@@ -1,0 +1,15 @@
+{
+  "genesis_time": "0001-01-01T00:00:00Z",
+  "chain_id": "minter-test-network",
+  "validators": [
+    {
+      "pub_key": {
+        "type": "AC26791624DE60",
+        "value": "kx4AZnCN67b2cF4BRUhIiWLAF497A0BGG14xhWya988="
+      },
+      "power": 10,
+      "name": ""
+    }
+  ],
+  "app_hash": "0000000000000000000000000000000000000000000000000000000000000000"
+}
