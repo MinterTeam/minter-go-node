@@ -529,7 +529,7 @@ func (s *StateDB) SubCoinReserve(symbol types.CoinSymbol, value *big.Int) {
 	}
 }
 
-func (s *StateDB) GetValidators() ([]abci.Validator, []Candidate) {
+func (s *StateDB) GetValidators(count int) ([]abci.Validator, []Candidate) {
 	stateCandidates := s.getStateCandidates()
 
 	if stateCandidates == nil {
@@ -550,8 +550,6 @@ func (s *StateDB) GetValidators() ([]abci.Validator, []Candidate) {
 	sort.Slice(activeCandidates, func(i, j int) bool {
 		return activeCandidates[i].TotalStake.Cmp(candidates[j].TotalStake) == -1
 	})
-
-	count := 10
 
 	if len(candidates) < count {
 		count = len(candidates)

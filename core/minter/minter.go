@@ -84,13 +84,17 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.ResponseBeginBlock {
 	app.rewards = big.NewInt(0)
 
+	// todo: give penalty to absent validators
+	// todo: give penalty to Byzantine validators
+
 	return abciTypes.ResponseBeginBlock{}
 }
 
 func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.ResponseEndBlock {
 	app.nextBlockHeight = uint64(req.Height)
 
-	validators, candidates := app.currentState.GetValidators()
+	// todo: calculate validators count from current block height
+	validators, candidates := app.currentState.GetValidators(10)
 
 	// calculate total power of validators
 	totalPower := big.NewInt(0)
