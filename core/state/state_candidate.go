@@ -23,6 +23,7 @@ import (
 	"minter/core/types"
 	"fmt"
 	"math/big"
+	"bytes"
 )
 
 const (
@@ -69,6 +70,16 @@ type Candidate struct {
 	CreatedAtBlock   uint
 	Status 			 byte
 	AbsentTimes      uint
+}
+
+func (candidate Candidate) GetStakeOfAddress(addr types.Address) *Stake {
+	for i, stake := range candidate.Stakes {
+		if bytes.Compare(stake.Owner.Bytes(), addr.Bytes()) == 0 {
+			return &(candidate.Stakes[i])
+		}
+	}
+
+	return nil
 }
 
 func (candidate Candidate) String() string {

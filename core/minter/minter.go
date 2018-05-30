@@ -357,6 +357,57 @@ func (app *Blockchain) RunTx(isCheck bool, tx *transaction.Transaction) Response
 			GasUsed:   tx.Gas(),
 			GasWanted: tx.Gas(),
 		}
+	case transaction.TypeUnbond:
+
+		data := tx.GetDecodedData().(transaction.UnbondData)
+
+		commission := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
+
+		if app.currentState.GetBalance(sender, app.BaseCoin).Cmp(commission) < 0 {
+			return Response{
+				Code: code.InsufficientFunds,
+				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %d ", sender.String(), commission)}
+		}
+
+		if !app.currentState.CandidateExists(data.PubKey) {
+			return Response{
+				Code: code.CandidateNotFound,
+				Log:  fmt.Sprintf("Candidate with such public key not found")}
+		}
+
+		candidate := app.currentState.GetStateCandidate(data.PubKey)
+
+		stake := candidate.GetStakeOfAddress(sender)
+
+		if stake == nil {
+			return Response{
+				Code: code.StakeNotFound,
+				Log:  fmt.Sprintf("Stake of current user not found")}
+		}
+
+		if stake.Value.Cmp(data.Value) < 0 {
+			return Response{
+				Code: code.InsufficientStake,
+				Log:  fmt.Sprintf("Insufficient stake for sender account")}
+		}
+
+		if !isCheck {
+			// now + 31 days
+			unboundAtBlock := int64(app.nextBlockHeight + 535680000)
+
+			app.rewards.Add(app.rewards, commission)
+
+			app.currentState.SubBalance(sender, app.BaseCoin, commission)
+			app.currentState.SubStake(sender, data.PubKey, data.Value)
+			app.currentState.GetOrNewStateFrozenFunds(unboundAtBlock).AddFund(sender, data.Value)
+			app.currentState.SetNonce(sender, tx.Nonce)
+		}
+
+		return Response{
+			Code:      code.OK,
+			GasUsed:   tx.Gas(),
+			GasWanted: tx.Gas(),
+		}
 	case transaction.TypeSend:
 
 		data := tx.GetDecodedData().(transaction.SendData)

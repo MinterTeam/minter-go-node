@@ -593,6 +593,22 @@ func (s *StateDB) CandidateExists(key types.Pubkey) bool {
 	return false
 }
 
+func (s *StateDB) GetStateCandidate(key types.Pubkey) *Candidate {
+	stateCandidates := s.getStateCandidates()
+
+	if stateCandidates == nil {
+		return nil
+	}
+
+	for i, candidate := range stateCandidates.data {
+		if bytes.Compare(candidate.PubKey, key) == 0 {
+			return &(stateCandidates.data[i])
+		}
+	}
+
+	return nil
+}
+
 func (s *StateDB) GetStateCoin(symbol types.CoinSymbol) *stateCoin {
 	return s.getStateCoin(symbol)
 }
@@ -737,6 +753,22 @@ func (s *StateDB) Delegate(sender types.Address, pubkey []byte, stake *big.Int) 
 				Value: stake,
 			})
 			candidate.TotalStake.Add(candidate.TotalStake, stake)
+		}
+	}
+
+	s.setStateCandidates(stateCandidates)
+	s.MarkStateCandidateDirty()
+}
+
+func (s *StateDB) SubStake(sender types.Address, pubkey []byte, value *big.Int) {
+	stateCandidates := s.getStateCandidates()
+
+	for i := range stateCandidates.data {
+		candidate := &stateCandidates.data[i]
+		if bytes.Compare(candidate.PubKey, pubkey) == 0 {
+			currentStakeValue := candidate.GetStakeOfAddress(sender).Value
+			currentStakeValue.Sub(currentStakeValue, value)
+			candidate.TotalStake.Sub(candidate.TotalStake, value)
 		}
 	}
 

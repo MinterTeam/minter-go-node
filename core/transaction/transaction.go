@@ -56,11 +56,11 @@ type SendData struct {
 }
 
 type SetCandidateOnData struct {
-	PubKey     []byte
+	PubKey []byte
 }
 
 type SetCandidateOffData struct {
-	PubKey     []byte
+	PubKey []byte
 }
 
 type ConvertData struct {
@@ -95,7 +95,8 @@ type RedeemCheckData struct {
 }
 
 type UnbondData struct {
-	Address types.Address
+	PubKey []byte
+	Value  *big.Int
 }
 
 func (tx *Transaction) Serialize() ([]byte, error) {
@@ -120,6 +121,8 @@ func (tx *Transaction) Gas() int64 {
 		gas = commissions.DeclareCandidacyTx
 	case TypeDelegate:
 		gas = commissions.DelegateTx
+	case TypeUnbond:
+		gas = commissions.UnboundTx
 	case TypeRedeemCheck:
 		gas = commissions.RedeemCheckTx
 	case TypeSetCandidateOnline:
@@ -128,7 +131,7 @@ func (tx *Transaction) Gas() int64 {
 		gas = commissions.ToggleCandidateStatus
 	}
 
-	gas = gas + int64(len(tx.Payload))*commissions.PayloadByte
+	gas = gas + int64(len(tx.Payload)+len(tx.ServiceData))*commissions.PayloadByte
 
 	return gas
 }
@@ -165,6 +168,12 @@ func (tx *Transaction) String() string {
 		{
 			txData := tx.decodedData.(DelegateData)
 			return fmt.Sprintf("DELEGATE CANDIDACY TX nonce:%d pubkey:%s payload: %s",
+				tx.Nonce, hexutil.Encode(txData.PubKey[:]), tx.Payload)
+		}
+	case TypeUnbond:
+		{
+			txData := tx.decodedData.(UnbondData)
+			return fmt.Sprintf("UNBOUND CANDIDACY TX nonce:%d pubkey:%s payload: %s",
 				tx.Nonce, hexutil.Encode(txData.PubKey[:]), tx.Payload)
 		}
 	case TypeRedeemCheck:
@@ -320,6 +329,12 @@ func DecodeFromBytes(buf []byte) (*Transaction, error) {
 	case TypeSetCandidateOffline:
 		{
 			data := SetCandidateOffData{}
+			rlp.Decode(bytes.NewReader(tx.Data), &data)
+			tx.SetDecodedData(data)
+		}
+	case TypeUnbond:
+		{
+			data := UnbondData{}
 			rlp.Decode(bytes.NewReader(tx.Data), &data)
 			tx.SetDecodedData(data)
 		}
