@@ -33,6 +33,7 @@ import (
 // Finally, call CommitTrie to write the modified storage trie into a database.
 type stateFrozenFund struct {
 	blockHeight int64
+	deleted     bool
 	data        FrozenFunds
 	db          *StateDB
 
@@ -84,6 +85,10 @@ func (c *stateFrozenFund) EncodeRLP(w io.Writer) error {
 func (c *stateFrozenFund) deepCopy(db *StateDB, onDirty func(blockHeight int64)) *stateFrozenFund {
 	frozenFund := newFrozenFund(db, c.blockHeight, c.data, onDirty)
 	return frozenFund
+}
+
+func (c *stateFrozenFund) Delete() {
+	c.deleted = true
 }
 
 func (c *stateFrozenFund) AddFund(address types.Address, value *big.Int) {

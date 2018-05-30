@@ -93,7 +93,15 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.ResponseEndBlock {
 	app.nextBlockHeight = uint64(req.Height)
 
-	// todo: pay frozen coins
+	frozenFunds := app.currentState.GetStateFrozenFunds(req.Height)
+
+	if frozenFunds != nil {
+		for _, item := range frozenFunds.List() {
+			app.currentState.SetBalance(item.Address, app.BaseCoin, item.Value)
+		}
+
+		frozenFunds.Delete()
+	}
 
 	// todo: calculate validators count from current block height
 	validators, candidates := app.currentState.GetValidators(10)

@@ -204,7 +204,7 @@ func (s *StateDB) updateStateFrozenFund(stateFrozenFund *stateFrozenFund) {
 	blockHeight := stateFrozenFund.BlockHeight()
 	data, err := rlp.EncodeToBytes(stateFrozenFund)
 	if err != nil {
-		panic(fmt.Errorf("can't encode frozen fund at %x: %v", blockHeight[:], err))
+		panic(fmt.Errorf("can't encode frozen fund at %d: %v", blockHeight, err))
 	}
 	key := []byte("frozenFundsForBlock:" + string(blockHeight))
 	// TODO: change key generation
@@ -236,6 +236,13 @@ func (s *StateDB) deleteStateObject(stateObject *stateObject) {
 	stateObject.deleted = true
 	addr := stateObject.Address()
 	s.setError(s.trie.TryDelete(addr[:]))
+}
+
+// deleteStateObject removes the given object from the state trie.
+func (s *StateDB) deleteFrozenFunds(stateFrozenFund *stateFrozenFund) {
+	stateFrozenFund.deleted = true
+	key := []byte("frozenFundsForBlock:" + string(stateFrozenFund.blockHeight))
+	s.setError(s.trie.TryDelete(key))
 }
 
 // Retrieve a state frozen funds by block height. Returns nil if not found.
@@ -377,6 +384,10 @@ func (s *StateDB) GetOrNewStateObject(addr types.Address) *stateObject {
 		stateObject, _ = s.createObject(addr)
 	}
 	return stateObject
+}
+
+func (s *StateDB) GetStateFrozenFunds(blockHeight int64) *stateFrozenFund {
+	return s.getStateFrozenFunds(blockHeight)
 }
 
 func (s *StateDB) GetOrNewStateFrozenFunds(blockHeight int64) *stateFrozenFund {
@@ -522,11 +533,14 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (root types.Hash, err error) {
 	for block, frozenFund := range s.stateFrozenFunds {
 		_, isDirty := s.stateFrozenFundsDirty[block]
 		switch {
+		case frozenFund.deleted:
+			s.deleteFrozenFunds(frozenFund)
 		case isDirty:
 			s.updateStateFrozenFund(frozenFund)
 		}
 		delete(s.stateFrozenFundsDirty, block)
 	}
+
 
 	if s.stateCandidatesDirty {
 		s.updateStateCandidates(s.stateCandidates)
