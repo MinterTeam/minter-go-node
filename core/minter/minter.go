@@ -23,7 +23,6 @@ type Blockchain struct {
 	currentStateCheck   *state.StateDB
 	rootHash            types.Hash
 	height              uint64
-	nextBlockHeight     uint64
 	rewards             *big.Int
 
 	BaseCoin types.CoinSymbol
@@ -98,10 +97,10 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 }
 
 func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.ResponseEndBlock {
-	app.nextBlockHeight = uint64(req.Height)
+	app.height = uint64(req.Height)
 
+	// apply frozen funds
 	frozenFunds := app.currentStateDeliver.GetStateFrozenFunds(req.Height)
-
 	if frozenFunds != nil {
 		for _, item := range frozenFunds.List() {
 			app.currentStateDeliver.SetBalance(item.Address, app.BaseCoin, item.Value)
@@ -164,7 +163,7 @@ func (app *Blockchain) DeliverTx(tx []byte) abciTypes.ResponseDeliverTx {
 
 	fmt.Println("deliver", decodedTx)
 
-	response := transaction.RunTx(app.currentStateDeliver, false, decodedTx, app.rewards, app.nextBlockHeight)
+	response := transaction.RunTx(app.currentStateDeliver, false, decodedTx, app.rewards, app.height)
 
 	return abciTypes.ResponseDeliverTx{
 		Code:      response.Code,
@@ -190,7 +189,7 @@ func (app *Blockchain) CheckTx(tx []byte) abciTypes.ResponseCheckTx {
 			Log:  err.Error()}
 	}
 
-	response := transaction.RunTx(app.currentStateCheck, true, decodedTx, nil, app.nextBlockHeight)
+	response := transaction.RunTx(app.currentStateCheck, true, decodedTx, nil, app.height)
 
 	return abciTypes.ResponseCheckTx{
 		Code:      response.Code,
@@ -217,7 +216,7 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 	}
 
 	height := make([]byte, 8)
-	binary.BigEndian.PutUint64(height[:], app.nextBlockHeight)
+	binary.BigEndian.PutUint64(height[:], app.height)
 	err = appTable.Put([]byte("height"), height[:])
 
 	if err != nil {
