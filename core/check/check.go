@@ -9,7 +9,10 @@ import (
 	"fmt"
 	"minter/crypto"
 	"minter/crypto/sha3"
-	"minter/core/transaction"
+)
+
+var (
+	ErrInvalidSig = errors.New("invalid transaction v, r, s values")
 )
 
 type Check struct {
@@ -84,11 +87,11 @@ func rlpHash(x interface{}) (h types.Hash) {
 
 func recoverPlain(sighash types.Hash, R, S, Vb *big.Int, homestead bool) (types.Address, error) {
 	if Vb.BitLen() > 8 {
-		return types.Address{}, transaction.ErrInvalidSig
+		return types.Address{}, ErrInvalidSig
 	}
 	V := byte(Vb.Uint64() - 27)
 	if !crypto.ValidateSignatureValues(V, R, S, homestead) {
-		return types.Address{}, transaction.ErrInvalidSig
+		return types.Address{}, ErrInvalidSig
 	}
 	// encode the snature in uncompressed format
 	r, s := R.Bytes(), S.Bytes()

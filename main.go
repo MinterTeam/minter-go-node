@@ -37,7 +37,6 @@ func main() {
 		app.Stop()
 		srv.Stop()
 	})
-
 }
 
 func runTendermint() {
@@ -55,10 +54,10 @@ func runTendermint() {
 		helpers.Copy(wd+"/default_config/config.toml", homeDir+"/config/config.toml")
 	}
 
-	tendermintLog, _ := os.OpenFile(wd + "/logs/tendermint.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	tendermintLog, _ := os.OpenFile(wd+"/logs/tendermint.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	defer tendermintLog.Close()
 
-	tendermintErrorLog, _ := os.OpenFile(wd + "/logs/tendermint.err.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	tendermintErrorLog, _ := os.OpenFile(wd+"/logs/tendermint.err.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	defer tendermintErrorLog.Close()
 
 	for {

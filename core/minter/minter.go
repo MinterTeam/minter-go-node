@@ -167,7 +167,7 @@ func (app *Blockchain) DeliverTx(tx []byte) abciTypes.ResponseDeliverTx {
 
 	fmt.Println("deliver", decodedTx)
 
-	response := transaction.RunTx(app.currentStateDeliver, false, decodedTx)
+	response := transaction.RunTx(app.currentStateDeliver, false, decodedTx, app.rewards, app.nextBlockHeight)
 
 	return abciTypes.ResponseDeliverTx{
 		Code:      response.Code,
@@ -193,7 +193,7 @@ func (app *Blockchain) CheckTx(tx []byte) abciTypes.ResponseCheckTx {
 			Log:  err.Error()}
 	}
 
-	response := transaction.RunTx(app.currentStateCheck, true, decodedTx)
+	response := transaction.RunTx(app.currentStateCheck, true, decodedTx, nil, app.nextBlockHeight)
 
 	return abciTypes.ResponseCheckTx{
 		Code:      response.Code,

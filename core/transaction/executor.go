@@ -3,13 +3,13 @@ package transaction
 import (
 	"minter/core/state"
 	"minter/core/code"
+	"minter/core/check"
+	"minter/core/types"
 	"fmt"
 	"math/big"
 	"minter/formula"
 	"github.com/tendermint/tmlibs/common"
 	"encoding/hex"
-	"minter/core/check"
-	"minter/core/types"
 	"minter/crypto/sha3"
 	"minter/rlp"
 	"minter/crypto"
@@ -27,7 +27,7 @@ type Response struct {
 	Fee       common.KI64Pair `protobuf:"bytes,8,opt,name=fee" json:"fee"`
 }
 
-func RunTx(context *state.StateDB, isCheck bool, tx *Transaction) Response {
+func RunTx(context *state.StateDB, isCheck bool, tx *Transaction, rewardPull *big.Int, currentBlock uint64) Response {
 	sender, _ := tx.Sender()
 
 	if expectedNonce := context.GetNonce(sender) + 1; expectedNonce != tx.Nonce {
@@ -67,10 +67,10 @@ func RunTx(context *state.StateDB, isCheck bool, tx *Transaction) Response {
 		// TODO: limit number of candidates to prevent flooding
 
 		if !isCheck {
-			app.rewards.Add(app.rewards, commission)
+			rewardPull.Add(rewardPull, commission)
 
 			context.SubBalance(sender, types.GetBaseCoin(), totalTxCost)
-			context.CreateCandidate(data.Address, data.PubKey, data.Commission, uint(app.nextBlockHeight))
+			context.CreateCandidate(data.Address, data.PubKey, data.Commission, uint(currentBlock))
 			context.Delegate(sender, data.PubKey, data.Stake)
 			context.SetNonce(sender, tx.Nonce)
 		}
@@ -100,7 +100,7 @@ func RunTx(context *state.StateDB, isCheck bool, tx *Transaction) Response {
 		}
 
 		if !isCheck {
-			app.rewards.Add(app.rewards, commission)
+			rewardPull.Add(rewardPull, commission)
 
 			context.SubBalance(sender, types.GetBaseCoin(), totalTxCost)
 			context.Delegate(sender, data.PubKey, data.Stake)
@@ -148,9 +148,9 @@ func RunTx(context *state.StateDB, isCheck bool, tx *Transaction) Response {
 
 		if !isCheck {
 			// now + 31 days
-			unboundAtBlock := int64(app.nextBlockHeight + 535680000)
+			unboundAtBlock := int64(currentBlock + 535680000)
 
-			app.rewards.Add(app.rewards, commission)
+			rewardPull.Add(rewardPull, commission)
 
 			context.SubBalance(sender, types.GetBaseCoin(), commission)
 			context.SubStake(sender, data.PubKey, data.Value)
@@ -192,7 +192,7 @@ func RunTx(context *state.StateDB, isCheck bool, tx *Transaction) Response {
 		// deliver TX
 
 		if !isCheck {
-			app.rewards.Add(app.rewards, commissionInBaseCoin)
+			rewardPull.Add(rewardPull, commissionInBaseCoin)
 
 			if data.Coin != types.GetBaseCoin() {
 				context.SubCoinVolume(data.Coin, commission)
@@ -231,7 +231,7 @@ func RunTx(context *state.StateDB, isCheck bool, tx *Transaction) Response {
 				Log:  fmt.Sprintf("Coin not exists")}
 		}
 
-		if decodedCheck.DueBlock < app.nextBlockHeight {
+		if decodedCheck.DueBlock < uint64(currentBlock) {
 			return Response{
 				Code: code.CheckExpired,
 				Log:  fmt.Sprintf("Check expired")}
@@ -287,7 +287,7 @@ func RunTx(context *state.StateDB, isCheck bool, tx *Transaction) Response {
 
 		if !isCheck {
 			context.UseCheck(decodedCheck)
-			app.rewards.Add(app.rewards, commissionInBaseCoin)
+			rewardPull.Add(rewardPull, commissionInBaseCoin)
 
 			if decodedCheck.Coin != types.GetBaseCoin() {
 				context.SubCoinVolume(decodedCheck.Coin, commission)
@@ -354,7 +354,7 @@ func RunTx(context *state.StateDB, isCheck bool, tx *Transaction) Response {
 		// deliver TX
 
 		if !isCheck {
-			app.rewards.Add(app.rewards, commissionInBaseCoin)
+			rewardPull.Add(rewardPull, commissionInBaseCoin)
 
 			context.SubBalance(sender, data.FromCoinSymbol, totalTxCost)
 
@@ -449,7 +449,7 @@ func RunTx(context *state.StateDB, isCheck bool, tx *Transaction) Response {
 		// deliver TX
 
 		if !isCheck {
-			app.rewards.Add(app.rewards, commission)
+			rewardPull.Add(rewardPull, commission)
 
 			context.SubBalance(sender, types.GetBaseCoin(), totalTxCost)
 			context.CreateCoin(data.Symbol, data.Name, data.InitialAmount, data.ConstantReserveRatio, data.InitialReserve, sender)
