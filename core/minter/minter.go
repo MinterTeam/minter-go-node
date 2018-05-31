@@ -79,15 +79,12 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.ResponseBeginBlock {
 	app.rewards = big.NewInt(0)
 
+	// todo: calculate validators count from current block height
 	_, candidates := app.currentStateDeliver.GetValidators(10)
 
 	// give penalty to absent validators
 	for _, i := range req.AbsentValidators {
-		candidates[i].AbsentTimes++
-
-		if candidates[i].AbsentTimes > 12 {
-			candidates[i].Status = state.CandidateStatusOffline
-		}
+		app.currentStateDeliver.IncreaseCandidateAbsentTimes(candidates[i].PubKey)
 	}
 
 	// give penalty to Byzantine validators

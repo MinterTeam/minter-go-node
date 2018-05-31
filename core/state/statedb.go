@@ -35,8 +35,9 @@ import (
 
 var (
 	// emptyState is the known hash of an empty state trie entry.
-	emptyState    = crypto.Keccak256Hash(nil)
-	candidatesKey = []byte("candidates")
+	emptyState              = crypto.Keccak256Hash(nil)
+	candidatesKey           = []byte("candidates")
+	CandidateMaxAbsentTimes = uint(12)
 )
 
 // StateDBs within the ethereum protocol are used to store anything
@@ -541,7 +542,6 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (root types.Hash, err error) {
 		delete(s.stateFrozenFundsDirty, block)
 	}
 
-
 	if s.stateCandidatesDirty {
 		s.updateStateCandidates(s.stateCandidates)
 		s.stateCandidatesDirty = false
@@ -802,6 +802,26 @@ func (s *StateDB) SetCandidateOnline(pubkey []byte) {
 		candidate := &stateCandidates.data[i]
 		if bytes.Compare(candidate.PubKey, pubkey) == 0 {
 			candidate.Status = CandidateStatusOnline
+		}
+	}
+
+	s.setStateCandidates(stateCandidates)
+	s.MarkStateCandidateDirty()
+}
+
+func (s *StateDB) IncreaseCandidateAbsentTimes(pubkey types.Pubkey) {
+	stateCandidates := s.getStateCandidates()
+
+	for i := range stateCandidates.data {
+		candidate := &stateCandidates.data[i]
+		if bytes.Compare(candidate.PubKey, pubkey) == 0 {
+			candidate.AbsentTimes++
+
+			if candidate.AbsentTimes > CandidateMaxAbsentTimes {
+				candidate.Status = CandidateStatusOffline
+				candidate.AbsentTimes = 0
+				// todo: make penalty
+			}
 		}
 	}
 
