@@ -766,6 +766,7 @@ func (s *StateDB) SubStake(sender types.Address, pubkey []byte, value *big.Int) 
 	for i := range stateCandidates.data {
 		candidate := &stateCandidates.data[i]
 		if bytes.Compare(candidate.PubKey, pubkey) == 0 {
+			// todo: remove if stake == 0
 			currentStakeValue := candidate.GetStakeOfAddress(sender).Value
 			currentStakeValue.Sub(currentStakeValue, value)
 			candidate.TotalStake.Sub(candidate.TotalStake, value)
