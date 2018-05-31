@@ -16,7 +16,8 @@ const (
 	CheckInvalidLock       uint32 = 12
 	CheckExpired           uint32 = 13
 	CheckUsed              uint32 = 14
-	TooHighGasPrice		   uint32 = 15
+	TooHighGasPrice        uint32 = 15
 	StakeNotFound          uint32 = 16
-	InsufficientStake	   uint32 = 17
+	InsufficientStake      uint32 = 17
+	IsNotOwnerOfCandidate  uint32 = 18
 )

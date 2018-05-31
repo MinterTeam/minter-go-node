@@ -182,6 +182,18 @@ func (tx *Transaction) String() string {
 			return fmt.Sprintf("REDEEM CHECK TX nonce:%d proof: %x",
 				tx.Nonce, txData.Proof)
 		}
+	case TypeSetCandidateOffline:
+		{
+			txData := tx.decodedData.(SetCandidateOffData)
+			return fmt.Sprintf("SET CANDIDATE OFFLINE TX nonce:%d, pubkey: %x",
+				tx.Nonce, txData.PubKey)
+		}
+	case TypeSetCandidateOnline:
+		{
+			txData := tx.decodedData.(SetCandidateOnData)
+			return fmt.Sprintf("SET CANDIDATE ONLINE TX nonce:%d, pubkey: %x",
+				tx.Nonce, txData.PubKey)
+		}
 	}
 
 	return "err"

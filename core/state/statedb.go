@@ -809,6 +809,20 @@ func (s *StateDB) SetCandidateOnline(pubkey []byte) {
 	s.MarkStateCandidateDirty()
 }
 
+func (s *StateDB) SetCandidateOffline(pubkey []byte) {
+	stateCandidates := s.getStateCandidates()
+
+	for i := range stateCandidates.data {
+		candidate := &stateCandidates.data[i]
+		if bytes.Compare(candidate.PubKey, pubkey) == 0 {
+			candidate.Status = CandidateStatusOffline
+		}
+	}
+
+	s.setStateCandidates(stateCandidates)
+	s.MarkStateCandidateDirty()
+}
+
 func (s *StateDB) IncreaseCandidateAbsentTimes(pubkey types.Pubkey) {
 	stateCandidates := s.getStateCandidates()
 

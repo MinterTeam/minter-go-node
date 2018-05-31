@@ -36,8 +36,6 @@ func RunTx(context *state.StateDB, isCheck bool, tx *Transaction, rewardPull *bi
 			Log:  fmt.Sprintf("Unexpected nonce. Expected: %d, got %d.", expectedNonce, tx.Nonce)}
 	}
 
-	// TODO: add "set candidate online/offline"
-
 	switch tx.Type {
 	case TypeDeclareCandidacy:
 
@@ -72,6 +70,84 @@ func RunTx(context *state.StateDB, isCheck bool, tx *Transaction, rewardPull *bi
 			context.SubBalance(sender, types.GetBaseCoin(), totalTxCost)
 			context.CreateCandidate(data.Address, data.PubKey, data.Commission, uint(currentBlock))
 			context.Delegate(sender, data.PubKey, data.Stake)
+			context.SetNonce(sender, tx.Nonce)
+		}
+
+		return Response{
+			Code:      code.OK,
+			GasUsed:   tx.Gas(),
+			GasWanted: tx.Gas(),
+		}
+	case TypeSetCandidateOnline:
+
+		data := tx.GetDecodedData().(SetCandidateOnData)
+
+		commission := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
+
+		if context.GetBalance(sender, types.GetBaseCoin()).Cmp(commission) < 0 {
+			return Response{
+				Code: code.InsufficientFunds,
+				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %d ", sender.String(), commission)}
+		}
+
+		if !context.CandidateExists(data.PubKey) {
+			return Response{
+				Code: code.CandidateNotFound,
+				Log:  fmt.Sprintf("Candidate with such public key not found")}
+		}
+
+		candidate := context.GetStateCandidate(data.PubKey)
+
+		if bytes.Compare(candidate.CandidateAddress.Bytes(), sender.Bytes()) != 0 {
+			return Response{
+				Code: code.IsNotOwnerOfCandidate,
+				Log:  fmt.Sprintf("Sender is not an owner of a candidate")}
+		}
+
+		if !isCheck {
+			rewardPull.Add(rewardPull, commission)
+
+			context.SubBalance(sender, types.GetBaseCoin(), commission)
+			context.SetCandidateOnline(data.PubKey)
+			context.SetNonce(sender, tx.Nonce)
+		}
+
+		return Response{
+			Code:      code.OK,
+			GasUsed:   tx.Gas(),
+			GasWanted: tx.Gas(),
+		}
+	case TypeSetCandidateOffline:
+
+		data := tx.GetDecodedData().(SetCandidateOffData)
+
+		commission := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
+
+		if context.GetBalance(sender, types.GetBaseCoin()).Cmp(commission) < 0 {
+			return Response{
+				Code: code.InsufficientFunds,
+				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %d ", sender.String(), commission)}
+		}
+
+		if !context.CandidateExists(data.PubKey) {
+			return Response{
+				Code: code.CandidateNotFound,
+				Log:  fmt.Sprintf("Candidate with such public key not found")}
+		}
+
+		candidate := context.GetStateCandidate(data.PubKey)
+
+		if bytes.Compare(candidate.CandidateAddress.Bytes(), sender.Bytes()) != 0 {
+			return Response{
+				Code: code.IsNotOwnerOfCandidate,
+				Log:  fmt.Sprintf("Sender is not an owner of a candidate")}
+		}
+
+		if !isCheck {
+			rewardPull.Add(rewardPull, commission)
+
+			context.SubBalance(sender, types.GetBaseCoin(), commission)
+			context.SetCandidateOffline(data.PubKey)
 			context.SetNonce(sender, tx.Nonce)
 		}
 
