@@ -337,6 +337,10 @@ func DecodeFromBytes(buf []byte) (*Transaction, error) {
 		{
 			data := SetCandidateOnData{}
 			rlp.Decode(bytes.NewReader(tx.Data), &data)
+			var key tCrypto.PubKeyEd25519
+			copy(key[:], data.PubKey)
+
+			data.PubKey = key.Bytes()
 			tx.SetDecodedData(data)
 		}
 	case TypeSetCandidateOffline:
