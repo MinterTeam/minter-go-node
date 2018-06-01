@@ -31,6 +31,7 @@ const (
 	TypeSetCandidateOffline byte = 0x09
 )
 
+// TODO: refactor, get rid of switch cases
 type Transaction struct {
 	Nonce       uint64
 	GasPrice    *big.Int

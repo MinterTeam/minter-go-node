@@ -50,8 +50,9 @@ func (c *stateFrozenFund) empty() bool {
 
 // frozen funds are only for BaseCoin
 type FrozenFund struct {
-	Address types.Address
-	Value   *big.Int
+	Address      types.Address
+	CandidateKey []byte
+	Value        *big.Int
 }
 
 type FrozenFunds struct {
@@ -91,10 +92,11 @@ func (c *stateFrozenFund) Delete() {
 	c.deleted = true
 }
 
-func (c *stateFrozenFund) AddFund(address types.Address, value *big.Int) {
+func (c *stateFrozenFund) AddFund(address types.Address, candidateKey []byte, value *big.Int) {
 	c.addFund(FrozenFund{
-		Address: address,
-		Value:   value,
+		Address:      address,
+		CandidateKey: candidateKey,
+		Value:        value,
 	})
 }
 

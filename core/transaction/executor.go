@@ -30,6 +30,7 @@ type Response struct {
 func RunTx(context *state.StateDB, isCheck bool, tx *Transaction, rewardPull *big.Int, currentBlock uint64) Response {
 	sender, _ := tx.Sender()
 
+	// TODO: deal smth about multiple outgoing transactions from one sender
 	if expectedNonce := context.GetNonce(sender) + 1; expectedNonce != tx.Nonce {
 		return Response{
 			Code: code.WrongNonce,
@@ -230,7 +231,7 @@ func RunTx(context *state.StateDB, isCheck bool, tx *Transaction, rewardPull *bi
 
 			context.SubBalance(sender, types.GetBaseCoin(), commission)
 			context.SubStake(sender, data.PubKey, data.Value)
-			context.GetOrNewStateFrozenFunds(unboundAtBlock).AddFund(sender, data.Value)
+			context.GetOrNewStateFrozenFunds(unboundAtBlock).AddFund(sender, data.PubKey, data.Value)
 			context.SetNonce(sender, tx.Nonce)
 		}
 

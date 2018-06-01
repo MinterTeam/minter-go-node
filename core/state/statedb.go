@@ -641,13 +641,6 @@ func (s *StateDB) SubCoinReserve(symbol types.CoinSymbol, value *big.Int) {
 	}
 }
 
-func (s *StateDB) AddFrozenFund(addr types.Address, amount *big.Int, blockHeight int64) {
-	stateObject := s.GetOrNewStateFrozenFunds(blockHeight)
-	if stateObject != nil {
-		stateObject.AddFund(addr, amount)
-	}
-}
-
 func (s *StateDB) GetValidators(count int) ([]abci.Validator, []Candidate) {
 	stateCandidates := s.getStateCandidates()
 
