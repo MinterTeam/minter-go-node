@@ -94,7 +94,7 @@ func RunTx(context *state.StateDB, isCheck bool, tx *Transaction, rewardPull *bi
 		if !context.CandidateExists(data.PubKey) {
 			return Response{
 				Code: code.CandidateNotFound,
-				Log:  fmt.Sprintf("Candidate with such public key not found")}
+				Log:  fmt.Sprintf("Candidate with such public key (%x) not found", data.PubKey)}
 		}
 
 		candidate := context.GetStateCandidate(data.PubKey)

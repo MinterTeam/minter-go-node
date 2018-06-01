@@ -584,8 +584,8 @@ func (s *StateDB) CandidateExists(key types.Pubkey) bool {
 		return false
 	}
 
-	for i := range stateCandidates.data {
-		if bytes.Compare(stateCandidates.data[i].PubKey, key) == 0 {
+	for _, candidate := range stateCandidates.data {
+		if bytes.Compare(candidate.PubKey, key) == 0 {
 			return true
 		}
 	}
@@ -663,14 +663,14 @@ func (s *StateDB) GetValidators(count int) ([]abci.Validator, []Candidate) {
 		return activeCandidates[i].TotalStake.Cmp(candidates[j].TotalStake) == -1
 	})
 
-	if len(candidates) < count {
-		count = len(candidates)
+	if len(activeCandidates) < count {
+		count = len(activeCandidates)
 	}
 
 	validators := make([]abci.Validator, count)
 
-	for i := range candidates[:count] {
-		pkey, err := tCrypto.PubKeyFromBytes(candidates[i].PubKey)
+	for i := range activeCandidates[:count] {
+		pkey, err := tCrypto.PubKeyFromBytes(activeCandidates[i].PubKey)
 
 		if err != nil {
 			panic(err)
@@ -682,7 +682,7 @@ func (s *StateDB) GetValidators(count int) ([]abci.Validator, []Candidate) {
 		}
 	}
 
-	return validators, candidates
+	return validators, activeCandidates
 }
 
 func (s *StateDB) AddAccumReward(pubkey types.Pubkey, reward *big.Int) {
