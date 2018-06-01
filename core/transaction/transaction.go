@@ -343,12 +343,22 @@ func DecodeFromBytes(buf []byte) (*Transaction, error) {
 		{
 			data := SetCandidateOffData{}
 			rlp.Decode(bytes.NewReader(tx.Data), &data)
+
+			var key tCrypto.PubKeyEd25519
+			copy(key[:], data.PubKey)
+
+			data.PubKey = key.Bytes()
 			tx.SetDecodedData(data)
 		}
 	case TypeUnbond:
 		{
 			data := UnbondData{}
 			rlp.Decode(bytes.NewReader(tx.Data), &data)
+
+			var key tCrypto.PubKeyEd25519
+			copy(key[:], data.PubKey)
+
+			data.PubKey = key.Bytes()
 			tx.SetDecodedData(data)
 		}
 	default:

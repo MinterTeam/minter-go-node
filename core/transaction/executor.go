@@ -54,7 +54,7 @@ func RunTx(context *state.StateDB, isCheck bool, tx *Transaction, rewardPull *bi
 		if context.CandidateExists(data.PubKey) {
 			return Response{
 				Code: code.CandidateExists,
-				Log:  fmt.Sprintf("Candidate with such public key already exists")}
+				Log:  fmt.Sprintf("Candidate with such public key (%x) already exists", data.PubKey)}
 		}
 
 		if data.Commission < 0 || data.Commission > 100 {
