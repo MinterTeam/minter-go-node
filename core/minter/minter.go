@@ -13,6 +13,7 @@ import (
 	"math/big"
 	"encoding/binary"
 	"minter/core/rewards"
+	"bytes"
 )
 
 type Blockchain struct {
@@ -24,6 +25,7 @@ type Blockchain struct {
 	rootHash            types.Hash
 	height              uint64
 	rewards             *big.Int
+	activeValidators    abciTypes.Validators
 
 	BaseCoin types.CoinSymbol
 }
@@ -67,9 +69,10 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 	faucet := types.HexToAddress("Mxfe60014a6e9ac91618f5d1cab3fd58cded61ee99")
 	app.currentStateDeliver.SetBalance(faucet, app.BaseCoin, big.NewInt(1e15))
 
-	for i := range req.Validators {
-		app.currentStateDeliver.CreateCandidate(coinbase, req.Validators[i].PubKey, 10, 1)
-		app.currentStateDeliver.SetCandidateOnline(req.Validators[i].PubKey)
+	for _, validator := range req.Validators {
+		app.currentStateDeliver.CreateCandidate(coinbase, validator.PubKey, 10, 1)
+		app.currentStateDeliver.SetCandidateOnline(validator.PubKey)
+		app.activeValidators = append(app.activeValidators, validator)
 	}
 
 	return abciTypes.ResponseInitChain{}
@@ -110,23 +113,23 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 	}
 
 	// todo: calculate validators count from current block height
-	validators, candidates := app.currentStateDeliver.GetValidators(10)
+	newValidators, newCandidates := app.currentStateDeliver.GetValidators(10)
 
 	// calculate total power of validators
 	totalPower := big.NewInt(0)
-	for i := range candidates {
-		totalPower.Add(totalPower, candidates[i].TotalStake)
+	for _, candidate := range newCandidates {
+		totalPower.Add(totalPower, candidate.TotalStake)
 	}
 
 	// accumulate rewards
-	for i := range candidates {
+	for _, candidate := range newCandidates {
 		reward := rewards.GetRewardForBlock(req.Height)
 		reward.Add(reward, app.rewards)
 
-		reward.Mul(reward, candidates[i].TotalStake)
+		reward.Mul(reward, candidate.TotalStake)
 		reward.Div(reward, totalPower)
 
-		app.currentStateDeliver.AddAccumReward(candidates[i].PubKey, reward)
+		app.currentStateDeliver.AddAccumReward(candidate.PubKey, reward)
 	}
 
 	// pay rewards
@@ -136,8 +139,34 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 
 	// update validators
 	if req.Height%5 == 0 {
+		defer func() {
+			app.activeValidators = newValidators
+		}()
+
+		updates := newValidators
+
+		for _, validator := range app.activeValidators {
+			persisted := false
+			for _, newValidator := range newValidators {
+				if bytes.Compare(validator.PubKey, newValidator.PubKey) == 0 {
+					persisted = true
+					break
+				}
+			}
+
+			// remove validator
+			if !persisted {
+				updates = append(updates, abciTypes.Validator{
+					PubKey: validator.PubKey,
+					Power: 0,
+				})
+			}
+		}
+
+		println(updates)
+
 		return abciTypes.ResponseEndBlock{
-			ValidatorUpdates: validators,
+			ValidatorUpdates: updates,
 		}
 	}
 
