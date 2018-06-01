@@ -163,8 +163,6 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 			}
 		}
 
-		println(updates)
-
 		return abciTypes.ResponseEndBlock{
 			ValidatorUpdates: updates,
 		}
