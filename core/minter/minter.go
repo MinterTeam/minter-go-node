@@ -64,10 +64,14 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 	// TODO: move initial balances to genesis.json
 
 	coinbase := types.HexToAddress("Mxa93163fdf10724dc4785ff5cbfb9ac0b5949409f")
-	app.currentStateDeliver.SetBalance(coinbase, app.BaseCoin, big.NewInt(1e15))
+
+	initBalance := big.NewInt(10)
+	initBalance.Exp(initBalance, big.NewInt(25), nil)
+
+	app.currentStateDeliver.SetBalance(coinbase, app.BaseCoin, initBalance)
 
 	faucet := types.HexToAddress("Mxfe60014a6e9ac91618f5d1cab3fd58cded61ee99")
-	app.currentStateDeliver.SetBalance(faucet, app.BaseCoin, big.NewInt(1e15))
+	app.currentStateDeliver.SetBalance(faucet, app.BaseCoin, initBalance)
 
 	for _, validator := range req.Validators {
 		app.currentStateDeliver.CreateCandidate(coinbase, validator.PubKey, 10, 1)
@@ -123,7 +127,8 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 
 	// accumulate rewards
 	for _, candidate := range newCandidates {
-		reward := rewards.GetRewardForBlock(req.Height)
+		reward := rewards.GetRewardForBlock(uint64(req.Height))
+
 		reward.Add(reward, app.rewards)
 
 		reward.Mul(reward, candidate.TotalStake)
@@ -138,37 +143,33 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 	}
 
 	// update validators
-	if req.Height%5 == 0 {
-		defer func() {
-			app.activeValidators = newValidators
-		}()
+	defer func() {
+		app.activeValidators = newValidators
+	}()
 
-		updates := newValidators
+	updates := newValidators
 
-		for _, validator := range app.activeValidators {
-			persisted := false
-			for _, newValidator := range newValidators {
-				if bytes.Compare(validator.PubKey, newValidator.PubKey) == 0 {
-					persisted = true
-					break
-				}
-			}
-
-			// remove validator
-			if !persisted {
-				updates = append(updates, abciTypes.Validator{
-					PubKey: validator.PubKey,
-					Power: 0,
-				})
+	for _, validator := range app.activeValidators {
+		persisted := false
+		for _, newValidator := range newValidators {
+			if bytes.Compare(validator.PubKey, newValidator.PubKey) == 0 {
+				persisted = true
+				break
 			}
 		}
 
-		return abciTypes.ResponseEndBlock{
-			ValidatorUpdates: updates,
+		// remove validator
+		if !persisted {
+			updates = append(updates, abciTypes.Validator{
+				PubKey: validator.PubKey,
+				Power: 0,
+			})
 		}
 	}
 
-	return abciTypes.ResponseEndBlock{}
+	return abciTypes.ResponseEndBlock{
+		ValidatorUpdates: updates,
+	}
 }
 
 func (app *Blockchain) Info(req abciTypes.RequestInfo) (resInfo abciTypes.ResponseInfo) {
