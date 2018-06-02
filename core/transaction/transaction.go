@@ -13,6 +13,7 @@ import (
 	"minter/hexutil"
 	tCrypto "github.com/tendermint/go-crypto"
 	"minter/core/commissions"
+	"encoding/json"
 )
 
 var (
@@ -54,6 +55,18 @@ type SendData struct {
 	Coin  types.CoinSymbol `json:"coin,string"`
 	To    types.Address    `json:"to"`
 	Value *big.Int         `json:"value"`
+}
+
+func (s *SendData) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Coin  types.CoinSymbol `json:"coin,string"`
+		To    types.Address    `json:"to"`
+		Value string           `json:"value"`
+	}{
+		Coin:  s.Coin,
+		To:    s.To,
+		Value: s.Value.String(),
+	})
 }
 
 type SetCandidateOnData struct {
