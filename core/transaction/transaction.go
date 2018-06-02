@@ -49,15 +49,17 @@ type Transaction struct {
 
 type RawData []byte
 
-type Data interface{}
-
-type SendData struct {
-	Coin  types.CoinSymbol `json:"coin,string"`
-	To    types.Address    `json:"to"`
-	Value *big.Int         `json:"value"`
+type Data interface {
+	MarshalJSON() ([]byte, error)
 }
 
-func (s *SendData) MarshalJSON() ([]byte, error) {
+type SendData struct {
+	Coin  types.CoinSymbol
+	To    types.Address
+	Value *big.Int
+}
+
+func (s SendData) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Coin  types.CoinSymbol `json:"coin,string"`
 		To    types.Address    `json:"to"`
@@ -73,14 +75,38 @@ type SetCandidateOnData struct {
 	PubKey []byte
 }
 
+func (s SetCandidateOnData) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		PubKey []byte `json:"pubkey"`
+	}{})
+}
+
 type SetCandidateOffData struct {
 	PubKey []byte
+}
+
+func (s SetCandidateOffData) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		PubKey []byte `json:"pubkey"`
+	}{})
 }
 
 type ConvertData struct {
 	FromCoinSymbol types.CoinSymbol
 	ToCoinSymbol   types.CoinSymbol
 	Value          *big.Int
+}
+
+func (s ConvertData) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		FromCoin types.CoinSymbol `json:"from_coin,string"`
+		ToCoin   types.CoinSymbol `json:"to_coin,string"`
+		Value    string           `json:"value"`
+	}{
+		FromCoin: s.FromCoinSymbol,
+		ToCoin:   s.ToCoinSymbol,
+		Value:    s.Value.String(),
+	})
 }
 
 type CreateCoinData struct {
@@ -91,6 +117,11 @@ type CreateCoinData struct {
 	ConstantReserveRatio uint
 }
 
+func (s CreateCoinData) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+	}{})
+}
+
 type DeclareCandidacyData struct {
 	Address    types.Address
 	PubKey     []byte
@@ -98,9 +129,19 @@ type DeclareCandidacyData struct {
 	Stake      *big.Int
 }
 
+func (s DeclareCandidacyData) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+	}{})
+}
+
 type DelegateData struct {
 	PubKey []byte
 	Stake  *big.Int
+}
+
+func (s DelegateData) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+	}{})
 }
 
 type RedeemCheckData struct {
@@ -108,9 +149,19 @@ type RedeemCheckData struct {
 	Proof    [65]byte
 }
 
+func (s RedeemCheckData) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+	}{})
+}
+
 type UnbondData struct {
 	PubKey []byte
 	Value  *big.Int
+}
+
+func (s UnbondData) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+	}{})
 }
 
 func (tx *Transaction) Serialize() ([]byte, error) {
