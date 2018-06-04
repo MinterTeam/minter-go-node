@@ -26,7 +26,7 @@ import (
 	"minter/core/types"
 	"minter/crypto"
 	"sort"
-)
+	)
 
 type Code []byte
 
@@ -311,6 +311,7 @@ func (c *stateObject) SubBalance(coinSymbol types.CoinSymbol, amount *big.Int) {
 }
 
 func (self *stateObject) SetBalance(coinSymbol types.CoinSymbol, amount *big.Int) {
+	EmitBalanceChange(self.address, coinSymbol, amount)
 	self.setBalance(coinSymbol, amount)
 }
 

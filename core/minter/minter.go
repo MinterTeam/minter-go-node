@@ -14,7 +14,7 @@ import (
 	"encoding/binary"
 	"minter/core/rewards"
 	"bytes"
-)
+	)
 
 type Blockchain struct {
 	abciTypes.BaseApplication
@@ -31,6 +31,8 @@ type Blockchain struct {
 }
 
 var (
+	blockchain *Blockchain
+
 	stateTableId = "state"
 	appTableId   = "app"
 )
@@ -44,7 +46,7 @@ func NewMinterBlockchain() *Blockchain {
 		panic(err)
 	}
 
-	blockchain := &Blockchain{
+	blockchain = &Blockchain{
 		db:       db,
 		BaseCoin: types.GetBaseCoin(),
 	}
@@ -162,7 +164,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 		if !persisted {
 			updates = append(updates, abciTypes.Validator{
 				PubKey: validator.PubKey,
-				Power: 0,
+				Power:  0,
 			})
 		}
 	}
