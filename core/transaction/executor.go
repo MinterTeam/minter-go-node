@@ -255,6 +255,13 @@ func RunTx(context *state.StateDB, isCheck bool, tx *Transaction, rewardPull *bi
 
 		if data.Coin != types.GetBaseCoin() {
 			coin := context.GetStateCoin(data.Coin)
+
+			if coin.ReserveBalance().Cmp(commissionInBaseCoin) < 0 {
+				return Response{
+					Code: code.CoinReserveNotSufficient,
+					Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.ReserveBalance().String(), commissionInBaseCoin.String())}
+			}
+
 			commission = formula.CalculateBuyDeposit(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
 		}
 
@@ -417,6 +424,13 @@ func RunTx(context *state.StateDB, isCheck bool, tx *Transaction, rewardPull *bi
 
 		if data.FromCoinSymbol != types.GetBaseCoin() {
 			coin := context.GetStateCoin(data.FromCoinSymbol)
+
+			if coin.ReserveBalance().Cmp(commissionInBaseCoin) < 0 {
+				return Response{
+					Code: code.CoinReserveNotSufficient,
+					Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.ReserveBalance().String(), commissionInBaseCoin.String())}
+			}
+
 			commission = formula.CalculateBuyDeposit(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
 		}
 
