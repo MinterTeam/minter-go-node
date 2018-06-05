@@ -26,6 +26,7 @@ type Blockchain struct {
 	height              uint64
 	rewards             *big.Int
 	activeValidators    abciTypes.Validators
+	absentCandidates    map[string]bool
 
 	BaseCoin types.CoinSymbol
 }
@@ -88,11 +89,17 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 	app.rewards = big.NewInt(0)
 
 	// todo: calculate validators count from current block height
-	_, candidates := app.currentStateDeliver.GetValidators(10)
+	validatorsCount := 10
+
+	_, candidates := app.currentStateDeliver.GetValidators(validatorsCount)
+
+	// clear absent candidates
+	app.absentCandidates = make(map[string]bool)
 
 	// give penalty to absent validators
 	for _, i := range req.AbsentValidators {
-		app.currentStateDeliver.IncreaseCandidateAbsentTimes(candidates[i].PubKey)
+		app.currentStateDeliver.SetValidatorAbsent(candidates[i].PubKey)
+		app.absentCandidates[candidates[i].PubKey.String()] = true
 	}
 
 	// give penalty to Byzantine validators
@@ -124,11 +131,23 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 	// calculate total power of validators
 	totalPower := big.NewInt(0)
 	for _, candidate := range newCandidates {
+
+		// skip if candidate is absent
+		if app.absentCandidates[candidate.PubKey.String()] {
+			continue
+		}
+
 		totalPower.Add(totalPower, candidate.TotalStake)
 	}
 
 	// accumulate rewards
 	for _, candidate := range newCandidates {
+
+		// skip if candidate is absent
+		if app.absentCandidates[candidate.PubKey.String()] {
+			continue
+		}
+
 		reward := rewards.GetRewardForBlock(uint64(req.Height))
 
 		reward.Add(reward, app.rewards)

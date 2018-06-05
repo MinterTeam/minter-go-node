@@ -28,9 +28,8 @@ import (
 
 const (
 	CandidateStatusOffline = 0x01
-	CandidateStatusOnline = 0x02
+	CandidateStatusOnline  = 0x02
 )
-
 
 // stateCandidate represents a candidate which is being modified.
 //
@@ -61,15 +60,15 @@ type Stake struct {
 }
 
 type Candidate struct {
-	CandidateAddress types.Address
-	TotalStake       *big.Int
-	PubKey           types.Pubkey
-	Commission       uint
-	AccumReward      *big.Int
-	Stakes           []Stake
-	CreatedAtBlock   uint
-	Status 			 byte
-	AbsentTimes      uint
+	CandidateAddress       types.Address
+	TotalStake             *big.Int
+	PubKey                 types.Pubkey
+	Commission             uint
+	AccumReward            *big.Int
+	Stakes                 []Stake
+	CreatedAtBlock         uint
+	Status                 byte
+	AbsentTimes            uint
 }
 
 func (candidate Candidate) GetStakeOfAddress(addr types.Address) *Stake {

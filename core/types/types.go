@@ -266,3 +266,7 @@ func (a UnprefixedAddress) MarshalText() ([]byte, error) {
 }
 
 type Pubkey []byte
+
+func (p Pubkey) String() string {
+	return string(p[:])
+}

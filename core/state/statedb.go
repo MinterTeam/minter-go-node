@@ -489,8 +489,9 @@ func (s *StateDB) CreateCandidate(
 				Value: big.NewInt(1),
 			},
 		},
-		CreatedAtBlock: currentBlock,
-		Status:         CandidateStatusOffline,
+		CreatedAtBlock:         currentBlock,
+		Status:                 CandidateStatusOffline,
+		AbsentTimes:            0,
 	})
 
 	s.MarkStateCandidateDirty()
@@ -669,6 +670,12 @@ func (s *StateDB) GetValidators(count int) ([]abci.Validator, []Candidate) {
 
 	validators := make([]abci.Validator, count)
 
+	// calculate total power
+	totalPower := big.NewInt(0)
+	for _, candidate := range activeCandidates[:count] {
+		totalPower.Add(totalPower, candidate.TotalStake)
+	}
+
 	for i := range activeCandidates[:count] {
 		pkey, err := tCrypto.PubKeyFromBytes(activeCandidates[i].PubKey)
 
@@ -676,9 +683,11 @@ func (s *StateDB) GetValidators(count int) ([]abci.Validator, []Candidate) {
 			panic(err)
 		}
 
+		power := big.NewInt(0).Div(big.NewInt(0).Mul(activeCandidates[i].TotalStake, big.NewInt(100)), totalPower)
+
 		validators[i] = abci.Validator{
 			PubKey: pkey.(tCrypto.PubKeyEd25519).Bytes(),
-			Power:  int64(10), // TODO: change to be based on stake
+			Power:  power.Int64(),
 		}
 	}
 
@@ -816,13 +825,13 @@ func (s *StateDB) SetCandidateOffline(pubkey []byte) {
 	s.MarkStateCandidateDirty()
 }
 
-func (s *StateDB) IncreaseCandidateAbsentTimes(pubkey types.Pubkey) {
+func (s *StateDB) SetValidatorAbsent(pubkey types.Pubkey) {
 	stateCandidates := s.getStateCandidates()
 
 	for i := range stateCandidates.data {
 		candidate := &stateCandidates.data[i]
 		if bytes.Compare(candidate.PubKey, pubkey) == 0 {
-			candidate.AbsentTimes++
+			candidate.AbsentTimes = candidate.AbsentTimes + 1
 
 			if candidate.AbsentTimes > CandidateMaxAbsentTimes {
 				candidate.Status = CandidateStatusOffline
