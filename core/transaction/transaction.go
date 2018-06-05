@@ -119,7 +119,18 @@ type CreateCoinData struct {
 
 func (s CreateCoinData) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-	}{})
+		Name                 string           `json:"name"`
+		Symbol               types.CoinSymbol `json:"coin_symbol"`
+		InitialAmount        string           `json:"initial_amount"`
+		InitialReserve       string           `json:"initial_reserve"`
+		ConstantReserveRatio uint             `json:"constant_reserve_ratio"`
+	}{
+		Name:                 s.Name,
+		Symbol:               s.Symbol,
+		InitialAmount:        s.InitialAmount.String(),
+		InitialReserve:       s.InitialReserve.String(),
+		ConstantReserveRatio: s.ConstantReserveRatio,
+	})
 }
 
 type DeclareCandidacyData struct {
