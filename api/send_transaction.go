@@ -32,7 +32,7 @@ func SendTransaction(w http.ResponseWriter, r *http.Request) {
 	body, _ := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
 	json.Unmarshal(body, &req)
 
-	client := rpcclient.NewJSONRPCClient(tendermintSocket)
+	client := rpcclient.NewJSONRPCClient(tendermintRpcAddr)
 	//core_types.RegisterAmino(client.Codec())
 	result := new(ResultBroadcastTxCommit)
 	_, err := client.Call("broadcast_tx_commit", map[string]interface{}{

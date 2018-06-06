@@ -1,0 +1,29 @@
+version: "3"
+networks:
+  minternet:
+   driver: bridge
+   ipam:
+     driver: default
+     config:
+     - subnet: 10.1.0.0/24
+services:
+  minter:
+    image: minter/minter:latest
+    command: --tendermint_addr=tpc://10.1.0.101:46657
+    ports:
+      - "8841:8841"
+      - "46658:46658"
+    networks:
+      minternet:
+        ipv4_address: 10.1.0.100
+  tendermint:
+    image: tendermint/tendermint:latest
+    command: node
+    volumes:
+      - ~/.tendermint:/tendermint
+    ports:
+      - "46656:46656"
+      - "46657:46657"
+    networks:
+      minternet:
+        ipv4_address: 10.1.0.101

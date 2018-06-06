@@ -26,7 +26,7 @@ func Transaction(w http.ResponseWriter, r *http.Request) {
 	hash := vars["hash"]
 	decoded, err := hex.DecodeString(hash)
 
-	client := rpcclient.NewJSONRPCClient(tendermintSocket)
+	client := rpcclient.NewJSONRPCClient(tendermintRpcAddr)
 	types.RegisterAmino(client.Codec())
 	result := new(ResTx)
 	_, err = client.Call("tx", map[string]interface{}{

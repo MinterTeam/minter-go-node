@@ -20,7 +20,7 @@ func Block(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	height, _ := strconv.ParseInt(vars["height"], 10, 64)
 
-	client := rpcclient.NewJSONRPCClient(tendermintSocket)
+	client := rpcclient.NewJSONRPCClient(tendermintRpcAddr)
 	tmtypes.RegisterAmino(client.Codec())
 	result := new(ResultBlock)
 	_, err := client.Call("block", map[string]interface{}{

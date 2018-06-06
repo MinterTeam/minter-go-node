@@ -18,7 +18,7 @@ type StatusResponse struct {
 
 func Status(w http.ResponseWriter, r *http.Request) {
 
-	client := rpcclient.NewJSONRPCClient(tendermintSocket)
+	client := rpcclient.NewJSONRPCClient(tendermintRpcAddr)
 	tmtypes.RegisterAmino(client.Codec())
 	result := new(tmtypes.ResultStatus)
 	_, err := client.Call("status", map[string]interface{}{}, result)
