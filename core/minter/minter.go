@@ -13,6 +13,8 @@ import (
 	"minter/core/transaction"
 	"minter/core/types"
 	"minter/mintdb"
+	"encoding/json"
+	"minter/genesis"
 )
 
 type Blockchain struct {
@@ -39,7 +41,7 @@ var (
 
 func NewMinterBlockchain() *Blockchain {
 
-	db, err := mintdb.NewLDBDatabase(utils.GetMinterHome(), 1000, 1000)
+	db, err := mintdb.NewLDBDatabase(utils.GetMinterHome() + "/data", 1000, 1000)
 
 	if err != nil {
 		panic(err)
@@ -61,21 +63,18 @@ func (app *Blockchain) SetOption(req abciTypes.RequestSetOption) abciTypes.Respo
 }
 
 func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.ResponseInitChain {
+	var genesisState genesis.AppState
+	json.Unmarshal(req.AppStateBytes, genesisState)
 
-	// TODO: move initial balances to genesis.json
-
-	coinbase := types.HexToAddress("Mxa93163fdf10724dc4785ff5cbfb9ac0b5949409f")
-
-	initBalance := big.NewInt(10)
-	initBalance.Exp(initBalance, big.NewInt(25), nil)
-
-	app.currentStateDeliver.SetBalance(coinbase, app.BaseCoin, initBalance)
-
-	faucet := types.HexToAddress("Mxfe60014a6e9ac91618f5d1cab3fd58cded61ee99")
-	app.currentStateDeliver.SetBalance(faucet, app.BaseCoin, initBalance)
+	for _, account := range genesisState.InitialBalances {
+		for coin, value := range account.Balance {
+			bigIntValue, _ := big.NewInt(0).SetString(value, 10)
+			app.currentStateDeliver.SetBalance(account.Address, coin, bigIntValue)
+		}
+	}
 
 	for _, validator := range req.Validators {
-		app.currentStateDeliver.CreateCandidate(coinbase, validator.PubKey, 10, 1)
+		app.currentStateDeliver.CreateCandidate(genesisState.FirstValidatorAddress, validator.PubKey, 10, 1)
 		app.currentStateDeliver.SetCandidateOnline(validator.PubKey)
 		app.activeValidators = append(app.activeValidators, validator)
 	}
