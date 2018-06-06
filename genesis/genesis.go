@@ -8,6 +8,6 @@ type AppState struct {
 }
 
 type Account struct {
-	Address types.Address               `json:"address"`
-	Balance map[types.CoinSymbol]string `json:"balance"`
+	Address types.Address     `json:"address"`
+	Balance map[string]string `json:"balance"`
 }

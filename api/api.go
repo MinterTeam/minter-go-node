@@ -16,10 +16,12 @@ import (
 
 var (
 	blockchain        *minter.Blockchain
-	tendermintRpcAddr = utils.TendermintRpcAddrFlag.Value
+	tendermintRpcAddr string
 )
 
 func RunApi(b *minter.Blockchain) {
+	tendermintRpcAddr = *utils.TendermintRpcAddrFlag
+
 	blockchain = b
 
 	router := mux.NewRouter().StrictSlash(true)

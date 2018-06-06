@@ -3,6 +3,7 @@ package minter
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	abciTypes "github.com/tendermint/abci/types"
 	"math/big"
@@ -12,9 +13,8 @@ import (
 	"minter/core/state"
 	"minter/core/transaction"
 	"minter/core/types"
-	"minter/mintdb"
-	"encoding/json"
 	"minter/genesis"
+	"minter/mintdb"
 )
 
 type Blockchain struct {
@@ -41,7 +41,7 @@ var (
 
 func NewMinterBlockchain() *Blockchain {
 
-	db, err := mintdb.NewLDBDatabase(utils.GetMinterHome() + "/data", 1000, 1000)
+	db, err := mintdb.NewLDBDatabase(utils.GetMinterHome()+"/data", 1000, 1000)
 
 	if err != nil {
 		panic(err)
@@ -64,11 +64,17 @@ func (app *Blockchain) SetOption(req abciTypes.RequestSetOption) abciTypes.Respo
 
 func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.ResponseInitChain {
 	var genesisState genesis.AppState
-	json.Unmarshal(req.AppStateBytes, genesisState)
+	err := json.Unmarshal(req.AppStateBytes, &genesisState)
+
+	if err != nil {
+		panic(err)
+	}
 
 	for _, account := range genesisState.InitialBalances {
-		for coin, value := range account.Balance {
+		for coinSymbol, value := range account.Balance {
 			bigIntValue, _ := big.NewInt(0).SetString(value, 10)
+			var coin types.CoinSymbol
+			copy(coin[:], []byte(coinSymbol))
 			app.currentStateDeliver.SetBalance(account.Address, coin, bigIntValue)
 		}
 	}
