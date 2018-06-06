@@ -11,5 +11,22 @@
       "name": ""
     }
   ],
+  "app_state": {
+    "first_validator_address": "Mxa93163fdf10724dc4785ff5cbfb9ac0b5949409f",
+    "initial_balances": [
+      {
+        "address": "Mxa93163fdf10724dc4785ff5cbfb9ac0b5949409f",
+        "balance": {
+          "MNT": "10000000000000000000000000"
+        }
+      },
+      {
+        "address": "Mxfe60014a6e9ac91618f5d1cab3fd58cded61ee99",
+        "balance": {
+          "MNT": "10000000000000000000000000"
+        }
+      }
+    ]
+  },
   "app_hash": "0000000000000000000000000000000000000000000000000000000000000000"
 }
