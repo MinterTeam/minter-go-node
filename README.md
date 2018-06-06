@@ -4,6 +4,9 @@ Minter is a blockchain network that lets people, projects, and companies issue a
 
 ## Run using Docker
 
+You'll need ``go`` `installed <https://golang.org/doc/install>`__ and the required
+`environment variables set <https://github.com/tendermint/tendermint/wiki/Setting-GOPATH>`__
+
 Clone Minter to your machine
 
 ```
