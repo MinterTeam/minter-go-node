@@ -19,11 +19,11 @@ package state
 import (
 	"io"
 
-	"minter/rlp"
-	"minter/core/types"
-	"math/big"
-	"minter/crypto"
 	"fmt"
+	"math/big"
+	"minter/core/types"
+	"minter/crypto"
+	"minter/rlp"
 )
 
 // stateCoin represents a coin which is being modified.

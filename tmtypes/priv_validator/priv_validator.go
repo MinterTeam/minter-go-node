@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/tendermint/go-crypto"
-	types "minter/tmtypes"
 	cmn "github.com/tendermint/tmlibs/common"
+	types "minter/tmtypes"
 )
 
 // TODO: type ?

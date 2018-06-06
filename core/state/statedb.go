@@ -26,11 +26,11 @@ import (
 	"minter/crypto"
 	"minter/rlp"
 
+	"bytes"
 	abci "github.com/tendermint/abci/types"
 	tCrypto "github.com/tendermint/go-crypto"
-	"sort"
-	"bytes"
 	"minter/core/check"
+	"sort"
 )
 
 var (
@@ -450,7 +450,7 @@ func (s *StateDB) CreateCoin(
 	volume *big.Int,
 	crr uint,
 	reserve *big.Int,
-	creator types.Address) (*stateCoin) {
+	creator types.Address) *stateCoin {
 
 	newC := newCoin(s, symbol, Coin{
 		Name:           name,
@@ -469,7 +469,7 @@ func (s *StateDB) CreateCandidate(
 	address types.Address,
 	pubkey types.Pubkey,
 	commission uint,
-	currentBlock uint) (*stateCandidates) {
+	currentBlock uint) *stateCandidates {
 
 	candidates := s.getStateCandidates()
 
@@ -489,9 +489,9 @@ func (s *StateDB) CreateCandidate(
 				Value: big.NewInt(1),
 			},
 		},
-		CreatedAtBlock:         currentBlock,
-		Status:                 CandidateStatusOffline,
-		AbsentTimes:            0,
+		CreatedAtBlock: currentBlock,
+		Status:         CandidateStatusOffline,
+		AbsentTimes:    0,
 	})
 
 	s.MarkStateCandidateDirty()

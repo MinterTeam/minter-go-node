@@ -1,19 +1,19 @@
 package transaction
 
 import (
-	"minter/core/types"
-	"math/big"
-	"minter/rlp"
 	"bytes"
-	"minter/crypto/sha3"
-	"minter/crypto"
 	"crypto/ecdsa"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"minter/hexutil"
 	tCrypto "github.com/tendermint/go-crypto"
+	"math/big"
 	"minter/core/commissions"
-	"encoding/json"
+	"minter/core/types"
+	"minter/crypto"
+	"minter/crypto/sha3"
+	"minter/hexutil"
+	"minter/rlp"
 )
 
 var (
@@ -142,6 +142,7 @@ type DeclareCandidacyData struct {
 
 func (s DeclareCandidacyData) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
+		// TODO: complete marshal function
 	}{})
 }
 
@@ -152,6 +153,7 @@ type DelegateData struct {
 
 func (s DelegateData) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
+		// TODO: complete marshal function
 	}{})
 }
 
@@ -162,6 +164,7 @@ type RedeemCheckData struct {
 
 func (s RedeemCheckData) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
+		// TODO: complete marshal function
 	}{})
 }
 
@@ -172,6 +175,7 @@ type UnbondData struct {
 
 func (s UnbondData) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
+		// TODO: complete marshal function
 	}{})
 }
 

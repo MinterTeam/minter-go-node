@@ -21,9 +21,9 @@ import (
 	"hash"
 	"sync"
 
+	"minter/core/types"
 	"minter/crypto/sha3"
 	"minter/rlp"
-	"minter/core/types"
 )
 
 type hasher struct {

@@ -86,10 +86,10 @@ type NodeIterator interface {
 // trie, which can be resumed at a later invocation.
 type nodeIteratorState struct {
 	hash    types.Hash // Hash of the node being iterated (nil if not standalone)
-	node    node        // Trie node being iterated
+	node    node       // Trie node being iterated
 	parent  types.Hash // Hash of the first full ancestor node (nil if current is the root)
-	index   int         // Child to be processed next
-	pathlen int         // Length of the path to this node
+	index   int        // Child to be processed next
+	pathlen int        // Length of the path to this node
 }
 
 type nodeIterator struct {

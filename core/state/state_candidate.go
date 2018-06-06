@@ -19,11 +19,11 @@ package state
 import (
 	"io"
 
-	"minter/rlp"
-	"minter/core/types"
+	"bytes"
 	"fmt"
 	"math/big"
-	"bytes"
+	"minter/core/types"
+	"minter/rlp"
 )
 
 const (
@@ -60,15 +60,15 @@ type Stake struct {
 }
 
 type Candidate struct {
-	CandidateAddress       types.Address
-	TotalStake             *big.Int
-	PubKey                 types.Pubkey
-	Commission             uint
-	AccumReward            *big.Int
-	Stakes                 []Stake
-	CreatedAtBlock         uint
-	Status                 byte
-	AbsentTimes            uint
+	CandidateAddress types.Address
+	TotalStake       *big.Int
+	PubKey           types.Pubkey
+	Commission       uint
+	AccumReward      *big.Int
+	Stakes           []Stake
+	CreatedAtBlock   uint
+	Status           byte
+	AbsentTimes      uint
 }
 
 func (candidate Candidate) GetStakeOfAddress(addr types.Address) *Stake {

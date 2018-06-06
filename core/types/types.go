@@ -23,9 +23,9 @@ import (
 	"math/rand"
 	"reflect"
 
-	"minter/hexutil"
-	"minter/crypto/sha3"
 	"bytes"
+	"minter/crypto/sha3"
+	"minter/hexutil"
 )
 
 const (
@@ -145,8 +145,8 @@ func (h UnprefixedHash) MarshalText() ([]byte, error) {
 
 type CoinSymbol [CoinSymbolLength]byte
 
-func (c CoinSymbol) String() string   { return string(bytes.Trim(c[:], "\x00")) }
-func (c CoinSymbol) Bytes() []byte { return c[:] }
+func (c CoinSymbol) String() string { return string(bytes.Trim(c[:], "\x00")) }
+func (c CoinSymbol) Bytes() []byte  { return c[:] }
 
 func (c CoinSymbol) MarshalJSON() ([]byte, error) {
 

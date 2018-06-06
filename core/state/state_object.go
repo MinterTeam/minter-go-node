@@ -22,11 +22,11 @@ import (
 	"io"
 	"math/big"
 
-	"minter/rlp"
 	"minter/core/types"
 	"minter/crypto"
+	"minter/rlp"
 	"sort"
-	)
+)
 
 type Code []byte
 
@@ -81,10 +81,10 @@ type stateObject struct {
 	// Cache flags.
 	// When an object is marked suicided it will be delete from the trie
 	// during the "update" phase of the state transition.
-	suicided  bool
-	touched   bool
-	deleted   bool
-	onDirty   func(addr types.Address) // Callback method to mark a state object newly dirty
+	suicided bool
+	touched  bool
+	deleted  bool
+	onDirty  func(addr types.Address) // Callback method to mark a state object newly dirty
 }
 
 // empty returns whether the account is considered empty.
@@ -98,7 +98,7 @@ type Balances struct {
 }
 
 type Balance struct {
-	Coin types.CoinSymbol
+	Coin   types.CoinSymbol
 	Amount *big.Int
 }
 
@@ -148,9 +148,9 @@ func (b *Balances) DecodeRLP(s *rlp.Stream) error {
 // Account is the Ethereum consensus representation of accounts.
 // These objects are stored in the main account trie.
 type Account struct {
-	Nonce    uint64
-	Balance  Balances
-	Root     types.Hash // merkle root of the storage trie
+	Nonce   uint64
+	Balance Balances
+	Root    types.Hash // merkle root of the storage trie
 }
 
 // newObject creates a state object.
@@ -384,4 +384,3 @@ func (self *stateObject) Balances() Balances {
 func (self *stateObject) Nonce() uint64 {
 	return self.data.Nonce
 }
-

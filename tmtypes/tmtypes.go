@@ -1,11 +1,11 @@
 package tmtypes
 
 import (
-	"time"
+	"github.com/tendermint/go-amino"
 	"github.com/tendermint/go-crypto"
 	"github.com/tendermint/tendermint/p2p"
 	"github.com/tendermint/tmlibs/common"
-	"github.com/tendermint/go-amino"
+	"time"
 )
 
 func RegisterAmino(cdc *amino.Codec) {

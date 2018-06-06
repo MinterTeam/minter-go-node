@@ -2,11 +2,11 @@ package api
 
 import (
 	"encoding/json"
+	"github.com/tendermint/tmlibs/common"
+	"minter/rpc/lib/client"
+	"minter/tmtypes"
 	"net/http"
 	"time"
-	"github.com/tendermint/tmlibs/common"
-	"minter/tmtypes"
-	"minter/rpc/lib/client"
 )
 
 type StatusResponse struct {

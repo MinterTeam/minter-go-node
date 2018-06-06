@@ -1,14 +1,14 @@
 package check
 
 import (
-	"minter/core/types"
-	"math/big"
-	"minter/rlp"
 	"bytes"
 	"errors"
 	"fmt"
+	"math/big"
+	"minter/core/types"
 	"minter/crypto"
 	"minter/crypto/sha3"
+	"minter/rlp"
 )
 
 var (

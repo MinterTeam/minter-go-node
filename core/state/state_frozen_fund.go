@@ -19,10 +19,10 @@ package state
 import (
 	"io"
 
-	"minter/rlp"
-	"math/big"
 	"fmt"
+	"math/big"
 	"minter/core/types"
+	"minter/rlp"
 )
 
 // stateFrozenFund represents a frozen fund which is being modified.

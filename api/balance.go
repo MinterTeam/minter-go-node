@@ -2,10 +2,10 @@ package api
 
 import (
 	"encoding/json"
-		"minter/core/types"
-	"net/http"
 	"github.com/gorilla/mux"
-	)
+	"minter/core/types"
+	"net/http"
+)
 
 type BalanceResponse map[string]string
 

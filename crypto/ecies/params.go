@@ -101,9 +101,9 @@ var (
 
 var paramsFromCurve = map[elliptic.Curve]*ECIESParams{
 	mintercrypto.S256(): ECIES_AES128_SHA256,
-	elliptic.P256():  ECIES_AES128_SHA256,
-	elliptic.P384():  ECIES_AES256_SHA384,
-	elliptic.P521():  ECIES_AES256_SHA512,
+	elliptic.P256():     ECIES_AES128_SHA256,
+	elliptic.P384():     ECIES_AES256_SHA384,
+	elliptic.P521():     ECIES_AES256_SHA512,
 }
 
 func AddParamsForCurve(curve elliptic.Curve, params *ECIESParams) {

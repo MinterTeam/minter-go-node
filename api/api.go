@@ -8,8 +8,8 @@ import (
 	"github.com/rs/cors"
 
 	"minter/core/minter"
-	"minter/tmtypes"
 	"minter/rpc/lib/client"
+	"minter/tmtypes"
 	"time"
 )
 

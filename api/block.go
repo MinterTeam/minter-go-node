@@ -2,11 +2,11 @@ package api
 
 import (
 	"encoding/json"
-	"net/http"
 	"github.com/gorilla/mux"
 	"minter/rpc/lib/client"
-	"strconv"
 	"minter/tmtypes"
+	"net/http"
+	"strconv"
 )
 
 // Single block (with meta)

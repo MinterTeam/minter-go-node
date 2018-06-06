@@ -2,10 +2,10 @@ package api
 
 import (
 	"encoding/json"
-	"net/http"
 	"github.com/gorilla/mux"
-	"minter/core/types"
 	"math/big"
+	"minter/core/types"
+	"net/http"
 )
 
 type CoinInfoResponse struct {

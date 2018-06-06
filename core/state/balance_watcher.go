@@ -1,9 +1,9 @@
 package state
 
 import (
-	"minter/core/types"
-	"math/big"
 	"encoding/json"
+	"math/big"
+	"minter/core/types"
 )
 
 var (
@@ -31,4 +31,3 @@ func (s BalanceChangeStruct) MarshalJSON() ([]byte, error) {
 func EmitBalanceChange(address types.Address, coin types.CoinSymbol, balance *big.Int) {
 	BalanceChangeChan <- BalanceChangeStruct{Address: address, Coin: coin, Balance: balance}
 }
-

@@ -1,20 +1,20 @@
 package minter
 
 import (
+	"fmt"
 	abciTypes "github.com/tendermint/abci/types"
 	"minter/mintdb"
 	"os"
-	"fmt"
 
-	"minter/core/transaction"
-	"minter/core/code"
-	"minter/core/types"
-	"minter/core/state"
-	"math/big"
-	"encoding/binary"
-	"minter/core/rewards"
 	"bytes"
-	)
+	"encoding/binary"
+	"math/big"
+	"minter/core/code"
+	"minter/core/rewards"
+	"minter/core/state"
+	"minter/core/transaction"
+	"minter/core/types"
+)
 
 type Blockchain struct {
 	abciTypes.BaseApplication
