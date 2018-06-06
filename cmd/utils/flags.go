@@ -1,18 +1,18 @@
 package utils
 
 import (
-	"gopkg.in/urfave/cli.v1"
+	"flag"
 	"os"
 	"os/user"
 )
 
 var (
-	TendermintRpcAddrFlag = cli.StringFlag{
-		Name:  "tendermint_addr",
-		Value: "tcp://127.0.0.1:46657",
-		Usage: "This is the address that minter will use to connect to the tendermint core node. Please provide a port.",
-	}
+	TendermintRpcAddrFlag = flag.String("tendermint_addr", "tcp://127.0.0.1:46657", "This is the address that minter will use to connect to the tendermint core node. Please provide a port.")
 )
+
+func init() {
+	flag.Parse()
+}
 
 func GetMinterHome() string {
 	home := os.Getenv("MINTERHOME")
