@@ -26,17 +26,18 @@ import (
 	"minter/crypto"
 	"minter/rlp"
 
+	"bytes"
 	abci "github.com/tendermint/abci/types"
 	tCrypto "github.com/tendermint/go-crypto"
-	"sort"
-	"bytes"
 	"minter/core/check"
+	"sort"
 )
 
 var (
 	// emptyState is the known hash of an empty state trie entry.
-	emptyState    = crypto.Keccak256Hash(nil)
-	candidatesKey = []byte("candidates")
+	emptyState              = crypto.Keccak256Hash(nil)
+	candidatesKey           = []byte("candidates")
+	CandidateMaxAbsentTimes = uint(12)
 )
 
 // StateDBs within the ethereum protocol are used to store anything
@@ -54,6 +55,9 @@ type StateDB struct {
 
 	stateCoins      map[types.CoinSymbol]*stateCoin
 	stateCoinsDirty map[types.CoinSymbol]struct{}
+
+	stateFrozenFunds      map[int64]*stateFrozenFund
+	stateFrozenFundsDirty map[int64]struct{}
 
 	stateCandidates      *stateCandidates
 	stateCandidatesDirty bool
@@ -77,14 +81,16 @@ func New(root types.Hash, db Database) (*StateDB, error) {
 		return nil, err
 	}
 	return &StateDB{
-		db:                   db,
-		trie:                 tr,
-		stateObjects:         make(map[types.Address]*stateObject),
-		stateObjectsDirty:    make(map[types.Address]struct{}),
-		stateCoins:           make(map[types.CoinSymbol]*stateCoin),
-		stateCoinsDirty:      make(map[types.CoinSymbol]struct{}),
-		stateCandidates:      nil,
-		stateCandidatesDirty: false,
+		db:                    db,
+		trie:                  tr,
+		stateObjects:          make(map[types.Address]*stateObject),
+		stateObjectsDirty:     make(map[types.Address]struct{}),
+		stateCoins:            make(map[types.CoinSymbol]*stateCoin),
+		stateCoinsDirty:       make(map[types.CoinSymbol]struct{}),
+		stateFrozenFunds:      make(map[int64]*stateFrozenFund),
+		stateFrozenFundsDirty: make(map[int64]struct{}),
+		stateCandidates:       nil,
+		stateCandidatesDirty:  false,
 	}, nil
 }
 
@@ -195,6 +201,17 @@ func (s *StateDB) updateStateObject(stateObject *stateObject) {
 	s.setError(s.trie.TryUpdate(addr[:], data))
 }
 
+func (s *StateDB) updateStateFrozenFund(stateFrozenFund *stateFrozenFund) {
+	blockHeight := stateFrozenFund.BlockHeight()
+	data, err := rlp.EncodeToBytes(stateFrozenFund)
+	if err != nil {
+		panic(fmt.Errorf("can't encode frozen fund at %d: %v", blockHeight, err))
+	}
+	key := []byte("frozenFundsForBlock:" + string(blockHeight))
+	// TODO: change key generation
+	s.setError(s.trie.TryUpdate(key, data))
+}
+
 func (s *StateDB) updateStateCoin(stateCoin *stateCoin) {
 	symbol := stateCoin.Symbol()
 	data, err := rlp.EncodeToBytes(stateCoin)
@@ -220,6 +237,39 @@ func (s *StateDB) deleteStateObject(stateObject *stateObject) {
 	stateObject.deleted = true
 	addr := stateObject.Address()
 	s.setError(s.trie.TryDelete(addr[:]))
+}
+
+// deleteStateObject removes the given object from the state trie.
+func (s *StateDB) deleteFrozenFunds(stateFrozenFund *stateFrozenFund) {
+	stateFrozenFund.deleted = true
+	key := []byte("frozenFundsForBlock:" + string(stateFrozenFund.blockHeight))
+	s.setError(s.trie.TryDelete(key))
+}
+
+// Retrieve a state frozen funds by block height. Returns nil if not found.
+func (s *StateDB) getStateFrozenFunds(blockHeight int64) (stateFrozenFund *stateFrozenFund) {
+	// Prefer 'live' objects.
+	if obj := s.stateFrozenFunds[blockHeight]; obj != nil {
+		return obj
+	}
+
+	// TODO: change key generation
+	key := []byte("frozenFundsForBlock:" + string(blockHeight))
+	// Load the object from the database.
+	enc, err := s.trie.TryGet(key)
+	if len(enc) == 0 {
+		s.setError(err)
+		return nil
+	}
+	var data FrozenFunds
+	if err := rlp.DecodeBytes(enc, &data); err != nil {
+		// log.Error("Failed to decode state coin", "symbol", symbol, "err", err)
+		return nil
+	}
+	// Insert into the live set.
+	obj := newFrozenFund(s, blockHeight, data, s.MarkStateFrozenFundsDirty)
+	s.setStateFrozenFunds(obj)
+	return obj
 }
 
 // Retrieve a state coin by symbol. Returns nil if not found.
@@ -314,6 +364,13 @@ func (s *StateDB) setStateCoin(coin *stateCoin) {
 	s.stateCoins[coin.Symbol()] = coin
 }
 
+func (s *StateDB) setStateFrozenFunds(frozenFund *stateFrozenFund) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	s.stateFrozenFunds[frozenFund.BlockHeight()] = frozenFund
+}
+
 func (s *StateDB) setStateCandidates(candidates *stateCandidates) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -328,6 +385,18 @@ func (s *StateDB) GetOrNewStateObject(addr types.Address) *stateObject {
 		stateObject, _ = s.createObject(addr)
 	}
 	return stateObject
+}
+
+func (s *StateDB) GetStateFrozenFunds(blockHeight int64) *stateFrozenFund {
+	return s.getStateFrozenFunds(blockHeight)
+}
+
+func (s *StateDB) GetOrNewStateFrozenFunds(blockHeight int64) *stateFrozenFund {
+	frozenFund := s.getStateFrozenFunds(blockHeight)
+	if frozenFund == nil {
+		frozenFund, _ = s.createFrozenFunds(blockHeight)
+	}
+	return frozenFund
 }
 
 // MarkStateObjectDirty adds the specified object to the dirty map to avoid costly
@@ -350,6 +419,13 @@ func (s *StateDB) MarkStateCoinDirty(symbol types.CoinSymbol) {
 	s.stateCoinsDirty[symbol] = struct{}{}
 }
 
+func (s *StateDB) MarkStateFrozenFundsDirty(blockHeight int64) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	s.stateFrozenFundsDirty[blockHeight] = struct{}{}
+}
+
 // createObject creates a new state object. If there is an existing account with
 // the given address, it is overwritten and returned as the second return value.
 func (s *StateDB) createObject(addr types.Address) (newobj, prev *stateObject) {
@@ -360,13 +436,21 @@ func (s *StateDB) createObject(addr types.Address) (newobj, prev *stateObject) {
 	return newobj, prev
 }
 
+func (s *StateDB) createFrozenFunds(blockHeight int64) (newobj, prev *stateFrozenFund) {
+	prev = s.getStateFrozenFunds(blockHeight)
+	newobj = newFrozenFund(s, blockHeight, FrozenFunds{}, s.MarkStateFrozenFundsDirty)
+	s.MarkStateFrozenFundsDirty(blockHeight)
+	s.setStateFrozenFunds(newobj)
+	return newobj, prev
+}
+
 func (s *StateDB) CreateCoin(
 	symbol types.CoinSymbol,
 	name string,
 	volume *big.Int,
 	crr uint,
 	reserve *big.Int,
-	creator types.Address) (*stateCoin) {
+	creator types.Address) *stateCoin {
 
 	newC := newCoin(s, symbol, Coin{
 		Name:           name,
@@ -385,7 +469,7 @@ func (s *StateDB) CreateCandidate(
 	address types.Address,
 	pubkey types.Pubkey,
 	commission uint,
-	currentBlock uint) (*stateCandidates) {
+	currentBlock uint) *stateCandidates {
 
 	candidates := s.getStateCandidates()
 
@@ -407,6 +491,7 @@ func (s *StateDB) CreateCandidate(
 		},
 		CreatedAtBlock: currentBlock,
 		Status:         CandidateStatusOffline,
+		AbsentTimes:    0,
 	})
 
 	s.MarkStateCandidateDirty()
@@ -444,6 +529,18 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (root types.Hash, err error) {
 			s.updateStateCoin(stateCoin)
 		}
 		delete(s.stateCoinsDirty, symbol)
+	}
+
+	// Commit frozen funds to the trie.
+	for block, frozenFund := range s.stateFrozenFunds {
+		_, isDirty := s.stateFrozenFundsDirty[block]
+		switch {
+		case frozenFund.deleted:
+			s.deleteFrozenFunds(frozenFund)
+		case isDirty:
+			s.updateStateFrozenFund(frozenFund)
+		}
+		delete(s.stateFrozenFundsDirty, block)
 	}
 
 	if s.stateCandidatesDirty {
@@ -488,13 +585,29 @@ func (s *StateDB) CandidateExists(key types.Pubkey) bool {
 		return false
 	}
 
-	for i := range stateCandidates.data {
-		if bytes.Compare(stateCandidates.data[i].PubKey, key) == 0 {
+	for _, candidate := range stateCandidates.data {
+		if bytes.Compare(candidate.PubKey, key) == 0 {
 			return true
 		}
 	}
 
 	return false
+}
+
+func (s *StateDB) GetStateCandidate(key types.Pubkey) *Candidate {
+	stateCandidates := s.getStateCandidates()
+
+	if stateCandidates == nil {
+		return nil
+	}
+
+	for i, candidate := range stateCandidates.data {
+		if bytes.Compare(candidate.PubKey, key) == 0 {
+			return &(stateCandidates.data[i])
+		}
+	}
+
+	return nil
 }
 
 func (s *StateDB) GetStateCoin(symbol types.CoinSymbol) *stateCoin {
@@ -529,7 +642,7 @@ func (s *StateDB) SubCoinReserve(symbol types.CoinSymbol, value *big.Int) {
 	}
 }
 
-func (s *StateDB) GetValidators() ([]abci.Validator, []Candidate) {
+func (s *StateDB) GetValidators(count int) ([]abci.Validator, []Candidate) {
 	stateCandidates := s.getStateCandidates()
 
 	if stateCandidates == nil {
@@ -551,28 +664,34 @@ func (s *StateDB) GetValidators() ([]abci.Validator, []Candidate) {
 		return activeCandidates[i].TotalStake.Cmp(candidates[j].TotalStake) == -1
 	})
 
-	count := 10
-
-	if len(candidates) < count {
-		count = len(candidates)
+	if len(activeCandidates) < count {
+		count = len(activeCandidates)
 	}
 
 	validators := make([]abci.Validator, count)
 
-	for i := range candidates[:count] {
-		pkey, err := tCrypto.PubKeyFromBytes(candidates[i].PubKey)
+	// calculate total power
+	totalPower := big.NewInt(0)
+	for _, candidate := range activeCandidates[:count] {
+		totalPower.Add(totalPower, candidate.TotalStake)
+	}
+
+	for i := range activeCandidates[:count] {
+		pkey, err := tCrypto.PubKeyFromBytes(activeCandidates[i].PubKey)
 
 		if err != nil {
 			panic(err)
 		}
 
+		power := big.NewInt(0).Div(big.NewInt(0).Mul(activeCandidates[i].TotalStake, big.NewInt(100)), totalPower)
+
 		validators[i] = abci.Validator{
 			PubKey: pkey.(tCrypto.PubKeyEd25519).Bytes(),
-			Power:  int64(10), // TODO: change to be based on stake
+			Power:  power.Int64(),
 		}
 	}
 
-	return validators, candidates
+	return validators, activeCandidates
 }
 
 func (s *StateDB) AddAccumReward(pubkey types.Pubkey, reward *big.Int) {
@@ -643,6 +762,23 @@ func (s *StateDB) Delegate(sender types.Address, pubkey []byte, stake *big.Int) 
 	s.MarkStateCandidateDirty()
 }
 
+func (s *StateDB) SubStake(sender types.Address, pubkey []byte, value *big.Int) {
+	stateCandidates := s.getStateCandidates()
+
+	for i := range stateCandidates.data {
+		candidate := &stateCandidates.data[i]
+		if bytes.Compare(candidate.PubKey, pubkey) == 0 {
+			// todo: remove if stake == 0
+			currentStakeValue := candidate.GetStakeOfAddress(sender).Value
+			currentStakeValue.Sub(currentStakeValue, value)
+			candidate.TotalStake.Sub(candidate.TotalStake, value)
+		}
+	}
+
+	s.setStateCandidates(stateCandidates)
+	s.MarkStateCandidateDirty()
+}
+
 func (s *StateDB) IsCheckUsed(check *check.Check) bool {
 	checkHash := check.Hash().Bytes()
 	// TODO: change key generation
@@ -668,6 +804,40 @@ func (s *StateDB) SetCandidateOnline(pubkey []byte) {
 		candidate := &stateCandidates.data[i]
 		if bytes.Compare(candidate.PubKey, pubkey) == 0 {
 			candidate.Status = CandidateStatusOnline
+		}
+	}
+
+	s.setStateCandidates(stateCandidates)
+	s.MarkStateCandidateDirty()
+}
+
+func (s *StateDB) SetCandidateOffline(pubkey []byte) {
+	stateCandidates := s.getStateCandidates()
+
+	for i := range stateCandidates.data {
+		candidate := &stateCandidates.data[i]
+		if bytes.Compare(candidate.PubKey, pubkey) == 0 {
+			candidate.Status = CandidateStatusOffline
+		}
+	}
+
+	s.setStateCandidates(stateCandidates)
+	s.MarkStateCandidateDirty()
+}
+
+func (s *StateDB) SetValidatorAbsent(pubkey types.Pubkey) {
+	stateCandidates := s.getStateCandidates()
+
+	for i := range stateCandidates.data {
+		candidate := &stateCandidates.data[i]
+		if bytes.Compare(candidate.PubKey, pubkey) == 0 {
+			candidate.AbsentTimes = candidate.AbsentTimes + 1
+
+			if candidate.AbsentTimes > CandidateMaxAbsentTimes {
+				candidate.Status = CandidateStatusOffline
+				candidate.AbsentTimes = 0
+				// todo: make penalty
+			}
 		}
 	}
 

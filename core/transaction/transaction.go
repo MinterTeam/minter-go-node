@@ -1,18 +1,19 @@
 package transaction
 
 import (
-	"minter/core/types"
-	"math/big"
-	"minter/rlp"
 	"bytes"
-	"minter/crypto/sha3"
-	"minter/crypto"
 	"crypto/ecdsa"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"minter/hexutil"
 	tCrypto "github.com/tendermint/go-crypto"
+	"math/big"
 	"minter/core/commissions"
+	"minter/core/types"
+	"minter/crypto"
+	"minter/crypto/sha3"
+	"minter/hexutil"
+	"minter/rlp"
 )
 
 var (
@@ -31,6 +32,7 @@ const (
 	TypeSetCandidateOffline byte = 0x09
 )
 
+// TODO: refactor, get rid of switch cases
 type Transaction struct {
 	Nonce       uint64
 	GasPrice    *big.Int
@@ -47,26 +49,64 @@ type Transaction struct {
 
 type RawData []byte
 
-type Data interface{}
+type Data interface {
+	MarshalJSON() ([]byte, error)
+}
 
 type SendData struct {
-	Coin  types.CoinSymbol `json:"coin,string"`
-	To    types.Address    `json:"to"`
-	Value *big.Int         `json:"value"`
+	Coin  types.CoinSymbol
+	To    types.Address
+	Value *big.Int
+}
+
+func (s SendData) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Coin  types.CoinSymbol `json:"coin,string"`
+		To    types.Address    `json:"to"`
+		Value string           `json:"value"`
+	}{
+		Coin:  s.Coin,
+		To:    s.To,
+		Value: s.Value.String(),
+	})
 }
 
 type SetCandidateOnData struct {
-	PubKey     []byte
+	PubKey []byte
+}
+
+func (s SetCandidateOnData) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		PubKey []byte `json:"pubkey"`
+	}{})
 }
 
 type SetCandidateOffData struct {
-	PubKey     []byte
+	PubKey []byte
+}
+
+func (s SetCandidateOffData) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		PubKey []byte `json:"pubkey"`
+	}{})
 }
 
 type ConvertData struct {
 	FromCoinSymbol types.CoinSymbol
 	ToCoinSymbol   types.CoinSymbol
 	Value          *big.Int
+}
+
+func (s ConvertData) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		FromCoin types.CoinSymbol `json:"from_coin,string"`
+		ToCoin   types.CoinSymbol `json:"to_coin,string"`
+		Value    string           `json:"value"`
+	}{
+		FromCoin: s.FromCoinSymbol,
+		ToCoin:   s.ToCoinSymbol,
+		Value:    s.Value.String(),
+	})
 }
 
 type CreateCoinData struct {
@@ -77,6 +117,22 @@ type CreateCoinData struct {
 	ConstantReserveRatio uint
 }
 
+func (s CreateCoinData) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Name                 string           `json:"name"`
+		Symbol               types.CoinSymbol `json:"coin_symbol"`
+		InitialAmount        string           `json:"initial_amount"`
+		InitialReserve       string           `json:"initial_reserve"`
+		ConstantReserveRatio uint             `json:"constant_reserve_ratio"`
+	}{
+		Name:                 s.Name,
+		Symbol:               s.Symbol,
+		InitialAmount:        s.InitialAmount.String(),
+		InitialReserve:       s.InitialReserve.String(),
+		ConstantReserveRatio: s.ConstantReserveRatio,
+	})
+}
+
 type DeclareCandidacyData struct {
 	Address    types.Address
 	PubKey     []byte
@@ -84,9 +140,21 @@ type DeclareCandidacyData struct {
 	Stake      *big.Int
 }
 
+func (s DeclareCandidacyData) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		// TODO: complete marshal function
+	}{})
+}
+
 type DelegateData struct {
 	PubKey []byte
 	Stake  *big.Int
+}
+
+func (s DelegateData) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		// TODO: complete marshal function
+	}{})
 }
 
 type RedeemCheckData struct {
@@ -94,8 +162,21 @@ type RedeemCheckData struct {
 	Proof    [65]byte
 }
 
+func (s RedeemCheckData) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		// TODO: complete marshal function
+	}{})
+}
+
 type UnbondData struct {
-	Address types.Address
+	PubKey []byte
+	Value  *big.Int
+}
+
+func (s UnbondData) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		// TODO: complete marshal function
+	}{})
 }
 
 func (tx *Transaction) Serialize() ([]byte, error) {
@@ -120,6 +201,8 @@ func (tx *Transaction) Gas() int64 {
 		gas = commissions.DeclareCandidacyTx
 	case TypeDelegate:
 		gas = commissions.DelegateTx
+	case TypeUnbond:
+		gas = commissions.UnboundTx
 	case TypeRedeemCheck:
 		gas = commissions.RedeemCheckTx
 	case TypeSetCandidateOnline:
@@ -128,7 +211,7 @@ func (tx *Transaction) Gas() int64 {
 		gas = commissions.ToggleCandidateStatus
 	}
 
-	gas = gas + int64(len(tx.Payload))*commissions.PayloadByte
+	gas = gas + int64(len(tx.Payload)+len(tx.ServiceData))*commissions.PayloadByte
 
 	return gas
 }
@@ -167,11 +250,29 @@ func (tx *Transaction) String() string {
 			return fmt.Sprintf("DELEGATE CANDIDACY TX nonce:%d pubkey:%s payload: %s",
 				tx.Nonce, hexutil.Encode(txData.PubKey[:]), tx.Payload)
 		}
+	case TypeUnbond:
+		{
+			txData := tx.decodedData.(UnbondData)
+			return fmt.Sprintf("UNBOUND CANDIDACY TX nonce:%d pubkey:%s payload: %s",
+				tx.Nonce, hexutil.Encode(txData.PubKey[:]), tx.Payload)
+		}
 	case TypeRedeemCheck:
 		{
 			txData := tx.decodedData.(RedeemCheckData)
 			return fmt.Sprintf("REDEEM CHECK TX nonce:%d proof: %x",
 				tx.Nonce, txData.Proof)
+		}
+	case TypeSetCandidateOffline:
+		{
+			txData := tx.decodedData.(SetCandidateOffData)
+			return fmt.Sprintf("SET CANDIDATE OFFLINE TX nonce:%d, pubkey: %x",
+				tx.Nonce, txData.PubKey)
+		}
+	case TypeSetCandidateOnline:
+		{
+			txData := tx.decodedData.(SetCandidateOnData)
+			return fmt.Sprintf("SET CANDIDATE ONLINE TX nonce:%d, pubkey: %x",
+				tx.Nonce, txData.PubKey)
 		}
 	}
 
@@ -315,12 +416,32 @@ func DecodeFromBytes(buf []byte) (*Transaction, error) {
 		{
 			data := SetCandidateOnData{}
 			rlp.Decode(bytes.NewReader(tx.Data), &data)
+			var key tCrypto.PubKeyEd25519
+			copy(key[:], data.PubKey)
+
+			data.PubKey = key.Bytes()
 			tx.SetDecodedData(data)
 		}
 	case TypeSetCandidateOffline:
 		{
 			data := SetCandidateOffData{}
 			rlp.Decode(bytes.NewReader(tx.Data), &data)
+
+			var key tCrypto.PubKeyEd25519
+			copy(key[:], data.PubKey)
+
+			data.PubKey = key.Bytes()
+			tx.SetDecodedData(data)
+		}
+	case TypeUnbond:
+		{
+			data := UnbondData{}
+			rlp.Decode(bytes.NewReader(tx.Data), &data)
+
+			var key tCrypto.PubKeyEd25519
+			copy(key[:], data.PubKey)
+
+			data.PubKey = key.Bytes()
 			tx.SetDecodedData(data)
 		}
 	default:

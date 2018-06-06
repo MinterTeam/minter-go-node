@@ -22,9 +22,9 @@ import (
 
 	"minter/crypto"
 	// "github.com/ethereum/go-ethereum/log"
-	"minter/rlp"
 	"minter/core/types"
 	"minter/mintdb"
+	"minter/rlp"
 )
 
 // Prove constructs a merkle proof for key. The result contains all encoded nodes

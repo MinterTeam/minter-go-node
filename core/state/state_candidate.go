@@ -19,17 +19,17 @@ package state
 import (
 	"io"
 
-	"minter/rlp"
-	"minter/core/types"
+	"bytes"
 	"fmt"
 	"math/big"
+	"minter/core/types"
+	"minter/rlp"
 )
 
 const (
 	CandidateStatusOffline = 0x01
-	CandidateStatusOnline = 0x02
+	CandidateStatusOnline  = 0x02
 )
-
 
 // stateCandidate represents a candidate which is being modified.
 //
@@ -67,8 +67,18 @@ type Candidate struct {
 	AccumReward      *big.Int
 	Stakes           []Stake
 	CreatedAtBlock   uint
-	Status 			 byte
+	Status           byte
 	AbsentTimes      uint
+}
+
+func (candidate Candidate) GetStakeOfAddress(addr types.Address) *Stake {
+	for i, stake := range candidate.Stakes {
+		if bytes.Compare(stake.Owner.Bytes(), addr.Bytes()) == 0 {
+			return &(candidate.Stakes[i])
+		}
+	}
+
+	return nil
 }
 
 func (candidate Candidate) String() string {

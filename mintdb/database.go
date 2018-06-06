@@ -23,12 +23,12 @@ import (
 	"time"
 
 	// "github.com/ethereum/go-ethereum/log"
-	"minter/metrics"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/filter"
 	"github.com/syndtr/goleveldb/leveldb/iterator"
 	"github.com/syndtr/goleveldb/leveldb/opt"
+	"minter/metrics"
 
 	gometrics "github.com/rcrowley/go-metrics"
 )
@@ -83,8 +83,8 @@ func NewLDBDatabase(file string, cache int, handles int) (*LDBDatabase, error) {
 		return nil, err
 	}
 	return &LDBDatabase{
-		fn:  file,
-		db:  db,
+		fn: file,
+		db: db,
 		// log: logger,
 	}, nil
 }

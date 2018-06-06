@@ -48,10 +48,10 @@ type Database struct {
 
 	nodes     map[types.Hash]*cachedNode // Data and references relationships of a node
 	preimages map[types.Hash][]byte      // Preimages of nodes from the secure trie
-	seckeybuf [secureKeyLength]byte       // Ephemeral buffer for calculating preimage keys
+	seckeybuf [secureKeyLength]byte      // Ephemeral buffer for calculating preimage keys
 
-	gctime  time.Duration      // Time spent on garbage collection since last commit
-	gcnodes uint64             // Nodes garbage collected since last commit
+	gctime  time.Duration     // Time spent on garbage collection since last commit
+	gcnodes uint64            // Nodes garbage collected since last commit
 	gcsize  types.StorageSize // Data storage garbage collected since last commit
 
 	nodesSize     types.StorageSize // Storage size of the nodes cache
@@ -63,8 +63,8 @@ type Database struct {
 // cachedNode is all the information we know about a single cached node in the
 // memory database write layer.
 type cachedNode struct {
-	blob     []byte              // Cached data block of the trie node
-	parents  int                 // Number of live nodes referencing this one
+	blob     []byte             // Cached data block of the trie node
+	parents  int                // Number of live nodes referencing this one
 	children map[types.Hash]int // Children referenced by this nodes
 }
 

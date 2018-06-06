@@ -2,10 +2,10 @@ package api
 
 import (
 	"encoding/json"
-	"net/http"
-	"minter/core/types"
 	"math/big"
+	"minter/core/types"
 	"minter/formula"
+	"net/http"
 )
 
 func EstimateCoinExchangeReturn(w http.ResponseWriter, r *http.Request) {

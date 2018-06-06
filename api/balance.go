@@ -2,13 +2,12 @@ package api
 
 import (
 	"encoding/json"
-	"math/big"
+	"github.com/gorilla/mux"
 	"minter/core/types"
 	"net/http"
-	"github.com/gorilla/mux"
 )
 
-type BalanceResponse map[string]*big.Int
+type BalanceResponse map[string]string
 
 type BalanceRequest struct {
 	Address types.Address    `json:"address"`
@@ -24,11 +23,11 @@ func GetBalance(w http.ResponseWriter, r *http.Request) {
 	balances := blockchain.CurrentState().GetBalances(address)
 
 	for k, v := range balances.Data {
-		balance[k.String()] = v
+		balance[k.String()] = v.String()
 	}
 
 	if _, exists := balance[types.GetBaseCoin().String()]; !exists {
-		balance[types.GetBaseCoin().String()] = types.Big0
+		balance[types.GetBaseCoin().String()] = "0"
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")

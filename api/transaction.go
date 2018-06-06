@@ -1,14 +1,14 @@
 package api
 
 import (
-	"encoding/json"
-	"net/http"
-	"github.com/gorilla/mux"
-	"minter/rpc/lib/client"
 	"encoding/hex"
-	types "minter/tmtypes"
-	"github.com/tendermint/tmlibs/common"
+	"encoding/json"
+	"github.com/gorilla/mux"
 	abci "github.com/tendermint/abci/types"
+	"github.com/tendermint/tmlibs/common"
+	"minter/rpc/lib/client"
+	types "minter/tmtypes"
+	"net/http"
 )
 
 type ResTx struct {
@@ -26,7 +26,7 @@ func Transaction(w http.ResponseWriter, r *http.Request) {
 	hash := vars["hash"]
 	decoded, err := hex.DecodeString(hash)
 
-	client := rpcclient.NewJSONRPCClient(tendermintSocket)
+	client := rpcclient.NewJSONRPCClient(tendermintRpcAddr)
 	types.RegisterAmino(client.Codec())
 	result := new(ResTx)
 	_, err = client.Call("tx", map[string]interface{}{

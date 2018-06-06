@@ -7,15 +7,16 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 
+	"minter/cmd/utils"
 	"minter/core/minter"
-	"minter/tmtypes"
 	"minter/rpc/lib/client"
+	"minter/tmtypes"
 	"time"
 )
 
 var (
-	blockchain       *minter.Blockchain
-	tendermintSocket = "unix://./.data/tendermint/tendermint-rpc.sock"
+	blockchain        *minter.Blockchain
+	tendermintRpcAddr = utils.TendermintRpcAddrFlag.Value
 )
 
 func RunApi(b *minter.Blockchain) {
@@ -24,6 +25,7 @@ func RunApi(b *minter.Blockchain) {
 	router := mux.NewRouter().StrictSlash(true)
 
 	router.HandleFunc("/api/balance/{address}", GetBalance).Methods("GET")
+	router.HandleFunc("/api/balanceWS", GetBalanceWatcher)
 	router.HandleFunc("/api/transactionCount/{address}", GetTransactionCount).Methods("GET")
 	router.HandleFunc("/api/sendTransaction", SendTransaction).Methods("POST")
 	router.HandleFunc("/api/transaction/{hash}", Transaction).Methods("GET")
@@ -41,14 +43,13 @@ func RunApi(b *minter.Blockchain) {
 
 	handler := c.Handler(router)
 
-	client := rpcclient.NewJSONRPCClient(tendermintSocket)
+	client := rpcclient.NewJSONRPCClient(tendermintRpcAddr)
 	tmtypes.RegisterAmino(client.Codec())
 
 	// wait for tendermint to start
 	for true {
 		result := new(tmtypes.ResultStatus)
 		_, err := client.Call("status", map[string]interface{}{}, result)
-
 		if err == nil {
 			break
 		}

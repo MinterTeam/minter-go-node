@@ -28,10 +28,10 @@ import (
 	"math/big"
 	"os"
 
-	"minter/math"
-	"minter/crypto/sha3"
-	"minter/rlp"
 	"minter/core/types"
+	"minter/crypto/sha3"
+	"minter/math"
+	"minter/rlp"
 )
 
 var (

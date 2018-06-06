@@ -2,12 +2,12 @@ package api
 
 import (
 	"encoding/json"
-	"net/http"
 	"github.com/tendermint/tmlibs/common"
 	"math/big"
 	"minter/core/transaction"
-	"minter/tmtypes"
 	"minter/rpc/lib/client"
+	"minter/tmtypes"
+	"net/http"
 )
 
 type TransactionResponse struct {
@@ -52,12 +52,12 @@ func Transactions(w http.ResponseWriter, r *http.Request) {
 
 	query := r.URL.Query().Get("query")
 
-	client := rpcclient.NewJSONRPCClient(tendermintSocket)
+	client := rpcclient.NewJSONRPCClient(tendermintRpcAddr)
 	tmtypes.RegisterAmino(client.Codec())
 	rpcResult := new(ResultTxSearch)
 	_, err := client.Call("tx_search", map[string]interface{}{
-		"query": query,
-		"page": 1,
+		"query":    query,
+		"page":     1,
 		"per_page": 100,
 	}, rpcResult)
 
