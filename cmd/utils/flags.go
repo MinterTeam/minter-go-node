@@ -2,6 +2,7 @@ package utils
 
 import (
 	"gopkg.in/urfave/cli.v1"
+	"os"
 )
 
 var (
@@ -11,3 +12,13 @@ var (
 		Usage: "This is the address that minter will use to connect to the tendermint core node. Please provide a port.",
 	}
 )
+
+func GetMinterHome() string {
+	home := os.Getenv("MINTERHOME")
+
+	if home == "" {
+		home = "~/.minter"
+	}
+
+	return home
+}

@@ -1,19 +1,18 @@
 package minter
 
 import (
-	"fmt"
-	abciTypes "github.com/tendermint/abci/types"
-	"minter/mintdb"
-	"os"
-
 	"bytes"
 	"encoding/binary"
+	"fmt"
+	abciTypes "github.com/tendermint/abci/types"
 	"math/big"
+	"minter/cmd/utils"
 	"minter/core/code"
 	"minter/core/rewards"
 	"minter/core/state"
 	"minter/core/transaction"
 	"minter/core/types"
+	"minter/mintdb"
 )
 
 type Blockchain struct {
@@ -40,8 +39,7 @@ var (
 
 func NewMinterBlockchain() *Blockchain {
 
-	dir, err := os.Getwd()
-	db, err := mintdb.NewLDBDatabase(dir+"/.data/minter", 1000, 1000)
+	db, err := mintdb.NewLDBDatabase(utils.GetMinterHome(), 1000, 1000)
 
 	if err != nil {
 		panic(err)

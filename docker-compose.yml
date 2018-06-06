@@ -10,6 +10,8 @@ services:
   minter:
     image: minter/minter:latest
     command: --tendermint_addr=tcp://10.1.0.101:46657
+    volumes:
+          - ~/.minter:/minter
     ports:
       - "8841:8841"
       - "46658:46658"

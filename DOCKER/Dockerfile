@@ -1,6 +1,18 @@
-FROM ubuntu:12.04
+FROM alpine:3.7
 
-RUN apt-get update
+ENV MINTERHOME /minter
+
+RUN apk update && \
+    apk upgrade && \
+    apk --no-cache add curl jq bash && \
+    addgroup minteruser && \
+    adduser -S -G minteruser minteruser -h "$MINTERHOME"
+
+USER minteruser
+
+VOLUME [ $MINTERHOME ]
+
+WORKDIR $MINTERHOME
 
 # api port
 EXPOSE 8841 46658

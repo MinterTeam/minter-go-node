@@ -1,13 +1,13 @@
 package main
 
 import (
-		"github.com/tendermint/abci/server"
+	"github.com/tendermint/abci/server"
 	"github.com/tendermint/tmlibs/common"
 	"github.com/tendermint/tmlibs/log"
 	"minter/api"
 	"minter/core/minter"
-		"os"
-		)
+	"os"
+)
 
 func main() {
 	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))

@@ -7,11 +7,11 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 
+	"minter/cmd/utils"
 	"minter/core/minter"
 	"minter/rpc/lib/client"
 	"minter/tmtypes"
 	"time"
-	"minter/cmd/utils"
 )
 
 var (
