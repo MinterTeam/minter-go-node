@@ -836,11 +836,58 @@ func (s *StateDB) SetValidatorAbsent(pubkey types.Pubkey) {
 			if candidate.AbsentTimes > CandidateMaxAbsentTimes {
 				candidate.Status = CandidateStatusOffline
 				candidate.AbsentTimes = 0
-				// todo: make penalty
+
+				totalStake := big.NewInt(0)
+
+				for j, stake := range candidate.Stakes {
+					newValue := big.NewInt(0).Set(stake.Value)
+					newValue.Mul(newValue, big.NewInt(99))
+					newValue.Mul(newValue, big.NewInt(100))
+
+					candidate.Stakes[j] = Stake{
+						Owner: stake.Owner,
+						Value: newValue,
+					}
+					totalStake.Add(totalStake, newValue)
+				}
+
+				candidate.TotalStake = totalStake
 			}
 		}
 	}
 
 	s.setStateCandidates(stateCandidates)
 	s.MarkStateCandidateDirty()
+}
+
+func (s *StateDB) PunishByzantineCandidate(PubKey []byte) {
+
+	stateCandidates := s.getStateCandidates()
+
+	for i := range stateCandidates.data {
+		candidate := &stateCandidates.data[i]
+		if bytes.Compare(candidate.PubKey, PubKey) == 0 {
+			candidate.AbsentTimes = candidate.AbsentTimes + 1
+
+			candidate.Stakes = []Stake{}
+			candidate.TotalStake = big.NewInt(0)
+			candidate.Status = CandidateStatusOffline
+			candidate.AccumReward = big.NewInt(0)
+		}
+	}
+
+	s.setStateCandidates(stateCandidates)
+	s.MarkStateCandidateDirty()
+}
+
+func (s *StateDB) RemoveFrozenFundsWithPubKey(fromBlock uint64, toBlock uint64, PubKey []byte) {
+	for i := fromBlock; i <= toBlock; i++ {
+		frozenFund := s.getStateFrozenFunds(int64(i))
+
+		if frozenFund == nil {
+			continue
+		}
+
+		frozenFund.RemoveFund(PubKey)
+	}
 }

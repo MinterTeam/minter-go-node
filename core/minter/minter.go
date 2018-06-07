@@ -107,9 +107,8 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 
 	// give penalty to Byzantine validators
 	for _, b := range req.ByzantineValidators {
-		fmt.Printf("Found Byzantine Validator with pubkey: %x", b.PubKey)
-		// todo: find candidate and set stake to null
-		// todo: find frozen funds with such pub key and delete them
+		app.currentStateDeliver.PunishByzantineCandidate(b.PubKey)
+		app.currentStateDeliver.RemoveFrozenFundsWithPubKey(app.height, app.height+518400, b.PubKey)
 	}
 
 	return abciTypes.ResponseBeginBlock{}
@@ -129,7 +128,9 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 	}
 
 	// todo: calculate validators count from current block height
-	newValidators, newCandidates := app.currentStateDeliver.GetValidators(10)
+	validatorsCount := 10
+
+	newValidators, newCandidates := app.currentStateDeliver.GetValidators(validatorsCount)
 
 	// calculate total power of validators
 	totalPower := big.NewInt(0)

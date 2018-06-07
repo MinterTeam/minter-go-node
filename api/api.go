@@ -9,10 +9,10 @@ import (
 
 	"minter/cmd/utils"
 	"minter/core/minter"
+	"minter/rpc/core/types"
 	"minter/rpc/lib/client"
 	"minter/tmtypes"
 	"time"
-	"minter/rpc/core/types"
 )
 
 var (

@@ -19,6 +19,7 @@ package state
 import (
 	"io"
 
+	"bytes"
 	"fmt"
 	"math/big"
 	"minter/core/types"
@@ -103,6 +104,31 @@ func (c *stateFrozenFund) AddFund(address types.Address, candidateKey []byte, va
 func (c *stateFrozenFund) addFund(fund FrozenFund) {
 
 	c.data.List = append(c.data.List, fund)
+
+	if c.onDirty != nil {
+		c.onDirty(c.blockHeight)
+		c.onDirty = nil
+	}
+}
+
+// remove fund with given candidate key (used in byzantine validator's punishment)
+func (c *stateFrozenFund) RemoveFund(candidateKey []byte) {
+	c.removeFund(candidateKey)
+}
+
+func (c *stateFrozenFund) removeFund(candidateKey []byte) {
+	var NewList []FrozenFund
+
+	for _, item := range c.data.List {
+		// skip fund with given candidate key
+		if bytes.Compare(item.CandidateKey, candidateKey) == 0 {
+			continue
+		}
+
+		NewList = append(NewList, item)
+	}
+
+	c.data.List = NewList
 
 	if c.onDirty != nil {
 		c.onDirty(c.blockHeight)
