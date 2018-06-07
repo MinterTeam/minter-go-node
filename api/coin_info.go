@@ -3,7 +3,6 @@ package api
 import (
 	"encoding/json"
 	"github.com/gorilla/mux"
-	"math/big"
 	"minter/core/types"
 	"net/http"
 )
@@ -11,10 +10,10 @@ import (
 type CoinInfoResponse struct {
 	Name           string           `json:"name"`
 	Symbol         types.CoinSymbol `json:"symbol"`
-	Volume         *big.Int         `json:"volume"`
+	Volume         string           `json:"volume"`
 	Crr            uint             `json:"crr"`
 	ReserveCoin    types.CoinSymbol `json:"reserve_coin"`
-	ReserveBalance *big.Int         `json:"reserve_balance"`
+	ReserveBalance string           `json:"reserve_balance"`
 	Creator        types.Address    `json:"creator"`
 }
 
@@ -37,10 +36,10 @@ func GetCoinInfo(w http.ResponseWriter, r *http.Request) {
 		Result: CoinInfoResponse{
 			Name:           coin.Name,
 			Symbol:         coin.Symbol,
-			Volume:         coin.Volume,
+			Volume:         coin.Volume.String(),
 			Crr:            coin.Crr,
 			ReserveCoin:    coin.ReserveCoin,
-			ReserveBalance: coin.ReserveBalance,
+			ReserveBalance: coin.ReserveBalance.String(),
 			Creator:        coin.Creator,
 		},
 	})

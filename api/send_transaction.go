@@ -10,7 +10,6 @@ import (
 	"strings"
 	//"github.com/tendermint/tendermint/rpc/core/types"
 	abci "github.com/tendermint/abci/types"
-	"github.com/tendermint/tendermint/rpc/lib/client"
 	"github.com/tendermint/tmlibs/common"
 	"minter/core/types"
 )
@@ -32,8 +31,6 @@ func SendTransaction(w http.ResponseWriter, r *http.Request) {
 	body, _ := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
 	json.Unmarshal(body, &req)
 
-	client := rpcclient.NewJSONRPCClient(tendermintRpcAddr)
-	//core_types.RegisterAmino(client.Codec())
 	result := new(ResultBroadcastTxCommit)
 	_, err := client.Call("broadcast_tx_commit", map[string]interface{}{
 		"tx": types.Hex2Bytes(strings.TrimLeft(req.Transaction, "Mx")),
