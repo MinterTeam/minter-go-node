@@ -12,15 +12,17 @@ import (
 	"minter/rpc/lib/client"
 	"minter/tmtypes"
 	"time"
+	"minter/rpc/core/types"
 )
 
 var (
-	blockchain        *minter.Blockchain
-	tendermintRpcAddr string
+	blockchain *minter.Blockchain
+	client     *rpcclient.JSONRPCClient
 )
 
 func RunApi(b *minter.Blockchain) {
-	tendermintRpcAddr = *utils.TendermintRpcAddrFlag
+	client = rpcclient.NewJSONRPCClient(*utils.TendermintRpcAddrFlag)
+	tmtypes.RegisterAmino(client.Codec())
 
 	blockchain = b
 
@@ -45,13 +47,10 @@ func RunApi(b *minter.Blockchain) {
 
 	handler := c.Handler(router)
 
-	client := rpcclient.NewJSONRPCClient(tendermintRpcAddr)
-	tmtypes.RegisterAmino(client.Codec())
-
 	// wait for tendermint to start
 	for true {
-		result := new(tmtypes.ResultStatus)
-		_, err := client.Call("status", map[string]interface{}{}, result)
+		result := new(core_types.ResultHealth)
+		_, err := client.Call("health", map[string]interface{}{}, result)
 		if err == nil {
 			break
 		}

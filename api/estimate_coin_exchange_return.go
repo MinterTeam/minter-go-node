@@ -42,6 +42,6 @@ func EstimateCoinExchangeReturn(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(Response{
 		Code:   0,
-		Result: result,
+		Result: result.String(),
 	})
 }

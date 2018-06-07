@@ -6,7 +6,6 @@ import (
 	"github.com/gorilla/mux"
 	abci "github.com/tendermint/abci/types"
 	"github.com/tendermint/tmlibs/common"
-	"minter/rpc/lib/client"
 	types "minter/tmtypes"
 	"net/http"
 )
@@ -26,8 +25,6 @@ func Transaction(w http.ResponseWriter, r *http.Request) {
 	hash := vars["hash"]
 	decoded, err := hex.DecodeString(hash)
 
-	client := rpcclient.NewJSONRPCClient(tendermintRpcAddr)
-	types.RegisterAmino(client.Codec())
 	result := new(ResTx)
 	_, err = client.Call("tx", map[string]interface{}{
 		"hash": decoded,

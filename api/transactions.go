@@ -5,7 +5,6 @@ import (
 	"github.com/tendermint/tmlibs/common"
 	"math/big"
 	"minter/core/transaction"
-	"minter/rpc/lib/client"
 	"minter/tmtypes"
 	"net/http"
 )
@@ -52,8 +51,6 @@ func Transactions(w http.ResponseWriter, r *http.Request) {
 
 	query := r.URL.Query().Get("query")
 
-	client := rpcclient.NewJSONRPCClient(tendermintRpcAddr)
-	tmtypes.RegisterAmino(client.Codec())
 	rpcResult := new(ResultTxSearch)
 	_, err := client.Call("tx_search", map[string]interface{}{
 		"query":    query,

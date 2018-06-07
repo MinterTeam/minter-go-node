@@ -177,7 +177,6 @@
   packages = [
     "client",
     "example/code",
-    "example/dummy",
     "example/kvstore",
     "server",
     "types"
@@ -223,7 +222,6 @@
     "p2p",
     "p2p/conn",
     "p2p/pex",
-    "p2p/trust",
     "p2p/upnp",
     "privval",
     "proxy",
@@ -349,15 +347,9 @@
   packages = ["collections/prque"]
   revision = "8dcd6a7f4951f6ff3ee9cbb919a06d8925822e57"
 
-[[projects]]
-  name = "gopkg.in/urfave/cli.v1"
-  packages = ["."]
-  revision = "cfb38830724cc34fedffe9a2a29fb54fa9169cd1"
-  version = "v1.20.0"
-
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "66021ff92c415a56dd4f38b13e6b6b9d42ac11ddfeb2f652dad20b7a8e8ded74"
+  inputs-digest = "85276144c0e589d0fcab7b8f9b46d553496e695d2b8f88276857eca75437417c"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	TendermintRpcAddrFlag = flag.String("tendermint_addr", "tcp://127.0.0.1:46657", "This is the address that minter will use to connect to the tendermint core node. Please provide a port.")
+	TendermintRpcAddrFlag = flag.String("tendermint_addr", "tcp://0.0.0.0:46657", "This is the address that minter will use to connect to the tendermint core node. Please provide a port.")
 )
 
 func init() {
