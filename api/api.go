@@ -15,17 +15,13 @@ import (
 )
 
 var (
-	blockchain        *minter.Blockchain
-	tendermintRpcAddr string
-	client            = rpcclient.NewJSONRPCClient(tendermintRpcAddr)
+	blockchain *minter.Blockchain
+	client     *rpcclient.JSONRPCClient
 )
 
-func init() {
-	tmtypes.RegisterAmino(client.Codec())
-}
-
 func RunApi(b *minter.Blockchain) {
-	tendermintRpcAddr = *utils.TendermintRpcAddrFlag
+	client = rpcclient.NewJSONRPCClient(*utils.TendermintRpcAddrFlag)
+	tmtypes.RegisterAmino(client.Codec())
 
 	blockchain = b
 
@@ -53,7 +49,7 @@ func RunApi(b *minter.Blockchain) {
 	// wait for tendermint to start
 	for true {
 		result := new(tmtypes.ResultStatus)
-		_, err := client.Call("status", map[string]interface{}{}, result)
+		_, err := client.Call("health", map[string]interface{}{}, result)
 		if err == nil {
 			break
 		}
