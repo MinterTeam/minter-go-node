@@ -108,7 +108,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 	// give penalty to Byzantine validators
 	for _, b := range req.ByzantineValidators {
 		app.currentStateDeliver.PunishByzantineCandidate(b.PubKey)
-		app.currentStateDeliver.RemoveFrozenFundsWithPubKey(app.height, app.height + 518400, b.PubKey)
+		app.currentStateDeliver.RemoveFrozenFundsWithPubKey(app.height, app.height+518400, b.PubKey)
 	}
 
 	return abciTypes.ResponseBeginBlock{}
