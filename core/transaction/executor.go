@@ -14,6 +14,7 @@ import (
 	"minter/crypto/sha3"
 	"minter/formula"
 	"minter/rlp"
+	"regexp"
 )
 
 type Response struct {
@@ -35,6 +36,12 @@ func RunTx(context *state.StateDB, isCheck bool, tx *Transaction, rewardPull *bi
 		return Response{
 			Code: code.WrongNonce,
 			Log:  fmt.Sprintf("Unexpected nonce. Expected: %d, got %d.", expectedNonce, tx.Nonce)}
+	}
+
+	if len(tx.Payload)+len(tx.ServiceData) > 1024 {
+		return Response{
+			Code: code.TooLongPayload,
+			Log:  fmt.Sprintf("Too long Payload + ServiceData. Max 1024 bytes.")}
 	}
 
 	switch tx.Type {
@@ -515,7 +522,35 @@ func RunTx(context *state.StateDB, isCheck bool, tx *Transaction, rewardPull *bi
 
 		data := tx.GetDecodedData().(CreateCoinData)
 
+		if match, _ := regexp.MatchString("^[A-Z0-9]{3,10}$", data.Symbol.String()); !match {
+			return Response{
+				Code: code.InvalidCoinSymbol,
+				Log:  fmt.Sprintf("Invalid coin symbol. Should be ^[A-Z0-9]{3,10}$")}
+		}
+
 		commission := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
+
+		// compute additional price from letters count
+		lettersCount := len(data.Symbol.String())
+		var price int64 = 0
+		switch lettersCount {
+		case 3:
+			price += 1000000 // 1mln bips
+		case 4:
+			price += 100000 // 100k bips
+		case 5:
+			price += 10000 // 10k bips
+		case 6:
+			price += 1000 // 1k bips
+		case 7:
+			price += 100 // 100 bips
+		case 8:
+			price += 10 // 10 bips
+		}
+		p := big.NewInt(10)
+		p.Exp(p, big.NewInt(18), nil)
+		p.Mul(p, big.NewInt(price))
+		commission.Add(commission, p)
 
 		totalTxCost := big.NewInt(0).Add(data.InitialReserve, commission)
 

@@ -21,4 +21,6 @@ const (
 	InsufficientStake        uint32 = 17
 	IsNotOwnerOfCandidate    uint32 = 18
 	CoinReserveNotSufficient uint32 = 19
+	InvalidCoinSymbol        uint32 = 20
+	TooLongPayload           uint32 = 21
 )
