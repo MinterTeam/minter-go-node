@@ -12,6 +12,7 @@ import (
 	"minter/rpc/lib/client"
 	"minter/tmtypes"
 	"time"
+	"minter/rpc/core/types"
 )
 
 var (
@@ -48,7 +49,7 @@ func RunApi(b *minter.Blockchain) {
 
 	// wait for tendermint to start
 	for true {
-		result := new(tmtypes.ResultStatus)
+		result := new(core_types.ResultHealth)
 		_, err := client.Call("health", map[string]interface{}{}, result)
 		if err == nil {
 			break
