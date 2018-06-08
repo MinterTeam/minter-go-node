@@ -34,8 +34,11 @@ make build-docker
 
 Prepare configs
 ```
-mkdir -p ~/.tendermint
-mkdir ~/.minter
+mkdir -p ~/.tendermint/data
+mkdir -p ~/.minter/data
+
+chmod -R 0777 ~/.tendermint
+chmod -R 0777 ~/.minter
 
 cp -R networks/testnet/ ~/.tendermint/config
 ```
