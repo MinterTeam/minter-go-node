@@ -10,30 +10,12 @@ _NOTE: This is alpha software. Please contact us if you intend to run it in prod
 
 ## Run using Docker
 
----
-
-You'll need **go** [installed](https://golang.org/doc/install) and the required [environment variables](https://github.com/tendermint/tendermint/wiki/Setting-GOPATH) set.
-
----
+You'll need [docker](https://docker.com/) and [docker compose](https://docs.docker.com/compose/) installed.
 
 Clone Minter to your machine
-
 ```
-git clone https://github.com/MinterTeam/minter-go-node.git $GOPATH/src/minter
-cd $GOPATH/src/minter
-```
-
-Install dependencies
-
-```
-make get_tools
-make get_vendor_deps
-```
-
-Build docker image
-```
-make build-linux
-make build-docker
+git clone https://github.com/MinterTeam/minter-go-node.git
+cd minter
 ```
 
 Prepare configs
@@ -50,4 +32,22 @@ cp -R networks/testnet/ ~/.tendermint/config
 Start Minter
 ```
 docker-compose up
+```
+
+### Troubleshooting
+
+#### make: gometalinter.v2: Command not found
+
+```
+go get -u gopkg.in/alecthomas/gometalinter.v2
+cd $GOPATH/src/gopkg.in/alecthomas/gometalinter.v2
+go build
+```
+
+#### GOPATH of govet is wrong
+
+```
+mkdir $GOPATH/src/github.com/alecthomas/gometalinter/_linters/github.com/dnephin
+cd $GOPATH/src/github.com/alecthomas/gometalinter/_linters/github.com/dnephin
+git clone https://github.com/dnephin/govet
 ```

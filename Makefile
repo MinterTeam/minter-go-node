@@ -92,7 +92,7 @@ metalinter_all:
 
 build-docker:
 	cp build/minter DOCKER/minter
-	docker build --label=minter --tag="minter/minter" DOCKER
+	docker build --label=minter --tag="minterteam/minter" DOCKER
 	rm -rf DOCKER/minter
 
 ###########################################################

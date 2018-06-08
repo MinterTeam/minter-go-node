@@ -1,7 +1,7 @@
 version: "3"
 services:
   minter:
-    image: minter/minter:latest
+    image: minterteam/minter:latest
     command: --tendermint_addr=tcp://tendermint:46657
     volumes:
       - ~/.minter:/minter
