@@ -261,6 +261,7 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 	hash, _ := app.currentStateDeliver.Commit(false)
 	app.currentStateDeliver.Database().TrieDB().Commit(hash, true)
 
+	// todo: make provider
 	appTable := mintdb.NewTable(app.db, appTableId)
 	err := appTable.Put([]byte("root"), hash.Bytes())
 
@@ -268,6 +269,7 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 		panic(err)
 	}
 
+	// todo: make provider
 	height := make([]byte, 8)
 	binary.BigEndian.PutUint64(height[:], app.height)
 	err = appTable.Put([]byte("height"), height[:])
@@ -297,9 +299,11 @@ func (app *Blockchain) Stop() {
 func (app *Blockchain) updateCurrentRootHash() {
 	appTable := mintdb.NewTable(app.db, appTableId)
 
+	// todo: make provider
 	result, _ := appTable.Get([]byte("root"))
 	app.rootHash = types.BytesToHash(result)
 
+	// todo: make provider
 	result, err := appTable.Get([]byte("height"))
 	if err == nil {
 		app.height = binary.BigEndian.Uint64(result)
