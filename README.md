@@ -10,30 +10,12 @@ _NOTE: This is alpha software. Please contact us if you intend to run it in prod
 
 ## Run using Docker
 
----
-
-You'll need [docker](https://docker.com/), [docker compose](https://docs.docker.com/compose/), **go** [installed](https://golang.org/doc/install) and the required [environment variables](https://github.com/tendermint/tendermint/wiki/Setting-GOPATH) set.
-
----
+You'll need [docker](https://docker.com/) and [docker compose](https://docs.docker.com/compose/) installed.
 
 Clone Minter to your machine
-
 ```
-git clone https://github.com/MinterTeam/minter-go-node.git $GOPATH/src/minter
-cd $GOPATH/src/minter
-```
-
-Install dependencies
-
-```
-make get_tools
-make get_vendor_deps
-```
-
-Build docker image
-```
-make build-linux
-make build-docker
+git clone https://github.com/MinterTeam/minter-go-node.git
+cd minter
 ```
 
 Prepare configs

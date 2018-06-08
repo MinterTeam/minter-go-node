@@ -16,7 +16,7 @@ read -p "==> Push 3 docker images with the following tags (latest, $TAG, $TAG_NO
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-	docker push "minter/minter:latest"
-	docker push "minter/minter:$TAG"
-	docker push "minter/minter:$TAG_NO_PATCH"
+	docker push "minterteam/minter:latest"
+	docker push "minterteam/minter:$TAG"
+	docker push "minterteam/minter:$TAG_NO_PATCH"
 fi

@@ -16,5 +16,5 @@ read -p "==> Build 3 docker images with the following tags (latest, $TAG, $TAG_N
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-		docker build -t "minter/minter" -t "minter/minter:$TAG" -t "minter/minter:$TAG_NO_PATCH" .
+		docker build -t "minterteam/minter" -t "minterteam/minter:$TAG" -t "minterteam/minter:$TAG_NO_PATCH" .
 fi
