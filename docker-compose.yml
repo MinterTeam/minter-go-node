@@ -7,7 +7,6 @@ services:
       - ~/.minter:/minter
     ports:
       - "8841:8841"
-      - "46658:46658"
   tendermint:
     image: tendermint/tendermint:0.19.9
     command: node --proxy_app=tcp://minter:46658
@@ -15,4 +14,3 @@ services:
       - ~/.tendermint:/tendermint
     ports:
       - "46656:46656"
-      - "46657:46657"
