@@ -70,7 +70,7 @@ laddr = "tcp://0.0.0.0:46656"
 seeds = ""
 
 # Comma separated list of nodes to keep persistent connections to
-persistent_peers = "b2208a77816c0a43958653664e654e044692bfb6@92.53.87.101:46656"
+persistent_peers = "2330033503a61a579edd9f9c7f4cfd4bcbe4d65a@159.89.107.246:46656"
 
 # Path to address book
 addr_book_file = "config/addrbook.json"
