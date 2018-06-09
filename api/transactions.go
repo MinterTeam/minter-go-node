@@ -2,10 +2,10 @@ package api
 
 import (
 	"encoding/json"
+	"github.com/tendermint/tendermint/types"
 	"github.com/tendermint/tmlibs/common"
 	"math/big"
 	"minter/core/transaction"
-	"minter/tmtypes"
 	"net/http"
 )
 
@@ -27,8 +27,8 @@ type ResultTx struct {
 	Height   int64             `json:"height"`
 	Index    uint32            `json:"index"`
 	TxResult ResponseDeliverTx `json:"tx_result"`
-	Tx       tmtypes.Tx        `json:"tx"`
-	Proof    tmtypes.TxProof   `json:"proof,omitempty"`
+	Tx       types.Tx          `json:"tx"`
+	Proof    types.TxProof     `json:"proof,omitempty"`
 }
 
 type ResponseDeliverTx struct {

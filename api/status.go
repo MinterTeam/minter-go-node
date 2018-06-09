@@ -2,8 +2,8 @@ package api
 
 import (
 	"encoding/json"
+	"github.com/tendermint/tendermint/rpc/core/types"
 	"github.com/tendermint/tmlibs/common"
-	"minter/tmtypes"
 	"net/http"
 	"time"
 )
@@ -17,7 +17,7 @@ type StatusResponse struct {
 
 func Status(w http.ResponseWriter, r *http.Request) {
 
-	result := new(tmtypes.ResultStatus)
+	result := new(core_types.ResultStatus)
 	_, err := client.Call("status", map[string]interface{}{}, result)
 
 	if err != nil {
