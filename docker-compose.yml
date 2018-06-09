@@ -1,4 +1,4 @@
-version: "3"
+version: "3.4"
 services:
   minter:
     image: minterteam/minter:latest
@@ -7,10 +7,28 @@ services:
       - ~/.minter:/minter
     ports:
       - "8841:8841"
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8841/api/status"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
   tendermint:
-    image: tendermint/tendermint:0.19.9
+    image: tendermint/tendermint:0.20.0
     command: node --proxy_app=tcp://minter:46658
     volumes:
       - ~/.tendermint:/tendermint
     ports:
       - "46656:46656"
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:46657/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    ulimits:
+      nofile:
+        soft: 1048576
+        hard: 1048576
