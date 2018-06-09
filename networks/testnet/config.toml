@@ -117,7 +117,7 @@ wal_file = "data/cs.wal/wal"
 wal_light = false
 
 # All timeouts are in milliseconds
-timeout_propose = 3000
+timeout_propose = 10000
 timeout_propose_delta = 500
 timeout_prevote = 1000
 timeout_prevote_delta = 500
