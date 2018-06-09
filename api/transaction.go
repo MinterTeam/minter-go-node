@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"github.com/gorilla/mux"
 	abci "github.com/tendermint/abci/types"
+	"github.com/tendermint/tendermint/types"
 	"github.com/tendermint/tmlibs/common"
-	types "minter/tmtypes"
 	"net/http"
 )
 

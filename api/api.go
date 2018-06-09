@@ -7,11 +7,10 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 
+	"github.com/tendermint/tendermint/rpc/core/types"
+	"github.com/tendermint/tendermint/rpc/lib/client"
 	"minter/cmd/utils"
 	"minter/core/minter"
-	"minter/rpc/core/types"
-	"minter/rpc/lib/client"
-	"minter/tmtypes"
 	"time"
 )
 
@@ -22,7 +21,7 @@ var (
 
 func RunApi(b *minter.Blockchain) {
 	client = rpcclient.NewJSONRPCClient(*utils.TendermintRpcAddrFlag)
-	tmtypes.RegisterAmino(client.Codec())
+	core_types.RegisterAmino(client.Codec())
 
 	blockchain = b
 

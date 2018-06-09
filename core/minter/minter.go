@@ -13,6 +13,7 @@ import (
 	"minter/core/state"
 	"minter/core/transaction"
 	"minter/core/types"
+	"minter/core/validators"
 	"minter/genesis"
 	"minter/mintdb"
 )
@@ -124,8 +125,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 		frozenFunds.Delete()
 	}
 
-	// todo: calculate validators count from current block height
-	validatorsCount := 10
+	validatorsCount := validators.GetValidatorsCountForBlock(app.height)
 
 	newValidators, newCandidates := app.currentStateDeliver.GetValidators(validatorsCount)
 

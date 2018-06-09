@@ -3,15 +3,15 @@ package api
 import (
 	"encoding/json"
 	"github.com/gorilla/mux"
-	"minter/tmtypes"
+	"github.com/tendermint/tendermint/types"
 	"net/http"
 	"strconv"
 )
 
 // Single block (with meta)
 type ResultBlock struct {
-	BlockMeta *tmtypes.BlockMeta `json:"block_meta"`
-	Block     *tmtypes.Block     `json:"block"`
+	BlockMeta *types.BlockMeta `json:"block_meta"`
+	Block     *types.Block     `json:"block"`
 }
 
 func Block(w http.ResponseWriter, r *http.Request) {
