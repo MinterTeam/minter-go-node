@@ -181,8 +181,8 @@
     "server",
     "types"
   ]
-  revision = "78a8905690ef54f9d57e3b2b0ee7ad3a04ef3f1f"
-  version = "v0.10.3"
+  revision = "ebee2fe114020aa49c70bbbae50b7079fc7e7b90"
+  version = "v0.11.0"
 
 [[projects]]
   branch = "master"
@@ -242,8 +242,8 @@
     "types",
     "version"
   ]
-  revision = "057e076ca914e25933a7517af64d7f86c8abdf97"
-  version = "v0.19.9"
+  revision = "27bd1deabe4ba6a2d9b463b8f3e3f1e31b993e61"
+  version = "v0.20.0"
 
 [[projects]]
   name = "github.com/tendermint/tmlibs"
@@ -350,6 +350,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "85276144c0e589d0fcab7b8f9b46d553496e695d2b8f88276857eca75437417c"
+  inputs-digest = "8c28ab4d6a7779a6548f6b211c0b19b04216a3f5e265dc4efa726bd9374d9fb5"
   solver-name = "gps-cdcl"
   solver-version = 1

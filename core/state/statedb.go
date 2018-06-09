@@ -28,7 +28,6 @@ import (
 
 	"bytes"
 	abci "github.com/tendermint/abci/types"
-	tCrypto "github.com/tendermint/go-crypto"
 	"minter/core/check"
 	"sort"
 )
@@ -677,18 +676,9 @@ func (s *StateDB) GetValidators(count int) ([]abci.Validator, []Candidate) {
 	}
 
 	for i := range activeCandidates[:count] {
-		pkey, err := tCrypto.PubKeyFromBytes(activeCandidates[i].PubKey)
-
-		if err != nil {
-			panic(err)
-		}
-
 		power := big.NewInt(0).Div(big.NewInt(0).Mul(activeCandidates[i].TotalStake, big.NewInt(100)), totalPower)
 
-		validators[i] = abci.Validator{
-			PubKey: pkey.(tCrypto.PubKeyEd25519).Bytes(),
-			Power:  power.Int64(),
-		}
+		validators[i] = abci.Ed25519Validator(activeCandidates[i].PubKey, power.Int64())
 	}
 
 	return validators, activeCandidates

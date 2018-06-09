@@ -80,8 +80,8 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 	}
 
 	for _, validator := range req.Validators {
-		app.currentStateDeliver.CreateCandidate(genesisState.FirstValidatorAddress, validator.PubKey, 10, 1)
-		app.currentStateDeliver.SetCandidateOnline(validator.PubKey)
+		app.currentStateDeliver.CreateCandidate(genesisState.FirstValidatorAddress, validator.PubKey.Data, 10, 1)
+		app.currentStateDeliver.SetCandidateOnline(validator.PubKey.Data)
 		app.activeValidators = append(app.activeValidators, validator)
 	}
 
@@ -91,24 +91,21 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.ResponseBeginBlock {
 	app.rewards = big.NewInt(0)
 
-	// todo: calculate validators count from current block height
-	validatorsCount := 10
-
-	_, candidates := app.currentStateDeliver.GetValidators(validatorsCount)
-
 	// clear absent candidates
 	app.absentCandidates = make(map[string]bool)
 
 	// give penalty to absent validators
-	for _, i := range req.AbsentValidators {
-		app.currentStateDeliver.SetValidatorAbsent(candidates[i].PubKey)
-		app.absentCandidates[candidates[i].PubKey.String()] = true
+	for _, v := range req.Validators {
+		if !v.SignedLastBlock {
+			app.currentStateDeliver.SetValidatorAbsent(v.Validator.PubKey.Data)
+			app.absentCandidates[v.Validator.PubKey.String()] = true
+		}
 	}
 
 	// give penalty to Byzantine validators
-	for _, b := range req.ByzantineValidators {
-		app.currentStateDeliver.PunishByzantineCandidate(b.PubKey)
-		app.currentStateDeliver.RemoveFrozenFundsWithPubKey(app.height, app.height+518400, b.PubKey)
+	for _, v := range req.ByzantineValidators {
+		app.currentStateDeliver.PunishByzantineCandidate(v.Validator.PubKey.Data)
+		app.currentStateDeliver.RemoveFrozenFundsWithPubKey(app.height, app.height+518400, v.Validator.PubKey.Data)
 	}
 
 	return abciTypes.ResponseBeginBlock{}
@@ -177,7 +174,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 	for _, validator := range app.activeValidators {
 		persisted := false
 		for _, newValidator := range newValidators {
-			if bytes.Compare(validator.PubKey, newValidator.PubKey) == 0 {
+			if bytes.Compare(validator.PubKey.Data, newValidator.PubKey.Data) == 0 {
 				persisted = true
 				break
 			}
