@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	tCrypto "github.com/tendermint/go-crypto"
 	"math/big"
 	"minter/core/commissions"
 	"minter/core/types"
@@ -394,54 +393,30 @@ func DecodeFromBytes(buf []byte) (*Transaction, error) {
 		{
 			data := DeclareCandidacyData{}
 			rlp.Decode(bytes.NewReader(tx.Data), &data)
-
-			var key tCrypto.PubKeyEd25519
-			copy(key[:], data.PubKey)
-
-			data.PubKey = key.Bytes()
 			tx.SetDecodedData(data)
 		}
 	case TypeDelegate:
 		{
 			data := DelegateData{}
 			rlp.Decode(bytes.NewReader(tx.Data), &data)
-
-			var key tCrypto.PubKeyEd25519
-			copy(key[:], data.PubKey)
-
-			data.PubKey = key.Bytes()
 			tx.SetDecodedData(data)
 		}
 	case TypeSetCandidateOnline:
 		{
 			data := SetCandidateOnData{}
 			rlp.Decode(bytes.NewReader(tx.Data), &data)
-			var key tCrypto.PubKeyEd25519
-			copy(key[:], data.PubKey)
-
-			data.PubKey = key.Bytes()
 			tx.SetDecodedData(data)
 		}
 	case TypeSetCandidateOffline:
 		{
 			data := SetCandidateOffData{}
 			rlp.Decode(bytes.NewReader(tx.Data), &data)
-
-			var key tCrypto.PubKeyEd25519
-			copy(key[:], data.PubKey)
-
-			data.PubKey = key.Bytes()
 			tx.SetDecodedData(data)
 		}
 	case TypeUnbond:
 		{
 			data := UnbondData{}
 			rlp.Decode(bytes.NewReader(tx.Data), &data)
-
-			var key tCrypto.PubKeyEd25519
-			copy(key[:], data.PubKey)
-
-			data.PubKey = key.Bytes()
 			tx.SetDecodedData(data)
 		}
 	default:
