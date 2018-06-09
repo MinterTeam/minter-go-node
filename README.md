@@ -33,21 +33,3 @@ Start Minter
 ```
 docker-compose up
 ```
-
-### Troubleshooting
-
-#### make: gometalinter.v2: Command not found
-
-```
-go get -u gopkg.in/alecthomas/gometalinter.v2
-cd $GOPATH/src/gopkg.in/alecthomas/gometalinter.v2
-go build
-```
-
-#### GOPATH of govet is wrong
-
-```
-mkdir $GOPATH/src/github.com/alecthomas/gometalinter/_linters/github.com/dnephin
-cd $GOPATH/src/github.com/alecthomas/gometalinter/_linters/github.com/dnephin
-git clone https://github.com/dnephin/govet
-```
