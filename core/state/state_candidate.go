@@ -24,6 +24,7 @@ import (
 	"math/big"
 	"minter/core/types"
 	"minter/rlp"
+	"encoding/json"
 )
 
 const (
@@ -57,6 +58,16 @@ func (c *stateCandidates) empty() bool {
 type Stake struct {
 	Owner types.Address
 	Value *big.Int
+}
+
+func (s *Stake) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Owner types.Address
+		Value string
+	}{
+		Owner: s.Owner,
+		Value: s.Value.String(),
+	})
 }
 
 type Candidate struct {
