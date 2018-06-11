@@ -832,7 +832,7 @@ func (s *StateDB) SetValidatorAbsent(pubkey types.Pubkey) {
 				for j, stake := range candidate.Stakes {
 					newValue := big.NewInt(0).Set(stake.Value)
 					newValue.Mul(newValue, big.NewInt(99))
-					newValue.Mul(newValue, big.NewInt(100))
+					newValue.Div(newValue, big.NewInt(100))
 
 					candidate.Stakes[j] = Stake{
 						Owner: stake.Owner,
