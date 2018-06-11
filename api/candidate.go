@@ -2,11 +2,11 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/gorilla/mux"
+	"minter/core/state"
 	"minter/core/types"
 	"net/http"
-		"minter/core/state"
-	"fmt"
 )
 
 func GetCandidate(w http.ResponseWriter, r *http.Request) {
@@ -20,7 +20,7 @@ func GetCandidate(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	json.NewEncoder(w).Encode(Response{
-		Code:   0,
+		Code: 0,
 		Result: struct {
 			CandidateAddress types.Address
 			TotalStake       string

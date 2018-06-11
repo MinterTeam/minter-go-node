@@ -821,6 +821,11 @@ func (s *StateDB) SetValidatorAbsent(pubkey types.Pubkey) {
 	for i := range stateCandidates.data {
 		candidate := &stateCandidates.data[i]
 		if bytes.Compare(candidate.PubKey, pubkey) == 0 {
+
+			if candidate.Status == CandidateStatusOffline {
+				return
+			}
+
 			candidate.AbsentTimes = candidate.AbsentTimes + 1
 
 			if candidate.AbsentTimes > CandidateMaxAbsentTimes {
