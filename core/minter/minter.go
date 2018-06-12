@@ -38,6 +38,8 @@ var (
 
 	stateTableId = "state"
 	appTableId   = "app"
+
+	maxTxLength = 1024
 )
 
 func NewMinterBlockchain() *Blockchain {
@@ -204,6 +206,12 @@ func (app *Blockchain) Info(req abciTypes.RequestInfo) (resInfo abciTypes.Respon
 
 func (app *Blockchain) DeliverTx(tx []byte) abciTypes.ResponseDeliverTx {
 
+	if len(tx) > maxTxLength {
+		return abciTypes.ResponseDeliverTx{
+			Code: code.TxTooLarge,
+			Log:  "TX length is over 1024 bytes"}
+	}
+
 	decodedTx, err := transaction.DecodeFromBytes(tx)
 
 	if err != nil {
@@ -231,6 +239,12 @@ func (app *Blockchain) DeliverTx(tx []byte) abciTypes.ResponseDeliverTx {
 func (app *Blockchain) CheckTx(tx []byte) abciTypes.ResponseCheckTx {
 
 	// todo: lock while producing block
+
+	if len(tx) > maxTxLength {
+		return abciTypes.ResponseCheckTx{
+			Code: code.TxTooLarge,
+			Log:  "TX length is over 1024 bytes"}
+	}
 
 	decodedTx, err := transaction.DecodeFromBytes(tx)
 
