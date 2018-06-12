@@ -55,8 +55,8 @@ type StateDB struct {
 	stateCoins      map[types.CoinSymbol]*stateCoin
 	stateCoinsDirty map[types.CoinSymbol]struct{}
 
-	stateFrozenFunds      map[int64]*stateFrozenFund
-	stateFrozenFundsDirty map[int64]struct{}
+	stateFrozenFunds      map[uint64]*stateFrozenFund
+	stateFrozenFundsDirty map[uint64]struct{}
 
 	stateCandidates      *stateCandidates
 	stateCandidatesDirty bool
@@ -86,8 +86,8 @@ func New(root types.Hash, db Database) (*StateDB, error) {
 		stateObjectsDirty:     make(map[types.Address]struct{}),
 		stateCoins:            make(map[types.CoinSymbol]*stateCoin),
 		stateCoinsDirty:       make(map[types.CoinSymbol]struct{}),
-		stateFrozenFunds:      make(map[int64]*stateFrozenFund),
-		stateFrozenFundsDirty: make(map[int64]struct{}),
+		stateFrozenFunds:      make(map[uint64]*stateFrozenFund),
+		stateFrozenFundsDirty: make(map[uint64]struct{}),
 		stateCandidates:       nil,
 		stateCandidatesDirty:  false,
 	}, nil
@@ -246,7 +246,7 @@ func (s *StateDB) deleteFrozenFunds(stateFrozenFund *stateFrozenFund) {
 }
 
 // Retrieve a state frozen funds by block height. Returns nil if not found.
-func (s *StateDB) getStateFrozenFunds(blockHeight int64) (stateFrozenFund *stateFrozenFund) {
+func (s *StateDB) getStateFrozenFunds(blockHeight uint64) (stateFrozenFund *stateFrozenFund) {
 	// Prefer 'live' objects.
 	if obj := s.stateFrozenFunds[blockHeight]; obj != nil {
 		return obj
@@ -386,11 +386,11 @@ func (s *StateDB) GetOrNewStateObject(addr types.Address) *stateObject {
 	return stateObject
 }
 
-func (s *StateDB) GetStateFrozenFunds(blockHeight int64) *stateFrozenFund {
+func (s *StateDB) GetStateFrozenFunds(blockHeight uint64) *stateFrozenFund {
 	return s.getStateFrozenFunds(blockHeight)
 }
 
-func (s *StateDB) GetOrNewStateFrozenFunds(blockHeight int64) *stateFrozenFund {
+func (s *StateDB) GetOrNewStateFrozenFunds(blockHeight uint64) *stateFrozenFund {
 	frozenFund := s.getStateFrozenFunds(blockHeight)
 	if frozenFund == nil {
 		frozenFund, _ = s.createFrozenFunds(blockHeight)
@@ -418,7 +418,7 @@ func (s *StateDB) MarkStateCoinDirty(symbol types.CoinSymbol) {
 	s.stateCoinsDirty[symbol] = struct{}{}
 }
 
-func (s *StateDB) MarkStateFrozenFundsDirty(blockHeight int64) {
+func (s *StateDB) MarkStateFrozenFundsDirty(blockHeight uint64) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -435,7 +435,7 @@ func (s *StateDB) createObject(addr types.Address) (newobj, prev *stateObject) {
 	return newobj, prev
 }
 
-func (s *StateDB) createFrozenFunds(blockHeight int64) (newobj, prev *stateFrozenFund) {
+func (s *StateDB) createFrozenFunds(blockHeight uint64) (newobj, prev *stateFrozenFund) {
 	prev = s.getStateFrozenFunds(blockHeight)
 	newobj = newFrozenFund(s, blockHeight, FrozenFunds{}, s.MarkStateFrozenFundsDirty)
 	s.MarkStateFrozenFundsDirty(blockHeight)
@@ -893,7 +893,7 @@ func (s *StateDB) PunishByzantineCandidate(PubKey []byte) {
 
 func (s *StateDB) RemoveFrozenFundsWithPubKey(fromBlock uint64, toBlock uint64, PubKey []byte) {
 	for i := fromBlock; i <= toBlock; i++ {
-		frozenFund := s.getStateFrozenFunds(int64(i))
+		frozenFund := s.getStateFrozenFunds(i)
 
 		if frozenFund == nil {
 			continue

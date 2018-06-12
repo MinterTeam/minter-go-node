@@ -33,7 +33,7 @@ import (
 // Account values can be accessed and modified through the object.
 // Finally, call CommitTrie to write the modified storage trie into a database.
 type stateFrozenFund struct {
-	blockHeight int64
+	blockHeight uint64
 	deleted     bool
 	data        FrozenFunds
 	db          *StateDB
@@ -41,7 +41,7 @@ type stateFrozenFund struct {
 	// Cache flags.
 	// When an object is marked suicided it will be delete from the trie
 	// during the "update" phase of the state transition.
-	onDirty func(blockHeight int64) // Callback method to mark a state object newly dirty
+	onDirty func(blockHeight uint64) // Callback method to mark a state object newly dirty
 }
 
 // empty returns whether the coin is considered empty.
@@ -66,7 +66,7 @@ func (f FrozenFunds) String() string {
 }
 
 // newFrozenFund creates a state object.
-func newFrozenFund(db *StateDB, blockHeight int64, data FrozenFunds, onDirty func(blockHeight int64)) *stateFrozenFund {
+func newFrozenFund(db *StateDB, blockHeight uint64, data FrozenFunds, onDirty func(blockHeight uint64)) *stateFrozenFund {
 	frozenFund := &stateFrozenFund{
 		db:          db,
 		blockHeight: blockHeight,
@@ -84,7 +84,7 @@ func (c *stateFrozenFund) EncodeRLP(w io.Writer) error {
 	return rlp.Encode(w, c.data)
 }
 
-func (c *stateFrozenFund) deepCopy(db *StateDB, onDirty func(blockHeight int64)) *stateFrozenFund {
+func (c *stateFrozenFund) deepCopy(db *StateDB, onDirty func(blockHeight uint64)) *stateFrozenFund {
 	frozenFund := newFrozenFund(db, c.blockHeight, c.data, onDirty)
 	return frozenFund
 }
@@ -140,7 +140,7 @@ func (c *stateFrozenFund) removeFund(candidateKey []byte) {
 // Attribute accessors
 //
 
-func (c *stateFrozenFund) BlockHeight() int64 {
+func (c *stateFrozenFund) BlockHeight() uint64 {
 	return c.blockHeight
 }
 

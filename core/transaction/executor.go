@@ -240,7 +240,7 @@ func RunTx(context *state.StateDB, isCheck bool, tx *Transaction, rewardPull *bi
 
 		if !isCheck {
 			// now + 31 days
-			unboundAtBlock := int64(currentBlock + 518400)
+			unboundAtBlock := currentBlock + 518400
 
 			rewardPull.Add(rewardPull, commission)
 
