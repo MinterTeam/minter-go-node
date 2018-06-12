@@ -735,17 +735,32 @@ func (s *StateDB) PayRewards() {
 	s.MarkStateCandidateDirty()
 }
 
-func (s *StateDB) Delegate(sender types.Address, pubkey []byte, stake *big.Int) {
+func (s *StateDB) Delegate(sender types.Address, pubkey []byte, value *big.Int) {
 	stateCandidates := s.getStateCandidates()
 
 	for i := range stateCandidates.data {
 		candidate := &stateCandidates.data[i]
 		if bytes.Compare(candidate.PubKey, pubkey) == 0 {
-			candidate.Stakes = append(candidate.Stakes, Stake{
-				Owner: sender,
-				Value: stake,
-			})
-			candidate.TotalStake.Add(candidate.TotalStake, stake)
+
+			exists := false
+
+			for j := range candidate.Stakes {
+				stake := &candidate.Stakes[j]
+				if bytes.Compare(sender.Bytes(), stake.Owner.Bytes()) == 0 {
+					stake.Value.Add(stake.Value, value)
+					exists = true
+					break
+				}
+			}
+
+			if !exists {
+				candidate.Stakes = append(candidate.Stakes, Stake{
+					Owner: sender,
+					Value: value,
+				})
+			}
+
+			candidate.TotalStake.Add(candidate.TotalStake, value)
 		}
 	}
 
