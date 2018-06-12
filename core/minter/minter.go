@@ -99,6 +99,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 	for _, v := range req.Validators {
 		if !v.SignedLastBlock {
 			app.currentStateDeliver.SetValidatorAbsent(v.Validator.PubKey.Data)
+			app.currentStateDeliver.SetValidatorPresent(v.Validator.PubKey.Data)
 			app.absentCandidates[v.Validator.PubKey.String()] = true
 		}
 	}

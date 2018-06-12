@@ -902,3 +902,17 @@ func (s *StateDB) RemoveFrozenFundsWithPubKey(fromBlock uint64, toBlock uint64, 
 		frozenFund.RemoveFund(PubKey)
 	}
 }
+
+func (s *StateDB) SetValidatorPresent(pubkey types.Pubkey) {
+	stateCandidates := s.getStateCandidates()
+
+	for i := range stateCandidates.data {
+		candidate := &stateCandidates.data[i]
+		if bytes.Compare(candidate.PubKey, pubkey) == 0 {
+			candidate.AbsentTimes = 0
+		}
+	}
+
+	s.setStateCandidates(stateCandidates)
+	s.MarkStateCandidateDirty()
+}
