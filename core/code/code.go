@@ -23,4 +23,5 @@ const (
 	CoinReserveNotSufficient uint32 = 19
 	InvalidCoinSymbol        uint32 = 20
 	TooLongPayload           uint32 = 21
+	TxTooLarge               uint32 = 22
 )

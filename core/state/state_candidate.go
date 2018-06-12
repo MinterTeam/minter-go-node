@@ -20,11 +20,11 @@ import (
 	"io"
 
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"minter/core/types"
 	"minter/rlp"
-	"encoding/json"
 )
 
 const (

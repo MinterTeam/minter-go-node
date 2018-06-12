@@ -15,6 +15,7 @@ import (
 	"minter/core/types"
 	"minter/core/validators"
 	"minter/genesis"
+	"minter/helpers"
 	"minter/mintdb"
 )
 
@@ -38,6 +39,10 @@ var (
 
 	stateTableId = "state"
 	appTableId   = "app"
+
+	maxTxLength    = 1024
+	teamAddress    = types.HexToAddress("Mxa93163fdf10724dc4785ff5cbfb9ac0b5949409f")
+	airdropAddress = types.HexToAddress("Mxa93163fdf10724dc4785ff5cbfb9ac0b5949409f")
 )
 
 func NewMinterBlockchain() *Blockchain {
@@ -81,7 +86,7 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 	}
 
 	for _, validator := range req.Validators {
-		app.currentStateDeliver.CreateCandidate(genesisState.FirstValidatorAddress, validator.PubKey.Data, 10, 1)
+		app.currentStateDeliver.CreateCandidate(genesisState.FirstValidatorAddress, validator.PubKey.Data, 10, 1, big.NewInt(1))
 		app.currentStateDeliver.SetCandidateOnline(validator.PubKey.Data)
 		app.activeValidators = append(app.activeValidators, validator)
 	}
@@ -90,6 +95,7 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 }
 
 func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.ResponseBeginBlock {
+	app.height = uint64(req.Header.Height)
 	app.rewards = big.NewInt(0)
 
 	// clear absent candidates
@@ -99,6 +105,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 	for _, v := range req.Validators {
 		if !v.SignedLastBlock {
 			app.currentStateDeliver.SetValidatorAbsent(v.Validator.PubKey.Data)
+			app.currentStateDeliver.SetValidatorPresent(v.Validator.PubKey.Data)
 			app.absentCandidates[v.Validator.PubKey.String()] = true
 		}
 	}
@@ -109,14 +116,23 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 		app.currentStateDeliver.RemoveFrozenFundsWithPubKey(app.height, app.height+518400, v.Validator.PubKey.Data)
 	}
 
+	// distributions:
+	if app.height <= 3110400*6 && app.height%3110400 == 0 { // team distribution
+		value := big.NewInt(300000000) // 300 000 000 bip (3%)
+		app.currentStateDeliver.AddBalance(teamAddress, types.GetBaseCoin(), helpers.BipToPip(value))
+	}
+
+	if app.height <= 3110400*10 && app.height%3110400 == 0 { // airdrop distribution
+		value := big.NewInt(500000000) // 500 000 000 bip (5%)
+		app.currentStateDeliver.AddBalance(airdropAddress, types.GetBaseCoin(), helpers.BipToPip(value))
+	}
+
 	return abciTypes.ResponseBeginBlock{}
 }
 
 func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.ResponseEndBlock {
-	app.height = uint64(req.Height)
-
 	// apply frozen funds
-	frozenFunds := app.currentStateDeliver.GetStateFrozenFunds(req.Height)
+	frozenFunds := app.currentStateDeliver.GetStateFrozenFunds(app.height)
 	if frozenFunds != nil {
 		for _, item := range frozenFunds.List() {
 			app.currentStateDeliver.SetBalance(item.Address, app.BaseCoin, item.Value)
@@ -149,7 +165,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 			continue
 		}
 
-		reward := rewards.GetRewardForBlock(uint64(req.Height))
+		reward := rewards.GetRewardForBlock(uint64(app.height))
 
 		reward.Add(reward, app.rewards)
 
@@ -160,7 +176,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 	}
 
 	// pay rewards
-	if req.Height%5 == 0 {
+	if app.height%5 == 0 {
 		app.currentStateDeliver.PayRewards()
 	}
 
@@ -203,6 +219,12 @@ func (app *Blockchain) Info(req abciTypes.RequestInfo) (resInfo abciTypes.Respon
 
 func (app *Blockchain) DeliverTx(tx []byte) abciTypes.ResponseDeliverTx {
 
+	if len(tx) > maxTxLength {
+		return abciTypes.ResponseDeliverTx{
+			Code: code.TxTooLarge,
+			Log:  "TX length is over 1024 bytes"}
+	}
+
 	decodedTx, err := transaction.DecodeFromBytes(tx)
 
 	if err != nil {
@@ -230,6 +252,12 @@ func (app *Blockchain) DeliverTx(tx []byte) abciTypes.ResponseDeliverTx {
 func (app *Blockchain) CheckTx(tx []byte) abciTypes.ResponseCheckTx {
 
 	// todo: lock while producing block
+
+	if len(tx) > maxTxLength {
+		return abciTypes.ResponseCheckTx{
+			Code: code.TxTooLarge,
+			Log:  "TX length is over 1024 bytes"}
+	}
 
 	decodedTx, err := transaction.DecodeFromBytes(tx)
 

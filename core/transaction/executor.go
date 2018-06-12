@@ -17,6 +17,10 @@ import (
 	"regexp"
 )
 
+var (
+	CommissionMultiplier = big.NewInt(10e8)
+)
+
 type Response struct {
 	Code      uint32          `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"`
 	Data      []byte          `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
@@ -50,6 +54,7 @@ func RunTx(context *state.StateDB, isCheck bool, tx *Transaction, rewardPull *bi
 		data := tx.GetDecodedData().(DeclareCandidacyData)
 
 		commission := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
+		commission.Mul(commission, CommissionMultiplier)
 		totalTxCost := big.NewInt(0).Add(data.Stake, commission)
 
 		if context.GetBalance(sender, types.GetBaseCoin()).Cmp(totalTxCost) < 0 {
@@ -76,8 +81,7 @@ func RunTx(context *state.StateDB, isCheck bool, tx *Transaction, rewardPull *bi
 			rewardPull.Add(rewardPull, commission)
 
 			context.SubBalance(sender, types.GetBaseCoin(), totalTxCost)
-			context.CreateCandidate(data.Address, data.PubKey, data.Commission, uint(currentBlock))
-			context.Delegate(sender, data.PubKey, data.Stake)
+			context.CreateCandidate(data.Address, data.PubKey, data.Commission, uint(currentBlock), data.Stake)
 			context.SetNonce(sender, tx.Nonce)
 		}
 
@@ -91,6 +95,7 @@ func RunTx(context *state.StateDB, isCheck bool, tx *Transaction, rewardPull *bi
 		data := tx.GetDecodedData().(SetCandidateOnData)
 
 		commission := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
+		commission.Mul(commission, CommissionMultiplier)
 
 		if context.GetBalance(sender, types.GetBaseCoin()).Cmp(commission) < 0 {
 			return Response{
@@ -130,6 +135,7 @@ func RunTx(context *state.StateDB, isCheck bool, tx *Transaction, rewardPull *bi
 		data := tx.GetDecodedData().(SetCandidateOffData)
 
 		commission := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
+		commission.Mul(commission, CommissionMultiplier)
 
 		if context.GetBalance(sender, types.GetBaseCoin()).Cmp(commission) < 0 {
 			return Response{
@@ -169,6 +175,7 @@ func RunTx(context *state.StateDB, isCheck bool, tx *Transaction, rewardPull *bi
 		data := tx.GetDecodedData().(DelegateData)
 
 		commission := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
+		commission.Mul(commission, CommissionMultiplier)
 		totalTxCost := big.NewInt(0).Add(data.Stake, commission)
 
 		if context.GetBalance(sender, types.GetBaseCoin()).Cmp(totalTxCost) < 0 {
@@ -201,6 +208,7 @@ func RunTx(context *state.StateDB, isCheck bool, tx *Transaction, rewardPull *bi
 		data := tx.GetDecodedData().(UnbondData)
 
 		commission := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
+		commission.Mul(commission, CommissionMultiplier)
 
 		if context.GetBalance(sender, types.GetBaseCoin()).Cmp(commission) < 0 {
 			return Response{
@@ -232,7 +240,7 @@ func RunTx(context *state.StateDB, isCheck bool, tx *Transaction, rewardPull *bi
 
 		if !isCheck {
 			// now + 31 days
-			unboundAtBlock := int64(currentBlock + 518400)
+			unboundAtBlock := currentBlock + 518400
 
 			rewardPull.Add(rewardPull, commission)
 
@@ -258,6 +266,7 @@ func RunTx(context *state.StateDB, isCheck bool, tx *Transaction, rewardPull *bi
 		}
 
 		commissionInBaseCoin := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
+		commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
 		commission := big.NewInt(0).Set(commissionInBaseCoin)
 
 		if data.Coin != types.GetBaseCoin() {
@@ -359,6 +368,7 @@ func RunTx(context *state.StateDB, isCheck bool, tx *Transaction, rewardPull *bi
 		}
 
 		commissionInBaseCoin := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
+		commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
 		commission := big.NewInt(0).Set(commissionInBaseCoin)
 
 		if decodedCheck.Coin != types.GetBaseCoin() {
@@ -427,6 +437,7 @@ func RunTx(context *state.StateDB, isCheck bool, tx *Transaction, rewardPull *bi
 		}
 
 		commissionInBaseCoin := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
+		commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
 		commission := big.NewInt(0).Set(commissionInBaseCoin)
 
 		if data.FromCoinSymbol != types.GetBaseCoin() {
@@ -529,6 +540,7 @@ func RunTx(context *state.StateDB, isCheck bool, tx *Transaction, rewardPull *bi
 		}
 
 		commission := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
+		commission.Mul(commission, CommissionMultiplier)
 
 		// compute additional price from letters count
 		lettersCount := len(data.Symbol.String())

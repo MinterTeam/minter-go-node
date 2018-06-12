@@ -55,8 +55,8 @@ type StateDB struct {
 	stateCoins      map[types.CoinSymbol]*stateCoin
 	stateCoinsDirty map[types.CoinSymbol]struct{}
 
-	stateFrozenFunds      map[int64]*stateFrozenFund
-	stateFrozenFundsDirty map[int64]struct{}
+	stateFrozenFunds      map[uint64]*stateFrozenFund
+	stateFrozenFundsDirty map[uint64]struct{}
 
 	stateCandidates      *stateCandidates
 	stateCandidatesDirty bool
@@ -86,8 +86,8 @@ func New(root types.Hash, db Database) (*StateDB, error) {
 		stateObjectsDirty:     make(map[types.Address]struct{}),
 		stateCoins:            make(map[types.CoinSymbol]*stateCoin),
 		stateCoinsDirty:       make(map[types.CoinSymbol]struct{}),
-		stateFrozenFunds:      make(map[int64]*stateFrozenFund),
-		stateFrozenFundsDirty: make(map[int64]struct{}),
+		stateFrozenFunds:      make(map[uint64]*stateFrozenFund),
+		stateFrozenFundsDirty: make(map[uint64]struct{}),
 		stateCandidates:       nil,
 		stateCandidatesDirty:  false,
 	}, nil
@@ -246,7 +246,7 @@ func (s *StateDB) deleteFrozenFunds(stateFrozenFund *stateFrozenFund) {
 }
 
 // Retrieve a state frozen funds by block height. Returns nil if not found.
-func (s *StateDB) getStateFrozenFunds(blockHeight int64) (stateFrozenFund *stateFrozenFund) {
+func (s *StateDB) getStateFrozenFunds(blockHeight uint64) (stateFrozenFund *stateFrozenFund) {
 	// Prefer 'live' objects.
 	if obj := s.stateFrozenFunds[blockHeight]; obj != nil {
 		return obj
@@ -386,11 +386,11 @@ func (s *StateDB) GetOrNewStateObject(addr types.Address) *stateObject {
 	return stateObject
 }
 
-func (s *StateDB) GetStateFrozenFunds(blockHeight int64) *stateFrozenFund {
+func (s *StateDB) GetStateFrozenFunds(blockHeight uint64) *stateFrozenFund {
 	return s.getStateFrozenFunds(blockHeight)
 }
 
-func (s *StateDB) GetOrNewStateFrozenFunds(blockHeight int64) *stateFrozenFund {
+func (s *StateDB) GetOrNewStateFrozenFunds(blockHeight uint64) *stateFrozenFund {
 	frozenFund := s.getStateFrozenFunds(blockHeight)
 	if frozenFund == nil {
 		frozenFund, _ = s.createFrozenFunds(blockHeight)
@@ -418,7 +418,7 @@ func (s *StateDB) MarkStateCoinDirty(symbol types.CoinSymbol) {
 	s.stateCoinsDirty[symbol] = struct{}{}
 }
 
-func (s *StateDB) MarkStateFrozenFundsDirty(blockHeight int64) {
+func (s *StateDB) MarkStateFrozenFundsDirty(blockHeight uint64) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -435,7 +435,7 @@ func (s *StateDB) createObject(addr types.Address) (newobj, prev *stateObject) {
 	return newobj, prev
 }
 
-func (s *StateDB) createFrozenFunds(blockHeight int64) (newobj, prev *stateFrozenFund) {
+func (s *StateDB) createFrozenFunds(blockHeight uint64) (newobj, prev *stateFrozenFund) {
 	prev = s.getStateFrozenFunds(blockHeight)
 	newobj = newFrozenFund(s, blockHeight, FrozenFunds{}, s.MarkStateFrozenFundsDirty)
 	s.MarkStateFrozenFundsDirty(blockHeight)
@@ -468,7 +468,8 @@ func (s *StateDB) CreateCandidate(
 	address types.Address,
 	pubkey types.Pubkey,
 	commission uint,
-	currentBlock uint) *stateCandidates {
+	currentBlock uint,
+	initialStake *big.Int) *stateCandidates {
 
 	candidates := s.getStateCandidates()
 
@@ -478,14 +479,14 @@ func (s *StateDB) CreateCandidate(
 
 	candidates.data = append(candidates.data, Candidate{
 		CandidateAddress: address,
-		TotalStake:       big.NewInt(1),
+		TotalStake:       initialStake,
 		PubKey:           pubkey,
 		Commission:       commission,
 		AccumReward:      big.NewInt(0),
 		Stakes: []Stake{
 			{
 				Owner: address,
-				Value: big.NewInt(1),
+				Value: initialStake,
 			},
 		},
 		CreatedAtBlock: currentBlock,
@@ -734,17 +735,32 @@ func (s *StateDB) PayRewards() {
 	s.MarkStateCandidateDirty()
 }
 
-func (s *StateDB) Delegate(sender types.Address, pubkey []byte, stake *big.Int) {
+func (s *StateDB) Delegate(sender types.Address, pubkey []byte, value *big.Int) {
 	stateCandidates := s.getStateCandidates()
 
 	for i := range stateCandidates.data {
 		candidate := &stateCandidates.data[i]
 		if bytes.Compare(candidate.PubKey, pubkey) == 0 {
-			candidate.Stakes = append(candidate.Stakes, Stake{
-				Owner: sender,
-				Value: stake,
-			})
-			candidate.TotalStake.Add(candidate.TotalStake, stake)
+
+			exists := false
+
+			for j := range candidate.Stakes {
+				stake := &candidate.Stakes[j]
+				if bytes.Compare(sender.Bytes(), stake.Owner.Bytes()) == 0 {
+					stake.Value.Add(stake.Value, value)
+					exists = true
+					break
+				}
+			}
+
+			if !exists {
+				candidate.Stakes = append(candidate.Stakes, Stake{
+					Owner: sender,
+					Value: value,
+				})
+			}
+
+			candidate.TotalStake.Add(candidate.TotalStake, value)
 		}
 	}
 
@@ -821,6 +837,11 @@ func (s *StateDB) SetValidatorAbsent(pubkey types.Pubkey) {
 	for i := range stateCandidates.data {
 		candidate := &stateCandidates.data[i]
 		if bytes.Compare(candidate.PubKey, pubkey) == 0 {
+
+			if candidate.Status == CandidateStatusOffline {
+				return
+			}
+
 			candidate.AbsentTimes = candidate.AbsentTimes + 1
 
 			if candidate.AbsentTimes > CandidateMaxAbsentTimes {
@@ -872,7 +893,7 @@ func (s *StateDB) PunishByzantineCandidate(PubKey []byte) {
 
 func (s *StateDB) RemoveFrozenFundsWithPubKey(fromBlock uint64, toBlock uint64, PubKey []byte) {
 	for i := fromBlock; i <= toBlock; i++ {
-		frozenFund := s.getStateFrozenFunds(int64(i))
+		frozenFund := s.getStateFrozenFunds(i)
 
 		if frozenFund == nil {
 			continue
@@ -880,4 +901,18 @@ func (s *StateDB) RemoveFrozenFundsWithPubKey(fromBlock uint64, toBlock uint64, 
 
 		frozenFund.RemoveFund(PubKey)
 	}
+}
+
+func (s *StateDB) SetValidatorPresent(pubkey types.Pubkey) {
+	stateCandidates := s.getStateCandidates()
+
+	for i := range stateCandidates.data {
+		candidate := &stateCandidates.data[i]
+		if bytes.Compare(candidate.PubKey, pubkey) == 0 {
+			candidate.AbsentTimes = 0
+		}
+	}
+
+	s.setStateCandidates(stateCandidates)
+	s.MarkStateCandidateDirty()
 }
