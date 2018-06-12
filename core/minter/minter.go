@@ -81,7 +81,7 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 	}
 
 	for _, validator := range req.Validators {
-		app.currentStateDeliver.CreateCandidate(genesisState.FirstValidatorAddress, validator.PubKey.Data, 10, 1)
+		app.currentStateDeliver.CreateCandidate(genesisState.FirstValidatorAddress, validator.PubKey.Data, 10, 1, big.NewInt(1))
 		app.currentStateDeliver.SetCandidateOnline(validator.PubKey.Data)
 		app.activeValidators = append(app.activeValidators, validator)
 	}

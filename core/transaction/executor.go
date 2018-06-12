@@ -76,8 +76,7 @@ func RunTx(context *state.StateDB, isCheck bool, tx *Transaction, rewardPull *bi
 			rewardPull.Add(rewardPull, commission)
 
 			context.SubBalance(sender, types.GetBaseCoin(), totalTxCost)
-			context.CreateCandidate(data.Address, data.PubKey, data.Commission, uint(currentBlock))
-			context.Delegate(sender, data.PubKey, data.Stake)
+			context.CreateCandidate(data.Address, data.PubKey, data.Commission, uint(currentBlock), data.Stake)
 			context.SetNonce(sender, tx.Nonce)
 		}
 

@@ -468,7 +468,8 @@ func (s *StateDB) CreateCandidate(
 	address types.Address,
 	pubkey types.Pubkey,
 	commission uint,
-	currentBlock uint) *stateCandidates {
+	currentBlock uint,
+	initialStake *big.Int) *stateCandidates {
 
 	candidates := s.getStateCandidates()
 
@@ -478,14 +479,14 @@ func (s *StateDB) CreateCandidate(
 
 	candidates.data = append(candidates.data, Candidate{
 		CandidateAddress: address,
-		TotalStake:       big.NewInt(1),
+		TotalStake:       initialStake,
 		PubKey:           pubkey,
 		Commission:       commission,
 		AccumReward:      big.NewInt(0),
 		Stakes: []Stake{
 			{
 				Owner: address,
-				Value: big.NewInt(1),
+				Value: initialStake,
 			},
 		},
 		CreatedAtBlock: currentBlock,
