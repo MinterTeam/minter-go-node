@@ -103,11 +103,11 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 
 	// give penalty to absent validators
 	for _, v := range req.Validators {
-		if !v.SignedLastBlock {
+		if v.SignedLastBlock {
+			app.currentStateDeliver.SetValidatorPresent(v.Validator.PubKey.Data)
+		} else {
 			app.currentStateDeliver.SetValidatorAbsent(v.Validator.PubKey.Data)
 			app.absentCandidates[v.Validator.PubKey.String()] = true
-		} else {
-			app.currentStateDeliver.SetValidatorPresent(v.Validator.PubKey.Data)
 		}
 	}
 
