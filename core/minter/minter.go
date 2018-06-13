@@ -117,6 +117,16 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 		app.currentStateDeliver.RemoveFrozenFundsWithPubKey(app.height, app.height+518400, v.Validator.PubKey.Data)
 	}
 
+	// apply frozen funds
+	frozenFunds := app.currentStateDeliver.GetStateFrozenFunds(app.height)
+	if frozenFunds != nil {
+		for _, item := range frozenFunds.List() {
+			app.currentStateDeliver.SetBalance(item.Address, app.BaseCoin, item.Value)
+		}
+
+		frozenFunds.Delete()
+	}
+
 	// distributions:
 	if app.height <= 3110400*6 && app.height%3110400 == 0 { // team distribution
 		value := big.NewInt(300000000) // 300 000 000 bip (3%)
@@ -132,15 +142,6 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 }
 
 func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.ResponseEndBlock {
-	// apply frozen funds
-	frozenFunds := app.currentStateDeliver.GetStateFrozenFunds(app.height)
-	if frozenFunds != nil {
-		for _, item := range frozenFunds.List() {
-			app.currentStateDeliver.SetBalance(item.Address, app.BaseCoin, item.Value)
-		}
-
-		frozenFunds.Delete()
-	}
 
 	validatorsCount := validators.GetValidatorsCountForBlock(app.height)
 
