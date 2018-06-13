@@ -103,9 +103,10 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 
 	// give penalty to absent validators
 	for _, v := range req.Validators {
-		if !v.SignedLastBlock {
-			app.currentStateDeliver.SetValidatorAbsent(v.Validator.PubKey.Data)
+		if v.SignedLastBlock {
 			app.currentStateDeliver.SetValidatorPresent(v.Validator.PubKey.Data)
+		} else {
+			app.currentStateDeliver.SetValidatorAbsent(v.Validator.PubKey.Data)
 			app.absentCandidates[v.Validator.PubKey.String()] = true
 		}
 	}
@@ -114,6 +115,16 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 	for _, v := range req.ByzantineValidators {
 		app.currentStateDeliver.PunishByzantineCandidate(v.Validator.PubKey.Data)
 		app.currentStateDeliver.RemoveFrozenFundsWithPubKey(app.height, app.height+518400, v.Validator.PubKey.Data)
+	}
+
+	// apply frozen funds
+	frozenFunds := app.currentStateDeliver.GetStateFrozenFunds(app.height)
+	if frozenFunds != nil {
+		for _, item := range frozenFunds.List() {
+			app.currentStateDeliver.SetBalance(item.Address, app.BaseCoin, item.Value)
+		}
+
+		frozenFunds.Delete()
 	}
 
 	// distributions:
@@ -131,15 +142,6 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 }
 
 func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.ResponseEndBlock {
-	// apply frozen funds
-	frozenFunds := app.currentStateDeliver.GetStateFrozenFunds(app.height)
-	if frozenFunds != nil {
-		for _, item := range frozenFunds.List() {
-			app.currentStateDeliver.SetBalance(item.Address, app.BaseCoin, item.Value)
-		}
-
-		frozenFunds.Delete()
-	}
 
 	validatorsCount := validators.GetValidatorsCountForBlock(app.height)
 

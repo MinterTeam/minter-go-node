@@ -29,6 +29,7 @@ import (
 	"bytes"
 	abci "github.com/tendermint/abci/types"
 	"minter/core/check"
+	"minter/core/dao"
 	"sort"
 )
 
@@ -708,13 +709,19 @@ func (s *StateDB) PayRewards() {
 
 			totalReward := big.NewInt(0).Set(candidate.AccumReward)
 
-			// pay commission
+			// pay commission to validator
 			reward := big.NewInt(0).Set(totalReward)
 			reward.Mul(reward, big.NewInt(int64(candidate.Commission)))
 			reward.Div(reward, big.NewInt(100))
-
 			totalReward.Sub(totalReward, reward)
 			s.AddBalance(candidate.CandidateAddress, types.GetBaseCoin(), reward)
+
+			// pay commission to DAO
+			DAOReward := big.NewInt(0).Set(totalReward)
+			DAOReward.Mul(DAOReward, big.NewInt(int64(dao.Commission)))
+			DAOReward.Div(DAOReward, big.NewInt(100))
+			totalReward.Sub(totalReward, DAOReward)
+			s.AddBalance(dao.Address, types.GetBaseCoin(), DAOReward)
 
 			// pay rewards
 			for j := range candidate.Stakes {
