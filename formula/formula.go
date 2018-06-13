@@ -190,13 +190,13 @@ func CalculateSaleReturn(supply *big.Int, reserve *big.Int, crr uint, sellAmount
 	return res
 }
 
-func CalculateBuyDeposit(supply *big.Int, reserve *big.Int, crr uint, wantBuy *big.Int) *big.Int {
+func CalculateSaleAmount(supply *big.Int, reserve *big.Int, crr uint, wantReceive *big.Int) *big.Int {
 
 	tSupply := big.NewFloat(0).SetInt(supply)
 	tReserve := big.NewFloat(0).SetInt(reserve)
-	tWantBuy := big.NewFloat(0).SetInt(wantBuy)
+	tWantReceive := big.NewFloat(0).SetInt(wantReceive)
 
-	res := big.NewFloat(0).Sub(tWantBuy, tReserve)
+	res := big.NewFloat(0).Sub(tWantReceive, tReserve)
 	res.Mul(res, big.NewFloat(-1))
 	res.Quo(res, tReserve)
 	res = bigfloat.Pow(res, big.NewFloat(float64(crr)/100))
