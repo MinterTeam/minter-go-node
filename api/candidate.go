@@ -7,7 +7,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/gorilla/mux"
 	"net/http"
-		"strings"
+	"strings"
 )
 
 func GetCandidate(w http.ResponseWriter, r *http.Request) {

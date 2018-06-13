@@ -9,11 +9,11 @@ import (
 
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/core/minter"
+	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/tendermint/tendermint/rpc/core/types"
 	"github.com/tendermint/tendermint/rpc/lib/client"
-	"time"
-	"github.com/MinterTeam/minter-go-node/core/state"
 	"strconv"
+	"time"
 )
 
 var (

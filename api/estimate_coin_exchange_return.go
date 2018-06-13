@@ -11,7 +11,7 @@ import (
 func EstimateCoinExchangeReturn(w http.ResponseWriter, r *http.Request) {
 
 	cState := GetStateForRequest(r)
-	
+
 	query := r.URL.Query()
 	fromCoin := query.Get("from_coin")
 	toCoin := query.Get("to_coin")
