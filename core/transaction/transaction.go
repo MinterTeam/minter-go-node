@@ -141,8 +141,16 @@ type DeclareCandidacyData struct {
 
 func (s DeclareCandidacyData) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		// TODO: complete marshal function
-	}{})
+		Address    types.Address
+		PubKey     string
+		Commission uint
+		Stake      string
+	}{
+		Address:    s.Address,
+		PubKey:     fmt.Sprintf("Mp%x", s.PubKey),
+		Commission: s.Commission,
+		Stake:      s.Stake.String(),
+	})
 }
 
 type DelegateData struct {
@@ -152,8 +160,12 @@ type DelegateData struct {
 
 func (s DelegateData) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		// TODO: complete marshal function
-	}{})
+		PubKey string
+		Stake  string
+	}{
+		PubKey: fmt.Sprintf("Mp%x", s.PubKey),
+		Stake:  s.Stake.String(),
+	})
 }
 
 type RedeemCheckData struct {
@@ -163,8 +175,12 @@ type RedeemCheckData struct {
 
 func (s RedeemCheckData) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		// TODO: complete marshal function
-	}{})
+		RawCheck string
+		Proof    string
+	}{
+		RawCheck: fmt.Sprintf("Mc%x", s.RawCheck),
+		Proof:    fmt.Sprintf("%x", s.Proof),
+	})
 }
 
 type UnbondData struct {
@@ -174,8 +190,12 @@ type UnbondData struct {
 
 func (s UnbondData) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		// TODO: complete marshal function
-	}{})
+		PubKey string
+		Value  string
+	}{
+		PubKey: fmt.Sprintf("Mp%x", s.PubKey),
+		Value:  s.Value.String(),
+	})
 }
 
 func (tx *Transaction) Serialize() ([]byte, error) {

@@ -10,6 +10,8 @@ import (
 
 func EstimateCoinExchangeReturn(w http.ResponseWriter, r *http.Request) {
 
+	cState := GetStateForRequest(r)
+
 	query := r.URL.Query()
 	fromCoin := query.Get("from_coin")
 	toCoin := query.Get("to_coin")
@@ -24,14 +26,14 @@ func EstimateCoinExchangeReturn(w http.ResponseWriter, r *http.Request) {
 	var result *big.Int
 
 	if fromCoinSymbol == blockchain.BaseCoin {
-		coin := blockchain.CurrentState().GetStateCoin(toCoinSymbol).Data()
+		coin := cState.GetStateCoin(toCoinSymbol).Data()
 		result = formula.CalculatePurchaseReturn(coin.Volume, coin.ReserveBalance, coin.Crr, value)
 	} else if toCoinSymbol == blockchain.BaseCoin {
-		coin := blockchain.CurrentState().GetStateCoin(fromCoinSymbol).Data()
+		coin := cState.GetStateCoin(fromCoinSymbol).Data()
 		result = formula.CalculateSaleReturn(coin.Volume, coin.ReserveBalance, coin.Crr, value)
 	} else {
-		coinFrom := blockchain.CurrentState().GetStateCoin(fromCoinSymbol).Data()
-		coinTo := blockchain.CurrentState().GetStateCoin(toCoinSymbol).Data()
+		coinFrom := cState.GetStateCoin(fromCoinSymbol).Data()
+		coinTo := cState.GetStateCoin(toCoinSymbol).Data()
 
 		val := formula.CalculateSaleReturn(coinFrom.Volume, coinFrom.ReserveBalance, coinFrom.Crr, value)
 		result = formula.CalculatePurchaseReturn(coinTo.Volume, coinTo.ReserveBalance, coinTo.Crr, val)

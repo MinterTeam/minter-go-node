@@ -16,11 +16,13 @@ type BalanceRequest struct {
 
 func GetBalance(w http.ResponseWriter, r *http.Request) {
 
+	cState := GetStateForRequest(r)
+
 	vars := mux.Vars(r)
 	address := types.HexToAddress(vars["address"])
 
 	balance := BalanceResponse{}
-	balances := blockchain.CurrentState().GetBalances(address)
+	balances := cState.GetBalances(address)
 
 	for k, v := range balances.Data {
 		balance[k.String()] = v.String()

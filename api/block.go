@@ -18,13 +18,17 @@ func Block(w http.ResponseWriter, r *http.Request) {
 		"height": height,
 	}, result)
 
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+
 	if err != nil {
-		panic(err)
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(Response{
+			Code:   0,
+			Result: err.Error(),
+		})
+		return
 	}
 
-	// TODO: check error
-
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 
 	err = json.NewEncoder(w).Encode(Response{

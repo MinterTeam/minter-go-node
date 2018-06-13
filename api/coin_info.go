@@ -19,6 +19,8 @@ type CoinInfoResponse struct {
 
 func GetCoinInfo(w http.ResponseWriter, r *http.Request) {
 
+	cState := GetStateForRequest(r)
+
 	vars := mux.Vars(r)
 	symbol := vars["symbol"]
 
@@ -26,7 +28,7 @@ func GetCoinInfo(w http.ResponseWriter, r *http.Request) {
 
 	copy(coinSymbol[:], []byte(symbol))
 
-	coin := blockchain.CurrentState().GetStateCoin(coinSymbol).Data()
+	coin := cState.GetStateCoin(coinSymbol).Data()
 
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
