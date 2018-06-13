@@ -21,6 +21,7 @@ services:
       - ~/.tendermint:/tendermint
     ports:
       - "46656:46656"
+      - "46657:46657"
     restart: always
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:46657/health"]
