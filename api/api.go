@@ -32,6 +32,8 @@ func RunApi(b *minter.Blockchain) {
 	router.HandleFunc("/api/balanceWS", GetBalanceWatcher)
 	router.HandleFunc("/api/transactionCount/{address}", GetTransactionCount).Methods("GET")
 	router.HandleFunc("/api/sendTransaction", SendTransaction).Methods("POST")
+	router.HandleFunc("/api/sendTransactionSync", SendTransactionSync).Methods("POST")
+	router.HandleFunc("/api/sendTransactionAsync", SendTransactionAsync).Methods("POST")
 	router.HandleFunc("/api/transaction/{hash}", Transaction).Methods("GET")
 	router.HandleFunc("/api/block/{height}", Block).Methods("GET")
 	router.HandleFunc("/api/transactions", Transactions).Methods("GET")
@@ -63,6 +65,6 @@ func RunApi(b *minter.Blockchain) {
 
 type Response struct {
 	Code   uint32      `json:"code"`
-	Result interface{} `json:"result"`
+	Result interface{} `json:"result,omitempty"`
 	Log    string      `json:"log,omitempty"`
 }

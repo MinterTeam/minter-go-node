@@ -3,23 +3,17 @@ package api
 import (
 	"encoding/json"
 	"github.com/gorilla/mux"
-	"github.com/tendermint/tendermint/types"
+	"github.com/tendermint/tendermint/rpc/core/types"
 	"net/http"
 	"strconv"
 )
-
-// Single block (with meta)
-type ResultBlock struct {
-	BlockMeta *types.BlockMeta `json:"block_meta"`
-	Block     *types.Block     `json:"block"`
-}
 
 func Block(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 	height, _ := strconv.ParseInt(vars["height"], 10, 64)
 
-	result := new(ResultBlock)
+	result := new(core_types.ResultBlock)
 	_, err := client.Call("block", map[string]interface{}{
 		"height": height,
 	}, result)

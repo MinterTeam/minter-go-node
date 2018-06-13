@@ -62,8 +62,8 @@ type Stake struct {
 
 func (s *Stake) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Owner types.Address
-		Value string
+		Owner types.Address `json:"owner"`
+		Value string        `json:"value"`
 	}{
 		Owner: s.Owner,
 		Value: s.Value.String(),

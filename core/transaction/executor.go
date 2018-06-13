@@ -35,11 +35,15 @@ type Response struct {
 func RunTx(context *state.StateDB, isCheck bool, tx *Transaction, rewardPull *big.Int, currentBlock uint64) Response {
 	sender, _ := tx.Sender()
 
-	// TODO: deal smth about multiple outgoing transactions from one sender
-	if expectedNonce := context.GetNonce(sender) + 1; expectedNonce != tx.Nonce {
-		return Response{
-			Code: code.WrongNonce,
-			Log:  fmt.Sprintf("Unexpected nonce. Expected: %d, got %d.", expectedNonce, tx.Nonce)}
+	// do not look at nonce of transaction while checking tx
+	// this will allow us to send multiple transaction from one account in one block
+	// in the future we should use "last known nonce" approach from Ethereum
+	if !isCheck {
+		if expectedNonce := context.GetNonce(sender) + 1; expectedNonce != tx.Nonce {
+			return Response{
+				Code: code.WrongNonce,
+				Log:  fmt.Sprintf("Unexpected nonce. Expected: %d, got %d.", expectedNonce, tx.Nonce)}
+		}
 	}
 
 	if len(tx.Payload)+len(tx.ServiceData) > 1024 {
