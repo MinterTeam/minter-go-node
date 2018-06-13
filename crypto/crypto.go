@@ -28,10 +28,10 @@ import (
 	"math/big"
 	"os"
 
-	"minter/core/types"
-	"minter/crypto/sha3"
-	"minter/math"
-	"minter/rlp"
+	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/crypto/sha3"
+	"github.com/MinterTeam/minter-go-node/math"
+	"github.com/MinterTeam/minter-go-node/rlp"
 )
 
 var (

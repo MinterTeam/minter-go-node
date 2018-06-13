@@ -18,7 +18,7 @@ package trie
 
 import (
 	// "github.com/ethereum/go-ethereum/log"
-	"minter/core/types"
+	"github.com/MinterTeam/minter-go-node/core/types"
 )
 
 // SecureTrie wraps a trie with key hashing. In a secure trie, all

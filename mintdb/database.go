@@ -23,12 +23,12 @@ import (
 	"time"
 
 	// "github.com/ethereum/go-ethereum/log"
+	"github.com/MinterTeam/minter-go-node/metrics"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/filter"
 	"github.com/syndtr/goleveldb/leveldb/iterator"
 	"github.com/syndtr/goleveldb/leveldb/opt"
-	"minter/metrics"
 
 	gometrics "github.com/rcrowley/go-metrics"
 )

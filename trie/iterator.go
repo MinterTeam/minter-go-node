@@ -21,7 +21,7 @@ import (
 	"container/heap"
 	"errors"
 
-	"minter/core/types"
+	"github.com/MinterTeam/minter-go-node/core/types"
 )
 
 // Iterator is a key-value trie iterator that traverses a Trie.

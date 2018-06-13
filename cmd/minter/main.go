@@ -1,11 +1,11 @@
 package main
 
 import (
+	"github.com/MinterTeam/minter-go-node/api"
+	"github.com/MinterTeam/minter-go-node/core/minter"
 	"github.com/tendermint/abci/server"
 	"github.com/tendermint/tmlibs/common"
 	"github.com/tendermint/tmlibs/log"
-	"minter/api"
-	"minter/core/minter"
 	"os"
 )
 

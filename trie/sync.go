@@ -20,9 +20,9 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/mintdb"
 	"gopkg.in/karalabe/cookiejar.v2/collections/prque"
-	"minter/core/types"
-	"minter/mintdb"
 )
 
 // ErrNotRequested is returned by the trie sync when it's requested to process a

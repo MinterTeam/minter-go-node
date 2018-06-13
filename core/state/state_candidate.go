@@ -22,9 +22,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/rlp"
 	"math/big"
-	"minter/core/types"
-	"minter/rlp"
 )
 
 const (

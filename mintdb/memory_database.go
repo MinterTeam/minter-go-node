@@ -20,7 +20,7 @@ import (
 	"errors"
 	"sync"
 
-	"minter/core/types"
+	"github.com/MinterTeam/minter-go-node/core/types"
 )
 
 /*

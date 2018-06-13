@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/crypto"
+	"github.com/MinterTeam/minter-go-node/crypto/sha3"
+	"github.com/MinterTeam/minter-go-node/rlp"
 	"math/big"
-	"minter/core/types"
-	"minter/crypto"
-	"minter/crypto/sha3"
-	"minter/rlp"
 )
 
 var (

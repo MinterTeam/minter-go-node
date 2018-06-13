@@ -3,9 +3,9 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/core/state"
+	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/gorilla/mux"
-	"minter/core/state"
-	"minter/core/types"
 	"net/http"
 )
 

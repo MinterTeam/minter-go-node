@@ -42,7 +42,7 @@ import (
 	"fmt"
 	"hash"
 
-	mintercrypto "minter/crypto"
+	mintercrypto "github.com/MinterTeam/minter-go-node/crypto"
 )
 
 var (

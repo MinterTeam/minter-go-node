@@ -21,8 +21,8 @@ import (
 	"time"
 
 	// "github.com/ethereum/go-ethereum/log"
-	"minter/core/types"
-	"minter/mintdb"
+	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/mintdb"
 )
 
 // secureKeyPrefix is the database key prefix used to store trie node preimages.

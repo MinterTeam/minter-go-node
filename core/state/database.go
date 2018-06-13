@@ -20,10 +20,10 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/mintdb"
+	"github.com/MinterTeam/minter-go-node/trie"
 	lru "github.com/hashicorp/golang-lru"
-	"minter/core/types"
-	"minter/mintdb"
-	"minter/trie"
 )
 
 // Trie cache generation limit after which to evic trie nodes from memory.

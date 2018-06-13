@@ -19,7 +19,7 @@ package trie
 import (
 	"fmt"
 
-	"minter/core/types"
+	"github.com/MinterTeam/minter-go-node/core/types"
 )
 
 // MissingNodeError is returned by the trie functions (TryGet, TryUpdate, TryDelete)

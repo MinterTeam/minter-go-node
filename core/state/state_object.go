@@ -22,9 +22,9 @@ import (
 	"io"
 	"math/big"
 
-	"minter/core/types"
-	"minter/crypto"
-	"minter/rlp"
+	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/crypto"
+	"github.com/MinterTeam/minter-go-node/rlp"
 	"sort"
 )
 

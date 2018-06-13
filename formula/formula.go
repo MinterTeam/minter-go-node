@@ -2,8 +2,8 @@ package formula
 
 import (
 	"github.com/ALTree/floatutils"
+	"github.com/MinterTeam/minter-go-node/core/types"
 	"math/big"
-	"minter/core/types"
 	"strings"
 )
 

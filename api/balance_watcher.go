@@ -1,9 +1,9 @@
 package api
 
 import (
+	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/gorilla/websocket"
 	"log"
-	"minter/core/state"
 	"net/http"
 )
 

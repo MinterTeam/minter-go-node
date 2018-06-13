@@ -22,14 +22,14 @@ import (
 	"math/big"
 	"sync"
 
-	"minter/core/types"
-	"minter/crypto"
-	"minter/rlp"
+	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/crypto"
+	"github.com/MinterTeam/minter-go-node/rlp"
 
 	"bytes"
+	"github.com/MinterTeam/minter-go-node/core/check"
+	"github.com/MinterTeam/minter-go-node/core/dao"
 	abci "github.com/tendermint/abci/types"
-	"minter/core/check"
-	"minter/core/dao"
 	"sort"
 )
 
