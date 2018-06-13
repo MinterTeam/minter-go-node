@@ -6,23 +6,14 @@ import (
 	"io/ioutil"
 
 	"github.com/MinterTeam/minter-go-node/core/code"
+	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/tendermint/tendermint/rpc/core/types"
 	"net/http"
 	"strings"
-	//"github.com/tendermint/tendermint/rpc/core/types"
-	"github.com/MinterTeam/minter-go-node/core/types"
-	abci "github.com/tendermint/abci/types"
-	"github.com/tendermint/tmlibs/common"
 )
 
 type SendTransactionRequest struct {
 	Transaction string `json:"transaction"`
-}
-
-type ResultBroadcastTxCommit struct {
-	CheckTx   abci.ResponseCheckTx   `json:"check_tx"`
-	DeliverTx abci.ResponseDeliverTx `json:"deliver_tx"`
-	Hash      common.HexBytes        `json:"hash"`
-	Height    int64                  `json:"height"`
 }
 
 func SendTransaction(w http.ResponseWriter, r *http.Request) {
@@ -31,7 +22,7 @@ func SendTransaction(w http.ResponseWriter, r *http.Request) {
 	body, _ := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
 	json.Unmarshal(body, &req)
 
-	result := new(ResultBroadcastTxCommit)
+	result := new(core_types.ResultBroadcastTxCommit)
 	_, err := client.Call("broadcast_tx_commit", map[string]interface{}{
 		"tx": types.Hex2Bytes(strings.TrimLeft(req.Transaction, "Mx")),
 	}, result)
