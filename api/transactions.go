@@ -58,11 +58,18 @@ func Transactions(w http.ResponseWriter, r *http.Request) {
 		"per_page": 100,
 	}, rpcResult)
 
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+
 	if err != nil {
-		panic(err)
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(Response{
+			Code:   0,
+			Result: err.Error(),
+		})
+		return
 	}
 
-	// TODO: check error
+	w.WriteHeader(http.StatusOK)
 
 	result := make([]TransactionResponse, len(rpcResult.Txs))
 
@@ -91,9 +98,6 @@ func Transactions(w http.ResponseWriter, r *http.Request) {
 			Payload:  decodedTx.Payload,
 		}
 	}
-
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
 
 	err = json.NewEncoder(w).Encode(Response{
 		Code:   0,
