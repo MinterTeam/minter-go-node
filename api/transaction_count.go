@@ -11,6 +11,8 @@ type TransactionCountResponse uint64
 
 func GetTransactionCount(w http.ResponseWriter, r *http.Request) {
 
+	cState := GetStateForRequest(r)
+
 	vars := mux.Vars(r)
 	address := types.HexToAddress(vars["address"])
 
@@ -19,6 +21,6 @@ func GetTransactionCount(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(Response{
 		Code:   0,
-		Result: blockchain.CurrentState().GetNonce(address),
+		Result: cState.GetNonce(address),
 	})
 }

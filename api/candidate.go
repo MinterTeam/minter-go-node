@@ -7,8 +7,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/gorilla/mux"
 	"net/http"
-	"strconv"
-	"strings"
+		"strings"
 )
 
 func GetCandidate(w http.ResponseWriter, r *http.Request) {
@@ -16,13 +15,7 @@ func GetCandidate(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	pubkey := types.Hex2Bytes(strings.TrimLeft(vars["pubkey"], "Mx"))
 
-	height, _ := strconv.Atoi(r.URL.Query().Get("height"))
-
-	cState := blockchain.CurrentState()
-
-	if height > 0 {
-		cState, _ = blockchain.GetStateForHeight(height)
-	}
+	cState := GetStateForRequest(r)
 
 	candidate := cState.GetStateCandidate(pubkey)
 
