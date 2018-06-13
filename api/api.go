@@ -63,6 +63,6 @@ func RunApi(b *minter.Blockchain) {
 
 type Response struct {
 	Code   uint32      `json:"code"`
-	Result interface{} `json:"result"`
+	Result interface{} `json:"result,omitempty"`
 	Log    string      `json:"log,omitempty"`
 }

@@ -16,6 +16,8 @@ import (
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/mintdb"
 	abciTypes "github.com/tendermint/abci/types"
+	"github.com/tendermint/tendermint/rpc/core/types"
+	"github.com/tendermint/tendermint/rpc/lib/client"
 	"math/big"
 )
 
@@ -253,8 +255,6 @@ func (app *Blockchain) DeliverTx(tx []byte) abciTypes.ResponseDeliverTx {
 
 func (app *Blockchain) CheckTx(tx []byte) abciTypes.ResponseCheckTx {
 
-	// todo: lock while producing block
-
 	if len(tx) > maxTxLength {
 		return abciTypes.ResponseCheckTx{
 			Code: code.TxTooLarge,
@@ -347,4 +347,25 @@ func (app *Blockchain) updateCurrentState() {
 
 func (app *Blockchain) CurrentState() *state.StateDB {
 	return app.currentStateCheck
+}
+
+func (app *Blockchain) GetStateForHeight(height int) (*state.StateDB, error) {
+	client := rpcclient.NewJSONRPCClient(*utils.TendermintRpcAddrFlag)
+	core_types.RegisterAmino(client.Codec())
+
+	result := new(core_types.ResultBlock)
+	_, err := client.Call("block", map[string]interface{}{
+		"height": height,
+	}, result)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var stateHash types.Hash
+
+	copy(stateHash[:], result.Block.AppHash.Bytes())
+
+	stateTable := mintdb.NewTable(app.db, stateTableId)
+	return state.New(stateHash, state.NewDatabase(stateTable))
 }
