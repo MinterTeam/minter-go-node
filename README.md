@@ -38,31 +38,48 @@ $ docker-compose up
 
 ## Build and run manually
 
-Install [Tendermint 0.20](https://github.com/tendermint/tendermint/blob/master/docs/install.rst)
+You'll need **go** [installed](https://golang.org/doc/install) and the required
+[environment variables set](https://github.com/tendermint/tendermint/wiki/Setting-GOPATH)
 
+1. Install [Tendermint 0.20](https://github.com/tendermint/tendermint/blob/master/docs/install.rst)
+
+2. Clone Minter to your machine
 ```bash
 $ mkdir $GOPATH/src/github.com/MinterTeam
 $ cd $GOPATH/src/github.com/MinterTeam
 $ git clone https://github.com/MinterTeam/minter-go-node.git
-
 $ cd minter-go-node
+```
+
+3. Get Tools & Dependencies
+
+```bash
 $ make get_tools
 $ make get_vendor_deps
+```
 
+4. Compile
+```bash
 $ make install
+```
 
+5. Create data directories
+```bash
 $ mkdir -p ~/.tendermint/data
 $ mkdir -p ~/.minter/data
+```
 
+6. Copy config and genesis file
+```bash
 $ cp -R networks/testnet/ ~/.tendermint/config
 ```
 
-Run Tendermint
+7. Run Tendermint
 ```bash
 $ tendermint node
 ```
 
-Run Minter
+8. Run Minter
 
 ```bash
 $ minter
