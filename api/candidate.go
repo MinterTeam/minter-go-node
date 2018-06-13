@@ -22,15 +22,15 @@ func GetCandidate(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(Response{
 		Code: 0,
 		Result: struct {
-			CandidateAddress types.Address
-			TotalStake       string
-			PubKey           string
-			Commission       uint
-			AccumReward      string
-			Stakes           []state.Stake
-			CreatedAtBlock   uint
-			Status           byte
-			AbsentTimes      uint
+			CandidateAddress types.Address `json:"candidate_address"`
+			TotalStake       string        `json:"total_stake"`
+			PubKey           string        `json:"pub_key"`
+			Commission       uint          `json:"commission"`
+			AccumReward      string        `json:"accumulated_reward"`
+			Stakes           []state.Stake `json:"stakes"`
+			CreatedAtBlock   uint          `json:"created_at_block"`
+			Status           byte          `json:"status"`
+			AbsentTimes      uint          `json:"absent_times"`
 		}{
 			CandidateAddress: candidate.CandidateAddress,
 			TotalStake:       candidate.TotalStake.String(),
