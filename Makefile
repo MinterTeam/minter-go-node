@@ -92,8 +92,11 @@ metalinter_all:
 
 build-docker:
 	cp build/minter DOCKER/minter
-	docker build --label=minter --tag="minterteam/minter" DOCKER
-	rm -rf DOCKER/minter
+	cd DOCKER && make build
+	rm -f minter
+
+push-docker:
+	cd DOCKER && make push
 
 ###########################################################
 ### Local testnet using docker
