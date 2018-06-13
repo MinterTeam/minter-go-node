@@ -2,8 +2,8 @@ package state
 
 import (
 	"encoding/json"
+	"github.com/MinterTeam/minter-go-node/core/types"
 	"math/big"
-	"minter/core/types"
 )
 
 var (

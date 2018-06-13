@@ -5,13 +5,13 @@ import (
 	"io"
 	"io/ioutil"
 
-	"minter/core/code"
+	"github.com/MinterTeam/minter-go-node/core/code"
 	"net/http"
 	"strings"
 	//"github.com/tendermint/tendermint/rpc/core/types"
+	"github.com/MinterTeam/minter-go-node/core/types"
 	abci "github.com/tendermint/abci/types"
 	"github.com/tendermint/tmlibs/common"
-	"minter/core/types"
 )
 
 type SendTransactionRequest struct {

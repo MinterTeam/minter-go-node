@@ -2,8 +2,8 @@ package api
 
 import (
 	"encoding/json"
+	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/gorilla/mux"
-	"minter/core/types"
 	"net/http"
 )
 

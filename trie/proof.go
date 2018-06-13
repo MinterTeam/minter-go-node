@@ -20,11 +20,11 @@ import (
 	"bytes"
 	"fmt"
 
-	"minter/crypto"
+	"github.com/MinterTeam/minter-go-node/crypto"
 	// "github.com/ethereum/go-ethereum/log"
-	"minter/core/types"
-	"minter/mintdb"
-	"minter/rlp"
+	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/mintdb"
+	"github.com/MinterTeam/minter-go-node/rlp"
 )
 
 // Prove constructs a merkle proof for key. The result contains all encoded nodes

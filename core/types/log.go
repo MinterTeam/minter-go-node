@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"io"
 
-	"minter/hexutil"
-	"minter/rlp"
+	"github.com/MinterTeam/minter-go-node/hexutil"
+	"github.com/MinterTeam/minter-go-node/rlp"
 )
 
 //go:generate gencodec -type Log -field-override logMarshaling -out gen_log_json.go

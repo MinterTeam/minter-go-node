@@ -2,9 +2,9 @@ package api
 
 import (
 	"encoding/json"
+	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/formula"
 	"math/big"
-	"minter/core/types"
-	"minter/formula"
 	"net/http"
 )
 

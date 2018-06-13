@@ -1,6 +1,6 @@
 package genesis
 
-import "minter/core/types"
+import "github.com/MinterTeam/minter-go-node/core/types"
 
 type AppState struct {
 	FirstValidatorAddress types.Address `json:"first_validator_address"`

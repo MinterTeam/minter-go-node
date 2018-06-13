@@ -21,9 +21,9 @@ import (
 
 	"bytes"
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/rlp"
 	"math/big"
-	"minter/core/types"
-	"minter/rlp"
 )
 
 // stateFrozenFund represents a frozen fund which is being modified.

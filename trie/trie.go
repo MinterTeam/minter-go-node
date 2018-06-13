@@ -22,9 +22,9 @@ import (
 	"fmt"
 
 	// "github.com/ethereum/go-ethereum/log"
+	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/rcrowley/go-metrics"
-	"minter/core/types"
-	"minter/crypto"
 )
 
 var (

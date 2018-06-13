@@ -2,10 +2,10 @@ package api
 
 import (
 	"encoding/json"
+	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/tendermint/tendermint/types"
 	"github.com/tendermint/tmlibs/common"
 	"math/big"
-	"minter/core/transaction"
 	"net/http"
 )
 

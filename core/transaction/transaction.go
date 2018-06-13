@@ -6,13 +6,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/core/commissions"
+	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/crypto"
+	"github.com/MinterTeam/minter-go-node/crypto/sha3"
+	"github.com/MinterTeam/minter-go-node/hexutil"
+	"github.com/MinterTeam/minter-go-node/rlp"
 	"math/big"
-	"minter/core/commissions"
-	"minter/core/types"
-	"minter/crypto"
-	"minter/crypto/sha3"
-	"minter/hexutil"
-	"minter/rlp"
 )
 
 var (

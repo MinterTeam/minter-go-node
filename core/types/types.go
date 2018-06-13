@@ -24,8 +24,8 @@ import (
 	"reflect"
 
 	"bytes"
-	"minter/crypto/sha3"
-	"minter/hexutil"
+	"github.com/MinterTeam/minter-go-node/crypto/sha3"
+	"github.com/MinterTeam/minter-go-node/hexutil"
 )
 
 const (
