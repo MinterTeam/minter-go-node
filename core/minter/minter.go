@@ -340,9 +340,8 @@ func (app *Blockchain) updateCurrentRootHash() {
 }
 
 func (app *Blockchain) updateCurrentState() {
-	stateTable := mintdb.NewTable(app.db, stateTableId)
-	app.currentStateDeliver, _ = state.New(app.rootHash, state.NewDatabase(stateTable))
-	app.currentStateCheck, _ = state.New(app.rootHash, state.NewDatabase(stateTable))
+	app.currentStateDeliver, _ = state.New(app.rootHash, state.NewDatabase(mintdb.NewTable(app.db, stateTableId)))
+	app.currentStateCheck, _ = state.New(app.rootHash, state.NewDatabase(mintdb.NewTable(app.db, stateTableId)))
 }
 
 func (app *Blockchain) CurrentState() *state.StateDB {
