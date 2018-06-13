@@ -709,19 +709,19 @@ func (s *StateDB) PayRewards() {
 
 			totalReward := big.NewInt(0).Set(candidate.AccumReward)
 
-			// pay commission to validator
-			reward := big.NewInt(0).Set(totalReward)
-			reward.Mul(reward, big.NewInt(int64(candidate.Commission)))
-			reward.Div(reward, big.NewInt(100))
-			totalReward.Sub(totalReward, reward)
-			s.AddBalance(candidate.CandidateAddress, types.GetBaseCoin(), reward)
-
 			// pay commission to DAO
 			DAOReward := big.NewInt(0).Set(totalReward)
 			DAOReward.Mul(DAOReward, big.NewInt(int64(dao.Commission)))
 			DAOReward.Div(DAOReward, big.NewInt(100))
 			totalReward.Sub(totalReward, DAOReward)
 			s.AddBalance(dao.Address, types.GetBaseCoin(), DAOReward)
+
+			// pay commission to validator
+			validatorReward := big.NewInt(0).Set(totalReward)
+			validatorReward.Mul(validatorReward, big.NewInt(int64(candidate.Commission)))
+			validatorReward.Div(validatorReward, big.NewInt(100))
+			totalReward.Sub(totalReward, validatorReward)
+			s.AddBalance(candidate.CandidateAddress, types.GetBaseCoin(), validatorReward)
 
 			// pay rewards
 			for j := range candidate.Stakes {
