@@ -9,8 +9,10 @@ import (
 
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/core/minter"
+	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/tendermint/tendermint/rpc/core/types"
 	"github.com/tendermint/tendermint/rpc/lib/client"
+	"strconv"
 	"time"
 )
 
@@ -67,4 +69,16 @@ type Response struct {
 	Code   uint32      `json:"code"`
 	Result interface{} `json:"result,omitempty"`
 	Log    string      `json:"log,omitempty"`
+}
+
+func GetStateForRequest(r *http.Request) *state.StateDB {
+	height, _ := strconv.Atoi(r.URL.Query().Get("height"))
+
+	cState := blockchain.CurrentState()
+
+	if height > 0 {
+		cState, _ = blockchain.GetStateForHeight(height)
+	}
+
+	return cState
 }
