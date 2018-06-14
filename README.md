@@ -25,10 +25,10 @@ Prepare configs
 $ mkdir -p ~/.tendermint/data
 $ mkdir -p ~/.minter/data
 
-$ chmod -R 0777 ~/.tendermint
-$ chmod -R 0777 ~/.minter
-
 $ cp -R networks/testnet/ ~/.tendermint/config
+
+$ chmod -R 0777 ~/.tendermint
+$ chmod -R 0777 ~/.minter 
 ```
 
 Start Minter
