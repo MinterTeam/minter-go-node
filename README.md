@@ -84,3 +84,13 @@ $ tendermint node
 ```bash
 $ minter
 ```
+
+## Troubleshooting
+
+If you see error like this: 
+
+```
+ERROR: Failed to create node: Error starting proxy app connections: Error on replay: Wrong Block.Header.AppHash.  Expected 6D94BF43BB6C83F396FD8310BC2983F08C658344F9F348BB6675D1E5913230B3, got A2F322A4891092C690F5F0B80C1B9D5017A703035B63385108628EC244ECB191 
+```
+
+then your build of Minter Node and network build of Minter Node are different.

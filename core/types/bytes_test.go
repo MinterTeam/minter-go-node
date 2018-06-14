@@ -57,7 +57,7 @@ func (s *BytesSuite) TestRightPadBytes(c *checker.C) {
 }
 
 func TestFromHex(t *testing.T) {
-	input := "0x01"
+	input := "Mx01"
 	expected := []byte{1}
 	result := FromHex(input)
 	if !bytes.Equal(expected, result) {
@@ -75,9 +75,9 @@ func TestIsHex(t *testing.T) {
 		{"00", true},
 		{"a9e67e", true},
 		{"A9E67E", true},
-		{"0xa9e67e", false},
+		{"Mxa9e67e", false},
 		{"a9e67e001", false},
-		{"0xHELLO_MY_NAME_IS_STEVEN_@#$^&*", false},
+		{"MxHELLO_MY_NAME_IS_STEVEN_@#$^&*", false},
 	}
 	for _, test := range tests {
 		if ok := isHex(test.input); ok != test.ok {
@@ -87,7 +87,7 @@ func TestIsHex(t *testing.T) {
 }
 
 func TestFromHexOddLength(t *testing.T) {
-	input := "0x1"
+	input := "Mx1"
 	expected := []byte{1}
 	result := FromHex(input)
 	if !bytes.Equal(expected, result) {

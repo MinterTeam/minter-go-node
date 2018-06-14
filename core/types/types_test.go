@@ -66,10 +66,10 @@ func TestHashJsonValidation(t *testing.T) {
 		Size   int
 		Error  string
 	}{
-		{"", 62, "json: cannot unmarshal hex string without Mx prefix into Go value of type common.Hash"},
-		{"Mx", 66, "hex string has length 66, want 64 for common.Hash"},
-		{"Mx", 63, "json: cannot unmarshal hex string of odd length into Go value of type common.Hash"},
-		{"Mx", 0, "hex string has length 0, want 64 for common.Hash"},
+		{"", 62, "json: cannot unmarshal hex string without Mx prefix into Go value of type types.Hash"},
+		{"Mx", 66, "hex string has length 66, want 64 for types.Hash"},
+		{"Mx", 63, "json: cannot unmarshal hex string of odd length into Go value of type types.Hash"},
+		{"Mx", 0, "hex string has length 0, want 64 for types.Hash"},
 		{"Mx", 64, ""},
 		{"Mx", 64, ""},
 	}
