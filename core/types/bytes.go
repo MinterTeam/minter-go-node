@@ -53,7 +53,7 @@ func CopyBytes(b []byte) (copiedBytes []byte) {
 }
 
 func hasHexPrefix(str string) bool {
-	return len(str) >= 2 && str[0] == '0' && (str[1] == 'x' || str[1] == 'X')
+	return len(str) >= 2 && str[0] == 'M' && (str[1] == 'x' || str[1] == 'X')
 }
 
 func isHexCharacter(c byte) bool {

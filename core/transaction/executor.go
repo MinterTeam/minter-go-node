@@ -282,7 +282,7 @@ func RunTx(context *state.StateDB, isCheck bool, tx *Transaction, rewardPull *bi
 					Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.ReserveBalance().String(), commissionInBaseCoin.String())}
 			}
 
-			commission = formula.CalculateBuyDeposit(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
+			commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
 		}
 
 		totalTxCost := big.NewInt(0).Add(data.Value, commission)
@@ -377,7 +377,7 @@ func RunTx(context *state.StateDB, isCheck bool, tx *Transaction, rewardPull *bi
 
 		if decodedCheck.Coin != types.GetBaseCoin() {
 			coin := context.GetStateCoin(decodedCheck.Coin)
-			commission = formula.CalculateBuyDeposit(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
+			commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
 		}
 
 		totalTxCost := big.NewInt(0).Add(decodedCheck.Value, commission)
@@ -453,7 +453,7 @@ func RunTx(context *state.StateDB, isCheck bool, tx *Transaction, rewardPull *bi
 					Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.ReserveBalance().String(), commissionInBaseCoin.String())}
 			}
 
-			commission = formula.CalculateBuyDeposit(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
+			commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
 		}
 
 		totalTxCost := big.NewInt(0).Add(data.Value, commission)
