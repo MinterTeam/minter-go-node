@@ -104,8 +104,10 @@ type Balance struct {
 
 func (b Balances) getCoins() []types.CoinSymbol {
 	keys := make([]types.CoinSymbol, 0, len(b.Data))
-	for k := range b.Data {
-		keys = append(keys, k)
+	for k, v := range b.Data {
+		if v.Cmp(types.Big0) > 0 {
+			keys = append(keys, k)
+		}
 	}
 
 	sort.Slice(keys, func(a, b int) bool {

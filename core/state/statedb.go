@@ -239,6 +239,13 @@ func (s *StateDB) deleteStateObject(stateObject *stateObject) {
 	s.setError(s.trie.TryDelete(addr[:]))
 }
 
+// deleteStateCoin removes the given object from the state trie.
+func (s *StateDB) deleteStateCoin(stateCoin *stateCoin) {
+	symbol := stateCoin.Symbol()
+	// TODO: change key generation
+	s.setError(s.trie.TryDelete(symbol[:]))
+}
+
 // deleteStateObject removes the given object from the state trie.
 func (s *StateDB) deleteFrozenFunds(stateFrozenFund *stateFrozenFund) {
 	stateFrozenFund.deleted = true
@@ -527,7 +534,13 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (root types.Hash, err error) {
 		_, isDirty := s.stateCoinsDirty[symbol]
 		switch {
 		case isDirty:
-			s.updateStateCoin(stateCoin)
+			{
+				if stateCoin.data.Volume.Cmp(types.Big0) == 0 {
+					s.deleteStateCoin(stateCoin)
+				} else {
+					s.updateStateCoin(stateCoin)
+				}
+			}
 		}
 		delete(s.stateCoinsDirty, symbol)
 	}
