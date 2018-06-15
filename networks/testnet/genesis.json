@@ -1,13 +1,13 @@
 {
   "genesis_time": "2018-06-09T00:00:00Z",
-  "chain_id": "minter-test-network-3",
+  "chain_id": "minter-test-network-4",
   "validators": [
     {
       "pub_key": {
         "type": "AC26791624DE60",
-        "value": "IeHQQ8bZwLsJKauNHdnzlI3g9a1yNM53OlAUQdIEqp4="
+        "value": "qu4d3zD/VMkHFdkotWZS/FEb7Tci5Ylz6O+Ub12uOXk="
       },
-      "power": 10,
+      "power": 100,
       "name": ""
     }
   ],

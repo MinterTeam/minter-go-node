@@ -5,7 +5,7 @@
 
 # TCP or UNIX socket address of the ABCI application,
 # or the name of an ABCI application compiled in with the Tendermint binary
-proxy_app = "tcp://0.0.0.0:46658"
+proxy_app = "tcp://127.0.0.1:46658"
 
 # A custom human readable name for this node
 moniker = "MinterNode"
@@ -51,7 +51,7 @@ filter_peers = false
 [rpc]
 
 # TCP or UNIX socket address for the RPC server to listen on
-laddr = "tcp://0.0.0.0:46657"
+laddr = "tcp://127.0.0.1:46657"
 
 # TCP or UNIX socket address for the gRPC server to listen on
 # NOTE: This server only supports /broadcast_tx_commit
@@ -70,7 +70,7 @@ laddr = "tcp://0.0.0.0:46656"
 seeds = ""
 
 # Comma separated list of nodes to keep persistent connections to
-persistent_peers = "2330033503a61a579edd9f9c7f4cfd4bcbe4d65a@159.89.107.246:46656"
+persistent_peers = "6800bdd85df3a1ad6bfdd08eb640b11d47abddf5@95.216.148.138:46656"
 
 # Path to address book
 addr_book_file = "config/addrbook.json"
@@ -85,13 +85,13 @@ flush_throttle_timeout = 100
 max_num_peers = 50
 
 # Maximum size of a message packet payload, in bytes
-max_msg_packet_payload_size = 1024
+max_msg_packet_payload_size = 2048
 
 # Rate at which packets can be sent, in bytes/second
-send_rate = 512000
+send_rate = 1024000
 
 # Rate at which packets can be received, in bytes/second
-recv_rate = 512000
+recv_rate = 1024000
 
 # Set true to enable the peer-exchange reactor
 pex = true
