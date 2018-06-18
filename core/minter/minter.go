@@ -368,3 +368,7 @@ func (app *Blockchain) GetStateForHeight(height int) (*state.StateDB, error) {
 	stateTable := mintdb.NewTable(app.db, stateTableId)
 	return state.New(stateHash, state.NewDatabase(stateTable))
 }
+
+func (app *Blockchain) Height() uint64 {
+	return app.height
+}
