@@ -213,9 +213,10 @@ func (s *StateDB) updateStateFrozenFund(stateFrozenFund *stateFrozenFund) {
 	if err != nil {
 		panic(fmt.Errorf("can't encode frozen fund at %d: %v", blockHeight, err))
 	}
-	var bHeight []byte
-	binary.PutVarint(bHeight, int64(blockHeight))
-	key := append(frozenFundsPrefix, bHeight...)
+	height := make([]byte, 8)
+	binary.BigEndian.PutUint64(height[:], stateFrozenFund.blockHeight)
+
+	key := append(frozenFundsPrefix, height...)
 	s.setError(s.trie.TryUpdate(key, data))
 }
 
@@ -253,9 +254,9 @@ func (s *StateDB) deleteStateCoin(stateCoin *stateCoin) {
 // deleteStateObject removes the given object from the state trie.
 func (s *StateDB) deleteFrozenFunds(stateFrozenFund *stateFrozenFund) {
 	stateFrozenFund.deleted = true
-	var bHeight []byte
-	binary.PutVarint(bHeight, int64(stateFrozenFund.blockHeight))
-	key := append(frozenFundsPrefix, bHeight...)
+	height := make([]byte, 8)
+	binary.BigEndian.PutUint64(height[:], stateFrozenFund.blockHeight)
+	key := append(frozenFundsPrefix, height...)
 	s.setError(s.trie.TryDelete(key))
 }
 
@@ -266,9 +267,9 @@ func (s *StateDB) getStateFrozenFunds(blockHeight uint64) (stateFrozenFund *stat
 		return obj
 	}
 
-	var bHeight []byte
-	binary.PutVarint(bHeight, int64(blockHeight))
-	key := append(frozenFundsPrefix, bHeight...)
+	height := make([]byte, 8)
+	binary.BigEndian.PutUint64(height[:], blockHeight)
+	key := append(frozenFundsPrefix, height...)
 
 	// Load the object from the database.
 	enc, err := s.trie.TryGet(key)
