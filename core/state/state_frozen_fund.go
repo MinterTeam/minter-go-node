@@ -53,6 +53,7 @@ func (c *stateFrozenFund) empty() bool {
 type FrozenFund struct {
 	Address      types.Address
 	CandidateKey []byte
+	Coin         types.CoinSymbol
 	Value        *big.Int
 }
 
@@ -93,10 +94,11 @@ func (c *stateFrozenFund) Delete() {
 	c.deleted = true
 }
 
-func (c *stateFrozenFund) AddFund(address types.Address, candidateKey []byte, value *big.Int) {
+func (c *stateFrozenFund) AddFund(address types.Address, candidateKey []byte, coin types.CoinSymbol, value *big.Int) {
 	c.addFund(FrozenFund{
 		Address:      address,
 		CandidateKey: candidateKey,
+		Coin:         coin,
 		Value:        value,
 	})
 }

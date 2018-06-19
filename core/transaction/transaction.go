@@ -136,6 +136,7 @@ type DeclareCandidacyData struct {
 	Address    types.Address
 	PubKey     []byte
 	Commission uint
+	Coin       types.CoinSymbol
 	Stake      *big.Int
 }
 
@@ -144,26 +145,31 @@ func (s DeclareCandidacyData) MarshalJSON() ([]byte, error) {
 		Address    types.Address
 		PubKey     string
 		Commission uint
+		Coin       types.CoinSymbol
 		Stake      string
 	}{
 		Address:    s.Address,
 		PubKey:     fmt.Sprintf("Mp%x", s.PubKey),
 		Commission: s.Commission,
+		Coin:       s.Coin,
 		Stake:      s.Stake.String(),
 	})
 }
 
 type DelegateData struct {
 	PubKey []byte
+	Coin   types.CoinSymbol
 	Stake  *big.Int
 }
 
 func (s DelegateData) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		PubKey string
+		Coin   types.CoinSymbol
 		Stake  string
 	}{
 		PubKey: fmt.Sprintf("Mp%x", s.PubKey),
+		Coin:   s.Coin,
 		Stake:  s.Stake.String(),
 	})
 }
@@ -185,15 +191,18 @@ func (s RedeemCheckData) MarshalJSON() ([]byte, error) {
 
 type UnbondData struct {
 	PubKey []byte
+	Coin   types.CoinSymbol
 	Value  *big.Int
 }
 
 func (s UnbondData) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		PubKey string
+		Coin   types.CoinSymbol
 		Value  string
 	}{
 		PubKey: fmt.Sprintf("Mp%x", s.PubKey),
+		Coin:   s.Coin,
 		Value:  s.Value.String(),
 	})
 }
@@ -266,13 +275,13 @@ func (tx *Transaction) String() string {
 	case TypeDelegate:
 		{
 			txData := tx.decodedData.(DelegateData)
-			return fmt.Sprintf("DELEGATE CANDIDACY TX nonce:%d pubkey:%s payload: %s",
+			return fmt.Sprintf("DELEGATE TX nonce:%d pubkey:%s payload: %s",
 				tx.Nonce, hexutil.Encode(txData.PubKey[:]), tx.Payload)
 		}
 	case TypeUnbond:
 		{
 			txData := tx.decodedData.(UnbondData)
-			return fmt.Sprintf("UNBOUND CANDIDACY TX nonce:%d pubkey:%s payload: %s",
+			return fmt.Sprintf("UNBOUND TX nonce:%d pubkey:%s payload: %s",
 				tx.Nonce, hexutil.Encode(txData.PubKey[:]), tx.Payload)
 		}
 	case TypeRedeemCheck:

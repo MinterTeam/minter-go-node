@@ -24,14 +24,14 @@ import (
 type Blockchain struct {
 	abciTypes.BaseApplication
 
-	db                  *mintdb.LDBDatabase
-	currentStateDeliver *state.StateDB
-	currentStateCheck   *state.StateDB
-	rootHash            types.Hash
-	height              uint64
-	rewards             *big.Int
-	activeValidators    abciTypes.Validators
-	absentCandidates    map[string]bool
+	db               *mintdb.LDBDatabase
+	stateDeliver     *state.StateDB
+	stateCheck       *state.StateDB
+	rootHash         types.Hash
+	height           uint64
+	rewards          *big.Int
+	activeValidators abciTypes.Validators
+	absentCandidates map[string]bool
 
 	BaseCoin types.CoinSymbol
 }
@@ -83,13 +83,13 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 			bigIntValue, _ := big.NewInt(0).SetString(value, 10)
 			var coin types.CoinSymbol
 			copy(coin[:], []byte(coinSymbol))
-			app.currentStateDeliver.SetBalance(account.Address, coin, bigIntValue)
+			app.stateDeliver.SetBalance(account.Address, coin, bigIntValue)
 		}
 	}
 
 	for _, validator := range req.Validators {
-		app.currentStateDeliver.CreateCandidate(genesisState.FirstValidatorAddress, validator.PubKey.Data, 10, 1, big.NewInt(1))
-		app.currentStateDeliver.SetCandidateOnline(validator.PubKey.Data)
+		app.stateDeliver.CreateCandidate(genesisState.FirstValidatorAddress, validator.PubKey.Data, 10, 1, types.GetBaseCoin(), big.NewInt(1))
+		app.stateDeliver.SetCandidateOnline(validator.PubKey.Data)
 		app.activeValidators = append(app.activeValidators, validator)
 	}
 
@@ -106,24 +106,24 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 	// give penalty to absent validators
 	for _, v := range req.Validators {
 		if v.SignedLastBlock {
-			app.currentStateDeliver.SetValidatorPresent(v.Validator.PubKey.Data)
+			app.stateDeliver.SetValidatorPresent(v.Validator.PubKey.Data)
 		} else {
-			app.currentStateDeliver.SetValidatorAbsent(v.Validator.PubKey.Data)
+			app.stateDeliver.SetValidatorAbsent(v.Validator.PubKey.Data)
 			app.absentCandidates[v.Validator.PubKey.String()] = true
 		}
 	}
 
 	// give penalty to Byzantine validators
 	for _, v := range req.ByzantineValidators {
-		app.currentStateDeliver.PunishByzantineCandidate(v.Validator.PubKey.Data)
-		app.currentStateDeliver.RemoveFrozenFundsWithPubKey(app.height, app.height+518400, v.Validator.PubKey.Data)
+		app.stateDeliver.PunishByzantineCandidate(v.Validator.PubKey.Data)
+		app.stateDeliver.RemoveFrozenFundsWithPubKey(app.height, app.height+518400, v.Validator.PubKey.Data)
 	}
 
 	// apply frozen funds
-	frozenFunds := app.currentStateDeliver.GetStateFrozenFunds(app.height)
+	frozenFunds := app.stateDeliver.GetStateFrozenFunds(app.height)
 	if frozenFunds != nil {
 		for _, item := range frozenFunds.List() {
-			app.currentStateDeliver.SetBalance(item.Address, app.BaseCoin, item.Value)
+			app.stateDeliver.SetBalance(item.Address, item.Coin, item.Value)
 		}
 
 		frozenFunds.Delete()
@@ -132,12 +132,12 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 	// distributions:
 	if app.height <= 3110400*6 && app.height%3110400 == 0 { // team distribution
 		value := big.NewInt(300000000) // 300 000 000 bip (3%)
-		app.currentStateDeliver.AddBalance(teamAddress, types.GetBaseCoin(), helpers.BipToPip(value))
+		app.stateDeliver.AddBalance(teamAddress, types.GetBaseCoin(), helpers.BipToPip(value))
 	}
 
 	if app.height <= 3110400*10 && app.height%3110400 == 0 { // airdrop distribution
 		value := big.NewInt(500000000) // 500 000 000 bip (5%)
-		app.currentStateDeliver.AddBalance(airdropAddress, types.GetBaseCoin(), helpers.BipToPip(value))
+		app.stateDeliver.AddBalance(airdropAddress, types.GetBaseCoin(), helpers.BipToPip(value))
 	}
 
 	return abciTypes.ResponseBeginBlock{}
@@ -145,9 +145,11 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 
 func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.ResponseEndBlock {
 
+	app.stateDeliver.RecalculateTotalStakeValues()
+
 	validatorsCount := validators.GetValidatorsCountForBlock(app.height)
 
-	newValidators, newCandidates := app.currentStateDeliver.GetValidators(validatorsCount)
+	newValidators, newCandidates := app.stateDeliver.GetValidators(validatorsCount)
 
 	// calculate total power of validators
 	totalPower := big.NewInt(0)
@@ -158,7 +160,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 			continue
 		}
 
-		totalPower.Add(totalPower, candidate.TotalStake)
+		totalPower.Add(totalPower, candidate.TotalBipStake)
 	}
 
 	// accumulate rewards
@@ -173,15 +175,15 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 
 		reward.Add(reward, app.rewards)
 
-		reward.Mul(reward, candidate.TotalStake)
+		reward.Mul(reward, candidate.TotalBipStake)
 		reward.Div(reward, totalPower)
 
-		app.currentStateDeliver.AddAccumReward(candidate.PubKey, reward)
+		app.stateDeliver.AddAccumReward(candidate.PubKey, reward)
 	}
 
 	// pay rewards
 	if app.height%5 == 0 {
-		app.currentStateDeliver.PayRewards()
+		app.stateDeliver.PayRewards()
 	}
 
 	// update validators
@@ -239,7 +241,7 @@ func (app *Blockchain) DeliverTx(tx []byte) abciTypes.ResponseDeliverTx {
 
 	fmt.Println("deliver", decodedTx)
 
-	response := transaction.RunTx(app.currentStateDeliver, false, decodedTx, app.rewards, app.height)
+	response := transaction.RunTx(app.stateDeliver, false, decodedTx, app.rewards, app.height)
 
 	return abciTypes.ResponseDeliverTx{
 		Code:      response.Code,
@@ -269,7 +271,7 @@ func (app *Blockchain) CheckTx(tx []byte) abciTypes.ResponseCheckTx {
 			Log:  err.Error()}
 	}
 
-	response := transaction.RunTx(app.currentStateCheck, true, decodedTx, nil, app.height)
+	response := transaction.RunTx(app.stateCheck, true, decodedTx, nil, app.height)
 
 	return abciTypes.ResponseCheckTx{
 		Code:      response.Code,
@@ -285,8 +287,8 @@ func (app *Blockchain) CheckTx(tx []byte) abciTypes.ResponseCheckTx {
 
 func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 
-	hash, _ := app.currentStateDeliver.Commit(false)
-	app.currentStateDeliver.Database().TrieDB().Commit(hash, true)
+	hash, _ := app.stateDeliver.Commit(false)
+	app.stateDeliver.Database().TrieDB().Commit(hash, true)
 
 	// todo: make provider
 	appTable := mintdb.NewTable(app.db, appTableId)
@@ -340,12 +342,12 @@ func (app *Blockchain) updateCurrentRootHash() {
 }
 
 func (app *Blockchain) updateCurrentState() {
-	app.currentStateDeliver, _ = state.New(app.rootHash, state.NewDatabase(mintdb.NewTable(app.db, stateTableId)))
-	app.currentStateCheck, _ = state.New(app.rootHash, state.NewDatabase(mintdb.NewTable(app.db, stateTableId)))
+	app.stateDeliver, _ = state.New(app.rootHash, state.NewDatabase(mintdb.NewTable(app.db, stateTableId)))
+	app.stateCheck, _ = state.New(app.rootHash, state.NewDatabase(mintdb.NewTable(app.db, stateTableId)))
 }
 
 func (app *Blockchain) CurrentState() *state.StateDB {
-	return app.currentStateCheck
+	return app.stateCheck
 }
 
 func (app *Blockchain) GetStateForHeight(height int) (*state.StateDB, error) {
