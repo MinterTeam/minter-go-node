@@ -27,6 +27,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/rlp"
 
 	"bytes"
+	"encoding/binary"
 	"github.com/MinterTeam/minter-go-node/core/check"
 	"github.com/MinterTeam/minter-go-node/core/dao"
 	abci "github.com/tendermint/abci/types"
@@ -36,8 +37,13 @@ import (
 var (
 	// emptyState is the known hash of an empty state trie entry.
 	emptyState              = crypto.Keccak256Hash(nil)
-	candidatesKey           = []byte("candidates")
 	CandidateMaxAbsentTimes = uint(12)
+
+	addressPrefix     = []byte("a")
+	coinPrefix        = []byte("c")
+	frozenFundsPrefix = []byte("f")
+	usedCheckPrefix   = []byte("u")
+	candidatesKey     = []byte("t")
 )
 
 // StateDBs within the ethereum protocol are used to store anything
@@ -198,7 +204,7 @@ func (s *StateDB) updateStateObject(stateObject *stateObject) {
 	if err != nil {
 		panic(fmt.Errorf("can't encode object at %x: %v", addr[:], err))
 	}
-	s.setError(s.trie.TryUpdate(addr[:], data))
+	s.setError(s.trie.TryUpdate(append(addressPrefix, addr[:]...), data))
 }
 
 func (s *StateDB) updateStateFrozenFund(stateFrozenFund *stateFrozenFund) {
@@ -207,8 +213,9 @@ func (s *StateDB) updateStateFrozenFund(stateFrozenFund *stateFrozenFund) {
 	if err != nil {
 		panic(fmt.Errorf("can't encode frozen fund at %d: %v", blockHeight, err))
 	}
-	key := []byte("frozenFundsForBlock:" + string(blockHeight))
-	// TODO: change key generation
+	var bHeight []byte
+	binary.PutVarint(bHeight, int64(blockHeight))
+	key := append(frozenFundsPrefix, bHeight...)
 	s.setError(s.trie.TryUpdate(key, data))
 }
 
@@ -218,8 +225,7 @@ func (s *StateDB) updateStateCoin(stateCoin *stateCoin) {
 	if err != nil {
 		panic(fmt.Errorf("can't encode coin at %x: %v", symbol[:], err))
 	}
-	// TODO: change key generation
-	s.setError(s.trie.TryUpdate(symbol[:], data))
+	s.setError(s.trie.TryUpdate(append(coinPrefix, symbol[:]...), data))
 }
 
 func (s *StateDB) updateStateCandidates(stateCandidates *stateCandidates) {
@@ -227,7 +233,6 @@ func (s *StateDB) updateStateCandidates(stateCandidates *stateCandidates) {
 	if err != nil {
 		panic(fmt.Errorf("can't encode candidates: %v", err))
 	}
-	// TODO: change key generation (IMPORTANT, possible attack)
 	err = s.trie.TryUpdate(candidatesKey, data)
 	s.setError(err)
 }
@@ -236,20 +241,21 @@ func (s *StateDB) updateStateCandidates(stateCandidates *stateCandidates) {
 func (s *StateDB) deleteStateObject(stateObject *stateObject) {
 	stateObject.deleted = true
 	addr := stateObject.Address()
-	s.setError(s.trie.TryDelete(addr[:]))
+	s.setError(s.trie.TryDelete(append(addressPrefix, addr[:]...)))
 }
 
 // deleteStateCoin removes the given object from the state trie.
 func (s *StateDB) deleteStateCoin(stateCoin *stateCoin) {
 	symbol := stateCoin.Symbol()
-	// TODO: change key generation
-	s.setError(s.trie.TryDelete(symbol[:]))
+	s.setError(s.trie.TryDelete(append(coinPrefix, symbol[:]...)))
 }
 
 // deleteStateObject removes the given object from the state trie.
 func (s *StateDB) deleteFrozenFunds(stateFrozenFund *stateFrozenFund) {
 	stateFrozenFund.deleted = true
-	key := []byte("frozenFundsForBlock:" + string(stateFrozenFund.blockHeight))
+	var bHeight []byte
+	binary.PutVarint(bHeight, int64(stateFrozenFund.blockHeight))
+	key := append(frozenFundsPrefix, bHeight...)
 	s.setError(s.trie.TryDelete(key))
 }
 
@@ -260,8 +266,10 @@ func (s *StateDB) getStateFrozenFunds(blockHeight uint64) (stateFrozenFund *stat
 		return obj
 	}
 
-	// TODO: change key generation
-	key := []byte("frozenFundsForBlock:" + string(blockHeight))
+	var bHeight []byte
+	binary.PutVarint(bHeight, int64(blockHeight))
+	key := append(frozenFundsPrefix, bHeight...)
+
 	// Load the object from the database.
 	enc, err := s.trie.TryGet(key)
 	if len(enc) == 0 {
@@ -286,10 +294,8 @@ func (s *StateDB) getStateCoin(symbol types.CoinSymbol) (stateCoin *stateCoin) {
 		return obj
 	}
 
-	// TODO: change key generation
-
 	// Load the object from the database.
-	enc, err := s.trie.TryGet(symbol[:])
+	enc, err := s.trie.TryGet(append(coinPrefix, symbol[:]...))
 	if len(enc) == 0 {
 		s.setError(err)
 		return nil
@@ -312,7 +318,6 @@ func (s *StateDB) getStateCandidates() (stateCandidates *stateCandidates) {
 		return s.stateCandidates
 	}
 
-	// TODO: change key generation
 	// Load the object from the database.
 	enc, err := s.trie.TryGet(candidatesKey)
 	if len(enc) == 0 {
@@ -341,7 +346,7 @@ func (s *StateDB) getStateObject(addr types.Address) (stateObject *stateObject) 
 	}
 
 	// Load the object from the database.
-	enc, err := s.trie.TryGet(addr[:])
+	enc, err := s.trie.TryGet(append(addressPrefix, addr[:]...))
 	if len(enc) == 0 {
 		s.setError(err)
 		return nil
@@ -807,18 +812,14 @@ func (s *StateDB) SubStake(sender types.Address, pubkey []byte, value *big.Int) 
 
 func (s *StateDB) IsCheckUsed(check *check.Check) bool {
 	checkHash := check.Hash().Bytes()
-	// TODO: change key generation
-	trieHash := append(checkHash, byte('C'))
-
-	data, _ := s.trie.TryGet(trieHash)
+	data, _ := s.trie.TryGet(append(usedCheckPrefix, checkHash...))
 
 	return len(data) != 0
 }
 
 func (s *StateDB) UseCheck(check *check.Check) {
 	checkHash := check.Hash().Bytes()
-	// TODO: change key generation
-	trieHash := append(checkHash, byte('C'))
+	trieHash := append(usedCheckPrefix, checkHash...)
 
 	s.setError(s.trie.TryUpdate(trieHash, []byte{0x1}))
 }
