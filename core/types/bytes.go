@@ -17,19 +17,22 @@
 // Package common contains various helper functions.
 package types
 
-import "encoding/hex"
+import (
+	"encoding/hex"
+	"strings"
+)
 
-func ToHex(b []byte) string {
+func ToHex(b []byte, prefix string) string {
 	hex := Bytes2Hex(b)
 	if len(hex) == 0 {
 		hex = "0"
 	}
-	return "Mx" + hex
+	return prefix + hex
 }
 
-func FromHex(s string) []byte {
+func FromHex(s string, prefix string) []byte {
 	if len(s) > 1 {
-		if s[0:2] == "Mx" || s[0:2] == "MX" {
+		if s[0:2] == prefix {
 			s = s[2:]
 		}
 	}
@@ -52,8 +55,8 @@ func CopyBytes(b []byte) (copiedBytes []byte) {
 	return
 }
 
-func hasHexPrefix(str string) bool {
-	return len(str) >= 2 && str[0] == 'M' && (str[1] == 'x' || str[1] == 'X')
+func hasHexPrefix(str string, prefix string) bool {
+	return len(str) >= 2 && strings.HasPrefix(str, prefix)
 }
 
 func isHexCharacter(c byte) bool {
