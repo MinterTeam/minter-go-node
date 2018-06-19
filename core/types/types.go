@@ -157,6 +157,14 @@ func (c CoinSymbol) MarshalJSON() ([]byte, error) {
 	return buffer.Bytes(), nil
 }
 
+func (c CoinSymbol) Compare(c2 CoinSymbol) int {
+	return bytes.Compare(c.Bytes(), c2.Bytes())
+}
+
+func (c CoinSymbol) IsBaseCoin() bool {
+	return c.Compare(GetBaseCoin()) == 0
+}
+
 /////////// Address
 
 // Address represents the 20 byte address of an Ethereum account.
@@ -252,6 +260,10 @@ func (a *Address) UnmarshalJSON(input []byte) error {
 	return hexutil.UnmarshalFixedJSON(addressT, input, a[:])
 }
 
+func (a *Address) Compare(a2 Address) int {
+	return bytes.Compare(a.Bytes(), a2.Bytes())
+}
+
 // UnprefixedHash allows marshaling an Address without 0x prefix.
 type UnprefixedAddress Address
 
@@ -269,4 +281,8 @@ type Pubkey []byte
 
 func (p Pubkey) String() string {
 	return string(p[:])
+}
+
+func (p Pubkey) Compare(p2 Pubkey) int {
+	return bytes.Compare(p, p2)
 }

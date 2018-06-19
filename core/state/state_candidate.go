@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"math/big"
 )
@@ -71,6 +72,16 @@ func (s *Stake) MarshalJSON() ([]byte, error) {
 		Coin:  s.Coin,
 		Value: s.Value.String(),
 	})
+}
+func (s *Stake) BipValue(context *StateDB) *big.Int {
+
+	if s.Coin.IsBaseCoin() {
+		return big.NewInt(0).Set(s.Value)
+	}
+
+	coin := context.getStateCoin(s.Coin)
+
+	return formula.CalculateSaleReturn(coin.Volume(), coin.ReserveBalance(), coin.data.Crr, s.Value)
 }
 
 type Candidate struct {
