@@ -58,7 +58,7 @@ $ make get_tools
 $ make get_vendor_deps
 ```
 
-4. Compile
+4. Compile & install
 ```bash
 $ make install
 ```
