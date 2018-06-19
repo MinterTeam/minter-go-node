@@ -26,7 +26,7 @@ func makeResponseCandidate(c state.Candidate) Candidate {
 	return Candidate{
 		CandidateAddress: c.CandidateAddress,
 		TotalStake:       c.TotalBipStake.String(),
-		PubKey:           fmt.Sprintf("Mx%x", c.PubKey),
+		PubKey:           fmt.Sprintf("Mp%x", c.PubKey),
 		Commission:       c.Commission,
 		AccumReward:      c.AccumReward.String(),
 		Stakes:           c.Stakes,

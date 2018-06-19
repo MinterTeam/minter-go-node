@@ -3,7 +3,7 @@ package api
 import (
 	"encoding/json"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
-	"github.com/tendermint/tendermint/types"
+	"github.com/tendermint/tendermint/rpc/core/types"
 	"github.com/tendermint/tmlibs/common"
 	"math/big"
 	"net/http"
@@ -22,15 +22,6 @@ type TransactionResponse struct {
 	Payload  []byte            `json:"payload"`
 }
 
-type ResultTx struct {
-	Hash     common.HexBytes   `json:"hash"`
-	Height   int64             `json:"height"`
-	Index    uint32            `json:"index"`
-	TxResult ResponseDeliverTx `json:"tx_result"`
-	Tx       types.Tx          `json:"tx"`
-	Proof    types.TxProof     `json:"proof,omitempty"`
-}
-
 type ResponseDeliverTx struct {
 	Code      uint32          `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"`
 	Data      []byte          `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
@@ -43,8 +34,8 @@ type ResponseDeliverTx struct {
 }
 
 type ResultTxSearch struct {
-	Txs        []*ResultTx `json:"txs"`
-	TotalCount int         `json:"total_count"`
+	Txs        []*core_types.ResultTx `json:"txs"`
+	TotalCount int                    `json:"total_count"`
 }
 
 func Transactions(w http.ResponseWriter, r *http.Request) {
