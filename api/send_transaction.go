@@ -24,7 +24,7 @@ func SendTransaction(w http.ResponseWriter, r *http.Request) {
 
 	result := new(core_types.ResultBroadcastTxCommit)
 	_, err := client.Call("broadcast_tx_commit", map[string]interface{}{
-		"tx": types.Hex2Bytes(strings.TrimLeft(req.Transaction, "Mx")),
+		"tx": types.Hex2Bytes(req.Transaction),
 	}, result)
 
 	if err != nil {
@@ -57,6 +57,6 @@ func SendTransaction(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(Response{
 		Code:   code.OK,
-		Result: "Mx" + strings.ToLower(result.Hash.String()),
+		Result: "Mt" + strings.ToLower(result.Hash.String()),
 	})
 }

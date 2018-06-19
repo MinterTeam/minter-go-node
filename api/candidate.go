@@ -11,7 +11,7 @@ import (
 func GetCandidate(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
-	pubkey := types.Hex2Bytes(strings.TrimLeft(vars["pubkey"], "Mx"))
+	pubkey := types.Hex2Bytes(strings.TrimLeft(vars["pubkey"], "Mp"))
 
 	cState := GetStateForRequest(r)
 

@@ -20,7 +20,7 @@ func SendTransactionSync(w http.ResponseWriter, r *http.Request) {
 
 	result := new(core_types.ResultBroadcastTx)
 	_, err := client.Call("broadcast_tx_sync", map[string]interface{}{
-		"tx": types.Hex2Bytes(strings.TrimLeft(req.Transaction, "Mx")),
+		"tx": types.Hex2Bytes(req.Transaction),
 	}, result)
 
 	if err != nil {
@@ -43,6 +43,6 @@ func SendTransactionSync(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(Response{
 		Code:   code.OK,
-		Result: "Mx" + strings.ToLower(result.Hash.String()),
+		Result: "Mt" + strings.ToLower(result.Hash.String()),
 	})
 }

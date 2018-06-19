@@ -8,6 +8,7 @@ import (
 	"github.com/tendermint/tendermint/types"
 	"github.com/tendermint/tmlibs/common"
 	"net/http"
+	"strings"
 )
 
 type ResTx struct {
@@ -22,7 +23,7 @@ type ResTx struct {
 func Transaction(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
-	hash := vars["hash"]
+	hash := strings.TrimRight(vars["hash"], "Mt")
 	decoded, err := hex.DecodeString(hash)
 
 	result := new(ResTx)
