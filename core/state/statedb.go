@@ -213,9 +213,10 @@ func (s *StateDB) updateStateFrozenFund(stateFrozenFund *stateFrozenFund) {
 	if err != nil {
 		panic(fmt.Errorf("can't encode frozen fund at %d: %v", blockHeight, err))
 	}
-	var bHeight []byte
-	binary.PutVarint(bHeight, int64(blockHeight))
-	key := append(frozenFundsPrefix, bHeight...)
+	height := make([]byte, 8)
+	binary.BigEndian.PutUint64(height[:], stateFrozenFund.blockHeight)
+
+	key := append(frozenFundsPrefix, height...)
 	s.setError(s.trie.TryUpdate(key, data))
 }
 
@@ -253,9 +254,9 @@ func (s *StateDB) deleteStateCoin(stateCoin *stateCoin) {
 // deleteStateObject removes the given object from the state trie.
 func (s *StateDB) deleteFrozenFunds(stateFrozenFund *stateFrozenFund) {
 	stateFrozenFund.deleted = true
-	var bHeight []byte
-	binary.PutVarint(bHeight, int64(stateFrozenFund.blockHeight))
-	key := append(frozenFundsPrefix, bHeight...)
+	height := make([]byte, 8)
+	binary.BigEndian.PutUint64(height[:], stateFrozenFund.blockHeight)
+	key := append(frozenFundsPrefix, height...)
 	s.setError(s.trie.TryDelete(key))
 }
 
@@ -266,9 +267,9 @@ func (s *StateDB) getStateFrozenFunds(blockHeight uint64) (stateFrozenFund *stat
 		return obj
 	}
 
-	var bHeight []byte
-	binary.PutVarint(bHeight, int64(blockHeight))
-	key := append(frozenFundsPrefix, bHeight...)
+	height := make([]byte, 8)
+	binary.BigEndian.PutUint64(height[:], blockHeight)
+	key := append(frozenFundsPrefix, height...)
 
 	// Load the object from the database.
 	enc, err := s.trie.TryGet(key)
@@ -482,6 +483,7 @@ func (s *StateDB) CreateCandidate(
 	pubkey types.Pubkey,
 	commission uint,
 	currentBlock uint,
+	coin types.CoinSymbol,
 	initialStake *big.Int) *stateCandidates {
 
 	candidates := s.getStateCandidates()
@@ -492,13 +494,13 @@ func (s *StateDB) CreateCandidate(
 
 	candidates.data = append(candidates.data, Candidate{
 		CandidateAddress: address,
-		TotalStake:       initialStake,
 		PubKey:           pubkey,
 		Commission:       commission,
 		AccumReward:      big.NewInt(0),
 		Stakes: []Stake{
 			{
 				Owner: address,
+				Coin:  coin,
 				Value: initialStake,
 			},
 		},
@@ -680,7 +682,7 @@ func (s *StateDB) GetValidators(count int) ([]abci.Validator, []Candidate) {
 	}
 
 	sort.Slice(activeCandidates, func(i, j int) bool {
-		return activeCandidates[i].TotalStake.Cmp(candidates[j].TotalStake) == -1
+		return activeCandidates[i].TotalBipStake.Cmp(candidates[j].TotalBipStake) == -1
 	})
 
 	if len(activeCandidates) < count {
@@ -692,11 +694,11 @@ func (s *StateDB) GetValidators(count int) ([]abci.Validator, []Candidate) {
 	// calculate total power
 	totalPower := big.NewInt(0)
 	for _, candidate := range activeCandidates[:count] {
-		totalPower.Add(totalPower, candidate.TotalStake)
+		totalPower.Add(totalPower, candidate.TotalBipStake)
 	}
 
 	for i := range activeCandidates[:count] {
-		power := big.NewInt(0).Div(big.NewInt(0).Mul(activeCandidates[i].TotalStake, big.NewInt(100)), totalPower)
+		power := big.NewInt(0).Div(big.NewInt(0).Mul(activeCandidates[i].TotalBipStake, big.NewInt(100)), totalPower)
 
 		validators[i] = abci.Ed25519Validator(activeCandidates[i].PubKey, power.Int64())
 	}
@@ -746,8 +748,8 @@ func (s *StateDB) PayRewards() {
 				stake := candidate.Stakes[j]
 
 				reward := big.NewInt(0).Set(totalReward)
-				reward.Mul(reward, stake.Value)
-				reward.Div(reward, candidate.TotalStake)
+				reward.Mul(reward, stake.BipValue(s))
+				reward.Div(reward, candidate.TotalBipStake)
 
 				s.AddBalance(stake.Owner, types.GetBaseCoin(), reward)
 			}
@@ -760,18 +762,37 @@ func (s *StateDB) PayRewards() {
 	s.MarkStateCandidateDirty()
 }
 
-func (s *StateDB) Delegate(sender types.Address, pubkey []byte, value *big.Int) {
+func (s *StateDB) RecalculateTotalStakeValues() {
 	stateCandidates := s.getStateCandidates()
 
 	for i := range stateCandidates.data {
 		candidate := &stateCandidates.data[i]
-		if bytes.Compare(candidate.PubKey, pubkey) == 0 {
 
+		totalBipStake := big.NewInt(0)
+
+		for j := range candidate.Stakes {
+			stake := candidate.Stakes[j]
+			totalBipStake.Add(totalBipStake, stake.BipValue(s))
+		}
+
+		candidate.TotalBipStake = totalBipStake
+	}
+
+	s.setStateCandidates(stateCandidates)
+	s.MarkStateCandidateDirty()
+}
+
+func (s *StateDB) Delegate(sender types.Address, pubkey []byte, coin types.CoinSymbol, value *big.Int) {
+	stateCandidates := s.getStateCandidates()
+
+	for i := range stateCandidates.data {
+		candidate := &stateCandidates.data[i]
+		if candidate.PubKey.Compare(pubkey) == 0 {
 			exists := false
 
 			for j := range candidate.Stakes {
 				stake := &candidate.Stakes[j]
-				if bytes.Compare(sender.Bytes(), stake.Owner.Bytes()) == 0 {
+				if sender.Compare(stake.Owner) == 0 && stake.Coin.Compare(coin) == 0 {
 					stake.Value.Add(stake.Value, value)
 					exists = true
 					break
@@ -781,11 +802,10 @@ func (s *StateDB) Delegate(sender types.Address, pubkey []byte, value *big.Int) 
 			if !exists {
 				candidate.Stakes = append(candidate.Stakes, Stake{
 					Owner: sender,
+					Coin:  coin,
 					Value: value,
 				})
 			}
-
-			candidate.TotalStake.Add(candidate.TotalStake, value)
 		}
 	}
 
@@ -793,16 +813,15 @@ func (s *StateDB) Delegate(sender types.Address, pubkey []byte, value *big.Int) 
 	s.MarkStateCandidateDirty()
 }
 
-func (s *StateDB) SubStake(sender types.Address, pubkey []byte, value *big.Int) {
+func (s *StateDB) SubStake(sender types.Address, pubkey []byte, coin types.CoinSymbol, value *big.Int) {
 	stateCandidates := s.getStateCandidates()
 
 	for i := range stateCandidates.data {
 		candidate := &stateCandidates.data[i]
-		if bytes.Compare(candidate.PubKey, pubkey) == 0 {
+		if candidate.PubKey.Compare(pubkey) == 0 {
 			// todo: remove if stake == 0
-			currentStakeValue := candidate.GetStakeOfAddress(sender).Value
+			currentStakeValue := candidate.GetStakeOfAddress(sender, coin).Value
 			currentStakeValue.Sub(currentStakeValue, value)
-			candidate.TotalStake.Sub(candidate.TotalStake, value)
 		}
 	}
 
@@ -878,12 +897,14 @@ func (s *StateDB) SetValidatorAbsent(pubkey types.Pubkey) {
 
 					candidate.Stakes[j] = Stake{
 						Owner: stake.Owner,
+						Coin:  stake.Coin,
 						Value: newValue,
 					}
 					totalStake.Add(totalStake, newValue)
 				}
 
-				candidate.TotalStake = totalStake
+				// TODO: recalc total stake in bips
+				candidate.TotalBipStake = totalStake
 			}
 		}
 	}
@@ -902,7 +923,7 @@ func (s *StateDB) PunishByzantineCandidate(PubKey []byte) {
 			candidate.AbsentTimes = candidate.AbsentTimes + 1
 
 			candidate.Stakes = []Stake{}
-			candidate.TotalStake = big.NewInt(0)
+			candidate.TotalBipStake = big.NewInt(0)
 			candidate.Status = CandidateStatusOffline
 			candidate.AccumReward = big.NewInt(0)
 		}

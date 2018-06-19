@@ -57,11 +57,25 @@ func RunTx(context *state.StateDB, isCheck bool, tx *Transaction, rewardPull *bi
 
 		data := tx.GetDecodedData().(DeclareCandidacyData)
 
-		commission := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
-		commission.Mul(commission, CommissionMultiplier)
+		commissionInBaseCoin := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
+		commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
+		commission := big.NewInt(0).Set(commissionInBaseCoin)
+
+		if data.Coin != types.GetBaseCoin() {
+			coin := context.GetStateCoin(data.Coin)
+
+			if coin.ReserveBalance().Cmp(commissionInBaseCoin) < 0 {
+				return Response{
+					Code: code.CoinReserveNotSufficient,
+					Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.ReserveBalance().String(), commissionInBaseCoin.String())}
+			}
+
+			commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
+		}
+
 		totalTxCost := big.NewInt(0).Add(data.Stake, commission)
 
-		if context.GetBalance(sender, types.GetBaseCoin()).Cmp(totalTxCost) < 0 {
+		if context.GetBalance(sender, data.Coin).Cmp(totalTxCost) < 0 {
 			return Response{
 				Code: code.InsufficientFunds,
 				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %d ", sender.String(), totalTxCost)}
@@ -84,8 +98,8 @@ func RunTx(context *state.StateDB, isCheck bool, tx *Transaction, rewardPull *bi
 		if !isCheck {
 			rewardPull.Add(rewardPull, commission)
 
-			context.SubBalance(sender, types.GetBaseCoin(), totalTxCost)
-			context.CreateCandidate(data.Address, data.PubKey, data.Commission, uint(currentBlock), data.Stake)
+			context.SubBalance(sender, data.Coin, totalTxCost)
+			context.CreateCandidate(data.Address, data.PubKey, data.Commission, uint(currentBlock), data.Coin, data.Stake)
 			context.SetNonce(sender, tx.Nonce)
 		}
 
@@ -178,11 +192,25 @@ func RunTx(context *state.StateDB, isCheck bool, tx *Transaction, rewardPull *bi
 
 		data := tx.GetDecodedData().(DelegateData)
 
-		commission := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
-		commission.Mul(commission, CommissionMultiplier)
+		commissionInBaseCoin := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
+		commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
+		commission := big.NewInt(0).Set(commissionInBaseCoin)
+
+		if data.Coin != types.GetBaseCoin() {
+			coin := context.GetStateCoin(data.Coin)
+
+			if coin.ReserveBalance().Cmp(commissionInBaseCoin) < 0 {
+				return Response{
+					Code: code.CoinReserveNotSufficient,
+					Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.ReserveBalance().String(), commissionInBaseCoin.String())}
+			}
+
+			commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
+		}
+
 		totalTxCost := big.NewInt(0).Add(data.Stake, commission)
 
-		if context.GetBalance(sender, types.GetBaseCoin()).Cmp(totalTxCost) < 0 {
+		if context.GetBalance(sender, data.Coin).Cmp(totalTxCost) < 0 {
 			return Response{
 				Code: code.InsufficientFunds,
 				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %d ", sender.String(), totalTxCost)}
@@ -197,8 +225,8 @@ func RunTx(context *state.StateDB, isCheck bool, tx *Transaction, rewardPull *bi
 		if !isCheck {
 			rewardPull.Add(rewardPull, commission)
 
-			context.SubBalance(sender, types.GetBaseCoin(), totalTxCost)
-			context.Delegate(sender, data.PubKey, data.Stake)
+			context.SubBalance(sender, data.Coin, totalTxCost)
+			context.Delegate(sender, data.PubKey, data.Coin, data.Stake)
 			context.SetNonce(sender, tx.Nonce)
 		}
 
@@ -228,7 +256,7 @@ func RunTx(context *state.StateDB, isCheck bool, tx *Transaction, rewardPull *bi
 
 		candidate := context.GetStateCandidate(data.PubKey)
 
-		stake := candidate.GetStakeOfAddress(sender)
+		stake := candidate.GetStakeOfAddress(sender, data.Coin)
 
 		if stake == nil {
 			return Response{
@@ -249,8 +277,8 @@ func RunTx(context *state.StateDB, isCheck bool, tx *Transaction, rewardPull *bi
 			rewardPull.Add(rewardPull, commission)
 
 			context.SubBalance(sender, types.GetBaseCoin(), commission)
-			context.SubStake(sender, data.PubKey, data.Value)
-			context.GetOrNewStateFrozenFunds(unboundAtBlock).AddFund(sender, data.PubKey, data.Value)
+			context.SubStake(sender, data.PubKey, data.Coin, data.Value)
+			context.GetOrNewStateFrozenFunds(unboundAtBlock).AddFund(sender, data.PubKey, data.Coin, data.Value)
 			context.SetNonce(sender, tx.Nonce)
 		}
 
