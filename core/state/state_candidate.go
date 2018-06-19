@@ -57,22 +57,25 @@ func (c *stateCandidates) empty() bool {
 
 type Stake struct {
 	Owner types.Address
+	Coin  types.CoinSymbol
 	Value *big.Int
 }
 
 func (s *Stake) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Owner types.Address `json:"owner"`
-		Value string        `json:"value"`
+		Owner types.Address    `json:"owner"`
+		Coin  types.CoinSymbol `json:"coin"`
+		Value string           `json:"value"`
 	}{
 		Owner: s.Owner,
+		Coin:  s.Coin,
 		Value: s.Value.String(),
 	})
 }
 
 type Candidate struct {
 	CandidateAddress types.Address
-	TotalStake       *big.Int
+	TotalBipStake    *big.Int
 	PubKey           types.Pubkey
 	Commission       uint
 	AccumReward      *big.Int
@@ -82,9 +85,9 @@ type Candidate struct {
 	AbsentTimes      uint
 }
 
-func (candidate Candidate) GetStakeOfAddress(addr types.Address) *Stake {
+func (candidate Candidate) GetStakeOfAddress(addr types.Address, coin types.CoinSymbol) *Stake {
 	for i, stake := range candidate.Stakes {
-		if bytes.Compare(stake.Owner.Bytes(), addr.Bytes()) == 0 {
+		if bytes.Compare(stake.Coin.Bytes(), coin.Bytes()) == 0 && bytes.Compare(stake.Owner.Bytes(), addr.Bytes()) == 0 {
 			return &(candidate.Stakes[i])
 		}
 	}

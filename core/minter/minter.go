@@ -123,7 +123,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 	frozenFunds := app.currentStateDeliver.GetStateFrozenFunds(app.height)
 	if frozenFunds != nil {
 		for _, item := range frozenFunds.List() {
-			app.currentStateDeliver.SetBalance(item.Address, app.BaseCoin, item.Value)
+			app.currentStateDeliver.SetBalance(item.Address, item.Coin, item.Value)
 		}
 
 		frozenFunds.Delete()
@@ -158,7 +158,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 			continue
 		}
 
-		totalPower.Add(totalPower, candidate.TotalStake)
+		totalPower.Add(totalPower, candidate.TotalBipStake)
 	}
 
 	// accumulate rewards
@@ -173,7 +173,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 
 		reward.Add(reward, app.rewards)
 
-		reward.Mul(reward, candidate.TotalStake)
+		reward.Mul(reward, candidate.TotalBipStake)
 		reward.Div(reward, totalPower)
 
 		app.currentStateDeliver.AddAccumReward(candidate.PubKey, reward)
