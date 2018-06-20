@@ -64,7 +64,7 @@ func RunApi(b *minter.Blockchain) {
 		time.Sleep(1 * time.Second)
 	}
 
-	log.Fatal(http.ListenAndServe(":8841", handler))
+	log.Fatal(http.ListenAndServe(*utils.MinterAPIAddrFlag, handler))
 }
 
 type Response struct {
