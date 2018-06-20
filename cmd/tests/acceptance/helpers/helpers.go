@@ -1,8 +1,10 @@
 package helpers
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -53,18 +55,22 @@ func RunMinter(isReady chan bool) {
 	logger.Println("Starting Minter Node...")
 
 	err := os.MkdirAll(path+"/docker/data/.tendermint/config/", os.ModePerm)
+	err = os.MkdirAll(path+"/docker/data/.tendermint/data/", os.ModePerm)
 
 	if err != nil {
 		panic(err)
 	}
 
-	cmd := exec.Command("cp", "-r", path+"/docker/default/", path+"/docker/data/.tendermint/config/")
-	cmd.Start()
-	cmd.Wait()
+	err = exec.Command("cp", "-r", path+"/docker/default/", path+"/docker/data/.tendermint/config/").Run()
 
-	cmd = exec.Command("docker-compose", "--file", path+"/docker/docker-compose.yml", "--project-name", "minter-test", "up")
+	if err != nil {
+		panic(err)
+	}
+
+	cmd := exec.Command("docker-compose", "--file", path+"/docker/docker-compose.yml", "--project-name", "minter-test", "up")
 	cmd.Stderr = os.Stderr
 	err = cmd.Start()
+
 	if err != nil {
 		logger.Fatal(err)
 	}
@@ -78,11 +84,28 @@ func RunMinter(isReady chan bool) {
 	}()
 
 	for {
-		_, err = http.Get("http://localhost:8841/api/status")
+		var status struct {
+			Code   int `json:"code"`
+			Result struct {
+				LatestBlockHash   string `json:"latest_block_hash"`
+				LatestAppHash     string `json:"latest_app_hash"`
+				LatestBlockHeight int    `json:"latest_block_height"`
+				LatestBlockTime   string `json:"latest_block_time"`
+			} `json:"result"`
+		}
+
+		response, err := http.Get("http://localhost:8841/api/status")
 
 		if err == nil {
-			isReady <- true
-			return
+
+			data, _ := ioutil.ReadAll(response.Body)
+
+			json.Unmarshal(data, &status)
+
+			if status.Result.LatestBlockHeight > 0 {
+				isReady <- true
+				return
+			}
 		}
 
 		time.Sleep(1 * time.Second)
@@ -100,18 +123,12 @@ func StopMinter() {
 	cmd.Start()
 	cmd.Wait()
 
-	cmd = exec.Command("rm", "-rf", path+"/docker/data/.minter")
-	cmd.Start()
-	err := cmd.Wait()
-
+	err := exec.Command("rm", "-rf", path+"/docker/data/.minter").Run()
 	if err != nil {
 		log.Fatalf("%s", err)
 	}
 
-	cmd = exec.Command("rm", "-rf", path+"/docker/data/.tendermint")
-	cmd.Start()
-	err = cmd.Wait()
-
+	err = exec.Command("rm", "-rf", path+"/docker/data/.tendermint").Run()
 	if err != nil {
 		log.Fatalf("%s", err)
 	}

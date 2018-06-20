@@ -5,12 +5,14 @@ import (
 	"github.com/MinterTeam/minter-go-node/cmd/tests/acceptance/helpers"
 	"log"
 	"os"
+	"strings"
 	"time"
 )
 
 var (
 	tests = []func() error{
 		api.TestApiStatus,
+		api.TestApiBlock,
 	}
 	logger = log.New(os.Stdout, "main-test-routine ", log.LstdFlags)
 )
@@ -26,7 +28,14 @@ func main() {
 
 	for _, test := range tests {
 		testName := helpers.GetTestName(test)
-		logger.Printf("Running test \"%s\"... \n", testName)
+
+		if len(os.Args) > 1 {
+			if !strings.Contains(strings.ToLower(testName), strings.ToLower(os.Args[1])) {
+				continue
+			}
+		}
+
+		logger.Printf("Running \"%s\"... \n", testName)
 
 		start := time.Now()
 		err := test()
