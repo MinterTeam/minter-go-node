@@ -43,6 +43,8 @@ func main() {
 
 		logger.Printf("Completed \"%s\" in %s \n", testName, elapsed)
 	}
+
+	logger.Printf("Completed all tests\n")
 }
 
 func testApiStatus() error {
