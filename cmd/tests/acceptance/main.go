@@ -1,19 +1,16 @@
 package main
 
 import (
-	"encoding/json"
+	"github.com/MinterTeam/minter-go-node/cmd/tests/acceptance/api"
 	"github.com/MinterTeam/minter-go-node/cmd/tests/acceptance/helpers"
-	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 	"time"
 )
 
 var (
 	tests = []func() error{
-		testApiStatus,
-		testSendTransaction,
+		api.TestApiStatus,
 	}
 	logger = log.New(os.Stdout, "main-test-routine ", log.LstdFlags)
 )
@@ -45,40 +42,4 @@ func main() {
 	}
 
 	logger.Printf("Completed all tests\n")
-}
-
-func testApiStatus() error {
-	result, err := http.Get("http://localhost:8841/api/status")
-
-	if err != nil {
-		return err
-	}
-
-	data, err := ioutil.ReadAll(result.Body)
-
-	if err != nil {
-		return err
-	}
-
-	var status struct {
-		Code   int `json:"code"`
-		Result struct {
-			LatestBlockHash   string `json:"latest_block_hash"`
-			LatestAppHash     string `json:"latest_app_hash"`
-			LatestBlockHeight int    `json:"latest_block_height"`
-			LatestBlockTime   string `json:"latest_block_time"`
-		} `json:"result"`
-	}
-
-	err = json.Unmarshal(data, &status)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func testSendTransaction() error {
-	return nil
 }

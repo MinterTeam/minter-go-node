@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"reflect"
 	"runtime"
+	"strings"
 	"time"
 )
 
@@ -21,7 +22,8 @@ func init() {
 }
 
 func GetTestName(test func() error) string {
-	return runtime.FuncForPC(reflect.ValueOf(test).Pointer()).Name()
+	path := strings.Split(runtime.FuncForPC(reflect.ValueOf(test).Pointer()).Name(), "/")
+	return path[len(path)-1]
 }
 
 func CopyFile(fromFile string, toFile string) {
