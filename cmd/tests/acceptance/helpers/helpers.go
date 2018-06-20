@@ -44,35 +44,34 @@ func CopyFile(fromFile string, toFile string) {
 }
 
 func RunMinter(isReady chan bool) {
+	StopMinter()
+
 	logger := log.New(os.Stdout, "minter-node ", log.LstdFlags)
 
 	logger.Println("Starting Minter Node...")
 
-	cmd := exec.Command("mkdir", "-p", path+"/docker/data/.tendermint/config/")
-	cmd.Start()
-	cmd.Wait()
+	err := os.MkdirAll(path+"/docker/data/.tendermint/config/", os.ModePerm)
 
-	cmd = exec.Command("cp", "-r", path+"/docker/default/", path+"/docker/data/.tendermint/config/")
-	cmd.Start()
-	cmd.Wait()
-
-	cmd = exec.Command("docker-compose", "--file", path+"/docker/docker-compose.yml", "--project-name", "minter-test", "start")
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
-	err := cmd.Start()
 	if err != nil {
-		logger.Fatal(err)
+		panic(err)
 	}
 
-	err = cmd.Wait()
+	cmd := exec.Command("cp", "-r", path+"/docker/default/", path+"/docker/data/.tendermint/config/")
+	cmd.Start()
+	cmd.Wait()
+
+	cmd = exec.Command("docker-compose", "--file", path+"/docker/docker-compose.yml", "--project-name", "minter-test", "up")
+	cmd.Stderr = os.Stderr
+	err = cmd.Start()
 	if err != nil {
-		logger.Fatalf("Minter finished with error: %v", err)
+		logger.Fatal(err)
 	}
 
 	timer := time.NewTimer(20 * time.Second)
 
 	go func() {
 		<-timer.C
+		StopMinter()
 		logger.Fatalln("Minter node start timeout...")
 	}()
 
@@ -86,6 +85,11 @@ func RunMinter(isReady chan bool) {
 
 		time.Sleep(1 * time.Second)
 	}
+
+	err = cmd.Wait()
+	if err != nil {
+		logger.Fatalf("Minter finished with error: %v", err)
+	}
 }
 
 func StopMinter() {
@@ -94,10 +98,19 @@ func StopMinter() {
 	cmd.Start()
 	cmd.Wait()
 
-	err := os.RemoveAll(path + "/docker/data/.minter")
-	err = os.RemoveAll(path + "/docker/data/.tendermint")
+	cmd = exec.Command("rm", "-rf", path+"/docker/data/.minter")
+	cmd.Start()
+	err := cmd.Wait()
 
 	if err != nil {
-		fmt.Printf("%s", err)
+		log.Fatalf("%s", err)
+	}
+
+	cmd = exec.Command("rm", "-rf", path+"/docker/data/.tendermint")
+	cmd.Start()
+	err = cmd.Wait()
+
+	if err != nil {
+		log.Fatalf("%s", err)
 	}
 }
