@@ -119,9 +119,8 @@ func RunMinter(isReady chan bool) {
 
 func StopMinter() {
 	fmt.Println("Stopping Minter...")
-	cmd := exec.Command("docker-compose", "--file", path+"/docker/docker-compose.yml", "--project-name", "minter-test", "stop")
-	cmd.Start()
-	cmd.Wait()
+	exec.Command("docker-compose", "--file", path+"/docker/docker-compose.yml", "--project-name", "minter-test", "stop").Run()
+	exec.Command("docker-compose", "--file", path+"/docker/docker-compose.yml", "--project-name", "minter-test", "rm", "--force").Run()
 
 	err := exec.Command("rm", "-rf", path+"/docker/data/.minter").Run()
 	if err != nil {
