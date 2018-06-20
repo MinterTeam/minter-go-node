@@ -25,6 +25,8 @@ func main() {
 	go helpers.RunMinter(minterNodeReady)
 	<-minterNodeReady
 
+	defer helpers.StopMinter()
+
 	for _, test := range tests {
 		testName := helpers.GetTestName(test)
 		logger.Printf("Running test \"%s\"... \n", testName)
@@ -33,6 +35,7 @@ func main() {
 		err := test()
 
 		if err != nil {
+			helpers.StopMinter()
 			logger.Fatalf("Failed test \"%s\"\nReason: %s", testName, err)
 		}
 
