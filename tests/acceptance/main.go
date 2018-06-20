@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/MinterTeam/minter-go-node/cmd/tests/acceptance/api"
-	"github.com/MinterTeam/minter-go-node/cmd/tests/acceptance/helpers"
+	"github.com/MinterTeam/minter-go-node/tests/acceptance/api"
+	"github.com/MinterTeam/minter-go-node/tests/acceptance/helpers"
 	"log"
 	"os"
 	"strings"
