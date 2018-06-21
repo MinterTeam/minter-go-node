@@ -10,6 +10,7 @@ Minter 101
    introduction.rst
    install.rst
    specs.rst
+   coins.rst
    transactions.rst
    checks.rst
    commissions.rst
