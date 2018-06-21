@@ -48,7 +48,7 @@ endpoints above plus some statistics. The tool can be found `here
 Monitoring Minter
 -----------------
 
-Each Minter instance has a standard `/status` RPC endpoint, which responds
+Each Minter instance has a standard `/api/status` endpoint, which responds
 with 200 (OK) if everything is fine and 500 (or no response) - if something is
 wrong.
 
