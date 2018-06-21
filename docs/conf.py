@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Tendermint documentation build configuration file, created by
+# Minter documentation build configuration file, created by
 # sphinx-quickstart on Mon Aug  7 04:55:09 2017.
 #
 # This file is execfile()d with the current directory set to its
@@ -118,7 +118,7 @@ html_sidebars = {
 # -- Options for HTMLHelp output ------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'Tendermintdoc'
+htmlhelp_basename = 'Minterdoc'
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -145,7 +145,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'Tendermint.tex', u'Tendermint Documentation',
+    (master_doc, 'Minter.tex', u'Minter Documentation',
      u'The Authors', 'manual'),
 ]
 
@@ -155,7 +155,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'Tendermint', u'Tendermint Documentation',
+    (master_doc, 'Minter', u'Minter Documentation',
      [author], 1)
 ]
 
@@ -166,32 +166,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'Tendermint', u'Tendermint Documentation',
-     author, 'Tendermint', 'Byzantine Fault Tolerant Consensus.',
+    (master_doc, 'Minter', u'Minter Documentation',
+     author, 'Minter', 'Byzantine Fault Tolerant Consensus.',
      'Database'),
 ]
-
-# ---- customization -------------------------
-
-tools_repo = "https://raw.githubusercontent.com/tendermint/tools/"
-tools_branch = "master"
-
-tools_dir = "./tools"
-assets_dir = tools_dir + "/assets"
-
-if os.path.isdir(tools_dir) != True:
-    os.mkdir(tools_dir)
-if os.path.isdir(assets_dir) != True:
-    os.mkdir(assets_dir)
-
-urllib.urlretrieve(tools_repo+tools_branch+'/docker/README.rst', filename=tools_dir+'/docker.rst')
-
-urllib.urlretrieve(tools_repo+tools_branch+'/tm-bench/README.rst', filename=tools_dir+'/benchmarking.rst')
-urllib.urlretrieve(tools_repo+tools_branch+'/tm-monitor/README.rst', filename='tools/monitoring.rst')
-
-#### abci spec #################################
-
-abci_repo = "https://raw.githubusercontent.com/tendermint/abci/"
-abci_branch = "develop"
-
-urllib.urlretrieve(abci_repo+abci_branch+'/specification.rst', filename='abci-spec.rst')
