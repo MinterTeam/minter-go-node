@@ -106,7 +106,7 @@ seed_mode = false
 [mempool]
 
 recheck = true
-recheck_empty = true
+recheck_empty = false
 broadcast = true
 wal_dir = "data/mempool.wal"
 
@@ -114,7 +114,6 @@ wal_dir = "data/mempool.wal"
 [consensus]
 
 wal_file = "data/cs.wal/wal"
-wal_light = false
 
 # All timeouts are in milliseconds
 timeout_propose = 3000
