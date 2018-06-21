@@ -70,7 +70,7 @@ laddr = "tcp://0.0.0.0:46656"
 seeds = ""
 
 # Comma separated list of nodes to keep persistent connections to
-persistent_peers = "6800bdd85df3a1ad6bfdd08eb640b11d47abddf5@95.216.148.138:46656"
+persistent_peers = ""
 
 # Path to address book
 addr_book_file = "config/addrbook.json"
@@ -106,7 +106,7 @@ seed_mode = false
 [mempool]
 
 recheck = true
-recheck_empty = false
+recheck_empty = true
 broadcast = true
 wal_dir = "data/mempool.wal"
 
@@ -114,6 +114,7 @@ wal_dir = "data/mempool.wal"
 [consensus]
 
 wal_file = "data/cs.wal/wal"
+wal_light = false
 
 # All timeouts are in milliseconds
 timeout_propose = 3000

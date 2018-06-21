@@ -1,0 +1,17 @@
+version: "3.4"
+services:
+  minter:
+    image: minterteam/minter:latest
+    command: --tendermint_addr=tcp://tendermint:46657
+    volumes:
+      - ./data/.minter:/minter
+    ports:
+      - "8841:8841"
+  tendermint:
+    image: tendermint/tendermint:0.20.0
+    command: node --proxy_app=tcp://minter:46658
+    volumes:
+      - ./data/.tendermint:/tendermint
+    ports:
+      - "46656:46656"
+      - "46657:46657"

@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/MinterTeam/minter-go-node/api"
+	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/core/minter"
 	"github.com/tendermint/abci/server"
 	"github.com/tendermint/tmlibs/common"
@@ -15,7 +16,7 @@ func main() {
 	app := minter.NewMinterBlockchain()
 
 	// Start the listener
-	srv, err := server.NewServer("tcp://0.0.0.0:46658", "socket", app)
+	srv, err := server.NewServer(*utils.MinterAppAddrFlag, "socket", app)
 	if err != nil {
 		panic(err)
 	}

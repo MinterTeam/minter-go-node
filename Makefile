@@ -3,7 +3,7 @@ GOTOOLS = \
 	gopkg.in/alecthomas/gometalinter.v2
 PACKAGES=$(shell go list ./... | grep -v '/vendor/')
 BUILD_TAGS?=minter
-BUILD_FLAGS=-ldflags "-X minter/version.GitCommit=`git rev-parse --short=8 HEAD`"
+BUILD_FLAGS=-ldflags "-s -w -X minter/version.GitCommit=`git rev-parse --short=8 HEAD`"
 
 all: check build test install
 
@@ -104,6 +104,9 @@ push-docker:
 # Build linux binary on other platforms
 build-linux:
 	GOOS=linux GOARCH=amd64 $(MAKE) build
+
+build-compress:
+	upx --brute build/minter
 
 build-docker-localnode:
 	cd networks/local
