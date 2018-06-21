@@ -11,7 +11,8 @@ You'll need `docker <https://docker.com/>`__ and `docker compose <https://docs.d
 Clone Minter source code to your machine
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-::
+.. code-block:: bash
+    :lineno-start: 1
 
     git clone https://github.com/MinterTeam/minter-go-node.git
     cd minter-go-node
@@ -20,7 +21,8 @@ Clone Minter source code to your machine
 Prepare folders and configs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-::
+.. code-block:: bash
+    :lineno-start: 3
 
     mkdir -p ~/.tendermint/data
     mkdir -p ~/.minter/data
@@ -33,7 +35,8 @@ Prepare folders and configs
 Start Minter
 ^^^^^^^^^^^^
 
-::
+.. code-block:: bash
+    :lineno-start: 10
 
     docker-compose up
 
@@ -51,7 +54,8 @@ Install Tendermint 0.20
 Clone Minter source code to your machine
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-::
+.. code-block:: bash
+    :lineno-start: 1
 
     mkdir $GOPATH/src/github.com/MinterTeam
     cd $GOPATH/src/github.com/MinterTeam
@@ -61,7 +65,8 @@ Clone Minter source code to your machine
 Get Tools & Dependencies
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-::
+.. code-block:: bash
+    :lineno-start: 5
 
     make get_tools
     make get_vendor_deps
@@ -69,13 +74,15 @@ Get Tools & Dependencies
 Compile
 ^^^^^^^
 
-::
+.. code-block:: bash
+    :lineno-start: 7
 
     make install
 
 to put the binary in ``$GOPATH/bin`` or use:
 
-::
+.. code-block:: bash
+    :lineno-start: 8
 
     make build
 
@@ -86,7 +93,8 @@ The latest ``minter version`` is now installed.
 Create data directories
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-::
+.. code-block:: bash
+    :lineno-start: 9
 
     mkdir -p ~/.tendermint/data
     mkdir -p ~/.minter/data
@@ -94,20 +102,23 @@ Create data directories
 Copy config and genesis file
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-::
+.. code-block:: bash
+    :lineno-start: 11
 
     cp -R networks/testnet/ ~/.tendermint/config
 
 Run Tendermint
 ^^^^^^^^^^^^^^
 
-::
+.. code-block:: bash
+    :lineno-start: 12
 
     tendermint node
 
 Run Minter
-^^^^^^^^^^^^^^
+^^^^^^^^^^
 
-::
+.. code-block:: bash
+    :lineno-start: 13
 
     minter
