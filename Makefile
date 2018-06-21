@@ -105,8 +105,8 @@ push-docker:
 build-linux:
 	GOOS=linux GOARCH=amd64 $(MAKE) build
 
-build-compress
-    upx --brute build/minter
+build-compress:
+	upx --brute build/minter
 
 build-docker-localnode:
 	cd networks/local
