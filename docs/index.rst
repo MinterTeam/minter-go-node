@@ -9,6 +9,7 @@ Minter 101
 
    introduction.rst
    install.rst
+   specs.rst
    transactions.rst
    commissions.rst
    validators.rst
