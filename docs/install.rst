@@ -1,10 +1,10 @@
 Install Minter
-==================
+==============
 
 There are several ways you can install Minter Blockchain node on your machine:
 
 Using Docker
-----------------
+------------
 
 You'll need `docker <https://docker.com/>`__ and `docker compose <https://docs.docker.com/compose/>`__ installed.
 
