@@ -106,7 +106,7 @@ build-linux:
 	GOOS=linux GOARCH=amd64 $(MAKE) build
 
 build-compress:
-	upx --brute build/minter
+	upx --brute -9 build/minter
 
 build-docker-localnode:
 	cd networks/local
