@@ -7,4 +7,6 @@ to Minter.
 What is Minter?
 -------------------
 
-Minter is a bla-bla-bla
+
+Minter is a blockchain network that lets people, projects, and companies issue
+and manage their own coins and trade them at a fair market price with absolute and instant liquidity.
