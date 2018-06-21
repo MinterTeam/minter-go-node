@@ -11,9 +11,11 @@ Minter 101
    install.rst
    specs.rst
    transactions.rst
+   checks.rst
    commissions.rst
    validators.rst
    api.rst
+   sdk.rst
 
 Minter 102
 ----------
