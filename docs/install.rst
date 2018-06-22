@@ -1,7 +1,9 @@
+.. _install-minter:
+
 Install Minter
 ==============
 
-There are several ways you can install Minter Blockchain node on your machine:
+There are several ways you can install Minter Blockchain Testnet node on your machine:
 
 Using Docker
 ------------
