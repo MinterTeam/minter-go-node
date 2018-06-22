@@ -16,7 +16,7 @@ Rules and fines
 
 ...
 
-How to became validator in testnet
+How to become validator in testnet
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 1. Install and run Minter Full Node. See :ref:`install-minter`. Make sure your node successfully synchronized.
