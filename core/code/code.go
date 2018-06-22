@@ -27,6 +27,7 @@ const (
 	StakeNotFound         uint32 = 404
 	InsufficientStake     uint32 = 405
 	IsNotOwnerOfCandidate uint32 = 406
+	IncorrectPubKey       uint32 = 407
 
 	// check
 	CheckInvalidLock uint32 = 501

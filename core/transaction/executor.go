@@ -57,6 +57,12 @@ func RunTx(context *state.StateDB, isCheck bool, tx *Transaction, rewardPull *bi
 
 		data := tx.GetDecodedData().(DeclareCandidacyData)
 
+		if len(data.PubKey) != 32 {
+			return Response{
+				Code: code.IncorrectPubKey,
+				Log:  fmt.Sprintf("Incorrect PubKey")}
+		}
+
 		commissionInBaseCoin := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
 		commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
 		commission := big.NewInt(0).Set(commissionInBaseCoin)
