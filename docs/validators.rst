@@ -19,7 +19,7 @@ Rules and fines
 How to became validator in testnet
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-1. Install and run Minter Full Node. See :ref:`install-minter`.
+1. Install and run Minter Full Node. See :ref:`install-minter`. Make sure your node successfully synchronized.
 2. Generate and install validator's key using our `tool <https://github.com/MinterTeam/minter-gen-validator>`__.
 3. Restart Minter Node and Tendermint.
 4. To to `Vault <http://vault.minter.network/>`__ and send 2 transactions:
