@@ -22,7 +22,7 @@ How to become validator in testnet
 1. Install and run Minter Full Node. See :ref:`install-minter`. Make sure your node successfully synchronized.
 2. Generate and install validator's key using our `tool <https://github.com/MinterTeam/minter-gen-validator>`__.
 3. Restart Minter Node and Tendermint.
-4. To to `Vault <http://vault.minter.network/>`__ (you can receive testnet coins in our telegram wallet @BipWallet_Bot) and send 2 transactions:
+4. Go to `Vault <http://vault.minter.network/>`__ (you can receive testnet coins in our telegram wallet @BipWallet_Bot) and send 2 transactions:
 
 Declare candidacy
     - Address - You will receive rewards to this address and will be able to on/off your validator.
