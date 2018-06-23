@@ -4,10 +4,41 @@ Validators
 Introduction
 ^^^^^^^^^^^^
 
-...
+The Minter Blockchain is based on Tendermint, which relies on a set of validators that are
+responsible for committing new blocks in the blockchain. These validators participate in
+the consensus protocol by broadcasting votes which contain cryptographic signatures signed
+by each validator’s private key.
+
+Validator candidates can bond their own coins and have coins “delegated”, or staked, to them
+by token holders. The validators are determined by who has the most stake delegated to them.
+
+Validators and their delegators will earn BIP (MNT) as. Note that validators can set
+commission on the rewards their delegators receive as additional incentive.
+
+If validators double sign, are frequently offline or do not participate in governance, their
+staked coins (including coins of users that delegated to them) can be slashed. The penalty
+depends on the severity of the violation.
 
 Requirements
 ^^^^^^^^^^^^
+
+Minimal requirements for running Validator's Node are:
+
+- 2GB RAM
+- 100GB of disk space
+- 1.4 GHz 2v CPU
+
+SSD disks are preferable for high transaction throughput.
+
+Recommended:
+
+- 4GB RAM
+- 200GB SSD
+- x64 2.0 GHz 4v CPU
+
+
+Rewards
+^^^^^^^
 
 ...
 
