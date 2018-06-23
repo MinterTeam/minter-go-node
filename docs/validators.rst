@@ -12,8 +12,8 @@ by each validator’s private key.
 Validator candidates can bond their own coins and have coins “delegated”, or staked, to them
 by token holders. The validators are determined by who has the most stake delegated to them.
 
-Validators and their delegators will earn BIP (MNT) as. Note that validators can set
-commission on the rewards their delegators receive as additional incentive.
+Validators and their delegators will earn BIP (MNT) as rewards for blocks and commissions. Note
+that validators can set commission on the rewards their delegators receive as additional incentive.
 
 If validators double sign, are frequently offline or do not participate in governance, their
 staked coins (including coins of users that delegated to them) can be slashed. The penalty
