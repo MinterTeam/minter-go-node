@@ -49,8 +49,8 @@ From Source
 You'll need ``go`` `installed <https://golang.org/doc/install>`__ and the required
 `environment variables set <https://github.com/tendermint/tendermint/wiki/Setting-GOPATH>`__
 
-Install Tendermint 0.20
-^^^^^^^^^^^^^^^^^^^^^^^
+Install Tendermint 0.21.0
+^^^^^^^^^^^^^^^^^^^^^^^^^
 `Read official instructions <https://tendermint.readthedocs.io/en/master/install.html>`__
 
 Clone Minter source code to your machine
