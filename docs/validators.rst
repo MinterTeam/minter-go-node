@@ -31,6 +31,11 @@ How to become validator in testnet
 4. Go to `Vault <http://vault.minter.network/>`__ and send 2 transactions:
     Fill and send ``Declare candidacy`` and ``Set candidate online`` forms.
 
+    If you cannot open Vault because of invalid certificate:
+    `reset HSTS <https://www.thesslstore.com/blog/clear-hsts-settings-chrome-firefox/>`__ for domains
+    ``minter.network`` and ``vault.minter.network``. Then try to open
+    `HTTP version of Vault <http://vault.minter.network/>`__.
+
     P.S. You can receive testnet coins in our telegram wallet @BipWallet_Bot.
 
     1. Declare candidacy
