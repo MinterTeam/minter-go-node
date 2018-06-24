@@ -188,7 +188,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 	}
 
 	// pay rewards
-	if app.height%5 == 0 {
+	if app.height%12 == 0 {
 		app.stateDeliver.PayRewards()
 	}
 
