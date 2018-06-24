@@ -13,7 +13,7 @@ BREAKING CHANGES
 
 IMPROVEMENT
 
-- [docs] Updated docks
+- [docs] Updated docs
 
 BUG FIXES
 
