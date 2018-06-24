@@ -69,7 +69,7 @@ How to become validator in testnet
 
     P.S. You can receive testnet coins in our telegram wallet @BipWallet_Bot.
 
-    1. Declare candidacy
+    4.1. Declare candidacy
         - Address - You will receive rewards to this address and will be able to on/off your validator.
         - Public Key - Paste public key you created in step 2.
         - Commission - Set commission for delegated stakes.
@@ -79,8 +79,10 @@ How to become validator in testnet
     .. figure:: assets/vault-declare.png
         :width: 300px
 
-    2. Set candidate online
-        Public Key - Paste public key you created in step 2.
+    4.2. Set candidate online
+        Public Key - Paste public key you created in step 4.2.
+
+        *Note: You should send transaction from address you choose in Address field in step 4.2*
 
     .. figure:: assets/vault-candidate-on.png
         :width: 300px
