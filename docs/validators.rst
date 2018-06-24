@@ -71,7 +71,7 @@ How to become validator in testnet
 
     4.1. Declare candidacy
         - Address - You will receive rewards to this address and will be able to on/off your validator.
-        - Public Key - Paste public key you created in step 2.
+        - Public Key - Paste public key you created in step 2 *(Mp...)*.
         - Commission - Set commission for delegated stakes.
         - Coin - Enter coin of your stake (MNT).
         - Stake - Enter value of your stake in given coin.
@@ -80,7 +80,7 @@ How to become validator in testnet
         :width: 300px
 
     4.2. Set candidate online
-        Public Key - Paste public key you created in step 4.2.
+        Public Key - Paste public key you created in step 2 *(Mp...)*.
 
         *Note: You should send transaction from address you choose in Address field in step 4.2*
 
