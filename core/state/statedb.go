@@ -698,7 +698,7 @@ func (s *StateDB) GetValidators(count int) ([]abci.Validator, []Candidate) {
 	}
 
 	for i := range activeCandidates[:count] {
-		power := big.NewInt(0).Div(big.NewInt(0).Mul(activeCandidates[i].TotalBipStake, big.NewInt(10000)), totalPower)
+		power := big.NewInt(0).Div(big.NewInt(0).Mul(activeCandidates[i].TotalBipStake, big.NewInt(100000000)), totalPower)
 		validators[i] = abci.Ed25519Validator(activeCandidates[i].PubKey, power.Int64())
 	}
 
