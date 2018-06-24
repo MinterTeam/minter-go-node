@@ -40,7 +40,13 @@ Recommended:
 Rewards
 ^^^^^^^
 
-...
+Rewards for blocks and commissions are accumulated and proportionally (based on stake value)
+payed once per 12 blocks (approx 1 minute) to all active validators (and their delegators).
+
+Delegators receive their rewards at the same time after paying commission to their validators
+(commission value is based on validator's settings).
+
+5% from reward going to DAO account.
 
 Rules and fines
 ^^^^^^^^^^^^^^^
