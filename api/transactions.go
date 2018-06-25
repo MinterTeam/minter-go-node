@@ -64,8 +64,7 @@ func Transactions(w http.ResponseWriter, r *http.Request) {
 
 	result := make([]TransactionResponse, len(rpcResult.Txs))
 
-	for i := range rpcResult.Txs {
-		tx := rpcResult.Txs[i]
+	for i, tx := range rpcResult.Txs {
 		decodedTx, _ := transaction.DecodeFromBytes(tx.Tx)
 		sender, _ := decodedTx.Sender()
 

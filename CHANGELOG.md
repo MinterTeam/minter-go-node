@@ -10,6 +10,7 @@ BREAKING CHANGES
 - [validators] Change total "validators' power" to 100 mln
 - [tendermint] Switched to v0.21.0
 - [testnet] New testnet chain id
+- [api] Changed */api/block* response format
 
 IMPROVEMENT
 

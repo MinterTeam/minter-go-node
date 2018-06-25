@@ -106,16 +106,18 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 	app.rewards = big.NewInt(0)
 
 	// clear absent candidates
-	app.validatorsStatuses = make(map[string]int8)
+	app.validatorsStatuses = map[string]int8{}
 
 	// give penalty to absent validators
 	for _, v := range req.Validators {
+		pubkey := types.Pubkey(v.Validator.PubKey.Data)
+
 		if v.SignedLastBlock {
-			app.stateDeliver.SetValidatorPresent(v.Validator.PubKey.Data)
-			app.validatorsStatuses[v.Validator.PubKey.String()] = ValidatorPresent
+			app.stateDeliver.SetValidatorPresent(pubkey)
+			app.validatorsStatuses[pubkey.String()] = ValidatorPresent
 		} else {
-			app.stateDeliver.SetValidatorAbsent(v.Validator.PubKey.Data)
-			app.validatorsStatuses[v.Validator.PubKey.String()] = ValidatorAbsent
+			app.stateDeliver.SetValidatorAbsent(pubkey)
+			app.validatorsStatuses[pubkey.String()] = ValidatorAbsent
 		}
 	}
 
@@ -160,7 +162,6 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 	// calculate total power of validators
 	totalPower := big.NewInt(0)
 	for _, candidate := range newCandidates {
-
 		// skip if candidate is not present
 		if app.validatorsStatuses[candidate.PubKey.String()] != ValidatorPresent {
 			continue
