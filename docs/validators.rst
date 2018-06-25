@@ -76,6 +76,9 @@ How to become validator in testnet
     P.S. You can receive testnet coins in our telegram wallet @BipWallet_Bot.
 
     4.1. Declare candidacy
+        Validators should declare their candidacy, after which users can delegate
+        and, if they so wish, unbond. Then declaring candidacy validator should fill a form:
+
         - Address - You will receive rewards to this address and will be able to on/off your validator.
         - Public Key - Paste public key you created in step 2 *(Mp...)*.
         - Commission - Set commission for delegated stakes.
@@ -86,7 +89,12 @@ How to become validator in testnet
         :width: 300px
 
     4.2. Set candidate online
-        Public Key - Paste public key you created in step 2 *(Mp...)*.
+        Validator is **offline** by default. When offline, validator is not included in the list of
+        Minter Blockchain validators, so he is not receiving any rewards and cannot be punished
+        for low availability.
+
+        To turn your validator **on**, you should provide Public Key (which you created in step
+        2 *(Mp...)*).
 
         *Note: You should send transaction from address you choose in Address field in step 4.2*
 
