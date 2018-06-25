@@ -124,3 +124,13 @@ Run Minter
     :lineno-start: 13
 
     minter
+
+Troubleshooting
+---------------
+
+Too many open files (24)
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Tendermint sometimes is very resource-demanding in terms of "max open files limit". If your
+instance is constantly shutting down after working couple minutes - try to increase open files limit:
+`<https://easyengine.io/tutorials/linux/increase-open-files-limit/>`__
