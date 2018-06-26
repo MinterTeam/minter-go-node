@@ -33,6 +33,7 @@ type BlockTransactionResponse struct {
 	Data        transaction.Data `json:"data"`
 	Payload     []byte           `json:"payload"`
 	ServiceData []byte           `json:"serviceData"`
+	Gas         int64            `json:"gas"`
 }
 
 func Block(w http.ResponseWriter, r *http.Request) {
@@ -73,6 +74,7 @@ func Block(w http.ResponseWriter, r *http.Request) {
 			Data:        tx.GetDecodedData(),
 			Payload:     tx.Payload,
 			ServiceData: tx.ServiceData,
+			Gas:         tx.Gas(),
 		}
 	}
 
