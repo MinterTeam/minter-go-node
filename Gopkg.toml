@@ -58,16 +58,8 @@
   name = "github.com/syndtr/goleveldb"
 
 [[constraint]]
-  name = "github.com/tendermint/abci"
-  version = "0.11.0"
-
-[[constraint]]
   name = "github.com/tendermint/tendermint"
-  version = "0.20.0"
-
-[[constraint]]
-  name = "github.com/tendermint/tmlibs"
-  version = "0.8.4"
+  version = "0.21.0"
 
 [[constraint]]
   branch = "v2"

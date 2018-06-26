@@ -1,7 +1,7 @@
 version: "3.4"
 services:
   minter:
-    image: minterteam/minter:latest
+    image: minterteam/minter:0.0.4
     command: --tendermint_addr=tcp://tendermint:46657
     volumes:
       - ~/.minter:/minter
@@ -15,7 +15,7 @@ services:
       retries: 3
       start_period: 30s
   tendermint:
-    image: tendermint/tendermint:0.20.0
+    image: tendermint/tendermint:0.21.0
     command: node --proxy_app=tcp://minter:46658
     volumes:
       - ~/.tendermint:/tendermint

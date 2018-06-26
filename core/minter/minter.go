@@ -24,17 +24,22 @@ import (
 type Blockchain struct {
 	abciTypes.BaseApplication
 
-	db               *mintdb.LDBDatabase
-	stateDeliver     *state.StateDB
-	stateCheck       *state.StateDB
-	rootHash         types.Hash
-	height           uint64
-	rewards          *big.Int
-	activeValidators abciTypes.Validators
-	absentCandidates map[string]bool
+	db                 *mintdb.LDBDatabase
+	stateDeliver       *state.StateDB
+	stateCheck         *state.StateDB
+	rootHash           types.Hash
+	height             uint64
+	rewards            *big.Int
+	activeValidators   abciTypes.Validators
+	validatorsStatuses map[string]int8
 
 	BaseCoin types.CoinSymbol
 }
+
+const (
+	ValidatorPresent = 1
+	ValidatorAbsent  = 2
+)
 
 var (
 	blockchain *Blockchain
@@ -101,15 +106,18 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 	app.rewards = big.NewInt(0)
 
 	// clear absent candidates
-	app.absentCandidates = make(map[string]bool)
+	app.validatorsStatuses = map[string]int8{}
 
 	// give penalty to absent validators
 	for _, v := range req.Validators {
+		pubkey := types.Pubkey(v.Validator.PubKey.Data)
+
 		if v.SignedLastBlock {
-			app.stateDeliver.SetValidatorPresent(v.Validator.PubKey.Data)
+			app.stateDeliver.SetValidatorPresent(pubkey)
+			app.validatorsStatuses[pubkey.String()] = ValidatorPresent
 		} else {
-			app.stateDeliver.SetValidatorAbsent(v.Validator.PubKey.Data)
-			app.absentCandidates[v.Validator.PubKey.String()] = true
+			app.stateDeliver.SetValidatorAbsent(pubkey)
+			app.validatorsStatuses[pubkey.String()] = ValidatorAbsent
 		}
 	}
 
@@ -154,9 +162,8 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 	// calculate total power of validators
 	totalPower := big.NewInt(0)
 	for _, candidate := range newCandidates {
-
-		// skip if candidate is absent
-		if app.absentCandidates[candidate.PubKey.String()] {
+		// skip if candidate is not present
+		if app.validatorsStatuses[candidate.PubKey.String()] != ValidatorPresent {
 			continue
 		}
 
@@ -166,8 +173,8 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 	// accumulate rewards
 	for _, candidate := range newCandidates {
 
-		// skip if candidate is absent
-		if app.absentCandidates[candidate.PubKey.String()] {
+		// skip if candidate is not present
+		if app.validatorsStatuses[candidate.PubKey.String()] != ValidatorPresent {
 			continue
 		}
 
@@ -182,7 +189,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 	}
 
 	// pay rewards
-	if app.height%5 == 0 {
+	if app.height%12 == 0 {
 		app.stateDeliver.PayRewards()
 	}
 

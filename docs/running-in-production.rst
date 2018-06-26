@@ -76,7 +76,7 @@ Minimal requirements are:
 
 - 2GB RAM
 - 100GB of disk space
-- 1.4 GHz CPU
+- 1.4 GHz 2v CPU
 
 SSD disks are preferable for high transaction throughput.
 
