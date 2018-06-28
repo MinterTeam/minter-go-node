@@ -4,7 +4,7 @@ Transactions
 Semantic
 ^^^^^^^^
 
-Transactions in Minter are `LRP-encoded <https://github.com/ethereum/wiki/wiki/RLP>`__ structures.
+Transactions in Minter are `RLP-encoded <https://github.com/ethereum/wiki/wiki/RLP>`__ structures.
 
 Example of a signed transaction:
 
