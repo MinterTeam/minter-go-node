@@ -26,17 +26,55 @@ func EstimateCoinExchangeReturn(w http.ResponseWriter, r *http.Request) {
 	var result *big.Int
 
 	if fromCoinSymbol == blockchain.BaseCoin {
-		coin := cState.GetStateCoin(toCoinSymbol).Data()
-		result = formula.CalculatePurchaseReturn(coin.Volume, coin.ReserveBalance, coin.Crr, value)
+		coin := cState.GetStateCoin(toCoinSymbol)
+		if coin == nil {
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(Response{
+				Code:   404,
+				Result: nil,
+				Log:    "Coin not found",
+			})
+			return
+		}
+		result = formula.CalculatePurchaseReturn(coin.Data().Volume, coin.Data().ReserveBalance, coin.Data().Crr, value)
 	} else if toCoinSymbol == blockchain.BaseCoin {
-		coin := cState.GetStateCoin(fromCoinSymbol).Data()
-		result = formula.CalculateSaleReturn(coin.Volume, coin.ReserveBalance, coin.Crr, value)
+		coin := cState.GetStateCoin(fromCoinSymbol)
+		if coin == nil {
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(Response{
+				Code:   404,
+				Result: nil,
+				Log:    "Coin not found",
+			})
+			return
+		}
+		result = formula.CalculateSaleReturn(coin.Data().Volume, coin.Data().ReserveBalance, coin.Data().Crr, value)
 	} else {
-		coinFrom := cState.GetStateCoin(fromCoinSymbol).Data()
-		coinTo := cState.GetStateCoin(toCoinSymbol).Data()
+		coinFrom := cState.GetStateCoin(fromCoinSymbol)
+		coinTo := cState.GetStateCoin(toCoinSymbol)
 
-		val := formula.CalculateSaleReturn(coinFrom.Volume, coinFrom.ReserveBalance, coinFrom.Crr, value)
-		result = formula.CalculatePurchaseReturn(coinTo.Volume, coinTo.ReserveBalance, coinTo.Crr, val)
+		if coinFrom == nil {
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(Response{
+				Code:   404,
+				Result: nil,
+				Log:    "Coin not found",
+			})
+			return
+		}
+
+		if coinTo == nil {
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(Response{
+				Code:   404,
+				Result: nil,
+				Log:    "Coin not found",
+			})
+			return
+		}
+
+		val := formula.CalculateSaleReturn(coinFrom.Data().Volume, coinFrom.Data().ReserveBalance, coinFrom.Data().Crr, value)
+		result = formula.CalculatePurchaseReturn(coinTo.Data().Volume, coinTo.Data().ReserveBalance, coinTo.Data().Crr, val)
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")

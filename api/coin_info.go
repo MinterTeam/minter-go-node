@@ -28,21 +28,32 @@ func GetCoinInfo(w http.ResponseWriter, r *http.Request) {
 
 	copy(coinSymbol[:], []byte(symbol))
 
-	coin := cState.GetStateCoin(coinSymbol).Data()
+	coin := cState.GetStateCoin(coinSymbol)
 
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+
+	if coin == nil {
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(Response{
+			Code:   404,
+			Result: nil,
+			Log:    "Coin not found",
+		})
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 
 	json.NewEncoder(w).Encode(Response{
 		Code: 0,
 		Result: CoinInfoResponse{
-			Name:           coin.Name,
-			Symbol:         coin.Symbol,
-			Volume:         coin.Volume.String(),
-			Crr:            coin.Crr,
-			ReserveCoin:    coin.ReserveCoin,
-			ReserveBalance: coin.ReserveBalance.String(),
-			Creator:        coin.Creator,
+			Name:           coin.Data().Name,
+			Symbol:         coin.Data().Symbol,
+			Volume:         coin.Data().Volume.String(),
+			Crr:            coin.Data().Crr,
+			ReserveCoin:    coin.Data().ReserveCoin,
+			ReserveBalance: coin.Data().ReserveBalance.String(),
+			Creator:        coin.Data().Creator,
 		},
 	})
 }
