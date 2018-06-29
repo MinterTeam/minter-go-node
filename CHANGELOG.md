@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.0.5
+*June 29th, 2018*
+
+BREAKING CHANGES
+
+- [testnet] New testnet chain id (minter-test-network-8)
+
+IMPROVEMENT
+
+- [api] Fix issue with not found coins
+
 ## 0.0.4
 
 *June 24th, 2018*
