@@ -5,6 +5,7 @@
 
 BREAKING CHANGES
 
+- [core] Remove Reserve Coin from coin object. All coins should be reserved with base coin.
 - [testnet] New testnet chain id (minter-test-network-8)
 
 IMPROVEMENT

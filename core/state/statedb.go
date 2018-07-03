@@ -470,7 +470,6 @@ func (s *StateDB) CreateCoin(
 		Symbol:         symbol,
 		Volume:         volume,
 		Crr:            crr,
-		ReserveCoin:    types.GetBaseCoin(),
 		ReserveBalance: reserve,
 		Creator:        creator,
 	}, s.MarkStateCoinDirty)
