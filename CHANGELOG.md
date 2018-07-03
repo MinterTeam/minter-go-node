@@ -14,6 +14,10 @@ IMPROVEMENT
 
 - [api] Fix issue with not found coins
 
+BUG FIXES
+
+- [api] Fix transaction endpoint
+
 ## 0.0.4
 
 *June 24th, 2018*
