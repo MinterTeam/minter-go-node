@@ -20,6 +20,19 @@ Issue own coin is as simple as filling a form with given fields:
 
 After coin issued you can send is as ordinary coin using standard wallets.
 
+Issuance Fees
+^^^^^^^^^^^^^
+
+To issue a coin Coiner should pay fee. Fee is depends on length of Coin Symbol.
+
+| 3 letters – 1 000 000 bips + standard transaction fee
+| 4 letters – 100 000 bips + standard transaction fee
+| 5 letters – 10 000 bips + standard transaction fee
+| 6 letters – 1000 bips + standard transaction fee
+| 7 letters – 100 bips + standard transaction fee
+| 8 letters – 10 bips + standard transaction fee
+| 9-10 letters - just standard transaction fee
+
 Coin Exchange
 ^^^^^^^^^^^^^
 
