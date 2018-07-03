@@ -12,11 +12,14 @@ Coin Issuance
 Every user of Minter can issue own coin. Each coin is backed by base coin in some proportion.
 Issue own coin is as simple as filling a form with given fields:
 
-- Coin name
-- Coin symbol
-- Initial supply
-- Initial reserve
-- Constant Reserve Ratio (CRR)
+.. figure:: assets/coin-minter.png
+    :width: 300px
+
+- **Coin name** - Name of a coin. Arbitrary string.
+- **Coin symbol** - Symbol of a coin. Must be unique, alphabetic, uppercase, 3 to 10 letters length.
+- **Initial supply** - Amount of coins to issue. Issued coins will be available to sender account.
+- **Initial reserve** - Initial reserve in base coin.
+- **Constant Reserve Ratio (CRR)** - uint, should be from 10 to 100.
 
 After coin issued you can send is as ordinary coin using standard wallets.
 
