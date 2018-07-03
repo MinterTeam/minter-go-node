@@ -4,9 +4,9 @@ import (
 	"github.com/MinterTeam/minter-go-node/api"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/core/minter"
-	"github.com/tendermint/abci/server"
-	"github.com/tendermint/tmlibs/common"
-	"github.com/tendermint/tmlibs/log"
+	"github.com/tendermint/tendermint/abci/server"
+	"github.com/tendermint/tendermint/libs/common"
+	"github.com/tendermint/tendermint/libs/log"
 	"os"
 )
 
