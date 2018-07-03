@@ -36,6 +36,13 @@ Recommended:
 - 200GB SSD
 - x64 2.0 GHz 4v CPU
 
+Validators limitations
+^^^^^^^^^^^^^^^^^^^^^^
+
+Minter Network has limited number of available slots for validators.
+
+At genesis there will be just ``16`` of them. ``4`` slots will be added each ``518,400`` blocks.
+Maximum validators count is ``256``.
 
 Rewards
 ^^^^^^^
@@ -51,7 +58,23 @@ Delegators receive their rewards at the same time after paying commission to the
 Rules and fines
 ^^^^^^^^^^^^^^^
 
-...
+Validators have one main responsibility:
+
+- Be able to constantly run a correct version of the software: validators need to make sure that their
+  servers are always online and their private keys are not compromised.
+
+
+If a validator misbehaves, its bonded stake along with its delegators' stake and will be slashed.
+The severity of the punishment depends on the type of fault. There are 3 main faults that can result in slashing
+of funds for a validator and its delegators:
+
+- **Double signing**: If someone reports on chain A that a validator signed two blocks at the same height on chain
+  A and chain B, this validator will get slashed on chain A
+- **Unavailability**: If a validator's signature has not been included in the last X blocks,
+  1% of stake will get slashed and validator will be turned off
+
+Note that even if a validator does not intentionally misbehave, it can still be slashed if its node crashes,
+looses connectivity, gets DDOSed, or if its private key is compromised.
 
 Becoming validator in testnet
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
