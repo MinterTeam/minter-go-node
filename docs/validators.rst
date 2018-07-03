@@ -53,8 +53,8 @@ Rules and fines
 
 ...
 
-How to become validator in testnet
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Becoming validator in testnet
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 1. Install and run Minter Full Node.
     See :ref:`install-minter`. Make sure your node successfully synchronized.
@@ -103,3 +103,7 @@ How to become validator in testnet
 
 5. Done.
     Now you will receive reward as long as your node is running and available.
+
+
+DDOS protection. Sentry node architecture
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

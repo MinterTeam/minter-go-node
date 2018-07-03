@@ -131,6 +131,9 @@ Troubleshooting
 Too many open files (24)
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-Tendermint sometimes is very resource-demanding in terms of "max open files limit". If your
-instance is constantly shutting down after working couple minutes - try to increase open files limit:
+The default number of files Linux can open (per-process) is 1024. Tendermint is known to open more than 1024 files.
+This causes the process to crash. A quick fix is to run ulimit -n 4096 (increase the number of open files allowed) and
+then restart the process with gaiad start. If you are using systemd or another process manager to launch gaiad this
+may require some configuration at that level.
+
 `<https://easyengine.io/tutorials/linux/increase-open-files-limit/>`__
