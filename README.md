@@ -45,7 +45,7 @@ $ docker-compose up
 You'll need **go** [installed](https://golang.org/doc/install) and the required
 [environment variables set](https://github.com/tendermint/tendermint/wiki/Setting-GOPATH)
 
-1. Install [Tendermint 0.21.0](https://github.com/tendermint/tendermint/blob/master/docs/install.rst)
+1. Install [Tendermint 0.22.0](https://github.com/tendermint/tendermint/blob/master/docs/install.rst)
 
 2. Clone Minter to your machine
 ```bash
