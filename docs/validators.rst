@@ -15,9 +15,8 @@ by token holders. The validators are determined by who has the most stake delega
 Validators and their delegators will earn BIP (MNT) as rewards for blocks and commissions. Note
 that validators can set commission on the rewards their delegators receive as additional incentive.
 
-If validators double sign, are frequently offline or do not participate in governance, their
-staked coins (including coins of users that delegated to them) can be slashed. The penalty
-depends on the severity of the violation.
+If validators double sign or frequently offline, their staked coins (including coins of users that
+delegated to them) can be slashed. The penalty depends on the severity of the violation.
 
 Requirements
 ^^^^^^^^^^^^
@@ -48,12 +47,12 @@ Rewards
 ^^^^^^^
 
 Rewards for blocks and commissions are accumulated and proportionally (based on stake value)
-payed once per 12 blocks (approx 1 minute) to all active validators (and their delegators).
+payed once per ``12 blocks`` (approx 1 minute) to all active validators (and their delegators).
 
 Delegators receive their rewards at the same time after paying commission to their validators
 (commission value is based on validator's settings).
 
-5% from reward going to DAO account.
+``5%`` from reward going to DAO account.
 
 Rules and fines
 ^^^^^^^^^^^^^^^
