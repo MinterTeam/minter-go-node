@@ -11,6 +11,8 @@ const (
 	DecodeError              uint32 = 106
 	InsufficientFunds        uint32 = 107
 	UnknownTransactionType   uint32 = 108
+	TxPayloadTooLarge        uint32 = 109
+	TxServiceDataTooLarge    uint32 = 110
 
 	// coin creation
 	CoinAlreadyExists uint32 = 201
