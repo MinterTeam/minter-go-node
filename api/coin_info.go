@@ -12,7 +12,6 @@ type CoinInfoResponse struct {
 	Symbol         types.CoinSymbol `json:"symbol"`
 	Volume         string           `json:"volume"`
 	Crr            uint             `json:"crr"`
-	ReserveCoin    types.CoinSymbol `json:"reserve_coin"`
 	ReserveBalance string           `json:"reserve_balance"`
 	Creator        types.Address    `json:"creator"`
 }
@@ -51,7 +50,6 @@ func GetCoinInfo(w http.ResponseWriter, r *http.Request) {
 			Symbol:         coin.Data().Symbol,
 			Volume:         coin.Data().Volume.String(),
 			Crr:            coin.Data().Crr,
-			ReserveCoin:    coin.Data().ReserveCoin,
 			ReserveBalance: coin.Data().ReserveBalance.String(),
 			Creator:        coin.Data().Creator,
 		},

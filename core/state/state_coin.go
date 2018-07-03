@@ -54,7 +54,6 @@ type Coin struct {
 	Symbol         types.CoinSymbol
 	Volume         *big.Int
 	Crr            uint
-	ReserveCoin    types.CoinSymbol
 	ReserveBalance *big.Int
 	Creator        types.Address
 }
