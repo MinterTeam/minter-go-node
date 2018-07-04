@@ -535,15 +535,15 @@ func RunTx(context *state.StateDB, isCheck bool, tx *Transaction, rewardPull *bi
 			coinFrom := context.GetStateCoin(data.FromCoinSymbol).Data()
 			coinTo := context.GetStateCoin(data.ToCoinSymbol).Data()
 
-			val := formula.CalculateSaleReturn(coinFrom.Volume, coinFrom.ReserveBalance, coinFrom.Crr, data.Value)
-			value = formula.CalculatePurchaseReturn(coinTo.Volume, coinTo.ReserveBalance, coinTo.Crr, val)
+			basecoinValue := formula.CalculateSaleReturn(coinFrom.Volume, coinFrom.ReserveBalance, coinFrom.Crr, data.Value)
+			value = formula.CalculatePurchaseReturn(coinTo.Volume, coinTo.ReserveBalance, coinTo.Crr, basecoinValue)
 
 			if !isCheck {
-				context.AddCoinVolume(data.ToCoinSymbol, data.Value)
-				context.SubCoinVolume(data.FromCoinSymbol, value)
+				context.AddCoinVolume(data.ToCoinSymbol, value)
+				context.SubCoinVolume(data.FromCoinSymbol, data.Value)
 
-				context.AddCoinReserve(data.ToCoinSymbol, data.Value)
-				context.SubCoinReserve(data.ToCoinSymbol, value)
+				context.AddCoinReserve(data.ToCoinSymbol, basecoinValue)
+				context.SubCoinReserve(data.FromCoinSymbol, basecoinValue)
 			}
 		}
 
