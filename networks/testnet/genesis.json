@@ -1,6 +1,6 @@
 {
   "genesis_time": "2018-06-09T00:00:00Z",
-  "chain_id": "minter-test-network-8",
+  "chain_id": "minter-test-network-9",
   "validators": [
     {
       "pub_key": {
