@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
-	"fmt"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/rewards"
@@ -16,6 +15,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/mintdb"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
+	"github.com/tendermint/tendermint/libs/log"
 	"github.com/tendermint/tendermint/rpc/core/types"
 	"github.com/tendermint/tendermint/rpc/lib/client"
 	"math/big"
@@ -32,6 +32,7 @@ type Blockchain struct {
 	rewards            *big.Int
 	activeValidators   abciTypes.Validators
 	validatorsStatuses map[string]int8
+	logger             log.Logger
 
 	BaseCoin types.CoinSymbol
 }
@@ -55,7 +56,7 @@ var (
 	airdropAddress = types.HexToAddress("Mxa93163fdf10724dc4785ff5cbfb9ac0b5949409f")
 )
 
-func NewMinterBlockchain() *Blockchain {
+func NewMinterBlockchain(logger log.Logger) *Blockchain {
 
 	db, err := mintdb.NewLDBDatabase(utils.GetMinterHome()+"/data", 1000, 1000)
 
@@ -66,6 +67,7 @@ func NewMinterBlockchain() *Blockchain {
 	blockchain = &Blockchain{
 		db:       db,
 		BaseCoin: types.GetBaseCoin(),
+		logger:   logger,
 	}
 
 	blockchain.updateCurrentRootHash()
@@ -261,7 +263,7 @@ func (app *Blockchain) DeliverTx(rawTx []byte) abciTypes.ResponseDeliverTx {
 			Log:  "TX service data length is over 128 bytes"}
 	}
 
-	fmt.Println("deliver", tx)
+	app.logger.Info("Deliver tx", "tx", tx.String())
 
 	response := transaction.RunTx(app.stateDeliver, false, tx, app.rewards, app.height)
 

@@ -13,7 +13,7 @@ import (
 func main() {
 	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 
-	app := minter.NewMinterBlockchain()
+	app := minter.NewMinterBlockchain(logger)
 
 	// Start the listener
 	srv, err := server.NewServer(*utils.MinterAppAddrFlag, "socket", app)
