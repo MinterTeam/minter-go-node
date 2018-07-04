@@ -10,20 +10,18 @@ import (
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/core/minter"
 	"github.com/MinterTeam/minter-go-node/core/state"
-	"github.com/tendermint/tendermint/rpc/core/types"
-	"github.com/tendermint/tendermint/rpc/lib/client"
+	rpc "github.com/tendermint/tendermint/rpc/client"
 	"strconv"
 	"time"
 )
 
 var (
 	blockchain *minter.Blockchain
-	client     *rpcclient.JSONRPCClient
+	client     *rpc.HTTP
 )
 
 func RunApi(b *minter.Blockchain) {
-	client = rpcclient.NewJSONRPCClient(*utils.TendermintRpcAddrFlag)
-	core_types.RegisterAmino(client.Codec())
+	client = rpc.NewHTTP(*utils.TendermintRpcAddrFlag, "/websocket")
 
 	blockchain = b
 
@@ -55,8 +53,7 @@ func RunApi(b *minter.Blockchain) {
 
 	// wait for tendermint to start
 	for true {
-		result := new(core_types.ResultHealth)
-		_, err := client.Call("health", map[string]interface{}{}, result)
+		_, err := client.Health()
 		if err == nil {
 			break
 		}

@@ -42,12 +42,7 @@ func Transactions(w http.ResponseWriter, r *http.Request) {
 
 	query := r.URL.Query().Get("query")
 
-	rpcResult := new(ResultTxSearch)
-	_, err := client.Call("tx_search", map[string]interface{}{
-		"query":    query,
-		"page":     1,
-		"per_page": 100,
-	}, rpcResult)
+	rpcResult, err := client.TxSearch(query, false, 1, 100)
 
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 

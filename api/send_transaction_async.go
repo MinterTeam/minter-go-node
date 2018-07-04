@@ -7,7 +7,6 @@ import (
 
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/tendermint/tendermint/rpc/core/types"
 	"net/http"
 	"strings"
 )
@@ -18,10 +17,7 @@ func SendTransactionAsync(w http.ResponseWriter, r *http.Request) {
 	body, _ := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
 	json.Unmarshal(body, &req)
 
-	result := new(core_types.ResultBroadcastTx)
-	_, err := client.Call("broadcast_tx_async", map[string]interface{}{
-		"tx": types.Hex2Bytes(req.Transaction),
-	}, result)
+	result, err := client.BroadcastTxAsync(types.Hex2Bytes(req.Transaction))
 
 	if err != nil {
 		panic(err)

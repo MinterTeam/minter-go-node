@@ -3,7 +3,6 @@ package api
 import (
 	"encoding/json"
 	"github.com/tendermint/tendermint/libs/common"
-	"github.com/tendermint/tendermint/rpc/core/types"
 	"net/http"
 	"time"
 )
@@ -17,17 +16,21 @@ type StatusResponse struct {
 
 func Status(w http.ResponseWriter, r *http.Request) {
 
-	result := new(core_types.ResultStatus)
-	_, err := client.Call("status", map[string]interface{}{}, result)
-
-	if err != nil {
-		panic(err)
-	}
+	result, err := client.Status()
 
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
 
-	err = json.NewEncoder(w).Encode(Response{
+	if err != nil {
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(Response{
+			Code:   500,
+			Result: nil,
+			Log:    err.Error(),
+		})
+		return
+	}
+
+	json.NewEncoder(w).Encode(Response{
 		Code: 0,
 		Result: StatusResponse{
 			LatestBlockHash:   common.HexBytes(result.SyncInfo.LatestBlockHash),
@@ -36,8 +39,4 @@ func Status(w http.ResponseWriter, r *http.Request) {
 			LatestBlockTime:   result.SyncInfo.LatestBlockTime,
 		},
 	})
-
-	if err != nil {
-		panic(err)
-	}
 }
