@@ -152,7 +152,10 @@
 
 [[projects]]
   name = "github.com/prometheus/client_golang"
-  packages = ["prometheus"]
+  packages = [
+    "prometheus",
+    "prometheus/promhttp"
+  ]
   revision = "c5b7fccd204277076155f10851dad72b76a49317"
   version = "v0.8.0"
 
@@ -241,37 +244,48 @@
     "abci/example/kvstore",
     "abci/server",
     "abci/types",
+    "blockchain",
     "config",
+    "consensus",
+    "consensus/types",
     "crypto",
     "crypto/merkle",
     "crypto/tmhash",
+    "evidence",
+    "libs/autofile",
+    "libs/clist",
     "libs/common",
     "libs/db",
+    "libs/events",
     "libs/flowrate",
     "libs/log",
     "libs/pubsub",
     "libs/pubsub/query",
+    "mempool",
+    "node",
     "p2p",
     "p2p/conn",
+    "p2p/pex",
     "p2p/upnp",
+    "privval",
     "proxy",
+    "rpc/client",
+    "rpc/core",
     "rpc/core/types",
+    "rpc/grpc",
+    "rpc/lib",
     "rpc/lib/client",
+    "rpc/lib/server",
     "rpc/lib/types",
     "state",
-    "types"
+    "state/txindex",
+    "state/txindex/kv",
+    "state/txindex/null",
+    "types",
+    "version"
   ]
   revision = "dfa9a9a30a666132425b29454e90a472aa579a48"
   version = "v0.22.0"
-
-[[projects]]
-  name = "github.com/tendermint/tmlibs"
-  packages = [
-    "common",
-    "log"
-  ]
-  revision = "692f1d86a6e2c0efa698fd1e4541b68c74ffaf38"
-  version = "v0.8.4"
 
 [[projects]]
   branch = "master"
@@ -298,6 +312,7 @@
     "http2/hpack",
     "idna",
     "internal/timeseries",
+    "netutil",
     "trace"
   ]
   revision = "1e491301e022f8f977054da4c2d852decd59571f"
@@ -374,6 +389,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "5dc565d960a37820eecf571bb5de7fd224da44e3fe11c277fdb65f1fa4fddc89"
+  inputs-digest = "b5767faba6c17d4970ec50b07e9c0f7ba70872b835c1fef51441a4101de8a9b1"
   solver-name = "gps-cdcl"
   solver-version = 1
