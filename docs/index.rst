@@ -15,6 +15,7 @@ Minter 101
    checks.rst
    commissions.rst
    validators.rst
+   delegator-faq.rst
    api.rst
    sdk.rst
 

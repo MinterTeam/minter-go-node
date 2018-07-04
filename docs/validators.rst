@@ -15,9 +15,8 @@ by token holders. The validators are determined by who has the most stake delega
 Validators and their delegators will earn BIP (MNT) as rewards for blocks and commissions. Note
 that validators can set commission on the rewards their delegators receive as additional incentive.
 
-If validators double sign, are frequently offline or do not participate in governance, their
-staked coins (including coins of users that delegated to them) can be slashed. The penalty
-depends on the severity of the violation.
+If validators double sign or frequently offline, their staked coins (including coins of users that
+delegated to them) can be slashed. The penalty depends on the severity of the violation.
 
 Requirements
 ^^^^^^^^^^^^
@@ -36,25 +35,48 @@ Recommended:
 - 200GB SSD
 - x64 2.0 GHz 4v CPU
 
+Validators limitations
+^^^^^^^^^^^^^^^^^^^^^^
+
+Minter Network has limited number of available slots for validators.
+
+At genesis there will be just ``16`` of them. ``4`` slots will be added each ``518,400`` blocks.
+Maximum validators count is ``256``.
 
 Rewards
 ^^^^^^^
 
 Rewards for blocks and commissions are accumulated and proportionally (based on stake value)
-payed once per 12 blocks (approx 1 minute) to all active validators (and their delegators).
+payed once per ``12 blocks`` (approx 1 minute) to all active validators (and their delegators).
 
 Delegators receive their rewards at the same time after paying commission to their validators
 (commission value is based on validator's settings).
 
-5% from reward going to DAO account.
+``5%`` from reward going to DAO account.
 
 Rules and fines
 ^^^^^^^^^^^^^^^
 
-...
+Validators have one main responsibility:
 
-How to become validator in testnet
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- Be able to constantly run a correct version of the software: validators need to make sure that their
+  servers are always online and their private keys are not compromised.
+
+
+If a validator misbehaves, its bonded stake along with its delegators' stake and will be slashed.
+The severity of the punishment depends on the type of fault. There are 3 main faults that can result in slashing
+of funds for a validator and its delegators:
+
+- **Double signing**: If someone reports on chain A that a validator signed two blocks at the same height on chain
+  A and chain B, this validator will get slashed on chain A
+- **Unavailability**: If a validator's signature has not been included in the last X blocks,
+  1% of stake will get slashed and validator will be turned off
+
+Note that even if a validator does not intentionally misbehave, it can still be slashed if its node crashes,
+looses connectivity, gets DDOSed, or if its private key is compromised.
+
+Becoming validator in testnet
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 1. Install and run Minter Full Node.
     See :ref:`install-minter`. Make sure your node successfully synchronized.
@@ -103,3 +125,7 @@ How to become validator in testnet
 
 5. Done.
     Now you will receive reward as long as your node is running and available.
+
+
+DDOS protection. Sentry node architecture
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

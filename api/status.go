@@ -2,8 +2,8 @@ package api
 
 import (
 	"encoding/json"
+	"github.com/tendermint/tendermint/libs/common"
 	"github.com/tendermint/tendermint/rpc/core/types"
-	"github.com/tendermint/tmlibs/common"
 	"net/http"
 	"time"
 )

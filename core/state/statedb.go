@@ -30,7 +30,7 @@ import (
 	"encoding/binary"
 	"github.com/MinterTeam/minter-go-node/core/check"
 	"github.com/MinterTeam/minter-go-node/core/dao"
-	abci "github.com/tendermint/abci/types"
+	abci "github.com/tendermint/tendermint/abci/types"
 	"sort"
 )
 
@@ -470,7 +470,6 @@ func (s *StateDB) CreateCoin(
 		Symbol:         symbol,
 		Volume:         volume,
 		Crr:            crr,
-		ReserveCoin:    types.GetBaseCoin(),
 		ReserveBalance: reserve,
 		Creator:        creator,
 	}, s.MarkStateCoinDirty)

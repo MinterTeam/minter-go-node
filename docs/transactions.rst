@@ -4,7 +4,7 @@ Transactions
 Semantic
 ^^^^^^^^
 
-Transactions in Minter are `LRP-encoded <https://github.com/ethereum/wiki/wiki/RLP>`__ structures.
+Transactions in Minter are `RLP-encoded <https://github.com/ethereum/wiki/wiki/RLP>`__ structures.
 
 Example of a signed transaction:
 
@@ -17,13 +17,13 @@ Example of a signed transaction:
 
 Each transaction has:
 
-- **Nonce** - int, used for prevent transaction reply
-- **Gas Price** - big int, used for
-- **Type** - type of transaction (see below)
-- **Data** - data of transaction
-- **Payload** (arbitrary bytes) - arbitrary user-defined bytes
-- **Service Data** - service data
-- **ECDSA fields (R, S and V)** - digital signature of transaction
+- **Nonce** - int, used for prevent transaction reply.
+- **Gas Price** - big int, used for managing transaction fees.
+- **Type** - type of transaction (see below).
+- **Data** - data of transaction (depends on transaction type).
+- **Payload** (arbitrary bytes) - arbitrary user-defined bytes.
+- **Service Data** - reserved field.
+- **ECDSA fields (R, S and V)** - digital signature of transaction.
 
 .. code-block:: go
 
@@ -69,6 +69,8 @@ Type of transaction is determined by a single byte.
 Send transaction
 ^^^^^^^^^^^^^^^^
 
+Type: **0x01**
+
 Transaction for sending arbitrary coin.
 
 *Data field contents:*
@@ -81,8 +83,14 @@ Transaction for sending arbitrary coin.
         Value *big.Int
     }
 
+| **Coin** - Symbol of a coin.
+| **To** - Recipient address in Minter Network.
+| **Value** - Amount of **Coin** to send.
+
 Convert transaction
 ^^^^^^^^^^^^^^^^^^^
+
+Type: **0x02**
 
 Transaction for converting one coin (owned by sender) to another coin in a system.
 
@@ -96,8 +104,14 @@ Transaction for converting one coin (owned by sender) to another coin in a syste
         Value          *big.Int
     }
 
+| **FromCoinSymbol** - Symbol of a coin to give.
+| **ToCoinSymbol** - Symbol of a coin to get.
+| **Value** - Amount of **FromCoinSymbol** to convert.
+
 Create coin transaction
 ^^^^^^^^^^^^^^^^^^^^^^^
+
+Type: **0x03**
 
 Transaction for creating new coin in a system.
 
@@ -113,8 +127,16 @@ Transaction for creating new coin in a system.
         ConstantReserveRatio uint
     }
 
+| **Name** - Name of a coin. Arbitrary string.
+| **Symbol** - Symbol of a coin. Must be unique, alphabetic, uppercase, 3 to 10 symbols length.
+| **InitialAmount** - Amount of coins to issue. Issued coins will be available to sender account.
+| **InitialReserve** - Initial reserve in BIP's.
+| **ConstantReserveRatio** - CRR, uint, should be from 10 to 100.
+
 Declare candidacy transaction
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Type: **0x04**
 
 Transaction for declaring new validator candidacy.
 
@@ -130,8 +152,16 @@ Transaction for declaring new validator candidacy.
         Stake      *big.Int
     }
 
+| **Address** - Address of candidate in Minter Network. This address would be able to control candidate. Also all rewards will be sent to this address.
+| **PubKey** - Public key of a validator.
+| **Commission** - Commission (from 0 to 100) from rewards which delegators will pay to validator.
+| **Coin** - Symbol of coin to stake.
+| **Stake** - Amount of coins to stake.
+
 Delegate transaction
 ^^^^^^^^^^^^^^^^^^^^
+
+Type: **0x05**
 
 Transaction for delegating funds to validator.
 
@@ -145,8 +175,14 @@ Transaction for delegating funds to validator.
         Stake  *big.Int
     }
 
+| **PubKey** - Public key of a validator.
+| **Coin** - Symbol of coin to stake.
+| **Stake** - Amount of coins to stake.
+
 Unbound transaction
 ^^^^^^^^^^^^^^^^^^^
+
+Type: **0x06**
 
 Transaction for unbounding funds from validator's stake.
 
@@ -160,8 +196,14 @@ Transaction for unbounding funds from validator's stake.
         Value  *big.Int
     }
 
+| **PubKey** - Public key of a validator.
+| **Coin** - Symbol of coin to unbond.
+| **Value** - Amount of coins to unbond.
+
 Redeem check transaction
 ^^^^^^^^^^^^^^^^^^^^^^^^
+
+Type: **0x07**
 
 Transaction for redeeming a check.
 
@@ -174,10 +216,15 @@ Transaction for redeeming a check.
         Proof    [65]byte
     }
 
+| **RawCheck** - Raw check received from sender.
+| **Proof** - Proof of owning a check.
+
 Set candidate online transaction
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Transaction for turning candidate on.
+Type: **0x08**
+
+Transaction for turning candidate on. This transaction should be sent from address which is set in the "Declare candidacy transaction".
 
 *Data field contents:*
 
@@ -187,10 +234,14 @@ Transaction for turning candidate on.
         PubKey []byte
     }
 
+| **PubKey** - Public key of a validator.
+
 Set candidate offline transaction
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Transaction for turning candidate off.
+Type: **0x09**
+
+Transaction for turning candidate off. This transaction should be sent from address which is set in the "Declare candidacy transaction".
 
 *Data field contents:*
 
@@ -200,3 +251,4 @@ Transaction for turning candidate off.
         PubKey []byte
     }
 
+| **PubKey** - Public key of a validator.

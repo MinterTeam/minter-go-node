@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.0.5
+*Jule 4rd, 2018*
+
+BREAKING CHANGES
+
+- [core] Remove Reserve Coin from coin object. All coins should be reserved with base coin
+- [core] Limit tx payload and service data to 128 bytes
+- [core] Fix critical issue with instant convert of 2 custom coins 
+- [testnet] New testnet chain id (minter-test-network-8)
+- [tendermint] Switched to v0.22.0
+
+IMPROVEMENT
+
+- [api] Fix issue with not found coins
+
+BUG FIXES
+
+- [api] Fix transaction endpoint
+
 ## 0.0.4
 
 *June 24th, 2018*

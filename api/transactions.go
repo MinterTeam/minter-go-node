@@ -3,8 +3,8 @@ package api
 import (
 	"encoding/json"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
+	"github.com/tendermint/tendermint/libs/common"
 	"github.com/tendermint/tendermint/rpc/core/types"
-	"github.com/tendermint/tmlibs/common"
 	"math/big"
 	"net/http"
 )

@@ -12,7 +12,7 @@ import (
 func Transaction(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
-	hash := strings.TrimRight(vars["hash"], "Mt")
+	hash := strings.TrimLeft(vars["hash"], "Mt")
 	decoded, err := hex.DecodeString(hash)
 
 	result := new(types.TxResult)
