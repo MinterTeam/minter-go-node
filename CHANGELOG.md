@@ -1,5 +1,9 @@
 # Changelog
 
+## TBD
+
+- [api] Update transaction api
+
 ## 0.0.5
 *Jule 4rd, 2018*
 
