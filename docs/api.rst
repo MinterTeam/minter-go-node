@@ -1,6 +1,12 @@
 Minter Node API
 ===============
 
+Minter Node API is based on JSON format. JSON is a lightweight data-interchange format.
+It can represent numbers, strings, ordered sequences of values, and collections of name/value pairs.
+
+If request is successful, Minter Node API will respond with ``result`` key and code equal to zero. Otherwise, it will
+respond with non-zero code and key ``log`` with error description.
+
 Status
 ^^^^^^
 
@@ -142,6 +148,8 @@ Returns balance of an account.
         }
     }
 
+**Result**: Map of balances. CoinSymbol => Balance (in pips).
+
 Transaction count
 ^^^^^^^^^^^^^^^^^
 
@@ -159,6 +167,8 @@ transaction.
         "result": 3
     }
 
+**Result**: Count of transactions sent from given account.
+
 Send transaction
 ^^^^^^^^^^^^^^^^
 
@@ -175,8 +185,12 @@ Sends transaction to the Minter Network.
         "result": "Mtfd5c3ecad1e8333564cf6e3f968578b9db5acea3"
     }
 
+**Result**: Transaction hash.
+
 Transaction
 ^^^^^^^^^^^
+
+*In development*
 
 .. code-block:: bash
 
@@ -186,7 +200,7 @@ Transaction
 
     {
         "code": 0,
-        "result": ...
+        "result": {}
     }
 
 Block
@@ -266,8 +280,38 @@ Returns information about coin.
           "symbol":"BLTCOIN",
           "volume":"3162375676992609621",
           "crr":10,
-          "reserve_coin":"MNT",
           "reserve_balance":"100030999965000000000000",
           "creator":"Mxc07ec7cdcae90dea3999558f022aeb25dabbeea2"
        }
     }
+
+**Result**:
+    - **Coin name** - Name of a coin. Arbitrary string.
+    - **Coin symbol** - Short symbol of a coin. Coin symbol is unique, alphabetic, uppercase, 3 to 10 letters length.
+    - **Volume** - Amount of coins exists in network.
+    - **Reserve balance** - Amount of BIP/MNT in coin reserve.
+    - **Constant Reserve Ratio (CRR)** - uint, from 10 to 100.
+    - **Creator** - Address of coin creator account.
+
+Exchange estimate
+^^^^^^^^^^^^^^^^^
+
+Return estimate of coin exchange transaction
+
+.. code-block:: bash
+
+    curl -s 'localhost:8841/api/estimateCoinExchangeReturn?from_coin=MNT&value=1000000000000000000&to_coin=BLTCOIN'
+
+Request params:
+    - **from_coin** – coin to give
+    - **value** – amount to give (in pips)
+    - **to_coin** - coin to get
+
+.. code-block:: json
+
+    {
+        "code": 0,
+        "result": "29808848728151191"
+    }
+
+**Result**: Amount of "to_coin" user will receive.
