@@ -29,8 +29,8 @@ Check hijacking protection
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Minter Checks are issued offline and do not exist in blockchain before "cashing".
-So we decided to use special passphrase to protect checks from double-activating. Hash of this passphrase is used
-as private key in ECDSA to prove that sender is the one who owns the check.
+So we decided to use special passphrase to protect checks from hijacking by another person in the moment of activation.
+Hash of this passphrase is used as private key in ECDSA to prove that sender is the one who owns the check.
 
 *TODO: describe algorithm*
 
