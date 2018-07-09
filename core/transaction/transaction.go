@@ -386,31 +386,35 @@ func rlpHash(x interface{}) (h types.Hash) {
 func DecodeFromBytes(buf []byte) (*Transaction, error) {
 
 	var tx Transaction
-	rlp.Decode(bytes.NewReader(buf), &tx)
+	err := rlp.Decode(bytes.NewReader(buf), &tx)
+
+	if err != nil {
+		return nil, err
+	}
 
 	switch tx.Type {
 	case TypeSend:
 		{
 			data := SendData{}
-			rlp.Decode(bytes.NewReader(tx.Data), &data)
+			err = rlp.Decode(bytes.NewReader(tx.Data), &data)
 			tx.SetDecodedData(data)
 		}
 	case TypeRedeemCheck:
 		{
 			data := RedeemCheckData{}
-			rlp.Decode(bytes.NewReader(tx.Data), &data)
+			err = rlp.Decode(bytes.NewReader(tx.Data), &data)
 			tx.SetDecodedData(data)
 		}
 	case TypeConvert:
 		{
 			data := ConvertData{}
-			rlp.Decode(bytes.NewReader(tx.Data), &data)
+			err = rlp.Decode(bytes.NewReader(tx.Data), &data)
 			tx.SetDecodedData(data)
 		}
 	case TypeCreateCoin:
 		{
 			data := CreateCoinData{}
-			rlp.Decode(bytes.NewReader(tx.Data), &data)
+			err = rlp.Decode(bytes.NewReader(tx.Data), &data)
 			tx.SetDecodedData(data)
 
 			if data.InitialReserve == nil || data.InitialAmount == nil {
@@ -421,35 +425,39 @@ func DecodeFromBytes(buf []byte) (*Transaction, error) {
 	case TypeDeclareCandidacy:
 		{
 			data := DeclareCandidacyData{}
-			rlp.Decode(bytes.NewReader(tx.Data), &data)
+			err = rlp.Decode(bytes.NewReader(tx.Data), &data)
 			tx.SetDecodedData(data)
 		}
 	case TypeDelegate:
 		{
 			data := DelegateData{}
-			rlp.Decode(bytes.NewReader(tx.Data), &data)
+			err = rlp.Decode(bytes.NewReader(tx.Data), &data)
 			tx.SetDecodedData(data)
 		}
 	case TypeSetCandidateOnline:
 		{
 			data := SetCandidateOnData{}
-			rlp.Decode(bytes.NewReader(tx.Data), &data)
+			err = rlp.Decode(bytes.NewReader(tx.Data), &data)
 			tx.SetDecodedData(data)
 		}
 	case TypeSetCandidateOffline:
 		{
 			data := SetCandidateOffData{}
-			rlp.Decode(bytes.NewReader(tx.Data), &data)
+			err = rlp.Decode(bytes.NewReader(tx.Data), &data)
 			tx.SetDecodedData(data)
 		}
 	case TypeUnbond:
 		{
 			data := UnbondData{}
-			rlp.Decode(bytes.NewReader(tx.Data), &data)
+			err = rlp.Decode(bytes.NewReader(tx.Data), &data)
 			tx.SetDecodedData(data)
 		}
 	default:
 		return nil, errors.New("incorrect tx data")
+	}
+
+	if err != nil {
+		return nil, err
 	}
 
 	if tx.S == nil || tx.R == nil || tx.V == nil {

@@ -1,7 +1,8 @@
 # Changelog
 
-## TBD
+## 0.0.6
 
+- [core] Fix transaction decoding issue
 - [api] Update transaction api
 
 ## 0.0.5
