@@ -11,6 +11,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/crypto/sha3"
 	"github.com/MinterTeam/minter-go-node/formula"
+	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/tendermint/tendermint/libs/common"
 	"math/big"
@@ -19,6 +20,12 @@ import (
 
 var (
 	CommissionMultiplier = big.NewInt(10e8)
+)
+
+const (
+	maxTxLength          = 1024
+	maxPayloadLength     = 128
+	maxServiceDataLength = 128
 )
 
 type Response struct {
@@ -32,7 +39,38 @@ type Response struct {
 	Fee       common.KI64Pair `protobuf:"bytes,8,opt,name=fee" json:"fee"`
 }
 
-func RunTx(context *state.StateDB, isCheck bool, tx *Transaction, rewardPull *big.Int, currentBlock uint64) Response {
+func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPull *big.Int, currentBlock uint64) Response {
+
+	if len(rawTx) > maxTxLength {
+		return Response{
+			Code: code.TxTooLarge,
+			Log:  "TX length is over 1024 bytes"}
+	}
+
+	tx, err := DecodeFromBytes(rawTx)
+
+	if !isCheck {
+		log.Info("Deliver tx", "tx", tx.String())
+	}
+
+	if err != nil {
+		return Response{
+			Code: code.DecodeError,
+			Log:  err.Error()}
+	}
+
+	if len(tx.Payload) > maxPayloadLength {
+		return Response{
+			Code: code.TxPayloadTooLarge,
+			Log:  "TX payload length is over 128 bytes"}
+	}
+
+	if len(tx.ServiceData) > maxServiceDataLength {
+		return Response{
+			Code: code.TxServiceDataTooLarge,
+			Log:  "TX service data length is over 128 bytes"}
+	}
+
 	sender, _ := tx.Sender()
 
 	// do not look at nonce of transaction while checking tx
