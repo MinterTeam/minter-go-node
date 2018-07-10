@@ -409,7 +409,7 @@ func DecodeFromBytes(buf []byte) (*Transaction, error) {
 			err = rlp.Decode(bytes.NewReader(tx.Data), &data)
 			tx.SetDecodedData(data)
 
-			if data.RawCheck == nil || data.Proof == nil {
+			if data.RawCheck == nil {
 				return nil, errors.New("incorrect tx data")
 			}
 		}

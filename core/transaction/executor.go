@@ -26,6 +26,12 @@ const (
 	maxTxLength          = 1024
 	maxPayloadLength     = 128
 	maxServiceDataLength = 128
+
+	minCommission = 0
+	maxCommission = 100
+	unboundPeriod = 518400
+
+	allowedCoinSymbols = "^[A-Z0-9]{3,10}$"
 )
 
 type Response struct {
@@ -90,12 +96,6 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPull *big.I
 		}
 	}
 
-	if len(tx.Payload)+len(tx.ServiceData) > 1024 {
-		return Response{
-			Code: code.TooLongPayload,
-			Log:  fmt.Sprintf("Too long Payload + ServiceData. Max 1024 bytes.")}
-	}
-
 	switch tx.Type {
 	case TypeDeclareCandidacy:
 
@@ -137,7 +137,7 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPull *big.I
 				Log:  fmt.Sprintf("Candidate with such public key (%x) already exists", data.PubKey)}
 		}
 
-		if data.Commission < 0 || data.Commission > 100 {
+		if data.Commission < minCommission || data.Commission > maxCommission {
 			return Response{
 				Code: code.WrongCommission,
 				Log:  fmt.Sprintf("Commission should be between 0 and 100")}
@@ -322,7 +322,7 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPull *big.I
 
 		if !isCheck {
 			// now + 31 days
-			unboundAtBlock := currentBlock + 518400
+			unboundAtBlock := currentBlock + unboundPeriod
 
 			rewardPull.Add(rewardPull, commission)
 
@@ -640,10 +640,10 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPull *big.I
 
 		data := tx.GetDecodedData().(CreateCoinData)
 
-		if match, _ := regexp.MatchString("^[A-Z0-9]{3,10}$", data.Symbol.String()); !match {
+		if match, _ := regexp.MatchString(allowedCoinSymbols, data.Symbol.String()); !match {
 			return Response{
 				Code: code.InvalidCoinSymbol,
-				Log:  fmt.Sprintf("Invalid coin symbol. Should be ^[A-Z0-9]{3,10}$")}
+				Log:  fmt.Sprintf("Invalid coin symbol. Should be %s", allowedCoinSymbols)}
 		}
 
 		commission := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
