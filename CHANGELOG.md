@@ -9,6 +9,7 @@ BREAKING CHANGES
 IMPROVEMENT
 
 - [api] Update transaction api
+- [api] Add transaction result to block api
 
 ## 0.0.5
 *Jule 4rd, 2018*

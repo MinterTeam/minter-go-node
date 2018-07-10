@@ -24,15 +24,16 @@ type BlockResponse struct {
 }
 
 type BlockTransactionResponse struct {
-	Hash        string           `json:"hash"`
-	From        string           `json:"from"`
-	Nonce       uint64           `json:"nonce"`
-	GasPrice    *big.Int         `json:"gasPrice"`
-	Type        byte             `json:"type"`
-	Data        transaction.Data `json:"data"`
-	Payload     []byte           `json:"payload"`
-	ServiceData []byte           `json:"serviceData"`
-	Gas         int64            `json:"gas"`
+	Hash        string            `json:"hash"`
+	From        string            `json:"from"`
+	Nonce       uint64            `json:"nonce"`
+	GasPrice    *big.Int          `json:"gasPrice"`
+	Type        byte              `json:"type"`
+	Data        transaction.Data  `json:"data"`
+	Payload     []byte            `json:"payload"`
+	ServiceData []byte            `json:"serviceData"`
+	Gas         int64             `json:"gas"`
+	TxResult    ResponseDeliverTx `json:"tx_result"`
 }
 
 func Block(w http.ResponseWriter, r *http.Request) {
@@ -40,7 +41,8 @@ func Block(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	height, _ := strconv.ParseInt(vars["height"], 10, 64)
 
-	result, err := client.Block(&height)
+	block, err := client.Block(&height)
+	blockResults, err := client.BlockResults(&height)
 
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 
@@ -55,9 +57,9 @@ func Block(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 
-	txs := make([]BlockTransactionResponse, len(result.Block.Data.Txs))
+	txs := make([]BlockTransactionResponse, len(block.Block.Data.Txs))
 
-	for i, rawTx := range result.Block.Data.Txs {
+	for i, rawTx := range block.Block.Data.Txs {
 		tx, _ := transaction.DecodeFromBytes(rawTx)
 		sender, _ := tx.Sender()
 
@@ -71,16 +73,24 @@ func Block(w http.ResponseWriter, r *http.Request) {
 			Payload:     tx.Payload,
 			ServiceData: tx.ServiceData,
 			Gas:         tx.Gas(),
+			TxResult: ResponseDeliverTx{
+				Code:      blockResults.Results.DeliverTx[i].Code,
+				Data:      blockResults.Results.DeliverTx[i].Data,
+				Log:       blockResults.Results.DeliverTx[i].Log,
+				Info:      blockResults.Results.DeliverTx[i].Info,
+				GasWanted: blockResults.Results.DeliverTx[i].GasWanted,
+				GasUsed:   blockResults.Results.DeliverTx[i].GasUsed,
+			},
 		}
 	}
 
 	response := BlockResponse{
-		Hash:         result.Block.Hash(),
-		Height:       result.Block.Height,
-		Time:         result.Block.Time,
-		NumTxs:       result.Block.NumTxs,
-		TotalTxs:     result.Block.TotalTxs,
-		Precommits:   result.Block.LastCommit.Precommits,
+		Hash:         block.Block.Hash(),
+		Height:       block.Block.Height,
+		Time:         block.Block.Time,
+		NumTxs:       block.Block.NumTxs,
+		TotalTxs:     block.Block.TotalTxs,
+		Precommits:   block.Block.LastCommit.Precommits,
 		Transactions: txs,
 	}
 
