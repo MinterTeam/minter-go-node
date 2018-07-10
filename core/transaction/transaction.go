@@ -398,18 +398,30 @@ func DecodeFromBytes(buf []byte) (*Transaction, error) {
 			data := SendData{}
 			err = rlp.Decode(bytes.NewReader(tx.Data), &data)
 			tx.SetDecodedData(data)
+
+			if data.Value == nil {
+				return nil, errors.New("incorrect tx data")
+			}
 		}
 	case TypeRedeemCheck:
 		{
 			data := RedeemCheckData{}
 			err = rlp.Decode(bytes.NewReader(tx.Data), &data)
 			tx.SetDecodedData(data)
+
+			if data.RawCheck == nil || data.Proof == nil {
+				return nil, errors.New("incorrect tx data")
+			}
 		}
 	case TypeConvert:
 		{
 			data := ConvertData{}
 			err = rlp.Decode(bytes.NewReader(tx.Data), &data)
 			tx.SetDecodedData(data)
+
+			if data.Value == nil {
+				return nil, errors.New("incorrect tx data")
+			}
 		}
 	case TypeCreateCoin:
 		{
@@ -418,7 +430,6 @@ func DecodeFromBytes(buf []byte) (*Transaction, error) {
 			tx.SetDecodedData(data)
 
 			if data.InitialReserve == nil || data.InitialAmount == nil {
-				fmt.Printf("%s\n", tx.String())
 				return nil, errors.New("incorrect tx data")
 			}
 		}
@@ -427,30 +438,50 @@ func DecodeFromBytes(buf []byte) (*Transaction, error) {
 			data := DeclareCandidacyData{}
 			err = rlp.Decode(bytes.NewReader(tx.Data), &data)
 			tx.SetDecodedData(data)
+
+			if data.PubKey == nil || data.Stake == nil {
+				return nil, errors.New("incorrect tx data")
+			}
 		}
 	case TypeDelegate:
 		{
 			data := DelegateData{}
 			err = rlp.Decode(bytes.NewReader(tx.Data), &data)
 			tx.SetDecodedData(data)
+
+			if data.PubKey == nil || data.Stake == nil {
+				return nil, errors.New("incorrect tx data")
+			}
 		}
 	case TypeSetCandidateOnline:
 		{
 			data := SetCandidateOnData{}
 			err = rlp.Decode(bytes.NewReader(tx.Data), &data)
 			tx.SetDecodedData(data)
+
+			if data.PubKey == nil {
+				return nil, errors.New("incorrect tx data")
+			}
 		}
 	case TypeSetCandidateOffline:
 		{
 			data := SetCandidateOffData{}
 			err = rlp.Decode(bytes.NewReader(tx.Data), &data)
 			tx.SetDecodedData(data)
+
+			if data.PubKey == nil {
+				return nil, errors.New("incorrect tx data")
+			}
 		}
 	case TypeUnbond:
 		{
 			data := UnbondData{}
 			err = rlp.Decode(bytes.NewReader(tx.Data), &data)
 			tx.SetDecodedData(data)
+
+			if data.PubKey == nil || data.Value == nil {
+				return nil, errors.New("incorrect tx data")
+			}
 		}
 	default:
 		return nil, errors.New("incorrect tx data")
