@@ -140,7 +140,7 @@ func TestNewContractAddress(t *testing.T) {
 }
 
 func TestLoadECDSAFile(t *testing.T) {
-	keyBytes := types.FromHex(testPrivHex)
+	keyBytes := types.FromHex(testPrivHex, "")
 	fileName0 := "test_key0"
 	fileName1 := "test_key1"
 	checkKey := func(k *ecdsa.PrivateKey) {
@@ -242,7 +242,7 @@ func TestPythonIntegration(t *testing.T) {
 	msg0 := Keccak256([]byte("foo"))
 	sig0, _ := Sign(msg0, k0)
 
-	msg1 := types.FromHex("00000000000000000000000000000000")
+	msg1 := types.FromHex("00000000000000000000000000000000", "")
 	sig1, _ := Sign(msg0, k0)
 
 	t.Logf("msg: %x, privkey: %s sig: %x\n", msg0, kh, sig0)
