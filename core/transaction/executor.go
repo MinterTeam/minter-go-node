@@ -71,7 +71,13 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPull *big.I
 			Log:  "TX service data length is over 128 bytes"}
 	}
 
-	sender, _ := tx.Sender()
+	sender, err := tx.Sender()
+
+	if err != nil {
+		return Response{
+			Code: code.DecodeError,
+			Log:  err.Error()}
+	}
 
 	// do not look at nonce of transaction while checking tx
 	// this will allow us to send multiple transaction from one account in one block
@@ -398,8 +404,21 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPull *big.I
 
 		data := tx.GetDecodedData().(RedeemCheckData)
 
-		decodedCheck, _ := check.DecodeFromBytes(data.RawCheck)
-		checkSender, _ := decodedCheck.Sender()
+		decodedCheck, err := check.DecodeFromBytes(data.RawCheck)
+
+		if err != nil {
+			return Response{
+				Code: code.DecodeError,
+				Log:  err.Error()}
+		}
+
+		checkSender, err := decodedCheck.Sender()
+
+		if err != nil {
+			return Response{
+				Code: code.DecodeError,
+				Log:  err.Error()}
+		}
 
 		if !context.CoinExists(decodedCheck.Coin) {
 			return Response{
@@ -426,7 +445,13 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPull *big.I
 				Log:  fmt.Sprintf("Gas price for check is limited to 1")}
 		}
 
-		lockPublicKey, _ := decodedCheck.LockPubKey()
+		lockPublicKey, err := decodedCheck.LockPubKey()
+
+		if err != nil {
+			return Response{
+				Code: code.DecodeError,
+				Log:  err.Error()}
+		}
 
 		var senderAddressHash types.Hash
 		hw := sha3.NewKeccak256()
@@ -435,7 +460,13 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPull *big.I
 		})
 		hw.Sum(senderAddressHash[:0])
 
-		pub, _ := crypto.Ecrecover(senderAddressHash[:], data.Proof[:])
+		pub, err := crypto.Ecrecover(senderAddressHash[:], data.Proof[:])
+
+		if err != nil {
+			return Response{
+				Code: code.DecodeError,
+				Log:  err.Error()}
+		}
 
 		if bytes.Compare(lockPublicKey, pub) != 0 {
 			return Response{
