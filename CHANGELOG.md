@@ -2,7 +2,12 @@
 
 ## 0.0.6
 
+BREAKING CHANGES
+
 - [core] Fix transaction decoding issue
+
+IMPROVEMENT
+
 - [api] Update transaction api
 
 ## 0.0.5
