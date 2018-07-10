@@ -10,6 +10,7 @@ IMPROVEMENT
 
 - [api] Update transaction api
 - [api] Add transaction result to block api
+- [mempool] Mempool cache is disabled
 
 ## 0.0.5
 *Jule 4rd, 2018*
