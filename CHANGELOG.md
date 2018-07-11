@@ -2,15 +2,21 @@
 
 ## 0.0.6
 
+TBD
+
+- [core] Change commissions
+
 BREAKING CHANGES
 
 - [core] Fix transaction decoding issue
+- [core] Remove transaction ConvertCoin, add SellCoin and BuyCoin. For details see the docs.
 
 IMPROVEMENT
 
 - [api] Update transaction api
 - [api] Add transaction result to block api
 - [mempool] Mempool cache is disabled
+- [tendermint] Updated to v0.22.3
 
 ## 0.0.5
 *Jule 4rd, 2018*
