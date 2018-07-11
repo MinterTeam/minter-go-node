@@ -76,8 +76,10 @@ type SetCandidateOnData struct {
 
 func (s SetCandidateOnData) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		PubKey []byte `json:"pubkey"`
-	}{})
+		PubKey string `json:"pubkey"`
+	}{
+		PubKey: fmt.Sprintf("Mp%x", s.PubKey),
+	})
 }
 
 type SetCandidateOffData struct {
@@ -86,8 +88,10 @@ type SetCandidateOffData struct {
 
 func (s SetCandidateOffData) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		PubKey []byte `json:"pubkey"`
-	}{})
+		PubKey string `json:"pubkey"`
+	}{
+		PubKey: fmt.Sprintf("Mp%x", s.PubKey),
+	})
 }
 
 type ConvertData struct {
