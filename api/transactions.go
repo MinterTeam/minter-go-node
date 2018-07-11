@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/tendermint/tendermint/libs/common"
 	"github.com/tendermint/tendermint/rpc/core/types"
@@ -11,6 +12,7 @@ import (
 
 type TransactionResponse struct {
 	Hash     common.HexBytes   `json:"hash"`
+	RawTx    string            `json:"raw_tx"`
 	Height   int64             `json:"height"`
 	Index    uint32            `json:"index"`
 	TxResult ResponseDeliverTx `json:"tx_result"`
@@ -65,6 +67,7 @@ func Transactions(w http.ResponseWriter, r *http.Request) {
 
 		result[i] = TransactionResponse{
 			Hash:   common.HexBytes(tx.Tx.Hash()),
+			RawTx:  fmt.Sprintf("%x", tx.Tx),
 			Height: tx.Height,
 			Index:  tx.Index,
 			TxResult: ResponseDeliverTx{

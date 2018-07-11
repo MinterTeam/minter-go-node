@@ -25,6 +25,7 @@ type BlockResponse struct {
 
 type BlockTransactionResponse struct {
 	Hash        string            `json:"hash"`
+	RawTx       string            `json:"raw_tx"`
 	From        string            `json:"from"`
 	Nonce       uint64            `json:"nonce"`
 	GasPrice    *big.Int          `json:"gasPrice"`
@@ -65,6 +66,7 @@ func Block(w http.ResponseWriter, r *http.Request) {
 
 		txs[i] = BlockTransactionResponse{
 			Hash:        fmt.Sprintf("Mt%x", types.Tx(rawTx).Hash()),
+			RawTx:       fmt.Sprintf("%x", rawTx),
 			From:        sender.String(),
 			Nonce:       tx.Nonce,
 			GasPrice:    tx.GasPrice,

@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/gorilla/mux"
 	"github.com/tendermint/tendermint/libs/common"
@@ -38,6 +39,7 @@ func Transaction(w http.ResponseWriter, r *http.Request) {
 		Code: 0,
 		Result: TransactionResponse{
 			Hash:   common.HexBytes(tx.Tx.Hash()),
+			RawTx:  fmt.Sprintf("%x", tx.Tx),
 			Height: tx.Height,
 			Index:  tx.Index,
 			TxResult: ResponseDeliverTx{
