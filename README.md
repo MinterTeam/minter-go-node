@@ -23,8 +23,7 @@ According to SemVer, anything in the public API can change at any time before ve
 
 To provide some stability to Minter users in these 0.X.X days, the MINOR version is used
 to signal breaking changes across a subset of the total public API. This subset includes all
-interfaces exposed to other processes (cli, rpc, p2p, etc.), but does not include the 
-in-process Go APIs.
+interfaces exposed to other processes, but does not include the in-process Go APIs.
 
 ### Upgrades
 
