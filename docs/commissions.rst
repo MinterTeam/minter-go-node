@@ -3,7 +3,7 @@ Commissions
 
 For each transaction sender should pay fee. Fees are measured in "units".
 
-1 unit = 10^13 pip = 0.001 bip.
+1 unit = 10^15 pip = 0.001 bip.
 
 Standard commissions
 ^^^^^^^^^^^^^^^^^^^^

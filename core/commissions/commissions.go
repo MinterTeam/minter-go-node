@@ -1,7 +1,7 @@
 package commissions
 
-// all commissions are divided by 10^13
-// actual commission is SendTx * 10^13 = 10 000 000 000 000 000 PIP = 0,01 BIP
+// all commissions are divided by 10^15
+// actual commission is SendTx * 10^15 = 1 000 000 000 000 000 PIP = 0,001 BIP
 const (
 	SendTx                int64 = 10
 	ConvertTx             int64 = 1000
