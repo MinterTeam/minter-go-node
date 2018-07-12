@@ -34,11 +34,22 @@ func CalculatePurchaseReturn(supply *big.Int, reserve *big.Int, crr uint, deposi
 }
 
 // reversed function CalculatePurchaseReturn
+// deposit = reserve * (((wantReceive + supply) / supply)^(100/c) - 1)
 func CalculatePurchaseAmount(supply *big.Int, reserve *big.Int, crr uint, wantReceive *big.Int) *big.Int {
 
-	panic("Implement")
+	tSupply := big.NewFloat(0).SetInt(supply)
+	tReserve := big.NewFloat(0).SetInt(reserve)
+	tWantReceive := big.NewFloat(0).SetInt(wantReceive)
 
-	return big.NewInt(0)
+	res := big.NewFloat(0).Add(tWantReceive, tSupply)   // reserve + supply
+	res.Quo(res, tSupply)                               // (reserve + supply) / supply
+	res = math.Pow(res, big.NewFloat(100/float64(crr))) // ((reserve + supply) / supply)^(100/c)
+	res.Sub(res, big.NewFloat(1))                       // (((reserve + supply) / supply)^(100/c) - 1)
+	res.Mul(res, tReserve)                              // reserve * (((reserve + supply) / supply)^(100/c) - 1)
+
+	result, _ := res.Int(nil)
+
+	return result
 }
 
 // Return = reserve * (1 - (1 - sellAmount / supply) ^ (1 / (crr / 100)))
