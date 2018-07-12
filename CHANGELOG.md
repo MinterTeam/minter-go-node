@@ -2,12 +2,9 @@
 
 ## 0.0.6
 
-TBD
-
-- [core] Change commissions
-
 BREAKING CHANGES
 
+- [core] Change commissions
 - [testnet] New testnet id
 - [core] Fix transaction decoding issue
 - [core] Remove transaction ConvertCoin, add SellCoin and BuyCoin. For details see the docs.
