@@ -60,7 +60,7 @@ func CalculatePurchaseAmount(supply *big.Int, reserve *big.Int, crr uint, wantRe
 	return result
 }
 
-// Return = reserve * (1 - (1 - sellAmount / supply) ^ (1 / (crr / 100)))
+// Return = reserve * (1 - (1 - sellAmount / supply) ^ (100 / crr))
 func CalculateSaleReturn(supply *big.Int, reserve *big.Int, crr uint, sellAmount *big.Int) *big.Int {
 
 	// special case for 0 sell amount
@@ -84,11 +84,11 @@ func CalculateSaleReturn(supply *big.Int, reserve *big.Int, crr uint, sellAmount
 	tReserve := newFloat(0).SetInt(reserve)
 	tSellAmount := newFloat(0).SetInt(sellAmount)
 
-	res := newFloat(0).Quo(tSellAmount, tSupply)        // sellAmount / supply
-	res.Sub(newFloat(1), res)                           // (1 - sellAmount / supply)
-	res = math.Pow(res, newFloat(1/(float64(crr)/100))) // (1 - sellAmount / supply) ^ (1 / (crr / 100))
-	res.Sub(newFloat(1), res)                           // (1 - (1 - sellAmount / supply) ^ (1 / (crr / 100)))
-	res.Mul(res, tReserve)                              // reserve * (1 - (1 - sellAmount / supply) ^ (1 / (crr / 100)))
+	res := newFloat(0).Quo(tSellAmount, tSupply)      // sellAmount / supply
+	res.Sub(newFloat(1), res)                         // (1 - sellAmount / supply)
+	res = math.Pow(res, newFloat(100/(float64(crr)))) // (1 - sellAmount / supply) ^ (100 / crr)
+	res.Sub(newFloat(1), res)                         // (1 - (1 - sellAmount / supply) ^ (1 / (crr / 100)))
+	res.Mul(res, tReserve)                            // reserve * (1 - (1 - sellAmount / supply) ^ (1 / (crr / 100)))
 
 	result, _ := res.Int(nil)
 
