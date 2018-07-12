@@ -674,46 +674,39 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPull *big.I
 			commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
 		}
 
-		totalTxCost := big.NewInt(0).Add(data.ValueToSell, commission)
-
-		if context.GetBalance(sender, data.CoinToSell).Cmp(totalTxCost) < 0 {
-			return Response{
-				Code: code.InsufficientFunds,
-				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %d ", sender.String(), totalTxCost)}
-		}
-
-		// deliver TX
-
-		if !isCheck {
-			rewardPull.Add(rewardPull, commissionInBaseCoin)
-
-			context.SubBalance(sender, data.CoinToSell, totalTxCost)
-
-			if data.CoinToSell != types.GetBaseCoin() {
-				context.SubCoinVolume(data.CoinToSell, commission)
-				context.SubCoinReserve(data.CoinToSell, commissionInBaseCoin)
-			}
-		}
-
 		var value *big.Int
 
 		if data.CoinToSell == types.GetBaseCoin() {
 			coin := context.GetStateCoin(data.CoinToBuy).Data()
 
-			value = formula.CalculatePurchaseReturn(coin.Volume, coin.ReserveBalance, coin.Crr, data.ValueToSell)
+			value = formula.CalculatePurchaseAmount(coin.Volume, coin.ReserveBalance, coin.Crr, data.ValueToBuy)
+
+			totalTxCost := big.NewInt(0).Add(value, commission)
+			if context.GetBalance(sender, data.CoinToSell).Cmp(totalTxCost) < 0 {
+				return Response{
+					Code: code.InsufficientFunds,
+					Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %d ", sender.String(), totalTxCost)}
+			}
 
 			if !isCheck {
-				context.AddCoinVolume(data.CoinToBuy, value)
-				context.AddCoinReserve(data.CoinToBuy, data.ValueToSell)
+				context.AddCoinVolume(data.CoinToBuy, data.ValueToBuy)
+				context.AddCoinReserve(data.CoinToBuy, value)
 			}
 		} else if data.CoinToBuy == types.GetBaseCoin() {
 			coin := context.GetStateCoin(data.CoinToSell).Data()
 
-			value = formula.CalculateSaleReturn(coin.Volume, coin.ReserveBalance, coin.Crr, data.ValueToSell)
+			value = formula.CalculateSaleAmount(coin.Volume, coin.ReserveBalance, coin.Crr, data.ValueToBuy)
+
+			totalTxCost := big.NewInt(0).Add(value, commission)
+			if context.GetBalance(sender, data.CoinToSell).Cmp(totalTxCost) < 0 {
+				return Response{
+					Code: code.InsufficientFunds,
+					Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %d ", sender.String(), totalTxCost)}
+			}
 
 			if !isCheck {
-				context.SubCoinVolume(data.CoinToSell, data.ValueToSell)
-				context.SubCoinReserve(data.CoinToSell, value)
+				context.SubCoinVolume(data.CoinToSell, value)
+				context.SubCoinReserve(data.CoinToSell, data.ValueToBuy)
 			}
 		} else {
 			coinFrom := context.GetStateCoin(data.CoinToSell).Data()
@@ -732,12 +725,21 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPull *big.I
 		}
 
 		if !isCheck {
+			rewardPull.Add(rewardPull, commissionInBaseCoin)
+
+			context.SubBalance(sender, data.CoinToSell, commission)
+
+			if data.CoinToSell != types.GetBaseCoin() {
+				context.SubCoinVolume(data.CoinToSell, commission)
+				context.SubCoinReserve(data.CoinToSell, commissionInBaseCoin)
+			}
+
 			context.AddBalance(sender, data.CoinToBuy, value)
 			context.SetNonce(sender, tx.Nonce)
 		}
 
 		tags := common.KVPairs{
-			common.KVPair{Key: []byte("tx.type"), Value: []byte{TypeSellCoin}},
+			common.KVPair{Key: []byte("tx.type"), Value: []byte{TypeBuyCoin}},
 			common.KVPair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
 			common.KVPair{Key: []byte("tx.coin_to_buy"), Value: []byte(data.CoinToBuy.String())},
 			common.KVPair{Key: []byte("tx.coin_to_sell"), Value: []byte(data.CoinToSell.String())},

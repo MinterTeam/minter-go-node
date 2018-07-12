@@ -3,12 +3,6 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/ALTree/floatutils"
-  packages = ["."]
-  revision = "b176f1e721fc5f9520ce35b8c68c90f78bda8d62"
-
-[[projects]]
-  branch = "master"
   name = "github.com/beorn7/perks"
   packages = ["quantile"]
   revision = "3a771d992973f24aa725d07868b467d1ddfceafb"
@@ -185,7 +179,6 @@
   revision = "40f013a808ec4fa79def444a1a56de4d1727efcb"
 
 [[projects]]
-  branch = "master"
   name = "github.com/rcrowley/go-metrics"
   packages = ["."]
   revision = "e2704e165165ec55d062f5919b4b29494e9fa790"
@@ -383,6 +376,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "ebfa53ad242ca183df63e1c363095ea17005cf98b7eac914e8c300df627c0454"
+  inputs-digest = "c9edef0c2e5606ea1a96cb89f65ef096a0745e1e201ee7f5d99c908e3f241e10"
   solver-name = "gps-cdcl"
   solver-version = 1

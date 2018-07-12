@@ -24,11 +24,6 @@
 #   go-tests = true
 #   unused-packages = true
 
-
-[[constraint]]
-  branch = "master"
-  name = "github.com/ALTree/floatutils"
-
 [[constraint]]
   branch = "master"
   name = "github.com/btcsuite/btcd"
