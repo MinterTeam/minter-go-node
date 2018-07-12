@@ -5,6 +5,8 @@ import (
 	"math/big"
 )
 
+// https://github.com/ALTree/bigfloat
+
 // Log returns a big.Float representation of the natural logarithm of
 // z. Precision is the same as the one of the argument. The function
 // panics if z is negative, returns -Inf when z = 0, and +Inf when z =

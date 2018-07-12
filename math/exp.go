@@ -5,6 +5,8 @@ import (
 	"math/big"
 )
 
+// https://github.com/ALTree/bigfloat
+
 // Exp returns a big.Float representation of exp(z). Precision is
 // the same as the one of the argument. The function returns +Inf
 // when z = +Inf, and 0 when z = -Inf.
