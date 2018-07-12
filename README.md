@@ -10,6 +10,10 @@ Minter is a blockchain network that lets people, projects, and companies issue a
 
 _NOTE: This is alpha software. Please contact us if you intend to run it in production._
 
+## Installation
+
+You can get official installation instructions in our [docs](https://minter-go-node.readthedocs.io/en/dev/install.html).
+
 ## Documentation
 
 For documentation, [Read The Docs](https://minter-go-node.readthedocs.io/en/dev/).
