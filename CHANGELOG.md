@@ -5,6 +5,7 @@
 TBD
 
 - [core] Change commissions
+- [api] Update estimate exchange endpoint
 
 BREAKING CHANGES
 
