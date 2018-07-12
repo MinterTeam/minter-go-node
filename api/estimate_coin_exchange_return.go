@@ -25,6 +25,8 @@ func EstimateCoinExchangeReturn(w http.ResponseWriter, r *http.Request) {
 
 	var result *big.Int
 
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+
 	if fromCoinSymbol == blockchain.BaseCoin {
 		coin := cState.GetStateCoin(toCoinSymbol)
 		if coin == nil {
@@ -77,7 +79,6 @@ func EstimateCoinExchangeReturn(w http.ResponseWriter, r *http.Request) {
 		result = formula.CalculatePurchaseReturn(coinTo.Data().Volume, coinTo.Data().ReserveBalance, coinTo.Data().Crr, val)
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 
 	json.NewEncoder(w).Encode(Response{

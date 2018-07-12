@@ -3,12 +3,6 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/ALTree/floatutils"
-  packages = ["."]
-  revision = "b176f1e721fc5f9520ce35b8c68c90f78bda8d62"
-
-[[projects]]
-  branch = "master"
   name = "github.com/beorn7/perks"
   packages = ["quantile"]
   revision = "3a771d992973f24aa725d07868b467d1ddfceafb"
@@ -26,7 +20,6 @@
   version = "v1.1.0"
 
 [[projects]]
-  branch = "master"
   name = "github.com/ebuchman/fail-test"
   packages = ["."]
   revision = "95f809107225be108efcf10a3509e4ea6ceef3c4"
@@ -156,8 +149,7 @@
     "prometheus",
     "prometheus/promhttp"
   ]
-  revision = "c5b7fccd204277076155f10851dad72b76a49317"
-  version = "v0.8.0"
+  revision = "ae27198cdd90bf12cd134ad79d1366a6cf49f632"
 
 [[projects]]
   branch = "master"
@@ -187,12 +179,8 @@
   revision = "40f013a808ec4fa79def444a1a56de4d1727efcb"
 
 [[projects]]
-  branch = "master"
   name = "github.com/rcrowley/go-metrics"
-  packages = [
-    ".",
-    "exp"
-  ]
+  packages = ["."]
   revision = "e2704e165165ec55d062f5919b4b29494e9fa790"
 
 [[projects]]
@@ -284,8 +272,8 @@
     "types",
     "version"
   ]
-  revision = "dfa9a9a30a666132425b29454e90a472aa579a48"
-  version = "v0.22.0"
+  revision = "2aa2b63cadc42cca1071c36adfd2f2ce14e1aa8f"
+  version = "v0.22.3"
 
 [[projects]]
   branch = "master"
@@ -303,7 +291,6 @@
   revision = "b47b1587369238182299fe4dad77d05b8b461e06"
 
 [[projects]]
-  branch = "master"
   name = "golang.org/x/net"
   packages = [
     "context",
@@ -315,7 +302,7 @@
     "netutil",
     "trace"
   ]
-  revision = "1e491301e022f8f977054da4c2d852decd59571f"
+  revision = "292b43bbf7cb8d35ddf40f8d5100ef3837cced3f"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -389,6 +376,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "b5767faba6c17d4970ec50b07e9c0f7ba70872b835c1fef51441a4101de8a9b1"
+  inputs-digest = "c9edef0c2e5606ea1a96cb89f65ef096a0745e1e201ee7f5d99c908e3f241e10"
   solver-name = "gps-cdcl"
   solver-version = 1

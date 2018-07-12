@@ -24,11 +24,6 @@
 #   go-tests = true
 #   unused-packages = true
 
-
-[[constraint]]
-  branch = "master"
-  name = "github.com/ALTree/floatutils"
-
 [[constraint]]
   branch = "master"
   name = "github.com/btcsuite/btcd"
@@ -59,7 +54,7 @@
 
 [[constraint]]
   name = "github.com/tendermint/tendermint"
-  version = "0.22.0"
+  version = "0.22.3"
 
 [[constraint]]
   branch = "v2"
