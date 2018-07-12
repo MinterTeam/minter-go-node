@@ -293,19 +293,19 @@ Returns information about coin.
     - **Constant Reserve Ratio (CRR)** - uint, from 10 to 100.
     - **Creator** - Address of coin creator account.
 
-Exchange estimate
+Estimate buy sell
 ^^^^^^^^^^^^^^^^^
 
-Return estimate of coin exchange transaction
+Return estimate of sell coin transaction
 
 .. code-block:: bash
 
-    curl -s 'localhost:8841/api/estimateCoinExchangeReturn?from_coin=MNT&value=1000000000000000000&to_coin=BLTCOIN'
+    curl -s 'localhost:8841/api/estimateCoinSell?coin_to_sell=MNT&value_to_sell=1000000000000000000&coin_to_buy=BLTCOIN'
 
 Request params:
-    - **from_coin** – coin to give
-    - **value** – amount to give (in pips)
-    - **to_coin** - coin to get
+    - **coin_to_sell** – coin to give
+    - **value_to_sell** – amount to give (in pips)
+    - **coin_to_buy** - coin to get
 
 .. code-block:: json
 
@@ -314,4 +314,28 @@ Request params:
         "result": "29808848728151191"
     }
 
-**Result**: Amount of "to_coin" user will receive.
+**Result**: Amount of "to_coin" user should get.
+
+
+Estimate buy coin
+^^^^^^^^^^^^^^^^^
+
+Return estimate of buy coin transaction
+
+.. code-block:: bash
+
+    curl -s 'localhost:8841/api/estimateCoinBuy?coin_to_sell=MNT&value_to_buy=1000000000000000000&coin_to_buy=BLTCOIN'
+
+Request params:
+    - **coin_to_sell** – coin to give
+    - **value_to_buy** – amount to get (in pips)
+    - **coin_to_buy** - coin to get
+
+.. code-block:: json
+
+    {
+        "code": 0,
+        "result": "29808848728151191"
+    }
+
+**Result**: Amount of "to_coin" user should give.

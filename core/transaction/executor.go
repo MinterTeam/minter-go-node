@@ -399,7 +399,6 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPull *big.I
 			GasUsed:   tx.Gas(),
 			GasWanted: tx.Gas(),
 		}
-
 	case TypeRedeemCheck:
 
 		data := tx.GetDecodedData().(RedeemCheckData)
@@ -520,7 +519,6 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPull *big.I
 			GasUsed:   tx.Gas(),
 			GasWanted: tx.Gas(),
 		}
-
 	case TypeSellCoin:
 
 		data := tx.GetDecodedData().(SellCoinData)
@@ -635,7 +633,6 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPull *big.I
 			GasUsed:   tx.Gas(),
 			GasWanted: tx.Gas(),
 		}
-
 	case TypeBuyCoin:
 
 		data := tx.GetDecodedData().(BuyCoinData)
@@ -763,7 +760,6 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPull *big.I
 			GasUsed:   tx.Gas(),
 			GasWanted: tx.Gas(),
 		}
-
 	case TypeCreateCoin:
 
 		data := tx.GetDecodedData().(CreateCoinData)
@@ -842,7 +838,6 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPull *big.I
 			GasUsed:   tx.Gas(),
 			GasWanted: tx.Gas(),
 		}
-
 	default:
 		return Response{Code: code.UnknownTransactionType}
 	}

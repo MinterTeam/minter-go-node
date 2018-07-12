@@ -5,13 +5,13 @@
 TBD
 
 - [core] Change commissions
-- [api] Update estimate exchange endpoint
 
 BREAKING CHANGES
 
 - [testnet] New testnet id
 - [core] Fix transaction decoding issue
 - [core] Remove transaction ConvertCoin, add SellCoin and BuyCoin. For details see the docs.
+- [api] Update estimate exchange endpoint
 
 IMPROVEMENT
 
