@@ -293,8 +293,8 @@ Returns information about coin.
     - **Constant Reserve Ratio (CRR)** - uint, from 10 to 100.
     - **Creator** - Address of coin creator account.
 
-Estimate buy sell
-^^^^^^^^^^^^^^^^^
+Estimate sell coin
+^^^^^^^^^^^^^^^^^^
 
 Return estimate of sell coin transaction
 
