@@ -26,6 +26,7 @@ const (
 	maxTxLength          = 1024
 	maxPayloadLength     = 128
 	maxServiceDataLength = 128
+	maxCoinNameBytes     = 64
 
 	minCommission = 0
 	maxCommission = 100
@@ -763,6 +764,12 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPull *big.I
 	case TypeCreateCoin:
 
 		data := tx.GetDecodedData().(CreateCoinData)
+
+		if len(data.Name) > maxCoinNameBytes {
+			return Response{
+				Code: code.InvalidCoinName,
+				Log:  fmt.Sprintf("Coin name is invalid. Allowed up to %d bytes.", maxCoinNameBytes)}
+		}
 
 		if match, _ := regexp.MatchString(allowedCoinSymbols, data.Symbol.String()); !match {
 			return Response{

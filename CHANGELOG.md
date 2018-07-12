@@ -8,6 +8,7 @@ BREAKING CHANGES
 - [testnet] New testnet id
 - [core] Fix transaction decoding issue
 - [core] Remove transaction ConvertCoin, add SellCoin and BuyCoin. For details see the docs.
+- [core] Coin name is now limited to max 64 bytes
 - [api] Update estimate exchange endpoint
 
 IMPROVEMENT
