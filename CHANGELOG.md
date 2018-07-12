@@ -2,14 +2,13 @@
 
 ## 0.0.6
 
-TBD
-
-- [core] Change commissions
-
 BREAKING CHANGES
 
+- [core] Change commissions
+- [testnet] New testnet id
 - [core] Fix transaction decoding issue
 - [core] Remove transaction ConvertCoin, add SellCoin and BuyCoin. For details see the docs.
+- [api] Update estimate exchange endpoint
 
 IMPROVEMENT
 
@@ -17,6 +16,7 @@ IMPROVEMENT
 - [api] Add transaction result to block api
 - [mempool] Mempool cache is disabled
 - [tendermint] Updated to v0.22.3
+- [versioning] Adapt Semantic Versioning https://semver.org/
 
 ## 0.0.5
 *Jule 4rd, 2018*
