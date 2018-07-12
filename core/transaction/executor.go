@@ -689,6 +689,7 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPull *big.I
 			}
 
 			if !isCheck {
+				context.SubBalance(sender, data.CoinToSell, value)
 				context.AddCoinVolume(data.CoinToBuy, data.ValueToBuy)
 				context.AddCoinReserve(data.CoinToBuy, value)
 			}
@@ -705,6 +706,7 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPull *big.I
 			}
 
 			if !isCheck {
+				context.SubBalance(sender, data.CoinToSell, value)
 				context.SubCoinVolume(data.CoinToSell, value)
 				context.SubCoinReserve(data.CoinToSell, data.ValueToBuy)
 			}
@@ -712,15 +714,24 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPull *big.I
 			coinFrom := context.GetStateCoin(data.CoinToSell).Data()
 			coinTo := context.GetStateCoin(data.CoinToBuy).Data()
 
-			basecoinValue := formula.CalculateSaleReturn(coinFrom.Volume, coinFrom.ReserveBalance, coinFrom.Crr, data.ValueToSell)
-			value = formula.CalculatePurchaseReturn(coinTo.Volume, coinTo.ReserveBalance, coinTo.Crr, basecoinValue)
+			baseCoinNeeded := formula.CalculatePurchaseAmount(coinTo.Volume, coinTo.ReserveBalance, coinTo.Crr, data.ValueToBuy)
+			value = formula.CalculateSaleAmount(coinFrom.Volume, coinFrom.ReserveBalance, coinFrom.Crr, baseCoinNeeded)
+
+			totalTxCost := big.NewInt(0).Add(value, commission)
+			if context.GetBalance(sender, data.CoinToSell).Cmp(totalTxCost) < 0 {
+				return Response{
+					Code: code.InsufficientFunds,
+					Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %d ", sender.String(), totalTxCost)}
+			}
 
 			if !isCheck {
-				context.AddCoinVolume(data.CoinToBuy, value)
-				context.SubCoinVolume(data.CoinToSell, data.ValueToSell)
+				context.SubBalance(sender, data.CoinToSell, value)
 
-				context.AddCoinReserve(data.CoinToBuy, basecoinValue)
-				context.SubCoinReserve(data.CoinToSell, basecoinValue)
+				context.AddCoinVolume(data.CoinToBuy, data.ValueToBuy)
+				context.SubCoinVolume(data.CoinToSell, value)
+
+				context.AddCoinReserve(data.CoinToBuy, baseCoinNeeded)
+				context.SubCoinReserve(data.CoinToSell, baseCoinNeeded)
 			}
 		}
 
