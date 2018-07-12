@@ -21,14 +21,15 @@ var (
 
 const (
 	TypeSend                byte = 0x01
-	TypeConvert             byte = 0x02
-	TypeCreateCoin          byte = 0x03
-	TypeDeclareCandidacy    byte = 0x04
-	TypeDelegate            byte = 0x05
-	TypeUnbond              byte = 0x06
-	TypeRedeemCheck         byte = 0x07
-	TypeSetCandidateOnline  byte = 0x08
-	TypeSetCandidateOffline byte = 0x09
+	TypeSellCoin            byte = 0x02
+	TypeBuyCoin             byte = 0x03
+	TypeCreateCoin          byte = 0x04
+	TypeDeclareCandidacy    byte = 0x05
+	TypeDelegate            byte = 0x06
+	TypeUnbond              byte = 0x07
+	TypeRedeemCheck         byte = 0x08
+	TypeSetCandidateOnline  byte = 0x09
+	TypeSetCandidateOffline byte = 0x0A
 )
 
 // TODO: refactor, get rid of switch cases
@@ -94,21 +95,39 @@ func (s SetCandidateOffData) MarshalJSON() ([]byte, error) {
 	})
 }
 
-type ConvertData struct {
-	FromCoinSymbol types.CoinSymbol
-	ToCoinSymbol   types.CoinSymbol
-	Value          *big.Int
+type SellCoinData struct {
+	CoinToSell  types.CoinSymbol
+	ValueToSell *big.Int
+	CoinToBuy   types.CoinSymbol
 }
 
-func (s ConvertData) MarshalJSON() ([]byte, error) {
+func (s SellCoinData) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		FromCoin types.CoinSymbol `json:"from_coin,string"`
-		ToCoin   types.CoinSymbol `json:"to_coin,string"`
-		Value    string           `json:"value"`
+		CoinToSell  types.CoinSymbol `json:"coin_to_sell,string"`
+		ValueToSell string           `json:"value_to_sell"`
+		CoinToBuy   types.CoinSymbol `json:"coin_to_buy,string"`
 	}{
-		FromCoin: s.FromCoinSymbol,
-		ToCoin:   s.ToCoinSymbol,
-		Value:    s.Value.String(),
+		CoinToSell:  s.CoinToSell,
+		ValueToSell: s.ValueToSell.String(),
+		CoinToBuy:   s.CoinToBuy,
+	})
+}
+
+type BuyCoinData struct {
+	CoinToBuy  types.CoinSymbol
+	ValueToBuy *big.Int
+	CoinToSell types.CoinSymbol
+}
+
+func (s BuyCoinData) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		CoinToBuy  types.CoinSymbol `json:"coin_to_buy,string"`
+		ValueToBuy string           `json:"value_to_buy"`
+		CoinToSell types.CoinSymbol `json:"coin_to_sell,string"`
+	}{
+		CoinToBuy:  s.CoinToBuy,
+		ValueToBuy: s.ValueToBuy.String(),
+		CoinToSell: s.CoinToSell,
 	})
 }
 
@@ -225,7 +244,9 @@ func (tx *Transaction) Gas() int64 {
 	switch tx.Type {
 	case TypeSend:
 		gas = commissions.SendTx
-	case TypeConvert:
+	case TypeSellCoin:
+		gas = commissions.ConvertTx
+	case TypeBuyCoin:
 		gas = commissions.ConvertTx
 	case TypeCreateCoin:
 		gas = commissions.CreateTx
@@ -258,11 +279,17 @@ func (tx *Transaction) String() string {
 			return fmt.Sprintf("SEND TX nonce:%d from:%s to:%s coin:%s value:%s payload: %s",
 				tx.Nonce, sender.String(), txData.To.String(), txData.Coin.String(), txData.Value.String(), tx.Payload)
 		}
-	case TypeConvert:
+	case TypeSellCoin:
 		{
-			txData := tx.decodedData.(ConvertData)
-			return fmt.Sprintf("CONVERT TX nonce:%d from:%s to:%s coin:%s value:%s payload: %s",
-				tx.Nonce, sender.String(), txData.FromCoinSymbol.String(), txData.ToCoinSymbol.String(), txData.Value.String(), tx.Payload)
+			txData := tx.decodedData.(SellCoinData)
+			return fmt.Sprintf("SELL COIN TX nonce:%d from:%s sell:%s %s buy:%s payload: %s",
+				tx.Nonce, sender.String(), txData.ValueToSell.String(), txData.CoinToBuy.String(), txData.CoinToSell.String(), tx.Payload)
+		}
+	case TypeBuyCoin:
+		{
+			txData := tx.decodedData.(BuyCoinData)
+			return fmt.Sprintf("BUY COIN TX nonce:%d from:%s sell:%s buy:%s %s payload: %s",
+				tx.Nonce, sender.String(), txData.CoinToSell.String(), txData.ValueToBuy.String(), txData.CoinToBuy.String(), tx.Payload)
 		}
 	case TypeCreateCoin:
 		{
@@ -417,13 +444,23 @@ func DecodeFromBytes(buf []byte) (*Transaction, error) {
 				return nil, errors.New("incorrect tx data")
 			}
 		}
-	case TypeConvert:
+	case TypeSellCoin:
 		{
-			data := ConvertData{}
+			data := SellCoinData{}
 			err = rlp.Decode(bytes.NewReader(tx.Data), &data)
 			tx.SetDecodedData(data)
 
-			if data.Value == nil {
+			if data.ValueToSell == nil {
+				return nil, errors.New("incorrect tx data")
+			}
+		}
+	case TypeBuyCoin:
+		{
+			data := BuyCoinData{}
+			err = rlp.Decode(bytes.NewReader(tx.Data), &data)
+			tx.SetDecodedData(data)
+
+			if data.ValueToBuy == nil {
 				return nil, errors.New("incorrect tx data")
 			}
 		}
