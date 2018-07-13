@@ -12,6 +12,9 @@ import (
 	"math/big"
 )
 
+const minCommission = 0
+const maxCommission = 100
+
 type DeclareCandidacyData struct {
 	Address    types.Address
 	PubKey     []byte

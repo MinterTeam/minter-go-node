@@ -11,6 +11,8 @@ import (
 	"math/big"
 )
 
+const unbondPeriod = 518400
+
 type UnbondData struct {
 	PubKey []byte
 	Coin   types.CoinSymbol
