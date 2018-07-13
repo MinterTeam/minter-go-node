@@ -17,7 +17,7 @@ type SetCandidateOnData struct {
 
 func (data SetCandidateOnData) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		PubKey string `json:"pubkey"`
+		PubKey string `json:"pub_key"`
 	}{
 		PubKey: fmt.Sprintf("Mp%x", data.PubKey),
 	})

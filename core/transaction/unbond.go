@@ -21,9 +21,9 @@ type UnbondData struct {
 
 func (data UnbondData) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		PubKey string
-		Coin   types.CoinSymbol
-		Value  string
+		PubKey string           `json:"pub_key"`
+		Coin   types.CoinSymbol `json:"coin"`
+		Value  string           `json:"value"`
 	}{
 		PubKey: fmt.Sprintf("Mp%x", data.PubKey),
 		Coin:   data.Coin,

@@ -18,7 +18,7 @@ type TransactionResponse struct {
 	TxResult ResponseDeliverTx `json:"tx_result"`
 	From     string            `json:"from"`
 	Nonce    uint64            `json:"nonce"`
-	GasPrice *big.Int          `json:"gasPrice"`
+	GasPrice *big.Int          `json:"gas_price"`
 	Type     byte              `json:"type"`
 	Data     transaction.Data  `json:"data"`
 	Payload  []byte            `json:"payload"`
@@ -29,8 +29,8 @@ type ResponseDeliverTx struct {
 	Data      []byte          `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
 	Log       string          `protobuf:"bytes,3,opt,name=log,proto3" json:"log,omitempty"`
 	Info      string          `protobuf:"bytes,4,opt,name=info,proto3" json:"info,omitempty"`
-	GasWanted int64           `protobuf:"varint,5,opt,name=gas_wanted,json=gasWanted,proto3" json:"gas_wanted,omitempty"`
-	GasUsed   int64           `protobuf:"varint,6,opt,name=gas_used,json=gasUsed,proto3" json:"gas_used,omitempty"`
+	GasWanted int64           `protobuf:"varint,5,opt,name=gas_wanted,json=gas_wanted,proto3" json:"gas_wanted,omitempty"`
+	GasUsed   int64           `protobuf:"varint,6,opt,name=gas_used,json=gas_used,proto3" json:"gas_used,omitempty"`
 	Tags      []common.KVPair `protobuf:"bytes,7,rep,name=tags" json:"tags,omitempty"`
 	Fee       common.KI64Pair `protobuf:"bytes,8,opt,name=fee" json:"fee"`
 }

@@ -25,11 +25,11 @@ type DeclareCandidacyData struct {
 
 func (data DeclareCandidacyData) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Address    types.Address
-		PubKey     string
-		Commission uint
-		Coin       types.CoinSymbol
-		Stake      string
+		Address    types.Address    `json:"address"`
+		PubKey     string           `json:"pub_key"`
+		Commission uint             `json:"commission"`
+		Coin       types.CoinSymbol `json:"coin"`
+		Stake      string           `json:"stake"`
 	}{
 		Address:    data.Address,
 		PubKey:     fmt.Sprintf("Mp%x", data.PubKey),
