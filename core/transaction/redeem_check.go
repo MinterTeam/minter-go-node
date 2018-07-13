@@ -129,8 +129,6 @@ func (data RedeemCheckData) Run(sender types.Address, tx *Transaction, context *
 			Log:  fmt.Sprintf("Insufficient funds for check issuer account: %s. Wanted %d ", checkSender.String(), totalTxCost)}
 	}
 
-	// deliver TX
-
 	if !isCheck {
 		context.UseCheck(decodedCheck)
 		rewardPull.Add(rewardPull, commissionInBaseCoin)

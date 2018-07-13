@@ -104,8 +104,6 @@ func (data CreateCoinData) Run(sender types.Address, tx *Transaction, context *s
 			Log:  fmt.Sprintf("Constant Reserve Ratio should be between 10 and 100")}
 	}
 
-	// deliver TX
-
 	if !isCheck {
 		rewardPull.Add(rewardPull, commission)
 

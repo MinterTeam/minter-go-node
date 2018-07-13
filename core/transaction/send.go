@@ -71,8 +71,6 @@ func (data SendData) Run(sender types.Address, tx *Transaction, context *state.S
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %data. Wanted %d ", sender.String(), totalTxCost)}
 	}
 
-	// deliver TX
-
 	if !isCheck {
 		rewardPull.Add(rewardPull, commissionInBaseCoin)
 
