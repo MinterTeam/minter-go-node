@@ -39,7 +39,7 @@ func (data SetCandidateOnData) Run(sender types.Address, tx *Transaction, contex
 	if context.GetBalance(sender, types.GetBaseCoin()).Cmp(commission) < 0 {
 		return Response{
 			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %data. Wanted %d ", sender.String(), commission)}
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %d ", sender.String(), commission)}
 	}
 
 	if !context.CandidateExists(data.PubKey) {
@@ -99,7 +99,7 @@ func (data SetCandidateOffData) Run(sender types.Address, tx *Transaction, conte
 	if context.GetBalance(sender, types.GetBaseCoin()).Cmp(commission) < 0 {
 		return Response{
 			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %data. Wanted %d ", sender.String(), commission)}
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %d ", sender.String(), commission)}
 	}
 
 	if !context.CandidateExists(data.PubKey) {

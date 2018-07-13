@@ -30,7 +30,7 @@ func (data UnbondData) MarshalJSON() ([]byte, error) {
 }
 
 func (data UnbondData) String() string {
-	return fmt.Sprintf("UNBOND pubkey:%data",
+	return fmt.Sprintf("UNBOND pubkey:%s",
 		hexutil.Encode(data.PubKey[:]))
 }
 
@@ -45,7 +45,7 @@ func (data UnbondData) Run(sender types.Address, tx *Transaction, context *state
 	if context.GetBalance(sender, types.GetBaseCoin()).Cmp(commission) < 0 {
 		return Response{
 			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %data. Wanted %d ", sender.String(), commission)}
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %d ", sender.String(), commission)}
 	}
 
 	if !context.CandidateExists(data.PubKey) {

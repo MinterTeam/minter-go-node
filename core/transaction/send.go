@@ -32,7 +32,7 @@ func (data SendData) MarshalJSON() ([]byte, error) {
 }
 
 func (data SendData) String() string {
-	return fmt.Sprintf("SEND to:%data coin:%data value:%data",
+	return fmt.Sprintf("SEND to:%s coin:%s value:%s",
 		data.To.String(), data.Coin.String(), data.Value.String())
 }
 
@@ -57,7 +57,7 @@ func (data SendData) Run(sender types.Address, tx *Transaction, context *state.S
 		if coin.ReserveBalance().Cmp(commissionInBaseCoin) < 0 {
 			return Response{
 				Code: code.CoinReserveNotSufficient,
-				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %data, required %data", coin.ReserveBalance().String(), commissionInBaseCoin.String())}
+				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.ReserveBalance().String(), commissionInBaseCoin.String())}
 		}
 
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
@@ -68,7 +68,7 @@ func (data SendData) Run(sender types.Address, tx *Transaction, context *state.S
 	if context.GetBalance(sender, data.Coin).Cmp(totalTxCost) < 0 {
 		return Response{
 			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %data. Wanted %d ", sender.String(), totalTxCost)}
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %d ", sender.String(), totalTxCost)}
 	}
 
 	if !isCheck {
