@@ -49,6 +49,7 @@ func Transaction(w http.ResponseWriter, r *http.Request) {
 				Info:      tx.TxResult.Info,
 				GasWanted: tx.TxResult.GasWanted,
 				GasUsed:   tx.TxResult.GasUsed,
+				Tags:      tx.TxResult.Tags,
 			},
 			From:     sender.String(),
 			Nonce:    decodedTx.Nonce,

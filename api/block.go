@@ -82,6 +82,7 @@ func Block(w http.ResponseWriter, r *http.Request) {
 				Info:      blockResults.Results.DeliverTx[i].Info,
 				GasWanted: blockResults.Results.DeliverTx[i].GasWanted,
 				GasUsed:   blockResults.Results.DeliverTx[i].GasUsed,
+				Tags:      blockResults.Results.DeliverTx[i].Tags,
 			},
 		}
 	}

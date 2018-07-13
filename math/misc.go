@@ -2,6 +2,8 @@ package math
 
 import "math/big"
 
+// https://github.com/ALTree/bigfloat
+
 // agm returns the arithmetic-geometric mean of a and b.
 // a and b must have the same precision.
 func agm(a, b *big.Float) *big.Float {
