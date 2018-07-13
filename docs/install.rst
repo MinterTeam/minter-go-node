@@ -49,7 +49,7 @@ From Source
 You'll need ``go`` `installed <https://golang.org/doc/install>`__ and the required
 `environment variables set <https://github.com/tendermint/tendermint/wiki/Setting-GOPATH>`__
 
-Install Tendermint 0.22.0
+Install Tendermint 0.22.3
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 `Read official instructions <https://tendermint.readthedocs.io/en/master/install.html>`__
 
