@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
-	. "github.com/MinterTeam/minter-go-node/core/transaction/types"
+	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/crypto/sha3"
@@ -51,6 +51,7 @@ type Data interface {
 	MarshalJSON() ([]byte, error)
 	String() string
 	Gas() int64
+	Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPull *big.Int, currentBlock uint64) Response
 }
 
 func (tx *Transaction) Serialize() ([]byte, error) {
