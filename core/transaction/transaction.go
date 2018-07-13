@@ -92,7 +92,7 @@ func (tx *Transaction) SetSignature(sig []byte) {
 }
 
 func (tx *Transaction) Sender() (types.Address, error) {
-	return recoverPlain(tx.Hash(), tx.R, tx.S, tx.V, true)
+	return recoverPlain(tx.Hash(), tx.R, tx.S, tx.V)
 }
 
 func (tx *Transaction) Hash() types.Hash {
@@ -114,12 +114,12 @@ func (tx *Transaction) GetDecodedData() Data {
 	return tx.decodedData
 }
 
-func recoverPlain(sighash types.Hash, R, S, Vb *big.Int, homestead bool) (types.Address, error) {
+func recoverPlain(sighash types.Hash, R, S, Vb *big.Int) (types.Address, error) {
 	if Vb.BitLen() > 8 {
 		return types.Address{}, ErrInvalidSig
 	}
 	V := byte(Vb.Uint64() - 27)
-	if !crypto.ValidateSignatureValues(V, R, S, homestead) {
+	if !crypto.ValidateSignatureValues(V, R, S) {
 		return types.Address{}, ErrInvalidSig
 	}
 	// encode the snature in uncompressed format
