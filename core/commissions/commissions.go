@@ -8,7 +8,7 @@ const (
 	CreateTx              int64 = 1000
 	DeclareCandidacyTx    int64 = 10000
 	DelegateTx            int64 = 100
-	UnboundTx             int64 = 100
+	UnbondTx              int64 = 100
 	RedeemCheckTx         int64 = 10
 	PayloadByte           int64 = 2
 	ToggleCandidateStatus int64 = 100

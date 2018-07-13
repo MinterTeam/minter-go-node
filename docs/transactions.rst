@@ -202,12 +202,12 @@ Transaction for delegating funds to validator.
 | **Coin** - Symbol of coin to stake.
 | **Stake** - Amount of coins to stake.
 
-Unbound transaction
+Unbond transaction
 ^^^^^^^^^^^^^^^^^^^
 
 Type: **0x07**
 
-Transaction for unbounding funds from validator's stake.
+Transaction for unbonding funds from validator's stake.
 
 *Data field contents:*
 

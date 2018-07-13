@@ -7,6 +7,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/check"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/state"
+	. "github.com/MinterTeam/minter-go-node/core/transaction/types"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/crypto/sha3"
@@ -30,7 +31,7 @@ const (
 
 	minCommission = 0
 	maxCommission = 100
-	unboundPeriod = 518400
+	unbondPeriod  = 518400
 
 	allowedCoinSymbols = "^[A-Z0-9]{3,10}$"
 )
@@ -323,13 +324,13 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPull *big.I
 
 		if !isCheck {
 			// now + 31 days
-			unboundAtBlock := currentBlock + unboundPeriod
+			unbondAtBlock := currentBlock + unbondPeriod
 
 			rewardPull.Add(rewardPull, commission)
 
 			context.SubBalance(sender, types.GetBaseCoin(), commission)
 			context.SubStake(sender, data.PubKey, data.Coin, data.Value)
-			context.GetOrNewStateFrozenFunds(unboundAtBlock).AddFund(sender, data.PubKey, data.Coin, data.Value)
+			context.GetOrNewStateFrozenFunds(unbondAtBlock).AddFund(sender, data.PubKey, data.Coin, data.Value)
 			context.SetNonce(sender, tx.Nonce)
 		}
 

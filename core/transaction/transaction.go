@@ -3,14 +3,13 @@ package transaction
 import (
 	"bytes"
 	"crypto/ecdsa"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
+	. "github.com/MinterTeam/minter-go-node/core/transaction/types"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/crypto/sha3"
-	"github.com/MinterTeam/minter-go-node/hexutil"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"math/big"
 )
@@ -32,7 +31,6 @@ const (
 	TypeSetCandidateOffline byte = 0x0A
 )
 
-// TODO: refactor, get rid of switch cases
 type Transaction struct {
 	Nonce       uint64
 	GasPrice    *big.Int
@@ -51,291 +49,27 @@ type RawData []byte
 
 type Data interface {
 	MarshalJSON() ([]byte, error)
-}
-
-type SendData struct {
-	Coin  types.CoinSymbol
-	To    types.Address
-	Value *big.Int
-}
-
-func (s SendData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		Coin  types.CoinSymbol `json:"coin,string"`
-		To    types.Address    `json:"to"`
-		Value string           `json:"value"`
-	}{
-		Coin:  s.Coin,
-		To:    s.To,
-		Value: s.Value.String(),
-	})
-}
-
-type SetCandidateOnData struct {
-	PubKey []byte
-}
-
-func (s SetCandidateOnData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		PubKey string `json:"pubkey"`
-	}{
-		PubKey: fmt.Sprintf("Mp%x", s.PubKey),
-	})
-}
-
-type SetCandidateOffData struct {
-	PubKey []byte
-}
-
-func (s SetCandidateOffData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		PubKey string `json:"pubkey"`
-	}{
-		PubKey: fmt.Sprintf("Mp%x", s.PubKey),
-	})
-}
-
-type SellCoinData struct {
-	CoinToSell  types.CoinSymbol
-	ValueToSell *big.Int
-	CoinToBuy   types.CoinSymbol
-}
-
-func (s SellCoinData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		CoinToSell  types.CoinSymbol `json:"coin_to_sell,string"`
-		ValueToSell string           `json:"value_to_sell"`
-		CoinToBuy   types.CoinSymbol `json:"coin_to_buy,string"`
-	}{
-		CoinToSell:  s.CoinToSell,
-		ValueToSell: s.ValueToSell.String(),
-		CoinToBuy:   s.CoinToBuy,
-	})
-}
-
-type BuyCoinData struct {
-	CoinToBuy  types.CoinSymbol
-	ValueToBuy *big.Int
-	CoinToSell types.CoinSymbol
-}
-
-func (s BuyCoinData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		CoinToBuy  types.CoinSymbol `json:"coin_to_buy,string"`
-		ValueToBuy string           `json:"value_to_buy"`
-		CoinToSell types.CoinSymbol `json:"coin_to_sell,string"`
-	}{
-		CoinToBuy:  s.CoinToBuy,
-		ValueToBuy: s.ValueToBuy.String(),
-		CoinToSell: s.CoinToSell,
-	})
-}
-
-type CreateCoinData struct {
-	Name                 string
-	Symbol               types.CoinSymbol
-	InitialAmount        *big.Int
-	InitialReserve       *big.Int
-	ConstantReserveRatio uint
-}
-
-func (s CreateCoinData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		Name                 string           `json:"name"`
-		Symbol               types.CoinSymbol `json:"coin_symbol"`
-		InitialAmount        string           `json:"initial_amount"`
-		InitialReserve       string           `json:"initial_reserve"`
-		ConstantReserveRatio uint             `json:"constant_reserve_ratio"`
-	}{
-		Name:                 s.Name,
-		Symbol:               s.Symbol,
-		InitialAmount:        s.InitialAmount.String(),
-		InitialReserve:       s.InitialReserve.String(),
-		ConstantReserveRatio: s.ConstantReserveRatio,
-	})
-}
-
-type DeclareCandidacyData struct {
-	Address    types.Address
-	PubKey     []byte
-	Commission uint
-	Coin       types.CoinSymbol
-	Stake      *big.Int
-}
-
-func (s DeclareCandidacyData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		Address    types.Address
-		PubKey     string
-		Commission uint
-		Coin       types.CoinSymbol
-		Stake      string
-	}{
-		Address:    s.Address,
-		PubKey:     fmt.Sprintf("Mp%x", s.PubKey),
-		Commission: s.Commission,
-		Coin:       s.Coin,
-		Stake:      s.Stake.String(),
-	})
-}
-
-type DelegateData struct {
-	PubKey []byte
-	Coin   types.CoinSymbol
-	Stake  *big.Int
-}
-
-func (s DelegateData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		PubKey string
-		Coin   types.CoinSymbol
-		Stake  string
-	}{
-		PubKey: fmt.Sprintf("Mp%x", s.PubKey),
-		Coin:   s.Coin,
-		Stake:  s.Stake.String(),
-	})
-}
-
-type RedeemCheckData struct {
-	RawCheck []byte
-	Proof    [65]byte
-}
-
-func (s RedeemCheckData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		RawCheck string
-		Proof    string
-	}{
-		RawCheck: fmt.Sprintf("Mc%x", s.RawCheck),
-		Proof:    fmt.Sprintf("%x", s.Proof),
-	})
-}
-
-type UnbondData struct {
-	PubKey []byte
-	Coin   types.CoinSymbol
-	Value  *big.Int
-}
-
-func (s UnbondData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		PubKey string
-		Coin   types.CoinSymbol
-		Value  string
-	}{
-		PubKey: fmt.Sprintf("Mp%x", s.PubKey),
-		Coin:   s.Coin,
-		Value:  s.Value.String(),
-	})
+	String() string
+	Gas() int64
 }
 
 func (tx *Transaction) Serialize() ([]byte, error) {
-
-	buf, err := rlp.EncodeToBytes(tx)
-
-	return buf, err
+	return rlp.EncodeToBytes(tx)
 }
 
 func (tx *Transaction) Gas() int64 {
+	return tx.decodedData.Gas() + tx.payloadGas()
+}
 
-	gas := int64(0)
-
-	switch tx.Type {
-	case TypeSend:
-		gas = commissions.SendTx
-	case TypeSellCoin:
-		gas = commissions.ConvertTx
-	case TypeBuyCoin:
-		gas = commissions.ConvertTx
-	case TypeCreateCoin:
-		gas = commissions.CreateTx
-	case TypeDeclareCandidacy:
-		gas = commissions.DeclareCandidacyTx
-	case TypeDelegate:
-		gas = commissions.DelegateTx
-	case TypeUnbond:
-		gas = commissions.UnboundTx
-	case TypeRedeemCheck:
-		gas = commissions.RedeemCheckTx
-	case TypeSetCandidateOnline:
-		gas = commissions.ToggleCandidateStatus
-	case TypeSetCandidateOffline:
-		gas = commissions.ToggleCandidateStatus
-	}
-
-	gas = gas + int64(len(tx.Payload)+len(tx.ServiceData))*commissions.PayloadByte
-
-	return gas
+func (tx *Transaction) payloadGas() int64 {
+	return int64(len(tx.Payload)+len(tx.ServiceData)) * commissions.PayloadByte
 }
 
 func (tx *Transaction) String() string {
 	sender, _ := tx.Sender()
 
-	switch tx.Type {
-	case TypeSend:
-		{
-			txData := tx.decodedData.(SendData)
-			return fmt.Sprintf("SEND TX nonce:%d from:%s to:%s coin:%s value:%s payload: %s",
-				tx.Nonce, sender.String(), txData.To.String(), txData.Coin.String(), txData.Value.String(), tx.Payload)
-		}
-	case TypeSellCoin:
-		{
-			txData := tx.decodedData.(SellCoinData)
-			return fmt.Sprintf("SELL COIN TX nonce:%d from:%s sell:%s %s buy:%s payload: %s",
-				tx.Nonce, sender.String(), txData.ValueToSell.String(), txData.CoinToBuy.String(), txData.CoinToSell.String(), tx.Payload)
-		}
-	case TypeBuyCoin:
-		{
-			txData := tx.decodedData.(BuyCoinData)
-			return fmt.Sprintf("BUY COIN TX nonce:%d from:%s sell:%s buy:%s %s payload: %s",
-				tx.Nonce, sender.String(), txData.CoinToSell.String(), txData.ValueToBuy.String(), txData.CoinToBuy.String(), tx.Payload)
-		}
-	case TypeCreateCoin:
-		{
-			txData := tx.decodedData.(CreateCoinData)
-			return fmt.Sprintf("CREATE COIN TX nonce:%d from:%s symbol:%s reserve:%s amount:%s crr:%d payload: %s",
-				tx.Nonce, sender.String(), txData.Symbol.String(), txData.InitialReserve, txData.InitialAmount, txData.ConstantReserveRatio, tx.Payload)
-		}
-	case TypeDeclareCandidacy:
-		{
-			txData := tx.decodedData.(DeclareCandidacyData)
-			return fmt.Sprintf("DECLARE CANDIDACY TX nonce:%d address:%s pubkey:%s commission: %d payload: %s",
-				tx.Nonce, txData.Address.String(), hexutil.Encode(txData.PubKey[:]), txData.Commission, tx.Payload)
-		}
-	case TypeDelegate:
-		{
-			txData := tx.decodedData.(DelegateData)
-			return fmt.Sprintf("DELEGATE TX nonce:%d pubkey:%s payload: %s",
-				tx.Nonce, hexutil.Encode(txData.PubKey[:]), tx.Payload)
-		}
-	case TypeUnbond:
-		{
-			txData := tx.decodedData.(UnbondData)
-			return fmt.Sprintf("UNBOUND TX nonce:%d pubkey:%s payload: %s",
-				tx.Nonce, hexutil.Encode(txData.PubKey[:]), tx.Payload)
-		}
-	case TypeRedeemCheck:
-		{
-			txData := tx.decodedData.(RedeemCheckData)
-			return fmt.Sprintf("REDEEM CHECK TX nonce:%d proof: %x",
-				tx.Nonce, txData.Proof)
-		}
-	case TypeSetCandidateOffline:
-		{
-			txData := tx.decodedData.(SetCandidateOffData)
-			return fmt.Sprintf("SET CANDIDATE OFFLINE TX nonce:%d, pubkey: %x",
-				tx.Nonce, txData.PubKey)
-		}
-	case TypeSetCandidateOnline:
-		{
-			txData := tx.decodedData.(SetCandidateOnData)
-			return fmt.Sprintf("SET CANDIDATE ONLINE TX nonce:%d, pubkey: %x",
-				tx.Nonce, txData.PubKey)
-		}
-	}
-
-	return "err"
+	return fmt.Sprintf("TX nonce:%d from:%s payload:%s data:%s",
+		tx.Nonce, sender.String(), tx.decodedData.String(), tx.Payload)
 }
 
 func (tx *Transaction) Sign(prv *ecdsa.PrivateKey) error {
