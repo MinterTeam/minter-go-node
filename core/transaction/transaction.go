@@ -70,7 +70,7 @@ func (tx *Transaction) String() string {
 	sender, _ := tx.Sender()
 
 	return fmt.Sprintf("TX nonce:%d from:%s payload:%s data:%s",
-		tx.Nonce, sender.String(), tx.decodedData.String(), tx.Payload)
+		tx.Nonce, sender.String(), tx.Payload, tx.decodedData.String())
 }
 
 func (tx *Transaction) Sign(prv *ecdsa.PrivateKey) error {
