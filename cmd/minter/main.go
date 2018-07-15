@@ -22,7 +22,9 @@ func main() {
 		panic(err)
 	}
 
-	go api.RunApi(app)
+	if !*utils.DisableApi {
+		go api.RunApi(app)
+	}
 
 	// Wait forever
 	common.TrapSignal(func() {

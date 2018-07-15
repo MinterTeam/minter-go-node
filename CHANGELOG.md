@@ -18,6 +18,7 @@ IMPROVEMENT
 - [mempool] Mempool cache is disabled
 - [tendermint] Updated to v0.22.4
 - [versioning] Adapt Semantic Versioning https://semver.org/
+- [client] Add --disable-api flag to client
 
 ## 0.0.5
 *Jule 4rd, 2018*
