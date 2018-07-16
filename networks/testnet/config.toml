@@ -109,7 +109,7 @@ recheck = true
 recheck_empty = false
 broadcast = true
 wal_dir = "data/mempool.wal"
-cache_size = 0
+cache_size = 100000
 
 ##### consensus configuration options #####
 [consensus]
