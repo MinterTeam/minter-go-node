@@ -13,6 +13,9 @@ import (
 	"regexp"
 )
 
+const maxCoinNameBytes = 64
+const allowedCoinSymbols = "^[A-Z0-9]{3,10}$"
+
 type CreateCoinData struct {
 	Name                 string
 	Symbol               types.CoinSymbol

@@ -20,9 +20,9 @@ type DelegateData struct {
 
 func (data DelegateData) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		PubKey string
-		Coin   types.CoinSymbol
-		Stake  string
+		PubKey string           `json:"pub_key"`
+		Coin   types.CoinSymbol `json:"coin"`
+		Stake  string           `json:"stake"`
 	}{
 		PubKey: fmt.Sprintf("Mp%x", data.PubKey),
 		Coin:   data.Coin,

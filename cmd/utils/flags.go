@@ -11,6 +11,7 @@ var (
 	MinterAppAddrFlag     = flag.String("minter_addr", "tcp://0.0.0.0:46658", "This is the address that minter will use to open ABCI application server. Please provide a port.")
 	MinterAPIAddrFlag     = flag.String("api_addr", ":8841", "This is the address that minter will use to open API server. Please provide a port.")
 	MinterHome            = flag.String("home", "", "Path to minter data directory")
+	DisableApi            = flag.Bool("disable-api", false, "")
 )
 
 func init() {

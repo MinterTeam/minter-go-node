@@ -25,8 +25,8 @@ type RedeemCheckData struct {
 
 func (data RedeemCheckData) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		RawCheck string
-		Proof    string
+		RawCheck string `json:"raw_check"`
+		Proof    string `json:"proof"`
 	}{
 		RawCheck: fmt.Sprintf("Mc%x", data.RawCheck),
 		Proof:    fmt.Sprintf("%x", data.Proof),

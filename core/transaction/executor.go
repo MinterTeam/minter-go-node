@@ -17,13 +17,6 @@ const (
 	maxTxLength          = 1024
 	maxPayloadLength     = 128
 	maxServiceDataLength = 128
-	maxCoinNameBytes     = 64
-
-	minCommission = 0
-	maxCommission = 100
-	unbondPeriod  = 518400
-
-	allowedCoinSymbols = "^[A-Z0-9]{3,10}$"
 )
 
 type Response struct {

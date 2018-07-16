@@ -28,11 +28,11 @@ type BlockTransactionResponse struct {
 	RawTx       string            `json:"raw_tx"`
 	From        string            `json:"from"`
 	Nonce       uint64            `json:"nonce"`
-	GasPrice    *big.Int          `json:"gasPrice"`
+	GasPrice    *big.Int          `json:"gas_price"`
 	Type        byte              `json:"type"`
 	Data        transaction.Data  `json:"data"`
 	Payload     []byte            `json:"payload"`
-	ServiceData []byte            `json:"serviceData"`
+	ServiceData []byte            `json:"service_data"`
 	Gas         int64             `json:"gas"`
 	TxResult    ResponseDeliverTx `json:"tx_result"`
 }
