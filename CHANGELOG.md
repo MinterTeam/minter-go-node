@@ -1,6 +1,7 @@
 # Changelog
 
 ## 0.0.6
+*Jule 16th, 2018*
 
 BREAKING CHANGES
 
