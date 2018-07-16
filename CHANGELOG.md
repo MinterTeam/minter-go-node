@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.0.6
+*Jule 16th, 2018*
+
+BREAKING CHANGES
+
+- [core] Change commissions
+- [testnet] New testnet id
+- [core] Fix transaction decoding issue
+- [core] Remove transaction ConvertCoin, add SellCoin and BuyCoin. For details see the docs.
+- [core] Coin name is now limited to max 64 bytes
+- [api] Update estimate exchange endpoint
+
+IMPROVEMENT
+
+- [api] Update transaction api
+- [api] Add transaction result to block api
+- [mempool] Mempool cache is disabled
+- [tendermint] Updated to v0.22.4
+- [versioning] Adapt Semantic Versioning https://semver.org/
+- [client] Add --disable-api flag to client
+
 ## 0.0.5
 *Jule 4rd, 2018*
 

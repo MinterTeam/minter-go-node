@@ -49,21 +49,23 @@ Type of transaction is determined by a single byte.
 +==================================+=========+
 | **TypeSend**                     | 0x01    |
 +----------------------------------+---------+
-| **TypeConvert**                  | 0x02    |
+| **TypeSellCoin**                 | 0x02    |
 +----------------------------------+---------+
-| **TypeCreateCoin**               | 0x03    |
+| **TypeBuyCoin**                  | 0x03    |
 +----------------------------------+---------+
-| **TypeDeclareCandidacy**         | 0x04    |
+| **TypeCreateCoin**               | 0x04    |
 +----------------------------------+---------+
-| **TypeDelegate**                 | 0x05    |
+| **TypeDeclareCandidacy**         | 0x05    |
 +----------------------------------+---------+
-| **TypeUnbond**                   | 0x06    |
+| **TypeDelegate**                 | 0x06    |
 +----------------------------------+---------+
-| **TypeRedeemCheck**              | 0x07    |
+| **TypeUnbond**                   | 0x07    |
 +----------------------------------+---------+
-| **TypeSetCandidateOnline**       | 0x08    |
+| **TypeRedeemCheck**              | 0x08    |
 +----------------------------------+---------+
-| **TypeSetCandidateOffline**      | 0x09    |
+| **TypeSetCandidateOnline**       | 0x09    |
++----------------------------------+---------+
+| **TypeSetCandidateOffline**      | 0x0A    |
 +----------------------------------+---------+
 
 Send transaction
@@ -87,31 +89,52 @@ Transaction for sending arbitrary coin.
 | **To** - Recipient address in Minter Network.
 | **Value** - Amount of **Coin** to send.
 
-Convert transaction
-^^^^^^^^^^^^^^^^^^^
+Sell coin transaction
+^^^^^^^^^^^^^^^^^^^^^
 
 Type: **0x02**
 
-Transaction for converting one coin (owned by sender) to another coin in a system.
+Transaction for selling one coin (owned by sender) in favour of another coin in a system.
 
 *Data field contents:*
 
 .. code-block:: go
 
-    type ConvertData struct {
-        FromCoinSymbol [10]byte
-        ToCoinSymbol   [10]byte
-        Value          *big.Int
+    type SellCoinData struct {
+        CoinToSell  [10]byte
+        ValueToSell *big.Int
+        CoinToBuy   [10]byte
     }
 
-| **FromCoinSymbol** - Symbol of a coin to give.
-| **ToCoinSymbol** - Symbol of a coin to get.
-| **Value** - Amount of **FromCoinSymbol** to convert.
+| **CoinToSell** - Symbol of a coin to give.
+| **ValueToSell** - Amount of **CoinToSell** to give.
+| **CoinToBuy** - Symbol of a coin to get.
+
+Buy coin transaction
+^^^^^^^^^^^^^^^^^^^^
+
+Type: **0x03**
+
+Transaction for buy a coin paying another coin (owned by sender).
+
+*Data field contents:*
+
+.. code-block:: go
+
+    type BuyCoinData struct {
+        CoinToBuy  [10]byte
+        ValueToBuy *big.Int
+        CoinToSell   [10]byte
+    }
+
+| **CoinToBuy** - Symbol of a coin to get.
+| **ValueToBuy** - Amount of **CoinToBuy** to get.
+| **CoinToSell** - Symbol of a coin to give.
 
 Create coin transaction
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-Type: **0x03**
+Type: **0x04**
 
 Transaction for creating new coin in a system.
 
@@ -136,7 +159,7 @@ Transaction for creating new coin in a system.
 Declare candidacy transaction
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Type: **0x04**
+Type: **0x05**
 
 Transaction for declaring new validator candidacy.
 
@@ -161,7 +184,7 @@ Transaction for declaring new validator candidacy.
 Delegate transaction
 ^^^^^^^^^^^^^^^^^^^^
 
-Type: **0x05**
+Type: **0x06**
 
 Transaction for delegating funds to validator.
 
@@ -179,12 +202,12 @@ Transaction for delegating funds to validator.
 | **Coin** - Symbol of coin to stake.
 | **Stake** - Amount of coins to stake.
 
-Unbound transaction
+Unbond transaction
 ^^^^^^^^^^^^^^^^^^^
 
-Type: **0x06**
+Type: **0x07**
 
-Transaction for unbounding funds from validator's stake.
+Transaction for unbonding funds from validator's stake.
 
 *Data field contents:*
 
@@ -203,7 +226,7 @@ Transaction for unbounding funds from validator's stake.
 Redeem check transaction
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-Type: **0x07**
+Type: **0x08**
 
 Transaction for redeeming a check.
 
@@ -222,7 +245,7 @@ Transaction for redeeming a check.
 Set candidate online transaction
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Type: **0x08**
+Type: **0x09**
 
 Transaction for turning candidate on. This transaction should be sent from address which is set in the "Declare candidacy transaction".
 
@@ -239,7 +262,7 @@ Transaction for turning candidate on. This transaction should be sent from addre
 Set candidate offline transaction
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Type: **0x09**
+Type: **0x0A**
 
 Transaction for turning candidate off. This transaction should be sent from address which is set in the "Declare candidacy transaction".
 

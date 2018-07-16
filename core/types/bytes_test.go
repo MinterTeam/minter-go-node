@@ -59,7 +59,7 @@ func (s *BytesSuite) TestRightPadBytes(c *checker.C) {
 func TestFromHex(t *testing.T) {
 	input := "Mx01"
 	expected := []byte{1}
-	result := FromHex(input)
+	result := FromHex(input, "Mx")
 	if !bytes.Equal(expected, result) {
 		t.Errorf("Expected %x got %x", expected, result)
 	}
@@ -89,7 +89,7 @@ func TestIsHex(t *testing.T) {
 func TestFromHexOddLength(t *testing.T) {
 	input := "Mx1"
 	expected := []byte{1}
-	result := FromHex(input)
+	result := FromHex(input, "Mx")
 	if !bytes.Equal(expected, result) {
 		t.Errorf("Expected %x got %x", expected, result)
 	}
@@ -98,7 +98,7 @@ func TestFromHexOddLength(t *testing.T) {
 func TestNoPrefixShortHexOddLength(t *testing.T) {
 	input := "1"
 	expected := []byte{1}
-	result := FromHex(input)
+	result := FromHex(input, "Mx")
 	if !bytes.Equal(expected, result) {
 		t.Errorf("Expected %x got %x", expected, result)
 	}

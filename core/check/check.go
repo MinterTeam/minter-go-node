@@ -27,7 +27,7 @@ type Check struct {
 }
 
 func (check *Check) Sender() (types.Address, error) {
-	return recoverPlain(check.Hash(), check.R, check.S, check.V, true)
+	return recoverPlain(check.Hash(), check.R, check.S, check.V)
 }
 
 func (check *Check) LockPubKey() ([]byte, error) {
@@ -85,12 +85,12 @@ func rlpHash(x interface{}) (h types.Hash) {
 	return h
 }
 
-func recoverPlain(sighash types.Hash, R, S, Vb *big.Int, homestead bool) (types.Address, error) {
+func recoverPlain(sighash types.Hash, R, S, Vb *big.Int) (types.Address, error) {
 	if Vb.BitLen() > 8 {
 		return types.Address{}, ErrInvalidSig
 	}
 	V := byte(Vb.Uint64() - 27)
-	if !crypto.ValidateSignatureValues(V, R, S, homestead) {
+	if !crypto.ValidateSignatureValues(V, R, S) {
 		return types.Address{}, ErrInvalidSig
 	}
 	// encode the snature in uncompressed format

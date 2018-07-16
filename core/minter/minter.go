@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
-	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/rewards"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
@@ -15,7 +14,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/mintdb"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/log"
 	"github.com/tendermint/tendermint/rpc/core/types"
 	"github.com/tendermint/tendermint/rpc/lib/client"
 	"math/big"
@@ -32,7 +30,6 @@ type Blockchain struct {
 	rewards            *big.Int
 	activeValidators   abciTypes.Validators
 	validatorsStatuses map[string]int8
-	logger             log.Logger
 
 	BaseCoin types.CoinSymbol
 }
@@ -43,10 +40,6 @@ const (
 
 	stateTableId = "state"
 	appTableId   = "app"
-
-	maxTxLength          = 1024
-	maxPayloadLength     = 128
-	maxServiceDataLength = 128
 )
 
 var (
@@ -56,7 +49,7 @@ var (
 	airdropAddress = types.HexToAddress("Mxa93163fdf10724dc4785ff5cbfb9ac0b5949409f")
 )
 
-func NewMinterBlockchain(logger log.Logger) *Blockchain {
+func NewMinterBlockchain() *Blockchain {
 
 	db, err := mintdb.NewLDBDatabase(utils.GetMinterHome()+"/data", 1000, 1000)
 
@@ -67,7 +60,6 @@ func NewMinterBlockchain(logger log.Logger) *Blockchain {
 	blockchain = &Blockchain{
 		db:       db,
 		BaseCoin: types.GetBaseCoin(),
-		logger:   logger,
 	}
 
 	blockchain.updateCurrentRootHash()
@@ -236,36 +228,7 @@ func (app *Blockchain) Info(req abciTypes.RequestInfo) (resInfo abciTypes.Respon
 }
 
 func (app *Blockchain) DeliverTx(rawTx []byte) abciTypes.ResponseDeliverTx {
-
-	if len(rawTx) > maxTxLength {
-		return abciTypes.ResponseDeliverTx{
-			Code: code.TxTooLarge,
-			Log:  "TX length is over 1024 bytes"}
-	}
-
-	tx, err := transaction.DecodeFromBytes(rawTx)
-
-	if err != nil {
-		return abciTypes.ResponseDeliverTx{
-			Code: code.DecodeError,
-			Log:  err.Error()}
-	}
-
-	if len(tx.Payload) > maxPayloadLength {
-		return abciTypes.ResponseDeliverTx{
-			Code: code.TxPayloadTooLarge,
-			Log:  "TX payload length is over 128 bytes"}
-	}
-
-	if len(tx.ServiceData) > maxServiceDataLength {
-		return abciTypes.ResponseDeliverTx{
-			Code: code.TxServiceDataTooLarge,
-			Log:  "TX service data length is over 128 bytes"}
-	}
-
-	app.logger.Info("Deliver tx", "tx", tx.String())
-
-	response := transaction.RunTx(app.stateDeliver, false, tx, app.rewards, app.height)
+	response := transaction.RunTx(app.stateDeliver, false, rawTx, app.rewards, app.height)
 
 	return abciTypes.ResponseDeliverTx{
 		Code:      response.Code,
@@ -280,34 +243,7 @@ func (app *Blockchain) DeliverTx(rawTx []byte) abciTypes.ResponseDeliverTx {
 }
 
 func (app *Blockchain) CheckTx(rawTx []byte) abciTypes.ResponseCheckTx {
-
-	if len(rawTx) > maxTxLength {
-		return abciTypes.ResponseCheckTx{
-			Code: code.TxTooLarge,
-			Log:  "TX length is over 1024 bytes"}
-	}
-
-	tx, err := transaction.DecodeFromBytes(rawTx)
-
-	if err != nil {
-		return abciTypes.ResponseCheckTx{
-			Code: code.DecodeError,
-			Log:  err.Error()}
-	}
-
-	if len(tx.Payload) > maxPayloadLength {
-		return abciTypes.ResponseCheckTx{
-			Code: code.TxPayloadTooLarge,
-			Log:  "TX payload length is over 128 bytes"}
-	}
-
-	if len(tx.ServiceData) > maxServiceDataLength {
-		return abciTypes.ResponseCheckTx{
-			Code: code.TxServiceDataTooLarge,
-			Log:  "TX service data length is over 128 bytes"}
-	}
-
-	response := transaction.RunTx(app.stateCheck, true, tx, nil, app.height)
+	response := transaction.RunTx(app.stateCheck, true, rawTx, nil, app.height)
 
 	return abciTypes.ResponseCheckTx{
 		Code:      response.Code,

@@ -18,6 +18,7 @@ const (
 	CoinAlreadyExists uint32 = 201
 	WrongCrr          uint32 = 202
 	InvalidCoinSymbol uint32 = 203
+	InvalidCoinName   uint32 = 204
 
 	// convert
 	CrossConvert uint32 = 301

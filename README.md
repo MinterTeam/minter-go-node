@@ -10,91 +10,32 @@ Minter is a blockchain network that lets people, projects, and companies issue a
 
 _NOTE: This is alpha software. Please contact us if you intend to run it in production._
 
+## Installation
+
+You can get official installation instructions in our [docs](https://minter-go-node.readthedocs.io/en/dev/install.html).
+
 ## Documentation
 
 For documentation, [Read The Docs](https://minter-go-node.readthedocs.io/en/dev/).
 
-## Run using Docker
+## Versioning
 
-You'll need [docker](https://docker.com/) and [docker compose](https://docs.docker.com/compose/) installed.
+### SemVer
 
-Clone Minter to your machine
-```bash
-$ git clone https://github.com/MinterTeam/minter-go-node.git
-$ cd minter-go-node
-```
+Minter uses [SemVer](http://semver.org/) to determine when and how the version changes.
+According to SemVer, anything in the public API can change at any time before version 1.0.0
 
-Prepare configs
-```bash
-$ mkdir -p ~/.tendermint/data
-$ mkdir -p ~/.minter/data
+To provide some stability to Minter users in these 0.X.X days, the MINOR version is used
+to signal breaking changes across a subset of the total public API. This subset includes all
+interfaces exposed to other processes, but does not include the in-process Go APIs.
 
-$ cp -R networks/testnet/ ~/.tendermint/config
+### Upgrades
 
-$ chmod -R 0777 ~/.tendermint
-$ chmod -R 0777 ~/.minter 
-```
+In an effort to avoid accumulating technical debt prior to 1.0.0,
+we do not guarantee that breaking changes (ie. bumps in the MINOR version)
+will work with existing tendermint blockchains. In these cases you will
+have to start a new blockchain, or write something custom to get the old
+data into the new chain.
 
-Start Minter
-```bash
-$ docker-compose up
-```
-
-## Build and run manually
-
-You'll need **go** [installed](https://golang.org/doc/install) and the required
-[environment variables set](https://github.com/tendermint/tendermint/wiki/Setting-GOPATH)
-
-1. Install [Tendermint 0.22.0](https://github.com/tendermint/tendermint/blob/master/docs/install.rst)
-
-2. Clone Minter to your machine
-```bash
-$ mkdir $GOPATH/src/github.com/MinterTeam
-$ cd $GOPATH/src/github.com/MinterTeam
-$ git clone https://github.com/MinterTeam/minter-go-node.git
-$ cd minter-go-node
-```
-
-3. Get Tools & Dependencies
-
-```bash
-$ make get_tools
-$ make get_vendor_deps
-```
-
-4. Compile & install
-```bash
-$ make install
-```
-
-5. Create data directories
-```bash
-$ mkdir -p ~/.tendermint/data
-$ mkdir -p ~/.minter/data
-```
-
-6. Copy config and genesis file
-```bash
-$ cp -R networks/testnet/ ~/.tendermint/config
-```
-
-7. Run Tendermint
-```bash
-$ tendermint node
-```
-
-8. Run Minter
-
-```bash
-$ minter
-```
-
-## Troubleshooting
-
-If you see error like this: 
-
-```
-ERROR: Failed to create node: Error starting proxy app connections: Error on replay: Wrong Block.Header.AppHash.  Expected 6D94BF43BB6C83F396FD8310BC2983F08C658344F9F348BB6675D1E5913230B3, got A2F322A4891092C690F5F0B80C1B9D5017A703035B63385108628EC244ECB191 
-```
-
-then your build of Minter Node and network build of Minter Node are different.
+However, any bump in the PATCH version should be compatible with existing histories
+(if not please open an [issue](https://github.com/MinterTeam/minter-go-node/issues)).
