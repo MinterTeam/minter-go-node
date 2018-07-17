@@ -6,8 +6,15 @@ Minter Blockchain is multi-coin system.
 | Base coin in testnet is ``MNT``.
 | Base coin in mainnet is ``BIP``.
 
-| Smallest part of a coin is called ``pip``.
+| Smallest part of *each* coin is called ``pip``.
 | 1 pip = 1^-18 of any coin. In Blockchain and API we only operating with pips.
+
+**Note:**
+Each coin has its **own** pip. You should treat pip like atomic part of a coin, not as currency.
+
+| 1 MNT = 10^18 pip (MNT's pip)
+| 1 ABC = 10^18 pip (ABC's pip)
+| 1 MNT != 1 ABC
 
 Coin Issuance
 ^^^^^^^^^^^^^
