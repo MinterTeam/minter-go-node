@@ -14,8 +14,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/mintdb"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/rpc/core/types"
-	"github.com/tendermint/tendermint/rpc/lib/client"
+	rpc "github.com/tendermint/tendermint/rpc/client"
 	"math/big"
 )
 
@@ -323,13 +322,9 @@ func (app *Blockchain) CurrentState() *state.StateDB {
 }
 
 func (app *Blockchain) GetStateForHeight(height int) (*state.StateDB, error) {
-	client := rpcclient.NewJSONRPCClient(*utils.TendermintRpcAddrFlag)
-	core_types.RegisterAmino(client.Codec())
-
-	result := new(core_types.ResultBlock)
-	_, err := client.Call("block", map[string]interface{}{
-		"height": height,
-	}, result)
+	h := int64(height)
+	client := rpc.NewHTTP(*utils.TendermintRpcAddrFlag, "/websocket")
+	result, err := client.Block(&h)
 
 	if err != nil {
 		return nil, err
