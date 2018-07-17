@@ -29,6 +29,7 @@ type Blockchain struct {
 	rewards            *big.Int
 	activeValidators   abciTypes.Validators
 	validatorsStatuses map[string]int8
+	tendermintRPC      *rpc.HTTP
 
 	BaseCoin types.CoinSymbol
 }
@@ -57,8 +58,9 @@ func NewMinterBlockchain() *Blockchain {
 	}
 
 	blockchain = &Blockchain{
-		db:       db,
-		BaseCoin: types.GetBaseCoin(),
+		db:            db,
+		BaseCoin:      types.GetBaseCoin(),
+		tendermintRPC: rpc.NewHTTP(*utils.TendermintRpcAddrFlag, "/websocket"),
 	}
 
 	blockchain.updateCurrentRootHash()
@@ -323,8 +325,7 @@ func (app *Blockchain) CurrentState() *state.StateDB {
 
 func (app *Blockchain) GetStateForHeight(height int) (*state.StateDB, error) {
 	h := int64(height)
-	client := rpc.NewHTTP(*utils.TendermintRpcAddrFlag, "/websocket")
-	result, err := client.Block(&h)
+	result, err := app.tendermintRPC.Block(&h)
 
 	if err != nil {
 		return nil, err
