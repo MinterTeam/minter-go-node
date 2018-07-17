@@ -23,9 +23,9 @@ Requirements
 
 Minimal requirements for running Validator's Node are:
 
-- 2GB RAM
-- 100GB of disk space
-- 1.4 GHz 2v CPU
+- 4GB RAM
+- 200GB SSD
+- x64 2.0 GHz 4 vCPUs
 
 SSD disks are preferable for high transaction throughput.
 
@@ -33,7 +33,8 @@ Recommended:
 
 - 4GB RAM
 - 200GB SSD
-- x64 2.0 GHz 4v CPU
+- x64 3.4 GHz 8 vCPUs
+- HSM
 
 Validators limitations
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -71,7 +72,7 @@ of funds for a validator and its delegators:
 
 - **Double signing**: If someone reports on chain A that a validator signed two blocks at the same height on chain
   A and chain B, this validator will get slashed on chain A
-- **Unavailability**: If a validator's signature has not been included in the last X blocks,
+- **Unavailability**: If a validator's signature has not been included in the last 12 blocks,
   1% of stake will get slashed and validator will be turned off
 
 Note that even if a validator does not intentionally misbehave, it can still be slashed if its node crashes,
@@ -91,11 +92,6 @@ Becoming validator in testnet
 
 4. Go to `Vault <http://vault.minter.network/>`__ and send 2 transactions:
     Fill and send ``Declare candidacy`` and ``Set candidate online`` forms.
-
-    If you cannot open Vault because of invalid certificate:
-    `reset HSTS <https://www.thesslstore.com/blog/clear-hsts-settings-chrome-firefox/>`__ for domains
-    ``minter.network`` and ``vault.minter.network``. Then try to open
-    `HTTP version of Vault <http://vault.minter.network/>`__.
 
     P.S. You can receive testnet coins in our telegram wallet @BipWallet_Bot.
 
@@ -169,10 +165,14 @@ Validators nodes should edit their ``config.toml``:
 
         # Comma separated list of nodes to keep persistent connections to
         # Do not add private peers to this list if you don't want them advertised
-        persistent_peers =[list of sentry nodes]
+        persistent_peers = [list of sentry nodes]
 
         # Set true to enable the peer-exchange reactor
         pex = false
+
+        # Disable transaction indexer for better performance
+        indexer = "null"
+        index_all_tags = false
 
 Sentry Nodes should edit their ``config.toml``:
 
@@ -180,3 +180,10 @@ Sentry Nodes should edit their ``config.toml``:
 
         # Comma separated list of peer IDs to keep private (will not be gossiped to other peers)
         private_peer_ids = "ipaddress of validator nodes"
+
+
+Also you can disable Minter API on Validator node to improve performance:
+
+::
+
+        minter --disable-api
