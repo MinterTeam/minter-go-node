@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.0
+*Jule 17th, 2018*
+
+BREAKING CHANGES
+
+- [core] 0.1x transaction fees
+
+IMPROVEMENT
+
+- [config] 10x default send/recv rate
+
 ## 0.0.6
 *Jule 16th, 2018*
 

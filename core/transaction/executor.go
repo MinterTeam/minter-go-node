@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	CommissionMultiplier = big.NewInt(10e15)
+	CommissionMultiplier = big.NewInt(10e14)
 )
 
 const (
