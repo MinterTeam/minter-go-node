@@ -14,8 +14,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/mintdb"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/rpc/core/types"
-	"github.com/tendermint/tendermint/rpc/lib/client"
+	rpc "github.com/tendermint/tendermint/rpc/client"
 	"math/big"
 )
 
@@ -30,6 +29,7 @@ type Blockchain struct {
 	rewards            *big.Int
 	activeValidators   abciTypes.Validators
 	validatorsStatuses map[string]int8
+	tendermintRPC      *rpc.HTTP
 
 	BaseCoin types.CoinSymbol
 }
@@ -58,8 +58,9 @@ func NewMinterBlockchain() *Blockchain {
 	}
 
 	blockchain = &Blockchain{
-		db:       db,
-		BaseCoin: types.GetBaseCoin(),
+		db:            db,
+		BaseCoin:      types.GetBaseCoin(),
+		tendermintRPC: rpc.NewHTTP(*utils.TendermintRpcAddrFlag, "/websocket"),
 	}
 
 	blockchain.updateCurrentRootHash()
@@ -323,13 +324,8 @@ func (app *Blockchain) CurrentState() *state.StateDB {
 }
 
 func (app *Blockchain) GetStateForHeight(height int) (*state.StateDB, error) {
-	client := rpcclient.NewJSONRPCClient(*utils.TendermintRpcAddrFlag)
-	core_types.RegisterAmino(client.Codec())
-
-	result := new(core_types.ResultBlock)
-	_, err := client.Call("block", map[string]interface{}{
-		"height": height,
-	}, result)
+	h := int64(height)
+	result, err := app.tendermintRPC.Block(&h)
 
 	if err != nil {
 		return nil, err
