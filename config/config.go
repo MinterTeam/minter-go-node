@@ -1,12 +1,11 @@
 package config
 
 import (
+	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	tmConfig "github.com/tendermint/tendermint/config"
-	"os"
 )
 
-var homeDir = os.Getenv("HOME")
-var MinterDir = homeDir + "/.minter"
+var MinterDir = utils.GetMinterHome()
 var config = tmConfig.DefaultConfig()
 
 func GetConfig() *tmConfig.Config {
