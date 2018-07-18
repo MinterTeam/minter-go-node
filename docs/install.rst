@@ -26,12 +26,10 @@ Prepare folders and configs
 .. code-block:: bash
     :lineno-start: 3
 
-    mkdir -p ~/.tendermint/data
     mkdir -p ~/.minter/data
 
-    cp -R networks/testnet/ ~/.tendermint/config
+    cp -R networks/testnet/ ~/.minter/config
 
-    chmod -R 0777 ~/.tendermint
     chmod -R 0777 ~/.minter
 
 Start Minter
@@ -48,10 +46,6 @@ From Source
 
 You'll need ``go`` `installed <https://golang.org/doc/install>`__ and the required
 `environment variables set <https://github.com/tendermint/tendermint/wiki/Setting-GOPATH>`__
-
-Install Tendermint 0.22.4
-^^^^^^^^^^^^^^^^^^^^^^^^^
-`Read official instructions <https://tendermint.readthedocs.io/en/master/install.html>`__
 
 Clone Minter source code to your machine
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -92,30 +86,21 @@ to put the binary in ``./build``.
 
 The latest ``minter version`` is now installed.
 
-Create data directories
-^^^^^^^^^^^^^^^^^^^^^^^
+Create data directory
+^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: bash
     :lineno-start: 9
 
-    mkdir -p ~/.tendermint/data
     mkdir -p ~/.minter/data
 
-Copy config and genesis file
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Copy genesis file
+^^^^^^^^^^^^^^^^^
 
 .. code-block:: bash
     :lineno-start: 11
 
-    cp -R networks/testnet/ ~/.tendermint/config
-
-Run Tendermint
-^^^^^^^^^^^^^^
-
-.. code-block:: bash
-    :lineno-start: 12
-
-    tendermint node
+    cp -R networks/testnet/ ~/.minter/config
 
 Run Minter
 ^^^^^^^^^^
