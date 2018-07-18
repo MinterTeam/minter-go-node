@@ -14,6 +14,8 @@ import (
 	"github.com/tendermint/tendermint/proxy"
 	"github.com/tendermint/tendermint/types"
 	"os"
+	"github.com/gobuffalo/packr"
+	"net/http"
 )
 
 func main() {
@@ -30,6 +32,8 @@ func main() {
 
 	app.RunRPC(node)
 
+	go runGUI()
+
 	if !*utils.DisableApi {
 		go api.RunApi(app, node)
 	}
@@ -40,6 +44,13 @@ func main() {
 		node.Stop()
 		app.Stop()
 	})
+}
+
+func runGUI() {
+	box := packr.NewBox("./../../gui")
+
+	http.Handle("/", http.FileServer(box))
+	log.Error(http.ListenAndServe(":3000", nil).Error())
 }
 
 func startTendermintNode(app *minter.Blockchain) *tmNode.Node {

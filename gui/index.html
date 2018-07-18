@@ -1,0 +1,124 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Minter Node GUI</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/css/bootstrap.min.css" integrity="sha384-9gVQ4dYFwwWSjIDZnLEWnxCjeSWFphJiwGPXr1jddIhOegiu1FwO5qRGvFXOdJZ4" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js"></script>
+    <style>
+        .body {
+            margin-top: 30px;
+        }
+
+        .table {
+            margin-bottom: 0;
+            table-layout: fixed;
+        }
+
+        .card-header {
+            font-weight: bold;
+        }
+
+        .card-header {
+            padding-left: 12px;
+        }
+
+        .h {
+            width: 200px;
+            background-color: #f3f3f3;
+            border-right: 1px solid #ccc;
+        }
+
+        .bg-success {
+            color: white;
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <nav class="navbar navbar-light bg-light">
+        <div class="container">
+            <span class="navbar-brand mb-0 h1">Minter Full Node Status</span>
+        </div>
+    </nav>
+    <div class="container body" v-if="status">
+        <div class="row">
+            <div class="col">
+                <div class="card">
+                    <div class="card-header">
+                        Node Info
+                    </div>
+                    <table class="table card-body">
+                        <tbody>
+                        <tr>
+                            <td class="h">Moniker</td>
+                            <td>{{ status.node_info.moniker }}</td>
+                        </tr>
+                        <tr>
+                            <td class="h">Node ID</td>
+                            <td>{{ status.node_info.id }}</td>
+                        </tr>
+                        <tr>
+                            <td class="h">Listen Addr</td>
+                            <td>{{ status.node_info.listen_addr }}</td>
+                        </tr>
+                        <tr>
+                            <td class="h">Network ID</td>
+                            <td>{{ status.node_info.network }}</td>
+                        </tr>
+                        <tr>
+                            <td class="h">Tendermint Version</td>
+                            <td>{{ status.node_info.version }}</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card">
+                    <div class="card-header">
+                        Syncing Info
+                    </div>
+                    <table class="table card-body">
+                        <tbody>
+                        <tr>
+                            <td class="h">Is Synced</td>
+                            <td class="bg-success">{{ status.sync_info.catching_up != false }}</td>
+                        </tr>
+                        <tr>
+                            <td class="h">Latest Block</td>
+                            <td>
+                                #{{ status.sync_info.latest_block_height }} <span class="text-muted">at {{ status.sync_info.latest_block_time }}</span>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+<script>
+    new Vue({
+        el: '#app',
+        data: {
+            status: null
+        },
+        mounted() {
+            this.refresh()
+        },
+        methods: {
+            refresh() {
+                axios.get('http://localhost:26657/status').then(function(data) {
+                  this.status = data.data.result
+                }.bind(this))
+            }
+        }
+    })
+</script>
+</body>
+</html>
