@@ -22,6 +22,10 @@ func Info(msg string, ctx ...interface{}) {
 	logger.Info(msg, ctx...)
 }
 
+func Error(msg string, ctx ...interface{}) {
+	logger.Error(msg, ctx...)
+}
+
 func With(keyvals ...interface{}) log.Logger {
 	return logger.With(keyvals...)
 }

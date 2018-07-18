@@ -1,6 +1,17 @@
 package genesis
 
-import "github.com/MinterTeam/minter-go-node/core/types"
+import (
+	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/tendermint/go-amino"
+	"github.com/tendermint/tendermint/crypto"
+	tmtypes "github.com/tendermint/tendermint/types"
+)
+
+var cdc = amino.NewCodec()
+
+func init() {
+	crypto.RegisterAmino(cdc)
+}
 
 var TestnetGenesis = `{
   "genesis_time": "2018-06-09T00:00:00Z",
@@ -34,6 +45,14 @@ var TestnetGenesis = `{
   },
   "app_hash": "0000000000000000000000000000000000000000000000000000000000000000"
 }`
+
+func GetTestnetGenesis() *tmtypes.GenesisDoc {
+	genDoc := tmtypes.GenesisDoc{}
+	cdc.UnmarshalJSON([]byte(TestnetGenesis), &genDoc)
+	genDoc.ValidateAndComplete()
+
+	return &genDoc
+}
 
 type AppState struct {
 	FirstValidatorAddress types.Address `json:"first_validator_address"`

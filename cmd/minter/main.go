@@ -12,26 +12,21 @@ import (
 	tmNode "github.com/tendermint/tendermint/node"
 	"github.com/tendermint/tendermint/privval"
 	"github.com/tendermint/tendermint/proxy"
-	"io/ioutil"
+	"github.com/tendermint/tendermint/types"
 	"os"
 )
 
 func main() {
 
-	configDir := utils.GetMinterHome() + "/config/"
-	genesisFile := configDir + "genesis.json"
+	err := common.EnsureDir(utils.GetMinterHome()+"/config", 0777)
 
-	if !common.FileExists(genesisFile) {
-		os.MkdirAll(configDir, 0777)
-		err := ioutil.WriteFile(genesisFile, []byte(genesis.TestnetGenesis), 0644)
-
-		if err != nil {
-			panic(err)
-		}
+	if err != nil {
+		log.Error(err.Error())
+		os.Exit(1)
 	}
 
 	app := minter.NewMinterBlockchain()
-	node := startTendermint(app)
+	node := startTendermintNode(app)
 
 	app.RunRPC(node)
 
@@ -47,7 +42,7 @@ func main() {
 	})
 }
 
-func startTendermint(app *minter.Blockchain) *tmNode.Node {
+func startTendermintNode(app *minter.Blockchain) *tmNode.Node {
 
 	cfg := config.GetConfig()
 
@@ -55,7 +50,9 @@ func startTendermint(app *minter.Blockchain) *tmNode.Node {
 		cfg,
 		privval.LoadOrGenFilePV(cfg.PrivValidatorFile()),
 		proxy.NewLocalClientCreator(app),
-		tmNode.DefaultGenesisDocProviderFunc(cfg),
+		func() (*types.GenesisDoc, error) {
+			return genesis.GetTestnetGenesis(), nil
+		},
 		tmNode.DefaultDBProvider,
 		tmNode.DefaultMetricsProvider,
 		log.With("module", "tendermint"),
