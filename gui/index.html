@@ -5,7 +5,8 @@
           content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Minter Node GUI</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/css/bootstrap.min.css" integrity="sha384-9gVQ4dYFwwWSjIDZnLEWnxCjeSWFphJiwGPXr1jddIhOegiu1FwO5qRGvFXOdJZ4" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/css/bootstrap.min.css"
+          integrity="sha384-9gVQ4dYFwwWSjIDZnLEWnxCjeSWFphJiwGPXr1jddIhOegiu1FwO5qRGvFXOdJZ4" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/vue"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js"></script>
     <style>
@@ -32,7 +33,7 @@
             border-right: 1px solid #ccc;
         }
 
-        .bg-success {
+        .bg-success, .bg-danger {
             color: white;
         }
     </style>
@@ -86,12 +87,13 @@
                         <tbody>
                         <tr>
                             <td class="h">Is Synced</td>
-                            <td class="bg-success">{{ status.sync_info.catching_up != false }}</td>
+                            <td :class="{'bg-success': status.sync_info.catching_up == false, 'bg-danger': status.sync_info.catching_up == true}">{{ status.sync_info.catching_up == false ? 'true' : 'false' }}</td>
                         </tr>
                         <tr>
                             <td class="h">Latest Block</td>
                             <td>
-                                #{{ status.sync_info.latest_block_height }} <span class="text-muted">at {{ status.sync_info.latest_block_time }}</span>
+                                #{{ status.sync_info.latest_block_height }} <span
+                                    class="text-muted">at {{ status.sync_info.latest_block_time }}</span>
                             </td>
                         </tr>
                         </tbody>
@@ -99,7 +101,6 @@
                 </div>
             </div>
         </div>
-
     </div>
 </div>
 <script>
@@ -113,8 +114,8 @@
         },
         methods: {
             refresh() {
-                axios.get('http://localhost:26657/status').then(function(data) {
-                  this.status = data.data.result
+                axios.get('http://localhost:26657/status').then(function (data) {
+                    this.status = data.data.result
                 }.bind(this))
             }
         }
