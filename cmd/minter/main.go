@@ -6,14 +6,29 @@ import (
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/minter"
+	"github.com/MinterTeam/minter-go-node/genesis"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/tendermint/tendermint/libs/common"
 	tmNode "github.com/tendermint/tendermint/node"
 	"github.com/tendermint/tendermint/privval"
 	"github.com/tendermint/tendermint/proxy"
+	"io/ioutil"
+	"os"
 )
 
 func main() {
+
+	configDir := utils.GetMinterHome() + "/config/"
+	genesisFile := configDir + "genesis.json"
+
+	if !common.FileExists(genesisFile) {
+		os.MkdirAll(configDir, 0777)
+		err := ioutil.WriteFile(genesisFile, []byte(genesis.TestnetGenesis), 0644)
+
+		if err != nil {
+			panic(err)
+		}
+	}
 
 	app := minter.NewMinterBlockchain()
 	node := startTendermint(app)

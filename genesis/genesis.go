@@ -2,6 +2,39 @@ package genesis
 
 import "github.com/MinterTeam/minter-go-node/core/types"
 
+var TestnetGenesis = `{
+  "genesis_time": "2018-06-09T00:00:00Z",
+  "chain_id": "minter-test-network-11",
+  "validators": [
+    {
+      "pub_key": {
+        "type": "tendermint/PubKeyEd25519",
+        "value": "qu4d3zD/VMkHFdkotWZS/FEb7Tci5Ylz6O+Ub12uOXk="
+      },
+      "power": "100",
+      "name": ""
+    }
+  ],
+  "app_state": {
+    "first_validator_address": "Mxa93163fdf10724dc4785ff5cbfb9ac0b5949409f",
+    "initial_balances": [
+      {
+        "address": "Mxa93163fdf10724dc4785ff5cbfb9ac0b5949409f",
+        "balance": {
+          "MNT": "10000000000000000000000000"
+        }
+      },
+      {
+        "address": "Mxfe60014a6e9ac91618f5d1cab3fd58cded61ee99",
+        "balance": {
+          "MNT": "10000000000000000000000000"
+        }
+      }
+    ]
+  },
+  "app_hash": "0000000000000000000000000000000000000000000000000000000000000000"
+}`
+
 type AppState struct {
 	FirstValidatorAddress types.Address `json:"first_validator_address"`
 	InitialBalances       []Account     `json:"initial_balances"`

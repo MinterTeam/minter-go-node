@@ -14,19 +14,6 @@ Download Minter
 Get `latest binary build <https://github.com/MinterTeam/minter-go-node/releases>`__ suitable for your architecture and
 unpack it to desired folder.
 
-Prepare folders and configs
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. code-block:: bash
-    :lineno-start: 3
-
-    mkdir -p ~/.minter/data
-
-    git clone https://github.com/MinterTeam/minter-go-node.git && cd minter-go-node
-    cp -R networks/testnet/ ~/.minter/config
-
-    chmod -R 0777 ~/.minter
-
 Run Minter
 ^^^^^^^^^^
 
@@ -48,19 +35,6 @@ Clone Minter source code to your machine
 
     git clone https://github.com/MinterTeam/minter-go-node.git
     cd minter-go-node
-
-
-Prepare folders and configs
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. code-block:: bash
-    :lineno-start: 3
-
-    mkdir -p ~/.minter/data
-
-    cp -R networks/testnet/ ~/.minter/config
-
-    chmod -R 0777 ~/.minter
 
 Start Minter
 ^^^^^^^^^^^^
@@ -115,22 +89,6 @@ to put the binary in ``$GOPATH/bin`` or use:
 to put the binary in ``./build``.
 
 The latest ``minter version`` is now installed.
-
-Create data directory
-^^^^^^^^^^^^^^^^^^^^^
-
-.. code-block:: bash
-    :lineno-start: 9
-
-    mkdir -p ~/.minter/data
-
-Copy genesis file
-^^^^^^^^^^^^^^^^^
-
-.. code-block:: bash
-    :lineno-start: 11
-
-    cp -R networks/testnet/ ~/.minter/config
 
 Run Minter
 ^^^^^^^^^^
