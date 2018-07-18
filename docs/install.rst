@@ -20,12 +20,12 @@ Prepare folders and configs
 .. code-block:: bash
     :lineno-start: 3
 
-        mkdir -p ~/.minter/data
+    mkdir -p ~/.minter/data
 
-        git clone https://github.com/MinterTeam/minter-go-node.git && cd minter-go-node
-        cp -R networks/testnet/ ~/.minter/config
+    git clone https://github.com/MinterTeam/minter-go-node.git && cd minter-go-node
+    cp -R networks/testnet/ ~/.minter/config
 
-        chmod -R 0777 ~/.minter
+    chmod -R 0777 ~/.minter
 
 Run Minter
 ^^^^^^^^^^
@@ -33,7 +33,7 @@ Run Minter
 .. code-block:: bash
     :lineno-start: 13
 
-        ./minter
+    ./minter
 
 Using Docker
 ------------
