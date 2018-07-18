@@ -10,6 +10,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/core/minter"
 	"github.com/MinterTeam/minter-go-node/core/state"
+	"github.com/tendermint/tendermint/node"
 	rpc "github.com/tendermint/tendermint/rpc/client"
 	"strconv"
 	"time"
@@ -17,11 +18,11 @@ import (
 
 var (
 	blockchain *minter.Blockchain
-	client     *rpc.HTTP
+	client     *rpc.Local
 )
 
-func RunApi(b *minter.Blockchain) {
-	client = rpc.NewHTTP(*utils.TendermintRpcAddrFlag, "/websocket")
+func RunApi(b *minter.Blockchain, node *node.Node) {
+	client = rpc.NewLocal(node)
 
 	blockchain = b
 

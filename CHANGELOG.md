@@ -13,6 +13,7 @@ BREAKING CHANGES
 
 IMPROVEMENT
 
+- [binary] Now Minter is available as single binary. There is no need to install Tendermint.
 - [config] 10x default send/recv rate
 - [config] Recheck after empty blocks
 - [core] Check transaction nonce before adding to mempool
