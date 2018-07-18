@@ -22,6 +22,7 @@ Prepare folders and configs
 
         mkdir -p ~/.minter/data
 
+        git clone https://github.com/MinterTeam/minter-go-node.git && cd minter-go-node
         cp -R networks/testnet/ ~/.minter/config
 
         chmod -R 0777 ~/.minter
