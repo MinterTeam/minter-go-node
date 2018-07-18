@@ -1,5 +1,9 @@
 # Changelog
 
+## TBD
+
+- [api] Add validators rewards to block api
+
 ## 0.1.0
 *Jule 17th, 2018*
 
@@ -10,6 +14,7 @@ BREAKING CHANGES
 IMPROVEMENT
 
 - [config] 10x default send/recv rate
+- [core] Check transaction nonce before adding to mempool
 
 ## 0.0.6
 *Jule 16th, 2018*

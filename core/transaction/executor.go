@@ -70,15 +70,11 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPull *big.I
 			Log:  err.Error()}
 	}
 
-	// do not look at nonce of transaction while checking tx
-	// this will allow us to send multiple transaction from one account in one block
-	// in the future we should use "last known nonce" approach from Ethereum
-	if !isCheck {
-		if expectedNonce := context.GetNonce(sender) + 1; expectedNonce != tx.Nonce {
-			return Response{
-				Code: code.WrongNonce,
-				Log:  fmt.Sprintf("Unexpected nonce. Expected: %d, got %d.", expectedNonce, tx.Nonce)}
-		}
+	// TODO: deal with multiple pending transactions from one account
+	if expectedNonce := context.GetNonce(sender) + 1; expectedNonce != tx.Nonce {
+		return Response{
+			Code: code.WrongNonce,
+			Log:  fmt.Sprintf("Unexpected nonce. Expected: %d, got %d.", expectedNonce, tx.Nonce)}
 	}
 
 	return tx.decodedData.Run(sender, tx, context, isCheck, rewardPull, currentBlock)
