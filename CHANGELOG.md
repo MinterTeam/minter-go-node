@@ -18,6 +18,10 @@ IMPROVEMENT
 - [config] Recheck after empty blocks
 - [core] Check transaction nonce before adding to mempool
 
+BUG FIXES
+
+- [api] Fixed raw transaction output
+
 ## 0.0.6
 *Jule 16th, 2018*
 
