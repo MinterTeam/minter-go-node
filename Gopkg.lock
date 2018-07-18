@@ -179,7 +179,6 @@
   revision = "40f013a808ec4fa79def444a1a56de4d1727efcb"
 
 [[projects]]
-  branch = "master"
   name = "github.com/rcrowley/go-metrics"
   packages = ["."]
   revision = "e2704e165165ec55d062f5919b4b29494e9fa790"
@@ -231,7 +230,6 @@
     "abci/client",
     "abci/example/code",
     "abci/example/kvstore",
-    "abci/server",
     "abci/types",
     "blockchain",
     "config",
@@ -377,6 +375,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "1c35f22aa0442b823988c777d05af72e5ad79329c000833560561029387eda7e"
+  inputs-digest = "6d00d7552efb4b12eec308fbd3142897972ed35ff6eb79a361b441504fab2a52"
   solver-name = "gps-cdcl"
   solver-version = 1
