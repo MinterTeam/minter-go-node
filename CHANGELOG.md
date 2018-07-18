@@ -14,6 +14,7 @@ BREAKING CHANGES
 IMPROVEMENT
 
 - [config] 10x default send/recv rate
+- [config] Recheck after empty blocks
 - [core] Check transaction nonce before adding to mempool
 
 ## 0.0.6

@@ -106,7 +106,7 @@ seed_mode = false
 [mempool]
 
 recheck = true
-recheck_empty = false
+recheck_empty = true
 broadcast = true
 wal_dir = "data/mempool.wal"
 cache_size = 100000
