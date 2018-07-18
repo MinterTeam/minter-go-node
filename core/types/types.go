@@ -24,7 +24,7 @@ import (
 	"reflect"
 
 	"bytes"
-		"github.com/MinterTeam/minter-go-node/hexutil"
+	"github.com/MinterTeam/minter-go-node/hexutil"
 )
 
 const (
