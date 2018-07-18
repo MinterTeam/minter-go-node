@@ -21,7 +21,7 @@ func GetConfig() *tmConfig.Config {
 	config.DBPath = MinterDir + "/tmdata"
 	config.Mempool.CacheSize = 100000
 	config.Mempool.WalPath = MinterDir + "/tmdata/mempool.wal"
-	config.Consensus.WalPath = MinterDir + "tmdata/cs.wal/wal"
+	config.Consensus.WalPath = MinterDir + "/tmdata/cs.wal/wal"
 	config.Genesis = MinterDir + "/config/genesis.json"
 	config.PrivValidator = MinterDir + "/config/priv_validator.json"
 	config.NodeKey = MinterDir + "/config/node_key.json"
