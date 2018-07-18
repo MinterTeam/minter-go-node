@@ -5,6 +5,35 @@ Install Minter
 
 There are several ways you can install Minter Blockchain Testnet node on your machine:
 
+Using binary
+------------
+
+Download Minter
+^^^^^^^^^^^^^^^
+
+Get `latest binary build <https://github.com/MinterTeam/minter-go-node/releases>`__ suitable for your architecture and
+unpack it to desired folder.
+
+Prepare folders and configs
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: bash
+    :lineno-start: 3
+
+        mkdir -p ~/.minter/data
+
+        cp -R networks/testnet/ ~/.minter/config
+
+        chmod -R 0777 ~/.minter
+
+Run Minter
+^^^^^^^^^^
+
+.. code-block:: bash
+    :lineno-start: 13
+
+        ./minter
+
 Using Docker
 ------------
 
