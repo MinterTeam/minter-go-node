@@ -65,8 +65,8 @@ func Block(w http.ResponseWriter, r *http.Request) {
 		sender, _ := tx.Sender()
 
 		txs[i] = BlockTransactionResponse{
-			Hash:        fmt.Sprintf("Mt%x", types.Tx(rawTx).Hash()),
-			RawTx:       fmt.Sprintf("%x", rawTx),
+			Hash:        fmt.Sprintf("Mt%x", rawTx.Hash()),
+			RawTx:       fmt.Sprintf("%x", []byte(rawTx)),
 			From:        sender.String(),
 			Nonce:       tx.Nonce,
 			GasPrice:    tx.GasPrice,

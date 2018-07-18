@@ -67,7 +67,7 @@ func Transactions(w http.ResponseWriter, r *http.Request) {
 
 		result[i] = TransactionResponse{
 			Hash:   common.HexBytes(tx.Tx.Hash()),
-			RawTx:  fmt.Sprintf("%x", tx.Tx),
+			RawTx:  fmt.Sprintf("%x", []byte(tx.Tx)),
 			Height: tx.Height,
 			Index:  tx.Index,
 			TxResult: ResponseDeliverTx{
