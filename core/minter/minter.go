@@ -14,6 +14,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/mintdb"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
+	"github.com/tendermint/tendermint/node"
 	rpc "github.com/tendermint/tendermint/rpc/client"
 	"math/big"
 )
@@ -29,7 +30,7 @@ type Blockchain struct {
 	rewards            *big.Int
 	activeValidators   abciTypes.Validators
 	validatorsStatuses map[string]int8
-	tendermintRPC      *rpc.HTTP
+	tendermintRPC      *rpc.Local
 
 	BaseCoin types.CoinSymbol
 }
@@ -58,15 +59,18 @@ func NewMinterBlockchain() *Blockchain {
 	}
 
 	blockchain = &Blockchain{
-		db:            db,
-		BaseCoin:      types.GetBaseCoin(),
-		tendermintRPC: rpc.NewHTTP(*utils.TendermintRpcAddrFlag, "/websocket"),
+		db:       db,
+		BaseCoin: types.GetBaseCoin(),
 	}
 
 	blockchain.updateCurrentRootHash()
 	blockchain.updateCurrentState()
 
 	return blockchain
+}
+
+func (app *Blockchain) RunRPC(node *node.Node) {
+	app.tendermintRPC = rpc.NewLocal(node)
 }
 
 func (app *Blockchain) SetOption(req abciTypes.RequestSetOption) abciTypes.ResponseSetOption {

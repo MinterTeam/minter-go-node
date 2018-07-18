@@ -33,6 +33,8 @@ func main() {
 	app := minter.NewMinterBlockchain()
 	node := startTendermint(app)
 
+	app.RunRPC(node)
+
 	if !*utils.DisableApi {
 		go api.RunApi(app, node)
 	}
