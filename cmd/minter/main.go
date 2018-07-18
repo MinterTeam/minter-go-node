@@ -8,14 +8,14 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/minter"
 	"github.com/MinterTeam/minter-go-node/genesis"
 	"github.com/MinterTeam/minter-go-node/log"
+	"github.com/gobuffalo/packr"
 	"github.com/tendermint/tendermint/libs/common"
 	tmNode "github.com/tendermint/tendermint/node"
 	"github.com/tendermint/tendermint/privval"
 	"github.com/tendermint/tendermint/proxy"
 	"github.com/tendermint/tendermint/types"
-	"os"
-	"github.com/gobuffalo/packr"
 	"net/http"
+	"os"
 )
 
 func main() {

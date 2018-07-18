@@ -9,7 +9,14 @@
           integrity="sha384-9gVQ4dYFwwWSjIDZnLEWnxCjeSWFphJiwGPXr1jddIhOegiu1FwO5qRGvFXOdJZ4" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/vue"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9-1/crypto-js.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tweetnacl/1.0.0/nacl.min.js"></script>
     <style>
+
+        .card {
+            margin-bottom: 20px;
+        }
+        
         .body {
             margin-top: 30px;
         }
@@ -99,6 +106,24 @@
                         </tbody>
                     </table>
                 </div>
+                <div class="card">
+                    <div class="card-header">
+                        Validator Info
+                    </div>
+                    <table class="table card-body">
+                        <tbody>
+                        <tr>
+                            <td>Public Key</td>
+                            <td>Mp{{ bytesToHex(status.validator_info.pub_key) }}</td>
+                        </tr>
+                        <tr>
+                            <td>Voting Power</td>
+                            <td>{{ status.validator_info.voting_power }} <span class="text-muted">of 100,000,000</span></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
             </div>
         </div>
     </div>
@@ -113,9 +138,14 @@
             this.refresh()
         },
         methods: {
+            bytesToHex(bytes) {
+                return Array.from(bytes, function (byte) {
+                    return ('0' + (byte & 0xFF).toString(16)).slice(-2);
+                }).join('')
+            },
             refresh() {
-                axios.get('http://localhost:26657/status').then(function (data) {
-                    this.status = data.data.result
+                axios.get('http://localhost:8841/api/status').then(function (data) {
+                    this.status = data.data.result.tm_status
                 }.bind(this))
             }
         }
