@@ -62,6 +62,12 @@
   version = "v1.7.0"
 
 [[projects]]
+  name = "github.com/gobuffalo/packr"
+  packages = ["."]
+  revision = "bd47f2894846e32edcf9aa37290fef76c327883f"
+  version = "v1.11.1"
+
+[[projects]]
   name = "github.com/gogo/protobuf"
   packages = [
     "gogoproto",
@@ -179,6 +185,7 @@
   revision = "40f013a808ec4fa79def444a1a56de4d1727efcb"
 
 [[projects]]
+  branch = "master"
   name = "github.com/rcrowley/go-metrics"
   packages = ["."]
   revision = "e2704e165165ec55d062f5919b4b29494e9fa790"
@@ -375,6 +382,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "6d00d7552efb4b12eec308fbd3142897972ed35ff6eb79a361b441504fab2a52"
+  inputs-digest = "9df7b77f9d69062c78eef41be0f70830f0ad71dba1823ce1a55716b9cc71082e"
   solver-name = "gps-cdcl"
   solver-version = 1
