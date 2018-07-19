@@ -115,7 +115,7 @@ Transaction for selling one coin (owned by sender) in favour of another coin in 
 Sell all coin transaction
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Type: **0x02**
+Type: **0x03**
 
 Transaction for selling all existing coins of one type (owned by sender) in favour of another coin in a system.
 
@@ -134,7 +134,7 @@ Transaction for selling all existing coins of one type (owned by sender) in favo
 Buy coin transaction
 ^^^^^^^^^^^^^^^^^^^^
 
-Type: **0x03**
+Type: **0x04**
 
 Transaction for buy a coin paying another coin (owned by sender).
 
@@ -155,7 +155,7 @@ Transaction for buy a coin paying another coin (owned by sender).
 Create coin transaction
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-Type: **0x04**
+Type: **0x05**
 
 Transaction for creating new coin in a system.
 
@@ -180,7 +180,7 @@ Transaction for creating new coin in a system.
 Declare candidacy transaction
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Type: **0x05**
+Type: **0x06**
 
 Transaction for declaring new validator candidacy.
 
@@ -205,7 +205,7 @@ Transaction for declaring new validator candidacy.
 Delegate transaction
 ^^^^^^^^^^^^^^^^^^^^
 
-Type: **0x06**
+Type: **0x07**
 
 Transaction for delegating funds to validator.
 
@@ -224,9 +224,9 @@ Transaction for delegating funds to validator.
 | **Stake** - Amount of coins to stake.
 
 Unbond transaction
-^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^
 
-Type: **0x07**
+Type: **0x08**
 
 Transaction for unbonding funds from validator's stake.
 
@@ -247,7 +247,7 @@ Transaction for unbonding funds from validator's stake.
 Redeem check transaction
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-Type: **0x08**
+Type: **0x09**
 
 Transaction for redeeming a check.
 
@@ -266,7 +266,7 @@ Transaction for redeeming a check.
 Set candidate online transaction
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Type: **0x09**
+Type: **0x0A**
 
 Transaction for turning candidate on. This transaction should be sent from address which is set in the "Declare candidacy transaction".
 
@@ -283,7 +283,7 @@ Transaction for turning candidate on. This transaction should be sent from addre
 Set candidate offline transaction
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Type: **0x0A**
+Type: **0x0B**
 
 Transaction for turning candidate off. This transaction should be sent from address which is set in the "Declare candidacy transaction".
 
