@@ -24,9 +24,14 @@
 #   go-tests = true
 #   unused-packages = true
 
+
 [[constraint]]
   branch = "master"
   name = "github.com/btcsuite/btcd"
+
+[[constraint]]
+  name = "github.com/gobuffalo/packr"
+  version = "1.11.1"
 
 [[constraint]]
   name = "github.com/gorilla/mux"
@@ -53,8 +58,16 @@
   name = "github.com/syndtr/goleveldb"
 
 [[constraint]]
+  name = "github.com/tendermint/go-amino"
+  version = "0.10.1"
+
+[[constraint]]
   name = "github.com/tendermint/tendermint"
   version = "0.22.4"
+
+[[constraint]]
+  branch = "v1"
+  name = "gopkg.in/check.v1"
 
 [[constraint]]
   branch = "v2"
