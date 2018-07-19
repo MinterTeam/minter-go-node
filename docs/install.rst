@@ -22,6 +22,8 @@ Run Minter
 
     ./minter
 
+Then open http://localhost:3000/ in local browser to see node's GUI.
+
 Using Docker
 ------------
 
@@ -44,6 +46,7 @@ Start Minter
 
     docker-compose up
 
+Then open http://localhost:3000/ in local browser to see node's GUI.
 
 From Source
 -----------
@@ -97,6 +100,8 @@ Run Minter
     :lineno-start: 13
 
     minter
+
+Then open http://localhost:3000/ in local browser to see node's GUI.
 
 Troubleshooting
 ---------------
