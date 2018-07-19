@@ -21,14 +21,15 @@ var (
 const (
 	TypeSend                byte = 0x01
 	TypeSellCoin            byte = 0x02
-	TypeBuyCoin             byte = 0x03
-	TypeCreateCoin          byte = 0x04
-	TypeDeclareCandidacy    byte = 0x05
-	TypeDelegate            byte = 0x06
-	TypeUnbond              byte = 0x07
-	TypeRedeemCheck         byte = 0x08
-	TypeSetCandidateOnline  byte = 0x09
-	TypeSetCandidateOffline byte = 0x0A
+	TypeSellAllCoin         byte = 0x03
+	TypeBuyCoin             byte = 0x04
+	TypeCreateCoin          byte = 0x05
+	TypeDeclareCandidacy    byte = 0x06
+	TypeDelegate            byte = 0x07
+	TypeUnbond              byte = 0x08
+	TypeRedeemCheck         byte = 0x09
+	TypeSetCandidateOnline  byte = 0x0A
+	TypeSetCandidateOffline byte = 0x0B
 )
 
 type Transaction struct {
@@ -188,6 +189,12 @@ func DecodeFromBytes(buf []byte) (*Transaction, error) {
 			if data.ValueToSell == nil {
 				return nil, errors.New("incorrect tx data")
 			}
+		}
+	case TypeSellAllCoin:
+		{
+			data := SellAllCoinData{}
+			err = rlp.Decode(bytes.NewReader(tx.Data), &data)
+			tx.SetDecodedData(data)
 		}
 	case TypeBuyCoin:
 		{

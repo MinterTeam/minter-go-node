@@ -2,8 +2,8 @@ package api
 
 import (
 	"encoding/json"
-			"net/http"
-	)
+	"net/http"
+)
 
 func NetInfo(w http.ResponseWriter, r *http.Request) {
 
@@ -22,7 +22,7 @@ func NetInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(Response{
-		Code: 0,
+		Code:   0,
 		Result: result,
 	})
 }

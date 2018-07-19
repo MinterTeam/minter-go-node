@@ -51,21 +51,23 @@ Type of transaction is determined by a single byte.
 +----------------------------------+---------+
 | **TypeSellCoin**                 | 0x02    |
 +----------------------------------+---------+
-| **TypeBuyCoin**                  | 0x03    |
+| **TypeSellAllCoin**              | 0x03    |
 +----------------------------------+---------+
-| **TypeCreateCoin**               | 0x04    |
+| **TypeBuyCoin**                  | 0x04    |
 +----------------------------------+---------+
-| **TypeDeclareCandidacy**         | 0x05    |
+| **TypeCreateCoin**               | 0x05    |
 +----------------------------------+---------+
-| **TypeDelegate**                 | 0x06    |
+| **TypeDeclareCandidacy**         | 0x06    |
 +----------------------------------+---------+
-| **TypeUnbond**                   | 0x07    |
+| **TypeDelegate**                 | 0x07    |
 +----------------------------------+---------+
-| **TypeRedeemCheck**              | 0x08    |
+| **TypeUnbond**                   | 0x08    |
 +----------------------------------+---------+
-| **TypeSetCandidateOnline**       | 0x09    |
+| **TypeRedeemCheck**              | 0x09    |
 +----------------------------------+---------+
-| **TypeSetCandidateOffline**      | 0x0A    |
+| **TypeSetCandidateOnline**       | 0x0A    |
++----------------------------------+---------+
+| **TypeSetCandidateOffline**      | 0x0B    |
 +----------------------------------+---------+
 
 Send transaction
@@ -108,6 +110,25 @@ Transaction for selling one coin (owned by sender) in favour of another coin in 
 
 | **CoinToSell** - Symbol of a coin to give.
 | **ValueToSell** - Amount of **CoinToSell** to give.
+| **CoinToBuy** - Symbol of a coin to get.
+
+Sell all coin transaction
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Type: **0x02**
+
+Transaction for selling all existing coins of one type (owned by sender) in favour of another coin in a system.
+
+*Data field contents:*
+
+.. code-block:: go
+
+    type SellAllCoinData struct {
+        CoinToSell  [10]byte
+        CoinToBuy   [10]byte
+    }
+
+| **CoinToSell** - Symbol of a coin to give.
 | **CoinToBuy** - Symbol of a coin to get.
 
 Buy coin transaction

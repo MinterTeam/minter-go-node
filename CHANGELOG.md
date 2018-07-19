@@ -12,6 +12,7 @@ BREAKING CHANGES
 - [core] 0.1x transaction fees
 - [core] Genesis is now encapsulated in code
 - [config] New config directories
+- [core] Add new transaction type: SellAllCoin
 
 IMPROVEMENT
 
