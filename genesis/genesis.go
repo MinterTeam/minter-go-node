@@ -1,10 +1,14 @@
 package genesis
 
 import (
+	"encoding/hex"
+	"encoding/json"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/tendermint/go-amino"
 	"github.com/tendermint/tendermint/crypto"
+	"github.com/tendermint/tendermint/libs/common"
 	tmtypes "github.com/tendermint/tendermint/types"
+	"time"
 )
 
 var cdc = amino.NewCodec()
@@ -13,21 +17,16 @@ func init() {
 	crypto.RegisterAmino(cdc)
 }
 
-var TestnetGenesis = `{
-  "genesis_time": "2018-06-09T00:00:00Z",
-  "chain_id": "minter-test-network-11",
-  "validators": [
-    {
-      "pub_key": {
-        "type": "tendermint/PubKeyEd25519",
-        "value": "qu4d3zD/VMkHFdkotWZS/FEb7Tci5Ylz6O+Ub12uOXk="
-      },
-      "power": "100",
-      "name": ""
-    }
-  ],
-  "app_state": {
-    "first_validator_address": "Mxa93163fdf10724dc4785ff5cbfb9ac0b5949409f",
+func GetTestnetGenesis() *tmtypes.GenesisDoc {
+
+	validatorPubKeyBytes, _ := hex.DecodeString("aaee1ddf30ff54c90715d928b56652fc511bed3722e58973e8ef946f5dae3979")
+	var validatorPubKey crypto.PubKeyEd25519
+	copy(validatorPubKey[:], validatorPubKeyBytes)
+
+	appHash, _ := hex.DecodeString("0000000000000000000000000000000000000000000000000000000000000000")
+
+	appState := `{
+	"first_validator_address": "Mxa93163fdf10724dc4785ff5cbfb9ac0b5949409f",
     "initial_balances": [
       {
         "address": "Mxa93163fdf10724dc4785ff5cbfb9ac0b5949409f",
@@ -42,16 +41,25 @@ var TestnetGenesis = `{
         }
       }
     ]
-  },
-  "app_hash": "0000000000000000000000000000000000000000000000000000000000000000"
-}`
+  }`
 
-func GetTestnetGenesis() *tmtypes.GenesisDoc {
-	genDoc := tmtypes.GenesisDoc{}
-	cdc.UnmarshalJSON([]byte(TestnetGenesis), &genDoc)
-	genDoc.ValidateAndComplete()
+	genesis := tmtypes.GenesisDoc{
+		GenesisTime:     time.Date(2018, 7, 19, 0, 0, 0, 0, time.UTC),
+		ChainID:         "minter-test-network-11",
+		ConsensusParams: nil,
+		Validators: []tmtypes.GenesisValidator{
+			{
+				PubKey: validatorPubKey,
+				Power:  100,
+			},
+		},
+		AppHash:  common.HexBytes(appHash),
+		AppState: json.RawMessage([]byte(appState)),
+	}
 
-	return &genDoc
+	genesis.ValidateAndComplete()
+
+	return &genesis
 }
 
 type AppState struct {

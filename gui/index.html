@@ -7,6 +7,7 @@
     <title>Minter Node GUI</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/css/bootstrap.min.css"
           integrity="sha384-9gVQ4dYFwwWSjIDZnLEWnxCjeSWFphJiwGPXr1jddIhOegiu1FwO5qRGvFXOdJZ4" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.1.1/css/all.css" integrity="sha384-O8whS3fhG2OnA5Kas0Y9l3cfpmYjapjI0E4theH4iuMD+pLhbf6JI0jIMfYcK3yZ" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/vue"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9-1/crypto-js.min.js"></script>
@@ -18,7 +19,8 @@
         }
         
         .body {
-            margin-top: 30px;
+            padding-top: 15px;
+            height: 100%;
         }
 
         .table {
@@ -43,16 +45,30 @@
         .bg-success, .bg-danger {
             color: white;
         }
+
+        .bg-danger {
+            border-color: #dc3545 !important;
+        }
+
+        .bg-success {
+            border-color: #28a745 !important;
+        }
     </style>
 </head>
-<body>
+<body style="background-color: #343a401a">
 <div id="app">
-    <nav class="navbar navbar-light bg-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <span class="navbar-brand mb-0 h1">Minter Full Node Status</span>
+            <span class="navbar-brand mb-0 h1"><i class="fas fa-terminal"></i> &nbsp; Minter Full Node Status</span>
         </div>
     </nav>
-    <div class="container body" v-if="status">
+    <div class="container body" v-if="error">
+        <div class="alert alert-danger" role="alert">
+            <h4 class="alert-heading">Error while connecting to local node</h4>
+            <p class="mb-0">{{ error }}</p>
+        </div>
+    </div>
+    <div class="container body bg-white" v-if="status">
         <div class="row">
             <div class="col">
                 <div class="card">
@@ -132,10 +148,13 @@
     new Vue({
         el: '#app',
         data: {
-            status: null
+            status: null,
+            error: null
         },
         mounted() {
             this.refresh()
+
+            setInterval(this.refresh, 500)
         },
         methods: {
             bytesToHex(bytes) {
@@ -144,8 +163,11 @@
                 }).join('')
             },
             refresh() {
-                axios.get('http://localhost:8841/api/status').then(function (data) {
+                axios.get("//" + window.location.hostname + ':8841/api/status').then(function (data) {
                     this.status = data.data.result.tm_status
+                    this.error = null
+                }.bind(this)).catch(function (reason) {
+                    this.error = reason.toString();
                 }.bind(this))
             }
         }
