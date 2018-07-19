@@ -134,7 +134,7 @@
                         </tr>
                         <tr>
                             <td>Voting Power</td>
-                            <td>{{ status.validator_info.voting_power }} <span class="text-muted">of 100,000,000</span></td>
+                            <td>{{ niceNum(status.validator_info.voting_power) }} <span class="text-muted">of 100,000,000</span></td>
                         </tr>
                         </tbody>
                     </table>
@@ -154,9 +154,12 @@
         mounted() {
             this.refresh()
 
-            setInterval(this.refresh, 500)
+            setInterval(this.refresh, 1000)
         },
         methods: {
+            niceNum(num) {
+                return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+            },
             bytesToHex(bytes) {
                 return Array.from(bytes, function (byte) {
                     return ('0' + (byte & 0xFF).toString(16)).slice(-2);
