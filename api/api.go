@@ -41,6 +41,7 @@ func RunApi(b *minter.Blockchain, node *node.Node) {
 	router.HandleFunc("/api/block/{height}", Block).Methods("GET")
 	router.HandleFunc("/api/transactions", Transactions).Methods("GET")
 	router.HandleFunc("/api/status", Status).Methods("GET")
+	router.HandleFunc("/api/net_info", NetInfo).Methods("GET")
 	router.HandleFunc("/api/coinInfo/{symbol}", GetCoinInfo).Methods("GET")
 	router.HandleFunc("/api/estimateCoinSell", EstimateCoinSell).Methods("GET")
 	router.HandleFunc("/api/estimateCoinBuy", EstimateCoinBuy).Methods("GET")
