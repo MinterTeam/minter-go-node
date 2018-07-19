@@ -100,6 +100,23 @@
                         </tbody>
                     </table>
                 </div>
+                <div class="card" v-if="net_info">
+                    <div class="card-header">
+                        Net Info
+                    </div>
+                    <table class="table card-body">
+                        <tbody>
+                        <tr>
+                            <td class="h">Is Listening</td>
+                            <td :class="{'bg-success': net_info.listening, 'bg-danger': !net_info.listening}">{{ net_info.listening }}</td>
+                        </tr>
+                        <tr>
+                            <td class="h">Connected peers</td>
+                            <td>{{ net_info.n_peers }}</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
             <div class="col">
                 <div class="card">
@@ -139,7 +156,6 @@
                         </tbody>
                     </table>
                 </div>
-
             </div>
         </div>
     </div>
@@ -149,6 +165,7 @@
         el: '#app',
         data: {
             status: null,
+            net_info: null,
             error: null
         },
         mounted() {
@@ -168,6 +185,13 @@
             refresh() {
                 axios.get("//" + window.location.hostname + ':8841/api/status').then(function (data) {
                     this.status = data.data.result.tm_status
+                    this.error = null
+                }.bind(this)).catch(function (reason) {
+                    this.error = reason.toString();
+                }.bind(this))
+
+                axios.get("//" + window.location.hostname + ':8841/api/net_info').then(function (data) {
+                    this.net_info = data.data.result
                     this.error = null
                 }.bind(this)).catch(function (reason) {
                     this.error = reason.toString();
