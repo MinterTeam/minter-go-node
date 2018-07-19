@@ -150,7 +150,7 @@ Transaction for creating new coin in a system.
         ConstantReserveRatio uint
     }
 
-| **Name** - Name of a coin. Arbitrary string.
+| **Name** - Name of a coin. Arbitrary string up to 64 letters length.
 | **Symbol** - Symbol of a coin. Must be unique, alphabetic, uppercase, 3 to 10 symbols length.
 | **InitialAmount** - Amount of coins to issue. Issued coins will be available to sender account.
 | **InitialReserve** - Initial reserve in BIP's.
