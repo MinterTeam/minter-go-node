@@ -25,17 +25,6 @@
   revision = "95f809107225be108efcf10a3509e4ea6ceef3c4"
 
 [[projects]]
-  name = "github.com/ethereum/go-ethereum"
-  packages = [
-    "common",
-    "common/hexutil",
-    "common/math",
-    "crypto/sha3"
-  ]
-  revision = "dea1ce052a10cd7d401a5c04f83f371a06fe293c"
-  version = "v1.8.11"
-
-[[projects]]
   name = "github.com/go-kit/kit"
   packages = [
     "log",
@@ -382,6 +371,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "9df7b77f9d69062c78eef41be0f70830f0ad71dba1823ce1a55716b9cc71082e"
+  inputs-digest = "d5d8e83af331cf5dfea5dc19095b132f51ccc181576a90491278fdc5f1d3d659"
   solver-name = "gps-cdcl"
   solver-version = 1
