@@ -42,5 +42,8 @@ func GetConfig() *tmConfig.Config {
 
 	config.P2P.AddrBook = MinterDir + "/config/addrbook.json"
 	config.P2P.ListenAddress = "tcp://0.0.0.0:26656"
+	config.P2P.SendRate = 5120000 // 5mb/s
+	config.P2P.RecvRate = 5120000 // 5mb/s
+
 	return config
 }
