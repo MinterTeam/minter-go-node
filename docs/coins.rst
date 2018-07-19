@@ -25,7 +25,7 @@ Issue own coin is as simple as filling a form with given fields:
 .. figure:: assets/coin-minter.png
     :width: 300px
 
-- **Coin name** - Name of a coin. Arbitrary string.
+- **Coin name** - Name of a coin. Arbitrary string up to 64 letters length.
 - **Coin symbol** - Symbol of a coin. Must be unique, alphabetic, uppercase, 3 to 10 letters length.
 - **Initial supply** - Amount of coins to issue. Issued coins will be available to sender account.
 - **Initial reserve** - Initial reserve in base coin.
