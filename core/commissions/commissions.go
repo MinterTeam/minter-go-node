@@ -4,7 +4,7 @@ package commissions
 // actual commission is SendTx * 10^14 = 10 000 000 000 000 000 PIP = 0,01 BIP
 const (
 	SendTx                int64 = 10
-	ConvertTx             int64 = 1000
+	ConvertTx             int64 = 100
 	CreateTx              int64 = 1000
 	DeclareCandidacyTx    int64 = 10000
 	DelegateTx            int64 = 100
