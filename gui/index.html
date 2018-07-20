@@ -150,7 +150,7 @@
                         <tbody>
                         <tr>
                             <td>Public Key</td>
-                            <td>Mp{{ bytesToHex(status.validator_info.pub_key) }}</td>
+                            <td>Mp{{ base64ToHex(status.validator_info.pub_key.value) }}</td>
                         </tr>
                         <tr>
                             <td>Voting Power</td>
@@ -180,10 +180,8 @@
             niceNum(num) {
                 return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
             },
-            bytesToHex(bytes) {
-                return Array.from(bytes, function (byte) {
-                    return ('0' + (byte & 0xFF).toString(16)).slice(-2);
-                }).join('')
+            base64ToHex(base64) {
+                return CryptoJS.enc.Base64.parse(base64).toString()
             },
             refresh() {
                 axios.get("//" + window.location.hostname + ':8841/api/status').then(function (data) {
