@@ -38,7 +38,9 @@ func SendTransactionSync(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	json.NewEncoder(w).Encode(Response{
-		Code:   code.OK,
-		Result: "Mt" + strings.ToLower(result.Hash.String()),
+		Code: code.OK,
+		Result: SendTransactionResponse{
+			Hash: "Mt" + strings.ToLower(result.Hash.String()),
+		},
 	})
 }
