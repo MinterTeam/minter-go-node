@@ -97,6 +97,10 @@
                             <td>{{ status.node_info.network }}</td>
                         </tr>
                         <tr>
+                            <td class="h">Minter Version</td>
+                            <td>{{ version }}</td>
+                        </tr>
+                        <tr>
                             <td class="h">Tendermint Version</td>
                             <td>{{ status.node_info.version }}</td>
                         </tr>
@@ -111,11 +115,11 @@
                         <tbody>
                         <tr>
                             <td class="h">Is Listening</td>
-                            <td :class="{'bg-success': net_info.listening, 'bg-danger': !net_info.listening}">{{ net_info.listening }}</td>
+                            <td :class="{'bg-danger': !net_info.listening}">{{ net_info.listening }}</td>
                         </tr>
                         <tr>
                             <td class="h">Connected Peers</td>
-                            <td>{{ net_info.n_peers }}</td>
+                            <td :class="{'bg-danger': net_info.n_peers < 1}">{{ net_info.n_peers }}</td>
                         </tr>
                         </tbody>
                     </table>
@@ -168,6 +172,7 @@
         el: '#app',
         data: {
             status: null,
+            version: null,
             net_info: null,
             error: null
         },
@@ -186,6 +191,7 @@
             refresh() {
                 axios.get("//" + window.location.hostname + ':8841/api/status').then(function (data) {
                     this.status = data.data.result.tm_status
+                    this.version = data.data.result.version
                     this.error = null
                 }.bind(this)).catch(function (reason) {
                     this.error = reason.toString();
