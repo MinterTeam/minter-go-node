@@ -62,6 +62,7 @@ with the following revenue:
 
 - 111 Bips as block reward
 - 10 Bips as transaction fees.
+
 This amounts to a total of 121 Bips to be distributed among all staking pools.
 
 Our validator's staking pool represents 10% of the total stake, which means the pool obtains 12.1 bips. Now let us

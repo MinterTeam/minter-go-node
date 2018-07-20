@@ -13,8 +13,8 @@ import (
 )
 
 type EstimateCoinBuyResponse struct {
-	WillPay    string
-	Commission string
+	WillPay    string `json:"will_pay"`
+	Commission string `json:"commission"`
 }
 
 func EstimateCoinBuy(w http.ResponseWriter, r *http.Request) {
