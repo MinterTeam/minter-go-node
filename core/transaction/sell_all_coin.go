@@ -20,11 +20,11 @@ type SellAllCoinData struct {
 
 func (data SellAllCoinData) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		CoinToSell  types.CoinSymbol `json:"coin_to_sell,string"`
-		CoinToBuy   types.CoinSymbol `json:"coin_to_buy,string"`
+		CoinToSell types.CoinSymbol `json:"coin_to_sell,string"`
+		CoinToBuy  types.CoinSymbol `json:"coin_to_buy,string"`
 	}{
-		CoinToSell:  data.CoinToSell,
-		CoinToBuy:   data.CoinToBuy,
+		CoinToSell: data.CoinToSell,
+		CoinToBuy:  data.CoinToBuy,
 	})
 }
 

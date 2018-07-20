@@ -346,3 +346,7 @@ func (app *Blockchain) GetStateForHeight(height int) (*state.StateDB, error) {
 func (app *Blockchain) Height() uint64 {
 	return app.height
 }
+
+func GetBlockchain() *Blockchain {
+	return blockchain
+}

@@ -4,11 +4,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
+	"github.com/MinterTeam/minter-go-node/core/commissions"
+	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"math/big"
 	"net/http"
 )
+
+type EstimateCoinBuyResponse struct {
+	WillPay    string
+	Commission string
+}
 
 func EstimateCoinBuy(w http.ResponseWriter, r *http.Request) {
 
@@ -56,6 +63,24 @@ func EstimateCoinBuy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	commissionInBaseCoin := big.NewInt(commissions.ConvertTx)
+	commissionInBaseCoin.Mul(commissionInBaseCoin, transaction.CommissionMultiplier)
+	commission := big.NewInt(0).Set(commissionInBaseCoin)
+
+	if coinToSellSymbol != types.GetBaseCoin() {
+		coin := cState.GetStateCoin(coinToSellSymbol)
+
+		if coin.ReserveBalance().Cmp(commissionInBaseCoin) < 0 {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(Response{
+				Code: 1,
+				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.ReserveBalance().String(), commissionInBaseCoin.String()),
+			})
+		}
+
+		commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
+	}
+
 	if coinToSellSymbol == types.GetBaseCoin() {
 		coin := cState.GetStateCoin(coinToBuySymbol).Data()
 		result = formula.CalculatePurchaseAmount(coin.Volume, coin.ReserveBalance, coin.Crr, valueToBuy)
@@ -71,7 +96,10 @@ func EstimateCoinBuy(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(Response{
-		Code:   0,
-		Result: result.String(),
+		Code: 0,
+		Result: EstimateCoinBuyResponse{
+			WillPay:    result.String(),
+			Commission: commission.String(),
+		},
 	})
 }

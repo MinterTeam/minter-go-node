@@ -1,9 +1,13 @@
 package api
 
 import (
+	"github.com/MinterTeam/minter-go-node/core/minter"
 	"github.com/MinterTeam/minter-go-node/core/state"
+	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/gorilla/websocket"
 	"log"
+	"math/big"
 	"net/http"
 )
 
@@ -26,6 +30,18 @@ func GetBalanceWatcher(w http.ResponseWriter, r *http.Request) {
 func handleBalanceChanges() {
 	for {
 		msg := <-state.BalanceChangeChan
+
+		var balanceInBasecoin *big.Int
+
+		if msg.Coin == types.GetBaseCoin() {
+			balanceInBasecoin = msg.Balance
+		} else {
+			sCoin := minter.GetBlockchain().CurrentState().GetStateCoin(msg.Coin).Data()
+			balanceInBasecoin = formula.CalculateSaleReturn(sCoin.Volume, sCoin.ReserveBalance, sCoin.Crr, msg.Balance)
+		}
+
+		msg.BalanceInBasecoin = balanceInBasecoin
+
 		for client := range clients {
 			err := client.WriteJSON(msg)
 			if err != nil {
