@@ -4,18 +4,11 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/tendermint/go-amino"
 	"github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/libs/common"
 	tmtypes "github.com/tendermint/tendermint/types"
 	"time"
 )
-
-var cdc = amino.NewCodec()
-
-func init() {
-	crypto.RegisterAmino(cdc)
-}
 
 func GetTestnetGenesis() *tmtypes.GenesisDoc {
 
