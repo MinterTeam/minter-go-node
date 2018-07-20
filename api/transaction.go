@@ -54,6 +54,7 @@ func Transaction(w http.ResponseWriter, r *http.Request) {
 			From:     sender.String(),
 			Nonce:    decodedTx.Nonce,
 			GasPrice: decodedTx.GasPrice,
+			GasCoin:  decodedTx.GasCoin,
 			Type:     decodedTx.Type,
 			Data:     decodedTx.GetDecodedData(),
 			Payload:  decodedTx.Payload,

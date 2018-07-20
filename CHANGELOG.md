@@ -5,13 +5,14 @@
 - [api] Add validators rewards to block api
 
 ## 0.1.0
-*Jule 17th, 2018*
+*Jule 20th, 2018*
 
 BREAKING CHANGES
 
 - [core] 0.1x transaction fees
 - [core] Genesis is now encapsulated in code
 - [core] Add new transaction type: SellAllCoin
+- [core] Add GasCoin field to transaction
 - [config] New config directories
 - [api] Huge API update. For more info see docs
 

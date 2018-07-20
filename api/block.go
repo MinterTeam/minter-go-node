@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
+	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/gorilla/mux"
 	"github.com/tendermint/tendermint/libs/common"
 	"math/big"
@@ -33,6 +34,7 @@ type BlockTransactionResponse struct {
 	Payload     []byte            `json:"payload"`
 	ServiceData []byte            `json:"service_data"`
 	Gas         int64             `json:"gas"`
+	GasCoin     types.CoinSymbol  `json:"gas_coin"`
 	TxResult    ResponseDeliverTx `json:"tx_result"`
 }
 
@@ -74,6 +76,7 @@ func Block(w http.ResponseWriter, r *http.Request) {
 			Payload:     tx.Payload,
 			ServiceData: tx.ServiceData,
 			Gas:         tx.Gas(),
+			GasCoin:     tx.GasCoin,
 			TxResult: ResponseDeliverTx{
 				Code:      blockResults.Results.DeliverTx[i].Code,
 				Data:      blockResults.Results.DeliverTx[i].Data,

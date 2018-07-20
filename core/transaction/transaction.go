@@ -35,6 +35,7 @@ const (
 type Transaction struct {
 	Nonce       uint64
 	GasPrice    *big.Int
+	GasCoin     types.CoinSymbol
 	Type        byte
 	Data        RawData
 	Payload     []byte
