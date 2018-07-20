@@ -6,7 +6,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/gorilla/mux"
 	"github.com/tendermint/tendermint/libs/common"
-	"github.com/tendermint/tendermint/types"
 	"math/big"
 	"net/http"
 	"strconv"
@@ -20,7 +19,7 @@ type BlockResponse struct {
 	NumTxs       int64                      `json:"num_txs"`
 	TotalTxs     int64                      `json:"total_txs"`
 	Transactions []BlockTransactionResponse `json:"transactions"`
-	Precommits   []*types.Vote              `json:"precommits"`
+	Precommits   json.RawMessage            `json:"precommits"`
 }
 
 type BlockTransactionResponse struct {
@@ -87,13 +86,15 @@ func Block(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	precommits, _ := cdc.MarshalJSON(block.Block.LastCommit.Precommits)
+
 	response := BlockResponse{
 		Hash:         block.Block.Hash(),
 		Height:       block.Block.Height,
 		Time:         block.Block.Time,
 		NumTxs:       block.Block.NumTxs,
 		TotalTxs:     block.Block.TotalTxs,
-		Precommits:   block.Block.LastCommit.Precommits,
+		Precommits:   json.RawMessage(precommits),
 		Transactions: txs,
 	}
 

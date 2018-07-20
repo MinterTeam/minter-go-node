@@ -3,17 +3,16 @@ package api
 import (
 	"encoding/json"
 	"github.com/tendermint/tendermint/libs/common"
-	"github.com/tendermint/tendermint/rpc/core/types"
 	"net/http"
 	"time"
 )
 
 type StatusResponse struct {
-	LatestBlockHash   common.HexBytes          `json:"latest_block_hash"`
-	LatestAppHash     common.HexBytes          `json:"latest_app_hash"`
-	LatestBlockHeight int64                    `json:"latest_block_height"`
-	LatestBlockTime   time.Time                `json:"latest_block_time"`
-	TmStatus          *core_types.ResultStatus `json:"tm_status"`
+	LatestBlockHash   common.HexBytes `json:"latest_block_hash"`
+	LatestAppHash     common.HexBytes `json:"latest_app_hash"`
+	LatestBlockHeight int64           `json:"latest_block_height"`
+	LatestBlockTime   time.Time       `json:"latest_block_time"`
+	TmStatus          json.RawMessage `json:"tm_status"`
 }
 
 func Status(w http.ResponseWriter, r *http.Request) {
@@ -32,6 +31,8 @@ func Status(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	tmStatus, _ := cdc.MarshalJSON(result)
+
 	json.NewEncoder(w).Encode(Response{
 		Code: 0,
 		Result: StatusResponse{
@@ -39,7 +40,7 @@ func Status(w http.ResponseWriter, r *http.Request) {
 			LatestAppHash:     common.HexBytes(result.SyncInfo.LatestAppHash),
 			LatestBlockHeight: result.SyncInfo.LatestBlockHeight,
 			LatestBlockTime:   result.SyncInfo.LatestBlockTime,
-			TmStatus:          result,
+			TmStatus:          json.RawMessage(tmStatus),
 		},
 	})
 }

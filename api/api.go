@@ -10,11 +10,19 @@ import (
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/core/minter"
 	"github.com/MinterTeam/minter-go-node/core/state"
+	"github.com/tendermint/go-amino"
+	"github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/node"
 	rpc "github.com/tendermint/tendermint/rpc/client"
 	"strconv"
 	"time"
 )
+
+var cdc = amino.NewCodec()
+
+func init() {
+	crypto.RegisterAmino(cdc)
+}
 
 var (
 	blockchain *minter.Blockchain
