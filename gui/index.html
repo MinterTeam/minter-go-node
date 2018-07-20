@@ -11,7 +11,6 @@
     <script src="https://cdn.jsdelivr.net/npm/vue"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9-1/crypto-js.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tweetnacl/1.0.0/nacl.min.js"></script>
     <style>
 
         .card {
@@ -55,6 +54,14 @@
 
         .bg-success {
             border-color: #28a745 !important;
+        }
+
+        .fa-check {
+            color: green;
+        }
+
+        .fa-exclamation-circle {
+            color: red;
         }
     </style>
 </head>
@@ -115,11 +122,11 @@
                         <tbody>
                         <tr>
                             <td class="h">Is Listening</td>
-                            <td :class="{'bg-danger': !net_info.listening}">{{ net_info.listening }}</td>
+                            <td><i :class="{'fa-check': net_info.listening}" class="fas"></i></td>
                         </tr>
                         <tr>
                             <td class="h">Connected Peers</td>
-                            <td :class="{'bg-danger': net_info.n_peers < 1}">{{ net_info.n_peers }}</td>
+                            <td>{{ net_info.n_peers }} <i :class="{'fa-exclamation-circle': net_info.n_peers < 1}" class="fas"></i></td>
                         </tr>
                         </tbody>
                     </table>
@@ -134,7 +141,10 @@
                         <tbody>
                         <tr>
                             <td class="h">Is Synced</td>
-                            <td :class="{'bg-success': status.sync_info.catching_up == false, 'bg-danger': status.sync_info.catching_up == true}">{{ status.sync_info.catching_up == false ? 'true' : 'false' }}</td>
+                            <td>
+                                <span v-if="status.sync_info.catching_up">No</span>
+                                <span v-if="!status.sync_info.catching_up">Yes</span>
+                                <i :class="{'fa-check': !status.sync_info.catching_up, 'fa-exclamation-circle': status.sync_info.catching_up}" class="fas"></i></td>
                         </tr>
                         <tr>
                             <td class="h">Latest Block</td>
