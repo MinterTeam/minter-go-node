@@ -31,13 +31,16 @@ func handleBalanceChanges() {
 	for {
 		msg := <-state.BalanceChangeChan
 
-		var balanceInBasecoin *big.Int
+		balanceInBasecoin := big.NewInt(0)
 
 		if msg.Coin == types.GetBaseCoin() {
 			balanceInBasecoin = msg.Balance
 		} else {
-			sCoin := minter.GetBlockchain().CurrentState().GetStateCoin(msg.Coin).Data()
-			balanceInBasecoin = formula.CalculateSaleReturn(sCoin.Volume, sCoin.ReserveBalance, sCoin.Crr, msg.Balance)
+			sCoin := minter.GetBlockchain().CurrentState().GetStateCoin(msg.Coin)
+
+			if sCoin != nil {
+				balanceInBasecoin = formula.CalculateSaleReturn(sCoin.Data().Volume, sCoin.Data().ReserveBalance, sCoin.Data().Crr, msg.Balance)
+			}
 		}
 
 		msg.BalanceInBasecoin = balanceInBasecoin
