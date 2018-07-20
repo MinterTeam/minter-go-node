@@ -6,11 +6,9 @@ const (
 	WrongNonce               uint32 = 101
 	CoinNotExists            uint32 = 102
 	CoinReserveNotSufficient uint32 = 103
-	TooLongPayload           uint32 = 104
 	TxTooLarge               uint32 = 105
 	DecodeError              uint32 = 106
 	InsufficientFunds        uint32 = 107
-	UnknownTransactionType   uint32 = 108
 	TxPayloadTooLarge        uint32 = 109
 	TxServiceDataTooLarge    uint32 = 110
 
