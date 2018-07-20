@@ -18,16 +18,15 @@ import (
 	"time"
 )
 
-var cdc = amino.NewCodec()
+var (
+	cdc        = amino.NewCodec()
+	blockchain *minter.Blockchain
+	client     *rpc.Local
+)
 
 func init() {
 	crypto.RegisterAmino(cdc)
 }
-
-var (
-	blockchain *minter.Blockchain
-	client     *rpc.Local
-)
 
 func RunApi(b *minter.Blockchain, node *node.Node) {
 	client = rpc.NewLocal(node)
@@ -63,6 +62,12 @@ func RunApi(b *minter.Blockchain, node *node.Node) {
 	handler := c.Handler(router)
 
 	// wait for tendermint to start
+	waitForTendermint()
+
+	log.Fatal(http.ListenAndServe(*utils.MinterAPIAddrFlag, handler))
+}
+
+func waitForTendermint() {
 	for true {
 		_, err := client.Health()
 		if err == nil {
@@ -71,8 +76,6 @@ func RunApi(b *minter.Blockchain, node *node.Node) {
 
 		time.Sleep(1 * time.Second)
 	}
-
-	log.Fatal(http.ListenAndServe(*utils.MinterAPIAddrFlag, handler))
 }
 
 type Response struct {
