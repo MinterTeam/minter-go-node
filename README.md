@@ -7,6 +7,7 @@ Minter is a blockchain network that lets people, projects, and companies issue a
 [![license](https://img.shields.io/github/license/MinterTeam/minter-go-node.svg)](https://github.com/MinterTeam/minter-go-node/blob/master/LICENSE)
 [![last-commit](https://img.shields.io/github/last-commit/MinterTeam/minter-go-node.svg)](https://github.com/MinterTeam/minter-go-node/commits/master)
 [![Documentation Status](//readthedocs.org/projects/minter-go-node/badge/?version=latest)](https://minter-go-node.readthedocs.io/en/latest/?badge=latest)
+[![Go Report Card](https://goreportcard.com/badge/github.com/MinterTeam/minter-go-node)](https://goreportcard.com/report/github.com/MinterTeam/minter-go-node)
 
 _NOTE: This is alpha software. Please contact us if you intend to run it in production._
 
