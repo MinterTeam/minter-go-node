@@ -107,16 +107,3 @@ build-linux:
 
 build-compress:
 	upx --brute -9 build/minter
-
-build-docker-localnode:
-	cd networks/local
-	make
-
-# Run a 4-node testnet locally
-localnet-start: localnet-stop
-	@if ! [ -f build/node0/config/genesis.json ]; then docker run --rm -v $(CURDIR)/build:/minter:Z minter/localnode testnet --v 4 --o . --populate-persistent-peers --starting-ip-address 192.167.10.2 ; fi
-	docker-compose up
-
-# Stop testnet
-localnet-stop:
-	docker-compose down
