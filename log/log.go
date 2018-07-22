@@ -1,6 +1,8 @@
 package log
 
 import (
+	"github.com/tendermint/tendermint/config"
+	"github.com/tendermint/tendermint/libs/cli/flags"
 	"github.com/tendermint/tendermint/libs/log"
 	"os"
 )
@@ -10,7 +12,7 @@ var (
 )
 
 func init() {
-	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
+	logger, _ := flags.ParseLogLevel(config.DefaultPackageLogLevels(), log.NewTMLogger(os.Stdout), "info")
 	SetLogger(logger)
 }
 
