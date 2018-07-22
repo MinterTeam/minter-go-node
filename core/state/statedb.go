@@ -590,11 +590,8 @@ func (s *StateDB) CoinExists(symbol types.CoinSymbol) bool {
 	}
 
 	stateCoin := s.getStateCoin(symbol)
-	if stateCoin != nil {
-		return true
-	}
 
-	return false
+	return stateCoin != nil
 }
 
 func (s *StateDB) CandidateExists(key types.Pubkey) bool {
@@ -606,7 +603,7 @@ func (s *StateDB) CandidateExists(key types.Pubkey) bool {
 	}
 
 	for _, candidate := range stateCandidates.data {
-		if bytes.Compare(candidate.PubKey, key) == 0 {
+		if bytes.Equal(candidate.PubKey, key) {
 			return true
 		}
 	}
@@ -622,7 +619,7 @@ func (s *StateDB) GetStateCandidate(key types.Pubkey) *Candidate {
 	}
 
 	for i, candidate := range stateCandidates.data {
-		if bytes.Compare(candidate.PubKey, key) == 0 {
+		if bytes.Equal(candidate.PubKey, key) {
 			return &(stateCandidates.data[i])
 		}
 	}
@@ -708,7 +705,7 @@ func (s *StateDB) AddAccumReward(pubkey types.Pubkey, reward *big.Int) {
 	stateCandidates := s.getStateCandidates()
 
 	for i := range stateCandidates.data {
-		if bytes.Compare(stateCandidates.data[i].PubKey, pubkey) == 0 {
+		if bytes.Equal(stateCandidates.data[i].PubKey, pubkey) {
 			stateCandidates.data[i].AccumReward.Add(stateCandidates.data[i].AccumReward, reward)
 			s.setStateCandidates(stateCandidates)
 			s.MarkStateCandidateDirty()
@@ -846,7 +843,7 @@ func (s *StateDB) SetCandidateOnline(pubkey []byte) {
 
 	for i := range stateCandidates.data {
 		candidate := &stateCandidates.data[i]
-		if bytes.Compare(candidate.PubKey, pubkey) == 0 {
+		if bytes.Equal(candidate.PubKey, pubkey) {
 			candidate.Status = CandidateStatusOnline
 		}
 	}
@@ -860,7 +857,7 @@ func (s *StateDB) SetCandidateOffline(pubkey []byte) {
 
 	for i := range stateCandidates.data {
 		candidate := &stateCandidates.data[i]
-		if bytes.Compare(candidate.PubKey, pubkey) == 0 {
+		if bytes.Equal(candidate.PubKey, pubkey) {
 			candidate.Status = CandidateStatusOffline
 		}
 	}
@@ -874,7 +871,7 @@ func (s *StateDB) SetValidatorAbsent(pubkey types.Pubkey) {
 
 	for i := range stateCandidates.data {
 		candidate := &stateCandidates.data[i]
-		if bytes.Compare(candidate.PubKey, pubkey) == 0 {
+		if bytes.Equal(candidate.PubKey, pubkey) {
 
 			if candidate.Status == CandidateStatusOffline {
 				return
@@ -917,7 +914,7 @@ func (s *StateDB) PunishByzantineCandidate(PubKey []byte) {
 
 	for i := range stateCandidates.data {
 		candidate := &stateCandidates.data[i]
-		if bytes.Compare(candidate.PubKey, PubKey) == 0 {
+		if bytes.Equal(candidate.PubKey, PubKey) {
 			candidate.AbsentTimes = candidate.AbsentTimes + 1
 
 			candidate.Stakes = []Stake{}
@@ -948,7 +945,7 @@ func (s *StateDB) SetValidatorPresent(pubkey types.Pubkey) {
 
 	for i := range stateCandidates.data {
 		candidate := &stateCandidates.data[i]
-		if bytes.Compare(candidate.PubKey, pubkey) == 0 {
+		if bytes.Equal(candidate.PubKey, pubkey) {
 			candidate.AbsentTimes = 0
 		}
 	}

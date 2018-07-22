@@ -106,7 +106,7 @@ func (data RedeemCheckData) Run(sender types.Address, tx *Transaction, context *
 			Log:  err.Error()}
 	}
 
-	if bytes.Compare(lockPublicKey, pub) != 0 {
+	if !bytes.Equal(lockPublicKey, pub) {
 		return Response{
 			Code: code.CheckInvalidLock,
 			Log:  fmt.Sprintf("Invalid proof")}

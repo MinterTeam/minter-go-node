@@ -45,7 +45,7 @@ func main() {
 			logger.Fatalf("Failed test \"%s\"\nReason: %s", testName, err)
 		}
 
-		elapsed := time.Now().Sub(start)
+		elapsed := time.Since(start)
 
 		logger.Printf("Completed \"%s\" in %s \n", testName, elapsed)
 	}

@@ -12,5 +12,3 @@ var (
 	xorInUnaligned   = xorInGeneric
 	copyOutUnaligned = copyOutGeneric
 )
-
-const xorImplementationUnaligned = "generic"

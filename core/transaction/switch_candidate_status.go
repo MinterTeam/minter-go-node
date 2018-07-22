@@ -50,7 +50,7 @@ func (data SetCandidateOnData) Run(sender types.Address, tx *Transaction, contex
 
 	candidate := context.GetStateCandidate(data.PubKey)
 
-	if bytes.Compare(candidate.CandidateAddress.Bytes(), sender.Bytes()) != 0 {
+	if !bytes.Equal(candidate.CandidateAddress.Bytes(), sender.Bytes()) {
 		return Response{
 			Code: code.IsNotOwnerOfCandidate,
 			Log:  fmt.Sprintf("Sender is not an owner of a candidate")}
@@ -110,7 +110,7 @@ func (data SetCandidateOffData) Run(sender types.Address, tx *Transaction, conte
 
 	candidate := context.GetStateCandidate(data.PubKey)
 
-	if bytes.Compare(candidate.CandidateAddress.Bytes(), sender.Bytes()) != 0 {
+	if !bytes.Equal(candidate.CandidateAddress.Bytes(), sender.Bytes()) {
 		return Response{
 			Code: code.IsNotOwnerOfCandidate,
 			Log:  fmt.Sprintf("Sender is not an owner of a candidate")}

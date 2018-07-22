@@ -205,7 +205,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 	for _, validator := range app.activeValidators {
 		persisted := false
 		for _, newValidator := range newValidators {
-			if bytes.Compare(validator.PubKey.Data, newValidator.PubKey.Data) == 0 {
+			if bytes.Equal(validator.PubKey.Data, newValidator.PubKey.Data) {
 				persisted = true
 				break
 			}

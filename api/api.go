@@ -68,7 +68,7 @@ func RunApi(b *minter.Blockchain, node *node.Node) {
 }
 
 func waitForTendermint() {
-	for true {
+	for {
 		_, err := client.Health()
 		if err == nil {
 			break
