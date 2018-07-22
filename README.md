@@ -34,7 +34,7 @@ interfaces exposed to other processes, but does not include the in-process Go AP
 
 In an effort to avoid accumulating technical debt prior to 1.0.0,
 we do not guarantee that breaking changes (ie. bumps in the MINOR version)
-will work with existing tendermint blockchains. In these cases you will
+will work with existing blockchain. In these cases you will
 have to start a new blockchain, or write something custom to get the old
 data into the new chain.
 
