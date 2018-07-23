@@ -102,6 +102,7 @@ func (tx *Transaction) Hash() types.Hash {
 	return rlpHash([]interface{}{
 		tx.Nonce,
 		tx.GasPrice,
+		tx.GasCoin,
 		tx.Type,
 		tx.Data,
 		tx.Payload,

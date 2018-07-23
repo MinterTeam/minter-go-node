@@ -78,7 +78,7 @@ func (data SendData) Run(sender types.Address, tx *Transaction, context *state.S
 	if context.GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
 		return Response{
 			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), data.Value, tx.GasCoin)}
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, tx.GasCoin)}
 	}
 
 	if !isCheck {
