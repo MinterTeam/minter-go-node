@@ -84,44 +84,39 @@ Becoming validator in testnet
 1. Install and run Minter Full Node.
     See :ref:`install-minter`. Make sure your node successfully synchronized.
 
-2. Generate and install validator's key using our `tool <https://github.com/MinterTeam/minter-gen-validator>`__.
-    If you already have ``priv_validator.json`` file – just replace it with new one.
+2. Get your validator's public key from `Minter GUI <http://localhost:3000/>`__.
 
-3. Restart Minter Node and Tendermint.
-    Restarting will apply changes to ``priv_validator.json`` file.
-
-4. Go to `Vault <http://vault.minter.network/>`__ and send 2 transactions:
+3. Go to `Vault <http://vault.minter.network/>`__ and send 2 transactions:
     Fill and send ``Declare candidacy`` and ``Set candidate online`` forms.
 
     P.S. You can receive testnet coins in our telegram wallet @BipWallet_Bot.
 
-    4.1. Declare candidacy
+    3.1. Declare candidacy
         Validators should declare their candidacy, after which users can delegate
         and, if they so wish, unbond. Then declaring candidacy validator should fill a form:
 
         - Address - You will receive rewards to this address and will be able to on/off your validator.
-        - Public Key - Paste public key you created in step 2 *(Mp...)*.
+        - Public Key - Paste public key from step 2 *(Mp...)*.
         - Commission - Set commission for delegated stakes.
-        - Coin - Enter coin of your stake (MNT).
+        - Coin - Enter coin of your stake (i.e. MNT).
         - Stake - Enter value of your stake in given coin.
 
     .. figure:: assets/vault-declare.png
         :width: 300px
 
-    4.2. Set candidate online
+    3.2. Set candidate online
         Validator is **offline** by default. When offline, validator is not included in the list of
         Minter Blockchain validators, so he is not receiving any rewards and cannot be punished
         for low availability.
 
-        To turn your validator **on**, you should provide Public Key (which you created in step
-        2 *(Mp...)*).
+        To turn your validator **on**, you should provide Public Key (from step 2 *(Mp...)*).
 
-        *Note: You should send transaction from address you choose in Address field in step 4.2*
+        *Note: You should send transaction from address you choose in Address field in step 3.2*
 
     .. figure:: assets/vault-candidate-on.png
         :width: 300px
 
-5. Done.
+4. Done.
     Now you will receive reward as long as your node is running and available.
 
 
