@@ -120,6 +120,18 @@ func (data CreateCoinData) Run(sender types.Address, tx *Transaction, context *s
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), data.InitialReserve.String(), types.GetBaseCoin())}
 	}
 
+	if types.GetBaseCoin() == tx.GasCoin {
+		totalTxCost := big.NewInt(0)
+		totalTxCost.Add(totalTxCost, data.InitialReserve)
+		totalTxCost.Add(totalTxCost, commission)
+
+		if context.GetBalance(sender, types.GetBaseCoin()).Cmp(totalTxCost) < 0 {
+			return Response{
+				Code: code.InsufficientFunds,
+				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), totalTxCost.String(), tx.GasCoin)}
+		}
+	}
+
 	if context.CoinExists(data.Symbol) {
 		return Response{
 			Code: code.CoinAlreadyExists,

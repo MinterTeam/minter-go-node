@@ -100,6 +100,18 @@ func (data BuyCoinData) Run(sender types.Address, tx *Transaction, context *stat
 				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), value.String(), data.CoinToSell)}
 		}
 
+		if data.CoinToSell == tx.GasCoin {
+			totalTxCost := big.NewInt(0)
+			totalTxCost.Add(totalTxCost, value)
+			totalTxCost.Add(totalTxCost, commission)
+
+			if context.GetBalance(sender, data.CoinToSell).Cmp(totalTxCost) < 0 {
+				return Response{
+					Code: code.InsufficientFunds,
+					Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), totalTxCost.String(), tx.GasCoin)}
+			}
+		}
+
 		if !isCheck {
 			context.SubBalance(sender, data.CoinToSell, value)
 			context.AddCoinVolume(data.CoinToBuy, data.ValueToBuy)
@@ -114,7 +126,19 @@ func (data BuyCoinData) Run(sender types.Address, tx *Transaction, context *stat
 		if context.GetBalance(sender, data.CoinToSell).Cmp(totalTxCost) < 0 {
 			return Response{
 				Code: code.InsufficientFunds,
-				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s ", sender.String(), totalTxCost.String(), data.CoinToSell)}
+				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), totalTxCost.String(), data.CoinToSell)}
+		}
+
+		if data.CoinToSell == tx.GasCoin {
+			totalTxCost := big.NewInt(0)
+			totalTxCost.Add(totalTxCost, value)
+			totalTxCost.Add(totalTxCost, commission)
+
+			if context.GetBalance(sender, data.CoinToSell).Cmp(totalTxCost) < 0 {
+				return Response{
+					Code: code.InsufficientFunds,
+					Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), totalTxCost.String(), tx.GasCoin)}
+			}
 		}
 
 		if !isCheck {
@@ -133,6 +157,18 @@ func (data BuyCoinData) Run(sender types.Address, tx *Transaction, context *stat
 			return Response{
 				Code: code.InsufficientFunds,
 				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), value.String(), data.CoinToSell)}
+		}
+
+		if data.CoinToSell == tx.GasCoin {
+			totalTxCost := big.NewInt(0)
+			totalTxCost.Add(totalTxCost, value)
+			totalTxCost.Add(totalTxCost, commission)
+
+			if context.GetBalance(sender, data.CoinToSell).Cmp(totalTxCost) < 0 {
+				return Response{
+					Code: code.InsufficientFunds,
+					Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), totalTxCost.String(), tx.GasCoin)}
+			}
 		}
 
 		if !isCheck {

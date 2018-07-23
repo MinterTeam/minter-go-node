@@ -75,6 +75,18 @@ func (data DelegateData) Run(sender types.Address, tx *Transaction, context *sta
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), data.Stake, data.Coin)}
 	}
 
+	if data.Coin == tx.GasCoin {
+		totalTxCost := big.NewInt(0)
+		totalTxCost.Add(totalTxCost, data.Stake)
+		totalTxCost.Add(totalTxCost, commission)
+
+		if context.GetBalance(sender, tx.GasCoin).Cmp(totalTxCost) < 0 {
+			return Response{
+				Code: code.InsufficientFunds,
+				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), totalTxCost.String(), tx.GasCoin)}
+		}
+	}
+
 	if !context.CandidateExists(data.PubKey) {
 		return Response{
 			Code: code.CandidateNotFound,

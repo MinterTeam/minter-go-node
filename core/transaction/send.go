@@ -81,6 +81,18 @@ func (data SendData) Run(sender types.Address, tx *Transaction, context *state.S
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, tx.GasCoin)}
 	}
 
+	if data.Coin == tx.GasCoin {
+		totalTxCost := big.NewInt(0)
+		totalTxCost.Add(totalTxCost, data.Value)
+		totalTxCost.Add(totalTxCost, commission)
+
+		if context.GetBalance(sender, tx.GasCoin).Cmp(totalTxCost) < 0 {
+			return Response{
+				Code: code.InsufficientFunds,
+				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), totalTxCost.String(), tx.GasCoin)}
+		}
+	}
+
 	if !isCheck {
 		rewardPull.Add(rewardPull, commissionInBaseCoin)
 
