@@ -5,7 +5,7 @@
 - [api] Add validators rewards to block api
 
 ## 0.1.0
-*Jule 20th, 2018*
+*Jule 23th, 2018*
 
 BREAKING CHANGES
 
