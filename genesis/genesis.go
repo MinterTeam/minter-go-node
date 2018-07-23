@@ -1,6 +1,7 @@
 package genesis
 
 import (
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"github.com/MinterTeam/minter-go-node/core/types"
@@ -14,7 +15,7 @@ import (
 
 func GetTestnetGenesis() *tmtypes.GenesisDoc {
 
-	validatorPubKeyBytes, _ := hex.DecodeString("aaee1ddf30ff54c90715d928b56652fc511bed3722e58973e8ef946f5dae3979")
+	validatorPubKeyBytes, _ := base64.StdEncoding.DecodeString("qu4d3zD/VMkHFdkotWZS/FEb7Tci5Ylz6O+Ub12uOXk=")
 	var validatorPubKey crypto.PubKeyEd25519
 	copy(validatorPubKey[:], validatorPubKeyBytes)
 
@@ -41,8 +42,8 @@ func GetTestnetGenesis() *tmtypes.GenesisDoc {
 	appStateJSON, _ := json.Marshal(appState)
 
 	genesis := tmtypes.GenesisDoc{
-		GenesisTime:     time.Date(2018, 7, 19, 0, 0, 0, 0, time.UTC),
-		ChainID:         "minter-test-network-11",
+		GenesisTime:     time.Date(2018, 7, 23, 0, 0, 0, 0, time.UTC),
+		ChainID:         "minter-test-network-14",
 		ConsensusParams: nil,
 		Validators: []tmtypes.GenesisValidator{
 			{
