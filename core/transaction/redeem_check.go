@@ -58,6 +58,12 @@ func (data RedeemCheckData) Run(sender types.Address, tx *Transaction, context *
 			Log:  err.Error()}
 	}
 
+	if tx.GasCoin != types.GetBaseCoin() {
+		return Response{
+			Code: code.WrongGasCoin,
+			Log:  fmt.Sprintf("Gas for for redeem check transaction can only be %s", types.GetBaseCoin())}
+	}
+
 	if !context.CoinExists(decodedCheck.Coin) {
 		return Response{
 			Code: code.CoinNotExists,
