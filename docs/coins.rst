@@ -6,8 +6,15 @@ Minter Blockchain is multi-coin system.
 | Base coin in testnet is ``MNT``.
 | Base coin in mainnet is ``BIP``.
 
-| Smallest part of a coin is called ``pip``.
+| Smallest part of *each* coin is called ``pip``.
 | 1 pip = 1^-18 of any coin. In Blockchain and API we only operating with pips.
+
+**Note:**
+Each coin has its **own** pip. You should treat pip like atomic part of a coin, not as currency.
+
+| 1 MNT = 10^18 pip (MNT's pip)
+| 1 ABC = 10^18 pip (ABC's pip)
+| 1 MNT != 1 ABC
 
 Coin Issuance
 ^^^^^^^^^^^^^
@@ -18,7 +25,7 @@ Issue own coin is as simple as filling a form with given fields:
 .. figure:: assets/coin-minter.png
     :width: 300px
 
-- **Coin name** - Name of a coin. Arbitrary string.
+- **Coin name** - Name of a coin. Arbitrary string up to 64 letters length.
 - **Coin symbol** - Symbol of a coin. Must be unique, alphabetic, uppercase, 3 to 10 letters length.
 - **Initial supply** - Amount of coins to issue. Issued coins will be available to sender account.
 - **Initial reserve** - Initial reserve in base coin.

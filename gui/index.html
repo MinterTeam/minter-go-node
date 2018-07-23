@@ -1,0 +1,221 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Minter Node GUI</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/css/bootstrap.min.css"
+          integrity="sha384-9gVQ4dYFwwWSjIDZnLEWnxCjeSWFphJiwGPXr1jddIhOegiu1FwO5qRGvFXOdJZ4" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.1.1/css/all.css" integrity="sha384-O8whS3fhG2OnA5Kas0Y9l3cfpmYjapjI0E4theH4iuMD+pLhbf6JI0jIMfYcK3yZ" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9-1/crypto-js.min.js"></script>
+    <style>
+
+        .card {
+            margin-bottom: 20px;
+        }
+
+        html,body,.body {
+            height: 100%;
+        }
+        
+        .body {
+            padding-top: 15px;
+        }
+
+        .table {
+            margin-bottom: 0;
+            table-layout: fixed;
+        }
+
+        .card-header {
+            font-weight: bold;
+        }
+
+        .card-header {
+            padding-left: 12px;
+        }
+
+        .h {
+            width: 200px;
+            background-color: #f3f3f3;
+            border-right: 1px solid #ccc;
+        }
+
+        .bg-success, .bg-danger {
+            color: white;
+        }
+
+        .bg-danger {
+            border-color: #dc3545 !important;
+        }
+
+        .bg-success {
+            border-color: #28a745 !important;
+        }
+
+        .fa-check {
+            color: green;
+        }
+
+        .fa-exclamation-circle {
+            color: red;
+        }
+    </style>
+</head>
+<body style="background-color: #343a401a">
+<div id="app">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <span class="navbar-brand mb-0 h1"><i class="fas fa-terminal"></i> &nbsp; Minter Full Node Status</span>
+        </div>
+    </nav>
+    <div class="container body" v-if="error">
+        <div class="alert alert-danger" role="alert">
+            <h4 class="alert-heading">Error while connecting to local node</h4>
+            <p class="mb-0">{{ error }}</p>
+        </div>
+    </div>
+    <div class="container body bg-white" v-if="status && !error">
+        <div class="row">
+            <div class="col">
+                <div class="card">
+                    <div class="card-header">
+                        Node Info
+                    </div>
+                    <table class="table card-body">
+                        <tbody>
+                        <tr>
+                            <td class="h">Moniker</td>
+                            <td>{{ status.node_info.moniker }}</td>
+                        </tr>
+                        <tr>
+                            <td class="h">Node ID</td>
+                            <td>{{ status.node_info.id }}</td>
+                        </tr>
+                        <tr>
+                            <td class="h">Listen Addr</td>
+                            <td>{{ status.node_info.listen_addr }}</td>
+                        </tr>
+                        <tr>
+                            <td class="h">Network ID</td>
+                            <td>{{ status.node_info.network }}</td>
+                        </tr>
+                        <tr>
+                            <td class="h">Minter Version</td>
+                            <td>{{ version }}</td>
+                        </tr>
+                        <tr>
+                            <td class="h">Tendermint Version</td>
+                            <td>{{ status.node_info.version }}</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card" v-if="net_info">
+                    <div class="card-header">
+                        Net Info
+                    </div>
+                    <table class="table card-body">
+                        <tbody>
+                        <tr>
+                            <td class="h">Is Listening</td>
+                            <td><i :class="{'fa-check': net_info.listening}" class="fas"></i></td>
+                        </tr>
+                        <tr>
+                            <td class="h">Connected Peers</td>
+                            <td>{{ net_info.n_peers }} <i :class="{'fa-exclamation-circle': net_info.n_peers < 1}" class="fas"></i></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card">
+                    <div class="card-header">
+                        Syncing Info
+                    </div>
+                    <table class="table card-body">
+                        <tbody>
+                        <tr>
+                            <td class="h">Is Synced</td>
+                            <td>
+                                <span v-if="status.sync_info.catching_up">No</span>
+                                <span v-if="!status.sync_info.catching_up">Yes</span>
+                                <i :class="{'fa-check': !status.sync_info.catching_up, 'fa-exclamation-circle': status.sync_info.catching_up}" class="fas"></i></td>
+                        </tr>
+                        <tr>
+                            <td class="h">Latest Block</td>
+                            <td>
+                                #{{ status.sync_info.latest_block_height }} <span
+                                    class="text-muted">at {{ status.sync_info.latest_block_time }}</span>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        Validator Info
+                    </div>
+                    <table class="table card-body">
+                        <tbody>
+                        <tr>
+                            <td>Public Key</td>
+                            <td>Mp{{ base64ToHex(status.validator_info.pub_key.value) }}</td>
+                        </tr>
+                        <tr>
+                            <td>Voting Power</td>
+                            <td>{{ niceNum(status.validator_info.voting_power) }} <span class="text-muted">of 100,000,000</span></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    new Vue({
+        el: '#app',
+        data: {
+            status: null,
+            version: null,
+            net_info: null,
+            error: null
+        },
+        mounted() {
+            this.refresh()
+
+            setInterval(this.refresh, 1000)
+        },
+        methods: {
+            niceNum(num) {
+                return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+            },
+            base64ToHex(base64) {
+                return CryptoJS.enc.Base64.parse(base64).toString()
+            },
+            refresh() {
+                axios.get("//" + window.location.hostname + ':8841/api/status').then(function (data) {
+                    this.status = data.data.result.tm_status
+                    this.version = data.data.result.version
+                    this.error = null
+                }.bind(this)).catch(function (reason) {
+                    this.error = reason.toString();
+                }.bind(this))
+
+                axios.get("//" + window.location.hostname + ':8841/api/net_info').then(function (data) {
+                    this.net_info = data.data.result
+                    this.error = null
+                }.bind(this)).catch(function (reason) {
+                    this.error = reason.toString();
+                }.bind(this))
+            }
+        }
+    })
+</script>
+</body>
+</html>

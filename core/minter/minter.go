@@ -14,6 +14,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/mintdb"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
+	"github.com/tendermint/tendermint/node"
 	rpc "github.com/tendermint/tendermint/rpc/client"
 	"math/big"
 )
@@ -29,7 +30,7 @@ type Blockchain struct {
 	rewards            *big.Int
 	activeValidators   abciTypes.Validators
 	validatorsStatuses map[string]int8
-	tendermintRPC      *rpc.HTTP
+	tendermintRPC      *rpc.Local
 
 	BaseCoin types.CoinSymbol
 }
@@ -58,15 +59,18 @@ func NewMinterBlockchain() *Blockchain {
 	}
 
 	blockchain = &Blockchain{
-		db:            db,
-		BaseCoin:      types.GetBaseCoin(),
-		tendermintRPC: rpc.NewHTTP(*utils.TendermintRpcAddrFlag, "/websocket"),
+		db:       db,
+		BaseCoin: types.GetBaseCoin(),
 	}
 
 	blockchain.updateCurrentRootHash()
 	blockchain.updateCurrentState()
 
 	return blockchain
+}
+
+func (app *Blockchain) RunRPC(node *node.Node) {
+	app.tendermintRPC = rpc.NewLocal(node)
 }
 
 func (app *Blockchain) SetOption(req abciTypes.RequestSetOption) abciTypes.ResponseSetOption {
@@ -201,7 +205,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 	for _, validator := range app.activeValidators {
 		persisted := false
 		for _, newValidator := range newValidators {
-			if bytes.Compare(validator.PubKey.Data, newValidator.PubKey.Data) == 0 {
+			if bytes.Equal(validator.PubKey.Data, newValidator.PubKey.Data) {
 				persisted = true
 				break
 			}
@@ -341,4 +345,8 @@ func (app *Blockchain) GetStateForHeight(height int) (*state.StateDB, error) {
 
 func (app *Blockchain) Height() uint64 {
 	return app.height
+}
+
+func GetBlockchain() *Blockchain {
+	return blockchain
 }

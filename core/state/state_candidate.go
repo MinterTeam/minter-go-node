@@ -98,7 +98,7 @@ type Candidate struct {
 
 func (candidate Candidate) GetStakeOfAddress(addr types.Address, coin types.CoinSymbol) *Stake {
 	for i, stake := range candidate.Stakes {
-		if bytes.Compare(stake.Coin.Bytes(), coin.Bytes()) == 0 && bytes.Compare(stake.Owner.Bytes(), addr.Bytes()) == 0 {
+		if bytes.Equal(stake.Coin.Bytes(), coin.Bytes()) && bytes.Equal(stake.Owner.Bytes(), addr.Bytes()) {
 			return &(candidate.Stakes[i])
 		}
 	}

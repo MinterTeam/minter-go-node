@@ -6,7 +6,7 @@ DOS Exposure and Mitigation
 
 Validators are supposed to setup `Sentry Node Architecture
 <https://blog.cosmos.network/tendermint-explained-bringing-bft-based-pos-to-the-public-blockchain-domain-f22e274a0fdb>`__
-to prevent Denial-of-service attacks. You can read more about it `here
+to prevent Denial-of-service attacks. `Read more about it
 <https://github.com/tendermint/aib-data/blob/develop/medium/TendermintBFT.md>`__.
 
 P2P
@@ -40,9 +40,9 @@ wrong.
 Other useful endpoints include mentioned earlier `/status`, `/net_info` and
 `/validators`.
 
-We have a small tool, called tm-monitor, which outputs information from the
-endpoints above plus some statistics. The tool can be found `here
-<https://github.com/tendermint/tools/tree/master/tm-monitor>`__.
+We have a small tool, called `tm-monitor
+<https://github.com/tendermint/tools/tree/master/tm-monitor>`__, which outputs information from the
+endpoints above plus some statistics.
 
 
 Monitoring Minter
@@ -90,8 +90,8 @@ Operating Systems
 ~~~~~~~~~~~~~~~~~
 
 Tendermint and Minter can be compiled for a wide range of operating systems thanks to Go
-language (the list of $OS/$ARCH pairs can be found `here
-<https://golang.org/doc/install/source#environment>`__).
+language. `List of $OS/$ARCH pairs
+<https://golang.org/doc/install/source#environment>`__.
 
 While we do not favor any operation system, more secure and stable Linux server
 distributions (like Centos) should be preferred over desktop operation systems

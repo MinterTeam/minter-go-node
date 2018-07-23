@@ -1,5 +1,34 @@
 # Changelog
 
+## TBD
+
+- [api] Add validators rewards to block api
+
+## 0.1.0
+*Jule 23th, 2018*
+
+BREAKING CHANGES
+
+- [core] 0.1x transaction fees
+- [core] Genesis is now encapsulated in code
+- [core] Add new transaction type: SellAllCoin
+- [core] Add GasCoin field to transaction
+- [config] New config directories
+- [api] Huge API update. For more info see docs
+
+IMPROVEMENT
+
+- [binary] Now Minter is available as single binary. There is no need to install Tendermint
+- [config] 10x default send/recv rate
+- [config] Recheck after empty blocks
+- [core] Check transaction nonce before adding to mempool
+- [performance] Huge performance enhancement due to getting rid of network overhead between tendermint and minter
+- [gui] GUI introduced! You can use it by visiting http://localhost:3000/ in your local browser
+
+BUG FIXES
+
+- [api] Fixed raw transaction output
+
 ## 0.0.6
 *Jule 16th, 2018*
 

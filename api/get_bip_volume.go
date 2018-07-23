@@ -9,6 +9,10 @@ import (
 	"strconv"
 )
 
+type BipVolumeResult struct {
+	Volume string `json:"volume"`
+}
+
 func GetBipVolume(w http.ResponseWriter, r *http.Request) {
 
 	height, _ := strconv.Atoi(r.URL.Query().Get("height"))
@@ -27,8 +31,10 @@ func GetBipVolume(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	json.NewEncoder(w).Encode(Response{
-		Code:   0,
-		Result: CalcBipVolume(height).String(),
+		Code: 0,
+		Result: BipVolumeResult{
+			Volume: CalcBipVolume(height).String(),
+		},
 	})
 }
 

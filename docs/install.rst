@@ -5,6 +5,25 @@ Install Minter
 
 There are several ways you can install Minter Blockchain Testnet node on your machine:
 
+Using binary
+------------
+
+Download Minter
+^^^^^^^^^^^^^^^
+
+Get `latest binary build <https://github.com/MinterTeam/minter-go-node/releases>`__ suitable for your architecture and
+unpack it to desired folder.
+
+Run Minter
+^^^^^^^^^^
+
+.. code-block:: bash
+    :lineno-start: 13
+
+    ./minter
+
+Then open http://localhost:3000/ in local browser to see node's GUI.
+
 Using Docker
 ------------
 
@@ -19,21 +38,6 @@ Clone Minter source code to your machine
     git clone https://github.com/MinterTeam/minter-go-node.git
     cd minter-go-node
 
-
-Prepare folders and configs
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. code-block:: bash
-    :lineno-start: 3
-
-    mkdir -p ~/.tendermint/data
-    mkdir -p ~/.minter/data
-
-    cp -R networks/testnet/ ~/.tendermint/config
-
-    chmod -R 0777 ~/.tendermint
-    chmod -R 0777 ~/.minter
-
 Start Minter
 ^^^^^^^^^^^^
 
@@ -42,16 +46,13 @@ Start Minter
 
     docker-compose up
 
+Then open http://localhost:3000/ in local browser to see node's GUI.
 
 From Source
 -----------
 
 You'll need ``go`` `installed <https://golang.org/doc/install>`__ and the required
 `environment variables set <https://github.com/tendermint/tendermint/wiki/Setting-GOPATH>`__
-
-Install Tendermint 0.22.4
-^^^^^^^^^^^^^^^^^^^^^^^^^
-`Read official instructions <https://tendermint.readthedocs.io/en/master/install.html>`__
 
 Clone Minter source code to your machine
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -92,31 +93,6 @@ to put the binary in ``./build``.
 
 The latest ``minter version`` is now installed.
 
-Create data directories
-^^^^^^^^^^^^^^^^^^^^^^^
-
-.. code-block:: bash
-    :lineno-start: 9
-
-    mkdir -p ~/.tendermint/data
-    mkdir -p ~/.minter/data
-
-Copy config and genesis file
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. code-block:: bash
-    :lineno-start: 11
-
-    cp -R networks/testnet/ ~/.tendermint/config
-
-Run Tendermint
-^^^^^^^^^^^^^^
-
-.. code-block:: bash
-    :lineno-start: 12
-
-    tendermint node
-
 Run Minter
 ^^^^^^^^^^
 
@@ -124,6 +100,8 @@ Run Minter
     :lineno-start: 13
 
     minter
+
+Then open http://localhost:3000/ in local browser to see node's GUI.
 
 Troubleshooting
 ---------------

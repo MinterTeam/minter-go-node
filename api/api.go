@@ -10,18 +10,26 @@ import (
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/core/minter"
 	"github.com/MinterTeam/minter-go-node/core/state"
+	"github.com/tendermint/go-amino"
+	"github.com/tendermint/tendermint/crypto"
+	"github.com/tendermint/tendermint/node"
 	rpc "github.com/tendermint/tendermint/rpc/client"
 	"strconv"
 	"time"
 )
 
 var (
+	cdc        = amino.NewCodec()
 	blockchain *minter.Blockchain
-	client     *rpc.HTTP
+	client     *rpc.Local
 )
 
-func RunApi(b *minter.Blockchain) {
-	client = rpc.NewHTTP(*utils.TendermintRpcAddrFlag, "/websocket")
+func init() {
+	crypto.RegisterAmino(cdc)
+}
+
+func RunApi(b *minter.Blockchain, node *node.Node) {
+	client = rpc.NewLocal(node)
 
 	blockchain = b
 
@@ -40,6 +48,7 @@ func RunApi(b *minter.Blockchain) {
 	router.HandleFunc("/api/block/{height}", Block).Methods("GET")
 	router.HandleFunc("/api/transactions", Transactions).Methods("GET")
 	router.HandleFunc("/api/status", Status).Methods("GET")
+	router.HandleFunc("/api/net_info", NetInfo).Methods("GET")
 	router.HandleFunc("/api/coinInfo/{symbol}", GetCoinInfo).Methods("GET")
 	router.HandleFunc("/api/estimateCoinSell", EstimateCoinSell).Methods("GET")
 	router.HandleFunc("/api/estimateCoinBuy", EstimateCoinBuy).Methods("GET")
@@ -53,7 +62,13 @@ func RunApi(b *minter.Blockchain) {
 	handler := c.Handler(router)
 
 	// wait for tendermint to start
-	for true {
+	waitForTendermint()
+
+	log.Fatal(http.ListenAndServe(*utils.MinterAPIAddrFlag, handler))
+}
+
+func waitForTendermint() {
+	for {
 		_, err := client.Health()
 		if err == nil {
 			break
@@ -61,8 +76,6 @@ func RunApi(b *minter.Blockchain) {
 
 		time.Sleep(1 * time.Second)
 	}
-
-	log.Fatal(http.ListenAndServe(*utils.MinterAPIAddrFlag, handler))
 }
 
 type Response struct {

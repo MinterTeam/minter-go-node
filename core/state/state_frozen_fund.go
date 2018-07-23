@@ -123,7 +123,7 @@ func (c *stateFrozenFund) removeFund(candidateKey []byte) {
 
 	for _, item := range c.data.List {
 		// skip fund with given candidate key
-		if bytes.Compare(item.CandidateKey, candidateKey) == 0 {
+		if bytes.Equal(item.CandidateKey, candidateKey) {
 			continue
 		}
 

@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
+	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/gorilla/mux"
 	"github.com/tendermint/tendermint/libs/common"
-	"github.com/tendermint/tendermint/types"
 	"math/big"
 	"net/http"
 	"strconv"
@@ -20,7 +20,7 @@ type BlockResponse struct {
 	NumTxs       int64                      `json:"num_txs"`
 	TotalTxs     int64                      `json:"total_txs"`
 	Transactions []BlockTransactionResponse `json:"transactions"`
-	Precommits   []*types.Vote              `json:"precommits"`
+	Precommits   json.RawMessage            `json:"precommits"`
 }
 
 type BlockTransactionResponse struct {
@@ -34,6 +34,7 @@ type BlockTransactionResponse struct {
 	Payload     []byte            `json:"payload"`
 	ServiceData []byte            `json:"service_data"`
 	Gas         int64             `json:"gas"`
+	GasCoin     types.CoinSymbol  `json:"gas_coin"`
 	TxResult    ResponseDeliverTx `json:"tx_result"`
 }
 
@@ -65,8 +66,8 @@ func Block(w http.ResponseWriter, r *http.Request) {
 		sender, _ := tx.Sender()
 
 		txs[i] = BlockTransactionResponse{
-			Hash:        fmt.Sprintf("Mt%x", types.Tx(rawTx).Hash()),
-			RawTx:       fmt.Sprintf("%x", rawTx),
+			Hash:        fmt.Sprintf("Mt%x", rawTx.Hash()),
+			RawTx:       fmt.Sprintf("%x", []byte(rawTx)),
 			From:        sender.String(),
 			Nonce:       tx.Nonce,
 			GasPrice:    tx.GasPrice,
@@ -75,6 +76,7 @@ func Block(w http.ResponseWriter, r *http.Request) {
 			Payload:     tx.Payload,
 			ServiceData: tx.ServiceData,
 			Gas:         tx.Gas(),
+			GasCoin:     tx.GasCoin,
 			TxResult: ResponseDeliverTx{
 				Code:      blockResults.Results.DeliverTx[i].Code,
 				Data:      blockResults.Results.DeliverTx[i].Data,
@@ -87,13 +89,15 @@ func Block(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	precommits, _ := cdc.MarshalJSON(block.Block.LastCommit.Precommits)
+
 	response := BlockResponse{
 		Hash:         block.Block.Hash(),
 		Height:       block.Block.Height,
 		Time:         block.Block.Time,
 		NumTxs:       block.Block.NumTxs,
 		TotalTxs:     block.Block.TotalTxs,
-		Precommits:   block.Block.LastCommit.Precommits,
+		Precommits:   json.RawMessage(precommits),
 		Transactions: txs,
 	}
 

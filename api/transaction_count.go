@@ -7,7 +7,9 @@ import (
 	"net/http"
 )
 
-type TransactionCountResponse uint64
+type TransactionCountResponse struct {
+	Count uint64 `json:"count"`
+}
 
 func GetTransactionCount(w http.ResponseWriter, r *http.Request) {
 
@@ -20,7 +22,9 @@ func GetTransactionCount(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	json.NewEncoder(w).Encode(Response{
-		Code:   0,
-		Result: cState.GetNonce(address),
+		Code: 0,
+		Result: TransactionCountResponse{
+			Count: cState.GetNonce(address),
+		},
 	})
 }

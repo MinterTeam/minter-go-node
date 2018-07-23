@@ -24,7 +24,6 @@ import (
 	"reflect"
 
 	"bytes"
-	"github.com/MinterTeam/minter-go-node/crypto/sha3"
 	"github.com/MinterTeam/minter-go-node/hexutil"
 )
 
@@ -194,26 +193,8 @@ func (a Address) Bytes() []byte { return a[:] }
 func (a Address) Big() *big.Int { return new(big.Int).SetBytes(a[:]) }
 func (a Address) Hash() Hash    { return BytesToHash(a[:]) }
 
-// Hex returns an EIP55-compliant hex string representation of the address.
 func (a Address) Hex() string {
-	unchecksummed := hex.EncodeToString(a[:])
-	sha := sha3.NewKeccak256()
-	sha.Write([]byte(unchecksummed))
-	hash := sha.Sum(nil)
-
-	result := []byte(unchecksummed)
-	for i := 0; i < len(result); i++ {
-		hashByte := hash[i/2]
-		if i%2 == 0 {
-			hashByte = hashByte >> 4
-		} else {
-			hashByte &= 0xf
-		}
-		if result[i] > '9' && hashByte > 7 {
-			result[i] -= 32
-		}
-	}
-	return "Mx" + string(result)
+	return "Mx" + hex.EncodeToString(a[:])
 }
 
 // String implements the stringer interface and is used also by the logger.

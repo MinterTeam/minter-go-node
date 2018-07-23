@@ -13,25 +13,27 @@ Here is a list of current fees:
 +----------------------------------+---------------------+
 | Type                             | Fee                 |
 +==================================+=====================+
-| **TypeSend**                     | 10  units           |
+| **TypeSend**                     | 10 units            |
 +----------------------------------+---------------------+
-| **TypeSellCoin**                 | 100  units          |
+| **TypeSellCoin**                 | 100 units           |
 +----------------------------------+---------------------+
-| **TypeBuyCoin**                  | 100  units          |
+| **TypeSellAllCoin**              | 100 units           |
 +----------------------------------+---------------------+
-| **TypeCreateCoin**               | 1000  units         |
+| **TypeBuyCoin**                  | 100 units           |
 +----------------------------------+---------------------+
-| **TypeDeclareCandidacy**         | 10000  units        |
+| **TypeCreateCoin**               | 1000 units          |
 +----------------------------------+---------------------+
-| **TypeDelegate**                 | 100  units          |
+| **TypeDeclareCandidacy**         | 10000 units         |
 +----------------------------------+---------------------+
-| **TypeUnbond**                   | 100  units          |
+| **TypeDelegate**                 | 100 units           |
 +----------------------------------+---------------------+
-| **TypeRedeemCheck**              | 10  units           |
+| **TypeUnbond**                   | 100 units           |
 +----------------------------------+---------------------+
-| **TypeSetCandidateOnline**       | 100  units          |
+| **TypeRedeemCheck**              | 10 units            |
 +----------------------------------+---------------------+
-| **TypeSetCandidateOffline**      | 100  units          |
+| **TypeSetCandidateOnline**       | 100 units           |
++----------------------------------+---------------------+
+| **TypeSetCandidateOffline**      | 100 units           |
 +----------------------------------+---------------------+
 
 Also sender should pay extra 2 units per byte in Payload and Service Data fields.

@@ -1,6 +1,8 @@
 package helpers
 
-import "math/big"
+import (
+	"math/big"
+)
 
 func BipToPip(bip *big.Int) *big.Int {
 	p := big.NewInt(10)

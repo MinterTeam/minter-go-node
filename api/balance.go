@@ -7,7 +7,9 @@ import (
 	"net/http"
 )
 
-type BalanceResponse map[string]string
+type BalanceResponse struct {
+	Balance map[string]string `json:"balance"`
+}
 
 type BalanceRequest struct {
 	Address types.Address    `json:"address"`
@@ -21,15 +23,17 @@ func GetBalance(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	address := types.HexToAddress(vars["address"])
 
-	balance := BalanceResponse{}
+	balanceResponse := BalanceResponse{
+		Balance: make(map[string]string),
+	}
 	balances := cState.GetBalances(address)
 
 	for k, v := range balances.Data {
-		balance[k.String()] = v.String()
+		balanceResponse.Balance[k.String()] = v.String()
 	}
 
-	if _, exists := balance[types.GetBaseCoin().String()]; !exists {
-		balance[types.GetBaseCoin().String()] = "0"
+	if _, exists := balanceResponse.Balance[types.GetBaseCoin().String()]; !exists {
+		balanceResponse.Balance[types.GetBaseCoin().String()] = "0"
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
@@ -37,6 +41,6 @@ func GetBalance(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(Response{
 		Code:   0,
-		Result: balance,
+		Result: balanceResponse,
 	})
 }

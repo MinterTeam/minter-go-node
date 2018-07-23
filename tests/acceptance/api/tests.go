@@ -32,11 +32,7 @@ func TestApiStatus() error {
 
 	err = json.Unmarshal(data, &status)
 
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func TestApiBlock() error {
@@ -59,9 +55,5 @@ func TestApiBlock() error {
 
 	err = json.Unmarshal(data, &blockResult)
 
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }

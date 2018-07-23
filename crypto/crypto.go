@@ -198,9 +198,3 @@ func PubkeyToAddress(p ecdsa.PublicKey) types.Address {
 	pubBytes := FromECDSAPub(&p)
 	return types.BytesToAddress(Keccak256(pubBytes[1:])[12:])
 }
-
-func zeroBytes(bytes []byte) {
-	for i := range bytes {
-		bytes[i] = 0
-	}
-}

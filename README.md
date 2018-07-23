@@ -7,6 +7,7 @@ Minter is a blockchain network that lets people, projects, and companies issue a
 [![license](https://img.shields.io/github/license/MinterTeam/minter-go-node.svg)](https://github.com/MinterTeam/minter-go-node/blob/master/LICENSE)
 [![last-commit](https://img.shields.io/github/last-commit/MinterTeam/minter-go-node.svg)](https://github.com/MinterTeam/minter-go-node/commits/master)
 [![Documentation Status](//readthedocs.org/projects/minter-go-node/badge/?version=latest)](https://minter-go-node.readthedocs.io/en/latest/?badge=latest)
+[![Go Report Card](https://goreportcard.com/badge/github.com/MinterTeam/minter-go-node)](https://goreportcard.com/report/github.com/MinterTeam/minter-go-node)
 
 _NOTE: This is alpha software. Please contact us if you intend to run it in production._
 
@@ -33,7 +34,7 @@ interfaces exposed to other processes, but does not include the in-process Go AP
 
 In an effort to avoid accumulating technical debt prior to 1.0.0,
 we do not guarantee that breaking changes (ie. bumps in the MINOR version)
-will work with existing tendermint blockchains. In these cases you will
+will work with existing blockchain. In these cases you will
 have to start a new blockchain, or write something custom to get the old
 data into the new chain.
 

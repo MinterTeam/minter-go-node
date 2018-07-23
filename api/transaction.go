@@ -39,7 +39,7 @@ func Transaction(w http.ResponseWriter, r *http.Request) {
 		Code: 0,
 		Result: TransactionResponse{
 			Hash:   common.HexBytes(tx.Tx.Hash()),
-			RawTx:  fmt.Sprintf("%x", tx.Tx),
+			RawTx:  fmt.Sprintf("%x", []byte(tx.Tx)),
 			Height: tx.Height,
 			Index:  tx.Index,
 			TxResult: ResponseDeliverTx{
@@ -54,6 +54,7 @@ func Transaction(w http.ResponseWriter, r *http.Request) {
 			From:     sender.String(),
 			Nonce:    decodedTx.Nonce,
 			GasPrice: decodedTx.GasPrice,
+			GasCoin:  decodedTx.GasCoin,
 			Type:     decodedTx.Type,
 			Data:     decodedTx.GetDecodedData(),
 			Payload:  decodedTx.Payload,
