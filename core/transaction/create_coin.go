@@ -8,6 +8,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/tendermint/tendermint/libs/common"
 	"math/big"
 	"regexp"
@@ -62,8 +63,8 @@ func (data CreateCoinData) Run(sender types.Address, tx *Transaction, context *s
 			Log:  fmt.Sprintf("Invalid coin symbol. Should be %s", allowedCoinSymbols)}
 	}
 
-	commission := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
-	commission.Mul(commission, CommissionMultiplier)
+	commissionInBaseCoin := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
+	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
 
 	// compute additional price from letters count
 	lettersCount := len(data.Symbol.String())
@@ -85,14 +86,31 @@ func (data CreateCoinData) Run(sender types.Address, tx *Transaction, context *s
 	p := big.NewInt(10)
 	p.Exp(p, big.NewInt(18), nil)
 	p.Mul(p, big.NewInt(price))
-	commission.Add(commission, p)
+	commissionInBaseCoin.Add(commissionInBaseCoin, p)
+	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
-	totalTxCost := big.NewInt(0).Add(data.InitialReserve, commission)
+	if tx.GasCoin != types.GetBaseCoin() {
+		coin := context.GetStateCoin(tx.GasCoin)
 
-	if context.GetBalance(sender, types.GetBaseCoin()).Cmp(totalTxCost) < 0 {
+		if coin.ReserveBalance().Cmp(commissionInBaseCoin) < 0 {
+			return Response{
+				Code: code.CoinReserveNotSufficient,
+				Log:  fmt.Sprintf("Gas coin reserve balance is not sufficient for transaction. Has: %s %s, required %s %s", coin.ReserveBalance().String(), types.GetBaseCoin(), commissionInBaseCoin.String(), types.GetBaseCoin())}
+		}
+
+		commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
+	}
+
+	if context.GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
 		return Response{
 			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %d ", sender.String(), totalTxCost)}
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission.String(), tx.GasCoin)}
+	}
+
+	if context.GetBalance(sender, types.GetBaseCoin()).Cmp(data.InitialReserve) < 0 {
+		return Response{
+			Code: code.InsufficientFunds,
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), data.InitialReserve.String(), types.GetBaseCoin())}
 	}
 
 	if context.CoinExists(data.Symbol) {
@@ -108,9 +126,10 @@ func (data CreateCoinData) Run(sender types.Address, tx *Transaction, context *s
 	}
 
 	if !isCheck {
-		rewardPull.Add(rewardPull, commission)
+		rewardPull.Add(rewardPull, commissionInBaseCoin)
 
-		context.SubBalance(sender, types.GetBaseCoin(), totalTxCost)
+		context.SubBalance(sender, types.GetBaseCoin(), data.InitialReserve)
+		context.SubBalance(sender, tx.GasCoin, commission)
 		context.CreateCoin(data.Symbol, data.Name, data.InitialAmount, data.ConstantReserveRatio, data.InitialReserve, sender)
 		context.AddBalance(sender, data.Symbol, data.InitialAmount)
 		context.SetNonce(sender, tx.Nonce)

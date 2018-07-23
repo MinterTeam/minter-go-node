@@ -8,6 +8,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/formula"
 	"math/big"
 )
 
@@ -33,13 +34,26 @@ func (data SetCandidateOnData) Gas() int64 {
 }
 
 func (data SetCandidateOnData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPull *big.Int, currentBlock uint64) Response {
-	commission := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
-	commission.Mul(commission, CommissionMultiplier)
+	commissionInBaseCoin := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
+	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
+	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
-	if context.GetBalance(sender, types.GetBaseCoin()).Cmp(commission) < 0 {
+	if tx.GasCoin != types.GetBaseCoin() {
+		coin := context.GetStateCoin(tx.GasCoin)
+
+		if coin.ReserveBalance().Cmp(commissionInBaseCoin) < 0 {
+			return Response{
+				Code: code.CoinReserveNotSufficient,
+				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.ReserveBalance().String(), commissionInBaseCoin.String())}
+		}
+
+		commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
+	}
+
+	if context.GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
 		return Response{
 			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %d ", sender.String(), commission)}
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, tx.GasCoin)}
 	}
 
 	if !context.CandidateExists(data.PubKey) {
@@ -57,9 +71,9 @@ func (data SetCandidateOnData) Run(sender types.Address, tx *Transaction, contex
 	}
 
 	if !isCheck {
-		rewardPull.Add(rewardPull, commission)
+		rewardPull.Add(rewardPull, commissionInBaseCoin)
 
-		context.SubBalance(sender, types.GetBaseCoin(), commission)
+		context.SubBalance(sender, tx.GasCoin, commission)
 		context.SetCandidateOnline(data.PubKey)
 		context.SetNonce(sender, tx.Nonce)
 	}
@@ -93,19 +107,32 @@ func (data SetCandidateOffData) Gas() int64 {
 }
 
 func (data SetCandidateOffData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPull *big.Int, currentBlock uint64) Response {
-	commission := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
-	commission.Mul(commission, CommissionMultiplier)
+	commissionInBaseCoin := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
+	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
+	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
-	if context.GetBalance(sender, types.GetBaseCoin()).Cmp(commission) < 0 {
+	if tx.GasCoin != types.GetBaseCoin() {
+		coin := context.GetStateCoin(tx.GasCoin)
+
+		if coin.ReserveBalance().Cmp(commissionInBaseCoin) < 0 {
+			return Response{
+				Code: code.CoinReserveNotSufficient,
+				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.ReserveBalance().String(), commissionInBaseCoin.String())}
+		}
+
+		commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
+	}
+
+	if context.GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
 		return Response{
 			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %d ", sender.String(), commission)}
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, tx.GasCoin)}
 	}
 
 	if !context.CandidateExists(data.PubKey) {
 		return Response{
 			Code: code.CandidateNotFound,
-			Log:  fmt.Sprintf("Candidate with such public key not found")}
+			Log:  fmt.Sprintf("Candidate with such public key (%x) not found", data.PubKey)}
 	}
 
 	candidate := context.GetStateCandidate(data.PubKey)
@@ -117,9 +144,9 @@ func (data SetCandidateOffData) Run(sender types.Address, tx *Transaction, conte
 	}
 
 	if !isCheck {
-		rewardPull.Add(rewardPull, commission)
+		rewardPull.Add(rewardPull, commissionInBaseCoin)
 
-		context.SubBalance(sender, types.GetBaseCoin(), commission)
+		context.SubBalance(sender, tx.GasCoin, commission)
 		context.SetCandidateOffline(data.PubKey)
 		context.SetNonce(sender, tx.Nonce)
 	}

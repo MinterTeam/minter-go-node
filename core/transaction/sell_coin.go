@@ -63,8 +63,8 @@ func (data SellCoinData) Run(sender types.Address, tx *Transaction, context *sta
 	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
-	if data.CoinToSell != types.GetBaseCoin() {
-		coin := context.GetStateCoin(data.CoinToSell)
+	if tx.GasCoin != types.GetBaseCoin() {
+		coin := context.GetStateCoin(tx.GasCoin)
 
 		if coin.ReserveBalance().Cmp(commissionInBaseCoin) < 0 {
 			return Response{
@@ -75,22 +75,21 @@ func (data SellCoinData) Run(sender types.Address, tx *Transaction, context *sta
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
 	}
 
-	totalTxCost := big.NewInt(0).Add(data.ValueToSell, commission)
-
-	if context.GetBalance(sender, data.CoinToSell).Cmp(totalTxCost) < 0 {
+	if context.GetBalance(sender, data.CoinToSell).Cmp(data.ValueToSell) < 0 {
 		return Response{
 			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %d ", sender.String(), totalTxCost)}
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %d ", sender.String(), data.ValueToSell)}
 	}
 
 	if !isCheck {
 		rewardPull.Add(rewardPull, commissionInBaseCoin)
 
-		context.SubBalance(sender, data.CoinToSell, totalTxCost)
+		context.SubBalance(sender, data.CoinToSell, data.ValueToSell)
+		context.SubBalance(sender, tx.GasCoin, commission)
 
-		if data.CoinToSell != types.GetBaseCoin() {
-			context.SubCoinVolume(data.CoinToSell, commission)
-			context.SubCoinReserve(data.CoinToSell, commissionInBaseCoin)
+		if tx.GasCoin != types.GetBaseCoin() {
+			context.SubCoinVolume(tx.GasCoin, commission)
+			context.SubCoinReserve(tx.GasCoin, commissionInBaseCoin)
 		}
 	}
 

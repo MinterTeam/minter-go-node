@@ -59,8 +59,8 @@ func (data DeclareCandidacyData) Run(sender types.Address, tx *Transaction, cont
 	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
-	if data.Coin != types.GetBaseCoin() {
-		coin := context.GetStateCoin(data.Coin)
+	if tx.GasCoin != types.GetBaseCoin() {
+		coin := context.GetStateCoin(tx.GasCoin)
 
 		if coin.ReserveBalance().Cmp(commissionInBaseCoin) < 0 {
 			return Response{
@@ -71,12 +71,16 @@ func (data DeclareCandidacyData) Run(sender types.Address, tx *Transaction, cont
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
 	}
 
-	totalTxCost := big.NewInt(0).Add(data.Stake, commission)
-
-	if context.GetBalance(sender, data.Coin).Cmp(totalTxCost) < 0 {
+	if context.GetBalance(sender, data.Coin).Cmp(data.Stake) < 0 {
 		return Response{
 			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %d ", sender.String(), totalTxCost)}
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), data.Stake, data.Coin)}
+	}
+
+	if context.GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
+		return Response{
+			Code: code.InsufficientFunds,
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, tx.GasCoin)}
 	}
 
 	if context.CandidateExists(data.PubKey) {
@@ -94,9 +98,10 @@ func (data DeclareCandidacyData) Run(sender types.Address, tx *Transaction, cont
 	// TODO: limit number of candidates to prevent flooding
 
 	if !isCheck {
-		rewardPull.Add(rewardPull, commission)
+		rewardPull.Add(rewardPull, commissionInBaseCoin)
 
-		context.SubBalance(sender, data.Coin, totalTxCost)
+		context.SubBalance(sender, data.Coin, data.Stake)
+		context.SubBalance(sender, tx.GasCoin, commission)
 		context.CreateCandidate(data.Address, data.PubKey, data.Commission, uint(currentBlock), data.Coin, data.Stake)
 		context.SetNonce(sender, tx.Nonce)
 	}

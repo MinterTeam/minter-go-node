@@ -51,8 +51,8 @@ func (data SendData) Run(sender types.Address, tx *Transaction, context *state.S
 	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
-	if data.Coin != types.GetBaseCoin() {
-		coin := context.GetStateCoin(data.Coin)
+	if tx.GasCoin != types.GetBaseCoin() {
+		coin := context.GetStateCoin(tx.GasCoin)
 
 		if coin.ReserveBalance().Cmp(commissionInBaseCoin) < 0 {
 			return Response{
@@ -63,23 +63,28 @@ func (data SendData) Run(sender types.Address, tx *Transaction, context *state.S
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
 	}
 
-	totalTxCost := big.NewInt(0).Add(data.Value, commission)
-
-	if context.GetBalance(sender, data.Coin).Cmp(totalTxCost) < 0 {
+	if context.GetBalance(sender, data.Coin).Cmp(data.Value) < 0 {
 		return Response{
 			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %d ", sender.String(), totalTxCost)}
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), data.Value, data.Coin)}
+	}
+
+	if context.GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
+		return Response{
+			Code: code.InsufficientFunds,
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), data.Value, tx.GasCoin)}
 	}
 
 	if !isCheck {
 		rewardPull.Add(rewardPull, commissionInBaseCoin)
 
-		if data.Coin != types.GetBaseCoin() {
-			context.SubCoinVolume(data.Coin, commission)
-			context.SubCoinReserve(data.Coin, commissionInBaseCoin)
+		if tx.GasCoin != types.GetBaseCoin() {
+			context.SubCoinVolume(tx.GasCoin, commission)
+			context.SubCoinReserve(tx.GasCoin, commissionInBaseCoin)
 		}
 
-		context.SubBalance(sender, data.Coin, totalTxCost)
+		context.SubBalance(sender, tx.GasCoin, commission)
+		context.SubBalance(sender, data.Coin, data.Value)
 		context.AddBalance(data.To, data.Coin, data.Value)
 		context.SetNonce(sender, tx.Nonce)
 	}

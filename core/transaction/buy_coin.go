@@ -47,32 +47,44 @@ func (data BuyCoinData) Run(sender types.Address, tx *Transaction, context *stat
 			Log:  fmt.Sprintf("\"From\" coin equals to \"to\" coin")}
 	}
 
+	if !context.CoinExists(tx.GasCoin) {
+		return Response{
+			Code: code.CoinNotExists,
+			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin)}
+	}
+
 	if !context.CoinExists(data.CoinToSell) {
 		return Response{
 			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin not exists")}
+			Log:  fmt.Sprintf("Coin %s not exists", data.CoinToSell)}
 	}
 
 	if !context.CoinExists(data.CoinToBuy) {
 		return Response{
 			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin not exists")}
+			Log:  fmt.Sprintf("Coin %s not exists", data.CoinToBuy)}
 	}
 
 	commissionInBaseCoin := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
 	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
-	if data.CoinToSell != types.GetBaseCoin() {
-		coin := context.GetStateCoin(data.CoinToSell)
+	if tx.GasCoin != types.GetBaseCoin() {
+		coin := context.GetStateCoin(tx.GasCoin)
 
 		if coin.ReserveBalance().Cmp(commissionInBaseCoin) < 0 {
 			return Response{
 				Code: code.CoinReserveNotSufficient,
-				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.ReserveBalance().String(), commissionInBaseCoin.String())}
+				Log:  fmt.Sprintf("Gas coin reserve balance is not sufficient for transaction. Has: %s %s, required %s %s", coin.ReserveBalance().String(), types.GetBaseCoin(), commissionInBaseCoin.String(), types.GetBaseCoin())}
 		}
 
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
+	}
+
+	if context.GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
+		return Response{
+			Code: code.InsufficientFunds,
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s.", sender.String(), commission.String(), tx.GasCoin)}
 	}
 
 	var value *big.Int
@@ -82,11 +94,10 @@ func (data BuyCoinData) Run(sender types.Address, tx *Transaction, context *stat
 
 		value = formula.CalculatePurchaseAmount(coin.Volume, coin.ReserveBalance, coin.Crr, data.ValueToBuy)
 
-		totalTxCost := big.NewInt(0).Add(value, commission)
-		if context.GetBalance(sender, data.CoinToSell).Cmp(totalTxCost) < 0 {
+		if context.GetBalance(sender, data.CoinToSell).Cmp(value) < 0 {
 			return Response{
 				Code: code.InsufficientFunds,
-				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %d ", sender.String(), totalTxCost)}
+				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), value.String(), data.CoinToSell)}
 		}
 
 		if !isCheck {
@@ -103,7 +114,7 @@ func (data BuyCoinData) Run(sender types.Address, tx *Transaction, context *stat
 		if context.GetBalance(sender, data.CoinToSell).Cmp(totalTxCost) < 0 {
 			return Response{
 				Code: code.InsufficientFunds,
-				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %d ", sender.String(), totalTxCost)}
+				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s ", sender.String(), totalTxCost.String(), data.CoinToSell)}
 		}
 
 		if !isCheck {
@@ -118,11 +129,10 @@ func (data BuyCoinData) Run(sender types.Address, tx *Transaction, context *stat
 		baseCoinNeeded := formula.CalculatePurchaseAmount(coinTo.Volume, coinTo.ReserveBalance, coinTo.Crr, data.ValueToBuy)
 		value = formula.CalculateSaleAmount(coinFrom.Volume, coinFrom.ReserveBalance, coinFrom.Crr, baseCoinNeeded)
 
-		totalTxCost := big.NewInt(0).Add(value, commission)
-		if context.GetBalance(sender, data.CoinToSell).Cmp(totalTxCost) < 0 {
+		if context.GetBalance(sender, data.CoinToSell).Cmp(value) < 0 {
 			return Response{
 				Code: code.InsufficientFunds,
-				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %d ", sender.String(), totalTxCost)}
+				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), value.String(), data.CoinToSell)}
 		}
 
 		if !isCheck {
@@ -139,11 +149,11 @@ func (data BuyCoinData) Run(sender types.Address, tx *Transaction, context *stat
 	if !isCheck {
 		rewardPull.Add(rewardPull, commissionInBaseCoin)
 
-		context.SubBalance(sender, data.CoinToSell, commission)
+		context.SubBalance(sender, tx.GasCoin, commission)
 
-		if data.CoinToSell != types.GetBaseCoin() {
-			context.SubCoinVolume(data.CoinToSell, commission)
-			context.SubCoinReserve(data.CoinToSell, commissionInBaseCoin)
+		if tx.GasCoin != types.GetBaseCoin() {
+			context.SubCoinVolume(tx.GasCoin, commission)
+			context.SubCoinReserve(tx.GasCoin, commissionInBaseCoin)
 		}
 
 		context.AddBalance(sender, data.CoinToBuy, value)
