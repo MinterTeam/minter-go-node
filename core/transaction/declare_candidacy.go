@@ -49,6 +49,13 @@ func (data DeclareCandidacyData) Gas() int64 {
 }
 
 func (data DeclareCandidacyData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPull *big.Int, currentBlock uint64) Response {
+
+	if !context.CoinExists(tx.GasCoin) {
+		return Response{
+			Code: code.CoinNotExists,
+			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin)}
+	}
+
 	if len(data.PubKey) != 32 {
 		return Response{
 			Code: code.IncorrectPubKey,

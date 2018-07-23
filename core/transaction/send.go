@@ -44,7 +44,13 @@ func (data SendData) Run(sender types.Address, tx *Transaction, context *state.S
 	if !context.CoinExists(data.Coin) {
 		return Response{
 			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin not exists")}
+			Log:  fmt.Sprintf("Coin %s not exists", data.Coin)}
+	}
+
+	if !context.CoinExists(tx.GasCoin) {
+		return Response{
+			Code: code.CoinNotExists,
+			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin)}
 	}
 
 	commissionInBaseCoin := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
