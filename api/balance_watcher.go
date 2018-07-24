@@ -5,8 +5,8 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
+	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/gorilla/websocket"
-	"log"
 	"math/big"
 	"net/http"
 )
@@ -21,7 +21,7 @@ func init() {
 func GetBalanceWatcher(w http.ResponseWriter, r *http.Request) {
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Fatal(err)
+		log.Error(err.Error())
 	}
 
 	clients[ws] = true
@@ -29,29 +29,38 @@ func GetBalanceWatcher(w http.ResponseWriter, r *http.Request) {
 
 func handleBalanceChanges() {
 	for {
-		msg := <-state.BalanceChangeChan
+		handleBalanceChange(<-state.BalanceChangeChan)
+	}
+}
 
-		balanceInBasecoin := big.NewInt(0)
+func handleBalanceChange(msg state.BalanceChangeStruct) {
 
-		if msg.Coin == types.GetBaseCoin() {
-			balanceInBasecoin = msg.Balance
-		} else {
-			sCoin := minter.GetBlockchain().CurrentState().GetStateCoin(msg.Coin)
-
-			if sCoin != nil {
-				balanceInBasecoin = formula.CalculateSaleReturn(sCoin.Data().Volume, sCoin.Data().ReserveBalance, sCoin.Data().Crr, msg.Balance)
-			}
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("Error in balance change handler")
 		}
+	}()
 
-		msg.BalanceInBasecoin = balanceInBasecoin
+	balanceInBasecoin := big.NewInt(0)
 
-		for client := range clients {
-			err := client.WriteJSON(msg)
-			if err != nil {
-				log.Printf("ws error: %v", err)
-				client.Close()
-				delete(clients, client)
-			}
+	if msg.Coin == types.GetBaseCoin() {
+		balanceInBasecoin = msg.Balance
+	} else {
+		sCoin := minter.GetBlockchain().CurrentState().GetStateCoin(msg.Coin)
+
+		if sCoin != nil {
+			balanceInBasecoin = formula.CalculateSaleReturn(sCoin.Data().Volume, sCoin.Data().ReserveBalance, sCoin.Data().Crr, msg.Balance)
+		}
+	}
+
+	msg.BalanceInBasecoin = balanceInBasecoin
+
+	for client := range clients {
+		err := client.WriteJSON(msg)
+		if err != nil {
+			log.Info("ws error: %v", err)
+			client.Close()
+			delete(clients, client)
 		}
 	}
 }
