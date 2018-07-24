@@ -15,7 +15,7 @@ import (
 
 func GetTestnetGenesis() *tmtypes.GenesisDoc {
 
-	validatorPubKeyBytes, _ := base64.StdEncoding.DecodeString("qu4d3zD/VMkHFdkotWZS/FEb7Tci5Ylz6O+Ub12uOXk=")
+	validatorPubKeyBytes, _ := base64.StdEncoding.DecodeString("SuHuc+YTbIWwypM6mhNHdYozSIXxCzI4OYpnrC6xU7g=")
 	var validatorPubKey crypto.PubKeyEd25519
 	copy(validatorPubKey[:], validatorPubKeyBytes)
 
