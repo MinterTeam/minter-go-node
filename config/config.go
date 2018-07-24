@@ -10,7 +10,7 @@ var config = tmConfig.DefaultConfig()
 
 func GetConfig() *tmConfig.Config {
 
-	config.P2P.PersistentPeers = "249c62818bf4601605a65b5adc35278236bd5312@95.216.148.138:26656"
+	config.P2P.PersistentPeers = "647e32df3b9c54809b5aca2877d9ba60900bc2d9@minter-node-1.testnet.minter.network:26656"
 
 	config.Moniker = "MinterNode"
 
