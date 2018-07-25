@@ -6,20 +6,29 @@ import (
 	"encoding/json"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/helpers"
-	"github.com/tendermint/tendermint/crypto"
+	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/libs/common"
 	tmtypes "github.com/tendermint/tendermint/types"
 	"math/big"
 	"time"
 )
 
-func GetTestnetGenesis() *tmtypes.GenesisDoc {
+func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
 
-	validatorPubKeyBytes, _ := base64.StdEncoding.DecodeString("SuHuc+YTbIWwypM6mhNHdYozSIXxCzI4OYpnrC6xU7g=")
-	var validatorPubKey crypto.PubKeyEd25519
+	validatorPubKeyBytes, err := base64.StdEncoding.DecodeString("SuHuc+YTbIWwypM6mhNHdYozSIXxCzI4OYpnrC6xU7g=")
+
+	if err != nil {
+		return nil, err
+	}
+
+	var validatorPubKey ed25519.PubKeyEd25519
 	copy(validatorPubKey[:], validatorPubKeyBytes)
 
-	appHash, _ := hex.DecodeString("0000000000000000000000000000000000000000000000000000000000000000")
+	appHash, err := hex.DecodeString("0000000000000000000000000000000000000000000000000000000000000000")
+
+	if err != nil {
+		return nil, err
+	}
 
 	appState := AppState{
 		FirstValidatorAddress: types.HexToAddress("Mxa93163fdf10724dc4785ff5cbfb9ac0b5949409f"),
@@ -39,7 +48,11 @@ func GetTestnetGenesis() *tmtypes.GenesisDoc {
 		},
 	}
 
-	appStateJSON, _ := json.Marshal(appState)
+	appStateJSON, err := json.Marshal(appState)
+
+	if err != nil {
+		return nil, err
+	}
 
 	genesis := tmtypes.GenesisDoc{
 		GenesisTime:     time.Date(2018, 7, 23, 0, 0, 0, 0, time.UTC),
@@ -55,9 +68,13 @@ func GetTestnetGenesis() *tmtypes.GenesisDoc {
 		AppState: json.RawMessage([]byte(appStateJSON)),
 	}
 
-	genesis.ValidateAndComplete()
+	err = genesis.ValidateAndComplete()
 
-	return &genesis
+	if err != nil {
+		return nil, err
+	}
+
+	return &genesis, nil
 }
 
 type AppState struct {

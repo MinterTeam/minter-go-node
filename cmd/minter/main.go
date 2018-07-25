@@ -13,7 +13,6 @@ import (
 	tmNode "github.com/tendermint/tendermint/node"
 	"github.com/tendermint/tendermint/privval"
 	"github.com/tendermint/tendermint/proxy"
-	"github.com/tendermint/tendermint/types"
 	"os"
 )
 
@@ -52,9 +51,7 @@ func startTendermintNode(app *minter.Blockchain) *tmNode.Node {
 		cfg,
 		privval.LoadOrGenFilePV(cfg.PrivValidatorFile()),
 		proxy.NewLocalClientCreator(app),
-		func() (*types.GenesisDoc, error) {
-			return genesis.GetTestnetGenesis(), nil
-		},
+		genesis.GetTestnetGenesis,
 		tmNode.DefaultDBProvider,
 		tmNode.DefaultMetricsProvider,
 		log.With("module", "tendermint"),
