@@ -11,7 +11,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/minter"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/tendermint/go-amino"
-	"github.com/tendermint/tendermint/crypto"
+	"github.com/tendermint/tendermint/crypto/encoding/amino"
 	"github.com/tendermint/tendermint/node"
 	rpc "github.com/tendermint/tendermint/rpc/client"
 	"strconv"
@@ -25,7 +25,7 @@ var (
 )
 
 func init() {
-	crypto.RegisterAmino(cdc)
+	cryptoAmino.RegisterAmino(cdc)
 }
 
 func RunApi(b *minter.Blockchain, node *node.Node) {

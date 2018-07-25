@@ -31,15 +31,15 @@
 
 [[constraint]]
   name = "github.com/gobuffalo/packr"
-  version = "1.11.1"
+  version = "=1.11.1"
 
 [[constraint]]
   name = "github.com/gorilla/mux"
-  version = "1.6.2"
+  version = "=1.6.2"
 
 [[constraint]]
   name = "github.com/gorilla/websocket"
-  version = "1.2.0"
+  version = "=1.2.0"
 
 [[constraint]]
   branch = "master"
@@ -51,7 +51,7 @@
 
 [[constraint]]
   name = "github.com/rs/cors"
-  version = "1.4.0"
+  version = "=1.4.0"
 
 [[constraint]]
   branch = "master"
@@ -59,11 +59,11 @@
 
 [[constraint]]
   name = "github.com/tendermint/go-amino"
-  version = "0.10.1"
+  version = "=v0.11.1"
 
 [[constraint]]
   name = "github.com/tendermint/tendermint"
-  version = "0.22.4"
+  version = "v0.22.5"
 
 [[constraint]]
   branch = "v1"

@@ -7,14 +7,12 @@ import (
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/minter"
 	"github.com/MinterTeam/minter-go-node/genesis"
+	"github.com/MinterTeam/minter-go-node/gui"
 	"github.com/MinterTeam/minter-go-node/log"
-	"github.com/gobuffalo/packr"
 	"github.com/tendermint/tendermint/libs/common"
 	tmNode "github.com/tendermint/tendermint/node"
 	"github.com/tendermint/tendermint/privval"
 	"github.com/tendermint/tendermint/proxy"
-	"github.com/tendermint/tendermint/types"
-	"net/http"
 	"os"
 )
 
@@ -32,10 +30,9 @@ func main() {
 
 	app.RunRPC(node)
 
-	go runGUI()
-
 	if !*utils.DisableApi {
 		go api.RunApi(app, node)
+		go gui.Run(":3000")
 	}
 
 	// Wait forever
@@ -46,13 +43,6 @@ func main() {
 	})
 }
 
-func runGUI() {
-	box := packr.NewBox("./../../gui")
-
-	http.Handle("/", http.FileServer(box))
-	log.Error(http.ListenAndServe(":3000", nil).Error())
-}
-
 func startTendermintNode(app *minter.Blockchain) *tmNode.Node {
 
 	cfg := config.GetConfig()
@@ -61,9 +51,7 @@ func startTendermintNode(app *minter.Blockchain) *tmNode.Node {
 		cfg,
 		privval.LoadOrGenFilePV(cfg.PrivValidatorFile()),
 		proxy.NewLocalClientCreator(app),
-		func() (*types.GenesisDoc, error) {
-			return genesis.GetTestnetGenesis(), nil
-		},
+		genesis.GetTestnetGenesis,
 		tmNode.DefaultDBProvider,
 		tmNode.DefaultMetricsProvider,
 		log.With("module", "tendermint"),
