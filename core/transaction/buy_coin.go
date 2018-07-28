@@ -122,11 +122,10 @@ func (data BuyCoinData) Run(sender types.Address, tx *Transaction, context *stat
 
 		value = formula.CalculateSaleAmount(coin.Volume, coin.ReserveBalance, coin.Crr, data.ValueToBuy)
 
-		totalTxCost := big.NewInt(0).Add(value, commission)
-		if context.GetBalance(sender, data.CoinToSell).Cmp(totalTxCost) < 0 {
+		if context.GetBalance(sender, data.CoinToSell).Cmp(value) < 0 {
 			return Response{
 				Code: code.InsufficientFunds,
-				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), totalTxCost.String(), data.CoinToSell)}
+				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), value.String(), data.CoinToSell)}
 		}
 
 		if data.CoinToSell == tx.GasCoin {
