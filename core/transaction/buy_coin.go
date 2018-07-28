@@ -69,7 +69,7 @@ func (data BuyCoinData) Run(sender types.Address, tx *Transaction, context *stat
 	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
-	if tx.GasCoin != types.GetBaseCoin() {
+	if !tx.GasCoin.IsBaseCoin() {
 		coin := context.GetStateCoin(tx.GasCoin)
 
 		if coin.ReserveBalance().Cmp(commissionInBaseCoin) < 0 {
@@ -89,7 +89,7 @@ func (data BuyCoinData) Run(sender types.Address, tx *Transaction, context *stat
 
 	var value *big.Int
 
-	if data.CoinToSell == types.GetBaseCoin() {
+	if data.CoinToSell.IsBaseCoin() {
 		coin := context.GetStateCoin(data.CoinToBuy).Data()
 
 		value = formula.CalculatePurchaseAmount(coin.Volume, coin.ReserveBalance, coin.Crr, data.ValueToBuy)
@@ -117,7 +117,7 @@ func (data BuyCoinData) Run(sender types.Address, tx *Transaction, context *stat
 			context.AddCoinVolume(data.CoinToBuy, data.ValueToBuy)
 			context.AddCoinReserve(data.CoinToBuy, value)
 		}
-	} else if data.CoinToBuy == types.GetBaseCoin() {
+	} else if data.CoinToBuy.IsBaseCoin() {
 		coin := context.GetStateCoin(data.CoinToSell).Data()
 
 		value = formula.CalculateSaleAmount(coin.Volume, coin.ReserveBalance, coin.Crr, data.ValueToBuy)
@@ -187,7 +187,7 @@ func (data BuyCoinData) Run(sender types.Address, tx *Transaction, context *stat
 
 		context.SubBalance(sender, tx.GasCoin, commission)
 
-		if tx.GasCoin != types.GetBaseCoin() {
+		if !tx.GasCoin.IsBaseCoin() {
 			context.SubCoinVolume(tx.GasCoin, commission)
 			context.SubCoinReserve(tx.GasCoin, commissionInBaseCoin)
 		}
