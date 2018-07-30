@@ -47,13 +47,6 @@ func (data DelegateData) Run(sender types.Address, tx *Transaction, context *sta
 			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin)}
 	}
 
-	// temporary
-	if !data.Coin.IsBaseCoin() {
-		return Response{
-			Code: 1,
-			Log:  fmt.Sprintf("Staking is only available in basecoin for now")}
-	}
-
 	commissionInBaseCoin := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
 	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
