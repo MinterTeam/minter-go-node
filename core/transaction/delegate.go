@@ -31,7 +31,7 @@ func (data DelegateData) MarshalJSON() ([]byte, error) {
 }
 
 func (data DelegateData) String() string {
-	return fmt.Sprintf("DELEGATE ubkey:%s ",
+	return fmt.Sprintf("DELEGATE pubkey:%s ",
 		hexutil.Encode(data.PubKey[:]))
 }
 
