@@ -122,7 +122,7 @@ func (data RedeemCheckData) Run(sender types.Address, tx *Transaction, context *
 	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
-	if decodedCheck.Coin != types.GetBaseCoin() {
+	if !decodedCheck.Coin.IsBaseCoin() {
 		coin := context.GetStateCoin(decodedCheck.Coin)
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
 	}
@@ -139,7 +139,7 @@ func (data RedeemCheckData) Run(sender types.Address, tx *Transaction, context *
 		context.UseCheck(decodedCheck)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		if decodedCheck.Coin != types.GetBaseCoin() {
+		if !decodedCheck.Coin.IsBaseCoin() {
 			context.SubCoinVolume(decodedCheck.Coin, commission)
 			context.SubCoinReserve(decodedCheck.Coin, commissionInBaseCoin)
 		}
