@@ -191,7 +191,7 @@ func (data BuyCoinData) Run(sender types.Address, tx *Transaction, context *stat
 			context.SubCoinReserve(tx.GasCoin, commissionInBaseCoin)
 		}
 
-		context.AddBalance(sender, data.CoinToBuy, value)
+		context.AddBalance(sender, data.CoinToBuy, data.ValueToBuy)
 		context.SetNonce(sender, tx.Nonce)
 	}
 
