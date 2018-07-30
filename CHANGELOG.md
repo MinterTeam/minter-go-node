@@ -4,6 +4,17 @@
 
 - [api] Add validators rewards to block api
 
+## 0.1.6
+*Jule 30th, 2018*
+
+BREAKING CHANGES
+
+- [testnet] New testnet id
+
+BUG FIXES
+
+- [core] Fixed critical bug
+
 ## 0.1.5
 *Jule 28th, 2018*
 
