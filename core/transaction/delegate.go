@@ -39,7 +39,7 @@ func (data DelegateData) Gas() int64 {
 	return commissions.DelegateTx
 }
 
-func (data DelegateData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPull *big.Int, currentBlock uint64) Response {
+func (data DelegateData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
 
 	if !context.CoinExists(tx.GasCoin) {
 		return Response{
@@ -94,7 +94,7 @@ func (data DelegateData) Run(sender types.Address, tx *Transaction, context *sta
 	}
 
 	if !isCheck {
-		rewardPull.Add(rewardPull, commissionInBaseCoin)
+		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
 		context.SubBalance(sender, tx.GasCoin, commission)
 		context.SubBalance(sender, data.Coin, data.Stake)

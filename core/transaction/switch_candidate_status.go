@@ -33,7 +33,7 @@ func (data SetCandidateOnData) Gas() int64 {
 	return commissions.ToggleCandidateStatus
 }
 
-func (data SetCandidateOnData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPull *big.Int, currentBlock uint64) Response {
+func (data SetCandidateOnData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
 
 	if !context.CoinExists(tx.GasCoin) {
 		return Response{
@@ -78,7 +78,7 @@ func (data SetCandidateOnData) Run(sender types.Address, tx *Transaction, contex
 	}
 
 	if !isCheck {
-		rewardPull.Add(rewardPull, commissionInBaseCoin)
+		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
 		context.SubBalance(sender, tx.GasCoin, commission)
 		context.SetCandidateOnline(data.PubKey)
@@ -113,7 +113,7 @@ func (data SetCandidateOffData) Gas() int64 {
 	return commissions.ToggleCandidateStatus
 }
 
-func (data SetCandidateOffData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPull *big.Int, currentBlock uint64) Response {
+func (data SetCandidateOffData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
 
 	if !context.CoinExists(tx.GasCoin) {
 		return Response{
@@ -158,7 +158,7 @@ func (data SetCandidateOffData) Run(sender types.Address, tx *Transaction, conte
 	}
 
 	if !isCheck {
-		rewardPull.Add(rewardPull, commissionInBaseCoin)
+		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
 		context.SubBalance(sender, tx.GasCoin, commission)
 		context.SetCandidateOffline(data.PubKey)

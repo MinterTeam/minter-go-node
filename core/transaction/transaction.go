@@ -53,7 +53,7 @@ type Data interface {
 	MarshalJSON() ([]byte, error)
 	String() string
 	Gas() int64
-	Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPull *big.Int, currentBlock uint64) Response
+	Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response
 }
 
 func (tx *Transaction) Serialize() ([]byte, error) {

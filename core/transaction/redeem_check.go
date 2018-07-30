@@ -41,7 +41,7 @@ func (data RedeemCheckData) Gas() int64 {
 	return commissions.SendTx
 }
 
-func (data RedeemCheckData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPull *big.Int, currentBlock uint64) Response {
+func (data RedeemCheckData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
 	decodedCheck, err := check.DecodeFromBytes(data.RawCheck)
 
 	if err != nil {
@@ -137,7 +137,7 @@ func (data RedeemCheckData) Run(sender types.Address, tx *Transaction, context *
 
 	if !isCheck {
 		context.UseCheck(decodedCheck)
-		rewardPull.Add(rewardPull, commissionInBaseCoin)
+		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
 		if decodedCheck.Coin != types.GetBaseCoin() {
 			context.SubCoinVolume(decodedCheck.Coin, commission)
