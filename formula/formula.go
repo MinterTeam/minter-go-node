@@ -96,19 +96,20 @@ func CalculateSaleReturn(supply *big.Int, reserve *big.Int, crr uint, sellAmount
 }
 
 // reversed function CalculateSaleReturn
+// -(-1 + (-(wantReceive - reserve)/reserve)^(1/crr)) * supply
 func CalculateSaleAmount(supply *big.Int, reserve *big.Int, crr uint, wantReceive *big.Int) *big.Int {
 
 	tSupply := newFloat(0).SetInt(supply)
 	tReserve := newFloat(0).SetInt(reserve)
 	tWantReceive := newFloat(0).SetInt(wantReceive)
 
-	res := newFloat(0).Sub(tWantReceive, tReserve)
-	res.Mul(res, newFloat(-1))
-	res.Quo(res, tReserve)
-	res = math.Pow(res, newFloat(float64(crr)/100))
-	res.Add(res, newFloat(-1))
-	res.Mul(res, newFloat(-1))
-	res.Mul(res, tSupply)
+	res := newFloat(0).Sub(tWantReceive, tReserve)  // (wantReceive - reserve)
+	res.Neg(res)                                    // -(wantReceive - reserve)
+	res.Quo(res, tReserve)                          // -(wantReceive - reserve)/reserve
+	res = math.Pow(res, newFloat(float64(crr)/100)) // (-(wantReceive - reserve)/reserve)^(1/crr)
+	res.Add(res, newFloat(-1))                      // -1 + (-(wantReceive - reserve)/reserve)^(1/crr)
+	res.Neg(res)                                    // -(-1 + (-(wantReceive - reserve)/reserve)^(1/crr))
+	res.Mul(res, tSupply)                           // -(-1 + (-(wantReceive - reserve)/reserve)^(1/crr)) * supply
 
 	result, _ := res.Int(nil)
 

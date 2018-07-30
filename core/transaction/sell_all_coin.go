@@ -30,14 +30,14 @@ func (data SellAllCoinData) MarshalJSON() ([]byte, error) {
 
 func (data SellAllCoinData) String() string {
 	return fmt.Sprintf("SELL ALL COIN sell:%s buy:%s",
-		data.CoinToBuy.String(), data.CoinToSell.String())
+		data.CoinToSell.String(), data.CoinToBuy.String())
 }
 
 func (data SellAllCoinData) Gas() int64 {
 	return commissions.ConvertTx
 }
 
-func (data SellAllCoinData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPull *big.Int, currentBlock uint64) Response {
+func (data SellAllCoinData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
 	if data.CoinToSell == data.CoinToBuy {
 		return Response{
 			Code: code.CrossConvert,
@@ -62,7 +62,7 @@ func (data SellAllCoinData) Run(sender types.Address, tx *Transaction, context *
 	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
-	if data.CoinToSell != types.GetBaseCoin() {
+	if !data.CoinToSell.IsBaseCoin() {
 		coin := context.GetStateCoin(data.CoinToSell)
 
 		if coin.ReserveBalance().Cmp(commissionInBaseCoin) < 0 {
@@ -84,11 +84,11 @@ func (data SellAllCoinData) Run(sender types.Address, tx *Transaction, context *
 	amountToSell.Sub(amountToSell, commission)
 
 	if !isCheck {
-		rewardPull.Add(rewardPull, commissionInBaseCoin)
+		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
 		context.SubBalance(sender, data.CoinToSell, available)
 
-		if data.CoinToSell != types.GetBaseCoin() {
+		if !data.CoinToSell.IsBaseCoin() {
 			context.SubCoinVolume(data.CoinToSell, commission)
 			context.SubCoinReserve(data.CoinToSell, commissionInBaseCoin)
 		}
@@ -96,7 +96,7 @@ func (data SellAllCoinData) Run(sender types.Address, tx *Transaction, context *
 
 	var value *big.Int
 
-	if data.CoinToSell == types.GetBaseCoin() {
+	if data.CoinToSell.IsBaseCoin() {
 		coin := context.GetStateCoin(data.CoinToBuy).Data()
 
 		value = formula.CalculatePurchaseReturn(coin.Volume, coin.ReserveBalance, coin.Crr, amountToSell)
@@ -105,7 +105,7 @@ func (data SellAllCoinData) Run(sender types.Address, tx *Transaction, context *
 			context.AddCoinVolume(data.CoinToBuy, value)
 			context.AddCoinReserve(data.CoinToBuy, amountToSell)
 		}
-	} else if data.CoinToBuy == types.GetBaseCoin() {
+	} else if data.CoinToBuy.IsBaseCoin() {
 		coin := context.GetStateCoin(data.CoinToSell).Data()
 
 		value = formula.CalculateSaleReturn(coin.Volume, coin.ReserveBalance, coin.Crr, amountToSell)

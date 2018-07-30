@@ -40,7 +40,7 @@ func (data SendData) Gas() int64 {
 	return commissions.SendTx
 }
 
-func (data SendData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPull *big.Int, currentBlock uint64) Response {
+func (data SendData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
 	if !context.CoinExists(data.Coin) {
 		return Response{
 			Code: code.CoinNotExists,
@@ -57,7 +57,7 @@ func (data SendData) Run(sender types.Address, tx *Transaction, context *state.S
 	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
-	if tx.GasCoin != types.GetBaseCoin() {
+	if !tx.GasCoin.IsBaseCoin() {
 		coin := context.GetStateCoin(tx.GasCoin)
 
 		if coin.ReserveBalance().Cmp(commissionInBaseCoin) < 0 {
@@ -94,9 +94,9 @@ func (data SendData) Run(sender types.Address, tx *Transaction, context *state.S
 	}
 
 	if !isCheck {
-		rewardPull.Add(rewardPull, commissionInBaseCoin)
+		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		if tx.GasCoin != types.GetBaseCoin() {
+		if !tx.GasCoin.IsBaseCoin() {
 			context.SubCoinVolume(tx.GasCoin, commission)
 			context.SubCoinReserve(tx.GasCoin, commissionInBaseCoin)
 		}

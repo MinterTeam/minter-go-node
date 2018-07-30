@@ -30,7 +30,7 @@ type Response struct {
 	Fee       common.KI64Pair `protobuf:"bytes,8,opt,name=fee" json:"fee"`
 }
 
-func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPull *big.Int, currentBlock uint64) Response {
+func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPool *big.Int, currentBlock uint64) Response {
 
 	if len(rawTx) > maxTxLength {
 		return Response{
@@ -77,5 +77,5 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPull *big.I
 			Log:  fmt.Sprintf("Unexpected nonce. Expected: %d, got %d.", expectedNonce, tx.Nonce)}
 	}
 
-	return tx.decodedData.Run(sender, tx, context, isCheck, rewardPull, currentBlock)
+	return tx.decodedData.Run(sender, tx, context, isCheck, rewardPool, currentBlock)
 }

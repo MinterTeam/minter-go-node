@@ -48,7 +48,7 @@ func (data DeclareCandidacyData) Gas() int64 {
 	return commissions.DeclareCandidacyTx
 }
 
-func (data DeclareCandidacyData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPull *big.Int, currentBlock uint64) Response {
+func (data DeclareCandidacyData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
 
 	if !context.CoinExists(tx.GasCoin) {
 		return Response{
@@ -117,7 +117,7 @@ func (data DeclareCandidacyData) Run(sender types.Address, tx *Transaction, cont
 	// TODO: limit number of candidates to prevent flooding
 
 	if !isCheck {
-		rewardPull.Add(rewardPull, commissionInBaseCoin)
+		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
 		context.SubBalance(sender, data.Coin, data.Stake)
 		context.SubBalance(sender, tx.GasCoin, commission)

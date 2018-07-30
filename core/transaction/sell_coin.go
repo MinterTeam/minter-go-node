@@ -40,7 +40,7 @@ func (data SellCoinData) Gas() int64 {
 	return commissions.ConvertTx
 }
 
-func (data SellCoinData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPull *big.Int, currentBlock uint64) Response {
+func (data SellCoinData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
 	if data.CoinToSell == data.CoinToBuy {
 		return Response{
 			Code: code.CrossConvert,
@@ -69,7 +69,7 @@ func (data SellCoinData) Run(sender types.Address, tx *Transaction, context *sta
 	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
-	if tx.GasCoin != types.GetBaseCoin() {
+	if !tx.GasCoin.IsBaseCoin() {
 		coin := context.GetStateCoin(tx.GasCoin)
 
 		if coin.ReserveBalance().Cmp(commissionInBaseCoin) < 0 {
@@ -100,12 +100,12 @@ func (data SellCoinData) Run(sender types.Address, tx *Transaction, context *sta
 	}
 
 	if !isCheck {
-		rewardPull.Add(rewardPull, commissionInBaseCoin)
+		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
 		context.SubBalance(sender, data.CoinToSell, data.ValueToSell)
 		context.SubBalance(sender, tx.GasCoin, commission)
 
-		if tx.GasCoin != types.GetBaseCoin() {
+		if !tx.GasCoin.IsBaseCoin() {
 			context.SubCoinVolume(tx.GasCoin, commission)
 			context.SubCoinReserve(tx.GasCoin, commissionInBaseCoin)
 		}
@@ -113,7 +113,7 @@ func (data SellCoinData) Run(sender types.Address, tx *Transaction, context *sta
 
 	var value *big.Int
 
-	if data.CoinToSell == types.GetBaseCoin() {
+	if data.CoinToSell.IsBaseCoin() {
 		coin := context.GetStateCoin(data.CoinToBuy).Data()
 
 		value = formula.CalculatePurchaseReturn(coin.Volume, coin.ReserveBalance, coin.Crr, data.ValueToSell)
@@ -122,7 +122,7 @@ func (data SellCoinData) Run(sender types.Address, tx *Transaction, context *sta
 			context.AddCoinVolume(data.CoinToBuy, value)
 			context.AddCoinReserve(data.CoinToBuy, data.ValueToSell)
 		}
-	} else if data.CoinToBuy == types.GetBaseCoin() {
+	} else if data.CoinToBuy.IsBaseCoin() {
 		coin := context.GetStateCoin(data.CoinToSell).Data()
 
 		value = formula.CalculateSaleReturn(coin.Volume, coin.ReserveBalance, coin.Crr, data.ValueToSell)

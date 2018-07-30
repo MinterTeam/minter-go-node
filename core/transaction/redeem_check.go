@@ -41,7 +41,7 @@ func (data RedeemCheckData) Gas() int64 {
 	return commissions.SendTx
 }
 
-func (data RedeemCheckData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPull *big.Int, currentBlock uint64) Response {
+func (data RedeemCheckData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
 	decodedCheck, err := check.DecodeFromBytes(data.RawCheck)
 
 	if err != nil {
@@ -122,7 +122,7 @@ func (data RedeemCheckData) Run(sender types.Address, tx *Transaction, context *
 	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
-	if decodedCheck.Coin != types.GetBaseCoin() {
+	if !decodedCheck.Coin.IsBaseCoin() {
 		coin := context.GetStateCoin(decodedCheck.Coin)
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
 	}
@@ -137,9 +137,9 @@ func (data RedeemCheckData) Run(sender types.Address, tx *Transaction, context *
 
 	if !isCheck {
 		context.UseCheck(decodedCheck)
-		rewardPull.Add(rewardPull, commissionInBaseCoin)
+		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		if decodedCheck.Coin != types.GetBaseCoin() {
+		if !decodedCheck.Coin.IsBaseCoin() {
 			context.SubCoinVolume(decodedCheck.Coin, commission)
 			context.SubCoinReserve(decodedCheck.Coin, commissionInBaseCoin)
 		}
