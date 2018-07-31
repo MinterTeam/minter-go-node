@@ -27,6 +27,7 @@ func main() {
 
 	if *utils.ResetPrivateValidator {
 		resetFilePV(config.GetConfig().PrivValidatorFile())
+		os.Exit(0)
 	}
 
 	app := minter.NewMinterBlockchain()
@@ -78,10 +79,10 @@ func resetFilePV(privValFile string) {
 	if _, err := os.Stat(privValFile); err == nil {
 		pv := privval.LoadFilePV(privValFile)
 		pv.Reset()
-		log.Info("Reset private validator file to genesis state", "file", privValFile)
+		log.Error("Reset private validator file to genesis state", "file", privValFile)
 	} else {
 		pv := privval.GenFilePV(privValFile)
 		pv.Save()
-		log.Info("Generated private validator file", "file", privValFile)
+		log.Error("Generated private validator file", "file", privValFile)
 	}
 }
