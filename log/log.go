@@ -11,7 +11,7 @@ var (
 )
 
 func init() {
-	logger, _ := flags.ParseLogLevel("consensus:info,state:info,*:error", log.NewTMLogger(os.Stdout), "info")
+	logger, _ := flags.ParseLogLevel("consensus:info,state:info,main:info,*:error", log.NewTMLogger(os.Stdout), "info")
 	SetLogger(logger)
 }
 

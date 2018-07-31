@@ -4,6 +4,18 @@
 
 - [api] Add validators rewards to block api
 
+## 0.1.7
+*Jule 30th, 2018*
+
+BREAKING CHANGES
+
+- [testnet] New testnet id
+
+IMPROVEMENT
+
+- [validators] Added flag ``--reset-private-validator``
+- [testnet] Main validator stake is set to 1 mln MNT by default
+
 ## 0.1.6
 *Jule 30th, 2018*
 
