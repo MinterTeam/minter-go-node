@@ -25,6 +25,10 @@ func main() {
 		os.Exit(1)
 	}
 
+	if *utils.ResetPrivateValidator {
+		resetFilePV(config.GetConfig().PrivValidatorFile())
+	}
+
 	app := minter.NewMinterBlockchain()
 	node := startTendermintNode(app)
 
@@ -68,4 +72,16 @@ func startTendermintNode(app *minter.Blockchain) *tmNode.Node {
 	log.Info("Started node", "nodeInfo", node.Switch().NodeInfo())
 
 	return node
+}
+
+func resetFilePV(privValFile string) {
+	if _, err := os.Stat(privValFile); err == nil {
+		pv := privval.LoadFilePV(privValFile)
+		pv.Reset()
+		log.Info("Reset private validator file to genesis state", "file", privValFile)
+	} else {
+		pv := privval.GenFilePV(privValFile)
+		pv.Save()
+		log.Info("Generated private validator file", "file", privValFile)
+	}
 }

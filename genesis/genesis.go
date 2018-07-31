@@ -55,13 +55,13 @@ func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
 	}
 
 	genesis := tmtypes.GenesisDoc{
-		GenesisTime:     time.Date(2018, 7, 23, 0, 0, 0, 0, time.UTC),
-		ChainID:         "minter-test-network-16",
+		GenesisTime:     time.Date(2018, 7, 31, 0, 0, 0, 0, time.UTC),
+		ChainID:         "minter-test-network-17",
 		ConsensusParams: nil,
 		Validators: []tmtypes.GenesisValidator{
 			{
 				PubKey: validatorPubKey,
-				Power:  100,
+				Power:  100000000,
 			},
 		},
 		AppHash:  common.HexBytes(appHash),
