@@ -58,7 +58,7 @@ type FrozenFund struct {
 }
 
 type FrozenFunds struct {
-	BlockHeight int64
+	BlockHeight uint64
 	List        []FrozenFund
 }
 
