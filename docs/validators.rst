@@ -111,7 +111,7 @@ Becoming validator in testnet
 
         To turn your validator **on**, you should provide Public Key (from step 2 *(Mp...)*).
 
-        *Note: You should send transaction from address you choose in Address field in step 3.2*
+        *Note: You should send transaction from address you choose in Address field in step 3.1*
 
     .. figure:: assets/vault-candidate-on.png
         :width: 300px
