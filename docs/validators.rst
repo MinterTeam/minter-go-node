@@ -86,7 +86,7 @@ Becoming validator in testnet
 
 2. Get your validator's public key from `Minter GUI <http://localhost:3000/>`__.
 
-3. Go to `Vault <http://vault.minter.network/>`__ and send 2 transactions:
+3. Go to `Minter Console <https://testnet.console.minter.network/masternode/>`__ and send 2 transactions:
     Fill and send ``Declare candidacy`` and ``Set candidate online`` forms.
 
     P.S. You can receive testnet coins in our telegram wallet @BipWallet_Bot.
@@ -101,8 +101,8 @@ Becoming validator in testnet
         - Coin - Enter coin of your stake (i.e. MNT).
         - Stake - Enter value of your stake in given coin.
 
-    .. figure:: assets/vault-declare.png
-        :width: 300px
+    .. figure:: assets/console-declare.png
+        :width: 600px
 
     3.2. Set candidate online
         Validator is **offline** by default. When offline, validator is not included in the list of
@@ -111,10 +111,10 @@ Becoming validator in testnet
 
         To turn your validator **on**, you should provide Public Key (from step 2 *(Mp...)*).
 
-        *Note: You should send transaction from address you choose in Address field in step 3.2*
+        *Note: You should send transaction from address you choose in Address field in step 3.1*
 
-    .. figure:: assets/vault-candidate-on.png
-        :width: 300px
+    .. figure:: assets/console-candidate-on.png
+        :width: 600px
 
 4. Done.
     Now you will receive reward as long as your node is running and available.
