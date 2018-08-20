@@ -195,28 +195,32 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 		app.stateDeliver.PayRewards()
 	}
 
+	var updates []abciTypes.Validator
+
 	// update validators
-	defer func() {
-		app.activeValidators = newValidators
-	}()
+	if app.height%12 == 0 {
+		defer func() {
+			app.activeValidators = newValidators
+		}()
 
-	updates := newValidators
+		updates = newValidators
 
-	for _, validator := range app.activeValidators {
-		persisted := false
-		for _, newValidator := range newValidators {
-			if bytes.Equal(validator.PubKey.Data, newValidator.PubKey.Data) {
-				persisted = true
-				break
+		for _, validator := range app.activeValidators {
+			persisted := false
+			for _, newValidator := range newValidators {
+				if bytes.Equal(validator.PubKey.Data, newValidator.PubKey.Data) {
+					persisted = true
+					break
+				}
 			}
-		}
 
-		// remove validator
-		if !persisted {
-			updates = append(updates, abciTypes.Validator{
-				PubKey: validator.PubKey,
-				Power:  0,
-			})
+			// remove validator
+			if !persisted {
+				updates = append(updates, abciTypes.Validator{
+					PubKey: validator.PubKey,
+					Power:  0,
+				})
+			}
 		}
 	}
 

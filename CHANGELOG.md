@@ -11,6 +11,7 @@ BREAKING CHANGES
 
 - [testnet] New testnet id
 - [core] New rewards
+- [core] Validators list are now updated each 12 blocks
 
 IMPROVEMENT
 
