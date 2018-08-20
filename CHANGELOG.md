@@ -15,6 +15,7 @@ BREAKING CHANGES
 IMPROVEMENT
 
 - [tendermint] Update tendermint to 0.23.0
+- [api] Add block reward to api
 
 ## 0.1.9
 *Aug 19th, 2018*
