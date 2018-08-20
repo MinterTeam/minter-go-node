@@ -4,6 +4,13 @@
 
 - [api] Add validators rewards to block api
 
+## 0.2.0
+*Aug 20th, 2018*
+
+IMPROVEMENT
+
+- [tendermint] Update tendermint to 0.23.0
+
 ## 0.1.9
 *Aug 19th, 2018*
 

@@ -111,7 +111,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 	app.validatorsStatuses = map[string]int8{}
 
 	// give penalty to absent validators
-	for _, v := range req.Validators {
+	for _, v := range req.LastCommitInfo.Validators {
 		pubkey := types.Pubkey(v.Validator.PubKey.Data)
 
 		if v.SignedLastBlock {
@@ -243,7 +243,6 @@ func (app *Blockchain) DeliverTx(rawTx []byte) abciTypes.ResponseDeliverTx {
 		GasWanted: response.GasWanted,
 		GasUsed:   response.GasUsed,
 		Tags:      response.Tags,
-		Fee:       response.Fee,
 	}
 }
 
@@ -258,7 +257,6 @@ func (app *Blockchain) CheckTx(rawTx []byte) abciTypes.ResponseCheckTx {
 		GasWanted: response.GasWanted,
 		GasUsed:   response.GasUsed,
 		Tags:      response.Tags,
-		Fee:       response.Fee,
 	}
 }
 

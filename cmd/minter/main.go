@@ -58,7 +58,7 @@ func startTendermintNode(app *minter.Blockchain) *tmNode.Node {
 		proxy.NewLocalClientCreator(app),
 		genesis.GetTestnetGenesis,
 		tmNode.DefaultDBProvider,
-		tmNode.DefaultMetricsProvider,
+		tmNode.DefaultMetricsProvider(cfg.Instrumentation),
 		log.With("module", "tendermint"),
 	)
 
