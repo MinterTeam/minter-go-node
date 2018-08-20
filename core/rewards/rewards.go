@@ -1,31 +1,31 @@
 package rewards
 
-import "math/big"
+import (
+	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/helpers"
+	"math/big"
+)
 
-func GetRewardForBlock(blockNumber uint64) *big.Int {
-	totalBlocksCount := uint64(44512766)
-	c := uint64(111)
+const lastBlock = 43702612
+const firstReward = 333
+const lastReward = 68
 
-	if blockNumber > totalBlocksCount+18 {
+func GetRewardForBlock(blockHeight uint64) *big.Int {
+
+	if blockHeight > lastBlock {
 		return big.NewInt(0)
 	}
 
-	if blockNumber > totalBlocksCount {
-		return big.NewInt(1)
+	if blockHeight == lastBlock {
+		return helpers.BipToPip(big.NewInt(lastReward))
 	}
 
-	c = (111*(totalBlocksCount-blockNumber))/totalBlocksCount + 1
+	reward := big.NewInt(firstReward)
+	reward.Sub(reward, big.NewInt(int64(blockHeight/200000)))
 
-	if blockNumber <= totalBlocksCount*50/100 {
-		c = c * 15 / 10
+	if reward.Cmp(types.Big0) < 1 {
+		return helpers.BipToPip(big.NewInt(1))
 	}
 
-	if c > 111 {
-		c = 111
-	}
-
-	reward := big.NewInt(int64(c))
-	reward.Mul(reward, big.NewInt(0).Exp(big.NewInt(10), big.NewInt(18), nil))
-
-	return reward
+	return helpers.BipToPip(reward)
 }

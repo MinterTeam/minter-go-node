@@ -10,6 +10,7 @@
 BREAKING CHANGES
 
 - [testnet] New testnet id
+- [core] New rewards
 
 IMPROVEMENT
 
