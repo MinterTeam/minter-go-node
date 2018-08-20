@@ -7,6 +7,10 @@
 ## 0.2.0
 *Aug 20th, 2018*
 
+BREAKING CHANGES
+
+- [testnet] New testnet id
+
 IMPROVEMENT
 
 - [tendermint] Update tendermint to 0.23.0
