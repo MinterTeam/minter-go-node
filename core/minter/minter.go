@@ -45,9 +45,6 @@ const (
 
 var (
 	blockchain *Blockchain
-
-	teamAddress    = types.HexToAddress("Mxa93163fdf10724dc4785ff5cbfb9ac0b5949409f")
-	airdropAddress = types.HexToAddress("Mxa93163fdf10724dc4785ff5cbfb9ac0b5949409f")
 )
 
 func NewMinterBlockchain() *Blockchain {
@@ -137,17 +134,6 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 		}
 
 		frozenFunds.Delete()
-	}
-
-	// distributions:
-	if app.height <= 3110400*6 && app.height%3110400 == 0 { // team distribution
-		value := big.NewInt(300000000) // 300 000 000 bip (3%)
-		app.stateDeliver.AddBalance(teamAddress, types.GetBaseCoin(), helpers.BipToPip(value))
-	}
-
-	if app.height <= 3110400*10 && app.height%3110400 == 0 { // airdrop distribution
-		value := big.NewInt(500000000) // 500 000 000 bip (5%)
-		app.stateDeliver.AddBalance(airdropAddress, types.GetBaseCoin(), helpers.BipToPip(value))
 	}
 
 	return abciTypes.ResponseBeginBlock{}
