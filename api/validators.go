@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/MinterTeam/minter-go-node/core/validators"
 	"net/http"
 	"strconv"
 )
@@ -22,11 +21,23 @@ type Candidate struct {
 	TotalStake       string        `json:"total_stake"`
 	PubKey           string        `json:"pub_key"`
 	Commission       uint          `json:"commission"`
-	AccumReward      string        `json:"accumulated_reward"`
 	Stakes           []Stake       `json:"stakes"`
 	CreatedAtBlock   uint          `json:"created_at_block"`
 	Status           byte          `json:"status"`
-	AbsentTimes      uint          `json:"absent_times"`
+}
+
+type Validator struct {
+	AccumReward string    `json:"accumulated_reward"`
+	AbsentTimes uint      `json:"absent_times"`
+	Candidate   Candidate `json:"candidate"`
+}
+
+func makeResponseValidator(v state.Validator, state *state.StateDB) Validator {
+	return Validator{
+		AccumReward: v.AccumReward.String(),
+		AbsentTimes: v.AbsentTimes,
+		Candidate:   makeResponseCandidate(*state.GetStateCandidate(v.PubKey), state),
+	}
 }
 
 func makeResponseCandidate(c state.Candidate, state *state.StateDB) Candidate {
@@ -47,11 +58,9 @@ func makeResponseCandidate(c state.Candidate, state *state.StateDB) Candidate {
 		TotalStake:       c.TotalBipStake.String(),
 		PubKey:           fmt.Sprintf("Mp%x", c.PubKey),
 		Commission:       c.Commission,
-		AccumReward:      c.AccumReward.String(),
 		Stakes:           stakes,
 		CreatedAtBlock:   c.CreatedAtBlock,
 		Status:           c.Status,
-		AbsentTimes:      c.AbsentTimes,
 	}
 }
 
@@ -64,19 +73,19 @@ func GetValidators(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rState := GetStateForRequest(r)
-	_, candidates := rState.GetValidators(validators.GetValidatorsCountForBlock(uint64(height)))
+	vals := rState.GetStateValidators().Data()
 
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 
-	var responseCandidates []Candidate
+	var responseValidators []Validator
 
-	for _, candidate := range candidates {
-		responseCandidates = append(responseCandidates, makeResponseCandidate(candidate, rState))
+	for _, val := range vals {
+		responseValidators = append(responseValidators, makeResponseValidator(val, rState))
 	}
 
 	json.NewEncoder(w).Encode(Response{
 		Code:   0,
-		Result: responseCandidates,
+		Result: responseValidators,
 	})
 }

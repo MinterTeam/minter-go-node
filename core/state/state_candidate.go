@@ -25,6 +25,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/rlp"
+	"github.com/tendermint/tendermint/crypto/ed25519"
 	"math/big"
 )
 
@@ -89,11 +90,11 @@ type Candidate struct {
 	TotalBipStake    *big.Int
 	PubKey           types.Pubkey
 	Commission       uint
-	AccumReward      *big.Int
 	Stakes           []Stake
 	CreatedAtBlock   uint
 	Status           byte
-	AbsentTimes      uint
+
+	tmAddress *[20]byte
 }
 
 func (candidate Candidate) GetStakeOfAddress(addr types.Address, coin types.CoinSymbol) *Stake {
@@ -108,6 +109,22 @@ func (candidate Candidate) GetStakeOfAddress(addr types.Address, coin types.Coin
 
 func (candidate Candidate) String() string {
 	return fmt.Sprintf("Candidate")
+}
+
+func (candidate Candidate) GetAddress() [20]byte {
+	if candidate.tmAddress != nil {
+		return *candidate.tmAddress
+	}
+
+	var pubkey ed25519.PubKeyEd25519
+	copy(pubkey[:], candidate.PubKey)
+
+	var address [20]byte
+	copy(address[:], pubkey.Address().Bytes())
+
+	candidate.tmAddress = &address
+
+	return address
 }
 
 // newCandidate creates a state object.
