@@ -200,7 +200,7 @@ func (data BuyCoinData) Run(sender types.Address, tx *Transaction, context *stat
 		common.KVPair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
 		common.KVPair{Key: []byte("tx.coin_to_buy"), Value: []byte(data.CoinToBuy.String())},
 		common.KVPair{Key: []byte("tx.coin_to_sell"), Value: []byte(data.CoinToSell.String())},
-		common.KVPair{Key: []byte("tx.return"), Value: value.Bytes()},
+		common.KVPair{Key: []byte("tx.return"), Value: []byte(value.String())},
 	}
 
 	return Response{
