@@ -31,16 +31,16 @@ func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
 	}
 
 	appState := AppState{
-		FirstValidatorAddress: types.HexToAddress("Mxa93163fdf10724dc4785ff5cbfb9ac0b5949409f"),
+		FirstValidatorAddress: types.HexToAddress("Mxee81347211c72524338f9680072af90744333146"),
 		InitialBalances: []Account{
 			{
-				Address: types.HexToAddress("Mxa93163fdf10724dc4785ff5cbfb9ac0b5949409f"),
+				Address: types.HexToAddress("Mxee81347211c72524338f9680072af90744333146"),
 				Balance: map[string]string{
 					"MNT": helpers.BipToPip(big.NewInt(1000000000)).String(),
 				},
 			},
 			{
-				Address: types.HexToAddress("Mxfe60014a6e9ac91618f5d1cab3fd58cded61ee99"),
+				Address: types.HexToAddress("Mxee81347211c72524338f9680072af90744333146"),
 				Balance: map[string]string{
 					"MNT": helpers.BipToPip(big.NewInt(10000000)).String(),
 				},
