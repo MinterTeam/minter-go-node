@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
-	"fmt"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/core/rewards"
 	"github.com/MinterTeam/minter-go-node/core/state"
@@ -13,7 +12,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/validators"
 	"github.com/MinterTeam/minter-go-node/genesis"
 	"github.com/MinterTeam/minter-go-node/helpers"
-	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/mintdb"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/node"
@@ -115,8 +113,6 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 		var address [20]byte
 		copy(address[:], v.Validator.Address)
 
-		log.Error(fmt.Sprintf("S: %x", address))
-
 		if v.SignedLastBlock {
 			app.stateDeliver.SetValidatorPresent(address)
 			app.validatorsStatuses[address] = ValidatorPresent
@@ -128,8 +124,11 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 
 	// give penalty to Byzantine validators
 	for _, v := range req.ByzantineValidators {
-		app.stateDeliver.PunishByzantineValidator(v.Validator.PubKey.Data)
-		app.stateDeliver.RemoveFrozenFundsWithPubKey(app.height, app.height+518400, v.Validator.PubKey.Data)
+		var address [20]byte
+		copy(address[:], v.Validator.Address)
+
+		app.stateDeliver.PunishByzantineValidator(address)
+		app.stateDeliver.RemoveFrozenFundsWithAddress(app.height, app.height+518400, address)
 	}
 
 	// apply frozen funds

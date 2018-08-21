@@ -1002,13 +1002,13 @@ func (s *StateDB) SetValidatorAbsent(address [20]byte) {
 	s.MarkStateValidatorsDirty()
 }
 
-func (s *StateDB) PunishByzantineValidator(PubKey []byte) {
+func (s *StateDB) PunishByzantineValidator(address [20]byte) {
 
 	validators := s.getStateValidators()
 
 	for i := range validators.data {
 		validator := &validators.data[i]
-		if bytes.Equal(validator.PubKey, PubKey) {
+		if validator.GetAddress() == address {
 			validator.AbsentTimes = validator.AbsentTimes + 1
 
 			candidates := s.getStateCandidates()
@@ -1016,7 +1016,7 @@ func (s *StateDB) PunishByzantineValidator(PubKey []byte) {
 			var candidate *Candidate
 
 			for i := range candidates.data {
-				if bytes.Equal(candidates.data[i].PubKey, PubKey) {
+				if candidates.data[i].GetAddress() == address {
 					candidate = &candidates.data[i]
 				}
 			}
@@ -1035,7 +1035,7 @@ func (s *StateDB) PunishByzantineValidator(PubKey []byte) {
 	s.MarkStateValidatorsDirty()
 }
 
-func (s *StateDB) RemoveFrozenFundsWithPubKey(fromBlock uint64, toBlock uint64, PubKey []byte) {
+func (s *StateDB) RemoveFrozenFundsWithAddress(fromBlock uint64, toBlock uint64, address [20]byte) {
 	for i := fromBlock; i <= toBlock; i++ {
 		frozenFund := s.getStateFrozenFunds(i)
 
@@ -1043,7 +1043,7 @@ func (s *StateDB) RemoveFrozenFundsWithPubKey(fromBlock uint64, toBlock uint64, 
 			continue
 		}
 
-		frozenFund.RemoveFund(PubKey)
+		frozenFund.RemoveFund(address)
 	}
 }
 
