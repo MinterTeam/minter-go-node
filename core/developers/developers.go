@@ -1,4 +1,4 @@
-package dao
+package developers
 
 import "github.com/MinterTeam/minter-go-node/core/types"
 

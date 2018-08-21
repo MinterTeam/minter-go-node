@@ -31,6 +31,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/check"
 	"github.com/MinterTeam/minter-go-node/core/dao"
 	"sort"
+	"github.com/MinterTeam/minter-go-node/core/developers"
 )
 
 var (
@@ -797,8 +798,16 @@ func (s *StateDB) PayRewards() {
 			DAOReward := big.NewInt(0).Set(totalReward)
 			DAOReward.Mul(DAOReward, big.NewInt(int64(dao.Commission)))
 			DAOReward.Div(DAOReward, big.NewInt(100))
-			totalReward.Sub(totalReward, DAOReward)
 			s.AddBalance(dao.Address, types.GetBaseCoin(), DAOReward)
+
+			// pay commission to Developers
+			DevelopersReward := big.NewInt(0).Set(totalReward)
+			DevelopersReward.Mul(DevelopersReward, big.NewInt(int64(developers.Commission)))
+			DevelopersReward.Div(DevelopersReward, big.NewInt(100))
+			s.AddBalance(developers.Address, types.GetBaseCoin(), DevelopersReward)
+
+			totalReward.Sub(totalReward, DevelopersReward)
+			totalReward.Sub(totalReward, DAOReward)
 
 			// pay commission to validator
 			validatorReward := big.NewInt(0).Set(totalReward)

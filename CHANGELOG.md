@@ -5,13 +5,15 @@
 - [api] Add validators rewards to block api
 
 ## 0.2.0
-*Aug 20th, 2018*
+*Aug 21th, 2018*
 
 BREAKING CHANGES
 
 - [testnet] New testnet id
 - [core] New rewards
 - [core] Validators list are now updated each 12 blocks
+- [core] Set DAO commission to 10% 
+- [core] Add Developers commission of 10%
 
 IMPROVEMENT
 
