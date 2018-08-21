@@ -14,6 +14,7 @@ BREAKING CHANGES
 - [core] Validators list are now updated each 12 blocks
 - [core] Set DAO commission to 10% 
 - [core] Add Developers commission of 10%
+- [core] Now stake of custom coin is calculated by selling all such staked coins
 - [api] Reformatted candidates and validators endpoints
 - [api] tx.return tags are now encoded as strings
 

@@ -146,8 +146,6 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 
 func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.ResponseEndBlock {
 
-	app.stateDeliver.RecalculateTotalStakeValues()
-
 	var updates []abciTypes.Validator
 
 	vals := app.stateDeliver.GetStateValidators().Data()
@@ -180,10 +178,12 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 		app.stateDeliver.AddAccumReward(val.PubKey, reward)
 	}
 
-	if app.height%3 == 0 {
+	if app.height%12 == 0 {
 
 		// pay rewards
 		app.stateDeliver.PayRewards()
+
+		app.stateDeliver.RecalculateTotalStakeValues()
 
 		valsCount := validators.GetValidatorsCountForBlock(app.height)
 

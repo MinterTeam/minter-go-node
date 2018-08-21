@@ -74,15 +74,33 @@ func (s *Stake) MarshalJSON() ([]byte, error) {
 		Value: s.Value.String(),
 	})
 }
+
 func (s *Stake) BipValue(context *StateDB) *big.Int {
 
 	if s.Coin.IsBaseCoin() {
 		return big.NewInt(0).Set(s.Value)
 	}
 
-	coin := context.getStateCoin(s.Coin)
+	totalStaked := big.NewInt(0)
 
-	return formula.CalculateSaleReturn(coin.Volume(), coin.ReserveBalance(), coin.data.Crr, s.Value)
+	candidates := context.getStateCandidates()
+
+	for _, candidate := range candidates.data {
+		for _, stake := range candidate.Stakes {
+			if bytes.Equal(stake.Coin.Bytes(), s.Coin.Bytes()) {
+				totalStaked.Add(totalStaked, stake.Value)
+			}
+		}
+	}
+
+	coin := context.getStateCoin(s.Coin)
+	totalBipValue := formula.CalculateSaleReturn(coin.Volume(), coin.ReserveBalance(), coin.data.Crr, totalStaked)
+
+	value := big.NewInt(0).Set(totalBipValue)
+	value.Mul(value, s.Value)
+	value.Div(value, totalBipValue)
+
+	return value
 }
 
 type Candidate struct {
