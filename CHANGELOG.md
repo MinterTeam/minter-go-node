@@ -15,6 +15,7 @@ BREAKING CHANGES
 - [core] Set DAO commission to 10% 
 - [core] Add Developers commission of 10%
 - [api] Reformatted candidates and validators endpoints
+- [api] tx.return tags are now encoded as strings
 
 IMPROVEMENT
 
