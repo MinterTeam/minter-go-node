@@ -14,12 +14,14 @@ BREAKING CHANGES
 - [core] Validators list are now updated each 12 blocks
 - [core] Set DAO commission to 10% 
 - [core] Add Developers commission of 10%
+- [api] Reformatted candidates and validators endpoints
 
 IMPROVEMENT
 
 - [tendermint] Update tendermint to 0.23.0
 - [api] Add block reward to api
 - [api] Add bip_value field to Stake
+- [api] Add /api/candidates endpoint
 
 ## 0.1.9
 *Aug 19th, 2018*

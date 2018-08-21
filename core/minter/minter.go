@@ -211,7 +211,10 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 			newValidators[i] = abciTypes.Ed25519Validator(newCandidates[i].PubKey, power)
 		}
 
-		// update validators
+		// update validators in state
+		app.stateDeliver.SetNewValidators(newCandidates)
+
+		// update validators in app cache
 		defer func() {
 			app.activeValidators = newValidators
 		}()

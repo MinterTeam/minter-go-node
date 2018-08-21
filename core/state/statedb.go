@@ -30,14 +30,15 @@ import (
 	"encoding/binary"
 	"github.com/MinterTeam/minter-go-node/core/check"
 	"github.com/MinterTeam/minter-go-node/core/dao"
-	"sort"
 	"github.com/MinterTeam/minter-go-node/core/developers"
+	"sort"
 )
 
 var (
 	// emptyState is the known hash of an empty state trie entry.
-	emptyState              = crypto.Keccak256Hash(nil)
-	CandidateMaxAbsentTimes = uint(12)
+	emptyState = crypto.Keccak256Hash(nil)
+
+	ValidatorMaxAbsentTimes = uint(12)
 
 	addressPrefix     = []byte("a")
 	coinPrefix        = []byte("c")
@@ -323,6 +324,10 @@ func (s *StateDB) getStateCoin(symbol types.CoinSymbol) (stateCoin *stateCoin) {
 	obj := newCoin(s, symbol, data, s.MarkStateCoinDirty)
 	s.setStateCoin(obj)
 	return obj
+}
+
+func (s *StateDB) GetStateCandidates() (stateCandidates *stateCandidates) {
+	return s.getStateCandidates()
 }
 
 // Retrieve a state candidates. Returns nil if not found.
@@ -856,13 +861,14 @@ func (s *StateDB) RecalculateTotalStakeValues() {
 		for j := range validators.data {
 			if bytes.Equal(validators.data[j].PubKey, candidate.PubKey) {
 				validators.data[j].TotalBipStake = totalBipStake
-				return
+				break
 			}
 		}
 	}
 
 	s.setStateValidators(validators)
 	s.MarkStateValidatorsDirty()
+
 	s.setStateCandidates(stateCandidates)
 	s.MarkStateCandidateDirty()
 }
@@ -979,7 +985,7 @@ func (s *StateDB) SetValidatorAbsent(address [20]byte) {
 
 			validator.AbsentTimes = validator.AbsentTimes + 1
 
-			if validator.AbsentTimes > CandidateMaxAbsentTimes {
+			if validator.AbsentTimes > ValidatorMaxAbsentTimes {
 				candidate.Status = CandidateStatusOffline
 				validator.AbsentTimes = 0
 
@@ -1067,5 +1073,36 @@ func (s *StateDB) SetValidatorPresent(address [20]byte) {
 	}
 
 	s.setStateValidators(validators)
+	s.MarkStateValidatorsDirty()
+}
+
+func (s *StateDB) SetNewValidators(candidates []Candidate) {
+	oldVals := s.getStateValidators()
+
+	var newVals Validators
+
+	for _, candidate := range candidates {
+		accumReward := big.NewInt(0)
+		absentTimes := uint(0)
+
+		for _, oldVal := range oldVals.data {
+			if oldVal.GetAddress() == candidate.GetAddress() {
+				accumReward = oldVal.AccumReward
+				absentTimes = oldVal.AbsentTimes
+			}
+		}
+
+		newVals = append(newVals, Validator{
+			CandidateAddress: candidate.CandidateAddress,
+			TotalBipStake:    candidate.TotalBipStake,
+			PubKey:           candidate.PubKey,
+			Commission:       candidate.Commission,
+			AccumReward:      accumReward,
+			AbsentTimes:      absentTimes,
+		})
+	}
+
+	oldVals.data = newVals
+	s.setStateValidators(oldVals)
 	s.MarkStateValidatorsDirty()
 }

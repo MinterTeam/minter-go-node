@@ -36,6 +36,7 @@ func RunApi(b *minter.Blockchain, node *node.Node) {
 	router := mux.NewRouter().StrictSlash(true)
 
 	router.HandleFunc("/api/bipVolume", GetBipVolume).Methods("GET")
+	router.HandleFunc("/api/candidates", GetCandidates).Methods("GET")
 	router.HandleFunc("/api/candidate/{pubkey}", GetCandidate).Methods("GET")
 	router.HandleFunc("/api/validators", GetValidators).Methods("GET")
 	router.HandleFunc("/api/balance/{address}", GetBalance).Methods("GET")
