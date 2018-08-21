@@ -98,7 +98,7 @@ func (s *Stake) BipValue(context *StateDB) *big.Int {
 
 	value := big.NewInt(0).Set(totalBipValue)
 	value.Mul(value, s.Value)
-	value.Div(value, totalBipValue)
+	value.Div(value, totalStaked)
 
 	return value
 }
