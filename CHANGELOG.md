@@ -22,6 +22,7 @@ IMPROVEMENT
 - [api] Add block reward to api
 - [api] Add bip_value field to Stake
 - [api] Add /api/candidates endpoint
+- [api] Add /api/estimateTxCommission endpoint
 
 ## 0.1.9
 *Aug 19th, 2018*

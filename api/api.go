@@ -53,6 +53,7 @@ func RunApi(b *minter.Blockchain, node *node.Node) {
 	router.HandleFunc("/api/coinInfo/{symbol}", GetCoinInfo).Methods("GET")
 	router.HandleFunc("/api/estimateCoinSell", EstimateCoinSell).Methods("GET")
 	router.HandleFunc("/api/estimateCoinBuy", EstimateCoinBuy).Methods("GET")
+	router.HandleFunc("/api/estimateTxCommission", EstimateTxCommission).Methods("GET")
 
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},

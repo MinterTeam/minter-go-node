@@ -53,8 +53,8 @@ func Block(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(Response{
-			Code:   0,
-			Result: err.Error(),
+			Code: 0,
+			Log:  err.Error(),
 		})
 		return
 	}
