@@ -17,8 +17,8 @@
             margin-bottom: 20px;
         }
 
-        html,body,.body {
-            height: 100%;
+        html,body,.body,#app {
+            min-height: 100%;
         }
         
         .body {
@@ -147,10 +147,15 @@
                                 <i :class="{'fa-check': !status.sync_info.catching_up, 'fa-exclamation-circle': status.sync_info.catching_up}" class="fas"></i></td>
                         </tr>
                         <tr>
-                            <td class="h">Latest Block</td>
+                            <td class="h">Latest Block Height</td>
                             <td>
-                                #{{ status.sync_info.latest_block_height }} <span
-                                    class="text-muted">at {{ status.sync_info.latest_block_time }}</span>
+                                #{{ status.sync_info.latest_block_height }} <span v-if="masterStatus" class="text-muted">of {{ masterStatus.latest_block_height }}</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="h">Latest Block Time</td>
+                            <td>
+                            {{ status.sync_info.latest_block_time }}
                             </td>
                         </tr>
                         </tbody>
@@ -181,6 +186,7 @@
     new Vue({
         el: '#app',
         data: {
+            masterStatus: null,
             status: null,
             version: null,
             net_info: null,
@@ -188,8 +194,6 @@
         },
         mounted() {
             this.refresh()
-
-            setInterval(this.refresh, 1000)
         },
         methods: {
             niceNum(num) {
@@ -199,18 +203,20 @@
                 return CryptoJS.enc.Base64.parse(base64).toString()
             },
             refresh() {
-                axios.get("//" + window.location.hostname + ':8841/api/status').then(function (data) {
-                    this.status = data.data.result.tm_status
-                    this.version = data.data.result.version
+                axios.all([
+                    axios.get("//" + window.location.hostname + ':8841/api/status'),
+                    axios.get("//" + window.location.hostname + ':8841/api/net_info'),
+                    axios.get("https://minter-node-1.testnet.minter.network/api/status")
+                ]).then(axios.spread(function (status, net_info, masterStatus) {
                     this.error = null
-                }.bind(this)).catch(function (reason) {
-                    this.error = reason.toString();
-                }.bind(this))
 
-                axios.get("//" + window.location.hostname + ':8841/api/net_info').then(function (data) {
-                    this.net_info = data.data.result
-                    this.error = null
-                }.bind(this)).catch(function (reason) {
+                    this.status = status.data.result.tm_status
+                    this.version = status.data.result.version
+                    this.net_info = net_info.data.result
+                    this.masterStatus = masterStatus.data.result
+
+                    setTimeout(this.refresh, 500)
+                }.bind(this))).catch(function (reason) {
                     this.error = reason.toString();
                 }.bind(this))
             }
