@@ -30,20 +30,22 @@ import (
 	"encoding/binary"
 	"github.com/MinterTeam/minter-go-node/core/check"
 	"github.com/MinterTeam/minter-go-node/core/dao"
-	abci "github.com/tendermint/tendermint/abci/types"
+	"github.com/MinterTeam/minter-go-node/core/developers"
 	"sort"
 )
 
 var (
 	// emptyState is the known hash of an empty state trie entry.
-	emptyState              = crypto.Keccak256Hash(nil)
-	CandidateMaxAbsentTimes = uint(12)
+	emptyState = crypto.Keccak256Hash(nil)
+
+	ValidatorMaxAbsentTimes = uint(12)
 
 	addressPrefix     = []byte("a")
 	coinPrefix        = []byte("c")
 	frozenFundsPrefix = []byte("f")
 	usedCheckPrefix   = []byte("u")
 	candidatesKey     = []byte("t")
+	validatorsKey     = []byte("v")
 )
 
 // StateDBs within the ethereum protocol are used to store anything
@@ -67,6 +69,9 @@ type StateDB struct {
 
 	stateCandidates      *stateCandidates
 	stateCandidatesDirty bool
+
+	stateValidators      *stateValidators
+	stateValidatorsDirty bool
 
 	// DB error.
 	// State objects are used by the consensus core and VM which are
@@ -238,6 +243,15 @@ func (s *StateDB) updateStateCandidates(stateCandidates *stateCandidates) {
 	s.setError(err)
 }
 
+func (s *StateDB) updateStateValidators(validators *stateValidators) {
+	data, err := rlp.EncodeToBytes(validators)
+	if err != nil {
+		panic(fmt.Errorf("can't encode validators: %v", err))
+	}
+	err = s.trie.TryUpdate(validatorsKey, data)
+	s.setError(err)
+}
+
 // deleteStateObject removes the given object from the state trie.
 func (s *StateDB) deleteStateObject(stateObject *stateObject) {
 	stateObject.deleted = true
@@ -312,7 +326,11 @@ func (s *StateDB) getStateCoin(symbol types.CoinSymbol) (stateCoin *stateCoin) {
 	return obj
 }
 
-// Retrieve a state candidate by public key. Returns nil if not found.
+func (s *StateDB) GetStateCandidates() (stateCandidates *stateCandidates) {
+	return s.getStateCandidates()
+}
+
+// Retrieve a state candidates. Returns nil if not found.
 func (s *StateDB) getStateCandidates() (stateCandidates *stateCandidates) {
 	// Prefer 'live' objects.
 	if s.stateCandidates != nil {
@@ -333,6 +351,34 @@ func (s *StateDB) getStateCandidates() (stateCandidates *stateCandidates) {
 	// Insert into the live set.
 	obj := newCandidate(s, data, s.MarkStateCandidateDirty)
 	s.setStateCandidates(obj)
+	return obj
+}
+
+func (s *StateDB) GetStateValidators() (stateValidators *stateValidators) {
+	return s.getStateValidators()
+}
+
+// Retrieve a state candidates. Returns nil if not found.
+func (s *StateDB) getStateValidators() (stateValidators *stateValidators) {
+	// Prefer 'live' objects.
+	if s.stateValidators != nil {
+		return s.stateValidators
+	}
+
+	// Load the object from the database.
+	enc, err := s.trie.TryGet(validatorsKey)
+	if len(enc) == 0 {
+		s.setError(err)
+		return nil
+	}
+	var data Validators
+	if err := rlp.DecodeBytes(enc, &data); err != nil {
+		panic(err)
+		return nil
+	}
+	// Insert into the live set.
+	obj := newValidator(s, data, s.MarkStateValidatorsDirty)
+	s.setStateValidators(obj)
 	return obj
 }
 
@@ -391,6 +437,13 @@ func (s *StateDB) setStateCandidates(candidates *stateCandidates) {
 	s.stateCandidates = candidates
 }
 
+func (s *StateDB) setStateValidators(validators *stateValidators) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	s.stateValidators = validators
+}
+
 // Retrieve a state object or create a new state object if nil
 func (s *StateDB) GetOrNewStateObject(addr types.Address) *stateObject {
 	stateObject := s.getStateObject(addr)
@@ -423,6 +476,10 @@ func (s *StateDB) MarkStateObjectDirty(addr types.Address) {
 
 func (s *StateDB) MarkStateCandidateDirty() {
 	s.stateCandidatesDirty = true
+}
+
+func (s *StateDB) MarkStateValidatorsDirty() {
+	s.stateValidatorsDirty = true
 }
 
 func (s *StateDB) MarkStateCoinDirty(symbol types.CoinSymbol) {
@@ -477,6 +534,34 @@ func (s *StateDB) CreateCoin(
 	return newC
 }
 
+func (s *StateDB) CreateValidator(
+	address types.Address,
+	pubkey types.Pubkey,
+	commission uint,
+	currentBlock uint,
+	coin types.CoinSymbol,
+	initialStake *big.Int) *stateValidators {
+
+	vals := s.getStateValidators()
+
+	if vals == nil {
+		vals = newValidator(s, Validators{}, s.MarkStateValidatorsDirty)
+	}
+
+	vals.data = append(vals.data, Validator{
+		CandidateAddress: address,
+		TotalBipStake:    initialStake,
+		PubKey:           pubkey,
+		Commission:       commission,
+		AccumReward:      big.NewInt(0),
+		AbsentTimes:      0,
+	})
+
+	s.MarkStateValidatorsDirty()
+	s.setStateValidators(vals)
+	return vals
+}
+
 func (s *StateDB) CreateCandidate(
 	address types.Address,
 	pubkey types.Pubkey,
@@ -495,7 +580,6 @@ func (s *StateDB) CreateCandidate(
 		CandidateAddress: address,
 		PubKey:           pubkey,
 		Commission:       commission,
-		AccumReward:      big.NewInt(0),
 		Stakes: []Stake{
 			{
 				Owner: address,
@@ -505,7 +589,6 @@ func (s *StateDB) CreateCandidate(
 		},
 		CreatedAtBlock: currentBlock,
 		Status:         CandidateStatusOffline,
-		AbsentTimes:    0,
 	})
 
 	s.MarkStateCandidateDirty()
@@ -566,6 +649,11 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (root types.Hash, err error) {
 	if s.stateCandidatesDirty {
 		s.updateStateCandidates(s.stateCandidates)
 		s.stateCandidatesDirty = false
+	}
+
+	if s.stateValidatorsDirty {
+		s.updateStateValidators(s.stateValidators)
+		s.stateValidatorsDirty = false
 	}
 
 	// Write trie changes.
@@ -659,11 +747,11 @@ func (s *StateDB) SubCoinReserve(symbol types.CoinSymbol, value *big.Int) {
 	}
 }
 
-func (s *StateDB) GetValidators(count int) ([]abci.Validator, []Candidate) {
+func (s *StateDB) GetCandidates(count int) []Candidate {
 	stateCandidates := s.getStateCandidates()
 
 	if stateCandidates == nil {
-		return nil, nil
+		return nil
 	}
 
 	candidates := stateCandidates.data
@@ -685,63 +773,55 @@ func (s *StateDB) GetValidators(count int) ([]abci.Validator, []Candidate) {
 		count = len(activeCandidates)
 	}
 
-	validators := make([]abci.Validator, count)
-
-	// calculate total power
-	totalPower := big.NewInt(0)
-	for _, candidate := range activeCandidates[:count] {
-		totalPower.Add(totalPower, candidate.TotalBipStake)
-	}
-
-	for i := range activeCandidates[:count] {
-		power := big.NewInt(0).Div(big.NewInt(0).Mul(activeCandidates[i].TotalBipStake, big.NewInt(100000000)), totalPower).Int64()
-
-		if power == 0 {
-			power = 1
-		}
-
-		validators[i] = abci.Ed25519Validator(activeCandidates[i].PubKey, power)
-	}
-
-	return validators, activeCandidates
+	return activeCandidates
 }
 
 func (s *StateDB) AddAccumReward(pubkey types.Pubkey, reward *big.Int) {
-	stateCandidates := s.getStateCandidates()
+	validators := s.getStateValidators()
 
-	for i := range stateCandidates.data {
-		if bytes.Equal(stateCandidates.data[i].PubKey, pubkey) {
-			stateCandidates.data[i].AccumReward.Add(stateCandidates.data[i].AccumReward, reward)
-			s.setStateCandidates(stateCandidates)
-			s.MarkStateCandidateDirty()
+	for i := range validators.data {
+		if bytes.Equal(validators.data[i].PubKey, pubkey) {
+			validators.data[i].AccumReward.Add(validators.data[i].AccumReward, reward)
+			s.setStateValidators(validators)
+			s.MarkStateValidatorsDirty()
 			return
 		}
 	}
 }
 
 func (s *StateDB) PayRewards() {
-	stateCandidates := s.getStateCandidates()
+	validators := s.getStateValidators()
 
-	for i := range stateCandidates.data {
-		candidate := stateCandidates.data[i]
+	for i := range validators.data {
+		validator := validators.data[i]
 
-		if candidate.AccumReward.Cmp(types.Big0) == 1 {
+		if validator.AccumReward.Cmp(types.Big0) == 1 {
 
-			totalReward := big.NewInt(0).Set(candidate.AccumReward)
+			totalReward := big.NewInt(0).Set(validator.AccumReward)
 
 			// pay commission to DAO
 			DAOReward := big.NewInt(0).Set(totalReward)
 			DAOReward.Mul(DAOReward, big.NewInt(int64(dao.Commission)))
 			DAOReward.Div(DAOReward, big.NewInt(100))
-			totalReward.Sub(totalReward, DAOReward)
 			s.AddBalance(dao.Address, types.GetBaseCoin(), DAOReward)
+
+			// pay commission to Developers
+			DevelopersReward := big.NewInt(0).Set(totalReward)
+			DevelopersReward.Mul(DevelopersReward, big.NewInt(int64(developers.Commission)))
+			DevelopersReward.Div(DevelopersReward, big.NewInt(100))
+			s.AddBalance(developers.Address, types.GetBaseCoin(), DevelopersReward)
+
+			totalReward.Sub(totalReward, DevelopersReward)
+			totalReward.Sub(totalReward, DAOReward)
 
 			// pay commission to validator
 			validatorReward := big.NewInt(0).Set(totalReward)
-			validatorReward.Mul(validatorReward, big.NewInt(int64(candidate.Commission)))
+			validatorReward.Mul(validatorReward, big.NewInt(int64(validator.Commission)))
 			validatorReward.Div(validatorReward, big.NewInt(100))
 			totalReward.Sub(totalReward, validatorReward)
-			s.AddBalance(candidate.CandidateAddress, types.GetBaseCoin(), validatorReward)
+			s.AddBalance(validator.CandidateAddress, types.GetBaseCoin(), validatorReward)
+
+			candidate := s.GetStateCandidate(validator.PubKey)
 
 			// pay rewards
 			for j := range candidate.Stakes {
@@ -749,21 +829,22 @@ func (s *StateDB) PayRewards() {
 
 				reward := big.NewInt(0).Set(totalReward)
 				reward.Mul(reward, stake.BipValue(s))
-				reward.Div(reward, candidate.TotalBipStake)
+				reward.Div(reward, validator.TotalBipStake)
 
 				s.AddBalance(stake.Owner, types.GetBaseCoin(), reward)
 			}
 
-			candidate.AccumReward.SetInt64(0)
+			validator.AccumReward.SetInt64(0)
 		}
 	}
 
-	s.setStateCandidates(stateCandidates)
-	s.MarkStateCandidateDirty()
+	s.setStateValidators(validators)
+	s.MarkStateValidatorsDirty()
 }
 
 func (s *StateDB) RecalculateTotalStakeValues() {
 	stateCandidates := s.getStateCandidates()
+	validators := s.getStateValidators()
 
 	for i := range stateCandidates.data {
 		candidate := &stateCandidates.data[i]
@@ -776,7 +857,17 @@ func (s *StateDB) RecalculateTotalStakeValues() {
 		}
 
 		candidate.TotalBipStake = totalBipStake
+
+		for j := range validators.data {
+			if bytes.Equal(validators.data[j].PubKey, candidate.PubKey) {
+				validators.data[j].TotalBipStake = totalBipStake
+				break
+			}
+		}
 	}
+
+	s.setStateValidators(validators)
+	s.MarkStateValidatorsDirty()
 
 	s.setStateCandidates(stateCandidates)
 	s.MarkStateCandidateDirty()
@@ -871,22 +962,32 @@ func (s *StateDB) SetCandidateOffline(pubkey []byte) {
 	s.MarkStateCandidateDirty()
 }
 
-func (s *StateDB) SetValidatorAbsent(pubkey types.Pubkey) {
-	stateCandidates := s.getStateCandidates()
+func (s *StateDB) SetValidatorAbsent(address [20]byte) {
+	validators := s.getStateValidators()
 
-	for i := range stateCandidates.data {
-		candidate := &stateCandidates.data[i]
-		if bytes.Equal(candidate.PubKey, pubkey) {
+	for i := range validators.data {
+		validator := &validators.data[i]
+		if validator.GetAddress() == address {
+
+			candidates := s.getStateCandidates()
+
+			var candidate *Candidate
+
+			for i := range candidates.data {
+				if candidates.data[i].GetAddress() == address {
+					candidate = &candidates.data[i]
+				}
+			}
 
 			if candidate.Status == CandidateStatusOffline {
 				return
 			}
 
-			candidate.AbsentTimes = candidate.AbsentTimes + 1
+			validator.AbsentTimes = validator.AbsentTimes + 1
 
-			if candidate.AbsentTimes > CandidateMaxAbsentTimes {
+			if validator.AbsentTimes > ValidatorMaxAbsentTimes {
 				candidate.Status = CandidateStatusOffline
-				candidate.AbsentTimes = 0
+				validator.AbsentTimes = 0
 
 				totalStake := big.NewInt(0)
 
@@ -904,36 +1005,52 @@ func (s *StateDB) SetValidatorAbsent(pubkey types.Pubkey) {
 				}
 
 				// TODO: recalc total stake in bips
-				candidate.TotalBipStake = totalStake
+				validator.TotalBipStake = totalStake
 			}
+
+			s.setStateCandidates(candidates)
+			s.MarkStateCandidateDirty()
 		}
 	}
 
-	s.setStateCandidates(stateCandidates)
-	s.MarkStateCandidateDirty()
+	s.setStateValidators(validators)
+	s.MarkStateValidatorsDirty()
 }
 
-func (s *StateDB) PunishByzantineCandidate(PubKey []byte) {
+func (s *StateDB) PunishByzantineValidator(address [20]byte) {
 
-	stateCandidates := s.getStateCandidates()
+	validators := s.getStateValidators()
 
-	for i := range stateCandidates.data {
-		candidate := &stateCandidates.data[i]
-		if bytes.Equal(candidate.PubKey, PubKey) {
-			candidate.AbsentTimes = candidate.AbsentTimes + 1
+	for i := range validators.data {
+		validator := &validators.data[i]
+		if validator.GetAddress() == address {
+			validator.AbsentTimes = validator.AbsentTimes + 1
+
+			candidates := s.getStateCandidates()
+
+			var candidate *Candidate
+
+			for i := range candidates.data {
+				if candidates.data[i].GetAddress() == address {
+					candidate = &candidates.data[i]
+				}
+			}
 
 			candidate.Stakes = []Stake{}
-			candidate.TotalBipStake = big.NewInt(0)
 			candidate.Status = CandidateStatusOffline
-			candidate.AccumReward = big.NewInt(0)
+			validator.AccumReward = big.NewInt(0)
+			validator.TotalBipStake = big.NewInt(0)
+
+			s.setStateCandidates(candidates)
+			s.MarkStateCandidateDirty()
 		}
 	}
 
-	s.setStateCandidates(stateCandidates)
-	s.MarkStateCandidateDirty()
+	s.setStateValidators(validators)
+	s.MarkStateValidatorsDirty()
 }
 
-func (s *StateDB) RemoveFrozenFundsWithPubKey(fromBlock uint64, toBlock uint64, PubKey []byte) {
+func (s *StateDB) RemoveFrozenFundsWithAddress(fromBlock uint64, toBlock uint64, address [20]byte) {
 	for i := fromBlock; i <= toBlock; i++ {
 		frozenFund := s.getStateFrozenFunds(i)
 
@@ -941,20 +1058,51 @@ func (s *StateDB) RemoveFrozenFundsWithPubKey(fromBlock uint64, toBlock uint64, 
 			continue
 		}
 
-		frozenFund.RemoveFund(PubKey)
+		frozenFund.RemoveFund(address)
 	}
 }
 
-func (s *StateDB) SetValidatorPresent(pubkey types.Pubkey) {
-	stateCandidates := s.getStateCandidates()
+func (s *StateDB) SetValidatorPresent(address [20]byte) {
+	validators := s.getStateValidators()
 
-	for i := range stateCandidates.data {
-		candidate := &stateCandidates.data[i]
-		if bytes.Equal(candidate.PubKey, pubkey) {
-			candidate.AbsentTimes = 0
+	for i := range validators.data {
+		validator := &validators.data[i]
+		if validator.GetAddress() == address {
+			validator.AbsentTimes = 0
 		}
 	}
 
-	s.setStateCandidates(stateCandidates)
-	s.MarkStateCandidateDirty()
+	s.setStateValidators(validators)
+	s.MarkStateValidatorsDirty()
+}
+
+func (s *StateDB) SetNewValidators(candidates []Candidate) {
+	oldVals := s.getStateValidators()
+
+	var newVals Validators
+
+	for _, candidate := range candidates {
+		accumReward := big.NewInt(0)
+		absentTimes := uint(0)
+
+		for _, oldVal := range oldVals.data {
+			if oldVal.GetAddress() == candidate.GetAddress() {
+				accumReward = oldVal.AccumReward
+				absentTimes = oldVal.AbsentTimes
+			}
+		}
+
+		newVals = append(newVals, Validator{
+			CandidateAddress: candidate.CandidateAddress,
+			TotalBipStake:    candidate.TotalBipStake,
+			PubKey:           candidate.PubKey,
+			Commission:       candidate.Commission,
+			AccumReward:      accumReward,
+			AbsentTimes:      absentTimes,
+		})
+	}
+
+	oldVals.data = newVals
+	s.setStateValidators(oldVals)
+	s.MarkStateValidatorsDirty()
 }

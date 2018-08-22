@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/core/rewards"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/gorilla/mux"
@@ -21,6 +22,7 @@ type BlockResponse struct {
 	TotalTxs     int64                      `json:"total_txs"`
 	Transactions []BlockTransactionResponse `json:"transactions"`
 	Precommits   json.RawMessage            `json:"precommits"`
+	BlockReward  string                     `json:"block_reward"`
 }
 
 type BlockTransactionResponse struct {
@@ -51,8 +53,8 @@ func Block(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(Response{
-			Code:   0,
-			Result: err.Error(),
+			Code: 0,
+			Log:  err.Error(),
 		})
 		return
 	}
@@ -97,8 +99,9 @@ func Block(w http.ResponseWriter, r *http.Request) {
 		Time:         block.Block.Time,
 		NumTxs:       block.Block.NumTxs,
 		TotalTxs:     block.Block.TotalTxs,
-		Precommits:   json.RawMessage(precommits),
 		Transactions: txs,
+		Precommits:   json.RawMessage(precommits),
+		BlockReward:  rewards.GetRewardForBlock(uint64(height)).String(),
 	}
 
 	err = json.NewEncoder(w).Encode(Response{

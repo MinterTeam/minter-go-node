@@ -36,6 +36,7 @@ func RunApi(b *minter.Blockchain, node *node.Node) {
 	router := mux.NewRouter().StrictSlash(true)
 
 	router.HandleFunc("/api/bipVolume", GetBipVolume).Methods("GET")
+	router.HandleFunc("/api/candidates", GetCandidates).Methods("GET")
 	router.HandleFunc("/api/candidate/{pubkey}", GetCandidate).Methods("GET")
 	router.HandleFunc("/api/validators", GetValidators).Methods("GET")
 	router.HandleFunc("/api/balance/{address}", GetBalance).Methods("GET")
@@ -52,6 +53,7 @@ func RunApi(b *minter.Blockchain, node *node.Node) {
 	router.HandleFunc("/api/coinInfo/{symbol}", GetCoinInfo).Methods("GET")
 	router.HandleFunc("/api/estimateCoinSell", EstimateCoinSell).Methods("GET")
 	router.HandleFunc("/api/estimateCoinBuy", EstimateCoinBuy).Methods("GET")
+	router.HandleFunc("/api/estimateTxCommission", EstimateTxCommission).Methods("GET")
 
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},

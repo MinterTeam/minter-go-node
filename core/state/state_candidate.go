@@ -25,6 +25,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/rlp"
+	"github.com/tendermint/tendermint/crypto/ed25519"
 	"math/big"
 )
 
@@ -73,15 +74,33 @@ func (s *Stake) MarshalJSON() ([]byte, error) {
 		Value: s.Value.String(),
 	})
 }
+
 func (s *Stake) BipValue(context *StateDB) *big.Int {
 
 	if s.Coin.IsBaseCoin() {
 		return big.NewInt(0).Set(s.Value)
 	}
 
-	coin := context.getStateCoin(s.Coin)
+	totalStaked := big.NewInt(0)
 
-	return formula.CalculateSaleReturn(coin.Volume(), coin.ReserveBalance(), coin.data.Crr, s.Value)
+	candidates := context.getStateCandidates()
+
+	for _, candidate := range candidates.data {
+		for _, stake := range candidate.Stakes {
+			if bytes.Equal(stake.Coin.Bytes(), s.Coin.Bytes()) {
+				totalStaked.Add(totalStaked, stake.Value)
+			}
+		}
+	}
+
+	coin := context.getStateCoin(s.Coin)
+	totalBipValue := formula.CalculateSaleReturn(coin.Volume(), coin.ReserveBalance(), coin.data.Crr, totalStaked)
+
+	value := big.NewInt(0).Set(totalBipValue)
+	value.Mul(value, s.Value)
+	value.Div(value, totalStaked)
+
+	return value
 }
 
 type Candidate struct {
@@ -89,11 +108,11 @@ type Candidate struct {
 	TotalBipStake    *big.Int
 	PubKey           types.Pubkey
 	Commission       uint
-	AccumReward      *big.Int
 	Stakes           []Stake
 	CreatedAtBlock   uint
 	Status           byte
-	AbsentTimes      uint
+
+	tmAddress *[20]byte
 }
 
 func (candidate Candidate) GetStakeOfAddress(addr types.Address, coin types.CoinSymbol) *Stake {
@@ -108,6 +127,22 @@ func (candidate Candidate) GetStakeOfAddress(addr types.Address, coin types.Coin
 
 func (candidate Candidate) String() string {
 	return fmt.Sprintf("Candidate")
+}
+
+func (candidate Candidate) GetAddress() [20]byte {
+	if candidate.tmAddress != nil {
+		return *candidate.tmAddress
+	}
+
+	var pubkey ed25519.PubKeyEd25519
+	copy(pubkey[:], candidate.PubKey)
+
+	var address [20]byte
+	copy(address[:], pubkey.Address().Bytes())
+
+	candidate.tmAddress = &address
+
+	return address
 }
 
 // newCandidate creates a state object.
@@ -131,4 +166,8 @@ func (c *stateCandidates) EncodeRLP(w io.Writer) error {
 func (c *stateCandidates) deepCopy(db *StateDB, onDirty func()) *stateCandidates {
 	stateCandidate := newCandidate(db, c.data, onDirty)
 	return stateCandidate
+}
+
+func (c *stateCandidates) GetData() Candidates {
+	return c.data
 }

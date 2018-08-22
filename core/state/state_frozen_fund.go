@@ -19,10 +19,10 @@ package state
 import (
 	"io"
 
-	"bytes"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/rlp"
+	"github.com/tendermint/tendermint/crypto/ed25519"
 	"math/big"
 )
 
@@ -114,16 +114,22 @@ func (c *stateFrozenFund) addFund(fund FrozenFund) {
 }
 
 // remove fund with given candidate key (used in byzantine validator's punishment)
-func (c *stateFrozenFund) RemoveFund(candidateKey []byte) {
-	c.removeFund(candidateKey)
+func (c *stateFrozenFund) RemoveFund(candidateAddress [20]byte) {
+	c.removeFund(candidateAddress)
 }
 
-func (c *stateFrozenFund) removeFund(candidateKey []byte) {
+func (c *stateFrozenFund) removeFund(candidateAddress [20]byte) {
 	var NewList []FrozenFund
 
 	for _, item := range c.data.List {
 		// skip fund with given candidate key
-		if bytes.Equal(item.CandidateKey, candidateKey) {
+		var pubkey ed25519.PubKeyEd25519
+		copy(pubkey[:], item.CandidateKey)
+
+		var address [20]byte
+		copy(address[:], pubkey.Address().Bytes())
+
+		if candidateAddress == address {
 			continue
 		}
 

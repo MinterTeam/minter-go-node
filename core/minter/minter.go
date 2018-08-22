@@ -29,7 +29,7 @@ type Blockchain struct {
 	height             uint64
 	rewards            *big.Int
 	activeValidators   abciTypes.Validators
-	validatorsStatuses map[string]int8
+	validatorsStatuses map[[20]byte]int8
 	tendermintRPC      *rpc.Local
 
 	BaseCoin types.CoinSymbol
@@ -45,9 +45,6 @@ const (
 
 var (
 	blockchain *Blockchain
-
-	teamAddress    = types.HexToAddress("Mxa93163fdf10724dc4785ff5cbfb9ac0b5949409f")
-	airdropAddress = types.HexToAddress("Mxa93163fdf10724dc4785ff5cbfb9ac0b5949409f")
 )
 
 func NewMinterBlockchain() *Blockchain {
@@ -96,6 +93,7 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 
 	for _, validator := range req.Validators {
 		app.stateDeliver.CreateCandidate(genesisState.FirstValidatorAddress, validator.PubKey.Data, 10, 1, types.GetBaseCoin(), helpers.BipToPip(big.NewInt(1000000)))
+		app.stateDeliver.CreateValidator(genesisState.FirstValidatorAddress, validator.PubKey.Data, 10, 1, types.GetBaseCoin(), helpers.BipToPip(big.NewInt(1000000)))
 		app.stateDeliver.SetCandidateOnline(validator.PubKey.Data)
 		app.activeValidators = append(app.activeValidators, validator)
 	}
@@ -108,25 +106,29 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 	app.rewards = big.NewInt(0)
 
 	// clear absent candidates
-	app.validatorsStatuses = map[string]int8{}
+	app.validatorsStatuses = map[[20]byte]int8{}
 
 	// give penalty to absent validators
-	for _, v := range req.Validators {
-		pubkey := types.Pubkey(v.Validator.PubKey.Data)
+	for _, v := range req.LastCommitInfo.Validators {
+		var address [20]byte
+		copy(address[:], v.Validator.Address)
 
 		if v.SignedLastBlock {
-			app.stateDeliver.SetValidatorPresent(pubkey)
-			app.validatorsStatuses[pubkey.String()] = ValidatorPresent
+			app.stateDeliver.SetValidatorPresent(address)
+			app.validatorsStatuses[address] = ValidatorPresent
 		} else {
-			app.stateDeliver.SetValidatorAbsent(pubkey)
-			app.validatorsStatuses[pubkey.String()] = ValidatorAbsent
+			app.stateDeliver.SetValidatorAbsent(address)
+			app.validatorsStatuses[address] = ValidatorAbsent
 		}
 	}
 
 	// give penalty to Byzantine validators
 	for _, v := range req.ByzantineValidators {
-		app.stateDeliver.PunishByzantineCandidate(v.Validator.PubKey.Data)
-		app.stateDeliver.RemoveFrozenFundsWithPubKey(app.height, app.height+518400, v.Validator.PubKey.Data)
+		var address [20]byte
+		copy(address[:], v.Validator.Address)
+
+		app.stateDeliver.PunishByzantineValidator(address)
+		app.stateDeliver.RemoveFrozenFundsWithAddress(app.height, app.height+518400, address)
 	}
 
 	// apply frozen funds
@@ -139,44 +141,30 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 		frozenFunds.Delete()
 	}
 
-	// distributions:
-	if app.height <= 3110400*6 && app.height%3110400 == 0 { // team distribution
-		value := big.NewInt(300000000) // 300 000 000 bip (3%)
-		app.stateDeliver.AddBalance(teamAddress, types.GetBaseCoin(), helpers.BipToPip(value))
-	}
-
-	if app.height <= 3110400*10 && app.height%3110400 == 0 { // airdrop distribution
-		value := big.NewInt(500000000) // 500 000 000 bip (5%)
-		app.stateDeliver.AddBalance(airdropAddress, types.GetBaseCoin(), helpers.BipToPip(value))
-	}
-
 	return abciTypes.ResponseBeginBlock{}
 }
 
 func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.ResponseEndBlock {
 
-	app.stateDeliver.RecalculateTotalStakeValues()
+	var updates []abciTypes.Validator
 
-	validatorsCount := validators.GetValidatorsCountForBlock(app.height)
-
-	newValidators, newCandidates := app.stateDeliver.GetValidators(validatorsCount)
-
+	vals := app.stateDeliver.GetStateValidators().Data()
 	// calculate total power of validators
 	totalPower := big.NewInt(0)
-	for _, candidate := range newCandidates {
+	for _, val := range vals {
 		// skip if candidate is not present
-		if app.validatorsStatuses[candidate.PubKey.String()] != ValidatorPresent {
+		if app.validatorsStatuses[val.GetAddress()] != ValidatorPresent {
 			continue
 		}
 
-		totalPower.Add(totalPower, candidate.TotalBipStake)
+		totalPower.Add(totalPower, val.TotalBipStake)
 	}
 
 	// accumulate rewards
-	for _, candidate := range newCandidates {
+	for _, val := range vals {
 
 		// skip if candidate is not present
-		if app.validatorsStatuses[candidate.PubKey.String()] != ValidatorPresent {
+		if app.validatorsStatuses[val.GetAddress()] != ValidatorPresent {
 			continue
 		}
 
@@ -184,39 +172,71 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 
 		reward.Add(reward, app.rewards)
 
-		reward.Mul(reward, candidate.TotalBipStake)
+		reward.Mul(reward, val.TotalBipStake)
 		reward.Div(reward, totalPower)
 
-		app.stateDeliver.AddAccumReward(candidate.PubKey, reward)
+		app.stateDeliver.AddAccumReward(val.PubKey, reward)
 	}
 
-	// pay rewards
 	if app.height%12 == 0 {
+
+		// pay rewards
 		app.stateDeliver.PayRewards()
-	}
 
-	// update validators
-	defer func() {
-		app.activeValidators = newValidators
-	}()
+		app.stateDeliver.RecalculateTotalStakeValues()
 
-	updates := newValidators
+		valsCount := validators.GetValidatorsCountForBlock(app.height)
 
-	for _, validator := range app.activeValidators {
-		persisted := false
-		for _, newValidator := range newValidators {
-			if bytes.Equal(validator.PubKey.Data, newValidator.PubKey.Data) {
-				persisted = true
-				break
-			}
+		newCandidates := app.stateDeliver.GetCandidates(valsCount)
+
+		if len(newCandidates) < valsCount {
+			valsCount = len(newCandidates)
 		}
 
-		// remove validator
-		if !persisted {
-			updates = append(updates, abciTypes.Validator{
-				PubKey: validator.PubKey,
-				Power:  0,
-			})
+		newValidators := make([]abciTypes.Validator, valsCount)
+
+		// calculate total power
+		totalPower := big.NewInt(0)
+		for _, candidate := range newCandidates[:valsCount] {
+			totalPower.Add(totalPower, candidate.TotalBipStake)
+		}
+
+		for i := range newCandidates[:valsCount] {
+			power := big.NewInt(0).Div(big.NewInt(0).Mul(newCandidates[i].TotalBipStake, big.NewInt(100000000)), totalPower).Int64()
+
+			if power == 0 {
+				power = 1
+			}
+
+			newValidators[i] = abciTypes.Ed25519Validator(newCandidates[i].PubKey, power)
+		}
+
+		// update validators in state
+		app.stateDeliver.SetNewValidators(newCandidates)
+
+		// update validators in app cache
+		defer func() {
+			app.activeValidators = newValidators
+		}()
+
+		updates = newValidators
+
+		for _, validator := range app.activeValidators {
+			persisted := false
+			for _, newValidator := range newValidators {
+				if bytes.Equal(validator.PubKey.Data, newValidator.PubKey.Data) {
+					persisted = true
+					break
+				}
+			}
+
+			// remove validator
+			if !persisted {
+				updates = append(updates, abciTypes.Validator{
+					PubKey: validator.PubKey,
+					Power:  0,
+				})
+			}
 		}
 	}
 
@@ -243,7 +263,6 @@ func (app *Blockchain) DeliverTx(rawTx []byte) abciTypes.ResponseDeliverTx {
 		GasWanted: response.GasWanted,
 		GasUsed:   response.GasUsed,
 		Tags:      response.Tags,
-		Fee:       response.Fee,
 	}
 }
 
@@ -258,7 +277,6 @@ func (app *Blockchain) CheckTx(rawTx []byte) abciTypes.ResponseCheckTx {
 		GasWanted: response.GasWanted,
 		GasUsed:   response.GasUsed,
 		Tags:      response.Tags,
-		Fee:       response.Fee,
 	}
 }
 

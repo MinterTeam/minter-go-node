@@ -4,6 +4,29 @@
 
 - [api] Add validators rewards to block api
 
+## 0.2.0
+*Aug 22th, 2018*
+
+BREAKING CHANGES
+
+- [testnet] New testnet id
+- [core] New rewards
+- [core] Validators list are now updated each 12 blocks
+- [core] Set DAO commission to 10% 
+- [core] Add Developers commission of 10%
+- [core] Now stake of custom coin is calculated by selling all such staked coins
+- [api] Reformatted candidates and validators endpoints
+- [api] tx.return tags are now encoded as strings
+
+IMPROVEMENT
+
+- [tendermint] Update tendermint to 0.23.0
+- [api] Add block reward to api
+- [api] Add bip_value field to Stake
+- [api] Add /api/candidates endpoint
+- [api] Add /api/estimateTxCommission endpoint
+- [gui] Minor GUI update
+
 ## 0.1.9
 *Aug 19th, 2018*
 
