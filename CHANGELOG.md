@@ -5,7 +5,7 @@
 - [api] Add validators rewards to block api
 
 ## 0.2.0
-*Aug 21th, 2018*
+*Aug 22th, 2018*
 
 BREAKING CHANGES
 
@@ -25,6 +25,7 @@ IMPROVEMENT
 - [api] Add bip_value field to Stake
 - [api] Add /api/candidates endpoint
 - [api] Add /api/estimateTxCommission endpoint
+- [gui] Minor GUI update
 
 ## 0.1.9
 *Aug 19th, 2018*
