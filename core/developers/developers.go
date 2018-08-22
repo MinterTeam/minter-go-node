@@ -3,6 +3,6 @@ package developers
 import "github.com/MinterTeam/minter-go-node/core/types"
 
 var (
-	Address    = types.HexToAddress("Mxa93163fdf10724dc4785ff5cbfb9ac0b5949409f")
+	Address    = types.HexToAddress("Mx444c4f1953ea170f74eabef4eee52ed8276a7d5e")
 	Commission = 10
 )

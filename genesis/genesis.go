@@ -36,13 +36,13 @@ func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
 			{
 				Address: types.HexToAddress("Mxee81347211c72524338f9680072af90744333146"),
 				Balance: map[string]string{
-					"MNT": helpers.BipToPip(big.NewInt(1000000000)).String(),
+					"MNT": helpers.BipToPip(big.NewInt(100000000)).String(),
 				},
 			},
 			{
 				Address: types.HexToAddress("Mxfe60014a6e9ac91618f5d1cab3fd58cded61ee99"),
 				Balance: map[string]string{
-					"MNT": helpers.BipToPip(big.NewInt(10000000)).String(),
+					"MNT": helpers.BipToPip(big.NewInt(100000000)).String(),
 				},
 			},
 		},
