@@ -7,6 +7,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"net/http"
 	"strconv"
+	"github.com/MinterTeam/minter-go-node/core/validators"
 )
 
 type Stake struct {
@@ -80,7 +81,13 @@ func GetValidators(w http.ResponseWriter, r *http.Request) {
 
 	var responseValidators []Validator
 
-	for _, val := range vals {
+	count := validators.GetValidatorsCountForBlock(uint64(height))
+
+	if len(vals) < count {
+		count = len(vals)
+	}
+
+	for _, val := range vals[:count] {
 		responseValidators = append(responseValidators, makeResponseValidator(val, rState))
 	}
 
