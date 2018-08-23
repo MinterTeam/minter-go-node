@@ -187,13 +187,13 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 
 		valsCount := validators.GetValidatorsCountForBlock(app.height)
 
-		newCandidates := app.stateDeliver.GetCandidates(valsCount)
+		newCandidates := app.stateDeliver.GetCandidates(valsCount, req.Height)
 
 		if len(newCandidates) < valsCount {
 			valsCount = len(newCandidates)
 		}
 
-		newValidators := make([]abciTypes.Validator, valsCount)
+		var newValidators []abciTypes.Validator
 
 		// calculate total power
 		totalPower := big.NewInt(0)
@@ -208,7 +208,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 				power = 1
 			}
 
-			newValidators[i] = abciTypes.Ed25519Validator(newCandidates[i].PubKey, power)
+			newValidators = append(newValidators, abciTypes.Ed25519Validator(newCandidates[i].PubKey, power))
 		}
 
 		// update validators in state

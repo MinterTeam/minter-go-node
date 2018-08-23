@@ -4,6 +4,17 @@
 
 - [api] Add validators rewards to block api
 
+## 0.2.1
+*Aug 23th, 2018*
+
+In this update we well test blockchain's hardfork.
+There is no need to wipe old data, just be sure to update binary
+until 15000 block.
+
+BUG FIXES
+
+- [validators] Fix validators issue
+
 ## 0.2.0
 *Aug 22th, 2018*
 
