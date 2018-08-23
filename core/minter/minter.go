@@ -193,7 +193,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 			valsCount = len(newCandidates)
 		}
 
-		var newValidators []abciTypes.Validator
+		newValidators := make([]abciTypes.Validator, valsCount)
 
 		// calculate total power
 		totalPower := big.NewInt(0)
@@ -208,7 +208,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 				power = 1
 			}
 
-			newValidators = append(newValidators, abciTypes.Ed25519Validator(newCandidates[i].PubKey, power))
+			newValidators[i] = abciTypes.Ed25519Validator(newCandidates[i].PubKey, power)
 		}
 
 		// update validators in state
