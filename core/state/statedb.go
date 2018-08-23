@@ -747,7 +747,7 @@ func (s *StateDB) SubCoinReserve(symbol types.CoinSymbol, value *big.Int) {
 	}
 }
 
-func (s *StateDB) GetCandidates(count int) []Candidate {
+func (s *StateDB) GetCandidates(count int, block int64) []Candidate {
 	stateCandidates := s.getStateCandidates()
 
 	if stateCandidates == nil {
@@ -771,6 +771,15 @@ func (s *StateDB) GetCandidates(count int) []Candidate {
 
 	if len(activeCandidates) < count {
 		count = len(activeCandidates)
+	}
+
+	// TODO: remove condition in next testnet
+	if block >= 15000 {
+		sort.Slice(activeCandidates, func(i, j int) bool {
+			return activeCandidates[i].TotalBipStake.Cmp(activeCandidates[j].TotalBipStake) == -1
+		})
+
+		activeCandidates = activeCandidates[:count]
 	}
 
 	return activeCandidates
