@@ -776,7 +776,7 @@ func (s *StateDB) GetCandidates(count int, block int64) []Candidate {
 	// TODO: remove condition in next testnet
 	if block >= 15000 {
 		sort.Slice(activeCandidates, func(i, j int) bool {
-			return activeCandidates[i].TotalBipStake.Cmp(activeCandidates[j].TotalBipStake) == -1
+			return activeCandidates[i].TotalBipStake.Cmp(activeCandidates[j].TotalBipStake) == 1
 		})
 
 		activeCandidates = activeCandidates[:count]
