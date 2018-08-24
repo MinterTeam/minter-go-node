@@ -7,6 +7,10 @@
 ## 0.2.3
 *Aug 24th, 2018*
 
+BUG FIXES
+
+- [api] Fix estimateTxCommission endpoint
+
 IMPROVEMENT
 
 - [gui] Minor GUI updates

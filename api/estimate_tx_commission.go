@@ -16,14 +16,14 @@ func EstimateTxCommission(w http.ResponseWriter, r *http.Request) {
 
 	query := r.URL.Query()
 	rawTx := query.Get("tx")
-	bytesTx, _ := hexutil.Decode(rawTx)
+	bytesTx, _ := hexutil.Decode("Mx" + rawTx)
 
 	tx, err := transaction.DecodeFromBytes(bytesTx)
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(Response{
-			Code: 0,
+			Code: 1,
 			Log:  err.Error(),
 		})
 		return
@@ -40,7 +40,7 @@ func EstimateTxCommission(w http.ResponseWriter, r *http.Request) {
 
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(Response{
-				Code: 0,
+				Code: 1,
 				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.ReserveBalance().String(), commissionInBaseCoin.String()),
 			})
 			return
