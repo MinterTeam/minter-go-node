@@ -1,0 +1,15 @@
+[Unit]
+Description=Minter Validator
+After=network.target auditd.service
+
+[Service]
+ExecStart=/home/user/minter
+Type=simple
+KillMode=process
+Restart=always
+RestartSec=3
+User=user
+
+[Install]
+WantedBy=multi-user.target
+Alias=minter.service

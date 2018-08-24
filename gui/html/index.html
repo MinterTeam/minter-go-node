@@ -205,19 +205,22 @@
             refresh() {
                 axios.all([
                     axios.get("//" + window.location.hostname + ':8841/api/status'),
-                    axios.get("//" + window.location.hostname + ':8841/api/net_info'),
-                    axios.get("https://minter-node-1.testnet.minter.network/api/status")
-                ]).then(axios.spread(function (status, net_info, masterStatus) {
+                    axios.get("//" + window.location.hostname + ':8841/api/net_info')
+                ]).then(axios.spread(function (status, net_info) {
                     this.error = null
 
                     this.status = status.data.result.tm_status
                     this.version = status.data.result.version
                     this.net_info = net_info.data.result
-                    this.masterStatus = masterStatus.data.result
 
                     setTimeout(this.refresh, 500)
                 }.bind(this))).catch(function (reason) {
                     this.error = reason.toString();
+                    setTimeout(this.refresh, 500)
+                }.bind(this))
+
+                axios.get("https://minter-node-1.testnet.minter.network/api/status").then(function (masterStatus) {
+                    this.masterStatus = masterStatus.data.result
                 }.bind(this))
             }
         }

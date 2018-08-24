@@ -4,6 +4,17 @@
 
 - [api] Add validators rewards to block api
 
+## 0.2.4
+*Aug 24th, 2018*
+
+BUG FIXES
+
+- [api] Fix estimateTxCommission endpoint
+
+IMPROVEMENT
+
+- [gui] Minor GUI updates
+
 ## 0.2.2
 *Aug 23th, 2018*
 
