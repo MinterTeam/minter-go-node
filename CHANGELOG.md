@@ -4,6 +4,13 @@
 
 - [api] Add validators rewards to block api
 
+## 0.2.3
+*Aug 24th, 2018*
+
+IMPROVEMENT
+
+- [gui] Minor GUI updates
+
 ## 0.2.2
 *Aug 23th, 2018*
 
