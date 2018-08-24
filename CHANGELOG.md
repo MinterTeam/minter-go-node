@@ -4,6 +4,13 @@
 
 - [api] Add validators rewards to block api
 
+## 0.2.5
+*Aug 24th, 2018*
+
+IMPROVEMENT
+
+- [p2p] Add seed nodes
+
 ## 0.2.4
 *Aug 24th, 2018*
 
