@@ -81,20 +81,30 @@ func (s *Stake) BipValue(context *StateDB) *big.Int {
 		return big.NewInt(0).Set(s.Value)
 	}
 
-	totalStaked := big.NewInt(0)
-
-	candidates := context.getStateCandidates()
-
-	for _, candidate := range candidates.data {
-		for _, stake := range candidate.Stakes {
-			if bytes.Equal(stake.Coin.Bytes(), s.Coin.Bytes()) {
-				totalStaked.Add(totalStaked, stake.Value)
-			}
-		}
+	if context.stakeBipValuesCache == nil {
+		context.stakeBipValuesCache = map[types.CoinSymbol]*big.Int{}
+		context.stakeTotalStakedCache = map[types.CoinSymbol]*big.Int{}
 	}
 
-	coin := context.getStateCoin(s.Coin)
-	totalBipValue := formula.CalculateSaleReturn(coin.Volume(), coin.ReserveBalance(), coin.data.Crr, totalStaked)
+	if _, has := context.stakeBipValuesCache[s.Coin]; !has {
+		totalStaked := big.NewInt(0)
+		candidates := context.getStateCandidates()
+
+		for _, candidate := range candidates.data {
+			for _, stake := range candidate.Stakes {
+				if bytes.Equal(stake.Coin.Bytes(), s.Coin.Bytes()) {
+					totalStaked.Add(totalStaked, stake.Value)
+				}
+			}
+		}
+
+		coin := context.getStateCoin(s.Coin)
+		context.stakeBipValuesCache[s.Coin] = formula.CalculateSaleReturn(coin.Volume(), coin.ReserveBalance(), coin.data.Crr, totalStaked)
+		context.stakeTotalStakedCache[s.Coin] = totalStaked
+	}
+
+	totalBipValue := context.stakeBipValuesCache[s.Coin]
+	totalStaked := context.stakeTotalStakedCache[s.Coin]
 
 	value := big.NewInt(0).Set(totalBipValue)
 	value.Mul(value, s.Value)

@@ -73,6 +73,9 @@ type StateDB struct {
 	stateValidators      *stateValidators
 	stateValidatorsDirty bool
 
+	stakeBipValuesCache   map[types.CoinSymbol]*big.Int
+	stakeTotalStakedCache map[types.CoinSymbol]*big.Int
+
 	// DB error.
 	// State objects are used by the consensus core and VM which are
 	// unable to deal with database-level errors. Any error that occurs
