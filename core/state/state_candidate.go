@@ -76,17 +76,11 @@ func (s *Stake) MarshalJSON() ([]byte, error) {
 }
 
 func (s *Stake) BipValue(context *StateDB) *big.Int {
-
 	if s.Coin.IsBaseCoin() {
 		return big.NewInt(0).Set(s.Value)
 	}
 
-	if context.stakeBipValuesCache == nil {
-		context.stakeBipValuesCache = map[types.CoinSymbol]*big.Int{}
-		context.stakeTotalStakedCache = map[types.CoinSymbol]*big.Int{}
-	}
-
-	if _, has := context.stakeBipValuesCache[s.Coin]; !has {
+	if _, has := context.stakeCache[s.Coin]; !has {
 		totalStaked := big.NewInt(0)
 		candidates := context.getStateCandidates()
 
@@ -99,16 +93,17 @@ func (s *Stake) BipValue(context *StateDB) *big.Int {
 		}
 
 		coin := context.getStateCoin(s.Coin)
-		context.stakeBipValuesCache[s.Coin] = formula.CalculateSaleReturn(coin.Volume(), coin.ReserveBalance(), coin.data.Crr, totalStaked)
-		context.stakeTotalStakedCache[s.Coin] = totalStaked
+		context.stakeCache[s.Coin] = StakeCache{
+			TotalValue: totalStaked,
+			BipValue:   formula.CalculateSaleReturn(coin.Volume(), coin.ReserveBalance(), coin.data.Crr, totalStaked),
+		}
 	}
 
-	totalBipValue := context.stakeBipValuesCache[s.Coin]
-	totalStaked := context.stakeTotalStakedCache[s.Coin]
+	data := context.stakeCache[s.Coin]
 
-	value := big.NewInt(0).Set(totalBipValue)
+	value := big.NewInt(0).Set(data.BipValue)
 	value.Mul(value, s.Value)
-	value.Div(value, totalStaked)
+	value.Div(value, data.TotalValue)
 
 	return value
 }

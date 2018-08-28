@@ -73,8 +73,7 @@ type StateDB struct {
 	stateValidators      *stateValidators
 	stateValidatorsDirty bool
 
-	stakeBipValuesCache   map[types.CoinSymbol]*big.Int
-	stakeTotalStakedCache map[types.CoinSymbol]*big.Int
+	stakeCache map[types.CoinSymbol]StakeCache
 
 	// DB error.
 	// State objects are used by the consensus core and VM which are
@@ -86,6 +85,11 @@ type StateDB struct {
 	thash, bhash types.Hash
 
 	lock sync.Mutex
+}
+
+type StakeCache struct {
+	TotalValue *big.Int
+	BipValue   *big.Int
 }
 
 // Create a new state from a given trie
@@ -105,6 +109,7 @@ func New(root types.Hash, db Database) (*StateDB, error) {
 		stateFrozenFundsDirty: make(map[uint64]struct{}),
 		stateCandidates:       nil,
 		stateCandidatesDirty:  false,
+		stakeCache:            make(map[types.CoinSymbol]StakeCache),
 	}, nil
 }
 
@@ -122,6 +127,10 @@ func (s *StateDB) setError(err error) {
 
 func (s *StateDB) Error() error {
 	return s.dbErr
+}
+
+func (s *StateDB) ClearStakeCache() {
+	s.stakeCache = make(map[types.CoinSymbol]StakeCache)
 }
 
 // Empty returns whether the state object is either non-existent
@@ -438,6 +447,7 @@ func (s *StateDB) setStateCandidates(candidates *stateCandidates) {
 	defer s.lock.Unlock()
 
 	s.stateCandidates = candidates
+	s.ClearStakeCache()
 }
 
 func (s *StateDB) setStateValidators(validators *stateValidators) {
@@ -445,6 +455,7 @@ func (s *StateDB) setStateValidators(validators *stateValidators) {
 	defer s.lock.Unlock()
 
 	s.stateValidators = validators
+	s.ClearStakeCache()
 }
 
 // Retrieve a state object or create a new state object if nil
