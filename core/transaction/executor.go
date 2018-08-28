@@ -14,8 +14,8 @@ var (
 )
 
 const (
-	maxTxLength          = 1024
-	maxPayloadLength     = 128
+	maxTxLength          = maxPayloadLength + maxServiceDataLength + 256
+	maxPayloadLength     = 1024
 	maxServiceDataLength = 128
 )
 

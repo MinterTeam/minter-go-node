@@ -11,6 +11,7 @@ IMPROVEMENT
 
 - [p2p] Add seed nodes
 - [sync] Speed up synchronization
+- [core] Extend max payload size to 1024 bytes
 
 ## 0.2.4
 *Aug 24th, 2018*
