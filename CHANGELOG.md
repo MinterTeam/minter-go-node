@@ -12,6 +12,7 @@ IMPROVEMENT
 - [p2p] Add seed nodes
 - [sync] Speed up synchronization
 - [core] Extend max payload size to 1024 bytes
+- [api] Limit balance watchers to 10 clients
 
 ## 0.2.4
 *Aug 24th, 2018*

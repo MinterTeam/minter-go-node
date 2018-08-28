@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"github.com/MinterTeam/minter-go-node/core/minter"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
@@ -11,6 +12,8 @@ import (
 	"net/http"
 )
 
+const maxClients = 10
+
 var clients = make(map[*websocket.Conn]bool)
 var upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
 
@@ -19,6 +22,17 @@ func init() {
 }
 
 func GetBalanceWatcher(w http.ResponseWriter, r *http.Request) {
+
+	if len(clients) > maxClients {
+		w.WriteHeader(http.StatusBadGateway)
+		json.NewEncoder(w).Encode(Response{
+			Code:   http.StatusBadGateway,
+			Result: nil,
+			Log:    "Max balance watchers limit reached",
+		})
+		return
+	}
+
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Error(err.Error())
@@ -56,11 +70,13 @@ func handleBalanceChange(msg state.BalanceChangeStruct) {
 	msg.BalanceInBasecoin = balanceInBasecoin
 
 	for client := range clients {
-		err := client.WriteJSON(msg)
-		if err != nil {
-			log.Info("ws error: %v", err)
-			client.Close()
-			delete(clients, client)
-		}
+		go func() {
+			err := client.WriteJSON(msg)
+			if err != nil {
+				log.Info("ws error: %v", err)
+				client.Close()
+				delete(clients, client)
+			}
+		}()
 	}
 }
