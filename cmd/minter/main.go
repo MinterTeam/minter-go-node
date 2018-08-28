@@ -16,6 +16,8 @@ import (
 	"os"
 )
 
+var cfg = config.GetConfig()
+
 func main() {
 
 	err := common.EnsureDir(utils.GetMinterHome()+"/config", 0777)
@@ -49,9 +51,6 @@ func main() {
 }
 
 func startTendermintNode(app *minter.Blockchain) *tmNode.Node {
-
-	cfg := config.GetConfig()
-
 	node, err := tmNode.NewNode(
 		cfg,
 		privval.LoadOrGenFilePV(cfg.PrivValidatorFile()),
@@ -63,11 +62,13 @@ func startTendermintNode(app *minter.Blockchain) *tmNode.Node {
 	)
 
 	if err != nil {
-		fmt.Errorf("Failed to create a node: %v", err)
+		println(fmt.Errorf("Failed to create a node: %v", err))
+		os.Exit(1)
 	}
 
 	if err = node.Start(); err != nil {
-		fmt.Errorf("Failed to start node: %v", err)
+		println(fmt.Errorf("Failed to start node: %v", err))
+		os.Exit(1)
 	}
 
 	log.Info("Started node", "nodeInfo", node.Switch().NodeInfo())
