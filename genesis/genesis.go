@@ -13,6 +13,10 @@ import (
 	"time"
 )
 
+var (
+	Network = "minter-test-network-19"
+)
+
 func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
 
 	validatorPubKeyBytes, err := base64.StdEncoding.DecodeString("SuHuc+YTbIWwypM6mhNHdYozSIXxCzI4OYpnrC6xU7g=")
@@ -55,7 +59,7 @@ func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
 	}
 
 	genesis := tmtypes.GenesisDoc{
-		ChainID:         "minter-test-network-19",
+		ChainID:         Network,
 		GenesisTime:     time.Date(2018, 8, 22, 0, 0, 0, 0, time.UTC),
 		ConsensusParams: nil,
 		Validators: []tmtypes.GenesisValidator{

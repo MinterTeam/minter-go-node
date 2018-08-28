@@ -12,11 +12,13 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/validators"
 	"github.com/MinterTeam/minter-go-node/genesis"
 	"github.com/MinterTeam/minter-go-node/helpers"
+	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/mintdb"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/node"
 	rpc "github.com/tendermint/tendermint/rpc/client"
 	"math/big"
+	"os"
 )
 
 type Blockchain struct {
@@ -68,6 +70,13 @@ func NewMinterBlockchain() *Blockchain {
 
 func (app *Blockchain) RunRPC(node *node.Node) {
 	app.tendermintRPC = rpc.NewLocal(node)
+
+	status, _ := app.tendermintRPC.Status()
+
+	if status.NodeInfo.Network != genesis.Network {
+		log.Error("Different networks")
+		os.Exit(1)
+	}
 }
 
 func (app *Blockchain) SetOption(req abciTypes.RequestSetOption) abciTypes.ResponseSetOption {
