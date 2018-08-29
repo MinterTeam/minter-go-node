@@ -15,6 +15,7 @@ IMPROVEMENT
 - [core] Add network id checker
 - [api] Limit balance watchers to 10 clients
 - [config] Add config file
+- [docs] Update documentation
 
 ## 0.2.4
 *Aug 24th, 2018*

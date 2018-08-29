@@ -50,12 +50,14 @@ Rewards
 Rewards for blocks and commissions are accumulated and proportionally (based on stake value)
 payed once per ``12 blocks`` (approx 1 minute) to all active validators (and their delegators).
 
-Block rewards are configured to decrease from 111 to 0 BIP (MNT) in 7 years.
+Block rewards are configured to decrease from 333 to 0 BIP (MNT) in ~7 years.
 
 Delegators receive their rewards at the same time after paying commission to their validators
 (commission value is based on validator's settings).
 
-``5%`` from reward going to DAO account.
+``10%`` from reward going to DAO account.
+
+``10%`` from reward going to Developers.
 
 Rules and fines
 ^^^^^^^^^^^^^^^
