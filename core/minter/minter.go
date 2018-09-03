@@ -253,6 +253,20 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 				})
 			}
 		}
+	} else {
+		for _, val := range vals {
+			if val.IsToDrop() {
+				app.stateDeliver.RemoveCurrentValidator(val.PubKey)
+				updates = append(updates, abciTypes.Ed25519Validator(val.PubKey, 0))
+
+				for i, validator := range app.activeValidators {
+					if bytes.Equal(validator.PubKey.Data, val.PubKey) {
+						app.activeValidators = append(app.activeValidators[:i], app.activeValidators[i+1:]...)
+						break
+					}
+				}
+			}
+		}
 	}
 
 	return abciTypes.ResponseEndBlock{

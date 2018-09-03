@@ -62,6 +62,11 @@ type Validator struct {
 	AbsentTimes      uint
 
 	tmAddress *[20]byte
+	toDrop    bool
+}
+
+func (validator *Validator) IsToDrop() bool {
+	return validator.toDrop
 }
 
 func (validator Validator) GetAddress() [20]byte {

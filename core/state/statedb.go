@@ -1009,10 +1009,12 @@ func (s *StateDB) SetValidatorAbsent(address [20]byte) {
 			if validator.AbsentTimes > ValidatorMaxAbsentTimes {
 				candidate.Status = CandidateStatusOffline
 				validator.AbsentTimes = 0
+				validator.toDrop = true
 
 				totalStake := big.NewInt(0)
 
 				for j, stake := range candidate.Stakes {
+					// TODO: sub custom's coin volume and reserve
 					newValue := big.NewInt(0).Set(stake.Value)
 					newValue.Mul(newValue, big.NewInt(99))
 					newValue.Div(newValue, big.NewInt(100))
@@ -1121,6 +1123,24 @@ func (s *StateDB) SetNewValidators(candidates []Candidate) {
 			AccumReward:      accumReward,
 			AbsentTimes:      absentTimes,
 		})
+	}
+
+	oldVals.data = newVals
+	s.setStateValidators(oldVals)
+	s.MarkStateValidatorsDirty()
+}
+
+func (s *StateDB) RemoveCurrentValidator(pubkey types.Pubkey) {
+	oldVals := s.getStateValidators()
+
+	var newVals Validators
+
+	for _, val := range oldVals.data {
+		if val.PubKey.Compare(pubkey) == 0 {
+			continue
+		}
+
+		newVals = append(newVals, val)
 	}
 
 	oldVals.data = newVals
