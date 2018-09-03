@@ -17,6 +17,7 @@ IMPROVEMENT
 - [sync] Speed up synchronization
 - [core] Extend max payload size to 1024 bytes
 - [core] Add network id checker
+- [core] Add tx.sell_amount to SellAllCoin tags
 - [api] Limit balance watchers to 10 clients
 - [config] Add config file
 - [docs] Update documentation
