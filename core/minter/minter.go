@@ -157,7 +157,8 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 
 	var updates []abciTypes.Validator
 
-	vals := app.stateDeliver.GetStateValidators().Data()
+	stateValidators := app.stateDeliver.GetStateValidators()
+	vals := stateValidators.Data()
 	// calculate total power of validators
 	totalPower := big.NewInt(0)
 	for _, val := range vals {
@@ -170,7 +171,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 	}
 
 	// accumulate rewards
-	for _, val := range vals {
+	for i, val := range vals {
 
 		// skip if candidate is not present
 		if app.validatorsStatuses[val.GetAddress()] != ValidatorPresent {
@@ -184,14 +185,19 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 		reward.Mul(reward, val.TotalBipStake)
 		reward.Div(reward, totalPower)
 
-		app.stateDeliver.AddAccumReward(val.PubKey, reward)
+		vals[i].AccumReward.Add(vals[i].AccumReward, reward)
 	}
 
+	stateValidators.SetData(vals)
+	app.stateDeliver.SetStateValidators(stateValidators)
+
+	// pay rewards
 	if app.height%12 == 0 {
-
-		// pay rewards
 		app.stateDeliver.PayRewards()
+	}
 
+	// update validators
+	if app.height%60 == 0 {
 		app.stateDeliver.RecalculateTotalStakeValues()
 
 		valsCount := validators.GetValidatorsCountForBlock(app.height)
@@ -210,7 +216,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 			totalPower.Add(totalPower, candidate.TotalBipStake)
 		}
 
-		for i := range newCandidates[:valsCount] {
+		for i := range newCandidates {
 			power := big.NewInt(0).Div(big.NewInt(0).Mul(newCandidates[i].TotalBipStake, big.NewInt(100000000)), totalPower).Int64()
 
 			if power == 0 {

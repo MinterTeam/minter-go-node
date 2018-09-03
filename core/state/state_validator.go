@@ -107,3 +107,7 @@ func (c *stateValidators) deepCopy(db *StateDB, onDirty func()) *stateValidators
 	stateValidators := newValidator(db, c.data, onDirty)
 	return stateValidators
 }
+
+func (c *stateValidators) SetData(validators Validators) {
+	c.data = validators
+}

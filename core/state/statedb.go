@@ -129,10 +129,6 @@ func (s *StateDB) Error() error {
 	return s.dbErr
 }
 
-func (s *StateDB) ClearStakeCache() {
-	s.stakeCache = make(map[types.CoinSymbol]StakeCache)
-}
-
 // Empty returns whether the state object is either non-existent
 // or empty according to the EIP161 specification (balance = nonce = code = 0)
 func (s *StateDB) Empty(addr types.Address) bool {
@@ -447,7 +443,10 @@ func (s *StateDB) setStateCandidates(candidates *stateCandidates) {
 	defer s.lock.Unlock()
 
 	s.stateCandidates = candidates
-	s.ClearStakeCache()
+}
+
+func (s *StateDB) SetStateValidators(validators *stateValidators) {
+	s.setStateValidators(validators)
 }
 
 func (s *StateDB) setStateValidators(validators *stateValidators) {
@@ -455,7 +454,6 @@ func (s *StateDB) setStateValidators(validators *stateValidators) {
 	defer s.lock.Unlock()
 
 	s.stateValidators = validators
-	s.ClearStakeCache()
 }
 
 // Retrieve a state object or create a new state object if nil
@@ -590,7 +588,7 @@ func (s *StateDB) CreateCandidate(
 		candidates = newCandidate(s, Candidates{}, s.MarkStateCandidateDirty)
 	}
 
-	candidates.data = append(candidates.data, Candidate{
+	candidate := Candidate{
 		CandidateAddress: address,
 		PubKey:           pubkey,
 		Commission:       commission,
@@ -603,7 +601,11 @@ func (s *StateDB) CreateCandidate(
 		},
 		CreatedAtBlock: currentBlock,
 		Status:         CandidateStatusOffline,
-	})
+	}
+
+	candidate.Stakes[0].BipValue = candidate.Stakes[0].CalcBipValue(s)
+
+	candidates.data = append(candidates.data, candidate)
 
 	s.MarkStateCandidateDirty()
 	s.setStateCandidates(candidates)
@@ -846,7 +848,7 @@ func (s *StateDB) PayRewards() {
 				stake := candidate.Stakes[j]
 
 				reward := big.NewInt(0).Set(totalReward)
-				reward.Mul(reward, stake.BipValue(s))
+				reward.Mul(reward, stake.BipValue)
 				reward.Div(reward, validator.TotalBipStake)
 
 				s.AddBalance(stake.Owner, types.GetBaseCoin(), reward)
@@ -870,8 +872,9 @@ func (s *StateDB) RecalculateTotalStakeValues() {
 		totalBipStake := big.NewInt(0)
 
 		for j := range candidate.Stakes {
-			stake := candidate.Stakes[j]
-			totalBipStake.Add(totalBipStake, stake.BipValue(s))
+			stake := &candidate.Stakes[j]
+			stake.BipValue = stake.CalcBipValue(s)
+			totalBipStake.Add(totalBipStake, stake.BipValue)
 		}
 
 		candidate.TotalBipStake = totalBipStake

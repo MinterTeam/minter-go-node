@@ -17,6 +17,7 @@
 package state
 
 import (
+	"github.com/MinterTeam/minter-go-node/log"
 	"io"
 
 	"bytes"
@@ -58,24 +59,27 @@ func (c *stateCandidates) empty() bool {
 }
 
 type Stake struct {
-	Owner types.Address
-	Coin  types.CoinSymbol
-	Value *big.Int
+	Owner    types.Address
+	Coin     types.CoinSymbol
+	Value    *big.Int
+	BipValue *big.Int
 }
 
 func (s *Stake) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Owner types.Address    `json:"owner"`
-		Coin  types.CoinSymbol `json:"coin"`
-		Value string           `json:"value"`
+		Owner    types.Address    `json:"owner"`
+		Coin     types.CoinSymbol `json:"coin"`
+		Value    string           `json:"value"`
+		BipValue string           `json:"bip_value"`
 	}{
-		Owner: s.Owner,
-		Coin:  s.Coin,
-		Value: s.Value.String(),
+		Owner:    s.Owner,
+		Coin:     s.Coin,
+		Value:    s.Value.String(),
+		BipValue: s.BipValue.String(),
 	})
 }
 
-func (s *Stake) BipValue(context *StateDB) *big.Int {
+func (s *Stake) CalcBipValue(context *StateDB) *big.Int {
 	if s.Coin.IsBaseCoin() {
 		return big.NewInt(0).Set(s.Value)
 	}
@@ -86,7 +90,7 @@ func (s *Stake) BipValue(context *StateDB) *big.Int {
 
 		for _, candidate := range candidates.data {
 			for _, stake := range candidate.Stakes {
-				if bytes.Equal(stake.Coin.Bytes(), s.Coin.Bytes()) {
+				if stake.Coin == s.Coin {
 					totalStaked.Add(totalStaked, stake.Value)
 				}
 			}

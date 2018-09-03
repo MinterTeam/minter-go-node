@@ -4,8 +4,12 @@
 
 - [api] Add validators rewards to block api
 
-## 0.2.5
-*Aug 24th, 2018*
+## 0.3.0
+*Sept 3rd, 2018*
+
+BREAKING CHANGES
+
+- [core] Validators are now updated each 60 blocks
 
 IMPROVEMENT
 
@@ -16,6 +20,7 @@ IMPROVEMENT
 - [api] Limit balance watchers to 10 clients
 - [config] Add config file
 - [docs] Update documentation
+- [tendermint] Update tendermint to v0.23.1. Fixed problem with growth of wal files.
 
 ## 0.2.4
 *Aug 24th, 2018*

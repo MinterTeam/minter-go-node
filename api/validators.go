@@ -36,11 +36,11 @@ func makeResponseValidator(v state.Validator, state *state.StateDB) Validator {
 	return Validator{
 		AccumReward: v.AccumReward.String(),
 		AbsentTimes: v.AbsentTimes,
-		Candidate:   makeResponseCandidate(*state.GetStateCandidate(v.PubKey), state),
+		Candidate:   makeResponseCandidate(*state.GetStateCandidate(v.PubKey)),
 	}
 }
 
-func makeResponseCandidate(c state.Candidate, state *state.StateDB) Candidate {
+func makeResponseCandidate(c state.Candidate) Candidate {
 
 	stakes := make([]Stake, len(c.Stakes))
 
@@ -49,7 +49,7 @@ func makeResponseCandidate(c state.Candidate, state *state.StateDB) Candidate {
 			Owner:    stake.Owner,
 			Coin:     stake.Coin,
 			Value:    stake.Value.String(),
-			BipValue: stake.BipValue(state).String(),
+			BipValue: stake.BipValue.String(),
 		}
 	}
 
