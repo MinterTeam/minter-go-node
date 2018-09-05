@@ -17,7 +17,6 @@
 package state
 
 import (
-	"github.com/MinterTeam/minter-go-node/log"
 	"io"
 
 	"bytes"
