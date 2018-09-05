@@ -70,6 +70,9 @@ moniker = "{{ .BaseConfig.Moniker }}"
 # Address to listen for GUI connections
 gui_listen_addr = "{{ .BaseConfig.GUIListenAddress }}"
 
+# Address to listen for API connections
+api_listen_addr = "{{ .BaseConfig.APIListenAddress }}"
+
 # If this node is many blocks behind the tip of the chain, FastSync
 # allows them to catchup quickly by downloading blocks in parallel
 # and verifying their commits

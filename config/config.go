@@ -202,8 +202,11 @@ type BaseConfig struct {
 	// Database directory
 	DBPath string `mapstructure:"db_dir"`
 
-	// Database directory
+	// Address to listen for GUI connections
 	GUIListenAddress string `mapstructure:"gui_listen_addr"`
+
+	// Address to listen for API connections
+	APIListenAddress string `mapstructure:"api_listen_addr"`
 }
 
 // DefaultBaseConfig returns a default base configuration for a Tendermint node
@@ -222,6 +225,7 @@ func DefaultBaseConfig() BaseConfig {
 		DBBackend:         "leveldb",
 		DBPath:            "data",
 		GUIListenAddress:  ":3000",
+		APIListenAddress:  ":8841",
 	}
 }
 

@@ -21,6 +21,7 @@ IMPROVEMENT
 - [api] Limit balance watchers to 10 clients
 - [config] Add config file
 - [config] Add GUI listen address to config
+- [config] Add API listen address to config
 - [docs] Update documentation
 - [tendermint] Update tendermint to v0.23.1. Fixed problem with growth of wal files.
 

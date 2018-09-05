@@ -37,10 +37,8 @@ func main() {
 
 	app.RunRPC(node)
 
-	if !*utils.DisableApi {
-		go api.RunApi(app, node)
-		go gui.Run(cfg.GUIListenAddress)
-	}
+	go api.RunApi(app, node)
+	go gui.Run(cfg.GUIListenAddress)
 
 	// Wait forever
 	common.TrapSignal(func() {
