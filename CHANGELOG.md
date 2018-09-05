@@ -26,6 +26,10 @@ IMPROVEMENT
 - [docs] Update documentation
 - [tendermint] Update tendermint to v0.23.1. Fixed problem with growth of wal files.
 
+BUG FIXES
+
+- [core] Fix issue #77 Incorrect createCoin fee
+
 ## 0.2.4
 *Aug 24th, 2018*
 

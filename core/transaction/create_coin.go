@@ -47,7 +47,25 @@ func (data CreateCoinData) String() string {
 }
 
 func (data CreateCoinData) Gas() int64 {
-	return commissions.CreateTx
+	gas := commissions.CreateTx
+
+	// compute additional commission from letters count
+	switch len(data.Symbol.String()) {
+	case 3:
+		gas += 1000000000 // 1mln bips
+	case 4:
+		gas += 100000000 // 100k bips
+	case 5:
+		gas += 10000000 // 10k bips
+	case 6:
+		gas += 1000000 // 1k bips
+	case 7:
+		gas += 100000 // 100 bips
+	case 8:
+		gas += 10000 // 10 bips
+	}
+
+	return gas
 }
 
 func (data CreateCoinData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
@@ -72,28 +90,6 @@ func (data CreateCoinData) Run(sender types.Address, tx *Transaction, context *s
 
 	commissionInBaseCoin := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
 	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
-
-	// compute additional price from letters count
-	lettersCount := len(data.Symbol.String())
-	var price int64 = 0
-	switch lettersCount {
-	case 3:
-		price += 1000000 // 1mln bips
-	case 4:
-		price += 100000 // 100k bips
-	case 5:
-		price += 10000 // 10k bips
-	case 6:
-		price += 1000 // 1k bips
-	case 7:
-		price += 100 // 100 bips
-	case 8:
-		price += 10 // 10 bips
-	}
-	p := big.NewInt(10)
-	p.Exp(p, big.NewInt(18), nil)
-	p.Mul(p, big.NewInt(price))
-	commissionInBaseCoin.Add(commissionInBaseCoin, p)
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
 	if tx.GasCoin != types.GetBaseCoin() {
