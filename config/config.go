@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/spf13/viper"
-	"github.com/tendermint/tendermint/config"
+	tmConfig "github.com/tendermint/tendermint/config"
 	"os"
 	"path/filepath"
 )
@@ -41,12 +41,12 @@ func init() {
 }
 
 func DefaultConfig() *Config {
-	cfg := TmDefaultConfig()
+	cfg := defaultConfig()
 
 	cfg.P2P.Seeds = "647e32df3b9c54809b5aca2877d9ba60900bc2d9@minter-node-1.testnet.minter.network:26656,d20522aa7ba4af8139749c5e724063c4ba18c58b@minter-node-2.testnet.minter.network:26656,249c62818bf4601605a65b5adc35278236bd5312@minter-node-3.testnet.minter.network:26656,b698b07f13f2210dfc82967bfa2a127d1cdfdc54@minter-node-4.testnet.minter.network:26656"
 	cfg.P2P.PersistentPeers = "647e32df3b9c54809b5aca2877d9ba60900bc2d9@minter-node-1.testnet.minter.network:26656"
 
-	cfg.TxIndex = &config.TxIndexConfig{
+	cfg.TxIndex = &tmConfig.TxIndexConfig{
 		Indexer:      "kv",
 		IndexTags:    "",
 		IndexAllTags: true,
@@ -100,24 +100,24 @@ type Config struct {
 	BaseConfig `mapstructure:",squash"`
 
 	// Options for services
-	RPC             *config.RPCConfig             `mapstructure:"rpc"`
-	P2P             *config.P2PConfig             `mapstructure:"p2p"`
-	Mempool         *config.MempoolConfig         `mapstructure:"mempool"`
-	Consensus       *config.ConsensusConfig       `mapstructure:"consensus"`
-	TxIndex         *config.TxIndexConfig         `mapstructure:"tx_index"`
-	Instrumentation *config.InstrumentationConfig `mapstructure:"instrumentation"`
+	RPC             *tmConfig.RPCConfig             `mapstructure:"rpc"`
+	P2P             *tmConfig.P2PConfig             `mapstructure:"p2p"`
+	Mempool         *tmConfig.MempoolConfig         `mapstructure:"mempool"`
+	Consensus       *tmConfig.ConsensusConfig       `mapstructure:"consensus"`
+	TxIndex         *tmConfig.TxIndexConfig         `mapstructure:"tx_index"`
+	Instrumentation *tmConfig.InstrumentationConfig `mapstructure:"instrumentation"`
 }
 
 // DefaultConfig returns a default configuration for a Tendermint node
-func TmDefaultConfig() *Config {
+func defaultConfig() *Config {
 	return &Config{
 		BaseConfig:      DefaultBaseConfig(),
-		RPC:             config.DefaultRPCConfig(),
-		P2P:             config.DefaultP2PConfig(),
-		Mempool:         config.DefaultMempoolConfig(),
-		Consensus:       config.DefaultConsensusConfig(),
-		TxIndex:         config.DefaultTxIndexConfig(),
-		Instrumentation: config.DefaultInstrumentationConfig(),
+		RPC:             tmConfig.DefaultRPCConfig(),
+		P2P:             tmConfig.DefaultP2PConfig(),
+		Mempool:         tmConfig.DefaultMempoolConfig(),
+		Consensus:       tmConfig.DefaultConsensusConfig(),
+		TxIndex:         tmConfig.DefaultTxIndexConfig(),
+		Instrumentation: tmConfig.DefaultInstrumentationConfig(),
 	}
 }
 
@@ -131,18 +131,33 @@ func (cfg *Config) SetRoot(root string) *Config {
 	return cfg
 }
 
-func GetTmConfig() *config.Config {
-	cfg := config.DefaultConfig()
+func GetTmConfig() *tmConfig.Config {
+	cfg := GetConfig()
 
-	err := viper.Unmarshal(cfg)
-	if err != nil {
-		panic(err)
+	return &tmConfig.Config{
+		BaseConfig: tmConfig.BaseConfig{
+			RootDir:                 cfg.RootDir,
+			Genesis:                 cfg.Genesis,
+			PrivValidator:           cfg.PrivValidator,
+			NodeKey:                 cfg.NodeKey,
+			Moniker:                 cfg.Moniker,
+			PrivValidatorListenAddr: cfg.PrivValidatorListenAddr,
+			ProxyApp:                cfg.ProxyApp,
+			ABCI:                    cfg.ABCI,
+			LogLevel:                cfg.LogLevel,
+			ProfListenAddress:       cfg.ProfListenAddress,
+			FastSync:                cfg.FastSync,
+			FilterPeers:             cfg.FilterPeers,
+			DBBackend:               cfg.DBBackend,
+			DBPath:                  cfg.DBPath,
+		},
+		RPC:             cfg.RPC,
+		P2P:             cfg.P2P,
+		Mempool:         cfg.Mempool,
+		Consensus:       cfg.Consensus,
+		TxIndex:         cfg.TxIndex,
+		Instrumentation: cfg.Instrumentation,
 	}
-
-	cfg.SetRoot(utils.GetMinterHome())
-	EnsureRoot(utils.GetMinterHome())
-
-	return cfg
 }
 
 //-----------------------------------------------------------------------------
