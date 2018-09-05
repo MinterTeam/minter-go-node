@@ -2,11 +2,9 @@ package config
 
 import (
 	"bytes"
-	"os"
 	"path/filepath"
 	"text/template"
 
-	tmConfig "github.com/tendermint/tendermint/config"
 	cmn "github.com/tendermint/tendermint/libs/common"
 )
 
@@ -49,7 +47,7 @@ func writeDefaultConfigFile(configFilePath string) {
 }
 
 // WriteConfigFile renders config using the template and writes it to configFilePath.
-func WriteConfigFile(configFilePath string, config *tmConfig.Config) {
+func WriteConfigFile(configFilePath string, config *Config) {
 	var buffer bytes.Buffer
 
 	if err := configTemplate.Execute(&buffer, config); err != nil {
@@ -68,6 +66,9 @@ const defaultConfigTemplate = `# This is a TOML config file.
 
 # A custom human readable name for this node
 moniker = "{{ .BaseConfig.Moniker }}"
+
+# Address to listen for GUI connections
+gui_listen_addr = "{{ .BaseConfig.GUIListenAddress }}"
 
 # If this node is many blocks behind the tip of the chain, FastSync
 # allows them to catchup quickly by downloading blocks in parallel
@@ -230,81 +231,3 @@ prometheus_listen_addr = "{{ .Instrumentation.PrometheusListenAddr }}"
 # 0 - unlimited.
 max_open_connections = {{ .Instrumentation.MaxOpenConnections }}
 `
-
-/****** these are for test settings ***********/
-
-func ResetTestRoot(testName string) *tmConfig.Config {
-	rootDir := os.ExpandEnv("$HOME/.tendermint_test")
-	rootDir = filepath.Join(rootDir, testName)
-	// Remove ~/.tendermint_test_bak
-	if cmn.FileExists(rootDir + "_bak") {
-		if err := os.RemoveAll(rootDir + "_bak"); err != nil {
-			cmn.PanicSanity(err.Error())
-		}
-	}
-	// Move ~/.tendermint_test to ~/.tendermint_test_bak
-	if cmn.FileExists(rootDir) {
-		if err := os.Rename(rootDir, rootDir+"_bak"); err != nil {
-			cmn.PanicSanity(err.Error())
-		}
-	}
-	// Create new dir
-	if err := cmn.EnsureDir(rootDir, 0700); err != nil {
-		cmn.PanicSanity(err.Error())
-	}
-	if err := cmn.EnsureDir(filepath.Join(rootDir, defaultConfigDir), 0700); err != nil {
-		cmn.PanicSanity(err.Error())
-	}
-	if err := cmn.EnsureDir(filepath.Join(rootDir, defaultDataDir), 0700); err != nil {
-		cmn.PanicSanity(err.Error())
-	}
-
-	baseConfig := tmConfig.DefaultBaseConfig()
-	configFilePath := filepath.Join(rootDir, defaultConfigFilePath)
-	genesisFilePath := filepath.Join(rootDir, baseConfig.Genesis)
-	privFilePath := filepath.Join(rootDir, baseConfig.PrivValidator)
-
-	// Write default config file if missing.
-	if !cmn.FileExists(configFilePath) {
-		writeDefaultConfigFile(configFilePath)
-	}
-	if !cmn.FileExists(genesisFilePath) {
-		cmn.MustWriteFile(genesisFilePath, []byte(testGenesis), 0644)
-	}
-	// we always overwrite the priv val
-	cmn.MustWriteFile(privFilePath, []byte(testPrivValidator), 0644)
-
-	config := tmConfig.TestConfig().SetRoot(rootDir)
-	return config
-}
-
-var testGenesis = `{
-  "genesis_time": "0001-01-01T00:00:00.000Z",
-  "chain_id": "tendermint_test",
-  "validators": [
-    {
-      "pub_key": {
-        "type": "tendermint/PubKeyEd25519",
-        "value":"AT/+aaL1eB0477Mud9JMm8Sh8BIvOYlPGC9KkIUmFaE="
-      },
-      "power": "10",
-      "name": ""
-    }
-  ],
-  "app_hash": ""
-}`
-
-var testPrivValidator = `{
-  "address": "A3258DCBF45DCA0DF052981870F2D1441A36D145",
-  "pub_key": {
-    "type": "tendermint/PubKeyEd25519",
-    "value": "AT/+aaL1eB0477Mud9JMm8Sh8BIvOYlPGC9KkIUmFaE="
-  },
-  "priv_key": {
-    "type": "tendermint/PrivKeyEd25519",
-    "value": "EVkqJO/jIXp3rkASXfh9YnyToYXRXhBr6g9cQVxPFnQBP/5povV4HTjvsy530kybxKHwEi85iU8YL0qQhSYVoQ=="
-  },
-  "last_height": "0",
-  "last_round": "0",
-  "last_step": 0
-}`

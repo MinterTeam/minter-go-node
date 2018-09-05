@@ -1,17 +1,28 @@
 package config
 
 import (
+	"fmt"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/spf13/viper"
-	tmConfig "github.com/tendermint/tendermint/config"
+	"github.com/tendermint/tendermint/config"
+	"os"
 	"path/filepath"
 )
 
 var (
-	defaultConfigDir      = "config"
-	defaultDataDir        = "data"
-	defaultConfigFileName = "config.toml"
-	defaultConfigFilePath = filepath.Join(defaultConfigDir, defaultConfigFileName)
+	defaultConfigDir = "config"
+	defaultDataDir   = "data"
+
+	defaultConfigFileName  = "config.toml"
+	defaultGenesisJSONName = "genesis.json"
+
+	defaultPrivValName = "priv_validator.json"
+	defaultNodeKeyName = "node_key.json"
+
+	defaultConfigFilePath  = filepath.Join(defaultConfigDir, defaultConfigFileName)
+	defaultGenesisJSONPath = filepath.Join(defaultConfigDir, defaultGenesisJSONName)
+	defaultPrivValPath     = filepath.Join(defaultConfigDir, defaultPrivValName)
+	defaultNodeKeyPath     = filepath.Join(defaultConfigDir, defaultNodeKeyName)
 )
 
 func init() {
@@ -29,13 +40,13 @@ func init() {
 	}
 }
 
-func DefaultConfig() *tmConfig.Config {
-	cfg := tmConfig.DefaultConfig()
+func DefaultConfig() *Config {
+	cfg := TmDefaultConfig()
 
 	cfg.P2P.Seeds = "647e32df3b9c54809b5aca2877d9ba60900bc2d9@minter-node-1.testnet.minter.network:26656,d20522aa7ba4af8139749c5e724063c4ba18c58b@minter-node-2.testnet.minter.network:26656,249c62818bf4601605a65b5adc35278236bd5312@minter-node-3.testnet.minter.network:26656,b698b07f13f2210dfc82967bfa2a127d1cdfdc54@minter-node-4.testnet.minter.network:26656"
 	cfg.P2P.PersistentPeers = "647e32df3b9c54809b5aca2877d9ba60900bc2d9@minter-node-1.testnet.minter.network:26656"
 
-	cfg.TxIndex = &tmConfig.TxIndexConfig{
+	cfg.TxIndex = &config.TxIndexConfig{
 		Indexer:      "kv",
 		IndexTags:    "",
 		IndexAllTags: true,
@@ -69,7 +80,7 @@ func DefaultConfig() *tmConfig.Config {
 	return cfg
 }
 
-func GetConfig() *tmConfig.Config {
+func GetConfig() *Config {
 	cfg := DefaultConfig()
 
 	err := viper.Unmarshal(cfg)
@@ -81,4 +92,193 @@ func GetConfig() *tmConfig.Config {
 	EnsureRoot(utils.GetMinterHome())
 
 	return cfg
+}
+
+// Config defines the top level configuration for a Tendermint node
+type Config struct {
+	// Top level options use an anonymous struct
+	BaseConfig `mapstructure:",squash"`
+
+	// Options for services
+	RPC             *config.RPCConfig             `mapstructure:"rpc"`
+	P2P             *config.P2PConfig             `mapstructure:"p2p"`
+	Mempool         *config.MempoolConfig         `mapstructure:"mempool"`
+	Consensus       *config.ConsensusConfig       `mapstructure:"consensus"`
+	TxIndex         *config.TxIndexConfig         `mapstructure:"tx_index"`
+	Instrumentation *config.InstrumentationConfig `mapstructure:"instrumentation"`
+}
+
+// DefaultConfig returns a default configuration for a Tendermint node
+func TmDefaultConfig() *Config {
+	return &Config{
+		BaseConfig:      DefaultBaseConfig(),
+		RPC:             config.DefaultRPCConfig(),
+		P2P:             config.DefaultP2PConfig(),
+		Mempool:         config.DefaultMempoolConfig(),
+		Consensus:       config.DefaultConsensusConfig(),
+		TxIndex:         config.DefaultTxIndexConfig(),
+		Instrumentation: config.DefaultInstrumentationConfig(),
+	}
+}
+
+// SetRoot sets the RootDir for all Config structs
+func (cfg *Config) SetRoot(root string) *Config {
+	cfg.BaseConfig.RootDir = root
+	cfg.RPC.RootDir = root
+	cfg.P2P.RootDir = root
+	cfg.Mempool.RootDir = root
+	cfg.Consensus.RootDir = root
+	return cfg
+}
+
+func GetTmConfig() *config.Config {
+	cfg := config.DefaultConfig()
+
+	err := viper.Unmarshal(cfg)
+	if err != nil {
+		panic(err)
+	}
+
+	cfg.SetRoot(utils.GetMinterHome())
+	EnsureRoot(utils.GetMinterHome())
+
+	return cfg
+}
+
+//-----------------------------------------------------------------------------
+// BaseConfig
+
+// BaseConfig defines the base configuration for a Tendermint node
+type BaseConfig struct {
+
+	// chainID is unexposed and immutable but here for convenience
+	chainID string
+
+	// The root directory for all data.
+	// This should be set in viper so it can unmarshal into this struct
+	RootDir string `mapstructure:"home"`
+
+	// Path to the JSON file containing the initial validator set and other meta data
+	Genesis string `mapstructure:"genesis_file"`
+
+	// Path to the JSON file containing the private key to use as a validator in the consensus protocol
+	PrivValidator string `mapstructure:"priv_validator_file"`
+
+	// A JSON file containing the private key to use for p2p authenticated encryption
+	NodeKey string `mapstructure:"node_key_file"`
+
+	// A custom human readable name for this node
+	Moniker string `mapstructure:"moniker"`
+
+	// TCP or UNIX socket address for Tendermint to listen on for
+	// connections from an external PrivValidator process
+	PrivValidatorListenAddr string `mapstructure:"priv_validator_laddr"`
+
+	// TCP or UNIX socket address of the ABCI application,
+	// or the name of an ABCI application compiled in with the Tendermint binary
+	ProxyApp string `mapstructure:"proxy_app"`
+
+	// Mechanism to connect to the ABCI application: socket | grpc
+	ABCI string `mapstructure:"abci"`
+
+	// Output level for logging
+	LogLevel string `mapstructure:"log_level"`
+
+	// TCP or UNIX socket address for the profiling server to listen on
+	ProfListenAddress string `mapstructure:"prof_laddr"`
+
+	// If this node is many blocks behind the tip of the chain, FastSync
+	// allows them to catchup quickly by downloading blocks in parallel
+	// and verifying their commits
+	FastSync bool `mapstructure:"fast_sync"`
+
+	// If true, query the ABCI app on connecting to a new peer
+	// so the app can decide if we should keep the connection or not
+	FilterPeers bool `mapstructure:"filter_peers"` // false
+
+	// Database backend: leveldb | memdb
+	DBBackend string `mapstructure:"db_backend"`
+
+	// Database directory
+	DBPath string `mapstructure:"db_dir"`
+
+	// Database directory
+	GUIListenAddress string `mapstructure:"gui_listen_addr"`
+}
+
+// DefaultBaseConfig returns a default base configuration for a Tendermint node
+func DefaultBaseConfig() BaseConfig {
+	return BaseConfig{
+		Genesis:           defaultGenesisJSONPath,
+		PrivValidator:     defaultPrivValPath,
+		NodeKey:           defaultNodeKeyPath,
+		Moniker:           defaultMoniker,
+		ProxyApp:          "tcp://127.0.0.1:26658",
+		ABCI:              "socket",
+		LogLevel:          DefaultPackageLogLevels(),
+		ProfListenAddress: "",
+		FastSync:          true,
+		FilterPeers:       false,
+		DBBackend:         "leveldb",
+		DBPath:            "data",
+		GUIListenAddress:  ":3000",
+	}
+}
+
+func (cfg BaseConfig) ChainID() string {
+	return cfg.chainID
+}
+
+// GenesisFile returns the full path to the genesis.json file
+func (cfg BaseConfig) GenesisFile() string {
+	return rootify(cfg.Genesis, cfg.RootDir)
+}
+
+// PrivValidatorFile returns the full path to the priv_validator.json file
+func (cfg BaseConfig) PrivValidatorFile() string {
+	return rootify(cfg.PrivValidator, cfg.RootDir)
+}
+
+// NodeKeyFile returns the full path to the node_key.json file
+func (cfg BaseConfig) NodeKeyFile() string {
+	return rootify(cfg.NodeKey, cfg.RootDir)
+}
+
+// DBDir returns the full path to the database directory
+func (cfg BaseConfig) DBDir() string {
+	return rootify(cfg.DBPath, cfg.RootDir)
+}
+
+// DefaultLogLevel returns a default log level of "error"
+func DefaultLogLevel() string {
+	return "error"
+}
+
+// DefaultPackageLogLevels returns a default log level setting so all packages
+// log at "error", while the `state` and `main` packages log at "info"
+func DefaultPackageLogLevels() string {
+	return fmt.Sprintf("main:info,state:info,*:%s", DefaultLogLevel())
+}
+
+//-----------------------------------------------------------------------------
+// Utils
+
+// helper function to make config creation independent of root dir
+func rootify(path, root string) string {
+	if filepath.IsAbs(path) {
+		return path
+	}
+	return filepath.Join(root, path)
+}
+
+var defaultMoniker = getDefaultMoniker()
+
+// getDefaultMoniker returns a default moniker, which is the host name. If runtime
+// fails to get the host name, "anonymous" will be returned.
+func getDefaultMoniker() string {
+	moniker, err := os.Hostname()
+	if err != nil {
+		moniker = "anonymous"
+	}
+	return moniker
 }

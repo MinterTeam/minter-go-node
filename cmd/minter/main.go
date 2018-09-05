@@ -39,7 +39,7 @@ func main() {
 
 	if !*utils.DisableApi {
 		go api.RunApi(app, node)
-		go gui.Run(":3000")
+		go gui.Run(cfg.GUIListenAddress)
 	}
 
 	// Wait forever
@@ -51,6 +51,7 @@ func main() {
 }
 
 func startTendermintNode(app *minter.Blockchain) *tmNode.Node {
+	cfg := config.GetTmConfig()
 	node, err := tmNode.NewNode(
 		cfg,
 		privval.LoadOrGenFilePV(cfg.PrivValidatorFile()),
