@@ -9,7 +9,8 @@
 
 BREAKING CHANGES
 
-- [core] Validators are now updated each 60 blocks
+- [core] Validators are now updated each 120 blocks
+- [core] Validators are now updated then at least one of current validators exceed 12 missed blocks 
 
 IMPROVEMENT
 
