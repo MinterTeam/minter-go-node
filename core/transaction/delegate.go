@@ -47,6 +47,12 @@ func (data DelegateData) Run(sender types.Address, tx *Transaction, context *sta
 			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin)}
 	}
 
+	if data.Stake.Cmp(types.Big0) < 1 {
+		return Response{
+			Code: code.StakeShouldBePositive,
+			Log:  fmt.Sprintf("Stake should be positive")}
+	}
+
 	commissionInBaseCoin := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
 	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
