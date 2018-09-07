@@ -30,6 +30,7 @@ BUG FIXES
 
 - [core] Fix issue #77 Incorrect createCoin fee
 - [core] Fix issue with insufficient coin reserve in buy coin tx
+- [api] Fix issue #82
 
 ## 0.2.4
 *Aug 24th, 2018*
