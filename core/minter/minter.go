@@ -30,7 +30,7 @@ type Blockchain struct {
 	rootHash           types.Hash
 	height             uint64
 	rewards            *big.Int
-	activeValidators   abciTypes.Validators
+	activeValidators   abciTypes.ValidatorUpdates
 	validatorsStatuses map[[20]byte]int8
 	tendermintRPC      *rpc.Local
 
@@ -118,7 +118,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 	app.validatorsStatuses = map[[20]byte]int8{}
 
 	// give penalty to absent validators
-	for _, v := range req.LastCommitInfo.Validators {
+	for _, v := range req.LastCommitInfo.Votes {
 		var address [20]byte
 		copy(address[:], v.Validator.Address)
 
@@ -155,7 +155,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 
 func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.ResponseEndBlock {
 
-	var updates []abciTypes.Validator
+	var updates []abciTypes.ValidatorUpdate
 
 	stateValidators := app.stateDeliver.GetStateValidators()
 	vals := stateValidators.Data()
@@ -215,7 +215,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 			valsCount = len(newCandidates)
 		}
 
-		newValidators := make([]abciTypes.Validator, valsCount)
+		newValidators := make([]abciTypes.ValidatorUpdate, valsCount)
 
 		// calculate total power
 		totalPower := big.NewInt(0)
@@ -230,7 +230,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 				power = 1
 			}
 
-			newValidators[i] = abciTypes.Ed25519Validator(newCandidates[i].PubKey, power)
+			newValidators[i] = abciTypes.Ed25519ValidatorUpdate(newCandidates[i].PubKey, power)
 		}
 
 		// update validators in state
@@ -254,7 +254,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 
 			// remove validator
 			if !persisted {
-				updates = append(updates, abciTypes.Validator{
+				updates = append(updates, abciTypes.ValidatorUpdate{
 					PubKey: validator.PubKey,
 					Power:  0,
 				})

@@ -11,6 +11,7 @@ BREAKING CHANGES
 
 - [core] Validators are now updated each 120 blocks
 - [core] Validators are now updated then at least one of current validators exceed 12 missed blocks 
+- [tendermint] Update Tendermint to v0.24.0-rc0
 
 IMPROVEMENT
 
@@ -24,7 +25,6 @@ IMPROVEMENT
 - [config] Add GUI listen address to config
 - [config] Add API listen address to config
 - [docs] Update documentation
-- [tendermint] Update tendermint to v0.23.1. Fixed problem with growth of wal files.
 
 BUG FIXES
 

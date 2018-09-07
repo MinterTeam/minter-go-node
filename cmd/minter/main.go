@@ -11,6 +11,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/tendermint/tendermint/libs/common"
 	tmNode "github.com/tendermint/tendermint/node"
+	"github.com/tendermint/tendermint/p2p"
 	"github.com/tendermint/tendermint/privval"
 	"github.com/tendermint/tendermint/proxy"
 	"os"
@@ -50,9 +51,16 @@ func main() {
 
 func startTendermintNode(app *minter.Blockchain) *tmNode.Node {
 	cfg := config.GetTmConfig()
+	nodeKey, err := p2p.LoadOrGenNodeKey(cfg.NodeKeyFile())
+
+	if err != nil {
+		panic(err)
+	}
+
 	node, err := tmNode.NewNode(
 		cfg,
 		privval.LoadOrGenFilePV(cfg.PrivValidatorFile()),
+		nodeKey,
 		proxy.NewLocalClientCreator(app),
 		genesis.GetTestnetGenesis,
 		tmNode.DefaultDBProvider,

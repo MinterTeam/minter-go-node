@@ -291,6 +291,11 @@
   revision = "c4c61651e9e37fa117f53c5a906d3b63090d8445"
 
 [[projects]]
+  name = "github.com/tendermint/btcd"
+  packages = ["btcec"]
+  revision = "e5840949ff4fff0c56f9b6a541e22b63581ea9df"
+
+[[projects]]
   branch = "master"
   name = "github.com/tendermint/ed25519"
   packages = [
@@ -303,8 +308,8 @@
 [[projects]]
   name = "github.com/tendermint/go-amino"
   packages = ["."]
-  revision = "2106ca61d91029c931fd54968c2bb02dc96b1412"
-  version = "0.10.1"
+  revision = "a8328986c1608950fa5d3d1c0472cccc4f8fc02c"
+  version = "v0.12.0-rc0"
 
 [[projects]]
   name = "github.com/tendermint/tendermint"
@@ -321,6 +326,8 @@
     "crypto/ed25519",
     "crypto/encoding/amino",
     "crypto/merkle",
+    "crypto/multisig",
+    "crypto/multisig/bitarray",
     "crypto/secp256k1",
     "crypto/tmhash",
     "evidence",
@@ -355,10 +362,11 @@
     "state/txindex/kv",
     "state/txindex/null",
     "types",
+    "types/time",
     "version"
   ]
-  revision = "9e940b95ad4d27efab60d0d49278db5acb2a3b7e"
-  version = "v0.23.1"
+  revision = "604eae86b66282185e2a3a5906031f1df223b779"
+  version = "v0.24.0-rc0"
 
 [[projects]]
   branch = "master"
@@ -479,6 +487,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "03d50a80f5b9e69312927d98c24db9c3777647d38d5833a57c97bed019c31159"
+  inputs-digest = "9ed5dde3f528e69eed9311bcc7f9b15d25f44f246b5a54b31de62528c4e4368d"
   solver-name = "gps-cdcl"
   solver-version = 1
