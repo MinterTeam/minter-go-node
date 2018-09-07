@@ -227,7 +227,6 @@
   revision = "ae68e2d4c00fed4943b5f6698d504a5fe083da8a"
 
 [[projects]]
-  branch = "master"
   name = "github.com/rcrowley/go-metrics"
   packages = ["."]
   revision = "e2704e165165ec55d062f5919b4b29494e9fa790"
@@ -308,8 +307,8 @@
 [[projects]]
   name = "github.com/tendermint/go-amino"
   packages = ["."]
-  revision = "a8328986c1608950fa5d3d1c0472cccc4f8fc02c"
-  version = "v0.12.0-rc0"
+  revision = "faa6e731944e2b7b6a46ad202902851e8ce85bee"
+  version = "v0.12.0"
 
 [[projects]]
   name = "github.com/tendermint/tendermint"
@@ -365,8 +364,8 @@
     "types/time",
     "version"
   ]
-  revision = "604eae86b66282185e2a3a5906031f1df223b779"
-  version = "v0.24.0-rc0"
+  revision = "d419fffe18531317c28c29a292ad7d253f6cafdf"
+  version = "v0.24.0"
 
 [[projects]]
   branch = "master"
@@ -487,6 +486,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "9ed5dde3f528e69eed9311bcc7f9b15d25f44f246b5a54b31de62528c4e4368d"
+  inputs-digest = "7f0b438359efe00bcf457cdb1437543bd234748f62e5b9ed64d56e57be975282"
   solver-name = "gps-cdcl"
   solver-version = 1

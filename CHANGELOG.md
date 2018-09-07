@@ -11,7 +11,7 @@ BREAKING CHANGES
 
 - [core] Validators are now updated each 120 blocks
 - [core] Validators are now updated then at least one of current validators exceed 12 missed blocks 
-- [tendermint] Update Tendermint to v0.24.0-rc0
+- [tendermint] Update Tendermint to v0.24.0
 
 IMPROVEMENT
 
