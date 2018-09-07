@@ -93,6 +93,10 @@ func (s *Stake) BipValue(context *StateDB) *big.Int {
 		}
 	}
 
+	if totalStaked.Cmp(types.Big0) == 0 {
+		return big.NewInt(0)
+	}
+
 	coin := context.getStateCoin(s.Coin)
 	totalBipValue := formula.CalculateSaleReturn(coin.Volume(), coin.ReserveBalance(), coin.data.Crr, totalStaked)
 
