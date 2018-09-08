@@ -113,12 +113,12 @@ func (c *stateFrozenFund) addFund(fund FrozenFund) {
 	}
 }
 
-// remove fund with given candidate key (used in byzantine validator's punishment)
-func (c *stateFrozenFund) RemoveFund(candidateAddress [20]byte) {
-	c.removeFund(candidateAddress)
+// punish fund with given candidate key (used in byzantine validator's punishment)
+func (c *stateFrozenFund) PunishFund(candidateAddress [20]byte) {
+	c.punishFund(candidateAddress)
 }
 
-func (c *stateFrozenFund) removeFund(candidateAddress [20]byte) {
+func (c *stateFrozenFund) punishFund(candidateAddress [20]byte) {
 	var NewList []FrozenFund
 
 	for _, item := range c.data.List {
@@ -130,7 +130,11 @@ func (c *stateFrozenFund) removeFund(candidateAddress [20]byte) {
 		copy(address[:], pubkey.Address().Bytes())
 
 		if candidateAddress == address {
-			continue
+			newValue := big.NewInt(0).Set(item.Value)
+			newValue.Mul(newValue, big.NewInt(95))
+			newValue.Div(newValue, big.NewInt(100))
+
+			item.Value = newValue
 		}
 
 		NewList = append(NewList, item)

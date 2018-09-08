@@ -20,6 +20,7 @@ IMPROVEMENT
 - [core] Extend max payload size to 1024 bytes
 - [core] Add network id checker
 - [core] Add tx.sell_amount to SellAllCoin tags
+- [core] Change punishment for byzantine behavior
 - [api] Limit balance watchers to 10 clients
 - [config] Add config file
 - [config] Add GUI listen address to config

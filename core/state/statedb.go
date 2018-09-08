@@ -34,6 +34,8 @@ import (
 	"sort"
 )
 
+const UnbondPeriod = 518400
+
 var (
 	// emptyState is the known hash of an empty state trie entry.
 	emptyState = crypto.Keccak256Hash(nil)
@@ -1041,7 +1043,7 @@ func (s *StateDB) SetValidatorAbsent(address [20]byte) {
 	s.MarkStateValidatorsDirty()
 }
 
-func (s *StateDB) PunishByzantineValidator(address [20]byte) {
+func (s *StateDB) PunishByzantineValidator(currentBlock uint64, address [20]byte) {
 
 	validators := s.getStateValidators()
 
@@ -1060,6 +1062,15 @@ func (s *StateDB) PunishByzantineValidator(address [20]byte) {
 				}
 			}
 
+			for _, stake := range candidate.Stakes {
+				// TODO: sub custom's coin volume and reserve
+				newValue := big.NewInt(0).Set(stake.Value)
+				newValue.Mul(newValue, big.NewInt(95))
+				newValue.Div(newValue, big.NewInt(100))
+
+				s.GetOrNewStateFrozenFunds(currentBlock+UnbondPeriod).AddFund(stake.Owner, candidate.PubKey, stake.Coin, newValue)
+			}
+
 			candidate.Stakes = []Stake{}
 			candidate.Status = CandidateStatusOffline
 			validator.AccumReward = big.NewInt(0)
@@ -1074,7 +1085,7 @@ func (s *StateDB) PunishByzantineValidator(address [20]byte) {
 	s.MarkStateValidatorsDirty()
 }
 
-func (s *StateDB) RemoveFrozenFundsWithAddress(fromBlock uint64, toBlock uint64, address [20]byte) {
+func (s *StateDB) PunishFrozenFundsWithAddress(fromBlock uint64, toBlock uint64, address [20]byte) {
 	for i := fromBlock; i <= toBlock; i++ {
 		frozenFund := s.getStateFrozenFunds(i)
 
@@ -1082,7 +1093,7 @@ func (s *StateDB) RemoveFrozenFundsWithAddress(fromBlock uint64, toBlock uint64,
 			continue
 		}
 
-		frozenFund.RemoveFund(address)
+		frozenFund.PunishFund(address)
 	}
 }
 

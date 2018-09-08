@@ -136,8 +136,8 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 		var address [20]byte
 		copy(address[:], v.Validator.Address)
 
-		app.stateDeliver.PunishByzantineValidator(address)
-		app.stateDeliver.RemoveFrozenFundsWithAddress(app.height, app.height+518400, address)
+		app.stateDeliver.PunishByzantineValidator(uint64(req.Header.Height), address)
+		app.stateDeliver.PunishFrozenFundsWithAddress(app.height, app.height+518400, address)
 	}
 
 	// apply frozen funds
