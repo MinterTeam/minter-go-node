@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	Network = "minter-test-network-20"
+	Network = "minter-test-network-21"
 )
 
 func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
