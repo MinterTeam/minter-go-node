@@ -4,6 +4,13 @@
 
 - [api] Add validators rewards to block api
 
+## 0.3.2
+*Sept 8th, 2018*
+
+BUG FIXES
+
+- [core] Fix null pointer exception
+
 ## 0.3.1
 *Sept 8th, 2018*
 
