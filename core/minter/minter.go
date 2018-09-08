@@ -14,6 +14,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/mintdb"
+	"github.com/tendermint/go-amino"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/node"
 	rpc "github.com/tendermint/tendermint/rpc/client"
@@ -30,7 +31,6 @@ type Blockchain struct {
 	rootHash           types.Hash
 	height             uint64
 	rewards            *big.Int
-	activeValidators   abciTypes.ValidatorUpdates
 	validatorsStatuses map[[20]byte]int8
 	tendermintRPC      *rpc.Local
 
@@ -47,6 +47,7 @@ const (
 
 var (
 	blockchain *Blockchain
+	cdc        = amino.NewCodec()
 )
 
 func NewMinterBlockchain() *Blockchain {
@@ -104,7 +105,6 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 		app.stateDeliver.CreateCandidate(genesisState.FirstValidatorAddress, validator.PubKey.Data, 100, 1, types.GetBaseCoin(), helpers.BipToPip(big.NewInt(1000000)))
 		app.stateDeliver.CreateValidator(genesisState.FirstValidatorAddress, validator.PubKey.Data, 100, 1, types.GetBaseCoin(), helpers.BipToPip(big.NewInt(1000000)))
 		app.stateDeliver.SetCandidateOnline(validator.PubKey.Data)
-		app.activeValidators = append(app.activeValidators, validator)
 	}
 
 	return abciTypes.ResponseInitChain{}
@@ -237,14 +237,13 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 		// update validators in state
 		app.stateDeliver.SetNewValidators(newCandidates)
 
-		// update validators in app cache
-		defer func() {
-			app.activeValidators = newValidators
-		}()
+		activeValidators := app.getCurrentValidators()
+
+		app.saveCurrentValidators(newValidators)
 
 		updates = newValidators
 
-		for _, validator := range app.activeValidators {
+		for _, validator := range activeValidators {
 			persisted := false
 			for _, newValidator := range newValidators {
 				if bytes.Equal(validator.PubKey.Data, newValidator.PubKey.Data) {
@@ -386,6 +385,41 @@ func (app *Blockchain) GetStateForHeight(height int) (*state.StateDB, error) {
 
 func (app *Blockchain) Height() uint64 {
 	return app.height
+}
+
+func (app *Blockchain) getCurrentValidators() abciTypes.ValidatorUpdates {
+	appTable := mintdb.NewTable(app.db, appTableId)
+
+	result, _ := appTable.Get([]byte("validators"))
+
+	if len(result) == 0 {
+		return abciTypes.ValidatorUpdates{}
+	}
+
+	var vals abciTypes.ValidatorUpdates
+
+	err := cdc.UnmarshalBinary(result, &vals)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return vals
+}
+
+func (app *Blockchain) saveCurrentValidators(vals abciTypes.ValidatorUpdates) {
+	data, err := cdc.MarshalBinary(vals)
+
+	if err != nil {
+		panic(err)
+	}
+
+	appTable := mintdb.NewTable(app.db, appTableId)
+	err = appTable.Put([]byte("validators"), data)
+
+	if err != nil {
+		panic(err)
+	}
 }
 
 func GetBlockchain() *Blockchain {
