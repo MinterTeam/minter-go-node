@@ -663,6 +663,7 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (root types.Hash, err error) {
 	}
 
 	if s.stateCandidatesDirty {
+		s.clearStateCandidates()
 		s.updateStateCandidates(s.stateCandidates)
 		s.stateCandidatesDirty = false
 	}
@@ -1146,4 +1147,22 @@ func (s *StateDB) RemoveCurrentValidator(pubkey types.Pubkey) {
 	oldVals.data = newVals
 	s.setStateValidators(oldVals)
 	s.MarkStateValidatorsDirty()
+}
+
+// remove 0-valued stakes
+func (s *StateDB) clearStateCandidates() {
+	stateCandidates := s.getStateCandidates()
+
+	for i := range stateCandidates.data {
+		candidate := &stateCandidates.data[i]
+
+		for j, stake := range candidate.Stakes {
+			if stake.Value.Cmp(types.Big0) == 0 {
+				candidate.Stakes = append(candidate.Stakes[:j], candidate.Stakes[j+1:]...)
+			}
+		}
+	}
+
+	s.setStateCandidates(stateCandidates)
+	s.MarkStateCandidateDirty()
 }

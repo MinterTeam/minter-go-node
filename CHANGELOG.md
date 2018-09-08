@@ -25,6 +25,7 @@ IMPROVEMENT
 - [config] Add GUI listen address to config
 - [config] Add API listen address to config
 - [docs] Update documentation
+- [validators] Remove 0-valued stakes from state
 
 BUG FIXES
 
