@@ -850,6 +850,10 @@ func (s *StateDB) PayRewards() {
 			for j := range candidate.Stakes {
 				stake := candidate.Stakes[j]
 
+				if stake.BipValue == nil {
+					continue
+				}
+
 				reward := big.NewInt(0).Set(totalReward)
 				reward.Mul(reward, stake.BipValue)
 				reward.Div(reward, validator.TotalBipStake)
