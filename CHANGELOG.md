@@ -4,6 +4,13 @@
 
 - [api] Add validators rewards to block api
 
+## 0.3.3
+*Sept 8th, 2018*
+
+IMPROVEMENT
+
+- [api] Add block size in bytes
+
 ## 0.3.2
 *Sept 8th, 2018*
 

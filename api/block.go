@@ -23,6 +23,7 @@ type BlockResponse struct {
 	Transactions []BlockTransactionResponse `json:"transactions"`
 	Precommits   json.RawMessage            `json:"precommits"`
 	BlockReward  string                     `json:"block_reward"`
+	Size         int                        `json:"size"`
 }
 
 type BlockTransactionResponse struct {
@@ -93,6 +94,10 @@ func Block(w http.ResponseWriter, r *http.Request) {
 
 	precommits, _ := cdc.MarshalJSON(block.Block.LastCommit.Precommits)
 
+	encodedBlock, _ := cdc.MarshalBinary(block)
+
+	size := len(encodedBlock)
+
 	response := BlockResponse{
 		Hash:         block.Block.Hash(),
 		Height:       block.Block.Height,
@@ -102,6 +107,7 @@ func Block(w http.ResponseWriter, r *http.Request) {
 		Transactions: txs,
 		Precommits:   json.RawMessage(precommits),
 		BlockReward:  rewards.GetRewardForBlock(uint64(height)).String(),
+		Size:         size,
 	}
 
 	err = json.NewEncoder(w).Encode(Response{
