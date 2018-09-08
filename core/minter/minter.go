@@ -144,7 +144,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 	frozenFunds := app.stateDeliver.GetStateFrozenFunds(app.height)
 	if frozenFunds != nil {
 		for _, item := range frozenFunds.List() {
-			app.stateDeliver.SetBalance(item.Address, item.Coin, item.Value)
+			app.stateDeliver.AddBalance(item.Address, item.Coin, item.Value)
 		}
 
 		frozenFunds.Delete()
