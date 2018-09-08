@@ -19,14 +19,19 @@ var (
 
 func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
 
-	validatorPubKeyBytes, err := base64.StdEncoding.DecodeString("SuHuc+YTbIWwypM6mhNHdYozSIXxCzI4OYpnrC6xU7g=")
+	validatorsPubKeys := []string{"7tc5AFPB+1XJ2Rs63OeDQZgF9k9MY+nZ+sp99dZP2dA="}
+	validators := make([]tmtypes.GenesisValidator, len(validatorsPubKeys))
 
-	if err != nil {
-		return nil, err
+	for i, val := range validatorsPubKeys {
+		validatorPubKeyBytes, _ := base64.StdEncoding.DecodeString(val)
+		var validatorPubKey ed25519.PubKeyEd25519
+		copy(validatorPubKey[:], validatorPubKeyBytes)
+
+		validators[i] = tmtypes.GenesisValidator{
+			PubKey: validatorPubKey,
+			Power:  10,
+		}
 	}
-
-	var validatorPubKey ed25519.PubKeyEd25519
-	copy(validatorPubKey[:], validatorPubKeyBytes)
 
 	appHash, err := hex.DecodeString("0000000000000000000000000000000000000000000000000000000000000000")
 
@@ -62,14 +67,9 @@ func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
 		ChainID:         Network,
 		GenesisTime:     time.Date(2018, 8, 22, 0, 0, 0, 0, time.UTC),
 		ConsensusParams: nil,
-		Validators: []tmtypes.GenesisValidator{
-			{
-				PubKey: validatorPubKey,
-				Power:  100000000,
-			},
-		},
-		AppHash:  common.HexBytes(appHash),
-		AppState: json.RawMessage([]byte(appStateJSON)),
+		Validators:      validators,
+		AppHash:         common.HexBytes(appHash),
+		AppState:        json.RawMessage([]byte(appStateJSON)),
 	}
 
 	err = genesis.ValidateAndComplete()

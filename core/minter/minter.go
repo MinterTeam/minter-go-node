@@ -101,8 +101,8 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 	}
 
 	for _, validator := range req.Validators {
-		app.stateDeliver.CreateCandidate(genesisState.FirstValidatorAddress, validator.PubKey.Data, 10, 1, types.GetBaseCoin(), helpers.BipToPip(big.NewInt(1000000)))
-		app.stateDeliver.CreateValidator(genesisState.FirstValidatorAddress, validator.PubKey.Data, 10, 1, types.GetBaseCoin(), helpers.BipToPip(big.NewInt(1000000)))
+		app.stateDeliver.CreateCandidate(genesisState.FirstValidatorAddress, validator.PubKey.Data, 100, 1, types.GetBaseCoin(), helpers.BipToPip(big.NewInt(1000000)))
+		app.stateDeliver.CreateValidator(genesisState.FirstValidatorAddress, validator.PubKey.Data, 100, 1, types.GetBaseCoin(), helpers.BipToPip(big.NewInt(1000000)))
 		app.stateDeliver.SetCandidateOnline(validator.PubKey.Data)
 		app.activeValidators = append(app.activeValidators, validator)
 	}
@@ -220,7 +220,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 
 		// calculate total power
 		totalPower := big.NewInt(0)
-		for _, candidate := range newCandidates[:valsCount] {
+		for _, candidate := range newCandidates {
 			totalPower.Add(totalPower, candidate.TotalBipStake)
 		}
 

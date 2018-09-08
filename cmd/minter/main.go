@@ -69,12 +69,12 @@ func startTendermintNode(app *minter.Blockchain) *tmNode.Node {
 	)
 
 	if err != nil {
-		println(fmt.Errorf("Failed to create a node: %v", err))
+		log.Error(fmt.Sprintf("Failed to create a node: %v", err))
 		os.Exit(1)
 	}
 
 	if err = node.Start(); err != nil {
-		println(fmt.Errorf("Failed to start node: %v", err))
+		log.Error(fmt.Sprintf("Failed to start node: %v", err))
 		os.Exit(1)
 	}
 
