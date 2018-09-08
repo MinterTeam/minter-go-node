@@ -14,12 +14,16 @@ import (
 )
 
 var (
-	Network = "minter-test-network-19"
+	Network = "minter-test-network-20"
 )
 
 func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
-
-	validatorsPubKeys := []string{"7tc5AFPB+1XJ2Rs63OeDQZgF9k9MY+nZ+sp99dZP2dA="}
+	validatorsPubKeys := []string{
+		"SuHuc+YTbIWwypM6mhNHdYozSIXxCzI4OYpnrC6xU7g=",
+		"c42kG6ant9abcpSvoVi4nFobQQy/DCRDyFxf4krR3Rw=",
+		"bxbB/yGm+5RqrtD0wfzKJyty/ZBJiPkdOIMoK4rjG6I=",
+		"nhPy9UaN14KzFkRPvWZZXhPbp9e9Pvob7NULQgRfWMY=",
+	}
 	validators := make([]tmtypes.GenesisValidator, len(validatorsPubKeys))
 
 	for i, val := range validatorsPubKeys {
@@ -65,11 +69,11 @@ func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
 
 	genesis := tmtypes.GenesisDoc{
 		ChainID:         Network,
-		GenesisTime:     time.Date(2018, 8, 22, 0, 0, 0, 0, time.UTC),
+		GenesisTime:     time.Date(2018, 9, 8, 0, 0, 0, 0, time.UTC),
 		ConsensusParams: nil,
 		Validators:      validators,
 		AppHash:         common.HexBytes(appHash),
-		AppState:        json.RawMessage([]byte(appStateJSON)),
+		AppState:        json.RawMessage(appStateJSON),
 	}
 
 	err = genesis.ValidateAndComplete()
