@@ -200,6 +200,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 	for _, val := range vals {
 		if val.IsToDrop() {
 			hasDroppedValidators = true
+			break
 		}
 	}
 
