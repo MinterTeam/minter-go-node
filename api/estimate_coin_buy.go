@@ -76,6 +76,7 @@ func EstimateCoinBuy(w http.ResponseWriter, r *http.Request) {
 				Code: 1,
 				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.ReserveBalance().String(), commissionInBaseCoin.String()),
 			})
+			return
 		}
 
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
@@ -91,6 +92,16 @@ func EstimateCoinBuy(w http.ResponseWriter, r *http.Request) {
 		coinFrom := cState.GetStateCoin(coinToSellSymbol).Data()
 		coinTo := cState.GetStateCoin(coinToBuySymbol).Data()
 		baseCoinNeeded := formula.CalculatePurchaseAmount(coinTo.Volume, coinTo.ReserveBalance, coinTo.Crr, valueToBuy)
+
+		if coinFrom.ReserveBalance.Cmp(baseCoinNeeded) < 0 {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(Response{
+				Code: 1,
+				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coinFrom.ReserveBalance.String(), baseCoinNeeded.String()),
+			})
+			return
+		}
+
 		result = formula.CalculateSaleAmount(coinFrom.Volume, coinFrom.ReserveBalance, coinFrom.Crr, baseCoinNeeded)
 	}
 

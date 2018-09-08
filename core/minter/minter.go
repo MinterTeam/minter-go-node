@@ -12,11 +12,13 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/validators"
 	"github.com/MinterTeam/minter-go-node/genesis"
 	"github.com/MinterTeam/minter-go-node/helpers"
+	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/mintdb"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/node"
 	rpc "github.com/tendermint/tendermint/rpc/client"
 	"math/big"
+	"os"
 )
 
 type Blockchain struct {
@@ -28,7 +30,7 @@ type Blockchain struct {
 	rootHash           types.Hash
 	height             uint64
 	rewards            *big.Int
-	activeValidators   abciTypes.Validators
+	activeValidators   abciTypes.ValidatorUpdates
 	validatorsStatuses map[[20]byte]int8
 	tendermintRPC      *rpc.Local
 
@@ -68,6 +70,13 @@ func NewMinterBlockchain() *Blockchain {
 
 func (app *Blockchain) RunRPC(node *node.Node) {
 	app.tendermintRPC = rpc.NewLocal(node)
+
+	status, _ := app.tendermintRPC.Status()
+
+	if status.NodeInfo.Network != genesis.Network {
+		log.Error("Different networks")
+		os.Exit(1)
+	}
 }
 
 func (app *Blockchain) SetOption(req abciTypes.RequestSetOption) abciTypes.ResponseSetOption {
@@ -92,8 +101,8 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 	}
 
 	for _, validator := range req.Validators {
-		app.stateDeliver.CreateCandidate(genesisState.FirstValidatorAddress, validator.PubKey.Data, 10, 1, types.GetBaseCoin(), helpers.BipToPip(big.NewInt(1000000)))
-		app.stateDeliver.CreateValidator(genesisState.FirstValidatorAddress, validator.PubKey.Data, 10, 1, types.GetBaseCoin(), helpers.BipToPip(big.NewInt(1000000)))
+		app.stateDeliver.CreateCandidate(genesisState.FirstValidatorAddress, validator.PubKey.Data, 100, 1, types.GetBaseCoin(), helpers.BipToPip(big.NewInt(1000000)))
+		app.stateDeliver.CreateValidator(genesisState.FirstValidatorAddress, validator.PubKey.Data, 100, 1, types.GetBaseCoin(), helpers.BipToPip(big.NewInt(1000000)))
 		app.stateDeliver.SetCandidateOnline(validator.PubKey.Data)
 		app.activeValidators = append(app.activeValidators, validator)
 	}
@@ -109,7 +118,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 	app.validatorsStatuses = map[[20]byte]int8{}
 
 	// give penalty to absent validators
-	for _, v := range req.LastCommitInfo.Validators {
+	for _, v := range req.LastCommitInfo.Votes {
 		var address [20]byte
 		copy(address[:], v.Validator.Address)
 
@@ -127,15 +136,15 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 		var address [20]byte
 		copy(address[:], v.Validator.Address)
 
-		app.stateDeliver.PunishByzantineValidator(address)
-		app.stateDeliver.RemoveFrozenFundsWithAddress(app.height, app.height+518400, address)
+		app.stateDeliver.PunishByzantineValidator(uint64(req.Header.Height), address)
+		app.stateDeliver.PunishFrozenFundsWithAddress(app.height, app.height+518400, address)
 	}
 
 	// apply frozen funds
 	frozenFunds := app.stateDeliver.GetStateFrozenFunds(app.height)
 	if frozenFunds != nil {
 		for _, item := range frozenFunds.List() {
-			app.stateDeliver.SetBalance(item.Address, item.Coin, item.Value)
+			app.stateDeliver.AddBalance(item.Address, item.Coin, item.Value)
 		}
 
 		frozenFunds.Delete()
@@ -146,9 +155,10 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 
 func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.ResponseEndBlock {
 
-	var updates []abciTypes.Validator
+	var updates []abciTypes.ValidatorUpdate
 
-	vals := app.stateDeliver.GetStateValidators().Data()
+	stateValidators := app.stateDeliver.GetStateValidators()
+	vals := stateValidators.Data()
 	// calculate total power of validators
 	totalPower := big.NewInt(0)
 	for _, val := range vals {
@@ -161,7 +171,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 	}
 
 	// accumulate rewards
-	for _, val := range vals {
+	for i, val := range vals {
 
 		// skip if candidate is not present
 		if app.validatorsStatuses[val.GetAddress()] != ValidatorPresent {
@@ -175,14 +185,27 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 		reward.Mul(reward, val.TotalBipStake)
 		reward.Div(reward, totalPower)
 
-		app.stateDeliver.AddAccumReward(val.PubKey, reward)
+		vals[i].AccumReward.Add(vals[i].AccumReward, reward)
 	}
 
+	stateValidators.SetData(vals)
+	app.stateDeliver.SetStateValidators(stateValidators)
+
+	// pay rewards
 	if app.height%12 == 0 {
-
-		// pay rewards
 		app.stateDeliver.PayRewards()
+	}
 
+	hasDroppedValidators := false
+	for _, val := range vals {
+		if val.IsToDrop() {
+			hasDroppedValidators = true
+			break
+		}
+	}
+
+	// update validators
+	if app.height%120 == 0 || hasDroppedValidators {
 		app.stateDeliver.RecalculateTotalStakeValues()
 
 		valsCount := validators.GetValidatorsCountForBlock(app.height)
@@ -193,22 +216,22 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 			valsCount = len(newCandidates)
 		}
 
-		newValidators := make([]abciTypes.Validator, valsCount)
+		newValidators := make([]abciTypes.ValidatorUpdate, valsCount)
 
 		// calculate total power
 		totalPower := big.NewInt(0)
-		for _, candidate := range newCandidates[:valsCount] {
+		for _, candidate := range newCandidates {
 			totalPower.Add(totalPower, candidate.TotalBipStake)
 		}
 
-		for i := range newCandidates[:valsCount] {
+		for i := range newCandidates {
 			power := big.NewInt(0).Div(big.NewInt(0).Mul(newCandidates[i].TotalBipStake, big.NewInt(100000000)), totalPower).Int64()
 
 			if power == 0 {
 				power = 1
 			}
 
-			newValidators[i] = abciTypes.Ed25519Validator(newCandidates[i].PubKey, power)
+			newValidators[i] = abciTypes.Ed25519ValidatorUpdate(newCandidates[i].PubKey, power)
 		}
 
 		// update validators in state
@@ -232,7 +255,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 
 			// remove validator
 			if !persisted {
-				updates = append(updates, abciTypes.Validator{
+				updates = append(updates, abciTypes.ValidatorUpdate{
 					PubKey: validator.PubKey,
 					Power:  0,
 				})

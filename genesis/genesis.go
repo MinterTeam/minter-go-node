@@ -13,16 +13,29 @@ import (
 	"time"
 )
 
+var (
+	Network = "minter-test-network-20"
+)
+
 func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
-
-	validatorPubKeyBytes, err := base64.StdEncoding.DecodeString("SuHuc+YTbIWwypM6mhNHdYozSIXxCzI4OYpnrC6xU7g=")
-
-	if err != nil {
-		return nil, err
+	validatorsPubKeys := []string{
+		"SuHuc+YTbIWwypM6mhNHdYozSIXxCzI4OYpnrC6xU7g=",
+		"c42kG6ant9abcpSvoVi4nFobQQy/DCRDyFxf4krR3Rw=",
+		"bxbB/yGm+5RqrtD0wfzKJyty/ZBJiPkdOIMoK4rjG6I=",
+		"nhPy9UaN14KzFkRPvWZZXhPbp9e9Pvob7NULQgRfWMY=",
 	}
+	validators := make([]tmtypes.GenesisValidator, len(validatorsPubKeys))
 
-	var validatorPubKey ed25519.PubKeyEd25519
-	copy(validatorPubKey[:], validatorPubKeyBytes)
+	for i, val := range validatorsPubKeys {
+		validatorPubKeyBytes, _ := base64.StdEncoding.DecodeString(val)
+		var validatorPubKey ed25519.PubKeyEd25519
+		copy(validatorPubKey[:], validatorPubKeyBytes)
+
+		validators[i] = tmtypes.GenesisValidator{
+			PubKey: validatorPubKey,
+			Power:  10,
+		}
+	}
 
 	appHash, err := hex.DecodeString("0000000000000000000000000000000000000000000000000000000000000000")
 
@@ -55,17 +68,12 @@ func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
 	}
 
 	genesis := tmtypes.GenesisDoc{
-		ChainID:         "minter-test-network-19",
-		GenesisTime:     time.Date(2018, 8, 22, 0, 0, 0, 0, time.UTC),
+		ChainID:         Network,
+		GenesisTime:     time.Date(2018, 9, 8, 0, 0, 0, 0, time.UTC),
 		ConsensusParams: nil,
-		Validators: []tmtypes.GenesisValidator{
-			{
-				PubKey: validatorPubKey,
-				Power:  100000000,
-			},
-		},
-		AppHash:  common.HexBytes(appHash),
-		AppState: json.RawMessage([]byte(appStateJSON)),
+		Validators:      validators,
+		AppHash:         common.HexBytes(appHash),
+		AppState:        json.RawMessage(appStateJSON),
 	}
 
 	err = genesis.ValidateAndComplete()

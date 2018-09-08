@@ -11,10 +11,13 @@ import (
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/tendermint/tendermint/libs/common"
 	tmNode "github.com/tendermint/tendermint/node"
+	"github.com/tendermint/tendermint/p2p"
 	"github.com/tendermint/tendermint/privval"
 	"github.com/tendermint/tendermint/proxy"
 	"os"
 )
+
+var cfg = config.GetConfig()
 
 func main() {
 
@@ -35,10 +38,8 @@ func main() {
 
 	app.RunRPC(node)
 
-	if !*utils.DisableApi {
-		go api.RunApi(app, node)
-		go gui.Run(":3000")
-	}
+	go api.RunApi(app, node)
+	go gui.Run(cfg.GUIListenAddress)
 
 	// Wait forever
 	common.TrapSignal(func() {
@@ -49,12 +50,17 @@ func main() {
 }
 
 func startTendermintNode(app *minter.Blockchain) *tmNode.Node {
+	cfg := config.GetTmConfig()
+	nodeKey, err := p2p.LoadOrGenNodeKey(cfg.NodeKeyFile())
 
-	cfg := config.GetConfig()
+	if err != nil {
+		panic(err)
+	}
 
 	node, err := tmNode.NewNode(
 		cfg,
 		privval.LoadOrGenFilePV(cfg.PrivValidatorFile()),
+		nodeKey,
 		proxy.NewLocalClientCreator(app),
 		genesis.GetTestnetGenesis,
 		tmNode.DefaultDBProvider,
@@ -63,11 +69,13 @@ func startTendermintNode(app *minter.Blockchain) *tmNode.Node {
 	)
 
 	if err != nil {
-		fmt.Errorf("Failed to create a node: %v", err)
+		log.Error(fmt.Sprintf("Failed to create a node: %v", err))
+		os.Exit(1)
 	}
 
 	if err = node.Start(); err != nil {
-		fmt.Errorf("Failed to start node: %v", err)
+		log.Error(fmt.Sprintf("Failed to start node: %v", err))
+		os.Exit(1)
 	}
 
 	log.Info("Started node", "nodeInfo", node.Switch().NodeInfo())

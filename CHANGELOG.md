@@ -4,6 +4,37 @@
 
 - [api] Add validators rewards to block api
 
+## 0.3.0
+*Sept 8th, 2018*
+
+BREAKING CHANGES
+
+- [core] Validators are now updated each 120 blocks
+- [core] Validators are now updated then at least one of current validators exceed 12 missed blocks 
+- [tendermint] Update Tendermint to v0.24.0
+
+IMPROVEMENT
+
+- [p2p] Add seed nodes
+- [sync] Speed up synchronization
+- [core] Extend max payload size to 1024 bytes
+- [core] Add network id checker
+- [core] Add tx.sell_amount to SellAllCoin tags
+- [core] Change punishment for byzantine behavior
+- [api] Limit balance watchers to 10 clients
+- [config] Add config file
+- [config] Add GUI listen address to config
+- [config] Add API listen address to config
+- [docs] Update documentation
+- [validators] Remove 0-valued stakes from state
+
+BUG FIXES
+
+- [core] Fix issue #77 Incorrect createCoin fee
+- [core] Fix issue with insufficient coin reserve in buy coin tx
+- [core] Fix unbond transaction
+- [api] Fix issue #82
+
 ## 0.2.4
 *Aug 24th, 2018*
 

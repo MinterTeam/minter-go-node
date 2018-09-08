@@ -150,6 +150,13 @@ func (data BuyCoinData) Run(sender types.Address, tx *Transaction, context *stat
 		coinTo := context.GetStateCoin(data.CoinToBuy).Data()
 
 		baseCoinNeeded := formula.CalculatePurchaseAmount(coinTo.Volume, coinTo.ReserveBalance, coinTo.Crr, data.ValueToBuy)
+
+		if coinFrom.ReserveBalance.Cmp(baseCoinNeeded) < 0 {
+			return Response{
+				Code: code.CoinReserveNotSufficient,
+				Log:  fmt.Sprintf("Gas coin reserve balance is not sufficient for transaction. Has: %s %s, required %s %s", coinFrom.ReserveBalance.String(), types.GetBaseCoin(), baseCoinNeeded.String(), types.GetBaseCoin())}
+		}
+
 		value = formula.CalculateSaleAmount(coinFrom.Volume, coinFrom.ReserveBalance, coinFrom.Crr, baseCoinNeeded)
 
 		if context.GetBalance(sender, data.CoinToSell).Cmp(value) < 0 {

@@ -34,6 +34,8 @@ import (
 	"sort"
 )
 
+const UnbondPeriod = 518400
+
 var (
 	// emptyState is the known hash of an empty state trie entry.
 	emptyState = crypto.Keccak256Hash(nil)
@@ -73,6 +75,8 @@ type StateDB struct {
 	stateValidators      *stateValidators
 	stateValidatorsDirty bool
 
+	stakeCache map[types.CoinSymbol]StakeCache
+
 	// DB error.
 	// State objects are used by the consensus core and VM which are
 	// unable to deal with database-level errors. Any error that occurs
@@ -83,6 +87,11 @@ type StateDB struct {
 	thash, bhash types.Hash
 
 	lock sync.Mutex
+}
+
+type StakeCache struct {
+	TotalValue *big.Int
+	BipValue   *big.Int
 }
 
 // Create a new state from a given trie
@@ -102,6 +111,7 @@ func New(root types.Hash, db Database) (*StateDB, error) {
 		stateFrozenFundsDirty: make(map[uint64]struct{}),
 		stateCandidates:       nil,
 		stateCandidatesDirty:  false,
+		stakeCache:            make(map[types.CoinSymbol]StakeCache),
 	}, nil
 }
 
@@ -437,6 +447,10 @@ func (s *StateDB) setStateCandidates(candidates *stateCandidates) {
 	s.stateCandidates = candidates
 }
 
+func (s *StateDB) SetStateValidators(validators *stateValidators) {
+	s.setStateValidators(validators)
+}
+
 func (s *StateDB) setStateValidators(validators *stateValidators) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -576,7 +590,7 @@ func (s *StateDB) CreateCandidate(
 		candidates = newCandidate(s, Candidates{}, s.MarkStateCandidateDirty)
 	}
 
-	candidates.data = append(candidates.data, Candidate{
+	candidate := Candidate{
 		CandidateAddress: address,
 		PubKey:           pubkey,
 		Commission:       commission,
@@ -589,7 +603,11 @@ func (s *StateDB) CreateCandidate(
 		},
 		CreatedAtBlock: currentBlock,
 		Status:         CandidateStatusOffline,
-	})
+	}
+
+	candidate.Stakes[0].BipValue = candidate.Stakes[0].CalcBipValue(s)
+
+	candidates.data = append(candidates.data, candidate)
 
 	s.MarkStateCandidateDirty()
 	s.setStateCandidates(candidates)
@@ -647,6 +665,7 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (root types.Hash, err error) {
 	}
 
 	if s.stateCandidatesDirty {
+		s.clearStateCandidates()
 		s.updateStateCandidates(s.stateCandidates)
 		s.stateCandidatesDirty = false
 	}
@@ -832,7 +851,7 @@ func (s *StateDB) PayRewards() {
 				stake := candidate.Stakes[j]
 
 				reward := big.NewInt(0).Set(totalReward)
-				reward.Mul(reward, stake.BipValue(s))
+				reward.Mul(reward, stake.BipValue)
 				reward.Div(reward, validator.TotalBipStake)
 
 				s.AddBalance(stake.Owner, types.GetBaseCoin(), reward)
@@ -856,8 +875,9 @@ func (s *StateDB) RecalculateTotalStakeValues() {
 		totalBipStake := big.NewInt(0)
 
 		for j := range candidate.Stakes {
-			stake := candidate.Stakes[j]
-			totalBipStake.Add(totalBipStake, stake.BipValue(s))
+			stake := &candidate.Stakes[j]
+			stake.BipValue = stake.CalcBipValue(s)
+			totalBipStake.Add(totalBipStake, stake.BipValue)
 		}
 
 		candidate.TotalBipStake = totalBipStake
@@ -992,10 +1012,12 @@ func (s *StateDB) SetValidatorAbsent(address [20]byte) {
 			if validator.AbsentTimes > ValidatorMaxAbsentTimes {
 				candidate.Status = CandidateStatusOffline
 				validator.AbsentTimes = 0
+				validator.toDrop = true
 
 				totalStake := big.NewInt(0)
 
 				for j, stake := range candidate.Stakes {
+					// TODO: sub custom's coin volume and reserve
 					newValue := big.NewInt(0).Set(stake.Value)
 					newValue.Mul(newValue, big.NewInt(99))
 					newValue.Div(newValue, big.NewInt(100))
@@ -1021,7 +1043,7 @@ func (s *StateDB) SetValidatorAbsent(address [20]byte) {
 	s.MarkStateValidatorsDirty()
 }
 
-func (s *StateDB) PunishByzantineValidator(address [20]byte) {
+func (s *StateDB) PunishByzantineValidator(currentBlock uint64, address [20]byte) {
 
 	validators := s.getStateValidators()
 
@@ -1040,6 +1062,15 @@ func (s *StateDB) PunishByzantineValidator(address [20]byte) {
 				}
 			}
 
+			for _, stake := range candidate.Stakes {
+				// TODO: sub custom's coin volume and reserve
+				newValue := big.NewInt(0).Set(stake.Value)
+				newValue.Mul(newValue, big.NewInt(95))
+				newValue.Div(newValue, big.NewInt(100))
+
+				s.GetOrNewStateFrozenFunds(currentBlock+UnbondPeriod).AddFund(stake.Owner, candidate.PubKey, stake.Coin, newValue)
+			}
+
 			candidate.Stakes = []Stake{}
 			candidate.Status = CandidateStatusOffline
 			validator.AccumReward = big.NewInt(0)
@@ -1054,7 +1085,7 @@ func (s *StateDB) PunishByzantineValidator(address [20]byte) {
 	s.MarkStateValidatorsDirty()
 }
 
-func (s *StateDB) RemoveFrozenFundsWithAddress(fromBlock uint64, toBlock uint64, address [20]byte) {
+func (s *StateDB) PunishFrozenFundsWithAddress(fromBlock uint64, toBlock uint64, address [20]byte) {
 	for i := fromBlock; i <= toBlock; i++ {
 		frozenFund := s.getStateFrozenFunds(i)
 
@@ -1062,7 +1093,7 @@ func (s *StateDB) RemoveFrozenFundsWithAddress(fromBlock uint64, toBlock uint64,
 			continue
 		}
 
-		frozenFund.RemoveFund(address)
+		frozenFund.PunishFund(address)
 	}
 }
 
@@ -1109,4 +1140,40 @@ func (s *StateDB) SetNewValidators(candidates []Candidate) {
 	oldVals.data = newVals
 	s.setStateValidators(oldVals)
 	s.MarkStateValidatorsDirty()
+}
+
+func (s *StateDB) RemoveCurrentValidator(pubkey types.Pubkey) {
+	oldVals := s.getStateValidators()
+
+	var newVals Validators
+
+	for _, val := range oldVals.data {
+		if val.PubKey.Compare(pubkey) == 0 {
+			continue
+		}
+
+		newVals = append(newVals, val)
+	}
+
+	oldVals.data = newVals
+	s.setStateValidators(oldVals)
+	s.MarkStateValidatorsDirty()
+}
+
+// remove 0-valued stakes
+func (s *StateDB) clearStateCandidates() {
+	stateCandidates := s.getStateCandidates()
+
+	for i := range stateCandidates.data {
+		candidate := &stateCandidates.data[i]
+
+		for j, stake := range candidate.Stakes {
+			if stake.Value.Cmp(types.Big0) == 0 {
+				candidate.Stakes = append(candidate.Stakes[:j], candidate.Stakes[j+1:]...)
+			}
+		}
+	}
+
+	s.setStateCandidates(stateCandidates)
+	s.MarkStateCandidateDirty()
 }

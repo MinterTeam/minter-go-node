@@ -54,14 +54,16 @@ Each validator's staking pool receives revenue in proportion to its total stake.
 distributed to delegators inside the staking pool, the validator can apply a commission. In other words, delegators
 have to pay a commission to their validators on the revenue they earn.
 
-``5%`` from reward going to DAO account.
+``10%`` from reward going to DAO account.
+
+``10%`` from reward going to Developers.
 
 Lets consider a validator whose stake (i.e. self-bonded stake + delegated stake) is 10% of the total stake of all
 validators. This validator has 20% self-bonded stake and applies a commission of 10%. Now let us consider a block
 with the following revenue:
 
-- 111 Bips as block reward
-- 10 Bips as transaction fees.
+- 111 Bips as block reward (after subtraction taxes of 20%)
+- 10 Bips as transaction fees (after subtraction taxes of 20%)
 
 This amounts to a total of 121 Bips to be distributed among all staking pools.
 

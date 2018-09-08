@@ -79,6 +79,15 @@ func EstimateCoinSell(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		if coin.Volume().Cmp(valueToSell) < 0 {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(Response{
+				Code: 1,
+				Log:  fmt.Sprintf("Coin volume is not sufficient for transaction. Has: %s, required %s", coin.Volume().String(), valueToSell.String()),
+			})
+			return
+		}
+
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
 	}
 

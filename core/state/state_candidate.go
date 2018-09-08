@@ -58,51 +58,55 @@ func (c *stateCandidates) empty() bool {
 }
 
 type Stake struct {
-	Owner types.Address
-	Coin  types.CoinSymbol
-	Value *big.Int
+	Owner    types.Address
+	Coin     types.CoinSymbol
+	Value    *big.Int
+	BipValue *big.Int
 }
 
 func (s *Stake) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Owner types.Address    `json:"owner"`
-		Coin  types.CoinSymbol `json:"coin"`
-		Value string           `json:"value"`
+		Owner    types.Address    `json:"owner"`
+		Coin     types.CoinSymbol `json:"coin"`
+		Value    string           `json:"value"`
+		BipValue string           `json:"bip_value"`
 	}{
-		Owner: s.Owner,
-		Coin:  s.Coin,
-		Value: s.Value.String(),
+		Owner:    s.Owner,
+		Coin:     s.Coin,
+		Value:    s.Value.String(),
+		BipValue: s.BipValue.String(),
 	})
 }
 
-func (s *Stake) BipValue(context *StateDB) *big.Int {
-
+func (s *Stake) CalcBipValue(context *StateDB) *big.Int {
 	if s.Coin.IsBaseCoin() {
 		return big.NewInt(0).Set(s.Value)
 	}
 
-	totalStaked := big.NewInt(0)
+	if _, has := context.stakeCache[s.Coin]; !has {
+		totalStaked := big.NewInt(0)
+		candidates := context.getStateCandidates()
 
-	candidates := context.getStateCandidates()
-
-	for _, candidate := range candidates.data {
-		for _, stake := range candidate.Stakes {
-			if bytes.Equal(stake.Coin.Bytes(), s.Coin.Bytes()) {
-				totalStaked.Add(totalStaked, stake.Value)
+		for _, candidate := range candidates.data {
+			for _, stake := range candidate.Stakes {
+				if stake.Coin == s.Coin {
+					totalStaked.Add(totalStaked, stake.Value)
+				}
 			}
+		}
+
+		coin := context.getStateCoin(s.Coin)
+		context.stakeCache[s.Coin] = StakeCache{
+			TotalValue: totalStaked,
+			BipValue:   formula.CalculateSaleReturn(coin.Volume(), coin.ReserveBalance(), coin.data.Crr, totalStaked),
 		}
 	}
 
-	if totalStaked.Cmp(types.Big0) == 0 {
-		return big.NewInt(0)
-	}
+	data := context.stakeCache[s.Coin]
 
-	coin := context.getStateCoin(s.Coin)
-	totalBipValue := formula.CalculateSaleReturn(coin.Volume(), coin.ReserveBalance(), coin.data.Crr, totalStaked)
-
-	value := big.NewInt(0).Set(totalBipValue)
+	value := big.NewInt(0).Set(data.BipValue)
 	value.Mul(value, s.Value)
-	value.Div(value, totalStaked)
+	value.Div(value, data.TotalValue)
 
 	return value
 }

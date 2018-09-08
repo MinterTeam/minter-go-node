@@ -62,6 +62,11 @@ type Validator struct {
 	AbsentTimes      uint
 
 	tmAddress *[20]byte
+	toDrop    bool
+}
+
+func (validator *Validator) IsToDrop() bool {
+	return validator.toDrop
 }
 
 func (validator Validator) GetAddress() [20]byte {
@@ -106,4 +111,8 @@ func (c *stateValidators) EncodeRLP(w io.Writer) error {
 func (c *stateValidators) deepCopy(db *StateDB, onDirty func()) *stateValidators {
 	stateValidators := newValidator(db, c.data, onDirty)
 	return stateValidators
+}
+
+func (c *stateValidators) SetData(validators Validators) {
+	c.data = validators
 }
