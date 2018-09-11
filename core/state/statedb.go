@@ -19,6 +19,7 @@ package state
 
 import (
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/eventsdb"
 	"math/big"
 	"sync"
 
@@ -812,7 +813,9 @@ func (s *StateDB) AddAccumReward(pubkey types.Pubkey, reward *big.Int) {
 	}
 }
 
-func (s *StateDB) PayRewards() {
+func (s *StateDB) PayRewards(height int64) {
+	edb := eventsdb.GetCurrent()
+
 	validators := s.getStateValidators()
 
 	for i := range validators.data {
@@ -827,12 +830,24 @@ func (s *StateDB) PayRewards() {
 			DAOReward.Mul(DAOReward, big.NewInt(int64(dao.Commission)))
 			DAOReward.Div(DAOReward, big.NewInt(100))
 			s.AddBalance(dao.Address, types.GetBaseCoin(), DAOReward)
+			edb.SaveEvent(height, eventsdb.RewardEvent{
+				Role:            eventsdb.RoleDAO,
+				Address:         dao.Address,
+				Amount:          DAOReward.String(),
+				ValidatorPubKey: validator.PubKey,
+			})
 
 			// pay commission to Developers
 			DevelopersReward := big.NewInt(0).Set(totalReward)
 			DevelopersReward.Mul(DevelopersReward, big.NewInt(int64(developers.Commission)))
 			DevelopersReward.Div(DevelopersReward, big.NewInt(100))
 			s.AddBalance(developers.Address, types.GetBaseCoin(), DevelopersReward)
+			edb.SaveEvent(height, eventsdb.RewardEvent{
+				Role:            eventsdb.RoleDevelopers,
+				Address:         developers.Address,
+				Amount:          DevelopersReward.String(),
+				ValidatorPubKey: validator.PubKey,
+			})
 
 			totalReward.Sub(totalReward, DevelopersReward)
 			totalReward.Sub(totalReward, DAOReward)
@@ -843,6 +858,12 @@ func (s *StateDB) PayRewards() {
 			validatorReward.Div(validatorReward, big.NewInt(100))
 			totalReward.Sub(totalReward, validatorReward)
 			s.AddBalance(validator.CandidateAddress, types.GetBaseCoin(), validatorReward)
+			edb.SaveEvent(height, eventsdb.RewardEvent{
+				Role:            eventsdb.RoleValidator,
+				Address:         validator.CandidateAddress,
+				Amount:          validatorReward.String(),
+				ValidatorPubKey: validator.PubKey,
+			})
 
 			candidate := s.GetStateCandidate(validator.PubKey)
 
@@ -858,7 +879,18 @@ func (s *StateDB) PayRewards() {
 				reward.Mul(reward, stake.BipValue)
 				reward.Div(reward, validator.TotalBipStake)
 
+				if reward.Cmp(types.Big0) < 1 {
+					continue
+				}
+
 				s.AddBalance(stake.Owner, types.GetBaseCoin(), reward)
+
+				edb.SaveEvent(height, eventsdb.RewardEvent{
+					Role:            eventsdb.RoleDelegator,
+					Address:         stake.Owner,
+					Amount:          reward.String(),
+					ValidatorPubKey: candidate.PubKey,
+				})
 			}
 
 			validator.AccumReward.SetInt64(0)
@@ -990,7 +1022,9 @@ func (s *StateDB) SetCandidateOffline(pubkey []byte) {
 	s.MarkStateCandidateDirty()
 }
 
-func (s *StateDB) SetValidatorAbsent(address [20]byte) {
+func (s *StateDB) SetValidatorAbsent(height int64, address [20]byte) {
+	edb := eventsdb.GetCurrent()
+
 	validators := s.getStateValidators()
 
 	for i := range validators.data {
@@ -1026,6 +1060,16 @@ func (s *StateDB) SetValidatorAbsent(address [20]byte) {
 					newValue.Mul(newValue, big.NewInt(99))
 					newValue.Div(newValue, big.NewInt(100))
 
+					slashed := big.NewInt(0).Set(stake.Value)
+					slashed.Sub(slashed, newValue)
+
+					edb.SaveEvent(height, eventsdb.SlashEvent{
+						Address:         stake.Owner,
+						Amount:          slashed.String(),
+						Coin:            stake.Coin,
+						ValidatorPubKey: candidate.PubKey,
+					})
+
 					candidate.Stakes[j] = Stake{
 						Owner: stake.Owner,
 						Coin:  stake.Coin,
@@ -1049,6 +1093,8 @@ func (s *StateDB) SetValidatorAbsent(address [20]byte) {
 
 func (s *StateDB) PunishByzantineValidator(currentBlock uint64, address [20]byte) {
 
+	edb := eventsdb.GetCurrent()
+
 	validators := s.getStateValidators()
 
 	for i := range validators.data {
@@ -1071,6 +1117,16 @@ func (s *StateDB) PunishByzantineValidator(currentBlock uint64, address [20]byte
 				newValue := big.NewInt(0).Set(stake.Value)
 				newValue.Mul(newValue, big.NewInt(95))
 				newValue.Div(newValue, big.NewInt(100))
+
+				slashed := big.NewInt(0).Set(stake.Value)
+				slashed.Sub(slashed, newValue)
+
+				edb.SaveEvent(int64(currentBlock), eventsdb.SlashEvent{
+					Address:         stake.Owner,
+					Amount:          slashed.String(),
+					Coin:            stake.Coin,
+					ValidatorPubKey: candidate.PubKey,
+				})
 
 				s.GetOrNewStateFrozenFunds(currentBlock+UnbondPeriod).AddFund(stake.Owner, candidate.PubKey, stake.Coin, newValue)
 			}

@@ -17,14 +17,13 @@
 package types
 
 import (
+	"bytes"
 	"encoding/hex"
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/hexutil"
 	"math/big"
 	"math/rand"
 	"reflect"
-
-	"bytes"
-	"github.com/MinterTeam/minter-go-node/hexutil"
 )
 
 const (

@@ -17,6 +17,7 @@
 package state
 
 import (
+	"github.com/MinterTeam/minter-go-node/eventsdb"
 	"io"
 
 	"fmt"
@@ -119,6 +120,9 @@ func (c *stateFrozenFund) PunishFund(candidateAddress [20]byte) {
 }
 
 func (c *stateFrozenFund) punishFund(candidateAddress [20]byte) {
+
+	edb := eventsdb.GetCurrent()
+
 	var NewList []FrozenFund
 
 	for _, item := range c.data.List {
@@ -133,6 +137,16 @@ func (c *stateFrozenFund) punishFund(candidateAddress [20]byte) {
 			newValue := big.NewInt(0).Set(item.Value)
 			newValue.Mul(newValue, big.NewInt(95))
 			newValue.Div(newValue, big.NewInt(100))
+
+			slashed := big.NewInt(0).Set(item.Value)
+			slashed.Sub(slashed, newValue)
+
+			edb.SaveEvent(int64(c.blockHeight), eventsdb.SlashEvent{
+				Address:         item.Address,
+				Amount:          slashed.String(),
+				Coin:            item.Coin,
+				ValidatorPubKey: item.CandidateKey,
+			})
 
 			item.Value = newValue
 		}

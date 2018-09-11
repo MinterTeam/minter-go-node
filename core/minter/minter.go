@@ -126,7 +126,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 			app.stateDeliver.SetValidatorPresent(address)
 			app.validatorsStatuses[address] = ValidatorPresent
 		} else {
-			app.stateDeliver.SetValidatorAbsent(address)
+			app.stateDeliver.SetValidatorAbsent(req.Header.Height, address)
 			app.validatorsStatuses[address] = ValidatorAbsent
 		}
 	}
@@ -193,7 +193,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 
 	// pay rewards
 	if app.height%12 == 0 {
-		app.stateDeliver.PayRewards()
+		app.stateDeliver.PayRewards(req.Height)
 	}
 
 	hasDroppedValidators := false
