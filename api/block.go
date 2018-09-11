@@ -6,6 +6,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/rewards"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/eventsdb"
 	"github.com/gorilla/mux"
 	"github.com/tendermint/tendermint/libs/common"
 	"math/big"
@@ -21,8 +22,10 @@ type BlockResponse struct {
 	NumTxs       int64                      `json:"num_txs"`
 	TotalTxs     int64                      `json:"total_txs"`
 	Transactions []BlockTransactionResponse `json:"transactions"`
+	Events       json.RawMessage            `json:"events,omitempty"`
 	Precommits   json.RawMessage            `json:"precommits"`
 	BlockReward  string                     `json:"block_reward"`
+	Size         int                        `json:"size"`
 }
 
 type BlockTransactionResponse struct {
@@ -44,6 +47,7 @@ func Block(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 	height, _ := strconv.ParseInt(vars["height"], 10, 64)
+	includeEvents, _ := strconv.ParseBool(r.URL.Query().Get("withEvents"))
 
 	block, err := client.Block(&height)
 	blockResults, err := client.BlockResults(&height)
@@ -58,8 +62,6 @@ func Block(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-
-	w.WriteHeader(http.StatusOK)
 
 	txs := make([]BlockTransactionResponse, len(block.Block.Data.Txs))
 
@@ -93,6 +95,29 @@ func Block(w http.ResponseWriter, r *http.Request) {
 
 	precommits, _ := cdc.MarshalJSON(block.Block.LastCommit.Precommits)
 
+	encodedBlock, _ := cdc.MarshalBinary(block)
+
+	size := len(encodedBlock)
+
+	var eventsRaw []byte
+
+	if includeEvents {
+		events := eventsdb.GetCurrent().GetEvents(height)
+
+		if len(events) > 0 {
+			eventsRaw, err = cdc.MarshalJSON(events)
+
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				json.NewEncoder(w).Encode(Response{
+					Code: 0,
+					Log:  err.Error(),
+				})
+				return
+			}
+		}
+	}
+
 	response := BlockResponse{
 		Hash:         block.Block.Hash(),
 		Height:       block.Block.Height,
@@ -100,10 +125,13 @@ func Block(w http.ResponseWriter, r *http.Request) {
 		NumTxs:       block.Block.NumTxs,
 		TotalTxs:     block.Block.TotalTxs,
 		Transactions: txs,
-		Precommits:   json.RawMessage(precommits),
+		Precommits:   precommits,
 		BlockReward:  rewards.GetRewardForBlock(uint64(height)).String(),
+		Size:         size,
+		Events:       eventsRaw,
 	}
 
+	w.WriteHeader(http.StatusOK)
 	err = json.NewEncoder(w).Encode(Response{
 		Code:   0,
 		Result: response,

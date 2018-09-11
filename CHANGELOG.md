@@ -1,8 +1,13 @@
 # Changelog
 
-## TBD
+## 0.3.3
+*Sept 8th, 2018*
 
-- [api] Add validators rewards to block api
+IMPROVEMENT
+
+- [api] Add block size in bytes
+- [api] #100 Add "events" to block response. To get events add ?withEvents=true to request URL. 
+WARNING! You should sync blockchain from scratch to get this feature working
 
 ## 0.3.2
 *Sept 8th, 2018*

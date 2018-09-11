@@ -2,6 +2,7 @@ package api
 
 import (
 	"github.com/MinterTeam/minter-go-node/config"
+	"github.com/MinterTeam/minter-go-node/eventsdb"
 	"log"
 	"net/http"
 
@@ -26,6 +27,7 @@ var (
 
 func init() {
 	cryptoAmino.RegisterAmino(cdc)
+	eventsdb.RegisterAminoEvents(cdc)
 }
 
 func RunApi(b *minter.Blockchain, node *node.Node) {
