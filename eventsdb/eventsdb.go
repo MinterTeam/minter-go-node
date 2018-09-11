@@ -3,12 +3,15 @@ package eventsdb
 import (
 	"encoding/binary"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
+	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/mintdb"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/tendermint/go-amino"
 )
 
 var cdc = amino.NewCodec()
+
+var eventsEnabled = config.GetConfig().EnableEvents
 
 var edb *EventsDB
 
@@ -39,6 +42,11 @@ func NewEventsDB(db *mintdb.LDBDatabase) *EventsDB {
 }
 
 func (db *EventsDB) SaveEvent(height int64, event Event) error {
+
+	if !eventsEnabled {
+		return nil
+	}
+
 	events := db.GetEvents(height)
 	events = append(events, event)
 

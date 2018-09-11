@@ -222,6 +222,8 @@ type BaseConfig struct {
 
 	// Address to listen for API connections
 	APIListenAddress string `mapstructure:"api_listen_addr"`
+
+	EnableEvents bool `mapstructure:"enable_events"`
 }
 
 // DefaultBaseConfig returns a default base configuration for a Tendermint node
@@ -241,6 +243,7 @@ func DefaultBaseConfig() BaseConfig {
 		DBPath:            "data",
 		GUIListenAddress:  ":3000",
 		APIListenAddress:  ":8841",
+		EnableEvents: 	   false,
 	}
 }
 
