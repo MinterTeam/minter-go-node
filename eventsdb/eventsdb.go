@@ -17,17 +17,20 @@ var edb *EventsDB
 
 func init() {
 	RegisterAminoEvents(cdc)
-
-	eventsDB, err := mintdb.NewLDBDatabase(utils.GetMinterHome()+"/events", 1000, 1000)
-
-	if err != nil {
-		panic(err)
-	}
-
-	edb = NewEventsDB(eventsDB)
 }
 
 func GetCurrent() *EventsDB {
+
+	if edb == nil {
+		eventsDB, err := mintdb.NewLDBDatabase(utils.GetMinterHome()+"/events", 1000, 1000)
+
+		if err != nil {
+			panic(err)
+		}
+
+		edb = NewEventsDB(eventsDB)
+	}
+
 	return edb
 }
 
