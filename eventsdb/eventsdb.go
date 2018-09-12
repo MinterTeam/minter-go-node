@@ -32,28 +32,31 @@ func GetCurrent() *EventsDB {
 }
 
 type EventsDB struct {
-	db *mintdb.LDBDatabase
+	db    *mintdb.LDBDatabase
+	cache map[int64]Events
 }
 
 func NewEventsDB(db *mintdb.LDBDatabase) *EventsDB {
 	return &EventsDB{
 		db: db,
+		cache: map[int64]Events{},
 	}
 }
 
-func (db *EventsDB) SaveEvent(height int64, event Event) error {
-
+func (db *EventsDB) AddEvent(height int64, event Event) {
 	if !eventsEnabled {
-		return nil
+		return
 	}
 
 	events := db.GetEvents(height)
 	events = append(events, event)
 
-	return db.SaveEvents(height, events)
+	db.SetEvents(height, events)
 }
 
-func (db *EventsDB) SaveEvents(height int64, events Events) error {
+func (db *EventsDB) FlushEvents(height int64) error {
+	events := db.GetEvents(height)
+
 	key := getKeyForHeight(height)
 
 	bytes, err := cdc.MarshalBinary(events)
@@ -62,10 +65,21 @@ func (db *EventsDB) SaveEvents(height int64, events Events) error {
 		return err
 	}
 
+	delete(db.cache, height)
+
 	return db.db.Put(key, bytes)
 }
 
+func (db *EventsDB) SetEvents(height int64, events Events) {
+	db.cache[height] = events
+}
+
 func (db *EventsDB) GetEvents(height int64) Events {
+
+	if events, has := db.cache[height]; has {
+		return events
+	}
+
 	key := getKeyForHeight(height)
 
 	data, err := db.db.Get(key)
@@ -84,6 +98,8 @@ func (db *EventsDB) GetEvents(height int64) Events {
 	if err != nil {
 		panic(err)
 	}
+
+	db.cache[height] = decoded
 
 	return decoded
 }

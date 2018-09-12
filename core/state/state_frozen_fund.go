@@ -141,7 +141,7 @@ func (c *stateFrozenFund) punishFund(candidateAddress [20]byte) {
 			slashed := big.NewInt(0).Set(item.Value)
 			slashed.Sub(slashed, newValue)
 
-			edb.SaveEvent(int64(c.blockHeight), eventsdb.SlashEvent{
+			edb.AddEvent(int64(c.blockHeight), eventsdb.SlashEvent{
 				Address:         item.Address,
 				Amount:          slashed.String(),
 				Coin:            item.Coin,

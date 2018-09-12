@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.4
+*Sept 12th, 2018*
+
+IMPROVEMENT
+
+- [api] Optimize events
+
 ## 0.3.3
 *Sept 8th, 2018*
 

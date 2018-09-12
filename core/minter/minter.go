@@ -10,6 +10,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/core/validators"
+	"github.com/MinterTeam/minter-go-node/eventsdb"
 	"github.com/MinterTeam/minter-go-node/genesis"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/log"
@@ -261,6 +262,8 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 			}
 		}
 	}
+
+	eventsdb.GetCurrent().FlushEvents(req.Height)
 
 	return abciTypes.ResponseEndBlock{
 		ValidatorUpdates: updates,

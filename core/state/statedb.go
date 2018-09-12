@@ -830,7 +830,7 @@ func (s *StateDB) PayRewards(height int64) {
 			DAOReward.Mul(DAOReward, big.NewInt(int64(dao.Commission)))
 			DAOReward.Div(DAOReward, big.NewInt(100))
 			s.AddBalance(dao.Address, types.GetBaseCoin(), DAOReward)
-			edb.SaveEvent(height, eventsdb.RewardEvent{
+			edb.AddEvent(height, eventsdb.RewardEvent{
 				Role:            eventsdb.RoleDAO,
 				Address:         dao.Address,
 				Amount:          DAOReward.String(),
@@ -842,7 +842,7 @@ func (s *StateDB) PayRewards(height int64) {
 			DevelopersReward.Mul(DevelopersReward, big.NewInt(int64(developers.Commission)))
 			DevelopersReward.Div(DevelopersReward, big.NewInt(100))
 			s.AddBalance(developers.Address, types.GetBaseCoin(), DevelopersReward)
-			edb.SaveEvent(height, eventsdb.RewardEvent{
+			edb.AddEvent(height, eventsdb.RewardEvent{
 				Role:            eventsdb.RoleDevelopers,
 				Address:         developers.Address,
 				Amount:          DevelopersReward.String(),
@@ -858,7 +858,7 @@ func (s *StateDB) PayRewards(height int64) {
 			validatorReward.Div(validatorReward, big.NewInt(100))
 			totalReward.Sub(totalReward, validatorReward)
 			s.AddBalance(validator.CandidateAddress, types.GetBaseCoin(), validatorReward)
-			edb.SaveEvent(height, eventsdb.RewardEvent{
+			edb.AddEvent(height, eventsdb.RewardEvent{
 				Role:            eventsdb.RoleValidator,
 				Address:         validator.CandidateAddress,
 				Amount:          validatorReward.String(),
@@ -885,7 +885,7 @@ func (s *StateDB) PayRewards(height int64) {
 
 				s.AddBalance(stake.Owner, types.GetBaseCoin(), reward)
 
-				edb.SaveEvent(height, eventsdb.RewardEvent{
+				edb.AddEvent(height, eventsdb.RewardEvent{
 					Role:            eventsdb.RoleDelegator,
 					Address:         stake.Owner,
 					Amount:          reward.String(),
@@ -1063,7 +1063,7 @@ func (s *StateDB) SetValidatorAbsent(height int64, address [20]byte) {
 					slashed := big.NewInt(0).Set(stake.Value)
 					slashed.Sub(slashed, newValue)
 
-					edb.SaveEvent(height, eventsdb.SlashEvent{
+					edb.AddEvent(height, eventsdb.SlashEvent{
 						Address:         stake.Owner,
 						Amount:          slashed.String(),
 						Coin:            stake.Coin,
@@ -1121,7 +1121,7 @@ func (s *StateDB) PunishByzantineValidator(currentBlock uint64, address [20]byte
 				slashed := big.NewInt(0).Set(stake.Value)
 				slashed.Sub(slashed, newValue)
 
-				edb.SaveEvent(int64(currentBlock), eventsdb.SlashEvent{
+				edb.AddEvent(int64(currentBlock), eventsdb.SlashEvent{
 					Address:         stake.Owner,
 					Amount:          slashed.String(),
 					Coin:            stake.Coin,
