@@ -60,7 +60,7 @@ CalculatePurchaseReturn
 
 ::
 
-    return s * ((1 + d / r) ^ d - 1);
+    return s * ((1 + d / r) ^ c - 1);
 
 
 CalculateSaleReturn
