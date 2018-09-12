@@ -8,6 +8,40 @@ import (
 
 type Role string
 
+func (r Role) Marshal() ([]byte, error) {
+	switch r {
+	case RoleValidator:
+		return []byte{1}, nil
+	case RoleDelegator:
+		return []byte{2}, nil
+	case RoleDAO:
+		return []byte{3}, nil
+	case RoleDevelopers:
+		return []byte{4}, nil
+	}
+
+	return nil, fmt.Errorf("undefined role")
+}
+
+func (r *Role) Unmarshal(b []byte) error {
+	switch b[0] {
+	case 1:
+		*r = RoleValidator
+		return nil
+	case 2:
+		*r = RoleDelegator
+		return nil
+	case 3:
+		*r = RoleDAO
+		return nil
+	case 4:
+		*r = RoleDevelopers
+		return nil
+	}
+
+	return fmt.Errorf("undefined role")
+}
+
 var (
 	RoleValidator  Role = "Validator"
 	RoleDelegator  Role = "Delegator"

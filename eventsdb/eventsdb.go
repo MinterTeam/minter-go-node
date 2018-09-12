@@ -38,7 +38,7 @@ type EventsDB struct {
 
 func NewEventsDB(db *mintdb.LDBDatabase) *EventsDB {
 	return &EventsDB{
-		db: db,
+		db:    db,
 		cache: map[int64]Events{},
 	}
 }
