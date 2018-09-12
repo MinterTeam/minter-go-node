@@ -833,7 +833,7 @@ func (s *StateDB) PayRewards(height int64) {
 			edb.AddEvent(height, eventsdb.RewardEvent{
 				Role:            eventsdb.RoleDAO,
 				Address:         dao.Address,
-				Amount:          DAOReward.String(),
+				Amount:          DAOReward.Bytes(),
 				ValidatorPubKey: validator.PubKey,
 			})
 
@@ -845,7 +845,7 @@ func (s *StateDB) PayRewards(height int64) {
 			edb.AddEvent(height, eventsdb.RewardEvent{
 				Role:            eventsdb.RoleDevelopers,
 				Address:         developers.Address,
-				Amount:          DevelopersReward.String(),
+				Amount:          DevelopersReward.Bytes(),
 				ValidatorPubKey: validator.PubKey,
 			})
 
@@ -861,7 +861,7 @@ func (s *StateDB) PayRewards(height int64) {
 			edb.AddEvent(height, eventsdb.RewardEvent{
 				Role:            eventsdb.RoleValidator,
 				Address:         validator.CandidateAddress,
-				Amount:          validatorReward.String(),
+				Amount:          validatorReward.Bytes(),
 				ValidatorPubKey: validator.PubKey,
 			})
 
@@ -888,7 +888,7 @@ func (s *StateDB) PayRewards(height int64) {
 				edb.AddEvent(height, eventsdb.RewardEvent{
 					Role:            eventsdb.RoleDelegator,
 					Address:         stake.Owner,
-					Amount:          reward.String(),
+					Amount:          reward.Bytes(),
 					ValidatorPubKey: candidate.PubKey,
 				})
 			}
@@ -1065,7 +1065,7 @@ func (s *StateDB) SetValidatorAbsent(height int64, address [20]byte) {
 
 					edb.AddEvent(height, eventsdb.SlashEvent{
 						Address:         stake.Owner,
-						Amount:          slashed.String(),
+						Amount:          slashed.Bytes(),
 						Coin:            stake.Coin,
 						ValidatorPubKey: candidate.PubKey,
 					})
@@ -1123,7 +1123,7 @@ func (s *StateDB) PunishByzantineValidator(currentBlock uint64, address [20]byte
 
 				edb.AddEvent(int64(currentBlock), eventsdb.SlashEvent{
 					Address:         stake.Owner,
-					Amount:          slashed.String(),
+					Amount:          slashed.Bytes(),
 					Coin:            stake.Coin,
 					ValidatorPubKey: candidate.PubKey,
 				})

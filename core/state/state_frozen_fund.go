@@ -143,7 +143,7 @@ func (c *stateFrozenFund) punishFund(candidateAddress [20]byte) {
 
 			edb.AddEvent(int64(c.blockHeight), eventsdb.SlashEvent{
 				Address:         item.Address,
-				Amount:          slashed.String(),
+				Amount:          slashed.Bytes(),
 				Coin:            item.Coin,
 				ValidatorPubKey: item.CandidateKey,
 			})

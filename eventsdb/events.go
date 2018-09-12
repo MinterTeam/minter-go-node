@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/types"
+	"math/big"
 )
 
 type Role string
@@ -55,7 +56,7 @@ type Events []Event
 type RewardEvent struct {
 	Role            Role
 	Address         types.Address
-	Amount          string
+	Amount          []byte
 	ValidatorPubKey types.Pubkey
 }
 
@@ -68,14 +69,14 @@ func (e RewardEvent) MarshalJSON() ([]byte, error) {
 	}{
 		Role:            string(e.Role),
 		Address:         e.Address.String(),
-		Amount:          e.Amount,
+		Amount:          big.NewInt(0).SetBytes(e.Amount).String(),
 		ValidatorPubKey: fmt.Sprintf("Mp%x", e.ValidatorPubKey),
 	})
 }
 
 type SlashEvent struct {
 	Address         types.Address
-	Amount          string
+	Amount          []byte
 	Coin            types.CoinSymbol
 	ValidatorPubKey types.Pubkey
 }
@@ -88,7 +89,7 @@ func (e SlashEvent) MarshalJSON() ([]byte, error) {
 		ValidatorPubKey string `json:"validator_pub_key"`
 	}{
 		Address:         e.Address.String(),
-		Amount:          e.Amount,
+		Amount:          big.NewInt(0).SetBytes(e.Amount).String(),
 		Coin:            e.Coin.String(),
 		ValidatorPubKey: fmt.Sprintf("Mp%x", e.ValidatorPubKey),
 	})
