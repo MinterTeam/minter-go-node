@@ -32,7 +32,7 @@ func (data DelegateData) MarshalJSON() ([]byte, error) {
 
 func (data DelegateData) String() string {
 	return fmt.Sprintf("DELEGATE pubkey:%s ",
-		hexutil.Encode(data.PubKey[:]))
+		hexutil.Encode(data.PubKey))
 }
 
 func (data DelegateData) Gas() int64 {

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.4
+*Sept 13th, 2018*
+
+IMPROVEMENT
+
+- [api] Optimize events. WARNING! If you are using events you should re-sync blockchain from scratch.
+- [api] Refactor api
+
 ## 0.3.3
 *Sept 8th, 2018*
 

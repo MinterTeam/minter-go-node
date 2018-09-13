@@ -16,24 +16,15 @@ type TransactionResponse struct {
 	RawTx    string            `json:"raw_tx"`
 	Height   int64             `json:"height"`
 	Index    uint32            `json:"index"`
-	TxResult ResponseDeliverTx `json:"tx_result"`
 	From     string            `json:"from"`
 	Nonce    uint64            `json:"nonce"`
 	GasPrice *big.Int          `json:"gas_price"`
 	GasCoin  types.CoinSymbol  `json:"gas_coin"`
+	GasUsed  int64             `json:"gas_used"`
 	Type     byte              `json:"type"`
 	Data     transaction.Data  `json:"data"`
 	Payload  []byte            `json:"payload"`
-}
-
-type ResponseDeliverTx struct {
-	Code      uint32          `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"`
-	Data      []byte          `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
-	Log       string          `protobuf:"bytes,3,opt,name=log,proto3" json:"log,omitempty"`
-	Info      string          `protobuf:"bytes,4,opt,name=info,proto3" json:"info,omitempty"`
-	GasWanted int64           `protobuf:"varint,5,opt,name=gas_wanted,json=gas_wanted,proto3" json:"gas_wanted,omitempty"`
-	GasUsed   int64           `protobuf:"varint,6,opt,name=gas_used,json=gas_used,proto3" json:"gas_used,omitempty"`
-	Tags      []common.KVPair `protobuf:"bytes,7,rep,name=tags" json:"tags,omitempty"`
+	Tags     map[string]string `json:"tags"`
 }
 
 type ResultTxSearch struct {
@@ -66,27 +57,26 @@ func Transactions(w http.ResponseWriter, r *http.Request) {
 		decodedTx, _ := transaction.DecodeFromBytes(tx.Tx)
 		sender, _ := decodedTx.Sender()
 
+		tags := make(map[string]string)
+
+		for _, tag := range tx.TxResult.Tags {
+			tags[string(tag.Key)] = string(tag.Value)
+		}
+
 		result[i] = TransactionResponse{
-			Hash:   common.HexBytes(tx.Tx.Hash()),
-			RawTx:  fmt.Sprintf("%x", []byte(tx.Tx)),
-			Height: tx.Height,
-			Index:  tx.Index,
-			TxResult: ResponseDeliverTx{
-				Code:      tx.TxResult.Code,
-				Data:      tx.TxResult.Data,
-				Log:       tx.TxResult.Log,
-				Info:      tx.TxResult.Info,
-				GasWanted: tx.TxResult.GasWanted,
-				GasUsed:   tx.TxResult.GasUsed,
-				Tags:      tx.TxResult.Tags,
-			},
+			Hash:     common.HexBytes(tx.Tx.Hash()),
+			RawTx:    fmt.Sprintf("%x", []byte(tx.Tx)),
+			Height:   tx.Height,
+			Index:    tx.Index,
 			From:     sender.String(),
 			Nonce:    decodedTx.Nonce,
 			GasPrice: decodedTx.GasPrice,
 			GasCoin:  decodedTx.GasCoin,
+			GasUsed:  tx.TxResult.GasUsed,
 			Type:     decodedTx.Type,
 			Data:     decodedTx.GetDecodedData(),
 			Payload:  decodedTx.Payload,
+			Tags:     tags,
 		}
 	}
 

@@ -17,6 +17,7 @@
 package mintdb
 
 import (
+	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/filter"
@@ -153,14 +154,14 @@ func (db *LDBDatabase) Close() {
 		errc := make(chan error)
 		db.quitChan <- errc
 		if err := <-errc; err != nil {
-			// db.log.Error("Metrics collection failed", "err", err)
+			log.Error("Metrics collection failed", "err", err)
 		}
 	}
 	err := db.db.Close()
 	if err == nil {
-		// db.log.Info("Database closed")
+		log.Info("Database closed")
 	} else {
-		// db.log.Error("Failed to close database", "err", err)
+		log.Error("Failed to close database", "err", err)
 	}
 }
 

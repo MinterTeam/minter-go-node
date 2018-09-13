@@ -173,7 +173,7 @@ func (b *Big) UnmarshalText(input []byte) error {
 	}
 	var dec big.Int
 	dec.SetBits(words)
-	*b = (Big)(dec)
+	*b = Big(dec)
 	return nil
 }
 

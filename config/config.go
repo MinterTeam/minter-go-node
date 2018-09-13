@@ -243,7 +243,7 @@ func DefaultBaseConfig() BaseConfig {
 		DBPath:            "data",
 		GUIListenAddress:  ":3000",
 		APIListenAddress:  ":8841",
-		EnableEvents: 	   false,
+		EnableEvents:      false,
 	}
 }
 

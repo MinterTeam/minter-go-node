@@ -230,7 +230,7 @@ func (s *StateDB) updateStateFrozenFund(stateFrozenFund *stateFrozenFund) {
 		panic(fmt.Errorf("can't encode frozen fund at %d: %v", blockHeight, err))
 	}
 	height := make([]byte, 8)
-	binary.BigEndian.PutUint64(height[:], stateFrozenFund.blockHeight)
+	binary.BigEndian.PutUint64(height, stateFrozenFund.blockHeight)
 
 	key := append(frozenFundsPrefix, height...)
 	s.setError(s.trie.TryUpdate(key, data))
@@ -280,7 +280,7 @@ func (s *StateDB) deleteStateCoin(stateCoin *stateCoin) {
 func (s *StateDB) deleteFrozenFunds(stateFrozenFund *stateFrozenFund) {
 	stateFrozenFund.deleted = true
 	height := make([]byte, 8)
-	binary.BigEndian.PutUint64(height[:], stateFrozenFund.blockHeight)
+	binary.BigEndian.PutUint64(height, stateFrozenFund.blockHeight)
 	key := append(frozenFundsPrefix, height...)
 	s.setError(s.trie.TryDelete(key))
 }
@@ -293,7 +293,7 @@ func (s *StateDB) getStateFrozenFunds(blockHeight uint64) (stateFrozenFund *stat
 	}
 
 	height := make([]byte, 8)
-	binary.BigEndian.PutUint64(height[:], blockHeight)
+	binary.BigEndian.PutUint64(height, blockHeight)
 	key := append(frozenFundsPrefix, height...)
 
 	// Load the object from the database.
@@ -640,16 +640,14 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (root types.Hash, err error) {
 	// Commit coins to the trie.
 	for symbol, stateCoin := range s.stateCoins {
 		_, isDirty := s.stateCoinsDirty[symbol]
-		switch {
-		case isDirty:
-			{
-				if stateCoin.data.Volume.Cmp(types.Big0) == 0 {
-					s.deleteStateCoin(stateCoin)
-				} else {
-					s.updateStateCoin(stateCoin)
-				}
+		if isDirty {
+			if stateCoin.data.Volume.Cmp(types.Big0) == 0 {
+				s.deleteStateCoin(stateCoin)
+			} else {
+				s.updateStateCoin(stateCoin)
 			}
 		}
+
 		delete(s.stateCoinsDirty, symbol)
 	}
 
@@ -830,10 +828,10 @@ func (s *StateDB) PayRewards(height int64) {
 			DAOReward.Mul(DAOReward, big.NewInt(int64(dao.Commission)))
 			DAOReward.Div(DAOReward, big.NewInt(100))
 			s.AddBalance(dao.Address, types.GetBaseCoin(), DAOReward)
-			edb.SaveEvent(height, eventsdb.RewardEvent{
+			edb.AddEvent(height, eventsdb.RewardEvent{
 				Role:            eventsdb.RoleDAO,
 				Address:         dao.Address,
-				Amount:          DAOReward.String(),
+				Amount:          DAOReward.Bytes(),
 				ValidatorPubKey: validator.PubKey,
 			})
 
@@ -842,10 +840,10 @@ func (s *StateDB) PayRewards(height int64) {
 			DevelopersReward.Mul(DevelopersReward, big.NewInt(int64(developers.Commission)))
 			DevelopersReward.Div(DevelopersReward, big.NewInt(100))
 			s.AddBalance(developers.Address, types.GetBaseCoin(), DevelopersReward)
-			edb.SaveEvent(height, eventsdb.RewardEvent{
+			edb.AddEvent(height, eventsdb.RewardEvent{
 				Role:            eventsdb.RoleDevelopers,
 				Address:         developers.Address,
-				Amount:          DevelopersReward.String(),
+				Amount:          DevelopersReward.Bytes(),
 				ValidatorPubKey: validator.PubKey,
 			})
 
@@ -858,10 +856,10 @@ func (s *StateDB) PayRewards(height int64) {
 			validatorReward.Div(validatorReward, big.NewInt(100))
 			totalReward.Sub(totalReward, validatorReward)
 			s.AddBalance(validator.CandidateAddress, types.GetBaseCoin(), validatorReward)
-			edb.SaveEvent(height, eventsdb.RewardEvent{
+			edb.AddEvent(height, eventsdb.RewardEvent{
 				Role:            eventsdb.RoleValidator,
 				Address:         validator.CandidateAddress,
-				Amount:          validatorReward.String(),
+				Amount:          validatorReward.Bytes(),
 				ValidatorPubKey: validator.PubKey,
 			})
 
@@ -885,10 +883,10 @@ func (s *StateDB) PayRewards(height int64) {
 
 				s.AddBalance(stake.Owner, types.GetBaseCoin(), reward)
 
-				edb.SaveEvent(height, eventsdb.RewardEvent{
+				edb.AddEvent(height, eventsdb.RewardEvent{
 					Role:            eventsdb.RoleDelegator,
 					Address:         stake.Owner,
-					Amount:          reward.String(),
+					Amount:          reward.Bytes(),
 					ValidatorPubKey: candidate.PubKey,
 				})
 			}
@@ -1063,9 +1061,9 @@ func (s *StateDB) SetValidatorAbsent(height int64, address [20]byte) {
 					slashed := big.NewInt(0).Set(stake.Value)
 					slashed.Sub(slashed, newValue)
 
-					edb.SaveEvent(height, eventsdb.SlashEvent{
+					edb.AddEvent(height, eventsdb.SlashEvent{
 						Address:         stake.Owner,
-						Amount:          slashed.String(),
+						Amount:          slashed.Bytes(),
 						Coin:            stake.Coin,
 						ValidatorPubKey: candidate.PubKey,
 					})
@@ -1121,9 +1119,9 @@ func (s *StateDB) PunishByzantineValidator(currentBlock uint64, address [20]byte
 				slashed := big.NewInt(0).Set(stake.Value)
 				slashed.Sub(slashed, newValue)
 
-				edb.SaveEvent(int64(currentBlock), eventsdb.SlashEvent{
+				edb.AddEvent(int64(currentBlock), eventsdb.SlashEvent{
 					Address:         stake.Owner,
-					Amount:          slashed.String(),
+					Amount:          slashed.Bytes(),
 					Coin:            stake.Coin,
 					ValidatorPubKey: candidate.PubKey,
 				})

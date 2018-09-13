@@ -10,6 +10,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/core/validators"
+	"github.com/MinterTeam/minter-go-node/eventsdb"
 	"github.com/MinterTeam/minter-go-node/genesis"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/log"
@@ -132,7 +133,8 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 	}
 
 	// give penalty to Byzantine validators
-	for _, v := range req.ByzantineValidators {
+	for i := range req.ByzantineValidators {
+		v := &req.ByzantineValidators[i]
 		var address [20]byte
 		copy(address[:], v.Validator.Address)
 
@@ -262,6 +264,8 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 		}
 	}
 
+	eventsdb.GetCurrent().FlushEvents(req.Height)
+
 	return abciTypes.ResponseEndBlock{
 		ValidatorUpdates: updates,
 	}
@@ -317,8 +321,8 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 
 	// todo: make provider
 	height := make([]byte, 8)
-	binary.BigEndian.PutUint64(height[:], app.height)
-	err = appTable.Put([]byte("height"), height[:])
+	binary.BigEndian.PutUint64(height, app.height)
+	err = appTable.Put([]byte("height"), height)
 
 	if err != nil {
 		panic(err)
