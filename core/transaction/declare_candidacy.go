@@ -41,7 +41,7 @@ func (data DeclareCandidacyData) MarshalJSON() ([]byte, error) {
 
 func (data DeclareCandidacyData) String() string {
 	return fmt.Sprintf("DECLARE CANDIDACY address:%s pubkey:%s commission: %d ",
-		data.Address.String(), hexutil.Encode(data.PubKey[:]), data.Commission)
+		data.Address.String(), hexutil.Encode(data.PubKey), data.Commission)
 }
 
 func (data DeclareCandidacyData) Gas() int64 {

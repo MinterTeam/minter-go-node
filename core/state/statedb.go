@@ -230,7 +230,7 @@ func (s *StateDB) updateStateFrozenFund(stateFrozenFund *stateFrozenFund) {
 		panic(fmt.Errorf("can't encode frozen fund at %d: %v", blockHeight, err))
 	}
 	height := make([]byte, 8)
-	binary.BigEndian.PutUint64(height[:], stateFrozenFund.blockHeight)
+	binary.BigEndian.PutUint64(height, stateFrozenFund.blockHeight)
 
 	key := append(frozenFundsPrefix, height...)
 	s.setError(s.trie.TryUpdate(key, data))
@@ -280,7 +280,7 @@ func (s *StateDB) deleteStateCoin(stateCoin *stateCoin) {
 func (s *StateDB) deleteFrozenFunds(stateFrozenFund *stateFrozenFund) {
 	stateFrozenFund.deleted = true
 	height := make([]byte, 8)
-	binary.BigEndian.PutUint64(height[:], stateFrozenFund.blockHeight)
+	binary.BigEndian.PutUint64(height, stateFrozenFund.blockHeight)
 	key := append(frozenFundsPrefix, height...)
 	s.setError(s.trie.TryDelete(key))
 }
@@ -293,7 +293,7 @@ func (s *StateDB) getStateFrozenFunds(blockHeight uint64) (stateFrozenFund *stat
 	}
 
 	height := make([]byte, 8)
-	binary.BigEndian.PutUint64(height[:], blockHeight)
+	binary.BigEndian.PutUint64(height, blockHeight)
 	key := append(frozenFundsPrefix, height...)
 
 	// Load the object from the database.
@@ -640,16 +640,14 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (root types.Hash, err error) {
 	// Commit coins to the trie.
 	for symbol, stateCoin := range s.stateCoins {
 		_, isDirty := s.stateCoinsDirty[symbol]
-		switch {
-		case isDirty:
-			{
-				if stateCoin.data.Volume.Cmp(types.Big0) == 0 {
-					s.deleteStateCoin(stateCoin)
-				} else {
-					s.updateStateCoin(stateCoin)
-				}
+		if isDirty {
+			if stateCoin.data.Volume.Cmp(types.Big0) == 0 {
+				s.deleteStateCoin(stateCoin)
+			} else {
+				s.updateStateCoin(stateCoin)
 			}
 		}
+
 		delete(s.stateCoinsDirty, symbol)
 	}
 

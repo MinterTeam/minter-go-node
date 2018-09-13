@@ -34,7 +34,7 @@ func (data UnbondData) MarshalJSON() ([]byte, error) {
 
 func (data UnbondData) String() string {
 	return fmt.Sprintf("UNBOND pubkey:%s",
-		hexutil.Encode(data.PubKey[:]))
+		hexutil.Encode(data.PubKey))
 }
 
 func (data UnbondData) Gas() int64 {
