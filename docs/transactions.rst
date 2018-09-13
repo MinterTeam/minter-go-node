@@ -19,6 +19,7 @@ Each transaction has:
 
 - **Nonce** - int, used for prevent transaction reply.
 - **Gas Price** - big int, used for managing transaction fees.
+- **Gas Coin** - 10 bytes, symbol of a coin to pay fee
 - **Type** - type of transaction (see below).
 - **Data** - data of transaction (depends on transaction type).
 - **Payload** (arbitrary bytes) - arbitrary user-defined bytes.
@@ -30,6 +31,7 @@ Each transaction has:
     type Transaction struct {
         Nonce       uint64
         GasPrice    *big.Int
+        GasCoin     [10]byte
         Type        byte
         Data        []byte
         Payload     []byte
