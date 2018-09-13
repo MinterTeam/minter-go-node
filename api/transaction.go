@@ -35,29 +35,28 @@ func Transaction(w http.ResponseWriter, r *http.Request) {
 	decodedTx, _ := transaction.DecodeFromBytes(tx.Tx)
 	sender, _ := decodedTx.Sender()
 
+	tags := make(map[string]string)
+
+	for _, tag := range tx.TxResult.Tags {
+		tags[string(tag.Key)] = string(tag.Value)
+	}
+
 	err = json.NewEncoder(w).Encode(Response{
 		Code: 0,
 		Result: TransactionResponse{
-			Hash:   common.HexBytes(tx.Tx.Hash()),
-			RawTx:  fmt.Sprintf("%x", []byte(tx.Tx)),
-			Height: tx.Height,
-			Index:  tx.Index,
-			TxResult: ResponseDeliverTx{
-				Code:      tx.TxResult.Code,
-				Data:      tx.TxResult.Data,
-				Log:       tx.TxResult.Log,
-				Info:      tx.TxResult.Info,
-				GasWanted: tx.TxResult.GasWanted,
-				GasUsed:   tx.TxResult.GasUsed,
-				Tags:      tx.TxResult.Tags,
-			},
+			Hash:     common.HexBytes(tx.Tx.Hash()),
+			RawTx:    fmt.Sprintf("%x", []byte(tx.Tx)),
+			Height:   tx.Height,
+			Index:    tx.Index,
 			From:     sender.String(),
 			Nonce:    decodedTx.Nonce,
 			GasPrice: decodedTx.GasPrice,
 			GasCoin:  decodedTx.GasCoin,
+			GasUsed:  tx.TxResult.GasUsed,
 			Type:     decodedTx.Type,
 			Data:     decodedTx.GetDecodedData(),
 			Payload:  decodedTx.Payload,
+			Tags:     tags,
 		},
 	})
 

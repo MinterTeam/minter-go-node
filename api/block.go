@@ -40,7 +40,8 @@ type BlockTransactionResponse struct {
 	ServiceData []byte            `json:"service_data"`
 	Gas         int64             `json:"gas"`
 	GasCoin     types.CoinSymbol  `json:"gas_coin"`
-	TxResult    ResponseDeliverTx `json:"tx_result"`
+	GasUsed     int64             `json:"gas_used"`
+	Tags        map[string]string `json:"tags"`
 }
 
 func Block(w http.ResponseWriter, r *http.Request) {
@@ -69,6 +70,12 @@ func Block(w http.ResponseWriter, r *http.Request) {
 		tx, _ := transaction.DecodeFromBytes(rawTx)
 		sender, _ := tx.Sender()
 
+		tags := make(map[string]string)
+
+		for _, tag := range blockResults.Results.DeliverTx[i].Tags {
+			tags[string(tag.Key)] = string(tag.Value)
+		}
+
 		txs[i] = BlockTransactionResponse{
 			Hash:        fmt.Sprintf("Mt%x", rawTx.Hash()),
 			RawTx:       fmt.Sprintf("%x", []byte(rawTx)),
@@ -81,15 +88,8 @@ func Block(w http.ResponseWriter, r *http.Request) {
 			ServiceData: tx.ServiceData,
 			Gas:         tx.Gas(),
 			GasCoin:     tx.GasCoin,
-			TxResult: ResponseDeliverTx{
-				Code:      blockResults.Results.DeliverTx[i].Code,
-				Data:      blockResults.Results.DeliverTx[i].Data,
-				Log:       blockResults.Results.DeliverTx[i].Log,
-				Info:      blockResults.Results.DeliverTx[i].Info,
-				GasWanted: blockResults.Results.DeliverTx[i].GasWanted,
-				GasUsed:   blockResults.Results.DeliverTx[i].GasUsed,
-				Tags:      blockResults.Results.DeliverTx[i].Tags,
-			},
+			GasUsed:     blockResults.Results.DeliverTx[i].GasUsed,
+			Tags:        tags,
 		}
 	}
 

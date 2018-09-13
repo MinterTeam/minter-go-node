@@ -6,6 +6,7 @@
 IMPROVEMENT
 
 - [api] Optimize events
+- [api] Refactor api
 
 ## 0.3.3
 *Sept 8th, 2018*
