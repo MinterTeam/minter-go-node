@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.5
+*Sept 13th, 2018*
+
+IMPROVEMENT
+
+- [api] Add Code and Log fields in transaction api
+
 ## 0.3.4
 *Sept 13th, 2018*
 

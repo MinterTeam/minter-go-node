@@ -25,6 +25,8 @@ type TransactionResponse struct {
 	Data     transaction.Data  `json:"data"`
 	Payload  []byte            `json:"payload"`
 	Tags     map[string]string `json:"tags"`
+	Code     uint32            `json:"code,omitempty"`
+	Log      string            `json:"log,omitempty"`
 }
 
 type ResultTxSearch struct {
@@ -77,6 +79,8 @@ func Transactions(w http.ResponseWriter, r *http.Request) {
 			Data:     decodedTx.GetDecodedData(),
 			Payload:  decodedTx.Payload,
 			Tags:     tags,
+			Code:     tx.TxResult.Code,
+			Log:      tx.TxResult.Log,
 		}
 	}
 

@@ -57,6 +57,8 @@ func Transaction(w http.ResponseWriter, r *http.Request) {
 			Data:     decodedTx.GetDecodedData(),
 			Payload:  decodedTx.Payload,
 			Tags:     tags,
+			Code:     tx.TxResult.Code,
+			Log:      tx.TxResult.Log,
 		},
 	})
 

@@ -42,6 +42,8 @@ type BlockTransactionResponse struct {
 	GasCoin     types.CoinSymbol  `json:"gas_coin"`
 	GasUsed     int64             `json:"gas_used"`
 	Tags        map[string]string `json:"tags"`
+	Code        uint32            `json:"code,omitempty"`
+	Log         string            `json:"log,omitempty"`
 }
 
 func Block(w http.ResponseWriter, r *http.Request) {
@@ -90,6 +92,8 @@ func Block(w http.ResponseWriter, r *http.Request) {
 			GasCoin:     tx.GasCoin,
 			GasUsed:     blockResults.Results.DeliverTx[i].GasUsed,
 			Tags:        tags,
+			Code:        blockResults.Results.DeliverTx[i].Code,
+			Log:         blockResults.Results.DeliverTx[i].Log,
 		}
 	}
 
