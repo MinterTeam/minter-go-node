@@ -83,6 +83,10 @@ func (s *Stake) CalcBipValue(context *StateDB) *big.Int {
 		return big.NewInt(0).Set(s.Value)
 	}
 
+	if s.Value.Cmp(types.Big0) == 0 {
+		return big.NewInt(0)
+	}
+
 	if _, has := context.stakeCache[s.Coin]; !has {
 		totalStaked := big.NewInt(0)
 		candidates := context.getStateCandidates()

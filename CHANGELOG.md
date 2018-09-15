@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.6
+*Sept 15th, 2018*
+
+BUG FIXES
+
+- [core] Critical fix
+
 ## 0.3.5
 *Sept 13th, 2018*
 
