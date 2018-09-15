@@ -16,6 +16,18 @@ _NOTE: This is alpha software. Please contact us if you intend to run it in prod
 
 You can get official installation instructions in our [docs](https://minter-go-node.readthedocs.io/en/dev/install.html).
 
+1. Download Minter
+
+Get [latest binary build](https://github.com/MinterTeam/minter-go-node/releases) suitable for your architecture and unpack it to desired folder.
+
+2. Run Minter Node
+
+```bash
+./minter
+```
+
+3. Open http://localhost:3000/ in local browser to see node’s GUI.
+
 ## Documentation
 
 For documentation, [Read The Docs](https://minter-go-node.readthedocs.io/en/dev/).
