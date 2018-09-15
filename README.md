@@ -16,23 +16,35 @@ _NOTE: This is alpha software. Please contact us if you intend to run it in prod
 
 You can get official installation instructions in our [docs](https://minter-go-node.readthedocs.io/en/dev/install.html).
 
-1. **Download Minter**
+1. Download Minter
 
     Get [latest binary build](https://github.com/MinterTeam/minter-go-node/releases) suitable for your architecture and unpack it to desired folder.
 
-2. **Run Minter Node**
+2. Run Minter Node
 
 ```bash
 ./minter
 ```
 
-3. **Use GUI**
+3. Use GUI
 
     Open http://localhost:3000/ in local browser to see node’s GUI.
 
-## Documentation
+## Resources
 
-For documentation, [Read The Docs](https://minter-go-node.readthedocs.io/en/dev/).
+- [Documentation](https://minter-go-node.readthedocs.io/en/dev/)
+- [Official site](https://minter.network)
+- [About Minter Blockchain](https://about.minter.network)
+- [Minter Console](https://testnet.console.minter.network)
+- [Minter Explorer](https://explorer.minter.network/)
+- [Telegram Bot Wallet](https://t.me/BipWallet_Bot)
+- [Android Wallet](https://play.google.com/store/apps/details?id=network.minter.bipwallet)
+
+### Community
+- [Telegram Channel (English)](https://t.me/MinterTeam)
+- [Telegram Channel (Russian)](https://t.me/MinterNetwork)
+- [Telegram Chat (English)](http://t.me/joinchat/EafyERJSJZJ-nwH_139jLQ)
+- [Telegram Chat (Russian)](https://t.me/joinchat/EafyEVD-HEOxDcv8YyaqNg)
 
 ## Versioning
 
