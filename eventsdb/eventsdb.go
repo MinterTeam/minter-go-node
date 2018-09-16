@@ -20,9 +20,8 @@ func init() {
 }
 
 func GetCurrent() *EventsDB {
-
 	if edb == nil {
-		eventsDB, err := mintdb.NewLDBDatabase(utils.GetMinterHome()+"/events", 1000, 1000)
+		eventsDB, err := mintdb.NewLDBDatabase(utils.GetMinterHome()+"/events", 128, 128)
 
 		if err != nil {
 			panic(err)
@@ -58,6 +57,11 @@ func (db *EventsDB) AddEvent(height int64, event Event) {
 }
 
 func (db *EventsDB) FlushEvents(height int64) error {
+
+	if !eventsEnabled {
+		return nil
+	}
+
 	events := db.GetEvents(height)
 
 	key := getKeyForHeight(height)

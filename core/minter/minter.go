@@ -53,7 +53,7 @@ var (
 
 func NewMinterBlockchain() *Blockchain {
 
-	db, err := mintdb.NewLDBDatabase(utils.GetMinterHome()+"/data", 1000, 1000)
+	db, err := mintdb.NewLDBDatabase(utils.GetMinterHome()+"/data", 1024, 512)
 
 	if err != nil {
 		panic(err)
