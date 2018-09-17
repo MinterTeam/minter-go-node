@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.7
+*Sept 17th, 2018*
+
+IMPROVEMENT
+
+- [core] Performance update
+
 ## 0.3.6
 *Sept 15th, 2018*
 

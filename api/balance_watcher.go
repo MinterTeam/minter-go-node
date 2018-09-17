@@ -49,6 +49,10 @@ func handleBalanceChanges() {
 
 func handleBalanceChange(msg state.BalanceChangeStruct) {
 
+	if len(clients) < 1 {
+		return
+	}
+
 	defer func() {
 		if r := recover(); r != nil {
 			log.Error("Error in balance change handler")
