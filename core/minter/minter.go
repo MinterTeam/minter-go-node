@@ -15,6 +15,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/mintdb"
+	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/tendermint/go-amino"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/node"
@@ -308,12 +309,21 @@ func (app *Blockchain) CheckTx(rawTx []byte) abciTypes.ResponseCheckTx {
 
 func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 
-	hash, _ := app.stateDeliver.Commit(false)
-	app.stateDeliver.Database().TrieDB().Commit(hash, true)
+	hash, err := app.stateDeliver.Commit(false)
+
+	if err != nil {
+		panic(err)
+	}
+
+	err = app.stateDeliver.Database().TrieDB().Commit(hash, true)
+
+	if err != nil {
+		panic(err)
+	}
 
 	// todo: make provider
 	appTable := mintdb.NewTable(app.db, appTableId)
-	err := appTable.Put([]byte("root"), hash.Bytes())
+	err = appTable.Put([]byte("root"), hash.Bytes())
 
 	if err != nil {
 		panic(err)
@@ -363,8 +373,18 @@ func (app *Blockchain) updateCurrentRootHash() {
 }
 
 func (app *Blockchain) updateCurrentState() {
-	app.stateDeliver, _ = state.New(app.rootHash, state.NewDatabase(mintdb.NewTable(app.db, stateTableId)))
-	app.stateCheck, _ = state.New(app.rootHash, state.NewDatabase(mintdb.NewTable(app.db, stateTableId)))
+	var err error
+	app.stateDeliver, err = state.New(app.rootHash, state.NewDatabase(mintdb.NewTable(app.db, stateTableId)))
+
+	if err != nil {
+		panic(err)
+	}
+
+	app.stateCheck, err = state.New(app.rootHash, state.NewDatabase(mintdb.NewTable(app.db, stateTableId)))
+
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (app *Blockchain) CurrentState() *state.StateDB {
@@ -394,7 +414,11 @@ func (app *Blockchain) Height() uint64 {
 func (app *Blockchain) getCurrentValidators() abciTypes.ValidatorUpdates {
 	appTable := mintdb.NewTable(app.db, appTableId)
 
-	result, _ := appTable.Get([]byte("validators"))
+	result, err := appTable.Get([]byte("validators"))
+
+	if err != nil && err != leveldb.ErrNotFound {
+		panic(err)
+	}
 
 	if len(result) == 0 {
 		return abciTypes.ValidatorUpdates{}
@@ -402,7 +426,7 @@ func (app *Blockchain) getCurrentValidators() abciTypes.ValidatorUpdates {
 
 	var vals abciTypes.ValidatorUpdates
 
-	err := cdc.UnmarshalBinary(result, &vals)
+	err = cdc.UnmarshalBinary(result, &vals)
 
 	if err != nil {
 		panic(err)

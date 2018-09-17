@@ -17,6 +17,7 @@
 package trie
 
 import (
+	"github.com/MinterTeam/minter-go-node/log"
 	"sync"
 	"time"
 
@@ -254,7 +255,7 @@ func (db *Database) Commit(node types.Hash, report bool) error {
 	// Move all of the accumulated preimages into a write batch
 	for hash, preimage := range db.preimages {
 		if err := batch.Put(db.secureKey(hash[:]), preimage); err != nil {
-			// log.Error("Failed to commit preimage from trie database", "err", err)
+			log.Error("Failed to commit preimage from trie database", "err", err)
 			db.lock.RUnlock()
 			return err
 		}
@@ -268,13 +269,13 @@ func (db *Database) Commit(node types.Hash, report bool) error {
 	// Move the trie itself into the batch, flushing if enough data is accumulated
 	// nodes, storage := len(db.nodes), db.nodesSize+db.preimagesSize
 	if err := db.commit(node, batch); err != nil {
-		// log.Error("Failed to commit trie from trie database", "err", err)
+		log.Error("Failed to commit trie from trie database", "err", err)
 		db.lock.RUnlock()
 		return err
 	}
 	// Write batch ready, unlock for readers during persistence
 	if err := batch.Write(); err != nil {
-		// log.Error("Failed to write trie to disk", "err", err)
+		log.Error("Failed to write trie to disk", "err", err)
 		db.lock.RUnlock()
 		return err
 	}
