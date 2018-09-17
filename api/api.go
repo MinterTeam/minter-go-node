@@ -3,6 +3,8 @@ package api
 import (
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/eventsdb"
+	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 
@@ -37,25 +39,25 @@ func RunApi(b *minter.Blockchain, node *node.Node) {
 
 	router := mux.NewRouter().StrictSlash(true)
 
-	router.HandleFunc("/api/bipVolume", GetBipVolume).Methods("GET")
-	router.HandleFunc("/api/candidates", GetCandidates).Methods("GET")
-	router.HandleFunc("/api/candidate/{pubkey}", GetCandidate).Methods("GET")
-	router.HandleFunc("/api/validators", GetValidators).Methods("GET")
-	router.HandleFunc("/api/balance/{address}", GetBalance).Methods("GET")
-	router.HandleFunc("/api/balanceWS", GetBalanceWatcher)
-	router.HandleFunc("/api/transactionCount/{address}", GetTransactionCount).Methods("GET")
-	router.HandleFunc("/api/sendTransaction", SendTransaction).Methods("POST")
-	router.HandleFunc("/api/sendTransactionSync", SendTransactionSync).Methods("POST")
-	router.HandleFunc("/api/sendTransactionAsync", SendTransactionAsync).Methods("POST")
-	router.HandleFunc("/api/transaction/{hash}", Transaction).Methods("GET")
-	router.HandleFunc("/api/block/{height}", Block).Methods("GET")
-	router.HandleFunc("/api/transactions", Transactions).Methods("GET")
-	router.HandleFunc("/api/status", Status).Methods("GET")
-	router.HandleFunc("/api/net_info", NetInfo).Methods("GET")
-	router.HandleFunc("/api/coinInfo/{symbol}", GetCoinInfo).Methods("GET")
-	router.HandleFunc("/api/estimateCoinSell", EstimateCoinSell).Methods("GET")
-	router.HandleFunc("/api/estimateCoinBuy", EstimateCoinBuy).Methods("GET")
-	router.HandleFunc("/api/estimateTxCommission", EstimateTxCommission).Methods("GET")
+	router.HandleFunc("/api/bipVolume", wrapper(GetBipVolume)).Methods("GET")
+	router.HandleFunc("/api/candidates", wrapper(GetCandidates)).Methods("GET")
+	router.HandleFunc("/api/candidate/{pubkey}", wrapper(GetCandidate)).Methods("GET")
+	router.HandleFunc("/api/validators", wrapper(GetValidators)).Methods("GET")
+	router.HandleFunc("/api/balance/{address}", wrapper(GetBalance)).Methods("GET")
+	router.HandleFunc("/api/balanceWS", wrapper(GetBalanceWatcher))
+	router.HandleFunc("/api/transactionCount/{address}", wrapper(GetTransactionCount)).Methods("GET")
+	router.HandleFunc("/api/sendTransaction", wrapper(SendTransaction)).Methods("POST")
+	router.HandleFunc("/api/sendTransactionSync", wrapper(SendTransactionSync)).Methods("POST")
+	router.HandleFunc("/api/sendTransactionAsync", wrapper(SendTransactionAsync)).Methods("POST")
+	router.HandleFunc("/api/transaction/{hash}", wrapper(Transaction)).Methods("GET")
+	router.HandleFunc("/api/block/{height}", wrapper(Block)).Methods("GET")
+	router.HandleFunc("/api/transactions", wrapper(Transactions)).Methods("GET")
+	router.HandleFunc("/api/status", wrapper(Status)).Methods("GET")
+	router.HandleFunc("/api/net_info", wrapper(NetInfo)).Methods("GET")
+	router.HandleFunc("/api/coinInfo/{symbol}", wrapper(GetCoinInfo)).Methods("GET")
+	router.HandleFunc("/api/estimateCoinSell", wrapper(EstimateCoinSell)).Methods("GET")
+	router.HandleFunc("/api/estimateCoinBuy", wrapper(EstimateCoinBuy)).Methods("GET")
+	router.HandleFunc("/api/estimateTxCommission", wrapper(EstimateTxCommission)).Methods("GET")
 
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
@@ -69,6 +71,15 @@ func RunApi(b *minter.Blockchain, node *node.Node) {
 	waitForTendermint()
 
 	log.Fatal(http.ListenAndServe(config.GetConfig().APIListenAddress, handler))
+}
+
+func wrapper(f func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer io.Copy(ioutil.Discard, r.Body)
+		defer r.Body.Close()
+
+		f(w, r)
+	}
 }
 
 func waitForTendermint() {
