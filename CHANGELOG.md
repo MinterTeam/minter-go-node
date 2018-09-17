@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.8
+*Sept 17th, 2018*
+
+BUG FIXES
+
+- [core] Proper handle of db errors
+
 ## 0.3.7
 *Sept 17th, 2018*
 
