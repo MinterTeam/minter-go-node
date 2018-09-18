@@ -176,6 +176,10 @@
                             <td>{{ validatorStatus }}</td>
                         </tr>
                         <tr>
+                            <td>Total Stake</td>
+                            <td>{{ stake }} MNT</td>
+                        </tr>
+                        <tr>
                             <td>Voting Power</td>
                             <td>{{ niceNum(status.validator_info.voting_power) }} <span class="text-muted">of 100,000,000</span></td>
                         </tr>
@@ -196,7 +200,8 @@
             net_info: null,
             error: null,
             validatorPubKey: '...',
-            validatorStatus: '...'
+            validatorStatus: '...',
+            stake: '...'
         },
         mounted() {
             this.refresh()
@@ -225,6 +230,7 @@
                         axios.get("//" + window.location.hostname + ':8841/api/validators'),
                         axios.get("//" + window.location.hostname + ':8841/api/candidate/' + this.validatorPubKey),
                     ]).then(axios.spread(function (validators, candidate) {
+                        this.stake = Math.round(candidate.data.result.candidate.total_stake / Math.pow(10, 17)) / 10
                         if (candidate.data.code !== 0) {
                             this.validatorStatus = 'Not declared';
                             return
@@ -243,12 +249,12 @@
                         this.validatorStatus = 'Down';
                     }.bind(this)));
 
-                    setTimeout(this.refresh, 500)
+                    setTimeout(this.refresh, 1000)
 
 
                 }.bind(this))).catch(function (reason) {
                     this.error = reason.toString();
-                    setTimeout(this.refresh, 500)
+                    setTimeout(this.refresh, 1000)
                 }.bind(this))
 
                 axios.get("https://minter-node-1.testnet.minter.network/api/status").then(function (masterStatus) {
