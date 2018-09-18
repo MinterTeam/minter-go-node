@@ -42,16 +42,8 @@
   version = "=1.2.0"
 
 [[constraint]]
-  branch = "master"
-  name = "github.com/rcrowley/go-metrics"
-
-[[constraint]]
   name = "github.com/rs/cors"
   version = "=1.4.0"
-
-[[constraint]]
-  branch = "master"
-  name = "github.com/syndtr/goleveldb"
 
 [[constraint]]
   name = "github.com/danil-lashin/iavl"
