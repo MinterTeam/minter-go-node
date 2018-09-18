@@ -30,7 +30,7 @@ type Blockchain struct {
 	appDB              db.DB
 	stateDeliver       *state.StateDB
 	stateCheck         *state.StateDB
-	rootHash           [16]byte
+	rootHash           [20]byte
 	height             uint64
 	rewards            *big.Int
 	validatorsStatuses map[[20]byte]int8

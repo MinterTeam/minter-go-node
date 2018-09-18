@@ -239,9 +239,7 @@ func (s *StateDB) updateStateFrozenFund(stateFrozenFund *stateFrozenFund) {
 	height := make([]byte, 8)
 	binary.BigEndian.PutUint64(height, stateFrozenFund.blockHeight)
 
-	key := append(frozenFundsPrefix, height...)
-
-	s.iavl.Set(key, data)
+	s.iavl.Set(append(frozenFundsPrefix, height...), data)
 }
 
 func (s *StateDB) updateStateCoin(stateCoin *stateCoin) {
@@ -624,7 +622,8 @@ func (s *StateDB) CreateCandidate(
 func (s *StateDB) Commit(deleteEmptyObjects bool) (root []byte, version int64, err error) {
 
 	// Commit objects to the trie.
-	for addr, stateObject := range s.stateObjects {
+	for _, addr := range getOrderedObjectsKeys(s.stateObjects) {
+		stateObject := s.stateObjects[addr]
 		_, isDirty := s.stateObjectsDirty[addr]
 		switch {
 		case stateObject.suicided || (isDirty && deleteEmptyObjects && stateObject.empty()):
@@ -639,7 +638,8 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (root []byte, version int64, e
 	}
 
 	// Commit coins to the trie.
-	for symbol, stateCoin := range s.stateCoins {
+	for _, symbol := range getOrderedCoinsKeys(s.stateCoins) {
+		stateCoin := s.stateCoins[symbol]
 		_, isDirty := s.stateCoinsDirty[symbol]
 		if isDirty {
 			if stateCoin.data.Volume.Cmp(types.Big0) == 0 {
@@ -653,7 +653,8 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (root []byte, version int64, e
 	}
 
 	// Commit frozen funds to the trie.
-	for block, frozenFund := range s.stateFrozenFunds {
+	for _, block := range getOrderedFrozenFundsKeys(s.stateFrozenFunds) {
+		frozenFund := s.stateFrozenFunds[block]
 		_, isDirty := s.stateFrozenFundsDirty[block]
 		switch {
 		case frozenFund.deleted:
@@ -686,6 +687,45 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (root []byte, version int64, e
 	}
 
 	return hash, version, err
+}
+
+func getOrderedObjectsKeys(objects map[types.Address]*stateObject) []types.Address {
+	keys := make([]types.Address, 0, len(objects))
+	for k := range objects {
+		keys = append(keys, k)
+	}
+
+	sort.Slice(keys, func(i, j int) bool {
+		return bytes.Compare(keys[i].Bytes(), keys[j].Bytes()) == 1
+	})
+
+	return keys
+}
+
+func getOrderedCoinsKeys(objects map[types.CoinSymbol]*stateCoin) []types.CoinSymbol {
+	keys := make([]types.CoinSymbol, 0, len(objects))
+	for k := range objects {
+		keys = append(keys, k)
+	}
+
+	sort.Slice(keys, func(i, j int) bool {
+		return bytes.Compare(keys[i].Bytes(), keys[j].Bytes()) == 1
+	})
+
+	return keys
+}
+
+func getOrderedFrozenFundsKeys(objects map[uint64]*stateFrozenFund) []uint64 {
+	keys := make([]uint64, 0, len(objects))
+	for k := range objects {
+		keys = append(keys, k)
+	}
+
+	sort.Slice(keys, func(i, j int) bool {
+		return keys[i] > keys[j]
+	})
+
+	return keys
 }
 
 func (s *StateDB) CoinExists(symbol types.CoinSymbol) bool {

@@ -21,7 +21,6 @@ import (
 	"math/big"
 
 	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"sort"
 )
@@ -33,10 +32,8 @@ import (
 // Account values can be accessed and modified through the object.
 // Finally, call CommitTrie to write the modified storage trie into a database.
 type stateObject struct {
-	address  types.Address
-	addrHash types.Hash // hash of ethereum address of the account
-	data     Account
-	db       *StateDB
+	address types.Address
+	data    Account
 
 	// Cache flags.
 	// When an object is marked suicided it will be delete from the trie
@@ -122,11 +119,9 @@ func newObject(db *StateDB, address types.Address, data Account, onDirty func(ad
 	}
 
 	return &stateObject{
-		db:       db,
-		address:  address,
-		addrHash: crypto.Keccak256Hash(address[:]),
-		data:     data,
-		onDirty:  onDirty,
+		address: address,
+		data:    data,
+		onDirty: onDirty,
 	}
 }
 
