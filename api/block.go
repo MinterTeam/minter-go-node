@@ -50,7 +50,6 @@ func Block(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 	height, _ := strconv.ParseInt(vars["height"], 10, 64)
-	includeEvents, _ := strconv.ParseBool(r.URL.Query().Get("withEvents"))
 
 	block, err := client.Block(&height)
 	blockResults, err := client.BlockResults(&height)
@@ -105,22 +104,21 @@ func Block(w http.ResponseWriter, r *http.Request) {
 
 	var eventsRaw []byte
 
-	if includeEvents {
-		events := eventsdb.GetCurrent().GetEvents(height)
+	events := eventsdb.GetCurrent().GetEvents(height)
 
-		if len(events) > 0 {
-			eventsRaw, err = cdc.MarshalJSON(events)
+	if len(events) > 0 {
+		eventsRaw, err = cdc.MarshalJSON(events)
 
-			if err != nil {
-				w.WriteHeader(http.StatusBadRequest)
-				json.NewEncoder(w).Encode(Response{
-					Code: 0,
-					Log:  err.Error(),
-				})
-				return
-			}
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(Response{
+				Code: 0,
+				Log:  err.Error(),
+			})
+			return
 		}
 	}
+
 
 	response := BlockResponse{
 		Hash:         block.Block.Hash(),

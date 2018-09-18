@@ -10,6 +10,7 @@ BREAKING CHANGES
 IMPROVEMENT
 
 - [config] Add validator mode
+- [api] Include events by default
 
 ## 0.3.8
 *Sept 17th, 2018*
