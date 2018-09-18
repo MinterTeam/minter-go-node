@@ -622,46 +622,38 @@ func (s *StateDB) CreateCandidate(
 func (s *StateDB) Commit(deleteEmptyObjects bool) (root []byte, version int64, err error) {
 
 	// Commit objects to the trie.
-	for _, addr := range getOrderedObjectsKeys(s.stateObjects) {
+	for _, addr := range getOrderedObjectsKeys(s.stateObjectsDirty) {
 		stateObject := s.stateObjects[addr]
-		_, isDirty := s.stateObjectsDirty[addr]
-		switch {
-		case stateObject.suicided || (isDirty && deleteEmptyObjects && stateObject.empty()):
-			// If the object has been removed, don't bother syncing it
-			// and just mark it for deletion in the trie.
+		if stateObject.suicided || (deleteEmptyObjects && stateObject.empty()) {
 			s.deleteStateObject(stateObject)
-		case isDirty:
-			// Update the object in the main account trie.
+		} else {
 			s.updateStateObject(stateObject)
 		}
 		delete(s.stateObjectsDirty, addr)
 	}
 
 	// Commit coins to the trie.
-	for _, symbol := range getOrderedCoinsKeys(s.stateCoins) {
+	for _, symbol := range getOrderedCoinsKeys(s.stateCoinsDirty) {
 		stateCoin := s.stateCoins[symbol]
-		_, isDirty := s.stateCoinsDirty[symbol]
-		if isDirty {
-			if stateCoin.data.Volume.Cmp(types.Big0) == 0 {
-				s.deleteStateCoin(stateCoin)
-			} else {
-				s.updateStateCoin(stateCoin)
-			}
+
+		if stateCoin.data.Volume.Cmp(types.Big0) == 0 {
+			s.deleteStateCoin(stateCoin)
+		} else {
+			s.updateStateCoin(stateCoin)
 		}
 
 		delete(s.stateCoinsDirty, symbol)
 	}
 
 	// Commit frozen funds to the trie.
-	for _, block := range getOrderedFrozenFundsKeys(s.stateFrozenFunds) {
+	for _, block := range getOrderedFrozenFundsKeys(s.stateFrozenFundsDirty) {
 		frozenFund := s.stateFrozenFunds[block]
-		_, isDirty := s.stateFrozenFundsDirty[block]
-		switch {
-		case frozenFund.deleted:
+		if frozenFund.deleted {
 			s.deleteFrozenFunds(frozenFund)
-		case isDirty:
+		} else {
 			s.updateStateFrozenFund(frozenFund)
 		}
+
 		delete(s.stateFrozenFundsDirty, block)
 	}
 
@@ -689,7 +681,7 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (root []byte, version int64, e
 	return hash, version, err
 }
 
-func getOrderedObjectsKeys(objects map[types.Address]*stateObject) []types.Address {
+func getOrderedObjectsKeys(objects map[types.Address]struct{}) []types.Address {
 	keys := make([]types.Address, 0, len(objects))
 	for k := range objects {
 		keys = append(keys, k)
@@ -702,7 +694,7 @@ func getOrderedObjectsKeys(objects map[types.Address]*stateObject) []types.Addre
 	return keys
 }
 
-func getOrderedCoinsKeys(objects map[types.CoinSymbol]*stateCoin) []types.CoinSymbol {
+func getOrderedCoinsKeys(objects map[types.CoinSymbol]struct{}) []types.CoinSymbol {
 	keys := make([]types.CoinSymbol, 0, len(objects))
 	for k := range objects {
 		keys = append(keys, k)
@@ -715,7 +707,7 @@ func getOrderedCoinsKeys(objects map[types.CoinSymbol]*stateCoin) []types.CoinSy
 	return keys
 }
 
-func getOrderedFrozenFundsKeys(objects map[uint64]*stateFrozenFund) []uint64 {
+func getOrderedFrozenFundsKeys(objects map[uint64]struct{}) []uint64 {
 	keys := make([]uint64, 0, len(objects))
 	for k := range objects {
 		keys = append(keys, k)
