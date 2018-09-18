@@ -92,6 +92,10 @@ func (db *EventsDB) GetEvents(height int64) Events {
 
 	data := db.db.Get(key)
 
+	if len(data) == 0 {
+		return Events{}
+	}
+
 	var decoded Events
 	err := cdc.UnmarshalBinary(data, &decoded)
 
