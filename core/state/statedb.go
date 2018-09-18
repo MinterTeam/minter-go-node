@@ -22,6 +22,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/eventsdb"
 	"github.com/danil-lashin/iavl"
+	"github.com/tendermint/tendermint/libs/common"
 	dbm "github.com/tendermint/tendermint/libs/db"
 	"math/big"
 	"sync"
@@ -40,7 +41,7 @@ import (
 const UnbondPeriod = 518400
 
 var (
-	ValidatorMaxAbsentTimes = uint(12)
+	ValidatorMaxAbsentTimes = 12
 
 	addressPrefix     = []byte("a")
 	coinPrefix        = []byte("c")
@@ -574,7 +575,7 @@ func (s *StateDB) CreateValidator(
 		PubKey:           pubkey,
 		Commission:       commission,
 		AccumReward:      big.NewInt(0),
-		AbsentTimes:      0,
+		AbsentTimes:      common.NewBitArray(24),
 	})
 
 	s.MarkStateValidatorsDirty()
@@ -1042,11 +1043,11 @@ func (s *StateDB) SetValidatorAbsent(height int64, address [20]byte) {
 				return
 			}
 
-			validator.AbsentTimes = validator.AbsentTimes + 1
+			validator.AbsentTimes.SetIndex(int(height%24), true)
 
-			if validator.AbsentTimes > ValidatorMaxAbsentTimes {
+			if validator.CountAbsentTimes() > ValidatorMaxAbsentTimes {
 				candidate.Status = CandidateStatusOffline
-				validator.AbsentTimes = 0
+				validator.AbsentTimes = common.NewBitArray(24)
 				validator.toDrop = true
 
 				totalStake := big.NewInt(0)
@@ -1097,8 +1098,6 @@ func (s *StateDB) PunishByzantineValidator(currentBlock uint64, address [20]byte
 	for i := range validators.data {
 		validator := &validators.data[i]
 		if validator.GetAddress() == address {
-			validator.AbsentTimes = validator.AbsentTimes + 1
-
 			candidates := s.getStateCandidates()
 
 			var candidate *Candidate
@@ -1154,20 +1153,6 @@ func (s *StateDB) PunishFrozenFundsWithAddress(fromBlock uint64, toBlock uint64,
 	}
 }
 
-func (s *StateDB) SetValidatorPresent(address [20]byte) {
-	validators := s.getStateValidators()
-
-	for i := range validators.data {
-		validator := &validators.data[i]
-		if validator.GetAddress() == address {
-			validator.AbsentTimes = 0
-		}
-	}
-
-	s.setStateValidators(validators)
-	s.MarkStateValidatorsDirty()
-}
-
 func (s *StateDB) SetNewValidators(candidates []Candidate) {
 	oldVals := s.getStateValidators()
 
@@ -1175,7 +1160,7 @@ func (s *StateDB) SetNewValidators(candidates []Candidate) {
 
 	for _, candidate := range candidates {
 		accumReward := big.NewInt(0)
-		absentTimes := uint(0)
+		absentTimes := common.NewBitArray(24)
 
 		for _, oldVal := range oldVals.data {
 			if oldVal.GetAddress() == candidate.GetAddress() {

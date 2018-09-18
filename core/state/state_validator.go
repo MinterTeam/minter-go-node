@@ -17,6 +17,7 @@
 package state
 
 import (
+	"github.com/tendermint/tendermint/libs/common"
 	"io"
 
 	"fmt"
@@ -59,10 +60,22 @@ type Validator struct {
 	PubKey           types.Pubkey
 	Commission       uint
 	AccumReward      *big.Int
-	AbsentTimes      uint
+	AbsentTimes      *common.BitArray
 
 	tmAddress *[20]byte
 	toDrop    bool
+}
+
+func (validator *Validator) CountAbsentTimes() int {
+	count := 0
+
+	for i := 0; i < 24; i++ {
+		if validator.AbsentTimes.GetIndex(i) {
+			count++
+		}
+	}
+
+	return count
 }
 
 func (validator *Validator) IsToDrop() bool {

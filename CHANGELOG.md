@@ -7,6 +7,7 @@ BREAKING CHANGES
 
 - [core] Switch Ethereum Patricia Tree to IAVL
 - [core] Change consensus TimeoutCommit to 4.5 sec, TimeoutPropose to 2 sec
+- [core] Now validator punished if it misses 12 of 24 last blocks
 
 IMPROVEMENT
 

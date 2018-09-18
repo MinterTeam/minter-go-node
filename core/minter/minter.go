@@ -122,7 +122,6 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 		copy(address[:], v.Validator.Address)
 
 		if v.SignedLastBlock {
-			app.stateDeliver.SetValidatorPresent(address)
 			app.validatorsStatuses[address] = ValidatorPresent
 		} else {
 			app.stateDeliver.SetValidatorAbsent(req.Header.Height, address)
