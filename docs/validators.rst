@@ -21,7 +21,7 @@ delegated to them) can be slashed. The penalty depends on the severity of the vi
 Requirements
 ^^^^^^^^^^^^
 
-Minimal requirements for running Validator's Node are:
+Minimal requirements for running Validator's Node in testnet are:
 
 - 4GB RAM
 - 200GB SSD
