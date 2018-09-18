@@ -17,7 +17,6 @@
 package state
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"math/big"
@@ -71,9 +70,6 @@ type stateObject struct {
 	// during a database read is memoized here and will eventually be returned
 	// by StateDB.Commit.
 	dbErr error
-
-	// Write caches.
-	trie Trie // storage trie, which becomes non-nil on first access
 
 	cachedStorage Storage // Storage entry cache to avoid duplicate reads
 	dirtyStorage  Storage // Storage entries that need to be flushed to disk
@@ -200,94 +196,6 @@ func (c *stateObject) touch() {
 	c.touched = true
 }
 
-func (c *stateObject) getTrie(db Database) Trie {
-	if c.trie == nil {
-		var err error
-		c.trie, err = db.OpenStorageTrie(c.addrHash, c.data.Root)
-		if err != nil {
-			c.trie, _ = db.OpenStorageTrie(c.addrHash, types.Hash{})
-			c.setError(fmt.Errorf("can't create storage trie: %v", err))
-		}
-	}
-	return c.trie
-}
-
-// GetState returns a value in account storage.
-func (self *stateObject) GetState(db Database, key types.Hash) types.Hash {
-	value, exists := self.cachedStorage[key]
-	if exists {
-		return value
-	}
-	// Load from DB in case it is missing.
-	enc, err := self.getTrie(db).TryGet(key[:])
-	if err != nil {
-		self.setError(err)
-		return types.Hash{}
-	}
-	if len(enc) > 0 {
-		_, content, _, err := rlp.Split(enc)
-		if err != nil {
-			self.setError(err)
-		}
-		value.SetBytes(content)
-	}
-	if (value != types.Hash{}) {
-		self.cachedStorage[key] = value
-	}
-	return value
-}
-
-// SetState updates a value in account storage.
-func (self *stateObject) SetState(db Database, key, value types.Hash) {
-	self.setState(key, value)
-}
-
-func (self *stateObject) setState(key, value types.Hash) {
-	self.cachedStorage[key] = value
-	self.dirtyStorage[key] = value
-
-	if self.onDirty != nil {
-		self.onDirty(self.Address())
-		self.onDirty = nil
-	}
-}
-
-// updateTrie writes cached storage modifications into the object's storage trie.
-func (self *stateObject) updateTrie(db Database) Trie {
-	tr := self.getTrie(db)
-	for key, value := range self.dirtyStorage {
-		delete(self.dirtyStorage, key)
-		if (value == types.Hash{}) {
-			self.setError(tr.TryDelete(key[:]))
-			continue
-		}
-		// Encoding []byte cannot fail, ok to ignore the error.
-		v, _ := rlp.EncodeToBytes(bytes.TrimLeft(value[:], "\x00"))
-		self.setError(tr.TryUpdate(key[:], v))
-	}
-	return tr
-}
-
-// UpdateRoot sets the trie root to the current root hash of
-func (self *stateObject) updateRoot(db Database) {
-	self.updateTrie(db)
-	self.data.Root = self.trie.Hash()
-}
-
-// CommitTrie the storage trie of the object to dwb.
-// This updates the trie root.
-func (self *stateObject) CommitTrie(db Database) error {
-	self.updateTrie(db)
-	if self.dbErr != nil {
-		return self.dbErr
-	}
-	root, err := self.trie.Commit(nil)
-	if err == nil {
-		self.data.Root = root
-	}
-	return err
-}
-
 // AddBalance removes amount from c's balance.
 // It is used to add funds to the destination account of a transfer.
 func (c *stateObject) AddBalance(coinSymbol types.CoinSymbol, amount *big.Int) {
@@ -335,9 +243,6 @@ func (c *stateObject) ReturnGas(gas *big.Int) {}
 
 func (self *stateObject) deepCopy(db *StateDB, onDirty func(addr types.Address)) *stateObject {
 	stateObject := newObject(db, self.address, self.data, onDirty)
-	if self.trie != nil {
-		stateObject.trie = db.db.CopyTrie(self.trie)
-	}
 	stateObject.dirtyStorage = self.dirtyStorage.Copy()
 	stateObject.cachedStorage = self.dirtyStorage.Copy()
 	stateObject.suicided = self.suicided

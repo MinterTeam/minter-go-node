@@ -59,7 +59,7 @@ var (
 // * Coins
 // * Accounts
 type StateDB struct {
-	db dbm.DB
+	db   dbm.DB
 	iavl *iavl.MutableTree
 
 	// This map holds 'live' objects, which will get modified while processing a state transition.
@@ -622,7 +622,7 @@ func (s *StateDB) CreateCandidate(
 }
 
 // Commit writes the state to the underlying in-memory trie database.
-func (s *StateDB) Commit(deleteEmptyObjects bool) (root types.Hash, height int64, err error) {
+func (s *StateDB) Commit(deleteEmptyObjects bool) (root types.Hash, version int64, err error) {
 
 	// Commit objects to the trie.
 	for addr, stateObject := range s.stateObjects {
@@ -633,10 +633,6 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (root types.Hash, height int64
 			// and just mark it for deletion in the trie.
 			s.deleteStateObject(stateObject)
 		case isDirty:
-			// Write any storage changes in the state object to its storage trie.
-			if err := stateObject.CommitTrie(s.db); err != nil {
-				return types.Hash{}, 0, err
-			}
 			// Update the object in the main account trie.
 			s.updateStateObject(stateObject)
 		}
@@ -680,11 +676,9 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (root types.Hash, height int64
 		s.stateValidatorsDirty = false
 	}
 
-	// Write trie changes.
+	hash, version, err := s.iavl.SaveVersion()
 
-	hash, height, err := s.iavl.SaveVersion()
-
-	return types.BytesToHash(hash), height, err
+	return types.BytesToHash(hash), version, err
 }
 
 func (s *StateDB) CoinExists(symbol types.CoinSymbol) bool {
