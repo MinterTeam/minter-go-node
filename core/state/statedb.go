@@ -1021,7 +1021,7 @@ func (s *StateDB) SetCandidateOffline(pubkey []byte) {
 
 func (s *StateDB) SetValidatorPresent(height int64, address [20]byte) {
 	validators := s.getStateValidators()
-cd
+
 	for i := range validators.data {
 		validator := &validators.data[i]
 		if validator.GetAddress() == address {
