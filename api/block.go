@@ -119,7 +119,6 @@ func Block(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-
 	response := BlockResponse{
 		Hash:         block.Block.Hash(),
 		Height:       block.Block.Height,

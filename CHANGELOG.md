@@ -11,6 +11,7 @@ IMPROVEMENT
 
 - [config] Add validator mode
 - [api] Include events by default
+- [gui] Add validator status
 
 ## 0.3.8
 *Sept 17th, 2018*

@@ -169,7 +169,11 @@
                         <tbody>
                         <tr>
                             <td>Public Key</td>
-                            <td>Mp{{ base64ToHex(status.validator_info.pub_key.value) }}</td>
+                            <td>{{ validatorPubKey }}</td>
+                        </tr>
+                        <tr>
+                            <td>Status</td>
+                            <td>{{ validatorStatus }}</td>
                         </tr>
                         <tr>
                             <td>Voting Power</td>
@@ -190,7 +194,9 @@
             status: null,
             version: null,
             net_info: null,
-            error: null
+            error: null,
+            validatorPubKey: '...',
+            validatorStatus: '...'
         },
         mounted() {
             this.refresh()
@@ -205,7 +211,7 @@
             refresh() {
                 axios.all([
                     axios.get("//" + window.location.hostname + ':8841/api/status'),
-                    axios.get("//" + window.location.hostname + ':8841/api/net_info')
+                    axios.get("//" + window.location.hostname + ':8841/api/net_info'),
                 ]).then(axios.spread(function (status, net_info) {
                     this.error = null
 
@@ -213,7 +219,33 @@
                     this.version = status.data.result.version
                     this.net_info = net_info.data.result
 
+                    this.validatorPubKey = 'Mp' + this.base64ToHex(status.data.result.tm_status.validator_info.pub_key.value)
+
+                    axios.all([
+                        axios.get("//" + window.location.hostname + ':8841/api/validators'),
+                        axios.get("//" + window.location.hostname + ':8841/api/candidate/' + this.validatorPubKey),
+                    ]).then(axios.spread(function (validators, candidate) {
+                        if (candidate.data.code !== 0) {
+                            this.validatorStatus = 'Not declared';
+                            return
+                        }
+
+                        if (validators.data.result.find(function(val) { return val.candidate.pub_key === this.validatorPubKey }.bind(this))) {
+                            this.validatorStatus = 'Validating';
+                            return
+                        }
+
+                        if (candidate.data.result.status === 2) {
+                            this.validatorStatus = 'Candidate'
+                            return
+                        }
+
+                        this.validatorStatus = 'Down';
+                    }.bind(this)));
+
                     setTimeout(this.refresh, 500)
+
+
                 }.bind(this))).catch(function (reason) {
                     this.error = reason.toString();
                     setTimeout(this.refresh, 500)
