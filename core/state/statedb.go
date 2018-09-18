@@ -19,6 +19,7 @@ package state
 
 import (
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/eventsdb"
 	"github.com/danil-lashin/iavl"
 	dbm "github.com/tendermint/tendermint/libs/db"
@@ -47,6 +48,8 @@ var (
 	usedCheckPrefix   = []byte("u")
 	candidatesKey     = []byte("t")
 	validatorsKey     = []byte("v")
+
+	cfg = config.GetConfig()
 )
 
 // StateDBs within the ethereum protocol are used to store anything
@@ -673,6 +676,14 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (root types.Hash, version int6
 	}
 
 	hash, version, err := s.iavl.SaveVersion()
+
+	if cfg.ValidatorMode && version > 1 {
+		err = s.iavl.DeleteVersion(version - 1)
+
+		if err != nil {
+			panic(err)
+		}
+	}
 
 	return types.BytesToHash(hash), version, err
 }

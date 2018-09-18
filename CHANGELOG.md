@@ -7,6 +7,10 @@ BREAKING CHANGES
 
 - [core] Switch Ethereum Patricia Tree to IAVL
 
+IMPROVEMENT
+
+- [config] Add validator mode
+
 ## 0.3.8
 *Sept 17th, 2018*
 

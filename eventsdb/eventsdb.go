@@ -10,7 +10,7 @@ import (
 
 var cdc = amino.NewCodec()
 
-var eventsEnabled = config.GetConfig().EnableEvents
+var eventsEnabled = !config.GetConfig().ValidatorMode
 
 var edb *EventsDB
 
