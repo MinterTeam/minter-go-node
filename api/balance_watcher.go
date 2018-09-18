@@ -42,8 +42,8 @@ func GetBalanceWatcher(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleBalanceChanges() {
-	for {
-		handleBalanceChange(<-state.BalanceChangeChan)
+	for change := range state.BalanceChangeChan {
+		handleBalanceChange(change)
 	}
 }
 

@@ -17,7 +17,6 @@
 package state
 
 import (
-	"fmt"
 	"io"
 	"math/big"
 
@@ -26,31 +25,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"sort"
 )
-
-type Code []byte
-
-func (self Code) String() string {
-	return string(self) //strings.Join(Disassemble(self), " ")
-}
-
-type Storage map[types.Hash]types.Hash
-
-func (self Storage) String() (str string) {
-	for key, value := range self {
-		str += fmt.Sprintf("%X : %X\n", key, value)
-	}
-
-	return
-}
-
-func (self Storage) Copy() Storage {
-	cpy := make(Storage)
-	for key, value := range self {
-		cpy[key] = value
-	}
-
-	return cpy
-}
 
 // stateObject represents an Ethereum account which is being modified.
 //
@@ -63,16 +37,6 @@ type stateObject struct {
 	addrHash types.Hash // hash of ethereum address of the account
 	data     Account
 	db       *StateDB
-
-	// DB error.
-	// State objects are used by the consensus core and VM which are
-	// unable to deal with database-level errors. Any error that occurs
-	// during a database read is memoized here and will eventually be returned
-	// by StateDB.Commit.
-	dbErr error
-
-	cachedStorage Storage // Storage entry cache to avoid duplicate reads
-	dirtyStorage  Storage // Storage entries that need to be flushed to disk
 
 	// Cache flags.
 	// When an object is marked suicided it will be delete from the trie
@@ -158,26 +122,17 @@ func newObject(db *StateDB, address types.Address, data Account, onDirty func(ad
 	}
 
 	return &stateObject{
-		db:            db,
-		address:       address,
-		addrHash:      crypto.Keccak256Hash(address[:]),
-		data:          data,
-		cachedStorage: make(Storage),
-		dirtyStorage:  make(Storage),
-		onDirty:       onDirty,
+		db:       db,
+		address:  address,
+		addrHash: crypto.Keccak256Hash(address[:]),
+		data:     data,
+		onDirty:  onDirty,
 	}
 }
 
 // EncodeRLP implements rlp.Encoder.
 func (c *stateObject) EncodeRLP(w io.Writer) error {
 	return rlp.Encode(w, c.data)
-}
-
-// setError remembers the first non-nil error it is called with.
-func (self *stateObject) setError(err error) {
-	if self.dbErr == nil {
-		self.dbErr = err
-	}
 }
 
 func (self *stateObject) markSuicided() {
@@ -243,8 +198,6 @@ func (c *stateObject) ReturnGas(gas *big.Int) {}
 
 func (self *stateObject) deepCopy(db *StateDB, onDirty func(addr types.Address)) *stateObject {
 	stateObject := newObject(db, self.address, self.data, onDirty)
-	stateObject.dirtyStorage = self.dirtyStorage.Copy()
-	stateObject.cachedStorage = self.dirtyStorage.Copy()
 	stateObject.suicided = self.suicided
 	stateObject.deleted = self.deleted
 	return stateObject
