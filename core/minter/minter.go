@@ -30,7 +30,7 @@ type Blockchain struct {
 	appDB              db.DB
 	stateDeliver       *state.StateDB
 	stateCheck         *state.StateDB
-	rootHash           types.Hash
+	rootHash           [16]byte
 	height             uint64
 	rewards            *big.Int
 	validatorsStatuses map[[20]byte]int8
@@ -272,7 +272,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 func (app *Blockchain) Info(req abciTypes.RequestInfo) (resInfo abciTypes.ResponseInfo) {
 	return abciTypes.ResponseInfo{
 		LastBlockHeight:  int64(app.height),
-		LastBlockAppHash: app.rootHash.Bytes(),
+		LastBlockAppHash: app.rootHash[:],
 	}
 }
 
@@ -316,7 +316,7 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 		panic(err)
 	}
 
-	app.appDB.Set([]byte("root"), hash.Bytes())
+	app.appDB.Set([]byte("root"), hash)
 
 	// todo: make provider
 	height := make([]byte, 8)
@@ -329,7 +329,7 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 	app.updateCurrentState()
 
 	return abciTypes.ResponseCommit{
-		Data: app.rootHash.Bytes(),
+		Data: app.rootHash[:],
 	}
 }
 
@@ -346,7 +346,7 @@ func (app *Blockchain) updateCurrentRootHash() {
 
 	// todo: make provider
 	result := app.appDB.Get([]byte("root"))
-	app.rootHash = types.BytesToHash(result)
+	copy(app.rootHash[:], result)
 
 	// todo: make provider
 	result = app.appDB.Get([]byte("height"))

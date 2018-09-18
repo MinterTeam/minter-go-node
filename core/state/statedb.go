@@ -621,7 +621,7 @@ func (s *StateDB) CreateCandidate(
 }
 
 // Commit writes the state to the underlying in-memory trie database.
-func (s *StateDB) Commit(deleteEmptyObjects bool) (root types.Hash, version int64, err error) {
+func (s *StateDB) Commit(deleteEmptyObjects bool) (root []byte, version int64, err error) {
 
 	// Commit objects to the trie.
 	for addr, stateObject := range s.stateObjects {
@@ -685,7 +685,7 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (root types.Hash, version int6
 		}
 	}
 
-	return types.BytesToHash(hash), version, err
+	return hash, version, err
 }
 
 func (s *StateDB) CoinExists(symbol types.CoinSymbol) bool {
