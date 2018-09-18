@@ -312,10 +312,6 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 		panic(err)
 	}
 
-	if err != nil {
-		panic(err)
-	}
-
 	app.appDB.Set([]byte("root"), hash)
 
 	// todo: make provider
