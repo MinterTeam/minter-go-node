@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.0
+*Sept 18th, 2018*
+
+BREAKING CHANGES
+
+- [core] Switch Ethereum Patricia Tree to IAVL
+
 ## 0.3.8
 *Sept 17th, 2018*
 
