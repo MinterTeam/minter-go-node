@@ -31,7 +31,6 @@ type Blockchain struct {
 	stateDeliver       *state.StateDB
 	stateCheck         *state.StateDB
 	rootHash           types.Hash
-	dbVersion          int64
 	height             uint64
 	rewards            *big.Int
 	validatorsStatuses map[[20]byte]int8
@@ -307,7 +306,7 @@ func (app *Blockchain) CheckTx(rawTx []byte) abciTypes.ResponseCheckTx {
 
 func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 
-	hash, version, err := app.stateDeliver.Commit(false)
+	hash, _, err := app.stateDeliver.Commit(false)
 
 	if err != nil {
 		panic(err)
@@ -323,11 +322,6 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 	height := make([]byte, 8)
 	binary.BigEndian.PutUint64(height, app.height)
 	app.appDB.Set([]byte("height"), height)
-
-	// todo: make provider
-	versionBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(versionBytes, uint64(version))
-	app.appDB.Set([]byte("version"), versionBytes)
 
 	// TODO: clear candidates list
 
@@ -361,25 +355,17 @@ func (app *Blockchain) updateCurrentRootHash() {
 	} else {
 		app.height = 0
 	}
-
-	// todo: make provider
-	result = app.appDB.Get([]byte("version"))
-	if result != nil {
-		app.dbVersion = int64(binary.BigEndian.Uint64(result))
-	} else {
-		app.dbVersion = 0
-	}
 }
 
 func (app *Blockchain) updateCurrentState() {
 	var err error
-	app.stateDeliver, err = state.New(app.dbVersion, app.stateDB)
+	app.stateDeliver, err = state.New(int64(app.height), app.stateDB)
 
 	if err != nil {
 		panic(err)
 	}
 
-	app.stateCheck, err = state.New(app.dbVersion, app.stateDB)
+	app.stateCheck, err = state.New(int64(app.height), app.stateDB)
 
 	if err != nil {
 		panic(err)

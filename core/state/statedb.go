@@ -26,7 +26,6 @@ import (
 	"sync"
 
 	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/rlp"
 
 	"bytes"
@@ -40,9 +39,6 @@ import (
 const UnbondPeriod = 518400
 
 var (
-	// emptyState is the known hash of an empty state trie entry.
-	emptyState = crypto.Keccak256Hash(nil)
-
 	ValidatorMaxAbsentTimes = uint(12)
 
 	addressPrefix     = []byte("a")
