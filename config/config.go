@@ -60,13 +60,13 @@ func DefaultConfig() *Config {
 	cfg.Mempool.RecheckEmpty = true
 
 	cfg.Consensus.WalPath = "tmdata/cs.wal/wal"
-	cfg.Consensus.TimeoutPropose = 3000
+	cfg.Consensus.TimeoutPropose = 2000
 	cfg.Consensus.TimeoutProposeDelta = 500
 	cfg.Consensus.TimeoutPrevote = 1000
 	cfg.Consensus.TimeoutPrevoteDelta = 500
 	cfg.Consensus.TimeoutPrecommit = 1000
 	cfg.Consensus.TimeoutPrecommitDelta = 500
-	cfg.Consensus.TimeoutCommit = 5000
+	cfg.Consensus.TimeoutCommit = 4500
 
 	cfg.PrivValidator = "config/priv_validator.json"
 
