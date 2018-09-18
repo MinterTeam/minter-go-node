@@ -22,7 +22,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/eventsdb"
 	"github.com/danil-lashin/iavl"
-	"github.com/tendermint/tendermint/libs/common"
 	dbm "github.com/tendermint/tendermint/libs/db"
 	"math/big"
 	"sync"
@@ -575,7 +574,7 @@ func (s *StateDB) CreateValidator(
 		PubKey:           pubkey,
 		Commission:       commission,
 		AccumReward:      big.NewInt(0),
-		AbsentTimes:      common.NewBitArray(24),
+		AbsentTimes:      NewBitArray(24),
 	})
 
 	s.MarkStateValidatorsDirty()
@@ -1020,6 +1019,20 @@ func (s *StateDB) SetCandidateOffline(pubkey []byte) {
 	s.MarkStateCandidateDirty()
 }
 
+func (s *StateDB) SetValidatorPresent(height int64, address [20]byte) {
+	validators := s.getStateValidators()
+cd
+	for i := range validators.data {
+		validator := &validators.data[i]
+		if validator.GetAddress() == address {
+			validator.AbsentTimes.SetIndex(uint(height%24), false)
+		}
+	}
+
+	s.setStateValidators(validators)
+	s.MarkStateValidatorsDirty()
+}
+
 func (s *StateDB) SetValidatorAbsent(height int64, address [20]byte) {
 	edb := eventsdb.GetCurrent()
 
@@ -1043,11 +1056,11 @@ func (s *StateDB) SetValidatorAbsent(height int64, address [20]byte) {
 				return
 			}
 
-			validator.AbsentTimes.SetIndex(int(height%24), true)
+			validator.AbsentTimes.SetIndex(uint(height%24), true)
 
 			if validator.CountAbsentTimes() > ValidatorMaxAbsentTimes {
 				candidate.Status = CandidateStatusOffline
-				validator.AbsentTimes = common.NewBitArray(24)
+				validator.AbsentTimes = NewBitArray(24)
 				validator.toDrop = true
 
 				totalStake := big.NewInt(0)
@@ -1160,7 +1173,7 @@ func (s *StateDB) SetNewValidators(candidates []Candidate) {
 
 	for _, candidate := range candidates {
 		accumReward := big.NewInt(0)
-		absentTimes := common.NewBitArray(24)
+		absentTimes := NewBitArray(24)
 
 		for _, oldVal := range oldVals.data {
 			if oldVal.GetAddress() == candidate.GetAddress() {
