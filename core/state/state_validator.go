@@ -68,7 +68,7 @@ type Validator struct {
 func (validator *Validator) CountAbsentTimes() int {
 	count := 0
 
-	for i := uint(0); i < 24; i++ {
+	for i := 0; i < ValidatorMaxAbsentWindow; i++ {
 		if validator.AbsentTimes.GetIndex(i) {
 			count++
 		}

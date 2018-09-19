@@ -18,12 +18,12 @@ type BitArray struct {
 
 // NewBitArray returns a new bit array.
 // It returns nil if the number of bits is zero.
-func NewBitArray(bits uint) *BitArray {
+func NewBitArray(bits int) *BitArray {
 	if bits <= 0 {
 		return nil
 	}
 	return &BitArray{
-		Bits:  bits,
+		Bits:  uint(bits),
 		Elems: make([]uint64, (bits+63)/64),
 	}
 }
@@ -38,13 +38,13 @@ func (bA *BitArray) Size() uint {
 
 // GetIndex returns the bit at index i within the bit array.
 // The behavior is undefined if i >= bA.Bits
-func (bA *BitArray) GetIndex(i uint) bool {
+func (bA *BitArray) GetIndex(i int) bool {
 	if bA == nil {
 		return false
 	}
 	bA.mtx.Lock()
 	defer bA.mtx.Unlock()
-	return bA.getIndex(i)
+	return bA.getIndex(uint(i))
 }
 
 func (bA *BitArray) getIndex(i uint) bool {
@@ -56,13 +56,13 @@ func (bA *BitArray) getIndex(i uint) bool {
 
 // SetIndex sets the bit at index i within the bit array.
 // The behavior is undefined if i >= bA.Bits
-func (bA *BitArray) SetIndex(i uint, v bool) bool {
+func (bA *BitArray) SetIndex(i int, v bool) bool {
 	if bA == nil {
 		return false
 	}
 	bA.mtx.Lock()
 	defer bA.mtx.Unlock()
-	return bA.setIndex(i, v)
+	return bA.setIndex(uint(i), v)
 }
 
 func (bA *BitArray) setIndex(i uint, v bool) bool {

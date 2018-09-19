@@ -40,7 +40,8 @@ import (
 const UnbondPeriod = 518400
 
 var (
-	ValidatorMaxAbsentTimes = 12
+	ValidatorMaxAbsentWindow = 24
+	ValidatorMaxAbsentTimes  = 12
 
 	addressPrefix     = []byte("a")
 	coinPrefix        = []byte("c")
@@ -541,7 +542,7 @@ func (s *StateDB) CreateValidator(
 		PubKey:           pubkey,
 		Commission:       commission,
 		AccumReward:      big.NewInt(0),
-		AbsentTimes:      NewBitArray(24),
+		AbsentTimes:      NewBitArray(ValidatorMaxAbsentWindow),
 	})
 
 	s.MarkStateValidatorsDirty()
@@ -1026,7 +1027,7 @@ func (s *StateDB) SetValidatorPresent(height int64, address [20]byte) {
 	for i := range validators.data {
 		validator := &validators.data[i]
 		if validator.GetAddress() == address {
-			validator.AbsentTimes.SetIndex(uint(height%24), false)
+			validator.AbsentTimes.SetIndex(int(height)%ValidatorMaxAbsentWindow, false)
 		}
 	}
 
@@ -1057,11 +1058,11 @@ func (s *StateDB) SetValidatorAbsent(height int64, address [20]byte) {
 				return
 			}
 
-			validator.AbsentTimes.SetIndex(uint(height%24), true)
+			validator.AbsentTimes.SetIndex(int(height)%ValidatorMaxAbsentWindow, true)
 
 			if validator.CountAbsentTimes() > ValidatorMaxAbsentTimes {
 				candidate.Status = CandidateStatusOffline
-				validator.AbsentTimes = NewBitArray(24)
+				validator.AbsentTimes = NewBitArray(ValidatorMaxAbsentWindow)
 				validator.toDrop = true
 
 				totalStake := big.NewInt(0)
@@ -1174,7 +1175,7 @@ func (s *StateDB) SetNewValidators(candidates []Candidate) {
 
 	for _, candidate := range candidates {
 		accumReward := big.NewInt(0)
-		absentTimes := NewBitArray(24)
+		absentTimes := NewBitArray(ValidatorMaxAbsentWindow)
 
 		for _, oldVal := range oldVals.data {
 			if oldVal.GetAddress() == candidate.GetAddress() {
