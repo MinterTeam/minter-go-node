@@ -52,11 +52,6 @@ var (
 	cfg = config.GetConfig()
 )
 
-// StateDBs within the ethereum protocol are used to store anything
-// within the merkle trie. StateDBs take care of caching and storing
-// nested states. It's the general query interface to retrieve:
-// * Coins
-// * Accounts
 type StateDB struct {
 	db   dbm.DB
 	iavl *iavl.MutableTree
@@ -79,15 +74,6 @@ type StateDB struct {
 
 	stakeCache map[types.CoinSymbol]StakeCache
 
-	// DB error.
-	// State objects are used by the consensus core and VM which are
-	// unable to deal with database-level errors. Any error that occurs
-	// during a database read is memoized here and will eventually be returned
-	// by StateDB.Commit.
-	dbErr error
-
-	thash, bhash types.Hash
-
 	lock sync.Mutex
 }
 
@@ -96,7 +82,6 @@ type StakeCache struct {
 	BipValue   *big.Int
 }
 
-// Create a new state from a given trie
 func New(height int64, db dbm.DB) (*StateDB, error) {
 
 	tree := iavl.NewMutableTree(db, 128)
@@ -120,22 +105,6 @@ func New(height int64, db dbm.DB) (*StateDB, error) {
 		stateCandidatesDirty:  false,
 		stakeCache:            make(map[types.CoinSymbol]StakeCache),
 	}, nil
-}
-
-// setError remembers the first non-nil error it is called with.
-func (s *StateDB) setError(err error) {
-
-	if err != nil {
-		fmt.Printf("ERROR: %s\n", err.Error())
-	}
-
-	if s.dbErr == nil {
-		s.dbErr = err
-	}
-}
-
-func (s *StateDB) Error() error {
-	return s.dbErr
 }
 
 // Empty returns whether the state object is either non-existent
