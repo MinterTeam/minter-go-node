@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-// Package state provides a caching layer atop the Ethereum state trie.
 package state
 
 import (
@@ -969,7 +968,6 @@ func (s *StateDB) SubStake(sender types.Address, pubkey []byte, coin types.CoinS
 	for i := range stateCandidates.data {
 		candidate := &stateCandidates.data[i]
 		if candidate.PubKey.Compare(pubkey) == 0 {
-			// todo: remove if stake == 0
 			currentStakeValue := candidate.GetStakeOfAddress(sender, coin).Value
 			currentStakeValue.Sub(currentStakeValue, value)
 		}
@@ -1091,7 +1089,6 @@ func (s *StateDB) SetValidatorAbsent(height int64, address [20]byte) {
 					totalStake.Add(totalStake, newValue)
 				}
 
-				// TODO: recalc total stake in bips
 				validator.TotalBipStake = totalStake
 			}
 
