@@ -361,9 +361,9 @@ func (bA *BitArray) UnmarshalJSON(bz []byte) error {
 	bits := match[1]
 
 	// Construct new BitArray and copy over.
-	numBits := uint(len(bits))
+	numBits := len(bits)
 	bA2 := NewBitArray(numBits)
-	for i := uint(0); i < numBits; i++ {
+	for i := 0; i < numBits; i++ {
 		if bits[i] == 'x' {
 			bA2.SetIndex(i, true)
 		}
