@@ -4,14 +4,13 @@ import (
 	"encoding/binary"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
-	"github.com/MinterTeam/minter-go-node/mintdb"
-	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/tendermint/go-amino"
+	"github.com/tendermint/tendermint/libs/db"
 )
 
 var cdc = amino.NewCodec()
 
-var eventsEnabled = config.GetConfig().EnableEvents
+var eventsEnabled = !config.GetConfig().ValidatorMode
 
 var edb *EventsDB
 
@@ -21,7 +20,7 @@ func init() {
 
 func GetCurrent() *EventsDB {
 	if edb == nil {
-		eventsDB, err := mintdb.NewLDBDatabase(utils.GetMinterHome()+"/events", 128, 128)
+		eventsDB, err := db.NewGoLevelDB("events", utils.GetMinterHome()+"/data")
 
 		if err != nil {
 			panic(err)
@@ -34,11 +33,11 @@ func GetCurrent() *EventsDB {
 }
 
 type EventsDB struct {
-	db    *mintdb.LDBDatabase
+	db    *db.GoLevelDB
 	cache map[int64]Events
 }
 
-func NewEventsDB(db *mintdb.LDBDatabase) *EventsDB {
+func NewEventsDB(db *db.GoLevelDB) *EventsDB {
 	return &EventsDB{
 		db:    db,
 		cache: map[int64]Events{},
@@ -74,7 +73,9 @@ func (db *EventsDB) FlushEvents(height int64) error {
 
 	delete(db.cache, height)
 
-	return db.db.Put(key, bytes)
+	db.db.Set(key, bytes)
+
+	return nil
 }
 
 func (db *EventsDB) SetEvents(height int64, events Events) {
@@ -89,18 +90,14 @@ func (db *EventsDB) GetEvents(height int64) Events {
 
 	key := getKeyForHeight(height)
 
-	data, err := db.db.Get(key)
+	data := db.db.Get(key)
 
-	if err != nil {
-		if err == leveldb.ErrNotFound {
-			return Events{}
-		}
-
-		panic(err)
+	if len(data) == 0 {
+		return Events{}
 	}
 
 	var decoded Events
-	err = cdc.UnmarshalBinary(data, &decoded)
+	err := cdc.UnmarshalBinary(data, &decoded)
 
 	if err != nil {
 		panic(err)

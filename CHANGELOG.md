@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.4.0
+*Sept 18th, 2018*
+
+BREAKING CHANGES
+
+- [core] Switch Ethereum Patricia Tree to IAVL
+- [core] Change consensus TimeoutCommit to 4.5 sec, TimeoutPropose to 2 sec
+- [core] Now validator punished if it misses 12 of 24 last blocks
+
+IMPROVEMENT
+
+- [config] Add validator mode
+- [api] Include events by default
+- [gui] Add validator status
+
 ## 0.3.8
 *Sept 17th, 2018*
 

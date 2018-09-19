@@ -60,13 +60,13 @@ func DefaultConfig() *Config {
 	cfg.Mempool.RecheckEmpty = true
 
 	cfg.Consensus.WalPath = "tmdata/cs.wal/wal"
-	cfg.Consensus.TimeoutPropose = 3000
+	cfg.Consensus.TimeoutPropose = 2000
 	cfg.Consensus.TimeoutProposeDelta = 500
 	cfg.Consensus.TimeoutPrevote = 1000
 	cfg.Consensus.TimeoutPrevoteDelta = 500
 	cfg.Consensus.TimeoutPrecommit = 1000
 	cfg.Consensus.TimeoutPrecommitDelta = 500
-	cfg.Consensus.TimeoutCommit = 5000
+	cfg.Consensus.TimeoutCommit = 4500
 
 	cfg.PrivValidator = "config/priv_validator.json"
 
@@ -86,6 +86,14 @@ func GetConfig() *Config {
 	err := viper.Unmarshal(cfg)
 	if err != nil {
 		panic(err)
+	}
+
+	if cfg.ValidatorMode {
+		cfg.TxIndex.IndexAllTags = false
+		cfg.TxIndex.IndexTags = ""
+
+		cfg.RPC.ListenAddress = ""
+		cfg.RPC.GRPCListenAddress = ""
 	}
 
 	cfg.SetRoot(utils.GetMinterHome())
@@ -223,7 +231,7 @@ type BaseConfig struct {
 	// Address to listen for API connections
 	APIListenAddress string `mapstructure:"api_listen_addr"`
 
-	EnableEvents bool `mapstructure:"enable_events"`
+	ValidatorMode bool `mapstructure:"validator_mode"`
 }
 
 // DefaultBaseConfig returns a default base configuration for a Tendermint node
@@ -243,7 +251,7 @@ func DefaultBaseConfig() BaseConfig {
 		DBPath:            "data",
 		GUIListenAddress:  ":3000",
 		APIListenAddress:  ":8841",
-		EnableEvents:      false,
+		ValidatorMode:     false,
 	}
 }
 

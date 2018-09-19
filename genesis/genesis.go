@@ -2,19 +2,17 @@ package genesis
 
 import (
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/tendermint/tendermint/crypto/ed25519"
-	"github.com/tendermint/tendermint/libs/common"
 	tmtypes "github.com/tendermint/tendermint/types"
 	"math/big"
 	"time"
 )
 
 var (
-	Network = "minter-test-network-21"
+	Network = "minter-test-network-22"
 )
 
 func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
@@ -33,15 +31,11 @@ func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
 
 		validators[i] = tmtypes.GenesisValidator{
 			PubKey: validatorPubKey,
-			Power:  10,
+			Power:  int64(100000000 / len(validatorsPubKeys)),
 		}
 	}
 
-	appHash, err := hex.DecodeString("0000000000000000000000000000000000000000000000000000000000000000")
-
-	if err != nil {
-		return nil, err
-	}
+	appHash := [20]byte{}
 
 	appState := AppState{
 		FirstValidatorAddress: types.HexToAddress("Mxee81347211c72524338f9680072af90744333146"),
@@ -69,10 +63,10 @@ func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
 
 	genesis := tmtypes.GenesisDoc{
 		ChainID:         Network,
-		GenesisTime:     time.Date(2018, 9, 8, 0, 0, 0, 0, time.UTC),
+		GenesisTime:     time.Date(2018, 9, 19, 9, 0, 0, 0, time.UTC),
 		ConsensusParams: nil,
 		Validators:      validators,
-		AppHash:         common.HexBytes(appHash),
+		AppHash:         appHash[:],
 		AppState:        json.RawMessage(appStateJSON),
 	}
 

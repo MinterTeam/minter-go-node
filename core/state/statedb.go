@@ -14,17 +14,18 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-// Package state provides a caching layer atop the Ethereum state trie.
 package state
 
 import (
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/eventsdb"
+	"github.com/danil-lashin/iavl"
+	dbm "github.com/tendermint/tendermint/libs/db"
 	"math/big"
 	"sync"
 
 	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/rlp"
 
 	"bytes"
@@ -38,10 +39,8 @@ import (
 const UnbondPeriod = 518400
 
 var (
-	// emptyState is the known hash of an empty state trie entry.
-	emptyState = crypto.Keccak256Hash(nil)
-
-	ValidatorMaxAbsentTimes = uint(12)
+	ValidatorMaxAbsentWindow = 24
+	ValidatorMaxAbsentTimes  = 12
 
 	addressPrefix     = []byte("a")
 	coinPrefix        = []byte("c")
@@ -49,16 +48,13 @@ var (
 	usedCheckPrefix   = []byte("u")
 	candidatesKey     = []byte("t")
 	validatorsKey     = []byte("v")
+
+	cfg = config.GetConfig()
 )
 
-// StateDBs within the ethereum protocol are used to store anything
-// within the merkle trie. StateDBs take care of caching and storing
-// nested states. It's the general query interface to retrieve:
-// * Coins
-// * Accounts
 type StateDB struct {
-	db   Database
-	trie Trie
+	db   dbm.DB
+	iavl *iavl.MutableTree
 
 	// This map holds 'live' objects, which will get modified while processing a state transition.
 	stateObjects      map[types.Address]*stateObject
@@ -78,15 +74,6 @@ type StateDB struct {
 
 	stakeCache map[types.CoinSymbol]StakeCache
 
-	// DB error.
-	// State objects are used by the consensus core and VM which are
-	// unable to deal with database-level errors. Any error that occurs
-	// during a database read is memoized here and will eventually be returned
-	// by StateDB.Commit.
-	dbErr error
-
-	thash, bhash types.Hash
-
 	lock sync.Mutex
 }
 
@@ -95,15 +82,19 @@ type StakeCache struct {
 	BipValue   *big.Int
 }
 
-// Create a new state from a given trie
-func New(root types.Hash, db Database) (*StateDB, error) {
-	tr, err := db.OpenTrie(root)
+func New(height int64, db dbm.DB) (*StateDB, error) {
+
+	tree := iavl.NewMutableTree(db, 128)
+
+	_, err := tree.LoadVersion(height)
+
 	if err != nil {
 		return nil, err
 	}
+
 	return &StateDB{
 		db:                    db,
-		trie:                  tr,
+		iavl:                  tree,
 		stateObjects:          make(map[types.Address]*stateObject),
 		stateObjectsDirty:     make(map[types.Address]struct{}),
 		stateCoins:            make(map[types.CoinSymbol]*stateCoin),
@@ -114,22 +105,6 @@ func New(root types.Hash, db Database) (*StateDB, error) {
 		stateCandidatesDirty:  false,
 		stakeCache:            make(map[types.CoinSymbol]StakeCache),
 	}, nil
-}
-
-// setError remembers the first non-nil error it is called with.
-func (s *StateDB) setError(err error) {
-
-	if err != nil {
-		fmt.Printf("ERROR: %s\n", err.Error())
-	}
-
-	if s.dbErr == nil {
-		s.dbErr = err
-	}
-}
-
-func (s *StateDB) Error() error {
-	return s.dbErr
 }
 
 // Empty returns whether the state object is either non-existent
@@ -171,7 +146,7 @@ func (s *StateDB) GetNonce(addr types.Address) uint64 {
 }
 
 // Database retrieves the low level database supporting the lower level trie ops.
-func (s *StateDB) Database() Database {
+func (s *StateDB) Database() dbm.DB {
 	return s.db
 }
 
@@ -220,7 +195,8 @@ func (s *StateDB) updateStateObject(stateObject *stateObject) {
 	if err != nil {
 		panic(fmt.Errorf("can't encode object at %x: %v", addr[:], err))
 	}
-	s.setError(s.trie.TryUpdate(append(addressPrefix, addr[:]...), data))
+
+	s.iavl.Set(append(addressPrefix, addr[:]...), data)
 }
 
 func (s *StateDB) updateStateFrozenFund(stateFrozenFund *stateFrozenFund) {
@@ -232,8 +208,7 @@ func (s *StateDB) updateStateFrozenFund(stateFrozenFund *stateFrozenFund) {
 	height := make([]byte, 8)
 	binary.BigEndian.PutUint64(height, stateFrozenFund.blockHeight)
 
-	key := append(frozenFundsPrefix, height...)
-	s.setError(s.trie.TryUpdate(key, data))
+	s.iavl.Set(append(frozenFundsPrefix, height...), data)
 }
 
 func (s *StateDB) updateStateCoin(stateCoin *stateCoin) {
@@ -242,7 +217,8 @@ func (s *StateDB) updateStateCoin(stateCoin *stateCoin) {
 	if err != nil {
 		panic(fmt.Errorf("can't encode coin at %x: %v", symbol[:], err))
 	}
-	s.setError(s.trie.TryUpdate(append(coinPrefix, symbol[:]...), data))
+
+	s.iavl.Set(append(coinPrefix, symbol[:]...), data)
 }
 
 func (s *StateDB) updateStateCandidates(stateCandidates *stateCandidates) {
@@ -250,8 +226,8 @@ func (s *StateDB) updateStateCandidates(stateCandidates *stateCandidates) {
 	if err != nil {
 		panic(fmt.Errorf("can't encode candidates: %v", err))
 	}
-	err = s.trie.TryUpdate(candidatesKey, data)
-	s.setError(err)
+
+	s.iavl.Set(candidatesKey, data)
 }
 
 func (s *StateDB) updateStateValidators(validators *stateValidators) {
@@ -259,21 +235,22 @@ func (s *StateDB) updateStateValidators(validators *stateValidators) {
 	if err != nil {
 		panic(fmt.Errorf("can't encode validators: %v", err))
 	}
-	err = s.trie.TryUpdate(validatorsKey, data)
-	s.setError(err)
+
+	s.iavl.Set(validatorsKey, data)
 }
 
 // deleteStateObject removes the given object from the state trie.
 func (s *StateDB) deleteStateObject(stateObject *stateObject) {
 	stateObject.deleted = true
 	addr := stateObject.Address()
-	s.setError(s.trie.TryDelete(append(addressPrefix, addr[:]...)))
+
+	s.iavl.Remove(append(addressPrefix, addr[:]...))
 }
 
 // deleteStateCoin removes the given object from the state trie.
 func (s *StateDB) deleteStateCoin(stateCoin *stateCoin) {
 	symbol := stateCoin.Symbol()
-	s.setError(s.trie.TryDelete(append(coinPrefix, symbol[:]...)))
+	s.iavl.Remove(append(coinPrefix, symbol[:]...))
 }
 
 // deleteStateObject removes the given object from the state trie.
@@ -282,7 +259,7 @@ func (s *StateDB) deleteFrozenFunds(stateFrozenFund *stateFrozenFund) {
 	height := make([]byte, 8)
 	binary.BigEndian.PutUint64(height, stateFrozenFund.blockHeight)
 	key := append(frozenFundsPrefix, height...)
-	s.setError(s.trie.TryDelete(key))
+	s.iavl.Remove(key)
 }
 
 // Retrieve a state frozen funds by block height. Returns nil if not found.
@@ -297,9 +274,8 @@ func (s *StateDB) getStateFrozenFunds(blockHeight uint64) (stateFrozenFund *stat
 	key := append(frozenFundsPrefix, height...)
 
 	// Load the object from the database.
-	enc, err := s.trie.TryGet(key)
+	_, enc := s.iavl.Get(key)
 	if len(enc) == 0 {
-		s.setError(err)
 		return nil
 	}
 	var data FrozenFunds
@@ -321,9 +297,8 @@ func (s *StateDB) getStateCoin(symbol types.CoinSymbol) (stateCoin *stateCoin) {
 	}
 
 	// Load the object from the database.
-	enc, err := s.trie.TryGet(append(coinPrefix, symbol[:]...))
+	_, enc := s.iavl.Get(append(coinPrefix, symbol[:]...))
 	if len(enc) == 0 {
-		s.setError(err)
 		return nil
 	}
 	var data Coin
@@ -349,9 +324,8 @@ func (s *StateDB) getStateCandidates() (stateCandidates *stateCandidates) {
 	}
 
 	// Load the object from the database.
-	enc, err := s.trie.TryGet(candidatesKey)
+	_, enc := s.iavl.Get(candidatesKey)
 	if len(enc) == 0 {
-		s.setError(err)
 		return nil
 	}
 	var data Candidates
@@ -377,9 +351,8 @@ func (s *StateDB) getStateValidators() (stateValidators *stateValidators) {
 	}
 
 	// Load the object from the database.
-	enc, err := s.trie.TryGet(validatorsKey)
+	_, enc := s.iavl.Get(validatorsKey)
 	if len(enc) == 0 {
-		s.setError(err)
 		return nil
 	}
 	var data Validators
@@ -404,9 +377,8 @@ func (s *StateDB) getStateObject(addr types.Address) (stateObject *stateObject) 
 	}
 
 	// Load the object from the database.
-	enc, err := s.trie.TryGet(append(addressPrefix, addr[:]...))
+	_, enc := s.iavl.Get(append(addressPrefix, addr[:]...))
 	if len(enc) == 0 {
-		s.setError(err)
 		return nil
 	}
 	var data Account
@@ -569,7 +541,7 @@ func (s *StateDB) CreateValidator(
 		PubKey:           pubkey,
 		Commission:       commission,
 		AccumReward:      big.NewInt(0),
-		AbsentTimes:      0,
+		AbsentTimes:      NewBitArray(ValidatorMaxAbsentWindow),
 	})
 
 	s.MarkStateValidatorsDirty()
@@ -616,50 +588,41 @@ func (s *StateDB) CreateCandidate(
 }
 
 // Commit writes the state to the underlying in-memory trie database.
-func (s *StateDB) Commit(deleteEmptyObjects bool) (root types.Hash, err error) {
+func (s *StateDB) Commit(deleteEmptyObjects bool) (root []byte, version int64, err error) {
 
 	// Commit objects to the trie.
-	for addr, stateObject := range s.stateObjects {
-		_, isDirty := s.stateObjectsDirty[addr]
-		switch {
-		case stateObject.suicided || (isDirty && deleteEmptyObjects && stateObject.empty()):
-			// If the object has been removed, don't bother syncing it
-			// and just mark it for deletion in the trie.
+	for _, addr := range getOrderedObjectsKeys(s.stateObjectsDirty) {
+		stateObject := s.stateObjects[addr]
+		if stateObject.suicided || (deleteEmptyObjects && stateObject.empty()) {
 			s.deleteStateObject(stateObject)
-		case isDirty:
-			// Write any storage changes in the state object to its storage trie.
-			if err := stateObject.CommitTrie(s.db); err != nil {
-				return types.Hash{}, err
-			}
-			// Update the object in the main account trie.
+		} else {
 			s.updateStateObject(stateObject)
 		}
 		delete(s.stateObjectsDirty, addr)
 	}
 
 	// Commit coins to the trie.
-	for symbol, stateCoin := range s.stateCoins {
-		_, isDirty := s.stateCoinsDirty[symbol]
-		if isDirty {
-			if stateCoin.data.Volume.Cmp(types.Big0) == 0 {
-				s.deleteStateCoin(stateCoin)
-			} else {
-				s.updateStateCoin(stateCoin)
-			}
+	for _, symbol := range getOrderedCoinsKeys(s.stateCoinsDirty) {
+		stateCoin := s.stateCoins[symbol]
+
+		if stateCoin.data.Volume.Cmp(types.Big0) == 0 {
+			s.deleteStateCoin(stateCoin)
+		} else {
+			s.updateStateCoin(stateCoin)
 		}
 
 		delete(s.stateCoinsDirty, symbol)
 	}
 
 	// Commit frozen funds to the trie.
-	for block, frozenFund := range s.stateFrozenFunds {
-		_, isDirty := s.stateFrozenFundsDirty[block]
-		switch {
-		case frozenFund.deleted:
+	for _, block := range getOrderedFrozenFundsKeys(s.stateFrozenFundsDirty) {
+		frozenFund := s.stateFrozenFunds[block]
+		if frozenFund.deleted {
 			s.deleteFrozenFunds(frozenFund)
-		case isDirty:
+		} else {
 			s.updateStateFrozenFund(frozenFund)
 		}
+
 		delete(s.stateFrozenFundsDirty, block)
 	}
 
@@ -674,19 +637,56 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (root types.Hash, err error) {
 		s.stateValidatorsDirty = false
 	}
 
-	// Write trie changes.
-	root, err = s.trie.Commit(func(leaf []byte, parent types.Hash) error {
-		var account Account
-		if err := rlp.DecodeBytes(leaf, &account); err != nil {
-			return nil
+	hash, version, err := s.iavl.SaveVersion()
+
+	if cfg.ValidatorMode && version > 1 {
+		err = s.iavl.DeleteVersion(version - 1)
+
+		if err != nil {
+			panic(err)
 		}
-		if account.Root != emptyState {
-			s.db.TrieDB().Reference(account.Root, parent)
-		}
-		return nil
+	}
+
+	return hash, version, err
+}
+
+func getOrderedObjectsKeys(objects map[types.Address]struct{}) []types.Address {
+	keys := make([]types.Address, 0, len(objects))
+	for k := range objects {
+		keys = append(keys, k)
+	}
+
+	sort.Slice(keys, func(i, j int) bool {
+		return bytes.Compare(keys[i].Bytes(), keys[j].Bytes()) == 1
 	})
-	// log.Debug("Trie cache stats after commit", "misses", trie.CacheMisses(), "unloads", trie.CacheUnloads())
-	return root, err
+
+	return keys
+}
+
+func getOrderedCoinsKeys(objects map[types.CoinSymbol]struct{}) []types.CoinSymbol {
+	keys := make([]types.CoinSymbol, 0, len(objects))
+	for k := range objects {
+		keys = append(keys, k)
+	}
+
+	sort.Slice(keys, func(i, j int) bool {
+		return bytes.Compare(keys[i].Bytes(), keys[j].Bytes()) == 1
+	})
+
+	return keys
+}
+
+func getOrderedFrozenFundsKeys(objects map[uint64]struct{}) []uint64 {
+	keys := make([]uint64, 0, len(objects))
+	for k := range objects {
+		keys = append(keys, k)
+	}
+
+	sort.Slice(keys, func(i, j int) bool {
+		return keys[i] > keys[j]
+	})
+
+	return keys
 }
 
 func (s *StateDB) CoinExists(symbol types.CoinSymbol) bool {
@@ -968,7 +968,6 @@ func (s *StateDB) SubStake(sender types.Address, pubkey []byte, coin types.CoinS
 	for i := range stateCandidates.data {
 		candidate := &stateCandidates.data[i]
 		if candidate.PubKey.Compare(pubkey) == 0 {
-			// todo: remove if stake == 0
 			currentStakeValue := candidate.GetStakeOfAddress(sender, coin).Value
 			currentStakeValue.Sub(currentStakeValue, value)
 		}
@@ -980,7 +979,7 @@ func (s *StateDB) SubStake(sender types.Address, pubkey []byte, coin types.CoinS
 
 func (s *StateDB) IsCheckUsed(check *check.Check) bool {
 	checkHash := check.Hash().Bytes()
-	data, _ := s.trie.TryGet(append(usedCheckPrefix, checkHash...))
+	_, data := s.iavl.Get(append(usedCheckPrefix, checkHash...))
 
 	return len(data) != 0
 }
@@ -989,7 +988,7 @@ func (s *StateDB) UseCheck(check *check.Check) {
 	checkHash := check.Hash().Bytes()
 	trieHash := append(usedCheckPrefix, checkHash...)
 
-	s.setError(s.trie.TryUpdate(trieHash, []byte{0x1}))
+	s.iavl.Set(trieHash, []byte{0x1})
 }
 
 func (s *StateDB) SetCandidateOnline(pubkey []byte) {
@@ -1020,6 +1019,20 @@ func (s *StateDB) SetCandidateOffline(pubkey []byte) {
 	s.MarkStateCandidateDirty()
 }
 
+func (s *StateDB) SetValidatorPresent(height int64, address [20]byte) {
+	validators := s.getStateValidators()
+
+	for i := range validators.data {
+		validator := &validators.data[i]
+		if validator.GetAddress() == address {
+			validator.AbsentTimes.SetIndex(int(height)%ValidatorMaxAbsentWindow, false)
+		}
+	}
+
+	s.setStateValidators(validators)
+	s.MarkStateValidatorsDirty()
+}
+
 func (s *StateDB) SetValidatorAbsent(height int64, address [20]byte) {
 	edb := eventsdb.GetCurrent()
 
@@ -1043,11 +1056,11 @@ func (s *StateDB) SetValidatorAbsent(height int64, address [20]byte) {
 				return
 			}
 
-			validator.AbsentTimes = validator.AbsentTimes + 1
+			validator.AbsentTimes.SetIndex(int(height)%ValidatorMaxAbsentWindow, true)
 
-			if validator.AbsentTimes > ValidatorMaxAbsentTimes {
+			if validator.CountAbsentTimes() > ValidatorMaxAbsentTimes {
 				candidate.Status = CandidateStatusOffline
-				validator.AbsentTimes = 0
+				validator.AbsentTimes = NewBitArray(ValidatorMaxAbsentWindow)
 				validator.toDrop = true
 
 				totalStake := big.NewInt(0)
@@ -1076,7 +1089,6 @@ func (s *StateDB) SetValidatorAbsent(height int64, address [20]byte) {
 					totalStake.Add(totalStake, newValue)
 				}
 
-				// TODO: recalc total stake in bips
 				validator.TotalBipStake = totalStake
 			}
 
@@ -1098,8 +1110,6 @@ func (s *StateDB) PunishByzantineValidator(currentBlock uint64, address [20]byte
 	for i := range validators.data {
 		validator := &validators.data[i]
 		if validator.GetAddress() == address {
-			validator.AbsentTimes = validator.AbsentTimes + 1
-
 			candidates := s.getStateCandidates()
 
 			var candidate *Candidate
@@ -1155,20 +1165,6 @@ func (s *StateDB) PunishFrozenFundsWithAddress(fromBlock uint64, toBlock uint64,
 	}
 }
 
-func (s *StateDB) SetValidatorPresent(address [20]byte) {
-	validators := s.getStateValidators()
-
-	for i := range validators.data {
-		validator := &validators.data[i]
-		if validator.GetAddress() == address {
-			validator.AbsentTimes = 0
-		}
-	}
-
-	s.setStateValidators(validators)
-	s.MarkStateValidatorsDirty()
-}
-
 func (s *StateDB) SetNewValidators(candidates []Candidate) {
 	oldVals := s.getStateValidators()
 
@@ -1176,7 +1172,7 @@ func (s *StateDB) SetNewValidators(candidates []Candidate) {
 
 	for _, candidate := range candidates {
 		accumReward := big.NewInt(0)
-		absentTimes := uint(0)
+		absentTimes := NewBitArray(ValidatorMaxAbsentWindow)
 
 		for _, oldVal := range oldVals.data {
 			if oldVal.GetAddress() == candidate.GetAddress() {

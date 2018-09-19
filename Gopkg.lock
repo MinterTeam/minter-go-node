@@ -14,6 +14,12 @@
   revision = "f673a4b563b57b9a95832545c878669a7fa801d9"
 
 [[projects]]
+  name = "github.com/danil-lashin/iavl"
+  packages = ["."]
+  revision = "646a1dd997127d6b198a8a65c3717125fa13ffe5"
+  version = "v0.11.1"
+
+[[projects]]
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
   revision = "346938d642f2ec3594ed81d874461961cd0faa76"
@@ -110,15 +116,6 @@
   packages = ["."]
   revision = "ea4d1f681babbce9545c9c5f3d5194a789c89f5b"
   version = "v1.2.0"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/hashicorp/golang-lru"
-  packages = [
-    ".",
-    "simplelru"
-  ]
-  revision = "0fb14efe8c47ae851c0034ed7a448854d3d34cf3"
 
 [[projects]]
   name = "github.com/hashicorp/hcl"
@@ -472,12 +469,6 @@
   revision = "788fd78401277ebd861206a03c884797c6ec5541"
 
 [[projects]]
-  branch = "v2"
-  name = "gopkg.in/karalabe/cookiejar.v2"
-  packages = ["collections/prque"]
-  revision = "8dcd6a7f4951f6ff3ee9cbb919a06d8925822e57"
-
-[[projects]]
   name = "gopkg.in/yaml.v2"
   packages = ["."]
   revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
@@ -486,6 +477,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "7f0b438359efe00bcf457cdb1437543bd234748f62e5b9ed64d56e57be975282"
+  inputs-digest = "26b32a8b58c383d7115a417db7eb0e0284ee7de7555ef7b097bcfffd52709320"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -93,6 +93,7 @@ func (c *stateFrozenFund) deepCopy(db *StateDB, onDirty func(blockHeight uint64)
 
 func (c *stateFrozenFund) Delete() {
 	c.deleted = true
+	c.onDirty(c.blockHeight)
 }
 
 func (c *stateFrozenFund) AddFund(address types.Address, candidateKey []byte, coin types.CoinSymbol, value *big.Int) {

@@ -59,10 +59,22 @@ type Validator struct {
 	PubKey           types.Pubkey
 	Commission       uint
 	AccumReward      *big.Int
-	AbsentTimes      uint
+	AbsentTimes      *BitArray
 
 	tmAddress *[20]byte
 	toDrop    bool
+}
+
+func (validator *Validator) CountAbsentTimes() int {
+	count := 0
+
+	for i := 0; i < ValidatorMaxAbsentWindow; i++ {
+		if validator.AbsentTimes.GetIndex(i) {
+			count++
+		}
+	}
+
+	return count
 }
 
 func (validator *Validator) IsToDrop() bool {

@@ -38,8 +38,10 @@ func main() {
 
 	app.RunRPC(node)
 
-	go api.RunApi(app, node)
-	go gui.Run(cfg.GUIListenAddress)
+	if !cfg.ValidatorMode {
+		go api.RunApi(app, node)
+		go gui.Run(cfg.GUIListenAddress)
+	}
 
 	// Wait forever
 	common.TrapSignal(func() {

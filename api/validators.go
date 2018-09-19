@@ -28,14 +28,14 @@ type Candidate struct {
 
 type Validator struct {
 	AccumReward string    `json:"accumulated_reward"`
-	AbsentTimes uint      `json:"absent_times"`
+	AbsentTimes int       `json:"absent_times"`
 	Candidate   Candidate `json:"candidate"`
 }
 
 func makeResponseValidator(v state.Validator, state *state.StateDB) Validator {
 	return Validator{
 		AccumReward: v.AccumReward.String(),
-		AbsentTimes: v.AbsentTimes,
+		AbsentTimes: v.CountAbsentTimes(),
 		Candidate:   makeResponseCandidate(*state.GetStateCandidate(v.PubKey)),
 	}
 }

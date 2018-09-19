@@ -14,10 +14,9 @@ import (
 	"github.com/MinterTeam/minter-go-node/genesis"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/log"
-	"github.com/MinterTeam/minter-go-node/mintdb"
-	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/tendermint/go-amino"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
+	"github.com/tendermint/tendermint/libs/db"
 	"github.com/tendermint/tendermint/node"
 	rpc "github.com/tendermint/tendermint/rpc/client"
 	"math/big"
@@ -27,10 +26,11 @@ import (
 type Blockchain struct {
 	abciTypes.BaseApplication
 
-	db                 *mintdb.LDBDatabase
+	stateDB            db.DB
+	appDB              db.DB
 	stateDeliver       *state.StateDB
 	stateCheck         *state.StateDB
-	rootHash           types.Hash
+	rootHash           [20]byte
 	height             uint64
 	rewards            *big.Int
 	validatorsStatuses map[[20]byte]int8
@@ -42,9 +42,6 @@ type Blockchain struct {
 const (
 	ValidatorPresent = 1
 	ValidatorAbsent  = 2
-
-	stateTableId = "state"
-	appTableId   = "app"
 )
 
 var (
@@ -53,15 +50,15 @@ var (
 )
 
 func NewMinterBlockchain() *Blockchain {
-
-	db, err := mintdb.NewLDBDatabase(utils.GetMinterHome()+"/data", 1024, 512)
+	ldb, err := db.NewGoLevelDB("minter", utils.GetMinterHome()+"/data")
 
 	if err != nil {
 		panic(err)
 	}
 
 	blockchain = &Blockchain{
-		db:       db,
+		stateDB:  db.NewPrefixDB(ldb, []byte("s")),
+		appDB:    db.NewPrefixDB(ldb, []byte("a")),
 		BaseCoin: types.GetBaseCoin(),
 	}
 
@@ -125,7 +122,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 		copy(address[:], v.Validator.Address)
 
 		if v.SignedLastBlock {
-			app.stateDeliver.SetValidatorPresent(address)
+			app.stateDeliver.SetValidatorPresent(req.Header.Height, address)
 			app.validatorsStatuses[address] = ValidatorPresent
 		} else {
 			app.stateDeliver.SetValidatorAbsent(req.Header.Height, address)
@@ -275,7 +272,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 func (app *Blockchain) Info(req abciTypes.RequestInfo) (resInfo abciTypes.ResponseInfo) {
 	return abciTypes.ResponseInfo{
 		LastBlockHeight:  int64(app.height),
-		LastBlockAppHash: app.rootHash.Bytes(),
+		LastBlockAppHash: app.rootHash[:],
 	}
 }
 
@@ -309,34 +306,18 @@ func (app *Blockchain) CheckTx(rawTx []byte) abciTypes.ResponseCheckTx {
 
 func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 
-	hash, err := app.stateDeliver.Commit(false)
+	hash, _, err := app.stateDeliver.Commit(false)
 
 	if err != nil {
 		panic(err)
 	}
 
-	err = app.stateDeliver.Database().TrieDB().Commit(hash, true)
-
-	if err != nil {
-		panic(err)
-	}
-
-	// todo: make provider
-	appTable := mintdb.NewTable(app.db, appTableId)
-	err = appTable.Put([]byte("root"), hash.Bytes())
-
-	if err != nil {
-		panic(err)
-	}
+	app.appDB.Set([]byte("root"), hash)
 
 	// todo: make provider
 	height := make([]byte, 8)
 	binary.BigEndian.PutUint64(height, app.height)
-	err = appTable.Put([]byte("height"), height)
-
-	if err != nil {
-		panic(err)
-	}
+	app.appDB.Set([]byte("height"), height)
 
 	// TODO: clear candidates list
 
@@ -344,7 +325,7 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 	app.updateCurrentState()
 
 	return abciTypes.ResponseCommit{
-		Data: app.rootHash.Bytes(),
+		Data: app.rootHash[:],
 	}
 }
 
@@ -353,19 +334,19 @@ func (app *Blockchain) Query(reqQuery abciTypes.RequestQuery) abciTypes.Response
 }
 
 func (app *Blockchain) Stop() {
-	app.db.Close()
+	app.appDB.Close()
+	app.stateDB.Close()
 }
 
 func (app *Blockchain) updateCurrentRootHash() {
-	appTable := mintdb.NewTable(app.db, appTableId)
 
 	// todo: make provider
-	result, _ := appTable.Get([]byte("root"))
-	app.rootHash = types.BytesToHash(result)
+	result := app.appDB.Get([]byte("root"))
+	copy(app.rootHash[:], result)
 
 	// todo: make provider
-	result, err := appTable.Get([]byte("height"))
-	if err == nil {
+	result = app.appDB.Get([]byte("height"))
+	if result != nil {
 		app.height = binary.BigEndian.Uint64(result)
 	} else {
 		app.height = 0
@@ -374,13 +355,13 @@ func (app *Blockchain) updateCurrentRootHash() {
 
 func (app *Blockchain) updateCurrentState() {
 	var err error
-	app.stateDeliver, err = state.New(app.rootHash, state.NewDatabase(mintdb.NewTable(app.db, stateTableId)))
+	app.stateDeliver, err = state.New(int64(app.height), app.stateDB)
 
 	if err != nil {
 		panic(err)
 	}
 
-	app.stateCheck, err = state.New(app.rootHash, state.NewDatabase(mintdb.NewTable(app.db, stateTableId)))
+	app.stateCheck, err = state.New(int64(app.height), app.stateDB)
 
 	if err != nil {
 		panic(err)
@@ -392,19 +373,7 @@ func (app *Blockchain) CurrentState() *state.StateDB {
 }
 
 func (app *Blockchain) GetStateForHeight(height int) (*state.StateDB, error) {
-	h := int64(height)
-	result, err := app.tendermintRPC.Block(&h)
-
-	if err != nil {
-		return nil, err
-	}
-
-	var stateHash types.Hash
-
-	copy(stateHash[:], result.Block.AppHash.Bytes())
-
-	stateTable := mintdb.NewTable(app.db, stateTableId)
-	return state.New(stateHash, state.NewDatabase(stateTable))
+	return state.New(int64(height), app.stateDB)
 }
 
 func (app *Blockchain) Height() uint64 {
@@ -412,13 +381,8 @@ func (app *Blockchain) Height() uint64 {
 }
 
 func (app *Blockchain) getCurrentValidators() abciTypes.ValidatorUpdates {
-	appTable := mintdb.NewTable(app.db, appTableId)
 
-	result, err := appTable.Get([]byte("validators"))
-
-	if err != nil && err != leveldb.ErrNotFound {
-		panic(err)
-	}
+	result := app.appDB.Get([]byte("validators"))
 
 	if len(result) == 0 {
 		return abciTypes.ValidatorUpdates{}
@@ -426,7 +390,7 @@ func (app *Blockchain) getCurrentValidators() abciTypes.ValidatorUpdates {
 
 	var vals abciTypes.ValidatorUpdates
 
-	err = cdc.UnmarshalBinary(result, &vals)
+	err := cdc.UnmarshalBinary(result, &vals)
 
 	if err != nil {
 		panic(err)
@@ -442,12 +406,7 @@ func (app *Blockchain) saveCurrentValidators(vals abciTypes.ValidatorUpdates) {
 		panic(err)
 	}
 
-	appTable := mintdb.NewTable(app.db, appTableId)
-	err = appTable.Put([]byte("validators"), data)
-
-	if err != nil {
-		panic(err)
-	}
+	app.appDB.Set([]byte("validators"), data)
 }
 
 func GetBlockchain() *Blockchain {

@@ -21,7 +21,7 @@ delegated to them) can be slashed. The penalty depends on the severity of the vi
 Requirements
 ^^^^^^^^^^^^
 
-Minimal requirements for running Validator's Node are:
+Minimal requirements for running Validator's Node in testnet are:
 
 - 4GB RAM
 - 200GB SSD
@@ -167,10 +167,6 @@ Validators nodes should edit their ``config.toml``:
         # Set true to enable the peer-exchange reactor
         pex = false
 
-        # Disable transaction indexer for better performance
-        indexer = "null"
-        index_all_tags = false
-
 Sentry Nodes should edit their ``config.toml``:
 
 ::
@@ -179,8 +175,4 @@ Sentry Nodes should edit their ``config.toml``:
         private_peer_ids = "ipaddress of validator nodes"
 
 
-Also you can disable Minter API on Validator node to improve performance:
 
-::
-
-        minter --disable-api

@@ -94,7 +94,7 @@ func (data UnbondData) Run(sender types.Address, tx *Transaction, context *state
 	}
 
 	if !isCheck {
-		// now + 31 days
+		// now + 30 days
 		unbondAtBlock := currentBlock + unbondPeriod
 
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
