@@ -19,14 +19,13 @@ package state
 import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/config"
+	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/eventsdb"
-	"github.com/danil-lashin/iavl"
+	"github.com/MinterTeam/minter-go-node/log"
+	"github.com/MinterTeam/minter-go-node/rlp"
 	dbm "github.com/tendermint/tendermint/libs/db"
 	"math/big"
 	"sync"
-
-	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/MinterTeam/minter-go-node/rlp"
 
 	"bytes"
 	"encoding/binary"
@@ -54,7 +53,7 @@ var (
 
 type StateDB struct {
 	db   dbm.DB
-	iavl *iavl.MutableTree
+	iavl Tree
 
 	// This map holds 'live' objects, which will get modified while processing a state transition.
 	stateObjects      map[types.Address]*stateObject
@@ -82,9 +81,25 @@ type StakeCache struct {
 	BipValue   *big.Int
 }
 
+func NewForCheck(s *StateDB) *StateDB {
+	return &StateDB{
+		db:                    s.db,
+		iavl:                  s.iavl.GetImmutable(),
+		stateObjects:          make(map[types.Address]*stateObject),
+		stateObjectsDirty:     make(map[types.Address]struct{}),
+		stateCoins:            make(map[types.CoinSymbol]*stateCoin),
+		stateCoinsDirty:       make(map[types.CoinSymbol]struct{}),
+		stateFrozenFunds:      make(map[uint64]*stateFrozenFund),
+		stateFrozenFundsDirty: make(map[uint64]struct{}),
+		stateCandidates:       nil,
+		stateCandidatesDirty:  false,
+		stakeCache:            make(map[types.CoinSymbol]StakeCache),
+	}
+}
+
 func New(height int64, db dbm.DB) (*StateDB, error) {
 
-	tree := iavl.NewMutableTree(db, 128)
+	tree := NewMutableTree(db)
 
 	_, err := tree.LoadVersion(height)
 
@@ -107,11 +122,16 @@ func New(height int64, db dbm.DB) (*StateDB, error) {
 	}, nil
 }
 
-// Empty returns whether the state object is either non-existent
-// or empty according to the EIP161 specification (balance = nonce = code = 0)
-func (s *StateDB) Empty(addr types.Address) bool {
-	so := s.getStateObject(addr)
-	return so == nil || so.empty()
+func (s *StateDB) Clear() {
+	s.stateObjects = make(map[types.Address]*stateObject)
+	s.stateObjectsDirty = make(map[types.Address]struct{})
+	s.stateCoins = make(map[types.CoinSymbol]*stateCoin)
+	s.stateCoinsDirty = make(map[types.CoinSymbol]struct{})
+	s.stateFrozenFunds = make(map[uint64]*stateFrozenFund)
+	s.stateFrozenFundsDirty = make(map[uint64]struct{})
+	s.stateCandidates = nil
+	s.stateCandidatesDirty = false
+	s.stakeCache = make(map[types.CoinSymbol]StakeCache)
 }
 
 // Retrieve the balance from the given address or 0 if object not found
@@ -143,11 +163,6 @@ func (s *StateDB) GetNonce(addr types.Address) uint64 {
 	}
 
 	return 0
-}
-
-// Database retrieves the low level database supporting the lower level trie ops.
-func (s *StateDB) Database() dbm.DB {
-	return s.db
 }
 
 /*
@@ -280,7 +295,6 @@ func (s *StateDB) getStateFrozenFunds(blockHeight uint64) (stateFrozenFund *stat
 	}
 	var data FrozenFunds
 	if err := rlp.DecodeBytes(enc, &data); err != nil {
-		// log.Error("Failed to decode state coin", "symbol", symbol, "err", err)
 		return nil
 	}
 	// Insert into the live set.
@@ -303,7 +317,7 @@ func (s *StateDB) getStateCoin(symbol types.CoinSymbol) (stateCoin *stateCoin) {
 	}
 	var data Coin
 	if err := rlp.DecodeBytes(enc, &data); err != nil {
-		// log.Error("Failed to decode state coin", "symbol", symbol, "err", err)
+		log.Error("Failed to decode state coin", "symbol", symbol, "err", err)
 		return nil
 	}
 	// Insert into the live set.
@@ -383,7 +397,7 @@ func (s *StateDB) getStateObject(addr types.Address) (stateObject *stateObject) 
 	}
 	var data Account
 	if err := rlp.DecodeBytes(enc, &data); err != nil {
-		// log.Error("Failed to decode state object", "addr", addr, "err", err)
+		log.Error("Failed to decode state object", "addr", addr, "err", err)
 		return nil
 	}
 	// Insert into the live set.
@@ -646,6 +660,8 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (root []byte, version int64, e
 			panic(err)
 		}
 	}
+
+	s.Clear()
 
 	return hash, version, err
 }
