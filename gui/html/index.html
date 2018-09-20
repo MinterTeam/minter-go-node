@@ -231,12 +231,6 @@
                         axios.get("//" + window.location.hostname + ':8841/api/candidate/' + this.validatorPubKey),
                     ]).then(axios.spread(function (validators, candidate) {
 
-                        if (candidate.data.code !== 0) {
-                            this.validatorStatus = 'Not declared';
-                            this.stake = 0;
-                            return
-                        }
-
                         this.stake = Math.round(candidate.data.result.candidate.total_stake / Math.pow(10, 17)) / 10
 
                         if (validators.data.result.find(function(val) { return val.candidate.pub_key === this.validatorPubKey }.bind(this))) {
@@ -250,7 +244,10 @@
                         }
 
                         this.validatorStatus = 'Down';
-                    }.bind(this)));
+                    }.bind(this))).catch(function()  {
+                        this.validatorStatus = 'Not declared';
+                        this.stake = 0;
+                    }.bind(this));
 
                     setTimeout(this.refresh, 1000)
 
