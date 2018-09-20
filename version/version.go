@@ -4,12 +4,12 @@ package version
 const (
 	Maj = "0"
 	Min = "4"
-	Fix = "0"
+	Fix = "1"
 )
 
 var (
 	// Must be a string because scripts like dist.sh read this file.
-	Version = "0.4.0"
+	Version = "0.4.1"
 
 	// GitCommit is the current HEAD set using ldflags.
 	GitCommit string

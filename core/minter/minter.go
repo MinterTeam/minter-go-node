@@ -63,6 +63,12 @@ func NewMinterBlockchain() *Blockchain {
 	}
 
 	blockchain.updateCurrentRootHash()
+	blockchain.stateDeliver, err = state.New(int64(blockchain.height), blockchain.stateDB)
+
+	if err != nil {
+		panic(err)
+	}
+
 	blockchain.updateCurrentState()
 
 	return blockchain
@@ -325,7 +331,7 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 	app.updateCurrentState()
 
 	return abciTypes.ResponseCommit{
-		Data: app.rootHash[:],
+		Data: hash,
 	}
 }
 
@@ -354,18 +360,7 @@ func (app *Blockchain) updateCurrentRootHash() {
 }
 
 func (app *Blockchain) updateCurrentState() {
-	var err error
-	app.stateDeliver, err = state.New(int64(app.height), app.stateDB)
-
-	if err != nil {
-		panic(err)
-	}
-
-	app.stateCheck, err = state.New(int64(app.height), app.stateDB)
-
-	if err != nil {
-		panic(err)
-	}
+	app.stateCheck = state.NewForCheck(app.stateDeliver)
 }
 
 func (app *Blockchain) CurrentState() *state.StateDB {

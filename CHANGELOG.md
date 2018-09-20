@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.4.1
+*Sept 20th, 2018*
+
+IMPROVEMENT
+
+- [core] Speed up synchronization 
+
+BUG FIXES
+
+- [gui] Fix validator status
+
 ## 0.4.0
 *Sept 18th, 2018*
 
