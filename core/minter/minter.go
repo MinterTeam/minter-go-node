@@ -364,7 +364,7 @@ func (app *Blockchain) updateCurrentState() {
 }
 
 func (app *Blockchain) CurrentState() *state.StateDB {
-	return app.stateCheck
+	return state.NewForCheck(app.stateCheck)
 }
 
 func (app *Blockchain) GetStateForHeight(height int) (*state.StateDB, error) {
