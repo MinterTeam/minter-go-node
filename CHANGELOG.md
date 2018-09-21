@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.2
+*Sept 21th, 2018*
+
+BUG FIXES
+
+- [api] Fix concurrent API calls
+
 ## 0.4.1
 *Sept 20th, 2018*
 

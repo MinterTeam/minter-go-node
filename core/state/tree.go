@@ -87,7 +87,7 @@ func (t *ImmutableTree) Load() (int64, error) {
 }
 
 func (t *ImmutableTree) GetImmutable() *ImmutableTree {
-	panic("Not implemented")
+	return t
 }
 
 func (t *ImmutableTree) Get(key []byte) (index int64, value []byte) {
