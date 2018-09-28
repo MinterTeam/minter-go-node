@@ -119,8 +119,6 @@ func (c *stateAccount) touch() {
 // AddBalance removes amount from c's balance.
 // It is used to add funds to the destination account of a transfer.
 func (c *stateAccount) AddBalance(coinSymbol types.CoinSymbol, amount *big.Int) {
-	// EIP158: We must check emptiness for the objects such that the account
-	// clearing (0,0,0 objects) can take effect.
 	if amount.Sign() == 0 {
 		if c.empty() {
 			c.touch()
