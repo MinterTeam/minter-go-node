@@ -1,19 +1,3 @@
-// Copyright 2014 The go-ethereum Authors
-// This file is part of the go-ethereum library.
-//
-// The go-ethereum library is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// The go-ethereum library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
-
 package state
 
 import (
@@ -25,27 +9,22 @@ import (
 	"sort"
 )
 
-// stateObject represents an Ethereum account which is being modified.
+// stateAccount represents an Minter account which is being modified.
 //
 // The usage pattern is as follows:
 // First you need to obtain a state object.
 // Account values can be accessed and modified through the object.
 // Finally, call CommitTrie to write the modified storage trie into a database.
-type stateObject struct {
+type stateAccount struct {
 	address types.Address
 	data    Account
 
-	// Cache flags.
-	// When an object is marked suicided it will be delete from the trie
-	// during the "update" phase of the state transition.
-	suicided bool
-	touched  bool
 	deleted  bool
 	onDirty  func(addr types.Address) // Callback method to mark a state object newly dirty
 }
 
 // empty returns whether the account is considered empty.
-func (s *stateObject) empty() bool {
+func (s *stateAccount) empty() bool {
 	return false
 	//return s.data.Nonce == 0 && s.data.Balance.Sign() == 0
 }
@@ -104,7 +83,7 @@ func (b *Balances) DecodeRLP(s *rlp.Stream) error {
 	return nil
 }
 
-// Account is the Ethereum consensus representation of accounts.
+// Account is the Minter consensus representation of accounts.
 // These objects are stored in the main account trie.
 type Account struct {
 	Nonce   uint64
@@ -113,12 +92,12 @@ type Account struct {
 }
 
 // newObject creates a state object.
-func newObject(db *StateDB, address types.Address, data Account, onDirty func(addr types.Address)) *stateObject {
+func newObject(db *StateDB, address types.Address, data Account, onDirty func(addr types.Address)) *stateAccount {
 	if data.Balance.Data == nil {
 		data.Balance.Data = make(map[types.CoinSymbol]*big.Int)
 	}
 
-	return &stateObject{
+	return &stateAccount{
 		address: address,
 		data:    data,
 		onDirty: onDirty,
@@ -126,29 +105,20 @@ func newObject(db *StateDB, address types.Address, data Account, onDirty func(ad
 }
 
 // EncodeRLP implements rlp.Encoder.
-func (c *stateObject) EncodeRLP(w io.Writer) error {
+func (c *stateAccount) EncodeRLP(w io.Writer) error {
 	return rlp.Encode(w, c.data)
 }
 
-func (self *stateObject) markSuicided() {
-	self.suicided = true
-	if self.onDirty != nil {
-		self.onDirty(self.Address())
-		self.onDirty = nil
-	}
-}
-
-func (c *stateObject) touch() {
+func (c *stateAccount) touch() {
 	if c.onDirty != nil {
 		c.onDirty(c.Address())
 		c.onDirty = nil
 	}
-	c.touched = true
 }
 
 // AddBalance removes amount from c's balance.
 // It is used to add funds to the destination account of a transfer.
-func (c *stateObject) AddBalance(coinSymbol types.CoinSymbol, amount *big.Int) {
+func (c *stateAccount) AddBalance(coinSymbol types.CoinSymbol, amount *big.Int) {
 	// EIP158: We must check emptiness for the objects such that the account
 	// clearing (0,0,0 objects) can take effect.
 	if amount.Sign() == 0 {
@@ -163,19 +133,19 @@ func (c *stateObject) AddBalance(coinSymbol types.CoinSymbol, amount *big.Int) {
 
 // SubBalance removes amount from c's balance.
 // It is used to remove funds from the origin account of a transfer.
-func (c *stateObject) SubBalance(coinSymbol types.CoinSymbol, amount *big.Int) {
+func (c *stateAccount) SubBalance(coinSymbol types.CoinSymbol, amount *big.Int) {
 	if amount.Sign() == 0 {
 		return
 	}
 	c.SetBalance(coinSymbol, new(big.Int).Sub(c.Balance(coinSymbol), amount))
 }
 
-func (self *stateObject) SetBalance(coinSymbol types.CoinSymbol, amount *big.Int) {
+func (self *stateAccount) SetBalance(coinSymbol types.CoinSymbol, amount *big.Int) {
 	EmitBalanceChange(self.address, coinSymbol, amount)
 	self.setBalance(coinSymbol, amount)
 }
 
-func (self *stateObject) setBalance(coinSymbol types.CoinSymbol, amount *big.Int) {
+func (self *stateAccount) setBalance(coinSymbol types.CoinSymbol, amount *big.Int) {
 
 	if self.data.Balance.Data == nil {
 		self.data.Balance.Data = make(map[types.CoinSymbol]*big.Int)
@@ -189,9 +159,9 @@ func (self *stateObject) setBalance(coinSymbol types.CoinSymbol, amount *big.Int
 }
 
 // Return the gas back to the origin. Used by the Virtual machine or Closures
-func (c *stateObject) ReturnGas(gas *big.Int) {}
+func (c *stateAccount) ReturnGas(gas *big.Int) {}
 
-func (self *stateObject) deepCopy(db *StateDB, onDirty func(addr types.Address)) *stateObject {
+func (self *stateAccount) deepCopy(db *StateDB, onDirty func(addr types.Address)) *stateAccount {
 	stateObject := newObject(db, self.address, self.data, onDirty)
 	stateObject.suicided = self.suicided
 	stateObject.deleted = self.deleted
@@ -203,15 +173,15 @@ func (self *stateObject) deepCopy(db *StateDB, onDirty func(addr types.Address))
 //
 
 // Returns the address of the contract/account
-func (c *stateObject) Address() types.Address {
+func (c *stateAccount) Address() types.Address {
 	return c.address
 }
 
-func (self *stateObject) SetNonce(nonce uint64) {
+func (self *stateAccount) SetNonce(nonce uint64) {
 	self.setNonce(nonce)
 }
 
-func (self *stateObject) setNonce(nonce uint64) {
+func (self *stateAccount) setNonce(nonce uint64) {
 	self.data.Nonce = nonce
 	if self.onDirty != nil {
 		self.onDirty(self.Address())
@@ -219,7 +189,7 @@ func (self *stateObject) setNonce(nonce uint64) {
 	}
 }
 
-func (self *stateObject) Balance(coinSymbol types.CoinSymbol) *big.Int {
+func (self *stateAccount) Balance(coinSymbol types.CoinSymbol) *big.Int {
 
 	if self.data.Balance.Data == nil {
 		return big.NewInt(0)
@@ -232,10 +202,10 @@ func (self *stateObject) Balance(coinSymbol types.CoinSymbol) *big.Int {
 	return self.data.Balance.Data[coinSymbol]
 }
 
-func (self *stateObject) Balances() Balances {
+func (self *stateAccount) Balances() Balances {
 	return self.data.Balance
 }
 
-func (self *stateObject) Nonce() uint64 {
+func (self *stateAccount) Nonce() uint64 {
 	return self.data.Nonce
 }

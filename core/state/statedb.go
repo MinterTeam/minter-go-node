@@ -56,8 +56,8 @@ type StateDB struct {
 	iavl Tree
 
 	// This map holds 'live' objects, which will get modified while processing a state transition.
-	stateObjects      map[types.Address]*stateObject
-	stateObjectsDirty map[types.Address]struct{}
+	stateAccounts      map[types.Address]*stateAccount
+	stateAccountsDirty map[types.Address]struct{}
 
 	stateCoins      map[types.CoinSymbol]*stateCoin
 	stateCoinsDirty map[types.CoinSymbol]struct{}
@@ -85,8 +85,8 @@ func NewForCheck(s *StateDB) *StateDB {
 	return &StateDB{
 		db:                    s.db,
 		iavl:                  s.iavl.GetImmutable(),
-		stateObjects:          make(map[types.Address]*stateObject),
-		stateObjectsDirty:     make(map[types.Address]struct{}),
+		stateAccounts:         make(map[types.Address]*stateAccount),
+		stateAccountsDirty:    make(map[types.Address]struct{}),
 		stateCoins:            make(map[types.CoinSymbol]*stateCoin),
 		stateCoinsDirty:       make(map[types.CoinSymbol]struct{}),
 		stateFrozenFunds:      make(map[uint64]*stateFrozenFund),
@@ -110,8 +110,8 @@ func New(height int64, db dbm.DB) (*StateDB, error) {
 	return &StateDB{
 		db:                    db,
 		iavl:                  tree,
-		stateObjects:          make(map[types.Address]*stateObject),
-		stateObjectsDirty:     make(map[types.Address]struct{}),
+		stateAccounts:         make(map[types.Address]*stateAccount),
+		stateAccountsDirty:    make(map[types.Address]struct{}),
 		stateCoins:            make(map[types.CoinSymbol]*stateCoin),
 		stateCoinsDirty:       make(map[types.CoinSymbol]struct{}),
 		stateFrozenFunds:      make(map[uint64]*stateFrozenFund),
@@ -123,8 +123,8 @@ func New(height int64, db dbm.DB) (*StateDB, error) {
 }
 
 func (s *StateDB) Clear() {
-	s.stateObjects = make(map[types.Address]*stateObject)
-	s.stateObjectsDirty = make(map[types.Address]struct{})
+	s.stateAccounts = make(map[types.Address]*stateAccount)
+	s.stateAccountsDirty = make(map[types.Address]struct{})
 	s.stateCoins = make(map[types.CoinSymbol]*stateCoin)
 	s.stateCoinsDirty = make(map[types.CoinSymbol]struct{})
 	s.stateFrozenFunds = make(map[uint64]*stateFrozenFund)
@@ -204,7 +204,7 @@ func (s *StateDB) SetNonce(addr types.Address, nonce uint64) {
 //
 
 // updateStateObject writes the given object to the trie.
-func (s *StateDB) updateStateObject(stateObject *stateObject) {
+func (s *StateDB) updateStateObject(stateObject *stateAccount) {
 	addr := stateObject.Address()
 	data, err := rlp.EncodeToBytes(stateObject)
 	if err != nil {
@@ -255,7 +255,7 @@ func (s *StateDB) updateStateValidators(validators *stateValidators) {
 }
 
 // deleteStateObject removes the given object from the state trie.
-func (s *StateDB) deleteStateObject(stateObject *stateObject) {
+func (s *StateDB) deleteStateObject(stateObject *stateAccount) {
 	stateObject.deleted = true
 	addr := stateObject.Address()
 
@@ -381,9 +381,9 @@ func (s *StateDB) getStateValidators() (stateValidators *stateValidators) {
 }
 
 // Retrieve a state object given my the address. Returns nil if not found.
-func (s *StateDB) getStateObject(addr types.Address) (stateObject *stateObject) {
+func (s *StateDB) getStateObject(addr types.Address) (stateObject *stateAccount) {
 	// Prefer 'live' objects.
-	if obj := s.stateObjects[addr]; obj != nil {
+	if obj := s.stateAccounts[addr]; obj != nil {
 		if obj.deleted {
 			return nil
 		}
@@ -406,11 +406,11 @@ func (s *StateDB) getStateObject(addr types.Address) (stateObject *stateObject) 
 	return obj
 }
 
-func (s *StateDB) setStateObject(object *stateObject) {
+func (s *StateDB) setStateObject(object *stateAccount) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	s.stateObjects[object.Address()] = object
+	s.stateAccounts[object.Address()] = object
 }
 
 func (s *StateDB) setStateCoin(coin *stateCoin) {
@@ -446,7 +446,7 @@ func (s *StateDB) setStateValidators(validators *stateValidators) {
 }
 
 // Retrieve a state object or create a new state object if nil
-func (s *StateDB) GetOrNewStateObject(addr types.Address) *stateObject {
+func (s *StateDB) GetOrNewStateObject(addr types.Address) *stateAccount {
 	stateObject := s.getStateObject(addr)
 	if stateObject == nil || stateObject.deleted {
 		stateObject, _ = s.createObject(addr)
@@ -472,7 +472,7 @@ func (s *StateDB) MarkStateObjectDirty(addr types.Address) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	s.stateObjectsDirty[addr] = struct{}{}
+	s.stateAccountsDirty[addr] = struct{}{}
 }
 
 func (s *StateDB) MarkStateCandidateDirty() {
@@ -499,7 +499,7 @@ func (s *StateDB) MarkStateFrozenFundsDirty(blockHeight uint64) {
 
 // createObject creates a new state object. If there is an existing account with
 // the given address, it is overwritten and returned as the second return value.
-func (s *StateDB) createObject(addr types.Address) (newobj, prev *stateObject) {
+func (s *StateDB) createObject(addr types.Address) (newobj, prev *stateAccount) {
 	prev = s.getStateObject(addr)
 	newobj = newObject(s, addr, Account{}, s.MarkStateObjectDirty)
 	newobj.setNonce(0) // sets the object to dirty
@@ -605,14 +605,14 @@ func (s *StateDB) CreateCandidate(
 func (s *StateDB) Commit(deleteEmptyObjects bool) (root []byte, version int64, err error) {
 
 	// Commit objects to the trie.
-	for _, addr := range getOrderedObjectsKeys(s.stateObjectsDirty) {
-		stateObject := s.stateObjects[addr]
-		if stateObject.suicided || (deleteEmptyObjects && stateObject.empty()) {
+	for _, addr := range getOrderedObjectsKeys(s.stateAccountsDirty) {
+		stateObject := s.stateAccounts[addr]
+		if deleteEmptyObjects && stateObject.empty() {
 			s.deleteStateObject(stateObject)
 		} else {
 			s.updateStateObject(stateObject)
 		}
-		delete(s.stateObjectsDirty, addr)
+		delete(s.stateAccountsDirty, addr)
 	}
 
 	// Commit coins to the trie.
