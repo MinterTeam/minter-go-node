@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.0
+*Sept 29th, 2018*
+
+IMPROVEMENT
+
+- [tendermint] Update to v0.25.0
+
 ## 0.4.2
 *Sept 21th, 2018*
 
