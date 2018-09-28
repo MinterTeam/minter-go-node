@@ -19,8 +19,8 @@ type stateAccount struct {
 	address types.Address
 	data    Account
 
-	deleted  bool
-	onDirty  func(addr types.Address) // Callback method to mark a state object newly dirty
+	deleted bool
+	onDirty func(addr types.Address) // Callback method to mark a state object newly dirty
 }
 
 // empty returns whether the account is considered empty.
@@ -163,7 +163,6 @@ func (c *stateAccount) ReturnGas(gas *big.Int) {}
 
 func (self *stateAccount) deepCopy(db *StateDB, onDirty func(addr types.Address)) *stateAccount {
 	stateObject := newObject(db, self.address, self.data, onDirty)
-	stateObject.suicided = self.suicided
 	stateObject.deleted = self.deleted
 	return stateObject
 }
