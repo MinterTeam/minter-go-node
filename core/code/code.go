@@ -37,4 +37,7 @@ const (
 	CheckUsed        uint32 = 503
 	TooHighGasPrice  uint32 = 504
 	WrongGasCoin     uint32 = 505
+
+	// multisig
+	IncorrectWeights uint32 = 601
 )

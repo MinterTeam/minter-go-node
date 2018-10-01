@@ -1247,3 +1247,7 @@ func (s *StateDB) clearStateCandidates() {
 	s.setStateCandidates(stateCandidates)
 	s.MarkStateCandidateDirty()
 }
+
+func (s *StateDB) CreateMultisig(weights []uint, addresses []types.Address, threshold uint) {
+	panic("implement me")
+}

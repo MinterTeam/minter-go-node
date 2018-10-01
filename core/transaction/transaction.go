@@ -26,6 +26,7 @@ const (
 	TypeRedeemCheck         byte = 0x09
 	TypeSetCandidateOnline  byte = 0x0A
 	TypeSetCandidateOffline byte = 0x0B
+	TypeCreateMultisig      byte = 0x0C
 )
 
 type Transaction struct {
@@ -246,6 +247,12 @@ func DecodeFromBytes(buf []byte) (*Transaction, error) {
 			if data.PubKey == nil || data.Value == nil {
 				return nil, errors.New("incorrect tx data")
 			}
+		}
+	case TypeCreateMultisig:
+		{
+			data := CreateMultisigData{}
+			err = rlp.Decode(bytes.NewReader(tx.Data), &data)
+			tx.SetDecodedData(data)
 		}
 	default:
 		return nil, errors.New("incorrect tx data")
