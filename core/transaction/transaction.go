@@ -27,19 +27,41 @@ const (
 	TypeSetCandidateOnline  byte = 0x0A
 	TypeSetCandidateOffline byte = 0x0B
 	TypeCreateMultisig      byte = 0x0C
+	TypeDestroyMultisig     byte = 0x0D
+
+	SigTypeSingle byte = 0x01
+	SigTypeMulti  byte = 0x02
+)
+
+var (
+	ErrInvalidSig = errors.New("invalid transaction v, r, s values")
 )
 
 type Transaction struct {
-	Nonce       uint64
-	GasPrice    *big.Int
-	GasCoin     types.CoinSymbol
-	Type        byte
-	Data        RawData
-	Payload     []byte
-	ServiceData []byte
-	Signatures  [][]byte
+	Nonce         uint64
+	GasPrice      *big.Int
+	GasCoin       types.CoinSymbol
+	Type          byte
+	Data          RawData
+	Payload       []byte
+	ServiceData   []byte
+	SignatureType byte
+	SignatureData []byte
 
 	decodedData Data
+	sig         *Signature
+	multisig    *SignatureMulti
+}
+
+type Signature struct {
+	V *big.Int
+	R *big.Int
+	S *big.Int
+}
+
+type SignatureMulti struct {
+	Multisig   types.Address
+	Signatures []Signature
 }
 
 type RawData []byte
@@ -84,11 +106,22 @@ func (tx *Transaction) Sign(prv *ecdsa.PrivateKey) error {
 }
 
 func (tx *Transaction) SetSignature(sig []byte) {
-	tx.Signatures[0] = sig
+	if tx.SignatureType == SigTypeSingle {
+		tx.sig.R = new(big.Int).SetBytes(sig[:32])
+		tx.sig.S = new(big.Int).SetBytes(sig[32:64])
+		tx.sig.V = new(big.Int).SetBytes([]byte{sig[64] + 27})
+	}
 }
 
 func (tx *Transaction) Sender() (types.Address, error) {
-	return recoverPlain(tx.Hash(), tx.Signatures[0])
+	switch tx.SignatureType {
+	case SigTypeSingle:
+		return recoverPlain(tx.Hash(), tx.sig.R, tx.sig.S, tx.sig.V)
+	case SigTypeMulti:
+		return tx.multisig.Multisig, nil
+	default:
+		return types.Address{}, errors.New("unknown signature type")
+	}
 }
 
 func (tx *Transaction) Hash() types.Hash {
@@ -100,6 +133,7 @@ func (tx *Transaction) Hash() types.Hash {
 		tx.Data,
 		tx.Payload,
 		tx.ServiceData,
+		tx.SignatureType,
 	})
 }
 
@@ -111,7 +145,21 @@ func (tx *Transaction) GetDecodedData() Data {
 	return tx.decodedData
 }
 
-func recoverPlain(sighash types.Hash, sig []byte) (types.Address, error) {
+func recoverPlain(sighash types.Hash, R, S, Vb *big.Int) (types.Address, error) {
+	if Vb.BitLen() > 8 {
+		return types.Address{}, ErrInvalidSig
+	}
+	V := byte(Vb.Uint64() - 27)
+	if !crypto.ValidateSignatureValues(V, R, S) {
+		return types.Address{}, ErrInvalidSig
+	}
+	// encode the snature in uncompressed format
+	r, s := R.Bytes(), S.Bytes()
+	sig := make([]byte, 65)
+	copy(sig[32-len(r):32], r)
+	copy(sig[64-len(s):64], s)
+	sig[64] = V
+
 	// recover the public key from the snature
 	pub, err := crypto.Ecrecover(sighash[:], sig)
 	if err != nil {
@@ -139,6 +187,23 @@ func DecodeFromBytes(buf []byte) (*Transaction, error) {
 
 	if err != nil {
 		return nil, err
+	}
+
+	switch tx.SignatureType {
+	case SigTypeMulti:
+		{
+			if err := rlp.DecodeBytes(tx.SignatureData, tx.multisig); err != nil {
+				return nil, err
+			}
+		}
+	case SigTypeSingle:
+		{
+			if err := rlp.DecodeBytes(tx.SignatureData, tx.sig); err != nil {
+				return nil, err
+			}
+		}
+	default:
+		return nil, errors.New("unknown signature type")
 	}
 
 	switch tx.Type {
@@ -260,10 +325,6 @@ func DecodeFromBytes(buf []byte) (*Transaction, error) {
 
 	if err != nil {
 		return nil, err
-	}
-
-	if len(tx.Signatures) == 0 || tx.Signatures[0] == nil {
-		return nil, errors.New("incorrect tx signature")
 	}
 
 	if tx.GasPrice == nil || tx.Data == nil {
