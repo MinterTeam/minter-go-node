@@ -319,6 +319,12 @@ func DecodeFromBytes(buf []byte) (*Transaction, error) {
 			err = rlp.Decode(bytes.NewReader(tx.Data), &data)
 			tx.SetDecodedData(data)
 		}
+	case TypeDestroyMultisig:
+		{
+			data := DestroyMultisigData{}
+			err = rlp.Decode(bytes.NewReader(tx.Data), &data)
+			tx.SetDecodedData(data)
+		}
 	default:
 		return nil, errors.New("incorrect tx data")
 	}

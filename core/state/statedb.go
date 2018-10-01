@@ -1251,3 +1251,7 @@ func (s *StateDB) clearStateCandidates() {
 func (s *StateDB) CreateMultisig(weights []uint, addresses []types.Address, threshold uint) {
 	panic("implement me")
 }
+
+func (s *StateDB) DestroyMultisig(multisig types.Address, recipient types.Address) {
+	panic("implement me")
+}
