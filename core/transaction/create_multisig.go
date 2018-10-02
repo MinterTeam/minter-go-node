@@ -14,15 +14,15 @@ import (
 )
 
 type CreateMultisigData struct {
-	Weights   []uint
 	Threshold uint
+	Weights   []uint
 	Addresses []types.Address
 }
 
 func (data CreateMultisigData) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Weights   []uint          `json:"weights"`
 		Threshold uint            `json:"threshold"`
+		Weights   []uint          `json:"weights"`
 		Addresses []types.Address `json:"address"`
 	}{
 		Weights:   data.Weights,
@@ -74,7 +74,7 @@ func (data CreateMultisigData) Run(sender types.Address, tx *Transaction, contex
 			Log:  fmt.Sprintf("Incorrect multisig weights")}
 	}
 
-	msigAddress := (state.Multisig{
+	msigAddress := (&state.Multisig{
 		Weights:   data.Weights,
 		Threshold: data.Threshold,
 		Addresses: data.Addresses,
@@ -83,7 +83,7 @@ func (data CreateMultisigData) Run(sender types.Address, tx *Transaction, contex
 	if context.AccountExists(msigAddress) {
 		return Response{
 			Code: code.MultisigExists,
-			Log:  fmt.Sprintf("Multisig %s already exists", msigAddress)}
+			Log:  fmt.Sprintf("Multisig %s already exists", msigAddress.String())}
 	}
 
 	if !isCheck {
@@ -103,6 +103,7 @@ func (data CreateMultisigData) Run(sender types.Address, tx *Transaction, contex
 	tags := common.KVPairs{
 		common.KVPair{Key: []byte("tx.type"), Value: []byte{TypeCreateMultisig}},
 		common.KVPair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
+		common.KVPair{Key: []byte("tx.created_multisig"), Value: []byte(hex.EncodeToString(msigAddress[:]))},
 	}
 
 	return Response{

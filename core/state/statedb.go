@@ -505,7 +505,7 @@ func (s *StateDB) createAccount(addr types.Address) (newobj, prev *stateAccount)
 	return newobj, prev
 }
 
-func (s *StateDB) createMultisigAccount(addr types.Address, multisig *Multisig) (newobj *stateAccount) {
+func (s *StateDB) createMultisigAccount(addr types.Address, multisig Multisig) (newobj *stateAccount) {
 	newobj = newObject(s, addr, Account{
 		MultisigData: multisig,
 	}, s.MarkStateObjectDirty)
@@ -1263,7 +1263,7 @@ func (s *StateDB) CreateMultisig(weights []uint, addresses []types.Address, thre
 	}
 
 	msigAddress := msig.Address()
-	s.createMultisigAccount(msigAddress, &msig).touch()
+	s.createMultisigAccount(msigAddress, msig).touch()
 }
 
 func (s *StateDB) DestroyMultisig(multisig types.Address, recipient types.Address) {

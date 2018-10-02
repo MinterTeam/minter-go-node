@@ -89,7 +89,7 @@ func (b *Balances) DecodeRLP(s *rlp.Stream) error {
 type Account struct {
 	Nonce        uint64
 	Balance      Balances
-	MultisigData *Multisig
+	MultisigData Multisig
 }
 
 type Multisig struct {
