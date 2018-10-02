@@ -69,6 +69,46 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPool *big.I
 			Log:  err.Error()}
 	}
 
+	// check multi-signature
+	if tx.SignatureType == SigTypeMulti {
+		multisig := context.GetOrNewStateObject(tx.multisig.Multisig)
+
+		if !multisig.IsMultisig() {
+			return Response{
+				Code: code.MultisigNotExists,
+				Log:  "Multisig does not exists"}
+		}
+
+		multisigData := multisig.Multisig()
+
+		if len(multisigData.Weights) < len(tx.multisig.Signatures) {
+			return Response{
+				Code: code.IncorrectMultiSignature,
+				Log:  "Incorrect multi-signature"}
+		}
+
+		txHash := tx.Hash()
+		var totalWeight uint = 0
+
+		for _, sig := range tx.multisig.Signatures {
+			signer, err := RecoverPlain(txHash, sig.R, sig.S, sig.V)
+
+			if err != nil {
+				return Response{
+					Code: code.IncorrectMultiSignature,
+					Log:  "Incorrect multi-signature"}
+			}
+
+			totalWeight += multisigData.GetWeight(signer)
+		}
+
+		if totalWeight < multisigData.Threshold {
+			return Response{
+				Code: code.IncorrectMultiSignature,
+				Log:  fmt.Sprintf("Not enough multisig votes. Needed %d, has %d", multisigData.Threshold, totalWeight)}
+		}
+	}
+
 	// TODO: deal with multiple pending transactions from one account
 	if expectedNonce := context.GetNonce(sender) + 1; expectedNonce != tx.Nonce {
 		return Response{

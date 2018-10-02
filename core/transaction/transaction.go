@@ -116,7 +116,7 @@ func (tx *Transaction) SetSignature(sig []byte) {
 func (tx *Transaction) Sender() (types.Address, error) {
 	switch tx.SignatureType {
 	case SigTypeSingle:
-		return recoverPlain(tx.Hash(), tx.sig.R, tx.sig.S, tx.sig.V)
+		return RecoverPlain(tx.Hash(), tx.sig.R, tx.sig.S, tx.sig.V)
 	case SigTypeMulti:
 		return tx.multisig.Multisig, nil
 	default:
@@ -145,7 +145,7 @@ func (tx *Transaction) GetDecodedData() Data {
 	return tx.decodedData
 }
 
-func recoverPlain(sighash types.Hash, R, S, Vb *big.Int) (types.Address, error) {
+func RecoverPlain(sighash types.Hash, R, S, Vb *big.Int) (types.Address, error) {
 	if Vb.BitLen() > 8 {
 		return types.Address{}, ErrInvalidSig
 	}
