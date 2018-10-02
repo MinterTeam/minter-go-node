@@ -24,22 +24,44 @@ Each transaction has:
 - **Data** - data of transaction (depends on transaction type).
 - **Payload** (arbitrary bytes) - arbitrary user-defined bytes.
 - **Service Data** - reserved field.
-- **ECDSA fields (R, S and V)** - digital signature of transaction.
+- **Signature Type** - single or multisig transaction.
+- **Signature Data** - digital signature of transaction.
 
 .. code-block:: go
 
     type Transaction struct {
-        Nonce       uint64
-        GasPrice    *big.Int
-        GasCoin     [10]byte
-        Type        byte
-        Data        []byte
-        Payload     []byte
-        ServiceData []byte
+        Nonce         uint64
+        GasPrice      *big.Int
+        GasCoin       [10]byte
+        Type          byte
+        Data          []byte
+        Payload       []byte
+        ServiceData   []byte
+        SignatureType byte
+        SignatureData Signature
+    }
+
+    type Signature struct {
         V           *big.Int
         R           *big.Int
         S           *big.Int
     }
+
+    type MultiSignature struct {
+        MultisigAddress [20]byte
+        Signatures      []Signature
+    }
+
+Signature Types
+^^^^^^^^^^^^^^^
+
++----------------------------------+---------+
+| Type Name                        | Byte    |
++==================================+=========+
+| **TypeSingle**                   | 0x01    |
++----------------------------------+---------+
+| **TypeMulti**                    | 0x02    |
++----------------------------------+---------+
 
 Types
 ^^^^^
