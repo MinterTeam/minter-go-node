@@ -192,12 +192,14 @@ func DecodeFromBytes(buf []byte) (*Transaction, error) {
 	switch tx.SignatureType {
 	case SigTypeMulti:
 		{
+			tx.multisig = &SignatureMulti{}
 			if err := rlp.DecodeBytes(tx.SignatureData, tx.multisig); err != nil {
 				return nil, err
 			}
 		}
 	case SigTypeSingle:
 		{
+			tx.sig = &Signature{}
 			if err := rlp.DecodeBytes(tx.SignatureData, tx.sig); err != nil {
 				return nil, err
 			}
