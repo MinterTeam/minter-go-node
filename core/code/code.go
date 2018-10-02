@@ -43,4 +43,5 @@ const (
 	MultisigExists          uint32 = 602
 	MultisigNotExists       uint32 = 603
 	IncorrectMultiSignature uint32 = 604
+	TooLargeOwnersList      uint32 = 605
 )

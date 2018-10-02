@@ -15,7 +15,7 @@ var (
 )
 
 const (
-	maxTxLength          = maxPayloadLength + maxServiceDataLength + 256
+	maxTxLength          = maxPayloadLength + maxServiceDataLength + 1024
 	maxPayloadLength     = 1024
 	maxServiceDataLength = 128
 )
@@ -82,7 +82,7 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPool *big.I
 
 		multisigData := multisig.Multisig()
 
-		if len(multisigData.Weights) < len(tx.multisig.Signatures) {
+		if len(tx.multisig.Signatures) > 32 || len(multisigData.Weights) < len(tx.multisig.Signatures) {
 			return Response{
 				Code: code.IncorrectMultiSignature,
 				Log:  "Incorrect multi-signature"}

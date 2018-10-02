@@ -46,6 +46,12 @@ func (data CreateMultisigData) Run(sender types.Address, tx *Transaction, contex
 			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin)}
 	}
 
+	if len(data.Weights) > 32 {
+		return Response{
+			Code: code.TooLargeOwnersList,
+			Log:  fmt.Sprintf("Owners list is limited to 32 items")}
+	}
+
 	commissionInBaseCoin := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
 	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
