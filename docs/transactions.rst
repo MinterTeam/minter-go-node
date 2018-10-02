@@ -93,6 +93,10 @@ Type of transaction is determined by a single byte.
 +----------------------------------+---------+
 | **TypeSetCandidateOffline**      | 0x0B    |
 +----------------------------------+---------+
+| **TypeCreateMultisig**           | 0x0C    |
++----------------------------------+---------+
+| **TypeDestroyMultisig**          | 0x0D    |
++----------------------------------+---------+
 
 Send transaction
 ^^^^^^^^^^^^^^^^
@@ -320,3 +324,37 @@ Transaction for turning candidate off. This transaction should be sent from addr
     }
 
 | **PubKey** - Public key of a validator.
+
+Create multisig address
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Type: **0x0C**
+
+Transaction for creating multisignature address.
+
+*Data field contents:*
+
+.. code-block:: go
+
+    type CreateMultisigData struct {
+	    Threshold uint
+        Weights   []uint
+        Addresses [][20]byte
+    }
+
+Destroy multisig address
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Type: **0x0D**
+
+Transaction for destroying multisignature address. All coins from destroyed address will be transferred to given address.
+
+*Data field contents:*
+
+.. code-block:: go
+
+    type DestroyMultisigData struct {
+        Address [20]byte
+    }
+
+
