@@ -38,7 +38,12 @@ func Transaction(w http.ResponseWriter, r *http.Request) {
 	tags := make(map[string]string)
 
 	for _, tag := range tx.TxResult.Tags {
-		tags[string(tag.Key)] = string(tag.Value)
+		switch string(tag.Key) {
+		case "tx.type":
+			tags[string(tag.Key)] = fmt.Sprintf("%X", tag.Value)
+		default:
+			tags[string(tag.Key)] = string(tag.Value)
+		}
 	}
 
 	err = json.NewEncoder(w).Encode(Response{
