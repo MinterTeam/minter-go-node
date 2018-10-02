@@ -23,7 +23,7 @@ func (data CreateMultisigData) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Threshold uint            `json:"threshold"`
 		Weights   []uint          `json:"weights"`
-		Addresses []types.Address `json:"address"`
+		Addresses []types.Address `json:"addresses"`
 	}{
 		Weights:   data.Weights,
 		Threshold: data.Threshold,
