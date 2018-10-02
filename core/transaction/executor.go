@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/state"
+	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/tendermint/tendermint/libs/common"
 	"math/big"
@@ -89,6 +90,7 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPool *big.I
 
 		txHash := tx.Hash()
 		var totalWeight uint = 0
+		var usedAccounts = map[types.Address]bool{}
 
 		for _, sig := range tx.multisig.Signatures {
 			signer, err := RecoverPlain(txHash, sig.R, sig.S, sig.V)
@@ -99,6 +101,13 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPool *big.I
 					Log:  "Incorrect multi-signature"}
 			}
 
+			if usedAccounts[signer] {
+				return Response{
+					Code: code.IncorrectMultiSignature,
+					Log:  "Incorrect multi-signature"}
+			}
+
+			usedAccounts[signer] = true
 			totalWeight += multisigData.GetWeight(signer)
 		}
 
