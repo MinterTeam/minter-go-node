@@ -1,6 +1,7 @@
 package state
 
 import (
+	"github.com/MinterTeam/minter-go-node/crypto"
 	"io"
 	"math/big"
 
@@ -86,9 +87,28 @@ func (b *Balances) DecodeRLP(s *rlp.Stream) error {
 // Account is the Minter consensus representation of accounts.
 // These objects are stored in the main account trie.
 type Account struct {
-	Nonce   uint64
-	Balance Balances
-	Root    types.Hash // merkle root of the storage trie
+	Nonce        uint64
+	Balance      Balances
+	MultisigData *Multisig
+}
+
+type Multisig struct {
+	Weights   []uint
+	Threshold uint
+	Addresses []types.Address
+}
+
+func (m *Multisig) Address() types.Address {
+	bytes, err := rlp.EncodeToBytes(m)
+
+	if err != nil {
+		panic(err)
+	}
+
+	var addr types.Address
+	copy(addr[:], crypto.Keccak256(bytes)[12:])
+
+	return addr
 }
 
 // newObject creates a state object.

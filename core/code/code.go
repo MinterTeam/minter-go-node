@@ -40,4 +40,5 @@ const (
 
 	// multisig
 	IncorrectWeights uint32 = 601
+	MultisigExists   uint32 = 602
 )

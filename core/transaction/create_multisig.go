@@ -74,6 +74,18 @@ func (data CreateMultisigData) Run(sender types.Address, tx *Transaction, contex
 			Log:  fmt.Sprintf("Incorrect multisig weights")}
 	}
 
+	msigAddress := (state.Multisig{
+		Weights:   data.Weights,
+		Threshold: data.Threshold,
+		Addresses: data.Addresses,
+	}).Address()
+
+	if context.AccountExists(msigAddress) {
+		return Response{
+			Code: code.MultisigExists,
+			Log:  fmt.Sprintf("Multisig %s already exists", msigAddress)}
+	}
+
 	if !isCheck {
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 

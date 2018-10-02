@@ -136,7 +136,7 @@ func (s *StateDB) Clear() {
 
 // Retrieve the balance from the given address or 0 if object not found
 func (s *StateDB) GetBalance(addr types.Address, coinSymbol types.CoinSymbol) *big.Int {
-	stateObject := s.getStateObject(addr)
+	stateObject := s.getStateAccount(addr)
 	if stateObject != nil {
 		return stateObject.Balance(coinSymbol)
 	}
@@ -144,7 +144,7 @@ func (s *StateDB) GetBalance(addr types.Address, coinSymbol types.CoinSymbol) *b
 }
 
 func (s *StateDB) GetBalances(addr types.Address) Balances {
-	stateObject := s.getStateObject(addr)
+	stateObject := s.getStateAccount(addr)
 	if stateObject != nil {
 		return stateObject.Balances()
 	}
@@ -157,7 +157,7 @@ func (s *StateDB) GetBalances(addr types.Address) Balances {
 }
 
 func (s *StateDB) GetNonce(addr types.Address) uint64 {
-	stateObject := s.getStateObject(addr)
+	stateObject := s.getStateAccount(addr)
 	if stateObject != nil {
 		return stateObject.Nonce()
 	}
@@ -380,8 +380,8 @@ func (s *StateDB) getStateValidators() (stateValidators *stateValidators) {
 	return obj
 }
 
-// Retrieve a state object given my the address. Returns nil if not found.
-func (s *StateDB) getStateObject(addr types.Address) (stateObject *stateAccount) {
+// Retrieve a state account given my the address. Returns nil if not found.
+func (s *StateDB) getStateAccount(addr types.Address) (stateObject *stateAccount) {
 	// Prefer 'live' objects.
 	if obj := s.stateAccounts[addr]; obj != nil {
 		if obj.deleted {
@@ -447,9 +447,9 @@ func (s *StateDB) setStateValidators(validators *stateValidators) {
 
 // Retrieve a state object or create a new state object if nil
 func (s *StateDB) GetOrNewStateObject(addr types.Address) *stateAccount {
-	stateObject := s.getStateObject(addr)
+	stateObject := s.getStateAccount(addr)
 	if stateObject == nil || stateObject.deleted {
-		stateObject, _ = s.createObject(addr)
+		stateObject, _ = s.createAccount(addr)
 	}
 	return stateObject
 }
@@ -497,14 +497,21 @@ func (s *StateDB) MarkStateFrozenFundsDirty(blockHeight uint64) {
 	s.stateFrozenFundsDirty[blockHeight] = struct{}{}
 }
 
-// createObject creates a new state object. If there is an existing account with
-// the given address, it is overwritten and returned as the second return value.
-func (s *StateDB) createObject(addr types.Address) (newobj, prev *stateAccount) {
-	prev = s.getStateObject(addr)
+func (s *StateDB) createAccount(addr types.Address) (newobj, prev *stateAccount) {
+	prev = s.getStateAccount(addr)
 	newobj = newObject(s, addr, Account{}, s.MarkStateObjectDirty)
 	newobj.setNonce(0) // sets the object to dirty
 	s.setStateObject(newobj)
 	return newobj, prev
+}
+
+func (s *StateDB) createMultisigAccount(addr types.Address, multisig *Multisig) (newobj *stateAccount) {
+	newobj = newObject(s, addr, Account{
+		MultisigData: multisig,
+	}, s.MarkStateObjectDirty)
+	newobj.setNonce(0) // sets the object to dirty
+	s.setStateObject(newobj)
+	return newobj
 }
 
 func (s *StateDB) createFrozenFunds(blockHeight uint64) (newobj, prev *stateFrozenFund) {
@@ -1249,9 +1256,20 @@ func (s *StateDB) clearStateCandidates() {
 }
 
 func (s *StateDB) CreateMultisig(weights []uint, addresses []types.Address, threshold uint) {
-	panic("implement me")
+	msig := Multisig{
+		Weights:   weights,
+		Threshold: threshold,
+		Addresses: addresses,
+	}
+
+	msigAddress := msig.Address()
+	s.createMultisigAccount(msigAddress, &msig).touch()
 }
 
 func (s *StateDB) DestroyMultisig(multisig types.Address, recipient types.Address) {
 	panic("implement me")
+}
+
+func (s *StateDB) AccountExists(address types.Address) bool {
+	return s.getStateAccount(address) != nil
 }
