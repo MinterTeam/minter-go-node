@@ -53,13 +53,13 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPool *big.I
 	if len(tx.Payload) > maxPayloadLength {
 		return Response{
 			Code: code.TxPayloadTooLarge,
-			Log:  "TX payload length is over 128 bytes"}
+			Log:  fmt.Sprintf("TX payload length is over %d bytes", maxPayloadLength)}
 	}
 
 	if len(tx.ServiceData) > maxServiceDataLength {
 		return Response{
 			Code: code.TxServiceDataTooLarge,
-			Log:  "TX service data length is over 128 bytes"}
+			Log:  fmt.Sprintf("TX service data length is over %d bytes", maxServiceDataLength)}
 	}
 
 	sender, err := tx.Sender()
