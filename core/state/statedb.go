@@ -1266,10 +1266,12 @@ func (s *StateDB) CreateMultisig(weights []uint, addresses []types.Address, thre
 	s.createMultisigAccount(msigAddress, msig).touch()
 }
 
-func (s *StateDB) DestroyMultisig(multisig types.Address, recipient types.Address) {
-	panic("implement me")
-}
-
 func (s *StateDB) AccountExists(address types.Address) bool {
 	return s.getStateAccount(address) != nil
+}
+
+func (s *StateDB) MultisigAccountExists(address types.Address) bool {
+	acc := s.getStateAccount(address)
+
+	return acc != nil && acc.IsMultisig()
 }

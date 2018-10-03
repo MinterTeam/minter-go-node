@@ -95,8 +95,6 @@ Type of transaction is determined by a single byte.
 +----------------------------------+---------+
 | **TypeCreateMultisig**           | 0x0C    |
 +----------------------------------+---------+
-| **TypeDestroyMultisig**          | 0x0D    |
-+----------------------------------+---------+
 
 Send transaction
 ^^^^^^^^^^^^^^^^
@@ -341,20 +339,3 @@ Transaction for creating multisignature address.
         Weights   []uint
         Addresses [][20]byte
     }
-
-Destroy multisig address
-^^^^^^^^^^^^^^^^^^^^^^^^
-
-Type: **0x0D**
-
-Transaction for destroying multisignature address. All coins from destroyed address will be transferred to given address.
-
-*Data field contents:*
-
-.. code-block:: go
-
-    type DestroyMultisigData struct {
-        Address [20]byte
-    }
-
-

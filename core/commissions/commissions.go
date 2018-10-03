@@ -5,7 +5,6 @@ package commissions
 const (
 	SendTx                int64 = 10
 	CreateMultisig        int64 = 100
-	DestroyMultisig       int64 = 1000
 	ConvertTx             int64 = 100
 	CreateTx              int64 = 1000
 	DeclareCandidacyTx    int64 = 10000
