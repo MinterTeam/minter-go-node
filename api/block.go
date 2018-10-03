@@ -58,10 +58,14 @@ func Block(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(Response{
+		err = json.NewEncoder(w).Encode(Response{
 			Code: 0,
 			Log:  err.Error(),
 		})
+
+		if err != nil {
+			panic(err)
+		}
 		return
 	}
 
@@ -116,10 +120,14 @@ func Block(w http.ResponseWriter, r *http.Request) {
 
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(Response{
+			err = json.NewEncoder(w).Encode(Response{
 				Code: 0,
 				Log:  err.Error(),
 			})
+
+			if err != nil {
+				panic(err)
+			}
 			return
 		}
 	}

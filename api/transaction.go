@@ -23,10 +23,14 @@ func Transaction(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(Response{
+		err = json.NewEncoder(w).Encode(Response{
 			Code:   0,
 			Result: err.Error(),
 		})
+
+		if err != nil {
+			panic(err)
+		}
 		return
 	}
 
