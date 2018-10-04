@@ -605,25 +605,6 @@ func (s *StateDB) CreateCandidate(
 
 	candidates.data = append(candidates.data, candidate)
 
-	maxCandidates := validators.GetCandidatesCountForBlock(uint64(currentBlock))
-
-	// Check for candidates count overflow and unbond smallest ones
-	if len(candidates.data) > maxCandidates {
-		sort.Slice(candidates.data, func(i, j int) bool {
-			return candidates.data[i].TotalBipStake.Cmp(candidates.data[j].TotalBipStake) == 1
-		})
-
-		dropped := candidates.data[maxCandidates:]
-		candidates.data = candidates.data[:maxCandidates]
-
-		unbondAtBlock := uint64(currentBlock + UnbondPeriod)
-		for _, candidate := range dropped {
-			for _, stake := range candidate.Stakes {
-				s.GetOrNewStateFrozenFunds(unbondAtBlock).AddFund(stake.Owner, candidate.PubKey, stake.Coin, stake.Value)
-			}
-		}
-	}
-
 	s.MarkStateCandidateDirty()
 	s.setStateCandidates(candidates)
 	return candidates
@@ -1330,4 +1311,30 @@ func (s *StateDB) IsNewCandidateStakeSufficient(coinSymbol types.CoinSymbol, sta
 
 func (s *StateDB) CandidatesCount() int {
 	return len(s.getStateCandidates().data)
+}
+
+func (s *StateDB) ClearCandidates(height uint64) {
+	maxCandidates := validators.GetCandidatesCountForBlock(height)
+
+	candidates := s.getStateCandidates()
+
+	// Check for candidates count overflow and unbond smallest ones
+	if len(candidates.data) > maxCandidates {
+		sort.Slice(candidates.data, func(i, j int) bool {
+			return candidates.data[i].TotalBipStake.Cmp(candidates.data[j].TotalBipStake) == 1
+		})
+
+		dropped := candidates.data[maxCandidates:]
+		candidates.data = candidates.data[:maxCandidates]
+
+		unbondAtBlock := uint64(height + UnbondPeriod)
+		for _, candidate := range dropped {
+			for _, stake := range candidate.Stakes {
+				s.GetOrNewStateFrozenFunds(unbondAtBlock).AddFund(stake.Owner, candidate.PubKey, stake.Coin, stake.Value)
+			}
+		}
+	}
+
+	s.setStateCandidates(candidates)
+	s.MarkStateCandidateDirty()
 }

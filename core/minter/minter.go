@@ -214,6 +214,8 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 	if app.height%120 == 0 || hasDroppedValidators {
 		app.stateDeliver.RecalculateTotalStakeValues()
 
+		app.stateDeliver.ClearCandidates(app.height)
+
 		valsCount := validators.GetValidatorsCountForBlock(app.height)
 
 		newCandidates := app.stateDeliver.GetCandidates(valsCount, req.Height)
