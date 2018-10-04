@@ -2,6 +2,7 @@ package state
 
 import (
 	"github.com/MinterTeam/minter-go-node/eventsdb"
+	"github.com/MinterTeam/minter-go-node/formula"
 	"io"
 
 	"fmt"
@@ -86,11 +87,11 @@ func (c *stateFrozenFund) addFund(fund FrozenFund) {
 }
 
 // punish fund with given candidate key (used in byzantine validator's punishment)
-func (c *stateFrozenFund) PunishFund(candidateAddress [20]byte) {
-	c.punishFund(candidateAddress)
+func (c *stateFrozenFund) PunishFund(context *StateDB, candidateAddress [20]byte) {
+	c.punishFund(context, candidateAddress)
 }
 
-func (c *stateFrozenFund) punishFund(candidateAddress [20]byte) {
+func (c *stateFrozenFund) punishFund(context *StateDB, candidateAddress [20]byte) {
 
 	edb := eventsdb.GetCurrent()
 
@@ -111,6 +112,14 @@ func (c *stateFrozenFund) punishFund(candidateAddress [20]byte) {
 
 			slashed := big.NewInt(0).Set(item.Value)
 			slashed.Sub(slashed, newValue)
+
+			if !item.Coin.IsBaseCoin() {
+				coin := context.GetStateCoin(item.Coin).Data()
+				ret := formula.CalculateSaleReturn(coin.Volume, coin.ReserveBalance, coin.Crr, slashed)
+
+				context.SubCoinVolume(coin.Symbol, slashed)
+				context.SubCoinReserve(coin.Symbol, ret)
+			}
 
 			edb.AddEvent(int64(c.blockHeight), eventsdb.SlashEvent{
 				Address:         item.Address,

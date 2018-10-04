@@ -21,6 +21,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/eventsdb"
+	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	dbm "github.com/tendermint/tendermint/libs/db"
@@ -1089,13 +1090,20 @@ func (s *StateDB) SetValidatorAbsent(height int64, address [20]byte) {
 				totalStake := big.NewInt(0)
 
 				for j, stake := range candidate.Stakes {
-					// TODO: sub custom's coin volume and reserve
 					newValue := big.NewInt(0).Set(stake.Value)
 					newValue.Mul(newValue, big.NewInt(99))
 					newValue.Div(newValue, big.NewInt(100))
 
 					slashed := big.NewInt(0).Set(stake.Value)
 					slashed.Sub(slashed, newValue)
+
+					if !stake.Coin.IsBaseCoin() {
+						coin := s.GetStateCoin(stake.Coin).Data()
+						ret := formula.CalculateSaleReturn(coin.Volume, coin.ReserveBalance, coin.Crr, slashed)
+
+						s.SubCoinVolume(coin.Symbol, slashed)
+						s.SubCoinReserve(coin.Symbol, ret)
+					}
 
 					edb.AddEvent(height, eventsdb.SlashEvent{
 						Address:         stake.Owner,
@@ -1144,13 +1152,20 @@ func (s *StateDB) PunishByzantineValidator(currentBlock uint64, address [20]byte
 			}
 
 			for _, stake := range candidate.Stakes {
-				// TODO: sub custom's coin volume and reserve
 				newValue := big.NewInt(0).Set(stake.Value)
 				newValue.Mul(newValue, big.NewInt(95))
 				newValue.Div(newValue, big.NewInt(100))
 
 				slashed := big.NewInt(0).Set(stake.Value)
 				slashed.Sub(slashed, newValue)
+
+				if !stake.Coin.IsBaseCoin() {
+					coin := s.GetStateCoin(stake.Coin).Data()
+					ret := formula.CalculateSaleReturn(coin.Volume, coin.ReserveBalance, coin.Crr, slashed)
+
+					s.SubCoinVolume(coin.Symbol, slashed)
+					s.SubCoinReserve(coin.Symbol, ret)
+				}
 
 				edb.AddEvent(int64(currentBlock), eventsdb.SlashEvent{
 					Address:         stake.Owner,
@@ -1184,7 +1199,7 @@ func (s *StateDB) PunishFrozenFundsWithAddress(fromBlock uint64, toBlock uint64,
 			continue
 		}
 
-		frozenFund.PunishFund(address)
+		frozenFund.PunishFund(s, address)
 	}
 }
 
