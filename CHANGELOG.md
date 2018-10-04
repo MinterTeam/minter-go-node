@@ -7,6 +7,7 @@ BREAKING CHANGES
 
 - [core] Multisig wallets
 - [core] Sub coin reserve and supply on slash
+- [core] Change unbond time for testnet to 720 blocks
 
 IMPROVEMENT
 

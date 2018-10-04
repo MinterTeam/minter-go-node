@@ -36,7 +36,7 @@ import (
 	"sort"
 )
 
-const UnbondPeriod = 518400
+const UnbondPeriod = 720 // in mainnet will be 518400 (30 days)
 
 var (
 	ValidatorMaxAbsentWindow = 24
