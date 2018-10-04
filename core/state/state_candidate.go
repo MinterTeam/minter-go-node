@@ -108,6 +108,10 @@ func (s *Stake) CalcBipValue(context *StateDB) *big.Int {
 
 	data := context.stakeCache[s.Coin]
 
+	if data.TotalValue.Cmp(types.Big0) == 0 {
+		return big.NewInt(0)
+	}
+
 	value := big.NewInt(0).Set(data.BipValue)
 	value.Mul(value, s.Value)
 	value.Div(value, data.TotalValue)
