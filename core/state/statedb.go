@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/core/validators"
 	"github.com/MinterTeam/minter-go-node/eventsdb"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/log"
@@ -603,6 +604,25 @@ func (s *StateDB) CreateCandidate(
 	candidate.Stakes[0].BipValue = candidate.Stakes[0].CalcBipValue(s)
 
 	candidates.data = append(candidates.data, candidate)
+
+	maxCandidates := validators.GetCandidatesCountForBlock(uint64(currentBlock))
+
+	// Check for candidates count overflow and unbond smallest ones
+	if len(candidates.data) > maxCandidates {
+		sort.Slice(candidates.data, func(i, j int) bool {
+			return candidates.data[i].TotalBipStake.Cmp(candidates.data[j].TotalBipStake) == 1
+		})
+
+		dropped := candidates.data[maxCandidates:]
+		candidates.data = candidates.data[:maxCandidates]
+
+		unbondAtBlock := uint64(currentBlock + UnbondPeriod)
+		for _, candidate := range dropped {
+			for _, stake := range candidate.Stakes {
+				s.GetOrNewStateFrozenFunds(unbondAtBlock).AddFund(stake.Owner, candidate.PubKey, stake.Coin, stake.Value)
+			}
+		}
+	}
 
 	s.MarkStateCandidateDirty()
 	s.setStateCandidates(candidates)
@@ -1289,4 +1309,25 @@ func (s *StateDB) MultisigAccountExists(address types.Address) bool {
 	acc := s.getStateAccount(address)
 
 	return acc != nil && acc.IsMultisig()
+}
+
+func (s *StateDB) IsNewCandidateStakeSufficient(coinSymbol types.CoinSymbol, stake *big.Int) bool {
+	bipValue := (&Stake{
+		Coin:  coinSymbol,
+		Value: stake,
+	}).CalcBipValue(s)
+
+	candidates := s.getStateCandidates()
+
+	for _, candidate := range candidates.data {
+		if candidate.TotalBipStake.Cmp(bipValue) == -1 {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (s *StateDB) CandidatesCount() int {
+	return len(s.getStateCandidates().data)
 }

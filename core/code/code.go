@@ -30,6 +30,7 @@ const (
 	IsNotOwnerOfCandidate uint32 = 406
 	IncorrectPubKey       uint32 = 407
 	StakeShouldBePositive uint32 = 408
+	TooLowStake           uint32 = 409
 
 	// check
 	CheckInvalidLock uint32 = 501
