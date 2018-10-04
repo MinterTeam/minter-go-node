@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/state"
+	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/tendermint/tendermint/libs/common"
 	"math/big"
@@ -14,7 +15,7 @@ var (
 )
 
 const (
-	maxTxLength          = maxPayloadLength + maxServiceDataLength + 256
+	maxTxLength          = maxPayloadLength + maxServiceDataLength + 1024
 	maxPayloadLength     = 1024
 	maxServiceDataLength = 128
 )
@@ -52,13 +53,13 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPool *big.I
 	if len(tx.Payload) > maxPayloadLength {
 		return Response{
 			Code: code.TxPayloadTooLarge,
-			Log:  "TX payload length is over 128 bytes"}
+			Log:  fmt.Sprintf("TX payload length is over %d bytes", maxPayloadLength)}
 	}
 
 	if len(tx.ServiceData) > maxServiceDataLength {
 		return Response{
 			Code: code.TxServiceDataTooLarge,
-			Log:  "TX service data length is over 128 bytes"}
+			Log:  fmt.Sprintf("TX service data length is over %d bytes", maxServiceDataLength)}
 	}
 
 	sender, err := tx.Sender()
@@ -67,6 +68,54 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPool *big.I
 		return Response{
 			Code: code.DecodeError,
 			Log:  err.Error()}
+	}
+
+	// check multi-signature
+	if tx.SignatureType == SigTypeMulti {
+		multisig := context.GetOrNewStateObject(tx.multisig.Multisig)
+
+		if !multisig.IsMultisig() {
+			return Response{
+				Code: code.MultisigNotExists,
+				Log:  "Multisig does not exists"}
+		}
+
+		multisigData := multisig.Multisig()
+
+		if len(tx.multisig.Signatures) > 32 || len(multisigData.Weights) < len(tx.multisig.Signatures) {
+			return Response{
+				Code: code.IncorrectMultiSignature,
+				Log:  "Incorrect multi-signature"}
+		}
+
+		txHash := tx.Hash()
+		var totalWeight uint = 0
+		var usedAccounts = map[types.Address]bool{}
+
+		for _, sig := range tx.multisig.Signatures {
+			signer, err := RecoverPlain(txHash, sig.R, sig.S, sig.V)
+
+			if err != nil {
+				return Response{
+					Code: code.IncorrectMultiSignature,
+					Log:  "Incorrect multi-signature"}
+			}
+
+			if usedAccounts[signer] {
+				return Response{
+					Code: code.IncorrectMultiSignature,
+					Log:  "Incorrect multi-signature"}
+			}
+
+			usedAccounts[signer] = true
+			totalWeight += multisigData.GetWeight(signer)
+		}
+
+		if totalWeight < multisigData.Threshold {
+			return Response{
+				Code: code.IncorrectMultiSignature,
+				Log:  fmt.Sprintf("Not enough multisig votes. Needed %d, has %d", multisigData.Threshold, totalWeight)}
+		}
 	}
 
 	// TODO: deal with multiple pending transactions from one account

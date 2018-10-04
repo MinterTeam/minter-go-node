@@ -23,10 +23,14 @@ func Transaction(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(Response{
+		err = json.NewEncoder(w).Encode(Response{
 			Code:   0,
 			Result: err.Error(),
 		})
+
+		if err != nil {
+			panic(err)
+		}
 		return
 	}
 
@@ -38,7 +42,12 @@ func Transaction(w http.ResponseWriter, r *http.Request) {
 	tags := make(map[string]string)
 
 	for _, tag := range tx.TxResult.Tags {
-		tags[string(tag.Key)] = string(tag.Value)
+		switch string(tag.Key) {
+		case "tx.type":
+			tags[string(tag.Key)] = fmt.Sprintf("%X", tag.Value)
+		default:
+			tags[string(tag.Key)] = string(tag.Value)
+		}
 	}
 
 	err = json.NewEncoder(w).Encode(Response{

@@ -13,6 +13,7 @@ Minter 101
    coins.rst
    transactions.rst
    checks.rst
+   multisigs.rst
    commissions.rst
    validators.rst
    delegator-faq.rst

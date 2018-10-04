@@ -1,6 +1,7 @@
 package state
 
 import (
+	"github.com/MinterTeam/minter-go-node/crypto"
 	"io"
 	"math/big"
 
@@ -86,9 +87,38 @@ func (b *Balances) DecodeRLP(s *rlp.Stream) error {
 // Account is the Minter consensus representation of accounts.
 // These objects are stored in the main account trie.
 type Account struct {
-	Nonce   uint64
-	Balance Balances
-	Root    types.Hash // merkle root of the storage trie
+	Nonce        uint64
+	Balance      Balances
+	MultisigData Multisig
+}
+
+type Multisig struct {
+	Weights   []uint
+	Threshold uint
+	Addresses []types.Address
+}
+
+func (m *Multisig) Address() types.Address {
+	bytes, err := rlp.EncodeToBytes(m)
+
+	if err != nil {
+		panic(err)
+	}
+
+	var addr types.Address
+	copy(addr[:], crypto.Keccak256(bytes)[12:])
+
+	return addr
+}
+
+func (m *Multisig) GetWeight(address types.Address) uint {
+	for i, addr := range m.Addresses {
+		if address == addr {
+			return m.Weights[i]
+		}
+	}
+
+	return 0
 }
 
 // newObject creates a state object.
@@ -105,63 +135,60 @@ func newObject(db *StateDB, address types.Address, data Account, onDirty func(ad
 }
 
 // EncodeRLP implements rlp.Encoder.
-func (c *stateAccount) EncodeRLP(w io.Writer) error {
-	return rlp.Encode(w, c.data)
+func (s *stateAccount) EncodeRLP(w io.Writer) error {
+	return rlp.Encode(w, s.data)
 }
 
-func (c *stateAccount) touch() {
-	if c.onDirty != nil {
-		c.onDirty(c.Address())
-		c.onDirty = nil
+func (s *stateAccount) touch() {
+	if s.onDirty != nil {
+		s.onDirty(s.Address())
+		s.onDirty = nil
 	}
 }
 
 // AddBalance removes amount from c's balance.
 // It is used to add funds to the destination account of a transfer.
-func (c *stateAccount) AddBalance(coinSymbol types.CoinSymbol, amount *big.Int) {
+func (s *stateAccount) AddBalance(coinSymbol types.CoinSymbol, amount *big.Int) {
 	if amount.Sign() == 0 {
-		if c.empty() {
-			c.touch()
+		if s.empty() {
+			s.touch()
 		}
 
 		return
 	}
-	c.SetBalance(coinSymbol, new(big.Int).Add(c.Balance(coinSymbol), amount))
+	s.SetBalance(coinSymbol, new(big.Int).Add(s.Balance(coinSymbol), amount))
 }
 
 // SubBalance removes amount from c's balance.
 // It is used to remove funds from the origin account of a transfer.
-func (c *stateAccount) SubBalance(coinSymbol types.CoinSymbol, amount *big.Int) {
+func (s *stateAccount) SubBalance(coinSymbol types.CoinSymbol, amount *big.Int) {
 	if amount.Sign() == 0 {
 		return
 	}
-	c.SetBalance(coinSymbol, new(big.Int).Sub(c.Balance(coinSymbol), amount))
+	s.SetBalance(coinSymbol, new(big.Int).Sub(s.Balance(coinSymbol), amount))
 }
 
-func (self *stateAccount) SetBalance(coinSymbol types.CoinSymbol, amount *big.Int) {
-	EmitBalanceChange(self.address, coinSymbol, amount)
-	self.setBalance(coinSymbol, amount)
+func (s *stateAccount) SetBalance(coinSymbol types.CoinSymbol, amount *big.Int) {
+	EmitBalanceChange(s.address, coinSymbol, amount)
+	s.setBalance(coinSymbol, amount)
 }
 
-func (self *stateAccount) setBalance(coinSymbol types.CoinSymbol, amount *big.Int) {
+func (s *stateAccount) setBalance(coinSymbol types.CoinSymbol, amount *big.Int) {
 
-	if self.data.Balance.Data == nil {
-		self.data.Balance.Data = make(map[types.CoinSymbol]*big.Int)
+	if s.data.Balance.Data == nil {
+		s.data.Balance.Data = make(map[types.CoinSymbol]*big.Int)
 	}
 
-	self.data.Balance.Data[coinSymbol] = amount
-	if self.onDirty != nil {
-		self.onDirty(self.Address())
-		self.onDirty = nil
+	s.data.Balance.Data[coinSymbol] = amount
+	if s.onDirty != nil {
+		s.onDirty(s.Address())
+		s.onDirty = nil
 	}
 }
 
-// Return the gas back to the origin. Used by the Virtual machine or Closures
-func (c *stateAccount) ReturnGas(gas *big.Int) {}
-
-func (self *stateAccount) deepCopy(db *StateDB, onDirty func(addr types.Address)) *stateAccount {
-	stateObject := newObject(db, self.address, self.data, onDirty)
-	stateObject.deleted = self.deleted
+func (s *stateAccount) deepCopy(db *StateDB, onDirty func(addr types.Address)) *stateAccount {
+	stateObject := newObject(db, s.address, s.data, onDirty)
+	stateObject.deleted = s.deleted
 	return stateObject
 }
 
@@ -170,39 +197,47 @@ func (self *stateAccount) deepCopy(db *StateDB, onDirty func(addr types.Address)
 //
 
 // Returns the address of the contract/account
-func (c *stateAccount) Address() types.Address {
-	return c.address
+func (s *stateAccount) Address() types.Address {
+	return s.address
 }
 
-func (self *stateAccount) SetNonce(nonce uint64) {
-	self.setNonce(nonce)
+func (s *stateAccount) SetNonce(nonce uint64) {
+	s.setNonce(nonce)
 }
 
-func (self *stateAccount) setNonce(nonce uint64) {
-	self.data.Nonce = nonce
-	if self.onDirty != nil {
-		self.onDirty(self.Address())
-		self.onDirty = nil
+func (s *stateAccount) setNonce(nonce uint64) {
+	s.data.Nonce = nonce
+	if s.onDirty != nil {
+		s.onDirty(s.Address())
+		s.onDirty = nil
 	}
 }
 
-func (self *stateAccount) Balance(coinSymbol types.CoinSymbol) *big.Int {
+func (s *stateAccount) Balance(coinSymbol types.CoinSymbol) *big.Int {
 
-	if self.data.Balance.Data == nil {
+	if s.data.Balance.Data == nil {
 		return big.NewInt(0)
 	}
 
-	if self.data.Balance.Data[coinSymbol] == nil {
+	if s.data.Balance.Data[coinSymbol] == nil {
 		return big.NewInt(0)
 	}
 
-	return self.data.Balance.Data[coinSymbol]
+	return s.data.Balance.Data[coinSymbol]
 }
 
-func (self *stateAccount) Balances() Balances {
-	return self.data.Balance
+func (s *stateAccount) Balances() Balances {
+	return s.data.Balance
 }
 
-func (self *stateAccount) Nonce() uint64 {
-	return self.data.Nonce
+func (s *stateAccount) Nonce() uint64 {
+	return s.data.Nonce
+}
+
+func (s *stateAccount) IsMultisig() bool {
+	return len(s.data.MultisigData.Weights) > 0
+}
+
+func (s *stateAccount) Multisig() Multisig {
+	return s.data.MultisigData
 }
