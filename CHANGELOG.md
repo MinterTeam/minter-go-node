@@ -1,7 +1,12 @@
 # Changelog
 
 ## 0.5.0
-*Sept 29th, 2018*
+*Oct 4th, 2018*
+
+BREAKING CHANGES
+
+- [core] Multisig wallets
+- [core] Sub coin reserve and supply on slash
 
 IMPROVEMENT
 
