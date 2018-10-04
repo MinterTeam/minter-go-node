@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.3
+*Oct 4th, 2018*
+
+BUG FIXES
+
+- [core] Fix division by zero
+
 ## 0.4.2
 *Sept 21th, 2018*
 
