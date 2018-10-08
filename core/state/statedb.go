@@ -38,6 +38,7 @@ import (
 )
 
 const UnbondPeriod = 720 // in mainnet will be 518400 (30 days)
+const MaxDelegatorsPerCandidate = 1000
 
 var (
 	ValidatorMaxAbsentWindow = 24
@@ -1337,4 +1338,74 @@ func (s *StateDB) ClearCandidates(height uint64) {
 
 	s.setStateCandidates(candidates)
 	s.MarkStateCandidateDirty()
+}
+
+func (s *StateDB) ClearStakes(height uint64) {
+	candidates := s.getStateCandidates()
+
+	for i := range candidates.data {
+		candidate := &candidates.data[i]
+		// Check for delegators count overflow and unbond smallest ones
+		if len(candidate.Stakes) > MaxDelegatorsPerCandidate {
+			sort.Slice(candidate.Stakes, func(t, d int) bool {
+				return candidates.data[i].Stakes[t].BipValue.Cmp(candidates.data[i].Stakes[d].BipValue) == 1
+			})
+
+			dropped := candidates.data[i].Stakes[MaxDelegatorsPerCandidate:]
+			candidates.data[i].Stakes = candidates.data[i].Stakes[:MaxDelegatorsPerCandidate]
+
+			unbondAtBlock := uint64(height + UnbondPeriod)
+			for _, stake := range dropped {
+				s.GetOrNewStateFrozenFunds(unbondAtBlock).AddFund(stake.Owner, candidate.PubKey, stake.Coin, stake.Value)
+			}
+		}
+	}
+
+	s.setStateCandidates(candidates)
+	s.MarkStateCandidateDirty()
+}
+
+func (s *StateDB) IsDelegatorStakeSufficient(sender types.Address, PubKey []byte, coinSymbol types.CoinSymbol, value *big.Int) bool {
+	if s.StakeExists(sender, PubKey, coinSymbol) {
+		return true
+	}
+
+	bipValue := (&Stake{
+		Coin:  coinSymbol,
+		Value: value,
+	}).CalcBipValue(s)
+
+	candidates := s.getStateCandidates()
+
+	for _, candidate := range candidates.data {
+		if bytes.Equal(candidate.PubKey, PubKey) {
+			for _, stake := range candidate.Stakes[:MaxDelegatorsPerCandidate] {
+				if stake.BipValue.Cmp(bipValue) == -1 {
+					return true
+				}
+			}
+
+			return false
+		}
+	}
+
+	return false
+}
+
+func (s *StateDB) StakeExists(owner types.Address, PubKey []byte, coinSymbol types.CoinSymbol) bool {
+	candidates := s.getStateCandidates().data
+
+	for _, c := range candidates {
+		if !bytes.Equal(PubKey, c.PubKey) {
+			continue
+		}
+
+		for _, s := range c.Stakes {
+			if s.Owner == owner && s.Coin == coinSymbol {
+				return true
+			}
+		}
+	}
+
+	return false
 }

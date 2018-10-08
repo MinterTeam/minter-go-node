@@ -215,6 +215,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 		app.stateDeliver.RecalculateTotalStakeValues()
 
 		app.stateDeliver.ClearCandidates(app.height)
+		app.stateDeliver.ClearStakes(app.height)
 
 		valsCount := validators.GetValidatorsCountForBlock(app.height)
 

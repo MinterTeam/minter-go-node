@@ -93,10 +93,17 @@ func (data DelegateData) Run(sender types.Address, tx *Transaction, context *sta
 		}
 	}
 
-	if !context.CandidateExists(data.PubKey) {
+	candidate := context.GetStateCandidate(data.PubKey)
+	if candidate == nil {
 		return Response{
 			Code: code.CandidateNotFound,
 			Log:  fmt.Sprintf("Candidate with such public key not found")}
+	}
+
+	if len(candidate.Stakes) >= state.MaxDelegatorsPerCandidate && !context.IsDelegatorStakeSufficient(sender, data.PubKey, data.Coin, data.Stake) {
+		return Response{
+			Code: code.TooLowStake,
+			Log:  fmt.Sprintf("Stake is too low")}
 	}
 
 	if !isCheck {
