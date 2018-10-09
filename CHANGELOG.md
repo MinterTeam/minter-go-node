@@ -9,6 +9,7 @@ BREAKING CHANGES
 - [core] Sub coin reserve and supply on slash
 - [core] Change unbond time for testnet to 720 blocks
 - [core] Limit candidates count to validatorsLimit*3 at given block
+- [core] Limit delegators count to 1000 per candidate/validator
 
 IMPROVEMENT
 
