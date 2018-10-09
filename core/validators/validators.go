@@ -9,3 +9,7 @@ func GetValidatorsCountForBlock(block uint64) int {
 
 	return int(count)
 }
+
+func GetCandidatesCountForBlock(block uint64) int {
+	return GetValidatorsCountForBlock(block) * 3
+}

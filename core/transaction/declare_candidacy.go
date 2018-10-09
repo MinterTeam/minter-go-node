@@ -7,6 +7,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/core/validators"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/hexutil"
 	"math/big"
@@ -62,6 +63,14 @@ func (data DeclareCandidacyData) Run(sender types.Address, tx *Transaction, cont
 			Log:  fmt.Sprintf("Incorrect PubKey")}
 	}
 
+	maxCandidatesCount := validators.GetCandidatesCountForBlock(currentBlock)
+
+	if context.CandidatesCount() >= maxCandidatesCount && !context.IsNewCandidateStakeSufficient(data.Coin, data.Stake) {
+		return Response{
+			Code: code.TooLowStake,
+			Log:  fmt.Sprintf("Given stake is too low")}
+	}
+
 	commissionInBaseCoin := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
 	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
@@ -113,8 +122,6 @@ func (data DeclareCandidacyData) Run(sender types.Address, tx *Transaction, cont
 			Code: code.WrongCommission,
 			Log:  fmt.Sprintf("Commission should be between 0 and 100")}
 	}
-
-	// TODO: limit number of candidates to prevent flooding
 
 	if !isCheck {
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
