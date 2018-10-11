@@ -113,7 +113,7 @@ func Block(w http.ResponseWriter, r *http.Request) {
 
 	var eventsRaw []byte
 
-	events := eventsdb.GetCurrent().GetEvents(height)
+	events := eventsdb.GetCurrent().LoadEvents(height)
 
 	if len(events) > 0 {
 		eventsRaw, err = cdc.MarshalJSON(events)

@@ -35,15 +35,25 @@ func GetCurrent() *EventsDB {
 
 type EventsDB struct {
 	db    *db.GoLevelDB
-	cache map[int64]Events
+	cache *EventsCache
 
 	lock sync.RWMutex
+}
+
+type EventsCache struct {
+	height int64
+	events Events
+}
+
+func (c *EventsCache) Set(height int64, events Events) {
+	c.height = height
+	c.events = events
 }
 
 func NewEventsDB(db *db.GoLevelDB) *EventsDB {
 	return &EventsDB{
 		db:    db,
-		cache: map[int64]Events{},
+		cache: &EventsCache{},
 	}
 }
 
@@ -74,9 +84,7 @@ func (db *EventsDB) FlushEvents(height int64) error {
 		return err
 	}
 
-	db.lock.Lock()
-	delete(db.cache, height)
-	db.lock.Unlock()
+	db.cache = &EventsCache{}
 
 	db.db.Set(key, bytes)
 
@@ -87,17 +95,10 @@ func (db *EventsDB) SetEvents(height int64, events Events) {
 	db.lock.Lock()
 	defer db.lock.Unlock()
 
-	db.cache[height] = events
+	db.cache.Set(height, events)
 }
 
-func (db *EventsDB) GetEvents(height int64) Events {
-
-	db.lock.RLock()
-	if events, has := db.cache[height]; has {
-		db.lock.RUnlock()
-		return events
-	}
-
+func (db *EventsDB) LoadEvents(height int64) Events {
 	key := getKeyForHeight(height)
 
 	data := db.db.Get(key)
@@ -113,11 +114,19 @@ func (db *EventsDB) GetEvents(height int64) Events {
 		panic(err)
 	}
 
-	db.lock.Lock()
-	db.cache[height] = decoded
-	db.lock.Unlock()
-
 	return decoded
+}
+
+func (db *EventsDB) GetEvents(height int64) Events {
+	if db.cache.height == height {
+		return db.cache.events
+	}
+
+	events := db.LoadEvents(height)
+
+	db.cache.Set(height, events)
+
+	return events
 }
 
 func getKeyForHeight(height int64) []byte {
