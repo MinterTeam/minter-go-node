@@ -6,6 +6,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/tendermint/go-amino"
 	"github.com/tendermint/tendermint/libs/db"
+	"sync"
 )
 
 var cdc = amino.NewCodec()
@@ -35,6 +36,8 @@ func GetCurrent() *EventsDB {
 type EventsDB struct {
 	db    *db.GoLevelDB
 	cache map[int64]Events
+
+	lock sync.RWMutex
 }
 
 func NewEventsDB(db *db.GoLevelDB) *EventsDB {
@@ -71,7 +74,9 @@ func (db *EventsDB) FlushEvents(height int64) error {
 		return err
 	}
 
+	db.lock.Lock()
 	delete(db.cache, height)
+	db.lock.Unlock()
 
 	db.db.Set(key, bytes)
 
@@ -79,12 +84,17 @@ func (db *EventsDB) FlushEvents(height int64) error {
 }
 
 func (db *EventsDB) SetEvents(height int64, events Events) {
+	db.lock.Lock()
+	defer db.lock.Unlock()
+
 	db.cache[height] = events
 }
 
 func (db *EventsDB) GetEvents(height int64) Events {
 
+	db.lock.RLock()
 	if events, has := db.cache[height]; has {
+		db.lock.RUnlock()
 		return events
 	}
 
@@ -103,7 +113,9 @@ func (db *EventsDB) GetEvents(height int64) Events {
 		panic(err)
 	}
 
+	db.lock.Lock()
 	db.cache[height] = decoded
+	db.lock.Unlock()
 
 	return decoded
 }
