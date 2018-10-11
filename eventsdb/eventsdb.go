@@ -84,7 +84,9 @@ func (db *EventsDB) FlushEvents(height int64) error {
 		return err
 	}
 
+	db.lock.Lock()
 	db.cache = &EventsCache{}
+	db.lock.Unlock()
 
 	db.db.Set(key, bytes)
 
@@ -119,6 +121,9 @@ func (db *EventsDB) LoadEvents(height int64) Events {
 
 func (db *EventsDB) GetEvents(height int64) Events {
 	if db.cache.height == height {
+		db.lock.RLock()
+		defer db.lock.RUnlock()
+
 		return db.cache.events
 	}
 
