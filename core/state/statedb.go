@@ -101,7 +101,6 @@ func NewForCheck(s *StateDB) *StateDB {
 }
 
 func New(height int64, db dbm.DB) (*StateDB, error) {
-
 	tree := NewMutableTree(db)
 
 	_, err := tree.LoadVersion(height)
@@ -901,6 +900,8 @@ func (s *StateDB) PayRewards(height int64) {
 
 				reward := big.NewInt(0).Set(totalReward)
 				reward.Mul(reward, stake.BipValue)
+
+				// TODO: check for division by zero
 				reward.Div(reward, validator.TotalBipStake)
 
 				if reward.Cmp(types.Big0) < 1 {

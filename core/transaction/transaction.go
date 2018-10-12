@@ -106,9 +106,21 @@ func (tx *Transaction) Sign(prv *ecdsa.PrivateKey) error {
 
 func (tx *Transaction) SetSignature(sig []byte) {
 	if tx.SignatureType == SigTypeSingle {
+		if tx.sig == nil {
+			tx.sig = &Signature{}
+		}
+
 		tx.sig.R = new(big.Int).SetBytes(sig[:32])
 		tx.sig.S = new(big.Int).SetBytes(sig[32:64])
 		tx.sig.V = new(big.Int).SetBytes([]byte{sig[64] + 27})
+
+		data, err := rlp.EncodeToBytes(tx.sig)
+
+		if err != nil {
+			panic(err)
+		}
+
+		tx.SignatureData = data
 	}
 }
 
