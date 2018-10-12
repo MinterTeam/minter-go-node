@@ -39,7 +39,7 @@ func TestDeclareCandidacyTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	buyCoinTx := Transaction{
+	tx := Transaction{
 		Nonce:         1,
 		GasPrice:      big.NewInt(1),
 		GasCoin:       coin,
@@ -48,11 +48,11 @@ func TestDeclareCandidacyTx(t *testing.T) {
 		SignatureType: SigTypeSingle,
 	}
 
-	if err := buyCoinTx.Sign(privateKey); err != nil {
+	if err := tx.Sign(privateKey); err != nil {
 		t.Fatal(err)
 	}
 
-	encodedTx, err := rlp.EncodeToBytes(buyCoinTx)
+	encodedTx, err := rlp.EncodeToBytes(tx)
 
 	if err != nil {
 		t.Fatal(err)
