@@ -40,14 +40,14 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPool *big.I
 
 	tx, err := DecodeFromBytes(rawTx)
 
-	if !isCheck {
-		log.Info("Deliver tx", "tx", tx.String())
-	}
-
 	if err != nil {
 		return Response{
 			Code: code.DecodeError,
 			Log:  err.Error()}
+	}
+
+	if !isCheck {
+		log.Info("Deliver tx", "tx", tx.String())
 	}
 
 	if len(tx.Payload) > maxPayloadLength {
