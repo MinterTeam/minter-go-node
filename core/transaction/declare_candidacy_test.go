@@ -6,51 +6,31 @@ import (
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
-	"github.com/tendermint/tendermint/libs/db"
 	"math/big"
 	"testing"
 )
 
-func getState() *state.StateDB {
-	s, err := state.New(0, db.NewMemDB())
-
-	if err != nil {
-		panic(err)
-	}
-
-	return s
-}
-
-func getTestCoinSymbol() types.CoinSymbol {
-	var coin types.CoinSymbol
-	copy(coin[:], []byte("TEST"))
-
-	return coin
-}
-
-func createTestCoin(stateDB *state.StateDB) {
-	volume := helpers.BipToPip(big.NewInt(100))
-	reserve := helpers.BipToPip(big.NewInt(100))
-
-	stateDB.CreateCoin(getTestCoinSymbol(), "TEST COIN", volume, 10, reserve, types.Address{})
-}
-
-func TestBuyCoinTx(t *testing.T) {
+func TestDeclareCandidacyTx(t *testing.T) {
 	cState := getState()
-
-	createTestCoin(cState)
 
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+
 	coin := types.GetBaseCoin()
 
 	cState.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
-	toBuy := helpers.BipToPip(big.NewInt(10))
-	data := BuyCoinData{
-		CoinToBuy:  getTestCoinSymbol(),
-		ValueToBuy: toBuy,
-		CoinToSell: coin,
+	pkey, _ := crypto.GenerateKey()
+	publicKey := crypto.FromECDSAPub(&pkey.PublicKey)[:32]
+
+	commission := uint(10)
+
+	data := DeclareCandidacyData{
+		Address:    addr,
+		PubKey:     publicKey,
+		Commission: commission,
+		Coin:       coin,
+		Stake:      helpers.BipToPip(big.NewInt(100)),
 	}
 
 	encodedData, err := rlp.EncodeToBytes(data)
@@ -63,7 +43,7 @@ func TestBuyCoinTx(t *testing.T) {
 		Nonce:         1,
 		GasPrice:      big.NewInt(1),
 		GasCoin:       coin,
-		Type:          TypeBuyCoin,
+		Type:          TypeDeclareCandidacy,
 		Data:          encodedData,
 		SignatureType: SigTypeSingle,
 	}
@@ -84,14 +64,31 @@ func TestBuyCoinTx(t *testing.T) {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
 
-	targetBalance, _ := big.NewInt(0).SetString("999840525753990000000000", 10)
+	targetBalance, _ := big.NewInt(0).SetString("999890000000000000000000", 10)
 	balance := cState.GetBalance(addr, coin)
 	if balance.Cmp(targetBalance) != 0 {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", coin, targetBalance, balance)
 	}
 
-	testBalance := cState.GetBalance(addr, getTestCoinSymbol())
-	if testBalance.Cmp(toBuy) != 0 {
-		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", getTestCoinSymbol(), toBuy, testBalance)
+	candidate := cState.GetStateCandidate(publicKey)
+
+	if candidate == nil {
+		t.Fatalf("Candidate not found")
+	}
+
+	if candidate.CandidateAddress != addr {
+		t.Fatalf("Candidate address is not correct")
+	}
+
+	if candidate.TotalBipStake != nil && candidate.TotalBipStake.Cmp(types.Big0) != 0 {
+		t.Fatalf("Total stake is not correct")
+	}
+
+	if candidate.Commission != commission {
+		t.Fatalf("Commission is not correct")
+	}
+
+	if candidate.Status != state.CandidateStatusOffline {
+		t.Fatalf("Incorrect candidate status")
 	}
 }

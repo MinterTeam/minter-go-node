@@ -1311,7 +1311,13 @@ func (s *StateDB) IsNewCandidateStakeSufficient(coinSymbol types.CoinSymbol, sta
 }
 
 func (s *StateDB) CandidatesCount() int {
-	return len(s.getStateCandidates().data)
+	candidates := s.getStateCandidates()
+
+	if candidates == nil {
+		return 0
+	}
+
+	return len(candidates.data)
 }
 
 func (s *StateDB) ClearCandidates(height uint64) {
