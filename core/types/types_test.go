@@ -120,30 +120,6 @@ func TestAddressUnmarshalJSON(t *testing.T) {
 	}
 }
 
-func TestAddressHexChecksum(t *testing.T) {
-	var tests = []struct {
-		Input  string
-		Output string
-	}{
-		// Test cases from https://github.com/ethereum/EIPs/blob/master/EIPS/eip-55.md#specification
-		{"Mx5aaeb6053f3e94c9b9a09f33669435e7ef1beaed", "Mx5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"},
-		{"Mxfb6916095ca1df60bb79ce92ce3ea74c37c5d359", "MxfB6916095ca1df60bB79Ce92cE3Ea74c37c5d359"},
-		{"Mxdbf03b407c01e7cd3cbea99509d93f8dddc8c6fb", "MxdbF03B407c01E7cD3CBea99509d93f8DDDC8C6FB"},
-		{"Mxd1220a0cf47c7b9be7a2e6ba89f429762e7b9adb", "MxD1220A0cf47c7B9Be7A2E6BA89F429762e7b9aDb"},
-		// Ensure that non-standard length input values are handled correctly
-		{"Mxa", "Mx000000000000000000000000000000000000000A"},
-		{"Mx0a", "Mx000000000000000000000000000000000000000A"},
-		{"Mx00a", "Mx000000000000000000000000000000000000000A"},
-		{"Mx000000000000000000000000000000000000000a", "Mx000000000000000000000000000000000000000A"},
-	}
-	for i, test := range tests {
-		output := HexToAddress(test.Input).Hex()
-		if output != test.Output {
-			t.Errorf("test #%d: failed to match when it should (%s != %s)", i, output, test.Output)
-		}
-	}
-}
-
 func BenchmarkAddressHex(b *testing.B) {
 	testAddr := HexToAddress("Mx5aaeb6053f3e94c9b9a09f33669435e7ef1beaed")
 	for n := 0; n < b.N; n++ {

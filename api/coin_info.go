@@ -51,7 +51,6 @@ func GetCoinInfo(w http.ResponseWriter, r *http.Request) {
 			Volume:         coin.Data().Volume.String(),
 			Crr:            coin.Data().Crr,
 			ReserveBalance: coin.Data().ReserveBalance.String(),
-			Creator:        coin.Data().Creator,
 		},
 	})
 }
