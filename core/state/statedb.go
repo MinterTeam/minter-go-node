@@ -1272,7 +1272,7 @@ func (s *StateDB) clearStateCandidates() {
 	s.MarkStateCandidateDirty()
 }
 
-func (s *StateDB) CreateMultisig(weights []uint, addresses []types.Address, threshold uint) {
+func (s *StateDB) CreateMultisig(weights []uint, addresses []types.Address, threshold uint) types.Address {
 	msig := Multisig{
 		Weights:   weights,
 		Threshold: threshold,
@@ -1281,6 +1281,8 @@ func (s *StateDB) CreateMultisig(weights []uint, addresses []types.Address, thre
 
 	msigAddress := msig.Address()
 	s.createMultisigAccount(msigAddress, msig).touch()
+
+	return msigAddress
 }
 
 func (s *StateDB) AccountExists(address types.Address) bool {

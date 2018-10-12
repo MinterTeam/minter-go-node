@@ -92,7 +92,6 @@ func (tx *Transaction) String() string {
 }
 
 func (tx *Transaction) Sign(prv *ecdsa.PrivateKey) error {
-
 	h := tx.Hash()
 	sig, err := crypto.Sign(h[:], prv)
 	if err != nil {
@@ -105,22 +104,48 @@ func (tx *Transaction) Sign(prv *ecdsa.PrivateKey) error {
 }
 
 func (tx *Transaction) SetSignature(sig []byte) {
-	if tx.SignatureType == SigTypeSingle {
-		if tx.sig == nil {
-			tx.sig = &Signature{}
+	switch tx.SignatureType {
+	case SigTypeSingle:
+		{
+			if tx.sig == nil {
+				tx.sig = &Signature{}
+			}
+
+			tx.sig.R = new(big.Int).SetBytes(sig[:32])
+			tx.sig.S = new(big.Int).SetBytes(sig[32:64])
+			tx.sig.V = new(big.Int).SetBytes([]byte{sig[64] + 27})
+
+			data, err := rlp.EncodeToBytes(tx.sig)
+
+			if err != nil {
+				panic(err)
+			}
+
+			tx.SignatureData = data
 		}
+	case SigTypeMulti:
+		{
+			if tx.multisig == nil {
+				tx.multisig = &SignatureMulti{
+					Multisig:   types.Address{},
+					Signatures: []Signature{},
+				}
+			}
 
-		tx.sig.R = new(big.Int).SetBytes(sig[:32])
-		tx.sig.S = new(big.Int).SetBytes(sig[32:64])
-		tx.sig.V = new(big.Int).SetBytes([]byte{sig[64] + 27})
+			tx.multisig.Signatures = append(tx.multisig.Signatures, Signature{
+				V: new(big.Int).SetBytes([]byte{sig[64] + 27}),
+				R: new(big.Int).SetBytes(sig[:32]),
+				S: new(big.Int).SetBytes(sig[32:64]),
+			})
 
-		data, err := rlp.EncodeToBytes(tx.sig)
+			data, err := rlp.EncodeToBytes(tx.multisig)
 
-		if err != nil {
-			panic(err)
+			if err != nil {
+				panic(err)
+			}
+
+			tx.SignatureData = data
 		}
-
-		tx.SignatureData = data
 	}
 }
 
@@ -154,6 +179,22 @@ func (tx *Transaction) SetDecodedData(data Data) {
 
 func (tx *Transaction) GetDecodedData() Data {
 	return tx.decodedData
+}
+
+func (tx *Transaction) SetMultisigAddress(address types.Address) {
+	if tx.multisig == nil {
+		tx.multisig = &SignatureMulti{}
+	}
+
+	tx.multisig.Multisig = address
+
+	data, err := rlp.EncodeToBytes(tx.multisig)
+
+	if err != nil {
+		panic(err)
+	}
+
+	tx.SignatureData = data
 }
 
 func RecoverPlain(sighash types.Hash, R, S, Vb *big.Int) (types.Address, error) {
