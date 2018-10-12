@@ -133,3 +133,11 @@ func (c *stateCoin) Volume() *big.Int {
 func (c *stateCoin) ReserveBalance() *big.Int {
 	return c.data.ReserveBalance
 }
+
+func (c *stateCoin) Crr() uint {
+	return c.data.Crr
+}
+
+func (c *stateCoin) Name() string {
+	return c.data.Name
+}
