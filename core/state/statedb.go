@@ -538,7 +538,6 @@ func (s *StateDB) CreateCoin(
 		Volume:         volume,
 		Crr:            crr,
 		ReserveBalance: reserve,
-		Creator:        creator,
 	}, s.MarkStateCoinDirty)
 	s.setStateCoin(newC)
 	return newC

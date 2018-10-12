@@ -26,7 +26,6 @@ type Coin struct {
 	Volume         *big.Int
 	Crr            uint
 	ReserveBalance *big.Int
-	Creator        types.Address
 }
 
 func (coin Coin) String() string {
