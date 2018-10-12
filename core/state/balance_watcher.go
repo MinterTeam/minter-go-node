@@ -32,6 +32,10 @@ func (s BalanceChangeStruct) MarshalJSON() ([]byte, error) {
 }
 
 func EmitBalanceChange(address types.Address, coin types.CoinSymbol, balance *big.Int) {
+	if len(BalanceChangeChan) >= 10 {
+		return
+	}
+
 	BalanceChangeChan <- BalanceChangeStruct{
 		Address: address,
 		Coin:    coin,
