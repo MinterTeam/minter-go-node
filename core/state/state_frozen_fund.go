@@ -1,23 +1,8 @@
-// Copyright 2014 The go-ethereum Authors
-// This file is part of the go-ethereum library.
-//
-// The go-ethereum library is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// The go-ethereum library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
-
 package state
 
 import (
 	"github.com/MinterTeam/minter-go-node/eventsdb"
+	"github.com/MinterTeam/minter-go-node/formula"
 	"io"
 
 	"fmt"
@@ -28,29 +13,15 @@ import (
 )
 
 // stateFrozenFund represents a frozen fund which is being modified.
-//
-// The usage pattern is as follows:
-// First you need to obtain a state object.
-// Account values can be accessed and modified through the object.
-// Finally, call CommitTrie to write the modified storage trie into a database.
 type stateFrozenFund struct {
 	blockHeight uint64
 	deleted     bool
 	data        FrozenFunds
 	db          *StateDB
 
-	// Cache flags.
-	// When an object is marked suicided it will be delete from the trie
-	// during the "update" phase of the state transition.
-	onDirty func(blockHeight uint64) // Callback method to mark a state object newly dirty
+	onDirty func(blockHeight uint64)
 }
 
-// empty returns whether the coin is considered empty.
-func (c *stateFrozenFund) empty() bool {
-	return false
-}
-
-// frozen funds are only for BaseCoin
 type FrozenFund struct {
 	Address      types.Address
 	CandidateKey []byte
@@ -67,7 +38,7 @@ func (f FrozenFunds) String() string {
 	return fmt.Sprintf("Frozen funds at block %d (%d items)", f.BlockHeight, len(f.List))
 }
 
-// newFrozenFund creates a state object.
+// newFrozenFund creates a state frozen fund.
 func newFrozenFund(db *StateDB, blockHeight uint64, data FrozenFunds, onDirty func(blockHeight uint64)) *stateFrozenFund {
 	frozenFund := &stateFrozenFund{
 		db:          db,
@@ -116,11 +87,11 @@ func (c *stateFrozenFund) addFund(fund FrozenFund) {
 }
 
 // punish fund with given candidate key (used in byzantine validator's punishment)
-func (c *stateFrozenFund) PunishFund(candidateAddress [20]byte) {
-	c.punishFund(candidateAddress)
+func (c *stateFrozenFund) PunishFund(context *StateDB, candidateAddress [20]byte) {
+	c.punishFund(context, candidateAddress)
 }
 
-func (c *stateFrozenFund) punishFund(candidateAddress [20]byte) {
+func (c *stateFrozenFund) punishFund(context *StateDB, candidateAddress [20]byte) {
 
 	edb := eventsdb.GetCurrent()
 
@@ -141,6 +112,14 @@ func (c *stateFrozenFund) punishFund(candidateAddress [20]byte) {
 
 			slashed := big.NewInt(0).Set(item.Value)
 			slashed.Sub(slashed, newValue)
+
+			if !item.Coin.IsBaseCoin() {
+				coin := context.GetStateCoin(item.Coin).Data()
+				ret := formula.CalculateSaleReturn(coin.Volume, coin.ReserveBalance, coin.Crr, slashed)
+
+				context.SubCoinVolume(coin.Symbol, slashed)
+				context.SubCoinReserve(coin.Symbol, ret)
+			}
 
 			edb.AddEvent(int64(c.blockHeight), eventsdb.SlashEvent{
 				Address:         item.Address,

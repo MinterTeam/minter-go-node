@@ -22,7 +22,7 @@ func EstimateTxCommission(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(Response{
+		_ = json.NewEncoder(w).Encode(Response{
 			Code: 1,
 			Log:  err.Error(),
 		})
@@ -39,7 +39,7 @@ func EstimateTxCommission(w http.ResponseWriter, r *http.Request) {
 		if coin.ReserveBalance().Cmp(commissionInBaseCoin) < 0 {
 
 			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(Response{
+			_ = json.NewEncoder(w).Encode(Response{
 				Code: 1,
 				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.ReserveBalance().String(), commissionInBaseCoin.String()),
 			})
@@ -50,7 +50,7 @@ func EstimateTxCommission(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(Response{
+	_ = json.NewEncoder(w).Encode(Response{
 		Code: 0,
 		Result: struct {
 			Commission string `json:"commission"`

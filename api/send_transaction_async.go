@@ -15,7 +15,15 @@ func SendTransactionAsync(w http.ResponseWriter, r *http.Request) {
 
 	var req SendTransactionRequest
 	body, _ := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
-	json.Unmarshal(body, &req)
+	err := json.Unmarshal(body, &req)
+
+	if err != nil {
+		_ = json.NewEncoder(w).Encode(Response{
+			Code: 1,
+			Log:  "Request decode error",
+		})
+		return
+	}
 
 	result, err := client.BroadcastTxAsync(types.Hex2Bytes(req.Transaction))
 
@@ -26,7 +34,7 @@ func SendTransactionAsync(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 
-	json.NewEncoder(w).Encode(Response{
+	_ = json.NewEncoder(w).Encode(Response{
 		Code: code.OK,
 		Result: SendTransactionResponse{
 			Hash: "Mt" + strings.ToLower(result.Hash.String()),

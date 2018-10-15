@@ -6,6 +6,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/tendermint/go-amino"
 	"github.com/tendermint/tendermint/libs/db"
+	"sync"
 )
 
 var cdc = amino.NewCodec()
@@ -34,13 +35,25 @@ func GetCurrent() *EventsDB {
 
 type EventsDB struct {
 	db    *db.GoLevelDB
-	cache map[int64]Events
+	cache *EventsCache
+
+	lock sync.RWMutex
+}
+
+type EventsCache struct {
+	height int64
+	events Events
+}
+
+func (c *EventsCache) Set(height int64, events Events) {
+	c.height = height
+	c.events = events
 }
 
 func NewEventsDB(db *db.GoLevelDB) *EventsDB {
 	return &EventsDB{
 		db:    db,
-		cache: map[int64]Events{},
+		cache: &EventsCache{},
 	}
 }
 
@@ -71,7 +84,9 @@ func (db *EventsDB) FlushEvents(height int64) error {
 		return err
 	}
 
-	delete(db.cache, height)
+	db.lock.Lock()
+	db.cache = &EventsCache{}
+	db.lock.Unlock()
 
 	db.db.Set(key, bytes)
 
@@ -79,15 +94,13 @@ func (db *EventsDB) FlushEvents(height int64) error {
 }
 
 func (db *EventsDB) SetEvents(height int64, events Events) {
-	db.cache[height] = events
+	db.lock.Lock()
+	defer db.lock.Unlock()
+
+	db.cache.Set(height, events)
 }
 
-func (db *EventsDB) GetEvents(height int64) Events {
-
-	if events, has := db.cache[height]; has {
-		return events
-	}
-
+func (db *EventsDB) LoadEvents(height int64) Events {
 	key := getKeyForHeight(height)
 
 	data := db.db.Get(key)
@@ -103,9 +116,22 @@ func (db *EventsDB) GetEvents(height int64) Events {
 		panic(err)
 	}
 
-	db.cache[height] = decoded
-
 	return decoded
+}
+
+func (db *EventsDB) GetEvents(height int64) Events {
+	if db.cache.height == height {
+		db.lock.RLock()
+		defer db.lock.RUnlock()
+
+		return db.cache.events
+	}
+
+	events := db.LoadEvents(height)
+
+	db.cache.Set(height, events)
+
+	return events
 }
 
 func getKeyForHeight(height int64) []byte {

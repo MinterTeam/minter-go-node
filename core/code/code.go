@@ -30,6 +30,7 @@ const (
 	IsNotOwnerOfCandidate uint32 = 406
 	IncorrectPubKey       uint32 = 407
 	StakeShouldBePositive uint32 = 408
+	TooLowStake           uint32 = 409
 
 	// check
 	CheckInvalidLock uint32 = 501
@@ -37,4 +38,11 @@ const (
 	CheckUsed        uint32 = 503
 	TooHighGasPrice  uint32 = 504
 	WrongGasCoin     uint32 = 505
+
+	// multisig
+	IncorrectWeights        uint32 = 601
+	MultisigExists          uint32 = 602
+	MultisigNotExists       uint32 = 603
+	IncorrectMultiSignature uint32 = 604
+	TooLargeOwnersList      uint32 = 605
 )

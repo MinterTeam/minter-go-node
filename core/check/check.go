@@ -2,6 +2,7 @@ package check
 
 import (
 	"bytes"
+	"crypto/ecdsa"
 	"errors"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/types"
@@ -32,12 +33,7 @@ func (check *Check) Sender() (types.Address, error) {
 
 func (check *Check) LockPubKey() ([]byte, error) {
 
-	hash := rlpHash([]interface{}{
-		check.Nonce,
-		check.DueBlock,
-		check.Coin,
-		check.Value,
-	})
+	hash := check.HashWithoutLock()
 
 	pub, err := crypto.Ecrecover(hash[:], check.Lock.Bytes())
 	if err != nil {
@@ -50,6 +46,15 @@ func (check *Check) LockPubKey() ([]byte, error) {
 	return pub, nil
 }
 
+func (check *Check) HashWithoutLock() types.Hash {
+	return rlpHash([]interface{}{
+		check.Nonce,
+		check.DueBlock,
+		check.Coin,
+		check.Value,
+	})
+}
+
 func (check *Check) Hash() types.Hash {
 	return rlpHash([]interface{}{
 		check.Nonce,
@@ -58,6 +63,24 @@ func (check *Check) Hash() types.Hash {
 		check.Value,
 		check.Lock,
 	})
+}
+
+func (check *Check) Sign(prv *ecdsa.PrivateKey) error {
+	h := check.Hash()
+	sig, err := crypto.Sign(h[:], prv)
+	if err != nil {
+		return err
+	}
+
+	check.SetSignature(sig)
+
+	return nil
+}
+
+func (check *Check) SetSignature(sig []byte) {
+	check.R = new(big.Int).SetBytes(sig[:32])
+	check.S = new(big.Int).SetBytes(sig[32:64])
+	check.V = new(big.Int).SetBytes([]byte{sig[64] + 27})
 }
 
 func (check *Check) String() string {

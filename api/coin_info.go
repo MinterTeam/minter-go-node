@@ -13,7 +13,6 @@ type CoinInfoResponse struct {
 	Volume         string           `json:"volume"`
 	Crr            uint             `json:"crr"`
 	ReserveBalance string           `json:"reserve_balance"`
-	Creator        types.Address    `json:"creator"`
 }
 
 func GetCoinInfo(w http.ResponseWriter, r *http.Request) {
@@ -33,7 +32,7 @@ func GetCoinInfo(w http.ResponseWriter, r *http.Request) {
 
 	if coin == nil {
 		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(Response{
+		_ = json.NewEncoder(w).Encode(Response{
 			Code:   404,
 			Result: nil,
 			Log:    "Coin not found",
@@ -43,7 +42,7 @@ func GetCoinInfo(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 
-	json.NewEncoder(w).Encode(Response{
+	_ = json.NewEncoder(w).Encode(Response{
 		Code: 0,
 		Result: CoinInfoResponse{
 			Name:           coin.Data().Name,
@@ -51,7 +50,6 @@ func GetCoinInfo(w http.ResponseWriter, r *http.Request) {
 			Volume:         coin.Data().Volume.String(),
 			Crr:            coin.Data().Crr,
 			ReserveBalance: coin.Data().ReserveBalance.String(),
-			Creator:        coin.Data().Creator,
 		},
 	})
 }

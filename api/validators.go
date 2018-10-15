@@ -84,7 +84,7 @@ func GetValidators(w http.ResponseWriter, r *http.Request) {
 		responseValidators = append(responseValidators, makeResponseValidator(val, rState))
 	}
 
-	json.NewEncoder(w).Encode(Response{
+	_ = json.NewEncoder(w).Encode(Response{
 		Code:   0,
 		Result: responseValidators,
 	})

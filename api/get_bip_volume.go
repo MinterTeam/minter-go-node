@@ -12,7 +12,7 @@ type BipVolumeResult struct {
 func GetBipVolume(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusBadRequest)
-	json.NewEncoder(w).Encode(Response{
+	_ = json.NewEncoder(w).Encode(Response{
 		Code: 501,
 		Log:  "Not implemented",
 	})

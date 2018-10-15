@@ -1,11 +1,19 @@
 # Changelog
 
-## 0.4.3
-*Oct 4th, 2018*
+## 0.5.0
+*Oct 15th, 2018*
 
-BUG FIXES
+BREAKING CHANGES
 
-- [core] Fix division by zero
+- [core] Multisig wallets
+- [core] Sub coin reserve and supply on slash
+- [core] Change unbond time for testnet to 720 blocks
+- [core] Limit candidates count to validatorsLimit*3 at given block
+- [core] Limit delegators count to 1000 per candidate/validator
+
+IMPROVEMENT
+
+- [tendermint] Update to [v0.25.0](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0250) 
 
 ## 0.4.2
 *Sept 21th, 2018*

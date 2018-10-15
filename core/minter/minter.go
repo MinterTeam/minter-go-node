@@ -35,8 +35,6 @@ type Blockchain struct {
 	rewards            *big.Int
 	validatorsStatuses map[[20]byte]int8
 	tendermintRPC      *rpc.Local
-
-	BaseCoin types.CoinSymbol
 }
 
 const (
@@ -57,9 +55,8 @@ func NewMinterBlockchain() *Blockchain {
 	}
 
 	blockchain = &Blockchain{
-		stateDB:  db.NewPrefixDB(ldb, []byte("s")),
-		appDB:    db.NewPrefixDB(ldb, []byte("a")),
-		BaseCoin: types.GetBaseCoin(),
+		stateDB: db.NewPrefixDB(ldb, []byte("s")),
+		appDB:   db.NewPrefixDB(ldb, []byte("a")),
 	}
 
 	blockchain.updateCurrentRootHash()
@@ -213,6 +210,9 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 	// update validators
 	if app.height%120 == 0 || hasDroppedValidators {
 		app.stateDeliver.RecalculateTotalStakeValues()
+
+		app.stateDeliver.ClearCandidates(app.height)
+		app.stateDeliver.ClearStakes(app.height)
 
 		valsCount := validators.GetValidatorsCountForBlock(app.height)
 

@@ -14,10 +14,10 @@
   revision = "f673a4b563b57b9a95832545c878669a7fa801d9"
 
 [[projects]]
+  branch = "master"
   name = "github.com/danil-lashin/iavl"
   packages = ["."]
-  revision = "646a1dd997127d6b198a8a65c3717125fa13ffe5"
-  version = "v0.11.1"
+  revision = "2c61cc5c1598b5e7a989e21ca000f0d7d009c193"
 
 [[projects]]
   name = "github.com/davecgh/go-spew"
@@ -332,6 +332,7 @@
     "libs/clist",
     "libs/common",
     "libs/db",
+    "libs/errors",
     "libs/events",
     "libs/flowrate",
     "libs/log",
@@ -342,7 +343,6 @@
     "p2p",
     "p2p/conn",
     "p2p/pex",
-    "p2p/upnp",
     "privval",
     "proxy",
     "rpc/client",
@@ -361,8 +361,8 @@
     "types/time",
     "version"
   ]
-  revision = "d419fffe18531317c28c29a292ad7d253f6cafdf"
-  version = "v0.24.0"
+  revision = "0c9c3292c918617624f6f3fbcd95eceade18bcd5"
+  version = "v0.25.0"
 
 [[projects]]
   branch = "master"
@@ -477,6 +477,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "26b32a8b58c383d7115a417db7eb0e0284ee7de7555ef7b097bcfffd52709320"
+  inputs-digest = "465c386a901a1cd866d86cbfd707c2e10b38043a59201a4a4f6e8a115ac58b42"
   solver-name = "gps-cdcl"
   solver-version = 1
