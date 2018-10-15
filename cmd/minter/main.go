@@ -15,11 +15,13 @@ import (
 	"github.com/tendermint/tendermint/privval"
 	"github.com/tendermint/tendermint/proxy"
 	"os"
+	"runtime"
 )
 
 var cfg = config.GetConfig()
 
 func main() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	err := common.EnsureDir(utils.GetMinterHome()+"/config", 0777)
 
