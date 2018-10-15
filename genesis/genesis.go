@@ -63,7 +63,7 @@ func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
 
 	genesis := tmtypes.GenesisDoc{
 		ChainID:         Network,
-		GenesisTime:     time.Date(2018, 10, 16, 9, 0, 0, 0, time.UTC),
+		GenesisTime:     time.Date(2018, 10, 15, 15, 0, 0, 0, time.UTC),
 		ConsensusParams: nil,
 		Validators:      validators,
 		AppHash:         appHash[:],
