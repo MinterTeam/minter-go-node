@@ -13,7 +13,7 @@ func NetInfo(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(Response{
+		_ = json.NewEncoder(w).Encode(Response{
 			Code:   500,
 			Result: nil,
 			Log:    err.Error(),
@@ -21,7 +21,7 @@ func NetInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(w).Encode(Response{
+	_ = json.NewEncoder(w).Encode(Response{
 		Code:   0,
 		Result: result,
 	})

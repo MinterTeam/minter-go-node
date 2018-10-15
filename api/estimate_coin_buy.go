@@ -38,7 +38,7 @@ func EstimateCoinBuy(w http.ResponseWriter, r *http.Request) {
 
 	if coinToSell == coinToBuy {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(Response{
+		_ = json.NewEncoder(w).Encode(Response{
 			Code: code.CrossConvert,
 			Log:  fmt.Sprintf("\"From\" coin equals to \"to\" coin"),
 		})
@@ -47,7 +47,7 @@ func EstimateCoinBuy(w http.ResponseWriter, r *http.Request) {
 
 	if !cState.CoinExists(coinToSellSymbol) {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(Response{
+		_ = json.NewEncoder(w).Encode(Response{
 			Code: code.CrossConvert,
 			Log:  fmt.Sprintf("Coin to sell not exists"),
 		})
@@ -56,7 +56,7 @@ func EstimateCoinBuy(w http.ResponseWriter, r *http.Request) {
 
 	if !cState.CoinExists(coinToBuySymbol) {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(Response{
+		_ = json.NewEncoder(w).Encode(Response{
 			Code: code.CrossConvert,
 			Log:  fmt.Sprintf("Coin to buy not exists"),
 		})
@@ -72,7 +72,7 @@ func EstimateCoinBuy(w http.ResponseWriter, r *http.Request) {
 
 		if coin.ReserveBalance().Cmp(commissionInBaseCoin) < 0 {
 			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(Response{
+			_ = json.NewEncoder(w).Encode(Response{
 				Code: 1,
 				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.ReserveBalance().String(), commissionInBaseCoin.String()),
 			})
@@ -95,7 +95,7 @@ func EstimateCoinBuy(w http.ResponseWriter, r *http.Request) {
 
 		if coinFrom.ReserveBalance.Cmp(baseCoinNeeded) < 0 {
 			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(Response{
+			_ = json.NewEncoder(w).Encode(Response{
 				Code: 1,
 				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coinFrom.ReserveBalance.String(), baseCoinNeeded.String()),
 			})
@@ -106,7 +106,7 @@ func EstimateCoinBuy(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(Response{
+	_ = json.NewEncoder(w).Encode(Response{
 		Code: 0,
 		Result: EstimateCoinBuyResponse{
 			WillPay:    result.String(),

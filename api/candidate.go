@@ -21,7 +21,7 @@ func GetCandidate(w http.ResponseWriter, r *http.Request) {
 
 	if candidate == nil {
 		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(Response{
+		_ = json.NewEncoder(w).Encode(Response{
 			Code: 404,
 			Log:  "Candidate not found",
 		})
@@ -30,7 +30,7 @@ func GetCandidate(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 
-	json.NewEncoder(w).Encode(Response{
+	_ = json.NewEncoder(w).Encode(Response{
 		Code: 0,
 		Result: struct {
 			Candidate Candidate `json:"candidate"`

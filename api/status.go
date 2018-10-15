@@ -26,10 +26,9 @@ func Status(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(Response{
-			Code:   500,
-			Result: nil,
-			Log:    err.Error(),
+		_ = json.NewEncoder(w).Encode(Response{
+			Code: 500,
+			Log:  err.Error(),
 		})
 		return
 	}
@@ -43,7 +42,7 @@ func Status(w http.ResponseWriter, r *http.Request) {
 		TmStatus:          result,
 	})
 
-	json.NewEncoder(w).Encode(Response{
+	_ = json.NewEncoder(w).Encode(Response{
 		Code:   0,
 		Result: json.RawMessage(tmStatus),
 	})

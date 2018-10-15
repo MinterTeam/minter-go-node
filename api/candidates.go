@@ -21,7 +21,7 @@ func GetCandidates(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 
-	json.NewEncoder(w).Encode(Response{
+	_ = json.NewEncoder(w).Encode(Response{
 		Code:   0,
 		Result: result,
 	})

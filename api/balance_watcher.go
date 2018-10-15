@@ -25,7 +25,7 @@ func GetBalanceWatcher(w http.ResponseWriter, r *http.Request) {
 
 	if len(clients) > maxClients {
 		w.WriteHeader(http.StatusBadGateway)
-		json.NewEncoder(w).Encode(Response{
+		_ = json.NewEncoder(w).Encode(Response{
 			Code:   http.StatusBadGateway,
 			Result: nil,
 			Log:    "Max balance watchers limit reached",
@@ -78,7 +78,7 @@ func handleBalanceChange(msg state.BalanceChangeStruct) {
 			err := client.WriteJSON(msg)
 			if err != nil {
 				log.Info("ws error: %v", err)
-				client.Close()
+				_ = client.Close()
 				delete(clients, client)
 			}
 		}()
