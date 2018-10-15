@@ -1,7 +1,7 @@
 # Changelog
 
 ## 0.5.0
-*Oct 4th, 2018*
+*Oct 15th, 2018*
 
 BREAKING CHANGES
 
