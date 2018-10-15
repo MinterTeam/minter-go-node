@@ -13,7 +13,7 @@ BREAKING CHANGES
 
 IMPROVEMENT
 
-- [tendermint] Update to v0.25.0
+- [tendermint] Update to [v0.25.0](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0250) 
 
 ## 0.4.2
 *Sept 21th, 2018*
