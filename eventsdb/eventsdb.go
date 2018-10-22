@@ -37,42 +37,44 @@ func GetCurrentDB() *db.GoLevelDB {
 }
 
 func GetCurrent() *EventsDB {
-	if edb == nil {
-		edb = NewEventsDB(GetCurrentDB())
+	if edb != nil {
+		return edb
 	}
+
+	edb = NewEventsDB(GetCurrentDB())
 
 	return edb
 }
 
 type EventsDB struct {
 	db    *db.GoLevelDB
-	cache *EventsCache
+	cache *eventsCache
 
 	lock sync.RWMutex
 }
 
-type EventsCache struct {
+type eventsCache struct {
 	height int64
 	events Events
 
 	lock sync.RWMutex
 }
 
-func (c *EventsCache) Set(height int64, events Events) {
+func (c *eventsCache) set(height int64, events Events) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
 	c.height, c.events = height, events
 }
 
-func (c *EventsCache) Get() Events {
+func (c *eventsCache) get() Events {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
 	return c.events
 }
 
-func (c *EventsCache) Clear() {
+func (c *eventsCache) Clear() {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
@@ -83,7 +85,7 @@ func (c *EventsCache) Clear() {
 func NewEventsDB(db *db.GoLevelDB) *EventsDB {
 	return &EventsDB{
 		db: db,
-		cache: &EventsCache{
+		cache: &eventsCache{
 			height: 0,
 			events: nil,
 			lock:   sync.RWMutex{},
@@ -97,8 +99,8 @@ func (db *EventsDB) AddEvent(height int64, event Event) {
 		return
 	}
 
-	events := db.GetEvents(height)
-	db.SetEvents(height, append(events, event))
+	events := db.getEvents(height)
+	db.setEvents(height, append(events, event))
 }
 
 func (db *EventsDB) FlushEvents(height int64) error {
@@ -106,7 +108,7 @@ func (db *EventsDB) FlushEvents(height int64) error {
 		return nil
 	}
 
-	events := db.GetEvents(height)
+	events := db.getEvents(height)
 	bytes, err := cdc.MarshalBinary(events)
 
 	if err != nil {
@@ -122,15 +124,14 @@ func (db *EventsDB) FlushEvents(height int64) error {
 	return nil
 }
 
-func (db *EventsDB) SetEvents(height int64, events Events) {
-	db.cache.Set(height, events)
+func (db *EventsDB) setEvents(height int64, events Events) {
+	db.cache.set(height, events)
 }
 
 func (db *EventsDB) LoadEvents(height int64) Events {
 	db.lock.RLock()
-	defer db.lock.RUnlock()
-
 	data := db.db.Get(getKeyForHeight(height))
+	db.lock.RUnlock()
 
 	if len(data) == 0 {
 		return Events{}
@@ -146,14 +147,13 @@ func (db *EventsDB) LoadEvents(height int64) Events {
 	return decoded
 }
 
-func (db *EventsDB) GetEvents(height int64) Events {
+func (db *EventsDB) getEvents(height int64) Events {
 	if db.cache.height == height {
-		return db.cache.Get()
+		return db.cache.get()
 	}
 
 	events := db.LoadEvents(height)
-
-	db.cache.Set(height, events)
+	db.cache.set(height, events)
 
 	return events
 }

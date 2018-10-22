@@ -35,11 +35,17 @@ func SendTransaction(w http.ResponseWriter, r *http.Request) {
 
 	result, err := client.BroadcastTxCommit(types.Hex2Bytes(req.Transaction))
 
-	if err != nil {
-		panic(err)
-	}
-
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+
+		_ = json.NewEncoder(w).Encode(Response{
+			Code: 500,
+			Log:  err.Error(),
+		})
+		return
+	}
 
 	if result.CheckTx.Code != code.OK {
 		w.WriteHeader(http.StatusInternalServerError)
