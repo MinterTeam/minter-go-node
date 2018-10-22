@@ -14,46 +14,83 @@ var cdc = amino.NewCodec()
 var eventsEnabled = !config.GetConfig().ValidatorMode
 
 var edb *EventsDB
+var godb *db.GoLevelDB
 
 func init() {
 	RegisterAminoEvents(cdc)
 }
 
-func GetCurrent() *EventsDB {
-	if edb == nil {
-		eventsDB, err := db.NewGoLevelDB("events", utils.GetMinterHome()+"/data")
-
-		if err != nil {
-			panic(err)
-		}
-
-		edb = NewEventsDB(eventsDB)
+func GetCurrentDB() *db.GoLevelDB {
+	if godb != nil {
+		return godb
 	}
+
+	gdb, err := db.NewGoLevelDB("events", utils.GetMinterHome()+"/data")
+
+	if err != nil {
+		panic(err)
+	}
+
+	godb = gdb
+
+	return gdb
+}
+
+func GetCurrent() *EventsDB {
+	if edb != nil {
+		return edb
+	}
+
+	edb = NewEventsDB(GetCurrentDB())
 
 	return edb
 }
 
 type EventsDB struct {
 	db    *db.GoLevelDB
-	cache *EventsCache
+	cache *eventsCache
 
 	lock sync.RWMutex
 }
 
-type EventsCache struct {
+type eventsCache struct {
 	height int64
 	events Events
+
+	lock sync.RWMutex
 }
 
-func (c *EventsCache) Set(height int64, events Events) {
-	c.height = height
-	c.events = events
+func (c *eventsCache) set(height int64, events Events) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	c.height, c.events = height, events
+}
+
+func (c *eventsCache) get() Events {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
+	return c.events
+}
+
+func (c *eventsCache) Clear() {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	c.height = 0
+	c.events = nil
 }
 
 func NewEventsDB(db *db.GoLevelDB) *EventsDB {
 	return &EventsDB{
-		db:    db,
-		cache: &EventsCache{},
+		db: db,
+		cache: &eventsCache{
+			height: 0,
+			events: nil,
+			lock:   sync.RWMutex{},
+		},
+		lock: sync.RWMutex{},
 	}
 }
 
@@ -62,48 +99,36 @@ func (db *EventsDB) AddEvent(height int64, event Event) {
 		return
 	}
 
-	events := db.GetEvents(height)
-	events = append(events, event)
-
-	db.SetEvents(height, events)
+	events := db.getEvents(height)
+	db.setEvents(height, append(events, event))
 }
 
 func (db *EventsDB) FlushEvents(height int64) error {
-
 	if !eventsEnabled {
 		return nil
 	}
 
-	events := db.GetEvents(height)
-
-	key := getKeyForHeight(height)
-
+	events := db.getEvents(height)
 	bytes, err := cdc.MarshalBinary(events)
 
 	if err != nil {
 		return err
 	}
 
-	db.lock.Lock()
-	db.cache = &EventsCache{}
-	db.lock.Unlock()
-
-	db.db.Set(key, bytes)
+	db.cache.Clear()
+	db.db.Set(getKeyForHeight(height), bytes)
 
 	return nil
 }
 
-func (db *EventsDB) SetEvents(height int64, events Events) {
-	db.lock.Lock()
-	defer db.lock.Unlock()
-
-	db.cache.Set(height, events)
+func (db *EventsDB) setEvents(height int64, events Events) {
+	db.cache.set(height, events)
 }
 
 func (db *EventsDB) LoadEvents(height int64) Events {
-	key := getKeyForHeight(height)
-
-	data := db.db.Get(key)
+	db.lock.RLock()
+	data := db.db.Get(getKeyForHeight(height))
+	db.lock.RUnlock()
 
 	if len(data) == 0 {
 		return Events{}
@@ -119,17 +144,13 @@ func (db *EventsDB) LoadEvents(height int64) Events {
 	return decoded
 }
 
-func (db *EventsDB) GetEvents(height int64) Events {
+func (db *EventsDB) getEvents(height int64) Events {
 	if db.cache.height == height {
-		db.lock.RLock()
-		defer db.lock.RUnlock()
-
-		return db.cache.events
+		return db.cache.get()
 	}
 
 	events := db.LoadEvents(height)
-
-	db.cache.Set(height, events)
+	db.cache.set(height, events)
 
 	return events
 }

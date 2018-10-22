@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.1
+*Oct 22th, 2018*
+
+BUG FIXES
+
+- [core] Fixed bug with unexpected node backoff
+
 ## 0.5.0
 *Oct 15th, 2018*
 

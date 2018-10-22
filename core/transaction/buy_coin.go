@@ -40,7 +40,7 @@ func (data BuyCoinData) Gas() int64 {
 	return commissions.ConvertTx
 }
 
-func (data BuyCoinData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
+func (data BuyCoinData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response {
 	if data.CoinToSell == data.CoinToBuy {
 		return Response{
 			Code: code.CrossConvert,

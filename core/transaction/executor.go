@@ -30,7 +30,7 @@ type Response struct {
 	Tags      []common.KVPair `protobuf:"bytes,7,rep,name=tags" json:"tags,omitempty"`
 }
 
-func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPool *big.Int, currentBlock uint64) Response {
+func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPool *big.Int, currentBlock int64) Response {
 
 	if len(rawTx) > maxTxLength {
 		return Response{

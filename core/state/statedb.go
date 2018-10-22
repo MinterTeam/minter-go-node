@@ -223,7 +223,7 @@ func (s *StateDB) updateStateFrozenFund(stateFrozenFund *stateFrozenFund) {
 		panic(fmt.Errorf("can't encode frozen fund at %d: %v", blockHeight, err))
 	}
 	height := make([]byte, 8)
-	binary.BigEndian.PutUint64(height, stateFrozenFund.blockHeight)
+	binary.BigEndian.PutUint64(height, uint64(stateFrozenFund.blockHeight))
 
 	s.iavl.Set(append(frozenFundsPrefix, height...), data)
 }
@@ -274,7 +274,7 @@ func (s *StateDB) deleteStateCoin(stateCoin *stateCoin) {
 func (s *StateDB) deleteFrozenFunds(stateFrozenFund *stateFrozenFund) {
 	stateFrozenFund.deleted = true
 	height := make([]byte, 8)
-	binary.BigEndian.PutUint64(height, stateFrozenFund.blockHeight)
+	binary.BigEndian.PutUint64(height, uint64(stateFrozenFund.blockHeight))
 	key := append(frozenFundsPrefix, height...)
 	s.iavl.Remove(key)
 }
@@ -287,7 +287,7 @@ func (s *StateDB) getStateFrozenFunds(blockHeight uint64) (stateFrozenFund *stat
 	}
 
 	height := make([]byte, 8)
-	binary.BigEndian.PutUint64(height, blockHeight)
+	binary.BigEndian.PutUint64(height, uint64(blockHeight))
 	key := append(frozenFundsPrefix, height...)
 
 	// Load the object from the database.
@@ -300,7 +300,7 @@ func (s *StateDB) getStateFrozenFunds(blockHeight uint64) (stateFrozenFund *stat
 		return nil
 	}
 	// Insert into the live set.
-	obj := newFrozenFund(s, blockHeight, data, s.MarkStateFrozenFundsDirty)
+	obj := newFrozenFund(s, uint64(blockHeight), data, s.MarkStateFrozenFundsDirty)
 	s.setStateFrozenFunds(obj)
 	return obj
 }
@@ -1134,7 +1134,7 @@ func (s *StateDB) SetValidatorAbsent(height int64, address [20]byte) {
 	s.MarkStateValidatorsDirty()
 }
 
-func (s *StateDB) PunishByzantineValidator(currentBlock uint64, address [20]byte) {
+func (s *StateDB) PunishByzantineValidator(currentBlock int64, address [20]byte) {
 
 	edb := eventsdb.GetCurrent()
 
@@ -1176,7 +1176,7 @@ func (s *StateDB) PunishByzantineValidator(currentBlock uint64, address [20]byte
 					ValidatorPubKey: candidate.PubKey,
 				})
 
-				s.GetOrNewStateFrozenFunds(currentBlock+UnbondPeriod).AddFund(stake.Owner, candidate.PubKey, stake.Coin, newValue)
+				s.GetOrNewStateFrozenFunds(uint64(currentBlock+UnbondPeriod)).AddFund(stake.Owner, candidate.PubKey, stake.Coin, newValue)
 			}
 
 			candidate.Stakes = []Stake{}
@@ -1322,7 +1322,7 @@ func (s *StateDB) CandidatesCount() int {
 	return len(candidates.data)
 }
 
-func (s *StateDB) ClearCandidates(height uint64) {
+func (s *StateDB) ClearCandidates(height int64) {
 	maxCandidates := validators.GetCandidatesCountForBlock(height)
 
 	candidates := s.getStateCandidates()
@@ -1348,7 +1348,7 @@ func (s *StateDB) ClearCandidates(height uint64) {
 	s.MarkStateCandidateDirty()
 }
 
-func (s *StateDB) ClearStakes(height uint64) {
+func (s *StateDB) ClearStakes(height int64) {
 	candidates := s.getStateCandidates()
 
 	for i := range candidates.data {

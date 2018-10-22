@@ -49,7 +49,7 @@ func (data DeclareCandidacyData) Gas() int64 {
 	return commissions.DeclareCandidacyTx
 }
 
-func (data DeclareCandidacyData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
+func (data DeclareCandidacyData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response {
 
 	if !context.CoinExists(tx.GasCoin) {
 		return Response{

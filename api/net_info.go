@@ -6,7 +6,6 @@ import (
 )
 
 func NetInfo(w http.ResponseWriter, r *http.Request) {
-
 	result, err := client.NetInfo()
 
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")

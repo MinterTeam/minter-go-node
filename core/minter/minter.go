@@ -21,6 +21,7 @@ import (
 	rpc "github.com/tendermint/tendermint/rpc/client"
 	"math/big"
 	"os"
+	"sync/atomic"
 )
 
 type Blockchain struct {
@@ -31,7 +32,7 @@ type Blockchain struct {
 	stateDeliver       *state.StateDB
 	stateCheck         *state.StateDB
 	rootHash           [20]byte
-	height             uint64
+	height             int64
 	rewards            *big.Int
 	validatorsStatuses map[[20]byte]int8
 	tendermintRPC      *rpc.Local
@@ -113,7 +114,7 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 }
 
 func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.ResponseBeginBlock {
-	app.height = uint64(req.Header.Height)
+	atomic.StoreInt64(&app.height, req.Header.Height)
 	app.rewards = big.NewInt(0)
 
 	// clear absent candidates
@@ -139,12 +140,12 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 		var address [20]byte
 		copy(address[:], v.Validator.Address)
 
-		app.stateDeliver.PunishByzantineValidator(uint64(req.Header.Height), address)
-		app.stateDeliver.PunishFrozenFundsWithAddress(app.height, app.height+518400, address)
+		app.stateDeliver.PunishByzantineValidator(req.Header.Height, address)
+		app.stateDeliver.PunishFrozenFundsWithAddress(uint64(req.Header.Height), uint64(req.Header.Height+518400), address)
 	}
 
 	// apply frozen funds
-	frozenFunds := app.stateDeliver.GetStateFrozenFunds(app.height)
+	frozenFunds := app.stateDeliver.GetStateFrozenFunds(uint64(req.Header.Height))
 	if frozenFunds != nil {
 		for _, item := range frozenFunds.List() {
 			app.stateDeliver.AddBalance(item.Address, item.Coin, item.Value)
@@ -268,7 +269,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 		}
 	}
 
-	eventsdb.GetCurrent().FlushEvents(req.Height)
+	_ = eventsdb.GetCurrent().FlushEvents(req.Height)
 
 	return abciTypes.ResponseEndBlock{
 		ValidatorUpdates: updates,
@@ -322,10 +323,8 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 
 	// todo: make provider
 	height := make([]byte, 8)
-	binary.BigEndian.PutUint64(height, app.height)
+	binary.BigEndian.PutUint64(height, uint64(app.height))
 	app.appDB.Set([]byte("height"), height)
-
-	// TODO: clear candidates list
 
 	app.updateCurrentRootHash()
 	app.updateCurrentState()
@@ -353,7 +352,7 @@ func (app *Blockchain) updateCurrentRootHash() {
 	// todo: make provider
 	result = app.appDB.Get([]byte("height"))
 	if result != nil {
-		app.height = binary.BigEndian.Uint64(result)
+		app.height = int64(binary.BigEndian.Uint64(result))
 	} else {
 		app.height = 0
 	}
@@ -371,8 +370,8 @@ func (app *Blockchain) GetStateForHeight(height int) (*state.StateDB, error) {
 	return state.New(int64(height), app.stateDB)
 }
 
-func (app *Blockchain) Height() uint64 {
-	return app.height
+func (app *Blockchain) Height() int64 {
+	return atomic.LoadInt64(&app.height)
 }
 
 func (app *Blockchain) getCurrentValidators() abciTypes.ValidatorUpdates {

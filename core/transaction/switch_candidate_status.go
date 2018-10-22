@@ -33,7 +33,7 @@ func (data SetCandidateOnData) Gas() int64 {
 	return commissions.ToggleCandidateStatus
 }
 
-func (data SetCandidateOnData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
+func (data SetCandidateOnData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response {
 
 	if !context.CoinExists(tx.GasCoin) {
 		return Response{
@@ -113,7 +113,7 @@ func (data SetCandidateOffData) Gas() int64 {
 	return commissions.ToggleCandidateStatus
 }
 
-func (data SetCandidateOffData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
+func (data SetCandidateOffData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response {
 
 	if !context.CoinExists(tx.GasCoin) {
 		return Response{

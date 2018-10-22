@@ -58,6 +58,7 @@ func DefaultConfig() *Config {
 	cfg.Mempool.WalPath = "tmdata/mempool.wal"
 	cfg.Mempool.Recheck = true
 	cfg.Mempool.RecheckEmpty = true
+	cfg.Mempool.Size = 10000
 
 	cfg.Consensus.WalPath = "tmdata/cs.wal/wal"
 	cfg.Consensus.TimeoutPropose = 2000

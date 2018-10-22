@@ -15,6 +15,12 @@ import (
 	"time"
 )
 
+var edb *eventsdb.EventsDB
+
+func init() {
+	edb = eventsdb.NewEventsDB(eventsdb.GetCurrentDB())
+}
+
 type BlockResponse struct {
 	Hash         common.HexBytes            `json:"hash"`
 	Height       int64                      `json:"height"`
@@ -113,7 +119,7 @@ func Block(w http.ResponseWriter, r *http.Request) {
 
 	var eventsRaw []byte
 
-	events := eventsdb.GetCurrent().LoadEvents(height)
+	events := edb.LoadEvents(height)
 
 	if len(events) > 0 {
 		eventsRaw, err = cdc.MarshalJSON(events)
