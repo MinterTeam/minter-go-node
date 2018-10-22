@@ -73,14 +73,24 @@ func GetValidators(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rState := GetStateForRequest(r)
-	vals := rState.GetStateValidators().Data()
+	vals := rState.GetStateValidators()
 
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+
+	if vals == nil {
+		w.WriteHeader(http.StatusNotFound)
+		_ = json.NewEncoder(w).Encode(Response{
+			Code: 404,
+			Log:  "Validators not found",
+		})
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 
 	var responseValidators []Validator
 
-	for _, val := range vals {
+	for _, val := range vals.Data() {
 		responseValidators = append(responseValidators, makeResponseValidator(val, rState))
 	}
 

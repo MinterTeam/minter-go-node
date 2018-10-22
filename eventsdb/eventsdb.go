@@ -43,17 +43,41 @@ type EventsDB struct {
 type EventsCache struct {
 	height int64
 	events Events
+
+	lock sync.RWMutex
 }
 
 func (c *EventsCache) Set(height int64, events Events) {
-	c.height = height
-	c.events = events
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	c.height, c.events = height, events
+}
+
+func (c *EventsCache) Get() Events {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
+	return c.events
+}
+
+func (c *EventsCache) Clear() {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	c.height = 0
+	c.events = nil
 }
 
 func NewEventsDB(db *db.GoLevelDB) *EventsDB {
 	return &EventsDB{
-		db:    db,
-		cache: &EventsCache{},
+		db: db,
+		cache: &EventsCache{
+			height: 0,
+			events: nil,
+			lock:   sync.RWMutex{},
+		},
+		lock: sync.RWMutex{},
 	}
 }
 
@@ -63,13 +87,10 @@ func (db *EventsDB) AddEvent(height int64, event Event) {
 	}
 
 	events := db.GetEvents(height)
-	events = append(events, event)
-
-	db.SetEvents(height, events)
+	db.SetEvents(height, append(events, event))
 }
 
 func (db *EventsDB) FlushEvents(height int64) error {
-
 	if !eventsEnabled {
 		return nil
 	}
@@ -84,26 +105,24 @@ func (db *EventsDB) FlushEvents(height int64) error {
 		return err
 	}
 
-	db.lock.Lock()
-	db.cache = &EventsCache{}
-	db.lock.Unlock()
+	db.cache.Clear()
 
-	db.db.Set(key, bytes)
+	db.lock.Lock()
+	db.db.Set(getKeyForHeight(height), bytes)
+	db.lock.Unlock()
 
 	return nil
 }
 
 func (db *EventsDB) SetEvents(height int64, events Events) {
-	db.lock.Lock()
-	defer db.lock.Unlock()
-
 	db.cache.Set(height, events)
 }
 
 func (db *EventsDB) LoadEvents(height int64) Events {
-	key := getKeyForHeight(height)
+	db.lock.RLock()
+	defer db.lock.RUnlock()
 
-	data := db.db.Get(key)
+	data := db.db.Get(getKeyForHeight(height))
 
 	if len(data) == 0 {
 		return Events{}
@@ -121,10 +140,7 @@ func (db *EventsDB) LoadEvents(height int64) Events {
 
 func (db *EventsDB) GetEvents(height int64) Events {
 	if db.cache.height == height {
-		db.lock.RLock()
-		defer db.lock.RUnlock()
-
-		return db.cache.events
+		return db.cache.Get()
 	}
 
 	events := db.LoadEvents(height)

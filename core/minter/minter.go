@@ -268,7 +268,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 		}
 	}
 
-	eventsdb.GetCurrent().FlushEvents(req.Height)
+	_ = eventsdb.GetCurrent().FlushEvents(req.Height)
 
 	return abciTypes.ResponseEndBlock{
 		ValidatorUpdates: updates,
