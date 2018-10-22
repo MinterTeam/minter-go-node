@@ -39,7 +39,7 @@ func (data CreateMultisigData) Gas() int64 {
 	return commissions.CreateMultisig
 }
 
-func (data CreateMultisigData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
+func (data CreateMultisigData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response {
 	if !context.CoinExists(tx.GasCoin) {
 		return Response{
 			Code: code.CoinNotExists,

@@ -41,7 +41,7 @@ func (data UnbondData) Gas() int64 {
 	return commissions.UnbondTx
 }
 
-func (data UnbondData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
+func (data UnbondData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response {
 
 	if !context.CoinExists(tx.GasCoin) {
 		return Response{
@@ -95,7 +95,7 @@ func (data UnbondData) Run(sender types.Address, tx *Transaction, context *state
 
 	if !isCheck {
 		// now + 30 days
-		unbondAtBlock := currentBlock + unbondPeriod
+		unbondAtBlock := uint64(currentBlock + unbondPeriod)
 
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 

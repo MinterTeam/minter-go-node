@@ -68,7 +68,7 @@ func (data CreateCoinData) Gas() int64 {
 	return gas
 }
 
-func (data CreateCoinData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
+func (data CreateCoinData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response {
 
 	if !context.CoinExists(tx.GasCoin) {
 		return Response{

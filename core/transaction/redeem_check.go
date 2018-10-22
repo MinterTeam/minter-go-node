@@ -41,7 +41,7 @@ func (data RedeemCheckData) Gas() int64 {
 	return commissions.SendTx
 }
 
-func (data RedeemCheckData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
+func (data RedeemCheckData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response {
 	decodedCheck, err := check.DecodeFromBytes(data.RawCheck)
 
 	if err != nil {

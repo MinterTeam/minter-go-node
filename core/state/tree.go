@@ -3,6 +3,7 @@ package state
 import (
 	"github.com/danil-lashin/iavl"
 	dbm "github.com/tendermint/tendermint/libs/db"
+	"sync"
 )
 
 type Tree interface {
@@ -26,47 +27,79 @@ func NewMutableTree(db dbm.DB) *MutableTree {
 
 type MutableTree struct {
 	tree *iavl.MutableTree
+
+	lock sync.RWMutex
 }
 
 func (t *MutableTree) Hash() []byte {
+	t.lock.RLock()
+	defer t.lock.RUnlock()
+
 	return t.tree.Hash()
 }
 
 func (t *MutableTree) Version() int64 {
+	t.lock.RLock()
+	defer t.lock.RUnlock()
+
 	return t.tree.Version()
 }
 
 func (t *MutableTree) Load() (int64, error) {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+
 	return t.tree.Load()
 }
 
 func (t *MutableTree) GetImmutable() *ImmutableTree {
+	t.lock.RLock()
+	defer t.lock.RUnlock()
+
 	return &ImmutableTree{
 		tree: t.tree.ImmutableTree,
 	}
 }
 
 func (t *MutableTree) Get(key []byte) (index int64, value []byte) {
+	t.lock.RLock()
+	defer t.lock.RUnlock()
+
 	return t.tree.Get(key)
 }
 
 func (t *MutableTree) Set(key, value []byte) bool {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+
 	return t.tree.Set(key, value)
 }
 
 func (t *MutableTree) Remove(key []byte) ([]byte, bool) {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+
 	return t.tree.Remove(key)
 }
 
 func (t *MutableTree) LoadVersion(targetVersion int64) (int64, error) {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+
 	return t.tree.LoadVersion(targetVersion)
 }
 
 func (t *MutableTree) SaveVersion() ([]byte, int64, error) {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+
 	return t.tree.SaveVersion()
 }
 
 func (t *MutableTree) DeleteVersion(version int64) error {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+
 	return t.tree.DeleteVersion(version)
 }
 
