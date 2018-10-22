@@ -3,17 +3,29 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/core/rewards"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/eventsdb"
 	"github.com/gorilla/mux"
 	"github.com/tendermint/tendermint/libs/common"
+	"github.com/tendermint/tendermint/libs/db"
 	"math/big"
 	"net/http"
 	"strconv"
 	"time"
 )
+
+var edb *eventsdb.EventsDB
+
+func init() {
+	eventsDB, err := db.NewGoLevelDB("events", utils.GetMinterHome()+"/data")
+	if err != nil {
+		panic(err)
+	}
+	edb = eventsdb.NewEventsDB(eventsDB)
+}
 
 type BlockResponse struct {
 	Hash         common.HexBytes            `json:"hash"`
@@ -113,7 +125,7 @@ func Block(w http.ResponseWriter, r *http.Request) {
 
 	var eventsRaw []byte
 
-	events := eventsdb.GetCurrent().LoadEvents(height)
+	events := edb.LoadEvents(height)
 
 	if len(events) > 0 {
 		eventsRaw, err = cdc.MarshalJSON(events)
