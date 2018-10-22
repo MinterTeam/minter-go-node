@@ -3,13 +3,12 @@ package api
 import (
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/eventsdb"
-	"io"
-	"io/ioutil"
-	"log"
-	"net/http"
-
+	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
+	"io"
+	"io/ioutil"
+	"net/http"
 
 	"github.com/MinterTeam/minter-go-node/core/minter"
 	"github.com/MinterTeam/minter-go-node/core/state"
@@ -70,7 +69,7 @@ func RunApi(b *minter.Blockchain, node *node.Node) {
 	// wait for tendermint to start
 	waitForTendermint()
 
-	log.Fatal(http.ListenAndServe(config.GetConfig().APIListenAddress, handler))
+	log.Error("Failed to start API", "err", http.ListenAndServe(config.GetConfig().APIListenAddress, handler))
 }
 
 func wrapper(f func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {

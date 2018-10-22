@@ -326,8 +326,6 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 	binary.BigEndian.PutUint64(height, uint64(app.height))
 	app.appDB.Set([]byte("height"), height)
 
-	// TODO: clear candidates list
-
 	app.updateCurrentRootHash()
 	app.updateCurrentState()
 

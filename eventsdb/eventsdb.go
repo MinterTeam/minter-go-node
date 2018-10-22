@@ -116,10 +116,7 @@ func (db *EventsDB) FlushEvents(height int64) error {
 	}
 
 	db.cache.Clear()
-
-	db.lock.Lock()
 	db.db.Set(getKeyForHeight(height), bytes)
-	db.lock.Unlock()
 
 	return nil
 }
