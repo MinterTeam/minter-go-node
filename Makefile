@@ -106,4 +106,4 @@ build-linux:
 	GOOS=linux GOARCH=amd64 $(MAKE) build
 
 build-compress:
-	upx --brute -9 build/minter
+	upx build/minter
