@@ -3,14 +3,12 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/core/rewards"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/eventsdb"
 	"github.com/gorilla/mux"
 	"github.com/tendermint/tendermint/libs/common"
-	"github.com/tendermint/tendermint/libs/db"
 	"math/big"
 	"net/http"
 	"strconv"
@@ -20,11 +18,7 @@ import (
 var edb *eventsdb.EventsDB
 
 func init() {
-	eventsDB, err := db.NewGoLevelDB("events", utils.GetMinterHome()+"/data")
-	if err != nil {
-		panic(err)
-	}
-	edb = eventsdb.NewEventsDB(eventsDB)
+	edb = eventsdb.NewEventsDB(eventsdb.GetCurrentDB())
 }
 
 type BlockResponse struct {

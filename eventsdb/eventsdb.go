@@ -14,20 +14,31 @@ var cdc = amino.NewCodec()
 var eventsEnabled = !config.GetConfig().ValidatorMode
 
 var edb *EventsDB
+var godb *db.GoLevelDB
 
 func init() {
 	RegisterAminoEvents(cdc)
 }
 
+func GetCurrentDB() *db.GoLevelDB {
+	if godb != nil {
+		return godb
+	}
+
+	gdb, err := db.NewGoLevelDB("events", utils.GetMinterHome()+"/data")
+
+	if err != nil {
+		panic(err)
+	}
+
+	godb = gdb
+
+	return gdb
+}
+
 func GetCurrent() *EventsDB {
 	if edb == nil {
-		eventsDB, err := db.NewGoLevelDB("events", utils.GetMinterHome()+"/data")
-
-		if err != nil {
-			panic(err)
-		}
-
-		edb = NewEventsDB(eventsDB)
+		edb = NewEventsDB(GetCurrentDB())
 	}
 
 	return edb
