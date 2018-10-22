@@ -96,9 +96,6 @@ func (db *EventsDB) FlushEvents(height int64) error {
 	}
 
 	events := db.GetEvents(height)
-
-	key := getKeyForHeight(height)
-
 	bytes, err := cdc.MarshalBinary(events)
 
 	if err != nil {
