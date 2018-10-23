@@ -6,8 +6,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
-	"io"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/MinterTeam/minter-go-node/core/minter"
@@ -24,6 +22,7 @@ var (
 	cdc        = amino.NewCodec()
 	blockchain *minter.Blockchain
 	client     *rpc.Local
+	limitter   = make(chan struct{}, 10)
 )
 
 func init() {
@@ -38,12 +37,10 @@ func RunApi(b *minter.Blockchain, node *node.Node) {
 
 	router := mux.NewRouter().StrictSlash(true)
 
-	router.HandleFunc("/api/bipVolume", wrapper(GetBipVolume)).Methods("GET")
 	router.HandleFunc("/api/candidates", wrapper(GetCandidates)).Methods("GET")
 	router.HandleFunc("/api/candidate/{pubkey}", wrapper(GetCandidate)).Methods("GET")
 	router.HandleFunc("/api/validators", wrapper(GetValidators)).Methods("GET")
 	router.HandleFunc("/api/balance/{address}", wrapper(GetBalance)).Methods("GET")
-	router.HandleFunc("/api/balanceWS", wrapper(GetBalanceWatcher))
 	router.HandleFunc("/api/transactionCount/{address}", wrapper(GetTransactionCount)).Methods("GET")
 	router.HandleFunc("/api/sendTransaction", wrapper(SendTransaction)).Methods("POST")
 	router.HandleFunc("/api/sendTransactionSync", wrapper(SendTransactionSync)).Methods("POST")
@@ -74,8 +71,8 @@ func RunApi(b *minter.Blockchain, node *node.Node) {
 
 func wrapper(f func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		defer io.Copy(ioutil.Discard, r.Body)
-		defer r.Body.Close()
+		limitter <- struct{}{}
+		defer func() { <-limitter }()
 
 		f(w, r)
 	}
