@@ -35,7 +35,6 @@ type ResultTxSearch struct {
 }
 
 func Transactions(w http.ResponseWriter, r *http.Request) {
-
 	query := r.URL.Query().Get("query")
 
 	rpcResult, err := client.TxSearch(query, false, 1, 100)

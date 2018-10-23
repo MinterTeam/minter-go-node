@@ -21,8 +21,8 @@ import (
 var (
 	cdc        = amino.NewCodec()
 	blockchain *minter.Blockchain
-	client     *rpc.Local
-	limitter   = make(chan struct{}, 10)
+	client     *Local
+	limitter   = make(chan struct{}, 200)
 )
 
 func init() {
@@ -31,7 +31,9 @@ func init() {
 }
 
 func RunApi(b *minter.Blockchain, node *node.Node) {
-	client = rpc.NewLocal(node)
+	client = &Local{
+		client: rpc.NewLocal(node),
+	}
 
 	blockchain = b
 

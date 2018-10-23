@@ -13,14 +13,10 @@ import (
 	"github.com/MinterTeam/minter-go-node/eventsdb"
 	"github.com/MinterTeam/minter-go-node/genesis"
 	"github.com/MinterTeam/minter-go-node/helpers"
-	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/tendermint/go-amino"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/db"
-	"github.com/tendermint/tendermint/node"
-	rpc "github.com/tendermint/tendermint/rpc/client"
 	"math/big"
-	"os"
 	"sync/atomic"
 )
 
@@ -35,12 +31,14 @@ type Blockchain struct {
 	height             int64
 	rewards            *big.Int
 	validatorsStatuses map[[20]byte]int8
-	tendermintRPC      *rpc.Local
 }
 
 const (
 	ValidatorPresent = 1
 	ValidatorAbsent  = 2
+
+	StateDBPrefix = "s"
+	AppDBPrefix   = "a"
 )
 
 var (
@@ -56,8 +54,8 @@ func NewMinterBlockchain() *Blockchain {
 	}
 
 	blockchain = &Blockchain{
-		stateDB: db.NewPrefixDB(ldb, []byte("s")),
-		appDB:   db.NewPrefixDB(ldb, []byte("a")),
+		stateDB: db.NewPrefixDB(ldb, []byte(StateDBPrefix)),
+		appDB:   db.NewPrefixDB(ldb, []byte(AppDBPrefix)),
 	}
 
 	blockchain.updateCurrentRootHash()
@@ -70,17 +68,6 @@ func NewMinterBlockchain() *Blockchain {
 	blockchain.updateCurrentState()
 
 	return blockchain
-}
-
-func (app *Blockchain) RunRPC(node *node.Node) {
-	app.tendermintRPC = rpc.NewLocal(node)
-
-	status, _ := app.tendermintRPC.Status()
-
-	if status.NodeInfo.Network != genesis.Network {
-		log.Error("Different networks")
-		os.Exit(1)
-	}
 }
 
 func (app *Blockchain) SetOption(req abciTypes.RequestSetOption) abciTypes.ResponseSetOption {
@@ -158,7 +145,6 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 }
 
 func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.ResponseEndBlock {
-
 	var updates []abciTypes.ValidatorUpdate
 
 	stateValidators := app.stateDeliver.GetStateValidators()
@@ -176,7 +162,6 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 
 	// accumulate rewards
 	for i, val := range vals {
-
 		// skip if candidate is not present
 		if app.validatorsStatuses[val.GetAddress()] != ValidatorPresent {
 			continue
@@ -312,7 +297,6 @@ func (app *Blockchain) CheckTx(rawTx []byte) abciTypes.ResponseCheckTx {
 }
 
 func (app *Blockchain) Commit() abciTypes.ResponseCommit {
-
 	hash, _, err := app.stateDeliver.Commit(false)
 
 	if err != nil {
@@ -344,7 +328,6 @@ func (app *Blockchain) Stop() {
 }
 
 func (app *Blockchain) updateCurrentRootHash() {
-
 	// todo: make provider
 	result := app.appDB.Get([]byte("root"))
 	copy(app.rootHash[:], result)
@@ -363,7 +346,7 @@ func (app *Blockchain) updateCurrentState() {
 }
 
 func (app *Blockchain) CurrentState() *state.StateDB {
-	return state.NewForCheck(app.stateCheck)
+	return app.stateCheck
 }
 
 func (app *Blockchain) GetStateForHeight(height int) (*state.StateDB, error) {
@@ -375,7 +358,6 @@ func (app *Blockchain) Height() int64 {
 }
 
 func (app *Blockchain) getCurrentValidators() abciTypes.ValidatorUpdates {
-
 	result := app.appDB.Get([]byte("validators"))
 
 	if len(result) == 0 {
@@ -401,8 +383,4 @@ func (app *Blockchain) saveCurrentValidators(vals abciTypes.ValidatorUpdates) {
 	}
 
 	app.appDB.Set([]byte("validators"), data)
-}
-
-func GetBlockchain() *Blockchain {
-	return blockchain
 }

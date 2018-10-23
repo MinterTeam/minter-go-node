@@ -14,6 +14,7 @@ import (
 	"github.com/tendermint/tendermint/p2p"
 	"github.com/tendermint/tendermint/privval"
 	"github.com/tendermint/tendermint/proxy"
+	rpc "github.com/tendermint/tendermint/rpc/client"
 	"os"
 )
 
@@ -35,7 +36,13 @@ func main() {
 	app := minter.NewMinterBlockchain()
 	node := startTendermintNode(app)
 
-	app.RunRPC(node)
+	client := rpc.NewLocal(node)
+	status, _ := client.Status()
+	if status.NodeInfo.Network != genesis.Network {
+		log.Error("Different networks")
+		os.Exit(1)
+	}
+	client.Stop()
 
 	if !cfg.ValidatorMode {
 		go api.RunApi(app, node)

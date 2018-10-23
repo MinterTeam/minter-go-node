@@ -134,6 +134,7 @@ func (s *StateDB) Clear() {
 	s.stateCandidates = nil
 	s.stateCandidatesDirty = false
 	s.stakeCache = make(map[types.CoinSymbol]StakeCache)
+	s.lock = sync.Mutex{}
 }
 
 // Retrieve the balance from the given address or 0 if object not found
@@ -151,10 +152,8 @@ func (s *StateDB) GetBalances(addr types.Address) Balances {
 		return stateObject.Balances()
 	}
 
-	def := make(map[types.CoinSymbol]*big.Int)
-
 	return Balances{
-		Data: def,
+		Data: make(map[types.CoinSymbol]*big.Int),
 	}
 }
 
@@ -611,7 +610,6 @@ func (s *StateDB) CreateCandidate(
 
 // Commit writes the state to the underlying in-memory trie database.
 func (s *StateDB) Commit(deleteEmptyObjects bool) (root []byte, version int64, err error) {
-
 	// Commit objects to the trie.
 	for _, addr := range getOrderedObjectsKeys(s.stateAccountsDirty) {
 		stateObject := s.stateAccounts[addr]
