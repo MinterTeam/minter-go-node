@@ -41,7 +41,6 @@ func makeResponseValidator(v state.Validator, state *state.StateDB) Validator {
 }
 
 func makeResponseCandidate(c state.Candidate) Candidate {
-
 	stakes := make([]Stake, len(c.Stakes))
 
 	for i, stake := range c.Stakes {
@@ -65,7 +64,6 @@ func makeResponseCandidate(c state.Candidate) Candidate {
 }
 
 func GetValidators(w http.ResponseWriter, r *http.Request) {
-
 	height, _ := strconv.Atoi(r.URL.Query().Get("height"))
 
 	if height <= 0 {

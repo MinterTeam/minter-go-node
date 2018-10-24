@@ -1,28 +1,38 @@
 package api
 
 import (
+	"encoding/json"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/eventsdb"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 	"net/http"
+	"strings"
+	"sync"
+	"sync/atomic"
 
 	"github.com/MinterTeam/minter-go-node/core/minter"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/tendermint/go-amino"
 	"github.com/tendermint/tendermint/crypto/encoding/amino"
-	"github.com/tendermint/tendermint/node"
 	rpc "github.com/tendermint/tendermint/rpc/client"
 	"strconv"
 	"time"
 )
 
 var (
-	cdc        = amino.NewCodec()
-	blockchain *minter.Blockchain
-	client     *Local
-	limitter   = make(chan struct{}, 200)
+	cdc         = amino.NewCodec()
+	blockchain  *minter.Blockchain
+	client      *Local
+	connections = int32(0)
+	limitter    = make(chan struct{}, 10)
+)
+
+const (
+	SimultReqLimit = 100
+	LimitPerClient = 100
+	LimitWindow    = 1 * time.Minute
 )
 
 func init() {
@@ -30,14 +40,21 @@ func init() {
 	eventsdb.RegisterAminoEvents(cdc)
 }
 
-func RunApi(b *minter.Blockchain, node *node.Node) {
+func RunApi(b *minter.Blockchain, tmRPC *rpc.Local) {
 	client = &Local{
-		client: rpc.NewLocal(node),
+		client: tmRPC,
 	}
 
 	blockchain = b
 
 	router := mux.NewRouter().StrictSlash(true)
+
+	stats := IpStats{
+		ips:  make(map[string]int),
+		lock: sync.Mutex{},
+	}
+
+	router.Use(RateLimit(LimitPerClient, LimitWindow, &stats))
 
 	router.HandleFunc("/api/candidates", wrapper(GetCandidates)).Methods("GET")
 	router.HandleFunc("/api/candidate/{pubkey}", wrapper(GetCandidate)).Methods("GET")
@@ -73,11 +90,100 @@ func RunApi(b *minter.Blockchain, node *node.Node) {
 
 func wrapper(f func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if atomic.LoadInt32(&connections) > SimultReqLimit {
+			w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+			w.WriteHeader(http.StatusTooManyRequests)
+			json.NewEncoder(w).Encode(Response{
+				Code: http.StatusTooManyRequests,
+				Log:  "Too many requests",
+			})
+			return
+		}
+
+		atomic.AddInt32(&connections, 1)
 		limitter <- struct{}{}
-		defer func() { <-limitter }()
+
+		defer func() {
+			log.With("module", "api").Info("Served API request", "req", r.RequestURI)
+			<-limitter
+			atomic.AddInt32(&connections, -1)
+		}()
 
 		f(w, r)
 	}
+}
+
+type IpStats struct {
+	ips  map[string]int
+	lock sync.Mutex
+}
+
+func (s *IpStats) Reset() {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	s.ips = make(map[string]int)
+}
+
+func (s *IpStats) Add(identifier string, count int) int {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	s.ips[identifier] += count
+
+	return s.ips[identifier]
+}
+
+type Stats interface {
+	// Reset will reset the map.
+	Reset()
+
+	// Add would add "count" to the map at the key of "identifier",
+	// and returns an int which is the total count of the value
+	// at that key.
+	Add(identifier string, count int) int
+}
+
+func RateLimit(limit int, window time.Duration, stats Stats) func(next http.Handler) http.Handler {
+	var windowStart time.Time
+
+	// Clear the rate limit stats after each window.
+	ticker := time.NewTicker(window)
+	go func() {
+		windowStart = time.Now()
+
+		for range ticker.C {
+			windowStart = time.Now()
+			stats.Reset()
+		}
+	}()
+
+	return func(next http.Handler) http.Handler {
+		h := func(w http.ResponseWriter, r *http.Request) {
+			value := int(stats.Add(identifyRequest(r), 1))
+
+			XRateLimitRemaining := limit - value
+			if XRateLimitRemaining < 0 {
+				XRateLimitRemaining = 0
+			}
+
+			w.Header().Add("X-Rate-Limit-Limit", strconv.Itoa(limit))
+			w.Header().Add("X-Rate-Limit-Remaining", strconv.Itoa(XRateLimitRemaining))
+			w.Header().Add("X-Rate-Limit-Reset", strconv.Itoa(int(window.Seconds()-time.Since(windowStart).Seconds())+1))
+
+			if value >= limit {
+				w.WriteHeader(429)
+			} else {
+				next.ServeHTTP(w, r)
+			}
+		}
+
+		return http.HandlerFunc(h)
+	}
+}
+
+func identifyRequest(r *http.Request) string {
+	return strings.Split(r.Header.Get("X-Real-IP"), ":")[0]
 }
 
 func waitForTendermint() {

@@ -42,10 +42,9 @@ func main() {
 		log.Error("Different networks")
 		os.Exit(1)
 	}
-	client.Stop()
 
 	if !cfg.ValidatorMode {
-		go api.RunApi(app, node)
+		go api.RunApi(app, client)
 		go gui.Run(cfg.GUIListenAddress)
 	}
 

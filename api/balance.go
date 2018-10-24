@@ -17,7 +17,6 @@ type BalanceRequest struct {
 }
 
 func GetBalance(w http.ResponseWriter, r *http.Request) {
-
 	cState := GetStateForRequest(r)
 
 	vars := mux.Vars(r)

@@ -17,6 +17,7 @@ import (
 	abciTypes "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/db"
 	"math/big"
+	"sync"
 	"sync/atomic"
 )
 
@@ -31,6 +32,8 @@ type Blockchain struct {
 	height             int64
 	rewards            *big.Int
 	validatorsStatuses map[[20]byte]int8
+
+	lock sync.RWMutex
 }
 
 const (
@@ -342,14 +345,23 @@ func (app *Blockchain) updateCurrentRootHash() {
 }
 
 func (app *Blockchain) updateCurrentState() {
+	app.lock.Lock()
+	defer app.lock.Unlock()
+
 	app.stateCheck = state.NewForCheck(app.stateDeliver)
 }
 
 func (app *Blockchain) CurrentState() *state.StateDB {
+	app.lock.RLock()
+	defer app.lock.RUnlock()
+
 	return app.stateCheck
 }
 
 func (app *Blockchain) GetStateForHeight(height int) (*state.StateDB, error) {
+	app.lock.RLock()
+	defer app.lock.RUnlock()
+
 	return state.New(int64(height), app.stateDB)
 }
 
