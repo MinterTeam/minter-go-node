@@ -109,7 +109,7 @@ func (db *EventsDB) FlushEvents(height int64) error {
 	}
 
 	events := db.getEvents(height)
-	bytes, err := cdc.MarshalBinary(events)
+	bytes, err := cdc.MarshalBinaryLengthPrefixed(events)
 
 	if err != nil {
 		return err
@@ -135,7 +135,7 @@ func (db *EventsDB) LoadEvents(height int64) Events {
 	}
 
 	var decoded Events
-	err := cdc.UnmarshalBinary(data, &decoded)
+	err := cdc.UnmarshalBinaryLengthPrefixed(data, &decoded)
 
 	if err != nil {
 		panic(err)

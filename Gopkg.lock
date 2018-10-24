@@ -18,12 +18,12 @@
   revision = "f673a4b563b57b9a95832545c878669a7fa801d9"
 
 [[projects]]
-  branch = "master"
-  digest = "1:4df5bb87cec81c9a94d98905e8bf6cd21f515b1deae2ac58ab318b6405b7c127"
+  branch = "develop"
+  digest = "1:13036d6e851d1af8f1af824b432dd39b239736cc808af4d51ebb9b3f79345797"
   name = "github.com/danil-lashin/iavl"
   packages = ["."]
   pruneopts = "UT"
-  revision = "b9d4830f8bc01a88d879c50dfaae9694a7490c2e"
+  revision = "11b9482fb1d12df76ed8e9f09cbb3756e37e5dba"
 
 [[projects]]
   digest = "1:a2c1d0e43bd3baaa071d1b9ed72c27d78169b2b269f71c105ac4ba34b1be4a39"
@@ -370,27 +370,16 @@
   revision = "e5840949ff4fff0c56f9b6a541e22b63581ea9df"
 
 [[projects]]
-  branch = "master"
-  digest = "1:087aaa7920e5d0bf79586feb57ce01c35c830396ab4392798112e8aae8c47722"
-  name = "github.com/tendermint/ed25519"
-  packages = [
-    ".",
-    "edwards25519",
-    "extra25519",
-  ]
-  pruneopts = "UT"
-  revision = "d8387025d2b9d158cf4efb07e7ebf814bcce2057"
-
-[[projects]]
-  digest = "1:2c971a45c89ca2ccc735af50919cdee05fbdc54d4bf50625073693300e31ead8"
+  digest = "1:5f52e817b6c9d52ddba70dece0ea31134d82a52c05bce98fbc739ab2a832df28"
   name = "github.com/tendermint/go-amino"
   packages = ["."]
   pruneopts = "UT"
-  revision = "faa6e731944e2b7b6a46ad202902851e8ce85bee"
-  version = "v0.12.0"
+  revision = "cb07448b240918aa8d8df4505153549b86b77134"
+  version = "v0.13.0"
 
 [[projects]]
-  digest = "1:e72ab95e00ccd512ca27103b961f8b5d2052139bc02d5ec7b39fe37c0dc14877"
+  branch = "develop"
+  digest = "1:a9855b0b2b4877f8d23c969f17dee7938821c2bdd8eb96d575e85fe08467563e"
   name = "github.com/tendermint/tendermint"
   packages = [
     "abci/client",
@@ -432,7 +421,6 @@
     "rpc/core",
     "rpc/core/types",
     "rpc/grpc",
-    "rpc/lib",
     "rpc/lib/client",
     "rpc/lib/server",
     "rpc/lib/types",
@@ -445,16 +433,16 @@
     "version",
   ]
   pruneopts = "UT"
-  revision = "90eda9bfb6e6daeed1c8015df41cb36772d91778"
-  version = "v0.25.1-rc0"
+  revision = "9795e12ef2eae822733e5add1300bdd37caf5d7c"
 
 [[projects]]
-  branch = "master"
-  digest = "1:c71272c5e0e2b7de4b434b3fe351fbb08388323273feda75a84ccde6c04a5007"
+  digest = "1:1fdfa9436cc1c11afbdbfb56549e9201a92db0b0a0b7bef0797e7b68c9e8791f"
   name = "golang.org/x/crypto"
   packages = [
     "chacha20poly1305",
     "curve25519",
+    "ed25519",
+    "ed25519/internal/edwards25519",
     "hkdf",
     "internal/chacha20",
     "internal/subtle",
@@ -465,7 +453,8 @@
     "salsa20/salsa",
   ]
   pruneopts = "UT"
-  revision = "a2144134853fc9a27a7b1e3eb4f19f1a76df13c9"
+  revision = "3764759f34a542a3aef74d6b02e35be7ab893bba"
+  source = "github.com/tendermint/crypto"
 
 [[projects]]
   digest = "1:d36f55a999540d29b6ea3c2ea29d71c76b1d9853fdcd3e5c5cb4836f2ba118f1"

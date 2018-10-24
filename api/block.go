@@ -113,9 +113,7 @@ func Block(w http.ResponseWriter, r *http.Request) {
 
 	precommits, _ := cdc.MarshalJSON(block.Block.LastCommit.Precommits)
 
-	encodedBlock, _ := cdc.MarshalBinary(block)
-
-	size := len(encodedBlock)
+	size := len(cdc.MustMarshalBinaryLengthPrefixed(block))
 
 	var eventsRaw []byte
 

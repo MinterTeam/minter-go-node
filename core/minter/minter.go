@@ -378,7 +378,7 @@ func (app *Blockchain) getCurrentValidators() abciTypes.ValidatorUpdates {
 
 	var vals abciTypes.ValidatorUpdates
 
-	err := cdc.UnmarshalBinary(result, &vals)
+	err := cdc.UnmarshalBinaryLengthPrefixed(result, &vals)
 
 	if err != nil {
 		panic(err)
@@ -388,7 +388,7 @@ func (app *Blockchain) getCurrentValidators() abciTypes.ValidatorUpdates {
 }
 
 func (app *Blockchain) saveCurrentValidators(vals abciTypes.ValidatorUpdates) {
-	data, err := cdc.MarshalBinary(vals)
+	data, err := cdc.MarshalBinaryLengthPrefixed(vals)
 
 	if err != nil {
 		panic(err)

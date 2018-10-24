@@ -7,6 +7,7 @@ import (
 	tmConfig "github.com/tendermint/tendermint/config"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 var (
@@ -57,17 +58,16 @@ func DefaultConfig() *Config {
 	cfg.Mempool.CacheSize = 100000
 	cfg.Mempool.WalPath = "tmdata/mempool.wal"
 	cfg.Mempool.Recheck = true
-	cfg.Mempool.RecheckEmpty = true
 	cfg.Mempool.Size = 10000
 
 	cfg.Consensus.WalPath = "tmdata/cs.wal/wal"
-	cfg.Consensus.TimeoutPropose = 2000
-	cfg.Consensus.TimeoutProposeDelta = 500
-	cfg.Consensus.TimeoutPrevote = 1000
-	cfg.Consensus.TimeoutPrevoteDelta = 500
-	cfg.Consensus.TimeoutPrecommit = 1000
-	cfg.Consensus.TimeoutPrecommitDelta = 500
-	cfg.Consensus.TimeoutCommit = 4500
+	cfg.Consensus.TimeoutPropose = 2 * time.Second
+	cfg.Consensus.TimeoutProposeDelta = 500 * time.Millisecond
+	cfg.Consensus.TimeoutPrevote = 1 * time.Second
+	cfg.Consensus.TimeoutPrevoteDelta = 500 * time.Millisecond
+	cfg.Consensus.TimeoutPrecommit = 1 * time.Second
+	cfg.Consensus.TimeoutPrecommitDelta = 500 * time.Millisecond
+	cfg.Consensus.TimeoutCommit = 4500 * time.Millisecond
 
 	cfg.PrivValidator = "config/priv_validator.json"
 

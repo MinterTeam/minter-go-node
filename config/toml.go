@@ -158,7 +158,7 @@ addr_book_file = "{{ js .P2P.AddrBook }}"
 addr_book_strict = {{ .P2P.AddrBookStrict }}
 
 # Time to wait before flushing messages out on the connection, in ms
-flush_throttle_timeout = {{ .P2P.FlushThrottleTimeout }}
+flush_throttle_timeout = "{{ .P2P.FlushThrottleTimeout }}"
 
 # Maximum number of inbound peers
 max_num_inbound_peers = {{ .P2P.MaxNumInboundPeers }}
@@ -191,7 +191,6 @@ private_peer_ids = "{{ .P2P.PrivatePeerIDs }}"
 [mempool]
 
 recheck = {{ .Mempool.Recheck }}
-recheck_empty = {{ .Mempool.RecheckEmpty }}
 broadcast = {{ .Mempool.Broadcast }}
 wal_dir = "{{ js .Mempool.WalPath }}"
 

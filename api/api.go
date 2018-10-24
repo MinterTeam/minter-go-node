@@ -31,7 +31,7 @@ var (
 
 const (
 	SimultReqLimit = 100
-	LimitPerClient = 100
+	LimitPerClient = 300
 	LimitWindow    = 1 * time.Minute
 )
 
