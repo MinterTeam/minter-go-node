@@ -659,7 +659,7 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (root []byte, version int64, e
 
 	hash, version, err := s.iavl.SaveVersion()
 
-	if cfg.ValidatorMode && version > 1 {
+	if !cfg.KeepStateHistory && version > 1 {
 		err = s.iavl.DeleteVersion(version - 1)
 
 		if err != nil {

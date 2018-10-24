@@ -233,6 +233,8 @@ type BaseConfig struct {
 	APIListenAddress string `mapstructure:"api_listen_addr"`
 
 	ValidatorMode bool `mapstructure:"validator_mode"`
+
+	KeepStateHistory bool `mapstructure:"keep_state_history"`
 }
 
 // DefaultBaseConfig returns a default base configuration for a Tendermint node
@@ -253,6 +255,7 @@ func DefaultBaseConfig() BaseConfig {
 		GUIListenAddress:  ":3000",
 		APIListenAddress:  ":8841",
 		ValidatorMode:     false,
+		KeepStateHistory:  false,
 	}
 }
 

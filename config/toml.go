@@ -76,6 +76,9 @@ api_listen_addr = "{{ .BaseConfig.APIListenAddress }}"
 # Sets node to be in validator mode. Disables API, events, history of blocks, indexes, etc. 
 validator_mode = {{ .BaseConfig.ValidatorMode }}
 
+# If set to true node will save old states. This can be useful for applications which need all blockchain history data. 
+keep_state_history = {{ .BaseConfig.KeepStateHistory }}
+
 # If this node is many blocks behind the tip of the chain, FastSync
 # allows them to catchup quickly by downloading blocks in parallel
 # and verifying their commits
