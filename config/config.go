@@ -174,7 +174,6 @@ func GetTmConfig() *tmConfig.Config {
 
 // BaseConfig defines the base configuration for a Tendermint node
 type BaseConfig struct {
-
 	// chainID is unexposed and immutable but here for convenience
 	chainID string
 
@@ -235,27 +234,36 @@ type BaseConfig struct {
 	ValidatorMode bool `mapstructure:"validator_mode"`
 
 	KeepStateHistory bool `mapstructure:"keep_state_history"`
+
+	APISimultaneousRequests int `mapstructure:"api_simultaneous_requests"`
+
+	APIPerIPLimit int `mapstructure:"api_per_ip_limit"`
+
+	APIPerIPLimitWindow time.Duration `mapstructure:"api_per_ip_limit_window"`
 }
 
 // DefaultBaseConfig returns a default base configuration for a Tendermint node
 func DefaultBaseConfig() BaseConfig {
 	return BaseConfig{
-		Genesis:           defaultGenesisJSONPath,
-		PrivValidator:     defaultPrivValPath,
-		NodeKey:           defaultNodeKeyPath,
-		Moniker:           defaultMoniker,
-		ProxyApp:          "tcp://127.0.0.1:26658",
-		ABCI:              "socket",
-		LogLevel:          DefaultPackageLogLevels(),
-		ProfListenAddress: "",
-		FastSync:          true,
-		FilterPeers:       false,
-		DBBackend:         "leveldb",
-		DBPath:            "data",
-		GUIListenAddress:  ":3000",
-		APIListenAddress:  ":8841",
-		ValidatorMode:     false,
-		KeepStateHistory:  false,
+		Genesis:                 defaultGenesisJSONPath,
+		PrivValidator:           defaultPrivValPath,
+		NodeKey:                 defaultNodeKeyPath,
+		Moniker:                 defaultMoniker,
+		ProxyApp:                "tcp://127.0.0.1:26658",
+		ABCI:                    "socket",
+		LogLevel:                DefaultPackageLogLevels(),
+		ProfListenAddress:       "",
+		FastSync:                true,
+		FilterPeers:             false,
+		DBBackend:               "leveldb",
+		DBPath:                  "data",
+		GUIListenAddress:        ":3000",
+		APIListenAddress:        ":8841",
+		ValidatorMode:           false,
+		KeepStateHistory:        false,
+		APISimultaneousRequests: 100,
+		APIPerIPLimit:           1000,
+		APIPerIPLimitWindow:     60 * time.Second,
 	}
 }
 

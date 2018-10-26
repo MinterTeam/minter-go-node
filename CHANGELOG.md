@@ -11,6 +11,7 @@ BREAKING CHANGES
 IMPROVEMENT
 
 - [config] Add keep_state_history option
+- [api] Limit API requests
 
 ## 0.5.1
 *Oct 22th, 2018*

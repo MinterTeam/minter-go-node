@@ -27,12 +27,7 @@ var (
 	client      *Local
 	connections = int32(0)
 	limitter    = make(chan struct{}, 10)
-)
-
-const (
-	SimultReqLimit = 100
-	LimitPerClient = 300
-	LimitWindow    = 1 * time.Minute
+	cfg         = config.GetConfig()
 )
 
 func init() {
@@ -54,7 +49,7 @@ func RunApi(b *minter.Blockchain, tmRPC *rpc.Local) {
 		lock: sync.Mutex{},
 	}
 
-	router.Use(RateLimit(LimitPerClient, LimitWindow, &stats))
+	router.Use(RateLimit(cfg.APIPerIPLimit, cfg.APIPerIPLimitWindow, &stats))
 
 	router.HandleFunc("/api/candidates", wrapper(GetCandidates)).Methods("GET")
 	router.HandleFunc("/api/candidate/{pubkey}", wrapper(GetCandidate)).Methods("GET")
@@ -90,7 +85,7 @@ func RunApi(b *minter.Blockchain, tmRPC *rpc.Local) {
 
 func wrapper(f func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if atomic.LoadInt32(&connections) > SimultReqLimit {
+		if atomic.LoadInt32(&connections) > int32(cfg.APISimultaneousRequests) {
 			w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 			w.WriteHeader(http.StatusTooManyRequests)
 			json.NewEncoder(w).Encode(Response{
