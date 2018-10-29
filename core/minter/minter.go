@@ -50,7 +50,7 @@ var (
 )
 
 func NewMinterBlockchain() *Blockchain {
-	ldb, err := db.NewGoLevelDB("minter", utils.GetMinterHome()+"/data")
+	ldb, err := db.NewGoLevelDB("state", utils.GetMinterHome()+"/data")
 
 	if err != nil {
 		panic(err)
