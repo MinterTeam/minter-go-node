@@ -11,27 +11,27 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:2c00f064ba355903866cbfbf3f7f4c0fe64af6638cc7d1b8bdcf3181bc67f1d8"
+  digest = "1:c0decf632843204d2b8781de7b26e7038584e2dcccc7e2f401e88ae85b1df2b7"
   name = "github.com/btcsuite/btcd"
   packages = ["btcec"]
   pruneopts = "UT"
-  revision = "f673a4b563b57b9a95832545c878669a7fa801d9"
+  revision = "67e573d211ace594f1366b4ce9d39726c4b19bd0"
 
 [[projects]]
-  branch = "develop"
-  digest = "1:13036d6e851d1af8f1af824b432dd39b239736cc808af4d51ebb9b3f79345797"
+  branch = "master"
+  digest = "1:0c4cb117e3229040d89bb2c5aae0f438fcabf3a85a48a667576c549bce0fc9db"
   name = "github.com/danil-lashin/iavl"
   packages = ["."]
   pruneopts = "UT"
-  revision = "11b9482fb1d12df76ed8e9f09cbb3756e37e5dba"
+  revision = "451c063b0b834b418c84fb98e1c0b9ae6b664dc9"
 
 [[projects]]
-  digest = "1:a2c1d0e43bd3baaa071d1b9ed72c27d78169b2b269f71c105ac4ba34b1be4a39"
+  digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
   pruneopts = "UT"
-  revision = "346938d642f2ec3594ed81d874461961cd0faa76"
-  version = "v1.1.0"
+  revision = "8991bc29aa16c548c550c7ff78260e27b9ab7c73"
+  version = "v1.1.1"
 
 [[projects]]
   digest = "1:c7644c73a3d23741fdba8a99b1464e021a224b7e205be497271a8003a15ca41b"
@@ -73,12 +73,12 @@
   version = "v0.3.0"
 
 [[projects]]
-  digest = "1:c4a2528ccbcabf90f9f3c464a5fc9e302d592861bbfd0b7135a7de8a943d0406"
+  digest = "1:586ea76dbd0374d6fb649a91d70d652b7fe0ccffb8910a77468e7702e7901f3d"
   name = "github.com/go-stack/stack"
   packages = ["."]
   pruneopts = "UT"
-  revision = "259ab82a6cad3992b4e21ff5cac294ccb06474bc"
-  version = "v1.7.0"
+  revision = "2fee6af1a9795aafbe0253a0cfbdf668e1fb8a9a"
+  version = "v1.8.0"
 
 [[projects]]
   digest = "1:234bd3c0b701cdb49dbda54821eecf2fc76431618751ee69e95248e358b26fdb"
@@ -217,12 +217,12 @@
   version = "v1.0.1"
 
 [[projects]]
-  digest = "1:645110e089152bd0f4a011a2648fbb0e4df5977be73ca605781157ac297f50c4"
+  digest = "1:53bc4cd4914cd7cd52139990d5170d6dc99067ae31c56530621b18b35fc30318"
   name = "github.com/mitchellh/mapstructure"
   packages = ["."]
   pruneopts = "UT"
-  revision = "fa473d140ef3c6adf42d6b391fe76707f1f243c8"
-  version = "v1.0.0"
+  revision = "3536a929edddb9a5b34bd6861dc4a9647cb459fe"
+  version = "v1.1.2"
 
 [[projects]]
   digest = "1:95741de3af260a92cc5c7f3f3061e85273f5a81b5db20d4bd68da74bd521675e"
@@ -260,7 +260,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:e469cd65badf7694aeb44874518606d93c1d59e7735d3754ad442782437d3cc3"
+  digest = "1:db712fde5d12d6cdbdf14b777f0c230f4ff5ab0be8e35b239fc319953ed577a4"
   name = "github.com/prometheus/common"
   packages = [
     "expfmt",
@@ -268,11 +268,11 @@
     "model",
   ]
   pruneopts = "UT"
-  revision = "7600349dcfe1abd18d72d3a1770870d9800a7801"
+  revision = "7e9e6cabbd393fc208072eedef99188d0ce788b6"
 
 [[projects]]
   branch = "master"
-  digest = "1:20d9bb50dbee172242f9bcd6ec24a917dd7a5bb17421bf16a79c33111dea7db1"
+  digest = "1:ef74914912f99c79434d9c09658274678bc85080ebe3ab32bec3940ebce5e1fc"
   name = "github.com/prometheus/procfs"
   packages = [
     ".",
@@ -281,7 +281,7 @@
     "xfs",
   ]
   pruneopts = "UT"
-  revision = "ae68e2d4c00fed4943b5f6698d504a5fe083da8a"
+  revision = "185b4288413d2a0dd0806f78c90dde719829e5ae"
 
 [[projects]]
   digest = "1:c4556a44e350b50a490544d9b06e9fba9c286c21d6c0e47f54f3a9214597298c"
@@ -299,15 +299,15 @@
   version = "v1.4.0"
 
 [[projects]]
-  digest = "1:bd1ae00087d17c5a748660b8e89e1043e1e5479d0fea743352cda2f8dd8c4f84"
+  digest = "1:6a4a11ba764a56d2758899ec6f3848d24698d48442ebce85ee7a3f63284526cd"
   name = "github.com/spf13/afero"
   packages = [
     ".",
     "mem",
   ]
   pruneopts = "UT"
-  revision = "787d034dfe70e44075ccc060d346146ef53270ad"
-  version = "v1.1.1"
+  revision = "d40851caa0d747393da1ffb28f7f9d8b4eeffebd"
+  version = "v1.1.2"
 
 [[projects]]
   digest = "1:516e71bed754268937f57d4ecb190e01958452336fa73dbac880894164e91c1f"
@@ -318,32 +318,32 @@
   version = "v1.2.0"
 
 [[projects]]
-  branch = "master"
-  digest = "1:8a020f916b23ff574845789daee6818daf8d25a4852419aae3f0b12378ba432a"
+  digest = "1:68ea4e23713989dc20b1bded5d9da2c5f9be14ff9885beef481848edd18c26cb"
   name = "github.com/spf13/jwalterweatherman"
   packages = ["."]
   pruneopts = "UT"
-  revision = "14d3d4c518341bea657dd8a226f5121c0ff8c9f2"
+  revision = "4a4406e478ca629068e7768fc33f3f044173c0a6"
+  version = "v1.0.0"
 
 [[projects]]
-  digest = "1:dab83a1bbc7ad3d7a6ba1a1cc1760f25ac38cdf7d96a5cdd55cd915a4f5ceaf9"
+  digest = "1:c1b1102241e7f645bc8e0c22ae352e8f0dc6484b6cb4d132fa9f24174e0119e2"
   name = "github.com/spf13/pflag"
   packages = ["."]
   pruneopts = "UT"
-  revision = "9a97c102cda95a86cec2345a6f09f55a939babf5"
-  version = "v1.0.2"
+  revision = "298182f68c66c05229eb03ac171abe6e309ee79a"
+  version = "v1.0.3"
 
 [[projects]]
-  digest = "1:4fc8a61287ccfb4286e1ca5ad2ce3b0b301d746053bf44ac38cf34e40ae10372"
+  digest = "1:214775c11fd26da94a100111a62daa25339198a4f9c57cb4aab352da889f5b93"
   name = "github.com/spf13/viper"
   packages = ["."]
   pruneopts = "UT"
-  revision = "907c19d40d9a6c9bb55f040ff4ae45271a4754b9"
-  version = "v1.1.0"
+  revision = "2c12c60302a5a0e62ee102ca9bc996277c2f64f5"
+  version = "v1.2.1"
 
 [[projects]]
   branch = "master"
-  digest = "1:b3cfb8d82b1601a846417c3f31c03a7961862cb2c98dcf0959c473843e6d9a2b"
+  digest = "1:59483b8e8183f10ab21a85ba1f4cbb4a2335d48891801f79ed7b9499f44d383c"
   name = "github.com/syndtr/goleveldb"
   packages = [
     "leveldb",
@@ -360,7 +360,7 @@
     "leveldb/util",
   ]
   pruneopts = "UT"
-  revision = "c4c61651e9e37fa117f53c5a906d3b63090d8445"
+  revision = "6b91fda63f2e36186f1c9d0e48578defb69c5d43"
 
 [[projects]]
   digest = "1:605b6546f3f43745695298ec2d342d3e952b6d91cdf9f349bea9315f677d759f"
@@ -370,16 +370,15 @@
   revision = "e5840949ff4fff0c56f9b6a541e22b63581ea9df"
 
 [[projects]]
-  digest = "1:5f52e817b6c9d52ddba70dece0ea31134d82a52c05bce98fbc739ab2a832df28"
+  digest = "1:10b3a599325740c84a7c81f3f3cb2e1fdb70b3ea01b7fa28495567a2519df431"
   name = "github.com/tendermint/go-amino"
   packages = ["."]
   pruneopts = "UT"
-  revision = "cb07448b240918aa8d8df4505153549b86b77134"
-  version = "v0.13.0"
+  revision = "6dcc6ddc143e116455c94b25c1004c99e0d0ca12"
+  version = "v0.14.0"
 
 [[projects]]
-  branch = "develop"
-  digest = "1:a9855b0b2b4877f8d23c969f17dee7938821c2bdd8eb96d575e85fe08467563e"
+  digest = "1:f98aef9b8b8d755b63d53f3c89aa0bd21280cf706be15e937c4e67c891074fb1"
   name = "github.com/tendermint/tendermint"
   packages = [
     "abci/client",
@@ -433,7 +432,8 @@
     "version",
   ]
   pruneopts = "UT"
-  revision = "9795e12ef2eae822733e5add1300bdd37caf5d7c"
+  revision = "bc0d672b26dbbd6858e97a570c87e3c20cbf199e"
+  version = "v0.26.0-rc0"
 
 [[projects]]
   digest = "1:1fdfa9436cc1c11afbdbfb56549e9201a92db0b0a0b7bef0797e7b68c9e8791f"
@@ -474,14 +474,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:a989b95f72fce8876213e8e20492525b4cf69a9e7fee7f1d9897983ee0d547e9"
+  digest = "1:c6a2356698f1f51289bc57ac8933745f15248283145df110fa3bb6964b3db77b"
   name = "golang.org/x/sys"
   packages = [
     "cpu",
     "unix",
   ]
   pruneopts = "UT"
-  revision = "1c9583448a9c3aa0f9a6a5241bf73c0bd8aafded"
+  revision = "d989b31c87461dc8ab2f1cac6792814e27fadea9"
 
 [[projects]]
   digest = "1:a2ab62866c75542dd18d2b069fec854577a20211d7c0ea6ae746072a1dccdd18"
@@ -507,11 +507,12 @@
   version = "v0.3.0"
 
 [[projects]]
-  digest = "1:cd018653a358d4b743a9d3bee89e825521f2ab2f2ec0770164bf7632d8d73ab7"
+  branch = "master"
+  digest = "1:56b0bca90b7e5d1facf5fbdacba23e4e0ce069d25381b8e2f70ef1e7ebfb9c1a"
   name = "google.golang.org/genproto"
   packages = ["googleapis/rpc/status"]
   pruneopts = "UT"
-  revision = "7fd901a49ba6a7f87732eb344f6e3c5b19d1b200"
+  revision = "94acd270e44e65579b9ee3cdab25034d33fed608"
 
 [[projects]]
   digest = "1:2dab32a43451e320e49608ff4542fdfc653c95dcc35d0065ec9c6c3dd540ed74"
