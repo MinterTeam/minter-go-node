@@ -1041,6 +1041,18 @@ func (s *StateDB) SetCandidateOffline(pubkey []byte) {
 
 	s.setStateCandidates(stateCandidates)
 	s.MarkStateCandidateDirty()
+
+	vals := s.getStateValidators()
+
+	for i := range vals.data {
+		validator := &vals.data[i]
+		if bytes.Equal(validator.PubKey, pubkey) {
+			validator.toDrop = true
+		}
+	}
+
+	s.setStateValidators(vals)
+	s.MarkStateValidatorsDirty()
 }
 
 func (s *StateDB) SetValidatorPresent(height int64, address [20]byte) {

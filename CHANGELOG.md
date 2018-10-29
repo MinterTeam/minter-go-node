@@ -6,6 +6,7 @@
 BREAKING CHANGES
 
 - [core] Set validators limit to 100 for testnet
+- [core] SetCandidateOff transaction now applies immediately
 - [tendermint] Update to [v0.26.0](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0260) 
 
 IMPROVEMENT
