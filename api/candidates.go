@@ -6,7 +6,6 @@ import (
 )
 
 func GetCandidates(w http.ResponseWriter, r *http.Request) {
-
 	cState := GetStateForRequest(r)
 
 	candidates := cState.GetStateCandidates().GetData()

@@ -76,6 +76,18 @@ api_listen_addr = "{{ .BaseConfig.APIListenAddress }}"
 # Sets node to be in validator mode. Disables API, events, history of blocks, indexes, etc. 
 validator_mode = {{ .BaseConfig.ValidatorMode }}
 
+# If set to true node will save old states. This can be useful for applications which need all blockchain history data. 
+keep_state_history = {{ .BaseConfig.KeepStateHistory }}
+
+# Limit for simultaneous requests to API
+api_simultaneous_requests = {{ .BaseConfig.APISimultaneousRequests }}
+
+# Limit API requests for client (by IP)
+api_per_ip_limit = {{ .BaseConfig.APIPerIPLimit }}
+
+# How often API requests limits will be cleared
+api_per_ip_limit_window = "{{ .BaseConfig.APIPerIPLimitWindow }}"
+
 # If this node is many blocks behind the tip of the chain, FastSync
 # allows them to catchup quickly by downloading blocks in parallel
 # and verifying their commits
@@ -158,7 +170,7 @@ addr_book_file = "{{ js .P2P.AddrBook }}"
 addr_book_strict = {{ .P2P.AddrBookStrict }}
 
 # Time to wait before flushing messages out on the connection, in ms
-flush_throttle_timeout = {{ .P2P.FlushThrottleTimeout }}
+flush_throttle_timeout = "{{ .P2P.FlushThrottleTimeout }}"
 
 # Maximum number of inbound peers
 max_num_inbound_peers = {{ .P2P.MaxNumInboundPeers }}
@@ -191,7 +203,6 @@ private_peer_ids = "{{ .P2P.PrivatePeerIDs }}"
 [mempool]
 
 recheck = {{ .Mempool.Recheck }}
-recheck_empty = {{ .Mempool.RecheckEmpty }}
 broadcast = {{ .Mempool.Broadcast }}
 wal_dir = "{{ js .Mempool.WalPath }}"
 

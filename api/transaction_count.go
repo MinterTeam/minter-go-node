@@ -12,7 +12,6 @@ type TransactionCountResponse struct {
 }
 
 func GetTransactionCount(w http.ResponseWriter, r *http.Request) {
-
 	cState := GetStateForRequest(r)
 
 	vars := mux.Vars(r)

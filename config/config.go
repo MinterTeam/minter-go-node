@@ -7,6 +7,7 @@ import (
 	tmConfig "github.com/tendermint/tendermint/config"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 var (
@@ -55,28 +56,20 @@ func DefaultConfig() *Config {
 	cfg.DBPath = "tmdata"
 
 	cfg.Mempool.CacheSize = 100000
-	cfg.Mempool.WalPath = "tmdata/mempool.wal"
 	cfg.Mempool.Recheck = true
-	cfg.Mempool.RecheckEmpty = true
-	cfg.Mempool.Size = 10000
 
 	cfg.Consensus.WalPath = "tmdata/cs.wal/wal"
-	cfg.Consensus.TimeoutPropose = 2000
-	cfg.Consensus.TimeoutProposeDelta = 500
-	cfg.Consensus.TimeoutPrevote = 1000
-	cfg.Consensus.TimeoutPrevoteDelta = 500
-	cfg.Consensus.TimeoutPrecommit = 1000
-	cfg.Consensus.TimeoutPrecommitDelta = 500
-	cfg.Consensus.TimeoutCommit = 4500
+	cfg.Consensus.TimeoutPropose = 2 * time.Second
+	cfg.Consensus.TimeoutProposeDelta = 500 * time.Millisecond
+	cfg.Consensus.TimeoutPrevote = 1 * time.Second
+	cfg.Consensus.TimeoutPrevoteDelta = 500 * time.Millisecond
+	cfg.Consensus.TimeoutPrecommit = 1 * time.Second
+	cfg.Consensus.TimeoutPrecommitDelta = 500 * time.Millisecond
+	cfg.Consensus.TimeoutCommit = 4500 * time.Millisecond
 
 	cfg.PrivValidator = "config/priv_validator.json"
-
 	cfg.NodeKey = "config/node_key.json"
-
 	cfg.P2P.AddrBook = "config/addrbook.json"
-	cfg.P2P.ListenAddress = "tcp://0.0.0.0:26656"
-	cfg.P2P.SendRate = 5120000 // 5mb/s
-	cfg.P2P.RecvRate = 5120000 // 5mb/s
 
 	return cfg
 }
@@ -174,7 +167,6 @@ func GetTmConfig() *tmConfig.Config {
 
 // BaseConfig defines the base configuration for a Tendermint node
 type BaseConfig struct {
-
 	// chainID is unexposed and immutable but here for convenience
 	chainID string
 
@@ -233,26 +225,38 @@ type BaseConfig struct {
 	APIListenAddress string `mapstructure:"api_listen_addr"`
 
 	ValidatorMode bool `mapstructure:"validator_mode"`
+
+	KeepStateHistory bool `mapstructure:"keep_state_history"`
+
+	APISimultaneousRequests int `mapstructure:"api_simultaneous_requests"`
+
+	APIPerIPLimit int `mapstructure:"api_per_ip_limit"`
+
+	APIPerIPLimitWindow time.Duration `mapstructure:"api_per_ip_limit_window"`
 }
 
 // DefaultBaseConfig returns a default base configuration for a Tendermint node
 func DefaultBaseConfig() BaseConfig {
 	return BaseConfig{
-		Genesis:           defaultGenesisJSONPath,
-		PrivValidator:     defaultPrivValPath,
-		NodeKey:           defaultNodeKeyPath,
-		Moniker:           defaultMoniker,
-		ProxyApp:          "tcp://127.0.0.1:26658",
-		ABCI:              "socket",
-		LogLevel:          DefaultPackageLogLevels(),
-		ProfListenAddress: "",
-		FastSync:          true,
-		FilterPeers:       false,
-		DBBackend:         "leveldb",
-		DBPath:            "data",
-		GUIListenAddress:  ":3000",
-		APIListenAddress:  ":8841",
-		ValidatorMode:     false,
+		Genesis:                 defaultGenesisJSONPath,
+		PrivValidator:           defaultPrivValPath,
+		NodeKey:                 defaultNodeKeyPath,
+		Moniker:                 defaultMoniker,
+		ProxyApp:                "tcp://127.0.0.1:26658",
+		ABCI:                    "socket",
+		LogLevel:                DefaultPackageLogLevels(),
+		ProfListenAddress:       "",
+		FastSync:                true,
+		FilterPeers:             false,
+		DBBackend:               "leveldb",
+		DBPath:                  "data",
+		GUIListenAddress:        ":3000",
+		APIListenAddress:        ":8841",
+		ValidatorMode:           false,
+		KeepStateHistory:        false,
+		APISimultaneousRequests: 100,
+		APIPerIPLimit:           1000,
+		APIPerIPLimitWindow:     60 * time.Second,
 	}
 }
 

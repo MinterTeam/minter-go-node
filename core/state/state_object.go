@@ -169,7 +169,6 @@ func (s *stateAccount) SubBalance(coinSymbol types.CoinSymbol, amount *big.Int) 
 }
 
 func (s *stateAccount) SetBalance(coinSymbol types.CoinSymbol, amount *big.Int) {
-	EmitBalanceChange(s.address, coinSymbol, amount)
 	s.setBalance(coinSymbol, amount)
 }
 

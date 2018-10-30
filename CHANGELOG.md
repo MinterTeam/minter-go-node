@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.6.0
+*Oct 30th, 2018*
+
+BREAKING CHANGES
+
+- [core] Set validators limit to 100 for testnet
+- [core] SetCandidateOff transaction now applies immediately
+- [tendermint] Update to [v0.26.0](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0260) 
+
+IMPROVEMENT
+
+- [config] Add keep_state_history option
+- [api] Limit API requests
+
 ## 0.5.1
 *Oct 22th, 2018*
 
