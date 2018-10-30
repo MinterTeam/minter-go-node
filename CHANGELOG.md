@@ -1,7 +1,7 @@
 # Changelog
 
 ## 0.6.0
-*Oct 24th, 2018*
+*Oct 30th, 2018*
 
 BREAKING CHANGES
 

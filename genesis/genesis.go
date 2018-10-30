@@ -12,7 +12,8 @@ import (
 )
 
 var (
-	Network = "minter-test-network-23"
+	Network     = "minter-test-network-24"
+	genesisTime = time.Date(2018, 10, 30, 15, 0, 0, 0, time.UTC)
 )
 
 func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
@@ -63,7 +64,7 @@ func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
 
 	genesis := tmtypes.GenesisDoc{
 		ChainID:         Network,
-		GenesisTime:     time.Date(2018, 10, 15, 15, 0, 0, 0, time.UTC),
+		GenesisTime:     genesisTime,
 		ConsensusParams: nil,
 		Validators:      validators,
 		AppHash:         appHash[:],
