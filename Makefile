@@ -1,6 +1,7 @@
 GOTOOLS = \
 	github.com/golang/dep/cmd/dep \
-	gopkg.in/alecthomas/gometalinter.v2
+	gopkg.in/alecthomas/gometalinter.v2 \
+	github.com/gobuffalo/packr/packr
 PACKAGES=$(shell go list ./... | grep -v '/vendor/')
 BUILD_TAGS?=minter
 BUILD_FLAGS=-ldflags "-s -w -X minter/version.GitCommit=`git rev-parse --short=8 HEAD`"
