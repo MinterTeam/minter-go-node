@@ -56,7 +56,6 @@ func DefaultConfig() *Config {
 	cfg.DBPath = "tmdata"
 
 	cfg.Mempool.CacheSize = 100000
-	cfg.Mempool.WalPath = "tmdata/mempool.wal"
 	cfg.Mempool.Recheck = true
 	cfg.Mempool.Size = 10000
 
@@ -70,13 +69,8 @@ func DefaultConfig() *Config {
 	cfg.Consensus.TimeoutCommit = 4500 * time.Millisecond
 
 	cfg.PrivValidator = "config/priv_validator.json"
-
 	cfg.NodeKey = "config/node_key.json"
-
 	cfg.P2P.AddrBook = "config/addrbook.json"
-	cfg.P2P.ListenAddress = "tcp://0.0.0.0:26656"
-	cfg.P2P.SendRate = 5120000 // 5mb/s
-	cfg.P2P.RecvRate = 5120000 // 5mb/s
 
 	return cfg
 }
