@@ -70,7 +70,17 @@ func GetValidators(w http.ResponseWriter, r *http.Request) {
 		height = int(blockchain.Height())
 	}
 
-	rState := GetStateForRequest(r)
+	rState, err := GetStateForRequest(r)
+
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		w.WriteHeader(http.StatusNotFound)
+		_ = json.NewEncoder(w).Encode(Response{
+			Code: 404,
+			Log:  "State for given height not found",
+		})
+		return
+	}
 	vals := rState.GetStateValidators()
 
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")

@@ -196,14 +196,14 @@ type Response struct {
 	Log    string      `json:"log,omitempty"`
 }
 
-func GetStateForRequest(r *http.Request) *state.StateDB {
+func GetStateForRequest(r *http.Request) (*state.StateDB, error) {
 	height, _ := strconv.Atoi(r.URL.Query().Get("height"))
 
-	cState := blockchain.CurrentState()
-
 	if height > 0 {
-		cState, _ = blockchain.GetStateForHeight(height)
+		cState, err := blockchain.GetStateForHeight(height)
+
+		return cState, err
 	}
 
-	return cState
+	return blockchain.CurrentState(), nil
 }
