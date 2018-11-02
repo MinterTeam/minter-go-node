@@ -1,6 +1,7 @@
 package log
 
 import (
+	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/tendermint/tendermint/libs/cli/flags"
 	"github.com/tendermint/tendermint/libs/log"
 	"os"
@@ -8,10 +9,11 @@ import (
 
 var (
 	logger log.Logger
+	cfg    = config.GetConfig()
 )
 
 func init() {
-	logger, _ := flags.ParseLogLevel("consensus:info,state:info,main:info,*:error", log.NewTMLogger(os.Stdout), "info")
+	logger, _ := flags.ParseLogLevel(cfg.LogLevel, log.NewTMLogger(os.Stdout), "info")
 	SetLogger(logger)
 }
 
