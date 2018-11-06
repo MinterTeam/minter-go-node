@@ -3,7 +3,7 @@ package utils
 import (
 	"flag"
 	"os"
-	"os/user"
+	"path/filepath"
 )
 
 var (
@@ -16,7 +16,6 @@ func init() {
 }
 
 func GetMinterHome() string {
-
 	if *MinterHome != "" {
 		return *MinterHome
 	}
@@ -27,10 +26,5 @@ func GetMinterHome() string {
 		return home
 	}
 
-	usr, err := user.Current()
-	if err != nil {
-		panic(err)
-	}
-
-	return usr.HomeDir + "/.minter"
+	return os.ExpandEnv(filepath.Join("$HOME", ".minter"))
 }
