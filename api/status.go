@@ -19,6 +19,7 @@ type StatusResponse struct {
 }
 
 func Status(w http.ResponseWriter, r *http.Request) {
+
 	result, err := client.Status()
 
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")

@@ -348,14 +348,14 @@ func (app *Blockchain) updateCurrentState() {
 	app.lock.Lock()
 	defer app.lock.Unlock()
 
-	app.stateCheck = state.NewForCheck(app.stateDeliver, app.height)
+	app.stateCheck = state.NewForCheck(app.stateDeliver)
 }
 
 func (app *Blockchain) CurrentState() *state.StateDB {
 	app.lock.RLock()
 	defer app.lock.RUnlock()
 
-	return state.NewForCheck(app.stateCheck, app.height)
+	return state.NewForCheck(app.stateCheck)
 }
 
 func (app *Blockchain) GetStateForHeight(height int) (*state.StateDB, error) {
