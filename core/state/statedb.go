@@ -84,10 +84,18 @@ type StakeCache struct {
 	BipValue   *big.Int
 }
 
-func NewForCheck(s *StateDB) *StateDB {
+func NewForCheck(s *StateDB, height int64) *StateDB {
+	tree := NewMutableTree(s.db)
+
+	_, err := tree.LoadVersion(height)
+
+	if err != nil {
+		panic(err)
+	}
+
 	return &StateDB{
 		db:                    s.db,
-		iavl:                  s.iavl.GetImmutable(),
+		iavl:                  tree,
 		stateAccounts:         make(map[types.Address]*stateAccount),
 		stateAccountsDirty:    make(map[types.Address]struct{}),
 		stateCoins:            make(map[types.CoinSymbol]*stateCoin),
