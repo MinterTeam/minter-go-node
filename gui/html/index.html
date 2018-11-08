@@ -249,12 +249,10 @@
                         this.stake = 0;
                     }.bind(this));
 
-                    setTimeout(this.refresh, 1000)
-
-
+                    setTimeout(this.refresh, 5000)
                 }.bind(this))).catch(function (reason) {
                     this.error = reason.toString();
-                    setTimeout(this.refresh, 1000)
+                    setTimeout(this.refresh, 5000)
                 }.bind(this))
 
                 axios.get("https://minter-node-1.testnet.minter.network/api/status").then(function (masterStatus) {
