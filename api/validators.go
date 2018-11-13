@@ -21,7 +21,7 @@ type Candidate struct {
 	TotalStake       string        `json:"total_stake"`
 	PubKey           string        `json:"pub_key"`
 	Commission       uint          `json:"commission"`
-	Stakes           []Stake       `json:"stakes"`
+	Stakes           []Stake       `json:"stakes,omitempty"`
 	CreatedAtBlock   uint          `json:"created_at_block"`
 	Status           byte          `json:"status"`
 }
@@ -36,31 +36,33 @@ func makeResponseValidator(v state.Validator, state *state.StateDB) Validator {
 	return Validator{
 		AccumReward: v.AccumReward.String(),
 		AbsentTimes: v.CountAbsentTimes(),
-		Candidate:   makeResponseCandidate(*state.GetStateCandidate(v.PubKey)),
+		Candidate:   makeResponseCandidate(*state.GetStateCandidate(v.PubKey), false),
 	}
 }
 
-func makeResponseCandidate(c state.Candidate) Candidate {
-	stakes := make([]Stake, len(c.Stakes))
-
-	for i, stake := range c.Stakes {
-		stakes[i] = Stake{
-			Owner:    stake.Owner,
-			Coin:     stake.Coin,
-			Value:    stake.Value.String(),
-			BipValue: stake.BipValue.String(),
-		}
-	}
-
-	return Candidate{
+func makeResponseCandidate(c state.Candidate, includeStakes bool) Candidate {
+	candidate := Candidate{
 		CandidateAddress: c.CandidateAddress,
 		TotalStake:       c.TotalBipStake.String(),
 		PubKey:           fmt.Sprintf("Mp%x", c.PubKey),
 		Commission:       c.Commission,
-		Stakes:           stakes,
 		CreatedAtBlock:   c.CreatedAtBlock,
 		Status:           c.Status,
 	}
+
+	if includeStakes {
+		candidate.Stakes = make([]Stake, len(c.Stakes))
+		for i, stake := range c.Stakes {
+			candidate.Stakes[i] = Stake{
+				Owner:    stake.Owner,
+				Coin:     stake.Coin,
+				Value:    stake.Value.String(),
+				BipValue: stake.BipValue.String(),
+			}
+		}
+	}
+
+	return candidate
 }
 
 func GetValidators(w http.ResponseWriter, r *http.Request) {

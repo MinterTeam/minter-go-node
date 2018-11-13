@@ -25,7 +25,7 @@ func GetCandidates(w http.ResponseWriter, r *http.Request) {
 	var result []Candidate
 
 	for _, candidate := range candidates {
-		result = append(result, makeResponseCandidate(candidate))
+		result = append(result, makeResponseCandidate(candidate, false))
 	}
 
 	w.WriteHeader(http.StatusOK)

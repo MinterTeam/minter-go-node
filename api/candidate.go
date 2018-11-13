@@ -44,7 +44,7 @@ func GetCandidate(w http.ResponseWriter, r *http.Request) {
 		Result: struct {
 			Candidate Candidate `json:"candidate"`
 		}{
-			Candidate: makeResponseCandidate(*candidate),
+			Candidate: makeResponseCandidate(*candidate, true),
 		},
 	})
 }
