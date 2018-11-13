@@ -20,7 +20,6 @@ type SendTransactionResponse struct {
 }
 
 func SendTransaction(w http.ResponseWriter, r *http.Request) {
-
 	var req SendTransactionRequest
 	body, _ := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
 	err := json.Unmarshal(body, &req)
@@ -33,7 +32,7 @@ func SendTransaction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := client.BroadcastTxCommit(types.Hex2Bytes(req.Transaction))
+	result, err := client.BroadcastTxSync(types.Hex2Bytes(req.Transaction))
 
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 
@@ -47,22 +46,12 @@ func SendTransaction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if result.CheckTx.Code != code.OK {
+	if result.Code != code.OK {
 		w.WriteHeader(http.StatusInternalServerError)
 
 		_ = json.NewEncoder(w).Encode(Response{
-			Code: result.CheckTx.Code,
-			Log:  "Check tx error: " + result.CheckTx.Log,
-		})
-		return
-	}
-
-	if result.DeliverTx.Code != code.OK {
-		w.WriteHeader(http.StatusInternalServerError)
-
-		_ = json.NewEncoder(w).Encode(Response{
-			Code: result.CheckTx.Code,
-			Log:  "Deliver tx error: " + result.DeliverTx.Log,
+			Code: result.Code,
+			Log:  "Check tx error: " + result.Log,
 		})
 		return
 	}

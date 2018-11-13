@@ -55,8 +55,6 @@ func RunApi(b *minter.Blockchain, tmRPC *rpc.Local) {
 	router.HandleFunc("/api/balance/{address}", wrapper(GetBalance)).Methods("GET")
 	router.HandleFunc("/api/transactionCount/{address}", wrapper(GetTransactionCount)).Methods("GET")
 	router.HandleFunc("/api/sendTransaction", wrapper(SendTransaction)).Methods("POST")
-	router.HandleFunc("/api/sendTransactionSync", wrapper(SendTransactionSync)).Methods("POST")
-	router.HandleFunc("/api/sendTransactionAsync", wrapper(SendTransactionAsync)).Methods("POST")
 	router.HandleFunc("/api/transaction/{hash}", wrapper(Transaction)).Methods("GET")
 	router.HandleFunc("/api/block/{height}", wrapper(Block)).Methods("GET")
 	router.HandleFunc("/api/transactions", wrapper(Transactions)).Methods("GET")
