@@ -13,6 +13,7 @@ IMPROVEMENT
 - [core] Add `MultisendTx`
 - [core] Add special cases to Formulas #140
 - [core] Stake unbond now instant after dropping of from 1,000st place #146
+- [p2p] Default send and receive rates are now 15mB/s
 
 ## 0.6.0
 *Oct 30th, 2018*
