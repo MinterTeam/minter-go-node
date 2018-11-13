@@ -95,6 +95,8 @@ Type of transaction is determined by a single byte.
 +----------------------------------+---------+
 | **TypeCreateMultisig**           | 0x0C    |
 +----------------------------------+---------+
+| **TypeMultisend**                | 0x0D    |
++----------------------------------+---------+
 
 Send transaction
 ^^^^^^^^^^^^^^^^
@@ -338,4 +340,26 @@ Transaction for creating multisignature address.
 	    Threshold uint
         Weights   []uint
         Addresses [][20]byte
+    }
+
+
+Multisend transaction
+^^^^^^^^^^^^^^^^^^^^^
+
+Type: **0x0D**
+
+Transaction for sending coins to multiple addresses.
+
+*Data field contents:*
+
+.. code-block:: go
+
+    type MultisendData struct {
+	    List []MultisendDataItem
+    }
+
+    type MultisendDataItem struct {
+        Coin  [10]byte
+        To    [20]byte
+        Value *big.Int
     }

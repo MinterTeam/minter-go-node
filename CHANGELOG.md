@@ -8,6 +8,10 @@ BREAKING CHANGES
 - [api] `/api/sendTransaction` is now returns only `checkTx` result. Applications are now forced to manually check if transaction is included in blockchain.
 - [tendermint] Update to [v0.26.1](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0261) 
 
+IMPROVEMENT
+
+- [core] Add `MultisendTx`
+
 ## 0.6.0
 *Oct 30th, 2018*
 

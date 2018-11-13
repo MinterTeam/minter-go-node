@@ -38,6 +38,8 @@ Here is a list of current fees:
 
 Also sender should pay extra 2 units per byte in Payload and Service Data fields.
 
+Multisend transaction requires 1 unit per recipient excluding first one.
+
 Special fees
 ^^^^^^^^^^^^
 

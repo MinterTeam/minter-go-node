@@ -27,6 +27,7 @@ const (
 	TypeSetCandidateOnline  byte = 0x0A
 	TypeSetCandidateOffline byte = 0x0B
 	TypeCreateMultisig      byte = 0x0C
+	TypeMultisend           byte = 0x0D
 
 	SigTypeSingle byte = 0x01
 	SigTypeMulti  byte = 0x02
@@ -370,6 +371,12 @@ func DecodeFromBytes(buf []byte) (*Transaction, error) {
 	case TypeCreateMultisig:
 		{
 			data := CreateMultisigData{}
+			err = rlp.Decode(bytes.NewReader(tx.Data), &data)
+			tx.SetDecodedData(data)
+		}
+	case TypeMultisend:
+		{
+			data := MultisendData{}
 			err = rlp.Decode(bytes.NewReader(tx.Data), &data)
 			tx.SetDecodedData(data)
 		}

@@ -11,6 +11,7 @@ const (
 	InsufficientFunds        uint32 = 107
 	TxPayloadTooLarge        uint32 = 109
 	TxServiceDataTooLarge    uint32 = 110
+	InvalidMultisendData     uint32 = 111
 
 	// coin creation
 	CoinAlreadyExists uint32 = 201
