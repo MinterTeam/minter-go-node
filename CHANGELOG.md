@@ -1,6 +1,13 @@
 # Changelog
 
 ## 0.6.0
+*Nov 13th, 2018*
+
+BREAKING CHANGES
+
+- [tendermint] Update to [v0.26.1](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0261) 
+
+## 0.6.0
 *Oct 30th, 2018*
 
 BREAKING CHANGES
