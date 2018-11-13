@@ -67,6 +67,9 @@ func DefaultConfig() *Config {
 	cfg.Consensus.TimeoutPrecommitDelta = 500 * time.Millisecond
 	cfg.Consensus.TimeoutCommit = 4500 * time.Millisecond
 
+	cfg.P2P.RecvRate = 15360000 // 15 mB/s
+	cfg.P2P.SendRate = 15360000 // 15 mB/s
+
 	cfg.PrivValidator = "config/priv_validator.json"
 	cfg.NodeKey = "config/node_key.json"
 	cfg.P2P.AddrBook = "config/addrbook.json"
