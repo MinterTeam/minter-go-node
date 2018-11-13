@@ -1372,9 +1372,8 @@ func (s *StateDB) ClearStakes(height int64) {
 			dropped := candidates.data[i].Stakes[MaxDelegatorsPerCandidate:]
 			candidates.data[i].Stakes = candidates.data[i].Stakes[:MaxDelegatorsPerCandidate]
 
-			unbondAtBlock := uint64(height + UnbondPeriod)
 			for _, stake := range dropped {
-				s.GetOrNewStateFrozenFunds(unbondAtBlock).AddFund(stake.Owner, candidate.PubKey, stake.Coin, stake.Value)
+				s.AddBalance(stake.Owner, stake.Coin, stake.Value)
 			}
 		}
 	}
