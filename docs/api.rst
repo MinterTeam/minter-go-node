@@ -159,20 +159,6 @@ Returns list of active validators.
             "total_stake": "5000001000000000000000000",
             "pub_key": "Mp738da41ba6a7b7d69b7294afa158b89c5a1b410cbf0c2443c85c5fe24ad1dd1c",
             "commission": 100,
-            "stakes": [
-              {
-                "owner": "Mxee81347211c72524338f9680072af90744333146",
-                "coin": "MNT",
-                "value": "5000000000000000000000000",
-                "bip_value": "5000000000000000000000000"
-              },
-              {
-                "owner": "Mx4f3385615a4abb104d6eda88591fa07c112cbdbf",
-                "coin": "MNT",
-                "value": "1000000000000000000",
-                "bip_value": "1000000000000000000"
-              }
-            ],
             "created_at_block": 165,
             "status": 2
           }
@@ -185,14 +171,6 @@ Returns list of active validators.
             "total_stake": "5000000000000000000000000",
             "pub_key": "Mp6f16c1ff21a6fb946aaed0f4c1fcca272b72fd904988f91d3883282b8ae31ba2",
             "commission": 100,
-            "stakes": [
-              {
-                "owner": "Mxee81347211c72524338f9680072af90744333146",
-                "coin": "MNT",
-                "value": "5000000000000000000000000",
-                "bip_value": "5000000000000000000000000"
-              }
-            ],
             "created_at_block": 174,
             "status": 2
           }
@@ -279,46 +257,31 @@ Transaction
 .. code-block:: json
 
     {
-      "code": 0,
-      "result": {
-        "hash": "E9BC108B9C9B3D9BC276EE359BF9DD98C144B7C6",
-        "raw_tx": "f8818207af018a4d4e540000000000000001abea8a4d4e54000000000000009435d05ae08a664964ba730ca7e7de6e97998086f589056bc75e2d6310000080801ba076d4aeb96756d94db0ad0fdb73aaff588f4df282b64b4dec34930dba3ca2ffc5a04e47954ec056235103707c5aeb33a9112eab6d63de6b9a3d9e7a156c3bebeca7",
-        "height": 94594,
-        "index": 0,
-        "tx_result": {
-          "gas_wanted": 10,
-          "gas_used": 10,
-          "tags": [
-            {
-              "key": "dHgudHlwZQ==",
-              "value": "AQ=="
+        "code": 0,
+        "result": {
+            "hash": "B829EE45734800273ACCCFA70BC96BE8D858E521",
+            "raw_tx": "f88682c8e8018a4d4e540000000000000001abea8a4d4e5400000000000000941a8e2cd08a2938b6412cc65aed449154577731e089056bc75e2d63100000808001b845f8431ba050141c66539362464496d1393b8a9468623f37dced4cf3bac8bfc5d576fd5e1fa00b37ee7103d2647bd7fc1a72c03df2a40cc38c9cc92771614f76eabf7be1cc79",
+            "height": 234218,
+            "index": 0,
+            "from": "Mxfe60014a6e9ac91618f5d1cab3fd58cded61ee99",
+            "nonce": 51432,
+            "gas_price": 1,
+            "gas_coin": "MNT",
+            "gas_used": 10,
+            "type": 1,
+            "data": {
+                "coin": "MNT",
+                "to": "Mx1a8e2cd08a2938b6412cc65aed449154577731e0",
+                "value": "100000000000000000000"
             },
-            {
-              "key": "dHguZnJvbQ==",
-              "value": "ZmU2MDAxNGE2ZTlhYzkxNjE4ZjVkMWNhYjNmZDU4Y2RlZDYxZWU5OQ=="
-            },
-            {
-              "key": "dHgudG8=",
-              "value": "MzVkMDVhZTA4YTY2NDk2NGJhNzMwY2E3ZTdkZTZlOTc5OTgwODZmNQ=="
-            },
-            {
-              "key": "dHguY29pbg==",
-              "value": "TU5U"
+            "payload": "",
+            "tags": {
+                "tx.coin": "MNT",
+                "tx.from": "fe60014a6e9ac91618f5d1cab3fd58cded61ee99",
+                "tx.to": "1a8e2cd08a2938b6412cc65aed449154577731e0",
+                "tx.type": "01"
             }
-          ]
-        },
-        "from": "Mxfe60014a6e9ac91618f5d1cab3fd58cded61ee99",
-        "nonce": 1967,
-        "gas_price": 1,
-        "gas_coin": "MNT",
-        "type": 1,
-        "data": {
-          "coin": "MNT",
-          "to": "Mx35d05ae08a664964ba730ca7e7de6e97998086f5",
-          "value": "100000000000000000000"
-        },
-        "payload": ""
-      }
+        }
     }
 
 Block
@@ -342,42 +305,27 @@ Returns block data at given height.
         "total_txs": 5515,
         "transactions": [
           {
-            "hash": "Mte9bc108b9c9b3d9bc276ee359bf9dd98c144b7c6",
-            "raw_tx": "f8818207af018a4d4e540000000000000001abea8a4d4e54000000000000009435d05ae08a664964ba730ca7e7de6e97998086f589056bc75e2d6310000080801ba076d4aeb96756d94db0ad0fdb73aaff588f4df282b64b4dec34930dba3ca2ffc5a04e47954ec056235103707c5aeb33a9112eab6d63de6b9a3d9e7a156c3bebeca7",
+            "hash": "B829EE45734800273ACCCFA70BC96BE8D858E521",
+            "raw_tx": "f88682c8e8018a4d4e540000000000000001abea8a4d4e5400000000000000941a8e2cd08a2938b6412cc65aed449154577731e089056bc75e2d63100000808001b845f8431ba050141c66539362464496d1393b8a9468623f37dced4cf3bac8bfc5d576fd5e1fa00b37ee7103d2647bd7fc1a72c03df2a40cc38c9cc92771614f76eabf7be1cc79",
+            "height": 94594,
+            "index": 0,
             "from": "Mxfe60014a6e9ac91618f5d1cab3fd58cded61ee99",
-            "nonce": 1967,
+            "nonce": 51432,
             "gas_price": 1,
+            "gas_coin": "MNT",
+            "gas_used": 10,
             "type": 1,
             "data": {
-              "coin": "MNT",
-              "to": "Mx35d05ae08a664964ba730ca7e7de6e97998086f5",
-              "value": "100000000000000000000"
+                "coin": "MNT",
+                "to": "Mx1a8e2cd08a2938b6412cc65aed449154577731e0",
+                "value": "100000000000000000000"
             },
             "payload": "",
-            "service_data": "",
-            "gas": 10,
-            "gas_coin": "MNT",
-            "tx_result": {
-              "gas_wanted": 10,
-              "gas_used": 10,
-              "tags": [
-                {
-                  "key": "dHgudHlwZQ==",
-                  "value": "AQ=="
-                },
-                {
-                  "key": "dHguZnJvbQ==",
-                  "value": "ZmU2MDAxNGE2ZTlhYzkxNjE4ZjVkMWNhYjNmZDU4Y2RlZDYxZWU5OQ=="
-                },
-                {
-                  "key": "dHgudG8=",
-                  "value": "MzVkMDVhZTA4YTY2NDk2NGJhNzMwY2E3ZTdkZTZlOTc5OTgwODZmNQ=="
-                },
-                {
-                  "key": "dHguY29pbg==",
-                  "value": "TU5U"
-                }
-              ]
+            "tags": {
+                "tx.coin": "MNT",
+                "tx.from": "fe60014a6e9ac91618f5d1cab3fd58cded61ee99",
+                "tx.to": "1a8e2cd08a2938b6412cc65aed449154577731e0",
+                "tx.type": "01"
             }
           }
         ],
@@ -488,8 +436,7 @@ Returns information about coin.
         "symbol": "SHSCOIN",
         "volume": "1985888114702108355026636",
         "crr": 50,
-        "reserve_balance": "394375160721239016660255",
-        "creator": "Mx6eadf5badeda8f76fc35e0c4d7f7fbc00fe34315"
+        "reserve_balance": "394375160721239016660255"
       }
     }
 
