@@ -337,7 +337,7 @@ Transaction for creating multisignature address.
 .. code-block:: go
 
     type CreateMultisigData struct {
-	    Threshold uint
+        Threshold uint
         Weights   []uint
         Addresses [][20]byte
     }
@@ -355,7 +355,7 @@ Transaction for sending coins to multiple addresses.
 .. code-block:: go
 
     type MultisendData struct {
-	    List []MultisendDataItem
+        List []MultisendDataItem
     }
 
     type MultisendDataItem struct {
