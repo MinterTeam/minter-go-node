@@ -19,11 +19,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:b1bc175e2ea07efa863cd7859d4eeef8ed9ff31c5b179e4da292bc9bdc2de13f"
+  digest = "1:d173bf7d19618431879574b6b6999d360fdcab5b87d253c2fdf9dc7867cbbd67"
   name = "github.com/danil-lashin/iavl"
   packages = ["."]
   pruneopts = "UT"
-  revision = "e5efdabc1ad92bbde86492e3d103e7ebbce5de4c"
+  revision = "a7c319a40aa38d4b3e8126f65506d0497a60011a"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
@@ -261,7 +261,7 @@
     "model",
   ]
   pruneopts = "UT"
-  revision = "a04bd04888af6ea6f64ed14244d9bcf2b739ebd6"
+  revision = "41aa239b4cce3c56ab88fc366ae8b0a6423fa239"
 
 [[projects]]
   branch = "master"
@@ -284,12 +284,12 @@
   revision = "e2704e165165ec55d062f5919b4b29494e9fa790"
 
 [[projects]]
-  digest = "1:9695b472826ca23e521d650849fefac3102dddbf841c9a4b35fb9d3ed5d17011"
+  digest = "1:b0c25f00bad20d783d259af2af8666969e2fc343fa0dc9efe52936bbd67fb758"
   name = "github.com/rs/cors"
   packages = ["."]
   pruneopts = "UT"
-  revision = "ca016a06a5753f8ba03029c0aa5e54afb1bf713f"
-  version = "v1.4.0"
+  revision = "9a47f48565a795472d43519dd49aac781f3034fb"
+  version = "v1.6.0"
 
 [[projects]]
   digest = "1:6a4a11ba764a56d2758899ec6f3848d24698d48442ebce85ee7a3f63284526cd"
@@ -371,7 +371,7 @@
   version = "v0.14.1"
 
 [[projects]]
-  digest = "1:c4304fb0265e8dc5721fd24d2b783a10e408abd39b440e2ec5148dff5609f413"
+  digest = "1:9bb2ee6f1780325480f8fbee85c0108387d8cffadeca4e405a67827469d71200"
   name = "github.com/tendermint/tendermint"
   packages = [
     "abci/client",
@@ -426,7 +426,7 @@
     "version",
   ]
   pruneopts = "UT"
-  revision = "5a6822c8acbd7353729cbb5d8393de2f6da39425"
+  revision = "1ce24a62828e9920efa7d7741b5f63f908c7c706"
 
 [[projects]]
   digest = "1:1fdfa9436cc1c11afbdbfb56549e9201a92db0b0a0b7bef0797e7b68c9e8791f"
