@@ -1,12 +1,13 @@
 # Changelog
 
 ## 0.7.0
-*Nov 13th, 2018*
+*Nov 15th, 2018*
 
 BREAKING CHANGES
 
 - [api] `/api/sendTransaction` is now returns only `checkTx` result. Applications are now forced to manually check if transaction is included in blockchain.
 - [tendermint] Update to [v0.26.1](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0261) 
+- [core] Block hash is now 32 bytes length
 
 IMPROVEMENT
 
