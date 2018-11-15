@@ -44,7 +44,6 @@ func init() {
 func DefaultConfig() *Config {
 	cfg := defaultConfig()
 
-	cfg.P2P.Seeds = "647e32df3b9c54809b5aca2877d9ba60900bc2d9@minter-node-1.testnet.minter.network:26656,d20522aa7ba4af8139749c5e724063c4ba18c58b@minter-node-2.testnet.minter.network:26656,249c62818bf4601605a65b5adc35278236bd5312@minter-node-3.testnet.minter.network:26656,b698b07f13f2210dfc82967bfa2a127d1cdfdc54@minter-node-4.testnet.minter.network:26656"
 	cfg.P2P.PersistentPeers = "647e32df3b9c54809b5aca2877d9ba60900bc2d9@minter-node-1.testnet.minter.network:26656"
 
 	cfg.TxIndex = &tmConfig.TxIndexConfig{
