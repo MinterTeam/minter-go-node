@@ -16,6 +16,7 @@ IMPROVEMENT
 - [core] Stake unbond now instant after dropping of from 1,000st place #146
 - [p2p] Default send and receive rates are now 15mB/s
 - [mempool] Set max mempool size to 10,000txs
+- [gui] Small GUI improvements
 
 ## 0.6.0
 *Oct 30th, 2018*
