@@ -29,7 +29,7 @@ func (appDB *AppDB) Close() {
 }
 
 func (appDB *AppDB) GetLastBlockHash() []byte {
-	var hash [20]byte
+	var hash [32]byte
 
 	rawHash := appDB.db.Get([]byte(hashPath))
 	copy(hash[:], rawHash)

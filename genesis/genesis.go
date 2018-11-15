@@ -36,7 +36,7 @@ func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
 		}
 	}
 
-	appHash := [20]byte{}
+	appHash := [32]byte{}
 
 	appState := AppState{
 		FirstValidatorAddress: types.HexToAddress("Mxee81347211c72524338f9680072af90744333146"),
