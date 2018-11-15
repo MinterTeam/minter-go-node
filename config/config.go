@@ -237,6 +237,8 @@ type BaseConfig struct {
 	APIPerIPLimit int `mapstructure:"api_per_ip_limit"`
 
 	APIPerIPLimitWindow time.Duration `mapstructure:"api_per_ip_limit_window"`
+
+	LogPath string `mapstructure:"log_path"`
 }
 
 // DefaultBaseConfig returns a default base configuration for a Tendermint node
@@ -261,6 +263,7 @@ func DefaultBaseConfig() BaseConfig {
 		APISimultaneousRequests: 100,
 		APIPerIPLimit:           1000,
 		APIPerIPLimitWindow:     60 * time.Second,
+		LogPath:                 "stdout",
 	}
 }
 

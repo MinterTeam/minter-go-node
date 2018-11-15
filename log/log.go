@@ -13,8 +13,27 @@ var (
 )
 
 func init() {
-	logger, _ := flags.ParseLogLevel(cfg.LogLevel, log.NewTMLogger(os.Stdout), "info")
-	SetLogger(logger)
+	var l log.Logger
+
+	if cfg.LogPath != "stdout" {
+		file, err := os.OpenFile(cfg.LogPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+
+		if err != nil {
+			panic(err)
+		}
+
+		l = log.NewTMLogger(file)
+	} else {
+		l = log.NewTMLogger(os.Stdout)
+	}
+
+	l, err := flags.ParseLogLevel(cfg.LogLevel, l, "info")
+
+	if err != nil {
+		panic(err)
+	}
+
+	SetLogger(l)
 }
 
 func SetLogger(l log.Logger) {

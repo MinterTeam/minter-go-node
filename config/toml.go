@@ -102,6 +102,9 @@ db_path = "{{ js .BaseConfig.DBPath }}"
 # Output level for logging, including package level options
 log_level = "{{ .BaseConfig.LogLevel }}"
 
+# Path to file for logs, "stdout" by default
+log_path = "{{ .BaseConfig.LogPath }}"
+
 ##### additional base config options #####
 
 # Path to the JSON file containing the private key to use as a validator in the consensus protocol
