@@ -39,7 +39,7 @@
 
 [[constraint]]
   name = "github.com/rs/cors"
-  version = "=1.4.0"
+  version = "^1.6.0"
 
 [[constraint]]
   name = "github.com/danil-lashin/iavl"
@@ -47,7 +47,7 @@
 
 [[constraint]]
   name = "github.com/tendermint/tendermint"
-  version = "=v0.26.0-rc0"
+  revision = "1ce24a62828e9920efa7d7741b5f63f908c7c706"
 
 [[constraint]]
   branch = "v1"

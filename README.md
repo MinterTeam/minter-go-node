@@ -40,8 +40,8 @@ You can get official installation instructions in our [docs](https://minter-go-n
 - [Telegram Bot Wallet](https://t.me/BipWallet_Bot)
 - [Android Wallet](https://play.google.com/store/apps/details?id=network.minter.bipwallet)
 
-
-- [Magnum Wallet (unofficial)](http://app.magnumwallet.co/?utm_source=gh&utm_medium=res&utm_campaign=mi)
+### Unofficial
+- [Magnum Wallet](http://app.magnumwallet.co/?utm_source=gh&utm_medium=res&utm_campaign=mi)
 
 ### Community
 - [Telegram Channel (English)](https://t.me/MinterTeam)

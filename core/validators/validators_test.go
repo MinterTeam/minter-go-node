@@ -10,7 +10,6 @@ type Results struct {
 }
 
 func TestGetValidatorsCountForBlock(t *testing.T) {
-
 	data := []Results{
 		{
 			Block:  1,

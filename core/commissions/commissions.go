@@ -12,4 +12,5 @@ const (
 	UnbondTx              int64 = 100
 	PayloadByte           int64 = 2
 	ToggleCandidateStatus int64 = 100
+	MultisendDelta        int64 = 1
 )

@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.7.0
+*Nov 15th, 2018*
+
+BREAKING CHANGES
+
+- [api] `/api/sendTransaction` is now returns only `checkTx` result. Applications are now forced to manually check if transaction is included in blockchain.
+- [tendermint] Update to [v0.26.1](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0261) 
+- [core] Block hash is now 32 bytes length
+
+IMPROVEMENT
+
+- [core] Add `MultisendTx`
+- [core] Add special cases to Formulas #140
+- [core] Stake unbond now instant after dropping of from 1,000st place #146
+- [p2p] Default send and receive rates are now 15mB/s
+- [mempool] Set max mempool size to 10,000txs
+- [gui] Small GUI improvements
+
 ## 0.6.0
 *Oct 30th, 2018*
 

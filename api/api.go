@@ -55,8 +55,6 @@ func RunApi(b *minter.Blockchain, tmRPC *rpc.Local) {
 	router.HandleFunc("/api/balance/{address}", wrapper(GetBalance)).Methods("GET")
 	router.HandleFunc("/api/transactionCount/{address}", wrapper(GetTransactionCount)).Methods("GET")
 	router.HandleFunc("/api/sendTransaction", wrapper(SendTransaction)).Methods("POST")
-	router.HandleFunc("/api/sendTransactionSync", wrapper(SendTransactionSync)).Methods("POST")
-	router.HandleFunc("/api/sendTransactionAsync", wrapper(SendTransactionAsync)).Methods("POST")
 	router.HandleFunc("/api/transaction/{hash}", wrapper(Transaction)).Methods("GET")
 	router.HandleFunc("/api/block/{height}", wrapper(Block)).Methods("GET")
 	router.HandleFunc("/api/transactions", wrapper(Transactions)).Methods("GET")
@@ -196,14 +194,14 @@ type Response struct {
 	Log    string      `json:"log,omitempty"`
 }
 
-func GetStateForRequest(r *http.Request) *state.StateDB {
+func GetStateForRequest(r *http.Request) (*state.StateDB, error) {
 	height, _ := strconv.Atoi(r.URL.Query().Get("height"))
 
-	cState := blockchain.CurrentState()
-
 	if height > 0 {
-		cState, _ = blockchain.GetStateForHeight(height)
+		cState, err := blockchain.GetStateForHeight(height)
+
+		return cState, err
 	}
 
-	return cState
+	return blockchain.CurrentState(), nil
 }

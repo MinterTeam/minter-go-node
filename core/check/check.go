@@ -32,10 +32,15 @@ func (check *Check) Sender() (types.Address, error) {
 }
 
 func (check *Check) LockPubKey() ([]byte, error) {
+	sig := check.Lock.Bytes()
+
+	if len(sig) < 65 {
+		return nil, errors.New("invalid sig")
+	}
 
 	hash := check.HashWithoutLock()
 
-	pub, err := crypto.Ecrecover(hash[:], check.Lock.Bytes())
+	pub, err := crypto.Ecrecover(hash[:], sig)
 	if err != nil {
 		return nil, err
 	}

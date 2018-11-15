@@ -96,10 +96,6 @@
                             <td>{{ status.node_info.id }}</td>
                         </tr>
                         <tr>
-                            <td class="h">Listen Addr</td>
-                            <td>{{ status.node_info.listen_addr }}</td>
-                        </tr>
-                        <tr>
                             <td class="h">Network ID</td>
                             <td>{{ status.node_info.network }}</td>
                         </tr>
@@ -149,7 +145,7 @@
                         <tr>
                             <td class="h">Latest Block Height</td>
                             <td>
-                                #{{ status.sync_info.latest_block_height }} <span v-if="masterStatus" class="text-muted">of {{ masterStatus.latest_block_height }}</span>
+                                #{{ status.sync_info.latest_block_height }} <span v-if="masterStatus && Number(status.sync_info.latest_block_height) <= Number(masterStatus.latest_block_height)" class="text-muted">of {{ masterStatus.latest_block_height }}</span>
                             </td>
                         </tr>
                         <tr>
@@ -249,12 +245,10 @@
                         this.stake = 0;
                     }.bind(this));
 
-                    setTimeout(this.refresh, 1000)
-
-
+                    setTimeout(this.refresh, 5000)
                 }.bind(this))).catch(function (reason) {
                     this.error = reason.toString();
-                    setTimeout(this.refresh, 1000)
+                    setTimeout(this.refresh, 5000)
                 }.bind(this))
 
                 axios.get("https://minter-node-1.testnet.minter.network/api/status").then(function (masterStatus) {

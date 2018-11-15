@@ -16,7 +16,7 @@ and beyond.
 Tendermint is designed to be easy-to-use, simple-to-understand, highly performant, and useful for a wide variety of
 distributed applications.
 
-You can read more about Tendermint Consensus in `official documentation <https://tendermint.readthedocs.io/en/master/introduction.html#consensus-overview>`__.
+You can read more about Tendermint Consensus in `official documentation <https://tendermint.com/docs/>`__.
 
 Consensus
 ^^^^^^^^^

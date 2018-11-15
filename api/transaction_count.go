@@ -12,7 +12,17 @@ type TransactionCountResponse struct {
 }
 
 func GetTransactionCount(w http.ResponseWriter, r *http.Request) {
-	cState := GetStateForRequest(r)
+	cState, err := GetStateForRequest(r)
+
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		w.WriteHeader(http.StatusNotFound)
+		_ = json.NewEncoder(w).Encode(Response{
+			Code: 404,
+			Log:  "State for given height not found",
+		})
+		return
+	}
 
 	vars := mux.Vars(r)
 	address := types.HexToAddress(vars["address"])

@@ -12,7 +12,17 @@ func GetCandidate(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	pubkey := types.Hex2Bytes(strings.TrimLeft(vars["pubkey"], "Mp"))
 
-	cState := GetStateForRequest(r)
+	cState, err := GetStateForRequest(r)
+
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		w.WriteHeader(http.StatusNotFound)
+		_ = json.NewEncoder(w).Encode(Response{
+			Code: 404,
+			Log:  "State for given height not found",
+		})
+		return
+	}
 
 	candidate := cState.GetStateCandidate(pubkey)
 
@@ -34,7 +44,7 @@ func GetCandidate(w http.ResponseWriter, r *http.Request) {
 		Result: struct {
 			Candidate Candidate `json:"candidate"`
 		}{
-			Candidate: makeResponseCandidate(*candidate),
+			Candidate: makeResponseCandidate(*candidate, true),
 		},
 	})
 }

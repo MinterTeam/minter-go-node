@@ -44,7 +44,6 @@ func init() {
 func DefaultConfig() *Config {
 	cfg := defaultConfig()
 
-	cfg.P2P.Seeds = "647e32df3b9c54809b5aca2877d9ba60900bc2d9@minter-node-1.testnet.minter.network:26656,d20522aa7ba4af8139749c5e724063c4ba18c58b@minter-node-2.testnet.minter.network:26656,249c62818bf4601605a65b5adc35278236bd5312@minter-node-3.testnet.minter.network:26656,b698b07f13f2210dfc82967bfa2a127d1cdfdc54@minter-node-4.testnet.minter.network:26656"
 	cfg.P2P.PersistentPeers = "647e32df3b9c54809b5aca2877d9ba60900bc2d9@minter-node-1.testnet.minter.network:26656"
 
 	cfg.TxIndex = &tmConfig.TxIndexConfig{
@@ -57,6 +56,7 @@ func DefaultConfig() *Config {
 
 	cfg.Mempool.CacheSize = 100000
 	cfg.Mempool.Recheck = true
+	cfg.Mempool.Size = 10000
 
 	cfg.Consensus.WalPath = "tmdata/cs.wal/wal"
 	cfg.Consensus.TimeoutPropose = 2 * time.Second
@@ -66,6 +66,9 @@ func DefaultConfig() *Config {
 	cfg.Consensus.TimeoutPrecommit = 1 * time.Second
 	cfg.Consensus.TimeoutPrecommitDelta = 500 * time.Millisecond
 	cfg.Consensus.TimeoutCommit = 4500 * time.Millisecond
+
+	cfg.P2P.RecvRate = 15360000 // 15 mB/s
+	cfg.P2P.SendRate = 15360000 // 15 mB/s
 
 	cfg.PrivValidator = "config/priv_validator.json"
 	cfg.NodeKey = "config/node_key.json"
@@ -233,6 +236,8 @@ type BaseConfig struct {
 	APIPerIPLimit int `mapstructure:"api_per_ip_limit"`
 
 	APIPerIPLimitWindow time.Duration `mapstructure:"api_per_ip_limit_window"`
+
+	LogPath string `mapstructure:"log_path"`
 }
 
 // DefaultBaseConfig returns a default base configuration for a Tendermint node
@@ -257,6 +262,7 @@ func DefaultBaseConfig() BaseConfig {
 		APISimultaneousRequests: 100,
 		APIPerIPLimit:           1000,
 		APIPerIPLimitWindow:     60 * time.Second,
+		LogPath:                 "stdout",
 	}
 }
 
@@ -292,7 +298,7 @@ func DefaultLogLevel() string {
 // DefaultPackageLogLevels returns a default log level setting so all packages
 // log at "error", while the `state` and `main` packages log at "info"
 func DefaultPackageLogLevels() string {
-	return fmt.Sprintf("main:info,state:info,*:%s", DefaultLogLevel())
+	return fmt.Sprintf("consesnus:info,main:info,blockchain:info,state:info,*:%s", DefaultLogLevel())
 }
 
 //-----------------------------------------------------------------------------

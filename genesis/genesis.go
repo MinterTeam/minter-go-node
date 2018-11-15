@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	Network     = "minter-test-network-24"
-	genesisTime = time.Date(2018, 10, 30, 15, 0, 0, 0, time.UTC)
+	Network     = "minter-test-network-26"
+	genesisTime = time.Date(2018, 11, 16, 9, 0, 0, 0, time.UTC)
 )
 
 func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
@@ -36,7 +36,7 @@ func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
 		}
 	}
 
-	appHash := [20]byte{}
+	appHash := [32]byte{}
 
 	appState := AppState{
 		FirstValidatorAddress: types.HexToAddress("Mxee81347211c72524338f9680072af90744333146"),

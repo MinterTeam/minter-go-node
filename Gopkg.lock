@@ -19,11 +19,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:0c4cb117e3229040d89bb2c5aae0f438fcabf3a85a48a667576c549bce0fc9db"
+  digest = "1:d173bf7d19618431879574b6b6999d360fdcab5b87d253c2fdf9dc7867cbbd67"
   name = "github.com/danil-lashin/iavl"
   packages = ["."]
   pruneopts = "UT"
-  revision = "451c063b0b834b418c84fb98e1c0b9ae6b664dc9"
+  revision = "a7c319a40aa38d4b3e8126f65506d0497a60011a"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
@@ -32,13 +32,6 @@
   pruneopts = "UT"
   revision = "8991bc29aa16c548c550c7ff78260e27b9ab7c73"
   version = "v1.1.1"
-
-[[projects]]
-  digest = "1:c7644c73a3d23741fdba8a99b1464e021a224b7e205be497271a8003a15ca41b"
-  name = "github.com/ebuchman/fail-test"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "95f809107225be108efcf10a3509e4ea6ceef3c4"
 
 [[projects]]
   digest = "1:abeb38ade3f32a92943e5be54f55ed6d6e3b6602761d74b4aab4c9dd45c18abd"
@@ -268,7 +261,7 @@
     "model",
   ]
   pruneopts = "UT"
-  revision = "7e9e6cabbd393fc208072eedef99188d0ce788b6"
+  revision = "41aa239b4cce3c56ab88fc366ae8b0a6423fa239"
 
 [[projects]]
   branch = "master"
@@ -291,12 +284,12 @@
   revision = "e2704e165165ec55d062f5919b4b29494e9fa790"
 
 [[projects]]
-  digest = "1:9695b472826ca23e521d650849fefac3102dddbf841c9a4b35fb9d3ed5d17011"
+  digest = "1:b0c25f00bad20d783d259af2af8666969e2fc343fa0dc9efe52936bbd67fb758"
   name = "github.com/rs/cors"
   packages = ["."]
   pruneopts = "UT"
-  revision = "ca016a06a5753f8ba03029c0aa5e54afb1bf713f"
-  version = "v1.4.0"
+  revision = "9a47f48565a795472d43519dd49aac781f3034fb"
+  version = "v1.6.0"
 
 [[projects]]
   digest = "1:6a4a11ba764a56d2758899ec6f3848d24698d48442ebce85ee7a3f63284526cd"
@@ -310,12 +303,12 @@
   version = "v1.1.2"
 
 [[projects]]
-  digest = "1:516e71bed754268937f57d4ecb190e01958452336fa73dbac880894164e91c1f"
+  digest = "1:08d65904057412fc0270fc4812a1c90c594186819243160dc779a402d4b6d0bc"
   name = "github.com/spf13/cast"
   packages = ["."]
   pruneopts = "UT"
-  revision = "8965335b8c7107321228e3e3702cab9832751bac"
-  version = "v1.2.0"
+  revision = "8c9545af88b134710ab1cd196795e7f2388358d7"
+  version = "v1.3.0"
 
 [[projects]]
   digest = "1:68ea4e23713989dc20b1bded5d9da2c5f9be14ff9885beef481848edd18c26cb"
@@ -343,7 +336,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:59483b8e8183f10ab21a85ba1f4cbb4a2335d48891801f79ed7b9499f44d383c"
+  digest = "1:9ff9e1808adfc43f788f1c1e9fd2660c285b522243da985a4c043ec6f2a2d736"
   name = "github.com/syndtr/goleveldb"
   packages = [
     "leveldb",
@@ -360,7 +353,7 @@
     "leveldb/util",
   ]
   pruneopts = "UT"
-  revision = "6b91fda63f2e36186f1c9d0e48578defb69c5d43"
+  revision = "f9080354173f192dfc8821931eacf9cfd6819253"
 
 [[projects]]
   digest = "1:605b6546f3f43745695298ec2d342d3e952b6d91cdf9f349bea9315f677d759f"
@@ -370,15 +363,15 @@
   revision = "e5840949ff4fff0c56f9b6a541e22b63581ea9df"
 
 [[projects]]
-  digest = "1:10b3a599325740c84a7c81f3f3cb2e1fdb70b3ea01b7fa28495567a2519df431"
+  digest = "1:ad9c4c1a4e7875330b1f62906f2830f043a23edb5db997e3a5ac5d3e6eadf80a"
   name = "github.com/tendermint/go-amino"
   packages = ["."]
   pruneopts = "UT"
-  revision = "6dcc6ddc143e116455c94b25c1004c99e0d0ca12"
-  version = "v0.14.0"
+  revision = "dc14acf9ef15f85828bfbc561ed9dd9d2a284885"
+  version = "v0.14.1"
 
 [[projects]]
-  digest = "1:f98aef9b8b8d755b63d53f3c89aa0bd21280cf706be15e937c4e67c891074fb1"
+  digest = "1:9bb2ee6f1780325480f8fbee85c0108387d8cffadeca4e405a67827469d71200"
   name = "github.com/tendermint/tendermint"
   packages = [
     "abci/client",
@@ -405,6 +398,7 @@
     "libs/db",
     "libs/errors",
     "libs/events",
+    "libs/fail",
     "libs/flowrate",
     "libs/log",
     "libs/pubsub",
@@ -432,8 +426,7 @@
     "version",
   ]
   pruneopts = "UT"
-  revision = "bc0d672b26dbbd6858e97a570c87e3c20cbf199e"
-  version = "v0.26.0-rc0"
+  revision = "1ce24a62828e9920efa7d7741b5f63f908c7c706"
 
 [[projects]]
   digest = "1:1fdfa9436cc1c11afbdbfb56549e9201a92db0b0a0b7bef0797e7b68c9e8791f"
@@ -474,14 +467,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:c6a2356698f1f51289bc57ac8933745f15248283145df110fa3bb6964b3db77b"
+  digest = "1:e9609f7e36a3fecb7dc9e3a15f9881011f9d8c42f94c9d5da231eb0c07826dc8"
   name = "golang.org/x/sys"
   packages = [
     "cpu",
     "unix",
   ]
   pruneopts = "UT"
-  revision = "d989b31c87461dc8ab2f1cac6792814e27fadea9"
+  revision = "66b7b1311ac80bbafcd2daeef9a5e6e2cd1e2399"
 
 [[projects]]
   digest = "1:a2ab62866c75542dd18d2b069fec854577a20211d7c0ea6ae746072a1dccdd18"
@@ -512,7 +505,7 @@
   name = "google.golang.org/genproto"
   packages = ["googleapis/rpc/status"]
   pruneopts = "UT"
-  revision = "94acd270e44e65579b9ee3cdab25034d33fed608"
+  revision = "b5d43981345bdb2c233eb4bf3277847b48c6fdc6"
 
 [[projects]]
   digest = "1:2dab32a43451e320e49608ff4542fdfc653c95dcc35d0065ec9c6c3dd540ed74"
@@ -572,6 +565,7 @@
     "github.com/danil-lashin/iavl",
     "github.com/gobuffalo/packr",
     "github.com/gorilla/mux",
+    "github.com/pkg/errors",
     "github.com/rs/cors",
     "github.com/spf13/viper",
     "github.com/tendermint/go-amino",
