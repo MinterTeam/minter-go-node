@@ -47,7 +47,7 @@
 
 [[constraint]]
   name = "github.com/tendermint/tendermint"
-  version = "=v0.26.1"
+  revision = "5a6822c8acbd7353729cbb5d8393de2f6da39425"
 
 [[constraint]]
   branch = "v1"

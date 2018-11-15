@@ -19,11 +19,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:b8cc35848b6b6f137e81754435ceec5851596934209196565edf0a3bbe189aee"
+  digest = "1:b1bc175e2ea07efa863cd7859d4eeef8ed9ff31c5b179e4da292bc9bdc2de13f"
   name = "github.com/danil-lashin/iavl"
   packages = ["."]
   pruneopts = "UT"
-  revision = "47ddeb8c86f416731c7b5bce781dcdb66484f435"
+  revision = "e5efdabc1ad92bbde86492e3d103e7ebbce5de4c"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
@@ -371,7 +371,7 @@
   version = "v0.14.1"
 
 [[projects]]
-  digest = "1:d3780e435c25422ae100602ff20240349f0ddd658b0ae1742a6d2b6f523541d1"
+  digest = "1:c4304fb0265e8dc5721fd24d2b783a10e408abd39b440e2ec5148dff5609f413"
   name = "github.com/tendermint/tendermint"
   packages = [
     "abci/client",
@@ -426,8 +426,7 @@
     "version",
   ]
   pruneopts = "UT"
-  revision = "80d0a362500fea2dd089258319075a54e5d40a2d"
-  version = "v0.26.1"
+  revision = "5a6822c8acbd7353729cbb5d8393de2f6da39425"
 
 [[projects]]
   digest = "1:1fdfa9436cc1c11afbdbfb56549e9201a92db0b0a0b7bef0797e7b68c9e8791f"
@@ -566,6 +565,7 @@
     "github.com/danil-lashin/iavl",
     "github.com/gobuffalo/packr",
     "github.com/gorilla/mux",
+    "github.com/pkg/errors",
     "github.com/rs/cors",
     "github.com/spf13/viper",
     "github.com/tendermint/go-amino",
