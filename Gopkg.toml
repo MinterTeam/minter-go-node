@@ -43,11 +43,11 @@
 
 [[constraint]]
   name = "github.com/danil-lashin/iavl"
-  branch = "master"
+  revision = "0f508ab5fe04b726c976a26459d141108e4a28ca"
 
 [[constraint]]
   name = "github.com/tendermint/tendermint"
-  revision = "1ce24a62828e9920efa7d7741b5f63f908c7c706"
+  version = "=0.26.2"
 
 [[constraint]]
   branch = "v1"
