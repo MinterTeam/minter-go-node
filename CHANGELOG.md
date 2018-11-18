@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.3
+*Nov 18th, 2018*
+
+BUG FIXES
+
+- [core] More fixes on issue with negative coin reserve
+
 ## 0.7.2
 *Nov 18th, 2018*
 
