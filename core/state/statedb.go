@@ -229,6 +229,17 @@ func (s *StateDB) updateStateFrozenFund(stateFrozenFund *stateFrozenFund) {
 
 func (s *StateDB) updateStateCoin(stateCoin *stateCoin) {
 	symbol := stateCoin.Symbol()
+
+	// TODO: delete
+	if stateCoin.ReserveBalance().Cmp(types.Big0) == -1 {
+		stateCoin.SetVolume(big.NewInt(0))
+	}
+
+	// TODO: delete
+	if stateCoin.Volume().Cmp(types.Big0) == -1 {
+		stateCoin.SetVolume(big.NewInt(0))
+	}
+
 	data, err := rlp.EncodeToBytes(stateCoin)
 	if err != nil {
 		panic(fmt.Errorf("can't encode coin at %x: %v", symbol[:], err))
