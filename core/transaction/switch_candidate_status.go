@@ -54,6 +54,12 @@ func (data SetCandidateOnData) Run(sender types.Address, tx *Transaction, contex
 		}
 
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
+
+		if commission == nil {
+			return Response{
+				Code: 999,
+				Log:  "Unknown error"}
+		}
 	}
 
 	if context.GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
@@ -133,6 +139,12 @@ func (data SetCandidateOffData) Run(sender types.Address, tx *Transaction, conte
 		}
 
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
+
+		if commission == nil {
+			return Response{
+				Code: 999,
+				Log:  "Unknown error"}
+		}
 	}
 
 	if context.GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {

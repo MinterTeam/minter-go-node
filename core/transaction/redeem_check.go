@@ -125,6 +125,12 @@ func (data RedeemCheckData) Run(sender types.Address, tx *Transaction, context *
 	if !decodedCheck.Coin.IsBaseCoin() {
 		coin := context.GetStateCoin(decodedCheck.Coin)
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
+
+		if commission == nil {
+			return Response{
+				Code: 999,
+				Log:  "Unknown error"}
+		}
 	}
 
 	totalTxCost := big.NewInt(0).Add(decodedCheck.Value, commission)

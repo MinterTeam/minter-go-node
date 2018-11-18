@@ -79,6 +79,12 @@ func (data BuyCoinData) Run(sender types.Address, tx *Transaction, context *stat
 		}
 
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
+
+		if commission == nil {
+			return Response{
+				Code: 999,
+				Log:  "Unknown error"}
+		}
 	}
 
 	if context.GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
@@ -122,6 +128,12 @@ func (data BuyCoinData) Run(sender types.Address, tx *Transaction, context *stat
 
 		value = formula.CalculateSaleAmount(coin.Volume, coin.ReserveBalance, coin.Crr, data.ValueToBuy)
 
+		if value == nil {
+			return Response{
+				Code: 999,
+				Log:  "Unknown error"}
+		}
+
 		if context.GetBalance(sender, data.CoinToSell).Cmp(value) < 0 {
 			return Response{
 				Code: code.InsufficientFunds,
@@ -158,6 +170,12 @@ func (data BuyCoinData) Run(sender types.Address, tx *Transaction, context *stat
 		}
 
 		value = formula.CalculateSaleAmount(coinFrom.Volume, coinFrom.ReserveBalance, coinFrom.Crr, baseCoinNeeded)
+
+		if value == nil {
+			return Response{
+				Code: 999,
+				Log:  "Unknown error"}
+		}
 
 		if context.GetBalance(sender, data.CoinToSell).Cmp(value) < 0 {
 			return Response{

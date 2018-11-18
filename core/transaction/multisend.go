@@ -85,6 +85,12 @@ func (data MultisendData) Run(sender types.Address, tx *Transaction, context *st
 		}
 
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
+
+		if commission == nil {
+			return Response{
+				Code: 999,
+				Log:  "Unknown error"}
+		}
 	}
 
 	if err := checkBalances(context, sender, data.List, commission, tx.GasCoin); err != nil {

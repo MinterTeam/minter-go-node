@@ -63,6 +63,12 @@ func (data UnbondData) Run(sender types.Address, tx *Transaction, context *state
 		}
 
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
+
+		if commission == nil {
+			return Response{
+				Code: 999,
+				Log:  "Unknown error"}
+		}
 	}
 
 	if context.GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
