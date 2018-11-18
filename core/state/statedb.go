@@ -232,7 +232,7 @@ func (s *StateDB) updateStateCoin(stateCoin *stateCoin) {
 
 	// TODO: delete
 	if stateCoin.ReserveBalance().Cmp(types.Big0) == -1 {
-		stateCoin.SetVolume(big.NewInt(0))
+		stateCoin.SetReserve(big.NewInt(0))
 	}
 
 	// TODO: delete
