@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.7.4
+*Nov 20th, 2018*
+
+BUG FIXES
+
+- [tendermint] "Send failed" is logged at debug level instead of error
+- [tendermint] Set connection config properly instead of always using default
+- [tendermint] Seed mode fixes:
+   - Only disconnect from inbound peers
+   - Use FlushStop instead of Sleep to ensure all messages are sent before disconnecting
+
 ## 0.7.3
 *Nov 18th, 2018*
 
