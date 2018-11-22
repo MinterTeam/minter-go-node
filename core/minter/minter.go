@@ -23,13 +23,14 @@ import (
 type Blockchain struct {
 	abciTypes.BaseApplication
 
-	stateDB            db.DB
-	appDB              *appdb.AppDB
-	stateDeliver       *state.StateDB
-	stateCheck         *state.StateDB
-	height             int64
-	rewards            *big.Int
-	validatorsStatuses map[[20]byte]int8
+	stateDB             db.DB
+	appDB               *appdb.AppDB
+	stateDeliver        *state.StateDB
+	stateCheck          *state.StateDB
+	height              int64
+	lastCommittedHeight int64
+	rewards             *big.Int
+	validatorsStatuses  map[[20]byte]int8
 
 	lock sync.RWMutex
 }
@@ -53,9 +54,10 @@ func NewMinterBlockchain() *Blockchain {
 	applicationDB := appdb.NewAppDB()
 
 	blockchain = &Blockchain{
-		stateDB: ldb,
-		appDB:   applicationDB,
-		height:  applicationDB.GetLastHeight(),
+		stateDB:             ldb,
+		appDB:               applicationDB,
+		height:              applicationDB.GetLastHeight(),
+		lastCommittedHeight: applicationDB.GetLastHeight(),
 	}
 
 	blockchain.stateDeliver, err = state.New(int64(blockchain.height), blockchain.stateDB)
@@ -307,6 +309,8 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 
 	app.updateCurrentState()
 
+	atomic.StoreInt64(&app.lastCommittedHeight, app.Height())
+
 	return abciTypes.ResponseCommit{
 		Data: hash,
 	}
@@ -344,6 +348,10 @@ func (app *Blockchain) GetStateForHeight(height int) (*state.StateDB, error) {
 
 func (app *Blockchain) Height() int64 {
 	return atomic.LoadInt64(&app.height)
+}
+
+func (app *Blockchain) LastCommittedHeight() int64 {
+	return atomic.LoadInt64(&app.lastCommittedHeight)
 }
 
 func (app *Blockchain) getCurrentValidators() abciTypes.ValidatorUpdates {

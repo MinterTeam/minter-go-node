@@ -21,10 +21,10 @@ func Transaction(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 
-	if err != nil {
+	if err != nil || tx.Height > blockchain.LastCommittedHeight() {
 		w.WriteHeader(http.StatusBadRequest)
 		err = json.NewEncoder(w).Encode(Response{
-			Code:   0,
+			Code:   404,
 			Result: err.Error(),
 		})
 
