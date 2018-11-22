@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.5
+*Nov 22th, 2018*
+
+BUG FIXES
+
+- [api] Fix issue in which transaction appeared in `/api/transaction` before actual execution
+
 ## 0.7.4
 *Nov 20th, 2018*
 
