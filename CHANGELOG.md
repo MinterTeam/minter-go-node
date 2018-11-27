@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.6
+*Nov 27th, 2018*
+
+BUG FIXES
+
+- [node] Fix issue #168 with unexpected database corruption
+
 ## 0.7.5
 *Nov 22th, 2018*
 
