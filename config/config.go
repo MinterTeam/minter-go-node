@@ -26,6 +26,13 @@ var (
 	defaultNodeKeyPath     = filepath.Join(defaultConfigDir, defaultNodeKeyName)
 )
 
+const (
+	// LogFormatPlain is a format for colored text
+	LogFormatPlain = "plain"
+	// LogFormatJSON is a format for json output
+	LogFormatJSON = "json"
+)
+
 func init() {
 	homeDir := utils.GetMinterHome()
 	viper.SetConfigName("config")
@@ -150,6 +157,7 @@ func GetTmConfig() *tmConfig.Config {
 			ProxyApp:                cfg.ProxyApp,
 			ABCI:                    cfg.ABCI,
 			LogLevel:                cfg.LogLevel,
+			LogFormat:               cfg.LogFormat,
 			ProfListenAddress:       cfg.ProfListenAddress,
 			FastSync:                cfg.FastSync,
 			FilterPeers:             cfg.FilterPeers,
@@ -202,6 +210,9 @@ type BaseConfig struct {
 
 	// Output level for logging
 	LogLevel string `mapstructure:"log_level"`
+
+	// Output format: 'plain' (colored text) or 'json'
+	LogFormat string `mapstructure:"log_format"`
 
 	// TCP or UNIX socket address for the profiling server to listen on
 	ProfListenAddress string `mapstructure:"prof_laddr"`
@@ -263,6 +274,7 @@ func DefaultBaseConfig() BaseConfig {
 		APIPerIPLimit:           1000,
 		APIPerIPLimitWindow:     60 * time.Second,
 		LogPath:                 "stdout",
+		LogFormat:               LogFormatPlain,
 	}
 }
 

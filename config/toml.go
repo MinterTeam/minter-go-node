@@ -102,6 +102,9 @@ db_path = "{{ js .BaseConfig.DBPath }}"
 # Output level for logging, including package level options
 log_level = "{{ .BaseConfig.LogLevel }}"
 
+# Output format: 'plain' (colored text) or 'json'
+log_format = "{{ .BaseConfig.LogFormat }}"
+
 # Path to file for logs, "stdout" by default
 log_path = "{{ .BaseConfig.LogPath }}"
 

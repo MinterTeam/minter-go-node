@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.7
+*Nov 28th, 2018*
+
+IMPROVEMENT
+
+- [logs] Add `log_format` option to config
+
 ## 0.7.6
 *Nov 27th, 2018*
 
