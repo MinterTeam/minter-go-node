@@ -3,14 +3,15 @@ package api
 import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/pkg/errors"
+	"math/big"
 )
 
 type CoinInfoResponse struct {
 	Name           string           `json:"name"`
 	Symbol         types.CoinSymbol `json:"symbol"`
-	Volume         string           `json:"volume"`
+	Volume         *big.Int         `json:"volume"`
 	Crr            uint             `json:"crr"`
-	ReserveBalance string           `json:"reserve_balance"`
+	ReserveBalance *big.Int         `json:"reserve_balance"`
 }
 
 func CoinInfo(coinSymbol string, height int) (*CoinInfoResponse, error) {
@@ -24,11 +25,12 @@ func CoinInfo(coinSymbol string, height int) (*CoinInfoResponse, error) {
 		return nil, errors.New("Coin not found")
 	}
 
+	coinData := coin.Data()
 	return &CoinInfoResponse{
-		Name:           coin.Data().Name,
-		Symbol:         coin.Data().Symbol,
-		Volume:         coin.Data().Volume.String(),
-		Crr:            coin.Data().Crr,
-		ReserveBalance: coin.Data().ReserveBalance.String(),
+		Name:           coinData.Name,
+		Symbol:         coinData.Symbol,
+		Volume:         coinData.Volume,
+		Crr:            coinData.Crr,
+		ReserveBalance: coinData.ReserveBalance,
 	}, nil
 }
