@@ -1,17 +1,14 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/rewards"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/eventsdb"
-	"github.com/gorilla/mux"
 	"github.com/tendermint/tendermint/libs/common"
+	tmtypes "github.com/tendermint/tendermint/types"
 	"math/big"
-	"net/http"
-	"strconv"
 	"time"
 )
 
@@ -28,8 +25,8 @@ type BlockResponse struct {
 	NumTxs       int64                      `json:"num_txs"`
 	TotalTxs     int64                      `json:"total_txs"`
 	Transactions []BlockTransactionResponse `json:"transactions"`
-	Events       json.RawMessage            `json:"events,omitempty"`
-	Precommits   json.RawMessage            `json:"precommits"`
+	Events       eventsdb.Events            `json:"events,omitempty"`
+	Precommits   []*tmtypes.Vote            `json:"precommits"`
 	BlockReward  string                     `json:"block_reward"`
 	Size         int                        `json:"size"`
 }
@@ -52,31 +49,14 @@ type BlockTransactionResponse struct {
 	Log         string            `json:"log,omitempty"`
 }
 
-func Block(w http.ResponseWriter, r *http.Request) {
-
-	vars := mux.Vars(r)
-	height, _ := strconv.ParseInt(vars["height"], 10, 64)
-
+func Block(height int64) (*BlockResponse, error) {
 	block, err := client.Block(&height)
 	blockResults, err := client.BlockResults(&height)
-
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		err = json.NewEncoder(w).Encode(Response{
-			Code: 0,
-			Log:  err.Error(),
-		})
-
-		if err != nil {
-			panic(err)
-		}
-		return
+		return nil, err
 	}
 
 	txs := make([]BlockTransactionResponse, len(block.Block.Data.Txs))
-
 	for i, rawTx := range block.Block.Data.Txs {
 		tx, _ := transaction.DecodeFromBytes(rawTx)
 		sender, _ := tx.Sender()
@@ -111,51 +91,16 @@ func Block(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	precommits, _ := cdc.MarshalJSON(block.Block.LastCommit.Precommits)
-
-	size := len(cdc.MustMarshalBinaryLengthPrefixed(block))
-
-	var eventsRaw []byte
-
-	events := edb.LoadEvents(height)
-
-	if len(events) > 0 {
-		eventsRaw, err = cdc.MarshalJSON(events)
-
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			err = json.NewEncoder(w).Encode(Response{
-				Code: 0,
-				Log:  err.Error(),
-			})
-
-			if err != nil {
-				panic(err)
-			}
-			return
-		}
-	}
-
-	response := BlockResponse{
+	return &BlockResponse{
 		Hash:         block.Block.Hash(),
 		Height:       block.Block.Height,
 		Time:         block.Block.Time,
 		NumTxs:       block.Block.NumTxs,
 		TotalTxs:     block.Block.TotalTxs,
 		Transactions: txs,
-		Precommits:   precommits,
+		Precommits:   block.Block.LastCommit.Precommits,
 		BlockReward:  rewards.GetRewardForBlock(uint64(height)).String(),
-		Size:         size,
-		Events:       eventsRaw,
-	}
-
-	w.WriteHeader(http.StatusOK)
-	err = json.NewEncoder(w).Encode(Response{
-		Code:   0,
-		Result: response,
-	})
-
-	if err != nil {
-		panic(err)
-	}
+		Size:         len(cdc.MustMarshalBinaryLengthPrefixed(block)),
+		Events:       edb.LoadEvents(height),
+	}, nil
 }

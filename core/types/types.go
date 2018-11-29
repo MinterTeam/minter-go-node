@@ -163,6 +163,12 @@ func (c CoinSymbol) IsBaseCoin() bool {
 	return c.Compare(GetBaseCoin()) == 0
 }
 
+func StrToCoinSymbol(s string) CoinSymbol {
+	var symbol CoinSymbol
+	copy(symbol[:], []byte(s))
+	return symbol
+}
+
 /////////// Address
 
 // Address represents the 20 byte address of an Ethereum account.
@@ -233,6 +239,15 @@ func (a Address) MarshalText() ([]byte, error) {
 // UnmarshalText parses a hash in hex syntax.
 func (a *Address) UnmarshalText(input []byte) error {
 	return hexutil.UnmarshalFixedText("Address", input, a[:])
+}
+
+func (a *Address) Unmarshal(input []byte) error {
+	copy(a[:], input)
+	return nil
+}
+
+func (a Address) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf("\"%s\"", a.String())), nil
 }
 
 // UnmarshalJSON parses a hash in hex syntax.

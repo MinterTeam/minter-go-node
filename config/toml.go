@@ -82,12 +82,6 @@ keep_state_history = {{ .BaseConfig.KeepStateHistory }}
 # Limit for simultaneous requests to API
 api_simultaneous_requests = {{ .BaseConfig.APISimultaneousRequests }}
 
-# Limit API requests for client (by IP)
-api_per_ip_limit = {{ .BaseConfig.APIPerIPLimit }}
-
-# How often API requests limits will be cleared
-api_per_ip_limit_window = "{{ .BaseConfig.APIPerIPLimitWindow }}"
-
 # If this node is many blocks behind the tip of the chain, FastSync
 # allows them to catchup quickly by downloading blocks in parallel
 # and verifying their commits

@@ -1,14 +1,12 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/tendermint/tendermint/libs/common"
 	"github.com/tendermint/tendermint/rpc/core/types"
 	"math/big"
-	"net/http"
 )
 
 type TransactionResponse struct {
@@ -34,26 +32,13 @@ type ResultTxSearch struct {
 	TotalCount int                    `json:"total_count"`
 }
 
-func Transactions(w http.ResponseWriter, r *http.Request) {
-	query := r.URL.Query().Get("query")
-
+func Transactions(query string) (*[]TransactionResponse, error) {
 	rpcResult, err := client.TxSearch(query, false, 1, 100)
-
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		_ = json.NewEncoder(w).Encode(Response{
-			Code:   0,
-			Result: err.Error(),
-		})
-		return
+		return nil, err
 	}
 
-	w.WriteHeader(http.StatusOK)
-
 	result := make([]TransactionResponse, len(rpcResult.Txs))
-
 	for i, tx := range rpcResult.Txs {
 		decodedTx, _ := transaction.DecodeFromBytes(tx.Tx)
 		sender, _ := decodedTx.Sender()
@@ -88,12 +73,5 @@ func Transactions(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	err = json.NewEncoder(w).Encode(Response{
-		Code:   0,
-		Result: result,
-	})
-
-	if err != nil {
-		panic(err)
-	}
+	return &result, nil
 }

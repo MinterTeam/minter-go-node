@@ -3,6 +3,10 @@
 ## 0.7.7
 *Nov 28th, 2018*
 
+BREAKING CHANGES
+
+- [api] Switch to RPC protocol
+
 IMPROVEMENT
 
 - [logs] Add `log_format` option to config

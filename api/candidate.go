@@ -1,50 +1,20 @@
 package api
 
 import (
-	"encoding/json"
-	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/gorilla/mux"
-	"net/http"
-	"strings"
+	"github.com/pkg/errors"
 )
 
-func GetCandidate(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	pubkey := types.Hex2Bytes(strings.TrimLeft(vars["pubkey"], "Mp"))
-
-	cState, err := GetStateForRequest(r)
-
+func Candidate(pubkey []byte, height int) (*CandidateResponse, error) {
+	cState, err := GetStateForHeight(height)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		w.WriteHeader(http.StatusNotFound)
-		_ = json.NewEncoder(w).Encode(Response{
-			Code: 404,
-			Log:  "State for given height not found",
-		})
-		return
+		return nil, err
 	}
 
 	candidate := cState.GetStateCandidate(pubkey)
-
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-
 	if candidate == nil {
-		w.WriteHeader(http.StatusNotFound)
-		_ = json.NewEncoder(w).Encode(Response{
-			Code: 404,
-			Log:  "Candidate not found",
-		})
-		return
+		return nil, errors.New("Candidate not found")
 	}
 
-	w.WriteHeader(http.StatusOK)
-
-	_ = json.NewEncoder(w).Encode(Response{
-		Code: 0,
-		Result: struct {
-			Candidate Candidate `json:"candidate"`
-		}{
-			Candidate: makeResponseCandidate(*candidate, true),
-		},
-	})
+	response := makeResponseCandidate(*candidate, true)
+	return &response, nil
 }

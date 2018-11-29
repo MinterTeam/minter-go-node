@@ -1,12 +1,10 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
-	"net/http"
-	"strconv"
+	"github.com/pkg/errors"
 )
 
 type Stake struct {
@@ -16,7 +14,7 @@ type Stake struct {
 	BipValue string           `json:"bip_value"`
 }
 
-type Candidate struct {
+type CandidateResponse struct {
 	CandidateAddress types.Address `json:"candidate_address"`
 	TotalStake       string        `json:"total_stake"`
 	PubKey           string        `json:"pub_key"`
@@ -26,22 +24,22 @@ type Candidate struct {
 	Status           byte          `json:"status"`
 }
 
-type Validator struct {
-	AccumReward string    `json:"accumulated_reward"`
-	AbsentTimes int       `json:"absent_times"`
-	Candidate   Candidate `json:"candidate"`
+type ValidatorResponse struct {
+	AccumReward string            `json:"accumulated_reward"`
+	AbsentTimes int               `json:"absent_times"`
+	Candidate   CandidateResponse `json:"candidate"`
 }
 
-func makeResponseValidator(v state.Validator, state *state.StateDB) Validator {
-	return Validator{
+func makeResponseValidator(v state.Validator, state *state.StateDB) ValidatorResponse {
+	return ValidatorResponse{
 		AccumReward: v.AccumReward.String(),
 		AbsentTimes: v.CountAbsentTimes(),
 		Candidate:   makeResponseCandidate(*state.GetStateCandidate(v.PubKey), false),
 	}
 }
 
-func makeResponseCandidate(c state.Candidate, includeStakes bool) Candidate {
-	candidate := Candidate{
+func makeResponseCandidate(c state.Candidate, includeStakes bool) CandidateResponse {
+	candidate := CandidateResponse{
 		CandidateAddress: c.CandidateAddress,
 		TotalStake:       c.TotalBipStake.String(),
 		PubKey:           fmt.Sprintf("Mp%x", c.PubKey),
@@ -65,47 +63,24 @@ func makeResponseCandidate(c state.Candidate, includeStakes bool) Candidate {
 	return candidate
 }
 
-func GetValidators(w http.ResponseWriter, r *http.Request) {
-	height, _ := strconv.Atoi(r.URL.Query().Get("height"))
+type ResponseValidators []ValidatorResponse
 
-	if height <= 0 {
-		height = int(blockchain.Height())
-	}
-
-	rState, err := GetStateForRequest(r)
+func Validators(height int) (*ResponseValidators, error) {
+	rState, err := GetStateForHeight(height)
 
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		w.WriteHeader(http.StatusNotFound)
-		_ = json.NewEncoder(w).Encode(Response{
-			Code: 404,
-			Log:  "State for given height not found",
-		})
-		return
+		return nil, err
 	}
+
 	vals := rState.GetStateValidators()
-
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-
 	if vals == nil {
-		w.WriteHeader(http.StatusNotFound)
-		_ = json.NewEncoder(w).Encode(Response{
-			Code: 404,
-			Log:  "Validators not found",
-		})
-		return
+		return nil, errors.New("Validator not found")
 	}
 
-	w.WriteHeader(http.StatusOK)
-
-	var responseValidators []Validator
-
+	var responseValidators ResponseValidators
 	for _, val := range vals.Data() {
 		responseValidators = append(responseValidators, makeResponseValidator(val, rState))
 	}
 
-	_ = json.NewEncoder(w).Encode(Response{
-		Code:   0,
-		Result: responseValidators,
-	})
+	return &responseValidators, nil
 }

@@ -1,40 +1,21 @@
 package api
 
 import (
-	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
-	"github.com/gorilla/mux"
+	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/common"
-	"net/http"
-	"strings"
 )
 
-func Transaction(w http.ResponseWriter, r *http.Request) {
-
-	vars := mux.Vars(r)
-	hash := strings.TrimLeft(vars["hash"], "Mt")
-	decoded, err := hex.DecodeString(hash)
-
-	tx, err := client.Tx(decoded, false)
-
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-
-	if err != nil || tx.Height > blockchain.LastCommittedHeight() {
-		w.WriteHeader(http.StatusBadRequest)
-		err = json.NewEncoder(w).Encode(Response{
-			Code:   404,
-			Result: err.Error(),
-		})
-
-		if err != nil {
-			panic(err)
-		}
-		return
+func Transaction(hash []byte) (*TransactionResponse, error) {
+	tx, err := client.Tx(hash, false)
+	if err != nil {
+		return nil, err
 	}
 
-	w.WriteHeader(http.StatusOK)
+	if tx.Height > blockchain.LastCommittedHeight() {
+		return nil, errors.New("Tx not found")
+	}
 
 	decodedTx, _ := transaction.DecodeFromBytes(tx.Tx)
 	sender, _ := decodedTx.Sender()
@@ -50,28 +31,21 @@ func Transaction(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	err = json.NewEncoder(w).Encode(Response{
-		Code: 0,
-		Result: TransactionResponse{
-			Hash:     common.HexBytes(tx.Tx.Hash()),
-			RawTx:    fmt.Sprintf("%x", []byte(tx.Tx)),
-			Height:   tx.Height,
-			Index:    tx.Index,
-			From:     sender.String(),
-			Nonce:    decodedTx.Nonce,
-			GasPrice: decodedTx.GasPrice,
-			GasCoin:  decodedTx.GasCoin,
-			GasUsed:  tx.TxResult.GasUsed,
-			Type:     decodedTx.Type,
-			Data:     decodedTx.GetDecodedData(),
-			Payload:  decodedTx.Payload,
-			Tags:     tags,
-			Code:     tx.TxResult.Code,
-			Log:      tx.TxResult.Log,
-		},
-	})
-
-	if err != nil {
-		panic(err)
-	}
+	return &TransactionResponse{
+		Hash:     common.HexBytes(tx.Tx.Hash()),
+		RawTx:    fmt.Sprintf("%x", []byte(tx.Tx)),
+		Height:   tx.Height,
+		Index:    tx.Index,
+		From:     sender.String(),
+		Nonce:    decodedTx.Nonce,
+		GasPrice: decodedTx.GasPrice,
+		GasCoin:  decodedTx.GasCoin,
+		GasUsed:  tx.TxResult.GasUsed,
+		Type:     decodedTx.Type,
+		Data:     decodedTx.GetDecodedData(),
+		Payload:  decodedTx.Payload,
+		Tags:     tags,
+		Code:     tx.TxResult.Code,
+		Log:      tx.TxResult.Log,
+	}, nil
 }
