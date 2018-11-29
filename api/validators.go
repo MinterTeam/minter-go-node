@@ -5,6 +5,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/pkg/errors"
+	"math/big"
 )
 
 type Stake struct {
@@ -16,7 +17,7 @@ type Stake struct {
 
 type CandidateResponse struct {
 	CandidateAddress types.Address `json:"candidate_address"`
-	TotalStake       string        `json:"total_stake"`
+	TotalStake       *big.Int      `json:"total_stake"`
 	PubKey           string        `json:"pub_key"`
 	Commission       uint          `json:"commission"`
 	Stakes           []Stake       `json:"stakes,omitempty"`
@@ -25,14 +26,14 @@ type CandidateResponse struct {
 }
 
 type ValidatorResponse struct {
-	AccumReward string            `json:"accumulated_reward"`
+	AccumReward *big.Int          `json:"accumulated_reward"`
 	AbsentTimes int               `json:"absent_times"`
 	Candidate   CandidateResponse `json:"candidate"`
 }
 
 func makeResponseValidator(v state.Validator, state *state.StateDB) ValidatorResponse {
 	return ValidatorResponse{
-		AccumReward: v.AccumReward.String(),
+		AccumReward: v.AccumReward,
 		AbsentTimes: v.CountAbsentTimes(),
 		Candidate:   makeResponseCandidate(*state.GetStateCandidate(v.PubKey), false),
 	}
@@ -41,7 +42,7 @@ func makeResponseValidator(v state.Validator, state *state.StateDB) ValidatorRes
 func makeResponseCandidate(c state.Candidate, includeStakes bool) CandidateResponse {
 	candidate := CandidateResponse{
 		CandidateAddress: c.CandidateAddress,
-		TotalStake:       c.TotalBipStake.String(),
+		TotalStake:       c.TotalBipStake,
 		PubKey:           fmt.Sprintf("Mp%x", c.PubKey),
 		Commission:       c.Commission,
 		CreatedAtBlock:   c.CreatedAtBlock,

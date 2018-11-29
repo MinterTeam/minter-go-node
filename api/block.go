@@ -27,7 +27,7 @@ type BlockResponse struct {
 	Transactions []BlockTransactionResponse `json:"transactions"`
 	Events       eventsdb.Events            `json:"events,omitempty"`
 	Precommits   []*tmtypes.Vote            `json:"precommits"`
-	BlockReward  string                     `json:"block_reward"`
+	BlockReward  *big.Int                   `json:"block_reward"`
 	Size         int                        `json:"size"`
 }
 
@@ -99,7 +99,7 @@ func Block(height int64) (*BlockResponse, error) {
 		TotalTxs:     block.Block.TotalTxs,
 		Transactions: txs,
 		Precommits:   block.Block.LastCommit.Precommits,
-		BlockReward:  rewards.GetRewardForBlock(uint64(height)).String(),
+		BlockReward:  rewards.GetRewardForBlock(uint64(height)),
 		Size:         len(cdc.MustMarshalBinaryLengthPrefixed(block)),
 		Events:       edb.LoadEvents(height),
 	}, nil
