@@ -46,6 +46,7 @@ func (data SendData) TotalSpend(tx *Transaction, context *state.StateDB) (TotalS
 	}
 
 	total.Add(tx.GasCoin, commission)
+	total.Add(data.Coin, data.Value)
 
 	return total, conversions, nil, nil
 }

@@ -30,8 +30,8 @@ func (data SellCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (To
 	if data.CoinToSell.IsBaseCoin() {
 		coin := context.GetStateCoin(data.CoinToBuy).Data()
 		value = formula.CalculatePurchaseReturn(coin.Volume, coin.ReserveBalance, coin.Crr, data.ValueToSell)
-		
-		total.Add(data.CoinToSell, value)
+
+		total.Add(data.CoinToSell, data.ValueToSell)
 		conversions = append(conversions, Conversion{
 			FromCoin:  data.CoinToSell,
 			ToCoin:    data.CoinToBuy,
@@ -59,7 +59,7 @@ func (data SellCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (To
 			rValue.Add(rValue, commissionInBaseCoin)
 		}
 
-		total.Add(data.CoinToSell, rValue)
+		total.Add(data.CoinToSell, valueToSell)
 		conversions = append(conversions, Conversion{
 			FromCoin:    data.CoinToSell,
 			FromAmount:  valueToSell,
@@ -90,7 +90,7 @@ func (data SellCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (To
 
 		value = formula.CalculatePurchaseReturn(coinTo.Volume, coinTo.ReserveBalance, coinTo.Crr, basecoinValue)
 
-		total.Add(data.CoinToSell, value)
+		total.Add(data.CoinToSell, valueToSell)
 
 		conversions = append(conversions, Conversion{
 			FromCoin:    data.CoinToSell,
@@ -175,38 +175,6 @@ func (data SellCoinData) Run(tx *Transaction, context *state.StateDB, isCheck bo
 	totalSpends, conversions, value, response := data.TotalSpend(tx, context)
 	if response != nil {
 		return *response
-	}
-
-	if data.CoinToSell.IsBaseCoin() {
-		coin := context.GetStateCoin(data.CoinToBuy).Data()
-		value = formula.CalculatePurchaseReturn(coin.Volume, coin.ReserveBalance, coin.Crr, data.ValueToSell)
-
-		if !isCheck {
-			context.AddCoinVolume(data.CoinToBuy, value)
-			context.AddCoinReserve(data.CoinToBuy, data.ValueToSell)
-		}
-	} else if data.CoinToBuy.IsBaseCoin() {
-		coin := context.GetStateCoin(data.CoinToSell).Data()
-		value = formula.CalculateSaleReturn(coin.Volume, coin.ReserveBalance, coin.Crr, data.ValueToSell)
-
-		if !isCheck {
-			context.SubCoinVolume(data.CoinToSell, data.ValueToSell)
-			context.SubCoinReserve(data.CoinToSell, value)
-		}
-	} else {
-		coinFrom := context.GetStateCoin(data.CoinToSell).Data()
-		coinTo := context.GetStateCoin(data.CoinToBuy).Data()
-
-		basecoinValue := formula.CalculateSaleReturn(coinFrom.Volume, coinFrom.ReserveBalance, coinFrom.Crr, data.ValueToSell)
-		value = formula.CalculatePurchaseReturn(coinTo.Volume, coinTo.ReserveBalance, coinTo.Crr, basecoinValue)
-
-		if !isCheck {
-			context.AddCoinVolume(data.CoinToBuy, value)
-			context.SubCoinVolume(data.CoinToSell, data.ValueToSell)
-
-			context.AddCoinReserve(data.CoinToBuy, basecoinValue)
-			context.SubCoinReserve(data.CoinToSell, basecoinValue)
-		}
 	}
 
 	for _, ts := range totalSpends {
