@@ -13,9 +13,9 @@ import (
 )
 
 type SellCoinData struct {
-	CoinToSell  types.CoinSymbol
-	ValueToSell *big.Int
-	CoinToBuy   types.CoinSymbol
+	CoinToSell  types.CoinSymbol `json:"coin_to_sell"`
+	ValueToSell *big.Int         `json:"value_to_sell"`
+	CoinToBuy   types.CoinSymbol `json:"coin_to_buy"`
 }
 
 func (data SellCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (TotalSpends, []Conversion, *big.Int, *Response) {
@@ -29,8 +29,8 @@ func (data SellCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (To
 
 	if data.CoinToSell.IsBaseCoin() {
 		coin := context.GetStateCoin(data.CoinToBuy).Data()
-
 		value = formula.CalculatePurchaseReturn(coin.Volume, coin.ReserveBalance, coin.Crr, data.ValueToSell)
+		
 		total.Add(data.CoinToSell, value)
 		conversions = append(conversions, Conversion{
 			FromCoin:  data.CoinToSell,

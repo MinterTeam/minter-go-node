@@ -17,11 +17,11 @@ const maxCoinNameBytes = 64
 const allowedCoinSymbols = "^[A-Z0-9]{3,10}$"
 
 type CreateCoinData struct {
-	Name                 string
-	Symbol               types.CoinSymbol
-	InitialAmount        *big.Int
-	InitialReserve       *big.Int
-	ConstantReserveRatio uint
+	Name                 string           `json:"name"`
+	Symbol               types.CoinSymbol `json:"symbol"`
+	InitialAmount        *big.Int         `json:"initial_amount"`
+	InitialReserve       *big.Int         `json:"initial_reserve"`
+	ConstantReserveRatio uint             `json:"constant_reserve_ratio"`
 }
 
 func (data CreateCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (TotalSpends, []Conversion, *big.Int, *Response) {

@@ -13,9 +13,9 @@ import (
 )
 
 type CreateMultisigData struct {
-	Threshold uint
-	Weights   []uint
-	Addresses []types.Address
+	Threshold uint            `json:"threshold"`
+	Weights   []uint          `json:"weights"`
+	Addresses []types.Address `json:"addresses"`
 }
 
 func (data CreateMultisigData) TotalSpend(tx *Transaction, context *state.StateDB) (TotalSpends, []Conversion, *big.Int, *Response) {

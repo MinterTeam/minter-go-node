@@ -16,11 +16,11 @@ const minCommission = 0
 const maxCommission = 100
 
 type DeclareCandidacyData struct {
-	Address    types.Address
-	PubKey     []byte
-	Commission uint
-	Coin       types.CoinSymbol
-	Stake      *big.Int
+	Address    types.Address    `json:"address"`
+	PubKey     []byte           `json:"pub_key"`
+	Commission uint             `json:"commission"`
+	Coin       types.CoinSymbol `json:"coin"`
+	Stake      *big.Int         `json:"stake"`
 }
 
 func (data DeclareCandidacyData) TotalSpend(tx *Transaction, context *state.StateDB) (TotalSpends, []Conversion, *big.Int, *Response) {

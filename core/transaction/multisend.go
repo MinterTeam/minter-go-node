@@ -16,7 +16,7 @@ import (
 )
 
 type MultisendData struct {
-	List []MultisendDataItem
+	List []MultisendDataItem `json:"list"`
 }
 
 func (data MultisendData) TotalSpend(tx *Transaction, context *state.StateDB) (TotalSpends, []Conversion, *big.Int, *Response) {
@@ -46,9 +46,9 @@ func (data MultisendData) BasicCheck(tx *Transaction, context *state.StateDB) *R
 }
 
 type MultisendDataItem struct {
-	Coin  types.CoinSymbol
-	To    types.Address
-	Value *big.Int
+	Coin  types.CoinSymbol `json:"coin"`
+	To    types.Address    `json:"to"`
+	Value *big.Int         `json:"value"`
 }
 
 func (data MultisendData) String() string {

@@ -13,9 +13,9 @@ import (
 )
 
 type SendData struct {
-	Coin  types.CoinSymbol
-	To    types.Address
-	Value *big.Int
+	Coin  types.CoinSymbol `json:"coin"`
+	To    types.Address    `json:"to"`
+	Value *big.Int         `json:"value"`
 }
 
 func (data SendData) TotalSpend(tx *Transaction, context *state.StateDB) (TotalSpends, []Conversion, *big.Int, *Response) {

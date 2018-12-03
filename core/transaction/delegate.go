@@ -12,9 +12,9 @@ import (
 )
 
 type DelegateData struct {
-	PubKey []byte
-	Coin   types.CoinSymbol
-	Stake  *big.Int
+	PubKey []byte           `json:"pub_key"`
+	Coin   types.CoinSymbol `json:"coin"`
+	Stake  *big.Int         `json:"stake"`
 }
 
 func (data DelegateData) TotalSpend(tx *Transaction, context *state.StateDB) (TotalSpends, []Conversion, *big.Int, *Response) {

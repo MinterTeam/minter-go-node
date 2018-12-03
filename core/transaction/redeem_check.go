@@ -18,8 +18,8 @@ import (
 )
 
 type RedeemCheckData struct {
-	RawCheck []byte
-	Proof    [65]byte
+	RawCheck []byte   `json:"raw_check"`
+	Proof    [65]byte `json:"proof"`
 }
 
 func (data RedeemCheckData) TotalSpend(tx *Transaction, context *state.StateDB) (TotalSpends, []Conversion, *big.Int, *Response) {

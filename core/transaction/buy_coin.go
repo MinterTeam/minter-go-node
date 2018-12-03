@@ -13,9 +13,9 @@ import (
 )
 
 type BuyCoinData struct {
-	CoinToBuy  types.CoinSymbol
-	ValueToBuy *big.Int
-	CoinToSell types.CoinSymbol
+	CoinToBuy  types.CoinSymbol `json:"coin_to_buy"`
+	ValueToBuy *big.Int         `json:"value_to_buy"`
+	CoinToSell types.CoinSymbol `json:"coin_to_sell"`
 }
 
 func (data BuyCoinData) String() string {

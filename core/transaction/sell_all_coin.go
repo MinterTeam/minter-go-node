@@ -13,8 +13,8 @@ import (
 )
 
 type SellAllCoinData struct {
-	CoinToSell types.CoinSymbol
-	CoinToBuy  types.CoinSymbol
+	CoinToSell types.CoinSymbol `json:"coin_to_sell"`
+	CoinToBuy  types.CoinSymbol `json:"coin_to_buy"`
 }
 
 func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (TotalSpends, []Conversion, *big.Int, *Response) {

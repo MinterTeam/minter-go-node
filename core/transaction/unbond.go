@@ -14,9 +14,9 @@ import (
 const unbondPeriod = 720 // in mainnet will be 518400 (30 days)
 
 type UnbondData struct {
-	PubKey []byte
-	Coin   types.CoinSymbol
-	Value  *big.Int
+	PubKey []byte           `json:"pub_key"`
+	Coin   types.CoinSymbol `json:"coin"`
+	Value  *big.Int         `json:"value"`
 }
 
 func (data UnbondData) TotalSpend(tx *Transaction, context *state.StateDB) (TotalSpends, []Conversion, *big.Int, *Response) {
