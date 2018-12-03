@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
@@ -20,7 +21,7 @@ type TransactionResponse struct {
 	GasCoin  types.CoinSymbol  `json:"gas_coin"`
 	GasUsed  int64             `json:"gas_used"`
 	Type     byte              `json:"type"`
-	Data     transaction.Data  `json:"data"`
+	Data     json.RawMessage   `json:"data"`
 	Payload  []byte            `json:"payload"`
 	Tags     map[string]string `json:"tags"`
 	Code     uint32            `json:"code,omitempty"`
@@ -54,6 +55,11 @@ func Transactions(query string) (*[]TransactionResponse, error) {
 			}
 		}
 
+		data, err := encodeTxData(decodedTx)
+		if err != nil {
+			return nil, err
+		}
+
 		result[i] = TransactionResponse{
 			Hash:     common.HexBytes(tx.Tx.Hash()),
 			RawTx:    fmt.Sprintf("%x", []byte(tx.Tx)),
@@ -65,7 +71,7 @@ func Transactions(query string) (*[]TransactionResponse, error) {
 			GasCoin:  decodedTx.GasCoin,
 			GasUsed:  tx.TxResult.GasUsed,
 			Type:     decodedTx.Type,
-			Data:     decodedTx.GetDecodedData(),
+			Data:     data,
 			Payload:  decodedTx.Payload,
 			Tags:     tags,
 			Code:     tx.TxResult.Code,
