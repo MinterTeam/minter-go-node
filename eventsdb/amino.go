@@ -1,6 +1,6 @@
 package eventsdb
 
-import "github.com/tendermint/go-amino"
+import "github.com/MinterTeam/go-amino"
 
 func RegisterAminoEvents(codec *amino.Codec) {
 	codec.RegisterInterface((*Event)(nil), nil)

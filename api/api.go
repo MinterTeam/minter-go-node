@@ -2,16 +2,19 @@ package api
 
 import (
 	"fmt"
+	"github.com/MinterTeam/go-amino"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/minter"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/eventsdb"
 	"github.com/MinterTeam/minter-go-node/log"
+	"github.com/MinterTeam/minter-go-node/rpc/lib/server"
 	"github.com/rs/cors"
-	"github.com/tendermint/go-amino"
-	"github.com/tendermint/tendermint/crypto/encoding/amino"
+	"github.com/tendermint/tendermint/crypto"
+	"github.com/tendermint/tendermint/crypto/ed25519"
+	"github.com/tendermint/tendermint/crypto/multisig"
+	"github.com/tendermint/tendermint/crypto/secp256k1"
 	rpc "github.com/tendermint/tendermint/rpc/client"
-	"github.com/tendermint/tendermint/rpc/lib/server"
 	"net/http"
 	"net/url"
 	"strings"
@@ -26,7 +29,7 @@ var (
 )
 
 func init() {
-	cryptoAmino.RegisterAmino(cdc)
+	RegisterCryptoAmino(cdc)
 	eventsdb.RegisterAminoEvents(cdc)
 }
 
@@ -124,4 +127,22 @@ func GetStateForHeight(height int) (*state.StateDB, error) {
 	}
 
 	return blockchain.CurrentState(), nil
+}
+
+// RegisterAmino registers all crypto related types in the given (amino) codec.
+func RegisterCryptoAmino(cdc *amino.Codec) {
+	// These are all written here instead of
+	cdc.RegisterInterface((*crypto.PubKey)(nil), nil)
+	cdc.RegisterConcrete(ed25519.PubKeyEd25519{},
+		ed25519.PubKeyAminoRoute, nil)
+	cdc.RegisterConcrete(secp256k1.PubKeySecp256k1{},
+		secp256k1.PubKeyAminoRoute, nil)
+	cdc.RegisterConcrete(multisig.PubKeyMultisigThreshold{},
+		multisig.PubKeyMultisigThresholdAminoRoute, nil)
+
+	cdc.RegisterInterface((*crypto.PrivKey)(nil), nil)
+	cdc.RegisterConcrete(ed25519.PrivKeyEd25519{},
+		ed25519.PrivKeyAminoRoute, nil)
+	cdc.RegisterConcrete(secp256k1.PrivKeySecp256k1{},
+		secp256k1.PrivKeyAminoRoute, nil)
 }

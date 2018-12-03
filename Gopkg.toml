@@ -50,6 +50,10 @@
   version = "=0.26.4"
 
 [[constraint]]
+  name = "github.com/MinterTeam/go-amino"
+  version = "=v0.14.1-m"
+
+[[constraint]]
   branch = "v1"
   name = "gopkg.in/check.v1"
 
