@@ -63,6 +63,11 @@ func (data DelegateData) Gas() int64 {
 func (data DelegateData) Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response {
 	sender, _ := tx.Sender()
 
+	response := data.BasicCheck(tx, context)
+	if response != nil {
+		return *response
+	}
+
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
