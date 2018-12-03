@@ -2,17 +2,26 @@ package transaction
 
 import (
 	"bytes"
-	"encoding/json"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
+	"github.com/tendermint/go-amino"
+	"github.com/tendermint/tendermint/crypto/encoding/amino"
 	"github.com/tendermint/tendermint/libs/db"
 	"math/big"
 	"testing"
 )
+
+var (
+	cdc = amino.NewCodec()
+)
+
+func init() {
+	cryptoAmino.RegisterAmino(cdc)
+}
 
 func getState() *state.StateDB {
 	s, err := state.New(0, db.NewMemDB())
@@ -380,7 +389,7 @@ func TestBuyCoinTxJSON(t *testing.T) {
 		CoinToSell: getTestCoinSymbol(),
 	}
 
-	result, err := json.Marshal(buyCoinData)
+	result, err := cdc.MarshalJSON(buyCoinData)
 
 	if err != nil {
 		t.Fatalf("Error: %s", err.Error())

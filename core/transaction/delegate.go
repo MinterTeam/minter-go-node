@@ -1,7 +1,6 @@
 package transaction
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
@@ -13,21 +12,43 @@ import (
 )
 
 type DelegateData struct {
-	PubKey []byte
-	Coin   types.CoinSymbol
-	Stake  *big.Int
+	PubKey []byte           `json:"pub_key"`
+	Coin   types.CoinSymbol `json:"coin"`
+	Stake  *big.Int         `json:"stake"`
 }
 
-func (data DelegateData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		PubKey string           `json:"pub_key"`
-		Coin   types.CoinSymbol `json:"coin"`
-		Stake  string           `json:"stake"`
-	}{
-		PubKey: fmt.Sprintf("Mp%x", data.PubKey),
-		Coin:   data.Coin,
-		Stake:  data.Stake.String(),
-	})
+func (data DelegateData) TotalSpend(tx *Transaction, context *state.StateDB) (TotalSpends, []Conversion, *big.Int, *Response) {
+	panic("implement me")
+}
+
+func (data DelegateData) BasicCheck(tx *Transaction, context *state.StateDB) *Response {
+	if !context.CoinExists(tx.GasCoin) {
+		return &Response{
+			Code: code.CoinNotExists,
+			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin)}
+	}
+
+	if data.Stake.Cmp(types.Big0) < 1 {
+		return &Response{
+			Code: code.StakeShouldBePositive,
+			Log:  fmt.Sprintf("Stake should be positive")}
+	}
+
+	candidate := context.GetStateCandidate(data.PubKey)
+	if candidate == nil {
+		return &Response{
+			Code: code.CandidateNotFound,
+			Log:  fmt.Sprintf("Candidate with such public key not found")}
+	}
+
+	sender, _ := tx.Sender()
+	if len(candidate.Stakes) >= state.MaxDelegatorsPerCandidate && !context.IsDelegatorStakeSufficient(sender, data.PubKey, data.Coin, data.Stake) {
+		return &Response{
+			Code: code.TooLowStake,
+			Log:  fmt.Sprintf("Stake is too low")}
+	}
+
+	return nil
 }
 
 func (data DelegateData) String() string {
@@ -39,22 +60,15 @@ func (data DelegateData) Gas() int64 {
 	return commissions.DelegateTx
 }
 
-func (data DelegateData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response {
+func (data DelegateData) Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response {
+	sender, _ := tx.Sender()
 
-	if !context.CoinExists(tx.GasCoin) {
-		return Response{
-			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin)}
+	response := data.BasicCheck(tx, context)
+	if response != nil {
+		return *response
 	}
 
-	if data.Stake.Cmp(types.Big0) < 1 {
-		return Response{
-			Code: code.StakeShouldBePositive,
-			Log:  fmt.Sprintf("Stake should be positive")}
-	}
-
-	commissionInBaseCoin := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
-	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
+	commissionInBaseCoin := tx.CommissionInBaseCoin()
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
 	if tx.GasCoin != types.GetBaseCoin() {
@@ -67,12 +81,6 @@ func (data DelegateData) Run(sender types.Address, tx *Transaction, context *sta
 		}
 
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
-
-		if commission == nil {
-			return Response{
-				Code: 999,
-				Log:  "Unknown error"}
-		}
 	}
 
 	if context.GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
@@ -97,19 +105,6 @@ func (data DelegateData) Run(sender types.Address, tx *Transaction, context *sta
 				Code: code.InsufficientFunds,
 				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), totalTxCost.String(), tx.GasCoin)}
 		}
-	}
-
-	candidate := context.GetStateCandidate(data.PubKey)
-	if candidate == nil {
-		return Response{
-			Code: code.CandidateNotFound,
-			Log:  fmt.Sprintf("Candidate with such public key not found")}
-	}
-
-	if len(candidate.Stakes) >= state.MaxDelegatorsPerCandidate && !context.IsDelegatorStakeSufficient(sender, data.PubKey, data.Coin, data.Stake) {
-		return Response{
-			Code: code.TooLowStake,
-			Log:  fmt.Sprintf("Stake is too low")}
 	}
 
 	if !isCheck {
