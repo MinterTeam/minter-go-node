@@ -406,7 +406,7 @@ Return estimate of buy coin transaction
 
 .. code-block:: bash
 
-    curl -s 'localhost:8841/estimateTxCommission?tx={transaction}'
+    curl -s 'localhost:8841/estimate_tx_commission?tx={transaction}'
 
 .. code-block:: json
 
