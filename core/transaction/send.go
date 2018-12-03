@@ -22,7 +22,7 @@ func (data SendData) TotalSpend(tx *Transaction, context *state.StateDB) (TotalS
 	total := TotalSpends{}
 	var conversions []Conversion
 
-	commissionInBaseCoin := data.CommissionInBaseCoin(tx)
+	commissionInBaseCoin := tx.CommissionInBaseCoin()
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
 	if !tx.GasCoin.IsBaseCoin() {
@@ -48,13 +48,6 @@ func (data SendData) TotalSpend(tx *Transaction, context *state.StateDB) (TotalS
 	total.Add(tx.GasCoin, commission)
 
 	return total, conversions, nil, nil
-}
-
-func (data SendData) CommissionInBaseCoin(tx *Transaction) *big.Int {
-	commissionInBaseCoin := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
-	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
-
-	return commissionInBaseCoin
 }
 
 func (data SendData) BasicCheck(tx *Transaction, context *state.StateDB) *Response {
@@ -119,7 +112,7 @@ func (data SendData) Run(tx *Transaction, context *state.StateDB, isCheck bool, 
 			context.AddCoinReserve(conversion.ToCoin, conversion.ToReserve)
 		}
 
-		rewardPool.Add(rewardPool, data.CommissionInBaseCoin(tx))
+		rewardPool.Add(rewardPool, tx.CommissionInBaseCoin())
 		context.AddBalance(data.To, data.Coin, data.Value)
 		context.SetNonce(sender, tx.Nonce)
 	}

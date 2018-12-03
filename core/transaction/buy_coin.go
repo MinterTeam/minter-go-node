@@ -27,18 +27,11 @@ func (data BuyCoinData) Gas() int64 {
 	return commissions.ConvertTx
 }
 
-func (data BuyCoinData) CommissionInBaseCoin(tx *Transaction) *big.Int {
-	commissionInBaseCoin := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
-	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
-
-	return commissionInBaseCoin
-}
-
 func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (TotalSpends, []Conversion, *big.Int, *Response) {
 	total := TotalSpends{}
 	var conversions []Conversion
 
-	commissionInBaseCoin := data.CommissionInBaseCoin(tx)
+	commissionInBaseCoin := tx.CommissionInBaseCoin()
 	commissionIncluded := false
 
 	var value *big.Int
@@ -194,7 +187,7 @@ func (data BuyCoinData) Run(tx *Transaction, context *state.StateDB, isCheck boo
 			context.AddCoinReserve(conversion.ToCoin, conversion.ToReserve)
 		}
 
-		rewardPool.Add(rewardPool, data.CommissionInBaseCoin(tx))
+		rewardPool.Add(rewardPool, tx.CommissionInBaseCoin())
 		context.AddBalance(sender, data.CoinToBuy, data.ValueToBuy)
 		context.SetNonce(sender, tx.Nonce)
 	}

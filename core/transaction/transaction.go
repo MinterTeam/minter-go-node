@@ -100,7 +100,6 @@ type Data interface {
 	String() string
 	Gas() int64
 	TotalSpend(tx *Transaction, context *state.StateDB) (TotalSpends, []Conversion, *big.Int, *Response)
-	CommissionInBaseCoin(tx *Transaction) *big.Int
 	BasicCheck(tx *Transaction, context *state.StateDB) *Response
 	Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response
 }
@@ -115,6 +114,13 @@ func (tx *Transaction) Gas() int64 {
 
 func (tx *Transaction) payloadGas() int64 {
 	return int64(len(tx.Payload)+len(tx.ServiceData)) * commissions.PayloadByte
+}
+
+func (tx *Transaction) CommissionInBaseCoin() *big.Int {
+	commissionInBaseCoin := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
+	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
+
+	return commissionInBaseCoin
 }
 
 func (tx *Transaction) String() string {
