@@ -66,11 +66,43 @@ type SignatureMulti struct {
 
 type RawData []byte
 
+type TotalSpends []TotalSpend
+
+func (tss *TotalSpends) Add(coin types.CoinSymbol, value *big.Int) {
+	for i, t := range *tss {
+		if t.Coin == coin {
+			(*tss)[i].Value.Add((*tss)[i].Value, value)
+			return
+		}
+	}
+
+	*tss = append(*tss, TotalSpend{
+		Coin:  coin,
+		Value: value,
+	})
+}
+
+type TotalSpend struct {
+	Coin  types.CoinSymbol
+	Value *big.Int
+}
+
+type Conversion struct {
+	FromCoin    types.CoinSymbol
+	FromAmount  *big.Int
+	FromReserve *big.Int
+	ToCoin      types.CoinSymbol
+	ToAmount    *big.Int
+	ToReserve   *big.Int
+}
+
 type Data interface {
-	MarshalJSON() ([]byte, error)
 	String() string
 	Gas() int64
-	Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response
+	TotalSpend(tx *Transaction, context *state.StateDB) (TotalSpends, []Conversion, *big.Int, *Response)
+	CommissionInBaseCoin(tx *Transaction) *big.Int
+	BasicCheck(tx *Transaction, context *state.StateDB) *Response
+	Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response
 }
 
 func (tx *Transaction) Serialize() ([]byte, error) {
