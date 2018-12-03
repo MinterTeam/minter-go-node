@@ -8,23 +8,26 @@ import (
 	"math/big"
 )
 
-func EstimateTxCommission(rawTx []byte, height int) (*big.Int, error) {
+type TxCommissionResponse struct {
+	Commission *big.Int `json:"commission"`
+}
+
+func EstimateTxCommission(tx []byte, height int) (*TxCommissionResponse, error) {
 	cState, err := GetStateForHeight(height)
 	if err != nil {
 		return nil, err
 	}
 
-	tx, err := transaction.DecodeFromBytes(rawTx)
+	decodedTx, err := transaction.DecodeFromBytes(tx)
 	if err != nil {
 		return nil, err
 	}
 
-	commissionInBaseCoin := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
-	commissionInBaseCoin.Mul(commissionInBaseCoin, transaction.CommissionMultiplier)
+	commissionInBaseCoin := decodedTx.CommissionInBaseCoin()
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
-	if !tx.GasCoin.IsBaseCoin() {
-		coin := cState.GetStateCoin(tx.GasCoin)
+	if !decodedTx.GasCoin.IsBaseCoin() {
+		coin := cState.GetStateCoin(decodedTx.GasCoin)
 
 		if coin.ReserveBalance().Cmp(commissionInBaseCoin) < 0 {
 			return nil, errors.New(fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.ReserveBalance().String(), commissionInBaseCoin.String()))
@@ -33,5 +36,7 @@ func EstimateTxCommission(rawTx []byte, height int) (*big.Int, error) {
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
 	}
 
-	return commission, nil
+	return &TxCommissionResponse{
+		Commission: commission,
+	}, nil
 }

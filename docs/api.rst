@@ -170,8 +170,8 @@ Returns the balance of given account and the number of outgoing transaction.
 
 
 
-**Result->balance**: Map of balances. CoinSymbol => Balance (in pips).
-**Result->transaction_count**: Count of transactions sent from the account.
+| **Result->balance**: Map of balances. CoinSymbol => Balance (in pips).
+| **Result->transaction_count**: Count of transactions sent from the account.
 
 Send transaction
 ^^^^^^^^^^^^^^^^
@@ -185,11 +185,16 @@ Sends transaction to the Minter Network.
 .. code-block:: json
 
     {
+      "jsonrpc": "2.0",
+      "id": "",
+      "result": {
         "code": 0,
-        "result": {
-            "hash": "Mtfd5c3ecad1e8333564cf6e3f968578b9db5acea3"
-        }
+        "data": "",
+        "log": "",
+        "hash": "C6C6B5008AF8077FB0CE817DDB79268D1C66B6B353AF76778CA5A264A80069DB"
+      }
     }
+
 
 **Result**: Transaction hash.
 
@@ -203,32 +208,34 @@ Transaction
 .. code-block:: json
 
     {
-        "code": 0,
-        "result": {
-            "hash": "B829EE45734800273ACCCFA70BC96BE8D858E521",
-            "raw_tx": "f88682c8e8018a4d4e540000000000000001abea8a4d4e5400000000000000941a8e2cd08a2938b6412cc65aed449154577731e089056bc75e2d63100000808001b845f8431ba050141c66539362464496d1393b8a9468623f37dced4cf3bac8bfc5d576fd5e1fa00b37ee7103d2647bd7fc1a72c03df2a40cc38c9cc92771614f76eabf7be1cc79",
-            "height": 234218,
-            "index": 0,
-            "from": "Mxfe60014a6e9ac91618f5d1cab3fd58cded61ee99",
-            "nonce": 51432,
-            "gas_price": 1,
-            "gas_coin": "MNT",
-            "gas_used": 10,
-            "type": 1,
-            "data": {
-                "coin": "MNT",
-                "to": "Mx1a8e2cd08a2938b6412cc65aed449154577731e0",
-                "value": "100000000000000000000"
-            },
-            "payload": "",
-            "tags": {
-                "tx.coin": "MNT",
-                "tx.from": "fe60014a6e9ac91618f5d1cab3fd58cded61ee99",
-                "tx.to": "1a8e2cd08a2938b6412cc65aed449154577731e0",
-                "tx.type": "01"
-            }
+      "jsonrpc": "2.0",
+      "id": "",
+      "result": {
+        "hash": "C6C6B5008AF8077FB0CE817DDB79268D1C66B6B353AF76778CA5A264A80069DB",
+        "raw_tx": "f88701018a4d4e540000000000000001aae98a4d4e540000000000000094ee81347211c72524338f9680072af9074433314688a688906bd8b0000084546573748001b845f8431ba098fd9402b0af434f461eecdad89908655c779fb394b7624a0c37198f931f27a1a075e73a04f81e2204d88826ac851b2b3da359e4a9a16ac6c17e992fa0a3de0c48",
+        "height": "387",
+        "index": 0,
+        "from": "Mxee81347211c72524338f9680072af90744333146",
+        "nonce": "1",
+        "gas_price": "1",
+        "gas_coin": "MNT",
+        "gas_used": "18",
+        "type": 1,
+        "data": {
+          "coin": "MNT",
+          "to": "Mxee81347211c72524338f9680072af90744333146",
+          "value": "12000000000000000000"
+        },
+        "payload": "VGVzdA==",
+        "tags": {
+          "tx.coin": "MNT",
+          "tx.type": "01",
+          "tx.from": "ee81347211c72524338f9680072af90744333146",
+          "tx.to": "ee81347211c72524338f9680072af90744333146"
         }
+      }
     }
+
 
 Block
 ^^^^^
@@ -237,129 +244,68 @@ Returns block data at given height.
 
 .. code-block:: bash
 
-    curl -s 'localhost:8841/block/{height}'
+    curl -s 'localhost:8841/block?height={height}'
 
 .. code-block:: json
 
     {
-      "code": 0,
+      "jsonrpc": "2.0",
+      "id": "",
       "result": {
-        "hash": "6B4F84E0C801EE01B4EA1AEC34B0A0249E4EB3FF",
-        "height": 94594,
-        "time": "2018-08-29T10:12:52.791097555Z",
-        "num_txs": 1,
-        "total_txs": 5515,
+        "hash": "F4D2F2DF68B20275B832B2D1859308509C373523689259CABD17AFC777C0B014",
+        "height": "387",
+        "time": "2018-12-03T14:39:41.364276Z",
+        "num_txs": "1",
+        "total_txs": "1",
         "transactions": [
           {
-            "hash": "B829EE45734800273ACCCFA70BC96BE8D858E521",
-            "raw_tx": "f88682c8e8018a4d4e540000000000000001abea8a4d4e5400000000000000941a8e2cd08a2938b6412cc65aed449154577731e089056bc75e2d63100000808001b845f8431ba050141c66539362464496d1393b8a9468623f37dced4cf3bac8bfc5d576fd5e1fa00b37ee7103d2647bd7fc1a72c03df2a40cc38c9cc92771614f76eabf7be1cc79",
-            "height": 94594,
-            "index": 0,
-            "from": "Mxfe60014a6e9ac91618f5d1cab3fd58cded61ee99",
-            "nonce": 51432,
-            "gas_price": 1,
-            "gas_coin": "MNT",
-            "gas_used": 10,
+            "hash": "Mtc6c6b5008af8077fb0ce817ddb79268d1c66b6b353af76778ca5a264a80069db",
+            "raw_tx": "f88701018a4d4e540000000000000001aae98a4d4e540000000000000094ee81347211c72524338f9680072af9074433314688a688906bd8b0000084546573748001b845f8431ba098fd9402b0af434f461eecdad89908655c779fb394b7624a0c37198f931f27a1a075e73a04f81e2204d88826ac851b2b3da359e4a9a16ac6c17e992fa0a3de0c48",
+            "from": "Mxee81347211c72524338f9680072af90744333146",
+            "nonce": "1",
+            "gas_price": "1",
             "type": 1,
             "data": {
-                "coin": "MNT",
-                "to": "Mx1a8e2cd08a2938b6412cc65aed449154577731e0",
-                "value": "100000000000000000000"
+              "coin": "MNT",
+              "to": "Mxee81347211c72524338f9680072af90744333146",
+              "value": "12000000000000000000"
             },
-            "payload": "",
+            "payload": "VGVzdA==",
+            "service_data": "",
+            "gas": "18",
+            "gas_coin": "MNT",
+            "gas_used": "18",
             "tags": {
-                "tx.coin": "MNT",
-                "tx.from": "fe60014a6e9ac91618f5d1cab3fd58cded61ee99",
-                "tx.to": "1a8e2cd08a2938b6412cc65aed449154577731e0",
-                "tx.type": "01"
+              "tx.type": "01",
+              "tx.from": "ee81347211c72524338f9680072af90744333146",
+              "tx.to": "ee81347211c72524338f9680072af90744333146",
+              "tx.coin": "MNT"
             }
           }
         ],
         "precommits": [
           {
-            "validator_address": "0D1A38E170F4BC84CBA505E041AF0A656FEF7CCE",
+            "type": 2,
+            "height": "386",
+            "round": "0",
+            "timestamp": "2018-12-03T14:39:41.364276Z",
+            "block_id": {
+              "hash": "8348B85D729555F0FEC3258EE07B188A38702F5045C1C0E3F0200A59713AA32F",
+              "parts": {
+                "total": "1",
+                "hash": "5816E926E9006AF09D6E77A51A90051B54E2D6FF984A21BE4AAC39A0E0758678"
+              }
+            },
+            "validator_address": "AB15A084DD592699812E9B22385C1959E7AEFFB8",
             "validator_index": "0",
-            "height": "94593",
-            "round": "0",
-            "timestamp": "2018-08-29T10:12:47.480971248Z",
-            "type": 2,
-            "block_id": {
-              "hash": "CCC196AE488111387594258B4F5B417B6DF6F01E",
-              "parts": {
-                "total": "1",
-                "hash": "6C8A070EBDD7218547617CD2E0894E031B815B95"
-              }
-            },
-            "signature": "+tNZnoPJnQNpanlK90YEb11GnGP20wGzrrqX7Wzf729KhZBhOkK4zFZW0CnUfVHwYpu4nGVaJLOgy8G6VKCgCg=="
-          },
-          {
-            "validator_address": "1B16468F89B8C36FE1AFC7F82F7251D4FC831530",
-            "validator_index": "1",
-            "height": "94593",
-            "round": "0",
-            "timestamp": "2018-08-29T10:12:47.494792759Z",
-            "type": 2,
-            "block_id": {
-              "hash": "CCC196AE488111387594258B4F5B417B6DF6F01E",
-              "parts": {
-                "total": "1",
-                "hash": "6C8A070EBDD7218547617CD2E0894E031B815B95"
-              }
-            },
-            "signature": "GofqbrNFZye3pQk8sDsuErFH4x4Z+bs7skQOeeTcNA+jSIoupo+NWM6SV/rePg6NVOSA3PHVkXG6MVO2xYfbCg=="
-          },
-          {
-            "validator_address": "22794FF373BE0867ECCB8206BEB77E0AB6F4A198",
-            "validator_index": "2",
-            "height": "94593",
-            "round": "0",
-            "timestamp": "2018-08-29T10:12:47.465617407Z",
-            "type": 2,
-            "block_id": {
-              "hash": "CCC196AE488111387594258B4F5B417B6DF6F01E",
-              "parts": {
-                "total": "1",
-                "hash": "6C8A070EBDD7218547617CD2E0894E031B815B95"
-              }
-            },
-            "signature": "19Xu5Y8UI4QwZc89HgC42G4dB8MaMn7ibph6R1iVo9YYwwTKN4NEOjbuvvl3VYl8k/8CBIhck45GtSq73xHiBA=="
-          },
-          {
-            "validator_address": "36575649BE18934623E0CE226B8E60FB1D1E7163",
-            "validator_index": "3",
-            "height": "94593",
-            "round": "0",
-            "timestamp": "2018-08-29T10:12:47.488838407Z",
-            "type": 2,
-            "block_id": {
-              "hash": "CCC196AE488111387594258B4F5B417B6DF6F01E",
-              "parts": {
-                "total": "1",
-                "hash": "6C8A070EBDD7218547617CD2E0894E031B815B95"
-              }
-            },
-            "signature": "5PE9BYgsnXGtzUeeUBqIwA/VTfunHC+gN1keQYeN220JSjXrI7qZguYm45+9dt79s/y6jc8S4XKRSDNvVI1DDg=="
-          },
-          {
-            "validator_address": "6330D572B9670786E0603332C01E7D4C35653C4A",
-            "validator_index": "4",
-            "height": "94593",
-            "round": "0",
-            "timestamp": "2018-08-29T10:12:47.443544695Z",
-            "type": 2,
-            "block_id": {
-              "hash": "CCC196AE488111387594258B4F5B417B6DF6F01E",
-              "parts": {
-                "total": "1",
-                "hash": "6C8A070EBDD7218547617CD2E0894E031B815B95"
-              }
-            },
-            "signature": "QTW+t2Yen2U04gO3T3CRG3nhAkmkVM1ucQRD4QZS5Pokwp8C9ykP3uEefXjgTznBd3x24+hkTHSUfOy/HY9CCw=="
+            "signature": "V/9uM9ZVUgfh5NdZn0DS4xWubLqJiEAB+J1McBCKW0Kq2X25L4+6mSjEG/hSYNxLGtS+yV22bhxLcc2qvqoDAg=="
           }
         ],
-        "block_reward": "333000000000000000000"
+        "block_reward": "333000000000000000000",
+        "size": "1204"
       }
     }
+
 
 
 Coin Info
@@ -371,18 +317,19 @@ Returns information about coin.
 
 .. code-block:: bash
 
-    curl -s 'localhost:8841/coinInfo/{symbol}'
+    curl -s 'localhost:8841/coin_info?symbol="{SYMBOL}"'
 
 .. code-block:: json
 
     {
-      "code": 0,
+      "jsonrpc": "2.0",
+      "id": "",
       "result": {
-        "name": "Stakeholder Coin",
-        "symbol": "SHSCOIN",
-        "volume": "1985888114702108355026636",
-        "crr": 50,
-        "reserve_balance": "394375160721239016660255"
+        "name": "TEST",
+        "symbol": "TESTCOIN",
+        "volume": "100000000000000000000",
+        "crr": "100",
+        "reserve_balance": "100000000000000000000"
       }
     }
 
@@ -402,7 +349,7 @@ Return estimate of sell coin transaction
 
 .. code-block:: bash
 
-    curl -s 'localhost:8841/estimateCoinSell?coin_to_sell=MNT&value_to_sell=1000000000000000000&coin_to_buy=BLTCOIN'
+    curl -s 'localhost:8841/estimate_coin_sell?coin_to_sell="MNT"&coin_to_buy="TESTCOIN"&value_to_sell="1"'
 
 Request params:
     - **coin_to_sell** – coin to give
@@ -412,12 +359,14 @@ Request params:
 .. code-block:: json
 
     {
-        "code": 0,
-        "result": {
-            "will_get": "29808848728151191",
-            "commission": "443372813245"
-        }
+      "jsonrpc": "2.0",
+      "id": "",
+      "result": {
+        "will_pay": "1",
+        "commission": "100000000000000000"
+      }
     }
+
 
 **Result**: Amount of "to_coin" user should get.
 
@@ -429,7 +378,7 @@ Return estimate of buy coin transaction
 
 .. code-block:: bash
 
-    curl -s 'localhost:8841/estimateCoinBuy?coin_to_sell=MNT&value_to_buy=1000000000000000000&coin_to_buy=BLTCOIN'
+    curl -s 'localhost:8841/estimate_coin_buy?coin_to_sell="MNT"&coin_to_buy="TESTCOIN"&value_to_buy="1"'
 
 Request params:
     - **coin_to_sell** – coin to give
@@ -439,12 +388,14 @@ Request params:
 .. code-block:: json
 
     {
-        "code": 0,
-        "result": {
-            "will_pay": "29808848728151191",
-            "commission": "443372813245"
-        }
+      "jsonrpc": "2.0",
+      "id": "",
+      "result": {
+        "will_pay": "1",
+        "commission": "100000000000000000"
+      }
     }
+
 
 **Result**: Amount of "to_coin" user should give.
 
@@ -460,11 +411,13 @@ Return estimate of buy coin transaction
 .. code-block:: json
 
     {
-      "code": 0,
+      "jsonrpc": "2.0",
+      "id": "",
       "result": {
-        "commission": "10000000000000000"
+        "commission": "11000000000000000000"
       }
     }
+
 
 
 **Result**: Commission in GasCoin.

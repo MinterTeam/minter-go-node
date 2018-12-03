@@ -47,7 +47,7 @@ var Routes = map[string]*rpcserver.RPCFunc{
 	"coin_info":              rpcserver.NewRPCFunc(CoinInfo, "symbol,height"),
 	"estimate_coin_sell":     rpcserver.NewRPCFunc(EstimateCoinSell, "coin_to_sell,coin_to_buy,value_to_sell,height"),
 	"estimate_coin_buy":      rpcserver.NewRPCFunc(EstimateCoinBuy, "coin_to_sell,coin_to_buy,value_to_buy,height"),
-	"estimate_tx_commission": rpcserver.NewRPCFunc(EstimateTxCommission, "tx"),
+	"estimate_tx_commission": rpcserver.NewRPCFunc(EstimateTxCommission, "tx,height"),
 	"unconfirmed_txs":        rpcserver.NewRPCFunc(UnconfirmedTxs, "limit"),
 }
 
