@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/rewards"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
@@ -38,7 +39,7 @@ type BlockTransactionResponse struct {
 	Nonce       uint64            `json:"nonce"`
 	GasPrice    *big.Int          `json:"gas_price"`
 	Type        byte              `json:"type"`
-	Data        transaction.Data  `json:"data"`
+	Data        json.RawMessage   `json:"data"`
 	Payload     []byte            `json:"payload"`
 	ServiceData []byte            `json:"service_data"`
 	Gas         int64             `json:"gas"`
@@ -72,6 +73,11 @@ func Block(height int64) (*BlockResponse, error) {
 			}
 		}
 
+		data, err := encodeTxData(tx)
+		if err != nil {
+			return nil, err
+		}
+
 		txs[i] = BlockTransactionResponse{
 			Hash:        fmt.Sprintf("Mt%x", rawTx.Hash()),
 			RawTx:       fmt.Sprintf("%x", []byte(rawTx)),
@@ -79,7 +85,7 @@ func Block(height int64) (*BlockResponse, error) {
 			Nonce:       tx.Nonce,
 			GasPrice:    tx.GasPrice,
 			Type:        tx.Type,
-			Data:        tx.GetDecodedData(),
+			Data:        data,
 			Payload:     tx.Payload,
 			ServiceData: tx.ServiceData,
 			Gas:         tx.Gas(),
