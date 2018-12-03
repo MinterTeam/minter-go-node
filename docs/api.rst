@@ -15,71 +15,54 @@ normal mode.
 
 .. code-block:: bash
 
-    curl -s 'localhost:8841/api/status'
+    curl -s 'localhost:8841/status'
 
 .. code-block:: json
 
     {
-      "code": 0,
+      "jsonrpc": "2.0",
+      "id": "",
       "result": {
-        "version": "0.2.5",
-        "latest_block_hash": "0CC015EA926173130C793BBE6E38145BF379CF6A",
-        "latest_app_hash": "1FB9B53F32298759D936E4A10A866E7AFB930EA4D7CC7184EC992F2320592E81",
-        "latest_block_height": 82541,
-        "latest_block_time": "2018-08-28T18:26:47.112704193+03:00",
+        "version": "0.8.0",
+        "latest_block_hash": "171F3A749F85425147986DD90EA0C397440B6A3C1FEF8F30E5E5F729DA174CC2",
+        "latest_app_hash": "55E75C9860E56AF3DEB8DD55741185F658569AB43C084436DDDB69CBFB06CC63",
+        "latest_block_height": "4",
+        "latest_block_time": "2018-12-03T13:18:42.50969Z",
         "tm_status": {
           "node_info": {
-            "id": "62a5d75ef3f48dcf62aad263a170b9c82eb3f2b8",
-            "listen_addr": "192.168.1.100:26656",
-            "network": "minter-test-network-19",
-            "version": "0.23.0",
+            "protocol_version": {
+              "p2p": "4",
+              "block": "7",
+              "app": "0"
+            },
+            "id": "9d5eb9f8fb7ada3ff6228841c3500f39e3121901",
+            "listen_addr": "tcp://0.0.0.0:26656",
+            "network": "minter-test-network-27-local",
+            "version": "0.26.4",
             "channels": "4020212223303800",
-            "moniker": "MinterNode",
-            "other": [
-              "amino_version=0.10.1",
-              "p2p_version=0.5.0",
-              "consensus_version=v1/0.2.2",
-              "rpc_version=0.7.0/3",
-              "tx_index=on",
-              "rpc_addr=tcp://0.0.0.0:26657"
-            ]
+            "moniker": "MacBook-Pro-Daniil-2.local",
+            "other": {
+              "tx_index": "on",
+              "rpc_address": "tcp://0.0.0.0:26657"
+            }
           },
           "sync_info": {
-            "latest_block_hash": "0CC015EA926173130C793BBE6E38145BF379CF6A",
-            "latest_app_hash": "1FB9B53F32298759D936E4A10A866E7AFB930EA4D7CC7184EC992F2320592E81",
-            "latest_block_height": "82541",
-            "latest_block_time": "2018-08-28T15:26:47.112704193Z",
-            "catching_up": true
+            "latest_block_hash": "171F3A749F85425147986DD90EA0C397440B6A3C1FEF8F30E5E5F729DA174CC2",
+            "latest_app_hash": "55E75C9860E56AF3DEB8DD55741185F658569AB43C084436DDDB69CBFB06CC63",
+            "latest_block_height": "4",
+            "latest_block_time": "2018-12-03T13:18:42.50969Z",
+            "catching_up": false
           },
           "validator_info": {
-            "address": "BCFB297FD1EE0458E1DBDA8EBAE2C599CD0A5984",
+            "address": "AB15A084DD592699812E9B22385C1959E7AEFFB8",
             "pub_key": {
               "type": "tendermint/PubKeyEd25519",
-              "value": "G2lZ+lJWW/kQvhOOI6CHVBHSEgjYq9awDgdlErLeVAE="
+              "value": "4LpQ40aLB/u8EnhAlT649P5X1ugWLfk7rv159dW8K5c="
             },
-            "voting_power": "0"
+            "voting_power": "100000000"
           }
         }
       }
-    }
-
-Volume of Base Coin in Blockchain
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-This endpoint shows amount of base coin (BIP or MNT) existing in the network. It counts block rewards, premine and
-relayed rewards.
-
-.. code-block:: bash
-
-    curl -s 'localhost:8841/api/bipVolume?height={height}'
-
-.. code-block:: json
-
-    {
-       "code":0,
-       "result":{
-          "volume":"20000222000000000000000000"
-       }
     }
 
 Candidate
@@ -105,37 +88,31 @@ found.
 
 .. code-block:: bash
 
-    curl -s 'localhost:8841/api/candidate/{public_key}'
+    curl -s 'localhost:8841/candidate?pubkey={public_key}'
 
 .. code-block:: json
 
     {
-      "code": 0,
+      "jsonrpc": "2.0",
+      "id": "",
       "result": {
-        "candidate": {
-          "candidate_address": "Mxee81347211c72524338f9680072af90744333146",
-          "total_stake": "5000001000000000000000000",
-          "pub_key": "Mp738da41ba6a7b7d69b7294afa158b89c5a1b410cbf0c2443c85c5fe24ad1dd1c",
-          "commission": 100,
-          "stakes": [
-            {
-              "owner": "Mxee81347211c72524338f9680072af90744333146",
-              "coin": "MNT",
-              "value": "5000000000000000000000000",
-              "bip_value": "5000000000000000000000000"
-            },
-            {
-              "owner": "Mx4f3385615a4abb104d6eda88591fa07c112cbdbf",
-              "coin": "MNT",
-              "value": "1000000000000000000",
-              "bip_value": "1000000000000000000"
-            }
-          ],
-          "created_at_block": 165,
-          "status": 2
-        }
+        "candidate_address": "Mxee81347211c72524338f9680072af90744333146",
+        "total_stake": 0,
+        "pub_key": "Mpe0ba50e3468b07fbbc127840953eb8f4fe57d6e8162df93baefd79f5d5bc2b97",
+        "commission": "100",
+        "stakes": [
+          {
+            "owner": "Mxee81347211c72524338f9680072af90744333146",
+            "coin": "MNT",
+            "value": "1000000000000000000000000",
+            "bip_value": "1000000000000000000000000"
+          }
+        ],
+        "created_at_block": "1",
+        "status": 2
       }
     }
+
 
 Validators
 ^^^^^^^^^^
@@ -144,34 +121,23 @@ Returns list of active validators.
 
 .. code-block:: bash
 
-    curl -s 'localhost:8841/api/validators'
+    curl -s 'localhost:8841/validators'
 
 .. code-block:: json
 
     {
-      "code": 0,
+      "jsonrpc": "2.0",
+      "id": "",
       "result": [
         {
-          "accumulated_reward": "652930049792069211272",
-          "absent_times": 0,
+          "accumulated_reward": 2331000000000000000000,
+          "absent_times": "0",
           "candidate": {
             "candidate_address": "Mxee81347211c72524338f9680072af90744333146",
-            "total_stake": "5000001000000000000000000",
-            "pub_key": "Mp738da41ba6a7b7d69b7294afa158b89c5a1b410cbf0c2443c85c5fe24ad1dd1c",
-            "commission": 100,
-            "created_at_block": 165,
-            "status": 2
-          }
-        },
-        {
-          "accumulated_reward": "652929919206085370058",
-          "absent_times": 0,
-          "candidate": {
-            "candidate_address": "Mxee81347211c72524338f9680072af90744333146",
-            "total_stake": "5000000000000000000000000",
-            "pub_key": "Mp6f16c1ff21a6fb946aaed0f4c1fcca272b72fd904988f91d3883282b8ae31ba2",
-            "commission": 100,
-            "created_at_block": 174,
+            "total_stake": 0,
+            "pub_key": "Mpe0ba50e3468b07fbbc127840953eb8f4fe57d6e8162df93baefd79f5d5bc2b97",
+            "commission": "100",
+            "created_at_block": "1",
             "status": 2
           }
         }
@@ -179,53 +145,33 @@ Returns list of active validators.
     }
 
 
-Balance
+
+Address
 ^^^^^^^
 
-Returns balance of an account.
+Returns the balance of given account and the number of outgoing transaction.
 
 .. code-block:: bash
 
-    curl -s 'localhost:8841/api/balance/{address}'
+    curl -s 'localhost:8841/address?address={address}'
 
 .. code-block:: json
 
     {
-      "code": 0,
+      "jsonrpc": "2.0",
+      "id": "",
       "result": {
         "balance": {
-          "MINTERONE": "2000000000000000000",
-          "MNT": "97924621949581028367025445",
-          "SHSCOIN": "201502537939970000000000",
-          "TESTCOIN": "1000000000000000000000"
-        }
+          "MNT": "100010489500000000000000000"
+        },
+        "transaction_count": "0"
       }
     }
 
 
-**Result**: Map of balances. CoinSymbol => Balance (in pips).
 
-Transaction count
-^^^^^^^^^^^^^^^^^
-
-Returns count of outgoing transactions from given account. This should be used for calculating nonce for the new
-transaction.
-
-.. code-block:: bash
-
-    curl -s 'localhost:8841/api/transactionCount/{address}'
-
-.. code-block:: json
-
-    {
-      "code": 0,
-      "result": {
-        "count": 59
-      }
-    }
-
-
-**Result**: Count of transactions sent from given account.
+**Result->balance**: Map of balances. CoinSymbol => Balance (in pips).
+**Result->transaction_count**: Count of transactions sent from the account.
 
 Send transaction
 ^^^^^^^^^^^^^^^^
@@ -234,7 +180,7 @@ Sends transaction to the Minter Network.
 
 .. code-block:: bash
 
-    curl -X POST --data '{"transaction":"..."}' -s 'localhost:8841/api/sendTransaction'
+    curl -s 'localhost:8841/send_transaction?tx={transaction}'
 
 .. code-block:: json
 
@@ -252,7 +198,7 @@ Transaction
 
 .. code-block:: bash
 
-    curl -s 'localhost:8841/api/transaction/{hash}'
+    curl -s 'localhost:8841/transaction?hash={hash}'
 
 .. code-block:: json
 
@@ -291,7 +237,7 @@ Returns block data at given height.
 
 .. code-block:: bash
 
-    curl -s 'localhost:8841/api/block/{height}'
+    curl -s 'localhost:8841/block/{height}'
 
 .. code-block:: json
 
@@ -425,7 +371,7 @@ Returns information about coin.
 
 .. code-block:: bash
 
-    curl -s 'localhost:8841/api/coinInfo/{symbol}'
+    curl -s 'localhost:8841/coinInfo/{symbol}'
 
 .. code-block:: json
 
@@ -456,7 +402,7 @@ Return estimate of sell coin transaction
 
 .. code-block:: bash
 
-    curl -s 'localhost:8841/api/estimateCoinSell?coin_to_sell=MNT&value_to_sell=1000000000000000000&coin_to_buy=BLTCOIN'
+    curl -s 'localhost:8841/estimateCoinSell?coin_to_sell=MNT&value_to_sell=1000000000000000000&coin_to_buy=BLTCOIN'
 
 Request params:
     - **coin_to_sell** – coin to give
@@ -483,7 +429,7 @@ Return estimate of buy coin transaction
 
 .. code-block:: bash
 
-    curl -s 'localhost:8841/api/estimateCoinBuy?coin_to_sell=MNT&value_to_buy=1000000000000000000&coin_to_buy=BLTCOIN'
+    curl -s 'localhost:8841/estimateCoinBuy?coin_to_sell=MNT&value_to_buy=1000000000000000000&coin_to_buy=BLTCOIN'
 
 Request params:
     - **coin_to_sell** – coin to give
@@ -509,7 +455,7 @@ Return estimate of buy coin transaction
 
 .. code-block:: bash
 
-    curl -s 'localhost:8841/api/estimateTxCommission?tx={transaction}'
+    curl -s 'localhost:8841/estimateTxCommission?tx={transaction}'
 
 .. code-block:: json
 
