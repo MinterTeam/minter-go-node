@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
@@ -20,28 +19,36 @@ type MultisendData struct {
 	List []MultisendDataItem
 }
 
+func (data MultisendData) TotalSpend(tx *Transaction, context *state.StateDB) (TotalSpends, []Conversion, *big.Int, *Response) {
+	panic("implement me")
+}
+
+func (data MultisendData) BasicCheck(tx *Transaction, context *state.StateDB) *Response {
+	if len(data.List) < 1 || len(data.List) > 100 {
+		return &Response{
+			Code: code.InvalidMultisendData,
+			Log:  "List length must be between 1 and 100"}
+	}
+
+	if err := checkCoins(context, data.List); err != nil {
+		return &Response{
+			Code: code.CoinNotExists,
+			Log:  err.Error()}
+	}
+
+	if !context.CoinExists(tx.GasCoin) {
+		return &Response{
+			Code: code.CoinNotExists,
+			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin)}
+	}
+
+	return nil
+}
+
 type MultisendDataItem struct {
 	Coin  types.CoinSymbol
 	To    types.Address
 	Value *big.Int
-}
-
-func (data MultisendData) MarshalJSON() ([]byte, error) {
-	var list []interface{}
-
-	for _, item := range data.List {
-		list = append(list, struct {
-			Coin  types.CoinSymbol
-			To    types.Address
-			Value string
-		}{
-			Coin:  item.Coin,
-			To:    item.To,
-			Value: item.Value.String(),
-		})
-	}
-
-	return json.Marshal(list)
 }
 
 func (data MultisendData) String() string {
@@ -52,27 +59,15 @@ func (data MultisendData) Gas() int64 {
 	return commissions.SendTx + ((int64(len(data.List)) - 1) * commissions.MultisendDelta)
 }
 
-func (data MultisendData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response {
-	if len(data.List) < 1 || len(data.List) > 100 {
-		return Response{
-			Code: code.InvalidMultisendData,
-			Log:  "List length must be between 1 and 100"}
+func (data MultisendData) Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response {
+	sender, _ := tx.Sender()
+
+	response := data.BasicCheck(tx, context)
+	if response != nil {
+		return *response
 	}
 
-	if err := checkCoins(context, data.List); err != nil {
-		return Response{
-			Code: code.CoinNotExists,
-			Log:  err.Error()}
-	}
-
-	if !context.CoinExists(tx.GasCoin) {
-		return Response{
-			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin)}
-	}
-
-	commissionInBaseCoin := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
-	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
+	commissionInBaseCoin := tx.CommissionInBaseCoin()
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
 	if !tx.GasCoin.IsBaseCoin() {
@@ -85,12 +80,6 @@ func (data MultisendData) Run(sender types.Address, tx *Transaction, context *st
 		}
 
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
-
-		if commission == nil {
-			return Response{
-				Code: 999,
-				Log:  "Unknown error"}
-		}
 	}
 
 	if err := checkBalances(context, sender, data.List, commission, tx.GasCoin); err != nil {
