@@ -1,11 +1,12 @@
 # Changelog
 
-## 0.7.7
-*Nov 28th, 2018*
+## 0.8.0
+*Dec 3rd, 2018*
 
 BREAKING CHANGES
 
 - [api] Switch to RPC protocol
+- [core] Fix issue with incorrect coin conversion
 
 IMPROVEMENT
 
