@@ -306,6 +306,14 @@ Returns block data at given height.
       }
     }
 
+Events
+^^^^^^
+
+Returns events at given height.
+
+.. code-block:: bash
+
+    curl -s 'localhost:8841/events?height={height}'
 
 
 Coin Info

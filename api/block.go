@@ -6,18 +6,11 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/rewards"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/MinterTeam/minter-go-node/eventsdb"
 	"github.com/tendermint/tendermint/libs/common"
 	tmtypes "github.com/tendermint/tendermint/types"
 	"math/big"
 	"time"
 )
-
-var edb *eventsdb.EventsDB
-
-func init() {
-	edb = eventsdb.NewEventsDB(eventsdb.GetCurrentDB())
-}
 
 type BlockResponse struct {
 	Hash         common.HexBytes            `json:"hash"`
@@ -26,7 +19,6 @@ type BlockResponse struct {
 	NumTxs       int64                      `json:"num_txs"`
 	TotalTxs     int64                      `json:"total_txs"`
 	Transactions []BlockTransactionResponse `json:"transactions"`
-	Events       eventsdb.Events            `json:"events,omitempty"`
 	Precommits   []*tmtypes.Vote            `json:"precommits"`
 	BlockReward  *big.Int                   `json:"block_reward"`
 	Size         int                        `json:"size"`
@@ -107,6 +99,5 @@ func Block(height int64) (*BlockResponse, error) {
 		Precommits:   block.Block.LastCommit.Precommits,
 		BlockReward:  rewards.GetRewardForBlock(uint64(height)),
 		Size:         len(cdc.MustMarshalBinaryLengthPrefixed(block)),
-		Events:       edb.LoadEvents(height),
 	}, nil
 }

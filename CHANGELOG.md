@@ -6,6 +6,7 @@
 BREAKING CHANGES
 
 - [api] Switch to RPC protocol
+- [api] Separate events from block in API
 - [core] Fix issue with incorrect coin conversion
 - [core] Limit coins supply to 1,000,000,000,000,000
 - [core] Set minimal reserve and min/max coin supply in CreateCoin tx
