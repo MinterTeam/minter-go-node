@@ -35,6 +35,7 @@ const (
 
 var (
 	ErrInvalidSig = errors.New("invalid transaction v, r, s values")
+	MaxCoinSupply = big.NewInt(0).Exp(big.NewInt(1000), big.NewInt(5 + 18), nil) // 1,000,000,000,000,000 bips
 )
 
 type Transaction struct {
@@ -431,4 +432,15 @@ func DecodeFromBytes(buf []byte) (*Transaction, error) {
 	}
 
 	return &tx, nil
+}
+
+func CheckForCoinSupplyOverflow(current *big.Int, delta *big.Int) error {
+	total := big.NewInt(0).Set(current)
+	total.Add(total, delta)
+
+	if total.Cmp(MaxCoinSupply) != -1 {
+		return errors.New("Coin supply overflow")
+	}
+
+	return nil
 }

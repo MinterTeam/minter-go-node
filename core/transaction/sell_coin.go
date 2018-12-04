@@ -36,6 +36,13 @@ func (data SellCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (To
 			// TODO: DO SMTH
 		}
 
+		if err := CheckForCoinSupplyOverflow(coin.Volume, value); err != nil {
+			return nil, nil, nil, &Response{
+				Code: code.CoinSupplyOverflow,
+				Log: err.Error(),
+			}
+		}
+
 		total.Add(data.CoinToSell, data.ValueToSell)
 		conversions = append(conversions, Conversion{
 			FromCoin:  data.CoinToSell,
@@ -104,6 +111,13 @@ func (data SellCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (To
 		}
 
 		value = formula.CalculatePurchaseReturn(coinTo.Volume, coinTo.ReserveBalance, coinTo.Crr, basecoinValue)
+
+		if err := CheckForCoinSupplyOverflow(coinTo.Volume, value); err != nil {
+			return nil, nil, nil, &Response{
+				Code: code.CoinSupplyOverflow,
+				Log: err.Error(),
+			}
+		}
 
 		total.Add(data.CoinToSell, valueToSell)
 
