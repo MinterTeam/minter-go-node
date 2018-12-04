@@ -31,6 +31,11 @@ func (data SellCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (To
 		coin := context.GetStateCoin(data.CoinToBuy).Data()
 		value = formula.CalculatePurchaseReturn(coin.Volume, coin.ReserveBalance, coin.Crr, data.ValueToSell)
 
+		if tx.GasCoin == data.CoinToBuy {
+			// commissionIncluded = true
+			// TODO: DO SMTH
+		}
+
 		total.Add(data.CoinToSell, data.ValueToSell)
 		conversions = append(conversions, Conversion{
 			FromCoin:  data.CoinToSell,
@@ -57,6 +62,11 @@ func (data SellCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (To
 
 			valueToSell.Add(valueToSell, c)
 			rValue.Add(rValue, commissionInBaseCoin)
+		}
+
+		if tx.GasCoin == data.CoinToBuy {
+			// commissionIncluded = true
+			// TODO: DO SMTH
 		}
 
 		total.Add(data.CoinToSell, valueToSell)
@@ -86,6 +96,11 @@ func (data SellCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (To
 
 			valueToSell.Add(valueToSell, c)
 			basecoinValue.Add(basecoinValue, commissionInBaseCoin)
+		}
+
+		if tx.GasCoin == data.CoinToBuy {
+			// commissionIncluded = true
+			// TODO: DO SMTH
 		}
 
 		value = formula.CalculatePurchaseReturn(coinTo.Volume, coinTo.ReserveBalance, coinTo.Crr, basecoinValue)

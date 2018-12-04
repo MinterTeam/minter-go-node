@@ -87,6 +87,7 @@ func (data SellAllCoinData) Run(tx *Transaction, context *state.StateDB, isCheck
 	amountToSell := big.NewInt(0).Set(available)
 	amountToSell.Sub(amountToSell, commission)
 
+	// TODO: move under errors
 	if !isCheck {
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
