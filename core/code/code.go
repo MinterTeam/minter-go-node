@@ -19,6 +19,7 @@ const (
 	WrongCrr          uint32 = 202
 	InvalidCoinSymbol uint32 = 203
 	InvalidCoinName   uint32 = 204
+	WrongCoinSupply   uint32 = 205
 
 	// convert
 	CrossConvert uint32 = 301

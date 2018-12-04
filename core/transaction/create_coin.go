@@ -8,6 +8,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
+	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/tendermint/tendermint/libs/common"
 	"math/big"
 	"regexp"
@@ -15,6 +16,11 @@ import (
 
 const maxCoinNameBytes = 64
 const allowedCoinSymbols = "^[A-Z0-9]{3,10}$"
+
+var (
+	minCoinSupply = helpers.BipToPip(big.NewInt(1))
+	minCoinReserve = helpers.BipToPip(big.NewInt(1))
+)
 
 type CreateCoinData struct {
 	Name                 string           `json:"name"`
@@ -57,6 +63,18 @@ func (data CreateCoinData) BasicCheck(tx *Transaction, context *state.StateDB) *
 		return &Response{
 			Code: code.WrongCrr,
 			Log:  fmt.Sprintf("Constant Reserve Ratio should be between 10 and 100")}
+	}
+
+	if data.InitialAmount.Cmp(MaxCoinSupply) != -1 || data.InitialAmount.Cmp(minCoinSupply) != 1 {
+		return &Response{
+			Code: code.WrongCoinSupply,
+			Log:  fmt.Sprintf("Coin supply should be between %s and %s", minCoinSupply.String(), MaxCoinSupply.String())}
+	}
+
+	if data.InitialReserve.Cmp(minCoinReserve) != 1 {
+		return &Response{
+			Code: code.WrongCoinSupply,
+			Log:  fmt.Sprintf("Coin reserve should be greater than %s", minCoinReserve.String())}
 	}
 
 	return nil
