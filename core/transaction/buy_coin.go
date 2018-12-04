@@ -49,13 +49,28 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (Tot
 
 	if data.CoinToSell.IsBaseCoin() {
 		coin := context.GetStateCoin(data.CoinToBuy).Data()
+		value = formula.CalculatePurchaseAmount(coin.Volume, coin.ReserveBalance, coin.Crr, data.ValueToBuy)
 
 		if tx.GasCoin == data.CoinToBuy {
-			// commissionIncluded = true
-			// TODO: DO SMTH
+			commissionIncluded = true
+
+			nVolume := big.NewInt(0).Set(coin.Volume)
+			nVolume.Add(nVolume, data.ValueToBuy)
+
+			nReserveBalance := big.NewInt(0).Set(coin.ReserveBalance)
+			nReserveBalance.Add(nReserveBalance, value)
+
+			commission := formula.CalculateSaleAmount(nVolume, nReserveBalance, coin.Crr, commissionInBaseCoin)
+
+			total.Add(tx.GasCoin, commission)
+			conversions = append(conversions, Conversion{
+				FromCoin:    tx.GasCoin,
+				FromAmount:  commission,
+				FromReserve: commissionInBaseCoin,
+				ToCoin:      types.GetBaseCoin(),
+			})
 		}
 
-		value = formula.CalculatePurchaseAmount(coin.Volume, coin.ReserveBalance, coin.Crr, data.ValueToBuy)
 		total.Add(data.CoinToSell, value)
 		conversions = append(conversions, Conversion{
 			FromCoin:  data.CoinToSell,
@@ -103,8 +118,23 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (Tot
 		}
 
 		if tx.GasCoin == data.CoinToBuy {
-			// commissionIncluded = true
-			// TODO: DO SMTH
+			commissionIncluded = true
+
+			nVolume := big.NewInt(0).Set(coinTo.Volume)
+			nVolume.Add(nVolume, valueToBuy)
+
+			nReserveBalance := big.NewInt(0).Set(coinTo.ReserveBalance)
+			nReserveBalance.Add(nReserveBalance, baseCoinNeeded)
+
+			commission := formula.CalculateSaleAmount(nVolume, nReserveBalance, coinTo.Crr, commissionInBaseCoin)
+
+			total.Add(tx.GasCoin, commission)
+			conversions = append(conversions, Conversion{
+				FromCoin:    tx.GasCoin,
+				FromAmount:  commission,
+				FromReserve: commissionInBaseCoin,
+				ToCoin:      types.GetBaseCoin(),
+			})
 		}
 
 		value = formula.CalculateSaleAmount(coinFrom.Volume, coinFrom.ReserveBalance, coinFrom.Crr, baseCoinNeeded)
@@ -136,6 +166,12 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (Tot
 			}
 
 			commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
+			conversions = append(conversions, Conversion{
+				FromCoin:    tx.GasCoin,
+				FromAmount:  commission,
+				FromReserve: commissionInBaseCoin,
+				ToCoin:      types.GetBaseCoin(),
+			})
 		}
 
 		total.Add(tx.GasCoin, commission)
