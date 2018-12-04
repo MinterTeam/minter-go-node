@@ -131,14 +131,16 @@ Transaction for selling one coin (owned by sender) in favour of another coin in 
 .. code-block:: go
 
     type SellCoinData struct {
-        CoinToSell  [10]byte
-        ValueToSell *big.Int
-        CoinToBuy   [10]byte
+        CoinToSell          [10]byte
+        ValueToSell         *big.Int
+        CoinToBuy           [10]byte
+        MinimumValueToBuy   *big.Int
     }
 
 | **CoinToSell** - Symbol of a coin to give.
 | **ValueToSell** - Amount of **CoinToSell** to give.
 | **CoinToBuy** - Symbol of a coin to get.
+| **MinimumValueToBuy** - Minimum value of coins to get.
 
 Sell all coin transaction
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -152,12 +154,14 @@ Transaction for selling all existing coins of one type (owned by sender) in favo
 .. code-block:: go
 
     type SellAllCoinData struct {
-        CoinToSell  [10]byte
-        CoinToBuy   [10]byte
+        CoinToSell          [10]byte
+        CoinToBuy           [10]byte
+        MinimumValueToBuy   *big.Int
     }
 
 | **CoinToSell** - Symbol of a coin to give.
 | **CoinToBuy** - Symbol of a coin to get.
+| **MinimumValueToBuy** - Minimum value of coins to get.
 
 Buy coin transaction
 ^^^^^^^^^^^^^^^^^^^^
@@ -171,14 +175,16 @@ Transaction for buy a coin paying another coin (owned by sender).
 .. code-block:: go
 
     type BuyCoinData struct {
-        CoinToBuy  [10]byte
-        ValueToBuy *big.Int
-        CoinToSell   [10]byte
+        CoinToBuy           [10]byte
+        ValueToBuy          *big.Int
+        CoinToSell          [10]byte
+        MaximumValueToSell  *big.Int
     }
 
 | **CoinToBuy** - Symbol of a coin to get.
 | **ValueToBuy** - Amount of **CoinToBuy** to get.
 | **CoinToSell** - Symbol of a coin to give.
+| **MaximumValueToSell** - Maximum value of coins to sell.
 
 Create coin transaction
 ^^^^^^^^^^^^^^^^^^^^^^^

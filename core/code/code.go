@@ -22,7 +22,9 @@ const (
 	WrongCoinSupply   uint32 = 205
 
 	// convert
-	CrossConvert uint32 = 301
+	CrossConvert              uint32 = 301
+	MaximumValueToSellReached uint32 = 302
+	MinimumValueToBuylReached uint32 = 303
 
 	// candidate
 	CandidateExists       uint32 = 401

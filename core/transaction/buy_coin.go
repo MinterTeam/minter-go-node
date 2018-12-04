@@ -13,9 +13,10 @@ import (
 )
 
 type BuyCoinData struct {
-	CoinToBuy  types.CoinSymbol `json:"coin_to_buy"`
-	ValueToBuy *big.Int         `json:"value_to_buy"`
-	CoinToSell types.CoinSymbol `json:"coin_to_sell"`
+	CoinToBuy          types.CoinSymbol `json:"coin_to_buy"`
+	ValueToBuy         *big.Int         `json:"value_to_buy"`
+	CoinToSell         types.CoinSymbol `json:"coin_to_sell"`
+	MaximumValueToSell *big.Int         `json:"maximum_value_to_sell"`
 }
 
 func (data BuyCoinData) String() string {
@@ -50,6 +51,13 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (Tot
 	if data.CoinToSell.IsBaseCoin() {
 		coin := context.GetStateCoin(data.CoinToBuy).Data()
 		value = formula.CalculatePurchaseAmount(coin.Volume, coin.ReserveBalance, coin.Crr, data.ValueToBuy)
+
+		if value.Cmp(data.MaximumValueToSell) == 1 {
+			return nil, nil, nil, &Response{
+				Code: code.MaximumValueToSellReached,
+				Log:  fmt.Sprintf("You wanted to sell maximum %s, but currently you need to spend %s to complete tx", data.MaximumValueToSell.String(), value.String()),
+			}
+		}
 
 		if tx.GasCoin == data.CoinToBuy {
 			commissionIncluded = true
@@ -88,6 +96,14 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (Tot
 
 		coin := context.GetStateCoin(data.CoinToSell).Data()
 		value = formula.CalculateSaleAmount(coin.Volume, coin.ReserveBalance, coin.Crr, valueToBuy)
+
+		if value.Cmp(data.MaximumValueToSell) == 1 {
+			return nil, nil, nil, &Response{
+				Code: code.MaximumValueToSellReached,
+				Log:  fmt.Sprintf("You wanted to sell maximum %s, but currently you need to spend %s to complete tx", data.MaximumValueToSell.String(), value.String()),
+			}
+		}
+
 		total.Add(data.CoinToSell, value)
 		conversions = append(conversions, Conversion{
 			FromCoin:    data.CoinToSell,
@@ -138,6 +154,14 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (Tot
 		}
 
 		value = formula.CalculateSaleAmount(coinFrom.Volume, coinFrom.ReserveBalance, coinFrom.Crr, baseCoinNeeded)
+
+		if value.Cmp(data.MaximumValueToSell) == 1 {
+			return nil, nil, nil, &Response{
+				Code: code.MaximumValueToSellReached,
+				Log:  fmt.Sprintf("You wanted to sell maximum %s, but currently you need to spend %s to complete tx", data.MaximumValueToSell.String(), value.String()),
+			}
+		}
+
 		total.Add(data.CoinToSell, value)
 		conversions = append(conversions, Conversion{
 			FromCoin:    data.CoinToSell,

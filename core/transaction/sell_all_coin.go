@@ -13,8 +13,9 @@ import (
 )
 
 type SellAllCoinData struct {
-	CoinToSell types.CoinSymbol `json:"coin_to_sell"`
-	CoinToBuy  types.CoinSymbol `json:"coin_to_buy"`
+	CoinToSell        types.CoinSymbol `json:"coin_to_sell"`
+	CoinToBuy         types.CoinSymbol `json:"coin_to_buy"`
+	MinimumValueToBuy *big.Int         `json:"minimum_value_to_buy"`
 }
 
 func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (TotalSpends, []Conversion, *big.Int, *Response) {
@@ -87,23 +88,18 @@ func (data SellAllCoinData) Run(tx *Transaction, context *state.StateDB, isCheck
 	amountToSell := big.NewInt(0).Set(available)
 	amountToSell.Sub(amountToSell, commission)
 
-	// TODO: move under errors
-	if !isCheck {
-		rewardPool.Add(rewardPool, commissionInBaseCoin)
-
-		context.SubBalance(sender, data.CoinToSell, available)
-
-		if !data.CoinToSell.IsBaseCoin() {
-			context.SubCoinVolume(data.CoinToSell, commission)
-			context.SubCoinReserve(data.CoinToSell, commissionInBaseCoin)
-		}
-	}
-
 	var value *big.Int
 
 	if data.CoinToSell.IsBaseCoin() {
 		coin := context.GetStateCoin(data.CoinToBuy).Data()
 		value = formula.CalculatePurchaseReturn(coin.Volume, coin.ReserveBalance, coin.Crr, amountToSell)
+
+		if value.Cmp(data.MinimumValueToBuy) == 1 {
+			return Response{
+				Code: code.MinimumValueToBuylReached,
+				Log:  fmt.Sprintf("You wanted to get minimum %s, but currently you will get %s", data.MinimumValueToBuy.String(), value.String()),
+			}
+		}
 
 		if !isCheck {
 			context.AddCoinVolume(data.CoinToBuy, value)
@@ -112,6 +108,13 @@ func (data SellAllCoinData) Run(tx *Transaction, context *state.StateDB, isCheck
 	} else if data.CoinToBuy.IsBaseCoin() {
 		coin := context.GetStateCoin(data.CoinToSell).Data()
 		value = formula.CalculateSaleReturn(coin.Volume, coin.ReserveBalance, coin.Crr, amountToSell)
+
+		if value.Cmp(data.MinimumValueToBuy) == 1 {
+			return Response{
+				Code: code.MinimumValueToBuylReached,
+				Log:  fmt.Sprintf("You wanted to get minimum %s, but currently you will get %s", data.MinimumValueToBuy.String(), value.String()),
+			}
+		}
 
 		if !isCheck {
 			context.SubCoinVolume(data.CoinToSell, amountToSell)
@@ -124,6 +127,13 @@ func (data SellAllCoinData) Run(tx *Transaction, context *state.StateDB, isCheck
 		basecoinValue := formula.CalculateSaleReturn(coinFrom.Volume, coinFrom.ReserveBalance, coinFrom.Crr, amountToSell)
 		value = formula.CalculatePurchaseReturn(coinTo.Volume, coinTo.ReserveBalance, coinTo.Crr, basecoinValue)
 
+		if value.Cmp(data.MinimumValueToBuy) == 1 {
+			return Response{
+				Code: code.MinimumValueToBuylReached,
+				Log:  fmt.Sprintf("You wanted to get minimum %s, but currently you will get %s", data.MinimumValueToBuy.String(), value.String()),
+			}
+		}
+
 		if !isCheck {
 			context.AddCoinVolume(data.CoinToBuy, value)
 			context.SubCoinVolume(data.CoinToSell, amountToSell)
@@ -134,6 +144,15 @@ func (data SellAllCoinData) Run(tx *Transaction, context *state.StateDB, isCheck
 	}
 
 	if !isCheck {
+		rewardPool.Add(rewardPool, commissionInBaseCoin)
+
+		context.SubBalance(sender, data.CoinToSell, available)
+
+		if !data.CoinToSell.IsBaseCoin() {
+			context.SubCoinVolume(data.CoinToSell, commission)
+			context.SubCoinReserve(data.CoinToSell, commissionInBaseCoin)
+		}
+
 		context.AddBalance(sender, data.CoinToBuy, value)
 		context.SetNonce(sender, tx.Nonce)
 	}

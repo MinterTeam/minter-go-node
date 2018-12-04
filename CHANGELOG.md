@@ -10,6 +10,7 @@ BREAKING CHANGES
 - [core] Fix issue with incorrect coin conversion
 - [core] Limit coins supply to 1,000,000,000,000,000
 - [core] Set minimal reserve and min/max coin supply in CreateCoin tx
+- [core] Add MinimumValueToBuy and MaximumValueToSell to convert transactions
 
 IMPROVEMENT
 

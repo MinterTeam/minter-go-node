@@ -13,9 +13,10 @@ import (
 )
 
 type SellCoinData struct {
-	CoinToSell  types.CoinSymbol `json:"coin_to_sell"`
-	ValueToSell *big.Int         `json:"value_to_sell"`
-	CoinToBuy   types.CoinSymbol `json:"coin_to_buy"`
+	CoinToSell        types.CoinSymbol `json:"coin_to_sell"`
+	ValueToSell       *big.Int         `json:"value_to_sell"`
+	CoinToBuy         types.CoinSymbol `json:"coin_to_buy"`
+	MinimumValueToBuy *big.Int         `json:"minimum_value_to_buy"`
 }
 
 func (data SellCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (TotalSpends, []Conversion, *big.Int, *Response) {
@@ -30,6 +31,13 @@ func (data SellCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (To
 	if data.CoinToSell.IsBaseCoin() {
 		coin := context.GetStateCoin(data.CoinToBuy).Data()
 		value = formula.CalculatePurchaseReturn(coin.Volume, coin.ReserveBalance, coin.Crr, data.ValueToSell)
+
+		if value.Cmp(data.MinimumValueToBuy) == 1 {
+			return nil, nil, nil, &Response{
+				Code: code.MinimumValueToBuylReached,
+				Log:  fmt.Sprintf("You wanted to get minimum %s, but currently you will get %s", data.MinimumValueToBuy.String(), value.String()),
+			}
+		}
 
 		if tx.GasCoin == data.CoinToBuy {
 			commissionIncluded = true
@@ -68,6 +76,14 @@ func (data SellCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (To
 	} else if data.CoinToBuy.IsBaseCoin() {
 		coin := context.GetStateCoin(data.CoinToSell).Data()
 		value = formula.CalculateSaleReturn(coin.Volume, coin.ReserveBalance, coin.Crr, data.ValueToSell)
+
+		if value.Cmp(data.MinimumValueToBuy) == 1 {
+			return nil, nil, nil, &Response{
+				Code: code.MinimumValueToBuylReached,
+				Log:  fmt.Sprintf("You wanted to get minimum %s, but currently you will get %s", data.MinimumValueToBuy.String(), value.String()),
+			}
+		}
+
 		rValue := big.NewInt(0).Set(value)
 		valueToSell := data.ValueToSell
 
@@ -116,6 +132,13 @@ func (data SellCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (To
 		}
 
 		value = formula.CalculatePurchaseReturn(coinTo.Volume, coinTo.ReserveBalance, coinTo.Crr, basecoinValue)
+
+		if value.Cmp(data.MinimumValueToBuy) == 1 {
+			return nil, nil, nil, &Response{
+				Code: code.MinimumValueToBuylReached,
+				Log:  fmt.Sprintf("You wanted to get minimum %s, but currently you will get %s", data.MinimumValueToBuy.String(), value.String()),
+			}
+		}
 
 		if tx.GasCoin == data.CoinToBuy {
 			commissionIncluded = true
