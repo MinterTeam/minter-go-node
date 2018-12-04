@@ -18,7 +18,7 @@ const maxCoinNameBytes = 64
 const allowedCoinSymbols = "^[A-Z0-9]{3,10}$"
 
 var (
-	minCoinSupply = helpers.BipToPip(big.NewInt(1))
+	minCoinSupply  = helpers.BipToPip(big.NewInt(1))
 	minCoinReserve = helpers.BipToPip(big.NewInt(1))
 )
 

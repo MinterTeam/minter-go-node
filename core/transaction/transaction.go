@@ -35,7 +35,7 @@ const (
 
 var (
 	ErrInvalidSig = errors.New("invalid transaction v, r, s values")
-	MaxCoinSupply = big.NewInt(0).Exp(big.NewInt(1000), big.NewInt(5 + 18), nil) // 1,000,000,000,000,000 bips
+	MaxCoinSupply = big.NewInt(0).Exp(big.NewInt(1000), big.NewInt(5+18), nil) // 1,000,000,000,000,000 bips
 )
 
 type Transaction struct {

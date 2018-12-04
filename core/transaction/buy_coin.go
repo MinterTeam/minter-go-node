@@ -34,12 +34,14 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (Tot
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
 	commissionIncluded := false
 
-	coin := context.GetStateCoin(data.CoinToBuy)
+	if !data.CoinToBuy.IsBaseCoin() {
+		coin := context.GetStateCoin(data.CoinToBuy).Data()
 
-	if err := CheckForCoinSupplyOverflow(coin.Volume(), data.ValueToBuy); err != nil {
-		return nil, nil, nil, &Response{
-			Code: code.CoinSupplyOverflow,
-			Log: err.Error(),
+		if err := CheckForCoinSupplyOverflow(coin.Volume, data.ValueToBuy); err != nil {
+			return nil, nil, nil, &Response{
+				Code: code.CoinSupplyOverflow,
+				Log:  err.Error(),
+			}
 		}
 	}
 
