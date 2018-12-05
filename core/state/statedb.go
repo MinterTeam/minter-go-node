@@ -1400,6 +1400,12 @@ func (s *StateDB) ClearStakes(height int64) {
 			candidates.data[i].Stakes = candidates.data[i].Stakes[:MaxDelegatorsPerCandidate]
 
 			for _, stake := range dropped {
+				eventsdb.GetCurrent().AddEvent(height, eventsdb.UnbondEvent{
+					Address:         stake.Owner,
+					Amount:          stake.Value.Bytes(),
+					Coin:            stake.Coin,
+					ValidatorPubKey: candidate.PubKey,
+				})
 				s.AddBalance(stake.Owner, stake.Coin, stake.Value)
 			}
 		}

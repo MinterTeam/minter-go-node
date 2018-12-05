@@ -15,6 +15,7 @@ BREAKING CHANGES
 IMPROVEMENT
 
 - [logs] Add `log_format` option to config
+- [events] Add UnbondEvent
 
 ## 0.7.6
 *Nov 27th, 2018*
