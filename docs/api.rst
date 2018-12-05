@@ -252,57 +252,42 @@ Returns block data at given height.
       "jsonrpc": "2.0",
       "id": "",
       "result": {
-        "hash": "F4D2F2DF68B20275B832B2D1859308509C373523689259CABD17AFC777C0B014",
-        "height": "387",
-        "time": "2018-12-03T14:39:41.364276Z",
+        "hash": "0B1226C12783373BB2FFB451A104FF2BE47F59B8E7B6690B7712AADBA197D2FC",
+        "height": "9",
+        "time": "2018-12-05T09:14:57.114925Z",
         "num_txs": "1",
         "total_txs": "1",
         "transactions": [
           {
-            "hash": "Mtc6c6b5008af8077fb0ce817ddb79268d1c66b6b353af76778ca5a264a80069db",
-            "raw_tx": "f88701018a4d4e540000000000000001aae98a4d4e540000000000000094ee81347211c72524338f9680072af9074433314688a688906bd8b0000084546573748001b845f8431ba098fd9402b0af434f461eecdad89908655c779fb394b7624a0c37198f931f27a1a075e73a04f81e2204d88826ac851b2b3da359e4a9a16ac6c17e992fa0a3de0c48",
+            "hash": "Mt0e765f48042683160d33c610a90845aeef5f8e0d71cab60e01895f8bd973d614",
+            "raw_tx": "f8a701018a4d4e540000000000000006b84df84b94ee81347211c72524338f9680072af90744333146a021e1d043c6d9c0bb0929ab8d1dd9f3948de0f5ad7234ce773a501441d204aa9e0a8a4d4e5400000000000000888ac7230489e80000808001b845f8431ca0a7cfaf4ab3b64695380a5fd2f86f5fd29a56c722572dcb1a7fbc49ba8ff1cdc0a06be96fdf026ed7da605cfa1a606c134d99fea51717dbd57997e5e021ef714944",
             "from": "Mxee81347211c72524338f9680072af90744333146",
             "nonce": "1",
             "gas_price": "1",
-            "type": 1,
+            "type": 6,
             "data": {
+              "address": "Mxee81347211c72524338f9680072af90744333146",
+              "pub_key": "Mp21e1d043c6d9c0bb0929ab8d1dd9f3948de0f5ad7234ce773a501441d204aa9e",
+              "commission": "10",
               "coin": "MNT",
-              "to": "Mxee81347211c72524338f9680072af90744333146",
-              "value": "12000000000000000000"
+              "stake": "10000000000000000000"
             },
-            "payload": "VGVzdA==",
+            "payload": "",
             "service_data": "",
-            "gas": "18",
+            "gas": "10000",
             "gas_coin": "MNT",
-            "gas_used": "18",
-            "tags": {
-              "tx.type": "01",
-              "tx.from": "ee81347211c72524338f9680072af90744333146",
-              "tx.to": "ee81347211c72524338f9680072af90744333146",
-              "tx.coin": "MNT"
-            }
-          }
-        ],
-        "precommits": [
-          {
-            "type": 2,
-            "height": "386",
-            "round": "0",
-            "timestamp": "2018-12-03T14:39:41.364276Z",
-            "block_id": {
-              "hash": "8348B85D729555F0FEC3258EE07B188A38702F5045C1C0E3F0200A59713AA32F",
-              "parts": {
-                "total": "1",
-                "hash": "5816E926E9006AF09D6E77A51A90051B54E2D6FF984A21BE4AAC39A0E0758678"
-              }
-            },
-            "validator_address": "AB15A084DD592699812E9B22385C1959E7AEFFB8",
-            "validator_index": "0",
-            "signature": "V/9uM9ZVUgfh5NdZn0DS4xWubLqJiEAB+J1McBCKW0Kq2X25L4+6mSjEG/hSYNxLGtS+yV22bhxLcc2qvqoDAg=="
+            "gas_used": "10000",
+            "tags": {}
           }
         ],
         "block_reward": "333000000000000000000",
-        "size": "1204"
+        "size": "1230",
+        "validators": [
+          {
+            "pubkey": "Mpddfadfb15908ed5607c79e66aaf4030ef93363bd1846d64186d52424b1896c83",
+            "signed": true
+          }
+        ]
       }
     }
 
