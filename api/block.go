@@ -22,6 +22,7 @@ type BlockResponse struct {
 	Transactions []BlockTransactionResponse `json:"transactions"`
 	BlockReward  *big.Int                   `json:"block_reward"`
 	Size         int                        `json:"size"`
+	Proposer     types.Pubkey               `json:"proposer"`
 	Validators   []BlockValidatorResponse   `json:"validators"`
 }
 
@@ -106,6 +107,7 @@ func Block(height int64) (*BlockResponse, error) {
 	}
 
 	validators := make([]BlockValidatorResponse, len(commit.Commit.Precommits))
+	proposer := types.Pubkey{}
 	for i, tmval := range tmValidators.Validators {
 		signed := false
 
@@ -124,6 +126,10 @@ func Block(height int64) (*BlockResponse, error) {
 			Pubkey: fmt.Sprintf("Mp%x", tmval.PubKey.Bytes()[5:]),
 			Signed: signed,
 		}
+
+		if bytes.Equal(tmval.Address.Bytes(), commit.ProposerAddress.Bytes()) {
+			proposer = tmval.PubKey.Bytes()[5:]
+		}
 	}
 
 	return &BlockResponse{
@@ -135,6 +141,7 @@ func Block(height int64) (*BlockResponse, error) {
 		Transactions: txs,
 		BlockReward:  rewards.GetRewardForBlock(uint64(height)),
 		Size:         len(cdc.MustMarshalBinaryLengthPrefixed(block)),
+		Proposer:     proposer,
 		Validators:   validators,
 	}, nil
 }

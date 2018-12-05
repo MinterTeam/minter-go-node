@@ -266,6 +266,7 @@ Returns block data at given height.
         ],
         "block_reward": "333000000000000000000",
         "size": "1230",
+        "proposer": "Mpddfadfb15908ed5607c79e66aaf4030ef93363bd1846d64186d52424b1896c83",
         "validators": [
           {
             "pubkey": "Mpddfadfb15908ed5607c79e66aaf4030ef93363bd1846d64186d52424b1896c83",
