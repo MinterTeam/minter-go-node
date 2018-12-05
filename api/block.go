@@ -1,13 +1,14 @@
 package api
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/rewards"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/rpc/lib/types"
 	"github.com/tendermint/tendermint/libs/common"
-	tmtypes "github.com/tendermint/tendermint/types"
 	"math/big"
 	"time"
 )
@@ -19,9 +20,9 @@ type BlockResponse struct {
 	NumTxs       int64                      `json:"num_txs"`
 	TotalTxs     int64                      `json:"total_txs"`
 	Transactions []BlockTransactionResponse `json:"transactions"`
-	Precommits   []*tmtypes.Vote            `json:"precommits"`
 	BlockReward  *big.Int                   `json:"block_reward"`
 	Size         int                        `json:"size"`
+	Validators   []BlockValidatorResponse   `json:"validators"`
 }
 
 type BlockTransactionResponse struct {
@@ -42,11 +43,16 @@ type BlockTransactionResponse struct {
 	Log         string            `json:"log,omitempty"`
 }
 
+type BlockValidatorResponse struct {
+	Pubkey string `json:"pubkey"`
+	Signed bool   `json:"signed"`
+}
+
 func Block(height int64) (*BlockResponse, error) {
 	block, err := client.Block(&height)
 	blockResults, err := client.BlockResults(&height)
 	if err != nil {
-		return nil, err
+		return nil, &rpctypes.RPCError{Code: 404, Message: "Block not found", Data: err.Error()}
 	}
 
 	txs := make([]BlockTransactionResponse, len(block.Block.Data.Txs))
@@ -89,6 +95,37 @@ func Block(height int64) (*BlockResponse, error) {
 		}
 	}
 
+	tmValidators, err := client.Validators(&height)
+	if err != nil {
+		return nil, &rpctypes.RPCError{Code: 404, Message: "Validators for block not found", Data: err.Error()}
+	}
+
+	commit, err := client.Commit(&height)
+	if err != nil {
+		return nil, &rpctypes.RPCError{Code: 404, Message: "Commit for block not found", Data: err.Error()}
+	}
+
+	validators := make([]BlockValidatorResponse, len(commit.Commit.Precommits))
+	for i, tmval := range tmValidators.Validators {
+		signed := false
+
+		for _, vote := range commit.Commit.Precommits {
+			if vote == nil {
+				continue
+			}
+
+			if bytes.Equal(vote.ValidatorAddress.Bytes(), tmval.Address.Bytes()) {
+				signed = true
+				break
+			}
+		}
+
+		validators[i] = BlockValidatorResponse{
+			Pubkey: fmt.Sprintf("Mp%x", tmval.PubKey.Bytes()[5:]),
+			Signed: signed,
+		}
+	}
+
 	return &BlockResponse{
 		Hash:         block.Block.Hash(),
 		Height:       block.Block.Height,
@@ -96,8 +133,8 @@ func Block(height int64) (*BlockResponse, error) {
 		NumTxs:       block.Block.NumTxs,
 		TotalTxs:     block.Block.TotalTxs,
 		Transactions: txs,
-		Precommits:   block.Block.LastCommit.Precommits,
 		BlockReward:  rewards.GetRewardForBlock(uint64(height)),
 		Size:         len(cdc.MustMarshalBinaryLengthPrefixed(block)),
+		Validators:   validators,
 	}, nil
 }

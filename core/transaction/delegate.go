@@ -12,7 +12,7 @@ import (
 )
 
 type DelegateData struct {
-	PubKey []byte           `json:"pub_key"`
+	PubKey types.Pubkey     `json:"pub_key"`
 	Coin   types.CoinSymbol `json:"coin"`
 	Stake  *big.Int         `json:"stake"`
 }

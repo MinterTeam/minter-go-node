@@ -17,7 +17,7 @@ const maxCommission = 100
 
 type DeclareCandidacyData struct {
 	Address    types.Address    `json:"address"`
-	PubKey     []byte           `json:"pub_key"`
+	PubKey     types.Pubkey     `json:"pub_key"`
 	Commission uint             `json:"commission"`
 	Coin       types.CoinSymbol `json:"coin"`
 	Stake      *big.Int         `json:"stake"`

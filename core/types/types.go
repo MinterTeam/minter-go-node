@@ -275,7 +275,15 @@ func (a UnprefixedAddress) MarshalText() ([]byte, error) {
 type Pubkey []byte
 
 func (p Pubkey) String() string {
-	return string(p[:])
+	return fmt.Sprintf("Mp%x", []byte(p))
+}
+
+func (p Pubkey) MarshalText() ([]byte, error) {
+	return []byte(p.String()), nil
+}
+
+func (p Pubkey) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf("\"%s\"", p.String())), nil
 }
 
 func (p Pubkey) Compare(p2 Pubkey) int {

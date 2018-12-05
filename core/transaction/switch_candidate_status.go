@@ -12,7 +12,7 @@ import (
 )
 
 type SetCandidateOnData struct {
-	PubKey []byte `json:"pub_key"`
+	PubKey types.Pubkey `json:"pub_key"`
 }
 
 func (data SetCandidateOnData) TotalSpend(tx *Transaction, context *state.StateDB) (TotalSpends, []Conversion, *big.Int, *Response) {
@@ -97,7 +97,7 @@ func (data SetCandidateOnData) Run(tx *Transaction, context *state.StateDB, isCh
 }
 
 type SetCandidateOffData struct {
-	PubKey []byte `json:"pub_key"`
+	PubKey types.Pubkey `json:"pub_key"`
 }
 
 func (data SetCandidateOffData) TotalSpend(tx *Transaction, context *state.StateDB) (TotalSpends, []Conversion, *big.Int, *Response) {

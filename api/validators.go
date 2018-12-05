@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/pkg/errors"
@@ -18,7 +17,7 @@ type Stake struct {
 type CandidateResponse struct {
 	CandidateAddress types.Address `json:"candidate_address"`
 	TotalStake       *big.Int      `json:"total_stake"`
-	PubKey           string        `json:"pub_key"`
+	PubKey           types.Pubkey  `json:"pub_key"`
 	Commission       uint          `json:"commission"`
 	Stakes           []Stake       `json:"stakes,omitempty"`
 	CreatedAtBlock   uint          `json:"created_at_block"`
@@ -43,7 +42,7 @@ func makeResponseCandidate(c state.Candidate, includeStakes bool) CandidateRespo
 	candidate := CandidateResponse{
 		CandidateAddress: c.CandidateAddress,
 		TotalStake:       c.TotalBipStake,
-		PubKey:           fmt.Sprintf("Mp%x", c.PubKey),
+		PubKey:           c.PubKey,
 		Commission:       c.Commission,
 		CreatedAtBlock:   c.CreatedAtBlock,
 		Status:           c.Status,

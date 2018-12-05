@@ -14,7 +14,7 @@ import (
 const unbondPeriod = 720 // in mainnet will be 518400 (30 days)
 
 type UnbondData struct {
-	PubKey []byte           `json:"pub_key"`
+	PubKey types.Pubkey     `json:"pub_key"`
 	Coin   types.CoinSymbol `json:"coin"`
 	Value  *big.Int         `json:"value"`
 }
