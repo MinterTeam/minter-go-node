@@ -48,7 +48,7 @@ func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
 				},
 			},
 			{
-				Address: types.HexToAddress("Mxfe60014a6e9ac91618f5d1cab3fd58cded61ee99"),
+				Address: types.HexToAddress("Mx184ac726059e43643e67290666f7b3195093f870"),
 				Balance: map[string]string{
 					"MNT": helpers.BipToPip(big.NewInt(100000000)).String(),
 				},
