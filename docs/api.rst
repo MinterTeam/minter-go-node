@@ -113,7 +113,6 @@ found.
       }
     }
 
-
 Validators
 ^^^^^^^^^^
 
@@ -130,21 +129,10 @@ Returns list of active validators.
       "id": "",
       "result": [
         {
-          "accumulated_reward": 2331000000000000000000,
-          "absent_times": "0",
-          "candidate": {
-            "candidate_address": "Mxee81347211c72524338f9680072af90744333146",
-            "total_stake": 0,
-            "pub_key": "Mpe0ba50e3468b07fbbc127840953eb8f4fe57d6e8162df93baefd79f5d5bc2b97",
-            "commission": "100",
-            "created_at_block": "1",
-            "status": 2
-          }
+          "pubkey": "Mpddfadfb15908ed5607c79e66aaf4030ef93363bd1846d64186d52424b1896c83"
         }
       ]
     }
-
-
 
 Address
 ^^^^^^^
@@ -167,8 +155,6 @@ Returns the balance of given account and the number of outgoing transaction.
         "transaction_count": "0"
       }
     }
-
-
 
 | **Result->balance**: Map of balances. CoinSymbol => Balance (in pips).
 | **Result->transaction_count**: Count of transactions sent from the account.
@@ -194,7 +180,6 @@ Sends transaction to the Minter Network.
         "hash": "C6C6B5008AF8077FB0CE817DDB79268D1C66B6B353AF76778CA5A264A80069DB"
       }
     }
-
 
 **Result**: Transaction hash.
 
@@ -235,7 +220,6 @@ Transaction
         }
       }
     }
-
 
 Block
 ^^^^^
@@ -326,7 +310,6 @@ Returns information about coin.
       }
     }
 
-
 **Result**:
     - **Coin name** - Name of a coin. Arbitrary string.
     - **Coin symbol** - Short symbol of a coin. Coin symbol is unique, alphabetic, uppercase, 3 to 10 letters length.
@@ -360,9 +343,7 @@ Request params:
       }
     }
 
-
 **Result**: Amount of "to_coin" user should get.
-
 
 Estimate buy coin
 ^^^^^^^^^^^^^^^^^
@@ -410,7 +391,5 @@ Return estimate of buy coin transaction
         "commission": "11000000000000000000"
       }
     }
-
-
 
 **Result**: Commission in GasCoin.

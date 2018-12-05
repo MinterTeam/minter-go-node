@@ -3,7 +3,6 @@ package api
 import (
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/pkg/errors"
 	"math/big"
 )
 
@@ -17,7 +16,7 @@ type Stake struct {
 type CandidateResponse struct {
 	CandidateAddress types.Address `json:"candidate_address"`
 	TotalStake       *big.Int      `json:"total_stake"`
-	PubKey           types.Pubkey  `json:"pub_key"`
+	PubKey           types.Pubkey  `json:"pubkey"`
 	Commission       uint          `json:"commission"`
 	Stakes           []Stake       `json:"stakes,omitempty"`
 	CreatedAtBlock   uint          `json:"created_at_block"`
@@ -25,17 +24,7 @@ type CandidateResponse struct {
 }
 
 type ValidatorResponse struct {
-	AccumReward *big.Int          `json:"accumulated_reward"`
-	AbsentTimes int               `json:"absent_times"`
-	Candidate   CandidateResponse `json:"candidate"`
-}
-
-func makeResponseValidator(v state.Validator, state *state.StateDB) ValidatorResponse {
-	return ValidatorResponse{
-		AccumReward: v.AccumReward,
-		AbsentTimes: v.CountAbsentTimes(),
-		Candidate:   makeResponseCandidate(*state.GetStateCandidate(v.PubKey), false),
-	}
+	Pubkey types.Pubkey `json:"pubkey"`
 }
 
 func makeResponseCandidate(c state.Candidate, includeStakes bool) CandidateResponse {
@@ -65,21 +54,17 @@ func makeResponseCandidate(c state.Candidate, includeStakes bool) CandidateRespo
 
 type ResponseValidators []ValidatorResponse
 
-func Validators(height int) (*ResponseValidators, error) {
-	rState, err := GetStateForHeight(height)
-
+func Validators(height int64) (*ResponseValidators, error) {
+	tmVals, err := client.Validators(&height)
 	if err != nil {
 		return nil, err
 	}
 
-	vals := rState.GetStateValidators()
-	if vals == nil {
-		return nil, errors.New("Validator not found")
-	}
-
-	var responseValidators ResponseValidators
-	for _, val := range vals.Data() {
-		responseValidators = append(responseValidators, makeResponseValidator(val, rState))
+	responseValidators := make(ResponseValidators, len(tmVals.Validators))
+	for i, val := range tmVals.Validators {
+		responseValidators[i] = ValidatorResponse{
+			Pubkey: val.PubKey.Bytes()[5:],
+		}
 	}
 
 	return &responseValidators, nil
