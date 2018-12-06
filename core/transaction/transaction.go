@@ -52,6 +52,7 @@ type Transaction struct {
 	decodedData Data
 	sig         *Signature
 	multisig    *SignatureMulti
+	sender      *types.Address
 }
 
 type Signature struct {
@@ -190,14 +191,24 @@ func (tx *Transaction) SetSignature(sig []byte) {
 }
 
 func (tx *Transaction) Sender() (types.Address, error) {
+	if tx.sender != nil {
+		return *tx.sender, nil
+	}
+
 	switch tx.SignatureType {
 	case SigTypeSingle:
-		return RecoverPlain(tx.Hash(), tx.sig.R, tx.sig.S, tx.sig.V)
+		sender, err := RecoverPlain(tx.Hash(), tx.sig.R, tx.sig.S, tx.sig.V)
+		if err != nil {
+			return types.Address{}, err
+		}
+
+		tx.sender = &sender
+		return sender, nil
 	case SigTypeMulti:
 		return tx.multisig.Multisig, nil
-	default:
-		return types.Address{}, errors.New("unknown signature type")
 	}
+
+	return types.Address{}, errors.New("unknown signature type")
 }
 
 func (tx *Transaction) Hash() types.Hash {
