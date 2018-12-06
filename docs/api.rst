@@ -331,7 +331,7 @@ Returns full list of candidates.
 
 .. code-block:: bash
 
-    curl -s 'localhost:8841/events?height={height}'
+    curl -s 'localhost:8841/candidates?height={height}'
 
 .. code-block:: json
 
