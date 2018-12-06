@@ -285,6 +285,77 @@ Returns events at given height.
 
     curl -s 'localhost:8841/events?height={height}'
 
+.. code-block:: json
+
+    {
+      "jsonrpc": "2.0",
+      "id": "",
+      "result": {
+        "events": [
+          {
+            "type": "minter/RewardEvent",
+            "value": {
+              "role": "DAO",
+              "address": "Mxee81347211c72524338f9680072af90744333146",
+              "amount": "367300000000000000000",
+              "validator_pub_key": "Mp4d7064646661646662313539303865643536303763373965363661616634303330656639333336336264313834366436343138366435323432346231383936633833"
+            }
+          },
+          {
+            "type": "minter/RewardEvent",
+            "value": {
+              "role": "Developers",
+              "address": "Mx444c4f1953ea170f74eabef4eee52ed8276a7d5e",
+              "amount": "367300000000000000000",
+              "validator_pub_key": "Mp4d7064646661646662313539303865643536303763373965363661616634303330656639333336336264313834366436343138366435323432346231383936633833"
+            }
+          },
+          {
+            "type": "minter/RewardEvent",
+            "value": {
+              "role": "Validator",
+              "address": "Mxee81347211c72524338f9680072af90744333146",
+              "amount": "2938400000000000000000",
+              "validator_pub_key": "Mp4d7064646661646662313539303865643536303763373965363661616634303330656639333336336264313834366436343138366435323432346231383936633833"
+            }
+          }
+        ]
+      }
+    }
+
+Candidates
+^^^^^^^^^^
+
+Returns full list of candidates.
+
+.. code-block:: bash
+
+    curl -s 'localhost:8841/events?height={height}'
+
+.. code-block:: json
+
+    {
+      "jsonrpc": "2.0",
+      "id": "",
+      "result": [
+        {
+          "candidate_address": "Mxee81347211c72524338f9680072af90744333146",
+          "total_stake": "1000000000000000000000000",
+          "pubkey": "Mpddfadfb15908ed5607c79e66aaf4030ef93363bd1846d64186d52424b1896c83",
+          "commission": "100",
+          "created_at_block": "1",
+          "status": 2
+        },
+        {
+          "candidate_address": "Mxee81347211c72524338f9680072af90744333146",
+          "total_stake": "9900000000000000000",
+          "pubkey": "Mp21e1d043c6d9c0bb0929ab8d1dd9f3948de0f5ad7234ce773a501441d204aa9e",
+          "commission": "10",
+          "created_at_block": "9",
+          "status": 1
+        }
+      ]
+    }
 
 Coin Info
 ^^^^^^^^^
