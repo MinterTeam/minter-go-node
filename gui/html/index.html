@@ -229,7 +229,7 @@
 
                         this.stake = Math.round(candidate.data.result.total_stake / Math.pow(10, 17)) / 10
 
-                        if (validators.data.result.find(function(val) { return val.candidate.pub_key === this.validatorPubKey }.bind(this))) {
+                        if (validators.data.result.find(function(val) { return val.pubkey === this.validatorPubKey }.bind(this))) {
                             this.validatorStatus = 'Validating';
                             return
                         }
