@@ -26,13 +26,6 @@
   revision = "67e573d211ace594f1366b4ce9d39726c4b19bd0"
 
 [[projects]]
-  digest = "1:70d33e721fdb80ae8a8529d87a5e4093acb8f14c513a092fb7d71750cb3a8438"
-  name = "github.com/danil-lashin/iavl"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "ff321d758752b411f0fb01f86370395c314bc13a"
-
-[[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
@@ -383,7 +376,15 @@
   version = "v0.14.1"
 
 [[projects]]
-  digest = "1:a38b9d6e0e2b28b5f046d72cec632d2bdbb736ef9f1693665cd7bbafea763b66"
+  digest = "1:e1cc8dd891e64aab63b0c09f2f12456cbe2cd9cbd9d96dfae3281245f05c2428"
+  name = "github.com/tendermint/iavl"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "de0740903a67b624d887f9055d4c60175dcfa758"
+  version = "v0.12.0"
+
+[[projects]]
+  digest = "1:959b42895610ce2f8e6652e3cb006638d59e84217459913e72df09822aa34bbd"
   name = "github.com/tendermint/tendermint"
   packages = [
     "abci/client",
@@ -437,8 +438,8 @@
     "version",
   ]
   pruneopts = "UT"
-  revision = "b771798d48c27630fb37b74c8e229da5a8b2042c"
-  version = "v0.26.4"
+  revision = "9c236ffd6c56add84f3c17930ae75c26c68d61ec"
+  version = "v0.27.0"
 
 [[projects]]
   digest = "1:1fdfa9436cc1c11afbdbfb56549e9201a92db0b0a0b7bef0797e7b68c9e8791f"
@@ -575,7 +576,6 @@
   input-imports = [
     "github.com/MinterTeam/go-amino",
     "github.com/btcsuite/btcd/btcec",
-    "github.com/danil-lashin/iavl",
     "github.com/go-kit/kit/log/term",
     "github.com/gobuffalo/packr",
     "github.com/gorilla/websocket",
@@ -585,11 +585,11 @@
     "github.com/stretchr/testify/assert",
     "github.com/stretchr/testify/require",
     "github.com/tendermint/go-amino",
+    "github.com/tendermint/iavl",
     "github.com/tendermint/tendermint/abci/types",
     "github.com/tendermint/tendermint/config",
     "github.com/tendermint/tendermint/crypto",
     "github.com/tendermint/tendermint/crypto/ed25519",
-    "github.com/tendermint/tendermint/crypto/encoding/amino",
     "github.com/tendermint/tendermint/crypto/multisig",
     "github.com/tendermint/tendermint/crypto/secp256k1",
     "github.com/tendermint/tendermint/libs/cli/flags",
