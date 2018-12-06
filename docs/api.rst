@@ -129,7 +129,8 @@ Returns list of active validators.
       "id": "",
       "result": [
         {
-          "pubkey": "Mpddfadfb15908ed5607c79e66aaf4030ef93363bd1846d64186d52424b1896c83"
+          "pubkey": "Mpddfadfb15908ed5607c79e66aaf4030ef93363bd1846d64186d52424b1896c83",
+          "voting_power": "100000000"
         }
       ]
     }
