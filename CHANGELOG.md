@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.8.0
+*Dec 3rd, 2018*
+
+BREAKING CHANGES
+
+- [api] Switch to RPC protocol
+- [api] Separate events from block in API
+- [core] Fix issue with incorrect coin conversion
+- [core] Limit coins supply to 1,000,000,000,000,000
+- [core] Set minimal reserve and min/max coin supply in CreateCoin tx
+- [core] Add MinimumValueToBuy and MaximumValueToSell to convert transactions
+- [tendermint] Update to [v0.27.0](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0270) 
+
+IMPROVEMENT
+
+- [logs] Add `log_format` option to config
+- [events] Add UnbondEvent
+
 ## 0.7.6
 *Nov 27th, 2018*
 

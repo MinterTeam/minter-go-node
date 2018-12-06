@@ -163,6 +163,12 @@ func (c CoinSymbol) IsBaseCoin() bool {
 	return c.Compare(GetBaseCoin()) == 0
 }
 
+func StrToCoinSymbol(s string) CoinSymbol {
+	var symbol CoinSymbol
+	copy(symbol[:], []byte(s))
+	return symbol
+}
+
 /////////// Address
 
 // Address represents the 20 byte address of an Ethereum account.
@@ -235,6 +241,15 @@ func (a *Address) UnmarshalText(input []byte) error {
 	return hexutil.UnmarshalFixedText("Address", input, a[:])
 }
 
+func (a *Address) Unmarshal(input []byte) error {
+	copy(a[:], input)
+	return nil
+}
+
+func (a Address) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf("\"%s\"", a.String())), nil
+}
+
 // UnmarshalJSON parses a hash in hex syntax.
 func (a *Address) UnmarshalJSON(input []byte) error {
 	return hexutil.UnmarshalFixedJSON(addressT, input, a[:])
@@ -260,7 +275,15 @@ func (a UnprefixedAddress) MarshalText() ([]byte, error) {
 type Pubkey []byte
 
 func (p Pubkey) String() string {
-	return string(p[:])
+	return fmt.Sprintf("Mp%x", []byte(p))
+}
+
+func (p Pubkey) MarshalText() ([]byte, error) {
+	return []byte(p.String()), nil
+}
+
+func (p Pubkey) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf("\"%s\"", p.String())), nil
 }
 
 func (p Pubkey) Compare(p2 Pubkey) int {

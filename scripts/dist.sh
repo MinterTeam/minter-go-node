@@ -24,8 +24,8 @@ GIT_COMMIT="$(git rev-parse --short=8 HEAD)"
 GIT_IMPORT="github.com/MinterTeam/minter-go-node/version"
 
 # Determine the arch/os combos we're building for
-XC_ARCH=${XC_ARCH:-"386 amd64 arm"}
-XC_OS=${XC_OS:-"solaris darwin freebsd linux windows"}
+XC_ARCH=${XC_ARCH:-"amd64"}
+XC_OS=${XC_OS:-"darwin linux windows"}
 XC_EXCLUDE=${XC_EXCLUDE:-" darwin/arm solaris/amd64 solaris/386 solaris/arm freebsd/amd64 windows/arm "}
 
 # Make sure build tools are available.

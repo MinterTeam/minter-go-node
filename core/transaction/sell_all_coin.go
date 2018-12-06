@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
@@ -14,18 +13,35 @@ import (
 )
 
 type SellAllCoinData struct {
-	CoinToSell types.CoinSymbol
-	CoinToBuy  types.CoinSymbol
+	CoinToSell        types.CoinSymbol `json:"coin_to_sell"`
+	CoinToBuy         types.CoinSymbol `json:"coin_to_buy"`
+	MinimumValueToBuy *big.Int         `json:"minimum_value_to_buy"`
 }
 
-func (data SellAllCoinData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		CoinToSell types.CoinSymbol `json:"coin_to_sell,string"`
-		CoinToBuy  types.CoinSymbol `json:"coin_to_buy,string"`
-	}{
-		CoinToSell: data.CoinToSell,
-		CoinToBuy:  data.CoinToBuy,
-	})
+func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (TotalSpends, []Conversion, *big.Int, *Response) {
+	panic("implement me")
+}
+
+func (data SellAllCoinData) BasicCheck(tx *Transaction, context *state.StateDB) *Response {
+	if data.CoinToSell == data.CoinToBuy {
+		return &Response{
+			Code: code.CrossConvert,
+			Log:  fmt.Sprintf("\"From\" coin equals to \"to\" coin")}
+	}
+
+	if !context.CoinExists(data.CoinToSell) {
+		return &Response{
+			Code: code.CoinNotExists,
+			Log:  fmt.Sprintf("Coin not exists")}
+	}
+
+	if !context.CoinExists(data.CoinToBuy) {
+		return &Response{
+			Code: code.CoinNotExists,
+			Log:  fmt.Sprintf("Coin not exists")}
+	}
+
+	return nil
 }
 
 func (data SellAllCoinData) String() string {
@@ -37,23 +53,12 @@ func (data SellAllCoinData) Gas() int64 {
 	return commissions.ConvertTx
 }
 
-func (data SellAllCoinData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response {
-	if data.CoinToSell == data.CoinToBuy {
-		return Response{
-			Code: code.CrossConvert,
-			Log:  fmt.Sprintf("\"From\" coin equals to \"to\" coin")}
-	}
+func (data SellAllCoinData) Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response {
+	sender, _ := tx.Sender()
 
-	if !context.CoinExists(data.CoinToSell) {
-		return Response{
-			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin not exists")}
-	}
-
-	if !context.CoinExists(data.CoinToBuy) {
-		return Response{
-			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin not exists")}
+	response := data.BasicCheck(tx, context)
+	if response != nil {
+		return *response
 	}
 
 	available := context.GetBalance(sender, data.CoinToSell)
@@ -72,12 +77,6 @@ func (data SellAllCoinData) Run(sender types.Address, tx *Transaction, context *
 		}
 
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
-
-		if commission == nil {
-			return Response{
-				Code: 999,
-				Log:  "Unknown error"}
-		}
 	}
 
 	if context.GetBalance(sender, data.CoinToSell).Cmp(commission) < 0 {
@@ -89,23 +88,18 @@ func (data SellAllCoinData) Run(sender types.Address, tx *Transaction, context *
 	amountToSell := big.NewInt(0).Set(available)
 	amountToSell.Sub(amountToSell, commission)
 
-	if !isCheck {
-		rewardPool.Add(rewardPool, commissionInBaseCoin)
-
-		context.SubBalance(sender, data.CoinToSell, available)
-
-		if !data.CoinToSell.IsBaseCoin() {
-			context.SubCoinVolume(data.CoinToSell, commission)
-			context.SubCoinReserve(data.CoinToSell, commissionInBaseCoin)
-		}
-	}
-
 	var value *big.Int
 
 	if data.CoinToSell.IsBaseCoin() {
 		coin := context.GetStateCoin(data.CoinToBuy).Data()
-
 		value = formula.CalculatePurchaseReturn(coin.Volume, coin.ReserveBalance, coin.Crr, amountToSell)
+
+		if value.Cmp(data.MinimumValueToBuy) == -1 {
+			return Response{
+				Code: code.MinimumValueToBuylReached,
+				Log:  fmt.Sprintf("You wanted to get minimum %s, but currently you will get %s", data.MinimumValueToBuy.String(), value.String()),
+			}
+		}
 
 		if !isCheck {
 			context.AddCoinVolume(data.CoinToBuy, value)
@@ -113,8 +107,14 @@ func (data SellAllCoinData) Run(sender types.Address, tx *Transaction, context *
 		}
 	} else if data.CoinToBuy.IsBaseCoin() {
 		coin := context.GetStateCoin(data.CoinToSell).Data()
-
 		value = formula.CalculateSaleReturn(coin.Volume, coin.ReserveBalance, coin.Crr, amountToSell)
+
+		if value.Cmp(data.MinimumValueToBuy) == -1 {
+			return Response{
+				Code: code.MinimumValueToBuylReached,
+				Log:  fmt.Sprintf("You wanted to get minimum %s, but currently you will get %s", data.MinimumValueToBuy.String(), value.String()),
+			}
+		}
 
 		if !isCheck {
 			context.SubCoinVolume(data.CoinToSell, amountToSell)
@@ -127,6 +127,13 @@ func (data SellAllCoinData) Run(sender types.Address, tx *Transaction, context *
 		basecoinValue := formula.CalculateSaleReturn(coinFrom.Volume, coinFrom.ReserveBalance, coinFrom.Crr, amountToSell)
 		value = formula.CalculatePurchaseReturn(coinTo.Volume, coinTo.ReserveBalance, coinTo.Crr, basecoinValue)
 
+		if value.Cmp(data.MinimumValueToBuy) == -1 {
+			return Response{
+				Code: code.MinimumValueToBuylReached,
+				Log:  fmt.Sprintf("You wanted to get minimum %s, but currently you will get %s", data.MinimumValueToBuy.String(), value.String()),
+			}
+		}
+
 		if !isCheck {
 			context.AddCoinVolume(data.CoinToBuy, value)
 			context.SubCoinVolume(data.CoinToSell, amountToSell)
@@ -137,6 +144,15 @@ func (data SellAllCoinData) Run(sender types.Address, tx *Transaction, context *
 	}
 
 	if !isCheck {
+		rewardPool.Add(rewardPool, commissionInBaseCoin)
+
+		context.SubBalance(sender, data.CoinToSell, available)
+
+		if !data.CoinToSell.IsBaseCoin() {
+			context.SubCoinVolume(data.CoinToSell, commission)
+			context.SubCoinReserve(data.CoinToSell, commissionInBaseCoin)
+		}
+
 		context.AddBalance(sender, data.CoinToBuy, value)
 		context.SetNonce(sender, tx.Nonce)
 	}

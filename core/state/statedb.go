@@ -771,6 +771,10 @@ func (s *StateDB) GetStateCoin(symbol types.CoinSymbol) *stateCoin {
 }
 
 func (s *StateDB) AddCoinVolume(symbol types.CoinSymbol, value *big.Int) {
+	if symbol.IsBaseCoin() {
+		return
+	}
+
 	stateCoin := s.GetStateCoin(symbol)
 	if stateCoin != nil {
 		stateCoin.AddVolume(value)
@@ -778,6 +782,10 @@ func (s *StateDB) AddCoinVolume(symbol types.CoinSymbol, value *big.Int) {
 }
 
 func (s *StateDB) SubCoinVolume(symbol types.CoinSymbol, value *big.Int) {
+	if symbol.IsBaseCoin() {
+		return
+	}
+
 	stateCoin := s.GetStateCoin(symbol)
 	if stateCoin != nil {
 		stateCoin.SubVolume(value)
@@ -785,6 +793,10 @@ func (s *StateDB) SubCoinVolume(symbol types.CoinSymbol, value *big.Int) {
 }
 
 func (s *StateDB) AddCoinReserve(symbol types.CoinSymbol, value *big.Int) {
+	if symbol.IsBaseCoin() {
+		return
+	}
+
 	stateCoin := s.GetStateCoin(symbol)
 	if stateCoin != nil {
 		stateCoin.AddReserve(value)
@@ -792,6 +804,10 @@ func (s *StateDB) AddCoinReserve(symbol types.CoinSymbol, value *big.Int) {
 }
 
 func (s *StateDB) SubCoinReserve(symbol types.CoinSymbol, value *big.Int) {
+	if symbol.IsBaseCoin() {
+		return
+	}
+
 	stateCoin := s.GetStateCoin(symbol)
 	if stateCoin != nil {
 		stateCoin.SubReserve(value)
@@ -1384,6 +1400,12 @@ func (s *StateDB) ClearStakes(height int64) {
 			candidates.data[i].Stakes = candidates.data[i].Stakes[:MaxDelegatorsPerCandidate]
 
 			for _, stake := range dropped {
+				eventsdb.GetCurrent().AddEvent(height, eventsdb.UnbondEvent{
+					Address:         stake.Owner,
+					Amount:          stake.Value.Bytes(),
+					Coin:            stake.Coin,
+					ValidatorPubKey: candidate.PubKey,
+				})
 				s.AddBalance(stake.Owner, stake.Coin, stake.Value)
 			}
 		}

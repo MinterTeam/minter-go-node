@@ -20,10 +20,12 @@ func TestSellCoinTx(t *testing.T) {
 
 	cState.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
+	minValToBuy, _ := big.NewInt(0).SetString("957658277688702625", 10)
 	data := SellCoinData{
-		CoinToSell:  coin,
-		ValueToSell: helpers.BipToPip(big.NewInt(10)),
-		CoinToBuy:   getTestCoinSymbol(),
+		CoinToSell:        coin,
+		ValueToSell:       helpers.BipToPip(big.NewInt(10)),
+		CoinToBuy:         getTestCoinSymbol(),
+		MinimumValueToBuy: minValToBuy,
 	}
 
 	encodedData, err := rlp.EncodeToBytes(data)

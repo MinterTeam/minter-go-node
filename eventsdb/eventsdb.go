@@ -2,9 +2,9 @@ package eventsdb
 
 import (
 	"encoding/binary"
+	"github.com/MinterTeam/go-amino"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
-	"github.com/tendermint/go-amino"
 	"github.com/tendermint/tendermint/libs/db"
 	"sync"
 )

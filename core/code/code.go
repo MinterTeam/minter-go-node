@@ -12,15 +12,19 @@ const (
 	TxPayloadTooLarge        uint32 = 109
 	TxServiceDataTooLarge    uint32 = 110
 	InvalidMultisendData     uint32 = 111
+	CoinSupplyOverflow       uint32 = 112
 
 	// coin creation
 	CoinAlreadyExists uint32 = 201
 	WrongCrr          uint32 = 202
 	InvalidCoinSymbol uint32 = 203
 	InvalidCoinName   uint32 = 204
+	WrongCoinSupply   uint32 = 205
 
 	// convert
-	CrossConvert uint32 = 301
+	CrossConvert              uint32 = 301
+	MaximumValueToSellReached uint32 = 302
+	MinimumValueToBuylReached uint32 = 303
 
 	// candidate
 	CandidateExists       uint32 = 401

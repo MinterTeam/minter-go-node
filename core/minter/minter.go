@@ -139,6 +139,12 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 	frozenFunds := app.stateDeliver.GetStateFrozenFunds(uint64(req.Header.Height))
 	if frozenFunds != nil {
 		for _, item := range frozenFunds.List() {
+			eventsdb.GetCurrent().AddEvent(req.Header.Height, eventsdb.UnbondEvent{
+				Address:         item.Address,
+				Amount:          item.Value.Bytes(),
+				Coin:            item.Coin,
+				ValidatorPubKey: item.CandidateKey,
+			})
 			app.stateDeliver.AddBalance(item.Address, item.Coin, item.Value)
 		}
 

@@ -3,7 +3,6 @@ package transaction
 import (
 	"bytes"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/check"
 	"github.com/MinterTeam/minter-go-node/core/code"
@@ -19,18 +18,20 @@ import (
 )
 
 type RedeemCheckData struct {
-	RawCheck []byte
-	Proof    [65]byte
+	RawCheck []byte   `json:"raw_check"`
+	Proof    [65]byte `json:"proof"`
 }
 
-func (data RedeemCheckData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		RawCheck string `json:"raw_check"`
-		Proof    string `json:"proof"`
-	}{
-		RawCheck: fmt.Sprintf("Mc%x", data.RawCheck),
-		Proof:    fmt.Sprintf("%x", data.Proof),
-	})
+func (data RedeemCheckData) TotalSpend(tx *Transaction, context *state.StateDB) (TotalSpends, []Conversion, *big.Int, *Response) {
+	panic("implement me")
+}
+
+func (data RedeemCheckData) CommissionInBaseCoin(tx *Transaction) *big.Int {
+	panic("implement me")
+}
+
+func (data RedeemCheckData) BasicCheck(tx *Transaction, context *state.StateDB) *Response {
+	panic("implement me")
 }
 
 func (data RedeemCheckData) String() string {
@@ -41,7 +42,8 @@ func (data RedeemCheckData) Gas() int64 {
 	return commissions.SendTx
 }
 
-func (data RedeemCheckData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response {
+func (data RedeemCheckData) Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response {
+	sender, _ := tx.Sender()
 	decodedCheck, err := check.DecodeFromBytes(data.RawCheck)
 
 	if err != nil {
@@ -99,7 +101,7 @@ func (data RedeemCheckData) Run(sender types.Address, tx *Transaction, context *
 
 	var senderAddressHash types.Hash
 	hw := sha3.NewKeccak256()
-	rlp.Encode(hw, []interface{}{
+	_ = rlp.Encode(hw, []interface{}{
 		sender,
 	})
 	hw.Sum(senderAddressHash[:0])
@@ -125,12 +127,6 @@ func (data RedeemCheckData) Run(sender types.Address, tx *Transaction, context *
 	if !decodedCheck.Coin.IsBaseCoin() {
 		coin := context.GetStateCoin(decodedCheck.Coin)
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
-
-		if commission == nil {
-			return Response{
-				Code: 999,
-				Log:  "Unknown error"}
-		}
 	}
 
 	totalTxCost := big.NewInt(0).Add(decodedCheck.Value, commission)

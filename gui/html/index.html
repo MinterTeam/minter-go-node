@@ -211,8 +211,8 @@
             },
             refresh() {
                 axios.all([
-                    axios.get("//" + window.location.hostname + ':8841/api/status'),
-                    axios.get("//" + window.location.hostname + ':8841/api/net_info'),
+                    axios.get("//" + window.location.hostname + ':8841/status'),
+                    axios.get("//" + window.location.hostname + ':8841/net_info'),
                 ]).then(axios.spread(function (status, net_info) {
                     this.error = null
 
@@ -223,18 +223,18 @@
                     this.validatorPubKey = 'Mp' + this.base64ToHex(status.data.result.tm_status.validator_info.pub_key.value)
 
                     axios.all([
-                        axios.get("//" + window.location.hostname + ':8841/api/validators'),
-                        axios.get("//" + window.location.hostname + ':8841/api/candidate/' + this.validatorPubKey),
+                        axios.get("//" + window.location.hostname + ':8841/validators'),
+                        axios.get("//" + window.location.hostname + ':8841/candidate?pubkey=' + this.validatorPubKey),
                     ]).then(axios.spread(function (validators, candidate) {
 
-                        this.stake = Math.round(candidate.data.result.candidate.total_stake / Math.pow(10, 17)) / 10
+                        this.stake = Math.round(candidate.data.result.total_stake / Math.pow(10, 17)) / 10
 
-                        if (validators.data.result.find(function(val) { return val.candidate.pub_key === this.validatorPubKey }.bind(this))) {
+                        if (validators.data.result.find(function(val) { return val.pubkey === this.validatorPubKey }.bind(this))) {
                             this.validatorStatus = 'Validating';
                             return
                         }
 
-                        if (candidate.data.result.candidate.status === 2) {
+                        if (candidate.data.result.status === 2) {
                             this.validatorStatus = 'Candidate'
                             return
                         }
@@ -251,7 +251,7 @@
                     setTimeout(this.refresh, 5000)
                 }.bind(this))
 
-                axios.get("https://minter-node-1.testnet.minter.network/api/status").then(function (masterStatus) {
+                axios.get("https://minter-node-1.testnet.minter.network/status").then(function (masterStatus) {
                     this.masterStatus = masterStatus.data.result
                 }.bind(this))
             }

@@ -1,50 +1,65 @@
 package api
 
 import (
-	"encoding/json"
+	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/gorilla/mux"
-	"net/http"
-	"strings"
+	"github.com/pkg/errors"
+	"math/big"
 )
 
-func GetCandidate(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	pubkey := types.Hex2Bytes(strings.TrimLeft(vars["pubkey"], "Mp"))
+type Stake struct {
+	Owner    types.Address    `json:"owner"`
+	Coin     types.CoinSymbol `json:"coin"`
+	Value    string           `json:"value"`
+	BipValue string           `json:"bip_value"`
+}
 
-	cState, err := GetStateForRequest(r)
+type CandidateResponse struct {
+	CandidateAddress types.Address `json:"candidate_address"`
+	TotalStake       *big.Int      `json:"total_stake"`
+	PubKey           types.Pubkey  `json:"pubkey"`
+	Commission       uint          `json:"commission"`
+	Stakes           []Stake       `json:"stakes,omitempty"`
+	CreatedAtBlock   uint          `json:"created_at_block"`
+	Status           byte          `json:"status"`
+}
 
+func makeResponseCandidate(c state.Candidate, includeStakes bool) CandidateResponse {
+	candidate := CandidateResponse{
+		CandidateAddress: c.CandidateAddress,
+		TotalStake:       c.TotalBipStake,
+		PubKey:           c.PubKey,
+		Commission:       c.Commission,
+		CreatedAtBlock:   c.CreatedAtBlock,
+		Status:           c.Status,
+	}
+
+	if includeStakes {
+		candidate.Stakes = make([]Stake, len(c.Stakes))
+		for i, stake := range c.Stakes {
+			candidate.Stakes[i] = Stake{
+				Owner:    stake.Owner,
+				Coin:     stake.Coin,
+				Value:    stake.Value.String(),
+				BipValue: stake.BipValue.String(),
+			}
+		}
+	}
+
+	return candidate
+}
+
+func Candidate(pubkey []byte, height int) (*CandidateResponse, error) {
+	cState, err := GetStateForHeight(height)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		w.WriteHeader(http.StatusNotFound)
-		_ = json.NewEncoder(w).Encode(Response{
-			Code: 404,
-			Log:  "State for given height not found",
-		})
-		return
+		return nil, err
 	}
 
 	candidate := cState.GetStateCandidate(pubkey)
-
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-
 	if candidate == nil {
-		w.WriteHeader(http.StatusNotFound)
-		_ = json.NewEncoder(w).Encode(Response{
-			Code: 404,
-			Log:  "Candidate not found",
-		})
-		return
+		return nil, errors.New("Candidate not found")
 	}
 
-	w.WriteHeader(http.StatusOK)
-
-	_ = json.NewEncoder(w).Encode(Response{
-		Code: 0,
-		Result: struct {
-			Candidate Candidate `json:"candidate"`
-		}{
-			Candidate: makeResponseCandidate(*candidate, true),
-		},
-	})
+	response := makeResponseCandidate(*candidate, true)
+	return &response, nil
 }

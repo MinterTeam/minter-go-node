@@ -1,7 +1,6 @@
 package transaction
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
@@ -17,27 +16,43 @@ const minCommission = 0
 const maxCommission = 100
 
 type DeclareCandidacyData struct {
-	Address    types.Address
-	PubKey     []byte
-	Commission uint
-	Coin       types.CoinSymbol
-	Stake      *big.Int
+	Address    types.Address    `json:"address"`
+	PubKey     types.Pubkey     `json:"pub_key"`
+	Commission uint             `json:"commission"`
+	Coin       types.CoinSymbol `json:"coin"`
+	Stake      *big.Int         `json:"stake"`
 }
 
-func (data DeclareCandidacyData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		Address    types.Address    `json:"address"`
-		PubKey     string           `json:"pub_key"`
-		Commission uint             `json:"commission"`
-		Coin       types.CoinSymbol `json:"coin"`
-		Stake      string           `json:"stake"`
-	}{
-		Address:    data.Address,
-		PubKey:     fmt.Sprintf("Mp%x", data.PubKey),
-		Commission: data.Commission,
-		Coin:       data.Coin,
-		Stake:      data.Stake.String(),
-	})
+func (data DeclareCandidacyData) TotalSpend(tx *Transaction, context *state.StateDB) (TotalSpends, []Conversion, *big.Int, *Response) {
+	panic("implement me")
+}
+
+func (data DeclareCandidacyData) BasicCheck(tx *Transaction, context *state.StateDB) *Response {
+	if !context.CoinExists(tx.GasCoin) {
+		return &Response{
+			Code: code.CoinNotExists,
+			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin)}
+	}
+
+	if len(data.PubKey) != 32 {
+		return &Response{
+			Code: code.IncorrectPubKey,
+			Log:  fmt.Sprintf("Incorrect PubKey")}
+	}
+
+	if context.CandidateExists(data.PubKey) {
+		return &Response{
+			Code: code.CandidateExists,
+			Log:  fmt.Sprintf("Candidate with such public key (%x) already exists", data.PubKey)}
+	}
+
+	if data.Commission < minCommission || data.Commission > maxCommission {
+		return &Response{
+			Code: code.WrongCommission,
+			Log:  fmt.Sprintf("Commission should be between 0 and 100")}
+	}
+
+	return nil
 }
 
 func (data DeclareCandidacyData) String() string {
@@ -49,18 +64,12 @@ func (data DeclareCandidacyData) Gas() int64 {
 	return commissions.DeclareCandidacyTx
 }
 
-func (data DeclareCandidacyData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response {
+func (data DeclareCandidacyData) Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response {
+	sender, _ := tx.Sender()
 
-	if !context.CoinExists(tx.GasCoin) {
-		return Response{
-			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin)}
-	}
-
-	if len(data.PubKey) != 32 {
-		return Response{
-			Code: code.IncorrectPubKey,
-			Log:  fmt.Sprintf("Incorrect PubKey")}
+	response := data.BasicCheck(tx, context)
+	if response != nil {
+		return *response
 	}
 
 	maxCandidatesCount := validators.GetCandidatesCountForBlock(currentBlock)
@@ -85,12 +94,6 @@ func (data DeclareCandidacyData) Run(sender types.Address, tx *Transaction, cont
 		}
 
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
-
-		if commission == nil {
-			return Response{
-				Code: 999,
-				Log:  "Unknown error"}
-		}
 	}
 
 	if context.GetBalance(sender, data.Coin).Cmp(data.Stake) < 0 {
@@ -115,18 +118,6 @@ func (data DeclareCandidacyData) Run(sender types.Address, tx *Transaction, cont
 				Code: code.InsufficientFunds,
 				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), totalTxCost.String(), tx.GasCoin)}
 		}
-	}
-
-	if context.CandidateExists(data.PubKey) {
-		return Response{
-			Code: code.CandidateExists,
-			Log:  fmt.Sprintf("Candidate with such public key (%x) already exists", data.PubKey)}
-	}
-
-	if data.Commission < minCommission || data.Commission > maxCommission {
-		return Response{
-			Code: code.WrongCommission,
-			Log:  fmt.Sprintf("Commission should be between 0 and 100")}
 	}
 
 	if !isCheck {

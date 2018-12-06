@@ -1,7 +1,6 @@
 package transaction
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
@@ -15,21 +14,46 @@ import (
 const unbondPeriod = 720 // in mainnet will be 518400 (30 days)
 
 type UnbondData struct {
-	PubKey []byte
-	Coin   types.CoinSymbol
-	Value  *big.Int
+	PubKey types.Pubkey     `json:"pub_key"`
+	Coin   types.CoinSymbol `json:"coin"`
+	Value  *big.Int         `json:"value"`
 }
 
-func (data UnbondData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		PubKey string           `json:"pub_key"`
-		Coin   types.CoinSymbol `json:"coin"`
-		Value  string           `json:"value"`
-	}{
-		PubKey: fmt.Sprintf("Mp%x", data.PubKey),
-		Coin:   data.Coin,
-		Value:  data.Value.String(),
-	})
+func (data UnbondData) TotalSpend(tx *Transaction, context *state.StateDB) (TotalSpends, []Conversion, *big.Int, *Response) {
+	panic("implement me")
+}
+
+func (data UnbondData) BasicCheck(tx *Transaction, context *state.StateDB) *Response {
+	if !context.CoinExists(tx.GasCoin) {
+		return &Response{
+			Code: code.CoinNotExists,
+			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin)}
+	}
+
+	if !context.CandidateExists(data.PubKey) {
+		return &Response{
+			Code: code.CandidateNotFound,
+			Log:  fmt.Sprintf("Candidate with such public key not found")}
+	}
+
+	candidate := context.GetStateCandidate(data.PubKey)
+
+	sender, _ := tx.Sender()
+	stake := candidate.GetStakeOfAddress(sender, data.Coin)
+
+	if stake == nil {
+		return &Response{
+			Code: code.StakeNotFound,
+			Log:  fmt.Sprintf("Stake of current user not found")}
+	}
+
+	if stake.Value.Cmp(data.Value) < 0 {
+		return &Response{
+			Code: code.InsufficientStake,
+			Log:  fmt.Sprintf("Insufficient stake for sender account")}
+	}
+
+	return nil
 }
 
 func (data UnbondData) String() string {
@@ -41,16 +65,15 @@ func (data UnbondData) Gas() int64 {
 	return commissions.UnbondTx
 }
 
-func (data UnbondData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response {
+func (data UnbondData) Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response {
+	sender, _ := tx.Sender()
 
-	if !context.CoinExists(tx.GasCoin) {
-		return Response{
-			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin)}
+	response := data.BasicCheck(tx, context)
+	if response != nil {
+		return *response
 	}
 
-	commissionInBaseCoin := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
-	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
+	commissionInBaseCoin := tx.CommissionInBaseCoin()
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
 	if tx.GasCoin != types.GetBaseCoin() {
@@ -63,40 +86,12 @@ func (data UnbondData) Run(sender types.Address, tx *Transaction, context *state
 		}
 
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
-
-		if commission == nil {
-			return Response{
-				Code: 999,
-				Log:  "Unknown error"}
-		}
 	}
 
 	if context.GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
 		return Response{
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, tx.GasCoin)}
-	}
-
-	if !context.CandidateExists(data.PubKey) {
-		return Response{
-			Code: code.CandidateNotFound,
-			Log:  fmt.Sprintf("Candidate with such public key not found")}
-	}
-
-	candidate := context.GetStateCandidate(data.PubKey)
-
-	stake := candidate.GetStakeOfAddress(sender, data.Coin)
-
-	if stake == nil {
-		return Response{
-			Code: code.StakeNotFound,
-			Log:  fmt.Sprintf("Stake of current user not found")}
-	}
-
-	if stake.Value.Cmp(data.Value) < 0 {
-		return Response{
-			Code: code.InsufficientStake,
-			Log:  fmt.Sprintf("Insufficient stake for sender account")}
 	}
 
 	if !isCheck {

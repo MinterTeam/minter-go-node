@@ -125,5 +125,5 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPool *big.I
 			Log:  fmt.Sprintf("Unexpected nonce. Expected: %d, got %d.", expectedNonce, tx.Nonce)}
 	}
 
-	return tx.decodedData.Run(sender, tx, context, isCheck, rewardPool, currentBlock)
+	return tx.decodedData.Run(tx, context, isCheck, rewardPool, currentBlock)
 }

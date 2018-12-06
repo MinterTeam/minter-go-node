@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
@@ -14,21 +13,229 @@ import (
 )
 
 type SellCoinData struct {
-	CoinToSell  types.CoinSymbol
-	ValueToSell *big.Int
-	CoinToBuy   types.CoinSymbol
+	CoinToSell        types.CoinSymbol `json:"coin_to_sell"`
+	ValueToSell       *big.Int         `json:"value_to_sell"`
+	CoinToBuy         types.CoinSymbol `json:"coin_to_buy"`
+	MinimumValueToBuy *big.Int         `json:"minimum_value_to_buy"`
 }
 
-func (data SellCoinData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		CoinToSell  types.CoinSymbol `json:"coin_to_sell,string"`
-		ValueToSell string           `json:"value_to_sell"`
-		CoinToBuy   types.CoinSymbol `json:"coin_to_buy,string"`
-	}{
-		CoinToSell:  data.CoinToSell,
-		ValueToSell: data.ValueToSell.String(),
-		CoinToBuy:   data.CoinToBuy,
-	})
+func (data SellCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (TotalSpends, []Conversion, *big.Int, *Response) {
+	total := TotalSpends{}
+	var conversions []Conversion
+
+	commissionInBaseCoin := tx.CommissionInBaseCoin()
+	commissionIncluded := false
+
+	var value *big.Int
+
+	if data.CoinToSell.IsBaseCoin() {
+		coin := context.GetStateCoin(data.CoinToBuy).Data()
+		value = formula.CalculatePurchaseReturn(coin.Volume, coin.ReserveBalance, coin.Crr, data.ValueToSell)
+
+		if value.Cmp(data.MinimumValueToBuy) == -1 {
+			return nil, nil, nil, &Response{
+				Code: code.MinimumValueToBuylReached,
+				Log:  fmt.Sprintf("You wanted to get minimum %s, but currently you will get %s", data.MinimumValueToBuy.String(), value.String()),
+			}
+		}
+
+		if tx.GasCoin == data.CoinToBuy {
+			commissionIncluded = true
+
+			nVolume := big.NewInt(0).Set(coin.Volume)
+			nVolume.Add(nVolume, value)
+
+			nReserveBalance := big.NewInt(0).Set(coin.ReserveBalance)
+			nReserveBalance.Add(nReserveBalance, data.ValueToSell)
+
+			commission := formula.CalculateSaleAmount(nVolume, nReserveBalance, coin.Crr, commissionInBaseCoin)
+
+			total.Add(tx.GasCoin, commission)
+			conversions = append(conversions, Conversion{
+				FromCoin:    tx.GasCoin,
+				FromAmount:  commission,
+				FromReserve: commissionInBaseCoin,
+				ToCoin:      types.GetBaseCoin(),
+			})
+		}
+
+		if err := CheckForCoinSupplyOverflow(coin.Volume, value); err != nil {
+			return nil, nil, nil, &Response{
+				Code: code.CoinSupplyOverflow,
+				Log:  err.Error(),
+			}
+		}
+
+		total.Add(data.CoinToSell, data.ValueToSell)
+		conversions = append(conversions, Conversion{
+			FromCoin:  data.CoinToSell,
+			ToCoin:    data.CoinToBuy,
+			ToAmount:  value,
+			ToReserve: data.ValueToSell,
+		})
+	} else if data.CoinToBuy.IsBaseCoin() {
+		coin := context.GetStateCoin(data.CoinToSell).Data()
+		value = formula.CalculateSaleReturn(coin.Volume, coin.ReserveBalance, coin.Crr, data.ValueToSell)
+
+		if value.Cmp(data.MinimumValueToBuy) == -1 {
+			return nil, nil, nil, &Response{
+				Code: code.MinimumValueToBuylReached,
+				Log:  fmt.Sprintf("You wanted to get minimum %s, but currently you will get %s", data.MinimumValueToBuy.String(), value.String()),
+			}
+		}
+
+		rValue := big.NewInt(0).Set(value)
+		valueToSell := data.ValueToSell
+
+		if tx.GasCoin == data.CoinToSell {
+			commissionIncluded = true
+
+			newVolume := big.NewInt(0).Set(coin.Volume)
+			newReserve := big.NewInt(0).Set(coin.ReserveBalance)
+
+			newVolume.Sub(newVolume, data.ValueToSell)
+			newReserve.Sub(newVolume, value)
+
+			c := formula.CalculateSaleAmount(newVolume, newReserve, coin.Crr, commissionInBaseCoin)
+
+			valueToSell.Add(valueToSell, c)
+			rValue.Add(rValue, commissionInBaseCoin)
+		}
+
+		total.Add(data.CoinToSell, valueToSell)
+		conversions = append(conversions, Conversion{
+			FromCoin:    data.CoinToSell,
+			FromAmount:  valueToSell,
+			FromReserve: rValue,
+			ToCoin:      data.CoinToBuy,
+		})
+	} else {
+		coinFrom := context.GetStateCoin(data.CoinToSell).Data()
+		coinTo := context.GetStateCoin(data.CoinToBuy).Data()
+
+		valueToSell := big.NewInt(0).Set(data.ValueToSell)
+
+		basecoinValue := formula.CalculateSaleReturn(coinFrom.Volume, coinFrom.ReserveBalance, coinFrom.Crr, data.ValueToSell)
+
+		if tx.GasCoin == data.CoinToSell {
+			commissionIncluded = true
+			newVolume := big.NewInt(0).Set(coinFrom.Volume)
+			newReserve := big.NewInt(0).Set(coinFrom.ReserveBalance)
+
+			newVolume.Sub(newVolume, data.ValueToSell)
+			newReserve.Sub(newVolume, value)
+
+			c := formula.CalculateSaleAmount(newVolume, newReserve, coinFrom.Crr, commissionInBaseCoin)
+
+			valueToSell.Add(valueToSell, c)
+			basecoinValue.Add(basecoinValue, commissionInBaseCoin)
+		}
+
+		value = formula.CalculatePurchaseReturn(coinTo.Volume, coinTo.ReserveBalance, coinTo.Crr, basecoinValue)
+
+		if value.Cmp(data.MinimumValueToBuy) == -1 {
+			return nil, nil, nil, &Response{
+				Code: code.MinimumValueToBuylReached,
+				Log:  fmt.Sprintf("You wanted to get minimum %s, but currently you will get %s", data.MinimumValueToBuy.String(), value.String()),
+			}
+		}
+
+		if tx.GasCoin == data.CoinToBuy {
+			commissionIncluded = true
+
+			nVolume := big.NewInt(0).Set(coinTo.Volume)
+			nVolume.Add(nVolume, value)
+
+			nReserveBalance := big.NewInt(0).Set(coinTo.ReserveBalance)
+			nReserveBalance.Add(nReserveBalance, basecoinValue)
+
+			commission := formula.CalculateSaleAmount(nVolume, nReserveBalance, coinTo.Crr, commissionInBaseCoin)
+
+			total.Add(tx.GasCoin, commission)
+			conversions = append(conversions, Conversion{
+				FromCoin:    tx.GasCoin,
+				FromAmount:  commission,
+				FromReserve: commissionInBaseCoin,
+				ToCoin:      types.GetBaseCoin(),
+			})
+		}
+
+		if err := CheckForCoinSupplyOverflow(coinTo.Volume, value); err != nil {
+			return nil, nil, nil, &Response{
+				Code: code.CoinSupplyOverflow,
+				Log:  err.Error(),
+			}
+		}
+
+		total.Add(data.CoinToSell, valueToSell)
+
+		conversions = append(conversions, Conversion{
+			FromCoin:    data.CoinToSell,
+			FromAmount:  valueToSell,
+			FromReserve: basecoinValue,
+			ToCoin:      data.CoinToBuy,
+			ToAmount:    value,
+			ToReserve:   basecoinValue,
+		})
+	}
+
+	if !commissionIncluded {
+		commission := big.NewInt(0).Set(commissionInBaseCoin)
+
+		if !tx.GasCoin.IsBaseCoin() {
+			coin := context.GetStateCoin(tx.GasCoin)
+
+			if coin.ReserveBalance().Cmp(commissionInBaseCoin) < 0 {
+				return nil, nil, nil, &Response{
+					Code: code.CoinReserveNotSufficient,
+					Log: fmt.Sprintf("Gas coin reserve balance is not sufficient for transaction. Has: %s %s, required %s %s",
+						coin.ReserveBalance().String(),
+						types.GetBaseCoin(),
+						commissionInBaseCoin.String(),
+						types.GetBaseCoin())}
+			}
+
+			commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
+			conversions = append(conversions, Conversion{
+				FromCoin:    tx.GasCoin,
+				FromAmount:  commission,
+				FromReserve: commissionInBaseCoin,
+				ToCoin:      types.GetBaseCoin(),
+			})
+		}
+
+		total.Add(tx.GasCoin, commission)
+	}
+
+	return total, conversions, value, nil
+}
+
+func (data SellCoinData) BasicCheck(tx *Transaction, context *state.StateDB) *Response {
+	if data.CoinToSell == data.CoinToBuy {
+		return &Response{
+			Code: code.CrossConvert,
+			Log:  fmt.Sprintf("\"From\" coin equals to \"to\" coin")}
+	}
+
+	if !context.CoinExists(data.CoinToSell) {
+		return &Response{
+			Code: code.CoinNotExists,
+			Log:  fmt.Sprintf("Coin not exists")}
+	}
+
+	if !context.CoinExists(data.CoinToBuy) {
+		return &Response{
+			Code: code.CoinNotExists,
+			Log:  fmt.Sprintf("Coin not exists")}
+	}
+
+	if !context.CoinExists(tx.GasCoin) {
+		return &Response{
+			Code: code.CoinNotExists,
+			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin)}
+	}
+
+	return nil
 }
 
 func (data SellCoinData) String() string {
@@ -40,120 +247,44 @@ func (data SellCoinData) Gas() int64 {
 	return commissions.ConvertTx
 }
 
-func (data SellCoinData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response {
-	if data.CoinToSell == data.CoinToBuy {
-		return Response{
-			Code: code.CrossConvert,
-			Log:  fmt.Sprintf("\"From\" coin equals to \"to\" coin")}
+func (data SellCoinData) Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response {
+	sender, _ := tx.Sender()
+
+	response := data.BasicCheck(tx, context)
+	if response != nil {
+		return *response
 	}
 
-	if !context.CoinExists(data.CoinToSell) {
-		return Response{
-			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin not exists")}
+	totalSpends, conversions, value, response := data.TotalSpend(tx, context)
+	if response != nil {
+		return *response
 	}
 
-	if !context.CoinExists(data.CoinToBuy) {
-		return Response{
-			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin not exists")}
-	}
-
-	if !context.CoinExists(tx.GasCoin) {
-		return Response{
-			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin)}
-	}
-
-	commissionInBaseCoin := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
-	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
-	commission := big.NewInt(0).Set(commissionInBaseCoin)
-
-	if !tx.GasCoin.IsBaseCoin() {
-		coin := context.GetStateCoin(tx.GasCoin)
-
-		if coin.ReserveBalance().Cmp(commissionInBaseCoin) < 0 {
-			return Response{
-				Code: code.CoinReserveNotSufficient,
-				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.ReserveBalance().String(), commissionInBaseCoin.String())}
-		}
-
-		commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
-
-		if commission == nil {
-			return Response{
-				Code: 999,
-				Log:  "Unknown error"}
-		}
-	}
-
-	if context.GetBalance(sender, data.CoinToSell).Cmp(data.ValueToSell) < 0 {
-		return Response{
-			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %d ", sender.String(), data.ValueToSell)}
-	}
-
-	if data.CoinToSell == tx.GasCoin {
-		totalTxCost := big.NewInt(0)
-		totalTxCost.Add(totalTxCost, data.ValueToSell)
-		totalTxCost.Add(totalTxCost, commission)
-
-		if context.GetBalance(sender, tx.GasCoin).Cmp(totalTxCost) < 0 {
+	for _, ts := range totalSpends {
+		if context.GetBalance(sender, ts.Coin).Cmp(ts.Value) < 0 {
 			return Response{
 				Code: code.InsufficientFunds,
-				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), totalTxCost.String(), tx.GasCoin)}
+				Log: fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s.",
+					sender.String(),
+					ts.Value.String(),
+					ts.Coin)}
 		}
 	}
 
 	if !isCheck {
-		rewardPool.Add(rewardPool, commissionInBaseCoin)
-
-		context.SubBalance(sender, data.CoinToSell, data.ValueToSell)
-		context.SubBalance(sender, tx.GasCoin, commission)
-
-		if !tx.GasCoin.IsBaseCoin() {
-			context.SubCoinVolume(tx.GasCoin, commission)
-			context.SubCoinReserve(tx.GasCoin, commissionInBaseCoin)
+		for _, ts := range totalSpends {
+			context.SubBalance(sender, ts.Coin, ts.Value)
 		}
-	}
 
-	var value *big.Int
+		for _, conversion := range conversions {
+			context.SubCoinVolume(conversion.FromCoin, conversion.FromAmount)
+			context.SubCoinReserve(conversion.FromCoin, conversion.FromReserve)
 
-	if data.CoinToSell.IsBaseCoin() {
-		coin := context.GetStateCoin(data.CoinToBuy).Data()
-
-		value = formula.CalculatePurchaseReturn(coin.Volume, coin.ReserveBalance, coin.Crr, data.ValueToSell)
-
-		if !isCheck {
-			context.AddCoinVolume(data.CoinToBuy, value)
-			context.AddCoinReserve(data.CoinToBuy, data.ValueToSell)
+			context.AddCoinVolume(conversion.ToCoin, conversion.ToAmount)
+			context.AddCoinReserve(conversion.ToCoin, conversion.ToReserve)
 		}
-	} else if data.CoinToBuy.IsBaseCoin() {
-		coin := context.GetStateCoin(data.CoinToSell).Data()
 
-		value = formula.CalculateSaleReturn(coin.Volume, coin.ReserveBalance, coin.Crr, data.ValueToSell)
-
-		if !isCheck {
-			context.SubCoinVolume(data.CoinToSell, data.ValueToSell)
-			context.SubCoinReserve(data.CoinToSell, value)
-		}
-	} else {
-		coinFrom := context.GetStateCoin(data.CoinToSell).Data()
-		coinTo := context.GetStateCoin(data.CoinToBuy).Data()
-
-		basecoinValue := formula.CalculateSaleReturn(coinFrom.Volume, coinFrom.ReserveBalance, coinFrom.Crr, data.ValueToSell)
-		value = formula.CalculatePurchaseReturn(coinTo.Volume, coinTo.ReserveBalance, coinTo.Crr, basecoinValue)
-
-		if !isCheck {
-			context.AddCoinVolume(data.CoinToBuy, value)
-			context.SubCoinVolume(data.CoinToSell, data.ValueToSell)
-
-			context.AddCoinReserve(data.CoinToBuy, basecoinValue)
-			context.SubCoinReserve(data.CoinToSell, basecoinValue)
-		}
-	}
-
-	if !isCheck {
+		rewardPool.Add(rewardPool, tx.CommissionInBaseCoin())
 		context.AddBalance(sender, data.CoinToBuy, value)
 		context.SetNonce(sender, tx.Nonce)
 	}

@@ -15,71 +15,54 @@ normal mode.
 
 .. code-block:: bash
 
-    curl -s 'localhost:8841/api/status'
+    curl -s 'localhost:8841/status'
 
 .. code-block:: json
 
     {
-      "code": 0,
+      "jsonrpc": "2.0",
+      "id": "",
       "result": {
-        "version": "0.2.5",
-        "latest_block_hash": "0CC015EA926173130C793BBE6E38145BF379CF6A",
-        "latest_app_hash": "1FB9B53F32298759D936E4A10A866E7AFB930EA4D7CC7184EC992F2320592E81",
-        "latest_block_height": 82541,
-        "latest_block_time": "2018-08-28T18:26:47.112704193+03:00",
+        "version": "0.8.0",
+        "latest_block_hash": "171F3A749F85425147986DD90EA0C397440B6A3C1FEF8F30E5E5F729DA174CC2",
+        "latest_app_hash": "55E75C9860E56AF3DEB8DD55741185F658569AB43C084436DDDB69CBFB06CC63",
+        "latest_block_height": "4",
+        "latest_block_time": "2018-12-03T13:18:42.50969Z",
         "tm_status": {
           "node_info": {
-            "id": "62a5d75ef3f48dcf62aad263a170b9c82eb3f2b8",
-            "listen_addr": "192.168.1.100:26656",
-            "network": "minter-test-network-19",
-            "version": "0.23.0",
+            "protocol_version": {
+              "p2p": "4",
+              "block": "7",
+              "app": "0"
+            },
+            "id": "9d5eb9f8fb7ada3ff6228841c3500f39e3121901",
+            "listen_addr": "tcp://0.0.0.0:26656",
+            "network": "minter-test-network-27-local",
+            "version": "0.26.4",
             "channels": "4020212223303800",
-            "moniker": "MinterNode",
-            "other": [
-              "amino_version=0.10.1",
-              "p2p_version=0.5.0",
-              "consensus_version=v1/0.2.2",
-              "rpc_version=0.7.0/3",
-              "tx_index=on",
-              "rpc_addr=tcp://0.0.0.0:26657"
-            ]
+            "moniker": "MacBook-Pro-Daniil-2.local",
+            "other": {
+              "tx_index": "on",
+              "rpc_address": "tcp://0.0.0.0:26657"
+            }
           },
           "sync_info": {
-            "latest_block_hash": "0CC015EA926173130C793BBE6E38145BF379CF6A",
-            "latest_app_hash": "1FB9B53F32298759D936E4A10A866E7AFB930EA4D7CC7184EC992F2320592E81",
-            "latest_block_height": "82541",
-            "latest_block_time": "2018-08-28T15:26:47.112704193Z",
-            "catching_up": true
+            "latest_block_hash": "171F3A749F85425147986DD90EA0C397440B6A3C1FEF8F30E5E5F729DA174CC2",
+            "latest_app_hash": "55E75C9860E56AF3DEB8DD55741185F658569AB43C084436DDDB69CBFB06CC63",
+            "latest_block_height": "4",
+            "latest_block_time": "2018-12-03T13:18:42.50969Z",
+            "catching_up": false
           },
           "validator_info": {
-            "address": "BCFB297FD1EE0458E1DBDA8EBAE2C599CD0A5984",
+            "address": "AB15A084DD592699812E9B22385C1959E7AEFFB8",
             "pub_key": {
               "type": "tendermint/PubKeyEd25519",
-              "value": "G2lZ+lJWW/kQvhOOI6CHVBHSEgjYq9awDgdlErLeVAE="
+              "value": "4LpQ40aLB/u8EnhAlT649P5X1ugWLfk7rv159dW8K5c="
             },
-            "voting_power": "0"
+            "voting_power": "100000000"
           }
         }
       }
-    }
-
-Volume of Base Coin in Blockchain
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-This endpoint shows amount of base coin (BIP or MNT) existing in the network. It counts block rewards, premine and
-relayed rewards.
-
-.. code-block:: bash
-
-    curl -s 'localhost:8841/api/bipVolume?height={height}'
-
-.. code-block:: json
-
-    {
-       "code":0,
-       "result":{
-          "volume":"20000222000000000000000000"
-       }
     }
 
 Candidate
@@ -105,35 +88,28 @@ found.
 
 .. code-block:: bash
 
-    curl -s 'localhost:8841/api/candidate/{public_key}'
+    curl -s 'localhost:8841/candidate?pubkey={public_key}'
 
 .. code-block:: json
 
     {
-      "code": 0,
+      "jsonrpc": "2.0",
+      "id": "",
       "result": {
-        "candidate": {
-          "candidate_address": "Mxee81347211c72524338f9680072af90744333146",
-          "total_stake": "5000001000000000000000000",
-          "pub_key": "Mp738da41ba6a7b7d69b7294afa158b89c5a1b410cbf0c2443c85c5fe24ad1dd1c",
-          "commission": 100,
-          "stakes": [
-            {
-              "owner": "Mxee81347211c72524338f9680072af90744333146",
-              "coin": "MNT",
-              "value": "5000000000000000000000000",
-              "bip_value": "5000000000000000000000000"
-            },
-            {
-              "owner": "Mx4f3385615a4abb104d6eda88591fa07c112cbdbf",
-              "coin": "MNT",
-              "value": "1000000000000000000",
-              "bip_value": "1000000000000000000"
-            }
-          ],
-          "created_at_block": 165,
-          "status": 2
-        }
+        "candidate_address": "Mxee81347211c72524338f9680072af90744333146",
+        "total_stake": 0,
+        "pub_key": "Mpe0ba50e3468b07fbbc127840953eb8f4fe57d6e8162df93baefd79f5d5bc2b97",
+        "commission": "100",
+        "stakes": [
+          {
+            "owner": "Mxee81347211c72524338f9680072af90744333146",
+            "coin": "MNT",
+            "value": "1000000000000000000000000",
+            "bip_value": "1000000000000000000000000"
+          }
+        ],
+        "created_at_block": "1",
+        "status": 2
       }
     }
 
@@ -144,88 +120,45 @@ Returns list of active validators.
 
 .. code-block:: bash
 
-    curl -s 'localhost:8841/api/validators'
+    curl -s 'localhost:8841/validators'
 
 .. code-block:: json
 
     {
-      "code": 0,
+      "jsonrpc": "2.0",
+      "id": "",
       "result": [
         {
-          "accumulated_reward": "652930049792069211272",
-          "absent_times": 0,
-          "candidate": {
-            "candidate_address": "Mxee81347211c72524338f9680072af90744333146",
-            "total_stake": "5000001000000000000000000",
-            "pub_key": "Mp738da41ba6a7b7d69b7294afa158b89c5a1b410cbf0c2443c85c5fe24ad1dd1c",
-            "commission": 100,
-            "created_at_block": 165,
-            "status": 2
-          }
-        },
-        {
-          "accumulated_reward": "652929919206085370058",
-          "absent_times": 0,
-          "candidate": {
-            "candidate_address": "Mxee81347211c72524338f9680072af90744333146",
-            "total_stake": "5000000000000000000000000",
-            "pub_key": "Mp6f16c1ff21a6fb946aaed0f4c1fcca272b72fd904988f91d3883282b8ae31ba2",
-            "commission": 100,
-            "created_at_block": 174,
-            "status": 2
-          }
+          "pubkey": "Mpddfadfb15908ed5607c79e66aaf4030ef93363bd1846d64186d52424b1896c83",
+          "voting_power": "100000000"
         }
       ]
     }
 
-
-Balance
+Address
 ^^^^^^^
 
-Returns balance of an account.
+Returns the balance of given account and the number of outgoing transaction.
 
 .. code-block:: bash
 
-    curl -s 'localhost:8841/api/balance/{address}'
+    curl -s 'localhost:8841/address?address={address}'
 
 .. code-block:: json
 
     {
-      "code": 0,
+      "jsonrpc": "2.0",
+      "id": "",
       "result": {
         "balance": {
-          "MINTERONE": "2000000000000000000",
-          "MNT": "97924621949581028367025445",
-          "SHSCOIN": "201502537939970000000000",
-          "TESTCOIN": "1000000000000000000000"
-        }
+          "MNT": "100010489500000000000000000"
+        },
+        "transaction_count": "0"
       }
     }
 
-
-**Result**: Map of balances. CoinSymbol => Balance (in pips).
-
-Transaction count
-^^^^^^^^^^^^^^^^^
-
-Returns count of outgoing transactions from given account. This should be used for calculating nonce for the new
-transaction.
-
-.. code-block:: bash
-
-    curl -s 'localhost:8841/api/transactionCount/{address}'
-
-.. code-block:: json
-
-    {
-      "code": 0,
-      "result": {
-        "count": 59
-      }
-    }
-
-
-**Result**: Count of transactions sent from given account.
+| **Result->balance**: Map of balances. CoinSymbol => Balance (in pips).
+| **Result->transaction_count**: Count of transactions sent from the account.
 
 Send transaction
 ^^^^^^^^^^^^^^^^
@@ -234,15 +167,19 @@ Sends transaction to the Minter Network.
 
 .. code-block:: bash
 
-    curl -X POST --data '{"transaction":"..."}' -s 'localhost:8841/api/sendTransaction'
+    curl -s 'localhost:8841/send_transaction?tx={transaction}'
 
 .. code-block:: json
 
     {
+      "jsonrpc": "2.0",
+      "id": "",
+      "result": {
         "code": 0,
-        "result": {
-            "hash": "Mtfd5c3ecad1e8333564cf6e3f968578b9db5acea3"
-        }
+        "data": "",
+        "log": "",
+        "hash": "C6C6B5008AF8077FB0CE817DDB79268D1C66B6B353AF76778CA5A264A80069DB"
+      }
     }
 
 **Result**: Transaction hash.
@@ -252,36 +189,37 @@ Transaction
 
 .. code-block:: bash
 
-    curl -s 'localhost:8841/api/transaction/{hash}'
+    curl -s 'localhost:8841/transaction?hash={hash}'
 
 .. code-block:: json
 
     {
-        "code": 0,
-        "result": {
-            "hash": "B829EE45734800273ACCCFA70BC96BE8D858E521",
-            "raw_tx": "f88682c8e8018a4d4e540000000000000001abea8a4d4e5400000000000000941a8e2cd08a2938b6412cc65aed449154577731e089056bc75e2d63100000808001b845f8431ba050141c66539362464496d1393b8a9468623f37dced4cf3bac8bfc5d576fd5e1fa00b37ee7103d2647bd7fc1a72c03df2a40cc38c9cc92771614f76eabf7be1cc79",
-            "height": 234218,
-            "index": 0,
-            "from": "Mxfe60014a6e9ac91618f5d1cab3fd58cded61ee99",
-            "nonce": 51432,
-            "gas_price": 1,
-            "gas_coin": "MNT",
-            "gas_used": 10,
-            "type": 1,
-            "data": {
-                "coin": "MNT",
-                "to": "Mx1a8e2cd08a2938b6412cc65aed449154577731e0",
-                "value": "100000000000000000000"
-            },
-            "payload": "",
-            "tags": {
-                "tx.coin": "MNT",
-                "tx.from": "fe60014a6e9ac91618f5d1cab3fd58cded61ee99",
-                "tx.to": "1a8e2cd08a2938b6412cc65aed449154577731e0",
-                "tx.type": "01"
-            }
+      "jsonrpc": "2.0",
+      "id": "",
+      "result": {
+        "hash": "C6C6B5008AF8077FB0CE817DDB79268D1C66B6B353AF76778CA5A264A80069DB",
+        "raw_tx": "f88701018a4d4e540000000000000001aae98a4d4e540000000000000094ee81347211c72524338f9680072af9074433314688a688906bd8b0000084546573748001b845f8431ba098fd9402b0af434f461eecdad89908655c779fb394b7624a0c37198f931f27a1a075e73a04f81e2204d88826ac851b2b3da359e4a9a16ac6c17e992fa0a3de0c48",
+        "height": "387",
+        "index": 0,
+        "from": "Mxee81347211c72524338f9680072af90744333146",
+        "nonce": "1",
+        "gas_price": "1",
+        "gas_coin": "MNT",
+        "gas_used": "18",
+        "type": 1,
+        "data": {
+          "coin": "MNT",
+          "to": "Mxee81347211c72524338f9680072af90744333146",
+          "value": "12000000000000000000"
+        },
+        "payload": "VGVzdA==",
+        "tags": {
+          "tx.coin": "MNT",
+          "tx.type": "01",
+          "tx.from": "ee81347211c72524338f9680072af90744333146",
+          "tx.to": "ee81347211c72524338f9680072af90744333146"
         }
+      }
     }
 
 Block
@@ -291,130 +229,134 @@ Returns block data at given height.
 
 .. code-block:: bash
 
-    curl -s 'localhost:8841/api/block/{height}'
+    curl -s 'localhost:8841/block?height={height}'
 
 .. code-block:: json
 
     {
-      "code": 0,
+      "jsonrpc": "2.0",
+      "id": "",
       "result": {
-        "hash": "6B4F84E0C801EE01B4EA1AEC34B0A0249E4EB3FF",
-        "height": 94594,
-        "time": "2018-08-29T10:12:52.791097555Z",
-        "num_txs": 1,
-        "total_txs": 5515,
+        "hash": "0B1226C12783373BB2FFB451A104FF2BE47F59B8E7B6690B7712AADBA197D2FC",
+        "height": "9",
+        "time": "2018-12-05T09:14:57.114925Z",
+        "num_txs": "1",
+        "total_txs": "1",
         "transactions": [
           {
-            "hash": "B829EE45734800273ACCCFA70BC96BE8D858E521",
-            "raw_tx": "f88682c8e8018a4d4e540000000000000001abea8a4d4e5400000000000000941a8e2cd08a2938b6412cc65aed449154577731e089056bc75e2d63100000808001b845f8431ba050141c66539362464496d1393b8a9468623f37dced4cf3bac8bfc5d576fd5e1fa00b37ee7103d2647bd7fc1a72c03df2a40cc38c9cc92771614f76eabf7be1cc79",
-            "height": 94594,
-            "index": 0,
-            "from": "Mxfe60014a6e9ac91618f5d1cab3fd58cded61ee99",
-            "nonce": 51432,
-            "gas_price": 1,
-            "gas_coin": "MNT",
-            "gas_used": 10,
-            "type": 1,
+            "hash": "Mt0e765f48042683160d33c610a90845aeef5f8e0d71cab60e01895f8bd973d614",
+            "raw_tx": "f8a701018a4d4e540000000000000006b84df84b94ee81347211c72524338f9680072af90744333146a021e1d043c6d9c0bb0929ab8d1dd9f3948de0f5ad7234ce773a501441d204aa9e0a8a4d4e5400000000000000888ac7230489e80000808001b845f8431ca0a7cfaf4ab3b64695380a5fd2f86f5fd29a56c722572dcb1a7fbc49ba8ff1cdc0a06be96fdf026ed7da605cfa1a606c134d99fea51717dbd57997e5e021ef714944",
+            "from": "Mxee81347211c72524338f9680072af90744333146",
+            "nonce": "1",
+            "gas_price": "1",
+            "type": 6,
             "data": {
-                "coin": "MNT",
-                "to": "Mx1a8e2cd08a2938b6412cc65aed449154577731e0",
-                "value": "100000000000000000000"
+              "address": "Mxee81347211c72524338f9680072af90744333146",
+              "pub_key": "Mp21e1d043c6d9c0bb0929ab8d1dd9f3948de0f5ad7234ce773a501441d204aa9e",
+              "commission": "10",
+              "coin": "MNT",
+              "stake": "10000000000000000000"
             },
             "payload": "",
-            "tags": {
-                "tx.coin": "MNT",
-                "tx.from": "fe60014a6e9ac91618f5d1cab3fd58cded61ee99",
-                "tx.to": "1a8e2cd08a2938b6412cc65aed449154577731e0",
-                "tx.type": "01"
-            }
+            "service_data": "",
+            "gas": "10000",
+            "gas_coin": "MNT",
+            "gas_used": "10000",
+            "tags": {}
           }
         ],
-        "precommits": [
+        "block_reward": "333000000000000000000",
+        "size": "1230",
+        "proposer": "Mpddfadfb15908ed5607c79e66aaf4030ef93363bd1846d64186d52424b1896c83",
+        "validators": [
           {
-            "validator_address": "0D1A38E170F4BC84CBA505E041AF0A656FEF7CCE",
-            "validator_index": "0",
-            "height": "94593",
-            "round": "0",
-            "timestamp": "2018-08-29T10:12:47.480971248Z",
-            "type": 2,
-            "block_id": {
-              "hash": "CCC196AE488111387594258B4F5B417B6DF6F01E",
-              "parts": {
-                "total": "1",
-                "hash": "6C8A070EBDD7218547617CD2E0894E031B815B95"
-              }
-            },
-            "signature": "+tNZnoPJnQNpanlK90YEb11GnGP20wGzrrqX7Wzf729KhZBhOkK4zFZW0CnUfVHwYpu4nGVaJLOgy8G6VKCgCg=="
-          },
-          {
-            "validator_address": "1B16468F89B8C36FE1AFC7F82F7251D4FC831530",
-            "validator_index": "1",
-            "height": "94593",
-            "round": "0",
-            "timestamp": "2018-08-29T10:12:47.494792759Z",
-            "type": 2,
-            "block_id": {
-              "hash": "CCC196AE488111387594258B4F5B417B6DF6F01E",
-              "parts": {
-                "total": "1",
-                "hash": "6C8A070EBDD7218547617CD2E0894E031B815B95"
-              }
-            },
-            "signature": "GofqbrNFZye3pQk8sDsuErFH4x4Z+bs7skQOeeTcNA+jSIoupo+NWM6SV/rePg6NVOSA3PHVkXG6MVO2xYfbCg=="
-          },
-          {
-            "validator_address": "22794FF373BE0867ECCB8206BEB77E0AB6F4A198",
-            "validator_index": "2",
-            "height": "94593",
-            "round": "0",
-            "timestamp": "2018-08-29T10:12:47.465617407Z",
-            "type": 2,
-            "block_id": {
-              "hash": "CCC196AE488111387594258B4F5B417B6DF6F01E",
-              "parts": {
-                "total": "1",
-                "hash": "6C8A070EBDD7218547617CD2E0894E031B815B95"
-              }
-            },
-            "signature": "19Xu5Y8UI4QwZc89HgC42G4dB8MaMn7ibph6R1iVo9YYwwTKN4NEOjbuvvl3VYl8k/8CBIhck45GtSq73xHiBA=="
-          },
-          {
-            "validator_address": "36575649BE18934623E0CE226B8E60FB1D1E7163",
-            "validator_index": "3",
-            "height": "94593",
-            "round": "0",
-            "timestamp": "2018-08-29T10:12:47.488838407Z",
-            "type": 2,
-            "block_id": {
-              "hash": "CCC196AE488111387594258B4F5B417B6DF6F01E",
-              "parts": {
-                "total": "1",
-                "hash": "6C8A070EBDD7218547617CD2E0894E031B815B95"
-              }
-            },
-            "signature": "5PE9BYgsnXGtzUeeUBqIwA/VTfunHC+gN1keQYeN220JSjXrI7qZguYm45+9dt79s/y6jc8S4XKRSDNvVI1DDg=="
-          },
-          {
-            "validator_address": "6330D572B9670786E0603332C01E7D4C35653C4A",
-            "validator_index": "4",
-            "height": "94593",
-            "round": "0",
-            "timestamp": "2018-08-29T10:12:47.443544695Z",
-            "type": 2,
-            "block_id": {
-              "hash": "CCC196AE488111387594258B4F5B417B6DF6F01E",
-              "parts": {
-                "total": "1",
-                "hash": "6C8A070EBDD7218547617CD2E0894E031B815B95"
-              }
-            },
-            "signature": "QTW+t2Yen2U04gO3T3CRG3nhAkmkVM1ucQRD4QZS5Pokwp8C9ykP3uEefXjgTznBd3x24+hkTHSUfOy/HY9CCw=="
+            "pubkey": "Mpddfadfb15908ed5607c79e66aaf4030ef93363bd1846d64186d52424b1896c83",
+            "signed": true
           }
-        ],
-        "block_reward": "333000000000000000000"
+        ]
       }
     }
 
+Events
+^^^^^^
+
+Returns events at given height.
+
+.. code-block:: bash
+
+    curl -s 'localhost:8841/events?height={height}'
+
+.. code-block:: json
+
+    {
+      "jsonrpc": "2.0",
+      "id": "",
+      "result": {
+        "events": [
+          {
+            "type": "minter/RewardEvent",
+            "value": {
+              "role": "DAO",
+              "address": "Mxee81347211c72524338f9680072af90744333146",
+              "amount": "367300000000000000000",
+              "validator_pub_key": "Mp4d7064646661646662313539303865643536303763373965363661616634303330656639333336336264313834366436343138366435323432346231383936633833"
+            }
+          },
+          {
+            "type": "minter/RewardEvent",
+            "value": {
+              "role": "Developers",
+              "address": "Mx444c4f1953ea170f74eabef4eee52ed8276a7d5e",
+              "amount": "367300000000000000000",
+              "validator_pub_key": "Mp4d7064646661646662313539303865643536303763373965363661616634303330656639333336336264313834366436343138366435323432346231383936633833"
+            }
+          },
+          {
+            "type": "minter/RewardEvent",
+            "value": {
+              "role": "Validator",
+              "address": "Mxee81347211c72524338f9680072af90744333146",
+              "amount": "2938400000000000000000",
+              "validator_pub_key": "Mp4d7064646661646662313539303865643536303763373965363661616634303330656639333336336264313834366436343138366435323432346231383936633833"
+            }
+          }
+        ]
+      }
+    }
+
+Candidates
+^^^^^^^^^^
+
+Returns full list of candidates.
+
+.. code-block:: bash
+
+    curl -s 'localhost:8841/events?height={height}'
+
+.. code-block:: json
+
+    {
+      "jsonrpc": "2.0",
+      "id": "",
+      "result": [
+        {
+          "candidate_address": "Mxee81347211c72524338f9680072af90744333146",
+          "total_stake": "1000000000000000000000000",
+          "pubkey": "Mpddfadfb15908ed5607c79e66aaf4030ef93363bd1846d64186d52424b1896c83",
+          "commission": "100",
+          "created_at_block": "1",
+          "status": 2
+        },
+        {
+          "candidate_address": "Mxee81347211c72524338f9680072af90744333146",
+          "total_stake": "9900000000000000000",
+          "pubkey": "Mp21e1d043c6d9c0bb0929ab8d1dd9f3948de0f5ad7234ce773a501441d204aa9e",
+          "commission": "10",
+          "created_at_block": "9",
+          "status": 1
+        }
+      ]
+    }
 
 Coin Info
 ^^^^^^^^^
@@ -425,21 +367,21 @@ Returns information about coin.
 
 .. code-block:: bash
 
-    curl -s 'localhost:8841/api/coinInfo/{symbol}'
+    curl -s 'localhost:8841/coin_info?symbol="{SYMBOL}"'
 
 .. code-block:: json
 
     {
-      "code": 0,
+      "jsonrpc": "2.0",
+      "id": "",
       "result": {
-        "name": "Stakeholder Coin",
-        "symbol": "SHSCOIN",
-        "volume": "1985888114702108355026636",
-        "crr": 50,
-        "reserve_balance": "394375160721239016660255"
+        "name": "TEST",
+        "symbol": "TESTCOIN",
+        "volume": "100000000000000000000",
+        "crr": "100",
+        "reserve_balance": "100000000000000000000"
       }
     }
-
 
 **Result**:
     - **Coin name** - Name of a coin. Arbitrary string.
@@ -456,7 +398,7 @@ Return estimate of sell coin transaction
 
 .. code-block:: bash
 
-    curl -s 'localhost:8841/api/estimateCoinSell?coin_to_sell=MNT&value_to_sell=1000000000000000000&coin_to_buy=BLTCOIN'
+    curl -s 'localhost:8841/estimate_coin_sell?coin_to_sell="MNT"&coin_to_buy="TESTCOIN"&value_to_sell="1"'
 
 Request params:
     - **coin_to_sell** – coin to give
@@ -466,15 +408,15 @@ Request params:
 .. code-block:: json
 
     {
-        "code": 0,
-        "result": {
-            "will_get": "29808848728151191",
-            "commission": "443372813245"
-        }
+      "jsonrpc": "2.0",
+      "id": "",
+      "result": {
+        "will_pay": "1",
+        "commission": "100000000000000000"
+      }
     }
 
 **Result**: Amount of "to_coin" user should get.
-
 
 Estimate buy coin
 ^^^^^^^^^^^^^^^^^
@@ -483,7 +425,7 @@ Return estimate of buy coin transaction
 
 .. code-block:: bash
 
-    curl -s 'localhost:8841/api/estimateCoinBuy?coin_to_sell=MNT&value_to_buy=1000000000000000000&coin_to_buy=BLTCOIN'
+    curl -s 'localhost:8841/estimate_coin_buy?coin_to_sell="MNT"&coin_to_buy="TESTCOIN"&value_to_buy="1"'
 
 Request params:
     - **coin_to_sell** – coin to give
@@ -493,12 +435,14 @@ Request params:
 .. code-block:: json
 
     {
-        "code": 0,
-        "result": {
-            "will_pay": "29808848728151191",
-            "commission": "443372813245"
-        }
+      "jsonrpc": "2.0",
+      "id": "",
+      "result": {
+        "will_pay": "1",
+        "commission": "100000000000000000"
+      }
     }
+
 
 **Result**: Amount of "to_coin" user should give.
 
@@ -509,16 +453,16 @@ Return estimate of buy coin transaction
 
 .. code-block:: bash
 
-    curl -s 'localhost:8841/api/estimateTxCommission?tx={transaction}'
+    curl -s 'localhost:8841/estimate_tx_commission?tx={transaction}'
 
 .. code-block:: json
 
     {
-      "code": 0,
+      "jsonrpc": "2.0",
+      "id": "",
       "result": {
-        "commission": "10000000000000000"
+        "commission": "11000000000000000000"
       }
     }
-
 
 **Result**: Commission in GasCoin.

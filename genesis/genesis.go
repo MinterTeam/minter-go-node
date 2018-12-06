@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	Network     = "minter-test-network-26"
-	genesisTime = time.Date(2018, 11, 16, 9, 0, 0, 0, time.UTC)
+	Network     = "minter-test-network-27"
+	genesisTime = time.Date(2018, 12, 10, 9, 0, 0, 0, time.UTC)
 )
 
 func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
@@ -48,7 +48,7 @@ func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
 				},
 			},
 			{
-				Address: types.HexToAddress("Mxfe60014a6e9ac91618f5d1cab3fd58cded61ee99"),
+				Address: types.HexToAddress("Mx184ac726059e43643e67290666f7b3195093f870"),
 				Balance: map[string]string{
 					"MNT": helpers.BipToPip(big.NewInt(100000000)).String(),
 				},

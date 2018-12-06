@@ -8,7 +8,6 @@ import (
 	"github.com/tendermint/tendermint/libs/common"
 	"github.com/tendermint/tendermint/rpc/core/types"
 	"math/big"
-	"net/http"
 )
 
 type TransactionResponse struct {
@@ -22,7 +21,7 @@ type TransactionResponse struct {
 	GasCoin  types.CoinSymbol  `json:"gas_coin"`
 	GasUsed  int64             `json:"gas_used"`
 	Type     byte              `json:"type"`
-	Data     transaction.Data  `json:"data"`
+	Data     json.RawMessage   `json:"data"`
 	Payload  []byte            `json:"payload"`
 	Tags     map[string]string `json:"tags"`
 	Code     uint32            `json:"code,omitempty"`
@@ -34,26 +33,13 @@ type ResultTxSearch struct {
 	TotalCount int                    `json:"total_count"`
 }
 
-func Transactions(w http.ResponseWriter, r *http.Request) {
-	query := r.URL.Query().Get("query")
-
+func Transactions(query string) (*[]TransactionResponse, error) {
 	rpcResult, err := client.TxSearch(query, false, 1, 100)
-
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		_ = json.NewEncoder(w).Encode(Response{
-			Code:   0,
-			Result: err.Error(),
-		})
-		return
+		return nil, err
 	}
 
-	w.WriteHeader(http.StatusOK)
-
 	result := make([]TransactionResponse, len(rpcResult.Txs))
-
 	for i, tx := range rpcResult.Txs {
 		decodedTx, _ := transaction.DecodeFromBytes(tx.Tx)
 		sender, _ := decodedTx.Sender()
@@ -69,6 +55,11 @@ func Transactions(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
+		data, err := encodeTxData(decodedTx)
+		if err != nil {
+			return nil, err
+		}
+
 		result[i] = TransactionResponse{
 			Hash:     common.HexBytes(tx.Tx.Hash()),
 			RawTx:    fmt.Sprintf("%x", []byte(tx.Tx)),
@@ -80,7 +71,7 @@ func Transactions(w http.ResponseWriter, r *http.Request) {
 			GasCoin:  decodedTx.GasCoin,
 			GasUsed:  tx.TxResult.GasUsed,
 			Type:     decodedTx.Type,
-			Data:     decodedTx.GetDecodedData(),
+			Data:     data,
 			Payload:  decodedTx.Payload,
 			Tags:     tags,
 			Code:     tx.TxResult.Code,
@@ -88,12 +79,5 @@ func Transactions(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	err = json.NewEncoder(w).Encode(Response{
-		Code:   0,
-		Result: result,
-	})
-
-	if err != nil {
-		panic(err)
-	}
+	return &result, nil
 }

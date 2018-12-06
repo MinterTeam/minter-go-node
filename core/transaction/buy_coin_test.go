@@ -2,7 +2,7 @@ package transaction
 
 import (
 	"bytes"
-	"encoding/json"
+	"github.com/MinterTeam/go-amino"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
@@ -12,6 +12,10 @@ import (
 	"github.com/tendermint/tendermint/libs/db"
 	"math/big"
 	"testing"
+)
+
+var (
+	cdc = amino.NewCodec()
 )
 
 func getState() *state.StateDB {
@@ -50,10 +54,12 @@ func TestBuyCoinTx(t *testing.T) {
 	cState.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
 	toBuy := helpers.BipToPip(big.NewInt(10))
+	maxValToSell, _ := big.NewInt(0).SetString("159374246010000000000", 10)
 	data := BuyCoinData{
-		CoinToBuy:  getTestCoinSymbol(),
-		ValueToBuy: toBuy,
-		CoinToSell: coin,
+		CoinToBuy:          getTestCoinSymbol(),
+		ValueToBuy:         toBuy,
+		CoinToSell:         coin,
+		MaximumValueToSell: maxValToSell,
 	}
 
 	encodedData, err := rlp.EncodeToBytes(data)
@@ -111,10 +117,12 @@ func TestBuyCoinTxInsufficientFunds(t *testing.T) {
 	cState.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1)))
 
 	toBuy := helpers.BipToPip(big.NewInt(10))
+	maxValToSell, _ := big.NewInt(0).SetString("159374246010000000000", 10)
 	data := BuyCoinData{
-		CoinToBuy:  getTestCoinSymbol(),
-		ValueToBuy: toBuy,
-		CoinToSell: coin,
+		CoinToBuy:          getTestCoinSymbol(),
+		ValueToBuy:         toBuy,
+		CoinToSell:         coin,
+		MaximumValueToSell: maxValToSell,
 	}
 
 	encodedData, err := rlp.EncodeToBytes(data)
@@ -334,9 +342,10 @@ func TestBuyCoinTxNotGasCoin(t *testing.T) {
 	cState.AddBalance(addr, getTestCoinSymbol(), helpers.BipToPip(big.NewInt(1000)))
 
 	data := BuyCoinData{
-		CoinToBuy:  types.GetBaseCoin(),
-		ValueToBuy: big.NewInt(1),
-		CoinToSell: getTestCoinSymbol(),
+		CoinToBuy:          types.GetBaseCoin(),
+		ValueToBuy:         big.NewInt(1),
+		CoinToSell:         getTestCoinSymbol(),
+		MaximumValueToSell: big.NewInt(10004502852067863),
 	}
 
 	encodedData, err := rlp.EncodeToBytes(data)
@@ -372,15 +381,16 @@ func TestBuyCoinTxNotGasCoin(t *testing.T) {
 }
 
 func TestBuyCoinTxJSON(t *testing.T) {
-	out := []byte("{\"coin_to_buy\":\"MNT\",\"value_to_buy\":\"1\",\"coin_to_sell\":\"TEST\"}")
+	out := []byte("{\"coin_to_buy\":\"MNT\",\"value_to_buy\":\"1\",\"coin_to_sell\":\"TEST\",\"maximum_value_to_sell\":\"1\"}")
 
 	buyCoinData := BuyCoinData{
-		CoinToBuy:  types.GetBaseCoin(),
-		ValueToBuy: big.NewInt(1),
-		CoinToSell: getTestCoinSymbol(),
+		CoinToBuy:          types.GetBaseCoin(),
+		ValueToBuy:         big.NewInt(1),
+		CoinToSell:         getTestCoinSymbol(),
+		MaximumValueToSell: big.NewInt(1),
 	}
 
-	result, err := json.Marshal(buyCoinData)
+	result, err := cdc.MarshalJSON(buyCoinData)
 
 	if err != nil {
 		t.Fatalf("Error: %s", err.Error())

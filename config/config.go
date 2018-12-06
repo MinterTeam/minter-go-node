@@ -26,6 +26,13 @@ var (
 	defaultNodeKeyPath     = filepath.Join(defaultConfigDir, defaultNodeKeyName)
 )
 
+const (
+	// LogFormatPlain is a format for colored text
+	LogFormatPlain = "plain"
+	// LogFormatJSON is a format for json output
+	LogFormatJSON = "json"
+)
+
 func init() {
 	homeDir := utils.GetMinterHome()
 	viper.SetConfigName("config")
@@ -44,7 +51,7 @@ func init() {
 func DefaultConfig() *Config {
 	cfg := defaultConfig()
 
-	cfg.P2P.PersistentPeers = "647e32df3b9c54809b5aca2877d9ba60900bc2d9@minter-node-1.testnet.minter.network:26656"
+	cfg.P2P.Seeds = "d20522aa7ba4af8139749c5e724063c4ba18c58b@minter-node-2.testnet.minter.network:26656"
 
 	cfg.TxIndex = &tmConfig.TxIndexConfig{
 		Indexer:      "kv",
@@ -150,6 +157,7 @@ func GetTmConfig() *tmConfig.Config {
 			ProxyApp:                cfg.ProxyApp,
 			ABCI:                    cfg.ABCI,
 			LogLevel:                cfg.LogLevel,
+			LogFormat:               cfg.LogFormat,
 			ProfListenAddress:       cfg.ProfListenAddress,
 			FastSync:                cfg.FastSync,
 			FilterPeers:             cfg.FilterPeers,
@@ -203,6 +211,9 @@ type BaseConfig struct {
 	// Output level for logging
 	LogLevel string `mapstructure:"log_level"`
 
+	// Output format: 'plain' (colored text) or 'json'
+	LogFormat string `mapstructure:"log_format"`
+
 	// TCP or UNIX socket address for the profiling server to listen on
 	ProfListenAddress string `mapstructure:"prof_laddr"`
 
@@ -247,8 +258,6 @@ func DefaultBaseConfig() BaseConfig {
 		PrivValidator:           defaultPrivValPath,
 		NodeKey:                 defaultNodeKeyPath,
 		Moniker:                 defaultMoniker,
-		ProxyApp:                "tcp://127.0.0.1:26658",
-		ABCI:                    "socket",
 		LogLevel:                DefaultPackageLogLevels(),
 		ProfListenAddress:       "",
 		FastSync:                true,
@@ -256,13 +265,12 @@ func DefaultBaseConfig() BaseConfig {
 		DBBackend:               "leveldb",
 		DBPath:                  "data",
 		GUIListenAddress:        ":3000",
-		APIListenAddress:        ":8841",
+		APIListenAddress:        "tcp://0.0.0.0:8841",
 		ValidatorMode:           false,
 		KeepStateHistory:        false,
 		APISimultaneousRequests: 100,
-		APIPerIPLimit:           1000,
-		APIPerIPLimitWindow:     60 * time.Second,
 		LogPath:                 "stdout",
+		LogFormat:               LogFormatPlain,
 	}
 }
 

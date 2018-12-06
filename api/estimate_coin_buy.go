@@ -1,125 +1,77 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
+	"github.com/pkg/errors"
 	"math/big"
-	"net/http"
 )
 
 type EstimateCoinBuyResponse struct {
-	WillPay    string `json:"will_pay"`
-	Commission string `json:"commission"`
+	WillPay    *big.Int `json:"will_pay"`
+	Commission *big.Int `json:"commission"`
 }
 
-func EstimateCoinBuy(w http.ResponseWriter, r *http.Request) {
-	cState, err := GetStateForRequest(r)
-
+func EstimateCoinBuy(coinToSellString string, coinToBuyString string, valueToBuy *big.Int, height int) (*EstimateCoinBuyResponse, error) {
+	cState, err := GetStateForHeight(height)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		w.WriteHeader(http.StatusNotFound)
-		_ = json.NewEncoder(w).Encode(Response{
-			Code: 404,
-			Log:  "State for given height not found",
-		})
-		return
+		return nil, err
 	}
 
-	query := r.URL.Query()
-	coinToSell := query.Get("coin_to_sell")
-	coinToBuy := query.Get("coin_to_buy")
-	valueToBuy, _ := big.NewInt(0).SetString(query.Get("value_to_buy"), 10)
-
-	var coinToSellSymbol types.CoinSymbol
-	copy(coinToSellSymbol[:], []byte(coinToSell))
-
-	var coinToBuySymbol types.CoinSymbol
-	copy(coinToBuySymbol[:], []byte(coinToBuy))
+	coinToSell := types.StrToCoinSymbol(coinToSellString)
+	coinToBuy := types.StrToCoinSymbol(coinToBuyString)
 
 	var result *big.Int
 
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-
 	if coinToSell == coinToBuy {
-		w.WriteHeader(http.StatusBadRequest)
-		_ = json.NewEncoder(w).Encode(Response{
-			Code: code.CrossConvert,
-			Log:  fmt.Sprintf("\"From\" coin equals to \"to\" coin"),
-		})
-		return
+		return nil, errors.New("\"From\" coin equals to \"to\" coin")
 	}
 
-	if !cState.CoinExists(coinToSellSymbol) {
-		w.WriteHeader(http.StatusBadRequest)
-		_ = json.NewEncoder(w).Encode(Response{
-			Code: code.CrossConvert,
-			Log:  fmt.Sprintf("Coin to sell not exists"),
-		})
-		return
+	if !cState.CoinExists(coinToSell) {
+		return nil, errors.New("Coin to sell not exists")
 	}
 
-	if !cState.CoinExists(coinToBuySymbol) {
-		w.WriteHeader(http.StatusBadRequest)
-		_ = json.NewEncoder(w).Encode(Response{
-			Code: code.CrossConvert,
-			Log:  fmt.Sprintf("Coin to buy not exists"),
-		})
-		return
+	if !cState.CoinExists(coinToBuy) {
+		return nil, errors.New("Coin to buy not exists")
 	}
 
 	commissionInBaseCoin := big.NewInt(commissions.ConvertTx)
 	commissionInBaseCoin.Mul(commissionInBaseCoin, transaction.CommissionMultiplier)
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
-	if coinToSellSymbol != types.GetBaseCoin() {
-		coin := cState.GetStateCoin(coinToSellSymbol)
+	if coinToSell != types.GetBaseCoin() {
+		coin := cState.GetStateCoin(coinToSell)
 
 		if coin.ReserveBalance().Cmp(commissionInBaseCoin) < 0 {
-			w.WriteHeader(http.StatusBadRequest)
-			_ = json.NewEncoder(w).Encode(Response{
-				Code: 1,
-				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.ReserveBalance().String(), commissionInBaseCoin.String()),
-			})
-			return
+			return nil, errors.New(fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.ReserveBalance().String(), commissionInBaseCoin.String()))
 		}
 
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
 	}
 
-	if coinToSellSymbol == types.GetBaseCoin() {
-		coin := cState.GetStateCoin(coinToBuySymbol).Data()
+	if coinToSell == types.GetBaseCoin() {
+		coin := cState.GetStateCoin(coinToBuy).Data()
 		result = formula.CalculatePurchaseAmount(coin.Volume, coin.ReserveBalance, coin.Crr, valueToBuy)
-	} else if coinToBuySymbol == types.GetBaseCoin() {
-		coin := cState.GetStateCoin(coinToSellSymbol).Data()
+	} else if coinToBuy == types.GetBaseCoin() {
+		coin := cState.GetStateCoin(coinToSell).Data()
 		result = formula.CalculateSaleAmount(coin.Volume, coin.ReserveBalance, coin.Crr, valueToBuy)
 	} else {
-		coinFrom := cState.GetStateCoin(coinToSellSymbol).Data()
-		coinTo := cState.GetStateCoin(coinToBuySymbol).Data()
+		coinFrom := cState.GetStateCoin(coinToSell).Data()
+		coinTo := cState.GetStateCoin(coinToBuy).Data()
 		baseCoinNeeded := formula.CalculatePurchaseAmount(coinTo.Volume, coinTo.ReserveBalance, coinTo.Crr, valueToBuy)
 
 		if coinFrom.ReserveBalance.Cmp(baseCoinNeeded) < 0 {
-			w.WriteHeader(http.StatusBadRequest)
-			_ = json.NewEncoder(w).Encode(Response{
-				Code: 1,
-				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coinFrom.ReserveBalance.String(), baseCoinNeeded.String()),
-			})
-			return
+			return nil, errors.New(fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coinFrom.ReserveBalance.String(), baseCoinNeeded.String()))
 		}
 
 		result = formula.CalculateSaleAmount(coinFrom.Volume, coinFrom.ReserveBalance, coinFrom.Crr, baseCoinNeeded)
 	}
 
-	w.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(w).Encode(Response{
-		Code: 0,
-		Result: EstimateCoinBuyResponse{
-			WillPay:    result.String(),
-			Commission: commission.String(),
-		},
-	})
+	return &EstimateCoinBuyResponse{
+		WillPay:    result,
+		Commission: commission,
+	}, nil
 }

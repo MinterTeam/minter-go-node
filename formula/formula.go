@@ -38,11 +38,6 @@ func CalculatePurchaseReturn(supply *big.Int, reserve *big.Int, crr uint, deposi
 
 	result, _ := res.Int(nil)
 
-	// TODO: delete
-	if result == nil {
-		return big.NewInt(0)
-	}
-
 	return result
 }
 
@@ -120,10 +115,6 @@ func CalculateSaleAmount(supply *big.Int, reserve *big.Int, crr uint, wantReceiv
 		ret.Div(ret, reserve)
 
 		return ret
-	}
-
-	if reserve.Cmp(wantReceive) == -1 {
-		return nil
 	}
 
 	tSupply := newFloat(0).SetInt(supply)

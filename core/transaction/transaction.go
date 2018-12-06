@@ -35,6 +35,7 @@ const (
 
 var (
 	ErrInvalidSig = errors.New("invalid transaction v, r, s values")
+	MaxCoinSupply = big.NewInt(0).Exp(big.NewInt(1000), big.NewInt(5+18), nil) // 1,000,000,000,000,000 bips
 )
 
 type Transaction struct {
@@ -66,11 +67,42 @@ type SignatureMulti struct {
 
 type RawData []byte
 
+type TotalSpends []TotalSpend
+
+func (tss *TotalSpends) Add(coin types.CoinSymbol, value *big.Int) {
+	for i, t := range *tss {
+		if t.Coin == coin {
+			(*tss)[i].Value.Add((*tss)[i].Value, value)
+			return
+		}
+	}
+
+	*tss = append(*tss, TotalSpend{
+		Coin:  coin,
+		Value: value,
+	})
+}
+
+type TotalSpend struct {
+	Coin  types.CoinSymbol
+	Value *big.Int
+}
+
+type Conversion struct {
+	FromCoin    types.CoinSymbol
+	FromAmount  *big.Int
+	FromReserve *big.Int
+	ToCoin      types.CoinSymbol
+	ToAmount    *big.Int
+	ToReserve   *big.Int
+}
+
 type Data interface {
-	MarshalJSON() ([]byte, error)
 	String() string
 	Gas() int64
-	Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response
+	TotalSpend(tx *Transaction, context *state.StateDB) (TotalSpends, []Conversion, *big.Int, *Response)
+	BasicCheck(tx *Transaction, context *state.StateDB) *Response
+	Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response
 }
 
 func (tx *Transaction) Serialize() ([]byte, error) {
@@ -83,6 +115,13 @@ func (tx *Transaction) Gas() int64 {
 
 func (tx *Transaction) payloadGas() int64 {
 	return int64(len(tx.Payload)+len(tx.ServiceData)) * commissions.PayloadByte
+}
+
+func (tx *Transaction) CommissionInBaseCoin() *big.Int {
+	commissionInBaseCoin := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
+	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
+
+	return commissionInBaseCoin
 }
 
 func (tx *Transaction) String() string {
@@ -393,4 +432,15 @@ func DecodeFromBytes(buf []byte) (*Transaction, error) {
 	}
 
 	return &tx, nil
+}
+
+func CheckForCoinSupplyOverflow(current *big.Int, delta *big.Int) error {
+	total := big.NewInt(0).Set(current)
+	total.Add(total, delta)
+
+	if total.Cmp(MaxCoinSupply) != -1 {
+		return errors.New("Coin supply overflow")
+	}
+
+	return nil
 }
