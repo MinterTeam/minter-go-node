@@ -5,6 +5,13 @@
 
 BUG FIXES
 
+- [core] Fix tx processing bug
+
+## 0.8.3
+*Dec 10th, 2018*
+
+BUG FIXES
+
 - [events] Fix pub key formatting in API
 
 ## 0.8.2
