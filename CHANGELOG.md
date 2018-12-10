@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.8.1
+*Dec 10th, 2018*
+
+IMPROVEMENT
+
+- [core] Speed-up tx processing
+
+BUG FIXES
+
+- [config] Change default seed node
+
 ## 0.8.0
 *Dec 3rd, 2018*
 
