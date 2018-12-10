@@ -62,15 +62,15 @@ type RewardEvent struct {
 
 func (e RewardEvent) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Role            string `json:"role"`
-		Address         string `json:"address"`
-		Amount          string `json:"amount"`
-		ValidatorPubKey string `json:"validator_pub_key"`
+		Role            string       `json:"role"`
+		Address         string       `json:"address"`
+		Amount          string       `json:"amount"`
+		ValidatorPubKey types.Pubkey `json:"validator_pub_key"`
 	}{
 		Role:            string(e.Role),
 		Address:         e.Address.String(),
 		Amount:          big.NewInt(0).SetBytes(e.Amount).String(),
-		ValidatorPubKey: fmt.Sprintf("Mp%x", e.ValidatorPubKey),
+		ValidatorPubKey: e.ValidatorPubKey,
 	})
 }
 
@@ -83,15 +83,15 @@ type SlashEvent struct {
 
 func (e SlashEvent) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Address         string `json:"address"`
-		Amount          string `json:"amount"`
-		Coin            string `json:"coin"`
-		ValidatorPubKey string `json:"validator_pub_key"`
+		Address         string       `json:"address"`
+		Amount          string       `json:"amount"`
+		Coin            string       `json:"coin"`
+		ValidatorPubKey types.Pubkey `json:"validator_pub_key"`
 	}{
 		Address:         e.Address.String(),
 		Amount:          big.NewInt(0).SetBytes(e.Amount).String(),
 		Coin:            e.Coin.String(),
-		ValidatorPubKey: fmt.Sprintf("Mp%x", e.ValidatorPubKey),
+		ValidatorPubKey: e.ValidatorPubKey,
 	})
 }
 
@@ -104,14 +104,14 @@ type UnbondEvent struct {
 
 func (e UnbondEvent) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Address         string `json:"address"`
-		Amount          string `json:"amount"`
-		Coin            string `json:"coin"`
-		ValidatorPubKey string `json:"validator_pub_key"`
+		Address         string       `json:"address"`
+		Amount          string       `json:"amount"`
+		Coin            string       `json:"coin"`
+		ValidatorPubKey types.Pubkey `json:"validator_pub_key"`
 	}{
 		Address:         e.Address.String(),
 		Amount:          big.NewInt(0).SetBytes(e.Amount).String(),
 		Coin:            e.Coin.String(),
-		ValidatorPubKey: fmt.Sprintf("Mp%x", e.ValidatorPubKey),
+		ValidatorPubKey: e.ValidatorPubKey,
 	})
 }
