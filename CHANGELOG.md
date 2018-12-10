@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.2
+*Dec 10th, 2018*
+
+BUG FIXES
+
+- [log] Add json log format
+
 ## 0.8.1
 *Dec 10th, 2018*
 
