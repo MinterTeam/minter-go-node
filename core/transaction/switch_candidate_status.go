@@ -29,7 +29,7 @@ func (data SetCandidateOnData) BasicCheck(tx *Transaction, context *state.StateD
 	if !context.CandidateExists(data.PubKey) {
 		return &Response{
 			Code: code.CandidateNotFound,
-			Log:  fmt.Sprintf("Candidate with such public key (%x) not found", data.PubKey)}
+			Log:  fmt.Sprintf("Candidate with such public key (%s) not found", data.PubKey.String())}
 	}
 
 	candidate := context.GetStateCandidate(data.PubKey)
@@ -114,7 +114,7 @@ func (data SetCandidateOffData) BasicCheck(tx *Transaction, context *state.State
 	if !context.CandidateExists(data.PubKey) {
 		return &Response{
 			Code: code.CandidateNotFound,
-			Log:  fmt.Sprintf("Candidate with such public key (%x) not found", data.PubKey)}
+			Log:  fmt.Sprintf("Candidate with such public key (%s) not found", data.PubKey.String())}
 	}
 
 	candidate := context.GetStateCandidate(data.PubKey)

@@ -8,7 +8,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/core/validators"
 	"github.com/MinterTeam/minter-go-node/formula"
-	"github.com/MinterTeam/minter-go-node/hexutil"
 	"math/big"
 )
 
@@ -43,7 +42,7 @@ func (data DeclareCandidacyData) BasicCheck(tx *Transaction, context *state.Stat
 	if context.CandidateExists(data.PubKey) {
 		return &Response{
 			Code: code.CandidateExists,
-			Log:  fmt.Sprintf("Candidate with such public key (%x) already exists", data.PubKey)}
+			Log:  fmt.Sprintf("Candidate with such public key (%s) already exists", data.PubKey.String())}
 	}
 
 	if data.Commission < minCommission || data.Commission > maxCommission {
@@ -56,8 +55,8 @@ func (data DeclareCandidacyData) BasicCheck(tx *Transaction, context *state.Stat
 }
 
 func (data DeclareCandidacyData) String() string {
-	return fmt.Sprintf("DECLARE CANDIDACY address:%s pubkey:%s commission: %d ",
-		data.Address.String(), hexutil.Encode(data.PubKey), data.Commission)
+	return fmt.Sprintf("DECLARE CANDIDACY address:%s pubkey:%s commission: %d",
+		data.Address.String(), data.PubKey.String(), data.Commission)
 }
 
 func (data DeclareCandidacyData) Gas() int64 {
