@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math/big"
 	"net/http"
 	"reflect"
 	"runtime/debug"
@@ -313,6 +314,10 @@ func httpParamsToArgs(rpcFunc *RPCFunc, cdc *amino.Codec, r *http.Request) ([]re
 }
 
 func jsonStringToArg(cdc *amino.Codec, rt reflect.Type, arg string) (reflect.Value, error) {
+	if rt == reflect.TypeOf(&big.Int{}) {
+		arg = fmt.Sprintf(`"%s"`, arg)
+	}
+
 	rv := reflect.New(rt)
 	err := cdc.UnmarshalJSON([]byte(arg), rv.Interface())
 	if err != nil {

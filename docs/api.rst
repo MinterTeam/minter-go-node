@@ -163,7 +163,7 @@ Returns the balance of given account and the number of outgoing transaction.
 Send transaction
 ^^^^^^^^^^^^^^^^
 
-Sends transaction to the Minter Network.
+Sends transaction to the Minter Network. **Note:** tx should start with 0x prefix.
 
 .. code-block:: bash
 
@@ -367,7 +367,7 @@ Returns information about coin.
 
 .. code-block:: bash
 
-    curl -s 'localhost:8841/coin_info?symbol="{SYMBOL}"'
+    curl -s 'localhost:8841/coin_info?symbol={SYMBOL}'
 
 .. code-block:: json
 
@@ -398,7 +398,7 @@ Return estimate of sell coin transaction
 
 .. code-block:: bash
 
-    curl -s 'localhost:8841/estimate_coin_sell?coin_to_sell="MNT"&coin_to_buy="TESTCOIN"&value_to_sell="1"'
+    curl -s 'localhost:8841/estimate_coin_sell?coin_to_sell=MNT&coin_to_buy=TESTCOIN&value_to_sell=1'
 
 Request params:
     - **coin_to_sell** – coin to give
@@ -425,7 +425,7 @@ Return estimate of buy coin transaction
 
 .. code-block:: bash
 
-    curl -s 'localhost:8841/estimate_coin_buy?coin_to_sell="MNT"&coin_to_buy="TESTCOIN"&value_to_buy="1"'
+    curl -s 'localhost:8841/estimate_coin_buy?coin_to_sell=MNT&coin_to_buy=TESTCOIN&value_to_buy=1'
 
 Request params:
     - **coin_to_sell** – coin to give
