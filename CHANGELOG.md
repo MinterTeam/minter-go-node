@@ -6,6 +6,7 @@
 BUG FIXES
 
 - [api] Fix estimate coin buy empty response
+- [api] Set quotes as not necessary attribute
 
 ## 0.8.4
 *Dec 10th, 2018*
