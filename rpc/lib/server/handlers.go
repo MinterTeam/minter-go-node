@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math/big"
 	"net/http"
 	"reflect"
 	"runtime/debug"
@@ -313,6 +314,10 @@ func httpParamsToArgs(rpcFunc *RPCFunc, cdc *amino.Codec, r *http.Request) ([]re
 }
 
 func jsonStringToArg(cdc *amino.Codec, rt reflect.Type, arg string) (reflect.Value, error) {
+	if rt == reflect.TypeOf(&big.Int{}) {
+		arg = fmt.Sprintf(`"%s"`, arg)
+	}
+
 	rv := reflect.New(rt)
 	err := cdc.UnmarshalJSON([]byte(arg), rv.Interface())
 	if err != nil {
@@ -343,7 +348,8 @@ func nonJSONStringToArg(cdc *amino.Codec, rt reflect.Type, arg string) (reflect.
 func _nonJSONStringToArg(cdc *amino.Codec, rt reflect.Type, arg string) (reflect.Value, error, bool) {
 	isIntString := RE_INT.Match([]byte(arg))
 	isQuotedString := strings.HasPrefix(arg, `"`) && strings.HasSuffix(arg, `"`)
-	isHexString := strings.HasPrefix(strings.ToLower(arg), "0x")
+	isHexString := strings.HasPrefix(strings.ToLower(arg), "0x") || strings.HasPrefix(arg, "Mt") ||
+		strings.HasPrefix(arg, "Mp")
 
 	var expectingString, expectingByteSlice, expectingInt bool
 	switch rt.Kind() {
@@ -382,6 +388,10 @@ func _nonJSONStringToArg(cdc *amino.Codec, rt reflect.Type, arg string) (reflect
 			return reflect.ValueOf(string(value)), nil, true
 		}
 		return reflect.ValueOf([]byte(value)), nil, true
+	}
+
+	if expectingString && !isQuotedString {
+		return reflect.ValueOf(arg), nil, true
 	}
 
 	if isQuotedString && expectingByteSlice {

@@ -57,6 +57,11 @@ func EstimateCoinBuy(coinToSellString string, coinToBuyString string, valueToBuy
 		result = formula.CalculatePurchaseAmount(coin.Volume, coin.ReserveBalance, coin.Crr, valueToBuy)
 	} else if coinToBuy == types.GetBaseCoin() {
 		coin := cState.GetStateCoin(coinToSell).Data()
+
+		if coin.ReserveBalance.Cmp(valueToBuy) < 0 {
+			return nil, errors.New(fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.ReserveBalance.String(), valueToBuy.String()))
+		}
+
 		result = formula.CalculateSaleAmount(coin.Volume, coin.ReserveBalance, coin.Crr, valueToBuy)
 	} else {
 		coinFrom := cState.GetStateCoin(coinToSell).Data()
