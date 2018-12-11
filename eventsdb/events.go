@@ -2,52 +2,32 @@ package eventsdb
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"math/big"
 )
 
-type Role string
+type Role byte
 
-func (r Role) Marshal() ([]byte, error) {
+func (r Role) String() string {
 	switch r {
 	case RoleValidator:
-		return []byte{1}, nil
+		return "Validator"
 	case RoleDelegator:
-		return []byte{2}, nil
+		return "Delegator"
 	case RoleDAO:
-		return []byte{3}, nil
+		return "DAO"
 	case RoleDevelopers:
-		return []byte{4}, nil
+		return "Developers"
 	}
 
-	return nil, fmt.Errorf("undefined role")
+	return "Undefined"
 }
 
-func (r *Role) Unmarshal(b []byte) error {
-	switch b[0] {
-	case 1:
-		*r = RoleValidator
-		return nil
-	case 2:
-		*r = RoleDelegator
-		return nil
-	case 3:
-		*r = RoleDAO
-		return nil
-	case 4:
-		*r = RoleDevelopers
-		return nil
-	}
-
-	return fmt.Errorf("undefined role")
-}
-
-var (
-	RoleValidator  Role = "Validator"
-	RoleDelegator  Role = "Delegator"
-	RoleDAO        Role = "DAO"
-	RoleDevelopers Role = "Developers"
+const (
+	RoleValidator Role = iota
+	RoleDelegator
+	RoleDAO
+	RoleDevelopers
 )
 
 type Event interface{}
@@ -67,7 +47,7 @@ func (e RewardEvent) MarshalJSON() ([]byte, error) {
 		Amount          string       `json:"amount"`
 		ValidatorPubKey types.Pubkey `json:"validator_pub_key"`
 	}{
-		Role:            string(e.Role),
+		Role:            e.Role.String(),
 		Address:         e.Address.String(),
 		Amount:          big.NewInt(0).SetBytes(e.Amount).String(),
 		ValidatorPubKey: e.ValidatorPubKey,
