@@ -4,9 +4,6 @@ Minter Node API
 Minter Node API is based on JSON format. JSON is a lightweight data-interchange format.
 It can represent numbers, strings, ordered sequences of values, and collections of name/value pairs.
 
-If request is successful, Minter Node API will respond with ``result`` key and code equal to zero. Otherwise, it will
-respond with non-zero code and key ``log`` with error description.
-
 Status
 ^^^^^^
 
