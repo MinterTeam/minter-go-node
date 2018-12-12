@@ -20,6 +20,12 @@ func (data SetCandidateOnData) TotalSpend(tx *Transaction, context *state.StateD
 }
 
 func (data SetCandidateOnData) BasicCheck(tx *Transaction, context *state.StateDB) *Response {
+	if data.PubKey == nil {
+		return &Response{
+			Code: code.DecodeError,
+			Log:  "Incorrect tx data"}
+	}
+
 	if !context.CoinExists(tx.GasCoin) {
 		return &Response{
 			Code: code.CoinNotExists,
@@ -105,6 +111,12 @@ func (data SetCandidateOffData) TotalSpend(tx *Transaction, context *state.State
 }
 
 func (data SetCandidateOffData) BasicCheck(tx *Transaction, context *state.StateDB) *Response {
+	if data.PubKey == nil {
+		return &Response{
+			Code: code.DecodeError,
+			Log:  "Incorrect tx data"}
+	}
+
 	if !context.CoinExists(tx.GasCoin) {
 		return &Response{
 			Code: code.CoinNotExists,

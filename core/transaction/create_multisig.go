@@ -108,7 +108,7 @@ func (data CreateMultisigData) Run(tx *Transaction, context *state.StateDB, isCh
 	}
 
 	tags := common.KVPairs{
-		common.KVPair{Key: []byte("tx.type"), Value: []byte{TypeCreateMultisig}},
+		common.KVPair{Key: []byte("tx.type"), Value: []byte{byte(TypeCreateMultisig)}},
 		common.KVPair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
 		common.KVPair{Key: []byte("tx.created_multisig"), Value: []byte(hex.EncodeToString(msigAddress[:]))},
 	}

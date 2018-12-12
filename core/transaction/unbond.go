@@ -24,6 +24,12 @@ func (data UnbondData) TotalSpend(tx *Transaction, context *state.StateDB) (Tota
 }
 
 func (data UnbondData) BasicCheck(tx *Transaction, context *state.StateDB) *Response {
+	if data.PubKey == nil || data.Value == nil {
+		return &Response{
+			Code: code.DecodeError,
+			Log:  "Incorrect tx data"}
+	}
+
 	if !context.CoinExists(tx.GasCoin) {
 		return &Response{
 			Code: code.CoinNotExists,

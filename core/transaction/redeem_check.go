@@ -31,7 +31,13 @@ func (data RedeemCheckData) CommissionInBaseCoin(tx *Transaction) *big.Int {
 }
 
 func (data RedeemCheckData) BasicCheck(tx *Transaction, context *state.StateDB) *Response {
-	panic("implement me")
+	if data.RawCheck == nil {
+		return &Response{
+			Code: code.DecodeError,
+			Log:  "Incorrect tx data"}
+	}
+
+	return nil
 }
 
 func (data RedeemCheckData) String() string {
@@ -44,6 +50,12 @@ func (data RedeemCheckData) Gas() int64 {
 
 func (data RedeemCheckData) Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response {
 	sender, _ := tx.Sender()
+
+	response := data.BasicCheck(tx, context)
+	if response != nil {
+		return *response
+	}
+
 	decodedCheck, err := check.DecodeFromBytes(data.RawCheck)
 
 	if err != nil {
@@ -152,7 +164,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context *state.StateDB, isCheck
 	}
 
 	tags := common.KVPairs{
-		common.KVPair{Key: []byte("tx.type"), Value: []byte{TypeRedeemCheck}},
+		common.KVPair{Key: []byte("tx.type"), Value: []byte{byte(TypeRedeemCheck)}},
 		common.KVPair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(checkSender[:]))},
 		common.KVPair{Key: []byte("tx.to"), Value: []byte(hex.EncodeToString(sender[:]))},
 		common.KVPair{Key: []byte("tx.coin"), Value: []byte(decodedCheck.Coin.String())},

@@ -145,6 +145,18 @@ func DecodeBytes(b []byte, val interface{}) error {
 	return nil
 }
 
+func DecodeBytesForType(b []byte, rt reflect.Type, val interface{}) error {
+	// TODO: this could use a Stream from a pool.
+	r := bytes.NewReader(b)
+	if err := NewStream(r, uint64(len(b))).DecodeForType(rt, val); err != nil {
+		return err
+	}
+	if r.Len() > 0 {
+		return ErrMoreThanOneValue
+	}
+	return nil
+}
+
 type decodeError struct {
 	msg string
 	typ reflect.Type
@@ -812,6 +824,36 @@ func (s *Stream) Decode(val interface{}) error {
 		// add decode target type to error so context has more meaning
 		decErr.ctx = append(decErr.ctx, fmt.Sprint("(", rtyp.Elem(), ")"))
 	}
+	return err
+}
+
+func (s *Stream) DecodeForType(rt reflect.Type, val interface{}) error {
+	if val == nil {
+		return errDecodeIntoNil
+	}
+	rval := reflect.ValueOf(val)
+
+	if rval.Type().Kind() != reflect.Ptr {
+		return errNoPointer
+	}
+	if rval.IsNil() {
+		return errDecodeIntoNil
+	}
+	info, err := cachedTypeInfo(rt, tags{})
+	if err != nil {
+		return err
+	}
+
+	cPtrRv := reflect.New(rt)
+	crv := cPtrRv.Elem()
+
+	err = info.decoder(s, crv)
+	if decErr, ok := err.(*decodeError); ok && len(decErr.ctx) > 0 {
+		// add decode target type to error so context has more meaning
+		decErr.ctx = append(decErr.ctx, fmt.Sprint("(", rt, ")"))
+	}
+
+	rval.Elem().Set(cPtrRv)
 	return err
 }
 

@@ -11,21 +11,21 @@ import (
 )
 
 type TransactionResponse struct {
-	Hash     common.HexBytes   `json:"hash"`
-	RawTx    string            `json:"raw_tx"`
-	Height   int64             `json:"height"`
-	Index    uint32            `json:"index"`
-	From     string            `json:"from"`
-	Nonce    uint64            `json:"nonce"`
-	GasPrice *big.Int          `json:"gas_price"`
-	GasCoin  types.CoinSymbol  `json:"gas_coin"`
-	GasUsed  int64             `json:"gas_used"`
-	Type     byte              `json:"type"`
-	Data     json.RawMessage   `json:"data"`
-	Payload  []byte            `json:"payload"`
-	Tags     map[string]string `json:"tags"`
-	Code     uint32            `json:"code,omitempty"`
-	Log      string            `json:"log,omitempty"`
+	Hash     common.HexBytes    `json:"hash"`
+	RawTx    string             `json:"raw_tx"`
+	Height   int64              `json:"height"`
+	Index    uint32             `json:"index"`
+	From     string             `json:"from"`
+	Nonce    uint64             `json:"nonce"`
+	GasPrice *big.Int           `json:"gas_price"`
+	GasCoin  types.CoinSymbol   `json:"gas_coin"`
+	GasUsed  int64              `json:"gas_used"`
+	Type     transaction.TxType `json:"type"`
+	Data     json.RawMessage    `json:"data"`
+	Payload  []byte             `json:"payload"`
+	Tags     map[string]string  `json:"tags"`
+	Code     uint32             `json:"code,omitempty"`
+	Log      string             `json:"log,omitempty"`
 }
 
 type ResultTxSearch struct {
@@ -41,7 +41,7 @@ func Transactions(query string) (*[]TransactionResponse, error) {
 
 	result := make([]TransactionResponse, len(rpcResult.Txs))
 	for i, tx := range rpcResult.Txs {
-		decodedTx, _ := transaction.DecodeFromBytes(tx.Tx)
+		decodedTx, _ := transaction.TxDecoder.DecodeFromBytes(tx.Tx)
 		sender, _ := decodedTx.Sender()
 
 		tags := make(map[string]string)

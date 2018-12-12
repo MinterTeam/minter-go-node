@@ -27,21 +27,21 @@ type BlockResponse struct {
 }
 
 type BlockTransactionResponse struct {
-	Hash        string            `json:"hash"`
-	RawTx       string            `json:"raw_tx"`
-	From        string            `json:"from"`
-	Nonce       uint64            `json:"nonce"`
-	GasPrice    *big.Int          `json:"gas_price"`
-	Type        byte              `json:"type"`
-	Data        json.RawMessage   `json:"data"`
-	Payload     []byte            `json:"payload"`
-	ServiceData []byte            `json:"service_data"`
-	Gas         int64             `json:"gas"`
-	GasCoin     types.CoinSymbol  `json:"gas_coin"`
-	GasUsed     int64             `json:"gas_used"`
-	Tags        map[string]string `json:"tags"`
-	Code        uint32            `json:"code,omitempty"`
-	Log         string            `json:"log,omitempty"`
+	Hash        string             `json:"hash"`
+	RawTx       string             `json:"raw_tx"`
+	From        string             `json:"from"`
+	Nonce       uint64             `json:"nonce"`
+	GasPrice    *big.Int           `json:"gas_price"`
+	Type        transaction.TxType `json:"type"`
+	Data        json.RawMessage    `json:"data"`
+	Payload     []byte             `json:"payload"`
+	ServiceData []byte             `json:"service_data"`
+	Gas         int64              `json:"gas"`
+	GasCoin     types.CoinSymbol   `json:"gas_coin"`
+	GasUsed     int64              `json:"gas_used"`
+	Tags        map[string]string  `json:"tags"`
+	Code        uint32             `json:"code,omitempty"`
+	Log         string             `json:"log,omitempty"`
 }
 
 type BlockValidatorResponse struct {
@@ -58,7 +58,7 @@ func Block(height int64) (*BlockResponse, error) {
 
 	txs := make([]BlockTransactionResponse, len(block.Block.Data.Txs))
 	for i, rawTx := range block.Block.Data.Txs {
-		tx, _ := transaction.DecodeFromBytes(rawTx)
+		tx, _ := transaction.TxDecoder.DecodeFromBytes(rawTx)
 		sender, _ := tx.Sender()
 
 		tags := make(map[string]string)

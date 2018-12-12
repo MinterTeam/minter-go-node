@@ -17,7 +17,7 @@ func Transaction(hash []byte) (*TransactionResponse, error) {
 		return nil, errors.New("Tx not found")
 	}
 
-	decodedTx, _ := transaction.DecodeFromBytes(tx.Tx)
+	decodedTx, _ := transaction.TxDecoder.DecodeFromBytes(tx.Tx)
 	sender, _ := decodedTx.Sender()
 
 	tags := make(map[string]string)

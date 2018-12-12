@@ -22,6 +22,12 @@ func (data DelegateData) TotalSpend(tx *Transaction, context *state.StateDB) (To
 }
 
 func (data DelegateData) BasicCheck(tx *Transaction, context *state.StateDB) *Response {
+	if data.PubKey == nil || data.Stake == nil {
+		return &Response{
+			Code: code.DecodeError,
+			Log:  "Incorrect tx data"}
+	}
+
 	if !context.CoinExists(tx.GasCoin) {
 		return &Response{
 			Code: code.CoinNotExists,
