@@ -40,7 +40,6 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPool *big.I
 	tx, err := TxDecoder.DecodeFromBytes(rawTx)
 
 	if err != nil {
-		panic(err)
 		return Response{
 			Code: code.DecodeError,
 			Log:  err.Error()}
