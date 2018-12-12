@@ -28,6 +28,7 @@ normal mode.
         "latest_app_hash": "55E75C9860E56AF3DEB8DD55741185F658569AB43C084436DDDB69CBFB06CC63",
         "latest_block_height": "4",
         "latest_block_time": "2018-12-03T13:18:42.50969Z",
+        "state_history": "on",
         "tm_status": {
           "node_info": {
             "protocol_version": {
