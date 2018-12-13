@@ -1,19 +1,3 @@
-// Copyright 2014 The go-ethereum Authors
-// This file is part of the go-ethereum library.
-//
-// The go-ethereum library is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// The go-ethereum library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
-
 package state
 
 import (
@@ -229,16 +213,6 @@ func (s *StateDB) updateStateFrozenFund(stateFrozenFund *stateFrozenFund) {
 
 func (s *StateDB) updateStateCoin(stateCoin *stateCoin) {
 	symbol := stateCoin.Symbol()
-
-	// TODO: delete
-	if stateCoin.ReserveBalance().Cmp(types.Big0) == -1 {
-		stateCoin.SetReserve(big.NewInt(0))
-	}
-
-	// TODO: delete
-	if stateCoin.Volume().Cmp(types.Big0) == -1 {
-		stateCoin.SetVolume(big.NewInt(0))
-	}
 
 	data, err := rlp.EncodeToBytes(stateCoin)
 	if err != nil {
@@ -539,8 +513,7 @@ func (s *StateDB) CreateCoin(
 	name string,
 	volume *big.Int,
 	crr uint,
-	reserve *big.Int,
-	creator types.Address) *stateCoin {
+	reserve *big.Int) *stateCoin {
 
 	newC := newCoin(s, symbol, Coin{
 		Name:           name,
@@ -620,11 +593,11 @@ func (s *StateDB) CreateCandidate(
 }
 
 // Commit writes the state to the underlying in-memory trie database.
-func (s *StateDB) Commit(deleteEmptyObjects bool) (root []byte, version int64, err error) {
+func (s *StateDB) Commit() (root []byte, version int64, err error) {
 	// Commit objects to the trie.
 	for _, addr := range getOrderedObjectsKeys(s.stateAccountsDirty) {
 		stateObject := s.stateAccounts[addr]
-		if deleteEmptyObjects && stateObject.empty() {
+		if stateObject.empty() {
 			s.deleteStateObject(stateObject)
 		} else {
 			s.updateStateObject(stateObject)

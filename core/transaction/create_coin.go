@@ -166,7 +166,7 @@ func (data CreateCoinData) Run(tx *Transaction, context *state.StateDB, isCheck 
 
 		context.SubBalance(sender, types.GetBaseCoin(), data.InitialReserve)
 		context.SubBalance(sender, tx.GasCoin, commission)
-		context.CreateCoin(data.Symbol, data.Name, data.InitialAmount, data.ConstantReserveRatio, data.InitialReserve, sender)
+		context.CreateCoin(data.Symbol, data.Name, data.InitialAmount, data.ConstantReserveRatio, data.InitialReserve)
 		context.AddBalance(sender, data.Symbol, data.InitialAmount)
 		context.SetNonce(sender, tx.Nonce)
 	}
