@@ -1,7 +1,15 @@
 # Changelog
 
-## 0.8.5
+## 0.8.6
 *Dec 10th, 2018*
+
+IMPROVEMENT
+
+- [events] Refactor events (WARNING: full re-sync needed for utilizing events API)
+- [api] #183 Report if node has full state history in /status
+
+## 0.8.5
+*Dec 11th, 2018*
 
 BUG FIXES
 

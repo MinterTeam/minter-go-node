@@ -307,7 +307,7 @@ func (app *Blockchain) CheckTx(rawTx []byte) abciTypes.ResponseCheckTx {
 }
 
 func (app *Blockchain) Commit() abciTypes.ResponseCommit {
-	hash, _, err := app.stateDeliver.Commit(false)
+	hash, _, err := app.stateDeliver.Commit()
 
 	if err != nil {
 		panic(err)

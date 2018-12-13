@@ -211,6 +211,12 @@ func (data SellCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (To
 }
 
 func (data SellCoinData) BasicCheck(tx *Transaction, context *state.StateDB) *Response {
+	if data.ValueToSell == nil {
+		return &Response{
+			Code: code.DecodeError,
+			Log:  "Incorrect tx data"}
+	}
+
 	if data.CoinToSell == data.CoinToBuy {
 		return &Response{
 			Code: code.CrossConvert,
@@ -290,7 +296,7 @@ func (data SellCoinData) Run(tx *Transaction, context *state.StateDB, isCheck bo
 	}
 
 	tags := common.KVPairs{
-		common.KVPair{Key: []byte("tx.type"), Value: []byte{TypeSellCoin}},
+		common.KVPair{Key: []byte("tx.type"), Value: []byte{byte(TypeSellCoin)}},
 		common.KVPair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
 		common.KVPair{Key: []byte("tx.coin_to_buy"), Value: []byte(data.CoinToBuy.String())},
 		common.KVPair{Key: []byte("tx.coin_to_sell"), Value: []byte(data.CoinToSell.String())},

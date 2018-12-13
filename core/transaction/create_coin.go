@@ -35,6 +35,12 @@ func (data CreateCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (
 }
 
 func (data CreateCoinData) BasicCheck(tx *Transaction, context *state.StateDB) *Response {
+	if data.InitialReserve == nil || data.InitialAmount == nil {
+		return &Response{
+			Code: code.DecodeError,
+			Log:  "Incorrect tx data"}
+	}
+
 	if !context.CoinExists(tx.GasCoin) {
 		return &Response{
 			Code: code.CoinNotExists,
@@ -160,13 +166,13 @@ func (data CreateCoinData) Run(tx *Transaction, context *state.StateDB, isCheck 
 
 		context.SubBalance(sender, types.GetBaseCoin(), data.InitialReserve)
 		context.SubBalance(sender, tx.GasCoin, commission)
-		context.CreateCoin(data.Symbol, data.Name, data.InitialAmount, data.ConstantReserveRatio, data.InitialReserve, sender)
+		context.CreateCoin(data.Symbol, data.Name, data.InitialAmount, data.ConstantReserveRatio, data.InitialReserve)
 		context.AddBalance(sender, data.Symbol, data.InitialAmount)
 		context.SetNonce(sender, tx.Nonce)
 	}
 
 	tags := common.KVPairs{
-		common.KVPair{Key: []byte("tx.type"), Value: []byte{TypeCreateCoin}},
+		common.KVPair{Key: []byte("tx.type"), Value: []byte{byte(TypeCreateCoin)}},
 		common.KVPair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
 		common.KVPair{Key: []byte("tx.coin"), Value: []byte(data.Symbol.String())},
 	}

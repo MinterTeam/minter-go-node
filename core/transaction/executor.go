@@ -31,14 +31,13 @@ type Response struct {
 }
 
 func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPool *big.Int, currentBlock int64) Response {
-
 	if len(rawTx) > maxTxLength {
 		return Response{
 			Code: code.TxTooLarge,
 			Log:  "TX length is over 1024 bytes"}
 	}
 
-	tx, err := DecodeFromBytes(rawTx)
+	tx, err := TxDecoder.DecodeFromBytes(rawTx)
 
 	if err != nil {
 		return Response{

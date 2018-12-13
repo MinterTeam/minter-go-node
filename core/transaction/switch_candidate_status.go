@@ -20,6 +20,12 @@ func (data SetCandidateOnData) TotalSpend(tx *Transaction, context *state.StateD
 }
 
 func (data SetCandidateOnData) BasicCheck(tx *Transaction, context *state.StateDB) *Response {
+	if data.PubKey == nil {
+		return &Response{
+			Code: code.DecodeError,
+			Log:  "Incorrect tx data"}
+	}
+
 	if !context.CoinExists(tx.GasCoin) {
 		return &Response{
 			Code: code.CoinNotExists,
@@ -29,7 +35,7 @@ func (data SetCandidateOnData) BasicCheck(tx *Transaction, context *state.StateD
 	if !context.CandidateExists(data.PubKey) {
 		return &Response{
 			Code: code.CandidateNotFound,
-			Log:  fmt.Sprintf("Candidate with such public key (%x) not found", data.PubKey)}
+			Log:  fmt.Sprintf("Candidate with such public key (%s) not found", data.PubKey.String())}
 	}
 
 	candidate := context.GetStateCandidate(data.PubKey)
@@ -105,6 +111,12 @@ func (data SetCandidateOffData) TotalSpend(tx *Transaction, context *state.State
 }
 
 func (data SetCandidateOffData) BasicCheck(tx *Transaction, context *state.StateDB) *Response {
+	if data.PubKey == nil {
+		return &Response{
+			Code: code.DecodeError,
+			Log:  "Incorrect tx data"}
+	}
+
 	if !context.CoinExists(tx.GasCoin) {
 		return &Response{
 			Code: code.CoinNotExists,
@@ -114,7 +126,7 @@ func (data SetCandidateOffData) BasicCheck(tx *Transaction, context *state.State
 	if !context.CandidateExists(data.PubKey) {
 		return &Response{
 			Code: code.CandidateNotFound,
-			Log:  fmt.Sprintf("Candidate with such public key (%x) not found", data.PubKey)}
+			Log:  fmt.Sprintf("Candidate with such public key (%s) not found", data.PubKey.String())}
 	}
 
 	candidate := context.GetStateCandidate(data.PubKey)
