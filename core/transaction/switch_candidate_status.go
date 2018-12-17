@@ -2,12 +2,14 @@ package transaction
 
 import (
 	"bytes"
+	"encoding/hex"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
+	"github.com/tendermint/tendermint/libs/common"
 	"math/big"
 )
 
@@ -95,10 +97,16 @@ func (data SetCandidateOnData) Run(tx *Transaction, context *state.StateDB, isCh
 		context.SetNonce(sender, tx.Nonce)
 	}
 
+	tags := common.KVPairs{
+		common.KVPair{Key: []byte("tx.type"), Value: []byte{byte(TypeSetCandidateOnline)}},
+		common.KVPair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
+	}
+
 	return Response{
 		Code:      code.OK,
 		GasUsed:   tx.Gas(),
 		GasWanted: tx.Gas(),
+		Tags:      tags,
 	}
 }
 
@@ -152,11 +160,9 @@ func (data SetCandidateOffData) Gas() int64 {
 func (data SetCandidateOffData) Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response {
 	sender, _ := tx.Sender()
 
-	if currentBlock > 7000 { // TODO: remove
-		response := data.BasicCheck(tx, context)
-		if response != nil {
-			return *response
-		}
+	response := data.BasicCheck(tx, context)
+	if response != nil {
+		return *response
 	}
 
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
@@ -188,9 +194,15 @@ func (data SetCandidateOffData) Run(tx *Transaction, context *state.StateDB, isC
 		context.SetNonce(sender, tx.Nonce)
 	}
 
+	tags := common.KVPairs{
+		common.KVPair{Key: []byte("tx.type"), Value: []byte{byte(TypeSetCandidateOffline)}},
+		common.KVPair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
+	}
+
 	return Response{
 		Code:      code.OK,
 		GasUsed:   tx.Gas(),
 		GasWanted: tx.Gas(),
+		Tags:      tags,
 	}
 }

@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"encoding/hex"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
@@ -8,6 +9,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/core/validators"
 	"github.com/MinterTeam/minter-go-node/formula"
+	"github.com/tendermint/tendermint/libs/common"
 	"math/big"
 )
 
@@ -134,9 +136,15 @@ func (data DeclareCandidacyData) Run(tx *Transaction, context *state.StateDB, is
 		context.SetNonce(sender, tx.Nonce)
 	}
 
+	tags := common.KVPairs{
+		common.KVPair{Key: []byte("tx.type"), Value: []byte{byte(TypeDeclareCandidacy)}},
+		common.KVPair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
+	}
+
 	return Response{
 		Code:      code.OK,
 		GasUsed:   tx.Gas(),
 		GasWanted: tx.Gas(),
+		Tags:      tags,
 	}
 }
