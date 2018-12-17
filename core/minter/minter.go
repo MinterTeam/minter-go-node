@@ -32,6 +32,9 @@ type Blockchain struct {
 	rewards             *big.Int
 	validatorsStatuses  map[[20]byte]int8
 
+	// currentMempool is responsive for prevent sending multiple transactions from one address in one block
+	currentMempool map[types.Address]struct{}
+
 	lock sync.RWMutex
 	wg   sync.WaitGroup
 }
@@ -59,6 +62,7 @@ func NewMinterBlockchain() *Blockchain {
 		appDB:               applicationDB,
 		height:              applicationDB.GetLastHeight(),
 		lastCommittedHeight: applicationDB.GetLastHeight(),
+		currentMempool:      make(map[types.Address]struct{}),
 	}
 
 	blockchain.stateDeliver, err = state.New(int64(blockchain.height), blockchain.stateDB)
@@ -279,7 +283,7 @@ func (app *Blockchain) Info(req abciTypes.RequestInfo) (resInfo abciTypes.Respon
 }
 
 func (app *Blockchain) DeliverTx(rawTx []byte) abciTypes.ResponseDeliverTx {
-	response := transaction.RunTx(app.stateDeliver, false, rawTx, app.rewards, app.height)
+	response := transaction.RunTx(app.stateDeliver, false, rawTx, app.rewards, app.height, nil)
 
 	return abciTypes.ResponseDeliverTx{
 		Code:      response.Code,
@@ -293,7 +297,7 @@ func (app *Blockchain) DeliverTx(rawTx []byte) abciTypes.ResponseDeliverTx {
 }
 
 func (app *Blockchain) CheckTx(rawTx []byte) abciTypes.ResponseCheckTx {
-	response := transaction.RunTx(app.stateCheck, true, rawTx, nil, app.height)
+	response := transaction.RunTx(app.stateCheck, true, rawTx, nil, app.height, app.currentMempool)
 
 	return abciTypes.ResponseCheckTx{
 		Code:      response.Code,
@@ -319,6 +323,8 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 	app.updateCurrentState()
 
 	atomic.StoreInt64(&app.lastCommittedHeight, app.Height())
+
+	app.currentMempool = make(map[types.Address]struct{})
 
 	app.wg.Done()
 

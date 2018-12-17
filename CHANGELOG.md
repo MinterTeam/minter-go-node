@@ -7,6 +7,7 @@ IMPROVEMENT
 
 - [events] Refactor events (WARNING: full re-sync needed for utilizing events API)
 - [api] #183 Report if node has full state history in /status
+- [core] Do not accept 2 transactions from same address in mempool at once
 
 ## 0.8.5
 *Dec 11th, 2018*

@@ -30,7 +30,7 @@ type Response struct {
 	Tags      []common.KVPair `protobuf:"bytes,7,rep,name=tags" json:"tags,omitempty"`
 }
 
-func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPool *big.Int, currentBlock int64) Response {
+func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPool *big.Int, currentBlock int64, currentMempool map[types.Address]struct{}) Response {
 	if len(rawTx) > maxTxLength {
 		return Response{
 			Code: code.TxTooLarge,
@@ -68,6 +68,15 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPool *big.I
 			Code: code.DecodeError,
 			Log:  err.Error()}
 	}
+
+	// check if mempool already has transactions from this address
+	if _, ok := currentMempool[sender]; isCheck && !ok {
+		return Response{
+			Code: code.TxFromSenderAlreadyInMempool,
+			Log:  fmt.Sprintf("Tx from %s already exists in mempool", sender.String())}
+	}
+
+	currentMempool[sender] = struct{}{}
 
 	// check multi-signature
 	if tx.SignatureType == SigTypeMulti {
@@ -117,7 +126,6 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPool *big.I
 		}
 	}
 
-	// TODO: deal with multiple pending transactions from one account
 	if expectedNonce := context.GetNonce(sender) + 1; expectedNonce != tx.Nonce {
 		return Response{
 			Code: code.WrongNonce,
