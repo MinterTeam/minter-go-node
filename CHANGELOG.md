@@ -9,6 +9,7 @@ IMPROVEMENT
 - [api] #183 Report if node has full state history in /status
 - [core] Do not accept 2 transactions from same address in mempool at once
 - [core] Add missing tags to transactions
+- [tendermint] Update to v0.27.3
 
 ## 0.8.5
 *Dec 11th, 2018*
