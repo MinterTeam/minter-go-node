@@ -107,3 +107,30 @@ func TestStateDB_Commit(t *testing.T) {
 		t.Errorf("Hash should be %x, got %x", targetHash, hash)
 	}
 }
+
+func TestStateDB_GetBalances(t *testing.T) {
+	state := getState()
+
+	address := types.HexToAddress("Mx02003587993aba5276925c058ba082d209e61cbb")
+	newBalance := helpers.BipToPip(big.NewInt(10))
+	state.AddBalance(address, types.GetBaseCoin(), newBalance)
+
+	expect := Balances{
+		Data:map[types.CoinSymbol]*big.Int{types.GetBaseCoin(): newBalance},
+	}
+
+	balances := state.GetBalances(address)
+	if len(balances.Data) != len(expect.Data) || balances.Data[types.GetBaseCoin()].Cmp(expect.Data[types.GetBaseCoin()]) != 0 {
+		t.Errorf("Balances of %s are not like expected", address.String())
+	}
+}
+
+func TestStateDB_GetEmptyBalances(t *testing.T) {
+	state := getState()
+
+	address := types.HexToAddress("Mx02003587993aba5276925c058ba082d209e61cbb")
+	balances := state.GetBalances(address)
+	if len(balances.Data) != 0 {
+		t.Errorf("Balances of %s are not like expected", address.String())
+	}
+}
