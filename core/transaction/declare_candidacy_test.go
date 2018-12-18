@@ -76,8 +76,12 @@ func TestDeclareCandidacyTx(t *testing.T) {
 		t.Fatalf("Candidate not found")
 	}
 
-	if candidate.CandidateAddress != addr {
-		t.Fatalf("Candidate address is not correct")
+	if candidate.OwnerAddress != addr {
+		t.Fatalf("Owner address is not correct")
+	}
+
+	if candidate.RewardAddress != addr {
+		t.Fatalf("Reward address is not correct")
 	}
 
 	if candidate.TotalBipStake != nil && candidate.TotalBipStake.Cmp(types.Big0) != 0 {

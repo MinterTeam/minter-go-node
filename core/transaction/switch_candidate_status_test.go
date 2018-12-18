@@ -22,7 +22,7 @@ func TestSwitchCandidateStatusTx(t *testing.T) {
 	pubkey := make([]byte, 32)
 	rand.Read(pubkey)
 
-	cState.CreateCandidate(addr, pubkey, 10, 0, types.GetBaseCoin(), helpers.BipToPip(big.NewInt(1)))
+	cState.CreateCandidate(addr, addr, pubkey, 10, 0, types.GetBaseCoin(), helpers.BipToPip(big.NewInt(1)))
 
 	data := SetCandidateOnData{
 		PubKey: pubkey,

@@ -15,6 +15,7 @@ IMPROVEMENT
 BUG FIXES
 
 - [core] Fix issue with `SellAll` tx
+- [core] Fix issue #182 with candidate owner's address
 
 ## 0.8.5
 *Dec 11th, 2018*

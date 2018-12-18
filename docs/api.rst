@@ -94,7 +94,8 @@ found.
       "jsonrpc": "2.0",
       "id": "",
       "result": {
-        "candidate_address": "Mxee81347211c72524338f9680072af90744333146",
+        "reward_address": "Mxee81347211c72524338f9680072af90744333146",
+        "owner_address": "Mxee81347211c72524338f9680072af90744333146",
         "total_stake": 0,
         "pub_key": "Mpe0ba50e3468b07fbbc127840953eb8f4fe57d6e8162df93baefd79f5d5bc2b97",
         "commission": "100",
@@ -338,7 +339,8 @@ Returns full list of candidates.
       "id": "",
       "result": [
         {
-          "candidate_address": "Mxee81347211c72524338f9680072af90744333146",
+          "reward_address": "Mxee81347211c72524338f9680072af90744333146",
+          "owner_address": "Mxee81347211c72524338f9680072af90744333146",
           "total_stake": "1000000000000000000000000",
           "pubkey": "Mpddfadfb15908ed5607c79e66aaf4030ef93363bd1846d64186d52424b1896c83",
           "commission": "100",
@@ -346,7 +348,8 @@ Returns full list of candidates.
           "status": 2
         },
         {
-          "candidate_address": "Mxee81347211c72524338f9680072af90744333146",
+          "reward_address": "Mxee81347211c72524338f9680072af90744333146",
+          "owner_address": "Mxee81347211c72524338f9680072af90744333146",
           "total_stake": "9900000000000000000",
           "pubkey": "Mp21e1d043c6d9c0bb0929ab8d1dd9f3948de0f5ad7234ce773a501441d204aa9e",
           "commission": "10",

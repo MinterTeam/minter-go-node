@@ -527,7 +527,7 @@ func (s *StateDB) CreateCoin(
 }
 
 func (s *StateDB) CreateValidator(
-	address types.Address,
+	rewardAddress types.Address,
 	pubkey types.Pubkey,
 	commission uint,
 	currentBlock uint,
@@ -541,12 +541,12 @@ func (s *StateDB) CreateValidator(
 	}
 
 	vals.data = append(vals.data, Validator{
-		CandidateAddress: address,
-		TotalBipStake:    initialStake,
-		PubKey:           pubkey,
-		Commission:       commission,
-		AccumReward:      big.NewInt(0),
-		AbsentTimes:      NewBitArray(ValidatorMaxAbsentWindow),
+		RewardAddress: rewardAddress,
+		TotalBipStake: initialStake,
+		PubKey:        pubkey,
+		Commission:    commission,
+		AccumReward:   big.NewInt(0),
+		AbsentTimes:   NewBitArray(ValidatorMaxAbsentWindow),
 	})
 
 	s.MarkStateValidatorsDirty()
@@ -555,7 +555,8 @@ func (s *StateDB) CreateValidator(
 }
 
 func (s *StateDB) CreateCandidate(
-	address types.Address,
+	rewardAddress types.Address,
+	ownerAddress types.Address,
 	pubkey types.Pubkey,
 	commission uint,
 	currentBlock uint,
@@ -569,12 +570,13 @@ func (s *StateDB) CreateCandidate(
 	}
 
 	candidate := Candidate{
-		CandidateAddress: address,
-		PubKey:           pubkey,
-		Commission:       commission,
+		RewardAddress: rewardAddress,
+		OwnerAddress:  ownerAddress,
+		PubKey:        pubkey,
+		Commission:    commission,
 		Stakes: []Stake{
 			{
-				Owner: address,
+				Owner: rewardAddress,
 				Coin:  coin,
 				Value: initialStake,
 			},
@@ -877,10 +879,10 @@ func (s *StateDB) PayRewards(height int64) {
 			validatorReward.Mul(validatorReward, big.NewInt(int64(validator.Commission)))
 			validatorReward.Div(validatorReward, big.NewInt(100))
 			totalReward.Sub(totalReward, validatorReward)
-			s.AddBalance(validator.CandidateAddress, types.GetBaseCoin(), validatorReward)
+			s.AddBalance(validator.RewardAddress, types.GetBaseCoin(), validatorReward)
 			edb.AddEvent(height, eventsdb.RewardEvent{
 				Role:            eventsdb.RoleValidator,
-				Address:         validator.CandidateAddress,
+				Address:         validator.RewardAddress,
 				Amount:          validatorReward.Bytes(),
 				ValidatorPubKey: validator.PubKey,
 			})
@@ -1232,12 +1234,12 @@ func (s *StateDB) SetNewValidators(candidates []Candidate) {
 		}
 
 		newVals = append(newVals, Validator{
-			CandidateAddress: candidate.CandidateAddress,
-			TotalBipStake:    candidate.TotalBipStake,
-			PubKey:           candidate.PubKey,
-			Commission:       candidate.Commission,
-			AccumReward:      accumReward,
-			AbsentTimes:      absentTimes,
+			RewardAddress: candidate.RewardAddress,
+			TotalBipStake: candidate.TotalBipStake,
+			PubKey:        candidate.PubKey,
+			Commission:    candidate.Commission,
+			AccumReward:   accumReward,
+			AbsentTimes:   absentTimes,
 		})
 	}
 

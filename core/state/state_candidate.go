@@ -91,13 +91,14 @@ func (s *Stake) CalcBipValue(context *StateDB) *big.Int {
 }
 
 type Candidate struct {
-	CandidateAddress types.Address
-	TotalBipStake    *big.Int
-	PubKey           types.Pubkey
-	Commission       uint
-	Stakes           []Stake
-	CreatedAtBlock   uint
-	Status           byte
+	RewardAddress  types.Address
+	OwnerAddress   types.Address
+	TotalBipStake  *big.Int
+	PubKey         types.Pubkey
+	Commission     uint
+	Stakes         []Stake
+	CreatedAtBlock uint
+	Status         byte
 
 	tmAddress *[20]byte
 }
