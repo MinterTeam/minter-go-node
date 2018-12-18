@@ -11,6 +11,10 @@ IMPROVEMENT
 - [core] Add missing tags to transactions
 - [tendermint] Update to v0.27.3
 
+BUG FIXES
+
+- [core] Fix issue with `SellAll` tx
+
 ## 0.8.5
 *Dec 11th, 2018*
 

@@ -15,7 +15,7 @@ func TestTooLongTx(t *testing.T) {
 	fakeTx := make([]byte, 2177)
 	rand.Read(fakeTx)
 
-	response := RunTx(getState(), false, fakeTx, big.NewInt(0), 0)
+	response := RunTx(getState(), false, fakeTx, big.NewInt(0), 0, make(map[types.Address]struct{}))
 
 	if response.Code != code.TxTooLarge {
 		t.Fatalf("Response code is not correct")
@@ -26,7 +26,7 @@ func TestIncorrectTx(t *testing.T) {
 	fakeTx := make([]byte, 1)
 	rand.Read(fakeTx)
 
-	response := RunTx(getState(), false, fakeTx, big.NewInt(0), 0)
+	response := RunTx(getState(), false, fakeTx, big.NewInt(0), 0, make(map[types.Address]struct{}))
 
 	if response.Code != code.DecodeError {
 		t.Fatalf("Response code is not correct")
@@ -65,7 +65,7 @@ func TestTooLongPayloadTx(t *testing.T) {
 
 	fakeTx, _ := rlp.EncodeToBytes(tx)
 
-	response := RunTx(getState(), false, fakeTx, big.NewInt(0), 0)
+	response := RunTx(getState(), false, fakeTx, big.NewInt(0), 0, make(map[types.Address]struct{}))
 
 	if response.Code != code.TxPayloadTooLarge {
 		t.Fatalf("Response code is not correct. Expected %d, got %d", code.TxPayloadTooLarge, response.Code)
@@ -103,7 +103,7 @@ func TestTooLongServiceDataTx(t *testing.T) {
 
 	fakeTx, _ := rlp.EncodeToBytes(tx)
 
-	response := RunTx(getState(), false, fakeTx, big.NewInt(0), 0)
+	response := RunTx(getState(), false, fakeTx, big.NewInt(0), 0, make(map[types.Address]struct{}))
 
 	if response.Code != code.TxServiceDataTooLarge {
 		t.Fatalf("Response code is not correct. Expected %d, got %d", code.TxServiceDataTooLarge, response.Code)
@@ -137,7 +137,7 @@ func TestUnexpectedNonceTx(t *testing.T) {
 
 	fakeTx, _ := rlp.EncodeToBytes(tx)
 
-	response := RunTx(getState(), false, fakeTx, big.NewInt(0), 0)
+	response := RunTx(getState(), false, fakeTx, big.NewInt(0), 0, make(map[types.Address]struct{}))
 
 	if response.Code != code.WrongNonce {
 		t.Fatalf("Response code is not correct. Expected %d, got %d", code.WrongNonce, response.Code)
@@ -174,7 +174,7 @@ func TestInvalidSigTx(t *testing.T) {
 
 	fakeTx, _ := rlp.EncodeToBytes(tx)
 
-	response := RunTx(getState(), false, fakeTx, big.NewInt(0), 0)
+	response := RunTx(getState(), false, fakeTx, big.NewInt(0), 0, make(map[types.Address]struct{}))
 
 	if response.Code != code.DecodeError {
 		t.Fatalf("Response code is not correct. Expected %d, got %d", code.DecodeError, response.Code)
@@ -212,7 +212,7 @@ func TestNotExistMultiSigTx(t *testing.T) {
 
 	fakeTx, _ := rlp.EncodeToBytes(tx)
 
-	response := RunTx(getState(), false, fakeTx, big.NewInt(0), 0)
+	response := RunTx(getState(), false, fakeTx, big.NewInt(0), 0, make(map[types.Address]struct{}))
 
 	if response.Code != code.MultisigNotExists {
 		t.Fatalf("Response code is not correct. Expected %d, got %d", code.MultisigNotExists, response.Code)
@@ -255,7 +255,7 @@ func TestMultiSigTx(t *testing.T) {
 
 	txBytes, _ := rlp.EncodeToBytes(tx)
 
-	response := RunTx(cState, false, txBytes, big.NewInt(0), 0)
+	response := RunTx(cState, false, txBytes, big.NewInt(0), 0, make(map[types.Address]struct{}))
 
 	if response.Code != 0 {
 		t.Fatalf("Error code is not 0. Error: %s", response.Log)
@@ -299,7 +299,7 @@ func TestMultiSigDoubleSignTx(t *testing.T) {
 
 	txBytes, _ := rlp.EncodeToBytes(tx)
 
-	response := RunTx(cState, false, txBytes, big.NewInt(0), 0)
+	response := RunTx(cState, false, txBytes, big.NewInt(0), 0, make(map[types.Address]struct{}))
 
 	if response.Code != code.IncorrectMultiSignature {
 		t.Fatalf("Error code is not %d, got %d", code.IncorrectMultiSignature, response.Code)
@@ -344,7 +344,7 @@ func TestMultiSigTooManySignsTx(t *testing.T) {
 
 	txBytes, _ := rlp.EncodeToBytes(tx)
 
-	response := RunTx(cState, false, txBytes, big.NewInt(0), 0)
+	response := RunTx(cState, false, txBytes, big.NewInt(0), 0, make(map[types.Address]struct{}))
 
 	if response.Code != code.IncorrectMultiSignature {
 		t.Fatalf("Error code is not %d, got %d", code.IncorrectMultiSignature, response.Code)
@@ -387,7 +387,7 @@ func TestMultiSigNotEnoughTx(t *testing.T) {
 
 	txBytes, _ := rlp.EncodeToBytes(tx)
 
-	response := RunTx(cState, false, txBytes, big.NewInt(0), 0)
+	response := RunTx(cState, false, txBytes, big.NewInt(0), 0, make(map[types.Address]struct{}))
 
 	if response.Code != code.IncorrectMultiSignature {
 		t.Fatalf("Error code is not %d. Error: %d", code.IncorrectMultiSignature, response.Code)
@@ -431,7 +431,7 @@ func TestMultiSigIncorrectSignsTx(t *testing.T) {
 
 	txBytes, _ := rlp.EncodeToBytes(tx)
 
-	response := RunTx(cState, false, txBytes, big.NewInt(0), 0)
+	response := RunTx(cState, false, txBytes, big.NewInt(0), 0, make(map[types.Address]struct{}))
 
 	if response.Code != code.IncorrectMultiSignature {
 		t.Fatalf("Error code is not %d, got %d", code.IncorrectMultiSignature, response.Code)

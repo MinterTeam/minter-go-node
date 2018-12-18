@@ -101,7 +101,7 @@ func TestRedeemCheckTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0)
+	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, make(map[types.Address]struct{}))
 
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
