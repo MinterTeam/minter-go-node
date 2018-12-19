@@ -123,7 +123,7 @@ func (data SellCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (To
 			newReserve := big.NewInt(0).Set(coinFrom.ReserveBalance)
 
 			newVolume.Sub(newVolume, data.ValueToSell)
-			newReserve.Sub(newVolume, value)
+			newReserve.Sub(newVolume, basecoinValue)
 
 			c := formula.CalculateSaleAmount(newVolume, newReserve, coinFrom.Crr, commissionInBaseCoin)
 
