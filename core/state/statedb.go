@@ -1443,8 +1443,8 @@ func (s *StateDB) GetCurrentMaxGas() uint64 {
 }
 
 func (s *StateDB) SetMaxGas(maxGas uint64) {
-	bs := make([]byte, 4)
-	binary.LittleEndian.PutUint64(bs, maxGas)
+	bs := make([]byte, 8)
+	binary.BigEndian.PutUint64(bs, maxGas)
 
 	s.iavl.Set(maxGasKey, bs)
 }

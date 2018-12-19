@@ -398,7 +398,7 @@ func (app *Blockchain) saveCurrentValidators(vals abciTypes.ValidatorUpdates) {
 func (app *Blockchain) calcMaxGas(height int64) uint64 {
 	const defaultMaxGas = 100000
 	const minMaxGas = 5000
-	const targetTime = 6
+	const targetTime = 7
 	const blockDelta = 10
 
 	// skip first 20 blocks
@@ -422,7 +422,7 @@ func (app *Blockchain) calcMaxGas(height int64) uint64 {
 	newMaxGas := app.stateCheck.GetCurrentMaxGas()
 
 	// check if blocks are created in time
-	if blockB.Block.Time.Sub(blockA.Block.Time).Seconds() < targetTime*blockDelta {
+	if blockB.Block.Time.Sub(blockA.Block.Time).Seconds() > targetTime*blockDelta {
 		newMaxGas = newMaxGas / 10 * 9 // decrease by 10%
 	} else {
 		newMaxGas = newMaxGas / 10 * 11 // increase by 10%
