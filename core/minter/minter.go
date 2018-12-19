@@ -15,6 +15,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/helpers"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/db"
+	rpc "github.com/tendermint/tendermint/rpc/client"
 	"math/big"
 	"sync"
 	"sync/atomic"
@@ -31,6 +32,9 @@ type Blockchain struct {
 	lastCommittedHeight int64
 	rewards             *big.Int
 	validatorsStatuses  map[[20]byte]int8
+
+	// local rpc client for Tendermint
+	rpcClient *rpc.Local
 
 	// currentMempool is responsive for prevent sending multiple transactions from one address in one block
 	currentMempool map[types.Address]struct{}
@@ -270,8 +274,18 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 
 	_ = eventsdb.GetCurrent().FlushEvents(req.Height)
 
+	// compute max gas
+	maxGas := app.calcMaxGas(req.Height)
+	app.stateDeliver.SetMaxGas(maxGas)
+
 	return abciTypes.ResponseEndBlock{
 		ValidatorUpdates: updates,
+		ConsensusParamUpdates: &abciTypes.ConsensusParams{
+			BlockSize: &abciTypes.BlockSizeParams{
+				MaxBytes: 10000,
+				MaxGas:   int64(maxGas),
+			},
+		},
 	}
 }
 
@@ -379,4 +393,54 @@ func (app *Blockchain) getCurrentValidators() abciTypes.ValidatorUpdates {
 
 func (app *Blockchain) saveCurrentValidators(vals abciTypes.ValidatorUpdates) {
 	app.appDB.SaveValidators(vals)
+}
+
+func (app *Blockchain) calcMaxGas(height int64) uint64 {
+	const defaultMaxGas = 100000
+	const minMaxGas = 5000
+	const targetTime = 6
+	const blockDelta = 10
+
+	// skip first 20 blocks
+	if height <= 20 {
+		return defaultMaxGas
+	}
+
+	targetBlockA := height - blockDelta - 1
+	blockA, err := app.rpcClient.Block(&targetBlockA)
+	if err != nil {
+		panic(err)
+	}
+
+	targetBlockB := height - 1
+	blockB, err := app.rpcClient.Block(&targetBlockB)
+	if err != nil {
+		panic(err)
+	}
+
+	// get current max gas
+	newMaxGas := app.stateCheck.GetCurrentMaxGas()
+
+	// check if blocks are created in time
+	if blockB.Block.Time.Sub(blockA.Block.Time).Seconds() < targetTime*blockDelta {
+		newMaxGas = newMaxGas / 10 * 9 // decrease by 10%
+	} else {
+		newMaxGas = newMaxGas / 10 * 11 // increase by 10%
+	}
+
+	// check if max gas is too high
+	if newMaxGas > defaultMaxGas {
+		newMaxGas = defaultMaxGas
+	}
+
+	// check if max gas is too low
+	if newMaxGas < minMaxGas {
+		newMaxGas = minMaxGas
+	}
+
+	return newMaxGas
+}
+
+func (app *Blockchain) SetRpcClient(client *rpc.Local) {
+	app.rpcClient = client
 }

@@ -10,6 +10,7 @@ IMPROVEMENT
 - [api] #164 Add /unconfirmed_tx endpoint
 - [core] Do not accept 2 transactions from same address in mempool at once
 - [core] Add missing tags to transactions
+- [core] Dynamically adjust max gas in blocks
 - [tendermint] Update to v0.27.3
 
 BUG FIXES

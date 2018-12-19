@@ -34,6 +34,7 @@ var (
 	usedCheckPrefix   = []byte("u")
 	candidatesKey     = []byte("t")
 	validatorsKey     = []byte("v")
+	maxGasKey         = []byte("g")
 
 	cfg = config.GetConfig()
 )
@@ -1433,4 +1434,17 @@ func (s *StateDB) StakeExists(owner types.Address, PubKey []byte, coinSymbol typ
 	}
 
 	return false
+}
+
+func (s *StateDB) GetCurrentMaxGas() uint64 {
+	_, maxGasBytes := s.iavl.Get(maxGasKey)
+
+	return binary.BigEndian.Uint64(maxGasBytes)
+}
+
+func (s *StateDB) SetMaxGas(maxGas uint64) {
+	bs := make([]byte, 4)
+	binary.LittleEndian.PutUint64(bs, maxGas)
+
+	s.iavl.Set(maxGasKey, bs)
 }

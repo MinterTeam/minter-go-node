@@ -43,6 +43,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	app.SetRpcClient(client)
+
 	if !cfg.ValidatorMode {
 		go api.RunApi(app, client)
 		go gui.Run(cfg.GUIListenAddress)

@@ -116,7 +116,7 @@ func TestStateDB_GetBalances(t *testing.T) {
 	state.AddBalance(address, types.GetBaseCoin(), newBalance)
 
 	expect := Balances{
-		Data:map[types.CoinSymbol]*big.Int{types.GetBaseCoin(): newBalance},
+		Data: map[types.CoinSymbol]*big.Int{types.GetBaseCoin(): newBalance},
 	}
 
 	balances := state.GetBalances(address)
