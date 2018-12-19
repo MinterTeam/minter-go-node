@@ -173,7 +173,6 @@ func (s *stateAccount) SetBalance(coinSymbol types.CoinSymbol, amount *big.Int) 
 }
 
 func (s *stateAccount) setBalance(coinSymbol types.CoinSymbol, amount *big.Int) {
-
 	if s.data.Balance.Data == nil {
 		s.data.Balance.Data = make(map[types.CoinSymbol]*big.Int)
 	}
