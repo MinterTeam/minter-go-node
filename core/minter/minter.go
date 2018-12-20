@@ -108,7 +108,6 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 	}
 
 	app.stateDeliver.SetMaxGas(100000)
-	app.stateCheck.SetMaxGas(100000)
 
 	return abciTypes.ResponseInitChain{}
 }
