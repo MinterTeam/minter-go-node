@@ -45,7 +45,7 @@ func (data RedeemCheckData) String() string {
 }
 
 func (data RedeemCheckData) Gas() int64 {
-	return commissions.SendTx
+	return commissions.RedeemCheckTx
 }
 
 func (data RedeemCheckData) Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response {

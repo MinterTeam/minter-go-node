@@ -12,6 +12,7 @@ IMPROVEMENT
 - [core] Do not accept 2 transactions from same address in mempool at once
 - [core] Add missing tags to transactions
 - [core] Dynamically adjust max gas in blocks
+- [core] Update commissions
 - [tendermint] Update to v0.27.3
 
 BUG FIXES
