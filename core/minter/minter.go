@@ -13,6 +13,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/eventsdb"
 	"github.com/MinterTeam/minter-go-node/genesis"
 	"github.com/MinterTeam/minter-go-node/helpers"
+	"github.com/MinterTeam/minter-go-node/version"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/db"
 	rpc "github.com/tendermint/tendermint/rpc/client"
@@ -293,8 +294,10 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 
 func (app *Blockchain) Info(req abciTypes.RequestInfo) (resInfo abciTypes.ResponseInfo) {
 	return abciTypes.ResponseInfo{
-		LastBlockHeight:  app.appDB.GetLastHeight(),
-		LastBlockAppHash: app.appDB.GetLastBlockHash(),
+		Version:              version.Version,
+		AppVersion:           version.AppVersion,
+		LastBlockHeight:      app.appDB.GetLastHeight(),
+		LastBlockAppHash:     app.appDB.GetLastBlockHash(),
 	}
 }
 

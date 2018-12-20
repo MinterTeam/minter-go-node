@@ -5,6 +5,8 @@ const (
 	Maj = "0"
 	Min = "9"
 	Fix = "0"
+
+	AppVersion = 1
 )
 
 var (
