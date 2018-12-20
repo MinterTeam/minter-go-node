@@ -8,6 +8,7 @@ IMPROVEMENT
 - [events] Refactor events (WARNING: full re-sync needed for utilizing events API)
 - [api] #183 Report if node has full state history in /status
 - [api] #164 Add /unconfirmed_tx endpoint
+- [api] Add /max_gas endpoint
 - [core] Do not accept 2 transactions from same address in mempool at once
 - [core] Add missing tags to transactions
 - [core] Dynamically adjust max gas in blocks

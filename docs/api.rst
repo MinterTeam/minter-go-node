@@ -63,6 +63,23 @@ normal mode.
       }
     }
 
+Max gas
+^^^^^^^
+
+This endpoint shows maximum gas value for given block
+
+.. code-block:: bash
+
+    curl -s 'localhost:8841/max_gas'
+
+.. code-block:: json
+
+    {
+      "jsonrpc": "2.0",
+      "id": "",
+      "result": "100000"
+    }
+
 Candidate
 ^^^^^^^^^
 
