@@ -172,7 +172,7 @@ func (data CreateCoinData) Run(tx *Transaction, context *state.StateDB, isCheck 
 	}
 
 	tags := common.KVPairs{
-		common.KVPair{Key: []byte("tx.type"), Value: []byte{byte(TypeCreateCoin)}},
+		common.KVPair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeCreateCoin)}))},
 		common.KVPair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
 		common.KVPair{Key: []byte("tx.coin"), Value: []byte(data.Symbol.String())},
 	}

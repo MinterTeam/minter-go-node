@@ -23,12 +23,7 @@ func Transaction(hash []byte) (*TransactionResponse, error) {
 	tags := make(map[string]string)
 
 	for _, tag := range tx.TxResult.Tags {
-		switch string(tag.Key) {
-		case "tx.type":
-			tags[string(tag.Key)] = fmt.Sprintf("%X", tag.Value)
-		default:
-			tags[string(tag.Key)] = string(tag.Value)
-		}
+		tags[string(tag.Key)] = string(tag.Value)
 	}
 
 	data, err := encodeTxData(decodedTx)

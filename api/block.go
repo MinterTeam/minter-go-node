@@ -64,12 +64,7 @@ func Block(height int64) (*BlockResponse, error) {
 		tags := make(map[string]string)
 
 		for _, tag := range blockResults.Results.DeliverTx[i].Tags {
-			switch string(tag.Key) {
-			case "tx.type":
-				tags[string(tag.Key)] = fmt.Sprintf("%X", tag.Value)
-			default:
-				tags[string(tag.Key)] = string(tag.Value)
-			}
+			tags[string(tag.Key)] = string(tag.Value)
 		}
 
 		data, err := encodeTxData(tx)

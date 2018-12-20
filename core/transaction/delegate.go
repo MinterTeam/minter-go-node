@@ -125,7 +125,7 @@ func (data DelegateData) Run(tx *Transaction, context *state.StateDB, isCheck bo
 	}
 
 	tags := common.KVPairs{
-		common.KVPair{Key: []byte("tx.type"), Value: []byte{byte(TypeDelegate)}},
+		common.KVPair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeDelegate)}))},
 		common.KVPair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
 	}
 

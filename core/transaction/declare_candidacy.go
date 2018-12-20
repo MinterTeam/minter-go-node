@@ -137,7 +137,7 @@ func (data DeclareCandidacyData) Run(tx *Transaction, context *state.StateDB, is
 	}
 
 	tags := common.KVPairs{
-		common.KVPair{Key: []byte("tx.type"), Value: []byte{byte(TypeDeclareCandidacy)}},
+		common.KVPair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeDeclareCandidacy)}))},
 		common.KVPair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
 	}
 

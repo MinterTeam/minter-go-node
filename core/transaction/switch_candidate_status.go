@@ -98,7 +98,7 @@ func (data SetCandidateOnData) Run(tx *Transaction, context *state.StateDB, isCh
 	}
 
 	tags := common.KVPairs{
-		common.KVPair{Key: []byte("tx.type"), Value: []byte{byte(TypeSetCandidateOnline)}},
+		common.KVPair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeSetCandidateOnline)}))},
 		common.KVPair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
 	}
 
@@ -195,7 +195,7 @@ func (data SetCandidateOffData) Run(tx *Transaction, context *state.StateDB, isC
 	}
 
 	tags := common.KVPairs{
-		common.KVPair{Key: []byte("tx.type"), Value: []byte{byte(TypeSetCandidateOffline)}},
+		common.KVPair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeSetCandidateOffline)}))},
 		common.KVPair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
 	}
 

@@ -164,7 +164,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context *state.StateDB, isCheck
 	}
 
 	tags := common.KVPairs{
-		common.KVPair{Key: []byte("tx.type"), Value: []byte{byte(TypeRedeemCheck)}},
+		common.KVPair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeRedeemCheck)}))},
 		common.KVPair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(checkSender[:]))},
 		common.KVPair{Key: []byte("tx.to"), Value: []byte(hex.EncodeToString(sender[:]))},
 		common.KVPair{Key: []byte("tx.coin"), Value: []byte(decodedCheck.Coin.String())},

@@ -125,7 +125,7 @@ func (data SendData) Run(tx *Transaction, context *state.StateDB, isCheck bool, 
 	}
 
 	tags := common.KVPairs{
-		common.KVPair{Key: []byte("tx.type"), Value: []byte{byte(TypeSend)}},
+		common.KVPair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeSend)}))},
 		common.KVPair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
 		common.KVPair{Key: []byte("tx.to"), Value: []byte(hex.EncodeToString(data.To[:]))},
 		common.KVPair{Key: []byte("tx.coin"), Value: []byte(data.Coin.String())},

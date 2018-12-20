@@ -428,7 +428,7 @@ func (app *Blockchain) calcMaxGas(height int64) uint64 {
 	if blockB.Block.Time.Sub(blockA.Block.Time).Seconds() > targetTime*blockDelta {
 		newMaxGas = newMaxGas * 7 / 10 // decrease by 30%
 	} else {
-		newMaxGas = newMaxGas * 105 / 100  // increase by 5%
+		newMaxGas = newMaxGas * 105 / 100 // increase by 5%
 	}
 
 	// check if max gas is too high
