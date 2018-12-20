@@ -402,7 +402,7 @@ func (app *Blockchain) calcMaxGas(height int64) uint64 {
 	const defaultMaxGas = 100000
 	const minMaxGas = 5000
 	const targetTime = 7
-	const blockDelta = 10
+	const blockDelta = 3
 
 	// skip first 20 blocks
 	if height <= 20 {
@@ -426,9 +426,9 @@ func (app *Blockchain) calcMaxGas(height int64) uint64 {
 
 	// check if blocks are created in time
 	if blockB.Block.Time.Sub(blockA.Block.Time).Seconds() > targetTime*blockDelta {
-		newMaxGas = newMaxGas / 10 * 9 // decrease by 10%
+		newMaxGas = newMaxGas * 7 / 10 // decrease by 30%
 	} else {
-		newMaxGas = newMaxGas / 10 * 11 // increase by 10%
+		newMaxGas = newMaxGas * 105 / 100  // increase by 5%
 	}
 
 	// check if max gas is too high
