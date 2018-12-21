@@ -67,7 +67,7 @@ func NewMinterBlockchain() *Blockchain {
 		appDB:               applicationDB,
 		height:              applicationDB.GetLastHeight(),
 		lastCommittedHeight: applicationDB.GetLastHeight(),
-		currentMempool:      make(map[types.Address]struct{}),
+		currentMempool:      map[types.Address]struct{}{},
 	}
 
 	blockchain.stateDeliver, err = state.New(int64(blockchain.height), blockchain.stateDB)
@@ -294,10 +294,10 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 
 func (app *Blockchain) Info(req abciTypes.RequestInfo) (resInfo abciTypes.ResponseInfo) {
 	return abciTypes.ResponseInfo{
-		Version:              version.Version,
-		AppVersion:           version.AppVersion,
-		LastBlockHeight:      app.appDB.GetLastHeight(),
-		LastBlockAppHash:     app.appDB.GetLastBlockHash(),
+		Version:          version.Version,
+		AppVersion:       version.AppVersion,
+		LastBlockHeight:  app.appDB.GetLastHeight(),
+		LastBlockAppHash: app.appDB.GetLastBlockHash(),
 	}
 }
 
@@ -343,7 +343,7 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 
 	atomic.StoreInt64(&app.lastCommittedHeight, app.Height())
 
-	app.currentMempool = make(map[types.Address]struct{})
+	app.currentMempool = map[types.Address]struct{}{}
 
 	app.wg.Done()
 

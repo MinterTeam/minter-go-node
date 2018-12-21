@@ -70,7 +70,7 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPool *big.I
 	}
 
 	// check if mempool already has transactions from this address
-	if _, ok := currentMempool[sender]; isCheck && !ok {
+	if _, has := currentMempool[sender]; isCheck && has {
 		return Response{
 			Code: code.TxFromSenderAlreadyInMempool,
 			Log:  fmt.Sprintf("Tx from %s already exists in mempool", sender.String())}
