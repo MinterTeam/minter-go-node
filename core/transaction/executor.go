@@ -76,7 +76,9 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPool *big.I
 			Log:  fmt.Sprintf("Tx from %s already exists in mempool", sender.String())}
 	}
 
-	currentMempool[sender] = struct{}{}
+	if isCheck {
+		currentMempool[sender] = struct{}{}
+	}
 
 	// check multi-signature
 	if tx.SignatureType == SigTypeMulti {
