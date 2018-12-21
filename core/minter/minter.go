@@ -402,7 +402,7 @@ func (app *Blockchain) saveCurrentValidators(vals abciTypes.ValidatorUpdates) {
 
 func (app *Blockchain) getBlocksTimeDelta(height, count int64) int {
 	if app.tmNode == nil {
-		return app.appDB.GetLastBlocksTimeDelta()
+		return app.appDB.GetLastBlocksTimeDelta(height)
 	}
 
 	blockStore := app.tmNode.BlockStore()
@@ -411,7 +411,7 @@ func (app *Blockchain) getBlocksTimeDelta(height, count int64) int {
 	blockB := blockStore.LoadBlockMeta(height - 1)
 
 	delta := int(blockB.Header.Time.Sub(blockA.Header.Time).Seconds())
-	app.appDB.SetLastBlocksTimeDelta(delta)
+	app.appDB.SetLastBlocksTimeDelta(height, delta)
 
 	return delta
 }

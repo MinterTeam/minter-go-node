@@ -43,7 +43,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	app.SetRpcClient(client)
+	app.SetTmNode(node)
 
 	if !cfg.ValidatorMode {
 		go api.RunApi(app, client)

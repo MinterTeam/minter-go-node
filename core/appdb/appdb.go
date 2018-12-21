@@ -68,7 +68,7 @@ func (appDB *AppDB) GetValidators() types.ValidatorUpdates {
 
 	var vals types.ValidatorUpdates
 
-	err := cdc.UnmarshalBinaryLengthPrefixed(result, &vals)
+	err := cdc.UnmarshalBinaryBare(result, &vals)
 
 	if err != nil {
 		panic(err)
@@ -78,7 +78,7 @@ func (appDB *AppDB) GetValidators() types.ValidatorUpdates {
 }
 
 func (appDB *AppDB) SaveValidators(vals types.ValidatorUpdates) {
-	data, err := cdc.MarshalBinaryLengthPrefixed(vals)
+	data, err := cdc.MarshalBinaryBare(vals)
 
 	if err != nil {
 		panic(err)
@@ -87,19 +87,41 @@ func (appDB *AppDB) SaveValidators(vals types.ValidatorUpdates) {
 	appDB.db.Set([]byte(validatorsPath), data)
 }
 
-func (appDB *AppDB) GetLastBlocksTimeDelta() int {
+type LastBlocksTimeDelta struct {
+	Height int64
+	Delta  int
+}
+
+func (appDB *AppDB) GetLastBlocksTimeDelta(height int64) int {
 	result := appDB.db.Get([]byte(blockTimeDeltaPath))
 	if result == nil {
 		panic("No info about LastBlocksTimeDelta is available")
 	}
 
-	return int(binary.BigEndian.Uint64(result))
+	data := LastBlocksTimeDelta{}
+	err := cdc.UnmarshalBinaryBare(result, &data)
+	if err != nil {
+		panic(err)
+	}
+
+	if data.Height != height {
+		panic("No info about LastBlocksTimeDelta is available")
+	}
+
+	return data.Delta
 }
 
-func (appDB *AppDB) SetLastBlocksTimeDelta(delta int) {
-	h := make([]byte, 8)
-	binary.BigEndian.PutUint64(h, uint64(delta))
-	appDB.db.Set([]byte(blockTimeDeltaPath), h)
+func (appDB *AppDB) SetLastBlocksTimeDelta(height int64, delta int) {
+	data, err := cdc.MarshalBinaryBare(LastBlocksTimeDelta{
+		Height: height,
+		Delta:  delta,
+	})
+
+	if err != nil {
+		panic(err)
+	}
+
+	appDB.db.Set([]byte(blockTimeDeltaPath), data)
 }
 
 func NewAppDB() *AppDB {
