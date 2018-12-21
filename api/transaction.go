@@ -53,31 +53,31 @@ func Transaction(hash []byte) (*TransactionResponse, error) {
 func encodeTxData(decodedTx *transaction.Transaction) ([]byte, error) {
 	switch decodedTx.Type {
 	case transaction.TypeSend:
-		return cdc.MarshalJSON(decodedTx.GetDecodedData().(transaction.SendData))
+		return cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.SendData))
 	case transaction.TypeRedeemCheck:
-		return cdc.MarshalJSON(decodedTx.GetDecodedData().(transaction.RedeemCheckData))
+		return cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.RedeemCheckData))
 	case transaction.TypeSellCoin:
-		return cdc.MarshalJSON(decodedTx.GetDecodedData().(transaction.SellCoinData))
+		return cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.SellCoinData))
 	case transaction.TypeSellAllCoin:
-		return cdc.MarshalJSON(decodedTx.GetDecodedData().(transaction.SellAllCoinData))
+		return cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.SellAllCoinData))
 	case transaction.TypeBuyCoin:
-		return cdc.MarshalJSON(decodedTx.GetDecodedData().(transaction.BuyCoinData))
+		return cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.BuyCoinData))
 	case transaction.TypeCreateCoin:
-		return cdc.MarshalJSON(decodedTx.GetDecodedData().(transaction.CreateCoinData))
+		return cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.CreateCoinData))
 	case transaction.TypeDeclareCandidacy:
-		return cdc.MarshalJSON(decodedTx.GetDecodedData().(transaction.DeclareCandidacyData))
+		return cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.DeclareCandidacyData))
 	case transaction.TypeDelegate:
-		return cdc.MarshalJSON(decodedTx.GetDecodedData().(transaction.DelegateData))
+		return cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.DelegateData))
 	case transaction.TypeSetCandidateOnline:
-		return cdc.MarshalJSON(decodedTx.GetDecodedData().(transaction.SetCandidateOnData))
+		return cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.SetCandidateOnData))
 	case transaction.TypeSetCandidateOffline:
-		return cdc.MarshalJSON(decodedTx.GetDecodedData().(transaction.SetCandidateOffData))
+		return cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.SetCandidateOffData))
 	case transaction.TypeUnbond:
-		return cdc.MarshalJSON(decodedTx.GetDecodedData().(transaction.UnbondData))
+		return cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.UnbondData))
 	case transaction.TypeCreateMultisig:
-		return cdc.MarshalJSON(decodedTx.GetDecodedData().(transaction.CreateMultisigData))
+		return cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.CreateMultisigData))
 	case transaction.TypeMultisend:
-		return cdc.MarshalJSON(decodedTx.GetDecodedData().(transaction.MultisendData))
+		return cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.MultisendData))
 	}
 
 	return nil, errors.New("unknown tx type")
