@@ -38,12 +38,12 @@
   version = "^1.6.0"
 
 [[constraint]]
-  name = "github.com/tendermint/iavl"
-  version = "0.12.0"
+  name = "github.com/danil-lashin/iavl"
+  revision = "771cfc4aeec9d03fe0da809c24583c3b106df4d5"
 
 [[constraint]]
   name = "github.com/tendermint/tendermint"
-  version = "0.27.3"
+  revision = "daddebac29d9f1258f7e93282e84709bd16a0acd"
 
 [[constraint]]
   name = "github.com/MinterTeam/go-amino"

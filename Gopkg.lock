@@ -26,6 +26,13 @@
   revision = "67e573d211ace594f1366b4ce9d39726c4b19bd0"
 
 [[projects]]
+  digest = "1:2afa5fcdea2ba0612ae77e04f0b282b2dd221b23003231afe6358c6cfadd9ab4"
+  name = "github.com/danil-lashin/iavl"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "771cfc4aeec9d03fe0da809c24583c3b106df4d5"
+
+[[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
@@ -376,19 +383,12 @@
   version = "v0.14.1"
 
 [[projects]]
-  digest = "1:e1cc8dd891e64aab63b0c09f2f12456cbe2cd9cbd9d96dfae3281245f05c2428"
-  name = "github.com/tendermint/iavl"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "de0740903a67b624d887f9055d4c60175dcfa758"
-  version = "v0.12.0"
-
-[[projects]]
-  digest = "1:f0aabaa3d7ca690bcb49259aa337c6dd78a4c12fd9269ee59c79d58496a0c5cb"
+  digest = "1:f2689a592392d2f9543a9ec49c53eb9e94e5918fdf76bf7c27c4ed9c787ac93e"
   name = "github.com/tendermint/tendermint"
   packages = [
     "abci/client",
     "abci/example/code",
+    "abci/example/counter",
     "abci/example/kvstore",
     "abci/types",
     "blockchain",
@@ -438,8 +438,7 @@
     "version",
   ]
   pruneopts = "UT"
-  revision = "0138530df202f5b8e8be1edb9c2f705e404a79cb"
-  version = "v0.27.3"
+  revision = "daddebac29d9f1258f7e93282e84709bd16a0acd"
 
 [[projects]]
   digest = "1:b6621a5e9003d7d809993d49217a841d27ef85b4bc0459115d3fd1f8c1518999"
@@ -575,6 +574,7 @@
   input-imports = [
     "github.com/MinterTeam/go-amino",
     "github.com/btcsuite/btcd/btcec",
+    "github.com/danil-lashin/iavl",
     "github.com/go-kit/kit/log/term",
     "github.com/gobuffalo/packr",
     "github.com/gorilla/websocket",
@@ -584,7 +584,6 @@
     "github.com/stretchr/testify/assert",
     "github.com/stretchr/testify/require",
     "github.com/tendermint/go-amino",
-    "github.com/tendermint/iavl",
     "github.com/tendermint/tendermint/abci/types",
     "github.com/tendermint/tendermint/config",
     "github.com/tendermint/tendermint/crypto",
