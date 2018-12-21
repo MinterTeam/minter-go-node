@@ -13,9 +13,10 @@ var (
 )
 
 const (
-	hashPath       = "hash"
-	heightPath     = "height"
-	validatorsPath = "validators"
+	hashPath           = "hash"
+	heightPath         = "height"
+	blockTimeDeltaPath = "blockDelta"
+	validatorsPath     = "validators"
 
 	dbName = "app"
 )
@@ -84,6 +85,21 @@ func (appDB *AppDB) SaveValidators(vals types.ValidatorUpdates) {
 	}
 
 	appDB.db.Set([]byte(validatorsPath), data)
+}
+
+func (appDB *AppDB) GetLastBlocksTimeDelta() int {
+	result := appDB.db.Get([]byte(blockTimeDeltaPath))
+	if result == nil {
+		panic("No info about LastBlocksTimeDelta is available")
+	}
+
+	return int(binary.BigEndian.Uint64(result))
+}
+
+func (appDB *AppDB) SetLastBlocksTimeDelta(delta int) {
+	h := make([]byte, 8)
+	binary.BigEndian.PutUint64(h, uint64(delta))
+	appDB.db.Set([]byte(blockTimeDeltaPath), h)
 }
 
 func NewAppDB() *AppDB {

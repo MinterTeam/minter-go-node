@@ -16,7 +16,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/version"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/db"
-	rpc "github.com/tendermint/tendermint/rpc/client"
+	tmNode "github.com/tendermint/tendermint/node"
 	"math/big"
 	"sync"
 	"sync/atomic"
@@ -35,7 +35,7 @@ type Blockchain struct {
 	validatorsStatuses  map[[20]byte]int8
 
 	// local rpc client for Tendermint
-	rpcClient *rpc.Local
+	tmNode *tmNode.Node
 
 	// currentMempool is responsive for prevent sending multiple transactions from one address in one block
 	currentMempool map[types.Address]struct{}
@@ -400,6 +400,22 @@ func (app *Blockchain) saveCurrentValidators(vals abciTypes.ValidatorUpdates) {
 	app.appDB.SaveValidators(vals)
 }
 
+func (app *Blockchain) getBlocksTimeDelta(height, count int64) int {
+	if app.tmNode == nil {
+		return app.appDB.GetLastBlocksTimeDelta()
+	}
+
+	blockStore := app.tmNode.BlockStore()
+
+	blockA := blockStore.LoadBlockMeta(height - count - 1)
+	blockB := blockStore.LoadBlockMeta(height - 1)
+
+	delta := int(blockB.Header.Time.Sub(blockA.Header.Time).Seconds())
+	app.appDB.SetLastBlocksTimeDelta(delta)
+
+	return delta
+}
+
 func (app *Blockchain) calcMaxGas(height int64) uint64 {
 	const defaultMaxGas = 100000
 	const minMaxGas = 5000
@@ -411,23 +427,11 @@ func (app *Blockchain) calcMaxGas(height int64) uint64 {
 		return defaultMaxGas
 	}
 
-	targetBlockA := height - blockDelta - 1
-	blockA, err := app.rpcClient.Block(&targetBlockA)
-	if err != nil {
-		panic(err)
-	}
-
-	targetBlockB := height - 1
-	blockB, err := app.rpcClient.Block(&targetBlockB)
-	if err != nil {
-		panic(err)
-	}
-
 	// get current max gas
 	newMaxGas := app.stateCheck.GetCurrentMaxGas()
 
 	// check if blocks are created in time
-	if blockB.Block.Time.Sub(blockA.Block.Time).Seconds() > targetTime*blockDelta {
+	if app.getBlocksTimeDelta(height, blockDelta) > targetTime*blockDelta {
 		newMaxGas = newMaxGas * 7 / 10 // decrease by 30%
 	} else {
 		newMaxGas = newMaxGas * 105 / 100 // increase by 5%
@@ -446,6 +450,6 @@ func (app *Blockchain) calcMaxGas(height int64) uint64 {
 	return newMaxGas
 }
 
-func (app *Blockchain) SetRpcClient(client *rpc.Local) {
-	app.rpcClient = client
+func (app *Blockchain) SetTmNode(node *tmNode.Node) {
+	app.tmNode = node
 }
