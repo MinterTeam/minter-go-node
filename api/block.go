@@ -38,7 +38,6 @@ type BlockTransactionResponse struct {
 	ServiceData []byte             `json:"service_data"`
 	Gas         int64              `json:"gas"`
 	GasCoin     types.CoinSymbol   `json:"gas_coin"`
-	GasUsed     int64              `json:"gas_used"`
 	Tags        map[string]string  `json:"tags"`
 	Code        uint32             `json:"code,omitempty"`
 	Log         string             `json:"log,omitempty"`
@@ -72,6 +71,11 @@ func Block(height int64) (*BlockResponse, error) {
 			return nil, err
 		}
 
+		gas := tx.Gas()
+		if tx.Type == transaction.TypeCreateCoin {
+			gas += tx.GetDecodedData().(transaction.CreateCoinData).Commission()
+		}
+
 		txs[i] = BlockTransactionResponse{
 			Hash:        fmt.Sprintf("Mt%x", rawTx.Hash()),
 			RawTx:       fmt.Sprintf("%x", []byte(rawTx)),
@@ -82,9 +86,8 @@ func Block(height int64) (*BlockResponse, error) {
 			Data:        data,
 			Payload:     tx.Payload,
 			ServiceData: tx.ServiceData,
-			Gas:         tx.Gas(),
+			Gas:         gas,
 			GasCoin:     tx.GasCoin,
-			GasUsed:     blockResults.Results.DeliverTx[i].GasUsed,
 			Tags:        tags,
 			Code:        blockResults.Results.DeliverTx[i].Code,
 			Log:         blockResults.Results.DeliverTx[i].Log,

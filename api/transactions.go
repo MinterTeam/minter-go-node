@@ -17,9 +17,9 @@ type TransactionResponse struct {
 	Index    uint32             `json:"index"`
 	From     string             `json:"from"`
 	Nonce    uint64             `json:"nonce"`
+	Gas      int64              `json:"gas"`
 	GasPrice *big.Int           `json:"gas_price"`
 	GasCoin  types.CoinSymbol   `json:"gas_coin"`
-	GasUsed  int64              `json:"gas_used"`
 	Type     transaction.TxType `json:"type"`
 	Data     json.RawMessage    `json:"data"`
 	Payload  []byte             `json:"payload"`
@@ -55,6 +55,11 @@ func Transactions(query string) (*[]TransactionResponse, error) {
 			return nil, err
 		}
 
+		gas := decodedTx.Gas()
+		if decodedTx.Type == transaction.TypeCreateCoin {
+			gas += decodedTx.GetDecodedData().(transaction.CreateCoinData).Commission()
+		}
+
 		result[i] = TransactionResponse{
 			Hash:     common.HexBytes(tx.Tx.Hash()),
 			RawTx:    fmt.Sprintf("%x", []byte(tx.Tx)),
@@ -62,9 +67,9 @@ func Transactions(query string) (*[]TransactionResponse, error) {
 			Index:    tx.Index,
 			From:     sender.String(),
 			Nonce:    decodedTx.Nonce,
+			Gas:      gas,
 			GasPrice: decodedTx.GasPrice,
 			GasCoin:  decodedTx.GasCoin,
-			GasUsed:  tx.TxResult.GasUsed,
 			Type:     decodedTx.Type,
 			Data:     data,
 			Payload:  decodedTx.Payload,
