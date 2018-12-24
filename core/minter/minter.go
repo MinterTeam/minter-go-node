@@ -295,7 +295,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 func (app *Blockchain) Info(req abciTypes.RequestInfo) (resInfo abciTypes.ResponseInfo) {
 	return abciTypes.ResponseInfo{
 		Version:          version.Version,
-		AppVersion:       version.AppVersion,
+		AppVersion:       version.AppVer,
 		LastBlockHeight:  app.appDB.GetLastHeight(),
 		LastBlockAppHash: app.appDB.GetLastBlockHash(),
 	}
