@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.1
+*Dec 24th, 2018*
+
+BUG FIXES
+
+- [api] Fix create coin tx error
+
 ## 0.9.0
 *Dec 24th, 2018*
 
