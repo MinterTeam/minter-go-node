@@ -57,7 +57,7 @@ func Transactions(query string) (*[]TransactionResponse, error) {
 
 		gas := decodedTx.Gas()
 		if decodedTx.Type == transaction.TypeCreateCoin {
-			gas += decodedTx.GetDecodedData().(transaction.CreateCoinData).Commission()
+			gas += decodedTx.GetDecodedData().(*transaction.CreateCoinData).Commission()
 		}
 
 		result[i] = TransactionResponse{
