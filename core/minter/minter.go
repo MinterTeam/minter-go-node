@@ -401,6 +401,7 @@ func (app *Blockchain) saveCurrentValidators(vals abciTypes.ValidatorUpdates) {
 }
 
 func (app *Blockchain) getBlocksTimeDelta(height, count int64) int {
+	// should do this because tmNode is unavailable during Tendermint's replay mode
 	if app.tmNode == nil {
 		return app.appDB.GetLastBlocksTimeDelta(height)
 	}
