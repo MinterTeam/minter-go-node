@@ -73,7 +73,7 @@ func Block(height int64) (*BlockResponse, error) {
 
 		gas := tx.Gas()
 		if tx.Type == transaction.TypeCreateCoin {
-			gas += tx.GetDecodedData().(transaction.CreateCoinData).Commission()
+			gas += tx.GetDecodedData().(*transaction.CreateCoinData).Commission()
 		}
 
 		txs[i] = BlockTransactionResponse{
