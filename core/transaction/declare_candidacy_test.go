@@ -58,7 +58,7 @@ func TestDeclareCandidacyTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0)
+	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, make(map[types.Address]struct{}))
 
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
@@ -76,8 +76,12 @@ func TestDeclareCandidacyTx(t *testing.T) {
 		t.Fatalf("Candidate not found")
 	}
 
-	if candidate.CandidateAddress != addr {
-		t.Fatalf("Candidate address is not correct")
+	if candidate.OwnerAddress != addr {
+		t.Fatalf("Owner address is not correct")
+	}
+
+	if candidate.RewardAddress != addr {
+		t.Fatalf("Reward address is not correct")
 	}
 
 	if candidate.TotalBipStake != nil && candidate.TotalBipStake.Cmp(types.Big0) != 0 {

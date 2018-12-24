@@ -4,9 +4,6 @@ Minter Node API
 Minter Node API is based on JSON format. JSON is a lightweight data-interchange format.
 It can represent numbers, strings, ordered sequences of values, and collections of name/value pairs.
 
-If request is successful, Minter Node API will respond with ``result`` key and code equal to zero. Otherwise, it will
-respond with non-zero code and key ``log`` with error description.
-
 Status
 ^^^^^^
 
@@ -28,6 +25,7 @@ normal mode.
         "latest_app_hash": "55E75C9860E56AF3DEB8DD55741185F658569AB43C084436DDDB69CBFB06CC63",
         "latest_block_height": "4",
         "latest_block_time": "2018-12-03T13:18:42.50969Z",
+        "state_history": "on",
         "tm_status": {
           "node_info": {
             "protocol_version": {
@@ -65,6 +63,23 @@ normal mode.
       }
     }
 
+Max gas
+^^^^^^^
+
+This endpoint shows maximum gas value for given block
+
+.. code-block:: bash
+
+    curl -s 'localhost:8841/max_gas'
+
+.. code-block:: json
+
+    {
+      "jsonrpc": "2.0",
+      "id": "",
+      "result": "100000"
+    }
+
 Candidate
 ^^^^^^^^^
 
@@ -96,7 +111,8 @@ found.
       "jsonrpc": "2.0",
       "id": "",
       "result": {
-        "candidate_address": "Mxee81347211c72524338f9680072af90744333146",
+        "reward_address": "Mxee81347211c72524338f9680072af90744333146",
+        "owner_address": "Mxee81347211c72524338f9680072af90744333146",
         "total_stake": 0,
         "pub_key": "Mpe0ba50e3468b07fbbc127840953eb8f4fe57d6e8162df93baefd79f5d5bc2b97",
         "commission": "100",
@@ -340,7 +356,8 @@ Returns full list of candidates.
       "id": "",
       "result": [
         {
-          "candidate_address": "Mxee81347211c72524338f9680072af90744333146",
+          "reward_address": "Mxee81347211c72524338f9680072af90744333146",
+          "owner_address": "Mxee81347211c72524338f9680072af90744333146",
           "total_stake": "1000000000000000000000000",
           "pubkey": "Mpddfadfb15908ed5607c79e66aaf4030ef93363bd1846d64186d52424b1896c83",
           "commission": "100",
@@ -348,7 +365,8 @@ Returns full list of candidates.
           "status": 2
         },
         {
-          "candidate_address": "Mxee81347211c72524338f9680072af90744333146",
+          "reward_address": "Mxee81347211c72524338f9680072af90744333146",
+          "owner_address": "Mxee81347211c72524338f9680072af90744333146",
           "total_stake": "9900000000000000000",
           "pubkey": "Mp21e1d043c6d9c0bb0929ab8d1dd9f3948de0f5ad7234ce773a501441d204aa9e",
           "commission": "10",

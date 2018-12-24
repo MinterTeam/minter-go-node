@@ -27,21 +27,20 @@ type BlockResponse struct {
 }
 
 type BlockTransactionResponse struct {
-	Hash        string            `json:"hash"`
-	RawTx       string            `json:"raw_tx"`
-	From        string            `json:"from"`
-	Nonce       uint64            `json:"nonce"`
-	GasPrice    *big.Int          `json:"gas_price"`
-	Type        byte              `json:"type"`
-	Data        json.RawMessage   `json:"data"`
-	Payload     []byte            `json:"payload"`
-	ServiceData []byte            `json:"service_data"`
-	Gas         int64             `json:"gas"`
-	GasCoin     types.CoinSymbol  `json:"gas_coin"`
-	GasUsed     int64             `json:"gas_used"`
-	Tags        map[string]string `json:"tags"`
-	Code        uint32            `json:"code,omitempty"`
-	Log         string            `json:"log,omitempty"`
+	Hash        string             `json:"hash"`
+	RawTx       string             `json:"raw_tx"`
+	From        string             `json:"from"`
+	Nonce       uint64             `json:"nonce"`
+	GasPrice    *big.Int           `json:"gas_price"`
+	Type        transaction.TxType `json:"type"`
+	Data        json.RawMessage    `json:"data"`
+	Payload     []byte             `json:"payload"`
+	ServiceData []byte             `json:"service_data"`
+	Gas         int64              `json:"gas"`
+	GasCoin     types.CoinSymbol   `json:"gas_coin"`
+	Tags        map[string]string  `json:"tags"`
+	Code        uint32             `json:"code,omitempty"`
+	Log         string             `json:"log,omitempty"`
 }
 
 type BlockValidatorResponse struct {
@@ -58,23 +57,23 @@ func Block(height int64) (*BlockResponse, error) {
 
 	txs := make([]BlockTransactionResponse, len(block.Block.Data.Txs))
 	for i, rawTx := range block.Block.Data.Txs {
-		tx, _ := transaction.DecodeFromBytes(rawTx)
+		tx, _ := transaction.TxDecoder.DecodeFromBytes(rawTx)
 		sender, _ := tx.Sender()
 
 		tags := make(map[string]string)
 
 		for _, tag := range blockResults.Results.DeliverTx[i].Tags {
-			switch string(tag.Key) {
-			case "tx.type":
-				tags[string(tag.Key)] = fmt.Sprintf("%X", tag.Value)
-			default:
-				tags[string(tag.Key)] = string(tag.Value)
-			}
+			tags[string(tag.Key)] = string(tag.Value)
 		}
 
 		data, err := encodeTxData(tx)
 		if err != nil {
 			return nil, err
+		}
+
+		gas := tx.Gas()
+		if tx.Type == transaction.TypeCreateCoin {
+			gas += tx.GetDecodedData().(transaction.CreateCoinData).Commission()
 		}
 
 		txs[i] = BlockTransactionResponse{
@@ -87,9 +86,8 @@ func Block(height int64) (*BlockResponse, error) {
 			Data:        data,
 			Payload:     tx.Payload,
 			ServiceData: tx.ServiceData,
-			Gas:         tx.Gas(),
+			Gas:         gas,
 			GasCoin:     tx.GasCoin,
-			GasUsed:     blockResults.Results.DeliverTx[i].GasUsed,
 			Tags:        tags,
 			Code:        blockResults.Results.DeliverTx[i].Code,
 			Log:         blockResults.Results.DeliverTx[i].Log,

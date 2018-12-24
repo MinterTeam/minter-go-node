@@ -18,7 +18,7 @@ func EstimateTxCommission(tx []byte, height int) (*TxCommissionResponse, error) 
 		return nil, err
 	}
 
-	decodedTx, err := transaction.DecodeFromBytes(tx)
+	decodedTx, err := transaction.TxDecoder.DecodeFromBytes(tx)
 	if err != nil {
 		return nil, err
 	}

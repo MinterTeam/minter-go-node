@@ -95,7 +95,6 @@ func (check *Check) String() string {
 }
 
 func DecodeFromBytes(buf []byte) (*Check, error) {
-
 	var check Check
 	rlp.Decode(bytes.NewReader(buf), &check)
 

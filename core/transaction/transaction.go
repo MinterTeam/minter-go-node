@@ -1,7 +1,6 @@
 package transaction
 
 import (
-	"bytes"
 	"crypto/ecdsa"
 	"errors"
 	"fmt"
@@ -14,39 +13,42 @@ import (
 	"math/big"
 )
 
-const (
-	TypeSend                byte = 0x01
-	TypeSellCoin            byte = 0x02
-	TypeSellAllCoin         byte = 0x03
-	TypeBuyCoin             byte = 0x04
-	TypeCreateCoin          byte = 0x05
-	TypeDeclareCandidacy    byte = 0x06
-	TypeDelegate            byte = 0x07
-	TypeUnbond              byte = 0x08
-	TypeRedeemCheck         byte = 0x09
-	TypeSetCandidateOnline  byte = 0x0A
-	TypeSetCandidateOffline byte = 0x0B
-	TypeCreateMultisig      byte = 0x0C
-	TypeMultisend           byte = 0x0D
+type TxType byte
+type SigType byte
 
-	SigTypeSingle byte = 0x01
-	SigTypeMulti  byte = 0x02
+const (
+	TypeSend                TxType = 0x01
+	TypeSellCoin            TxType = 0x02
+	TypeSellAllCoin         TxType = 0x03
+	TypeBuyCoin             TxType = 0x04
+	TypeCreateCoin          TxType = 0x05
+	TypeDeclareCandidacy    TxType = 0x06
+	TypeDelegate            TxType = 0x07
+	TypeUnbond              TxType = 0x08
+	TypeRedeemCheck         TxType = 0x09
+	TypeSetCandidateOnline  TxType = 0x0A
+	TypeSetCandidateOffline TxType = 0x0B
+	TypeCreateMultisig      TxType = 0x0C
+	TypeMultisend           TxType = 0x0D
+
+	SigTypeSingle SigType = 0x01
+	SigTypeMulti  SigType = 0x02
 )
 
 var (
 	ErrInvalidSig = errors.New("invalid transaction v, r, s values")
-	MaxCoinSupply = big.NewInt(0).Exp(big.NewInt(1000), big.NewInt(5+18), nil) // 1,000,000,000,000,000 bips
+	MaxCoinSupply = big.NewInt(0).Exp(big.NewInt(10), big.NewInt(15+18), nil) // 1,000,000,000,000,000 bips
 )
 
 type Transaction struct {
 	Nonce         uint64
 	GasPrice      *big.Int
 	GasCoin       types.CoinSymbol
-	Type          byte
+	Type          TxType
 	Data          RawData
 	Payload       []byte
 	ServiceData   []byte
-	SignatureType byte
+	SignatureType SigType
 	SignatureData []byte
 
 	decodedData Data
@@ -281,168 +283,6 @@ func rlpHash(x interface{}) (h types.Hash) {
 	rlp.Encode(hw, x)
 	hw.Sum(h[:0])
 	return h
-}
-
-func DecodeFromBytes(buf []byte) (*Transaction, error) {
-
-	var tx Transaction
-	err := rlp.Decode(bytes.NewReader(buf), &tx)
-
-	if err != nil {
-		return nil, err
-	}
-
-	switch tx.SignatureType {
-	case SigTypeMulti:
-		{
-			tx.multisig = &SignatureMulti{}
-			if err := rlp.DecodeBytes(tx.SignatureData, tx.multisig); err != nil {
-				return nil, err
-			}
-		}
-	case SigTypeSingle:
-		{
-			tx.sig = &Signature{}
-			if err := rlp.DecodeBytes(tx.SignatureData, tx.sig); err != nil {
-				return nil, err
-			}
-		}
-	default:
-		return nil, errors.New("unknown signature type")
-	}
-
-	switch tx.Type {
-	case TypeSend:
-		{
-			data := SendData{}
-			err = rlp.Decode(bytes.NewReader(tx.Data), &data)
-			tx.SetDecodedData(data)
-
-			if data.Value == nil {
-				return nil, errors.New("incorrect tx data")
-			}
-		}
-	case TypeRedeemCheck:
-		{
-			data := RedeemCheckData{}
-			err = rlp.Decode(bytes.NewReader(tx.Data), &data)
-			tx.SetDecodedData(data)
-
-			if data.RawCheck == nil {
-				return nil, errors.New("incorrect tx data")
-			}
-		}
-	case TypeSellCoin:
-		{
-			data := SellCoinData{}
-			err = rlp.Decode(bytes.NewReader(tx.Data), &data)
-			tx.SetDecodedData(data)
-
-			if data.ValueToSell == nil {
-				return nil, errors.New("incorrect tx data")
-			}
-		}
-	case TypeSellAllCoin:
-		{
-			data := SellAllCoinData{}
-			err = rlp.Decode(bytes.NewReader(tx.Data), &data)
-			tx.SetDecodedData(data)
-		}
-	case TypeBuyCoin:
-		{
-			data := BuyCoinData{}
-			err = rlp.Decode(bytes.NewReader(tx.Data), &data)
-			tx.SetDecodedData(data)
-
-			if data.ValueToBuy == nil {
-				return nil, errors.New("incorrect tx data")
-			}
-		}
-	case TypeCreateCoin:
-		{
-			data := CreateCoinData{}
-			err = rlp.Decode(bytes.NewReader(tx.Data), &data)
-			tx.SetDecodedData(data)
-
-			if data.InitialReserve == nil || data.InitialAmount == nil {
-				return nil, errors.New("incorrect tx data")
-			}
-		}
-	case TypeDeclareCandidacy:
-		{
-			data := DeclareCandidacyData{}
-			err = rlp.Decode(bytes.NewReader(tx.Data), &data)
-			tx.SetDecodedData(data)
-
-			if data.PubKey == nil || data.Stake == nil {
-				return nil, errors.New("incorrect tx data")
-			}
-		}
-	case TypeDelegate:
-		{
-			data := DelegateData{}
-			err = rlp.Decode(bytes.NewReader(tx.Data), &data)
-			tx.SetDecodedData(data)
-
-			if data.PubKey == nil || data.Stake == nil {
-				return nil, errors.New("incorrect tx data")
-			}
-		}
-	case TypeSetCandidateOnline:
-		{
-			data := SetCandidateOnData{}
-			err = rlp.Decode(bytes.NewReader(tx.Data), &data)
-			tx.SetDecodedData(data)
-
-			if data.PubKey == nil {
-				return nil, errors.New("incorrect tx data")
-			}
-		}
-	case TypeSetCandidateOffline:
-		{
-			data := SetCandidateOffData{}
-			err = rlp.Decode(bytes.NewReader(tx.Data), &data)
-			tx.SetDecodedData(data)
-
-			if data.PubKey == nil {
-				return nil, errors.New("incorrect tx data")
-			}
-		}
-	case TypeUnbond:
-		{
-			data := UnbondData{}
-			err = rlp.Decode(bytes.NewReader(tx.Data), &data)
-			tx.SetDecodedData(data)
-
-			if data.PubKey == nil || data.Value == nil {
-				return nil, errors.New("incorrect tx data")
-			}
-		}
-	case TypeCreateMultisig:
-		{
-			data := CreateMultisigData{}
-			err = rlp.Decode(bytes.NewReader(tx.Data), &data)
-			tx.SetDecodedData(data)
-		}
-	case TypeMultisend:
-		{
-			data := MultisendData{}
-			err = rlp.Decode(bytes.NewReader(tx.Data), &data)
-			tx.SetDecodedData(data)
-		}
-	default:
-		return nil, errors.New("incorrect tx data")
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	if tx.GasPrice == nil || tx.Data == nil {
-		return nil, errors.New("incorrect tx data")
-	}
-
-	return &tx, nil
 }
 
 func CheckForCoinSupplyOverflow(current *big.Int, delta *big.Int) error {

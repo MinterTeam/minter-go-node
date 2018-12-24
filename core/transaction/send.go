@@ -52,6 +52,12 @@ func (data SendData) TotalSpend(tx *Transaction, context *state.StateDB) (TotalS
 }
 
 func (data SendData) BasicCheck(tx *Transaction, context *state.StateDB) *Response {
+	if data.Value == nil {
+		return &Response{
+			Code: code.DecodeError,
+			Log:  "Incorrect tx data"}
+	}
+
 	if !context.CoinExists(data.Coin) {
 		return &Response{
 			Code: code.CoinNotExists,
@@ -119,7 +125,7 @@ func (data SendData) Run(tx *Transaction, context *state.StateDB, isCheck bool, 
 	}
 
 	tags := common.KVPairs{
-		common.KVPair{Key: []byte("tx.type"), Value: []byte{TypeSend}},
+		common.KVPair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeSend)}))},
 		common.KVPair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
 		common.KVPair{Key: []byte("tx.to"), Value: []byte(hex.EncodeToString(data.To[:]))},
 		common.KVPair{Key: []byte("tx.coin"), Value: []byte(data.Coin.String())},

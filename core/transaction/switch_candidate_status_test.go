@@ -22,7 +22,7 @@ func TestSwitchCandidateStatusTx(t *testing.T) {
 	pubkey := make([]byte, 32)
 	rand.Read(pubkey)
 
-	cState.CreateCandidate(addr, pubkey, 10, 0, types.GetBaseCoin(), helpers.BipToPip(big.NewInt(1)))
+	cState.CreateCandidate(addr, addr, pubkey, 10, 0, types.GetBaseCoin(), helpers.BipToPip(big.NewInt(1)))
 
 	data := SetCandidateOnData{
 		PubKey: pubkey,
@@ -53,7 +53,7 @@ func TestSwitchCandidateStatusTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0)
+	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, make(map[types.Address]struct{}))
 
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)

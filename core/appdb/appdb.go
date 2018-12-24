@@ -13,9 +13,10 @@ var (
 )
 
 const (
-	hashPath       = "hash"
-	heightPath     = "height"
-	validatorsPath = "validators"
+	hashPath           = "hash"
+	heightPath         = "height"
+	blockTimeDeltaPath = "blockDelta"
+	validatorsPath     = "validators"
 
 	dbName = "app"
 )
@@ -67,7 +68,7 @@ func (appDB *AppDB) GetValidators() types.ValidatorUpdates {
 
 	var vals types.ValidatorUpdates
 
-	err := cdc.UnmarshalBinaryLengthPrefixed(result, &vals)
+	err := cdc.UnmarshalBinaryBare(result, &vals)
 
 	if err != nil {
 		panic(err)
@@ -77,13 +78,50 @@ func (appDB *AppDB) GetValidators() types.ValidatorUpdates {
 }
 
 func (appDB *AppDB) SaveValidators(vals types.ValidatorUpdates) {
-	data, err := cdc.MarshalBinaryLengthPrefixed(vals)
+	data, err := cdc.MarshalBinaryBare(vals)
 
 	if err != nil {
 		panic(err)
 	}
 
 	appDB.db.Set([]byte(validatorsPath), data)
+}
+
+type LastBlocksTimeDelta struct {
+	Height int64
+	Delta  int
+}
+
+func (appDB *AppDB) GetLastBlocksTimeDelta(height int64) int {
+	result := appDB.db.Get([]byte(blockTimeDeltaPath))
+	if result == nil {
+		panic("No info about LastBlocksTimeDelta is available")
+	}
+
+	data := LastBlocksTimeDelta{}
+	err := cdc.UnmarshalBinaryBare(result, &data)
+	if err != nil {
+		panic(err)
+	}
+
+	if data.Height != height {
+		panic("No info about LastBlocksTimeDelta is available")
+	}
+
+	return data.Delta
+}
+
+func (appDB *AppDB) SetLastBlocksTimeDelta(height int64, delta int) {
+	data, err := cdc.MarshalBinaryBare(LastBlocksTimeDelta{
+		Height: height,
+		Delta:  delta,
+	})
+
+	if err != nil {
+		panic(err)
+	}
+
+	appDB.db.Set([]byte(blockTimeDeltaPath), data)
 }
 
 func NewAppDB() *AppDB {

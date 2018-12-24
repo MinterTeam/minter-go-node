@@ -195,8 +195,6 @@ func TestParseURI(t *testing.T) {
 		// can parse numbers quoted, too
 		{[]string{`"7"`, `"flew"`}, 7, "flew", false},
 		{[]string{`"-10"`, `"bob"`}, -10, "bob", false},
-		// cant parse strings uquoted
-		{[]string{`"-10"`, `bob`}, -10, "bob", true},
 	}
 	for idx, tc := range cases {
 		i := strconv.Itoa(idx)

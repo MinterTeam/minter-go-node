@@ -50,6 +50,7 @@ var Routes = map[string]*rpcserver.RPCFunc{
 	"estimate_coin_buy":      rpcserver.NewRPCFunc(EstimateCoinBuy, "coin_to_sell,coin_to_buy,value_to_buy,height"),
 	"estimate_tx_commission": rpcserver.NewRPCFunc(EstimateTxCommission, "tx,height"),
 	"unconfirmed_txs":        rpcserver.NewRPCFunc(UnconfirmedTxs, "limit"),
+	"max_gas":                rpcserver.NewRPCFunc(MaxGas, "height"),
 }
 
 func RunApi(b *minter.Blockchain, tmRPC *rpc.Local) {

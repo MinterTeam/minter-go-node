@@ -106,7 +106,7 @@ func (data MultisendData) Run(tx *Transaction, context *state.StateDB, isCheck b
 	}
 
 	tags := common.KVPairs{
-		common.KVPair{Key: []byte("tx.type"), Value: []byte{TypeMultisend}},
+		common.KVPair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeMultisend)}))},
 		common.KVPair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
 		common.KVPair{Key: []byte("tx.to"), Value: []byte(pluckRecipients(data.List))},
 	}

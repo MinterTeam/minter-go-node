@@ -13,8 +13,10 @@ import (
 	"github.com/MinterTeam/minter-go-node/eventsdb"
 	"github.com/MinterTeam/minter-go-node/genesis"
 	"github.com/MinterTeam/minter-go-node/helpers"
+	"github.com/MinterTeam/minter-go-node/version"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/db"
+	tmNode "github.com/tendermint/tendermint/node"
 	"math/big"
 	"sync"
 	"sync/atomic"
@@ -31,6 +33,12 @@ type Blockchain struct {
 	lastCommittedHeight int64
 	rewards             *big.Int
 	validatorsStatuses  map[[20]byte]int8
+
+	// local rpc client for Tendermint
+	tmNode *tmNode.Node
+
+	// currentMempool is responsive for prevent sending multiple transactions from one address in one block
+	currentMempool map[types.Address]struct{}
 
 	lock sync.RWMutex
 	wg   sync.WaitGroup
@@ -59,6 +67,7 @@ func NewMinterBlockchain() *Blockchain {
 		appDB:               applicationDB,
 		height:              applicationDB.GetLastHeight(),
 		lastCommittedHeight: applicationDB.GetLastHeight(),
+		currentMempool:      map[types.Address]struct{}{},
 	}
 
 	blockchain.stateDeliver, err = state.New(int64(blockchain.height), blockchain.stateDB)
@@ -94,10 +103,12 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 	}
 
 	for _, validator := range req.Validators {
-		app.stateDeliver.CreateCandidate(genesisState.FirstValidatorAddress, validator.PubKey.Data, 100, 1, types.GetBaseCoin(), helpers.BipToPip(big.NewInt(1000000)))
+		app.stateDeliver.CreateCandidate(genesisState.FirstValidatorAddress, genesisState.FirstValidatorAddress, validator.PubKey.Data, 100, 1, types.GetBaseCoin(), helpers.BipToPip(big.NewInt(1000000)))
 		app.stateDeliver.CreateValidator(genesisState.FirstValidatorAddress, validator.PubKey.Data, 100, 1, types.GetBaseCoin(), helpers.BipToPip(big.NewInt(1000000)))
 		app.stateDeliver.SetCandidateOnline(validator.PubKey.Data)
 	}
+
+	app.stateDeliver.SetMaxGas(100000)
 
 	return abciTypes.ResponseInitChain{}
 }
@@ -266,20 +277,32 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 
 	_ = eventsdb.GetCurrent().FlushEvents(req.Height)
 
+	// compute max gas
+	maxGas := app.calcMaxGas(req.Height)
+	app.stateDeliver.SetMaxGas(maxGas)
+
 	return abciTypes.ResponseEndBlock{
 		ValidatorUpdates: updates,
+		ConsensusParamUpdates: &abciTypes.ConsensusParams{
+			BlockSize: &abciTypes.BlockSizeParams{
+				MaxBytes: 10000,
+				MaxGas:   int64(maxGas),
+			},
+		},
 	}
 }
 
 func (app *Blockchain) Info(req abciTypes.RequestInfo) (resInfo abciTypes.ResponseInfo) {
 	return abciTypes.ResponseInfo{
+		Version:          version.Version,
+		AppVersion:       version.AppVersion,
 		LastBlockHeight:  app.appDB.GetLastHeight(),
 		LastBlockAppHash: app.appDB.GetLastBlockHash(),
 	}
 }
 
 func (app *Blockchain) DeliverTx(rawTx []byte) abciTypes.ResponseDeliverTx {
-	response := transaction.RunTx(app.stateDeliver, false, rawTx, app.rewards, app.height)
+	response := transaction.RunTx(app.stateDeliver, false, rawTx, app.rewards, app.height, nil)
 
 	return abciTypes.ResponseDeliverTx{
 		Code:      response.Code,
@@ -293,7 +316,7 @@ func (app *Blockchain) DeliverTx(rawTx []byte) abciTypes.ResponseDeliverTx {
 }
 
 func (app *Blockchain) CheckTx(rawTx []byte) abciTypes.ResponseCheckTx {
-	response := transaction.RunTx(app.stateCheck, true, rawTx, nil, app.height)
+	response := transaction.RunTx(app.stateCheck, true, rawTx, nil, app.height, app.currentMempool)
 
 	return abciTypes.ResponseCheckTx{
 		Code:      response.Code,
@@ -307,7 +330,7 @@ func (app *Blockchain) CheckTx(rawTx []byte) abciTypes.ResponseCheckTx {
 }
 
 func (app *Blockchain) Commit() abciTypes.ResponseCommit {
-	hash, _, err := app.stateDeliver.Commit(false)
+	hash, _, err := app.stateDeliver.Commit()
 
 	if err != nil {
 		panic(err)
@@ -319,6 +342,8 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 	app.updateCurrentState()
 
 	atomic.StoreInt64(&app.lastCommittedHeight, app.Height())
+
+	app.currentMempool = map[types.Address]struct{}{}
 
 	app.wg.Done()
 
@@ -373,4 +398,59 @@ func (app *Blockchain) getCurrentValidators() abciTypes.ValidatorUpdates {
 
 func (app *Blockchain) saveCurrentValidators(vals abciTypes.ValidatorUpdates) {
 	app.appDB.SaveValidators(vals)
+}
+
+func (app *Blockchain) getBlocksTimeDelta(height, count int64) int {
+	// should do this because tmNode is unavailable during Tendermint's replay mode
+	if app.tmNode == nil {
+		return app.appDB.GetLastBlocksTimeDelta(height)
+	}
+
+	blockStore := app.tmNode.BlockStore()
+
+	blockA := blockStore.LoadBlockMeta(height - count - 1)
+	blockB := blockStore.LoadBlockMeta(height - 1)
+
+	delta := int(blockB.Header.Time.Sub(blockA.Header.Time).Seconds())
+	app.appDB.SetLastBlocksTimeDelta(height, delta)
+
+	return delta
+}
+
+func (app *Blockchain) calcMaxGas(height int64) uint64 {
+	const defaultMaxGas = 100000
+	const minMaxGas = 5000
+	const targetTime = 7
+	const blockDelta = 3
+
+	// skip first 20 blocks
+	if height <= 20 {
+		return defaultMaxGas
+	}
+
+	// get current max gas
+	newMaxGas := app.stateCheck.GetCurrentMaxGas()
+
+	// check if blocks are created in time
+	if app.getBlocksTimeDelta(height, blockDelta) > targetTime*blockDelta {
+		newMaxGas = newMaxGas * 7 / 10 // decrease by 30%
+	} else {
+		newMaxGas = newMaxGas * 105 / 100 // increase by 5%
+	}
+
+	// check if max gas is too high
+	if newMaxGas > defaultMaxGas {
+		newMaxGas = defaultMaxGas
+	}
+
+	// check if max gas is too low
+	if newMaxGas < minMaxGas {
+		newMaxGas = minMaxGas
+	}
+
+	return newMaxGas
+}
+
+func (app *Blockchain) SetTmNode(node *tmNode.Node) {
+	app.tmNode = node
 }

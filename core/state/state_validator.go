@@ -25,12 +25,12 @@ func (c *stateValidators) Data() Validators {
 }
 
 type Validator struct {
-	CandidateAddress types.Address
-	TotalBipStake    *big.Int
-	PubKey           types.Pubkey
-	Commission       uint
-	AccumReward      *big.Int
-	AbsentTimes      *BitArray
+	RewardAddress types.Address
+	TotalBipStake *big.Int
+	PubKey        types.Pubkey
+	Commission    uint
+	AccumReward   *big.Int
+	AbsentTimes   *BitArray
 
 	tmAddress *[20]byte
 	toDrop    bool

@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"encoding/hex"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
@@ -8,6 +9,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/hexutil"
+	"github.com/tendermint/tendermint/libs/common"
 	"math/big"
 )
 
@@ -22,6 +24,12 @@ func (data DelegateData) TotalSpend(tx *Transaction, context *state.StateDB) (To
 }
 
 func (data DelegateData) BasicCheck(tx *Transaction, context *state.StateDB) *Response {
+	if data.PubKey == nil || data.Stake == nil {
+		return &Response{
+			Code: code.DecodeError,
+			Log:  "Incorrect tx data"}
+	}
+
 	if !context.CoinExists(tx.GasCoin) {
 		return &Response{
 			Code: code.CoinNotExists,
@@ -116,9 +124,15 @@ func (data DelegateData) Run(tx *Transaction, context *state.StateDB, isCheck bo
 		context.SetNonce(sender, tx.Nonce)
 	}
 
+	tags := common.KVPairs{
+		common.KVPair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeDelegate)}))},
+		common.KVPair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
+	}
+
 	return Response{
 		Code:      code.OK,
 		GasUsed:   tx.Gas(),
 		GasWanted: tx.Gas(),
+		Tags:      tags,
 	}
 }

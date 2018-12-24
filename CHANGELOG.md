@@ -1,7 +1,29 @@
 # Changelog
 
-## 0.8.5
+## 0.9.0
 *Dec 10th, 2018*
+
+IMPROVEMENT
+
+- [events] Refactor events
+- [api] #183 Report if node has full state history in /status
+- [api] #164 Add /unconfirmed_txs endpoint
+- [api] Add /max_gas endpoint
+- [core] Do not accept 2 transactions from same address in mempool at once
+- [core] Add missing tags to transactions
+- [core] Dynamically adjust max gas in blocks
+- [core] Update commissions
+- [tendermint] Update to v0.27.4
+
+BUG FIXES
+
+- [core] Fix issue with `SellAll` tx
+- [core] Fix issue #182 with candidate owner's address
+- [core] Fix max coin supply
+- [api] Fix tx tags
+
+## 0.8.5
+*Dec 11th, 2018*
 
 BUG FIXES
 

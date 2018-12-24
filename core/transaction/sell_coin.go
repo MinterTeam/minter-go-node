@@ -123,7 +123,7 @@ func (data SellCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (To
 			newReserve := big.NewInt(0).Set(coinFrom.ReserveBalance)
 
 			newVolume.Sub(newVolume, data.ValueToSell)
-			newReserve.Sub(newVolume, value)
+			newReserve.Sub(newVolume, basecoinValue)
 
 			c := formula.CalculateSaleAmount(newVolume, newReserve, coinFrom.Crr, commissionInBaseCoin)
 
@@ -211,6 +211,12 @@ func (data SellCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (To
 }
 
 func (data SellCoinData) BasicCheck(tx *Transaction, context *state.StateDB) *Response {
+	if data.ValueToSell == nil {
+		return &Response{
+			Code: code.DecodeError,
+			Log:  "Incorrect tx data"}
+	}
+
 	if data.CoinToSell == data.CoinToBuy {
 		return &Response{
 			Code: code.CrossConvert,
@@ -290,7 +296,7 @@ func (data SellCoinData) Run(tx *Transaction, context *state.StateDB, isCheck bo
 	}
 
 	tags := common.KVPairs{
-		common.KVPair{Key: []byte("tx.type"), Value: []byte{TypeSellCoin}},
+		common.KVPair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeSellCoin)}))},
 		common.KVPair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
 		common.KVPair{Key: []byte("tx.coin_to_buy"), Value: []byte(data.CoinToBuy.String())},
 		common.KVPair{Key: []byte("tx.coin_to_sell"), Value: []byte(data.CoinToSell.String())},

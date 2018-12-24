@@ -2,12 +2,14 @@ package transaction
 
 import (
 	"bytes"
+	"encoding/hex"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
+	"github.com/tendermint/tendermint/libs/common"
 	"math/big"
 )
 
@@ -20,6 +22,12 @@ func (data SetCandidateOnData) TotalSpend(tx *Transaction, context *state.StateD
 }
 
 func (data SetCandidateOnData) BasicCheck(tx *Transaction, context *state.StateDB) *Response {
+	if data.PubKey == nil {
+		return &Response{
+			Code: code.DecodeError,
+			Log:  "Incorrect tx data"}
+	}
+
 	if !context.CoinExists(tx.GasCoin) {
 		return &Response{
 			Code: code.CoinNotExists,
@@ -29,12 +37,12 @@ func (data SetCandidateOnData) BasicCheck(tx *Transaction, context *state.StateD
 	if !context.CandidateExists(data.PubKey) {
 		return &Response{
 			Code: code.CandidateNotFound,
-			Log:  fmt.Sprintf("Candidate with such public key (%x) not found", data.PubKey)}
+			Log:  fmt.Sprintf("Candidate with such public key (%s) not found", data.PubKey.String())}
 	}
 
 	candidate := context.GetStateCandidate(data.PubKey)
 	sender, _ := tx.Sender()
-	if !bytes.Equal(candidate.CandidateAddress.Bytes(), sender.Bytes()) {
+	if !bytes.Equal(candidate.OwnerAddress.Bytes(), sender.Bytes()) {
 		return &Response{
 			Code: code.IsNotOwnerOfCandidate,
 			Log:  fmt.Sprintf("Sender is not an owner of a candidate")}
@@ -89,10 +97,16 @@ func (data SetCandidateOnData) Run(tx *Transaction, context *state.StateDB, isCh
 		context.SetNonce(sender, tx.Nonce)
 	}
 
+	tags := common.KVPairs{
+		common.KVPair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeSetCandidateOnline)}))},
+		common.KVPair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
+	}
+
 	return Response{
 		Code:      code.OK,
 		GasUsed:   tx.Gas(),
 		GasWanted: tx.Gas(),
+		Tags:      tags,
 	}
 }
 
@@ -105,6 +119,12 @@ func (data SetCandidateOffData) TotalSpend(tx *Transaction, context *state.State
 }
 
 func (data SetCandidateOffData) BasicCheck(tx *Transaction, context *state.StateDB) *Response {
+	if data.PubKey == nil {
+		return &Response{
+			Code: code.DecodeError,
+			Log:  "Incorrect tx data"}
+	}
+
 	if !context.CoinExists(tx.GasCoin) {
 		return &Response{
 			Code: code.CoinNotExists,
@@ -114,12 +134,12 @@ func (data SetCandidateOffData) BasicCheck(tx *Transaction, context *state.State
 	if !context.CandidateExists(data.PubKey) {
 		return &Response{
 			Code: code.CandidateNotFound,
-			Log:  fmt.Sprintf("Candidate with such public key (%x) not found", data.PubKey)}
+			Log:  fmt.Sprintf("Candidate with such public key (%s) not found", data.PubKey.String())}
 	}
 
 	candidate := context.GetStateCandidate(data.PubKey)
 	sender, _ := tx.Sender()
-	if !bytes.Equal(candidate.CandidateAddress.Bytes(), sender.Bytes()) {
+	if !bytes.Equal(candidate.OwnerAddress.Bytes(), sender.Bytes()) {
 		return &Response{
 			Code: code.IsNotOwnerOfCandidate,
 			Log:  fmt.Sprintf("Sender is not an owner of a candidate")}
@@ -140,11 +160,9 @@ func (data SetCandidateOffData) Gas() int64 {
 func (data SetCandidateOffData) Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response {
 	sender, _ := tx.Sender()
 
-	if currentBlock > 7000 { // TODO: remove
-		response := data.BasicCheck(tx, context)
-		if response != nil {
-			return *response
-		}
+	response := data.BasicCheck(tx, context)
+	if response != nil {
+		return *response
 	}
 
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
@@ -176,9 +194,15 @@ func (data SetCandidateOffData) Run(tx *Transaction, context *state.StateDB, isC
 		context.SetNonce(sender, tx.Nonce)
 	}
 
+	tags := common.KVPairs{
+		common.KVPair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeSetCandidateOffline)}))},
+		common.KVPair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
+	}
+
 	return Response{
 		Code:      code.OK,
 		GasUsed:   tx.Gas(),
 		GasWanted: tx.Gas(),
+		Tags:      tags,
 	}
 }
