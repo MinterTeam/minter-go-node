@@ -5,7 +5,7 @@
 
 IMPROVEMENT
 
-- [events] Refactor events (WARNING: full re-sync needed for utilizing events API)
+- [events] Refactor events
 - [api] #183 Report if node has full state history in /status
 - [api] #164 Add /unconfirmed_txs endpoint
 - [api] Add /max_gas endpoint
