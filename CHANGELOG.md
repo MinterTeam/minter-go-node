@@ -1,7 +1,7 @@
 # Changelog
 
 ## 0.9.0
-*Dec 10th, 2018*
+*Dec 24th, 2018*
 
 IMPROVEMENT
 

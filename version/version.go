@@ -6,7 +6,7 @@ const (
 	Min = "9"
 	Fix = "0"
 
-	AppVersion = 1
+	AppVer = 1
 )
 
 var (
