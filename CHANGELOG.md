@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.4
+*Dec 25th, 2018*
+
+BUG FIXES
+
+- [core] Fix sell all coin tx
+
 ## 0.9.2
 *Dec 25th, 2018*
 
