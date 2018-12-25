@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.2
+*Dec 25th, 2018*
+
+BUG FIXES
+
+- [core] Increase max block bytes
+
 ## 0.9.1
 *Dec 24th, 2018*
 
