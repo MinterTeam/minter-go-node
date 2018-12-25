@@ -70,7 +70,7 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.StateDB) 
 			}
 		}
 
-		value.Set(ret)
+		value = big.NewInt(0).Set(ret)
 		value.Sub(ret, commissionInBaseCoin)
 
 		conversions = append(conversions, Conversion{
@@ -151,6 +151,13 @@ func (data SellAllCoinData) Gas() int64 {
 
 func (data SellAllCoinData) Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response {
 	sender, _ := tx.Sender()
+
+	// TODO: delete
+	if isCheck && currentBlock < 14000 {
+		return Response{
+			Code: 999,
+			Log:  "Temporary forbidden tx"}
+	}
 
 	response := data.BasicCheck(tx, context)
 	if response != nil {
