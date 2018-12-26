@@ -100,6 +100,8 @@ func GetConfig() *Config {
 		cfg.RPC.GRPCListenAddress = ""
 	}
 
+	cfg.Mempool.Recheck = false
+
 	cfg.SetRoot(utils.GetMinterHome())
 	EnsureRoot(utils.GetMinterHome())
 
