@@ -134,5 +134,11 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPool *big.I
 			Log:  fmt.Sprintf("Unexpected nonce. Expected: %d, got %d.", expectedNonce, tx.Nonce)}
 	}
 
-	return tx.decodedData.Run(tx, context, isCheck, rewardPool, currentBlock)
+	response := tx.decodedData.Run(tx, context, isCheck, rewardPool, currentBlock)
+
+	if response.Code != code.TxFromSenderAlreadyInMempool && response.Code != code.OK {
+		delete(currentMempool, sender)
+	}
+
+	return response
 }

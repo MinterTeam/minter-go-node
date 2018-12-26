@@ -1,6 +1,17 @@
 # Changelog
 
 ## 0.9.4
+*Dec 26th, 2018*
+
+IMPROVEMENT
+
+- [mempool] Disable tx rechecking
+
+BUG FIXES
+
+- [core] Fix issue with bag tx occupying mempool
+
+## 0.9.3
 *Dec 25th, 2018*
 
 BUG FIXES

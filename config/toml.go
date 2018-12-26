@@ -202,7 +202,6 @@ private_peer_ids = "{{ .P2P.PrivatePeerIDs }}"
 ##### mempool configuration options #####
 [mempool]
 
-recheck = {{ .Mempool.Recheck }}
 broadcast = {{ .Mempool.Broadcast }}
 wal_dir = "{{ js .Mempool.WalPath }}"
 
