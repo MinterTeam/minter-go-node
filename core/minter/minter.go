@@ -40,8 +40,9 @@ type Blockchain struct {
 	// currentMempool is responsive for prevent sending multiple transactions from one address in one block
 	currentMempool map[types.Address]struct{}
 
-	lock sync.RWMutex
-	wg   sync.WaitGroup
+	lock    sync.RWMutex
+	wg      sync.WaitGroup
+	stopped uint32
 }
 
 const (
@@ -117,6 +118,9 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 
 func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.ResponseBeginBlock {
 	app.wg.Add(1)
+	if atomic.LoadUint32(&app.stopped) == 1 {
+		panic("Application stopped")
+	}
 
 	atomic.StoreInt64(&app.height, req.Header.Height)
 	app.rewards = big.NewInt(0)
@@ -359,6 +363,7 @@ func (app *Blockchain) Query(reqQuery abciTypes.RequestQuery) abciTypes.Response
 }
 
 func (app *Blockchain) Stop() {
+	atomic.StoreUint32(&app.stopped, 1)
 	app.wg.Wait()
 
 	app.appDB.Close()
