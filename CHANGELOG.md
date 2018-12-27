@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.6
+*Dec 27th, 2018*
+
+BUG FIXES
+
+- [core] Fix issue with corrupted db
+
 ## 0.9.5
 *Dec 26th, 2018*
 
