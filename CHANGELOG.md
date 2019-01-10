@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.10.0
+*Jan 10th, 2019*
+
+BUG FIXES
+
+- [core] Various bug fixes
+
+IMPROVEMENT
+
+- [mempool] Add variable min gas price threshold
+
 ## 0.9.6
 *Dec 27th, 2018*
 

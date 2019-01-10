@@ -1,7 +1,7 @@
 version: "3.4"
 services:
   minter:
-    image: minterteam/minter:0.9.6
+    image: minterteam/minter:0.10.0
     volumes:
       - ~/.minter:/minter
     ports:
