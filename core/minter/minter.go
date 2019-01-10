@@ -132,10 +132,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 		panic("Application stopped")
 	}
 
-	// temporary fix for db crash TODO: eliminate
-	if req.Header.Height > 20 {
-		app.updateBlocksTimeDelta(req.Header.Height, 3)
-	}
+	app.updateBlocksTimeDelta(req.Header.Height, 3)
 
 	atomic.StoreInt64(&app.height, req.Header.Height)
 	app.rewards = big.NewInt(0)
@@ -447,6 +444,10 @@ func (app *Blockchain) saveCurrentValidators(vals abciTypes.ValidatorUpdates) {
 func (app *Blockchain) updateBlocksTimeDelta(height, count int64) {
 	// should do this because tmNode is unavailable during Tendermint's replay mode
 	if app.tmNode == nil {
+		return
+	}
+
+	if height-count < 1 {
 		return
 	}
 
