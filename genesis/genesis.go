@@ -57,7 +57,6 @@ func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
 	}
 
 	appStateJSON, err := json.Marshal(appState)
-
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +71,6 @@ func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
 	}
 
 	err = genesis.ValidateAndComplete()
-
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +125,6 @@ func GetPreTestnetGenesis() (*tmtypes.GenesisDoc, error) {
 	}
 
 	appStateJSON, err := json.Marshal(appState)
-
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +139,6 @@ func GetPreTestnetGenesis() (*tmtypes.GenesisDoc, error) {
 	}
 
 	err = genesis.ValidateAndComplete()
-
 	if err != nil {
 		return nil, err
 	}
