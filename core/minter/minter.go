@@ -443,20 +443,20 @@ func (app *Blockchain) SetTmNode(node *tmNode.Node) {
 func (app *Blockchain) MinGasPrice() *big.Int {
 	mempoolSize := app.tmNode.MempoolReactor().Mempool.Size()
 
-	if mempoolSize > 100 {
-		return big.NewInt(2)
-	}
-
-	if mempoolSize > 500 {
-		return big.NewInt(5)
+	if mempoolSize > 5000 {
+		return big.NewInt(50)
 	}
 
 	if mempoolSize > 1000 {
 		return big.NewInt(10)
 	}
 
-	if mempoolSize > 5000 {
-		return big.NewInt(50)
+	if mempoolSize > 500 {
+		return big.NewInt(5)
+	}
+
+	if mempoolSize > 100 {
+		return big.NewInt(2)
 	}
 
 	return big.NewInt(1)
