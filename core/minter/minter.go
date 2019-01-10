@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/core/appdb"
+	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/rewards"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
@@ -21,6 +22,18 @@ import (
 	"math/big"
 	"sync"
 	"sync/atomic"
+)
+
+const (
+	// Global validator's statuses
+	ValidatorPresent = 1
+	ValidatorAbsent  = 2
+
+	BlockMaxBytes = 10000000
+)
+
+var (
+	blockchain *Blockchain
 )
 
 // Main structure of Minter Blockchain
@@ -46,18 +59,6 @@ type Blockchain struct {
 	wg      sync.WaitGroup // wg is used for graceful node shutdown
 	stopped uint32
 }
-
-const (
-	// Global validator's statuses
-	ValidatorPresent = 1
-	ValidatorAbsent  = 2
-
-	BlockMaxBytes = 10000000
-)
-
-var (
-	blockchain *Blockchain
-)
 
 // Creates Minter Blockchain instance, should be only called once
 func NewMinterBlockchain() *Blockchain {
@@ -341,6 +342,13 @@ func (app *Blockchain) DeliverTx(rawTx []byte) abciTypes.ResponseDeliverTx {
 func (app *Blockchain) CheckTx(rawTx []byte) abciTypes.ResponseCheckTx {
 	response := transaction.RunTx(app.stateCheck, true, rawTx, nil, app.height, app.currentMempool)
 
+	if response.GasPrice.Cmp(app.MinGasPrice()) == -1 {
+		return abciTypes.ResponseCheckTx{
+			Code: code.TooLowGasPrice,
+			Log:  "Gas price of tx is too low to be included in mempool",
+		}
+	}
+
 	return abciTypes.ResponseCheckTx{
 		Code:      response.Code,
 		Data:      response.Data,
@@ -400,13 +408,6 @@ func (app *Blockchain) Stop() {
 	app.stateDB.Close()
 }
 
-func (app *Blockchain) resetCheckState() {
-	app.lock.Lock()
-	defer app.lock.Unlock()
-
-	app.stateCheck = state.NewForCheck(app.stateDeliver)
-}
-
 // Get immutable state of Minter Blockchain
 func (app *Blockchain) CurrentState() *state.StateDB {
 	app.lock.RLock()
@@ -431,6 +432,41 @@ func (app *Blockchain) Height() int64 {
 // Get last committed height of Minter Blockchain
 func (app *Blockchain) LastCommittedHeight() int64 {
 	return atomic.LoadInt64(&app.lastCommittedHeight)
+}
+
+// Set Tendermint node
+func (app *Blockchain) SetTmNode(node *tmNode.Node) {
+	app.tmNode = node
+}
+
+// Get minimal acceptable gas price
+func (app *Blockchain) MinGasPrice() *big.Int {
+	mempoolSize := app.tmNode.MempoolReactor().Mempool.Size()
+
+	if mempoolSize > 100 {
+		return big.NewInt(2)
+	}
+
+	if mempoolSize > 500 {
+		return big.NewInt(5)
+	}
+
+	if mempoolSize > 1000 {
+		return big.NewInt(10)
+	}
+
+	if mempoolSize > 5000 {
+		return big.NewInt(50)
+	}
+
+	return big.NewInt(1)
+}
+
+func (app *Blockchain) resetCheckState() {
+	app.lock.Lock()
+	defer app.lock.Unlock()
+
+	app.stateCheck = state.NewForCheck(app.stateDeliver)
 }
 
 func (app *Blockchain) getCurrentValidators() abciTypes.ValidatorUpdates {
@@ -496,9 +532,4 @@ func (app *Blockchain) calcMaxGas(height int64) uint64 {
 	}
 
 	return newMaxGas
-}
-
-// Set Tendermint node
-func (app *Blockchain) SetTmNode(node *tmNode.Node) {
-	app.tmNode = node
 }

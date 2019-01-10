@@ -28,6 +28,7 @@ type Response struct {
 	GasWanted int64           `protobuf:"varint,5,opt,name=gas_wanted,json=gasWanted,proto3" json:"gas_wanted,omitempty"`
 	GasUsed   int64           `protobuf:"varint,6,opt,name=gas_used,json=gasUsed,proto3" json:"gas_used,omitempty"`
 	Tags      []common.KVPair `protobuf:"bytes,7,rep,name=tags" json:"tags,omitempty"`
+	GasPrice  *big.Int
 }
 
 func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPool *big.Int, currentBlock int64, currentMempool map[types.Address]struct{}) Response {
@@ -38,7 +39,6 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPool *big.I
 	}
 
 	tx, err := TxDecoder.DecodeFromBytes(rawTx)
-
 	if err != nil {
 		return Response{
 			Code: code.DecodeError,
@@ -62,7 +62,6 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPool *big.I
 	}
 
 	sender, err := tx.Sender()
-
 	if err != nil {
 		return Response{
 			Code: code.DecodeError,
@@ -139,6 +138,8 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPool *big.I
 	if response.Code != code.TxFromSenderAlreadyInMempool && response.Code != code.OK {
 		delete(currentMempool, sender)
 	}
+
+	response.GasPrice = tx.GasPrice
 
 	return response
 }
