@@ -3,6 +3,7 @@ package minter
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/core/appdb"
 	"github.com/MinterTeam/minter-go-node/core/rewards"
@@ -22,6 +23,7 @@ import (
 	"sync/atomic"
 )
 
+// Main structure of Minter Blockchain
 type Blockchain struct {
 	abciTypes.BaseApplication
 
@@ -29,9 +31,9 @@ type Blockchain struct {
 	appDB               *appdb.AppDB
 	stateDeliver        *state.StateDB
 	stateCheck          *state.StateDB
-	height              int64
-	lastCommittedHeight int64
-	rewards             *big.Int
+	height              int64    // current Blockchain height
+	lastCommittedHeight int64    // Blockchain.height updated in the at begin of block processing, while lastCommittedHeight updated at the end of block processing
+	rewards             *big.Int // Rewards pool
 	validatorsStatuses  map[[20]byte]int8
 
 	// local rpc client for Tendermint
@@ -41,28 +43,30 @@ type Blockchain struct {
 	currentMempool map[types.Address]struct{}
 
 	lock    sync.RWMutex
-	wg      sync.WaitGroup
+	wg      sync.WaitGroup // wg is used for graceful node shutdown
 	stopped uint32
 }
 
 const (
+	// Global validator's statuses
 	ValidatorPresent = 1
 	ValidatorAbsent  = 2
 
-	BlockMaxBytes = 10000 // TODO: change to 10000000
+	BlockMaxBytes = 10000000
 )
 
 var (
 	blockchain *Blockchain
 )
 
+// Creates Minter Blockchain instance, should be only called once
 func NewMinterBlockchain() *Blockchain {
 	ldb, err := db.NewGoLevelDB("state", utils.GetMinterHome()+"/data")
-
 	if err != nil {
 		panic(err)
 	}
 
+	// Initiate Application DB. Used for persisting data like current block, validators, etc.
 	applicationDB := appdb.NewAppDB()
 
 	blockchain = &Blockchain{
@@ -73,56 +77,62 @@ func NewMinterBlockchain() *Blockchain {
 		currentMempool:      map[types.Address]struct{}{},
 	}
 
+	// Set stateDeliver and stateCheck
 	blockchain.stateDeliver, err = state.New(int64(blockchain.height), blockchain.stateDB)
-
 	if err != nil {
 		panic(err)
 	}
 
-	blockchain.updateCurrentState()
+	blockchain.stateCheck = state.NewForCheck(blockchain.stateDeliver)
 
 	return blockchain
 }
 
-func (app *Blockchain) SetOption(req abciTypes.RequestSetOption) abciTypes.ResponseSetOption {
-	return abciTypes.ResponseSetOption{}
-}
-
+// Initialize blockchain with validators and other info. Only called once.
 func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.ResponseInitChain {
 	var genesisState genesis.AppState
 	err := json.Unmarshal(req.AppStateBytes, &genesisState)
-
 	if err != nil {
 		panic(err)
 	}
 
+	// Filling genesis accounts with given amount of coins
 	for _, account := range genesisState.InitialBalances {
-		for coinSymbol, value := range account.Balance {
-			bigIntValue, _ := big.NewInt(0).SetString(value, 10)
-			var coin types.CoinSymbol
-			copy(coin[:], []byte(coinSymbol))
-			app.stateDeliver.SetBalance(account.Address, coin, bigIntValue)
+		for coin, value := range account.Balance {
+			bigIntValue, success := big.NewInt(0).SetString(value, 10)
+			if !success {
+				panic(fmt.Sprintf("%s is not a corrent int", value))
+			}
+
+			coinSymbol := types.StrToCoinSymbol(coin)
+			app.stateDeliver.SetBalance(account.Address, coinSymbol, bigIntValue)
 		}
 	}
 
+	// Set initial Blockchain validators
+	commission := uint(100)
+	currentBlock := uint(1)
+	initialStake := helpers.BipToPip(big.NewInt(1000000)) // 1 mln bip
 	for _, validator := range req.Validators {
-		app.stateDeliver.CreateCandidate(genesisState.FirstValidatorAddress, genesisState.FirstValidatorAddress, validator.PubKey.Data, 100, 1, types.GetBaseCoin(), helpers.BipToPip(big.NewInt(1000000)))
-		app.stateDeliver.CreateValidator(genesisState.FirstValidatorAddress, validator.PubKey.Data, 100, 1, types.GetBaseCoin(), helpers.BipToPip(big.NewInt(1000000)))
+		app.stateDeliver.CreateCandidate(genesisState.FirstValidatorAddress, genesisState.FirstValidatorAddress, validator.PubKey.Data, commission, currentBlock, types.GetBaseCoin(), initialStake)
+		app.stateDeliver.CreateValidator(genesisState.FirstValidatorAddress, validator.PubKey.Data, commission, currentBlock, types.GetBaseCoin(), initialStake)
 		app.stateDeliver.SetCandidateOnline(validator.PubKey.Data)
 	}
 
+	// Set initial max gas to 100k
 	app.stateDeliver.SetMaxGas(100000)
 
 	return abciTypes.ResponseInitChain{}
 }
 
+// Signals the beginning of a block.
 func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.ResponseBeginBlock {
 	app.wg.Add(1)
 	if atomic.LoadUint32(&app.stopped) == 1 {
 		panic("Application stopped")
 	}
 
-	// temporary fix for db crash
+	// temporary fix for db crash TODO: eliminate
 	if req.Header.Height > 20 {
 		app.updateBlocksTimeDelta(req.Header.Height, 3)
 	}
@@ -157,7 +167,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 		app.stateDeliver.PunishFrozenFundsWithAddress(uint64(req.Header.Height), uint64(req.Header.Height+518400), address)
 	}
 
-	// apply frozen funds
+	// apply frozen funds (used for unbond stakes)
 	frozenFunds := app.stateDeliver.GetStateFrozenFunds(uint64(req.Header.Height))
 	if frozenFunds != nil {
 		for _, item := range frozenFunds.List() {
@@ -170,12 +180,14 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 			app.stateDeliver.AddBalance(item.Address, item.Coin, item.Value)
 		}
 
+		// delete from db
 		frozenFunds.Delete()
 	}
 
 	return abciTypes.ResponseBeginBlock{}
 }
 
+// Signals the end of a block, returns changes to the validator set
 func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.ResponseEndBlock {
 	var updates []abciTypes.ValidatorUpdate
 
@@ -303,6 +315,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 	}
 }
 
+// Return application info. Used for synchronization between Tendermint and Minter
 func (app *Blockchain) Info(req abciTypes.RequestInfo) (resInfo abciTypes.ResponseInfo) {
 	return abciTypes.ResponseInfo{
 		Version:          version.Version,
@@ -312,6 +325,7 @@ func (app *Blockchain) Info(req abciTypes.RequestInfo) (resInfo abciTypes.Respon
 	}
 }
 
+// Deliver a tx for full processing
 func (app *Blockchain) DeliverTx(rawTx []byte) abciTypes.ResponseDeliverTx {
 	response := transaction.RunTx(app.stateDeliver, false, rawTx, app.rewards, app.height, nil)
 
@@ -326,6 +340,7 @@ func (app *Blockchain) DeliverTx(rawTx []byte) abciTypes.ResponseDeliverTx {
 	}
 }
 
+// Validate a tx for the mempool
 func (app *Blockchain) CheckTx(rawTx []byte) abciTypes.ResponseCheckTx {
 	response := transaction.RunTx(app.stateCheck, true, rawTx, nil, app.height, app.currentMempool)
 
@@ -340,22 +355,28 @@ func (app *Blockchain) CheckTx(rawTx []byte) abciTypes.ResponseCheckTx {
 	}
 }
 
+// Commit the state and return the application Merkle root hash
 func (app *Blockchain) Commit() abciTypes.ResponseCommit {
+	// Committing Minter Blockchain state
 	hash, _, err := app.stateDeliver.Commit()
-
 	if err != nil {
 		panic(err)
 	}
 
+	// Persist application hash and height
 	app.appDB.SetLastBlockHash(hash)
 	app.appDB.SetLastHeight(app.height)
 
-	app.updateCurrentState()
+	// Resetting check state to be consistent with current height
+	app.resetCheckState()
 
+	// Update LastCommittedHeight
 	atomic.StoreInt64(&app.lastCommittedHeight, app.Height())
 
+	// Clear mempool
 	app.currentMempool = map[types.Address]struct{}{}
 
+	// Releasing wg
 	app.wg.Done()
 
 	return abciTypes.ResponseCommit{
@@ -363,10 +384,17 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 	}
 }
 
+// Unused method, required by Tendermint
 func (app *Blockchain) Query(reqQuery abciTypes.RequestQuery) abciTypes.ResponseQuery {
 	return abciTypes.ResponseQuery{}
 }
 
+// Unused method, required by Tendermint
+func (app *Blockchain) SetOption(req abciTypes.RequestSetOption) abciTypes.ResponseSetOption {
+	return abciTypes.ResponseSetOption{}
+}
+
+// Gracefully stopping Minter Blockchain instance
 func (app *Blockchain) Stop() {
 	atomic.StoreUint32(&app.stopped, 1)
 	app.wg.Wait()
@@ -375,13 +403,14 @@ func (app *Blockchain) Stop() {
 	app.stateDB.Close()
 }
 
-func (app *Blockchain) updateCurrentState() {
+func (app *Blockchain) resetCheckState() {
 	app.lock.Lock()
 	defer app.lock.Unlock()
 
 	app.stateCheck = state.NewForCheck(app.stateDeliver)
 }
 
+// Get immutable state of Minter Blockchain
 func (app *Blockchain) CurrentState() *state.StateDB {
 	app.lock.RLock()
 	defer app.lock.RUnlock()
@@ -389,6 +418,7 @@ func (app *Blockchain) CurrentState() *state.StateDB {
 	return state.NewForCheck(app.stateCheck)
 }
 
+// Get immutable state of Minter Blockchain for given height
 func (app *Blockchain) GetStateForHeight(height int) (*state.StateDB, error) {
 	app.lock.RLock()
 	defer app.lock.RUnlock()
@@ -396,10 +426,12 @@ func (app *Blockchain) GetStateForHeight(height int) (*state.StateDB, error) {
 	return state.New(int64(height), app.stateDB)
 }
 
+// Get current height of Minter Blockchain
 func (app *Blockchain) Height() int64 {
 	return atomic.LoadInt64(&app.height)
 }
 
+// Get last committed height of Minter Blockchain
 func (app *Blockchain) LastCommittedHeight() int64 {
 	return atomic.LoadInt64(&app.lastCommittedHeight)
 }
@@ -465,6 +497,7 @@ func (app *Blockchain) calcMaxGas(height int64) uint64 {
 	return newMaxGas
 }
 
+// Set Tendermint node
 func (app *Blockchain) SetTmNode(node *tmNode.Node) {
 	app.tmNode = node
 }
