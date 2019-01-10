@@ -483,7 +483,7 @@ func (app *Blockchain) updateBlocksTimeDelta(height, count int64) {
 		return
 	}
 
-	if height-count < 1 {
+	if height-count-1 < 1 {
 		return
 	}
 
