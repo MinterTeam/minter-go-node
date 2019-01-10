@@ -6,12 +6,11 @@ import (
 	"math/big"
 )
 
-const lastBlock = 43702612
+const lastBlock = 43702611
 const firstReward = 333
 const lastReward = 68
 
 func GetRewardForBlock(blockHeight uint64) *big.Int {
-
 	if blockHeight > lastBlock {
 		return big.NewInt(0)
 	}
