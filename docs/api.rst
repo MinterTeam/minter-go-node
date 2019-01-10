@@ -80,6 +80,23 @@ This endpoint shows maximum gas value for given block
       "result": "100000"
     }
 
+Min gas price
+^^^^^^^^^^^^^
+
+This endpoint shows min acceptable gas price for tx to be included in mempool
+
+.. code-block:: bash
+
+    curl -s 'localhost:8841/min_gas_price'
+
+.. code-block:: json
+
+    {
+      "jsonrpc": "2.0",
+      "id": "",
+      "result": "1"
+    }
+
 Candidate
 ^^^^^^^^^
 
