@@ -29,11 +29,17 @@ Here is a list of current fees:
 +----------------------------------+---------------------+
 | **TypeUnbond**                   | 100 units           |
 +----------------------------------+---------------------+
-| **TypeRedeemCheck**              | 10 units            |
+| **TypeRedeemCheck**              | 30 units            |
 +----------------------------------+---------------------+
 | **TypeSetCandidateOnline**       | 100 units           |
 +----------------------------------+---------------------+
 | **TypeSetCandidateOffline**      | 100 units           |
++----------------------------------+---------------------+
+| **TypeCreateMultisig**           | 100 units           |
++----------------------------------+---------------------+
+| **TypeMultisend**                | 10+(n-1)*5 units    |
++----------------------------------+---------------------+
+| **TypeEditCandidate**            | 10000 units         |
 +----------------------------------+---------------------+
 
 Also sender should pay extra 2 units per byte in Payload and Service Data fields.
