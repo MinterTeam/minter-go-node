@@ -12,6 +12,7 @@ const (
 	UnbondTx              int64 = 200
 	PayloadByte           int64 = 2
 	ToggleCandidateStatus int64 = 100
+	EditCandidate         int64 = 10000
 	MultisendDelta        int64 = 5
 	RedeemCheckTx         int64 = SendTx * 3
 )

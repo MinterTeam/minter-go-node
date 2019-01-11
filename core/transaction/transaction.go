@@ -30,6 +30,7 @@ const (
 	TypeSetCandidateOffline TxType = 0x0B
 	TypeCreateMultisig      TxType = 0x0C
 	TypeMultisend           TxType = 0x0D
+	TypeEditCandidate       TxType = 0x0E
 
 	SigTypeSingle SigType = 0x01
 	SigTypeMulti  SigType = 0x02

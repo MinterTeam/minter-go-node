@@ -369,3 +369,20 @@ Transaction for sending coins to multiple addresses.
         To    [20]byte
         Value *big.Int
     }
+
+Edit candidate transaction
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Type: **0x0E**
+
+Transaction for editing existing candidate
+
+*Data field contents:*
+
+.. code-block:: go
+
+    type EditCandidateData struct {
+        PubKey           []byte
+        RewardAddress    [20]byte
+        OwnderAddress    [20]byte
+    }

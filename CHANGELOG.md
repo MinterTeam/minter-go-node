@@ -3,6 +3,10 @@
 ## 0.10.0
 *Jan 10th, 2019*
 
+BREAKING CHANGES
+
+- [core] Add EditCandidate transaction
+
 BUG FIXES
 
 - [core] Various bug fixes
