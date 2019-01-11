@@ -41,6 +41,10 @@ func init() {
 	_ = os.RemoveAll(*utils.MinterHome)
 
 	cfg = config.GetTmConfig()
+	cfg.Consensus.TimeoutPropose = 0
+	cfg.Consensus.TimeoutPrecommit = 0
+	cfg.Consensus.TimeoutPrevote = 0
+	cfg.Consensus.SkipTimeoutCommit = true
 
 	pv = privval.GenFilePV(cfg.PrivValidatorFile())
 	pv.Save()
@@ -101,7 +105,7 @@ func TestBlocksCreation(t *testing.T) {
 
 func TestSendTx(t *testing.T) {
 	for blockchain.Height() < 2 {
-		time.Sleep(5 * time.Second)
+		time.Sleep(time.Millisecond)
 	}
 
 	value := helpers.BipToPip(big.NewInt(10))
