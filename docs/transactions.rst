@@ -386,5 +386,5 @@ Transaction for editing existing candidate
     type EditCandidateData struct {
         PubKey           []byte
         RewardAddress    [20]byte
-        OwnderAddress    [20]byte
+        OwnerAddress     [20]byte
     }
