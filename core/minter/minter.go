@@ -19,6 +19,7 @@ import (
 	abciTypes "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/db"
 	tmNode "github.com/tendermint/tendermint/node"
+	types2 "github.com/tendermint/tendermint/types"
 	"math/big"
 	"sync"
 	"sync/atomic"
@@ -135,7 +136,7 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 				MaxAge: 1000,
 			},
 			Validator: &abciTypes.ValidatorParams{
-				PubKeyTypes: []string{"secp256k1"},
+				PubKeyTypes: []string{types2.ABCIPubKeyTypeEd25519},
 			},
 		},
 	}
