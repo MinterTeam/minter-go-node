@@ -97,6 +97,8 @@ Type of transaction is determined by a single byte.
 +----------------------------------+---------+
 | **TypeMultisend**                | 0x0D    |
 +----------------------------------+---------+
+| **TypeEditCandidate**            | 0x0E    |
++----------------------------------+---------+
 
 Send transaction
 ^^^^^^^^^^^^^^^^
