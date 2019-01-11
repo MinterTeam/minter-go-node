@@ -30,6 +30,9 @@ const (
 	ValidatorAbsent  = 2
 
 	BlockMaxBytes = 10000000
+
+	DefaultMaxGas = 100000
+	MinMaxGas     = 5000
 )
 
 var (
@@ -120,10 +123,22 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 		app.stateDeliver.SetCandidateOnline(validator.PubKey.Data)
 	}
 
-	// Set initial max gas to 100k
-	app.stateDeliver.SetMaxGas(100000)
+	app.stateDeliver.SetMaxGas(DefaultMaxGas)
 
-	return abciTypes.ResponseInitChain{}
+	return abciTypes.ResponseInitChain{
+		ConsensusParams: &abciTypes.ConsensusParams{
+			BlockSize: &abciTypes.BlockSizeParams{
+				MaxBytes: BlockMaxBytes,
+				MaxGas:   DefaultMaxGas,
+			},
+			Evidence: &abciTypes.EvidenceParams{
+				MaxAge: 1000,
+			},
+			Validator: &abciTypes.ValidatorParams{
+				PubKeyTypes: []string{"secp256k1"},
+			},
+		},
+	}
 }
 
 // Signals the beginning of a block.
@@ -501,14 +516,12 @@ func (app *Blockchain) getBlocksTimeDelta(height, count int64) int {
 }
 
 func (app *Blockchain) calcMaxGas(height int64) uint64 {
-	const defaultMaxGas = 100000
-	const minMaxGas = 5000
 	const targetTime = 7
 	const blockDelta = 3
 
 	// skip first 20 blocks
 	if height <= 20 {
-		return defaultMaxGas
+		return DefaultMaxGas
 	}
 
 	// get current max gas
@@ -522,13 +535,13 @@ func (app *Blockchain) calcMaxGas(height int64) uint64 {
 	}
 
 	// check if max gas is too high
-	if newMaxGas > defaultMaxGas {
-		newMaxGas = defaultMaxGas
+	if newMaxGas > DefaultMaxGas {
+		newMaxGas = DefaultMaxGas
 	}
 
 	// check if max gas is too low
-	if newMaxGas < minMaxGas {
-		newMaxGas = minMaxGas
+	if newMaxGas < MinMaxGas {
+		newMaxGas = MinMaxGas
 	}
 
 	return newMaxGas
