@@ -6,6 +6,7 @@
 BREAKING CHANGES
 
 - [core] Add EditCandidate transaction
+- [core] Make validators count logic conforms to mainnet
 
 BUG FIXES
 

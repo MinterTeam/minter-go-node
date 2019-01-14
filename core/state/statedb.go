@@ -901,7 +901,6 @@ func (s *StateDB) PayRewards(height int64) {
 				reward := big.NewInt(0).Set(totalReward)
 				reward.Mul(reward, stake.BipValue)
 
-				// TODO: check for division by zero
 				reward.Div(reward, validator.TotalBipStake)
 
 				if reward.Cmp(types.Big0) < 1 {
