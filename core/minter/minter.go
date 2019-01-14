@@ -361,7 +361,7 @@ func (app *Blockchain) CheckTx(rawTx []byte) abciTypes.ResponseCheckTx {
 	if response.GasPrice.Cmp(app.MinGasPrice()) == -1 {
 		return abciTypes.ResponseCheckTx{
 			Code: code.TooLowGasPrice,
-			Log:  "Gas price of tx is too low to be included in mempool",
+			Log:  fmt.Sprintf("Gas price of tx is too low to be included in mempool. Expected %s", app.MinGasPrice().String()),
 		}
 	}
 
