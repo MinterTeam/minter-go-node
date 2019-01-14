@@ -76,6 +76,7 @@ func DefaultConfig() *Config {
 
 	cfg.P2P.RecvRate = 15360000 // 15 mB/s
 	cfg.P2P.SendRate = 15360000 // 15 mB/s
+	cfg.P2P.FlushThrottleTimeout = 10 * time.Millisecond
 
 	cfg.PrivValidator = "config/priv_validator.json"
 	cfg.NodeKey = "config/node_key.json"
