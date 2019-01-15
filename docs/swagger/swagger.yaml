@@ -188,6 +188,23 @@ paths:
         200:
           schema:
             $ref: "#/definitions/EstimateCoinSellResponse"
+  /estimate_tx_commission:
+    get:
+      summary: "Estimate tx commission"
+      description: ""
+      operationId: "estimate_tx_commission"
+      produces:
+        - "application/json"
+      parameters:
+        - name: "tx"
+          in: "query"
+          description: "Raw transaction"
+          required: true
+          type: string
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/EstimateTxCommissionResponse"
 definitions:
   AddressResponse:
     type: "object"
@@ -1312,6 +1329,12 @@ definitions:
       will_get:
         type: string
         example: "209369045801925559657593"
+      commission:
+        type: string
+        example: "209369045801925559657593"
+  EstimateTxCommissionResponse:
+    type: object
+    properties:
       commission:
         type: string
         example: "209369045801925559657593"
