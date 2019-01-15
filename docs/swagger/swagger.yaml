@@ -26,6 +26,11 @@ paths:
           description: "Minter Address, starts with Mx..."
           required: true
           type: string
+        - name: "height"
+          in: "query"
+          description: "Specify height"
+          required: false
+          type: string
       responses:
         200:
           schema:
