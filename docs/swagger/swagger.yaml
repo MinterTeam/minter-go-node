@@ -102,6 +102,28 @@ paths:
         200:
           schema:
             $ref: "#/definitions/CandidatesResponse"
+  /coin_info:
+    get:
+      summary: "Get information about coin"
+      description: ""
+      operationId: "coin"
+      produces:
+        - "application/json"
+      parameters:
+        - name: "symbol"
+          in: "query"
+          description: "Coin symbol"
+          required: true
+          type: string
+        - name: "height"
+          in: "query"
+          description: "Specify height"
+          required: false
+          type: string
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/CoinInfoResponse"
 definitions:
   AddressResponse:
     type: "object"
@@ -1193,3 +1215,21 @@ definitions:
             - 1
             - 2
           example: 1
+  CoinInfoResponse:
+    type: object
+    properties:
+      name:
+        type: string
+        example: "ABC Coin"
+      symbol:
+        type: string
+        example: "ABC"
+      volume:
+        type: string
+        example: "209369045801925559657593"
+      crr:
+        type: string
+        example: "50"
+      reserve_balance:
+        type: string
+        example: "209369045801925559657593"
