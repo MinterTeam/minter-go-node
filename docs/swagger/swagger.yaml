@@ -41,6 +41,23 @@ paths:
         200:
           schema:
             $ref: "#/definitions/StatusResponse"
+  /block:
+    get:
+      summary: "Get information about given block"
+      description: ""
+      operationId: "block"
+      produces:
+        - "application/json"
+      parameters:
+        - name: "height"
+          in: "query"
+          description: "Block height"
+          required: true
+          type: integer
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/BlockResponse"
 definitions:
   AddressResponse:
     type: "object"
@@ -182,3 +199,380 @@ definitions:
                   voting_power:
                     type: string
                     example: "0"
+  BlockResponse:
+    type: object
+    properties:
+      jsonrpc:
+        type: string
+        example: "2.0"
+      id:
+        type: string
+        example: ""
+      result:
+        type: object
+        properties:
+          hash:
+            type: string
+            example: "129ABDC2A6396C38D4FF60DFE2850E8A88046744FDBA9B76ABFA752A11F16AA1"
+          height:
+            type: string
+            example: "1"
+          time:
+            type: string
+            example: "2018-12-24T13:04:19.45937898Z"
+          num_txs:
+            type: string
+            example: "1"
+          total_txs:
+            type: string
+            example: "1"
+          transactions:
+            type: array
+            items:
+              anyOf:
+                - $ref: "#/definitions/SendTx"
+                - $ref: "#/definitions/SellCoinTx"
+                - $ref: "#/definitions/SellAllCoinTx"
+                - $ref: "#/definitions/BuyCoinTx"
+                - $ref: "#/definitions/CreateCoinTx"
+          block_reward:
+            type: string
+            example: "333000000000000000000"
+          size:
+            type: string
+            example: "1352"
+          proposer:
+            type: string
+            example: "Mp4ae1ee73e6136c85b0ca933a9a1347758a334885f10b3238398a67ac2eb153b8"
+          validators:
+            type: array
+            items:
+              type: object
+              properties:
+                pubkey:
+                  type: string
+                  example: "Mp738da41ba6a7b7d69b7294afa158b89c5a1b410cbf0c2443c85c5fe24ad1dd1c"
+                signed:
+                  type: boolean
+                  example: true
+  SendTx:
+    type: object
+    properties:
+      hash:
+        type: string
+        example: "6D94F757237A5AB007191349E327D342AF45B38332CC65CB3780AD83E627F22E"
+      raw_tx:
+        type: string
+        example: "f886821b9d018a4d4e540000000000000001abea8a4d4e540000000000000094c22d7a6273fd2bbf03884038e3d99571d746ac7e89056bc75e2d63100000808001b845f8431ca0b37eb53ec1c68aedc3e47e9c510bba14ff7fec47d0c08a39e518c287c25252bca030275aad807be5a624ee014757f850232e527b41997f54f8aa5a7584b26418c6"
+      from:
+        type: string
+        example: "Mx184ac726059e43643e67290666f7b3195093f870"
+      nonce:
+        type: string
+        example: "7069"
+      gas_price:
+        type: string
+        example: "1"
+      type:
+        type: integer
+        example: 1
+      data:
+        type: object
+        properties:
+          coin:
+            type: string
+            example: "MNT"
+          to:
+            type: string
+            example: "Mx184ac726059e43643e67290666f7b3195093f870"
+          value:
+            type: string
+            example: "100000000000000000000"
+      payload:
+        type: string
+        example: "payload"
+      service_data:
+        type: string
+        example: "service data"
+      gas:
+        type: string
+        example: "10"
+      gas_coin:
+        type: string
+        example: "MNT"
+      tags:
+        type: object
+        properties:
+          "tx.from":
+            type: string
+            example: "184ac726059e43643e67290666f7b3195093f870"
+          "tx.to":
+            type: string
+            example: "c22d7a6273fd2bbf03884038e3d99571d746ac7e"
+          "tx.coin":
+            type: string
+            example: "MNT"
+          "tx.type":
+            type: string
+            example: "01"
+  SellCoinTx:
+    type: object
+    properties:
+      hash:
+        type: string
+        example: "6D94F757237A5AB007191349E327D342AF45B38332CC65CB3780AD83E627F22E"
+      raw_tx:
+        type: string
+        example: "f886821b9d018a4d4e540000000000000001abea8a4d4e540000000000000094c22d7a6273fd2bbf03884038e3d99571d746ac7e89056bc75e2d63100000808001b845f8431ca0b37eb53ec1c68aedc3e47e9c510bba14ff7fec47d0c08a39e518c287c25252bca030275aad807be5a624ee014757f850232e527b41997f54f8aa5a7584b26418c6"
+      from:
+        type: string
+        example: "Mx184ac726059e43643e67290666f7b3195093f870"
+      nonce:
+        type: string
+        example: "7069"
+      gas_price:
+        type: string
+        example: "1"
+      type:
+        type: integer
+        example: 2
+      data:
+        type: object
+        properties:
+          coin_to_sell:
+            type: string
+            example: "MNT"
+          coin_to_buy:
+            type: string
+            example: "ABC"
+          value_to_sell:
+            type: string
+            example: "100000000000000000000"
+          minimum_value_to_buy:
+            type: string
+            example: "100000000000000000000"
+      payload:
+        type: string
+        example: "payload"
+      service_data:
+        type: string
+        example: "service data"
+      gas:
+        type: string
+        example: "10"
+      gas_coin:
+        type: string
+        example: "MNT"
+      tags:
+        type: object
+        properties:
+          "tx.from":
+            type: string
+            example: "184ac726059e43643e67290666f7b3195093f870"
+          "tx.coin_to_sell":
+            type: string
+            example: "MNT"
+          "tx.coin_to_buy":
+            type: string
+            example: "ABC"
+          "tx.type":
+            type: string
+            example: "02"
+          "tx.return":
+            type: string
+            example: "1230000000"
+  SellAllCoinTx:
+    type: object
+    properties:
+      hash:
+        type: string
+        example: "6D94F757237A5AB007191349E327D342AF45B38332CC65CB3780AD83E627F22E"
+      raw_tx:
+        type: string
+        example: "f886821b9d018a4d4e540000000000000001abea8a4d4e540000000000000094c22d7a6273fd2bbf03884038e3d99571d746ac7e89056bc75e2d63100000808001b845f8431ca0b37eb53ec1c68aedc3e47e9c510bba14ff7fec47d0c08a39e518c287c25252bca030275aad807be5a624ee014757f850232e527b41997f54f8aa5a7584b26418c6"
+      from:
+        type: string
+        example: "Mx184ac726059e43643e67290666f7b3195093f870"
+      nonce:
+        type: string
+        example: "7069"
+      gas_price:
+        type: string
+        example: "1"
+      type:
+        type: integer
+        example: 3
+      data:
+        type: object
+        properties:
+          coin_to_sell:
+            type: string
+            example: "MNT"
+          coin_to_buy:
+            type: string
+            example: "ABC"
+          minimum_value_to_buy:
+            type: string
+            example: "100000000000000000000"
+      payload:
+        type: string
+        example: "payload"
+      service_data:
+        type: string
+        example: "service data"
+      gas:
+        type: string
+        example: "10"
+      gas_coin:
+        type: string
+        example: "MNT"
+      tags:
+        type: object
+        properties:
+          "tx.from":
+            type: string
+            example: "184ac726059e43643e67290666f7b3195093f870"
+          "tx.coin_to_sell":
+            type: string
+            example: "MNT"
+          "tx.coin_to_buy":
+            type: string
+            example: "ABC"
+          "tx.type":
+            type: string
+            example: "03"
+          "tx.return":
+            type: string
+            example: "1230000000"
+          "tx.sell_amount":
+            type: string
+            example: "1230000000"
+  BuyCoinTx:
+    type: object
+    properties:
+      hash:
+        type: string
+        example: "6D94F757237A5AB007191349E327D342AF45B38332CC65CB3780AD83E627F22E"
+      raw_tx:
+        type: string
+        example: "f886821b9d018a4d4e540000000000000001abea8a4d4e540000000000000094c22d7a6273fd2bbf03884038e3d99571d746ac7e89056bc75e2d63100000808001b845f8431ca0b37eb53ec1c68aedc3e47e9c510bba14ff7fec47d0c08a39e518c287c25252bca030275aad807be5a624ee014757f850232e527b41997f54f8aa5a7584b26418c6"
+      from:
+        type: string
+        example: "Mx184ac726059e43643e67290666f7b3195093f870"
+      nonce:
+        type: string
+        example: "7069"
+      gas_price:
+        type: string
+        example: "1"
+      type:
+        type: integer
+        example: 4
+      data:
+        type: object
+        properties:
+          coin_to_sell:
+            type: string
+            example: "MNT"
+          coin_to_buy:
+            type: string
+            example: "ABC"
+          value_to_buy:
+            type: string
+            example: "100000000000000000000"
+          maximum_value_to_sell:
+            type: string
+            example: "100000000000000000000"
+      payload:
+        type: string
+        example: "payload"
+      service_data:
+        type: string
+        example: "service data"
+      gas:
+        type: string
+        example: "10"
+      gas_coin:
+        type: string
+        example: "MNT"
+      tags:
+        type: object
+        properties:
+          "tx.from":
+            type: string
+            example: "184ac726059e43643e67290666f7b3195093f870"
+          "tx.coin_to_sell":
+            type: string
+            example: "MNT"
+          "tx.coin_to_buy":
+            type: string
+            example: "ABC"
+          "tx.type":
+            type: string
+            example: "04"
+          "tx.return":
+            type: string
+            example: "1230000000"
+  CreateCoinTx:
+    type: object
+    properties:
+      hash:
+        type: string
+        example: "6D94F757237A5AB007191349E327D342AF45B38332CC65CB3780AD83E627F22E"
+      raw_tx:
+        type: string
+        example: "f886821b9d018a4d4e540000000000000001abea8a4d4e540000000000000094c22d7a6273fd2bbf03884038e3d99571d746ac7e89056bc75e2d63100000808001b845f8431ca0b37eb53ec1c68aedc3e47e9c510bba14ff7fec47d0c08a39e518c287c25252bca030275aad807be5a624ee014757f850232e527b41997f54f8aa5a7584b26418c6"
+      from:
+        type: string
+        example: "Mx184ac726059e43643e67290666f7b3195093f870"
+      nonce:
+        type: string
+        example: "7069"
+      gas_price:
+        type: string
+        example: "1"
+      type:
+        type: integer
+        example: 5
+      data:
+        type: object
+        properties:
+          name:
+            type: string
+            example: "ABC coin"
+          symbol:
+            type: string
+            example: "ABC"
+          initial_amount:
+            type: string
+            example: "100000000000000000000"
+          initial_reserve:
+            type: string
+            example: "100000000000000000000"
+          constant_reserve_ratio:
+            type: string
+            example: "40"
+      payload:
+        type: string
+        example: "payload"
+      service_data:
+        type: string
+        example: "service data"
+      gas:
+        type: string
+        example: "10"
+      gas_coin:
+        type: string
+        example: "MNT"
+      tags:
+        type: object
+        properties:
+          "tx.from":
+            type: string
+            example: "184ac726059e43643e67290666f7b3195093f870"
+          "tx.type":
+            type: string
+            example: "05"
+          "tx.coin":
+            type: string
+            example: "ABC"
