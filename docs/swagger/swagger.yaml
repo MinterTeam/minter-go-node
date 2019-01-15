@@ -124,6 +124,70 @@ paths:
         200:
           schema:
             $ref: "#/definitions/CoinInfoResponse"
+  /estimate_coin_buy:
+    get:
+      summary: "Estimate BuyCoin operation"
+      description: ""
+      operationId: "estimate_coin_buy"
+      produces:
+        - "application/json"
+      parameters:
+        - name: "coin_to_sell"
+          in: "query"
+          description: "Coin symbol to sell"
+          required: true
+          type: string
+        - name: "coin_to_buy"
+          in: "query"
+          description: "Coin symbol to buy"
+          required: true
+          type: string
+        - name: "value_to_buy"
+          in: "query"
+          description: "Value to buy"
+          required: true
+          type: string
+        - name: "height"
+          in: "query"
+          description: "Specify height"
+          required: false
+          type: string
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/EstimateCoinBuyResponse"
+  /estimate_coin_sell:
+    get:
+      summary: "Estimate SellCoin operation"
+      description: ""
+      operationId: "estimate_coin_sell"
+      produces:
+        - "application/json"
+      parameters:
+        - name: "coin_to_sell"
+          in: "query"
+          description: "Coin symbol to sell"
+          required: true
+          type: string
+        - name: "coin_to_buy"
+          in: "query"
+          description: "Coin symbol to buy"
+          required: true
+          type: string
+        - name: "value_to_sell"
+          in: "query"
+          description: "Value to sell"
+          required: true
+          type: string
+        - name: "height"
+          in: "query"
+          description: "Specify height"
+          required: false
+          type: string
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/EstimateCoinSellResponse"
 definitions:
   AddressResponse:
     type: "object"
@@ -1231,5 +1295,23 @@ definitions:
         type: string
         example: "50"
       reserve_balance:
+        type: string
+        example: "209369045801925559657593"
+  EstimateCoinBuyResponse:
+    type: object
+    properties:
+      will_pay:
+        type: string
+        example: "209369045801925559657593"
+      commission:
+        type: string
+        example: "209369045801925559657593"
+  EstimateCoinSellResponse:
+    type: object
+    properties:
+      will_get:
+        type: string
+        example: "209369045801925559657593"
+      commission:
         type: string
         example: "209369045801925559657593"
