@@ -63,6 +63,45 @@ paths:
         200:
           schema:
             $ref: "#/definitions/BlockResponse"
+  /candidate:
+    get:
+      summary: "Get information about candidate"
+      description: ""
+      operationId: "candidate"
+      produces:
+        - "application/json"
+      parameters:
+        - name: "pubkey"
+          in: "query"
+          description: "Public key of a candidate"
+          required: true
+          type: string
+        - name: "height"
+          in: "query"
+          description: "Specify height"
+          required: false
+          type: string
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/CandidateResponse"
+  /candidates:
+    get:
+      summary: "Get information about candidates"
+      description: ""
+      operationId: "candidates"
+      produces:
+        - "application/json"
+      parameters:
+        - name: "height"
+          in: "query"
+          description: "Specify height"
+          required: false
+          type: string
+      responses:
+        200:
+          schema:
+            $ref: "#/definitions/CandidatesResponse"
 definitions:
   AddressResponse:
     type: "object"
@@ -1081,3 +1120,76 @@ definitions:
           "tx.type":
             type: string
             example: "14"
+  CandidateResponse:
+    type: object
+    properties:
+      reward_address:
+        type: string
+        example: "Mx190fd0ad9fce4878ff7a6776a2692114e9838a34"
+      owner_address:
+        type: string
+        example: "Mx190fd0ad9fce4878ff7a6776a2692114e9838a34"
+      total_stake:
+        type: string
+        example: "209369045801925559657593"
+      pubkey:
+        type: string
+        example: "Mpc5b635cde82f796d1f8320efb8ec634f443e6b533a973570e4b5ea04aa44e96d"
+      commission:
+        type: string
+        example: "10"
+      stakes:
+        type: array
+        items:
+          type: object
+          properties:
+            owner:
+              type: string
+              example: "Mx190fd0ad9fce4878ff7a6776a2692114e9838a34"
+            coin:
+              type: string
+              example: "MNT"
+            value:
+              type: string
+              example: "1000000000000000000"
+            bip_value:
+              type: string
+              example: "1000000000000000000"
+      created_at_block:
+        type: string
+        example: "10"
+      status:
+        type: integer
+        enum:
+          - 1
+          - 2
+        example: 1
+  CandidatesResponse:
+    type: array
+    items:
+      type: object
+      properties:
+        reward_address:
+          type: string
+          example: "Mx190fd0ad9fce4878ff7a6776a2692114e9838a34"
+        owner_address:
+          type: string
+          example: "Mx190fd0ad9fce4878ff7a6776a2692114e9838a34"
+        total_stake:
+          type: string
+          example: "209369045801925559657593"
+        pubkey:
+          type: string
+          example: "Mpc5b635cde82f796d1f8320efb8ec634f443e6b533a973570e4b5ea04aa44e96d"
+        commission:
+          type: string
+          example: "10"
+        created_at_block:
+          type: string
+          example: "10"
+        status:
+          type: integer
+          enum:
+            - 1
+            - 2
+          example: 1
