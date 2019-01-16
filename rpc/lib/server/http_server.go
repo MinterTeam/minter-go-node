@@ -100,7 +100,11 @@ func WriteRPCResponseHTTP(w http.ResponseWriter, res types.RPCResponse) {
 		panic(err)
 	}
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
+	status := 200
+	if res.Error != nil && res.Error.Code != 0 {
+		status = 500
+	}
+	w.WriteHeader(status)
 	w.Write(jsonBytes) // nolint: errcheck, gas
 }
 
