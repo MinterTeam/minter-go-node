@@ -18,6 +18,7 @@ IMPROVEMENT
 - [mempool] Add variable min gas price threshold
 - [p2p] Lower FlushThrottleTimeout to 10 ms
 - [rpc] RPC errors are now delivered with 500 HTTP code
+- [rpc] Prettify RPC errors
 
 ## 0.9.6
 *Dec 27th, 2018*

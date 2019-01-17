@@ -797,6 +797,12 @@ func (wm *WebsocketManager) WebsocketHandler(w http.ResponseWriter, r *http.Requ
 func unreflectResult(returns []reflect.Value) (interface{}, error) {
 	errV := returns[1]
 	if errV.Interface() != nil {
+		if txErr, ok := errV.Interface().(types.TxError); ok {
+			return nil, txErr
+		}
+		if rpcErr, ok := errV.Interface().(types.RPCError); ok {
+			return nil, rpcErr
+		}
 		return nil, errors.Errorf("%v", errV.Interface())
 	}
 	rv := returns[0]

@@ -52,7 +52,7 @@ func Block(height int64) (*BlockResponse, error) {
 	block, err := client.Block(&height)
 	blockResults, err := client.BlockResults(&height)
 	if err != nil {
-		return nil, &rpctypes.RPCError{Code: 404, Message: "Block not found", Data: err.Error()}
+		return nil, rpctypes.RPCError{Code: 404, Message: "Block not found", Data: err.Error()}
 	}
 
 	txs := make([]BlockTransactionResponse, len(block.Block.Data.Txs))
@@ -96,12 +96,12 @@ func Block(height int64) (*BlockResponse, error) {
 
 	tmValidators, err := client.Validators(&height)
 	if err != nil {
-		return nil, &rpctypes.RPCError{Code: 404, Message: "Validators for block not found", Data: err.Error()}
+		return nil, rpctypes.RPCError{Code: 404, Message: "Validators for block not found", Data: err.Error()}
 	}
 
 	commit, err := client.Commit(&height)
 	if err != nil {
-		return nil, &rpctypes.RPCError{Code: 404, Message: "Commit for block not found", Data: err.Error()}
+		return nil, rpctypes.RPCError{Code: 404, Message: "Commit for block not found", Data: err.Error()}
 	}
 
 	validators := make([]BlockValidatorResponse, len(commit.Commit.Precommits))
