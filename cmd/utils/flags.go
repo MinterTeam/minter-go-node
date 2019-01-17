@@ -7,8 +7,7 @@ import (
 )
 
 var (
-	MinterHome            = flag.String("home", "", "Path to minter data directory")
-	ResetPrivateValidator = flag.Bool("reset-private-validator", false, "")
+	MinterHome = flag.String("home", "", "Path to minter data directory")
 )
 
 func init() {

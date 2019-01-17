@@ -7,6 +7,7 @@ BREAKING CHANGES
 
 - [core] Add EditCandidate transaction
 - [core] Make validators count logic conforms to mainnet
+- [tendermint] Update to [v0.28.0](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0280) 
 
 BUG FIXES
 

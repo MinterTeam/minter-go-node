@@ -133,15 +133,15 @@ func RegisterCryptoAmino(cdc *amino.Codec) {
 	// These are all written here instead of
 	cdc.RegisterInterface((*crypto.PubKey)(nil), nil)
 	cdc.RegisterConcrete(ed25519.PubKeyEd25519{},
-		ed25519.PubKeyAminoRoute, nil)
+		ed25519.PubKeyAminoName, nil)
 	cdc.RegisterConcrete(secp256k1.PubKeySecp256k1{},
-		secp256k1.PubKeyAminoRoute, nil)
+		secp256k1.PubKeyAminoName, nil)
 	cdc.RegisterConcrete(multisig.PubKeyMultisigThreshold{},
 		multisig.PubKeyMultisigThresholdAminoRoute, nil)
 
 	cdc.RegisterInterface((*crypto.PrivKey)(nil), nil)
 	cdc.RegisterConcrete(ed25519.PrivKeyEd25519{},
-		ed25519.PrivKeyAminoRoute, nil)
+		ed25519.PrivKeyAminoName, nil)
 	cdc.RegisterConcrete(secp256k1.PrivKeySecp256k1{},
-		secp256k1.PrivKeyAminoRoute, nil)
+		secp256k1.PrivKeyAminoName, nil)
 }

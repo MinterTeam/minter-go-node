@@ -46,7 +46,7 @@ func init() {
 	cfg.Consensus.TimeoutPrevote = 0
 	cfg.Consensus.SkipTimeoutCommit = true
 
-	pv = privval.GenFilePV(cfg.PrivValidatorFile())
+	pv = privval.GenFilePV(cfg.PrivValidatorKeyFile(), cfg.PrivValidatorStateFile())
 	pv.Save()
 
 	b, _ := hex.DecodeString("825ca965c34ef1c8343e8e377959108370c23ba6194d858452b63432456403f9")
@@ -168,7 +168,7 @@ func TestSendTx(t *testing.T) {
 func getGenesis() (*types2.GenesisDoc, error) {
 	validators := []types2.GenesisValidator{
 		{
-			PubKey: pv.PubKey,
+			PubKey: pv.Key.PubKey,
 			Power:  100000000,
 		},
 	}

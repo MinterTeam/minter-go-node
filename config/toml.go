@@ -105,7 +105,8 @@ log_path = "{{ .BaseConfig.LogPath }}"
 ##### additional base config options #####
 
 # Path to the JSON file containing the private key to use as a validator in the consensus protocol
-priv_validator_file = "{{ js .BaseConfig.PrivValidator }}"
+priv_validator_key_file = "{{ js .BaseConfig.PrivValidatorKey }}"
+priv_validator_state_file = "{{ js .BaseConfig.PrivValidatorState }}"
 
 # Path to the JSON file containing the private key to use for node authentication in the p2p protocol
 node_key_file = "{{ js .BaseConfig.NodeKey}}"
