@@ -14,7 +14,7 @@ _NOTE: This is alpha software. Please contact us if you intend to run it in prod
 
 ## Installation
 
-You can get official installation instructions in our [docs](https://minterteam.github.io/minter-go-node-docs/#section/Install-Minter).
+You can get official installation instructions in our [docs](https://docs.minter.network/#section/Install-Minter).
 
 1. Download Minter
 
@@ -32,7 +32,7 @@ You can get official installation instructions in our [docs](https://minterteam.
 
 ## Resources
 
-- [Documentation](https://minterteam.github.io/minter-go-node-docs/)
+- [Documentation](https://docs.minter.network)
 - [Official site](https://minter.network)
 - [About Minter Blockchain](https://about.minter.network)
 - [Minter Console](https://testnet.console.minter.network)
