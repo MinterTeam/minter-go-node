@@ -28,7 +28,6 @@ func TestSendTx(t *testing.T) {
 	}
 
 	encodedData, err := rlp.EncodeToBytes(data)
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -47,13 +46,11 @@ func TestSendTx(t *testing.T) {
 	}
 
 	encodedTx, err := rlp.EncodeToBytes(tx)
-
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, make(map[types.Address]struct{}))
-
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error: %s", response.Log)
 	}

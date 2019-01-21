@@ -4,12 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"reflect"
-	"strings"
-
 	"github.com/pkg/errors"
+	"reflect"
 
-	amino "github.com/MinterTeam/go-amino"
+	"github.com/MinterTeam/go-amino"
 
 	tmpubsub "github.com/tendermint/tendermint/libs/pubsub"
 )
@@ -132,10 +130,17 @@ func ArrayToRequest(cdc *amino.Codec, id jsonrpcid, method string, params []inte
 //----------------------------------------
 // RESPONSE
 
+type TxResult struct {
+	Code uint32 `json:"code"`
+	Log  string `json:"log"`
+}
+
 type RPCError struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
 	Data    string `json:"data,omitempty"`
+
+	TxResult *TxResult `json:"tx_result,omitempty"`
 }
 
 func (err RPCError) Error() string {
@@ -226,6 +231,30 @@ func RPCInvalidParamsError(id jsonrpcid, err error) RPCResponse {
 }
 
 func RPCInternalError(id jsonrpcid, err error) RPCResponse {
+	if txError, ok := err.(TxError); ok {
+		return RPCResponse{
+			JSONRPC: "2.0",
+			ID:      id,
+			Error: &RPCError{
+				Code:    412, // HTTP Code: Precondition Failed
+				Message: "Check tx error",
+				Data:    "",
+				TxResult: &TxResult{
+					Code: txError.Code,
+					Log:  txError.Log,
+				},
+			},
+		}
+	}
+
+	if rpcError, ok := err.(RPCError); ok {
+		return RPCResponse{
+			JSONRPC: "2.0",
+			ID:      id,
+			Error:   &rpcError,
+		}
+	}
+
 	return NewRPCErrorResponse(id, -32603, "Internal error", err.Error())
 }
 
@@ -257,16 +286,11 @@ type WSRPCContext struct {
 	WSRPCConnection
 }
 
-//----------------------------------------
-// SOCKETS
-//
-// Determine if its a unix or tcp socket.
-// If tcp, must specify the port; `0.0.0.0` will return incorrectly as "unix" since there's no port
-// TODO: deprecate
-func SocketType(listenAddr string) string {
-	socketType := "unix"
-	if len(strings.Split(listenAddr, ":")) >= 2 {
-		socketType = "tcp"
-	}
-	return socketType
+type TxError struct {
+	Code uint32 `json:"code"`
+	Log  string `json:"log"`
+}
+
+func (err TxError) Error() string {
+	return err.Log
 }

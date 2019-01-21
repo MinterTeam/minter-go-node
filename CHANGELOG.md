@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.10.0
+*Jan 10th, 2019*
+
+BREAKING CHANGES
+
+- [core] Add EditCandidate transaction
+- [core] Make validators count logic conforms to mainnet
+- [tendermint] Update to [v0.28.1](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0281) 
+
+BUG FIXES
+
+- [core] Various bug fixes
+
+IMPROVEMENT
+
+- [mempool] Add variable min gas price threshold
+- [p2p] Lower FlushThrottleTimeout to 10 ms
+- [rpc] RPC errors are now delivered with 500 HTTP code
+- [rpc] Prettify RPC errors
+
 ## 0.9.6
 *Dec 27th, 2018*
 

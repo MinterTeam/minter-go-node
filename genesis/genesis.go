@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	Network     = "minter-test-network-28"
-	genesisTime = time.Date(2018, 12, 24, 13, 0, 0, 0, time.UTC)
+	Network     = "minter-test-network-29"
+	genesisTime = time.Date(2019, 1, 22, 9, 0, 0, 0, time.UTC)
 )
 
 func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
@@ -57,7 +57,6 @@ func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
 	}
 
 	appStateJSON, err := json.Marshal(appState)
-
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +71,6 @@ func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
 	}
 
 	err = genesis.ValidateAndComplete()
-
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +125,6 @@ func GetPreTestnetGenesis() (*tmtypes.GenesisDoc, error) {
 	}
 
 	appStateJSON, err := json.Marshal(appState)
-
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +139,6 @@ func GetPreTestnetGenesis() (*tmtypes.GenesisDoc, error) {
 	}
 
 	err = genesis.ValidateAndComplete()
-
 	if err != nil {
 		return nil, err
 	}

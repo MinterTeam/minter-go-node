@@ -152,13 +152,6 @@ func (data SellAllCoinData) Gas() int64 {
 func (data SellAllCoinData) Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response {
 	sender, _ := tx.Sender()
 
-	// TODO: delete
-	if isCheck && currentBlock < 14000 {
-		return Response{
-			Code: 999,
-			Log:  "Temporary forbidden tx"}
-	}
-
 	response := data.BasicCheck(tx, context)
 	if response != nil {
 		return *response

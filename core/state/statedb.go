@@ -901,7 +901,6 @@ func (s *StateDB) PayRewards(height int64) {
 				reward := big.NewInt(0).Set(totalReward)
 				reward.Mul(reward, stake.BipValue)
 
-				// TODO: check for division by zero
 				reward.Div(reward, validator.TotalBipStake)
 
 				if reward.Cmp(types.Big0) < 1 {
@@ -1016,6 +1015,31 @@ func (s *StateDB) UseCheck(check *check.Check) {
 	trieHash := append(usedCheckPrefix, checkHash...)
 
 	s.iavl.Set(trieHash, []byte{0x1})
+}
+
+func (s *StateDB) EditCandidate(pubkey []byte, newRewardAddress types.Address, newOwnerAddress types.Address) {
+	stateCandidates := s.getStateCandidates()
+	for i := range stateCandidates.data {
+		candidate := &stateCandidates.data[i]
+		if bytes.Equal(candidate.PubKey, pubkey) {
+			candidate.RewardAddress = newRewardAddress
+			candidate.OwnerAddress = newOwnerAddress
+			break
+		}
+	}
+	s.setStateCandidates(stateCandidates)
+	s.MarkStateCandidateDirty()
+
+	vals := s.getStateValidators()
+	for i := range vals.data {
+		validator := &vals.data[i]
+		if bytes.Equal(validator.PubKey, pubkey) {
+			validator.RewardAddress = newRewardAddress
+			break
+		}
+	}
+	s.setStateValidators(vals)
+	s.MarkStateValidatorsDirty()
 }
 
 func (s *StateDB) SetCandidateOnline(pubkey []byte) {

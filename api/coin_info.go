@@ -2,7 +2,7 @@ package api
 
 import (
 	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/pkg/errors"
+	"github.com/MinterTeam/minter-go-node/rpc/lib/types"
 	"math/big"
 )
 
@@ -22,7 +22,7 @@ func CoinInfo(coinSymbol string, height int) (*CoinInfoResponse, error) {
 
 	coin := cState.GetStateCoin(types.StrToCoinSymbol(coinSymbol))
 	if coin == nil {
-		return nil, errors.New("Coin not found")
+		return nil, rpctypes.RPCError{Code: 404, Message: "Coin not found"}
 	}
 
 	coinData := coin.Data()

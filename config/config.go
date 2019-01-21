@@ -17,13 +17,15 @@ var (
 	defaultConfigFileName  = "config.toml"
 	defaultGenesisJSONName = "genesis.json"
 
-	defaultPrivValName = "priv_validator.json"
-	defaultNodeKeyName = "node_key.json"
+	defaultPrivValName      = "priv_validator.json"
+	defaultPrivValStateName = "priv_validator_state.json"
+	defaultNodeKeyName      = "node_key.json"
 
-	defaultConfigFilePath  = filepath.Join(defaultConfigDir, defaultConfigFileName)
-	defaultGenesisJSONPath = filepath.Join(defaultConfigDir, defaultGenesisJSONName)
-	defaultPrivValPath     = filepath.Join(defaultConfigDir, defaultPrivValName)
-	defaultNodeKeyPath     = filepath.Join(defaultConfigDir, defaultNodeKeyName)
+	defaultConfigFilePath   = filepath.Join(defaultConfigDir, defaultConfigFileName)
+	defaultGenesisJSONPath  = filepath.Join(defaultConfigDir, defaultGenesisJSONName)
+	defaultPrivValKeyPath   = filepath.Join(defaultConfigDir, defaultPrivValName)
+	defaultPrivValStatePath = filepath.Join(defaultConfigDir, defaultPrivValStateName)
+	defaultNodeKeyPath      = filepath.Join(defaultConfigDir, defaultNodeKeyName)
 )
 
 const (
@@ -76,8 +78,10 @@ func DefaultConfig() *Config {
 
 	cfg.P2P.RecvRate = 15360000 // 15 mB/s
 	cfg.P2P.SendRate = 15360000 // 15 mB/s
+	cfg.P2P.FlushThrottleTimeout = 10 * time.Millisecond
 
-	cfg.PrivValidator = "config/priv_validator.json"
+	cfg.PrivValidatorKey = "config/priv_validator.json"
+	cfg.PrivValidatorState = "config/priv_validator_state.json"
 	cfg.NodeKey = "config/node_key.json"
 	cfg.P2P.AddrBook = "config/addrbook.json"
 
@@ -152,7 +156,8 @@ func GetTmConfig() *tmConfig.Config {
 		BaseConfig: tmConfig.BaseConfig{
 			RootDir:                 cfg.RootDir,
 			Genesis:                 cfg.Genesis,
-			PrivValidator:           cfg.PrivValidator,
+			PrivValidatorKey:        cfg.PrivValidatorKey,
+			PrivValidatorState:      cfg.PrivValidatorState,
 			NodeKey:                 cfg.NodeKey,
 			Moniker:                 cfg.Moniker,
 			PrivValidatorListenAddr: cfg.PrivValidatorListenAddr,
@@ -191,17 +196,20 @@ type BaseConfig struct {
 	Genesis string `mapstructure:"genesis_file"`
 
 	// Path to the JSON file containing the private key to use as a validator in the consensus protocol
-	PrivValidator string `mapstructure:"priv_validator_file"`
+	PrivValidatorKey string `mapstructure:"priv_validator_key_file"`
+
+	// Path to the JSON file containing the last sign state of a validator
+	PrivValidatorState string `mapstructure:"priv_validator_state_file"`
+
+	// TCP or UNIX socket address for Tendermint to listen on for
+	// connections from an external PrivValidator process
+	PrivValidatorListenAddr string `mapstructure:"priv_validator_laddr"`
 
 	// A JSON file containing the private key to use for p2p authenticated encryption
 	NodeKey string `mapstructure:"node_key_file"`
 
 	// A custom human readable name for this node
 	Moniker string `mapstructure:"moniker"`
-
-	// TCP or UNIX socket address for Tendermint to listen on for
-	// connections from an external PrivValidator process
-	PrivValidatorListenAddr string `mapstructure:"priv_validator_laddr"`
 
 	// TCP or UNIX socket address of the ABCI application,
 	// or the name of an ABCI application compiled in with the Tendermint binary
@@ -257,7 +265,8 @@ type BaseConfig struct {
 func DefaultBaseConfig() BaseConfig {
 	return BaseConfig{
 		Genesis:                 defaultGenesisJSONPath,
-		PrivValidator:           defaultPrivValPath,
+		PrivValidatorKey:        defaultPrivValKeyPath,
+		PrivValidatorState:      defaultPrivValStatePath,
 		NodeKey:                 defaultNodeKeyPath,
 		Moniker:                 defaultMoniker,
 		LogLevel:                DefaultPackageLogLevels(),
@@ -286,8 +295,8 @@ func (cfg BaseConfig) GenesisFile() string {
 }
 
 // PrivValidatorFile returns the full path to the priv_validator.json file
-func (cfg BaseConfig) PrivValidatorFile() string {
-	return rootify(cfg.PrivValidator, cfg.RootDir)
+func (cfg BaseConfig) PrivValidatorStateFile() string {
+	return rootify(cfg.PrivValidatorState, cfg.RootDir)
 }
 
 // NodeKeyFile returns the full path to the node_key.json file

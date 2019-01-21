@@ -26,6 +26,14 @@
   revision = "67e573d211ace594f1366b4ce9d39726c4b19bd0"
 
 [[projects]]
+  branch = "master"
+  digest = "1:69a4040a3d661e3427e6d68a207a3fc3f51817285d7d61b91212ca99597738cd"
+  name = "github.com/danil-lashin/iavl"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "cbd6b9f5b1f77d1e04b37290a50a7609823bccea"
+
+[[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
@@ -376,19 +384,12 @@
   version = "v0.14.1"
 
 [[projects]]
-  digest = "1:e1cc8dd891e64aab63b0c09f2f12456cbe2cd9cbd9d96dfae3281245f05c2428"
-  name = "github.com/tendermint/iavl"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "de0740903a67b624d887f9055d4c60175dcfa758"
-  version = "v0.12.0"
-
-[[projects]]
-  digest = "1:38957d65b64dbf0f4d084e57b177d060afc5e8b81888123e782fc67636cd8b1c"
+  digest = "1:2d496c83b0b751ff85ee1033ef51e49a8befef99f0fafd304ca75ffdd2a1bcf8"
   name = "github.com/tendermint/tendermint"
   packages = [
     "abci/client",
     "abci/example/code",
+    "abci/example/counter",
     "abci/example/kvstore",
     "abci/types",
     "blockchain",
@@ -438,8 +439,8 @@
     "version",
   ]
   pruneopts = "UT"
-  revision = "1e1ca15bccedc16c2452c73745c3c2b5df91ae96"
-  version = "v0.27.4"
+  revision = "07263298bd76f1ea7ad82f8e06234a450150d76c"
+  version = "v0.28.1"
 
 [[projects]]
   digest = "1:b6621a5e9003d7d809993d49217a841d27ef85b4bc0459115d3fd1f8c1518999"
@@ -575,6 +576,7 @@
   input-imports = [
     "github.com/MinterTeam/go-amino",
     "github.com/btcsuite/btcd/btcec",
+    "github.com/danil-lashin/iavl",
     "github.com/go-kit/kit/log/term",
     "github.com/gobuffalo/packr",
     "github.com/gorilla/websocket",
@@ -584,7 +586,6 @@
     "github.com/stretchr/testify/assert",
     "github.com/stretchr/testify/require",
     "github.com/tendermint/go-amino",
-    "github.com/tendermint/iavl",
     "github.com/tendermint/tendermint/abci/types",
     "github.com/tendermint/tendermint/config",
     "github.com/tendermint/tendermint/crypto",
@@ -596,6 +597,7 @@
     "github.com/tendermint/tendermint/libs/db",
     "github.com/tendermint/tendermint/libs/log",
     "github.com/tendermint/tendermint/libs/pubsub",
+    "github.com/tendermint/tendermint/libs/pubsub/query",
     "github.com/tendermint/tendermint/node",
     "github.com/tendermint/tendermint/p2p",
     "github.com/tendermint/tendermint/privval",

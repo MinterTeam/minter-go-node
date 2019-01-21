@@ -14,6 +14,7 @@ const (
 	InvalidMultisendData         uint32 = 111
 	CoinSupplyOverflow           uint32 = 112
 	TxFromSenderAlreadyInMempool uint32 = 113
+	TooLowGasPrice               uint32 = 114
 
 	// coin creation
 	CoinAlreadyExists uint32 = 201
