@@ -12,16 +12,16 @@ import (
 )
 
 var (
-	Network     = "minter-test-network-29-local"
-	genesisTime = time.Date(2018, 12, 24, 13, 0, 0, 0, time.UTC)
+	Network     = "minter-test-network-29"
+	genesisTime = time.Date(2019, 1, 22, 9, 0, 0, 0, time.UTC)
 )
 
 func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
 	validatorsPubKeys := []string{
-		"Gh0OvdKGwtgFQx9bU8aXYWpzUZpSLmy06/FnaSqa4OA=",
-		//"c42kG6ant9abcpSvoVi4nFobQQy/DCRDyFxf4krR3Rw=",
-		//"bxbB/yGm+5RqrtD0wfzKJyty/ZBJiPkdOIMoK4rjG6I=",
-		//"nhPy9UaN14KzFkRPvWZZXhPbp9e9Pvob7NULQgRfWMY=",
+		"SuHuc+YTbIWwypM6mhNHdYozSIXxCzI4OYpnrC6xU7g=",
+		"c42kG6ant9abcpSvoVi4nFobQQy/DCRDyFxf4krR3Rw=",
+		"bxbB/yGm+5RqrtD0wfzKJyty/ZBJiPkdOIMoK4rjG6I=",
+		"nhPy9UaN14KzFkRPvWZZXhPbp9e9Pvob7NULQgRfWMY=",
 	}
 	validators := make([]tmtypes.GenesisValidator, len(validatorsPubKeys))
 
