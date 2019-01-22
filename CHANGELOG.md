@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.11.0
+*Jan 23th, 2019*
+
+BREAKING CHANGES
+
+- [core] Fix coin convert issue
+
 ## 0.10.1
 *Jan 22th, 2019*
 

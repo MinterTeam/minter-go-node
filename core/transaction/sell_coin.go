@@ -94,7 +94,17 @@ func (data SellCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (To
 			newReserve := big.NewInt(0).Set(coin.ReserveBalance)
 
 			newVolume.Sub(newVolume, data.ValueToSell)
-			newReserve.Sub(newVolume, value)
+			newReserve.Sub(newReserve, value)
+
+			if newReserve.Cmp(commissionInBaseCoin) == -1 {
+				return nil, nil, nil, &Response{
+					Code: code.CoinReserveNotSufficient,
+					Log: fmt.Sprintf("Gas coin reserve balance is not sufficient for transaction. Has: %s %s, required %s %s",
+						coin.ReserveBalance.String(),
+						types.GetBaseCoin(),
+						commissionInBaseCoin.String(),
+						types.GetBaseCoin())}
+			}
 
 			c := formula.CalculateSaleAmount(newVolume, newReserve, coin.Crr, commissionInBaseCoin)
 
@@ -123,7 +133,17 @@ func (data SellCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (To
 			newReserve := big.NewInt(0).Set(coinFrom.ReserveBalance)
 
 			newVolume.Sub(newVolume, data.ValueToSell)
-			newReserve.Sub(newVolume, basecoinValue)
+			newReserve.Sub(newReserve, basecoinValue)
+
+			if newReserve.Cmp(commissionInBaseCoin) == -1 {
+				return nil, nil, nil, &Response{
+					Code: code.CoinReserveNotSufficient,
+					Log: fmt.Sprintf("Gas coin reserve balance is not sufficient for transaction. Has: %s %s, required %s %s",
+						coinFrom.ReserveBalance.String(),
+						types.GetBaseCoin(),
+						commissionInBaseCoin.String(),
+						types.GetBaseCoin())}
+			}
 
 			c := formula.CalculateSaleAmount(newVolume, newReserve, coinFrom.Crr, commissionInBaseCoin)
 
