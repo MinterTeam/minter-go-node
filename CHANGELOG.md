@@ -1,7 +1,14 @@
 # Changelog
 
+## 0.10.1
+*Jan 22th, 2019*
+
+BREAKING CHANGES
+
+- [tendermint] Update to [v0.29.0](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0290) 
+
 ## 0.10.0
-*Jan 10th, 2019*
+*Jan 20th, 2019*
 
 BREAKING CHANGES
 
