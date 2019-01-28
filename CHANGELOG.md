@@ -1,11 +1,10 @@
 # Changelog
 
 ## 0.11.0
-*Jan 23th, 2019*
-
 BREAKING CHANGES
 
 - [core] Fix coin convert issue
+- [tendermint] Update to [v0.29.1](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0291) 
 
 ## 0.10.1
 *Jan 22th, 2019*

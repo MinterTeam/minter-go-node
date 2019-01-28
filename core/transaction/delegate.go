@@ -103,6 +103,7 @@ func (data DelegateData) Run(tx *Transaction, context *state.StateDB, isCheck bo
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), data.Stake, data.Coin)}
 	}
 
+	// TODO: fix
 	if data.Coin == tx.GasCoin {
 		totalTxCost := big.NewInt(0)
 		totalTxCost.Add(totalTxCost, data.Stake)

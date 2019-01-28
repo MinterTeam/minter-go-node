@@ -31,10 +31,9 @@ func (data SellCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (To
 	if data.CoinToSell.IsBaseCoin() {
 		coin := context.GetStateCoin(data.CoinToBuy).Data()
 		value = formula.CalculatePurchaseReturn(coin.Volume, coin.ReserveBalance, coin.Crr, data.ValueToSell)
-
 		if value.Cmp(data.MinimumValueToBuy) == -1 {
 			return nil, nil, nil, &Response{
-				Code: code.MinimumValueToBuylReached,
+				Code: code.MinimumValueToBuyReached,
 				Log:  fmt.Sprintf("You wanted to get minimum %s, but currently you will get %s", data.MinimumValueToBuy.String(), value.String()),
 			}
 		}
@@ -79,7 +78,7 @@ func (data SellCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (To
 
 		if value.Cmp(data.MinimumValueToBuy) == -1 {
 			return nil, nil, nil, &Response{
-				Code: code.MinimumValueToBuylReached,
+				Code: code.MinimumValueToBuyReached,
 				Log:  fmt.Sprintf("You wanted to get minimum %s, but currently you will get %s", data.MinimumValueToBuy.String(), value.String()),
 			}
 		}
@@ -155,7 +154,7 @@ func (data SellCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (To
 
 		if value.Cmp(data.MinimumValueToBuy) == -1 {
 			return nil, nil, nil, &Response{
-				Code: code.MinimumValueToBuylReached,
+				Code: code.MinimumValueToBuyReached,
 				Log:  fmt.Sprintf("You wanted to get minimum %s, but currently you will get %s", data.MinimumValueToBuy.String(), value.String()),
 			}
 		}

@@ -27,11 +27,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:69a4040a3d661e3427e6d68a207a3fc3f51817285d7d61b91212ca99597738cd"
+  digest = "1:e95f8e16042a7f26c62add7496a0d4e2292a04fc55c655c57408449e67761537"
   name = "github.com/danil-lashin/iavl"
   packages = ["."]
   pruneopts = "UT"
-  revision = "cbd6b9f5b1f77d1e04b37290a50a7609823bccea"
+  revision = "296da4a2bb62ed122ee9d3de504f9b8c26562a34"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
@@ -385,7 +385,7 @@
   version = "v0.14.1"
 
 [[projects]]
-  digest = "1:297827f151547600442d70089253765f8810b25f620ffa4f39adb5b3df688fe8"
+  digest = "1:56dd3b36df017f40007f957371ccdbcedb6dedc50440cbb413fd96f8f3def52f"
   name = "github.com/tendermint/tendermint"
   packages = [
     "abci/client",
@@ -440,8 +440,8 @@
     "version",
   ]
   pruneopts = "UT"
-  revision = "d9d4f3e6292c100e2c0a06c16d0a9cd4b6508255"
-  version = "v0.29.0-rc0"
+  revision = "4d7b29cd8f8ef998cf8f7141f3a100b0a4fa718d"
+  version = "v0.29.1"
 
 [[projects]]
   digest = "1:b6621a5e9003d7d809993d49217a841d27ef85b4bc0459115d3fd1f8c1518999"
