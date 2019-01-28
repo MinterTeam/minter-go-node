@@ -39,7 +39,7 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.StateDB) 
 
 		if value.Cmp(data.MinimumValueToBuy) == -1 {
 			return nil, nil, nil, &Response{
-				Code: code.MinimumValueToBuylReached,
+				Code: code.MinimumValueToBuyReached,
 				Log:  fmt.Sprintf("You wanted to get minimum %s, but currently you will get %s", data.MinimumValueToBuy.String(), value.String()),
 			}
 		}
@@ -58,7 +58,7 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.StateDB) 
 
 		if ret.Cmp(data.MinimumValueToBuy) == -1 {
 			return nil, nil, nil, &Response{
-				Code: code.MinimumValueToBuylReached,
+				Code: code.MinimumValueToBuyReached,
 				Log:  fmt.Sprintf("You wanted to get minimum %s, but currently you will get %s", data.MinimumValueToBuy.String(), ret.String()),
 			}
 		}
@@ -100,7 +100,7 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.StateDB) 
 
 		if value.Cmp(data.MinimumValueToBuy) == -1 {
 			return nil, nil, nil, &Response{
-				Code: code.MinimumValueToBuylReached,
+				Code: code.MinimumValueToBuyReached,
 				Log:  fmt.Sprintf("You wanted to get minimum %s, but currently you will get %s", data.MinimumValueToBuy.String(), value.String()),
 			}
 		}
