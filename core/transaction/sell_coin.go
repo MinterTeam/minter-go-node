@@ -31,7 +31,6 @@ func (data SellCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (To
 	if data.CoinToSell.IsBaseCoin() {
 		coin := context.GetStateCoin(data.CoinToBuy).Data()
 		value = formula.CalculatePurchaseReturn(coin.Volume, coin.ReserveBalance, coin.Crr, data.ValueToSell)
-
 		if value.Cmp(data.MinimumValueToBuy) == -1 {
 			return nil, nil, nil, &Response{
 				Code: code.MinimumValueToBuyReached,

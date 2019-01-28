@@ -44,6 +44,13 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.StateDB) 
 			}
 		}
 
+		if err := CheckForCoinSupplyOverflow(coin.Volume, value); err != nil {
+			return nil, nil, nil, &Response{
+				Code: code.CoinSupplyOverflow,
+				Log:  err.Error(),
+			}
+		}
+
 		conversions = append(conversions, Conversion{
 			FromCoin:  data.CoinToSell,
 			ToCoin:    data.CoinToBuy,
@@ -86,7 +93,6 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.StateDB) 
 		coinTo := context.GetStateCoin(data.CoinToBuy).Data()
 
 		basecoinValue := formula.CalculateSaleReturn(coinFrom.Volume, coinFrom.ReserveBalance, coinFrom.Crr, amountToSell)
-
 		if basecoinValue.Cmp(commissionInBaseCoin) == -1 {
 			return nil, nil, nil, &Response{
 				Code: code.InsufficientFunds,
@@ -97,11 +103,17 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.StateDB) 
 		basecoinValue.Sub(basecoinValue, commissionInBaseCoin)
 
 		value = formula.CalculatePurchaseReturn(coinTo.Volume, coinTo.ReserveBalance, coinTo.Crr, basecoinValue)
-
 		if value.Cmp(data.MinimumValueToBuy) == -1 {
 			return nil, nil, nil, &Response{
 				Code: code.MinimumValueToBuyReached,
 				Log:  fmt.Sprintf("You wanted to get minimum %s, but currently you will get %s", data.MinimumValueToBuy.String(), value.String()),
+			}
+		}
+
+		if err := CheckForCoinSupplyOverflow(coinTo.Volume, value); err != nil {
+			return nil, nil, nil, &Response{
+				Code: code.CoinSupplyOverflow,
+				Log:  err.Error(),
 			}
 		}
 

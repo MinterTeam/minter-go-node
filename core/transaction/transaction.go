@@ -76,7 +76,7 @@ type TotalSpends []TotalSpend
 func (tss *TotalSpends) Add(coin types.CoinSymbol, value *big.Int) {
 	for i, t := range *tss {
 		if t.Coin == coin {
-			(*tss)[i].Value.Add((*tss)[i].Value, value)
+			(*tss)[i].Value.Add((*tss)[i].Value, big.NewInt(0).Set(value))
 			return
 		}
 	}
