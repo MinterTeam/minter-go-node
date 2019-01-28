@@ -13,7 +13,7 @@ import (
 
 var (
 	Network     = "minter-test-network-30"
-	genesisTime = time.Date(2019, 1, 28, 15, 45, 0, 0, time.UTC)
+	genesisTime = time.Date(2019, 1, 28, 15, 30, 0, 0, time.UTC)
 )
 
 func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
