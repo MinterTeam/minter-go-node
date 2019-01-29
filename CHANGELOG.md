@@ -5,6 +5,7 @@
 BREAKING CHANGES
 
 - [core] Updated commission handling
+- [core] Fix multisend issue
 
 ## 0.11.0
 
