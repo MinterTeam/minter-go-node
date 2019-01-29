@@ -92,10 +92,8 @@ func (data MultisendData) Run(tx *Transaction, context *state.StateDB, isCheck b
 	if !isCheck {
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		if !tx.GasCoin.IsBaseCoin() {
-			context.SubCoinVolume(tx.GasCoin, commission)
-			context.SubCoinReserve(tx.GasCoin, commissionInBaseCoin)
-		}
+		context.SubCoinVolume(tx.GasCoin, commission)
+		context.SubCoinReserve(tx.GasCoin, commissionInBaseCoin)
 
 		context.SubBalance(sender, tx.GasCoin, commission)
 		for _, item := range data.List {

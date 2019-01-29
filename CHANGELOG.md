@@ -1,6 +1,13 @@
 # Changelog
 
+## 0.12.0
+
+BREAKING CHANGES
+
+- [core] Updated commission handling
+
 ## 0.11.0
+
 BREAKING CHANGES
 
 - [core] Fix coin convert issue

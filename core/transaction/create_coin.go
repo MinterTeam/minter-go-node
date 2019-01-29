@@ -151,7 +151,7 @@ func (data CreateCoinData) Run(tx *Transaction, context *state.StateDB, isCheck 
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), data.InitialReserve.String(), types.GetBaseCoin())}
 	}
 
-	if types.GetBaseCoin() == tx.GasCoin {
+	if tx.GasCoin.IsBaseCoin() {
 		totalTxCost := big.NewInt(0)
 		totalTxCost.Add(totalTxCost, data.InitialReserve)
 		totalTxCost.Add(totalTxCost, commission)
@@ -165,6 +165,9 @@ func (data CreateCoinData) Run(tx *Transaction, context *state.StateDB, isCheck 
 
 	if !isCheck {
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
+
+		context.SubCoinReserve(tx.GasCoin, commissionInBaseCoin)
+		context.SubCoinVolume(tx.GasCoin, commission)
 
 		context.SubBalance(sender, types.GetBaseCoin(), data.InitialReserve)
 		context.SubBalance(sender, tx.GasCoin, commission)
