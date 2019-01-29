@@ -1,6 +1,13 @@
 # Changelog
 
+## 0.11.1
+
+BREAKING CHANGES
+
+- [core] Fix coin convert issue
+
 ## 0.11.0
+
 BREAKING CHANGES
 
 - [core] Fix coin convert issue

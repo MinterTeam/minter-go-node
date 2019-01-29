@@ -94,6 +94,11 @@ func CalculateSaleReturn(supply *big.Int, reserve *big.Int, crr uint, sellAmount
 
 	res := newFloat(0).Quo(tSellAmount, tSupply)      // sellAmount / supply
 	res.Sub(newFloat(1), res)                         // (1 - sellAmount / supply)
+
+	if res.Cmp(big.NewFloat(0)) == -1 {
+		return big.NewInt(0)
+	}
+
 	res = math.Pow(res, newFloat(100/(float64(crr)))) // (1 - sellAmount / supply) ^ (100 / crr)
 	res.Sub(newFloat(1), res)                         // (1 - (1 - sellAmount / supply) ^ (1 / (crr / 100)))
 	res.Mul(res, tReserve)                            // reserve * (1 - (1 - sellAmount / supply) ^ (1 / (crr / 100)))
