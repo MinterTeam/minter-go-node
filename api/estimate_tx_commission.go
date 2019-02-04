@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/formula"
-	"github.com/pkg/errors"
+	"github.com/MinterTeam/minter-go-node/rpc/lib/types"
 	"math/big"
 )
 
@@ -20,7 +20,7 @@ func EstimateTxCommission(tx []byte, height int) (*TxCommissionResponse, error) 
 
 	decodedTx, err := transaction.TxDecoder.DecodeFromBytes(tx)
 	if err != nil {
-		return nil, err
+		return nil, rpctypes.RPCError{Code: 400, Message: "Cannot decode transaction", Data: err.Error()}
 	}
 
 	commissionInBaseCoin := decodedTx.CommissionInBaseCoin()
@@ -30,7 +30,7 @@ func EstimateTxCommission(tx []byte, height int) (*TxCommissionResponse, error) 
 		coin := cState.GetStateCoin(decodedTx.GasCoin)
 
 		if coin.ReserveBalance().Cmp(commissionInBaseCoin) < 0 {
-			return nil, errors.New(fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.ReserveBalance().String(), commissionInBaseCoin.String()))
+			return nil, rpctypes.RPCError{Code: 400, Message: fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.ReserveBalance().String(), commissionInBaseCoin.String())}
 		}
 
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)

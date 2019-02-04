@@ -92,10 +92,8 @@ func (data MultisendData) Run(tx *Transaction, context *state.StateDB, isCheck b
 	if !isCheck {
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		if !tx.GasCoin.IsBaseCoin() {
-			context.SubCoinVolume(tx.GasCoin, commission)
-			context.SubCoinReserve(tx.GasCoin, commissionInBaseCoin)
-		}
+		context.SubCoinVolume(tx.GasCoin, commission)
+		context.SubCoinReserve(tx.GasCoin, commissionInBaseCoin)
 
 		context.SubBalance(sender, tx.GasCoin, commission)
 		for _, item := range data.List {
@@ -121,7 +119,7 @@ func (data MultisendData) Run(tx *Transaction, context *state.StateDB, isCheck b
 
 func checkBalances(context *state.StateDB, sender types.Address, items []MultisendDataItem, commission *big.Int, gasCoin types.CoinSymbol) error {
 	total := map[types.CoinSymbol]*big.Int{}
-	total[gasCoin] = commission
+	total[gasCoin] = big.NewInt(0).Set(commission)
 
 	for _, item := range items {
 		if total[item.Coin] == nil {

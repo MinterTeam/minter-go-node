@@ -3,7 +3,7 @@ package api
 import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
-	"github.com/pkg/errors"
+	"github.com/MinterTeam/minter-go-node/rpc/lib/types"
 	"github.com/tendermint/tendermint/libs/common"
 )
 
@@ -14,14 +14,13 @@ func Transaction(hash []byte) (*TransactionResponse, error) {
 	}
 
 	if tx.Height > blockchain.LastCommittedHeight() {
-		return nil, errors.New("Tx not found")
+		return nil, rpctypes.RPCError{Code: 404, Message: "Tx not found"}
 	}
 
 	decodedTx, _ := transaction.TxDecoder.DecodeFromBytes(tx.Tx)
 	sender, _ := decodedTx.Sender()
 
 	tags := make(map[string]string)
-
 	for _, tag := range tx.TxResult.Tags {
 		tags[string(tag.Key)] = string(tag.Value)
 	}
@@ -87,5 +86,5 @@ func encodeTxData(decodedTx *transaction.Transaction) ([]byte, error) {
 		return cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.EditCandidateData))
 	}
 
-	return nil, errors.New("unknown tx type")
+	return nil, rpctypes.RPCError{Code: 500, Message: "unknown tx type"}
 }

@@ -45,7 +45,6 @@ func Transactions(query string) (*[]TransactionResponse, error) {
 		sender, _ := decodedTx.Sender()
 
 		tags := make(map[string]string)
-
 		for _, tag := range tx.TxResult.Tags {
 			tags[string(tag.Key)] = string(tag.Value)
 		}

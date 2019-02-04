@@ -91,7 +91,7 @@ func (data DeclareCandidacyData) Run(tx *Transaction, context *state.StateDB, is
 	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
-	if tx.GasCoin != types.GetBaseCoin() {
+	if !tx.GasCoin.IsBaseCoin() {
 		coin := context.GetStateCoin(tx.GasCoin)
 
 		if coin.ReserveBalance().Cmp(commissionInBaseCoin) < 0 {
@@ -129,6 +129,9 @@ func (data DeclareCandidacyData) Run(tx *Transaction, context *state.StateDB, is
 
 	if !isCheck {
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
+
+		context.SubCoinReserve(tx.GasCoin, commissionInBaseCoin)
+		context.SubCoinVolume(tx.GasCoin, commission)
 
 		context.SubBalance(sender, data.Coin, data.Stake)
 		context.SubBalance(sender, tx.GasCoin, commission)

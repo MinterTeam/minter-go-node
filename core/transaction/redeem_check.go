@@ -153,10 +153,8 @@ func (data RedeemCheckData) Run(tx *Transaction, context *state.StateDB, isCheck
 		context.UseCheck(decodedCheck)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		if !decodedCheck.Coin.IsBaseCoin() {
-			context.SubCoinVolume(decodedCheck.Coin, commission)
-			context.SubCoinReserve(decodedCheck.Coin, commissionInBaseCoin)
-		}
+		context.SubCoinVolume(decodedCheck.Coin, commission)
+		context.SubCoinReserve(decodedCheck.Coin, commissionInBaseCoin)
 
 		context.SubBalance(checkSender, decodedCheck.Coin, totalTxCost)
 		context.AddBalance(sender, decodedCheck.Coin, decodedCheck.Value)

@@ -2,7 +2,6 @@ package api
 
 import (
 	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/MinterTeam/minter-go-node/rpc/lib/types"
 	"math/big"
 )
 
@@ -14,7 +13,7 @@ type AddressResponse struct {
 func Address(address types.Address, height int) (*AddressResponse, error) {
 	cState, err := GetStateForHeight(height)
 	if err != nil {
-		return nil, rpctypes.RPCError{Code: 404, Message: "State at given height not found", Data: err.Error()}
+		return nil, err
 	}
 
 	response := AddressResponse{

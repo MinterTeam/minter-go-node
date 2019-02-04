@@ -83,7 +83,7 @@ func (tss *TotalSpends) Add(coin types.CoinSymbol, value *big.Int) {
 
 	*tss = append(*tss, TotalSpend{
 		Coin:  coin,
-		Value: value,
+		Value: big.NewInt(0).Set(value),
 	})
 }
 

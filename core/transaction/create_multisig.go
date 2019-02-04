@@ -96,10 +96,8 @@ func (data CreateMultisigData) Run(tx *Transaction, context *state.StateDB, isCh
 	if !isCheck {
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		if !tx.GasCoin.IsBaseCoin() {
-			context.SubCoinVolume(tx.GasCoin, commission)
-			context.SubCoinReserve(tx.GasCoin, commissionInBaseCoin)
-		}
+		context.SubCoinVolume(tx.GasCoin, commission)
+		context.SubCoinReserve(tx.GasCoin, commissionInBaseCoin)
 
 		context.SubBalance(sender, tx.GasCoin, commission)
 		context.SetNonce(sender, tx.Nonce)

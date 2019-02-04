@@ -79,7 +79,7 @@ func (data DelegateData) Run(tx *Transaction, context *state.StateDB, isCheck bo
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
-	if tx.GasCoin != types.GetBaseCoin() {
+	if !tx.GasCoin.IsBaseCoin() {
 		coin := context.GetStateCoin(tx.GasCoin)
 
 		if coin.ReserveBalance().Cmp(commissionInBaseCoin) < 0 {
@@ -103,7 +103,6 @@ func (data DelegateData) Run(tx *Transaction, context *state.StateDB, isCheck bo
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), data.Stake, data.Coin)}
 	}
 
-	// TODO: fix
 	if data.Coin == tx.GasCoin {
 		totalTxCost := big.NewInt(0)
 		totalTxCost.Add(totalTxCost, data.Stake)
@@ -118,6 +117,9 @@ func (data DelegateData) Run(tx *Transaction, context *state.StateDB, isCheck bo
 
 	if !isCheck {
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
+
+		context.SubCoinReserve(tx.GasCoin, commissionInBaseCoin)
+		context.SubCoinVolume(tx.GasCoin, commission)
 
 		context.SubBalance(sender, tx.GasCoin, commission)
 		context.SubBalance(sender, data.Coin, data.Stake)
