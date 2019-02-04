@@ -19,7 +19,6 @@ type StatusResponse struct {
 
 func Status() (*StatusResponse, error) {
 	result, err := client.Status()
-
 	if err != nil {
 		return nil, err
 	}

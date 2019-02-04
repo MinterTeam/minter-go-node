@@ -6,7 +6,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
-	"github.com/pkg/errors"
+	"github.com/MinterTeam/minter-go-node/rpc/lib/types"
 	"math/big"
 )
 
@@ -27,15 +27,15 @@ func EstimateCoinSell(coinToSellString string, coinToBuyString string, valueToSe
 	var result *big.Int
 
 	if coinToSell == coinToBuy {
-		return nil, errors.New("\"From\" coin equals to \"to\" coin")
+		return nil, rpctypes.RPCError{Code: 400, Message: "\"From\" coin equals to \"to\" coin"}
 	}
 
 	if !cState.CoinExists(coinToSell) {
-		return nil, errors.New("Coin to sell not exists")
+		return nil, rpctypes.RPCError{Code: 404, Message: "Coin to sell not exists"}
 	}
 
 	if !cState.CoinExists(coinToBuy) {
-		return nil, errors.New("Coin to buy not exists")
+		return nil, rpctypes.RPCError{Code: 404, Message: "Coin to buy not exists"}
 	}
 
 	commissionInBaseCoin := big.NewInt(commissions.ConvertTx)
@@ -46,11 +46,11 @@ func EstimateCoinSell(coinToSellString string, coinToBuyString string, valueToSe
 		coin := cState.GetStateCoin(coinToSell)
 
 		if coin.ReserveBalance().Cmp(commissionInBaseCoin) < 0 {
-			return nil, errors.New(fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.ReserveBalance().String(), commissionInBaseCoin.String()))
+			return nil, rpctypes.RPCError{Code: 400, Message: fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.ReserveBalance().String(), commissionInBaseCoin.String())}
 		}
 
 		if coin.Volume().Cmp(valueToSell) < 0 {
-			return nil, errors.New(fmt.Sprintf("Coin volume is not sufficient for transaction. Has: %s, required %s", coin.Volume().String(), valueToSell.String()))
+			return nil, rpctypes.RPCError{Code: 400, Message: fmt.Sprintf("Coin volume is not sufficient for transaction. Has: %s, required %s", coin.Volume().String(), valueToSell.String())}
 		}
 
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)

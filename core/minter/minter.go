@@ -16,6 +16,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/genesis"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/version"
+	"github.com/danil-lashin/tendermint/rpc/lib/types"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/db"
 	tmNode "github.com/tendermint/tendermint/node"
@@ -437,7 +438,12 @@ func (app *Blockchain) GetStateForHeight(height int) (*state.StateDB, error) {
 	app.lock.RLock()
 	defer app.lock.RUnlock()
 
-	return state.New(int64(height), app.stateDB)
+	s, err := state.New(int64(height), app.stateDB)
+	if err != nil {
+		return nil, rpctypes.RPCError{Code: 404, Message: "State at given height not found", Data: err.Error()}
+	}
+
+	return s, nil
 }
 
 // Get current height of Minter Blockchain

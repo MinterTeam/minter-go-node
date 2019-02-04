@@ -6,7 +6,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
-	"github.com/pkg/errors"
+	"github.com/MinterTeam/minter-go-node/rpc/lib/types"
 	"math/big"
 )
 
@@ -27,15 +27,15 @@ func EstimateCoinBuy(coinToSellString string, coinToBuyString string, valueToBuy
 	var result *big.Int
 
 	if coinToSell == coinToBuy {
-		return nil, errors.New("\"From\" coin equals to \"to\" coin")
+		return nil, rpctypes.RPCError{Code: 400, Message: "\"From\" coin equals to \"to\" coin"}
 	}
 
 	if !cState.CoinExists(coinToSell) {
-		return nil, errors.New("Coin to sell not exists")
+		return nil, rpctypes.RPCError{Code: 404, Message: "Coin to sell not exists"}
 	}
 
 	if !cState.CoinExists(coinToBuy) {
-		return nil, errors.New("Coin to buy not exists")
+		return nil, rpctypes.RPCError{Code: 404, Message: "Coin to buy not exists"}
 	}
 
 	commissionInBaseCoin := big.NewInt(commissions.ConvertTx)
@@ -46,7 +46,7 @@ func EstimateCoinBuy(coinToSellString string, coinToBuyString string, valueToBuy
 		coin := cState.GetStateCoin(coinToSell)
 
 		if coin.ReserveBalance().Cmp(commissionInBaseCoin) < 0 {
-			return nil, errors.New(fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.ReserveBalance().String(), commissionInBaseCoin.String()))
+			return nil, rpctypes.RPCError{Code: 400, Message: fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.ReserveBalance().String(), commissionInBaseCoin.String())}
 		}
 
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
@@ -59,7 +59,7 @@ func EstimateCoinBuy(coinToSellString string, coinToBuyString string, valueToBuy
 		coin := cState.GetStateCoin(coinToSell).Data()
 
 		if coin.ReserveBalance.Cmp(valueToBuy) < 0 {
-			return nil, errors.New(fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.ReserveBalance.String(), valueToBuy.String()))
+			return nil, rpctypes.RPCError{Code: 400, Message: fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.ReserveBalance.String(), valueToBuy.String())}
 		}
 
 		result = formula.CalculateSaleAmount(coin.Volume, coin.ReserveBalance, coin.Crr, valueToBuy)
@@ -69,7 +69,7 @@ func EstimateCoinBuy(coinToSellString string, coinToBuyString string, valueToBuy
 		baseCoinNeeded := formula.CalculatePurchaseAmount(coinTo.Volume, coinTo.ReserveBalance, coinTo.Crr, valueToBuy)
 
 		if coinFrom.ReserveBalance.Cmp(baseCoinNeeded) < 0 {
-			return nil, errors.New(fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coinFrom.ReserveBalance.String(), baseCoinNeeded.String()))
+			return nil, rpctypes.RPCError{Code: 400, Message: fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coinFrom.ReserveBalance.String(), baseCoinNeeded.String())}
 		}
 
 		result = formula.CalculateSaleAmount(coinFrom.Volume, coinFrom.ReserveBalance, coinFrom.Crr, baseCoinNeeded)
