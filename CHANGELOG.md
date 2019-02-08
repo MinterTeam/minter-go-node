@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.12.1
+
+BUG FIXES
+
+- [core] Fix "No info about LastBlocksTimeDelta is available" issue
+
 ## 0.12.0
 
 BREAKING CHANGES

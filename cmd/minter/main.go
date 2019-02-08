@@ -9,6 +9,8 @@ import (
 	"github.com/MinterTeam/minter-go-node/genesis"
 	"github.com/MinterTeam/minter-go-node/gui"
 	"github.com/MinterTeam/minter-go-node/log"
+	bc "github.com/tendermint/tendermint/blockchain"
+	tmCfg "github.com/tendermint/tendermint/config"
 	"github.com/tendermint/tendermint/libs/common"
 	tmNode "github.com/tendermint/tendermint/node"
 	"github.com/tendermint/tendermint/p2p"
@@ -29,7 +31,29 @@ func main() {
 	}
 
 	app := minter.NewMinterBlockchain()
-	node := startTendermintNode(app)
+
+	tmCfg := config.GetTmConfig()
+
+	// update BlocksTimeDelta
+	// TODO: refactor
+	blockStoreDB, err := tmNode.DefaultDBProvider(&tmNode.DBContext{ID: "blockstore", Config: tmCfg})
+	if err != nil {
+		panic(err)
+	}
+	blockStore := bc.NewBlockStore(blockStoreDB)
+	height := blockStore.Height()
+	count := int64(3)
+	if _, err := app.GetBlocksTimeDelta(height, count); err != nil {
+		blockA := blockStore.LoadBlockMeta(height - count - 1)
+		blockB := blockStore.LoadBlockMeta(height - 1)
+
+		delta := int(blockB.Header.Time.Sub(blockA.Header.Time).Seconds())
+		app.SetBlocksTimeDelta(height, delta)
+	}
+	blockStoreDB.Close()
+
+	// start TM node
+	node := startTendermintNode(app, tmCfg)
 
 	client := rpc.NewLocal(node)
 	status, _ := client.Status()
@@ -53,8 +77,7 @@ func main() {
 	})
 }
 
-func startTendermintNode(app *minter.Blockchain) *tmNode.Node {
-	cfg := config.GetTmConfig()
+func startTendermintNode(app *minter.Blockchain, cfg *tmCfg.Config) *tmNode.Node {
 	nodeKey, err := p2p.LoadOrGenNodeKey(cfg.NodeKeyFile())
 
 	if err != nil {

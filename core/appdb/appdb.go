@@ -2,6 +2,7 @@ package appdb
 
 import (
 	"encoding/binary"
+	"errors"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/tendermint/go-amino"
 	"github.com/tendermint/tendermint/abci/types"
@@ -92,7 +93,7 @@ type LastBlocksTimeDelta struct {
 	Delta  int
 }
 
-func (appDB *AppDB) GetLastBlocksTimeDelta(height int64) int {
+func (appDB *AppDB) GetLastBlocksTimeDelta(height int64) (int, error) {
 	result := appDB.db.Get([]byte(blockTimeDeltaPath))
 	if result == nil {
 		panic("No info about LastBlocksTimeDelta is available")
@@ -105,10 +106,10 @@ func (appDB *AppDB) GetLastBlocksTimeDelta(height int64) int {
 	}
 
 	if data.Height != height {
-		panic("No info about LastBlocksTimeDelta is available")
+		return 0, errors.New("no info about LastBlocksTimeDelta is available")
 	}
 
-	return data.Delta
+	return data.Delta, nil
 }
 
 func (appDB *AppDB) SetLastBlocksTimeDelta(height int64, delta int) {

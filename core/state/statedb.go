@@ -1472,3 +1472,9 @@ func (s *StateDB) SetMaxGas(maxGas uint64) {
 
 	s.iavl.Set(maxGasKey, bs)
 }
+
+func (s *StateDB) GetMaxGas() uint64 {
+	_, b := s.iavl.Get(maxGasKey)
+
+	return binary.BigEndian.Uint64(b)
+}

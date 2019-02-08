@@ -35,7 +35,7 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPool *big.I
 	if len(rawTx) > maxTxLength {
 		return Response{
 			Code: code.TxTooLarge,
-			Log:  "TX length is over 1024 bytes"}
+			Log:  fmt.Sprintf("TX length is over %d bytes", maxTxLength)}
 	}
 
 	tx, err := TxDecoder.DecodeFromBytes(rawTx)
