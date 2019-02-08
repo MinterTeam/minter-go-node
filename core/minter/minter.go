@@ -150,7 +150,10 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 		panic("Application stopped")
 	}
 
+	// compute max gas
 	app.updateBlocksTimeDelta(req.Header.Height, 3)
+	maxGas := app.calcMaxGas(req.Header.Height)
+	app.stateDeliver.SetMaxGas(maxGas)
 
 	atomic.StoreInt64(&app.height, req.Header.Height)
 	app.rewards = big.NewInt(0)
@@ -315,16 +318,12 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 
 	_ = eventsdb.GetCurrent().FlushEvents(req.Height)
 
-	// compute max gas
-	maxGas := app.calcMaxGas(req.Height)
-	app.stateDeliver.SetMaxGas(maxGas)
-
 	return abciTypes.ResponseEndBlock{
 		ValidatorUpdates: updates,
 		ConsensusParamUpdates: &abciTypes.ConsensusParams{
 			BlockSize: &abciTypes.BlockSizeParams{
 				MaxBytes: BlockMaxBytes,
-				MaxGas:   int64(maxGas),
+				MaxGas:   int64(app.stateDeliver.GetMaxGas()),
 			},
 		},
 	}
@@ -518,7 +517,11 @@ func (app *Blockchain) updateBlocksTimeDelta(height, count int64) {
 	app.appDB.SetLastBlocksTimeDelta(height, delta)
 }
 
-func (app *Blockchain) getBlocksTimeDelta(height, count int64) int {
+func (app *Blockchain) SetBlocksTimeDelta(height int64, value int) {
+	app.appDB.SetLastBlocksTimeDelta(height, value)
+}
+
+func (app *Blockchain) GetBlocksTimeDelta(height, count int64) (int, error) {
 	return app.appDB.GetLastBlocksTimeDelta(height)
 }
 
@@ -535,7 +538,7 @@ func (app *Blockchain) calcMaxGas(height int64) uint64 {
 	newMaxGas := app.stateCheck.GetCurrentMaxGas()
 
 	// check if blocks are created in time
-	if app.getBlocksTimeDelta(height, blockDelta) > targetTime*blockDelta {
+	if delta, _ := app.GetBlocksTimeDelta(height, blockDelta); delta > targetTime*blockDelta {
 		newMaxGas = newMaxGas * 7 / 10 // decrease by 30%
 	} else {
 		newMaxGas = newMaxGas * 105 / 100 // increase by 5%
