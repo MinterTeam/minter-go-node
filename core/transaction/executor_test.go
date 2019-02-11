@@ -12,7 +12,7 @@ import (
 )
 
 func TestTooLongTx(t *testing.T) {
-	fakeTx := make([]byte, 4225)
+	fakeTx := make([]byte, 10000)
 
 	response := RunTx(getState(), false, fakeTx, big.NewInt(0), 0, make(map[types.Address]struct{}))
 
