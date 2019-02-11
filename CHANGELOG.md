@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.13.1
+
+BUG FIXES
+
+- [core] Fix sync issue
+
 ## 0.13.0
 
 BREAKING CHANGES
