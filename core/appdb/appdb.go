@@ -96,7 +96,7 @@ type LastBlocksTimeDelta struct {
 func (appDB *AppDB) GetLastBlocksTimeDelta(height int64) (int, error) {
 	result := appDB.db.Get([]byte(blockTimeDeltaPath))
 	if result == nil {
-		panic("No info about LastBlocksTimeDelta is available")
+		return 0, errors.New("no info about LastBlocksTimeDelta is available")
 	}
 
 	data := LastBlocksTimeDelta{}
