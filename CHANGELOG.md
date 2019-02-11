@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.13.0
+
+BREAKING CHANGES
+
+- [tendermint] Update to [v0.30.0](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0300) 
+
+BUG FIXES
+
+- [core] Fix max tx length
+
 ## 0.12.1
 
 BUG FIXES

@@ -1,5 +1,5 @@
 [[constraint]]
-  branch = "master"
+  revision = "ed77733ec07dfc8a513741138419b8d9d3de9d2d"
   name = "github.com/btcsuite/btcd"
 
 [[constraint]]
@@ -12,11 +12,11 @@
 
 [[constraint]]
   name = "github.com/danil-lashin/iavl"
-  branch = "master"
+  revision = "83a81c94ee7eb3bd0eb14d6829bd04f22e530e6f"
 
 [[constraint]]
   name = "github.com/tendermint/tendermint"
-  version = "0.29.1"
+  version = "0.30.0"
 
 [[constraint]]
   name = "github.com/MinterTeam/go-amino"
