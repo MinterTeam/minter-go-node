@@ -15,7 +15,7 @@ var (
 )
 
 const (
-	maxTxLength          = maxPayloadLength + maxServiceDataLength + (1024 * 3) // TODO: make some estimations
+	maxTxLength          = maxPayloadLength + maxServiceDataLength + (1024 * 4) // TODO: make some estimations
 	maxPayloadLength     = 1024
 	maxServiceDataLength = 128
 )

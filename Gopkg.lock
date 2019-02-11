@@ -18,20 +18,26 @@
   revision = "3a771d992973f24aa725d07868b467d1ddfceafb"
 
 [[projects]]
-  branch = "master"
-  digest = "1:c0decf632843204d2b8781de7b26e7038584e2dcccc7e2f401e88ae85b1df2b7"
+  digest = "1:093bf93a65962e8191e3e8cd8fc6c363f83d43caca9739c906531ba7210a9904"
   name = "github.com/btcsuite/btcd"
   packages = ["btcec"]
   pruneopts = "UT"
-  revision = "67e573d211ace594f1366b4ce9d39726c4b19bd0"
+  revision = "ed77733ec07dfc8a513741138419b8d9d3de9d2d"
 
 [[projects]]
-  branch = "master"
-  digest = "1:e95f8e16042a7f26c62add7496a0d4e2292a04fc55c655c57408449e67761537"
+  digest = "1:a87ce480584818a6a9672ccd2530f8aa87361c70588ffbde34dafbd267e15bfc"
   name = "github.com/danil-lashin/iavl"
   packages = ["."]
   pruneopts = "UT"
-  revision = "296da4a2bb62ed122ee9d3de504f9b8c26562a34"
+  revision = "83a81c94ee7eb3bd0eb14d6829bd04f22e530e6f"
+
+[[projects]]
+  digest = "1:58f28ece14b66e78bb3bfbeb806d47ac38b247272bcba8902d67656768d00bb2"
+  name = "github.com/danil-lashin/tendermint"
+  packages = ["rpc/lib/types"]
+  pruneopts = "UT"
+  revision = "9c236ffd6c56add84f3c17930ae75c26c68d61ec"
+  version = "v0.27.0"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
@@ -40,6 +46,14 @@
   pruneopts = "UT"
   revision = "8991bc29aa16c548c550c7ff78260e27b9ab7c73"
   version = "v1.1.1"
+
+[[projects]]
+  digest = "1:fed20bf7f0da387c96d4cfc140a95572e5aba4bb984beb7de910e090ae39849b"
+  name = "github.com/ethereum/go-ethereum"
+  packages = ["crypto/secp256k1"]
+  pruneopts = "UT"
+  revision = "7fa3509e2eaf1a4ebc12344590e5699406690f15"
+  version = "v1.8.22"
 
 [[projects]]
   digest = "1:abeb38ade3f32a92943e5be54f55ed6d6e3b6602761d74b4aab4c9dd45c18abd"
@@ -369,14 +383,6 @@
   revision = "f9080354173f192dfc8821931eacf9cfd6819253"
 
 [[projects]]
-  digest = "1:83f5e189eea2baad419a6a410984514266ff690075759c87e9ede596809bd0b8"
-  name = "github.com/tendermint/btcd"
-  packages = ["btcec"]
-  pruneopts = "UT"
-  revision = "80daadac05d1cd29571fccf27002d79667a88b58"
-  version = "v0.1.1"
-
-[[projects]]
   digest = "1:ad9c4c1a4e7875330b1f62906f2830f043a23edb5db997e3a5ac5d3e6eadf80a"
   name = "github.com/tendermint/go-amino"
   packages = ["."]
@@ -385,7 +391,7 @@
   version = "v0.14.1"
 
 [[projects]]
-  digest = "1:56dd3b36df017f40007f957371ccdbcedb6dedc50440cbb413fd96f8f3def52f"
+  digest = "1:4ec393e2b75ea00af14ac3a17a93c6917ec5e10f7bb39b6d1b81f4f950dd75da"
   name = "github.com/tendermint/tendermint"
   packages = [
     "abci/client",
@@ -440,8 +446,8 @@
     "version",
   ]
   pruneopts = "UT"
-  revision = "4d7b29cd8f8ef998cf8f7141f3a100b0a4fa718d"
-  version = "v0.29.1"
+  revision = "28d75ec8016b7fb043735cbe4c4d92ec73355de7"
+  version = "v0.30.0"
 
 [[projects]]
   digest = "1:b6621a5e9003d7d809993d49217a841d27ef85b4bc0459115d3fd1f8c1518999"
@@ -578,6 +584,7 @@
     "github.com/MinterTeam/go-amino",
     "github.com/btcsuite/btcd/btcec",
     "github.com/danil-lashin/iavl",
+    "github.com/danil-lashin/tendermint/rpc/lib/types",
     "github.com/go-kit/kit/log/term",
     "github.com/gobuffalo/packr",
     "github.com/gorilla/websocket",
@@ -588,6 +595,7 @@
     "github.com/stretchr/testify/require",
     "github.com/tendermint/go-amino",
     "github.com/tendermint/tendermint/abci/types",
+    "github.com/tendermint/tendermint/blockchain",
     "github.com/tendermint/tendermint/config",
     "github.com/tendermint/tendermint/crypto",
     "github.com/tendermint/tendermint/crypto/ed25519",
