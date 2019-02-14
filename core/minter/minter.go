@@ -117,7 +117,7 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 	// Set initial Blockchain validators
 	commission := uint(100)
 	currentBlock := uint(1)
-	initialStake := big.NewInt(0) // 0 bip
+	initialStake := 1 // 1 pip
 	for _, validator := range req.Validators {
 		app.stateDeliver.CreateCandidate(genesisState.FirstValidatorAddress, genesisState.FirstValidatorAddress, validator.PubKey.Data, commission, currentBlock, types.GetBaseCoin(), initialStake)
 		app.stateDeliver.CreateValidator(genesisState.FirstValidatorAddress, validator.PubKey.Data, commission, currentBlock, types.GetBaseCoin(), initialStake)
