@@ -61,12 +61,14 @@ func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
 		return nil, err
 	}
 
+	appHash := [32]byte{}
+
 	// Compose Genesis
 	genesis := tmtypes.GenesisDoc{
 		ChainID:     Network,
 		GenesisTime: genesisTime,
 		Validators:  makeValidators(validatorsPubKeys),
-		AppHash:     [32]byte{}[:],
+		AppHash:     appHash[:],
 		AppState:    json.RawMessage(appStateJSON),
 	}
 

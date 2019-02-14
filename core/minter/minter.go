@@ -221,6 +221,10 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 		totalPower.Add(totalPower, val.TotalBipStake)
 	}
 
+	if totalPower.Cmp(types.Big0) == 0 {
+		totalPower = big.NewInt(1)
+	}
+
 	// accumulate rewards
 	for i, val := range vals {
 		// skip if candidate is not present
