@@ -47,6 +47,7 @@ func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
 		"Mx3bdee0d64fa9ac892720f48724ef6a4e2919a6ba": 803817,   // Minternator
 		"Mxe1dbde5c02a730f747a47d24f0f993c27da9dff1": 636837,   // Rundax
 		"Mx601609b85ee21b9493dffbca1079c74d47b75f2a": 165133,   // PRO-BLOCKCHAIN
+		"Mxdce154b6e1d06b46e95881b900eeb164e247c180": 75414,    // Mother Minter
 		"Mxdc7fcc63930bf81ebdce12b3bcef57b93e99a157": 61982,    // Validator.Center
 		"Mx0acbd5df9bc4bdc9fcf2f87e8393907739401a27": 34512,    // bipMaker
 		"Mx35c40563ee5181899d0d605839edb9e940b0d8e5": 33869,    // SolidMinter
