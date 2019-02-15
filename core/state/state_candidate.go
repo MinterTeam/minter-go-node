@@ -151,11 +151,6 @@ func (c *stateCandidates) EncodeRLP(w io.Writer) error {
 	return rlp.Encode(w, c.data)
 }
 
-func (c *stateCandidates) deepCopy(db *StateDB, onDirty func()) *stateCandidates {
-	stateCandidate := newCandidate(db, c.data, onDirty)
-	return stateCandidate
-}
-
 func (c *stateCandidates) GetData() Candidates {
 	return c.data
 }

@@ -177,7 +177,7 @@ func TestLoadECDSAFile(t *testing.T) {
 func TestValidateSignatureValues(t *testing.T) {
 	check := func(expected bool, v byte, r, s *big.Int) {
 		if ValidateSignatureValues(v, r, s) != expected {
-			t.Errorf("mismatch for v: %d r: %d s: %d want: %v", v, r, s, expected)
+			t.Errorf("mismatch for v: %d r: %d s: %s want: %v", v, r, s.String(), expected)
 		}
 	}
 	minusOne := big.NewInt(-1)

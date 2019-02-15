@@ -28,7 +28,8 @@ func (data SellCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (To
 
 	var value *big.Int
 
-	if data.CoinToSell.IsBaseCoin() {
+	switch {
+	case data.CoinToSell.IsBaseCoin():
 		coin := context.GetStateCoin(data.CoinToBuy).Data()
 		value = formula.CalculatePurchaseReturn(coin.Volume, coin.ReserveBalance, coin.Crr, data.ValueToSell)
 		if value.Cmp(data.MinimumValueToBuy) == -1 {
@@ -72,7 +73,7 @@ func (data SellCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (To
 			ToAmount:  value,
 			ToReserve: data.ValueToSell,
 		})
-	} else if data.CoinToBuy.IsBaseCoin() {
+	case data.CoinToBuy.IsBaseCoin():
 		coin := context.GetStateCoin(data.CoinToSell).Data()
 		value = formula.CalculateSaleReturn(coin.Volume, coin.ReserveBalance, coin.Crr, data.ValueToSell)
 
@@ -118,7 +119,7 @@ func (data SellCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (To
 			FromReserve: rValue,
 			ToCoin:      data.CoinToBuy,
 		})
-	} else {
+	default:
 		coinFrom := context.GetStateCoin(data.CoinToSell).Data()
 		coinTo := context.GetStateCoin(data.CoinToBuy).Data()
 

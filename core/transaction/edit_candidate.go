@@ -13,10 +13,18 @@ import (
 	"math/big"
 )
 
+type CandidateTx interface {
+	GetPubKey() types.Pubkey
+}
+
 type EditCandidateData struct {
 	PubKey        types.Pubkey  `json:"pub_key"`
 	RewardAddress types.Address `json:"reward_address"`
 	OwnerAddress  types.Address `json:"owner_address"`
+}
+
+func (data EditCandidateData) GetPubKey() types.Pubkey {
+	return data.PubKey
 }
 
 func (data EditCandidateData) TotalSpend(tx *Transaction, context *state.StateDB) (TotalSpends, []Conversion, *big.Int, *Response) {
@@ -24,33 +32,7 @@ func (data EditCandidateData) TotalSpend(tx *Transaction, context *state.StateDB
 }
 
 func (data EditCandidateData) BasicCheck(tx *Transaction, context *state.StateDB) *Response {
-	if data.PubKey == nil {
-		return &Response{
-			Code: code.DecodeError,
-			Log:  "Incorrect tx data"}
-	}
-
-	if !context.CoinExists(tx.GasCoin) {
-		return &Response{
-			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin)}
-	}
-
-	if !context.CandidateExists(data.PubKey) {
-		return &Response{
-			Code: code.CandidateNotFound,
-			Log:  fmt.Sprintf("Candidate with such public key (%s) not found", data.PubKey.String())}
-	}
-
-	candidate := context.GetStateCandidate(data.PubKey)
-	sender, _ := tx.Sender()
-	if !bytes.Equal(candidate.OwnerAddress.Bytes(), sender.Bytes()) {
-		return &Response{
-			Code: code.IsNotOwnerOfCandidate,
-			Log:  fmt.Sprintf("Sender is not an owner of a candidate")}
-	}
-
-	return nil
+	return checkCandidateOwnership(data, tx, context)
 }
 
 func (data EditCandidateData) String() string {
@@ -113,4 +95,34 @@ func (data EditCandidateData) Run(tx *Transaction, context *state.StateDB, isChe
 		GasWanted: tx.Gas(),
 		Tags:      tags,
 	}
+}
+
+func checkCandidateOwnership(data CandidateTx, tx *Transaction, context *state.StateDB) *Response {
+	if data.GetPubKey() == nil {
+		return &Response{
+			Code: code.DecodeError,
+			Log:  "Incorrect tx data"}
+	}
+
+	if !context.CoinExists(tx.GasCoin) {
+		return &Response{
+			Code: code.CoinNotExists,
+			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin)}
+	}
+
+	if !context.CandidateExists(data.GetPubKey()) {
+		return &Response{
+			Code: code.CandidateNotFound,
+			Log:  fmt.Sprintf("Candidate with such public key (%s) not found", data.GetPubKey().String())}
+	}
+
+	candidate := context.GetStateCandidate(data.GetPubKey())
+	sender, _ := tx.Sender()
+	if !bytes.Equal(candidate.OwnerAddress.Bytes(), sender.Bytes()) {
+		return &Response{
+			Code: code.IsNotOwnerOfCandidate,
+			Log:  fmt.Sprintf("Sender is not an owner of a candidate")}
+	}
+
+	return nil
 }

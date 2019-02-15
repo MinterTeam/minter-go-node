@@ -98,7 +98,7 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPool *big.I
 		}
 
 		txHash := tx.Hash()
-		var totalWeight uint = 0
+		var totalWeight uint
 		var usedAccounts = map[types.Address]bool{}
 
 		for _, sig := range tx.multisig.Signatures {

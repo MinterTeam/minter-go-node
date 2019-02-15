@@ -106,8 +106,6 @@ func makeValidators(pubkeys []string) []tmtypes.GenesisValidator {
 }
 
 func makeBalances(balances map[string]int64) []Account {
-	var result []Account
-
 	var totalBalances int64
 	for _, val := range balances {
 		totalBalances += val
@@ -115,13 +113,16 @@ func makeBalances(balances map[string]int64) []Account {
 
 	balances[developers.Address.String()] = 200000000 - totalBalances // Developers account
 
+	result := make([]Account, len(balances))
+	i := 0
 	for address, balance := range balances {
-		result = append(result, Account{
+		result[i] = Account{
 			Address: types.HexToAddress(address),
 			Balance: map[string]string{
 				types.GetBaseCoin().String(): helpers.BipToPip(big.NewInt(balance)).String(),
 			},
-		})
+		}
+		i++
 	}
 
 	return result

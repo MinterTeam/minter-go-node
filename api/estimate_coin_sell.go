@@ -15,7 +15,9 @@ type EstimateCoinSellResponse struct {
 	Commission *big.Int `json:"commission"`
 }
 
-func EstimateCoinSell(coinToSellString string, coinToBuyString string, valueToSell *big.Int, height int) (*EstimateCoinSellResponse, error) {
+func EstimateCoinSell(
+	coinToSellString string, coinToBuyString string, valueToSell *big.Int, height int) (*EstimateCoinSellResponse,
+	error) {
 	cState, err := GetStateForHeight(height)
 	if err != nil {
 		return nil, err
@@ -46,23 +48,26 @@ func EstimateCoinSell(coinToSellString string, coinToBuyString string, valueToSe
 		coin := cState.GetStateCoin(coinToSell)
 
 		if coin.ReserveBalance().Cmp(commissionInBaseCoin) < 0 {
-			return nil, rpctypes.RPCError{Code: 400, Message: fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.ReserveBalance().String(), commissionInBaseCoin.String())}
+			return nil, rpctypes.RPCError{Code: 400, Message: fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s",
+				coin.ReserveBalance().String(), commissionInBaseCoin.String())}
 		}
 
 		if coin.Volume().Cmp(valueToSell) < 0 {
-			return nil, rpctypes.RPCError{Code: 400, Message: fmt.Sprintf("Coin volume is not sufficient for transaction. Has: %s, required %s", coin.Volume().String(), valueToSell.String())}
+			return nil, rpctypes.RPCError{Code: 400, Message: fmt.Sprintf("Coin volume is not sufficient for transaction. Has: %s, required %s",
+				coin.Volume().String(), valueToSell.String())}
 		}
 
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
 	}
 
-	if coinToSell == types.GetBaseCoin() {
+	switch {
+	case coinToSell == types.GetBaseCoin():
 		coin := cState.GetStateCoin(coinToBuy).Data()
 		result = formula.CalculatePurchaseReturn(coin.Volume, coin.ReserveBalance, coin.Crr, valueToSell)
-	} else if coinToBuy == types.GetBaseCoin() {
+	case coinToBuy == types.GetBaseCoin():
 		coin := cState.GetStateCoin(coinToSell).Data()
 		result = formula.CalculateSaleReturn(coin.Volume, coin.ReserveBalance, coin.Crr, valueToSell)
-	} else {
+	default:
 		coinFrom := cState.GetStateCoin(coinToSell).Data()
 		coinTo := cState.GetStateCoin(coinToBuy).Data()
 		basecoinValue := formula.CalculateSaleReturn(coinFrom.Volume, coinFrom.ReserveBalance, coinFrom.Crr, valueToSell)

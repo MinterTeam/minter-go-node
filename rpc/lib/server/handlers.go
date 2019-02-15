@@ -649,10 +649,8 @@ func (wsc *wsConnection) readRoutine() {
 				if len(request.Params) > 0 {
 					args, err = jsonParamsToArgsWS(rpcFunc, wsc.cdc, request.Params, wsCtx)
 				}
-			} else {
-				if len(request.Params) > 0 {
-					args, err = jsonParamsToArgsRPC(rpcFunc, wsc.cdc, request.Params)
-				}
+			} else if len(request.Params) > 0 {
+				args, err = jsonParamsToArgsRPC(rpcFunc, wsc.cdc, request.Params)
 			}
 			if err != nil {
 				wsc.WriteRPCResponse(types.RPCInternalError(request.ID, errors.Wrap(err, "Error converting json params to arguments")))
@@ -712,12 +710,10 @@ func (wsc *wsConnection) writeRoutine() {
 			jsonBytes, err := json.MarshalIndent(msg, "", "  ")
 			if err != nil {
 				wsc.Logger.Error("Failed to marshal RPCResponse to JSON", "err", err)
-			} else {
-				if err = wsc.writeMessageWithDeadline(websocket.TextMessage, jsonBytes); err != nil {
-					wsc.Logger.Error("Failed to write response", "err", err)
-					wsc.Stop()
-					return
-				}
+			} else if err = wsc.writeMessageWithDeadline(websocket.TextMessage, jsonBytes); err != nil {
+				wsc.Logger.Error("Failed to write response", "err", err)
+				wsc.Stop()
+				return
 			}
 		case <-wsc.Quit():
 			return

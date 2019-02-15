@@ -332,7 +332,6 @@ func (s *StateDB) getStateCandidates() (stateCandidates *stateCandidates) {
 	var data Candidates
 	if err := rlp.DecodeBytes(enc, &data); err != nil {
 		panic(err)
-		return nil
 	}
 	// Insert into the live set.
 	obj := newCandidate(s, data, s.MarkStateCandidateDirty)
@@ -359,7 +358,6 @@ func (s *StateDB) getStateValidators() (stateValidators *stateValidators) {
 	var data Validators
 	if err := rlp.DecodeBytes(enc, &data); err != nil {
 		panic(err)
-		return nil
 	}
 	// Insert into the live set.
 	obj := newValidator(s, data, s.MarkStateValidatorsDirty)
@@ -388,7 +386,7 @@ func (s *StateDB) getStateAccount(addr types.Address) (stateObject *stateAccount
 		return nil
 	}
 	// Insert into the live set.
-	obj := newObject(s, addr, data, s.MarkStateObjectDirty)
+	obj := newObject(addr, data, s.MarkStateObjectDirty)
 	s.setStateObject(obj)
 	return obj
 }
@@ -486,14 +484,14 @@ func (s *StateDB) MarkStateFrozenFundsDirty(blockHeight uint64) {
 
 func (s *StateDB) createAccount(addr types.Address) (newobj, prev *stateAccount) {
 	prev = s.getStateAccount(addr)
-	newobj = newObject(s, addr, Account{}, s.MarkStateObjectDirty)
+	newobj = newObject(addr, Account{}, s.MarkStateObjectDirty)
 	newobj.setNonce(0) // sets the object to dirty
 	s.setStateObject(newobj)
 	return newobj, prev
 }
 
 func (s *StateDB) createMultisigAccount(addr types.Address, multisig Multisig) (newobj *stateAccount) {
-	newobj = newObject(s, addr, Account{
+	newobj = newObject(addr, Account{
 		MultisigData: multisig,
 	}, s.MarkStateObjectDirty)
 	newobj.setNonce(0) // sets the object to dirty
@@ -1213,7 +1211,8 @@ func (s *StateDB) PunishByzantineValidator(currentBlock int64, address [20]byte)
 					ValidatorPubKey: candidate.PubKey,
 				})
 
-				s.GetOrNewStateFrozenFunds(uint64(currentBlock+UnbondPeriod)).AddFund(stake.Owner, candidate.PubKey, stake.Coin, newValue)
+				s.GetOrNewStateFrozenFunds(uint64(currentBlock+UnbondPeriod)).AddFund(stake.Owner, candidate.PubKey,
+					stake.Coin, newValue)
 			}
 
 			candidate.Stakes = []Stake{}
@@ -1415,8 +1414,9 @@ func (s *StateDB) ClearStakes(height int64) {
 	s.MarkStateCandidateDirty()
 }
 
-func (s *StateDB) IsDelegatorStakeSufficient(sender types.Address, PubKey []byte, coinSymbol types.CoinSymbol, value *big.Int) bool {
-	if s.StakeExists(sender, PubKey, coinSymbol) {
+func (s *StateDB) IsDelegatorStakeSufficient(sender types.Address, pubKey []byte, coinSymbol types.CoinSymbol,
+	value *big.Int) bool {
+	if s.StakeExists(sender, pubKey, coinSymbol) {
 		return true
 	}
 
@@ -1428,7 +1428,7 @@ func (s *StateDB) IsDelegatorStakeSufficient(sender types.Address, PubKey []byte
 	candidates := s.getStateCandidates()
 
 	for _, candidate := range candidates.data {
-		if bytes.Equal(candidate.PubKey, PubKey) {
+		if bytes.Equal(candidate.PubKey, pubKey) {
 			for _, stake := range candidate.Stakes[:MaxDelegatorsPerCandidate] {
 				if stake.BipValue.Cmp(bipValue) == -1 {
 					return true
@@ -1442,11 +1442,11 @@ func (s *StateDB) IsDelegatorStakeSufficient(sender types.Address, PubKey []byte
 	return false
 }
 
-func (s *StateDB) StakeExists(owner types.Address, PubKey []byte, coinSymbol types.CoinSymbol) bool {
+func (s *StateDB) StakeExists(owner types.Address, pubKey []byte, coinSymbol types.CoinSymbol) bool {
 	candidates := s.getStateCandidates().data
 
 	for _, c := range candidates {
-		if !bytes.Equal(PubKey, c.PubKey) {
+		if !bytes.Equal(pubKey, c.PubKey) {
 			continue
 		}
 

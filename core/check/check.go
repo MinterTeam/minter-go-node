@@ -91,12 +91,16 @@ func (check *Check) SetSignature(sig []byte) {
 func (check *Check) String() string {
 	sender, _ := check.Sender()
 
-	return fmt.Sprintf("Check sender: %s nonce: %d, dueBlock: %d, value: %d %s", sender.String(), check.Nonce, check.DueBlock, check.Value, check.Coin.String())
+	return fmt.Sprintf("Check sender: %s nonce: %d, dueBlock: %d, value: %s %s", sender.String(), check.Nonce,
+		check.DueBlock, check.Value.String(), check.Coin.String())
 }
 
 func DecodeFromBytes(buf []byte) (*Check, error) {
 	var check Check
-	rlp.Decode(bytes.NewReader(buf), &check)
+	err := rlp.Decode(bytes.NewReader(buf), &check)
+	if err != nil {
+		return nil, err
+	}
 
 	if check.S == nil || check.R == nil || check.V == nil {
 		return nil, errors.New("incorrect tx signature")
@@ -107,7 +111,10 @@ func DecodeFromBytes(buf []byte) (*Check, error) {
 
 func rlpHash(x interface{}) (h types.Hash) {
 	hw := sha3.NewKeccak256()
-	rlp.Encode(hw, x)
+	err := rlp.Encode(hw, x)
+	if err != nil {
+		panic(err)
+	}
 	hw.Sum(h[:0])
 	return h
 }

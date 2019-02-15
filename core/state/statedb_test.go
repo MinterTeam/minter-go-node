@@ -82,14 +82,16 @@ func TestStateDB_SetNonce(t *testing.T) {
 
 func TestStateDB_Commit(t *testing.T) {
 	state := getState()
-	state.AddBalance(types.HexToAddress("Mx02003587993aba5276925c058ba082d209e61cbb"), types.GetBaseCoin(), big.NewInt(1))
+	state.AddBalance(types.HexToAddress("Mx02003587993aba5276925c058ba082d209e61cbb"), types.GetBaseCoin(),
+		big.NewInt(1))
 
 	symbol := types.CoinSymbol{}
 	copy(symbol[:], []byte("TEST"))
 	state.CreateCoin(symbol, "TEST NAME", big.NewInt(10), 10, big.NewInt(10))
 
 	ff := state.GetOrNewStateFrozenFunds(2)
-	ff.AddFund(types.HexToAddress("Mx02003587993aba5276925c058ba082d209e61cbb"), []byte{}, types.GetBaseCoin(), big.NewInt(2))
+	ff.AddFund(types.HexToAddress("Mx02003587993aba5276925c058ba082d209e61cbb"), []byte{}, types.GetBaseCoin(),
+		big.NewInt(2))
 
 	hash, version, err := state.Commit()
 
@@ -103,7 +105,7 @@ func TestStateDB_Commit(t *testing.T) {
 
 	targetHash, _ := hex.DecodeString("890866e0a38f831ab825dedc0fa6996c0afe47c40ab184fbf88b2b156343970d")
 
-	if bytes.Compare(hash, targetHash) != 0 {
+	if !bytes.Equal(hash, targetHash) {
 		t.Errorf("Hash should be %x, got %x", targetHash, hash)
 	}
 }
@@ -120,7 +122,8 @@ func TestStateDB_GetBalances(t *testing.T) {
 	}
 
 	balances := state.GetBalances(address)
-	if len(balances.Data) != len(expect.Data) || balances.Data[types.GetBaseCoin()].Cmp(expect.Data[types.GetBaseCoin()]) != 0 {
+	if len(balances.Data) != len(expect.Data) ||
+		balances.Data[types.GetBaseCoin()].Cmp(expect.Data[types.GetBaseCoin()]) != 0 {
 		t.Errorf("Balances of %s are not like expected", address.String())
 	}
 }

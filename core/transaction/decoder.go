@@ -70,7 +70,7 @@ func (decoder *Decoder) DecodeFromBytes(buf []byte) (*Transaction, error) {
 	d, ok := decoder.registeredTypes[tx.Type]
 
 	if !ok {
-		return nil, errors.New(fmt.Sprintf("tx type %x is not registered", tx.Type))
+		return nil, fmt.Errorf("tx type %x is not registered", tx.Type)
 	}
 
 	err = rlp.DecodeBytesForType(tx.Data, reflect.ValueOf(d).Type(), &d)

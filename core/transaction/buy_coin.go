@@ -28,7 +28,8 @@ func (data BuyCoinData) Gas() int64 {
 	return commissions.ConvertTx
 }
 
-func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (TotalSpends, []Conversion, *big.Int, *Response) {
+func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (TotalSpends,
+	[]Conversion, *big.Int, *Response) {
 	total := TotalSpends{}
 	var conversions []Conversion
 
@@ -48,14 +49,17 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (Tot
 
 	var value *big.Int
 
-	if data.CoinToSell.IsBaseCoin() {
+	switch {
+	case data.CoinToSell.IsBaseCoin():
 		coin := context.GetStateCoin(data.CoinToBuy).Data()
 		value = formula.CalculatePurchaseAmount(coin.Volume, coin.ReserveBalance, coin.Crr, data.ValueToBuy)
 
 		if value.Cmp(data.MaximumValueToSell) == 1 {
 			return nil, nil, nil, &Response{
 				Code: code.MaximumValueToSellReached,
-				Log:  fmt.Sprintf("You wanted to sell maximum %s, but currently you need to spend %s to complete tx", data.MaximumValueToSell.String(), value.String()),
+				Log: fmt.Sprintf(
+					"You wanted to sell maximum %s, but currently you need to spend %s to complete tx",
+					data.MaximumValueToSell.String(), value.String()),
 			}
 		}
 
@@ -96,7 +100,7 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (Tot
 			ToAmount:  data.ValueToBuy,
 			ToReserve: value,
 		})
-	} else if data.CoinToBuy.IsBaseCoin() {
+	case data.CoinToBuy.IsBaseCoin():
 		valueToBuy := big.NewInt(0).Set(data.ValueToBuy)
 
 		if tx.GasCoin == data.CoinToSell {
@@ -110,7 +114,9 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (Tot
 		if value.Cmp(data.MaximumValueToSell) == 1 {
 			return nil, nil, nil, &Response{
 				Code: code.MaximumValueToSellReached,
-				Log:  fmt.Sprintf("You wanted to sell maximum %s, but currently you need to spend %s to complete tx", data.MaximumValueToSell.String(), value.String()),
+				Log: fmt.Sprintf(
+					"You wanted to sell maximum %s, but currently you need to spend %s to complete tx",
+					data.MaximumValueToSell.String(), value.String()),
 			}
 		}
 
@@ -121,7 +127,7 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (Tot
 			FromReserve: valueToBuy,
 			ToCoin:      data.CoinToBuy,
 		})
-	} else {
+	default:
 		valueToBuy := big.NewInt(0).Set(data.ValueToBuy)
 
 		if tx.GasCoin == data.CoinToSell {

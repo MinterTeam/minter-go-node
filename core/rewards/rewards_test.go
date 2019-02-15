@@ -31,7 +31,7 @@ func TestGetRewardForBlock(t *testing.T) {
 		result := GetRewardForBlock(item.Block)
 
 		if result.Cmp(item.Result) != 0 {
-			t.Errorf("GetRewardForBlock result is not correct. Expected %d, got %d", item.Result, result)
+			t.Errorf("GetRewardForBlock result is not correct. Expected %s, got %s", item.Result.String(), result.String())
 		}
 	}
 }

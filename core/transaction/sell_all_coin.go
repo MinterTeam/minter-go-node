@@ -30,7 +30,8 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.StateDB) 
 
 	total.Add(data.CoinToSell, available)
 
-	if data.CoinToSell.IsBaseCoin() {
+	switch {
+	case data.CoinToSell.IsBaseCoin():
 		amountToSell := big.NewInt(0).Set(available)
 		amountToSell.Sub(amountToSell, commissionInBaseCoin)
 
@@ -57,7 +58,7 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.StateDB) 
 			ToAmount:  value,
 			ToReserve: amountToSell,
 		})
-	} else if data.CoinToBuy.IsBaseCoin() {
+	case data.CoinToBuy.IsBaseCoin():
 		amountToSell := big.NewInt(0).Set(available)
 
 		coin := context.GetStateCoin(data.CoinToSell).Data()
@@ -86,7 +87,7 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.StateDB) 
 			FromReserve: ret,
 			ToCoin:      data.CoinToBuy,
 		})
-	} else {
+	default:
 		amountToSell := big.NewInt(0).Set(available)
 
 		coinFrom := context.GetStateCoin(data.CoinToSell).Data()

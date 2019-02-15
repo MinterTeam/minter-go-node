@@ -8,9 +8,9 @@ func Candidates(height int) (*[]CandidateResponse, error) {
 
 	candidates := cState.GetStateCandidates().GetData()
 
-	var result []CandidateResponse
-	for _, candidate := range candidates {
-		result = append(result, makeResponseCandidate(candidate, false))
+	result := make([]CandidateResponse, len(candidates))
+	for i, candidate := range candidates {
+		result[i] = makeResponseCandidate(candidate, false)
 	}
 
 	return &result, nil

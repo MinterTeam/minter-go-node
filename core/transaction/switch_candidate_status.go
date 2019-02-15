@@ -1,7 +1,6 @@
 package transaction
 
 import (
-	"bytes"
 	"encoding/hex"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
@@ -17,38 +16,16 @@ type SetCandidateOnData struct {
 	PubKey types.Pubkey `json:"pub_key"`
 }
 
+func (data SetCandidateOnData) GetPubKey() types.Pubkey {
+	return data.PubKey
+}
+
 func (data SetCandidateOnData) TotalSpend(tx *Transaction, context *state.StateDB) (TotalSpends, []Conversion, *big.Int, *Response) {
 	panic("implement me")
 }
 
 func (data SetCandidateOnData) BasicCheck(tx *Transaction, context *state.StateDB) *Response {
-	if data.PubKey == nil {
-		return &Response{
-			Code: code.DecodeError,
-			Log:  "Incorrect tx data"}
-	}
-
-	if !context.CoinExists(tx.GasCoin) {
-		return &Response{
-			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin)}
-	}
-
-	if !context.CandidateExists(data.PubKey) {
-		return &Response{
-			Code: code.CandidateNotFound,
-			Log:  fmt.Sprintf("Candidate with such public key (%s) not found", data.PubKey.String())}
-	}
-
-	candidate := context.GetStateCandidate(data.PubKey)
-	sender, _ := tx.Sender()
-	if !bytes.Equal(candidate.OwnerAddress.Bytes(), sender.Bytes()) {
-		return &Response{
-			Code: code.IsNotOwnerOfCandidate,
-			Log:  fmt.Sprintf("Sender is not an owner of a candidate")}
-	}
-
-	return nil
+	return checkCandidateOwnership(data, tx, context)
 }
 
 func (data SetCandidateOnData) String() string {
@@ -117,38 +94,16 @@ type SetCandidateOffData struct {
 	PubKey types.Pubkey `json:"pub_key"`
 }
 
+func (data SetCandidateOffData) GetPubKey() types.Pubkey {
+	return data.PubKey
+}
+
 func (data SetCandidateOffData) TotalSpend(tx *Transaction, context *state.StateDB) (TotalSpends, []Conversion, *big.Int, *Response) {
 	panic("implement me")
 }
 
 func (data SetCandidateOffData) BasicCheck(tx *Transaction, context *state.StateDB) *Response {
-	if data.PubKey == nil {
-		return &Response{
-			Code: code.DecodeError,
-			Log:  "Incorrect tx data"}
-	}
-
-	if !context.CoinExists(tx.GasCoin) {
-		return &Response{
-			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin)}
-	}
-
-	if !context.CandidateExists(data.PubKey) {
-		return &Response{
-			Code: code.CandidateNotFound,
-			Log:  fmt.Sprintf("Candidate with such public key (%s) not found", data.PubKey.String())}
-	}
-
-	candidate := context.GetStateCandidate(data.PubKey)
-	sender, _ := tx.Sender()
-	if !bytes.Equal(candidate.OwnerAddress.Bytes(), sender.Bytes()) {
-		return &Response{
-			Code: code.IsNotOwnerOfCandidate,
-			Log:  fmt.Sprintf("Sender is not an owner of a candidate")}
-	}
-
-	return nil
+	return checkCandidateOwnership(data, tx, context)
 }
 
 func (data SetCandidateOffData) String() string {

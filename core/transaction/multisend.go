@@ -159,10 +159,9 @@ func checkCoins(context *state.StateDB, items []MultisendDataItem) error {
 }
 
 func pluckRecipients(items []MultisendDataItem) string {
-	var recipients []string
-
-	for _, item := range items {
-		recipients = append(recipients, hex.EncodeToString(item.To[:]))
+	recipients := make([]string, len(items))
+	for i, item := range items {
+		recipients[i] = hex.EncodeToString(item.To[:])
 	}
 
 	return strings.Join(recipients, ",")

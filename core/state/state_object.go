@@ -55,11 +55,11 @@ func (b Balances) getCoins() []types.CoinSymbol {
 }
 
 func (b Balances) EncodeRLP(w io.Writer) error {
+	coins := b.getCoins()
 
-	var balances []Balance
-
-	for _, k := range b.getCoins() {
-		balances = append(balances, Balance{k, b.Data[k]})
+	balances := make([]Balance, len(coins))
+	for i, k := range coins {
+		balances[i] = Balance{k, b.Data[k]}
 	}
 
 	return rlp.Encode(w, balances)
@@ -122,7 +122,7 @@ func (m *Multisig) GetWeight(address types.Address) uint {
 }
 
 // newObject creates a state object.
-func newObject(db *StateDB, address types.Address, data Account, onDirty func(addr types.Address)) *stateAccount {
+func newObject(address types.Address, data Account, onDirty func(addr types.Address)) *stateAccount {
 	if data.Balance.Data == nil {
 		data.Balance.Data = make(map[types.CoinSymbol]*big.Int)
 	}
@@ -182,12 +182,6 @@ func (s *stateAccount) setBalance(coinSymbol types.CoinSymbol, amount *big.Int) 
 		s.onDirty(s.Address())
 		s.onDirty = nil
 	}
-}
-
-func (s *stateAccount) deepCopy(db *StateDB, onDirty func(addr types.Address)) *stateAccount {
-	stateObject := newObject(db, s.address, s.data, onDirty)
-	stateObject.deleted = s.deleted
-	return stateObject
 }
 
 //
