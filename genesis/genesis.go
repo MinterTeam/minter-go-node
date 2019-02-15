@@ -38,6 +38,7 @@ func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
 	}
 
 	balances := map[string]int64{
+		"Mx50003880d87db2fa48f6b824cdcfeeab1ac77733": 15021622, // DeCenter
 		"Mxe6732a97c6445edb0becf685dd92655bb4a1b838": 12644321, // Minter One
 		"Mx89f5395a03847826d6b48bb02dbde64376945a20": 5038353,  // MonsterNode
 		"Mx8da4f97b635cf751f2c0f0020f2e78ceb691d7d5": 3434147,  // BTC.Secure
