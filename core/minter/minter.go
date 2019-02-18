@@ -14,7 +14,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/validators"
 	"github.com/MinterTeam/minter-go-node/eventsdb"
 	"github.com/MinterTeam/minter-go-node/genesis"
-	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/version"
 	"github.com/danil-lashin/tendermint/rpc/lib/types"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
@@ -49,10 +48,11 @@ type Blockchain struct {
 	appDB               *appdb.AppDB
 	stateDeliver        *state.StateDB
 	stateCheck          *state.StateDB
-	height              int64    // current Blockchain height
-	lastCommittedHeight int64    // Blockchain.height updated in the at begin of block processing, while lastCommittedHeight updated at the end of block processing
-	rewards             *big.Int // Rewards pool
-	validatorsStatuses  map[[20]byte]int8
+	height              int64 // current Blockchain height
+	lastCommittedHeight int64 // Blockchain.height updated in the at begin of block processing, while
+	// lastCommittedHeight updated at the end of block processing
+	rewards            *big.Int // Rewards pool
+	validatorsStatuses map[[20]byte]int8
 
 	// local rpc client for Tendermint
 	tmNode *tmNode.Node
@@ -118,10 +118,12 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 	// Set initial Blockchain validators
 	commission := uint(100)
 	currentBlock := uint(1)
-	initialStake := helpers.BipToPip(big.NewInt(1000000)) // 1 mln bip
+	initialStake := big.NewInt(1) // 1 pip
 	for _, validator := range req.Validators {
-		app.stateDeliver.CreateCandidate(genesisState.FirstValidatorAddress, genesisState.FirstValidatorAddress, validator.PubKey.Data, commission, currentBlock, types.GetBaseCoin(), initialStake)
-		app.stateDeliver.CreateValidator(genesisState.FirstValidatorAddress, validator.PubKey.Data, commission, currentBlock, types.GetBaseCoin(), initialStake)
+		app.stateDeliver.CreateCandidate(genesisState.FirstValidatorAddress, genesisState.FirstValidatorAddress,
+			validator.PubKey.Data, commission, currentBlock, types.GetBaseCoin(), initialStake)
+		app.stateDeliver.CreateValidator(genesisState.FirstValidatorAddress, validator.PubKey.Data, commission,
+			currentBlock, types.GetBaseCoin(), initialStake)
 		app.stateDeliver.SetCandidateOnline(validator.PubKey.Data)
 	}
 
@@ -222,6 +224,10 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 		totalPower.Add(totalPower, val.TotalBipStake)
 	}
 
+	if totalPower.Cmp(types.Big0) == 0 {
+		totalPower = big.NewInt(1)
+	}
+
 	// accumulate rewards
 	for i, val := range vals {
 		// skip if candidate is not present
@@ -279,7 +285,8 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 		}
 
 		for i := range newCandidates {
-			power := big.NewInt(0).Div(big.NewInt(0).Mul(newCandidates[i].TotalBipStake, big.NewInt(100000000)), totalPower).Int64()
+			power := big.NewInt(0).Div(big.NewInt(0).Mul(newCandidates[i].TotalBipStake,
+				big.NewInt(100000000)), totalPower).Int64()
 
 			if power == 0 {
 				power = 1

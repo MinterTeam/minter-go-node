@@ -281,7 +281,10 @@ func RecoverPlain(sighash types.Hash, R, S, Vb *big.Int) (types.Address, error) 
 
 func rlpHash(x interface{}) (h types.Hash) {
 	hw := sha3.NewKeccak256()
-	rlp.Encode(hw, x)
+	err := rlp.Encode(hw, x)
+	if err != nil {
+		panic(err)
+	}
 	hw.Sum(h[:0])
 	return h
 }
@@ -291,7 +294,7 @@ func CheckForCoinSupplyOverflow(current *big.Int, delta *big.Int) error {
 	total.Add(total, delta)
 
 	if total.Cmp(MaxCoinSupply) != -1 {
-		return errors.New("Coin supply overflow")
+		return errors.New("сoin supply overflow")
 	}
 
 	return nil

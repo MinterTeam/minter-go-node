@@ -54,54 +54,54 @@ func (g *G1) String() string {
 }
 
 // CurvePoints returns p's curve points in big integer
-func (e *G1) CurvePoints() (*big.Int, *big.Int, *big.Int, *big.Int) {
-	return e.p.x, e.p.y, e.p.z, e.p.t
+func (g *G1) CurvePoints() (*big.Int, *big.Int, *big.Int, *big.Int) {
+	return g.p.x, g.p.y, g.p.z, g.p.t
 }
 
 // ScalarBaseMult sets e to g*k where g is the generator of the group and
 // then returns e.
-func (e *G1) ScalarBaseMult(k *big.Int) *G1 {
-	if e.p == nil {
-		e.p = newCurvePoint(nil)
+func (g *G1) ScalarBaseMult(k *big.Int) *G1 {
+	if g.p == nil {
+		g.p = newCurvePoint(nil)
 	}
-	e.p.Mul(curveGen, k, new(bnPool))
-	return e
+	g.p.Mul(curveGen, k, new(bnPool))
+	return g
 }
 
 // ScalarMult sets e to a*k and then returns e.
-func (e *G1) ScalarMult(a *G1, k *big.Int) *G1 {
-	if e.p == nil {
-		e.p = newCurvePoint(nil)
+func (g *G1) ScalarMult(a *G1, k *big.Int) *G1 {
+	if g.p == nil {
+		g.p = newCurvePoint(nil)
 	}
-	e.p.Mul(a.p, k, new(bnPool))
-	return e
+	g.p.Mul(a.p, k, new(bnPool))
+	return g
 }
 
 // Add sets e to a+b and then returns e.
 // BUG(agl): this function is not complete: a==b fails.
-func (e *G1) Add(a, b *G1) *G1 {
-	if e.p == nil {
-		e.p = newCurvePoint(nil)
+func (g *G1) Add(a, b *G1) *G1 {
+	if g.p == nil {
+		g.p = newCurvePoint(nil)
 	}
-	e.p.Add(a.p, b.p, new(bnPool))
-	return e
+	g.p.Add(a.p, b.p, new(bnPool))
+	return g
 }
 
 // Neg sets e to -a and then returns e.
-func (e *G1) Neg(a *G1) *G1 {
-	if e.p == nil {
-		e.p = newCurvePoint(nil)
+func (g *G1) Neg(a *G1) *G1 {
+	if g.p == nil {
+		g.p = newCurvePoint(nil)
 	}
-	e.p.Negative(a.p)
-	return e
+	g.p.Negative(a.p)
+	return g
 }
 
 // Marshal converts n to a byte slice.
-func (n *G1) Marshal() []byte {
-	n.p.MakeAffine(nil)
+func (g *G1) Marshal() []byte {
+	g.p.MakeAffine(nil)
 
-	xBytes := new(big.Int).Mod(n.p.x, P).Bytes()
-	yBytes := new(big.Int).Mod(n.p.y, P).Bytes()
+	xBytes := new(big.Int).Mod(g.p.x, P).Bytes()
+	yBytes := new(big.Int).Mod(g.p.y, P).Bytes()
 
 	// Each value is a 256-bit number.
 	const numBytes = 256 / 8
@@ -115,7 +115,7 @@ func (n *G1) Marshal() []byte {
 
 // Unmarshal sets e to the result of converting the output of Marshal back into
 // a group element and then returns e.
-func (e *G1) Unmarshal(m []byte) (*G1, bool) {
+func (g *G1) Unmarshal(m []byte) (*G1, bool) {
 	// Each value is a 256-bit number.
 	const numBytes = 256 / 8
 
@@ -123,28 +123,28 @@ func (e *G1) Unmarshal(m []byte) (*G1, bool) {
 		return nil, false
 	}
 
-	if e.p == nil {
-		e.p = newCurvePoint(nil)
+	if g.p == nil {
+		g.p = newCurvePoint(nil)
 	}
 
-	e.p.x.SetBytes(m[0*numBytes : 1*numBytes])
-	e.p.y.SetBytes(m[1*numBytes : 2*numBytes])
+	g.p.x.SetBytes(m[0*numBytes : 1*numBytes])
+	g.p.y.SetBytes(m[1*numBytes : 2*numBytes])
 
-	if e.p.x.Sign() == 0 && e.p.y.Sign() == 0 {
+	if g.p.x.Sign() == 0 && g.p.y.Sign() == 0 {
 		// This is the point at infinity.
-		e.p.y.SetInt64(1)
-		e.p.z.SetInt64(0)
-		e.p.t.SetInt64(0)
+		g.p.y.SetInt64(1)
+		g.p.z.SetInt64(0)
+		g.p.t.SetInt64(0)
 	} else {
-		e.p.z.SetInt64(1)
-		e.p.t.SetInt64(1)
+		g.p.z.SetInt64(1)
+		g.p.t.SetInt64(1)
 
-		if !e.p.IsOnCurve() {
+		if !g.p.IsOnCurve() {
 			return nil, false
 		}
 	}
 
-	return e, true
+	return g, true
 }
 
 // G2 is an abstract cyclic group. The zero value is suitable for use as the
@@ -177,47 +177,47 @@ func (g *G2) String() string {
 
 // CurvePoints returns the curve points of p which includes the real
 // and imaginary parts of the curve point.
-func (e *G2) CurvePoints() (*gfP2, *gfP2, *gfP2, *gfP2) {
-	return e.p.x, e.p.y, e.p.z, e.p.t
+func (g *G2) CurvePoints() (*gfP2, *gfP2, *gfP2, *gfP2) {
+	return g.p.x, g.p.y, g.p.z, g.p.t
 }
 
 // ScalarBaseMult sets e to g*k where g is the generator of the group and
 // then returns out.
-func (e *G2) ScalarBaseMult(k *big.Int) *G2 {
-	if e.p == nil {
-		e.p = newTwistPoint(nil)
+func (g *G2) ScalarBaseMult(k *big.Int) *G2 {
+	if g.p == nil {
+		g.p = newTwistPoint(nil)
 	}
-	e.p.Mul(twistGen, k, new(bnPool))
-	return e
+	g.p.Mul(twistGen, k, new(bnPool))
+	return g
 }
 
 // ScalarMult sets e to a*k and then returns e.
-func (e *G2) ScalarMult(a *G2, k *big.Int) *G2 {
-	if e.p == nil {
-		e.p = newTwistPoint(nil)
+func (g *G2) ScalarMult(a *G2, k *big.Int) *G2 {
+	if g.p == nil {
+		g.p = newTwistPoint(nil)
 	}
-	e.p.Mul(a.p, k, new(bnPool))
-	return e
+	g.p.Mul(a.p, k, new(bnPool))
+	return g
 }
 
 // Add sets e to a+b and then returns e.
 // BUG(agl): this function is not complete: a==b fails.
-func (e *G2) Add(a, b *G2) *G2 {
-	if e.p == nil {
-		e.p = newTwistPoint(nil)
+func (g *G2) Add(a, b *G2) *G2 {
+	if g.p == nil {
+		g.p = newTwistPoint(nil)
 	}
-	e.p.Add(a.p, b.p, new(bnPool))
-	return e
+	g.p.Add(a.p, b.p, new(bnPool))
+	return g
 }
 
 // Marshal converts n into a byte slice.
-func (n *G2) Marshal() []byte {
-	n.p.MakeAffine(nil)
+func (g *G2) Marshal() []byte {
+	g.p.MakeAffine(nil)
 
-	xxBytes := new(big.Int).Mod(n.p.x.x, P).Bytes()
-	xyBytes := new(big.Int).Mod(n.p.x.y, P).Bytes()
-	yxBytes := new(big.Int).Mod(n.p.y.x, P).Bytes()
-	yyBytes := new(big.Int).Mod(n.p.y.y, P).Bytes()
+	xxBytes := new(big.Int).Mod(g.p.x.x, P).Bytes()
+	xyBytes := new(big.Int).Mod(g.p.x.y, P).Bytes()
+	yxBytes := new(big.Int).Mod(g.p.y.x, P).Bytes()
+	yyBytes := new(big.Int).Mod(g.p.y.y, P).Bytes()
 
 	// Each value is a 256-bit number.
 	const numBytes = 256 / 8
@@ -233,7 +233,7 @@ func (n *G2) Marshal() []byte {
 
 // Unmarshal sets e to the result of converting the output of Marshal back into
 // a group element and then returns e.
-func (e *G2) Unmarshal(m []byte) (*G2, bool) {
+func (g *G2) Unmarshal(m []byte) (*G2, bool) {
 	// Each value is a 256-bit number.
 	const numBytes = 256 / 8
 
@@ -241,33 +241,33 @@ func (e *G2) Unmarshal(m []byte) (*G2, bool) {
 		return nil, false
 	}
 
-	if e.p == nil {
-		e.p = newTwistPoint(nil)
+	if g.p == nil {
+		g.p = newTwistPoint(nil)
 	}
 
-	e.p.x.x.SetBytes(m[0*numBytes : 1*numBytes])
-	e.p.x.y.SetBytes(m[1*numBytes : 2*numBytes])
-	e.p.y.x.SetBytes(m[2*numBytes : 3*numBytes])
-	e.p.y.y.SetBytes(m[3*numBytes : 4*numBytes])
+	g.p.x.x.SetBytes(m[0*numBytes : 1*numBytes])
+	g.p.x.y.SetBytes(m[1*numBytes : 2*numBytes])
+	g.p.y.x.SetBytes(m[2*numBytes : 3*numBytes])
+	g.p.y.y.SetBytes(m[3*numBytes : 4*numBytes])
 
-	if e.p.x.x.Sign() == 0 &&
-		e.p.x.y.Sign() == 0 &&
-		e.p.y.x.Sign() == 0 &&
-		e.p.y.y.Sign() == 0 {
+	if g.p.x.x.Sign() == 0 &&
+		g.p.x.y.Sign() == 0 &&
+		g.p.y.x.Sign() == 0 &&
+		g.p.y.y.Sign() == 0 {
 		// This is the point at infinity.
-		e.p.y.SetOne()
-		e.p.z.SetZero()
-		e.p.t.SetZero()
+		g.p.y.SetOne()
+		g.p.z.SetZero()
+		g.p.t.SetZero()
 	} else {
-		e.p.z.SetOne()
-		e.p.t.SetOne()
+		g.p.z.SetOne()
+		g.p.t.SetOne()
 
-		if !e.p.IsOnCurve() {
+		if !g.p.IsOnCurve() {
 			return nil, false
 		}
 	}
 
-	return e, true
+	return g, true
 }
 
 // GT is an abstract cyclic group. The zero value is suitable for use as the

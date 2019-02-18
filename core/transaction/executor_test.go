@@ -288,6 +288,9 @@ func TestMultiSigDoubleSignTx(t *testing.T) {
 	}
 
 	err := tx.Sign(privateKey)
+	if err != nil {
+		t.Fatalf("Error %s", err.Error())
+	}
 	err = tx.Sign(privateKey)
 
 	tx.SetMultisigAddress(msigAddress)
@@ -332,14 +335,19 @@ func TestMultiSigTooManySignsTx(t *testing.T) {
 	}
 
 	err := tx.Sign(privateKey)
-	err = tx.Sign(privateKey)
-	err = tx.Sign(privateKey)
-
-	tx.SetMultisigAddress(msigAddress)
-
 	if err != nil {
 		t.Fatalf("Error %s", err.Error())
 	}
+	err = tx.Sign(privateKey)
+	if err != nil {
+		t.Fatalf("Error %s", err.Error())
+	}
+	err = tx.Sign(privateKey)
+	if err != nil {
+		t.Fatalf("Error %s", err.Error())
+	}
+
+	tx.SetMultisigAddress(msigAddress)
 
 	txBytes, _ := rlp.EncodeToBytes(tx)
 

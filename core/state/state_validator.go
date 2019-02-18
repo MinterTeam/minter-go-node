@@ -91,11 +91,6 @@ func (c *stateValidators) EncodeRLP(w io.Writer) error {
 	return rlp.Encode(w, c.data)
 }
 
-func (c *stateValidators) deepCopy(db *StateDB, onDirty func()) *stateValidators {
-	stateValidators := newValidator(db, c.data, onDirty)
-	return stateValidators
-}
-
 func (c *stateValidators) SetData(validators Validators) {
 	c.data = validators
 }

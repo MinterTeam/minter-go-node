@@ -9,6 +9,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/genesis"
 	"github.com/MinterTeam/minter-go-node/gui"
 	"github.com/MinterTeam/minter-go-node/log"
+	"github.com/tendermint/tendermint/abci/types"
 	bc "github.com/tendermint/tendermint/blockchain"
 	tmCfg "github.com/tendermint/tendermint/config"
 	"github.com/tendermint/tendermint/libs/common"
@@ -65,19 +66,22 @@ func main() {
 	app.SetTmNode(node)
 
 	if !cfg.ValidatorMode {
-		go api.RunApi(app, client)
+		go api.RunAPI(app, client)
 		go gui.Run(cfg.GUIListenAddress)
 	}
 
 	// Wait forever
 	common.TrapSignal(func() {
 		// Cleanup
-		node.Stop()
+		err := node.Stop()
 		app.Stop()
+		if err != nil {
+			panic(err)
+		}
 	})
 }
 
-func startTendermintNode(app *minter.Blockchain, cfg *tmCfg.Config) *tmNode.Node {
+func startTendermintNode(app types.Application, cfg *tmCfg.Config) *tmNode.Node {
 	nodeKey, err := p2p.LoadOrGenNodeKey(cfg.NodeKeyFile())
 
 	if err != nil {

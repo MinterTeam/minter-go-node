@@ -54,7 +54,7 @@ var Routes = map[string]*rpcserver.RPCFunc{
 	"min_gas_price":          rpcserver.NewRPCFunc(MinGasPrice, ""),
 }
 
-func RunApi(b *minter.Blockchain, tmRPC *rpc.Local) {
+func RunAPI(b *minter.Blockchain, tmRPC *rpc.Local) {
 	client = tmRPC
 	blockchain = b
 	waitForTendermint()

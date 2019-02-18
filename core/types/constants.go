@@ -4,10 +4,10 @@ func GetBaseCoin() CoinSymbol {
 	return getBaseCoin(2)
 }
 
-func getBaseCoin(chainId int) CoinSymbol {
+func getBaseCoin(chainID int) CoinSymbol {
 	var coin CoinSymbol
 
-	switch chainId {
+	switch chainID {
 	case 1:
 		copy(coin[:], []byte("BIP"))
 	case 2:

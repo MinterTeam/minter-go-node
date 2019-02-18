@@ -41,7 +41,7 @@ func agm(a, b *big.Float) *big.Float {
 
 var piCache *big.Float
 var piCachePrec uint
-var enablePiCache bool = true
+var enablePiCache = true
 
 func init() {
 	if !enablePiCache {

@@ -39,7 +39,8 @@ func (f FrozenFunds) String() string {
 }
 
 // newFrozenFund creates a state frozen fund.
-func newFrozenFund(db *StateDB, blockHeight uint64, data FrozenFunds, onDirty func(blockHeight uint64)) *stateFrozenFund {
+func newFrozenFund(db *StateDB, blockHeight uint64, data FrozenFunds,
+	onDirty func(blockHeight uint64)) *stateFrozenFund {
 	frozenFund := &stateFrozenFund{
 		db:          db,
 		blockHeight: blockHeight,
@@ -55,11 +56,6 @@ func newFrozenFund(db *StateDB, blockHeight uint64, data FrozenFunds, onDirty fu
 // EncodeRLP implements rlp.Encoder.
 func (c *stateFrozenFund) EncodeRLP(w io.Writer) error {
 	return rlp.Encode(w, c.data)
-}
-
-func (c *stateFrozenFund) deepCopy(db *StateDB, onDirty func(blockHeight uint64)) *stateFrozenFund {
-	frozenFund := newFrozenFund(db, c.blockHeight, c.data, onDirty)
-	return frozenFund
 }
 
 func (c *stateFrozenFund) Delete() {
@@ -92,12 +88,10 @@ func (c *stateFrozenFund) PunishFund(context *StateDB, candidateAddress [20]byte
 }
 
 func (c *stateFrozenFund) punishFund(context *StateDB, candidateAddress [20]byte) {
-
 	edb := eventsdb.GetCurrent()
 
-	var NewList []FrozenFund
-
-	for _, item := range c.data.List {
+	newList := make([]FrozenFund, len(c.data.List))
+	for i, item := range c.data.List {
 		// skip fund with given candidate key
 		var pubkey ed25519.PubKeyEd25519
 		copy(pubkey[:], item.CandidateKey)
@@ -131,10 +125,10 @@ func (c *stateFrozenFund) punishFund(context *StateDB, candidateAddress [20]byte
 			item.Value = newValue
 		}
 
-		NewList = append(NewList, item)
+		newList[i] = item
 	}
 
-	c.data.List = NewList
+	c.data.List = newList
 
 	if c.onDirty != nil {
 		c.onDirty(c.blockHeight)

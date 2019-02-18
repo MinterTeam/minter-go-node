@@ -50,6 +50,9 @@ type BlockValidatorResponse struct {
 
 func Block(height int64) (*BlockResponse, error) {
 	block, err := client.Block(&height)
+	if err != nil {
+		return nil, rpctypes.RPCError{Code: 404, Message: "Block not found", Data: err.Error()}
+	}
 	blockResults, err := client.BlockResults(&height)
 	if err != nil {
 		return nil, rpctypes.RPCError{Code: 404, Message: "Block not found", Data: err.Error()}

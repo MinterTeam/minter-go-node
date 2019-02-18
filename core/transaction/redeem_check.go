@@ -146,7 +146,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context *state.StateDB, isCheck
 	if context.GetBalance(checkSender, decodedCheck.Coin).Cmp(totalTxCost) < 0 {
 		return Response{
 			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for check issuer account: %s. Wanted %d ", checkSender.String(), totalTxCost)}
+			Log:  fmt.Sprintf("Insufficient funds for check issuer account: %s. Wanted %s ", checkSender.String(), totalTxCost.String())}
 	}
 
 	if !isCheck {

@@ -29,7 +29,8 @@ type Coin struct {
 }
 
 func (coin Coin) String() string {
-	return fmt.Sprintf("%s (%s), volume: %s, reserve: %s, crr: %d", coin.Name, coin.Symbol, coin.Volume, coin.ReserveBalance, coin.Crr)
+	return fmt.Sprintf("%s (%s), volume: %s, reserve: %s, crr: %d", coin.Name, coin.Symbol, coin.Volume,
+		coin.ReserveBalance, coin.Crr)
 }
 
 // newCoin creates a state coin.
@@ -50,11 +51,6 @@ func newCoin(db *StateDB, symbol types.CoinSymbol, data Coin, onDirty func(symbo
 // EncodeRLP implements rlp.Encoder.
 func (c *stateCoin) EncodeRLP(w io.Writer) error {
 	return rlp.Encode(w, c.data)
-}
-
-func (c *stateCoin) deepCopy(db *StateDB, onDirty func(addr types.CoinSymbol)) *stateCoin {
-	stateCoin := newCoin(db, c.symbol, c.data, onDirty)
-	return stateCoin
 }
 
 func (c *stateCoin) AddVolume(amount *big.Int) {

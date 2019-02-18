@@ -45,7 +45,7 @@ func (appDB *AppDB) SetLastBlockHash(hash []byte) {
 
 func (appDB *AppDB) GetLastHeight() int64 {
 	result := appDB.db.Get([]byte(heightPath))
-	var height int64 = 0
+	var height int64
 
 	if result != nil {
 		height = int64(binary.BigEndian.Uint64(result))
