@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.14.1
+
+IMPROVEMENT
+
+- [api] Add /addresses endpoint
+
 ## 0.13.1
 
 BUG FIXES
