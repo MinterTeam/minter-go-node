@@ -5,6 +5,12 @@
 IMPROVEMENT
 
 - [api] Add /addresses endpoint
+- [api] Add evidence data to /block
+- [tendermint] Update to [v0.30.1](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0301) 
+
+BUG FIXES
+
+- [api] Fix /block endpoint
 
 ## 0.13.1
 

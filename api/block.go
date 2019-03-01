@@ -9,6 +9,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/rpc/lib/types"
 	"github.com/tendermint/tendermint/libs/common"
+	types2 "github.com/tendermint/tendermint/types"
 	"math/big"
 	"time"
 )
@@ -24,6 +25,7 @@ type BlockResponse struct {
 	Size         int                        `json:"size"`
 	Proposer     types.Pubkey               `json:"proposer"`
 	Validators   []BlockValidatorResponse   `json:"validators"`
+	Evidence     types2.EvidenceData        `json:"evidence,omitempty"`
 }
 
 type BlockTransactionResponse struct {
@@ -144,5 +146,6 @@ func Block(height int64) (*BlockResponse, error) {
 		Size:         len(cdc.MustMarshalBinaryLengthPrefixed(block)),
 		Proposer:     proposer,
 		Validators:   validators,
+		Evidence:     block.Block.Evidence,
 	}, nil
 }
