@@ -14,7 +14,9 @@ import (
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/crypto/multisig"
 	"github.com/tendermint/tendermint/crypto/secp256k1"
+	"github.com/tendermint/tendermint/evidence"
 	rpc "github.com/tendermint/tendermint/rpc/client"
+	"github.com/tendermint/tendermint/types"
 	"net/http"
 	"net/url"
 	"strings"
@@ -28,17 +30,13 @@ var (
 	cfg        = config.GetConfig()
 )
 
-func init() {
-	RegisterCryptoAmino(cdc)
-	eventsdb.RegisterAminoEvents(cdc)
-}
-
 var Routes = map[string]*rpcserver.RPCFunc{
 	"status":                 rpcserver.NewRPCFunc(Status, ""),
 	"candidates":             rpcserver.NewRPCFunc(Candidates, "height"),
 	"candidate":              rpcserver.NewRPCFunc(Candidate, "pubkey,height"),
 	"validators":             rpcserver.NewRPCFunc(Validators, "height"),
 	"address":                rpcserver.NewRPCFunc(Address, "address,height"),
+	"addresses":              rpcserver.NewRPCFunc(Addresses, "addresses,height"),
 	"send_transaction":       rpcserver.NewRPCFunc(SendTransaction, "tx"),
 	"transaction":            rpcserver.NewRPCFunc(Transaction, "hash"),
 	"transactions":           rpcserver.NewRPCFunc(Transactions, "query"),
@@ -55,6 +53,10 @@ var Routes = map[string]*rpcserver.RPCFunc{
 }
 
 func RunAPI(b *minter.Blockchain, tmRPC *rpc.Local) {
+	RegisterCryptoAmino(cdc)
+	eventsdb.RegisterAminoEvents(cdc)
+	RegisterEvidenceMessages(cdc)
+
 	client = tmRPC
 	blockchain = b
 	waitForTendermint()
@@ -144,4 +146,12 @@ func RegisterCryptoAmino(cdc *amino.Codec) {
 		ed25519.PrivKeyAminoName, nil)
 	cdc.RegisterConcrete(secp256k1.PrivKeySecp256k1{},
 		secp256k1.PrivKeyAminoName, nil)
+}
+
+func RegisterEvidenceMessages(cdc *amino.Codec) {
+	cdc.RegisterInterface((*evidence.EvidenceMessage)(nil), nil)
+	cdc.RegisterConcrete(&evidence.EvidenceListMessage{},
+		"tendermint/evidence/EvidenceListMessage", nil)
+	cdc.RegisterInterface((*types.Evidence)(nil), nil)
+	cdc.RegisterConcrete(&types.DuplicateVoteEvidence{}, "tendermint/DuplicateVoteEvidence", nil)
 }
