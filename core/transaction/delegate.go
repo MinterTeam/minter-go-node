@@ -1,7 +1,7 @@
 package transaction
 
 import (
-	"encoding/json"
+	"encoding/hex"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
@@ -9,49 +9,77 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/hexutil"
+	"github.com/tendermint/tendermint/libs/common"
 	"math/big"
 )
 
 type DelegateData struct {
-	PubKey []byte
-	Coin   types.CoinSymbol
-	Stake  *big.Int
+	PubKey types.Pubkey     `json:"pub_key"`
+	Coin   types.CoinSymbol `json:"coin"`
+	Stake  *big.Int         `json:"stake"`
 }
 
-func (data DelegateData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		PubKey string           `json:"pub_key"`
-		Coin   types.CoinSymbol `json:"coin"`
-		Stake  string           `json:"stake"`
-	}{
-		PubKey: fmt.Sprintf("Mp%x", data.PubKey),
-		Coin:   data.Coin,
-		Stake:  data.Stake.String(),
-	})
+func (data DelegateData) TotalSpend(tx *Transaction, context *state.StateDB) (TotalSpends, []Conversion, *big.Int, *Response) {
+	panic("implement me")
+}
+
+func (data DelegateData) BasicCheck(tx *Transaction, context *state.StateDB) *Response {
+	if data.PubKey == nil || data.Stake == nil {
+		return &Response{
+			Code: code.DecodeError,
+			Log:  "Incorrect tx data"}
+	}
+
+	if !context.CoinExists(tx.GasCoin) {
+		return &Response{
+			Code: code.CoinNotExists,
+			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin)}
+	}
+
+	if data.Stake.Cmp(types.Big0) < 1 {
+		return &Response{
+			Code: code.StakeShouldBePositive,
+			Log:  fmt.Sprintf("Stake should be positive")}
+	}
+
+	candidate := context.GetStateCandidate(data.PubKey)
+	if candidate == nil {
+		return &Response{
+			Code: code.CandidateNotFound,
+			Log:  fmt.Sprintf("Candidate with such public key not found")}
+	}
+
+	sender, _ := tx.Sender()
+	if len(candidate.Stakes) >= state.MaxDelegatorsPerCandidate && !context.IsDelegatorStakeSufficient(sender, data.PubKey, data.Coin, data.Stake) {
+		return &Response{
+			Code: code.TooLowStake,
+			Log:  fmt.Sprintf("Stake is too low")}
+	}
+
+	return nil
 }
 
 func (data DelegateData) String() string {
 	return fmt.Sprintf("DELEGATE pubkey:%s ",
-		hexutil.Encode(data.PubKey[:]))
+		hexutil.Encode(data.PubKey))
 }
 
 func (data DelegateData) Gas() int64 {
 	return commissions.DelegateTx
 }
 
-func (data DelegateData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
+func (data DelegateData) Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response {
+	sender, _ := tx.Sender()
 
-	if !context.CoinExists(tx.GasCoin) {
-		return Response{
-			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin)}
+	response := data.BasicCheck(tx, context)
+	if response != nil {
+		return *response
 	}
 
-	commissionInBaseCoin := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
-	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
+	commissionInBaseCoin := tx.CommissionInBaseCoin()
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
-	if tx.GasCoin != types.GetBaseCoin() {
+	if !tx.GasCoin.IsBaseCoin() {
 		coin := context.GetStateCoin(tx.GasCoin)
 
 		if coin.ReserveBalance().Cmp(commissionInBaseCoin) < 0 {
@@ -87,14 +115,11 @@ func (data DelegateData) Run(sender types.Address, tx *Transaction, context *sta
 		}
 	}
 
-	if !context.CandidateExists(data.PubKey) {
-		return Response{
-			Code: code.CandidateNotFound,
-			Log:  fmt.Sprintf("Candidate with such public key not found")}
-	}
-
 	if !isCheck {
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
+
+		context.SubCoinReserve(tx.GasCoin, commissionInBaseCoin)
+		context.SubCoinVolume(tx.GasCoin, commission)
 
 		context.SubBalance(sender, tx.GasCoin, commission)
 		context.SubBalance(sender, data.Coin, data.Stake)
@@ -102,9 +127,15 @@ func (data DelegateData) Run(sender types.Address, tx *Transaction, context *sta
 		context.SetNonce(sender, tx.Nonce)
 	}
 
+	tags := common.KVPairs{
+		common.KVPair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeDelegate)}))},
+		common.KVPair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
+	}
+
 	return Response{
 		Code:      code.OK,
 		GasUsed:   tx.Gas(),
 		GasWanted: tx.Gas(),
+		Tags:      tags,
 	}
 }

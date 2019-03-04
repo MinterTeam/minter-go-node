@@ -1,32 +1,5 @@
-# Gopkg.toml example
-#
-# Refer to https://github.com/golang/dep/blob/master/docs/Gopkg.toml.md
-# for detailed Gopkg.toml documentation.
-#
-# required = ["github.com/user/thing/cmd/thing"]
-# ignored = ["github.com/user/project/pkgX", "bitbucket.org/user/project/pkgA/pkgY"]
-#
-# [[constraint]]
-#   name = "github.com/user/project"
-#   version = "1.0.0"
-#
-# [[constraint]]
-#   name = "github.com/user/project2"
-#   branch = "dev"
-#   source = "github.com/myfork/project2"
-#
-# [[override]]
-#   name = "github.com/x/y"
-#   version = "2.4.0"
-#
-# [prune]
-#   non-go = false
-#   go-tests = true
-#   unused-packages = true
-
-
 [[constraint]]
-  branch = "master"
+  revision = "ed77733ec07dfc8a513741138419b8d9d3de9d2d"
   name = "github.com/btcsuite/btcd"
 
 [[constraint]]
@@ -34,44 +7,24 @@
   version = "=1.11.1"
 
 [[constraint]]
-  name = "github.com/gorilla/mux"
-  version = "=1.6.2"
-
-[[constraint]]
-  name = "github.com/gorilla/websocket"
-  version = "=1.2.0"
-
-[[constraint]]
-  branch = "master"
-  name = "github.com/hashicorp/golang-lru"
-
-[[constraint]]
-  branch = "master"
-  name = "github.com/rcrowley/go-metrics"
-
-[[constraint]]
   name = "github.com/rs/cors"
-  version = "=1.4.0"
+  version = "^1.6.0"
 
 [[constraint]]
-  branch = "master"
-  name = "github.com/syndtr/goleveldb"
-
-[[constraint]]
-  name = "github.com/tendermint/go-amino"
-  version = "=v0.10.1"
+  name = "github.com/danil-lashin/iavl"
+  revision = "83a81c94ee7eb3bd0eb14d6829bd04f22e530e6f"
 
 [[constraint]]
   name = "github.com/tendermint/tendermint"
-  version = "=v0.23.0"
+  version = "0.30.1"
+
+[[constraint]]
+  name = "github.com/MinterTeam/go-amino"
+  version = "=v0.14.1-m"
 
 [[constraint]]
   branch = "v1"
   name = "gopkg.in/check.v1"
-
-[[constraint]]
-  branch = "v2"
-  name = "gopkg.in/karalabe/cookiejar.v2"
 
 [prune]
   go-tests = true

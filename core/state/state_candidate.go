@@ -1,19 +1,3 @@
-// Copyright 2014 The go-ethereum Authors
-// This file is part of the go-ethereum library.
-//
-// The go-ethereum library is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// The go-ethereum library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
-
 package state
 
 import (
@@ -35,82 +19,86 @@ const (
 )
 
 // stateCandidate represents a candidate which is being modified.
-//
-// The usage pattern is as follows:
-// First you need to obtain a state object.
-// Account values can be accessed and modified through the object.
-// Finally, call CommitTrie to write the modified storage trie into a database.
 type stateCandidates struct {
 	data Candidates
 	db   *StateDB
 
-	// Cache flags.
-	// When an object is marked suicided it will be delete from the trie
-	// during the "update" phase of the state transition.
 	onDirty func() // Callback method to mark a state object newly dirty
 }
 
 type Candidates []Candidate
 
-// empty returns whether the candidate is considered empty.
-func (c *stateCandidates) empty() bool {
-	return false
-}
-
 type Stake struct {
-	Owner types.Address
-	Coin  types.CoinSymbol
-	Value *big.Int
+	Owner    types.Address
+	Coin     types.CoinSymbol
+	Value    *big.Int
+	BipValue *big.Int
 }
 
 func (s *Stake) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Owner types.Address    `json:"owner"`
-		Coin  types.CoinSymbol `json:"coin"`
-		Value string           `json:"value"`
+		Owner    types.Address    `json:"owner"`
+		Coin     types.CoinSymbol `json:"coin"`
+		Value    string           `json:"value"`
+		BipValue string           `json:"bip_value"`
 	}{
-		Owner: s.Owner,
-		Coin:  s.Coin,
-		Value: s.Value.String(),
+		Owner:    s.Owner,
+		Coin:     s.Coin,
+		Value:    s.Value.String(),
+		BipValue: s.BipValue.String(),
 	})
 }
 
-func (s *Stake) BipValue(context *StateDB) *big.Int {
-
+func (s *Stake) CalcBipValue(context *StateDB) *big.Int {
 	if s.Coin.IsBaseCoin() {
 		return big.NewInt(0).Set(s.Value)
 	}
 
-	totalStaked := big.NewInt(0)
+	if s.Value.Cmp(types.Big0) == 0 {
+		return big.NewInt(0)
+	}
 
-	candidates := context.getStateCandidates()
+	if _, has := context.stakeCache[s.Coin]; !has {
+		totalStaked := big.NewInt(0)
+		candidates := context.getStateCandidates()
 
-	for _, candidate := range candidates.data {
-		for _, stake := range candidate.Stakes {
-			if bytes.Equal(stake.Coin.Bytes(), s.Coin.Bytes()) {
-				totalStaked.Add(totalStaked, stake.Value)
+		for _, candidate := range candidates.data {
+			for _, stake := range candidate.Stakes {
+				if stake.Coin == s.Coin {
+					totalStaked.Add(totalStaked, stake.Value)
+				}
 			}
+		}
+
+		coin := context.getStateCoin(s.Coin)
+		context.stakeCache[s.Coin] = StakeCache{
+			TotalValue: totalStaked,
+			BipValue:   formula.CalculateSaleReturn(coin.Volume(), coin.ReserveBalance(), coin.data.Crr, totalStaked),
 		}
 	}
 
-	coin := context.getStateCoin(s.Coin)
-	totalBipValue := formula.CalculateSaleReturn(coin.Volume(), coin.ReserveBalance(), coin.data.Crr, totalStaked)
+	data := context.stakeCache[s.Coin]
 
-	value := big.NewInt(0).Set(totalBipValue)
+	if data.TotalValue.Cmp(types.Big0) == 0 {
+		return big.NewInt(0)
+	}
+
+	value := big.NewInt(0).Set(data.BipValue)
 	value.Mul(value, s.Value)
-	value.Div(value, totalStaked)
+	value.Div(value, data.TotalValue)
 
 	return value
 }
 
 type Candidate struct {
-	CandidateAddress types.Address
-	TotalBipStake    *big.Int
-	PubKey           types.Pubkey
-	Commission       uint
-	Stakes           []Stake
-	CreatedAtBlock   uint
-	Status           byte
+	RewardAddress  types.Address
+	OwnerAddress   types.Address
+	TotalBipStake  *big.Int
+	PubKey         types.Pubkey
+	Commission     uint
+	Stakes         []Stake
+	CreatedAtBlock uint
+	Status         byte
 
 	tmAddress *[20]byte
 }
@@ -161,11 +149,6 @@ func newCandidate(db *StateDB, data Candidates, onDirty func()) *stateCandidates
 // EncodeRLP implements rlp.Encoder.
 func (c *stateCandidates) EncodeRLP(w io.Writer) error {
 	return rlp.Encode(w, c.data)
-}
-
-func (c *stateCandidates) deepCopy(db *StateDB, onDirty func()) *stateCandidates {
-	stateCandidate := newCandidate(db, c.data, onDirty)
-	return stateCandidate
 }
 
 func (c *stateCandidates) GetData() Candidates {

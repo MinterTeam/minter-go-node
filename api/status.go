@@ -1,49 +1,40 @@
 package api
 
 import (
-	"encoding/json"
+	"fmt"
 	"github.com/MinterTeam/minter-go-node/version"
-	"github.com/tendermint/tendermint/libs/common"
-	"net/http"
+	"github.com/tendermint/tendermint/rpc/core/types"
 	"time"
 )
 
 type StatusResponse struct {
-	MinterVersion     string          `json:"version"`
-	LatestBlockHash   common.HexBytes `json:"latest_block_hash"`
-	LatestAppHash     common.HexBytes `json:"latest_app_hash"`
-	LatestBlockHeight int64           `json:"latest_block_height"`
-	LatestBlockTime   time.Time       `json:"latest_block_time"`
-	TmStatus          json.RawMessage `json:"tm_status"`
+	MinterVersion     string                   `json:"version"`
+	LatestBlockHash   string                   `json:"latest_block_hash"`
+	LatestAppHash     string                   `json:"latest_app_hash"`
+	LatestBlockHeight int64                    `json:"latest_block_height"`
+	LatestBlockTime   time.Time                `json:"latest_block_time"`
+	StateHistory      string                   `json:"state_history"`
+	TmStatus          *core_types.ResultStatus `json:"tm_status"`
 }
 
-func Status(w http.ResponseWriter, r *http.Request) {
-
+func Status() (*StatusResponse, error) {
 	result, err := client.Status()
-
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-
 	if err != nil {
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(Response{
-			Code:   500,
-			Result: nil,
-			Log:    err.Error(),
-		})
-		return
+		return nil, err
 	}
 
-	tmStatus, _ := cdc.MarshalJSON(result)
+	stateHistory := "off"
+	if cfg.BaseConfig.KeepStateHistory {
+		stateHistory = "on"
+	}
 
-	json.NewEncoder(w).Encode(Response{
-		Code: 0,
-		Result: StatusResponse{
-			MinterVersion:     version.Version,
-			LatestBlockHash:   common.HexBytes(result.SyncInfo.LatestBlockHash),
-			LatestAppHash:     common.HexBytes(result.SyncInfo.LatestAppHash),
-			LatestBlockHeight: result.SyncInfo.LatestBlockHeight,
-			LatestBlockTime:   result.SyncInfo.LatestBlockTime,
-			TmStatus:          json.RawMessage(tmStatus),
-		},
-	})
+	return &StatusResponse{
+		MinterVersion:     version.Version,
+		LatestBlockHash:   fmt.Sprintf("%X", result.SyncInfo.LatestBlockHash),
+		LatestAppHash:     fmt.Sprintf("%X", result.SyncInfo.LatestAppHash),
+		LatestBlockHeight: result.SyncInfo.LatestBlockHeight,
+		LatestBlockTime:   result.SyncInfo.LatestBlockTime,
+		StateHistory:      stateHistory,
+		TmStatus:          result,
+	}, nil
 }

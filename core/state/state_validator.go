@@ -1,19 +1,3 @@
-// Copyright 2014 The go-ethereum Authors
-// This file is part of the go-ethereum library.
-//
-// The go-ethereum library is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// The go-ethereum library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
-
 package state
 
 import (
@@ -27,41 +11,45 @@ import (
 )
 
 // stateValidators represents a validators which is being modified.
-//
-// The usage pattern is as follows:
-// First you need to obtain a state object.
-// Account values can be accessed and modified through the object.
-// Finally, call CommitTrie to write the modified storage trie into a database.
 type stateValidators struct {
 	data Validators
 	db   *StateDB
 
-	// Cache flags.
-	// When an object is marked suicided it will be delete from the trie
-	// during the "update" phase of the state transition.
 	onDirty func() // Callback method to mark a state object newly dirty
 }
 
 type Validators []Validator
-
-// empty returns whether the candidate is considered empty.
-func (c *stateValidators) empty() bool {
-	return false
-}
 
 func (c *stateValidators) Data() Validators {
 	return c.data
 }
 
 type Validator struct {
-	CandidateAddress types.Address
-	TotalBipStake    *big.Int
-	PubKey           types.Pubkey
-	Commission       uint
-	AccumReward      *big.Int
-	AbsentTimes      uint
+	RewardAddress types.Address
+	TotalBipStake *big.Int
+	PubKey        types.Pubkey
+	Commission    uint
+	AccumReward   *big.Int
+	AbsentTimes   *BitArray
 
 	tmAddress *[20]byte
+	toDrop    bool
+}
+
+func (validator *Validator) CountAbsentTimes() int {
+	count := 0
+
+	for i := 0; i < ValidatorMaxAbsentWindow; i++ {
+		if validator.AbsentTimes.GetIndex(i) {
+			count++
+		}
+	}
+
+	return count
+}
+
+func (validator *Validator) IsToDrop() bool {
+	return validator.toDrop
 }
 
 func (validator Validator) GetAddress() [20]byte {
@@ -103,7 +91,6 @@ func (c *stateValidators) EncodeRLP(w io.Writer) error {
 	return rlp.Encode(w, c.data)
 }
 
-func (c *stateValidators) deepCopy(db *StateDB, onDirty func()) *stateValidators {
-	stateValidators := newValidator(db, c.data, onDirty)
-	return stateValidators
+func (c *stateValidators) SetData(validators Validators) {
+	c.data = validators
 }

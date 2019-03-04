@@ -8,32 +8,24 @@ import (
 	"github.com/tendermint/tendermint/libs/common"
 	"github.com/tendermint/tendermint/rpc/core/types"
 	"math/big"
-	"net/http"
 )
 
 type TransactionResponse struct {
-	Hash     common.HexBytes   `json:"hash"`
-	RawTx    string            `json:"raw_tx"`
-	Height   int64             `json:"height"`
-	Index    uint32            `json:"index"`
-	TxResult ResponseDeliverTx `json:"tx_result"`
-	From     string            `json:"from"`
-	Nonce    uint64            `json:"nonce"`
-	GasPrice *big.Int          `json:"gas_price"`
-	GasCoin  types.CoinSymbol  `json:"gas_coin"`
-	Type     byte              `json:"type"`
-	Data     transaction.Data  `json:"data"`
-	Payload  []byte            `json:"payload"`
-}
-
-type ResponseDeliverTx struct {
-	Code      uint32          `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"`
-	Data      []byte          `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
-	Log       string          `protobuf:"bytes,3,opt,name=log,proto3" json:"log,omitempty"`
-	Info      string          `protobuf:"bytes,4,opt,name=info,proto3" json:"info,omitempty"`
-	GasWanted int64           `protobuf:"varint,5,opt,name=gas_wanted,json=gas_wanted,proto3" json:"gas_wanted,omitempty"`
-	GasUsed   int64           `protobuf:"varint,6,opt,name=gas_used,json=gas_used,proto3" json:"gas_used,omitempty"`
-	Tags      []common.KVPair `protobuf:"bytes,7,rep,name=tags" json:"tags,omitempty"`
+	Hash     common.HexBytes    `json:"hash"`
+	RawTx    string             `json:"raw_tx"`
+	Height   int64              `json:"height"`
+	Index    uint32             `json:"index"`
+	From     string             `json:"from"`
+	Nonce    uint64             `json:"nonce"`
+	Gas      int64              `json:"gas"`
+	GasPrice *big.Int           `json:"gas_price"`
+	GasCoin  types.CoinSymbol   `json:"gas_coin"`
+	Type     transaction.TxType `json:"type"`
+	Data     json.RawMessage    `json:"data"`
+	Payload  []byte             `json:"payload"`
+	Tags     map[string]string  `json:"tags"`
+	Code     uint32             `json:"code,omitempty"`
+	Log      string             `json:"log,omitempty"`
 }
 
 type ResultTxSearch struct {
@@ -41,61 +33,50 @@ type ResultTxSearch struct {
 	TotalCount int                    `json:"total_count"`
 }
 
-func Transactions(w http.ResponseWriter, r *http.Request) {
-
-	query := r.URL.Query().Get("query")
-
+func Transactions(query string) (*[]TransactionResponse, error) {
 	rpcResult, err := client.TxSearch(query, false, 1, 100)
-
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(Response{
-			Code:   0,
-			Result: err.Error(),
-		})
-		return
+		return nil, err
 	}
 
-	w.WriteHeader(http.StatusOK)
-
 	result := make([]TransactionResponse, len(rpcResult.Txs))
-
 	for i, tx := range rpcResult.Txs {
-		decodedTx, _ := transaction.DecodeFromBytes(tx.Tx)
+		decodedTx, _ := transaction.TxDecoder.DecodeFromBytes(tx.Tx)
 		sender, _ := decodedTx.Sender()
 
+		tags := make(map[string]string)
+		for _, tag := range tx.TxResult.Tags {
+			tags[string(tag.Key)] = string(tag.Value)
+		}
+
+		data, err := encodeTxData(decodedTx)
+		if err != nil {
+			return nil, err
+		}
+
+		gas := decodedTx.Gas()
+		if decodedTx.Type == transaction.TypeCreateCoin {
+			gas += decodedTx.GetDecodedData().(*transaction.CreateCoinData).Commission()
+		}
+
 		result[i] = TransactionResponse{
-			Hash:   common.HexBytes(tx.Tx.Hash()),
-			RawTx:  fmt.Sprintf("%x", []byte(tx.Tx)),
-			Height: tx.Height,
-			Index:  tx.Index,
-			TxResult: ResponseDeliverTx{
-				Code:      tx.TxResult.Code,
-				Data:      tx.TxResult.Data,
-				Log:       tx.TxResult.Log,
-				Info:      tx.TxResult.Info,
-				GasWanted: tx.TxResult.GasWanted,
-				GasUsed:   tx.TxResult.GasUsed,
-				Tags:      tx.TxResult.Tags,
-			},
+			Hash:     common.HexBytes(tx.Tx.Hash()),
+			RawTx:    fmt.Sprintf("%x", []byte(tx.Tx)),
+			Height:   tx.Height,
+			Index:    tx.Index,
 			From:     sender.String(),
 			Nonce:    decodedTx.Nonce,
+			Gas:      gas,
 			GasPrice: decodedTx.GasPrice,
 			GasCoin:  decodedTx.GasCoin,
 			Type:     decodedTx.Type,
-			Data:     decodedTx.GetDecodedData(),
+			Data:     data,
 			Payload:  decodedTx.Payload,
+			Tags:     tags,
+			Code:     tx.TxResult.Code,
+			Log:      tx.TxResult.Log,
 		}
 	}
 
-	err = json.NewEncoder(w).Encode(Response{
-		Code:   0,
-		Result: result,
-	})
-
-	if err != nil {
-		panic(err)
-	}
+	return &result, nil
 }

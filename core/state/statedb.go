@@ -1,30 +1,17 @@
-// Copyright 2014 The go-ethereum Authors
-// This file is part of the go-ethereum library.
-//
-// The go-ethereum library is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// The go-ethereum library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
-
-// Package state provides a caching layer atop the Ethereum state trie.
 package state
 
 import (
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/config"
+	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/core/validators"
+	"github.com/MinterTeam/minter-go-node/eventsdb"
+	"github.com/MinterTeam/minter-go-node/formula"
+	"github.com/MinterTeam/minter-go-node/log"
+	"github.com/MinterTeam/minter-go-node/rlp"
+	dbm "github.com/tendermint/tendermint/libs/db"
 	"math/big"
 	"sync"
-
-	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/MinterTeam/minter-go-node/crypto"
-	"github.com/MinterTeam/minter-go-node/rlp"
 
 	"bytes"
 	"encoding/binary"
@@ -34,11 +21,12 @@ import (
 	"sort"
 )
 
-var (
-	// emptyState is the known hash of an empty state trie entry.
-	emptyState = crypto.Keccak256Hash(nil)
+const UnbondPeriod = 720 // in mainnet will be 518400 (30 days)
+const MaxDelegatorsPerCandidate = 1000
 
-	ValidatorMaxAbsentTimes = uint(12)
+var (
+	ValidatorMaxAbsentWindow = 24
+	ValidatorMaxAbsentTimes  = 12
 
 	addressPrefix     = []byte("a")
 	coinPrefix        = []byte("c")
@@ -46,20 +34,18 @@ var (
 	usedCheckPrefix   = []byte("u")
 	candidatesKey     = []byte("t")
 	validatorsKey     = []byte("v")
+	maxGasKey         = []byte("g")
+
+	cfg = config.GetConfig()
 )
 
-// StateDBs within the ethereum protocol are used to store anything
-// within the merkle trie. StateDBs take care of caching and storing
-// nested states. It's the general query interface to retrieve:
-// * Coins
-// * Accounts
 type StateDB struct {
-	db   Database
-	trie Trie
+	db   dbm.DB
+	iavl Tree
 
 	// This map holds 'live' objects, which will get modified while processing a state transition.
-	stateObjects      map[types.Address]*stateObject
-	stateObjectsDirty map[types.Address]struct{}
+	stateAccounts      map[types.Address]*stateAccount
+	stateAccountsDirty map[types.Address]struct{}
 
 	stateCoins      map[types.CoinSymbol]*stateCoin
 	stateCoinsDirty map[types.CoinSymbol]struct{}
@@ -73,64 +59,72 @@ type StateDB struct {
 	stateValidators      *stateValidators
 	stateValidatorsDirty bool
 
-	// DB error.
-	// State objects are used by the consensus core and VM which are
-	// unable to deal with database-level errors. Any error that occurs
-	// during a database read is memoized here and will eventually be returned
-	// by StateDB.Commit.
-	dbErr error
-
-	thash, bhash types.Hash
+	stakeCache map[types.CoinSymbol]StakeCache
 
 	lock sync.Mutex
 }
 
-// Create a new state from a given trie
-func New(root types.Hash, db Database) (*StateDB, error) {
-	tr, err := db.OpenTrie(root)
-	if err != nil {
-		return nil, err
-	}
+type StakeCache struct {
+	TotalValue *big.Int
+	BipValue   *big.Int
+}
+
+func NewForCheck(s *StateDB) *StateDB {
 	return &StateDB{
-		db:                    db,
-		trie:                  tr,
-		stateObjects:          make(map[types.Address]*stateObject),
-		stateObjectsDirty:     make(map[types.Address]struct{}),
+		db:                    s.db,
+		iavl:                  s.iavl.GetImmutable(),
+		stateAccounts:         make(map[types.Address]*stateAccount),
+		stateAccountsDirty:    make(map[types.Address]struct{}),
 		stateCoins:            make(map[types.CoinSymbol]*stateCoin),
 		stateCoinsDirty:       make(map[types.CoinSymbol]struct{}),
 		stateFrozenFunds:      make(map[uint64]*stateFrozenFund),
 		stateFrozenFundsDirty: make(map[uint64]struct{}),
 		stateCandidates:       nil,
 		stateCandidatesDirty:  false,
+		stakeCache:            make(map[types.CoinSymbol]StakeCache),
+	}
+}
+
+func New(height int64, db dbm.DB) (*StateDB, error) {
+	tree := NewMutableTree(db)
+
+	_, err := tree.LoadVersion(height)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &StateDB{
+		db:                    db,
+		iavl:                  tree,
+		stateAccounts:         make(map[types.Address]*stateAccount),
+		stateAccountsDirty:    make(map[types.Address]struct{}),
+		stateCoins:            make(map[types.CoinSymbol]*stateCoin),
+		stateCoinsDirty:       make(map[types.CoinSymbol]struct{}),
+		stateFrozenFunds:      make(map[uint64]*stateFrozenFund),
+		stateFrozenFundsDirty: make(map[uint64]struct{}),
+		stateCandidates:       nil,
+		stateCandidatesDirty:  false,
+		stakeCache:            make(map[types.CoinSymbol]StakeCache),
 	}, nil
 }
 
-// setError remembers the first non-nil error it is called with.
-func (s *StateDB) setError(err error) {
-
-	if err != nil {
-		fmt.Printf("ERROR: %s\n", err.Error())
-	}
-
-	if s.dbErr == nil {
-		s.dbErr = err
-	}
-}
-
-func (s *StateDB) Error() error {
-	return s.dbErr
-}
-
-// Empty returns whether the state object is either non-existent
-// or empty according to the EIP161 specification (balance = nonce = code = 0)
-func (s *StateDB) Empty(addr types.Address) bool {
-	so := s.getStateObject(addr)
-	return so == nil || so.empty()
+func (s *StateDB) Clear() {
+	s.stateAccounts = make(map[types.Address]*stateAccount)
+	s.stateAccountsDirty = make(map[types.Address]struct{})
+	s.stateCoins = make(map[types.CoinSymbol]*stateCoin)
+	s.stateCoinsDirty = make(map[types.CoinSymbol]struct{})
+	s.stateFrozenFunds = make(map[uint64]*stateFrozenFund)
+	s.stateFrozenFundsDirty = make(map[uint64]struct{})
+	s.stateCandidates = nil
+	s.stateCandidatesDirty = false
+	s.stakeCache = make(map[types.CoinSymbol]StakeCache)
+	s.lock = sync.Mutex{}
 }
 
 // Retrieve the balance from the given address or 0 if object not found
 func (s *StateDB) GetBalance(addr types.Address, coinSymbol types.CoinSymbol) *big.Int {
-	stateObject := s.getStateObject(addr)
+	stateObject := s.getStateAccount(addr)
 	if stateObject != nil {
 		return stateObject.Balance(coinSymbol)
 	}
@@ -138,30 +132,23 @@ func (s *StateDB) GetBalance(addr types.Address, coinSymbol types.CoinSymbol) *b
 }
 
 func (s *StateDB) GetBalances(addr types.Address) Balances {
-	stateObject := s.getStateObject(addr)
+	stateObject := s.getStateAccount(addr)
 	if stateObject != nil {
 		return stateObject.Balances()
 	}
 
-	def := make(map[types.CoinSymbol]*big.Int)
-
 	return Balances{
-		Data: def,
+		Data: make(map[types.CoinSymbol]*big.Int),
 	}
 }
 
 func (s *StateDB) GetNonce(addr types.Address) uint64 {
-	stateObject := s.getStateObject(addr)
+	stateObject := s.getStateAccount(addr)
 	if stateObject != nil {
 		return stateObject.Nonce()
 	}
 
 	return 0
-}
-
-// Database retrieves the low level database supporting the lower level trie ops.
-func (s *StateDB) Database() Database {
-	return s.db
 }
 
 /*
@@ -203,13 +190,14 @@ func (s *StateDB) SetNonce(addr types.Address, nonce uint64) {
 //
 
 // updateStateObject writes the given object to the trie.
-func (s *StateDB) updateStateObject(stateObject *stateObject) {
+func (s *StateDB) updateStateObject(stateObject *stateAccount) {
 	addr := stateObject.Address()
 	data, err := rlp.EncodeToBytes(stateObject)
 	if err != nil {
 		panic(fmt.Errorf("can't encode object at %x: %v", addr[:], err))
 	}
-	s.setError(s.trie.TryUpdate(append(addressPrefix, addr[:]...), data))
+
+	s.iavl.Set(append(addressPrefix, addr[:]...), data)
 }
 
 func (s *StateDB) updateStateFrozenFund(stateFrozenFund *stateFrozenFund) {
@@ -219,19 +207,20 @@ func (s *StateDB) updateStateFrozenFund(stateFrozenFund *stateFrozenFund) {
 		panic(fmt.Errorf("can't encode frozen fund at %d: %v", blockHeight, err))
 	}
 	height := make([]byte, 8)
-	binary.BigEndian.PutUint64(height[:], stateFrozenFund.blockHeight)
+	binary.BigEndian.PutUint64(height, uint64(stateFrozenFund.blockHeight))
 
-	key := append(frozenFundsPrefix, height...)
-	s.setError(s.trie.TryUpdate(key, data))
+	s.iavl.Set(append(frozenFundsPrefix, height...), data)
 }
 
 func (s *StateDB) updateStateCoin(stateCoin *stateCoin) {
 	symbol := stateCoin.Symbol()
+
 	data, err := rlp.EncodeToBytes(stateCoin)
 	if err != nil {
 		panic(fmt.Errorf("can't encode coin at %x: %v", symbol[:], err))
 	}
-	s.setError(s.trie.TryUpdate(append(coinPrefix, symbol[:]...), data))
+
+	s.iavl.Set(append(coinPrefix, symbol[:]...), data)
 }
 
 func (s *StateDB) updateStateCandidates(stateCandidates *stateCandidates) {
@@ -239,8 +228,8 @@ func (s *StateDB) updateStateCandidates(stateCandidates *stateCandidates) {
 	if err != nil {
 		panic(fmt.Errorf("can't encode candidates: %v", err))
 	}
-	err = s.trie.TryUpdate(candidatesKey, data)
-	s.setError(err)
+
+	s.iavl.Set(candidatesKey, data)
 }
 
 func (s *StateDB) updateStateValidators(validators *stateValidators) {
@@ -248,30 +237,31 @@ func (s *StateDB) updateStateValidators(validators *stateValidators) {
 	if err != nil {
 		panic(fmt.Errorf("can't encode validators: %v", err))
 	}
-	err = s.trie.TryUpdate(validatorsKey, data)
-	s.setError(err)
+
+	s.iavl.Set(validatorsKey, data)
 }
 
 // deleteStateObject removes the given object from the state trie.
-func (s *StateDB) deleteStateObject(stateObject *stateObject) {
+func (s *StateDB) deleteStateObject(stateObject *stateAccount) {
 	stateObject.deleted = true
 	addr := stateObject.Address()
-	s.setError(s.trie.TryDelete(append(addressPrefix, addr[:]...)))
+
+	s.iavl.Remove(append(addressPrefix, addr[:]...))
 }
 
 // deleteStateCoin removes the given object from the state trie.
 func (s *StateDB) deleteStateCoin(stateCoin *stateCoin) {
 	symbol := stateCoin.Symbol()
-	s.setError(s.trie.TryDelete(append(coinPrefix, symbol[:]...)))
+	s.iavl.Remove(append(coinPrefix, symbol[:]...))
 }
 
 // deleteStateObject removes the given object from the state trie.
 func (s *StateDB) deleteFrozenFunds(stateFrozenFund *stateFrozenFund) {
 	stateFrozenFund.deleted = true
 	height := make([]byte, 8)
-	binary.BigEndian.PutUint64(height[:], stateFrozenFund.blockHeight)
+	binary.BigEndian.PutUint64(height, uint64(stateFrozenFund.blockHeight))
 	key := append(frozenFundsPrefix, height...)
-	s.setError(s.trie.TryDelete(key))
+	s.iavl.Remove(key)
 }
 
 // Retrieve a state frozen funds by block height. Returns nil if not found.
@@ -282,22 +272,20 @@ func (s *StateDB) getStateFrozenFunds(blockHeight uint64) (stateFrozenFund *stat
 	}
 
 	height := make([]byte, 8)
-	binary.BigEndian.PutUint64(height[:], blockHeight)
+	binary.BigEndian.PutUint64(height, uint64(blockHeight))
 	key := append(frozenFundsPrefix, height...)
 
 	// Load the object from the database.
-	enc, err := s.trie.TryGet(key)
+	_, enc := s.iavl.Get(key)
 	if len(enc) == 0 {
-		s.setError(err)
 		return nil
 	}
 	var data FrozenFunds
 	if err := rlp.DecodeBytes(enc, &data); err != nil {
-		// log.Error("Failed to decode state coin", "symbol", symbol, "err", err)
 		return nil
 	}
 	// Insert into the live set.
-	obj := newFrozenFund(s, blockHeight, data, s.MarkStateFrozenFundsDirty)
+	obj := newFrozenFund(s, uint64(blockHeight), data, s.MarkStateFrozenFundsDirty)
 	s.setStateFrozenFunds(obj)
 	return obj
 }
@@ -310,14 +298,13 @@ func (s *StateDB) getStateCoin(symbol types.CoinSymbol) (stateCoin *stateCoin) {
 	}
 
 	// Load the object from the database.
-	enc, err := s.trie.TryGet(append(coinPrefix, symbol[:]...))
+	_, enc := s.iavl.Get(append(coinPrefix, symbol[:]...))
 	if len(enc) == 0 {
-		s.setError(err)
 		return nil
 	}
 	var data Coin
 	if err := rlp.DecodeBytes(enc, &data); err != nil {
-		// log.Error("Failed to decode state coin", "symbol", symbol, "err", err)
+		log.Error("Failed to decode state coin", "symbol", symbol, "err", err)
 		return nil
 	}
 	// Insert into the live set.
@@ -338,15 +325,13 @@ func (s *StateDB) getStateCandidates() (stateCandidates *stateCandidates) {
 	}
 
 	// Load the object from the database.
-	enc, err := s.trie.TryGet(candidatesKey)
+	_, enc := s.iavl.Get(candidatesKey)
 	if len(enc) == 0 {
-		s.setError(err)
 		return nil
 	}
 	var data Candidates
 	if err := rlp.DecodeBytes(enc, &data); err != nil {
 		panic(err)
-		return nil
 	}
 	// Insert into the live set.
 	obj := newCandidate(s, data, s.MarkStateCandidateDirty)
@@ -366,15 +351,13 @@ func (s *StateDB) getStateValidators() (stateValidators *stateValidators) {
 	}
 
 	// Load the object from the database.
-	enc, err := s.trie.TryGet(validatorsKey)
+	_, enc := s.iavl.Get(validatorsKey)
 	if len(enc) == 0 {
-		s.setError(err)
 		return nil
 	}
 	var data Validators
 	if err := rlp.DecodeBytes(enc, &data); err != nil {
 		panic(err)
-		return nil
 	}
 	// Insert into the live set.
 	obj := newValidator(s, data, s.MarkStateValidatorsDirty)
@@ -382,10 +365,10 @@ func (s *StateDB) getStateValidators() (stateValidators *stateValidators) {
 	return obj
 }
 
-// Retrieve a state object given my the address. Returns nil if not found.
-func (s *StateDB) getStateObject(addr types.Address) (stateObject *stateObject) {
+// Retrieve a state account given my the address. Returns nil if not found.
+func (s *StateDB) getStateAccount(addr types.Address) (stateObject *stateAccount) {
 	// Prefer 'live' objects.
-	if obj := s.stateObjects[addr]; obj != nil {
+	if obj := s.stateAccounts[addr]; obj != nil {
 		if obj.deleted {
 			return nil
 		}
@@ -393,27 +376,26 @@ func (s *StateDB) getStateObject(addr types.Address) (stateObject *stateObject) 
 	}
 
 	// Load the object from the database.
-	enc, err := s.trie.TryGet(append(addressPrefix, addr[:]...))
+	_, enc := s.iavl.Get(append(addressPrefix, addr[:]...))
 	if len(enc) == 0 {
-		s.setError(err)
 		return nil
 	}
 	var data Account
 	if err := rlp.DecodeBytes(enc, &data); err != nil {
-		// log.Error("Failed to decode state object", "addr", addr, "err", err)
+		log.Error("Failed to decode state object", "addr", addr, "err", err)
 		return nil
 	}
 	// Insert into the live set.
-	obj := newObject(s, addr, data, s.MarkStateObjectDirty)
+	obj := newObject(addr, data, s.MarkStateObjectDirty)
 	s.setStateObject(obj)
 	return obj
 }
 
-func (s *StateDB) setStateObject(object *stateObject) {
+func (s *StateDB) setStateObject(object *stateAccount) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	s.stateObjects[object.Address()] = object
+	s.stateAccounts[object.Address()] = object
 }
 
 func (s *StateDB) setStateCoin(coin *stateCoin) {
@@ -437,6 +419,10 @@ func (s *StateDB) setStateCandidates(candidates *stateCandidates) {
 	s.stateCandidates = candidates
 }
 
+func (s *StateDB) SetStateValidators(validators *stateValidators) {
+	s.setStateValidators(validators)
+}
+
 func (s *StateDB) setStateValidators(validators *stateValidators) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -445,10 +431,10 @@ func (s *StateDB) setStateValidators(validators *stateValidators) {
 }
 
 // Retrieve a state object or create a new state object if nil
-func (s *StateDB) GetOrNewStateObject(addr types.Address) *stateObject {
-	stateObject := s.getStateObject(addr)
+func (s *StateDB) GetOrNewStateObject(addr types.Address) *stateAccount {
+	stateObject := s.getStateAccount(addr)
 	if stateObject == nil || stateObject.deleted {
-		stateObject, _ = s.createObject(addr)
+		stateObject, _ = s.createAccount(addr)
 	}
 	return stateObject
 }
@@ -471,7 +457,7 @@ func (s *StateDB) MarkStateObjectDirty(addr types.Address) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	s.stateObjectsDirty[addr] = struct{}{}
+	s.stateAccountsDirty[addr] = struct{}{}
 }
 
 func (s *StateDB) MarkStateCandidateDirty() {
@@ -496,14 +482,21 @@ func (s *StateDB) MarkStateFrozenFundsDirty(blockHeight uint64) {
 	s.stateFrozenFundsDirty[blockHeight] = struct{}{}
 }
 
-// createObject creates a new state object. If there is an existing account with
-// the given address, it is overwritten and returned as the second return value.
-func (s *StateDB) createObject(addr types.Address) (newobj, prev *stateObject) {
-	prev = s.getStateObject(addr)
-	newobj = newObject(s, addr, Account{}, s.MarkStateObjectDirty)
+func (s *StateDB) createAccount(addr types.Address) (newobj, prev *stateAccount) {
+	prev = s.getStateAccount(addr)
+	newobj = newObject(addr, Account{}, s.MarkStateObjectDirty)
 	newobj.setNonce(0) // sets the object to dirty
 	s.setStateObject(newobj)
 	return newobj, prev
+}
+
+func (s *StateDB) createMultisigAccount(addr types.Address, multisig Multisig) (newobj *stateAccount) {
+	newobj = newObject(addr, Account{
+		MultisigData: multisig,
+	}, s.MarkStateObjectDirty)
+	newobj.setNonce(0) // sets the object to dirty
+	s.setStateObject(newobj)
+	return newobj
 }
 
 func (s *StateDB) createFrozenFunds(blockHeight uint64) (newobj, prev *stateFrozenFund) {
@@ -519,8 +512,7 @@ func (s *StateDB) CreateCoin(
 	name string,
 	volume *big.Int,
 	crr uint,
-	reserve *big.Int,
-	creator types.Address) *stateCoin {
+	reserve *big.Int) *stateCoin {
 
 	newC := newCoin(s, symbol, Coin{
 		Name:           name,
@@ -528,14 +520,13 @@ func (s *StateDB) CreateCoin(
 		Volume:         volume,
 		Crr:            crr,
 		ReserveBalance: reserve,
-		Creator:        creator,
 	}, s.MarkStateCoinDirty)
 	s.setStateCoin(newC)
 	return newC
 }
 
 func (s *StateDB) CreateValidator(
-	address types.Address,
+	rewardAddress types.Address,
 	pubkey types.Pubkey,
 	commission uint,
 	currentBlock uint,
@@ -549,12 +540,12 @@ func (s *StateDB) CreateValidator(
 	}
 
 	vals.data = append(vals.data, Validator{
-		CandidateAddress: address,
-		TotalBipStake:    initialStake,
-		PubKey:           pubkey,
-		Commission:       commission,
-		AccumReward:      big.NewInt(0),
-		AbsentTimes:      0,
+		RewardAddress: rewardAddress,
+		TotalBipStake: initialStake,
+		PubKey:        pubkey,
+		Commission:    commission,
+		AccumReward:   big.NewInt(0),
+		AbsentTimes:   NewBitArray(ValidatorMaxAbsentWindow),
 	})
 
 	s.MarkStateValidatorsDirty()
@@ -563,7 +554,8 @@ func (s *StateDB) CreateValidator(
 }
 
 func (s *StateDB) CreateCandidate(
-	address types.Address,
+	rewardAddress types.Address,
+	ownerAddress types.Address,
 	pubkey types.Pubkey,
 	commission uint,
 	currentBlock uint,
@@ -576,20 +568,25 @@ func (s *StateDB) CreateCandidate(
 		candidates = newCandidate(s, Candidates{}, s.MarkStateCandidateDirty)
 	}
 
-	candidates.data = append(candidates.data, Candidate{
-		CandidateAddress: address,
-		PubKey:           pubkey,
-		Commission:       commission,
+	candidate := Candidate{
+		RewardAddress: rewardAddress,
+		OwnerAddress:  ownerAddress,
+		PubKey:        pubkey,
+		Commission:    commission,
 		Stakes: []Stake{
 			{
-				Owner: address,
+				Owner: rewardAddress,
 				Coin:  coin,
 				Value: initialStake,
 			},
 		},
 		CreatedAtBlock: currentBlock,
 		Status:         CandidateStatusOffline,
-	})
+	}
+
+	candidate.Stakes[0].BipValue = candidate.Stakes[0].CalcBipValue(s)
+
+	candidates.data = append(candidates.data, candidate)
 
 	s.MarkStateCandidateDirty()
 	s.setStateCandidates(candidates)
@@ -597,56 +594,45 @@ func (s *StateDB) CreateCandidate(
 }
 
 // Commit writes the state to the underlying in-memory trie database.
-func (s *StateDB) Commit(deleteEmptyObjects bool) (root types.Hash, err error) {
-
+func (s *StateDB) Commit() (root []byte, version int64, err error) {
 	// Commit objects to the trie.
-	for addr, stateObject := range s.stateObjects {
-		_, isDirty := s.stateObjectsDirty[addr]
-		switch {
-		case stateObject.suicided || (isDirty && deleteEmptyObjects && stateObject.empty()):
-			// If the object has been removed, don't bother syncing it
-			// and just mark it for deletion in the trie.
+	for _, addr := range getOrderedObjectsKeys(s.stateAccountsDirty) {
+		stateObject := s.stateAccounts[addr]
+		if stateObject.empty() {
 			s.deleteStateObject(stateObject)
-		case isDirty:
-			// Write any storage changes in the state object to its storage trie.
-			if err := stateObject.CommitTrie(s.db); err != nil {
-				return types.Hash{}, err
-			}
-			// Update the object in the main account trie.
+		} else {
 			s.updateStateObject(stateObject)
 		}
-		delete(s.stateObjectsDirty, addr)
+		delete(s.stateAccountsDirty, addr)
 	}
 
 	// Commit coins to the trie.
-	for symbol, stateCoin := range s.stateCoins {
-		_, isDirty := s.stateCoinsDirty[symbol]
-		switch {
-		case isDirty:
-			{
-				if stateCoin.data.Volume.Cmp(types.Big0) == 0 {
-					s.deleteStateCoin(stateCoin)
-				} else {
-					s.updateStateCoin(stateCoin)
-				}
-			}
+	for _, symbol := range getOrderedCoinsKeys(s.stateCoinsDirty) {
+		stateCoin := s.stateCoins[symbol]
+
+		if stateCoin.data.Volume.Cmp(types.Big0) == 0 {
+			s.deleteStateCoin(stateCoin)
+		} else {
+			s.updateStateCoin(stateCoin)
 		}
+
 		delete(s.stateCoinsDirty, symbol)
 	}
 
 	// Commit frozen funds to the trie.
-	for block, frozenFund := range s.stateFrozenFunds {
-		_, isDirty := s.stateFrozenFundsDirty[block]
-		switch {
-		case frozenFund.deleted:
+	for _, block := range getOrderedFrozenFundsKeys(s.stateFrozenFundsDirty) {
+		frozenFund := s.stateFrozenFunds[block]
+		if frozenFund.deleted {
 			s.deleteFrozenFunds(frozenFund)
-		case isDirty:
+		} else {
 			s.updateStateFrozenFund(frozenFund)
 		}
+
 		delete(s.stateFrozenFundsDirty, block)
 	}
 
 	if s.stateCandidatesDirty {
+		s.clearStateCandidates()
 		s.updateStateCandidates(s.stateCandidates)
 		s.stateCandidatesDirty = false
 	}
@@ -656,19 +642,58 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (root types.Hash, err error) {
 		s.stateValidatorsDirty = false
 	}
 
-	// Write trie changes.
-	root, err = s.trie.Commit(func(leaf []byte, parent types.Hash) error {
-		var account Account
-		if err := rlp.DecodeBytes(leaf, &account); err != nil {
-			return nil
+	hash, version, err := s.iavl.SaveVersion()
+
+	if !cfg.KeepStateHistory && version > 1 {
+		err = s.iavl.DeleteVersion(version - 1)
+
+		if err != nil {
+			panic(err)
 		}
-		if account.Root != emptyState {
-			s.db.TrieDB().Reference(account.Root, parent)
-		}
-		return nil
+	}
+
+	s.Clear()
+
+	return hash, version, err
+}
+
+func getOrderedObjectsKeys(objects map[types.Address]struct{}) []types.Address {
+	keys := make([]types.Address, 0, len(objects))
+	for k := range objects {
+		keys = append(keys, k)
+	}
+
+	sort.Slice(keys, func(i, j int) bool {
+		return bytes.Compare(keys[i].Bytes(), keys[j].Bytes()) == 1
 	})
-	// log.Debug("Trie cache stats after commit", "misses", trie.CacheMisses(), "unloads", trie.CacheUnloads())
-	return root, err
+
+	return keys
+}
+
+func getOrderedCoinsKeys(objects map[types.CoinSymbol]struct{}) []types.CoinSymbol {
+	keys := make([]types.CoinSymbol, 0, len(objects))
+	for k := range objects {
+		keys = append(keys, k)
+	}
+
+	sort.Slice(keys, func(i, j int) bool {
+		return bytes.Compare(keys[i].Bytes(), keys[j].Bytes()) == 1
+	})
+
+	return keys
+}
+
+func getOrderedFrozenFundsKeys(objects map[uint64]struct{}) []uint64 {
+	keys := make([]uint64, 0, len(objects))
+	for k := range objects {
+		keys = append(keys, k)
+	}
+
+	sort.Slice(keys, func(i, j int) bool {
+		return keys[i] > keys[j]
+	})
+
+	return keys
 }
 
 func (s *StateDB) CoinExists(symbol types.CoinSymbol) bool {
@@ -720,6 +745,10 @@ func (s *StateDB) GetStateCoin(symbol types.CoinSymbol) *stateCoin {
 }
 
 func (s *StateDB) AddCoinVolume(symbol types.CoinSymbol, value *big.Int) {
+	if symbol.IsBaseCoin() {
+		return
+	}
+
 	stateCoin := s.GetStateCoin(symbol)
 	if stateCoin != nil {
 		stateCoin.AddVolume(value)
@@ -727,6 +756,10 @@ func (s *StateDB) AddCoinVolume(symbol types.CoinSymbol, value *big.Int) {
 }
 
 func (s *StateDB) SubCoinVolume(symbol types.CoinSymbol, value *big.Int) {
+	if symbol.IsBaseCoin() {
+		return
+	}
+
 	stateCoin := s.GetStateCoin(symbol)
 	if stateCoin != nil {
 		stateCoin.SubVolume(value)
@@ -734,6 +767,10 @@ func (s *StateDB) SubCoinVolume(symbol types.CoinSymbol, value *big.Int) {
 }
 
 func (s *StateDB) AddCoinReserve(symbol types.CoinSymbol, value *big.Int) {
+	if symbol.IsBaseCoin() {
+		return
+	}
+
 	stateCoin := s.GetStateCoin(symbol)
 	if stateCoin != nil {
 		stateCoin.AddReserve(value)
@@ -741,6 +778,10 @@ func (s *StateDB) AddCoinReserve(symbol types.CoinSymbol, value *big.Int) {
 }
 
 func (s *StateDB) SubCoinReserve(symbol types.CoinSymbol, value *big.Int) {
+	if symbol.IsBaseCoin() {
+		return
+	}
+
 	stateCoin := s.GetStateCoin(symbol)
 	if stateCoin != nil {
 		stateCoin.SubReserve(value)
@@ -793,7 +834,9 @@ func (s *StateDB) AddAccumReward(pubkey types.Pubkey, reward *big.Int) {
 	}
 }
 
-func (s *StateDB) PayRewards() {
+func (s *StateDB) PayRewards(height int64) {
+	edb := eventsdb.GetCurrent()
+
 	validators := s.getStateValidators()
 
 	for i := range validators.data {
@@ -808,12 +851,24 @@ func (s *StateDB) PayRewards() {
 			DAOReward.Mul(DAOReward, big.NewInt(int64(dao.Commission)))
 			DAOReward.Div(DAOReward, big.NewInt(100))
 			s.AddBalance(dao.Address, types.GetBaseCoin(), DAOReward)
+			edb.AddEvent(height, eventsdb.RewardEvent{
+				Role:            eventsdb.RoleDAO,
+				Address:         dao.Address,
+				Amount:          DAOReward.Bytes(),
+				ValidatorPubKey: validator.PubKey,
+			})
 
 			// pay commission to Developers
 			DevelopersReward := big.NewInt(0).Set(totalReward)
 			DevelopersReward.Mul(DevelopersReward, big.NewInt(int64(developers.Commission)))
 			DevelopersReward.Div(DevelopersReward, big.NewInt(100))
 			s.AddBalance(developers.Address, types.GetBaseCoin(), DevelopersReward)
+			edb.AddEvent(height, eventsdb.RewardEvent{
+				Role:            eventsdb.RoleDevelopers,
+				Address:         developers.Address,
+				Amount:          DevelopersReward.Bytes(),
+				ValidatorPubKey: validator.PubKey,
+			})
 
 			totalReward.Sub(totalReward, DevelopersReward)
 			totalReward.Sub(totalReward, DAOReward)
@@ -823,7 +878,13 @@ func (s *StateDB) PayRewards() {
 			validatorReward.Mul(validatorReward, big.NewInt(int64(validator.Commission)))
 			validatorReward.Div(validatorReward, big.NewInt(100))
 			totalReward.Sub(totalReward, validatorReward)
-			s.AddBalance(validator.CandidateAddress, types.GetBaseCoin(), validatorReward)
+			s.AddBalance(validator.RewardAddress, types.GetBaseCoin(), validatorReward)
+			edb.AddEvent(height, eventsdb.RewardEvent{
+				Role:            eventsdb.RoleValidator,
+				Address:         validator.RewardAddress,
+				Amount:          validatorReward.Bytes(),
+				ValidatorPubKey: validator.PubKey,
+			})
 
 			candidate := s.GetStateCandidate(validator.PubKey)
 
@@ -831,11 +892,27 @@ func (s *StateDB) PayRewards() {
 			for j := range candidate.Stakes {
 				stake := candidate.Stakes[j]
 
+				if stake.BipValue == nil {
+					continue
+				}
+
 				reward := big.NewInt(0).Set(totalReward)
-				reward.Mul(reward, stake.BipValue(s))
+				reward.Mul(reward, stake.BipValue)
+
 				reward.Div(reward, validator.TotalBipStake)
 
+				if reward.Cmp(types.Big0) < 1 {
+					continue
+				}
+
 				s.AddBalance(stake.Owner, types.GetBaseCoin(), reward)
+
+				edb.AddEvent(height, eventsdb.RewardEvent{
+					Role:            eventsdb.RoleDelegator,
+					Address:         stake.Owner,
+					Amount:          reward.Bytes(),
+					ValidatorPubKey: candidate.PubKey,
+				})
 			}
 
 			validator.AccumReward.SetInt64(0)
@@ -856,8 +933,9 @@ func (s *StateDB) RecalculateTotalStakeValues() {
 		totalBipStake := big.NewInt(0)
 
 		for j := range candidate.Stakes {
-			stake := candidate.Stakes[j]
-			totalBipStake.Add(totalBipStake, stake.BipValue(s))
+			stake := &candidate.Stakes[j]
+			stake.BipValue = stake.CalcBipValue(s)
+			totalBipStake.Add(totalBipStake, stake.BipValue)
 		}
 
 		candidate.TotalBipStake = totalBipStake
@@ -914,7 +992,6 @@ func (s *StateDB) SubStake(sender types.Address, pubkey []byte, coin types.CoinS
 	for i := range stateCandidates.data {
 		candidate := &stateCandidates.data[i]
 		if candidate.PubKey.Compare(pubkey) == 0 {
-			// todo: remove if stake == 0
 			currentStakeValue := candidate.GetStakeOfAddress(sender, coin).Value
 			currentStakeValue.Sub(currentStakeValue, value)
 		}
@@ -926,7 +1003,7 @@ func (s *StateDB) SubStake(sender types.Address, pubkey []byte, coin types.CoinS
 
 func (s *StateDB) IsCheckUsed(check *check.Check) bool {
 	checkHash := check.Hash().Bytes()
-	data, _ := s.trie.TryGet(append(usedCheckPrefix, checkHash...))
+	_, data := s.iavl.Get(append(usedCheckPrefix, checkHash...))
 
 	return len(data) != 0
 }
@@ -935,7 +1012,32 @@ func (s *StateDB) UseCheck(check *check.Check) {
 	checkHash := check.Hash().Bytes()
 	trieHash := append(usedCheckPrefix, checkHash...)
 
-	s.setError(s.trie.TryUpdate(trieHash, []byte{0x1}))
+	s.iavl.Set(trieHash, []byte{0x1})
+}
+
+func (s *StateDB) EditCandidate(pubkey []byte, newRewardAddress types.Address, newOwnerAddress types.Address) {
+	stateCandidates := s.getStateCandidates()
+	for i := range stateCandidates.data {
+		candidate := &stateCandidates.data[i]
+		if bytes.Equal(candidate.PubKey, pubkey) {
+			candidate.RewardAddress = newRewardAddress
+			candidate.OwnerAddress = newOwnerAddress
+			break
+		}
+	}
+	s.setStateCandidates(stateCandidates)
+	s.MarkStateCandidateDirty()
+
+	vals := s.getStateValidators()
+	for i := range vals.data {
+		validator := &vals.data[i]
+		if bytes.Equal(validator.PubKey, pubkey) {
+			validator.RewardAddress = newRewardAddress
+			break
+		}
+	}
+	s.setStateValidators(vals)
+	s.MarkStateValidatorsDirty()
 }
 
 func (s *StateDB) SetCandidateOnline(pubkey []byte) {
@@ -964,9 +1066,37 @@ func (s *StateDB) SetCandidateOffline(pubkey []byte) {
 
 	s.setStateCandidates(stateCandidates)
 	s.MarkStateCandidateDirty()
+
+	vals := s.getStateValidators()
+
+	for i := range vals.data {
+		validator := &vals.data[i]
+		if bytes.Equal(validator.PubKey, pubkey) {
+			validator.toDrop = true
+		}
+	}
+
+	s.setStateValidators(vals)
+	s.MarkStateValidatorsDirty()
 }
 
-func (s *StateDB) SetValidatorAbsent(address [20]byte) {
+func (s *StateDB) SetValidatorPresent(height int64, address [20]byte) {
+	validators := s.getStateValidators()
+
+	for i := range validators.data {
+		validator := &validators.data[i]
+		if validator.GetAddress() == address {
+			validator.AbsentTimes.SetIndex(int(height)%ValidatorMaxAbsentWindow, false)
+		}
+	}
+
+	s.setStateValidators(validators)
+	s.MarkStateValidatorsDirty()
+}
+
+func (s *StateDB) SetValidatorAbsent(height int64, address [20]byte) {
+	edb := eventsdb.GetCurrent()
+
 	validators := s.getStateValidators()
 
 	for i := range validators.data {
@@ -987,11 +1117,12 @@ func (s *StateDB) SetValidatorAbsent(address [20]byte) {
 				return
 			}
 
-			validator.AbsentTimes = validator.AbsentTimes + 1
+			validator.AbsentTimes.SetIndex(int(height)%ValidatorMaxAbsentWindow, true)
 
-			if validator.AbsentTimes > ValidatorMaxAbsentTimes {
+			if validator.CountAbsentTimes() > ValidatorMaxAbsentTimes {
 				candidate.Status = CandidateStatusOffline
-				validator.AbsentTimes = 0
+				validator.AbsentTimes = NewBitArray(ValidatorMaxAbsentWindow)
+				validator.toDrop = true
 
 				totalStake := big.NewInt(0)
 
@@ -999,6 +1130,24 @@ func (s *StateDB) SetValidatorAbsent(address [20]byte) {
 					newValue := big.NewInt(0).Set(stake.Value)
 					newValue.Mul(newValue, big.NewInt(99))
 					newValue.Div(newValue, big.NewInt(100))
+
+					slashed := big.NewInt(0).Set(stake.Value)
+					slashed.Sub(slashed, newValue)
+
+					if !stake.Coin.IsBaseCoin() {
+						coin := s.GetStateCoin(stake.Coin).Data()
+						ret := formula.CalculateSaleReturn(coin.Volume, coin.ReserveBalance, coin.Crr, slashed)
+
+						s.SubCoinVolume(coin.Symbol, slashed)
+						s.SubCoinReserve(coin.Symbol, ret)
+					}
+
+					edb.AddEvent(height, eventsdb.SlashEvent{
+						Address:         stake.Owner,
+						Amount:          slashed.Bytes(),
+						Coin:            stake.Coin,
+						ValidatorPubKey: candidate.PubKey,
+					})
 
 					candidate.Stakes[j] = Stake{
 						Owner: stake.Owner,
@@ -1008,7 +1157,6 @@ func (s *StateDB) SetValidatorAbsent(address [20]byte) {
 					totalStake.Add(totalStake, newValue)
 				}
 
-				// TODO: recalc total stake in bips
 				validator.TotalBipStake = totalStake
 			}
 
@@ -1021,15 +1169,15 @@ func (s *StateDB) SetValidatorAbsent(address [20]byte) {
 	s.MarkStateValidatorsDirty()
 }
 
-func (s *StateDB) PunishByzantineValidator(address [20]byte) {
+func (s *StateDB) PunishByzantineValidator(currentBlock int64, address [20]byte) {
+
+	edb := eventsdb.GetCurrent()
 
 	validators := s.getStateValidators()
 
 	for i := range validators.data {
 		validator := &validators.data[i]
 		if validator.GetAddress() == address {
-			validator.AbsentTimes = validator.AbsentTimes + 1
-
 			candidates := s.getStateCandidates()
 
 			var candidate *Candidate
@@ -1038,6 +1186,33 @@ func (s *StateDB) PunishByzantineValidator(address [20]byte) {
 				if candidates.data[i].GetAddress() == address {
 					candidate = &candidates.data[i]
 				}
+			}
+
+			for _, stake := range candidate.Stakes {
+				newValue := big.NewInt(0).Set(stake.Value)
+				newValue.Mul(newValue, big.NewInt(95))
+				newValue.Div(newValue, big.NewInt(100))
+
+				slashed := big.NewInt(0).Set(stake.Value)
+				slashed.Sub(slashed, newValue)
+
+				if !stake.Coin.IsBaseCoin() {
+					coin := s.GetStateCoin(stake.Coin).Data()
+					ret := formula.CalculateSaleReturn(coin.Volume, coin.ReserveBalance, coin.Crr, slashed)
+
+					s.SubCoinVolume(coin.Symbol, slashed)
+					s.SubCoinReserve(coin.Symbol, ret)
+				}
+
+				edb.AddEvent(int64(currentBlock), eventsdb.SlashEvent{
+					Address:         stake.Owner,
+					Amount:          slashed.Bytes(),
+					Coin:            stake.Coin,
+					ValidatorPubKey: candidate.PubKey,
+				})
+
+				s.GetOrNewStateFrozenFunds(uint64(currentBlock+UnbondPeriod)).AddFund(stake.Owner, candidate.PubKey,
+					stake.Coin, newValue)
 			}
 
 			candidate.Stakes = []Stake{}
@@ -1054,7 +1229,7 @@ func (s *StateDB) PunishByzantineValidator(address [20]byte) {
 	s.MarkStateValidatorsDirty()
 }
 
-func (s *StateDB) RemoveFrozenFundsWithAddress(fromBlock uint64, toBlock uint64, address [20]byte) {
+func (s *StateDB) PunishFrozenFundsWithAddress(fromBlock uint64, toBlock uint64, address [20]byte) {
 	for i := fromBlock; i <= toBlock; i++ {
 		frozenFund := s.getStateFrozenFunds(i)
 
@@ -1062,22 +1237,8 @@ func (s *StateDB) RemoveFrozenFundsWithAddress(fromBlock uint64, toBlock uint64,
 			continue
 		}
 
-		frozenFund.RemoveFund(address)
+		frozenFund.PunishFund(s, address)
 	}
-}
-
-func (s *StateDB) SetValidatorPresent(address [20]byte) {
-	validators := s.getStateValidators()
-
-	for i := range validators.data {
-		validator := &validators.data[i]
-		if validator.GetAddress() == address {
-			validator.AbsentTimes = 0
-		}
-	}
-
-	s.setStateValidators(validators)
-	s.MarkStateValidatorsDirty()
 }
 
 func (s *StateDB) SetNewValidators(candidates []Candidate) {
@@ -1087,7 +1248,7 @@ func (s *StateDB) SetNewValidators(candidates []Candidate) {
 
 	for _, candidate := range candidates {
 		accumReward := big.NewInt(0)
-		absentTimes := uint(0)
+		absentTimes := NewBitArray(ValidatorMaxAbsentWindow)
 
 		for _, oldVal := range oldVals.data {
 			if oldVal.GetAddress() == candidate.GetAddress() {
@@ -1097,16 +1258,223 @@ func (s *StateDB) SetNewValidators(candidates []Candidate) {
 		}
 
 		newVals = append(newVals, Validator{
-			CandidateAddress: candidate.CandidateAddress,
-			TotalBipStake:    candidate.TotalBipStake,
-			PubKey:           candidate.PubKey,
-			Commission:       candidate.Commission,
-			AccumReward:      accumReward,
-			AbsentTimes:      absentTimes,
+			RewardAddress: candidate.RewardAddress,
+			TotalBipStake: candidate.TotalBipStake,
+			PubKey:        candidate.PubKey,
+			Commission:    candidate.Commission,
+			AccumReward:   accumReward,
+			AbsentTimes:   absentTimes,
 		})
 	}
 
 	oldVals.data = newVals
 	s.setStateValidators(oldVals)
 	s.MarkStateValidatorsDirty()
+}
+
+func (s *StateDB) RemoveCurrentValidator(pubkey types.Pubkey) {
+	oldVals := s.getStateValidators()
+
+	var newVals Validators
+
+	for _, val := range oldVals.data {
+		if val.PubKey.Compare(pubkey) == 0 {
+			continue
+		}
+
+		newVals = append(newVals, val)
+	}
+
+	oldVals.data = newVals
+	s.setStateValidators(oldVals)
+	s.MarkStateValidatorsDirty()
+}
+
+// remove 0-valued stakes
+func (s *StateDB) clearStateCandidates() {
+	stateCandidates := s.getStateCandidates()
+
+	for i := range stateCandidates.data {
+		candidate := &stateCandidates.data[i]
+
+		for j, stake := range candidate.Stakes {
+			if stake.Value.Cmp(types.Big0) == 0 {
+				candidate.Stakes = append(candidate.Stakes[:j], candidate.Stakes[j+1:]...)
+			}
+		}
+	}
+
+	s.setStateCandidates(stateCandidates)
+	s.MarkStateCandidateDirty()
+}
+
+func (s *StateDB) CreateMultisig(weights []uint, addresses []types.Address, threshold uint) types.Address {
+	msig := Multisig{
+		Weights:   weights,
+		Threshold: threshold,
+		Addresses: addresses,
+	}
+
+	msigAddress := msig.Address()
+	s.createMultisigAccount(msigAddress, msig).touch()
+
+	return msigAddress
+}
+
+func (s *StateDB) AccountExists(address types.Address) bool {
+	return s.getStateAccount(address) != nil
+}
+
+func (s *StateDB) MultisigAccountExists(address types.Address) bool {
+	acc := s.getStateAccount(address)
+
+	return acc != nil && acc.IsMultisig()
+}
+
+func (s *StateDB) IsNewCandidateStakeSufficient(coinSymbol types.CoinSymbol, stake *big.Int) bool {
+	bipValue := (&Stake{
+		Coin:  coinSymbol,
+		Value: stake,
+	}).CalcBipValue(s)
+
+	candidates := s.getStateCandidates()
+
+	for _, candidate := range candidates.data {
+		if candidate.TotalBipStake.Cmp(bipValue) == -1 {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (s *StateDB) CandidatesCount() int {
+	candidates := s.getStateCandidates()
+
+	if candidates == nil {
+		return 0
+	}
+
+	return len(candidates.data)
+}
+
+func (s *StateDB) ClearCandidates(height int64) {
+	maxCandidates := validators.GetCandidatesCountForBlock(height)
+
+	candidates := s.getStateCandidates()
+
+	// Check for candidates count overflow and unbond smallest ones
+	if len(candidates.data) > maxCandidates {
+		sort.Slice(candidates.data, func(i, j int) bool {
+			return candidates.data[i].TotalBipStake.Cmp(candidates.data[j].TotalBipStake) == 1
+		})
+
+		dropped := candidates.data[maxCandidates:]
+		candidates.data = candidates.data[:maxCandidates]
+
+		unbondAtBlock := uint64(height + UnbondPeriod)
+		for _, candidate := range dropped {
+			for _, stake := range candidate.Stakes {
+				s.GetOrNewStateFrozenFunds(unbondAtBlock).AddFund(stake.Owner, candidate.PubKey, stake.Coin, stake.Value)
+			}
+		}
+	}
+
+	s.setStateCandidates(candidates)
+	s.MarkStateCandidateDirty()
+}
+
+func (s *StateDB) ClearStakes(height int64) {
+	candidates := s.getStateCandidates()
+
+	for i := range candidates.data {
+		candidate := &candidates.data[i]
+		// Check for delegators count overflow and unbond smallest ones
+		if len(candidate.Stakes) > MaxDelegatorsPerCandidate {
+			sort.Slice(candidate.Stakes, func(t, d int) bool {
+				return candidates.data[i].Stakes[t].BipValue.Cmp(candidates.data[i].Stakes[d].BipValue) == 1
+			})
+
+			dropped := candidates.data[i].Stakes[MaxDelegatorsPerCandidate:]
+			candidates.data[i].Stakes = candidates.data[i].Stakes[:MaxDelegatorsPerCandidate]
+
+			for _, stake := range dropped {
+				eventsdb.GetCurrent().AddEvent(height, eventsdb.UnbondEvent{
+					Address:         stake.Owner,
+					Amount:          stake.Value.Bytes(),
+					Coin:            stake.Coin,
+					ValidatorPubKey: candidate.PubKey,
+				})
+				s.AddBalance(stake.Owner, stake.Coin, stake.Value)
+			}
+		}
+	}
+
+	s.setStateCandidates(candidates)
+	s.MarkStateCandidateDirty()
+}
+
+func (s *StateDB) IsDelegatorStakeSufficient(sender types.Address, pubKey []byte, coinSymbol types.CoinSymbol,
+	value *big.Int) bool {
+	if s.StakeExists(sender, pubKey, coinSymbol) {
+		return true
+	}
+
+	bipValue := (&Stake{
+		Coin:  coinSymbol,
+		Value: value,
+	}).CalcBipValue(s)
+
+	candidates := s.getStateCandidates()
+
+	for _, candidate := range candidates.data {
+		if bytes.Equal(candidate.PubKey, pubKey) {
+			for _, stake := range candidate.Stakes[:MaxDelegatorsPerCandidate] {
+				if stake.BipValue.Cmp(bipValue) == -1 {
+					return true
+				}
+			}
+
+			return false
+		}
+	}
+
+	return false
+}
+
+func (s *StateDB) StakeExists(owner types.Address, pubKey []byte, coinSymbol types.CoinSymbol) bool {
+	candidates := s.getStateCandidates().data
+
+	for _, c := range candidates {
+		if !bytes.Equal(pubKey, c.PubKey) {
+			continue
+		}
+
+		for _, s := range c.Stakes {
+			if s.Owner == owner && s.Coin == coinSymbol {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+func (s *StateDB) GetCurrentMaxGas() uint64 {
+	_, maxGasBytes := s.iavl.Get(maxGasKey)
+
+	return binary.BigEndian.Uint64(maxGasBytes)
+}
+
+func (s *StateDB) SetMaxGas(maxGas uint64) {
+	bs := make([]byte, 8)
+	binary.BigEndian.PutUint64(bs, maxGas)
+
+	s.iavl.Set(maxGasKey, bs)
+}
+
+func (s *StateDB) GetMaxGas() uint64 {
+	_, b := s.iavl.Get(maxGasKey)
+
+	return binary.BigEndian.Uint64(b)
 }

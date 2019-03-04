@@ -1,6 +1,9 @@
 GOTOOLS = \
-	github.com/golang/dep/cmd/dep \
-	gopkg.in/alecthomas/gometalinter.v2
+	github.com/mitchellh/gox \
+    github.com/golang/dep/cmd/dep \
+    github.com/alecthomas/gometalinter \
+    github.com/gogo/protobuf/protoc-gen-gogo \
+	github.com/gobuffalo/packr/packr
 PACKAGES=$(shell go list ./... | grep -v '/vendor/')
 BUILD_TAGS?=minter
 BUILD_FLAGS=-ldflags "-s -w -X minter/version.GitCommit=`git rev-parse --short=8 HEAD`"
@@ -29,8 +32,7 @@ check_tools:
 
 get_tools:
 	@echo "--> Installing tools"
-	go get -u -v $(GOTOOLS)
-	@gometalinter.v2 --install
+	./scripts/get_tools.sh
 
 update_tools:
 	@echo "--> Updating tools"
@@ -106,4 +108,4 @@ build-linux:
 	GOOS=linux GOARCH=amd64 $(MAKE) build
 
 build-compress:
-	upx --brute -9 build/minter
+	upx build/minter

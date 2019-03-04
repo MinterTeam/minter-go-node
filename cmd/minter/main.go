@@ -9,15 +9,21 @@ import (
 	"github.com/MinterTeam/minter-go-node/genesis"
 	"github.com/MinterTeam/minter-go-node/gui"
 	"github.com/MinterTeam/minter-go-node/log"
+	"github.com/tendermint/tendermint/abci/types"
+	bc "github.com/tendermint/tendermint/blockchain"
+	tmCfg "github.com/tendermint/tendermint/config"
 	"github.com/tendermint/tendermint/libs/common"
 	tmNode "github.com/tendermint/tendermint/node"
+	"github.com/tendermint/tendermint/p2p"
 	"github.com/tendermint/tendermint/privval"
 	"github.com/tendermint/tendermint/proxy"
+	rpc "github.com/tendermint/tendermint/rpc/client"
 	"os"
 )
 
-func main() {
+var cfg = config.GetConfig()
 
+func main() {
 	err := common.EnsureDir(utils.GetMinterHome()+"/config", 0777)
 
 	if err != nil {
@@ -25,36 +31,67 @@ func main() {
 		os.Exit(1)
 	}
 
-	if *utils.ResetPrivateValidator {
-		resetFilePV(config.GetConfig().PrivValidatorFile())
-		os.Exit(0)
+	app := minter.NewMinterBlockchain()
+
+	tmCfg := config.GetTmConfig()
+
+	// update BlocksTimeDelta
+	// TODO: refactor
+	blockStoreDB, err := tmNode.DefaultDBProvider(&tmNode.DBContext{ID: "blockstore", Config: tmCfg})
+	if err != nil {
+		panic(err)
+	}
+	blockStore := bc.NewBlockStore(blockStoreDB)
+	height := blockStore.Height()
+	count := int64(3)
+	if _, err := app.GetBlocksTimeDelta(height, count); height >= 20 && err != nil {
+		blockA := blockStore.LoadBlockMeta(height - count - 1)
+		blockB := blockStore.LoadBlockMeta(height - 1)
+
+		delta := int(blockB.Header.Time.Sub(blockA.Header.Time).Seconds())
+		app.SetBlocksTimeDelta(height, delta)
+	}
+	blockStoreDB.Close()
+
+	// start TM node
+	node := startTendermintNode(app, tmCfg)
+
+	client := rpc.NewLocal(node)
+	status, _ := client.Status()
+	if status.NodeInfo.Network != genesis.Network {
+		log.Error("Different networks")
+		os.Exit(1)
 	}
 
-	app := minter.NewMinterBlockchain()
-	node := startTendermintNode(app)
+	app.SetTmNode(node)
 
-	app.RunRPC(node)
-
-	if !*utils.DisableApi {
-		go api.RunApi(app, node)
-		go gui.Run(":3000")
+	if !cfg.ValidatorMode {
+		go api.RunAPI(app, client)
+		go gui.Run(cfg.GUIListenAddress)
 	}
 
 	// Wait forever
 	common.TrapSignal(func() {
 		// Cleanup
-		node.Stop()
+		err := node.Stop()
 		app.Stop()
+		if err != nil {
+			panic(err)
+		}
 	})
 }
 
-func startTendermintNode(app *minter.Blockchain) *tmNode.Node {
+func startTendermintNode(app types.Application, cfg *tmCfg.Config) *tmNode.Node {
+	nodeKey, err := p2p.LoadOrGenNodeKey(cfg.NodeKeyFile())
 
-	cfg := config.GetConfig()
+	if err != nil {
+		panic(err)
+	}
 
 	node, err := tmNode.NewNode(
 		cfg,
-		privval.LoadOrGenFilePV(cfg.PrivValidatorFile()),
+		privval.LoadOrGenFilePV(cfg.PrivValidatorKeyFile(), cfg.PrivValidatorStateFile()),
+		nodeKey,
 		proxy.NewLocalClientCreator(app),
 		genesis.GetTestnetGenesis,
 		tmNode.DefaultDBProvider,
@@ -63,26 +100,16 @@ func startTendermintNode(app *minter.Blockchain) *tmNode.Node {
 	)
 
 	if err != nil {
-		fmt.Errorf("Failed to create a node: %v", err)
+		log.Error(fmt.Sprintf("Failed to create a node: %v", err))
+		os.Exit(1)
 	}
 
 	if err = node.Start(); err != nil {
-		fmt.Errorf("Failed to start node: %v", err)
+		log.Error(fmt.Sprintf("Failed to start node: %v", err))
+		os.Exit(1)
 	}
 
 	log.Info("Started node", "nodeInfo", node.Switch().NodeInfo())
 
 	return node
-}
-
-func resetFilePV(privValFile string) {
-	if _, err := os.Stat(privValFile); err == nil {
-		pv := privval.LoadFilePV(privValFile)
-		pv.Reset()
-		log.Error("Reset private validator file to genesis state", "file", privValFile)
-	} else {
-		pv := privval.GenFilePV(privValFile)
-		pv.Save()
-		log.Error("Generated private validator file", "file", privValFile)
-	}
 }

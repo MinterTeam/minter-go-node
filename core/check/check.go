@@ -2,6 +2,7 @@ package check
 
 import (
 	"bytes"
+	"crypto/ecdsa"
 	"errors"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/types"
@@ -31,15 +32,15 @@ func (check *Check) Sender() (types.Address, error) {
 }
 
 func (check *Check) LockPubKey() ([]byte, error) {
+	sig := check.Lock.Bytes()
 
-	hash := rlpHash([]interface{}{
-		check.Nonce,
-		check.DueBlock,
-		check.Coin,
-		check.Value,
-	})
+	if len(sig) < 65 {
+		return nil, errors.New("invalid sig")
+	}
 
-	pub, err := crypto.Ecrecover(hash[:], check.Lock.Bytes())
+	hash := check.HashWithoutLock()
+
+	pub, err := crypto.Ecrecover(hash[:], sig)
 	if err != nil {
 		return nil, err
 	}
@@ -48,6 +49,15 @@ func (check *Check) LockPubKey() ([]byte, error) {
 	}
 
 	return pub, nil
+}
+
+func (check *Check) HashWithoutLock() types.Hash {
+	return rlpHash([]interface{}{
+		check.Nonce,
+		check.DueBlock,
+		check.Coin,
+		check.Value,
+	})
 }
 
 func (check *Check) Hash() types.Hash {
@@ -60,16 +70,37 @@ func (check *Check) Hash() types.Hash {
 	})
 }
 
+func (check *Check) Sign(prv *ecdsa.PrivateKey) error {
+	h := check.Hash()
+	sig, err := crypto.Sign(h[:], prv)
+	if err != nil {
+		return err
+	}
+
+	check.SetSignature(sig)
+
+	return nil
+}
+
+func (check *Check) SetSignature(sig []byte) {
+	check.R = new(big.Int).SetBytes(sig[:32])
+	check.S = new(big.Int).SetBytes(sig[32:64])
+	check.V = new(big.Int).SetBytes([]byte{sig[64] + 27})
+}
+
 func (check *Check) String() string {
 	sender, _ := check.Sender()
 
-	return fmt.Sprintf("Check sender: %s nonce: %d, dueBlock: %d, value: %d %s", sender.String(), check.Nonce, check.DueBlock, check.Value, check.Coin.String())
+	return fmt.Sprintf("Check sender: %s nonce: %d, dueBlock: %d, value: %s %s", sender.String(), check.Nonce,
+		check.DueBlock, check.Value.String(), check.Coin.String())
 }
 
 func DecodeFromBytes(buf []byte) (*Check, error) {
-
 	var check Check
-	rlp.Decode(bytes.NewReader(buf), &check)
+	err := rlp.Decode(bytes.NewReader(buf), &check)
+	if err != nil {
+		return nil, err
+	}
 
 	if check.S == nil || check.R == nil || check.V == nil {
 		return nil, errors.New("incorrect tx signature")
@@ -80,7 +111,10 @@ func DecodeFromBytes(buf []byte) (*Check, error) {
 
 func rlpHash(x interface{}) (h types.Hash) {
 	hw := sha3.NewKeccak256()
-	rlp.Encode(hw, x)
+	err := rlp.Encode(hw, x)
+	if err != nil {
+		panic(err)
+	}
 	hw.Sum(h[:0])
 	return h
 }

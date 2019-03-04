@@ -96,10 +96,6 @@
                             <td>{{ status.node_info.id }}</td>
                         </tr>
                         <tr>
-                            <td class="h">Listen Addr</td>
-                            <td>{{ status.node_info.listen_addr }}</td>
-                        </tr>
-                        <tr>
                             <td class="h">Network ID</td>
                             <td>{{ status.node_info.network }}</td>
                         </tr>
@@ -149,7 +145,7 @@
                         <tr>
                             <td class="h">Latest Block Height</td>
                             <td>
-                                #{{ status.sync_info.latest_block_height }} <span v-if="masterStatus" class="text-muted">of {{ masterStatus.latest_block_height }}</span>
+                                #{{ status.sync_info.latest_block_height }} <span v-if="masterStatus && Number(status.sync_info.latest_block_height) <= Number(masterStatus.latest_block_height)" class="text-muted">of {{ masterStatus.latest_block_height }}</span>
                             </td>
                         </tr>
                         <tr>
@@ -169,7 +165,15 @@
                         <tbody>
                         <tr>
                             <td>Public Key</td>
-                            <td>Mp{{ base64ToHex(status.validator_info.pub_key.value) }}</td>
+                            <td>{{ validatorPubKey }}</td>
+                        </tr>
+                        <tr>
+                            <td>Status</td>
+                            <td>{{ validatorStatus }}</td>
+                        </tr>
+                        <tr>
+                            <td>Total Stake</td>
+                            <td>{{ stake }} MNT</td>
                         </tr>
                         <tr>
                             <td>Voting Power</td>
@@ -190,7 +194,10 @@
             status: null,
             version: null,
             net_info: null,
-            error: null
+            error: null,
+            validatorPubKey: '...',
+            validatorStatus: '...',
+            stake: '...'
         },
         mounted() {
             this.refresh()
@@ -204,8 +211,8 @@
             },
             refresh() {
                 axios.all([
-                    axios.get("//" + window.location.hostname + ':8841/api/status'),
-                    axios.get("//" + window.location.hostname + ':8841/api/net_info')
+                    axios.get("//" + window.location.hostname + ':8841/status'),
+                    axios.get("//" + window.location.hostname + ':8841/net_info'),
                 ]).then(axios.spread(function (status, net_info) {
                     this.error = null
 
@@ -213,13 +220,38 @@
                     this.version = status.data.result.version
                     this.net_info = net_info.data.result
 
-                    setTimeout(this.refresh, 500)
+                    this.validatorPubKey = 'Mp' + this.base64ToHex(status.data.result.tm_status.validator_info.pub_key.value)
+
+                    axios.all([
+                        axios.get("//" + window.location.hostname + ':8841/validators'),
+                        axios.get("//" + window.location.hostname + ':8841/candidate?pubkey=' + this.validatorPubKey),
+                    ]).then(axios.spread(function (validators, candidate) {
+
+                        this.stake = Math.round(candidate.data.result.total_stake / Math.pow(10, 17)) / 10
+
+                        if (validators.data.result.find(function(val) { return val.pubkey === this.validatorPubKey }.bind(this))) {
+                            this.validatorStatus = 'Validating';
+                            return
+                        }
+
+                        if (candidate.data.result.status === 2) {
+                            this.validatorStatus = 'Candidate'
+                            return
+                        }
+
+                        this.validatorStatus = 'Down';
+                    }.bind(this))).catch(function()  {
+                        this.validatorStatus = 'Not declared';
+                        this.stake = 0;
+                    }.bind(this));
+
+                    setTimeout(this.refresh, 5000)
                 }.bind(this))).catch(function (reason) {
                     this.error = reason.toString();
-                    setTimeout(this.refresh, 500)
+                    setTimeout(this.refresh, 5000)
                 }.bind(this))
 
-                axios.get("https://minter-node-1.testnet.minter.network/api/status").then(function (masterStatus) {
+                axios.get("https://minter-node-1.testnet.minter.network/status").then(function (masterStatus) {
                     this.masterStatus = masterStatus.data.result
                 }.bind(this))
             }

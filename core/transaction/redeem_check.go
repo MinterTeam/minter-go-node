@@ -3,7 +3,6 @@ package transaction
 import (
 	"bytes"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/check"
 	"github.com/MinterTeam/minter-go-node/core/code"
@@ -19,18 +18,26 @@ import (
 )
 
 type RedeemCheckData struct {
-	RawCheck []byte
-	Proof    [65]byte
+	RawCheck []byte   `json:"raw_check"`
+	Proof    [65]byte `json:"proof"`
 }
 
-func (data RedeemCheckData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		RawCheck string `json:"raw_check"`
-		Proof    string `json:"proof"`
-	}{
-		RawCheck: fmt.Sprintf("Mc%x", data.RawCheck),
-		Proof:    fmt.Sprintf("%x", data.Proof),
-	})
+func (data RedeemCheckData) TotalSpend(tx *Transaction, context *state.StateDB) (TotalSpends, []Conversion, *big.Int, *Response) {
+	panic("implement me")
+}
+
+func (data RedeemCheckData) CommissionInBaseCoin(tx *Transaction) *big.Int {
+	panic("implement me")
+}
+
+func (data RedeemCheckData) BasicCheck(tx *Transaction, context *state.StateDB) *Response {
+	if data.RawCheck == nil {
+		return &Response{
+			Code: code.DecodeError,
+			Log:  "Incorrect tx data"}
+	}
+
+	return nil
 }
 
 func (data RedeemCheckData) String() string {
@@ -38,10 +45,17 @@ func (data RedeemCheckData) String() string {
 }
 
 func (data RedeemCheckData) Gas() int64 {
-	return commissions.SendTx
+	return commissions.RedeemCheckTx
 }
 
-func (data RedeemCheckData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
+func (data RedeemCheckData) Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response {
+	sender, _ := tx.Sender()
+
+	response := data.BasicCheck(tx, context)
+	if response != nil {
+		return *response
+	}
+
 	decodedCheck, err := check.DecodeFromBytes(data.RawCheck)
 
 	if err != nil {
@@ -99,7 +113,7 @@ func (data RedeemCheckData) Run(sender types.Address, tx *Transaction, context *
 
 	var senderAddressHash types.Hash
 	hw := sha3.NewKeccak256()
-	rlp.Encode(hw, []interface{}{
+	_ = rlp.Encode(hw, []interface{}{
 		sender,
 	})
 	hw.Sum(senderAddressHash[:0])
@@ -132,17 +146,15 @@ func (data RedeemCheckData) Run(sender types.Address, tx *Transaction, context *
 	if context.GetBalance(checkSender, decodedCheck.Coin).Cmp(totalTxCost) < 0 {
 		return Response{
 			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for check issuer account: %s. Wanted %d ", checkSender.String(), totalTxCost)}
+			Log:  fmt.Sprintf("Insufficient funds for check issuer account: %s. Wanted %s ", checkSender.String(), totalTxCost.String())}
 	}
 
 	if !isCheck {
 		context.UseCheck(decodedCheck)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		if !decodedCheck.Coin.IsBaseCoin() {
-			context.SubCoinVolume(decodedCheck.Coin, commission)
-			context.SubCoinReserve(decodedCheck.Coin, commissionInBaseCoin)
-		}
+		context.SubCoinVolume(decodedCheck.Coin, commission)
+		context.SubCoinReserve(decodedCheck.Coin, commissionInBaseCoin)
 
 		context.SubBalance(checkSender, decodedCheck.Coin, totalTxCost)
 		context.AddBalance(sender, decodedCheck.Coin, decodedCheck.Value)
@@ -150,7 +162,7 @@ func (data RedeemCheckData) Run(sender types.Address, tx *Transaction, context *
 	}
 
 	tags := common.KVPairs{
-		common.KVPair{Key: []byte("tx.type"), Value: []byte{TypeRedeemCheck}},
+		common.KVPair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeRedeemCheck)}))},
 		common.KVPair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(checkSender[:]))},
 		common.KVPair{Key: []byte("tx.to"), Value: []byte(hex.EncodeToString(sender[:]))},
 		common.KVPair{Key: []byte("tx.coin"), Value: []byte(decodedCheck.Coin.String())},

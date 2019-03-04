@@ -3,14 +3,11 @@ package utils
 import (
 	"flag"
 	"os"
-	"os/user"
+	"path/filepath"
 )
 
 var (
-	MinterAPIAddrFlag     = flag.String("api_addr", ":8841", "This is the address that minter will use to open API server. Please provide a port.")
-	MinterHome            = flag.String("home", "", "Path to minter data directory")
-	DisableApi            = flag.Bool("disable-api", false, "")
-	ResetPrivateValidator = flag.Bool("reset-private-validator", false, "")
+	MinterHome = flag.String("home", "", "Path to minter data directory")
 )
 
 func init() {
@@ -18,7 +15,6 @@ func init() {
 }
 
 func GetMinterHome() string {
-
 	if *MinterHome != "" {
 		return *MinterHome
 	}
@@ -29,10 +25,5 @@ func GetMinterHome() string {
 		return home
 	}
 
-	usr, err := user.Current()
-	if err != nil {
-		panic(err)
-	}
-
-	return usr.HomeDir + "/.minter"
+	return os.ExpandEnv(filepath.Join("$HOME", ".minter"))
 }

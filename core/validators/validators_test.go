@@ -5,12 +5,11 @@ import (
 )
 
 type Results struct {
-	Block  uint64
+	Block  int64
 	Result int
 }
 
 func TestGetValidatorsCountForBlock(t *testing.T) {
-
 	data := []Results{
 		{
 			Block:  1,

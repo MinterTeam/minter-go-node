@@ -1,27 +1,31 @@
 package transaction
 
 import (
-	"bytes"
-	"encoding/json"
+	"encoding/hex"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
+	"github.com/tendermint/tendermint/libs/common"
 	"math/big"
 )
 
 type SetCandidateOnData struct {
-	PubKey []byte
+	PubKey types.Pubkey `json:"pub_key"`
 }
 
-func (data SetCandidateOnData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		PubKey string `json:"pub_key"`
-	}{
-		PubKey: fmt.Sprintf("Mp%x", data.PubKey),
-	})
+func (data SetCandidateOnData) GetPubKey() types.Pubkey {
+	return data.PubKey
+}
+
+func (data SetCandidateOnData) TotalSpend(tx *Transaction, context *state.StateDB) (TotalSpends, []Conversion, *big.Int, *Response) {
+	panic("implement me")
+}
+
+func (data SetCandidateOnData) BasicCheck(tx *Transaction, context *state.StateDB) *Response {
+	return checkCandidateOwnership(data, tx, context)
 }
 
 func (data SetCandidateOnData) String() string {
@@ -33,19 +37,18 @@ func (data SetCandidateOnData) Gas() int64 {
 	return commissions.ToggleCandidateStatus
 }
 
-func (data SetCandidateOnData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
+func (data SetCandidateOnData) Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response {
+	sender, _ := tx.Sender()
 
-	if !context.CoinExists(tx.GasCoin) {
-		return Response{
-			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin)}
+	response := data.BasicCheck(tx, context)
+	if response != nil {
+		return *response
 	}
 
-	commissionInBaseCoin := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
-	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
+	commissionInBaseCoin := tx.CommissionInBaseCoin()
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
-	if tx.GasCoin != types.GetBaseCoin() {
+	if !tx.GasCoin.IsBaseCoin() {
 		coin := context.GetStateCoin(tx.GasCoin)
 
 		if coin.ReserveBalance().Cmp(commissionInBaseCoin) < 0 {
@@ -63,45 +66,44 @@ func (data SetCandidateOnData) Run(sender types.Address, tx *Transaction, contex
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, tx.GasCoin)}
 	}
 
-	if !context.CandidateExists(data.PubKey) {
-		return Response{
-			Code: code.CandidateNotFound,
-			Log:  fmt.Sprintf("Candidate with such public key (%x) not found", data.PubKey)}
-	}
-
-	candidate := context.GetStateCandidate(data.PubKey)
-
-	if !bytes.Equal(candidate.CandidateAddress.Bytes(), sender.Bytes()) {
-		return Response{
-			Code: code.IsNotOwnerOfCandidate,
-			Log:  fmt.Sprintf("Sender is not an owner of a candidate")}
-	}
-
 	if !isCheck {
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
+
+		context.SubCoinReserve(tx.GasCoin, commissionInBaseCoin)
+		context.SubCoinVolume(tx.GasCoin, commission)
 
 		context.SubBalance(sender, tx.GasCoin, commission)
 		context.SetCandidateOnline(data.PubKey)
 		context.SetNonce(sender, tx.Nonce)
 	}
 
+	tags := common.KVPairs{
+		common.KVPair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeSetCandidateOnline)}))},
+		common.KVPair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
+	}
+
 	return Response{
 		Code:      code.OK,
 		GasUsed:   tx.Gas(),
 		GasWanted: tx.Gas(),
+		Tags:      tags,
 	}
 }
 
 type SetCandidateOffData struct {
-	PubKey []byte
+	PubKey types.Pubkey `json:"pub_key"`
 }
 
-func (data SetCandidateOffData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		PubKey string `json:"pub_key"`
-	}{
-		PubKey: fmt.Sprintf("Mp%x", data.PubKey),
-	})
+func (data SetCandidateOffData) GetPubKey() types.Pubkey {
+	return data.PubKey
+}
+
+func (data SetCandidateOffData) TotalSpend(tx *Transaction, context *state.StateDB) (TotalSpends, []Conversion, *big.Int, *Response) {
+	panic("implement me")
+}
+
+func (data SetCandidateOffData) BasicCheck(tx *Transaction, context *state.StateDB) *Response {
+	return checkCandidateOwnership(data, tx, context)
 }
 
 func (data SetCandidateOffData) String() string {
@@ -113,19 +115,18 @@ func (data SetCandidateOffData) Gas() int64 {
 	return commissions.ToggleCandidateStatus
 }
 
-func (data SetCandidateOffData) Run(sender types.Address, tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
+func (data SetCandidateOffData) Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response {
+	sender, _ := tx.Sender()
 
-	if !context.CoinExists(tx.GasCoin) {
-		return Response{
-			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin)}
+	response := data.BasicCheck(tx, context)
+	if response != nil {
+		return *response
 	}
 
-	commissionInBaseCoin := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
-	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
+	commissionInBaseCoin := tx.CommissionInBaseCoin()
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
-	if tx.GasCoin != types.GetBaseCoin() {
+	if !tx.GasCoin.IsBaseCoin() {
 		coin := context.GetStateCoin(tx.GasCoin)
 
 		if coin.ReserveBalance().Cmp(commissionInBaseCoin) < 0 {
@@ -143,31 +144,26 @@ func (data SetCandidateOffData) Run(sender types.Address, tx *Transaction, conte
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, tx.GasCoin)}
 	}
 
-	if !context.CandidateExists(data.PubKey) {
-		return Response{
-			Code: code.CandidateNotFound,
-			Log:  fmt.Sprintf("Candidate with such public key (%x) not found", data.PubKey)}
-	}
-
-	candidate := context.GetStateCandidate(data.PubKey)
-
-	if !bytes.Equal(candidate.CandidateAddress.Bytes(), sender.Bytes()) {
-		return Response{
-			Code: code.IsNotOwnerOfCandidate,
-			Log:  fmt.Sprintf("Sender is not an owner of a candidate")}
-	}
-
 	if !isCheck {
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
+
+		context.SubCoinReserve(tx.GasCoin, commissionInBaseCoin)
+		context.SubCoinVolume(tx.GasCoin, commission)
 
 		context.SubBalance(sender, tx.GasCoin, commission)
 		context.SetCandidateOffline(data.PubKey)
 		context.SetNonce(sender, tx.Nonce)
 	}
 
+	tags := common.KVPairs{
+		common.KVPair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeSetCandidateOffline)}))},
+		common.KVPair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
+	}
+
 	return Response{
 		Code:      code.OK,
 		GasUsed:   tx.Gas(),
 		GasWanted: tx.Gas(),
+		Tags:      tags,
 	}
 }

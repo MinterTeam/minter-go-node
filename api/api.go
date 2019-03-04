@@ -1,20 +1,25 @@
 package api
 
 import (
-	"log"
-	"net/http"
-
-	"github.com/gorilla/mux"
-	"github.com/rs/cors"
-
-	"github.com/MinterTeam/minter-go-node/cmd/utils"
+	"fmt"
+	"github.com/MinterTeam/go-amino"
+	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/minter"
 	"github.com/MinterTeam/minter-go-node/core/state"
-	"github.com/tendermint/go-amino"
-	"github.com/tendermint/tendermint/crypto/encoding/amino"
-	"github.com/tendermint/tendermint/node"
+	"github.com/MinterTeam/minter-go-node/eventsdb"
+	"github.com/MinterTeam/minter-go-node/log"
+	"github.com/MinterTeam/minter-go-node/rpc/lib/server"
+	"github.com/rs/cors"
+	"github.com/tendermint/tendermint/crypto"
+	"github.com/tendermint/tendermint/crypto/ed25519"
+	"github.com/tendermint/tendermint/crypto/multisig"
+	"github.com/tendermint/tendermint/crypto/secp256k1"
+	"github.com/tendermint/tendermint/evidence"
 	rpc "github.com/tendermint/tendermint/rpc/client"
-	"strconv"
+	"github.com/tendermint/tendermint/types"
+	"net/http"
+	"net/url"
+	"strings"
 	"time"
 )
 
@@ -22,38 +27,50 @@ var (
 	cdc        = amino.NewCodec()
 	blockchain *minter.Blockchain
 	client     *rpc.Local
+	cfg        = config.GetConfig()
 )
 
-func init() {
-	cryptoAmino.RegisterAmino(cdc)
+var Routes = map[string]*rpcserver.RPCFunc{
+	"status":                 rpcserver.NewRPCFunc(Status, ""),
+	"candidates":             rpcserver.NewRPCFunc(Candidates, "height"),
+	"candidate":              rpcserver.NewRPCFunc(Candidate, "pubkey,height"),
+	"validators":             rpcserver.NewRPCFunc(Validators, "height"),
+	"address":                rpcserver.NewRPCFunc(Address, "address,height"),
+	"addresses":              rpcserver.NewRPCFunc(Addresses, "addresses,height"),
+	"send_transaction":       rpcserver.NewRPCFunc(SendTransaction, "tx"),
+	"transaction":            rpcserver.NewRPCFunc(Transaction, "hash"),
+	"transactions":           rpcserver.NewRPCFunc(Transactions, "query"),
+	"block":                  rpcserver.NewRPCFunc(Block, "height"),
+	"events":                 rpcserver.NewRPCFunc(Events, "height"),
+	"net_info":               rpcserver.NewRPCFunc(NetInfo, ""),
+	"coin_info":              rpcserver.NewRPCFunc(CoinInfo, "symbol,height"),
+	"estimate_coin_sell":     rpcserver.NewRPCFunc(EstimateCoinSell, "coin_to_sell,coin_to_buy,value_to_sell,height"),
+	"estimate_coin_buy":      rpcserver.NewRPCFunc(EstimateCoinBuy, "coin_to_sell,coin_to_buy,value_to_buy,height"),
+	"estimate_tx_commission": rpcserver.NewRPCFunc(EstimateTxCommission, "tx,height"),
+	"unconfirmed_txs":        rpcserver.NewRPCFunc(UnconfirmedTxs, "limit"),
+	"max_gas":                rpcserver.NewRPCFunc(MaxGas, "height"),
+	"min_gas_price":          rpcserver.NewRPCFunc(MinGasPrice, ""),
 }
 
-func RunApi(b *minter.Blockchain, node *node.Node) {
-	client = rpc.NewLocal(node)
+func RunAPI(b *minter.Blockchain, tmRPC *rpc.Local) {
+	RegisterCryptoAmino(cdc)
+	eventsdb.RegisterAminoEvents(cdc)
+	RegisterEvidenceMessages(cdc)
 
+	client = tmRPC
 	blockchain = b
+	waitForTendermint()
 
-	router := mux.NewRouter().StrictSlash(true)
+	m := http.NewServeMux()
+	logger := log.With("module", "rpc")
+	rpcserver.RegisterRPCFuncs(m, Routes, cdc, logger)
+	listener, err := rpcserver.Listen(config.GetConfig().APIListenAddress, rpcserver.Config{
+		MaxOpenConnections: cfg.APISimultaneousRequests,
+	})
 
-	router.HandleFunc("/api/bipVolume", GetBipVolume).Methods("GET")
-	router.HandleFunc("/api/candidates", GetCandidates).Methods("GET")
-	router.HandleFunc("/api/candidate/{pubkey}", GetCandidate).Methods("GET")
-	router.HandleFunc("/api/validators", GetValidators).Methods("GET")
-	router.HandleFunc("/api/balance/{address}", GetBalance).Methods("GET")
-	router.HandleFunc("/api/balanceWS", GetBalanceWatcher)
-	router.HandleFunc("/api/transactionCount/{address}", GetTransactionCount).Methods("GET")
-	router.HandleFunc("/api/sendTransaction", SendTransaction).Methods("POST")
-	router.HandleFunc("/api/sendTransactionSync", SendTransactionSync).Methods("POST")
-	router.HandleFunc("/api/sendTransactionAsync", SendTransactionAsync).Methods("POST")
-	router.HandleFunc("/api/transaction/{hash}", Transaction).Methods("GET")
-	router.HandleFunc("/api/block/{height}", Block).Methods("GET")
-	router.HandleFunc("/api/transactions", Transactions).Methods("GET")
-	router.HandleFunc("/api/status", Status).Methods("GET")
-	router.HandleFunc("/api/net_info", NetInfo).Methods("GET")
-	router.HandleFunc("/api/coinInfo/{symbol}", GetCoinInfo).Methods("GET")
-	router.HandleFunc("/api/estimateCoinSell", EstimateCoinSell).Methods("GET")
-	router.HandleFunc("/api/estimateCoinBuy", EstimateCoinBuy).Methods("GET")
-	router.HandleFunc("/api/estimateTxCommission", EstimateTxCommission).Methods("GET")
+	if err != nil {
+		panic(err)
+	}
 
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
@@ -61,12 +78,29 @@ func RunApi(b *minter.Blockchain, node *node.Node) {
 		AllowCredentials: true,
 	})
 
-	handler := c.Handler(router)
+	handler := c.Handler(m)
+	log.Error("Failed to start API", "err", rpcserver.StartHTTPServer(listener, Handler(handler), logger))
+}
 
-	// wait for tendermint to start
-	waitForTendermint()
+func Handler(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		query := r.URL.Query()
 
-	log.Fatal(http.ListenAndServe(*utils.MinterAPIAddrFlag, handler))
+		for key, value := range query {
+			val := value[0]
+			if strings.HasPrefix(val, "Mx") {
+				query.Set(key, fmt.Sprintf("\"%s\"", val))
+			}
+		}
+
+		var err error
+		r.URL, err = url.ParseRequestURI(fmt.Sprintf("%s?%s", r.URL.Path, query.Encode()))
+		if err != nil {
+			panic(err)
+		}
+
+		h.ServeHTTP(w, r)
+	})
 }
 
 func waitForTendermint() {
@@ -86,14 +120,38 @@ type Response struct {
 	Log    string      `json:"log,omitempty"`
 }
 
-func GetStateForRequest(r *http.Request) *state.StateDB {
-	height, _ := strconv.Atoi(r.URL.Query().Get("height"))
-
-	cState := blockchain.CurrentState()
-
+func GetStateForHeight(height int) (*state.StateDB, error) {
 	if height > 0 {
-		cState, _ = blockchain.GetStateForHeight(height)
+		cState, err := blockchain.GetStateForHeight(height)
+
+		return cState, err
 	}
 
-	return cState
+	return blockchain.CurrentState(), nil
+}
+
+// RegisterAmino registers all crypto related types in the given (amino) codec.
+func RegisterCryptoAmino(cdc *amino.Codec) {
+	// These are all written here instead of
+	cdc.RegisterInterface((*crypto.PubKey)(nil), nil)
+	cdc.RegisterConcrete(ed25519.PubKeyEd25519{},
+		ed25519.PubKeyAminoName, nil)
+	cdc.RegisterConcrete(secp256k1.PubKeySecp256k1{},
+		secp256k1.PubKeyAminoName, nil)
+	cdc.RegisterConcrete(multisig.PubKeyMultisigThreshold{},
+		multisig.PubKeyMultisigThresholdAminoRoute, nil)
+
+	cdc.RegisterInterface((*crypto.PrivKey)(nil), nil)
+	cdc.RegisterConcrete(ed25519.PrivKeyEd25519{},
+		ed25519.PrivKeyAminoName, nil)
+	cdc.RegisterConcrete(secp256k1.PrivKeySecp256k1{},
+		secp256k1.PrivKeyAminoName, nil)
+}
+
+func RegisterEvidenceMessages(cdc *amino.Codec) {
+	cdc.RegisterInterface((*evidence.EvidenceMessage)(nil), nil)
+	cdc.RegisterConcrete(&evidence.EvidenceListMessage{},
+		"tendermint/evidence/EvidenceListMessage", nil)
+	cdc.RegisterInterface((*types.Evidence)(nil), nil)
+	cdc.RegisterConcrete(&types.DuplicateVoteEvidence{}, "tendermint/DuplicateVoteEvidence", nil)
 }

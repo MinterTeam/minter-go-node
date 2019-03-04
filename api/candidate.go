@@ -1,41 +1,67 @@
 package api
 
 import (
-	"encoding/json"
+	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/gorilla/mux"
-	"net/http"
-	"strings"
+	"github.com/MinterTeam/minter-go-node/rpc/lib/types"
+	"math/big"
 )
 
-func GetCandidate(w http.ResponseWriter, r *http.Request) {
+type Stake struct {
+	Owner    types.Address    `json:"owner"`
+	Coin     types.CoinSymbol `json:"coin"`
+	Value    string           `json:"value"`
+	BipValue string           `json:"bip_value"`
+}
 
-	vars := mux.Vars(r)
-	pubkey := types.Hex2Bytes(strings.TrimLeft(vars["pubkey"], "Mp"))
+type CandidateResponse struct {
+	RewardAddress  types.Address `json:"reward_address"`
+	OwnerAddress   types.Address `json:"owner_address"`
+	TotalStake     *big.Int      `json:"total_stake"`
+	PubKey         types.Pubkey  `json:"pubkey"`
+	Commission     uint          `json:"commission"`
+	Stakes         []Stake       `json:"stakes,omitempty"`
+	CreatedAtBlock uint          `json:"created_at_block"`
+	Status         byte          `json:"status"`
+}
 
-	cState := GetStateForRequest(r)
-
-	candidate := cState.GetStateCandidate(pubkey)
-
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-
-	if candidate == nil {
-		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(Response{
-			Code: 404,
-			Log:  "Candidate not found",
-		})
-		return
+func makeResponseCandidate(c state.Candidate, includeStakes bool) CandidateResponse {
+	candidate := CandidateResponse{
+		RewardAddress:  c.RewardAddress,
+		OwnerAddress:   c.OwnerAddress,
+		TotalStake:     c.TotalBipStake,
+		PubKey:         c.PubKey,
+		Commission:     c.Commission,
+		CreatedAtBlock: c.CreatedAtBlock,
+		Status:         c.Status,
 	}
 
-	w.WriteHeader(http.StatusOK)
+	if includeStakes {
+		candidate.Stakes = make([]Stake, len(c.Stakes))
+		for i, stake := range c.Stakes {
+			candidate.Stakes[i] = Stake{
+				Owner:    stake.Owner,
+				Coin:     stake.Coin,
+				Value:    stake.Value.String(),
+				BipValue: stake.BipValue.String(),
+			}
+		}
+	}
 
-	json.NewEncoder(w).Encode(Response{
-		Code: 0,
-		Result: struct {
-			Candidate Candidate `json:"candidate"`
-		}{
-			Candidate: makeResponseCandidate(*candidate, cState),
-		},
-	})
+	return candidate
+}
+
+func Candidate(pubkey []byte, height int) (*CandidateResponse, error) {
+	cState, err := GetStateForHeight(height)
+	if err != nil {
+		return nil, err
+	}
+
+	candidate := cState.GetStateCandidate(pubkey)
+	if candidate == nil {
+		return nil, rpctypes.RPCError{Code: 404, Message: "Candidate not found"}
+	}
+
+	response := makeResponseCandidate(*candidate, true)
+	return &response, nil
 }

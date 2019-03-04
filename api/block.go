@@ -1,16 +1,16 @@
 package api
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/rewards"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/gorilla/mux"
+	"github.com/MinterTeam/minter-go-node/rpc/lib/types"
 	"github.com/tendermint/tendermint/libs/common"
+	types2 "github.com/tendermint/tendermint/types"
 	"math/big"
-	"net/http"
-	"strconv"
 	"time"
 )
 
@@ -21,51 +21,65 @@ type BlockResponse struct {
 	NumTxs       int64                      `json:"num_txs"`
 	TotalTxs     int64                      `json:"total_txs"`
 	Transactions []BlockTransactionResponse `json:"transactions"`
-	Precommits   json.RawMessage            `json:"precommits"`
-	BlockReward  string                     `json:"block_reward"`
+	BlockReward  *big.Int                   `json:"block_reward"`
+	Size         int                        `json:"size"`
+	Proposer     types.Pubkey               `json:"proposer"`
+	Validators   []BlockValidatorResponse   `json:"validators"`
+	Evidence     types2.EvidenceData        `json:"evidence,omitempty"`
 }
 
 type BlockTransactionResponse struct {
-	Hash        string            `json:"hash"`
-	RawTx       string            `json:"raw_tx"`
-	From        string            `json:"from"`
-	Nonce       uint64            `json:"nonce"`
-	GasPrice    *big.Int          `json:"gas_price"`
-	Type        byte              `json:"type"`
-	Data        transaction.Data  `json:"data"`
-	Payload     []byte            `json:"payload"`
-	ServiceData []byte            `json:"service_data"`
-	Gas         int64             `json:"gas"`
-	GasCoin     types.CoinSymbol  `json:"gas_coin"`
-	TxResult    ResponseDeliverTx `json:"tx_result"`
+	Hash        string             `json:"hash"`
+	RawTx       string             `json:"raw_tx"`
+	From        string             `json:"from"`
+	Nonce       uint64             `json:"nonce"`
+	GasPrice    *big.Int           `json:"gas_price"`
+	Type        transaction.TxType `json:"type"`
+	Data        json.RawMessage    `json:"data"`
+	Payload     []byte             `json:"payload"`
+	ServiceData []byte             `json:"service_data"`
+	Gas         int64              `json:"gas"`
+	GasCoin     types.CoinSymbol   `json:"gas_coin"`
+	Tags        map[string]string  `json:"tags"`
+	Code        uint32             `json:"code,omitempty"`
+	Log         string             `json:"log,omitempty"`
 }
 
-func Block(w http.ResponseWriter, r *http.Request) {
+type BlockValidatorResponse struct {
+	Pubkey string `json:"pubkey"`
+	Signed bool   `json:"signed"`
+}
 
-	vars := mux.Vars(r)
-	height, _ := strconv.ParseInt(vars["height"], 10, 64)
-
+func Block(height int64) (*BlockResponse, error) {
 	block, err := client.Block(&height)
-	blockResults, err := client.BlockResults(&height)
-
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(Response{
-			Code: 0,
-			Log:  err.Error(),
-		})
-		return
+		return nil, rpctypes.RPCError{Code: 404, Message: "Block not found", Data: err.Error()}
+	}
+	blockResults, err := client.BlockResults(&height)
+	if err != nil {
+		return nil, rpctypes.RPCError{Code: 404, Message: "Block not found", Data: err.Error()}
 	}
 
-	w.WriteHeader(http.StatusOK)
-
 	txs := make([]BlockTransactionResponse, len(block.Block.Data.Txs))
-
 	for i, rawTx := range block.Block.Data.Txs {
-		tx, _ := transaction.DecodeFromBytes(rawTx)
+		tx, _ := transaction.TxDecoder.DecodeFromBytes(rawTx)
 		sender, _ := tx.Sender()
+
+		tags := make(map[string]string)
+
+		for _, tag := range blockResults.Results.DeliverTx[i].Tags {
+			tags[string(tag.Key)] = string(tag.Value)
+		}
+
+		data, err := encodeTxData(tx)
+		if err != nil {
+			return nil, err
+		}
+
+		gas := tx.Gas()
+		if tx.Type == transaction.TypeCreateCoin {
+			gas += tx.GetDecodedData().(*transaction.CreateCoinData).Commission()
+		}
 
 		txs[i] = BlockTransactionResponse{
 			Hash:        fmt.Sprintf("Mt%x", rawTx.Hash()),
@@ -74,42 +88,64 @@ func Block(w http.ResponseWriter, r *http.Request) {
 			Nonce:       tx.Nonce,
 			GasPrice:    tx.GasPrice,
 			Type:        tx.Type,
-			Data:        tx.GetDecodedData(),
+			Data:        data,
 			Payload:     tx.Payload,
 			ServiceData: tx.ServiceData,
-			Gas:         tx.Gas(),
+			Gas:         gas,
 			GasCoin:     tx.GasCoin,
-			TxResult: ResponseDeliverTx{
-				Code:      blockResults.Results.DeliverTx[i].Code,
-				Data:      blockResults.Results.DeliverTx[i].Data,
-				Log:       blockResults.Results.DeliverTx[i].Log,
-				Info:      blockResults.Results.DeliverTx[i].Info,
-				GasWanted: blockResults.Results.DeliverTx[i].GasWanted,
-				GasUsed:   blockResults.Results.DeliverTx[i].GasUsed,
-				Tags:      blockResults.Results.DeliverTx[i].Tags,
-			},
+			Tags:        tags,
+			Code:        blockResults.Results.DeliverTx[i].Code,
+			Log:         blockResults.Results.DeliverTx[i].Log,
 		}
 	}
 
-	precommits, _ := cdc.MarshalJSON(block.Block.LastCommit.Precommits)
+	tmValidators, err := client.Validators(&height)
+	if err != nil {
+		return nil, rpctypes.RPCError{Code: 404, Message: "Validators for block not found", Data: err.Error()}
+	}
 
-	response := BlockResponse{
+	commit, err := client.Commit(&height)
+	if err != nil {
+		return nil, rpctypes.RPCError{Code: 404, Message: "Commit for block not found", Data: err.Error()}
+	}
+
+	validators := make([]BlockValidatorResponse, len(commit.Commit.Precommits))
+	proposer := types.Pubkey{}
+	for i, tmval := range tmValidators.Validators {
+		signed := false
+
+		for _, vote := range commit.Commit.Precommits {
+			if vote == nil {
+				continue
+			}
+
+			if bytes.Equal(vote.ValidatorAddress.Bytes(), tmval.Address.Bytes()) {
+				signed = true
+				break
+			}
+		}
+
+		validators[i] = BlockValidatorResponse{
+			Pubkey: fmt.Sprintf("Mp%x", tmval.PubKey.Bytes()[5:]),
+			Signed: signed,
+		}
+
+		if bytes.Equal(tmval.Address.Bytes(), commit.ProposerAddress.Bytes()) {
+			proposer = tmval.PubKey.Bytes()[5:]
+		}
+	}
+
+	return &BlockResponse{
 		Hash:         block.Block.Hash(),
 		Height:       block.Block.Height,
 		Time:         block.Block.Time,
 		NumTxs:       block.Block.NumTxs,
 		TotalTxs:     block.Block.TotalTxs,
 		Transactions: txs,
-		Precommits:   json.RawMessage(precommits),
-		BlockReward:  rewards.GetRewardForBlock(uint64(height)).String(),
-	}
-
-	err = json.NewEncoder(w).Encode(Response{
-		Code:   0,
-		Result: response,
-	})
-
-	if err != nil {
-		panic(err)
-	}
+		BlockReward:  rewards.GetRewardForBlock(uint64(height)),
+		Size:         len(cdc.MustMarshalBinaryLengthPrefixed(block)),
+		Proposer:     proposer,
+		Validators:   validators,
+		Evidence:     block.Block.Evidence,
+	}, nil
 }

@@ -1,18 +1,49 @@
 package log
 
 import (
+	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/tendermint/tendermint/libs/cli/flags"
 	"github.com/tendermint/tendermint/libs/log"
+	"io"
 	"os"
 )
 
 var (
 	logger log.Logger
+	cfg    = config.GetConfig()
 )
 
 func init() {
-	logger, _ := flags.ParseLogLevel("consensus:info,state:info,main:info,*:error", log.NewTMLogger(os.Stdout), "info")
-	SetLogger(logger)
+	var dest io.Writer = os.Stdout
+
+	if cfg.LogPath != "stdout" {
+		file, err := os.OpenFile(cfg.LogPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+
+		if err != nil {
+			panic(err)
+		}
+
+		dest = file
+	}
+
+	var l log.Logger
+
+	switch cfg.LogFormat {
+	case config.LogFormatJSON:
+		l = log.NewTMJSONLogger(dest)
+	case config.LogFormatPlain:
+		l = log.NewTMLogger(dest)
+	default:
+		panic("unsupported log format")
+	}
+
+	l, err := flags.ParseLogLevel(cfg.LogLevel, l, "info")
+
+	if err != nil {
+		panic(err)
+	}
+
+	SetLogger(l)
 }
 
 func SetLogger(l log.Logger) {

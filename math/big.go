@@ -186,9 +186,9 @@ func U256(x *big.Int) *big.Int {
 func S256(x *big.Int) *big.Int {
 	if x.Cmp(tt255) < 0 {
 		return x
-	} else {
-		return new(big.Int).Sub(x, tt256)
 	}
+
+	return new(big.Int).Sub(x, tt256)
 }
 
 // Exp implements exponentiation by squaring.

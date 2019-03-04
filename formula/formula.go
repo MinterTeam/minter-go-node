@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	precision = 5000
+	precision = 100
 )
 
 func newFloat(x float64) *big.Float {
@@ -44,6 +44,15 @@ func CalculatePurchaseReturn(supply *big.Int, reserve *big.Int, crr uint, deposi
 // reversed function CalculatePurchaseReturn
 // deposit = reserve * (((wantReceive + supply) / supply)^(100/c) - 1)
 func CalculatePurchaseAmount(supply *big.Int, reserve *big.Int, crr uint, wantReceive *big.Int) *big.Int {
+	if wantReceive.Cmp(types.Big0) == 0 {
+		return big.NewInt(0)
+	}
+
+	if crr == 100 {
+		result := big.NewInt(0).Mul(wantReceive, reserve)
+
+		return result.Div(result, supply)
+	}
 
 	tSupply := newFloat(0).SetInt(supply)
 	tReserve := newFloat(0).SetInt(reserve)
@@ -62,7 +71,6 @@ func CalculatePurchaseAmount(supply *big.Int, reserve *big.Int, crr uint, wantRe
 
 // Return = reserve * (1 - (1 - sellAmount / supply) ^ (100 / crr))
 func CalculateSaleReturn(supply *big.Int, reserve *big.Int, crr uint, sellAmount *big.Int) *big.Int {
-
 	// special case for 0 sell amount
 	if sellAmount.Cmp(types.Big0) == 0 {
 		return big.NewInt(0)
@@ -98,6 +106,16 @@ func CalculateSaleReturn(supply *big.Int, reserve *big.Int, crr uint, sellAmount
 // reversed function CalculateSaleReturn
 // -(-1 + (-(wantReceive - reserve)/reserve)^(1/crr)) * supply
 func CalculateSaleAmount(supply *big.Int, reserve *big.Int, crr uint, wantReceive *big.Int) *big.Int {
+	if wantReceive.Cmp(types.Big0) == 0 {
+		return big.NewInt(0)
+	}
+
+	if crr == 100 {
+		ret := big.NewInt(0).Mul(wantReceive, supply)
+		ret.Div(ret, reserve)
+
+		return ret
+	}
 
 	tSupply := newFloat(0).SetInt(supply)
 	tReserve := newFloat(0).SetInt(reserve)

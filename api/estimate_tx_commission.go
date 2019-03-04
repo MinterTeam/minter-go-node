@@ -1,61 +1,43 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/formula"
-	"github.com/MinterTeam/minter-go-node/hexutil"
+	"github.com/MinterTeam/minter-go-node/rpc/lib/types"
 	"math/big"
-	"net/http"
 )
 
-func EstimateTxCommission(w http.ResponseWriter, r *http.Request) {
+type TxCommissionResponse struct {
+	Commission *big.Int `json:"commission"`
+}
 
-	cState := GetStateForRequest(r)
-
-	query := r.URL.Query()
-	rawTx := query.Get("tx")
-	bytesTx, _ := hexutil.Decode("Mx" + rawTx)
-
-	tx, err := transaction.DecodeFromBytes(bytesTx)
-
+func EstimateTxCommission(tx []byte, height int) (*TxCommissionResponse, error) {
+	cState, err := GetStateForHeight(height)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(Response{
-			Code: 1,
-			Log:  err.Error(),
-		})
-		return
+		return nil, err
 	}
 
-	commissionInBaseCoin := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
-	commissionInBaseCoin.Mul(commissionInBaseCoin, transaction.CommissionMultiplier)
+	decodedTx, err := transaction.TxDecoder.DecodeFromBytes(tx)
+	if err != nil {
+		return nil, rpctypes.RPCError{Code: 400, Message: "Cannot decode transaction", Data: err.Error()}
+	}
+
+	commissionInBaseCoin := decodedTx.CommissionInBaseCoin()
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
-	if !tx.GasCoin.IsBaseCoin() {
-		coin := cState.GetStateCoin(tx.GasCoin)
+	if !decodedTx.GasCoin.IsBaseCoin() {
+		coin := cState.GetStateCoin(decodedTx.GasCoin)
 
 		if coin.ReserveBalance().Cmp(commissionInBaseCoin) < 0 {
-
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(Response{
-				Code: 1,
-				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.ReserveBalance().String(), commissionInBaseCoin.String()),
-			})
-			return
+			return nil, rpctypes.RPCError{Code: 400, Message: fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s",
+				coin.ReserveBalance().String(), commissionInBaseCoin.String())}
 		}
 
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
 	}
 
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(Response{
-		Code: 0,
-		Result: struct {
-			Commission string `json:"commission"`
-		}{
-			Commission: commission.String(),
-		},
-	})
+	return &TxCommissionResponse{
+		Commission: commission,
+	}, nil
 }

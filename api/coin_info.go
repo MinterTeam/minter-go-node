@@ -1,57 +1,36 @@
 package api
 
 import (
-	"encoding/json"
 	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/gorilla/mux"
-	"net/http"
+	"github.com/MinterTeam/minter-go-node/rpc/lib/types"
+	"math/big"
 )
 
 type CoinInfoResponse struct {
 	Name           string           `json:"name"`
 	Symbol         types.CoinSymbol `json:"symbol"`
-	Volume         string           `json:"volume"`
+	Volume         *big.Int         `json:"volume"`
 	Crr            uint             `json:"crr"`
-	ReserveBalance string           `json:"reserve_balance"`
-	Creator        types.Address    `json:"creator"`
+	ReserveBalance *big.Int         `json:"reserve_balance"`
 }
 
-func GetCoinInfo(w http.ResponseWriter, r *http.Request) {
-
-	cState := GetStateForRequest(r)
-
-	vars := mux.Vars(r)
-	symbol := vars["symbol"]
-
-	var coinSymbol types.CoinSymbol
-
-	copy(coinSymbol[:], []byte(symbol))
-
-	coin := cState.GetStateCoin(coinSymbol)
-
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-
-	if coin == nil {
-		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(Response{
-			Code:   404,
-			Result: nil,
-			Log:    "Coin not found",
-		})
-		return
+func CoinInfo(coinSymbol string, height int) (*CoinInfoResponse, error) {
+	cState, err := GetStateForHeight(height)
+	if err != nil {
+		return nil, err
 	}
 
-	w.WriteHeader(http.StatusOK)
+	coin := cState.GetStateCoin(types.StrToCoinSymbol(coinSymbol))
+	if coin == nil {
+		return nil, rpctypes.RPCError{Code: 404, Message: "Coin not found"}
+	}
 
-	json.NewEncoder(w).Encode(Response{
-		Code: 0,
-		Result: CoinInfoResponse{
-			Name:           coin.Data().Name,
-			Symbol:         coin.Data().Symbol,
-			Volume:         coin.Data().Volume.String(),
-			Crr:            coin.Data().Crr,
-			ReserveBalance: coin.Data().ReserveBalance.String(),
-			Creator:        coin.Data().Creator,
-		},
-	})
+	coinData := coin.Data()
+	return &CoinInfoResponse{
+		Name:           coinData.Name,
+		Symbol:         coinData.Symbol,
+		Volume:         coinData.Volume,
+		Crr:            coinData.Crr,
+		ReserveBalance: coinData.ReserveBalance,
+	}, nil
 }
