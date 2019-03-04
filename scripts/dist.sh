@@ -34,7 +34,7 @@ make get_tools
 # Get VENDORED dependencies
 make get_vendor_deps
 
-packr
+#packr
 
 # Build!
 # ldflags: -s Omit the symbol table and debug information.
