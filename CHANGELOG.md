@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.14.2
+
+BUG FIXES
+
+- [events] Fix slash event on double sign (full resync needed)
+
 ## 0.14.1
 
 IMPROVEMENT

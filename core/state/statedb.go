@@ -1170,22 +1170,23 @@ func (s *StateDB) SetValidatorAbsent(height int64, address [20]byte) {
 }
 
 func (s *StateDB) PunishByzantineValidator(currentBlock int64, address [20]byte) {
-
 	edb := eventsdb.GetCurrent()
+	vals := s.getStateValidators()
 
-	validators := s.getStateValidators()
-
-	for i := range validators.data {
-		validator := &validators.data[i]
+	for i := range vals.data {
+		validator := &vals.data[i]
 		if validator.GetAddress() == address {
 			candidates := s.getStateCandidates()
 
 			var candidate *Candidate
-
 			for i := range candidates.data {
 				if candidates.data[i].GetAddress() == address {
 					candidate = &candidates.data[i]
 				}
+			}
+
+			if candidate == nil {
+				return
 			}
 
 			for _, stake := range candidate.Stakes {
@@ -1219,13 +1220,15 @@ func (s *StateDB) PunishByzantineValidator(currentBlock int64, address [20]byte)
 			candidate.Status = CandidateStatusOffline
 			validator.AccumReward = big.NewInt(0)
 			validator.TotalBipStake = big.NewInt(0)
+			// TODO: uncomment
+			//validator.toDrop = true
 
 			s.setStateCandidates(candidates)
 			s.MarkStateCandidateDirty()
 		}
 	}
 
-	s.setStateValidators(validators)
+	s.setStateValidators(vals)
 	s.MarkStateValidatorsDirty()
 }
 
@@ -1237,7 +1240,7 @@ func (s *StateDB) PunishFrozenFundsWithAddress(fromBlock uint64, toBlock uint64,
 			continue
 		}
 
-		frozenFund.PunishFund(s, address)
+		frozenFund.PunishFund(s, address, fromBlock)
 	}
 }
 
