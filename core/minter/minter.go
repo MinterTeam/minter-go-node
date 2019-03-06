@@ -178,11 +178,11 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 	}
 
 	// give penalty to Byzantine validators
-	for i := range req.ByzantineValidators {
-		v := &req.ByzantineValidators[i]
+	for _, byzVal := range req.ByzantineValidators {
 		var address [20]byte
-		copy(address[:], v.Validator.Address)
+		copy(address[:], byzVal.Validator.Address)
 
+		// TODO: switch places
 		app.stateDeliver.PunishByzantineValidator(req.Header.Height, address)
 		app.stateDeliver.PunishFrozenFundsWithAddress(uint64(req.Header.Height), uint64(req.Header.Height+518400), address)
 	}
