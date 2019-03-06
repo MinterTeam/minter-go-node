@@ -726,13 +726,27 @@ func (s *StateDB) CandidateExists(key types.Pubkey) bool {
 
 func (s *StateDB) GetStateCandidate(key types.Pubkey) *Candidate {
 	stateCandidates := s.getStateCandidates()
-
 	if stateCandidates == nil {
 		return nil
 	}
 
 	for i, candidate := range stateCandidates.data {
 		if bytes.Equal(candidate.PubKey, key) {
+			return &(stateCandidates.data[i])
+		}
+	}
+
+	return nil
+}
+
+func (s *StateDB) GetStateCandidateByTmAddress(address [20]byte) *Candidate {
+	stateCandidates := s.getStateCandidates()
+	if stateCandidates == nil {
+		return nil
+	}
+
+	for i, candidate := range stateCandidates.data {
+		if candidate.GetAddress() == address {
 			return &(stateCandidates.data[i])
 		}
 	}

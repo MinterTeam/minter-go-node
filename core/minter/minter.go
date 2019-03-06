@@ -182,6 +182,12 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 		var address [20]byte
 		copy(address[:], byzVal.Validator.Address)
 
+		// skip already offline candidates to prevent double punishing
+		candidate := app.stateDeliver.GetStateCandidateByTmAddress(address)
+		if candidate == nil && candidate.Status == state.CandidateStatusOffline {
+			continue
+		}
+
 		app.stateDeliver.PunishFrozenFundsWithAddress(req.Header.Height, req.Header.Height+state.UnbondPeriod, address)
 		app.stateDeliver.PunishByzantineValidator(req.Header.Height, address)
 	}
