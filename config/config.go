@@ -254,10 +254,6 @@ type BaseConfig struct {
 
 	APISimultaneousRequests int `mapstructure:"api_simultaneous_requests"`
 
-	APIPerIPLimit int `mapstructure:"api_per_ip_limit"`
-
-	APIPerIPLimitWindow time.Duration `mapstructure:"api_per_ip_limit_window"`
-
 	LogPath string `mapstructure:"log_path"`
 }
 
