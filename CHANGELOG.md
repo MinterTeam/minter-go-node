@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.15.0
+
+BUG FIXES
+
+- [core] Fix double sign slashing issue #215
+
 ## 0.14.2
 
 BUG FIXES

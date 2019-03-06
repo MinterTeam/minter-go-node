@@ -1220,8 +1220,7 @@ func (s *StateDB) PunishByzantineValidator(currentBlock int64, address [20]byte)
 			candidate.Status = CandidateStatusOffline
 			validator.AccumReward = big.NewInt(0)
 			validator.TotalBipStake = big.NewInt(0)
-			// TODO: uncomment
-			//validator.toDrop = true
+			validator.toDrop = true
 
 			s.setStateCandidates(candidates)
 			s.MarkStateCandidateDirty()
@@ -1232,9 +1231,9 @@ func (s *StateDB) PunishByzantineValidator(currentBlock int64, address [20]byte)
 	s.MarkStateValidatorsDirty()
 }
 
-func (s *StateDB) PunishFrozenFundsWithAddress(fromBlock uint64, toBlock uint64, address [20]byte) {
+func (s *StateDB) PunishFrozenFundsWithAddress(fromBlock int64, toBlock int64, address [20]byte) {
 	for i := fromBlock; i <= toBlock; i++ {
-		frozenFund := s.getStateFrozenFunds(i)
+		frozenFund := s.getStateFrozenFunds(uint64(i))
 
 		if frozenFund == nil {
 			continue

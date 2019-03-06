@@ -182,9 +182,8 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 		var address [20]byte
 		copy(address[:], byzVal.Validator.Address)
 
-		// TODO: switch places
+		app.stateDeliver.PunishFrozenFundsWithAddress(req.Header.Height, req.Header.Height+state.UnbondPeriod, address)
 		app.stateDeliver.PunishByzantineValidator(req.Header.Height, address)
-		app.stateDeliver.PunishFrozenFundsWithAddress(uint64(req.Header.Height), uint64(req.Header.Height+518400), address)
 	}
 
 	// apply frozen funds (used for unbond stakes)
