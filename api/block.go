@@ -2,20 +2,20 @@ package api
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/rewards"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/rpc/lib/types"
-	"github.com/tendermint/tendermint/libs/common"
 	types2 "github.com/tendermint/tendermint/types"
 	"math/big"
 	"time"
 )
 
 type BlockResponse struct {
-	Hash         common.HexBytes            `json:"hash"`
+	Hash         string                     `json:"hash"`
 	Height       int64                      `json:"height"`
 	Time         time.Time                  `json:"time"`
 	NumTxs       int64                      `json:"num_txs"`
@@ -136,7 +136,7 @@ func Block(height int64) (*BlockResponse, error) {
 	}
 
 	return &BlockResponse{
-		Hash:         block.Block.Hash(),
+		Hash:         hex.EncodeToString(block.Block.Hash()),
 		Height:       block.Block.Height,
 		Time:         block.Block.Time,
 		NumTxs:       block.Block.NumTxs,

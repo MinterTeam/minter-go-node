@@ -5,6 +5,7 @@
 BUG FIXES
 
 - [core] Fix double sign slashing issue #215
+- [api] Make block hash lowercase #214
 
 ## 0.14.2
 
