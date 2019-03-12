@@ -391,7 +391,7 @@
   version = "v0.14.1"
 
 [[projects]]
-  digest = "1:a8544db2d244d8c51fd1991ef4daaa78e80c3ee23c1d0f4a99e77f4df3ad0fe8"
+  digest = "1:be67dbeff326148ddaa39436a4b80a5ea436d5c7207ff39651bd5ba34f0006fe"
   name = "github.com/tendermint/tendermint"
   packages = [
     "abci/client",
@@ -446,8 +446,8 @@
     "version",
   ]
   pruneopts = "UT"
-  revision = "e0f8936455029a40287a69d5b0e7baa4d5864da1"
-  version = "v0.30.1"
+  revision = "976819537d199aa43c6ad55ec4e8958323322bb0"
+  version = "v0.30.2"
 
 [[projects]]
   digest = "1:b6621a5e9003d7d809993d49217a841d27ef85b4bc0459115d3fd1f8c1518999"
@@ -601,6 +601,7 @@
     "github.com/tendermint/tendermint/crypto/ed25519",
     "github.com/tendermint/tendermint/crypto/multisig",
     "github.com/tendermint/tendermint/crypto/secp256k1",
+    "github.com/tendermint/tendermint/evidence",
     "github.com/tendermint/tendermint/libs/cli/flags",
     "github.com/tendermint/tendermint/libs/common",
     "github.com/tendermint/tendermint/libs/db",

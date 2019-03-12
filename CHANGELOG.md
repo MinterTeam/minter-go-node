@@ -2,9 +2,14 @@
 
 ## 0.15.0
 
+IMPROVEMENT
+
+- [tendermint] Update to [v0.30.2](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0302) 
+
 BUG FIXES
 
 - [core] Fix double sign slashing issue #215
+- [core] Fix issue with slashing small stake #209
 - [api] Make block hash lowercase #214
 
 ## 0.14.2
