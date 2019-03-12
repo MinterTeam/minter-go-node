@@ -1536,16 +1536,18 @@ func (s *StateDB) deleteCoin(symbol types.CoinSymbol) {
 
 	// remove coin from stakes
 	candidates := s.getStateCandidates()
-	for i := range candidates.data {
-		candidate := &candidates.data[i]
-		for j, stake := range candidate.Stakes {
-			if stake.Coin == symbol {
-				candidate.Stakes[j].Value = big.NewInt(0)
+	if candidates != nil {
+		for i := range candidates.data {
+			candidate := &candidates.data[i]
+			for j, stake := range candidate.Stakes {
+				if stake.Coin == symbol {
+					candidate.Stakes[j].Value = big.NewInt(0)
+				}
 			}
 		}
+		s.setStateCandidates(candidates)
+		s.MarkStateCandidateDirty()
 	}
-	s.setStateCandidates(candidates)
-	s.MarkStateCandidateDirty()
 
 	// set coin volume to 0
 	s.SubCoinVolume(symbol, s.GetStateCoin(symbol).Volume())
