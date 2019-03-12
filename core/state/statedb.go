@@ -1154,6 +1154,7 @@ func (s *StateDB) SetValidatorAbsent(height int64, address [20]byte) {
 
 						s.SubCoinVolume(coin.Symbol, slashed)
 						s.SubCoinReserve(coin.Symbol, ret)
+						s.DeleteCoinIfZeroReserve(stake.Coin)
 					}
 
 					edb.AddEvent(height, eventsdb.SlashEvent{
@@ -1228,6 +1229,7 @@ func (s *StateDB) PunishByzantineValidator(currentBlock int64, address [20]byte)
 
 				s.GetOrNewStateFrozenFunds(uint64(currentBlock+UnbondPeriod)).AddFund(stake.Owner, candidate.PubKey,
 					stake.Coin, newValue)
+				s.DeleteCoinIfZeroReserve(stake.Coin)
 			}
 
 			candidate.Stakes = []Stake{}
@@ -1493,4 +1495,58 @@ func (s *StateDB) GetMaxGas() uint64 {
 	_, b := s.iavl.Get(maxGasKey)
 
 	return binary.BigEndian.Uint64(b)
+}
+
+func (s *StateDB) DeleteCoinIfZeroReserve(symbol types.CoinSymbol) {
+	if symbol.IsBaseCoin() {
+		return
+	}
+
+	coin := s.GetStateCoin(symbol)
+	if coin.ReserveBalance().Cmp(big.NewInt(0)) == 0 {
+		s.deleteCoin(symbol)
+	}
+}
+
+func (s *StateDB) deleteCoin(symbol types.CoinSymbol) {
+	s.iavl.Iterate(func(key []byte, value []byte) bool {
+		// remove coin from accounts
+		if key[0] == addressPrefix[0] {
+			account := s.GetOrNewStateObject(types.BytesToAddress(key[1:]))
+			for _, coin := range account.Balances().getCoins() {
+				if coin == symbol {
+					account.SetBalance(symbol, big.NewInt(0))
+				}
+			}
+		}
+
+		// remove coin from frozen funds
+		if key[0] == frozenFundsPrefix[0] {
+			frozenFunds := s.GetStateFrozenFunds(binary.BigEndian.Uint64(key[1:]))
+
+			for i, ff := range frozenFunds.data.List {
+				if ff.Coin == symbol {
+					frozenFunds.data.List = append(frozenFunds.data.List[:i], frozenFunds.data.List[i+1:]...)
+				}
+			}
+		}
+
+		return false
+	})
+
+	// remove coin from stakes
+	candidates := s.getStateCandidates()
+	for i := range candidates.data {
+		candidate := &candidates.data[i]
+		for j, stake := range candidate.Stakes {
+			if stake.Coin == symbol {
+				candidate.Stakes[j].Value = big.NewInt(0)
+			}
+		}
+	}
+	s.setStateCandidates(candidates)
+	s.MarkStateCandidateDirty()
+
+	// set coin volume to 0
+	s.SubCoinVolume(symbol, s.GetStateCoin(symbol).Volume())
 }

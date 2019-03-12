@@ -5,6 +5,7 @@
 IMPROVEMENT
 
 - [tendermint] Update to [v0.30.2](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0302) 
+- [core] Delete coins with 0 reserves #217
 
 BUG FIXES
 

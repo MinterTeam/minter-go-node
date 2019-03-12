@@ -141,5 +141,9 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPool *big.I
 
 	response.GasPrice = tx.GasPrice
 
+	if !isCheck && response.Code == code.OK {
+		context.DeleteCoinIfZeroReserve(tx.GasCoin)
+	}
+
 	return response
 }

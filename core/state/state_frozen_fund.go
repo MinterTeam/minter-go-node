@@ -123,6 +123,7 @@ func (c *stateFrozenFund) punishFund(context *StateDB, candidateAddress [20]byte
 			})
 
 			item.Value = newValue
+			context.DeleteCoinIfZeroReserve(item.Coin)
 		}
 
 		newList[i] = item
