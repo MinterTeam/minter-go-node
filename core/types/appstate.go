@@ -60,10 +60,15 @@ type FrozenFund struct {
 type UsedCheck string
 
 type Account struct {
-	Address      Address           `json:"address"`
-	Balance      map[string]string `json:"balance"`
-	Nonce        uint64            `json:"nonce"`
-	MultisigData Multisig          `json:"multisig_data"`
+	Address      Address   `json:"address"`
+	Balance      []Balance `json:"balance"`
+	Nonce        uint64    `json:"nonce"`
+	MultisigData Multisig  `json:"multisig_data"`
+}
+
+type Balance struct {
+	Coin  CoinSymbol `json:"coin"`
+	Value *big.Int   `json:"value"`
 }
 
 type Multisig struct {
