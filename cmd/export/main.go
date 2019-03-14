@@ -21,14 +21,15 @@ func main() {
 	}
 
 	applicationDB := appdb.NewAppDB()
-	currentState, err := state.New(applicationDB.GetLastHeight(), ldb)
+	height := applicationDB.GetLastHeight()
+	currentState, err := state.New(height, ldb)
 	if err != nil {
 		panic(err)
 	}
 
 	cdc := amino.NewCodec()
 
-	jsonBytes, err := cdc.MarshalJSONIndent(currentState.Export(), "", "	")
+	jsonBytes, err := cdc.MarshalJSONIndent(currentState.Export(height), "", "	")
 	if err != nil {
 		panic(err)
 	}

@@ -1558,7 +1558,7 @@ func (s *StateDB) deleteCoin(symbol types.CoinSymbol) {
 	s.SubCoinVolume(symbol, s.GetStateCoin(symbol).Volume())
 }
 
-func (s *StateDB) Export() types.AppState {
+func (s *StateDB) Export(currentHeight int64) types.AppState {
 	appState := types.AppState{}
 
 	s.iavl.Iterate(func(key []byte, value []byte) bool {
@@ -1618,7 +1618,7 @@ func (s *StateDB) Export() types.AppState {
 
 			for _, frozenFund := range frozenFunds.List() {
 				appState.FrozenFunds = append(appState.FrozenFunds, types.FrozenFund{
-					Height:       height,
+					Height:       height - uint64(currentHeight),
 					Address:      frozenFund.Address,
 					CandidateKey: frozenFund.CandidateKey,
 					Coin:         frozenFund.Coin,
