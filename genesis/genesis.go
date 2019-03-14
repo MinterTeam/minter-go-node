@@ -126,8 +126,11 @@ func makeBalances(balances map[string]int64) []types.Account {
 	for address, balance := range balances {
 		result[i] = types.Account{
 			Address: types.HexToAddress(address),
-			Balance: map[string]string{
-				types.GetBaseCoin().String(): helpers.BipToPip(big.NewInt(balance)).String(),
+			Balance: []types.Balance{
+				{
+					Coin:  types.GetBaseCoin(),
+					Value: helpers.BipToPip(big.NewInt(balance)),
+				},
 			},
 		}
 		i++
