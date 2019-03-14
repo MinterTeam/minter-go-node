@@ -545,7 +545,7 @@ func (s *StateDB) CreateValidator(
 		PubKey:        pubkey,
 		Commission:    commission,
 		AccumReward:   big.NewInt(0),
-		AbsentTimes:   NewBitArray(ValidatorMaxAbsentWindow),
+		AbsentTimes:   types.NewBitArray(ValidatorMaxAbsentWindow),
 	})
 
 	s.MarkStateValidatorsDirty()
@@ -1135,7 +1135,7 @@ func (s *StateDB) SetValidatorAbsent(height int64, address [20]byte) {
 
 			if validator.CountAbsentTimes() > ValidatorMaxAbsentTimes {
 				candidate.Status = CandidateStatusOffline
-				validator.AbsentTimes = NewBitArray(ValidatorMaxAbsentWindow)
+				validator.AbsentTimes = types.NewBitArray(ValidatorMaxAbsentWindow)
 				validator.toDrop = true
 
 				totalStake := big.NewInt(0)
@@ -1266,7 +1266,7 @@ func (s *StateDB) SetNewValidators(candidates []Candidate) {
 
 	for _, candidate := range candidates {
 		accumReward := big.NewInt(0)
-		absentTimes := NewBitArray(ValidatorMaxAbsentWindow)
+		absentTimes := types.NewBitArray(ValidatorMaxAbsentWindow)
 
 		for _, oldVal := range oldVals.data {
 			if oldVal.GetAddress() == candidate.GetAddress() {
@@ -1551,4 +1551,111 @@ func (s *StateDB) deleteCoin(symbol types.CoinSymbol) {
 
 	// set coin volume to 0
 	s.SubCoinVolume(symbol, s.GetStateCoin(symbol).Volume())
+}
+
+func (s *StateDB) Export() types.AppState {
+	appState := types.AppState{}
+
+	s.iavl.Iterate(func(key []byte, value []byte) bool {
+		// export accounts
+		if key[0] == addressPrefix[0] {
+			account := s.GetOrNewStateObject(types.BytesToAddress(key[1:]))
+
+			balance := map[string]string{}
+			for coin, value := range account.Balances().Data {
+				balance[coin.String()] = value.String()
+			}
+
+			appState.Accounts = append(appState.Accounts, types.Account{
+				Address: account.address,
+				Balance: balance,
+				Nonce:   account.data.Nonce,
+				MultisigData: types.Multisig{
+					Weights:   account.data.MultisigData.Weights,
+					Threshold: account.data.MultisigData.Threshold,
+					Addresses: account.data.MultisigData.Addresses,
+				},
+			})
+		}
+
+		// export coins
+		if key[0] == coinPrefix[0] {
+			coin := s.GetStateCoin(types.StrToCoinSymbol(string(key[1:])))
+
+			appState.Coins = append(appState.Coins, types.Coin{
+				Name:           coin.Name(),
+				Symbol:         coin.Symbol(),
+				Volume:         coin.Volume(),
+				Crr:            coin.Crr(),
+				ReserveBalance: coin.ReserveBalance(),
+			})
+		}
+
+		// export used checks
+		if key[0] == usedCheckPrefix[0] {
+			appState.UsedChecks = append(appState.UsedChecks, types.UsedCheck(fmt.Sprintf("%x", key[1:])))
+		}
+
+		// export frozen funds
+		if key[0] == frozenFundsPrefix[0] {
+			height := binary.BigEndian.Uint64(key[1:])
+			frozenFunds := s.GetStateFrozenFunds(height)
+
+			for _, frozenFund := range frozenFunds.List() {
+				appState.FrozenFunds = append(appState.FrozenFunds, types.FrozenFund{
+					Height:       height,
+					Address:      frozenFund.Address,
+					CandidateKey: frozenFund.CandidateKey,
+					Coin:         frozenFund.Coin,
+					Value:        frozenFund.Value,
+				})
+			}
+		}
+
+		return false
+	})
+
+	candidates := s.getStateCandidates()
+	for _, candidate := range candidates.data {
+		var stakes []types.Stake
+		for _, s := range candidate.Stakes {
+			stakes = append(stakes, types.Stake{
+				Owner:    s.Owner,
+				Coin:     s.Coin,
+				Value:    s.Value,
+				BipValue: s.BipValue,
+			})
+		}
+
+		appState.Candidates = append(appState.Candidates, types.Candidate{
+			RewardAddress:  candidate.RewardAddress,
+			OwnerAddress:   candidate.OwnerAddress,
+			TotalBipStake:  candidate.TotalBipStake,
+			PubKey:         candidate.PubKey,
+			Commission:     candidate.Commission,
+			Stakes:         stakes,
+			CreatedAtBlock: candidate.CreatedAtBlock,
+			Status:         candidate.Status,
+		})
+	}
+
+	vals := s.getStateValidators()
+	for _, val := range vals.data {
+		appState.Validators = append(appState.Validators, types.Validator{
+			RewardAddress: val.RewardAddress,
+			TotalBipStake: val.TotalBipStake,
+			PubKey:        val.PubKey,
+			Commission:    val.Commission,
+			AccumReward:   val.AccumReward,
+			AbsentTimes:   val.AbsentTimes,
+		})
+	}
+
+	appState.MaxGas = s.GetMaxGas()
+
+	return appState
+}
+
+func (s *StateDB) Import(appState types.AppState) {
+
 }

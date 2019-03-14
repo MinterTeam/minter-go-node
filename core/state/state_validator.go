@@ -30,7 +30,7 @@ type Validator struct {
 	PubKey        types.Pubkey
 	Commission    uint
 	AccumReward   *big.Int
-	AbsentTimes   *BitArray
+	AbsentTimes   *types.BitArray
 
 	tmAddress *[20]byte
 	toDrop    bool

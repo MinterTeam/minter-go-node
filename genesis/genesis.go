@@ -4,9 +4,9 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"github.com/MinterTeam/minter-go-node/core/developers"
+	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/helpers"
-	"github.com/tendermint/tendermint/crypto/ed25519"
 	tmtypes "github.com/tendermint/tendermint/types"
 	"math/big"
 	"time"
@@ -15,19 +15,7 @@ import (
 var (
 	Network     = "minter-test-network-33"
 	genesisTime = time.Date(2019, 2, 18, 9, 0, 0, 0, time.UTC)
-
-	totalValidatorsPower = 100000000
 )
-
-type AppState struct {
-	FirstValidatorAddress types.Address `json:"first_validator_address"`
-	InitialBalances       []Account     `json:"initial_balances"`
-}
-
-type Account struct {
-	Address types.Address     `json:"address"`
-	Balance map[string]string `json:"balance"`
-}
 
 func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
 	validatorsPubKeys := []string{
@@ -54,10 +42,14 @@ func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
 		"Mx35c40563ee5181899d0d605839edb9e940b0d8e5": 33869,    // SolidMinter
 	}
 
+	validators, candidates := makeValidatorsAndCandidates(validatorsPubKeys)
+
 	// Prepare initial AppState
-	appStateJSON, err := json.Marshal(AppState{
-		FirstValidatorAddress: developers.Address,
-		InitialBalances:       makeBalances(balances),
+	appStateJSON, err := json.Marshal(types.AppState{
+		Validators: validators,
+		Candidates: candidates,
+		Accounts:   makeBalances(balances),
+		MaxGas:     100000,
 	})
 	if err != nil {
 		return nil, err
@@ -69,7 +61,6 @@ func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
 	genesis := tmtypes.GenesisDoc{
 		ChainID:     Network,
 		GenesisTime: genesisTime,
-		Validators:  makeValidators(validatorsPubKeys),
 		AppHash:     appHash[:],
 		AppState:    json.RawMessage(appStateJSON),
 	}
@@ -82,31 +73,47 @@ func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
 	return &genesis, nil
 }
 
-func decodeValidatorPubkey(pubkey string) ed25519.PubKeyEd25519 {
-	validatorPubKeyBytes, err := base64.StdEncoding.DecodeString(pubkey)
-	if err != nil {
-		panic(err)
-	}
+func makeValidatorsAndCandidates(pubkeys []string) ([]types.Validator, []types.Candidate) {
+	validators := make([]types.Validator, len(pubkeys))
+	candidates := make([]types.Candidate, len(pubkeys))
+	addr := developers.Address
 
-	var validatorPubKey ed25519.PubKeyEd25519
-	copy(validatorPubKey[:], validatorPubKeyBytes)
-
-	return validatorPubKey
-}
-
-func makeValidators(pubkeys []string) []tmtypes.GenesisValidator {
-	validators := make([]tmtypes.GenesisValidator, len(pubkeys))
 	for i, val := range pubkeys {
-		validators[i] = tmtypes.GenesisValidator{
-			PubKey: decodeValidatorPubkey(val),
-			Power:  int64(totalValidatorsPower / len(pubkeys)),
+		pkey, err := base64.StdEncoding.DecodeString(val)
+		if err != nil {
+			panic(err)
+		}
+
+		validators[i] = types.Validator{
+			RewardAddress: addr,
+			TotalBipStake: big.NewInt(1),
+			PubKey:        pkey,
+			Commission:    100,
+		}
+
+		candidates[i] = types.Candidate{
+			RewardAddress: addr,
+			OwnerAddress:  addr,
+			TotalBipStake: big.NewInt(1),
+			PubKey:        pkey,
+			Commission:    100,
+			Stakes: []types.Stake{
+				{
+					Owner:    addr,
+					Coin:     types.GetBaseCoin(),
+					Value:    big.NewInt(1),
+					BipValue: big.NewInt(1),
+				},
+			},
+			CreatedAtBlock: 1,
+			Status:         state.CandidateStatusOnline,
 		}
 	}
 
-	return validators
+	return validators, candidates
 }
 
-func makeBalances(balances map[string]int64) []Account {
+func makeBalances(balances map[string]int64) []types.Account {
 	var totalBalances int64
 	for _, val := range balances {
 		totalBalances += val
@@ -114,10 +121,10 @@ func makeBalances(balances map[string]int64) []Account {
 
 	balances[developers.Address.String()] = 200000000 - totalBalances // Developers account
 
-	result := make([]Account, len(balances))
+	result := make([]types.Account, len(balances))
 	i := 0
 	for address, balance := range balances {
-		result[i] = Account{
+		result[i] = types.Account{
 			Address: types.HexToAddress(address),
 			Balance: map[string]string{
 				types.GetBaseCoin().String(): helpers.BipToPip(big.NewInt(balance)).String(),
