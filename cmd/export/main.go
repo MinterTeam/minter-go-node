@@ -1,7 +1,7 @@
 package main
 
 import (
-	"encoding/json"
+	"github.com/MinterTeam/go-amino"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/core/appdb"
 	"github.com/MinterTeam/minter-go-node/core/state"
@@ -26,7 +26,9 @@ func main() {
 		panic(err)
 	}
 
-	jsonBytes, err := json.MarshalIndent(currentState.Export(), "", "	")
+	cdc := amino.NewCodec()
+
+	jsonBytes, err := cdc.MarshalJSONIndent(currentState.Export(), "", "	")
 	if err != nil {
 		panic(err)
 	}

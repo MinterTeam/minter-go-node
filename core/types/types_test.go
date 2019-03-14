@@ -19,6 +19,7 @@ package types
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/MinterTeam/go-amino"
 	"math/big"
 	"strings"
 	"testing"
@@ -171,7 +172,7 @@ func TestAppState(t *testing.T) {
 					},
 				},
 				Nonce:   1,
-				MultisigData: Multisig{
+				MultisigData: &Multisig{
 					Weights:   []uint{1,2,3},
 					Threshold: 1,
 					Addresses: []Address{testAddr,testAddr},
@@ -202,18 +203,20 @@ func TestAppState(t *testing.T) {
 		MaxGas:      10,
 	}
 
-	b1, err := json.Marshal(appState)
+	cdc := amino.NewCodec()
+
+	b1, err := cdc.MarshalJSON(appState)
 	if err != nil {
 		panic(err)
 	}
 
 	newAppState := AppState{}
-	err = json.Unmarshal(b1, &newAppState)
+	err = cdc.UnmarshalJSON(b1, &newAppState)
 	if err != nil {
 		panic(err)
 	}
 
-	b2, err := json.Marshal(newAppState)
+	b2, err := cdc.MarshalJSON(newAppState)
 	if err != nil {
 		panic(err)
 	}

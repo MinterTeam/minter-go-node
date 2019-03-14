@@ -1576,16 +1576,21 @@ func (s *StateDB) Export() types.AppState {
 				i++
 			}
 
-			appState.Accounts = append(appState.Accounts, types.Account{
+			acc := types.Account{
 				Address: account.address,
 				Balance: balance,
 				Nonce:   account.data.Nonce,
-				MultisigData: types.Multisig{
+			}
+
+			if account.IsMultisig() {
+				acc.MultisigData = &types.Multisig{
 					Weights:   account.data.MultisigData.Weights,
 					Threshold: account.data.MultisigData.Threshold,
 					Addresses: account.data.MultisigData.Addresses,
-				},
-			})
+				}
+			}
+
+			appState.Accounts = append(appState.Accounts, acc)
 		}
 
 		// export coins
@@ -1673,9 +1678,12 @@ func (s *StateDB) Import(appState types.AppState) {
 		account := s.GetOrNewStateObject(a.Address)
 
 		account.data.Nonce = a.Nonce
-		account.data.MultisigData.Addresses = a.MultisigData.Addresses
-		account.data.MultisigData.Threshold = a.MultisigData.Threshold
-		account.data.MultisigData.Weights = a.MultisigData.Weights
+
+		if a.MultisigData != nil {
+			account.data.MultisigData.Addresses = a.MultisigData.Addresses
+			account.data.MultisigData.Threshold = a.MultisigData.Threshold
+			account.data.MultisigData.Weights = a.MultisigData.Weights
+		}
 
 		for _, b := range a.Balance {
 			account.SetBalance(b.Coin, b.Value)

@@ -63,7 +63,7 @@ type Account struct {
 	Address      Address   `json:"address"`
 	Balance      []Balance `json:"balance"`
 	Nonce        uint64    `json:"nonce"`
-	MultisigData Multisig  `json:"multisig_data"`
+	MultisigData *Multisig  `json:"multisig_data"`
 }
 
 type Balance struct {
