@@ -3,6 +3,7 @@ package genesis
 import (
 	"encoding/base64"
 	"encoding/json"
+	"github.com/MinterTeam/go-amino"
 	"github.com/MinterTeam/minter-go-node/core/developers"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
@@ -15,6 +16,9 @@ import (
 var (
 	Network     = "minter-test-network-33"
 	genesisTime = time.Date(2019, 2, 18, 9, 0, 0, 0, time.UTC)
+
+	BlockMaxBytes int64 = 10000000
+	DefaultMaxGas int64 = 100000
 )
 
 func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
@@ -42,15 +46,17 @@ func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
 		"Mx35c40563ee5181899d0d605839edb9e940b0d8e5": 33869,    // SolidMinter
 	}
 
-	validators, candidates := makeValidatorsAndCandidates(validatorsPubKeys)
+	validators, candidates := MakeValidatorsAndCandidates(validatorsPubKeys, big.NewInt(1))
+
+	cdc := amino.NewCodec()
 
 	// Prepare initial AppState
-	appStateJSON, err := json.Marshal(types.AppState{
+	appStateJSON, err := cdc.MarshalJSONIndent(types.AppState{
 		Validators: validators,
 		Candidates: candidates,
 		Accounts:   makeBalances(balances),
 		MaxGas:     100000,
-	})
+	}, "", "	")
 	if err != nil {
 		return nil, err
 	}
@@ -59,10 +65,22 @@ func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
 
 	// Compose Genesis
 	genesis := tmtypes.GenesisDoc{
-		ChainID:     Network,
 		GenesisTime: genesisTime,
-		AppHash:     appHash[:],
-		AppState:    json.RawMessage(appStateJSON),
+		ChainID:     Network,
+		ConsensusParams: &tmtypes.ConsensusParams{
+			BlockSize: tmtypes.BlockSizeParams{
+				MaxBytes: BlockMaxBytes,
+				MaxGas:   DefaultMaxGas,
+			},
+			Evidence: tmtypes.EvidenceParams{
+				MaxAge: 1000,
+			},
+			Validator: tmtypes.ValidatorParams{
+				PubKeyTypes: []string{tmtypes.ABCIPubKeyTypeEd25519},
+			},
+		},
+		AppHash:  appHash[:],
+		AppState: json.RawMessage(appStateJSON),
 	}
 
 	err = genesis.ValidateAndComplete()
@@ -73,7 +91,7 @@ func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
 	return &genesis, nil
 }
 
-func makeValidatorsAndCandidates(pubkeys []string) ([]types.Validator, []types.Candidate) {
+func MakeValidatorsAndCandidates(pubkeys []string, stake *big.Int) ([]types.Validator, []types.Candidate) {
 	validators := make([]types.Validator, len(pubkeys))
 	candidates := make([]types.Candidate, len(pubkeys))
 	addr := developers.Address
@@ -86,9 +104,11 @@ func makeValidatorsAndCandidates(pubkeys []string) ([]types.Validator, []types.C
 
 		validators[i] = types.Validator{
 			RewardAddress: addr,
-			TotalBipStake: big.NewInt(1),
+			TotalBipStake: stake,
 			PubKey:        pkey,
 			Commission:    100,
+			AccumReward:   big.NewInt(0),
+			AbsentTimes:   types.NewBitArray(24),
 		}
 
 		candidates[i] = types.Candidate{
@@ -101,8 +121,8 @@ func makeValidatorsAndCandidates(pubkeys []string) ([]types.Validator, []types.C
 				{
 					Owner:    addr,
 					Coin:     types.GetBaseCoin(),
-					Value:    big.NewInt(1),
-					BipValue: big.NewInt(1),
+					Value:    stake,
+					BipValue: stake,
 				},
 			},
 			CreatedAtBlock: 1,

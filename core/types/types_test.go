@@ -130,27 +130,29 @@ func BenchmarkAddressHex(b *testing.B) {
 
 func TestAppState(t *testing.T) {
 	testAddr := HexToAddress("Mx5aaeb6053f3e94c9b9a09f33669435e7ef1beaed")
-	pubkey := Pubkey{1,2,3}
+	pubkey := Pubkey{1, 2, 3}
+	ba := NewBitArray(24)
+	ba.SetIndex(3, true)
 
 	appState := AppState{
-		Validators:  []Validator{
+		Validators: []Validator{
 			{
 				RewardAddress: testAddr,
 				TotalBipStake: big.NewInt(1),
 				PubKey:        pubkey,
 				Commission:    1,
 				AccumReward:   big.NewInt(1),
-				AbsentTimes:   NewBitArray(24),
+				AbsentTimes:   ba,
 			},
 		},
-		Candidates:  []Candidate{
+		Candidates: []Candidate{
 			{
-				RewardAddress:  testAddr,
-				OwnerAddress:   testAddr,
-				TotalBipStake:  big.NewInt(1),
-				PubKey:         pubkey,
-				Commission:     1,
-				Stakes:         []Stake{
+				RewardAddress: testAddr,
+				OwnerAddress:  testAddr,
+				TotalBipStake: big.NewInt(1),
+				PubKey:        pubkey,
+				Commission:    1,
+				Stakes: []Stake{
 					{
 						Owner:    testAddr,
 						Coin:     GetBaseCoin(),
@@ -162,7 +164,7 @@ func TestAppState(t *testing.T) {
 				Status:         1,
 			},
 		},
-		Accounts:    []Account{
+		Accounts: []Account{
 			{
 				Address: testAddr,
 				Balance: []Balance{
@@ -171,15 +173,15 @@ func TestAppState(t *testing.T) {
 						Value: big.NewInt(1),
 					},
 				},
-				Nonce:   1,
+				Nonce: 1,
 				MultisigData: &Multisig{
-					Weights:   []uint{1,2,3},
+					Weights:   []uint{1, 2, 3},
 					Threshold: 1,
-					Addresses: []Address{testAddr,testAddr},
+					Addresses: []Address{testAddr, testAddr},
 				},
 			},
 		},
-		Coins:       []Coin{
+		Coins: []Coin{
 			{
 				Name:           "ASD",
 				Symbol:         GetBaseCoin(),
@@ -197,10 +199,10 @@ func TestAppState(t *testing.T) {
 				Value:        big.NewInt(1),
 			},
 		},
-		UsedChecks:  []UsedCheck{
+		UsedChecks: []UsedCheck{
 			"123",
 		},
-		MaxGas:      10,
+		MaxGas: 10,
 	}
 
 	cdc := amino.NewCodec()

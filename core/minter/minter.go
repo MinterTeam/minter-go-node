@@ -124,18 +124,6 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 
 	return abciTypes.ResponseInitChain{
 		Validators: vals,
-		ConsensusParams: &abciTypes.ConsensusParams{
-			BlockSize: &abciTypes.BlockSizeParams{
-				MaxBytes: BlockMaxBytes,
-				MaxGas:   DefaultMaxGas,
-			},
-			Evidence: &abciTypes.EvidenceParams{
-				MaxAge: 1000,
-			},
-			Validator: &abciTypes.ValidatorParams{
-				PubKeyTypes: []string{types2.ABCIPubKeyTypeEd25519},
-			},
-		},
 	}
 }
 

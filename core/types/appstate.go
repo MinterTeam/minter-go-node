@@ -5,12 +5,12 @@ import (
 )
 
 type AppState struct {
-	Validators  []Validator  `json:"validators"`
-	Candidates  []Candidate  `json:"candidates"`
-	Accounts    []Account    `json:"accounts"`
-	Coins       []Coin       `json:"coins"`
-	FrozenFunds []FrozenFund `json:"frozen_funds"`
-	UsedChecks  []UsedCheck  `json:"used_checks"`
+	Validators  []Validator  `json:"validators,omitempty"`
+	Candidates  []Candidate  `json:"candidates,omitempty"`
+	Accounts    []Account    `json:"accounts,omitempty"`
+	Coins       []Coin       `json:"coins,omitempty"`
+	FrozenFunds []FrozenFund `json:"frozen_funds,omitempty"`
+	UsedChecks  []UsedCheck  `json:"used_checks,omitempty"`
 	MaxGas      uint64       `json:"max_gas"`
 }
 
@@ -63,7 +63,7 @@ type Account struct {
 	Address      Address   `json:"address"`
 	Balance      []Balance `json:"balance"`
 	Nonce        uint64    `json:"nonce"`
-	MultisigData *Multisig  `json:"multisig_data"`
+	MultisigData *Multisig `json:"multisig_data,omitempty"`
 }
 
 type Balance struct {

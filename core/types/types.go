@@ -156,7 +156,7 @@ func (c CoinSymbol) MarshalJSON() ([]byte, error) {
 }
 
 func (c *CoinSymbol) UnmarshalJSON(input []byte) error {
-	*c = StrToCoinSymbol(string(input[1:len(input) - 1]))
+	*c = StrToCoinSymbol(string(input[1 : len(input)-1]))
 	return nil
 }
 
@@ -292,7 +292,7 @@ func (p Pubkey) MarshalJSON() ([]byte, error) {
 }
 
 func (p *Pubkey) UnmarshalJSON(input []byte) error {
-	b, err := hex.DecodeString(string(input)[3:len(input) - 1])
+	b, err := hex.DecodeString(string(input)[3 : len(input)-1])
 	*p = Pubkey(b)
 
 	return err

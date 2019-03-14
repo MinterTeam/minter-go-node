@@ -3,6 +3,7 @@ package minter
 import (
 	"context"
 	"crypto/ecdsa"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -371,25 +372,24 @@ FORLOOP2:
 }
 
 func getGenesis() (*types2.GenesisDoc, error) {
-	validators := []types2.GenesisValidator{
-		{
-			PubKey: pv.Key.PubKey,
-			Power:  100000000,
-		},
-	}
-
 	appHash := [32]byte{}
 
-	appState := genesis.AppState{
-		FirstValidatorAddress: crypto.PubkeyToAddress(privateKey.PublicKey),
-		InitialBalances: []genesis.Account{
+	validators, candidates := genesis.MakeValidatorsAndCandidates([]string{base64.StdEncoding.EncodeToString(pv.Key.PubKey.Bytes()[5:])}, big.NewInt(10000000))
+
+	appState := types.AppState{
+		Accounts: []types.Account{
 			{
 				Address: crypto.PubkeyToAddress(privateKey.PublicKey),
-				Balance: map[string]string{
-					"MNT": helpers.BipToPip(big.NewInt(100000000)).String(),
+				Balance: []types.Balance{
+					{
+						Coin:  types.GetBaseCoin(),
+						Value: helpers.BipToPip(big.NewInt(1000000)),
+					},
 				},
 			},
 		},
+		Validators: validators,
+		Candidates: candidates,
 	}
 
 	appStateJSON, err := json.Marshal(appState)
@@ -398,12 +398,10 @@ func getGenesis() (*types2.GenesisDoc, error) {
 	}
 
 	genesisDoc := types2.GenesisDoc{
-		ChainID:         "minter-test-network",
-		GenesisTime:     time.Now(),
-		ConsensusParams: nil,
-		Validators:      validators,
-		AppHash:         appHash[:],
-		AppState:        json.RawMessage(appStateJSON),
+		ChainID:     "minter-test-network",
+		GenesisTime: time.Now(),
+		AppHash:     appHash[:],
+		AppState:    json.RawMessage(appStateJSON),
 	}
 
 	err = genesisDoc.ValidateAndComplete()
