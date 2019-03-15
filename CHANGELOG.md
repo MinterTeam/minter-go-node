@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.14.3
+
+BUG FIXES
+
+- [core] Temp fix for consensus failure
+
 ## 0.14.2
 
 BUG FIXES

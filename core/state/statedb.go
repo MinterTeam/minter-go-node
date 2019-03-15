@@ -1433,6 +1433,11 @@ func (s *StateDB) IsDelegatorStakeSufficient(sender types.Address, pubKey []byte
 	for _, candidate := range candidates.data {
 		if bytes.Equal(candidate.PubKey, pubKey) {
 			for _, stake := range candidate.Stakes[:MaxDelegatorsPerCandidate] {
+				// TODO: delete at v0.15.0
+				if stake.BipValue == nil {
+					continue
+				}
+
 				if stake.BipValue.Cmp(bipValue) == -1 {
 					return true
 				}
