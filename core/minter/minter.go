@@ -49,8 +49,8 @@ type Blockchain struct {
 	appDB               *appdb.AppDB
 	stateDeliver        *state.StateDB
 	stateCheck          *state.StateDB
-	height              int64 // current Blockchain height
-	lastCommittedHeight int64 // Blockchain.height updated in the at begin of block processing, while
+	height              uint64 // current Blockchain height
+	lastCommittedHeight uint64 // Blockchain.height updated in the at begin of block processing, while
 	// lastCommittedHeight updated at the end of block processing
 	rewards            *big.Int // Rewards pool
 	validatorsStatuses map[[20]byte]int8
@@ -85,7 +85,7 @@ func NewMinterBlockchain() *Blockchain {
 	}
 
 	// Set stateDeliver and stateCheck
-	blockchain.stateDeliver, err = state.New(int64(blockchain.height), blockchain.stateDB)
+	blockchain.stateDeliver, err = state.New(blockchain.height, blockchain.stateDB)
 	if err != nil {
 		panic(err)
 	}
@@ -134,12 +134,14 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 		panic("Application stopped")
 	}
 
+	height := uint64(req.Header.Height)
+
 	// compute max gas
-	app.updateBlocksTimeDelta(req.Header.Height, 3)
-	maxGas := app.calcMaxGas(req.Header.Height)
+	app.updateBlocksTimeDelta(height, 3)
+	maxGas := app.calcMaxGas(height)
 	app.stateDeliver.SetMaxGas(maxGas)
 
-	atomic.StoreInt64(&app.height, req.Header.Height)
+	atomic.StoreUint64(&app.height, height)
 	app.rewards = big.NewInt(0)
 
 	// clear absent candidates
@@ -151,10 +153,10 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 		copy(address[:], v.Validator.Address)
 
 		if v.SignedLastBlock {
-			app.stateDeliver.SetValidatorPresent(req.Header.Height, address)
+			app.stateDeliver.SetValidatorPresent(address)
 			app.validatorsStatuses[address] = ValidatorPresent
 		} else {
-			app.stateDeliver.SetValidatorAbsent(req.Header.Height, address)
+			app.stateDeliver.SetValidatorAbsent(address)
 			app.validatorsStatuses[address] = ValidatorAbsent
 		}
 	}
@@ -170,15 +172,15 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 			continue
 		}
 
-		app.stateDeliver.PunishFrozenFundsWithAddress(req.Header.Height, req.Header.Height+state.UnbondPeriod, address)
-		app.stateDeliver.PunishByzantineValidator(req.Header.Height, address)
+		app.stateDeliver.PunishFrozenFundsWithAddress(height, height+state.UnbondPeriod, address)
+		app.stateDeliver.PunishByzantineValidator(address)
 	}
 
 	// apply frozen funds (used for unbond stakes)
 	frozenFunds := app.stateDeliver.GetStateFrozenFunds(uint64(req.Header.Height))
 	if frozenFunds != nil {
 		for _, item := range frozenFunds.List() {
-			eventsdb.GetCurrent().AddEvent(req.Header.Height, eventsdb.UnbondEvent{
+			eventsdb.GetCurrent().AddEvent(uint64(req.Header.Height), eventsdb.UnbondEvent{
 				Address:         item.Address,
 				Amount:          item.Value.Bytes(),
 				Coin:            item.Coin,
@@ -196,6 +198,8 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 
 // Signals the end of a block, returns changes to the validator set
 func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.ResponseEndBlock {
+	height := uint64(req.Height)
+
 	var updates []abciTypes.ValidatorUpdate
 
 	stateValidators := app.stateDeliver.GetStateValidators()
@@ -237,7 +241,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 
 	// pay rewards
 	if req.Height%12 == 0 {
-		app.stateDeliver.PayRewards(req.Height)
+		app.stateDeliver.PayRewards()
 	}
 
 	hasDroppedValidators := false
@@ -252,10 +256,10 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 	if req.Height%120 == 0 || hasDroppedValidators {
 		app.stateDeliver.RecalculateTotalStakeValues()
 
-		app.stateDeliver.ClearCandidates(req.Height)
-		app.stateDeliver.ClearStakes(req.Height)
+		app.stateDeliver.ClearCandidates()
+		app.stateDeliver.ClearStakes()
 
-		valsCount := validators.GetValidatorsCountForBlock(req.Height)
+		valsCount := validators.GetValidatorsCountForBlock(height)
 
 		newCandidates := app.stateDeliver.GetCandidates(valsCount, req.Height)
 
@@ -317,7 +321,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 		}
 	}
 
-	_ = eventsdb.GetCurrent().FlushEvents(req.Height)
+	_ = eventsdb.GetCurrent().FlushEvents(uint64(req.Height))
 
 	return abciTypes.ResponseEndBlock{
 		ValidatorUpdates: updates,
@@ -335,7 +339,7 @@ func (app *Blockchain) Info(req abciTypes.RequestInfo) (resInfo abciTypes.Respon
 	return abciTypes.ResponseInfo{
 		Version:          version.Version,
 		AppVersion:       version.AppVer,
-		LastBlockHeight:  app.appDB.GetLastHeight(),
+		LastBlockHeight:  int64(app.appDB.GetLastHeight()),
 		LastBlockAppHash: app.appDB.GetLastBlockHash(),
 	}
 }
@@ -393,7 +397,7 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 	app.resetCheckState()
 
 	// Update LastCommittedHeight
-	atomic.StoreInt64(&app.lastCommittedHeight, app.Height())
+	atomic.StoreUint64(&app.lastCommittedHeight, app.Height())
 
 	// Clear mempool
 	app.currentMempool = map[types.Address]struct{}{}
@@ -434,11 +438,11 @@ func (app *Blockchain) CurrentState() *state.StateDB {
 }
 
 // Get immutable state of Minter Blockchain for given height
-func (app *Blockchain) GetStateForHeight(height int) (*state.StateDB, error) {
+func (app *Blockchain) GetStateForHeight(height uint64) (*state.StateDB, error) {
 	app.lock.RLock()
 	defer app.lock.RUnlock()
 
-	s, err := state.New(int64(height), app.stateDB)
+	s, err := state.New(height, app.stateDB)
 	if err != nil {
 		return nil, rpctypes.RPCError{Code: 404, Message: "State at given height not found", Data: err.Error()}
 	}
@@ -447,13 +451,13 @@ func (app *Blockchain) GetStateForHeight(height int) (*state.StateDB, error) {
 }
 
 // Get current height of Minter Blockchain
-func (app *Blockchain) Height() int64 {
-	return atomic.LoadInt64(&app.height)
+func (app *Blockchain) Height() uint64 {
+	return atomic.LoadUint64(&app.height)
 }
 
 // Get last committed height of Minter Blockchain
-func (app *Blockchain) LastCommittedHeight() int64 {
-	return atomic.LoadInt64(&app.lastCommittedHeight)
+func (app *Blockchain) LastCommittedHeight() uint64 {
+	return atomic.LoadUint64(&app.lastCommittedHeight)
 }
 
 // Set Tendermint node
@@ -499,7 +503,7 @@ func (app *Blockchain) saveCurrentValidators(vals abciTypes.ValidatorUpdates) {
 	app.appDB.SaveValidators(vals)
 }
 
-func (app *Blockchain) updateBlocksTimeDelta(height, count int64) {
+func (app *Blockchain) updateBlocksTimeDelta(height, count uint64) {
 	// should do this because tmNode is unavailable during Tendermint's replay mode
 	if app.tmNode == nil {
 		return
@@ -511,22 +515,22 @@ func (app *Blockchain) updateBlocksTimeDelta(height, count int64) {
 
 	blockStore := app.tmNode.BlockStore()
 
-	blockA := blockStore.LoadBlockMeta(height - count - 1)
-	blockB := blockStore.LoadBlockMeta(height - 1)
+	blockA := blockStore.LoadBlockMeta(int64(height - count - 1))
+	blockB := blockStore.LoadBlockMeta(int64(height - 1))
 
 	delta := int(blockB.Header.Time.Sub(blockA.Header.Time).Seconds())
 	app.appDB.SetLastBlocksTimeDelta(height, delta)
 }
 
-func (app *Blockchain) SetBlocksTimeDelta(height int64, value int) {
+func (app *Blockchain) SetBlocksTimeDelta(height uint64, value int) {
 	app.appDB.SetLastBlocksTimeDelta(height, value)
 }
 
-func (app *Blockchain) GetBlocksTimeDelta(height, count int64) (int, error) {
+func (app *Blockchain) GetBlocksTimeDelta(height, count uint64) (int, error) {
 	return app.appDB.GetLastBlocksTimeDelta(height)
 }
 
-func (app *Blockchain) calcMaxGas(height int64) uint64 {
+func (app *Blockchain) calcMaxGas(height uint64) uint64 {
 	const targetTime = 7
 	const blockDelta = 3
 

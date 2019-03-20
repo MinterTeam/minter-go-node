@@ -44,6 +44,8 @@ type StateDB struct {
 	db   dbm.DB
 	iavl Tree
 
+	height uint64
+
 	// This map holds 'live' objects, which will get modified while processing a state transition.
 	stateAccounts      map[types.Address]*stateAccount
 	stateAccountsDirty map[types.Address]struct{}
@@ -73,6 +75,7 @@ type StakeCache struct {
 func NewForCheck(s *StateDB) *StateDB {
 	return &StateDB{
 		db:                    s.db,
+		height:                s.height,
 		iavl:                  s.iavl.GetImmutable(),
 		stateAccounts:         make(map[types.Address]*stateAccount),
 		stateAccountsDirty:    make(map[types.Address]struct{}),
@@ -86,10 +89,10 @@ func NewForCheck(s *StateDB) *StateDB {
 	}
 }
 
-func New(height int64, db dbm.DB) (*StateDB, error) {
+func New(height uint64, db dbm.DB) (*StateDB, error) {
 	tree := NewMutableTree(db)
 
-	_, err := tree.LoadVersion(height)
+	_, err := tree.LoadVersion(int64(height))
 
 	if err != nil {
 		return nil, err
@@ -97,6 +100,7 @@ func New(height int64, db dbm.DB) (*StateDB, error) {
 
 	return &StateDB{
 		db:                    db,
+		height:                height,
 		iavl:                  tree,
 		stateAccounts:         make(map[types.Address]*stateAccount),
 		stateAccountsDirty:    make(map[types.Address]struct{}),
@@ -253,6 +257,9 @@ func (s *StateDB) deleteStateObject(stateObject *stateAccount) {
 // deleteStateCoin removes the given object from the state trie.
 func (s *StateDB) deleteStateCoin(stateCoin *stateCoin) {
 	symbol := stateCoin.Symbol()
+	eventsdb.GetCurrent().AddEvent(s.height, eventsdb.CoinLiquidationEvent{
+		Coin: symbol,
+	})
 	s.iavl.Remove(append(coinPrefix, symbol[:]...))
 }
 
@@ -654,6 +661,7 @@ func (s *StateDB) Commit() (root []byte, version int64, err error) {
 	}
 
 	s.Clear()
+	s.height++
 
 	return hash, version, err
 }
@@ -849,7 +857,7 @@ func (s *StateDB) AddAccumReward(pubkey types.Pubkey, reward *big.Int) {
 	}
 }
 
-func (s *StateDB) PayRewards(height int64) {
+func (s *StateDB) PayRewards() {
 	edb := eventsdb.GetCurrent()
 
 	validators := s.getStateValidators()
@@ -866,7 +874,7 @@ func (s *StateDB) PayRewards(height int64) {
 			DAOReward.Mul(DAOReward, big.NewInt(int64(dao.Commission)))
 			DAOReward.Div(DAOReward, big.NewInt(100))
 			s.AddBalance(dao.Address, types.GetBaseCoin(), DAOReward)
-			edb.AddEvent(height, eventsdb.RewardEvent{
+			edb.AddEvent(s.height, eventsdb.RewardEvent{
 				Role:            eventsdb.RoleDAO,
 				Address:         dao.Address,
 				Amount:          DAOReward.Bytes(),
@@ -878,7 +886,7 @@ func (s *StateDB) PayRewards(height int64) {
 			DevelopersReward.Mul(DevelopersReward, big.NewInt(int64(developers.Commission)))
 			DevelopersReward.Div(DevelopersReward, big.NewInt(100))
 			s.AddBalance(developers.Address, types.GetBaseCoin(), DevelopersReward)
-			edb.AddEvent(height, eventsdb.RewardEvent{
+			edb.AddEvent(s.height, eventsdb.RewardEvent{
 				Role:            eventsdb.RoleDevelopers,
 				Address:         developers.Address,
 				Amount:          DevelopersReward.Bytes(),
@@ -894,7 +902,7 @@ func (s *StateDB) PayRewards(height int64) {
 			validatorReward.Div(validatorReward, big.NewInt(100))
 			totalReward.Sub(totalReward, validatorReward)
 			s.AddBalance(validator.RewardAddress, types.GetBaseCoin(), validatorReward)
-			edb.AddEvent(height, eventsdb.RewardEvent{
+			edb.AddEvent(s.height, eventsdb.RewardEvent{
 				Role:            eventsdb.RoleValidator,
 				Address:         validator.RewardAddress,
 				Amount:          validatorReward.Bytes(),
@@ -922,7 +930,7 @@ func (s *StateDB) PayRewards(height int64) {
 
 				s.AddBalance(stake.Owner, types.GetBaseCoin(), reward)
 
-				edb.AddEvent(height, eventsdb.RewardEvent{
+				edb.AddEvent(s.height, eventsdb.RewardEvent{
 					Role:            eventsdb.RoleDelegator,
 					Address:         stake.Owner,
 					Amount:          reward.Bytes(),
@@ -1099,13 +1107,13 @@ func (s *StateDB) SetCandidateOffline(pubkey []byte) {
 	s.MarkStateValidatorsDirty()
 }
 
-func (s *StateDB) SetValidatorPresent(height int64, address [20]byte) {
+func (s *StateDB) SetValidatorPresent(address [20]byte) {
 	validators := s.getStateValidators()
 
 	for i := range validators.data {
 		validator := &validators.data[i]
 		if validator.GetAddress() == address {
-			validator.AbsentTimes.SetIndex(int(height)%ValidatorMaxAbsentWindow, false)
+			validator.AbsentTimes.SetIndex(int(s.height)%ValidatorMaxAbsentWindow, false)
 		}
 	}
 
@@ -1113,7 +1121,7 @@ func (s *StateDB) SetValidatorPresent(height int64, address [20]byte) {
 	s.MarkStateValidatorsDirty()
 }
 
-func (s *StateDB) SetValidatorAbsent(height int64, address [20]byte) {
+func (s *StateDB) SetValidatorAbsent(address [20]byte) {
 	edb := eventsdb.GetCurrent()
 
 	validators := s.getStateValidators()
@@ -1136,7 +1144,7 @@ func (s *StateDB) SetValidatorAbsent(height int64, address [20]byte) {
 				return
 			}
 
-			validator.AbsentTimes.SetIndex(int(height)%ValidatorMaxAbsentWindow, true)
+			validator.AbsentTimes.SetIndex(int(s.height)%ValidatorMaxAbsentWindow, true)
 
 			if validator.CountAbsentTimes() > ValidatorMaxAbsentTimes {
 				candidate.Status = CandidateStatusOffline
@@ -1162,7 +1170,7 @@ func (s *StateDB) SetValidatorAbsent(height int64, address [20]byte) {
 						s.DeleteCoinIfZeroReserve(stake.Coin)
 					}
 
-					edb.AddEvent(height, eventsdb.SlashEvent{
+					edb.AddEvent(s.height, eventsdb.SlashEvent{
 						Address:         stake.Owner,
 						Amount:          slashed.Bytes(),
 						Coin:            stake.Coin,
@@ -1189,7 +1197,7 @@ func (s *StateDB) SetValidatorAbsent(height int64, address [20]byte) {
 	s.MarkStateValidatorsDirty()
 }
 
-func (s *StateDB) PunishByzantineValidator(currentBlock int64, address [20]byte) {
+func (s *StateDB) PunishByzantineValidator(address [20]byte) {
 	edb := eventsdb.GetCurrent()
 	vals := s.getStateValidators()
 
@@ -1225,14 +1233,14 @@ func (s *StateDB) PunishByzantineValidator(currentBlock int64, address [20]byte)
 					s.SubCoinReserve(coin.Symbol, ret)
 				}
 
-				edb.AddEvent(int64(currentBlock), eventsdb.SlashEvent{
+				edb.AddEvent(s.height, eventsdb.SlashEvent{
 					Address:         stake.Owner,
 					Amount:          slashed.Bytes(),
 					Coin:            stake.Coin,
 					ValidatorPubKey: candidate.PubKey,
 				})
 
-				s.GetOrNewStateFrozenFunds(uint64(currentBlock+UnbondPeriod)).AddFund(stake.Owner, candidate.PubKey,
+				s.GetOrNewStateFrozenFunds(s.height+UnbondPeriod).AddFund(stake.Owner, candidate.PubKey,
 					stake.Coin, newValue)
 				s.DeleteCoinIfZeroReserve(stake.Coin)
 			}
@@ -1252,9 +1260,9 @@ func (s *StateDB) PunishByzantineValidator(currentBlock int64, address [20]byte)
 	s.MarkStateValidatorsDirty()
 }
 
-func (s *StateDB) PunishFrozenFundsWithAddress(fromBlock int64, toBlock int64, address [20]byte) {
+func (s *StateDB) PunishFrozenFundsWithAddress(fromBlock uint64, toBlock uint64, address [20]byte) {
 	for i := fromBlock; i <= toBlock; i++ {
-		frozenFund := s.getStateFrozenFunds(uint64(i))
+		frozenFund := s.getStateFrozenFunds(i)
 
 		if frozenFund == nil {
 			continue
@@ -1381,8 +1389,8 @@ func (s *StateDB) CandidatesCount() int {
 	return len(candidates.data)
 }
 
-func (s *StateDB) ClearCandidates(height int64) {
-	maxCandidates := validators.GetCandidatesCountForBlock(height)
+func (s *StateDB) ClearCandidates() {
+	maxCandidates := validators.GetCandidatesCountForBlock(s.height)
 
 	candidates := s.getStateCandidates()
 
@@ -1395,7 +1403,7 @@ func (s *StateDB) ClearCandidates(height int64) {
 		dropped := candidates.data[maxCandidates:]
 		candidates.data = candidates.data[:maxCandidates]
 
-		unbondAtBlock := uint64(height + UnbondPeriod)
+		unbondAtBlock := s.height + UnbondPeriod
 		for _, candidate := range dropped {
 			for _, stake := range candidate.Stakes {
 				s.GetOrNewStateFrozenFunds(unbondAtBlock).AddFund(stake.Owner, candidate.PubKey, stake.Coin, stake.Value)
@@ -1407,7 +1415,7 @@ func (s *StateDB) ClearCandidates(height int64) {
 	s.MarkStateCandidateDirty()
 }
 
-func (s *StateDB) ClearStakes(height int64) {
+func (s *StateDB) ClearStakes() {
 	candidates := s.getStateCandidates()
 
 	for i := range candidates.data {
@@ -1422,7 +1430,7 @@ func (s *StateDB) ClearStakes(height int64) {
 			candidates.data[i].Stakes = candidates.data[i].Stakes[:MaxDelegatorsPerCandidate]
 
 			for _, stake := range dropped {
-				eventsdb.GetCurrent().AddEvent(height, eventsdb.UnbondEvent{
+				eventsdb.GetCurrent().AddEvent(s.height, eventsdb.UnbondEvent{
 					Address:         stake.Owner,
 					Amount:          stake.Value.Bytes(),
 					Coin:            stake.Coin,
@@ -1563,7 +1571,7 @@ func (s *StateDB) deleteCoin(symbol types.CoinSymbol) {
 	s.SubCoinVolume(symbol, s.GetStateCoin(symbol).Volume())
 }
 
-func (s *StateDB) Export(currentHeight int64) types.AppState {
+func (s *StateDB) Export(currentHeight uint64) types.AppState {
 	appState := types.AppState{}
 
 	s.iavl.Iterate(func(key []byte, value []byte) bool {

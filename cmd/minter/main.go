@@ -42,11 +42,11 @@ func main() {
 		panic(err)
 	}
 	blockStore := bc.NewBlockStore(blockStoreDB)
-	height := blockStore.Height()
-	count := int64(3)
+	height := uint64(blockStore.Height())
+	count := uint64(3)
 	if _, err := app.GetBlocksTimeDelta(height, count); height >= 20 && err != nil {
-		blockA := blockStore.LoadBlockMeta(height - count - 1)
-		blockB := blockStore.LoadBlockMeta(height - 1)
+		blockA := blockStore.LoadBlockMeta(int64(height - count - 1))
+		blockB := blockStore.LoadBlockMeta(int64(height - 1))
 
 		delta := int(blockB.Header.Time.Sub(blockA.Header.Time).Seconds())
 		app.SetBlocksTimeDelta(height, delta)

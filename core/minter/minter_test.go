@@ -102,7 +102,7 @@ func initNode() {
 
 func TestBlocksCreation(t *testing.T) {
 	// Wait for blocks
-	blocks, err := client.Subscribe(context.TODO(),"test-client","tm.event = 'NewBlock'")
+	blocks, err := client.Subscribe(context.TODO(), "test-client", "tm.event = 'NewBlock'")
 	if err != nil {
 		panic(err)
 	}

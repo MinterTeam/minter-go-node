@@ -95,3 +95,15 @@ func (e UnbondEvent) MarshalJSON() ([]byte, error) {
 		ValidatorPubKey: e.ValidatorPubKey,
 	})
 }
+
+type CoinLiquidationEvent struct {
+	Coin types.CoinSymbol
+}
+
+func (e CoinLiquidationEvent) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Coin string `json:"coin"`
+	}{
+		Coin: e.Coin.String(),
+	})
+}

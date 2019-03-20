@@ -59,7 +59,7 @@ func (data MultisendData) Gas() int64 {
 	return commissions.SendTx + ((int64(len(data.List)) - 1) * commissions.MultisendDelta)
 }
 
-func (data MultisendData) Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response {
+func (data MultisendData) Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
 	sender, _ := tx.Sender()
 
 	response := data.BasicCheck(tx, context)

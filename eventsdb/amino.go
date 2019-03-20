@@ -10,4 +10,6 @@ func RegisterAminoEvents(codec *amino.Codec) {
 		"minter/SlashEvent", nil)
 	codec.RegisterConcrete(UnbondEvent{},
 		"minter/UnbondEvent", nil)
+	codec.RegisterConcrete(CoinLiquidationEvent{},
+		"minter/CoinLiquidationEvent", nil)
 }

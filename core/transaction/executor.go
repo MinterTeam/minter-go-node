@@ -31,7 +31,7 @@ type Response struct {
 	GasPrice  *big.Int
 }
 
-func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPool *big.Int, currentBlock int64, currentMempool map[types.Address]struct{}) Response {
+func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPool *big.Int, currentBlock uint64, currentMempool map[types.Address]struct{}) Response {
 	if len(rawTx) > maxTxLength {
 		return Response{
 			Code: code.TxTooLarge,

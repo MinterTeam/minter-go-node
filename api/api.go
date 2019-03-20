@@ -122,7 +122,7 @@ type Response struct {
 
 func GetStateForHeight(height int) (*state.StateDB, error) {
 	if height > 0 {
-		cState, err := blockchain.GetStateForHeight(height)
+		cState, err := blockchain.GetStateForHeight(uint64(height))
 
 		return cState, err
 	}

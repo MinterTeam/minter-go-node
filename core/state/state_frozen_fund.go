@@ -83,11 +83,11 @@ func (c *stateFrozenFund) addFund(fund FrozenFund) {
 }
 
 // punish fund with given candidate key (used in byzantine validator's punishment)
-func (c *stateFrozenFund) PunishFund(context *StateDB, candidateAddress [20]byte, fromBlock int64) {
+func (c *stateFrozenFund) PunishFund(context *StateDB, candidateAddress [20]byte, fromBlock uint64) {
 	c.punishFund(context, candidateAddress, fromBlock)
 }
 
-func (c *stateFrozenFund) punishFund(context *StateDB, candidateAddress [20]byte, fromBlock int64) {
+func (c *stateFrozenFund) punishFund(context *StateDB, candidateAddress [20]byte, fromBlock uint64) {
 	edb := eventsdb.GetCurrent()
 
 	newList := make([]FrozenFund, len(c.data.List))

@@ -37,7 +37,7 @@ func (data SetCandidateOnData) Gas() int64 {
 	return commissions.ToggleCandidateStatus
 }
 
-func (data SetCandidateOnData) Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response {
+func (data SetCandidateOnData) Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
 	sender, _ := tx.Sender()
 
 	response := data.BasicCheck(tx, context)
@@ -115,7 +115,7 @@ func (data SetCandidateOffData) Gas() int64 {
 	return commissions.ToggleCandidateStatus
 }
 
-func (data SetCandidateOffData) Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response {
+func (data SetCandidateOffData) Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
 	sender, _ := tx.Sender()
 
 	response := data.BasicCheck(tx, context)

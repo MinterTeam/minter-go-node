@@ -43,20 +43,20 @@ func (appDB *AppDB) SetLastBlockHash(hash []byte) {
 	appDB.db.Set([]byte(hashPath), hash)
 }
 
-func (appDB *AppDB) GetLastHeight() int64 {
+func (appDB *AppDB) GetLastHeight() uint64 {
 	result := appDB.db.Get([]byte(heightPath))
-	var height int64
+	var height uint64
 
 	if result != nil {
-		height = int64(binary.BigEndian.Uint64(result))
+		height = binary.BigEndian.Uint64(result)
 	}
 
 	return height
 }
 
-func (appDB *AppDB) SetLastHeight(height int64) {
+func (appDB *AppDB) SetLastHeight(height uint64) {
 	h := make([]byte, 8)
-	binary.BigEndian.PutUint64(h, uint64(height))
+	binary.BigEndian.PutUint64(h, height)
 	appDB.db.Set([]byte(heightPath), h)
 }
 
@@ -89,11 +89,11 @@ func (appDB *AppDB) SaveValidators(vals types.ValidatorUpdates) {
 }
 
 type LastBlocksTimeDelta struct {
-	Height int64
+	Height uint64
 	Delta  int
 }
 
-func (appDB *AppDB) GetLastBlocksTimeDelta(height int64) (int, error) {
+func (appDB *AppDB) GetLastBlocksTimeDelta(height uint64) (int, error) {
 	result := appDB.db.Get([]byte(blockTimeDeltaPath))
 	if result == nil {
 		return 0, errors.New("no info about LastBlocksTimeDelta is available")
@@ -112,7 +112,7 @@ func (appDB *AppDB) GetLastBlocksTimeDelta(height int64) (int, error) {
 	return data.Delta, nil
 }
 
-func (appDB *AppDB) SetLastBlocksTimeDelta(height int64, delta int) {
+func (appDB *AppDB) SetLastBlocksTimeDelta(height uint64, delta int) {
 	data, err := cdc.MarshalBinaryBare(LastBlocksTimeDelta{
 		Height: height,
 		Delta:  delta,

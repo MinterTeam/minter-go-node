@@ -8,7 +8,7 @@ type EventsResponse struct {
 	Events eventsdb.Events `json:"events"`
 }
 
-func Events(height int64) (*EventsResponse, error) {
+func Events(height uint64) (*EventsResponse, error) {
 	return &EventsResponse{
 		Events: eventsdb.NewEventsDB(eventsdb.GetCurrentDB()).LoadEvents(height),
 	}, nil
