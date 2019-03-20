@@ -155,6 +155,11 @@ func (c CoinSymbol) MarshalJSON() ([]byte, error) {
 	return buffer.Bytes(), nil
 }
 
+func (c *CoinSymbol) UnmarshalJSON(input []byte) error {
+	*c = StrToCoinSymbol(string(input[1 : len(input)-1]))
+	return nil
+}
+
 func (c CoinSymbol) Compare(c2 CoinSymbol) int {
 	return bytes.Compare(c.Bytes(), c2.Bytes())
 }
@@ -284,6 +289,13 @@ func (p Pubkey) MarshalText() ([]byte, error) {
 
 func (p Pubkey) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf("\"%s\"", p.String())), nil
+}
+
+func (p *Pubkey) UnmarshalJSON(input []byte) error {
+	b, err := hex.DecodeString(string(input)[3 : len(input)-1])
+	*p = Pubkey(b)
+
+	return err
 }
 
 func (p Pubkey) Compare(p2 Pubkey) int {

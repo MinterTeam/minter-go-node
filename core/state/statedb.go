@@ -1,6 +1,7 @@
 package state
 
 import (
+	"encoding/hex"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/types"
@@ -545,7 +546,7 @@ func (s *StateDB) CreateValidator(
 		PubKey:        pubkey,
 		Commission:    commission,
 		AccumReward:   big.NewInt(0),
-		AbsentTimes:   NewBitArray(ValidatorMaxAbsentWindow),
+		AbsentTimes:   types.NewBitArray(ValidatorMaxAbsentWindow),
 	})
 
 	s.MarkStateValidatorsDirty()
@@ -1024,7 +1025,11 @@ func (s *StateDB) IsCheckUsed(check *check.Check) bool {
 
 func (s *StateDB) UseCheck(check *check.Check) {
 	checkHash := check.Hash().Bytes()
-	trieHash := append(usedCheckPrefix, checkHash...)
+	s.useCheckHash(checkHash)
+}
+
+func (s *StateDB) useCheckHash(hash []byte) {
+	trieHash := append(usedCheckPrefix, hash...)
 
 	s.iavl.Set(trieHash, []byte{0x1})
 }
@@ -1135,7 +1140,7 @@ func (s *StateDB) SetValidatorAbsent(height int64, address [20]byte) {
 
 			if validator.CountAbsentTimes() > ValidatorMaxAbsentTimes {
 				candidate.Status = CandidateStatusOffline
-				validator.AbsentTimes = NewBitArray(ValidatorMaxAbsentWindow)
+				validator.AbsentTimes = types.NewBitArray(ValidatorMaxAbsentWindow)
 				validator.toDrop = true
 
 				totalStake := big.NewInt(0)
@@ -1266,7 +1271,7 @@ func (s *StateDB) SetNewValidators(candidates []Candidate) {
 
 	for _, candidate := range candidates {
 		accumReward := big.NewInt(0)
-		absentTimes := NewBitArray(ValidatorMaxAbsentWindow)
+		absentTimes := types.NewBitArray(ValidatorMaxAbsentWindow)
 
 		for _, oldVal := range oldVals.data {
 			if oldVal.GetAddress() == candidate.GetAddress() {
@@ -1556,4 +1561,194 @@ func (s *StateDB) deleteCoin(symbol types.CoinSymbol) {
 
 	// set coin volume to 0
 	s.SubCoinVolume(symbol, s.GetStateCoin(symbol).Volume())
+}
+
+func (s *StateDB) Export(currentHeight int64) types.AppState {
+	appState := types.AppState{}
+
+	s.iavl.Iterate(func(key []byte, value []byte) bool {
+		// export accounts
+		if key[0] == addressPrefix[0] {
+			account := s.GetOrNewStateObject(types.BytesToAddress(key[1:]))
+
+			balance := make([]types.Balance, len(account.Balances().Data))
+			i := 0
+			for coin, value := range account.Balances().Data {
+				balance[i] = types.Balance{
+					Coin:  coin,
+					Value: value,
+				}
+				i++
+			}
+
+			acc := types.Account{
+				Address: account.address,
+				Balance: balance,
+				Nonce:   account.data.Nonce,
+			}
+
+			if account.IsMultisig() {
+				acc.MultisigData = &types.Multisig{
+					Weights:   account.data.MultisigData.Weights,
+					Threshold: account.data.MultisigData.Threshold,
+					Addresses: account.data.MultisigData.Addresses,
+				}
+			}
+
+			appState.Accounts = append(appState.Accounts, acc)
+		}
+
+		// export coins
+		if key[0] == coinPrefix[0] {
+			coin := s.GetStateCoin(types.StrToCoinSymbol(string(key[1:])))
+
+			appState.Coins = append(appState.Coins, types.Coin{
+				Name:           coin.Name(),
+				Symbol:         coin.Symbol(),
+				Volume:         coin.Volume(),
+				Crr:            coin.Crr(),
+				ReserveBalance: coin.ReserveBalance(),
+			})
+		}
+
+		// export used checks
+		if key[0] == usedCheckPrefix[0] {
+			appState.UsedChecks = append(appState.UsedChecks, types.UsedCheck(fmt.Sprintf("%x", key[1:])))
+		}
+
+		// export frozen funds
+		if key[0] == frozenFundsPrefix[0] {
+			height := binary.BigEndian.Uint64(key[1:])
+			frozenFunds := s.GetStateFrozenFunds(height)
+
+			for _, frozenFund := range frozenFunds.List() {
+				appState.FrozenFunds = append(appState.FrozenFunds, types.FrozenFund{
+					Height:       height - uint64(currentHeight),
+					Address:      frozenFund.Address,
+					CandidateKey: frozenFund.CandidateKey,
+					Coin:         frozenFund.Coin,
+					Value:        frozenFund.Value,
+				})
+			}
+		}
+
+		return false
+	})
+
+	candidates := s.getStateCandidates()
+	for _, candidate := range candidates.data {
+		var stakes []types.Stake
+		for _, s := range candidate.Stakes {
+			stakes = append(stakes, types.Stake{
+				Owner:    s.Owner,
+				Coin:     s.Coin,
+				Value:    s.Value,
+				BipValue: s.BipValue,
+			})
+		}
+
+		appState.Candidates = append(appState.Candidates, types.Candidate{
+			RewardAddress:  candidate.RewardAddress,
+			OwnerAddress:   candidate.OwnerAddress,
+			TotalBipStake:  candidate.TotalBipStake,
+			PubKey:         candidate.PubKey,
+			Commission:     candidate.Commission,
+			Stakes:         stakes,
+			CreatedAtBlock: candidate.CreatedAtBlock,
+			Status:         candidate.Status,
+		})
+	}
+
+	vals := s.getStateValidators()
+	for _, val := range vals.data {
+		appState.Validators = append(appState.Validators, types.Validator{
+			RewardAddress: val.RewardAddress,
+			TotalBipStake: val.TotalBipStake,
+			PubKey:        val.PubKey,
+			Commission:    val.Commission,
+			AccumReward:   val.AccumReward,
+			AbsentTimes:   val.AbsentTimes,
+		})
+	}
+
+	appState.MaxGas = s.GetMaxGas()
+
+	return appState
+}
+
+func (s *StateDB) Import(appState types.AppState) {
+	s.SetMaxGas(appState.MaxGas)
+
+	for _, a := range appState.Accounts {
+		account := s.GetOrNewStateObject(a.Address)
+
+		account.data.Nonce = a.Nonce
+
+		if a.MultisigData != nil {
+			account.data.MultisigData.Addresses = a.MultisigData.Addresses
+			account.data.MultisigData.Threshold = a.MultisigData.Threshold
+			account.data.MultisigData.Weights = a.MultisigData.Weights
+		}
+
+		for _, b := range a.Balance {
+			account.SetBalance(b.Coin, b.Value)
+		}
+
+		s.setStateObject(account)
+		s.MarkStateObjectDirty(a.Address)
+	}
+
+	for _, c := range appState.Coins {
+		s.CreateCoin(c.Symbol, c.Name, c.Volume, c.Crr, c.ReserveBalance)
+	}
+
+	vals := &stateValidators{}
+	for _, v := range appState.Validators {
+		vals.data = append(vals.data, Validator{
+			RewardAddress: v.RewardAddress,
+			TotalBipStake: v.TotalBipStake,
+			PubKey:        v.PubKey,
+			Commission:    v.Commission,
+			AccumReward:   v.AccumReward,
+			AbsentTimes:   v.AbsentTimes,
+		})
+	}
+	s.SetStateValidators(vals)
+	s.MarkStateValidatorsDirty()
+
+	cands := &stateCandidates{}
+	for _, c := range appState.Candidates {
+		stakes := make([]Stake, len(c.Stakes))
+		for i, stake := range c.Stakes {
+			stakes[i] = Stake{
+				Owner:    stake.Owner,
+				Coin:     stake.Coin,
+				Value:    stake.Value,
+				BipValue: stake.BipValue,
+			}
+		}
+		cands.data = append(cands.data, Candidate{
+			RewardAddress:  c.RewardAddress,
+			OwnerAddress:   c.OwnerAddress,
+			TotalBipStake:  c.TotalBipStake,
+			PubKey:         c.PubKey,
+			Commission:     c.Commission,
+			Stakes:         stakes,
+			CreatedAtBlock: 1,
+			Status:         c.Status,
+		})
+	}
+	s.setStateCandidates(cands)
+	s.MarkStateCandidateDirty()
+
+	for _, hashString := range appState.UsedChecks {
+		hash, _ := hex.DecodeString(string(hashString))
+		s.useCheckHash(hash)
+	}
+
+	for _, ff := range appState.FrozenFunds {
+		frozenFunds := s.GetOrNewStateFrozenFunds(ff.Height)
+		frozenFunds.AddFund(ff.Address, ff.CandidateKey, ff.Coin, ff.Value)
+		s.setStateFrozenFunds(frozenFunds)
+	}
 }

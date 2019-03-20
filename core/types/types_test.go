@@ -17,8 +17,9 @@
 package types
 
 import (
+	"bytes"
 	"encoding/json"
-
+	"github.com/MinterTeam/go-amino"
 	"math/big"
 	"strings"
 	"testing"
@@ -124,5 +125,105 @@ func BenchmarkAddressHex(b *testing.B) {
 	testAddr := HexToAddress("Mx5aaeb6053f3e94c9b9a09f33669435e7ef1beaed")
 	for n := 0; n < b.N; n++ {
 		testAddr.Hex()
+	}
+}
+
+func TestAppState(t *testing.T) {
+	testAddr := HexToAddress("Mx5aaeb6053f3e94c9b9a09f33669435e7ef1beaed")
+	pubkey := Pubkey{1, 2, 3}
+	ba := NewBitArray(24)
+	ba.SetIndex(3, true)
+
+	appState := AppState{
+		Validators: []Validator{
+			{
+				RewardAddress: testAddr,
+				TotalBipStake: big.NewInt(1),
+				PubKey:        pubkey,
+				Commission:    1,
+				AccumReward:   big.NewInt(1),
+				AbsentTimes:   ba,
+			},
+		},
+		Candidates: []Candidate{
+			{
+				RewardAddress: testAddr,
+				OwnerAddress:  testAddr,
+				TotalBipStake: big.NewInt(1),
+				PubKey:        pubkey,
+				Commission:    1,
+				Stakes: []Stake{
+					{
+						Owner:    testAddr,
+						Coin:     GetBaseCoin(),
+						Value:    big.NewInt(1),
+						BipValue: big.NewInt(1),
+					},
+				},
+				CreatedAtBlock: 1,
+				Status:         1,
+			},
+		},
+		Accounts: []Account{
+			{
+				Address: testAddr,
+				Balance: []Balance{
+					{
+						Coin:  GetBaseCoin(),
+						Value: big.NewInt(1),
+					},
+				},
+				Nonce: 1,
+				MultisigData: &Multisig{
+					Weights:   []uint{1, 2, 3},
+					Threshold: 1,
+					Addresses: []Address{testAddr, testAddr},
+				},
+			},
+		},
+		Coins: []Coin{
+			{
+				Name:           "ASD",
+				Symbol:         GetBaseCoin(),
+				Volume:         big.NewInt(1),
+				Crr:            1,
+				ReserveBalance: big.NewInt(1),
+			},
+		},
+		FrozenFunds: []FrozenFund{
+			{
+				Height:       1,
+				Address:      testAddr,
+				CandidateKey: pubkey,
+				Coin:         GetBaseCoin(),
+				Value:        big.NewInt(1),
+			},
+		},
+		UsedChecks: []UsedCheck{
+			"123",
+		},
+		MaxGas: 10,
+	}
+
+	cdc := amino.NewCodec()
+
+	b1, err := cdc.MarshalJSON(appState)
+	if err != nil {
+		panic(err)
+	}
+
+	newAppState := AppState{}
+	err = cdc.UnmarshalJSON(b1, &newAppState)
+	if err != nil {
+		panic(err)
+	}
+
+	b2, err := cdc.MarshalJSON(newAppState)
+	if err != nil {
+		panic(err)
+	}
+
+	if bytes.Compare(b1, b2) != 0 {
+		t.Errorf("Bytes are not the same")
 	}
 }

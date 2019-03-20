@@ -13,10 +13,11 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/core/validators"
 	"github.com/MinterTeam/minter-go-node/eventsdb"
-	"github.com/MinterTeam/minter-go-node/genesis"
 	"github.com/MinterTeam/minter-go-node/version"
 	"github.com/danil-lashin/tendermint/rpc/lib/types"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
+	"github.com/tendermint/tendermint/crypto/ed25519"
+	"github.com/tendermint/tendermint/crypto/encoding/amino"
 	"github.com/tendermint/tendermint/libs/db"
 	tmNode "github.com/tendermint/tendermint/node"
 	types2 "github.com/tendermint/tendermint/types"
@@ -96,52 +97,33 @@ func NewMinterBlockchain() *Blockchain {
 
 // Initialize blockchain with validators and other info. Only called once.
 func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.ResponseInitChain {
-	var genesisState genesis.AppState
+	var genesisState types.AppState
 	err := json.Unmarshal(req.AppStateBytes, &genesisState)
 	if err != nil {
 		panic(err)
 	}
 
-	// Filling genesis accounts with given amount of coins
-	for _, account := range genesisState.InitialBalances {
-		for coin, value := range account.Balance {
-			bigIntValue, success := big.NewInt(0).SetString(value, 10)
-			if !success {
-				panic(fmt.Sprintf("%s is not a corrent int", value))
-			}
+	app.stateDeliver.Import(genesisState)
 
-			coinSymbol := types.StrToCoinSymbol(coin)
-			app.stateDeliver.SetBalance(account.Address, coinSymbol, bigIntValue)
+	totalValidatorsPower := 100000000
+	votingPower := int64(totalValidatorsPower / len(genesisState.Validators))
+	vals := make([]abciTypes.ValidatorUpdate, len(genesisState.Validators))
+	for i, val := range genesisState.Validators {
+		var validatorPubKey ed25519.PubKeyEd25519
+		copy(validatorPubKey[:], val.PubKey)
+		pkey, err := cryptoAmino.PubKeyFromBytes(validatorPubKey.Bytes())
+		if err != nil {
+			panic(err)
+		}
+
+		vals[i] = abciTypes.ValidatorUpdate{
+			PubKey: types2.TM2PB.PubKey(pkey),
+			Power:  votingPower,
 		}
 	}
 
-	// Set initial Blockchain validators
-	commission := uint(100)
-	currentBlock := uint(1)
-	initialStake := big.NewInt(1) // 1 pip
-	for _, validator := range req.Validators {
-		app.stateDeliver.CreateCandidate(genesisState.FirstValidatorAddress, genesisState.FirstValidatorAddress,
-			validator.PubKey.Data, commission, currentBlock, types.GetBaseCoin(), initialStake)
-		app.stateDeliver.CreateValidator(genesisState.FirstValidatorAddress, validator.PubKey.Data, commission,
-			currentBlock, types.GetBaseCoin(), initialStake)
-		app.stateDeliver.SetCandidateOnline(validator.PubKey.Data)
-	}
-
-	app.stateDeliver.SetMaxGas(DefaultMaxGas)
-
 	return abciTypes.ResponseInitChain{
-		ConsensusParams: &abciTypes.ConsensusParams{
-			Block: &abciTypes.BlockParams{
-				MaxBytes: BlockMaxBytes,
-				MaxGas:   DefaultMaxGas,
-			},
-			Evidence: &abciTypes.EvidenceParams{
-				MaxAge: 1000,
-			},
-			Validator: &abciTypes.ValidatorParams{
-				PubKeyTypes: []string{types2.ABCIPubKeyTypeEd25519},
-			},
-		},
+		Validators: vals,
 	}
 }
 
