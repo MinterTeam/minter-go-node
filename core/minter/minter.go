@@ -503,20 +503,20 @@ func (app *Blockchain) saveCurrentValidators(vals abciTypes.ValidatorUpdates) {
 	app.appDB.SaveValidators(vals)
 }
 
-func (app *Blockchain) updateBlocksTimeDelta(height, count uint64) {
+func (app *Blockchain) updateBlocksTimeDelta(height uint64, count int64) {
 	// should do this because tmNode is unavailable during Tendermint's replay mode
 	if app.tmNode == nil {
 		return
 	}
 
-	if height-count-1 < 1 {
+	if int64(height)-count-1 < 1 {
 		return
 	}
 
 	blockStore := app.tmNode.BlockStore()
 
-	blockA := blockStore.LoadBlockMeta(int64(height - count - 1))
-	blockB := blockStore.LoadBlockMeta(int64(height - 1))
+	blockA := blockStore.LoadBlockMeta(int64(height) - count - 1)
+	blockB := blockStore.LoadBlockMeta(int64(height) - 1)
 
 	delta := int(blockB.Header.Time.Sub(blockA.Header.Time).Seconds())
 	app.appDB.SetLastBlocksTimeDelta(height, delta)
