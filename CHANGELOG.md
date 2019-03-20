@@ -6,6 +6,7 @@ IMPROVEMENT
 
 - [tendermint] Update to [v0.30.2](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0302) 
 - [core] Delete coins with 0 reserves #217
+- [api] Add ?include_stakes to /candidates endpoint #222
 
 BUG FIXES
 
