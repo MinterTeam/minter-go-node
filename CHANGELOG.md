@@ -13,6 +13,12 @@ BUG FIXES
 - [core] Fix issue with slashing small stake #209
 - [api] Make block hash lowercase #214
 
+## 0.14.3
+
+BUG FIXES
+
+- [core] Temp fix for consensus failure
+
 ## 0.14.2
 
 BUG FIXES
