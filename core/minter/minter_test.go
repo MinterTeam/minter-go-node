@@ -17,7 +17,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/rlp"
 	tmConfig "github.com/tendermint/tendermint/config"
 	log2 "github.com/tendermint/tendermint/libs/log"
-	"github.com/tendermint/tendermint/libs/pubsub/query"
 	tmNode "github.com/tendermint/tendermint/node"
 	"github.com/tendermint/tendermint/p2p"
 	"github.com/tendermint/tendermint/privval"
@@ -102,8 +101,7 @@ func initNode() {
 
 func TestBlocksCreation(t *testing.T) {
 	// Wait for blocks
-	blocks := make(chan interface{})
-	err := client.Subscribe(context.TODO(), "test-client", query.MustParse("tm.event = 'NewBlock'"), blocks)
+	blocks, err := client.Subscribe(context.TODO(),"test-client","tm.event = 'NewBlock'")
 	if err != nil {
 		panic(err)
 	}
@@ -165,8 +163,7 @@ func TestSendTx(t *testing.T) {
 		t.Fatalf("CheckTx code is not 0: %d", res.Code)
 	}
 
-	txs := make(chan interface{})
-	err = client.Subscribe(context.TODO(), "test-client", query.MustParse(fmt.Sprintf("tm.event = 'Tx'")), txs)
+	txs, err := client.Subscribe(context.TODO(), "test-client", "tm.event = 'Tx'")
 	if err != nil {
 		panic(err)
 	}
@@ -266,8 +263,7 @@ func TestSmallStakeValidator(t *testing.T) {
 	targetBlockHeight := status.SyncInfo.LatestBlockHeight - (status.SyncInfo.LatestBlockHeight % 120) + 150
 	println("target block", targetBlockHeight)
 
-	blocks := make(chan interface{})
-	err = client.Subscribe(context.TODO(), "test-client", query.MustParse("tm.event = 'NewBlock'"), blocks)
+	blocks, err := client.Subscribe(context.TODO(), "test-client", "tm.event = 'NewBlock'")
 	if err != nil {
 		panic(err)
 	}
@@ -276,7 +272,7 @@ func TestSmallStakeValidator(t *testing.T) {
 	for !ready {
 		select {
 		case block := <-blocks:
-			if block.(types2.EventDataNewBlock).Block.Height < targetBlockHeight {
+			if block.Data.(types2.EventDataNewBlock).Block.Height < targetBlockHeight {
 				continue
 			}
 
@@ -334,8 +330,7 @@ func TestSmallStakeValidator(t *testing.T) {
 	targetBlockHeight = status.SyncInfo.LatestBlockHeight - (status.SyncInfo.LatestBlockHeight % 120) + 120 + 5
 	println("target block", targetBlockHeight)
 
-	blocks = make(chan interface{})
-	err = client.Subscribe(context.TODO(), "test-client", query.MustParse("tm.event = 'NewBlock'"), blocks)
+	blocks, err = client.Subscribe(context.TODO(), "test-client", "tm.event = 'NewBlock'")
 	if err != nil {
 		panic(err)
 	}
@@ -344,7 +339,7 @@ FORLOOP2:
 	for {
 		select {
 		case block := <-blocks:
-			if block.(types2.EventDataNewBlock).Block.Height < targetBlockHeight {
+			if block.Data.(types2.EventDataNewBlock).Block.Height < targetBlockHeight {
 				continue FORLOOP2
 			}
 

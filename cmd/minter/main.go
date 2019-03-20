@@ -71,7 +71,7 @@ func main() {
 	}
 
 	// Wait forever
-	common.TrapSignal(func() {
+	common.TrapSignal(log.With("module", "trap"), func() {
 		// Cleanup
 		err := node.Stop()
 		app.Stop()

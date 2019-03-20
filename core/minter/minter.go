@@ -131,7 +131,7 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 
 	return abciTypes.ResponseInitChain{
 		ConsensusParams: &abciTypes.ConsensusParams{
-			BlockSize: &abciTypes.BlockSizeParams{
+			Block: &abciTypes.BlockParams{
 				MaxBytes: BlockMaxBytes,
 				MaxGas:   DefaultMaxGas,
 			},
@@ -340,7 +340,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 	return abciTypes.ResponseEndBlock{
 		ValidatorUpdates: updates,
 		ConsensusParamUpdates: &abciTypes.ConsensusParams{
-			BlockSize: &abciTypes.BlockSizeParams{
+			Block: &abciTypes.BlockParams{
 				MaxBytes: BlockMaxBytes,
 				MaxGas:   int64(app.stateDeliver.GetMaxGas()),
 			},
