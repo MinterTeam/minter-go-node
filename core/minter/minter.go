@@ -13,6 +13,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/core/validators"
 	"github.com/MinterTeam/minter-go-node/eventsdb"
+	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/version"
 	"github.com/danil-lashin/tendermint/rpc/lib/types"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
@@ -132,6 +133,10 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 	app.wg.Add(1)
 	if atomic.LoadUint32(&app.stopped) == 1 {
 		panic("Application stopped")
+	}
+
+	if err := app.stateDeliver.CheckForInvariants(); err != nil {
+		log.Error("Invariants error", "msg", err.Error())
 	}
 
 	height := uint64(req.Header.Height)

@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/config"
+	"github.com/MinterTeam/minter-go-node/core/rewards"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/core/validators"
 	"github.com/MinterTeam/minter-go-node/eventsdb"
@@ -1759,4 +1760,102 @@ func (s *StateDB) Import(appState types.AppState) {
 		frozenFunds.AddFund(ff.Address, ff.CandidateKey, ff.Coin, ff.Value)
 		s.setStateFrozenFunds(frozenFunds)
 	}
+}
+
+func (s *StateDB) CheckForInvariants() error {
+	totalBasecoinVolume := big.NewInt(0)
+
+	coinSupplies := map[types.CoinSymbol]*big.Int{}
+	coinTotalOwned := map[types.CoinSymbol]*big.Int{}
+
+	s.iavl.Iterate(func(key []byte, value []byte) bool {
+		if key[0] == addressPrefix[0] {
+			account := s.GetOrNewStateObject(types.BytesToAddress(key[1:]))
+
+			for coin, value := range account.Balances().Data {
+				if coin.IsBaseCoin() {
+					totalBasecoinVolume.Add(totalBasecoinVolume, value)
+					continue
+				}
+
+				if coinTotalOwned[coin] == nil {
+					coinTotalOwned[coin] = big.NewInt(0)
+				}
+				coinTotalOwned[coin].Add(coinTotalOwned[coin], value)
+			}
+
+		}
+
+		if key[0] == coinPrefix[0] {
+			coin := s.GetStateCoin(types.StrToCoinSymbol(string(key[1:])))
+
+			totalBasecoinVolume.Add(totalBasecoinVolume, coin.ReserveBalance())
+			coinSupplies[coin.symbol] = coin.Volume()
+		}
+
+		if key[0] == frozenFundsPrefix[0] {
+			height := binary.BigEndian.Uint64(key[1:])
+			frozenFunds := s.GetStateFrozenFunds(height)
+
+			for _, frozenFund := range frozenFunds.List() {
+				if frozenFund.Coin.IsBaseCoin() {
+					totalBasecoinVolume.Add(totalBasecoinVolume, frozenFund.Value)
+					continue
+				}
+
+				if coinTotalOwned[frozenFund.Coin] == nil {
+					coinTotalOwned[frozenFund.Coin] = big.NewInt(0)
+				}
+				coinTotalOwned[frozenFund.Coin].Add(coinTotalOwned[frozenFund.Coin], frozenFund.Value)
+			}
+		}
+
+		return false
+	})
+
+	candidates := s.getStateCandidates()
+	if candsCount := len(candidates.data); candsCount > validators.GetCandidatesCountForBlock(s.height) {
+		return fmt.Errorf("too many candidates in blockchain. Expected %d, got %d",
+			validators.GetCandidatesCountForBlock(s.height), candsCount)
+	}
+
+	for _, candidate := range candidates.data {
+		for _, stake := range candidate.Stakes {
+			if stake.Coin.IsBaseCoin() {
+				totalBasecoinVolume.Add(totalBasecoinVolume, stake.Value)
+				continue
+			}
+
+			if coinTotalOwned[stake.Coin] == nil {
+				coinTotalOwned[stake.Coin] = big.NewInt(0)
+			}
+			coinTotalOwned[stake.Coin].Add(coinTotalOwned[stake.Coin], stake.Value)
+		}
+	}
+
+	vals := s.getStateValidators()
+	if valsCount := len(vals.data); valsCount > validators.GetValidatorsCountForBlock(s.height) {
+		return fmt.Errorf("too many validators in blockchain. Expected %d, got %d",
+			validators.GetValidatorsCountForBlock(s.height), valsCount)
+	}
+
+	predictedBasecoinVolume := big.NewInt(0) // TODO: add slashed values
+	for i := uint64(1); i < s.height; i++ {
+		predictedBasecoinVolume.Add(predictedBasecoinVolume, rewards.GetRewardForBlock(i))
+	}
+
+	delta := big.NewInt(0).Abs(big.NewInt(0).Sub(predictedBasecoinVolume, totalBasecoinVolume))
+	if delta.Cmp(big.NewInt(1000000000)) == 1 {
+		return fmt.Errorf("smth wrong with total base coins in blockchain. Expected total supply to be %s, got %s",
+			predictedBasecoinVolume, totalBasecoinVolume)
+	}
+
+	for coin, volume := range coinSupplies {
+		if volume.Cmp(coinTotalOwned[coin]) != 0 {
+			return fmt.Errorf("smth wrong with %s coin in blockchain. Total supply (%s) does not match total owned (%s)",
+				coin, volume, coinTotalOwned[coin])
+		}
+	}
+
+	return nil
 }
