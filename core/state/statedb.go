@@ -917,7 +917,7 @@ func (s *StateDB) PayRewards() {
 			for j := range candidate.Stakes {
 				stake := candidate.Stakes[j]
 
-				if stake.BipValue == nil {
+				if stake.BipValue.Cmp(big.NewInt(0)) == 0 {
 					continue
 				}
 
