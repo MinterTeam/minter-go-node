@@ -18,6 +18,7 @@ BUG FIXES
 
 - [core] Fix double sign slashing issue #215
 - [core] Fix issue with slashing small stake #209
+- [core] Fix coin creation issue
 - [api] Make block hash lowercase #214
 
 ## 0.14.3
