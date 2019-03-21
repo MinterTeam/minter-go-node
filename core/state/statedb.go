@@ -153,7 +153,7 @@ func (s *StateDB) GetTotalSlashed() *big.Int {
 	// Load the object from the database.
 	_, enc := s.iavl.Get(totalSlashedKey)
 	if len(enc) == 0 {
-		return nil
+		return big.NewInt(0)
 	}
 	var data *big.Int
 	if err := rlp.DecodeBytes(enc, &data); err != nil {
