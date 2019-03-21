@@ -69,8 +69,9 @@ func GetTestnetGenesis() (*tmtypes.GenesisDoc, error) {
 		ChainID:     Network,
 		ConsensusParams: &tmtypes.ConsensusParams{
 			Block: tmtypes.BlockParams{
-				MaxBytes: BlockMaxBytes,
-				MaxGas:   DefaultMaxGas,
+				MaxBytes:   BlockMaxBytes,
+				MaxGas:     DefaultMaxGas,
+				TimeIotaMs: 1000,
 			},
 			Evidence: tmtypes.EvidenceParams{
 				MaxAge: 1000,

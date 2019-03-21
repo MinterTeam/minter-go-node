@@ -2,8 +2,8 @@ package minter
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
+	"github.com/MinterTeam/go-amino"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/core/appdb"
 	"github.com/MinterTeam/minter-go-node/core/code"
@@ -99,7 +99,8 @@ func NewMinterBlockchain() *Blockchain {
 // Initialize blockchain with validators and other info. Only called once.
 func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.ResponseInitChain {
 	var genesisState types.AppState
-	err := json.Unmarshal(req.AppStateBytes, &genesisState)
+
+	err := amino.UnmarshalJSON(req.AppStateBytes, &genesisState)
 	if err != nil {
 		panic(err)
 	}
