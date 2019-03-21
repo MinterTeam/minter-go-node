@@ -113,6 +113,10 @@ func (c *stateFrozenFund) punishFund(context *StateDB, candidateAddress [20]byte
 
 				context.SubCoinVolume(coin.Symbol, slashed)
 				context.SubCoinReserve(coin.Symbol, ret)
+
+				context.AddTotalSlashed(ret)
+			} else {
+				context.AddTotalSlashed(slashed)
 			}
 
 			edb.AddEvent(fromBlock, eventsdb.SlashEvent{

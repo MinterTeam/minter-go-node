@@ -37,6 +37,7 @@ var (
 	candidatesKey     = []byte("t")
 	validatorsKey     = []byte("v")
 	maxGasKey         = []byte("g")
+	totalSlashedKey   = []byte("s")
 
 	cfg = config.GetConfig()
 )
@@ -63,6 +64,9 @@ type StateDB struct {
 	stateValidators      *stateValidators
 	stateValidatorsDirty bool
 
+	totalSlashed      *big.Int
+	totalSlashedDirty bool
+
 	stakeCache map[types.CoinSymbol]StakeCache
 
 	lock sync.Mutex
@@ -86,6 +90,10 @@ func NewForCheck(s *StateDB) *StateDB {
 		stateFrozenFundsDirty: make(map[uint64]struct{}),
 		stateCandidates:       nil,
 		stateCandidatesDirty:  false,
+		stateValidators:       nil,
+		stateValidatorsDirty:  false,
+		totalSlashed:          nil,
+		totalSlashedDirty:     false,
 		stakeCache:            make(map[types.CoinSymbol]StakeCache),
 	}
 }
@@ -111,6 +119,10 @@ func New(height uint64, db dbm.DB) (*StateDB, error) {
 		stateFrozenFundsDirty: make(map[uint64]struct{}),
 		stateCandidates:       nil,
 		stateCandidatesDirty:  false,
+		stateValidators:       nil,
+		stateValidatorsDirty:  false,
+		totalSlashed:          nil,
+		totalSlashedDirty:     false,
 		stakeCache:            make(map[types.CoinSymbol]StakeCache),
 	}, nil
 }
@@ -124,8 +136,33 @@ func (s *StateDB) Clear() {
 	s.stateFrozenFundsDirty = make(map[uint64]struct{})
 	s.stateCandidates = nil
 	s.stateCandidatesDirty = false
+	s.stateValidators = nil
+	s.stateValidatorsDirty = false
+	s.totalSlashed = nil
+	s.totalSlashedDirty = false
 	s.stakeCache = make(map[types.CoinSymbol]StakeCache)
 	s.lock = sync.Mutex{}
+}
+
+func (s *StateDB) GetTotalSlashed() *big.Int {
+	// Prefer 'live' object.
+	if s.totalSlashed != nil {
+		return s.totalSlashed
+	}
+
+	// Load the object from the database.
+	_, enc := s.iavl.Get(totalSlashedKey)
+	if len(enc) == 0 {
+		return nil
+	}
+	var data *big.Int
+	if err := rlp.DecodeBytes(enc, &data); err != nil {
+		log.Error("Failed to decode total slashed", "err", err)
+		return nil
+	}
+
+	s.setTotalSlashed(data)
+	return data
 }
 
 // Retrieve the balance from the given address or 0 if object not found
@@ -245,6 +282,15 @@ func (s *StateDB) updateStateValidators(validators *stateValidators) {
 	}
 
 	s.iavl.Set(validatorsKey, data)
+}
+
+func (s *StateDB) updateTotalSlashed(value *big.Int) {
+	data, err := rlp.EncodeToBytes(value)
+	if err != nil {
+		panic(fmt.Errorf("can't encode total slashed: %v", err))
+	}
+
+	s.iavl.Set(totalSlashedKey, data)
 }
 
 // deleteStateObject removes the given object from the state trie.
@@ -405,6 +451,21 @@ func (s *StateDB) setStateObject(object *stateAccount) {
 	defer s.lock.Unlock()
 
 	s.stateAccounts[object.Address()] = object
+}
+
+func (s *StateDB) setTotalSlashed(object *big.Int) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	s.totalSlashed = object
+}
+
+func (s *StateDB) AddTotalSlashed(value *big.Int) {
+	current := s.GetTotalSlashed()
+	current.Add(current, value)
+
+	s.setTotalSlashed(current)
+	s.totalSlashedDirty = true
 }
 
 func (s *StateDB) setStateCoin(coin *stateCoin) {
@@ -584,9 +645,9 @@ func (s *StateDB) CreateCandidate(
 		Commission:    commission,
 		Stakes: []Stake{
 			{
-				Owner: rewardAddress,
-				Coin:  coin,
-				Value: initialStake,
+				Owner:    rewardAddress,
+				Coin:     coin,
+				Value:    initialStake,
 				BipValue: big.NewInt(0),
 			},
 		},
@@ -650,6 +711,11 @@ func (s *StateDB) Commit() (root []byte, version int64, err error) {
 	if s.stateValidatorsDirty {
 		s.updateStateValidators(s.stateValidators)
 		s.stateValidatorsDirty = false
+	}
+
+	if s.totalSlashedDirty {
+		s.updateTotalSlashed(s.totalSlashed)
+		s.totalSlashedDirty = false
 	}
 
 	hash, version, err := s.iavl.SaveVersion()
@@ -1171,6 +1237,10 @@ func (s *StateDB) SetValidatorAbsent(address [20]byte) {
 						s.SubCoinVolume(coin.Symbol, slashed)
 						s.SubCoinReserve(coin.Symbol, ret)
 						s.DeleteCoinIfZeroReserve(stake.Coin)
+
+						s.AddTotalSlashed(ret)
+					} else {
+						s.AddTotalSlashed(slashed)
 					}
 
 					edb.AddEvent(s.height, eventsdb.SlashEvent{
@@ -1181,9 +1251,9 @@ func (s *StateDB) SetValidatorAbsent(address [20]byte) {
 					})
 
 					candidate.Stakes[j] = Stake{
-						Owner: stake.Owner,
-						Coin:  stake.Coin,
-						Value: newValue,
+						Owner:    stake.Owner,
+						Coin:     stake.Coin,
+						Value:    newValue,
 						BipValue: big.NewInt(0),
 					}
 					totalStake.Add(totalStake, newValue)
@@ -1235,6 +1305,10 @@ func (s *StateDB) PunishByzantineValidator(address [20]byte) {
 
 					s.SubCoinVolume(coin.Symbol, slashed)
 					s.SubCoinReserve(coin.Symbol, ret)
+
+					s.AddTotalSlashed(ret)
+				} else {
+					s.AddTotalSlashed(slashed)
 				}
 
 				edb.AddEvent(s.height, eventsdb.SlashEvent{
@@ -1368,8 +1442,8 @@ func (s *StateDB) MultisigAccountExists(address types.Address) bool {
 
 func (s *StateDB) IsNewCandidateStakeSufficient(coinSymbol types.CoinSymbol, stake *big.Int) bool {
 	bipValue := (&Stake{
-		Coin:  coinSymbol,
-		Value: stake,
+		Coin:     coinSymbol,
+		Value:    stake,
 		BipValue: big.NewInt(0),
 	}).CalcBipValue(s)
 
@@ -1457,8 +1531,8 @@ func (s *StateDB) IsDelegatorStakeSufficient(sender types.Address, pubKey []byte
 	}
 
 	bipValue := (&Stake{
-		Coin:  coinSymbol,
-		Value: value,
+		Coin:     coinSymbol,
+		Value:    value,
 		BipValue: big.NewInt(0),
 	}).CalcBipValue(s)
 
@@ -1839,10 +1913,11 @@ func (s *StateDB) CheckForInvariants() error {
 			validators.GetValidatorsCountForBlock(s.height), valsCount)
 	}
 
-	predictedBasecoinVolume := big.NewInt(0) // TODO: add slashed values
+	predictedBasecoinVolume := big.NewInt(0)
 	for i := uint64(1); i < s.height; i++ {
 		predictedBasecoinVolume.Add(predictedBasecoinVolume, rewards.GetRewardForBlock(i))
 	}
+	predictedBasecoinVolume.Sub(predictedBasecoinVolume, s.GetTotalSlashed())
 
 	delta := big.NewInt(0).Abs(big.NewInt(0).Sub(predictedBasecoinVolume, totalBasecoinVolume))
 	if delta.Cmp(big.NewInt(1000000000)) == 1 {
