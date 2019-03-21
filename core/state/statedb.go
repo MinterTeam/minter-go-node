@@ -587,6 +587,7 @@ func (s *StateDB) CreateCandidate(
 				Owner: rewardAddress,
 				Coin:  coin,
 				Value: initialStake,
+				BipValue: big.NewInt(0),
 			},
 		},
 		CreatedAtBlock: currentBlock,
@@ -998,9 +999,10 @@ func (s *StateDB) Delegate(sender types.Address, pubkey []byte, coin types.CoinS
 
 			if !exists {
 				candidate.Stakes = append(candidate.Stakes, Stake{
-					Owner: sender,
-					Coin:  coin,
-					Value: value,
+					Owner:    sender,
+					Coin:     coin,
+					Value:    value,
+					BipValue: big.NewInt(0),
 				})
 			}
 		}
@@ -1182,6 +1184,7 @@ func (s *StateDB) SetValidatorAbsent(address [20]byte) {
 						Owner: stake.Owner,
 						Coin:  stake.Coin,
 						Value: newValue,
+						BipValue: big.NewInt(0),
 					}
 					totalStake.Add(totalStake, newValue)
 				}
@@ -1367,6 +1370,7 @@ func (s *StateDB) IsNewCandidateStakeSufficient(coinSymbol types.CoinSymbol, sta
 	bipValue := (&Stake{
 		Coin:  coinSymbol,
 		Value: stake,
+		BipValue: big.NewInt(0),
 	}).CalcBipValue(s)
 
 	candidates := s.getStateCandidates()
@@ -1455,6 +1459,7 @@ func (s *StateDB) IsDelegatorStakeSufficient(sender types.Address, pubKey []byte
 	bipValue := (&Stake{
 		Coin:  coinSymbol,
 		Value: value,
+		BipValue: big.NewInt(0),
 	}).CalcBipValue(s)
 
 	candidates := s.getStateCandidates()
@@ -1462,11 +1467,6 @@ func (s *StateDB) IsDelegatorStakeSufficient(sender types.Address, pubKey []byte
 	for _, candidate := range candidates.data {
 		if bytes.Equal(candidate.PubKey, pubKey) {
 			for _, stake := range candidate.Stakes[:MaxDelegatorsPerCandidate] {
-				// TODO: delete at v0.15.0
-				if stake.BipValue == nil {
-					continue
-				}
-
 				if stake.BipValue.Cmp(bipValue) == -1 {
 					return true
 				}
