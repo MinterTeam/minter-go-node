@@ -70,7 +70,6 @@ func main() {
 		go gui.Run(cfg.GUIListenAddress)
 	}
 
-	// Wait forever
 	common.TrapSignal(log.With("module", "trap"), func() {
 		// Cleanup
 		err := node.Stop()
@@ -79,6 +78,9 @@ func main() {
 			panic(err)
 		}
 	})
+
+	// Run forever
+	select {}
 }
 
 func startTendermintNode(app types.Application, cfg *tmCfg.Config) *tmNode.Node {
