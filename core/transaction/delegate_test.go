@@ -38,7 +38,7 @@ func TestDelegateTx(t *testing.T) {
 	data := DelegateData{
 		PubKey: pubkey,
 		Coin:   coin,
-		Stake:  value,
+		Value:  value,
 	}
 
 	encodedData, err := rlp.EncodeToBytes(data)
