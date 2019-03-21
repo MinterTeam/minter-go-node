@@ -137,7 +137,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 	}
 
 	if err := app.stateDeliver.CheckForInvariants(); err != nil {
-		log.Error("Invariants error", "msg", err.Error())
+		log.With("module", "invariants").Error("Invariants error", "msg", err.Error())
 	}
 
 	height := uint64(req.Header.Height)

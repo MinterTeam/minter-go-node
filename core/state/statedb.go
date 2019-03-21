@@ -1913,11 +1913,19 @@ func (s *StateDB) CheckForInvariants() error {
 			validators.GetValidatorsCountForBlock(s.height), valsCount)
 	}
 
+	for _, val := range vals.data {
+		totalBasecoinVolume.Add(totalBasecoinVolume, val.AccumReward)
+	}
+
 	predictedBasecoinVolume := big.NewInt(0)
 	for i := uint64(1); i < s.height; i++ {
 		predictedBasecoinVolume.Add(predictedBasecoinVolume, rewards.GetRewardForBlock(i))
 	}
 	predictedBasecoinVolume.Sub(predictedBasecoinVolume, s.GetTotalSlashed())
+
+	// TODO: compute from genesis
+	GenesisAlloc, _ := big.NewInt(0).SetString("200000000000000000000000000", 10)
+	predictedBasecoinVolume.Add(predictedBasecoinVolume, GenesisAlloc)
 
 	delta := big.NewInt(0).Abs(big.NewInt(0).Sub(predictedBasecoinVolume, totalBasecoinVolume))
 	if delta.Cmp(big.NewInt(1000000000)) == 1 {
