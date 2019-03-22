@@ -74,11 +74,10 @@ func main() {
 	// Recheck mempool. Currently kind a hack. TODO: refactor
 	go func() {
 		ticker := time.NewTicker(time.Minute)
+		mempool := node.MempoolReactor().Mempool
 		for {
 			select {
 			case <-ticker.C:
-				mempool := node.MempoolReactor().Mempool
-
 				txs := mempool.ReapMaxTxs(cfg.Mempool.Size)
 				mempool.Flush()
 
