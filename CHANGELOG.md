@@ -13,6 +13,7 @@ IMPROVEMENT
 - [api] Add ?include_stakes to /candidates endpoint #222
 - [api] Change `stake` to `value` in DelegateTx
 - [events] Add CoinLiquidation event #221
+- [mempool] Recheck mempool once per minute
 
 BUG FIXES
 

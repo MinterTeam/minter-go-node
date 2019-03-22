@@ -19,6 +19,7 @@ import (
 	"github.com/tendermint/tendermint/proxy"
 	rpc "github.com/tendermint/tendermint/rpc/client"
 	"os"
+	"time"
 )
 
 var cfg = config.GetConfig()
@@ -69,6 +70,24 @@ func main() {
 		go api.RunAPI(app, client)
 		go gui.Run(cfg.GUIListenAddress)
 	}
+
+	// Recheck mempool. Currently kind a hack. TODO: refactor
+	go func() {
+		ticker := time.NewTicker(time.Minute)
+		for {
+			select {
+			case <-ticker.C:
+				mempool := node.MempoolReactor().Mempool
+
+				txs := mempool.ReapMaxTxs(cfg.Mempool.Size)
+				mempool.Flush()
+
+				for _, tx := range txs {
+					_ = mempool.CheckTx(tx, func(res *types.Response) {})
+				}
+			}
+		}
+	}()
 
 	common.TrapSignal(log.With("module", "trap"), func() {
 		// Cleanup
