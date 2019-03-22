@@ -7,6 +7,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"math/big"
 	"math/rand"
+	"sync"
 	"testing"
 )
 
@@ -58,7 +59,7 @@ func TestEditCandidateTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, make(map[types.Address]struct{}))
+	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, sync.Map{}, big.NewInt(0))
 
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)

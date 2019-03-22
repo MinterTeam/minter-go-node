@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/MinterTeam/go-amino"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
@@ -387,7 +388,7 @@ func getGenesis() (*types2.GenesisDoc, error) {
 		Candidates: candidates,
 	}
 
-	appStateJSON, err := json.Marshal(appState)
+	appStateJSON, err := amino.MarshalJSON(appState)
 	if err != nil {
 		return nil, err
 	}
