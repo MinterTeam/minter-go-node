@@ -2,11 +2,9 @@ package minter
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/MinterTeam/go-amino"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/core/appdb"
-	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/rewards"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
@@ -60,7 +58,7 @@ type Blockchain struct {
 	tmNode *tmNode.Node
 
 	// currentMempool is responsive for prevent sending multiple transactions from one address in one block
-	currentMempool map[types.Address]struct{}
+	currentMempool sync.Map
 
 	lock    sync.RWMutex
 	wg      sync.WaitGroup // wg is used for graceful node shutdown
@@ -82,7 +80,7 @@ func NewMinterBlockchain() *Blockchain {
 		appDB:               applicationDB,
 		height:              applicationDB.GetLastHeight(),
 		lastCommittedHeight: applicationDB.GetLastHeight(),
-		currentMempool:      map[types.Address]struct{}{},
+		currentMempool:      sync.Map{},
 	}
 
 	// Set stateDeliver and stateCheck
@@ -352,7 +350,7 @@ func (app *Blockchain) Info(req abciTypes.RequestInfo) (resInfo abciTypes.Respon
 
 // Deliver a tx for full processing
 func (app *Blockchain) DeliverTx(rawTx []byte) abciTypes.ResponseDeliverTx {
-	response := transaction.RunTx(app.stateDeliver, false, rawTx, app.rewards, app.height, nil)
+	response := transaction.RunTx(app.stateDeliver, false, rawTx, app.rewards, app.height, sync.Map{}, nil)
 
 	return abciTypes.ResponseDeliverTx{
 		Code:      response.Code,
@@ -367,14 +365,7 @@ func (app *Blockchain) DeliverTx(rawTx []byte) abciTypes.ResponseDeliverTx {
 
 // Validate a tx for the mempool
 func (app *Blockchain) CheckTx(rawTx []byte) abciTypes.ResponseCheckTx {
-	response := transaction.RunTx(app.stateCheck, true, rawTx, nil, app.height, app.currentMempool)
-
-	if response.Code == code.OK && response.GasPrice.Cmp(app.MinGasPrice()) == -1 {
-		return abciTypes.ResponseCheckTx{
-			Code: code.TooLowGasPrice,
-			Log:  fmt.Sprintf("Gas price of tx is too low to be included in mempool. Expected %s", app.MinGasPrice().String()),
-		}
-	}
+	response := transaction.RunTx(app.stateCheck, true, rawTx, nil, app.height, app.currentMempool, app.MinGasPrice())
 
 	return abciTypes.ResponseCheckTx{
 		Code:      response.Code,
@@ -406,7 +397,7 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 	atomic.StoreUint64(&app.lastCommittedHeight, app.Height())
 
 	// Clear mempool
-	app.currentMempool = map[types.Address]struct{}{}
+	app.currentMempool = sync.Map{}
 
 	// Releasing wg
 	app.wg.Done()
