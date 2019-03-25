@@ -8,6 +8,7 @@ BREAKING CHANGES
 
 IMPROVEMENT
 
+- [invariants] Add invariants checker each 720 blocks
 - [core] Delete coins with 0 reserves #217
 - [genesis] Add option to export/import state
 - [api] Add ?include_stakes to /candidates endpoint #222
