@@ -46,7 +46,7 @@ type BlockTransactionResponse struct {
 }
 
 type BlockValidatorResponse struct {
-	Pubkey string `json:"pubkey"`
+	Pubkey string `json:"pub_key"`
 	Signed bool   `json:"signed"`
 }
 

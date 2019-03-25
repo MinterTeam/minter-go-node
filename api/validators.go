@@ -5,7 +5,7 @@ import (
 )
 
 type ValidatorResponse struct {
-	Pubkey      types.Pubkey `json:"pubkey"`
+	Pubkey      types.Pubkey `json:"pub_key"`
 	VotingPower int64        `json:"voting_power"`
 }
 
