@@ -136,12 +136,6 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 
 	height := uint64(req.Header.Height)
 
-	if height%720 == 0 {
-		if err := app.stateDeliver.CheckForInvariants(); err != nil {
-			log.With("module", "invariants").Error("Invariants error", "msg", err.Error())
-		}
-	}
-
 	// compute max gas
 	app.updateBlocksTimeDelta(height, 3)
 	maxGas := app.calcMaxGas(height)
@@ -324,6 +318,12 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 					Power:  0,
 				})
 			}
+		}
+	}
+
+	if app.height%720 == 0 {
+		if err := app.stateDeliver.CheckForInvariants(); err != nil {
+			log.With("module", "invariants").Error("Invariants error", "msg", err.Error())
 		}
 	}
 
