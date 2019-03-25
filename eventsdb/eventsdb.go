@@ -103,10 +103,12 @@ func (db *EventsDB) AddEvent(height uint64, event Event) {
 	db.setEvents(height, append(events, event))
 }
 
-func (db *EventsDB) FlushEvents(height uint64) error {
+func (db *EventsDB) FlushEvents() error {
 	if !eventsEnabled {
 		return nil
 	}
+
+	height := db.cache.height
 
 	events := db.getEvents(height)
 	bytes, err := cdc.MarshalBinaryBare(events)

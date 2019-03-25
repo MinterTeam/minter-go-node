@@ -136,7 +136,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 
 	height := uint64(req.Header.Height)
 
-	if height % 720 == 0 {
+	if height%720 == 0 {
 		if err := app.stateDeliver.CheckForInvariants(); err != nil {
 			log.With("module", "invariants").Error("Invariants error", "msg", err.Error())
 		}
@@ -232,7 +232,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 			continue
 		}
 
-		reward := rewards.GetRewardForBlock(uint64(req.Height))
+		reward := rewards.GetRewardForBlock(height)
 
 		reward.Add(reward, app.rewards)
 
@@ -327,8 +327,6 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 		}
 	}
 
-	_ = eventsdb.GetCurrent().FlushEvents(uint64(req.Height))
-
 	return abciTypes.ResponseEndBlock{
 		ValidatorUpdates: updates,
 		ConsensusParamUpdates: &abciTypes.ConsensusParams{
@@ -387,6 +385,9 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 	if err != nil {
 		panic(err)
 	}
+
+	// Flush events db
+	_ = eventsdb.GetCurrent().FlushEvents()
 
 	// Persist application hash and height
 	app.appDB.SetLastBlockHash(hash)

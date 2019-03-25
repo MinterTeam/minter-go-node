@@ -109,7 +109,7 @@ func New(height uint64, db dbm.DB) (*StateDB, error) {
 
 	return &StateDB{
 		db:                    db,
-		height:                height,
+		height:                height + 1,
 		iavl:                  tree,
 		stateAccounts:         make(map[types.Address]*stateAccount),
 		stateAccountsDirty:    make(map[types.Address]struct{}),
