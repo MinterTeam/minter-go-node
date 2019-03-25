@@ -13,7 +13,7 @@ IMPROVEMENT
 - [genesis] Add option to export/import state
 - [api] Add ?include_stakes to /candidates endpoint #222
 - [api] Change `stake` to `value` in DelegateTx
-- [api] Change `pubkey` to `pub_key` in all API resources
+- [api] Change `pubkey` to `pub_key` in all API resources and requests
 - [events] Add CoinLiquidation event #221
 - [mempool] Recheck mempool once per minute
 
