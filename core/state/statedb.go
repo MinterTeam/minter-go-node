@@ -1837,6 +1837,8 @@ func (s *StateDB) Import(appState types.AppState) {
 }
 
 func (s *StateDB) CheckForInvariants() error {
+	height := s.height - 1
+
 	totalBasecoinVolume := big.NewInt(0)
 
 	coinSupplies := map[types.CoinSymbol]*big.Int{}
@@ -1888,9 +1890,9 @@ func (s *StateDB) CheckForInvariants() error {
 	})
 
 	candidates := s.getStateCandidates()
-	if candsCount := len(candidates.data); candsCount > validators.GetCandidatesCountForBlock(s.height) {
+	if candsCount := len(candidates.data); candsCount > validators.GetCandidatesCountForBlock(height) {
 		return fmt.Errorf("too many candidates in blockchain. Expected %d, got %d",
-			validators.GetCandidatesCountForBlock(s.height), candsCount)
+			validators.GetCandidatesCountForBlock(height), candsCount)
 	}
 
 	for _, candidate := range candidates.data {
@@ -1908,9 +1910,9 @@ func (s *StateDB) CheckForInvariants() error {
 	}
 
 	vals := s.getStateValidators()
-	if valsCount := len(vals.data); valsCount > validators.GetValidatorsCountForBlock(s.height) {
+	if valsCount := len(vals.data); valsCount > validators.GetValidatorsCountForBlock(height) {
 		return fmt.Errorf("too many validators in blockchain. Expected %d, got %d",
-			validators.GetValidatorsCountForBlock(s.height), valsCount)
+			validators.GetValidatorsCountForBlock(height), valsCount)
 	}
 
 	for _, val := range vals.data {
@@ -1918,7 +1920,7 @@ func (s *StateDB) CheckForInvariants() error {
 	}
 
 	predictedBasecoinVolume := big.NewInt(0)
-	for i := uint64(1); i < s.height; i++ {
+	for i := uint64(1); i < height; i++ {
 		predictedBasecoinVolume.Add(predictedBasecoinVolume, rewards.GetRewardForBlock(i))
 	}
 	predictedBasecoinVolume.Sub(predictedBasecoinVolume, s.GetTotalSlashed())

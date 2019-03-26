@@ -321,12 +321,6 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 		}
 	}
 
-	if app.height%720 == 0 {
-		if err := app.stateDeliver.CheckForInvariants(); err != nil {
-			log.With("module", "invariants").Error("Invariants error", "msg", err.Error())
-		}
-	}
-
 	return abciTypes.ResponseEndBlock{
 		ValidatorUpdates: updates,
 		ConsensusParamUpdates: &abciTypes.ConsensusParams{
@@ -401,6 +395,13 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 
 	// Clear mempool
 	app.currentMempool = sync.Map{}
+
+	// Check invariants
+	if app.height%720 == 0 {
+		if err := app.stateCheck.CheckForInvariants(); err != nil {
+			log.With("module", "invariants").Error("Invariants error", "msg", err.Error())
+		}
+	}
 
 	// Releasing wg
 	app.wg.Done()
