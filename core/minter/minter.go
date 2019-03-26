@@ -398,7 +398,7 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 
 	// Check invariants
 	if app.height%720 == 0 {
-		if err := app.stateCheck.CheckForInvariants(); err != nil {
+		if err := state.NewForCheck(app.stateCheck).CheckForInvariants(); err != nil {
 			log.With("module", "invariants").Error("Invariants error", "msg", err.Error())
 		}
 	}
