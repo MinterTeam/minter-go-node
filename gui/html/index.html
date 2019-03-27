@@ -145,7 +145,7 @@
                         <tr>
                             <td class="h">Latest Block Height</td>
                             <td>
-                                #{{ status.sync_info.latest_block_height }} <span v-if="masterStatus && Number(status.sync_info.latest_block_height) <= Number(masterStatus.latest_block_height)" class="text-muted">of {{ masterStatus.latest_block_height }}</span>
+                                #{{ status.sync_info.latest_block_height }} <span v-if="masterStatus && status.node_info.network == masterStatus.tm_status.node_info.network && Number(status.sync_info.latest_block_height) <= Number(masterStatus.latest_block_height)" class="text-muted">of {{ masterStatus.latest_block_height }}</span>
                             </td>
                         </tr>
                         <tr>
@@ -224,12 +224,12 @@
 
                     axios.all([
                         axios.get("//" + window.location.hostname + ':8841/validators'),
-                        axios.get("//" + window.location.hostname + ':8841/candidate?pubkey=' + this.validatorPubKey),
+                        axios.get("//" + window.location.hostname + ':8841/candidate?pub_key=' + this.validatorPubKey),
                     ]).then(axios.spread(function (validators, candidate) {
 
                         this.stake = Math.round(candidate.data.result.total_stake / Math.pow(10, 17)) / 10
 
-                        if (validators.data.result.find(function(val) { return val.pubkey === this.validatorPubKey }.bind(this))) {
+                        if (validators.data.result.find(function(val) { return val.pub_key === this.validatorPubKey }.bind(this))) {
                             this.validatorStatus = 'Validating';
                             return
                         }

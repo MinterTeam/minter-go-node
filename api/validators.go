@@ -5,18 +5,19 @@ import (
 )
 
 type ValidatorResponse struct {
-	Pubkey      types.Pubkey `json:"pubkey"`
+	Pubkey      types.Pubkey `json:"pub_key"`
 	VotingPower int64        `json:"voting_power"`
 }
 
 type ResponseValidators []ValidatorResponse
 
-func Validators(height int64) (*ResponseValidators, error) {
+func Validators(height uint64) (*ResponseValidators, error) {
 	if height == 0 {
 		height = blockchain.Height()
 	}
 
-	tmVals, err := client.Validators(&height)
+	h := int64(height)
+	tmVals, err := client.Validators(&h)
 	if err != nil {
 		return nil, err
 	}

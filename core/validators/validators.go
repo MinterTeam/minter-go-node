@@ -1,6 +1,6 @@
 package validators
 
-func GetValidatorsCountForBlock(block int64) int {
+func GetValidatorsCountForBlock(block uint64) int {
 	count := 16 + (block/518400)*4
 
 	if count > 256 {
@@ -10,6 +10,6 @@ func GetValidatorsCountForBlock(block int64) int {
 	return int(count)
 }
 
-func GetCandidatesCountForBlock(block int64) int {
+func GetCandidatesCountForBlock(block uint64) int {
 	return GetValidatorsCountForBlock(block) * 3
 }

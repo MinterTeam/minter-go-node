@@ -264,7 +264,7 @@ func (data BuyCoinData) BasicCheck(tx *Transaction, context *state.StateDB) *Res
 	return nil
 }
 
-func (data BuyCoinData) Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response {
+func (data BuyCoinData) Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
 	sender, _ := tx.Sender()
 
 	response := data.BasicCheck(tx, context)
@@ -304,6 +304,9 @@ func (data BuyCoinData) Run(tx *Transaction, context *state.StateDB, isCheck boo
 		rewardPool.Add(rewardPool, tx.CommissionInBaseCoin())
 		context.AddBalance(sender, data.CoinToBuy, data.ValueToBuy)
 		context.SetNonce(sender, tx.Nonce)
+
+		context.DeleteCoinIfZeroReserve(data.CoinToBuy)
+		context.DeleteCoinIfZeroReserve(data.CoinToSell)
 	}
 
 	tags := common.KVPairs{

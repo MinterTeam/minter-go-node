@@ -8,6 +8,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/tendermint/tendermint/libs/common"
 	"math/big"
+	"sync"
 )
 
 var (
@@ -31,7 +32,7 @@ type Response struct {
 	GasPrice  *big.Int
 }
 
-func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPool *big.Int, currentBlock int64, currentMempool map[types.Address]struct{}) Response {
+func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPool *big.Int, currentBlock uint64, currentMempool sync.Map, minGasPrice *big.Int) Response {
 	if len(rawTx) > maxTxLength {
 		return Response{
 			Code: code.TxTooLarge,
@@ -43,6 +44,13 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPool *big.I
 		return Response{
 			Code: code.DecodeError,
 			Log:  err.Error()}
+	}
+
+	if isCheck && tx.GasPrice.Cmp(minGasPrice) == -1 {
+		return Response{
+			Code: code.TooLowGasPrice,
+			Log:  fmt.Sprintf("Gas price of tx is too low to be included in mempool. Expected %s", minGasPrice),
+		}
 	}
 
 	if !isCheck {
@@ -69,14 +77,14 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPool *big.I
 	}
 
 	// check if mempool already has transactions from this address
-	if _, has := currentMempool[sender]; isCheck && has {
+	if _, has := currentMempool.Load(sender); isCheck && has {
 		return Response{
 			Code: code.TxFromSenderAlreadyInMempool,
 			Log:  fmt.Sprintf("Tx from %s already exists in mempool", sender.String())}
 	}
 
 	if isCheck {
-		currentMempool[sender] = struct{}{}
+		currentMempool.Store(sender, true)
 	}
 
 	// check multi-signature
@@ -136,10 +144,14 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPool *big.I
 	response := tx.decodedData.Run(tx, context, isCheck, rewardPool, currentBlock)
 
 	if response.Code != code.TxFromSenderAlreadyInMempool && response.Code != code.OK {
-		delete(currentMempool, sender)
+		currentMempool.Delete(sender)
 	}
 
 	response.GasPrice = tx.GasPrice
+
+	if !isCheck && response.Code == code.OK {
+		context.DeleteCoinIfZeroReserve(tx.GasCoin)
+	}
 
 	return response
 }

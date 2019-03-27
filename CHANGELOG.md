@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.15.0
+
+BREAKING CHANGES
+
+- [tendermint] Update to [v0.31.0](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0310) 
+
+IMPROVEMENT
+
+- [invariants] Add invariants checker each 720 blocks
+- [core] Delete coins with 0 reserves #217
+- [genesis] Add option to export/import state
+- [api] Add ?include_stakes to /candidates endpoint #222
+- [api] Change `stake` to `value` in DelegateTx
+- [api] Change `pubkey` to `pub_key` in all API resources and requests
+- [events] Add CoinLiquidation event #221
+- [mempool] Recheck mempool once per minute
+
+BUG FIXES
+
+- [core] Fix double sign slashing issue #215
+- [core] Fix issue with slashing small stake #209
+- [core] Fix coin creation issue
+- [core] Fix mempool issue #220
+- [api] Make block hash lowercase #214
+
 ## 0.14.3
 
 BUG FIXES

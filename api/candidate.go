@@ -18,7 +18,7 @@ type CandidateResponse struct {
 	RewardAddress  types.Address `json:"reward_address"`
 	OwnerAddress   types.Address `json:"owner_address"`
 	TotalStake     *big.Int      `json:"total_stake"`
-	PubKey         types.Pubkey  `json:"pubkey"`
+	PubKey         types.Pubkey  `json:"pub_key"`
 	Commission     uint          `json:"commission"`
 	Stakes         []Stake       `json:"stakes,omitempty"`
 	CreatedAtBlock uint          `json:"created_at_block"`

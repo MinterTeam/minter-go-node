@@ -1,6 +1,6 @@
 package api
 
-func Candidates(height int) (*[]CandidateResponse, error) {
+func Candidates(height int, includeStakes bool) (*[]CandidateResponse, error) {
 	cState, err := GetStateForHeight(height)
 	if err != nil {
 		return nil, err
@@ -10,7 +10,7 @@ func Candidates(height int) (*[]CandidateResponse, error) {
 
 	result := make([]CandidateResponse, len(candidates))
 	for i, candidate := range candidates {
-		result[i] = makeResponseCandidate(candidate, false)
+		result[i] = makeResponseCandidate(candidate, includeStakes)
 	}
 
 	return &result, nil

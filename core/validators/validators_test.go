@@ -5,7 +5,7 @@ import (
 )
 
 type Results struct {
-	Block  int64
+	Block  uint64
 	Result int
 }
 

@@ -106,7 +106,7 @@ type Data interface {
 	Gas() int64
 	TotalSpend(tx *Transaction, context *state.StateDB) (TotalSpends, []Conversion, *big.Int, *Response)
 	BasicCheck(tx *Transaction, context *state.StateDB) *Response
-	Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response
+	Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response
 }
 
 func (tx *Transaction) Serialize() ([]byte, error) {

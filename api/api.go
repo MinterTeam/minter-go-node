@@ -32,8 +32,8 @@ var (
 
 var Routes = map[string]*rpcserver.RPCFunc{
 	"status":                 rpcserver.NewRPCFunc(Status, ""),
-	"candidates":             rpcserver.NewRPCFunc(Candidates, "height"),
-	"candidate":              rpcserver.NewRPCFunc(Candidate, "pubkey,height"),
+	"candidates":             rpcserver.NewRPCFunc(Candidates, "height,include_stakes"),
+	"candidate":              rpcserver.NewRPCFunc(Candidate, "pub_key,height"),
 	"validators":             rpcserver.NewRPCFunc(Validators, "height"),
 	"address":                rpcserver.NewRPCFunc(Address, "address,height"),
 	"addresses":              rpcserver.NewRPCFunc(Addresses, "addresses,height"),
@@ -122,7 +122,7 @@ type Response struct {
 
 func GetStateForHeight(height int) (*state.StateDB, error) {
 	if height > 0 {
-		cState, err := blockchain.GetStateForHeight(height)
+		cState, err := blockchain.GetStateForHeight(uint64(height))
 
 		return cState, err
 	}

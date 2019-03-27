@@ -19,6 +19,7 @@ import (
 	"github.com/tendermint/tendermint/proxy"
 	rpc "github.com/tendermint/tendermint/rpc/client"
 	"os"
+	"time"
 )
 
 var cfg = config.GetConfig()
@@ -42,11 +43,11 @@ func main() {
 		panic(err)
 	}
 	blockStore := bc.NewBlockStore(blockStoreDB)
-	height := blockStore.Height()
-	count := int64(3)
+	height := uint64(blockStore.Height())
+	count := uint64(3)
 	if _, err := app.GetBlocksTimeDelta(height, count); height >= 20 && err != nil {
-		blockA := blockStore.LoadBlockMeta(height - count - 1)
-		blockB := blockStore.LoadBlockMeta(height - 1)
+		blockA := blockStore.LoadBlockMeta(int64(height - count - 1))
+		blockB := blockStore.LoadBlockMeta(int64(height - 1))
 
 		delta := int(blockB.Header.Time.Sub(blockA.Header.Time).Seconds())
 		app.SetBlocksTimeDelta(height, delta)
@@ -70,8 +71,24 @@ func main() {
 		go gui.Run(cfg.GUIListenAddress)
 	}
 
-	// Wait forever
-	common.TrapSignal(func() {
+	// Recheck mempool. Currently kind a hack. TODO: refactor
+	go func() {
+		ticker := time.NewTicker(time.Minute)
+		mempool := node.MempoolReactor().Mempool
+		for {
+			select {
+			case <-ticker.C:
+				txs := mempool.ReapMaxTxs(cfg.Mempool.Size)
+				mempool.Flush()
+
+				for _, tx := range txs {
+					_ = mempool.CheckTx(tx, func(res *types.Response) {})
+				}
+			}
+		}
+	}()
+
+	common.TrapSignal(log.With("module", "trap"), func() {
 		// Cleanup
 		err := node.Stop()
 		app.Stop()
@@ -79,6 +96,9 @@ func main() {
 			panic(err)
 		}
 	})
+
+	// Run forever
+	select {}
 }
 
 func startTendermintNode(app types.Application, cfg *tmCfg.Config) *tmNode.Node {

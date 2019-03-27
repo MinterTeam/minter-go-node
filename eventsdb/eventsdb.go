@@ -54,13 +54,13 @@ type EventsDB struct {
 }
 
 type eventsCache struct {
-	height int64
+	height uint64
 	events Events
 
 	lock sync.RWMutex
 }
 
-func (c *eventsCache) set(height int64, events Events) {
+func (c *eventsCache) set(height uint64, events Events) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
@@ -94,7 +94,7 @@ func NewEventsDB(db *db.GoLevelDB) *EventsDB {
 	}
 }
 
-func (db *EventsDB) AddEvent(height int64, event Event) {
+func (db *EventsDB) AddEvent(height uint64, event Event) {
 	if !eventsEnabled {
 		return
 	}
@@ -103,10 +103,12 @@ func (db *EventsDB) AddEvent(height int64, event Event) {
 	db.setEvents(height, append(events, event))
 }
 
-func (db *EventsDB) FlushEvents(height int64) error {
+func (db *EventsDB) FlushEvents() error {
 	if !eventsEnabled {
 		return nil
 	}
+
+	height := db.cache.height
 
 	events := db.getEvents(height)
 	bytes, err := cdc.MarshalBinaryBare(events)
@@ -121,11 +123,11 @@ func (db *EventsDB) FlushEvents(height int64) error {
 	return nil
 }
 
-func (db *EventsDB) setEvents(height int64, events Events) {
+func (db *EventsDB) setEvents(height uint64, events Events) {
 	db.cache.set(height, events)
 }
 
-func (db *EventsDB) LoadEvents(height int64) Events {
+func (db *EventsDB) LoadEvents(height uint64) Events {
 	db.lock.RLock()
 	data := db.db.Get(getKeyForHeight(height))
 	db.lock.RUnlock()
@@ -144,7 +146,7 @@ func (db *EventsDB) LoadEvents(height int64) Events {
 	return decoded
 }
 
-func (db *EventsDB) getEvents(height int64) Events {
+func (db *EventsDB) getEvents(height uint64) Events {
 	if db.cache.height == height {
 		return db.cache.get()
 	}
@@ -155,9 +157,9 @@ func (db *EventsDB) getEvents(height int64) Events {
 	return events
 }
 
-func getKeyForHeight(height int64) []byte {
+func getKeyForHeight(height uint64) []byte {
 	var h = make([]byte, 8)
-	binary.BigEndian.PutUint64(h, uint64(height))
+	binary.BigEndian.PutUint64(h, height)
 
 	return h
 }

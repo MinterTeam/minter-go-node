@@ -82,7 +82,7 @@ func (data SendData) Gas() int64 {
 	return commissions.SendTx
 }
 
-func (data SendData) Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response {
+func (data SendData) Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
 	sender, _ := tx.Sender()
 
 	response := data.BasicCheck(tx, context)

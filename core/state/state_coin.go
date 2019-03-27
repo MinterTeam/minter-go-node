@@ -5,17 +5,15 @@ import (
 
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"math/big"
 )
 
 // stateCoin represents a coin which is being modified.
 type stateCoin struct {
-	symbol     types.CoinSymbol
-	symbolHash types.Hash
-	data       Coin
-	db         *StateDB
+	symbol types.CoinSymbol
+	data   Coin
+	db     *StateDB
 
 	onDirty func(symbol types.CoinSymbol) // Callback method to mark a state coin newly dirty
 }
@@ -36,11 +34,10 @@ func (coin Coin) String() string {
 // newCoin creates a state coin.
 func newCoin(db *StateDB, symbol types.CoinSymbol, data Coin, onDirty func(symbol types.CoinSymbol)) *stateCoin {
 	coin := &stateCoin{
-		db:         db,
-		symbol:     symbol,
-		symbolHash: crypto.Keccak256Hash(symbol[:]),
-		data:       data,
-		onDirty:    onDirty,
+		db:      db,
+		symbol:  symbol,
+		data:    data,
+		onDirty: onDirty,
 	}
 
 	coin.onDirty(coin.symbol)

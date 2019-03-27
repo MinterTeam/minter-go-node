@@ -16,7 +16,7 @@ import (
 type DelegateData struct {
 	PubKey types.Pubkey     `json:"pub_key"`
 	Coin   types.CoinSymbol `json:"coin"`
-	Stake  *big.Int         `json:"stake"`
+	Value  *big.Int         `json:"value"`
 }
 
 func (data DelegateData) TotalSpend(tx *Transaction, context *state.StateDB) (TotalSpends, []Conversion, *big.Int, *Response) {
@@ -24,7 +24,7 @@ func (data DelegateData) TotalSpend(tx *Transaction, context *state.StateDB) (To
 }
 
 func (data DelegateData) BasicCheck(tx *Transaction, context *state.StateDB) *Response {
-	if data.PubKey == nil || data.Stake == nil {
+	if data.PubKey == nil || data.Value == nil {
 		return &Response{
 			Code: code.DecodeError,
 			Log:  "Incorrect tx data"}
@@ -36,7 +36,7 @@ func (data DelegateData) BasicCheck(tx *Transaction, context *state.StateDB) *Re
 			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin)}
 	}
 
-	if data.Stake.Cmp(types.Big0) < 1 {
+	if data.Value.Cmp(types.Big0) < 1 {
 		return &Response{
 			Code: code.StakeShouldBePositive,
 			Log:  fmt.Sprintf("Stake should be positive")}
@@ -50,7 +50,7 @@ func (data DelegateData) BasicCheck(tx *Transaction, context *state.StateDB) *Re
 	}
 
 	sender, _ := tx.Sender()
-	if len(candidate.Stakes) >= state.MaxDelegatorsPerCandidate && !context.IsDelegatorStakeSufficient(sender, data.PubKey, data.Coin, data.Stake) {
+	if len(candidate.Stakes) >= state.MaxDelegatorsPerCandidate && !context.IsDelegatorStakeSufficient(sender, data.PubKey, data.Coin, data.Value) {
 		return &Response{
 			Code: code.TooLowStake,
 			Log:  fmt.Sprintf("Stake is too low")}
@@ -68,7 +68,7 @@ func (data DelegateData) Gas() int64 {
 	return commissions.DelegateTx
 }
 
-func (data DelegateData) Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response {
+func (data DelegateData) Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
 	sender, _ := tx.Sender()
 
 	response := data.BasicCheck(tx, context)
@@ -97,15 +97,15 @@ func (data DelegateData) Run(tx *Transaction, context *state.StateDB, isCheck bo
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, tx.GasCoin)}
 	}
 
-	if context.GetBalance(sender, data.Coin).Cmp(data.Stake) < 0 {
+	if context.GetBalance(sender, data.Coin).Cmp(data.Value) < 0 {
 		return Response{
 			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), data.Stake, data.Coin)}
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), data.Value, data.Coin)}
 	}
 
 	if data.Coin == tx.GasCoin {
 		totalTxCost := big.NewInt(0)
-		totalTxCost.Add(totalTxCost, data.Stake)
+		totalTxCost.Add(totalTxCost, data.Value)
 		totalTxCost.Add(totalTxCost, commission)
 
 		if context.GetBalance(sender, tx.GasCoin).Cmp(totalTxCost) < 0 {
@@ -122,8 +122,8 @@ func (data DelegateData) Run(tx *Transaction, context *state.StateDB, isCheck bo
 		context.SubCoinVolume(tx.GasCoin, commission)
 
 		context.SubBalance(sender, tx.GasCoin, commission)
-		context.SubBalance(sender, data.Coin, data.Stake)
-		context.Delegate(sender, data.PubKey, data.Coin, data.Stake)
+		context.SubBalance(sender, data.Coin, data.Value)
+		context.Delegate(sender, data.PubKey, data.Coin, data.Value)
 		context.SetNonce(sender, tx.Nonce)
 	}
 

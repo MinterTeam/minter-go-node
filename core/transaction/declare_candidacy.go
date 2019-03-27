@@ -71,7 +71,7 @@ func (data DeclareCandidacyData) Gas() int64 {
 	return commissions.DeclareCandidacyTx
 }
 
-func (data DeclareCandidacyData) Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock int64) Response {
+func (data DeclareCandidacyData) Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
 	sender, _ := tx.Sender()
 
 	response := data.BasicCheck(tx, context)

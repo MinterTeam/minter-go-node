@@ -17,6 +17,7 @@ type Tree interface {
 	GetImmutable() *ImmutableTree
 	Version() int64
 	Hash() []byte
+	Iterate(fn func(key []byte, value []byte) bool) (stopped bool)
 }
 
 func NewMutableTree(db dbm.DB) *MutableTree {
@@ -29,6 +30,10 @@ type MutableTree struct {
 	tree *iavl.MutableTree
 
 	lock sync.RWMutex
+}
+
+func (t *MutableTree) Iterate(fn func(key []byte, value []byte) bool) (stopped bool) {
+	return t.tree.Iterate(fn)
 }
 
 func (t *MutableTree) Hash() []byte {
@@ -105,6 +110,10 @@ func (t *MutableTree) DeleteVersion(version int64) error {
 
 type ImmutableTree struct {
 	tree *iavl.ImmutableTree
+}
+
+func (t *ImmutableTree) Iterate(fn func(key []byte, value []byte) bool) (stopped bool) {
+	return t.tree.Iterate(fn)
 }
 
 func (t *ImmutableTree) Hash() []byte {
