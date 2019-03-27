@@ -97,16 +97,17 @@ func NewMinterBlockchain() *Blockchain {
 // Initialize blockchain with validators and other info. Only called once.
 func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.ResponseInitChain {
 	var genesisState types.AppState
-
-	err := amino.UnmarshalJSON(req.AppStateBytes, &genesisState)
-	if err != nil {
+	if err := amino.UnmarshalJSON(req.AppStateBytes, &genesisState); err != nil {
 		panic(err)
 	}
 
 	app.stateDeliver.Import(genesisState)
 
-	totalValidatorsPower := 100000000
-	votingPower := int64(totalValidatorsPower / len(genesisState.Validators))
+	totalPower := big.NewInt(0)
+	for _, val := range genesisState.Validators {
+		totalPower.Add(totalPower, val.TotalBipStake)
+	}
+
 	vals := make([]abciTypes.ValidatorUpdate, len(genesisState.Validators))
 	for i, val := range genesisState.Validators {
 		var validatorPubKey ed25519.PubKeyEd25519
@@ -118,7 +119,8 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 
 		vals[i] = abciTypes.ValidatorUpdate{
 			PubKey: types2.TM2PB.PubKey(pkey),
-			Power:  votingPower,
+			Power: big.NewInt(0).Div(big.NewInt(0).Mul(val.TotalBipStake,
+				big.NewInt(100000000)), totalPower).Int64(),
 		}
 	}
 
