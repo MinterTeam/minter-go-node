@@ -14,8 +14,8 @@ import (
 )
 
 var (
-	Network     = "minter-test-network-33"
-	genesisTime = time.Date(2019, 2, 18, 9, 0, 0, 0, time.UTC)
+	Network     = "minter-test-network-34"
+	genesisTime = time.Date(2019, time.March, 27, 12, 0, 0, 0, time.UTC)
 
 	BlockMaxBytes int64 = 10000000
 	DefaultMaxGas int64 = 100000
