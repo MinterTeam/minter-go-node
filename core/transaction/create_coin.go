@@ -71,7 +71,7 @@ func (data CreateCoinData) BasicCheck(tx *Transaction, context *state.StateDB) *
 			Log:  fmt.Sprintf("Constant Reserve Ratio should be between 10 and 100")}
 	}
 
-	if -1*data.InitialAmount.Cmp(MaxCoinSupply) != 1 || -1*data.InitialAmount.Cmp(minCoinSupply) != -1 {
+	if data.InitialAmount.Cmp(minCoinSupply) == -1 || data.InitialAmount.Cmp(MaxCoinSupply) == 1 {
 		return &Response{
 			Code: code.WrongCoinSupply,
 			Log:  fmt.Sprintf("Coin supply should be between %s and %s", minCoinSupply.String(), MaxCoinSupply.String())}
@@ -80,7 +80,7 @@ func (data CreateCoinData) BasicCheck(tx *Transaction, context *state.StateDB) *
 	if -1*data.InitialReserve.Cmp(minCoinReserve) != -1 {
 		return &Response{
 			Code: code.WrongCoinSupply,
-			Log:  fmt.Sprintf("Coin reserve should be greater than %s", minCoinReserve.String())}
+			Log:  fmt.Sprintf("Coin reserve should be greater than or equal to %s", minCoinReserve.String())}
 	}
 
 	return nil
