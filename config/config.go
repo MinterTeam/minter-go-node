@@ -300,6 +300,10 @@ func (cfg BaseConfig) NodeKeyFile() string {
 	return rootify(cfg.NodeKey, cfg.RootDir)
 }
 
+func (cfg BaseConfig) PrivValidatorKeyFile() string {
+	return rootify(cfg.PrivValidatorKey, cfg.RootDir)
+}
+
 // DBDir returns the full path to the database directory
 func (cfg BaseConfig) DBDir() string {
 	return rootify(cfg.DBPath, cfg.RootDir)

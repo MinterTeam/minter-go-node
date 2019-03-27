@@ -9,9 +9,12 @@ import (
 	"github.com/MinterTeam/minter-go-node/genesis"
 	"github.com/MinterTeam/minter-go-node/gui"
 	"github.com/MinterTeam/minter-go-node/log"
+	"github.com/pkg/errors"
+	"github.com/tendermint/go-amino"
 	"github.com/tendermint/tendermint/abci/types"
 	bc "github.com/tendermint/tendermint/blockchain"
 	tmCfg "github.com/tendermint/tendermint/config"
+	"github.com/tendermint/tendermint/crypto/encoding/amino"
 	"github.com/tendermint/tendermint/libs/common"
 	tmNode "github.com/tendermint/tendermint/node"
 	"github.com/tendermint/tendermint/p2p"
@@ -30,6 +33,16 @@ func main() {
 	if err != nil {
 		log.Error(err.Error())
 		os.Exit(1)
+	}
+
+	if *utils.ShowNodeId {
+		showNodeID()
+		return
+	}
+
+	if *utils.ShowValidator {
+		showValidator()
+		return
 	}
 
 	app := minter.NewMinterBlockchain()
@@ -132,4 +145,31 @@ func startTendermintNode(app types.Application, cfg *tmCfg.Config) *tmNode.Node 
 	log.Info("Started node", "nodeInfo", node.Switch().NodeInfo())
 
 	return node
+}
+
+func showNodeID() {
+	nodeKey, err := p2p.LoadNodeKey(cfg.NodeKeyFile())
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(nodeKey.ID())
+}
+
+func showValidator() {
+	cdc := amino.NewCodec()
+	cryptoAmino.RegisterAmino(cdc)
+
+	keyFilePath := cfg.PrivValidatorKeyFile()
+	if !common.FileExists(keyFilePath) {
+		panic(fmt.Errorf("private validator file %s does not exist", keyFilePath))
+	}
+
+	pv := privval.LoadFilePV(keyFilePath, cfg.PrivValidatorStateFile())
+	bz, err := cdc.MarshalJSON(pv.GetPubKey())
+	if err != nil {
+		panic(errors.Wrap(err, "failed to marshal private validator pubkey"))
+	}
+
+	fmt.Println(string(bz))
 }

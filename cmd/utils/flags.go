@@ -7,7 +7,9 @@ import (
 )
 
 var (
-	MinterHome = flag.String("home", "", "Path to minter data directory")
+	MinterHome    = flag.String("home", "", "Path to minter data directory")
+	ShowNodeId    = flag.Bool("show_node_id", false, "Show node id")
+	ShowValidator = flag.Bool("show_validator", false, "Show validator info")
 )
 
 func init() {

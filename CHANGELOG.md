@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.15.1
+
+IMPROVEMENT
+
+- [cmd] Add `--show_node_id` and `--show_validator` flags
+
 ## 0.15.0
 
 BREAKING CHANGES
