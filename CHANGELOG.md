@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.15.2
+
+IMPROVEMENT
+
+- [cmd] `--show_validator` flag now returns hex public key of a validator
+- [tendermint] Update to [v0.31.1](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0311) 
+
 ## 0.15.1
 
 IMPROVEMENT
