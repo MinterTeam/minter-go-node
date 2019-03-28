@@ -9,7 +9,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/genesis"
 	"github.com/MinterTeam/minter-go-node/gui"
 	"github.com/MinterTeam/minter-go-node/log"
-	"github.com/pkg/errors"
 	"github.com/tendermint/go-amino"
 	"github.com/tendermint/tendermint/abci/types"
 	bc "github.com/tendermint/tendermint/blockchain"
@@ -166,10 +165,5 @@ func showValidator() {
 	}
 
 	pv := privval.LoadFilePV(keyFilePath, cfg.PrivValidatorStateFile())
-	bz, err := cdc.MarshalJSON(pv.GetPubKey())
-	if err != nil {
-		panic(errors.Wrap(err, "failed to marshal private validator pubkey"))
-	}
-
-	fmt.Println(string(bz))
+	fmt.Printf("Mp%x", pv.GetPubKey().Bytes()[5:])
 }
