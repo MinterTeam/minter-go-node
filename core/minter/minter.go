@@ -170,7 +170,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 
 		// skip already offline candidates to prevent double punishing
 		candidate := app.stateDeliver.GetStateCandidateByTmAddress(address)
-		if candidate == nil && candidate.Status == state.CandidateStatusOffline {
+		if candidate == nil || candidate.Status == state.CandidateStatusOffline {
 			continue
 		}
 

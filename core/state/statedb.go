@@ -1152,40 +1152,34 @@ func (s *StateDB) SetCandidateOnline(pubkey []byte) {
 
 func (s *StateDB) SetCandidateOffline(pubkey []byte) {
 	stateCandidates := s.getStateCandidates()
-
 	for i := range stateCandidates.data {
 		candidate := &stateCandidates.data[i]
 		if bytes.Equal(candidate.PubKey, pubkey) {
 			candidate.Status = CandidateStatusOffline
 		}
 	}
-
 	s.setStateCandidates(stateCandidates)
 	s.MarkStateCandidateDirty()
 
 	vals := s.getStateValidators()
-
 	for i := range vals.data {
 		validator := &vals.data[i]
 		if bytes.Equal(validator.PubKey, pubkey) {
 			validator.toDrop = true
 		}
 	}
-
 	s.setStateValidators(vals)
 	s.MarkStateValidatorsDirty()
 }
 
 func (s *StateDB) SetValidatorPresent(address [20]byte) {
 	validators := s.getStateValidators()
-
 	for i := range validators.data {
 		validator := &validators.data[i]
 		if validator.GetAddress() == address {
 			validator.AbsentTimes.SetIndex(int(s.height)%ValidatorMaxAbsentWindow, false)
 		}
 	}
-
 	s.setStateValidators(validators)
 	s.MarkStateValidatorsDirty()
 }
@@ -1194,7 +1188,6 @@ func (s *StateDB) SetValidatorAbsent(address [20]byte) {
 	edb := eventsdb.GetCurrent()
 
 	validators := s.getStateValidators()
-
 	for i := range validators.data {
 		validator := &validators.data[i]
 		if validator.GetAddress() == address {

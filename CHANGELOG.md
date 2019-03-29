@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.16.0
+
+BUG FIXES
+
+- [core] Fix issue with multiple punishments to byzantine validator
+
 ## 0.15.2
 
 IMPROVEMENT
