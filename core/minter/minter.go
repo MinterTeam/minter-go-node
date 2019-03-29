@@ -206,6 +206,19 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 
 	stateValidators := app.stateDeliver.GetStateValidators()
 	vals := stateValidators.Data()
+
+	hasDroppedValidators := false
+	for _, val := range vals {
+		if val.IsToDrop() {
+			hasDroppedValidators = true
+
+			// Move dropped validator's accum rewards back to pool
+			app.rewards.Add(app.rewards, val.AccumReward)
+			val.AccumReward.SetInt64(0)
+			break
+		}
+	}
+
 	// calculate total power of validators
 	totalPower := big.NewInt(0)
 	for _, val := range vals {
@@ -244,14 +257,6 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 	// pay rewards
 	if req.Height%12 == 0 {
 		app.stateDeliver.PayRewards()
-	}
-
-	hasDroppedValidators := false
-	for _, val := range vals {
-		if val.IsToDrop() {
-			hasDroppedValidators = true
-			break
-		}
 	}
 
 	// update validators

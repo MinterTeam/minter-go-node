@@ -5,6 +5,7 @@
 BUG FIXES
 
 - [core] Fix issue with multiple punishments to byzantine validator
+- [core] Make accum reward of dropped validator distributes again between active ones
 
 ## 0.15.2
 

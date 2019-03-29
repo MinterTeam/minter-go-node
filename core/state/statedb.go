@@ -1195,7 +1195,6 @@ func (s *StateDB) SetValidatorAbsent(address [20]byte) {
 			candidates := s.getStateCandidates()
 
 			var candidate *Candidate
-
 			for i := range candidates.data {
 				if candidates.data[i].GetAddress() == address {
 					candidate = &candidates.data[i]
