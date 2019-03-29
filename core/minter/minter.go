@@ -223,7 +223,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 	totalPower := big.NewInt(0)
 	for _, val := range vals {
 		// skip if candidate is not present
-		if app.validatorsStatuses[val.GetAddress()] != ValidatorPresent {
+		if val.IsToDrop() || app.validatorsStatuses[val.GetAddress()] != ValidatorPresent {
 			continue
 		}
 
@@ -237,7 +237,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 	// accumulate rewards
 	for i, val := range vals {
 		// skip if candidate is not present
-		if app.validatorsStatuses[val.GetAddress()] != ValidatorPresent {
+		if val.IsToDrop() || app.validatorsStatuses[val.GetAddress()] != ValidatorPresent {
 			continue
 		}
 
