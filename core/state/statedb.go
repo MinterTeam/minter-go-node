@@ -1317,7 +1317,6 @@ func (s *StateDB) PunishByzantineValidator(address [20]byte) {
 
 			candidate.Stakes = []Stake{}
 			candidate.Status = CandidateStatusOffline
-			validator.AccumReward = big.NewInt(0)
 			validator.TotalBipStake = big.NewInt(0)
 			validator.toDrop = true
 
