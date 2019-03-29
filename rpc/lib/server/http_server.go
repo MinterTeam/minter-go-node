@@ -84,7 +84,7 @@ func WriteRPCResponseHTTPError(
 	httpCode int,
 	res types.RPCResponse,
 ) {
-	jsonBytes, err := json.MarshalIndent(res, "", "  ")
+	jsonBytes, err := json.Marshal(res)
 	if err != nil {
 		panic(err)
 	}
@@ -95,7 +95,7 @@ func WriteRPCResponseHTTPError(
 }
 
 func WriteRPCResponseHTTP(w http.ResponseWriter, res types.RPCResponse) {
-	jsonBytes, err := json.MarshalIndent(res, "", "  ")
+	jsonBytes, err := json.Marshal(res)
 	if err != nil {
 		panic(err)
 	}

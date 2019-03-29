@@ -2,6 +2,10 @@
 
 ## 0.16.0
 
+IMPROVEMENT
+
+- [api] Make compact json responses
+
 BUG FIXES
 
 - [core] Fix issue with multiple punishments to byzantine validator
