@@ -19,7 +19,7 @@ const allowedCoinSymbols = "^[A-Z0-9]{3,10}$"
 
 var (
 	minCoinSupply  = helpers.BipToPip(big.NewInt(1))
-	minCoinReserve = helpers.BipToPip(big.NewInt(1))
+	minCoinReserve = helpers.BipToPip(big.NewInt(1000))
 )
 
 type CreateCoinData struct {

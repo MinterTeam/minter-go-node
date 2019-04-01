@@ -2,6 +2,10 @@
 
 ## 0.16.0
 
+BREAKING CHANGES
+
+- [core] Set min coin reserve to 1000 bip
+
 IMPROVEMENT
 
 - [api] Make compact json responses
