@@ -16,6 +16,7 @@ var (
 const (
 	hashPath           = "hash"
 	heightPath         = "height"
+	startHeightPath    = "startHeight"
 	blockTimeDeltaPath = "blockDelta"
 	validatorsPath     = "validators"
 
@@ -54,10 +55,27 @@ func (appDB *AppDB) GetLastHeight() uint64 {
 	return height
 }
 
-func (appDB *AppDB) SetLastHeight(height uint64) {
+func (appDB *AppDB) SetStartHeight(height uint64) {
 	h := make([]byte, 8)
 	binary.BigEndian.PutUint64(h, height)
 	appDB.db.Set([]byte(heightPath), h)
+}
+
+func (appDB *AppDB) GetStartHeight() uint64 {
+	result := appDB.db.Get([]byte(startHeightPath))
+	var height uint64
+
+	if result != nil {
+		height = binary.BigEndian.Uint64(result)
+	}
+
+	return height
+}
+
+func (appDB *AppDB) SetLastHeight(height uint64) {
+	h := make([]byte, 8)
+	binary.BigEndian.PutUint64(h, height)
+	appDB.db.Set([]byte(startHeightPath), h)
 }
 
 func (appDB *AppDB) GetValidators() types.ValidatorUpdates {

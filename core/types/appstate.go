@@ -5,6 +5,7 @@ import (
 )
 
 type AppState struct {
+	StartHeight uint64       `json:"start_height"`
 	Validators  []Validator  `json:"validators,omitempty"`
 	Candidates  []Candidate  `json:"candidates,omitempty"`
 	Accounts    []Account    `json:"accounts,omitempty"`

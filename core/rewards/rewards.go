@@ -10,7 +10,11 @@ const lastBlock = 43702611
 const firstReward = 333
 const lastReward = 68
 
+var startHeight uint64 = 0
+
 func GetRewardForBlock(blockHeight uint64) *big.Int {
+	blockHeight += startHeight
+
 	if blockHeight > lastBlock {
 		return big.NewInt(0)
 	}
@@ -27,4 +31,8 @@ func GetRewardForBlock(blockHeight uint64) *big.Int {
 	}
 
 	return helpers.BipToPip(reward)
+}
+
+func SetStartHeight(sHeight uint64) {
+	startHeight = sHeight
 }

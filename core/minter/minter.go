@@ -91,6 +91,9 @@ func NewMinterBlockchain() *Blockchain {
 
 	blockchain.stateCheck = state.NewForCheck(blockchain.stateDeliver)
 
+	// Set start height for rewards
+	rewards.SetStartHeight(applicationDB.GetStartHeight())
+
 	return blockchain
 }
 
@@ -123,6 +126,9 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 				big.NewInt(100000000)), totalPower).Int64(),
 		}
 	}
+
+	app.appDB.SetStartHeight(genesisState.StartHeight)
+	rewards.SetStartHeight(genesisState.StartHeight)
 
 	return abciTypes.ResponseInitChain{
 		Validators: vals,

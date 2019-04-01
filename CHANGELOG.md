@@ -7,6 +7,7 @@ IMPROVEMENT
 - [api] Make compact json responses
 - [api] Add `/genesis` endpoint
 - [check] Make check's nonce a byte array field. Max 16 bytes.
+- [appState] Use `startHeight` in genesis to manage rewards
 
 BUG FIXES
 

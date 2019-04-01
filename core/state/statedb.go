@@ -1746,6 +1746,7 @@ func (s *StateDB) Export(currentHeight uint64) types.AppState {
 	}
 
 	appState.MaxGas = s.GetMaxGas()
+	appState.StartHeight = s.height
 
 	return appState
 }

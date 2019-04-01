@@ -46,11 +46,11 @@ func main() {
 
 	app := minter.NewMinterBlockchain()
 
-	tmCfg := config.GetTmConfig()
+	tmConfig := config.GetTmConfig()
 
 	// update BlocksTimeDelta
 	// TODO: refactor
-	blockStoreDB, err := tmNode.DefaultDBProvider(&tmNode.DBContext{ID: "blockstore", Config: tmCfg})
+	blockStoreDB, err := tmNode.DefaultDBProvider(&tmNode.DBContext{ID: "blockstore", Config: tmConfig})
 	if err != nil {
 		panic(err)
 	}
@@ -67,7 +67,7 @@ func main() {
 	blockStoreDB.Close()
 
 	// start TM node
-	node := startTendermintNode(app, tmCfg)
+	node := startTendermintNode(app, tmConfig)
 
 	client := rpc.NewLocal(node)
 	status, _ := client.Status()
