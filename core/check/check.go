@@ -17,7 +17,7 @@ var (
 )
 
 type Check struct {
-	Nonce    uint64
+	Nonce    []byte
 	DueBlock uint64
 	Coin     types.CoinSymbol
 	Value    *big.Int
@@ -91,7 +91,7 @@ func (check *Check) SetSignature(sig []byte) {
 func (check *Check) String() string {
 	sender, _ := check.Sender()
 
-	return fmt.Sprintf("Check sender: %s nonce: %d, dueBlock: %d, value: %s %s", sender.String(), check.Nonce,
+	return fmt.Sprintf("Check sender: %s nonce: %x, dueBlock: %d, value: %s %s", sender.String(), check.Nonce,
 		check.DueBlock, check.Value.String(), check.Coin.String())
 }
 

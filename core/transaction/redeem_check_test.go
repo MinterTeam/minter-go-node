@@ -35,7 +35,7 @@ func TestRedeemCheckTx(t *testing.T) {
 	checkValue := helpers.BipToPip(big.NewInt(10))
 
 	check := c.Check{
-		Nonce:    0,
+		Nonce:    []byte{1, 2, 3},
 		DueBlock: 1,
 		Coin:     coin,
 		Value:    checkValue,
