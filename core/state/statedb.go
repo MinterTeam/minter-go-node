@@ -9,6 +9,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/validators"
 	"github.com/MinterTeam/minter-go-node/eventsdb"
 	"github.com/MinterTeam/minter-go-node/formula"
+	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	dbm "github.com/tendermint/tendermint/libs/db"
@@ -1228,7 +1229,7 @@ func (s *StateDB) SetValidatorAbsent(address [20]byte) {
 
 						s.SubCoinVolume(coin.Symbol, slashed)
 						s.SubCoinReserve(coin.Symbol, ret)
-						s.DeleteCoinIfZeroReserve(stake.Coin)
+						s.SanitizeCoin(stake.Coin)
 
 						s.AddTotalSlashed(ret)
 					} else {
@@ -1312,7 +1313,7 @@ func (s *StateDB) PunishByzantineValidator(address [20]byte) {
 
 				s.GetOrNewStateFrozenFunds(s.height+UnbondPeriod).AddFund(stake.Owner, candidate.PubKey,
 					stake.Coin, newValue)
-				s.DeleteCoinIfZeroReserve(stake.Coin)
+				s.SanitizeCoin(stake.Coin)
 			}
 
 			candidate.Stakes = []Stake{}
@@ -1581,24 +1582,50 @@ func (s *StateDB) GetMaxGas() uint64 {
 	return binary.BigEndian.Uint64(b)
 }
 
-func (s *StateDB) DeleteCoinIfZeroReserve(symbol types.CoinSymbol) {
+func (s *StateDB) SanitizeCoin(symbol types.CoinSymbol) {
 	if symbol.IsBaseCoin() {
 		return
 	}
 
 	coin := s.GetStateCoin(symbol)
-	if coin.ReserveBalance().Cmp(big.NewInt(0)) == 0 {
+
+	// Delete coin if reserve is less than 100 bips
+	if coin.ReserveBalance().Cmp(helpers.BipToPip(big.NewInt(100))) == -1 {
 		s.deleteCoin(symbol)
+		return
+	}
+
+	// Delete coin if volume is less than 1 coin
+	if coin.Volume().Cmp(helpers.BipToPip(big.NewInt(1))) == -1 {
+		s.deleteCoin(symbol)
+		return
+	}
+
+	// Delete coin if price of 1 coin is less than 0.0001 bip
+	price := formula.CalculateSaleReturn(coin.Volume(), coin.ReserveBalance(), coin.Crr(), helpers.BipToPip(big.NewInt(1)))
+	minPrice := big.NewInt(100000000000000) // 0.0001 bip
+	if price.Cmp(minPrice) == -1 {
+		s.deleteCoin(symbol)
+		return
 	}
 }
 
 func (s *StateDB) deleteCoin(symbol types.CoinSymbol) {
+	coinToDelete := s.getStateCoin(symbol)
+
 	s.iavl.Iterate(func(key []byte, value []byte) bool {
 		// remove coin from accounts
 		if key[0] == addressPrefix[0] {
 			account := s.GetOrNewStateObject(types.BytesToAddress(key[1:]))
 			for _, coin := range account.Balances().getCoins() {
 				if coin == symbol {
+					amount := account.Balance(symbol)
+					ret := formula.CalculateSaleReturn(coinToDelete.Volume(), coinToDelete.ReserveBalance(), 100, amount)
+
+					coinToDelete.SubReserve(ret)
+					coinToDelete.SubVolume(amount)
+
+					account.AddBalance(symbol, ret)
 					account.SetBalance(symbol, big.NewInt(0))
 				}
 			}
@@ -1610,7 +1637,15 @@ func (s *StateDB) deleteCoin(symbol types.CoinSymbol) {
 
 			for i, ff := range frozenFunds.data.List {
 				if ff.Coin == symbol {
+					ret := formula.CalculateSaleReturn(coinToDelete.Volume(), coinToDelete.ReserveBalance(), 100, ff.Value)
+
+					coinToDelete.SubReserve(ret)
+					coinToDelete.SubVolume(ff.Value)
+
 					frozenFunds.data.List = append(frozenFunds.data.List[:i], frozenFunds.data.List[i+1:]...)
+					frozenFunds.AddFund(ff.Address, ff.CandidateKey, types.GetBaseCoin(), ret)
+
+					s.MarkStateFrozenFundsDirty(frozenFunds.blockHeight)
 				}
 			}
 		}
@@ -1625,7 +1660,14 @@ func (s *StateDB) deleteCoin(symbol types.CoinSymbol) {
 			candidate := &candidates.data[i]
 			for j, stake := range candidate.Stakes {
 				if stake.Coin == symbol {
-					candidate.Stakes[j].Value = big.NewInt(0)
+					ret := formula.CalculateSaleReturn(coinToDelete.Volume(), coinToDelete.ReserveBalance(), 100, stake.Value)
+
+					coinToDelete.SubReserve(ret)
+					coinToDelete.SubVolume(stake.Value)
+
+					candidate.Stakes[j].Value = ret
+					candidate.Stakes[j].Coin = types.GetBaseCoin()
+					candidate.Stakes[j].BipValue = ret
 				}
 			}
 		}
@@ -1635,6 +1677,7 @@ func (s *StateDB) deleteCoin(symbol types.CoinSymbol) {
 
 	// set coin volume to 0
 	s.SubCoinVolume(symbol, s.GetStateCoin(symbol).Volume())
+	s.MarkStateCoinDirty(symbol)
 }
 
 func (s *StateDB) Export(currentHeight uint64) types.AppState {

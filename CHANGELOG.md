@@ -6,6 +6,7 @@ BREAKING CHANGES
 
 - [core] Set min coin reserve to 1000 bip
 - [core] Coins with 7-10 letters are now requires 100 bips fee
+- [core] Delete coin if reserve is less than 100 bips OR price is less than 0.0001 bip, OR volume is less than 1 coin
 
 IMPROVEMENT
 

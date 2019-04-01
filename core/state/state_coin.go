@@ -97,7 +97,6 @@ func (c *stateCoin) SetReserve(amount *big.Int) {
 }
 
 func (c *stateCoin) setReserve(amount *big.Int) {
-
 	c.data.ReserveBalance = amount
 
 	if c.onDirty != nil {
