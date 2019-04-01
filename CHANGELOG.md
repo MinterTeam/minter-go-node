@@ -5,6 +5,7 @@
 IMPROVEMENT
 
 - [api] Make compact json responses
+- [api] Add `/genesis` endpoint
 - [check] Make check's nonce a byte array field. Max 16 bytes.
 
 BUG FIXES
