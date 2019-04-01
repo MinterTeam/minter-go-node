@@ -1790,12 +1790,14 @@ func (s *StateDB) Export(currentHeight uint64) types.AppState {
 
 	appState.MaxGas = s.GetMaxGas()
 	appState.StartHeight = s.height
+	appState.TotalSlashed = s.GetTotalSlashed()
 
 	return appState
 }
 
 func (s *StateDB) Import(appState types.AppState) {
 	s.SetMaxGas(appState.MaxGas)
+	s.setTotalSlashed(appState.TotalSlashed)
 
 	for _, a := range appState.Accounts {
 		account := s.GetOrNewStateObject(a.Address)
