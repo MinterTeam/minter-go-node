@@ -77,7 +77,7 @@ func (data CreateCoinData) BasicCheck(tx *Transaction, context *state.StateDB) *
 			Log:  fmt.Sprintf("Coin supply should be between %s and %s", minCoinSupply.String(), MaxCoinSupply.String())}
 	}
 
-	if -1*data.InitialReserve.Cmp(minCoinReserve) != -1 {
+	if data.InitialReserve.Cmp(minCoinReserve) == -1 {
 		return &Response{
 			Code: code.WrongCoinSupply,
 			Log:  fmt.Sprintf("Coin reserve should be greater than or equal to %s", minCoinReserve.String())}
