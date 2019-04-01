@@ -106,13 +106,9 @@ func (data CreateCoinData) Commission() int64 {
 		return 10000000 // 10k bips
 	case 6:
 		return 1000000 // 1k bips
-	case 7:
-		return 100000 // 100 bips
-	case 8:
-		return 10000 // 10 bips
 	}
 
-	return 0
+	return 100000 // 100 bips
 }
 
 func (data CreateCoinData) Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {

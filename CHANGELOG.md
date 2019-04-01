@@ -5,6 +5,7 @@
 BREAKING CHANGES
 
 - [core] Set min coin reserve to 1000 bip
+- [core] Coins with 7-10 letters are now requires 100 bips fee
 
 IMPROVEMENT
 
