@@ -22,3 +22,4 @@ RUN git clone https://github.com/MinterTeam/minter-go-node.git . && git checkout
 RUN make get_tools && make get_vendor_deps
 
 RUN CGO_LDFLAGS="-lsnappy" make build_c
+RUN cp build/minter /dist
