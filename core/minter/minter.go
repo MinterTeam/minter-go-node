@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"github.com/MinterTeam/go-amino"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
+	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/appdb"
 	"github.com/MinterTeam/minter-go-node/core/rewards"
 	"github.com/MinterTeam/minter-go-node/core/state"
@@ -67,10 +68,8 @@ type Blockchain struct {
 
 // Creates Minter Blockchain instance, should be only called once
 func NewMinterBlockchain() *Blockchain {
-	ldb, err := db.NewGoLevelDB("state", utils.GetMinterHome()+"/data")
-	if err != nil {
-		panic(err)
-	}
+	dbType := db.DBBackendType(config.GetConfig().DBBackend)
+	ldb := db.NewDB("state", dbType, utils.GetMinterHome()+"/data")
 
 	// Initiate Application DB. Used for persisting data like current block, validators, etc.
 	applicationDB := appdb.NewAppDB()
@@ -84,6 +83,7 @@ func NewMinterBlockchain() *Blockchain {
 	}
 
 	// Set stateDeliver and stateCheck
+	var err error
 	blockchain.stateDeliver, err = state.New(blockchain.height, blockchain.stateDB)
 	if err != nil {
 		panic(err)

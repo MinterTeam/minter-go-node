@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
+	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/tendermint/go-amino"
 	"github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/db"
@@ -144,13 +145,7 @@ func (appDB *AppDB) SetLastBlocksTimeDelta(height uint64, delta int) {
 }
 
 func NewAppDB() *AppDB {
-	ldb, err := db.NewGoLevelDB(dbName, utils.GetMinterHome()+"/data")
-
-	if err != nil {
-		panic(err)
-	}
-
 	return &AppDB{
-		db: ldb,
+		db: db.NewDB(dbName, db.DBBackendType(config.GetConfig().DBBackend), utils.GetMinterHome()+"/data"),
 	}
 }

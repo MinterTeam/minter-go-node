@@ -23,16 +23,15 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/btcsuite/btcd/btcec"
+	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/math"
+	"github.com/MinterTeam/minter-go-node/rlp"
 	"io"
 	"io/ioutil"
 	"math/big"
 	"os"
 
-	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/MinterTeam/minter-go-node/crypto/sha3"
-	"github.com/MinterTeam/minter-go-node/math"
-	"github.com/MinterTeam/minter-go-node/rlp"
+	"golang.org/x/crypto/sha3"
 )
 
 var (
@@ -44,7 +43,7 @@ var errInvalidPubkey = errors.New("invalid secp256k1 public key")
 
 // Keccak256 calculates and returns the Keccak256 hash of the input data.
 func Keccak256(data ...[]byte) []byte {
-	d := sha3.NewKeccak256()
+	d := sha3.NewLegacyKeccak256()
 	for _, b := range data {
 		d.Write(b)
 	}
@@ -54,7 +53,7 @@ func Keccak256(data ...[]byte) []byte {
 // Keccak256Hash calculates and returns the Keccak256 hash of the input data,
 // converting it to an internal Hash data structure.
 func Keccak256Hash(data ...[]byte) (h types.Hash) {
-	d := sha3.NewKeccak256()
+	d := sha3.NewLegacyKeccak256()
 	for _, b := range data {
 		d.Write(b)
 	}
@@ -64,7 +63,7 @@ func Keccak256Hash(data ...[]byte) (h types.Hash) {
 
 // Keccak512 calculates and returns the Keccak512 hash of the input data.
 func Keccak512(data ...[]byte) []byte {
-	d := sha3.NewKeccak512()
+	d := sha3.NewLegacyKeccak512()
 	for _, b := range data {
 		d.Write(b)
 	}
@@ -75,6 +74,12 @@ func Keccak512(data ...[]byte) []byte {
 func CreateAddress(b types.Address, nonce uint64) types.Address {
 	data, _ := rlp.EncodeToBytes([]interface{}{b, nonce})
 	return types.BytesToAddress(Keccak256(data)[12:])
+}
+
+// CreateAddress2 creates an ethereum address given the address bytes, initial
+// contract code hash and a salt.
+func CreateAddress2(b types.Address, salt [32]byte, inithash []byte) types.Address {
+	return types.BytesToAddress(Keccak256([]byte{0xff}, b.Bytes(), salt[:], inithash)[12:])
 }
 
 // ToECDSA creates a private key with the given D value.
@@ -95,7 +100,7 @@ func ToECDSAUnsafe(d []byte) *ecdsa.PrivateKey {
 // it can also accept legacy encodings (0 prefixes).
 func toECDSA(d []byte, strict bool) (*ecdsa.PrivateKey, error) {
 	priv := new(ecdsa.PrivateKey)
-	priv.PublicKey.Curve = btcec.S256()
+	priv.PublicKey.Curve = S256()
 	if strict && 8*len(d) != priv.Params().BitSize {
 		return nil, fmt.Errorf("invalid length, need %d bits", priv.Params().BitSize)
 	}
@@ -127,18 +132,18 @@ func FromECDSA(priv *ecdsa.PrivateKey) []byte {
 
 // UnmarshalPubkey converts bytes to a secp256k1 public key.
 func UnmarshalPubkey(pub []byte) (*ecdsa.PublicKey, error) {
-	x, y := elliptic.Unmarshal(btcec.S256(), pub)
+	x, y := elliptic.Unmarshal(S256(), pub)
 	if x == nil {
 		return nil, errInvalidPubkey
 	}
-	return &ecdsa.PublicKey{Curve: btcec.S256(), X: x, Y: y}, nil
+	return &ecdsa.PublicKey{Curve: S256(), X: x, Y: y}, nil
 }
 
 func FromECDSAPub(pub *ecdsa.PublicKey) []byte {
 	if pub == nil || pub.X == nil || pub.Y == nil {
 		return nil
 	}
-	return elliptic.Marshal(btcec.S256(), pub.X, pub.Y)
+	return elliptic.Marshal(S256(), pub.X, pub.Y)
 }
 
 // HexToECDSA parses a secp256k1 private key.
@@ -177,18 +182,18 @@ func SaveECDSA(file string, key *ecdsa.PrivateKey) error {
 }
 
 func GenerateKey() (*ecdsa.PrivateKey, error) {
-	return ecdsa.GenerateKey(btcec.S256(), rand.Reader)
+	return ecdsa.GenerateKey(S256(), rand.Reader)
 }
 
 // ValidateSignatureValues verifies whether the signature values are valid with
 // the given chain rules. The v value is assumed to be either 0 or 1.
-func ValidateSignatureValues(v byte, r, s *big.Int) bool {
+func ValidateSignatureValues(v byte, r, s *big.Int, homestead bool) bool {
 	if r.Cmp(types.Big1) < 0 || s.Cmp(types.Big1) < 0 {
 		return false
 	}
 	// reject upper range of s values (ECDSA malleability)
 	// see discussion in secp256k1/libsecp256k1/include/secp256k1.h
-	if s.Cmp(secp256k1halfN) > 0 {
+	if homestead && s.Cmp(secp256k1halfN) > 0 {
 		return false
 	}
 	// Frontier: allow s to be in full N range
@@ -198,4 +203,10 @@ func ValidateSignatureValues(v byte, r, s *big.Int) bool {
 func PubkeyToAddress(p ecdsa.PublicKey) types.Address {
 	pubBytes := FromECDSAPub(&p)
 	return types.BytesToAddress(Keccak256(pubBytes[1:])[12:])
+}
+
+func zeroBytes(bytes []byte) {
+	for i := range bytes {
+		bytes[i] = 0
+	}
 }
