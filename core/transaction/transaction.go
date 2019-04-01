@@ -256,7 +256,7 @@ func RecoverPlain(sighash types.Hash, R, S, Vb *big.Int) (types.Address, error) 
 		return types.Address{}, ErrInvalidSig
 	}
 	V := byte(Vb.Uint64() - 27)
-	if !crypto.ValidateSignatureValues(V, R, S) {
+	if !crypto.ValidateSignatureValues(V, R, S, true) {
 		return types.Address{}, ErrInvalidSig
 	}
 	// encode the snature in uncompressed format
