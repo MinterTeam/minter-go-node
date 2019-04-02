@@ -23,10 +23,6 @@ mkdir -p build/pkg
 GIT_COMMIT="$(git rev-parse --short=8 HEAD)"
 GIT_IMPORT="github.com/MinterTeam/minter-go-node/version"
 
-# Determine the arch/os combos we're building for
-XC_ARCH=${XC_ARCH:-"amd64"}
-XC_OS=${XC_OS:-"darwin"}
-
 # Make sure build tools are available.
 make get_tools
 
@@ -38,15 +34,8 @@ make get_vendor_deps
 # Build!
 # ldflags: -s Omit the symbol table and debug information.
 #	         -w Omit the DWARF symbol table.
-echo "==> Building..."
-IFS=' ' read -ra arch_list <<< "$XC_ARCH"
-IFS=' ' read -ra os_list <<< "$XC_OS"
-for arch in "${arch_list[@]}"; do
-	for os in "${os_list[@]}"; do
-        echo "--> $os/$arch"
-        CGO_LDFLAGS="-lsnappy" CGO_ENABLED=1 GOOS=${os} GOARCH=${arch} go build -ldflags "-s -w -X ${GIT_IMPORT}.GitCommit=${GIT_COMMIT}" -o "build/pkg/${os}_${arch}/minter" ./cmd/minter
-	done
-done
+echo "==> Building for mac os..."
+CGO_ENABLED=1 CGO_LDFLAGS="-lsnappy" go build -tags "minter gcc" -ldflags "-s -w -X ${GIT_IMPORT}.GitCommit=${GIT_COMMIT}" -o "build/pkg/darwin_amd64/minter" ./cmd/minter
 
 echo "==> Building for linux in docker"
 docker run -t -v ${PWD}:/go/src/github.com/MinterTeam/minter-go-node/ -i 37effcb3746d sh -c 'CGO_ENABLED=1 CGO_LDFLAGS="-lsnappy" go build -ldflags "-s -w -X ${GIT_IMPORT}.GitCommit=${GIT_COMMIT}" -o "build/pkg/linux_amd64/minter" ./cmd/minter/'
