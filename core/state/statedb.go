@@ -9,7 +9,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/validators"
 	"github.com/MinterTeam/minter-go-node/eventsdb"
 	"github.com/MinterTeam/minter-go-node/formula"
-	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	dbm "github.com/tendermint/tendermint/libs/db"
@@ -1588,70 +1587,81 @@ func (s *StateDB) SanitizeCoin(symbol types.CoinSymbol) {
 	}
 
 	coin := s.GetStateCoin(symbol)
-
-	// Delete coin if reserve is less than 100 bips
-	if coin.ReserveBalance().Cmp(helpers.BipToPip(big.NewInt(100))) == -1 {
-		s.deleteCoin(symbol)
-		return
-	}
-
-	// Delete coin if volume is less than 1 coin
-	if coin.Volume().Cmp(helpers.BipToPip(big.NewInt(1))) == -1 {
-		s.deleteCoin(symbol)
-		return
-	}
-
-	// Delete coin if price of 1 coin is less than 0.0001 bip
-	price := formula.CalculateSaleReturn(coin.Volume(), coin.ReserveBalance(), coin.Crr(), helpers.BipToPip(big.NewInt(1)))
-	minPrice := big.NewInt(100000000000000) // 0.0001 bip
-	if price.Cmp(minPrice) == -1 {
-		s.deleteCoin(symbol)
-		return
+	if coin.IsToDelete() {
+		s.deleteCoin(coin.symbol)
 	}
 }
 
 func (s *StateDB) deleteCoin(symbol types.CoinSymbol) {
 	coinToDelete := s.getStateCoin(symbol)
 
+	var addresses []types.Address
+	for _, account := range s.stateAccounts {
+		addresses = append(addresses, account.address)
+	}
+
+	var frozenFundsHeights []uint64
+	for height := range s.stateFrozenFunds {
+		frozenFundsHeights = append(frozenFundsHeights, height)
+	}
+
 	s.iavl.Iterate(func(key []byte, value []byte) bool {
-		// remove coin from accounts
 		if key[0] == addressPrefix[0] {
 			account := s.GetOrNewStateObject(types.BytesToAddress(key[1:]))
 			for _, coin := range account.Balances().getCoins() {
 				if coin == symbol {
-					amount := account.Balance(symbol)
-					ret := formula.CalculateSaleReturn(coinToDelete.Volume(), coinToDelete.ReserveBalance(), 100, amount)
-
-					coinToDelete.SubReserve(ret)
-					coinToDelete.SubVolume(amount)
-
-					account.AddBalance(symbol, ret)
-					account.SetBalance(symbol, big.NewInt(0))
+					addresses = append(addresses, account.address)
 				}
 			}
 		}
 
-		// remove coin from frozen funds
 		if key[0] == frozenFundsPrefix[0] {
 			frozenFunds := s.GetStateFrozenFunds(binary.BigEndian.Uint64(key[1:]))
-
-			for i, ff := range frozenFunds.data.List {
+			for _, ff := range frozenFunds.data.List {
 				if ff.Coin == symbol {
-					ret := formula.CalculateSaleReturn(coinToDelete.Volume(), coinToDelete.ReserveBalance(), 100, ff.Value)
-
-					coinToDelete.SubReserve(ret)
-					coinToDelete.SubVolume(ff.Value)
-
-					frozenFunds.data.List = append(frozenFunds.data.List[:i], frozenFunds.data.List[i+1:]...)
-					frozenFunds.AddFund(ff.Address, ff.CandidateKey, types.GetBaseCoin(), ret)
-
-					s.MarkStateFrozenFundsDirty(frozenFunds.blockHeight)
+					frozenFundsHeights = append(frozenFundsHeights, frozenFunds.data.BlockHeight)
 				}
 			}
 		}
 
 		return false
 	})
+
+	// remove coin from accounts
+	for _, address := range addresses {
+		account := s.getStateAccount(address)
+		for _, coin := range account.Balances().getCoins() {
+			if coin == symbol {
+				amount := account.Balance(symbol)
+				ret := formula.CalculateSaleReturn(coinToDelete.Volume(), coinToDelete.ReserveBalance(), 100, amount)
+
+				coinToDelete.SubReserve(ret)
+				coinToDelete.SubVolume(amount)
+
+				account.AddBalance(types.GetBaseCoin(), ret)
+				account.SetBalance(symbol, big.NewInt(0))
+				s.MarkStateObjectDirty(account.address)
+			}
+		}
+	}
+
+	// remove coin from frozen funds
+	for _, height := range frozenFundsHeights {
+		frozenFunds := s.GetStateFrozenFunds(height)
+		for i, ff := range frozenFunds.data.List {
+			if ff.Coin == symbol {
+				ret := formula.CalculateSaleReturn(coinToDelete.Volume(), coinToDelete.ReserveBalance(), 100, ff.Value)
+
+				coinToDelete.SubReserve(ret)
+				coinToDelete.SubVolume(ff.Value)
+
+				frozenFunds.data.List = append(frozenFunds.data.List[:i], frozenFunds.data.List[i+1:]...)
+				frozenFunds.AddFund(ff.Address, ff.CandidateKey, types.GetBaseCoin(), ret)
+
+				s.MarkStateFrozenFundsDirty(frozenFunds.blockHeight)
+			}
+		}
+	}
 
 	// remove coin from stakes
 	candidates := s.getStateCandidates()
