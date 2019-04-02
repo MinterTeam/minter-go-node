@@ -174,5 +174,5 @@ func showValidator() {
 	}
 
 	pv := privval.LoadFilePV(keyFilePath, cfg.PrivValidatorStateFile())
-	fmt.Printf("Mp%x", pv.GetPubKey().Bytes()[5:])
+	fmt.Printf("Mp%x\n", pv.GetPubKey().Bytes()[5:])
 }
