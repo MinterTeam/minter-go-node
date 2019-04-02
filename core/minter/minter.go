@@ -12,7 +12,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/core/validators"
 	"github.com/MinterTeam/minter-go-node/eventsdb"
-	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/version"
 	"github.com/danil-lashin/tendermint/rpc/lib/types"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
@@ -410,11 +409,11 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 	app.currentMempool = sync.Map{}
 
 	// Check invariants
-	if app.height%720 == 0 {
-		if err := state.NewForCheck(app.stateCheck).CheckForInvariants(); err != nil {
-			log.With("module", "invariants").Error("Invariants error", "msg", err.Error())
-		}
-	}
+	//if app.height%720 == 0 {
+	//	if err := state.NewForCheck(app.stateCheck).CheckForInvariants(); err != nil {
+	//		log.With("module", "invariants").Error("Invariants error", "msg", err.Error())
+	//	}
+	//}
 
 	// Releasing wg
 	app.wg.Done()
