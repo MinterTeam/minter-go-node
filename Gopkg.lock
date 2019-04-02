@@ -383,7 +383,7 @@
   version = "v0.14.1"
 
 [[projects]]
-  digest = "1:c9856690720d5c24530ab1e2768dd4c80f6f21e34d16464f6906a70921a40254"
+  digest = "1:d39d24ace81e3a88dc0228841721f4dc728f309a0e66b957c83a3237525a6dfa"
   name = "github.com/tendermint/tendermint"
   packages = [
     "abci/client",
@@ -439,11 +439,11 @@
     "version",
   ]
   pruneopts = "UT"
-  revision = "a0234affb6959a0aec285eebf3a3963251d2d186"
-  version = "v0.31.1"
+  revision = "79e9f205782f1adb94b4150561e414280115cf4e"
+  version = "v0.31.2"
 
 [[projects]]
-  digest = "1:b6621a5e9003d7d809993d49217a841d27ef85b4bc0459115d3fd1f8c1518999"
+  digest = "1:24ccc5c3deefe7d181e924cb82060682fd0b236ca03bbe49daa8190caf9a86a2"
   name = "golang.org/x/crypto"
   packages = [
     "chacha20poly1305",
@@ -458,6 +458,7 @@
     "poly1305",
     "ripemd160",
     "salsa20/salsa",
+    "sha3",
   ]
   pruneopts = "UT"
   revision = "505ab145d0a99da450461ae2c1a9f6cd10d1f447"
@@ -612,7 +613,9 @@
     "github.com/tendermint/tendermint/rpc/lib/server",
     "github.com/tendermint/tendermint/rpc/lib/types",
     "github.com/tendermint/tendermint/types",
+    "golang.org/x/crypto/sha3",
     "golang.org/x/net/netutil",
+    "golang.org/x/sys/cpu",
     "gopkg.in/check.v1",
   ]
   solver-name = "gps-cdcl"

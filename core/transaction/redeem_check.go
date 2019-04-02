@@ -64,6 +64,12 @@ func (data RedeemCheckData) Run(tx *Transaction, context *state.StateDB, isCheck
 			Log:  err.Error()}
 	}
 
+	if len(decodedCheck.Nonce) > 16 {
+		return Response{
+			Code: code.TooLongNonce,
+			Log:  "Nonce is too big. Should be up to 16 bytes."}
+	}
+
 	checkSender, err := decodedCheck.Sender()
 
 	if err != nil {

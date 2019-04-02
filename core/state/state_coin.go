@@ -1,6 +1,8 @@
 package state
 
 import (
+	"github.com/MinterTeam/minter-go-node/formula"
+	"github.com/MinterTeam/minter-go-node/helpers"
 	"io"
 
 	"fmt"
@@ -29,6 +31,31 @@ type Coin struct {
 func (coin Coin) String() string {
 	return fmt.Sprintf("%s (%s), volume: %s, reserve: %s, crr: %d", coin.Name, coin.Symbol, coin.Volume,
 		coin.ReserveBalance, coin.Crr)
+}
+
+func (c *stateCoin) IsToDelete() bool {
+	if c == nil {
+		return false
+	}
+
+	// Delete coin if reserve is less than 100 bips
+	if c.ReserveBalance().Cmp(helpers.BipToPip(big.NewInt(100))) == -1 {
+		return true
+	}
+
+	// Delete coin if volume is less than 1 coin
+	if c.Volume().Cmp(helpers.BipToPip(big.NewInt(1))) == -1 {
+		return true
+	}
+
+	// Delete coin if price of 1 coin is less than 0.0001 bip
+	price := formula.CalculateSaleReturn(c.Volume(), c.ReserveBalance(), c.Crr(), helpers.BipToPip(big.NewInt(1)))
+	minPrice := big.NewInt(100000000000000) // 0.0001 bip
+	if price.Cmp(minPrice) == -1 {
+		return true
+	}
+
+	return false
 }
 
 // newCoin creates a state coin.
@@ -97,7 +124,6 @@ func (c *stateCoin) SetReserve(amount *big.Int) {
 }
 
 func (c *stateCoin) setReserve(amount *big.Int) {
-
 	c.data.ReserveBalance = amount
 
 	if c.onDirty != nil {

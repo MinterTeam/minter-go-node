@@ -22,7 +22,7 @@ func TestCreateCoinTx(t *testing.T) {
 	var toCreate types.CoinSymbol
 	copy(toCreate[:], []byte("ABCDEF"))
 
-	reserve := helpers.BipToPip(big.NewInt(100))
+	reserve := helpers.BipToPip(big.NewInt(1000))
 	amount := helpers.BipToPip(big.NewInt(100))
 	crr := uint(50)
 	name := "My Test Coin"
@@ -66,7 +66,7 @@ func TestCreateCoinTx(t *testing.T) {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
 
-	targetBalance, _ := big.NewInt(0).SetString("998899000000000000000000", 10)
+	targetBalance, _ := big.NewInt(0).SetString("997999000000000000000000", 10)
 	balance := cState.GetBalance(addr, coin)
 	if balance.Cmp(targetBalance) != 0 {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", coin, targetBalance, balance)

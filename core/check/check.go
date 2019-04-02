@@ -17,7 +17,7 @@ var (
 )
 
 type Check struct {
-	Nonce    uint64
+	Nonce    []byte
 	DueBlock uint64
 	Coin     types.CoinSymbol
 	Value    *big.Int
@@ -91,7 +91,7 @@ func (check *Check) SetSignature(sig []byte) {
 func (check *Check) String() string {
 	sender, _ := check.Sender()
 
-	return fmt.Sprintf("Check sender: %s nonce: %d, dueBlock: %d, value: %s %s", sender.String(), check.Nonce,
+	return fmt.Sprintf("Check sender: %s nonce: %x, dueBlock: %d, value: %s %s", sender.String(), check.Nonce,
 		check.DueBlock, check.Value.String(), check.Coin.String())
 }
 
@@ -124,7 +124,7 @@ func recoverPlain(sighash types.Hash, R, S, Vb *big.Int) (types.Address, error) 
 		return types.Address{}, ErrInvalidSig
 	}
 	V := byte(Vb.Uint64() - 27)
-	if !crypto.ValidateSignatureValues(V, R, S) {
+	if !crypto.ValidateSignatureValues(V, R, S, true) {
 		return types.Address{}, ErrInvalidSig
 	}
 	// encode the snature in uncompressed format

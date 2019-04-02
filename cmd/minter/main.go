@@ -20,6 +20,7 @@ import (
 	"github.com/tendermint/tendermint/privval"
 	"github.com/tendermint/tendermint/proxy"
 	rpc "github.com/tendermint/tendermint/rpc/client"
+	types2 "github.com/tendermint/tendermint/types"
 	"os"
 	"time"
 )
@@ -28,8 +29,12 @@ var cfg = config.GetConfig()
 
 func main() {
 	err := common.EnsureDir(utils.GetMinterHome()+"/config", 0777)
-
 	if err != nil {
+		log.Error(err.Error())
+		os.Exit(1)
+	}
+
+	if err := common.EnsureDir(utils.GetMinterHome()+"/tmdata/blockstore.db", 0777); err != nil {
 		log.Error(err.Error())
 		os.Exit(1)
 	}
@@ -46,11 +51,11 @@ func main() {
 
 	app := minter.NewMinterBlockchain()
 
-	tmCfg := config.GetTmConfig()
+	tmConfig := config.GetTmConfig()
 
 	// update BlocksTimeDelta
 	// TODO: refactor
-	blockStoreDB, err := tmNode.DefaultDBProvider(&tmNode.DBContext{ID: "blockstore", Config: tmCfg})
+	blockStoreDB, err := tmNode.DefaultDBProvider(&tmNode.DBContext{ID: "blockstore", Config: tmConfig})
 	if err != nil {
 		panic(err)
 	}
@@ -67,7 +72,7 @@ func main() {
 	blockStoreDB.Close()
 
 	// start TM node
-	node := startTendermintNode(app, tmCfg)
+	node := startTendermintNode(app, tmConfig)
 
 	client := rpc.NewLocal(node)
 	status, _ := client.Status()
@@ -125,7 +130,7 @@ func startTendermintNode(app types.Application, cfg *tmCfg.Config) *tmNode.Node 
 		privval.LoadOrGenFilePV(cfg.PrivValidatorKeyFile(), cfg.PrivValidatorStateFile()),
 		nodeKey,
 		proxy.NewLocalClientCreator(app),
-		genesis.GetTestnetGenesis,
+		getGenesis,
 		tmNode.DefaultDBProvider,
 		tmNode.DefaultMetricsProvider(cfg.Instrumentation),
 		log.With("module", "tendermint"),
@@ -144,6 +149,10 @@ func startTendermintNode(app types.Application, cfg *tmCfg.Config) *tmNode.Node 
 	log.Info("Started node", "nodeInfo", node.Switch().NodeInfo())
 
 	return node
+}
+
+func getGenesis() (doc *types2.GenesisDoc, e error) {
+	return types2.GenesisDocFromFile(utils.GetMinterHome() + "/config/genesis.json")
 }
 
 func showNodeID() {
@@ -165,5 +174,5 @@ func showValidator() {
 	}
 
 	pv := privval.LoadFilePV(keyFilePath, cfg.PrivValidatorStateFile())
-	fmt.Printf("Mp%x", pv.GetPubKey().Bytes()[5:])
+	fmt.Printf("Mp%x\n", pv.GetPubKey().Bytes()[5:])
 }

@@ -19,7 +19,7 @@ const allowedCoinSymbols = "^[A-Z0-9]{3,10}$"
 
 var (
 	minCoinSupply  = helpers.BipToPip(big.NewInt(1))
-	minCoinReserve = helpers.BipToPip(big.NewInt(1))
+	minCoinReserve = helpers.BipToPip(big.NewInt(1000))
 )
 
 type CreateCoinData struct {
@@ -77,7 +77,7 @@ func (data CreateCoinData) BasicCheck(tx *Transaction, context *state.StateDB) *
 			Log:  fmt.Sprintf("Coin supply should be between %s and %s", minCoinSupply.String(), MaxCoinSupply.String())}
 	}
 
-	if -1*data.InitialReserve.Cmp(minCoinReserve) != -1 {
+	if data.InitialReserve.Cmp(minCoinReserve) == -1 {
 		return &Response{
 			Code: code.WrongCoinSupply,
 			Log:  fmt.Sprintf("Coin reserve should be greater than or equal to %s", minCoinReserve.String())}
@@ -106,13 +106,9 @@ func (data CreateCoinData) Commission() int64 {
 		return 10000000 // 10k bips
 	case 6:
 		return 1000000 // 1k bips
-	case 7:
-		return 100000 // 100 bips
-	case 8:
-		return 10000 // 10 bips
 	}
 
-	return 0
+	return 100000 // 100 bips
 }
 
 func (data CreateCoinData) Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {

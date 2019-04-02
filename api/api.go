@@ -50,6 +50,7 @@ var Routes = map[string]*rpcserver.RPCFunc{
 	"unconfirmed_txs":        rpcserver.NewRPCFunc(UnconfirmedTxs, "limit"),
 	"max_gas":                rpcserver.NewRPCFunc(MaxGas, "height"),
 	"min_gas_price":          rpcserver.NewRPCFunc(MinGasPrice, ""),
+	"genesis":                rpcserver.NewRPCFunc(Genesis, ""),
 }
 
 func RunAPI(b *minter.Blockchain, tmRPC *rpc.Local) {

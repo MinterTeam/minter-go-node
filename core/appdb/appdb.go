@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
+	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/tendermint/go-amino"
 	"github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/db"
@@ -16,6 +17,7 @@ var (
 const (
 	hashPath           = "hash"
 	heightPath         = "height"
+	startHeightPath    = "startHeight"
 	blockTimeDeltaPath = "blockDelta"
 	validatorsPath     = "validators"
 
@@ -58,6 +60,23 @@ func (appDB *AppDB) SetLastHeight(height uint64) {
 	h := make([]byte, 8)
 	binary.BigEndian.PutUint64(h, height)
 	appDB.db.Set([]byte(heightPath), h)
+}
+
+func (appDB *AppDB) SetStartHeight(height uint64) {
+	h := make([]byte, 8)
+	binary.BigEndian.PutUint64(h, height)
+	appDB.db.Set([]byte(startHeightPath), h)
+}
+
+func (appDB *AppDB) GetStartHeight() uint64 {
+	result := appDB.db.Get([]byte(startHeightPath))
+	var height uint64
+
+	if result != nil {
+		height = binary.BigEndian.Uint64(result)
+	}
+
+	return height
 }
 
 func (appDB *AppDB) GetValidators() types.ValidatorUpdates {
@@ -126,13 +145,7 @@ func (appDB *AppDB) SetLastBlocksTimeDelta(height uint64, delta int) {
 }
 
 func NewAppDB() *AppDB {
-	ldb, err := db.NewGoLevelDB(dbName, utils.GetMinterHome()+"/data")
-
-	if err != nil {
-		panic(err)
-	}
-
 	return &AppDB{
-		db: ldb,
+		db: db.NewDB(dbName, db.DBBackendType(config.GetConfig().DBBackend), utils.GetMinterHome()+"/data"),
 	}
 }

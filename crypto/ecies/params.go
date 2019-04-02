@@ -42,11 +42,11 @@ import (
 	"fmt"
 	"hash"
 
-	mintercrypto "github.com/MinterTeam/minter-go-node/crypto"
+	ethcrypto "github.com/MinterTeam/minter-go-node/crypto"
 )
 
 var (
-	DefaultCurve                  = mintercrypto.S256()
+	DefaultCurve                  = ethcrypto.S256()
 	ErrUnsupportedECDHAlgorithm   = fmt.Errorf("ecies: unsupported ECDH algorithm")
 	ErrUnsupportedECIESParameters = fmt.Errorf("ecies: unsupported ECIES parameters")
 )
@@ -100,10 +100,10 @@ var (
 )
 
 var paramsFromCurve = map[elliptic.Curve]*ECIESParams{
-	mintercrypto.S256(): ECIES_AES128_SHA256,
-	elliptic.P256():     ECIES_AES128_SHA256,
-	elliptic.P384():     ECIES_AES256_SHA384,
-	elliptic.P521():     ECIES_AES256_SHA512,
+	ethcrypto.S256(): ECIES_AES128_SHA256,
+	elliptic.P256():  ECIES_AES128_SHA256,
+	elliptic.P384():  ECIES_AES256_SHA384,
+	elliptic.P521():  ECIES_AES256_SHA512,
 }
 
 func AddParamsForCurve(curve elliptic.Curve, params *ECIESParams) {

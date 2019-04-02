@@ -314,8 +314,8 @@ func (data SellCoinData) Run(tx *Transaction, context *state.StateDB, isCheck bo
 		context.AddBalance(sender, data.CoinToBuy, value)
 		context.SetNonce(sender, tx.Nonce)
 
-		context.DeleteCoinIfZeroReserve(data.CoinToBuy)
-		context.DeleteCoinIfZeroReserve(data.CoinToSell)
+		context.SanitizeCoin(data.CoinToBuy)
+		context.SanitizeCoin(data.CoinToSell)
 	}
 
 	tags := common.KVPairs{

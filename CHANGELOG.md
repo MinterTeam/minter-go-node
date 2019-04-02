@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.16.0
+
+BREAKING CHANGES
+
+- [core] Set min coin reserve to 1000 bip
+- [core] Coins with 7-10 letters are now requires 100 bips fee
+- [core] Delete coin if reserve is less than 100 bips OR price is less than 0.0001 bip, OR volume is less than 1 coin
+
+IMPROVEMENT
+
+- [api] Make compact json responses
+- [api] Add `/genesis` endpoint
+- [check] Make check's nonce a byte array field. Max 16 bytes.
+- [appState] Use `startHeight` in genesis to manage rewards
+- [crypto] Update crypto library
+- [core] Add option to use cleveldb
+
+BUG FIXES
+
+- [core] Fix issue with multiple punishments to byzantine validator
+- [core] Make accum reward of dropped validator distributes again between active ones
+- [tendermint] Update to [v0.31.2](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0312) 
+
 ## 0.15.2
 
 IMPROVEMENT

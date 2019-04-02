@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"github.com/MinterTeam/go-amino"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
+	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/appdb"
 	"github.com/MinterTeam/minter-go-node/core/rewards"
 	"github.com/MinterTeam/minter-go-node/core/state"
@@ -11,7 +12,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/core/validators"
 	"github.com/MinterTeam/minter-go-node/eventsdb"
-	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/version"
 	"github.com/danil-lashin/tendermint/rpc/lib/types"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
@@ -67,10 +67,8 @@ type Blockchain struct {
 
 // Creates Minter Blockchain instance, should be only called once
 func NewMinterBlockchain() *Blockchain {
-	ldb, err := db.NewGoLevelDB("state", utils.GetMinterHome()+"/data")
-	if err != nil {
-		panic(err)
-	}
+	dbType := db.DBBackendType(config.GetConfig().DBBackend)
+	ldb := db.NewDB("state", dbType, utils.GetMinterHome()+"/data")
 
 	// Initiate Application DB. Used for persisting data like current block, validators, etc.
 	applicationDB := appdb.NewAppDB()
@@ -84,12 +82,16 @@ func NewMinterBlockchain() *Blockchain {
 	}
 
 	// Set stateDeliver and stateCheck
+	var err error
 	blockchain.stateDeliver, err = state.New(blockchain.height, blockchain.stateDB)
 	if err != nil {
 		panic(err)
 	}
 
 	blockchain.stateCheck = state.NewForCheck(blockchain.stateDeliver)
+
+	// Set start height for rewards
+	rewards.SetStartHeight(applicationDB.GetStartHeight())
 
 	return blockchain
 }
@@ -123,6 +125,9 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 				big.NewInt(100000000)), totalPower).Int64(),
 		}
 	}
+
+	app.appDB.SetStartHeight(genesisState.StartHeight)
+	rewards.SetStartHeight(genesisState.StartHeight)
 
 	return abciTypes.ResponseInitChain{
 		Validators: vals,
@@ -170,7 +175,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 
 		// skip already offline candidates to prevent double punishing
 		candidate := app.stateDeliver.GetStateCandidateByTmAddress(address)
-		if candidate == nil && candidate.Status == state.CandidateStatusOffline {
+		if candidate == nil || candidate.Status == state.CandidateStatusOffline {
 			continue
 		}
 
@@ -206,11 +211,24 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 
 	stateValidators := app.stateDeliver.GetStateValidators()
 	vals := stateValidators.Data()
+
+	hasDroppedValidators := false
+	for _, val := range vals {
+		if val.IsToDrop() {
+			hasDroppedValidators = true
+
+			// Move dropped validator's accum rewards back to pool
+			app.rewards.Add(app.rewards, val.AccumReward)
+			val.AccumReward.SetInt64(0)
+			break
+		}
+	}
+
 	// calculate total power of validators
 	totalPower := big.NewInt(0)
 	for _, val := range vals {
 		// skip if candidate is not present
-		if app.validatorsStatuses[val.GetAddress()] != ValidatorPresent {
+		if val.IsToDrop() || app.validatorsStatuses[val.GetAddress()] != ValidatorPresent {
 			continue
 		}
 
@@ -224,7 +242,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 	// accumulate rewards
 	for i, val := range vals {
 		// skip if candidate is not present
-		if app.validatorsStatuses[val.GetAddress()] != ValidatorPresent {
+		if val.IsToDrop() || app.validatorsStatuses[val.GetAddress()] != ValidatorPresent {
 			continue
 		}
 
@@ -244,14 +262,6 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 	// pay rewards
 	if req.Height%12 == 0 {
 		app.stateDeliver.PayRewards()
-	}
-
-	hasDroppedValidators := false
-	for _, val := range vals {
-		if val.IsToDrop() {
-			hasDroppedValidators = true
-			break
-		}
 	}
 
 	// update validators
@@ -399,11 +409,11 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 	app.currentMempool = sync.Map{}
 
 	// Check invariants
-	if app.height%720 == 0 {
-		if err := state.NewForCheck(app.stateCheck).CheckForInvariants(); err != nil {
-			log.With("module", "invariants").Error("Invariants error", "msg", err.Error())
-		}
-	}
+	//if app.height%720 == 0 {
+	//	if err := state.NewForCheck(app.stateCheck).CheckForInvariants(); err != nil {
+	//		log.With("module", "invariants").Error("Invariants error", "msg", err.Error())
+	//	}
+	//}
 
 	// Releasing wg
 	app.wg.Done()

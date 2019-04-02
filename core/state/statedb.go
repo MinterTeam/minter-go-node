@@ -1152,40 +1152,34 @@ func (s *StateDB) SetCandidateOnline(pubkey []byte) {
 
 func (s *StateDB) SetCandidateOffline(pubkey []byte) {
 	stateCandidates := s.getStateCandidates()
-
 	for i := range stateCandidates.data {
 		candidate := &stateCandidates.data[i]
 		if bytes.Equal(candidate.PubKey, pubkey) {
 			candidate.Status = CandidateStatusOffline
 		}
 	}
-
 	s.setStateCandidates(stateCandidates)
 	s.MarkStateCandidateDirty()
 
 	vals := s.getStateValidators()
-
 	for i := range vals.data {
 		validator := &vals.data[i]
 		if bytes.Equal(validator.PubKey, pubkey) {
 			validator.toDrop = true
 		}
 	}
-
 	s.setStateValidators(vals)
 	s.MarkStateValidatorsDirty()
 }
 
 func (s *StateDB) SetValidatorPresent(address [20]byte) {
 	validators := s.getStateValidators()
-
 	for i := range validators.data {
 		validator := &validators.data[i]
 		if validator.GetAddress() == address {
 			validator.AbsentTimes.SetIndex(int(s.height)%ValidatorMaxAbsentWindow, false)
 		}
 	}
-
 	s.setStateValidators(validators)
 	s.MarkStateValidatorsDirty()
 }
@@ -1194,7 +1188,6 @@ func (s *StateDB) SetValidatorAbsent(address [20]byte) {
 	edb := eventsdb.GetCurrent()
 
 	validators := s.getStateValidators()
-
 	for i := range validators.data {
 		validator := &validators.data[i]
 		if validator.GetAddress() == address {
@@ -1202,7 +1195,6 @@ func (s *StateDB) SetValidatorAbsent(address [20]byte) {
 			candidates := s.getStateCandidates()
 
 			var candidate *Candidate
-
 			for i := range candidates.data {
 				if candidates.data[i].GetAddress() == address {
 					candidate = &candidates.data[i]
@@ -1236,7 +1228,7 @@ func (s *StateDB) SetValidatorAbsent(address [20]byte) {
 
 						s.SubCoinVolume(coin.Symbol, slashed)
 						s.SubCoinReserve(coin.Symbol, ret)
-						s.DeleteCoinIfZeroReserve(stake.Coin)
+						s.SanitizeCoin(stake.Coin)
 
 						s.AddTotalSlashed(ret)
 					} else {
@@ -1320,12 +1312,11 @@ func (s *StateDB) PunishByzantineValidator(address [20]byte) {
 
 				s.GetOrNewStateFrozenFunds(s.height+UnbondPeriod).AddFund(stake.Owner, candidate.PubKey,
 					stake.Coin, newValue)
-				s.DeleteCoinIfZeroReserve(stake.Coin)
+				s.SanitizeCoin(stake.Coin)
 			}
 
 			candidate.Stakes = []Stake{}
 			candidate.Status = CandidateStatusOffline
-			validator.AccumReward = big.NewInt(0)
 			validator.TotalBipStake = big.NewInt(0)
 			validator.toDrop = true
 
@@ -1590,42 +1581,87 @@ func (s *StateDB) GetMaxGas() uint64 {
 	return binary.BigEndian.Uint64(b)
 }
 
-func (s *StateDB) DeleteCoinIfZeroReserve(symbol types.CoinSymbol) {
+func (s *StateDB) SanitizeCoin(symbol types.CoinSymbol) {
 	if symbol.IsBaseCoin() {
 		return
 	}
 
 	coin := s.GetStateCoin(symbol)
-	if coin.ReserveBalance().Cmp(big.NewInt(0)) == 0 {
-		s.deleteCoin(symbol)
+	if coin.IsToDelete() {
+		s.deleteCoin(coin.symbol)
 	}
 }
 
 func (s *StateDB) deleteCoin(symbol types.CoinSymbol) {
+	coinToDelete := s.getStateCoin(symbol)
+
+	var addresses []types.Address
+	for _, account := range s.stateAccounts {
+		addresses = append(addresses, account.address)
+	}
+
+	var frozenFundsHeights []uint64
+	for height := range s.stateFrozenFunds {
+		frozenFundsHeights = append(frozenFundsHeights, height)
+	}
+
 	s.iavl.Iterate(func(key []byte, value []byte) bool {
-		// remove coin from accounts
 		if key[0] == addressPrefix[0] {
 			account := s.GetOrNewStateObject(types.BytesToAddress(key[1:]))
 			for _, coin := range account.Balances().getCoins() {
 				if coin == symbol {
-					account.SetBalance(symbol, big.NewInt(0))
+					addresses = append(addresses, account.address)
 				}
 			}
 		}
 
-		// remove coin from frozen funds
 		if key[0] == frozenFundsPrefix[0] {
 			frozenFunds := s.GetStateFrozenFunds(binary.BigEndian.Uint64(key[1:]))
-
-			for i, ff := range frozenFunds.data.List {
+			for _, ff := range frozenFunds.data.List {
 				if ff.Coin == symbol {
-					frozenFunds.data.List = append(frozenFunds.data.List[:i], frozenFunds.data.List[i+1:]...)
+					frozenFundsHeights = append(frozenFundsHeights, frozenFunds.data.BlockHeight)
 				}
 			}
 		}
 
 		return false
 	})
+
+	// remove coin from accounts
+	for _, address := range addresses {
+		account := s.getStateAccount(address)
+		for _, coin := range account.Balances().getCoins() {
+			if coin == symbol {
+				amount := account.Balance(symbol)
+				ret := formula.CalculateSaleReturn(coinToDelete.Volume(), coinToDelete.ReserveBalance(), 100, amount)
+
+				coinToDelete.SubReserve(ret)
+				coinToDelete.SubVolume(amount)
+
+				account.AddBalance(types.GetBaseCoin(), ret)
+				account.SetBalance(symbol, big.NewInt(0))
+				s.MarkStateObjectDirty(account.address)
+			}
+		}
+	}
+
+	// remove coin from frozen funds
+	for _, height := range frozenFundsHeights {
+		frozenFunds := s.GetStateFrozenFunds(height)
+		for i, ff := range frozenFunds.data.List {
+			if ff.Coin == symbol {
+				ret := formula.CalculateSaleReturn(coinToDelete.Volume(), coinToDelete.ReserveBalance(), 100, ff.Value)
+
+				coinToDelete.SubReserve(ret)
+				coinToDelete.SubVolume(ff.Value)
+
+				frozenFunds.data.List = append(frozenFunds.data.List[:i], frozenFunds.data.List[i+1:]...)
+				frozenFunds.AddFund(ff.Address, ff.CandidateKey, types.GetBaseCoin(), ret)
+
+				s.MarkStateFrozenFundsDirty(frozenFunds.blockHeight)
+			}
+		}
+	}
 
 	// remove coin from stakes
 	candidates := s.getStateCandidates()
@@ -1634,7 +1670,14 @@ func (s *StateDB) deleteCoin(symbol types.CoinSymbol) {
 			candidate := &candidates.data[i]
 			for j, stake := range candidate.Stakes {
 				if stake.Coin == symbol {
-					candidate.Stakes[j].Value = big.NewInt(0)
+					ret := formula.CalculateSaleReturn(coinToDelete.Volume(), coinToDelete.ReserveBalance(), 100, stake.Value)
+
+					coinToDelete.SubReserve(ret)
+					coinToDelete.SubVolume(stake.Value)
+
+					candidate.Stakes[j].Value = ret
+					candidate.Stakes[j].Coin = types.GetBaseCoin()
+					candidate.Stakes[j].BipValue = ret
 				}
 			}
 		}
@@ -1644,6 +1687,7 @@ func (s *StateDB) deleteCoin(symbol types.CoinSymbol) {
 
 	// set coin volume to 0
 	s.SubCoinVolume(symbol, s.GetStateCoin(symbol).Volume())
+	s.MarkStateCoinDirty(symbol)
 }
 
 func (s *StateDB) Export(currentHeight uint64) types.AppState {
@@ -1755,12 +1799,15 @@ func (s *StateDB) Export(currentHeight uint64) types.AppState {
 	}
 
 	appState.MaxGas = s.GetMaxGas()
+	appState.StartHeight = s.height
+	appState.TotalSlashed = s.GetTotalSlashed()
 
 	return appState
 }
 
 func (s *StateDB) Import(appState types.AppState) {
 	s.SetMaxGas(appState.MaxGas)
+	s.setTotalSlashed(appState.TotalSlashed)
 
 	for _, a := range appState.Accounts {
 		account := s.GetOrNewStateObject(a.Address)

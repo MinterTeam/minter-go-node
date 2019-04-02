@@ -176,8 +176,8 @@ func TestLoadECDSAFile(t *testing.T) {
 
 func TestValidateSignatureValues(t *testing.T) {
 	check := func(expected bool, v byte, r, s *big.Int) {
-		if ValidateSignatureValues(v, r, s) != expected {
-			t.Errorf("mismatch for v: %d r: %d s: %s want: %v", v, r, s.String(), expected)
+		if ValidateSignatureValues(v, r, s, false) != expected {
+			t.Errorf("mismatch for v: %d r: %d s: %d want: %v", v, r, s, expected)
 		}
 	}
 	minusOne := big.NewInt(-1)
@@ -207,8 +207,8 @@ func TestValidateSignatureValues(t *testing.T) {
 	check(false, 1, zero, one)
 	check(false, 1, one, zero)
 
-	// correct r, incorrect s
-	check(false, 0, secp256k1nMinus1, secp256k1nMinus1)
+	// correct sig with max r,s
+	check(true, 0, secp256k1nMinus1, secp256k1nMinus1)
 	// correct v, combinations of incorrect r,s at upper limit
 	check(false, 0, secp256k1N, secp256k1nMinus1)
 	check(false, 0, secp256k1nMinus1, secp256k1N)
