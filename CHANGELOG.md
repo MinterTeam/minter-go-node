@@ -21,6 +21,7 @@ BUG FIXES
 
 - [core] Fix issue with multiple punishments to byzantine validator
 - [core] Make accum reward of dropped validator distributes again between active ones
+- [tendermint] Update to [v0.31.2](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0312) 
 
 ## 0.15.2
 
