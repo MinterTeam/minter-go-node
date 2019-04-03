@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.17.0
+
+BUG FIXES
+
+- [core] Fix bug which causes dropped in first 120 blocks validators to stay in val list forever
+
 ## 0.16.0
 
 BREAKING CHANGES

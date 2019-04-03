@@ -127,7 +127,7 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 	}
 
 	app.appDB.SetStartHeight(genesisState.StartHeight)
-	// app.appDB.SaveValidators(vals) TODO: uncomment next testnet
+	app.appDB.SaveValidators(vals)
 	rewards.SetStartHeight(genesisState.StartHeight)
 
 	return abciTypes.ResponseInitChain{
