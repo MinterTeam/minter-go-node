@@ -5,6 +5,7 @@
 BUG FIXES
 
 - [core] Fix bug which causes dropped in first 120 blocks validators to stay in val list forever
+- [core] Set start height for validators count
 
 ## 0.16.0
 

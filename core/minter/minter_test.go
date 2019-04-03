@@ -457,4 +457,3 @@ func makeValidatorsAndCandidates(pubkeys []string, stake *big.Int) ([]types.Vali
 
 	return validators, candidates
 }
-
