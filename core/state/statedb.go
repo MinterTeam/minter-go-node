@@ -1675,9 +1675,14 @@ func (s *StateDB) deleteCoin(symbol types.CoinSymbol) {
 					coinToDelete.SubReserve(ret)
 					coinToDelete.SubVolume(stake.Value)
 
-					candidate.Stakes[j].Value = ret
-					candidate.Stakes[j].Coin = types.GetBaseCoin()
-					candidate.Stakes[j].BipValue = ret
+					stake := candidate.GetStakeOfAddress(stake.Owner, types.GetBaseCoin())
+					if stake == nil {
+						candidate.Stakes[j].Value = ret
+						candidate.Stakes[j].Coin = types.GetBaseCoin()
+						candidate.Stakes[j].BipValue = ret
+					} else {
+						stake.Value.Add(stake.Value, ret)
+					}
 				}
 			}
 		}

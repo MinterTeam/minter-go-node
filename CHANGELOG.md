@@ -6,6 +6,7 @@ BUG FIXES
 
 - [core] Fix bug which causes dropped in first 120 blocks validators to stay in val list forever
 - [core] Set start height for validators count
+- [core] Add value to existing basecoin stake if exists when deleting coin instead of creating new one
 - [tendermint] Update to [v0.31.3](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0313) 
 
 ## 0.16.0
