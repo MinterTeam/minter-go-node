@@ -3,6 +3,7 @@ package state
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/MinterTeam/go-amino"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/rewards"
 	"github.com/MinterTeam/minter-go-node/core/types"
@@ -12,6 +13,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	dbm "github.com/tendermint/tendermint/libs/db"
+	types2 "github.com/tendermint/tendermint/types"
 	"math/big"
 	"sync"
 
@@ -1888,8 +1890,38 @@ func (s *StateDB) Import(appState types.AppState) {
 	}
 }
 
-func (s *StateDB) CheckForInvariants() error {
+func (s *StateDB) CheckForInvariants(genesis *types2.GenesisDoc) error {
 	height := s.height - 1
+
+	var genesisState types.AppState
+	_ = amino.UnmarshalJSON(genesis.AppState, &genesisState)
+
+	GenesisAlloc := big.NewInt(0)
+	for _, account := range genesisState.Accounts {
+		for _, bal := range account.Balance {
+			if bal.Coin.IsBaseCoin() {
+				GenesisAlloc.Add(GenesisAlloc, bal.Value)
+			}
+		}
+	}
+
+	for _, candidate := range genesisState.Candidates {
+		for _, stake := range candidate.Stakes {
+			if stake.Coin.IsBaseCoin() {
+				GenesisAlloc.Add(GenesisAlloc, stake.Value)
+			}
+		}
+	}
+
+	for _, coin := range genesisState.Coins {
+		GenesisAlloc.Add(GenesisAlloc, coin.ReserveBalance)
+	}
+
+	for _, ff := range genesisState.FrozenFunds {
+		if ff.Coin.IsBaseCoin() {
+			GenesisAlloc.Add(GenesisAlloc, ff.Value)
+		}
+	}
 
 	totalBasecoinVolume := big.NewInt(0)
 
@@ -1976,9 +2008,6 @@ func (s *StateDB) CheckForInvariants() error {
 		predictedBasecoinVolume.Add(predictedBasecoinVolume, rewards.GetRewardForBlock(i))
 	}
 	predictedBasecoinVolume.Sub(predictedBasecoinVolume, s.GetTotalSlashed())
-
-	// TODO: compute from genesis
-	GenesisAlloc, _ := big.NewInt(0).SetString("200000000000000000000000000", 10)
 	predictedBasecoinVolume.Add(predictedBasecoinVolume, GenesisAlloc)
 
 	delta := big.NewInt(0).Abs(big.NewInt(0).Sub(predictedBasecoinVolume, totalBasecoinVolume))
