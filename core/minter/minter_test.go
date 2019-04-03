@@ -19,6 +19,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	tmConfig "github.com/tendermint/tendermint/config"
+	"github.com/tendermint/tendermint/libs/common"
 	log2 "github.com/tendermint/tendermint/libs/log"
 	tmNode "github.com/tendermint/tendermint/node"
 	"github.com/tendermint/tendermint/p2p"
@@ -52,6 +53,11 @@ func init() {
 func initNode() {
 	*utils.MinterHome = os.ExpandEnv(filepath.Join("$HOME", ".minter_test"))
 	_ = os.RemoveAll(*utils.MinterHome)
+
+	if err := common.EnsureDir(utils.GetMinterHome()+"/tmdata/blockstore.db", 0777); err != nil {
+		log.Error(err.Error())
+		os.Exit(1)
+	}
 
 	cfg = config.GetTmConfig()
 	cfg.Consensus.TimeoutPropose = 0
