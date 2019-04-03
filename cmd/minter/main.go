@@ -6,7 +6,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/minter"
-	"github.com/MinterTeam/minter-go-node/genesis"
 	"github.com/MinterTeam/minter-go-node/gui"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/tendermint/go-amino"
@@ -76,7 +75,8 @@ func main() {
 
 	client := rpc.NewLocal(node)
 	status, _ := client.Status()
-	if status.NodeInfo.Network != genesis.Network {
+	genesis, _ := client.Genesis()
+	if status.NodeInfo.Network != genesis.Genesis.ChainID {
 		log.Error("Different networks")
 		os.Exit(1)
 	}
