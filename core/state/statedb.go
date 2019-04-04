@@ -2006,6 +2006,7 @@ func (s *StateDB) CheckForInvariants(genesis *tmTypes.GenesisDoc) error {
 	}
 
 	predictedBasecoinVolume := big.NewInt(0)
+	predictedBasecoinVolume.Add(predictedBasecoinVolume, rewards.BeforeGenesis)
 	for i := uint64(1); i < height; i++ {
 		predictedBasecoinVolume.Add(predictedBasecoinVolume, rewards.GetRewardForBlock(i))
 	}

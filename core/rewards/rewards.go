@@ -11,6 +11,7 @@ const firstReward = 333
 const lastReward = 68
 
 var startHeight uint64 = 0
+var BeforeGenesis = big.NewInt(0)
 
 func GetRewardForBlock(blockHeight uint64) *big.Int {
 	blockHeight += startHeight
@@ -34,5 +35,9 @@ func GetRewardForBlock(blockHeight uint64) *big.Int {
 }
 
 func SetStartHeight(sHeight uint64) {
+	for i := uint64(1); i <= sHeight; i++ {
+		BeforeGenesis.Add(BeforeGenesis, GetRewardForBlock(i))
+	}
+
 	startHeight = sHeight
 }
