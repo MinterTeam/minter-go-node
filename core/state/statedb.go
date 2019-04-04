@@ -13,7 +13,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	dbm "github.com/tendermint/tendermint/libs/db"
-	types2 "github.com/tendermint/tendermint/types"
+	tmTypes "github.com/tendermint/tendermint/types"
 	"math/big"
 	"sync"
 
@@ -915,12 +915,11 @@ func (s *StateDB) GetCandidates(count int, block int64) []Candidate {
 }
 
 func (s *StateDB) AddAccumReward(pubkey types.Pubkey, reward *big.Int) {
-	validators := s.getStateValidators()
-
-	for i := range validators.data {
-		if bytes.Equal(validators.data[i].PubKey, pubkey) {
-			validators.data[i].AccumReward.Add(validators.data[i].AccumReward, reward)
-			s.setStateValidators(validators)
+	vals := s.getStateValidators()
+	for i := range vals.data {
+		if bytes.Equal(vals.data[i].PubKey, pubkey) {
+			vals.data[i].AccumReward.Add(vals.data[i].AccumReward, reward)
+			s.setStateValidators(vals)
 			s.MarkStateValidatorsDirty()
 			return
 		}
@@ -930,10 +929,9 @@ func (s *StateDB) AddAccumReward(pubkey types.Pubkey, reward *big.Int) {
 func (s *StateDB) PayRewards() {
 	edb := eventsdb.GetCurrent()
 
-	validators := s.getStateValidators()
-
-	for i := range validators.data {
-		validator := validators.data[i]
+	vals := s.getStateValidators()
+	for i := range vals.data {
+		validator := vals.data[i]
 
 		if validator.AccumReward.Cmp(types.Big0) == 1 {
 
@@ -1012,14 +1010,13 @@ func (s *StateDB) PayRewards() {
 		}
 	}
 
-	s.setStateValidators(validators)
+	s.setStateValidators(vals)
 	s.MarkStateValidatorsDirty()
 }
 
 func (s *StateDB) RecalculateTotalStakeValues() {
 	stateCandidates := s.getStateCandidates()
-	validators := s.getStateValidators()
-
+	vals := s.getStateValidators()
 	for i := range stateCandidates.data {
 		candidate := &stateCandidates.data[i]
 
@@ -1033,15 +1030,15 @@ func (s *StateDB) RecalculateTotalStakeValues() {
 
 		candidate.TotalBipStake = totalBipStake
 
-		for j := range validators.data {
-			if bytes.Equal(validators.data[j].PubKey, candidate.PubKey) {
-				validators.data[j].TotalBipStake = totalBipStake
+		for j := range vals.data {
+			if bytes.Equal(vals.data[j].PubKey, candidate.PubKey) {
+				vals.data[j].TotalBipStake = totalBipStake
 				break
 			}
 		}
 	}
 
-	s.setStateValidators(validators)
+	s.setStateValidators(vals)
 	s.MarkStateValidatorsDirty()
 
 	s.setStateCandidates(stateCandidates)
@@ -1175,23 +1172,23 @@ func (s *StateDB) SetCandidateOffline(pubkey []byte) {
 }
 
 func (s *StateDB) SetValidatorPresent(address [20]byte) {
-	validators := s.getStateValidators()
-	for i := range validators.data {
-		validator := &validators.data[i]
+	vals := s.getStateValidators()
+	for i := range vals.data {
+		validator := &vals.data[i]
 		if validator.GetAddress() == address {
 			validator.AbsentTimes.SetIndex(int(s.height)%ValidatorMaxAbsentWindow, false)
 		}
 	}
-	s.setStateValidators(validators)
+	s.setStateValidators(vals)
 	s.MarkStateValidatorsDirty()
 }
 
 func (s *StateDB) SetValidatorAbsent(address [20]byte) {
 	edb := eventsdb.GetCurrent()
 
-	validators := s.getStateValidators()
-	for i := range validators.data {
-		validator := &validators.data[i]
+	vals := s.getStateValidators()
+	for i := range vals.data {
+		validator := &vals.data[i]
 		if validator.GetAddress() == address {
 
 			candidates := s.getStateCandidates()
@@ -1201,6 +1198,11 @@ func (s *StateDB) SetValidatorAbsent(address [20]byte) {
 				if candidates.data[i].GetAddress() == address {
 					candidate = &candidates.data[i]
 				}
+			}
+
+			if candidate == nil {
+				log.Error("Candidate not found", "address", fmt.Sprintf("%x", address))
+				return
 			}
 
 			if candidate.Status == CandidateStatusOffline {
@@ -1261,7 +1263,7 @@ func (s *StateDB) SetValidatorAbsent(address [20]byte) {
 		}
 	}
 
-	s.setStateValidators(validators)
+	s.setStateValidators(vals)
 	s.MarkStateValidatorsDirty()
 }
 
@@ -1890,7 +1892,7 @@ func (s *StateDB) Import(appState types.AppState) {
 	}
 }
 
-func (s *StateDB) CheckForInvariants(genesis *types2.GenesisDoc) error {
+func (s *StateDB) CheckForInvariants(genesis *tmTypes.GenesisDoc) error {
 	height := s.height - 1
 
 	var genesisState types.AppState
