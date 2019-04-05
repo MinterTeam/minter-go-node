@@ -776,7 +776,6 @@ func getOrderedFrozenFundsKeys(objects map[uint64]struct{}) []uint64 {
 }
 
 func (s *StateDB) CoinExists(symbol types.CoinSymbol) bool {
-
 	if symbol == types.GetBaseCoin() {
 		return true
 	}
@@ -2035,4 +2034,8 @@ func (s *StateDB) CheckForInvariants(genesis *tmTypes.GenesisDoc) error {
 	}
 
 	return nil
+}
+
+func (s *StateDB) Height() uint64 {
+	return s.height
 }

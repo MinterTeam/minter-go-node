@@ -35,10 +35,10 @@ func (data DeclareCandidacyData) BasicCheck(tx *Transaction, context *state.Stat
 			Log:  "Incorrect tx data"}
 	}
 
-	if !context.CoinExists(tx.GasCoin) {
+	if context.Height() > 5000 && !context.CoinExists(data.Coin) {
 		return &Response{
 			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin)}
+			Log:  fmt.Sprintf("Coin %s not exists", data.Coin)}
 	}
 
 	if len(data.PubKey) != 32 {
