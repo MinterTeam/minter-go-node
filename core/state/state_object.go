@@ -47,7 +47,7 @@ func (b Balances) getCoins() []types.CoinSymbol {
 		}
 	}
 
-	sort.Slice(keys, func(a, b int) bool {
+	sort.SliceStable(keys, func(a, b int) bool {
 		return big.NewInt(0).SetBytes(keys[a].Bytes()).Cmp(big.NewInt(0).SetBytes(keys[b].Bytes())) == 1
 	})
 

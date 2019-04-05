@@ -90,8 +90,9 @@ func NewMinterBlockchain() *Blockchain {
 
 	blockchain.stateCheck = state.NewForCheck(blockchain.stateDeliver)
 
-	// Set start height for rewards
+	// Set start height for rewards and validators
 	rewards.SetStartHeight(applicationDB.GetStartHeight())
+	validators.SetStartHeight(applicationDB.GetStartHeight())
 
 	return blockchain
 }
@@ -127,7 +128,9 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 	}
 
 	app.appDB.SetStartHeight(genesisState.StartHeight)
+	app.appDB.SaveValidators(vals)
 	rewards.SetStartHeight(genesisState.StartHeight)
+	validators.SetStartHeight(genesisState.StartHeight)
 
 	return abciTypes.ResponseInitChain{
 		Validators: vals,
@@ -410,7 +413,8 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 
 	// Check invariants
 	//if app.height%720 == 0 {
-	//	if err := state.NewForCheck(app.stateCheck).CheckForInvariants(); err != nil {
+	//	genesis, _ := client.NewLocal(app.tmNode).Genesis()
+	//	if err := state.NewForCheck(app.stateCheck).CheckForInvariants(genesis.Genesis); err != nil {
 	//		log.With("module", "invariants").Error("Invariants error", "msg", err.Error())
 	//	}
 	//}

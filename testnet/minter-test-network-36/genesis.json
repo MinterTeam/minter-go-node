@@ -1,0 +1,281 @@
+{
+  "genesis_time": "2019-04-05T17:00:00Z",
+  "chain_id": "minter-test-network-36",
+  "consensus_params": {
+    "block": {
+      "max_bytes": "10000000",
+      "max_gas": "100000",
+      "time_iota_ms": "1000"
+    },
+    "evidence": {
+      "max_age": "1000"
+    },
+    "validator": {
+      "pub_key_types": [
+        "ed25519"
+      ]
+    }
+  },
+  "app_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "app_state": {
+    "start_height": "0",
+    "validators": [
+      {
+        "reward_address": "Mxee81347211c72524338f9680072af90744333146",
+        "total_bip_stake": "1",
+        "pub_key": "Mp4ae1ee73e6136c85b0ca933a9a1347758a334885f10b3238398a67ac2eb153b8",
+        "commission": "100",
+        "accum_reward": "0",
+        "absent_times": "________________________"
+      },
+      {
+        "reward_address": "Mxee81347211c72524338f9680072af90744333146",
+        "total_bip_stake": "1",
+        "pub_key": "Mp738da41ba6a7b7d69b7294afa158b89c5a1b410cbf0c2443c85c5fe24ad1dd1c",
+        "commission": "100",
+        "accum_reward": "0",
+        "absent_times": "________________________"
+      },
+      {
+        "reward_address": "Mxee81347211c72524338f9680072af90744333146",
+        "total_bip_stake": "1",
+        "pub_key": "Mp6f16c1ff21a6fb946aaed0f4c1fcca272b72fd904988f91d3883282b8ae31ba2",
+        "commission": "100",
+        "accum_reward": "0",
+        "absent_times": "________________________"
+      },
+      {
+        "reward_address": "Mxee81347211c72524338f9680072af90744333146",
+        "total_bip_stake": "1",
+        "pub_key": "Mp9e13f2f5468dd782b316444fbd66595e13dba7d7bd3efa1becd50b42045f58c6",
+        "commission": "100",
+        "accum_reward": "0",
+        "absent_times": "________________________"
+      }
+    ],
+    "candidates": [
+      {
+        "reward_address": "Mxee81347211c72524338f9680072af90744333146",
+        "owner_address": "Mxee81347211c72524338f9680072af90744333146",
+        "total_bip_stake": "1",
+        "pub_key": "Mp4ae1ee73e6136c85b0ca933a9a1347758a334885f10b3238398a67ac2eb153b8",
+        "commission": "100",
+        "stakes": [
+          {
+            "owner": "Mxee81347211c72524338f9680072af90744333146",
+            "coin": "MNT",
+            "value": "1",
+            "bip_value": "1"
+          }
+        ],
+        "created_at_block": "1",
+        "status": 2
+      },
+      {
+        "reward_address": "Mxee81347211c72524338f9680072af90744333146",
+        "owner_address": "Mxee81347211c72524338f9680072af90744333146",
+        "total_bip_stake": "1",
+        "pub_key": "Mp738da41ba6a7b7d69b7294afa158b89c5a1b410cbf0c2443c85c5fe24ad1dd1c",
+        "commission": "100",
+        "stakes": [
+          {
+            "owner": "Mxee81347211c72524338f9680072af90744333146",
+            "coin": "MNT",
+            "value": "1",
+            "bip_value": "1"
+          }
+        ],
+        "created_at_block": "1",
+        "status": 2
+      },
+      {
+        "reward_address": "Mxee81347211c72524338f9680072af90744333146",
+        "owner_address": "Mxee81347211c72524338f9680072af90744333146",
+        "total_bip_stake": "1",
+        "pub_key": "Mp6f16c1ff21a6fb946aaed0f4c1fcca272b72fd904988f91d3883282b8ae31ba2",
+        "commission": "100",
+        "stakes": [
+          {
+            "owner": "Mxee81347211c72524338f9680072af90744333146",
+            "coin": "MNT",
+            "value": "1",
+            "bip_value": "1"
+          }
+        ],
+        "created_at_block": "1",
+        "status": 2
+      },
+      {
+        "reward_address": "Mxee81347211c72524338f9680072af90744333146",
+        "owner_address": "Mxee81347211c72524338f9680072af90744333146",
+        "total_bip_stake": "1",
+        "pub_key": "Mp9e13f2f5468dd782b316444fbd66595e13dba7d7bd3efa1becd50b42045f58c6",
+        "commission": "100",
+        "stakes": [
+          {
+            "owner": "Mxee81347211c72524338f9680072af90744333146",
+            "coin": "MNT",
+            "value": "1",
+            "bip_value": "1"
+          }
+        ],
+        "created_at_block": "1",
+        "status": 2
+      }
+    ],
+    "accounts": [
+      {
+        "address": "Mx3bdee0d64fa9ac892720f48724ef6a4e2919a6ba",
+        "balance": [
+          {
+            "coin": "MNT",
+            "value": "803817000000000000000000"
+          }
+        ],
+        "nonce": "0"
+      },
+      {
+        "address": "Mxee81347211c72524338f9680072af90744333146",
+        "balance": [
+          {
+            "coin": "MNT",
+            "value": "161145981000000000000000000"
+          }
+        ],
+        "nonce": "0"
+      },
+      {
+        "address": "Mxe6732a97c6445edb0becf685dd92655bb4a1b838",
+        "balance": [
+          {
+            "coin": "MNT",
+            "value": "17318590000000000000000000"
+          }
+        ],
+        "nonce": "0"
+      },
+      {
+        "address": "Mx8bee92ba8999ab047cb5e2d98e190dada4d7a2b2",
+        "balance": [
+          {
+            "coin": "MNT",
+            "value": "803118000000000000000000"
+          }
+        ],
+        "nonce": "0"
+      },
+      {
+        "address": "Mx601609b85ee21b9493dffbca1079c74d47b75f2a",
+        "balance": [
+          {
+            "coin": "MNT",
+            "value": "158857000000000000000000"
+          }
+        ],
+        "nonce": "0"
+      },
+      {
+        "address": "Mx0acbd5df9bc4bdc9fcf2f87e8393907739401a27",
+        "balance": [
+          {
+            "coin": "MNT",
+            "value": "34512000000000000000000"
+          }
+        ],
+        "nonce": "0"
+      },
+      {
+        "address": "Mx89f5395a03847826d6b48bb02dbde64376945a20",
+        "balance": [
+          {
+            "coin": "MNT",
+            "value": "9833248000000000000000000"
+          }
+        ],
+        "nonce": "0"
+      },
+      {
+        "address": "Mxf5d006607e9420978b8f33a940a6fcbc67797db2",
+        "balance": [
+          {
+            "coin": "MNT",
+            "value": "2187460000000000000000000"
+          }
+        ],
+        "nonce": "0"
+      },
+      {
+        "address": "Mx198208eb4d11d4b389ff262ac52494d920770879",
+        "balance": [
+          {
+            "coin": "MNT",
+            "value": "1063320000000000000000000"
+          }
+        ],
+        "nonce": "0"
+      },
+      {
+        "address": "Mxe1dbde5c02a730f747a47d24f0f993c27da9dff1",
+        "balance": [
+          {
+            "coin": "MNT",
+            "value": "636837000000000000000000"
+          }
+        ],
+        "nonce": "0"
+      },
+      {
+        "address": "Mx35c40563ee5181899d0d605839edb9e940b0d8e5",
+        "balance": [
+          {
+            "coin": "MNT",
+            "value": "33869000000000000000000"
+          }
+        ],
+        "nonce": "0"
+      },
+      {
+        "address": "Mx8da4f97b635cf751f2c0f0020f2e78ceb691d7d5",
+        "balance": [
+          {
+            "coin": "MNT",
+            "value": "3798414000000000000000000"
+          }
+        ],
+        "nonce": "0"
+      },
+      {
+        "address": "Mx50003880d87db2fa48f6b824cdcfeeab1ac77733",
+        "balance": [
+          {
+            "coin": "MNT",
+            "value": "2038305000000000000000000"
+          }
+        ],
+        "nonce": "0"
+      },
+      {
+        "address": "Mxdce154b6e1d06b46e95881b900eeb164e247c180",
+        "balance": [
+          {
+            "coin": "MNT",
+            "value": "75414000000000000000000"
+          }
+        ],
+        "nonce": "0"
+      },
+      {
+        "address": "Mxdc7fcc63930bf81ebdce12b3bcef57b93e99a157",
+        "balance": [
+          {
+            "coin": "MNT",
+            "value": "68258000000000000000000"
+          }
+        ],
+        "nonce": "0"
+      }
+    ],
+    "max_gas": "100000",
+    "total_slashed": "0"
+  }
+}

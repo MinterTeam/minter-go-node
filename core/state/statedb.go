@@ -3,6 +3,7 @@ package state
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/MinterTeam/go-amino"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/rewards"
 	"github.com/MinterTeam/minter-go-node/core/types"
@@ -12,6 +13,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	dbm "github.com/tendermint/tendermint/libs/db"
+	tmTypes "github.com/tendermint/tendermint/types"
 	"math/big"
 	"sync"
 
@@ -80,8 +82,8 @@ type StakeCache struct {
 func NewForCheck(s *StateDB) *StateDB {
 	return &StateDB{
 		db:                    s.db,
-		height:                s.height,
 		iavl:                  s.iavl.GetImmutable(),
+		height:                s.height,
 		stateAccounts:         make(map[types.Address]*stateAccount),
 		stateAccountsDirty:    make(map[types.Address]struct{}),
 		stateCoins:            make(map[types.CoinSymbol]*stateCoin),
@@ -740,7 +742,7 @@ func getOrderedObjectsKeys(objects map[types.Address]struct{}) []types.Address {
 		keys = append(keys, k)
 	}
 
-	sort.Slice(keys, func(i, j int) bool {
+	sort.SliceStable(keys, func(i, j int) bool {
 		return bytes.Compare(keys[i].Bytes(), keys[j].Bytes()) == 1
 	})
 
@@ -753,7 +755,7 @@ func getOrderedCoinsKeys(objects map[types.CoinSymbol]struct{}) []types.CoinSymb
 		keys = append(keys, k)
 	}
 
-	sort.Slice(keys, func(i, j int) bool {
+	sort.SliceStable(keys, func(i, j int) bool {
 		return bytes.Compare(keys[i].Bytes(), keys[j].Bytes()) == 1
 	})
 
@@ -766,7 +768,7 @@ func getOrderedFrozenFundsKeys(objects map[uint64]struct{}) []uint64 {
 		keys = append(keys, k)
 	}
 
-	sort.Slice(keys, func(i, j int) bool {
+	sort.SliceStable(keys, func(i, j int) bool {
 		return keys[i] > keys[j]
 	})
 
@@ -897,7 +899,7 @@ func (s *StateDB) GetCandidates(count int, block int64) []Candidate {
 		}
 	}
 
-	sort.Slice(activeCandidates, func(i, j int) bool {
+	sort.SliceStable(activeCandidates, func(i, j int) bool {
 		return activeCandidates[i].TotalBipStake.Cmp(candidates[j].TotalBipStake) == -1
 	})
 
@@ -905,7 +907,7 @@ func (s *StateDB) GetCandidates(count int, block int64) []Candidate {
 		count = len(activeCandidates)
 	}
 
-	sort.Slice(activeCandidates, func(i, j int) bool {
+	sort.SliceStable(activeCandidates, func(i, j int) bool {
 		return activeCandidates[i].TotalBipStake.Cmp(activeCandidates[j].TotalBipStake) == 1
 	})
 
@@ -913,12 +915,11 @@ func (s *StateDB) GetCandidates(count int, block int64) []Candidate {
 }
 
 func (s *StateDB) AddAccumReward(pubkey types.Pubkey, reward *big.Int) {
-	validators := s.getStateValidators()
-
-	for i := range validators.data {
-		if bytes.Equal(validators.data[i].PubKey, pubkey) {
-			validators.data[i].AccumReward.Add(validators.data[i].AccumReward, reward)
-			s.setStateValidators(validators)
+	vals := s.getStateValidators()
+	for i := range vals.data {
+		if bytes.Equal(vals.data[i].PubKey, pubkey) {
+			vals.data[i].AccumReward.Add(vals.data[i].AccumReward, reward)
+			s.setStateValidators(vals)
 			s.MarkStateValidatorsDirty()
 			return
 		}
@@ -928,10 +929,9 @@ func (s *StateDB) AddAccumReward(pubkey types.Pubkey, reward *big.Int) {
 func (s *StateDB) PayRewards() {
 	edb := eventsdb.GetCurrent()
 
-	validators := s.getStateValidators()
-
-	for i := range validators.data {
-		validator := validators.data[i]
+	vals := s.getStateValidators()
+	for i := range vals.data {
+		validator := vals.data[i]
 
 		if validator.AccumReward.Cmp(types.Big0) == 1 {
 
@@ -1010,14 +1010,13 @@ func (s *StateDB) PayRewards() {
 		}
 	}
 
-	s.setStateValidators(validators)
+	s.setStateValidators(vals)
 	s.MarkStateValidatorsDirty()
 }
 
 func (s *StateDB) RecalculateTotalStakeValues() {
 	stateCandidates := s.getStateCandidates()
-	validators := s.getStateValidators()
-
+	vals := s.getStateValidators()
 	for i := range stateCandidates.data {
 		candidate := &stateCandidates.data[i]
 
@@ -1031,15 +1030,15 @@ func (s *StateDB) RecalculateTotalStakeValues() {
 
 		candidate.TotalBipStake = totalBipStake
 
-		for j := range validators.data {
-			if bytes.Equal(validators.data[j].PubKey, candidate.PubKey) {
-				validators.data[j].TotalBipStake = totalBipStake
+		for j := range vals.data {
+			if bytes.Equal(vals.data[j].PubKey, candidate.PubKey) {
+				vals.data[j].TotalBipStake = totalBipStake
 				break
 			}
 		}
 	}
 
-	s.setStateValidators(validators)
+	s.setStateValidators(vals)
 	s.MarkStateValidatorsDirty()
 
 	s.setStateCandidates(stateCandidates)
@@ -1173,23 +1172,23 @@ func (s *StateDB) SetCandidateOffline(pubkey []byte) {
 }
 
 func (s *StateDB) SetValidatorPresent(address [20]byte) {
-	validators := s.getStateValidators()
-	for i := range validators.data {
-		validator := &validators.data[i]
+	vals := s.getStateValidators()
+	for i := range vals.data {
+		validator := &vals.data[i]
 		if validator.GetAddress() == address {
 			validator.AbsentTimes.SetIndex(int(s.height)%ValidatorMaxAbsentWindow, false)
 		}
 	}
-	s.setStateValidators(validators)
+	s.setStateValidators(vals)
 	s.MarkStateValidatorsDirty()
 }
 
 func (s *StateDB) SetValidatorAbsent(address [20]byte) {
 	edb := eventsdb.GetCurrent()
 
-	validators := s.getStateValidators()
-	for i := range validators.data {
-		validator := &validators.data[i]
+	vals := s.getStateValidators()
+	for i := range vals.data {
+		validator := &vals.data[i]
 		if validator.GetAddress() == address {
 
 			candidates := s.getStateCandidates()
@@ -1199,6 +1198,11 @@ func (s *StateDB) SetValidatorAbsent(address [20]byte) {
 				if candidates.data[i].GetAddress() == address {
 					candidate = &candidates.data[i]
 				}
+			}
+
+			if candidate == nil {
+				log.Error("Candidate not found", "address", fmt.Sprintf("%x", address))
+				return
 			}
 
 			if candidate.Status == CandidateStatusOffline {
@@ -1259,7 +1263,7 @@ func (s *StateDB) SetValidatorAbsent(address [20]byte) {
 		}
 	}
 
-	s.setStateValidators(validators)
+	s.setStateValidators(vals)
 	s.MarkStateValidatorsDirty()
 }
 
@@ -1466,7 +1470,7 @@ func (s *StateDB) ClearCandidates() {
 
 	// Check for candidates count overflow and unbond smallest ones
 	if len(candidates.data) > maxCandidates {
-		sort.Slice(candidates.data, func(i, j int) bool {
+		sort.SliceStable(candidates.data, func(i, j int) bool {
 			return candidates.data[i].TotalBipStake.Cmp(candidates.data[j].TotalBipStake) == 1
 		})
 
@@ -1492,7 +1496,7 @@ func (s *StateDB) ClearStakes() {
 		candidate := &candidates.data[i]
 		// Check for delegators count overflow and unbond smallest ones
 		if len(candidate.Stakes) > MaxDelegatorsPerCandidate {
-			sort.Slice(candidate.Stakes, func(t, d int) bool {
+			sort.SliceStable(candidate.Stakes, func(t, d int) bool {
 				return candidates.data[i].Stakes[t].BipValue.Cmp(candidates.data[i].Stakes[d].BipValue) == 1
 			})
 
@@ -1600,10 +1604,18 @@ func (s *StateDB) deleteCoin(symbol types.CoinSymbol) {
 		addresses = append(addresses, account.address)
 	}
 
+	sort.SliceStable(addresses, func(i, j int) bool {
+		return addresses[i].Compare(addresses[j]) == -1
+	})
+
 	var frozenFundsHeights []uint64
 	for height := range s.stateFrozenFunds {
 		frozenFundsHeights = append(frozenFundsHeights, height)
 	}
+
+	sort.SliceStable(frozenFundsHeights, func(i, j int) bool {
+		return frozenFundsHeights[i] < frozenFundsHeights[j]
+	})
 
 	s.iavl.Iterate(func(key []byte, value []byte) bool {
 		if key[0] == addressPrefix[0] {
@@ -1675,9 +1687,14 @@ func (s *StateDB) deleteCoin(symbol types.CoinSymbol) {
 					coinToDelete.SubReserve(ret)
 					coinToDelete.SubVolume(stake.Value)
 
-					candidate.Stakes[j].Value = ret
-					candidate.Stakes[j].Coin = types.GetBaseCoin()
-					candidate.Stakes[j].BipValue = ret
+					stake := candidate.GetStakeOfAddress(stake.Owner, types.GetBaseCoin())
+					if stake == nil {
+						candidate.Stakes[j].Value = ret
+						candidate.Stakes[j].Coin = types.GetBaseCoin()
+						candidate.Stakes[j].BipValue = ret
+					} else {
+						stake.Value.Add(stake.Value, ret)
+					}
 				}
 			}
 		}
@@ -1883,8 +1900,38 @@ func (s *StateDB) Import(appState types.AppState) {
 	}
 }
 
-func (s *StateDB) CheckForInvariants() error {
+func (s *StateDB) CheckForInvariants(genesis *tmTypes.GenesisDoc) error {
 	height := s.height - 1
+
+	var genesisState types.AppState
+	_ = amino.UnmarshalJSON(genesis.AppState, &genesisState)
+
+	GenesisAlloc := big.NewInt(0)
+	for _, account := range genesisState.Accounts {
+		for _, bal := range account.Balance {
+			if bal.Coin.IsBaseCoin() {
+				GenesisAlloc.Add(GenesisAlloc, bal.Value)
+			}
+		}
+	}
+
+	for _, candidate := range genesisState.Candidates {
+		for _, stake := range candidate.Stakes {
+			if stake.Coin.IsBaseCoin() {
+				GenesisAlloc.Add(GenesisAlloc, stake.Value)
+			}
+		}
+	}
+
+	for _, coin := range genesisState.Coins {
+		GenesisAlloc.Add(GenesisAlloc, coin.ReserveBalance)
+	}
+
+	for _, ff := range genesisState.FrozenFunds {
+		if ff.Coin.IsBaseCoin() {
+			GenesisAlloc.Add(GenesisAlloc, ff.Value)
+		}
+	}
 
 	totalBasecoinVolume := big.NewInt(0)
 
@@ -1967,13 +2014,11 @@ func (s *StateDB) CheckForInvariants() error {
 	}
 
 	predictedBasecoinVolume := big.NewInt(0)
+	predictedBasecoinVolume.Add(predictedBasecoinVolume, rewards.BeforeGenesis)
 	for i := uint64(1); i < height; i++ {
 		predictedBasecoinVolume.Add(predictedBasecoinVolume, rewards.GetRewardForBlock(i))
 	}
 	predictedBasecoinVolume.Sub(predictedBasecoinVolume, s.GetTotalSlashed())
-
-	// TODO: compute from genesis
-	GenesisAlloc, _ := big.NewInt(0).SetString("200000000000000000000000000", 10)
 	predictedBasecoinVolume.Add(predictedBasecoinVolume, GenesisAlloc)
 
 	delta := big.NewInt(0).Abs(big.NewInt(0).Sub(predictedBasecoinVolume, totalBasecoinVolume))

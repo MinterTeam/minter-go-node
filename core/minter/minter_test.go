@@ -10,14 +10,16 @@ import (
 	"github.com/MinterTeam/go-amino"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
+	"github.com/MinterTeam/minter-go-node/core/developers"
+	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
-	"github.com/MinterTeam/minter-go-node/genesis"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	tmConfig "github.com/tendermint/tendermint/config"
+	"github.com/tendermint/tendermint/libs/common"
 	log2 "github.com/tendermint/tendermint/libs/log"
 	tmNode "github.com/tendermint/tendermint/node"
 	"github.com/tendermint/tendermint/p2p"
@@ -52,6 +54,11 @@ func initNode() {
 	*utils.MinterHome = os.ExpandEnv(filepath.Join("$HOME", ".minter_test"))
 	_ = os.RemoveAll(*utils.MinterHome)
 
+	if err := common.EnsureDir(utils.GetMinterHome()+"/tmdata/blockstore.db", 0777); err != nil {
+		log.Error(err.Error())
+		os.Exit(1)
+	}
+
 	cfg = config.GetTmConfig()
 	cfg.Consensus.TimeoutPropose = 0
 	cfg.Consensus.TimeoutPrecommit = 0
@@ -63,6 +70,7 @@ func initNode() {
 	cfg.Consensus.SkipTimeoutCommit = true
 	cfg.P2P.Seeds = ""
 	cfg.P2P.PersistentPeers = ""
+	cfg.DBBackend = "leveldb"
 
 	pv = privval.GenFilePV(cfg.PrivValidatorKeyFile(), cfg.PrivValidatorStateFile())
 	pv.Save()
@@ -370,7 +378,7 @@ FORLOOP2:
 func getGenesis() (*types2.GenesisDoc, error) {
 	appHash := [32]byte{}
 
-	validators, candidates := genesis.MakeValidatorsAndCandidates([]string{base64.StdEncoding.EncodeToString(pv.Key.PubKey.Bytes()[5:])}, big.NewInt(10000000))
+	validators, candidates := makeValidatorsAndCandidates([]string{base64.StdEncoding.EncodeToString(pv.Key.PubKey.Bytes()[5:])}, big.NewInt(10000000))
 
 	appState := types.AppState{
 		Accounts: []types.Account{
@@ -406,4 +414,46 @@ func getGenesis() (*types2.GenesisDoc, error) {
 	}
 
 	return &genesisDoc, nil
+}
+
+func makeValidatorsAndCandidates(pubkeys []string, stake *big.Int) ([]types.Validator, []types.Candidate) {
+	validators := make([]types.Validator, len(pubkeys))
+	candidates := make([]types.Candidate, len(pubkeys))
+	addr := developers.Address
+
+	for i, val := range pubkeys {
+		pkey, err := base64.StdEncoding.DecodeString(val)
+		if err != nil {
+			panic(err)
+		}
+
+		validators[i] = types.Validator{
+			RewardAddress: addr,
+			TotalBipStake: stake,
+			PubKey:        pkey,
+			Commission:    100,
+			AccumReward:   big.NewInt(0),
+			AbsentTimes:   types.NewBitArray(24),
+		}
+
+		candidates[i] = types.Candidate{
+			RewardAddress: addr,
+			OwnerAddress:  addr,
+			TotalBipStake: big.NewInt(1),
+			PubKey:        pkey,
+			Commission:    100,
+			Stakes: []types.Stake{
+				{
+					Owner:    addr,
+					Coin:     types.GetBaseCoin(),
+					Value:    stake,
+					BipValue: stake,
+				},
+			},
+			CreatedAtBlock: 1,
+			Status:         state.CandidateStatusOnline,
+		}
+	}
+
+	return validators, candidates
 }

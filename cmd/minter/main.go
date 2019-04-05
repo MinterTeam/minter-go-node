@@ -6,9 +6,9 @@ import (
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/minter"
-	"github.com/MinterTeam/minter-go-node/genesis"
 	"github.com/MinterTeam/minter-go-node/gui"
 	"github.com/MinterTeam/minter-go-node/log"
+	"github.com/gobuffalo/packr"
 	"github.com/tendermint/go-amino"
 	"github.com/tendermint/tendermint/abci/types"
 	bc "github.com/tendermint/tendermint/blockchain"
@@ -20,7 +20,7 @@ import (
 	"github.com/tendermint/tendermint/privval"
 	"github.com/tendermint/tendermint/proxy"
 	rpc "github.com/tendermint/tendermint/rpc/client"
-	types2 "github.com/tendermint/tendermint/types"
+	tmTypes "github.com/tendermint/tendermint/types"
 	"os"
 	"time"
 )
@@ -76,7 +76,8 @@ func main() {
 
 	client := rpc.NewLocal(node)
 	status, _ := client.Status()
-	if status.NodeInfo.Network != genesis.Network {
+	genesis, _ := client.Genesis()
+	if status.NodeInfo.Network != genesis.Genesis.ChainID {
 		log.Error("Different networks")
 		os.Exit(1)
 	}
@@ -151,8 +152,19 @@ func startTendermintNode(app types.Application, cfg *tmCfg.Config) *tmNode.Node 
 	return node
 }
 
-func getGenesis() (doc *types2.GenesisDoc, e error) {
-	return types2.GenesisDocFromFile(utils.GetMinterHome() + "/config/genesis.json")
+func getGenesis() (doc *tmTypes.GenesisDoc, e error) {
+	genesisFile := utils.GetMinterHome() + "/config/genesis.json"
+
+	if !common.FileExists(genesisFile) {
+		box := packr.NewBox("../../testnet/minter-test-network-36")
+
+		err := common.WriteFile(genesisFile, box.Bytes("genesis.json"), 0644)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return tmTypes.GenesisDocFromFile(genesisFile)
 }
 
 func showNodeID() {
