@@ -82,8 +82,8 @@ type StakeCache struct {
 func NewForCheck(s *StateDB) *StateDB {
 	return &StateDB{
 		db:                    s.db,
-		height:                s.height,
 		iavl:                  s.iavl.GetImmutable(),
+		height:                s.height,
 		stateAccounts:         make(map[types.Address]*stateAccount),
 		stateAccountsDirty:    make(map[types.Address]struct{}),
 		stateCoins:            make(map[types.CoinSymbol]*stateCoin),
