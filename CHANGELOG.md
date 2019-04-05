@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.17.1
+
+BUG FIXES
+
+- [core] Fix issue with candidacy declaration
+
 ## 0.17.0
 
 BUG FIXES
