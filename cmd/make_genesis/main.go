@@ -63,8 +63,8 @@ func main() {
 		ChainID:     networkId,
 		ConsensusParams: &tmTypes.ConsensusParams{
 			Block: tmTypes.BlockParams{
-				MaxBytes:   10000000,
-				MaxGas:     100000,
+				MaxBytes:   minter.BlockMaxBytes,
+				MaxGas:     minter.DefaultMaxGas,
 				TimeIotaMs: 1000,
 			},
 			Evidence: tmTypes.EvidenceParams{
