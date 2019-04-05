@@ -134,7 +134,7 @@ func checkBalances(context *state.StateDB, sender types.Address, items []Multise
 		coins = append(coins, k)
 	}
 
-	sort.Slice(coins, func(i, j int) bool {
+	sort.SliceStable(coins, func(i, j int) bool {
 		return coins[i].Compare(coins[j]) == 1
 	})
 

@@ -742,7 +742,7 @@ func getOrderedObjectsKeys(objects map[types.Address]struct{}) []types.Address {
 		keys = append(keys, k)
 	}
 
-	sort.Slice(keys, func(i, j int) bool {
+	sort.SliceStable(keys, func(i, j int) bool {
 		return bytes.Compare(keys[i].Bytes(), keys[j].Bytes()) == 1
 	})
 
@@ -755,7 +755,7 @@ func getOrderedCoinsKeys(objects map[types.CoinSymbol]struct{}) []types.CoinSymb
 		keys = append(keys, k)
 	}
 
-	sort.Slice(keys, func(i, j int) bool {
+	sort.SliceStable(keys, func(i, j int) bool {
 		return bytes.Compare(keys[i].Bytes(), keys[j].Bytes()) == 1
 	})
 
@@ -768,7 +768,7 @@ func getOrderedFrozenFundsKeys(objects map[uint64]struct{}) []uint64 {
 		keys = append(keys, k)
 	}
 
-	sort.Slice(keys, func(i, j int) bool {
+	sort.SliceStable(keys, func(i, j int) bool {
 		return keys[i] > keys[j]
 	})
 
@@ -899,7 +899,7 @@ func (s *StateDB) GetCandidates(count int, block int64) []Candidate {
 		}
 	}
 
-	sort.Slice(activeCandidates, func(i, j int) bool {
+	sort.SliceStable(activeCandidates, func(i, j int) bool {
 		return activeCandidates[i].TotalBipStake.Cmp(candidates[j].TotalBipStake) == -1
 	})
 
@@ -907,7 +907,7 @@ func (s *StateDB) GetCandidates(count int, block int64) []Candidate {
 		count = len(activeCandidates)
 	}
 
-	sort.Slice(activeCandidates, func(i, j int) bool {
+	sort.SliceStable(activeCandidates, func(i, j int) bool {
 		return activeCandidates[i].TotalBipStake.Cmp(activeCandidates[j].TotalBipStake) == 1
 	})
 
@@ -1470,7 +1470,7 @@ func (s *StateDB) ClearCandidates() {
 
 	// Check for candidates count overflow and unbond smallest ones
 	if len(candidates.data) > maxCandidates {
-		sort.Slice(candidates.data, func(i, j int) bool {
+		sort.SliceStable(candidates.data, func(i, j int) bool {
 			return candidates.data[i].TotalBipStake.Cmp(candidates.data[j].TotalBipStake) == 1
 		})
 
@@ -1496,7 +1496,7 @@ func (s *StateDB) ClearStakes() {
 		candidate := &candidates.data[i]
 		// Check for delegators count overflow and unbond smallest ones
 		if len(candidate.Stakes) > MaxDelegatorsPerCandidate {
-			sort.Slice(candidate.Stakes, func(t, d int) bool {
+			sort.SliceStable(candidate.Stakes, func(t, d int) bool {
 				return candidates.data[i].Stakes[t].BipValue.Cmp(candidates.data[i].Stakes[d].BipValue) == 1
 			})
 
@@ -1604,10 +1604,18 @@ func (s *StateDB) deleteCoin(symbol types.CoinSymbol) {
 		addresses = append(addresses, account.address)
 	}
 
+	sort.SliceStable(addresses, func(i, j int) bool {
+		return addresses[i].Compare(addresses[j]) == -1
+	})
+
 	var frozenFundsHeights []uint64
 	for height := range s.stateFrozenFunds {
 		frozenFundsHeights = append(frozenFundsHeights, height)
 	}
+
+	sort.SliceStable(frozenFundsHeights, func(i, j int) bool {
+		return frozenFundsHeights[i] < frozenFundsHeights[j]
+	})
 
 	s.iavl.Iterate(func(key []byte, value []byte) bool {
 		if key[0] == addressPrefix[0] {
