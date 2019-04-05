@@ -29,7 +29,7 @@ func main() {
 		"Mx89f5395a03847826d6b48bb02dbde64376945a20": 9833248,  // MonsterNode
 		"Mx8da4f97b635cf751f2c0f0020f2e78ceb691d7d5": 3798414,  // BTC.Secure
 		"Mxf5d006607e9420978b8f33a940a6fcbc67797db2": 2187460,  // Minter Store
-		"Mx50003880d87db2fa48f6b824cdcfeeab1ac77733": 2038305, // DeCenter
+		"Mx50003880d87db2fa48f6b824cdcfeeab1ac77733": 2038305,  // DeCenter
 		"Mx198208eb4d11d4b389ff262ac52494d920770879": 1063320,  // MINTER CENTER
 		"Mx3bdee0d64fa9ac892720f48724ef6a4e2919a6ba": 803817,   // Minternator
 		"Mx8bee92ba8999ab047cb5e2d98e190dada4d7a2b2": 803118,   // StakeHolder
