@@ -12,6 +12,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/core/validators"
 	"github.com/MinterTeam/minter-go-node/eventsdb"
+	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/version"
 	"github.com/danil-lashin/tendermint/rpc/lib/types"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
@@ -19,6 +20,7 @@ import (
 	"github.com/tendermint/tendermint/crypto/encoding/amino"
 	"github.com/tendermint/tendermint/libs/db"
 	tmNode "github.com/tendermint/tendermint/node"
+	"github.com/tendermint/tendermint/rpc/client"
 	types2 "github.com/tendermint/tendermint/types"
 	"math/big"
 	"sync"
@@ -243,21 +245,29 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 	}
 
 	// accumulate rewards
+	reward := rewards.GetRewardForBlock(height)
+	reward.Add(reward, app.rewards)
+
+	// compute remainder to keep total emission consist
+	remainder := big.NewInt(0).Set(reward)
+
 	for i, val := range vals {
 		// skip if candidate is not present
 		if val.IsToDrop() || app.validatorsStatuses[val.GetAddress()] != ValidatorPresent {
 			continue
 		}
 
-		reward := rewards.GetRewardForBlock(height)
+		r := big.NewInt(0).Set(reward)
+		r.Mul(r, val.TotalBipStake)
+		r.Div(r, totalPower)
 
-		reward.Add(reward, app.rewards)
-
-		reward.Mul(reward, val.TotalBipStake)
-		reward.Div(reward, totalPower)
-
-		vals[i].AccumReward.Add(vals[i].AccumReward, reward)
+		remainder.Sub(remainder, r)
+		vals[i].AccumReward.Add(vals[i].AccumReward, r)
 	}
+
+	// add remainder to last validator
+	lastValidator := vals[len(vals)-1]
+	lastValidator.AccumReward.Add(lastValidator.AccumReward, remainder)
 
 	stateValidators.SetData(vals)
 	app.stateDeliver.SetStateValidators(stateValidators)
@@ -412,12 +422,12 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 	app.currentMempool = sync.Map{}
 
 	// Check invariants
-	//if app.height%720 == 0 {
-	//	genesis, _ := client.NewLocal(app.tmNode).Genesis()
-	//	if err := state.NewForCheck(app.stateCheck).CheckForInvariants(genesis.Genesis); err != nil {
-	//		log.With("module", "invariants").Error("Invariants error", "msg", err.Error())
-	//	}
-	//}
+	if app.height%720 == 0 {
+		genesis, _ := client.NewLocal(app.tmNode).Genesis()
+		if err := state.NewForCheck(app.stateCheck).CheckForInvariants(genesis.Genesis); err != nil {
+			log.With("module", "invariants").Error("Invariants error", "msg", err.Error(), "height", app.height)
+		}
+	}
 
 	// Releasing wg
 	app.wg.Done()

@@ -933,14 +933,15 @@ func (s *StateDB) PayRewards() {
 		validator := vals.data[i]
 
 		if validator.AccumReward.Cmp(types.Big0) == 1 {
-
 			totalReward := big.NewInt(0).Set(validator.AccumReward)
+			remainder := big.NewInt(0).Set(validator.AccumReward)
 
 			// pay commission to DAO
 			DAOReward := big.NewInt(0).Set(totalReward)
 			DAOReward.Mul(DAOReward, big.NewInt(int64(dao.Commission)))
 			DAOReward.Div(DAOReward, big.NewInt(100))
 			s.AddBalance(dao.Address, types.GetBaseCoin(), DAOReward)
+			remainder.Sub(remainder, DAOReward)
 			edb.AddEvent(s.height, eventsdb.RewardEvent{
 				Role:            eventsdb.RoleDAO,
 				Address:         dao.Address,
@@ -953,6 +954,7 @@ func (s *StateDB) PayRewards() {
 			DevelopersReward.Mul(DevelopersReward, big.NewInt(int64(developers.Commission)))
 			DevelopersReward.Div(DevelopersReward, big.NewInt(100))
 			s.AddBalance(developers.Address, types.GetBaseCoin(), DevelopersReward)
+			remainder.Sub(remainder, DevelopersReward)
 			edb.AddEvent(s.height, eventsdb.RewardEvent{
 				Role:            eventsdb.RoleDevelopers,
 				Address:         developers.Address,
@@ -969,6 +971,7 @@ func (s *StateDB) PayRewards() {
 			validatorReward.Div(validatorReward, big.NewInt(100))
 			totalReward.Sub(totalReward, validatorReward)
 			s.AddBalance(validator.RewardAddress, types.GetBaseCoin(), validatorReward)
+			remainder.Sub(remainder, validatorReward)
 			edb.AddEvent(s.height, eventsdb.RewardEvent{
 				Role:            eventsdb.RoleValidator,
 				Address:         validator.RewardAddress,
@@ -996,6 +999,7 @@ func (s *StateDB) PayRewards() {
 				}
 
 				s.AddBalance(stake.Owner, types.GetBaseCoin(), reward)
+				remainder.Sub(remainder, reward)
 
 				edb.AddEvent(s.height, eventsdb.RewardEvent{
 					Role:            eventsdb.RoleDelegator,
@@ -1005,7 +1009,7 @@ func (s *StateDB) PayRewards() {
 				})
 			}
 
-			validator.AccumReward.SetInt64(0)
+			validator.AccumReward.Set(remainder)
 		}
 	}
 
@@ -2021,7 +2025,7 @@ func (s *StateDB) CheckForInvariants(genesis *tmTypes.GenesisDoc) error {
 	predictedBasecoinVolume.Add(predictedBasecoinVolume, GenesisAlloc)
 
 	delta := big.NewInt(0).Abs(big.NewInt(0).Sub(predictedBasecoinVolume, totalBasecoinVolume))
-	if delta.Cmp(big.NewInt(1000000000)) == 1 {
+	if delta.Cmp(big.NewInt(1000)) == 1 {
 		return fmt.Errorf("smth wrong with total base coins in blockchain. Expected total supply to be %s, got %s",
 			predictedBasecoinVolume, totalBasecoinVolume)
 	}
