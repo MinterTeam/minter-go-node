@@ -76,9 +76,8 @@ func main() {
 
 	client := rpc.NewLocal(node)
 	status, _ := client.Status()
-	genesis, _ := client.Genesis()
-	if status.NodeInfo.Network != genesis.Genesis.ChainID {
-		log.Error("Different networks")
+	if status.NodeInfo.Network != config.NetworkId {
+		log.Error("Different networks", "expected", config.NetworkId, "got", status.NodeInfo.Network)
 		os.Exit(1)
 	}
 
@@ -156,7 +155,7 @@ func getGenesis() (doc *tmTypes.GenesisDoc, e error) {
 	genesisFile := utils.GetMinterHome() + "/config/genesis.json"
 
 	if !common.FileExists(genesisFile) {
-		box := packr.NewBox("../../testnet/minter-test-network-37")
+		box := packr.NewBox("../../testnet/" + config.NetworkId)
 
 		err := common.WriteFile(genesisFile, box.Bytes("genesis.json"), 0644)
 		if err != nil {

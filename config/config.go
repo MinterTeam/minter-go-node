@@ -11,6 +11,8 @@ import (
 )
 
 var (
+	NetworkId = "minter-test-network-37"
+
 	defaultConfigDir = "config"
 	defaultDataDir   = "data"
 
@@ -83,7 +85,6 @@ func DefaultConfig() *Config {
 	cfg.PrivValidatorKey = "config/priv_validator.json"
 	cfg.PrivValidatorState = "config/priv_validator_state.json"
 	cfg.NodeKey = "config/node_key.json"
-	cfg.P2P.AddrBook = "config/addrbook.json"
 
 	return cfg
 }
@@ -105,6 +106,8 @@ func GetConfig() *Config {
 	}
 
 	cfg.Mempool.Recheck = false
+
+	cfg.P2P.AddrBook = "config/addrbook-" + NetworkId + ".json"
 
 	cfg.SetRoot(utils.GetMinterHome())
 	EnsureRoot(utils.GetMinterHome())
