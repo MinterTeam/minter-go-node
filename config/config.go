@@ -10,8 +10,13 @@ import (
 	"time"
 )
 
-var (
+const (
 	NetworkId = "minter-test-network-37"
+
+	// LogFormatPlain is a format for colored text
+	LogFormatPlain = "plain"
+	// LogFormatJSON is a format for json output
+	LogFormatJSON = "json"
 
 	defaultConfigDir = "config"
 	defaultDataDir   = "data"
@@ -22,19 +27,14 @@ var (
 	defaultPrivValName      = "priv_validator.json"
 	defaultPrivValStateName = "priv_validator_state.json"
 	defaultNodeKeyName      = "node_key.json"
+)
 
+var (
 	defaultConfigFilePath   = filepath.Join(defaultConfigDir, defaultConfigFileName)
 	defaultGenesisJSONPath  = filepath.Join(defaultConfigDir, defaultGenesisJSONName)
 	defaultPrivValKeyPath   = filepath.Join(defaultConfigDir, defaultPrivValName)
 	defaultPrivValStatePath = filepath.Join(defaultConfigDir, defaultPrivValStateName)
 	defaultNodeKeyPath      = filepath.Join(defaultConfigDir, defaultNodeKeyName)
-)
-
-const (
-	// LogFormatPlain is a format for colored text
-	LogFormatPlain = "plain"
-	// LogFormatJSON is a format for json output
-	LogFormatJSON = "json"
 )
 
 func init() {
