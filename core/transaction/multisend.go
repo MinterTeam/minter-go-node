@@ -36,12 +36,6 @@ func (data MultisendData) BasicCheck(tx *Transaction, context *state.StateDB) *R
 			Log:  err.Error()}
 	}
 
-	if !context.CoinExists(tx.GasCoin) {
-		return &Response{
-			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin)}
-	}
-
 	return nil
 }
 

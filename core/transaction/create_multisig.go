@@ -23,12 +23,6 @@ func (data CreateMultisigData) TotalSpend(tx *Transaction, context *state.StateD
 }
 
 func (data CreateMultisigData) BasicCheck(tx *Transaction, context *state.StateDB) *Response {
-	if !context.CoinExists(tx.GasCoin) {
-		return &Response{
-			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin)}
-	}
-
 	if len(data.Weights) > 32 {
 		return &Response{
 			Code: code.TooLargeOwnersList,

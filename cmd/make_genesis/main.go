@@ -25,11 +25,11 @@ func main() {
 	}
 
 	balances := map[string]int64{
-		"Mxe6732a97c6445edb0becf685dd92655bb4a1b838": 17318590, // Minter One
-		"Mx89f5395a03847826d6b48bb02dbde64376945a20": 9833248,  // MonsterNode
-		"Mx8da4f97b635cf751f2c0f0020f2e78ceb691d7d5": 3798414,  // BTC.Secure
-		"Mxf5d006607e9420978b8f33a940a6fcbc67797db2": 2187460,  // Minter Store
-		"Mx50003880d87db2fa48f6b824cdcfeeab1ac77733": 2038305,  // DeCenter
+		"Mxe6732a97c6445edb0becf685dd92655bb4a1b838": 17351769, // Minter One
+		"Mx89f5395a03847826d6b48bb02dbde64376945a20": 9861716,  // MonsterNode
+		"Mx8da4f97b635cf751f2c0f0020f2e78ceb691d7d5": 3809865,  // BTC.Secure
+		"Mxf5d006607e9420978b8f33a940a6fcbc67797db2": 2190487,  // Minter Store
+		"Mx50003880d87db2fa48f6b824cdcfeeab1ac77733": 2057729,  // DeCenter
 		"Mx198208eb4d11d4b389ff262ac52494d920770879": 1063320,  // MINTER CENTER
 		"Mx3bdee0d64fa9ac892720f48724ef6a4e2919a6ba": 803817,   // Minternator
 		"Mx8bee92ba8999ab047cb5e2d98e190dada4d7a2b2": 803118,   // StakeHolder
@@ -55,11 +55,11 @@ func main() {
 	}
 
 	appHash := [32]byte{}
-	networkId := "minter-test-network-36"
+	networkId := "minter-test-network-37"
 
 	// Compose Genesis
 	genesis := tmTypes.GenesisDoc{
-		GenesisTime: time.Date(2019, time.April, 5, 17, 0, 0, 0, time.UTC),
+		GenesisTime: time.Date(2019, time.April, 9, 17, 0, 0, 0, time.UTC),
 		ChainID:     networkId,
 		ConsensusParams: &tmTypes.ConsensusParams{
 			Block: tmTypes.BlockParams{

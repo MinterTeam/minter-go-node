@@ -164,9 +164,6 @@ persistent_peers = "{{ .P2P.PersistentPeers }}"
 # UPNP port forwarding
 upnp = {{ .P2P.UPNP }}
 
-# Path to address book
-addr_book_file = "{{ js .P2P.AddrBook }}"
-
 # Set true for strict address routability rules
 addr_book_strict = {{ .P2P.AddrBookStrict }}
 

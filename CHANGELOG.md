@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.18.0
+
+IMPROVEMENT
+
+- [api] Add `/estimate_coin_sell_all` endpoint
+
+BUG FIXES
+
+- [p2p] Make new addressbook file for each testnet
+
 ## 0.17.1
 
 BUG FIXES

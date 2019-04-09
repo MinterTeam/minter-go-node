@@ -255,12 +255,6 @@ func (data SellCoinData) BasicCheck(tx *Transaction, context *state.StateDB) *Re
 			Log:  fmt.Sprintf("Coin not exists")}
 	}
 
-	if !context.CoinExists(tx.GasCoin) {
-		return &Response{
-			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin)}
-	}
-
 	return nil
 }
 

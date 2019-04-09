@@ -46,6 +46,12 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPool *big.I
 			Log:  err.Error()}
 	}
 
+	if !context.CoinExists(tx.GasCoin) {
+		return Response{
+			Code: code.CoinNotExists,
+			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin)}
+	}
+
 	if isCheck && tx.GasPrice.Cmp(minGasPrice) == -1 {
 		return Response{
 			Code: code.TooLowGasPrice,

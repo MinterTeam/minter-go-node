@@ -10,7 +10,14 @@ import (
 	"time"
 )
 
-var (
+const (
+	NetworkId = "minter-test-network-37"
+
+	// LogFormatPlain is a format for colored text
+	LogFormatPlain = "plain"
+	// LogFormatJSON is a format for json output
+	LogFormatJSON = "json"
+
 	defaultConfigDir = "config"
 	defaultDataDir   = "data"
 
@@ -20,19 +27,14 @@ var (
 	defaultPrivValName      = "priv_validator.json"
 	defaultPrivValStateName = "priv_validator_state.json"
 	defaultNodeKeyName      = "node_key.json"
+)
 
+var (
 	defaultConfigFilePath   = filepath.Join(defaultConfigDir, defaultConfigFileName)
 	defaultGenesisJSONPath  = filepath.Join(defaultConfigDir, defaultGenesisJSONName)
 	defaultPrivValKeyPath   = filepath.Join(defaultConfigDir, defaultPrivValName)
 	defaultPrivValStatePath = filepath.Join(defaultConfigDir, defaultPrivValStateName)
 	defaultNodeKeyPath      = filepath.Join(defaultConfigDir, defaultNodeKeyName)
-)
-
-const (
-	// LogFormatPlain is a format for colored text
-	LogFormatPlain = "plain"
-	// LogFormatJSON is a format for json output
-	LogFormatJSON = "json"
 )
 
 func init() {
@@ -53,7 +55,10 @@ func init() {
 func DefaultConfig() *Config {
 	cfg := defaultConfig()
 
-	cfg.P2P.Seeds = "647e32df3b9c54809b5aca2877d9ba60900bc2d9@minter-node-1.testnet.minter.network:26656,d20522aa7ba4af8139749c5e724063c4ba18c58b@minter-node-2.testnet.minter.network:26656,249c62818bf4601605a65b5adc35278236bd5312@minter-node-3.testnet.minter.network:26656,b698b07f13f2210dfc82967bfa2a127d1cdfdc54@minter-node-4.testnet.minter.network:26656"
+	cfg.P2P.Seeds = "647e32df3b9c54809b5aca2877d9ba60900bc2d9@minter-node-1.testnet.minter.network:26656," +
+		"d20522aa7ba4af8139749c5e724063c4ba18c58b@minter-node-2.testnet.minter.network:26656," +
+		"249c62818bf4601605a65b5adc35278236bd5312@minter-node-3.testnet.minter.network:26656," +
+		"b698b07f13f2210dfc82967bfa2a127d1cdfdc54@minter-node-4.testnet.minter.network:26656"
 
 	cfg.TxIndex = &tmConfig.TxIndexConfig{
 		Indexer:      "kv",
@@ -83,7 +88,6 @@ func DefaultConfig() *Config {
 	cfg.PrivValidatorKey = "config/priv_validator.json"
 	cfg.PrivValidatorState = "config/priv_validator_state.json"
 	cfg.NodeKey = "config/node_key.json"
-	cfg.P2P.AddrBook = "config/addrbook.json"
 
 	return cfg
 }
@@ -105,6 +109,8 @@ func GetConfig() *Config {
 	}
 
 	cfg.Mempool.Recheck = false
+
+	cfg.P2P.AddrBook = "config/addrbook-" + NetworkId + ".json"
 
 	cfg.SetRoot(utils.GetMinterHome())
 	EnsureRoot(utils.GetMinterHome())
