@@ -104,12 +104,6 @@ func checkCandidateOwnership(data CandidateTx, tx *Transaction, context *state.S
 			Log:  "Incorrect tx data"}
 	}
 
-	if !context.CoinExists(tx.GasCoin) {
-		return &Response{
-			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin)}
-	}
-
 	if !context.CandidateExists(data.GetPubKey()) {
 		return &Response{
 			Code: code.CandidateNotFound,

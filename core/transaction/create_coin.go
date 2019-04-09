@@ -41,12 +41,6 @@ func (data CreateCoinData) BasicCheck(tx *Transaction, context *state.StateDB) *
 			Log:  "Incorrect tx data"}
 	}
 
-	if !context.CoinExists(tx.GasCoin) {
-		return &Response{
-			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin)}
-	}
-
 	if len(data.Name) > maxCoinNameBytes {
 		return &Response{
 			Code: code.InvalidCoinName,

@@ -37,6 +37,19 @@ func (data RedeemCheckData) BasicCheck(tx *Transaction, context *state.StateDB) 
 			Log:  "Incorrect tx data"}
 	}
 
+	if tx.GasCoin != types.GetBaseCoin() {
+		return &Response{
+			Code: code.WrongGasCoin,
+			Log:  fmt.Sprintf("Gas coin for redeem check transaction can only be %s", types.GetBaseCoin())}
+	}
+
+	// fixed potential problem with making too high commission for sender
+	if tx.GasPrice.Cmp(big.NewInt(1)) == 1 {
+		return &Response{
+			Code: code.TooHighGasPrice,
+			Log:  fmt.Sprintf("Gas price for check is limited to 1")}
+	}
+
 	return nil
 }
 
@@ -78,12 +91,6 @@ func (data RedeemCheckData) Run(tx *Transaction, context *state.StateDB, isCheck
 			Log:  err.Error()}
 	}
 
-	if tx.GasCoin != types.GetBaseCoin() {
-		return Response{
-			Code: code.WrongGasCoin,
-			Log:  fmt.Sprintf("Gas coin for redeem check transaction can only be %s", types.GetBaseCoin())}
-	}
-
 	if !context.CoinExists(decodedCheck.Coin) {
 		return Response{
 			Code: code.CoinNotExists,
@@ -100,13 +107,6 @@ func (data RedeemCheckData) Run(tx *Transaction, context *state.StateDB, isCheck
 		return Response{
 			Code: code.CheckUsed,
 			Log:  fmt.Sprintf("Check already redeemed")}
-	}
-
-	// fixed potential problem with making too high commission for sender
-	if tx.GasPrice.Cmp(big.NewInt(1)) == 1 {
-		return Response{
-			Code: code.TooHighGasPrice,
-			Log:  fmt.Sprintf("Gas price for check is limited to 1")}
 	}
 
 	lockPublicKey, err := decodedCheck.LockPubKey()
