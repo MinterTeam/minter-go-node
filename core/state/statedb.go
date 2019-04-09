@@ -1904,7 +1904,7 @@ func (s *StateDB) Import(appState types.AppState) {
 }
 
 func (s *StateDB) CheckForInvariants(genesis *tmTypes.GenesisDoc) error {
-	height := s.height - 1
+	height := s.height
 
 	var genesisState types.AppState
 	_ = amino.UnmarshalJSON(genesis.AppState, &genesisState)
@@ -2024,8 +2024,8 @@ func (s *StateDB) CheckForInvariants(genesis *tmTypes.GenesisDoc) error {
 	predictedBasecoinVolume.Sub(predictedBasecoinVolume, s.GetTotalSlashed())
 	predictedBasecoinVolume.Add(predictedBasecoinVolume, GenesisAlloc)
 
-	delta := big.NewInt(0).Abs(big.NewInt(0).Sub(predictedBasecoinVolume, totalBasecoinVolume))
-	if delta.Cmp(big.NewInt(1000)) == 1 {
+	delta := big.NewInt(0).Sub(predictedBasecoinVolume, totalBasecoinVolume)
+	if delta.Cmp(big.NewInt(0)) != 0 {
 		return fmt.Errorf("smth wrong with total base coins in blockchain. Expected total supply to be %s, got %s",
 			predictedBasecoinVolume, totalBasecoinVolume)
 	}
