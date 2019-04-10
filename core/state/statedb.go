@@ -1027,6 +1027,7 @@ func (s *StateDB) RecalculateTotalStakeValues() {
 
 		for j := range candidate.Stakes {
 			stake := &candidate.Stakes[j]
+			// TODO: delete
 			if !s.CoinExists(stake.Coin) {
 				stake.Value = big.NewInt(0)
 				continue
@@ -1704,6 +1705,10 @@ func (s *StateDB) deleteCoin(symbol types.CoinSymbol) {
 						candidate.Stakes[j].Coin = types.GetBaseCoin()
 						candidate.Stakes[j].BipValue = ret
 					} else {
+						// TODO: delete condition
+						if s.height > 2540 {
+							candidate.Stakes[j].Value = big.NewInt(0)
+						}
 						stake.Value.Add(stake.Value, ret)
 					}
 				}
