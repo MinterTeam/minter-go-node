@@ -188,6 +188,11 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (Tot
 			}
 		}
 
+		toReserve := big.NewInt(0).Set(baseCoinNeeded)
+		if tx.GasCoin == data.CoinToSell {
+			toReserve.Sub(toReserve, baseCoinNeeded)
+		}
+
 		total.Add(data.CoinToSell, value)
 		conversions = append(conversions, Conversion{
 			FromCoin:    data.CoinToSell,
@@ -195,7 +200,7 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (Tot
 			FromReserve: baseCoinNeeded,
 			ToCoin:      data.CoinToBuy,
 			ToAmount:    valueToBuy,
-			ToReserve:   baseCoinNeeded,
+			ToReserve:   toReserve,
 		})
 	}
 
