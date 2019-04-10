@@ -2,6 +2,10 @@
 
 ## 0.19.0
 
+IMPROVEMENT
+
+- [api] Fix list of endpoints
+
 BUG FIXES
 
 - [core] Fix incorrect coin conversion
