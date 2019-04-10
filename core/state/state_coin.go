@@ -13,9 +13,10 @@ import (
 
 // stateCoin represents a coin which is being modified.
 type stateCoin struct {
-	symbol types.CoinSymbol
-	data   Coin
-	db     *StateDB
+	symbol    types.CoinSymbol
+	data      Coin
+	db        *StateDB
+	isDeleted bool
 
 	onDirty func(symbol types.CoinSymbol) // Callback method to mark a state coin newly dirty
 }

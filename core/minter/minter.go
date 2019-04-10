@@ -422,7 +422,7 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 	app.currentMempool = sync.Map{}
 
 	// Check invariants
-	if app.height%720 == 0 {
+	if app.height%720 == 0 && app.tmNode != nil {
 		genesis, _ := client.NewLocal(app.tmNode).Genesis()
 		if err := state.NewForCheck(app.stateCheck).CheckForInvariants(genesis.Genesis); err != nil {
 			log.With("module", "invariants").Error("Invariants error", "msg", err.Error(), "height", app.height)
