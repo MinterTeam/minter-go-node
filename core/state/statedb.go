@@ -1601,6 +1601,10 @@ func (s *StateDB) SanitizeCoin(symbol types.CoinSymbol) {
 
 func (s *StateDB) deleteCoin(symbol types.CoinSymbol) {
 	coinToDelete := s.getStateCoin(symbol)
+	if coinToDelete.isDeleted {
+		return
+	}
+	coinToDelete.isDeleted = true
 
 	var addresses []types.Address
 	for _, account := range s.stateAccounts {

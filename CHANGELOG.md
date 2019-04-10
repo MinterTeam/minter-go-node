@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.18.1
+
+BUG FIXES
+
+- [core] Fix attempt to double coin deletion
+
 ## 0.18.0
 
 IMPROVEMENT
