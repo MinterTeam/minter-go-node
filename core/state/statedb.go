@@ -1027,6 +1027,10 @@ func (s *StateDB) RecalculateTotalStakeValues() {
 
 		for j := range candidate.Stakes {
 			stake := &candidate.Stakes[j]
+			if !s.CoinExists(stake.Coin) {
+				stake.Value = big.NewInt(0)
+				continue
+			}
 			stake.BipValue = stake.CalcBipValue(s)
 			totalBipStake.Add(totalBipStake, stake.BipValue)
 		}
