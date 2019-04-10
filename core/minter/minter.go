@@ -265,9 +265,8 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 		vals[i].AccumReward.Add(vals[i].AccumReward, r)
 	}
 
-	// add remainder to last validator
-	lastValidator := vals[len(vals)-1]
-	lastValidator.AccumReward.Add(lastValidator.AccumReward, remainder)
+	// add remainder to total slashed
+	app.stateDeliver.AddTotalSlashed(remainder)
 
 	stateValidators.SetData(vals)
 	app.stateDeliver.SetStateValidators(stateValidators)
