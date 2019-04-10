@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.19.0
+
+BUG FIXES
+
+- [core] Fix incorrect coin conversion
+
 ## 0.18.1
 
 BUG FIXES

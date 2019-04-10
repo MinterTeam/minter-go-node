@@ -130,14 +130,14 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (Tot
 	default:
 		valueToBuy := big.NewInt(0).Set(data.ValueToBuy)
 
-		if tx.GasCoin == data.CoinToSell {
-			commissionIncluded = true
-			valueToBuy.Add(valueToBuy, commissionInBaseCoin)
-		}
-
 		coinFrom := context.GetStateCoin(data.CoinToSell).Data()
 		coinTo := context.GetStateCoin(data.CoinToBuy).Data()
 		baseCoinNeeded := formula.CalculatePurchaseAmount(coinTo.Volume, coinTo.ReserveBalance, coinTo.Crr, valueToBuy)
+
+		if tx.GasCoin == data.CoinToSell {
+			commissionIncluded = true
+			baseCoinNeeded.Add(baseCoinNeeded, commissionInBaseCoin)
+		}
 
 		if coinFrom.ReserveBalance.Cmp(baseCoinNeeded) < 0 {
 			return nil, nil, nil, &Response{
