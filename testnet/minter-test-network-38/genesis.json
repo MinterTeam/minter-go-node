@@ -1,5 +1,5 @@
 {
-  "genesis_time": "2019-04-09T17:00:00Z",
+  "genesis_time": "2019-04-15T17:00:00Z",
   "chain_id": "minter-test-network-38",
   "consensus_params": {
     "block": {
