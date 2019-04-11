@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/base64"
+	"encoding/csv"
 	"encoding/json"
 	"github.com/MinterTeam/go-amino"
 	"github.com/MinterTeam/minter-go-node/core/developers"
@@ -11,6 +12,8 @@ import (
 	"github.com/MinterTeam/minter-go-node/helpers"
 	tmTypes "github.com/tendermint/tendermint/types"
 	"math/big"
+	"os"
+	"sort"
 	"time"
 )
 
@@ -24,38 +27,137 @@ func main() {
 		"nhPy9UaN14KzFkRPvWZZXhPbp9e9Pvob7NULQgRfWMY=",
 	}
 
-	balances := map[string]int64{
-		"Mxe6732a97c6445edb0becf685dd92655bb4a1b838": 17351769, // Minter One
-		"Mx89f5395a03847826d6b48bb02dbde64376945a20": 9861716,  // MonsterNode
-		"Mx8da4f97b635cf751f2c0f0020f2e78ceb691d7d5": 3809865,  // BTC.Secure
-		"Mxf5d006607e9420978b8f33a940a6fcbc67797db2": 2190487,  // Minter Store
-		"Mx50003880d87db2fa48f6b824cdcfeeab1ac77733": 2057729,  // DeCenter
-		"Mx198208eb4d11d4b389ff262ac52494d920770879": 1063320,  // MINTER CENTER
-		"Mx3bdee0d64fa9ac892720f48724ef6a4e2919a6ba": 803817,   // Minternator
-		"Mx8bee92ba8999ab047cb5e2d98e190dada4d7a2b2": 803118,   // StakeHolder
-		"Mxe1dbde5c02a730f747a47d24f0f993c27da9dff1": 636837,   // Rundax
-		"Mx601609b85ee21b9493dffbca1079c74d47b75f2a": 158857,   // PRO-BLOCKCHAIN
-		"Mxdce154b6e1d06b46e95881b900eeb164e247c180": 75414,    // Mother Minter
-		"Mxdc7fcc63930bf81ebdce12b3bcef57b93e99a157": 68258,    // Validator.Center
-		"Mx0acbd5df9bc4bdc9fcf2f87e8393907739401a27": 34512,    // bipMaker
-		"Mx35c40563ee5181899d0d605839edb9e940b0d8e5": 33869,    // SolidMinter
+	file, err := os.Open("cmd/make_genesis/data.csv")
+	if err != nil {
+		panic(err)
 	}
+
+	firstBalances := map[string]*big.Int{}
+	secondBalances := map[string]*big.Int{}
+	bonusBalances := map[string]*big.Int{}
+	airdropBalances := map[string]*big.Int{}
+
+	reader := csv.NewReader(file)
+	reader.FieldsPerRecord = 4
+	rawCSVdata, err := reader.ReadAll()
+
+	p := big.NewFloat(0).SetInt(big.NewInt(0).Exp(big.NewInt(10), big.NewInt(18), nil))
+
+	for _, line := range rawCSVdata {
+		address, balMain, balBonus, balAirdrop := line[0], line[1], line[2], line[3]
+		isPoolAdmin := "false"
+		if _, has := firstBalances[address]; !has {
+			firstBalances[address] = big.NewInt(0)
+			secondBalances[address] = big.NewInt(0)
+		}
+
+		if _, has := bonusBalances[address]; !has {
+			bonusBalances[address] = big.NewInt(0)
+		}
+
+		if _, has := airdropBalances[address]; !has {
+			airdropBalances[address] = big.NewInt(0)
+		}
+
+		balMainFloat, _ := big.NewFloat(0).SetString(balMain)
+		balMainInt, _ := big.NewFloat(0).Mul(balMainFloat, p).Int(nil)
+		if balMainInt.Cmp(helpers.BipToPip(big.NewInt(1000000))) != -1 || isPoolAdmin == "true" {
+			firstBalances[address].Add(firstBalances[address], balMainInt)
+		} else {
+			secondBalances[address].Add(secondBalances[address], balMainInt)
+		}
+
+		balBonusFloat, _ := big.NewFloat(0).SetString(balBonus)
+		balBonusInt, _ := big.NewFloat(0).Mul(balBonusFloat, p).Int(nil)
+		bonusBalances[address].Add(bonusBalances[address], balBonusInt)
+
+		balAirdropFloat, _ := big.NewFloat(0).SetString(balAirdrop)
+		balAirdropInt, _ := big.NewFloat(0).Mul(balAirdropFloat, p).Int(nil)
+		airdropBalances[address].Add(airdropBalances[address], balAirdropInt)
+	}
+
+	var frozenFunds []types.FrozenFund
+
+	for address, balance := range secondBalances {
+		if balance.Cmp(big.NewInt(0)) == 0 {
+			continue
+		}
+
+		frozenFunds = append(frozenFunds, types.FrozenFund{
+			Height:       17280*8,
+			Address:      types.HexToAddress(address),
+			CandidateKey: []byte{0},
+			Coin:         types.GetBaseCoin(),
+			Value:        balance,
+		})
+	}
+
+	for address, balance := range bonusBalances {
+		if balance.Cmp(big.NewInt(0)) == 0 {
+			continue
+		}
+
+		frozenFunds = append(frozenFunds, types.FrozenFund{
+			Height:       17280*15,
+			Address:      types.HexToAddress(address),
+			CandidateKey: []byte{0},
+			Coin:         types.GetBaseCoin(),
+			Value:        balance,
+		})
+	}
+
+	for address, balance := range airdropBalances {
+		if balance.Cmp(big.NewInt(0)) == 0 {
+			continue
+		}
+
+		frozenFunds = append(frozenFunds, types.FrozenFund{
+			Height:       17280*29,
+			Address:      types.HexToAddress(address),
+			CandidateKey: []byte{0},
+			Coin:         types.GetBaseCoin(),
+			Value:        balance,
+		})
+	}
+
+	sort.SliceStable(frozenFunds, func(i, j int) bool {
+		if frozenFunds[i].Height != frozenFunds[j].Height {
+			return frozenFunds[i].Height < frozenFunds[j].Height
+		}
+
+		return frozenFunds[i].Address.Compare(frozenFunds[j].Address) == -1
+	})
+
+	sort.SliceStable(frozenFunds, func(i, j int) bool {
+		if frozenFunds[i].Height != frozenFunds[j].Height {
+			return frozenFunds[i].Height < frozenFunds[j].Height
+		}
+
+		return frozenFunds[i].Address.Compare(frozenFunds[j].Address) == -1
+	})
+
+	bals := makeBalances(firstBalances)
+
+	sort.SliceStable(bals, func(i, j int) bool {
+		return bals[i].Address.Compare(bals[j].Address) == -1
+	})
 
 	validators, candidates := makeValidatorsAndCandidates(validatorsPubKeys, big.NewInt(1))
 
 	jsonBytes, err := cdc.MarshalJSONIndent(types.AppState{
 		Validators:   validators,
 		Candidates:   candidates,
-		Accounts:     makeBalances(balances),
+		Accounts:     bals,
 		MaxGas:       minter.DefaultMaxGas,
 		TotalSlashed: big.NewInt(0),
+		FrozenFunds:  frozenFunds,
 	}, "", "	")
 	if err != nil {
 		panic(err)
 	}
 
 	appHash := [32]byte{}
-	networkId := "minter-test-network-37"
+	networkId := "minter-test-network-38"
 
 	// Compose Genesis
 	genesis := tmTypes.GenesisDoc{
@@ -130,27 +232,29 @@ func makeValidatorsAndCandidates(pubkeys []string, stake *big.Int) ([]types.Vali
 	return validators, candidates
 }
 
-func makeBalances(balances map[string]int64) []types.Account {
-	var totalBalances int64
+func makeBalances(balances map[string]*big.Int) []types.Account {
+	totalBalances := big.NewInt(0)
 	for _, val := range balances {
-		totalBalances += val
+		totalBalances.Add(totalBalances, val)
 	}
 
-	balances[developers.Address.String()] = 200000000 - totalBalances // Developers account
+	balances[developers.Address.String()] = big.NewInt(0).Sub(helpers.BipToPip(big.NewInt(200000000)), totalBalances) // Developers account
 
-	result := make([]types.Account, len(balances))
-	i := 0
+	var result []types.Account
 	for address, balance := range balances {
-		result[i] = types.Account{
+		if balance.Cmp(big.NewInt(0)) == 0 {
+			continue
+		}
+
+		result = append(result, types.Account{
 			Address: types.HexToAddress(address),
 			Balance: []types.Balance{
 				{
 					Coin:  types.GetBaseCoin(),
-					Value: helpers.BipToPip(big.NewInt(balance)),
+					Value: balance,
 				},
 			},
-		}
-		i++
+		})
 	}
 
 	return result
