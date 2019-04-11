@@ -38,14 +38,13 @@ func main() {
 	airdropBalances := map[string]*big.Int{}
 
 	reader := csv.NewReader(file)
-	reader.FieldsPerRecord = 4
+	reader.FieldsPerRecord = 5
 	rawCSVdata, err := reader.ReadAll()
 
 	p := big.NewFloat(0).SetInt(big.NewInt(0).Exp(big.NewInt(10), big.NewInt(18), nil))
 
 	for _, line := range rawCSVdata {
-		address, balMain, balBonus, balAirdrop := line[0], line[1], line[2], line[3]
-		isPoolAdmin := "false"
+		role, address, balMain, balBonus, balAirdrop := line[0], line[1], line[2], line[3], line[4]
 		if _, has := firstBalances[address]; !has {
 			firstBalances[address] = big.NewInt(0)
 			secondBalances[address] = big.NewInt(0)
@@ -61,7 +60,7 @@ func main() {
 
 		balMainFloat, _ := big.NewFloat(0).SetString(balMain)
 		balMainInt, _ := big.NewFloat(0).Mul(balMainFloat, p).Int(nil)
-		if balMainInt.Cmp(helpers.BipToPip(big.NewInt(1000000))) != -1 || isPoolAdmin == "true" {
+		if balMainInt.Cmp(helpers.BipToPip(big.NewInt(1000000))) != -1 || role == "pool_admin" {
 			firstBalances[address].Add(firstBalances[address], balMainInt)
 		} else {
 			secondBalances[address].Add(secondBalances[address], balMainInt)
@@ -84,7 +83,7 @@ func main() {
 		}
 
 		frozenFunds = append(frozenFunds, types.FrozenFund{
-			Height:       17280*8,
+			Height:       17280 * 8,
 			Address:      types.HexToAddress(address),
 			CandidateKey: []byte{0},
 			Coin:         types.GetBaseCoin(),
@@ -98,7 +97,7 @@ func main() {
 		}
 
 		frozenFunds = append(frozenFunds, types.FrozenFund{
-			Height:       17280*15,
+			Height:       17280 * 15,
 			Address:      types.HexToAddress(address),
 			CandidateKey: []byte{0},
 			Coin:         types.GetBaseCoin(),
@@ -112,7 +111,7 @@ func main() {
 		}
 
 		frozenFunds = append(frozenFunds, types.FrozenFund{
-			Height:       17280*29,
+			Height:       17280 * 29,
 			Address:      types.HexToAddress(address),
 			CandidateKey: []byte{0},
 			Coin:         types.GetBaseCoin(),
