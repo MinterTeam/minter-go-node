@@ -5,6 +5,7 @@
 IMPROVEMENT
 
 - [api] Fix list of endpoints
+- [cmd] Minter node now launched as `minter node` command
 
 BUG FIXES
 
