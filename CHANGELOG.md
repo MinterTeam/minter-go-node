@@ -2,6 +2,10 @@
 
 ## 0.19.0
 
+BREAKING CHANGES
+
+- [core] Add ChainID to transactions
+
 IMPROVEMENT
 
 - [api] Fix list of endpoints

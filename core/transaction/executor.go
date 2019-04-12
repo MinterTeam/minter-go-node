@@ -52,6 +52,12 @@ func RunTx(context *state.StateDB,
 			Log:  err.Error()}
 	}
 
+	if tx.ChainID != types.CurrentChainID {
+		return Response{
+			Code: code.WrongChainID,
+			Log:  "Wrong chain id"}
+	}
+
 	if !context.CoinExists(tx.GasCoin) {
 		return Response{
 			Code: code.CoinNotExists,

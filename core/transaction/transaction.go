@@ -43,6 +43,7 @@ var (
 
 type Transaction struct {
 	Nonce         uint64
+	ChainID       types.ChainID
 	GasPrice      uint32
 	GasCoin       types.CoinSymbol
 	Type          TxType

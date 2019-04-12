@@ -1,16 +1,25 @@
 package types
 
+type ChainID byte
+
+const (
+	ChainTestnet = 0x02
+	ChainMainnet = 0x01
+
+	CurrentChainID = ChainTestnet
+)
+
 func GetBaseCoin() CoinSymbol {
-	return getBaseCoin(2)
+	return getBaseCoin(CurrentChainID)
 }
 
-func getBaseCoin(chainID int) CoinSymbol {
+func getBaseCoin(chainID ChainID) CoinSymbol {
 	var coin CoinSymbol
 
 	switch chainID {
-	case 1:
+	case ChainMainnet:
 		copy(coin[:], []byte("BIP"))
-	case 2:
+	case ChainTestnet:
 		copy(coin[:], []byte("MNT"))
 	}
 
