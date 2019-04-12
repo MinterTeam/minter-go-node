@@ -83,7 +83,7 @@ func main() {
 		}
 
 		frozenFunds = append(frozenFunds, types.FrozenFund{
-			Height:       17280 * 8,
+			Height:       17280 * 1,
 			Address:      types.HexToAddress(address),
 			CandidateKey: []byte{0},
 			Coin:         types.GetBaseCoin(),
@@ -97,7 +97,7 @@ func main() {
 		}
 
 		frozenFunds = append(frozenFunds, types.FrozenFund{
-			Height:       17280 * 15,
+			Height:       17280 * 2,
 			Address:      types.HexToAddress(address),
 			CandidateKey: []byte{0},
 			Coin:         types.GetBaseCoin(),
@@ -111,7 +111,7 @@ func main() {
 		}
 
 		frozenFunds = append(frozenFunds, types.FrozenFund{
-			Height:       17280 * 29,
+			Height:       17280 * 3,
 			Address:      types.HexToAddress(address),
 			CandidateKey: []byte{0},
 			Coin:         types.GetBaseCoin(),
