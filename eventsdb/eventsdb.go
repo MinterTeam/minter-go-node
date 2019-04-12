@@ -11,43 +11,51 @@ import (
 
 var cdc = amino.NewCodec()
 
-var eventsEnabled = !config.GetConfig().ValidatorMode
-
-var edb *EventsDB
-var godb *db.GoLevelDB
+var edb IEventsDB
 
 func init() {
 	RegisterAminoEvents(cdc)
 }
 
-func GetCurrentDB() *db.GoLevelDB {
-	if godb != nil {
-		return godb
+func InitDB(cfg *config.Config) {
+	if cfg.ValidatorMode {
+		edb = NOOPEventsDB{}
+	} else {
+		edb = NewEventsDB(db.NewDB("events", db.DBBackendType(cfg.DBBackend), utils.GetMinterHome()+"/data"))
 	}
-
-	gdb, err := db.NewGoLevelDB("events", utils.GetMinterHome()+"/data")
-
-	if err != nil {
-		panic(err)
-	}
-
-	godb = gdb
-
-	return gdb
 }
 
-func GetCurrent() *EventsDB {
-	if edb != nil {
-		return edb
+func GetCurrent() IEventsDB {
+	if edb == nil {
+		panic("Events db is not initialized")
 	}
-
-	edb = NewEventsDB(GetCurrentDB())
 
 	return edb
 }
 
+type IEventsDB interface {
+	AddEvent(height uint64, event Event)
+	LoadEvents(height uint64) Events
+	FlushEvents() error
+}
+
+type NOOPEventsDB struct {
+}
+
+func (NOOPEventsDB) AddEvent(height uint64, event Event) {
+
+}
+
+func (NOOPEventsDB) LoadEvents(height uint64) Events {
+	return Events{}
+}
+
+func (NOOPEventsDB) FlushEvents() error {
+	return nil
+}
+
 type EventsDB struct {
-	db    *db.GoLevelDB
+	db    db.DB
 	cache *eventsCache
 
 	lock sync.RWMutex
@@ -82,7 +90,7 @@ func (c *eventsCache) Clear() {
 	c.events = nil
 }
 
-func NewEventsDB(db *db.GoLevelDB) *EventsDB {
+func NewEventsDB(db db.DB) *EventsDB {
 	return &EventsDB{
 		db: db,
 		cache: &eventsCache{
@@ -95,24 +103,15 @@ func NewEventsDB(db *db.GoLevelDB) *EventsDB {
 }
 
 func (db *EventsDB) AddEvent(height uint64, event Event) {
-	if !eventsEnabled {
-		return
-	}
-
 	events := db.getEvents(height)
 	db.setEvents(height, append(events, event))
 }
 
 func (db *EventsDB) FlushEvents() error {
-	if !eventsEnabled {
-		return nil
-	}
-
 	height := db.cache.height
 
 	events := db.getEvents(height)
 	bytes, err := cdc.MarshalBinaryBare(events)
-
 	if err != nil {
 		return err
 	}
@@ -138,7 +137,6 @@ func (db *EventsDB) LoadEvents(height uint64) Events {
 
 	var decoded Events
 	err := cdc.UnmarshalBinaryBare(data, &decoded)
-
 	if err != nil {
 		panic(err)
 	}
