@@ -8,6 +8,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/core/validators"
 	"github.com/MinterTeam/minter-go-node/eventsdb"
+	"github.com/MinterTeam/minter-go-node/eventsdb/events"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/rlp"
@@ -305,7 +306,7 @@ func (s *StateDB) deleteStateObject(stateObject *stateAccount) {
 // deleteStateCoin removes the given object from the state trie.
 func (s *StateDB) deleteStateCoin(stateCoin *stateCoin) {
 	symbol := stateCoin.Symbol()
-	eventsdb.GetCurrent().AddEvent(s.height, eventsdb.CoinLiquidationEvent{
+	eventsdb.GetCurrent().AddEvent(s.height, events.CoinLiquidationEvent{
 		Coin: symbol,
 	})
 	s.iavl.Remove(append(coinPrefix, symbol[:]...))
@@ -941,8 +942,8 @@ func (s *StateDB) PayRewards() {
 			DAOReward.Div(DAOReward, big.NewInt(100))
 			s.AddBalance(dao.Address, types.GetBaseCoin(), DAOReward)
 			remainder.Sub(remainder, DAOReward)
-			edb.AddEvent(s.height, eventsdb.RewardEvent{
-				Role:            eventsdb.RoleDAO,
+			edb.AddEvent(s.height, events.RewardEvent{
+				Role:            events.RoleDAO,
 				Address:         dao.Address,
 				Amount:          DAOReward.Bytes(),
 				ValidatorPubKey: validator.PubKey,
@@ -954,8 +955,8 @@ func (s *StateDB) PayRewards() {
 			DevelopersReward.Div(DevelopersReward, big.NewInt(100))
 			s.AddBalance(developers.Address, types.GetBaseCoin(), DevelopersReward)
 			remainder.Sub(remainder, DevelopersReward)
-			edb.AddEvent(s.height, eventsdb.RewardEvent{
-				Role:            eventsdb.RoleDevelopers,
+			edb.AddEvent(s.height, events.RewardEvent{
+				Role:            events.RoleDevelopers,
 				Address:         developers.Address,
 				Amount:          DevelopersReward.Bytes(),
 				ValidatorPubKey: validator.PubKey,
@@ -971,8 +972,8 @@ func (s *StateDB) PayRewards() {
 			totalReward.Sub(totalReward, validatorReward)
 			s.AddBalance(validator.RewardAddress, types.GetBaseCoin(), validatorReward)
 			remainder.Sub(remainder, validatorReward)
-			edb.AddEvent(s.height, eventsdb.RewardEvent{
-				Role:            eventsdb.RoleValidator,
+			edb.AddEvent(s.height, events.RewardEvent{
+				Role:            events.RoleValidator,
 				Address:         validator.RewardAddress,
 				Amount:          validatorReward.Bytes(),
 				ValidatorPubKey: validator.PubKey,
@@ -1000,8 +1001,8 @@ func (s *StateDB) PayRewards() {
 				s.AddBalance(stake.Owner, types.GetBaseCoin(), reward)
 				remainder.Sub(remainder, reward)
 
-				edb.AddEvent(s.height, eventsdb.RewardEvent{
-					Role:            eventsdb.RoleDelegator,
+				edb.AddEvent(s.height, events.RewardEvent{
+					Role:            events.RoleDelegator,
 					Address:         stake.Owner,
 					Amount:          reward.Bytes(),
 					ValidatorPubKey: candidate.PubKey,
@@ -1241,7 +1242,7 @@ func (s *StateDB) SetValidatorAbsent(address [20]byte) {
 						s.AddTotalSlashed(slashed)
 					}
 
-					edb.AddEvent(s.height, eventsdb.SlashEvent{
+					edb.AddEvent(s.height, events.SlashEvent{
 						Address:         stake.Owner,
 						Amount:          slashed.Bytes(),
 						Coin:            stake.Coin,
@@ -1309,7 +1310,7 @@ func (s *StateDB) PunishByzantineValidator(address [20]byte) {
 					s.AddTotalSlashed(slashed)
 				}
 
-				edb.AddEvent(s.height, eventsdb.SlashEvent{
+				edb.AddEvent(s.height, events.SlashEvent{
 					Address:         stake.Owner,
 					Amount:          slashed.Bytes(),
 					Coin:            stake.Coin,
@@ -1506,7 +1507,7 @@ func (s *StateDB) ClearStakes() {
 			candidates.data[i].Stakes = candidates.data[i].Stakes[:MaxDelegatorsPerCandidate]
 
 			for _, stake := range dropped {
-				eventsdb.GetCurrent().AddEvent(s.height, eventsdb.UnbondEvent{
+				eventsdb.GetCurrent().AddEvent(s.height, events.UnbondEvent{
 					Address:         stake.Owner,
 					Amount:          stake.Value.Bytes(),
 					Coin:            stake.Coin,

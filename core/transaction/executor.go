@@ -22,17 +22,23 @@ const (
 )
 
 type Response struct {
-	Code      uint32          `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"`
-	Data      []byte          `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
-	Log       string          `protobuf:"bytes,3,opt,name=log,proto3" json:"log,omitempty"`
-	Info      string          `protobuf:"bytes,4,opt,name=info,proto3" json:"info,omitempty"`
-	GasWanted int64           `protobuf:"varint,5,opt,name=gas_wanted,json=gasWanted,proto3" json:"gas_wanted,omitempty"`
-	GasUsed   int64           `protobuf:"varint,6,opt,name=gas_used,json=gasUsed,proto3" json:"gas_used,omitempty"`
-	Tags      []common.KVPair `protobuf:"bytes,7,rep,name=tags" json:"tags,omitempty"`
-	GasPrice  *big.Int
+	Code      uint32          `json:"code,omitempty"`
+	Data      []byte          `json:"data,omitempty"`
+	Log       string          `json:"log,omitempty"`
+	Info      string          `json:"info,omitempty"`
+	GasWanted int64           `json:"gas_wanted,omitempty"`
+	GasUsed   int64           `json:"gas_used,omitempty"`
+	Tags      []common.KVPair `json:"tags,omitempty"`
+	GasPrice  *big.Int        `json:"gas_price"`
 }
 
-func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPool *big.Int, currentBlock uint64, currentMempool sync.Map, minGasPrice *big.Int) Response {
+func RunTx(context *state.StateDB,
+	isCheck bool,
+	rawTx []byte,
+	rewardPool *big.Int,
+	currentBlock uint64,
+	currentMempool sync.Map,
+	minGasPrice *big.Int) Response {
 	if len(rawTx) > maxTxLength {
 		return Response{
 			Code: code.TxTooLarge,

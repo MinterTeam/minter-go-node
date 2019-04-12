@@ -2,6 +2,7 @@ package state
 
 import (
 	"github.com/MinterTeam/minter-go-node/eventsdb"
+	"github.com/MinterTeam/minter-go-node/eventsdb/events"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"io"
 
@@ -119,7 +120,7 @@ func (c *stateFrozenFund) punishFund(context *StateDB, candidateAddress [20]byte
 				context.AddTotalSlashed(slashed)
 			}
 
-			edb.AddEvent(fromBlock, eventsdb.SlashEvent{
+			edb.AddEvent(fromBlock, events.SlashEvent{
 				Address:         item.Address,
 				Amount:          slashed.Bytes(),
 				Coin:            item.Coin,
