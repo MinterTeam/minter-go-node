@@ -6,7 +6,6 @@ const (
 	SendTx                int64 = 10
 	CreateMultisig        int64 = 100
 	ConvertTx             int64 = 100
-	CreateTx              int64 = 1000
 	DeclareCandidacyTx    int64 = 10000
 	DelegateTx            int64 = 200
 	UnbondTx              int64 = 200

@@ -3,11 +3,12 @@ package api
 import (
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/eventsdb"
+	"github.com/MinterTeam/minter-go-node/eventsdb/events"
 	"github.com/tendermint/tendermint/libs/db"
 )
 
 type EventsResponse struct {
-	Events eventsdb.Events `json:"events"`
+	Events events.Events `json:"events"`
 }
 
 func Events(height uint64) (*EventsResponse, error) {

@@ -67,7 +67,7 @@ func RunTx(context *state.StateDB,
 	if isCheck && tx.GasPrice < minGasPrice {
 		return Response{
 			Code: code.TooLowGasPrice,
-			Log:  fmt.Sprintf("Gas price of tx is too low to be included in mempool. Expected %s", minGasPrice),
+			Log:  fmt.Sprintf("Gas price of tx is too low to be included in mempool. Expected %d", minGasPrice),
 		}
 	}
 

@@ -1,7 +1,5 @@
 package api
 
-import "math/big"
-
-func MinGasPrice() (*big.Int, error) {
+func MinGasPrice() (uint32, error) {
 	return blockchain.MinGasPrice(), nil
 }

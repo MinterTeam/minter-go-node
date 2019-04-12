@@ -15,6 +15,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
+	"github.com/MinterTeam/minter-go-node/eventsdb"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/rlp"
@@ -60,6 +61,7 @@ func initNode() {
 	}
 
 	minterCfg := config.GetConfig()
+	eventsdb.InitDB(minterCfg)
 	cfg = config.GetTmConfig(minterCfg)
 	cfg.Consensus.TimeoutPropose = 0
 	cfg.Consensus.TimeoutPrecommit = 0
@@ -151,7 +153,8 @@ func TestSendTx(t *testing.T) {
 
 	tx := transaction.Transaction{
 		Nonce:         nonce,
-		GasPrice:      big.NewInt(1),
+		ChainID:       types.ChainTestnet,
+		GasPrice:      1,
 		GasCoin:       types.GetBaseCoin(),
 		Type:          transaction.TypeSend,
 		Data:          encodedData,
@@ -215,7 +218,8 @@ func TestSmallStakeValidator(t *testing.T) {
 
 	tx := transaction.Transaction{
 		Nonce:         nonce,
-		GasPrice:      big.NewInt(1),
+		ChainID:       types.ChainTestnet,
+		GasPrice:      1,
 		GasCoin:       types.GetBaseCoin(),
 		Type:          transaction.TypeDeclareCandidacy,
 		Data:          encodedData,
@@ -249,7 +253,8 @@ func TestSmallStakeValidator(t *testing.T) {
 
 	tx = transaction.Transaction{
 		Nonce:         nonce,
-		GasPrice:      big.NewInt(1),
+		GasPrice:      1,
+		ChainID:       types.ChainTestnet,
 		GasCoin:       types.GetBaseCoin(),
 		Type:          transaction.TypeSetCandidateOnline,
 		Data:          encodedData,
@@ -316,7 +321,8 @@ func TestSmallStakeValidator(t *testing.T) {
 
 	tx = transaction.Transaction{
 		Nonce:         nonce,
-		GasPrice:      big.NewInt(1),
+		GasPrice:      1,
+		ChainID:       types.ChainTestnet,
 		GasCoin:       types.GetBaseCoin(),
 		Type:          transaction.TypeSetCandidateOnline,
 		Data:          encodedData,

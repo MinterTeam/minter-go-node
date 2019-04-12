@@ -33,7 +33,7 @@ type BlockTransactionResponse struct {
 	RawTx       string             `json:"raw_tx"`
 	From        string             `json:"from"`
 	Nonce       uint64             `json:"nonce"`
-	GasPrice    *big.Int           `json:"gas_price"`
+	GasPrice    uint32             `json:"gas_price"`
 	Type        transaction.TxType `json:"type"`
 	Data        json.RawMessage    `json:"data"`
 	Payload     []byte             `json:"payload"`
@@ -76,11 +76,6 @@ func Block(height int64) (*BlockResponse, error) {
 			return nil, err
 		}
 
-		gas := tx.Gas()
-		if tx.Type == transaction.TypeCreateCoin {
-			gas += tx.GetDecodedData().(*transaction.CreateCoinData).Commission()
-		}
-
 		txs[i] = BlockTransactionResponse{
 			Hash:        fmt.Sprintf("Mt%x", rawTx.Hash()),
 			RawTx:       fmt.Sprintf("%x", []byte(rawTx)),
@@ -91,7 +86,7 @@ func Block(height int64) (*BlockResponse, error) {
 			Data:        data,
 			Payload:     tx.Payload,
 			ServiceData: tx.ServiceData,
-			Gas:         gas,
+			Gas:         tx.Gas(),
 			GasCoin:     tx.GasCoin,
 			Tags:        tags,
 			Code:        blockResults.Results.DeliverTx[i].Code,

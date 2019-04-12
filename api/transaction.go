@@ -30,11 +30,6 @@ func Transaction(hash []byte) (*TransactionResponse, error) {
 		return nil, err
 	}
 
-	gas := decodedTx.Gas()
-	if decodedTx.Type == transaction.TypeCreateCoin {
-		gas += decodedTx.GetDecodedData().(*transaction.CreateCoinData).Commission()
-	}
-
 	return &TransactionResponse{
 		Hash:     common.HexBytes(tx.Tx.Hash()),
 		RawTx:    fmt.Sprintf("%x", []byte(tx.Tx)),
@@ -44,7 +39,7 @@ func Transaction(hash []byte) (*TransactionResponse, error) {
 		Nonce:    decodedTx.Nonce,
 		GasPrice: decodedTx.GasPrice,
 		GasCoin:  decodedTx.GasCoin,
-		Gas:      gas,
+		Gas:      decodedTx.Gas(),
 		Type:     decodedTx.Type,
 		Data:     data,
 		Payload:  decodedTx.Payload,

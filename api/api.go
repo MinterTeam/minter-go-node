@@ -6,7 +6,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/minter"
 	"github.com/MinterTeam/minter-go-node/core/state"
-	"github.com/MinterTeam/minter-go-node/eventsdb"
+	"github.com/MinterTeam/minter-go-node/eventsdb/events"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/rpc/lib/server"
 	"github.com/rs/cors"
@@ -57,7 +57,7 @@ var Routes = map[string]*rpcserver.RPCFunc{
 func RunAPI(b *minter.Blockchain, tmRPC *rpc.Local, cfg *config.Config) {
 	minterCfg = cfg
 	RegisterCryptoAmino(cdc)
-	eventsdb.RegisterAminoEvents(cdc)
+	events.RegisterAminoEvents(cdc)
 	RegisterEvidenceMessages(cdc)
 
 	client = tmRPC

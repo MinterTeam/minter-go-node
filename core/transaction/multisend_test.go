@@ -40,8 +40,9 @@ func TestMultisendTx(t *testing.T) {
 
 	tx := Transaction{
 		Nonce:         1,
-		GasPrice:      big.NewInt(1),
+		GasPrice:      1,
 		GasCoin:       coin,
+		ChainID:       types.ChainTestnet,
 		Type:          TypeMultisend,
 		Data:          encodedData,
 		SignatureType: SigTypeSingle,
@@ -57,7 +58,7 @@ func TestMultisendTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, sync.Map{}, big.NewInt(0))
+	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, sync.Map{}, 0)
 
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error: %s", response.Log)
