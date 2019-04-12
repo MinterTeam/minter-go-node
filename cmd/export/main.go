@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/MinterTeam/go-amino"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
+	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/appdb"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/tendermint/tendermint/libs/common"
@@ -23,9 +24,9 @@ func main() {
 		panic(err)
 	}
 
-	applicationDB := appdb.NewAppDB()
+	applicationDB := appdb.NewAppDB(config.GetConfig())
 	height := applicationDB.GetLastHeight()
-	currentState, err := state.New(height, ldb)
+	currentState, err := state.New(height, ldb, false)
 	if err != nil {
 		panic(err)
 	}

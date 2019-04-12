@@ -68,12 +68,12 @@ type Blockchain struct {
 }
 
 // Creates Minter Blockchain instance, should be only called once
-func NewMinterBlockchain() *Blockchain {
-	dbType := db.DBBackendType(config.GetConfig().DBBackend)
+func NewMinterBlockchain(cfg *config.Config) *Blockchain {
+	dbType := db.DBBackendType(cfg.DBBackend)
 	ldb := db.NewDB("state", dbType, utils.GetMinterHome()+"/data")
 
 	// Initiate Application DB. Used for persisting data like current block, validators, etc.
-	applicationDB := appdb.NewAppDB()
+	applicationDB := appdb.NewAppDB(cfg)
 
 	blockchain = &Blockchain{
 		stateDB:             ldb,
@@ -85,7 +85,7 @@ func NewMinterBlockchain() *Blockchain {
 
 	// Set stateDeliver and stateCheck
 	var err error
-	blockchain.stateDeliver, err = state.New(blockchain.height, blockchain.stateDB)
+	blockchain.stateDeliver, err = state.New(blockchain.height, blockchain.stateDB, cfg.KeepStateHistory)
 	if err != nil {
 		panic(err)
 	}
@@ -469,7 +469,7 @@ func (app *Blockchain) GetStateForHeight(height uint64) (*state.StateDB, error) 
 	app.lock.RLock()
 	defer app.lock.RUnlock()
 
-	s, err := state.New(height, app.stateDB)
+	s, err := state.New(height, app.stateDB, false)
 	if err != nil {
 		return nil, rpctypes.RPCError{Code: 404, Message: "State at given height not found", Data: err.Error()}
 	}

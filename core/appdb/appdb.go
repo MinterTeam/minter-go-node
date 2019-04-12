@@ -144,8 +144,8 @@ func (appDB *AppDB) SetLastBlocksTimeDelta(height uint64, delta int) {
 	appDB.db.Set([]byte(blockTimeDeltaPath), data)
 }
 
-func NewAppDB() *AppDB {
+func NewAppDB(cfg *config.Config) *AppDB {
 	return &AppDB{
-		db: db.NewDB(dbName, db.DBBackendType(config.GetConfig().DBBackend), utils.GetMinterHome()+"/data"),
+		db: db.NewDB(dbName, db.DBBackendType(cfg.DBBackend), utils.GetMinterHome()+"/data"),
 	}
 }

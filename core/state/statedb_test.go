@@ -11,7 +11,7 @@ import (
 )
 
 func getState() *StateDB {
-	s, err := New(0, db.NewMemDB())
+	s, err := New(0, db.NewMemDB(), false)
 	if err != nil {
 		panic(err)
 	}

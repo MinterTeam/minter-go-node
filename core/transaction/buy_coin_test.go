@@ -20,7 +20,7 @@ var (
 )
 
 func getState() *state.StateDB {
-	s, err := state.New(0, db.NewMemDB())
+	s, err := state.New(0, db.NewMemDB(), false)
 
 	if err != nil {
 		panic(err)

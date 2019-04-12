@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/MinterTeam/go-amino"
-	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/rewards"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/core/validators"
@@ -40,8 +39,6 @@ var (
 	validatorsKey     = []byte("v")
 	maxGasKey         = []byte("g")
 	totalSlashedKey   = []byte("s")
-
-	cfg = config.GetConfig()
 )
 
 type StateDB struct {
@@ -71,7 +68,8 @@ type StateDB struct {
 
 	stakeCache map[types.CoinSymbol]StakeCache
 
-	lock sync.Mutex
+	lock             sync.Mutex
+	keepStateHistory bool
 }
 
 type StakeCache struct {
@@ -100,7 +98,7 @@ func NewForCheck(s *StateDB) *StateDB {
 	}
 }
 
-func New(height uint64, db dbm.DB) (*StateDB, error) {
+func New(height uint64, db dbm.DB, keepState bool) (*StateDB, error) {
 	tree := NewMutableTree(db)
 
 	_, err := tree.LoadVersion(int64(height))
@@ -126,6 +124,7 @@ func New(height uint64, db dbm.DB) (*StateDB, error) {
 		totalSlashed:          nil,
 		totalSlashedDirty:     false,
 		stakeCache:            make(map[types.CoinSymbol]StakeCache),
+		keepStateHistory:      keepState,
 	}, nil
 }
 
@@ -722,7 +721,7 @@ func (s *StateDB) Commit() (root []byte, version int64, err error) {
 
 	hash, version, err := s.iavl.SaveVersion()
 
-	if !cfg.KeepStateHistory && version > 1 {
+	if !s.keepStateHistory && version > 1 {
 		err = s.iavl.DeleteVersion(version - 1)
 
 		if err != nil {

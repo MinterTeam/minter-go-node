@@ -155,9 +155,7 @@ func (cfg *Config) SetRoot(root string) *Config {
 	return cfg
 }
 
-func GetTmConfig() *tmConfig.Config {
-	cfg := GetConfig()
-
+func GetTmConfig(cfg *Config) *tmConfig.Config {
 	return &tmConfig.Config{
 		BaseConfig: tmConfig.BaseConfig{
 			RootDir:                 cfg.RootDir,

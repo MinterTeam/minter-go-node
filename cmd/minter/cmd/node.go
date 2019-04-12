@@ -31,8 +31,7 @@ var RunNode = &cobra.Command{
 }
 
 func runNode() error {
-	cfg := config.GetConfig()
-	tmConfig := config.GetTmConfig()
+	tmConfig := config.GetTmConfig(cfg)
 
 	if err := common.EnsureDir(utils.GetMinterHome()+"/config", 0777); err != nil {
 		return err
@@ -42,17 +41,7 @@ func runNode() error {
 		return err
 	}
 
-	//if *utils.ShowNodeId {
-	//	showNodeID(cfg)
-	//	return
-	//}
-	//
-	//if *utils.ShowValidator {
-	//	showValidator(cfg)
-	//	return
-	//}
-
-	app := minter.NewMinterBlockchain()
+	app := minter.NewMinterBlockchain(cfg)
 
 	// update BlocksTimeDelta in case it was corrupted
 	updateBlocksTimeDelta(app, tmConfig)
@@ -69,7 +58,7 @@ func runNode() error {
 	app.SetTmNode(node)
 
 	if !cfg.ValidatorMode {
-		go api.RunAPI(app, client)
+		go api.RunAPI(app, client, cfg)
 		go gui.Run(cfg.GUIListenAddress)
 	}
 
