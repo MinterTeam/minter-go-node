@@ -87,7 +87,7 @@ func (data DeclareCandidacyData) Run(tx *Transaction, context *state.StateDB, is
 			Log:  fmt.Sprintf("Given stake is too low")}
 	}
 
-	commissionInBaseCoin := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
+	commissionInBaseCoin := big.NewInt(0).Mul(big.NewInt(int64(tx.GasPrice)), big.NewInt(tx.Gas()))
 	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 

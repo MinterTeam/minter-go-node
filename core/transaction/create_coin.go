@@ -113,7 +113,7 @@ func (data CreateCoinData) Run(tx *Transaction, context *state.StateDB, isCheck 
 		return *response
 	}
 
-	commissionInBaseCoin := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()+data.Commission()))
+	commissionInBaseCoin := big.NewInt(0).Mul(big.NewInt(int64(tx.GasPrice)), big.NewInt(tx.Gas()+data.Commission()))
 	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 

@@ -44,7 +44,7 @@ func (data RedeemCheckData) BasicCheck(tx *Transaction, context *state.StateDB) 
 	}
 
 	// fixed potential problem with making too high commission for sender
-	if tx.GasPrice.Cmp(big.NewInt(1)) == 1 {
+	if tx.GasPrice != 1 {
 		return &Response{
 			Code: code.TooHighGasPrice,
 			Log:  fmt.Sprintf("Gas price for check is limited to 1")}
@@ -138,7 +138,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context *state.StateDB, isCheck
 			Log:  fmt.Sprintf("Invalid proof")}
 	}
 
-	commissionInBaseCoin := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
+	commissionInBaseCoin := big.NewInt(0).Mul(big.NewInt(int64(tx.GasPrice)), big.NewInt(tx.Gas()))
 	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 

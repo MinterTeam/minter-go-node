@@ -16,7 +16,7 @@ var (
 )
 
 const (
-	maxTxLength          = maxPayloadLength + maxServiceDataLength + (1024 * 4) // TODO: make some estimations
+	maxTxLength          = 7168
 	maxPayloadLength     = 1024
 	maxServiceDataLength = 128
 )
@@ -29,7 +29,7 @@ type Response struct {
 	GasWanted int64           `json:"gas_wanted,omitempty"`
 	GasUsed   int64           `json:"gas_used,omitempty"`
 	Tags      []common.KVPair `json:"tags,omitempty"`
-	GasPrice  *big.Int        `json:"gas_price"`
+	GasPrice  uint32          `json:"gas_price"`
 }
 
 func RunTx(context *state.StateDB,
@@ -38,7 +38,7 @@ func RunTx(context *state.StateDB,
 	rewardPool *big.Int,
 	currentBlock uint64,
 	currentMempool sync.Map,
-	minGasPrice *big.Int) Response {
+	minGasPrice uint32) Response {
 	if len(rawTx) > maxTxLength {
 		return Response{
 			Code: code.TxTooLarge,
@@ -58,7 +58,7 @@ func RunTx(context *state.StateDB,
 			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin)}
 	}
 
-	if isCheck && tx.GasPrice.Cmp(minGasPrice) == -1 {
+	if isCheck && tx.GasPrice < minGasPrice {
 		return Response{
 			Code: code.TooLowGasPrice,
 			Log:  fmt.Sprintf("Gas price of tx is too low to be included in mempool. Expected %s", minGasPrice),
