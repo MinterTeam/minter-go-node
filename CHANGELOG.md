@@ -5,6 +5,7 @@
 BREAKING CHANGES
 
 - [core] Add ChainID to transactions
+- [core] Add ChainID to check
 - [core] Simplify coin creation commissions (remove base commission)
 
 IMPROVEMENT

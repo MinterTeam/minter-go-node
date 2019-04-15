@@ -37,6 +37,12 @@ func (data RedeemCheckData) BasicCheck(tx *Transaction, context *state.StateDB) 
 			Log:  "Incorrect tx data"}
 	}
 
+	if tx.ChainID != types.CurrentChainID {
+		return &Response{
+			Code: code.WrongChainID,
+			Log:  "Wrong chain id"}
+	}
+
 	if tx.GasCoin != types.GetBaseCoin() {
 		return &Response{
 			Code: code.WrongGasCoin,

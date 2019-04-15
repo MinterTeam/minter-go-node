@@ -18,6 +18,7 @@ var (
 
 type Check struct {
 	Nonce    []byte
+	ChainID  types.ChainID
 	DueBlock uint64
 	Coin     types.CoinSymbol
 	Value    *big.Int
