@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	NetworkId = "minter-test-network-37"
+	NetworkId = "minter-test-network-38"
 
 	// LogFormatPlain is a format for colored text
 	LogFormatPlain = "plain"

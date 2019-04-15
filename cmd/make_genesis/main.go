@@ -160,7 +160,7 @@ func main() {
 
 	// Compose Genesis
 	genesis := tmTypes.GenesisDoc{
-		GenesisTime: time.Date(2019, time.April, 15, 17, 0, 0, 0, time.UTC),
+		GenesisTime: time.Date(2019, time.April, 17, 17, 0, 0, 0, time.UTC),
 		ChainID:     networkId,
 		ConsensusParams: &tmTypes.ConsensusParams{
 			Block: tmTypes.BlockParams{
