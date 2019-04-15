@@ -135,6 +135,16 @@
         "nonce": "0"
       },
       {
+        "address": "Mx0f3794bdc6a424676db8f2cc62c6be0ff04f48b3",
+        "balance": [
+          {
+            "coin": "MNT",
+            "value": "342878120000000003932160"
+          }
+        ],
+        "nonce": "0"
+      },
+      {
         "address": "Mx2a89a15e5be1cc9cfc8e6a28adcb2107e814bce0",
         "balance": [
           {
@@ -150,6 +160,16 @@
           {
             "coin": "MNT",
             "value": "1505261154375920988979200"
+          }
+        ],
+        "nonce": "0"
+      },
+      {
+        "address": "Mx4ea252d237537126e02db0d48b23f7a48b6a7c9e",
+        "balance": [
+          {
+            "coin": "MNT",
+            "value": "761598000000000046661632"
           }
         ],
         "nonce": "0"
@@ -199,7 +219,7 @@
         "balance": [
           {
             "coin": "MNT",
-            "value": "7830919594757594409861120"
+            "value": "8033389553980597063385088"
           }
         ],
         "nonce": "0"
@@ -245,6 +265,26 @@
         "nonce": "0"
       },
       {
+        "address": "Mxb1a027b2ee9deaf3c60cf0b5673396c8ee99c946",
+        "balance": [
+          {
+            "coin": "MNT",
+            "value": "999999999999999983222784"
+          }
+        ],
+        "nonce": "0"
+      },
+      {
+        "address": "Mxc8cd3e03e6589cca50aaffb09012a0dab3721935",
+        "balance": [
+          {
+            "coin": "MNT",
+            "value": "999999999999999983222784"
+          }
+        ],
+        "nonce": "0"
+      },
+      {
         "address": "Mxe059334c5c98dd01b5a3e8da2b7f9e36f2a41379",
         "balance": [
           {
@@ -269,7 +309,17 @@
         "balance": [
           {
             "coin": "MNT",
-            "value": "152346186889730736080814080"
+            "value": "148039240810507733427027968"
+          }
+        ],
+        "nonce": "0"
+      },
+      {
+        "address": "Mxf07dc703fae3608abf29719d052a1b527b1dd9f8",
+        "balance": [
+          {
+            "coin": "MNT",
+            "value": "999999999999999983222784"
           }
         ],
         "nonce": "0"
@@ -317,13 +367,6 @@
         "candidate_key": "Mp00",
         "coin": "MNT",
         "value": "3109861134906000146432"
-      },
-      {
-        "height": "17280",
-        "address": "Mx0f3794bdc6a424676db8f2cc62c6be0ff04f48b3",
-        "candidate_key": "Mp00",
-        "coin": "MNT",
-        "value": "342878120000000003932160"
       },
       {
         "height": "17280",
@@ -544,13 +587,6 @@
       },
       {
         "height": "17280",
-        "address": "Mx4ea252d237537126e02db0d48b23f7a48b6a7c9e",
-        "candidate_key": "Mp00",
-        "coin": "MNT",
-        "value": "761598000000000046661632"
-      },
-      {
-        "height": "17280",
         "address": "Mx501415ead79b847c8b40bbcc425a8942022c0c0c",
         "candidate_key": "Mp00",
         "coin": "MNT",
@@ -653,13 +689,6 @@
         "candidate_key": "Mp00",
         "coin": "MNT",
         "value": "100000000000000000000"
-      },
-      {
-        "height": "17280",
-        "address": "Mx67e0a4dac5d25d4727dcae9ca1975b74c3de7c84",
-        "candidate_key": "Mp00",
-        "coin": "MNT",
-        "value": "202469959223002653523968"
       },
       {
         "height": "17280",
@@ -1006,13 +1035,6 @@
       },
       {
         "height": "17280",
-        "address": "Mxb1a027b2ee9deaf3c60cf0b5673396c8ee99c946",
-        "candidate_key": "Mp00",
-        "coin": "MNT",
-        "value": "999999999999999983222784"
-      },
-      {
-        "height": "17280",
         "address": "Mxb28e3426a8e4213fd6856175af2efc8860fd90c2",
         "candidate_key": "Mp00",
         "coin": "MNT",
@@ -1101,13 +1123,6 @@
         "candidate_key": "Mp00",
         "coin": "MNT",
         "value": "99999999999999991611392"
-      },
-      {
-        "height": "17280",
-        "address": "Mxc8cd3e03e6589cca50aaffb09012a0dab3721935",
-        "candidate_key": "Mp00",
-        "coin": "MNT",
-        "value": "999999999999999983222784"
       },
       {
         "height": "17280",
@@ -1241,13 +1256,6 @@
         "candidate_key": "Mp00",
         "coin": "MNT",
         "value": "4658332999999999705088"
-      },
-      {
-        "height": "17280",
-        "address": "Mxf07dc703fae3608abf29719d052a1b527b1dd9f8",
-        "candidate_key": "Mp00",
-        "coin": "MNT",
-        "value": "999999999999999983222784"
       },
       {
         "height": "17280",

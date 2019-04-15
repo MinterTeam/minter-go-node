@@ -60,7 +60,7 @@ func main() {
 
 		balMainFloat, _ := big.NewFloat(0).SetString(balMain)
 		balMainInt, _ := big.NewFloat(0).Mul(balMainFloat, p).Int(nil)
-		if balMainInt.Cmp(helpers.BipToPip(big.NewInt(1000000))) != -1 || role == "pool_admin" {
+		if balMainInt.Cmp(helpers.BipToPip(big.NewInt(100000))) != -1 || role == "pool_admin" {
 			firstBalances[address].Add(firstBalances[address], balMainInt)
 		} else {
 			secondBalances[address].Add(secondBalances[address], balMainInt)
