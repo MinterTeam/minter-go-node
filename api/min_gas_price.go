@@ -1,5 +1,5 @@
 package api
 
-func MinGasPrice() (uint32, error) {
-	return blockchain.MinGasPrice(), nil
+func MinGasPrice() (uint64, error) {
+	return uint64(blockchain.MinGasPrice()), nil
 }
