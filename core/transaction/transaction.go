@@ -218,6 +218,7 @@ func (tx *Transaction) Sender() (types.Address, error) {
 func (tx *Transaction) Hash() types.Hash {
 	return rlpHash([]interface{}{
 		tx.Nonce,
+		tx.ChainID,
 		tx.GasPrice,
 		tx.GasCoin,
 		tx.Type,
