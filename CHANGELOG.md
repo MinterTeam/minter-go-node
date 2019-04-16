@@ -16,7 +16,7 @@ IMPROVEMENT
 BUG FIXES
 
 - [core] Fix incorrect coin conversion
-- [tendermint] Update to [v0.31.4](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0313) 
+- [tendermint] Update to [v0.31.5](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0315) 
 
 ## 0.18.1
 
