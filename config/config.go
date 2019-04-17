@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	NetworkId = "minter-test-network-37"
+	NetworkId = "minter-test-network-38"
 
 	// LogFormatPlain is a format for colored text
 	LogFormatPlain = "plain"
@@ -36,21 +36,6 @@ var (
 	defaultPrivValStatePath = filepath.Join(defaultConfigDir, defaultPrivValStateName)
 	defaultNodeKeyPath      = filepath.Join(defaultConfigDir, defaultNodeKeyName)
 )
-
-func init() {
-	homeDir := utils.GetMinterHome()
-	viper.SetConfigName("config")
-	viper.AddConfigPath(filepath.Join(homeDir, "config"))
-
-	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		// stderr, so if we redirect output to json file, this doesn't appear
-		// fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
-	} else if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-		// ignore not found error, return other errors
-		panic(err)
-	}
-}
 
 func DefaultConfig() *Config {
 	cfg := defaultConfig()
@@ -155,9 +140,7 @@ func (cfg *Config) SetRoot(root string) *Config {
 	return cfg
 }
 
-func GetTmConfig() *tmConfig.Config {
-	cfg := GetConfig()
-
+func GetTmConfig(cfg *Config) *tmConfig.Config {
 	return &tmConfig.Config{
 		BaseConfig: tmConfig.BaseConfig{
 			RootDir:                 cfg.RootDir,

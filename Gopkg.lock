@@ -160,6 +160,14 @@
   version = "v1.0.0"
 
 [[projects]]
+  digest = "1:870d441fe217b8e689d7949fef6e43efbc787e50f200cb1e70dbca9204a1d6be"
+  name = "github.com/inconshreveable/mousetrap"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75"
+  version = "v1.0"
+
+[[projects]]
   digest = "1:a74b5a8e34ee5843cd6e65f698f3e75614f812ff170c2243425d75bc091e9af2"
   name = "github.com/jmhodges/levigo"
   packages = ["."]
@@ -319,6 +327,14 @@
   version = "v1.3.0"
 
 [[projects]]
+  digest = "1:645cabccbb4fa8aab25a956cbcbdf6a6845ca736b2c64e197ca7cbb9d210b939"
+  name = "github.com/spf13/cobra"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "ef82de70bb3f60c65fb8eebacbb2d122ef517385"
+  version = "v0.0.3"
+
+[[projects]]
   digest = "1:68ea4e23713989dc20b1bded5d9da2c5f9be14ff9885beef481848edd18c26cb"
   name = "github.com/spf13/jwalterweatherman"
   packages = ["."]
@@ -383,7 +399,7 @@
   version = "v0.14.1"
 
 [[projects]]
-  digest = "1:872cdfcb779d0a56fcb502f6ed6619495ba5fb7806897ec911130fa8212be24f"
+  digest = "1:e2e0e41f7e2edfd93fb3cc29ae647cb37163b06665cac948298ac29af1bce346"
   name = "github.com/tendermint/tendermint"
   packages = [
     "abci/client",
@@ -439,8 +455,8 @@
     "version",
   ]
   pruneopts = "UT"
-  revision = "6cc3f4d87cae6589aef0ac2b4707f1ebc8a669b2"
-  version = "v0.31.3"
+  revision = "d2eab536ac1071b1b5f64283572397606326eb73"
+  version = "v0.31.5"
 
 [[projects]]
   digest = "1:24ccc5c3deefe7d181e924cb82060682fd0b236ca03bbe49daa8190caf9a86a2"
@@ -584,6 +600,7 @@
     "github.com/gorilla/websocket",
     "github.com/pkg/errors",
     "github.com/rs/cors",
+    "github.com/spf13/cobra",
     "github.com/spf13/viper",
     "github.com/stretchr/testify/assert",
     "github.com/stretchr/testify/require",

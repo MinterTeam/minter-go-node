@@ -50,7 +50,8 @@ func TestDelegateTx(t *testing.T) {
 
 	tx := Transaction{
 		Nonce:         1,
-		GasPrice:      big.NewInt(1),
+		GasPrice:      1,
+		ChainID:       types.ChainTestnet,
 		GasCoin:       coin,
 		Type:          TypeDelegate,
 		Data:          encodedData,
@@ -67,7 +68,7 @@ func TestDelegateTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, sync.Map{}, big.NewInt(0))
+	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, sync.Map{}, 0)
 
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)

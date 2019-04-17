@@ -12,6 +12,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/core/validators"
 	"github.com/MinterTeam/minter-go-node/eventsdb"
+	"github.com/MinterTeam/minter-go-node/eventsdb/events"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/version"
 	"github.com/danil-lashin/tendermint/rpc/lib/types"
@@ -68,12 +69,12 @@ type Blockchain struct {
 }
 
 // Creates Minter Blockchain instance, should be only called once
-func NewMinterBlockchain() *Blockchain {
-	dbType := db.DBBackendType(config.GetConfig().DBBackend)
+func NewMinterBlockchain(cfg *config.Config) *Blockchain {
+	dbType := db.DBBackendType(cfg.DBBackend)
 	ldb := db.NewDB("state", dbType, utils.GetMinterHome()+"/data")
 
 	// Initiate Application DB. Used for persisting data like current block, validators, etc.
-	applicationDB := appdb.NewAppDB()
+	applicationDB := appdb.NewAppDB(cfg)
 
 	blockchain = &Blockchain{
 		stateDB:             ldb,
@@ -85,7 +86,7 @@ func NewMinterBlockchain() *Blockchain {
 
 	// Set stateDeliver and stateCheck
 	var err error
-	blockchain.stateDeliver, err = state.New(blockchain.height, blockchain.stateDB)
+	blockchain.stateDeliver, err = state.New(blockchain.height, blockchain.stateDB, cfg.KeepStateHistory)
 	if err != nil {
 		panic(err)
 	}
@@ -192,7 +193,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 	frozenFunds := app.stateDeliver.GetStateFrozenFunds(uint64(req.Header.Height))
 	if frozenFunds != nil {
 		for _, item := range frozenFunds.List() {
-			eventsdb.GetCurrent().AddEvent(uint64(req.Header.Height), eventsdb.UnbondEvent{
+			eventsdb.GetCurrent().AddEvent(uint64(req.Header.Height), events.UnbondEvent{
 				Address:         item.Address,
 				Amount:          item.Value.Bytes(),
 				Coin:            item.Coin,
@@ -368,7 +369,7 @@ func (app *Blockchain) Info(req abciTypes.RequestInfo) (resInfo abciTypes.Respon
 
 // Deliver a tx for full processing
 func (app *Blockchain) DeliverTx(rawTx []byte) abciTypes.ResponseDeliverTx {
-	response := transaction.RunTx(app.stateDeliver, false, rawTx, app.rewards, app.height, sync.Map{}, nil)
+	response := transaction.RunTx(app.stateDeliver, false, rawTx, app.rewards, app.height, sync.Map{}, 0)
 
 	return abciTypes.ResponseDeliverTx{
 		Code:      response.Code,
@@ -468,7 +469,7 @@ func (app *Blockchain) GetStateForHeight(height uint64) (*state.StateDB, error) 
 	app.lock.RLock()
 	defer app.lock.RUnlock()
 
-	s, err := state.New(height, app.stateDB)
+	s, err := state.New(height, app.stateDB, false)
 	if err != nil {
 		return nil, rpctypes.RPCError{Code: 404, Message: "State at given height not found", Data: err.Error()}
 	}
@@ -492,26 +493,26 @@ func (app *Blockchain) SetTmNode(node *tmNode.Node) {
 }
 
 // Get minimal acceptable gas price
-func (app *Blockchain) MinGasPrice() *big.Int {
+func (app *Blockchain) MinGasPrice() uint32 {
 	mempoolSize := app.tmNode.MempoolReactor().Mempool.Size()
 
 	if mempoolSize > 5000 {
-		return big.NewInt(50)
+		return 50
 	}
 
 	if mempoolSize > 1000 {
-		return big.NewInt(10)
+		return 10
 	}
 
 	if mempoolSize > 500 {
-		return big.NewInt(5)
+		return 5
 	}
 
 	if mempoolSize > 100 {
-		return big.NewInt(2)
+		return 2
 	}
 
-	return big.NewInt(1)
+	return 1
 }
 
 func (app *Blockchain) resetCheckState() {

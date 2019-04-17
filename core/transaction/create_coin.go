@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
-	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
@@ -86,11 +85,6 @@ func (data CreateCoinData) String() string {
 }
 
 func (data CreateCoinData) Gas() int64 {
-	return commissions.CreateTx
-}
-
-// compute additional commission from letters count
-func (data CreateCoinData) Commission() int64 {
 	switch len(data.Symbol.String()) {
 	case 3:
 		return 1000000000 // 1mln bips
@@ -113,7 +107,7 @@ func (data CreateCoinData) Run(tx *Transaction, context *state.StateDB, isCheck 
 		return *response
 	}
 
-	commissionInBaseCoin := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()+data.Commission()))
+	commissionInBaseCoin := big.NewInt(0).Mul(big.NewInt(int64(tx.GasPrice)), big.NewInt(data.Gas()))
 	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 

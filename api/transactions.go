@@ -7,7 +7,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/tendermint/tendermint/libs/common"
 	"github.com/tendermint/tendermint/rpc/core/types"
-	"math/big"
 )
 
 type TransactionResponse struct {
@@ -18,7 +17,7 @@ type TransactionResponse struct {
 	From     string             `json:"from"`
 	Nonce    uint64             `json:"nonce"`
 	Gas      int64              `json:"gas"`
-	GasPrice *big.Int           `json:"gas_price"`
+	GasPrice uint32             `json:"gas_price"`
 	GasCoin  types.CoinSymbol   `json:"gas_coin"`
 	Type     transaction.TxType `json:"type"`
 	Data     json.RawMessage    `json:"data"`
@@ -54,11 +53,6 @@ func Transactions(query string) (*[]TransactionResponse, error) {
 			return nil, err
 		}
 
-		gas := decodedTx.Gas()
-		if decodedTx.Type == transaction.TypeCreateCoin {
-			gas += decodedTx.GetDecodedData().(*transaction.CreateCoinData).Commission()
-		}
-
 		result[i] = TransactionResponse{
 			Hash:     common.HexBytes(tx.Tx.Hash()),
 			RawTx:    fmt.Sprintf("%x", []byte(tx.Tx)),
@@ -66,7 +60,7 @@ func Transactions(query string) (*[]TransactionResponse, error) {
 			Index:    tx.Index,
 			From:     sender.String(),
 			Nonce:    decodedTx.Nonce,
-			Gas:      gas,
+			Gas:      decodedTx.Gas(),
 			GasPrice: decodedTx.GasPrice,
 			GasCoin:  decodedTx.GasCoin,
 			Type:     decodedTx.Type,

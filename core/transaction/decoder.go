@@ -44,7 +44,7 @@ func (decoder *Decoder) DecodeFromBytes(buf []byte) (*Transaction, error) {
 		return nil, err
 	}
 
-	if tx.GasPrice == nil || tx.Data == nil {
+	if tx.GasPrice == 0 || tx.Data == nil {
 		return nil, errors.New("incorrect tx data")
 	}
 

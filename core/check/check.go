@@ -18,6 +18,7 @@ var (
 
 type Check struct {
 	Nonce    []byte
+	ChainID  types.ChainID
 	DueBlock uint64
 	Coin     types.CoinSymbol
 	Value    *big.Int
@@ -54,6 +55,7 @@ func (check *Check) LockPubKey() ([]byte, error) {
 func (check *Check) HashWithoutLock() types.Hash {
 	return rlpHash([]interface{}{
 		check.Nonce,
+		check.ChainID,
 		check.DueBlock,
 		check.Coin,
 		check.Value,
@@ -63,6 +65,7 @@ func (check *Check) HashWithoutLock() types.Hash {
 func (check *Check) Hash() types.Hash {
 	return rlpHash([]interface{}{
 		check.Nonce,
+		check.ChainID,
 		check.DueBlock,
 		check.Coin,
 		check.Value,

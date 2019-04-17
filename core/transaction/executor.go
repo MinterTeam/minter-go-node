@@ -16,23 +16,31 @@ var (
 )
 
 const (
-	maxTxLength          = maxPayloadLength + maxServiceDataLength + (1024 * 4) // TODO: make some estimations
+	maxTxLength          = 7168
 	maxPayloadLength     = 1024
 	maxServiceDataLength = 128
+
+	createCoinGas = 5000
 )
 
 type Response struct {
-	Code      uint32          `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"`
-	Data      []byte          `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
-	Log       string          `protobuf:"bytes,3,opt,name=log,proto3" json:"log,omitempty"`
-	Info      string          `protobuf:"bytes,4,opt,name=info,proto3" json:"info,omitempty"`
-	GasWanted int64           `protobuf:"varint,5,opt,name=gas_wanted,json=gasWanted,proto3" json:"gas_wanted,omitempty"`
-	GasUsed   int64           `protobuf:"varint,6,opt,name=gas_used,json=gasUsed,proto3" json:"gas_used,omitempty"`
-	Tags      []common.KVPair `protobuf:"bytes,7,rep,name=tags" json:"tags,omitempty"`
-	GasPrice  *big.Int
+	Code      uint32          `json:"code,omitempty"`
+	Data      []byte          `json:"data,omitempty"`
+	Log       string          `json:"log,omitempty"`
+	Info      string          `json:"info,omitempty"`
+	GasWanted int64           `json:"gas_wanted,omitempty"`
+	GasUsed   int64           `json:"gas_used,omitempty"`
+	Tags      []common.KVPair `json:"tags,omitempty"`
+	GasPrice  uint32          `json:"gas_price"`
 }
 
-func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPool *big.Int, currentBlock uint64, currentMempool sync.Map, minGasPrice *big.Int) Response {
+func RunTx(context *state.StateDB,
+	isCheck bool,
+	rawTx []byte,
+	rewardPool *big.Int,
+	currentBlock uint64,
+	currentMempool sync.Map,
+	minGasPrice uint32) Response {
 	if len(rawTx) > maxTxLength {
 		return Response{
 			Code: code.TxTooLarge,
@@ -46,16 +54,22 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPool *big.I
 			Log:  err.Error()}
 	}
 
+	if tx.ChainID != types.CurrentChainID {
+		return Response{
+			Code: code.WrongChainID,
+			Log:  "Wrong chain id"}
+	}
+
 	if !context.CoinExists(tx.GasCoin) {
 		return Response{
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin)}
 	}
 
-	if isCheck && tx.GasPrice.Cmp(minGasPrice) == -1 {
+	if isCheck && tx.GasPrice < minGasPrice {
 		return Response{
 			Code: code.TooLowGasPrice,
-			Log:  fmt.Sprintf("Gas price of tx is too low to be included in mempool. Expected %s", minGasPrice),
+			Log:  fmt.Sprintf("Gas price of tx is too low to be included in mempool. Expected %d", minGasPrice),
 		}
 	}
 
@@ -157,6 +171,11 @@ func RunTx(context *state.StateDB, isCheck bool, rawTx []byte, rewardPool *big.I
 
 	if !isCheck && response.Code == code.OK {
 		context.SanitizeCoin(tx.GasCoin)
+	}
+
+	if tx.Type == TypeCreateCoin {
+		response.GasUsed = createCoinGas
+		response.GasWanted = createCoinGas
 	}
 
 	return response

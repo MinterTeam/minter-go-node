@@ -58,6 +58,11 @@ func Error(msg string, ctx ...interface{}) {
 	logger.Error(msg, ctx...)
 }
 
+func Fatal(msg string, ctx ...interface{}) {
+	logger.Error(msg, ctx...)
+	os.Exit(1)
+}
+
 func With(keyvals ...interface{}) log.Logger {
 	return logger.With(keyvals...)
 }

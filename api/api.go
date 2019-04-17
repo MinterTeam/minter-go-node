@@ -6,7 +6,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/minter"
 	"github.com/MinterTeam/minter-go-node/core/state"
-	"github.com/MinterTeam/minter-go-node/eventsdb"
+	"github.com/MinterTeam/minter-go-node/eventsdb/events"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/rpc/lib/server"
 	"github.com/rs/cors"
@@ -27,7 +27,7 @@ var (
 	cdc        = amino.NewCodec()
 	blockchain *minter.Blockchain
 	client     *rpc.Local
-	cfg        = config.GetConfig()
+	minterCfg  *config.Config
 )
 
 var Routes = map[string]*rpcserver.RPCFunc{
@@ -54,9 +54,10 @@ var Routes = map[string]*rpcserver.RPCFunc{
 	"genesis":                rpcserver.NewRPCFunc(Genesis, ""),
 }
 
-func RunAPI(b *minter.Blockchain, tmRPC *rpc.Local) {
+func RunAPI(b *minter.Blockchain, tmRPC *rpc.Local, cfg *config.Config) {
+	minterCfg = cfg
 	RegisterCryptoAmino(cdc)
-	eventsdb.RegisterAminoEvents(cdc)
+	events.RegisterAminoEvents(cdc)
 	RegisterEvidenceMessages(cdc)
 
 	client = tmRPC
@@ -66,7 +67,7 @@ func RunAPI(b *minter.Blockchain, tmRPC *rpc.Local) {
 	m := http.NewServeMux()
 	logger := log.With("module", "rpc")
 	rpcserver.RegisterRPCFuncs(m, Routes, cdc, logger)
-	listener, err := rpcserver.Listen(config.GetConfig().APIListenAddress, rpcserver.Config{
+	listener, err := rpcserver.Listen(cfg.APIListenAddress, rpcserver.Config{
 		MaxOpenConnections: cfg.APISimultaneousRequests,
 	})
 

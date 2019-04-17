@@ -15,6 +15,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
+	"github.com/MinterTeam/minter-go-node/eventsdb"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/rlp"
@@ -38,7 +39,7 @@ import (
 
 var pv *privval.FilePV
 var cfg *tmConfig.Config
-var client *rpc.Local
+var tmCli *rpc.Local
 var app *Blockchain
 var privateKey *ecdsa.PrivateKey
 var l sync.Mutex
@@ -59,7 +60,9 @@ func initNode() {
 		os.Exit(1)
 	}
 
-	cfg = config.GetTmConfig()
+	minterCfg := config.GetConfig()
+	eventsdb.InitDB(minterCfg)
+	cfg = config.GetTmConfig(minterCfg)
 	cfg.Consensus.TimeoutPropose = 0
 	cfg.Consensus.TimeoutPrecommit = 0
 	cfg.Consensus.TimeoutPrevote = 0
@@ -78,7 +81,7 @@ func initNode() {
 	b, _ := hex.DecodeString("825ca965c34ef1c8343e8e377959108370c23ba6194d858452b63432456403f9")
 	privateKey, _ = crypto.ToECDSA(b)
 
-	app = NewMinterBlockchain()
+	app = NewMinterBlockchain(minterCfg)
 	nodeKey, err := p2p.LoadOrGenNodeKey(cfg.NodeKeyFile())
 	if err != nil {
 		panic(err)
@@ -105,13 +108,13 @@ func initNode() {
 
 	log.Info("Started node", "nodeInfo", node.Switch().NodeInfo())
 	app.SetTmNode(node)
-	client = rpc.NewLocal(node)
+	tmCli = rpc.NewLocal(node)
 	l.Unlock()
 }
 
 func TestBlocksCreation(t *testing.T) {
 	// Wait for blocks
-	blocks, err := client.Subscribe(context.TODO(), "test-client", "tm.event = 'NewBlock'")
+	blocks, err := tmCli.Subscribe(context.TODO(), "test-client", "tm.event = 'NewBlock'")
 	if err != nil {
 		panic(err)
 	}
@@ -123,7 +126,7 @@ func TestBlocksCreation(t *testing.T) {
 		t.Fatalf("Timeout waiting for the first block")
 	}
 
-	err = client.UnsubscribeAll(context.TODO(), "test-client")
+	err = tmCli.UnsubscribeAll(context.TODO(), "test-client")
 	if err != nil {
 		panic(err)
 	}
@@ -150,7 +153,8 @@ func TestSendTx(t *testing.T) {
 
 	tx := transaction.Transaction{
 		Nonce:         nonce,
-		GasPrice:      big.NewInt(1),
+		ChainID:       types.ChainTestnet,
+		GasPrice:      1,
 		GasCoin:       types.GetBaseCoin(),
 		Type:          transaction.TypeSend,
 		Data:          encodedData,
@@ -164,7 +168,7 @@ func TestSendTx(t *testing.T) {
 
 	txBytes, _ := tx.Serialize()
 
-	res, err := client.BroadcastTxSync(txBytes)
+	res, err := tmCli.BroadcastTxSync(txBytes)
 	if err != nil {
 		t.Fatalf("Failed: %s", err.Error())
 	}
@@ -173,7 +177,7 @@ func TestSendTx(t *testing.T) {
 		t.Fatalf("CheckTx code is not 0: %d", res.Code)
 	}
 
-	txs, err := client.Subscribe(context.TODO(), "test-client", "tm.event = 'Tx'")
+	txs, err := tmCli.Subscribe(context.TODO(), "test-client", "tm.event = 'Tx'")
 	if err != nil {
 		panic(err)
 	}
@@ -185,7 +189,7 @@ func TestSendTx(t *testing.T) {
 		t.Fatalf("Timeout waiting for the tx to be committed")
 	}
 
-	err = client.UnsubscribeAll(context.TODO(), "test-client")
+	err = tmCli.UnsubscribeAll(context.TODO(), "test-client")
 	if err != nil {
 		panic(err)
 	}
@@ -214,7 +218,8 @@ func TestSmallStakeValidator(t *testing.T) {
 
 	tx := transaction.Transaction{
 		Nonce:         nonce,
-		GasPrice:      big.NewInt(1),
+		ChainID:       types.ChainTestnet,
+		GasPrice:      1,
 		GasCoin:       types.GetBaseCoin(),
 		Type:          transaction.TypeDeclareCandidacy,
 		Data:          encodedData,
@@ -227,7 +232,7 @@ func TestSmallStakeValidator(t *testing.T) {
 	}
 
 	txBytes, _ := tx.Serialize()
-	res, err := client.BroadcastTxSync(txBytes)
+	res, err := tmCli.BroadcastTxSync(txBytes)
 	if err != nil {
 		t.Fatalf("Failed: %s", err.Error())
 	}
@@ -248,7 +253,8 @@ func TestSmallStakeValidator(t *testing.T) {
 
 	tx = transaction.Transaction{
 		Nonce:         nonce,
-		GasPrice:      big.NewInt(1),
+		GasPrice:      1,
+		ChainID:       types.ChainTestnet,
 		GasCoin:       types.GetBaseCoin(),
 		Type:          transaction.TypeSetCandidateOnline,
 		Data:          encodedData,
@@ -261,7 +267,7 @@ func TestSmallStakeValidator(t *testing.T) {
 	}
 
 	txBytes, _ = tx.Serialize()
-	res, err = client.BroadcastTxSync(txBytes)
+	res, err = tmCli.BroadcastTxSync(txBytes)
 	if err != nil {
 		t.Fatalf("Failed: %s", err.Error())
 	}
@@ -269,11 +275,11 @@ func TestSmallStakeValidator(t *testing.T) {
 		t.Fatalf("CheckTx code is not 0: %d", res.Code)
 	}
 
-	status, _ := client.Status()
+	status, _ := tmCli.Status()
 	targetBlockHeight := status.SyncInfo.LatestBlockHeight - (status.SyncInfo.LatestBlockHeight % 120) + 150
 	println("target block", targetBlockHeight)
 
-	blocks, err := client.Subscribe(context.TODO(), "test-client", "tm.event = 'NewBlock'")
+	blocks, err := tmCli.Subscribe(context.TODO(), "test-client", "tm.event = 'NewBlock'")
 	if err != nil {
 		panic(err)
 	}
@@ -286,7 +292,7 @@ func TestSmallStakeValidator(t *testing.T) {
 				continue
 			}
 
-			vals, _ := client.Validators(&targetBlockHeight)
+			vals, _ := tmCli.Validators(&targetBlockHeight)
 
 			if len(vals.Validators) > 1 {
 				t.Errorf("There are should be 1 validator (has %d)", len(vals.Validators))
@@ -301,7 +307,7 @@ func TestSmallStakeValidator(t *testing.T) {
 			t.Fatalf("Timeout waiting for the block")
 		}
 	}
-	err = client.UnsubscribeAll(context.TODO(), "test-client")
+	err = tmCli.UnsubscribeAll(context.TODO(), "test-client")
 	if err != nil {
 		panic(err)
 	}
@@ -315,7 +321,8 @@ func TestSmallStakeValidator(t *testing.T) {
 
 	tx = transaction.Transaction{
 		Nonce:         nonce,
-		GasPrice:      big.NewInt(1),
+		GasPrice:      1,
+		ChainID:       types.ChainTestnet,
 		GasCoin:       types.GetBaseCoin(),
 		Type:          transaction.TypeSetCandidateOnline,
 		Data:          encodedData,
@@ -328,7 +335,7 @@ func TestSmallStakeValidator(t *testing.T) {
 	}
 
 	txBytes, _ = tx.Serialize()
-	res, err = client.BroadcastTxSync(txBytes)
+	res, err = tmCli.BroadcastTxSync(txBytes)
 	if err != nil {
 		t.Fatalf("Failed: %s", err.Error())
 	}
@@ -336,11 +343,11 @@ func TestSmallStakeValidator(t *testing.T) {
 		t.Fatalf("CheckTx code is not 0: %d", res.Code)
 	}
 
-	status, _ = client.Status()
+	status, _ = tmCli.Status()
 	targetBlockHeight = status.SyncInfo.LatestBlockHeight - (status.SyncInfo.LatestBlockHeight % 120) + 120 + 5
 	println("target block", targetBlockHeight)
 
-	blocks, err = client.Subscribe(context.TODO(), "test-client", "tm.event = 'NewBlock'")
+	blocks, err = tmCli.Subscribe(context.TODO(), "test-client", "tm.event = 'NewBlock'")
 	if err != nil {
 		panic(err)
 	}
@@ -353,7 +360,7 @@ FORLOOP2:
 				continue FORLOOP2
 			}
 
-			vals, _ := client.Validators(&targetBlockHeight)
+			vals, _ := tmCli.Validators(&targetBlockHeight)
 
 			if len(vals.Validators) > 1 {
 				t.Errorf("There are should be only 1 validator")
@@ -369,7 +376,7 @@ FORLOOP2:
 		}
 	}
 
-	err = client.UnsubscribeAll(context.TODO(), "test-client")
+	err = tmCli.UnsubscribeAll(context.TODO(), "test-client")
 	if err != nil {
 		panic(err)
 	}

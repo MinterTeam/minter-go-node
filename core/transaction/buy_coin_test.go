@@ -20,7 +20,7 @@ var (
 )
 
 func getState() *state.StateDB {
-	s, err := state.New(0, db.NewMemDB())
+	s, err := state.New(0, db.NewMemDB(), false)
 
 	if err != nil {
 		panic(err)
@@ -71,7 +71,8 @@ func TestBuyCoinTx(t *testing.T) {
 
 	tx := Transaction{
 		Nonce:         1,
-		GasPrice:      big.NewInt(1),
+		GasPrice:      1,
+		ChainID:       types.ChainTestnet,
 		GasCoin:       coin,
 		Type:          TypeBuyCoin,
 		Data:          encodedData,
@@ -88,7 +89,7 @@ func TestBuyCoinTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, sync.Map{}, big.NewInt(0))
+	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, sync.Map{}, 0)
 
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
@@ -133,8 +134,10 @@ func TestBuyCoinTxInsufficientFunds(t *testing.T) {
 	}
 
 	tx := Transaction{
-		Nonce:         1,
-		GasPrice:      big.NewInt(1),
+		Nonce:    1,
+		GasPrice: 1,
+
+		ChainID:       types.ChainTestnet,
 		GasCoin:       coin,
 		Type:          TypeBuyCoin,
 		Data:          encodedData,
@@ -151,7 +154,7 @@ func TestBuyCoinTxInsufficientFunds(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, sync.Map{}, big.NewInt(0))
+	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, sync.Map{}, 0)
 
 	if response.Code != code.InsufficientFunds {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
@@ -177,7 +180,8 @@ func TestBuyCoinTxEqualCoins(t *testing.T) {
 
 	tx := Transaction{
 		Nonce:         1,
-		GasPrice:      big.NewInt(1),
+		GasPrice:      1,
+		ChainID:       types.ChainTestnet,
 		GasCoin:       types.GetBaseCoin(),
 		Type:          TypeBuyCoin,
 		Data:          encodedData,
@@ -194,7 +198,7 @@ func TestBuyCoinTxEqualCoins(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, sync.Map{}, big.NewInt(0))
+	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, sync.Map{}, 0)
 
 	if response.Code != code.CrossConvert {
 		t.Fatalf("Response code is not %d. Error %s", code.CrossConvert, response.Log)
@@ -220,7 +224,8 @@ func TestBuyCoinTxNotExistsBuyCoin(t *testing.T) {
 
 	tx := Transaction{
 		Nonce:         1,
-		GasPrice:      big.NewInt(1),
+		GasPrice:      1,
+		ChainID:       types.ChainTestnet,
 		GasCoin:       types.GetBaseCoin(),
 		Type:          TypeBuyCoin,
 		Data:          encodedData,
@@ -237,7 +242,7 @@ func TestBuyCoinTxNotExistsBuyCoin(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, sync.Map{}, big.NewInt(0))
+	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, sync.Map{}, 0)
 
 	if response.Code != code.CoinNotExists {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
@@ -263,7 +268,8 @@ func TestBuyCoinTxNotExistsSellCoin(t *testing.T) {
 
 	tx := Transaction{
 		Nonce:         1,
-		GasPrice:      big.NewInt(1),
+		GasPrice:      1,
+		ChainID:       types.ChainTestnet,
 		GasCoin:       types.GetBaseCoin(),
 		Type:          TypeBuyCoin,
 		Data:          encodedData,
@@ -280,7 +286,7 @@ func TestBuyCoinTxNotExistsSellCoin(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, sync.Map{}, big.NewInt(0))
+	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, sync.Map{}, 0)
 
 	if response.Code != code.CoinNotExists {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
@@ -308,7 +314,8 @@ func TestBuyCoinTxNotExistsGasCoin(t *testing.T) {
 
 	tx := Transaction{
 		Nonce:         1,
-		GasPrice:      big.NewInt(1),
+		GasPrice:      1,
+		ChainID:       types.ChainTestnet,
 		GasCoin:       types.CoinSymbol{},
 		Type:          TypeBuyCoin,
 		Data:          encodedData,
@@ -325,7 +332,7 @@ func TestBuyCoinTxNotExistsGasCoin(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, sync.Map{}, big.NewInt(0))
+	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, sync.Map{}, 0)
 
 	if response.Code != code.CoinNotExists {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
@@ -357,7 +364,8 @@ func TestBuyCoinTxNotGasCoin(t *testing.T) {
 
 	tx := Transaction{
 		Nonce:         1,
-		GasPrice:      big.NewInt(1),
+		GasPrice:      1,
+		ChainID:       types.ChainTestnet,
 		GasCoin:       getTestCoinSymbol(),
 		Type:          TypeBuyCoin,
 		Data:          encodedData,
@@ -374,7 +382,7 @@ func TestBuyCoinTxNotGasCoin(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, sync.Map{}, big.NewInt(0))
+	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, sync.Map{}, 0)
 
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)

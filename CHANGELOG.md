@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.19.0
+
+BREAKING CHANGES
+
+- [core] Add ChainID to transactions
+- [core] Add ChainID to check
+- [core] Simplify coin creation commissions (remove base commission)
+
+IMPROVEMENT
+
+- [api] Fix list of endpoints
+- [cmd] Minter node now launched as `minter node` command
+
+BUG FIXES
+
+- [core] Fix incorrect coin conversion
+- [tendermint] Update to [v0.31.5](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0315) 
+
 ## 0.18.1
 
 BUG FIXES

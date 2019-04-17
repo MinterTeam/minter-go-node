@@ -15,6 +15,7 @@ const (
 	CoinSupplyOverflow           uint32 = 112
 	TxFromSenderAlreadyInMempool uint32 = 113
 	TooLowGasPrice               uint32 = 114
+	WrongChainID                 uint32 = 115
 
 	// coin creation
 	CoinAlreadyExists uint32 = 201

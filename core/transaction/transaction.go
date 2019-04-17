@@ -43,7 +43,8 @@ var (
 
 type Transaction struct {
 	Nonce         uint64
-	GasPrice      *big.Int
+	ChainID       types.ChainID
+	GasPrice      uint32
 	GasCoin       types.CoinSymbol
 	Type          TxType
 	Data          RawData
@@ -122,7 +123,7 @@ func (tx *Transaction) payloadGas() int64 {
 }
 
 func (tx *Transaction) CommissionInBaseCoin() *big.Int {
-	commissionInBaseCoin := big.NewInt(0).Mul(tx.GasPrice, big.NewInt(tx.Gas()))
+	commissionInBaseCoin := big.NewInt(0).Mul(big.NewInt(int64(tx.GasPrice)), big.NewInt(tx.Gas()))
 	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
 
 	return commissionInBaseCoin
@@ -217,6 +218,7 @@ func (tx *Transaction) Sender() (types.Address, error) {
 func (tx *Transaction) Hash() types.Hash {
 	return rlpHash([]interface{}{
 		tx.Nonce,
+		tx.ChainID,
 		tx.GasPrice,
 		tx.GasCoin,
 		tx.Type,

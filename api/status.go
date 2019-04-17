@@ -24,7 +24,7 @@ func Status() (*StatusResponse, error) {
 	}
 
 	stateHistory := "off"
-	if cfg.BaseConfig.KeepStateHistory {
+	if minterCfg.BaseConfig.KeepStateHistory {
 		stateHistory = "on"
 	}
 
