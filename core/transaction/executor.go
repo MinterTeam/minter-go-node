@@ -19,6 +19,8 @@ const (
 	maxTxLength          = 7168
 	maxPayloadLength     = 1024
 	maxServiceDataLength = 128
+
+	createCoinGas = 5000
 )
 
 type Response struct {
@@ -169,6 +171,11 @@ func RunTx(context *state.StateDB,
 
 	if !isCheck && response.Code == code.OK {
 		context.SanitizeCoin(tx.GasCoin)
+	}
+
+	if tx.Type == TypeCreateCoin {
+		response.GasUsed = createCoinGas
+		response.GasWanted = createCoinGas
 	}
 
 	return response
