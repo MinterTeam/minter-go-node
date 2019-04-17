@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
-	"github.com/spf13/viper"
 	tmConfig "github.com/tendermint/tendermint/config"
 	"os"
 	"path/filepath"
@@ -79,11 +78,6 @@ func DefaultConfig() *Config {
 
 func GetConfig() *Config {
 	cfg := DefaultConfig()
-
-	err := viper.Unmarshal(cfg)
-	if err != nil {
-		panic(err)
-	}
 
 	if cfg.ValidatorMode {
 		cfg.TxIndex.IndexAllTags = false
