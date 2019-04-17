@@ -5,9 +5,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var cfg = config.GetConfig()
+var cfg *config.Config
 
 var RootCmd = &cobra.Command{
 	Use:   "minter",
 	Short: "Minter Go Node",
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		cfg = config.GetConfig()
+	},
 }
