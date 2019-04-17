@@ -37,21 +37,6 @@ var (
 	defaultNodeKeyPath      = filepath.Join(defaultConfigDir, defaultNodeKeyName)
 )
 
-func init() {
-	homeDir := utils.GetMinterHome()
-	viper.SetConfigName("config")
-	viper.AddConfigPath(filepath.Join(homeDir, "config"))
-
-	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		// stderr, so if we redirect output to json file, this doesn't appear
-		// fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
-	} else if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-		// ignore not found error, return other errors
-		panic(err)
-	}
-}
-
 func DefaultConfig() *Config {
 	cfg := defaultConfig()
 

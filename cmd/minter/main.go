@@ -7,14 +7,16 @@ import (
 
 func main() {
 	rootCmd := cmd.RootCmd
-	rootCmd.PersistentFlags().StringVar(&utils.MinterHome, "home-dir", "", "base dir (default is $HOME/.minter)")
 
 	rootCmd.AddCommand(
 		cmd.RunNode,
 		cmd.ShowNodeId,
 		cmd.ShowValidator)
 
-	if err := cmd.RootCmd.Execute(); err != nil {
+	rootCmd.PersistentFlags().StringVar(&utils.MinterHome, "home-dir", "", "base dir (default is $HOME/.minter)")
+	rootCmd.PersistentFlags().StringVar(&utils.MinterConfig, "config", "", "path to config (default is $(home-dir)/config/config.toml)")
+
+	if err := rootCmd.Execute(); err != nil {
 		panic(err)
 	}
 }

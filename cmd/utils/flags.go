@@ -6,7 +6,8 @@ import (
 )
 
 var (
-	MinterHome string
+	MinterHome   string
+	MinterConfig string
 )
 
 func GetMinterHome() string {
@@ -21,4 +22,12 @@ func GetMinterHome() string {
 	}
 
 	return os.ExpandEnv(filepath.Join("$HOME", ".minter"))
+}
+
+func GetMinterConfigPath() string {
+	if MinterConfig != "" {
+		return MinterConfig
+	}
+
+	return GetMinterHome() + "/config/config.toml"
 }
