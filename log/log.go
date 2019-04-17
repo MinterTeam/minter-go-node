@@ -10,10 +10,9 @@ import (
 
 var (
 	logger log.Logger
-	cfg    = config.GetConfig()
 )
 
-func init() {
+func InitLog(cfg *config.Config) {
 	var dest io.Writer = os.Stdout
 
 	if cfg.LogPath != "stdout" {
