@@ -1009,7 +1009,7 @@ func (s *StateDB) PayRewards() {
 				})
 			}
 
-			s.AddTotalSlashed(remainder)
+			validator.AccumReward.Set(remainder)
 		}
 	}
 
