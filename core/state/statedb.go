@@ -1404,11 +1404,15 @@ func (s *StateDB) clearStateCandidates() {
 	for i := range stateCandidates.data {
 		candidate := &stateCandidates.data[i]
 
-		for j, stake := range candidate.Stakes {
+		var newStakes []Stake
+		for _, stake := range candidate.Stakes {
 			if stake.Value.Cmp(types.Big0) == 0 {
-				candidate.Stakes = append(candidate.Stakes[:j], candidate.Stakes[j+1:]...)
+				continue
 			}
+			newStakes = append(newStakes, stake)
 		}
+
+		candidate.Stakes = newStakes
 	}
 
 	s.setStateCandidates(stateCandidates)
@@ -1667,19 +1671,30 @@ func (s *StateDB) deleteCoin(symbol types.CoinSymbol) {
 	// remove coin from frozen funds
 	for _, height := range frozenFundsHeights {
 		frozenFunds := s.GetStateFrozenFunds(height)
-		for i, ff := range frozenFunds.data.List {
+		var newFrozenFunds []FrozenFund
+		for _, ff := range frozenFunds.data.List {
 			if ff.Coin == symbol {
 				ret := formula.CalculateSaleReturn(coinToDelete.Volume(), coinToDelete.ReserveBalance(), 100, ff.Value)
 
 				coinToDelete.SubReserve(ret)
 				coinToDelete.SubVolume(ff.Value)
 
-				frozenFunds.data.List = append(frozenFunds.data.List[:i], frozenFunds.data.List[i+1:]...)
-				frozenFunds.AddFund(ff.Address, ff.CandidateKey, types.GetBaseCoin(), ret)
+				newFrozenFunds = append(newFrozenFunds, FrozenFund{
+					Address:      ff.Address,
+					CandidateKey: ff.CandidateKey,
+					Coin:         types.GetBaseCoin(),
+					Value:        ret,
+				})
 
-				s.MarkStateFrozenFundsDirty(frozenFunds.blockHeight)
+				continue
 			}
+
+			newFrozenFunds = append(newFrozenFunds, ff)
 		}
+
+		frozenFunds.data.List = newFrozenFunds
+		s.setStateFrozenFunds(frozenFunds)
+		s.MarkStateFrozenFundsDirty(frozenFunds.blockHeight)
 	}
 
 	// remove coin from stakes

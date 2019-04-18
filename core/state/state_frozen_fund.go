@@ -74,7 +74,6 @@ func (c *stateFrozenFund) AddFund(address types.Address, candidateKey []byte, co
 }
 
 func (c *stateFrozenFund) addFund(fund FrozenFund) {
-
 	c.data.List = append(c.data.List, fund)
 
 	if c.onDirty != nil {
