@@ -29,6 +29,7 @@ BUG FIXES
 BUG FIXES
 
 - [core] Fix attempt to double coin deletion
+- [core] Add remainder to total slashed value
 
 ## 0.18.0
 
