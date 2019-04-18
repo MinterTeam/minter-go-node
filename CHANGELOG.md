@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.19.2
+
+BUG FIXES
+
+- [core] Fix slice issues
+
 ## 0.19.0
 
 BREAKING CHANGES
