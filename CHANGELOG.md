@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.20.0
+
+IMPROVEMENT
+
+- [core] Add remainder to total slashed 
+
 ## 0.19.2
 
 BUG FIXES
