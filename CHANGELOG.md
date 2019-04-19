@@ -5,6 +5,7 @@
 IMPROVEMENT
 
 - [core] Add remainder to total slashed 
+- [cmd] Add `--network-id` flag
 
 ## 0.19.2
 
