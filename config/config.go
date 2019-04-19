@@ -28,7 +28,7 @@ const (
 
 var (
 	NetworkId        string
-	DefaultNetworkId = "minter-test-network-38"
+	DefaultNetworkId = "minter-test-network-39"
 
 	defaultConfigFilePath   = filepath.Join(defaultConfigDir, defaultConfigFileName)
 	defaultGenesisJSONPath  = filepath.Join(defaultConfigDir, defaultGenesisJSONName)

@@ -156,11 +156,11 @@ func main() {
 	}
 
 	appHash := [32]byte{}
-	networkId := "minter-test-network-38"
+	networkId := "minter-test-network-39"
 
 	// Compose Genesis
 	genesis := tmTypes.GenesisDoc{
-		GenesisTime: time.Date(2019, time.April, 17, 17, 0, 0, 0, time.UTC),
+		GenesisTime: time.Date(2019, time.April, 22, 17, 0, 0, 0, time.UTC),
 		ChainID:     networkId,
 		ConsensusParams: &tmTypes.ConsensusParams{
 			Block: tmTypes.BlockParams{
