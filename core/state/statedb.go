@@ -1009,7 +1009,9 @@ func (s *StateDB) PayRewards() {
 				})
 			}
 
-			validator.AccumReward.Set(remainder)
+			if s.height < 41556 {
+				validator.AccumReward.Set(remainder)
+			}
 		}
 	}
 

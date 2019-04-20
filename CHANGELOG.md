@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.19.3
+
+BUG FIXES
+
+- [core] Fix set candidate remainder issue
+
 ## 0.19.2
 
 BUG FIXES
