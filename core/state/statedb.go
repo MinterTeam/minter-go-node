@@ -1009,7 +1009,7 @@ func (s *StateDB) PayRewards() {
 				})
 			}
 
-			validator.AccumReward = big.NewInt(0)
+			vals.data[i].AccumReward = big.NewInt(0)
 
 			if remainder.Cmp(big.NewInt(0)) > -1 {
 				s.AddTotalSlashed(remainder)
