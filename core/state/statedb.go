@@ -1714,10 +1714,8 @@ func (s *StateDB) deleteCoin(symbol types.CoinSymbol) {
 					if stake == nil {
 						candidate.Stakes[j].Value = ret
 						candidate.Stakes[j].Coin = types.GetBaseCoin()
-						candidate.Stakes[j].BipValue = ret
 					} else {
 						candidate.Stakes[j].Value = big.NewInt(0)
-						candidate.Stakes[j].BipValue = big.NewInt(0)
 						stake.Value.Add(stake.Value, ret)
 					}
 				}
