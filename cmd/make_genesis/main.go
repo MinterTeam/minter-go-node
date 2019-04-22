@@ -135,7 +135,7 @@ func main() {
 		return frozenFunds[i].Address.Compare(frozenFunds[j].Address) == -1
 	})
 
-	bals := makeBalances(firstBalances)
+	bals := makeBalances(firstBalances, secondBalances, bonusBalances, airdropBalances)
 
 	sort.SliceStable(bals, func(i, j int) bool {
 		return bals[i].Address.Compare(bals[j].Address) == -1
@@ -231,9 +231,21 @@ func makeValidatorsAndCandidates(pubkeys []string, stake *big.Int) ([]types.Vali
 	return validators, candidates
 }
 
-func makeBalances(balances map[string]*big.Int) []types.Account {
+func makeBalances(balances map[string]*big.Int, balances2 map[string]*big.Int, balances3 map[string]*big.Int, balances4 map[string]*big.Int) []types.Account {
 	totalBalances := big.NewInt(0)
 	for _, val := range balances {
+		totalBalances.Add(totalBalances, val)
+	}
+
+	for _, val := range balances2 {
+		totalBalances.Add(totalBalances, val)
+	}
+
+	for _, val := range balances3 {
+		totalBalances.Add(totalBalances, val)
+	}
+
+	for _, val := range balances4 {
 		totalBalances.Add(totalBalances, val)
 	}
 
