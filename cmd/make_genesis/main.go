@@ -135,7 +135,7 @@ func main() {
 		return frozenFunds[i].Address.Compare(frozenFunds[j].Address) == -1
 	})
 
-	bals := makeBalances(firstBalances)
+	bals := makeBalances(firstBalances, secondBalances, bonusBalances, airdropBalances)
 
 	sort.SliceStable(bals, func(i, j int) bool {
 		return bals[i].Address.Compare(bals[j].Address) == -1
@@ -156,11 +156,11 @@ func main() {
 	}
 
 	appHash := [32]byte{}
-	networkId := "minter-test-network-38"
+	networkId := "minter-test-network-39"
 
 	// Compose Genesis
 	genesis := tmTypes.GenesisDoc{
-		GenesisTime: time.Date(2019, time.April, 17, 17, 0, 0, 0, time.UTC),
+		GenesisTime: time.Date(2019, time.April, 22, 17, 0, 0, 0, time.UTC),
 		ChainID:     networkId,
 		ConsensusParams: &tmTypes.ConsensusParams{
 			Block: tmTypes.BlockParams{
@@ -231,11 +231,25 @@ func makeValidatorsAndCandidates(pubkeys []string, stake *big.Int) ([]types.Vali
 	return validators, candidates
 }
 
-func makeBalances(balances map[string]*big.Int) []types.Account {
+func makeBalances(balances map[string]*big.Int, balances2 map[string]*big.Int, balances3 map[string]*big.Int, balances4 map[string]*big.Int) []types.Account {
 	totalBalances := big.NewInt(0)
 	for _, val := range balances {
 		totalBalances.Add(totalBalances, val)
 	}
+
+	for _, val := range balances2 {
+		totalBalances.Add(totalBalances, val)
+	}
+
+	for _, val := range balances3 {
+		totalBalances.Add(totalBalances, val)
+	}
+
+	for _, val := range balances4 {
+		totalBalances.Add(totalBalances, val)
+	}
+
+	totalBalances.Add(totalBalances, big.NewInt(4)) // first validators' stakes
 
 	balances[developers.Address.String()] = big.NewInt(0).Sub(helpers.BipToPip(big.NewInt(200000000)), totalBalances) // Developers account
 

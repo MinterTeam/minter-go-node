@@ -10,8 +10,6 @@ import (
 )
 
 const (
-	NetworkId = "minter-test-network-38"
-
 	// LogFormatPlain is a format for colored text
 	LogFormatPlain = "plain"
 	// LogFormatJSON is a format for json output
@@ -29,6 +27,9 @@ const (
 )
 
 var (
+	NetworkId        string
+	DefaultNetworkId = "minter-test-network-39"
+
 	defaultConfigFilePath   = filepath.Join(defaultConfigDir, defaultConfigFileName)
 	defaultGenesisJSONPath  = filepath.Join(defaultConfigDir, defaultGenesisJSONName)
 	defaultPrivValKeyPath   = filepath.Join(defaultConfigDir, defaultPrivValName)

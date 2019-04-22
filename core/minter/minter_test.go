@@ -52,8 +52,8 @@ func init() {
 }
 
 func initNode() {
-	*utils.MinterHome = os.ExpandEnv(filepath.Join("$HOME", ".minter_test"))
-	_ = os.RemoveAll(*utils.MinterHome)
+	utils.MinterHome = os.ExpandEnv(filepath.Join("$HOME", ".minter_test"))
+	_ = os.RemoveAll(utils.MinterHome)
 
 	if err := common.EnsureDir(utils.GetMinterHome()+"/tmdata/blockstore.db", 0777); err != nil {
 		log.Error(err.Error())
@@ -61,6 +61,7 @@ func initNode() {
 	}
 
 	minterCfg := config.GetConfig()
+	log.InitLog(minterCfg)
 	eventsdb.InitDB(minterCfg)
 	cfg = config.GetTmConfig(minterCfg)
 	cfg.Consensus.TimeoutPropose = 0

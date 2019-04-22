@@ -1,10 +1,11 @@
 # Changelog
 
-## 0.19.3
+## 0.20.0
 
-BUG FIXES
+IMPROVEMENT
 
-- [core] Fix set candidate remainder issue
+- [core] Add remainder to total slashed 
+- [cmd] Add `--network-id` flag
 
 ## 0.19.2
 

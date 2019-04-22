@@ -1009,8 +1009,12 @@ func (s *StateDB) PayRewards() {
 				})
 			}
 
-			if s.height < 41556 {
-				validator.AccumReward.Set(remainder)
+			vals.data[i].AccumReward = big.NewInt(0)
+
+			if remainder.Cmp(big.NewInt(0)) > -1 {
+				s.AddTotalSlashed(remainder)
+			} else {
+				log.With("module", "main").Error("Negative remainder", "remainder", remainder.String())
 			}
 		}
 	}
@@ -1673,7 +1677,7 @@ func (s *StateDB) deleteCoin(symbol types.CoinSymbol) {
 	// remove coin from frozen funds
 	for _, height := range frozenFundsHeights {
 		frozenFunds := s.GetStateFrozenFunds(height)
-		var newFrozenFunds []FrozenFund
+		var newFrozenFundsList []FrozenFund
 		for _, ff := range frozenFunds.data.List {
 			if ff.Coin == symbol {
 				ret := formula.CalculateSaleReturn(coinToDelete.Volume(), coinToDelete.ReserveBalance(), 100, ff.Value)
@@ -1681,7 +1685,7 @@ func (s *StateDB) deleteCoin(symbol types.CoinSymbol) {
 				coinToDelete.SubReserve(ret)
 				coinToDelete.SubVolume(ff.Value)
 
-				newFrozenFunds = append(newFrozenFunds, FrozenFund{
+				newFrozenFundsList = append(newFrozenFundsList, FrozenFund{
 					Address:      ff.Address,
 					CandidateKey: ff.CandidateKey,
 					Coin:         types.GetBaseCoin(),
@@ -1691,10 +1695,10 @@ func (s *StateDB) deleteCoin(symbol types.CoinSymbol) {
 				continue
 			}
 
-			newFrozenFunds = append(newFrozenFunds, ff)
+			newFrozenFundsList = append(newFrozenFundsList, ff)
 		}
 
-		frozenFunds.data.List = newFrozenFunds
+		frozenFunds.data.List = newFrozenFundsList
 		s.setStateFrozenFunds(frozenFunds)
 		s.MarkStateFrozenFundsDirty(frozenFunds.blockHeight)
 	}
@@ -1715,10 +1719,8 @@ func (s *StateDB) deleteCoin(symbol types.CoinSymbol) {
 					if stake == nil {
 						candidate.Stakes[j].Value = ret
 						candidate.Stakes[j].Coin = types.GetBaseCoin()
-						candidate.Stakes[j].BipValue = ret
 					} else {
 						candidate.Stakes[j].Value = big.NewInt(0)
-						candidate.Stakes[j].BipValue = big.NewInt(0)
 						stake.Value.Add(stake.Value, ret)
 					}
 				}
