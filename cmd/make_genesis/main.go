@@ -249,6 +249,8 @@ func makeBalances(balances map[string]*big.Int, balances2 map[string]*big.Int, b
 		totalBalances.Add(totalBalances, val)
 	}
 
+	totalBalances.Add(totalBalances, big.NewInt(4)) // first validators' stakes
+
 	balances[developers.Address.String()] = big.NewInt(0).Sub(helpers.BipToPip(big.NewInt(200000000)), totalBalances) // Developers account
 
 	var result []types.Account
