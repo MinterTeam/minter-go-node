@@ -28,6 +28,9 @@ install:
 ########################################
 ### Tools & dependencies
 
+test:
+	CGO_ENABLED=1 CGO_LDFLAGS="-lsnappy" go test --count 1 --tags "gcc" ./...
+
 check_tools:
 	@# https://stackoverflow.com/a/25668869
 	@echo "Found tools: $(foreach tool,$(notdir $(GOTOOLS)),\

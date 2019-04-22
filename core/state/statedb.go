@@ -1677,7 +1677,7 @@ func (s *StateDB) deleteCoin(symbol types.CoinSymbol) {
 	// remove coin from frozen funds
 	for _, height := range frozenFundsHeights {
 		frozenFunds := s.GetStateFrozenFunds(height)
-		var newFrozenFunds []FrozenFund
+		var newFrozenFundsList []FrozenFund
 		for _, ff := range frozenFunds.data.List {
 			if ff.Coin == symbol {
 				ret := formula.CalculateSaleReturn(coinToDelete.Volume(), coinToDelete.ReserveBalance(), 100, ff.Value)
@@ -1685,7 +1685,7 @@ func (s *StateDB) deleteCoin(symbol types.CoinSymbol) {
 				coinToDelete.SubReserve(ret)
 				coinToDelete.SubVolume(ff.Value)
 
-				newFrozenFunds = append(newFrozenFunds, FrozenFund{
+				newFrozenFundsList = append(newFrozenFundsList, FrozenFund{
 					Address:      ff.Address,
 					CandidateKey: ff.CandidateKey,
 					Coin:         types.GetBaseCoin(),
@@ -1695,10 +1695,10 @@ func (s *StateDB) deleteCoin(symbol types.CoinSymbol) {
 				continue
 			}
 
-			newFrozenFunds = append(newFrozenFunds, ff)
+			newFrozenFundsList = append(newFrozenFundsList, ff)
 		}
 
-		frozenFunds.data.List = newFrozenFunds
+		frozenFunds.data.List = newFrozenFundsList
 		s.setStateFrozenFunds(frozenFunds)
 		s.MarkStateFrozenFundsDirty(frozenFunds.blockHeight)
 	}
