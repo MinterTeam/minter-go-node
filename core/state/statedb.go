@@ -1010,7 +1010,12 @@ func (s *StateDB) PayRewards() {
 			}
 
 			validator.AccumReward = big.NewInt(0)
-			s.AddTotalSlashed(remainder)
+
+			if remainder.Cmp(big.NewInt(0)) > -1 {
+				s.AddTotalSlashed(remainder)
+			} else {
+				log.With("module", "main").Error("Negative remainder", "remainder", remainder.String())
+			}
 		}
 	}
 
