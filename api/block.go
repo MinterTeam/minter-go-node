@@ -23,7 +23,7 @@ type BlockResponse struct {
 	Transactions []BlockTransactionResponse `json:"transactions"`
 	BlockReward  *big.Int                   `json:"block_reward"`
 	Size         int                        `json:"size"`
-	Proposer     types.Pubkey               `json:"proposer"`
+	Proposer     types.Pubkey               `json:"proposer,omitempty"`
 	Validators   []BlockValidatorResponse   `json:"validators"`
 	Evidence     types2.EvidenceData        `json:"evidence,omitempty"`
 }
@@ -58,7 +58,7 @@ func Block(height int64) (*BlockResponse, error) {
 
 	blockResults, err := client.BlockResults(&height)
 	if err != nil {
-		return nil, rpctypes.RPCError{Code: 404, Message: "Block not found", Data: err.Error()}
+		return nil, rpctypes.RPCError{Code: 404, Message: "Block results not found", Data: err.Error()}
 	}
 
 	tmValidators, err := client.Validators(&height)
@@ -72,7 +72,6 @@ func Block(height int64) (*BlockResponse, error) {
 		sender, _ := tx.Sender()
 
 		tags := make(map[string]string)
-
 		for _, tag := range blockResults.Results.DeliverTx[i].Tags {
 			tags[string(tag.Key)] = string(tag.Value)
 		}
@@ -102,27 +101,28 @@ func Block(height int64) (*BlockResponse, error) {
 
 	validators := make([]BlockValidatorResponse, len(block.Block.LastCommit.Precommits))
 	proposer := types.Pubkey{}
-	for i, tmval := range tmValidators.Validators {
-		signed := false
+	if height > 1 {
+		for i, tmval := range tmValidators.Validators {
+			signed := false
+			for _, vote := range block.Block.LastCommit.Precommits {
+				if vote == nil {
+					continue
+				}
 
-		for _, vote := range block.Block.LastCommit.Precommits {
-			if vote == nil {
-				continue
+				if bytes.Equal(vote.ValidatorAddress.Bytes(), tmval.Address.Bytes()) {
+					signed = true
+					break
+				}
 			}
 
-			if bytes.Equal(vote.ValidatorAddress.Bytes(), tmval.Address.Bytes()) {
-				signed = true
-				break
+			validators[i] = BlockValidatorResponse{
+				Pubkey: fmt.Sprintf("Mp%x", tmval.PubKey.Bytes()[5:]),
+				Signed: signed,
 			}
-		}
 
-		validators[i] = BlockValidatorResponse{
-			Pubkey: fmt.Sprintf("Mp%x", tmval.PubKey.Bytes()[5:]),
-			Signed: signed,
-		}
-
-		if bytes.Equal(tmval.Address.Bytes(), block.Block.ProposerAddress.Bytes()) {
-			proposer = tmval.PubKey.Bytes()[5:]
+			if bytes.Equal(tmval.Address.Bytes(), block.Block.ProposerAddress.Bytes()) {
+				proposer = tmval.PubKey.Bytes()[5:]
+			}
 		}
 	}
 

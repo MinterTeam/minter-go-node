@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.20.2
+
+BUG FIXES
+
+- [api] Fix block signatures for first block
+
 ## 0.20.1
 
 BUG FIXES
