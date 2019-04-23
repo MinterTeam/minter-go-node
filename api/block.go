@@ -55,9 +55,15 @@ func Block(height int64) (*BlockResponse, error) {
 	if err != nil {
 		return nil, rpctypes.RPCError{Code: 404, Message: "Block not found", Data: err.Error()}
 	}
+
 	blockResults, err := client.BlockResults(&height)
 	if err != nil {
 		return nil, rpctypes.RPCError{Code: 404, Message: "Block not found", Data: err.Error()}
+	}
+
+	tmValidators, err := client.Validators(&height)
+	if err != nil {
+		return nil, rpctypes.RPCError{Code: 404, Message: "Validators for block not found", Data: err.Error()}
 	}
 
 	txs := make([]BlockTransactionResponse, len(block.Block.Data.Txs))
@@ -94,22 +100,12 @@ func Block(height int64) (*BlockResponse, error) {
 		}
 	}
 
-	tmValidators, err := client.Validators(&height)
-	if err != nil {
-		return nil, rpctypes.RPCError{Code: 404, Message: "Validators for block not found", Data: err.Error()}
-	}
-
-	commit, err := client.Commit(&height)
-	if err != nil {
-		return nil, rpctypes.RPCError{Code: 404, Message: "Commit for block not found", Data: err.Error()}
-	}
-
-	validators := make([]BlockValidatorResponse, len(commit.Commit.Precommits))
+	validators := make([]BlockValidatorResponse, len(block.Block.LastCommit.Precommits))
 	proposer := types.Pubkey{}
 	for i, tmval := range tmValidators.Validators {
 		signed := false
 
-		for _, vote := range commit.Commit.Precommits {
+		for _, vote := range block.Block.LastCommit.Precommits {
 			if vote == nil {
 				continue
 			}
@@ -125,7 +121,7 @@ func Block(height int64) (*BlockResponse, error) {
 			Signed: signed,
 		}
 
-		if bytes.Equal(tmval.Address.Bytes(), commit.ProposerAddress.Bytes()) {
+		if bytes.Equal(tmval.Address.Bytes(), block.Block.ProposerAddress.Bytes()) {
 			proposer = tmval.PubKey.Bytes()[5:]
 		}
 	}
