@@ -61,7 +61,11 @@ func Block(height int64) (*BlockResponse, error) {
 		return nil, rpctypes.RPCError{Code: 404, Message: "Block results not found", Data: err.Error()}
 	}
 
-	tmValidators, err := client.Validators(&height)
+	valHeight := height - 1
+	if valHeight < 1 {
+		valHeight = 1
+	}
+	tmValidators, err := client.Validators(&valHeight)
 	if err != nil {
 		return nil, rpctypes.RPCError{Code: 404, Message: "Validators for block not found", Data: err.Error()}
 	}
@@ -99,9 +103,10 @@ func Block(height int64) (*BlockResponse, error) {
 		}
 	}
 
-	validators := make([]BlockValidatorResponse, len(block.Block.LastCommit.Precommits))
+	var validators []BlockValidatorResponse
 	proposer := types.Pubkey{}
 	if height > 1 {
+		validators = make([]BlockValidatorResponse, len(tmValidators.Validators))
 		for i, tmval := range tmValidators.Validators {
 			signed := false
 			for _, vote := range block.Block.LastCommit.Precommits {
