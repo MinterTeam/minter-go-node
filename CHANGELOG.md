@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.20.4
+
+BUG FIXES
+
+- [core] Fix empty frozen funds case
+
 ## 0.20.3
 
 BUG FIXES
