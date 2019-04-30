@@ -1677,30 +1677,33 @@ func (s *StateDB) deleteCoin(symbol types.CoinSymbol) {
 	// remove coin from frozen funds
 	for _, height := range frozenFundsHeights {
 		frozenFunds := s.GetStateFrozenFunds(height)
-		var newFrozenFundsList []FrozenFund
-		for _, ff := range frozenFunds.data.List {
-			if ff.Coin == symbol {
-				ret := formula.CalculateSaleReturn(coinToDelete.Volume(), coinToDelete.ReserveBalance(), 100, ff.Value)
+		if frozenFunds != nil {
+			var newFrozenFundsList []FrozenFund
 
-				coinToDelete.SubReserve(ret)
-				coinToDelete.SubVolume(ff.Value)
+			for _, ff := range frozenFunds.data.List {
+				if ff.Coin == symbol {
+					ret := formula.CalculateSaleReturn(coinToDelete.Volume(), coinToDelete.ReserveBalance(), 100, ff.Value)
 
-				newFrozenFundsList = append(newFrozenFundsList, FrozenFund{
-					Address:      ff.Address,
-					CandidateKey: ff.CandidateKey,
-					Coin:         types.GetBaseCoin(),
-					Value:        ret,
-				})
+					coinToDelete.SubReserve(ret)
+					coinToDelete.SubVolume(ff.Value)
 
-				continue
+					newFrozenFundsList = append(newFrozenFundsList, FrozenFund{
+						Address:      ff.Address,
+						CandidateKey: ff.CandidateKey,
+						Coin:         types.GetBaseCoin(),
+						Value:        ret,
+					})
+
+					continue
+				}
+
+				newFrozenFundsList = append(newFrozenFundsList, ff)
 			}
 
-			newFrozenFundsList = append(newFrozenFundsList, ff)
+			frozenFunds.data.List = newFrozenFundsList
+			s.setStateFrozenFunds(frozenFunds)
+			s.MarkStateFrozenFundsDirty(frozenFunds.blockHeight)
 		}
-
-		frozenFunds.data.List = newFrozenFundsList
-		s.setStateFrozenFunds(frozenFunds)
-		s.MarkStateFrozenFundsDirty(frozenFunds.blockHeight)
 	}
 
 	// remove coin from stakes
