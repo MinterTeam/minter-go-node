@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.20.5
+
+IMPROVEMENT
+
+- [api] Speed up state history
+
 ## 0.20.4
 
 BUG FIXES

@@ -91,7 +91,7 @@ func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 		panic(err)
 	}
 
-	blockchain.stateCheck = state.NewForCheck(blockchain.stateDeliver)
+	blockchain.stateCheck = state.NewForCheckFromDeliver(blockchain.stateDeliver)
 
 	// Set start height for rewards and validators
 	rewards.SetStartHeight(applicationDB.GetStartHeight())
@@ -428,7 +428,7 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 	// Check invariants
 	if app.height%720 == 0 && app.tmNode != nil {
 		genesis, _ := client.NewLocal(app.tmNode).Genesis()
-		if err := state.NewForCheck(app.stateCheck).CheckForInvariants(genesis.Genesis); err != nil {
+		if err := state.NewForCheckFromDeliver(app.stateCheck).CheckForInvariants(genesis.Genesis); err != nil {
 			log.With("module", "invariants").Error("Invariants error", "msg", err.Error(), "height", app.height)
 		}
 	}
@@ -465,7 +465,7 @@ func (app *Blockchain) CurrentState() *state.StateDB {
 	app.lock.RLock()
 	defer app.lock.RUnlock()
 
-	return state.NewForCheck(app.stateCheck)
+	return state.NewForCheckFromDeliver(app.stateCheck)
 }
 
 // Get immutable state of Minter Blockchain for given height
@@ -473,7 +473,7 @@ func (app *Blockchain) GetStateForHeight(height uint64) (*state.StateDB, error) 
 	app.lock.RLock()
 	defer app.lock.RUnlock()
 
-	s, err := state.New(height, app.stateDB, false)
+	s, err := state.NewForCheck(height, app.stateDB)
 	if err != nil {
 		return nil, rpctypes.RPCError{Code: 404, Message: "State at given height not found", Data: err.Error()}
 	}
@@ -523,7 +523,7 @@ func (app *Blockchain) resetCheckState() {
 	app.lock.Lock()
 	defer app.lock.Unlock()
 
-	app.stateCheck = state.NewForCheck(app.stateDeliver)
+	app.stateCheck = state.NewForCheckFromDeliver(app.stateDeliver)
 }
 
 func (app *Blockchain) getCurrentValidators() abciTypes.ValidatorUpdates {
