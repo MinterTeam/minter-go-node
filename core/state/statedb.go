@@ -78,7 +78,35 @@ type StakeCache struct {
 	BipValue   *big.Int
 }
 
-func NewForCheck(s *StateDB) *StateDB {
+func NewForCheck(height uint64, db dbm.DB) (*StateDB, error) {
+	tree := NewMutableTree(db)
+
+	t, err := tree.GetImmutableAtHeight(int64(height))
+	if err != nil {
+		return nil, err
+	}
+
+	return &StateDB{
+		db:                    db,
+		iavl:                  t,
+		height:                height,
+		stateAccounts:         make(map[types.Address]*stateAccount),
+		stateAccountsDirty:    make(map[types.Address]struct{}),
+		stateCoins:            make(map[types.CoinSymbol]*stateCoin),
+		stateCoinsDirty:       make(map[types.CoinSymbol]struct{}),
+		stateFrozenFunds:      make(map[uint64]*stateFrozenFund),
+		stateFrozenFundsDirty: make(map[uint64]struct{}),
+		stateCandidates:       nil,
+		stateCandidatesDirty:  false,
+		stateValidators:       nil,
+		stateValidatorsDirty:  false,
+		totalSlashed:          nil,
+		totalSlashedDirty:     false,
+		stakeCache:            make(map[types.CoinSymbol]StakeCache),
+	}, nil
+}
+
+func NewForCheckFromDeliver(s *StateDB) *StateDB {
 	return &StateDB{
 		db:                    s.db,
 		iavl:                  s.iavl.GetImmutable(),
@@ -2070,4 +2098,8 @@ func (s *StateDB) CheckForInvariants(genesis *tmTypes.GenesisDoc) error {
 
 func (s *StateDB) Height() uint64 {
 	return s.height
+}
+
+func (s *StateDB) DB() dbm.DB {
+	return s.db
 }
