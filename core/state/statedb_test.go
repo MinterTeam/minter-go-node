@@ -94,7 +94,6 @@ func TestStateDB_Commit(t *testing.T) {
 		big.NewInt(2))
 
 	hash, version, err := state.Commit()
-
 	if err != nil {
 		t.Errorf("Error: %s", err.Error())
 	}
@@ -103,8 +102,7 @@ func TestStateDB_Commit(t *testing.T) {
 		t.Errorf("Version should be 1, got %d", version)
 	}
 
-	targetHash, _ := hex.DecodeString("890866e0a38f831ab825dedc0fa6996c0afe47c40ab184fbf88b2b156343970d")
-
+	targetHash, _ := hex.DecodeString("c5ffd98054e8ecb08c3f6b64f0c91dc629a664eca07b62782317d4760868f623")
 	if !bytes.Equal(hash, targetHash) {
 		t.Errorf("Hash should be %x, got %x", targetHash, hash)
 	}
