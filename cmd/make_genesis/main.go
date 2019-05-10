@@ -85,7 +85,7 @@ func main() {
 		}
 
 		frozenFunds = append(frozenFunds, types.FrozenFund{
-			Height:       17280 * 1,
+			Height:       17280 * 8,
 			Address:      types.HexToAddress(address),
 			CandidateKey: []byte{0},
 			Coin:         types.GetBaseCoin(),
@@ -99,7 +99,7 @@ func main() {
 		}
 
 		frozenFunds = append(frozenFunds, types.FrozenFund{
-			Height:       17280 * 2,
+			Height:       17280 * 15,
 			Address:      types.HexToAddress(address),
 			CandidateKey: []byte{0},
 			Coin:         types.GetBaseCoin(),
@@ -113,7 +113,7 @@ func main() {
 		}
 
 		frozenFunds = append(frozenFunds, types.FrozenFund{
-			Height:       17280 * 3,
+			Height:       17280 * 29,
 			Address:      types.HexToAddress(address),
 			CandidateKey: []byte{0},
 			Coin:         types.GetBaseCoin(),
@@ -162,7 +162,7 @@ func main() {
 
 	// Compose Genesis
 	genesis := tmTypes.GenesisDoc{
-		GenesisTime: time.Date(2019, time.April, 22, 17, 0, 0, 0, time.UTC),
+		GenesisTime: time.Date(2019, time.May, 12, 11, 0, 0, 0, time.UTC),
 		ChainID:     networkId,
 		ConsensusParams: &tmTypes.ConsensusParams{
 			Block: tmTypes.BlockParams{
