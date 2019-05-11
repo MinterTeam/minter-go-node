@@ -5,7 +5,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"github.com/MinterTeam/go-amino"
-	"github.com/MinterTeam/minter-go-node/core/developers"
+	"github.com/MinterTeam/minter-go-node/core/dao"
 	"github.com/MinterTeam/minter-go-node/core/minter"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
@@ -194,7 +194,7 @@ func main() {
 func makeValidatorsAndCandidates(pubkeys []string, stake *big.Int) ([]types.Validator, []types.Candidate) {
 	validators := make([]types.Validator, len(pubkeys))
 	candidates := make([]types.Candidate, len(pubkeys))
-	addr := developers.Address
+	addr := dao.Address
 
 	for i, val := range pubkeys {
 		pkey, err := base64.StdEncoding.DecodeString(val)
@@ -252,8 +252,7 @@ func makeBalances(balances map[string]*big.Int, balances2 map[string]*big.Int, b
 	}
 
 	totalBalances.Add(totalBalances, big.NewInt(4)) // first validators' stakes
-
-	balances[developers.Address.String()] = big.NewInt(0).Sub(helpers.BipToPip(big.NewInt(200000000)), totalBalances) // Developers account
+	balances[dao.Address.String()] = big.NewInt(0).Sub(helpers.BipToPip(big.NewInt(200000000)), totalBalances) // DAO account
 
 	var result []types.Account
 	for address, balance := range balances {
