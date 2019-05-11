@@ -5,15 +5,17 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"github.com/MinterTeam/go-amino"
-	"github.com/MinterTeam/minter-go-node/core/developers"
+	"github.com/MinterTeam/minter-go-node/core/dao"
 	"github.com/MinterTeam/minter-go-node/core/minter"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	tmTypes "github.com/tendermint/tendermint/types"
+	"math"
 	"math/big"
 	"os"
 	"sort"
+	"strconv"
 	"time"
 )
 
@@ -41,7 +43,7 @@ func main() {
 	reader.FieldsPerRecord = 5
 	rawCSVdata, err := reader.ReadAll()
 
-	p := big.NewFloat(0).SetInt(big.NewInt(0).Exp(big.NewInt(10), big.NewInt(18), nil))
+	p := big.NewInt(0).Set(big.NewInt(0).Exp(big.NewInt(10), big.NewInt(18), nil))
 
 	for _, line := range rawCSVdata {
 		role, address, balMain, balBonus, balAirdrop := line[0], line[1], line[2], line[3], line[4]
@@ -58,20 +60,20 @@ func main() {
 			airdropBalances[address] = big.NewInt(0)
 		}
 
-		balMainFloat, _ := big.NewFloat(0).SetString(balMain)
-		balMainInt, _ := big.NewFloat(0).Mul(balMainFloat, p).Int(nil)
+		balMainFloat, _ := strconv.ParseFloat(balMain, 64)
+		balMainInt := big.NewInt(0).Mul(big.NewInt(int64(math.Round(balMainFloat))), p)
 		if balMainInt.Cmp(helpers.BipToPip(big.NewInt(100000))) != -1 || role == "pool_admin" {
 			firstBalances[address].Add(firstBalances[address], balMainInt)
 		} else {
 			secondBalances[address].Add(secondBalances[address], balMainInt)
 		}
 
-		balBonusFloat, _ := big.NewFloat(0).SetString(balBonus)
-		balBonusInt, _ := big.NewFloat(0).Mul(balBonusFloat, p).Int(nil)
+		balBonusFloat, _ := strconv.ParseFloat(balBonus, 64)
+		balBonusInt := big.NewInt(0).Mul(big.NewInt(int64(math.Round(balBonusFloat))), p)
 		bonusBalances[address].Add(bonusBalances[address], balBonusInt)
 
-		balAirdropFloat, _ := big.NewFloat(0).SetString(balAirdrop)
-		balAirdropInt, _ := big.NewFloat(0).Mul(balAirdropFloat, p).Int(nil)
+		balAirdropFloat, _ := strconv.ParseFloat(balAirdrop, 64)
+		balAirdropInt := big.NewInt(0).Mul(big.NewInt(int64(math.Round(balAirdropFloat))), p)
 		airdropBalances[address].Add(airdropBalances[address], balAirdropInt)
 	}
 
@@ -83,7 +85,7 @@ func main() {
 		}
 
 		frozenFunds = append(frozenFunds, types.FrozenFund{
-			Height:       17280 * 1,
+			Height:       17280 * 8,
 			Address:      types.HexToAddress(address),
 			CandidateKey: []byte{0},
 			Coin:         types.GetBaseCoin(),
@@ -97,7 +99,7 @@ func main() {
 		}
 
 		frozenFunds = append(frozenFunds, types.FrozenFund{
-			Height:       17280 * 2,
+			Height:       17280 * 15,
 			Address:      types.HexToAddress(address),
 			CandidateKey: []byte{0},
 			Coin:         types.GetBaseCoin(),
@@ -111,7 +113,7 @@ func main() {
 		}
 
 		frozenFunds = append(frozenFunds, types.FrozenFund{
-			Height:       17280 * 3,
+			Height:       17280 * 29,
 			Address:      types.HexToAddress(address),
 			CandidateKey: []byte{0},
 			Coin:         types.GetBaseCoin(),
@@ -156,11 +158,11 @@ func main() {
 	}
 
 	appHash := [32]byte{}
-	networkId := "minter-test-network-39"
+	networkId := "minter-test-network-40"
 
 	// Compose Genesis
 	genesis := tmTypes.GenesisDoc{
-		GenesisTime: time.Date(2019, time.April, 22, 17, 0, 0, 0, time.UTC),
+		GenesisTime: time.Date(2019, time.May, 12, 11, 0, 0, 0, time.UTC),
 		ChainID:     networkId,
 		ConsensusParams: &tmTypes.ConsensusParams{
 			Block: tmTypes.BlockParams{
@@ -192,7 +194,7 @@ func main() {
 func makeValidatorsAndCandidates(pubkeys []string, stake *big.Int) ([]types.Validator, []types.Candidate) {
 	validators := make([]types.Validator, len(pubkeys))
 	candidates := make([]types.Candidate, len(pubkeys))
-	addr := developers.Address
+	addr := dao.Address
 
 	for i, val := range pubkeys {
 		pkey, err := base64.StdEncoding.DecodeString(val)
@@ -249,9 +251,8 @@ func makeBalances(balances map[string]*big.Int, balances2 map[string]*big.Int, b
 		totalBalances.Add(totalBalances, val)
 	}
 
-	totalBalances.Add(totalBalances, big.NewInt(4)) // first validators' stakes
-
-	balances[developers.Address.String()] = big.NewInt(0).Sub(helpers.BipToPip(big.NewInt(200000000)), totalBalances) // Developers account
+	totalBalances.Add(totalBalances, big.NewInt(4))                                                            // first validators' stakes
+	balances[dao.Address.String()] = big.NewInt(0).Sub(helpers.BipToPip(big.NewInt(200000000)), totalBalances) // DAO account
 
 	var result []types.Account
 	for address, balance := range balances {

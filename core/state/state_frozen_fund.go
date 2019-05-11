@@ -31,12 +31,11 @@ type FrozenFund struct {
 }
 
 type FrozenFunds struct {
-	BlockHeight uint64
-	List        []FrozenFund
+	List []FrozenFund
 }
 
 func (f FrozenFunds) String() string {
-	return fmt.Sprintf("Frozen funds at block %d (%d items)", f.BlockHeight, len(f.List))
+	return fmt.Sprintf("Frozen funds (%d items)", len(f.List))
 }
 
 // newFrozenFund creates a state frozen fund.

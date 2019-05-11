@@ -25,7 +25,7 @@ import (
 	"sort"
 )
 
-const UnbondPeriod = 720 // in mainnet will be 518400 (30 days)
+const UnbondPeriod = 518400
 const MaxDelegatorsPerCandidate = 1000
 
 var (
@@ -1676,7 +1676,7 @@ func (s *StateDB) deleteCoin(symbol types.CoinSymbol) {
 			frozenFunds := s.GetStateFrozenFunds(binary.BigEndian.Uint64(key[1:]))
 			for _, ff := range frozenFunds.data.List {
 				if ff.Coin == symbol {
-					frozenFundsHeights = append(frozenFundsHeights, frozenFunds.data.BlockHeight)
+					frozenFundsHeights = append(frozenFundsHeights, frozenFunds.BlockHeight())
 				}
 			}
 		}
