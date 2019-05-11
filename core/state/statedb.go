@@ -25,7 +25,7 @@ import (
 	"sort"
 )
 
-const UnbondPeriod = 720 // in mainnet will be 518400 (30 days)
+const UnbondPeriod = 518400
 const MaxDelegatorsPerCandidate = 1000
 
 var (
