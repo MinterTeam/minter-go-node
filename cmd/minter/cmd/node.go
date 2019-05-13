@@ -151,7 +151,7 @@ func getGenesis() (doc *tmTypes.GenesisDoc, e error) {
 	genesisFile := utils.GetMinterHome() + "/config/genesis.json"
 
 	if !common.FileExists(genesisFile) {
-		box := packr.NewBox("../../../testnet")
+		box := packr.NewBox("../../../mainnet")
 		err := common.WriteFile(genesisFile, box.Bytes("/"+config.NetworkId+"/genesis.json"), 0644)
 		if err != nil {
 			return nil, err
