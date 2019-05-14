@@ -146,6 +146,7 @@ func main() {
 	validators, candidates := makeValidatorsAndCandidates(validatorsPubKeys, big.NewInt(1))
 
 	jsonBytes, err := cdc.MarshalJSONIndent(types.AppState{
+		Note:         "Minter, the Internet of Money (IoM)\nBIP Initial Price – $0.32\nSo Long, and Thanks for All the Fish!",
 		Validators:   validators,
 		Candidates:   candidates,
 		Accounts:     bals,
