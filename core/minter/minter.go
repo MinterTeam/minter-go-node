@@ -403,6 +403,12 @@ func (app *Blockchain) CheckTx(rawTx []byte) abciTypes.ResponseCheckTx {
 
 // Commit the state and return the application Merkle root hash
 func (app *Blockchain) Commit() abciTypes.ResponseCommit {
+	// Committing Minter Blockchain state
+	hash, _, err := app.stateDeliver.Commit()
+	if err != nil {
+		panic(err)
+	}
+
 	// Check invariants
 	if app.height%12 == 0 && app.tmNode != nil {
 		genesis, _ := client.NewLocal(app.tmNode).Genesis()
@@ -410,12 +416,6 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 			log.With("module", "invariants").Error("Invariants error", "msg", err.Error(), "height", app.height)
 			panic("INVARIANTS FAILURE")
 		}
-	}
-
-	// Committing Minter Blockchain state
-	hash, _, err := app.stateDeliver.Commit()
-	if err != nil {
-		panic(err)
 	}
 
 	// Flush events db
