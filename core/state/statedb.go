@@ -11,6 +11,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/eventsdb"
 	"github.com/MinterTeam/minter-go-node/eventsdb/events"
 	"github.com/MinterTeam/minter-go-node/formula"
+	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	dbm "github.com/tendermint/tendermint/libs/db"
@@ -2088,9 +2089,14 @@ func (s *StateDB) CheckForInvariants() error {
 	predictedBasecoinVolume.Add(predictedBasecoinVolume, GenesisAlloc)
 
 	delta := big.NewInt(0).Sub(predictedBasecoinVolume, totalBasecoinVolume)
+
 	if delta.Cmp(big.NewInt(0)) != 0 {
 		return fmt.Errorf("smth wrong with total base coins in blockchain. Expected total supply to be %s, got %s",
 			predictedBasecoinVolume, totalBasecoinVolume)
+	}
+
+	if delta.Cmp(helpers.BipToPip(big.NewInt(1000))) == 1 {
+		panic("CRITICAL INVARIANTS FAILURE")
 	}
 
 	for coin, volume := range coinSupplies {
