@@ -403,6 +403,15 @@ func (app *Blockchain) CheckTx(rawTx []byte) abciTypes.ResponseCheckTx {
 
 // Commit the state and return the application Merkle root hash
 func (app *Blockchain) Commit() abciTypes.ResponseCommit {
+	// Check invariants
+	if app.height%12 == 0 && app.tmNode != nil {
+		genesis, _ := client.NewLocal(app.tmNode).Genesis()
+		if err := state.NewForCheckFromDeliver(app.stateCheck).CheckForInvariants(genesis.Genesis); err != nil {
+			log.With("module", "invariants").Error("Invariants error", "msg", err.Error(), "height", app.height)
+			panic("INVARIANTS FAILURE")
+		}
+	}
+
 	// Committing Minter Blockchain state
 	hash, _, err := app.stateDeliver.Commit()
 	if err != nil {
@@ -424,14 +433,6 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 
 	// Clear mempool
 	app.currentMempool = sync.Map{}
-
-	// Check invariants
-	if app.height%720 == 0 && app.tmNode != nil {
-		genesis, _ := client.NewLocal(app.tmNode).Genesis()
-		if err := state.NewForCheckFromDeliver(app.stateCheck).CheckForInvariants(genesis.Genesis); err != nil {
-			log.With("module", "invariants").Error("Invariants error", "msg", err.Error(), "height", app.height)
-		}
-	}
 
 	// Releasing wg
 	app.wg.Done()
