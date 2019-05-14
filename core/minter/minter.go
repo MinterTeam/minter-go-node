@@ -428,7 +428,7 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 	app.wg.Done()
 
 	// Check invariants
-	if app.height%12 == 0 {
+	if app.height%720 == 0 {
 		if err := state.NewForCheckFromDeliver(app.stateCheck).CheckForInvariants(); err != nil {
 			log.With("module", "invariants").Error("Invariants error", "msg", err.Error(), "height", app.height)
 			panic("INVARIANTS FAILURE")
