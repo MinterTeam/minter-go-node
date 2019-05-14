@@ -17,6 +17,7 @@ import (
 	dbm "github.com/tendermint/tendermint/libs/db"
 	tmTypes "github.com/tendermint/tendermint/types"
 	"math/big"
+	"os"
 	"sync"
 
 	"bytes"
@@ -2091,12 +2092,15 @@ func (s *StateDB) CheckForInvariants() error {
 	delta := big.NewInt(0).Sub(predictedBasecoinVolume, totalBasecoinVolume)
 
 	if delta.Cmp(big.NewInt(0)) != 0 {
-		return fmt.Errorf("smth wrong with total base coins in blockchain. Expected total supply to be %s, got %s",
+		e := fmt.Errorf("smth wrong with total base coins in blockchain. Expected total supply to be %s, got %s",
 			predictedBasecoinVolume, totalBasecoinVolume)
-	}
 
-	if delta.Cmp(helpers.BipToPip(big.NewInt(1000))) == 1 {
-		panic("CRITICAL INVARIANTS FAILURE")
+		if delta.Cmp(helpers.BipToPip(big.NewInt(1000))) == 1 {
+			println(fmt.Sprintf("CRITICAL INVARIANTS FAILURE: %s", e))
+			os.Exit(1)
+		}
+
+		return e
 	}
 
 	for coin, volume := range coinSupplies {
