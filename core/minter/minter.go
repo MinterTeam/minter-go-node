@@ -142,7 +142,7 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 // Signals the beginning of a block.
 func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.ResponseBeginBlock {
 	// Check invariants
-	if app.height%1 == 0 {
+	if app.height%720 == 0 {
 		if err := state.NewForCheckFromDeliver(app.stateCheck).CheckForInvariants(); err != nil {
 			log.With("module", "invariants").Error("Invariants error", "msg", err.Error(), "height", app.height)
 		}
