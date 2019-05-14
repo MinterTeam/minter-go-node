@@ -78,7 +78,7 @@ func TestBuyCoinTx(t *testing.T) {
 	tx := Transaction{
 		Nonce:         1,
 		GasPrice:      1,
-		ChainID:       types.ChainTestnet,
+		ChainID:       types.CurrentChainID,
 		GasCoin:       coin,
 		Type:          TypeBuyCoin,
 		Data:          encodedData,
@@ -143,7 +143,7 @@ func TestBuyCoinTxInsufficientFunds(t *testing.T) {
 		Nonce:    1,
 		GasPrice: 1,
 
-		ChainID:       types.ChainTestnet,
+		ChainID:       types.CurrentChainID,
 		GasCoin:       coin,
 		Type:          TypeBuyCoin,
 		Data:          encodedData,
@@ -187,7 +187,7 @@ func TestBuyCoinTxEqualCoins(t *testing.T) {
 	tx := Transaction{
 		Nonce:         1,
 		GasPrice:      1,
-		ChainID:       types.ChainTestnet,
+		ChainID:       types.CurrentChainID,
 		GasCoin:       types.GetBaseCoin(),
 		Type:          TypeBuyCoin,
 		Data:          encodedData,
@@ -231,7 +231,7 @@ func TestBuyCoinTxNotExistsBuyCoin(t *testing.T) {
 	tx := Transaction{
 		Nonce:         1,
 		GasPrice:      1,
-		ChainID:       types.ChainTestnet,
+		ChainID:       types.CurrentChainID,
 		GasCoin:       types.GetBaseCoin(),
 		Type:          TypeBuyCoin,
 		Data:          encodedData,
@@ -275,7 +275,7 @@ func TestBuyCoinTxNotExistsSellCoin(t *testing.T) {
 	tx := Transaction{
 		Nonce:         1,
 		GasPrice:      1,
-		ChainID:       types.ChainTestnet,
+		ChainID:       types.CurrentChainID,
 		GasCoin:       types.GetBaseCoin(),
 		Type:          TypeBuyCoin,
 		Data:          encodedData,
@@ -321,7 +321,7 @@ func TestBuyCoinTxNotExistsGasCoin(t *testing.T) {
 	tx := Transaction{
 		Nonce:         1,
 		GasPrice:      1,
-		ChainID:       types.ChainTestnet,
+		ChainID:       types.CurrentChainID,
 		GasCoin:       types.CoinSymbol{},
 		Type:          TypeBuyCoin,
 		Data:          encodedData,
@@ -371,7 +371,7 @@ func TestBuyCoinTxNotGasCoin(t *testing.T) {
 	tx := Transaction{
 		Nonce:         1,
 		GasPrice:      1,
-		ChainID:       types.ChainTestnet,
+		ChainID:       types.CurrentChainID,
 		GasCoin:       getTestCoinSymbol(),
 		Type:          TypeBuyCoin,
 		Data:          encodedData,
@@ -396,7 +396,7 @@ func TestBuyCoinTxNotGasCoin(t *testing.T) {
 }
 
 func TestBuyCoinTxJSON(t *testing.T) {
-	out := []byte("{\"coin_to_buy\":\"MNT\",\"value_to_buy\":\"1\",\"coin_to_sell\":\"TEST\",\"maximum_value_to_sell\":\"1\"}")
+	out := []byte("{\"coin_to_buy\":\"BIP\",\"value_to_buy\":\"1\",\"coin_to_sell\":\"TEST\",\"maximum_value_to_sell\":\"1\"}")
 
 	buyCoinData := BuyCoinData{
 		CoinToBuy:          types.GetBaseCoin(),
@@ -412,6 +412,6 @@ func TestBuyCoinTxJSON(t *testing.T) {
 	}
 
 	if !bytes.Equal(out, result) {
-		t.Fatalf("Error: result is not correct %s", string(result))
+		t.Fatalf("Error: result is not correct %s, expected %s", string(result), string(out))
 	}
 }

@@ -42,7 +42,7 @@ func TestMultisendTx(t *testing.T) {
 		Nonce:         1,
 		GasPrice:      1,
 		GasCoin:       coin,
-		ChainID:       types.ChainTestnet,
+		ChainID:       types.CurrentChainID,
 		Type:          TypeMultisend,
 		Data:          encodedData,
 		SignatureType: SigTypeSingle,

@@ -4,17 +4,20 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/MinterTeam/go-amino"
+	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/core/rewards"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/core/validators"
 	"github.com/MinterTeam/minter-go-node/eventsdb"
 	"github.com/MinterTeam/minter-go-node/eventsdb/events"
 	"github.com/MinterTeam/minter-go-node/formula"
+	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	dbm "github.com/tendermint/tendermint/libs/db"
 	tmTypes "github.com/tendermint/tendermint/types"
 	"math/big"
+	"os"
 	"sync"
 
 	"bytes"
@@ -1959,8 +1962,14 @@ func (s *StateDB) Import(appState types.AppState) {
 	}
 }
 
-func (s *StateDB) CheckForInvariants(genesis *tmTypes.GenesisDoc) error {
+func (s *StateDB) CheckForInvariants() error {
 	height := s.height
+
+	genesisFile := utils.GetMinterHome() + "/config/genesis.json"
+	genesis, err := tmTypes.GenesisDocFromFile(genesisFile)
+	if err != nil {
+		panic(err)
+	}
 
 	var genesisState types.AppState
 	_ = amino.UnmarshalJSON(genesis.AppState, &genesisState)
@@ -2081,9 +2090,17 @@ func (s *StateDB) CheckForInvariants(genesis *tmTypes.GenesisDoc) error {
 	predictedBasecoinVolume.Add(predictedBasecoinVolume, GenesisAlloc)
 
 	delta := big.NewInt(0).Sub(predictedBasecoinVolume, totalBasecoinVolume)
+
 	if delta.Cmp(big.NewInt(0)) != 0 {
-		return fmt.Errorf("smth wrong with total base coins in blockchain. Expected total supply to be %s, got %s",
+		e := fmt.Errorf("smth wrong with total base coins in blockchain. Expected total supply to be %s, got %s",
 			predictedBasecoinVolume, totalBasecoinVolume)
+
+		if delta.Cmp(helpers.BipToPip(big.NewInt(1000))) == 1 {
+			println(fmt.Sprintf("CRITICAL INVARIANTS FAILURE: %s", e))
+			os.Exit(1)
+		}
+
+		return e
 	}
 
 	for coin, volume := range coinSupplies {

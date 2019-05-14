@@ -16,17 +16,19 @@ _NOTE: This is alpha software. Please contact us if you intend to run it in prod
 
 You can get official installation instructions in our [docs](https://docs.minter.network/#section/Install-Minter).
 
-1. Download Minter
+1. Install LevelDB: https://github.com/google/leveldb
+
+2. Download Minter
 
     Get [latest binary build](https://github.com/MinterTeam/minter-go-node/releases) suitable for your architecture and unpack it to desired folder.
 
-2. Run Minter Node
+3. Run Minter Node
 
 ```bash
-./minter
+./minter node
 ```
 
-3. Use GUI
+4. Use GUI
 
     Open http://localhost:3000/ in local browser to see node’s GUI.
 

@@ -21,7 +21,6 @@ import (
 	"github.com/tendermint/tendermint/crypto/encoding/amino"
 	"github.com/tendermint/tendermint/libs/db"
 	tmNode "github.com/tendermint/tendermint/node"
-	"github.com/tendermint/tendermint/rpc/client"
 	types2 "github.com/tendermint/tendermint/types"
 	"math/big"
 	"sync"
@@ -142,6 +141,13 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 
 // Signals the beginning of a block.
 func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.ResponseBeginBlock {
+	// Check invariants
+	if app.height%1 == 0 {
+		if err := state.NewForCheckFromDeliver(app.stateCheck).CheckForInvariants(); err != nil {
+			log.With("module", "invariants").Error("Invariants error", "msg", err.Error(), "height", app.height)
+		}
+	}
+
 	app.wg.Add(1)
 	if atomic.LoadUint32(&app.stopped) == 1 {
 		panic("Application stopped")
@@ -424,14 +430,6 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 
 	// Clear mempool
 	app.currentMempool = sync.Map{}
-
-	// Check invariants
-	if app.height%720 == 0 && app.tmNode != nil {
-		genesis, _ := client.NewLocal(app.tmNode).Genesis()
-		if err := state.NewForCheckFromDeliver(app.stateCheck).CheckForInvariants(genesis.Genesis); err != nil {
-			log.With("module", "invariants").Error("Invariants error", "msg", err.Error(), "height", app.height)
-		}
-	}
 
 	// Releasing wg
 	app.wg.Done()
