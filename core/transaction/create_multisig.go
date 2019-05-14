@@ -23,6 +23,12 @@ func (data CreateMultisigData) TotalSpend(tx *Transaction, context *state.StateD
 }
 
 func (data CreateMultisigData) BasicCheck(tx *Transaction, context *state.StateDB) *Response {
+	if true {
+		return &Response{
+			Code: code.DecodeError,
+			Log:  fmt.Sprintf("multisig transactions are not supported yet")}
+	}
+
 	if len(data.Weights) > 32 {
 		return &Response{
 			Code: code.TooLargeOwnersList,
