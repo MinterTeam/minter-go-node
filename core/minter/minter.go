@@ -141,19 +141,18 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 
 // Signals the beginning of a block.
 func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.ResponseBeginBlock {
-	// Check invariants
-	if app.height%1 == 0 {
-		if err := state.NewForCheckFromDeliver(app.stateCheck).CheckForInvariants(); err != nil {
-			log.With("module", "invariants").Error("Invariants error", "msg", err.Error(), "height", app.height)
-		}
-	}
-
 	app.wg.Add(1)
 	if atomic.LoadUint32(&app.stopped) == 1 {
 		panic("Application stopped")
 	}
 
 	height := uint64(req.Header.Height)
+	// Check invariants
+	if height%720 == 0 {
+		if err := state.NewForCheckFromDeliver(app.stateCheck).CheckForInvariants(); err != nil {
+			log.With("module", "invariants").Error("Invariants error", "msg", err.Error(), "height", app.height)
+		}
+	}
 
 	// compute max gas
 	app.updateBlocksTimeDelta(height, 3)
