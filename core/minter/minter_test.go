@@ -154,7 +154,7 @@ func TestSendTx(t *testing.T) {
 
 	tx := transaction.Transaction{
 		Nonce:         nonce,
-		ChainID:       types.ChainTestnet,
+		ChainID:       types.CurrentChainID,
 		GasPrice:      1,
 		GasCoin:       types.GetBaseCoin(),
 		Type:          transaction.TypeSend,
@@ -219,7 +219,7 @@ func TestSmallStakeValidator(t *testing.T) {
 
 	tx := transaction.Transaction{
 		Nonce:         nonce,
-		ChainID:       types.ChainTestnet,
+		ChainID:       types.CurrentChainID,
 		GasPrice:      1,
 		GasCoin:       types.GetBaseCoin(),
 		Type:          transaction.TypeDeclareCandidacy,
@@ -255,7 +255,7 @@ func TestSmallStakeValidator(t *testing.T) {
 	tx = transaction.Transaction{
 		Nonce:         nonce,
 		GasPrice:      1,
-		ChainID:       types.ChainTestnet,
+		ChainID:       types.CurrentChainID,
 		GasCoin:       types.GetBaseCoin(),
 		Type:          transaction.TypeSetCandidateOnline,
 		Data:          encodedData,
@@ -323,7 +323,7 @@ func TestSmallStakeValidator(t *testing.T) {
 	tx = transaction.Transaction{
 		Nonce:         nonce,
 		GasPrice:      1,
-		ChainID:       types.ChainTestnet,
+		ChainID:       types.CurrentChainID,
 		GasCoin:       types.GetBaseCoin(),
 		Type:          transaction.TypeSetCandidateOnline,
 		Data:          encodedData,
@@ -419,6 +419,11 @@ func getGenesis() (*types2.GenesisDoc, error) {
 	err = genesisDoc.ValidateAndComplete()
 	if err != nil {
 		return nil, err
+	}
+
+	genesisFile := utils.GetMinterHome() + "/config/genesis.json"
+	if err := genesisDoc.SaveAs(genesisFile); err != nil {
+		panic(err)
 	}
 
 	return &genesisDoc, nil

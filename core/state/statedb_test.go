@@ -102,7 +102,7 @@ func TestStateDB_Commit(t *testing.T) {
 		t.Errorf("Version should be 1, got %d", version)
 	}
 
-	targetHash, _ := hex.DecodeString("c5ffd98054e8ecb08c3f6b64f0c91dc629a664eca07b62782317d4760868f623")
+	targetHash, _ := hex.DecodeString("466e1c2aca40c0db51e54f6d87224c2eede66b26b96fa1f4c762d66a3d93e637,")
 	if !bytes.Equal(hash, targetHash) {
 		t.Errorf("Hash should be %x, got %x", targetHash, hash)
 	}
