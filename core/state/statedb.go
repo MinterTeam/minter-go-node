@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/MinterTeam/go-amino"
+	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/core/rewards"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/core/validators"
@@ -1959,8 +1960,14 @@ func (s *StateDB) Import(appState types.AppState) {
 	}
 }
 
-func (s *StateDB) CheckForInvariants(genesis *tmTypes.GenesisDoc) error {
+func (s *StateDB) CheckForInvariants() error {
 	height := s.height
+
+	genesisFile := utils.GetMinterHome() + "/config/genesis.json"
+	genesis, err := tmTypes.GenesisDocFromFile(genesisFile)
+	if err != nil {
+		panic(err)
+	}
 
 	var genesisState types.AppState
 	_ = amino.UnmarshalJSON(genesis.AppState, &genesisState)
