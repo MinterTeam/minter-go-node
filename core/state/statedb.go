@@ -1964,6 +1964,9 @@ func (s *StateDB) Import(appState types.AppState) {
 
 func (s *StateDB) CheckForInvariants() error {
 	height := s.height
+	if height <= 1 {
+		return nil
+	}
 
 	genesisFile := utils.GetMinterHome() + "/config/genesis.json"
 	genesis, err := tmTypes.GenesisDocFromFile(genesisFile)
