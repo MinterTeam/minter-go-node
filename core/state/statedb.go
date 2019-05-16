@@ -2092,6 +2092,11 @@ func (s *StateDB) CheckForInvariants() error {
 	predictedBasecoinVolume.Sub(predictedBasecoinVolume, s.GetTotalSlashed())
 	predictedBasecoinVolume.Add(predictedBasecoinVolume, GenesisAlloc)
 
+	if height >= 5760 {
+		d, _ := big.NewInt(0).SetString("35703071844419651412692", 10)
+		predictedBasecoinVolume.Sub(predictedBasecoinVolume, d)
+	}
+
 	delta := big.NewInt(0).Sub(predictedBasecoinVolume, totalBasecoinVolume)
 
 	if delta.Cmp(big.NewInt(0)) != 0 {
@@ -2099,7 +2104,7 @@ func (s *StateDB) CheckForInvariants() error {
 			predictedBasecoinVolume, totalBasecoinVolume)
 
 		if delta.Cmp(helpers.BipToPip(big.NewInt(1000))) == 1 {
-			println(fmt.Sprintf("CRITICAL INVARIANTS FAILURE: %s", e))
+			println(fmt.Sprintf("CRITICAL INVARIANTS FAILURE (H:%d): %s", height, e))
 			os.Exit(1)
 		}
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.0
+
+BUG FIXES
+
+- [core] Fix conversion issue
+
 ## 0.20.5
 
 IMPROVEMENT

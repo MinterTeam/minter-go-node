@@ -190,7 +190,11 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (Tot
 
 		toReserve := big.NewInt(0).Set(baseCoinNeeded)
 		if tx.GasCoin == data.CoinToSell {
-			toReserve.Sub(toReserve, baseCoinNeeded)
+			if context.Height() < 5760 {
+				toReserve.Sub(toReserve, baseCoinNeeded)
+			} else {
+				toReserve.Sub(toReserve, commissionInBaseCoin)
+			}
 		}
 
 		total.Add(data.CoinToSell, value)

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"github.com/MinterTeam/minter-go-node/api"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
@@ -32,6 +33,13 @@ var RunNode = &cobra.Command{
 }
 
 func runNode() error {
+	now := time.Now()
+	startTime := time.Date(2019, time.May, 16, 10, 0, 0, 0, time.UTC)
+	if startTime.After(now) {
+		fmt.Printf("Start time is in the future, sleeping until %s", startTime)
+		time.Sleep(startTime.Sub(now))
+	}
+
 	tmConfig := config.GetTmConfig(cfg)
 
 	if err := common.EnsureDir(utils.GetMinterHome()+"/config", 0777); err != nil {
