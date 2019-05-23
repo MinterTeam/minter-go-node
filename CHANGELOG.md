@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.2
+
+BUG FIXES
+
+- [api] Fix block proposer issue
+
 ## 1.0.0
 
 BUG FIXES

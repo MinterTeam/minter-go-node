@@ -9,6 +9,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/rpc/lib/types"
+	core_types "github.com/tendermint/tendermint/rpc/core/types"
 	types2 "github.com/tendermint/tendermint/types"
 	"math/big"
 	"time"
@@ -24,7 +25,7 @@ type BlockResponse struct {
 	BlockReward  *big.Int                   `json:"block_reward"`
 	Size         int                        `json:"size"`
 	Proposer     types.Pubkey               `json:"proposer,omitempty"`
-	Validators   []BlockValidatorResponse   `json:"validators"`
+	Validators   []BlockValidatorResponse   `json:"validators,omitempty"`
 	Evidence     types2.EvidenceData        `json:"evidence,omitempty"`
 }
 
@@ -106,6 +107,11 @@ func Block(height int64) (*BlockResponse, error) {
 	var validators []BlockValidatorResponse
 	proposer := types.Pubkey{}
 	if height > 1 {
+		proposer, err = getBlockProposer(block)
+		if err != nil {
+			return nil, err
+		}
+
 		validators = make([]BlockValidatorResponse, len(tmValidators.Validators))
 		for i, tmval := range tmValidators.Validators {
 			signed := false
@@ -144,4 +150,19 @@ func Block(height int64) (*BlockResponse, error) {
 		Validators:   validators,
 		Evidence:     block.Block.Evidence,
 	}, nil
+}
+
+func getBlockProposer(block *core_types.ResultBlock) (types.Pubkey, error) {
+	vals, err := client.Validators(&block.Block.Height)
+	if err != nil {
+		return nil, rpctypes.RPCError{Code: 404, Message: "Validators for block not found", Data: err.Error()}
+	}
+
+	for _, tmval := range vals.Validators {
+		if bytes.Equal(tmval.Address.Bytes(), block.Block.ProposerAddress.Bytes()) {
+			return tmval.PubKey.Bytes()[5:], nil
+		}
+	}
+
+	return nil, rpctypes.RPCError{Code: 404, Message: "Block proposer not found"}
 }
