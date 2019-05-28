@@ -5,6 +5,8 @@
 BUG FIXES
 
 - [api] Fix block proposer issue
+- [api] Fix 0x api error
+- [api] Add /missed_blocks endpoint
 
 ## 1.0.0
 
