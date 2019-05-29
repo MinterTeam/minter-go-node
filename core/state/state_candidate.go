@@ -74,10 +74,6 @@ func (s *Stake) CalcSimulatedBipValue(context *StateDB) *big.Int {
 	coin := context.getStateCoin(s.Coin)
 	bipValue := formula.CalculateSaleReturn(coin.Volume(), coin.ReserveBalance(), coin.data.Crr, totalStaked)
 
-	if totalStaked.Cmp(types.Big0) == 0 {
-		return big.NewInt(0)
-	}
-
 	value := big.NewInt(0).Set(bipValue)
 	value.Mul(value, s.Value)
 	value.Div(value, totalStaked)
