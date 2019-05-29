@@ -49,6 +49,13 @@ func (s *Stake) MarshalJSON() ([]byte, error) {
 	})
 }
 
+func (s *Stake) CalcSimulatedBipValue(pubkey []byte, context *StateDB) *big.Int {
+	newContext := NewForCheckFromDeliver(context)
+	newContext.Delegate(s.Owner, pubkey, s.Coin, s.Value)
+
+	return s.CalcBipValue(newContext)
+}
+
 func (s *Stake) CalcBipValue(context *StateDB) *big.Int {
 	if s.Coin.IsBaseCoin() {
 		return big.NewInt(0).Set(s.Value)

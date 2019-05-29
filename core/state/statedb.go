@@ -1569,11 +1569,21 @@ func (s *StateDB) IsDelegatorStakeSufficient(sender types.Address, pubKey []byte
 		return true
 	}
 
-	bipValue := (&Stake{
-		Coin:     coinSymbol,
-		Value:    value,
-		BipValue: big.NewInt(0),
-	}).CalcBipValue(s)
+	bipValue := big.NewInt(0)
+
+	if s.Height() < 250000 {
+		bipValue = (&Stake{
+			Coin:     coinSymbol,
+			Value:    value,
+			BipValue: big.NewInt(0),
+		}).CalcBipValue(s)
+	} else {
+		bipValue = (&Stake{
+			Coin:     coinSymbol,
+			Value:    value,
+			BipValue: big.NewInt(0),
+		}).CalcSimulatedBipValue(pubKey, s)
+	}
 
 	candidates := s.getStateCandidates()
 
