@@ -40,10 +40,9 @@ var (
 func DefaultConfig() *Config {
 	cfg := defaultConfig()
 
-	cfg.P2P.Seeds = "647e32df3b9c54809b5aca2877d9ba60900bc2d9@minter-node-1.testnet.minter.network:26656," +
-		"d20522aa7ba4af8139749c5e724063c4ba18c58b@minter-node-2.testnet.minter.network:26656," +
-		"249c62818bf4601605a65b5adc35278236bd5312@minter-node-3.testnet.minter.network:26656," +
-		"b698b07f13f2210dfc82967bfa2a127d1cdfdc54@minter-node-4.testnet.minter.network:26656"
+	cfg.P2P.Seeds = "25104d4b173d1047e9d1a70cdefde9e30707beb1@84.201.143.192:26656," +
+		"1e1c6149451d2a7c1072523e49cab658080d9bd2@minter-nodes-1.mainnet.btcsecure.io:26656," +
+		"667b26ffa9f844719a9cd73f96a49252f8bfd7df@node-1.minterdex.com"
 
 	cfg.TxIndex = &tmConfig.TxIndexConfig{
 		Indexer:      "kv",
