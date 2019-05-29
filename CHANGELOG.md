@@ -12,6 +12,7 @@ BUG FIXES
 - [api] Fix block proposer issue
 - [api] Fix 0x api error
 - [core] Fix "Stake is too low" issue with new custom coins
+- [core] Fix redeem check invariants
 
 ## 1.0.0
 
