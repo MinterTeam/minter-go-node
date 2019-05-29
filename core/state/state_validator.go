@@ -53,7 +53,6 @@ func (validator *Validator) IsToDrop() bool {
 }
 
 func (validator Validator) GetAddress() [20]byte {
-
 	if validator.tmAddress != nil {
 		return *validator.tmAddress
 	}

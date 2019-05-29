@@ -14,6 +14,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/rlp"
+	"github.com/MinterTeam/minter-go-node/upgrades"
 	dbm "github.com/tendermint/tendermint/libs/db"
 	tmTypes "github.com/tendermint/tendermint/types"
 	"math/big"
@@ -1569,11 +1570,18 @@ func (s *StateDB) IsDelegatorStakeSufficient(sender types.Address, pubKey []byte
 		return true
 	}
 
-	bipValue := (&Stake{
+	stake := Stake{
 		Coin:     coinSymbol,
 		Value:    value,
 		BipValue: big.NewInt(0),
-	}).CalcBipValue(s)
+	}
+
+	bipValue := big.NewInt(0)
+	if s.Height() > upgrades.UpgradeBlock1 {
+		bipValue = stake.CalcSimulatedBipValue(s)
+	} else {
+		bipValue = stake.CalcBipValue(s)
+	}
 
 	candidates := s.getStateCandidates()
 
@@ -2092,7 +2100,7 @@ func (s *StateDB) CheckForInvariants() error {
 	predictedBasecoinVolume.Sub(predictedBasecoinVolume, s.GetTotalSlashed())
 	predictedBasecoinVolume.Add(predictedBasecoinVolume, GenesisAlloc)
 
-	if height >= 5760 {
+	if height >= upgrades.UpgradeBlock0 {
 		d, _ := big.NewInt(0).SetString("35703071844419651412692", 10)
 		predictedBasecoinVolume.Sub(predictedBasecoinVolume, d)
 	}

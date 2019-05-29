@@ -13,6 +13,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/crypto/sha3"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/rlp"
+	"github.com/MinterTeam/minter-go-node/upgrades"
 	"github.com/tendermint/tendermint/libs/common"
 	"math/big"
 )
@@ -35,12 +36,6 @@ func (data RedeemCheckData) BasicCheck(tx *Transaction, context *state.StateDB) 
 		return &Response{
 			Code: code.DecodeError,
 			Log:  "Incorrect tx data"}
-	}
-
-	if tx.ChainID != types.CurrentChainID {
-		return &Response{
-			Code: code.WrongChainID,
-			Log:  "Wrong chain id"}
 	}
 
 	if tx.GasCoin != types.GetBaseCoin() {
@@ -76,11 +71,18 @@ func (data RedeemCheckData) Run(tx *Transaction, context *state.StateDB, isCheck
 	}
 
 	decodedCheck, err := check.DecodeFromBytes(data.RawCheck)
-
 	if err != nil {
 		return Response{
 			Code: code.DecodeError,
 			Log:  err.Error()}
+	}
+
+	if context.Height() > upgrades.UpgradeBlock1 {
+		if decodedCheck.ChainID != types.CurrentChainID {
+			return Response{
+				Code: code.WrongChainID,
+				Log:  "Wrong chain id"}
+		}
 	}
 
 	if len(decodedCheck.Nonce) > 16 {

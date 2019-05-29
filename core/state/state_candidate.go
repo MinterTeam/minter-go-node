@@ -49,6 +49,38 @@ func (s *Stake) MarshalJSON() ([]byte, error) {
 	})
 }
 
+func (s *Stake) CalcSimulatedBipValue(context *StateDB) *big.Int {
+	if s.Coin.IsBaseCoin() {
+		return big.NewInt(0).Set(s.Value)
+	}
+
+	if s.Value.Cmp(types.Big0) == 0 {
+		return big.NewInt(0)
+	}
+
+	totalStaked := big.NewInt(0)
+	totalStaked.Add(totalStaked, s.Value)
+
+	candidates := context.getStateCandidates()
+
+	for _, candidate := range candidates.data {
+		for _, stake := range candidate.Stakes {
+			if stake.Coin == s.Coin {
+				totalStaked.Add(totalStaked, stake.Value)
+			}
+		}
+	}
+
+	coin := context.getStateCoin(s.Coin)
+	bipValue := formula.CalculateSaleReturn(coin.Volume(), coin.ReserveBalance(), coin.data.Crr, totalStaked)
+
+	value := big.NewInt(0).Set(bipValue)
+	value.Mul(value, s.Value)
+	value.Div(value, totalStaked)
+
+	return value
+}
+
 func (s *Stake) CalcBipValue(context *StateDB) *big.Int {
 	if s.Coin.IsBaseCoin() {
 		return big.NewInt(0).Set(s.Value)
