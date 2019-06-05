@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.3
+
+BUG FIXES
+
+- [core] Fix coin liquidation issue
+
 ## 1.0.2
 
 IMPROVEMENT

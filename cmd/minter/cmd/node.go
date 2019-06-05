@@ -34,7 +34,7 @@ var RunNode = &cobra.Command{
 
 func runNode() error {
 	now := time.Now()
-	startTime := time.Date(2019, time.May, 16, 10, 0, 0, 0, time.UTC)
+	startTime := time.Date(2019, time.June, 5, 17, 0, 0, 0, time.UTC)
 	if startTime.After(now) {
 		fmt.Printf("Start time is in the future, sleeping until %s", startTime)
 		time.Sleep(startTime.Sub(now))

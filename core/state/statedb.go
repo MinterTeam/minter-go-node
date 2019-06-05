@@ -814,7 +814,7 @@ func (s *StateDB) CoinExists(symbol types.CoinSymbol) bool {
 
 	stateCoin := s.getStateCoin(symbol)
 
-	return stateCoin != nil
+	return stateCoin != nil && !stateCoin.isDeleted
 }
 
 func (s *StateDB) CandidateExists(key types.Pubkey) bool {
