@@ -48,6 +48,14 @@
   version = "v1.1.1"
 
 [[projects]]
+  digest = "1:5f7414cf41466d4b4dd7ec52b2cd3e481e08cfd11e7e24fef730c0e483e88bb1"
+  name = "github.com/etcd-io/bbolt"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "63597a96ec0ad9e6d43c3fc81e809909e0237461"
+  version = "v1.3.2"
+
+[[projects]]
   digest = "1:abeb38ade3f32a92943e5be54f55ed6d6e3b6602761d74b4aab4c9dd45c18abd"
   name = "github.com/fsnotify/fsnotify"
   packages = ["."]
@@ -399,7 +407,7 @@
   version = "v0.14.1"
 
 [[projects]]
-  digest = "1:e2e0e41f7e2edfd93fb3cc29ae647cb37163b06665cac948298ac29af1bce346"
+  digest = "1:2a54e787f4d1d863871a4373a70b44e7f4a2d74dcaf678ec5319c5d48048931d"
   name = "github.com/tendermint/tendermint"
   packages = [
     "abci/client",
@@ -433,6 +441,7 @@
     "libs/pubsub",
     "libs/pubsub/query",
     "mempool",
+    "mock",
     "node",
     "p2p",
     "p2p/conn",
@@ -455,8 +464,8 @@
     "version",
   ]
   pruneopts = "UT"
-  revision = "d2eab536ac1071b1b5f64283572397606326eb73"
-  version = "v0.31.5"
+  revision = "8fb2c2a0e824d68a1c057e02b4897b085e3a855a"
+  version = "v0.31.7"
 
 [[projects]]
   digest = "1:24ccc5c3deefe7d181e924cb82060682fd0b236ca03bbe49daa8190caf9a86a2"

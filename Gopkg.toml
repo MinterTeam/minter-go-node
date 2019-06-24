@@ -20,7 +20,7 @@
 
 [[constraint]]
   name = "github.com/tendermint/tendermint"
-  version = "0.31.5"
+  version = "0.31.7"
 
 [[constraint]]
   name = "github.com/MinterTeam/go-amino"

@@ -495,7 +495,7 @@ func (app *Blockchain) SetTmNode(node *tmNode.Node) {
 
 // Get minimal acceptable gas price
 func (app *Blockchain) MinGasPrice() uint32 {
-	mempoolSize := app.tmNode.MempoolReactor().Mempool.Size()
+	mempoolSize := app.tmNode.Mempool().Size()
 
 	if mempoolSize > 5000 {
 		return 50
