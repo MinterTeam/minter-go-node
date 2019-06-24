@@ -1,4 +1,4 @@
 package upgrades
 
-const UpgradeBlock0 = 5760
-const UpgradeBlock1 = 250000
+const UpgradeBlock0 = 0
+const UpgradeBlock1 = 0

@@ -28,7 +28,7 @@ const (
 
 var (
 	NetworkId        string
-	DefaultNetworkId = "minter-mainnet-1"
+	DefaultNetworkId = "minter-testnet-41"
 
 	defaultConfigFilePath   = filepath.Join(defaultConfigDir, defaultConfigFileName)
 	defaultGenesisJSONPath  = filepath.Join(defaultConfigDir, defaultGenesisJSONName)
@@ -40,10 +40,7 @@ var (
 func DefaultConfig() *Config {
 	cfg := defaultConfig()
 
-	cfg.P2P.Seeds = "25104d4b173d1047e9d1a70cdefde9e30707beb1@84.201.143.192:26656," +
-		"1e1c6149451d2a7c1072523e49cab658080d9bd2@minter-nodes-1.mainnet.btcsecure.io:26656," +
-		"667b26ffa9f844719a9cd73f96a49252f8bfd7df@node-1.minterdex.com:26656," +
-		"c098df48319b81a7535b9784873d0f143f8b72f5@minter-node-1.rundax.com:26656"
+	cfg.P2P.Seeds = "4735e67924e611b89fbd3f951441b5e912e226d3@minter-node-1.testnet.minter.network,8a5f7f75b4eb8526bc859c4d31cb6ee37ef8726d@minter-node-2.testnet.minter.network"
 
 	cfg.TxIndex = &tmConfig.TxIndexConfig{
 		Indexer:      "kv",

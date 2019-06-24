@@ -1,0 +1,66 @@
+{
+  "genesis_time": "2019-06-24T12:00:00Z",
+  "chain_id": "minter-test-network-41",
+  "consensus_params": {
+    "block": {
+      "max_bytes": "10000000",
+      "max_gas": "100000",
+      "time_iota_ms": "1000"
+    },
+    "evidence": {
+      "max_age": "1000"
+    },
+    "validator": {
+      "pub_key_types": [
+        "ed25519"
+      ]
+    }
+  },
+  "app_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "app_state": {
+    "start_height": "0",
+    "validators": [
+      {
+        "reward_address": "Mxee81347211c72524338f9680072af90744333146",
+        "total_bip_stake": "1000000000000000000000000",
+        "pub_key": "Mp0d29a83e54653a1d5f34e561e0135f1e81cbcae152f1f327ab36857a7e32de4c",
+        "commission": "100",
+        "accum_reward": "0",
+        "absent_times": "________________________"
+      }
+    ],
+    "candidates": [
+      {
+        "reward_address": "Mxee81347211c72524338f9680072af90744333146",
+        "owner_address": "Mxee81347211c72524338f9680072af90744333146",
+        "total_bip_stake": "1000000000000000000000000",
+        "pub_key": "Mp0d29a83e54653a1d5f34e561e0135f1e81cbcae152f1f327ab36857a7e32de4c",
+        "commission": "100",
+        "stakes": [
+          {
+            "owner": "Mxee81347211c72524338f9680072af90744333146",
+            "coin": "MNT",
+            "value": "1000000000000000000000000",
+            "bip_value": "1000000000000000000000000"
+          }
+        ],
+        "created_at_block": "1",
+        "status": 2
+      }
+    ],
+    "accounts": [
+      {
+        "address": "Mxee81347211c72524338f9680072af90744333146",
+        "balance": [
+          {
+            "coin": "MNT",
+            "value": "1000000000000000000000000000000"
+          }
+        ],
+        "nonce": "0"
+      }
+    ],
+    "max_gas": "100000",
+    "total_slashed": "0"
+  }
+}
