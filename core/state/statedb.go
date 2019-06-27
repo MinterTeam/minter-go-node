@@ -2100,11 +2100,6 @@ func (s *StateDB) CheckForInvariants() error {
 	predictedBasecoinVolume.Sub(predictedBasecoinVolume, s.GetTotalSlashed())
 	predictedBasecoinVolume.Add(predictedBasecoinVolume, GenesisAlloc)
 
-	if height >= upgrades.UpgradeBlock0 {
-		d, _ := big.NewInt(0).SetString("35703071844419651412692", 10)
-		predictedBasecoinVolume.Sub(predictedBasecoinVolume, d)
-	}
-
 	delta := big.NewInt(0).Sub(predictedBasecoinVolume, totalBasecoinVolume)
 
 	if delta.Cmp(big.NewInt(0)) != 0 {
