@@ -39,7 +39,7 @@ var Routes = map[string]*rpcserver.RPCFunc{
 	"addresses":              rpcserver.NewRPCFunc(Addresses, "addresses,height"),
 	"send_transaction":       rpcserver.NewRPCFunc(SendTransaction, "tx"),
 	"transaction":            rpcserver.NewRPCFunc(Transaction, "hash"),
-	"transactions":           rpcserver.NewRPCFunc(Transactions, "query"),
+	"transactions":           rpcserver.NewRPCFunc(Transactions, "query,page,perPage"),
 	"block":                  rpcserver.NewRPCFunc(Block, "height"),
 	"events":                 rpcserver.NewRPCFunc(Events, "height"),
 	"net_info":               rpcserver.NewRPCFunc(NetInfo, ""),

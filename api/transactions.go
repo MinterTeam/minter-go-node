@@ -32,8 +32,15 @@ type ResultTxSearch struct {
 	TotalCount int                    `json:"total_count"`
 }
 
-func Transactions(query string) (*[]TransactionResponse, error) {
-	rpcResult, err := client.TxSearch(query, false, 1, 100)
+func Transactions(query string, page, perPage int) (*[]TransactionResponse, error) {
+	if page == 0 {
+		page = 1
+	}
+	if perPage == 0 {
+		perPage = 100
+	}
+
+	rpcResult, err := client.TxSearch(query, false, page, perPage)
 	if err != nil {
 		return nil, err
 	}
