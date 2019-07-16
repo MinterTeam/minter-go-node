@@ -77,7 +77,7 @@ func Block(height int64) (*BlockResponse, error) {
 		sender, _ := tx.Sender()
 
 		tags := make(map[string]string)
-		for _, tag := range blockResults.Results.DeliverTx[i].Tags {
+		for _, tag := range blockResults.Results.DeliverTx[i].Events[0].Attributes {
 			tags[string(tag.Key)] = string(tag.Value)
 		}
 
