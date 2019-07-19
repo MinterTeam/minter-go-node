@@ -6,6 +6,7 @@ IMPROVEMENT
 
 - [tendermint] Update to [v0.32.1](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0321) 
 - [api] Add page and perPage params to /api/transactions (@Danmer)
+- [cmd] Add `minter version` command
 
 ## 1.0.3
 
