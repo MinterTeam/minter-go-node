@@ -74,7 +74,7 @@ func initNode() {
 	cfg.Consensus.SkipTimeoutCommit = true
 	cfg.P2P.Seeds = ""
 	cfg.P2P.PersistentPeers = ""
-	cfg.DBBackend = "leveldb"
+	cfg.DBBackend = "memdb"
 
 	pv = privval.GenFilePV(cfg.PrivValidatorKeyFile(), cfg.PrivValidatorStateFile())
 	pv.Save()

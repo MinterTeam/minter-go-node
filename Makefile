@@ -19,7 +19,7 @@ build:
 	CGO_ENABLED=0 go build $(BUILD_FLAGS) -tags '$(BUILD_TAGS)' -o build/minter ./cmd/minter/
 
 build_c:
-	CGO_ENABLED=1 go build $(BUILD_FLAGS) -tags '$(BUILD_TAGS) gcc' -o build/minter ./cmd/minter/
+	CGO_ENABLED=1 go build $(BUILD_FLAGS) -tags '$(BUILD_TAGS) gcc cleveldb' -o build/minter ./cmd/minter/
 
 install:
 	CGO_ENABLED=0 go install $(BUILD_FLAGS) -tags '$(BUILD_TAGS)' ./cmd/minter
@@ -29,7 +29,7 @@ install:
 ### Tools & dependencies
 
 test:
-	CGO_ENABLED=1 CGO_LDFLAGS="-lsnappy" go test --count 1 --tags "gcc" ./...
+	CGO_ENABLED=1 CGO_LDFLAGS="-lsnappy" go test --count 1 --tags "gcc cleveldb" ./...
 
 check_tools:
 	@# https://stackoverflow.com/a/25668869
