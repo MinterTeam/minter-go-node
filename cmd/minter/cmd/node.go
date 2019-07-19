@@ -92,7 +92,7 @@ func runNode() error {
 
 func recheckMempool(node *tmNode.Node, config *config.Config) {
 	ticker := time.NewTicker(time.Minute)
-	mempool := node.MempoolReactor().Mempool
+	mempool := node.Mempool()
 	for {
 		select {
 		case <-ticker.C:

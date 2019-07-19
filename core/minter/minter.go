@@ -377,8 +377,8 @@ func (app *Blockchain) Info(req abciTypes.RequestInfo) (resInfo abciTypes.Respon
 }
 
 // Deliver a tx for full processing
-func (app *Blockchain) DeliverTx(rawTx []byte) abciTypes.ResponseDeliverTx {
-	response := transaction.RunTx(app.stateDeliver, false, rawTx, app.rewards, app.height, sync.Map{}, 0)
+func (app *Blockchain) DeliverTx(req abciTypes.RequestDeliverTx) abciTypes.ResponseDeliverTx {
+	response := transaction.RunTx(app.stateDeliver, false, req.Tx, app.rewards, app.height, sync.Map{}, 0)
 
 	return abciTypes.ResponseDeliverTx{
 		Code:      response.Code,
@@ -387,13 +387,18 @@ func (app *Blockchain) DeliverTx(rawTx []byte) abciTypes.ResponseDeliverTx {
 		Info:      response.Info,
 		GasWanted: response.GasWanted,
 		GasUsed:   response.GasUsed,
-		Tags:      response.Tags,
+		Events: []abciTypes.Event{
+			{
+				Type:       "tags",
+				Attributes: response.Tags,
+			},
+		},
 	}
 }
 
 // Validate a tx for the mempool
-func (app *Blockchain) CheckTx(rawTx []byte) abciTypes.ResponseCheckTx {
-	response := transaction.RunTx(app.stateCheck, true, rawTx, nil, app.height, app.currentMempool, app.MinGasPrice())
+func (app *Blockchain) CheckTx(req abciTypes.RequestCheckTx) abciTypes.ResponseCheckTx {
+	response := transaction.RunTx(app.stateCheck, true, req.Tx, nil, app.height, app.currentMempool, app.MinGasPrice())
 
 	return abciTypes.ResponseCheckTx{
 		Code:      response.Code,
@@ -402,7 +407,12 @@ func (app *Blockchain) CheckTx(rawTx []byte) abciTypes.ResponseCheckTx {
 		Info:      response.Info,
 		GasWanted: response.GasWanted,
 		GasUsed:   response.GasUsed,
-		Tags:      response.Tags,
+		Events: []abciTypes.Event{
+			{
+				Type:       "tags",
+				Attributes: response.Tags,
+			},
+		},
 	}
 }
 
@@ -495,7 +505,7 @@ func (app *Blockchain) SetTmNode(node *tmNode.Node) {
 
 // Get minimal acceptable gas price
 func (app *Blockchain) MinGasPrice() uint32 {
-	mempoolSize := app.tmNode.MempoolReactor().Mempool.Size()
+	mempoolSize := app.tmNode.Mempool().Size()
 
 	if mempoolSize > 5000 {
 		return 50

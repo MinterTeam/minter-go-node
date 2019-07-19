@@ -23,13 +23,13 @@ func init() {
 // and panics if it fails.
 func EnsureRoot(rootDir string) {
 	if err := cmn.EnsureDir(rootDir, 0700); err != nil {
-		cmn.PanicSanity(err.Error())
+		panic(err.Error())
 	}
 	if err := cmn.EnsureDir(filepath.Join(rootDir, defaultConfigDir), 0700); err != nil {
-		cmn.PanicSanity(err.Error())
+		panic(err.Error())
 	}
 	if err := cmn.EnsureDir(filepath.Join(rootDir, defaultDataDir), 0700); err != nil {
-		cmn.PanicSanity(err.Error())
+		panic(err.Error())
 	}
 
 	configFilePath := filepath.Join(rootDir, defaultConfigFilePath)

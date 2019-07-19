@@ -134,7 +134,7 @@ func NewForCheckFromDeliver(s *StateDB) *StateDB {
 func New(height uint64, db dbm.DB, keepState bool) (*StateDB, error) {
 	tree := NewMutableTree(db)
 
-	_, err := tree.LoadVersion(int64(height))
+	_, err := tree.LazyLoadVersion(int64(height))
 
 	if err != nil {
 		return nil, err

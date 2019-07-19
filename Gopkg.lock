@@ -25,11 +25,11 @@
   revision = "ed77733ec07dfc8a513741138419b8d9d3de9d2d"
 
 [[projects]]
-  digest = "1:7ca13b5c032dca181b9e28e7e29e7c09fdefd7cb5eb9ab32e0822dd1f856ccd3"
+  digest = "1:853d8ec36ad6990bd0b293fa861c0528960e7923ba700e83a3c462c5b95a6ff1"
   name = "github.com/danil-lashin/iavl"
   packages = ["."]
   pruneopts = "UT"
-  revision = "98552e00562de7d0c62e0e0bf2fcedf5223517c5"
+  revision = "cad5bb134c2d7533f45108731ae7505198aee8c6"
 
 [[projects]]
   digest = "1:58f28ece14b66e78bb3bfbeb806d47ac38b247272bcba8902d67656768d00bb2"
@@ -46,6 +46,14 @@
   pruneopts = "UT"
   revision = "8991bc29aa16c548c550c7ff78260e27b9ab7c73"
   version = "v1.1.1"
+
+[[projects]]
+  digest = "1:5f7414cf41466d4b4dd7ec52b2cd3e481e08cfd11e7e24fef730c0e483e88bb1"
+  name = "github.com/etcd-io/bbolt"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "63597a96ec0ad9e6d43c3fc81e809909e0237461"
+  version = "v1.3.2"
 
 [[projects]]
   digest = "1:abeb38ade3f32a92943e5be54f55ed6d6e3b6602761d74b4aab4c9dd45c18abd"
@@ -399,7 +407,7 @@
   version = "v0.14.1"
 
 [[projects]]
-  digest = "1:e2e0e41f7e2edfd93fb3cc29ae647cb37163b06665cac948298ac29af1bce346"
+  digest = "1:7c5194d8d7dd3705f0e6a3224c9542e5151b31df0792c7b02849914131976130"
   name = "github.com/tendermint/tendermint"
   packages = [
     "abci/client",
@@ -433,6 +441,7 @@
     "libs/pubsub",
     "libs/pubsub/query",
     "mempool",
+    "mock",
     "node",
     "p2p",
     "p2p/conn",
@@ -455,8 +464,8 @@
     "version",
   ]
   pruneopts = "UT"
-  revision = "d2eab536ac1071b1b5f64283572397606326eb73"
-  version = "v0.31.5"
+  revision = "dbf4062acd626716a37817f54550dd3776425caa"
+  version = "v0.32.1"
 
 [[projects]]
   digest = "1:24ccc5c3deefe7d181e924cb82060682fd0b236ca03bbe49daa8190caf9a86a2"
