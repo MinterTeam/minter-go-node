@@ -21,7 +21,7 @@ func Transaction(hash []byte) (*TransactionResponse, error) {
 	sender, _ := decodedTx.Sender()
 
 	tags := make(map[string]string)
-	for _, tag := range tx.TxResult.Tags {
+	for _, tag := range tx.TxResult.Events[0].Attributes {
 		tags[string(tag.Key)] = string(tag.Value)
 	}
 

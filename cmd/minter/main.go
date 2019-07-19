@@ -12,7 +12,8 @@ func main() {
 	rootCmd.AddCommand(
 		cmd.RunNode,
 		cmd.ShowNodeId,
-		cmd.ShowValidator)
+		cmd.ShowValidator,
+		cmd.Version)
 
 	rootCmd.PersistentFlags().StringVar(&utils.MinterHome, "home-dir", "", "base dir (default is $HOME/.minter)")
 	rootCmd.PersistentFlags().StringVar(&utils.MinterConfig, "config", "", "path to config (default is $(home-dir)/config/config.toml)")

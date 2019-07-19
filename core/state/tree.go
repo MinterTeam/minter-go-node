@@ -11,6 +11,7 @@ type Tree interface {
 	Set(key, value []byte) bool
 	Remove(key []byte) ([]byte, bool)
 	LoadVersion(targetVersion int64) (int64, error)
+	LazyLoadVersion(targetVersion int64) (int64, error)
 	SaveVersion() ([]byte, int64, error)
 	DeleteVersion(version int64) error
 	GetImmutable() *ImmutableTree
@@ -98,6 +99,13 @@ func (t *MutableTree) LoadVersion(targetVersion int64) (int64, error) {
 	return t.tree.LoadVersion(targetVersion)
 }
 
+func (t *MutableTree) LazyLoadVersion(targetVersion int64) (int64, error) {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+
+	return t.tree.LazyLoadVersion(targetVersion)
+}
+
 func (t *MutableTree) SaveVersion() ([]byte, int64, error) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
@@ -155,6 +163,10 @@ func (t *ImmutableTree) Remove(key []byte) ([]byte, bool) {
 }
 
 func (t *ImmutableTree) LoadVersion(targetVersion int64) (int64, error) {
+	panic("Not implemented")
+}
+
+func (t *ImmutableTree) LazyLoadVersion(targetVersion int64) (int64, error) {
 	panic("Not implemented")
 }
 
