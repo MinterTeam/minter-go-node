@@ -1,5 +1,9 @@
 # Changelog
 
+BREAKING CHANGES
+
+- [core] Fix invalid check's sig issue #264
+
 ## 1.0.4
 
 IMPROVEMENT

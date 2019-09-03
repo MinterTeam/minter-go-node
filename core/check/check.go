@@ -36,7 +36,7 @@ func (check *Check) LockPubKey() ([]byte, error) {
 	sig := check.Lock.Bytes()
 
 	if len(sig) < 65 {
-		return nil, errors.New("invalid sig")
+		sig = append(make([]byte, 65-len(sig)), sig...)
 	}
 
 	hash := check.HashWithoutLock()
