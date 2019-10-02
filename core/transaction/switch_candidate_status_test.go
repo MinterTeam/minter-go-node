@@ -1,7 +1,7 @@
 package transaction
 
 import (
-	"github.com/MinterTeam/minter-go-node/core/state"
+	"github.com/MinterTeam/minter-go-node/core/state/candidates"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/helpers"
@@ -18,12 +18,12 @@ func TestSwitchCandidateStatusTx(t *testing.T) {
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 	coin := types.GetBaseCoin()
-	cState.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
+	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
 	pubkey := make([]byte, 32)
 	rand.Read(pubkey)
 
-	cState.CreateCandidate(addr, addr, pubkey, 10, 0, types.GetBaseCoin(), helpers.BipToPip(big.NewInt(1)))
+	cState.Candidates.Create(addr, addr, pubkey, 10, types.GetBaseCoin(), helpers.BipToPip(big.NewInt(1)))
 
 	data := SetCandidateOnData{
 		PubKey: pubkey,
@@ -62,18 +62,18 @@ func TestSwitchCandidateStatusTx(t *testing.T) {
 	}
 
 	targetBalance, _ := big.NewInt(0).SetString("999999900000000000000000", 10)
-	balance := cState.GetBalance(addr, coin)
+	balance := cState.Accounts.GetBalance(addr, coin)
 	if balance.Cmp(targetBalance) != 0 {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", coin, targetBalance, balance)
 	}
 
-	candidate := cState.GetStateCandidate(pubkey)
+	candidate := cState.Candidates.GetCandidate(pubkey)
 
 	if candidate == nil {
 		t.Fatalf("Candidate not found")
 	}
 
-	if candidate.Status != state.CandidateStatusOnline {
+	if candidate.Status != candidates.CandidateStatusOnline {
 		t.Fatalf("Status has not changed")
 	}
 }

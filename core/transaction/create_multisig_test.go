@@ -26,7 +26,7 @@ func TestCreateMultisigTx(t *testing.T) {
 
 	coin := types.GetBaseCoin()
 
-	cState.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
+	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
 	addresses := []types.Address{
 		addr,
@@ -74,7 +74,7 @@ func TestCreateMultisigTx(t *testing.T) {
 	}
 
 	targetBalance, _ := big.NewInt(0).SetString("999999900000000000000000", 10)
-	balance := cState.GetBalance(addr, coin)
+	balance := cState.Accounts.GetBalance(addr, coin)
 	if balance.Cmp(targetBalance) != 0 {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", coin, targetBalance, balance)
 	}
@@ -87,7 +87,7 @@ func TestCreateMultisigTx(t *testing.T) {
 		}
 	}
 
-	multisig := cState.GetOrNewStateObject(multisigAddr)
+	multisig := cState.Accounts.GetOrNew(multisigAddr)
 
 	if !multisig.IsMultisig() {
 		t.Fatalf("Multisig %s is not created", multisigAddr.String())

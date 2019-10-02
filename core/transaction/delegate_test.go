@@ -12,12 +12,12 @@ import (
 	"testing"
 )
 
-func createTestCandidate(stateDB *state.StateDB) []byte {
+func createTestCandidate(stateDB *state.State) []byte {
 	address := types.Address{}
 	pubkey := make([]byte, 32)
 	rand.Read(pubkey)
 
-	stateDB.CreateCandidate(address, address, pubkey, 10, 0, types.GetBaseCoin(), helpers.BipToPip(big.NewInt(1)))
+	stateDB.Candidates.Create(address, address, pubkey, 10, types.GetBaseCoin(), helpers.BipToPip(big.NewInt(1)))
 
 	return pubkey
 }
@@ -32,7 +32,7 @@ func TestDelegateTx(t *testing.T) {
 
 	coin := types.GetBaseCoin()
 
-	cState.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
+	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
 	value := helpers.BipToPip(big.NewInt(100))
 
@@ -75,12 +75,12 @@ func TestDelegateTx(t *testing.T) {
 	}
 
 	targetBalance, _ := big.NewInt(0).SetString("999899800000000000000000", 10)
-	balance := cState.GetBalance(addr, coin)
+	balance := cState.Accounts.GetBalance(addr, coin)
 	if balance.Cmp(targetBalance) != 0 {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", coin, targetBalance, balance)
 	}
 
-	candidate := cState.GetStateCandidate(pubkey)
+	candidate := cState.Candidates.GetCandidate(pubkey)
 
 	stake := candidate.GetStakeOfAddress(addr, coin)
 
@@ -88,7 +88,7 @@ func TestDelegateTx(t *testing.T) {
 		t.Fatalf("Stake not found")
 	}
 
-	if stake.Value.Cmp(value) != 0 {
-		t.Fatalf("Stake value is not corrent. Expected %s, got %s", value, stake.Value)
+	if stake.Cmp(value) != 0 {
+		t.Fatalf("Stake value is not corrent. Expected %s, got %s", value, stake)
 	}
 }

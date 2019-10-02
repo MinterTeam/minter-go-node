@@ -4,6 +4,8 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/state/accounts"
 	"github.com/MinterTeam/minter-go-node/core/state/app"
 	"github.com/MinterTeam/minter-go-node/core/state/candidates"
+	"github.com/MinterTeam/minter-go-node/core/state/checks"
+	"github.com/MinterTeam/minter-go-node/core/state/coins"
 	"github.com/MinterTeam/minter-go-node/core/state/frozen_funds"
 	"github.com/MinterTeam/minter-go-node/core/state/validators"
 	"github.com/MinterTeam/minter-go-node/core/types"
@@ -16,6 +18,8 @@ type State struct {
 	Candidates  *candidates.Candidates
 	FrozenFunds *frozen_funds.FrozenFunds
 	Accounts    *accounts.Accounts
+	Coins       *coins.Coins
+	Checks      *checks.Checks
 
 	height uint64
 	db     db.DB
@@ -47,12 +51,24 @@ func NewState(height uint64, db db.DB) (*State, error) {
 		return nil, err
 	}
 
+	coinsState, err := coins.NewCoins(db)
+	if err != nil {
+		return nil, err
+	}
+
+	checksState, err := checks.NewChecks(db)
+	if err != nil {
+		return nil, err
+	}
+
 	state := &State{
 		Validators:  validatorsState,
 		App:         appState,
 		Candidates:  candidatesState,
 		FrozenFunds: frozenFundsState,
 		Accounts:    accountsState,
+		Coins:       coinsState,
+		Checks:      checksState,
 
 		height: height,
 		db:     db,
@@ -82,5 +98,9 @@ func (s *State) Import(state types.AppState) error {
 }
 
 func (s *State) CheckForInvariants() error {
+	panic("implement me")
+}
+
+func (s *State) Height() uint64 {
 	panic("implement me")
 }

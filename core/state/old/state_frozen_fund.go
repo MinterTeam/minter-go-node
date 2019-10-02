@@ -107,11 +107,11 @@ func (c *stateFrozenFund) punishFund(context *StateDB, candidateAddress [20]byte
 			slashed.Sub(slashed, newValue)
 
 			if !item.Coin.IsBaseCoin() {
-				coin := context.GetStateCoin(item.Coin).Data()
+				coin := context.Coins.GetCoin(item.Coin).Data()
 				ret := formula.CalculateSaleReturn(coin.Volume, coin.ReserveBalance, coin.Crr, slashed)
 
-				context.SubCoinVolume(coin.Symbol, slashed)
-				context.SubCoinReserve(coin.Symbol, ret)
+				context.Coins.SubVolume(coin.Symbol, slashed)
+				context.Coins.SubReserve(coin.Symbol, ret)
 
 				context.AddTotalSlashed(ret)
 			} else {

@@ -25,8 +25,8 @@ func init() {
 	log.InitLog(config.GetConfig())
 }
 
-func getState() *state.StateDB {
-	s, err := state.New(0, db.NewMemDB(), false)
+func getState() *state.State {
+	s, err := state.NewState(0, db.NewMemDB())
 
 	if err != nil {
 		panic(err)
@@ -42,11 +42,11 @@ func getTestCoinSymbol() types.CoinSymbol {
 	return coin
 }
 
-func createTestCoin(stateDB *state.StateDB) {
+func createTestCoin(stateDB *state.State) {
 	volume := helpers.BipToPip(big.NewInt(100))
 	reserve := helpers.BipToPip(big.NewInt(100))
 
-	stateDB.CreateCoin(getTestCoinSymbol(), "TEST COIN", volume, 10, reserve)
+	stateDB.Coins.Create(getTestCoinSymbol(), "TEST COIN", volume, 10, reserve)
 }
 
 func TestBuyCoinTx(t *testing.T) {
@@ -58,7 +58,7 @@ func TestBuyCoinTx(t *testing.T) {
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 	coin := types.GetBaseCoin()
 
-	cState.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
+	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
 	toBuy := helpers.BipToPip(big.NewInt(10))
 	maxValToSell, _ := big.NewInt(0).SetString("159374246010000000000", 10)
@@ -102,12 +102,12 @@ func TestBuyCoinTx(t *testing.T) {
 	}
 
 	targetBalance, _ := big.NewInt(0).SetString("999840525753990000000000", 10)
-	balance := cState.GetBalance(addr, coin)
+	balance := cState.Accounts.GetBalance(addr, coin)
 	if balance.Cmp(targetBalance) != 0 {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", coin, targetBalance, balance)
 	}
 
-	testBalance := cState.GetBalance(addr, getTestCoinSymbol())
+	testBalance := cState.Accounts.GetBalance(addr, getTestCoinSymbol())
 	if testBalance.Cmp(toBuy) != 0 {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", getTestCoinSymbol(), toBuy, testBalance)
 	}
@@ -122,7 +122,7 @@ func TestBuyCoinTxInsufficientFunds(t *testing.T) {
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 	coin := types.GetBaseCoin()
 
-	cState.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1)))
+	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1)))
 
 	toBuy := helpers.BipToPip(big.NewInt(10))
 	maxValToSell, _ := big.NewInt(0).SetString("159374246010000000000", 10)
@@ -353,7 +353,7 @@ func TestBuyCoinTxNotGasCoin(t *testing.T) {
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 
-	cState.AddBalance(addr, getTestCoinSymbol(), helpers.BipToPip(big.NewInt(1000)))
+	cState.Accounts.AddBalance(addr, getTestCoinSymbol(), helpers.BipToPip(big.NewInt(1000)))
 
 	data := BuyCoinData{
 		CoinToBuy:          types.GetBaseCoin(),

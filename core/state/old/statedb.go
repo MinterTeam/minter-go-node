@@ -1819,7 +1819,7 @@ func (s *StateDB) Export(currentHeight uint64) types.AppState {
 			appState.Coins = append(appState.Coins, types.Coin{
 				Name:           coin.Name(),
 				Symbol:         coin.Symbol(),
-				Volume:         coin.Volume(),
+				Volume:         coin.Volume,
 				Crr:            coin.Crr(),
 				ReserveBalance: coin.ReserveBalance(),
 			})
@@ -2039,7 +2039,7 @@ func (s *StateDB) CheckForInvariants() error {
 			coin := s.GetStateCoin(types.StrToCoinSymbol(string(key[1:])))
 
 			totalBasecoinVolume.Add(totalBasecoinVolume, coin.ReserveBalance())
-			coinSupplies[coin.symbol] = coin.Volume()
+			coinSupplies[coin.symbol] = coin.Volume
 		}
 
 		if key[0] == frozenFundsPrefix[0] {

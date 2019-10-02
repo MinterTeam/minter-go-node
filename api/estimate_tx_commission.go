@@ -34,7 +34,7 @@ func EstimateTxCommission(tx []byte, height int) (*TxCommissionResponse, error) 
 				coin.ReserveBalance().String(), commissionInBaseCoin.String())}
 		}
 
-		commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
+		commission = formula.CalculateSaleAmount(coin.Volume, coin.ReserveBalance(), coin.Crr, commissionInBaseCoin)
 	}
 
 	return &TxCommissionResponse{

@@ -50,7 +50,7 @@ func EstimateCoinBuy(coinToSellString string, coinToBuyString string, valueToBuy
 				coin.ReserveBalance().String(), commissionInBaseCoin.String())}
 		}
 
-		commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
+		commission = formula.CalculateSaleAmount(coin.Volume, coin.ReserveBalance(), coin.Crr, commissionInBaseCoin)
 	}
 
 	switch {

@@ -34,7 +34,7 @@ type Response struct {
 	GasPrice  uint32          `json:"gas_price"`
 }
 
-func RunTx(context *state.StateDB,
+func RunTx(context *state.State,
 	isCheck bool,
 	rawTx []byte,
 	rewardPool *big.Int,
@@ -60,7 +60,7 @@ func RunTx(context *state.StateDB,
 			Log:  "Wrong chain id"}
 	}
 
-	if !context.CoinExists(tx.GasCoin) {
+	if !context.Coins.Exists(tx.GasCoin) {
 		return Response{
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin)}
@@ -109,7 +109,7 @@ func RunTx(context *state.StateDB,
 
 	// check multi-signature
 	if tx.SignatureType == SigTypeMulti {
-		multisig := context.GetOrNewStateObject(tx.multisig.Multisig)
+		multisig := context.Accounts.GetOrNew(tx.multisig.Multisig)
 
 		if !multisig.IsMultisig() {
 			return Response{
@@ -155,7 +155,7 @@ func RunTx(context *state.StateDB,
 		}
 	}
 
-	if expectedNonce := context.GetNonce(sender) + 1; expectedNonce != tx.Nonce {
+	if expectedNonce := context.Accounts.GetNonce(sender) + 1; expectedNonce != tx.Nonce {
 		return Response{
 			Code: code.WrongNonce,
 			Log:  fmt.Sprintf("Unexpected nonce. Expected: %d, got %d.", expectedNonce, tx.Nonce)}

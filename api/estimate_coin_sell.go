@@ -52,12 +52,12 @@ func EstimateCoinSell(
 				coin.ReserveBalance().String(), commissionInBaseCoin.String())}
 		}
 
-		if coin.Volume().Cmp(valueToSell) < 0 {
+		if coin.Volume.Cmp(valueToSell) < 0 {
 			return nil, rpctypes.RPCError{Code: 400, Message: fmt.Sprintf("Coin volume is not sufficient for transaction. Has: %s, required %s",
-				coin.Volume().String(), valueToSell.String())}
+				coin.Volume.String(), valueToSell.String())}
 		}
 
-		commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
+		commission = formula.CalculateSaleAmount(coin.Volume, coin.ReserveBalance(), coin.Crr, commissionInBaseCoin)
 	}
 
 	switch {

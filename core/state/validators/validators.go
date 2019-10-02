@@ -43,6 +43,10 @@ func (v *Validators) PunishByzantineValidator(tmAddress [20]byte) {
 	panic("implement me")
 }
 
+func (v *Validators) Create(ownerAddress types.Address, pubkey []byte, commission int, coin types.CoinSymbol, stake *big.Int) {
+	panic("implement me")
+}
+
 type Info struct {
 	data []ValidatorInfo
 
