@@ -23,7 +23,7 @@ func Address(address types.Address, height int) (*AddressResponse, error) {
 
 	balances := cState.Accounts.GetBalances(address)
 
-	for k, v := range balances.Data {
+	for k, v := range balances {
 		response.Balance[k.String()] = v
 	}
 

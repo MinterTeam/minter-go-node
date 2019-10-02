@@ -6,6 +6,6 @@ func MaxGas(height int) (*uint64, error) {
 		return nil, err
 	}
 
-	maxGas := cState.GetCurrentMaxGas()
+	maxGas := cState.App.GetMaxGas()
 	return &maxGas, nil
 }

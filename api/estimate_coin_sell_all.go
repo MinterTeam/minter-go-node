@@ -34,11 +34,11 @@ func EstimateCoinSellAll(
 		return nil, rpctypes.RPCError{Code: 400, Message: "\"From\" coin equals to \"to\" coin"}
 	}
 
-	if !cState.CoinExists(coinToSell) {
+	if !cState.Coins.Exists(coinToSell) {
 		return nil, rpctypes.RPCError{Code: 404, Message: "Coin to sell not exists"}
 	}
 
-	if !cState.CoinExists(coinToBuy) {
+	if !cState.Coins.Exists(coinToBuy) {
 		return nil, rpctypes.RPCError{Code: 404, Message: "Coin to buy not exists"}
 	}
 
@@ -48,7 +48,7 @@ func EstimateCoinSellAll(
 
 	switch {
 	case coinToSell == types.GetBaseCoin():
-		coin := cState.GetStateCoin(coinToBuy).Data()
+		coin := cState.Coins.GetCoin(coinToBuy)
 
 		valueToSell.Sub(valueToSell, commission)
 		if valueToSell.Cmp(big.NewInt(0)) != 1 {
@@ -57,7 +57,7 @@ func EstimateCoinSellAll(
 
 		result = formula.CalculatePurchaseReturn(coin.Volume, coin.ReserveBalance, coin.Crr, valueToSell)
 	case coinToBuy == types.GetBaseCoin():
-		coin := cState.GetStateCoin(coinToSell).Data()
+		coin := cState.Coins.GetCoin(coinToSell)
 		result = formula.CalculateSaleReturn(coin.Volume, coin.ReserveBalance, coin.Crr, valueToSell)
 
 		result.Sub(result, commission)
@@ -65,8 +65,8 @@ func EstimateCoinSellAll(
 			return nil, rpctypes.RPCError{Code: 400, Message: "Not enough coins to pay commission"}
 		}
 	default:
-		coinFrom := cState.GetStateCoin(coinToSell).Data()
-		coinTo := cState.GetStateCoin(coinToBuy).Data()
+		coinFrom := cState.Coins.GetCoin(coinToSell)
+		coinTo := cState.Coins.GetCoin(coinToBuy)
 		basecoinValue := formula.CalculateSaleReturn(coinFrom.Volume, coinFrom.ReserveBalance, coinFrom.Crr, valueToSell)
 
 		basecoinValue.Sub(basecoinValue, commission)

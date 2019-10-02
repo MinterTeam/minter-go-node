@@ -17,12 +17,12 @@ func MissedBlocks(pubkey []byte, height int) (*MissedBlocksResponse, error) {
 		return nil, err
 	}
 
-	vals := cState.GetStateValidators()
+	vals := cState.Validators.GetValidators()
 	if vals == nil {
 		return nil, rpctypes.RPCError{Code: 404, Message: "Validators not found"}
 	}
 
-	for _, val := range vals.Data() {
+	for _, val := range vals {
 		if bytes.Equal(val.PubKey, pubkey) {
 			return &MissedBlocksResponse{
 				MissedBlocks:      val.AbsentTimes,

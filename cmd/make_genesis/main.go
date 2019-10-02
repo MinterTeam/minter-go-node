@@ -7,7 +7,7 @@ import (
 	"github.com/MinterTeam/go-amino"
 	"github.com/MinterTeam/minter-go-node/core/dao"
 	"github.com/MinterTeam/minter-go-node/core/minter"
-	"github.com/MinterTeam/minter-go-node/core/state"
+	candidates2 "github.com/MinterTeam/minter-go-node/core/state/candidates"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	tmTypes "github.com/tendermint/tendermint/types"
@@ -227,7 +227,7 @@ func makeValidatorsAndCandidates(pubkeys []string, stake *big.Int) ([]types.Vali
 				},
 			},
 			CreatedAtBlock: 1,
-			Status:         state.CandidateStatusOnline,
+			Status:         candidates2.CandidateStatusOnline,
 		}
 	}
 

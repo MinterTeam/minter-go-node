@@ -87,6 +87,10 @@ func (info *ValidatorInfo) AddAccumReward(amount *big.Int) {
 	panic("implement me")
 }
 
+func (info *ValidatorInfo) CountAbsentTimes() int {
+	panic("implement me")
+}
+
 type Stakes struct {
 	data []ValidatorStake
 

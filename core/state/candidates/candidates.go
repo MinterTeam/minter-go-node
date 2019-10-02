@@ -94,6 +94,10 @@ func (v *Candidates) SubStake(address types.Address, oubkey types.Pubkey, coin t
 	panic("implement me")
 }
 
+func (v *Candidates) GetCandidates() []Candidate {
+	panic("implement me")
+}
+
 type Candidate struct {
 	RewardAddress  types.Address
 	OwnerAddress   types.Address

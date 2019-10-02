@@ -1,7 +1,6 @@
 package api
 
 import (
-	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/state/candidates"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/rpc/lib/types"
@@ -58,7 +57,7 @@ func Candidate(pubkey []byte, height int) (*CandidateResponse, error) {
 		return nil, err
 	}
 
-	candidate := cState.GetStateCandidate(pubkey)
+	candidate := cState.Candidates.GetCandidate(pubkey)
 	if candidate == nil {
 		return nil, rpctypes.RPCError{Code: 404, Message: "Candidate not found"}
 	}

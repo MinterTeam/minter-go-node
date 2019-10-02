@@ -52,7 +52,7 @@ func (v *Accounts) GetNonce(addresses types.Address) uint64 {
 	panic("implement me")
 }
 
-func (v *Accounts) GetBalances(addresses types.Address) interface{} {
+func (v *Accounts) GetBalances(addresses types.Address) map[types.CoinSymbol]*big.Int {
 	panic("implement me")
 }
 
