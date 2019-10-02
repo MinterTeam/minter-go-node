@@ -38,7 +38,7 @@ func (v *Accounts) Commit() error {
 				return fmt.Errorf("can't encode object at %x: %v", address[:], err)
 			}
 
-			path := []byte(mainPrefix)
+			path := []byte{mainPrefix}
 			path = append(path, address[:]...)
 			v.iavl.Set(path, data)
 		}
@@ -51,7 +51,7 @@ func (v *Accounts) Commit() error {
 				return fmt.Errorf("can't encode object at %x: %v", address[:], err)
 			}
 
-			path := []byte(mainPrefix)
+			path := []byte{mainPrefix}
 			path = append(path, address[:]...)
 			path = append(path, coinsPrefix)
 			v.iavl.Set(path, coinsList)
@@ -65,7 +65,7 @@ func (v *Accounts) Commit() error {
 					continue
 				}
 
-				path := []byte(mainPrefix)
+				path := []byte{mainPrefix}
 				path = append(path, address[:]...)
 				path = append(path, balancePrefix)
 				path = append(path, coin[:]...)
@@ -101,7 +101,7 @@ func (v *Accounts) GetBalance(address types.Address, coin types.CoinSymbol) *big
 	if _, ok := account.balances[coin]; !ok {
 		balance := big.NewInt(0)
 
-		path := []byte(mainPrefix)
+		path := []byte{mainPrefix}
 		path = append(path, address[:]...)
 		path = append(path, balancePrefix)
 		path = append(path, coin[:]...)
@@ -145,7 +145,7 @@ func (v *Accounts) GetOrNew(address types.Address) *Account {
 		return account
 	}
 
-	path := []byte(mainPrefix)
+	path := []byte{mainPrefix}
 	path = append(path, address[:]...)
 	_, enc := v.iavl.Get(path)
 	if len(enc) == 0 {
@@ -161,7 +161,7 @@ func (v *Accounts) GetOrNew(address types.Address) *Account {
 	account.balances = map[types.CoinSymbol]*big.Int{}
 
 	// load coins
-	path = []byte(mainPrefix)
+	path = []byte{mainPrefix}
 	path = append(path, address[:]...)
 	path = append(path, coinsPrefix)
 	_, enc = v.iavl.Get(path)
@@ -189,7 +189,7 @@ func (v *Accounts) GetBalances(address types.Address) map[types.CoinSymbol]*big.
 
 	balances := map[types.CoinSymbol]*big.Int{}
 	for _, coin := range account.coins {
-		path := []byte(mainPrefix)
+		path := []byte{mainPrefix}
 		path = append(path, address[:]...)
 		path = append(path, balancePrefix)
 		path = append(path, coin[:]...)
