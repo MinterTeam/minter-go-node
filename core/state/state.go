@@ -9,6 +9,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/state/frozen_funds"
 	"github.com/MinterTeam/minter-go-node/core/state/validators"
 	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/tree"
 	db "github.com/tendermint/tm-db"
 )
 
@@ -26,6 +27,13 @@ type State struct {
 }
 
 func NewState(height uint64, db db.DB) (*State, error) {
+	iavl := tree.NewMutableTree(db)
+
+	t, err := iavl.GetImmutableAtHeight(int64(height))
+	if err != nil {
+		return nil, err
+	}
+
 	validatorsState, err := validators.NewValidators(db)
 	if err != nil {
 		return nil, err
@@ -46,7 +54,7 @@ func NewState(height uint64, db db.DB) (*State, error) {
 		return nil, err
 	}
 
-	accountsState, err := accounts.NewAccounts(db)
+	accountsState, err := accounts.NewAccounts(t)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +110,7 @@ func (s *State) CheckForInvariants() error {
 }
 
 func (s *State) Height() uint64 {
-	panic("implement me")
+	return s.height
 }
 
 func (s *State) Export(height uint64) types.AppState {

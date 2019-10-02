@@ -1,4 +1,4 @@
-package old
+package tree
 
 import (
 	"github.com/danil-lashin/iavl"
