@@ -101,16 +101,16 @@ func (s *State) Commit() ([]byte, error) {
 	return nil, nil
 }
 
-func (s *State) Import(state types.AppState) error {
-	panic("implement me")
-}
-
 func (s *State) CheckForInvariants() error {
 	panic("implement me")
 }
 
 func (s *State) Height() uint64 {
 	return s.height
+}
+
+func (s *State) Import(state types.AppState) error {
+	panic("implement me")
 }
 
 func (s *State) Export(height uint64) types.AppState {
