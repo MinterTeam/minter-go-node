@@ -22,6 +22,10 @@ func (v *FrozenFunds) GetFrozenFunds(height uint64) *FrozenFundsAtHeight {
 	panic("implement me")
 }
 
+func (v *FrozenFunds) PunishFrozenFundsWithAddress(fromHeight uint64, toHeight interface{}, tmAddress [20]byte) {
+	panic("implement me")
+}
+
 type FrozenFund struct {
 	Address      types.Address
 	CandidateKey []byte

@@ -65,7 +65,7 @@ func NewCheckState(state *State) *State {
 	panic("implement me")
 }
 
-func NewCheckStateAtHeight(height, state *State) (*State, error) {
+func NewCheckStateAtHeight(height uint64, db db.DB) (*State, error) {
 	panic("implement me")
 }
 

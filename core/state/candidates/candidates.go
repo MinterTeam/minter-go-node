@@ -9,6 +9,9 @@ import (
 const (
 	CandidateStatusOffline = 0x01
 	CandidateStatusOnline  = 0x02
+
+	UnbondPeriod              = 518400
+	MaxDelegatorsPerCandidate = 1000
 )
 
 type Candidates struct {
@@ -36,7 +39,15 @@ func (v *Candidates) Clear() {
 }
 
 func (v *Candidates) GetNewCandidates(valCount int, height int64) []Candidate {
+	panic("implement me")
+}
 
+func (v *Candidates) PunishByzantineCandidate(tmAddress [20]byte) {
+	panic("implement me")
+}
+
+func (v *Candidates) PayRewards() {
+	panic("implement me")
 }
 
 type Candidate struct {

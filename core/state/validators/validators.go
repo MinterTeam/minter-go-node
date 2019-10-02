@@ -39,6 +39,10 @@ func (v *Validators) SetNewValidators(candidates []candidates.Candidate) {
 	panic("implement me")
 }
 
+func (v *Validators) PunishByzantineValidator(tmAddress [20]byte) {
+	panic("implement me")
+}
+
 type Info struct {
 	data []ValidatorInfo
 
