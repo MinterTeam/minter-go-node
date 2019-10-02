@@ -2,6 +2,7 @@ package app
 
 import (
 	db "github.com/tendermint/tm-db"
+	"math/big"
 )
 
 type App struct {
@@ -19,5 +20,13 @@ func (v *App) Commit() error {
 }
 
 func (v *App) SetMaxGas(gas uint64) {
+	panic("implement me")
+}
+
+func (v *App) AddTotalSlashed(amount *big.Int) {
+	panic("implement me")
+}
+
+func (v *App) GetMaxGas() uint64 {
 	panic("implement me")
 }

@@ -24,6 +24,18 @@ func (v *Candidates) Commit() error {
 }
 
 func (v *Candidates) GetCandidateByTendermintAddress(address [20]byte) *Candidate {
+	panic("implement me")
+}
+
+func (v *Candidates) RecalculateTotalStakeValues() {
+	panic("implement me")
+}
+
+func (v *Candidates) Clear() {
+	panic("implement me") // clear stakes and candidates
+}
+
+func (v *Candidates) GetNewCandidates(valCount int, height int64) []Candidate {
 
 }
 

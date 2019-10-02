@@ -1,6 +1,7 @@
 package validators
 
 import (
+	"github.com/MinterTeam/minter-go-node/core/state/candidates"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	db "github.com/tendermint/tm-db"
 	"math/big"
@@ -23,11 +24,19 @@ func (v *Validators) Commit() error {
 }
 
 func (v *Validators) SetValidatorPresent(address [20]byte) {
-
+	panic("implement me")
 }
 
 func (v *Validators) SetValidatorAbsent(address [20]byte) {
+	panic("implement me")
+}
 
+func (v *Validators) GetValidators() []ValidatorInfo {
+	panic("implement me")
+}
+
+func (v *Validators) SetNewValidators(candidates []candidates.Candidate) {
+	panic("implement me")
 }
 
 type Info struct {
@@ -44,6 +53,30 @@ type ValidatorInfo struct {
 
 	tmAddress *[20]byte
 	toDrop    bool
+}
+
+func (info *ValidatorInfo) IsToDrop() bool {
+	return info.toDrop
+}
+
+func (info *ValidatorInfo) SetAccumReward(value *big.Int) {
+	panic("implement me")
+}
+
+func (info *ValidatorInfo) GetAccumReward() *big.Int {
+	panic("implement me")
+}
+
+func (info *ValidatorInfo) GetAddress() [20]byte {
+	panic("implement me")
+}
+
+func (info *ValidatorInfo) GetTotalBipStake() *big.Int {
+	panic("implement me")
+}
+
+func (info *ValidatorInfo) AddAccumReward(amount *big.Int) {
+	panic("implement me")
 }
 
 type Stakes struct {
