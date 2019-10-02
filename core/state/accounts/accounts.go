@@ -68,7 +68,13 @@ func (v *Accounts) Commit() error {
 				path = append(path, address[:]...)
 				path = append(path, balancePrefix)
 				path = append(path, coin[:]...)
-				v.iavl.Set(path, account.GetBalance(coin).Bytes())
+
+				balance := account.GetBalance(coin)
+				if balance.Cmp(big.NewInt(0)) == 0 {
+					v.iavl.Remove(path)
+				} else {
+					v.iavl.Set(path, balance.Bytes())
+				}
 			}
 		}
 	}

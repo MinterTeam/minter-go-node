@@ -64,7 +64,28 @@ func (account *Account) Multisig() *Multisig {
 }
 
 func (account *Account) SetBalance(coin types.CoinSymbol, amount *big.Int) {
-	// todo: clear 0 balances
+	if amount.Cmp(big.NewInt(0)) == 0 {
+		if !account.HasCoin(coin) {
+			return
+		}
+
+		var newCoins []types.CoinSymbol
+		for _, c := range account.coins {
+			if coin == c {
+				continue
+			}
+
+			newCoins = append(newCoins, c)
+		}
+
+		account.hasDirtyCoins = true
+		account.coins = newCoins
+		account.balances[coin] = amount
+		account.dirtyBalances[coin] = struct{}{}
+		account.markDirty(account.address)
+
+		return
+	}
 
 	if !account.HasCoin(coin) {
 		account.hasDirtyCoins = true
