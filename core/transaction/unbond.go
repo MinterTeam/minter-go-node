@@ -104,7 +104,7 @@ func (data UnbondData) Run(tx *Transaction, context *state.State, isCheck bool, 
 
 	if !isCheck {
 		// now + 30 days
-		unbondAtBlock := uint64(currentBlock + unbondPeriod)
+		unbondAtBlock := currentBlock + unbondPeriod
 
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
@@ -113,7 +113,7 @@ func (data UnbondData) Run(tx *Transaction, context *state.State, isCheck bool, 
 
 		context.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		context.Candidates.SubStake(sender, data.PubKey, data.Coin, data.Value)
-		context.FrozenFunds.GetOrNewStateFrozenFunds(unbondAtBlock).AddFund(sender, data.PubKey, data.Coin, data.Value)
+		context.FrozenFunds.GetOrNew(unbondAtBlock).AddFund(sender, data.PubKey, data.Coin, data.Value)
 		context.Accounts.SetNonce(sender, tx.Nonce)
 	}
 

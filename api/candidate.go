@@ -2,6 +2,7 @@ package api
 
 import (
 	"github.com/MinterTeam/minter-go-node/core/state"
+	"github.com/MinterTeam/minter-go-node/core/state/candidates"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/rpc/lib/types"
 	"math/big"
@@ -25,7 +26,7 @@ type CandidateResponse struct {
 	Status         byte          `json:"status"`
 }
 
-func makeResponseCandidate(c state.Candidate, includeStakes bool) CandidateResponse {
+func makeResponseCandidate(c candidates.Candidate, includeStakes bool) CandidateResponse {
 	candidate := CandidateResponse{
 		RewardAddress:  c.RewardAddress,
 		OwnerAddress:   c.OwnerAddress,
@@ -37,8 +38,8 @@ func makeResponseCandidate(c state.Candidate, includeStakes bool) CandidateRespo
 	}
 
 	if includeStakes {
-		candidate.Stakes = make([]Stake, len(c.Stakes))
-		for i, stake := range c.Stakes {
+		candidate.Stakes = make([]Stake, c.StakesCount())
+		for i, stake := range c.Stakes() {
 			candidate.Stakes[i] = Stake{
 				Owner:    stake.Owner,
 				Coin:     stake.Coin,

@@ -104,3 +104,7 @@ func (s *State) CheckForInvariants() error {
 func (s *State) Height() uint64 {
 	panic("implement me")
 }
+
+func (s *State) Export(height uint64) types.AppState {
+	panic("implement me")
+}

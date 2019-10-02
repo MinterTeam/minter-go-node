@@ -51,7 +51,7 @@ func (data DelegateData) BasicCheck(tx *Transaction, context *state.State) *Resp
 	}
 
 	sender, _ := tx.Sender()
-	if len(candidate.Stakes) >= candidates.MaxDelegatorsPerCandidate && !context.Candidates.IsDelegatorStakeSufficient(sender, data.PubKey, data.Coin, data.Value) {
+	if candidate.StakesCount() >= candidates.MaxDelegatorsPerCandidate && !context.Candidates.IsDelegatorStakeSufficient(sender, data.PubKey, data.Coin, data.Value) {
 		return &Response{
 			Code: code.TooLowStake,
 			Log:  fmt.Sprintf("Stake is too low")}

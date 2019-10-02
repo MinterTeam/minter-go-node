@@ -100,7 +100,6 @@ type Candidate struct {
 	TotalBipStake  *big.Int
 	PubKey         types.Pubkey
 	Commission     uint
-	Stakes         []Stake
 	CreatedAtBlock uint
 	Status         byte
 
@@ -109,4 +108,19 @@ type Candidate struct {
 
 func (candidate *Candidate) GetStakeOfAddress(address types.Address, coin types.CoinSymbol) *big.Int {
 	panic("implement me")
+}
+
+func (candidate *Candidate) StakesCount() int {
+	panic("implement me")
+}
+
+func (candidate *Candidate) Stakes() []Stake {
+	panic("implement me")
+}
+
+type Stake struct {
+	Owner    types.Address
+	Coin     types.CoinSymbol
+	Value    *big.Int
+	BipValue *big.Int
 }

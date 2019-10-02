@@ -26,6 +26,10 @@ func (v *FrozenFunds) PunishFrozenFundsWithAddress(fromHeight uint64, toHeight i
 	panic("implement me")
 }
 
+func (v *FrozenFunds) GetOrNew(height uint64) *FrozenFundsAtHeight {
+	panic("implement me")
+}
+
 type FrozenFund struct {
 	Address      types.Address
 	CandidateKey []byte
@@ -38,5 +42,9 @@ type FrozenFundsAtHeight struct {
 }
 
 func (ff *FrozenFundsAtHeight) Delete() {
+	panic("implement me")
+}
 
+func (ff *FrozenFundsAtHeight) AddFund(address types.Address, pubkey types.Pubkey, coin types.CoinSymbol, value *big.Int) {
+	panic("implement me")
 }

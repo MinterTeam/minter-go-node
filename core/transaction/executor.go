@@ -170,7 +170,7 @@ func RunTx(context *state.State,
 	response.GasPrice = tx.GasPrice
 
 	if !isCheck && response.Code == code.OK {
-		context.SanitizeCoin(tx.GasCoin)
+		context.Coins.Sanitize(tx.GasCoin)
 	}
 
 	if tx.Type == TypeCreateCoin {

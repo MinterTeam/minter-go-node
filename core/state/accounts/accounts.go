@@ -52,9 +52,12 @@ func (v *Accounts) GetNonce(addresses types.Address) uint64 {
 	panic("implement me")
 }
 
+func (v *Accounts) GetBalances(addresses types.Address) interface{} {
+	panic("implement me")
+}
+
 type Account struct {
 	Nonce        uint64
-	Balance      Balances
 	MultisigData Multisig
 }
 
