@@ -12,7 +12,6 @@ import (
 	"github.com/gobuffalo/packr"
 	"github.com/spf13/cobra"
 	"github.com/tendermint/tendermint/abci/types"
-	bc "github.com/tendermint/tendermint/blockchain"
 	tmCfg "github.com/tendermint/tendermint/config"
 	"github.com/tendermint/tendermint/libs/common"
 	tmNode "github.com/tendermint/tendermint/node"
@@ -20,6 +19,7 @@ import (
 	"github.com/tendermint/tendermint/privval"
 	"github.com/tendermint/tendermint/proxy"
 	rpc "github.com/tendermint/tendermint/rpc/client"
+	"github.com/tendermint/tendermint/store"
 	tmTypes "github.com/tendermint/tendermint/types"
 	"time"
 )
@@ -112,7 +112,7 @@ func updateBlocksTimeDelta(app *minter.Blockchain, config *tmCfg.Config) {
 		panic(err)
 	}
 
-	blockStore := bc.NewBlockStore(blockStoreDB)
+	blockStore := store.NewBlockStore(blockStoreDB)
 	height := uint64(blockStore.Height())
 	count := uint64(3)
 	if _, err := app.GetBlocksTimeDelta(height, count); height >= 20 && err != nil {

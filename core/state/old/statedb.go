@@ -1,4 +1,4 @@
-package state
+package old
 
 import (
 	"encoding/hex"
@@ -15,8 +15,8 @@ import (
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/upgrades"
-	dbm "github.com/tendermint/tendermint/libs/db"
 	tmTypes "github.com/tendermint/tendermint/types"
+	dbm "github.com/tendermint/tm-db"
 	"math/big"
 	"os"
 	"sync"

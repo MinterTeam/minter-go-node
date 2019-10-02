@@ -1,8 +1,8 @@
-package state
+package old
 
 import (
 	"github.com/danil-lashin/iavl"
-	dbm "github.com/tendermint/tendermint/libs/db"
+	dbm "github.com/tendermint/tm-db"
 	"sync"
 )
 

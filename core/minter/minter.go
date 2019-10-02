@@ -8,6 +8,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/appdb"
 	"github.com/MinterTeam/minter-go-node/core/rewards"
 	"github.com/MinterTeam/minter-go-node/core/state"
+	"github.com/MinterTeam/minter-go-node/core/state/candidates"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/core/validators"
@@ -15,13 +16,13 @@ import (
 	"github.com/MinterTeam/minter-go-node/eventsdb/events"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/version"
-	"github.com/danil-lashin/tendermint/rpc/lib/types"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/crypto/encoding/amino"
-	"github.com/tendermint/tendermint/libs/db"
 	tmNode "github.com/tendermint/tendermint/node"
+	rpctypes "github.com/tendermint/tendermint/rpc/lib/types"
 	types2 "github.com/tendermint/tendermint/types"
+	"github.com/tendermint/tm-db"
 	"math/big"
 	"sync"
 	"sync/atomic"
@@ -48,8 +49,8 @@ type Blockchain struct {
 
 	stateDB             db.DB
 	appDB               *appdb.AppDB
-	stateDeliver        *state.StateDB
-	stateCheck          *state.StateDB
+	stateDeliver        *state.State
+	stateCheck          *state.State
 	height              uint64 // current Blockchain height
 	lastCommittedHeight uint64 // Blockchain.height updated in the at begin of block processing, while
 	// lastCommittedHeight updated at the end of block processing
@@ -85,12 +86,12 @@ func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 
 	// Set stateDeliver and stateCheck
 	var err error
-	blockchain.stateDeliver, err = state.New(blockchain.height, blockchain.stateDB, cfg.KeepStateHistory)
+	blockchain.stateDeliver, err = state.NewState(blockchain.height, blockchain.stateDB)
 	if err != nil {
 		panic(err)
 	}
 
-	blockchain.stateCheck = state.NewForCheckFromDeliver(blockchain.stateDeliver)
+	blockchain.stateCheck = state.NewCheckState(blockchain.stateDeliver)
 
 	// Set start height for rewards and validators
 	rewards.SetStartHeight(applicationDB.GetStartHeight())
@@ -106,7 +107,9 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 		panic(err)
 	}
 
-	app.stateDeliver.Import(genesisState)
+	if err := app.stateDeliver.Import(genesisState); err != nil {
+		panic(err)
+	}
 
 	totalPower := big.NewInt(0)
 	for _, val := range genesisState.Validators {
@@ -149,7 +152,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 	height := uint64(req.Header.Height)
 	// Check invariants
 	if height%720 == 0 {
-		if err := state.NewForCheckFromDeliver(app.stateCheck).CheckForInvariants(); err != nil {
+		if err := state.NewCheckState(app.stateCheck).CheckForInvariants(); err != nil {
 			log.With("module", "invariants").Error("Invariants error", "msg", err.Error(), "height", app.height)
 		}
 	}
@@ -157,7 +160,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 	// compute max gas
 	app.updateBlocksTimeDelta(height, 3)
 	maxGas := app.calcMaxGas(height)
-	app.stateDeliver.SetMaxGas(maxGas)
+	app.stateDeliver.App.SetMaxGas(maxGas)
 
 	atomic.StoreUint64(&app.height, height)
 	app.rewards = big.NewInt(0)
@@ -171,10 +174,10 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 		copy(address[:], v.Validator.Address)
 
 		if v.SignedLastBlock {
-			app.stateDeliver.SetValidatorPresent(address)
+			app.stateDeliver.Validators.SetValidatorPresent(address)
 			app.validatorsStatuses[address] = ValidatorPresent
 		} else {
-			app.stateDeliver.SetValidatorAbsent(address)
+			app.stateDeliver.Validators.SetValidatorAbsent(address)
 			app.validatorsStatuses[address] = ValidatorAbsent
 		}
 	}
@@ -185,8 +188,8 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 		copy(address[:], byzVal.Validator.Address)
 
 		// skip already offline candidates to prevent double punishing
-		candidate := app.stateDeliver.GetStateCandidateByTmAddress(address)
-		if candidate == nil || candidate.Status == state.CandidateStatusOffline {
+		candidate := app.stateDeliver.Candidates.GetCandidateByTendermintAddress(address)
+		if candidate == nil || candidate.Status == candidates.CandidateStatusOffline {
 			continue
 		}
 

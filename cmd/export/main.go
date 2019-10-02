@@ -8,8 +8,8 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/appdb"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/tendermint/tendermint/libs/common"
-	"github.com/tendermint/tendermint/libs/db"
 	"github.com/tendermint/tendermint/types"
+	"github.com/tendermint/tm-db"
 	"time"
 )
 

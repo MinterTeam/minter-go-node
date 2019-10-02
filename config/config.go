@@ -150,7 +150,7 @@ func GetTmConfig(cfg *Config) *tmConfig.Config {
 			LogLevel:                cfg.LogLevel,
 			LogFormat:               cfg.LogFormat,
 			ProfListenAddress:       cfg.ProfListenAddress,
-			FastSync:                cfg.FastSync,
+			FastSyncMode:            cfg.FastSync,
 			FilterPeers:             cfg.FilterPeers,
 			DBBackend:               cfg.DBBackend,
 			DBPath:                  cfg.DBPath,

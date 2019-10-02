@@ -11,7 +11,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/rlp"
-	"github.com/tendermint/tendermint/libs/db"
+	"github.com/tendermint/tm-db"
 	"math/big"
 	"sync"
 	"testing"

@@ -6,7 +6,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
 	e "github.com/MinterTeam/minter-go-node/eventsdb/events"
-	"github.com/tendermint/tendermint/libs/db"
+	"github.com/tendermint/tm-db"
 	"sync"
 )
 

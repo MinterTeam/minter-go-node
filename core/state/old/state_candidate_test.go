@@ -1,10 +1,10 @@
-package state
+package old
 
 import (
 	"crypto/rand"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/helpers"
-	"github.com/tendermint/tendermint/libs/db"
+	"github.com/tendermint/tm-db"
 	"math/big"
 	"testing"
 )
