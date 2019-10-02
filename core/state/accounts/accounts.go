@@ -16,7 +16,8 @@ const coinsPrefix = byte('c')
 const balancePrefix = byte('b')
 
 type Accounts struct {
-	list map[types.Address]*Account
+	list  map[types.Address]*Account
+	dirty map[types.Address]struct{}
 
 	iavl tree.Tree
 }
@@ -26,14 +27,25 @@ func NewAccounts(iavl tree.Tree) (*Accounts, error) {
 }
 
 func (v *Accounts) Commit() error {
-	keys := v.getOrderedListKeys()
-
-	for _, address := range keys {
+	accounts := v.getOrderedDirtyAccounts()
+	for _, address := range accounts {
 		account := v.list[address]
-		coins := account.getOrderedCoins()
+
+		// save info (nonce and multisig data)
+		if account.isDirty {
+			data, err := rlp.EncodeToBytes(account)
+			if err != nil {
+				return fmt.Errorf("can't encode object at %x: %v", address[:], err)
+			}
+
+			path := []byte(mainPrefix)
+			path = append(path, address[:]...)
+			v.iavl.Set(path, data)
+		}
 
 		// save coins list
 		if account.hasDirtyCoins {
+			coins := account.getOrderedCoins()
 			coinsList, err := rlp.EncodeToBytes(coins)
 			if err != nil {
 				return fmt.Errorf("can't encode object at %x: %v", address[:], err)
@@ -47,6 +59,7 @@ func (v *Accounts) Commit() error {
 
 		// save balances
 		if account.hasDirtyBalances() {
+			coins := account.getOrderedCoins()
 			for _, coin := range coins {
 				if !account.isBalanceDirty(coin) {
 					continue
@@ -55,29 +68,18 @@ func (v *Accounts) Commit() error {
 				path := []byte(mainPrefix)
 				path = append(path, address[:]...)
 				path = append(path, balancePrefix)
+				path = append(path, coin[:]...)
 				v.iavl.Set(path, account.GetBalance(coin).Bytes())
 			}
-		}
-
-		// save info
-		if account.isDirty {
-			data, err := rlp.EncodeToBytes(account)
-			if err != nil {
-				return fmt.Errorf("can't encode object at %x: %v", address[:], err)
-			}
-
-			path := []byte(mainPrefix)
-			path = append(path, address[:]...)
-			v.iavl.Set(path, data)
 		}
 	}
 
 	return nil
 }
 
-func (v *Accounts) getOrderedListKeys() []types.Address {
-	keys := make([]types.Address, 0, len(v.list))
-	for k := range v.list {
+func (v *Accounts) getOrderedDirtyAccounts() []types.Address {
+	keys := make([]types.Address, 0, len(v.dirty))
+	for k := range v.dirty {
 		keys = append(keys, k)
 	}
 
@@ -89,19 +91,45 @@ func (v *Accounts) getOrderedListKeys() []types.Address {
 }
 
 func (v *Accounts) AddBalance(address types.Address, coin types.CoinSymbol, amount *big.Int) {
-	panic("implement me")
+	balance := v.GetBalance(address, coin)
+	v.SetBalance(address, coin, big.NewInt(0).Add(balance, amount))
 }
 
 func (v *Accounts) GetBalance(address types.Address, coin types.CoinSymbol) *big.Int {
-	panic("implement me")
+	account := v.GetOrNew(address)
+
+	if _, ok := account.balances[coin]; !ok {
+		balance := big.NewInt(0)
+
+		path := []byte(mainPrefix)
+		path = append(path, address[:]...)
+		path = append(path, balancePrefix)
+		path = append(path, coin[:]...)
+
+		_, enc := v.iavl.Get(path)
+		if len(enc) != 0 {
+			balance = big.NewInt(0).SetBytes(enc)
+		}
+
+		account.balances[coin] = balance
+	}
+
+	return account.balances[coin]
 }
 
 func (v *Accounts) SubBalance(address types.Address, coin types.CoinSymbol, amount *big.Int) {
-	panic("implement me")
+	balance := v.GetBalance(address, coin)
+	v.SetBalance(address, coin, big.NewInt(0).Sub(balance, amount))
+}
+
+func (v *Accounts) SetBalance(address types.Address, coin types.CoinSymbol, amount *big.Int) {
+	account := v.GetOrNew(address)
+	account.SetBalance(coin, amount)
 }
 
 func (v *Accounts) SetNonce(address types.Address, nonce uint64) {
-	panic("implement me")
+	account := v.GetOrNew(address)
+	account.SetNonce(nonce)
 }
 
 func (v *Accounts) Exists(msigAddress types.Address) bool {
@@ -112,16 +140,73 @@ func (v *Accounts) CreateMultisig(weights []uint, addresses []types.Address, thr
 	panic("implement me")
 }
 
-func (v *Accounts) GetOrNew(addresses types.Address) *Account {
-	panic("implement me")
+func (v *Accounts) GetOrNew(address types.Address) *Account {
+	if account := v.list[address]; account != nil {
+		return account
+	}
+
+	path := []byte(mainPrefix)
+	path = append(path, address[:]...)
+	_, enc := v.iavl.Get(path)
+	if len(enc) == 0 {
+		return nil
+	}
+
+	account := &Account{}
+	if err := rlp.DecodeBytes(enc, account); err != nil {
+		panic(fmt.Sprintf("failed to decode account at address %s: %s", address.String(), err))
+		return nil
+	}
+
+	account.balances = map[types.CoinSymbol]*big.Int{}
+
+	// load coins
+	path = []byte(mainPrefix)
+	path = append(path, address[:]...)
+	path = append(path, coinsPrefix)
+	_, enc = v.iavl.Get(path)
+	if len(enc) != 0 {
+		var coins []types.CoinSymbol
+		if err := rlp.DecodeBytes(enc, &coins); err != nil {
+			panic(fmt.Sprintf("failed to decode coins list at address %s: %s", address.String(), err))
+		}
+
+		account.coins = coins
+	}
+
+	v.list[address] = account
+	return account
 }
 
-func (v *Accounts) GetNonce(addresses types.Address) uint64 {
-	panic("implement me")
+func (v *Accounts) GetNonce(address types.Address) uint64 {
+	account := v.GetOrNew(address)
+
+	return account.Nonce
 }
 
-func (v *Accounts) GetBalances(addresses types.Address) map[types.CoinSymbol]*big.Int {
-	panic("implement me")
+func (v *Accounts) GetBalances(address types.Address) map[types.CoinSymbol]*big.Int {
+	account := v.GetOrNew(address)
+
+	balances := map[types.CoinSymbol]*big.Int{}
+	for _, coin := range account.coins {
+		path := []byte(mainPrefix)
+		path = append(path, address[:]...)
+		path = append(path, balancePrefix)
+		path = append(path, coin[:]...)
+
+		_, enc := v.iavl.Get(path)
+		if len(enc) == 0 {
+			balances[coin] = big.NewInt(0)
+		}
+
+		balances[coin] = big.NewInt(0).SetBytes(enc)
+	}
+
+	return balances
+}
+
+func (v *Accounts) markDirty(addr types.Address) {
+	v.dirty[addr] = struct{}{}
 }
 
 type Account struct {
@@ -129,11 +214,19 @@ type Account struct {
 	MultisigData *Multisig
 
 	address  types.Address
+	coins    []types.CoinSymbol
 	balances map[types.CoinSymbol]*big.Int
 
 	hasDirtyCoins bool
 	dirtyBalances map[types.CoinSymbol]struct{}
-	isDirty       bool
+	isDirty       bool // nonce or multisig data
+
+	markDirty func(types.Address)
+}
+
+func (account *Account) SetNonce(nonce uint64) {
+	account.Nonce = nonce
+	account.markDirty(account.address)
 }
 
 func (account *Account) GetBalance(coin types.CoinSymbol) *big.Int {
@@ -163,11 +256,30 @@ func (account *Account) getOrderedCoins() []types.CoinSymbol {
 }
 
 func (account *Account) IsMultisig() bool {
-	panic("implement me")
+	return account.MultisigData != nil
 }
 
 func (account *Account) Multisig() *Multisig {
 	return account.MultisigData
+}
+
+func (account *Account) SetBalance(coin types.CoinSymbol, amount *big.Int) {
+	if !account.HasCoin(coin) {
+		account.hasDirtyCoins = true
+	}
+	account.dirtyBalances[coin] = struct{}{}
+	account.markDirty(account.address)
+	account.balances[coin] = amount
+}
+
+func (account *Account) HasCoin(coin types.CoinSymbol) bool {
+	for _, c := range account.coins {
+		if c == coin {
+			return true
+		}
+	}
+
+	return false
 }
 
 type Multisig struct {
