@@ -114,7 +114,6 @@ type Multisig struct {
 
 func (m *Multisig) Address() types.Address {
 	b, err := rlp.EncodeToBytes(m)
-
 	if err != nil {
 		panic(err)
 	}

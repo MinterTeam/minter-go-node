@@ -23,13 +23,11 @@ type State struct {
 	Checks      *checks.Checks
 
 	height uint64
-	db     db.DB
+	tree   tree.Tree
 }
 
 func NewState(height uint64, db db.DB) (*State, error) {
-	iavl := tree.NewMutableTree(db)
-
-	t, err := iavl.GetImmutableAtHeight(int64(height))
+	iavlTree, err := tree.NewMutableTree(db).GetImmutableAtHeight(int64(height))
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +52,7 @@ func NewState(height uint64, db db.DB) (*State, error) {
 		return nil, err
 	}
 
-	accountsState, err := accounts.NewAccounts(t)
+	accountsState, err := accounts.NewAccounts(iavlTree)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +77,7 @@ func NewState(height uint64, db db.DB) (*State, error) {
 		Checks:      checksState,
 
 		height: height,
-		db:     db,
+		tree:   iavlTree,
 	}
 
 	return state, nil
@@ -94,11 +92,13 @@ func NewCheckStateAtHeight(height uint64, db db.DB) (*State, error) {
 }
 
 func (s *State) Commit() ([]byte, error) {
-	if err := s.Validators.Commit(); err != nil {
+	if err := s.Accounts.Commit(); err != nil {
 		return nil, err
 	}
 
-	return nil, nil
+	hash, _, err := s.tree.SaveVersion()
+
+	return hash, err
 }
 
 func (s *State) CheckForInvariants() error {
