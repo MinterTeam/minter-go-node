@@ -97,6 +97,9 @@ func (v *Accounts) AddBalance(address types.Address, coin types.CoinSymbol, amou
 
 func (v *Accounts) GetBalance(address types.Address, coin types.CoinSymbol) *big.Int {
 	account := v.GetOrNew(address)
+	if !account.HasCoin(coin) {
+		return big.NewInt(0)
+	}
 
 	if _, ok := account.balances[coin]; !ok {
 		balance := big.NewInt(0)
@@ -266,6 +269,7 @@ func (account *Account) Multisig() *Multisig {
 func (account *Account) SetBalance(coin types.CoinSymbol, amount *big.Int) {
 	if !account.HasCoin(coin) {
 		account.hasDirtyCoins = true
+		account.coins = append(account.coins, coin)
 	}
 	account.dirtyBalances[coin] = struct{}{}
 	account.markDirty(account.address)
