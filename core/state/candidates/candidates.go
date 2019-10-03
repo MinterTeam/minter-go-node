@@ -142,15 +142,15 @@ func (c *Candidates) GetTotalStake(pubkey types.Pubkey) *big.Int {
 	return candidate.totalBipStake
 }
 
-func (c *Candidates) GetStakes(pubkey types.Pubkey) []Stake {
+func (c *Candidates) GetStakes(pubkey types.Pubkey) []*Stake {
 	state := c.getStakeState(pubkey)
 
-	var stakes []Stake
+	var stakes []*Stake
 	i := 0
 	currentIndex := state.Tail
 	for i < state.Count && currentIndex != -1 {
 		stake := c.getStakeAtIndex(pubkey, currentIndex)
-		stakes = append(stakes, *stake)
+		stakes = append(stakes, stake)
 
 		currentIndex = stake.PrevStakeIndex
 	}
@@ -164,8 +164,24 @@ func (c *Candidates) StakesCount(pubkey types.Pubkey) int {
 	return state.Count
 }
 
-func (c *Candidates) GetStakeOfAddress(pubkey types.Pubkey, address types.Address, coin types.CoinSymbol) *big.Int {
-	panic("implement me")
+func (c *Candidates) GetStakeOfAddress(pubkey types.Pubkey, address types.Address, coin types.CoinSymbol) *Stake {
+	stakes := c.GetStakes(pubkey)
+	for _, stake := range stakes {
+		if stake.Owner == address && stake.Coin == coin {
+			return stake
+		}
+	}
+
+	return nil
+}
+
+func (c *Candidates) GetStakeValueOfAddress(pubkey types.Pubkey, address types.Address, coin types.CoinSymbol) *big.Int {
+	stake := c.GetStakeOfAddress(pubkey, address, coin)
+	if stake == nil {
+		return nil
+	}
+
+	return stake.Value
 }
 
 func (c *Candidates) GetCandidateOwner(pubkey types.Pubkey) types.Address {
@@ -229,5 +245,25 @@ func (c *Candidates) getStakeState(pubkey types.Pubkey) *stakesState {
 }
 
 func (c *Candidates) getStakeAtIndex(pubkey types.Pubkey, index int) *Stake {
-	panic("implement me")
+	c.loadCandidates()
+	candidate := c.list[pubkey]
+	if candidate.stakes[index] == nil {
+		path := []byte{mainPrefix}
+		path = append(path, pubkey[:]...)
+		path = append(path, stakesPrefix)
+		path = append(path, []byte(fmt.Sprintf("%d", index))...)
+		_, enc := c.iavl.Get(path)
+		if len(enc) == 0 {
+			return nil
+		}
+
+		var stake Stake
+		if err := rlp.DecodeBytes(enc, &stake); err != nil {
+			panic(fmt.Sprintf("failed to decode stake: %s", err))
+		}
+
+		candidate.stakes[index] = &stake
+	}
+
+	return candidate.stakes[index]
 }

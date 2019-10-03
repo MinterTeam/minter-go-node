@@ -45,7 +45,7 @@ func (data UnbondData) BasicCheck(tx *Transaction, context *state.State) *Respon
 	}
 
 	sender, _ := tx.Sender()
-	stake := context.Candidates.GetStakeOfAddress(data.PubKey, sender, data.Coin)
+	stake := context.Candidates.GetStakeValueOfAddress(data.PubKey, sender, data.Coin)
 
 	if stake == nil {
 		return &Response{
