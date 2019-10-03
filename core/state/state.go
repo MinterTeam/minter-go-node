@@ -37,12 +37,12 @@ func NewState(height uint64, db db.DB) (*State, error) {
 		return nil, err
 	}
 
-	candidatesState, err := candidates.NewCandidates(db)
+	candidatesState, err := candidates.NewCandidates(iavlTree)
 	if err != nil {
 		return nil, err
 	}
 
-	appState, err := app.NewApp(db)
+	appState, err := app.NewApp(iavlTree)
 	if err != nil {
 		return nil, err
 	}
@@ -93,6 +93,10 @@ func NewCheckStateAtHeight(height uint64, db db.DB) (*State, error) {
 
 func (s *State) Commit() ([]byte, error) {
 	if err := s.Accounts.Commit(); err != nil {
+		return nil, err
+	}
+
+	if err := s.App.Commit(); err != nil {
 		return nil, err
 	}
 

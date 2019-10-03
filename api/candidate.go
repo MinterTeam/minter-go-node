@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/state/candidates"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/rpc/lib/types"
@@ -15,30 +16,29 @@ type Stake struct {
 }
 
 type CandidateResponse struct {
-	RewardAddress  types.Address `json:"reward_address"`
-	OwnerAddress   types.Address `json:"owner_address"`
-	TotalStake     *big.Int      `json:"total_stake"`
-	PubKey         types.Pubkey  `json:"pub_key"`
-	Commission     uint          `json:"commission"`
-	Stakes         []Stake       `json:"stakes,omitempty"`
-	CreatedAtBlock uint          `json:"created_at_block"`
-	Status         byte          `json:"status"`
+	RewardAddress types.Address `json:"reward_address"`
+	OwnerAddress  types.Address `json:"owner_address"`
+	TotalStake    *big.Int      `json:"total_stake"`
+	PubKey        types.Pubkey  `json:"pub_key"`
+	Commission    uint          `json:"commission"`
+	Stakes        []Stake       `json:"stakes,omitempty"`
+	Status        byte          `json:"status"`
 }
 
-func makeResponseCandidate(c candidates.Candidate, includeStakes bool) CandidateResponse {
+func makeResponseCandidate(state *state.State, c candidates.Candidate, includeStakes bool) CandidateResponse {
 	candidate := CandidateResponse{
-		RewardAddress:  c.RewardAddress,
-		OwnerAddress:   c.OwnerAddress,
-		TotalStake:     c.TotalBipStake,
-		PubKey:         c.PubKey,
-		Commission:     c.Commission,
-		CreatedAtBlock: c.CreatedAtBlock,
-		Status:         c.Status,
+		RewardAddress: c.RewardAddress,
+		OwnerAddress:  c.OwnerAddress,
+		TotalStake:    state.Candidates.GetTotalStake(c.PubKey),
+		PubKey:        c.PubKey,
+		Commission:    c.Commission,
+		Status:        c.Status,
 	}
 
 	if includeStakes {
-		candidate.Stakes = make([]Stake, c.StakesCount())
-		for i, stake := range c.Stakes() {
+		stakes := state.Candidates.GetStakes(c.PubKey)
+		candidate.Stakes = make([]Stake, len(stakes))
+		for i, stake := range stakes {
 			candidate.Stakes[i] = Stake{
 				Owner:    stake.Owner,
 				Coin:     stake.Coin,
@@ -62,6 +62,6 @@ func Candidate(pubkey []byte, height int) (*CandidateResponse, error) {
 		return nil, rpctypes.RPCError{Code: 404, Message: "Candidate not found"}
 	}
 
-	response := makeResponseCandidate(*candidate, true)
+	response := makeResponseCandidate(cState, *candidate, true)
 	return &response, nil
 }

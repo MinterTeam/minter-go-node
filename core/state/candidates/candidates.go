@@ -2,7 +2,7 @@ package candidates
 
 import (
 	"github.com/MinterTeam/minter-go-node/core/types"
-	db "github.com/tendermint/tm-db"
+	"github.com/MinterTeam/minter-go-node/tree"
 	"math/big"
 )
 
@@ -12,21 +12,25 @@ const (
 
 	UnbondPeriod              = 518400
 	MaxDelegatorsPerCandidate = 1000
+
+	mainPrefix       = 'с'
+	stakesPrefix     = 's'
+	totalStakePrefix = 't'
 )
 
 type Candidates struct {
-	db db.DB
+	iavl tree.Tree
 }
 
-func NewCandidates(db db.DB) (*Candidates, error) {
-	return &Candidates{db: db}, nil
+func NewCandidates(iavl tree.Tree) (*Candidates, error) {
+	return &Candidates{iavl: iavl}, nil
 }
 
 func (v *Candidates) Commit() error {
 	panic("implement me")
 }
 
-func (v *Candidates) GetCandidateByTendermintAddress(address [20]byte) *Candidate {
+func (v *Candidates) GetCandidateByTendermintAddress(address types.TmAddress) *Candidate {
 	panic("implement me")
 }
 
@@ -42,7 +46,7 @@ func (v *Candidates) GetNewCandidates(valCount int, height int64) []Candidate {
 	panic("implement me")
 }
 
-func (v *Candidates) PunishByzantineCandidate(tmAddress [20]byte) {
+func (v *Candidates) PunishByzantineCandidate(tmAddress types.TmAddress) {
 	panic("implement me")
 }
 
@@ -90,7 +94,7 @@ func (v *Candidates) SetOffline(pubkey types.Pubkey) {
 	panic("implement me")
 }
 
-func (v *Candidates) SubStake(address types.Address, oubkey types.Pubkey, coin types.CoinSymbol, value *big.Int) {
+func (v *Candidates) SubStake(address types.Address, pubkey types.Pubkey, coin types.CoinSymbol, value *big.Int) {
 	panic("implement me")
 }
 
@@ -98,33 +102,18 @@ func (v *Candidates) GetCandidates() []Candidate {
 	panic("implement me")
 }
 
-type Candidate struct {
-	RewardAddress  types.Address
-	OwnerAddress   types.Address
-	TotalBipStake  *big.Int
-	PubKey         types.Pubkey
-	Commission     uint
-	CreatedAtBlock uint
-	Status         byte
-
-	tmAddress *[20]byte
-}
-
-func (candidate *Candidate) GetStakeOfAddress(address types.Address, coin types.CoinSymbol) *big.Int {
+func (v *Candidates) GetTotalStake(pubkey types.Pubkey) *big.Int {
 	panic("implement me")
 }
 
-func (candidate *Candidate) StakesCount() int {
+func (v *Candidates) GetStakes(pubkey types.Pubkey) []Stake {
 	panic("implement me")
 }
 
-func (candidate *Candidate) Stakes() []Stake {
+func (v *Candidates) StakesCount(pubkey types.Pubkey) int {
 	panic("implement me")
 }
 
-type Stake struct {
-	Owner    types.Address
-	Coin     types.CoinSymbol
-	Value    *big.Int
-	BipValue *big.Int
+func (v *Candidates) GetStakeOfAddress(pubkey types.Pubkey, address types.Address, coin types.CoinSymbol) *big.Int {
+	panic("implement me")
 }

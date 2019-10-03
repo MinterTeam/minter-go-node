@@ -301,3 +301,5 @@ func (p *Pubkey) UnmarshalJSON(input []byte) error {
 func (p Pubkey) Compare(p2 Pubkey) int {
 	return bytes.Compare(p, p2)
 }
+
+type TmAddress [20]byte

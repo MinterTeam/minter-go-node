@@ -3,15 +3,13 @@ package accounts
 import (
 	"bytes"
 	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/MinterTeam/minter-go-node/crypto"
-	"github.com/MinterTeam/minter-go-node/rlp"
 	"math/big"
 	"sort"
 )
 
 type Model struct {
 	Nonce        uint64
-	MultisigData *Multisig
+	MultisigData *interface{}
 
 	address  types.Address
 	coins    []types.CoinSymbol
@@ -55,14 +53,6 @@ func (model *Model) getOrderedCoins() []types.CoinSymbol {
 	return keys
 }
 
-func (model *Model) IsMultisig() bool {
-	return model.MultisigData != nil
-}
-
-func (model *Model) Multisig() *Multisig {
-	return model.MultisigData
-}
-
 func (model *Model) setBalance(coin types.CoinSymbol, amount *big.Int) {
 	if amount.Cmp(big.NewInt(0)) == 0 {
 		if !model.hasCoin(coin) {
@@ -104,26 +94,4 @@ func (model *Model) hasCoin(coin types.CoinSymbol) bool {
 	}
 
 	return false
-}
-
-type Multisig struct {
-	Weights   []uint
-	Threshold uint
-	Addresses []types.Address
-}
-
-func (m *Multisig) Address() types.Address {
-	b, err := rlp.EncodeToBytes(m)
-	if err != nil {
-		panic(err)
-	}
-
-	var addr types.Address
-	copy(addr[:], crypto.Keccak256(b)[12:])
-
-	return addr
-}
-
-func (m *Multisig) GetWeight(address types.Address) uint {
-	panic("implement me")
 }

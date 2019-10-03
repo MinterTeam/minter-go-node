@@ -184,7 +184,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 
 	// give penalty to Byzantine validators
 	for _, byzVal := range req.ByzantineValidators {
-		var address [20]byte
+		var address types.TmAddress
 		copy(address[:], byzVal.Validator.Address)
 
 		// skip already offline candidates to prevent double punishing
@@ -295,7 +295,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 		// remove candidates with 0 total stake
 		var tempCandidates []candidates.Candidate
 		for _, candidate := range newCandidates {
-			if candidate.TotalBipStake.Cmp(big.NewInt(0)) != 1 {
+			if app.stateDeliver.Candidates.GetTotalStake(candidate.PubKey).Cmp(big.NewInt(0)) != 1 {
 				continue
 			}
 
@@ -312,11 +312,11 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 		// calculate total power
 		totalPower := big.NewInt(0)
 		for _, candidate := range newCandidates {
-			totalPower.Add(totalPower, candidate.TotalBipStake)
+			totalPower.Add(totalPower, app.stateDeliver.Candidates.GetTotalStake(candidate.PubKey))
 		}
 
 		for i := range newCandidates {
-			power := big.NewInt(0).Div(big.NewInt(0).Mul(newCandidates[i].TotalBipStake,
+			power := big.NewInt(0).Div(big.NewInt(0).Mul(app.stateDeliver.Candidates.GetTotalStake(newCandidates[i].PubKey),
 				big.NewInt(100000000)), totalPower).Int64()
 
 			if power == 0 {

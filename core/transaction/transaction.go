@@ -28,7 +28,6 @@ const (
 	TypeRedeemCheck         TxType = 0x09
 	TypeSetCandidateOnline  TxType = 0x0A
 	TypeSetCandidateOffline TxType = 0x0B
-	TypeCreateMultisig      TxType = 0x0C
 	TypeMultisend           TxType = 0x0D
 	TypeEditCandidate       TxType = 0x0E
 
