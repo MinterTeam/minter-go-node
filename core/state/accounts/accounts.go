@@ -15,7 +15,7 @@ const coinsPrefix = byte('c')
 const balancePrefix = byte('b')
 
 type Accounts struct {
-	list  map[types.Address]*Account
+	list  map[types.Address]*Model
 	dirty map[types.Address]struct{}
 
 	iavl tree.Tree
@@ -69,7 +69,7 @@ func (v *Accounts) Commit() error {
 				path = append(path, balancePrefix)
 				path = append(path, coin[:]...)
 
-				balance := account.GetBalance(coin)
+				balance := account.getBalance(coin)
 				if balance.Cmp(big.NewInt(0)) == 0 {
 					v.iavl.Remove(path)
 				} else {
@@ -101,8 +101,8 @@ func (v *Accounts) AddBalance(address types.Address, coin types.CoinSymbol, amou
 }
 
 func (v *Accounts) GetBalance(address types.Address, coin types.CoinSymbol) *big.Int {
-	account := v.GetOrNew(address)
-	if !account.HasCoin(coin) {
+	account := v.getOrNew(address)
+	if !account.hasCoin(coin) {
 		return big.NewInt(0)
 	}
 
@@ -131,13 +131,13 @@ func (v *Accounts) SubBalance(address types.Address, coin types.CoinSymbol, amou
 }
 
 func (v *Accounts) SetBalance(address types.Address, coin types.CoinSymbol, amount *big.Int) {
-	account := v.GetOrNew(address)
-	account.SetBalance(coin, amount)
+	account := v.getOrNew(address)
+	account.setBalance(coin, amount)
 }
 
 func (v *Accounts) SetNonce(address types.Address, nonce uint64) {
-	account := v.GetOrNew(address)
-	account.SetNonce(nonce)
+	account := v.getOrNew(address)
+	account.setNonce(nonce)
 }
 
 func (v *Accounts) Exists(msigAddress types.Address) bool {
@@ -148,7 +148,7 @@ func (v *Accounts) CreateMultisig(weights []uint, addresses []types.Address, thr
 	panic("implement me")
 }
 
-func (v *Accounts) GetOrNew(address types.Address) *Account {
+func (v *Accounts) get(address types.Address) *Model {
 	if account := v.list[address]; account != nil {
 		return account
 	}
@@ -160,12 +160,13 @@ func (v *Accounts) GetOrNew(address types.Address) *Account {
 		return nil
 	}
 
-	account := &Account{}
+	account := &Model{}
 	if err := rlp.DecodeBytes(enc, account); err != nil {
 		panic(fmt.Sprintf("failed to decode account at address %s: %s", address.String(), err))
 		return nil
 	}
 
+	account.address = address
 	account.balances = map[types.CoinSymbol]*big.Int{}
 
 	// load coins
@@ -186,14 +187,29 @@ func (v *Accounts) GetOrNew(address types.Address) *Account {
 	return account
 }
 
+func (v *Accounts) getOrNew(address types.Address) *Model {
+	account := v.get(address)
+	if account == nil {
+		account = &Model{
+			Nonce:     0,
+			address:   address,
+			coins:     []types.CoinSymbol{},
+			balances:  map[types.CoinSymbol]*big.Int{},
+			markDirty: v.markDirty,
+		}
+	}
+
+	return account
+}
+
 func (v *Accounts) GetNonce(address types.Address) uint64 {
-	account := v.GetOrNew(address)
+	account := v.getOrNew(address)
 
 	return account.Nonce
 }
 
 func (v *Accounts) GetBalances(address types.Address) map[types.CoinSymbol]*big.Int {
-	account := v.GetOrNew(address)
+	account := v.getOrNew(address)
 
 	balances := map[types.CoinSymbol]*big.Int{}
 	for _, coin := range account.coins {

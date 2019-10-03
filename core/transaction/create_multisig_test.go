@@ -87,7 +87,7 @@ func TestCreateMultisigTx(t *testing.T) {
 		}
 	}
 
-	multisig := cState.Accounts.GetOrNew(multisigAddr)
+	multisig := cState.Accounts.getOrNew(multisigAddr)
 
 	if !multisig.IsMultisig() {
 		t.Fatalf("Multisig %s is not created", multisigAddr.String())

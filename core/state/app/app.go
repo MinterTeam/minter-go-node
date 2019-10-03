@@ -1,32 +1,98 @@
 package app
 
 import (
-	db "github.com/tendermint/tm-db"
+	"fmt"
+	"github.com/MinterTeam/minter-go-node/rlp"
+	"github.com/MinterTeam/minter-go-node/tree"
 	"math/big"
 )
 
+const mainPrefix = 'd'
+
 type App struct {
+	model   *Model
 	isDirty bool
 
-	db db.DB
+	iavl tree.Tree
 }
 
-func NewApp(db db.DB) (*App, error) {
-	return &App{db: db}, nil
+func NewApp(iavl tree.Tree) (*App, error) {
+	return &App{iavl: iavl}, nil
 }
 
 func (v *App) Commit() error {
-	panic("implement me")
-}
+	if !v.isDirty {
+		return nil
+	}
 
-func (v *App) SetMaxGas(gas uint64) {
-	panic("implement me")
-}
+	data, err := rlp.EncodeToBytes(v.model)
+	if err != nil {
+		return fmt.Errorf("can't encode app model: %s", err)
+	}
 
-func (v *App) AddTotalSlashed(amount *big.Int) {
-	panic("implement me")
+	path := []byte{mainPrefix}
+	v.iavl.Set(path, data)
+
+	return nil
 }
 
 func (v *App) GetMaxGas() uint64 {
-	panic("implement me")
+	model := v.getOrNew()
+
+	return model.getMaxGas()
+}
+
+func (v *App) SetMaxGas(gas uint64) {
+	model := v.getOrNew()
+	model.setMaxGas(gas)
+}
+
+func (v *App) GetTotalSlashed() *big.Int {
+	model := v.getOrNew()
+
+	return model.getTotalSlashed()
+}
+
+func (v *App) AddTotalSlashed(amount *big.Int) {
+	model := v.getOrNew()
+	model.setTotalSlashed(big.NewInt(0).Add(model.getTotalSlashed(), amount))
+}
+
+func (v *App) get() *Model {
+	if v.model != nil {
+		return v.model
+	}
+
+	path := []byte{mainPrefix}
+	_, enc := v.iavl.Get(path)
+	if len(enc) == 0 {
+		return nil
+	}
+
+	model := &Model{}
+	if err := rlp.DecodeBytes(enc, model); err != nil {
+		panic(fmt.Sprintf("failed to decode app model at: %s", err))
+		return nil
+	}
+
+	v.model = model
+	return v.model
+}
+
+func (v *App) getOrNew() *Model {
+	model := v.get()
+	if model == nil {
+		model = &Model{
+			TotalSlashed: nil,
+			MaxGas:       0,
+			markDirty:    v.markDirty,
+		}
+		v.model = model
+	}
+
+	return model
+}
+
+func (v *App) markDirty() {
+	v.isDirty = true
 }

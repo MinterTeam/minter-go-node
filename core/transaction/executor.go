@@ -109,7 +109,7 @@ func RunTx(context *state.State,
 
 	// check multi-signature
 	if tx.SignatureType == SigTypeMulti {
-		multisig := context.Accounts.GetOrNew(tx.multisig.Multisig)
+		multisig := context.Accounts.getOrNew(tx.multisig.Multisig)
 
 		if !multisig.IsMultisig() {
 			return Response{
