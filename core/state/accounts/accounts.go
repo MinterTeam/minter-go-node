@@ -197,22 +197,7 @@ func (v *Accounts) GetBalances(address types.Address) map[types.CoinSymbol]*big.
 
 	balances := map[types.CoinSymbol]*big.Int{}
 	for _, coin := range account.coins {
-		if balance := account.GetBalance(coin); balance != nil {
-			balances[coin] = balance
-			continue
-		}
-
-		path := []byte{mainPrefix}
-		path = append(path, address[:]...)
-		path = append(path, balancePrefix)
-		path = append(path, coin[:]...)
-
-		_, enc := v.iavl.Get(path)
-		if len(enc) == 0 {
-			balances[coin] = big.NewInt(0)
-		}
-
-		balances[coin] = big.NewInt(0).SetBytes(enc)
+		balances[coin] = v.GetBalance(address, coin)
 	}
 
 	return balances
