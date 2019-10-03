@@ -15,7 +15,7 @@ const (
 	UnbondPeriod              = 518400
 	MaxDelegatorsPerCandidate = 1000
 
-	mainPrefix        = 'с'
+	mainPrefix        = 'c'
 	stakesPrefix      = 's'
 	stakesStatePrefix = 'q'
 	totalStakePrefix  = 't'
