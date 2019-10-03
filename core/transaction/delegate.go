@@ -43,15 +43,14 @@ func (data DelegateData) BasicCheck(tx *Transaction, context *state.State) *Resp
 			Log:  fmt.Sprintf("Stake should be positive")}
 	}
 
-	candidate := context.Candidates.GetCandidate(data.PubKey)
-	if candidate == nil {
+	if !context.Candidates.Exists(data.PubKey) {
 		return &Response{
 			Code: code.CandidateNotFound,
 			Log:  fmt.Sprintf("Candidate with such public key not found")}
 	}
 
 	sender, _ := tx.Sender()
-	if context.Candidates.StakesCount(candidate.PubKey) >= candidates.MaxDelegatorsPerCandidate && !context.Candidates.IsDelegatorStakeSufficient(sender, data.PubKey, data.Coin, data.Value) {
+	if context.Candidates.StakesCount(data.PubKey) >= candidates.MaxDelegatorsPerCandidate && !context.Candidates.IsDelegatorStakeSufficient(sender, data.PubKey, data.Coin, data.Value) {
 		return &Response{
 			Code: code.TooLowStake,
 			Log:  fmt.Sprintf("Stake is too low")}

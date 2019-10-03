@@ -1,7 +1,9 @@
 package candidates
 
 import (
+	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/tree"
 	"math/big"
 )
@@ -20,7 +22,8 @@ const (
 )
 
 type Candidates struct {
-	list map[types.Pubkey]*Candidate
+	list   map[types.Pubkey]*Candidate
+	loaded bool
 
 	iavl tree.Tree
 }
@@ -30,7 +33,13 @@ func NewCandidates(iavl tree.Tree) (*Candidates, error) {
 }
 
 func (c *Candidates) Commit() error {
-	panic("implement me")
+	if !c.loaded {
+		return nil
+	}
+
+	// todo commit
+
+	return nil
 }
 
 func (c *Candidates) GetCandidateByTendermintAddress(address types.TmAddress) *Candidate {
@@ -50,11 +59,16 @@ func (c *Candidates) PunishByzantineCandidate(tmAddress types.TmAddress) {
 }
 
 func (c *Candidates) Exists(pubkey types.Pubkey) bool {
-	panic("implement me")
+	c.loadCandidates()
+	_, exists := c.list[pubkey]
+
+	return exists
 }
 
 func (c *Candidates) Count() int {
-	panic("implement me")
+	c.loadCandidates()
+
+	return len(c.list)
 }
 
 func (c *Candidates) IsNewCandidateStakeSufficient(coin types.CoinSymbol, stake *big.Int) bool {
@@ -66,7 +80,9 @@ func (c *Candidates) Create(ownerAddress types.Address, rewardAddress types.Addr
 }
 
 func (c *Candidates) GetCandidate(pubkey types.Pubkey) *Candidate {
-	panic("implement me")
+	c.loadCandidates()
+
+	return c.list[pubkey]
 }
 
 func (c *Candidates) IsDelegatorStakeSufficient(address types.Address, pubkey types.Pubkey, coin types.CoinSymbol, amount *big.Int) bool {
@@ -78,15 +94,19 @@ func (c *Candidates) Delegate(address types.Address, pubkey types.Pubkey, coin t
 }
 
 func (c *Candidates) Edit(pubkey types.Pubkey, rewardAddress types.Address, ownerAddress types.Address) {
-	panic("implement me")
+	c.loadCandidates()
+	c.list[pubkey].setOwner(ownerAddress)
+	c.list[pubkey].setReward(rewardAddress)
 }
 
 func (c *Candidates) SetOnline(pubkey types.Pubkey) {
-	panic("implement me")
+	c.loadCandidates()
+	c.list[pubkey].setStatus(CandidateStatusOnline)
 }
 
 func (c *Candidates) SetOffline(pubkey types.Pubkey) {
-	panic("implement me")
+	c.loadCandidates()
+	c.list[pubkey].setStatus(CandidateStatusOffline)
 }
 
 func (c *Candidates) SubStake(address types.Address, pubkey types.Pubkey, coin types.CoinSymbol, value *big.Int) {
@@ -94,21 +114,120 @@ func (c *Candidates) SubStake(address types.Address, pubkey types.Pubkey, coin t
 }
 
 func (c *Candidates) GetCandidates() []Candidate {
-	panic("implement me")
+	c.loadCandidates()
+	var candidates []Candidate
+	for _, candidate := range c.list {
+		candidates = append(candidates, *candidate)
+	}
+
+	return candidates
 }
 
 func (c *Candidates) GetTotalStake(pubkey types.Pubkey) *big.Int {
-	panic("implement me")
+	c.loadCandidates()
+	candidate := c.list[pubkey]
+	if candidate.totalBipStake == nil {
+		path := []byte{mainPrefix}
+		path = append(path, pubkey[:]...)
+		path = append(path, totalStakePrefix)
+		_, enc := c.iavl.Get(path)
+		if len(enc) == 0 {
+			candidate.totalBipStake = big.NewInt(0)
+			return big.NewInt(0)
+		}
+
+		candidate.totalBipStake = big.NewInt(0).SetBytes(enc)
+	}
+
+	return candidate.totalBipStake
 }
 
 func (c *Candidates) GetStakes(pubkey types.Pubkey) []Stake {
-	panic("implement me")
+	state := c.getStakeState(pubkey)
+
+	var stakes []Stake
+	i := 0
+	currentIndex := state.Tail
+	for i < state.Count && currentIndex != -1 {
+		stake := c.getStakeAtIndex(pubkey, currentIndex)
+		stakes = append(stakes, *stake)
+
+		currentIndex = stake.PrevStakeIndex
+	}
+
+	return stakes
 }
 
 func (c *Candidates) StakesCount(pubkey types.Pubkey) int {
-	panic("implement me")
+	state := c.getStakeState(pubkey)
+
+	return state.Count
 }
 
 func (c *Candidates) GetStakeOfAddress(pubkey types.Pubkey, address types.Address, coin types.CoinSymbol) *big.Int {
+	panic("implement me")
+}
+
+func (c *Candidates) GetCandidateOwner(pubkey types.Pubkey) types.Address {
+	c.loadCandidates()
+
+	return c.list[pubkey].OwnerAddress
+}
+
+func (c *Candidates) loadCandidates() {
+	if c.loaded {
+		return
+	}
+
+	c.loaded = true
+
+	path := []byte{mainPrefix}
+	_, enc := c.iavl.Get(path)
+	if len(enc) == 0 {
+		c.list = map[types.Pubkey]*Candidate{}
+		return
+	}
+
+	var candidates []Candidate
+	if err := rlp.DecodeBytes(enc, candidates); err != nil {
+		panic(fmt.Sprintf("failed to decode candidates: %s", err))
+		return
+	}
+
+	list := map[types.Pubkey]*Candidate{}
+	for _, candidate := range candidates {
+		list[candidate.PubKey] = &candidate
+	}
+}
+
+func (c *Candidates) getStakeState(pubkey types.Pubkey) *stakesState {
+	c.loadCandidates()
+	candidate := c.list[pubkey]
+	if candidate.stakesState == nil {
+		path := []byte{mainPrefix}
+		path = append(path, pubkey[:]...)
+		path = append(path, totalStakePrefix)
+		_, enc := c.iavl.Get(path)
+		if len(enc) == 0 {
+			candidate.stakesState = &stakesState{
+				Count:   0,
+				Tail:    0,
+				isDirty: false,
+			}
+			return candidate.stakesState
+		}
+
+		var stakesState stakesState
+		if err := rlp.DecodeBytes(enc, &stakesState); err != nil {
+			panic(fmt.Sprintf("failed to decode stakes state: %s", err))
+		}
+
+		candidate.stakesState = &stakesState
+	}
+
+	return candidate.stakesState
+}
+
+func (c *Candidates) getStakeAtIndex(pubkey types.Pubkey, index int) *Stake {
 	panic("implement me")
 }

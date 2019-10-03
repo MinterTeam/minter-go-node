@@ -1,7 +1,6 @@
 package transaction
 
 import (
-	"bytes"
 	"encoding/hex"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
@@ -104,9 +103,9 @@ func checkCandidateOwnership(data CandidateTx, tx *Transaction, context *state.S
 			Log:  fmt.Sprintf("Candidate with such public key (%s) not found", data.GetPubKey().String())}
 	}
 
-	candidate := context.Candidates.GetCandidate(data.GetPubKey())
+	owner := context.Candidates.GetCandidateOwner(data.GetPubKey())
 	sender, _ := tx.Sender()
-	if !bytes.Equal(candidate.OwnerAddress.Bytes(), sender.Bytes()) {
+	if owner != sender {
 		return &Response{
 			Code: code.IsNotOwnerOfCandidate,
 			Log:  fmt.Sprintf("Sender is not an owner of a candidate")}

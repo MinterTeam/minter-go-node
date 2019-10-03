@@ -44,10 +44,8 @@ func (data UnbondData) BasicCheck(tx *Transaction, context *state.State) *Respon
 			Log:  fmt.Sprintf("Candidate with such public key not found")}
 	}
 
-	candidate := context.Candidates.GetCandidate(data.PubKey)
-
 	sender, _ := tx.Sender()
-	stake := context.Candidates.GetStakeOfAddress(candidate.PubKey, sender, data.Coin)
+	stake := context.Candidates.GetStakeOfAddress(data.PubKey, sender, data.Coin)
 
 	if stake == nil {
 		return &Response{

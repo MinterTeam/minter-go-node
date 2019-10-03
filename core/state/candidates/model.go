@@ -17,20 +17,38 @@ type Candidate struct {
 	stakes        [MaxDelegatorsPerCandidate]*Stake
 	tmAddress     *types.TmAddress
 
-	isDirty bool
+	isDirty           bool
+	isTotalStakeDirty bool
+}
+
+func (candidate *Candidate) setStatus(status byte) {
+	candidate.isDirty = true
+	candidate.Status = status
+}
+
+func (candidate *Candidate) setOwner(address types.Address) {
+	candidate.isDirty = true
+	candidate.OwnerAddress = address
+}
+
+func (candidate *Candidate) setReward(address types.Address) {
+	candidate.isDirty = true
+	candidate.RewardAddress = address
 }
 
 type Stake struct {
-	Owner    types.Address
-	Coin     types.CoinSymbol
-	Value    *big.Int
-	BipValue *big.Int
+	Owner          types.Address
+	Coin           types.CoinSymbol
+	Value          *big.Int
+	BipValue       *big.Int
+	PrevStakeIndex int
 
 	isDirty bool
 }
 
 type stakesState struct {
-	Tail int32
+	Count int
+	Tail  int
 
 	isDirty bool
 }
