@@ -105,7 +105,7 @@ func Block(height int64) (*BlockResponse, error) {
 	}
 
 	var validators []BlockValidatorResponse
-	proposer := types.Pubkey{}
+	proposer := &types.Pubkey{}
 	if height > 1 {
 		proposer, err = getBlockProposer(block)
 		if err != nil {
@@ -132,7 +132,7 @@ func Block(height int64) (*BlockResponse, error) {
 			}
 
 			if bytes.Equal(tmval.Address.Bytes(), block.Block.ProposerAddress.Bytes()) {
-				proposer = tmval.PubKey.Bytes()[5:]
+				copy(proposer[:], tmval.PubKey.Bytes()[5:])
 			}
 		}
 	}
@@ -146,13 +146,13 @@ func Block(height int64) (*BlockResponse, error) {
 		Transactions: txs,
 		BlockReward:  rewards.GetRewardForBlock(uint64(height)),
 		Size:         len(cdc.MustMarshalBinaryLengthPrefixed(block)),
-		Proposer:     proposer,
+		Proposer:     *proposer,
 		Validators:   validators,
 		Evidence:     block.Block.Evidence,
 	}, nil
 }
 
-func getBlockProposer(block *core_types.ResultBlock) (types.Pubkey, error) {
+func getBlockProposer(block *core_types.ResultBlock) (*types.Pubkey, error) {
 	vals, err := client.Validators(&block.Block.Height)
 	if err != nil {
 		return nil, rpctypes.RPCError{Code: 404, Message: "Validators for block not found", Data: err.Error()}
@@ -160,7 +160,9 @@ func getBlockProposer(block *core_types.ResultBlock) (types.Pubkey, error) {
 
 	for _, tmval := range vals.Validators {
 		if bytes.Equal(tmval.Address.Bytes(), block.Block.ProposerAddress.Bytes()) {
-			return tmval.PubKey.Bytes()[5:], nil
+			var result types.Pubkey
+			copy(result[:], tmval.PubKey.Bytes()[5:])
+			return &result, nil
 		}
 	}
 

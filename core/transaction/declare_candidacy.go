@@ -29,7 +29,7 @@ func (data DeclareCandidacyData) TotalSpend(tx *Transaction, context *state.Stat
 }
 
 func (data DeclareCandidacyData) BasicCheck(tx *Transaction, context *state.State) *Response {
-	if data.PubKey == nil || data.Stake == nil {
+	if data.Stake == nil {
 		return &Response{
 			Code: code.DecodeError,
 			Log:  "Incorrect tx data"}

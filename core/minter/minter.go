@@ -119,7 +119,7 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 	vals := make([]abciTypes.ValidatorUpdate, len(genesisState.Validators))
 	for i, val := range genesisState.Validators {
 		var validatorPubKey ed25519.PubKeyEd25519
-		copy(validatorPubKey[:], val.PubKey)
+		copy(validatorPubKey[:], val.PubKey[:])
 		pkey, err := cryptoAmino.PubKeyFromBytes(validatorPubKey.Bytes())
 		if err != nil {
 			panic(err)
@@ -206,7 +206,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 				Address:         item.Address,
 				Amount:          item.Value.Bytes(),
 				Coin:            item.Coin,
-				ValidatorPubKey: item.CandidateKey,
+				ValidatorPubKey: *item.CandidateKey,
 			})
 			app.stateDeliver.Accounts.AddBalance(item.Address, item.Coin, item.Value)
 		}
@@ -279,14 +279,12 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 
 	// pay rewards
 	if req.Height%12 == 0 {
-		app.stateDeliver.Candidates.PayRewards()
+		app.stateDeliver.Validators.PayRewards()
 	}
 
 	// update validators
 	if req.Height%120 == 0 || hasDroppedValidators {
 		app.stateDeliver.Candidates.RecalculateTotalStakeValues()
-
-		app.stateDeliver.Candidates.Clear()
 
 		valsCount := validators.GetValidatorsCountForBlock(height)
 
@@ -323,7 +321,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 				power = 1
 			}
 
-			newValidators[i] = abciTypes.Ed25519ValidatorUpdate(newCandidates[i].PubKey, power)
+			newValidators[i] = abciTypes.Ed25519ValidatorUpdate(newCandidates[i].PubKey[:], power)
 		}
 
 		// update validators in state

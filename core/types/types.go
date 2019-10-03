@@ -277,10 +277,10 @@ func (a UnprefixedAddress) MarshalText() ([]byte, error) {
 	return []byte(hex.EncodeToString(a[:])), nil
 }
 
-type Pubkey []byte
+type Pubkey [32]byte
 
 func (p Pubkey) String() string {
-	return fmt.Sprintf("Mp%x", []byte(p))
+	return fmt.Sprintf("Mp%x", p[:])
 }
 
 func (p Pubkey) MarshalText() ([]byte, error) {
@@ -293,13 +293,13 @@ func (p Pubkey) MarshalJSON() ([]byte, error) {
 
 func (p *Pubkey) UnmarshalJSON(input []byte) error {
 	b, err := hex.DecodeString(string(input)[3 : len(input)-1])
-	*p = Pubkey(b)
+	copy(p[:], b)
 
 	return err
 }
 
-func (p Pubkey) Compare(p2 Pubkey) int {
-	return bytes.Compare(p, p2)
+func (p Pubkey) Equals(p2 Pubkey) bool {
+	return p == p2
 }
 
 type TmAddress [20]byte

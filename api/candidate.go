@@ -51,7 +51,7 @@ func makeResponseCandidate(state *state.State, c candidates.Candidate, includeSt
 	return candidate
 }
 
-func Candidate(pubkey []byte, height int) (*CandidateResponse, error) {
+func Candidate(pubkey types.Pubkey, height int) (*CandidateResponse, error) {
 	cState, err := GetStateForHeight(height)
 	if err != nil {
 		return nil, err

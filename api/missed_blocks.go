@@ -1,7 +1,6 @@
 package api
 
 import (
-	"bytes"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/rpc/lib/types"
 )
@@ -11,7 +10,7 @@ type MissedBlocksResponse struct {
 	MissedBlocksCount int             `json:"missed_blocks_count"`
 }
 
-func MissedBlocks(pubkey []byte, height int) (*MissedBlocksResponse, error) {
+func MissedBlocks(pubkey types.Pubkey, height int) (*MissedBlocksResponse, error) {
 	cState, err := GetStateForHeight(height)
 	if err != nil {
 		return nil, err
@@ -23,7 +22,7 @@ func MissedBlocks(pubkey []byte, height int) (*MissedBlocksResponse, error) {
 	}
 
 	for _, val := range vals {
-		if bytes.Equal(val.PubKey, pubkey) {
+		if val.PubKey == pubkey {
 			return &MissedBlocksResponse{
 				MissedBlocks:      val.AbsentTimes,
 				MissedBlocksCount: val.CountAbsentTimes(),

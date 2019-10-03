@@ -26,7 +26,7 @@ func (data UnbondData) TotalSpend(tx *Transaction, context *state.State) (TotalS
 }
 
 func (data UnbondData) BasicCheck(tx *Transaction, context *state.State) *Response {
-	if data.PubKey == nil || data.Value == nil {
+	if data.Value == nil {
 		return &Response{
 			Code: code.DecodeError,
 			Log:  "Incorrect tx data"}
@@ -66,7 +66,7 @@ func (data UnbondData) BasicCheck(tx *Transaction, context *state.State) *Respon
 
 func (data UnbondData) String() string {
 	return fmt.Sprintf("UNBOND pubkey:%s",
-		hexutil.Encode(data.PubKey))
+		hexutil.Encode(data.PubKey[:]))
 }
 
 func (data UnbondData) Gas() int64 {

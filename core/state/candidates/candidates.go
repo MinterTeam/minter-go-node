@@ -13,12 +13,15 @@ const (
 	UnbondPeriod              = 518400
 	MaxDelegatorsPerCandidate = 1000
 
-	mainPrefix       = 'с'
-	stakesPrefix     = 's'
-	totalStakePrefix = 't'
+	mainPrefix        = 'с'
+	stakesPrefix      = 's'
+	stakesStatePrefix = 'q'
+	totalStakePrefix  = 't'
 )
 
 type Candidates struct {
+	list map[types.Pubkey]*Candidate
+
 	iavl tree.Tree
 }
 
@@ -26,94 +29,86 @@ func NewCandidates(iavl tree.Tree) (*Candidates, error) {
 	return &Candidates{iavl: iavl}, nil
 }
 
-func (v *Candidates) Commit() error {
+func (c *Candidates) Commit() error {
 	panic("implement me")
 }
 
-func (v *Candidates) GetCandidateByTendermintAddress(address types.TmAddress) *Candidate {
+func (c *Candidates) GetCandidateByTendermintAddress(address types.TmAddress) *Candidate {
 	panic("implement me")
 }
 
-func (v *Candidates) RecalculateTotalStakeValues() {
+func (c *Candidates) RecalculateTotalStakeValues() {
 	panic("implement me")
 }
 
-func (v *Candidates) Clear() {
-	panic("implement me") // clear stakes and candidates
-}
-
-func (v *Candidates) GetNewCandidates(valCount int, height int64) []Candidate {
+func (c *Candidates) GetNewCandidates(valCount int, height int64) []Candidate {
 	panic("implement me")
 }
 
-func (v *Candidates) PunishByzantineCandidate(tmAddress types.TmAddress) {
+func (c *Candidates) PunishByzantineCandidate(tmAddress types.TmAddress) {
 	panic("implement me")
 }
 
-func (v *Candidates) PayRewards() {
+func (c *Candidates) Exists(pubkey types.Pubkey) bool {
 	panic("implement me")
 }
 
-func (v *Candidates) Exists(pubkey types.Pubkey) bool {
+func (c *Candidates) Count() int {
 	panic("implement me")
 }
 
-func (v *Candidates) Count() int {
+func (c *Candidates) IsNewCandidateStakeSufficient(coin types.CoinSymbol, stake *big.Int) bool {
 	panic("implement me")
 }
 
-func (v *Candidates) IsNewCandidateStakeSufficient(coin types.CoinSymbol, stake *big.Int) bool {
+func (c *Candidates) Create(ownerAddress types.Address, rewardAddress types.Address, pubkey types.Pubkey, commission uint, coin types.CoinSymbol, stake *big.Int) {
 	panic("implement me")
 }
 
-func (v *Candidates) Create(ownerAddress types.Address, rewardAddress types.Address, pubkey types.Pubkey, commission uint, coin types.CoinSymbol, stake *big.Int) {
+func (c *Candidates) GetCandidate(pubkey types.Pubkey) *Candidate {
 	panic("implement me")
 }
 
-func (v *Candidates) GetCandidate(pubkey []byte) *Candidate {
+func (c *Candidates) IsDelegatorStakeSufficient(address types.Address, pubkey types.Pubkey, coin types.CoinSymbol, amount *big.Int) bool {
 	panic("implement me")
 }
 
-func (v *Candidates) IsDelegatorStakeSufficient(address types.Address, pubkey types.Pubkey, coin types.CoinSymbol, amount *big.Int) bool {
+func (c *Candidates) Delegate(address types.Address, pubkey types.Pubkey, coin types.CoinSymbol, value *big.Int) {
 	panic("implement me")
 }
 
-func (v *Candidates) Delegate(address types.Address, pubkey types.Pubkey, coin types.CoinSymbol, value *big.Int) {
+func (c *Candidates) Edit(pubkey types.Pubkey, rewardAddress types.Address, ownerAddress types.Address) {
 	panic("implement me")
 }
 
-func (v *Candidates) Edit(pubkey types.Pubkey, rewardAddress types.Address, ownerAddress types.Address) {
+func (c *Candidates) SetOnline(pubkey types.Pubkey) {
 	panic("implement me")
 }
 
-func (v *Candidates) SetOnline(pubkey types.Pubkey) {
+func (c *Candidates) SetOffline(pubkey types.Pubkey) {
 	panic("implement me")
 }
 
-func (v *Candidates) SetOffline(pubkey types.Pubkey) {
+func (c *Candidates) SubStake(address types.Address, pubkey types.Pubkey, coin types.CoinSymbol, value *big.Int) {
 	panic("implement me")
 }
 
-func (v *Candidates) SubStake(address types.Address, pubkey types.Pubkey, coin types.CoinSymbol, value *big.Int) {
+func (c *Candidates) GetCandidates() []Candidate {
 	panic("implement me")
 }
 
-func (v *Candidates) GetCandidates() []Candidate {
+func (c *Candidates) GetTotalStake(pubkey types.Pubkey) *big.Int {
 	panic("implement me")
 }
 
-func (v *Candidates) GetTotalStake(pubkey types.Pubkey) *big.Int {
+func (c *Candidates) GetStakes(pubkey types.Pubkey) []Stake {
 	panic("implement me")
 }
 
-func (v *Candidates) GetStakes(pubkey types.Pubkey) []Stake {
+func (c *Candidates) StakesCount(pubkey types.Pubkey) int {
 	panic("implement me")
 }
 
-func (v *Candidates) StakesCount(pubkey types.Pubkey) int {
-	panic("implement me")
-}
-
-func (v *Candidates) GetStakeOfAddress(pubkey types.Pubkey, address types.Address, coin types.CoinSymbol) *big.Int {
+func (c *Candidates) GetStakeOfAddress(pubkey types.Pubkey, address types.Address, coin types.CoinSymbol) *big.Int {
 	panic("implement me")
 }

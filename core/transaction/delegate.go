@@ -25,7 +25,7 @@ func (data DelegateData) TotalSpend(tx *Transaction, context *state.State) (Tota
 }
 
 func (data DelegateData) BasicCheck(tx *Transaction, context *state.State) *Response {
-	if data.PubKey == nil || data.Value == nil {
+	if data.Value == nil {
 		return &Response{
 			Code: code.DecodeError,
 			Log:  "Incorrect tx data"}
@@ -62,7 +62,7 @@ func (data DelegateData) BasicCheck(tx *Transaction, context *state.State) *Resp
 
 func (data DelegateData) String() string {
 	return fmt.Sprintf("DELEGATE pubkey:%s ",
-		hexutil.Encode(data.PubKey))
+		hexutil.Encode(data.PubKey[:]))
 }
 
 func (data DelegateData) Gas() int64 {

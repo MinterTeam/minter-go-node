@@ -13,8 +13,11 @@ type Candidate struct {
 	Status        byte
 
 	totalBipStake *big.Int
+	stakesState   *stakesState
 	stakes        [MaxDelegatorsPerCandidate]*Stake
 	tmAddress     *types.TmAddress
+
+	isDirty bool
 }
 
 type Stake struct {
@@ -22,4 +25,12 @@ type Stake struct {
 	Coin     types.CoinSymbol
 	Value    *big.Int
 	BipValue *big.Int
+
+	isDirty bool
+}
+
+type stakesState struct {
+	Tail int32
+
+	isDirty bool
 }

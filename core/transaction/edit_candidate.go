@@ -98,12 +98,6 @@ func (data EditCandidateData) Run(tx *Transaction, context *state.State, isCheck
 }
 
 func checkCandidateOwnership(data CandidateTx, tx *Transaction, context *state.State) *Response {
-	if data.GetPubKey() == nil {
-		return &Response{
-			Code: code.DecodeError,
-			Log:  "Incorrect tx data"}
-	}
-
 	if !context.Candidates.Exists(data.GetPubKey()) {
 		return &Response{
 			Code: code.CandidateNotFound,

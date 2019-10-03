@@ -47,6 +47,10 @@ func (v *Validators) Create(ownerAddress types.Address, pubkey []byte, commissio
 	panic("implement me")
 }
 
+func (v *Validators) PayRewards() {
+	panic("implement me")
+}
+
 type Info struct {
 	data []ValidatorInfo
 

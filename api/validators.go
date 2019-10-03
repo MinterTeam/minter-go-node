@@ -24,8 +24,10 @@ func Validators(height uint64) (*ResponseValidators, error) {
 
 	responseValidators := make(ResponseValidators, len(tmVals.Validators))
 	for i, val := range tmVals.Validators {
+		var pk types.Pubkey
+		copy(pk[:], val.PubKey.Bytes()[5:])
 		responseValidators[i] = ValidatorResponse{
-			Pubkey:      val.PubKey.Bytes()[5:],
+			Pubkey:      pk,
 			VotingPower: val.VotingPower,
 		}
 	}

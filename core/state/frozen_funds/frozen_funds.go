@@ -32,7 +32,7 @@ func (v *FrozenFunds) GetOrNew(height uint64) *FrozenFundsAtHeight {
 
 type FrozenFund struct {
 	Address      types.Address
-	CandidateKey []byte
+	CandidateKey *types.Pubkey
 	Coin         types.CoinSymbol
 	Value        *big.Int
 }

@@ -55,7 +55,7 @@ type Coin struct {
 type FrozenFund struct {
 	Height       uint64     `json:"height"`
 	Address      Address    `json:"address"`
-	CandidateKey Pubkey     `json:"candidate_key"`
+	CandidateKey *Pubkey    `json:"candidate_key,omitempty"`
 	Coin         CoinSymbol `json:"coin"`
 	Value        *big.Int   `json:"value"`
 }
