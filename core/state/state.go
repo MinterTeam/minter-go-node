@@ -100,6 +100,10 @@ func (s *State) Commit() ([]byte, error) {
 		return nil, err
 	}
 
+	if err := s.Coins.Commit(); err != nil {
+		return nil, err
+	}
+
 	hash, _, err := s.tree.SaveVersion()
 
 	return hash, err
