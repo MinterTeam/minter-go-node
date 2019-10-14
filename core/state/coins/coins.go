@@ -28,6 +28,7 @@ func (c *Coins) Commit() error {
 	coins := c.getOrderedDirtyCoins()
 	for _, symbol := range coins {
 		coin := c.list[symbol]
+		delete(c.dirty, symbol)
 
 		if coin.IsDirty() {
 			data, err := rlp.EncodeToBytes(coin)

@@ -13,7 +13,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/crypto/sha3"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/rlp"
-	"github.com/MinterTeam/minter-go-node/upgrades"
 	"github.com/tendermint/tendermint/libs/common"
 	"math/big"
 )
@@ -36,12 +35,6 @@ func (data RedeemCheckData) BasicCheck(tx *Transaction, context *state.State) *R
 		return &Response{
 			Code: code.DecodeError,
 			Log:  "Incorrect tx data"}
-	}
-
-	if tx.GasCoin != types.GetBaseCoin() {
-		return &Response{
-			Code: code.WrongGasCoin,
-			Log:  fmt.Sprintf("Gas coin for redeem check transaction can only be %s", types.GetBaseCoin())}
 	}
 
 	// fixed potential problem with making too high commission for sender
@@ -77,12 +70,10 @@ func (data RedeemCheckData) Run(tx *Transaction, context *state.State, isCheck b
 			Log:  err.Error()}
 	}
 
-	if context.Height() > upgrades.UpgradeBlock1 {
-		if decodedCheck.ChainID != types.CurrentChainID {
-			return Response{
-				Code: code.WrongChainID,
-				Log:  "Wrong chain id"}
-		}
+	if decodedCheck.ChainID != types.CurrentChainID {
+		return Response{
+			Code: code.WrongChainID,
+			Log:  "Wrong chain id"}
 	}
 
 	if len(decodedCheck.Nonce) > 16 {
@@ -105,7 +96,19 @@ func (data RedeemCheckData) Run(tx *Transaction, context *state.State, isCheck b
 			Log:  fmt.Sprintf("Coin not exists")}
 	}
 
-	if decodedCheck.DueBlock < uint64(currentBlock) {
+	if !context.Coins.Exists(decodedCheck.GasCoin) {
+		return Response{
+			Code: code.CoinNotExists,
+			Log:  fmt.Sprintf("Gas coin not exists")}
+	}
+
+	if tx.GasCoin != decodedCheck.GasCoin {
+		return Response{
+			Code: code.WrongGasCoin,
+			Log:  fmt.Sprintf("Gas coin for redeem check transaction can only be %s", decodedCheck.GasCoin)}
+	}
+
+	if decodedCheck.DueBlock < currentBlock {
 		return Response{
 			Code: code.CheckExpired,
 			Log:  fmt.Sprintf("Check expired")}
@@ -150,8 +153,8 @@ func (data RedeemCheckData) Run(tx *Transaction, context *state.State, isCheck b
 	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
-	if !decodedCheck.Coin.IsBaseCoin() {
-		coin := context.Coins.GetCoin(decodedCheck.Coin)
+	if !decodedCheck.GasCoin.IsBaseCoin() {
+		coin := context.Coins.GetCoin(decodedCheck.GasCoin)
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
 	}
 
