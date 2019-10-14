@@ -1,11 +1,13 @@
 package coins
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/tree"
 	"math/big"
+	"sort"
 )
 
 const mainPrefix = byte('q')
@@ -23,39 +25,87 @@ func NewCoins(iavl tree.Tree) (*Coins, error) {
 }
 
 func (c *Coins) Commit() error {
-	panic("implement me")
+	coins := c.getOrderedDirtyCoins()
+	for _, symbol := range coins {
+		coin := c.list[symbol]
+
+		if coin.IsDirty() {
+			data, err := rlp.EncodeToBytes(coin)
+			if err != nil {
+				return fmt.Errorf("can't encode object at %x: %v", symbol[:], err)
+			}
+
+			path := []byte{mainPrefix}
+			path = append(path, symbol[:]...)
+			c.iavl.Set(path, data)
+			coin.isDirty = false
+		}
+
+		if coin.IsInfoDirty() {
+			data, err := rlp.EncodeToBytes(coin.info)
+			if err != nil {
+				return fmt.Errorf("can't encode object at %x: %v", symbol[:], err)
+			}
+
+			path := []byte{mainPrefix}
+			path = append(path, symbol[:]...)
+			path = append(path, infoPrefix)
+			c.iavl.Set(path, data)
+			coin.info.isDirty = false
+		}
+
+	}
+
+	return nil
 }
 
 func (c *Coins) GetCoin(symbol types.CoinSymbol) *Model {
-	panic("implement me")
+	return c.get(symbol)
 }
 
 func (c *Coins) Exists(symbol types.CoinSymbol) bool {
-	panic("implement me")
+	return c.get(symbol) != nil
 }
 
 func (c *Coins) SubVolume(symbol types.CoinSymbol, amount *big.Int) {
-	panic("implement me")
+	c.get(symbol).SubVolume(amount)
 }
 
 func (c *Coins) AddVolume(symbol types.CoinSymbol, amount *big.Int) {
-	panic("implement me")
+	c.get(symbol).AddVolume(amount)
 }
 
 func (c *Coins) SubReserve(symbol types.CoinSymbol, amount *big.Int) {
-	panic("implement me")
+	c.get(symbol).SubReserve(amount)
 }
 
 func (c *Coins) AddReserve(symbol types.CoinSymbol, amount *big.Int) {
-	panic("implement me")
+	c.get(symbol).AddReserve(amount)
 }
 
 func (c *Coins) Sanitize(symbol types.CoinSymbol) {
-	panic("implement me")
+	if symbol.IsBaseCoin() {
+		return
+	}
+
+	coin := c.get(symbol)
+	if coin.IsToDelete() {
+		c.delete(coin.symbol)
+	}
 }
 
 func (c *Coins) Create(symbol types.CoinSymbol, name string, volume *big.Int, crr uint, reserve *big.Int) {
-	panic("implement me")
+	coin := Model{
+		CName:     name,
+		CCrr:      crr,
+		symbol:    symbol,
+		markDirty: c.markDirty,
+		isDirty:   true,
+	}
+
+	coin.SetReserve(reserve)
+	coin.SetVolume(volume)
+	c.markDirty(symbol)
 }
 
 func (c *Coins) get(symbol types.CoinSymbol) *Model {
@@ -77,6 +127,7 @@ func (c *Coins) get(symbol types.CoinSymbol) *Model {
 	}
 
 	coin.symbol = symbol
+	coin.markDirty = c.markDirty
 
 	// load info
 	path = []byte{mainPrefix}
@@ -95,4 +146,25 @@ func (c *Coins) get(symbol types.CoinSymbol) *Model {
 	c.list[symbol] = coin
 
 	return coin
+}
+
+func (c *Coins) markDirty(symbol types.CoinSymbol) {
+	c.dirty[symbol] = struct{}{}
+}
+
+func (c *Coins) delete(symbol types.CoinSymbol) {
+	// todo: delete coin
+}
+
+func (c *Coins) getOrderedDirtyCoins() []types.CoinSymbol {
+	keys := make([]types.CoinSymbol, 0, len(c.dirty))
+	for k := range c.dirty {
+		keys = append(keys, k)
+	}
+
+	sort.SliceStable(keys, func(i, j int) bool {
+		return bytes.Compare(keys[i].Bytes(), keys[j].Bytes()) == 1
+	})
+
+	return keys
 }

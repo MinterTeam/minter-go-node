@@ -40,6 +40,7 @@ func (v *Accounts) Commit() error {
 			path := []byte{mainPrefix}
 			path = append(path, address[:]...)
 			v.iavl.Set(path, data)
+			account.isDirty = false
 		}
 
 		// save coins list
@@ -54,6 +55,7 @@ func (v *Accounts) Commit() error {
 			path = append(path, address[:]...)
 			path = append(path, coinsPrefix)
 			v.iavl.Set(path, coinsList)
+			account.hasDirtyCoins = false
 		}
 
 		// save balances
@@ -76,6 +78,8 @@ func (v *Accounts) Commit() error {
 					v.iavl.Set(path, balance.Bytes())
 				}
 			}
+
+			account.dirtyBalances = nil
 		}
 	}
 
@@ -168,6 +172,7 @@ func (v *Accounts) get(address types.Address) *Model {
 
 	account.address = address
 	account.balances = map[types.CoinSymbol]*big.Int{}
+	account.markDirty = v.markDirty
 
 	// load coins
 	path = []byte{mainPrefix}
