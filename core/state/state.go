@@ -57,7 +57,7 @@ func NewState(height uint64, db db.DB) (*State, error) {
 		return nil, err
 	}
 
-	coinsState, err := coins.NewCoins(db)
+	coinsState, err := coins.NewCoins(iavlTree)
 	if err != nil {
 		return nil, err
 	}

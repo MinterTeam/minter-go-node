@@ -94,13 +94,13 @@ func (data DeclareCandidacyData) Run(tx *Transaction, context *state.State, isCh
 	if !tx.GasCoin.IsBaseCoin() {
 		coin := context.Coins.GetCoin(tx.GasCoin)
 
-		if coin.ReserveBalance.Cmp(commissionInBaseCoin) < 0 {
+		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
 			return Response{
 				Code: code.CoinReserveNotSufficient,
-				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.ReserveBalance.String(), commissionInBaseCoin.String())}
+				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.Reserve().String(), commissionInBaseCoin.String())}
 		}
 
-		commission = formula.CalculateSaleAmount(coin.Volume, coin.ReserveBalance, coin.Crr, commissionInBaseCoin)
+		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
 	}
 
 	if context.Accounts.GetBalance(sender, data.Coin).Cmp(data.Stake) < 0 {

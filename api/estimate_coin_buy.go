@@ -45,38 +45,38 @@ func EstimateCoinBuy(coinToSellString string, coinToBuyString string, valueToBuy
 	if coinToSell != types.GetBaseCoin() {
 		coin := cState.Coins.GetCoin(coinToSell)
 
-		if coin.ReserveBalance.Cmp(commissionInBaseCoin) < 0 {
+		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
 			return nil, rpctypes.RPCError{Code: 400, Message: fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s",
-				coin.ReserveBalance.String(), commissionInBaseCoin.String())}
+				coin.Reserve().String(), commissionInBaseCoin.String())}
 		}
 
-		commission = formula.CalculateSaleAmount(coin.Volume, coin.ReserveBalance, coin.Crr, commissionInBaseCoin)
+		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
 	}
 
 	switch {
 	case coinToSell == types.GetBaseCoin():
 		coin := cState.Coins.GetCoin(coinToBuy)
-		result = formula.CalculatePurchaseAmount(coin.Volume, coin.ReserveBalance, coin.Crr, valueToBuy)
+		result = formula.CalculatePurchaseAmount(coin.Volume(), coin.Reserve(), coin.Crr(), valueToBuy)
 	case coinToBuy == types.GetBaseCoin():
 		coin := cState.Coins.GetCoin(coinToSell)
 
-		if coin.ReserveBalance.Cmp(valueToBuy) < 0 {
+		if coin.Reserve().Cmp(valueToBuy) < 0 {
 			return nil, rpctypes.RPCError{Code: 400, Message: fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s",
-				coin.ReserveBalance.String(), valueToBuy.String())}
+				coin.Reserve().String(), valueToBuy.String())}
 		}
 
-		result = formula.CalculateSaleAmount(coin.Volume, coin.ReserveBalance, coin.Crr, valueToBuy)
+		result = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), valueToBuy)
 	default:
 		coinFrom := cState.Coins.GetCoin(coinToSell)
 		coinTo := cState.Coins.GetCoin(coinToBuy)
-		baseCoinNeeded := formula.CalculatePurchaseAmount(coinTo.Volume, coinTo.ReserveBalance, coinTo.Crr, valueToBuy)
+		baseCoinNeeded := formula.CalculatePurchaseAmount(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), valueToBuy)
 
-		if coinFrom.ReserveBalance.Cmp(baseCoinNeeded) < 0 {
+		if coinFrom.Reserve().Cmp(baseCoinNeeded) < 0 {
 			return nil, rpctypes.RPCError{Code: 400, Message: fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s",
-				coinFrom.ReserveBalance.String(), baseCoinNeeded.String())}
+				coinFrom.Reserve().String(), baseCoinNeeded.String())}
 		}
 
-		result = formula.CalculateSaleAmount(coinFrom.Volume, coinFrom.ReserveBalance, coinFrom.Crr, baseCoinNeeded)
+		result = formula.CalculateSaleAmount(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), baseCoinNeeded)
 	}
 
 	return &EstimateCoinBuyResponse{

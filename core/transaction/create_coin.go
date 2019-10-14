@@ -114,13 +114,13 @@ func (data CreateCoinData) Run(tx *Transaction, context *state.State, isCheck bo
 	if tx.GasCoin != types.GetBaseCoin() {
 		coin := context.Coins.GetCoin(tx.GasCoin)
 
-		if coin.ReserveBalance.Cmp(commissionInBaseCoin) < 0 {
+		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
 			return Response{
 				Code: code.CoinReserveNotSufficient,
-				Log:  fmt.Sprintf("Gas coin reserve balance is not sufficient for transaction. Has: %s %s, required %s %s", coin.ReserveBalance.String(), types.GetBaseCoin(), commissionInBaseCoin.String(), types.GetBaseCoin())}
+				Log:  fmt.Sprintf("Gas coin reserve balance is not sufficient for transaction. Has: %s %s, required %s %s", coin.Reserve().String(), types.GetBaseCoin(), commissionInBaseCoin.String(), types.GetBaseCoin())}
 		}
 
-		commission = formula.CalculateSaleAmount(coin.Volume, coin.ReserveBalance, coin.Crr, commissionInBaseCoin)
+		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
 	}
 
 	if context.Accounts.GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {

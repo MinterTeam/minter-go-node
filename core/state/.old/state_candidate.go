@@ -72,7 +72,7 @@ func (s *Stake) CalcSimulatedBipValue(context *StateDB) *big.Int {
 	}
 
 	coin := context.Coins.GetCoin(s.Coin)
-	bipValue := formula.CalculateSaleReturn(coin.Volume, coin.ReserveBalance(), coin.data.Crr, totalStaked)
+	bipValue := formula.CalculateSaleReturn(coin.Volume(), coin.Reserve()(), coin.data.Crr, totalStaked)
 
 	value := big.NewInt(0).Set(bipValue)
 	value.Mul(value, s.Value)
@@ -105,7 +105,7 @@ func (s *Stake) CalcBipValue(context *StateDB) *big.Int {
 		coin := context.Coins.GetCoin(s.Coin)
 		context.stakeCache[s.Coin] = StakeCache{
 			TotalValue: totalStaked,
-			BipValue:   formula.CalculateSaleReturn(coin.Volume, coin.ReserveBalance(), coin.data.Crr, totalStaked),
+			BipValue:   formula.CalculateSaleReturn(coin.Volume(), coin.Reserve()(), coin.data.Crr, totalStaked),
 		}
 	}
 

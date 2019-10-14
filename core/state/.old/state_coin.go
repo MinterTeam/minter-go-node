@@ -30,8 +30,8 @@ type Coin struct {
 }
 
 func (coin Coin) String() string {
-	return fmt.Sprintf("%s (%s), volume: %s, reserve: %s, crr: %d", coin.Name, coin.Symbol, coin.Volume,
-		coin.ReserveBalance, coin.Crr)
+	return fmt.Sprintf("%s (%s), volume: %s, reserve: %s, crr: %d", coin.Name, coin.Symbol, coin.Volume(),
+		coin.Reserve(), coin.Crr())
 }
 
 func (c *stateCoin) IsToDelete() bool {

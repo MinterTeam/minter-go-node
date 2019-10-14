@@ -86,11 +86,48 @@ func (c *Candidates) GetCandidate(pubkey types.Pubkey) *Candidate {
 }
 
 func (c *Candidates) IsDelegatorStakeSufficient(address types.Address, pubkey types.Pubkey, coin types.CoinSymbol, amount *big.Int) bool {
-	panic("implement me")
+	state := c.getStakeState(pubkey)
+	if state.Count < MaxDelegatorsPerCandidate {
+		return true
+	}
+
+	smallestStake := c.getStakeAtIndex(pubkey, state.Tail)
+	stakeValue := c.calculateBipValue(coin, amount, true)
+
+	if stakeValue.Cmp(smallestStake.BipValue) == -1 {
+		return false
+	}
+
+	return true
 }
 
 func (c *Candidates) Delegate(address types.Address, pubkey types.Pubkey, coin types.CoinSymbol, value *big.Int) {
-	panic("implement me")
+	stake := &Stake{
+		Owner:          address,
+		Coin:           coin,
+		Value:          value,
+		BipValue:       c.calculateBipValue(coin, value, true),
+		PrevStakeIndex: -1,
+		isDirty:        true,
+	}
+
+	state := c.getStakeState(pubkey)
+	if state.Count < MaxDelegatorsPerCandidate {
+		stake.PrevStakeIndex = state.Count - 1
+		c.setStakeAtIndex(pubkey, state.Count, stake)
+		state.SetTail(state.Count)
+	} else {
+		cI := state.Tail
+		for {
+			s := c.getStakeAtIndex(pubkey, cI)
+			cI = s.PrevStakeIndex
+
+			if s.BipValue.Cmp(stake.BipValue) == -1 || cI == -1 {
+				// todo insert stake
+
+			}
+		}
+	}
 }
 
 func (c *Candidates) Edit(pubkey types.Pubkey, rewardAddress types.Address, ownerAddress types.Address) {
@@ -266,4 +303,33 @@ func (c *Candidates) getStakeAtIndex(pubkey types.Pubkey, index int) *Stake {
 	}
 
 	return candidate.stakes[index]
+}
+
+func (c *Candidates) setStakeAtIndex(pubkey types.Pubkey, index int, stake *Stake) {
+	c.loadCandidates()
+	candidate := c.list[pubkey]
+	candidate.stakes[index] = stake
+}
+
+func (c *Candidates) calculateBipValue(coin types.CoinSymbol, amount *big.Int, include bool) *big.Int {
+	if coin.IsBaseCoin() {
+		return big.NewInt(0).Set(amount)
+	}
+
+	totalAmount := big.NewInt(0)
+	if include {
+		totalAmount.Set(amount)
+	}
+
+	candidates := c.GetCandidates()
+	for _, candidate := range candidates {
+		stakes := c.GetStakes(candidate.PubKey)
+		for _, stake := range stakes {
+			if stake.Coin == coin {
+				totalAmount.Add(totalAmount, stake.Value)
+			}
+		}
+	}
+
+	panic("calculate sale return")
 }

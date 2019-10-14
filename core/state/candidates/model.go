@@ -52,3 +52,8 @@ type stakesState struct {
 
 	isDirty bool
 }
+
+func (state *stakesState) SetTail(tail int) {
+	state.Tail = tail
+	state.isDirty = true
+}

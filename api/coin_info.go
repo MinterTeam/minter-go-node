@@ -26,10 +26,10 @@ func CoinInfo(coinSymbol string, height int) (*CoinInfoResponse, error) {
 	}
 
 	return &CoinInfoResponse{
-		Name:           coin.Name,
-		Symbol:         coin.Symbol,
-		Volume:         coin.Volume,
-		Crr:            coin.Crr,
-		ReserveBalance: coin.ReserveBalance,
+		Name:           coin.Name(),
+		Symbol:         coin.Symbol(),
+		Volume:         coin.Volume(),
+		Crr:            coin.Crr(),
+		ReserveBalance: coin.Reserve(),
 	}, nil
 }

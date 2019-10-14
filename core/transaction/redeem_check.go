@@ -152,7 +152,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context *state.State, isCheck b
 
 	if !decodedCheck.Coin.IsBaseCoin() {
 		coin := context.Coins.GetCoin(decodedCheck.Coin)
-		commission = formula.CalculateSaleAmount(coin.Volume, coin.ReserveBalance, coin.Crr, commissionInBaseCoin)
+		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
 	}
 
 	totalTxCost := big.NewInt(0).Add(decodedCheck.Value, commission)

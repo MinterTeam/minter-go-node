@@ -1269,7 +1269,7 @@ func (s *StateDB) SetValidatorAbsent(address [20]byte) {
 
 					if !stake.Coin.IsBaseCoin() {
 						coin := s.GetStateCoin(stake.Coin).Data()
-						ret := formula.CalculateSaleReturn(coin.Volume, coin.ReserveBalance, coin.Crr, slashed)
+						ret := formula.CalculateSaleReturn(coin.Volume(), coin.Reserve(), coin.Crr(), slashed)
 
 						s.SubCoinVolume(coin.Symbol, slashed)
 						s.SubCoinReserve(coin.Symbol, ret)
@@ -1338,7 +1338,7 @@ func (s *StateDB) PunishByzantineValidator(address [20]byte) {
 
 				if !stake.Coin.IsBaseCoin() {
 					coin := s.GetStateCoin(stake.Coin).Data()
-					ret := formula.CalculateSaleReturn(coin.Volume, coin.ReserveBalance, coin.Crr, slashed)
+					ret := formula.CalculateSaleReturn(coin.Volume(), coin.Reserve(), coin.Crr(), slashed)
 
 					s.SubCoinVolume(coin.Symbol, slashed)
 					s.SubCoinReserve(coin.Symbol, ret)
@@ -1819,9 +1819,9 @@ func (s *StateDB) Export(currentHeight uint64) types.AppState {
 			appState.Coins = append(appState.Coins, types.Coin{
 				Name:           coin.Name(),
 				Symbol:         coin.Symbol(),
-				Volume:         coin.Volume,
-				Crr:            coin.Crr(),
-				ReserveBalance: coin.ReserveBalance(),
+				Volume:         coin.Volume(),
+				Crr:            coin.Crr()(),
+				ReserveBalance: coin.Reserve()(),
 			})
 		}
 
@@ -2003,7 +2003,7 @@ func (s *StateDB) CheckForInvariants() error {
 	}
 
 	for _, coin := range genesisState.Coins {
-		GenesisAlloc.Add(GenesisAlloc, coin.ReserveBalance)
+		GenesisAlloc.Add(GenesisAlloc, coin.Reserve())
 	}
 
 	for _, ff := range genesisState.FrozenFunds {
@@ -2038,8 +2038,8 @@ func (s *StateDB) CheckForInvariants() error {
 		if key[0] == coinPrefix[0] {
 			coin := s.GetStateCoin(types.StrToCoinSymbol(string(key[1:])))
 
-			totalBasecoinVolume.Add(totalBasecoinVolume, coin.ReserveBalance())
-			coinSupplies[coin.symbol] = coin.Volume
+			totalBasecoinVolume.Add(totalBasecoinVolume, coin.Reserve()())
+			coinSupplies[coin.symbol] = coin.Volume()
 		}
 
 		if key[0] == frozenFundsPrefix[0] {

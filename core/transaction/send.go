@@ -28,15 +28,15 @@ func (data SendData) TotalSpend(tx *Transaction, context *state.State) (TotalSpe
 	if !tx.GasCoin.IsBaseCoin() {
 		coin := context.Coins.GetCoin(tx.GasCoin)
 
-		if coin.ReserveBalance.Cmp(commissionInBaseCoin) < 0 {
+		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
 			return nil, nil, nil, &Response{
 				Code: code.CoinReserveNotSufficient,
 				Log: fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s",
-					coin.ReserveBalance.String(),
+					coin.Reserve().String(),
 					commissionInBaseCoin.String())}
 		}
 
-		commission = formula.CalculateSaleAmount(coin.Volume, coin.ReserveBalance, coin.Crr, commissionInBaseCoin)
+		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
 		conversions = append(conversions, Conversion{
 			FromCoin:    tx.GasCoin,
 			FromAmount:  commission,

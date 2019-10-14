@@ -79,16 +79,16 @@ func TestCreateCoinTx(t *testing.T) {
 		t.Fatalf("Coin %s not found in state", toCreate)
 	}
 
-	if stateCoin.ReserveBalance.Cmp(reserve) != 0 {
-		t.Fatalf("Reserve balance in state is not correct. Expected %s, got %s", reserve, stateCoin.ReserveBalance)
+	if statecoin.Reserve().Cmp(reserve) != 0 {
+		t.Fatalf("Reserve balance in state is not correct. Expected %s, got %s", reserve, statecoin.Reserve())
 	}
 
-	if stateCoin.Volume.Cmp(amount) != 0 {
-		t.Fatalf("Volume in state is not correct. Expected %s, got %s", amount, stateCoin.Volume)
+	if statecoin.Volume().Cmp(amount) != 0 {
+		t.Fatalf("Volume in state is not correct. Expected %s, got %s", amount, statecoin.Volume())
 	}
 
-	if stateCoin.Crr != crr {
-		t.Fatalf("Crr in state is not correct. Expected %d, got %d", crr, stateCoin.Crr)
+	if statecoin.Crr() != crr {
+		t.Fatalf("Crr in state is not correct. Expected %d, got %d", crr, statecoin.Crr())
 	}
 
 	if stateCoin.Name != name {

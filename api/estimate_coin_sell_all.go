@@ -55,10 +55,10 @@ func EstimateCoinSellAll(
 			return nil, rpctypes.RPCError{Code: 400, Message: "Not enough coins to pay commission"}
 		}
 
-		result = formula.CalculatePurchaseReturn(coin.Volume, coin.ReserveBalance, coin.Crr, valueToSell)
+		result = formula.CalculatePurchaseReturn(coin.Volume(), coin.Reserve(), coin.Crr(), valueToSell)
 	case coinToBuy == types.GetBaseCoin():
 		coin := cState.Coins.GetCoin(coinToSell)
-		result = formula.CalculateSaleReturn(coin.Volume, coin.ReserveBalance, coin.Crr, valueToSell)
+		result = formula.CalculateSaleReturn(coin.Volume(), coin.Reserve(), coin.Crr(), valueToSell)
 
 		result.Sub(result, commission)
 		if result.Cmp(big.NewInt(0)) != 1 {
@@ -67,14 +67,14 @@ func EstimateCoinSellAll(
 	default:
 		coinFrom := cState.Coins.GetCoin(coinToSell)
 		coinTo := cState.Coins.GetCoin(coinToBuy)
-		basecoinValue := formula.CalculateSaleReturn(coinFrom.Volume, coinFrom.ReserveBalance, coinFrom.Crr, valueToSell)
+		basecoinValue := formula.CalculateSaleReturn(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), valueToSell)
 
 		basecoinValue.Sub(basecoinValue, commission)
 		if basecoinValue.Cmp(big.NewInt(0)) != 1 {
 			return nil, rpctypes.RPCError{Code: 400, Message: "Not enough coins to pay commission"}
 		}
 
-		result = formula.CalculatePurchaseReturn(coinTo.Volume, coinTo.ReserveBalance, coinTo.Crr, basecoinValue)
+		result = formula.CalculatePurchaseReturn(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), basecoinValue)
 	}
 
 	return &EstimateCoinSellAllResponse{
