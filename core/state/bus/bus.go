@@ -16,7 +16,7 @@ type Event struct {
 	Data interface{}
 }
 
-type DoneEvent struct {
+type doneEvent struct {
 	Data interface{}
 }
 
@@ -81,15 +81,15 @@ func (b *Bus) waitDoneEvent(from, to string) interface{} {
 		select {
 		case msg := <-s.Out():
 			switch msg.Data().(type) {
-			case DoneEvent:
-				return msg.Data().(DoneEvent).Data
+			case doneEvent:
+				return msg.Data().(doneEvent).Data
 			}
 		}
 	}
 }
 
 func (b *Bus) SendDone(from, to string, data interface{}) {
-	b.SendEvent(from, to, DoneEvent{
+	b.SendEvent(from, to, doneEvent{
 		Data: data,
 	})
 }
