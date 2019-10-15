@@ -203,6 +203,7 @@ func (a *Accounts) getOrNew(address types.Address) *Model {
 			balances:  map[types.CoinSymbol]*big.Int{},
 			markDirty: a.markDirty,
 		}
+		a.list[address] = account
 	}
 
 	return account

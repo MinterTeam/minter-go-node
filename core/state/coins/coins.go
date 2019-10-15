@@ -3,6 +3,7 @@ package coins
 import (
 	"bytes"
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/core/state/bus"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/tree"
@@ -17,11 +18,47 @@ type Coins struct {
 	list  map[types.CoinSymbol]*Model
 	dirty map[types.CoinSymbol]struct{}
 
+	bus  *bus.Bus
 	iavl tree.Tree
 }
 
-func NewCoins(iavl tree.Tree) (*Coins, error) {
-	return &Coins{iavl: iavl}, nil
+func NewCoins(stateBus *bus.Bus, iavl tree.Tree) (*Coins, error) {
+	coins := &Coins{bus: stateBus, iavl: iavl}
+	coins.runBus()
+
+	return coins, nil
+}
+
+func (c *Coins) runBus() {
+	events := make(chan bus.Event)
+	c.bus.ListenEvents(bus.Coins, events)
+
+	go func() {
+		for event := range events {
+			switch event.Data.(type) {
+			case bus.GetCoin:
+				coin := c.GetCoin(event.Data.(bus.GetCoin).Symbol)
+				c.bus.SendDone(bus.Coins, event.From, bus.Coin{
+					Name:    coin.Name(),
+					Crr:     coin.Crr(),
+					Symbol:  coin.Symbol(),
+					Volume:  coin.Volume(),
+					Reserve: coin.Reserve(),
+				})
+			case bus.SubCoinReserve:
+				data := event.Data.(bus.SubCoinReserve)
+				c.SubReserve(data.Symbol, data.Amount)
+				c.bus.SendDone(bus.Coins, event.From, nil)
+			case bus.SubCoinVolume:
+				data := event.Data.(bus.SubCoinVolume)
+				c.SubVolume(data.Symbol, data.Amount)
+				c.bus.SendDone(bus.Coins, event.From, nil)
+			case bus.SanitizeCoin:
+				c.Sanitize(event.Data.(bus.SanitizeCoin).Symbol)
+				c.bus.SendDone(bus.Coins, event.From, nil)
+			}
+		}
+	}()
 }
 
 func (c *Coins) Commit() error {

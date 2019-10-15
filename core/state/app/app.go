@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/core/state/bus"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/tree"
 	"math/big"
@@ -13,11 +14,30 @@ type App struct {
 	model   *Model
 	isDirty bool
 
+	bus  *bus.Bus
 	iavl tree.Tree
 }
 
-func NewApp(iavl tree.Tree) (*App, error) {
-	return &App{iavl: iavl}, nil
+func NewApp(stateBus *bus.Bus, iavl tree.Tree) (*App, error) {
+	app := &App{bus: stateBus, iavl: iavl}
+	app.runBus()
+
+	return app, nil
+}
+
+func (v *App) runBus() {
+	events := make(chan bus.Event)
+	v.bus.ListenEvents(bus.App, events)
+
+	go func() {
+		for event := range events {
+			switch event.Data.(type) {
+			case bus.AddTotalSlashed:
+				v.AddTotalSlashed(event.Data.(bus.AddTotalSlashed).Amount)
+				v.bus.SendDone(bus.App, event.From, nil)
+			}
+		}
+	}()
 }
 
 func (v *App) Commit() error {

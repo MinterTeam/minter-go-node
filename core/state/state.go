@@ -3,6 +3,7 @@ package state
 import (
 	"github.com/MinterTeam/minter-go-node/core/state/accounts"
 	"github.com/MinterTeam/minter-go-node/core/state/app"
+	"github.com/MinterTeam/minter-go-node/core/state/bus"
 	"github.com/MinterTeam/minter-go-node/core/state/candidates"
 	"github.com/MinterTeam/minter-go-node/core/state/checks"
 	"github.com/MinterTeam/minter-go-node/core/state/coins"
@@ -27,6 +28,8 @@ type State struct {
 }
 
 func NewState(height uint64, db db.DB) (*State, error) {
+	stateBus := bus.NewBus()
+
 	iavlTree, err := tree.NewMutableTree(db).GetImmutableAtHeight(int64(height))
 	if err != nil {
 		return nil, err
@@ -42,12 +45,12 @@ func NewState(height uint64, db db.DB) (*State, error) {
 		return nil, err
 	}
 
-	appState, err := app.NewApp(iavlTree)
+	appState, err := app.NewApp(stateBus, iavlTree)
 	if err != nil {
 		return nil, err
 	}
 
-	frozenFundsState, err := frozen_funds.NewFrozenFunds(db)
+	frozenFundsState, err := frozen_funds.NewFrozenFunds(stateBus, iavlTree)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +60,7 @@ func NewState(height uint64, db db.DB) (*State, error) {
 		return nil, err
 	}
 
-	coinsState, err := coins.NewCoins(iavlTree)
+	coinsState, err := coins.NewCoins(stateBus, iavlTree)
 	if err != nil {
 		return nil, err
 	}
