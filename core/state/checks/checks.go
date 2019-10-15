@@ -2,25 +2,43 @@ package checks
 
 import (
 	"github.com/MinterTeam/minter-go-node/core/check"
-	db "github.com/tendermint/tm-db"
+	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/tree"
 )
 
+const mainPrefix = byte('t')
+
 type Checks struct {
-	db db.DB
+	usedChecks map[types.Hash]struct{}
+
+	iavl tree.Tree
 }
 
-func NewChecks(db db.DB) (*Checks, error) {
-	return &Checks{db: db}, nil
+func NewChecks(iavl tree.Tree) (*Checks, error) {
+	return &Checks{iavl: iavl}, nil
 }
 
-func (v *Checks) Commit() error {
-	panic("implement me")
+func (c *Checks) Commit() error {
+	for hash := range c.usedChecks {
+		delete(c.usedChecks, hash)
+
+		trieHash := append([]byte{mainPrefix}, hash.Bytes()...)
+		c.iavl.Set(trieHash, []byte{0x1})
+	}
+
+	return nil
 }
 
-func (v *Checks) IsCheckUsed(check *check.Check) bool {
-	panic("implement me")
+func (c *Checks) IsCheckUsed(check *check.Check) bool {
+	if _, has := c.usedChecks[check.Hash()]; has {
+		return true
+	}
+
+	_, data := c.iavl.Get(append([]byte{mainPrefix}, check.Hash().Bytes()...))
+
+	return len(data) != 0
 }
 
-func (v *Checks) UseCheck(check *check.Check) {
-	panic("implement me")
+func (c *Checks) UseCheck(check *check.Check) {
+	c.usedChecks[check.Hash()] = struct{}{}
 }

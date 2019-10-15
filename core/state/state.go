@@ -32,12 +32,12 @@ func NewState(height uint64, db db.DB) (*State, error) {
 		return nil, err
 	}
 
-	validatorsState, err := validators.NewValidators(db)
+	candidatesState, err := candidates.NewCandidates(iavlTree)
 	if err != nil {
 		return nil, err
 	}
 
-	candidatesState, err := candidates.NewCandidates(iavlTree)
+	validatorsState, err := validators.NewValidators(iavlTree, candidatesState)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +62,7 @@ func NewState(height uint64, db db.DB) (*State, error) {
 		return nil, err
 	}
 
-	checksState, err := checks.NewChecks(db)
+	checksState, err := checks.NewChecks(iavlTree)
 	if err != nil {
 		return nil, err
 	}
