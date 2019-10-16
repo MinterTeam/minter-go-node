@@ -7,12 +7,17 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/tree"
+	"github.com/xujiajun/nutsdb"
 	"math/big"
 	"sort"
 )
 
-const mainPrefix = byte('q')
-const infoPrefix = byte('i')
+const (
+	mainPrefix = byte('q')
+	infoPrefix = byte('i')
+)
+
+const ownerIndexBucket = "coinOwnerIndex"
 
 type Coins struct {
 	list  map[types.CoinSymbol]*Model
@@ -20,10 +25,11 @@ type Coins struct {
 
 	bus  *bus.Bus
 	iavl tree.Tree
+	db   *nutsdb.DB
 }
 
-func NewCoins(stateBus *bus.Bus, iavl tree.Tree) (*Coins, error) {
-	coins := &Coins{bus: stateBus, iavl: iavl}
+func NewCoins(stateBus *bus.Bus, iavl tree.Tree, db *nutsdb.DB) (*Coins, error) {
+	coins := &Coins{bus: stateBus, iavl: iavl, db: db}
 	coins.bus.SetCoins(NewBus(coins))
 
 	return coins, nil
@@ -173,4 +179,43 @@ func (c *Coins) getOrderedDirtyCoins() []types.CoinSymbol {
 	})
 
 	return keys
+}
+
+func (c *Coins) AddOwner(symbol types.CoinSymbol, address types.Address) {
+	err := c.db.Update(func(tx *nutsdb.Tx) error {
+		return tx.SAdd(ownerIndexBucket, symbol.Bytes(), address.Bytes())
+	})
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (c *Coins) RemoveOwner(symbol types.CoinSymbol, address types.Address) {
+	err := c.db.Update(func(tx *nutsdb.Tx) error {
+		return tx.SRem(ownerIndexBucket, symbol.Bytes(), address.Bytes())
+	})
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (c *Coins) getOwners(symbol types.CoinSymbol) []types.Address {
+	var owners []types.Address
+	err := c.db.View(func(tx *nutsdb.Tx) error {
+		items, err := tx.SMembers(ownerIndexBucket, symbol.Bytes())
+		if err != nil {
+			return err
+		}
+
+		for _, item := range items {
+			owners = append(owners, types.BytesToAddress(item))
+		}
+
+		return nil
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	return owners
 }

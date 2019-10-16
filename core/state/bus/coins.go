@@ -10,6 +10,9 @@ type Coins interface {
 	SubCoinVolume(types.CoinSymbol, *big.Int)
 	SubCoinReserve(types.CoinSymbol, *big.Int)
 	SanitizeCoin(types.CoinSymbol)
+
+	AddOwner(types.CoinSymbol, types.Address)
+	RemoveOwner(types.CoinSymbol, types.Address)
 }
 
 type Coin struct {

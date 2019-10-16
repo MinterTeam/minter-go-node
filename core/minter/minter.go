@@ -23,6 +23,7 @@ import (
 	rpctypes "github.com/tendermint/tendermint/rpc/lib/types"
 	types2 "github.com/tendermint/tendermint/types"
 	"github.com/tendermint/tm-db"
+	"github.com/xujiajun/nutsdb"
 	"math/big"
 	"sync"
 	"sync/atomic"
@@ -70,8 +71,18 @@ type Blockchain struct {
 
 // Creates Minter Blockchain instance, should be only called once
 func NewMinterBlockchain(cfg *config.Config) *Blockchain {
+	var err error
+
 	dbType := db.DBBackendType(cfg.DBBackend)
 	ldb := db.NewDB("state", dbType, utils.GetMinterHome()+"/data")
+
+	opt := nutsdb.DefaultOptions
+	opt.Dir = utils.GetMinterHome() + "/nutsdb"
+	nuts, err := nutsdb.Open(opt)
+	if err != nil {
+		panic(err)
+	}
+	defer nuts.Close()
 
 	// Initiate Application DB. Used for persisting data like current block, validators, etc.
 	applicationDB := appdb.NewAppDB(cfg)
@@ -85,8 +96,7 @@ func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 	}
 
 	// Set stateDeliver and stateCheck
-	var err error
-	blockchain.stateDeliver, err = state.NewState(blockchain.height, blockchain.stateDB)
+	blockchain.stateDeliver, err = state.NewState(blockchain.height, blockchain.stateDB, nuts)
 	if err != nil {
 		panic(err)
 	}

@@ -12,6 +12,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/tree"
 	db "github.com/tendermint/tm-db"
+	"github.com/xujiajun/nutsdb"
 )
 
 type State struct {
@@ -27,7 +28,7 @@ type State struct {
 	tree   tree.Tree
 }
 
-func NewState(height uint64, db db.DB) (*State, error) {
+func NewState(height uint64, db db.DB, nuts *nutsdb.DB) (*State, error) {
 	stateBus := bus.NewBus()
 
 	iavlTree, err := tree.NewMutableTree(db).GetImmutableAtHeight(int64(height))
@@ -60,7 +61,7 @@ func NewState(height uint64, db db.DB) (*State, error) {
 		return nil, err
 	}
 
-	coinsState, err := coins.NewCoins(stateBus, iavlTree)
+	coinsState, err := coins.NewCoins(stateBus, iavlTree, nuts)
 	if err != nil {
 		return nil, err
 	}
