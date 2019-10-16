@@ -5,8 +5,11 @@ import (
 	"math/big"
 )
 
-type GetCoin struct {
-	Symbol types.CoinSymbol
+type Coins interface {
+	GetCoin(types.CoinSymbol) *Coin
+	SubCoinVolume(types.CoinSymbol, *big.Int)
+	SubCoinReserve(types.CoinSymbol, *big.Int)
+	SanitizeCoin(types.CoinSymbol)
 }
 
 type Coin struct {
@@ -15,18 +18,4 @@ type Coin struct {
 	Symbol  types.CoinSymbol
 	Volume  *big.Int
 	Reserve *big.Int
-}
-
-type SubCoinVolume struct {
-	Symbol types.CoinSymbol
-	Amount *big.Int
-}
-
-type SubCoinReserve struct {
-	Symbol types.CoinSymbol
-	Amount *big.Int
-}
-
-type SanitizeCoin struct {
-	Symbol types.CoinSymbol
 }

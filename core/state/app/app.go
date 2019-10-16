@@ -20,24 +20,9 @@ type App struct {
 
 func NewApp(stateBus *bus.Bus, iavl tree.Tree) (*App, error) {
 	app := &App{bus: stateBus, iavl: iavl}
-	app.runBus()
+	app.bus.SetApp(NewBus(app))
 
 	return app, nil
-}
-
-func (v *App) runBus() {
-	events := make(chan bus.Event)
-	v.bus.ListenEvents(bus.App, events)
-
-	go func() {
-		for event := range events {
-			switch event.Data.(type) {
-			case bus.AddTotalSlashed:
-				v.AddTotalSlashed(event.Data.(bus.AddTotalSlashed).Amount)
-				v.bus.SendDone(bus.App, event.From, nil)
-			}
-		}
-	}()
 }
 
 func (v *App) Commit() error {

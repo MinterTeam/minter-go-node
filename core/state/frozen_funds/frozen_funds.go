@@ -73,16 +73,13 @@ func (f *FrozenFunds) PunishFrozenFundsWithAddress(fromHeight uint64, toHeight u
 				slashed.Sub(slashed, newValue)
 
 				if !item.Coin.IsBaseCoin() {
-					coin := f.bus.SendEvent(bus.FrozenFunds, bus.Coins, bus.GetCoin{Symbol: item.Coin}).(bus.Coin)
-
+					coin := f.bus.Coins().GetCoin(item.Coin)
 					ret := formula.CalculateSaleReturn(coin.Volume, coin.Reserve, coin.Crr, slashed)
-
-					f.bus.SendEvent(bus.FrozenFunds, bus.Coins, bus.SubCoinVolume{Symbol: item.Coin, Amount: slashed})
-					f.bus.SendEvent(bus.FrozenFunds, bus.Coins, bus.SubCoinReserve{Symbol: item.Coin, Amount: ret})
-
-					f.bus.SendEvent(bus.FrozenFunds, bus.App, bus.AddTotalSlashed{Amount: ret})
+					f.bus.Coins().SubCoinVolume(item.Coin, slashed)
+					f.bus.Coins().SubCoinReserve(item.Coin, ret)
+					f.bus.App().AddTotalSlashed(ret)
 				} else {
-					f.bus.SendEvent(bus.FrozenFunds, bus.App, bus.AddTotalSlashed{Amount: slashed})
+					f.bus.App().AddTotalSlashed(slashed)
 				}
 
 				// TODO: add event
@@ -94,7 +91,7 @@ func (f *FrozenFunds) PunishFrozenFundsWithAddress(fromHeight uint64, toHeight u
 				//})
 
 				item.Value = newValue
-				f.bus.SendEvent(bus.FrozenFunds, bus.Coins, bus.SanitizeCoin{Symbol: item.Coin})
+				f.bus.Coins().SanitizeCoin(item.Coin)
 			}
 
 			newList[i] = item

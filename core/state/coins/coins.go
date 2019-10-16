@@ -24,41 +24,9 @@ type Coins struct {
 
 func NewCoins(stateBus *bus.Bus, iavl tree.Tree) (*Coins, error) {
 	coins := &Coins{bus: stateBus, iavl: iavl}
-	coins.runBus()
+	coins.bus.SetCoins(NewBus(coins))
 
 	return coins, nil
-}
-
-func (c *Coins) runBus() {
-	events := make(chan bus.Event)
-	c.bus.ListenEvents(bus.Coins, events)
-
-	go func() {
-		for event := range events {
-			switch event.Data.(type) {
-			case bus.GetCoin:
-				coin := c.GetCoin(event.Data.(bus.GetCoin).Symbol)
-				c.bus.SendDone(bus.Coins, event.From, bus.Coin{
-					Name:    coin.Name(),
-					Crr:     coin.Crr(),
-					Symbol:  coin.Symbol(),
-					Volume:  coin.Volume(),
-					Reserve: coin.Reserve(),
-				})
-			case bus.SubCoinReserve:
-				data := event.Data.(bus.SubCoinReserve)
-				c.SubReserve(data.Symbol, data.Amount)
-				c.bus.SendDone(bus.Coins, event.From, nil)
-			case bus.SubCoinVolume:
-				data := event.Data.(bus.SubCoinVolume)
-				c.SubVolume(data.Symbol, data.Amount)
-				c.bus.SendDone(bus.Coins, event.From, nil)
-			case bus.SanitizeCoin:
-				c.Sanitize(event.Data.(bus.SanitizeCoin).Symbol)
-				c.bus.SendDone(bus.Coins, event.From, nil)
-			}
-		}
-	}()
 }
 
 func (c *Coins) Commit() error {
