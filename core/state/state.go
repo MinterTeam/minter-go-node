@@ -7,7 +7,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/state/candidates"
 	"github.com/MinterTeam/minter-go-node/core/state/checks"
 	"github.com/MinterTeam/minter-go-node/core/state/coins"
-	"github.com/MinterTeam/minter-go-node/core/state/frozen_funds"
+	"github.com/MinterTeam/minter-go-node/core/state/frozenfunds"
 	"github.com/MinterTeam/minter-go-node/core/state/validators"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/tree"
@@ -18,7 +18,7 @@ type State struct {
 	App         *app.App
 	Validators  *validators.Validators
 	Candidates  *candidates.Candidates
-	FrozenFunds *frozen_funds.FrozenFunds
+	FrozenFunds *frozenfunds.FrozenFunds
 	Accounts    *accounts.Accounts
 	Coins       *coins.Coins
 	Checks      *checks.Checks
@@ -50,7 +50,7 @@ func NewState(height uint64, db db.DB) (*State, error) {
 		return nil, err
 	}
 
-	frozenFundsState, err := frozen_funds.NewFrozenFunds(stateBus, iavlTree)
+	frozenFundsState, err := frozenfunds.NewFrozenFunds(stateBus, iavlTree)
 	if err != nil {
 		return nil, err
 	}

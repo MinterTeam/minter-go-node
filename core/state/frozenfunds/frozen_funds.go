@@ -1,4 +1,4 @@
-package frozen_funds
+package frozenfunds
 
 import (
 	"encoding/binary"
