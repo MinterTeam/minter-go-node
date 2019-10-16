@@ -15,6 +15,7 @@ type Model struct {
 	info      *Info
 	markDirty func(symbol types.CoinSymbol)
 	isDirty   bool
+	isDeleted bool
 }
 
 func (m Model) Name() string {

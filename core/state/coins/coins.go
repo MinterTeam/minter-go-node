@@ -165,7 +165,19 @@ func (c *Coins) markDirty(symbol types.CoinSymbol) {
 }
 
 func (c *Coins) delete(symbol types.CoinSymbol) {
-	// todo: delete coin
+	coin := c.GetCoin(symbol)
+	if coin.isDeleted {
+		return
+	}
+	coin.isDeleted = true
+
+	addresses := c.getOwners(symbol)
+	for _, address := range addresses {
+		c.bus.Accounts().DeleteCoin(address, symbol)
+	}
+
+	c.bus.Candidates().DeleteCoin(symbol)
+	c.bus.FrozenFunds().DeleteCoin(symbol)
 }
 
 func (c *Coins) getOrderedDirtyCoins() []types.CoinSymbol {
