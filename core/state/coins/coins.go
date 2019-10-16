@@ -2,6 +2,7 @@ package coins
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/state/bus"
 	"github.com/MinterTeam/minter-go-node/core/types"
@@ -17,7 +18,9 @@ const (
 	infoPrefix = byte('i')
 )
 
-const ownerIndexBucket = "coinOwnerIndex"
+const ownerAccountsIndexBucket = "coinOwnerAccountsIndex"
+const ownerCandidatesIndexBucket = "coinOwnerCandidatesIndex"
+const ownerFrozenFundsIndexBucket = "coinOwnerFrozenFundsIndex"
 
 type Coins struct {
 	list  map[types.CoinSymbol]*Model
@@ -182,7 +185,6 @@ func (c *Coins) delete(symbol types.CoinSymbol) {
 	accounts, candidates, frozenfunds := c.getOwners(symbol)
 	for _, address := range accounts {
 		c.bus.Accounts().DeleteCoin(address, symbol)
-		c.RemoveOwnerAddress(symbol, address)
 	}
 
 	for _, pubkey := range candidates {
@@ -209,7 +211,7 @@ func (c *Coins) getOrderedDirtyCoins() []types.CoinSymbol {
 
 func (c *Coins) AddOwnerAddress(symbol types.CoinSymbol, address types.Address) {
 	err := c.db.Update(func(tx *nutsdb.Tx) error {
-		return tx.SAdd(ownerIndexBucket, symbol.Bytes(), address.Bytes())
+		return tx.SAdd(ownerAccountsIndexBucket, symbol.Bytes(), address.Bytes())
 	})
 	if err != nil {
 		panic(err)
@@ -218,7 +220,49 @@ func (c *Coins) AddOwnerAddress(symbol types.CoinSymbol, address types.Address) 
 
 func (c *Coins) RemoveOwnerAddress(symbol types.CoinSymbol, address types.Address) {
 	err := c.db.Update(func(tx *nutsdb.Tx) error {
-		return tx.SRem(ownerIndexBucket, symbol.Bytes(), address.Bytes())
+		return tx.SRem(ownerAccountsIndexBucket, symbol.Bytes(), address.Bytes())
+	})
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (c *Coins) AddOwnerCandidate(symbol types.CoinSymbol, pubkey types.Pubkey) {
+	err := c.db.Update(func(tx *nutsdb.Tx) error {
+		return tx.SAdd(ownerCandidatesIndexBucket, symbol.Bytes(), pubkey.Bytes())
+	})
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (c *Coins) RemoveOwnerCandidate(symbol types.CoinSymbol, pubkey types.Pubkey) {
+	err := c.db.Update(func(tx *nutsdb.Tx) error {
+		return tx.SRem(ownerCandidatesIndexBucket, symbol.Bytes(), pubkey.Bytes())
+	})
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (c *Coins) AddOwnerFrozenFund(symbol types.CoinSymbol, height uint64) {
+	b := make([]byte, 8)
+	binary.LittleEndian.PutUint64(b, height)
+
+	err := c.db.Update(func(tx *nutsdb.Tx) error {
+		return tx.SAdd(ownerFrozenFundsIndexBucket, symbol.Bytes(), b)
+	})
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (c *Coins) RemoveOwnerFrozenFund(symbol types.CoinSymbol, height uint64) {
+	b := make([]byte, 8)
+	binary.LittleEndian.PutUint64(b, height)
+
+	err := c.db.Update(func(tx *nutsdb.Tx) error {
+		return tx.SRem(ownerFrozenFundsIndexBucket, symbol.Bytes(), b)
 	})
 	if err != nil {
 		panic(err)
@@ -226,15 +270,15 @@ func (c *Coins) RemoveOwnerAddress(symbol types.CoinSymbol, address types.Addres
 }
 
 func (c *Coins) getOwners(symbol types.CoinSymbol) ([]types.Address, []types.Pubkey, []uint64) {
-	var owners []types.Address
+	var addresses []types.Address
 	err := c.db.View(func(tx *nutsdb.Tx) error {
-		items, err := tx.SMembers(ownerIndexBucket, symbol.Bytes())
+		items, err := tx.SMembers(ownerAccountsIndexBucket, symbol.Bytes())
 		if err != nil {
 			return err
 		}
 
 		for _, item := range items {
-			owners = append(owners, types.BytesToAddress(item))
+			addresses = append(addresses, types.BytesToAddress(item))
 		}
 
 		return nil
@@ -243,5 +287,39 @@ func (c *Coins) getOwners(symbol types.CoinSymbol) ([]types.Address, []types.Pub
 		panic(err)
 	}
 
-	return owners, nil, nil
+	var pubkeys []types.Pubkey
+	err = c.db.View(func(tx *nutsdb.Tx) error {
+		items, err := tx.SMembers(ownerCandidatesIndexBucket, symbol.Bytes())
+		if err != nil {
+			return err
+		}
+
+		for _, item := range items {
+			pubkeys = append(pubkeys, types.BytesToPubkey(item))
+		}
+
+		return nil
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	var frozenfunds []uint64
+	err = c.db.View(func(tx *nutsdb.Tx) error {
+		items, err := tx.SMembers(ownerFrozenFundsIndexBucket, symbol.Bytes())
+		if err != nil {
+			return err
+		}
+
+		for _, item := range items {
+			frozenfunds = append(frozenfunds, binary.LittleEndian.Uint64(item))
+		}
+
+		return nil
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	return addresses, pubkeys, frozenfunds
 }

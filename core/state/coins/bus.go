@@ -48,3 +48,11 @@ func (b *Bus) AddOwnerAddress(symbol types.CoinSymbol, owner types.Address) {
 func (b *Bus) RemoveOwnerAddress(symbol types.CoinSymbol, owner types.Address) {
 	b.coins.RemoveOwnerAddress(symbol, owner)
 }
+
+func (b *Bus) AddOwnerCandidate(symbol types.CoinSymbol, owner types.Pubkey) {
+	b.coins.AddOwnerCandidate(symbol, owner)
+}
+
+func (b *Bus) RemoveOwnerCandidate(symbol types.CoinSymbol, owner types.Pubkey) {
+	b.coins.RemoveOwnerCandidate(symbol, owner)
+}

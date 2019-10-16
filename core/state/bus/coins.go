@@ -13,6 +13,9 @@ type Coins interface {
 
 	AddOwnerAddress(types.CoinSymbol, types.Address)
 	RemoveOwnerAddress(types.CoinSymbol, types.Address)
+
+	AddOwnerCandidate(types.CoinSymbol, types.Pubkey)
+	RemoveOwnerCandidate(types.CoinSymbol, types.Pubkey)
 }
 
 type Coin struct {

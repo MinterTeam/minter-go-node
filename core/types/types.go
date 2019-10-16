@@ -279,6 +279,21 @@ func (a UnprefixedAddress) MarshalText() ([]byte, error) {
 
 type Pubkey [32]byte
 
+func BytesToPubkey(b []byte) Pubkey {
+	var p Pubkey
+	p.SetBytes(b)
+	return p
+}
+
+func (p *Pubkey) SetBytes(b []byte) {
+	if len(b) > len(p) {
+		b = b[len(b)-AddressLength:]
+	}
+	copy(p[AddressLength-len(b):], b)
+}
+
+func (p Pubkey) Bytes() []byte { return p[:] }
+
 func (p Pubkey) String() string {
 	return fmt.Sprintf("Mp%x", p[:])
 }
