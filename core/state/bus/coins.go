@@ -11,8 +11,8 @@ type Coins interface {
 	SubCoinReserve(types.CoinSymbol, *big.Int)
 	SanitizeCoin(types.CoinSymbol)
 
-	AddOwner(types.CoinSymbol, types.Address)
-	RemoveOwner(types.CoinSymbol, types.Address)
+	AddOwnerAddress(types.CoinSymbol, types.Address)
+	RemoveOwnerAddress(types.CoinSymbol, types.Address)
 }
 
 type Coin struct {

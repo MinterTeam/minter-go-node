@@ -41,6 +41,15 @@ func (c *Coins) Commit() error {
 		coin := c.list[symbol]
 		delete(c.dirty, symbol)
 
+		if coin.isDeleted {
+			c.iavl.Remove(append([]byte{mainPrefix}, symbol[:]...))
+
+			path := append([]byte{mainPrefix}, symbol[:]...)
+			path = append(path, infoPrefix)
+			c.iavl.Remove(path)
+			continue
+		}
+
 		if coin.IsDirty() {
 			data, err := rlp.EncodeToBytes(coin)
 			if err != nil {
@@ -65,7 +74,6 @@ func (c *Coins) Commit() error {
 			c.iavl.Set(path, data)
 			coin.info.isDirty = false
 		}
-
 	}
 
 	return nil
@@ -171,13 +179,18 @@ func (c *Coins) delete(symbol types.CoinSymbol) {
 	}
 	coin.isDeleted = true
 
-	addresses := c.getOwners(symbol)
-	for _, address := range addresses {
+	accounts, candidates, frozenfunds := c.getOwners(symbol)
+	for _, address := range accounts {
 		c.bus.Accounts().DeleteCoin(address, symbol)
 	}
 
-	c.bus.Candidates().DeleteCoin(symbol)
-	c.bus.FrozenFunds().DeleteCoin(symbol)
+	for _, pubkey := range candidates {
+		c.bus.Candidates().DeleteCoin(pubkey, symbol)
+	}
+
+	for _, height := range frozenfunds {
+		c.bus.FrozenFunds().DeleteCoin(height, symbol)
+	}
 }
 
 func (c *Coins) getOrderedDirtyCoins() []types.CoinSymbol {
@@ -193,7 +206,7 @@ func (c *Coins) getOrderedDirtyCoins() []types.CoinSymbol {
 	return keys
 }
 
-func (c *Coins) AddOwner(symbol types.CoinSymbol, address types.Address) {
+func (c *Coins) AddOwnerAddress(symbol types.CoinSymbol, address types.Address) {
 	err := c.db.Update(func(tx *nutsdb.Tx) error {
 		return tx.SAdd(ownerIndexBucket, symbol.Bytes(), address.Bytes())
 	})
@@ -202,7 +215,7 @@ func (c *Coins) AddOwner(symbol types.CoinSymbol, address types.Address) {
 	}
 }
 
-func (c *Coins) RemoveOwner(symbol types.CoinSymbol, address types.Address) {
+func (c *Coins) RemoveOwnerAddress(symbol types.CoinSymbol, address types.Address) {
 	err := c.db.Update(func(tx *nutsdb.Tx) error {
 		return tx.SRem(ownerIndexBucket, symbol.Bytes(), address.Bytes())
 	})
@@ -211,7 +224,7 @@ func (c *Coins) RemoveOwner(symbol types.CoinSymbol, address types.Address) {
 	}
 }
 
-func (c *Coins) getOwners(symbol types.CoinSymbol) []types.Address {
+func (c *Coins) getOwners(symbol types.CoinSymbol) ([]types.Address, []types.Pubkey, []uint64) {
 	var owners []types.Address
 	err := c.db.View(func(tx *nutsdb.Tx) error {
 		items, err := tx.SMembers(ownerIndexBucket, symbol.Bytes())
@@ -229,5 +242,5 @@ func (c *Coins) getOwners(symbol types.CoinSymbol) []types.Address {
 		panic(err)
 	}
 
-	return owners
+	return owners, nil, nil
 }

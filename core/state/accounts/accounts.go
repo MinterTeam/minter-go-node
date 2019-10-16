@@ -3,7 +3,9 @@ package accounts
 import (
 	"bytes"
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/core/state/bus"
 	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/tree"
 	"math/big"
@@ -19,10 +21,14 @@ type Accounts struct {
 	dirty map[types.Address]struct{}
 
 	iavl tree.Tree
+	bus *bus.Bus
 }
 
-func NewAccounts(iavl tree.Tree) (*Accounts, error) {
-	return &Accounts{iavl: iavl}, nil
+func NewAccounts(stateBus *bus.Bus, iavl tree.Tree) (*Accounts, error) {
+	accounts := &Accounts{iavl: iavl, bus: stateBus}
+	accounts.bus.SetAccounts(NewBus(accounts))
+
+	return accounts, nil
 }
 
 func (a *Accounts) Commit() error {
@@ -224,6 +230,16 @@ func (a *Accounts) GetBalances(address types.Address) map[types.CoinSymbol]*big.
 	}
 
 	return balances
+}
+
+func (a *Accounts) DeleteCoin(address types.Address, symbol types.CoinSymbol) {
+	balance := a.GetBalance(address, symbol)
+	coin := a.bus.Coins().GetCoin(symbol)
+
+	ret := formula.CalculateSaleReturn(coin.Volume, coin.Reserve, 100, balance)
+
+	a.AddBalance(address, types.GetBaseCoin(), ret)
+	a.SetBalance(address, symbol, big.NewInt(0))
 }
 
 func (a *Accounts) markDirty(addr types.Address) {

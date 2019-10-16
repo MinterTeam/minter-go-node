@@ -41,10 +41,10 @@ func (b *Bus) SanitizeCoin(symbol types.CoinSymbol) {
 	b.coins.Sanitize(symbol)
 }
 
-func (b *Bus) AddOwner(symbol types.CoinSymbol, owner types.Address) {
-	b.coins.AddOwner(symbol, owner)
+func (b *Bus) AddOwnerAddress(symbol types.CoinSymbol, owner types.Address) {
+	b.coins.AddOwnerAddress(symbol, owner)
 }
 
-func (b *Bus) RemoveOwner(symbol types.CoinSymbol, owner types.Address) {
-	b.coins.RemoveOwner(symbol, owner)
+func (b *Bus) RemoveOwnerAddress(symbol types.CoinSymbol, owner types.Address) {
+	b.coins.RemoveOwnerAddress(symbol, owner)
 }
