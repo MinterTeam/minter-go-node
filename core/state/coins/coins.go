@@ -182,6 +182,7 @@ func (c *Coins) delete(symbol types.CoinSymbol) {
 	accounts, candidates, frozenfunds := c.getOwners(symbol)
 	for _, address := range accounts {
 		c.bus.Accounts().DeleteCoin(address, symbol)
+		c.RemoveOwnerAddress(symbol, address)
 	}
 
 	for _, pubkey := range candidates {

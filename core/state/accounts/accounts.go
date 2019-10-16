@@ -21,7 +21,7 @@ type Accounts struct {
 	dirty map[types.Address]struct{}
 
 	iavl tree.Tree
-	bus *bus.Bus
+	bus  *bus.Bus
 }
 
 func NewAccounts(stateBus *bus.Bus, iavl tree.Tree) (*Accounts, error) {
@@ -108,6 +108,9 @@ func (a *Accounts) getOrderedDirtyAccounts() []types.Address {
 
 func (a *Accounts) AddBalance(address types.Address, coin types.CoinSymbol, amount *big.Int) {
 	balance := a.GetBalance(address, coin)
+	if balance.Cmp(big.NewInt(0)) == 0 {
+		a.bus.Coins().AddOwnerAddress(coin, address)
+	}
 	a.SetBalance(address, coin, big.NewInt(0).Add(balance, amount))
 }
 
@@ -137,12 +140,21 @@ func (a *Accounts) GetBalance(address types.Address, coin types.CoinSymbol) *big
 }
 
 func (a *Accounts) SubBalance(address types.Address, coin types.CoinSymbol, amount *big.Int) {
-	balance := a.GetBalance(address, coin)
-	a.SetBalance(address, coin, big.NewInt(0).Sub(balance, amount))
+	balance := big.NewInt(0).Sub(a.GetBalance(address, coin), amount)
+	if balance.Cmp(big.NewInt(0)) == 0 {
+		a.bus.Coins().RemoveOwnerAddress(coin, address)
+	}
+	a.SetBalance(address, coin, balance)
 }
 
 func (a *Accounts) SetBalance(address types.Address, coin types.CoinSymbol, amount *big.Int) {
+	if amount.Cmp(big.NewInt(0)) == 0 {
+		a.bus.Coins().RemoveOwnerAddress(coin, address)
+	}
 	account := a.getOrNew(address)
+	if a.GetBalance(address, coin).Cmp(big.NewInt(0)) == 0 {
+		a.bus.Coins().AddOwnerAddress(coin, address)
+	}
 	account.setBalance(coin, amount)
 }
 
