@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/state/bus"
 	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/MinterTeam/minter-go-node/eventsdb/events"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/tree"
