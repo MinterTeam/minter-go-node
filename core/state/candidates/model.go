@@ -70,6 +70,22 @@ func (candidate *Candidate) GetTmAddress() types.TmAddress {
 	return address
 }
 
+func (candidate *Candidate) hasDirtyUpdates() bool {
+	for _, update := range candidate.updates {
+		if update.isDirty {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (candidate *Candidate) uncheckDirtyUpdates() {
+	for _, update := range candidate.updates {
+		update.isDirty = false
+	}
+}
+
 type Stake struct {
 	Owner          types.Address
 	Coin           types.CoinSymbol

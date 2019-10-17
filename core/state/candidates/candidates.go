@@ -100,7 +100,7 @@ func (c *Candidates) Commit() error {
 			c.iavl.Set(path, data)
 		}
 
-		if len(candidate.updates) > 0 {
+		if candidate.hasDirtyUpdates() {
 			data, err := rlp.EncodeToBytes(candidate.updates)
 			if err != nil {
 				return fmt.Errorf("can't encode candidates updates: %v", err)
@@ -110,6 +110,7 @@ func (c *Candidates) Commit() error {
 			path = append(path, pubkey[:]...)
 			path = append(path, updatesPrefix)
 			c.iavl.Set(path, data)
+			candidate.uncheckDirtyUpdates()
 		}
 	}
 
@@ -121,7 +122,35 @@ func (c *Candidates) GetNewCandidates(valCount int, height int64) []Candidate {
 }
 
 func (c *Candidates) DeleteCoin(pubkey types.Pubkey, coinSymbol types.CoinSymbol) {
-	panic("implement me")
+	stakes := c.GetStakes(pubkey)
+	coin := c.bus.Coins().GetCoin(coinSymbol)
+	for _, stake := range stakes {
+		if stake.Coin != coinSymbol {
+			continue
+		}
+
+		ret := formula.CalculateSaleReturn(coin.Volume, coin.Reserve, 100, stake.Value)
+
+		stake := c.GetStakeOfAddress(pubkey, stake.Owner, types.GetBaseCoin())
+		if stake == nil {
+			candidate.Stakes[j].Value = ret
+			candidate.Stakes[j].Coin = types.GetBaseCoin()
+		} else {
+			candidate.Stakes[j].Value = big.NewInt(0)
+			stake.Value.Add(stake.Value, ret)
+		}
+	}
+
+	candidate := c.GetCandidate(pubkey)
+	for _, update := range candidate.updates {
+		if update.Coin != coinSymbol {
+			continue
+		}
+
+		update.isDirty = true
+		update.Coin = types.GetBaseCoin()
+		update.Value = formula.CalculateSaleReturn(coin.Volume, coin.Reserve, 100, update.Value)
+	}
 }
 
 func (c *Candidates) Create(ownerAddress types.Address, rewardAddress types.Address, pubkey types.Pubkey, commission uint, coin types.CoinSymbol, stake *big.Int) {
