@@ -1,6 +1,7 @@
 package candidates
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/state/bus"
 	"github.com/MinterTeam/minter-go-node/core/types"
@@ -8,6 +9,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/tree"
 	"math/big"
+	"sort"
 )
 
 const (
@@ -21,6 +23,7 @@ const (
 	stakesPrefix      = 's'
 	stakesStatePrefix = 'q'
 	totalStakePrefix  = 't'
+	updatesPrefix     = 'u'
 )
 
 type Candidates struct {
@@ -44,7 +47,71 @@ func (c *Candidates) Commit() error {
 		return nil
 	}
 
-	// todo commit
+	keys := c.getOrderedDirtyCandidates()
+	if len(keys) > 0 {
+		data, err := rlp.EncodeToBytes(c.list)
+		if err != nil {
+			return fmt.Errorf("can't encode candidates: %v", err)
+		}
+
+		path := []byte{mainPrefix}
+		c.iavl.Set(path, data)
+	}
+
+	for _, pubkey := range keys {
+		candidate := c.list[pubkey]
+		candidate.isDirty = false
+
+		if candidate.isTotalStakeDirty {
+			path := []byte{mainPrefix}
+			path = append(path, pubkey[:]...)
+			path = append(path, totalStakePrefix)
+			c.iavl.Set(path, candidate.totalBipStake.Bytes())
+			candidate.isTotalStakeDirty = false
+		}
+
+		for index, stake := range candidate.stakes {
+			if stake.isDirty {
+				data, err := rlp.EncodeToBytes(stake)
+				if err != nil {
+					return fmt.Errorf("can't encode stake: %v", err)
+				}
+
+				path := []byte{mainPrefix}
+				path = append(path, pubkey[:]...)
+				path = append(path, stakesPrefix)
+				path = append(path, []byte(fmt.Sprintf("%d", index))...)
+				c.iavl.Set(path, data)
+				stake.isDirty = false
+			}
+		}
+
+		if candidate.stakesState.isDirty {
+			candidate.stakesState.isDirty = false
+
+			data, err := rlp.EncodeToBytes(candidate.stakesState)
+			if err != nil {
+				return fmt.Errorf("can't encode stakes state: %v", err)
+			}
+
+			path := []byte{mainPrefix}
+			path = append(path, pubkey[:]...)
+			path = append(path, stakesStatePrefix)
+			c.iavl.Set(path, data)
+		}
+
+		if len(candidate.updates) > 0 {
+			data, err := rlp.EncodeToBytes(candidate.updates)
+			if err != nil {
+				return fmt.Errorf("can't encode candidates updates: %v", err)
+			}
+
+			path := []byte{mainPrefix}
+			path = append(path, pubkey[:]...)
+			path = append(path, updatesPrefix)
+			c.iavl.Set(path, data)
+		}
+	}
 
 	return nil
 }
@@ -59,13 +126,13 @@ func (c *Candidates) DeleteCoin(pubkey types.Pubkey, coinSymbol types.CoinSymbol
 
 func (c *Candidates) Create(ownerAddress types.Address, rewardAddress types.Address, pubkey types.Pubkey, commission uint, coin types.CoinSymbol, stake *big.Int) {
 	c.list[pubkey] = &Candidate{
-		PubKey:            pubkey,
-		RewardAddress:     rewardAddress,
-		OwnerAddress:      ownerAddress,
-		Commission:        commission,
-		Status:            CandidateStatusOffline,
-		totalBipStake:     big.NewInt(0),
-		stakesState:       &stakesState{
+		PubKey:        pubkey,
+		RewardAddress: rewardAddress,
+		OwnerAddress:  ownerAddress,
+		Commission:    commission,
+		Status:        CandidateStatusOffline,
+		totalBipStake: big.NewInt(0),
+		stakesState: &stakesState{
 			Count:   0,
 			Tail:    -1,
 			isDirty: true,
@@ -321,6 +388,7 @@ func (c *Candidates) GetCandidateOwner(pubkey types.Pubkey) types.Address {
 }
 
 func (c *Candidates) loadCandidates() {
+	// todo: load updates, load total stake, load stakes, load stakes state
 	if c.loaded {
 		return
 	}
@@ -432,4 +500,20 @@ func (c *Candidates) calculateBipValue(coinSymbol types.CoinSymbol, amount *big.
 	coin := c.bus.Coins().GetCoin(coinSymbol)
 
 	return formula.CalculateSaleReturn(coin.Volume, coin.Reserve, coin.Crr, totalAmount)
+}
+
+func (c *Candidates) getOrderedDirtyCandidates() []types.Pubkey {
+	var keys []types.Pubkey
+	for _, candidate := range c.list {
+		if !candidate.isDirty && !candidate.isTotalStakeDirty {
+			continue
+		}
+		keys = append(keys, candidate.PubKey)
+	}
+
+	sort.SliceStable(keys, func(i, j int) bool {
+		return bytes.Compare(keys[i].Bytes(), keys[j].Bytes()) == 1
+	})
+
+	return keys
 }
