@@ -34,6 +34,7 @@ type Candidates struct {
 func NewCandidates(iavl tree.Tree, bus *bus.Bus) (*Candidates, error) {
 	candidates := &Candidates{iavl: iavl, bus: bus}
 	candidates.bus.SetCandidates(NewBus(candidates))
+	candidates.loadCandidates()
 
 	return candidates, nil
 }
@@ -50,6 +51,29 @@ func (c *Candidates) Commit() error {
 
 func (c *Candidates) GetNewCandidates(valCount int, height int64) []Candidate {
 	panic("implement me")
+}
+
+func (c *Candidates) DeleteCoin(pubkey types.Pubkey, coinSymbol types.CoinSymbol) {
+	panic("implement me")
+}
+
+func (c *Candidates) Create(ownerAddress types.Address, rewardAddress types.Address, pubkey types.Pubkey, commission uint, coin types.CoinSymbol, stake *big.Int) {
+	c.list[pubkey] = &Candidate{
+		PubKey:            pubkey,
+		RewardAddress:     rewardAddress,
+		OwnerAddress:      ownerAddress,
+		Commission:        commission,
+		Status:            CandidateStatusOffline,
+		totalBipStake:     big.NewInt(0),
+		stakesState:       &stakesState{
+			Count:   0,
+			Tail:    -1,
+			isDirty: true,
+		},
+		stakes:            [1000]*Stake{},
+		isDirty:           true,
+		isTotalStakeDirty: true,
+	}
 }
 
 func (c *Candidates) PunishByzantineCandidate(height uint64, tmAddress types.TmAddress) {
@@ -90,8 +114,6 @@ func (c *Candidates) PunishByzantineCandidate(height uint64, tmAddress types.TmA
 }
 
 func (c *Candidates) GetCandidateByTendermintAddress(address types.TmAddress) *Candidate {
-	c.loadCandidates()
-
 	candidates := c.GetCandidates()
 	for _, candidate := range candidates {
 		if candidate.GetTmAddress() == address {
@@ -103,8 +125,6 @@ func (c *Candidates) GetCandidateByTendermintAddress(address types.TmAddress) *C
 }
 
 func (c *Candidates) RecalculateStakes() {
-	c.loadCandidates()
-
 	for _, candidate := range c.list {
 		stakes := c.GetStakes(candidate.PubKey)
 
@@ -151,15 +171,12 @@ func (c *Candidates) RecalculateStakes() {
 }
 
 func (c *Candidates) Exists(pubkey types.Pubkey) bool {
-	c.loadCandidates()
 	_, exists := c.list[pubkey]
 
 	return exists
 }
 
 func (c *Candidates) Count() int {
-	c.loadCandidates()
-
 	return len(c.list)
 }
 
@@ -176,13 +193,7 @@ func (c *Candidates) IsNewCandidateStakeSufficient(coin types.CoinSymbol, stake 
 	return false
 }
 
-func (c *Candidates) Create(ownerAddress types.Address, rewardAddress types.Address, pubkey types.Pubkey, commission uint, coin types.CoinSymbol, stake *big.Int) {
-	panic("implement me")
-}
-
 func (c *Candidates) GetCandidate(pubkey types.Pubkey) *Candidate {
-	c.loadCandidates()
-
 	return c.list[pubkey]
 }
 
@@ -219,18 +230,15 @@ func (c *Candidates) Delegate(address types.Address, pubkey types.Pubkey, coin t
 }
 
 func (c *Candidates) Edit(pubkey types.Pubkey, rewardAddress types.Address, ownerAddress types.Address) {
-	c.loadCandidates()
 	c.list[pubkey].setOwner(ownerAddress)
 	c.list[pubkey].setReward(rewardAddress)
 }
 
 func (c *Candidates) SetOnline(pubkey types.Pubkey) {
-	c.loadCandidates()
 	c.list[pubkey].setStatus(CandidateStatusOnline)
 }
 
 func (c *Candidates) SetOffline(pubkey types.Pubkey) {
-	c.loadCandidates()
 	c.list[pubkey].setStatus(CandidateStatusOffline)
 }
 
@@ -240,7 +248,6 @@ func (c *Candidates) SubStake(address types.Address, pubkey types.Pubkey, coin t
 }
 
 func (c *Candidates) GetCandidates() []*Candidate {
-	c.loadCandidates()
 	var candidates []*Candidate
 	for _, candidate := range c.list {
 		candidates = append(candidates, candidate)
@@ -250,7 +257,6 @@ func (c *Candidates) GetCandidates() []*Candidate {
 }
 
 func (c *Candidates) GetTotalStake(pubkey types.Pubkey) *big.Int {
-	c.loadCandidates()
 	candidate := c.list[pubkey]
 	if candidate.totalBipStake == nil {
 		path := []byte{mainPrefix}
@@ -311,8 +317,6 @@ func (c *Candidates) GetStakeValueOfAddress(pubkey types.Pubkey, address types.A
 }
 
 func (c *Candidates) GetCandidateOwner(pubkey types.Pubkey) types.Address {
-	c.loadCandidates()
-
 	return c.list[pubkey].OwnerAddress
 }
 
@@ -343,7 +347,6 @@ func (c *Candidates) loadCandidates() {
 }
 
 func (c *Candidates) getStakeState(pubkey types.Pubkey) *stakesState {
-	c.loadCandidates()
 	candidate := c.list[pubkey]
 	if candidate.stakesState == nil {
 		path := []byte{mainPrefix}
@@ -371,7 +374,6 @@ func (c *Candidates) getStakeState(pubkey types.Pubkey) *stakesState {
 }
 
 func (c *Candidates) getStakeAtIndex(pubkey types.Pubkey, index int) *Stake {
-	c.loadCandidates()
 	candidate := c.list[pubkey]
 	if candidate.stakes[index] == nil {
 		path := []byte{mainPrefix}
@@ -395,7 +397,6 @@ func (c *Candidates) getStakeAtIndex(pubkey types.Pubkey, index int) *Stake {
 }
 
 func (c *Candidates) setStakeAtIndex(pubkey types.Pubkey, index int, stake *Stake) {
-	c.loadCandidates()
 	candidate := c.list[pubkey]
 	candidate.stakes[index] = stake
 }
@@ -431,8 +432,4 @@ func (c *Candidates) calculateBipValue(coinSymbol types.CoinSymbol, amount *big.
 	coin := c.bus.Coins().GetCoin(coinSymbol)
 
 	return formula.CalculateSaleReturn(coin.Volume, coin.Reserve, coin.Crr, totalAmount)
-}
-
-func (c *Candidates) DeleteCoin(pubkey types.Pubkey, coinSymbol types.CoinSymbol) {
-
 }
