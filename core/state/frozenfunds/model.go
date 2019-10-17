@@ -1,7 +1,9 @@
 package frozenfunds
 
 import (
+	"github.com/MinterTeam/minter-go-node/core/state/bus"
 	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/formula"
 	"math/big"
 )
 
@@ -37,4 +39,29 @@ func (m *Model) addFund(address types.Address, pubkey types.Pubkey, coin types.C
 
 func (m *Model) Height() uint64 {
 	return m.height
+}
+
+func (m *Model) deleteCoin(coinSymbol types.CoinSymbol, bus *bus.Bus) {
+	coin := bus.Coins().GetCoin(coinSymbol)
+	var list []Item
+
+	for _, ff := range m.List {
+		if ff.Coin == coinSymbol {
+			ret := formula.CalculateSaleReturn(coin.Volume, coin.Reserve, 100, ff.Value)
+
+			list = append(list, Item{
+				Address:      ff.Address,
+				CandidateKey: ff.CandidateKey,
+				Coin:         types.GetBaseCoin(),
+				Value:        ret,
+			})
+
+			continue
+		}
+
+		list = append(list, ff)
+	}
+
+	m.List = list
+	m.markDirty(m.height)
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/state/bus"
 	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/eventsdb/events"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/tree"
@@ -24,7 +25,10 @@ type FrozenFunds struct {
 }
 
 func NewFrozenFunds(stateBus *bus.Bus, iavl tree.Tree) (*FrozenFunds, error) {
-	return &FrozenFunds{bus: stateBus, iavl: iavl}, nil
+	frozenfunds := &FrozenFunds{bus: stateBus, iavl: iavl}
+	frozenfunds.bus.SetFrozenFunds(NewBus(frozenfunds))
+
+	return frozenfunds, nil
 }
 
 func (f *FrozenFunds) Commit() error {
@@ -172,6 +176,15 @@ func (f *FrozenFunds) Delete(height uint64) {
 	}
 
 	ff.delete()
+}
+
+func (f *FrozenFunds) DeleteCoin(height uint64, coinSymbol types.CoinSymbol) {
+	ff := f.get(height)
+	if ff == nil {
+		return
+	}
+
+	ff.deleteCoin(coinSymbol, f.bus)
 }
 
 func getPath(height uint64) []byte {

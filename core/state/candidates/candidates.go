@@ -2,7 +2,9 @@ package candidates
 
 import (
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/core/state/bus"
 	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/tree"
 	"math/big"
@@ -26,10 +28,11 @@ type Candidates struct {
 	loaded bool
 
 	iavl tree.Tree
+	bus  *bus.Bus
 }
 
-func NewCandidates(iavl tree.Tree) (*Candidates, error) {
-	return &Candidates{iavl: iavl}, nil
+func NewCandidates(iavl tree.Tree, bus *bus.Bus) (*Candidates, error) {
+	return &Candidates{iavl: iavl, bus: bus}, nil
 }
 
 func (c *Candidates) Commit() error {
@@ -109,24 +112,6 @@ func (c *Candidates) Delegate(address types.Address, pubkey types.Pubkey, coin t
 		BipValue:       c.calculateBipValue(coin, value, true),
 		PrevStakeIndex: -1,
 		isDirty:        true,
-	}
-
-	state := c.getStakeState(pubkey)
-	if state.Count < MaxDelegatorsPerCandidate {
-		stake.PrevStakeIndex = state.Count - 1
-		c.setStakeAtIndex(pubkey, state.Count, stake)
-		state.SetTail(state.Count)
-	} else {
-		cI := state.Tail
-		for {
-			s := c.getStakeAtIndex(pubkey, cI)
-			cI = s.PrevStakeIndex
-
-			if s.BipValue.Cmp(stake.BipValue) == -1 || cI == -1 {
-				// todo insert stake
-
-			}
-		}
 	}
 }
 
@@ -311,8 +296,8 @@ func (c *Candidates) setStakeAtIndex(pubkey types.Pubkey, index int, stake *Stak
 	candidate.stakes[index] = stake
 }
 
-func (c *Candidates) calculateBipValue(coin types.CoinSymbol, amount *big.Int, include bool) *big.Int {
-	if coin.IsBaseCoin() {
+func (c *Candidates) calculateBipValue(coinSymbol types.CoinSymbol, amount *big.Int, include bool) *big.Int {
+	if coinSymbol.IsBaseCoin() {
 		return big.NewInt(0).Set(amount)
 	}
 
@@ -325,11 +310,13 @@ func (c *Candidates) calculateBipValue(coin types.CoinSymbol, amount *big.Int, i
 	for _, candidate := range candidates {
 		stakes := c.GetStakes(candidate.PubKey)
 		for _, stake := range stakes {
-			if stake.Coin == coin {
+			if stake.Coin == coinSymbol {
 				totalAmount.Add(totalAmount, stake.Value)
 			}
 		}
 	}
 
-	panic("calculate sale return")
+	coin := c.bus.Coins().GetCoin(coinSymbol)
+
+	return formula.CalculateSaleReturn(coin.Volume, coin.Reserve, coin.Crr, totalAmount)
 }
