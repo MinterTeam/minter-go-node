@@ -65,11 +65,11 @@ func (c *Candidates) RecalculateStakes() {
 		stakes := c.GetStakes(candidate.PubKey)
 
 		for _, stake := range stakes {
-			stake.setBipValue(c.calculateBipValue(stake.Coin, stake.Value, false))
+			stake.setBipValue(c.calculateBipValue(stake.Coin, stake.Value, false, true))
 		}
 
 		for _, update := range candidate.updates {
-			bipValue := c.calculateBipValue(update.Coin, update.Value, false)
+			bipValue := c.calculateBipValue(update.Coin, update.Value, false, true)
 			stake := c.GetStakeOfAddress(candidate.PubKey, update.Owner, update.Coin)
 			if stake == nil {
 				state := c.getStakeState(candidate.PubKey)
@@ -83,10 +83,7 @@ func (c *Candidates) RecalculateStakes() {
 						c.bus.Accounts().AddBalance(update.Owner, update.Coin, update.Value)
 						// todo: unbond event
 
-						stake.Coin = update.Coin
-						stake.Owner = update.Owner
-						stake.BipValue = big.NewInt(0)
-						stake.Value = big.NewInt(0)
+						stake.setNewOwner(stake.Coin, stake.Owner)
 						break
 					}
 				}
@@ -94,9 +91,11 @@ func (c *Candidates) RecalculateStakes() {
 
 			if stake != nil {
 				stake.addValue(update.Value)
-				stake.setBipValue(c.calculateBipValue(stake.Coin, stake.Value, false))
+				update.Value = big.NewInt(0)
+				stake.setBipValue(c.calculateBipValue(stake.Coin, stake.Value, false, true))
 			}
 		}
+		candidate.clearUpdates()
 
 		totalBipValue := big.NewInt(0)
 		for _, stake := range stakes {
@@ -104,7 +103,6 @@ func (c *Candidates) RecalculateStakes() {
 		}
 
 		candidate.setTotalBipValue(totalBipValue)
-		candidate.clearUpdates()
 	}
 }
 
@@ -130,7 +128,7 @@ func (c *Candidates) Count() int {
 }
 
 func (c *Candidates) IsNewCandidateStakeSufficient(coin types.CoinSymbol, stake *big.Int) bool {
-	bipValue := c.calculateBipValue(coin, stake, true)
+	bipValue := c.calculateBipValue(coin, stake, true, true)
 	candidates := c.list
 
 	for _, candidate := range candidates {
@@ -153,19 +151,19 @@ func (c *Candidates) GetCandidate(pubkey types.Pubkey) *Candidate {
 }
 
 func (c *Candidates) IsDelegatorStakeSufficient(address types.Address, pubkey types.Pubkey, coin types.CoinSymbol, amount *big.Int) bool {
-	state := c.getStakeState(pubkey)
-	if state.Count < MaxDelegatorsPerCandidate {
+	stakes := c.GetStakes(pubkey)
+	if len(stakes) < MaxDelegatorsPerCandidate {
 		return true
 	}
 
-	smallestStake := c.getStakeAtIndex(pubkey, state.Tail)
-	stakeValue := c.calculateBipValue(coin, amount, true)
-
-	if stakeValue.Cmp(smallestStake.BipValue) == -1 {
-		return false
+	stakeValue := c.calculateBipValue(coin, amount, true, true)
+	for _, stake := range stakes {
+		if stakeValue.Cmp(stake.BipValue) == -1 {
+			return true
+		}
 	}
 
-	return true
+	return false
 }
 
 func (c *Candidates) Delegate(address types.Address, pubkey types.Pubkey, coin types.CoinSymbol, value *big.Int) {
@@ -173,7 +171,7 @@ func (c *Candidates) Delegate(address types.Address, pubkey types.Pubkey, coin t
 		Owner:          address,
 		Coin:           coin,
 		Value:          value,
-		BipValue:       c.calculateBipValue(coin, value, true),
+		BipValue:       big.NewInt(0),
 		PrevStakeIndex: -1,
 		isDirty:        true,
 	}
@@ -366,13 +364,13 @@ func (c *Candidates) setStakeAtIndex(pubkey types.Pubkey, index int, stake *Stak
 	candidate.stakes[index] = stake
 }
 
-func (c *Candidates) calculateBipValue(coinSymbol types.CoinSymbol, amount *big.Int, include bool) *big.Int {
+func (c *Candidates) calculateBipValue(coinSymbol types.CoinSymbol, amount *big.Int, includeSelf, includeUpdates bool) *big.Int {
 	if coinSymbol.IsBaseCoin() {
 		return big.NewInt(0).Set(amount)
 	}
 
 	totalAmount := big.NewInt(0)
-	if include {
+	if includeSelf {
 		totalAmount.Set(amount)
 	}
 
@@ -382,6 +380,14 @@ func (c *Candidates) calculateBipValue(coinSymbol types.CoinSymbol, amount *big.
 		for _, stake := range stakes {
 			if stake.Coin == coinSymbol {
 				totalAmount.Add(totalAmount, stake.Value)
+			}
+		}
+
+		if includeUpdates {
+			for _, update := range candidate.updates {
+				if update.Coin == coinSymbol {
+					totalAmount.Add(totalAmount, update.Value)
+				}
 			}
 		}
 	}

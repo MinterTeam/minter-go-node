@@ -95,6 +95,14 @@ func (stake *Stake) setBipValue(value *big.Int) {
 	stake.BipValue.Set(value)
 }
 
+func (stake *Stake) setNewOwner(coin types.CoinSymbol, owner types.Address) {
+	stake.Coin = coin
+	stake.Owner = owner
+	stake.BipValue = big.NewInt(0)
+	stake.Value = big.NewInt(0)
+	stake.isDirty = true
+}
+
 type stakesState struct {
 	Count int
 	Tail  int
