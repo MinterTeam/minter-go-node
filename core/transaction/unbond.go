@@ -111,7 +111,7 @@ func (data UnbondData) Run(tx *Transaction, context *state.State, isCheck bool, 
 
 		context.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		context.Candidates.SubStake(sender, data.PubKey, data.Coin, data.Value)
-		context.FrozenFunds.GetOrNew(unbondAtBlock).AddFund(sender, data.PubKey, data.Coin, data.Value)
+		context.FrozenFunds.AddFund(unbondAtBlock, sender, data.PubKey, data.Coin, data.Value)
 		context.Accounts.SetNonce(sender, tx.Nonce)
 	}
 

@@ -56,3 +56,11 @@ func (b *Bus) AddOwnerCandidate(symbol types.CoinSymbol, owner types.Pubkey) {
 func (b *Bus) RemoveOwnerCandidate(symbol types.CoinSymbol, owner types.Pubkey) {
 	b.coins.RemoveOwnerCandidate(symbol, owner)
 }
+
+func (b *Bus) AddOwnerFrozenFund(symbol types.CoinSymbol, owner uint64) {
+	b.coins.AddOwnerFrozenFund(symbol, owner)
+}
+
+func (b *Bus) RemoveOwnerFrozenFund(symbol types.CoinSymbol, owner uint64) {
+	b.coins.RemoveOwnerFrozenFund(symbol, owner)
+}

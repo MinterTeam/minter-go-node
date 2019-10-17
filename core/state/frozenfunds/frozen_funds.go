@@ -156,6 +156,24 @@ func (f *FrozenFunds) getOrderedDirty() []uint64 {
 	return keys
 }
 
+func (f *FrozenFunds) AddFund(height uint64, address types.Address, pubkey types.Pubkey, coin types.CoinSymbol, value *big.Int) {
+	f.GetOrNew(height).addFund(address, pubkey, coin, value)
+	f.bus.Coins().AddOwnerFrozenFund(coin, height)
+}
+
+func (f *FrozenFunds) Delete(height uint64) {
+	ff := f.get(height)
+	if ff == nil {
+		return
+	}
+
+	for _, item := range ff.List {
+		f.bus.Coins().RemoveOwnerFrozenFund(item.Coin, height)
+	}
+
+	ff.delete()
+}
+
 func getPath(height uint64) []byte {
 	b := make([]byte, 8)
 	binary.BigEndian.PutUint64(b, height)

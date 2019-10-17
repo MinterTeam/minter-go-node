@@ -20,12 +20,12 @@ type Model struct {
 	markDirty func(height uint64)
 }
 
-func (m *Model) Delete() {
+func (m *Model) delete() {
 	m.deleted = true
 	m.markDirty(m.height)
 }
 
-func (m *Model) AddFund(address types.Address, pubkey types.Pubkey, coin types.CoinSymbol, value *big.Int) {
+func (m *Model) addFund(address types.Address, pubkey types.Pubkey, coin types.CoinSymbol, value *big.Int) {
 	m.List = append(m.List, Item{
 		Address:      address,
 		CandidateKey: &pubkey,
@@ -33,4 +33,8 @@ func (m *Model) AddFund(address types.Address, pubkey types.Pubkey, coin types.C
 		Value:        value,
 	})
 	m.markDirty(m.height)
+}
+
+func (m *Model) Height() uint64 {
+	return m.height
 }

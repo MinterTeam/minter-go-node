@@ -16,6 +16,9 @@ type Coins interface {
 
 	AddOwnerCandidate(types.CoinSymbol, types.Pubkey)
 	RemoveOwnerCandidate(types.CoinSymbol, types.Pubkey)
+
+	AddOwnerFrozenFund(types.CoinSymbol, uint64)
+	RemoveOwnerFrozenFund(types.CoinSymbol, uint64)
 }
 
 type Coin struct {
