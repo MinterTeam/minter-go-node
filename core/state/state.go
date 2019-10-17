@@ -36,7 +36,7 @@ func NewState(height uint64, db db.DB, nuts *nutsdb.DB) (*State, error) {
 		return nil, err
 	}
 
-	candidatesState, err := candidates.NewCandidates(iavlTree)
+	candidatesState, err := candidates.NewCandidates(iavlTree, stateBus)
 	if err != nil {
 		return nil, err
 	}
