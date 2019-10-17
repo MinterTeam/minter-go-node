@@ -32,7 +32,10 @@ type Candidates struct {
 }
 
 func NewCandidates(iavl tree.Tree, bus *bus.Bus) (*Candidates, error) {
-	return &Candidates{iavl: iavl, bus: bus}, nil
+	candidates := &Candidates{iavl: iavl, bus: bus}
+	candidates.bus.SetCandidates(NewBus(candidates))
+
+	return candidates, nil
 }
 
 func (c *Candidates) Commit() error {
@@ -43,6 +46,47 @@ func (c *Candidates) Commit() error {
 	// todo commit
 
 	return nil
+}
+
+func (c *Candidates) GetNewCandidates(valCount int, height int64) []Candidate {
+	panic("implement me")
+}
+
+func (c *Candidates) PunishByzantineCandidate(height uint64, tmAddress types.TmAddress) {
+	candidate := c.GetCandidateByTendermintAddress(tmAddress)
+	stakes := c.GetStakes(candidate.PubKey)
+
+	for _, stake := range stakes {
+		newValue := big.NewInt(0).Set(stake.Value)
+		newValue.Mul(newValue, big.NewInt(95))
+		newValue.Div(newValue, big.NewInt(100))
+
+		slashed := big.NewInt(0).Set(stake.Value)
+		slashed.Sub(slashed, newValue)
+
+		if !stake.Coin.IsBaseCoin() {
+			coin := c.bus.Coins().GetCoin(stake.Coin)
+			ret := formula.CalculateSaleReturn(coin.Volume, coin.Reserve, coin.Crr, slashed)
+
+			c.bus.Coins().SubCoinVolume(coin.Symbol, slashed)
+			c.bus.Coins().SubCoinReserve(coin.Symbol, ret)
+
+			c.bus.App().AddTotalSlashed(ret)
+		} else {
+			c.bus.App().AddTotalSlashed(slashed)
+		}
+
+		// todo: add event
+		//edb.AddEvent(s.height, events.SlashEvent{
+		//	Address:         stake.Owner,
+		//	Amount:          slashed.Bytes(),
+		//	Coin:            stake.Coin,
+		//	ValidatorPubKey: candidate.PubKey,
+		//})
+
+		c.bus.FrozenFunds().AddFrozenFund(height+UnbondPeriod, stake.Owner, candidate.PubKey, stake.Coin, newValue)
+		c.bus.Coins().SanitizeCoin(stake.Coin)
+	}
 }
 
 func (c *Candidates) GetCandidateByTendermintAddress(address types.TmAddress) *Candidate {
@@ -104,14 +148,6 @@ func (c *Candidates) RecalculateStakes() {
 
 		candidate.setTotalBipValue(totalBipValue)
 	}
-}
-
-func (c *Candidates) GetNewCandidates(valCount int, height int64) []Candidate {
-	panic("implement me")
-}
-
-func (c *Candidates) PunishByzantineCandidate(tmAddress types.TmAddress) {
-	panic("implement me")
 }
 
 func (c *Candidates) Exists(pubkey types.Pubkey) bool {
@@ -395,4 +431,8 @@ func (c *Candidates) calculateBipValue(coinSymbol types.CoinSymbol, amount *big.
 	coin := c.bus.Coins().GetCoin(coinSymbol)
 
 	return formula.CalculateSaleReturn(coin.Volume, coin.Reserve, coin.Crr, totalAmount)
+}
+
+func (c *Candidates) DeleteCoin(pubkey types.Pubkey, coinSymbol types.CoinSymbol) {
+
 }
