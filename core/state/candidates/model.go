@@ -2,6 +2,7 @@ package candidates
 
 import (
 	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/tendermint/tendermint/crypto/ed25519"
 	"math/big"
 )
 
@@ -15,6 +16,7 @@ type Candidate struct {
 	totalBipStake *big.Int
 	stakesState   *stakesState
 	stakes        [MaxDelegatorsPerCandidate]*Stake
+	updates       []*Stake
 	tmAddress     *types.TmAddress
 
 	isDirty           bool
@@ -36,6 +38,38 @@ func (candidate *Candidate) setReward(address types.Address) {
 	candidate.RewardAddress = address
 }
 
+func (candidate *Candidate) addUpdate(stake *Stake) {
+	candidate.isDirty = true
+	candidate.updates = append(candidate.updates, stake)
+}
+
+func (candidate *Candidate) clearUpdates() {
+	candidate.isDirty = true
+	candidate.updates = nil
+}
+
+func (candidate *Candidate) setTotalBipValue(totalBipValue *big.Int) {
+	candidate.isDirty = true
+	candidate.isTotalStakeDirty = true
+	candidate.totalBipStake.Set(totalBipValue)
+}
+
+func (candidate *Candidate) GetTmAddress() types.TmAddress {
+	if candidate.tmAddress != nil {
+		return *candidate.tmAddress
+	}
+
+	var pubkey ed25519.PubKeyEd25519
+	copy(pubkey[:], candidate.PubKey[:])
+
+	var address types.TmAddress
+	copy(address[:], pubkey.Address().Bytes())
+
+	candidate.tmAddress = &address
+
+	return address
+}
+
 type Stake struct {
 	Owner          types.Address
 	Coin           types.CoinSymbol
@@ -44,6 +78,21 @@ type Stake struct {
 	PrevStakeIndex int
 
 	isDirty bool
+}
+
+func (stake *Stake) addValue(value *big.Int) {
+	stake.isDirty = true
+	stake.Value.Add(stake.Value, value)
+}
+
+func (stake *Stake) subValue(value *big.Int) {
+	stake.isDirty = true
+	stake.Value.Sub(stake.Value, value)
+}
+
+func (stake *Stake) setBipValue(value *big.Int) {
+	stake.isDirty = true
+	stake.BipValue.Set(value)
 }
 
 type stakesState struct {

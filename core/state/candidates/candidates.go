@@ -46,11 +46,66 @@ func (c *Candidates) Commit() error {
 }
 
 func (c *Candidates) GetCandidateByTendermintAddress(address types.TmAddress) *Candidate {
-	panic("implement me")
+	c.loadCandidates()
+
+	candidates := c.GetCandidates()
+	for _, candidate := range candidates {
+		if candidate.GetTmAddress() == address {
+			return candidate
+		}
+	}
+
+	return nil
 }
 
-func (c *Candidates) RecalculateTotalStakeValues() {
-	panic("implement me")
+func (c *Candidates) RecalculateStakes() {
+	c.loadCandidates()
+
+	for _, candidate := range c.list {
+		stakes := c.GetStakes(candidate.PubKey)
+
+		for _, stake := range stakes {
+			stake.setBipValue(c.calculateBipValue(stake.Coin, stake.Value, false))
+		}
+
+		for _, update := range candidate.updates {
+			bipValue := c.calculateBipValue(update.Coin, update.Value, false)
+			stake := c.GetStakeOfAddress(candidate.PubKey, update.Owner, update.Coin)
+			if stake == nil {
+				state := c.getStakeState(candidate.PubKey)
+				i := 0
+				currentIndex := state.Tail
+				for i < state.Count && currentIndex != -1 {
+					stake := c.getStakeAtIndex(candidate.PubKey, currentIndex)
+					currentIndex = stake.PrevStakeIndex
+
+					if stake.BipValue.Cmp(bipValue) == -1 {
+						c.bus.Accounts().AddBalance(update.Owner, update.Coin, update.Value)
+						// todo: unbond event
+
+						stake.Coin = update.Coin
+						stake.Owner = update.Owner
+						stake.BipValue = big.NewInt(0)
+						stake.Value = big.NewInt(0)
+						break
+					}
+				}
+			}
+
+			if stake != nil {
+				stake.addValue(update.Value)
+				stake.setBipValue(c.calculateBipValue(stake.Coin, stake.Value, false))
+			}
+		}
+
+		totalBipValue := big.NewInt(0)
+		for _, stake := range stakes {
+			totalBipValue.Add(totalBipValue, stake.BipValue)
+		}
+
+		candidate.setTotalBipValue(totalBipValue)
+		candidate.clearUpdates()
+	}
 }
 
 func (c *Candidates) GetNewCandidates(valCount int, height int64) []Candidate {
@@ -75,7 +130,16 @@ func (c *Candidates) Count() int {
 }
 
 func (c *Candidates) IsNewCandidateStakeSufficient(coin types.CoinSymbol, stake *big.Int) bool {
-	panic("implement me")
+	bipValue := c.calculateBipValue(coin, stake, true)
+	candidates := c.list
+
+	for _, candidate := range candidates {
+		if candidate.totalBipStake.Cmp(bipValue) == -1 {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (c *Candidates) Create(ownerAddress types.Address, rewardAddress types.Address, pubkey types.Pubkey, commission uint, coin types.CoinSymbol, stake *big.Int) {
@@ -113,6 +177,11 @@ func (c *Candidates) Delegate(address types.Address, pubkey types.Pubkey, coin t
 		PrevStakeIndex: -1,
 		isDirty:        true,
 	}
+
+	c.bus.Coins().AddOwnerCandidate(coin, pubkey)
+
+	candidate := c.GetCandidate(pubkey)
+	candidate.addUpdate(stake)
 }
 
 func (c *Candidates) Edit(pubkey types.Pubkey, rewardAddress types.Address, ownerAddress types.Address) {
@@ -132,14 +201,15 @@ func (c *Candidates) SetOffline(pubkey types.Pubkey) {
 }
 
 func (c *Candidates) SubStake(address types.Address, pubkey types.Pubkey, coin types.CoinSymbol, value *big.Int) {
-	panic("implement me")
+	stake := c.GetStakeOfAddress(pubkey, address, coin)
+	stake.subValue(value)
 }
 
-func (c *Candidates) GetCandidates() []Candidate {
+func (c *Candidates) GetCandidates() []*Candidate {
 	c.loadCandidates()
-	var candidates []Candidate
+	var candidates []*Candidate
 	for _, candidate := range c.list {
-		candidates = append(candidates, *candidate)
+		candidates = append(candidates, candidate)
 	}
 
 	return candidates
