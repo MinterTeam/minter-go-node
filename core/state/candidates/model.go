@@ -14,13 +14,15 @@ type Candidate struct {
 	Status        byte
 
 	totalBipStake *big.Int
-	stakesState   *stakesState
+	stakesCount   int
 	stakes        [MaxDelegatorsPerCandidate]*Stake
 	updates       []*Stake
 	tmAddress     *types.TmAddress
 
 	isDirty           bool
 	isTotalStakeDirty bool
+	isUpdatesDirty    bool
+	dirtyStakes       [MaxDelegatorsPerCandidate]bool
 }
 
 func (candidate *Candidate) setStatus(status byte) {
@@ -55,10 +57,11 @@ func (candidate *Candidate) setTotalBipValue(totalBipValue *big.Int) {
 }
 
 func (candidate *Candidate) GetTmAddress() types.TmAddress {
-	if candidate.tmAddress != nil {
-		return *candidate.tmAddress
-	}
+	return *candidate.tmAddress
+}
 
+func (candidate *Candidate) setTmAddress() {
+	// set tm address
 	var pubkey ed25519.PubKeyEd25519
 	copy(pubkey[:], candidate.PubKey[:])
 
@@ -66,48 +69,30 @@ func (candidate *Candidate) GetTmAddress() types.TmAddress {
 	copy(address[:], pubkey.Address().Bytes())
 
 	candidate.tmAddress = &address
-
-	return address
-}
-
-func (candidate *Candidate) hasDirtyUpdates() bool {
-	for _, update := range candidate.updates {
-		if update.isDirty {
-			return true
-		}
-	}
-
-	return false
-}
-
-func (candidate *Candidate) uncheckDirtyUpdates() {
-	for _, update := range candidate.updates {
-		update.isDirty = false
-	}
 }
 
 type Stake struct {
-	Owner          types.Address
-	Coin           types.CoinSymbol
-	Value          *big.Int
-	BipValue       *big.Int
-	PrevStakeIndex int
+	Owner    types.Address
+	Coin     types.CoinSymbol
+	Value    *big.Int
+	BipValue *big.Int
 
-	isDirty bool
+	index     int
+	markDirty func(int)
 }
 
 func (stake *Stake) addValue(value *big.Int) {
-	stake.isDirty = true
+	stake.markDirty(stake.index)
 	stake.Value.Add(stake.Value, value)
 }
 
 func (stake *Stake) subValue(value *big.Int) {
-	stake.isDirty = true
+	stake.markDirty(stake.index)
 	stake.Value.Sub(stake.Value, value)
 }
 
 func (stake *Stake) setBipValue(value *big.Int) {
-	stake.isDirty = true
+	stake.markDirty(stake.index)
 	stake.BipValue.Set(value)
 }
 
@@ -116,17 +101,15 @@ func (stake *Stake) setNewOwner(coin types.CoinSymbol, owner types.Address) {
 	stake.Owner = owner
 	stake.BipValue = big.NewInt(0)
 	stake.Value = big.NewInt(0)
-	stake.isDirty = true
+	stake.markDirty(stake.index)
 }
 
-type stakesState struct {
-	Count int
-	Tail  int
-
-	isDirty bool
+func (stake *Stake) setValue(ret *big.Int) {
+	stake.markDirty(stake.index)
+	stake.Value.Set(ret)
 }
 
-func (state *stakesState) SetTail(tail int) {
-	state.Tail = tail
-	state.isDirty = true
+func (stake *Stake) setCoin(coin types.CoinSymbol) {
+	stake.markDirty(stake.index)
+	stake.Coin = coin
 }

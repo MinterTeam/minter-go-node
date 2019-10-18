@@ -70,37 +70,34 @@ func (c *Candidates) Commit() error {
 			candidate.isTotalStakeDirty = false
 		}
 
-		for index, stake := range candidate.stakes {
-			if stake.isDirty {
-				data, err := rlp.EncodeToBytes(stake)
-				if err != nil {
-					return fmt.Errorf("can't encode stake: %v", err)
-				}
-
-				path := []byte{mainPrefix}
-				path = append(path, pubkey[:]...)
-				path = append(path, stakesPrefix)
-				path = append(path, []byte(fmt.Sprintf("%d", index))...)
-				c.iavl.Set(path, data)
-				stake.isDirty = false
+		stakes := c.GetStakes(candidate.PubKey)
+		for index, stake := range stakes {
+			if !candidate.dirtyStakes[index] {
+				continue
 			}
-		}
 
-		if candidate.stakesState.isDirty {
-			candidate.stakesState.isDirty = false
-
-			data, err := rlp.EncodeToBytes(candidate.stakesState)
-			if err != nil {
-				return fmt.Errorf("can't encode stakes state: %v", err)
-			}
+			candidate.dirtyStakes[index] = false
 
 			path := []byte{mainPrefix}
 			path = append(path, pubkey[:]...)
-			path = append(path, stakesStatePrefix)
+			path = append(path, stakesPrefix)
+			path = append(path, []byte(fmt.Sprintf("%d", index))...)
+
+			if stake == nil {
+				c.iavl.Remove(path)
+				candidate.stakes[index] = nil
+				continue
+			}
+
+			data, err := rlp.EncodeToBytes(stake)
+			if err != nil {
+				return fmt.Errorf("can't encode stake: %v", err)
+			}
+
 			c.iavl.Set(path, data)
 		}
 
-		if candidate.hasDirtyUpdates() {
+		if candidate.isUpdatesDirty {
 			data, err := rlp.EncodeToBytes(candidate.updates)
 			if err != nil {
 				return fmt.Errorf("can't encode candidates updates: %v", err)
@@ -110,7 +107,7 @@ func (c *Candidates) Commit() error {
 			path = append(path, pubkey[:]...)
 			path = append(path, updatesPrefix)
 			c.iavl.Set(path, data)
-			candidate.uncheckDirtyUpdates()
+			candidate.isUpdatesDirty = false
 		}
 	}
 
@@ -124,52 +121,51 @@ func (c *Candidates) GetNewCandidates(valCount int, height int64) []Candidate {
 func (c *Candidates) DeleteCoin(pubkey types.Pubkey, coinSymbol types.CoinSymbol) {
 	stakes := c.GetStakes(pubkey)
 	coin := c.bus.Coins().GetCoin(coinSymbol)
-	for _, stake := range stakes {
+	candidate := c.GetCandidate(pubkey)
+
+	for index, stake := range stakes {
 		if stake.Coin != coinSymbol {
 			continue
 		}
 
 		ret := formula.CalculateSaleReturn(coin.Volume, coin.Reserve, 100, stake.Value)
 
-		stake := c.GetStakeOfAddress(pubkey, stake.Owner, types.GetBaseCoin())
-		if stake == nil {
-			candidate.Stakes[j].Value = ret
-			candidate.Stakes[j].Coin = types.GetBaseCoin()
+		tStake := c.GetStakeOfAddress(pubkey, stake.Owner, types.GetBaseCoin())
+		if tStake == nil {
+			stake.setValue(ret)
+			stake.setCoin(types.GetBaseCoin())
 		} else {
-			candidate.Stakes[j].Value = big.NewInt(0)
+			candidate.stakes[index] = nil
 			stake.Value.Add(stake.Value, ret)
 		}
 	}
 
-	candidate := c.GetCandidate(pubkey)
 	for _, update := range candidate.updates {
 		if update.Coin != coinSymbol {
 			continue
 		}
 
-		update.isDirty = true
+		candidate.isUpdatesDirty = true
 		update.Coin = types.GetBaseCoin()
 		update.Value = formula.CalculateSaleReturn(coin.Volume, coin.Reserve, 100, update.Value)
 	}
 }
 
 func (c *Candidates) Create(ownerAddress types.Address, rewardAddress types.Address, pubkey types.Pubkey, commission uint, coin types.CoinSymbol, stake *big.Int) {
-	c.list[pubkey] = &Candidate{
-		PubKey:        pubkey,
-		RewardAddress: rewardAddress,
-		OwnerAddress:  ownerAddress,
-		Commission:    commission,
-		Status:        CandidateStatusOffline,
-		totalBipStake: big.NewInt(0),
-		stakesState: &stakesState{
-			Count:   0,
-			Tail:    -1,
-			isDirty: true,
-		},
+	candidate := &Candidate{
+		PubKey:            pubkey,
+		RewardAddress:     rewardAddress,
+		OwnerAddress:      ownerAddress,
+		Commission:        commission,
+		Status:            CandidateStatusOffline,
+		totalBipStake:     big.NewInt(0),
 		stakes:            [1000]*Stake{},
 		isDirty:           true,
 		isTotalStakeDirty: true,
 	}
+	candidate.setTmAddress()
+
+	c.list[pubkey] = candidate
 }
 
 func (c *Candidates) PunishByzantineCandidate(height uint64, tmAddress types.TmAddress) {
@@ -177,6 +173,10 @@ func (c *Candidates) PunishByzantineCandidate(height uint64, tmAddress types.TmA
 	stakes := c.GetStakes(candidate.PubKey)
 
 	for _, stake := range stakes {
+		if stake == nil {
+			continue
+		}
+
 		newValue := big.NewInt(0).Set(stake.Value)
 		newValue.Mul(newValue, big.NewInt(95))
 		newValue.Div(newValue, big.NewInt(100))
@@ -223,8 +223,10 @@ func (c *Candidates) GetCandidateByTendermintAddress(address types.TmAddress) *C
 func (c *Candidates) RecalculateStakes() {
 	for _, candidate := range c.list {
 		stakes := c.GetStakes(candidate.PubKey)
-
 		for _, stake := range stakes {
+			if stake == nil {
+				continue
+			}
 			stake.setBipValue(c.calculateBipValue(stake.Coin, stake.Value, false, true))
 		}
 
@@ -232,12 +234,8 @@ func (c *Candidates) RecalculateStakes() {
 			bipValue := c.calculateBipValue(update.Coin, update.Value, false, true)
 			stake := c.GetStakeOfAddress(candidate.PubKey, update.Owner, update.Coin)
 			if stake == nil {
-				state := c.getStakeState(candidate.PubKey)
-				i := 0
-				currentIndex := state.Tail
-				for i < state.Count && currentIndex != -1 {
-					stake := c.getStakeAtIndex(candidate.PubKey, currentIndex)
-					currentIndex = stake.PrevStakeIndex
+				for i := 0; i < MaxDelegatorsPerCandidate; i++ {
+					stake = candidate.stakes[i]
 
 					if stake.BipValue.Cmp(bipValue) == -1 {
 						c.bus.Accounts().AddBalance(update.Owner, update.Coin, update.Value)
@@ -259,6 +257,9 @@ func (c *Candidates) RecalculateStakes() {
 
 		totalBipValue := big.NewInt(0)
 		for _, stake := range stakes {
+			if stake == nil {
+				continue
+			}
 			totalBipValue.Add(totalBipValue, stake.BipValue)
 		}
 
@@ -301,6 +302,10 @@ func (c *Candidates) IsDelegatorStakeSufficient(address types.Address, pubkey ty
 
 	stakeValue := c.calculateBipValue(coin, amount, true, true)
 	for _, stake := range stakes {
+		if stake == nil {
+			continue
+		}
+
 		if stakeValue.Cmp(stake.BipValue) == -1 {
 			return true
 		}
@@ -311,12 +316,10 @@ func (c *Candidates) IsDelegatorStakeSufficient(address types.Address, pubkey ty
 
 func (c *Candidates) Delegate(address types.Address, pubkey types.Pubkey, coin types.CoinSymbol, value *big.Int) {
 	stake := &Stake{
-		Owner:          address,
-		Coin:           coin,
-		Value:          value,
-		BipValue:       big.NewInt(0),
-		PrevStakeIndex: -1,
-		isDirty:        true,
+		Owner:    address,
+		Coin:     coin,
+		Value:    value,
+		BipValue: big.NewInt(0),
 	}
 
 	c.bus.Coins().AddOwnerCandidate(coin, pubkey)
@@ -371,25 +374,22 @@ func (c *Candidates) GetTotalStake(pubkey types.Pubkey) *big.Int {
 }
 
 func (c *Candidates) GetStakes(pubkey types.Pubkey) []*Stake {
-	state := c.getStakeState(pubkey)
+	candidate := c.GetCandidate(pubkey)
 
 	var stakes []*Stake
-	i := 0
-	currentIndex := state.Tail
-	for i < state.Count && currentIndex != -1 {
-		stake := c.getStakeAtIndex(pubkey, currentIndex)
+	for i := 0; i < MaxDelegatorsPerCandidate; i++ {
+		stake := candidate.stakes[i]
+		if stake == nil {
+			continue
+		}
 		stakes = append(stakes, stake)
-
-		currentIndex = stake.PrevStakeIndex
 	}
 
 	return stakes
 }
 
 func (c *Candidates) StakesCount(pubkey types.Pubkey) int {
-	state := c.getStakeState(pubkey)
-
-	return state.Count
+	return c.GetCandidate(pubkey).stakesCount
 }
 
 func (c *Candidates) GetStakeOfAddress(pubkey types.Pubkey, address types.Address, coin types.CoinSymbol) *Stake {
@@ -417,7 +417,6 @@ func (c *Candidates) GetCandidateOwner(pubkey types.Pubkey) types.Address {
 }
 
 func (c *Candidates) loadCandidates() {
-	// todo: load updates, load total stake, load stakes, load stakes state
 	if c.loaded {
 		return
 	}
@@ -431,71 +430,77 @@ func (c *Candidates) loadCandidates() {
 		return
 	}
 
-	var candidates []Candidate
+	var candidates []*Candidate
 	if err := rlp.DecodeBytes(enc, candidates); err != nil {
 		panic(fmt.Sprintf("failed to decode candidates: %s", err))
 		return
 	}
 
-	list := map[types.Pubkey]*Candidate{}
+	c.list = map[types.Pubkey]*Candidate{}
 	for _, candidate := range candidates {
-		list[candidate.PubKey] = &candidate
-	}
-}
-
-func (c *Candidates) getStakeState(pubkey types.Pubkey) *stakesState {
-	candidate := c.list[pubkey]
-	if candidate.stakesState == nil {
-		path := []byte{mainPrefix}
-		path = append(path, pubkey[:]...)
-		path = append(path, totalStakePrefix)
-		_, enc := c.iavl.Get(path)
-		if len(enc) == 0 {
-			candidate.stakesState = &stakesState{
-				Count:   0,
-				Tail:    0,
-				isDirty: false,
+		// load stakes
+		stakesCount := 0
+		for index := 0; index < MaxDelegatorsPerCandidate; index++ {
+			path := []byte{mainPrefix}
+			path = append(path, candidate.PubKey.Bytes()...)
+			path = append(path, stakesPrefix)
+			path = append(path, []byte(fmt.Sprintf("%d", index))...)
+			_, enc := c.iavl.Get(path)
+			if len(enc) == 0 {
+				candidate.stakes[index] = nil
+				continue
 			}
-			return candidate.stakesState
+
+			var stake Stake
+			if err := rlp.DecodeBytes(enc, &stake); err != nil {
+				panic(fmt.Sprintf("failed to decode stake: %s", err))
+			}
+
+			stake.markDirty = func(index int) {
+				candidate.dirtyStakes[index] = true
+			}
+
+			candidate.stakes[index] = &stake
+			stakesCount++
 		}
 
-		var stakesState stakesState
-		if err := rlp.DecodeBytes(enc, &stakesState); err != nil {
-			panic(fmt.Sprintf("failed to decode stakes state: %s", err))
-		}
+		candidate.stakesCount = stakesCount
 
-		candidate.stakesState = &stakesState
-	}
-
-	return candidate.stakesState
-}
-
-func (c *Candidates) getStakeAtIndex(pubkey types.Pubkey, index int) *Stake {
-	candidate := c.list[pubkey]
-	if candidate.stakes[index] == nil {
+		// load updates
 		path := []byte{mainPrefix}
-		path = append(path, pubkey[:]...)
-		path = append(path, stakesPrefix)
-		path = append(path, []byte(fmt.Sprintf("%d", index))...)
+		path = append(path, candidate.PubKey.Bytes()...)
+		path = append(path, updatesPrefix)
 		_, enc := c.iavl.Get(path)
 		if len(enc) == 0 {
-			return nil
+			candidate.updates = nil
+		} else {
+			var updates []*Stake
+			if err := rlp.DecodeBytes(enc, &updates); err != nil {
+				panic(fmt.Sprintf("failed to decode updated: %s", err))
+			}
+
+			for _, update := range updates {
+				update.markDirty = func(i int) {
+					candidate.isUpdatesDirty = true
+				}
+			}
+
+			candidate.updates = updates
 		}
 
-		var stake Stake
-		if err := rlp.DecodeBytes(enc, &stake); err != nil {
-			panic(fmt.Sprintf("failed to decode stake: %s", err))
+		// load total stake
+		path = append([]byte{mainPrefix}, candidate.PubKey.Bytes()...)
+		path = append(path, totalStakePrefix)
+		_, enc = c.iavl.Get(path)
+		if len(enc) == 0 {
+			candidate.totalBipStake = big.NewInt(0)
+		} else {
+			candidate.totalBipStake = big.NewInt(0).SetBytes(enc)
 		}
 
-		candidate.stakes[index] = &stake
+		candidate.setTmAddress()
+		c.list[candidate.PubKey] = candidate
 	}
-
-	return candidate.stakes[index]
-}
-
-func (c *Candidates) setStakeAtIndex(pubkey types.Pubkey, index int, stake *Stake) {
-	candidate := c.list[pubkey]
-	candidate.stakes[index] = stake
 }
 
 func (c *Candidates) calculateBipValue(coinSymbol types.CoinSymbol, amount *big.Int, includeSelf, includeUpdates bool) *big.Int {
