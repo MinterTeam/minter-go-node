@@ -224,29 +224,51 @@ func (c *Candidates) RecalculateStakes() {
 			stake.setBipValue(c.calculateBipValue(stake.Coin, stake.Value, false, true))
 		}
 
+		// apply updates for existing stakes
 		for _, update := range candidate.updates {
-			bipValue := c.calculateBipValue(update.Coin, update.Value, false, true)
 			stake := c.GetStakeOfAddress(candidate.PubKey, update.Owner, update.Coin)
-			if stake == nil {
-				for i := 0; i < MaxDelegatorsPerCandidate; i++ {
-					stake = candidate.stakes[i]
-
-					if stake.BipValue.Cmp(bipValue) == -1 {
-						c.bus.Accounts().AddBalance(update.Owner, update.Coin, update.Value)
-						// todo: unbond event
-
-						stake.setNewOwner(stake.Coin, stake.Owner)
-						break
-					}
-				}
-			}
-
 			if stake != nil {
 				stake.addValue(update.Value)
 				update.Value = big.NewInt(0)
 				stake.setBipValue(c.calculateBipValue(stake.Coin, stake.Value, false, true))
 			}
 		}
+
+		updates := candidate.GetFilteredUpdates()
+		for _, update := range updates {
+			update.setBipValue(c.calculateBipValue(update.Coin, update.Value, false, true))
+		}
+		// Sort updates in descending order
+		sort.SliceStable(updates, func(i, j int) bool {
+			return updates[i].BipValue.Cmp(updates[j].BipValue) == 1
+		})
+
+		for _, update := range updates {
+			// find and replace smallest stake
+			index := -1
+			var smallestStake *big.Int
+			for i, stake := range stakes {
+				if stake == nil {
+					index = i
+					break
+				}
+
+				if smallestStake == nil || smallestStake.Cmp(stake.BipValue) == 1 {
+					smallestStake = big.NewInt(0).Set(stake.BipValue)
+					index = i
+				}
+			}
+
+			if smallestStake != nil && smallestStake.Cmp(update.BipValue) == 1 {
+				// todo: fire unbond event
+				c.bus.Accounts().AddBalance(update.Owner, update.Coin, update.Value)
+				update.setValue(big.NewInt(0))
+				continue
+			}
+
+			stakes[index] = update
+		}
+
 		candidate.clearUpdates()
 
 		totalBipValue := big.NewInt(0)
@@ -529,7 +551,7 @@ func (c *Candidates) calculateBipValue(coinSymbol types.CoinSymbol, amount *big.
 func (c *Candidates) getOrderedDirtyCandidates() []types.Pubkey {
 	var keys []types.Pubkey
 	for _, candidate := range c.list {
-		if !candidate.isDirty && !candidate.isTotalStakeDirty {
+		if !candidate.HasDirty() {
 			continue
 		}
 		keys = append(keys, candidate.PubKey)

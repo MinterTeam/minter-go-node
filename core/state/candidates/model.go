@@ -41,17 +41,16 @@ func (candidate *Candidate) setReward(address types.Address) {
 }
 
 func (candidate *Candidate) addUpdate(stake *Stake) {
-	candidate.isDirty = true
+	candidate.isUpdatesDirty = true
 	candidate.updates = append(candidate.updates, stake)
 }
 
 func (candidate *Candidate) clearUpdates() {
-	candidate.isDirty = true
 	candidate.updates = nil
+	candidate.isUpdatesDirty = true
 }
 
 func (candidate *Candidate) setTotalBipValue(totalBipValue *big.Int) {
-	candidate.isDirty = true
 	candidate.isTotalStakeDirty = true
 	candidate.totalBipStake.Set(totalBipValue)
 }
@@ -69,6 +68,43 @@ func (candidate *Candidate) setTmAddress() {
 	copy(address[:], pubkey.Address().Bytes())
 
 	candidate.tmAddress = &address
+}
+
+func (candidate *Candidate) HasDirty() bool {
+	isDirty := candidate.isDirty || candidate.isUpdatesDirty || candidate.isTotalStakeDirty
+	if isDirty {
+		return isDirty
+	}
+
+	for _, isDirty := range candidate.dirtyStakes {
+		if isDirty {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (candidate *Candidate) GetFilteredUpdates() []*Stake {
+	var updates []*Stake
+	for _, update := range candidate.updates {
+		// skip updates with 0 stakes
+		if update.Value.Cmp(big.NewInt(0)) != 1 {
+			continue
+		}
+
+		// merge updates
+		for _, u := range updates {
+			if u.Coin == update.Coin && u.Owner == update.Owner {
+				u.Value.Add(u.Value, update.Value)
+				continue
+			}
+		}
+
+		updates = append(updates, update)
+	}
+
+	return updates
 }
 
 type Stake struct {
