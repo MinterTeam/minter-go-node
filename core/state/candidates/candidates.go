@@ -21,7 +21,6 @@ const (
 
 	mainPrefix        = 'c'
 	stakesPrefix      = 's'
-	stakesStatePrefix = 'q'
 	totalStakePrefix  = 't'
 	updatesPrefix     = 'u'
 )
