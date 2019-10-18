@@ -70,7 +70,7 @@ func (c *Candidates) Commit() error {
 			candidate.isTotalStakeDirty = false
 		}
 
-		stakes := c.GetStakes(candidate.PubKey)
+		stakes := candidate.stakes
 		for index, stake := range stakes {
 			if !candidate.dirtyStakes[index] {
 				continue
@@ -136,6 +136,7 @@ func (c *Candidates) DeleteCoin(pubkey types.Pubkey, coinSymbol types.CoinSymbol
 			stake.setCoin(types.GetBaseCoin())
 		} else {
 			candidate.stakes[index] = nil
+			candidate.dirtyStakes[index] = true
 			stake.Value.Add(stake.Value, ret)
 		}
 	}
@@ -173,10 +174,6 @@ func (c *Candidates) PunishByzantineCandidate(height uint64, tmAddress types.TmA
 	stakes := c.GetStakes(candidate.PubKey)
 
 	for _, stake := range stakes {
-		if stake == nil {
-			continue
-		}
-
 		newValue := big.NewInt(0).Set(stake.Value)
 		newValue.Mul(newValue, big.NewInt(95))
 		newValue.Div(newValue, big.NewInt(100))
@@ -224,9 +221,6 @@ func (c *Candidates) RecalculateStakes() {
 	for _, candidate := range c.list {
 		stakes := c.GetStakes(candidate.PubKey)
 		for _, stake := range stakes {
-			if stake == nil {
-				continue
-			}
 			stake.setBipValue(c.calculateBipValue(stake.Coin, stake.Value, false, true))
 		}
 
@@ -302,10 +296,6 @@ func (c *Candidates) IsDelegatorStakeSufficient(address types.Address, pubkey ty
 
 	stakeValue := c.calculateBipValue(coin, amount, true, true)
 	for _, stake := range stakes {
-		if stake == nil {
-			continue
-		}
-
 		if stakeValue.Cmp(stake.BipValue) == -1 {
 			return true
 		}

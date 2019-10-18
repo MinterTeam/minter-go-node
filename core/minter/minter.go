@@ -205,7 +205,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 
 		app.stateDeliver.FrozenFunds.PunishFrozenFundsWithAddress(height, height+candidates.UnbondPeriod, address)
 		app.stateDeliver.Validators.PunishByzantineValidator(address)
-		app.stateDeliver.Candidates.PunishByzantineCandidate(address)
+		app.stateDeliver.Candidates.PunishByzantineCandidate(height, address)
 	}
 
 	// apply frozen funds (used for unbond stakes)
