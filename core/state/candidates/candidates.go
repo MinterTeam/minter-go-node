@@ -19,10 +19,10 @@ const (
 	UnbondPeriod              = 518400
 	MaxDelegatorsPerCandidate = 1000
 
-	mainPrefix        = 'c'
-	stakesPrefix      = 's'
-	totalStakePrefix  = 't'
-	updatesPrefix     = 'u'
+	mainPrefix       = 'c'
+	stakesPrefix     = 's'
+	totalStakePrefix = 't'
+	updatesPrefix    = 'u'
 )
 
 type Candidates struct {
@@ -82,7 +82,7 @@ func (c *Candidates) Commit() error {
 			path = append(path, stakesPrefix)
 			path = append(path, []byte(fmt.Sprintf("%d", index))...)
 
-			if stake == nil {
+			if stake == nil || stake.Value.Cmp(big.NewInt(0)) == 0 {
 				c.iavl.Remove(path)
 				candidate.stakes[index] = nil
 				continue
@@ -279,6 +279,7 @@ func (c *Candidates) RecalculateStakes() {
 		}
 
 		candidate.setTotalBipValue(totalBipValue)
+		candidate.updateStakesCount()
 	}
 }
 

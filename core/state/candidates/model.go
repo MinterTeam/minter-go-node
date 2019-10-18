@@ -107,6 +107,16 @@ func (candidate *Candidate) GetFilteredUpdates() []*Stake {
 	return updates
 }
 
+func (candidate *Candidate) updateStakesCount() {
+	count := 0
+	for _, stake := range candidate.stakes {
+		if stake != nil {
+			count++
+		}
+	}
+	candidate.stakesCount = count
+}
+
 type Stake struct {
 	Owner    types.Address
 	Coin     types.CoinSymbol
