@@ -3,13 +3,14 @@ module github.com/MinterTeam/minter-go-node
 go 1.12
 
 require (
-	github.com/MinterTeam/go-amino v0.14.1-m
+	github.com/MinterTeam/go-amino v0.14.1
 	github.com/btcsuite/btcd v0.0.0-20190115013929-ed77733ec07d
 	github.com/bwmarrin/snowflake v0.3.0 // indirect
 	github.com/danil-lashin/iavl v0.11.2-0.20190919102354-29ac293f4952
-	github.com/go-kit/kit v0.6.0
+	github.com/go-kit/kit v0.9.0
 	github.com/gobuffalo/packr v1.11.1
 	github.com/gorilla/websocket v1.2.0
+	github.com/klim0v/compact-db v0.0.0-20191021100918-605b93120176
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/common v0.0.0-20181113130724-41aa239b4cce // indirect
@@ -20,7 +21,7 @@ require (
 	github.com/tendermint/go-amino v0.14.1
 	github.com/tendermint/iavl v0.12.4 // indirect
 	github.com/tendermint/tendermint v0.32.3
-	github.com/tendermint/tm-db v0.1.1
+	github.com/tendermint/tm-db v0.2.0
 	github.com/xujiajun/nutsdb v0.4.0
 	golang.org/x/crypto v0.0.0-20190313024323-a1f597ede03a
 	golang.org/x/net v0.0.0-20190628185345-da137c7871d7

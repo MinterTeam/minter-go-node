@@ -12,10 +12,9 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/core/validators"
-	"github.com/MinterTeam/minter-go-node/eventsdb"
-	"github.com/MinterTeam/minter-go-node/eventsdb/events"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/version"
+	compact "github.com/klim0v/compact-db"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/crypto/encoding/amino"
@@ -50,6 +49,7 @@ type Blockchain struct {
 
 	stateDB             db.DB
 	appDB               *appdb.AppDB
+	eventsDB            compact.IEventsDB
 	stateDeliver        *state.State
 	stateCheck          *state.State
 	height              uint64 // current Blockchain height
@@ -92,6 +92,7 @@ func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 		appDB:               applicationDB,
 		height:              applicationDB.GetLastHeight(),
 		lastCommittedHeight: applicationDB.GetLastHeight(),
+		eventsDB:            compact.NewEventsStore(db.NewDB("events", dbType, utils.GetMinterHome()+"/data")),
 		currentMempool:      sync.Map{},
 	}
 
@@ -212,7 +213,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 	frozenFunds := app.stateDeliver.FrozenFunds.GetFrozenFunds(uint64(req.Header.Height))
 	if frozenFunds != nil {
 		for _, item := range frozenFunds.List {
-			eventsdb.GetCurrent().AddEvent(uint64(req.Header.Height), events.UnbondEvent{
+			app.eventsDB.AddEvent(uint32(req.Header.Height), compact.UnbondEvent{
 				Address:         item.Address,
 				Amount:          item.Value.Bytes(),
 				Coin:            item.Coin,
@@ -432,7 +433,7 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 	}
 
 	// Flush events db
-	_ = eventsdb.GetCurrent().FlushEvents()
+	_ = app.eventsDB.CommitEvents()
 
 	// Persist application hash and height
 	app.appDB.SetLastBlockHash(hash)
@@ -605,4 +606,8 @@ func (app *Blockchain) calcMaxGas(height uint64) uint64 {
 	}
 
 	return newMaxGas
+}
+
+func (app *Blockchain) GetEventsDB() compact.IEventsDB {
+	return app.eventsDB
 }

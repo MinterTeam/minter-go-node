@@ -15,7 +15,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
-	"github.com/MinterTeam/minter-go-node/eventsdb"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/rlp"
@@ -62,7 +61,6 @@ func initNode() {
 
 	minterCfg := config.GetConfig()
 	log.InitLog(minterCfg)
-	eventsdb.InitDB(minterCfg)
 	cfg = config.GetTmConfig(minterCfg)
 	cfg.Consensus.TimeoutPropose = 0
 	cfg.Consensus.TimeoutPrecommit = 0

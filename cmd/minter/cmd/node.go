@@ -6,7 +6,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/minter"
-	"github.com/MinterTeam/minter-go-node/eventsdb"
 	"github.com/MinterTeam/minter-go-node/gui"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/gobuffalo/packr"
@@ -49,9 +48,6 @@ func runNode() error {
 	if err := common.EnsureDir(utils.GetMinterHome()+"/tmdata", 0777); err != nil {
 		return err
 	}
-
-	// init events db
-	eventsdb.InitDB(cfg)
 
 	app := minter.NewMinterBlockchain(cfg)
 
