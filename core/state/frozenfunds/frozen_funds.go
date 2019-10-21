@@ -8,6 +8,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/tree"
+	compact "github.com/klim0v/compact-db"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	"math/big"
 	"sort"
@@ -85,13 +86,12 @@ func (f *FrozenFunds) PunishFrozenFundsWithAddress(fromHeight uint64, toHeight u
 					f.bus.App().AddTotalSlashed(slashed)
 				}
 
-				// TODO: add event
-				//edb.AddEvent(fromBlock, events.SlashEvent{
-				//	Address:         item.Address,
-				//	Amount:          slashed.Bytes(),
-				//	Coin:            item.Coin,
-				//	ValidatorPubKey: *item.CandidateKey,
-				//})
+				f.bus.Events().AddEvent(uint32(fromHeight), compact.SlashEvent{
+					Address:         item.Address,
+					Amount:          slashed.Bytes(),
+					Coin:            item.Coin,
+					ValidatorPubKey: *item.CandidateKey,
+				})
 
 				item.Value = newValue
 				f.bus.Coins().SanitizeCoin(item.Coin)

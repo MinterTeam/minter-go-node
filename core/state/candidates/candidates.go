@@ -8,6 +8,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/tree"
+	compact "github.com/klim0v/compact-db"
 	"math/big"
 	"sort"
 )
@@ -192,13 +193,12 @@ func (c *Candidates) PunishByzantineCandidate(height uint64, tmAddress types.TmA
 			c.bus.App().AddTotalSlashed(slashed)
 		}
 
-		// todo: add event
-		//edb.AddEvent(s.height, events.SlashEvent{
-		//	Address:         stake.Owner,
-		//	Amount:          slashed.Bytes(),
-		//	Coin:            stake.Coin,
-		//	ValidatorPubKey: candidate.PubKey,
-		//})
+		c.bus.Events().AddEvent(uint32(height), compact.SlashEvent{
+			Address:         stake.Owner,
+			Amount:          slashed.Bytes(),
+			Coin:            stake.Coin,
+			ValidatorPubKey: candidate.PubKey,
+		})
 
 		c.bus.FrozenFunds().AddFrozenFund(height+UnbondPeriod, stake.Owner, candidate.PubKey, stake.Coin, newValue)
 		c.bus.Coins().SanitizeCoin(stake.Coin)
@@ -216,7 +216,7 @@ func (c *Candidates) GetCandidateByTendermintAddress(address types.TmAddress) *C
 	return nil
 }
 
-func (c *Candidates) RecalculateStakes() {
+func (c *Candidates) RecalculateStakes(height uint64) {
 	for _, candidate := range c.list {
 		stakes := c.GetStakes(candidate.PubKey)
 		for _, stake := range stakes {
@@ -259,7 +259,12 @@ func (c *Candidates) RecalculateStakes() {
 			}
 
 			if smallestStake != nil && smallestStake.Cmp(update.BipValue) == 1 {
-				// todo: fire unbond event
+				c.bus.Events().AddEvent(uint32(height), compact.UnbondEvent{
+					Address:         update.Owner,
+					Amount:          update.Value.Bytes(),
+					Coin:            update.Coin,
+					ValidatorPubKey: candidate.PubKey,
+				})
 				c.bus.Accounts().AddBalance(update.Owner, update.Coin, update.Value)
 				update.setValue(big.NewInt(0))
 				continue
