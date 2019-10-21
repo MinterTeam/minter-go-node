@@ -26,7 +26,7 @@ func main() {
 
 	applicationDB := appdb.NewAppDB(config.GetConfig())
 	height := applicationDB.GetLastHeight()
-	currentState, err := state.NewState(height, ldb, nil)
+	currentState, err := state.NewState(height, ldb, nil, nil)
 	if err != nil {
 		panic(err)
 	}

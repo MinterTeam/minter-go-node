@@ -11,6 +11,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/state/validators"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/tree"
+	compact "github.com/klim0v/compact-db"
 	db "github.com/tendermint/tm-db"
 	"github.com/xujiajun/nutsdb"
 )
@@ -28,8 +29,9 @@ type State struct {
 	tree   tree.Tree
 }
 
-func NewState(height uint64, db db.DB, nuts *nutsdb.DB) (*State, error) {
+func NewState(height uint64, db db.DB, nuts *nutsdb.DB, events compact.IEventsDB) (*State, error) {
 	stateBus := bus.NewBus()
+	stateBus.SetEvents(events)
 
 	iavlTree, err := tree.NewMutableTree(db).GetImmutableAtHeight(int64(height))
 	if err != nil {

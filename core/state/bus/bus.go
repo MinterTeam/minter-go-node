@@ -1,11 +1,14 @@
 package bus
 
+import compact "github.com/klim0v/compact-db"
+
 type Bus struct {
 	coins       Coins
 	app         App
 	accounts    Accounts
 	candidates  Candidates
 	frozenfunds FrozenFunds
+	events      compact.IEventsDB
 }
 
 func NewBus() *Bus {
@@ -50,4 +53,12 @@ func (b *Bus) SetFrozenFunds(frozenfunds FrozenFunds) {
 
 func (b *Bus) FrozenFunds() FrozenFunds {
 	return b.frozenfunds
+}
+
+func (b *Bus) SetEvents(events compact.IEventsDB) {
+	b.events = events
+}
+
+func (b *Bus) Events() compact.IEventsDB {
+	return b.events
 }
