@@ -111,7 +111,30 @@ func (c *Candidates) Commit() error {
 }
 
 func (c *Candidates) GetNewCandidates(valCount int, height int64) []Candidate {
-	panic("implement me")
+	var result []Candidate
+
+	candidates := c.GetCandidates()
+	for _, candidate := range candidates {
+		if candidate.Status == CandidateStatusOffline {
+			continue
+		}
+
+		if candidate.totalBipStake.Cmp(big.NewInt(0)) == 0 {
+			continue
+		}
+
+		result = append(result, *candidate)
+	}
+
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].totalBipStake.Cmp(result[j].totalBipStake) == 1
+	})
+
+	if len(result) > valCount {
+		result = result[:valCount]
+	}
+
+	return result
 }
 
 func (c *Candidates) DeleteCoin(pubkey types.Pubkey, coinSymbol types.CoinSymbol) {
