@@ -19,7 +19,10 @@ const (
 	accumRewardPrefix = byte('r')
 )
 
-const ValidatorMaxAbsentWindow = 24
+const (
+	ValidatorMaxAbsentWindow = 24
+	ValidatorMaxAbsentTimes  = 12
+)
 
 type Validators struct {
 	list   []*Validator
@@ -75,8 +78,12 @@ func (v *Validators) SetValidatorPresent(height uint64, address types.TmAddress)
 }
 
 func (v *Validators) SetValidatorAbsent(height uint64, address types.TmAddress) {
-	v.getByTmAddress(address).SetAbsent(height)
-	// todo: check overflow
+	validator := v.getByTmAddress(address)
+	validator.SetAbsent(height)
+
+	if validator.CountAbsentTimes() > ValidatorMaxAbsentTimes {
+		v.punishValidator(height, address)
+	}
 }
 
 func (v *Validators) GetValidators() []*Validator {
@@ -88,7 +95,10 @@ func (v *Validators) SetNewValidators(candidates []candidates.Candidate) {
 }
 
 func (v *Validators) PunishByzantineValidator(tmAddress [20]byte) {
-	panic("implement me")
+	validator := v.getByTmAddress(tmAddress)
+	validator.SetTotalBipStake(big.NewInt(0))
+	validator.toDrop = true
+	validator.isDirty = true
 }
 
 func (v *Validators) Create(ownerAddress types.Address, pubkey types.Pubkey, commission uint, coin types.CoinSymbol, stake *big.Int) {
@@ -265,4 +275,14 @@ func (v *Validators) uncheckDirtyValidators() {
 	for _, val := range v.list {
 		val.isDirty = false
 	}
+}
+
+func (v *Validators) punishValidator(height uint64, tmAddress types.TmAddress) {
+	validator := v.getByTmAddress(tmAddress)
+	validator.AbsentTimes = types.NewBitArray(ValidatorMaxAbsentWindow)
+	validator.toDrop = true
+	validator.isDirty = true
+
+	totalStake := v.bus.Candidates().Punish(height, tmAddress)
+	validator.SetTotalBipStake(totalStake)
 }

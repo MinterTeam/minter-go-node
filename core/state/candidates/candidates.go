@@ -564,3 +564,43 @@ func (c *Candidates) getOrderedDirtyCandidates() []types.Pubkey {
 
 	return keys
 }
+
+func (c *Candidates) Punish(height uint64, address types.TmAddress) *big.Int {
+	totalStake := big.NewInt(0)
+
+	candidate := c.GetCandidateByTendermintAddress(address)
+	stakes := c.GetStakes(candidate.PubKey)
+	for _, stake := range stakes {
+		newValue := big.NewInt(0).Set(stake.Value)
+		newValue.Mul(newValue, big.NewInt(99))
+		newValue.Div(newValue, big.NewInt(100))
+
+		slashed := big.NewInt(0).Set(stake.Value)
+		slashed.Sub(slashed, newValue)
+
+		if !stake.Coin.IsBaseCoin() {
+			coin := c.bus.Coins().GetCoin(stake.Coin)
+			ret := formula.CalculateSaleReturn(coin.Volume, coin.Reserve, coin.Crr, slashed)
+
+			c.bus.Coins().SubCoinVolume(coin.Symbol, slashed)
+			c.bus.Coins().SubCoinReserve(coin.Symbol, ret)
+			c.bus.Coins().SanitizeCoin(stake.Coin)
+
+			c.bus.App().AddTotalSlashed(ret)
+		} else {
+			c.bus.App().AddTotalSlashed(slashed)
+		}
+
+		c.bus.Events().AddEvent(uint32(height), compact.SlashEvent{
+			Address:         stake.Owner,
+			Amount:          slashed.Bytes(),
+			Coin:            stake.Coin,
+			ValidatorPubKey: candidate.PubKey,
+		})
+
+		stake.setValue(newValue)
+		totalStake.Add(totalStake, newValue)
+	}
+
+	return totalStake
+}

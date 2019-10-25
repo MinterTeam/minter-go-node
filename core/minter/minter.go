@@ -289,8 +289,8 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 	app.stateDeliver.App.AddTotalSlashed(remainder)
 
 	// pay rewards
-	if req.Height%12 == 0 {
-		app.stateDeliver.Validators.PayRewards()
+	if height%12 == 0 {
+		app.stateDeliver.Validators.PayRewards(height)
 	}
 
 	// update validators

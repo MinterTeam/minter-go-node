@@ -8,6 +8,7 @@ import (
 type Candidates interface {
 	DeleteCoin(types.Pubkey, types.CoinSymbol)
 	GetStakes(types.Pubkey) []Stake
+	Punish(uint64, types.TmAddress) *big.Int
 }
 
 type Stake struct {
