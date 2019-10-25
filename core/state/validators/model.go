@@ -2,65 +2,87 @@ package validators
 
 import (
 	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/tendermint/tendermint/crypto/ed25519"
 	"math/big"
 )
 
-type Info struct {
-	data []ValidatorInfo
-
-	isDirty bool
-}
-
-type ValidatorInfo struct {
+type Validator struct {
+	OwnerAddress  types.Address
 	RewardAddress types.Address
 	PubKey        types.Pubkey
 	Commission    uint
 	AbsentTimes   *types.BitArray
 
-	tmAddress *[20]byte
+	totalStake  *big.Int
+	accumReward *big.Int
+
+	isDirty            bool
+	isTotalStakeDirty  bool
+	isAccumRewardDirty bool
+
+	tmAddress types.TmAddress
 	toDrop    bool
 }
 
-func (info *ValidatorInfo) IsToDrop() bool {
-	return info.toDrop
+func (v *Validator) IsToDrop() bool {
+	return v.toDrop
 }
 
-func (info *ValidatorInfo) SetAccumReward(value *big.Int) {
-	panic("implement me")
+func (v *Validator) SetAccumReward(value *big.Int) {
+	v.accumReward = value
+	v.isAccumRewardDirty = true
 }
 
-func (info *ValidatorInfo) GetAccumReward() *big.Int {
-	panic("implement me")
+func (v *Validator) GetAccumReward() *big.Int {
+	return big.NewInt(0).Set(v.accumReward)
 }
 
-func (info *ValidatorInfo) GetAddress() [20]byte {
-	panic("implement me")
+func (v *Validator) GetAddress() types.TmAddress {
+	return v.tmAddress
 }
 
-func (info *ValidatorInfo) GetTotalBipStake() *big.Int {
-	panic("implement me")
+func (v *Validator) GetTotalBipStake() *big.Int {
+	return big.NewInt(0).Set(v.totalStake)
 }
 
-func (info *ValidatorInfo) AddAccumReward(amount *big.Int) {
-	panic("implement me")
+func (v *Validator) SetTotalBipStake(value *big.Int) {
+	v.totalStake = value
+	v.isTotalStakeDirty = true
 }
 
-func (info *ValidatorInfo) CountAbsentTimes() int {
-	panic("implement me")
+func (v *Validator) AddAccumReward(amount *big.Int) {
+	v.SetAccumReward(big.NewInt(0).Add(v.accumReward, amount))
 }
 
-type Stakes struct {
-	data []ValidatorStake
+func (v *Validator) CountAbsentTimes() int {
+	count := 0
 
-	isDirty bool
+	for i := 0; i < ValidatorMaxAbsentWindow; i++ {
+		if v.AbsentTimes.GetIndex(i) {
+			count++
+		}
+	}
+
+	return count
 }
 
-type ValidatorStake *big.Int
+func (v *Validator) setTmAddress() {
+	// set tm address
+	var pubkey ed25519.PubKeyEd25519
+	copy(pubkey[:], v.PubKey[:])
 
-type Rewards struct {
-	data []ValidatorReward
+	var address types.TmAddress
+	copy(address[:], pubkey.Address().Bytes())
 
-	isDirty bool
+	v.tmAddress = address
 }
 
-type ValidatorReward *big.Int
+func (v *Validator) SetPresent(height uint64) {
+	v.AbsentTimes.SetIndex(int(height)%ValidatorMaxAbsentWindow, false)
+	v.isDirty = true
+}
+
+func (v *Validator) SetAbsent(height uint64) {
+	v.AbsentTimes.SetIndex(int(height)%ValidatorMaxAbsentWindow, true)
+	v.isDirty = true
+}

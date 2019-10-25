@@ -1,7 +1,7 @@
 package tree
 
 import (
-	"github.com/danil-lashin/iavl"
+	"github.com/tendermint/iavl"
 	dbm "github.com/tendermint/tm-db"
 	"sync"
 )

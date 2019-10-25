@@ -34,7 +34,7 @@ type Candidates struct {
 	bus  *bus.Bus
 }
 
-func NewCandidates(iavl tree.Tree, bus *bus.Bus) (*Candidates, error) {
+func NewCandidates(bus *bus.Bus, iavl tree.Tree) (*Candidates, error) {
 	candidates := &Candidates{iavl: iavl, bus: bus}
 	candidates.bus.SetCandidates(NewBus(candidates))
 	candidates.loadCandidates()
@@ -43,10 +43,6 @@ func NewCandidates(iavl tree.Tree, bus *bus.Bus) (*Candidates, error) {
 }
 
 func (c *Candidates) Commit() error {
-	if !c.loaded {
-		return nil
-	}
-
 	keys := c.getOrderedDirtyCandidates()
 	if len(keys) > 0 {
 		data, err := rlp.EncodeToBytes(c.list)

@@ -38,12 +38,12 @@ func NewState(height uint64, db db.DB, nuts *nutsdb.DB, events compact.IEventsDB
 		return nil, err
 	}
 
-	candidatesState, err := candidates.NewCandidates(iavlTree, stateBus)
+	candidatesState, err := candidates.NewCandidates(stateBus, iavlTree)
 	if err != nil {
 		return nil, err
 	}
 
-	validatorsState, err := validators.NewValidators(iavlTree, candidatesState)
+	validatorsState, err := validators.NewValidators(stateBus, iavlTree)
 	if err != nil {
 		return nil, err
 	}
@@ -107,6 +107,22 @@ func (s *State) Commit() ([]byte, error) {
 	}
 
 	if err := s.Coins.Commit(); err != nil {
+		return nil, err
+	}
+
+	if err := s.Candidates.Commit(); err != nil {
+		return nil, err
+	}
+
+	if err := s.Validators.Commit(); err != nil {
+		return nil, err
+	}
+
+	if err := s.Checks.Commit(); err != nil {
+		return nil, err
+	}
+
+	if err := s.FrozenFunds.Commit(); err != nil {
 		return nil, err
 	}
 

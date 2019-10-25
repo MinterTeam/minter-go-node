@@ -70,9 +70,6 @@ func runNode() error {
 		go gui.Run(cfg.GUIListenAddress)
 	}
 
-	// Recheck mempool. Currently kind a hack.
-	go recheckMempool(node, cfg)
-
 	common.TrapSignal(log.With("module", "trap"), func() {
 		// Cleanup
 		err := node.Stop()
@@ -84,22 +81,6 @@ func runNode() error {
 
 	// Run forever
 	select {}
-}
-
-func recheckMempool(node *tmNode.Node, config *config.Config) {
-	ticker := time.NewTicker(time.Minute)
-	mempool := node.Mempool()
-	for {
-		select {
-		case <-ticker.C:
-			txs := mempool.ReapMaxTxs(config.Mempool.Size)
-			mempool.Flush()
-
-			for _, tx := range txs {
-				_ = mempool.CheckTx(tx, func(res *types.Response) {})
-			}
-		}
-	}
 }
 
 func updateBlocksTimeDelta(app *minter.Blockchain, config *tmCfg.Config) {

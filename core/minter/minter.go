@@ -56,7 +56,7 @@ type Blockchain struct {
 	lastCommittedHeight uint64 // Blockchain.height updated in the at begin of block processing, while
 	// lastCommittedHeight updated at the end of block processing
 	rewards            *big.Int // Rewards pool
-	validatorsStatuses map[[20]byte]int8
+	validatorsStatuses map[types.TmAddress]int8
 
 	// local rpc client for Tendermint
 	tmNode *tmNode.Node
@@ -177,18 +177,18 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 	app.rewards = big.NewInt(0)
 
 	// clear absent candidates
-	app.validatorsStatuses = map[[20]byte]int8{}
+	app.validatorsStatuses = map[types.TmAddress]int8{}
 
 	// give penalty to absent validators
 	for _, v := range req.LastCommitInfo.Votes {
-		var address [20]byte
+		var address types.TmAddress
 		copy(address[:], v.Validator.Address)
 
 		if v.SignedLastBlock {
-			app.stateDeliver.Validators.SetValidatorPresent(address)
+			app.stateDeliver.Validators.SetValidatorPresent(height, address)
 			app.validatorsStatuses[address] = ValidatorPresent
 		} else {
-			app.stateDeliver.Validators.SetValidatorAbsent(address)
+			app.stateDeliver.Validators.SetValidatorAbsent(height, address)
 			app.validatorsStatuses[address] = ValidatorAbsent
 		}
 	}

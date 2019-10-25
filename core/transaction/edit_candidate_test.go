@@ -19,8 +19,8 @@ func TestEditCandidateTx(t *testing.T) {
 	coin := types.GetBaseCoin()
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
-	pubkey := make([]byte, 32)
-	rand.Read(pubkey)
+	pubkey := [32]byte{}
+	rand.Read(pubkey[:])
 
 	cState.Candidates.Create(addr, addr, pubkey, 10, types.GetBaseCoin(), helpers.BipToPip(big.NewInt(1)))
 	cState.Validators.Create(addr, pubkey, 10, types.GetBaseCoin(), helpers.BipToPip(big.NewInt(1)))
