@@ -117,6 +117,10 @@ func (candidate *Candidate) updateStakesCount() {
 	candidate.stakesCount = count
 }
 
+func (candidate *Candidate) GetTotalBipStake() *big.Int {
+	return big.NewInt(0).Set(candidate.totalBipStake)
+}
+
 type Stake struct {
 	Owner    types.Address
 	Coin     types.CoinSymbol

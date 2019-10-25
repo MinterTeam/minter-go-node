@@ -7,7 +7,6 @@ import (
 )
 
 type Validator struct {
-	OwnerAddress  types.Address
 	RewardAddress types.Address
 	PubKey        types.Pubkey
 	Commission    uint

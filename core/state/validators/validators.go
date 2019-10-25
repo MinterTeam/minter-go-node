@@ -91,7 +91,35 @@ func (v *Validators) GetValidators() []*Validator {
 }
 
 func (v *Validators) SetNewValidators(candidates []candidates.Candidate) {
-	panic("implement me")
+	old := v.GetValidators()
+
+	var newVals []*Validator
+	for _, candidate := range candidates {
+		accumReward := big.NewInt(0)
+		absentTimes := types.NewBitArray(ValidatorMaxAbsentWindow)
+
+		for _, oldVal := range old {
+			if oldVal.GetAddress() == candidate.GetTmAddress() {
+				accumReward = oldVal.accumReward
+				absentTimes = oldVal.AbsentTimes
+			}
+		}
+
+		newVals = append(newVals, &Validator{
+			RewardAddress:      candidate.RewardAddress,
+			PubKey:             candidate.PubKey,
+			Commission:         candidate.Commission,
+			AbsentTimes:        absentTimes,
+			totalStake:         candidate.GetTotalBipStake(),
+			accumReward:        accumReward,
+			isDirty:            true,
+			isTotalStakeDirty:  true,
+			isAccumRewardDirty: true,
+			tmAddress:          candidate.GetTmAddress(),
+		})
+	}
+
+	v.list = newVals
 }
 
 func (v *Validators) PunishByzantineValidator(tmAddress [20]byte) {
@@ -103,7 +131,6 @@ func (v *Validators) PunishByzantineValidator(tmAddress [20]byte) {
 
 func (v *Validators) Create(ownerAddress types.Address, pubkey types.Pubkey, commission uint, coin types.CoinSymbol, stake *big.Int) {
 	val := &Validator{
-		OwnerAddress:  ownerAddress,
 		RewardAddress: ownerAddress,
 		PubKey:        pubkey,
 		Commission:    commission,
