@@ -101,3 +101,7 @@ func (v *App) getOrNew() *Model {
 func (v *App) markDirty() {
 	v.isDirty = true
 }
+
+func (v *App) SetTotalSlashed(amount *big.Int) {
+	v.getOrNew().setTotalSlashed(amount)
+}

@@ -135,7 +135,8 @@ func (data DeclareCandidacyData) Run(tx *Transaction, context *state.State, isCh
 
 		context.Accounts.SubBalance(sender, data.Coin, data.Stake)
 		context.Accounts.SubBalance(sender, tx.GasCoin, commission)
-		context.Candidates.Create(data.Address, sender, data.PubKey, data.Commission, data.Coin, data.Stake)
+		context.Candidates.Create(data.Address, sender, data.PubKey, data.Commission)
+		context.Candidates.Delegate(sender, data.PubKey, data.Coin, data.Stake, big.NewInt(0))
 		context.Accounts.SetNonce(sender, tx.Nonce)
 	}
 

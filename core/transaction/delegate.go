@@ -123,7 +123,7 @@ func (data DelegateData) Run(tx *Transaction, context *state.State, isCheck bool
 
 		context.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		context.Accounts.SubBalance(sender, data.Coin, data.Value)
-		context.Candidates.Delegate(sender, data.PubKey, data.Coin, data.Value)
+		context.Candidates.Delegate(sender, data.PubKey, data.Coin, data.Value, big.NewInt(0))
 		context.Accounts.SetNonce(sender, tx.Nonce)
 	}
 

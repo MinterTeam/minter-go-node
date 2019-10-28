@@ -1,6 +1,7 @@
 package state
 
 import (
+	"encoding/hex"
 	"github.com/MinterTeam/minter-go-node/core/state/accounts"
 	"github.com/MinterTeam/minter-go-node/core/state/app"
 	"github.com/MinterTeam/minter-go-node/core/state/bus"
@@ -140,7 +141,65 @@ func (s *State) Height() uint64 {
 }
 
 func (s *State) Import(state types.AppState) error {
-	panic("implement me")
+	s.App.SetMaxGas(state.MaxGas)
+	s.App.SetTotalSlashed(state.TotalSlashed)
+
+	for _, a := range state.Accounts {
+		s.Accounts.SetNonce(a.Address, a.Nonce)
+
+		//if a.MultisigData != nil {
+		//	account.data.MultisigData.Addresses = a.MultisigData.Addresses
+		//	account.data.MultisigData.Threshold = a.MultisigData.Threshold
+		//	account.data.MultisigData.Weights = a.MultisigData.Weights
+		//}
+
+		for _, b := range a.Balance {
+			s.Accounts.SetBalance(a.Address, b.Coin, b.Value)
+		}
+	}
+
+	for _, c := range state.Coins {
+		s.Coins.Create(c.Symbol, c.Name, c.Volume, c.Crr, c.ReserveBalance)
+	}
+
+	var vals []*validators.Validator
+	for _, v := range state.Validators {
+		vals = append(vals, validators.NewValidator(
+			v.RewardAddress,
+			v.PubKey,
+			v.Commission,
+			v.AbsentTimes,
+			v.TotalBipStake,
+			v.AccumReward,
+			true,
+			true,
+			true))
+	}
+	s.Validators.SetValidators(vals)
+
+	for _, c := range state.Candidates {
+		s.Candidates.Create(c.OwnerAddress, c.RewardAddress, c.PubKey, c.Commission)
+		if c.Status == candidates.CandidateStatusOnline {
+			s.Candidates.SetOnline(c.PubKey)
+		}
+
+		for _, stake := range c.Stakes {
+			s.Candidates.Delegate(stake.Owner, c.PubKey, stake.Coin, stake.Value, stake.BipValue)
+		}
+	}
+
+	for _, hashString := range state.UsedChecks {
+		bytes, _ := hex.DecodeString(string(hashString))
+		var hash types.Hash
+		copy(hash[:], bytes)
+		s.Checks.UseCheckHash(hash)
+	}
+
+	for _, ff := range state.FrozenFunds {
+		s.FrozenFunds.AddFund(ff.Height, ff.Address, *ff.CandidateKey, ff.Coin, ff.Value)
+	}
+
+	return nil
 }
 
 func (s *State) Export(height uint64) types.AppState {

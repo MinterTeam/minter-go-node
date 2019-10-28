@@ -23,6 +23,12 @@ type Validator struct {
 	toDrop    bool
 }
 
+func NewValidator(rewardAddress types.Address, pubKey types.Pubkey, commission uint, absentTimes *types.BitArray, totalStake *big.Int, accumReward *big.Int, isDirty bool, isTotalStakeDirty bool, isAccumRewardDirty bool) *Validator {
+	val := &Validator{RewardAddress: rewardAddress, PubKey: pubKey, Commission: commission, AbsentTimes: absentTimes, totalStake: totalStake, accumReward: accumReward, isDirty: isDirty, isTotalStakeDirty: isTotalStakeDirty, isAccumRewardDirty: isAccumRewardDirty}
+	val.setTmAddress()
+	return val
+}
+
 func (v *Validator) IsToDrop() bool {
 	return v.toDrop
 }

@@ -171,7 +171,7 @@ func (c *Candidates) DeleteCoin(pubkey types.Pubkey, coinSymbol types.CoinSymbol
 	}
 }
 
-func (c *Candidates) Create(ownerAddress types.Address, rewardAddress types.Address, pubkey types.Pubkey, commission uint, coin types.CoinSymbol, stake *big.Int) {
+func (c *Candidates) Create(ownerAddress types.Address, rewardAddress types.Address, pubkey types.Pubkey, commission uint) {
 	candidate := &Candidate{
 		PubKey:            pubkey,
 		RewardAddress:     rewardAddress,
@@ -350,12 +350,12 @@ func (c *Candidates) IsDelegatorStakeSufficient(address types.Address, pubkey ty
 	return false
 }
 
-func (c *Candidates) Delegate(address types.Address, pubkey types.Pubkey, coin types.CoinSymbol, value *big.Int) {
+func (c *Candidates) Delegate(address types.Address, pubkey types.Pubkey, coin types.CoinSymbol, value *big.Int, bipValue *big.Int) {
 	stake := &Stake{
 		Owner:    address,
 		Coin:     coin,
 		Value:    value,
-		BipValue: big.NewInt(0),
+		BipValue: bipValue,
 	}
 
 	c.bus.Coins().AddOwnerCandidate(coin, pubkey)
@@ -626,4 +626,8 @@ func (c *Candidates) Punish(height uint64, address types.TmAddress) *big.Int {
 	}
 
 	return totalStake
+}
+
+func (c *Candidates) SetCandidates(candidates []Candidate) {
+
 }

@@ -313,3 +313,7 @@ func (v *Validators) punishValidator(height uint64, tmAddress types.TmAddress) {
 	totalStake := v.bus.Candidates().Punish(height, tmAddress)
 	validator.SetTotalBipStake(totalStake)
 }
+
+func (v *Validators) SetValidators(vals []*Validator) {
+	v.list = vals
+}
