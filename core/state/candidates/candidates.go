@@ -45,7 +45,11 @@ func NewCandidates(bus *bus.Bus, iavl tree.Tree) (*Candidates, error) {
 func (c *Candidates) Commit() error {
 	keys := c.getOrderedDirtyCandidates()
 	if len(keys) > 0 {
-		data, err := rlp.EncodeToBytes(c.list)
+		var candidates []*Candidate
+		for _, key := range keys {
+			candidates = append(candidates, c.list[key])
+		}
+		data, err := rlp.EncodeToBytes(candidates)
 		if err != nil {
 			return fmt.Errorf("can't encode candidates: %v", err)
 		}
@@ -467,7 +471,7 @@ func (c *Candidates) loadCandidates() {
 	}
 
 	var candidates []*Candidate
-	if err := rlp.DecodeBytes(enc, candidates); err != nil {
+	if err := rlp.DecodeBytes(enc, &candidates); err != nil {
 		panic(fmt.Sprintf("failed to decode candidates: %s", err))
 		return
 	}

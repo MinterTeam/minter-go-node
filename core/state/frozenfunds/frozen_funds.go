@@ -110,7 +110,8 @@ func (f *FrozenFunds) GetOrNew(height uint64) *Model {
 	ff := f.get(height)
 	if ff == nil {
 		ff = &Model{
-			height: height,
+			height:    height,
+			markDirty: f.markDirty,
 		}
 		f.list[height] = ff
 	}

@@ -257,7 +257,7 @@ func (v *Validators) loadValidators() {
 	}
 
 	var validators []*Validator
-	if err := rlp.DecodeBytes(enc, validators); err != nil {
+	if err := rlp.DecodeBytes(enc, &validators); err != nil {
 		panic(fmt.Sprintf("failed to decode validators: %s", err))
 		return
 	}

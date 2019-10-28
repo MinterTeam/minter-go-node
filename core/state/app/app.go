@@ -81,6 +81,7 @@ func (v *App) get() *Model {
 	}
 
 	v.model = model
+	v.model.markDirty = v.markDirty
 	return v.model
 }
 

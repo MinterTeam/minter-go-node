@@ -86,7 +86,7 @@ func (a *Accounts) Commit() error {
 				}
 			}
 
-			account.dirtyBalances = nil
+			account.dirtyBalances = map[types.CoinSymbol]struct{}{}
 		}
 	}
 
