@@ -11,7 +11,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/developers"
-	"github.com/MinterTeam/minter-go-node/core/state"
+	candidates2 "github.com/MinterTeam/minter-go-node/core/state/candidates"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
@@ -297,8 +297,8 @@ func TestSmallStakeValidator(t *testing.T) {
 				t.Errorf("There are should be 1 validator (has %d)", len(vals.Validators))
 			}
 
-			if len(app.stateDeliver.GetStateValidators().Data()) > 1 {
-				t.Errorf("There are should be 1 validator (has %d)", len(app.stateDeliver.GetStateValidators().Data()))
+			if len(app.stateDeliver.Validators.GetValidators()) > 1 {
+				t.Errorf("There are should be 1 validator (has %d)", len(app.stateDeliver.Validators.GetValidators()))
 			}
 
 			ready = true
@@ -365,7 +365,7 @@ FORLOOP2:
 				t.Errorf("There are should be only 1 validator")
 			}
 
-			if len(app.stateDeliver.GetStateValidators().Data()) > 1 {
+			if len(app.stateDeliver.Validators.GetValidators()) > 1 {
 				t.Errorf("There are should be only 1 validator")
 			}
 
@@ -433,10 +433,13 @@ func makeValidatorsAndCandidates(pubkeys []string, stake *big.Int) ([]types.Vali
 	addr := developers.Address
 
 	for i, val := range pubkeys {
-		pkey, err := base64.StdEncoding.DecodeString(val)
+		pkeyBytes, err := base64.StdEncoding.DecodeString(val)
 		if err != nil {
 			panic(err)
 		}
+
+		var pkey types.Pubkey
+		copy(pkey[:], pkeyBytes)
 
 		validators[i] = types.Validator{
 			RewardAddress: addr,
@@ -462,7 +465,7 @@ func makeValidatorsAndCandidates(pubkeys []string, stake *big.Int) ([]types.Vali
 				},
 			},
 			CreatedAtBlock: 1,
-			Status:         state.CandidateStatusOnline,
+			Status:         candidates2.CandidateStatusOnline,
 		}
 	}
 

@@ -89,7 +89,7 @@ func (v *App) getOrNew() *Model {
 	model := v.get()
 	if model == nil {
 		model = &Model{
-			TotalSlashed: nil,
+			TotalSlashed: big.NewInt(0),
 			MaxGas:       0,
 			markDirty:    v.markDirty,
 		}

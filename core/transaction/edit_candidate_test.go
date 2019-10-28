@@ -22,8 +22,8 @@ func TestEditCandidateTx(t *testing.T) {
 	pubkey := [32]byte{}
 	rand.Read(pubkey[:])
 
-	cState.Candidates.Create(addr, addr, pubkey, 10, types.GetBaseCoin(), helpers.BipToPip(big.NewInt(1)))
-	cState.Validators.Create(addr, pubkey, 10, types.GetBaseCoin(), helpers.BipToPip(big.NewInt(1)))
+	cState.Candidates.Create(addr, addr, pubkey, 10)
+	cState.Validators.Create(addr, pubkey, 10, helpers.BipToPip(big.NewInt(1)))
 
 	newRewardAddress := types.Address{1}
 	newOwnerAddress := types.Address{2}

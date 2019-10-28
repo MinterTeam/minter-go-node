@@ -129,7 +129,7 @@ func (v *Validators) PunishByzantineValidator(tmAddress [20]byte) {
 	validator.isDirty = true
 }
 
-func (v *Validators) Create(ownerAddress types.Address, pubkey types.Pubkey, commission uint, coin types.CoinSymbol, stake *big.Int) {
+func (v *Validators) Create(ownerAddress types.Address, pubkey types.Pubkey, commission uint, stake *big.Int) {
 	val := &Validator{
 		RewardAddress: ownerAddress,
 		PubKey:        pubkey,

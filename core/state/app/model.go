@@ -19,6 +19,10 @@ func (model *Model) setMaxGas(maxGas uint64) {
 }
 
 func (model *Model) getTotalSlashed() *big.Int {
+	if model.TotalSlashed == nil {
+		return big.NewInt(0)
+	}
+
 	return model.TotalSlashed
 }
 

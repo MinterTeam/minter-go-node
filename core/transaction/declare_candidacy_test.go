@@ -22,7 +22,9 @@ func TestDeclareCandidacyTx(t *testing.T) {
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
 	pkey, _ := crypto.GenerateKey()
-	publicKey := crypto.FromECDSAPub(&pkey.PublicKey)[:32]
+	publicKeyBytes := crypto.FromECDSAPub(&pkey.PublicKey)[:32]
+	var publicKey types.Pubkey
+	copy(publicKey[:], publicKeyBytes)
 
 	commission := uint(10)
 
@@ -86,7 +88,7 @@ func TestDeclareCandidacyTx(t *testing.T) {
 		t.Fatalf("Reward address is not correct")
 	}
 
-	if candidate.TotalBipStake != nil && candidate.TotalBipStake.Cmp(types.Big0) != 0 {
+	if candidate.GetTotalBipStake() != nil && candidate.GetTotalBipStake().Cmp(types.Big0) != 0 {
 		t.Fatalf("Total stake is not correct")
 	}
 

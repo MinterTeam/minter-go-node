@@ -12,7 +12,9 @@ import (
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/tendermint/tm-db"
+	"github.com/xujiajun/nutsdb"
 	"math/big"
+	"os"
 	"sync"
 	"testing"
 )
@@ -26,7 +28,12 @@ func init() {
 }
 
 func getState() *state.State {
-	s, err := state.NewState(0, db.NewMemDB(), nil, nil)
+	opt := nutsdb.DefaultOptions
+	opt.Dir = "/tmp/nutsdb"
+	os.RemoveAll(opt.Dir)
+	nuts, err := nutsdb.Open(opt)
+
+	s, err := state.NewState(0, db.NewMemDB(), nuts, nil)
 
 	if err != nil {
 		panic(err)

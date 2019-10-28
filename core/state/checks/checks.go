@@ -15,7 +15,7 @@ type Checks struct {
 }
 
 func NewChecks(iavl tree.Tree) (*Checks, error) {
-	return &Checks{iavl: iavl}, nil
+	return &Checks{iavl: iavl, usedChecks: map[types.Hash]struct{}{}}, nil
 }
 
 func (c *Checks) Commit() error {

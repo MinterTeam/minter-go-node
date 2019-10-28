@@ -36,9 +36,11 @@ func TestRedeemCheckTx(t *testing.T) {
 
 	check := c.Check{
 		Nonce:    []byte{1, 2, 3},
+		ChainID:  types.CurrentChainID,
 		DueBlock: 1,
 		Coin:     coin,
 		Value:    checkValue,
+		GasCoin:  types.GetBaseCoin(),
 	}
 
 	lock, err := crypto.Sign(check.HashWithoutLock().Bytes(), passphrasePk)

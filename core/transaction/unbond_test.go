@@ -22,7 +22,7 @@ func TestUnbondTx(t *testing.T) {
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
 	value := helpers.BipToPip(big.NewInt(100))
-	cState.Candidates.Delegate(addr, pubkey, coin, value)
+	cState.Candidates.Delegate(addr, pubkey, coin, value, big.NewInt(0))
 
 	data := UnbondData{
 		PubKey: pubkey,
@@ -68,11 +68,9 @@ func TestUnbondTx(t *testing.T) {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", coin, targetBalance, balance)
 	}
 
-	candidate := cState.Candidates.GetCandidate(pubkey)
+	stake := cState.Candidates.GetStakeOfAddress(pubkey, addr, coin)
 
-	stake := candidate.GetStakeOfAddress(addr, coin)
-
-	if stake.Cmp(types.Big0) != 0 {
-		t.Fatalf("Stake value is not corrent. Expected %s, got %s", types.Big0, stake)
+	if stake.Value.Cmp(types.Big0) != 0 {
+		t.Fatalf("Stake value is not corrent. Expected %s, got %s", types.Big0, stake.Value)
 	}
 }

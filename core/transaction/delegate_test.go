@@ -12,12 +12,12 @@ import (
 	"testing"
 )
 
-func createTestCandidate(stateDB *state.State) []byte {
+func createTestCandidate(stateDB *state.State) types.Pubkey {
 	address := types.Address{}
-	pubkey := make([]byte, 32)
-	rand.Read(pubkey)
+	pubkey := types.Pubkey{}
+	rand.Read(pubkey[:])
 
-	stateDB.Candidates.Create(address, address, pubkey, 10, types.GetBaseCoin(), helpers.BipToPip(big.NewInt(1)))
+	stateDB.Candidates.Create(address, address, pubkey, 10)
 
 	return pubkey
 }
@@ -80,15 +80,13 @@ func TestDelegateTx(t *testing.T) {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", coin, targetBalance, balance)
 	}
 
-	candidate := cState.Candidates.GetCandidate(pubkey)
-
-	stake := candidate.GetStakeOfAddress(addr, coin)
+	stake := cState.Candidates.GetStakeOfAddress(pubkey, addr, coin)
 
 	if stake == nil {
 		t.Fatalf("Stake not found")
 	}
 
-	if stake.Cmp(value) != 0 {
-		t.Fatalf("Stake value is not corrent. Expected %s, got %s", value, stake)
+	if stake.Value.Cmp(value) != 0 {
+		t.Fatalf("Stake value is not corrent. Expected %s, got %s", value, stake.Value)
 	}
 }

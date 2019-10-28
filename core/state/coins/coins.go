@@ -11,6 +11,7 @@ import (
 	"github.com/xujiajun/nutsdb"
 	"math/big"
 	"sort"
+	"strings"
 )
 
 const (
@@ -32,7 +33,7 @@ type Coins struct {
 }
 
 func NewCoins(stateBus *bus.Bus, iavl tree.Tree, db *nutsdb.DB) (*Coins, error) {
-	coins := &Coins{bus: stateBus, iavl: iavl, db: db}
+	coins := &Coins{bus: stateBus, iavl: iavl, db: db, list: map[types.CoinSymbol]*Model{}, dirty: map[types.CoinSymbol]struct{}{}}
 	coins.bus.SetCoins(NewBus(coins))
 
 	return coins, nil
@@ -87,22 +88,38 @@ func (c *Coins) GetCoin(symbol types.CoinSymbol) *Model {
 }
 
 func (c *Coins) Exists(symbol types.CoinSymbol) bool {
+	if symbol.IsBaseCoin() {
+		return true
+	}
+
 	return c.get(symbol) != nil
 }
 
 func (c *Coins) SubVolume(symbol types.CoinSymbol, amount *big.Int) {
+	if symbol.IsBaseCoin() {
+		return
+	}
 	c.get(symbol).SubVolume(amount)
 }
 
 func (c *Coins) AddVolume(symbol types.CoinSymbol, amount *big.Int) {
+	if symbol.IsBaseCoin() {
+		return
+	}
 	c.get(symbol).AddVolume(amount)
 }
 
 func (c *Coins) SubReserve(symbol types.CoinSymbol, amount *big.Int) {
+	if symbol.IsBaseCoin() {
+		return
+	}
 	c.get(symbol).SubReserve(amount)
 }
 
 func (c *Coins) AddReserve(symbol types.CoinSymbol, amount *big.Int) {
+	if symbol.IsBaseCoin() {
+		return
+	}
 	c.get(symbol).AddReserve(amount)
 }
 
@@ -118,13 +135,20 @@ func (c *Coins) Sanitize(symbol types.CoinSymbol) {
 }
 
 func (c *Coins) Create(symbol types.CoinSymbol, name string, volume *big.Int, crr uint, reserve *big.Int) {
-	coin := Model{
+	coin := &Model{
 		CName:     name,
 		CCrr:      crr,
 		symbol:    symbol,
 		markDirty: c.markDirty,
 		isDirty:   true,
+		info: &Info{
+			Volume:  big.NewInt(0),
+			Reserve: big.NewInt(0),
+			isDirty: false,
+		},
 	}
+
+	c.list[coin.symbol] = coin
 
 	coin.SetReserve(reserve)
 	coin.SetVolume(volume)
@@ -300,7 +324,7 @@ func (c *Coins) getOwners(symbol types.CoinSymbol) ([]types.Address, []types.Pub
 
 		return nil
 	})
-	if err != nil {
+	if err != nil && !strings.Contains(err.Error(), "not found bucket") {
 		panic(err)
 	}
 
@@ -317,7 +341,7 @@ func (c *Coins) getOwners(symbol types.CoinSymbol) ([]types.Address, []types.Pub
 
 		return nil
 	})
-	if err != nil {
+	if err != nil && !strings.Contains(err.Error(), "not found bucket") {
 		panic(err)
 	}
 

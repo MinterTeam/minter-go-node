@@ -194,7 +194,7 @@ func TestAppState(t *testing.T) {
 			{
 				Height:       1,
 				Address:      testAddr,
-				CandidateKey: pubkey,
+				CandidateKey: &pubkey,
 				Coin:         GetBaseCoin(),
 				Value:        big.NewInt(1),
 			},

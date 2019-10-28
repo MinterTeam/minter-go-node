@@ -20,10 +20,10 @@ func TestSwitchCandidateStatusTx(t *testing.T) {
 	coin := types.GetBaseCoin()
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
-	pubkey := make([]byte, 32)
-	rand.Read(pubkey)
+	pubkey := types.Pubkey{}
+	rand.Read(pubkey[:])
 
-	cState.Candidates.Create(addr, addr, pubkey, 10, types.GetBaseCoin(), helpers.BipToPip(big.NewInt(1)))
+	cState.Candidates.Create(addr, addr, pubkey, 10)
 
 	data := SetCandidateOnData{
 		PubKey: pubkey,
