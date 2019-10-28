@@ -3,7 +3,7 @@ module github.com/MinterTeam/minter-go-node
 go 1.13
 
 require (
-	github.com/MinterTeam/go-amino v0.14.1
+	github.com/MinterTeam/go-amino v0.14.2-0.20191028111634-b14d3fa91c7a
 	github.com/btcsuite/btcd v0.0.0-20190115013929-ed77733ec07d
 	github.com/bwmarrin/snowflake v0.3.0 // indirect
 	github.com/go-kit/kit v0.9.0

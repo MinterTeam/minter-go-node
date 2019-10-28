@@ -25,7 +25,7 @@ type Accounts struct {
 }
 
 func NewAccounts(stateBus *bus.Bus, iavl tree.Tree) (*Accounts, error) {
-	accounts := &Accounts{iavl: iavl, bus: stateBus}
+	accounts := &Accounts{iavl: iavl, bus: stateBus, list: map[types.Address]*Model{}, dirty: map[types.Address]struct{}{}}
 	accounts.bus.SetAccounts(NewBus(accounts))
 
 	return accounts, nil
@@ -192,6 +192,7 @@ func (a *Accounts) get(address types.Address) *Model {
 	account.address = address
 	account.balances = map[types.CoinSymbol]*big.Int{}
 	account.markDirty = a.markDirty
+	account.dirtyBalances = map[types.CoinSymbol]struct{}{}
 
 	// load coins
 	path = []byte{mainPrefix}
@@ -215,11 +216,12 @@ func (a *Accounts) getOrNew(address types.Address) *Model {
 	account := a.get(address)
 	if account == nil {
 		account = &Model{
-			Nonce:     0,
-			address:   address,
-			coins:     []types.CoinSymbol{},
-			balances:  map[types.CoinSymbol]*big.Int{},
-			markDirty: a.markDirty,
+			Nonce:         0,
+			address:       address,
+			coins:         []types.CoinSymbol{},
+			balances:      map[types.CoinSymbol]*big.Int{},
+			markDirty:     a.markDirty,
+			dirtyBalances: map[types.CoinSymbol]struct{}{},
 		}
 		a.list[address] = account
 	}

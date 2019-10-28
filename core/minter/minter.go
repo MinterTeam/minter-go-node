@@ -82,7 +82,6 @@ func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 	if err != nil {
 		panic(err)
 	}
-	defer nuts.Close()
 
 	// Initiate Application DB. Used for persisting data like current block, validators, etc.
 	applicationDB := appdb.NewAppDB(cfg)

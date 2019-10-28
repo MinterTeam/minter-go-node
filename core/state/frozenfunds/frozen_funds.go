@@ -25,7 +25,7 @@ type FrozenFunds struct {
 }
 
 func NewFrozenFunds(stateBus *bus.Bus, iavl tree.Tree) (*FrozenFunds, error) {
-	frozenfunds := &FrozenFunds{bus: stateBus, iavl: iavl}
+	frozenfunds := &FrozenFunds{bus: stateBus, iavl: iavl, list: map[uint64]*Model{}, dirty: map[uint64]interface{}{}}
 	frozenfunds.bus.SetFrozenFunds(NewBus(frozenfunds))
 
 	return frozenfunds, nil

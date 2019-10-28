@@ -34,7 +34,8 @@ func NewState(height uint64, db db.DB, nuts *nutsdb.DB, events compact.IEventsDB
 	stateBus := bus.NewBus()
 	stateBus.SetEvents(events)
 
-	iavlTree, err := tree.NewMutableTree(db).GetImmutableAtHeight(int64(height))
+	iavlTree := tree.NewMutableTree(db)
+	_, err := iavlTree.LazyLoadVersion(int64(height))
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +92,7 @@ func NewState(height uint64, db db.DB, nuts *nutsdb.DB, events compact.IEventsDB
 }
 
 func NewCheckState(state *State) *State {
-	panic("implement me")
+	return state // todo: fix
 }
 
 func NewCheckStateAtHeight(height uint64, db db.DB) (*State, error) {
