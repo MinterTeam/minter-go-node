@@ -19,6 +19,8 @@ type Model struct {
 	dirtyBalances map[types.CoinSymbol]struct{}
 	isDirty       bool // nonce or multisig data
 
+	isNew bool
+
 	markDirty func(types.Address)
 }
 

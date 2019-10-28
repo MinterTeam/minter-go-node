@@ -38,7 +38,7 @@ func (a *Accounts) Commit() error {
 		delete(a.dirty, address)
 
 		// save info (nonce and multisig data)
-		if account.isDirty {
+		if account.isDirty || account.isNew {
 			data, err := rlp.EncodeToBytes(account)
 			if err != nil {
 				return fmt.Errorf("can't encode object at %x: %v", address[:], err)
@@ -48,6 +48,7 @@ func (a *Accounts) Commit() error {
 			path = append(path, address[:]...)
 			a.iavl.Set(path, data)
 			account.isDirty = false
+			account.isNew = false
 		}
 
 		// save coins list
@@ -222,6 +223,7 @@ func (a *Accounts) getOrNew(address types.Address) *Model {
 			balances:      map[types.CoinSymbol]*big.Int{},
 			markDirty:     a.markDirty,
 			dirtyBalances: map[types.CoinSymbol]struct{}{},
+			isNew:         true,
 		}
 		a.list[address] = account
 	}
