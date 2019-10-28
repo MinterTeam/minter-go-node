@@ -632,6 +632,21 @@ func (c *Candidates) Punish(height uint64, address types.TmAddress) *big.Int {
 	return totalStake
 }
 
-func (c *Candidates) SetCandidates(candidates []Candidate) {
-
+func (c *Candidates) SetStakes(pubkey types.Pubkey, stakes []types.Stake) {
+	candidate := c.GetCandidate(pubkey)
+	candidate.stakesCount = len(stakes)
+	for i := 0; i < len(stakes); i++ {
+		stake := stakes[i]
+		candidate.stakes[i] = &Stake{
+			Owner:    stake.Owner,
+			Coin:     stake.Coin,
+			Value:    stake.Value,
+			BipValue: stake.BipValue,
+			index:    i,
+			markDirty: func(index int) {
+				candidate.dirtyStakes[index] = true
+			},
+		}
+		candidate.stakes[i].markDirty(i)
+	}
 }

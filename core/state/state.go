@@ -184,9 +184,7 @@ func (s *State) Import(state types.AppState) error {
 			s.Candidates.SetOnline(c.PubKey)
 		}
 
-		for _, stake := range c.Stakes {
-			s.Candidates.Delegate(stake.Owner, c.PubKey, stake.Coin, stake.Value, stake.BipValue)
-		}
+		s.Candidates.SetStakes(c.PubKey, c.Stakes)
 	}
 
 	for _, hashString := range state.UsedChecks {
