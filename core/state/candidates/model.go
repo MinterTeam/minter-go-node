@@ -121,6 +121,11 @@ func (candidate *Candidate) GetTotalBipStake() *big.Int {
 	return big.NewInt(0).Set(candidate.totalBipStake)
 }
 
+func (candidate *Candidate) SetStakeAtIndex(index int, stake *Stake) {
+	candidate.stakes[index] = stake
+	stake.markDirty(index)
+}
+
 type Stake struct {
 	Owner    types.Address
 	Coin     types.CoinSymbol

@@ -207,7 +207,7 @@ func TestSmallStakeValidator(t *testing.T) {
 		PubKey:     pubkey,
 		Commission: 10,
 		Coin:       types.GetBaseCoin(),
-		Stake:      big.NewInt(1),
+		Stake:      big.NewInt(0),
 	}
 
 	encodedData, err := rlp.EncodeToBytes(data)
@@ -362,11 +362,12 @@ FORLOOP2:
 			vals, _ := tmCli.Validators(&targetBlockHeight)
 
 			if len(vals.Validators) > 1 {
-				t.Errorf("There are should be only 1 validator")
+				t.Errorf("There should be only 1 validator, got %d", len(vals.Validators))
 			}
 
-			if len(app.stateDeliver.Validators.GetValidators()) > 1 {
-				t.Errorf("There are should be only 1 validator")
+			mvals := app.stateDeliver.Validators.GetValidators()
+			if len(mvals) > 1 {
+				t.Errorf("There should be only 1 validator, got %d", len(mvals))
 			}
 
 			break FORLOOP2

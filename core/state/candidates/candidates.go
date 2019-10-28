@@ -266,34 +266,43 @@ func (c *Candidates) RecalculateStakes(height uint64) {
 		})
 
 		for _, update := range updates {
-			// find and replace smallest stake
-			index := -1
-			var smallestStake *big.Int
-			for i, stake := range stakes {
-				if stake == nil {
-					index = i
-					break
+			if candidate.stakesCount < MaxDelegatorsPerCandidate {
+				update.markDirty = func(i int) {
+					candidate.dirtyStakes[i] = true
 				}
 
-				if smallestStake == nil || smallestStake.Cmp(stake.BipValue) == 1 {
-					smallestStake = big.NewInt(0).Set(stake.BipValue)
-					index = i
+				candidate.SetStakeAtIndex(candidate.stakesCount, update)
+				candidate.stakesCount++
+			} else {
+				// find and replace smallest stake
+				index := -1
+				var smallestStake *big.Int
+				for i, stake := range stakes {
+					if stake == nil {
+						index = i
+						break
+					}
+
+					if smallestStake == nil || smallestStake.Cmp(stake.BipValue) == 1 {
+						smallestStake = big.NewInt(0).Set(stake.BipValue)
+						index = i
+					}
 				}
-			}
 
-			if smallestStake != nil && smallestStake.Cmp(update.BipValue) == 1 {
-				c.bus.Events().AddEvent(uint32(height), compact.UnbondEvent{
-					Address:         update.Owner,
-					Amount:          update.Value.Bytes(),
-					Coin:            update.Coin,
-					ValidatorPubKey: candidate.PubKey,
-				})
-				c.bus.Accounts().AddBalance(update.Owner, update.Coin, update.Value)
-				update.setValue(big.NewInt(0))
-				continue
-			}
+				if smallestStake != nil && smallestStake.Cmp(update.BipValue) == 1 {
+					c.bus.Events().AddEvent(uint32(height), compact.UnbondEvent{
+						Address:         update.Owner,
+						Amount:          update.Value.Bytes(),
+						Coin:            update.Coin,
+						ValidatorPubKey: candidate.PubKey,
+					})
+					c.bus.Accounts().AddBalance(update.Owner, update.Coin, update.Value)
+					update.setValue(big.NewInt(0))
+					continue
+				}
 
-			stakes[index] = update
+				stakes[index] = update // todo: fix
+			}
 		}
 
 		candidate.clearUpdates()
@@ -356,10 +365,11 @@ func (c *Candidates) IsDelegatorStakeSufficient(address types.Address, pubkey ty
 
 func (c *Candidates) Delegate(address types.Address, pubkey types.Pubkey, coin types.CoinSymbol, value *big.Int, bipValue *big.Int) {
 	stake := &Stake{
-		Owner:    address,
-		Coin:     coin,
-		Value:    value,
-		BipValue: bipValue,
+		Owner:     address,
+		Coin:      coin,
+		Value:     value,
+		BipValue:  bipValue,
+		markDirty: func(i int) {},
 	}
 
 	c.bus.Coins().AddOwnerCandidate(coin, pubkey)

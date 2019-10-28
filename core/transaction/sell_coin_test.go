@@ -135,7 +135,7 @@ func TestSellCoinTxWithCoinRemoval(t *testing.T) {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", coin, targetBalance, balance)
 	}
 
-	if cState.Coins.GetCoin(coin).Volume().Cmp(big.NewInt(0)) != 0 {
-		t.Fatalf("Target %s volume is not correct. Expected %s, got %s", coin, big.NewInt(0), cState.Coins.GetCoin(coin).Volume())
+	if !cState.Coins.GetCoin(coin).IsToDelete() {
+		t.Fatalf("Coin was not deleted")
 	}
 }

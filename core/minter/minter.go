@@ -300,17 +300,6 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 
 		newCandidates := app.stateDeliver.Candidates.GetNewCandidates(valsCount, req.Height)
 
-		// remove candidates with 0 total stake
-		var tempCandidates []candidates.Candidate
-		for _, candidate := range newCandidates {
-			if app.stateDeliver.Candidates.GetTotalStake(candidate.PubKey).Cmp(big.NewInt(0)) != 1 {
-				continue
-			}
-
-			tempCandidates = append(tempCandidates, candidate)
-		}
-		newCandidates = tempCandidates
-
 		if len(newCandidates) < valsCount {
 			valsCount = len(newCandidates)
 		}

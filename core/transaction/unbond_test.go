@@ -24,6 +24,8 @@ func TestUnbondTx(t *testing.T) {
 	value := helpers.BipToPip(big.NewInt(100))
 	cState.Candidates.Delegate(addr, pubkey, coin, value, big.NewInt(0))
 
+	cState.Candidates.RecalculateStakes(1)
+
 	data := UnbondData{
 		PubKey: pubkey,
 		Coin:   coin,
@@ -61,6 +63,8 @@ func TestUnbondTx(t *testing.T) {
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
+
+	cState.Candidates.RecalculateStakes(1)
 
 	targetBalance, _ := big.NewInt(0).SetString("999999800000000000000000", 10)
 	balance := cState.Accounts.GetBalance(addr, coin)
