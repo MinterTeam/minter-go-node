@@ -10,6 +10,7 @@ BREAKING CHANGES
 - [core] Remove CreatedAtBlock field in candidates
 - [core] Add GasCoin to Checks
 - [gui] Remove GUI
+- [config] KeepStateHistory -> KeepLastStates
 
 ## 1.0.4
 

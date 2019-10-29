@@ -13,7 +13,7 @@ type StatusResponse struct {
 	LatestAppHash     string                   `json:"latest_app_hash"`
 	LatestBlockHeight int64                    `json:"latest_block_height"`
 	LatestBlockTime   time.Time                `json:"latest_block_time"`
-	StateHistory      string                   `json:"state_history"`
+	KeepLastStates    int64                    `json:"keep_last_states"`
 	TmStatus          *core_types.ResultStatus `json:"tm_status"`
 }
 
@@ -23,18 +23,13 @@ func Status() (*StatusResponse, error) {
 		return nil, err
 	}
 
-	stateHistory := "off"
-	if minterCfg.BaseConfig.KeepStateHistory {
-		stateHistory = "on"
-	}
-
 	return &StatusResponse{
 		MinterVersion:     version.Version,
 		LatestBlockHash:   fmt.Sprintf("%X", result.SyncInfo.LatestBlockHash),
 		LatestAppHash:     fmt.Sprintf("%X", result.SyncInfo.LatestAppHash),
 		LatestBlockHeight: result.SyncInfo.LatestBlockHeight,
 		LatestBlockTime:   result.SyncInfo.LatestBlockTime,
-		StateHistory:      stateHistory,
+		KeepLastStates:    minterCfg.BaseConfig.KeepLastStates,
 		TmStatus:          result,
 	}, nil
 }

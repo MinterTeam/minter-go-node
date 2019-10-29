@@ -76,8 +76,8 @@ api_listen_addr = "{{ .BaseConfig.APIListenAddress }}"
 # Sets node to be in validator mode. Disables API, events, history of blocks, indexes, etc. 
 validator_mode = {{ .BaseConfig.ValidatorMode }}
 
-# If set to true node will save old states. This can be useful for applications which need all blockchain history data. 
-keep_state_history = {{ .BaseConfig.KeepStateHistory }}
+# Sets number of last stated to be saved
+keep_last_states = {{ .BaseConfig.KeepLastStates }}
 
 # Limit for simultaneous requests to API
 api_simultaneous_requests = {{ .BaseConfig.APISimultaneousRequests }}

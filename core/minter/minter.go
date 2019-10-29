@@ -96,7 +96,7 @@ func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 	}
 
 	// Set stateDeliver and stateCheck
-	blockchain.stateDeliver, err = state.NewState(blockchain.height, blockchain.stateDB, nuts, blockchain.eventsDB)
+	blockchain.stateDeliver, err = state.NewState(blockchain.height, blockchain.stateDB, nuts, blockchain.eventsDB, cfg.KeepLastStates)
 	if err != nil {
 		panic(err)
 	}

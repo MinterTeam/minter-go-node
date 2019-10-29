@@ -26,24 +26,25 @@ type State struct {
 	Coins       *coins.Coins
 	Checks      *checks.Checks
 
-	db     db.DB
-	nuts   *nutsdb.DB
-	events compact.IEventsDB
-	tree   tree.Tree
+	db             db.DB
+	nuts           *nutsdb.DB
+	events         compact.IEventsDB
+	tree           tree.Tree
+	keepLastStates int64
 }
 
-func NewState(height uint64, db db.DB, nuts *nutsdb.DB, events compact.IEventsDB) (*State, error) {
+func NewState(height uint64, db db.DB, nuts *nutsdb.DB, events compact.IEventsDB, keepLastStates int64) (*State, error) {
 	iavlTree := tree.NewMutableTree(db)
-	_, err := iavlTree.LazyLoadVersion(int64(height))
+	_, err := iavlTree.LoadVersion(int64(height))
 	if err != nil {
 		return nil, err
 	}
 
-	return newStateForTree(iavlTree, nuts, events, db)
+	return newStateForTree(iavlTree, nuts, events, db, keepLastStates)
 }
 
 func NewCheckState(state *State) *State {
-	s, err := newStateForTree(state.tree, state.nuts, state.events, state.db)
+	s, err := newStateForTree(state.tree, state.nuts, state.events, state.db, 0)
 	if err != nil {
 		panic(err)
 	}
@@ -57,7 +58,7 @@ func NewCheckStateAtHeight(height uint64, db db.DB) (*State, error) {
 		return nil, err
 	}
 
-	return newStateForTree(iavlTree.GetImmutable(), nil, nil, nil)
+	return newStateForTree(iavlTree.GetImmutable(), nil, nil, nil, 0)
 }
 
 func (s *State) Commit() ([]byte, error) {
@@ -89,7 +90,15 @@ func (s *State) Commit() ([]byte, error) {
 		return nil, err
 	}
 
-	hash, _, err := s.tree.SaveVersion()
+	hash, version, err := s.tree.SaveVersion()
+
+	if s.keepLastStates < version-1 {
+		err = s.tree.DeleteVersion(version - s.keepLastStates)
+
+		if err != nil {
+			panic(err)
+		}
+	}
 
 	return hash, err
 }
@@ -176,7 +185,7 @@ func (s *State) Export(height uint64) types.AppState {
 	return appState
 }
 
-func newStateForTree(iavlTree tree.Tree, nuts *nutsdb.DB, events compact.IEventsDB, db db.DB) (*State, error) {
+func newStateForTree(iavlTree tree.Tree, nuts *nutsdb.DB, events compact.IEventsDB, db db.DB, keepLastStates int64) (*State, error) {
 	stateBus := bus.NewBus()
 	stateBus.SetEvents(events)
 
@@ -224,10 +233,11 @@ func newStateForTree(iavlTree tree.Tree, nuts *nutsdb.DB, events compact.IEvents
 		Coins:       coinsState,
 		Checks:      checksState,
 
-		db:     db,
-		nuts:   nuts,
-		events: events,
-		tree:   iavlTree,
+		db:             db,
+		nuts:           nuts,
+		events:         events,
+		tree:           iavlTree,
+		keepLastStates: keepLastStates,
 	}
 
 	return state, nil
