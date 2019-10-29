@@ -6,7 +6,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/minter"
-	"github.com/MinterTeam/minter-go-node/gui"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/gobuffalo/packr"
 	"github.com/spf13/cobra"
@@ -67,7 +66,6 @@ func runNode() error {
 
 	if !cfg.ValidatorMode {
 		go api.RunAPI(app, client, cfg)
-		go gui.Run(cfg.GUIListenAddress)
 	}
 
 	common.TrapSignal(log.With("module", "trap"), func() {
