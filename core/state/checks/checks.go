@@ -1,6 +1,7 @@
 package checks
 
 import (
+	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/check"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/tree"
@@ -46,4 +47,15 @@ func (c *Checks) UseCheck(check *check.Check) {
 
 func (c *Checks) UseCheckHash(hash types.Hash) {
 	c.usedChecks[hash] = struct{}{}
+}
+
+func (c *Checks) Export(state *types.AppState) {
+	// todo: iterate range?
+	c.iavl.Iterate(func(key []byte, value []byte) bool {
+		if key[0] == mainPrefix {
+			state.UsedChecks = append(state.UsedChecks, types.UsedCheck(fmt.Sprintf("%x", key[1:])))
+		}
+
+		return false
+	})
 }

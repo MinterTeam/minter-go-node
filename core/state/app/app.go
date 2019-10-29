@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/state/bus"
+	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/tree"
 	"math/big"
@@ -105,4 +106,9 @@ func (v *App) markDirty() {
 
 func (v *App) SetTotalSlashed(amount *big.Int) {
 	v.getOrNew().setTotalSlashed(amount)
+}
+
+func (v *App) Export(state *types.AppState) {
+	state.MaxGas = v.GetMaxGas()
+	state.TotalSlashed = v.GetTotalSlashed()
 }

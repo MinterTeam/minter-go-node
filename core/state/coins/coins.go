@@ -348,3 +348,22 @@ func (c *Coins) getOwners(symbol types.CoinSymbol) ([]types.Address, []types.Pub
 
 	return addresses, pubkeys, frozenfunds
 }
+
+func (c *Coins) Export(state *types.AppState) {
+	// todo: iterate range?
+	c.iavl.Iterate(func(key []byte, value []byte) bool {
+		if key[0] == mainPrefix {
+			coin := c.GetCoin(types.StrToCoinSymbol(string(key[1:])))
+
+			state.Coins = append(state.Coins, types.Coin{
+				Name:    coin.Name(),
+				Symbol:  coin.Symbol(),
+				Volume:  coin.Volume(),
+				Crr:     coin.Crr(),
+				Reserve: coin.Reserve(),
+			})
+		}
+
+		return false
+	})
+}

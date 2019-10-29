@@ -317,3 +317,17 @@ func (v *Validators) punishValidator(height uint64, tmAddress types.TmAddress) {
 func (v *Validators) SetValidators(vals []*Validator) {
 	v.list = vals
 }
+
+func (v *Validators) Export(state *types.AppState) {
+	vals := v.GetValidators()
+	for _, val := range vals {
+		state.Validators = append(state.Validators, types.Validator{
+			RewardAddress: val.RewardAddress,
+			TotalBipStake: val.GetTotalBipStake(),
+			PubKey:        val.PubKey,
+			Commission:    val.Commission,
+			AccumReward:   val.GetAccumReward(),
+			AbsentTimes:   val.AbsentTimes,
+		})
+	}
+}

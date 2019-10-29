@@ -660,3 +660,29 @@ func (c *Candidates) SetStakes(pubkey types.Pubkey, stakes []types.Stake) {
 		candidate.stakes[i].markDirty(i)
 	}
 }
+
+func (c *Candidates) Export(state *types.AppState) {
+	candidates := c.GetCandidates()
+	for _, candidate := range candidates {
+		var stakes []types.Stake
+		for _, s := range c.GetStakes(candidate.PubKey) {
+			stakes = append(stakes, types.Stake{
+				Owner:    s.Owner,
+				Coin:     s.Coin,
+				Value:    s.Value,
+				BipValue: s.BipValue,
+			})
+		}
+
+		state.Candidates = append(state.Candidates, types.Candidate{
+			RewardAddress: candidate.RewardAddress,
+			OwnerAddress:  candidate.OwnerAddress,
+			TotalBipStake: candidate.GetTotalBipStake(),
+			PubKey:        candidate.PubKey,
+			Commission:    candidate.Commission,
+			Stakes:        stakes,
+			Status:        candidate.Status,
+		})
+	}
+
+}

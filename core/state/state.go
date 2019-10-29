@@ -26,6 +26,7 @@ type State struct {
 	Coins       *coins.Coins
 	Checks      *checks.Checks
 
+	db     db.DB
 	nuts   *nutsdb.DB
 	events compact.IEventsDB
 	tree   tree.Tree
@@ -38,11 +39,11 @@ func NewState(height uint64, db db.DB, nuts *nutsdb.DB, events compact.IEventsDB
 		return nil, err
 	}
 
-	return newStateForTree(iavlTree, nuts, events)
+	return newStateForTree(iavlTree, nuts, events, db)
 }
 
 func NewCheckState(state *State) *State {
-	s, err := newStateForTree(state.tree, state.nuts, state.events)
+	s, err := newStateForTree(state.tree, state.nuts, state.events, state.db)
 	if err != nil {
 		panic(err)
 	}
@@ -56,7 +57,7 @@ func NewCheckStateAtHeight(height uint64, db db.DB) (*State, error) {
 		return nil, err
 	}
 
-	return newStateForTree(iavlTree, nil, nil)
+	return newStateForTree(iavlTree, nil, nil, nil)
 }
 
 func (s *State) Commit() ([]byte, error) {
@@ -116,7 +117,7 @@ func (s *State) Import(state types.AppState) error {
 	}
 
 	for _, c := range state.Coins {
-		s.Coins.Create(c.Symbol, c.Name, c.Volume, c.Crr, c.ReserveBalance, c.MaxSupply)
+		s.Coins.Create(c.Symbol, c.Name, c.Volume, c.Crr, c.Reserve, c.MaxSupply)
 	}
 
 	var vals []*validators.Validator
@@ -158,10 +159,24 @@ func (s *State) Import(state types.AppState) error {
 }
 
 func (s *State) Export(height uint64) types.AppState {
-	panic("implement me")
+	state, err := NewCheckStateAtHeight(height, s.db)
+	if err != nil {
+		panic(err)
+	}
+	appState := types.AppState{}
+
+	state.App.Export(&appState)
+	state.Validators.Export(&appState)
+	state.Candidates.Export(&appState)
+	state.FrozenFunds.Export(&appState, height)
+	state.Accounts.Export(&appState)
+	state.Coins.Export(&appState)
+	state.Checks.Export(&appState)
+
+	return appState
 }
 
-func newStateForTree(iavlTree tree.Tree, nuts *nutsdb.DB, events compact.IEventsDB) (*State, error) {
+func newStateForTree(iavlTree tree.Tree, nuts *nutsdb.DB, events compact.IEventsDB, db db.DB) (*State, error) {
 	stateBus := bus.NewBus()
 	stateBus.SetEvents(events)
 
@@ -209,6 +224,7 @@ func newStateForTree(iavlTree tree.Tree, nuts *nutsdb.DB, events compact.IEvents
 		Coins:       coinsState,
 		Checks:      checksState,
 
+		db:     db,
 		nuts:   nuts,
 		events: events,
 		tree:   iavlTree,

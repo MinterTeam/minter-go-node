@@ -7,6 +7,7 @@ BREAKING CHANGES
 - [core] Fix invalid check's sig issue #264
 - [core] Refactoring
 - [core] Add Coin's MaxSupply
+- [core] Remove CreatedAtBlock field in candidates
 
 ## 1.0.4
 

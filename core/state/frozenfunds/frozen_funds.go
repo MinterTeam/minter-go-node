@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/state/bus"
+	"github.com/MinterTeam/minter-go-node/core/state/candidates"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/rlp"
@@ -185,6 +186,24 @@ func (f *FrozenFunds) DeleteCoin(height uint64, coinSymbol types.CoinSymbol) {
 	}
 
 	ff.deleteCoin(coinSymbol, f.bus)
+}
+
+func (f *FrozenFunds) Export(state *types.AppState, height uint64) {
+	for i := height; i <= height+candidates.UnbondPeriod; i++ {
+		frozenFunds := f.get(i)
+		if frozenFunds == nil {
+			continue
+		}
+		for _, frozenFund := range frozenFunds.List {
+			state.FrozenFunds = append(state.FrozenFunds, types.FrozenFund{
+				Height:       i,
+				Address:      frozenFund.Address,
+				CandidateKey: frozenFund.CandidateKey,
+				Coin:         frozenFund.Coin,
+				Value:        frozenFund.Value,
+			})
+		}
+	}
 }
 
 func getPath(height uint64) []byte {

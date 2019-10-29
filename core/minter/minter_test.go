@@ -465,8 +465,7 @@ func makeValidatorsAndCandidates(pubkeys []string, stake *big.Int) ([]types.Vali
 					BipValue: stake,
 				},
 			},
-			CreatedAtBlock: 1,
-			Status:         candidates2.CandidateStatusOnline,
+			Status: candidates2.CandidateStatusOnline,
 		}
 	}
 

@@ -261,3 +261,38 @@ func (a *Accounts) DeleteCoin(address types.Address, symbol types.CoinSymbol) {
 func (a *Accounts) markDirty(addr types.Address) {
 	a.dirty[addr] = struct{}{}
 }
+
+func (a *Accounts) Export(state *types.AppState) {
+	// todo: iterate range?
+	a.iavl.Iterate(func(key []byte, value []byte) bool {
+		if key[0] == mainPrefix {
+			account := a.get(types.BytesToAddress(key[1:]))
+
+			var balance []types.Balance
+			for coin, value := range a.GetBalances(account.address) {
+				balance = append(balance, types.Balance{
+					Coin:  coin,
+					Value: value,
+				})
+			}
+
+			acc := types.Account{
+				Address: account.address,
+				Balance: balance,
+				Nonce:   account.Nonce,
+			}
+
+			//if account.IsMultisig() {
+			//	acc.MultisigData = &types.Multisig{
+			//		Weights:   account.data.MultisigData.Weights,
+			//		Threshold: account.data.MultisigData.Threshold,
+			//		Addresses: account.data.MultisigData.Addresses,
+			//	}
+			//}
+
+			state.Accounts = append(state.Accounts, acc)
+		}
+
+		return false
+	})
+}

@@ -160,8 +160,7 @@ func TestAppState(t *testing.T) {
 						BipValue: big.NewInt(1),
 					},
 				},
-				CreatedAtBlock: 1,
-				Status:         1,
+				Status: 1,
 			},
 		},
 		Accounts: []Account{
