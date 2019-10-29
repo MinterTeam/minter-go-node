@@ -8,8 +8,9 @@ import (
 )
 
 type Model struct {
-	CName string
-	CCrr  uint
+	CName      string
+	CCrr       uint
+	CMaxSupply *big.Int
 
 	symbol    types.CoinSymbol
 	info      *Info
@@ -101,6 +102,10 @@ func (m Model) IsInfoDirty() bool {
 
 func (m Model) IsDirty() bool {
 	return m.isDirty
+}
+
+func (m Model) MaxSupply() *big.Int {
+	return m.CMaxSupply
 }
 
 type Info struct {

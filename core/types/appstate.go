@@ -50,6 +50,7 @@ type Coin struct {
 	Volume         *big.Int   `json:"volume"`
 	Crr            uint       `json:"crr"`
 	ReserveBalance *big.Int   `json:"reserve_balance"`
+	MaxSupply      *big.Int   `json:"max_supply"`
 }
 
 type FrozenFund struct {

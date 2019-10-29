@@ -27,6 +27,7 @@ type CreateCoinData struct {
 	InitialAmount        *big.Int         `json:"initial_amount"`
 	InitialReserve       *big.Int         `json:"initial_reserve"`
 	ConstantReserveRatio uint             `json:"constant_reserve_ratio"`
+	MaxSupply            *big.Int         `json:"max_supply"`
 }
 
 func (data CreateCoinData) TotalSpend(tx *Transaction, context *state.State) (TotalSpends, []Conversion, *big.Int, *Response) {
@@ -34,7 +35,7 @@ func (data CreateCoinData) TotalSpend(tx *Transaction, context *state.State) (To
 }
 
 func (data CreateCoinData) BasicCheck(tx *Transaction, context *state.State) *Response {
-	if data.InitialReserve == nil || data.InitialAmount == nil {
+	if data.InitialReserve == nil || data.InitialAmount == nil || data.MaxSupply == nil {
 		return &Response{
 			Code: code.DecodeError,
 			Log:  "Incorrect tx data"}
@@ -64,10 +65,17 @@ func (data CreateCoinData) BasicCheck(tx *Transaction, context *state.State) *Re
 			Log:  fmt.Sprintf("Constant Reserve Ratio should be between 10 and 100")}
 	}
 
-	if data.InitialAmount.Cmp(minCoinSupply) == -1 || data.InitialAmount.Cmp(MaxCoinSupply) == 1 {
+	if data.InitialAmount.Cmp(minCoinSupply) == -1 || data.InitialAmount.Cmp(data.MaxSupply) == 1 {
 		return &Response{
 			Code: code.WrongCoinSupply,
-			Log:  fmt.Sprintf("Coin supply should be between %s and %s", minCoinSupply.String(), MaxCoinSupply.String())}
+			Log:  fmt.Sprintf("Coin supply should be between %s and %s", minCoinSupply.String(), data.MaxSupply.String())}
+	}
+
+	MaxCoinSupply := big.NewInt(0).Exp(big.NewInt(10), big.NewInt(15+18), nil)
+	if data.MaxSupply.Cmp(MaxCoinSupply) == 1 {
+		return &Response{
+			Code: code.WrongCoinSupply,
+			Log:  fmt.Sprintf("Max coin supply should be less than %s", MaxCoinSupply)}
 	}
 
 	if data.InitialReserve.Cmp(minCoinReserve) == -1 {
@@ -155,7 +163,7 @@ func (data CreateCoinData) Run(tx *Transaction, context *state.State, isCheck bo
 
 		context.Accounts.SubBalance(sender, types.GetBaseCoin(), data.InitialReserve)
 		context.Accounts.SubBalance(sender, tx.GasCoin, commission)
-		context.Coins.Create(data.Symbol, data.Name, data.InitialAmount, data.ConstantReserveRatio, data.InitialReserve)
+		context.Coins.Create(data.Symbol, data.Name, data.InitialAmount, data.ConstantReserveRatio, data.InitialReserve, data.MaxSupply)
 		context.Accounts.AddBalance(sender, data.Symbol, data.InitialAmount)
 		context.Accounts.SetNonce(sender, tx.Nonce)
 	}

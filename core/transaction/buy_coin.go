@@ -39,7 +39,7 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.State) (Total
 	if !data.CoinToBuy.IsBaseCoin() {
 		coin := context.Coins.GetCoin(data.CoinToBuy)
 
-		if err := CheckForCoinSupplyOverflow(coin.Volume(), data.ValueToBuy); err != nil {
+		if err := CheckForCoinSupplyOverflow(coin.Volume(), data.ValueToBuy, coin.MaxSupply()); err != nil {
 			return nil, nil, nil, &Response{
 				Code: code.CoinSupplyOverflow,
 				Log:  err.Error(),

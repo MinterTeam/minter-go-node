@@ -33,6 +33,7 @@ func TestCreateCoinTx(t *testing.T) {
 		InitialAmount:        amount,
 		InitialReserve:       reserve,
 		ConstantReserveRatio: crr,
+		MaxSupply:            big.NewInt(0).Mul(amount, big.NewInt(10)),
 	}
 
 	encodedData, err := rlp.EncodeToBytes(data)

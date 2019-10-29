@@ -116,7 +116,7 @@ func (s *State) Import(state types.AppState) error {
 	}
 
 	for _, c := range state.Coins {
-		s.Coins.Create(c.Symbol, c.Name, c.Volume, c.Crr, c.ReserveBalance)
+		s.Coins.Create(c.Symbol, c.Name, c.Volume, c.Crr, c.ReserveBalance, c.MaxSupply)
 	}
 
 	var vals []*validators.Validator

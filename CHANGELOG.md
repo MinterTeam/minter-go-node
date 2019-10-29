@@ -1,8 +1,12 @@
 # Changelog
 
+## 1.1.0
+
 BREAKING CHANGES
 
 - [core] Fix invalid check's sig issue #264
+- [core] Refactoring
+- [core] Add Coin's MaxSupply
 
 ## 1.0.4
 

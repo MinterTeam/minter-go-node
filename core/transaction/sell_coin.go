@@ -59,7 +59,7 @@ func (data SellCoinData) TotalSpend(tx *Transaction, context *state.State) (Tota
 			})
 		}
 
-		if err := CheckForCoinSupplyOverflow(coin.Volume(), value); err != nil {
+		if err := CheckForCoinSupplyOverflow(coin.Volume(), value, coin.MaxSupply()); err != nil {
 			return nil, nil, nil, &Response{
 				Code: code.CoinSupplyOverflow,
 				Log:  err.Error(),
@@ -181,7 +181,7 @@ func (data SellCoinData) TotalSpend(tx *Transaction, context *state.State) (Tota
 			})
 		}
 
-		if err := CheckForCoinSupplyOverflow(coinTo.Volume(), value); err != nil {
+		if err := CheckForCoinSupplyOverflow(coinTo.Volume(), value, coinTo.MaxSupply()); err != nil {
 			return nil, nil, nil, &Response{
 				Code: code.CoinSupplyOverflow,
 				Log:  err.Error(),

@@ -80,7 +80,7 @@ func TestSellCoinTxWithCoinRemoval(t *testing.T) {
 	volume, _ := big.NewInt(0).SetString("673449859091115734468033", 10)
 	reserve, _ := big.NewInt(0).SetString("4991502952461582748", 10)
 
-	cState.Coins.Create(getTestCoinSymbol(), "TEST COIN", volume, 10, reserve)
+	cState.Coins.Create(getTestCoinSymbol(), "TEST COIN", volume, 10, reserve, big.NewInt(0).Mul(volume, big.NewInt(10)))
 
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)

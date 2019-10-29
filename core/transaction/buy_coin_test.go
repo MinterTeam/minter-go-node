@@ -53,7 +53,7 @@ func createTestCoin(stateDB *state.State) {
 	volume := helpers.BipToPip(big.NewInt(100))
 	reserve := helpers.BipToPip(big.NewInt(100))
 
-	stateDB.Coins.Create(getTestCoinSymbol(), "TEST COIN", volume, 10, reserve)
+	stateDB.Coins.Create(getTestCoinSymbol(), "TEST COIN", volume, 10, reserve, big.NewInt(0).Mul(volume, big.NewInt(10)))
 }
 
 func TestBuyCoinTx(t *testing.T) {

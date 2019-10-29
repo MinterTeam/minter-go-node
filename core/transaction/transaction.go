@@ -37,7 +37,6 @@ const (
 
 var (
 	ErrInvalidSig = errors.New("invalid transaction v, r, s values")
-	MaxCoinSupply = big.NewInt(0).Exp(big.NewInt(10), big.NewInt(15+18), nil) // 1,000,000,000,000,000 bips
 )
 
 type Transaction struct {
@@ -290,11 +289,11 @@ func rlpHash(x interface{}) (h types.Hash) {
 	return h
 }
 
-func CheckForCoinSupplyOverflow(current *big.Int, delta *big.Int) error {
+func CheckForCoinSupplyOverflow(current *big.Int, delta *big.Int, max *big.Int) error {
 	total := big.NewInt(0).Set(current)
 	total.Add(total, delta)
 
-	if total.Cmp(MaxCoinSupply) != -1 {
+	if total.Cmp(max) != -1 {
 		return errors.New("сoin supply overflow")
 	}
 

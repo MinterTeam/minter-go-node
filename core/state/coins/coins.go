@@ -134,13 +134,14 @@ func (c *Coins) Sanitize(symbol types.CoinSymbol) {
 	}
 }
 
-func (c *Coins) Create(symbol types.CoinSymbol, name string, volume *big.Int, crr uint, reserve *big.Int) {
+func (c *Coins) Create(symbol types.CoinSymbol, name string, volume *big.Int, crr uint, reserve *big.Int, maxSupply *big.Int) {
 	coin := &Model{
-		CName:     name,
-		CCrr:      crr,
-		symbol:    symbol,
-		markDirty: c.markDirty,
-		isDirty:   true,
+		CName:      name,
+		CCrr:       crr,
+		CMaxSupply: maxSupply,
+		symbol:     symbol,
+		markDirty:  c.markDirty,
+		isDirty:    true,
 		info: &Info{
 			Volume:  big.NewInt(0),
 			Reserve: big.NewInt(0),
