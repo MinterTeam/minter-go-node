@@ -11,11 +11,10 @@ import (
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/developers"
-	"github.com/MinterTeam/minter-go-node/core/state"
+	candidates2 "github.com/MinterTeam/minter-go-node/core/state/candidates"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
-	"github.com/MinterTeam/minter-go-node/eventsdb"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/rlp"
@@ -62,7 +61,6 @@ func initNode() {
 
 	minterCfg := config.GetConfig()
 	log.InitLog(minterCfg)
-	eventsdb.InitDB(minterCfg)
 	cfg = config.GetTmConfig(minterCfg)
 	cfg.Consensus.TimeoutPropose = 0
 	cfg.Consensus.TimeoutPrecommit = 0
@@ -209,7 +207,7 @@ func TestSmallStakeValidator(t *testing.T) {
 		PubKey:     pubkey,
 		Commission: 10,
 		Coin:       types.GetBaseCoin(),
-		Stake:      big.NewInt(1),
+		Stake:      big.NewInt(0),
 	}
 
 	encodedData, err := rlp.EncodeToBytes(data)
@@ -299,8 +297,8 @@ func TestSmallStakeValidator(t *testing.T) {
 				t.Errorf("There are should be 1 validator (has %d)", len(vals.Validators))
 			}
 
-			if len(app.stateDeliver.GetStateValidators().Data()) > 1 {
-				t.Errorf("There are should be 1 validator (has %d)", len(app.stateDeliver.GetStateValidators().Data()))
+			if len(app.stateDeliver.Validators.GetValidators()) > 1 {
+				t.Errorf("There are should be 1 validator (has %d)", len(app.stateDeliver.Validators.GetValidators()))
 			}
 
 			ready = true
@@ -364,11 +362,12 @@ FORLOOP2:
 			vals, _ := tmCli.Validators(&targetBlockHeight)
 
 			if len(vals.Validators) > 1 {
-				t.Errorf("There are should be only 1 validator")
+				t.Errorf("There should be only 1 validator, got %d", len(vals.Validators))
 			}
 
-			if len(app.stateDeliver.GetStateValidators().Data()) > 1 {
-				t.Errorf("There are should be only 1 validator")
+			mvals := app.stateDeliver.Validators.GetValidators()
+			if len(mvals) > 1 {
+				t.Errorf("There should be only 1 validator, got %d", len(mvals))
 			}
 
 			break FORLOOP2
@@ -435,10 +434,13 @@ func makeValidatorsAndCandidates(pubkeys []string, stake *big.Int) ([]types.Vali
 	addr := developers.Address
 
 	for i, val := range pubkeys {
-		pkey, err := base64.StdEncoding.DecodeString(val)
+		pkeyBytes, err := base64.StdEncoding.DecodeString(val)
 		if err != nil {
 			panic(err)
 		}
+
+		var pkey types.Pubkey
+		copy(pkey[:], pkeyBytes)
 
 		validators[i] = types.Validator{
 			RewardAddress: addr,
@@ -464,7 +466,7 @@ func makeValidatorsAndCandidates(pubkeys []string, stake *big.Int) ([]types.Vali
 				},
 			},
 			CreatedAtBlock: 1,
-			Status:         state.CandidateStatusOnline,
+			Status:         candidates2.CandidateStatusOnline,
 		}
 	}
 

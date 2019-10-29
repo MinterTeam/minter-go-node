@@ -6,13 +6,11 @@ import (
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/minter"
-	"github.com/MinterTeam/minter-go-node/eventsdb"
 	"github.com/MinterTeam/minter-go-node/gui"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/gobuffalo/packr"
 	"github.com/spf13/cobra"
 	"github.com/tendermint/tendermint/abci/types"
-	bc "github.com/tendermint/tendermint/blockchain"
 	tmCfg "github.com/tendermint/tendermint/config"
 	"github.com/tendermint/tendermint/libs/common"
 	tmNode "github.com/tendermint/tendermint/node"
@@ -20,6 +18,7 @@ import (
 	"github.com/tendermint/tendermint/privval"
 	"github.com/tendermint/tendermint/proxy"
 	rpc "github.com/tendermint/tendermint/rpc/client"
+	"github.com/tendermint/tendermint/store"
 	tmTypes "github.com/tendermint/tendermint/types"
 	"time"
 )
@@ -50,9 +49,6 @@ func runNode() error {
 		return err
 	}
 
-	// init events db
-	eventsdb.InitDB(cfg)
-
 	app := minter.NewMinterBlockchain(cfg)
 
 	// update BlocksTimeDelta in case it was corrupted
@@ -74,9 +70,6 @@ func runNode() error {
 		go gui.Run(cfg.GUIListenAddress)
 	}
 
-	// Recheck mempool. Currently kind a hack.
-	go recheckMempool(node, cfg)
-
 	common.TrapSignal(log.With("module", "trap"), func() {
 		// Cleanup
 		err := node.Stop()
@@ -90,29 +83,13 @@ func runNode() error {
 	select {}
 }
 
-func recheckMempool(node *tmNode.Node, config *config.Config) {
-	ticker := time.NewTicker(time.Minute)
-	mempool := node.Mempool()
-	for {
-		select {
-		case <-ticker.C:
-			txs := mempool.ReapMaxTxs(config.Mempool.Size)
-			mempool.Flush()
-
-			for _, tx := range txs {
-				_ = mempool.CheckTx(tx, func(res *types.Response) {})
-			}
-		}
-	}
-}
-
 func updateBlocksTimeDelta(app *minter.Blockchain, config *tmCfg.Config) {
 	blockStoreDB, err := tmNode.DefaultDBProvider(&tmNode.DBContext{ID: "blockstore", Config: config})
 	if err != nil {
 		panic(err)
 	}
 
-	blockStore := bc.NewBlockStore(blockStoreDB)
+	blockStore := store.NewBlockStore(blockStoreDB)
 	height := uint64(blockStore.Height())
 	count := uint64(3)
 	if _, err := app.GetBlocksTimeDelta(height, count); height >= 20 && err != nil {

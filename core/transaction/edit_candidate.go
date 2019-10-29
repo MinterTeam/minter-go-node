@@ -1,7 +1,6 @@
 package transaction
 
 import (
-	"bytes"
 	"encoding/hex"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
@@ -27,11 +26,11 @@ func (data EditCandidateData) GetPubKey() types.Pubkey {
 	return data.PubKey
 }
 
-func (data EditCandidateData) TotalSpend(tx *Transaction, context *state.StateDB) (TotalSpends, []Conversion, *big.Int, *Response) {
+func (data EditCandidateData) TotalSpend(tx *Transaction, context *state.State) (TotalSpends, []Conversion, *big.Int, *Response) {
 	panic("implement me")
 }
 
-func (data EditCandidateData) BasicCheck(tx *Transaction, context *state.StateDB) *Response {
+func (data EditCandidateData) BasicCheck(tx *Transaction, context *state.State) *Response {
 	return checkCandidateOwnership(data, tx, context)
 }
 
@@ -44,7 +43,7 @@ func (data EditCandidateData) Gas() int64 {
 	return commissions.EditCandidate
 }
 
-func (data EditCandidateData) Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
+func (data EditCandidateData) Run(tx *Transaction, context *state.State, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
 	sender, _ := tx.Sender()
 
 	response := data.BasicCheck(tx, context)
@@ -56,18 +55,18 @@ func (data EditCandidateData) Run(tx *Transaction, context *state.StateDB, isChe
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
 	if !tx.GasCoin.IsBaseCoin() {
-		coin := context.GetStateCoin(tx.GasCoin)
+		coin := context.Coins.GetCoin(tx.GasCoin)
 
-		if coin.ReserveBalance().Cmp(commissionInBaseCoin) < 0 {
+		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
 			return Response{
 				Code: code.CoinReserveNotSufficient,
-				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.ReserveBalance().String(), commissionInBaseCoin.String())}
+				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.Reserve().String(), commissionInBaseCoin.String())}
 		}
 
-		commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
+		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
 	}
 
-	if context.GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
+	if context.Accounts.GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
 		return Response{
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, tx.GasCoin)}
@@ -76,12 +75,12 @@ func (data EditCandidateData) Run(tx *Transaction, context *state.StateDB, isChe
 	if !isCheck {
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		context.SubCoinReserve(tx.GasCoin, commissionInBaseCoin)
-		context.SubCoinVolume(tx.GasCoin, commission)
+		context.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
+		context.Coins.SubVolume(tx.GasCoin, commission)
 
-		context.SubBalance(sender, tx.GasCoin, commission)
-		context.EditCandidate(data.PubKey, data.RewardAddress, data.OwnerAddress)
-		context.SetNonce(sender, tx.Nonce)
+		context.Accounts.SubBalance(sender, tx.GasCoin, commission)
+		context.Candidates.Edit(data.PubKey, data.RewardAddress, data.OwnerAddress)
+		context.Accounts.SetNonce(sender, tx.Nonce)
 	}
 
 	tags := common.KVPairs{
@@ -97,22 +96,16 @@ func (data EditCandidateData) Run(tx *Transaction, context *state.StateDB, isChe
 	}
 }
 
-func checkCandidateOwnership(data CandidateTx, tx *Transaction, context *state.StateDB) *Response {
-	if data.GetPubKey() == nil {
-		return &Response{
-			Code: code.DecodeError,
-			Log:  "Incorrect tx data"}
-	}
-
-	if !context.CandidateExists(data.GetPubKey()) {
+func checkCandidateOwnership(data CandidateTx, tx *Transaction, context *state.State) *Response {
+	if !context.Candidates.Exists(data.GetPubKey()) {
 		return &Response{
 			Code: code.CandidateNotFound,
 			Log:  fmt.Sprintf("Candidate with such public key (%s) not found", data.GetPubKey().String())}
 	}
 
-	candidate := context.GetStateCandidate(data.GetPubKey())
+	owner := context.Candidates.GetCandidateOwner(data.GetPubKey())
 	sender, _ := tx.Sender()
-	if !bytes.Equal(candidate.OwnerAddress.Bytes(), sender.Bytes()) {
+	if owner != sender {
 		return &Response{
 			Code: code.IsNotOwnerOfCandidate,
 			Log:  fmt.Sprintf("Sender is not an owner of a candidate")}

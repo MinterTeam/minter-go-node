@@ -22,6 +22,7 @@ type Check struct {
 	DueBlock uint64
 	Coin     types.CoinSymbol
 	Value    *big.Int
+	GasCoin  types.CoinSymbol
 	Lock     *big.Int
 	V        *big.Int
 	R        *big.Int
@@ -59,6 +60,7 @@ func (check *Check) HashWithoutLock() types.Hash {
 		check.DueBlock,
 		check.Coin,
 		check.Value,
+		check.GasCoin,
 	})
 }
 
@@ -69,6 +71,7 @@ func (check *Check) Hash() types.Hash {
 		check.DueBlock,
 		check.Coin,
 		check.Value,
+		check.GasCoin,
 		check.Lock,
 	})
 }

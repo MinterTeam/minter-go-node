@@ -8,8 +8,8 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/appdb"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/tendermint/tendermint/libs/common"
-	"github.com/tendermint/tendermint/libs/db"
 	"github.com/tendermint/tendermint/types"
+	"github.com/tendermint/tm-db"
 	"time"
 )
 
@@ -26,7 +26,7 @@ func main() {
 
 	applicationDB := appdb.NewAppDB(config.GetConfig())
 	height := applicationDB.GetLastHeight()
-	currentState, err := state.New(height, ldb, false)
+	currentState, err := state.NewState(height, ldb, nil, nil)
 	if err != nil {
 		panic(err)
 	}

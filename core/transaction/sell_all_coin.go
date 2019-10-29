@@ -18,14 +18,14 @@ type SellAllCoinData struct {
 	MinimumValueToBuy *big.Int         `json:"minimum_value_to_buy"`
 }
 
-func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.StateDB) (TotalSpends, []Conversion, *big.Int, *Response) {
+func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.State) (TotalSpends, []Conversion, *big.Int, *Response) {
 	sender, _ := tx.Sender()
 
 	total := TotalSpends{}
 	var conversions []Conversion
 
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
-	available := context.GetBalance(sender, data.CoinToSell)
+	available := context.Accounts.GetBalance(sender, data.CoinToSell)
 	var value *big.Int
 
 	total.Add(data.CoinToSell, available)
@@ -35,8 +35,8 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.StateDB) 
 		amountToSell := big.NewInt(0).Set(available)
 		amountToSell.Sub(amountToSell, commissionInBaseCoin)
 
-		coin := context.GetStateCoin(data.CoinToBuy).Data()
-		value = formula.CalculatePurchaseReturn(coin.Volume, coin.ReserveBalance, coin.Crr, amountToSell)
+		coin := context.Coins.GetCoin(data.CoinToBuy)
+		value = formula.CalculatePurchaseReturn(coin.Volume(), coin.Reserve(), coin.Crr(), amountToSell)
 
 		if value.Cmp(data.MinimumValueToBuy) == -1 {
 			return nil, nil, nil, &Response{
@@ -45,7 +45,7 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.StateDB) 
 			}
 		}
 
-		if err := CheckForCoinSupplyOverflow(coin.Volume, value); err != nil {
+		if err := CheckForCoinSupplyOverflow(coin.Volume(), value); err != nil {
 			return nil, nil, nil, &Response{
 				Code: code.CoinSupplyOverflow,
 				Log:  err.Error(),
@@ -61,8 +61,8 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.StateDB) 
 	case data.CoinToBuy.IsBaseCoin():
 		amountToSell := big.NewInt(0).Set(available)
 
-		coin := context.GetStateCoin(data.CoinToSell).Data()
-		ret := formula.CalculateSaleReturn(coin.Volume, coin.ReserveBalance, coin.Crr, amountToSell)
+		coin := context.Coins.GetCoin(data.CoinToSell)
+		ret := formula.CalculateSaleReturn(coin.Volume(), coin.Reserve(), coin.Crr(), amountToSell)
 
 		if ret.Cmp(data.MinimumValueToBuy) == -1 {
 			return nil, nil, nil, &Response{
@@ -90,10 +90,10 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.StateDB) 
 	default:
 		amountToSell := big.NewInt(0).Set(available)
 
-		coinFrom := context.GetStateCoin(data.CoinToSell).Data()
-		coinTo := context.GetStateCoin(data.CoinToBuy).Data()
+		coinFrom := context.Coins.GetCoin(data.CoinToSell)
+		coinTo := context.Coins.GetCoin(data.CoinToBuy)
 
-		basecoinValue := formula.CalculateSaleReturn(coinFrom.Volume, coinFrom.ReserveBalance, coinFrom.Crr, amountToSell)
+		basecoinValue := formula.CalculateSaleReturn(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), amountToSell)
 		if basecoinValue.Cmp(commissionInBaseCoin) == -1 {
 			return nil, nil, nil, &Response{
 				Code: code.InsufficientFunds,
@@ -103,7 +103,7 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.StateDB) 
 
 		basecoinValue.Sub(basecoinValue, commissionInBaseCoin)
 
-		value = formula.CalculatePurchaseReturn(coinTo.Volume, coinTo.ReserveBalance, coinTo.Crr, basecoinValue)
+		value = formula.CalculatePurchaseReturn(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), basecoinValue)
 		if value.Cmp(data.MinimumValueToBuy) == -1 {
 			return nil, nil, nil, &Response{
 				Code: code.MinimumValueToBuyReached,
@@ -111,7 +111,7 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.StateDB) 
 			}
 		}
 
-		if err := CheckForCoinSupplyOverflow(coinTo.Volume, value); err != nil {
+		if err := CheckForCoinSupplyOverflow(coinTo.Volume(), value); err != nil {
 			return nil, nil, nil, &Response{
 				Code: code.CoinSupplyOverflow,
 				Log:  err.Error(),
@@ -131,20 +131,20 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.StateDB) 
 	return total, conversions, value, nil
 }
 
-func (data SellAllCoinData) BasicCheck(tx *Transaction, context *state.StateDB) *Response {
+func (data SellAllCoinData) BasicCheck(tx *Transaction, context *state.State) *Response {
 	if data.CoinToSell == data.CoinToBuy {
 		return &Response{
 			Code: code.CrossConvert,
 			Log:  fmt.Sprintf("\"From\" coin equals to \"to\" coin")}
 	}
 
-	if !context.CoinExists(data.CoinToSell) {
+	if !context.Coins.Exists(data.CoinToSell) {
 		return &Response{
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin not exists")}
 	}
 
-	if !context.CoinExists(data.CoinToBuy) {
+	if !context.Coins.Exists(data.CoinToBuy) {
 		return &Response{
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin not exists")}
@@ -162,7 +162,7 @@ func (data SellAllCoinData) Gas() int64 {
 	return commissions.ConvertTx
 }
 
-func (data SellAllCoinData) Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
+func (data SellAllCoinData) Run(tx *Transaction, context *state.State, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
 	sender, _ := tx.Sender()
 
 	response := data.BasicCheck(tx, context)
@@ -170,7 +170,7 @@ func (data SellAllCoinData) Run(tx *Transaction, context *state.StateDB, isCheck
 		return *response
 	}
 
-	available := context.GetBalance(sender, data.CoinToSell)
+	available := context.Accounts.GetBalance(sender, data.CoinToSell)
 
 	totalSpends, conversions, value, response := data.TotalSpend(tx, context)
 	if response != nil {
@@ -178,7 +178,7 @@ func (data SellAllCoinData) Run(tx *Transaction, context *state.StateDB, isCheck
 	}
 
 	for _, ts := range totalSpends {
-		if context.GetBalance(sender, ts.Coin).Cmp(ts.Value) < 0 {
+		if context.Accounts.GetBalance(sender, ts.Coin).Cmp(ts.Value) < 0 {
 			return Response{
 				Code: code.InsufficientFunds,
 				Log: fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s.",
@@ -190,23 +190,23 @@ func (data SellAllCoinData) Run(tx *Transaction, context *state.StateDB, isCheck
 
 	if !isCheck {
 		for _, ts := range totalSpends {
-			context.SubBalance(sender, ts.Coin, ts.Value)
+			context.Accounts.SubBalance(sender, ts.Coin, ts.Value)
 		}
 
 		for _, conversion := range conversions {
-			context.SubCoinVolume(conversion.FromCoin, conversion.FromAmount)
-			context.SubCoinReserve(conversion.FromCoin, conversion.FromReserve)
+			context.Coins.SubVolume(conversion.FromCoin, conversion.FromAmount)
+			context.Coins.SubReserve(conversion.FromCoin, conversion.FromReserve)
 
-			context.AddCoinVolume(conversion.ToCoin, conversion.ToAmount)
-			context.AddCoinReserve(conversion.ToCoin, conversion.ToReserve)
+			context.Coins.AddVolume(conversion.ToCoin, conversion.ToAmount)
+			context.Coins.AddReserve(conversion.ToCoin, conversion.ToReserve)
 		}
 
 		rewardPool.Add(rewardPool, tx.CommissionInBaseCoin())
-		context.AddBalance(sender, data.CoinToBuy, value)
-		context.SetNonce(sender, tx.Nonce)
+		context.Accounts.AddBalance(sender, data.CoinToBuy, value)
+		context.Accounts.SetNonce(sender, tx.Nonce)
 
-		context.SanitizeCoin(data.CoinToBuy)
-		context.SanitizeCoin(data.CoinToSell)
+		context.Coins.Sanitize(data.CoinToBuy)
+		context.Coins.Sanitize(data.CoinToSell)
 	}
 
 	tags := common.KVPairs{

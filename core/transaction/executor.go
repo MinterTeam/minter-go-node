@@ -34,7 +34,7 @@ type Response struct {
 	GasPrice  uint32          `json:"gas_price"`
 }
 
-func RunTx(context *state.StateDB,
+func RunTx(context *state.State,
 	isCheck bool,
 	rawTx []byte,
 	rewardPool *big.Int,
@@ -60,7 +60,7 @@ func RunTx(context *state.StateDB,
 			Log:  "Wrong chain id"}
 	}
 
-	if !context.CoinExists(tx.GasCoin) {
+	if !context.Coins.Exists(tx.GasCoin) {
 		return Response{
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin)}
@@ -107,55 +107,7 @@ func RunTx(context *state.StateDB,
 		currentMempool.Store(sender, true)
 	}
 
-	// check multi-signature
-	if tx.SignatureType == SigTypeMulti {
-		multisig := context.GetOrNewStateObject(tx.multisig.Multisig)
-
-		if !multisig.IsMultisig() {
-			return Response{
-				Code: code.MultisigNotExists,
-				Log:  "Multisig does not exists"}
-		}
-
-		multisigData := multisig.Multisig()
-
-		if len(tx.multisig.Signatures) > 32 || len(multisigData.Weights) < len(tx.multisig.Signatures) {
-			return Response{
-				Code: code.IncorrectMultiSignature,
-				Log:  "Incorrect multi-signature"}
-		}
-
-		txHash := tx.Hash()
-		var totalWeight uint
-		var usedAccounts = map[types.Address]bool{}
-
-		for _, sig := range tx.multisig.Signatures {
-			signer, err := RecoverPlain(txHash, sig.R, sig.S, sig.V)
-
-			if err != nil {
-				return Response{
-					Code: code.IncorrectMultiSignature,
-					Log:  "Incorrect multi-signature"}
-			}
-
-			if usedAccounts[signer] {
-				return Response{
-					Code: code.IncorrectMultiSignature,
-					Log:  "Incorrect multi-signature"}
-			}
-
-			usedAccounts[signer] = true
-			totalWeight += multisigData.GetWeight(signer)
-		}
-
-		if totalWeight < multisigData.Threshold {
-			return Response{
-				Code: code.IncorrectMultiSignature,
-				Log:  fmt.Sprintf("Not enough multisig votes. Needed %d, has %d", multisigData.Threshold, totalWeight)}
-		}
-	}
-
-	if expectedNonce := context.GetNonce(sender) + 1; expectedNonce != tx.Nonce {
+	if expectedNonce := context.Accounts.GetNonce(sender) + 1; expectedNonce != tx.Nonce {
 		return Response{
 			Code: code.WrongNonce,
 			Log:  fmt.Sprintf("Unexpected nonce. Expected: %d, got %d.", expectedNonce, tx.Nonce)}
@@ -170,7 +122,7 @@ func RunTx(context *state.StateDB,
 	response.GasPrice = tx.GasPrice
 
 	if !isCheck && response.Code == code.OK {
-		context.SanitizeCoin(tx.GasCoin)
+		context.Coins.Sanitize(tx.GasCoin)
 	}
 
 	if tx.Type == TypeCreateCoin {

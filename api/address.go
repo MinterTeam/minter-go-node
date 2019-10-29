@@ -18,12 +18,12 @@ func Address(address types.Address, height int) (*AddressResponse, error) {
 
 	response := AddressResponse{
 		Balance:          make(map[string]*big.Int),
-		TransactionCount: cState.GetNonce(address),
+		TransactionCount: cState.Accounts.GetNonce(address),
 	}
 
-	balances := cState.GetBalances(address)
+	balances := cState.Accounts.GetBalances(address)
 
-	for k, v := range balances.Data {
+	for k, v := range balances {
 		response.Balance[k.String()] = v
 	}
 

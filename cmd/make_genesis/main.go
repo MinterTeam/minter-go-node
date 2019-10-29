@@ -7,7 +7,7 @@ import (
 	"github.com/MinterTeam/go-amino"
 	"github.com/MinterTeam/minter-go-node/core/dao"
 	"github.com/MinterTeam/minter-go-node/core/minter"
-	"github.com/MinterTeam/minter-go-node/core/state"
+	candidates2 "github.com/MinterTeam/minter-go-node/core/state/candidates"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	tmTypes "github.com/tendermint/tendermint/types"
@@ -87,7 +87,7 @@ func main() {
 		frozenFunds = append(frozenFunds, types.FrozenFund{
 			Height:       17280 * 8,
 			Address:      types.HexToAddress(address),
-			CandidateKey: []byte{0},
+			CandidateKey: nil,
 			Coin:         types.GetBaseCoin(),
 			Value:        balance,
 		})
@@ -101,7 +101,7 @@ func main() {
 		frozenFunds = append(frozenFunds, types.FrozenFund{
 			Height:       17280 * 15,
 			Address:      types.HexToAddress(address),
-			CandidateKey: []byte{0},
+			CandidateKey: nil,
 			Coin:         types.GetBaseCoin(),
 			Value:        balance,
 		})
@@ -115,7 +115,7 @@ func main() {
 		frozenFunds = append(frozenFunds, types.FrozenFund{
 			Height:       17280 * 29,
 			Address:      types.HexToAddress(address),
-			CandidateKey: []byte{0},
+			CandidateKey: nil,
 			Coin:         types.GetBaseCoin(),
 			Value:        balance,
 		})
@@ -198,10 +198,13 @@ func makeValidatorsAndCandidates(pubkeys []string, stake *big.Int) ([]types.Vali
 	addr := dao.Address
 
 	for i, val := range pubkeys {
-		pkey, err := base64.StdEncoding.DecodeString(val)
+		pkeyBytes, err := base64.StdEncoding.DecodeString(val)
 		if err != nil {
 			panic(err)
 		}
+
+		var pkey types.Pubkey
+		copy(pkey[:], pkeyBytes)
 
 		validators[i] = types.Validator{
 			RewardAddress: addr,
@@ -227,7 +230,7 @@ func makeValidatorsAndCandidates(pubkeys []string, stake *big.Int) ([]types.Vali
 				},
 			},
 			CreatedAtBlock: 1,
-			Status:         state.CandidateStatusOnline,
+			Status:         candidates2.CandidateStatusOnline,
 		}
 	}
 

@@ -1,6 +1,5 @@
 GOTOOLS = \
 	github.com/mitchellh/gox \
-    github.com/golang/dep/cmd/dep \
     github.com/alecthomas/gometalinter \
     github.com/gogo/protobuf/protoc-gen-gogo \
 	github.com/gobuffalo/packr/packr
@@ -48,13 +47,13 @@ update_tools:
 get_vendor_deps:
 	@rm -rf vendor/
 	@echo "--> Running dep"
-	@dep ensure -vendor-only
+	@go mod vendor
 
 #Run this locally.
 ensure_deps:
 	@rm -rf vendor/
 	@echo "--> Running dep"
-	@dep ensure
+	@go mod vendor
 
 ########################################
 ### Formatting, linting, and vetting

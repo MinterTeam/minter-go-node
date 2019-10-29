@@ -20,17 +20,16 @@ func CoinInfo(coinSymbol string, height int) (*CoinInfoResponse, error) {
 		return nil, err
 	}
 
-	coin := cState.GetStateCoin(types.StrToCoinSymbol(coinSymbol))
+	coin := cState.Coins.GetCoin(types.StrToCoinSymbol(coinSymbol))
 	if coin == nil {
 		return nil, rpctypes.RPCError{Code: 404, Message: "Coin not found"}
 	}
 
-	coinData := coin.Data()
 	return &CoinInfoResponse{
-		Name:           coinData.Name,
-		Symbol:         coinData.Symbol,
-		Volume:         coinData.Volume,
-		Crr:            coinData.Crr,
-		ReserveBalance: coinData.ReserveBalance,
+		Name:           coin.Name(),
+		Symbol:         coin.Symbol(),
+		Volume:         coin.Volume(),
+		Crr:            coin.Crr(),
+		ReserveBalance: coin.Reserve(),
 	}, nil
 }

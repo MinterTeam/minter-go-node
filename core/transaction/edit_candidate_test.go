@@ -17,13 +17,13 @@ func TestEditCandidateTx(t *testing.T) {
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 	coin := types.GetBaseCoin()
-	cState.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
+	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
-	pubkey := make([]byte, 32)
-	rand.Read(pubkey)
+	pubkey := [32]byte{}
+	rand.Read(pubkey[:])
 
-	cState.CreateCandidate(addr, addr, pubkey, 10, 0, types.GetBaseCoin(), helpers.BipToPip(big.NewInt(1)))
-	cState.CreateValidator(addr, pubkey, 10, 0, types.GetBaseCoin(), helpers.BipToPip(big.NewInt(1)))
+	cState.Candidates.Create(addr, addr, pubkey, 10)
+	cState.Validators.Create(addr, pubkey, 10, helpers.BipToPip(big.NewInt(1)))
 
 	newRewardAddress := types.Address{1}
 	newOwnerAddress := types.Address{2}
@@ -67,12 +67,12 @@ func TestEditCandidateTx(t *testing.T) {
 	}
 
 	targetBalance, _ := big.NewInt(0).SetString("999990000000000000000000", 10)
-	balance := cState.GetBalance(addr, coin)
+	balance := cState.Accounts.GetBalance(addr, coin)
 	if balance.Cmp(targetBalance) != 0 {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", coin, targetBalance, balance)
 	}
 
-	candidate := cState.GetStateCandidate(pubkey)
+	candidate := cState.Candidates.GetCandidate(pubkey)
 
 	if candidate == nil {
 		t.Fatalf("Candidate not found")

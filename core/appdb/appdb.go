@@ -7,7 +7,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/tendermint/go-amino"
 	"github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/db"
+	"github.com/tendermint/tm-db"
 )
 
 var (

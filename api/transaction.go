@@ -73,8 +73,6 @@ func encodeTxData(decodedTx *transaction.Transaction) ([]byte, error) {
 		return cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.SetCandidateOffData))
 	case transaction.TypeUnbond:
 		return cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.UnbondData))
-	case transaction.TypeCreateMultisig:
-		return cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.CreateMultisigData))
 	case transaction.TypeMultisend:
 		return cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.MultisendData))
 	case transaction.TypeEditCandidate:

@@ -6,9 +6,9 @@ import (
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/minter"
 	"github.com/MinterTeam/minter-go-node/core/state"
-	"github.com/MinterTeam/minter-go-node/eventsdb/events"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/rpc/lib/server"
+	compact "github.com/klim0v/compact-db"
 	"github.com/rs/cors"
 	"github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/crypto/ed25519"
@@ -58,7 +58,7 @@ var Routes = map[string]*rpcserver.RPCFunc{
 func RunAPI(b *minter.Blockchain, tmRPC *rpc.Local, cfg *config.Config) {
 	minterCfg = cfg
 	RegisterCryptoAmino(cdc)
-	events.RegisterAminoEvents(cdc)
+	compact.RegisterAminoEvents(cdc)
 	RegisterEvidenceMessages(cdc)
 
 	client = tmRPC
@@ -124,7 +124,7 @@ type Response struct {
 	Log    string      `json:"log,omitempty"`
 }
 
-func GetStateForHeight(height int) (*state.StateDB, error) {
+func GetStateForHeight(height int) (*state.State, error) {
 	if height > 0 {
 		cState, err := blockchain.GetStateForHeight(uint64(height))
 

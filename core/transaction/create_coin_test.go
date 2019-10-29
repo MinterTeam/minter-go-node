@@ -17,7 +17,7 @@ func TestCreateCoinTx(t *testing.T) {
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 	coin := types.GetBaseCoin()
 
-	cState.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
+	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
 	var toCreate types.CoinSymbol
 	copy(toCreate[:], []byte("ABCDEF"))
@@ -68,19 +68,19 @@ func TestCreateCoinTx(t *testing.T) {
 	}
 
 	targetBalance, _ := big.NewInt(0).SetString("998000000000000000000000", 10)
-	balance := cState.GetBalance(addr, coin)
+	balance := cState.Accounts.GetBalance(addr, coin)
 	if balance.Cmp(targetBalance) != 0 {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", coin, targetBalance, balance)
 	}
 
-	stateCoin := cState.GetStateCoin(toCreate)
+	stateCoin := cState.Coins.GetCoin(toCreate)
 
 	if stateCoin == nil {
 		t.Fatalf("Coin %s not found in state", toCreate)
 	}
 
-	if stateCoin.ReserveBalance().Cmp(reserve) != 0 {
-		t.Fatalf("Reserve balance in state is not correct. Expected %s, got %s", reserve, stateCoin.ReserveBalance())
+	if stateCoin.Reserve().Cmp(reserve) != 0 {
+		t.Fatalf("Reserve balance in state is not correct. Expected %s, got %s", reserve, stateCoin.Reserve())
 	}
 
 	if stateCoin.Volume().Cmp(amount) != 0 {

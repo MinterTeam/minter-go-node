@@ -24,18 +24,18 @@ type DeclareCandidacyData struct {
 	Stake      *big.Int         `json:"stake"`
 }
 
-func (data DeclareCandidacyData) TotalSpend(tx *Transaction, context *state.StateDB) (TotalSpends, []Conversion, *big.Int, *Response) {
+func (data DeclareCandidacyData) TotalSpend(tx *Transaction, context *state.State) (TotalSpends, []Conversion, *big.Int, *Response) {
 	panic("implement me")
 }
 
-func (data DeclareCandidacyData) BasicCheck(tx *Transaction, context *state.StateDB) *Response {
-	if data.PubKey == nil || data.Stake == nil {
+func (data DeclareCandidacyData) BasicCheck(tx *Transaction, context *state.State) *Response {
+	if data.Stake == nil {
 		return &Response{
 			Code: code.DecodeError,
 			Log:  "Incorrect tx data"}
 	}
 
-	if !context.CoinExists(data.Coin) {
+	if !context.Coins.Exists(data.Coin) {
 		return &Response{
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin %s not exists", data.Coin)}
@@ -47,7 +47,7 @@ func (data DeclareCandidacyData) BasicCheck(tx *Transaction, context *state.Stat
 			Log:  fmt.Sprintf("Incorrect PubKey")}
 	}
 
-	if context.CandidateExists(data.PubKey) {
+	if context.Candidates.Exists(data.PubKey) {
 		return &Response{
 			Code: code.CandidateExists,
 			Log:  fmt.Sprintf("Candidate with such public key (%s) already exists", data.PubKey.String())}
@@ -71,7 +71,7 @@ func (data DeclareCandidacyData) Gas() int64 {
 	return commissions.DeclareCandidacyTx
 }
 
-func (data DeclareCandidacyData) Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
+func (data DeclareCandidacyData) Run(tx *Transaction, context *state.State, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
 	sender, _ := tx.Sender()
 
 	response := data.BasicCheck(tx, context)
@@ -81,7 +81,7 @@ func (data DeclareCandidacyData) Run(tx *Transaction, context *state.StateDB, is
 
 	maxCandidatesCount := validators.GetCandidatesCountForBlock(currentBlock)
 
-	if context.CandidatesCount() >= maxCandidatesCount && !context.IsNewCandidateStakeSufficient(data.Coin, data.Stake) {
+	if context.Candidates.Count() >= maxCandidatesCount && !context.Candidates.IsNewCandidateStakeSufficient(data.Coin, data.Stake) {
 		return Response{
 			Code: code.TooLowStake,
 			Log:  fmt.Sprintf("Given stake is too low")}
@@ -92,24 +92,24 @@ func (data DeclareCandidacyData) Run(tx *Transaction, context *state.StateDB, is
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
 	if !tx.GasCoin.IsBaseCoin() {
-		coin := context.GetStateCoin(tx.GasCoin)
+		coin := context.Coins.GetCoin(tx.GasCoin)
 
-		if coin.ReserveBalance().Cmp(commissionInBaseCoin) < 0 {
+		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
 			return Response{
 				Code: code.CoinReserveNotSufficient,
-				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.ReserveBalance().String(), commissionInBaseCoin.String())}
+				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.Reserve().String(), commissionInBaseCoin.String())}
 		}
 
-		commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
+		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
 	}
 
-	if context.GetBalance(sender, data.Coin).Cmp(data.Stake) < 0 {
+	if context.Accounts.GetBalance(sender, data.Coin).Cmp(data.Stake) < 0 {
 		return Response{
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), data.Stake, data.Coin)}
 	}
 
-	if context.GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
+	if context.Accounts.GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
 		return Response{
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, tx.GasCoin)}
@@ -120,7 +120,7 @@ func (data DeclareCandidacyData) Run(tx *Transaction, context *state.StateDB, is
 		totalTxCost.Add(totalTxCost, data.Stake)
 		totalTxCost.Add(totalTxCost, commission)
 
-		if context.GetBalance(sender, tx.GasCoin).Cmp(totalTxCost) < 0 {
+		if context.Accounts.GetBalance(sender, tx.GasCoin).Cmp(totalTxCost) < 0 {
 			return Response{
 				Code: code.InsufficientFunds,
 				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), totalTxCost.String(), tx.GasCoin)}
@@ -130,13 +130,14 @@ func (data DeclareCandidacyData) Run(tx *Transaction, context *state.StateDB, is
 	if !isCheck {
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		context.SubCoinReserve(tx.GasCoin, commissionInBaseCoin)
-		context.SubCoinVolume(tx.GasCoin, commission)
+		context.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
+		context.Coins.SubVolume(tx.GasCoin, commission)
 
-		context.SubBalance(sender, data.Coin, data.Stake)
-		context.SubBalance(sender, tx.GasCoin, commission)
-		context.CreateCandidate(data.Address, sender, data.PubKey, data.Commission, uint(currentBlock), data.Coin, data.Stake)
-		context.SetNonce(sender, tx.Nonce)
+		context.Accounts.SubBalance(sender, data.Coin, data.Stake)
+		context.Accounts.SubBalance(sender, tx.GasCoin, commission)
+		context.Candidates.Create(data.Address, sender, data.PubKey, data.Commission)
+		context.Candidates.Delegate(sender, data.PubKey, data.Coin, data.Stake, big.NewInt(0))
+		context.Accounts.SetNonce(sender, tx.Nonce)
 	}
 
 	tags := common.KVPairs{

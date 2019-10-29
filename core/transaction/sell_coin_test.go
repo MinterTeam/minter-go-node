@@ -19,7 +19,7 @@ func TestSellCoinTx(t *testing.T) {
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 	coin := types.GetBaseCoin()
 
-	cState.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
+	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
 	minValToBuy, _ := big.NewInt(0).SetString("957658277688702625", 10)
 	data := SellCoinData{
@@ -62,13 +62,13 @@ func TestSellCoinTx(t *testing.T) {
 	}
 
 	targetBalance, _ := big.NewInt(0).SetString("999989900000000000000000", 10)
-	balance := cState.GetBalance(addr, coin)
+	balance := cState.Accounts.GetBalance(addr, coin)
 	if balance.Cmp(targetBalance) != 0 {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", coin, targetBalance, balance)
 	}
 
 	targetTestBalance, _ := big.NewInt(0).SetString("957658277688702625", 10)
-	testBalance := cState.GetBalance(addr, getTestCoinSymbol())
+	testBalance := cState.Accounts.GetBalance(addr, getTestCoinSymbol())
 	if testBalance.Cmp(targetTestBalance) != 0 {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", getTestCoinSymbol(), targetTestBalance, testBalance)
 	}
@@ -80,14 +80,14 @@ func TestSellCoinTxWithCoinRemoval(t *testing.T) {
 	volume, _ := big.NewInt(0).SetString("673449859091115734468033", 10)
 	reserve, _ := big.NewInt(0).SetString("4991502952461582748", 10)
 
-	cState.CreateCoin(getTestCoinSymbol(), "TEST COIN", volume, 10, reserve)
+	cState.Coins.Create(getTestCoinSymbol(), "TEST COIN", volume, 10, reserve)
 
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 	coin := getTestCoinSymbol()
 
 	toSell, _ := big.NewInt(0).SetString("672849068640650013513552", 10)
-	cState.AddBalance(addr, coin, toSell)
+	cState.Accounts.AddBalance(addr, coin, toSell)
 
 	minValToBuy := big.NewInt(0)
 
@@ -130,12 +130,12 @@ func TestSellCoinTxWithCoinRemoval(t *testing.T) {
 	}
 
 	targetBalance := big.NewInt(0)
-	balance := cState.GetBalance(addr, coin)
+	balance := cState.Accounts.GetBalance(addr, coin)
 	if balance.Cmp(targetBalance) != 0 {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", coin, targetBalance, balance)
 	}
 
-	if cState.GetStateCoin(coin).Volume().Cmp(big.NewInt(0)) != 0 {
-		t.Fatalf("Target %s volume is not correct. Expected %s, got %s", coin, big.NewInt(0), cState.GetStateCoin(coin).Volume())
+	if !cState.Coins.GetCoin(coin).IsToDelete() {
+		t.Fatalf("Coin was not deleted")
 	}
 }

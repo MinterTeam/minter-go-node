@@ -6,11 +6,11 @@ func Candidates(height int, includeStakes bool) (*[]CandidateResponse, error) {
 		return nil, err
 	}
 
-	candidates := cState.GetStateCandidates().GetData()
+	candidates := cState.Candidates.GetCandidates()
 
 	result := make([]CandidateResponse, len(candidates))
 	for i, candidate := range candidates {
-		result[i] = makeResponseCandidate(candidate, includeStakes)
+		result[i] = makeResponseCandidate(cState, *candidate, includeStakes)
 	}
 
 	return &result, nil
