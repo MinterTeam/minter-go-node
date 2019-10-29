@@ -165,7 +165,7 @@ func (s *State) Export(height uint64) types.AppState {
 	}
 	appState := types.AppState{}
 
-	state.App.Export(&appState)
+	state.App.Export(&appState, height)
 	state.Validators.Export(&appState)
 	state.Candidates.Export(&appState)
 	state.FrozenFunds.Export(&appState, height)
