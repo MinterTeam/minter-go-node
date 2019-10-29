@@ -26,77 +26,37 @@ type State struct {
 	Coins       *coins.Coins
 	Checks      *checks.Checks
 
-	height uint64
+	nuts   *nutsdb.DB
+	events compact.IEventsDB
 	tree   tree.Tree
 }
 
 func NewState(height uint64, db db.DB, nuts *nutsdb.DB, events compact.IEventsDB) (*State, error) {
-	stateBus := bus.NewBus()
-	stateBus.SetEvents(events)
-
 	iavlTree := tree.NewMutableTree(db)
 	_, err := iavlTree.LazyLoadVersion(int64(height))
 	if err != nil {
 		return nil, err
 	}
 
-	candidatesState, err := candidates.NewCandidates(stateBus, iavlTree)
-	if err != nil {
-		return nil, err
-	}
-
-	validatorsState, err := validators.NewValidators(stateBus, iavlTree)
-	if err != nil {
-		return nil, err
-	}
-
-	appState, err := app.NewApp(stateBus, iavlTree)
-	if err != nil {
-		return nil, err
-	}
-
-	frozenFundsState, err := frozenfunds.NewFrozenFunds(stateBus, iavlTree)
-	if err != nil {
-		return nil, err
-	}
-
-	accountsState, err := accounts.NewAccounts(stateBus, iavlTree)
-	if err != nil {
-		return nil, err
-	}
-
-	coinsState, err := coins.NewCoins(stateBus, iavlTree, nuts)
-	if err != nil {
-		return nil, err
-	}
-
-	checksState, err := checks.NewChecks(iavlTree)
-	if err != nil {
-		return nil, err
-	}
-
-	state := &State{
-		Validators:  validatorsState,
-		App:         appState,
-		Candidates:  candidatesState,
-		FrozenFunds: frozenFundsState,
-		Accounts:    accountsState,
-		Coins:       coinsState,
-		Checks:      checksState,
-
-		height: height,
-		tree:   iavlTree,
-	}
-
-	return state, nil
+	return newStateForTree(iavlTree, nuts, events)
 }
 
 func NewCheckState(state *State) *State {
-	return state // todo: fix
+	s, err := newStateForTree(state.tree, state.nuts, state.events)
+	if err != nil {
+		panic(err)
+	}
+	return s
 }
 
 func NewCheckStateAtHeight(height uint64, db db.DB) (*State, error) {
-	panic("implement me")
+	iavlTree := tree.NewImmutableTree(db)
+	_, err := iavlTree.LazyLoadVersion(int64(height))
+	if err != nil {
+		return nil, err
+	}
+
+	return newStateForTree(iavlTree, nil, nil)
 }
 
 func (s *State) Commit() ([]byte, error) {
@@ -135,10 +95,6 @@ func (s *State) Commit() ([]byte, error) {
 
 func (s *State) CheckForInvariants() error {
 	panic("implement me")
-}
-
-func (s *State) Height() uint64 {
-	return s.height
 }
 
 func (s *State) Import(state types.AppState) error {
@@ -203,4 +159,60 @@ func (s *State) Import(state types.AppState) error {
 
 func (s *State) Export(height uint64) types.AppState {
 	panic("implement me")
+}
+
+func newStateForTree(iavlTree tree.Tree, nuts *nutsdb.DB, events compact.IEventsDB) (*State, error) {
+	stateBus := bus.NewBus()
+	stateBus.SetEvents(events)
+
+	candidatesState, err := candidates.NewCandidates(stateBus, iavlTree)
+	if err != nil {
+		return nil, err
+	}
+
+	validatorsState, err := validators.NewValidators(stateBus, iavlTree)
+	if err != nil {
+		return nil, err
+	}
+
+	appState, err := app.NewApp(stateBus, iavlTree)
+	if err != nil {
+		return nil, err
+	}
+
+	frozenFundsState, err := frozenfunds.NewFrozenFunds(stateBus, iavlTree)
+	if err != nil {
+		return nil, err
+	}
+
+	accountsState, err := accounts.NewAccounts(stateBus, iavlTree)
+	if err != nil {
+		return nil, err
+	}
+
+	coinsState, err := coins.NewCoins(stateBus, iavlTree, nuts)
+	if err != nil {
+		return nil, err
+	}
+
+	checksState, err := checks.NewChecks(iavlTree)
+	if err != nil {
+		return nil, err
+	}
+
+	state := &State{
+		Validators:  validatorsState,
+		App:         appState,
+		Candidates:  candidatesState,
+		FrozenFunds: frozenFundsState,
+		Accounts:    accountsState,
+		Coins:       coinsState,
+		Checks:      checksState,
+
+		nuts:   nuts,
+		events: events,
+		tree:   iavlTree,
+	}
+
+	return state, nil
 }
