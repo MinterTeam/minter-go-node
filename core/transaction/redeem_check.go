@@ -158,22 +158,36 @@ func (data RedeemCheckData) Run(tx *Transaction, context *state.State, isCheck b
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
 	}
 
-	totalTxCost := big.NewInt(0).Add(decodedCheck.Value, commission)
+	if decodedCheck.Coin == decodedCheck.GasCoin {
+		totalTxCost := big.NewInt(0).Add(decodedCheck.Value, commission)
+		if context.Accounts.GetBalance(checkSender, decodedCheck.Coin).Cmp(totalTxCost) < 0 {
+			return Response{
+				Code: code.InsufficientFunds,
+				Log:  fmt.Sprintf("Insufficient funds for check issuer account: %s %s. Wanted %s %s", decodedCheck.Coin, checkSender.String(), totalTxCost.String(), decodedCheck.Coin)}
+		}
+	} else {
+		if context.Accounts.GetBalance(checkSender, decodedCheck.Coin).Cmp(decodedCheck.Value) < 0 {
+			return Response{
+				Code: code.InsufficientFunds,
+				Log:  fmt.Sprintf("Insufficient funds for check issuer account: %s %s. Wanted %s %s", checkSender.String(), decodedCheck.Coin, decodedCheck.Value.String(), decodedCheck.Coin)}
+		}
 
-	if context.Accounts.GetBalance(checkSender, decodedCheck.Coin).Cmp(totalTxCost) < 0 {
-		return Response{
-			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for check issuer account: %s. Wanted %s ", checkSender.String(), totalTxCost.String())}
+		if context.Accounts.GetBalance(checkSender, decodedCheck.GasCoin).Cmp(commission) < 0 {
+			return Response{
+				Code: code.InsufficientFunds,
+				Log:  fmt.Sprintf("Insufficient funds for check issuer account: %s %s. Wanted %s %s", checkSender.String(), decodedCheck.GasCoin, commission.String(), decodedCheck.GasCoin)}
+		}
 	}
 
 	if !isCheck {
 		context.Checks.UseCheck(decodedCheck)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		context.Coins.SubVolume(decodedCheck.Coin, commission)
-		context.Coins.SubReserve(decodedCheck.Coin, commissionInBaseCoin)
+		context.Coins.SubVolume(decodedCheck.GasCoin, commission)
+		context.Coins.SubReserve(decodedCheck.GasCoin, commissionInBaseCoin)
 
-		context.Accounts.SubBalance(checkSender, decodedCheck.Coin, totalTxCost)
+		context.Accounts.SubBalance(checkSender, decodedCheck.GasCoin, commission)
+		context.Accounts.SubBalance(checkSender, decodedCheck.Coin, decodedCheck.Value)
 		context.Accounts.AddBalance(sender, decodedCheck.Coin, decodedCheck.Value)
 		context.Accounts.SetNonce(sender, tx.Nonce)
 	}

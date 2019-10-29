@@ -8,6 +8,7 @@ BREAKING CHANGES
 - [core] Refactoring
 - [core] Add Coin's MaxSupply
 - [core] Remove CreatedAtBlock field in candidates
+- [core] Add GasCoin to Checks
 
 ## 1.0.4
 
