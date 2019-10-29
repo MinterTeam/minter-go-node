@@ -301,7 +301,8 @@ func (c *Candidates) RecalculateStakes(height uint64) {
 					continue
 				}
 
-				stakes[index] = update // todo: fix
+				candidate.SetStakeAtIndex(index, update)
+				stakes = c.GetStakes(candidate.PubKey)
 			}
 		}
 
