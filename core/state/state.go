@@ -51,13 +51,13 @@ func NewCheckState(state *State) *State {
 }
 
 func NewCheckStateAtHeight(height uint64, db db.DB) (*State, error) {
-	iavlTree := tree.NewImmutableTree(db)
+	iavlTree := tree.NewMutableTree(db)
 	_, err := iavlTree.LazyLoadVersion(int64(height))
 	if err != nil {
 		return nil, err
 	}
 
-	return newStateForTree(iavlTree, nil, nil, nil)
+	return newStateForTree(iavlTree.GetImmutable(), nil, nil, nil)
 }
 
 func (s *State) Commit() ([]byte, error) {
