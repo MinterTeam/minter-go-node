@@ -182,11 +182,11 @@ func TestAppState(t *testing.T) {
 		},
 		Coins: []Coin{
 			{
-				Name:           "ASD",
-				Symbol:         GetBaseCoin(),
-				Volume:         big.NewInt(1),
-				Crr:            1,
-				ReserveBalance: big.NewInt(1),
+				Name:    "ASD",
+				Symbol:  GetBaseCoin(),
+				Volume:  big.NewInt(1),
+				Crr:     1,
+				Reserve: big.NewInt(1),
 			},
 		},
 		FrozenFunds: []FrozenFund{
