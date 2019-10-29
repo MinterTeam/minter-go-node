@@ -26,6 +26,7 @@ type Model struct {
 
 func (model *Model) setNonce(nonce uint64) {
 	model.Nonce = nonce
+	model.isDirty = true
 	model.markDirty(model.address)
 }
 
