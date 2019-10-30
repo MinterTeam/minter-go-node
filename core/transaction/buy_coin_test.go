@@ -33,7 +33,7 @@ func getState() *state.State {
 	os.RemoveAll(opt.Dir)
 	nuts, err := nutsdb.Open(opt)
 
-	s, err := state.NewState(0, db.NewMemDB(), nuts, nil)
+	s, err := state.NewState(0, db.NewMemDB(), nuts, nil, 1, 1)
 
 	if err != nil {
 		panic(err)

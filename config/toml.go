@@ -79,6 +79,9 @@ validator_mode = {{ .BaseConfig.ValidatorMode }}
 # Sets number of last stated to be saved
 keep_last_states = {{ .BaseConfig.KeepLastStates }}
 
+# State cache size 
+state_cache_size = {{ .BaseConfig.StateCacheSize }}
+
 # Limit for simultaneous requests to API
 api_simultaneous_requests = {{ .BaseConfig.APISimultaneousRequests }}
 

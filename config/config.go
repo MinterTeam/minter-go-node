@@ -240,6 +240,8 @@ type BaseConfig struct {
 	APISimultaneousRequests int `mapstructure:"api_simultaneous_requests"`
 
 	LogPath string `mapstructure:"log_path"`
+
+	StateCacheSize int `mapstructure:"state_cache_size"`
 }
 
 // DefaultBaseConfig returns a default base configuration for a Tendermint node
@@ -260,6 +262,7 @@ func DefaultBaseConfig() BaseConfig {
 		APIListenAddress:        "tcp://0.0.0.0:8841",
 		ValidatorMode:           false,
 		KeepLastStates:          120,
+		StateCacheSize:          1000000,
 		APISimultaneousRequests: 100,
 		LogPath:                 "stdout",
 		LogFormat:               LogFormatPlain,

@@ -33,8 +33,8 @@ type State struct {
 	keepLastStates int64
 }
 
-func NewState(height uint64, db db.DB, nuts *nutsdb.DB, events compact.IEventsDB, keepLastStates int64) (*State, error) {
-	iavlTree := tree.NewMutableTree(db)
+func NewState(height uint64, db db.DB, nuts *nutsdb.DB, events compact.IEventsDB, keepLastStates int64, cacheSize int) (*State, error) {
+	iavlTree := tree.NewMutableTree(db, cacheSize)
 	_, err := iavlTree.LoadVersion(int64(height))
 	if err != nil {
 		return nil, err
@@ -52,7 +52,7 @@ func NewCheckState(state *State) *State {
 }
 
 func NewCheckStateAtHeight(height uint64, db db.DB) (*State, error) {
-	iavlTree := tree.NewMutableTree(db)
+	iavlTree := tree.NewMutableTree(db, 1024)
 	_, err := iavlTree.LazyLoadVersion(int64(height))
 	if err != nil {
 		return nil, err

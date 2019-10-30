@@ -21,9 +21,9 @@ type Tree interface {
 	Iterate(fn func(key []byte, value []byte) bool) (stopped bool)
 }
 
-func NewMutableTree(db dbm.DB) *MutableTree {
+func NewMutableTree(db dbm.DB, cacheSize int) *MutableTree {
 	return &MutableTree{
-		tree: iavl.NewMutableTree(db, 1024),
+		tree: iavl.NewMutableTree(db, cacheSize),
 	}
 }
 

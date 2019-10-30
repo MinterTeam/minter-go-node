@@ -11,6 +11,7 @@ BREAKING CHANGES
 - [core] Add GasCoin to Checks
 - [gui] Remove GUI
 - [config] KeepStateHistory -> KeepLastStates
+- [config] Add state_cache_size option
 
 ## 1.0.4
 
