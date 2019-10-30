@@ -10,6 +10,7 @@ BREAKING CHANGES
 - [core] Remove CreatedAtBlock field in candidates
 - [core] Add GasCoin to Checks
 - [core] Fix buy coin commission calculation
+- [core] Fix sell coin commission calculation
 - [gui] Remove GUI
 - [config] KeepStateHistory -> KeepLastStates
 - [config] Add state_cache_size option
