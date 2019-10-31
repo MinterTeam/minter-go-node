@@ -67,14 +67,14 @@ func TestDelegate(t *testing.T) {
 	}
 }
 
-func TestDelegateALot(t *testing.T) {
+func TestComplexDelegate(t *testing.T) {
 	st := getState()
 
 	coin := types.GetBaseCoin()
-	amount := big.NewInt(1)
 	pubkey := createTestCandidate(st)
 
 	for i := uint64(0); i < 2000; i++ {
+		amount := big.NewInt(int64(2000 - i))
 		var addr types.Address
 		binary.BigEndian.PutUint64(addr[:], i)
 		st.Candidates.Delegate(addr, pubkey, coin, amount, big.NewInt(0))
@@ -85,6 +85,7 @@ func TestDelegateALot(t *testing.T) {
 	for i := uint64(0); i < 1000; i++ {
 		var addr types.Address
 		binary.BigEndian.PutUint64(addr[:], i)
+		amount := big.NewInt(int64(2000 - i))
 
 		stake := st.Candidates.GetStakeOfAddress(pubkey, addr, coin)
 		if stake == nil {
@@ -103,6 +104,56 @@ func TestDelegateALot(t *testing.T) {
 	for i := uint64(1000); i < 2000; i++ {
 		var addr types.Address
 		binary.BigEndian.PutUint64(addr[:], i)
+
+		stake := st.Candidates.GetStakeOfAddress(pubkey, addr, coin)
+		if stake != nil {
+			t.Fatalf("Stake of address %s found, but should not be", addr.String())
+		}
+	}
+
+	{
+		var addr types.Address
+		binary.BigEndian.PutUint64(addr[:], 3000)
+		st.Candidates.Delegate(addr, pubkey, coin, big.NewInt(3000), big.NewInt(0))
+
+		st.Candidates.RecalculateStakes(1)
+
+		replacedAddress := types.HexToAddress("Mx00000000000003e7000000000000000000000000")
+		stake := st.Candidates.GetStakeOfAddress(pubkey, replacedAddress, coin)
+		if stake != nil {
+			t.Fatalf("Stake of address %s found, but should not be", replacedAddress.String())
+		}
+	}
+
+	{
+		var addr types.Address
+		binary.BigEndian.PutUint64(addr[:], 4000)
+		st.Candidates.Delegate(addr, pubkey, coin, big.NewInt(4000), big.NewInt(0))
+
+		var addr2 types.Address
+		binary.BigEndian.PutUint64(addr2[:], 3500)
+		st.Candidates.Delegate(addr2, pubkey, coin, big.NewInt(3500), big.NewInt(0))
+
+		st.Candidates.RecalculateStakes(1)
+
+		stake := st.Candidates.GetStakeOfAddress(pubkey, addr, coin)
+		if stake == nil {
+			t.Fatalf("Stake of address %s not found, but should be", addr.String())
+		}
+
+		replacedAddress := types.HexToAddress("Mx00000000000003e5000000000000000000000000")
+		stake = st.Candidates.GetStakeOfAddress(pubkey, replacedAddress, coin)
+		if stake != nil {
+			t.Fatalf("Stake of address %s found, but should not be", replacedAddress.String())
+		}
+	}
+
+	{
+		var addr types.Address
+		binary.BigEndian.PutUint64(addr[:], 4001)
+		st.Candidates.Delegate(addr, pubkey, coin, big.NewInt(900), big.NewInt(0))
+
+		st.Candidates.RecalculateStakes(1)
 
 		stake := st.Candidates.GetStakeOfAddress(pubkey, addr, coin)
 		if stake != nil {

@@ -289,7 +289,7 @@ func (c *Candidates) RecalculateStakes(height uint64) {
 					}
 				}
 
-				if index == -1 {
+				if index == -1 || smallestStake.Cmp(update.BipValue) == 1 {
 					c.bus.Events().AddEvent(uint32(height), compact.UnbondEvent{
 						Address:         update.Owner,
 						Amount:          update.Value.Bytes(),
@@ -299,6 +299,16 @@ func (c *Candidates) RecalculateStakes(height uint64) {
 					c.bus.Accounts().AddBalance(update.Owner, update.Coin, update.Value)
 					update.setValue(big.NewInt(0))
 					continue
+				}
+
+				if stakes[index] != nil {
+					c.bus.Events().AddEvent(uint32(height), compact.UnbondEvent{
+						Address:         stakes[index].Owner,
+						Amount:          stakes[index].Value.Bytes(),
+						Coin:            stakes[index].Coin,
+						ValidatorPubKey: candidate.PubKey,
+					})
+					c.bus.Accounts().AddBalance(stakes[index].Owner, stakes[index].Coin, stakes[index].Value)
 				}
 
 				candidate.SetStakeAtIndex(index, update)
