@@ -366,7 +366,7 @@ func (c *Candidates) IsDelegatorStakeSufficient(address types.Address, pubkey ty
 
 	stakeValue := c.calculateBipValue(coin, amount, true, true)
 	for _, stake := range stakes {
-		if stakeValue.Cmp(stake.BipValue) == -1 {
+		if stakeValue.Cmp(stake.BipValue) == 1 || (stake.Owner == address && stake.Coin == coin) {
 			return true
 		}
 	}

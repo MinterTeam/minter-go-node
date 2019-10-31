@@ -162,6 +162,55 @@ func TestComplexDelegate(t *testing.T) {
 	}
 }
 
+func TestStakeSufficiency(t *testing.T) {
+	st := getState()
+
+	coin := types.GetBaseCoin()
+	pubkey := createTestCandidate(st)
+
+	for i := uint64(0); i < 1000; i++ {
+		amount := big.NewInt(int64(1000 - i))
+		var addr types.Address
+		binary.BigEndian.PutUint64(addr[:], i)
+		st.Candidates.Delegate(addr, pubkey, coin, amount, big.NewInt(0))
+	}
+
+	st.Candidates.RecalculateStakes(1)
+
+	{
+		stake := big.NewInt(1)
+		var addr types.Address
+		binary.BigEndian.PutUint64(addr[:], 1001)
+
+		result := st.Candidates.IsDelegatorStakeSufficient(addr, pubkey, coin, stake)
+		if result {
+			t.Fatalf("Stake %s %s of address %s shold not be sufficient", stake.String(), coin.String(), addr.String())
+		}
+	}
+
+	{
+		stake := big.NewInt(1)
+		var addr types.Address
+		binary.BigEndian.PutUint64(addr[:], 1)
+
+		result := st.Candidates.IsDelegatorStakeSufficient(addr, pubkey, coin, stake)
+		if !result {
+			t.Fatalf("Stake of %s %s of address %s shold be sufficient", stake.String(), coin.String(), addr.String())
+		}
+	}
+
+	{
+		stake := big.NewInt(1001)
+		var addr types.Address
+		binary.BigEndian.PutUint64(addr[:], 1002)
+
+		result := st.Candidates.IsDelegatorStakeSufficient(addr, pubkey, coin, stake)
+		if !result {
+			t.Fatalf("Stake of %s %s of address %s shold be sufficient", stake.String(), coin.String(), addr.String())
+		}
+	}
+}
+
 func getState() *State {
 	opt := nutsdb.DefaultOptions
 	opt.Dir = "/tmp/nutsdb"
