@@ -289,7 +289,7 @@ func (c *Candidates) RecalculateStakes(height uint64) {
 					}
 				}
 
-				if smallestStake != nil && smallestStake.Cmp(update.BipValue) == 1 {
+				if index == -1 {
 					c.bus.Events().AddEvent(uint32(height), compact.UnbondEvent{
 						Address:         update.Owner,
 						Amount:          update.Value.Bytes(),
@@ -368,8 +368,8 @@ func (c *Candidates) Delegate(address types.Address, pubkey types.Pubkey, coin t
 	stake := &Stake{
 		Owner:     address,
 		Coin:      coin,
-		Value:     value,
-		BipValue:  bipValue,
+		Value:     big.NewInt(0).Set(value),
+		BipValue:  big.NewInt(0).Set(bipValue),
 		markDirty: func(i int) {},
 	}
 

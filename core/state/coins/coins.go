@@ -235,6 +235,9 @@ func (c *Coins) getOrderedDirtyCoins() []types.CoinSymbol {
 }
 
 func (c *Coins) AddOwnerAddress(symbol types.CoinSymbol, address types.Address) {
+	if symbol.IsBaseCoin() {
+		return
+	}
 	err := c.db.Update(func(tx *nutsdb.Tx) error {
 		return tx.SAdd(ownerAccountsIndexBucket, symbol.Bytes(), address.Bytes())
 	})
@@ -244,6 +247,9 @@ func (c *Coins) AddOwnerAddress(symbol types.CoinSymbol, address types.Address) 
 }
 
 func (c *Coins) RemoveOwnerAddress(symbol types.CoinSymbol, address types.Address) {
+	if symbol.IsBaseCoin() {
+		return
+	}
 	err := c.db.Update(func(tx *nutsdb.Tx) error {
 		return tx.SRem(ownerAccountsIndexBucket, symbol.Bytes(), address.Bytes())
 	})
@@ -253,6 +259,9 @@ func (c *Coins) RemoveOwnerAddress(symbol types.CoinSymbol, address types.Addres
 }
 
 func (c *Coins) AddOwnerCandidate(symbol types.CoinSymbol, pubkey types.Pubkey) {
+	if symbol.IsBaseCoin() {
+		return
+	}
 	err := c.db.Update(func(tx *nutsdb.Tx) error {
 		return tx.SAdd(ownerCandidatesIndexBucket, symbol.Bytes(), pubkey.Bytes())
 	})
@@ -262,6 +271,9 @@ func (c *Coins) AddOwnerCandidate(symbol types.CoinSymbol, pubkey types.Pubkey) 
 }
 
 func (c *Coins) RemoveOwnerCandidate(symbol types.CoinSymbol, pubkey types.Pubkey) {
+	if symbol.IsBaseCoin() {
+		return
+	}
 	err := c.db.Update(func(tx *nutsdb.Tx) error {
 		return tx.SRem(ownerCandidatesIndexBucket, symbol.Bytes(), pubkey.Bytes())
 	})
@@ -271,6 +283,9 @@ func (c *Coins) RemoveOwnerCandidate(symbol types.CoinSymbol, pubkey types.Pubke
 }
 
 func (c *Coins) AddOwnerFrozenFund(symbol types.CoinSymbol, height uint64) {
+	if symbol.IsBaseCoin() {
+		return
+	}
 	b := make([]byte, 8)
 	binary.LittleEndian.PutUint64(b, height)
 
@@ -283,6 +298,9 @@ func (c *Coins) AddOwnerFrozenFund(symbol types.CoinSymbol, height uint64) {
 }
 
 func (c *Coins) RemoveOwnerFrozenFund(symbol types.CoinSymbol, height uint64) {
+	if symbol.IsBaseCoin() {
+		return
+	}
 	b := make([]byte, 8)
 	binary.LittleEndian.PutUint64(b, height)
 

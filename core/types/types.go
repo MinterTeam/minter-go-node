@@ -1,19 +1,3 @@
-// Copyright 2015 The go-ethereum Authors
-// This file is part of the go-ethereum library.
-//
-// The go-ethereum library is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// The go-ethereum library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
-
 package types
 
 import (
@@ -36,12 +20,6 @@ var (
 	hashT    = reflect.TypeOf(Hash{})
 	addressT = reflect.TypeOf(Address{})
 )
-
-func ReplaceAtIndex(in string, r byte, i int) string {
-	out := []byte(in)
-	out[i] = r
-	return string(out)
-}
 
 // Hash represents the 32 byte Keccak256 hash of arbitrary data.
 type Hash [HashLength]byte
@@ -176,7 +154,6 @@ func StrToCoinSymbol(s string) CoinSymbol {
 
 /////////// Address
 
-// Address represents the 20 byte address of an Ethereum account.
 type Address [AddressLength]byte
 
 func BytesToAddress(b []byte) Address {

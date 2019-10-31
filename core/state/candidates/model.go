@@ -94,14 +94,18 @@ func (candidate *Candidate) GetFilteredUpdates() []*Stake {
 		}
 
 		// merge updates
+		merged := false
 		for _, u := range updates {
 			if u.Coin == update.Coin && u.Owner == update.Owner {
 				u.Value.Add(u.Value, update.Value)
-				continue
+				merged = true
+				break
 			}
 		}
 
-		updates = append(updates, update)
+		if !merged {
+			updates = append(updates, update)
+		}
 	}
 
 	return updates
