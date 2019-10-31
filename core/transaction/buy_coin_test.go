@@ -108,7 +108,7 @@ func TestBuyCoinTxBaseToCustom(t *testing.T) {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
 
-	targetBalance, _ := big.NewInt(0).SetString("999899854987997899747979", 10)
+	targetBalance, _ := big.NewInt(0).SetString("999840525753990000000000", 10)
 	balance := cState.Accounts.GetBalance(addr, coin)
 	if balance.Cmp(targetBalance) != 0 {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", coin, targetBalance, balance)
