@@ -178,7 +178,7 @@ func (a *Accounts) CreateMultisig(weights []uint, addresses []types.Address, thr
 
 	account := &Model{
 		Nonce:         0,
-		MultisigData:  &msig,
+		MultisigData:  msig,
 		address:       address,
 		coins:         []types.CoinSymbol{},
 		balances:      map[types.CoinSymbol]*big.Int{},

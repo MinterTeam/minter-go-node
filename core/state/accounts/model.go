@@ -11,7 +11,7 @@ import (
 
 type Model struct {
 	Nonce        uint64
-	MultisigData *Multisig
+	MultisigData Multisig
 
 	address  types.Address
 	coins    []types.CoinSymbol
@@ -130,9 +130,9 @@ func (model *Model) hasCoin(coin types.CoinSymbol) bool {
 }
 
 func (model *Model) IsMultisig() bool {
-	return model.MultisigData != nil
+	return len(model.MultisigData.Weights) > 0
 }
 
-func (model *Model) Multisig() *Multisig {
+func (model *Model) Multisig() Multisig {
 	return model.MultisigData
 }
