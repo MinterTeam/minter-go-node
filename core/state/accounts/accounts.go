@@ -165,11 +165,30 @@ func (a *Accounts) SetNonce(address types.Address, nonce uint64) {
 }
 
 func (a *Accounts) Exists(msigAddress types.Address) bool {
-	panic("implement me")
+	return a.get(msigAddress) != nil
 }
 
 func (a *Accounts) CreateMultisig(weights []uint, addresses []types.Address, threshold uint) types.Address {
-	panic("implement me")
+	msig := Multisig{
+		Weights:   weights,
+		Threshold: threshold,
+		Addresses: addresses,
+	}
+	address := msig.Address()
+
+	account := &Model{
+		Nonce:         0,
+		MultisigData:  &msig,
+		address:       address,
+		coins:         []types.CoinSymbol{},
+		balances:      map[types.CoinSymbol]*big.Int{},
+		markDirty:     a.markDirty,
+		dirtyBalances: map[types.CoinSymbol]struct{}{},
+		isNew:         true,
+	}
+	a.list[address] = account
+
+	return address
 }
 
 func (a *Accounts) get(address types.Address) *Model {
@@ -282,17 +301,21 @@ func (a *Accounts) Export(state *types.AppState) {
 				Nonce:   account.Nonce,
 			}
 
-			//if account.IsMultisig() {
-			//	acc.MultisigData = &types.Multisig{
-			//		Weights:   account.data.MultisigData.Weights,
-			//		Threshold: account.data.MultisigData.Threshold,
-			//		Addresses: account.data.MultisigData.Addresses,
-			//	}
-			//}
+			if account.IsMultisig() {
+				acc.MultisigData = &types.Multisig{
+					Weights:   account.MultisigData.Weights,
+					Threshold: account.MultisigData.Threshold,
+					Addresses: account.MultisigData.Addresses,
+				}
+			}
 
 			state.Accounts = append(state.Accounts, acc)
 		}
 
 		return false
 	})
+}
+
+func (a *Accounts) GetAccount(address types.Address) *Model {
+	return a.getOrNew(address)
 }

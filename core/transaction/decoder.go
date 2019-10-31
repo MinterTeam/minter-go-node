@@ -24,6 +24,7 @@ func init() {
 	TxDecoder.RegisterType(TypeSetCandidateOnline, SetCandidateOnData{})
 	TxDecoder.RegisterType(TypeSetCandidateOffline, SetCandidateOffData{})
 	TxDecoder.RegisterType(TypeMultisend, MultisendData{})
+	TxDecoder.RegisterType(TypeCreateMultisig, CreateMultisigData{})
 	TxDecoder.RegisterType(TypeEditCandidate, EditCandidateData{})
 }
 
@@ -50,10 +51,6 @@ func (decoder *Decoder) DecodeFromBytes(buf []byte) (*Transaction, error) {
 	switch tx.SignatureType {
 	case SigTypeMulti:
 		{
-			if true {
-				return nil, errors.New("multisig transactions are not supported yet")
-			}
-
 			tx.multisig = &SignatureMulti{}
 			if err := rlp.DecodeBytes(tx.SignatureData, tx.multisig); err != nil {
 				return nil, err

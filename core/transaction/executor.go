@@ -107,6 +107,54 @@ func RunTx(context *state.State,
 		currentMempool.Store(sender, true)
 	}
 
+	// check multi-signature
+	if tx.SignatureType == SigTypeMulti {
+		multisig := context.Accounts.GetAccount(tx.multisig.Multisig)
+
+		if !multisig.IsMultisig() {
+			return Response{
+				Code: code.MultisigNotExists,
+				Log:  "Multisig does not exists"}
+		}
+
+		multisigData := multisig.Multisig()
+
+		if len(tx.multisig.Signatures) > 32 || len(multisigData.Weights) < len(tx.multisig.Signatures) {
+			return Response{
+				Code: code.IncorrectMultiSignature,
+				Log:  "Incorrect multi-signature"}
+		}
+
+		txHash := tx.Hash()
+		var totalWeight uint
+		var usedAccounts = map[types.Address]bool{}
+
+		for _, sig := range tx.multisig.Signatures {
+			signer, err := RecoverPlain(txHash, sig.R, sig.S, sig.V)
+
+			if err != nil {
+				return Response{
+					Code: code.IncorrectMultiSignature,
+					Log:  "Incorrect multi-signature"}
+			}
+
+			if usedAccounts[signer] {
+				return Response{
+					Code: code.IncorrectMultiSignature,
+					Log:  "Incorrect multi-signature"}
+			}
+
+			usedAccounts[signer] = true
+			totalWeight += multisigData.GetWeight(signer)
+		}
+
+		if totalWeight < multisigData.Threshold {
+			return Response{
+				Code: code.IncorrectMultiSignature,
+				Log:  fmt.Sprintf("Not enough multisig votes. Needed %d, has %d", multisigData.Threshold, totalWeight)}
+		}
+	}
+
 	if expectedNonce := context.Accounts.GetNonce(sender) + 1; expectedNonce != tx.Nonce {
 		return Response{
 			Code: code.WrongNonce,
