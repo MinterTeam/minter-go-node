@@ -30,7 +30,7 @@ func init() {
 func getState() *state.State {
 	opt := nutsdb.DefaultOptions
 	opt.Dir = "/tmp/nutsdb"
-	os.RemoveAll(opt.Dir)
+	_ = os.RemoveAll(opt.Dir)
 	nuts, err := nutsdb.Open(opt)
 
 	s, err := state.NewState(0, db.NewMemDB(), nuts, nil, 1, 1)
@@ -50,13 +50,13 @@ func getTestCoinSymbol() types.CoinSymbol {
 }
 
 func createTestCoin(stateDB *state.State) {
-	volume := helpers.BipToPip(big.NewInt(100))
-	reserve := helpers.BipToPip(big.NewInt(100))
+	volume := helpers.BipToPip(big.NewInt(100000))
+	reserve := helpers.BipToPip(big.NewInt(100000))
 
 	stateDB.Coins.Create(getTestCoinSymbol(), "TEST COIN", volume, 10, reserve, big.NewInt(0).Mul(volume, big.NewInt(10)))
 }
 
-func TestBuyCoinTx(t *testing.T) {
+func TestBuyCoinTxBaseToCustom(t *testing.T) {
 	cState := getState()
 
 	createTestCoin(cState)
@@ -108,7 +108,7 @@ func TestBuyCoinTx(t *testing.T) {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
 
-	targetBalance, _ := big.NewInt(0).SetString("999840525753990000000000", 10)
+	targetBalance, _ := big.NewInt(0).SetString("999899854987997899747979", 10)
 	balance := cState.Accounts.GetBalance(addr, coin)
 	if balance.Cmp(targetBalance) != 0 {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", coin, targetBalance, balance)
@@ -420,5 +420,81 @@ func TestBuyCoinTxJSON(t *testing.T) {
 
 	if !bytes.Equal(out, result) {
 		t.Fatalf("Error: result is not correct %s, expected %s", string(result), string(out))
+	}
+}
+
+func TestBuyCoinTxCustomToBase(t *testing.T) {
+	cState := getState()
+
+	createTestCoin(cState)
+
+	privateKey, _ := crypto.GenerateKey()
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+	coin := getTestCoinSymbol()
+
+	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(10000000)))
+
+	toBuy := helpers.BipToPip(big.NewInt(10))
+	maxValToSell, _ := big.NewInt(0).SetString("159374246010000000000", 10)
+	data := BuyCoinData{
+		CoinToBuy:          types.GetBaseCoin(),
+		ValueToBuy:         toBuy,
+		CoinToSell:         coin,
+		MaximumValueToSell: maxValToSell,
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := Transaction{
+		Nonce:         1,
+		GasPrice:      1,
+		ChainID:       types.CurrentChainID,
+		GasCoin:       coin,
+		Type:          TypeBuyCoin,
+		Data:          encodedData,
+		SignatureType: SigTypeSingle,
+	}
+
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, sync.Map{}, 0)
+
+	if response.Code != 0 {
+		t.Fatalf("Response code is not 0. Error %s", response.Log)
+	}
+
+	targetBalance, _ := big.NewInt(0).SetString("9999998989954092563427063", 10)
+	balance := cState.Accounts.GetBalance(addr, coin)
+	if balance.Cmp(targetBalance) != 0 {
+		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", coin, targetBalance, balance)
+	}
+
+	baseBalance := cState.Accounts.GetBalance(addr, types.GetBaseCoin())
+	if baseBalance.Cmp(toBuy) != 0 {
+		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", types.GetBaseCoin(), toBuy, baseBalance)
+	}
+
+	coinData := cState.Coins.GetCoin(coin)
+
+	targetReserve, _ := big.NewInt(0).SetString("99989900000000000000000", 10)
+	if coinData.Reserve().Cmp(targetReserve) != 0 {
+		t.Fatalf("Target %s reserve is not correct. Expected %s, got %s", coin, targetBalance, coinData.Reserve())
+	}
+
+	targetVolume, _ := big.NewInt(0).SetString("99998989954092563427063", 10)
+	if coinData.Volume().Cmp(targetVolume) != 0 {
+		t.Fatalf("Target %s volume is not correct. Expected %s, got %s", coin, targetVolume, coinData.Volume())
 	}
 }

@@ -67,7 +67,7 @@ func TestSellCoinTx(t *testing.T) {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", coin, targetBalance, balance)
 	}
 
-	targetTestBalance, _ := big.NewInt(0).SetString("957658277688702625", 10)
+	targetTestBalance, _ := big.NewInt(0).SetString("999955002849793446", 10)
 	testBalance := cState.Accounts.GetBalance(addr, getTestCoinSymbol())
 	if testBalance.Cmp(targetTestBalance) != 0 {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", getTestCoinSymbol(), targetTestBalance, testBalance)

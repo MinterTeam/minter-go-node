@@ -137,7 +137,7 @@ func (a *Accounts) GetBalance(address types.Address, coin types.CoinSymbol) *big
 		account.balances[coin] = balance
 	}
 
-	return account.balances[coin]
+	return big.NewInt(0).Set(account.balances[coin])
 }
 
 func (a *Accounts) SubBalance(address types.Address, coin types.CoinSymbol, amount *big.Int) {
