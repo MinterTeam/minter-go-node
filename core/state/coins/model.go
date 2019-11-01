@@ -2,8 +2,6 @@ package coins
 
 import (
 	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/MinterTeam/minter-go-node/formula"
-	"github.com/MinterTeam/minter-go-node/helpers"
 	"math/big"
 )
 
@@ -16,7 +14,6 @@ type Model struct {
 	info      *Info
 	markDirty func(symbol types.CoinSymbol)
 	isDirty   bool
-	isDeleted bool
 }
 
 func (m Model) Name() string {
@@ -73,27 +70,6 @@ func (m *Model) SetVolume(volume *big.Int) {
 	m.info.Volume.Set(volume)
 	m.markDirty(m.symbol)
 	m.info.isDirty = true
-}
-
-func (m Model) IsToDelete() bool {
-	// Delete coin if reserve is less than 100 bips
-	if m.Reserve().Cmp(helpers.BipToPip(big.NewInt(100))) == -1 {
-		return true
-	}
-
-	// Delete coin if volume is less than 1 coin
-	if m.Volume().Cmp(helpers.BipToPip(big.NewInt(1))) == -1 {
-		return true
-	}
-
-	// Delete coin if price of 1 coin is less than 0.0001 bip
-	price := formula.CalculateSaleReturn(m.Volume(), m.Reserve(), m.Crr(), helpers.BipToPip(big.NewInt(1)))
-	minPrice := big.NewInt(100000000000000) // 0.0001 bip
-	if price.Cmp(minPrice) == -1 {
-		return true
-	}
-
-	return false
 }
 
 func (m Model) IsInfoDirty() bool {

@@ -95,7 +95,6 @@ func (f *FrozenFunds) PunishFrozenFundsWithAddress(fromHeight uint64, toHeight u
 				})
 
 				item.Value = newValue
-				f.bus.Coins().SanitizeCoin(item.Coin)
 			}
 
 			newList[i] = item
@@ -163,17 +162,12 @@ func (f *FrozenFunds) getOrderedDirty() []uint64 {
 
 func (f *FrozenFunds) AddFund(height uint64, address types.Address, pubkey types.Pubkey, coin types.CoinSymbol, value *big.Int) {
 	f.GetOrNew(height).addFund(address, pubkey, coin, value)
-	f.bus.Coins().AddOwnerFrozenFund(coin, height)
 }
 
 func (f *FrozenFunds) Delete(height uint64) {
 	ff := f.get(height)
 	if ff == nil {
 		return
-	}
-
-	for _, item := range ff.List {
-		f.bus.Coins().RemoveOwnerFrozenFund(item.Coin, height)
 	}
 
 	ff.delete()

@@ -5,7 +5,6 @@ go 1.13
 require (
 	github.com/MinterTeam/go-amino v0.14.2-0.20191028111634-b14d3fa91c7a
 	github.com/btcsuite/btcd v0.0.0-20190115013929-ed77733ec07d
-	github.com/bwmarrin/snowflake v0.3.0 // indirect
 	github.com/go-kit/kit v0.9.0
 	github.com/gobuffalo/packr v1.11.1
 	github.com/gogo/protobuf v1.3.1 // indirect
@@ -21,7 +20,6 @@ require (
 	github.com/tendermint/iavl v0.12.4
 	github.com/tendermint/tendermint v0.32.6
 	github.com/tendermint/tm-db v0.2.0
-	github.com/xujiajun/nutsdb v0.4.0
 	golang.org/x/crypto v0.0.0-20190313024323-a1f597ede03a
 	golang.org/x/net v0.0.0-20190628185345-da137c7871d7
 	golang.org/x/sys v0.0.0-20191020212454-3e7259c5e7c2

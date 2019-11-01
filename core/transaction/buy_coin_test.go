@@ -12,9 +12,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/tendermint/tm-db"
-	"github.com/xujiajun/nutsdb"
 	"math/big"
-	"os"
 	"sync"
 	"testing"
 )
@@ -28,12 +26,7 @@ func init() {
 }
 
 func getState() *state.State {
-	opt := nutsdb.DefaultOptions
-	opt.Dir = "/tmp/nutsdb"
-	_ = os.RemoveAll(opt.Dir)
-	nuts, err := nutsdb.Open(opt)
-
-	s, err := state.NewState(0, db.NewMemDB(), nuts, nil, 1, 1)
+	s, err := state.NewState(0, db.NewMemDB(), nil, 1, 1)
 
 	if err != nil {
 		panic(err)
@@ -108,7 +101,7 @@ func TestBuyCoinTxBaseToCustom(t *testing.T) {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
 
-	targetBalance, _ := big.NewInt(0).SetString("999840525753990000000000", 10)
+	targetBalance, _ := big.NewInt(0).SetString("999899854987997899747979", 10)
 	balance := cState.Accounts.GetBalance(addr, coin)
 	if balance.Cmp(targetBalance) != 0 {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", coin, targetBalance, balance)

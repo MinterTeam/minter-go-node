@@ -36,31 +36,3 @@ func (b *Bus) SubCoinVolume(symbol types.CoinSymbol, amount *big.Int) {
 func (b *Bus) SubCoinReserve(symbol types.CoinSymbol, amount *big.Int) {
 	b.coins.SubReserve(symbol, amount)
 }
-
-func (b *Bus) SanitizeCoin(symbol types.CoinSymbol) {
-	b.coins.Sanitize(symbol)
-}
-
-func (b *Bus) AddOwnerAddress(symbol types.CoinSymbol, owner types.Address) {
-	b.coins.AddOwnerAddress(symbol, owner)
-}
-
-func (b *Bus) RemoveOwnerAddress(symbol types.CoinSymbol, owner types.Address) {
-	b.coins.RemoveOwnerAddress(symbol, owner)
-}
-
-func (b *Bus) AddOwnerCandidate(symbol types.CoinSymbol, owner types.Pubkey) {
-	b.coins.AddOwnerCandidate(symbol, owner)
-}
-
-func (b *Bus) RemoveOwnerCandidate(symbol types.CoinSymbol, owner types.Pubkey) {
-	b.coins.RemoveOwnerCandidate(symbol, owner)
-}
-
-func (b *Bus) AddOwnerFrozenFund(symbol types.CoinSymbol, owner uint64) {
-	b.coins.AddOwnerFrozenFund(symbol, owner)
-}
-
-func (b *Bus) RemoveOwnerFrozenFund(symbol types.CoinSymbol, owner uint64) {
-	b.coins.RemoveOwnerFrozenFund(symbol, owner)
-}

@@ -14,7 +14,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/tree"
 	compact "github.com/klim0v/compact-db"
 	db "github.com/tendermint/tm-db"
-	"github.com/xujiajun/nutsdb"
 )
 
 type State struct {
@@ -27,24 +26,23 @@ type State struct {
 	Checks      *checks.Checks
 
 	db             db.DB
-	nuts           *nutsdb.DB
 	events         compact.IEventsDB
 	tree           tree.Tree
 	keepLastStates int64
 }
 
-func NewState(height uint64, db db.DB, nuts *nutsdb.DB, events compact.IEventsDB, keepLastStates int64, cacheSize int) (*State, error) {
+func NewState(height uint64, db db.DB, events compact.IEventsDB, keepLastStates int64, cacheSize int) (*State, error) {
 	iavlTree := tree.NewMutableTree(db, cacheSize)
 	_, err := iavlTree.LoadVersion(int64(height))
 	if err != nil {
 		return nil, err
 	}
 
-	return newStateForTree(iavlTree, nuts, events, db, keepLastStates)
+	return newStateForTree(iavlTree, events, db, keepLastStates)
 }
 
 func NewCheckState(state *State) *State {
-	s, err := newStateForTree(state.tree, state.nuts, state.events, state.db, 0)
+	s, err := newStateForTree(state.tree, state.events, state.db, 0)
 	if err != nil {
 		panic(err)
 	}
@@ -58,7 +56,7 @@ func NewCheckStateAtHeight(height uint64, db db.DB) (*State, error) {
 		return nil, err
 	}
 
-	return newStateForTree(iavlTree.GetImmutable(), nil, nil, nil, 0)
+	return newStateForTree(iavlTree.GetImmutable(), nil, nil, 0)
 }
 
 func (s *State) Commit() ([]byte, error) {
@@ -185,7 +183,7 @@ func (s *State) Export(height uint64) types.AppState {
 	return appState
 }
 
-func newStateForTree(iavlTree tree.Tree, nuts *nutsdb.DB, events compact.IEventsDB, db db.DB, keepLastStates int64) (*State, error) {
+func newStateForTree(iavlTree tree.Tree, events compact.IEventsDB, db db.DB, keepLastStates int64) (*State, error) {
 	stateBus := bus.NewBus()
 	stateBus.SetEvents(events)
 
@@ -214,7 +212,7 @@ func newStateForTree(iavlTree tree.Tree, nuts *nutsdb.DB, events compact.IEvents
 		return nil, err
 	}
 
-	coinsState, err := coins.NewCoins(stateBus, iavlTree, nuts)
+	coinsState, err := coins.NewCoins(stateBus, iavlTree)
 	if err != nil {
 		return nil, err
 	}
@@ -234,7 +232,6 @@ func newStateForTree(iavlTree tree.Tree, nuts *nutsdb.DB, events compact.IEvents
 		Checks:      checksState,
 
 		db:             db,
-		nuts:           nuts,
 		events:         events,
 		tree:           iavlTree,
 		keepLastStates: keepLastStates,

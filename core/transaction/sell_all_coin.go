@@ -204,9 +204,6 @@ func (data SellAllCoinData) Run(tx *Transaction, context *state.State, isCheck b
 		rewardPool.Add(rewardPool, tx.CommissionInBaseCoin())
 		context.Accounts.AddBalance(sender, data.CoinToBuy, value)
 		context.Accounts.SetNonce(sender, tx.Nonce)
-
-		context.Coins.Sanitize(data.CoinToBuy)
-		context.Coins.Sanitize(data.CoinToSell)
 	}
 
 	tags := common.KVPairs{

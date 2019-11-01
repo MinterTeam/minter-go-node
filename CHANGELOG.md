@@ -12,6 +12,7 @@ BREAKING CHANGES
 - [core] Fix buy coin commission calculation
 - [core] Fix sell coin commission calculation
 - [core] Enable multisignatures
+- [core] Do not delete coins with small reserve
 - [gui] Remove GUI
 - [config] KeepStateHistory -> KeepLastStates
 - [config] Add state_cache_size option

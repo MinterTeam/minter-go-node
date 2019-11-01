@@ -6,9 +6,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	compact_db "github.com/klim0v/compact-db"
 	db "github.com/tendermint/tm-db"
-	"github.com/xujiajun/nutsdb"
 	"math/big"
-	"os"
 	"testing"
 )
 
@@ -212,12 +210,7 @@ func TestStakeSufficiency(t *testing.T) {
 }
 
 func getState() *State {
-	opt := nutsdb.DefaultOptions
-	opt.Dir = "/tmp/nutsdb"
-	_ = os.RemoveAll(opt.Dir)
-	nuts, err := nutsdb.Open(opt)
-
-	s, err := NewState(0, db.NewMemDB(), nuts, emptyEvents{}, 1, 1)
+	s, err := NewState(0, db.NewMemDB(), emptyEvents{}, 1, 1)
 
 	if err != nil {
 		panic(err)

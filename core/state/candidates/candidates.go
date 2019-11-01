@@ -224,7 +224,6 @@ func (c *Candidates) PunishByzantineCandidate(height uint64, tmAddress types.TmA
 		})
 
 		c.bus.FrozenFunds().AddFrozenFund(height+UnbondPeriod, stake.Owner, candidate.PubKey, stake.Coin, newValue)
-		c.bus.Coins().SanitizeCoin(stake.Coin)
 	}
 }
 
@@ -382,8 +381,6 @@ func (c *Candidates) Delegate(address types.Address, pubkey types.Pubkey, coin t
 		BipValue:  big.NewInt(0).Set(bipValue),
 		markDirty: func(i int) {},
 	}
-
-	c.bus.Coins().AddOwnerCandidate(coin, pubkey)
 
 	candidate := c.GetCandidate(pubkey)
 	candidate.addUpdate(stake)
@@ -632,7 +629,6 @@ func (c *Candidates) Punish(height uint64, address types.TmAddress) *big.Int {
 
 			c.bus.Coins().SubCoinVolume(coin.Symbol, slashed)
 			c.bus.Coins().SubCoinReserve(coin.Symbol, ret)
-			c.bus.Coins().SanitizeCoin(stake.Coin)
 
 			c.bus.App().AddTotalSlashed(ret)
 		} else {
