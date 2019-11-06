@@ -102,7 +102,7 @@ func (s *State) Commit() ([]byte, error) {
 }
 
 func (s *State) CheckForInvariants() error {
-	panic("implement me")
+	return nil //todo
 }
 
 func (s *State) Import(state types.AppState) error {
