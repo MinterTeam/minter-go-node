@@ -67,6 +67,13 @@ func (data CreateMultisigData) Run(tx *Transaction, context *state.State, isChec
 	if !tx.GasCoin.IsBaseCoin() {
 		coin := context.Coins.GetCoin(tx.GasCoin)
 
+		err := coin.CheckReserveUnderflow(commissionInBaseCoin)
+		if err != nil {
+			return Response{
+				Code: code.CoinReserveUnderflow,
+				Log:  err.Error()}
+		}
+
 		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
 			return Response{
 				Code: code.CoinReserveNotSufficient,

@@ -18,7 +18,7 @@ const allowedCoinSymbols = "^[A-Z0-9]{3,10}$"
 
 var (
 	minCoinSupply  = helpers.BipToPip(big.NewInt(1))
-	minCoinReserve = helpers.BipToPip(big.NewInt(1000))
+	minCoinReserve = helpers.BipToPip(big.NewInt(10000))
 )
 
 type CreateCoinData struct {
@@ -121,6 +121,13 @@ func (data CreateCoinData) Run(tx *Transaction, context *state.State, isCheck bo
 
 	if tx.GasCoin != types.GetBaseCoin() {
 		coin := context.Coins.GetCoin(tx.GasCoin)
+
+		err := coin.CheckReserveUnderflow(commissionInBaseCoin)
+		if err != nil {
+			return Response{
+				Code: code.CoinReserveUnderflow,
+				Log:  err.Error()}
+		}
 
 		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
 			return Response{

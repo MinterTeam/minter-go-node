@@ -1,9 +1,13 @@
 package coins
 
 import (
+	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/helpers"
 	"math/big"
 )
+
+var minCoinReserve = helpers.BipToPip(big.NewInt(10000))
 
 type Model struct {
 	CName      string
@@ -70,6 +74,17 @@ func (m *Model) SetVolume(volume *big.Int) {
 	m.info.Volume.Set(volume)
 	m.markDirty(m.symbol)
 	m.info.isDirty = true
+}
+
+func (m *Model) CheckReserveUnderflow(delta *big.Int) error {
+	total := big.NewInt(0).Sub(m.Reserve(), delta)
+
+	if total.Cmp(minCoinReserve) == -1 {
+		min := big.NewInt(0).Add(minCoinReserve, delta)
+		return fmt.Errorf("coin %s reserve is too small (%s, required at least %s)", m.symbol.String(), m.Reserve().String(), min.String())
+	}
+
+	return nil
 }
 
 func (m Model) IsInfoDirty() bool {

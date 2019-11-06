@@ -188,6 +188,13 @@ func (data SellAllCoinData) Run(tx *Transaction, context *state.State, isCheck b
 		}
 	}
 
+	err := checkConversionsReserveUnderflow(conversions, context)
+	if err != nil {
+		return Response{
+			Code: code.CoinReserveUnderflow,
+			Log:  err.Error()}
+	}
+
 	if !isCheck {
 		for _, ts := range totalSpends {
 			context.Accounts.SubBalance(sender, ts.Coin, ts.Value)

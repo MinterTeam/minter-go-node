@@ -315,6 +315,13 @@ func (data BuyCoinData) Run(tx *Transaction, context *state.State, isCheck bool,
 		}
 	}
 
+	err := checkConversionsReserveUnderflow(conversions, context)
+	if err != nil {
+		return Response{
+			Code: code.CoinReserveUnderflow,
+			Log:  err.Error()}
+	}
+
 	if !isCheck {
 		for _, ts := range totalSpends {
 			context.Accounts.SubBalance(sender, ts.Coin, ts.Value)
@@ -347,4 +354,30 @@ func (data BuyCoinData) Run(tx *Transaction, context *state.State, isCheck bool,
 		GasUsed:   tx.Gas(),
 		GasWanted: tx.Gas(),
 	}
+}
+
+func checkConversionsReserveUnderflow(conversions []Conversion, context *state.State) error {
+	var totalReserveCoins []types.CoinSymbol
+	totalReserveSub := make(map[types.CoinSymbol]*big.Int)
+	for _, conversion := range conversions {
+		if conversion.FromCoin.IsBaseCoin() {
+			continue
+		}
+
+		if totalReserveSub[conversion.FromCoin] == nil {
+			totalReserveCoins = append(totalReserveCoins, conversion.FromCoin)
+			totalReserveSub[conversion.FromCoin] = big.NewInt(0)
+		}
+
+		totalReserveSub[conversion.FromCoin].Add(totalReserveSub[conversion.FromCoin], conversion.FromReserve)
+	}
+
+	for _, coinSymbol := range totalReserveCoins {
+		err := context.Coins.GetCoin(coinSymbol).CheckReserveUnderflow(totalReserveSub[coinSymbol])
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

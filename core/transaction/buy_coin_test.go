@@ -491,3 +491,56 @@ func TestBuyCoinTxCustomToBase(t *testing.T) {
 		t.Fatalf("Target %s volume is not correct. Expected %s, got %s", coin, targetVolume, coinData.Volume())
 	}
 }
+
+func TestBuyCoinReserveUnderflow(t *testing.T) {
+	cState := getState()
+
+	createTestCoin(cState)
+
+	privateKey, _ := crypto.GenerateKey()
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+	coin := getTestCoinSymbol()
+
+	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(10000000)))
+
+	toBuy := helpers.BipToPip(big.NewInt(99000))
+	maxValToSell, _ := big.NewInt(0).SetString("36904896537720035723223", 10)
+	data := BuyCoinData{
+		CoinToBuy:          types.GetBaseCoin(),
+		ValueToBuy:         toBuy,
+		CoinToSell:         coin,
+		MaximumValueToSell: maxValToSell,
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := Transaction{
+		Nonce:         1,
+		GasPrice:      1,
+		ChainID:       types.CurrentChainID,
+		GasCoin:       coin,
+		Type:          TypeBuyCoin,
+		Data:          encodedData,
+		SignatureType: SigTypeSingle,
+	}
+
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, sync.Map{}, 0)
+
+	if response.Code != code.CoinReserveUnderflow {
+		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveUnderflow, response.Log)
+	}
+}

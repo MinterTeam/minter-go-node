@@ -295,7 +295,7 @@ func CheckForCoinSupplyOverflow(current *big.Int, delta *big.Int, max *big.Int) 
 	total.Add(total, delta)
 
 	if total.Cmp(max) != -1 {
-		return errors.New("сoin supply overflow")
+		return errors.New("coin supply overflow")
 	}
 
 	return nil

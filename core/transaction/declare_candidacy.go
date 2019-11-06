@@ -41,12 +41,6 @@ func (data DeclareCandidacyData) BasicCheck(tx *Transaction, context *state.Stat
 			Log:  fmt.Sprintf("Coin %s not exists", data.Coin)}
 	}
 
-	if len(data.PubKey) != 32 {
-		return &Response{
-			Code: code.IncorrectPubKey,
-			Log:  fmt.Sprintf("Incorrect PubKey")}
-	}
-
 	if context.Candidates.Exists(data.PubKey) {
 		return &Response{
 			Code: code.CandidateExists,
@@ -93,6 +87,13 @@ func (data DeclareCandidacyData) Run(tx *Transaction, context *state.State, isCh
 
 	if !tx.GasCoin.IsBaseCoin() {
 		coin := context.Coins.GetCoin(tx.GasCoin)
+
+		err := coin.CheckReserveUnderflow(commissionInBaseCoin)
+		if err != nil {
+			return Response{
+				Code: code.CoinReserveUnderflow,
+				Log:  err.Error()}
+		}
 
 		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
 			return Response{
