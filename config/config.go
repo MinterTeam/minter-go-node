@@ -27,9 +27,6 @@ const (
 )
 
 var (
-	NetworkId        string
-	DefaultNetworkId = "minter-mainnet-1"
-
 	defaultConfigFilePath   = filepath.Join(defaultConfigDir, defaultConfigFileName)
 	defaultGenesisJSONPath  = filepath.Join(defaultConfigDir, defaultGenesisJSONName)
 	defaultPrivValKeyPath   = filepath.Join(defaultConfigDir, defaultPrivValName)
@@ -90,7 +87,7 @@ func GetConfig() *Config {
 
 	cfg.Mempool.Recheck = false
 
-	cfg.P2P.AddrBook = "config/addrbook-" + NetworkId + ".json"
+	cfg.P2P.AddrBook = "config/addrbook.json"
 
 	cfg.SetRoot(utils.GetMinterHome())
 	EnsureRoot(utils.GetMinterHome())
