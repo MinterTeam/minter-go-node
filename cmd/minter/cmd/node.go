@@ -130,7 +130,7 @@ func getGenesis() (doc *tmTypes.GenesisDoc, e error) {
 	genesisFile := utils.GetMinterHome() + "/config/genesis.json"
 
 	if !common.FileExists(genesisFile) {
-		box := packr.NewBox("../../../mainnet/current/")
+		box := packr.NewBox("../../../genesis/current/")
 		bytes, err := box.MustBytes("genesis.json")
 		if err != nil {
 			panic(err)
