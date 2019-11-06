@@ -57,10 +57,6 @@ func runNode() error {
 	node := startTendermintNode(app, tmConfig)
 
 	client := rpc.NewLocal(node)
-	status, _ := client.Status()
-	if status.NodeInfo.Network != config.NetworkId {
-		log.Fatal("Different networks", "expected", config.NetworkId, "got", status.NodeInfo.Network)
-	}
 
 	app.SetTmNode(node)
 
@@ -134,8 +130,8 @@ func getGenesis() (doc *tmTypes.GenesisDoc, e error) {
 	genesisFile := utils.GetMinterHome() + "/config/genesis.json"
 
 	if !common.FileExists(genesisFile) {
-		box := packr.NewBox("../../../mainnet/")
-		bytes, err := box.MustBytes(config.NetworkId + "/genesis.json")
+		box := packr.NewBox("../../../mainnet/current/")
+		bytes, err := box.MustBytes("genesis.json")
 		if err != nil {
 			panic(err)
 		}
