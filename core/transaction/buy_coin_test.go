@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/MinterTeam/go-amino"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/code"
@@ -396,7 +397,8 @@ func TestBuyCoinTxNotGasCoin(t *testing.T) {
 }
 
 func TestBuyCoinTxJSON(t *testing.T) {
-	out := []byte("{\"coin_to_buy\":\"BIP\",\"value_to_buy\":\"1\",\"coin_to_sell\":\"TEST\",\"maximum_value_to_sell\":\"1\"}")
+	str := "{\"coin_to_buy\":\"%s\",\"value_to_buy\":\"1\",\"coin_to_sell\":\"TEST\",\"maximum_value_to_sell\":\"1\"}"
+	out := []byte(fmt.Sprintf(str, types.GetBaseCoin().String()))
 
 	buyCoinData := BuyCoinData{
 		CoinToBuy:          types.GetBaseCoin(),
