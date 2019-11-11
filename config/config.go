@@ -224,9 +224,6 @@ type BaseConfig struct {
 	// Database directory
 	DBPath string `mapstructure:"db_dir"`
 
-	// Address to listen for GUI connections
-	GUIListenAddress string `mapstructure:"gui_listen_addr"`
-
 	// Address to listen for API connections
 	APIListenAddress string `mapstructure:"api_listen_addr"`
 
@@ -253,9 +250,8 @@ func DefaultBaseConfig() BaseConfig {
 		ProfListenAddress:       "",
 		FastSync:                true,
 		FilterPeers:             false,
-		DBBackend:               "cleveldb",
+		DBBackend:               "goleveldb",
 		DBPath:                  "data",
-		GUIListenAddress:        ":3000",
 		APIListenAddress:        "tcp://0.0.0.0:8841",
 		ValidatorMode:           false,
 		KeepLastStates:          120,
