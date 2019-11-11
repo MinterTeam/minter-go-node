@@ -15,6 +15,7 @@ BREAKING CHANGES
 - [core] Do not delete coins with small reserve
 - [core] Do now allow to sell coins with reserve less than 10,000 bip
 - [core] Set min coin reserve to 10,000 bip
+- [core] Pay rewards each 120 blocks
 - [gui] Remove GUI
 - [config] KeepStateHistory -> KeepLastStates
 - [config] Add state_cache_size option
