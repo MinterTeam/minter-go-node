@@ -13,9 +13,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	amino "github.com/MinterTeam/go-amino"
 	rs "github.com/MinterTeam/minter-go-node/rpc/lib/server"
 	types "github.com/MinterTeam/minter-go-node/rpc/lib/types"
+	amino "github.com/tendermint/go-amino"
 	"github.com/tendermint/tendermint/libs/log"
 )
 

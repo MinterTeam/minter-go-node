@@ -18,8 +18,8 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
 
-	amino "github.com/MinterTeam/go-amino"
 	types "github.com/MinterTeam/minter-go-node/rpc/lib/types"
+	"github.com/tendermint/go-amino"
 	cmn "github.com/tendermint/tendermint/libs/common"
 	"github.com/tendermint/tendermint/libs/log"
 )

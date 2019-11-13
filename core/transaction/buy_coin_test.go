@@ -3,7 +3,6 @@ package transaction
 import (
 	"bytes"
 	"fmt"
-	"github.com/MinterTeam/go-amino"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/state"
@@ -12,6 +11,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/rlp"
+	"github.com/tendermint/go-amino"
 	"github.com/tendermint/tm-db"
 	"math/big"
 	"sync"
