@@ -14,6 +14,10 @@ func BipToPip(bip *big.Int) *big.Int {
 }
 
 func StringToBigInt(s string) *big.Int {
+	if s == "" {
+		return big.NewInt(0)
+	}
+	
 	b, success := big.NewInt(0).SetString(s, 10)
 	if !success {
 		panic(fmt.Sprintf("Cannot decode %s into big.Int", s))
