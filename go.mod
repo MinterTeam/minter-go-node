@@ -4,7 +4,7 @@ go 1.13
 
 require (
 	github.com/MinterTeam/events-db v0.1.0
-	github.com/MinterTeam/go-amino v0.14.2-0.20191028111634-b14d3fa91c7a
+	github.com/MinterTeam/go-amino v0.14.2-0.20191113110031-d5499d43f453
 	github.com/btcsuite/btcd v0.0.0-20190115013929-ed77733ec07d
 	github.com/go-kit/kit v0.9.0
 	github.com/gobuffalo/packr v1.11.1
