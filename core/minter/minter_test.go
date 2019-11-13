@@ -394,7 +394,7 @@ func getGenesis() (*types2.GenesisDoc, error) {
 				Balance: []types.Balance{
 					{
 						Coin:  types.GetBaseCoin(),
-						Value: helpers.BipToPip(big.NewInt(1000000)),
+						Value: helpers.BipToPip(big.NewInt(1000000)).String(),
 					},
 				},
 			},
@@ -444,25 +444,25 @@ func makeValidatorsAndCandidates(pubkeys []string, stake *big.Int) ([]types.Vali
 
 		validators[i] = types.Validator{
 			RewardAddress: addr,
-			TotalBipStake: stake,
+			TotalBipStake: stake.String(),
 			PubKey:        pkey,
 			Commission:    100,
-			AccumReward:   big.NewInt(0),
+			AccumReward:   big.NewInt(0).String(),
 			AbsentTimes:   types.NewBitArray(24),
 		}
 
 		candidates[i] = types.Candidate{
 			RewardAddress: addr,
 			OwnerAddress:  addr,
-			TotalBipStake: big.NewInt(1),
+			TotalBipStake: big.NewInt(1).String(),
 			PubKey:        pkey,
 			Commission:    100,
 			Stakes: []types.Stake{
 				{
 					Owner:    addr,
 					Coin:     types.GetBaseCoin(),
-					Value:    stake,
-					BipValue: stake,
+					Value:    stake.String(),
+					BipValue: stake.String(),
 				},
 			},
 			Status: candidates2.CandidateStatusOnline,

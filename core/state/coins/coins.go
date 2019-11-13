@@ -198,9 +198,9 @@ func (c *Coins) Export(state *types.AppState) {
 			state.Coins = append(state.Coins, types.Coin{
 				Name:    coin.Name(),
 				Symbol:  coin.Symbol(),
-				Volume:  coin.Volume(),
+				Volume:  coin.Volume().String(),
 				Crr:     coin.Crr(),
-				Reserve: coin.Reserve(),
+				Reserve: coin.Reserve().String(),
 			})
 		}
 

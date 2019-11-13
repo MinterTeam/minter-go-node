@@ -323,10 +323,10 @@ func (v *Validators) Export(state *types.AppState) {
 	for _, val := range vals {
 		state.Validators = append(state.Validators, types.Validator{
 			RewardAddress: val.RewardAddress,
-			TotalBipStake: val.GetTotalBipStake(),
+			TotalBipStake: val.GetTotalBipStake().String(),
 			PubKey:        val.PubKey,
 			Commission:    val.Commission,
-			AccumReward:   val.GetAccumReward(),
+			AccumReward:   val.GetAccumReward().String(),
 			AbsentTimes:   val.AbsentTimes,
 		})
 	}

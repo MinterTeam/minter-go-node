@@ -12,6 +12,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/state/frozenfunds"
 	"github.com/MinterTeam/minter-go-node/core/state/validators"
 	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/tree"
 	db "github.com/tendermint/tm-db"
 )
@@ -107,7 +108,7 @@ func (s *State) CheckForInvariants() error {
 
 func (s *State) Import(state types.AppState) error {
 	s.App.SetMaxGas(state.MaxGas)
-	s.App.SetTotalSlashed(state.TotalSlashed)
+	s.App.SetTotalSlashed(helpers.StringToBigInt(state.TotalSlashed))
 
 	for _, a := range state.Accounts {
 		s.Accounts.SetNonce(a.Address, a.Nonce)
@@ -119,12 +120,12 @@ func (s *State) Import(state types.AppState) error {
 		//}
 
 		for _, b := range a.Balance {
-			s.Accounts.SetBalance(a.Address, b.Coin, b.Value)
+			s.Accounts.SetBalance(a.Address, b.Coin, helpers.StringToBigInt(b.Value))
 		}
 	}
 
 	for _, c := range state.Coins {
-		s.Coins.Create(c.Symbol, c.Name, c.Volume, c.Crr, c.Reserve, c.MaxSupply)
+		s.Coins.Create(c.Symbol, c.Name, helpers.StringToBigInt(c.Volume), c.Crr, helpers.StringToBigInt(c.Reserve), helpers.StringToBigInt(c.MaxSupply))
 	}
 
 	var vals []*validators.Validator
@@ -134,8 +135,8 @@ func (s *State) Import(state types.AppState) error {
 			v.PubKey,
 			v.Commission,
 			v.AbsentTimes,
-			v.TotalBipStake,
-			v.AccumReward,
+			helpers.StringToBigInt(v.TotalBipStake),
+			helpers.StringToBigInt(v.AccumReward),
 			true,
 			true,
 			true))
@@ -159,7 +160,7 @@ func (s *State) Import(state types.AppState) error {
 	}
 
 	for _, ff := range state.FrozenFunds {
-		s.FrozenFunds.AddFund(ff.Height, ff.Address, *ff.CandidateKey, ff.Coin, ff.Value)
+		s.FrozenFunds.AddFund(ff.Height, ff.Address, *ff.CandidateKey, ff.Coin, helpers.StringToBigInt(ff.Value))
 	}
 
 	return nil

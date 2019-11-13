@@ -110,6 +110,6 @@ func (v *App) SetTotalSlashed(amount *big.Int) {
 
 func (v *App) Export(state *types.AppState, height uint64) {
 	state.MaxGas = v.GetMaxGas()
-	state.TotalSlashed = v.GetTotalSlashed()
+	state.TotalSlashed = v.GetTotalSlashed().String()
 	state.StartHeight = height
 }

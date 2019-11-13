@@ -279,7 +279,7 @@ func (a *Accounts) Export(state *types.AppState) {
 			for coin, value := range a.GetBalances(account.address) {
 				balance = append(balance, types.Balance{
 					Coin:  coin,
-					Value: value,
+					Value: value.String(),
 				})
 			}
 

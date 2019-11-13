@@ -12,6 +12,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/core/validators"
+	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/version"
 	"github.com/tendermint/go-amino"
@@ -115,7 +116,7 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 
 	totalPower := big.NewInt(0)
 	for _, val := range genesisState.Validators {
-		totalPower.Add(totalPower, val.TotalBipStake)
+		totalPower.Add(totalPower, helpers.StringToBigInt(val.TotalBipStake))
 	}
 
 	vals := make([]abciTypes.ValidatorUpdate, len(genesisState.Validators))
@@ -129,7 +130,7 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 
 		vals[i] = abciTypes.ValidatorUpdate{
 			PubKey: types2.TM2PB.PubKey(pkey),
-			Power: big.NewInt(0).Div(big.NewInt(0).Mul(val.TotalBipStake,
+			Power: big.NewInt(0).Div(big.NewInt(0).Mul(helpers.StringToBigInt(val.TotalBipStake),
 				big.NewInt(100000000)), totalPower).Int64(),
 		}
 	}

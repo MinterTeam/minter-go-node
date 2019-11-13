@@ -7,6 +7,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/state/bus"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
+	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/tree"
 	"math/big"
@@ -657,8 +658,8 @@ func (c *Candidates) SetStakes(pubkey types.Pubkey, stakes []types.Stake) {
 		candidate.stakes[i] = &Stake{
 			Owner:    stake.Owner,
 			Coin:     stake.Coin,
-			Value:    stake.Value,
-			BipValue: stake.BipValue,
+			Value:    helpers.StringToBigInt(stake.Value),
+			BipValue: helpers.StringToBigInt(stake.BipValue),
 			index:    i,
 			markDirty: func(index int) {
 				candidate.dirtyStakes[index] = true
@@ -676,15 +677,15 @@ func (c *Candidates) Export(state *types.AppState) {
 			stakes = append(stakes, types.Stake{
 				Owner:    s.Owner,
 				Coin:     s.Coin,
-				Value:    s.Value,
-				BipValue: s.BipValue,
+				Value:    s.Value.String(),
+				BipValue: s.BipValue.String(),
 			})
 		}
 
 		state.Candidates = append(state.Candidates, types.Candidate{
 			RewardAddress: candidate.RewardAddress,
 			OwnerAddress:  candidate.OwnerAddress,
-			TotalBipStake: candidate.GetTotalBipStake(),
+			TotalBipStake: candidate.GetTotalBipStake().String(),
 			PubKey:        candidate.PubKey,
 			Commission:    candidate.Commission,
 			Stakes:        stakes,

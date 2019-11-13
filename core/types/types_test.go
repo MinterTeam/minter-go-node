@@ -138,10 +138,10 @@ func TestAppState(t *testing.T) {
 		Validators: []Validator{
 			{
 				RewardAddress: testAddr,
-				TotalBipStake: big.NewInt(1),
+				TotalBipStake: big.NewInt(1).String(),
 				PubKey:        pubkey,
 				Commission:    1,
-				AccumReward:   big.NewInt(1),
+				AccumReward:   big.NewInt(1).String(),
 				AbsentTimes:   ba,
 			},
 		},
@@ -149,15 +149,15 @@ func TestAppState(t *testing.T) {
 			{
 				RewardAddress: testAddr,
 				OwnerAddress:  testAddr,
-				TotalBipStake: big.NewInt(1),
+				TotalBipStake: big.NewInt(1).String(),
 				PubKey:        pubkey,
 				Commission:    1,
 				Stakes: []Stake{
 					{
 						Owner:    testAddr,
 						Coin:     GetBaseCoin(),
-						Value:    big.NewInt(1),
-						BipValue: big.NewInt(1),
+						Value:    big.NewInt(1).String(),
+						BipValue: big.NewInt(1).String(),
 					},
 				},
 				Status: 1,
@@ -169,7 +169,7 @@ func TestAppState(t *testing.T) {
 				Balance: []Balance{
 					{
 						Coin:  GetBaseCoin(),
-						Value: big.NewInt(1),
+						Value: big.NewInt(1).String(),
 					},
 				},
 				Nonce: 1,
@@ -184,9 +184,9 @@ func TestAppState(t *testing.T) {
 			{
 				Name:    "ASD",
 				Symbol:  GetBaseCoin(),
-				Volume:  big.NewInt(1),
+				Volume:  big.NewInt(1).String(),
 				Crr:     1,
-				Reserve: big.NewInt(1),
+				Reserve: big.NewInt(1).String(),
 			},
 		},
 		FrozenFunds: []FrozenFund{
@@ -195,7 +195,7 @@ func TestAppState(t *testing.T) {
 				Address:      testAddr,
 				CandidateKey: &pubkey,
 				Coin:         GetBaseCoin(),
-				Value:        big.NewInt(1),
+				Value:        big.NewInt(1).String(),
 			},
 		},
 		UsedChecks: []UsedCheck{
