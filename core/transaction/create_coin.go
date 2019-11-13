@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/state"
@@ -22,12 +23,30 @@ var (
 )
 
 type CreateCoinData struct {
-	Name                 string           `json:"name"`
-	Symbol               types.CoinSymbol `json:"symbol"`
-	InitialAmount        *big.Int         `json:"initial_amount"`
-	InitialReserve       *big.Int         `json:"initial_reserve"`
-	ConstantReserveRatio uint             `json:"constant_reserve_ratio"`
-	MaxSupply            *big.Int         `json:"max_supply"`
+	Name                 string
+	Symbol               types.CoinSymbol
+	InitialAmount        *big.Int
+	InitialReserve       *big.Int
+	ConstantReserveRatio uint
+	MaxSupply            *big.Int
+}
+
+func (data CreateCoinData) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Name                 string `json:"name"`
+		Symbol               string `json:"symbol"`
+		InitialAmount        string `json:"initial_amount"`
+		InitialReserve       string `json:"initial_reserve"`
+		ConstantReserveRatio uint   `json:"constant_reserve_ratio"`
+		MaxSupply            string `json:"max_supply"`
+	}{
+		Name:                 data.Name,
+		Symbol:               data.Symbol.String(),
+		InitialAmount:        data.InitialAmount.String(),
+		InitialReserve:       data.InitialReserve.String(),
+		ConstantReserveRatio: data.ConstantReserveRatio,
+		MaxSupply:            data.MaxSupply.String(),
+	})
 }
 
 func (data CreateCoinData) TotalSpend(tx *Transaction, context *state.State) (TotalSpends, []Conversion, *big.Int, *Response) {

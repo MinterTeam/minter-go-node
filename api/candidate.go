@@ -9,28 +9,28 @@ import (
 )
 
 type Stake struct {
-	Owner    types.Address    `json:"owner"`
-	Coin     types.CoinSymbol `json:"coin"`
-	Value    string           `json:"value"`
-	BipValue string           `json:"bip_value"`
+	Owner    string `json:"owner"`
+	Coin     string `json:"coin"`
+	Value    string `json:"value"`
+	BipValue string `json:"bip_value"`
 }
 
 type CandidateResponse struct {
-	RewardAddress types.Address `json:"reward_address"`
-	OwnerAddress  types.Address `json:"owner_address"`
-	TotalStake    *big.Int      `json:"total_stake"`
-	PubKey        types.Pubkey  `json:"pub_key"`
-	Commission    uint          `json:"commission"`
-	Stakes        []Stake       `json:"stakes,omitempty"`
-	Status        byte          `json:"status"`
+	RewardAddress string  `json:"reward_address"`
+	OwnerAddress  string  `json:"owner_address"`
+	TotalStake    string  `json:"total_stake"`
+	PubKey        string  `json:"pub_key"`
+	Commission    uint    `json:"commission"`
+	Stakes        []Stake `json:"stakes,omitempty"`
+	Status        byte    `json:"status"`
 }
 
 func makeResponseCandidate(state *state.State, c candidates.Candidate, includeStakes bool) CandidateResponse {
 	candidate := CandidateResponse{
-		RewardAddress: c.RewardAddress,
-		OwnerAddress:  c.OwnerAddress,
-		TotalStake:    state.Candidates.GetTotalStake(c.PubKey),
-		PubKey:        c.PubKey,
+		RewardAddress: c.RewardAddress.String(),
+		OwnerAddress:  c.OwnerAddress.String(),
+		TotalStake:    state.Candidates.GetTotalStake(c.PubKey).String(),
+		PubKey:        c.PubKey.String(),
 		Commission:    c.Commission,
 		Status:        c.Status,
 	}
@@ -40,8 +40,8 @@ func makeResponseCandidate(state *state.State, c candidates.Candidate, includeSt
 		candidate.Stakes = make([]Stake, len(stakes))
 		for i, stake := range stakes {
 			candidate.Stakes[i] = Stake{
-				Owner:    stake.Owner,
-				Coin:     stake.Coin,
+				Owner:    stake.Owner.String(),
+				Coin:     stake.Coin.String(),
 				Value:    stake.Value.String(),
 				BipValue: stake.BipValue.String(),
 			}

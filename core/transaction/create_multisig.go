@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
@@ -14,9 +15,21 @@ import (
 )
 
 type CreateMultisigData struct {
-	Threshold uint            `json:"threshold"`
-	Weights   []uint          `json:"weights"`
-	Addresses []types.Address `json:"addresses"`
+	Threshold uint
+	Weights   []uint
+	Addresses []types.Address
+}
+
+func (data CreateMultisigData) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Threshold uint            `json:"threshold"`
+		Weights   []uint          `json:"weights"`
+		Addresses []types.Address `json:"addresses"`
+	}{
+		Threshold: data.Threshold,
+		Weights:   data.Weights,
+		Addresses: data.Addresses,
+	})
 }
 
 func (data CreateMultisigData) TotalSpend(tx *Transaction, context *state.State) (TotalSpends, []Conversion, *big.Int, *Response) {

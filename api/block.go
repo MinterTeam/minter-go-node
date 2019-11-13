@@ -10,40 +10,38 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/rpc/lib/types"
 	core_types "github.com/tendermint/tendermint/rpc/core/types"
-	types2 "github.com/tendermint/tendermint/types"
-	"math/big"
-	"time"
+	tmTypes "github.com/tendermint/tendermint/types"
 )
 
 type BlockResponse struct {
 	Hash         string                     `json:"hash"`
 	Height       int64                      `json:"height"`
-	Time         time.Time                  `json:"time"`
+	Time         string                     `json:"time"`
 	NumTxs       int64                      `json:"num_txs"`
 	TotalTxs     int64                      `json:"total_txs"`
 	Transactions []BlockTransactionResponse `json:"transactions"`
-	BlockReward  *big.Int                   `json:"block_reward"`
+	BlockReward  string                     `json:"block_reward"`
 	Size         int                        `json:"size"`
-	Proposer     types.Pubkey               `json:"proposer,omitempty"`
+	Proposer     string                     `json:"proposer,omitempty"`
 	Validators   []BlockValidatorResponse   `json:"validators,omitempty"`
-	Evidence     types2.EvidenceData        `json:"evidence,omitempty"`
+	Evidence     tmTypes.EvidenceData       `json:"evidence,omitempty"`
 }
 
 type BlockTransactionResponse struct {
-	Hash        string             `json:"hash"`
-	RawTx       string             `json:"raw_tx"`
-	From        string             `json:"from"`
-	Nonce       uint64             `json:"nonce"`
-	GasPrice    uint32             `json:"gas_price"`
-	Type        transaction.TxType `json:"type"`
-	Data        json.RawMessage    `json:"data"`
-	Payload     []byte             `json:"payload"`
-	ServiceData []byte             `json:"service_data"`
-	Gas         int64              `json:"gas"`
-	GasCoin     types.CoinSymbol   `json:"gas_coin"`
-	Tags        map[string]string  `json:"tags"`
-	Code        uint32             `json:"code,omitempty"`
-	Log         string             `json:"log,omitempty"`
+	Hash        string            `json:"hash"`
+	RawTx       string            `json:"raw_tx"`
+	From        string            `json:"from"`
+	Nonce       uint64            `json:"nonce"`
+	GasPrice    uint32            `json:"gas_price"`
+	Type        string            `json:"type"`
+	Data        json.RawMessage   `json:"data"`
+	Payload     []byte            `json:"payload"`
+	ServiceData []byte            `json:"service_data"`
+	Gas         int64             `json:"gas"`
+	GasCoin     string            `json:"gas_coin"`
+	Tags        map[string]string `json:"tags"`
+	Code        uint32            `json:"code,omitempty"`
+	Log         string            `json:"log,omitempty"`
 }
 
 type BlockValidatorResponse struct {
@@ -92,12 +90,12 @@ func Block(height int64) (*BlockResponse, error) {
 			From:        sender.String(),
 			Nonce:       tx.Nonce,
 			GasPrice:    tx.GasPrice,
-			Type:        tx.Type,
+			Type:        string(tx.Type),
 			Data:        data,
 			Payload:     tx.Payload,
 			ServiceData: tx.ServiceData,
 			Gas:         tx.Gas(),
-			GasCoin:     tx.GasCoin,
+			GasCoin:     tx.GasCoin.String(),
 			Tags:        tags,
 			Code:        blockResults.Results.DeliverTx[i].Code,
 			Log:         blockResults.Results.DeliverTx[i].Log,
@@ -140,13 +138,13 @@ func Block(height int64) (*BlockResponse, error) {
 	return &BlockResponse{
 		Hash:         hex.EncodeToString(block.Block.Hash()),
 		Height:       block.Block.Height,
-		Time:         block.Block.Time,
+		Time:         block.Block.Time.String(),
 		NumTxs:       block.Block.NumTxs,
 		TotalTxs:     block.Block.TotalTxs,
 		Transactions: txs,
-		BlockReward:  rewards.GetRewardForBlock(uint64(height)),
+		BlockReward:  rewards.GetRewardForBlock(uint64(height)).String(),
 		Size:         len(cdc.MustMarshalBinaryLengthPrefixed(block)),
-		Proposer:     *proposer,
+		Proposer:     proposer.String(),
 		Validators:   validators,
 		Evidence:     block.Block.Evidence,
 	}, nil

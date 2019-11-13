@@ -7,11 +7,11 @@ import (
 )
 
 type CoinInfoResponse struct {
-	Name           string           `json:"name"`
-	Symbol         types.CoinSymbol `json:"symbol"`
-	Volume         *big.Int         `json:"volume"`
-	Crr            uint             `json:"crr"`
-	ReserveBalance *big.Int         `json:"reserve_balance"`
+	Name           string `json:"name"`
+	Symbol         string `json:"symbol"`
+	Volume         string `json:"volume"`
+	Crr            uint   `json:"crr"`
+	ReserveBalance string `json:"reserve_balance"`
 }
 
 func CoinInfo(coinSymbol string, height int) (*CoinInfoResponse, error) {
@@ -27,9 +27,9 @@ func CoinInfo(coinSymbol string, height int) (*CoinInfoResponse, error) {
 
 	return &CoinInfoResponse{
 		Name:           coin.Name(),
-		Symbol:         coin.Symbol(),
-		Volume:         coin.Volume(),
+		Symbol:         coin.Symbol().String(),
+		Volume:         coin.Volume().String(),
 		Crr:            coin.Crr(),
-		ReserveBalance: coin.Reserve(),
+		ReserveBalance: coin.Reserve().String(),
 	}, nil
 }

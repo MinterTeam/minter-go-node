@@ -9,7 +9,7 @@ import (
 )
 
 type TxCommissionResponse struct {
-	Commission *big.Int `json:"commission"`
+	Commission string `json:"commission"`
 }
 
 func EstimateTxCommission(tx []byte, height int) (*TxCommissionResponse, error) {
@@ -38,6 +38,6 @@ func EstimateTxCommission(tx []byte, height int) (*TxCommissionResponse, error) 
 	}
 
 	return &TxCommissionResponse{
-		Commission: commission,
+		Commission: commission.String(),
 	}, nil
 }

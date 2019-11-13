@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
@@ -17,11 +18,27 @@ const minCommission = 0
 const maxCommission = 100
 
 type DeclareCandidacyData struct {
-	Address    types.Address    `json:"address"`
-	PubKey     types.Pubkey     `json:"pub_key"`
-	Commission uint             `json:"commission"`
-	Coin       types.CoinSymbol `json:"coin"`
-	Stake      *big.Int         `json:"stake"`
+	Address    types.Address
+	PubKey     types.Pubkey
+	Commission uint
+	Coin       types.CoinSymbol
+	Stake      *big.Int
+}
+
+func (data DeclareCandidacyData) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Address    string `json:"address"`
+		PubKey     string `json:"pub_key"`
+		Commission uint   `json:"commission"`
+		Coin       string `json:"coin"`
+		Stake      string `json:"stake"`
+	}{
+		Address:    data.Address.String(),
+		PubKey:     data.PubKey.String(),
+		Commission: data.Commission,
+		Coin:       data.Coin.String(),
+		Stake:      data.Stake.String(),
+	})
 }
 
 func (data DeclareCandidacyData) TotalSpend(tx *Transaction, context *state.State) (TotalSpends, []Conversion, *big.Int, *Response) {

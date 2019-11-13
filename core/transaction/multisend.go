@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
@@ -40,9 +41,21 @@ func (data MultisendData) BasicCheck(tx *Transaction, context *state.State) *Res
 }
 
 type MultisendDataItem struct {
-	Coin  types.CoinSymbol `json:"coin"`
-	To    types.Address    `json:"to"`
-	Value *big.Int         `json:"value"`
+	Coin  types.CoinSymbol
+	To    types.Address
+	Value *big.Int
+}
+
+func (item MultisendDataItem) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Coin  string `json:"coin"`
+		To    string `json:"to"`
+		Value string `json:"value"`
+	}{
+		Coin:  item.Coin.String(),
+		To:    item.To.String(),
+		Value: item.Value.String(),
+	})
 }
 
 func (data MultisendData) String() string {

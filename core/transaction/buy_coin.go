@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
@@ -13,10 +14,24 @@ import (
 )
 
 type BuyCoinData struct {
-	CoinToBuy          types.CoinSymbol `json:"coin_to_buy"`
-	ValueToBuy         *big.Int         `json:"value_to_buy"`
-	CoinToSell         types.CoinSymbol `json:"coin_to_sell"`
-	MaximumValueToSell *big.Int         `json:"maximum_value_to_sell"`
+	CoinToBuy          types.CoinSymbol
+	ValueToBuy         *big.Int
+	CoinToSell         types.CoinSymbol
+	MaximumValueToSell *big.Int
+}
+
+func (data BuyCoinData) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		CoinToBuy          string `json:"coin_to_buy"`
+		ValueToBuy         string `json:"value_to_buy"`
+		CoinToSell         string `json:"coin_to_sell"`
+		MaximumValueToSell string `json:"maximum_value_to_sell"`
+	}{
+		CoinToBuy:          data.CoinToBuy.String(),
+		ValueToBuy:         data.ValueToBuy.String(),
+		CoinToSell:         data.CoinToSell.String(),
+		MaximumValueToSell: data.MaximumValueToSell.String(),
+	})
 }
 
 func (data BuyCoinData) String() string {

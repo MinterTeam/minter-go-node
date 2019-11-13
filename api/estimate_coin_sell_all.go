@@ -10,7 +10,7 @@ import (
 )
 
 type EstimateCoinSellAllResponse struct {
-	WillGet *big.Int `json:"will_get"`
+	WillGet string `json:"will_get"`
 }
 
 func EstimateCoinSellAll(
@@ -78,6 +78,6 @@ func EstimateCoinSellAll(
 	}
 
 	return &EstimateCoinSellAllResponse{
-		WillGet: result,
+		WillGet: result.String(),
 	}, nil
 }

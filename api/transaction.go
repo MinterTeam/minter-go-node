@@ -31,16 +31,16 @@ func Transaction(hash []byte) (*TransactionResponse, error) {
 	}
 
 	return &TransactionResponse{
-		Hash:     common.HexBytes(tx.Tx.Hash()),
+		Hash:     common.HexBytes(tx.Tx.Hash()).String(),
 		RawTx:    fmt.Sprintf("%x", []byte(tx.Tx)),
 		Height:   tx.Height,
 		Index:    tx.Index,
 		From:     sender.String(),
 		Nonce:    decodedTx.Nonce,
 		GasPrice: decodedTx.GasPrice,
-		GasCoin:  decodedTx.GasCoin,
+		GasCoin:  decodedTx.GasCoin.String(),
 		Gas:      decodedTx.Gas(),
-		Type:     decodedTx.Type,
+		Type:     string(decodedTx.Type),
 		Data:     data,
 		Payload:  decodedTx.Payload,
 		Tags:     tags,
