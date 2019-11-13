@@ -17,7 +17,7 @@ import (
 type BlockResponse struct {
 	Hash         string                     `json:"hash"`
 	Height       int64                      `json:"height"`
-	Time         string                     `json:"time"`
+	Time         time.Time                  `json:"time"`
 	NumTxs       int64                      `json:"num_txs"`
 	TotalTxs     int64                      `json:"total_txs"`
 	Transactions []BlockTransactionResponse `json:"transactions"`
@@ -139,7 +139,7 @@ func Block(height int64) (*BlockResponse, error) {
 	return &BlockResponse{
 		Hash:         hex.EncodeToString(block.Block.Hash()),
 		Height:       block.Block.Height,
-		Time:         block.Block.Time.Format(time.RFC3339Nano),
+		Time:         block.Block.Time,
 		NumTxs:       block.Block.NumTxs,
 		TotalTxs:     block.Block.TotalTxs,
 		Transactions: txs,

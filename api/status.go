@@ -12,7 +12,7 @@ type StatusResponse struct {
 	LatestBlockHash   string                   `json:"latest_block_hash"`
 	LatestAppHash     string                   `json:"latest_app_hash"`
 	LatestBlockHeight int64                    `json:"latest_block_height"`
-	LatestBlockTime   string                   `json:"latest_block_time"`
+	LatestBlockTime   time.Time                `json:"latest_block_time"`
 	KeepLastStates    int64                    `json:"keep_last_states"`
 	TmStatus          *core_types.ResultStatus `json:"tm_status"`
 }
@@ -28,7 +28,7 @@ func Status() (*StatusResponse, error) {
 		LatestBlockHash:   fmt.Sprintf("%X", result.SyncInfo.LatestBlockHash),
 		LatestAppHash:     fmt.Sprintf("%X", result.SyncInfo.LatestAppHash),
 		LatestBlockHeight: result.SyncInfo.LatestBlockHeight,
-		LatestBlockTime:   result.SyncInfo.LatestBlockTime.Format(time.RFC3339Nano),
+		LatestBlockTime:   result.SyncInfo.LatestBlockTime,
 		KeepLastStates:    minterCfg.BaseConfig.KeepLastStates,
 		TmStatus:          result,
 	}, nil
