@@ -3,8 +3,8 @@ package state
 import (
 	"crypto/rand"
 	"encoding/binary"
+	eventsdb "github.com/MinterTeam/events-db"
 	"github.com/MinterTeam/minter-go-node/core/types"
-	compact_db "github.com/klim0v/compact-db"
 	db "github.com/tendermint/tm-db"
 	"math/big"
 	"testing"
@@ -231,6 +231,6 @@ func createTestCandidate(stateDB *State) types.Pubkey {
 
 type emptyEvents struct{}
 
-func (e emptyEvents) AddEvent(height uint32, event compact_db.Event) {}
-func (e emptyEvents) LoadEvents(height uint32) compact_db.Events     { return compact_db.Events{} }
-func (e emptyEvents) CommitEvents() error                            { return nil }
+func (e emptyEvents) AddEvent(height uint32, event eventsdb.Event) {}
+func (e emptyEvents) LoadEvents(height uint32) eventsdb.Events     { return eventsdb.Events{} }
+func (e emptyEvents) CommitEvents() error                          { return nil }

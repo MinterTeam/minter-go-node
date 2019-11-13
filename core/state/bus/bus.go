@@ -1,6 +1,6 @@
 package bus
 
-import compact "github.com/klim0v/compact-db"
+import eventsdb "github.com/MinterTeam/events-db"
 
 type Bus struct {
 	coins       Coins
@@ -8,7 +8,7 @@ type Bus struct {
 	accounts    Accounts
 	candidates  Candidates
 	frozenfunds FrozenFunds
-	events      compact.IEventsDB
+	events      eventsdb.IEventsDB
 }
 
 func NewBus() *Bus {
@@ -55,10 +55,10 @@ func (b *Bus) FrozenFunds() FrozenFunds {
 	return b.frozenfunds
 }
 
-func (b *Bus) SetEvents(events compact.IEventsDB) {
+func (b *Bus) SetEvents(events eventsdb.IEventsDB) {
 	b.events = events
 }
 
-func (b *Bus) Events() compact.IEventsDB {
+func (b *Bus) Events() eventsdb.IEventsDB {
 	return b.events
 }

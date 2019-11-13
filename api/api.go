@@ -2,13 +2,13 @@ package api
 
 import (
 	"fmt"
+	eventsdb "github.com/MinterTeam/events-db"
 	"github.com/MinterTeam/go-amino"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/minter"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/rpc/lib/server"
-	compact "github.com/klim0v/compact-db"
 	"github.com/rs/cors"
 	"github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/crypto/ed25519"
@@ -58,7 +58,7 @@ var Routes = map[string]*rpcserver.RPCFunc{
 func RunAPI(b *minter.Blockchain, tmRPC *rpc.Local, cfg *config.Config) {
 	minterCfg = cfg
 	RegisterCryptoAmino(cdc)
-	compact.RegisterAminoEvents(cdc)
+	eventsdb.RegisterAminoEvents(cdc)
 	RegisterEvidenceMessages(cdc)
 
 	client = tmRPC

@@ -2,6 +2,7 @@ package minter
 
 import (
 	"bytes"
+	eventsdb "github.com/MinterTeam/events-db"
 	"github.com/MinterTeam/go-amino"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
@@ -14,7 +15,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/validators"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/version"
-	compact "github.com/klim0v/compact-db"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/crypto/encoding/amino"
@@ -48,7 +48,7 @@ type Blockchain struct {
 
 	stateDB             db.DB
 	appDB               *appdb.AppDB
-	eventsDB            compact.IEventsDB
+	eventsDB            eventsdb.IEventsDB
 	stateDeliver        *state.State
 	stateCheck          *state.State
 	height              uint64 // current Blockchain height
@@ -83,7 +83,7 @@ func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 		appDB:               applicationDB,
 		height:              applicationDB.GetLastHeight(),
 		lastCommittedHeight: applicationDB.GetLastHeight(),
-		eventsDB:            compact.NewEventsStore(db.NewDB("events", dbType, utils.GetMinterHome()+"/data")),
+		eventsDB:            eventsdb.NewEventsStore(db.NewDB("events", dbType, utils.GetMinterHome()+"/data")),
 		currentMempool:      sync.Map{},
 	}
 
@@ -204,7 +204,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 	frozenFunds := app.stateDeliver.FrozenFunds.GetFrozenFunds(uint64(req.Header.Height))
 	if frozenFunds != nil {
 		for _, item := range frozenFunds.List {
-			app.eventsDB.AddEvent(uint32(req.Header.Height), compact.UnbondEvent{
+			app.eventsDB.AddEvent(uint32(req.Header.Height), eventsdb.UnbondEvent{
 				Address:         item.Address,
 				Amount:          item.Value.Bytes(),
 				Coin:            item.Coin,
@@ -585,6 +585,6 @@ func (app *Blockchain) calcMaxGas(height uint64) uint64 {
 	return newMaxGas
 }
 
-func (app *Blockchain) GetEventsDB() compact.IEventsDB {
+func (app *Blockchain) GetEventsDB() eventsdb.IEventsDB {
 	return app.eventsDB
 }

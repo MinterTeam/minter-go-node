@@ -3,13 +3,13 @@ package frozenfunds
 import (
 	"encoding/binary"
 	"fmt"
+	eventsdb "github.com/MinterTeam/events-db"
 	"github.com/MinterTeam/minter-go-node/core/state/bus"
 	"github.com/MinterTeam/minter-go-node/core/state/candidates"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/tree"
-	compact "github.com/klim0v/compact-db"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	"math/big"
 	"sort"
@@ -87,7 +87,7 @@ func (f *FrozenFunds) PunishFrozenFundsWithAddress(fromHeight uint64, toHeight u
 					f.bus.App().AddTotalSlashed(slashed)
 				}
 
-				f.bus.Events().AddEvent(uint32(fromHeight), compact.SlashEvent{
+				f.bus.Events().AddEvent(uint32(fromHeight), eventsdb.SlashEvent{
 					Address:         item.Address,
 					Amount:          slashed.Bytes(),
 					Coin:            item.Coin,

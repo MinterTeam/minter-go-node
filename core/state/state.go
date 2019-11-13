@@ -2,6 +2,7 @@ package state
 
 import (
 	"encoding/hex"
+	eventsdb "github.com/MinterTeam/events-db"
 	"github.com/MinterTeam/minter-go-node/core/state/accounts"
 	"github.com/MinterTeam/minter-go-node/core/state/app"
 	"github.com/MinterTeam/minter-go-node/core/state/bus"
@@ -12,7 +13,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/state/validators"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/tree"
-	compact "github.com/klim0v/compact-db"
 	db "github.com/tendermint/tm-db"
 )
 
@@ -26,12 +26,12 @@ type State struct {
 	Checks      *checks.Checks
 
 	db             db.DB
-	events         compact.IEventsDB
+	events         eventsdb.IEventsDB
 	tree           tree.Tree
 	keepLastStates int64
 }
 
-func NewState(height uint64, db db.DB, events compact.IEventsDB, keepLastStates int64, cacheSize int) (*State, error) {
+func NewState(height uint64, db db.DB, events eventsdb.IEventsDB, keepLastStates int64, cacheSize int) (*State, error) {
 	iavlTree := tree.NewMutableTree(db, cacheSize)
 	_, err := iavlTree.LoadVersion(int64(height))
 	if err != nil {
@@ -183,7 +183,7 @@ func (s *State) Export(height uint64) types.AppState {
 	return appState
 }
 
-func newStateForTree(iavlTree tree.Tree, events compact.IEventsDB, db db.DB, keepLastStates int64) (*State, error) {
+func newStateForTree(iavlTree tree.Tree, events eventsdb.IEventsDB, db db.DB, keepLastStates int64) (*State, error) {
 	stateBus := bus.NewBus()
 	stateBus.SetEvents(events)
 

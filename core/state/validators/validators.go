@@ -2,6 +2,7 @@ package validators
 
 import (
 	"fmt"
+	eventsdb "github.com/MinterTeam/events-db"
 	"github.com/MinterTeam/minter-go-node/core/dao"
 	"github.com/MinterTeam/minter-go-node/core/developers"
 	"github.com/MinterTeam/minter-go-node/core/state/bus"
@@ -9,7 +10,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/tree"
-	compact_db "github.com/klim0v/compact-db"
 	"math/big"
 )
 
@@ -155,8 +155,8 @@ func (v *Validators) PayRewards(height uint64) {
 			DAOReward.Div(DAOReward, big.NewInt(100))
 			v.bus.Accounts().AddBalance(dao.Address, types.GetBaseCoin(), DAOReward)
 			remainder.Sub(remainder, DAOReward)
-			v.bus.Events().AddEvent(uint32(height), compact_db.RewardEvent{
-				Role:            compact_db.RoleDAO,
+			v.bus.Events().AddEvent(uint32(height), eventsdb.RewardEvent{
+				Role:            eventsdb.RoleDAO,
 				Address:         dao.Address,
 				Amount:          DAOReward.Bytes(),
 				ValidatorPubKey: validator.PubKey,
@@ -168,8 +168,8 @@ func (v *Validators) PayRewards(height uint64) {
 			DevelopersReward.Div(DevelopersReward, big.NewInt(100))
 			v.bus.Accounts().AddBalance(developers.Address, types.GetBaseCoin(), DevelopersReward)
 			remainder.Sub(remainder, DevelopersReward)
-			v.bus.Events().AddEvent(uint32(height), compact_db.RewardEvent{
-				Role:            compact_db.RoleDevelopers,
+			v.bus.Events().AddEvent(uint32(height), eventsdb.RewardEvent{
+				Role:            eventsdb.RoleDevelopers,
 				Address:         developers.Address,
 				Amount:          DevelopersReward.Bytes(),
 				ValidatorPubKey: validator.PubKey,
@@ -185,8 +185,8 @@ func (v *Validators) PayRewards(height uint64) {
 			totalReward.Sub(totalReward, validatorReward)
 			v.bus.Accounts().AddBalance(validator.RewardAddress, types.GetBaseCoin(), validatorReward)
 			remainder.Sub(remainder, validatorReward)
-			v.bus.Events().AddEvent(uint32(height), compact_db.RewardEvent{
-				Role:            compact_db.RoleValidator,
+			v.bus.Events().AddEvent(uint32(height), eventsdb.RewardEvent{
+				Role:            eventsdb.RoleValidator,
 				Address:         validator.RewardAddress,
 				Amount:          validatorReward.Bytes(),
 				ValidatorPubKey: validator.PubKey,
@@ -213,8 +213,8 @@ func (v *Validators) PayRewards(height uint64) {
 				v.bus.Accounts().AddBalance(stake.Owner, types.GetBaseCoin(), reward)
 				remainder.Sub(remainder, reward)
 
-				v.bus.Events().AddEvent(uint32(height), compact_db.RewardEvent{
-					Role:            compact_db.RoleDelegator,
+				v.bus.Events().AddEvent(uint32(height), eventsdb.RewardEvent{
+					Role:            eventsdb.RoleDelegator,
 					Address:         stake.Owner,
 					Amount:          reward.Bytes(),
 					ValidatorPubKey: validator.PubKey,
