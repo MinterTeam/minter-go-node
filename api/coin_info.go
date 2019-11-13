@@ -3,7 +3,6 @@ package api
 import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/rpc/lib/types"
-	"math/big"
 )
 
 type CoinInfoResponse struct {

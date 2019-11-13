@@ -2,7 +2,6 @@ package api
 
 import (
 	"github.com/MinterTeam/minter-go-node/core/types"
-	"math/big"
 )
 
 type AddressesResponse struct {

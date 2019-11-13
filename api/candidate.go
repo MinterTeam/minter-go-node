@@ -5,7 +5,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/state/candidates"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/rpc/lib/types"
-	"math/big"
 )
 
 type Stake struct {
