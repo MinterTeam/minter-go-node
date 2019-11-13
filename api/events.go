@@ -8,8 +8,8 @@ type EventsResponse struct {
 	Events compact.Events `json:"events"`
 }
 
-func Events(height uint32) (*EventsResponse, error) {
+func Events(height uint64) (*EventsResponse, error) {
 	return &EventsResponse{
-		Events: blockchain.GetEventsDB().LoadEvents(height),
+		Events: blockchain.GetEventsDB().LoadEvents(uint32(height)),
 	}, nil
 }
