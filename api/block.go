@@ -23,7 +23,7 @@ type BlockResponse struct {
 	Transactions []BlockTransactionResponse `json:"transactions"`
 	BlockReward  string                     `json:"block_reward"`
 	Size         int                        `json:"size"`
-	Proposer     string                     `json:"proposer,omitempty"`
+	Proposer     *string                    `json:"proposer,omitempty"`
 	Validators   []BlockValidatorResponse   `json:"validators,omitempty"`
 	Evidence     tmTypes.EvidenceData       `json:"evidence,omitempty"`
 }
@@ -104,11 +104,16 @@ func Block(height int64) (*BlockResponse, error) {
 	}
 
 	var validators []BlockValidatorResponse
-	proposer := &types.Pubkey{}
+	var proposer *string
 	if height > 1 {
-		proposer, err = getBlockProposer(block)
+		p, err := getBlockProposer(block)
 		if err != nil {
 			return nil, err
+		}
+
+		if p != nil {
+			str := p.String()
+			proposer = &str
 		}
 
 		validators = make([]BlockValidatorResponse, len(tmValidators.Validators))
@@ -129,10 +134,6 @@ func Block(height int64) (*BlockResponse, error) {
 				Pubkey: fmt.Sprintf("Mp%x", tmval.PubKey.Bytes()[5:]),
 				Signed: signed,
 			}
-
-			if bytes.Equal(tmval.Address.Bytes(), block.Block.ProposerAddress.Bytes()) {
-				copy(proposer[:], tmval.PubKey.Bytes()[5:])
-			}
 		}
 	}
 
@@ -145,7 +146,7 @@ func Block(height int64) (*BlockResponse, error) {
 		Transactions: txs,
 		BlockReward:  rewards.GetRewardForBlock(uint64(height)).String(),
 		Size:         len(cdc.MustMarshalBinaryLengthPrefixed(block)),
-		Proposer:     proposer.String(),
+		Proposer:     proposer,
 		Validators:   validators,
 		Evidence:     block.Block.Evidence,
 	}, nil

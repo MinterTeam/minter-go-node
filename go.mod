@@ -3,7 +3,7 @@ module github.com/MinterTeam/minter-go-node
 go 1.13
 
 require (
-	github.com/MinterTeam/events-db v0.1.1-0.20191113112136-26c67bf12a51
+	github.com/MinterTeam/events-db v0.1.1-0.20191113155258-73206cb9a3ea
 	github.com/btcsuite/btcd v0.0.0-20190115013929-ed77733ec07d
 	github.com/go-kit/kit v0.9.0
 	github.com/gobuffalo/packr v1.11.1
@@ -19,6 +19,6 @@ require (
 	github.com/tendermint/tm-db v0.2.0
 	golang.org/x/crypto v0.0.0-20190313024323-a1f597ede03a
 	golang.org/x/net v0.0.0-20190628185345-da137c7871d7
-	golang.org/x/sys v0.0.0-20191020212454-3e7259c5e7c2
+	golang.org/x/sys v0.0.0-20191113150313-8ad342257130
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127
 )
