@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/version"
 	"github.com/tendermint/tendermint/rpc/core/types"
+	"time"
 )
 
 type StatusResponse struct {
@@ -27,7 +28,7 @@ func Status() (*StatusResponse, error) {
 		LatestBlockHash:   fmt.Sprintf("%X", result.SyncInfo.LatestBlockHash),
 		LatestAppHash:     fmt.Sprintf("%X", result.SyncInfo.LatestAppHash),
 		LatestBlockHeight: result.SyncInfo.LatestBlockHeight,
-		LatestBlockTime:   result.SyncInfo.LatestBlockTime.String(),
+		LatestBlockTime:   result.SyncInfo.LatestBlockTime.Format(time.RFC3339Nano),
 		KeepLastStates:    minterCfg.BaseConfig.KeepLastStates,
 		TmStatus:          result,
 	}, nil

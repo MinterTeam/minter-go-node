@@ -11,6 +11,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/rpc/lib/types"
 	core_types "github.com/tendermint/tendermint/rpc/core/types"
 	tmTypes "github.com/tendermint/tendermint/types"
+	"time"
 )
 
 type BlockResponse struct {
@@ -138,7 +139,7 @@ func Block(height int64) (*BlockResponse, error) {
 	return &BlockResponse{
 		Hash:         hex.EncodeToString(block.Block.Hash()),
 		Height:       block.Block.Height,
-		Time:         block.Block.Time.String(),
+		Time:         block.Block.Time.Format(time.RFC3339Nano),
 		NumTxs:       block.Block.NumTxs,
 		TotalTxs:     block.Block.TotalTxs,
 		Transactions: txs,
