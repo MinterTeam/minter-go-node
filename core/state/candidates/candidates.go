@@ -28,8 +28,7 @@ const (
 )
 
 type Candidates struct {
-	list   map[types.Pubkey]*Candidate
-	loaded bool
+	list map[types.Pubkey]*Candidate
 
 	iavl tree.Tree
 	bus  *bus.Bus
@@ -251,7 +250,7 @@ func (c *Candidates) RecalculateStakes(height uint64) {
 			stake := c.GetStakeOfAddress(candidate.PubKey, update.Owner, update.Coin)
 			if stake != nil {
 				stake.addValue(update.Value)
-				update.Value = big.NewInt(0)
+				update.setValue(big.NewInt(0))
 				stake.setBipValue(c.calculateBipValue(stake.Coin, stake.Value, false, true))
 			}
 		}
@@ -273,6 +272,7 @@ func (c *Candidates) RecalculateStakes(height uint64) {
 
 				candidate.SetStakeAtIndex(candidate.stakesCount, update)
 				candidate.stakesCount++
+				stakes = c.GetStakes(candidate.PubKey)
 			} else {
 				// find and replace smallest stake
 				index := -1
@@ -309,6 +309,10 @@ func (c *Candidates) RecalculateStakes(height uint64) {
 						ValidatorPubKey: candidate.PubKey,
 					})
 					c.bus.Accounts().AddBalance(stakes[index].Owner, stakes[index].Coin, stakes[index].Value)
+				}
+
+				update.markDirty = func(i int) {
+					candidate.dirtyStakes[i] = true
 				}
 
 				candidate.SetStakeAtIndex(index, update)
@@ -476,12 +480,6 @@ func (c *Candidates) GetCandidateOwner(pubkey types.Pubkey) types.Address {
 }
 
 func (c *Candidates) loadCandidates() {
-	if c.loaded {
-		return
-	}
-
-	c.loaded = true
-
 	path := []byte{mainPrefix}
 	_, enc := c.iavl.Get(path)
 	if len(enc) == 0 {

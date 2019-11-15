@@ -7,7 +7,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
-	"github.com/MinterTeam/minter-go-node/core/state/candidates"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/hexutil"
@@ -63,7 +62,7 @@ func (data DelegateData) BasicCheck(tx *Transaction, context *state.State) *Resp
 	}
 
 	sender, _ := tx.Sender()
-	if context.Candidates.StakesCount(data.PubKey) >= candidates.MaxDelegatorsPerCandidate && !context.Candidates.IsDelegatorStakeSufficient(sender, data.PubKey, data.Coin, data.Value) {
+	if !context.Candidates.IsDelegatorStakeSufficient(sender, data.PubKey, data.Coin, data.Value) {
 		return &Response{
 			Code: code.TooLowStake,
 			Log:  fmt.Sprintf("Stake is too low")}
