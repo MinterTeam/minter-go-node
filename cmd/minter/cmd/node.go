@@ -1,12 +1,14 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/api"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/minter"
 	"github.com/MinterTeam/minter-go-node/log"
+	"github.com/MinterTeam/minter-node-cli/service"
 	"github.com/gobuffalo/packr"
 	"github.com/spf13/cobra"
 	"github.com/tendermint/tendermint/abci/types"
@@ -64,8 +66,17 @@ func runNode() error {
 		go api.RunAPI(app, client, cfg)
 	}
 
+	ctxCli, stopCli := context.WithCancel(context.Background())
+	go func() {
+		err := service.StartCLIServer(utils.GetMinterHome()+"/manager.sock", service.NewManager(app, client, cfg), ctxCli)
+		if err != nil {
+			panic(err)
+		}
+	}()
+
 	common.TrapSignal(log.With("module", "trap"), func() {
 		// Cleanup
+		stopCli()
 		err := node.Stop()
 		app.Stop()
 		if err != nil {

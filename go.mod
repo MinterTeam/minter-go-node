@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	github.com/MinterTeam/events-db v0.1.1-0.20191113155258-73206cb9a3ea
+	github.com/MinterTeam/minter-node-cli v0.0.0-20191115113401-6a2592ea2fc4
 	github.com/btcsuite/btcd v0.0.0-20190115013929-ed77733ec07d
 	github.com/go-kit/kit v0.9.0
 	github.com/gobuffalo/packr v1.11.1
