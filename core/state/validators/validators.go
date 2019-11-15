@@ -196,7 +196,6 @@ func (v *Validators) PayRewards(height uint64) {
 
 			// pay rewards
 			for _, stake := range stakes {
-
 				if stake.BipValue.Cmp(big.NewInt(0)) == 0 {
 					continue
 				}
@@ -205,7 +204,6 @@ func (v *Validators) PayRewards(height uint64) {
 				reward.Mul(reward, stake.BipValue)
 
 				reward.Div(reward, validator.GetTotalBipStake())
-
 				if reward.Cmp(types.Big0) < 1 {
 					continue
 				}

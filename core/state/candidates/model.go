@@ -50,7 +50,7 @@ func (candidate *Candidate) clearUpdates() {
 	candidate.isUpdatesDirty = true
 }
 
-func (candidate *Candidate) setTotalBipValue(totalBipValue *big.Int) {
+func (candidate *Candidate) setTotalBipStake(totalBipValue *big.Int) {
 	candidate.isTotalStakeDirty = true
 	candidate.totalBipStake.Set(totalBipValue)
 }

@@ -12,6 +12,7 @@ func main() {
 		cmd.RunNode,
 		cmd.ShowNodeId,
 		cmd.ShowValidator,
+		cmd.Manager,
 		cmd.Version)
 
 	rootCmd.PersistentFlags().StringVar(&utils.MinterHome, "home-dir", "", "base dir (default is $HOME/.minter)")

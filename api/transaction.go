@@ -40,7 +40,7 @@ func Transaction(hash []byte) (*TransactionResponse, error) {
 		GasPrice: decodedTx.GasPrice,
 		GasCoin:  decodedTx.GasCoin.String(),
 		Gas:      decodedTx.Gas(),
-		Type:     string(decodedTx.Type),
+		Type:     uint8(decodedTx.Type),
 		Data:     data,
 		Payload:  decodedTx.Payload,
 		Tags:     tags,

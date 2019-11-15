@@ -34,7 +34,7 @@ type BlockTransactionResponse struct {
 	From        string            `json:"from"`
 	Nonce       uint64            `json:"nonce"`
 	GasPrice    uint32            `json:"gas_price"`
-	Type        string            `json:"type"`
+	Type        uint8             `json:"type"`
 	Data        json.RawMessage   `json:"data"`
 	Payload     []byte            `json:"payload"`
 	ServiceData []byte            `json:"service_data"`
@@ -91,7 +91,7 @@ func Block(height int64) (*BlockResponse, error) {
 			From:        sender.String(),
 			Nonce:       tx.Nonce,
 			GasPrice:    tx.GasPrice,
-			Type:        string(tx.Type),
+			Type:        uint8(tx.Type),
 			Data:        data,
 			Payload:     tx.Payload,
 			ServiceData: tx.ServiceData,

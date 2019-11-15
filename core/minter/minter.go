@@ -280,16 +280,17 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 	// add remainder to total slashed
 	app.stateDeliver.App.AddTotalSlashed(remainder)
 
-	// update validators & pay rewards
-	if req.Height%120 == 0 || hasDroppedValidators {
+	// pay rewards
+	if req.Height%120 == 0 {
 		app.stateDeliver.Validators.PayRewards(height)
+	}
 
+	// update validators
+	if req.Height%120 == 0 || hasDroppedValidators {
 		app.stateDeliver.Candidates.RecalculateStakes(height)
 
 		valsCount := validators.GetValidatorsCountForBlock(height)
-
 		newCandidates := app.stateDeliver.Candidates.GetNewCandidates(valsCount, req.Height)
-
 		if len(newCandidates) < valsCount {
 			valsCount = len(newCandidates)
 		}

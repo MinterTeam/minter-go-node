@@ -319,14 +319,14 @@ func (c *Candidates) RecalculateStakes(height uint64) {
 		candidate.clearUpdates()
 
 		totalBipValue := big.NewInt(0)
-		for _, stake := range stakes {
+		for _, stake := range c.GetStakes(candidate.PubKey) {
 			if stake == nil {
 				continue
 			}
 			totalBipValue.Add(totalBipValue, stake.BipValue)
 		}
 
-		candidate.setTotalBipValue(totalBipValue)
+		candidate.setTotalBipStake(totalBipValue)
 		candidate.updateStakesCount()
 	}
 }
