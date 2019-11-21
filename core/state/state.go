@@ -2,11 +2,13 @@ package state
 
 import (
 	"encoding/hex"
+	"fmt"
 	eventsdb "github.com/MinterTeam/events-db"
 	"github.com/MinterTeam/minter-go-node/core/state/accounts"
 	"github.com/MinterTeam/minter-go-node/core/state/app"
 	"github.com/MinterTeam/minter-go-node/core/state/bus"
 	"github.com/MinterTeam/minter-go-node/core/state/candidates"
+	"github.com/MinterTeam/minter-go-node/core/state/checker"
 	"github.com/MinterTeam/minter-go-node/core/state/checks"
 	"github.com/MinterTeam/minter-go-node/core/state/coins"
 	"github.com/MinterTeam/minter-go-node/core/state/frozenfunds"
@@ -15,6 +17,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/tree"
 	db "github.com/tendermint/tm-db"
+	"math/big"
 )
 
 type State struct {
@@ -25,11 +28,13 @@ type State struct {
 	Accounts    *accounts.Accounts
 	Coins       *coins.Coins
 	Checks      *checks.Checks
+	Checker     *checker.Checker
 
 	db             db.DB
 	events         eventsdb.IEventsDB
 	tree           tree.Tree
 	keepLastStates int64
+	bus            *bus.Bus
 }
 
 func NewState(height uint64, db db.DB, events eventsdb.IEventsDB, keepLastStates int64, cacheSize int) (*State, error) {
@@ -43,11 +48,7 @@ func NewState(height uint64, db db.DB, events eventsdb.IEventsDB, keepLastStates
 }
 
 func NewCheckState(state *State) *State {
-	s, err := newStateForTree(state.tree, state.events, state.db, 0)
-	if err != nil {
-		panic(err)
-	}
-	return s
+	return state
 }
 
 func NewCheckStateAtHeight(height uint64, db db.DB) (*State, error) {
@@ -60,7 +61,26 @@ func NewCheckStateAtHeight(height uint64, db db.DB) (*State, error) {
 	return newStateForTree(iavlTree.GetImmutable(), nil, nil, 0)
 }
 
+func (s *State) Check(rewards *big.Int) error {
+	for coin, delta := range s.Checker.Delta() {
+		if coin.IsBaseCoin() {
+			if delta.Cmp(rewards) != 0 {
+				return fmt.Errorf("invariants error on coin %s: %s", coin.String(), delta.String())
+			}
+			continue
+		}
+
+		if delta.Cmp(big.NewInt(0)) != 0 {
+			return fmt.Errorf("invariants error on coin %s: %s", coin.String(), delta.String())
+		}
+	}
+
+	return nil
+}
+
 func (s *State) Commit() ([]byte, error) {
+	s.Checker.Reset()
+
 	if err := s.Accounts.Commit(); err != nil {
 		return nil, err
 	}
@@ -139,7 +159,8 @@ func (s *State) Import(state types.AppState) error {
 			helpers.StringToBigInt(v.AccumReward),
 			true,
 			true,
-			true))
+			true,
+			s.bus))
 	}
 	s.Validators.SetValidators(vals)
 
@@ -188,6 +209,8 @@ func newStateForTree(iavlTree tree.Tree, events eventsdb.IEventsDB, db db.DB, ke
 	stateBus := bus.NewBus()
 	stateBus.SetEvents(events)
 
+	stateChecker := checker.NewChecker(stateBus)
+
 	candidatesState, err := candidates.NewCandidates(stateBus, iavlTree)
 	if err != nil {
 		return nil, err
@@ -231,6 +254,8 @@ func newStateForTree(iavlTree tree.Tree, events eventsdb.IEventsDB, db db.DB, ke
 		Accounts:    accountsState,
 		Coins:       coinsState,
 		Checks:      checksState,
+		Checker:     stateChecker,
+		bus:         stateBus,
 
 		db:             db,
 		events:         events,

@@ -47,14 +47,12 @@ var (
 type Blockchain struct {
 	abciTypes.BaseApplication
 
-	stateDB             db.DB
-	appDB               *appdb.AppDB
-	eventsDB            eventsdb.IEventsDB
-	stateDeliver        *state.State
-	stateCheck          *state.State
-	height              uint64 // current Blockchain height
-	lastCommittedHeight uint64 // Blockchain.height updated in the at begin of block processing, while
-	// lastCommittedHeight updated at the end of block processing
+	stateDB            db.DB
+	appDB              *appdb.AppDB
+	eventsDB           eventsdb.IEventsDB
+	stateDeliver       *state.State
+	stateCheck         *state.State
+	height             uint64   // current Blockchain height
 	rewards            *big.Int // Rewards pool
 	validatorsStatuses map[types.TmAddress]int8
 
@@ -80,12 +78,11 @@ func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 	applicationDB := appdb.NewAppDB(cfg)
 
 	blockchain = &Blockchain{
-		stateDB:             ldb,
-		appDB:               applicationDB,
-		height:              applicationDB.GetLastHeight(),
-		lastCommittedHeight: applicationDB.GetLastHeight(),
-		eventsDB:            eventsdb.NewEventsStore(db.NewDB("events", dbType, utils.GetMinterHome()+"/data")),
-		currentMempool:      sync.Map{},
+		stateDB:        ldb,
+		appDB:          applicationDB,
+		height:         applicationDB.GetLastHeight(),
+		eventsDB:       eventsdb.NewEventsStore(db.NewDB("events", dbType, utils.GetMinterHome()+"/data")),
+		currentMempool: sync.Map{},
 	}
 
 	// Set stateDeliver and stateCheck
@@ -405,6 +402,12 @@ func (app *Blockchain) CheckTx(req abciTypes.RequestCheckTx) abciTypes.ResponseC
 
 // Commit the state and return the application Merkle root hash
 func (app *Blockchain) Commit() abciTypes.ResponseCommit {
+	if app.height > 1 {
+		if err := app.stateDeliver.Check(rewards.GetRewardForBlock(app.height)); err != nil {
+			panic(err)
+		}
+	}
+
 	// Committing Minter Blockchain state
 	hash, err := app.stateDeliver.Commit()
 	if err != nil {
@@ -420,9 +423,6 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 
 	// Resetting check state to be consistent with current height
 	app.resetCheckState()
-
-	// Update LastCommittedHeight
-	atomic.StoreUint64(&app.lastCommittedHeight, app.Height())
 
 	// Clear mempool
 	app.currentMempool = sync.Map{}
@@ -478,11 +478,6 @@ func (app *Blockchain) GetStateForHeight(height uint64) (*state.State, error) {
 // Get current height of Minter Blockchain
 func (app *Blockchain) Height() uint64 {
 	return atomic.LoadUint64(&app.height)
-}
-
-// Get last committed height of Minter Blockchain
-func (app *Blockchain) LastCommittedHeight() uint64 {
-	return atomic.LoadUint64(&app.lastCommittedHeight)
 }
 
 // Set Tendermint node

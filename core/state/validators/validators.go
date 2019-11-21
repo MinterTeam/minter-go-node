@@ -116,6 +116,7 @@ func (v *Validators) SetNewValidators(candidates []candidates.Candidate) {
 			isTotalStakeDirty:  true,
 			isAccumRewardDirty: true,
 			tmAddress:          candidate.GetTmAddress(),
+			bus:                v.bus,
 		})
 	}
 
@@ -283,6 +284,7 @@ func (v *Validators) loadValidators() {
 		}
 
 		validator.setTmAddress()
+		validator.bus = v.bus
 	}
 }
 
