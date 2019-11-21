@@ -144,6 +144,9 @@ func (a *Accounts) SubBalance(address types.Address, coin types.CoinSymbol, amou
 
 func (a *Accounts) SetBalance(address types.Address, coin types.CoinSymbol, amount *big.Int) {
 	account := a.getOrNew(address)
+	oldBalance := a.GetBalance(address, coin)
+	a.bus.Checker().AddCoin(coin, big.NewInt(0).Sub(amount, oldBalance))
+
 	account.setBalance(coin, amount)
 }
 

@@ -9,6 +9,7 @@ type Bus struct {
 	candidates  Candidates
 	frozenfunds FrozenFunds
 	events      eventsdb.IEventsDB
+	checker     Checker
 }
 
 func NewBus() *Bus {
@@ -61,4 +62,12 @@ func (b *Bus) SetEvents(events eventsdb.IEventsDB) {
 
 func (b *Bus) Events() eventsdb.IEventsDB {
 	return b.events
+}
+
+func (b *Bus) SetChecker(checker Checker) {
+	b.checker = checker
+}
+
+func (b *Bus) Checker() Checker {
+	return b.checker
 }

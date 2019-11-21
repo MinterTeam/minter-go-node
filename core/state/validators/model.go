@@ -1,6 +1,7 @@
 package validators
 
 import (
+	"github.com/MinterTeam/minter-go-node/core/state/bus"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	"math/big"
@@ -21,10 +22,23 @@ type Validator struct {
 
 	tmAddress types.TmAddress
 	toDrop    bool
+
+	bus *bus.Bus
 }
 
-func NewValidator(rewardAddress types.Address, pubKey types.Pubkey, commission uint, absentTimes *types.BitArray, totalStake *big.Int, accumReward *big.Int, isDirty bool, isTotalStakeDirty bool, isAccumRewardDirty bool) *Validator {
-	val := &Validator{RewardAddress: rewardAddress, PubKey: pubKey, Commission: commission, AbsentTimes: absentTimes, totalStake: totalStake, accumReward: accumReward, isDirty: isDirty, isTotalStakeDirty: isTotalStakeDirty, isAccumRewardDirty: isAccumRewardDirty}
+func NewValidator(rewardAddress types.Address, pubKey types.Pubkey, commission uint, absentTimes *types.BitArray, totalStake *big.Int, accumReward *big.Int, isDirty bool, isTotalStakeDirty bool, isAccumRewardDirty bool, bus *bus.Bus) *Validator {
+	val := &Validator{
+		RewardAddress:      rewardAddress,
+		PubKey:             pubKey,
+		Commission:         commission,
+		AbsentTimes:        absentTimes,
+		totalStake:         totalStake,
+		accumReward:        accumReward,
+		isDirty:            isDirty,
+		isTotalStakeDirty:  isTotalStakeDirty,
+		isAccumRewardDirty: isAccumRewardDirty,
+		bus:                bus,
+	}
 	val.setTmAddress()
 	return val
 }
@@ -34,7 +48,8 @@ func (v *Validator) IsToDrop() bool {
 }
 
 func (v *Validator) SetAccumReward(value *big.Int) {
-	v.accumReward = value
+	v.bus.Checker().AddCoin(types.GetBaseCoin(), big.NewInt(0).Sub(value, v.accumReward))
+	v.accumReward = big.NewInt(0).Set(value)
 	v.isAccumRewardDirty = true
 }
 

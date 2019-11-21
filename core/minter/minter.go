@@ -405,6 +405,12 @@ func (app *Blockchain) CheckTx(req abciTypes.RequestCheckTx) abciTypes.ResponseC
 
 // Commit the state and return the application Merkle root hash
 func (app *Blockchain) Commit() abciTypes.ResponseCommit {
+	if app.height > 1 {
+		if err := app.stateDeliver.Check(rewards.GetRewardForBlock(app.height)); err != nil {
+			panic(err)
+		}
+	}
+
 	// Committing Minter Blockchain state
 	hash, err := app.stateDeliver.Commit()
 	if err != nil {

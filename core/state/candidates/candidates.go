@@ -297,6 +297,7 @@ func (c *Candidates) RecalculateStakes(height uint64) {
 						ValidatorPubKey: candidate.PubKey,
 					})
 					c.bus.Accounts().AddBalance(update.Owner, update.Coin, update.Value)
+					c.bus.Checker().AddCoin(update.Coin, big.NewInt(0).Neg(update.Value))
 					update.setValue(big.NewInt(0))
 					continue
 				}
@@ -309,6 +310,7 @@ func (c *Candidates) RecalculateStakes(height uint64) {
 						ValidatorPubKey: candidate.PubKey,
 					})
 					c.bus.Accounts().AddBalance(stakes[index].Owner, stakes[index].Coin, stakes[index].Value)
+					c.bus.Checker().AddCoin(stakes[index].Coin, big.NewInt(0).Neg(stakes[index].Value))
 				}
 
 				update.markDirty = func(i int) {
@@ -389,6 +391,8 @@ func (c *Candidates) Delegate(address types.Address, pubkey types.Pubkey, coin t
 
 	candidate := c.GetCandidate(pubkey)
 	candidate.addUpdate(stake)
+
+	c.bus.Checker().AddCoin(coin, value)
 }
 
 func (c *Candidates) Edit(pubkey types.Pubkey, rewardAddress types.Address, ownerAddress types.Address) {
