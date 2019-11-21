@@ -8,8 +8,8 @@ github.com/MinterTeam/go-amino v0.14.1/go.mod h1:2sqs1fcf3DcQpvIJarkzVCjALWc11WD
 github.com/MinterTeam/go-amino v0.14.2-0.20191113110031-d5499d43f453/go.mod h1:o4p3WDNrrIOapHOfM5pKJNZ1exPI+c6ZvbemrNapJxc=
 github.com/MinterTeam/minter-go-node v1.0.4/go.mod h1:juaQ5woUKkGknh4Fj57+uv0AgMAzSv/aChNQT04K+uQ=
 github.com/MinterTeam/minter-go-node v1.0.5-0.20191113110340-a46b8ef88084/go.mod h1:ihc9SIXO0ZSnnS6AB2kT+UD9iIHap0TH47BvL6A2fQg=
-github.com/MinterTeam/minter-node-cli v0.0.0-20191119130742-ff299656cc42 h1:35JqBzLvc3Ilpf9b+BeqfJ6y5wBAlcPraj1fUCygpGE=
-github.com/MinterTeam/minter-node-cli v0.0.0-20191119130742-ff299656cc42/go.mod h1:BBdfIpoP99SYroYibeSI5ZT2iBWsh3jJf2WlHqwTQ9c=
+github.com/MinterTeam/minter-node-cli v0.0.0-20191121123724-2e676b1d46bb h1:TWePR7bLDtMJxwShYGXWXud86jIYkqWrTkGVRNDATF8=
+github.com/MinterTeam/minter-node-cli v0.0.0-20191121123724-2e676b1d46bb/go.mod h1:BBdfIpoP99SYroYibeSI5ZT2iBWsh3jJf2WlHqwTQ9c=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/VividCortex/gohistogram v1.0.0 h1:6+hBz+qvs0JOrrNhhmR7lFxo5sINxBCGXrdtl/UvroE=
 github.com/VividCortex/gohistogram v1.0.0/go.mod h1:Pf5mBqqDxYaXu3hDrrU+w6nw50o/4+TcAqDqk/vUH7g=
