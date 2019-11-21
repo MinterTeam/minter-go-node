@@ -7,8 +7,9 @@ import (
 )
 
 var Manager = &cobra.Command{
-	Use:   "manager",
-	Short: "Minter CLI manager",
+	Use:                "manager",
+	Short:              "Minter CLI manager",
+	DisableFlagParsing: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		service.RunCli(utils.GetMinterHome()+"/manager.sock", args)
 		return nil
