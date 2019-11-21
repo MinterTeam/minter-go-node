@@ -13,10 +13,6 @@ func Transaction(hash []byte) (*TransactionResponse, error) {
 		return nil, err
 	}
 
-	if uint64(tx.Height) > blockchain.LastCommittedHeight() {
-		return nil, rpctypes.RPCError{Code: 404, Message: "Tx not found"}
-	}
-
 	decodedTx, _ := transaction.TxDecoder.DecodeFromBytes(tx.Tx)
 	sender, _ := decodedTx.Sender()
 
