@@ -3,6 +3,7 @@ package rewards
 import (
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"math/big"
+	"sync"
 	"testing"
 )
 
@@ -37,11 +38,31 @@ func TestGetRewardForBlock(t *testing.T) {
 }
 
 func TestTotalRewardsCount(t *testing.T) {
-	total := big.NewInt(0)
 	target := helpers.BipToPip(big.NewInt(9800000000))
+	fromHeight := uint64(1)
+	toHeight := uint64(43703000)
+	const routines = 4
+	results := [routines]*big.Int{}
+	chunk := (toHeight - fromHeight) / routines
 
-	for i := uint64(1); i <= 43703000; i++ {
-		total.Add(total, GetRewardForBlock(i))
+	wg := sync.WaitGroup{}
+	wg.Add(routines)
+
+	for i := uint64(0); i < routines; i++ {
+		go func(i uint64) {
+			results[i] = big.NewInt(0)
+			for block := fromHeight + (i * chunk); block < fromHeight+((i+1)*chunk) && block < toHeight; block++ {
+				results[i].Add(results[i], GetRewardForBlock(block))
+			}
+			wg.Done()
+		}(i)
+	}
+
+	wg.Wait()
+
+	total := big.NewInt(0)
+	for _, result := range results {
+		total.Add(total, result)
 	}
 
 	if total.Cmp(target) != 0 {
