@@ -13,7 +13,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/core/validators"
 	"github.com/MinterTeam/minter-go-node/helpers"
-	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/version"
 	"github.com/tendermint/go-amino"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
@@ -150,12 +149,6 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 	}
 
 	height := uint64(req.Header.Height)
-	// Check invariants
-	if height%720 == 0 {
-		if err := state.NewCheckState(app.stateCheck).CheckForInvariants(); err != nil {
-			log.With("module", "invariants").Error("Invariants error", "msg", err.Error(), "height", app.height)
-		}
-	}
 
 	// compute max gas
 	app.updateBlocksTimeDelta(height, 3)

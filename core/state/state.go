@@ -122,10 +122,6 @@ func (s *State) Commit() ([]byte, error) {
 	return hash, err
 }
 
-func (s *State) CheckForInvariants() error {
-	return nil //todo
-}
-
 func (s *State) Import(state types.AppState) error {
 	s.App.SetMaxGas(state.MaxGas)
 	s.App.SetTotalSlashed(helpers.StringToBigInt(state.TotalSlashed))
