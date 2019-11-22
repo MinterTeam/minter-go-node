@@ -87,6 +87,8 @@ func (f *FrozenFunds) PunishFrozenFundsWithAddress(fromHeight uint64, toHeight u
 					f.bus.App().AddTotalSlashed(slashed)
 				}
 
+				f.bus.Checker().AddCoin(item.Coin, slashed)
+
 				f.bus.Events().AddEvent(uint32(fromHeight), eventsdb.SlashEvent{
 					Address:         item.Address,
 					Amount:          slashed.Bytes(),
@@ -162,6 +164,7 @@ func (f *FrozenFunds) getOrderedDirty() []uint64 {
 
 func (f *FrozenFunds) AddFund(height uint64, address types.Address, pubkey types.Pubkey, coin types.CoinSymbol, value *big.Int) {
 	f.GetOrNew(height).addFund(address, pubkey, coin, value)
+	f.bus.Checker().AddCoin(coin, value)
 }
 
 func (f *FrozenFunds) Delete(height uint64) {
@@ -171,15 +174,10 @@ func (f *FrozenFunds) Delete(height uint64) {
 	}
 
 	ff.delete()
-}
 
-func (f *FrozenFunds) DeleteCoin(height uint64, coinSymbol types.CoinSymbol) {
-	ff := f.get(height)
-	if ff == nil {
-		return
+	for _, fund := range ff.List {
+		f.bus.Checker().AddCoin(fund.Coin, big.NewInt(0).Neg(fund.Value))
 	}
-
-	ff.deleteCoin(coinSymbol, f.bus)
 }
 
 func (f *FrozenFunds) Export(state *types.AppState, height uint64) {
