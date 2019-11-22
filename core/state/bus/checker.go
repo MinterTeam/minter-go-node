@@ -7,4 +7,5 @@ import (
 
 type Checker interface {
 	AddCoin(types.CoinSymbol, *big.Int)
+	AddCoinVolume(types.CoinSymbol, *big.Int)
 }

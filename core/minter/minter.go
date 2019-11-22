@@ -248,6 +248,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 
 	// accumulate rewards
 	reward := rewards.GetRewardForBlock(height)
+	app.stateDeliver.Checker.AddCoinVolume(types.GetBaseCoin(), reward)
 	reward.Add(reward, app.rewards)
 
 	// compute remainder to keep total emission consist
@@ -396,7 +397,7 @@ func (app *Blockchain) CheckTx(req abciTypes.RequestCheckTx) abciTypes.ResponseC
 // Commit the state and return the application Merkle root hash
 func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 	if app.height > 1 {
-		if err := app.stateDeliver.Check(rewards.GetRewardForBlock(app.height)); err != nil {
+		if err := app.stateDeliver.Check(); err != nil {
 			panic(err)
 		}
 	}

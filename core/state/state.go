@@ -17,7 +17,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/tree"
 	db "github.com/tendermint/tm-db"
-	"math/big"
 )
 
 type State struct {
@@ -61,16 +60,10 @@ func NewCheckStateAtHeight(height uint64, db db.DB) (*State, error) {
 	return newStateForTree(iavlTree.GetImmutable(), nil, nil, 0)
 }
 
-func (s *State) Check(rewards *big.Int) error {
-	for coin, delta := range s.Checker.Delta() {
-		if coin.IsBaseCoin() {
-			if delta.Cmp(rewards) != 0 {
-				return fmt.Errorf("invariants error on coin %s: %s", coin.String(), delta.String())
-			}
-			continue
-		}
-
-		if delta.Cmp(big.NewInt(0)) != 0 {
+func (s *State) Check() error {
+	volumeDeltas := s.Checker.VolumeDeltas()
+	for coin, delta := range s.Checker.Deltas() {
+		if delta.Cmp(volumeDeltas[coin]) != 0 {
 			return fmt.Errorf("invariants error on coin %s: %s", coin.String(), delta.String())
 		}
 	}
