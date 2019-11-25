@@ -134,6 +134,9 @@ func (c *Coins) Create(symbol types.CoinSymbol, name string, volume *big.Int, cr
 	coin.SetReserve(reserve)
 	coin.SetVolume(volume)
 	c.markDirty(symbol)
+
+	c.bus.Checker().AddCoin(types.GetBaseCoin(), reserve)
+	c.bus.Checker().AddCoinVolume(symbol, volume)
 }
 
 func (c *Coins) get(symbol types.CoinSymbol) *Model {

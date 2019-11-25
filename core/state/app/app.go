@@ -60,6 +60,10 @@ func (v *App) GetTotalSlashed() *big.Int {
 }
 
 func (v *App) AddTotalSlashed(amount *big.Int) {
+	if amount.Cmp(big.NewInt(0)) == 0 {
+		return
+	}
+
 	model := v.getOrNew()
 	model.setTotalSlashed(big.NewInt(0).Add(model.getTotalSlashed(), amount))
 	v.bus.Checker().AddCoin(types.GetBaseCoin(), amount)
