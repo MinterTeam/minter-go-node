@@ -1,10 +1,12 @@
 package checks
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/check"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/tree"
+	"sort"
 )
 
 const mainPrefix = byte('t')
@@ -20,7 +22,7 @@ func NewChecks(iavl tree.Tree) (*Checks, error) {
 }
 
 func (c *Checks) Commit() error {
-	for hash := range c.usedChecks {
+	for _, hash := range c.getOrderedHashes() {
 		delete(c.usedChecks, hash)
 
 		trieHash := append([]byte{mainPrefix}, hash.Bytes()...)
@@ -58,4 +60,17 @@ func (c *Checks) Export(state *types.AppState) {
 
 		return false
 	})
+}
+
+func (c *Checks) getOrderedHashes() []types.Hash {
+	var keys []types.Hash
+	for hash := range c.usedChecks {
+		keys = append(keys, hash)
+	}
+
+	sort.SliceStable(keys, func(i, j int) bool {
+		return bytes.Compare(keys[i].Bytes(), keys[j].Bytes()) == 1
+	})
+
+	return keys
 }
