@@ -269,9 +269,11 @@ func (c *Candidates) RecalculateStakes(height uint64) {
 
 		for _, update := range updates {
 			if candidate.stakesCount < MaxDelegatorsPerCandidate {
-				update.markDirty = func(i int) {
-					candidate.dirtyStakes[i] = true
-				}
+				update.markDirty = (func(candidate *Candidate) func(int) {
+					return func(i int) {
+						candidate.dirtyStakes[i] = true
+					}
+				})(candidate)
 
 				candidate.SetStakeAtIndex(candidate.stakesCount, update)
 				candidate.stakesCount++
@@ -316,9 +318,11 @@ func (c *Candidates) RecalculateStakes(height uint64) {
 					c.bus.Checker().AddCoin(stakes[index].Coin, big.NewInt(0).Neg(stakes[index].Value))
 				}
 
-				update.markDirty = func(i int) {
-					candidate.dirtyStakes[i] = true
-				}
+				update.markDirty = (func(candidate *Candidate) func(int) {
+					return func(i int) {
+						candidate.dirtyStakes[i] = true
+					}
+				})(candidate)
 
 				candidate.SetStakeAtIndex(index, update)
 				stakes = c.GetStakes(candidate.PubKey)
@@ -515,16 +519,20 @@ func (c *Candidates) loadCandidates() {
 				continue
 			}
 
-			var stake Stake
-			if err := rlp.DecodeBytes(enc, &stake); err != nil {
+			var stake *Stake = &Stake{}
+			if err := rlp.DecodeBytes(enc, stake); err != nil {
 				panic(fmt.Sprintf("failed to decode stake: %s", err))
 			}
 
-			stake.markDirty = func(index int) {
-				candidate.dirtyStakes[index] = true
-			}
+			stake.markDirty = (func(candidate *Candidate) func(int) {
+				return func(i int) {
+					candidate.dirtyStakes[i] = true
+				}
+			})(candidate)
 
-			candidate.stakes[index] = &stake
+			println(stake.Owner.String(), stake.Value.String())
+
+			candidate.stakes[index] = stake
 			stakesCount++
 		}
 
@@ -544,9 +552,11 @@ func (c *Candidates) loadCandidates() {
 			}
 
 			for _, update := range updates {
-				update.markDirty = func(i int) {
-					candidate.isUpdatesDirty = true
-				}
+				update.markDirty = (func(candidate *Candidate) func(int) {
+					return func(i int) {
+						candidate.isUpdatesDirty = true
+					}
+				})(candidate)
 			}
 
 			candidate.updates = updates
