@@ -44,7 +44,6 @@ func (c *Checks) IsCheckUsed(check *check.Check) bool {
 
 func (c *Checks) UseCheck(check *check.Check) {
 	c.UseCheckHash(check.Hash())
-
 }
 
 func (c *Checks) UseCheckHash(hash types.Hash) {

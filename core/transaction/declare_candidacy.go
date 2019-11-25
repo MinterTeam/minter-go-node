@@ -12,6 +12,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/tendermint/tendermint/libs/common"
 	"math/big"
+	"strconv"
 )
 
 const minCommission = 0
@@ -29,13 +30,13 @@ func (data DeclareCandidacyData) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Address    string `json:"address"`
 		PubKey     string `json:"pub_key"`
-		Commission uint   `json:"commission"`
+		Commission string `json:"commission"`
 		Coin       string `json:"coin"`
 		Stake      string `json:"stake"`
 	}{
 		Address:    data.Address.String(),
 		PubKey:     data.PubKey.String(),
-		Commission: data.Commission,
+		Commission: strconv.Itoa(int(data.Commission)),
 		Coin:       data.Coin.String(),
 		Stake:      data.Stake.String(),
 	})
