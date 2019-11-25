@@ -106,9 +106,7 @@ func (v *Validators) SetNewValidators(candidates []candidates.Candidate) {
 		}
 
 		newVals = append(newVals, &Validator{
-			RewardAddress:      candidate.RewardAddress,
 			PubKey:             candidate.PubKey,
-			Commission:         candidate.Commission,
 			AbsentTimes:        absentTimes,
 			totalStake:         candidate.GetTotalBipStake(),
 			accumReward:        accumReward,
@@ -130,14 +128,12 @@ func (v *Validators) PunishByzantineValidator(tmAddress [20]byte) {
 	validator.isDirty = true
 }
 
-func (v *Validators) Create(ownerAddress types.Address, pubkey types.Pubkey, commission uint, stake *big.Int) {
+func (v *Validators) Create(pubkey types.Pubkey, stake *big.Int) {
 	val := &Validator{
-		RewardAddress: ownerAddress,
-		PubKey:        pubkey,
-		Commission:    commission,
-		AbsentTimes:   types.NewBitArray(ValidatorMaxAbsentWindow),
-		totalStake:    stake,
-		accumReward:   big.NewInt(0),
+		PubKey:      pubkey,
+		AbsentTimes: types.NewBitArray(ValidatorMaxAbsentWindow),
+		totalStake:  stake,
+		accumReward: big.NewInt(0),
 	}
 	val.setTmAddress()
 	v.list = append(v.list, val)
@@ -147,6 +143,8 @@ func (v *Validators) PayRewards(height uint64) {
 	vals := v.GetValidators()
 	for _, validator := range vals {
 		if validator.GetAccumReward().Cmp(types.Big0) == 1 {
+			candidate := v.bus.Candidates().GetCandidate(validator.PubKey)
+
 			totalReward := big.NewInt(0).Set(validator.GetAccumReward())
 			remainder := big.NewInt(0).Set(validator.GetAccumReward())
 
@@ -181,21 +179,19 @@ func (v *Validators) PayRewards(height uint64) {
 
 			// pay commission to validator
 			validatorReward := big.NewInt(0).Set(totalReward)
-			validatorReward.Mul(validatorReward, big.NewInt(int64(validator.Commission)))
+			validatorReward.Mul(validatorReward, big.NewInt(int64(candidate.Commission)))
 			validatorReward.Div(validatorReward, big.NewInt(100))
 			totalReward.Sub(totalReward, validatorReward)
-			v.bus.Accounts().AddBalance(validator.RewardAddress, types.GetBaseCoin(), validatorReward)
+			v.bus.Accounts().AddBalance(candidate.RewardAddress, types.GetBaseCoin(), validatorReward)
 			remainder.Sub(remainder, validatorReward)
 			v.bus.Events().AddEvent(uint32(height), eventsdb.RewardEvent{
 				Role:            eventsdb.RoleValidator,
-				Address:         validator.RewardAddress,
+				Address:         candidate.RewardAddress,
 				Amount:          validatorReward.Bytes(),
 				ValidatorPubKey: validator.PubKey,
 			})
 
 			stakes := v.bus.Candidates().GetStakes(validator.PubKey)
-
-			// pay rewards
 			for _, stake := range stakes {
 				if stake.BipValue.Cmp(big.NewInt(0)) == 0 {
 					continue
@@ -322,10 +318,8 @@ func (v *Validators) Export(state *types.AppState) {
 	vals := v.GetValidators()
 	for _, val := range vals {
 		state.Validators = append(state.Validators, types.Validator{
-			RewardAddress: val.RewardAddress,
 			TotalBipStake: val.GetTotalBipStake().String(),
 			PubKey:        val.PubKey,
-			Commission:    val.Commission,
 			AccumReward:   val.GetAccumReward().String(),
 			AbsentTimes:   val.AbsentTimes,
 		})

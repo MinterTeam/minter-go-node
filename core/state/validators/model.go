@@ -8,10 +8,8 @@ import (
 )
 
 type Validator struct {
-	RewardAddress types.Address
-	PubKey        types.Pubkey
-	Commission    uint
-	AbsentTimes   *types.BitArray
+	PubKey      types.Pubkey
+	AbsentTimes *types.BitArray
 
 	totalStake  *big.Int
 	accumReward *big.Int
@@ -26,11 +24,9 @@ type Validator struct {
 	bus *bus.Bus
 }
 
-func NewValidator(rewardAddress types.Address, pubKey types.Pubkey, commission uint, absentTimes *types.BitArray, totalStake *big.Int, accumReward *big.Int, isDirty bool, isTotalStakeDirty bool, isAccumRewardDirty bool, bus *bus.Bus) *Validator {
+func NewValidator(pubKey types.Pubkey, absentTimes *types.BitArray, totalStake *big.Int, accumReward *big.Int, isDirty bool, isTotalStakeDirty bool, isAccumRewardDirty bool, bus *bus.Bus) *Validator {
 	val := &Validator{
-		RewardAddress:      rewardAddress,
 		PubKey:             pubKey,
-		Commission:         commission,
 		AbsentTimes:        absentTimes,
 		totalStake:         totalStake,
 		accumReward:        accumReward,

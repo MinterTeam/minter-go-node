@@ -140,9 +140,7 @@ func (s *State) Import(state types.AppState) error {
 	var vals []*validators.Validator
 	for _, v := range state.Validators {
 		vals = append(vals, validators.NewValidator(
-			v.RewardAddress,
 			v.PubKey,
-			v.Commission,
 			v.AbsentTimes,
 			helpers.StringToBigInt(v.TotalBipStake),
 			helpers.StringToBigInt(v.AccumReward),

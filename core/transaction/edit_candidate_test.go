@@ -23,7 +23,7 @@ func TestEditCandidateTx(t *testing.T) {
 	rand.Read(pubkey[:])
 
 	cState.Candidates.Create(addr, addr, pubkey, 10)
-	cState.Validators.Create(addr, pubkey, 10, helpers.BipToPip(big.NewInt(1)))
+	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 
 	newRewardAddress := types.Address{1}
 	newOwnerAddress := types.Address{2}

@@ -37,3 +37,18 @@ func (b *Bus) GetStakes(pubkey types.Pubkey) []bus.Stake {
 func (b *Bus) Punish(height uint64, address types.TmAddress) *big.Int {
 	return b.candidates.Punish(height, address)
 }
+
+func (b *Bus) GetCandidate(pubkey types.Pubkey) *bus.Candidate {
+	candidate := b.candidates.GetCandidate(pubkey)
+	if candidate == nil {
+		return nil
+	}
+
+	return &bus.Candidate{
+		PubKey:        candidate.PubKey,
+		RewardAddress: candidate.RewardAddress,
+		OwnerAddress:  candidate.OwnerAddress,
+		Commission:    candidate.Commission,
+		Status:        candidate.Status,
+	}
+}

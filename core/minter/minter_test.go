@@ -443,10 +443,8 @@ func makeValidatorsAndCandidates(pubkeys []string, stake *big.Int) ([]types.Vali
 		copy(pkey[:], pkeyBytes)
 
 		validators[i] = types.Validator{
-			RewardAddress: addr,
 			TotalBipStake: stake.String(),
 			PubKey:        pkey,
-			Commission:    100,
 			AccumReward:   big.NewInt(0).String(),
 			AbsentTimes:   types.NewBitArray(24),
 		}

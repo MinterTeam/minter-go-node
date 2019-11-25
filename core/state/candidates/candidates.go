@@ -421,6 +421,10 @@ func (c *Candidates) GetCandidates() []*Candidate {
 		candidates = append(candidates, candidate)
 	}
 
+	sort.Slice(candidates, func(i, j int) bool {
+		return bytes.Compare(candidates[i].PubKey[:], candidates[j].PubKey[:]) == 1
+	})
+
 	return candidates
 }
 

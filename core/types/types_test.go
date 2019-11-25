@@ -137,10 +137,8 @@ func TestAppState(t *testing.T) {
 	appState := AppState{
 		Validators: []Validator{
 			{
-				RewardAddress: testAddr,
 				TotalBipStake: big.NewInt(1).String(),
 				PubKey:        pubkey,
-				Commission:    1,
 				AccumReward:   big.NewInt(1).String(),
 				AbsentTimes:   ba,
 			},
