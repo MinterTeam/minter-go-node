@@ -16,10 +16,6 @@ const (
 	infoPrefix = byte('i')
 )
 
-const ownerAccountsIndexBucket = "coinOwnerAccountsIndex"
-const ownerCandidatesIndexBucket = "coinOwnerCandidatesIndex"
-const ownerFrozenFundsIndexBucket = "coinOwnerFrozenFundsIndex"
-
 type Coins struct {
 	list  map[types.CoinSymbol]*Model
 	dirty map[types.CoinSymbol]struct{}
