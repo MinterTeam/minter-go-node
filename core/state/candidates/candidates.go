@@ -43,8 +43,17 @@ func NewCandidates(bus *bus.Bus, iavl tree.Tree) (*Candidates, error) {
 }
 
 func (c *Candidates) Commit() error {
-	keys := c.getOrderedDirtyCandidates()
-	if len(keys) > 0 {
+	keys := c.getOrderedCandidates()
+
+	hasDirty := false
+	for _, pubkey := range keys {
+		if c.list[pubkey].isDirty {
+			hasDirty = true
+			break
+		}
+	}
+
+	if hasDirty {
 		var candidates []*Candidate
 		for _, key := range keys {
 			candidates = append(candidates, c.list[key])
@@ -70,8 +79,7 @@ func (c *Candidates) Commit() error {
 			candidate.isTotalStakeDirty = false
 		}
 
-		stakes := candidate.stakes
-		for index, stake := range stakes {
+		for index, stake := range candidate.stakes {
 			if !candidate.dirtyStakes[index] {
 				continue
 			}
@@ -606,22 +614,6 @@ func (c *Candidates) calculateBipValue(coinSymbol types.CoinSymbol, amount *big.
 	coin := c.bus.Coins().GetCoin(coinSymbol)
 
 	return formula.CalculateSaleReturn(coin.Volume, coin.Reserve, coin.Crr, totalAmount)
-}
-
-func (c *Candidates) getOrderedDirtyCandidates() []types.Pubkey {
-	var keys []types.Pubkey
-	for _, candidate := range c.list {
-		if !candidate.HasDirty() {
-			continue
-		}
-		keys = append(keys, candidate.PubKey)
-	}
-
-	sort.SliceStable(keys, func(i, j int) bool {
-		return bytes.Compare(keys[i].Bytes(), keys[j].Bytes()) == 1
-	})
-
-	return keys
 }
 
 func (c *Candidates) Punish(height uint64, address types.TmAddress) *big.Int {

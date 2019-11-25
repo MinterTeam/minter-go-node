@@ -70,21 +70,6 @@ func (candidate *Candidate) setTmAddress() {
 	candidate.tmAddress = &address
 }
 
-func (candidate *Candidate) HasDirty() bool {
-	isDirty := candidate.isDirty || candidate.isUpdatesDirty || candidate.isTotalStakeDirty
-	if isDirty {
-		return isDirty
-	}
-
-	for _, isDirty := range candidate.dirtyStakes {
-		if isDirty {
-			return true
-		}
-	}
-
-	return false
-}
-
 func (candidate *Candidate) GetFilteredUpdates() []*Stake {
 	var updates []*Stake
 	for _, update := range candidate.updates {
