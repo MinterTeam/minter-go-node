@@ -241,7 +241,8 @@ func (c *Candidates) GetCandidateByTendermintAddress(address types.TmAddress) *C
 }
 
 func (c *Candidates) RecalculateStakes(height uint64) {
-	for _, candidate := range c.list {
+	for _, pubkey := range c.getOrderedCandidates() {
+		candidate := c.list[pubkey]
 		stakes := c.GetStakes(candidate.PubKey)
 		for _, stake := range stakes {
 			stake.setBipValue(c.calculateBipValue(stake.Coin, stake.Value, false, true))
@@ -417,13 +418,9 @@ func (c *Candidates) SubStake(address types.Address, pubkey types.Pubkey, coin t
 
 func (c *Candidates) GetCandidates() []*Candidate {
 	var candidates []*Candidate
-	for _, candidate := range c.list {
-		candidates = append(candidates, candidate)
+	for _, pubkey := range c.getOrderedCandidates() {
+		candidates = append(candidates, c.list[pubkey])
 	}
-
-	sort.Slice(candidates, func(i, j int) bool {
-		return bytes.Compare(candidates[i].PubKey[:], candidates[j].PubKey[:]) == 1
-	})
 
 	return candidates
 }
@@ -703,4 +700,17 @@ func (c *Candidates) Export(state *types.AppState) {
 		})
 	}
 
+}
+
+func (c *Candidates) getOrderedCandidates() []types.Pubkey {
+	var keys []types.Pubkey
+	for _, candidate := range c.list {
+		keys = append(keys, candidate.PubKey)
+	}
+
+	sort.SliceStable(keys, func(i, j int) bool {
+		return bytes.Compare(keys[i].Bytes(), keys[j].Bytes()) == 1
+	})
+
+	return keys
 }
