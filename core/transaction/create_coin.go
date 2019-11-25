@@ -12,6 +12,7 @@ import (
 	"github.com/tendermint/tendermint/libs/common"
 	"math/big"
 	"regexp"
+	"strconv"
 )
 
 const maxCoinNameBytes = 64
@@ -37,14 +38,14 @@ func (data CreateCoinData) MarshalJSON() ([]byte, error) {
 		Symbol               string `json:"symbol"`
 		InitialAmount        string `json:"initial_amount"`
 		InitialReserve       string `json:"initial_reserve"`
-		ConstantReserveRatio uint   `json:"constant_reserve_ratio"`
+		ConstantReserveRatio string `json:"constant_reserve_ratio"`
 		MaxSupply            string `json:"max_supply"`
 	}{
 		Name:                 data.Name,
 		Symbol:               data.Symbol.String(),
 		InitialAmount:        data.InitialAmount.String(),
 		InitialReserve:       data.InitialReserve.String(),
-		ConstantReserveRatio: data.ConstantReserveRatio,
+		ConstantReserveRatio: strconv.Itoa(int(data.ConstantReserveRatio)),
 		MaxSupply:            data.MaxSupply.String(),
 	})
 }
