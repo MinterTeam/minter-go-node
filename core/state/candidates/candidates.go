@@ -530,8 +530,6 @@ func (c *Candidates) loadCandidates() {
 				}
 			})(candidate)
 
-			println(stake.Owner.String(), stake.Value.String())
-
 			candidate.stakes[index] = stake
 			stakesCount++
 		}
