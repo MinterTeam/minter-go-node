@@ -74,11 +74,18 @@ func (v *Validators) Commit() error {
 }
 
 func (v *Validators) SetValidatorPresent(height uint64, address types.TmAddress) {
-	v.getByTmAddress(address).SetPresent(height)
+	validator := v.getByTmAddress(address)
+	if validator == nil {
+		return
+	}
+	validator.SetPresent(height)
 }
 
 func (v *Validators) SetValidatorAbsent(height uint64, address types.TmAddress) {
 	validator := v.getByTmAddress(address)
+	if validator == nil {
+		return
+	}
 	validator.SetAbsent(height)
 
 	if validator.CountAbsentTimes() > ValidatorMaxAbsentTimes {

@@ -21,7 +21,7 @@ func NewChecker(bus *bus.Bus) *Checker {
 	return checker
 }
 
-func (c *Checker) AddCoin(coin types.CoinSymbol, value *big.Int) {
+func (c *Checker) AddCoin(coin types.CoinSymbol, value *big.Int, msg ...string) {
 	cValue, exists := c.delta[coin]
 
 	if !exists {
