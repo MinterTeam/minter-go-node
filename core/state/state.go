@@ -17,6 +17,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/tree"
 	db "github.com/tendermint/tm-db"
+	"math/big"
 )
 
 type State struct {
@@ -64,7 +65,7 @@ func (s *State) Check() error {
 	volumeDeltas := s.Checker.VolumeDeltas()
 	for coin, delta := range s.Checker.Deltas() {
 		if delta.Cmp(volumeDeltas[coin]) != 0 {
-			return fmt.Errorf("invariants error on coin %s: %s", coin.String(), delta.String())
+			return fmt.Errorf("invariants error on coin %s: %s", coin.String(), big.NewInt(0).Sub(volumeDeltas[coin], delta).String())
 		}
 	}
 

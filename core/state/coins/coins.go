@@ -99,7 +99,7 @@ func (c *Coins) SubReserve(symbol types.CoinSymbol, amount *big.Int) {
 		return
 	}
 	c.get(symbol).SubReserve(amount)
-	c.bus.Checker().AddCoin(types.GetBaseCoin(), amount)
+	c.bus.Checker().AddCoin(types.GetBaseCoin(), big.NewInt(0).Neg(amount))
 }
 
 func (c *Coins) AddReserve(symbol types.CoinSymbol, amount *big.Int) {
@@ -107,7 +107,7 @@ func (c *Coins) AddReserve(symbol types.CoinSymbol, amount *big.Int) {
 		return
 	}
 	c.get(symbol).AddReserve(amount)
-	c.bus.Checker().AddCoin(types.GetBaseCoin(), big.NewInt(0).Neg(amount))
+	c.bus.Checker().AddCoin(types.GetBaseCoin(), amount)
 }
 
 func (c *Coins) Create(symbol types.CoinSymbol, name string, volume *big.Int, crr uint, reserve *big.Int, maxSupply *big.Int) {
