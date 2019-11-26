@@ -621,6 +621,8 @@ func (c *Candidates) Punish(height uint64, address types.TmAddress) *big.Int {
 	totalStake := big.NewInt(0)
 
 	candidate := c.GetCandidateByTendermintAddress(address)
+	c.SetOffline(candidate.PubKey)
+
 	stakes := c.GetStakes(candidate.PubKey)
 	for _, stake := range stakes {
 		newValue := big.NewInt(0).Set(stake.Value)
