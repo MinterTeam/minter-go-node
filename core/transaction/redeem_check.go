@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -28,8 +29,8 @@ func (data RedeemCheckData) MarshalJSON() ([]byte, error) {
 		RawCheck string `json:"raw_check"`
 		Proof    string `json:"proof"`
 	}{
-		RawCheck: fmt.Sprintf("%x", data.RawCheck),
-		Proof:    fmt.Sprintf("%x", data.Proof),
+		RawCheck: base64.StdEncoding.EncodeToString(data.RawCheck),
+		Proof:    base64.StdEncoding.EncodeToString(data.Proof[:]),
 	})
 }
 
