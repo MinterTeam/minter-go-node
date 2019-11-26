@@ -426,6 +426,7 @@ func (c *Candidates) SetOffline(pubkey types.Pubkey) {
 func (c *Candidates) SubStake(address types.Address, pubkey types.Pubkey, coin types.CoinSymbol, value *big.Int) {
 	stake := c.GetStakeOfAddress(pubkey, address, coin)
 	stake.subValue(value)
+	c.bus.Checker().AddCoin(coin, big.NewInt(0).Neg(value))
 }
 
 func (c *Candidates) GetCandidates() []*Candidate {
