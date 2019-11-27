@@ -49,6 +49,14 @@ func (data CreateMultisigData) BasicCheck(tx *Transaction, context *state.State)
 			Log:  fmt.Sprintf("Incorrect multisig weights")}
 	}
 
+	for _, weight := range data.Weights {
+		if weight > 1023 {
+			return &Response{
+				Code: code.IncorrectWeights,
+				Log:  fmt.Sprintf("Incorrect multisig weights")}
+		}
+	}
+
 	return nil
 }
 
