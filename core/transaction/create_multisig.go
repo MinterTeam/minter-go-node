@@ -12,6 +12,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/tendermint/tendermint/libs/common"
 	"math/big"
+	"strconv"
 )
 
 type CreateMultisigData struct {
