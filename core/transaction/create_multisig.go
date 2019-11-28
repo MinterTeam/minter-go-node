@@ -21,13 +21,18 @@ type CreateMultisigData struct {
 }
 
 func (data CreateMultisigData) MarshalJSON() ([]byte, error) {
+	var weights []string
+	for _, weight := range data.Weights {
+		weights = append(weights, strconv.Itoa(int(weight)))
+	}
+
 	return json.Marshal(struct {
-		Threshold uint            `json:"threshold"`
-		Weights   []uint          `json:"weights"`
+		Threshold string          `json:"threshold"`
+		Weights   []string        `json:"weights"`
 		Addresses []types.Address `json:"addresses"`
 	}{
-		Threshold: data.Threshold,
-		Weights:   data.Weights,
+		Threshold: strconv.Itoa(int(data.Threshold)),
+		Weights:   weights,
 		Addresses: data.Addresses,
 	})
 }
