@@ -64,7 +64,12 @@ func NewCheckStateAtHeight(height uint64, db db.DB) (*State, error) {
 func (s *State) Check() error {
 	volumeDeltas := s.Checker.VolumeDeltas()
 	for coin, delta := range s.Checker.Deltas() {
-		if delta.Cmp(volumeDeltas[coin]) != 0 {
+		volume := volumeDeltas[coin]
+		if volume == nil {
+			volume = big.NewInt(0)
+		}
+
+		if delta.Cmp(volume) != 0 {
 			return fmt.Errorf("invariants error on coin %s: %s", coin.String(), big.NewInt(0).Sub(volumeDeltas[coin], delta).String())
 		}
 	}
