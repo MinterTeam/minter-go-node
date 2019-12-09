@@ -52,6 +52,10 @@ func runNode() error {
 		return err
 	}
 
+	if cfg.KeepLastStates < 1 {
+		panic("keep_last_states field should be greater than 0")
+	}
+
 	app := minter.NewMinterBlockchain(cfg)
 	logger := log.NewLogger(cfg)
 
