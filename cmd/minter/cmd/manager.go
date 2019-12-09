@@ -8,7 +8,7 @@ import (
 
 var ManagerCommand = &cobra.Command{
 	Use:                "manager",
-	Short:              "Minter CLI manager",
+	Short:              "Minter manager execute command",
 	DisableFlagParsing: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		console, err := service.ConfigureManagerConsole(utils.GetMinterHome() + "/manager.sock")
