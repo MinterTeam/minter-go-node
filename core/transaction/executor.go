@@ -5,7 +5,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/tendermint/tendermint/libs/common"
 	"math/big"
 	"sync"
@@ -71,10 +70,6 @@ func RunTx(context *state.State,
 			Code: code.TooLowGasPrice,
 			Log:  fmt.Sprintf("Gas price of tx is too low to be included in mempool. Expected %d", minGasPrice),
 		}
-	}
-
-	if !isCheck {
-		log.Info("Deliver tx", "tx", tx.String())
 	}
 
 	if len(tx.Payload) > maxPayloadLength {

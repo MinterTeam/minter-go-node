@@ -3,13 +3,11 @@ package transaction
 import (
 	"bytes"
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/helpers"
-	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/tendermint/go-amino"
 	"github.com/tendermint/tm-db"
@@ -21,10 +19,6 @@ import (
 var (
 	cdc = amino.NewCodec()
 )
-
-func init() {
-	log.InitLog(config.GetConfig())
-}
 
 func getState() *state.State {
 	s, err := state.NewState(0, db.NewMemDB(), nil, 1, 1)

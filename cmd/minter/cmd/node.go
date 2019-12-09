@@ -14,6 +14,7 @@ import (
 	"github.com/tendermint/tendermint/abci/types"
 	tmCfg "github.com/tendermint/tendermint/config"
 	"github.com/tendermint/tendermint/libs/common"
+	tmlog "github.com/tendermint/tendermint/libs/log"
 	tmNode "github.com/tendermint/tendermint/node"
 	"github.com/tendermint/tendermint/p2p"
 	"github.com/tendermint/tendermint/privval"
@@ -21,6 +22,7 @@ import (
 	rpc "github.com/tendermint/tendermint/rpc/client"
 	"github.com/tendermint/tendermint/store"
 	tmTypes "github.com/tendermint/tendermint/types"
+	"os"
 	"time"
 )
 
@@ -51,19 +53,20 @@ func runNode() error {
 	}
 
 	app := minter.NewMinterBlockchain(cfg)
+	logger := log.NewLogger(cfg)
 
 	// update BlocksTimeDelta in case it was corrupted
 	updateBlocksTimeDelta(app, tmConfig)
 
 	// start TM node
-	node := startTendermintNode(app, tmConfig)
+	node := startTendermintNode(app, tmConfig, logger)
 
 	client := rpc.NewLocal(node)
 
 	app.SetTmNode(node)
 
 	if !cfg.ValidatorMode {
-		go api.RunAPI(app, client, cfg)
+		go api.RunAPI(app, client, cfg, logger)
 	}
 
 	ctxCli, stopCli := context.WithCancel(context.Background())
@@ -74,7 +77,7 @@ func runNode() error {
 		}
 	}()
 
-	common.TrapSignal(log.With("module", "trap"), func() {
+	common.TrapSignal(logger.With("module", "trap"), func() {
 		// Cleanup
 		stopCli()
 		err := node.Stop()
@@ -107,7 +110,7 @@ func updateBlocksTimeDelta(app *minter.Blockchain, config *tmCfg.Config) {
 	blockStoreDB.Close()
 }
 
-func startTendermintNode(app types.Application, cfg *tmCfg.Config) *tmNode.Node {
+func startTendermintNode(app types.Application, cfg *tmCfg.Config, logger tmlog.Logger) *tmNode.Node {
 	nodeKey, err := p2p.LoadOrGenNodeKey(cfg.NodeKeyFile())
 	if err != nil {
 		panic(err)
@@ -121,18 +124,20 @@ func startTendermintNode(app types.Application, cfg *tmCfg.Config) *tmNode.Node 
 		getGenesis,
 		tmNode.DefaultDBProvider,
 		tmNode.DefaultMetricsProvider(cfg.Instrumentation),
-		log.With("module", "tendermint"),
+		logger.With("module", "tendermint"),
 	)
 
 	if err != nil {
-		log.Fatal("failed to create a node", "err", err)
+		logger.Error("failed to create a node", "err", err)
+		os.Exit(1)
 	}
 
 	if err = node.Start(); err != nil {
-		log.Fatal("failed to start node", "err", err)
+		logger.Error("failed to start node", "err", err)
+		os.Exit(1)
 	}
 
-	log.Info("Started node", "nodeInfo", node.Switch().NodeInfo())
+	logger.Info("Started node", "nodeInfo", node.Switch().NodeInfo())
 
 	return node
 }

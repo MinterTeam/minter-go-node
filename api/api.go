@@ -6,7 +6,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/minter"
 	"github.com/MinterTeam/minter-go-node/core/state"
-	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/rpc/lib/server"
 	"github.com/rs/cors"
 	"github.com/tendermint/go-amino"
@@ -15,6 +14,7 @@ import (
 	"github.com/tendermint/tendermint/crypto/multisig"
 	"github.com/tendermint/tendermint/crypto/secp256k1"
 	"github.com/tendermint/tendermint/evidence"
+	"github.com/tendermint/tendermint/libs/log"
 	rpc "github.com/tendermint/tendermint/rpc/client"
 	"github.com/tendermint/tendermint/types"
 	"net/http"
@@ -55,7 +55,7 @@ var Routes = map[string]*rpcserver.RPCFunc{
 	"missed_blocks":          rpcserver.NewRPCFunc(MissedBlocks, "pub_key,height"),
 }
 
-func RunAPI(b *minter.Blockchain, tmRPC *rpc.Local, cfg *config.Config) {
+func RunAPI(b *minter.Blockchain, tmRPC *rpc.Local, cfg *config.Config, logger log.Logger) {
 	minterCfg = cfg
 	RegisterCryptoAmino(cdc)
 	eventsdb.RegisterAminoEvents(cdc)
@@ -66,8 +66,7 @@ func RunAPI(b *minter.Blockchain, tmRPC *rpc.Local, cfg *config.Config) {
 	waitForTendermint()
 
 	m := http.NewServeMux()
-	logger := log.With("module", "rpc")
-	rpcserver.RegisterRPCFuncs(m, Routes, cdc, logger)
+	rpcserver.RegisterRPCFuncs(m, Routes, cdc, logger.With("module", "rpc"))
 	listener, err := rpcserver.Listen(cfg.APIListenAddress, rpcserver.Config{
 		MaxOpenConnections: cfg.APISimultaneousRequests,
 	})
@@ -83,7 +82,7 @@ func RunAPI(b *minter.Blockchain, tmRPC *rpc.Local, cfg *config.Config) {
 	})
 
 	handler := c.Handler(m)
-	log.Error("Failed to start API", "err", rpcserver.StartHTTPServer(listener, Handler(handler), logger))
+	logger.Error("Failed to start API", "err", rpcserver.StartHTTPServer(listener, Handler(handler), logger))
 }
 
 func Handler(h http.Handler) http.Handler {

@@ -55,12 +55,11 @@ func initNode() {
 	_ = os.RemoveAll(utils.MinterHome)
 
 	if err := common.EnsureDir(utils.GetMinterHome()+"/tmdata/blockstore.db", 0777); err != nil {
-		log.Error(err.Error())
-		os.Exit(1)
+		panic(err.Error())
 	}
 
 	minterCfg := config.GetConfig()
-	log.InitLog(minterCfg)
+	logger := log.NewLogger(minterCfg)
 	cfg = config.GetTmConfig(minterCfg)
 	cfg.Consensus.TimeoutPropose = 0
 	cfg.Consensus.TimeoutPrecommit = 0
@@ -105,7 +104,7 @@ func initNode() {
 		panic(fmt.Sprintf("Failed to start node: %v", err))
 	}
 
-	log.Info("Started node", "nodeInfo", node.Switch().NodeInfo())
+	logger.Info("Started node", "nodeInfo", node.Switch().NodeInfo())
 	app.SetTmNode(node)
 	tmCli = rpc.NewLocal(node)
 	l.Unlock()
