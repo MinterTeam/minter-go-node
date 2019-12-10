@@ -124,6 +124,7 @@ func (s *State) Import(state types.AppState) error {
 	for _, a := range state.Accounts {
 		s.Accounts.SetNonce(a.Address, a.Nonce)
 
+		// todo
 		//if a.MultisigData != nil {
 		//	account.data.MultisigData.Addresses = a.MultisigData.Addresses
 		//	account.data.MultisigData.Threshold = a.MultisigData.Threshold
