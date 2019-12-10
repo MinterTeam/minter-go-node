@@ -2,7 +2,6 @@ package state
 
 import (
 	"encoding/hex"
-	"errors"
 	"fmt"
 	eventsdb "github.com/MinterTeam/events-db"
 	"github.com/MinterTeam/minter-go-node/core/state/accounts"
@@ -17,7 +16,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/tree"
-	"github.com/tendermint/iavl"
 	db "github.com/tendermint/tm-db"
 	"math/big"
 )
@@ -113,11 +111,7 @@ func (s *State) Commit() ([]byte, error) {
 	hash, version, err := s.tree.SaveVersion()
 
 	if s.keepLastStates < version-1 {
-		err = s.tree.DeleteVersion(version - s.keepLastStates)
-
-		if err != nil && !errors.Is(err, iavl.ErrVersionDoesNotExist) {
-			panic(err)
-		}
+		_ = s.tree.DeleteVersion(version - s.keepLastStates)
 	}
 
 	return hash, err
