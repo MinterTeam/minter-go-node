@@ -114,6 +114,7 @@ func (candidate *Candidate) SetStakeAtIndex(index int, stake *Stake, isDirty boo
 	stake.markDirty = func(i int) {
 		candidate.dirtyStakes[i] = true
 	}
+	stake.index = index
 
 	candidate.stakes[index] = stake
 
