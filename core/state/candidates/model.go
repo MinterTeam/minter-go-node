@@ -110,9 +110,16 @@ func (candidate *Candidate) GetTotalBipStake() *big.Int {
 	return big.NewInt(0).Set(candidate.totalBipStake)
 }
 
-func (candidate *Candidate) SetStakeAtIndex(index int, stake *Stake) {
+func (candidate *Candidate) SetStakeAtIndex(index int, stake *Stake, isDirty bool) {
+	stake.markDirty = func(i int) {
+		candidate.dirtyStakes[i] = true
+	}
+
 	candidate.stakes[index] = stake
-	stake.markDirty(index)
+
+	if isDirty {
+		stake.markDirty(index)
+	}
 }
 
 type Stake struct {

@@ -14,10 +14,6 @@ func NewBus(candidates *Candidates) *Bus {
 	return &Bus{candidates: candidates}
 }
 
-func (b *Bus) DeleteCoin(pubkey types.Pubkey, coin types.CoinSymbol) {
-	b.candidates.DeleteCoin(pubkey, coin)
-}
-
 func (b *Bus) GetStakes(pubkey types.Pubkey) []bus.Stake {
 	stakes := b.candidates.GetStakes(pubkey)
 	var result []bus.Stake

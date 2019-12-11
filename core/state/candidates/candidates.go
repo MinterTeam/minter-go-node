@@ -149,40 +149,6 @@ func (c *Candidates) GetNewCandidates(valCount int, height int64) []Candidate {
 	return result
 }
 
-func (c *Candidates) DeleteCoin(pubkey types.Pubkey, coinSymbol types.CoinSymbol) {
-	stakes := c.GetStakes(pubkey)
-	coin := c.bus.Coins().GetCoin(coinSymbol)
-	candidate := c.GetCandidate(pubkey)
-
-	for index, stake := range stakes {
-		if stake.Coin != coinSymbol {
-			continue
-		}
-
-		ret := formula.CalculateSaleReturn(coin.Volume, coin.Reserve, 100, stake.Value)
-
-		tStake := c.GetStakeOfAddress(pubkey, stake.Owner, types.GetBaseCoin())
-		if tStake == nil {
-			stake.setValue(ret)
-			stake.setCoin(types.GetBaseCoin())
-		} else {
-			candidate.stakes[index] = nil
-			candidate.dirtyStakes[index] = true
-			stake.Value.Add(stake.Value, ret)
-		}
-	}
-
-	for _, update := range candidate.updates {
-		if update.Coin != coinSymbol {
-			continue
-		}
-
-		candidate.isUpdatesDirty = true
-		update.Coin = types.GetBaseCoin()
-		update.Value = formula.CalculateSaleReturn(coin.Volume, coin.Reserve, 100, update.Value)
-	}
-}
-
 func (c *Candidates) Create(ownerAddress types.Address, rewardAddress types.Address, pubkey types.Pubkey, commission uint) {
 	candidate := &Candidate{
 		PubKey:            pubkey,
@@ -277,13 +243,7 @@ func (c *Candidates) RecalculateStakes(height uint64) {
 
 		for _, update := range updates {
 			if candidate.stakesCount < MaxDelegatorsPerCandidate {
-				update.markDirty = (func(candidate *Candidate) func(int) {
-					return func(i int) {
-						candidate.dirtyStakes[i] = true
-					}
-				})(candidate)
-
-				candidate.SetStakeAtIndex(candidate.stakesCount, update)
+				candidate.SetStakeAtIndex(candidate.stakesCount, update, true)
 				candidate.stakesCount++
 				stakes = c.GetStakes(candidate.PubKey)
 			} else {
@@ -326,13 +286,7 @@ func (c *Candidates) RecalculateStakes(height uint64) {
 					c.bus.Checker().AddCoin(stakes[index].Coin, big.NewInt(0).Neg(stakes[index].Value))
 				}
 
-				update.markDirty = (func(candidate *Candidate) func(int) {
-					return func(i int) {
-						candidate.dirtyStakes[i] = true
-					}
-				})(candidate)
-
-				candidate.SetStakeAtIndex(index, update)
+				candidate.SetStakeAtIndex(index, update, true)
 				stakes = c.GetStakes(candidate.PubKey)
 			}
 		}
@@ -528,18 +482,13 @@ func (c *Candidates) loadCandidates() {
 				continue
 			}
 
-			var stake *Stake = &Stake{}
+			stake := &Stake{}
 			if err := rlp.DecodeBytes(enc, stake); err != nil {
 				panic(fmt.Sprintf("failed to decode stake: %s", err))
 			}
 
-			stake.markDirty = (func(candidate *Candidate) func(int) {
-				return func(i int) {
-					candidate.dirtyStakes[i] = true
-				}
-			})(candidate)
+			candidate.SetStakeAtIndex(index, stake, false)
 
-			candidate.stakes[index] = stake
 			stakesCount++
 		}
 

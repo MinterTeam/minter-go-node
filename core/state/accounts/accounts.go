@@ -53,8 +53,7 @@ func (a *Accounts) Commit() error {
 
 		// save coins list
 		if account.hasDirtyCoins {
-			coins := account.getOrderedCoins()
-			coinsList, err := rlp.EncodeToBytes(coins)
+			coinsList, err := rlp.EncodeToBytes(account.coins)
 			if err != nil {
 				return fmt.Errorf("can't encode object at %x: %v", address[:], err)
 			}

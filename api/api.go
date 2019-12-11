@@ -94,6 +94,10 @@ func Handler(h http.Handler) http.Handler {
 			if strings.HasPrefix(val, "Mx") {
 				query.Set(key, fmt.Sprintf("\"%s\"", val))
 			}
+
+			if strings.HasPrefix(val, "Mp") {
+				query.Set(key, fmt.Sprintf("\"%s\"", val))
+			}
 		}
 
 		var err error
