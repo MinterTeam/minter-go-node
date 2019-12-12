@@ -4,7 +4,7 @@
 
 BREAKING CHANGES
 
-- [core] Fix invalid check's sig issue #264
+- [core] Fix invalid check's sig issue [#264](https://github.com/MinterTeam/minter-go-node/issues/264)
 - [core] Refactoring
 - [core] Add Coin's MaxSupply
 - [core] Remove CreatedAtBlock field in candidates
@@ -194,21 +194,21 @@ BREAKING CHANGES
 IMPROVEMENT
 
 - [invariants] Add invariants checker each 720 blocks
-- [core] Delete coins with 0 reserves #217
+- [core] Delete coins with 0 reserves [#217](https://github.com/MinterTeam/minter-go-node/issues/217)
 - [genesis] Add option to export/import state
-- [api] Add ?include_stakes to /candidates endpoint #222
+- [api] Add ?include_stakes to /candidates endpoint [#222](https://github.com/MinterTeam/minter-go-node/issues/222)
 - [api] Change `stake` to `value` in DelegateTx
 - [api] Change `pubkey` to `pub_key` in all API resources and requests
-- [events] Add CoinLiquidation event #221
+- [events] Add CoinLiquidation event [#221](https://github.com/MinterTeam/minter-go-node/issues/221)
 - [mempool] Recheck mempool once per minute
 
 BUG FIXES
 
-- [core] Fix double sign slashing issue #215
-- [core] Fix issue with slashing small stake #209
+- [core] Fix double sign slashing issue [#215](https://github.com/MinterTeam/minter-go-node/issues/215)
+- [core] Fix issue with slashing small stake [#209](https://github.com/MinterTeam/minter-go-node/issues/209)
 - [core] Fix coin creation issue
-- [core] Fix mempool issue #220
-- [api] Make block hash lowercase #214
+- [core] Fix mempool issue [#220](https://github.com/MinterTeam/minter-go-node/issues/220)
+- [api] Make block hash lowercase [#214](https://github.com/MinterTeam/minter-go-node/issues/214)
 
 ## 0.14.3
 
@@ -351,8 +351,8 @@ BUG FIXES
 IMPROVEMENT
 
 - [events] Refactor events
-- [api] #183 Report if node has full state history in /status
-- [api] #164 Add /unconfirmed_txs endpoint
+- [api] [#183](https://github.com/MinterTeam/minter-go-node/issues/183) Report if node has full state history in /status
+- [api] [#164](https://github.com/MinterTeam/minter-go-node/issues/164) Add /unconfirmed_txs endpoint
 - [api] Add /max_gas endpoint
 - [core] Do not accept 2 transactions from same address in mempool at once
 - [core] Add missing tags to transactions
@@ -363,7 +363,7 @@ IMPROVEMENT
 BUG FIXES
 
 - [core] Fix issue with `SellAll` tx
-- [core] Fix issue #182 with candidate owner's address
+- [core] Fix issue [#182](https://github.com/MinterTeam/minter-go-node/issues/182) with candidate owner's address
 - [core] Fix max coin supply
 - [api] Fix tx tags
 
@@ -434,7 +434,7 @@ IMPROVEMENT
 
 BUG FIXES
 
-- [node] Fix issue #168 with unexpected database corruption
+- [node] Fix issue [#168](https://github.com/MinterTeam/minter-go-node/issues/168) with unexpected database corruption
 
 ## 0.7.5
 *Nov 22th, 2018*
@@ -486,8 +486,8 @@ BREAKING CHANGES
 IMPROVEMENT
 
 - [core] Add `MultisendTx`
-- [core] Add special cases to Formulas #140
-- [core] Stake unbond now instant after dropping of from 1,000st place #146
+- [core] Add special cases to Formulas [#140](https://github.com/MinterTeam/minter-go-node/issues/140)
+- [core] Stake unbond now instant after dropping of from 1,000st place [#146](https://github.com/MinterTeam/minter-go-node/issues/146)
 - [p2p] Default send and receive rates are now 15mB/s
 - [mempool] Set max mempool size to 10,000txs
 - [gui] Small GUI improvements
@@ -603,7 +603,7 @@ IMPROVEMENT
 IMPROVEMENT
 
 - [api] Add block size in bytes
-- [api] #100 Add "events" to block response. To get events add ?withEvents=true to request URL. 
+- [api] [#100](https://github.com/MinterTeam/minter-go-node/issues/100) Add "events" to block response. To get events add ?withEvents=true to request URL. 
 WARNING! You should sync blockchain from scratch to get this feature working
 
 ## 0.3.2
@@ -646,10 +646,10 @@ IMPROVEMENT
 
 BUG FIXES
 
-- [core] Fix issue #77 Incorrect createCoin fee
+- [core] Fix issue [#77](https://github.com/MinterTeam/minter-go-node/issues/77) Incorrect createCoin fee
 - [core] Fix issue with insufficient coin reserve in buy coin tx
 - [core] Fix unbond transaction
-- [api] Fix issue #82
+- [api] Fix issue [#82](https://github.com/MinterTeam/minter-go-node/issues/82)
 
 ## 0.2.4
 *Aug 24th, 2018*
