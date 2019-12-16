@@ -61,9 +61,7 @@ type Blockchain struct {
 	// currentMempool is responsive for prevent sending multiple transactions from one address in one block
 	currentMempool sync.Map
 
-	lock    sync.RWMutex
-	wg      sync.WaitGroup // wg is used for graceful node shutdown
-	stopped uint32
+	lock sync.RWMutex
 }
 
 // Creates Minter Blockchain instance, should be only called once
@@ -143,11 +141,6 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 
 // Signals the beginning of a block.
 func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.ResponseBeginBlock {
-	app.wg.Add(1)
-	if atomic.LoadUint32(&app.stopped) == 1 {
-		panic("Application stopped")
-	}
-
 	height := uint64(req.Header.Height)
 
 	// compute max gas
@@ -421,9 +414,6 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 	// Clear mempool
 	app.currentMempool = sync.Map{}
 
-	// Releasing wg
-	app.wg.Done()
-
 	return abciTypes.ResponseCommit{
 		Data: hash,
 	}
@@ -441,9 +431,6 @@ func (app *Blockchain) SetOption(req abciTypes.RequestSetOption) abciTypes.Respo
 
 // Gracefully stopping Minter Blockchain instance
 func (app *Blockchain) Stop() {
-	atomic.StoreUint32(&app.stopped, 1)
-	app.wg.Wait()
-
 	app.appDB.Close()
 	app.stateDB.Close()
 }
