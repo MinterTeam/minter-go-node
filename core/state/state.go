@@ -122,14 +122,11 @@ func (s *State) Import(state types.AppState) error {
 	s.App.SetTotalSlashed(helpers.StringToBigInt(state.TotalSlashed))
 
 	for _, a := range state.Accounts {
-		s.Accounts.SetNonce(a.Address, a.Nonce)
+		if a.MultisigData != nil {
+			s.Accounts.CreateMultisig(a.MultisigData.Weights, a.MultisigData.Addresses, a.MultisigData.Threshold)
+		}
 
-		// todo
-		//if a.MultisigData != nil {
-		//	account.data.MultisigData.Addresses = a.MultisigData.Addresses
-		//	account.data.MultisigData.Threshold = a.MultisigData.Threshold
-		//	account.data.MultisigData.Weights = a.MultisigData.Weights
-		//}
+		s.Accounts.SetNonce(a.Address, a.Nonce)
 
 		for _, b := range a.Balance {
 			s.Accounts.SetBalance(a.Address, b.Coin, helpers.StringToBigInt(b.Value))
