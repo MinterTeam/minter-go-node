@@ -157,7 +157,7 @@ func (c *Candidates) Create(ownerAddress types.Address, rewardAddress types.Addr
 		Commission:        commission,
 		Status:            CandidateStatusOffline,
 		totalBipStake:     big.NewInt(0),
-		stakes:            [1000]*Stake{},
+		stakes:            [MaxDelegatorsPerCandidate]*Stake{},
 		isDirty:           true,
 		isTotalStakeDirty: true,
 	}
