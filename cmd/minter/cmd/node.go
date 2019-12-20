@@ -2,14 +2,17 @@ package cmd
 
 import (
 	"context"
-	"github.com/MinterTeam/minter-go-node/api"
+	v2 "github.com/MinterTeam/minter-go-node/api/v2"
+	service_api "github.com/MinterTeam/minter-go-node/api/v2/service"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/minter"
 	"github.com/MinterTeam/minter-go-node/log"
+	"github.com/MinterTeam/minter-go-node/version"
 	"github.com/MinterTeam/minter-node-cli/service"
 	"github.com/gobuffalo/packr"
 	"github.com/spf13/cobra"
+	"github.com/tendermint/go-amino"
 	"github.com/tendermint/tendermint/abci/types"
 	tmCfg "github.com/tendermint/tendermint/config"
 	"github.com/tendermint/tendermint/libs/common"
@@ -61,7 +64,7 @@ func runNode() error {
 	app.SetTmNode(node)
 
 	if !cfg.ValidatorMode {
-		go api.RunAPI(app, client, cfg, logger)
+		go v2.Run(service_api.NewService(amino.NewCodec(), app, client, cfg, version.Version+"test"), ":8841")
 	}
 
 	ctxCli, stopCli := context.WithCancel(context.Background())

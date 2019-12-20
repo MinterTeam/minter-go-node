@@ -1,0 +1,1928 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "http.proto",
+    "version": "version not set"
+  },
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/address": {
+      "get": {
+        "operationId": "Address",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbAddressResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "address",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "height",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "tags": [
+          "HttpService"
+        ]
+      }
+    },
+    "/addresses": {
+      "get": {
+        "operationId": "Addresses",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbAddressesResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "addresses",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
+          },
+          {
+            "name": "height",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "tags": [
+          "HttpService"
+        ]
+      }
+    },
+    "/block": {
+      "get": {
+        "operationId": "Block",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbBlockResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "height",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "HttpService"
+        ]
+      }
+    },
+    "/candidate": {
+      "get": {
+        "operationId": "Candidate",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbCandidateResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "public_key",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "height",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "tags": [
+          "HttpService"
+        ]
+      }
+    },
+    "/candidates": {
+      "get": {
+        "operationId": "Candidates",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbCandidatesResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "height",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "include_stakes",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "format": "boolean"
+          }
+        ],
+        "tags": [
+          "HttpService"
+        ]
+      }
+    },
+    "/coin_info": {
+      "get": {
+        "operationId": "CoinInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbCoinInfoResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "height",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "symbol",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "HttpService"
+        ]
+      }
+    },
+    "/estimate_coin_buy": {
+      "get": {
+        "operationId": "EstimateCoinBuy",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbEstimateCoinBuyResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "coin_to_buy",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "coin_to_sell",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "value_to_buy",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "height",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "tags": [
+          "HttpService"
+        ]
+      }
+    },
+    "/estimate_coin_sell": {
+      "get": {
+        "operationId": "EstimateCoinSell",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbEstimateCoinSellResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "coin_to_sell",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "coin_to_buy",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "value_to_sell",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "height",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "tags": [
+          "HttpService"
+        ]
+      }
+    },
+    "/estimate_coin_sell_all": {
+      "get": {
+        "operationId": "EstimateCoinSellAll",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbEstimateCoinSellAllResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "coin_to_sell",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "coin_to_buy",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "value_to_sell",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "gas_price",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "height",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "tags": [
+          "HttpService"
+        ]
+      }
+    },
+    "/estimate_tx_commission": {
+      "get": {
+        "operationId": "EstimateTxCommission",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbEstimateTxCommissionResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "tx",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "height",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "tags": [
+          "HttpService"
+        ]
+      }
+    },
+    "/events": {
+      "get": {
+        "operationId": "Events",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbEventsResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "height",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "tags": [
+          "HttpService"
+        ]
+      }
+    },
+    "/genesis": {
+      "get": {
+        "operationId": "Genesis",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbGenesisResponse"
+            }
+          }
+        },
+        "tags": [
+          "HttpService"
+        ]
+      }
+    },
+    "/max_gas": {
+      "get": {
+        "operationId": "MaxGas",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbMaxGasResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "height",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "tags": [
+          "HttpService"
+        ]
+      }
+    },
+    "/min_gas_price": {
+      "get": {
+        "operationId": "MinGasPrice",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbMinGasPriceResponse"
+            }
+          }
+        },
+        "tags": [
+          "HttpService"
+        ]
+      }
+    },
+    "/missed_blocks": {
+      "get": {
+        "operationId": "MissedBlocks",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbMissedBlocksResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "public_key",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "height",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "tags": [
+          "HttpService"
+        ]
+      }
+    },
+    "/net_info": {
+      "get": {
+        "operationId": "NetInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbNetInfoResponse"
+            }
+          }
+        },
+        "tags": [
+          "HttpService"
+        ]
+      }
+    },
+    "/send_transaction": {
+      "get": {
+        "operationId": "SendTransaction",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbSendTransactionResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "tx",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "HttpService"
+        ]
+      }
+    },
+    "/status": {
+      "get": {
+        "operationId": "Status",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbStatusResponse"
+            }
+          }
+        },
+        "tags": [
+          "HttpService"
+        ]
+      }
+    },
+    "/transaction": {
+      "get": {
+        "operationId": "Transaction",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbTransactionResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "hash",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "HttpService"
+        ]
+      }
+    },
+    "/transactions": {
+      "get": {
+        "operationId": "Transactions",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbTransactionsResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "perPage",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "tags": [
+          "HttpService"
+        ]
+      }
+    },
+    "/unconfirmed_txs": {
+      "get": {
+        "operationId": "UnconfirmedTxs",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbUnconfirmedTxsResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "tags": [
+          "HttpService"
+        ]
+      }
+    },
+    "/validators": {
+      "get": {
+        "operationId": "Validators",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbValidatorsResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "height",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "tags": [
+          "HttpService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "AccountBalance": {
+      "type": "object",
+      "properties": {
+        "coin": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "AppStateAccount": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string"
+        },
+        "balance": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AccountBalance"
+          }
+        },
+        "nonce": {
+          "type": "string"
+        }
+      }
+    },
+    "AppStateCandidate": {
+      "type": "object",
+      "properties": {
+        "reward_address": {
+          "type": "string"
+        },
+        "owner_address": {
+          "type": "string"
+        },
+        "total_bip_stake": {
+          "type": "string"
+        },
+        "public_key": {
+          "type": "string"
+        },
+        "commission": {
+          "type": "string"
+        },
+        "stakes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AppStateCandidateStake"
+          }
+        },
+        "created_at_block": {
+          "type": "string"
+        },
+        "status": {
+          "type": "number",
+          "format": "double"
+        }
+      }
+    },
+    "AppStateCandidateStake": {
+      "type": "object",
+      "properties": {
+        "owner": {
+          "type": "string"
+        },
+        "coin": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "bip_value": {
+          "type": "string"
+        }
+      }
+    },
+    "BlockResponseResultEvidence": {
+      "type": "object",
+      "properties": {
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ResultEvidenceEvidence"
+          }
+        }
+      }
+    },
+    "BlockResponseResultValidator": {
+      "type": "object",
+      "properties": {
+        "public_key": {
+          "type": "string"
+        },
+        "signed": {
+          "type": "boolean",
+          "format": "boolean"
+        }
+      }
+    },
+    "ConnectionStatusChannel": {
+      "type": "object",
+      "properties": {
+        "ID": {
+          "type": "string"
+        },
+        "SendQueueCapacity": {
+          "type": "string"
+        },
+        "SendQueueSize": {
+          "type": "string"
+        },
+        "Priority": {
+          "type": "string"
+        },
+        "RecentlySent": {
+          "type": "string"
+        }
+      }
+    },
+    "ConnectionStatusMonitor": {
+      "type": "object",
+      "properties": {
+        "Active": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "Start": {
+          "type": "string"
+        },
+        "Duration": {
+          "type": "string"
+        },
+        "Idle": {
+          "type": "string"
+        },
+        "Bytes": {
+          "type": "string"
+        },
+        "Samples": {
+          "type": "string"
+        },
+        "InstRate": {
+          "type": "string"
+        },
+        "CurRate": {
+          "type": "string"
+        },
+        "AvgRate": {
+          "type": "string"
+        },
+        "PeakRate": {
+          "type": "string"
+        },
+        "BytesRem": {
+          "type": "string"
+        },
+        "TimeRem": {
+          "type": "string"
+        },
+        "Progress": {
+          "type": "string"
+        }
+      }
+    },
+    "ConsensusParamsBlock": {
+      "type": "object",
+      "properties": {
+        "max_bytes": {
+          "type": "string"
+        },
+        "max_gas": {
+          "type": "string"
+        },
+        "time_iota_ms": {
+          "type": "string"
+        }
+      }
+    },
+    "EventsResponseResultEvent": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "value": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "GenesisAppState": {
+      "type": "object",
+      "properties": {
+        "start_height": {
+          "type": "string"
+        },
+        "validators": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/GenesisAppStateValidator"
+          }
+        },
+        "candidates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AppStateCandidate"
+          }
+        },
+        "accounts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AppStateAccount"
+          }
+        },
+        "max_gas": {
+          "type": "string"
+        },
+        "total_slashed": {
+          "type": "string"
+        }
+      }
+    },
+    "GenesisAppStateValidator": {
+      "type": "object",
+      "properties": {
+        "reward_address": {
+          "type": "string"
+        },
+        "total_bip_stake": {
+          "type": "string"
+        },
+        "public_key": {
+          "type": "string"
+        },
+        "commission": {
+          "type": "string"
+        },
+        "accum_reward": {
+          "type": "string"
+        },
+        "absent_times": {
+          "type": "string"
+        }
+      }
+    },
+    "GenesisConsensusParams": {
+      "type": "object",
+      "properties": {
+        "block": {
+          "$ref": "#/definitions/ConsensusParamsBlock"
+        },
+        "evidence": {
+          "$ref": "#/definitions/GenesisConsensusParamsEvidence"
+        },
+        "validator": {
+          "$ref": "#/definitions/GenesisConsensusParamsValidator"
+        }
+      }
+    },
+    "GenesisConsensusParamsEvidence": {
+      "type": "object",
+      "properties": {
+        "max_age": {
+          "type": "string"
+        }
+      }
+    },
+    "GenesisConsensusParamsValidator": {
+      "type": "object",
+      "properties": {
+        "public_key_types": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "NodeInfoOther": {
+      "type": "object",
+      "properties": {
+        "tx_index": {
+          "type": "string"
+        },
+        "rpc_address": {
+          "type": "string"
+        }
+      }
+    },
+    "NodeInfoProtocolVersion": {
+      "type": "object",
+      "properties": {
+        "p2p": {
+          "type": "string"
+        },
+        "block": {
+          "type": "string"
+        },
+        "app": {
+          "type": "string"
+        }
+      }
+    },
+    "PeerConnectionStatus": {
+      "type": "object",
+      "properties": {
+        "Duration": {
+          "type": "string"
+        },
+        "SendMonitor": {
+          "$ref": "#/definitions/ConnectionStatusMonitor"
+        },
+        "RecvMonitor": {
+          "$ref": "#/definitions/ConnectionStatusMonitor"
+        },
+        "Channels": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ConnectionStatusChannel"
+          }
+        }
+      }
+    },
+    "ResultEvidenceEvidence": {
+      "type": "object"
+    },
+    "ResultGenesis": {
+      "type": "object",
+      "properties": {
+        "genesis_time": {
+          "type": "string"
+        },
+        "chain_id": {
+          "type": "string"
+        },
+        "consensus_params": {
+          "$ref": "#/definitions/GenesisConsensusParams"
+        },
+        "app_hash": {
+          "type": "string"
+        },
+        "app_state": {
+          "$ref": "#/definitions/GenesisAppState"
+        }
+      }
+    },
+    "ResultPeer": {
+      "type": "object",
+      "properties": {
+        "node_info": {
+          "$ref": "#/definitions/pbNodeInfo"
+        },
+        "is_outbound": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "connection_status": {
+          "$ref": "#/definitions/PeerConnectionStatus"
+        },
+        "remote_ip": {
+          "type": "string"
+        }
+      }
+    },
+    "ResultTmStatus": {
+      "type": "object",
+      "properties": {
+        "node_info": {
+          "$ref": "#/definitions/pbNodeInfo"
+        },
+        "sync_info": {
+          "$ref": "#/definitions/TmStatusSyncInfo"
+        },
+        "validator_info": {
+          "$ref": "#/definitions/TmStatusValidatorInfo"
+        }
+      }
+    },
+    "ResultTransaction": {
+      "type": "object",
+      "properties": {
+        "hash": {
+          "type": "string"
+        },
+        "raw_tx": {
+          "type": "string"
+        },
+        "from": {
+          "type": "string"
+        },
+        "nonce": {
+          "type": "string"
+        },
+        "gas_price": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object"
+        },
+        "payload": {
+          "type": "string",
+          "format": "byte"
+        },
+        "service_data": {
+          "type": "string",
+          "format": "byte"
+        },
+        "gas": {
+          "type": "string"
+        },
+        "gas_coin": {
+          "type": "string"
+        },
+        "tags": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "code": {
+          "type": "string"
+        },
+        "log": {
+          "type": "string"
+        }
+      }
+    },
+    "TmStatusSyncInfo": {
+      "type": "object",
+      "properties": {
+        "latest_block_hash": {
+          "type": "string"
+        },
+        "latest_app_hash": {
+          "type": "string"
+        },
+        "latest_block_height": {
+          "type": "string"
+        },
+        "latest_block_time": {
+          "type": "string"
+        },
+        "catching_up": {
+          "type": "boolean",
+          "format": "boolean"
+        }
+      }
+    },
+    "TmStatusValidatorInfo": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string"
+        },
+        "public_key": {
+          "$ref": "#/definitions/ValidatorInfoPubKey"
+        },
+        "voting_power": {
+          "type": "string"
+        }
+      }
+    },
+    "ValidatorInfoPubKey": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "pbAddressResponse": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "result": {
+          "$ref": "#/definitions/pbAddressResponseResult"
+        },
+        "error": {
+          "$ref": "#/definitions/pbError"
+        }
+      }
+    },
+    "pbAddressResponseResult": {
+      "type": "object",
+      "properties": {
+        "balance": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "transaction_count": {
+          "type": "string"
+        }
+      }
+    },
+    "pbAddressesResponse": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "result": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/pbAddressesResponseResult"
+          }
+        },
+        "error": {
+          "$ref": "#/definitions/pbError"
+        }
+      }
+    },
+    "pbAddressesResponseResult": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string"
+        },
+        "balance": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "transaction_count": {
+          "type": "string"
+        }
+      }
+    },
+    "pbBlockResponse": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "result": {
+          "$ref": "#/definitions/pbBlockResponseResult"
+        },
+        "error": {
+          "$ref": "#/definitions/pbError"
+        }
+      }
+    },
+    "pbBlockResponseResult": {
+      "type": "object",
+      "properties": {
+        "hash": {
+          "type": "string"
+        },
+        "height": {
+          "type": "string"
+        },
+        "time": {
+          "type": "string"
+        },
+        "num_txs": {
+          "type": "string"
+        },
+        "total_txs": {
+          "type": "string"
+        },
+        "transactions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ResultTransaction"
+          }
+        },
+        "block_reward": {
+          "type": "string"
+        },
+        "size": {
+          "type": "string"
+        },
+        "proposer": {
+          "type": "string"
+        },
+        "validators": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/BlockResponseResultValidator"
+          }
+        },
+        "evidence": {
+          "$ref": "#/definitions/BlockResponseResultEvidence"
+        }
+      }
+    },
+    "pbCandidateResponse": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "result": {
+          "$ref": "#/definitions/pbCandidateResult"
+        },
+        "error": {
+          "$ref": "#/definitions/pbError"
+        }
+      }
+    },
+    "pbCandidateResult": {
+      "type": "object",
+      "properties": {
+        "reward_address": {
+          "type": "string"
+        },
+        "total_stake": {
+          "type": "string"
+        },
+        "public_key": {
+          "type": "string"
+        },
+        "commission": {
+          "type": "string"
+        },
+        "stakes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/pbCandidateResultStake"
+          }
+        },
+        "status": {
+          "type": "string"
+        }
+      }
+    },
+    "pbCandidateResultStake": {
+      "type": "object",
+      "properties": {
+        "owner": {
+          "type": "string"
+        },
+        "coin": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "bip_value": {
+          "type": "string"
+        }
+      }
+    },
+    "pbCandidatesResponse": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "result": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/pbCandidateResult"
+          }
+        },
+        "error": {
+          "$ref": "#/definitions/pbError"
+        }
+      }
+    },
+    "pbCoinInfoResponse": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "result": {
+          "$ref": "#/definitions/pbCoinInfoResponseResult"
+        },
+        "error": {
+          "$ref": "#/definitions/pbError"
+        }
+      }
+    },
+    "pbCoinInfoResponseResult": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "symbol": {
+          "type": "string"
+        },
+        "volume": {
+          "type": "string"
+        },
+        "crr": {
+          "type": "string"
+        },
+        "reserve_balance": {
+          "type": "string"
+        }
+      }
+    },
+    "pbError": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "data": {
+          "type": "string"
+        },
+        "log": {
+          "type": "string"
+        }
+      }
+    },
+    "pbEstimateCoinBuyResponse": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "result": {
+          "$ref": "#/definitions/pbEstimateCoinBuyResponseResult"
+        },
+        "error": {
+          "$ref": "#/definitions/pbError"
+        }
+      }
+    },
+    "pbEstimateCoinBuyResponseResult": {
+      "type": "object",
+      "properties": {
+        "will_pay": {
+          "type": "string"
+        },
+        "commission": {
+          "type": "string"
+        }
+      }
+    },
+    "pbEstimateCoinSellAllResponse": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "result": {
+          "$ref": "#/definitions/pbEstimateCoinSellAllResponseResult"
+        },
+        "error": {
+          "$ref": "#/definitions/pbError"
+        }
+      }
+    },
+    "pbEstimateCoinSellAllResponseResult": {
+      "type": "object",
+      "properties": {
+        "will_get": {
+          "type": "string"
+        }
+      }
+    },
+    "pbEstimateCoinSellResponse": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "result": {
+          "$ref": "#/definitions/pbEstimateCoinSellResponseResult"
+        },
+        "error": {
+          "$ref": "#/definitions/pbError"
+        }
+      }
+    },
+    "pbEstimateCoinSellResponseResult": {
+      "type": "object",
+      "properties": {
+        "will_get": {
+          "type": "string"
+        },
+        "commission": {
+          "type": "string"
+        }
+      }
+    },
+    "pbEstimateTxCommissionResponse": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "result": {
+          "$ref": "#/definitions/pbEstimateTxCommissionResponseResult"
+        },
+        "error": {
+          "$ref": "#/definitions/pbError"
+        }
+      }
+    },
+    "pbEstimateTxCommissionResponseResult": {
+      "type": "object",
+      "properties": {
+        "commission": {
+          "type": "string"
+        }
+      }
+    },
+    "pbEventsResponse": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "result": {
+          "$ref": "#/definitions/pbEventsResponseResult"
+        },
+        "error": {
+          "$ref": "#/definitions/pbError"
+        }
+      }
+    },
+    "pbEventsResponseResult": {
+      "type": "object",
+      "properties": {
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/EventsResponseResultEvent"
+          }
+        }
+      }
+    },
+    "pbGenesisResponse": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "result": {
+          "$ref": "#/definitions/pbGenesisResponseResult"
+        },
+        "error": {
+          "$ref": "#/definitions/pbError"
+        }
+      }
+    },
+    "pbGenesisResponseResult": {
+      "type": "object",
+      "properties": {
+        "genesis": {
+          "$ref": "#/definitions/ResultGenesis"
+        }
+      }
+    },
+    "pbMaxGasResponse": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "result": {
+          "type": "string"
+        },
+        "error": {
+          "$ref": "#/definitions/pbError"
+        }
+      }
+    },
+    "pbMinGasPriceResponse": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "result": {
+          "type": "string"
+        },
+        "error": {
+          "$ref": "#/definitions/pbError"
+        }
+      }
+    },
+    "pbMissedBlocksResponse": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "result": {
+          "$ref": "#/definitions/pbMissedBlocksResponseResult"
+        },
+        "error": {
+          "$ref": "#/definitions/pbError"
+        }
+      }
+    },
+    "pbMissedBlocksResponseResult": {
+      "type": "object",
+      "properties": {
+        "missed_blocks": {
+          "type": "string"
+        },
+        "missed_blocks_count": {
+          "type": "string"
+        }
+      }
+    },
+    "pbNetInfoResponse": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "result": {
+          "$ref": "#/definitions/pbNetInfoResponseResult"
+        },
+        "error": {
+          "$ref": "#/definitions/pbError"
+        }
+      }
+    },
+    "pbNetInfoResponseResult": {
+      "type": "object",
+      "properties": {
+        "listening": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "listeners": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "n_peers": {
+          "type": "string"
+        },
+        "peers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ResultPeer"
+          }
+        }
+      }
+    },
+    "pbNodeInfo": {
+      "type": "object",
+      "properties": {
+        "protocol_version": {
+          "$ref": "#/definitions/NodeInfoProtocolVersion"
+        },
+        "id": {
+          "type": "string"
+        },
+        "listen_addr": {
+          "type": "string"
+        },
+        "network": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "channels": {
+          "type": "string"
+        },
+        "moniker": {
+          "type": "string"
+        },
+        "other": {
+          "$ref": "#/definitions/NodeInfoOther"
+        }
+      }
+    },
+    "pbSendTransactionResponse": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "result": {
+          "$ref": "#/definitions/pbSendTransactionResponseResult"
+        },
+        "error": {
+          "$ref": "#/definitions/pbError"
+        }
+      }
+    },
+    "pbSendTransactionResponseResult": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "data": {
+          "type": "string"
+        },
+        "log": {
+          "type": "string"
+        },
+        "hash": {
+          "type": "string"
+        }
+      }
+    },
+    "pbStatusResponse": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "result": {
+          "$ref": "#/definitions/pbStatusResponseResult"
+        },
+        "error": {
+          "$ref": "#/definitions/pbError"
+        }
+      }
+    },
+    "pbStatusResponseResult": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string"
+        },
+        "latest_block_hash": {
+          "type": "string"
+        },
+        "latest_app_hash": {
+          "type": "string"
+        },
+        "latest_block_height": {
+          "type": "string"
+        },
+        "latest_block_time": {
+          "type": "string"
+        },
+        "keep_last_states": {
+          "type": "string"
+        },
+        "tm_status": {
+          "$ref": "#/definitions/ResultTmStatus"
+        }
+      }
+    },
+    "pbTransactionResponse": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "result": {
+          "$ref": "#/definitions/pbTransactionResult"
+        },
+        "error": {
+          "$ref": "#/definitions/pbError"
+        }
+      }
+    },
+    "pbTransactionResult": {
+      "type": "object",
+      "properties": {
+        "hash": {
+          "type": "string"
+        },
+        "raw_tx": {
+          "type": "string"
+        },
+        "height": {
+          "type": "string"
+        },
+        "index": {
+          "type": "string"
+        },
+        "from": {
+          "type": "string"
+        },
+        "nonce": {
+          "type": "string"
+        },
+        "gas": {
+          "type": "string"
+        },
+        "gas_price": {
+          "type": "string"
+        },
+        "gas_coin": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object"
+        },
+        "payload": {
+          "type": "string",
+          "format": "byte"
+        },
+        "tags": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "code": {
+          "type": "string"
+        },
+        "log": {
+          "type": "string"
+        }
+      }
+    },
+    "pbTransactionsResponse": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "result": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/pbTransactionResult"
+          }
+        },
+        "error": {
+          "$ref": "#/definitions/pbError"
+        }
+      }
+    },
+    "pbUnconfirmedTxsResponse": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "result": {
+          "$ref": "#/definitions/pbUnconfirmedTxsResponseResult"
+        },
+        "error": {
+          "$ref": "#/definitions/pbError"
+        }
+      }
+    },
+    "pbUnconfirmedTxsResponseResult": {
+      "type": "object",
+      "properties": {
+        "n_txs": {
+          "type": "string"
+        },
+        "total": {
+          "type": "string"
+        },
+        "total_bytes": {
+          "type": "string"
+        },
+        "txs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "pbValidatorsResponse": {
+      "type": "object",
+      "properties": {
+        "jsonrpc": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "result": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/pbValidatorsResponseResult"
+          }
+        },
+        "error": {
+          "$ref": "#/definitions/pbError"
+        }
+      }
+    },
+    "pbValidatorsResponseResult": {
+      "type": "object",
+      "properties": {
+        "public_key": {
+          "type": "string"
+        },
+        "voting_power": {
+          "type": "string"
+        }
+      }
+    },
+    "protobufNullValue": {
+      "type": "string",
+      "enum": [
+        "NULL_VALUE"
+      ],
+      "default": "NULL_VALUE",
+      "description": "`NullValue` is a singleton enumeration to represent the null value for the\n`Value` type union.\n\n The JSON representation for `NullValue` is JSON `null`.\n\n - NULL_VALUE: Null value."
+    }
+  }
+}
