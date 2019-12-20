@@ -389,7 +389,7 @@ func (app *Blockchain) CheckTx(req abciTypes.RequestCheckTx) abciTypes.ResponseC
 
 // Commit the state and return the application Merkle root hash
 func (app *Blockchain) Commit() abciTypes.ResponseCommit {
-	if app.height > 1 {
+	if app.height > app.appDB.GetStartHeight() + 1 {
 		if err := app.stateDeliver.Check(); err != nil {
 			panic(err)
 		}
