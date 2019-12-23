@@ -20,9 +20,7 @@ func Run(srvc *service.Service, addr string) error {
 		return err
 	}
 
-	mux.Handle("GET", runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"subscribe"}, "", runtime.AssumeColonVerbOpt(true))), func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
-		//todo
-	})
+	mux.Handle("GET", runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"subscribe"}, "", runtime.AssumeColonVerbOpt(true))), srvc.Subscribe)
 
 	fmt.Println("listening")
 

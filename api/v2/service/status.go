@@ -5,17 +5,21 @@ import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/api/v2/pb"
 	"github.com/golang/protobuf/ptypes/empty"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"time"
 )
 
 func (s *Service) Status(context.Context, *empty.Empty) (*pb.StatusResponse, error) {
 	result, err := s.client.Status()
 	if err != nil {
-		return &pb.StatusResponse{
-			Error: &pb.Error{
-				Data: err.Error(),
-			},
-		}, nil
+		details, _ := status.New(codes.Internal, err.Error()).WithDetails(&pb.Error{
+			Code:    "12",
+			Message: "ddd",
+			Data:    "eee",
+			Log:     "aaa",
+		})
+		return &pb.StatusResponse{}, details.Err()
 	}
 
 	return &pb.StatusResponse{
