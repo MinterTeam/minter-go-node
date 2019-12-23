@@ -4,13 +4,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/api/v2/pb"
 	"github.com/MinterTeam/minter-go-node/core/rewards"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
-	_struct "github.com/golang/protobuf/ptypes/struct"
 	core_types "github.com/tendermint/tendermint/rpc/core/types"
 	"time"
 )
@@ -63,17 +61,7 @@ func (s *Service) Block(_ context.Context, req *pb.BlockRequest) (*pb.BlockRespo
 			tags[string(tag.Key)] = string(tag.Value)
 		}
 
-		data, err := s.encodeTxData(tx)
-		if err != nil {
-			return &pb.BlockResponse{
-				Error: &pb.Error{
-					Data: err.Error(),
-				},
-			}, nil
-		}
-
-		dataStruct := &_struct.Struct{Fields: make(map[string]*_struct.Value)}
-		err = json.Unmarshal(data, dataStruct.Fields)
+		dataStruct, err := s.encodeTxData(tx)
 		if err != nil {
 			return &pb.BlockResponse{
 				Error: &pb.Error{
@@ -89,7 +77,7 @@ func (s *Service) Block(_ context.Context, req *pb.BlockRequest) (*pb.BlockRespo
 			Nonce:       fmt.Sprintf("%d", tx.Nonce),
 			GasPrice:    fmt.Sprintf("%d", tx.GasPrice),
 			Type:        fmt.Sprintf("%d", tx.Type),
-			Data:        dataStruct, //todo
+			Data:        dataStruct,
 			Payload:     tx.Payload,
 			ServiceData: tx.ServiceData,
 			Gas:         fmt.Sprintf("%d", tx.Gas()),

@@ -1,12 +1,13 @@
 package service
 
 import (
+	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/api/v2/pb"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
+	"github.com/golang/protobuf/jsonpb"
 	_struct "github.com/golang/protobuf/ptypes/struct"
 	"github.com/tendermint/tendermint/libs/common"
 )
@@ -29,17 +30,7 @@ func (s *Service) Transaction(_ context.Context, req *pb.TransactionRequest) (*p
 		tags[string(tag.Key)] = string(tag.Value)
 	}
 
-	data, err := s.encodeTxData(decodedTx)
-	if err != nil {
-		return &pb.TransactionResponse{
-			Error: &pb.Error{
-				Data: err.Error(),
-			},
-		}, nil
-	}
-
-	dataStruct := &_struct.Struct{Fields: make(map[string]*_struct.Value)}
-	err = json.Unmarshal(data, dataStruct.Fields)
+	dataStruct, err := s.encodeTxData(decodedTx)
 	if err != nil {
 		return &pb.TransactionResponse{
 			Error: &pb.Error{
@@ -69,37 +60,55 @@ func (s *Service) Transaction(_ context.Context, req *pb.TransactionRequest) (*p
 	}, nil
 }
 
-func (s *Service) encodeTxData(decodedTx *transaction.Transaction) ([]byte, error) {
+func (s *Service) encodeTxData(decodedTx *transaction.Transaction) (*_struct.Struct, error) {
+	var (
+		err error
+		b   []byte
+		bb  bytes.Buffer
+	)
 	switch decodedTx.Type {
 	case transaction.TypeSend:
-		return s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.SendData))
+		b, err = s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.SendData))
 	case transaction.TypeRedeemCheck:
-		return s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.RedeemCheckData))
+		b, err = s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.RedeemCheckData))
 	case transaction.TypeSellCoin:
-		return s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.SellCoinData))
+		b, err = s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.SellCoinData))
 	case transaction.TypeSellAllCoin:
-		return s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.SellAllCoinData))
+		b, err = s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.SellAllCoinData))
 	case transaction.TypeBuyCoin:
-		return s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.BuyCoinData))
+		b, err = s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.BuyCoinData))
 	case transaction.TypeCreateCoin:
-		return s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.CreateCoinData))
+		b, err = s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.CreateCoinData))
 	case transaction.TypeDeclareCandidacy:
-		return s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.DeclareCandidacyData))
+		b, err = s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.DeclareCandidacyData))
 	case transaction.TypeDelegate:
-		return s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.DelegateData))
+		b, err = s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.DelegateData))
 	case transaction.TypeSetCandidateOnline:
-		return s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.SetCandidateOnData))
+		b, err = s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.SetCandidateOnData))
 	case transaction.TypeSetCandidateOffline:
-		return s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.SetCandidateOffData))
+		b, err = s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.SetCandidateOffData))
 	case transaction.TypeUnbond:
-		return s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.UnbondData))
+		b, err = s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.UnbondData))
 	case transaction.TypeMultisend:
-		return s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.MultisendData))
+		b, err = s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.MultisendData))
 	case transaction.TypeCreateMultisig:
-		return s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.CreateMultisigData))
+		b, err = s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.CreateMultisigData))
 	case transaction.TypeEditCandidate:
-		return s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.EditCandidateData))
+		b, err = s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.EditCandidateData))
+	default:
+		return nil, errors.New("unknown tx type")
 	}
 
-	return nil, errors.New("unknown tx type")
+	if err != nil {
+		return nil, err
+	}
+
+	bb.Write(b)
+
+	dataStruct := &_struct.Struct{Fields: make(map[string]*_struct.Value)}
+	if err := (&jsonpb.Unmarshaler{}).Unmarshal(&bb, dataStruct); err != nil {
+		return nil, err
+	}
+
+	return dataStruct, nil
 }

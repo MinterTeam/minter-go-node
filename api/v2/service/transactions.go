@@ -2,11 +2,9 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/api/v2/pb"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
-	_struct "github.com/golang/protobuf/ptypes/struct"
 	"github.com/tendermint/tendermint/libs/common"
 )
 
@@ -39,17 +37,7 @@ func (s *Service) Transactions(_ context.Context, req *pb.TransactionsRequest) (
 			tags[string(tag.Key)] = string(tag.Value)
 		}
 
-		data, err := s.encodeTxData(decodedTx)
-		if err != nil {
-			return &pb.TransactionsResponse{
-				Error: &pb.Error{
-					Data: err.Error(),
-				},
-			}, nil
-		}
-
-		dataStruct := &_struct.Struct{Fields: make(map[string]*_struct.Value)}
-		err = json.Unmarshal(data, dataStruct.Fields)
+		dataStruct, err := s.encodeTxData(decodedTx)
 		if err != nil {
 			return &pb.TransactionsResponse{
 				Error: &pb.Error{

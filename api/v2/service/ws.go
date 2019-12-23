@@ -55,11 +55,17 @@ func (s *Service) Subscribe(w http.ResponseWriter, r *http.Request, pathParams m
 	done := make(chan struct{})
 
 	closeErr := make(chan error)
+	stopNextReader := make(chan struct{})
 	go func() {
 		for {
-			if _, _, err := conn.NextReader(); err != nil {
-				closeErr <- err
+			select {
+			case <-stopNextReader:
 				return
+			default:
+				if _, _, err := conn.NextReader(); err != nil {
+					closeErr <- err
+					return
+				}
 			}
 		}
 	}()
@@ -89,6 +95,7 @@ func (s *Service) Subscribe(w http.ResponseWriter, r *http.Request, pathParams m
 	}()
 
 	<-done
+	close(stopNextReader)
 	if err := conn.Close(); err != nil {
 		s.client.Logger.Error(err.Error())
 	}
