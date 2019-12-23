@@ -27,8 +27,8 @@ func (s *Service) Transactions(_ context.Context, req *pb.TransactionsRequest) (
 		}, nil
 	}
 
-	result := make([]*pb.TransactionResult, len(rpcResult.Txs))
-	for i, tx := range rpcResult.Txs {
+	result := make([]*pb.TransactionResponse, 0, len(rpcResult.Txs))
+	for _, tx := range rpcResult.Txs {
 		decodedTx, _ := transaction.TxDecoder.DecodeFromBytes(tx.Tx)
 		sender, _ := decodedTx.Sender()
 
@@ -46,7 +46,7 @@ func (s *Service) Transactions(_ context.Context, req *pb.TransactionsRequest) (
 			}, nil
 		}
 
-		result[i] = &pb.TransactionResult{
+		result = append(result, &pb.TransactionResponse{
 			Hash:     common.HexBytes(tx.Tx.Hash()).String(),
 			RawTx:    fmt.Sprintf("%x", []byte(tx.Tx)),
 			Height:   fmt.Sprintf("%d", tx.Height),
@@ -62,10 +62,10 @@ func (s *Service) Transactions(_ context.Context, req *pb.TransactionsRequest) (
 			Tags:     tags,
 			Code:     fmt.Sprintf("%d", tx.TxResult.Code),
 			Log:      tx.TxResult.Log,
-		}
+		})
 	}
 
 	return &pb.TransactionsResponse{
-		Result: result,
+		Transactions: result,
 	}, nil
 }

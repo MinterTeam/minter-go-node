@@ -26,11 +26,9 @@ func (s *Service) SendTransaction(_ context.Context, req *pb.SendTransactionRequ
 	}
 
 	return &pb.SendTransactionResponse{
-		Result: &pb.SendTransactionResponse_Result{
-			Code: fmt.Sprintf("%d", result.Code),
-			Data: result.Data.String(),
-			Log:  result.Log,
-			Hash: result.Hash.String(),
-		},
+		Code: fmt.Sprintf("%d", result.Code),
+		Data: result.Data.String(),
+		Log:  result.Log,
+		Hash: result.Hash.String(),
 	}, nil
 }

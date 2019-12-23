@@ -724,26 +724,58 @@
         }
       }
     },
-    "BlockResponseResultEvidence": {
-      "type": "object",
-      "properties": {
-        "evidence": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/ResultEvidenceEvidence"
-          }
-        }
-      }
+    "BlockResponseEvidenceEvidence": {
+      "type": "object"
     },
-    "BlockResponseResultValidator": {
+    "BlockResponseTransaction": {
       "type": "object",
       "properties": {
-        "public_key": {
+        "hash": {
           "type": "string"
         },
-        "signed": {
-          "type": "boolean",
-          "format": "boolean"
+        "raw_tx": {
+          "type": "string"
+        },
+        "from": {
+          "type": "string"
+        },
+        "nonce": {
+          "type": "string"
+        },
+        "gas_price": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object"
+        },
+        "payload": {
+          "type": "string",
+          "format": "byte"
+        },
+        "service_data": {
+          "type": "string",
+          "format": "byte"
+        },
+        "gas": {
+          "type": "string"
+        },
+        "gas_coin": {
+          "type": "string"
+        },
+        "tags": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "code": {
+          "type": "string"
+        },
+        "log": {
+          "type": "string"
         }
       }
     },
@@ -826,7 +858,7 @@
         }
       }
     },
-    "EventsResponseResultEvent": {
+    "EventsResponseEvent": {
       "type": "object",
       "properties": {
         "type": {
@@ -928,6 +960,26 @@
         }
       }
     },
+    "GenesisResponseGenesis": {
+      "type": "object",
+      "properties": {
+        "genesis_time": {
+          "type": "string"
+        },
+        "chain_id": {
+          "type": "string"
+        },
+        "consensus_params": {
+          "$ref": "#/definitions/GenesisConsensusParams"
+        },
+        "app_hash": {
+          "type": "string"
+        },
+        "app_state": {
+          "$ref": "#/definitions/GenesisAppState"
+        }
+      }
+    },
     "NodeInfoOther": {
       "type": "object",
       "properties": {
@@ -973,29 +1025,6 @@
         }
       }
     },
-    "ResultEvidenceEvidence": {
-      "type": "object"
-    },
-    "ResultGenesis": {
-      "type": "object",
-      "properties": {
-        "genesis_time": {
-          "type": "string"
-        },
-        "chain_id": {
-          "type": "string"
-        },
-        "consensus_params": {
-          "$ref": "#/definitions/GenesisConsensusParams"
-        },
-        "app_hash": {
-          "type": "string"
-        },
-        "app_state": {
-          "$ref": "#/definitions/GenesisAppState"
-        }
-      }
-    },
     "ResultPeer": {
       "type": "object",
       "properties": {
@@ -1014,108 +1043,7 @@
         }
       }
     },
-    "ResultTmStatus": {
-      "type": "object",
-      "properties": {
-        "node_info": {
-          "$ref": "#/definitions/pbNodeInfo"
-        },
-        "sync_info": {
-          "$ref": "#/definitions/TmStatusSyncInfo"
-        },
-        "validator_info": {
-          "$ref": "#/definitions/TmStatusValidatorInfo"
-        }
-      }
-    },
-    "ResultTransaction": {
-      "type": "object",
-      "properties": {
-        "hash": {
-          "type": "string"
-        },
-        "raw_tx": {
-          "type": "string"
-        },
-        "from": {
-          "type": "string"
-        },
-        "nonce": {
-          "type": "string"
-        },
-        "gas_price": {
-          "type": "string"
-        },
-        "type": {
-          "type": "string"
-        },
-        "data": {
-          "type": "object"
-        },
-        "payload": {
-          "type": "string",
-          "format": "byte"
-        },
-        "service_data": {
-          "type": "string",
-          "format": "byte"
-        },
-        "gas": {
-          "type": "string"
-        },
-        "gas_coin": {
-          "type": "string"
-        },
-        "tags": {
-          "type": "object",
-          "additionalProperties": {
-            "type": "string"
-          }
-        },
-        "code": {
-          "type": "string"
-        },
-        "log": {
-          "type": "string"
-        }
-      }
-    },
-    "TmStatusSyncInfo": {
-      "type": "object",
-      "properties": {
-        "latest_block_hash": {
-          "type": "string"
-        },
-        "latest_app_hash": {
-          "type": "string"
-        },
-        "latest_block_height": {
-          "type": "string"
-        },
-        "latest_block_time": {
-          "type": "string"
-        },
-        "catching_up": {
-          "type": "boolean",
-          "format": "boolean"
-        }
-      }
-    },
-    "TmStatusValidatorInfo": {
-      "type": "object",
-      "properties": {
-        "address": {
-          "type": "string"
-        },
-        "public_key": {
-          "$ref": "#/definitions/ValidatorInfoPubKey"
-        },
-        "voting_power": {
-          "type": "string"
-        }
-      }
-    },
-    "ValidatorInfoPubKey": {
+    "StatusResponsePubKey": {
       "type": "object",
       "properties": {
         "type": {
@@ -1127,23 +1055,6 @@
       }
     },
     "pbAddressResponse": {
-      "type": "object",
-      "properties": {
-        "jsonrpc": {
-          "type": "string"
-        },
-        "id": {
-          "type": "string"
-        },
-        "result": {
-          "$ref": "#/definitions/pbAddressResponseResult"
-        },
-        "error": {
-          "$ref": "#/definitions/pbError"
-        }
-      }
-    },
-    "pbAddressResponseResult": {
       "type": "object",
       "properties": {
         "balance": {
@@ -1160,20 +1071,11 @@
     "pbAddressesResponse": {
       "type": "object",
       "properties": {
-        "jsonrpc": {
-          "type": "string"
-        },
-        "id": {
-          "type": "string"
-        },
-        "result": {
+        "addresses": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/pbAddressesResponseResult"
           }
-        },
-        "error": {
-          "$ref": "#/definitions/pbError"
         }
       }
     },
@@ -1197,23 +1099,6 @@
     "pbBlockResponse": {
       "type": "object",
       "properties": {
-        "jsonrpc": {
-          "type": "string"
-        },
-        "id": {
-          "type": "string"
-        },
-        "result": {
-          "$ref": "#/definitions/pbBlockResponseResult"
-        },
-        "error": {
-          "$ref": "#/definitions/pbError"
-        }
-      }
-    },
-    "pbBlockResponseResult": {
-      "type": "object",
-      "properties": {
         "hash": {
           "type": "string"
         },
@@ -1232,7 +1117,7 @@
         "transactions": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/ResultTransaction"
+            "$ref": "#/definitions/BlockResponseTransaction"
           }
         },
         "block_reward": {
@@ -1247,32 +1132,38 @@
         "validators": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/BlockResponseResultValidator"
+            "$ref": "#/definitions/pbBlockResponseValidator"
           }
         },
         "evidence": {
-          "$ref": "#/definitions/BlockResponseResultEvidence"
+          "$ref": "#/definitions/pbBlockResponseEvidence"
+        }
+      }
+    },
+    "pbBlockResponseEvidence": {
+      "type": "object",
+      "properties": {
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/BlockResponseEvidenceEvidence"
+          }
+        }
+      }
+    },
+    "pbBlockResponseValidator": {
+      "type": "object",
+      "properties": {
+        "public_key": {
+          "type": "string"
+        },
+        "signed": {
+          "type": "boolean",
+          "format": "boolean"
         }
       }
     },
     "pbCandidateResponse": {
-      "type": "object",
-      "properties": {
-        "jsonrpc": {
-          "type": "string"
-        },
-        "id": {
-          "type": "string"
-        },
-        "result": {
-          "$ref": "#/definitions/pbCandidateResult"
-        },
-        "error": {
-          "$ref": "#/definitions/pbError"
-        }
-      }
-    },
-    "pbCandidateResult": {
       "type": "object",
       "properties": {
         "reward_address": {
@@ -1290,7 +1181,7 @@
         "stakes": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/pbCandidateResultStake"
+            "$ref": "#/definitions/pbCandidateResponseStake"
           }
         },
         "status": {
@@ -1298,7 +1189,7 @@
         }
       }
     },
-    "pbCandidateResultStake": {
+    "pbCandidateResponseStake": {
       "type": "object",
       "properties": {
         "owner": {
@@ -1318,41 +1209,15 @@
     "pbCandidatesResponse": {
       "type": "object",
       "properties": {
-        "jsonrpc": {
-          "type": "string"
-        },
-        "id": {
-          "type": "string"
-        },
-        "result": {
+        "candidates": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/pbCandidateResult"
+            "$ref": "#/definitions/pbCandidateResponse"
           }
-        },
-        "error": {
-          "$ref": "#/definitions/pbError"
         }
       }
     },
     "pbCoinInfoResponse": {
-      "type": "object",
-      "properties": {
-        "jsonrpc": {
-          "type": "string"
-        },
-        "id": {
-          "type": "string"
-        },
-        "result": {
-          "$ref": "#/definitions/pbCoinInfoResponseResult"
-        },
-        "error": {
-          "$ref": "#/definitions/pbError"
-        }
-      }
-    },
-    "pbCoinInfoResponseResult": {
       "type": "object",
       "properties": {
         "name": {
@@ -1372,41 +1237,7 @@
         }
       }
     },
-    "pbError": {
-      "type": "object",
-      "properties": {
-        "code": {
-          "type": "string"
-        },
-        "message": {
-          "type": "string"
-        },
-        "data": {
-          "type": "string"
-        },
-        "log": {
-          "type": "string"
-        }
-      }
-    },
     "pbEstimateCoinBuyResponse": {
-      "type": "object",
-      "properties": {
-        "jsonrpc": {
-          "type": "string"
-        },
-        "id": {
-          "type": "string"
-        },
-        "result": {
-          "$ref": "#/definitions/pbEstimateCoinBuyResponseResult"
-        },
-        "error": {
-          "$ref": "#/definitions/pbError"
-        }
-      }
-    },
-    "pbEstimateCoinBuyResponseResult": {
       "type": "object",
       "properties": {
         "will_pay": {
@@ -1420,46 +1251,12 @@
     "pbEstimateCoinSellAllResponse": {
       "type": "object",
       "properties": {
-        "jsonrpc": {
-          "type": "string"
-        },
-        "id": {
-          "type": "string"
-        },
-        "result": {
-          "$ref": "#/definitions/pbEstimateCoinSellAllResponseResult"
-        },
-        "error": {
-          "$ref": "#/definitions/pbError"
-        }
-      }
-    },
-    "pbEstimateCoinSellAllResponseResult": {
-      "type": "object",
-      "properties": {
         "will_get": {
           "type": "string"
         }
       }
     },
     "pbEstimateCoinSellResponse": {
-      "type": "object",
-      "properties": {
-        "jsonrpc": {
-          "type": "string"
-        },
-        "id": {
-          "type": "string"
-        },
-        "result": {
-          "$ref": "#/definitions/pbEstimateCoinSellResponseResult"
-        },
-        "error": {
-          "$ref": "#/definitions/pbError"
-        }
-      }
-    },
-    "pbEstimateCoinSellResponseResult": {
       "type": "object",
       "properties": {
         "will_get": {
@@ -1473,23 +1270,6 @@
     "pbEstimateTxCommissionResponse": {
       "type": "object",
       "properties": {
-        "jsonrpc": {
-          "type": "string"
-        },
-        "id": {
-          "type": "string"
-        },
-        "result": {
-          "$ref": "#/definitions/pbEstimateTxCommissionResponseResult"
-        },
-        "error": {
-          "$ref": "#/definitions/pbError"
-        }
-      }
-    },
-    "pbEstimateTxCommissionResponseResult": {
-      "type": "object",
-      "properties": {
         "commission": {
           "type": "string"
         }
@@ -1498,27 +1278,10 @@
     "pbEventsResponse": {
       "type": "object",
       "properties": {
-        "jsonrpc": {
-          "type": "string"
-        },
-        "id": {
-          "type": "string"
-        },
-        "result": {
-          "$ref": "#/definitions/pbEventsResponseResult"
-        },
-        "error": {
-          "$ref": "#/definitions/pbError"
-        }
-      }
-    },
-    "pbEventsResponseResult": {
-      "type": "object",
-      "properties": {
         "events": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/EventsResponseResultEvent"
+            "$ref": "#/definitions/EventsResponseEvent"
           }
         }
       }
@@ -1526,80 +1289,28 @@
     "pbGenesisResponse": {
       "type": "object",
       "properties": {
-        "jsonrpc": {
-          "type": "string"
-        },
-        "id": {
-          "type": "string"
-        },
-        "result": {
-          "$ref": "#/definitions/pbGenesisResponseResult"
-        },
-        "error": {
-          "$ref": "#/definitions/pbError"
-        }
-      }
-    },
-    "pbGenesisResponseResult": {
-      "type": "object",
-      "properties": {
         "genesis": {
-          "$ref": "#/definitions/ResultGenesis"
+          "$ref": "#/definitions/GenesisResponseGenesis"
         }
       }
     },
     "pbMaxGasResponse": {
       "type": "object",
       "properties": {
-        "jsonrpc": {
-          "type": "string"
-        },
-        "id": {
-          "type": "string"
-        },
         "result": {
           "type": "string"
-        },
-        "error": {
-          "$ref": "#/definitions/pbError"
         }
       }
     },
     "pbMinGasPriceResponse": {
       "type": "object",
       "properties": {
-        "jsonrpc": {
-          "type": "string"
-        },
-        "id": {
-          "type": "string"
-        },
         "result": {
           "type": "string"
-        },
-        "error": {
-          "$ref": "#/definitions/pbError"
         }
       }
     },
     "pbMissedBlocksResponse": {
-      "type": "object",
-      "properties": {
-        "jsonrpc": {
-          "type": "string"
-        },
-        "id": {
-          "type": "string"
-        },
-        "result": {
-          "$ref": "#/definitions/pbMissedBlocksResponseResult"
-        },
-        "error": {
-          "$ref": "#/definitions/pbError"
-        }
-      }
-    },
-    "pbMissedBlocksResponseResult": {
       "type": "object",
       "properties": {
         "missed_blocks": {
@@ -1613,17 +1324,8 @@
     "pbNetInfoResponse": {
       "type": "object",
       "properties": {
-        "jsonrpc": {
-          "type": "string"
-        },
-        "id": {
-          "type": "string"
-        },
         "result": {
           "$ref": "#/definitions/pbNetInfoResponseResult"
-        },
-        "error": {
-          "$ref": "#/definitions/pbError"
         }
       }
     },
@@ -1683,23 +1385,6 @@
     "pbSendTransactionResponse": {
       "type": "object",
       "properties": {
-        "jsonrpc": {
-          "type": "string"
-        },
-        "id": {
-          "type": "string"
-        },
-        "result": {
-          "$ref": "#/definitions/pbSendTransactionResponseResult"
-        },
-        "error": {
-          "$ref": "#/definitions/pbError"
-        }
-      }
-    },
-    "pbSendTransactionResponseResult": {
-      "type": "object",
-      "properties": {
         "code": {
           "type": "string"
         },
@@ -1715,23 +1400,6 @@
       }
     },
     "pbStatusResponse": {
-      "type": "object",
-      "properties": {
-        "jsonrpc": {
-          "type": "string"
-        },
-        "id": {
-          "type": "string"
-        },
-        "result": {
-          "$ref": "#/definitions/pbStatusResponseResult"
-        },
-        "error": {
-          "$ref": "#/definitions/pbError"
-        }
-      }
-    },
-    "pbStatusResponseResult": {
       "type": "object",
       "properties": {
         "version": {
@@ -1752,29 +1420,16 @@
         "keep_last_states": {
           "type": "string"
         },
-        "tm_status": {
-          "$ref": "#/definitions/ResultTmStatus"
+        "catching_up": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "public_key": {
+          "$ref": "#/definitions/StatusResponsePubKey"
         }
       }
     },
     "pbTransactionResponse": {
-      "type": "object",
-      "properties": {
-        "jsonrpc": {
-          "type": "string"
-        },
-        "id": {
-          "type": "string"
-        },
-        "result": {
-          "$ref": "#/definitions/pbTransactionResult"
-        },
-        "error": {
-          "$ref": "#/definitions/pbError"
-        }
-      }
-    },
-    "pbTransactionResult": {
       "type": "object",
       "properties": {
         "hash": {
@@ -1831,41 +1486,15 @@
     "pbTransactionsResponse": {
       "type": "object",
       "properties": {
-        "jsonrpc": {
-          "type": "string"
-        },
-        "id": {
-          "type": "string"
-        },
-        "result": {
+        "transactions": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/pbTransactionResult"
+            "$ref": "#/definitions/pbTransactionResponse"
           }
-        },
-        "error": {
-          "$ref": "#/definitions/pbError"
         }
       }
     },
     "pbUnconfirmedTxsResponse": {
-      "type": "object",
-      "properties": {
-        "jsonrpc": {
-          "type": "string"
-        },
-        "id": {
-          "type": "string"
-        },
-        "result": {
-          "$ref": "#/definitions/pbUnconfirmedTxsResponseResult"
-        },
-        "error": {
-          "$ref": "#/definitions/pbError"
-        }
-      }
-    },
-    "pbUnconfirmedTxsResponseResult": {
       "type": "object",
       "properties": {
         "n_txs": {
@@ -1888,20 +1517,11 @@
     "pbValidatorsResponse": {
       "type": "object",
       "properties": {
-        "jsonrpc": {
-          "type": "string"
-        },
-        "id": {
-          "type": "string"
-        },
-        "result": {
+        "validators": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/pbValidatorsResponseResult"
           }
-        },
-        "error": {
-          "$ref": "#/definitions/pbError"
         }
       }
     },

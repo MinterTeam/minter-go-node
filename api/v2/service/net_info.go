@@ -75,8 +75,6 @@ func (s *Service) NetInfo(context.Context, *empty.Empty) (*pb.NetInfoResponse, e
 	}
 
 	return &pb.NetInfoResponse{
-		Jsonrpc: "2.0",
-		Id:      "",
 		Result: &pb.NetInfoResponse_Result{
 			Listening: result.Listening,
 			Listeners: result.Listeners,

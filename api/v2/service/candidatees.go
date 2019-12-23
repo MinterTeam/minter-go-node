@@ -18,10 +18,10 @@ func (s *Service) Candidates(_ context.Context, req *pb.CandidatesRequest) (*pb.
 	candidates := cState.Candidates.GetCandidates()
 
 	result := &pb.CandidatesResponse{
-		Result: make([]*pb.CandidateResult, len(candidates)),
+		Candidates: make([]*pb.CandidateResponse, 0, len(candidates)),
 	}
-	for i, candidate := range candidates {
-		result.Result[i] = makeResponseCandidate(cState, *candidate, req.IncludeStakes)
+	for _, candidate := range candidates {
+		result.Candidates = append(result.Candidates, makeResponseCandidate(cState, *candidate, req.IncludeStakes))
 	}
 
 	return result, nil

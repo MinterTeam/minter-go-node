@@ -28,12 +28,10 @@ func (s *Service) CoinInfo(_ context.Context, req *pb.CoinInfoRequest) (*pb.Coin
 	}
 
 	return &pb.CoinInfoResponse{
-		Result: &pb.CoinInfoResponse_Result{
-			Name:           coin.Name(),
-			Symbol:         coin.Symbol().String(),
-			Volume:         coin.Volume().String(),
-			Crr:            fmt.Sprintf("%d", coin.Crr()),
-			ReserveBalance: coin.Reserve().String(),
-		},
+		Name:           coin.Name(),
+		Symbol:         coin.Symbol().String(),
+		Volume:         coin.Volume().String(),
+		Crr:            fmt.Sprintf("%d", coin.Crr()),
+		ReserveBalance: coin.Reserve().String(),
 	}, nil
 }

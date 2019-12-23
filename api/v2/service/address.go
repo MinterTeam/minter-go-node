@@ -19,20 +19,18 @@ func (s *Service) Address(_ context.Context, req *pb.AddressRequest) (*pb.Addres
 
 	address := types.StringToAddress(req.Address)
 	response := &pb.AddressResponse{
-		Result: &pb.AddressResponse_Result{
-			Balance:          make(map[string]string),
-			TransactionCount: fmt.Sprintf("%d", cState.Accounts.GetNonce(address)),
-		},
+		Balance:          make(map[string]string),
+		TransactionCount: fmt.Sprintf("%d", cState.Accounts.GetNonce(address)),
 	}
 
 	balances := cState.Accounts.GetBalances(address)
 
 	for k, v := range balances {
-		response.Result.Balance[k.String()] = v.String()
+		response.Balance[k.String()] = v.String()
 	}
 
-	if _, exists := response.Result.Balance[types.GetBaseCoin().String()]; !exists {
-		response.Result.Balance[types.GetBaseCoin().String()] = "0"
+	if _, exists := response.Balance[types.GetBaseCoin().String()]; !exists {
+		response.Balance[types.GetBaseCoin().String()] = "0"
 	}
 
 	return response, nil

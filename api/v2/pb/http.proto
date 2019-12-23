@@ -32,8 +32,6 @@ message NodeInfo {
     Other other = 7;
 }
 message NetInfoResponse {
-    string jsonrpc = 1;
-    string id = 2;
     message Result {
         bool listening = 4;
         repeated string listeners = 1;
@@ -75,183 +73,142 @@ message NetInfoResponse {
         repeated Peer peers = 3;
     }
     Result result = 3;
-    Error error = 4;
 }
 message StatusResponse {
-    string jsonrpc = 1;
-    string id = 2;
-    message Result {
-        string version = 7;
-        string latest_block_hash = 1;
-        string latest_app_hash = 2;
-        string latest_block_height = 3;
-        string latest_block_time = 4;
-        string keep_last_states = 5;
-        message TmStatus {
-            NodeInfo node_info = 3;
-            message SyncInfo {
-                string latest_block_hash = 5;
-                string latest_app_hash = 1;
-                string latest_block_height = 2;
-                string latest_block_time = 3;
-                bool catching_up = 4;
-            }
-            SyncInfo sync_info = 1;
-            message ValidatorInfo {
-                string address = 3;
-                message PubKey {
-                    string type = 2;
-                    string value = 1;
-                }
-                PubKey public_key = 1;
-                string voting_power = 2;
-            }
-            ValidatorInfo validator_info = 2;
-        }
-        TmStatus tm_status = 6;
+    string version = 8;
+    string latest_block_hash = 1;
+    string latest_app_hash = 2;
+    string latest_block_height = 3;
+    string latest_block_time = 4;
+    message PubKey {
+        string type = 2;
+        string value = 1;
     }
-    Result result = 3;
-    Error error = 4;
+    string keep_last_states = 5;
+    bool catching_up = 6;
+    PubKey public_key = 7;
 }
 message GenesisResponse {
-    string jsonrpc = 1;
-    string id = 2;
-    message Result {
-        message Genesis {
-            string genesis_time = 1;
-            string chain_id = 2;
-            message ConsensusParams {
-                message Block {
-                    string max_bytes = 1;
-                    string max_gas = 2;
-                    string time_iota_ms = 3;
-                }
-                Block block = 1;
-                message Evidence {
-                    string max_age = 1;
-                }
-                Evidence evidence = 2;
-                message Validator {
-                    repeated string public_key_types = 1;
-                }
-                Validator validator = 3;
+    message Genesis {
+        string genesis_time = 1;
+        string chain_id = 2;
+        message ConsensusParams {
+            message Block {
+                string max_bytes = 1;
+                string max_gas = 2;
+                string time_iota_ms = 3;
             }
-            ConsensusParams consensus_params = 3;
-            string app_hash = 4;
-            message AppState {
-                string start_height = 1;
-                message Validator {
-                    string reward_address = 1;
-                    string total_bip_stake = 2;
-                    string public_key = 3;
-                    string commission = 4;
-                    string accum_reward = 5;
-                    string absent_times = 6;
-                }
-                repeated Validator validators = 2;
-                message Candidate {
-                    string reward_address = 1;
-                    string owner_address = 2;
-                    string total_bip_stake = 3;
-                    string public_key = 4;
-                    string commission = 5;
-                    message Stake {
-                        string owner = 1;
-                        string coin = 2;
-                        string value = 3;
-                        string bip_value = 4;
-                    }
-                    repeated Stake stakes = 6;
-                    string created_at_block = 7;
-                    double status = 8;
-                }
-                repeated Candidate candidates = 3;
-                message Account {
-                    string address = 1;
-                    message Balance {
-                        string coin = 1;
-                        string value = 2;
-                    }
-                    repeated Balance balance = 2;
-                    string nonce = 3;
-                }
-                repeated Account accounts = 4;
-                string max_gas = 5;
-                string total_slashed = 6;
+            Block block = 1;
+            message Evidence {
+                string max_age = 1;
             }
-            AppState app_state = 5;
+            Evidence evidence = 2;
+            message Validator {
+                repeated string public_key_types = 1;
+            }
+            Validator validator = 3;
         }
-        Genesis genesis = 1;
+        ConsensusParams consensus_params = 3;
+        string app_hash = 4;
+        message AppState {
+            string start_height = 1;
+            message Validator {
+                string reward_address = 1;
+                string total_bip_stake = 2;
+                string public_key = 3;
+                string commission = 4;
+                string accum_reward = 5;
+                string absent_times = 6;
+            }
+            repeated Validator validators = 2;
+            message Candidate {
+                string reward_address = 1;
+                string owner_address = 2;
+                string total_bip_stake = 3;
+                string public_key = 4;
+                string commission = 5;
+                message Stake {
+                    string owner = 1;
+                    string coin = 2;
+                    string value = 3;
+                    string bip_value = 4;
+                }
+                repeated Stake stakes = 6;
+                string created_at_block = 7;
+                double status = 8;
+            }
+            repeated Candidate candidates = 3;
+            message Account {
+                string address = 1;
+                message Balance {
+                    string coin = 1;
+                    string value = 2;
+                }
+                repeated Balance balance = 2;
+                string nonce = 3;
+            }
+            repeated Account accounts = 4;
+            string max_gas = 5;
+            string total_slashed = 6;
+        }
+        AppState app_state = 5;
     }
-    Result result = 3;
-    Error error = 4;
+    Genesis genesis = 1;
 }
 message MinGasPriceResponse {
-    string jsonrpc = 1;
-    string id = 2;
     string result = 3;
-    Error error = 4;
 }
 
 message BlockRequest {
     int64 height = 1;
 }
 message BlockResponse {
-    string jsonrpc = 1;
-    string id = 2;
-    message Result {
+    string hash = 1;
+    string height = 2;
+    string time = 3;
+    string num_txs = 4;
+    string total_txs = 5;
+
+    message Transaction {
         string hash = 1;
-        string height = 2;
-        string time = 3;
-        string num_txs = 4;
-        string total_txs = 5;
-
-        message Transaction {
-            string hash = 1;
-            string raw_tx = 2;
-            string from = 3;
-            string nonce = 4;
-            string gas_price = 5;
-            string type = 6;
-            google.protobuf.Struct data = 7;
-            bytes payload = 8;
-            bytes service_data = 9;
-            string gas = 10;
-            string gas_coin = 11;
-            map<string, string> tags = 12;
-            string code = 13;
-            string log = 14;
-        }
-
-        repeated Transaction transactions = 6;
-        string block_reward = 7;
-        string size = 8;
-        string proposer = 9;
-        message Validator {
-            string public_key = 1;
-            bool signed = 2;
-        }
-        repeated Validator validators = 10;
-        message Evidence {
-            message Evidence {
-
-            }
-            repeated Evidence evidence = 1;
-        }
-        Evidence evidence = 11;
+        string raw_tx = 2;
+        string from = 3;
+        string nonce = 4;
+        string gas_price = 5;
+        string type = 6;
+        google.protobuf.Struct data = 7;
+        bytes payload = 8;
+        bytes service_data = 9;
+        string gas = 10;
+        string gas_coin = 11;
+        map<string, string> tags = 12;
+        string code = 13;
+        string log = 14;
     }
-    Result result = 3;
-    Error error = 4;
+
+    repeated Transaction transactions = 6;
+    string block_reward = 7;
+    string size = 8;
+    string proposer = 9;
+    message Validator {
+        string public_key = 1;
+        bool signed = 2;
+    }
+    repeated Validator validators = 10;
+    message Evidence {
+        message Evidence {
+
+        }
+        repeated Evidence evidence = 1;
+    }
+    Evidence evidence = 11;
 }
 
 message MaxGasRequest {
     int32 height = 1;
 }
 message MaxGasResponse {
-    string jsonrpc = 1;
-    string id = 2;
     string result = 3;
-    Error error = 4;
 }
 
 message AddressRequest {
@@ -259,14 +216,8 @@ message AddressRequest {
     int32 height = 2;
 }
 message AddressResponse {
-    string jsonrpc = 1;
-    string id = 2;
-    message Result {
-        map<string, string> balance = 1;
-        string transaction_count = 2;
-    }
-    Result result = 3;
-    Error error = 4;
+    map<string, string> balance = 1;
+    string transaction_count = 2;
 }
 
 message AddressesRequest {
@@ -274,22 +225,19 @@ message AddressesRequest {
     int32 height = 2;
 }
 message AddressesResponse {
-    string jsonrpc = 1;
-    string id = 2;
     message Result {
         string address = 1;
         map<string, string> balance = 2;
         string transaction_count = 3;
     }
-    repeated Result result = 3;
-    Error error = 4;
+    repeated Result addresses = 3;
 }
 
 message CandidateRequest {
     string public_key = 1;
     int32 height = 2;
 }
-message CandidateResult {
+message CandidateResponse {
     string reward_address = 1;
     string total_stake = 2;
     string public_key = 3;
@@ -303,22 +251,13 @@ message CandidateResult {
     repeated Stake stakes = 5;
     string status = 6;
 }
-message CandidateResponse {
-    string jsonrpc = 1;
-    string id = 2;
-    CandidateResult result = 3;
-    Error error = 4;
-}
 
 message CandidatesRequest {
     int32 height = 1;
     bool include_stakes = 2;
 }
 message CandidatesResponse {
-    string jsonrpc = 1;
-    string id = 2;
-    repeated CandidateResult result = 3;
-    Error error = 4;
+    repeated CandidateResponse candidates = 3;
 }
 
 message CoinInfoRequest {
@@ -326,36 +265,24 @@ message CoinInfoRequest {
     string symbol = 2;
 }
 message CoinInfoResponse {
-    string jsonrpc = 1;
-    string id = 2;
-    message Result {
-        string name = 1;
-        string symbol = 2;
-        string volume = 3;
-        string crr = 4;
-        string reserve_balance = 5;
-    }
-    Result result = 3;
-    Error error = 4;
+    string name = 1;
+    string symbol = 2;
+    string volume = 3;
+    string crr = 4;
+    string reserve_balance = 5;
 }
 
 message SendTransactionResponse {
-    string jsonrpc = 1;
-    string id = 2;
-    message Result {
-        string code = 1;
-        string data = 2;
-        string log = 3;
-        string hash = 4;
-    }
-    Result result = 3;
-    Error error = 4;
+    string code = 1;
+    string data = 2;
+    string log = 3;
+    string hash = 4;
 }
 message SendTransactionRequest {
     string tx = 1;
 }
 
-message TransactionResult {
+message TransactionResponse {
     string hash = 1;
     string raw_tx = 2;
     string height = 3;
@@ -372,21 +299,12 @@ message TransactionResult {
     string code = 14;
     string log = 15;
 }
-message TransactionResponse {
-    string jsonrpc = 1;
-    string id = 2;
-    TransactionResult result = 3;
-    Error error = 4;
-}
 message TransactionRequest {
     string hash = 1;
 }
 
 message TransactionsResponse {
-    string jsonrpc = 1;
-    string id = 2;
-    repeated TransactionResult result = 3;
-    Error error = 4;
+    repeated TransactionResponse transactions = 3;
 }
 message TransactionsRequest {
     string query = 1;
@@ -401,14 +319,8 @@ message EstimateCoinBuyRequest {
     int32 height = 4;
 }
 message EstimateCoinBuyResponse {
-    string jsonrpc = 1;
-    string id = 2;
-    message Result {
-        string will_pay = 1;
-        string commission = 2;
-    }
-    Result result = 3;
-    Error error = 4;
+    string will_pay = 1;
+    string commission = 2;
 }
 
 message EstimateCoinSellRequest {
@@ -418,24 +330,12 @@ message EstimateCoinSellRequest {
     int32 height = 4;
 }
 message EstimateCoinSellResponse {
-    string jsonrpc = 1;
-    string id = 2;
-    message Result {
-        string will_get = 1;
-        string commission = 2;
-    }
-    Result result = 3;
-    Error error = 4;
+    string will_get = 1;
+    string commission = 2;
 }
 
 message EstimateCoinSellAllResponse {
-    string jsonrpc = 1;
-    string id = 2;
-    message Result {
-        string will_get = 1;
-    }
-    Result result = 3;
-    Error error = 4;
+    string will_get = 1;
 }
 message EstimateCoinSellAllRequest {
     string coin_to_sell = 1;
@@ -446,13 +346,7 @@ message EstimateCoinSellAllRequest {
 }
 
 message EstimateTxCommissionResponse {
-    string jsonrpc = 1;
-    string id = 2;
-    message Result {
-        string commission = 1;
-    }
-    Result result = 3;
-    Error error = 4;
+    string commission = 1;
 }
 message EstimateTxCommissionRequest {
     string tx = 1;
@@ -463,17 +357,11 @@ message EventsRequest {
     int32 height = 1;
 }
 message EventsResponse {
-    string jsonrpc = 1;
-    string id = 2;
-    message Result {
-        message Event {
-            string type = 1;
-            map<string, string> value = 2;
-        }
-        repeated Event events = 1;
+    message Event {
+        string type = 1;
+        map<string, string> value = 2;
     }
-    Result result = 3;
-    Error error = 4;
+    repeated Event events = 1;
 }
 
 message MissedBlocksRequest {
@@ -481,27 +369,15 @@ message MissedBlocksRequest {
     int32 height = 2;
 }
 message MissedBlocksResponse {
-    string jsonrpc = 1;
-    string id = 2;
-    message Result {
-        string missed_blocks = 1;
-        string missed_blocks_count = 2;
-    }
-    Result result = 3;
-    Error error = 4;
+    string missed_blocks = 1;
+    string missed_blocks_count = 2;
 }
 
 message UnconfirmedTxsResponse {
-    string jsonrpc = 1;
-    string id = 2;
-    message Result {
-        string n_txs = 1;
-        string total = 2;
-        string total_bytes = 3;
-        repeated string txs = 4;
-    }
-    Result result = 3;
-    Error error = 4;
+    string n_txs = 1;
+    string total = 2;
+    string total_bytes = 3;
+    repeated string txs = 4;
 }
 message UnconfirmedTxsRequest {
     int32 limit = 1;
@@ -511,14 +387,11 @@ message ValidatorsRequest {
     int32 height = 1;
 }
 message ValidatorsResponse {
-    string jsonrpc = 1;
-    string id = 2;
     message Result {
         string public_key = 1;
         string voting_power = 2;
     }
-    repeated Result result = 3;
-    Error error = 4;
+    repeated Result validators = 3;
 }
 
 service HttpService {

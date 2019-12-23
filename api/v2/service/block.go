@@ -51,7 +51,7 @@ func (s *Service) Block(_ context.Context, req *pb.BlockRequest) (*pb.BlockRespo
 		}, nil
 	}
 
-	txs := make([]*pb.BlockResponse_Result_Transaction, len(block.Block.Data.Txs))
+	txs := make([]*pb.BlockResponse_Transaction, 0, len(block.Block.Data.Txs))
 	for i, rawTx := range block.Block.Data.Txs {
 		tx, _ := transaction.TxDecoder.DecodeFromBytes(rawTx)
 		sender, _ := tx.Sender()
@@ -70,7 +70,7 @@ func (s *Service) Block(_ context.Context, req *pb.BlockRequest) (*pb.BlockRespo
 			}, nil
 		}
 
-		txs[i] = &pb.BlockResponse_Result_Transaction{
+		txs = append(txs, &pb.BlockResponse_Transaction{
 			Hash:        fmt.Sprintf("Mt%x", rawTx.Hash()),
 			RawTx:       fmt.Sprintf("%x", []byte(rawTx)),
 			From:        sender.String(),
@@ -85,10 +85,10 @@ func (s *Service) Block(_ context.Context, req *pb.BlockRequest) (*pb.BlockRespo
 			Tags:        tags,
 			Code:        fmt.Sprintf("%d", blockResults.Results.DeliverTx[i].Code),
 			Log:         blockResults.Results.DeliverTx[i].Log,
-		}
+		})
 	}
 
-	var validators []*pb.BlockResponse_Result_Validator
+	var validators []*pb.BlockResponse_Validator
 	var proposer string
 	if req.Height > 1 {
 		p, err := s.getBlockProposer(block)
@@ -103,8 +103,8 @@ func (s *Service) Block(_ context.Context, req *pb.BlockRequest) (*pb.BlockRespo
 			proposer = str
 		}
 
-		validators = make([]*pb.BlockResponse_Result_Validator, len(tmValidators.Validators))
-		for i, tmval := range tmValidators.Validators {
+		validators = make([]*pb.BlockResponse_Validator, 0, len(tmValidators.Validators))
+		for _, tmval := range tmValidators.Validators {
 			signed := false
 			for _, vote := range block.Block.LastCommit.Precommits {
 				if vote == nil {
@@ -117,28 +117,26 @@ func (s *Service) Block(_ context.Context, req *pb.BlockRequest) (*pb.BlockRespo
 				}
 			}
 
-			validators[i] = &pb.BlockResponse_Result_Validator{
+			validators = append(validators, &pb.BlockResponse_Validator{
 				PublicKey: fmt.Sprintf("Mp%x", tmval.PubKey.Bytes()[5:]),
 				Signed:    signed,
-			}
+			})
 		}
 	}
 
 	return &pb.BlockResponse{
-		Result: &pb.BlockResponse_Result{
-			Hash:         hex.EncodeToString(block.Block.Hash()),
-			Height:       fmt.Sprintf("%d", block.Block.Height),
-			Time:         block.Block.Time.Format(time.RFC3339Nano),
-			NumTxs:       fmt.Sprintf("%d", block.Block.NumTxs),
-			TotalTxs:     fmt.Sprintf("%d", block.Block.TotalTxs),
-			Transactions: txs,
-			BlockReward:  rewards.GetRewardForBlock(uint64(req.Height)).String(),
-			Size:         fmt.Sprintf("%d", s.cdc.MustMarshalBinaryLengthPrefixed(block)),
-			Proposer:     proposer,
-			Validators:   validators,
-			Evidence: &pb.BlockResponse_Result_Evidence{
-				Evidence: make([]*pb.BlockResponse_Result_Evidence_Evidence, len(block.Block.Evidence.Evidence)), // todo
-			},
+		Hash:         hex.EncodeToString(block.Block.Hash()),
+		Height:       fmt.Sprintf("%d", block.Block.Height),
+		Time:         block.Block.Time.Format(time.RFC3339Nano),
+		NumTxs:       fmt.Sprintf("%d", block.Block.NumTxs),
+		TotalTxs:     fmt.Sprintf("%d", block.Block.TotalTxs),
+		Transactions: txs,
+		BlockReward:  rewards.GetRewardForBlock(uint64(req.Height)).String(),
+		Size:         fmt.Sprintf("%d", s.cdc.MustMarshalBinaryLengthPrefixed(block)),
+		Proposer:     proposer,
+		Validators:   validators,
+		Evidence: &pb.BlockResponse_Evidence{
+			Evidence: make([]*pb.BlockResponse_Evidence_Evidence, len(block.Block.Evidence.Evidence)), // todo
 		},
 	}, nil
 }

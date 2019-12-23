@@ -50,8 +50,6 @@ func (s *Service) EstimateTxCommission(_ context.Context, req *pb.EstimateTxComm
 	}
 
 	return &pb.EstimateTxCommissionResponse{
-		Result: &pb.EstimateTxCommissionResponse_Result{
-			Commission: commission.String(),
-		},
+		Commission: commission.String(),
 	}, nil
 }

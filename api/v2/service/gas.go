@@ -26,8 +26,6 @@ func (s *Service) MaxGas(_ context.Context, req *pb.MaxGasRequest) (*pb.MaxGasRe
 	}
 
 	return &pb.MaxGasResponse{
-		Jsonrpc: "2.0",
-		Id:      "",
-		Result:  fmt.Sprintf("%d", cState.App.GetMaxGas()),
+		Result: fmt.Sprintf("%d", cState.App.GetMaxGas()),
 	}, nil
 }

@@ -109,9 +109,7 @@ func (s *Service) EstimateCoinBuy(_ context.Context, req *pb.EstimateCoinBuyRequ
 	}
 
 	return &pb.EstimateCoinBuyResponse{
-		Result: &pb.EstimateCoinBuyResponse_Result{
-			WillPay:    result.String(),
-			Commission: commission.String(),
-		},
+		WillPay:    result.String(),
+		Commission: commission.String(),
 	}, nil
 }

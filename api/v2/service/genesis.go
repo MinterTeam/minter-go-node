@@ -19,7 +19,7 @@ func (s *Service) Genesis(context.Context, *empty.Empty) (*pb.GenesisResponse, e
 		}, nil
 	}
 
-	appState := new(pb.GenesisResponse_Result_Genesis_AppState)
+	appState := new(pb.GenesisResponse_Genesis_AppState)
 	err = json.Unmarshal(result.Genesis.AppState, appState)
 	if err != nil {
 		return &pb.GenesisResponse{
@@ -30,28 +30,24 @@ func (s *Service) Genesis(context.Context, *empty.Empty) (*pb.GenesisResponse, e
 	}
 
 	return &pb.GenesisResponse{
-		Jsonrpc: "2.0",
-		Id:      "",
-		Result: &pb.GenesisResponse_Result{
-			Genesis: &pb.GenesisResponse_Result_Genesis{
-				GenesisTime: result.Genesis.GenesisTime.Format(time.RFC3339Nano),
-				ChainId:     result.Genesis.ChainID,
-				ConsensusParams: &pb.GenesisResponse_Result_Genesis_ConsensusParams{
-					Block: &pb.GenesisResponse_Result_Genesis_ConsensusParams_Block{
-						MaxBytes:   fmt.Sprintf("%d", result.Genesis.ConsensusParams.Block.MaxBytes),
-						MaxGas:     fmt.Sprintf("%d", result.Genesis.ConsensusParams.Block.MaxGas),
-						TimeIotaMs: fmt.Sprintf("%d", result.Genesis.ConsensusParams.Block.TimeIotaMs),
-					},
-					Evidence: &pb.GenesisResponse_Result_Genesis_ConsensusParams_Evidence{
-						MaxAge: fmt.Sprintf("%d", result.Genesis.ConsensusParams.Evidence.MaxAge),
-					},
-					Validator: &pb.GenesisResponse_Result_Genesis_ConsensusParams_Validator{
-						PublicKeyTypes: result.Genesis.ConsensusParams.Validator.PubKeyTypes,
-					},
+		Genesis: &pb.GenesisResponse_Genesis{
+			GenesisTime: result.Genesis.GenesisTime.Format(time.RFC3339Nano),
+			ChainId:     result.Genesis.ChainID,
+			ConsensusParams: &pb.GenesisResponse_Genesis_ConsensusParams{
+				Block: &pb.GenesisResponse_Genesis_ConsensusParams_Block{
+					MaxBytes:   fmt.Sprintf("%d", result.Genesis.ConsensusParams.Block.MaxBytes),
+					MaxGas:     fmt.Sprintf("%d", result.Genesis.ConsensusParams.Block.MaxGas),
+					TimeIotaMs: fmt.Sprintf("%d", result.Genesis.ConsensusParams.Block.TimeIotaMs),
 				},
-				AppHash:  result.Genesis.AppHash.String(),
-				AppState: appState,
+				Evidence: &pb.GenesisResponse_Genesis_ConsensusParams_Evidence{
+					MaxAge: fmt.Sprintf("%d", result.Genesis.ConsensusParams.Evidence.MaxAge),
+				},
+				Validator: &pb.GenesisResponse_Genesis_ConsensusParams_Validator{
+					PublicKeyTypes: result.Genesis.ConsensusParams.Validator.PubKeyTypes,
+				},
 			},
+			AppHash:  result.Genesis.AppHash.String(),
+			AppState: appState,
 		},
 	}, nil
 }

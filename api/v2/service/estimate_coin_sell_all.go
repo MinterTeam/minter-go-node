@@ -109,8 +109,6 @@ func (s *Service) EstimateCoinSellAll(_ context.Context, req *pb.EstimateCoinSel
 	}
 
 	return &pb.EstimateCoinSellAllResponse{
-		Result: &pb.EstimateCoinSellAllResponse_Result{
-			WillGet: result.String(),
-		},
+		WillGet: result.String(),
 	}, nil
 }

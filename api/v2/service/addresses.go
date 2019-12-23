@@ -18,10 +18,10 @@ func (s *Service) Addresses(_ context.Context, req *pb.AddressesRequest) (*pb.Ad
 	}
 
 	response := &pb.AddressesResponse{
-		Result: make([]*pb.AddressesResponse_Result, len(req.Addresses)),
+		Addresses: make([]*pb.AddressesResponse_Result, 0, len(req.Addresses)),
 	}
 
-	for i, address := range req.Addresses {
+	for _, address := range req.Addresses {
 		addr := types.StringToAddress(address)
 		data := &pb.AddressesResponse_Result{
 			Address:          address,
@@ -38,7 +38,7 @@ func (s *Service) Addresses(_ context.Context, req *pb.AddressesRequest) (*pb.Ad
 			data.Balance[types.GetBaseCoin().String()] = "0"
 		}
 
-		response.Result[i] = data
+		response.Addresses = append(response.Addresses, data)
 	}
 
 	return response, nil

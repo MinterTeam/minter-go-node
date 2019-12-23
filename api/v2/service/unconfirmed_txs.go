@@ -11,9 +11,9 @@ func (s *Service) UnconfirmedTxs(_ context.Context, req *pb.UnconfirmedTxsReques
 	if err != nil {
 		return &pb.UnconfirmedTxsResponse{Error: &pb.Error{Message: err.Error()}}, nil
 	}
-	return &pb.UnconfirmedTxsResponse{Result: &pb.UnconfirmedTxsResponse_Result{
+	return &pb.UnconfirmedTxsResponse{
 		NTxs:       fmt.Sprintf("%d", txs.Count),
 		Total:      fmt.Sprintf("%d", txs.Total),
 		TotalBytes: fmt.Sprintf("%d", txs.TotalBytes),
-	}}, nil
+	}, nil
 }

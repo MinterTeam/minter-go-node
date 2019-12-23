@@ -23,14 +23,14 @@ func (s *Service) Validators(_ context.Context, req *pb.ValidatorsRequest) (*pb.
 		}, nil
 	}
 
-	responseValidators := make([]*pb.ValidatorsResponse_Result, len(tmVals.Validators))
-	for i, val := range tmVals.Validators {
+	responseValidators := make([]*pb.ValidatorsResponse_Result, 0, len(tmVals.Validators))
+	for _, val := range tmVals.Validators {
 		var pk types.Pubkey
 		copy(pk[:], val.PubKey.Bytes()[5:])
-		responseValidators[i] = &pb.ValidatorsResponse_Result{
+		responseValidators = append(responseValidators, &pb.ValidatorsResponse_Result{
 			PublicKey:   pk.String(),
 			VotingPower: fmt.Sprintf("%d", val.VotingPower),
-		}
+		})
 	}
-	return &pb.ValidatorsResponse{Result: responseValidators}, nil
+	return &pb.ValidatorsResponse{Validators: responseValidators}, nil
 }

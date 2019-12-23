@@ -30,11 +30,11 @@ func (s *Service) Candidate(_ context.Context, req *pb.CandidateRequest) (*pb.Ca
 	}
 
 	result := makeResponseCandidate(cState, *candidate, true)
-	return &pb.CandidateResponse{Result: result}, nil
+	return result, nil
 }
 
-func makeResponseCandidate(state *state.State, c candidates.Candidate, includeStakes bool) *pb.CandidateResult {
-	candidate := &pb.CandidateResult{
+func makeResponseCandidate(state *state.State, c candidates.Candidate, includeStakes bool) *pb.CandidateResponse {
+	candidate := &pb.CandidateResponse{
 		RewardAddress: c.RewardAddress.String(),
 		TotalStake:    state.Candidates.GetTotalStake(c.PubKey).String(),
 		PublicKey:     c.PubKey.String(),
@@ -44,14 +44,14 @@ func makeResponseCandidate(state *state.State, c candidates.Candidate, includeSt
 
 	if includeStakes {
 		stakes := state.Candidates.GetStakes(c.PubKey)
-		candidate.Stakes = make([]*pb.CandidateResult_Stake, len(stakes))
-		for i, stake := range stakes {
-			candidate.Stakes[i] = &pb.CandidateResult_Stake{
+		candidate.Stakes = make([]*pb.CandidateResponse_Stake, len(stakes))
+		for _, stake := range stakes {
+			candidate.Stakes = append(candidate.Stakes, &pb.CandidateResponse_Stake{
 				Owner:    stake.Owner.String(),
 				Coin:     stake.Coin.String(),
 				Value:    stake.Value.String(),
 				BipValue: stake.BipValue.String(),
-			}
+			})
 		}
 	}
 

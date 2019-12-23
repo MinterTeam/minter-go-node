@@ -29,10 +29,8 @@ func (s *Service) MissedBlocks(_ context.Context, req *pb.MissedBlocksRequest) (
 	for _, val := range vals {
 		if string(val.PubKey[:]) == req.PublicKey {
 			return &pb.MissedBlocksResponse{
-				Result: &pb.MissedBlocksResponse_Result{
-					MissedBlocks:      val.AbsentTimes.String(),
-					MissedBlocksCount: fmt.Sprintf("%d", val.CountAbsentTimes()),
-				},
+				MissedBlocks:      val.AbsentTimes.String(),
+				MissedBlocksCount: fmt.Sprintf("%d", val.CountAbsentTimes()),
 			}, nil
 		}
 	}
