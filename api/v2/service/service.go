@@ -42,7 +42,6 @@ func (s *Service) createError(statusErr *status.Status, details map[string]strin
 		return statusErr.Err()
 	}
 
-	detailsMap := &_struct.Struct{Fields: make(map[string]*_struct.Value)}
 	marshal, err := json.Marshal(details)
 	if err != nil {
 		s.client.Logger.Error(err.Error())
@@ -50,7 +49,12 @@ func (s *Service) createError(statusErr *status.Status, details map[string]strin
 	}
 
 	var bb bytes.Buffer
-	bb.Write(marshal)
+	if _, err = bb.Write(marshal); err != nil {
+		s.client.Logger.Error(err.Error())
+		return statusErr.Err()
+	}
+
+	detailsMap := &_struct.Struct{Fields: make(map[string]*_struct.Value)}
 	if err := (&jsonpb.Unmarshaler{}).Unmarshal(&bb, detailsMap); err != nil {
 		s.client.Logger.Error(err.Error())
 		return statusErr.Err()
