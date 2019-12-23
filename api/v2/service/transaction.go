@@ -10,16 +10,14 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	_struct "github.com/golang/protobuf/ptypes/struct"
 	"github.com/tendermint/tendermint/libs/common"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func (s *Service) Transaction(_ context.Context, req *pb.TransactionRequest) (*pb.TransactionResponse, error) {
 	tx, err := s.client.Tx([]byte(req.Hash), false)
 	if err != nil {
-		return &pb.TransactionResponse{
-			Error: &pb.Error{
-				Data: err.Error(),
-			},
-		}, nil
+		return &pb.TransactionResponse{}, status.Error(codes.FailedPrecondition, err.Error())
 	}
 
 	decodedTx, _ := transaction.TxDecoder.DecodeFromBytes(tx.Tx)
@@ -32,31 +30,25 @@ func (s *Service) Transaction(_ context.Context, req *pb.TransactionRequest) (*p
 
 	dataStruct, err := s.encodeTxData(decodedTx)
 	if err != nil {
-		return &pb.TransactionResponse{
-			Error: &pb.Error{
-				Data: err.Error(),
-			},
-		}, nil
+		return &pb.TransactionResponse{}, status.Error(codes.FailedPrecondition, err.Error())
 	}
 
 	return &pb.TransactionResponse{
-		Result: &pb.TransactionResult{
-			Hash:     common.HexBytes(tx.Tx.Hash()).String(),
-			RawTx:    fmt.Sprintf("%x", []byte(tx.Tx)),
-			Height:   fmt.Sprintf("%d", tx.Height),
-			Index:    fmt.Sprintf("%d", tx.Index),
-			From:     sender.String(),
-			Nonce:    fmt.Sprintf("%d", decodedTx.Nonce),
-			GasPrice: fmt.Sprintf("%d", decodedTx.GasPrice),
-			GasCoin:  decodedTx.GasCoin.String(),
-			Gas:      fmt.Sprintf("%d", decodedTx.Gas()),
-			Type:     fmt.Sprintf("%d", uint8(decodedTx.Type)),
-			Data:     dataStruct,
-			Payload:  decodedTx.Payload,
-			Tags:     tags,
-			Code:     fmt.Sprintf("%d", tx.TxResult.Code),
-			Log:      tx.TxResult.Log,
-		},
+		Hash:     common.HexBytes(tx.Tx.Hash()).String(),
+		RawTx:    fmt.Sprintf("%x", []byte(tx.Tx)),
+		Height:   fmt.Sprintf("%d", tx.Height),
+		Index:    fmt.Sprintf("%d", tx.Index),
+		From:     sender.String(),
+		Nonce:    fmt.Sprintf("%d", decodedTx.Nonce),
+		GasPrice: fmt.Sprintf("%d", decodedTx.GasPrice),
+		GasCoin:  decodedTx.GasCoin.String(),
+		Gas:      fmt.Sprintf("%d", decodedTx.Gas()),
+		Type:     fmt.Sprintf("%d", uint8(decodedTx.Type)),
+		Data:     dataStruct,
+		Payload:  decodedTx.Payload,
+		Tags:     tags,
+		Code:     fmt.Sprintf("%d", tx.TxResult.Code),
+		Log:      tx.TxResult.Log,
 	}, nil
 }
 

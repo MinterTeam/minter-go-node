@@ -13,59 +13,20 @@ import (
 func (s *Service) Status(context.Context, *empty.Empty) (*pb.StatusResponse, error) {
 	result, err := s.client.Status()
 	if err != nil {
-		details, _ := status.New(codes.Internal, err.Error()).WithDetails(&pb.Error{
-			Code:    "12",
-			Message: "ddd",
-			Data:    "eee",
-			Log:     "aaa",
-		})
-		return &pb.StatusResponse{}, details.Err()
+		return new(pb.StatusResponse), status.Error(codes.Internal, err.Error())
 	}
 
 	return &pb.StatusResponse{
-		Jsonrpc: "2.0",
-		Id:      "",
-		Result: &pb.StatusResponse{
-			Version:           s.version,
-			LatestBlockHash:   fmt.Sprintf("%X", result.SyncInfo.LatestBlockHash),
-			LatestAppHash:     fmt.Sprintf("%X", result.SyncInfo.LatestAppHash),
-			LatestBlockHeight: fmt.Sprintf("%d", result.SyncInfo.LatestBlockHeight),
-			LatestBlockTime:   result.SyncInfo.LatestBlockTime.Format(time.RFC3339Nano),
-			KeepLastStates:    fmt.Sprintf("%d", s.minterCfg.BaseConfig.KeepLastStates),
-			TmStatus: &pb.StatusResponse_TmStatus{
-				NodeInfo: &pb.NodeInfo{
-					ProtocolVersion: &pb.NodeInfo_ProtocolVersion{
-						P2P:   fmt.Sprintf("%d", result.NodeInfo.ProtocolVersion.P2P),
-						Block: fmt.Sprintf("%d", result.NodeInfo.ProtocolVersion.Block),
-						App:   fmt.Sprintf("%d", result.NodeInfo.ProtocolVersion.App),
-					},
-					Id:         string(result.NodeInfo.ID_),
-					ListenAddr: result.NodeInfo.ListenAddr,
-					Network:    result.NodeInfo.Network,
-					Version:    result.NodeInfo.Version,
-					Channels:   result.NodeInfo.Channels.String(),
-					Moniker:    result.NodeInfo.Moniker,
-					Other: &pb.NodeInfo_Other{
-						TxIndex:    result.NodeInfo.Other.TxIndex,
-						RpcAddress: result.NodeInfo.Other.RPCAddress,
-					},
-				},
-				SyncInfo: &pb.StatusResponse_TmStatus_SyncInfo{
-					LatestBlockHash:   result.SyncInfo.LatestBlockHash.String(),
-					LatestAppHash:     result.SyncInfo.LatestAppHash.String(),
-					LatestBlockHeight: fmt.Sprintf("%d", result.SyncInfo.LatestBlockHeight),
-					LatestBlockTime:   result.SyncInfo.LatestBlockTime.Format(time.RFC3339Nano),
-					CatchingUp:        result.SyncInfo.CatchingUp,
-				},
-				ValidatorInfo: &pb.StatusResponse_TmStatus_ValidatorInfo{
-					Address: result.ValidatorInfo.Address.String(),
-					PublicKey: &pb.StatusResponse_TmStatus_ValidatorInfo_PubKey{
-						Type:  "todo",
-						Value: fmt.Sprintf("Mp%x", result.ValidatorInfo.PubKey.Bytes()[5:]),
-					},
-					VotingPower: fmt.Sprintf("%d", result.ValidatorInfo.VotingPower),
-				},
-			},
+		Version:           s.version,
+		LatestBlockHash:   fmt.Sprintf("%X", result.SyncInfo.LatestBlockHash),
+		LatestAppHash:     fmt.Sprintf("%X", result.SyncInfo.LatestAppHash),
+		LatestBlockHeight: fmt.Sprintf("%d", result.SyncInfo.LatestBlockHeight),
+		LatestBlockTime:   result.SyncInfo.LatestBlockTime.Format(time.RFC3339Nano),
+		KeepLastStates:    fmt.Sprintf("%d", s.minterCfg.BaseConfig.KeepLastStates),
+		CatchingUp:        result.SyncInfo.CatchingUp,
+		PublicKey: &pb.StatusResponse_PubKey{
+			Type:  "todo",
+			Value: fmt.Sprintf("Mp%x", result.ValidatorInfo.PubKey.Bytes()[5:]),
 		},
 	}, nil
 }

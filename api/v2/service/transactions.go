@@ -6,6 +6,8 @@ import (
 	"github.com/MinterTeam/minter-go-node/api/v2/pb"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/tendermint/tendermint/libs/common"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func (s *Service) Transactions(_ context.Context, req *pb.TransactionsRequest) (*pb.TransactionsResponse, error) {
@@ -20,11 +22,7 @@ func (s *Service) Transactions(_ context.Context, req *pb.TransactionsRequest) (
 
 	rpcResult, err := s.client.TxSearch(req.Query, false, page, perPage)
 	if err != nil {
-		return &pb.TransactionsResponse{
-			Error: &pb.Error{
-				Data: err.Error(),
-			},
-		}, nil
+		return new(pb.TransactionsResponse), status.Error(codes.FailedPrecondition, err.Error())
 	}
 
 	result := make([]*pb.TransactionResponse, 0, len(rpcResult.Txs))
@@ -39,11 +37,7 @@ func (s *Service) Transactions(_ context.Context, req *pb.TransactionsRequest) (
 
 		dataStruct, err := s.encodeTxData(decodedTx)
 		if err != nil {
-			return &pb.TransactionsResponse{
-				Error: &pb.Error{
-					Data: err.Error(),
-				},
-			}, nil
+			return new(pb.TransactionsResponse), status.Error(codes.FailedPrecondition, err.Error())
 		}
 
 		result = append(result, &pb.TransactionResponse{
