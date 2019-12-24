@@ -14,6 +14,8 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/validators"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/version"
+	"github.com/syndtr/goleveldb/leveldb/filter"
+	"github.com/syndtr/goleveldb/leveldb/opt"
 	"github.com/tendermint/go-amino"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto/ed25519"
@@ -40,6 +42,13 @@ const (
 
 var (
 	blockchain *Blockchain
+
+	dbOpts = &opt.Options{
+		OpenFilesCacheCapacity: 1024,
+		BlockCacheCapacity:     1024 / 2 * opt.MiB,
+		WriteBuffer:            1024 / 4 * opt.MiB, // Two of these are used internally
+		Filter:                 filter.NewBloomFilter(10),
+	}
 )
 
 // Main structure of Minter Blockchain
@@ -68,17 +77,24 @@ type Blockchain struct {
 func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 	var err error
 
-	dbType := db.DBBackendType(cfg.DBBackend)
-	ldb := db.NewDB("state", dbType, utils.GetMinterHome()+"/data")
+	ldb, err := db.NewGoLevelDBWithOpts("state", utils.GetMinterHome()+"/data", dbOpts)
+	if err != nil {
+		panic(err)
+	}
 
 	// Initiate Application DB. Used for persisting data like current block, validators, etc.
 	applicationDB := appdb.NewAppDB(cfg)
+
+	edb, err := db.NewGoLevelDBWithOpts("events", utils.GetMinterHome()+"/data", dbOpts)
+	if err != nil {
+		panic(err)
+	}
 
 	blockchain = &Blockchain{
 		stateDB:        ldb,
 		appDB:          applicationDB,
 		height:         applicationDB.GetLastHeight(),
-		eventsDB:       eventsdb.NewEventsStore(db.NewDB("events", dbType, utils.GetMinterHome()+"/data")),
+		eventsDB:       eventsdb.NewEventsStore(edb),
 		currentMempool: sync.Map{},
 	}
 
