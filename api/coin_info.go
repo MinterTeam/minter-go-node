@@ -11,6 +11,7 @@ type CoinInfoResponse struct {
 	Volume         string `json:"volume"`
 	Crr            uint   `json:"crr"`
 	ReserveBalance string `json:"reserve_balance"`
+	MaxSupply      string `json:"max_supply"`
 }
 
 func CoinInfo(coinSymbol string, height int) (*CoinInfoResponse, error) {
@@ -30,5 +31,6 @@ func CoinInfo(coinSymbol string, height int) (*CoinInfoResponse, error) {
 		Volume:         coin.Volume().String(),
 		Crr:            coin.Crr(),
 		ReserveBalance: coin.Reserve().String(),
+		MaxSupply:      coin.MaxSupply().String(),
 	}, nil
 }
