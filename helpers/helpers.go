@@ -15,7 +15,7 @@ func BipToPip(bip *big.Int) *big.Int {
 
 func StringToBigInt(s string) *big.Int {
 	if s == "" {
-		return big.NewInt(0)
+		panic("string is empty")
 	}
 
 	b, success := big.NewInt(0).SetString(s, 10)

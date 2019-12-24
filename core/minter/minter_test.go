@@ -387,6 +387,7 @@ func getGenesis() (*types2.GenesisDoc, error) {
 	validators, candidates := makeValidatorsAndCandidates([]string{base64.StdEncoding.EncodeToString(pv.Key.PubKey.Bytes()[5:])}, big.NewInt(10000000))
 
 	appState := types.AppState{
+		TotalSlashed: "0",
 		Accounts: []types.Account{
 			{
 				Address: crypto.PubkeyToAddress(privateKey.PublicKey),

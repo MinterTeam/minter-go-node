@@ -563,7 +563,9 @@ func (c *Candidates) calculateBipValue(coinSymbol types.CoinSymbol, amount *big.
 
 	coin := c.bus.Coins().GetCoin(coinSymbol)
 
-	return formula.CalculateSaleReturn(coin.Volume, coin.Reserve, coin.Crr, totalAmount)
+	totalPower := formula.CalculateSaleReturn(coin.Volume, coin.Reserve, coin.Crr, totalAmount)
+
+	return big.NewInt(0).Div(big.NewInt(0).Mul(totalPower, amount), totalAmount)
 }
 
 func (c *Candidates) Punish(height uint64, address types.TmAddress) *big.Int {
