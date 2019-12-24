@@ -40,8 +40,13 @@ func (s *Service) SendTransaction(_ context.Context, req *pb.SendTransactionRequ
 		details["value"] = fields[7]
 		details["coin"] = fields[8]
 	case code.TxPayloadTooLarge:
+		details["description"] = "tx_payload_too_large"
+		details["max_payload_length"] = fields[5]
 	case code.TxServiceDataTooLarge:
+		details["description"] = "tx_service_data_too_large"
+		details["max_service_data_length"] = fields[6]
 	case code.InvalidMultisendData:
+		details["description"] = "invalid_multisend_data"
 	case code.CoinSupplyOverflow:
 	case code.TxFromSenderAlreadyInMempool:
 	case code.TooLowGasPrice:
