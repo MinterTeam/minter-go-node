@@ -38,7 +38,7 @@ func (s *Service) getStateForHeight(height int32) (*state.State, error) {
 }
 
 func (s *Service) createError(statusErr *status.Status, details map[string]string) error {
-	if details == nil {
+	if len(details) == 0 {
 		return statusErr.Err()
 	}
 
