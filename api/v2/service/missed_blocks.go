@@ -4,26 +4,19 @@ import (
 	"context"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/api/v2/pb"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func (s *Service) MissedBlocks(_ context.Context, req *pb.MissedBlocksRequest) (*pb.MissedBlocksResponse, error) {
 	cState, err := s.getStateForHeight(req.Height)
 	if err != nil {
-		return &pb.MissedBlocksResponse{
-			Error: &pb.Error{
-				Data: err.Error(),
-			},
-		}, nil
+		return &pb.MissedBlocksResponse{}, status.Error(codes.NotFound, err.Error())
 	}
 
 	vals := cState.Validators.GetValidators()
 	if vals == nil {
-		return &pb.MissedBlocksResponse{
-			Error: &pb.Error{
-				Code:    "404",
-				Message: "Validators not found",
-			},
-		}, nil
+		return &pb.MissedBlocksResponse{}, status.Error(codes.NotFound, "Validators not found")
 	}
 
 	for _, val := range vals {
@@ -35,11 +28,6 @@ func (s *Service) MissedBlocks(_ context.Context, req *pb.MissedBlocksRequest) (
 		}
 	}
 
-	return &pb.MissedBlocksResponse{
-		Error: &pb.Error{
-			Code:    "404",
-			Message: "Validator not found",
-		},
-	}, nil
+	return &pb.MissedBlocksResponse{}, status.Error(codes.NotFound, "Validator not found")
 
 }

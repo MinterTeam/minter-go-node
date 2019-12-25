@@ -6,27 +6,21 @@ import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/api/v2/pb"
 	"github.com/golang/protobuf/ptypes/empty"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"time"
 )
 
 func (s *Service) Genesis(context.Context, *empty.Empty) (*pb.GenesisResponse, error) {
 	result, err := s.client.Genesis()
 	if err != nil {
-		return &pb.GenesisResponse{
-			Error: &pb.Error{
-				Data: err.Error(),
-			},
-		}, nil
+		return &pb.GenesisResponse{}, status.Error(codes.FailedPrecondition, err.Error())
 	}
 
 	appState := new(pb.GenesisResponse_Genesis_AppState)
 	err = json.Unmarshal(result.Genesis.AppState, appState)
 	if err != nil {
-		return &pb.GenesisResponse{
-			Error: &pb.Error{
-				Data: err.Error(),
-			},
-		}, nil
+		return &pb.GenesisResponse{}, status.Error(codes.FailedPrecondition, err.Error())
 	}
 
 	return &pb.GenesisResponse{

@@ -26,7 +26,7 @@ type Response struct {
 	Code      uint32          `json:"code,omitempty"`
 	Data      []byte          `json:"data,omitempty"`
 	Log       string          `json:"log,omitempty"`
-	Info      string          `json:"info,omitempty"`
+	Info      string          `json:"-"`
 	GasWanted int64           `json:"gas_wanted,omitempty"`
 	GasUsed   int64           `json:"gas_used,omitempty"`
 	Tags      []common.KVPair `json:"tags,omitempty"`

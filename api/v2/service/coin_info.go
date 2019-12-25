@@ -5,26 +5,19 @@ import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/api/v2/pb"
 	"github.com/MinterTeam/minter-go-node/core/types"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func (s *Service) CoinInfo(_ context.Context, req *pb.CoinInfoRequest) (*pb.CoinInfoResponse, error) {
 	cState, err := s.getStateForHeight(req.Height)
 	if err != nil {
-		return &pb.CoinInfoResponse{
-			Error: &pb.Error{
-				Data: err.Error(),
-			},
-		}, nil
+		return &pb.CoinInfoResponse{}, status.Error(codes.NotFound, err.Error())
 	}
 
 	coin := cState.Coins.GetCoin(types.StrToCoinSymbol(req.Symbol))
 	if coin == nil {
-		return &pb.CoinInfoResponse{
-			Error: &pb.Error{
-				Code:    "404",
-				Message: "Coin not found",
-			},
-		}, nil
+		return &pb.CoinInfoResponse{}, status.Error(codes.FailedPrecondition, "Coin not found")
 	}
 
 	return &pb.CoinInfoResponse{

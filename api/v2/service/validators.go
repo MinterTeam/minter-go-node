@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/api/v2/pb"
 	"github.com/MinterTeam/minter-go-node/core/types"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func (s *Service) Validators(_ context.Context, req *pb.ValidatorsRequest) (*pb.ValidatorsResponse, error) {
@@ -16,11 +18,7 @@ func (s *Service) Validators(_ context.Context, req *pb.ValidatorsRequest) (*pb.
 	h := int64(height)
 	tmVals, err := s.client.Validators(&h)
 	if err != nil {
-		return &pb.ValidatorsResponse{
-			Error: &pb.Error{
-				Data: err.Error(),
-			},
-		}, nil
+		return &pb.ValidatorsResponse{}, status.Error(codes.FailedPrecondition, err.Error())
 	}
 
 	responseValidators := make([]*pb.ValidatorsResponse_Result, 0, len(tmVals.Validators))

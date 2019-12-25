@@ -7,7 +7,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"strings"
 )
 
 func (s *Service) SendTransaction(_ context.Context, req *pb.SendTransactionRequest) (*pb.SendTransactionResponse, error) {
@@ -16,37 +15,17 @@ func (s *Service) SendTransaction(_ context.Context, req *pb.SendTransactionRequ
 		return new(pb.SendTransactionResponse), s.createError(status.New(codes.FailedPrecondition, err.Error()), nil)
 	}
 
-	var details = make(map[string]string)
-	fields := strings.Fields(strings.ReplaceAll(result.Log, ",", ""))
-
 	switch result.Code {
 	// general
 	case code.WrongNonce:
-		details["description"] = "wrong_nonce"
-		details["expected"] = fields[3]
-		details["got"] = fields[5]
 	case code.CoinNotExists:
-		details["description"] = "coin_not_exists"
-		details["coin"] = fields[1]
 	case code.CoinReserveNotSufficient:
 	case code.TxTooLarge:
-		details["description"] = "tx_too_large"
-		details["max_tx_length"] = fields[4]
 	case code.DecodeError:
-		details["description"] = "decode_error"
 	case code.InsufficientFunds:
-		details["description"] = "insufficient_funds"
-		details["sender"] = fields[5]
-		details["value"] = fields[7]
-		details["coin"] = fields[8]
 	case code.TxPayloadTooLarge:
-		details["description"] = "tx_payload_too_large"
-		details["max_payload_length"] = fields[5]
 	case code.TxServiceDataTooLarge:
-		details["description"] = "tx_service_data_too_large"
-		details["max_service_data_length"] = fields[6]
 	case code.InvalidMultisendData:
-		details["description"] = "invalid_multisend_data"
 	case code.CoinSupplyOverflow:
 	case code.TxFromSenderAlreadyInMempool:
 	case code.TooLowGasPrice:
@@ -97,12 +76,10 @@ func (s *Service) SendTransaction(_ context.Context, req *pb.SendTransactionRequ
 	default:
 		return &pb.SendTransactionResponse{
 			Code: fmt.Sprintf("%d", result.Code),
-			Data: result.Data.String(),
 			Log:  result.Log,
 			Hash: result.Hash.String(),
 		}, nil
 	}
 
-	details["code"] = fmt.Sprintf("%d", result.Code)
-	return new(pb.SendTransactionResponse), s.createError(status.New(codes.InvalidArgument, result.Log), details)
+	return new(pb.SendTransactionResponse), s.createError(status.New(codes.InvalidArgument, result.Log), result.Data)
 }

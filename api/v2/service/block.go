@@ -10,30 +10,20 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	core_types "github.com/tendermint/tendermint/rpc/core/types"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"time"
 )
 
 func (s *Service) Block(_ context.Context, req *pb.BlockRequest) (*pb.BlockResponse, error) {
 	block, err := s.client.Block(&req.Height)
 	if err != nil {
-		return &pb.BlockResponse{
-			Error: &pb.Error{
-				Code:    "404",
-				Message: "Block not found",
-				Data:    err.Error(),
-			},
-		}, nil
+		return &pb.BlockResponse{}, status.Error(codes.NotFound, "Block not found")
 	}
 
 	blockResults, err := s.client.BlockResults(&req.Height)
 	if err != nil {
-		return &pb.BlockResponse{
-			Error: &pb.Error{
-				Code:    "404",
-				Message: "Block results not found",
-				Data:    err.Error(),
-			},
-		}, nil
+		return &pb.BlockResponse{}, status.Error(codes.NotFound, "Block results not found")
 	}
 
 	valHeight := req.Height - 1
@@ -42,13 +32,7 @@ func (s *Service) Block(_ context.Context, req *pb.BlockRequest) (*pb.BlockRespo
 	}
 	tmValidators, err := s.client.Validators(&valHeight)
 	if err != nil {
-		return &pb.BlockResponse{
-			Error: &pb.Error{
-				Code:    "404",
-				Message: "Validators for block not found",
-				Data:    err.Error(),
-			},
-		}, nil
+		return &pb.BlockResponse{}, status.Error(codes.NotFound, "Validators for block not found")
 	}
 
 	txs := make([]*pb.BlockResponse_Transaction, 0, len(block.Block.Data.Txs))
@@ -63,11 +47,7 @@ func (s *Service) Block(_ context.Context, req *pb.BlockRequest) (*pb.BlockRespo
 
 		dataStruct, err := s.encodeTxData(tx)
 		if err != nil {
-			return &pb.BlockResponse{
-				Error: &pb.Error{
-					Data: err.Error(),
-				},
-			}, nil
+			return &pb.BlockResponse{}, status.Error(codes.InvalidArgument, err.Error())
 		}
 
 		txs = append(txs, &pb.BlockResponse_Transaction{
@@ -93,9 +73,7 @@ func (s *Service) Block(_ context.Context, req *pb.BlockRequest) (*pb.BlockRespo
 	if req.Height > 1 {
 		p, err := s.getBlockProposer(block)
 		if err != nil {
-			return &pb.BlockResponse{
-				Error: err,
-			}, nil
+			return &pb.BlockResponse{}, status.Error(codes.FailedPrecondition, err.Error())
 		}
 
 		if p != nil {
@@ -141,10 +119,10 @@ func (s *Service) Block(_ context.Context, req *pb.BlockRequest) (*pb.BlockRespo
 	}, nil
 }
 
-func (s *Service) getBlockProposer(block *core_types.ResultBlock) (*types.Pubkey, *pb.Error) {
+func (s *Service) getBlockProposer(block *core_types.ResultBlock) (*types.Pubkey, error) {
 	vals, err := s.client.Validators(&block.Block.Height)
 	if err != nil {
-		return nil, &pb.Error{Code: "404", Message: "Validators for block not found", Data: err.Error()}
+		return nil, status.Error(codes.NotFound, "Validators for block not found")
 	}
 
 	for _, tmval := range vals.Validators {
@@ -155,5 +133,5 @@ func (s *Service) getBlockProposer(block *core_types.ResultBlock) (*types.Pubkey
 		}
 	}
 
-	return nil, &pb.Error{Code: "404", Message: "Block proposer not found"}
+	return nil, status.Error(codes.NotFound, "Block proposer not found")
 }

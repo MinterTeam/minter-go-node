@@ -2,7 +2,6 @@ package service
 
 import (
 	"bytes"
-	"encoding/json"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/minter"
 	"github.com/MinterTeam/minter-go-node/core/state"
@@ -37,19 +36,13 @@ func (s *Service) getStateForHeight(height int32) (*state.State, error) {
 	return s.blockchain.CurrentState(), nil
 }
 
-func (s *Service) createError(statusErr *status.Status, details map[string]string) error {
-	if len(details) == 0 {
-		return statusErr.Err()
-	}
-
-	marshal, err := json.Marshal(details)
-	if err != nil {
-		s.client.Logger.Error(err.Error())
+func (s *Service) createError(statusErr *status.Status, data []byte) error {
+	if len(data) == 0 {
 		return statusErr.Err()
 	}
 
 	var bb bytes.Buffer
-	if _, err = bb.Write(marshal); err != nil {
+	if _, err := bb.Write(data); err != nil {
 		s.client.Logger.Error(err.Error())
 		return statusErr.Err()
 	}

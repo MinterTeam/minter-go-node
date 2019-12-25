@@ -3,16 +3,14 @@ package service
 import (
 	"context"
 	"github.com/MinterTeam/minter-go-node/api/v2/pb"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func (s *Service) Candidates(_ context.Context, req *pb.CandidatesRequest) (*pb.CandidatesResponse, error) {
 	cState, err := s.getStateForHeight(req.Height)
 	if err != nil {
-		return &pb.CandidatesResponse{
-			Error: &pb.Error{
-				Data: err.Error(),
-			},
-		}, nil
+		return &pb.CandidatesResponse{}, status.Error(codes.NotFound, err.Error())
 	}
 
 	candidates := cState.Candidates.GetCandidates()

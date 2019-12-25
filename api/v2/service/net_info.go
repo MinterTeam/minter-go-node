@@ -5,17 +5,15 @@ import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/api/v2/pb"
 	"github.com/golang/protobuf/ptypes/empty"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"time"
 )
 
 func (s *Service) NetInfo(context.Context, *empty.Empty) (*pb.NetInfoResponse, error) {
 	result, err := s.client.NetInfo()
 	if err != nil {
-		return &pb.NetInfoResponse{
-			Error: &pb.Error{
-				Data: err.Error(),
-			},
-		}, nil
+		return &pb.NetInfoResponse{}, status.Error(codes.FailedPrecondition, err.Error())
 	}
 
 	var peers []*pb.NetInfoResponse_Result_Peer

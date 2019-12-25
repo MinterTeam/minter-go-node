@@ -2,22 +2,22 @@ package service
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"github.com/MinterTeam/minter-go-node/api/v2/pb"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"math/big"
 )
 
 func (s *Service) EstimateCoinSellAll(_ context.Context, req *pb.EstimateCoinSellAllRequest) (*pb.EstimateCoinSellAllResponse, error) {
 	cState, err := s.getStateForHeight(req.Height)
 	if err != nil {
-		return &pb.EstimateCoinSellAllResponse{
-			Error: &pb.Error{
-				Data: err.Error(),
-			},
-		}, nil
+		return &pb.EstimateCoinSellAllResponse{}, status.Error(codes.NotFound, err.Error())
 	}
 
 	gasPrice := req.GasPrice
@@ -32,30 +32,25 @@ func (s *Service) EstimateCoinSellAll(_ context.Context, req *pb.EstimateCoinSel
 	var result *big.Int
 
 	if coinToSell == coinToBuy {
-		return &pb.EstimateCoinSellAllResponse{
-			Error: &pb.Error{
-				Code:    "400",
-				Message: "\"From\" coin equals to \"to\" coin",
-			},
-		}, nil
+		bytes, _ := json.Marshal(map[string]string{
+			"coin_to_sell": coinToSell.String(),
+			"coin_to_buy":  coinToBuy.String(),
+		})
+		return &pb.EstimateCoinSellAllResponse{}, s.createError(status.New(codes.InvalidArgument, "\"From\" coin equals to \"to\" coin"), bytes)
 	}
 
 	if !cState.Coins.Exists(coinToSell) {
-		return &pb.EstimateCoinSellAllResponse{
-			Error: &pb.Error{
-				Code:    "404",
-				Message: "Coin to sell not exists",
-			},
-		}, nil
+		bytes, _ := json.Marshal(map[string]string{
+			"coin_to_sell": coinToSell.String(),
+		})
+		return &pb.EstimateCoinSellAllResponse{}, s.createError(status.New(codes.InvalidArgument, "Coin to sell not exists"), bytes)
 	}
 
 	if !cState.Coins.Exists(coinToBuy) {
-		return &pb.EstimateCoinSellAllResponse{
-			Error: &pb.Error{
-				Code:    "404",
-				Message: "Coin to buy not exists",
-			},
-		}, nil
+		bytes, _ := json.Marshal(map[string]string{
+			"coin_to_buy": coinToBuy.String(),
+		})
+		return &pb.EstimateCoinSellAllResponse{}, s.createError(status.New(codes.InvalidArgument, "Coin to buy not exists"), bytes)
 	}
 
 	commissionInBaseCoin := big.NewInt(commissions.ConvertTx)
@@ -68,12 +63,12 @@ func (s *Service) EstimateCoinSellAll(_ context.Context, req *pb.EstimateCoinSel
 
 		valueToSell.Sub(valueToSell, commission)
 		if valueToSell.Cmp(big.NewInt(0)) != 1 {
-			return &pb.EstimateCoinSellAllResponse{
-				Error: &pb.Error{
-					Code:    "400",
-					Message: "Not enough coins to pay commission",
-				},
-			}, nil
+			bytes, _ := json.Marshal(map[string]string{
+				"value_to_sell": valueToSell.String(),
+				"coin_to_sell":  coinToSell.String(),
+				"commission":    commission.String(),
+			})
+			return &pb.EstimateCoinSellAllResponse{}, s.createError(status.New(codes.InvalidArgument, "Not enough coins to pay commission"), bytes)
 		}
 
 		result = formula.CalculatePurchaseReturn(coin.Volume(), coin.Reserve(), coin.Crr(), valueToSell)
@@ -83,12 +78,15 @@ func (s *Service) EstimateCoinSellAll(_ context.Context, req *pb.EstimateCoinSel
 
 		result.Sub(result, commission)
 		if result.Cmp(big.NewInt(0)) != 1 {
-			return &pb.EstimateCoinSellAllResponse{
-				Error: &pb.Error{
-					Code:    "400",
-					Message: "Not enough coins to pay commission",
-				},
-			}, nil
+			bytes, _ := json.Marshal(map[string]string{
+				"value_to_sell":        valueToSell.String(),
+				"coin_to_sell":         coinToSell.String(),
+				"coin_reserve_to_sell": coin.Reserve().String(),
+				"coin_crr_to_sell":     fmt.Sprintf("%d", coin.Crr()),
+				"result":               result.String(),
+				"commission":           commission.String(),
+			})
+			return &pb.EstimateCoinSellAllResponse{}, s.createError(status.New(codes.InvalidArgument, "Not enough coins to pay commission"), bytes)
 		}
 	default:
 		coinFrom := cState.Coins.GetCoin(coinToSell)
@@ -97,12 +95,15 @@ func (s *Service) EstimateCoinSellAll(_ context.Context, req *pb.EstimateCoinSel
 
 		basecoinValue.Sub(basecoinValue, commission)
 		if basecoinValue.Cmp(big.NewInt(0)) != 1 {
-			return &pb.EstimateCoinSellAllResponse{
-				Error: &pb.Error{
-					Code:    "400",
-					Message: "Not enough coins to pay commission",
-				},
-			}, nil
+			bytes, _ := json.Marshal(map[string]string{
+				"coin_to_sell":         coinToSell.String(),
+				"coin_to_buy":          coinToBuy.String(),
+				"coin_to_sell_crr":     fmt.Sprintf("%d", coinFrom.Crr()),
+				"coin_to_sell_reserve": coinFrom.Reserve().String(),
+				"result":               basecoinValue.String(),
+				"commission":           commission.String(),
+			})
+			return &pb.EstimateCoinSellAllResponse{}, s.createError(status.New(codes.FailedPrecondition, "Not enough coins to pay commission"), bytes)
 		}
 
 		result = formula.CalculatePurchaseReturn(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), basecoinValue)

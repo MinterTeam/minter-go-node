@@ -5,16 +5,14 @@ import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/api/v2/pb"
 	"github.com/MinterTeam/minter-go-node/core/types"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func (s *Service) Addresses(_ context.Context, req *pb.AddressesRequest) (*pb.AddressesResponse, error) {
 	cState, err := s.getStateForHeight(req.Height)
 	if err != nil {
-		return &pb.AddressesResponse{
-			Error: &pb.Error{
-				Data: err.Error(),
-			},
-		}, nil
+		return &pb.AddressesResponse{}, status.Error(codes.NotFound, err.Error())
 	}
 
 	response := &pb.AddressesResponse{
