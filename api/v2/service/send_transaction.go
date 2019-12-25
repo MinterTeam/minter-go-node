@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/api/v2/pb"
 	"github.com/MinterTeam/minter-go-node/core/code"
@@ -10,7 +11,11 @@ import (
 )
 
 func (s *Service) SendTransaction(_ context.Context, req *pb.SendTransactionRequest) (*pb.SendTransactionResponse, error) {
-	result, err := s.client.BroadcastTxSync([]byte(req.Tx))
+	decodeString, err := hex.DecodeString(req.Tx[2:])
+	if err != nil {
+		return new(pb.SendTransactionResponse), s.createError(status.New(codes.InvalidArgument, err.Error()), nil)
+	}
+	result, err := s.client.BroadcastTxSync(decodeString)
 	if err != nil {
 		return new(pb.SendTransactionResponse), s.createError(status.New(codes.FailedPrecondition, err.Error()), nil)
 	}
