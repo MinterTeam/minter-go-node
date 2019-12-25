@@ -55,7 +55,12 @@ func (s *Service) EstimateCoinBuy(_ context.Context, req *pb.EstimateCoinBuyRequ
 
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
 	}
-	valueToBuy, _ := big.NewInt(0).SetString(req.ValueToBuy, 10)
+
+	valueToBuy, ok := big.NewInt(0).SetString(req.ValueToBuy, 10)
+	if !ok {
+		return &pb.EstimateCoinBuyResponse{}, s.createError(status.New(codes.InvalidArgument, "Value to buy not specified"), nil)
+	}
+
 	switch {
 	case coinToSell == types.GetBaseCoin():
 		coin := cState.Coins.GetCoin(coinToBuy)

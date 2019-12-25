@@ -86,5 +86,5 @@ func (s *Service) SendTransaction(_ context.Context, req *pb.SendTransactionRequ
 		}, nil
 	}
 
-	return new(pb.SendTransactionResponse), s.createError(status.New(codes.InvalidArgument, result.Log), result.Data)
+	return new(pb.SendTransactionResponse), s.createError(status.New(codes.InvalidArgument, result.Log), nil) //todo
 }

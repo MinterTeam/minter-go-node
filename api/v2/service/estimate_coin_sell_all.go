@@ -27,7 +27,10 @@ func (s *Service) EstimateCoinSellAll(_ context.Context, req *pb.EstimateCoinSel
 
 	coinToSell := types.StrToCoinSymbol(req.CoinToSell)
 	coinToBuy := types.StrToCoinSymbol(req.CoinToBuy)
-	valueToSell, _ := big.NewInt(0).SetString(req.ValueToSell, 10)
+	valueToSell, ok := big.NewInt(0).SetString(req.ValueToSell, 10)
+	if !ok {
+		return &pb.EstimateCoinSellAllResponse{}, s.createError(status.New(codes.InvalidArgument, "Value to sell not specified"), nil)
+	}
 
 	var result *big.Int
 

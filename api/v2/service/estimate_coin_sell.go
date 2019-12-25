@@ -45,7 +45,10 @@ func (s *Service) EstimateCoinSell(_ context.Context, req *pb.EstimateCoinSellRe
 	commissionInBaseCoin := big.NewInt(commissions.ConvertTx)
 	commissionInBaseCoin.Mul(commissionInBaseCoin, transaction.CommissionMultiplier)
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
-	valueToSell, _ := big.NewInt(0).SetString(req.ValueToSell, 10)
+	valueToSell, ok := big.NewInt(0).SetString(req.ValueToSell, 10)
+	if !ok {
+		return &pb.EstimateCoinSellResponse{}, s.createError(status.New(codes.InvalidArgument, "Value to sell not specified"), nil)
+	}
 
 	if coinToSell != types.GetBaseCoin() {
 		coin := cState.Coins.GetCoin(coinToSell)
