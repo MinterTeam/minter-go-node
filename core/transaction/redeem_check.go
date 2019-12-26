@@ -167,11 +167,9 @@ func (data RedeemCheckData) Run(tx *Transaction, context *state.State, isCheck b
 
 	if !decodedCheck.GasCoin.IsBaseCoin() {
 		coin := context.Coins.GetCoin(decodedCheck.GasCoin)
-		err := coin.CheckReserveUnderflow(commissionInBaseCoin)
-		if err != nil {
-			return Response{
-				Code: code.CoinReserveUnderflow,
-				Log:  err.Error()}
+		errResp := CheckReserveUnderflow(coin, commissionInBaseCoin)
+		if errResp != nil {
+			return *errResp
 		}
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
 	}

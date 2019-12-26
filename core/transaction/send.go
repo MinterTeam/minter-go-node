@@ -41,11 +41,9 @@ func (data SendData) TotalSpend(tx *Transaction, context *state.State) (TotalSpe
 	if !tx.GasCoin.IsBaseCoin() {
 		coin := context.Coins.GetCoin(tx.GasCoin)
 
-		err := coin.CheckReserveUnderflow(commissionInBaseCoin)
-		if err != nil {
-			return nil, nil, nil, &Response{
-				Code: code.CoinReserveUnderflow,
-				Log:  err.Error()}
+		errResp := CheckReserveUnderflow(coin, commissionInBaseCoin)
+		if errResp != nil {
+			return nil, nil, nil, errResp
 		}
 
 		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {

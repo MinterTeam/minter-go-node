@@ -4,8 +4,10 @@ import (
 	"crypto/ecdsa"
 	"errors"
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
+	"github.com/MinterTeam/minter-go-node/core/state/coins"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/crypto/sha3"
@@ -290,12 +292,39 @@ func rlpHash(x interface{}) (h types.Hash) {
 	return h
 }
 
-func CheckForCoinSupplyOverflow(current *big.Int, delta *big.Int, max *big.Int) error {
+func CheckForCoinSupplyOverflow(current *big.Int, delta *big.Int, max *big.Int) *Response {
 	total := big.NewInt(0).Set(current)
 	total.Add(total, delta)
 
 	if total.Cmp(max) != -1 {
-		return errors.New("coin supply overflow")
+		return &Response{
+			Code: code.CoinSupplyOverflow,
+			Log:  "coin supply overflow",
+			Info: EncodeError(map[string]string{
+				"current": total.String(),
+				"delta":   delta.String(),
+				"max":     max.String(),
+			}),
+		}
+	}
+
+	return nil
+}
+
+func CheckReserveUnderflow(m *coins.Model, delta *big.Int) *Response {
+	total := big.NewInt(0).Sub(m.Reserve(), delta)
+
+	if total.Cmp(minCoinReserve) == -1 {
+		min := big.NewInt(0).Add(minCoinReserve, delta)
+		return &Response{
+			Code: code.CoinReserveUnderflow,
+			Log:  fmt.Sprintf("coin %s reserve is too small (%s, required at least %s)", m.Symbol().String(), m.Reserve().String(), min.String()),
+			Info: EncodeError(map[string]string{
+				"coin":             m.Symbol().String(),
+				"reserve":          m.Reserve().String(),
+				"min_coin_reserve": min.String(),
+			}),
+		}
 	}
 
 	return nil

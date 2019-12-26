@@ -58,11 +58,8 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.State) (T
 			}
 		}
 
-		if err := CheckForCoinSupplyOverflow(coin.Volume(), value, coin.MaxSupply()); err != nil {
-			return nil, nil, nil, &Response{
-				Code: code.CoinSupplyOverflow,
-				Log:  err.Error(),
-			}
+		if errResp := CheckForCoinSupplyOverflow(coin.Volume(), value, coin.MaxSupply()); errResp != nil {
+			return nil, nil, nil, errResp
 		}
 
 		conversions = append(conversions, Conversion{
@@ -124,11 +121,8 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.State) (T
 			}
 		}
 
-		if err := CheckForCoinSupplyOverflow(coinTo.Volume(), value, coinTo.MaxSupply()); err != nil {
-			return nil, nil, nil, &Response{
-				Code: code.CoinSupplyOverflow,
-				Log:  err.Error(),
-			}
+		if errResp := CheckForCoinSupplyOverflow(coinTo.Volume(), value, coinTo.MaxSupply()); errResp != nil {
+			return nil, nil, nil, errResp
 		}
 
 		conversions = append(conversions, Conversion{
@@ -148,19 +142,32 @@ func (data SellAllCoinData) BasicCheck(tx *Transaction, context *state.State) *R
 	if data.CoinToSell == data.CoinToBuy {
 		return &Response{
 			Code: code.CrossConvert,
-			Log:  fmt.Sprintf("\"From\" coin equals to \"to\" coin")}
+			Log:  fmt.Sprintf("\"From\" coin equals to \"to\" coin"),
+			Info: EncodeError(map[string]string{
+				"coin_to_sell": fmt.Sprintf("%s", data.CoinToSell),
+				"coin_to_buy":  fmt.Sprintf("%s", data.CoinToBuy),
+			}),
+		}
 	}
 
 	if !context.Coins.Exists(data.CoinToSell) {
 		return &Response{
 			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin not exists")}
+			Log:  fmt.Sprintf("Coin to sell not exists"),
+			Info: EncodeError(map[string]string{
+				"coin_to_sell": fmt.Sprintf("%s", data.CoinToSell),
+			}),
+		}
 	}
 
 	if !context.Coins.Exists(data.CoinToBuy) {
 		return &Response{
 			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin not exists")}
+			Log:  fmt.Sprintf("Coin to buy not exists"),
+			Info: EncodeError(map[string]string{
+				"coin_to_buy": fmt.Sprintf("%s", data.CoinToBuy),
+			}),
+		}
 	}
 
 	return nil
@@ -197,15 +204,19 @@ func (data SellAllCoinData) Run(tx *Transaction, context *state.State, isCheck b
 				Log: fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s.",
 					sender.String(),
 					ts.Value.String(),
-					ts.Coin)}
+					ts.Coin),
+				Info: EncodeError(map[string]string{
+					"sender":       sender.String(),
+					"needed_value": ts.Value.String(),
+					"coin":         fmt.Sprintf("%s", ts.Coin),
+				}),
+			}
 		}
 	}
 
-	err := checkConversionsReserveUnderflow(conversions, context)
-	if err != nil {
-		return Response{
-			Code: code.CoinReserveUnderflow,
-			Log:  err.Error()}
+	errResp := checkConversionsReserveUnderflow(conversions, context)
+	if errResp != nil {
+		return *errResp
 	}
 
 	if !isCheck {
