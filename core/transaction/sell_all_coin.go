@@ -55,6 +55,10 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.State) (T
 			return nil, nil, nil, &Response{
 				Code: code.MinimumValueToBuyReached,
 				Log:  fmt.Sprintf("You wanted to get minimum %s, but currently you will get %s", data.MinimumValueToBuy.String(), value.String()),
+				Info: EncodeError(map[string]string{
+					"minimum_value_to_buy": data.MinimumValueToBuy.String(),
+					"coin":                 value.String(),
+				}),
 			}
 		}
 
@@ -78,6 +82,10 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.State) (T
 			return nil, nil, nil, &Response{
 				Code: code.MinimumValueToBuyReached,
 				Log:  fmt.Sprintf("You wanted to get minimum %s, but currently you will get %s", data.MinimumValueToBuy.String(), ret.String()),
+				Info: EncodeError(map[string]string{
+					"minimum_value_to_buy": data.MinimumValueToBuy.String(),
+					"will_get_value":       ret.String(),
+				}),
 			}
 		}
 
@@ -118,6 +126,10 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.State) (T
 			return nil, nil, nil, &Response{
 				Code: code.MinimumValueToBuyReached,
 				Log:  fmt.Sprintf("You wanted to get minimum %s, but currently you will get %s", data.MinimumValueToBuy.String(), value.String()),
+				Info: EncodeError(map[string]string{
+					"minimum_value_to_buy": data.MinimumValueToBuy.String(),
+					"will_get_value":       value.String(),
+				}),
 			}
 		}
 

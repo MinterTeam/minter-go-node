@@ -26,17 +26,16 @@ func (data MultisendData) TotalSpend(tx *Transaction, context *state.State) (Tot
 func (data MultisendData) BasicCheck(tx *Transaction, context *state.State) *Response {
 	quantity := len(data.List)
 	if quantity < 1 || quantity > 100 {
-		bytes, _ := json.Marshal(map[string]string{
-			"code":         fmt.Sprintf("%d", code.InvalidMultisendData),
-			"description":  "invalid_multisend_data",
-			"min_quantity": "1",
-			"max_quantity": "100",
-			"got_quantity": fmt.Sprintf("%d", quantity),
-		})
 		return &Response{
 			Code: code.InvalidMultisendData,
 			Log:  "List length must be between 1 and 100",
-			Info: string(bytes),
+			Info: EncodeError(map[string]string{
+				"code":         fmt.Sprintf("%d", code.InvalidMultisendData),
+				"description":  "invalid_multisend_data",
+				"min_quantity": "1",
+				"max_quantity": "100",
+				"got_quantity": fmt.Sprintf("%d", quantity),
+			}),
 		}
 	}
 

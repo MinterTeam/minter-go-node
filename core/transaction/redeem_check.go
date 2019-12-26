@@ -79,19 +79,26 @@ func (data RedeemCheckData) Run(tx *Transaction, context *state.State, isCheck b
 	if err != nil {
 		return Response{
 			Code: code.DecodeError,
-			Log:  err.Error()}
+			Log:  err.Error(),
+		}
 	}
 
 	if decodedCheck.ChainID != types.CurrentChainID {
 		return Response{
 			Code: code.WrongChainID,
-			Log:  "Wrong chain id"}
+			Log:  "Wrong chain id",
+			Info: EncodeError(map[string]string{
+				"current_chain_id": fmt.Sprintf("%d", types.CurrentChainID),
+				"got_chain_id":     fmt.Sprintf("%d", decodedCheck.ChainID),
+			}),
+		}
 	}
 
 	if len(decodedCheck.Nonce) > 16 {
 		return Response{
 			Code: code.TooLongNonce,
-			Log:  "Nonce is too big. Should be up to 16 bytes."}
+			Log:  "Nonce is too big. Should be up to 16 bytes.",
+		}
 	}
 
 	checkSender, err := decodedCheck.Sender()
@@ -105,25 +112,42 @@ func (data RedeemCheckData) Run(tx *Transaction, context *state.State, isCheck b
 	if !context.Coins.Exists(decodedCheck.Coin) {
 		return Response{
 			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin not exists")}
+			Log:  fmt.Sprintf("Coin not exists"),
+			Info: EncodeError(map[string]string{
+				"coin": fmt.Sprintf("%s", decodedCheck.Coin),
+			}),
+		}
 	}
 
 	if !context.Coins.Exists(decodedCheck.GasCoin) {
 		return Response{
 			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Gas coin not exists")}
+			Log:  fmt.Sprintf("Gas coin not exists"),
+			Info: EncodeError(map[string]string{
+				"gas_coin": fmt.Sprintf("%s", decodedCheck.GasCoin),
+			}),
+		}
 	}
 
 	if tx.GasCoin != decodedCheck.GasCoin {
 		return Response{
 			Code: code.WrongGasCoin,
-			Log:  fmt.Sprintf("Gas coin for redeem check transaction can only be %s", decodedCheck.GasCoin)}
+			Log:  fmt.Sprintf("Gas coin for redeem check transaction can only be %s", decodedCheck.GasCoin),
+			Info: EncodeError(map[string]string{
+				"gas_coin": fmt.Sprintf("%s", decodedCheck.GasCoin),
+			}),
+		}
 	}
 
 	if decodedCheck.DueBlock < currentBlock {
 		return Response{
 			Code: code.CheckExpired,
-			Log:  fmt.Sprintf("Check expired")}
+			Log:  fmt.Sprintf("Check expired"),
+			Info: EncodeError(map[string]string{
+				"due_block":     fmt.Sprintf("%d", decodedCheck.DueBlock),
+				"current_block": fmt.Sprintf("%d", currentBlock),
+			}),
+		}
 	}
 
 	if context.Checks.IsCheckUsed(decodedCheck) {
@@ -152,13 +176,15 @@ func (data RedeemCheckData) Run(tx *Transaction, context *state.State, isCheck b
 	if err != nil {
 		return Response{
 			Code: code.DecodeError,
-			Log:  err.Error()}
+			Log:  err.Error(),
+		}
 	}
 
 	if !bytes.Equal(lockPublicKey, pub) {
 		return Response{
 			Code: code.CheckInvalidLock,
-			Log:  fmt.Sprintf("Invalid proof")}
+			Log:  "Invalid proof",
+		}
 	}
 
 	commissionInBaseCoin := big.NewInt(0).Mul(big.NewInt(int64(tx.GasPrice)), big.NewInt(tx.Gas()))
@@ -179,19 +205,37 @@ func (data RedeemCheckData) Run(tx *Transaction, context *state.State, isCheck b
 		if context.Accounts.GetBalance(checkSender, decodedCheck.Coin).Cmp(totalTxCost) < 0 {
 			return Response{
 				Code: code.InsufficientFunds,
-				Log:  fmt.Sprintf("Insufficient funds for check issuer account: %s %s. Wanted %s %s", decodedCheck.Coin, checkSender.String(), totalTxCost.String(), decodedCheck.Coin)}
+				Log:  fmt.Sprintf("Insufficient funds for check issuer account: %s %s. Wanted %s %s", decodedCheck.Coin, checkSender.String(), totalTxCost.String(), decodedCheck.Coin),
+				Info: EncodeError(map[string]string{
+					"sender":        checkSender.String(),
+					"coin":          fmt.Sprintf("%s", decodedCheck.Coin),
+					"total_tx_cost": totalTxCost.String(),
+				}),
+			}
 		}
 	} else {
 		if context.Accounts.GetBalance(checkSender, decodedCheck.Coin).Cmp(decodedCheck.Value) < 0 {
 			return Response{
 				Code: code.InsufficientFunds,
-				Log:  fmt.Sprintf("Insufficient funds for check issuer account: %s %s. Wanted %s %s", checkSender.String(), decodedCheck.Coin, decodedCheck.Value.String(), decodedCheck.Coin)}
+				Log:  fmt.Sprintf("Insufficient funds for check issuer account: %s %s. Wanted %s %s", checkSender.String(), decodedCheck.Coin, decodedCheck.Value.String(), decodedCheck.Coin),
+				Info: EncodeError(map[string]string{
+					"sender": checkSender.String(),
+					"coin":   fmt.Sprintf("%s", decodedCheck.Coin),
+					"value":  decodedCheck.Value.String(),
+				}),
+			}
 		}
 
 		if context.Accounts.GetBalance(checkSender, decodedCheck.GasCoin).Cmp(commission) < 0 {
 			return Response{
 				Code: code.InsufficientFunds,
-				Log:  fmt.Sprintf("Insufficient funds for check issuer account: %s %s. Wanted %s %s", checkSender.String(), decodedCheck.GasCoin, commission.String(), decodedCheck.GasCoin)}
+				Log:  fmt.Sprintf("Insufficient funds for check issuer account: %s %s. Wanted %s %s", checkSender.String(), decodedCheck.GasCoin, commission.String(), decodedCheck.GasCoin),
+				Info: EncodeError(map[string]string{
+					"sender":     sender.String(),
+					"gas_coin":   fmt.Sprintf("%s", decodedCheck.GasCoin),
+					"commission": commission.String(),
+				}),
+			}
 		}
 	}
 

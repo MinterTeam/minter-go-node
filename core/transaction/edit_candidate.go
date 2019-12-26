@@ -78,7 +78,12 @@ func (data EditCandidateData) Run(tx *Transaction, context *state.State, isCheck
 		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
 			return Response{
 				Code: code.CoinReserveNotSufficient,
-				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.Reserve().String(), commissionInBaseCoin.String())}
+				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.Reserve().String(), commissionInBaseCoin.String()),
+				Info: EncodeError(map[string]string{
+					"coin_reserve":            coin.Reserve().String(),
+					"commission_in_base_coin": commissionInBaseCoin.String(),
+				}),
+			}
 		}
 
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
@@ -87,7 +92,13 @@ func (data EditCandidateData) Run(tx *Transaction, context *state.State, isCheck
 	if context.Accounts.GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
 		return Response{
 			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, tx.GasCoin)}
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission.String(), tx.GasCoin),
+			Info: EncodeError(map[string]string{
+				"sender":       sender.String(),
+				"needed_value": commission.String(),
+				"gas_coin":     fmt.Sprintf("%s", tx.GasCoin),
+			}),
+		}
 	}
 
 	if !isCheck {
@@ -118,7 +129,11 @@ func checkCandidateOwnership(data CandidateTx, tx *Transaction, context *state.S
 	if !context.Candidates.Exists(data.GetPubKey()) {
 		return &Response{
 			Code: code.CandidateNotFound,
-			Log:  fmt.Sprintf("Candidate with such public key (%s) not found", data.GetPubKey().String())}
+			Log:  fmt.Sprintf("Candidate with such public key (%s) not found", data.GetPubKey().String()),
+			Info: EncodeError(map[string]string{
+				"public_key": data.GetPubKey().String(),
+			}),
+		}
 	}
 
 	owner := context.Candidates.GetCandidateOwner(data.GetPubKey())
