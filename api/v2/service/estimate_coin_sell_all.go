@@ -16,7 +16,7 @@ import (
 func (s *Service) EstimateCoinSellAll(_ context.Context, req *pb.EstimateCoinSellAllRequest) (*pb.EstimateCoinSellAllResponse, error) {
 	cState, err := s.getStateForHeight(req.Height)
 	if err != nil {
-		return &pb.EstimateCoinSellAllResponse{}, status.Error(codes.NotFound, err.Error())
+		return new(pb.EstimateCoinSellAllResponse), status.Error(codes.NotFound, err.Error())
 	}
 
 	gasPrice := req.GasPrice
@@ -28,31 +28,31 @@ func (s *Service) EstimateCoinSellAll(_ context.Context, req *pb.EstimateCoinSel
 	coinToBuy := types.StrToCoinSymbol(req.CoinToBuy)
 	valueToSell, ok := big.NewInt(0).SetString(req.ValueToSell, 10)
 	if !ok {
-		return &pb.EstimateCoinSellAllResponse{}, s.createError(status.New(codes.InvalidArgument, "Value to sell not specified"), "")
+		return new(pb.EstimateCoinSellAllResponse), status.Error(codes.InvalidArgument, "Value to sell not specified")
 	}
 
 	var result *big.Int
 
 	if coinToSell == coinToBuy {
-		bytes := encodeError(map[string]string{
+		bytes := transaction.EncodeError(map[string]string{
 			"coin_to_sell": coinToSell.String(),
 			"coin_to_buy":  coinToBuy.String(),
 		})
-		return &pb.EstimateCoinSellAllResponse{}, s.createError(status.New(codes.InvalidArgument, "\"From\" coin equals to \"to\" coin"), bytes)
+		return new(pb.EstimateCoinSellAllResponse), s.createError(status.New(codes.InvalidArgument, "\"From\" coin equals to \"to\" coin"), bytes)
 	}
 
 	if !cState.Coins.Exists(coinToSell) {
-		bytes := encodeError(map[string]string{
+		bytes := transaction.EncodeError(map[string]string{
 			"coin_to_sell": coinToSell.String(),
 		})
-		return &pb.EstimateCoinSellAllResponse{}, s.createError(status.New(codes.InvalidArgument, "Coin to sell not exists"), bytes)
+		return new(pb.EstimateCoinSellAllResponse), s.createError(status.New(codes.InvalidArgument, "Coin to sell not exists"), bytes)
 	}
 
 	if !cState.Coins.Exists(coinToBuy) {
-		bytes := encodeError(map[string]string{
+		bytes := transaction.EncodeError(map[string]string{
 			"coin_to_buy": coinToBuy.String(),
 		})
-		return &pb.EstimateCoinSellAllResponse{}, s.createError(status.New(codes.InvalidArgument, "Coin to buy not exists"), bytes)
+		return new(pb.EstimateCoinSellAllResponse), s.createError(status.New(codes.InvalidArgument, "Coin to buy not exists"), bytes)
 	}
 
 	commissionInBaseCoin := big.NewInt(commissions.ConvertTx)
@@ -65,12 +65,12 @@ func (s *Service) EstimateCoinSellAll(_ context.Context, req *pb.EstimateCoinSel
 
 		valueToSell.Sub(valueToSell, commission)
 		if valueToSell.Cmp(big.NewInt(0)) != 1 {
-			bytes := encodeError(map[string]string{
+			bytes := transaction.EncodeError(map[string]string{
 				"value_to_sell": valueToSell.String(),
 				"coin_to_sell":  coinToSell.String(),
 				"commission":    commission.String(),
 			})
-			return &pb.EstimateCoinSellAllResponse{}, s.createError(status.New(codes.InvalidArgument, "Not enough coins to pay commission"), bytes)
+			return new(pb.EstimateCoinSellAllResponse), s.createError(status.New(codes.InvalidArgument, "Not enough coins to pay commission"), bytes)
 		}
 
 		result = formula.CalculatePurchaseReturn(coin.Volume(), coin.Reserve(), coin.Crr(), valueToSell)
@@ -80,7 +80,7 @@ func (s *Service) EstimateCoinSellAll(_ context.Context, req *pb.EstimateCoinSel
 
 		result.Sub(result, commission)
 		if result.Cmp(big.NewInt(0)) != 1 {
-			bytes := encodeError(map[string]string{
+			bytes := transaction.EncodeError(map[string]string{
 				"value_to_sell":        valueToSell.String(),
 				"coin_to_sell":         coinToSell.String(),
 				"coin_reserve_to_sell": coin.Reserve().String(),
@@ -88,7 +88,7 @@ func (s *Service) EstimateCoinSellAll(_ context.Context, req *pb.EstimateCoinSel
 				"result":               result.String(),
 				"commission":           commission.String(),
 			})
-			return &pb.EstimateCoinSellAllResponse{}, s.createError(status.New(codes.InvalidArgument, "Not enough coins to pay commission"), bytes)
+			return new(pb.EstimateCoinSellAllResponse), s.createError(status.New(codes.InvalidArgument, "Not enough coins to pay commission"), bytes)
 		}
 	default:
 		coinFrom := cState.Coins.GetCoin(coinToSell)
@@ -97,7 +97,7 @@ func (s *Service) EstimateCoinSellAll(_ context.Context, req *pb.EstimateCoinSel
 
 		basecoinValue.Sub(basecoinValue, commission)
 		if basecoinValue.Cmp(big.NewInt(0)) != 1 {
-			bytes := encodeError(map[string]string{
+			bytes := transaction.EncodeError(map[string]string{
 				"coin_to_sell":         coinToSell.String(),
 				"coin_to_buy":          coinToBuy.String(),
 				"coin_to_sell_crr":     fmt.Sprintf("%d", coinFrom.Crr()),
@@ -105,7 +105,7 @@ func (s *Service) EstimateCoinSellAll(_ context.Context, req *pb.EstimateCoinSel
 				"result":               basecoinValue.String(),
 				"commission":           commission.String(),
 			})
-			return &pb.EstimateCoinSellAllResponse{}, s.createError(status.New(codes.FailedPrecondition, "Not enough coins to pay commission"), bytes)
+			return new(pb.EstimateCoinSellAllResponse), s.createError(status.New(codes.FailedPrecondition, "Not enough coins to pay commission"), bytes)
 		}
 
 		result = formula.CalculatePurchaseReturn(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), basecoinValue)

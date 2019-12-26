@@ -11,7 +11,7 @@ import (
 func (s *Service) UnconfirmedTxs(_ context.Context, req *pb.UnconfirmedTxsRequest) (*pb.UnconfirmedTxsResponse, error) {
 	txs, err := s.client.UnconfirmedTxs(int(req.Limit))
 	if err != nil {
-		return &pb.UnconfirmedTxsResponse{}, status.Error(codes.Internal, err.Error())
+		return new(pb.UnconfirmedTxsResponse), status.Error(codes.Internal, err.Error())
 	}
 	return &pb.UnconfirmedTxsResponse{
 		NTxs:       fmt.Sprintf("%d", txs.Count),

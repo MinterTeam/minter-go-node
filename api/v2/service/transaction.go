@@ -17,7 +17,7 @@ import (
 func (s *Service) Transaction(_ context.Context, req *pb.TransactionRequest) (*pb.TransactionResponse, error) {
 	tx, err := s.client.Tx([]byte(req.Hash), false)
 	if err != nil {
-		return &pb.TransactionResponse{}, status.Error(codes.FailedPrecondition, err.Error())
+		return new(pb.TransactionResponse), status.Error(codes.FailedPrecondition, err.Error())
 	}
 
 	decodedTx, _ := transaction.TxDecoder.DecodeFromBytes(tx.Tx)
@@ -30,7 +30,7 @@ func (s *Service) Transaction(_ context.Context, req *pb.TransactionRequest) (*p
 
 	dataStruct, err := s.encodeTxData(decodedTx)
 	if err != nil {
-		return &pb.TransactionResponse{}, status.Error(codes.FailedPrecondition, err.Error())
+		return new(pb.TransactionResponse), status.Error(codes.FailedPrecondition, err.Error())
 	}
 
 	return &pb.TransactionResponse{

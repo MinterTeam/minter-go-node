@@ -16,7 +16,7 @@ import (
 func (s *Service) EstimateCoinSell(_ context.Context, req *pb.EstimateCoinSellRequest) (*pb.EstimateCoinSellResponse, error) {
 	cState, err := s.getStateForHeight(req.Height)
 	if err != nil {
-		return &pb.EstimateCoinSellResponse{}, status.Error(codes.NotFound, err.Error())
+		return new(pb.EstimateCoinSellResponse), status.Error(codes.NotFound, err.Error())
 	}
 
 	coinToSell := types.StrToCoinSymbol(req.CoinToSell)
@@ -24,20 +24,20 @@ func (s *Service) EstimateCoinSell(_ context.Context, req *pb.EstimateCoinSellRe
 
 	var result *big.Int
 
-	detailCoin := encodeError(map[string]string{
+	detailCoin := transaction.EncodeError(map[string]string{
 		"coin": coinToSell.String(),
 	})
 
 	if coinToSell == coinToBuy {
-		return &pb.EstimateCoinSellResponse{}, s.createError(status.New(codes.InvalidArgument, "\"From\" coin equals to \"to\" coin"), detailCoin)
+		return new(pb.EstimateCoinSellResponse), s.createError(status.New(codes.InvalidArgument, "\"From\" coin equals to \"to\" coin"), detailCoin)
 	}
 
 	if !cState.Coins.Exists(coinToSell) {
-		return &pb.EstimateCoinSellResponse{}, s.createError(status.New(codes.InvalidArgument, "Coin to sell not exists"), detailCoin)
+		return new(pb.EstimateCoinSellResponse), s.createError(status.New(codes.InvalidArgument, "Coin to sell not exists"), detailCoin)
 	}
 
 	if !cState.Coins.Exists(coinToBuy) {
-		return &pb.EstimateCoinSellResponse{}, s.createError(status.New(codes.InvalidArgument, "Coin to buy not exists"), detailCoin)
+		return new(pb.EstimateCoinSellResponse), s.createError(status.New(codes.InvalidArgument, "Coin to buy not exists"), detailCoin)
 
 	}
 
@@ -46,27 +46,27 @@ func (s *Service) EstimateCoinSell(_ context.Context, req *pb.EstimateCoinSellRe
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 	valueToSell, ok := big.NewInt(0).SetString(req.ValueToSell, 10)
 	if !ok {
-		return &pb.EstimateCoinSellResponse{}, s.createError(status.New(codes.InvalidArgument, "Value to sell not specified"), "")
+		return new(pb.EstimateCoinSellResponse), status.Error(codes.InvalidArgument, "Value to sell not specified")
 	}
 
 	if coinToSell != types.GetBaseCoin() {
 		coin := cState.Coins.GetCoin(coinToSell)
 
 		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
-			bytes := encodeError(map[string]string{
+			bytes := transaction.EncodeError(map[string]string{
 				"has":      coin.Reserve().String(),
 				"required": commissionInBaseCoin.String(),
 			})
-			return &pb.EstimateCoinSellResponse{}, s.createError(status.New(codes.InvalidArgument, fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s",
+			return new(pb.EstimateCoinSellResponse), s.createError(status.New(codes.InvalidArgument, fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s",
 				coin.Reserve().String(), commissionInBaseCoin.String())), bytes)
 		}
 
 		if coin.Volume().Cmp(valueToSell) < 0 {
-			bytes := encodeError(map[string]string{
+			bytes := transaction.EncodeError(map[string]string{
 				"has":      coin.Reserve().String(),
 				"required": valueToSell.String(),
 			})
-			return &pb.EstimateCoinSellResponse{}, s.createError(status.New(codes.InvalidArgument, fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s",
+			return new(pb.EstimateCoinSellResponse), s.createError(status.New(codes.InvalidArgument, fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s",
 				coin.Reserve().String(), valueToSell.String())), bytes)
 		}
 

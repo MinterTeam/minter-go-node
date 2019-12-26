@@ -2,7 +2,6 @@ package service
 
 import (
 	"bytes"
-	"encoding/json"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/minter"
 	"github.com/MinterTeam/minter-go-node/core/state"
@@ -37,14 +36,6 @@ func (s *Service) getStateForHeight(height int32) (*state.State, error) {
 	}
 
 	return s.blockchain.CurrentState(), nil
-}
-
-func encodeError(data map[string]string) string {
-	marshal, err := json.Marshal(data)
-	if err != nil {
-		panic(err)
-	}
-	return string(marshal)
 }
 
 func (s *Service) createError(statusErr *status.Status, data string) error {

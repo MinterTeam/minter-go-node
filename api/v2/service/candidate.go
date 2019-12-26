@@ -14,12 +14,12 @@ import (
 func (s *Service) Candidate(_ context.Context, req *pb.CandidateRequest) (*pb.CandidateResponse, error) {
 	cState, err := s.getStateForHeight(req.Height)
 	if err != nil {
-		return &pb.CandidateResponse{}, status.Error(codes.NotFound, err.Error())
+		return new(pb.CandidateResponse), status.Error(codes.NotFound, err.Error())
 	}
 
 	candidate := cState.Candidates.GetCandidate(types.BytesToPubkey([]byte(req.PublicKey)))
 	if candidate == nil {
-		return &pb.CandidateResponse{}, status.Error(codes.NotFound, "Candidate not found")
+		return new(pb.CandidateResponse), status.Error(codes.NotFound, "Candidate not found")
 	}
 
 	result := makeResponseCandidate(cState, *candidate, true)

@@ -14,13 +14,13 @@ import (
 func (s *Service) Genesis(context.Context, *empty.Empty) (*pb.GenesisResponse, error) {
 	result, err := s.client.Genesis()
 	if err != nil {
-		return &pb.GenesisResponse{}, status.Error(codes.FailedPrecondition, err.Error())
+		return new(pb.GenesisResponse), status.Error(codes.FailedPrecondition, err.Error())
 	}
 
 	appState := new(pb.GenesisResponse_Genesis_AppState)
 	err = json.Unmarshal(result.Genesis.AppState, appState)
 	if err != nil {
-		return &pb.GenesisResponse{}, status.Error(codes.FailedPrecondition, err.Error())
+		return new(pb.GenesisResponse), status.Error(codes.FailedPrecondition, err.Error())
 	}
 
 	return &pb.GenesisResponse{

@@ -11,12 +11,12 @@ import (
 func (s *Service) MissedBlocks(_ context.Context, req *pb.MissedBlocksRequest) (*pb.MissedBlocksResponse, error) {
 	cState, err := s.getStateForHeight(req.Height)
 	if err != nil {
-		return &pb.MissedBlocksResponse{}, status.Error(codes.NotFound, err.Error())
+		return new(pb.MissedBlocksResponse), status.Error(codes.NotFound, err.Error())
 	}
 
 	vals := cState.Validators.GetValidators()
 	if vals == nil {
-		return &pb.MissedBlocksResponse{}, status.Error(codes.NotFound, "Validators not found")
+		return new(pb.MissedBlocksResponse), status.Error(codes.NotFound, "Validators not found")
 	}
 
 	for _, val := range vals {
@@ -28,6 +28,6 @@ func (s *Service) MissedBlocks(_ context.Context, req *pb.MissedBlocksRequest) (
 		}
 	}
 
-	return &pb.MissedBlocksResponse{}, status.Error(codes.NotFound, "Validator not found")
+	return new(pb.MissedBlocksResponse), status.Error(codes.NotFound, "Validator not found")
 
 }

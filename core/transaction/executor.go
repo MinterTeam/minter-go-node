@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/state"
@@ -153,7 +154,12 @@ func RunTx(context *state.State,
 	if expectedNonce := context.Accounts.GetNonce(sender) + 1; expectedNonce != tx.Nonce {
 		return Response{
 			Code: code.WrongNonce,
-			Log:  fmt.Sprintf("Unexpected nonce. Expected: %d, got %d.", expectedNonce, tx.Nonce)}
+			Log:  fmt.Sprintf("Unexpected nonce. Expected: %d, got %d.", expectedNonce, tx.Nonce),
+			Info: EncodeError(map[string]string{
+				"expected_nonce": fmt.Sprintf("%d", expectedNonce),
+				"got_nonce":      fmt.Sprintf("%d", tx.Nonce),
+			}),
+		}
 	}
 
 	response := tx.decodedData.Run(tx, context, isCheck, rewardPool, currentBlock)
@@ -170,4 +176,12 @@ func RunTx(context *state.State,
 	}
 
 	return response
+}
+
+func EncodeError(data map[string]string) string {
+	marshal, err := json.Marshal(data)
+	if err != nil {
+		panic(err)
+	}
+	return string(marshal)
 }

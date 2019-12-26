@@ -18,12 +18,12 @@ import (
 func (s *Service) Block(_ context.Context, req *pb.BlockRequest) (*pb.BlockResponse, error) {
 	block, err := s.client.Block(&req.Height)
 	if err != nil {
-		return &pb.BlockResponse{}, status.Error(codes.NotFound, "Block not found")
+		return new(pb.BlockResponse), status.Error(codes.NotFound, "Block not found")
 	}
 
 	blockResults, err := s.client.BlockResults(&req.Height)
 	if err != nil {
-		return &pb.BlockResponse{}, status.Error(codes.NotFound, "Block results not found")
+		return new(pb.BlockResponse), status.Error(codes.NotFound, "Block results not found")
 	}
 
 	valHeight := req.Height - 1
@@ -32,7 +32,7 @@ func (s *Service) Block(_ context.Context, req *pb.BlockRequest) (*pb.BlockRespo
 	}
 	tmValidators, err := s.client.Validators(&valHeight)
 	if err != nil {
-		return &pb.BlockResponse{}, status.Error(codes.NotFound, "Validators for block not found")
+		return new(pb.BlockResponse), status.Error(codes.NotFound, "Validators for block not found")
 	}
 
 	txs := make([]*pb.BlockResponse_Transaction, 0, len(block.Block.Data.Txs))
@@ -47,7 +47,7 @@ func (s *Service) Block(_ context.Context, req *pb.BlockRequest) (*pb.BlockRespo
 
 		dataStruct, err := s.encodeTxData(tx)
 		if err != nil {
-			return &pb.BlockResponse{}, status.Error(codes.InvalidArgument, err.Error())
+			return new(pb.BlockResponse), status.Error(codes.InvalidArgument, err.Error())
 		}
 
 		txs = append(txs, &pb.BlockResponse_Transaction{
@@ -73,7 +73,7 @@ func (s *Service) Block(_ context.Context, req *pb.BlockRequest) (*pb.BlockRespo
 	if req.Height > 1 {
 		p, err := s.getBlockProposer(block)
 		if err != nil {
-			return &pb.BlockResponse{}, status.Error(codes.FailedPrecondition, err.Error())
+			return new(pb.BlockResponse), status.Error(codes.FailedPrecondition, err.Error())
 		}
 
 		if p != nil {

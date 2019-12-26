@@ -10,7 +10,7 @@ import (
 func (s *Service) Candidates(_ context.Context, req *pb.CandidatesRequest) (*pb.CandidatesResponse, error) {
 	cState, err := s.getStateForHeight(req.Height)
 	if err != nil {
-		return &pb.CandidatesResponse{}, status.Error(codes.NotFound, err.Error())
+		return new(pb.CandidatesResponse), status.Error(codes.NotFound, err.Error())
 	}
 
 	candidates := cState.Candidates.GetCandidates()
