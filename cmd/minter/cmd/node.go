@@ -64,7 +64,7 @@ func runNode() error {
 	app.SetTmNode(node)
 
 	if !cfg.ValidatorMode {
-		go v2.Run(service_api.NewService(amino.NewCodec(), app, client, cfg, version.Version+"-apiV2"), ":8841")
+		go v2.Run(service_api.NewService(amino.NewCodec(), app, client, node, cfg, version.Version+"-apiV2"), ":8841")
 	}
 
 	ctxCli, stopCli := context.WithCancel(context.Background())

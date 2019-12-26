@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/api/v2/pb"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
@@ -29,13 +28,13 @@ func (s *Service) EstimateCoinSellAll(_ context.Context, req *pb.EstimateCoinSel
 	coinToBuy := types.StrToCoinSymbol(req.CoinToBuy)
 	valueToSell, ok := big.NewInt(0).SetString(req.ValueToSell, 10)
 	if !ok {
-		return &pb.EstimateCoinSellAllResponse{}, s.createError(status.New(codes.InvalidArgument, "Value to sell not specified"), nil)
+		return &pb.EstimateCoinSellAllResponse{}, s.createError(status.New(codes.InvalidArgument, "Value to sell not specified"), "")
 	}
 
 	var result *big.Int
 
 	if coinToSell == coinToBuy {
-		bytes, _ := json.Marshal(map[string]string{
+		bytes := encodeError(map[string]string{
 			"coin_to_sell": coinToSell.String(),
 			"coin_to_buy":  coinToBuy.String(),
 		})
@@ -43,14 +42,14 @@ func (s *Service) EstimateCoinSellAll(_ context.Context, req *pb.EstimateCoinSel
 	}
 
 	if !cState.Coins.Exists(coinToSell) {
-		bytes, _ := json.Marshal(map[string]string{
+		bytes := encodeError(map[string]string{
 			"coin_to_sell": coinToSell.String(),
 		})
 		return &pb.EstimateCoinSellAllResponse{}, s.createError(status.New(codes.InvalidArgument, "Coin to sell not exists"), bytes)
 	}
 
 	if !cState.Coins.Exists(coinToBuy) {
-		bytes, _ := json.Marshal(map[string]string{
+		bytes := encodeError(map[string]string{
 			"coin_to_buy": coinToBuy.String(),
 		})
 		return &pb.EstimateCoinSellAllResponse{}, s.createError(status.New(codes.InvalidArgument, "Coin to buy not exists"), bytes)
@@ -66,7 +65,7 @@ func (s *Service) EstimateCoinSellAll(_ context.Context, req *pb.EstimateCoinSel
 
 		valueToSell.Sub(valueToSell, commission)
 		if valueToSell.Cmp(big.NewInt(0)) != 1 {
-			bytes, _ := json.Marshal(map[string]string{
+			bytes := encodeError(map[string]string{
 				"value_to_sell": valueToSell.String(),
 				"coin_to_sell":  coinToSell.String(),
 				"commission":    commission.String(),
@@ -81,7 +80,7 @@ func (s *Service) EstimateCoinSellAll(_ context.Context, req *pb.EstimateCoinSel
 
 		result.Sub(result, commission)
 		if result.Cmp(big.NewInt(0)) != 1 {
-			bytes, _ := json.Marshal(map[string]string{
+			bytes := encodeError(map[string]string{
 				"value_to_sell":        valueToSell.String(),
 				"coin_to_sell":         coinToSell.String(),
 				"coin_reserve_to_sell": coin.Reserve().String(),
@@ -98,7 +97,7 @@ func (s *Service) EstimateCoinSellAll(_ context.Context, req *pb.EstimateCoinSel
 
 		basecoinValue.Sub(basecoinValue, commission)
 		if basecoinValue.Cmp(big.NewInt(0)) != 1 {
-			bytes, _ := json.Marshal(map[string]string{
+			bytes := encodeError(map[string]string{
 				"coin_to_sell":         coinToSell.String(),
 				"coin_to_buy":          coinToBuy.String(),
 				"coin_to_sell_crr":     fmt.Sprintf("%d", coinFrom.Crr()),

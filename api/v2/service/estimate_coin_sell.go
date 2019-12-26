@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/api/v2/pb"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
@@ -25,7 +24,7 @@ func (s *Service) EstimateCoinSell(_ context.Context, req *pb.EstimateCoinSellRe
 
 	var result *big.Int
 
-	detailCoin, _ := json.Marshal(map[string]string{
+	detailCoin := encodeError(map[string]string{
 		"coin": coinToSell.String(),
 	})
 
@@ -47,14 +46,14 @@ func (s *Service) EstimateCoinSell(_ context.Context, req *pb.EstimateCoinSellRe
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 	valueToSell, ok := big.NewInt(0).SetString(req.ValueToSell, 10)
 	if !ok {
-		return &pb.EstimateCoinSellResponse{}, s.createError(status.New(codes.InvalidArgument, "Value to sell not specified"), nil)
+		return &pb.EstimateCoinSellResponse{}, s.createError(status.New(codes.InvalidArgument, "Value to sell not specified"), "")
 	}
 
 	if coinToSell != types.GetBaseCoin() {
 		coin := cState.Coins.GetCoin(coinToSell)
 
 		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
-			bytes, _ := json.Marshal(map[string]string{
+			bytes := encodeError(map[string]string{
 				"has":      coin.Reserve().String(),
 				"required": commissionInBaseCoin.String(),
 			})
@@ -63,7 +62,7 @@ func (s *Service) EstimateCoinSell(_ context.Context, req *pb.EstimateCoinSellRe
 		}
 
 		if coin.Volume().Cmp(valueToSell) < 0 {
-			bytes, _ := json.Marshal(map[string]string{
+			bytes := encodeError(map[string]string{
 				"has":      coin.Reserve().String(),
 				"required": valueToSell.String(),
 			})

@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/api/v2/pb"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
@@ -30,13 +29,12 @@ func (s *Service) EstimateTxCommission(_ context.Context, req *pb.EstimateTxComm
 		coin := cState.Coins.GetCoin(decodedTx.GasCoin)
 
 		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
-			bytes, _ := json.Marshal(map[string]string{
+			return &pb.EstimateTxCommissionResponse{}, s.createError(status.New(codes.InvalidArgument, fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s",
+				coin.Reserve().String(), commissionInBaseCoin.String())), encodeError(map[string]string{
 				"commission_in_base_coin": coin.Reserve().String(),
 				"value_has":               coin.Reserve().String(),
 				"value_required":          commissionInBaseCoin.String(),
-			})
-			return &pb.EstimateTxCommissionResponse{}, s.createError(status.New(codes.InvalidArgument, fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s",
-				coin.Reserve().String(), commissionInBaseCoin.String())), bytes)
+			}))
 		}
 
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)

@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/api/v2/pb"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
@@ -45,7 +44,7 @@ func (s *Service) EstimateCoinBuy(_ context.Context, req *pb.EstimateCoinBuyRequ
 		coin := cState.Coins.GetCoin(coinToSell)
 
 		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
-			bytes, _ := json.Marshal(map[string]string{
+			bytes := encodeError(map[string]string{
 				"has":      coin.Reserve().String(),
 				"required": commissionInBaseCoin.String(),
 			})
@@ -58,7 +57,7 @@ func (s *Service) EstimateCoinBuy(_ context.Context, req *pb.EstimateCoinBuyRequ
 
 	valueToBuy, ok := big.NewInt(0).SetString(req.ValueToBuy, 10)
 	if !ok {
-		return &pb.EstimateCoinBuyResponse{}, s.createError(status.New(codes.InvalidArgument, "Value to buy not specified"), nil)
+		return &pb.EstimateCoinBuyResponse{}, s.createError(status.New(codes.InvalidArgument, "Value to buy not specified"), "")
 	}
 
 	switch {
@@ -69,7 +68,7 @@ func (s *Service) EstimateCoinBuy(_ context.Context, req *pb.EstimateCoinBuyRequ
 		coin := cState.Coins.GetCoin(coinToSell)
 
 		if coin.Reserve().Cmp(valueToBuy) < 0 {
-			bytes, _ := json.Marshal(map[string]string{
+			bytes := encodeError(map[string]string{
 				"has":      coin.Reserve().String(),
 				"required": valueToBuy.String(),
 			})
@@ -84,7 +83,7 @@ func (s *Service) EstimateCoinBuy(_ context.Context, req *pb.EstimateCoinBuyRequ
 		baseCoinNeeded := formula.CalculatePurchaseAmount(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), valueToBuy)
 
 		if coinFrom.Reserve().Cmp(baseCoinNeeded) < 0 {
-			bytes, _ := json.Marshal(map[string]string{
+			bytes := encodeError(map[string]string{
 				"has":      coinFrom.Reserve().String(),
 				"required": baseCoinNeeded.String(),
 			})
