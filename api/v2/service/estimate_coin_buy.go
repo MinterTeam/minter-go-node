@@ -44,12 +44,11 @@ func (s *Service) EstimateCoinBuy(_ context.Context, req *pb.EstimateCoinBuyRequ
 		coin := cState.Coins.GetCoin(coinToSell)
 
 		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
-			bytes := transaction.EncodeError(map[string]string{
+			return new(pb.EstimateCoinBuyResponse), s.createError(status.New(codes.InvalidArgument, fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s",
+				coin.Reserve().String(), commissionInBaseCoin.String())), transaction.EncodeError(map[string]string{
 				"has":      coin.Reserve().String(),
 				"required": commissionInBaseCoin.String(),
-			})
-			return new(pb.EstimateCoinBuyResponse), s.createError(status.New(codes.InvalidArgument, fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s",
-				coin.Reserve().String(), commissionInBaseCoin.String())), bytes)
+			}))
 		}
 
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
@@ -68,12 +67,11 @@ func (s *Service) EstimateCoinBuy(_ context.Context, req *pb.EstimateCoinBuyRequ
 		coin := cState.Coins.GetCoin(coinToSell)
 
 		if coin.Reserve().Cmp(valueToBuy) < 0 {
-			bytes := transaction.EncodeError(map[string]string{
+			return new(pb.EstimateCoinBuyResponse), s.createError(status.New(codes.InvalidArgument, fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s",
+				coin.Reserve().String(), valueToBuy.String())), transaction.EncodeError(map[string]string{
 				"has":      coin.Reserve().String(),
 				"required": valueToBuy.String(),
-			})
-			return new(pb.EstimateCoinBuyResponse), s.createError(status.New(codes.InvalidArgument, fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s",
-				coin.Reserve().String(), valueToBuy.String())), bytes)
+			}))
 		}
 
 		result = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), valueToBuy)
@@ -83,12 +81,11 @@ func (s *Service) EstimateCoinBuy(_ context.Context, req *pb.EstimateCoinBuyRequ
 		baseCoinNeeded := formula.CalculatePurchaseAmount(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), valueToBuy)
 
 		if coinFrom.Reserve().Cmp(baseCoinNeeded) < 0 {
-			bytes := transaction.EncodeError(map[string]string{
+			return new(pb.EstimateCoinBuyResponse), s.createError(status.New(codes.InvalidArgument, fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s",
+				coinFrom.Reserve().String(), baseCoinNeeded.String())), transaction.EncodeError(map[string]string{
 				"has":      coinFrom.Reserve().String(),
 				"required": baseCoinNeeded.String(),
-			})
-			return new(pb.EstimateCoinBuyResponse), s.createError(status.New(codes.InvalidArgument, fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s",
-				coinFrom.Reserve().String(), baseCoinNeeded.String())), bytes)
+			}))
 
 		}
 
