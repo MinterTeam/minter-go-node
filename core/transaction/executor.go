@@ -41,62 +41,99 @@ func RunTx(context *state.State,
 	currentBlock uint64,
 	currentMempool sync.Map,
 	minGasPrice uint32) Response {
-	if len(rawTx) > maxTxLength {
+	lenRawTx := len(rawTx)
+	if lenRawTx > maxTxLength {
 		return Response{
 			Code: code.TxTooLarge,
-			Log:  fmt.Sprintf("TX length is over %d bytes", maxTxLength)}
+			Log:  fmt.Sprintf("TX length is over %d bytes", maxTxLength),
+			Info: EncodeError(map[string]string{
+				"max_tx_length": fmt.Sprintf("%d", maxTxLength),
+				"got_tx_length": fmt.Sprintf("%d", lenRawTx),
+			}),
+		}
 	}
 
 	tx, err := TxDecoder.DecodeFromBytes(rawTx)
 	if err != nil {
 		return Response{
 			Code: code.DecodeError,
-			Log:  err.Error()}
+			Log:  err.Error(),
+		}
 	}
 
 	if tx.ChainID != types.CurrentChainID {
 		return Response{
 			Code: code.WrongChainID,
-			Log:  "Wrong chain id"}
+			Log:  "Wrong chain id",
+			Info: EncodeError(map[string]string{
+				"current_chain_id": fmt.Sprintf("%d", types.CurrentChainID),
+				"got_chain_id":     fmt.Sprintf("%d", tx.ChainID),
+			}),
+		}
 	}
 
 	if !context.Coins.Exists(tx.GasCoin) {
 		return Response{
 			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin)}
+			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin),
+			Info: EncodeError(map[string]string{
+				"gas_coin": fmt.Sprintf("%d", tx.GasCoin),
+			}),
+		}
 	}
 
 	if isCheck && tx.GasPrice < minGasPrice {
 		return Response{
 			Code: code.TooLowGasPrice,
 			Log:  fmt.Sprintf("Gas price of tx is too low to be included in mempool. Expected %d", minGasPrice),
+			Info: EncodeError(map[string]string{
+				"min_gas_price": fmt.Sprintf("%d", minGasPrice),
+				"got_gas_price": fmt.Sprintf("%d", tx.GasPrice),
+			}),
 		}
 	}
 
-	if len(tx.Payload) > maxPayloadLength {
+	lenPayload := len(tx.Payload)
+	if lenPayload > maxPayloadLength {
 		return Response{
 			Code: code.TxPayloadTooLarge,
-			Log:  fmt.Sprintf("TX payload length is over %d bytes", maxPayloadLength)}
+			Log:  fmt.Sprintf("TX payload length is over %d bytes", maxPayloadLength),
+			Info: EncodeError(map[string]string{
+				"max_payload_length": fmt.Sprintf("%d", maxPayloadLength),
+				"got_payload_length": fmt.Sprintf("%d", lenPayload),
+			}),
+		}
 	}
 
-	if len(tx.ServiceData) > maxServiceDataLength {
+	lenServiceData := len(tx.ServiceData)
+	if lenServiceData > maxServiceDataLength {
 		return Response{
 			Code: code.TxServiceDataTooLarge,
-			Log:  fmt.Sprintf("TX service data length is over %d bytes", maxServiceDataLength)}
+			Log:  fmt.Sprintf("TX service data length is over %d bytes", maxServiceDataLength),
+			Info: EncodeError(map[string]string{
+				"max_service_data_length": fmt.Sprintf("%d", maxServiceDataLength),
+				"got_service_data_length": fmt.Sprintf("%d", lenServiceData),
+			}),
+		}
 	}
 
 	sender, err := tx.Sender()
 	if err != nil {
 		return Response{
 			Code: code.DecodeError,
-			Log:  err.Error()}
+			Log:  err.Error(),
+		}
 	}
 
 	// check if mempool already has transactions from this address
 	if _, has := currentMempool.Load(sender); isCheck && has {
 		return Response{
 			Code: code.TxFromSenderAlreadyInMempool,
-			Log:  fmt.Sprintf("Tx from %s already exists in mempool", sender.String())}
+			Log:  fmt.Sprintf("Tx from %s already exists in mempool", sender.String()),
+			Info: EncodeError(map[string]string{
+				"sender": sender.String(),
+			}),
+		}
 	}
 
 	if isCheck {
@@ -110,7 +147,8 @@ func RunTx(context *state.State,
 		if !multisig.IsMultisig() {
 			return Response{
 				Code: code.MultisigNotExists,
-				Log:  "Multisig does not exists"}
+				Log:  "Multisig does not exists",
+			}
 		}
 
 		multisigData := multisig.Multisig()
@@ -147,8 +185,14 @@ func RunTx(context *state.State,
 		if totalWeight < multisigData.Threshold {
 			return Response{
 				Code: code.IncorrectMultiSignature,
-				Log:  fmt.Sprintf("Not enough multisig votes. Needed %d, has %d", multisigData.Threshold, totalWeight)}
+				Log:  fmt.Sprintf("Not enough multisig votes. Needed %d, has %d", multisigData.Threshold, totalWeight),
+				Info: EncodeError(map[string]string{
+					"needed_votes": fmt.Sprintf("%d", multisigData.Threshold),
+					"got_votes":    fmt.Sprintf("%d", totalWeight),
+				}),
+			}
 		}
+
 	}
 
 	if expectedNonce := context.Accounts.GetNonce(sender) + 1; expectedNonce != tx.Nonce {
