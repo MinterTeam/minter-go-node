@@ -95,8 +95,9 @@ func (data MultisendData) Run(tx *Transaction, context *state.State, isCheck boo
 				Code: code.CoinReserveNotSufficient,
 				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.Reserve().String(), commissionInBaseCoin.String()),
 				Info: EncodeError(map[string]string{
-					"has_coin":      coin.Reserve().String(),
-					"required_coin": commissionInBaseCoin.String(),
+					"has_reserve": coin.Reserve().String(),
+					"commission":  commissionInBaseCoin.String(),
+					"gas_coin":    coin.CName,
 				}),
 			}
 		}

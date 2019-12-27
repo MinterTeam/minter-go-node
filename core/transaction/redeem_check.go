@@ -161,7 +161,8 @@ func (data RedeemCheckData) Run(tx *Transaction, context *state.State, isCheck b
 	if err != nil {
 		return Response{
 			Code: code.DecodeError,
-			Log:  err.Error()}
+			Log:  err.Error(),
+		}
 	}
 
 	var senderAddressHash types.Hash

@@ -80,8 +80,9 @@ func (data EditCandidateData) Run(tx *Transaction, context *state.State, isCheck
 				Code: code.CoinReserveNotSufficient,
 				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.Reserve().String(), commissionInBaseCoin.String()),
 				Info: EncodeError(map[string]string{
-					"coin_reserve":            coin.Reserve().String(),
-					"commission_in_base_coin": commissionInBaseCoin.String(),
+					"has_reserve": coin.Reserve().String(),
+					"commission":  commissionInBaseCoin.String(),
+					"gas_coin":    coin.CName,
 				}),
 			}
 		}

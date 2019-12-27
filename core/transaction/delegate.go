@@ -58,7 +58,11 @@ func (data DelegateData) BasicCheck(tx *Transaction, context *state.State) *Resp
 	if !context.Candidates.Exists(data.PubKey) {
 		return &Response{
 			Code: code.CandidateNotFound,
-			Log:  fmt.Sprintf("Candidate with such public key not found")}
+			Log:  fmt.Sprintf("Candidate with such public key not found"),
+			Info: EncodeError(map[string]string{
+				"pub_key": data.PubKey.String(),
+			}),
+		}
 	}
 
 	sender, _ := tx.Sender()
@@ -102,7 +106,13 @@ func (data DelegateData) Run(tx *Transaction, context *state.State, isCheck bool
 		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
 			return Response{
 				Code: code.CoinReserveNotSufficient,
-				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.Reserve().String(), commissionInBaseCoin.String())}
+				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.Reserve().String(), commissionInBaseCoin.String()),
+				Info: EncodeError(map[string]string{
+					"has_reserve": coin.Reserve().String(),
+					"commission":  commissionInBaseCoin.String(),
+					"gas_coin":    coin.CName,
+				}),
+			}
 		}
 
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
@@ -111,13 +121,25 @@ func (data DelegateData) Run(tx *Transaction, context *state.State, isCheck bool
 	if context.Accounts.GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
 		return Response{
 			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, tx.GasCoin)}
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, tx.GasCoin),
+			Info: EncodeError(map[string]string{
+				"sender":       sender.String(),
+				"needed_value": commission.String(),
+				"gas_coin":     fmt.Sprintf("%s", tx.GasCoin),
+			}),
+		}
 	}
 
 	if context.Accounts.GetBalance(sender, data.Coin).Cmp(data.Value) < 0 {
 		return Response{
 			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), data.Value, data.Coin)}
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), data.Value, data.Coin),
+			Info: EncodeError(map[string]string{
+				"sender":       sender.String(),
+				"needed_value": data.Value.String(),
+				"coin":         fmt.Sprintf("%s", data.Coin),
+			}),
+		}
 	}
 
 	if data.Coin == tx.GasCoin {
@@ -128,7 +150,13 @@ func (data DelegateData) Run(tx *Transaction, context *state.State, isCheck bool
 		if context.Accounts.GetBalance(sender, tx.GasCoin).Cmp(totalTxCost) < 0 {
 			return Response{
 				Code: code.InsufficientFunds,
-				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), totalTxCost.String(), tx.GasCoin)}
+				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), totalTxCost.String(), tx.GasCoin),
+				Info: EncodeError(map[string]string{
+					"sender":       sender.String(),
+					"needed_value": totalTxCost.String(),
+					"gas_coin":     fmt.Sprintf("%s", tx.GasCoin),
+				}),
+			}
 		}
 	}
 
