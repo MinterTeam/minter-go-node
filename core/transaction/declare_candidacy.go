@@ -78,7 +78,7 @@ func (data DeclareCandidacyData) BasicCheck(tx *Transaction, context *state.Stat
 			Code: code.WrongCommission,
 			Log:  fmt.Sprintf("Commission should be between 0 and 100"),
 			Info: EncodeError(map[string]string{
-				"got_commission": data.Commission.String(),
+				"got_commission": fmt.Sprintf("%d", data.Commission),
 			}),
 		}
 	}
