@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"github.com/MinterTeam/minter-go-node/api/v2/pb"
+	pb "github.com/MinterTeam/minter-go-node/api/v2/api_pb"
 )
 
 func (s *Service) Events(_ context.Context, req *pb.EventsRequest) (*pb.EventsResponse, error) {

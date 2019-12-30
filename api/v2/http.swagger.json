@@ -18,7 +18,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/pbAddressResponse"
+              "$ref": "#/definitions/api_pbAddressResponse"
             }
           }
         },
@@ -49,7 +49,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/pbAddressesResponse"
+              "$ref": "#/definitions/api_pbAddressesResponse"
             }
           }
         },
@@ -84,7 +84,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/pbBlockResponse"
+              "$ref": "#/definitions/api_pbBlockResponse"
             }
           }
         },
@@ -109,7 +109,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/pbCandidateResponse"
+              "$ref": "#/definitions/api_pbCandidateResponse"
             }
           }
         },
@@ -140,7 +140,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/pbCandidatesResponse"
+              "$ref": "#/definitions/api_pbCandidatesResponse"
             }
           }
         },
@@ -172,7 +172,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/pbCoinInfoResponse"
+              "$ref": "#/definitions/api_pbCoinInfoResponse"
             }
           }
         },
@@ -203,7 +203,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/pbEstimateCoinBuyResponse"
+              "$ref": "#/definitions/api_pbEstimateCoinBuyResponse"
             }
           }
         },
@@ -246,7 +246,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/pbEstimateCoinSellResponse"
+              "$ref": "#/definitions/api_pbEstimateCoinSellResponse"
             }
           }
         },
@@ -289,7 +289,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/pbEstimateCoinSellAllResponse"
+              "$ref": "#/definitions/api_pbEstimateCoinSellAllResponse"
             }
           }
         },
@@ -339,7 +339,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/pbEstimateTxCommissionResponse"
+              "$ref": "#/definitions/api_pbEstimateTxCommissionResponse"
             }
           }
         },
@@ -370,7 +370,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/pbEventsResponse"
+              "$ref": "#/definitions/api_pbEventsResponse"
             }
           }
         },
@@ -395,7 +395,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/pbGenesisResponse"
+              "$ref": "#/definitions/api_pbGenesisResponse"
             }
           }
         },
@@ -411,7 +411,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/pbMaxGasResponse"
+              "$ref": "#/definitions/api_pbMaxGasResponse"
             }
           }
         },
@@ -436,7 +436,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/pbMinGasPriceResponse"
+              "$ref": "#/definitions/api_pbMinGasPriceResponse"
             }
           }
         },
@@ -452,7 +452,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/pbMissedBlocksResponse"
+              "$ref": "#/definitions/api_pbMissedBlocksResponse"
             }
           }
         },
@@ -483,7 +483,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/pbNetInfoResponse"
+              "$ref": "#/definitions/api_pbNetInfoResponse"
             }
           }
         },
@@ -499,7 +499,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/pbSendTransactionResponse"
+              "$ref": "#/definitions/api_pbSendTransactionResponse"
             }
           }
         },
@@ -523,7 +523,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/pbStatusResponse"
+              "$ref": "#/definitions/api_pbStatusResponse"
             }
           }
         },
@@ -539,7 +539,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/pbTransactionResponse"
+              "$ref": "#/definitions/api_pbTransactionResponse"
             }
           }
         },
@@ -563,7 +563,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/pbTransactionsResponse"
+              "$ref": "#/definitions/api_pbTransactionsResponse"
             }
           }
         },
@@ -601,7 +601,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/pbUnconfirmedTxsResponse"
+              "$ref": "#/definitions/api_pbUnconfirmedTxsResponse"
             }
           }
         },
@@ -626,7 +626,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/pbValidatorsResponse"
+              "$ref": "#/definitions/api_pbValidatorsResponse"
             }
           }
         },
@@ -980,6 +980,24 @@
         }
       }
     },
+    "NetInfoResponsePeer": {
+      "type": "object",
+      "properties": {
+        "node_info": {
+          "$ref": "#/definitions/api_pbNodeInfo"
+        },
+        "is_outbound": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "connection_status": {
+          "$ref": "#/definitions/PeerConnectionStatus"
+        },
+        "remote_ip": {
+          "type": "string"
+        }
+      }
+    },
     "NodeInfoOther": {
       "type": "object",
       "properties": {
@@ -1025,24 +1043,6 @@
         }
       }
     },
-    "ResultPeer": {
-      "type": "object",
-      "properties": {
-        "node_info": {
-          "$ref": "#/definitions/pbNodeInfo"
-        },
-        "is_outbound": {
-          "type": "boolean",
-          "format": "boolean"
-        },
-        "connection_status": {
-          "$ref": "#/definitions/PeerConnectionStatus"
-        },
-        "remote_ip": {
-          "type": "string"
-        }
-      }
-    },
     "StatusResponsePubKey": {
       "type": "object",
       "properties": {
@@ -1054,7 +1054,7 @@
         }
       }
     },
-    "pbAddressResponse": {
+    "api_pbAddressResponse": {
       "type": "object",
       "properties": {
         "balance": {
@@ -1068,18 +1068,18 @@
         }
       }
     },
-    "pbAddressesResponse": {
+    "api_pbAddressesResponse": {
       "type": "object",
       "properties": {
         "addresses": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/pbAddressesResponseResult"
+            "$ref": "#/definitions/api_pbAddressesResponseResult"
           }
         }
       }
     },
-    "pbAddressesResponseResult": {
+    "api_pbAddressesResponseResult": {
       "type": "object",
       "properties": {
         "address": {
@@ -1096,7 +1096,7 @@
         }
       }
     },
-    "pbBlockResponse": {
+    "api_pbBlockResponse": {
       "type": "object",
       "properties": {
         "hash": {
@@ -1132,15 +1132,15 @@
         "validators": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/pbBlockResponseValidator"
+            "$ref": "#/definitions/api_pbBlockResponseValidator"
           }
         },
         "evidence": {
-          "$ref": "#/definitions/pbBlockResponseEvidence"
+          "$ref": "#/definitions/api_pbBlockResponseEvidence"
         }
       }
     },
-    "pbBlockResponseEvidence": {
+    "api_pbBlockResponseEvidence": {
       "type": "object",
       "properties": {
         "evidence": {
@@ -1151,7 +1151,7 @@
         }
       }
     },
-    "pbBlockResponseValidator": {
+    "api_pbBlockResponseValidator": {
       "type": "object",
       "properties": {
         "public_key": {
@@ -1163,7 +1163,7 @@
         }
       }
     },
-    "pbCandidateResponse": {
+    "api_pbCandidateResponse": {
       "type": "object",
       "properties": {
         "reward_address": {
@@ -1181,7 +1181,7 @@
         "stakes": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/pbCandidateResponseStake"
+            "$ref": "#/definitions/api_pbCandidateResponseStake"
           }
         },
         "status": {
@@ -1189,7 +1189,7 @@
         }
       }
     },
-    "pbCandidateResponseStake": {
+    "api_pbCandidateResponseStake": {
       "type": "object",
       "properties": {
         "owner": {
@@ -1206,18 +1206,18 @@
         }
       }
     },
-    "pbCandidatesResponse": {
+    "api_pbCandidatesResponse": {
       "type": "object",
       "properties": {
         "candidates": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/pbCandidateResponse"
+            "$ref": "#/definitions/api_pbCandidateResponse"
           }
         }
       }
     },
-    "pbCoinInfoResponse": {
+    "api_pbCoinInfoResponse": {
       "type": "object",
       "properties": {
         "name": {
@@ -1237,7 +1237,7 @@
         }
       }
     },
-    "pbEstimateCoinBuyResponse": {
+    "api_pbEstimateCoinBuyResponse": {
       "type": "object",
       "properties": {
         "will_pay": {
@@ -1248,7 +1248,7 @@
         }
       }
     },
-    "pbEstimateCoinSellAllResponse": {
+    "api_pbEstimateCoinSellAllResponse": {
       "type": "object",
       "properties": {
         "will_get": {
@@ -1256,7 +1256,7 @@
         }
       }
     },
-    "pbEstimateCoinSellResponse": {
+    "api_pbEstimateCoinSellResponse": {
       "type": "object",
       "properties": {
         "will_get": {
@@ -1267,7 +1267,7 @@
         }
       }
     },
-    "pbEstimateTxCommissionResponse": {
+    "api_pbEstimateTxCommissionResponse": {
       "type": "object",
       "properties": {
         "commission": {
@@ -1275,7 +1275,7 @@
         }
       }
     },
-    "pbEventsResponse": {
+    "api_pbEventsResponse": {
       "type": "object",
       "properties": {
         "events": {
@@ -1286,7 +1286,7 @@
         }
       }
     },
-    "pbGenesisResponse": {
+    "api_pbGenesisResponse": {
       "type": "object",
       "properties": {
         "genesis": {
@@ -1294,7 +1294,7 @@
         }
       }
     },
-    "pbMaxGasResponse": {
+    "api_pbMaxGasResponse": {
       "type": "object",
       "properties": {
         "result": {
@@ -1302,7 +1302,7 @@
         }
       }
     },
-    "pbMinGasPriceResponse": {
+    "api_pbMinGasPriceResponse": {
       "type": "object",
       "properties": {
         "result": {
@@ -1310,7 +1310,7 @@
         }
       }
     },
-    "pbMissedBlocksResponse": {
+    "api_pbMissedBlocksResponse": {
       "type": "object",
       "properties": {
         "missed_blocks": {
@@ -1321,15 +1321,7 @@
         }
       }
     },
-    "pbNetInfoResponse": {
-      "type": "object",
-      "properties": {
-        "result": {
-          "$ref": "#/definitions/pbNetInfoResponseResult"
-        }
-      }
-    },
-    "pbNetInfoResponseResult": {
+    "api_pbNetInfoResponse": {
       "type": "object",
       "properties": {
         "listening": {
@@ -1348,12 +1340,12 @@
         "peers": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/ResultPeer"
+            "$ref": "#/definitions/NetInfoResponsePeer"
           }
         }
       }
     },
-    "pbNodeInfo": {
+    "api_pbNodeInfo": {
       "type": "object",
       "properties": {
         "protocol_version": {
@@ -1382,7 +1374,7 @@
         }
       }
     },
-    "pbSendTransactionResponse": {
+    "api_pbSendTransactionResponse": {
       "type": "object",
       "properties": {
         "code": {
@@ -1399,7 +1391,7 @@
         }
       }
     },
-    "pbStatusResponse": {
+    "api_pbStatusResponse": {
       "type": "object",
       "properties": {
         "version": {
@@ -1429,7 +1421,7 @@
         }
       }
     },
-    "pbTransactionResponse": {
+    "api_pbTransactionResponse": {
       "type": "object",
       "properties": {
         "hash": {
@@ -1483,18 +1475,18 @@
         }
       }
     },
-    "pbTransactionsResponse": {
+    "api_pbTransactionsResponse": {
       "type": "object",
       "properties": {
         "transactions": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/pbTransactionResponse"
+            "$ref": "#/definitions/api_pbTransactionResponse"
           }
         }
       }
     },
-    "pbUnconfirmedTxsResponse": {
+    "api_pbUnconfirmedTxsResponse": {
       "type": "object",
       "properties": {
         "count_transactions": {
@@ -1514,18 +1506,18 @@
         }
       }
     },
-    "pbValidatorsResponse": {
+    "api_pbValidatorsResponse": {
       "type": "object",
       "properties": {
         "validators": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/pbValidatorsResponseResult"
+            "$ref": "#/definitions/api_pbValidatorsResponseResult"
           }
         }
       }
     },
-    "pbValidatorsResponseResult": {
+    "api_pbValidatorsResponseResult": {
       "type": "object",
       "properties": {
         "public_key": {

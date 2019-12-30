@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/api/v2/pb"
+	pb "github.com/MinterTeam/minter-go-node/api/v2/api_pb"
 	"github.com/MinterTeam/minter-go-node/core/rewards"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"

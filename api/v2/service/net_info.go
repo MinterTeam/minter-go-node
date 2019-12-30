@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/api/v2/pb"
+	pb "github.com/MinterTeam/minter-go-node/api/v2/api_pb"
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -16,11 +16,11 @@ func (s *Service) NetInfo(context.Context, *empty.Empty) (*pb.NetInfoResponse, e
 		return new(pb.NetInfoResponse), status.Error(codes.FailedPrecondition, err.Error())
 	}
 
-	var peers []*pb.NetInfoResponse_Result_Peer
+	var peers []*pb.NetInfoResponse_Peer
 	for _, peer := range result.Peers {
-		var channels []*pb.NetInfoResponse_Result_Peer_ConnectionStatus_Channel
+		var channels []*pb.NetInfoResponse_Peer_ConnectionStatus_Channel
 		for _, channel := range peer.ConnectionStatus.Channels {
-			channels = append(channels, &pb.NetInfoResponse_Result_Peer_ConnectionStatus_Channel{
+			channels = append(channels, &pb.NetInfoResponse_Peer_ConnectionStatus_Channel{
 				ID:                fmt.Sprintf("%d", channel.ID),
 				SendQueueCapacity: fmt.Sprintf("%d", channel.SendQueueCapacity),
 				SendQueueSize:     fmt.Sprintf("%d", channel.SendQueueSize),
@@ -29,7 +29,7 @@ func (s *Service) NetInfo(context.Context, *empty.Empty) (*pb.NetInfoResponse, e
 			})
 		}
 
-		peers = append(peers, &pb.NetInfoResponse_Result_Peer{
+		peers = append(peers, &pb.NetInfoResponse_Peer{
 			NodeInfo: &pb.NodeInfo{
 				ProtocolVersion: &pb.NodeInfo_ProtocolVersion{
 					P2P:   fmt.Sprintf("%d", peer.NodeInfo.ProtocolVersion.P2P),
@@ -48,9 +48,9 @@ func (s *Service) NetInfo(context.Context, *empty.Empty) (*pb.NetInfoResponse, e
 				},
 			},
 			IsOutbound: peer.IsOutbound,
-			ConnectionStatus: &pb.NetInfoResponse_Result_Peer_ConnectionStatus{
+			ConnectionStatus: &pb.NetInfoResponse_Peer_ConnectionStatus{
 				Duration: fmt.Sprintf("%d", peer.ConnectionStatus.Duration),
-				SendMonitor: &pb.NetInfoResponse_Result_Peer_ConnectionStatus_Monitor{
+				SendMonitor: &pb.NetInfoResponse_Peer_ConnectionStatus_Monitor{
 					Active:   false,
 					Start:    peer.ConnectionStatus.SendMonitor.Start.Format(time.RFC3339Nano),
 					Duration: fmt.Sprintf("%d", peer.ConnectionStatus.SendMonitor.Duration.Nanoseconds()),
@@ -73,11 +73,9 @@ func (s *Service) NetInfo(context.Context, *empty.Empty) (*pb.NetInfoResponse, e
 	}
 
 	return &pb.NetInfoResponse{
-		Result: &pb.NetInfoResponse_Result{
-			Listening:  result.Listening,
-			Listeners:  result.Listeners,
-			CountPeers: fmt.Sprintf("%d", result.NPeers),
-			Peers:      peers,
-		},
+		Listening:  result.Listening,
+		Listeners:  result.Listeners,
+		CountPeers: fmt.Sprintf("%d", result.NPeers),
+		Peers:      peers,
 	}, nil
 }

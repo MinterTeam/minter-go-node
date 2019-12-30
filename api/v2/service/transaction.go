@@ -5,7 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/api/v2/pb"
+	pb "github.com/MinterTeam/minter-go-node/api/v2/api_pb"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/golang/protobuf/jsonpb"
 	_struct "github.com/golang/protobuf/ptypes/struct"

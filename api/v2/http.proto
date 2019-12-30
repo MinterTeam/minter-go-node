@@ -1,5 +1,8 @@
 syntax = "proto3";
-package pb;
+
+package api_pb;
+
+option go_package = "./api_pb";
 
 import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
@@ -25,7 +28,6 @@ message NodeInfo {
     Other other = 7;
 }
 message NetInfoResponse {
-    message Result {
         bool listening = 4;
         repeated string listeners = 1;
         string count_peers = 2;
@@ -64,8 +66,6 @@ message NetInfoResponse {
             string remote_ip = 3;
         }
         repeated Peer peers = 3;
-    }
-    Result result = 3;
 }
 message StatusResponse {
     string version = 8;

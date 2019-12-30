@@ -3,7 +3,7 @@ package v2
 import (
 	"context"
 	"fmt"
-	gw "github.com/MinterTeam/minter-go-node/api/v2/pb"
+	gw "github.com/MinterTeam/minter-go-node/api/v2/api_pb"
 	"github.com/MinterTeam/minter-go-node/api/v2/service"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"net/http"
