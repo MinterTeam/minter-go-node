@@ -17,8 +17,8 @@ func (s *Service) Address(_ context.Context, req *pb.AddressRequest) (*pb.Addres
 
 	address := types.StringToAddress(req.Address)
 	response := &pb.AddressResponse{
-		Balance:          make(map[string]string),
-		TransactionCount: fmt.Sprintf("%d", cState.Accounts.GetNonce(address)),
+		Balance:           make(map[string]string),
+		CountTransactions: fmt.Sprintf("%d", cState.Accounts.GetNonce(address)),
 	}
 
 	balances := cState.Accounts.GetBalances(address)

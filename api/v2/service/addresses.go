@@ -22,9 +22,9 @@ func (s *Service) Addresses(_ context.Context, req *pb.AddressesRequest) (*pb.Ad
 	for _, address := range req.Addresses {
 		addr := types.StringToAddress(address)
 		data := &pb.AddressesResponse_Result{
-			Address:          address,
-			Balance:          make(map[string]string),
-			TransactionCount: fmt.Sprintf("%d", cState.Accounts.GetNonce(addr)),
+			Address:           address,
+			Balance:           make(map[string]string),
+			CountTransactions: fmt.Sprintf("%d", cState.Accounts.GetNonce(addr)),
 		}
 
 		balances := cState.Accounts.GetBalances(addr)

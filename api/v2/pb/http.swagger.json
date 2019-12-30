@@ -582,7 +582,7 @@
             "format": "int32"
           },
           {
-            "name": "perPage",
+            "name": "per_page",
             "in": "query",
             "required": false,
             "type": "integer",
@@ -1063,7 +1063,7 @@
             "type": "string"
           }
         },
-        "transaction_count": {
+        "count_transactions": {
           "type": "string"
         }
       }
@@ -1091,7 +1091,7 @@
             "type": "string"
           }
         },
-        "transaction_count": {
+        "count_transactions": {
           "type": "string"
         }
       }
@@ -1108,10 +1108,10 @@
         "time": {
           "type": "string"
         },
-        "num_txs": {
+        "count_transactions": {
           "type": "string"
         },
-        "total_txs": {
+        "total_transactions": {
           "type": "string"
         },
         "transactions": {
@@ -1342,7 +1342,7 @@
             "type": "string"
           }
         },
-        "n_peers": {
+        "count_peers": {
           "type": "string"
         },
         "peers": {
@@ -1497,16 +1497,16 @@
     "pbUnconfirmedTxsResponse": {
       "type": "object",
       "properties": {
-        "n_txs": {
+        "count_transactions": {
           "type": "string"
         },
-        "total": {
+        "total_transactions": {
           "type": "string"
         },
         "total_bytes": {
           "type": "string"
         },
-        "txs": {
+        "transactions": {
           "type": "array",
           "items": {
             "type": "string"

@@ -74,10 +74,10 @@ func (s *Service) NetInfo(context.Context, *empty.Empty) (*pb.NetInfoResponse, e
 
 	return &pb.NetInfoResponse{
 		Result: &pb.NetInfoResponse_Result{
-			Listening: result.Listening,
-			Listeners: result.Listeners,
-			NPeers:    fmt.Sprintf("%d", result.NPeers),
-			Peers:     peers,
+			Listening:  result.Listening,
+			Listeners:  result.Listeners,
+			CountPeers: fmt.Sprintf("%d", result.NPeers),
+			Peers:      peers,
 		},
 	}, nil
 }

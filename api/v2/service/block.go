@@ -103,16 +103,16 @@ func (s *Service) Block(_ context.Context, req *pb.BlockRequest) (*pb.BlockRespo
 	}
 
 	return &pb.BlockResponse{
-		Hash:         hex.EncodeToString(block.Block.Hash()),
-		Height:       fmt.Sprintf("%d", block.Block.Height),
-		Time:         block.Block.Time.Format(time.RFC3339Nano),
-		NumTxs:       fmt.Sprintf("%d", block.Block.NumTxs),
-		TotalTxs:     fmt.Sprintf("%d", block.Block.TotalTxs),
-		Transactions: txs,
-		BlockReward:  rewards.GetRewardForBlock(uint64(req.Height)).String(),
-		Size:         fmt.Sprintf("%d", s.cdc.MustMarshalBinaryLengthPrefixed(block)),
-		Proposer:     proposer,
-		Validators:   validators,
+		Hash:              hex.EncodeToString(block.Block.Hash()),
+		Height:            fmt.Sprintf("%d", block.Block.Height),
+		Time:              block.Block.Time.Format(time.RFC3339Nano),
+		CountTransactions: fmt.Sprintf("%d", block.Block.NumTxs),
+		TotalTransactions: fmt.Sprintf("%d", block.Block.TotalTxs),
+		Transactions:      txs,
+		BlockReward:       rewards.GetRewardForBlock(uint64(req.Height)).String(),
+		Size:              fmt.Sprintf("%d", s.cdc.MustMarshalBinaryLengthPrefixed(block)),
+		Proposer:          proposer,
+		Validators:        validators,
 		Evidence: &pb.BlockResponse_Evidence{
 			Evidence: make([]*pb.BlockResponse_Evidence_Evidence, len(block.Block.Evidence.Evidence)), // todo
 		},

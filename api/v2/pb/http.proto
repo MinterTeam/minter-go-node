@@ -28,7 +28,7 @@ message NetInfoResponse {
     message Result {
         bool listening = 4;
         repeated string listeners = 1;
-        string n_peers = 2;
+        string count_peers = 2;
         message Peer {
             NodeInfo node_info = 4;
             bool is_outbound = 1;
@@ -159,8 +159,8 @@ message BlockResponse {
     string hash = 1;
     string height = 2;
     string time = 3;
-    string num_txs = 4;
-    string total_txs = 5;
+    string count_transactions = 4;
+    string total_transactions = 5;
 
     message Transaction {
         string hash = 1;
@@ -210,7 +210,7 @@ message AddressRequest {
 }
 message AddressResponse {
     map<string, string> balance = 1;
-    string transaction_count = 2;
+    string count_transactions = 2;
 }
 
 message AddressesRequest {
@@ -221,7 +221,7 @@ message AddressesResponse {
     message Result {
         string address = 1;
         map<string, string> balance = 2;
-        string transaction_count = 3;
+        string count_transactions = 3;
     }
     repeated Result addresses = 3;
 }
@@ -302,7 +302,7 @@ message TransactionsResponse {
 message TransactionsRequest {
     string query = 1;
     int32 page = 2;
-    int32 perPage = 3;
+    int32 per_page = 3;
 }
 
 message EstimateCoinBuyRequest {
@@ -367,10 +367,10 @@ message MissedBlocksResponse {
 }
 
 message UnconfirmedTxsResponse {
-    string n_txs = 1;
-    string total = 2;
+    string count_transactions = 1;
+    string total_transactions = 2;
     string total_bytes = 3;
-    repeated string txs = 4;
+    repeated string transactions = 4;
 }
 message UnconfirmedTxsRequest {
     int32 limit = 1;
