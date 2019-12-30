@@ -10,13 +10,12 @@ import (
 )
 
 func (s *Service) Validators(_ context.Context, req *pb.ValidatorsRequest) (*pb.ValidatorsResponse, error) {
-	height := uint64(req.Height)
+	height := req.Height
 	if height == 0 {
-		height = s.blockchain.Height()
+		height = int64(s.blockchain.Height())
 	}
 
-	h := int64(height)
-	tmVals, err := s.client.Validators(&h)
+	tmVals, err := s.client.Validators(&height)
 	if err != nil {
 		return new(pb.ValidatorsResponse), status.Error(codes.FailedPrecondition, err.Error())
 	}

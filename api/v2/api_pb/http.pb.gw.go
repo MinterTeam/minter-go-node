@@ -105,12 +105,30 @@ func local_request_HttpService_Status_0(ctx context.Context, marshaler runtime.M
 }
 
 var (
-	filter_HttpService_Address_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
+	filter_HttpService_Address_0 = &utilities.DoubleArray{Encoding: map[string]int{"address": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 )
 
 func request_HttpService_Address_0(ctx context.Context, marshaler runtime.Marshaler, client HttpServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq AddressRequest
 	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["address"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "address")
+	}
+
+	protoReq.Address, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "address", err)
+	}
 
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
@@ -127,6 +145,24 @@ func request_HttpService_Address_0(ctx context.Context, marshaler runtime.Marsha
 func local_request_HttpService_Address_0(ctx context.Context, marshaler runtime.Marshaler, server HttpServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq AddressRequest
 	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["address"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "address")
+	}
+
+	protoReq.Address, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "address", err)
+	}
 
 	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_HttpService_Address_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
@@ -170,19 +206,26 @@ func local_request_HttpService_Addresses_0(ctx context.Context, marshaler runtim
 
 }
 
-var (
-	filter_HttpService_Block_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
-)
-
 func request_HttpService_Block_0(ctx context.Context, marshaler runtime.Marshaler, client HttpServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq BlockRequest
 	var metadata runtime.ServerMetadata
 
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["height"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "height")
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_HttpService_Block_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+
+	protoReq.Height, err = runtime.Int64(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "height", err)
 	}
 
 	msg, err := client.Block(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -194,8 +237,22 @@ func local_request_HttpService_Block_0(ctx context.Context, marshaler runtime.Ma
 	var protoReq BlockRequest
 	var metadata runtime.ServerMetadata
 
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_HttpService_Block_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["height"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "height")
+	}
+
+	protoReq.Height, err = runtime.Int64(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "height", err)
 	}
 
 	msg, err := server.Block(ctx, &protoReq)
@@ -204,12 +261,30 @@ func local_request_HttpService_Block_0(ctx context.Context, marshaler runtime.Ma
 }
 
 var (
-	filter_HttpService_Candidate_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
+	filter_HttpService_Candidate_0 = &utilities.DoubleArray{Encoding: map[string]int{"public_key": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 )
 
 func request_HttpService_Candidate_0(ctx context.Context, marshaler runtime.Marshaler, client HttpServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq CandidateRequest
 	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["public_key"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "public_key")
+	}
+
+	protoReq.PublicKey, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "public_key", err)
+	}
 
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
@@ -226,6 +301,24 @@ func request_HttpService_Candidate_0(ctx context.Context, marshaler runtime.Mars
 func local_request_HttpService_Candidate_0(ctx context.Context, marshaler runtime.Marshaler, server HttpServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq CandidateRequest
 	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["public_key"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "public_key")
+	}
+
+	protoReq.PublicKey, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "public_key", err)
+	}
 
 	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_HttpService_Candidate_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
@@ -270,12 +363,30 @@ func local_request_HttpService_Candidates_0(ctx context.Context, marshaler runti
 }
 
 var (
-	filter_HttpService_CoinInfo_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
+	filter_HttpService_CoinInfo_0 = &utilities.DoubleArray{Encoding: map[string]int{"symbol": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 )
 
 func request_HttpService_CoinInfo_0(ctx context.Context, marshaler runtime.Marshaler, client HttpServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq CoinInfoRequest
 	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["symbol"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "symbol")
+	}
+
+	protoReq.Symbol, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "symbol", err)
+	}
 
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
@@ -292,6 +403,24 @@ func request_HttpService_CoinInfo_0(ctx context.Context, marshaler runtime.Marsh
 func local_request_HttpService_CoinInfo_0(ctx context.Context, marshaler runtime.Marshaler, server HttpServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq CoinInfoRequest
 	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["symbol"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "symbol")
+	}
+
+	protoReq.Symbol, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "symbol", err)
+	}
 
 	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_HttpService_CoinInfo_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
@@ -402,12 +531,30 @@ func local_request_HttpService_EstimateCoinSellAll_0(ctx context.Context, marsha
 }
 
 var (
-	filter_HttpService_EstimateTxCommission_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
+	filter_HttpService_EstimateTxCommission_0 = &utilities.DoubleArray{Encoding: map[string]int{"tx": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 )
 
 func request_HttpService_EstimateTxCommission_0(ctx context.Context, marshaler runtime.Marshaler, client HttpServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq EstimateTxCommissionRequest
 	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["tx"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "tx")
+	}
+
+	protoReq.Tx, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "tx", err)
+	}
 
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
@@ -425,6 +572,24 @@ func local_request_HttpService_EstimateTxCommission_0(ctx context.Context, marsh
 	var protoReq EstimateTxCommissionRequest
 	var metadata runtime.ServerMetadata
 
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["tx"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "tx")
+	}
+
+	protoReq.Tx, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "tx", err)
+	}
+
 	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_HttpService_EstimateTxCommission_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
@@ -434,19 +599,26 @@ func local_request_HttpService_EstimateTxCommission_0(ctx context.Context, marsh
 
 }
 
-var (
-	filter_HttpService_Events_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
-)
-
 func request_HttpService_Events_0(ctx context.Context, marshaler runtime.Marshaler, client HttpServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq EventsRequest
 	var metadata runtime.ServerMetadata
 
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["height"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "height")
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_HttpService_Events_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+
+	protoReq.Height, err = runtime.Int32(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "height", err)
 	}
 
 	msg, err := client.Events(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -458,8 +630,22 @@ func local_request_HttpService_Events_0(ctx context.Context, marshaler runtime.M
 	var protoReq EventsRequest
 	var metadata runtime.ServerMetadata
 
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_HttpService_Events_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["height"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "height")
+	}
+
+	protoReq.Height, err = runtime.Int32(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "height", err)
 	}
 
 	msg, err := server.Events(ctx, &protoReq)
@@ -501,12 +687,30 @@ func local_request_HttpService_MaxGas_0(ctx context.Context, marshaler runtime.M
 }
 
 var (
-	filter_HttpService_MissedBlocks_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
+	filter_HttpService_MissedBlocks_0 = &utilities.DoubleArray{Encoding: map[string]int{"public_key": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 )
 
 func request_HttpService_MissedBlocks_0(ctx context.Context, marshaler runtime.Marshaler, client HttpServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq MissedBlocksRequest
 	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["public_key"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "public_key")
+	}
+
+	protoReq.PublicKey, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "public_key", err)
+	}
 
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
@@ -523,6 +727,24 @@ func request_HttpService_MissedBlocks_0(ctx context.Context, marshaler runtime.M
 func local_request_HttpService_MissedBlocks_0(ctx context.Context, marshaler runtime.Marshaler, server HttpServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq MissedBlocksRequest
 	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["public_key"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "public_key")
+	}
+
+	protoReq.PublicKey, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "public_key", err)
+	}
 
 	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_HttpService_MissedBlocks_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
@@ -566,19 +788,26 @@ func local_request_HttpService_SendTransaction_0(ctx context.Context, marshaler 
 
 }
 
-var (
-	filter_HttpService_Transaction_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
-)
-
 func request_HttpService_Transaction_0(ctx context.Context, marshaler runtime.Marshaler, client HttpServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq TransactionRequest
 	var metadata runtime.ServerMetadata
 
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["hash"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "hash")
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_HttpService_Transaction_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+
+	protoReq.Hash, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "hash", err)
 	}
 
 	msg, err := client.Transaction(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -590,8 +819,22 @@ func local_request_HttpService_Transaction_0(ctx context.Context, marshaler runt
 	var protoReq TransactionRequest
 	var metadata runtime.ServerMetadata
 
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_HttpService_Transaction_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["hash"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "hash")
+	}
+
+	protoReq.Hash, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "hash", err)
 	}
 
 	msg, err := server.Transaction(ctx, &protoReq)
@@ -1636,17 +1879,17 @@ var (
 
 	pattern_HttpService_Status_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"status"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_HttpService_Address_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"address"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_HttpService_Address_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 0}, []string{"address"}, "", runtime.AssumeColonVerbOpt(true)))
 
 	pattern_HttpService_Addresses_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"addresses"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_HttpService_Block_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"block"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_HttpService_Block_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"block", "height"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_HttpService_Candidate_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"candidate"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_HttpService_Candidate_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"candidate", "public_key"}, "", runtime.AssumeColonVerbOpt(true)))
 
 	pattern_HttpService_Candidates_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"candidates"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_HttpService_CoinInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"coin_info"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_HttpService_CoinInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"coin_info", "symbol"}, "", runtime.AssumeColonVerbOpt(true)))
 
 	pattern_HttpService_EstimateCoinBuy_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"estimate_coin_buy"}, "", runtime.AssumeColonVerbOpt(true)))
 
@@ -1654,17 +1897,17 @@ var (
 
 	pattern_HttpService_EstimateCoinSellAll_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"estimate_coin_sell_all"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_HttpService_EstimateTxCommission_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"estimate_tx_commission"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_HttpService_EstimateTxCommission_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"estimate_tx_commission", "tx"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_HttpService_Events_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"events"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_HttpService_Events_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"events", "height"}, "", runtime.AssumeColonVerbOpt(true)))
 
 	pattern_HttpService_MaxGas_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"max_gas"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_HttpService_MissedBlocks_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"missed_blocks"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_HttpService_MissedBlocks_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"missed_blocks", "public_key"}, "", runtime.AssumeColonVerbOpt(true)))
 
 	pattern_HttpService_SendTransaction_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"send_transaction"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_HttpService_Transaction_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"transaction"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_HttpService_Transaction_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"transaction", "hash"}, "", runtime.AssumeColonVerbOpt(true)))
 
 	pattern_HttpService_Transactions_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"transactions"}, "", runtime.AssumeColonVerbOpt(true)))
 

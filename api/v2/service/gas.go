@@ -11,7 +11,7 @@ import (
 
 func (s *Service) MinGasPrice(context.Context, *empty.Empty) (*pb.MinGasPriceResponse, error) {
 	return &pb.MinGasPriceResponse{
-		Result: fmt.Sprintf("%d", s.blockchain.MinGasPrice()),
+		MinGasPrice: fmt.Sprintf("%d", s.blockchain.MinGasPrice()),
 	}, nil
 }
 
@@ -22,6 +22,6 @@ func (s *Service) MaxGas(_ context.Context, req *pb.MaxGasRequest) (*pb.MaxGasRe
 	}
 
 	return &pb.MaxGasResponse{
-		Result: fmt.Sprintf("%d", cState.App.GetMaxGas()),
+		MaxGas: fmt.Sprintf("%d", cState.App.GetMaxGas()),
 	}, nil
 }

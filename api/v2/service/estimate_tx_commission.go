@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	pb "github.com/MinterTeam/minter-go-node/api/v2/api_pb"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
@@ -17,7 +18,12 @@ func (s *Service) EstimateTxCommission(_ context.Context, req *pb.EstimateTxComm
 		return new(pb.EstimateTxCommissionResponse), status.Error(codes.NotFound, err.Error())
 	}
 
-	decodedTx, err := transaction.TxDecoder.DecodeFromBytes([]byte(req.Tx))
+	decodeString, err := hex.DecodeString(req.Tx[2:])
+	if err != nil {
+		return new(pb.EstimateTxCommissionResponse), status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	decodedTx, err := transaction.TxDecoder.DecodeFromBytes(decodeString)
 	if err != nil {
 		return new(pb.EstimateTxCommissionResponse), status.Error(codes.InvalidArgument, "Cannot decode transaction")
 	}

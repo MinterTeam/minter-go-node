@@ -11,7 +11,7 @@
     "application/json"
   ],
   "paths": {
-    "/address": {
+    "/address/{address}": {
       "get": {
         "operationId": "Address",
         "responses": {
@@ -25,8 +25,8 @@
         "parameters": [
           {
             "name": "address",
-            "in": "query",
-            "required": false,
+            "in": "path",
+            "required": true,
             "type": "string"
           },
           {
@@ -77,7 +77,7 @@
         ]
       }
     },
-    "/block": {
+    "/block/{height}": {
       "get": {
         "operationId": "Block",
         "responses": {
@@ -91,8 +91,8 @@
         "parameters": [
           {
             "name": "height",
-            "in": "query",
-            "required": false,
+            "in": "path",
+            "required": true,
             "type": "string",
             "format": "int64"
           }
@@ -102,7 +102,7 @@
         ]
       }
     },
-    "/candidate": {
+    "/candidate/{public_key}": {
       "get": {
         "operationId": "Candidate",
         "responses": {
@@ -116,8 +116,8 @@
         "parameters": [
           {
             "name": "public_key",
-            "in": "query",
-            "required": false,
+            "in": "path",
+            "required": true,
             "type": "string"
           },
           {
@@ -165,7 +165,7 @@
         ]
       }
     },
-    "/coin_info": {
+    "/coin_info/{symbol}": {
       "get": {
         "operationId": "CoinInfo",
         "responses": {
@@ -178,17 +178,17 @@
         },
         "parameters": [
           {
+            "name": "symbol",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
             "name": "height",
             "in": "query",
             "required": false,
             "type": "integer",
             "format": "int32"
-          },
-          {
-            "name": "symbol",
-            "in": "query",
-            "required": false,
-            "type": "string"
           }
         ],
         "tags": [
@@ -332,7 +332,7 @@
         ]
       }
     },
-    "/estimate_tx_commission": {
+    "/estimate_tx_commission/{tx}": {
       "get": {
         "operationId": "EstimateTxCommission",
         "responses": {
@@ -346,8 +346,8 @@
         "parameters": [
           {
             "name": "tx",
-            "in": "query",
-            "required": false,
+            "in": "path",
+            "required": true,
             "type": "string"
           },
           {
@@ -363,7 +363,7 @@
         ]
       }
     },
-    "/events": {
+    "/events/{height}": {
       "get": {
         "operationId": "Events",
         "responses": {
@@ -377,8 +377,8 @@
         "parameters": [
           {
             "name": "height",
-            "in": "query",
-            "required": false,
+            "in": "path",
+            "required": true,
             "type": "integer",
             "format": "int32"
           }
@@ -445,7 +445,7 @@
         ]
       }
     },
-    "/missed_blocks": {
+    "/missed_blocks/{public_key}": {
       "get": {
         "operationId": "MissedBlocks",
         "responses": {
@@ -459,8 +459,8 @@
         "parameters": [
           {
             "name": "public_key",
-            "in": "query",
-            "required": false,
+            "in": "path",
+            "required": true,
             "type": "string"
           },
           {
@@ -532,7 +532,7 @@
         ]
       }
     },
-    "/transaction": {
+    "/transaction/{hash}": {
       "get": {
         "operationId": "Transaction",
         "responses": {
@@ -546,8 +546,8 @@
         "parameters": [
           {
             "name": "hash",
-            "in": "query",
-            "required": false,
+            "in": "path",
+            "required": true,
             "type": "string"
           }
         ],
@@ -635,8 +635,8 @@
             "name": "height",
             "in": "query",
             "required": false,
-            "type": "integer",
-            "format": "int32"
+            "type": "string",
+            "format": "int64"
           }
         ],
         "tags": [
@@ -782,7 +782,7 @@
     "ConnectionStatusChannel": {
       "type": "object",
       "properties": {
-        "iD": {
+        "id": {
           "type": "string"
         },
         "send_queue_capacity": {
@@ -872,7 +872,7 @@
         }
       }
     },
-    "GenesisAppState": {
+    "GenesisResponseAppState": {
       "type": "object",
       "properties": {
         "start_height": {
@@ -881,7 +881,7 @@
         "validators": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/GenesisAppStateValidator"
+            "$ref": "#/definitions/GenesisResponseAppStateValidator"
           }
         },
         "candidates": {
@@ -904,7 +904,7 @@
         }
       }
     },
-    "GenesisAppStateValidator": {
+    "GenesisResponseAppStateValidator": {
       "type": "object",
       "properties": {
         "reward_address": {
@@ -927,21 +927,21 @@
         }
       }
     },
-    "GenesisConsensusParams": {
+    "GenesisResponseConsensusParams": {
       "type": "object",
       "properties": {
         "block": {
           "$ref": "#/definitions/ConsensusParamsBlock"
         },
         "evidence": {
-          "$ref": "#/definitions/GenesisConsensusParamsEvidence"
+          "$ref": "#/definitions/GenesisResponseConsensusParamsEvidence"
         },
         "validator": {
-          "$ref": "#/definitions/GenesisConsensusParamsValidator"
+          "$ref": "#/definitions/GenesisResponseConsensusParamsValidator"
         }
       }
     },
-    "GenesisConsensusParamsEvidence": {
+    "GenesisResponseConsensusParamsEvidence": {
       "type": "object",
       "properties": {
         "max_age": {
@@ -949,7 +949,7 @@
         }
       }
     },
-    "GenesisConsensusParamsValidator": {
+    "GenesisResponseConsensusParamsValidator": {
       "type": "object",
       "properties": {
         "public_key_types": {
@@ -957,26 +957,6 @@
           "items": {
             "type": "string"
           }
-        }
-      }
-    },
-    "GenesisResponseGenesis": {
-      "type": "object",
-      "properties": {
-        "genesis_time": {
-          "type": "string"
-        },
-        "chain_id": {
-          "type": "string"
-        },
-        "consensus_params": {
-          "$ref": "#/definitions/GenesisConsensusParams"
-        },
-        "app_hash": {
-          "type": "string"
-        },
-        "app_state": {
-          "$ref": "#/definitions/GenesisAppState"
         }
       }
     },
@@ -1035,7 +1015,7 @@
         "RecvMonitor": {
           "$ref": "#/definitions/ConnectionStatusMonitor"
         },
-        "Channels": {
+        "channels": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/ConnectionStatusChannel"
@@ -1289,15 +1269,27 @@
     "api_pbGenesisResponse": {
       "type": "object",
       "properties": {
-        "genesis": {
-          "$ref": "#/definitions/GenesisResponseGenesis"
+        "genesis_time": {
+          "type": "string"
+        },
+        "chain_id": {
+          "type": "string"
+        },
+        "consensus_params": {
+          "$ref": "#/definitions/GenesisResponseConsensusParams"
+        },
+        "app_hash": {
+          "type": "string"
+        },
+        "app_state": {
+          "$ref": "#/definitions/GenesisResponseAppState"
         }
       }
     },
     "api_pbMaxGasResponse": {
       "type": "object",
       "properties": {
-        "result": {
+        "max_gas": {
           "type": "string"
         }
       }
@@ -1305,7 +1297,7 @@
     "api_pbMinGasPriceResponse": {
       "type": "object",
       "properties": {
-        "result": {
+        "min_gas_price": {
           "type": "string"
         }
       }

@@ -21,7 +21,7 @@ func (s *Service) NetInfo(context.Context, *empty.Empty) (*pb.NetInfoResponse, e
 		var channels []*pb.NetInfoResponse_Peer_ConnectionStatus_Channel
 		for _, channel := range peer.ConnectionStatus.Channels {
 			channels = append(channels, &pb.NetInfoResponse_Peer_ConnectionStatus_Channel{
-				ID:                fmt.Sprintf("%d", channel.ID),
+				Id:                fmt.Sprintf("%d", channel.ID),
 				SendQueueCapacity: fmt.Sprintf("%d", channel.SendQueueCapacity),
 				SendQueueSize:     fmt.Sprintf("%d", channel.SendQueueSize),
 				Priority:          fmt.Sprintf("%d", channel.Priority),
