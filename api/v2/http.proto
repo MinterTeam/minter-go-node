@@ -35,30 +35,30 @@ message NetInfoResponse {
             NodeInfo node_info = 4;
             bool is_outbound = 1;
             message ConnectionStatus {
-                string Duration = 4;
+                string duration = 4;
                 message Monitor {
-                    bool Active = 13;
-                    string Start = 1;
-                    string Duration = 2;
-                    string Idle = 3;
-                    string Bytes = 4;
-                    string Samples = 5;
-                    string InstRate = 6;
-                    string CurRate = 7;
-                    string AvgRate = 8;
-                    string PeakRate = 9;
-                    string BytesRem = 10;
-                    string TimeRem = 11;
-                    string Progress = 12;
+                    bool active = 13;
+                    string start = 1;
+                    string duration = 2;
+                    string idle = 3;
+                    string bytes = 4;
+                    string samples = 5;
+                    string inst_rate = 6;
+                    string cur_rate = 7;
+                    string avg_rate = 8;
+                    string peak_rate = 9;
+                    string bytes_rem = 10;
+                    string time_rem = 11;
+                    string progress = 12;
                 }
                 Monitor SendMonitor = 1;
                 Monitor RecvMonitor = 2;
                 message Channel {
-                    string ID = 5;
-                    string SendQueueCapacity = 1;
-                    string SendQueueSize = 2;
-                    string Priority = 3;
-                    string RecentlySent = 4;
+                    string iD = 5;
+                    string send_queue_capacity = 1;
+                    string send_queue_size = 2;
+                    string priority = 3;
+                    string recently_sent = 4;
                 }
                 repeated Channel Channels = 3;
             }

@@ -782,19 +782,19 @@
     "ConnectionStatusChannel": {
       "type": "object",
       "properties": {
-        "ID": {
+        "iD": {
           "type": "string"
         },
-        "SendQueueCapacity": {
+        "send_queue_capacity": {
           "type": "string"
         },
-        "SendQueueSize": {
+        "send_queue_size": {
           "type": "string"
         },
-        "Priority": {
+        "priority": {
           "type": "string"
         },
-        "RecentlySent": {
+        "recently_sent": {
           "type": "string"
         }
       }
@@ -802,44 +802,44 @@
     "ConnectionStatusMonitor": {
       "type": "object",
       "properties": {
-        "Active": {
+        "active": {
           "type": "boolean",
           "format": "boolean"
         },
-        "Start": {
+        "start": {
           "type": "string"
         },
-        "Duration": {
+        "duration": {
           "type": "string"
         },
-        "Idle": {
+        "idle": {
           "type": "string"
         },
-        "Bytes": {
+        "bytes": {
           "type": "string"
         },
-        "Samples": {
+        "samples": {
           "type": "string"
         },
-        "InstRate": {
+        "inst_rate": {
           "type": "string"
         },
-        "CurRate": {
+        "cur_rate": {
           "type": "string"
         },
-        "AvgRate": {
+        "avg_rate": {
           "type": "string"
         },
-        "PeakRate": {
+        "peak_rate": {
           "type": "string"
         },
-        "BytesRem": {
+        "bytes_rem": {
           "type": "string"
         },
-        "TimeRem": {
+        "time_rem": {
           "type": "string"
         },
-        "Progress": {
+        "progress": {
           "type": "string"
         }
       }
@@ -1026,7 +1026,7 @@
     "PeerConnectionStatus": {
       "type": "object",
       "properties": {
-        "Duration": {
+        "duration": {
           "type": "string"
         },
         "SendMonitor": {
