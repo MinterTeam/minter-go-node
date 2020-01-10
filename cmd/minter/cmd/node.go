@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"github.com/MinterTeam/minter-go-node/api"
 	v2 "github.com/MinterTeam/minter-go-node/api/v2"
 	service_api "github.com/MinterTeam/minter-go-node/api/v2/service"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
@@ -64,7 +65,8 @@ func runNode() error {
 	app.SetTmNode(node)
 
 	if !cfg.ValidatorMode {
-		go logger.Error("Failed to start API", v2.Run(service_api.NewService(amino.NewCodec(), app, client, node, cfg, version.Version), ":8841"))
+		go logger.Error("Failed to start API", v2.Run(service_api.NewService(amino.NewCodec(), app, client, node, cfg, version.Version), ":8842"))
+		go api.RunAPI(app, client, cfg, logger)
 	}
 
 	ctxCli, stopCli := context.WithCancel(context.Background())

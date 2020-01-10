@@ -858,20 +858,6 @@
         }
       }
     },
-    "EventsResponseEvent": {
-      "type": "object",
-      "properties": {
-        "type": {
-          "type": "string"
-        },
-        "value": {
-          "type": "object",
-          "additionalProperties": {
-            "type": "string"
-          }
-        }
-      }
-    },
     "GenesisResponseAppState": {
       "type": "object",
       "properties": {
@@ -1261,7 +1247,21 @@
         "events": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/EventsResponseEvent"
+            "$ref": "#/definitions/api_pbEventsResponseEvent"
+          }
+        }
+      }
+    },
+    "api_pbEventsResponseEvent": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "value": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
           }
         }
       }
