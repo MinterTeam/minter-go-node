@@ -35,7 +35,7 @@ func (s *Service) Subscribe(request *pb.SubscribeRequest, stream pb.ApiService_S
 		return status.Error(codes.Internal, err.Error())
 	}
 	defer func() {
-		if err := s.client.UnsubscribeAll(subCtx, subscriber); err != nil {
+		if err := s.client.UnsubscribeAll(stream.Context(), subscriber); err != nil {
 			s.client.Logger.Error(err.Error())
 		}
 	}()
