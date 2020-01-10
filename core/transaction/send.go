@@ -41,11 +41,9 @@ func (data SendData) TotalSpend(tx *Transaction, context *state.State) (TotalSpe
 	if !tx.GasCoin.IsBaseCoin() {
 		coin := context.Coins.GetCoin(tx.GasCoin)
 
-		err := coin.CheckReserveUnderflow(commissionInBaseCoin)
-		if err != nil {
-			return nil, nil, nil, &Response{
-				Code: code.CoinReserveUnderflow,
-				Log:  err.Error()}
+		errResp := CheckReserveUnderflow(coin, commissionInBaseCoin)
+		if errResp != nil {
+			return nil, nil, nil, errResp
 		}
 
 		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
@@ -53,7 +51,12 @@ func (data SendData) TotalSpend(tx *Transaction, context *state.State) (TotalSpe
 				Code: code.CoinReserveNotSufficient,
 				Log: fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s",
 					coin.Reserve().String(),
-					commissionInBaseCoin.String())}
+					commissionInBaseCoin.String()),
+				Info: EncodeError(map[string]string{
+					"has":      coin.Reserve().String(),
+					"required": commissionInBaseCoin.String(),
+				}),
+			}
 		}
 
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
@@ -81,7 +84,11 @@ func (data SendData) BasicCheck(tx *Transaction, context *state.State) *Response
 	if !context.Coins.Exists(data.Coin) {
 		return &Response{
 			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin %s not exists", data.Coin)}
+			Log:  fmt.Sprintf("Coin %s not exists", data.Coin),
+			Info: EncodeError(map[string]string{
+				"coin": fmt.Sprintf("%s", data.Coin),
+			}),
+		}
 	}
 
 	return nil
@@ -116,7 +123,13 @@ func (data SendData) Run(tx *Transaction, context *state.State, isCheck bool, re
 				Log: fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s.",
 					sender.String(),
 					ts.Value.String(),
-					ts.Coin)}
+					ts.Coin),
+				Info: EncodeError(map[string]string{
+					"sender":       sender.String(),
+					"needed_value": ts.Value.String(),
+					"coin":         fmt.Sprintf("%s", ts.Coin),
+				}),
+			}
 		}
 	}
 

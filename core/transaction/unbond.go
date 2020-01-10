@@ -48,13 +48,21 @@ func (data UnbondData) BasicCheck(tx *Transaction, context *state.State) *Respon
 	if !context.Coins.Exists(data.Coin) {
 		return &Response{
 			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin %s not exists", data.Coin)}
+			Log:  fmt.Sprintf("Coin %s not exists", data.Coin),
+			Info: EncodeError(map[string]string{
+				"coin": fmt.Sprintf("%s", data.Coin),
+			}),
+		}
 	}
 
 	if !context.Candidates.Exists(data.PubKey) {
 		return &Response{
 			Code: code.CandidateNotFound,
-			Log:  fmt.Sprintf("Candidate with such public key not found")}
+			Log:  fmt.Sprintf("Candidate with such public key not found"),
+			Info: EncodeError(map[string]string{
+				"pub_key": data.PubKey.String(),
+			}),
+		}
 	}
 
 	sender, _ := tx.Sender()
@@ -69,7 +77,10 @@ func (data UnbondData) BasicCheck(tx *Transaction, context *state.State) *Respon
 	if stake.Cmp(data.Value) < 0 {
 		return &Response{
 			Code: code.InsufficientStake,
-			Log:  fmt.Sprintf("Insufficient stake for sender account")}
+			Log:  fmt.Sprintf("Insufficient stake for sender account"),
+			Info: EncodeError(map[string]string{
+				"pub_key": data.PubKey.String(),
+			})}
 	}
 
 	return nil
@@ -98,17 +109,21 @@ func (data UnbondData) Run(tx *Transaction, context *state.State, isCheck bool, 
 	if !tx.GasCoin.IsBaseCoin() {
 		coin := context.Coins.GetCoin(tx.GasCoin)
 
-		err := coin.CheckReserveUnderflow(commissionInBaseCoin)
-		if err != nil {
-			return Response{
-				Code: code.CoinReserveUnderflow,
-				Log:  err.Error()}
+		errResp := CheckReserveUnderflow(coin, commissionInBaseCoin)
+		if errResp != nil {
+			return *errResp
 		}
 
 		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
 			return Response{
 				Code: code.CoinReserveNotSufficient,
-				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.Reserve().String(), commissionInBaseCoin.String())}
+				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.Reserve().String(), commissionInBaseCoin.String()),
+				Info: EncodeError(map[string]string{
+					"has_reserve": coin.Reserve().String(),
+					"commission":  commissionInBaseCoin.String(),
+					"gas_coin":    coin.CName,
+				}),
+			}
 		}
 
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
@@ -117,7 +132,13 @@ func (data UnbondData) Run(tx *Transaction, context *state.State, isCheck bool, 
 	if context.Accounts.GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
 		return Response{
 			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, tx.GasCoin)}
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, tx.GasCoin),
+			Info: EncodeError(map[string]string{
+				"sender":       sender.String(),
+				"needed_value": commission.String(),
+				"gas_coin":     fmt.Sprintf("%s", tx.GasCoin),
+			}),
+		}
 	}
 
 	if !isCheck {

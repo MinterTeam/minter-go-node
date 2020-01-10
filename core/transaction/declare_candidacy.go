@@ -56,19 +56,31 @@ func (data DeclareCandidacyData) BasicCheck(tx *Transaction, context *state.Stat
 	if !context.Coins.Exists(data.Coin) {
 		return &Response{
 			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin %s not exists", data.Coin)}
+			Log:  fmt.Sprintf("Coin %s not exists", data.Coin),
+			Info: EncodeError(map[string]string{
+				"coin": fmt.Sprintf("%s", data.Coin),
+			}),
+		}
 	}
 
 	if context.Candidates.Exists(data.PubKey) {
 		return &Response{
 			Code: code.CandidateExists,
-			Log:  fmt.Sprintf("Candidate with such public key (%s) already exists", data.PubKey.String())}
+			Log:  fmt.Sprintf("Candidate with such public key (%s) already exists", data.PubKey.String()),
+			Info: EncodeError(map[string]string{
+				"public_key": data.PubKey.String(),
+			}),
+		}
 	}
 
 	if data.Commission < minCommission || data.Commission > maxCommission {
 		return &Response{
 			Code: code.WrongCommission,
-			Log:  fmt.Sprintf("Commission should be between 0 and 100")}
+			Log:  fmt.Sprintf("Commission should be between 0 and 100"),
+			Info: EncodeError(map[string]string{
+				"got_commission": fmt.Sprintf("%d", data.Commission),
+			}),
+		}
 	}
 
 	return nil
@@ -106,17 +118,21 @@ func (data DeclareCandidacyData) Run(tx *Transaction, context *state.State, isCh
 	if !tx.GasCoin.IsBaseCoin() {
 		coin := context.Coins.GetCoin(tx.GasCoin)
 
-		err := coin.CheckReserveUnderflow(commissionInBaseCoin)
-		if err != nil {
-			return Response{
-				Code: code.CoinReserveUnderflow,
-				Log:  err.Error()}
+		errResp := CheckReserveUnderflow(coin, commissionInBaseCoin)
+		if errResp != nil {
+			return *errResp
 		}
 
 		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
 			return Response{
 				Code: code.CoinReserveNotSufficient,
-				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.Reserve().String(), commissionInBaseCoin.String())}
+				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.Reserve().String(), commissionInBaseCoin.String()),
+				Info: EncodeError(map[string]string{
+					"has_reserve": coin.Reserve().String(),
+					"commission":  commissionInBaseCoin.String(),
+					"gas_coin":    coin.CName,
+				}),
+			}
 		}
 
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
@@ -125,13 +141,25 @@ func (data DeclareCandidacyData) Run(tx *Transaction, context *state.State, isCh
 	if context.Accounts.GetBalance(sender, data.Coin).Cmp(data.Stake) < 0 {
 		return Response{
 			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), data.Stake, data.Coin)}
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), data.Stake, data.Coin),
+			Info: EncodeError(map[string]string{
+				"sender":       sender.String(),
+				"needed_value": data.Stake.String(),
+				"coin":         fmt.Sprintf("%s", data.Coin),
+			}),
+		}
 	}
 
 	if context.Accounts.GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
 		return Response{
 			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, tx.GasCoin)}
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, tx.GasCoin),
+			Info: EncodeError(map[string]string{
+				"sender":       sender.String(),
+				"needed_value": commission.String(),
+				"gas_coin":     fmt.Sprintf("%s", tx.GasCoin),
+			}),
+		}
 	}
 
 	if data.Coin == tx.GasCoin {
@@ -142,7 +170,13 @@ func (data DeclareCandidacyData) Run(tx *Transaction, context *state.State, isCh
 		if context.Accounts.GetBalance(sender, tx.GasCoin).Cmp(totalTxCost) < 0 {
 			return Response{
 				Code: code.InsufficientFunds,
-				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), totalTxCost.String(), tx.GasCoin)}
+				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), totalTxCost.String(), tx.GasCoin),
+				Info: EncodeError(map[string]string{
+					"sender":       sender.String(),
+					"needed_value": totalTxCost.String(),
+					"gas_coin":     fmt.Sprintf("%s", tx.GasCoin),
+				}),
+			}
 		}
 	}
 

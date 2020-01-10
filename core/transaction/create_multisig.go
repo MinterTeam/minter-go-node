@@ -43,16 +43,23 @@ func (data CreateMultisigData) TotalSpend(tx *Transaction, context *state.State)
 }
 
 func (data CreateMultisigData) BasicCheck(tx *Transaction, context *state.State) *Response {
-	if len(data.Weights) > 32 {
+	lenWeights := len(data.Weights)
+	if lenWeights > 32 {
 		return &Response{
 			Code: code.TooLargeOwnersList,
 			Log:  fmt.Sprintf("Owners list is limited to 32 items")}
 	}
 
-	if len(data.Addresses) != len(data.Weights) {
+	lenAddresses := len(data.Addresses)
+	if lenAddresses != lenWeights {
 		return &Response{
 			Code: code.IncorrectWeights,
-			Log:  fmt.Sprintf("Incorrect multisig weights")}
+			Log:  fmt.Sprintf("Incorrect multisig weights"),
+			Info: EncodeError(map[string]string{
+				"count_weights":   fmt.Sprintf("%d", lenWeights),
+				"count_addresses": fmt.Sprintf("%d", lenAddresses),
+			}),
+		}
 	}
 
 	for _, weight := range data.Weights {
@@ -88,17 +95,21 @@ func (data CreateMultisigData) Run(tx *Transaction, context *state.State, isChec
 	if !tx.GasCoin.IsBaseCoin() {
 		coin := context.Coins.GetCoin(tx.GasCoin)
 
-		err := coin.CheckReserveUnderflow(commissionInBaseCoin)
-		if err != nil {
-			return Response{
-				Code: code.CoinReserveUnderflow,
-				Log:  err.Error()}
+		errResp := CheckReserveUnderflow(coin, commissionInBaseCoin)
+		if errResp != nil {
+			return *errResp
 		}
 
 		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
 			return Response{
 				Code: code.CoinReserveNotSufficient,
-				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.Reserve().String(), commissionInBaseCoin.String())}
+				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.Reserve().String(), commissionInBaseCoin.String()),
+				Info: EncodeError(map[string]string{
+					"has_reserve": coin.Reserve().String(),
+					"commission":  commissionInBaseCoin.String(),
+					"gas_coin":    coin.CName,
+				}),
+			}
 		}
 
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
@@ -107,7 +118,13 @@ func (data CreateMultisigData) Run(tx *Transaction, context *state.State, isChec
 	if context.Accounts.GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
 		return Response{
 			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, tx.GasCoin)}
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, tx.GasCoin),
+			Info: EncodeError(map[string]string{
+				"sender":       sender.String(),
+				"needed_value": commission.String(),
+				"gas_coin":     fmt.Sprintf("%s", tx.GasCoin),
+			}),
+		}
 	}
 
 	msigAddress := (&accounts.Multisig{
@@ -119,7 +136,11 @@ func (data CreateMultisigData) Run(tx *Transaction, context *state.State, isChec
 	if context.Accounts.Exists(msigAddress) {
 		return Response{
 			Code: code.MultisigExists,
-			Log:  fmt.Sprintf("Multisig %s already exists", msigAddress.String())}
+			Log:  fmt.Sprintf("Multisig %s already exists", msigAddress.String()),
+			Info: EncodeError(map[string]string{
+				"multisig_address": msigAddress.String(),
+			}),
+		}
 	}
 
 	if !isCheck {
