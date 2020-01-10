@@ -65,7 +65,11 @@ func runNode() error {
 	app.SetTmNode(node)
 
 	if !cfg.ValidatorMode {
-		go logger.Error("Failed to start API", v2.Run(service_api.NewService(amino.NewCodec(), app, client, node, cfg, version.Version), ":8842"))
+		go logger.Error(
+			"Failed to start API", v2.Run(
+				service_api.NewService(amino.NewCodec(), app, client, node, cfg, version.Version),
+				":8842", ":8843",
+			))
 		go api.RunAPI(app, client, cfg, logger)
 	}
 
