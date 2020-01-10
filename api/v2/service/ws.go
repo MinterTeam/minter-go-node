@@ -43,23 +43,20 @@ func (s *Service) Subscribe(request *pb.SubscribeRequest, stream pb.ApiService_S
 	for {
 		select {
 		case <-stream.Context().Done():
-			return stream.Context().Err() //todo: when to do it?
+			return err //todo: when to do it?
 		case msg, ok := <-sub:
 			if !ok {
 				return nil
 			}
 			res, err := subscribeResponse(msg)
+			if err != nil {
+				return status.Error(codes.Aborted, err.Error())
+			}
 			if err := stream.Send(res); err != nil {
 				return err
 			}
-			if err != nil {
-				s.client.Logger.Error(err.Error())
-				break
-			}
 		}
 	}
-
-	return nil
 }
 
 func subscribeResponse(msg core_types.ResultEvent) (*pb.SubscribeResponse, error) {
