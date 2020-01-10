@@ -43,7 +43,10 @@ func (s *Service) Subscribe(request *pb.SubscribeRequest, stream pb.ApiService_S
 	select {
 	case <-stream.Context().Done():
 		return stream.Context().Err() //todo: when to do it?
-	case msg := <-sub:
+	case msg, ok := <-sub:
+		if !ok {
+			return nil
+		}
 		res, err := subscribeResponse(msg)
 		if err := stream.Send(res); err != nil {
 			return err
