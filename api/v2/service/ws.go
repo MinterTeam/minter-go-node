@@ -43,14 +43,14 @@ func (s *Service) Subscribe(request *pb.SubscribeRequest, stream pb.ApiService_S
 	for {
 		select {
 		case <-stream.Context().Done():
-			return err //todo: when to do it?
+			return stream.Context().Err() //todo: when to do it?
 		case msg, ok := <-sub:
 			if !ok {
 				return nil
 			}
 			res, err := subscribeResponse(msg)
 			if err != nil {
-				return status.Error(codes.Aborted, err.Error())
+				return status.Error(codes.Internal, err.Error())
 			}
 			if err := stream.Send(res); err != nil {
 				return err
@@ -61,7 +61,12 @@ func (s *Service) Subscribe(request *pb.SubscribeRequest, stream pb.ApiService_S
 
 func subscribeResponse(msg core_types.ResultEvent) (*pb.SubscribeResponse, error) {
 	var events []*pb.SubscribeResponse_Event
-
+	for key, eventSlice := range msg.Events {
+		events = append(events, &pb.SubscribeResponse_Event{
+			Key:    key,
+			Events: eventSlice,
+		})
+	}
 	byteData, err := json.Marshal(msg.Data)
 	if err != nil {
 		return nil, err
