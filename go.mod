@@ -8,7 +8,6 @@ require (
 	github.com/btcsuite/btcd v0.0.0-20190115013929-ed77733ec07d
 	github.com/go-kit/kit v0.9.0
 	github.com/gobuffalo/packr v1.11.1
-	github.com/gogo/protobuf v1.3.1
 	github.com/golang/protobuf v1.3.2
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/websocket v1.4.1
