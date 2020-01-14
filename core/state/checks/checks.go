@@ -7,6 +7,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/tree"
 	"sort"
+	"sync"
 )
 
 const mainPrefix = byte('t')
@@ -15,6 +16,8 @@ type Checks struct {
 	usedChecks map[types.Hash]struct{}
 
 	iavl tree.Tree
+
+	lock sync.RWMutex
 }
 
 func NewChecks(iavl tree.Tree) (*Checks, error) {
@@ -23,7 +26,9 @@ func NewChecks(iavl tree.Tree) (*Checks, error) {
 
 func (c *Checks) Commit() error {
 	for _, hash := range c.getOrderedHashes() {
+		c.lock.Lock()
 		delete(c.usedChecks, hash)
+		c.lock.Unlock()
 
 		trieHash := append([]byte{mainPrefix}, hash.Bytes()...)
 		c.iavl.Set(trieHash, []byte{0x1})
@@ -33,6 +38,9 @@ func (c *Checks) Commit() error {
 }
 
 func (c *Checks) IsCheckUsed(check *check.Check) bool {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
 	if _, has := c.usedChecks[check.Hash()]; has {
 		return true
 	}
@@ -47,6 +55,9 @@ func (c *Checks) UseCheck(check *check.Check) {
 }
 
 func (c *Checks) UseCheckHash(hash types.Hash) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
 	c.usedChecks[hash] = struct{}{}
 }
 
@@ -62,6 +73,9 @@ func (c *Checks) Export(state *types.AppState) {
 }
 
 func (c *Checks) getOrderedHashes() []types.Hash {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
 	var keys []types.Hash
 	for hash := range c.usedChecks {
 		keys = append(keys, hash)

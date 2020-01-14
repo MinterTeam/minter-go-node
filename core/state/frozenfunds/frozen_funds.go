@@ -13,6 +13,7 @@ import (
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	"math/big"
 	"sort"
+	"sync"
 )
 
 const mainPrefix = byte('f')
@@ -23,6 +24,8 @@ type FrozenFunds struct {
 
 	bus  *bus.Bus
 	iavl tree.Tree
+
+	lock sync.RWMutex
 }
 
 func NewFrozenFunds(stateBus *bus.Bus, iavl tree.Tree) (*FrozenFunds, error) {
@@ -35,8 +38,11 @@ func NewFrozenFunds(stateBus *bus.Bus, iavl tree.Tree) (*FrozenFunds, error) {
 func (f *FrozenFunds) Commit() error {
 	dirty := f.getOrderedDirty()
 	for _, height := range dirty {
-		ff := f.list[height]
+		ff := f.getFromMap(height)
+
+		f.lock.Lock()
 		delete(f.dirty, height)
+		f.lock.Unlock()
 
 		data, err := rlp.EncodeToBytes(ff)
 		if err != nil {
@@ -115,14 +121,14 @@ func (f *FrozenFunds) GetOrNew(height uint64) *Model {
 			height:    height,
 			markDirty: f.markDirty,
 		}
-		f.list[height] = ff
+		f.setToMap(height, ff)
 	}
 
 	return ff
 }
 
 func (f *FrozenFunds) get(height uint64) *Model {
-	if ff := f.list[height]; ff != nil {
+	if ff := f.getFromMap(height); ff != nil {
 		return ff
 	}
 
@@ -140,7 +146,7 @@ func (f *FrozenFunds) get(height uint64) *Model {
 	ff.height = height
 	ff.markDirty = f.markDirty
 
-	f.list[height] = ff
+	f.setToMap(height, ff)
 
 	return ff
 }
@@ -196,6 +202,20 @@ func (f *FrozenFunds) Export(state *types.AppState, height uint64) {
 			})
 		}
 	}
+}
+
+func (f *FrozenFunds) getFromMap(height uint64) *Model {
+	f.lock.RLock()
+	defer f.lock.RUnlock()
+
+	return f.list[height]
+}
+
+func (f *FrozenFunds) setToMap(height uint64, model *Model) {
+	f.lock.Lock()
+	defer f.lock.Unlock()
+
+	f.list[height] = model
 }
 
 func getPath(height uint64) []byte {

@@ -12,6 +12,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/tree"
 	"math/big"
 	"sort"
+	"sync"
 )
 
 const (
@@ -32,6 +33,8 @@ type Candidates struct {
 
 	iavl tree.Tree
 	bus  *bus.Bus
+
+	lock sync.RWMutex
 }
 
 func NewCandidates(bus *bus.Bus, iavl tree.Tree) (*Candidates, error) {
@@ -47,7 +50,7 @@ func (c *Candidates) Commit() error {
 
 	hasDirty := false
 	for _, pubkey := range keys {
-		if c.list[pubkey].isDirty {
+		if c.getFromMap(pubkey).isDirty {
 			hasDirty = true
 			break
 		}
@@ -56,7 +59,7 @@ func (c *Candidates) Commit() error {
 	if hasDirty {
 		var candidates []*Candidate
 		for _, key := range keys {
-			candidates = append(candidates, c.list[key])
+			candidates = append(candidates, c.getFromMap(key))
 		}
 		data, err := rlp.EncodeToBytes(candidates)
 		if err != nil {
@@ -68,7 +71,7 @@ func (c *Candidates) Commit() error {
 	}
 
 	for _, pubkey := range keys {
-		candidate := c.list[pubkey]
+		candidate := c.getFromMap(pubkey)
 		candidate.isDirty = false
 
 		if candidate.isTotalStakeDirty {
@@ -163,7 +166,7 @@ func (c *Candidates) Create(ownerAddress types.Address, rewardAddress types.Addr
 	}
 	candidate.setTmAddress()
 
-	c.list[pubkey] = candidate
+	c.setToMap(pubkey, candidate)
 }
 
 func (c *Candidates) PunishByzantineCandidate(height uint64, tmAddress types.TmAddress) {
@@ -216,7 +219,7 @@ func (c *Candidates) GetCandidateByTendermintAddress(address types.TmAddress) *C
 
 func (c *Candidates) RecalculateStakes(height uint64) {
 	for _, pubkey := range c.getOrderedCandidates() {
-		candidate := c.list[pubkey]
+		candidate := c.getFromMap(pubkey)
 		stakes := c.GetStakes(candidate.PubKey)
 		for _, stake := range stakes {
 			stake.setBipValue(c.calculateBipValue(stake.Coin, stake.Value, false, true))
@@ -307,16 +310,25 @@ func (c *Candidates) RecalculateStakes(height uint64) {
 }
 
 func (c *Candidates) Exists(pubkey types.Pubkey) bool {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
 	_, exists := c.list[pubkey]
 
 	return exists
 }
 
 func (c *Candidates) Count() int {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
 	return len(c.list)
 }
 
 func (c *Candidates) IsNewCandidateStakeSufficient(coin types.CoinSymbol, stake *big.Int) bool {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
 	bipValue := c.calculateBipValue(coin, stake, true, true)
 	candidates := c.list
 
@@ -330,7 +342,7 @@ func (c *Candidates) IsNewCandidateStakeSufficient(coin types.CoinSymbol, stake 
 }
 
 func (c *Candidates) GetCandidate(pubkey types.Pubkey) *Candidate {
-	return c.list[pubkey]
+	return c.getFromMap(pubkey)
 }
 
 func (c *Candidates) IsDelegatorStakeSufficient(address types.Address, pubkey types.Pubkey, coin types.CoinSymbol, amount *big.Int) bool {
@@ -365,16 +377,17 @@ func (c *Candidates) Delegate(address types.Address, pubkey types.Pubkey, coin t
 }
 
 func (c *Candidates) Edit(pubkey types.Pubkey, rewardAddress types.Address, ownerAddress types.Address) {
-	c.list[pubkey].setOwner(ownerAddress)
-	c.list[pubkey].setReward(rewardAddress)
+	candidate := c.getFromMap(pubkey)
+	candidate.setOwner(ownerAddress)
+	candidate.setReward(rewardAddress)
 }
 
 func (c *Candidates) SetOnline(pubkey types.Pubkey) {
-	c.list[pubkey].setStatus(CandidateStatusOnline)
+	c.getFromMap(pubkey).setStatus(CandidateStatusOnline)
 }
 
 func (c *Candidates) SetOffline(pubkey types.Pubkey) {
-	c.list[pubkey].setStatus(CandidateStatusOffline)
+	c.getFromMap(pubkey).setStatus(CandidateStatusOffline)
 }
 
 func (c *Candidates) SubStake(address types.Address, pubkey types.Pubkey, coin types.CoinSymbol, value *big.Int) {
@@ -386,14 +399,14 @@ func (c *Candidates) SubStake(address types.Address, pubkey types.Pubkey, coin t
 func (c *Candidates) GetCandidates() []*Candidate {
 	var candidates []*Candidate
 	for _, pubkey := range c.getOrderedCandidates() {
-		candidates = append(candidates, c.list[pubkey])
+		candidates = append(candidates, c.getFromMap(pubkey))
 	}
 
 	return candidates
 }
 
 func (c *Candidates) GetTotalStake(pubkey types.Pubkey) *big.Int {
-	candidate := c.list[pubkey]
+	candidate := c.getFromMap(pubkey)
 	if candidate.totalBipStake == nil {
 		path := []byte{mainPrefix}
 		path = append(path, pubkey[:]...)
@@ -450,7 +463,7 @@ func (c *Candidates) GetStakeValueOfAddress(pubkey types.Pubkey, address types.A
 }
 
 func (c *Candidates) GetCandidateOwner(pubkey types.Pubkey) types.Address {
-	return c.list[pubkey].OwnerAddress
+	return c.getFromMap(pubkey).OwnerAddress
 }
 
 func (c *Candidates) loadCandidates() {
@@ -529,7 +542,7 @@ func (c *Candidates) loadCandidates() {
 		}
 
 		candidate.setTmAddress()
-		c.list[candidate.PubKey] = candidate
+		c.setToMap(candidate.PubKey, candidate)
 	}
 }
 
@@ -657,6 +670,9 @@ func (c *Candidates) Export(state *types.AppState) {
 }
 
 func (c *Candidates) getOrderedCandidates() []types.Pubkey {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
 	var keys []types.Pubkey
 	for _, candidate := range c.list {
 		keys = append(keys, candidate.PubKey)
@@ -667,4 +683,18 @@ func (c *Candidates) getOrderedCandidates() []types.Pubkey {
 	})
 
 	return keys
+}
+
+func (c *Candidates) getFromMap(pubkey types.Pubkey) *Candidate {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
+	return c.list[pubkey]
+}
+
+func (c *Candidates) setToMap(pubkey types.Pubkey, model *Candidate) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	c.list[pubkey] = model
 }

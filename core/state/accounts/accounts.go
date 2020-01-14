@@ -10,6 +10,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/tree"
 	"math/big"
 	"sort"
+	"sync"
 )
 
 const mainPrefix = byte('a')
@@ -22,6 +23,8 @@ type Accounts struct {
 
 	iavl tree.Tree
 	bus  *bus.Bus
+
+	lock sync.RWMutex
 }
 
 func NewAccounts(stateBus *bus.Bus, iavl tree.Tree) (*Accounts, error) {
@@ -34,8 +37,10 @@ func NewAccounts(stateBus *bus.Bus, iavl tree.Tree) (*Accounts, error) {
 func (a *Accounts) Commit() error {
 	accounts := a.getOrderedDirtyAccounts()
 	for _, address := range accounts {
-		account := a.list[address]
+		account := a.getFromMap(address)
+		a.lock.Lock()
 		delete(a.dirty, address)
+		a.lock.Unlock()
 
 		// save info (nonce and multisig data)
 		if account.isDirty || account.isNew {
@@ -176,13 +181,13 @@ func (a *Accounts) CreateMultisig(weights []uint, addresses []types.Address, thr
 		dirtyBalances: map[types.CoinSymbol]struct{}{},
 		isNew:         true,
 	}
-	a.list[address] = account
+	a.setToMap(address, account)
 
 	return address
 }
 
 func (a *Accounts) get(address types.Address) *Model {
-	if account := a.list[address]; account != nil {
+	if account := a.getFromMap(address); account != nil {
 		return account
 	}
 
@@ -218,7 +223,7 @@ func (a *Accounts) get(address types.Address) *Model {
 		account.coins = coins
 	}
 
-	a.list[address] = account
+	a.setToMap(address, account)
 	return account
 }
 
@@ -234,7 +239,7 @@ func (a *Accounts) getOrNew(address types.Address) *Model {
 			dirtyBalances: map[types.CoinSymbol]struct{}{},
 			isNew:         true,
 		}
-		a.list[address] = account
+		a.setToMap(address, account)
 	}
 
 	return account
@@ -308,4 +313,18 @@ func (a *Accounts) Export(state *types.AppState) {
 
 func (a *Accounts) GetAccount(address types.Address) *Model {
 	return a.getOrNew(address)
+}
+
+func (a *Accounts) getFromMap(address types.Address) *Model {
+	a.lock.RLock()
+	defer a.lock.RUnlock()
+
+	return a.list[address]
+}
+
+func (a *Accounts) setToMap(address types.Address, model *Model) {
+	a.lock.Lock()
+	defer a.lock.Unlock()
+
+	a.list[address] = model
 }

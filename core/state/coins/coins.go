@@ -9,6 +9,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/tree"
 	"math/big"
 	"sort"
+	"sync"
 )
 
 const (
@@ -22,6 +23,8 @@ type Coins struct {
 
 	bus  *bus.Bus
 	iavl tree.Tree
+
+	lock sync.RWMutex
 }
 
 func NewCoins(stateBus *bus.Bus, iavl tree.Tree) (*Coins, error) {
@@ -34,8 +37,10 @@ func NewCoins(stateBus *bus.Bus, iavl tree.Tree) (*Coins, error) {
 func (c *Coins) Commit() error {
 	coins := c.getOrderedDirtyCoins()
 	for _, symbol := range coins {
-		coin := c.list[symbol]
+		coin := c.getFromMap(symbol)
+		c.lock.Lock()
 		delete(c.dirty, symbol)
+		c.lock.Unlock()
 
 		if coin.IsDirty() {
 			data, err := rlp.EncodeToBytes(coin)
@@ -125,7 +130,7 @@ func (c *Coins) Create(symbol types.CoinSymbol, name string, volume *big.Int, cr
 		},
 	}
 
-	c.list[coin.symbol] = coin
+	c.setToMap(coin.symbol, coin)
 
 	coin.SetReserve(reserve)
 	coin.SetVolume(volume)
@@ -136,7 +141,7 @@ func (c *Coins) Create(symbol types.CoinSymbol, name string, volume *big.Int, cr
 }
 
 func (c *Coins) get(symbol types.CoinSymbol) *Model {
-	if coin := c.list[symbol]; coin != nil {
+	if coin := c.getFromMap(symbol); coin != nil {
 		return coin
 	}
 
@@ -170,7 +175,7 @@ func (c *Coins) get(symbol types.CoinSymbol) *Model {
 		coin.info = &info
 	}
 
-	c.list[symbol] = coin
+	c.setToMap(symbol, coin)
 
 	return coin
 }
@@ -209,4 +214,18 @@ func (c *Coins) Export(state *types.AppState) {
 
 		return false
 	})
+}
+
+func (c *Coins) getFromMap(symbol types.CoinSymbol) *Model {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
+	return c.list[symbol]
+}
+
+func (c *Coins) setToMap(symbol types.CoinSymbol, model *Model) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	c.list[symbol] = model
 }
