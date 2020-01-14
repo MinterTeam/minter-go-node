@@ -2,31 +2,45 @@ package v2
 
 import (
 	"context"
-	"fmt"
 	gw "github.com/MinterTeam/minter-go-node/api/v2/api_pb"
 	"github.com/MinterTeam/minter-go-node/api/v2/service"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/tmc/grpc-websocket-proxy/wsproxy"
+	"golang.org/x/sync/errgroup"
+	"google.golang.org/grpc"
+	"net"
 	"net/http"
 )
 
-func Run(srvc *service.Service, addr string) error {
+func Run(srv *service.Service, addrGRPC, addrApi string) error {
+	lis, err := net.Listen("tcp", addrGRPC)
+	if err != nil {
+		return err
+	}
+
+	grpcServer := grpc.NewServer()
+	gw.RegisterApiServiceServer(grpcServer, srv)
+	var group errgroup.Group
+
+	group.Go(func() error {
+		return grpcServer.Serve(lis)
+	})
+
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-
 	mux := runtime.NewServeMux()
+	opts := []grpc.DialOption{grpc.WithInsecure()}
 
-	if err := gw.RegisterHttpServiceHandlerServer(ctx, mux, srvc); err != nil {
-		return err
-	}
+	group.Go(func() error {
+		return gw.RegisterApiServiceHandlerFromEndpoint(ctx, mux, addrGRPC, opts)
+	})
+	group.Go(func() error {
+		return http.ListenAndServe(addrApi, mux)
+	})
+	group.Go(func() error {
+		return http.ListenAndServe(addrApi, wsproxy.WebsocketProxy(mux))
+	})
 
-	mux.Handle("GET", runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"subscribe"}, "", runtime.AssumeColonVerbOpt(true))), srvc.Subscribe)
-
-	fmt.Println("listening")
-
-	if err := http.ListenAndServe(addr, mux); err != nil {
-		return err
-	}
-
-	return nil
+	return group.Wait()
 }

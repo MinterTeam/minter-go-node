@@ -1,12 +1,17 @@
 package service
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
-	"github.com/gorilla/websocket"
-	ctypes "github.com/tendermint/tendermint/rpc/core/types"
-	"log"
-	"net/http"
+	pb "github.com/MinterTeam/minter-go-node/api/v2/api_pb"
+	"github.com/golang/protobuf/jsonpb"
+	_struct "github.com/golang/protobuf/ptypes/struct"
+	"github.com/google/uuid"
+	core_types "github.com/tendermint/tendermint/rpc/core/types"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"time"
 )
 
@@ -14,92 +19,66 @@ const (
 	SubscribeTimeout = 5 * time.Second
 )
 
-var (
-	upgrader = websocket.Upgrader{}
-)
-
-// Subscribe for events via WebSocket.
-func (s *Service) Subscribe(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
-
-	query := r.URL.Query().Get("query")
-
-	conn, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		log.Println("Upgrade:", err)
-		return
-	}
-	addr := conn.RemoteAddr().String()
+func (s *Service) Subscribe(request *pb.SubscribeRequest, stream pb.ApiService_SubscribeServer) error {
 
 	if s.client.NumClients() >= s.minterCfg.RPC.MaxSubscriptionClients {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(fmt.Sprintf("max_subscription_clients %d reached", s.minterCfg.RPC.MaxSubscriptionClients)))
-		return
-	} else if s.client.NumClientSubscriptions(addr) >= s.minterCfg.RPC.MaxSubscriptionsPerClient {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(fmt.Sprintf("max_subscriptions_per_client %d reached", s.minterCfg.RPC.MaxSubscriptionsPerClient)))
-		return
+		return status.Error(codes.Internal, fmt.Sprintf("max_subscription_clients %d reached", s.minterCfg.RPC.MaxSubscriptionClients))
 	}
 
-	s.client.Logger.Info("Subscribe to query", "remote", addr, "query", query)
+	s.client.Logger.Info("Subscribe to query", "query", request.Query)
 
-	subCtx, cancel := context.WithTimeout(r.Context(), SubscribeTimeout)
+	subCtx, cancel := context.WithTimeout(stream.Context(), SubscribeTimeout)
 	defer cancel()
-
-	sub, err := s.client.Subscribe(subCtx, addr, query)
+	subscriber := uuid.New().String()
+	sub, err := s.client.Subscribe(subCtx, subscriber, request.Query)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(err.Error()))
-		return
+		return status.Error(codes.Internal, err.Error())
 	}
-
-	done := make(chan struct{})
-
-	closeErr := make(chan error)
-	stopNextReader := make(chan struct{})
-	go func() {
-		for {
-			select {
-			case <-stopNextReader:
-				return
-			default:
-				if _, _, err := conn.NextReader(); err != nil {
-					closeErr <- err
-					return
-				}
-			}
+	defer func() {
+		if err := s.client.UnsubscribeAll(stream.Context(), subscriber); err != nil {
+			s.client.Logger.Error(err.Error())
 		}
 	}()
 
-	go func() {
-		defer close(done)
-		for {
-			select {
-			case msg, ok := <-sub:
-				if !ok {
-					if err := conn.WriteMessage(websocket.CloseMessage, []byte("subscription was cancelled")); err != nil {
-						s.client.Logger.Error(err.Error())
-					}
-					return
-				}
-				resultEvent := &ctypes.ResultEvent{Query: query, Data: msg.Data, Events: msg.Events}
-				if err := conn.WriteJSON(resultEvent); err != nil {
-					if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-						s.client.Logger.Error(err.Error())
-					}
-					return
-				}
-			case <-closeErr:
-				return
+	for {
+		select {
+		case <-stream.Context().Done():
+			return stream.Context().Err()
+		case msg, ok := <-sub:
+			if !ok {
+				return nil
+			}
+			res, err := subscribeResponse(msg)
+			if err != nil {
+				return status.Error(codes.Internal, err.Error())
+			}
+			if err := stream.Send(res); err != nil {
+				return err
 			}
 		}
-	}()
+	}
+}
 
-	<-done
-	close(stopNextReader)
-	if err := conn.Close(); err != nil {
-		s.client.Logger.Error(err.Error())
+func subscribeResponse(msg core_types.ResultEvent) (*pb.SubscribeResponse, error) {
+	var events []*pb.SubscribeResponse_Event
+	for key, eventSlice := range msg.Events {
+		events = append(events, &pb.SubscribeResponse_Event{
+			Key:    key,
+			Events: eventSlice,
+		})
 	}
-	if err := s.client.UnsubscribeAll(r.Context(), addr); err != nil {
-		s.client.Logger.Error(err.Error())
+	byteData, err := json.Marshal(msg.Data)
+	if err != nil {
+		return nil, err
 	}
+
+	var bb bytes.Buffer
+	bb.Write(byteData)
+
+	data := &_struct.Struct{Fields: make(map[string]*_struct.Value)}
+	if err := (&jsonpb.Unmarshaler{}).Unmarshal(&bb, data); err != nil {
+		return nil, err
+	}
+
+	return &pb.SubscribeResponse{Query: msg.Query, Data: data, Events: events}, nil
 }

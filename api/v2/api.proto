@@ -28,44 +28,44 @@ message NodeInfo {
     Other other = 7;
 }
 message NetInfoResponse {
-        bool listening = 4;
-        repeated string listeners = 1;
-        string count_peers = 2;
-        message Peer {
-            NodeInfo node_info = 4;
-            bool is_outbound = 1;
-            message ConnectionStatus {
-                string duration = 4;
-                message Monitor {
-                    bool active = 13;
-                    string start = 1;
-                    string duration = 2;
-                    string idle = 3;
-                    string bytes = 4;
-                    string samples = 5;
-                    string inst_rate = 6;
-                    string cur_rate = 7;
-                    string avg_rate = 8;
-                    string peak_rate = 9;
-                    string bytes_rem = 10;
-                    string time_rem = 11;
-                    string progress = 12;
-                }
-                Monitor SendMonitor = 1;
-                Monitor RecvMonitor = 2;
-                message Channel {
-                    string id = 5;
-                    string send_queue_capacity = 1;
-                    string send_queue_size = 2;
-                    string priority = 3;
-                    string recently_sent = 4;
-                }
-                repeated Channel channels = 3;
+    bool listening = 4;
+    repeated string listeners = 1;
+    string count_peers = 2;
+    message Peer {
+        NodeInfo node_info = 4;
+        bool is_outbound = 1;
+        message ConnectionStatus {
+            string duration = 4;
+            message Monitor {
+                bool active = 13;
+                string start = 1;
+                string duration = 2;
+                string idle = 3;
+                string bytes = 4;
+                string samples = 5;
+                string inst_rate = 6;
+                string cur_rate = 7;
+                string avg_rate = 8;
+                string peak_rate = 9;
+                string bytes_rem = 10;
+                string time_rem = 11;
+                string progress = 12;
             }
-            ConnectionStatus connection_status = 2;
-            string remote_ip = 3;
+            Monitor SendMonitor = 1;
+            Monitor RecvMonitor = 2;
+            message Channel {
+                string id = 5;
+                string send_queue_capacity = 1;
+                string send_queue_size = 2;
+                string priority = 3;
+                string recently_sent = 4;
+            }
+            repeated Channel channels = 3;
         }
-        repeated Peer peers = 3;
+        ConnectionStatus connection_status = 2;
+        string remote_ip = 3;
+    }
+    repeated Peer peers = 3;
 }
 message StatusResponse {
     string version = 8;
@@ -82,68 +82,68 @@ message StatusResponse {
     PubKey public_key = 7;
 }
 message GenesisResponse {
-        string genesis_time = 1;
-        string chain_id = 2;
-        message ConsensusParams {
-            message Block {
-                string max_bytes = 1;
-                string max_gas = 2;
-                string time_iota_ms = 3;
-            }
-            Block block = 1;
-            message Evidence {
-                string max_age = 1;
-            }
-            Evidence evidence = 2;
-            message Validator {
-                repeated string public_key_types = 1;
-            }
-            Validator validator = 3;
+    string genesis_time = 1;
+    string chain_id = 2;
+    message ConsensusParams {
+        message Block {
+            string max_bytes = 1;
+            string max_gas = 2;
+            string time_iota_ms = 3;
         }
-        ConsensusParams consensus_params = 3;
-        string app_hash = 4;
-        message AppState {
-            string start_height = 1;
-            message Validator {
-                string reward_address = 1;
-                string total_bip_stake = 2;
-                string public_key = 3;
-                string commission = 4;
-                string accum_reward = 5;
-                string absent_times = 6;
-            }
-            repeated Validator validators = 2;
-            message Candidate {
-                string reward_address = 1;
-                string owner_address = 2;
-                string total_bip_stake = 3;
-                string public_key = 4;
-                string commission = 5;
-                message Stake {
-                    string owner = 1;
-                    string coin = 2;
-                    string value = 3;
-                    string bip_value = 4;
-                }
-                repeated Stake stakes = 6;
-                string created_at_block = 7;
-                double status = 8;
-            }
-            repeated Candidate candidates = 3;
-            message Account {
-                string address = 1;
-                message Balance {
-                    string coin = 1;
-                    string value = 2;
-                }
-                repeated Balance balance = 2;
-                string nonce = 3;
-            }
-            repeated Account accounts = 4;
-            string max_gas = 5;
-            string total_slashed = 6;
+        Block block = 1;
+        message Evidence {
+            string max_age = 1;
         }
-        AppState app_state = 5;
+        Evidence evidence = 2;
+        message Validator {
+            repeated string public_key_types = 1;
+        }
+        Validator validator = 3;
+    }
+    ConsensusParams consensus_params = 3;
+    string app_hash = 4;
+    message AppState {
+        string start_height = 1;
+        message Validator {
+            string reward_address = 1;
+            string total_bip_stake = 2;
+            string public_key = 3;
+            string commission = 4;
+            string accum_reward = 5;
+            string absent_times = 6;
+        }
+        repeated Validator validators = 2;
+        message Candidate {
+            string reward_address = 1;
+            string owner_address = 2;
+            string total_bip_stake = 3;
+            string public_key = 4;
+            string commission = 5;
+            message Stake {
+                string owner = 1;
+                string coin = 2;
+                string value = 3;
+                string bip_value = 4;
+            }
+            repeated Stake stakes = 6;
+            string created_at_block = 7;
+            double status = 8;
+        }
+        repeated Candidate candidates = 3;
+        message Account {
+            string address = 1;
+            message Balance {
+                string coin = 1;
+                string value = 2;
+            }
+            repeated Balance balance = 2;
+            string nonce = 3;
+        }
+        repeated Account accounts = 4;
+        string max_gas = 5;
+        string total_slashed = 6;
+    }
+    AppState app_state = 5;
 }
 
 message MinGasPriceResponse {
@@ -385,134 +385,133 @@ message ValidatorsResponse {
     repeated Result validators = 3;
 }
 
-service HttpService {
+message SubscribeRequest {
+    string query = 1;
+}
+
+message SubscribeResponse {
+    string query = 1;
+    google.protobuf.Struct data = 2;
+    message Event {
+        string key = 1;
+        repeated string events = 2;
+    }
+    repeated Event events = 3;
+}
+
+
+service ApiService {
+    rpc Subscribe (SubscribeRequest) returns (stream SubscribeResponse) {
+        option (google.api.http) = {
+            get: "/subscribe"
+        };
+    }
 
     rpc Genesis (google.protobuf.Empty) returns (GenesisResponse) {
         option (google.api.http) = {
             get: "/genesis"
         };
     }
-
     rpc MinGasPrice (google.protobuf.Empty) returns (MinGasPriceResponse) {
         option (google.api.http) = {
             get: "/min_gas_price"
         };
     }
-
     rpc NetInfo (google.protobuf.Empty) returns (NetInfoResponse) {
         option (google.api.http) = {
             get: "/net_info"
         };
     }
-
     rpc Status (google.protobuf.Empty) returns (StatusResponse) {
         option (google.api.http) = {
             get: "/status"
         };
     }
-
     rpc Address (AddressRequest) returns (AddressResponse) {
         option (google.api.http) = {
             get: "/address/{address}"
         };
     }
-
     rpc Addresses (AddressesRequest) returns (AddressesResponse) {
         option (google.api.http) = {
             get: "/addresses"
         };
     }
-
     rpc Block (BlockRequest) returns (BlockResponse) {
         option (google.api.http) = {
             get: "/block/{height}"
         };
     }
-
     rpc Candidate (CandidateRequest) returns (CandidateResponse) {
         option (google.api.http) = {
             get: "/candidate/{public_key}"
         };
     }
-
     rpc Candidates (CandidatesRequest) returns (CandidatesResponse) {
         option (google.api.http) = {
             get: "/candidates"
         };
     }
-
     rpc CoinInfo (CoinInfoRequest) returns (CoinInfoResponse) {
         option (google.api.http) = {
             get: "/coin_info/{symbol}"
         };
     }
-
     rpc EstimateCoinBuy (EstimateCoinBuyRequest) returns (EstimateCoinBuyResponse) {
         option (google.api.http) = {
             get: "/estimate_coin_buy"
         };
     }
-
     rpc EstimateCoinSell (EstimateCoinSellRequest) returns (EstimateCoinSellResponse) {
         option (google.api.http) = {
             get: "/estimate_coin_sell"
         };
     }
-
     rpc EstimateCoinSellAll (EstimateCoinSellAllRequest) returns (EstimateCoinSellAllResponse) {
         option (google.api.http) = {
             get: "/estimate_coin_sell_all"
         };
     }
-
     rpc EstimateTxCommission (EstimateTxCommissionRequest) returns (EstimateTxCommissionResponse) {
         option (google.api.http) = {
             get: "/estimate_tx_commission/{tx}"
         };
     }
-
     rpc Events (EventsRequest) returns (EventsResponse) {
         option (google.api.http) = {
             get: "/events/{height}"
         };
     }
-
     rpc MaxGas (MaxGasRequest) returns (MaxGasResponse) {
         option (google.api.http) = {
             get: "/max_gas"
         };
     }
-
     rpc MissedBlocks (MissedBlocksRequest) returns (MissedBlocksResponse) {
         option (google.api.http) = {
             get: "/missed_blocks/{public_key}"
         };
     }
-
     rpc SendTransaction (SendTransactionRequest) returns (SendTransactionResponse) {
         option (google.api.http) = {
             get: "/send_transaction"
         };
     }
-
     rpc Transaction (TransactionRequest) returns (TransactionResponse) {
         option (google.api.http) = {
             get: "/transaction/{hash}"
         };
     }
-
     rpc Transactions (TransactionsRequest) returns (TransactionsResponse) {
         option (google.api.http) = {
             get: "/transactions"
         };
     }
-
     rpc UnconfirmedTxs (UnconfirmedTxsRequest) returns (UnconfirmedTxsResponse) {
         option (google.api.http) = {
             get: "/unconfirmed_txs"
         };
     }
-
     rpc Validators (ValidatorsRequest) returns (ValidatorsResponse) {
         option (google.api.http) = {
             get: "/validators"

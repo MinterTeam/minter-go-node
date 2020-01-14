@@ -1,7 +1,7 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "http.proto",
+    "title": "api.proto",
     "version": "version not set"
   },
   "consumes": [
@@ -38,7 +38,7 @@
           }
         ],
         "tags": [
-          "HttpService"
+          "ApiService"
         ]
       }
     },
@@ -73,7 +73,7 @@
           }
         ],
         "tags": [
-          "HttpService"
+          "ApiService"
         ]
       }
     },
@@ -98,7 +98,7 @@
           }
         ],
         "tags": [
-          "HttpService"
+          "ApiService"
         ]
       }
     },
@@ -129,7 +129,7 @@
           }
         ],
         "tags": [
-          "HttpService"
+          "ApiService"
         ]
       }
     },
@@ -161,7 +161,7 @@
           }
         ],
         "tags": [
-          "HttpService"
+          "ApiService"
         ]
       }
     },
@@ -192,7 +192,7 @@
           }
         ],
         "tags": [
-          "HttpService"
+          "ApiService"
         ]
       }
     },
@@ -235,7 +235,7 @@
           }
         ],
         "tags": [
-          "HttpService"
+          "ApiService"
         ]
       }
     },
@@ -278,7 +278,7 @@
           }
         ],
         "tags": [
-          "HttpService"
+          "ApiService"
         ]
       }
     },
@@ -328,7 +328,7 @@
           }
         ],
         "tags": [
-          "HttpService"
+          "ApiService"
         ]
       }
     },
@@ -359,7 +359,7 @@
           }
         ],
         "tags": [
-          "HttpService"
+          "ApiService"
         ]
       }
     },
@@ -384,7 +384,7 @@
           }
         ],
         "tags": [
-          "HttpService"
+          "ApiService"
         ]
       }
     },
@@ -400,7 +400,7 @@
           }
         },
         "tags": [
-          "HttpService"
+          "ApiService"
         ]
       }
     },
@@ -425,7 +425,7 @@
           }
         ],
         "tags": [
-          "HttpService"
+          "ApiService"
         ]
       }
     },
@@ -441,7 +441,7 @@
           }
         },
         "tags": [
-          "HttpService"
+          "ApiService"
         ]
       }
     },
@@ -472,7 +472,7 @@
           }
         ],
         "tags": [
-          "HttpService"
+          "ApiService"
         ]
       }
     },
@@ -488,7 +488,7 @@
           }
         },
         "tags": [
-          "HttpService"
+          "ApiService"
         ]
       }
     },
@@ -512,7 +512,7 @@
           }
         ],
         "tags": [
-          "HttpService"
+          "ApiService"
         ]
       }
     },
@@ -528,7 +528,31 @@
           }
         },
         "tags": [
-          "HttpService"
+          "ApiService"
+        ]
+      }
+    },
+    "/subscribe": {
+      "get": {
+        "operationId": "Subscribe",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "$ref": "#/x-stream-definitions/api_pbSubscribeResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "ApiService"
         ]
       }
     },
@@ -552,7 +576,7 @@
           }
         ],
         "tags": [
-          "HttpService"
+          "ApiService"
         ]
       }
     },
@@ -590,7 +614,7 @@
           }
         ],
         "tags": [
-          "HttpService"
+          "ApiService"
         ]
       }
     },
@@ -615,7 +639,7 @@
           }
         ],
         "tags": [
-          "HttpService"
+          "ApiService"
         ]
       }
     },
@@ -640,7 +664,7 @@
           }
         ],
         "tags": [
-          "HttpService"
+          "ApiService"
         ]
       }
     }
@@ -855,20 +879,6 @@
         },
         "time_iota_ms": {
           "type": "string"
-        }
-      }
-    },
-    "EventsResponseEvent": {
-      "type": "object",
-      "properties": {
-        "type": {
-          "type": "string"
-        },
-        "value": {
-          "type": "object",
-          "additionalProperties": {
-            "type": "string"
-          }
         }
       }
     },
@@ -1261,7 +1271,21 @@
         "events": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/EventsResponseEvent"
+            "$ref": "#/definitions/api_pbEventsResponseEvent"
+          }
+        }
+      }
+    },
+    "api_pbEventsResponseEvent": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "value": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
           }
         }
       }
@@ -1413,6 +1437,37 @@
         }
       }
     },
+    "api_pbSubscribeResponse": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object"
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/api_pbSubscribeResponseEvent"
+          }
+        }
+      }
+    },
+    "api_pbSubscribeResponseEvent": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
     "api_pbTransactionResponse": {
       "type": "object",
       "properties": {
@@ -1520,6 +1575,18 @@
         }
       }
     },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "type_url": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
     "protobufNullValue": {
       "type": "string",
       "enum": [
@@ -1527,6 +1594,45 @@
       ],
       "default": "NULL_VALUE",
       "description": "`NullValue` is a singleton enumeration to represent the null value for the\n`Value` type union.\n\n The JSON representation for `NullValue` is JSON `null`.\n\n - NULL_VALUE: Null value."
+    },
+    "runtimeStreamError": {
+      "type": "object",
+      "properties": {
+        "grpc_code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "http_code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "http_status": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    }
+  },
+  "x-stream-definitions": {
+    "api_pbSubscribeResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/api_pbSubscribeResponse"
+        },
+        "error": {
+          "$ref": "#/definitions/runtimeStreamError"
+        }
+      },
+      "title": "Stream result of api_pbSubscribeResponse"
     }
   }
 }
