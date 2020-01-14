@@ -401,13 +401,12 @@ message SubscribeResponse {
 
 
 service ApiService {
-    //ws
     rpc Subscribe (SubscribeRequest) returns (stream SubscribeResponse) {
         option (google.api.http) = {
             get: "/subscribe"
         };
     }
-    //http
+
     rpc Genesis (google.protobuf.Empty) returns (GenesisResponse) {
         option (google.api.http) = {
             get: "/genesis"

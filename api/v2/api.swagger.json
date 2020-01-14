@@ -390,7 +390,6 @@
     },
     "/genesis": {
       "get": {
-        "summary": "http",
         "operationId": "Genesis",
         "responses": {
           "200": {
@@ -535,7 +534,6 @@
     },
     "/subscribe": {
       "get": {
-        "summary": "ws",
         "operationId": "Subscribe",
         "responses": {
           "200": {

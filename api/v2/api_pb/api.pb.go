@@ -4333,9 +4333,7 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type ApiServiceClient interface {
-	//ws
 	Subscribe(ctx context.Context, in *SubscribeRequest, opts ...grpc.CallOption) (ApiService_SubscribeClient, error)
-	//http
 	Genesis(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*GenesisResponse, error)
 	MinGasPrice(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*MinGasPriceResponse, error)
 	NetInfo(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*NetInfoResponse, error)
@@ -4600,9 +4598,7 @@ func (c *apiServiceClient) Validators(ctx context.Context, in *ValidatorsRequest
 
 // ApiServiceServer is the server API for ApiService service.
 type ApiServiceServer interface {
-	//ws
 	Subscribe(*SubscribeRequest, ApiService_SubscribeServer) error
-	//http
 	Genesis(context.Context, *empty.Empty) (*GenesisResponse, error)
 	MinGasPrice(context.Context, *empty.Empty) (*MinGasPriceResponse, error)
 	NetInfo(context.Context, *empty.Empty) (*NetInfoResponse, error)
