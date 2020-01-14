@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"context"
-	"github.com/MinterTeam/minter-go-node/api"
-	v2 "github.com/MinterTeam/minter-go-node/api/v2"
+	api_v1 "github.com/MinterTeam/minter-go-node/api"
+	api_v2 "github.com/MinterTeam/minter-go-node/api/v2"
 	service_api "github.com/MinterTeam/minter-go-node/api/v2/service"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
@@ -65,12 +65,11 @@ func runNode() error {
 	app.SetTmNode(node)
 
 	if !cfg.ValidatorMode {
-		go logger.Error(
-			"Failed to start API", v2.Run(
-				service_api.NewService(amino.NewCodec(), app, client, node, cfg, version.Version),
-				":8842", ":8843",
-			))
-		go api.RunAPI(app, client, cfg, logger)
+		go func(srv *service_api.Service) {
+			logger.Error("Failed to start Api V2 in both gRPC and RESTful", api_v2.Run(srv, ":8842", ":8843"))
+		}(service_api.NewService(amino.NewCodec(), app, client, node, cfg, version.Version))
+
+		go api_v1.RunAPI(app, client, cfg, logger)
 	}
 
 	ctxCli, stopCli := context.WithCancel(context.Background())
