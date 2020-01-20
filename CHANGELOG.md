@@ -17,6 +17,7 @@ BREAKING CHANGES
 - [core] Set min coin reserve to 10,000 bip
 - [core] Pay rewards each 120 blocks
 - [core] Fix create coin commission issue
+- [core] Limit power of a single validator to 10%
 - [gui] Remove GUI
 - [config] KeepStateHistory -> KeepLastStates
 - [config] Add state_cache_size option

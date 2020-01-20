@@ -25,6 +25,7 @@ import (
 	types2 "github.com/tendermint/tendermint/types"
 	"github.com/tendermint/tm-db"
 	"math/big"
+	"sort"
 	"sync"
 	"sync/atomic"
 )
@@ -312,6 +313,24 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 			}
 
 			newValidators[i] = abciTypes.Ed25519ValidatorUpdate(newCandidates[i].PubKey[:], power)
+		}
+
+		sort.SliceStable(newValidators, func(i, j int) bool {
+			return newValidators[i].Power > newValidators[j].Power
+		})
+
+		// limit power of a single validator to 10%
+		const maxPower int64 = 10000000
+		if len(newValidators) >= 10 {
+			left := int64(0)
+			for i := range newValidators {
+				newValidators[i].Power = newValidators[i].Power + left
+				left = 0
+				if newValidators[i].Power > maxPower {
+					left = left + (newValidators[i].Power - maxPower)
+					newValidators[i].Power = maxPower
+				}
+			}
 		}
 
 		// update validators in state
