@@ -9,7 +9,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/helpers"
-	"github.com/tendermint/tendermint/libs/common"
+	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
 	"regexp"
 	"strconv"
@@ -216,10 +216,10 @@ func (data CreateCoinData) Run(tx *Transaction, context *state.State, isCheck bo
 		context.Accounts.SetNonce(sender, tx.Nonce)
 	}
 
-	tags := common.KVPairs{
-		common.KVPair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeCreateCoin)}))},
-		common.KVPair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
-		common.KVPair{Key: []byte("tx.coin"), Value: []byte(data.Symbol.String())},
+	tags := kv.Pairs{
+		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeCreateCoin)}))},
+		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
+		kv.Pair{Key: []byte("tx.coin"), Value: []byte(data.Symbol.String())},
 	}
 
 	return Response{

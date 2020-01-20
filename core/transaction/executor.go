@@ -6,7 +6,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/tendermint/tendermint/libs/common"
+	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
 	"sync"
 )
@@ -24,14 +24,14 @@ const (
 )
 
 type Response struct {
-	Code      uint32          `json:"code,omitempty"`
-	Data      []byte          `json:"data,omitempty"`
-	Log       string          `json:"log,omitempty"`
-	Info      string          `json:"-"`
-	GasWanted int64           `json:"gas_wanted,omitempty"`
-	GasUsed   int64           `json:"gas_used,omitempty"`
-	Tags      []common.KVPair `json:"tags,omitempty"`
-	GasPrice  uint32          `json:"gas_price"`
+	Code      uint32    `json:"code,omitempty"`
+	Data      []byte    `json:"data,omitempty"`
+	Log       string    `json:"log,omitempty"`
+	Info      string    `json:"-"`
+	GasWanted int64     `json:"gas_wanted,omitempty"`
+	GasUsed   int64     `json:"gas_used,omitempty"`
+	Tags      []kv.Pair `json:"tags,omitempty"`
+	GasPrice  uint32    `json:"gas_price"`
 }
 
 func RunTx(context *state.State,

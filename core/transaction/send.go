@@ -9,7 +9,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
-	"github.com/tendermint/tendermint/libs/common"
+	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
 )
 
@@ -151,11 +151,11 @@ func (data SendData) Run(tx *Transaction, context *state.State, isCheck bool, re
 		context.Accounts.SetNonce(sender, tx.Nonce)
 	}
 
-	tags := common.KVPairs{
-		common.KVPair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeSend)}))},
-		common.KVPair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
-		common.KVPair{Key: []byte("tx.to"), Value: []byte(hex.EncodeToString(data.To[:]))},
-		common.KVPair{Key: []byte("tx.coin"), Value: []byte(data.Coin.String())},
+	tags := kv.Pairs{
+		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeSend)}))},
+		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
+		kv.Pair{Key: []byte("tx.to"), Value: []byte(hex.EncodeToString(data.To[:]))},
+		kv.Pair{Key: []byte("tx.coin"), Value: []byte(data.Coin.String())},
 	}
 
 	return Response{

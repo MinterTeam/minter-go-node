@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
-	"github.com/tendermint/tendermint/libs/common"
-	"github.com/tendermint/tendermint/rpc/core/types"
+	"github.com/tendermint/tendermint/libs/bytes"
+	core_types "github.com/tendermint/tendermint/rpc/core/types"
 )
 
 type TransactionResponse struct {
@@ -60,7 +60,7 @@ func Transactions(query string, page, perPage int) (*[]TransactionResponse, erro
 		}
 
 		result[i] = TransactionResponse{
-			Hash:     common.HexBytes(tx.Tx.Hash()).String(),
+			Hash:     bytes.HexBytes(tx.Tx.Hash()).String(),
 			RawTx:    fmt.Sprintf("%x", []byte(tx.Tx)),
 			Height:   tx.Height,
 			Index:    tx.Index,

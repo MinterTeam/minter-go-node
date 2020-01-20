@@ -22,8 +22,12 @@ type Tree interface {
 }
 
 func NewMutableTree(db dbm.DB, cacheSize int) *MutableTree {
+	tree, err := iavl.NewMutableTree(db, cacheSize)
+	if err != nil {
+		panic(err)
+	}
 	return &MutableTree{
-		tree: iavl.NewMutableTree(db, cacheSize),
+		tree: tree,
 	}
 }
 

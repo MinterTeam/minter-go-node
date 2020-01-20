@@ -19,8 +19,8 @@ import (
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/tendermint/go-amino"
 	tmConfig "github.com/tendermint/tendermint/config"
-	"github.com/tendermint/tendermint/libs/common"
 	log2 "github.com/tendermint/tendermint/libs/log"
+	tmos "github.com/tendermint/tendermint/libs/os"
 	tmNode "github.com/tendermint/tendermint/node"
 	"github.com/tendermint/tendermint/p2p"
 	"github.com/tendermint/tendermint/privval"
@@ -54,7 +54,7 @@ func initNode() {
 	utils.MinterHome = os.ExpandEnv(filepath.Join("$HOME", ".minter_test"))
 	_ = os.RemoveAll(utils.MinterHome)
 
-	if err := common.EnsureDir(utils.GetMinterHome()+"/tmdata/blockstore.db", 0777); err != nil {
+	if err := tmos.EnsureDir(utils.GetMinterHome()+"/tmdata/blockstore.db", 0777); err != nil {
 		panic(err.Error())
 	}
 
@@ -290,7 +290,7 @@ func TestSmallStakeValidator(t *testing.T) {
 				continue
 			}
 
-			vals, _ := tmCli.Validators(&targetBlockHeight)
+			vals, _ := tmCli.Validators(&targetBlockHeight, 1, 1000)
 
 			if len(vals.Validators) > 1 {
 				t.Errorf("There are should be 1 validator (has %d)", len(vals.Validators))
@@ -358,7 +358,7 @@ FORLOOP2:
 				continue FORLOOP2
 			}
 
-			vals, _ := tmCli.Validators(&targetBlockHeight)
+			vals, _ := tmCli.Validators(&targetBlockHeight, 1, 100)
 
 			if len(vals.Validators) > 1 {
 				t.Errorf("There should be only 1 validator, got %d", len(vals.Validators))

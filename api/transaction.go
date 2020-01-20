@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/rpc/lib/types"
-	"github.com/tendermint/tendermint/libs/common"
+	"github.com/tendermint/tendermint/libs/bytes"
 )
 
 func Transaction(hash []byte) (*TransactionResponse, error) {
@@ -27,7 +27,7 @@ func Transaction(hash []byte) (*TransactionResponse, error) {
 	}
 
 	return &TransactionResponse{
-		Hash:     common.HexBytes(tx.Tx.Hash()).String(),
+		Hash:     bytes.HexBytes(tx.Tx.Hash()).String(),
 		RawTx:    fmt.Sprintf("%x", []byte(tx.Tx)),
 		Height:   tx.Height,
 		Index:    tx.Index,

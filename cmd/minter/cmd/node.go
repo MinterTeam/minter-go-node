@@ -16,8 +16,8 @@ import (
 	"github.com/tendermint/go-amino"
 	"github.com/tendermint/tendermint/abci/types"
 	tmCfg "github.com/tendermint/tendermint/config"
-	"github.com/tendermint/tendermint/libs/common"
 	tmlog "github.com/tendermint/tendermint/libs/log"
+	tmos "github.com/tendermint/tendermint/libs/os"
 	tmNode "github.com/tendermint/tendermint/node"
 	"github.com/tendermint/tendermint/p2p"
 	"github.com/tendermint/tendermint/privval"
@@ -39,11 +39,11 @@ var RunNode = &cobra.Command{
 func runNode() error {
 	tmConfig := config.GetTmConfig(cfg)
 
-	if err := common.EnsureDir(utils.GetMinterHome()+"/config", 0777); err != nil {
+	if err := tmos.EnsureDir(utils.GetMinterHome()+"/config", 0777); err != nil {
 		return err
 	}
 
-	if err := common.EnsureDir(utils.GetMinterHome()+"/tmdata", 0777); err != nil {
+	if err := tmos.EnsureDir(utils.GetMinterHome()+"/tmdata", 0777); err != nil {
 		return err
 	}
 
@@ -80,7 +80,7 @@ func runNode() error {
 		}
 	}()
 
-	common.TrapSignal(logger.With("module", "trap"), func() {
+	tmos.TrapSignal(logger.With("module", "trap"), func() {
 		// Cleanup
 		stopCli()
 		err := node.Stop()
@@ -148,14 +148,14 @@ func startTendermintNode(app types.Application, cfg *tmCfg.Config, logger tmlog.
 func getGenesis() (doc *tmTypes.GenesisDoc, e error) {
 	genesisFile := utils.GetMinterHome() + "/config/genesis.json"
 
-	if !common.FileExists(genesisFile) {
+	if !tmos.FileExists(genesisFile) {
 		box := packr.NewBox("../../../genesis/current/")
 		bytes, err := box.MustBytes("genesis.json")
 		if err != nil {
 			panic(err)
 		}
 
-		if err := common.WriteFile(genesisFile, bytes, 0644); err != nil {
+		if err := tmos.WriteFile(genesisFile, bytes, 0644); err != nil {
 			return nil, err
 		}
 	}

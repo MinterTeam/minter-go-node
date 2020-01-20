@@ -7,7 +7,7 @@ import (
 	pb "github.com/MinterTeam/minter-go-node/api/v2/api_pb"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	abci "github.com/tendermint/tendermint/abci/types"
-	cmn "github.com/tendermint/tendermint/libs/common"
+	"github.com/tendermint/tendermint/libs/bytes"
 	"github.com/tendermint/tendermint/mempool"
 	"github.com/tendermint/tendermint/types"
 	"google.golang.org/grpc/codes"
@@ -38,11 +38,11 @@ func (s *Service) SendTransaction(_ context.Context, req *pb.SendTransactionRequ
 }
 
 type ResultBroadcastTx struct {
-	Code uint32       `json:"code"`
-	Data cmn.HexBytes `json:"data"`
-	Log  string       `json:"log"`
-	Info string       `json:"-"`
-	Hash cmn.HexBytes `json:"hash"`
+	Code uint32         `json:"code"`
+	Data bytes.HexBytes `json:"data"`
+	Log  string         `json:"log"`
+	Info string         `json:"-"`
+	Hash bytes.HexBytes `json:"hash"`
 }
 
 func (s *Service) broadcastTxSync(tx types.Tx) (*ResultBroadcastTx, error) {

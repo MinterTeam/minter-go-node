@@ -3,7 +3,7 @@ package api
 import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/version"
-	"github.com/tendermint/tendermint/rpc/core/types"
+	core_types "github.com/tendermint/tendermint/rpc/core/types"
 	"time"
 )
 

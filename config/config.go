@@ -44,8 +44,8 @@ func DefaultConfig() *Config {
 
 	cfg.TxIndex = &tmConfig.TxIndexConfig{
 		Indexer:      "kv",
-		IndexTags:    "",
-		IndexAllTags: true,
+		IndexKeys:    "",
+		IndexAllKeys: true,
 	}
 
 	cfg.DBPath = "tmdata"
@@ -78,8 +78,8 @@ func GetConfig() *Config {
 	cfg := DefaultConfig()
 
 	if cfg.ValidatorMode {
-		cfg.TxIndex.IndexAllTags = false
-		cfg.TxIndex.IndexTags = ""
+		cfg.TxIndex.IndexAllKeys = false
+		cfg.TxIndex.IndexKeys = ""
 
 		cfg.RPC.ListenAddress = ""
 		cfg.RPC.GRPCListenAddress = ""

@@ -7,14 +7,14 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/appdb"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/tendermint/go-amino"
-	"github.com/tendermint/tendermint/libs/common"
+	"github.com/tendermint/tendermint/libs/os"
 	"github.com/tendermint/tendermint/types"
 	"github.com/tendermint/tm-db"
 	"time"
 )
 
 func main() {
-	err := common.EnsureDir(utils.GetMinterHome()+"/config", 0777)
+	err := os.EnsureDir(utils.GetMinterHome()+"/config", 0777)
 	if err != nil {
 		panic(err)
 	}
@@ -51,7 +51,7 @@ func main() {
 				TimeIotaMs: 1000,
 			},
 			Evidence: types.EvidenceParams{
-				MaxAge: 1000,
+				MaxAgeNumBlocks: 1000,
 			},
 			Validator: types.ValidatorParams{
 				PubKeyTypes: []string{types.ABCIPubKeyTypeEd25519},

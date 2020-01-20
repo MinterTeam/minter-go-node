@@ -19,7 +19,7 @@ import (
 	"github.com/tendermint/go-amino"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto/ed25519"
-	"github.com/tendermint/tendermint/crypto/encoding/amino"
+	cryptoAmino "github.com/tendermint/tendermint/crypto/encoding/amino"
 	tmNode "github.com/tendermint/tendermint/node"
 	rpctypes "github.com/tendermint/tendermint/rpc/lib/types"
 	types2 "github.com/tendermint/tendermint/types"

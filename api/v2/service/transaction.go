@@ -9,7 +9,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/golang/protobuf/jsonpb"
 	_struct "github.com/golang/protobuf/ptypes/struct"
-	"github.com/tendermint/tendermint/libs/common"
+	tmbytes "github.com/tendermint/tendermint/libs/bytes"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -34,7 +34,7 @@ func (s *Service) Transaction(_ context.Context, req *pb.TransactionRequest) (*p
 	}
 
 	return &pb.TransactionResponse{
-		Hash:     common.HexBytes(tx.Tx.Hash()).String(),
+		Hash:     tmbytes.HexBytes(tx.Tx.Hash()).String(),
 		RawTx:    fmt.Sprintf("%x", []byte(tx.Tx)),
 		Height:   fmt.Sprintf("%d", tx.Height),
 		Index:    fmt.Sprintf("%d", tx.Index),

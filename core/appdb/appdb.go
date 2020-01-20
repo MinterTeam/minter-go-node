@@ -35,7 +35,10 @@ func (appDB *AppDB) Close() {
 func (appDB *AppDB) GetLastBlockHash() []byte {
 	var hash [32]byte
 
-	rawHash := appDB.db.Get([]byte(hashPath))
+	rawHash, err := appDB.db.Get([]byte(hashPath))
+	if err != nil {
+		panic(err)
+	}
 	copy(hash[:], rawHash)
 
 	return hash[:]
@@ -46,7 +49,10 @@ func (appDB *AppDB) SetLastBlockHash(hash []byte) {
 }
 
 func (appDB *AppDB) GetLastHeight() uint64 {
-	result := appDB.db.Get([]byte(heightPath))
+	result, err := appDB.db.Get([]byte(heightPath))
+	if err != nil {
+		panic(err)
+	}
 	var height uint64
 
 	if result != nil {
@@ -69,7 +75,10 @@ func (appDB *AppDB) SetStartHeight(height uint64) {
 }
 
 func (appDB *AppDB) GetStartHeight() uint64 {
-	result := appDB.db.Get([]byte(startHeightPath))
+	result, err := appDB.db.Get([]byte(startHeightPath))
+	if err != nil {
+		panic(err)
+	}
 	var height uint64
 
 	if result != nil {
@@ -80,7 +89,10 @@ func (appDB *AppDB) GetStartHeight() uint64 {
 }
 
 func (appDB *AppDB) GetValidators() types.ValidatorUpdates {
-	result := appDB.db.Get([]byte(validatorsPath))
+	result, err := appDB.db.Get([]byte(validatorsPath))
+	if err != nil {
+		panic(err)
+	}
 
 	if len(result) == 0 {
 		return types.ValidatorUpdates{}
@@ -88,7 +100,7 @@ func (appDB *AppDB) GetValidators() types.ValidatorUpdates {
 
 	var vals types.ValidatorUpdates
 
-	err := cdc.UnmarshalBinaryBare(result, &vals)
+	err = cdc.UnmarshalBinaryBare(result, &vals)
 
 	if err != nil {
 		panic(err)
@@ -113,13 +125,16 @@ type LastBlocksTimeDelta struct {
 }
 
 func (appDB *AppDB) GetLastBlocksTimeDelta(height uint64) (int, error) {
-	result := appDB.db.Get([]byte(blockTimeDeltaPath))
+	result, err := appDB.db.Get([]byte(blockTimeDeltaPath))
+	if err != nil {
+		panic(err)
+	}
 	if result == nil {
 		return 0, errors.New("no info about LastBlocksTimeDelta is available")
 	}
 
 	data := LastBlocksTimeDelta{}
-	err := cdc.UnmarshalBinaryBare(result, &data)
+	err = cdc.UnmarshalBinaryBare(result, &data)
 	if err != nil {
 		panic(err)
 	}
@@ -146,6 +161,6 @@ func (appDB *AppDB) SetLastBlocksTimeDelta(height uint64, delta int) {
 
 func NewAppDB(cfg *config.Config) *AppDB {
 	return &AppDB{
-		db: db.NewDB(dbName, db.DBBackendType(cfg.DBBackend), utils.GetMinterHome()+"/data"),
+		db: db.NewDB(dbName, db.BackendType(cfg.DBBackend), utils.GetMinterHome()+"/data"),
 	}
 }

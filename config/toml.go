@@ -2,10 +2,9 @@ package config
 
 import (
 	"bytes"
+	"github.com/tendermint/tendermint/libs/os"
 	"path/filepath"
 	"text/template"
-
-	cmn "github.com/tendermint/tendermint/libs/common"
 )
 
 var configTemplate *template.Template
@@ -22,20 +21,20 @@ func init() {
 // EnsureRoot creates the root, config, and data directories if they don't exist,
 // and panics if it fails.
 func EnsureRoot(rootDir string) {
-	if err := cmn.EnsureDir(rootDir, 0700); err != nil {
+	if err := os.EnsureDir(rootDir, 0700); err != nil {
 		panic(err.Error())
 	}
-	if err := cmn.EnsureDir(filepath.Join(rootDir, defaultConfigDir), 0700); err != nil {
+	if err := os.EnsureDir(filepath.Join(rootDir, defaultConfigDir), 0700); err != nil {
 		panic(err.Error())
 	}
-	if err := cmn.EnsureDir(filepath.Join(rootDir, defaultDataDir), 0700); err != nil {
+	if err := os.EnsureDir(filepath.Join(rootDir, defaultDataDir), 0700); err != nil {
 		panic(err.Error())
 	}
 
 	configFilePath := filepath.Join(rootDir, defaultConfigFilePath)
 
 	// Write default config file if missing.
-	if !cmn.FileExists(configFilePath) {
+	if !os.FileExists(configFilePath) {
 		writeDefaultConfigFile(configFilePath)
 	}
 }
@@ -54,7 +53,7 @@ func WriteConfigFile(configFilePath string, config *Config) {
 		panic(err)
 	}
 
-	cmn.MustWriteFile(configFilePath, buffer.Bytes(), 0644)
+	os.MustWriteFile(configFilePath, buffer.Bytes(), 0644)
 }
 
 // Note: any changes to the comments/variables/mapstructure

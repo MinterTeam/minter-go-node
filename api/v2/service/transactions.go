@@ -5,7 +5,7 @@ import (
 	"fmt"
 	pb "github.com/MinterTeam/minter-go-node/api/v2/api_pb"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
-	"github.com/tendermint/tendermint/libs/common"
+	"github.com/tendermint/tendermint/libs/bytes"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -41,7 +41,7 @@ func (s *Service) Transactions(_ context.Context, req *pb.TransactionsRequest) (
 		}
 
 		result = append(result, &pb.TransactionResponse{
-			Hash:     common.HexBytes(tx.Tx.Hash()).String(),
+			Hash:     bytes.HexBytes(tx.Tx.Hash()).String(),
 			RawTx:    fmt.Sprintf("%x", []byte(tx.Tx)),
 			Height:   fmt.Sprintf("%d", tx.Height),
 			Index:    fmt.Sprintf("%d", tx.Index),

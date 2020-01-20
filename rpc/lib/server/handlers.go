@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/tendermint/tendermint/libs/service"
 	"io/ioutil"
 	"net/http"
 	"reflect"
@@ -19,7 +20,6 @@ import (
 
 	types "github.com/MinterTeam/minter-go-node/rpc/lib/types"
 	"github.com/tendermint/go-amino"
-	cmn "github.com/tendermint/tendermint/libs/common"
 	"github.com/tendermint/tendermint/libs/log"
 )
 
@@ -418,7 +418,7 @@ const (
 //
 // In case of an error, the connection is stopped.
 type wsConnection struct {
-	cmn.BaseService
+	service.BaseService
 
 	remoteAddr string
 	baseConn   *websocket.Conn
@@ -469,7 +469,7 @@ func NewWSConnection(
 	for _, option := range options {
 		option(wsc)
 	}
-	wsc.BaseService = *cmn.NewBaseService(nil, "wsConnection", wsc)
+	wsc.BaseService = *service.NewBaseService(nil, "wsConnection", wsc)
 	return wsc
 }
 
