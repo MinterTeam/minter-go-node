@@ -20,6 +20,7 @@ BREAKING CHANGES
 - [gui] Remove GUI
 - [config] KeepStateHistory -> KeepLastStates
 - [config] Add state_cache_size option
+- [tendermint] Upgrade to [v0.32.8](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0328) 
 
 ## 1.0.4
 
