@@ -3,9 +3,9 @@ module github.com/MinterTeam/minter-go-node
 go 1.13
 
 require (
-	github.com/MinterTeam/events-db v0.1.1-0.20200120125931-dbd8951d5e88
-	github.com/MinterTeam/minter-node-cli v0.0.0-20191202172005-309e9d40a5a3
+	github.com/MinterTeam/events-db v0.1.2
 	github.com/btcsuite/btcd v0.0.0-20190115013929-ed77733ec07d
+	github.com/c-bata/go-prompt v0.2.3
 	github.com/go-kit/kit v0.9.0
 	github.com/gobuffalo/packr v1.11.1
 	github.com/golang/protobuf v1.3.2
@@ -24,6 +24,7 @@ require (
 	github.com/tendermint/tendermint v0.33.0
 	github.com/tendermint/tm-db v0.4.0
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5
+	github.com/urfave/cli/v2 v2.0.0
 	golang.org/x/crypto v0.0.0-20191206172530-e9b2fee46413
 	golang.org/x/net v0.0.0-20191002035440-2ec189313ef0
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e

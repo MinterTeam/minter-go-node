@@ -11,6 +11,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/rpc/lib/types"
 	core_types "github.com/tendermint/tendermint/rpc/core/types"
 	tmTypes "github.com/tendermint/tendermint/types"
+	tm_types "github.com/tendermint/tendermint/types"
 	"time"
 )
 
@@ -65,7 +66,17 @@ func Block(height int64) (*BlockResponse, error) {
 	if valHeight < 1 {
 		valHeight = 1
 	}
-	tmValidators, err := client.Validators(&valHeight)
+	var allValidators []*tm_types.Validator
+	for i := 1; ; i++ {
+		tmValidators, err := client.Validators(&valHeight, i, 256)
+		if err != nil {
+			return nil, rpctypes.RPCError{Code: 404, Message: "Validators for block not found", Data: err.Error()}
+		}
+		if len(tmValidators.Validators) == 0 {
+			break
+		}
+		allValidators = append(allValidators, tmValidators.Validators...)
+	}
 	if err != nil {
 		return nil, rpctypes.RPCError{Code: 404, Message: "Validators for block not found", Data: err.Error()}
 	}
@@ -75,8 +86,12 @@ func Block(height int64) (*BlockResponse, error) {
 		tx, _ := transaction.TxDecoder.DecodeFromBytes(rawTx)
 		sender, _ := tx.Sender()
 
+		if len(blockResults.TxsResults) == 0 {
+			break
+		}
+
 		tags := make(map[string]string)
-		for _, tag := range blockResults.Results.DeliverTx[i].Events[0].Attributes {
+		for _, tag := range blockResults.TxsResults[i].Events[0].Attributes {
 			tags[string(tag.Key)] = string(tag.Value)
 		}
 
@@ -98,8 +113,8 @@ func Block(height int64) (*BlockResponse, error) {
 			Gas:         tx.Gas(),
 			GasCoin:     tx.GasCoin.String(),
 			Tags:        tags,
-			Code:        blockResults.Results.DeliverTx[i].Code,
-			Log:         blockResults.Results.DeliverTx[i].Log,
+			Code:        blockResults.TxsResults[i].Code,
+			Log:         blockResults.TxsResults[i].Log,
 		}
 	}
 
@@ -116,14 +131,10 @@ func Block(height int64) (*BlockResponse, error) {
 			proposer = &str
 		}
 
-		validators = make([]BlockValidatorResponse, len(tmValidators.Validators))
-		for i, tmval := range tmValidators.Validators {
+		validators = make([]BlockValidatorResponse, len(allValidators))
+		for i, tmval := range allValidators {
 			signed := false
-			for _, vote := range block.Block.LastCommit.Precommits {
-				if vote == nil {
-					continue
-				}
-
+			for _, vote := range block.Block.LastCommit.Signatures {
 				if bytes.Equal(vote.ValidatorAddress.Bytes(), tmval.Address.Bytes()) {
 					signed = true
 					break
@@ -141,8 +152,7 @@ func Block(height int64) (*BlockResponse, error) {
 		Hash:         hex.EncodeToString(block.Block.Hash()),
 		Height:       block.Block.Height,
 		Time:         block.Block.Time,
-		NumTxs:       block.Block.NumTxs,
-		TotalTxs:     block.Block.TotalTxs,
+		TotalTxs:     int64(len(block.Block.Txs)),
 		Transactions: txs,
 		BlockReward:  rewards.GetRewardForBlock(uint64(height)).String(),
 		Size:         len(cdc.MustMarshalBinaryLengthPrefixed(block)),
@@ -153,12 +163,19 @@ func Block(height int64) (*BlockResponse, error) {
 }
 
 func getBlockProposer(block *core_types.ResultBlock) (*types.Pubkey, error) {
-	vals, err := client.Validators(&block.Block.Height)
-	if err != nil {
-		return nil, rpctypes.RPCError{Code: 404, Message: "Validators for block not found", Data: err.Error()}
+	var allValidators []*tm_types.Validator
+	for i := 1; ; i++ {
+		tmValidators, err := client.Validators(&block.Block.Height, i, 256)
+		if err != nil {
+			return nil, err
+		}
+		if len(tmValidators.Validators) == 0 {
+			break
+		}
+		allValidators = append(allValidators, tmValidators.Validators...)
 	}
 
-	for _, tmval := range vals.Validators {
+	for _, tmval := range allValidators {
 		if bytes.Equal(tmval.Address.Bytes(), block.Block.ProposerAddress.Bytes()) {
 			var result types.Pubkey
 			copy(result[:], tmval.PubKey.Bytes()[5:])

@@ -15,7 +15,7 @@ func (s *Service) Validators(_ context.Context, req *pb.ValidatorsRequest) (*pb.
 		height = int64(s.blockchain.Height())
 	}
 
-	tmVals, err := s.client.Validators(&height)
+	tmVals, err := s.client.Validators(&height, int(req.Page), int(req.PerPage))
 	if err != nil {
 		return new(pb.ValidatorsResponse), status.Error(codes.FailedPrecondition, err.Error())
 	}

@@ -92,7 +92,8 @@ message GenesisResponse {
         }
         Block block = 1;
         message Evidence {
-            string max_age = 1;
+            string max_age_num_blocks = 1;
+            string max_age_duration = 2;
         }
         Evidence evidence = 2;
         message Validator {
@@ -102,48 +103,7 @@ message GenesisResponse {
     }
     ConsensusParams consensus_params = 3;
     string app_hash = 4;
-    message AppState {
-        string start_height = 1;
-        message Validator {
-            string reward_address = 1;
-            string total_bip_stake = 2;
-            string public_key = 3;
-            string commission = 4;
-            string accum_reward = 5;
-            string absent_times = 6;
-        }
-        repeated Validator validators = 2;
-        message Candidate {
-            string reward_address = 1;
-            string owner_address = 2;
-            string total_bip_stake = 3;
-            string public_key = 4;
-            string commission = 5;
-            message Stake {
-                string owner = 1;
-                string coin = 2;
-                string value = 3;
-                string bip_value = 4;
-            }
-            repeated Stake stakes = 6;
-            string created_at_block = 7;
-            double status = 8;
-        }
-        repeated Candidate candidates = 3;
-        message Account {
-            string address = 1;
-            message Balance {
-                string coin = 1;
-                string value = 2;
-            }
-            repeated Balance balance = 2;
-            string nonce = 3;
-        }
-        repeated Account accounts = 4;
-        string max_gas = 5;
-        string total_slashed = 6;
-    }
-    AppState app_state = 5;
+    google.protobuf.Struct app_state = 5;
 }
 
 message MinGasPriceResponse {
@@ -188,7 +148,10 @@ message BlockResponse {
     repeated Validator validators = 10;
     message Evidence {
         message Evidence {
-
+            string height = 1;
+            string time = 2;
+            string address = 3;
+            string hash = 4;
         }
         repeated Evidence evidence = 1;
     }
@@ -376,6 +339,8 @@ message UnconfirmedTxsRequest {
 
 message ValidatorsRequest {
     int64 height = 1;
+    int32 page = 2;
+    int32 per_page = 3;
 }
 message ValidatorsResponse {
     message Result {
