@@ -2,6 +2,7 @@ package minter
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/MinterTeam/go-amino"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
@@ -65,6 +66,8 @@ type Blockchain struct {
 	lock    sync.RWMutex
 	wg      sync.WaitGroup // wg is used for graceful node shutdown
 	stopped uint32
+
+	haltHeight uint64
 }
 
 // Creates Minter Blockchain instance, should be only called once
@@ -95,6 +98,8 @@ func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 	// Set start height for rewards and validators
 	rewards.SetStartHeight(applicationDB.GetStartHeight())
 	validators.SetStartHeight(applicationDB.GetStartHeight())
+
+	blockchain.haltHeight = uint64(cfg.HaltHeight)
 
 	return blockchain
 }
@@ -152,6 +157,11 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 		if err := state.NewForCheckFromDeliver(app.stateCheck).CheckForInvariants(); err != nil {
 			log.With("module", "invariants").Error("Invariants error", "msg", err.Error(), "height", app.height)
 		}
+	}
+
+	if app.haltHeight > 0 && height >= app.haltHeight {
+		app.wg.Done()
+		panic(fmt.Sprintf("Application halted at height %d", height))
 	}
 
 	// compute max gas

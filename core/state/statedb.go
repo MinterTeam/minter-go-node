@@ -1231,7 +1231,7 @@ func (s *StateDB) SetValidatorAbsent(address [20]byte) {
 	for i := range vals.data {
 		validator := &vals.data[i]
 		if validator.GetAddress() == address {
-
+			var coinsToSanitize []types.CoinSymbol
 			candidates := s.getStateCandidates()
 
 			var candidate *Candidate
@@ -1252,55 +1252,71 @@ func (s *StateDB) SetValidatorAbsent(address [20]byte) {
 
 			validator.AbsentTimes.SetIndex(int(s.height)%ValidatorMaxAbsentWindow, true)
 
+			isGracePeriod := false
+			if s.height > upgrades.GracePeriod1From && s.height < upgrades.GracePeriod1To {
+				isGracePeriod = true
+			}
+
 			if validator.CountAbsentTimes() > ValidatorMaxAbsentTimes {
 				candidate.Status = CandidateStatusOffline
 				validator.AbsentTimes = types.NewBitArray(ValidatorMaxAbsentWindow)
 				validator.toDrop = true
 
-				totalStake := big.NewInt(0)
+				if !isGracePeriod {
+					totalStake := big.NewInt(0)
 
-				for j, stake := range candidate.Stakes {
-					newValue := big.NewInt(0).Set(stake.Value)
-					newValue.Mul(newValue, big.NewInt(99))
-					newValue.Div(newValue, big.NewInt(100))
+					for j, stake := range candidate.Stakes {
+						newValue := big.NewInt(0).Set(stake.Value)
+						newValue.Mul(newValue, big.NewInt(99))
+						newValue.Div(newValue, big.NewInt(100))
 
-					slashed := big.NewInt(0).Set(stake.Value)
-					slashed.Sub(slashed, newValue)
+						slashed := big.NewInt(0).Set(stake.Value)
+						slashed.Sub(slashed, newValue)
 
-					if !stake.Coin.IsBaseCoin() {
-						coin := s.GetStateCoin(stake.Coin).Data()
-						ret := formula.CalculateSaleReturn(coin.Volume, coin.ReserveBalance, coin.Crr, slashed)
+						if !stake.Coin.IsBaseCoin() {
+							coin := s.GetStateCoin(stake.Coin).Data()
+							ret := formula.CalculateSaleReturn(coin.Volume, coin.ReserveBalance, coin.Crr, slashed)
 
-						s.SubCoinVolume(coin.Symbol, slashed)
-						s.SubCoinReserve(coin.Symbol, ret)
-						s.SanitizeCoin(stake.Coin)
+							s.SubCoinVolume(coin.Symbol, slashed)
+							s.SubCoinReserve(coin.Symbol, ret)
+							if s.height <= upgrades.UpgradeBlock2 {
+								s.SanitizeCoin(stake.Coin)
+							}
+							coinsToSanitize = append(coinsToSanitize, stake.Coin)
 
-						s.AddTotalSlashed(ret)
-					} else {
-						s.AddTotalSlashed(slashed)
+							s.AddTotalSlashed(ret)
+						} else {
+							s.AddTotalSlashed(slashed)
+						}
+
+						edb.AddEvent(s.height, events.SlashEvent{
+							Address:         stake.Owner,
+							Amount:          slashed.Bytes(),
+							Coin:            stake.Coin,
+							ValidatorPubKey: candidate.PubKey,
+						})
+
+						candidate.Stakes[j] = Stake{
+							Owner:    stake.Owner,
+							Coin:     stake.Coin,
+							Value:    newValue,
+							BipValue: big.NewInt(0),
+						}
+						totalStake.Add(totalStake, newValue)
 					}
 
-					edb.AddEvent(s.height, events.SlashEvent{
-						Address:         stake.Owner,
-						Amount:          slashed.Bytes(),
-						Coin:            stake.Coin,
-						ValidatorPubKey: candidate.PubKey,
-					})
-
-					candidate.Stakes[j] = Stake{
-						Owner:    stake.Owner,
-						Coin:     stake.Coin,
-						Value:    newValue,
-						BipValue: big.NewInt(0),
-					}
-					totalStake.Add(totalStake, newValue)
+					validator.TotalBipStake = totalStake
 				}
-
-				validator.TotalBipStake = totalStake
 			}
 
 			s.setStateCandidates(candidates)
 			s.MarkStateCandidateDirty()
+
+			if s.height > upgrades.UpgradeBlock2 {
+				for _, coin := range coinsToSanitize {
+					s.SanitizeCoin(coin)
+				}
+			}
 		}
 	}
 
@@ -1757,13 +1773,13 @@ func (s *StateDB) deleteCoin(symbol types.CoinSymbol) {
 					coinToDelete.SubReserve(ret)
 					coinToDelete.SubVolume(stake.Value)
 
-					stake := candidate.GetStakeOfAddress(stake.Owner, types.GetBaseCoin())
-					if stake == nil {
+					st := candidate.GetStakeOfAddress(stake.Owner, types.GetBaseCoin())
+					if st == nil {
 						candidate.Stakes[j].Value = ret
 						candidate.Stakes[j].Coin = types.GetBaseCoin()
 					} else {
 						candidate.Stakes[j].Value = big.NewInt(0)
-						stake.Value.Add(stake.Value, ret)
+						st.Value.Add(st.Value, ret)
 					}
 				}
 			}
