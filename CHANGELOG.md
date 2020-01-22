@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.0.5
+
+BUG FIXES
+
+- [core] Fix coin liquidation issue
+
+IMPROVEMENT
+
+- [core] Add grace period from 4262457 to 4262500 block
+- [cmd] Set start time at 7:00 AM Wednesday, January 22, 2020
+- [config] Add halt_height param
+
 ## 1.0.4
 
 IMPROVEMENT

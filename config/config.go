@@ -239,6 +239,8 @@ type BaseConfig struct {
 	APISimultaneousRequests int `mapstructure:"api_simultaneous_requests"`
 
 	LogPath string `mapstructure:"log_path"`
+
+	HaltHeight int `mapstructure:"halt_height"`
 }
 
 // DefaultBaseConfig returns a default base configuration for a Tendermint node
