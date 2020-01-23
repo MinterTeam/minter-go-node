@@ -34,7 +34,7 @@ var Routes = map[string]*rpcserver.RPCFunc{
 	"status":                 rpcserver.NewRPCFunc(Status, ""),
 	"candidates":             rpcserver.NewRPCFunc(Candidates, "height,include_stakes"),
 	"candidate":              rpcserver.NewRPCFunc(Candidate, "pub_key,height"),
-	"validators":             rpcserver.NewRPCFunc(Validators, "height"),
+	"validators":             rpcserver.NewRPCFunc(Validators, "height,page,perPage"),
 	"address":                rpcserver.NewRPCFunc(Address, "address,height"),
 	"addresses":              rpcserver.NewRPCFunc(Addresses, "addresses,height"),
 	"send_transaction":       rpcserver.NewRPCFunc(SendTransaction, "tx"),
@@ -156,8 +156,8 @@ func RegisterCryptoAmino(cdc *amino.Codec) {
 }
 
 func RegisterEvidenceMessages(cdc *amino.Codec) {
-	cdc.RegisterInterface((*evidence.EvidenceMessage)(nil), nil)
-	cdc.RegisterConcrete(&evidence.EvidenceListMessage{},
+	cdc.RegisterInterface((*evidence.Message)(nil), nil)
+	cdc.RegisterConcrete(&evidence.ListMessage{},
 		"tendermint/evidence/EvidenceListMessage", nil)
 	cdc.RegisterInterface((*types.Evidence)(nil), nil)
 	cdc.RegisterConcrete(&types.DuplicateVoteEvidence{}, "tendermint/DuplicateVoteEvidence", nil)

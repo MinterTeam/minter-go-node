@@ -661,6 +661,20 @@
             "required": false,
             "type": "string",
             "format": "int64"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
           }
         ],
         "tags": [
@@ -670,86 +684,22 @@
     }
   },
   "definitions": {
-    "AccountBalance": {
+    "BlockResponseEvidenceEvidence": {
       "type": "object",
       "properties": {
-        "coin": {
+        "height": {
           "type": "string"
         },
-        "value": {
+        "time": {
           "type": "string"
-        }
-      }
-    },
-    "AppStateAccount": {
-      "type": "object",
-      "properties": {
+        },
         "address": {
           "type": "string"
         },
-        "balance": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/AccountBalance"
-          }
-        },
-        "nonce": {
+        "hash": {
           "type": "string"
         }
       }
-    },
-    "AppStateCandidate": {
-      "type": "object",
-      "properties": {
-        "reward_address": {
-          "type": "string"
-        },
-        "owner_address": {
-          "type": "string"
-        },
-        "total_bip_stake": {
-          "type": "string"
-        },
-        "public_key": {
-          "type": "string"
-        },
-        "commission": {
-          "type": "string"
-        },
-        "stakes": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/AppStateCandidateStake"
-          }
-        },
-        "created_at_block": {
-          "type": "string"
-        },
-        "status": {
-          "type": "number",
-          "format": "double"
-        }
-      }
-    },
-    "AppStateCandidateStake": {
-      "type": "object",
-      "properties": {
-        "owner": {
-          "type": "string"
-        },
-        "coin": {
-          "type": "string"
-        },
-        "value": {
-          "type": "string"
-        },
-        "bip_value": {
-          "type": "string"
-        }
-      }
-    },
-    "BlockResponseEvidenceEvidence": {
-      "type": "object"
     },
     "BlockResponseTransaction": {
       "type": "object",
@@ -799,6 +749,23 @@
           "type": "string"
         },
         "log": {
+          "type": "string"
+        }
+      }
+    },
+    "CandidateResponseStake": {
+      "type": "object",
+      "properties": {
+        "owner": {
+          "type": "string"
+        },
+        "coin": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "bip_value": {
           "type": "string"
         }
       }
@@ -882,61 +849,6 @@
         }
       }
     },
-    "GenesisResponseAppState": {
-      "type": "object",
-      "properties": {
-        "start_height": {
-          "type": "string"
-        },
-        "validators": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/GenesisResponseAppStateValidator"
-          }
-        },
-        "candidates": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/AppStateCandidate"
-          }
-        },
-        "accounts": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/AppStateAccount"
-          }
-        },
-        "max_gas": {
-          "type": "string"
-        },
-        "total_slashed": {
-          "type": "string"
-        }
-      }
-    },
-    "GenesisResponseAppStateValidator": {
-      "type": "object",
-      "properties": {
-        "reward_address": {
-          "type": "string"
-        },
-        "total_bip_stake": {
-          "type": "string"
-        },
-        "public_key": {
-          "type": "string"
-        },
-        "commission": {
-          "type": "string"
-        },
-        "accum_reward": {
-          "type": "string"
-        },
-        "absent_times": {
-          "type": "string"
-        }
-      }
-    },
     "GenesisResponseConsensusParams": {
       "type": "object",
       "properties": {
@@ -954,7 +866,10 @@
     "GenesisResponseConsensusParamsEvidence": {
       "type": "object",
       "properties": {
-        "max_age": {
+        "max_age_num_blocks": {
+          "type": "string"
+        },
+        "max_age_duration": {
           "type": "string"
         }
       }
@@ -1171,27 +1086,10 @@
         "stakes": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/api_pbCandidateResponseStake"
+            "$ref": "#/definitions/CandidateResponseStake"
           }
         },
         "status": {
-          "type": "string"
-        }
-      }
-    },
-    "api_pbCandidateResponseStake": {
-      "type": "object",
-      "properties": {
-        "owner": {
-          "type": "string"
-        },
-        "coin": {
-          "type": "string"
-        },
-        "value": {
-          "type": "string"
-        },
-        "bip_value": {
           "type": "string"
         }
       }
@@ -1306,7 +1204,7 @@
           "type": "string"
         },
         "app_state": {
-          "$ref": "#/definitions/GenesisResponseAppState"
+          "type": "object"
         }
       }
     },

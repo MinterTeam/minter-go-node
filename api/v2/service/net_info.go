@@ -36,7 +36,7 @@ func (s *Service) NetInfo(context.Context, *empty.Empty) (*pb.NetInfoResponse, e
 					Block: fmt.Sprintf("%d", peer.NodeInfo.ProtocolVersion.Block),
 					App:   fmt.Sprintf("%d", peer.NodeInfo.ProtocolVersion.App),
 				},
-				Id:         string(peer.NodeInfo.ID_),
+				Id:         string(peer.NodeInfo.ID()),
 				ListenAddr: peer.NodeInfo.ListenAddr,
 				Network:    peer.NodeInfo.Network,
 				Version:    peer.NodeInfo.Version,

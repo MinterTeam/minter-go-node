@@ -1,8 +1,8 @@
 package cmd
 
 import (
+	"github.com/MinterTeam/minter-go-node/cli/service"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
-	"github.com/MinterTeam/minter-node-cli/service"
 	"github.com/spf13/cobra"
 )
 

@@ -10,6 +10,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	core_types "github.com/tendermint/tendermint/rpc/core/types"
+	tm_types "github.com/tendermint/tendermint/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"time"
@@ -30,9 +31,16 @@ func (s *Service) Block(_ context.Context, req *pb.BlockRequest) (*pb.BlockRespo
 	if valHeight < 1 {
 		valHeight = 1
 	}
-	tmValidators, err := s.client.Validators(&valHeight)
-	if err != nil {
-		return new(pb.BlockResponse), status.Error(codes.NotFound, "Validators for block not found")
+	var allValidators []*tm_types.Validator
+	for i := 1; ; i++ {
+		tmValidators, err := s.client.Validators(&valHeight, i, 256)
+		if err != nil {
+			return new(pb.BlockResponse), status.Error(codes.NotFound, "Validators for block not found")
+		}
+		if len(tmValidators.Validators) == 0 {
+			break
+		}
+		allValidators = append(allValidators, tmValidators.Validators...)
 	}
 
 	txs := make([]*pb.BlockResponse_Transaction, 0, len(block.Block.Data.Txs))
@@ -41,7 +49,7 @@ func (s *Service) Block(_ context.Context, req *pb.BlockRequest) (*pb.BlockRespo
 		sender, _ := tx.Sender()
 
 		tags := make(map[string]string)
-		for _, tag := range blockResults.Results.DeliverTx[i].Events[0].Attributes {
+		for _, tag := range blockResults.TxsResults[i].Events[0].Attributes {
 			tags[string(tag.Key)] = string(tag.Value)
 		}
 
@@ -63,8 +71,8 @@ func (s *Service) Block(_ context.Context, req *pb.BlockRequest) (*pb.BlockRespo
 			Gas:         fmt.Sprintf("%d", tx.Gas()),
 			GasCoin:     tx.GasCoin.String(),
 			Tags:        tags,
-			Code:        fmt.Sprintf("%d", blockResults.Results.DeliverTx[i].Code),
-			Log:         blockResults.Results.DeliverTx[i].Log,
+			Code:        fmt.Sprintf("%d", blockResults.TxsResults[i].Code),
+			Log:         blockResults.TxsResults[i].Log,
 		})
 	}
 
@@ -81,14 +89,10 @@ func (s *Service) Block(_ context.Context, req *pb.BlockRequest) (*pb.BlockRespo
 			proposer = str
 		}
 
-		validators = make([]*pb.BlockResponse_Validator, 0, len(tmValidators.Validators))
-		for _, tmval := range tmValidators.Validators {
+		validators = make([]*pb.BlockResponse_Validator, 0, len(allValidators))
+		for _, tmval := range allValidators {
 			signed := false
-			for _, vote := range block.Block.LastCommit.Precommits {
-				if vote == nil {
-					continue
-				}
-
+			for _, vote := range block.Block.LastCommit.Signatures {
 				if bytes.Equal(vote.ValidatorAddress.Bytes(), tmval.Address.Bytes()) {
 					signed = true
 					break
@@ -102,25 +106,33 @@ func (s *Service) Block(_ context.Context, req *pb.BlockRequest) (*pb.BlockRespo
 		}
 	}
 
+	evidences := make([]*pb.BlockResponse_Evidence_Evidence, len(block.Block.Evidence.Evidence))
+	for _, evidence := range block.Block.Evidence.Evidence {
+		evidences = append(evidences, &pb.BlockResponse_Evidence_Evidence{
+			Height:  fmt.Sprintf("%d", evidence.Height()),
+			Time:    evidence.Time().Format(time.RFC3339Nano),
+			Address: fmt.Sprintf("%s", evidence.Address()),
+			Hash:    fmt.Sprintf("%s", evidence.Hash()),
+		})
+	}
 	return &pb.BlockResponse{
 		Hash:              hex.EncodeToString(block.Block.Hash()),
 		Height:            fmt.Sprintf("%d", block.Block.Height),
 		Time:              block.Block.Time.Format(time.RFC3339Nano),
-		CountTransactions: fmt.Sprintf("%d", block.Block.NumTxs),
-		TotalTransactions: fmt.Sprintf("%d", block.Block.TotalTxs),
+		TotalTransactions: fmt.Sprintf("%d", len(block.Block.Txs)),
 		Transactions:      txs,
 		BlockReward:       rewards.GetRewardForBlock(uint64(req.Height)).String(),
 		Size:              fmt.Sprintf("%d", s.cdc.MustMarshalBinaryLengthPrefixed(block)),
 		Proposer:          proposer,
 		Validators:        validators,
 		Evidence: &pb.BlockResponse_Evidence{
-			Evidence: make([]*pb.BlockResponse_Evidence_Evidence, len(block.Block.Evidence.Evidence)), // todo
+			Evidence: evidences, // todo
 		},
 	}, nil
 }
 
 func (s *Service) getBlockProposer(block *core_types.ResultBlock) (*types.Pubkey, error) {
-	vals, err := s.client.Validators(&block.Block.Height)
+	vals, err := s.client.Validators(&block.Block.Height, 0, 0)
 	if err != nil {
 		return nil, status.Error(codes.NotFound, "Validators for block not found")
 	}

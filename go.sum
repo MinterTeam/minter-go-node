@@ -4,13 +4,15 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/ChainSafe/go-schnorrkel v0.0.0-20200102211924-4bcbc698314f h1:4O1om+UVU+Hfcihr1timk8YNXHxzZWgCo7ofnrZRApw=
 github.com/ChainSafe/go-schnorrkel v0.0.0-20200102211924-4bcbc698314f/go.mod h1:URdX5+vg25ts3aCh8H5IFZybJYKWhJHYMTnf+ULtoC4=
 github.com/MinterTeam/events-db v0.1.0/go.mod h1:ZnKNYUSFUgVTTB359LvKQbroYqBiriXmbnyaMsULU2o=
-github.com/MinterTeam/events-db v0.1.1-0.20200120125931-dbd8951d5e88 h1:gNCQR4g8HxIXwR/UeG1gshwv27xKarRs5sBjwAUt7iU=
-github.com/MinterTeam/events-db v0.1.1-0.20200120125931-dbd8951d5e88/go.mod h1:TxkmgLWeJpnc+pWj+OeZflx5aQjhBVZNNL5HhUzUn6o=
+github.com/MinterTeam/events-db v0.1.1-0.20191113155258-73206cb9a3ea/go.mod h1:INfo4gbiX8/EGfjHmRvvW2+5YuOcTy7Tob69yUhAqU4=
+github.com/MinterTeam/events-db v0.1.2 h1:xjnKnW6JR98qqjOg82VC/zgAwtoExa67zYZ8v41L2h8=
+github.com/MinterTeam/events-db v0.1.2/go.mod h1:niLCQF2EmB3G27zHj94jUO3p359sXEvTcdZrt8dS2AQ=
 github.com/MinterTeam/go-amino v0.14.1/go.mod h1:2sqs1fcf3DcQpvIJarkzVCjALWc11WDwc5oFHCrG5R4=
 github.com/MinterTeam/go-amino v0.14.2-0.20191113110031-d5499d43f453 h1:uHtg6ZR5wVNJhwVI0Gw1RPPip6sj6Mo2SqoAh8scGp0=
 github.com/MinterTeam/go-amino v0.14.2-0.20191113110031-d5499d43f453/go.mod h1:o4p3WDNrrIOapHOfM5pKJNZ1exPI+c6ZvbemrNapJxc=
 github.com/MinterTeam/minter-go-node v1.0.4/go.mod h1:juaQ5woUKkGknh4Fj57+uv0AgMAzSv/aChNQT04K+uQ=
 github.com/MinterTeam/minter-go-node v1.0.5-0.20191113110340-a46b8ef88084/go.mod h1:ihc9SIXO0ZSnnS6AB2kT+UD9iIHap0TH47BvL6A2fQg=
+github.com/MinterTeam/minter-go-node v1.1.0-beta5/go.mod h1:MeO8y1SPL2uk/znxFPauMB4karv/xQeI1O1SPeEycrU=
 github.com/MinterTeam/minter-node-cli v0.0.0-20191202172005-309e9d40a5a3 h1:2ndNow11LzKNggx2JNh2Fhb0NKEQ2kVt+HL9jdEBLOg=
 github.com/MinterTeam/minter-node-cli v0.0.0-20191202172005-309e9d40a5a3/go.mod h1:6iFtZjWsvR9ZaXaogfDkIYVSrQAHQBk/tU1L5yKS5/8=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
@@ -241,6 +243,7 @@ github.com/spf13/pflag v1.0.3/go.mod h1:DYY7MBk1bdzusC3SYhjObp+wFpr4gzcvqqNjLnIn
 github.com/spf13/viper v1.0.0/go.mod h1:A8kyI5cUJhb8N+3pkfONlcEcZbueH6nhAm0Fq7SrnBM=
 github.com/spf13/viper v1.4.0 h1:yXHLWeravcrgGyFSyCgdYpXQ9dR9c/WED3pg1RhxqEU=
 github.com/spf13/viper v1.4.0/go.mod h1:PTJ7Z/lr49W6bUbkmS1V3by4uWynFiR9p7+dSq/yZzE=
+github.com/spf13/viper v1.5.0/go.mod h1:AkYRkVJF8TkSG/xet6PzXX+l39KhhXa2pdqVSxnTcn4=
 github.com/spf13/viper v1.6.1 h1:VPZzIkznI1YhVMRi6vNFLHSwhnhReBfgTxIPccpfdZk=
 github.com/spf13/viper v1.6.1/go.mod h1:t3iDnF5Jlj76alVNuyFBk5oUMCvsrkbvZK0WQdfDi5k=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
@@ -271,6 +274,7 @@ github.com/tendermint/iavl v0.13.0/go.mod h1:7nSUPdrsHEZ2nNZa+9gaIrcJciWd1jCQZXt
 github.com/tendermint/tendermint v0.32.1/go.mod h1:jmPDAKuNkev9793/ivn/fTBnfpA9mGBww8MPRNPNxnU=
 github.com/tendermint/tendermint v0.32.6 h1:HozXi0USWvKrWuEh5ratnJV10ykkTy4nwXUi0UvPVzg=
 github.com/tendermint/tendermint v0.32.6/go.mod h1:D2+A3pNjY+Po72X0mTfaXorFhiVI8dh/Zg640FGyGtE=
+github.com/tendermint/tendermint v0.32.8/go.mod h1:5/B1XZjNYtVBso8o1l/Eg4A0Mhu42lDcmftoQl95j/E=
 github.com/tendermint/tendermint v0.33.0 h1:TW1g9sQs3YSqKM8o1+opL3/VmBy4Ke/VKV9MxYpqNbI=
 github.com/tendermint/tendermint v0.33.0/go.mod h1:s5UoymnPIY+GcA3mMte4P9gpMP8vS7UH7HBXikT1pHI=
 github.com/tendermint/tm-db v0.1.1/go.mod h1:0cPKWu2Mou3IlxecH+MEUSYc1Ch537alLe6CpFrKzgw=
@@ -373,6 +377,7 @@ google.golang.org/grpc v1.23.1/go.mod h1:Y5yQAOtifL1yxbo5wqy6BxZv8vAUGQwXBOALyac
 google.golang.org/grpc v1.24.0/go.mod h1:XDChyiUovWa60DnaeDeZmSW86xtLtjtZbwvSiRnRtcA=
 google.golang.org/grpc v1.25.0 h1:ItERT+UbGdX+s4u+nQNlVM/Q7cbmf7icKfvzbWqVtq0=
 google.golang.org/grpc v1.25.0/go.mod h1:c3i+UQWmh7LiEpx4sFZnkU36qjEYZ0imhYfXVyQciAY=
+google.golang.org/grpc v1.25.1/go.mod h1:c3i+UQWmh7LiEpx4sFZnkU36qjEYZ0imhYfXVyQciAY=
 google.golang.org/grpc v1.26.0 h1:2dTRdpdFEEhJYQD8EMLB61nnrzSCTbG38PhqdhvOltg=
 google.golang.org/grpc v1.26.0/go.mod h1:qbnxyOmOxrQa7FizSgH+ReBfzJrCY1pSN7KXBS8abTk=
 gopkg.in/alecthomas/kingpin.v2 v2.2.6/go.mod h1:FMv+mEhP44yOT+4EoQTLFTRgOQ1FBLkstjWtayDeSgw=
