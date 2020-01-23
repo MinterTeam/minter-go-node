@@ -30,21 +30,20 @@ type State struct {
 	Checks      *checks.Checks
 	Checker     *checker.Checker
 
-	db             db.DB
-	events         eventsdb.IEventsDB
-	tree           tree.Tree
-	keepLastStates int64
-	bus            *bus.Bus
+	db     db.DB
+	events eventsdb.IEventsDB
+	tree   tree.Tree
+	bus    *bus.Bus
 }
 
 func NewState(height uint64, db db.DB, events eventsdb.IEventsDB, keepLastStates int64, cacheSize int) (*State, error) {
-	iavlTree := tree.NewMutableTree(db, cacheSize)
+	iavlTree := tree.NewMutableTree(db, cacheSize, keepLastStates)
 	_, err := iavlTree.LoadVersion(int64(height))
 	if err != nil {
 		return nil, err
 	}
 
-	return newStateForTree(iavlTree, events, db, keepLastStates)
+	return newStateForTree(iavlTree, events, db)
 }
 
 func NewCheckState(state *State) *State {
@@ -52,13 +51,13 @@ func NewCheckState(state *State) *State {
 }
 
 func NewCheckStateAtHeight(height uint64, db db.DB) (*State, error) {
-	iavlTree := tree.NewMutableTree(db, 1024)
+	iavlTree := tree.NewMutableTree(db, 1024, 0)
 	_, err := iavlTree.LazyLoadVersion(int64(height))
 	if err != nil {
 		return nil, err
 	}
 
-	return newStateForTree(iavlTree.GetImmutable(), nil, nil, 0)
+	return newStateForTree(iavlTree.GetImmutable(), nil, nil)
 }
 
 func (s *State) Check() error {
@@ -108,11 +107,7 @@ func (s *State) Commit() ([]byte, error) {
 		return nil, err
 	}
 
-	hash, version, err := s.tree.SaveVersion()
-
-	if s.keepLastStates < version-1 {
-		_ = s.tree.DeleteVersion(version - s.keepLastStates)
-	}
+	hash, _, err := s.tree.SaveVersion()
 
 	return hash, err
 }
@@ -192,7 +187,7 @@ func (s *State) Export(height uint64) types.AppState {
 	return appState
 }
 
-func newStateForTree(iavlTree tree.Tree, events eventsdb.IEventsDB, db db.DB, keepLastStates int64) (*State, error) {
+func newStateForTree(iavlTree tree.Tree, events eventsdb.IEventsDB, db db.DB) (*State, error) {
 	stateBus := bus.NewBus()
 	stateBus.SetEvents(events)
 
@@ -244,10 +239,9 @@ func newStateForTree(iavlTree tree.Tree, events eventsdb.IEventsDB, db db.DB, ke
 		Checker:     stateChecker,
 		bus:         stateBus,
 
-		db:             db,
-		events:         events,
-		tree:           iavlTree,
-		keepLastStates: keepLastStates,
+		db:     db,
+		events: events,
+		tree:   iavlTree,
 	}
 
 	return state, nil
