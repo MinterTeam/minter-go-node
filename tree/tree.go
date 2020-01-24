@@ -22,7 +22,7 @@ type Tree interface {
 }
 
 func NewMutableTree(db dbm.DB, cacheSize int, keepEvery int64) *MutableTree {
-	tree, err := iavl.NewMutableTreeWithOpts(db, dbm.NewMemDB(), cacheSize, iavl.PruningOptions(keepEvery, 1))
+	tree, err := iavl.NewMutableTreeWithOpts(db, dbm.NewMemDB(), cacheSize, iavl.PruningOptions(keepEvery, 0))
 	if err != nil {
 		panic(err)
 	}
