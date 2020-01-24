@@ -204,11 +204,12 @@ func (c *Coins) Export(state *types.AppState) {
 			coin := c.GetCoin(types.StrToCoinSymbol(string(key[1:])))
 
 			state.Coins = append(state.Coins, types.Coin{
-				Name:    coin.Name(),
-				Symbol:  coin.Symbol(),
-				Volume:  coin.Volume().String(),
-				Crr:     coin.Crr(),
-				Reserve: coin.Reserve().String(),
+				Name:      coin.Name(),
+				Symbol:    coin.Symbol(),
+				Volume:    coin.Volume().String(),
+				Crr:       coin.Crr(),
+				Reserve:   coin.Reserve().String(),
+				MaxSupply: coin.MaxSupply().String(),
 			})
 		}
 
