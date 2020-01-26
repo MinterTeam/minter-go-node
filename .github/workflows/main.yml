@@ -7,7 +7,6 @@ jobs:
     - name: Docker Publish
       uses: manusa/actions-publish-docker@v1.0.1
       with:
-        name: 
         tag script: git rev-parse --short=8 HEAD
         username: ${{ secrets.DOCKER_HUB_USER }}
         password: ${{ secrets.DOCKER_HUB_PASSWORD }}
