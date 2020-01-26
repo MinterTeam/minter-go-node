@@ -2,6 +2,8 @@ name: Registry
 on: [push]
 jobs:
   build:
+    runs-on: ubuntu-latest
+    steps:
     - name: Docker Publish
       uses: manusa/actions-publish-docker@v1.0.1
       with:
