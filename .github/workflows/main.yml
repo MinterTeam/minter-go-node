@@ -16,6 +16,4 @@ jobs:
         env:
           USERNAME: ${{ secrets.DOCKER_HUB_USER }}
           PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
-          LATEST: "true"
-          TAG_NAME: "tazhate/minter-go-node"
- 
+          LATEST: "true" 
