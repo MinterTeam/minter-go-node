@@ -1,14 +1,20 @@
-name: Registry
-on: [push]
+name: Docker Push
+
+on: push
+
 jobs:
-  build:
+  docker:
     runs-on: ubuntu-latest
     steps:
-    - name: Docker Publish
-      uses: manusa/actions-publish-docker@v1.0.1
-      with:
-        tag script: git rev-parse --short=8 HEAD
-        username: ${{ secrets.DOCKER_HUB_USER }}
-        password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+      - name: Checkout
+        uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
 
+      - name: Build & Push to Docker Hub
+        uses: opspresso/action-docker@master
+        env:
+          USERNAME: ${{ secrets.DOCKER_HUB_USER }}
+          PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
+          LATEST: "true"
  
