@@ -3,7 +3,7 @@ COPY . /gopath/src/github.com/MinterTeam/minter-go-node
 WORKDIR /gopath/src/github.com/MinterTeam/minter-go-node
 RUN make get_tools
 RUN make get_vendor_deps
-RUN make build
+RUN make buildc
 
 FROM ubuntu
 COPY --from=builder /gopath/src/github.com/MinterTeam/minter-go-node/build/minter/ /usr/bin/minter
