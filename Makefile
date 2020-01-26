@@ -1,8 +1,8 @@
 GOTOOLS = \
 	github.com/mitchellh/gox \
-    github.com/golang/dep/cmd/dep \
-    github.com/alecthomas/gometalinter \
-    github.com/gogo/protobuf/protoc-gen-gogo \
+	github.com/golang/dep/cmd/dep \
+	github.com/alecthomas/gometalinter \
+	github.com/gogo/protobuf/protoc-gen-gogo \
 	github.com/gobuffalo/packr/packr
 PACKAGES=$(shell go list ./... | grep -v '/vendor/')
 BUILD_TAGS?=minter
