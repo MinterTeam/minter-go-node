@@ -12,8 +12,10 @@ FROM ubuntu:bionic
 COPY --from=builder /gopath/src/github.com/MinterTeam/minter-go-node/build/minter/ /usr/bin/minter
 RUN apt update && apt install libleveldb1v5 -y --no-install-recommends -q
 RUN addgroup minteruser && useradd --no-log-init -r -m -d /minter -g minteruser minteruser
+RUN chown -R minteruser:minteruser /minter
 USER minteruser
 WORKDIR /minter
+RUN mkdir /minter/data 
 EXPOSE 8841
 ENTRYPOINT ["/usr/bin/minter"]
 CMD ["node", "--home-dir", "/minter"]
