@@ -12,6 +12,8 @@ all: check build test install
 
 check: check_tools ensure_deps
 
+docker: build_docker
+
 ########################################
 ### Build
 
@@ -98,13 +100,8 @@ metalinter_all:
 ###########################################################
 ### Docker image
 
-build-docker:
-	cp build/minter DOCKER/minter
-	cd DOCKER && make build
-	rm -f minter
-
-push-docker:
-	cd DOCKER && make push
+build_docker:
+	docker build . --tag minter-go-node:local
 
 ###########################################################
 ### Local testnet using docker
