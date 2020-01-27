@@ -15,7 +15,12 @@ Minter is a blockchain network that lets people, projects, and companies issue a
 _NOTE: This is alpha software. Please contact us if you intend to run it in production._
 
 ## Installation
+### Docker
+1. To simply run node just clone this repo and run ```docker-compose up -d```
 
+2. To build from source just clone this repo, change  and run ```docker-compose up --build -d```
+
+### Manual
 You can get official installation instructions in our [docs](https://docs.minter.network/#section/Install-Minter).
 
 1. Install LevelDB: https://github.com/google/leveldb

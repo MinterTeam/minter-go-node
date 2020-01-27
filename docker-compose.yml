@@ -1,9 +1,10 @@
 version: "3.4"
 services:
   minter:
-    image: minterteam/minter:latest
+    #image: tazhate/minter-go-node:latest
+    build: .
     volumes:
-      - ~/.minter:/minter
+      - minter_data:/minter/data
     ports:
       - "8841:8841"
       - "127.0.0.1:3000:3000"
@@ -14,3 +15,7 @@ services:
       timeout: 5s
       retries: 3
       start_period: 30s
+
+volumes:
+    minter_data:
+        external: false
