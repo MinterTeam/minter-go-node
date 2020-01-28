@@ -13,6 +13,7 @@ import (
 const (
 	HashLength       = 32
 	AddressLength    = 20
+	PubKeyLength     = 32
 	CoinSymbolLength = 10
 )
 
@@ -264,9 +265,9 @@ func BytesToPubkey(b []byte) Pubkey {
 
 func (p *Pubkey) SetBytes(b []byte) {
 	if len(b) > len(p) {
-		b = b[len(b)-AddressLength:]
+		b = b[len(b)-PubKeyLength:]
 	}
-	copy(p[AddressLength-len(b):], b)
+	copy(p[PubKeyLength-len(b):], b)
 }
 
 func (p Pubkey) Bytes() []byte { return p[:] }
