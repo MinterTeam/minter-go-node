@@ -1925,15 +1925,15 @@ func (s *StateDB) Export11(currentHeight uint64) types11.AppState {
 			balance := make([]types11.Balance, len(account.Balances().Data))
 			i := 0
 			for coin, value := range account.Balances().Data {
+
 				balance[i] = types11.Balance{
-					Coin:  [10]byte(coin),
+					Coin:  types11.StrToCoinSymbol(coin.String()),
 					Value: value.String(),
 				}
 				i++
 			}
-
 			acc := types11.Account{
-				Address: [20]byte(account.address),
+				Address: types11.BytesToAddress(account.address.Bytes()),
 				Balance: balance,
 				Nonce:   account.data.Nonce,
 			}
@@ -1941,7 +1941,7 @@ func (s *StateDB) Export11(currentHeight uint64) types11.AppState {
 			if account.IsMultisig() {
 				addresses := make([]types11.Address, 0, len(account.data.MultisigData.Addresses))
 				for _, address := range account.data.MultisigData.Addresses {
-					addresses = append(addresses, [20]byte(address))
+					addresses = append(addresses, types11.BytesToAddress(address.Bytes()))
 				}
 				acc.MultisigData = &types11.Multisig{
 					Weights:   account.data.MultisigData.Weights,
@@ -1959,7 +1959,7 @@ func (s *StateDB) Export11(currentHeight uint64) types11.AppState {
 
 			appState.Coins = append(appState.Coins, types11.Coin{
 				Name:      coin.Name(),
-				Symbol:    [10]byte(coin.Symbol()),
+				Symbol:    types11.StrToCoinSymbol(coin.Symbol().String()),
 				Volume:    coin.Volume().String(),
 				Crr:       coin.Crr(),
 				Reserve:   coin.ReserveBalance().String(),
@@ -1981,9 +1981,9 @@ func (s *StateDB) Export11(currentHeight uint64) types11.AppState {
 				pubKey10to11 := consertPubKey10to11(frozenFund.CandidateKey)
 				appState.FrozenFunds = append(appState.FrozenFunds, types11.FrozenFund{
 					Height:       height - uint64(currentHeight),
-					Address:      [20]byte(frozenFund.Address),
+					Address:      types11.BytesToAddress(frozenFund.Address.Bytes()),
 					CandidateKey: &pubKey10to11,
-					Coin:         [10]byte(frozenFund.Coin),
+					Coin:         types11.StrToCoinSymbol(frozenFund.Coin.String()),
 					Value:        frozenFund.Value.String(),
 				})
 			}
@@ -1997,16 +1997,16 @@ func (s *StateDB) Export11(currentHeight uint64) types11.AppState {
 		var stakes []types11.Stake
 		for _, s := range candidate.Stakes {
 			stakes = append(stakes, types11.Stake{
-				Owner:    [20]byte(s.Owner),
-				Coin:     [10]byte(s.Coin),
+				Owner:    types11.BytesToAddress(s.Owner.Bytes()),
+				Coin:     types11.StrToCoinSymbol(s.Coin.String()),
 				Value:    s.Value.String(),
 				BipValue: s.BipValue.String(),
 			})
 		}
 
 		appState.Candidates = append(appState.Candidates, types11.Candidate{
-			RewardAddress: [20]byte(candidate.RewardAddress),
-			OwnerAddress:  [20]byte(candidate.OwnerAddress),
+			RewardAddress: types11.BytesToAddress(candidate.RewardAddress.Bytes()),
+			OwnerAddress:  types11.BytesToAddress(candidate.OwnerAddress.Bytes()),
 			TotalBipStake: candidate.TotalBipStake.String(),
 			PubKey:        consertPubKey10to11(candidate.PubKey),
 			Commission:    candidate.Commission,
