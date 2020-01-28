@@ -1910,10 +1910,6 @@ func (s *StateDB) Export(currentHeight uint64) types.AppState {
 }
 
 func (s *StateDB) Export11(currentHeight uint64) types11.AppState {
-	consertPubKey10to11 := func(pubkey types.Pubkey) (res types11.Pubkey) {
-		copy(res[:], pubkey)
-		return
-	}
 
 	appState := types11.AppState{}
 
@@ -1978,7 +1974,7 @@ func (s *StateDB) Export11(currentHeight uint64) types11.AppState {
 			frozenFunds := s.GetStateFrozenFunds(height)
 
 			for _, frozenFund := range frozenFunds.List() {
-				pubKey10to11 := consertPubKey10to11(frozenFund.CandidateKey)
+				pubKey10to11 := types11.BytesToPubkey(frozenFund.CandidateKey)
 				appState.FrozenFunds = append(appState.FrozenFunds, types11.FrozenFund{
 					Height:       height - uint64(currentHeight),
 					Address:      types11.BytesToAddress(frozenFund.Address.Bytes()),
@@ -2008,7 +2004,7 @@ func (s *StateDB) Export11(currentHeight uint64) types11.AppState {
 			RewardAddress: types11.BytesToAddress(candidate.RewardAddress.Bytes()),
 			OwnerAddress:  types11.BytesToAddress(candidate.OwnerAddress.Bytes()),
 			TotalBipStake: candidate.TotalBipStake.String(),
-			PubKey:        consertPubKey10to11(candidate.PubKey),
+			PubKey:        types11.BytesToPubkey(candidate.PubKey),
 			Commission:    candidate.Commission,
 			Stakes:        stakes,
 			Status:        candidate.Status,
@@ -2019,7 +2015,7 @@ func (s *StateDB) Export11(currentHeight uint64) types11.AppState {
 	for _, val := range vals.data {
 		appState.Validators = append(appState.Validators, types11.Validator{
 			TotalBipStake: val.TotalBipStake.String(),
-			PubKey:        consertPubKey10to11(val.PubKey),
+			PubKey:        types11.BytesToPubkey(val.PubKey),
 			AccumReward:   val.AccumReward.String(),
 			AbsentTimes: &types11.BitArray{
 				Bits:  val.AbsentTimes.Bits,

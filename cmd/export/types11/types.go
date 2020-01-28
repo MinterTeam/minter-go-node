@@ -2,9 +2,11 @@ package types11
 
 import (
 	"bytes"
+	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/hexutil"
+	"strings"
 	"sync"
 )
 
@@ -82,8 +84,6 @@ type Multisig struct {
 	Addresses []Address `json:"addresses"`
 }
 
-type Pubkey [32]byte
-
 const CoinSymbolLength = 10
 
 type CoinSymbol [CoinSymbolLength]byte
@@ -115,6 +115,97 @@ type BitArray struct {
 	mtx   sync.Mutex
 	Bits  uint     `json:"bits"`  // NOTE: persisted via reflect, must be exported
 	Elems []uint64 `json:"elems"` // NOTE: persisted via reflect, must be exported
+}
+
+func (bA *BitArray) getIndex(i uint) bool {
+	if i >= bA.Bits {
+		return false
+	}
+	return bA.Elems[i/64]&(uint64(1)<<uint(i%64)) > 0
+}
+
+// String returns a string representation of BitArray: BA{<bit-string>},
+// where <bit-string> is a sequence of 'x' (1) and '_' (0).
+// The <bit-string> includes spaces and newlines to help people.
+// For a simple sequence of 'x' and '_' characters with no spaces or newlines,
+// see the MarshalJSON() method.
+// Example: "BA{_x_}" or "nil-BitArray" for nil.
+func (bA *BitArray) String() string {
+	return bA.StringIndented("")
+}
+
+// StringIndented returns the same thing as String(), but applies the indent
+// at every 10th bit, and twice at every 50th bit.
+func (bA *BitArray) StringIndented(indent string) string {
+	if bA == nil {
+		return "nil-BitArray"
+	}
+	bA.mtx.Lock()
+	defer bA.mtx.Unlock()
+	return bA.stringIndented(indent)
+}
+
+func (bA *BitArray) stringIndented(indent string) string {
+	lines := []string{}
+	bits := ""
+	for i := uint(0); i < bA.Bits; i++ {
+		if bA.getIndex(i) {
+			bits += "x"
+		} else {
+			bits += "_"
+		}
+		if i%100 == 99 {
+			lines = append(lines, bits)
+			bits = ""
+		}
+		if i%10 == 9 {
+			bits += indent
+		}
+		if i%50 == 49 {
+			bits += indent
+		}
+	}
+	if len(bits) > 0 {
+		lines = append(lines, bits)
+	}
+	return fmt.Sprintf("BA{%v:%v}", bA.Bits, strings.Join(lines, indent))
+}
+
+// Bytes returns the byte representation of the bits within the bitarray.
+func (bA *BitArray) Bytes() []byte {
+	bA.mtx.Lock()
+	defer bA.mtx.Unlock()
+
+	numBytes := (bA.Bits + 7) / 8
+	bytes := make([]byte, numBytes)
+	for i := 0; i < len(bA.Elems); i++ {
+		elemBytes := [8]byte{}
+		binary.LittleEndian.PutUint64(elemBytes[:], bA.Elems[i])
+		copy(bytes[i*8:], elemBytes[:])
+	}
+	return bytes
+}
+
+// MarshalJSON implements json.Marshaler interface by marshaling bit array
+// using a custom format: a string of '-' or 'x' where 'x' denotes the 1 bit.
+func (bA *BitArray) MarshalJSON() ([]byte, error) {
+	if bA == nil {
+		return []byte("null"), nil
+	}
+
+	bA.mtx.Lock()
+	defer bA.mtx.Unlock()
+
+	bits := `"`
+	for i := uint(0); i < bA.Bits; i++ {
+		if bA.getIndex(i) {
+			bits += `x`
+		} else {
+			bits += `_`
+		}
+	}
+	bits += `"`
+	return []byte(bits), nil
 }
 
 const AddressLength = 20
@@ -156,4 +247,42 @@ func (a *Address) Unmarshal(input []byte) error {
 
 func (a Address) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf("\"%s\"", a.String())), nil
+}
+
+const PubKeyLength = 32
+
+type Pubkey [PubKeyLength]byte
+
+func BytesToPubkey(b []byte) Pubkey {
+	var p Pubkey
+	p.SetBytes(b)
+	return p
+}
+
+func (p *Pubkey) SetBytes(b []byte) {
+	if len(b) > len(p) {
+		b = b[len(b)-PubKeyLength:]
+	}
+	copy(p[PubKeyLength-len(b):], b)
+}
+
+func (p Pubkey) Bytes() []byte { return p[:] }
+
+func (p Pubkey) String() string {
+	return fmt.Sprintf("Mp%x", p[:])
+}
+
+func (p Pubkey) MarshalText() ([]byte, error) {
+	return []byte(p.String()), nil
+}
+
+func (p Pubkey) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf("\"%s\"", p.String())), nil
+}
+
+func (p *Pubkey) UnmarshalJSON(input []byte) error {
+	b, err := hex.DecodeString(string(input)[3 : len(input)-1])
+	copy(p[:], b)
+
+	return err
 }
