@@ -29,6 +29,11 @@ var (
 )
 
 func main() {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in f", r)
+		}
+	}()
 	required := []string{"height", "chain_id", "genesis_time"}
 	flag.Parse()
 	seen := make(map[string]bool)
@@ -75,6 +80,7 @@ func main() {
 			},
 			Evidence: EvidenceParams{
 				MaxAgeNumBlocks: 1000,
+				MaxAgeDuration:  24 * time.Hour, //todo
 			},
 			Validator: ValidatorParams{
 				PubKeyTypes: []string{types.ABCIPubKeyTypeEd25519},
@@ -94,7 +100,7 @@ func main() {
 	}
 
 	fmt.Println("OK")
-	fmt.Println(sha3.Sum512([]byte(fmt.Sprintf("%v", genesis))))
+	fmt.Println(fmt.Sprintf("%x", sha3.Sum512([]byte(fmt.Sprintf("%v", genesis)))))
 }
 
 type GenesisDoc struct {
