@@ -3,6 +3,7 @@ package types11
 import (
 	"bytes"
 	"encoding/hex"
+	"fmt"
 	"github.com/MinterTeam/minter-go-node/hexutil"
 	"sync"
 )
@@ -153,15 +154,6 @@ func (a *Address) Unmarshal(input []byte) error {
 	return nil
 }
 
-//
-//func (a Address) MarshalJSON() ([]byte, error) {
-//	return []byte(fmt.Sprintf("\"%s\"", a.String())), nil
-//}
 func (a Address) MarshalJSON() ([]byte, error) {
-
-	buffer := bytes.NewBufferString("\"")
-	buffer.WriteString(a.String())
-	buffer.WriteString("\"")
-
-	return buffer.Bytes(), nil
+	return []byte(fmt.Sprintf("\"%s\"", a.String())), nil
 }
