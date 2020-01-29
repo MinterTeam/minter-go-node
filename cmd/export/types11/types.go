@@ -7,7 +7,7 @@ import (
 type AppState struct {
 	Note         string             `json:"note"`
 	StartHeight  uint64             `json:"start_height"`
-	Validators   []types.Validator  `json:"validators,omitempty"`
+	Validators   []Validator        `json:"validators,omitempty"`
 	Candidates   []types.Candidate  `json:"candidates,omitempty"`
 	Accounts     []types.Account    `json:"accounts,omitempty"`
 	Coins        []Coin             `json:"coins,omitempty"`
@@ -15,6 +15,13 @@ type AppState struct {
 	UsedChecks   []types.UsedCheck  `json:"used_checks,omitempty"`
 	MaxGas       uint64             `json:"max_gas"`
 	TotalSlashed string             `json:"total_slashed"`
+}
+
+type Validator struct {
+	TotalBipStake string          `json:"total_bip_stake"`
+	PubKey        types.Pubkey    `json:"pub_key"`
+	AccumReward   string          `json:"accum_reward"`
+	AbsentTimes   *types.BitArray `json:"absent_times"`
 }
 
 type Coin struct {

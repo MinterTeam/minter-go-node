@@ -119,10 +119,10 @@ func main() {
 	}
 
 	for _, validator := range oldState.Validators {
-		newState.Validators = append(newState.Validators, mtypes.Validator{
-			TotalBipStake: validator.TotalBipStake,
+		newState.Validators = append(newState.Validators, types11.Validator{
+			TotalBipStake: validator.TotalBipStake.String(),
 			PubKey:        validator.PubKey,
-			AccumReward:   validator.AccumReward,
+			AccumReward:   validator.AccumReward.String(),
 			AbsentTimes:   validator.AbsentTimes,
 		})
 	}
