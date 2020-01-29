@@ -639,6 +639,7 @@
     "github.com/tendermint/tendermint/rpc/lib/server",
     "github.com/tendermint/tendermint/rpc/lib/types",
     "github.com/tendermint/tendermint/types",
+    "github.com/tendermint/tendermint/types/time",
     "golang.org/x/crypto/sha3",
     "golang.org/x/net/netutil",
     "golang.org/x/sys/cpu",
