@@ -133,7 +133,7 @@ func main() {
 		panic(err)
 	}
 
-	appHash := currentState.Hash()
+	appHash := [32]byte{}
 
 	// Compose Genesis
 	genesis := types11.GenesisDoc{
@@ -153,7 +153,7 @@ func main() {
 				PubKeyTypes: []string{types.ABCIPubKeyTypeEd25519},
 			},
 		},
-		AppHash:  appHash,
+		AppHash:  appHash[:],
 		AppState: json.RawMessage(jsonBytes),
 	}
 
