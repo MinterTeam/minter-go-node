@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/MinterTeam/go-amino"
-	"github.com/MinterTeam/minter-go-node/cmd/export/types11"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/core/rewards"
 	"github.com/MinterTeam/minter-go-node/core/types"
@@ -1804,10 +1803,10 @@ func (s *StateDB) Export(currentHeight uint64) types.AppState {
 
 			balance := make([]types.Balance, len(account.Balances().Data))
 			i := 0
-			for coin, value := range account.Balances().Data {
+			for _, coin := range account.Balances().getCoins() {
 				balance[i] = types.Balance{
 					Coin:  coin,
-					Value: value,
+					Value: account.Balance(coin),
 				}
 				i++
 			}
@@ -1905,128 +1904,6 @@ func (s *StateDB) Export(currentHeight uint64) types.AppState {
 	appState.MaxGas = s.GetMaxGas()
 	appState.StartHeight = s.height
 	appState.TotalSlashed = s.GetTotalSlashed()
-
-	return appState
-}
-
-func (s *StateDB) Export11(currentHeight uint64) types11.AppState {
-
-	appState := types11.AppState{}
-
-	s.iavl.Iterate(func(key []byte, value []byte) bool {
-		// export accounts
-		if key[0] == addressPrefix[0] {
-			account := s.GetOrNewStateObject(types.BytesToAddress(key[1:]))
-
-			balance := make([]types11.Balance, len(account.Balances().Data))
-			i := 0
-			for coin, value := range account.Balances().Data {
-
-				balance[i] = types11.Balance{
-					Coin:  types11.StrToCoinSymbol(coin.String()),
-					Value: value.String(),
-				}
-				i++
-			}
-			acc := types11.Account{
-				Address: types11.BytesToAddress(account.address.Bytes()),
-				Balance: balance,
-				Nonce:   account.data.Nonce,
-			}
-
-			if account.IsMultisig() {
-				addresses := make([]types11.Address, 0, len(account.data.MultisigData.Addresses))
-				for _, address := range account.data.MultisigData.Addresses {
-					addresses = append(addresses, types11.BytesToAddress(address.Bytes()))
-				}
-				acc.MultisigData = &types11.Multisig{
-					Weights:   account.data.MultisigData.Weights,
-					Threshold: account.data.MultisigData.Threshold,
-					Addresses: addresses,
-				}
-			}
-
-			appState.Accounts = append(appState.Accounts, acc)
-		}
-
-		// export coins
-		if key[0] == coinPrefix[0] {
-			coin := s.GetStateCoin(types.StrToCoinSymbol(string(key[1:])))
-
-			appState.Coins = append(appState.Coins, types11.Coin{
-				Name:      coin.Name(),
-				Symbol:    types11.StrToCoinSymbol(coin.Symbol().String()),
-				Volume:    coin.Volume().String(),
-				Crr:       coin.Crr(),
-				Reserve:   coin.ReserveBalance().String(),
-				MaxSupply: big.NewInt(0).Exp(big.NewInt(10), big.NewInt(15+18), nil).String(),
-			})
-		}
-
-		// export used checks
-		if key[0] == usedCheckPrefix[0] {
-			appState.UsedChecks = append(appState.UsedChecks, types11.UsedCheck(fmt.Sprintf("%x", key[1:])))
-		}
-
-		// export frozen funds
-		if key[0] == frozenFundsPrefix[0] {
-			height := binary.BigEndian.Uint64(key[1:])
-			frozenFunds := s.GetStateFrozenFunds(height)
-
-			for _, frozenFund := range frozenFunds.List() {
-				pubKey10to11 := types11.BytesToPubkey(frozenFund.CandidateKey)
-				appState.FrozenFunds = append(appState.FrozenFunds, types11.FrozenFund{
-					Height:       height - uint64(currentHeight),
-					Address:      types11.BytesToAddress(frozenFund.Address.Bytes()),
-					CandidateKey: &pubKey10to11,
-					Coin:         types11.StrToCoinSymbol(frozenFund.Coin.String()),
-					Value:        frozenFund.Value.String(),
-				})
-			}
-		}
-
-		return false
-	})
-
-	candidates := s.getStateCandidates()
-	for _, candidate := range candidates.data {
-		var stakes []types11.Stake
-		for _, s := range candidate.Stakes {
-			stakes = append(stakes, types11.Stake{
-				Owner:    types11.BytesToAddress(s.Owner.Bytes()),
-				Coin:     types11.StrToCoinSymbol(s.Coin.String()),
-				Value:    s.Value.String(),
-				BipValue: s.BipValue.String(),
-			})
-		}
-
-		appState.Candidates = append(appState.Candidates, types11.Candidate{
-			RewardAddress: types11.BytesToAddress(candidate.RewardAddress.Bytes()),
-			OwnerAddress:  types11.BytesToAddress(candidate.OwnerAddress.Bytes()),
-			TotalBipStake: candidate.TotalBipStake.String(),
-			PubKey:        types11.BytesToPubkey(candidate.PubKey),
-			Commission:    candidate.Commission,
-			Stakes:        stakes,
-			Status:        candidate.Status,
-		})
-	}
-
-	vals := s.getStateValidators()
-	for _, val := range vals.data {
-		appState.Validators = append(appState.Validators, types11.Validator{
-			TotalBipStake: val.TotalBipStake.String(),
-			PubKey:        types11.BytesToPubkey(val.PubKey),
-			AccumReward:   val.AccumReward.String(),
-			AbsentTimes: &types11.BitArray{
-				Bits:  val.AbsentTimes.Bits,
-				Elems: val.AbsentTimes.Elems,
-			},
-		})
-	}
-
-	appState.MaxGas = s.GetMaxGas()
-	appState.StartHeight = s.height
-	appState.TotalSlashed = s.GetTotalSlashed().String()
 
 	return appState
 }
@@ -2274,4 +2151,8 @@ func (s *StateDB) Height() uint64 {
 
 func (s *StateDB) DB() dbm.DB {
 	return s.db
+}
+
+func (s *StateDB) Hash() []byte {
+	return s.iavl.Hash()
 }
