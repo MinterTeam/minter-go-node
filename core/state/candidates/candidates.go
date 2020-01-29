@@ -218,11 +218,13 @@ func (c *Candidates) GetCandidateByTendermintAddress(address types.TmAddress) *C
 }
 
 func (c *Candidates) RecalculateStakes(height uint64) {
+	coinsCache := newCoinsCache()
+
 	for _, pubkey := range c.getOrderedCandidates() {
 		candidate := c.getFromMap(pubkey)
 		stakes := c.GetStakes(candidate.PubKey)
 		for _, stake := range stakes {
-			stake.setBipValue(c.calculateBipValue(stake.Coin, stake.Value, false, true))
+			stake.setBipValue(c.calculateBipValue(stake.Coin, stake.Value, false, true, coinsCache))
 		}
 
 		// apply updates for existing stakes
@@ -231,13 +233,13 @@ func (c *Candidates) RecalculateStakes(height uint64) {
 			if stake != nil {
 				stake.addValue(update.Value)
 				update.setValue(big.NewInt(0))
-				stake.setBipValue(c.calculateBipValue(stake.Coin, stake.Value, false, true))
+				stake.setBipValue(c.calculateBipValue(stake.Coin, stake.Value, false, true, coinsCache))
 			}
 		}
 
 		updates := candidate.GetFilteredUpdates()
 		for _, update := range updates {
-			update.setBipValue(c.calculateBipValue(update.Coin, update.Value, false, true))
+			update.setBipValue(c.calculateBipValue(update.Coin, update.Value, false, true, coinsCache))
 		}
 		// Sort updates in descending order
 		sort.SliceStable(updates, func(i, j int) bool {
@@ -329,7 +331,7 @@ func (c *Candidates) IsNewCandidateStakeSufficient(coin types.CoinSymbol, stake 
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
-	bipValue := c.calculateBipValue(coin, stake, true, true)
+	bipValue := c.calculateBipValue(coin, stake, true, true, nil)
 	candidates := c.list
 
 	for _, candidate := range candidates {
@@ -351,7 +353,7 @@ func (c *Candidates) IsDelegatorStakeSufficient(address types.Address, pubkey ty
 		return true
 	}
 
-	stakeValue := c.calculateBipValue(coin, amount, true, true)
+	stakeValue := c.calculateBipValue(coin, amount, true, true, nil)
 	for _, stake := range stakes {
 		if stakeValue.Cmp(stake.BipValue) == 1 || (stake.Owner == address && stake.Coin == coin) {
 			return true
@@ -546,7 +548,7 @@ func (c *Candidates) loadCandidates() {
 	}
 }
 
-func (c *Candidates) calculateBipValue(coinSymbol types.CoinSymbol, amount *big.Int, includeSelf, includeUpdates bool) *big.Int {
+func (c *Candidates) calculateBipValue(coinSymbol types.CoinSymbol, amount *big.Int, includeSelf, includeUpdates bool, coinsCache *coinsCache) *big.Int {
 	if coinSymbol.IsBaseCoin() {
 		return big.NewInt(0).Set(amount)
 	}
@@ -556,27 +558,34 @@ func (c *Candidates) calculateBipValue(coinSymbol types.CoinSymbol, amount *big.
 		totalAmount.Set(amount)
 	}
 
-	candidates := c.GetCandidates()
-	for _, candidate := range candidates {
-		stakes := c.GetStakes(candidate.PubKey)
-		for _, stake := range stakes {
-			if stake.Coin == coinSymbol {
-				totalAmount.Add(totalAmount, stake.Value)
-			}
-		}
+	var totalPower *big.Int
 
-		if includeUpdates {
-			for _, update := range candidate.updates {
-				if update.Coin == coinSymbol {
-					totalAmount.Add(totalAmount, update.Value)
+	if coinsCache.Exists(coinSymbol) {
+		totalPower, totalAmount = coinsCache.Get(coinSymbol)
+	} else {
+		candidates := c.GetCandidates()
+		for _, candidate := range candidates {
+			stakes := c.GetStakes(candidate.PubKey)
+			for _, stake := range stakes {
+				if stake.Coin == coinSymbol {
+					totalAmount.Add(totalAmount, stake.Value)
+				}
+			}
+
+			if includeUpdates {
+				for _, update := range candidate.updates {
+					if update.Coin == coinSymbol {
+						totalAmount.Add(totalAmount, update.Value)
+					}
 				}
 			}
 		}
+
+		coin := c.bus.Coins().GetCoin(coinSymbol)
+
+		totalPower = formula.CalculateSaleReturn(coin.Volume, coin.Reserve, coin.Crr, totalAmount)
+		coinsCache.Set(coinSymbol, totalPower, totalAmount)
 	}
-
-	coin := c.bus.Coins().GetCoin(coinSymbol)
-
-	totalPower := formula.CalculateSaleReturn(coin.Volume, coin.Reserve, coin.Crr, totalAmount)
 
 	return big.NewInt(0).Div(big.NewInt(0).Mul(totalPower, amount), totalAmount)
 }

@@ -165,3 +165,43 @@ func (stake *Stake) setCoin(coin types.CoinSymbol) {
 	stake.markDirty(stake.index)
 	stake.Coin = coin
 }
+
+type coinsCache struct {
+	list map[types.CoinSymbol]*coinsCacheItem
+}
+
+func newCoinsCache() *coinsCache {
+	return &coinsCache{list: map[types.CoinSymbol]*coinsCacheItem{}}
+}
+
+type coinsCacheItem struct {
+	totalPower  *big.Int
+	totalAmount *big.Int
+}
+
+func (c *coinsCache) Exists(symbol types.CoinSymbol) bool {
+	if c == nil {
+		return false
+	}
+
+	_, exists := c.list[symbol]
+
+	return exists
+}
+
+func (c *coinsCache) Get(symbol types.CoinSymbol) (totalPower *big.Int, totalAmount *big.Int) {
+	return c.list[symbol].totalPower, c.list[symbol].totalAmount
+}
+
+func (c *coinsCache) Set(symbol types.CoinSymbol, totalPower *big.Int, totalAmount *big.Int) {
+	if c == nil {
+		return
+	}
+
+	if c.list[symbol] == nil {
+		c.list[symbol] = &coinsCacheItem{}
+	}
+
+	c.list[symbol].totalAmount = totalAmount
+	c.list[symbol].totalPower = totalPower
+}
