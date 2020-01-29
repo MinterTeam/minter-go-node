@@ -698,3 +698,7 @@ func (c *Candidates) setToMap(pubkey types.Pubkey, model *Candidate) {
 
 	c.list[pubkey] = model
 }
+
+func (c *Candidates) SetTotalStake(pubkey types.Pubkey, stake *big.Int) {
+	c.GetCandidate(pubkey).setTotalBipStake(stake)
+}

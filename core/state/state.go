@@ -157,6 +157,7 @@ func (s *State) Import(state types.AppState) error {
 			s.Candidates.SetOnline(c.PubKey)
 		}
 
+		s.Candidates.SetTotalStake(c.PubKey, helpers.StringToBigInt(c.TotalBipStake))
 		s.Candidates.SetStakes(c.PubKey, c.Stakes)
 	}
 
