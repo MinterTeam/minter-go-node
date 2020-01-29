@@ -46,12 +46,18 @@ func (candidate *Candidate) addUpdate(stake *Stake) {
 }
 
 func (candidate *Candidate) clearUpdates() {
+	if candidate.updates != nil {
+		candidate.isUpdatesDirty = true
+	}
+
 	candidate.updates = nil
-	candidate.isUpdatesDirty = true
 }
 
 func (candidate *Candidate) setTotalBipStake(totalBipValue *big.Int) {
-	candidate.isTotalStakeDirty = true
+	if totalBipValue.Cmp(candidate.totalBipStake) != 0 {
+		candidate.isTotalStakeDirty = true
+	}
+
 	candidate.totalBipStake.Set(totalBipValue)
 }
 
