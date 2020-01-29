@@ -144,7 +144,10 @@ func (stake *Stake) subValue(value *big.Int) {
 }
 
 func (stake *Stake) setBipValue(value *big.Int) {
-	stake.markDirty(stake.index)
+	if stake.BipValue.Cmp(value) != 0 {
+		stake.markDirty(stake.index)
+	}
+
 	stake.BipValue.Set(value)
 }
 
