@@ -319,20 +319,6 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 			return newValidators[i].Power > newValidators[j].Power
 		})
 
-		// limit power of a single validator to 10%
-		const maxPower int64 = 10000000
-		if len(newValidators) >= 10 {
-			left := int64(0)
-			for i := range newValidators {
-				newValidators[i].Power = newValidators[i].Power + left
-				left = 0
-				if newValidators[i].Power > maxPower {
-					left = left + (newValidators[i].Power - maxPower)
-					newValidators[i].Power = maxPower
-				}
-			}
-		}
-
 		// update validators in state
 		app.stateDeliver.Validators.SetNewValidators(newCandidates)
 
