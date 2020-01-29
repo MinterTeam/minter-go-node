@@ -1803,10 +1803,10 @@ func (s *StateDB) Export(currentHeight uint64) types.AppState {
 
 			balance := make([]types.Balance, len(account.Balances().Data))
 			i := 0
-			for coin, value := range account.Balances().Data {
+			for _, coin := range account.Balances().getCoins() {
 				balance[i] = types.Balance{
 					Coin:  coin,
-					Value: value,
+					Value: account.Balance(coin),
 				}
 				i++
 			}
