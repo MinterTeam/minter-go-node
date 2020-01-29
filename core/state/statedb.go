@@ -4,8 +4,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/MinterTeam/go-amino"
-	"github.com/MinterTeam/minter-go-node/cmd/export/newtypes"
-	"github.com/MinterTeam/minter-go-node/cmd/export/types11"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/core/rewards"
 	"github.com/MinterTeam/minter-go-node/core/types"
