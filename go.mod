@@ -3,7 +3,7 @@ module github.com/MinterTeam/minter-go-node
 go 1.13
 
 require (
-	github.com/MinterTeam/events-db v0.1.4
+	github.com/MinterTeam/events-db v0.1.5
 	github.com/btcsuite/btcd v0.0.0-20190115013929-ed77733ec07d
 	github.com/c-bata/go-prompt v0.2.3
 	github.com/go-kit/kit v0.9.0

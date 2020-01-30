@@ -162,7 +162,7 @@ func (v *Validators) PayRewards(height uint64) {
 			v.bus.Accounts().AddBalance(dao.Address, types.GetBaseCoin(), DAOReward)
 			remainder.Sub(remainder, DAOReward)
 			v.bus.Events().AddEvent(uint32(height), eventsdb.RewardEvent{
-				Role:            eventsdb.RoleDAO,
+				Role:            eventsdb.RoleDAO.String(),
 				Address:         dao.Address,
 				Amount:          DAOReward.String(),
 				ValidatorPubKey: validator.PubKey,
@@ -175,7 +175,7 @@ func (v *Validators) PayRewards(height uint64) {
 			v.bus.Accounts().AddBalance(developers.Address, types.GetBaseCoin(), DevelopersReward)
 			remainder.Sub(remainder, DevelopersReward)
 			v.bus.Events().AddEvent(uint32(height), eventsdb.RewardEvent{
-				Role:            eventsdb.RoleDevelopers,
+				Role:            eventsdb.RoleDevelopers.String(),
 				Address:         developers.Address,
 				Amount:          DevelopersReward.String(),
 				ValidatorPubKey: validator.PubKey,
@@ -192,7 +192,7 @@ func (v *Validators) PayRewards(height uint64) {
 			v.bus.Accounts().AddBalance(candidate.RewardAddress, types.GetBaseCoin(), validatorReward)
 			remainder.Sub(remainder, validatorReward)
 			v.bus.Events().AddEvent(uint32(height), eventsdb.RewardEvent{
-				Role:            eventsdb.RoleValidator,
+				Role:            eventsdb.RoleValidator.String(),
 				Address:         candidate.RewardAddress,
 				Amount:          validatorReward.String(),
 				ValidatorPubKey: validator.PubKey,
@@ -216,7 +216,7 @@ func (v *Validators) PayRewards(height uint64) {
 				remainder.Sub(remainder, reward)
 
 				v.bus.Events().AddEvent(uint32(height), eventsdb.RewardEvent{
-					Role:            eventsdb.RoleDelegator,
+					Role:            eventsdb.RoleDelegator.String(),
 					Address:         stake.Owner,
 					Amount:          reward.String(),
 					ValidatorPubKey: validator.PubKey,
