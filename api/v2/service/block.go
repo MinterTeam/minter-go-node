@@ -33,6 +33,10 @@ func (s *Service) Block(_ context.Context, req *pb.BlockRequest) (*pb.BlockRespo
 
 	tmValidators, err := s.client.Validators(&valHeight, 1, 256)
 	if err != nil {
+		return new(pb.BlockResponse), status.Error(codes.Internal, err.Error())
+	}
+
+	if len(tmValidators.Validators) == 0 {
 		return new(pb.BlockResponse), status.Error(codes.NotFound, "Validators for block not found")
 	}
 
