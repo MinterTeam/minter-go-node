@@ -11,7 +11,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/rpc/lib/types"
 	core_types "github.com/tendermint/tendermint/rpc/core/types"
 	tmTypes "github.com/tendermint/tendermint/types"
-	tm_types "github.com/tendermint/tendermint/types"
 	"time"
 )
 
@@ -66,17 +65,8 @@ func Block(height int64) (*BlockResponse, error) {
 	if valHeight < 1 {
 		valHeight = 1
 	}
-	var allValidators []*tm_types.Validator
-	for i := 1; ; i++ {
-		tmValidators, err := client.Validators(&valHeight, i, 256)
-		if err != nil {
-			return nil, rpctypes.RPCError{Code: 404, Message: "Validators for block not found", Data: err.Error()}
-		}
-		if len(tmValidators.Validators) == 0 {
-			break
-		}
-		allValidators = append(allValidators, tmValidators.Validators...)
-	}
+
+	tmValidators, err := client.Validators(&valHeight, 1, 256)
 	if err != nil {
 		return nil, rpctypes.RPCError{Code: 404, Message: "Validators for block not found", Data: err.Error()}
 	}
@@ -131,8 +121,8 @@ func Block(height int64) (*BlockResponse, error) {
 			proposer = &str
 		}
 
-		validators = make([]BlockValidatorResponse, len(allValidators))
-		for i, tmval := range allValidators {
+		validators = make([]BlockValidatorResponse, len(tmValidators.Validators))
+		for i, tmval := range tmValidators.Validators {
 			signed := false
 			for _, vote := range block.Block.LastCommit.Signatures {
 				if bytes.Equal(vote.ValidatorAddress.Bytes(), tmval.Address.Bytes()) {
@@ -163,19 +153,12 @@ func Block(height int64) (*BlockResponse, error) {
 }
 
 func getBlockProposer(block *core_types.ResultBlock) (*types.Pubkey, error) {
-	var allValidators []*tm_types.Validator
-	for i := 1; ; i++ {
-		tmValidators, err := client.Validators(&block.Block.Height, i, 256)
-		if err != nil {
-			return nil, err
-		}
-		if len(tmValidators.Validators) == 0 {
-			break
-		}
-		allValidators = append(allValidators, tmValidators.Validators...)
+	tmValidators, err := client.Validators(&block.Block.Height, 1, 256)
+	if err != nil {
+		return nil, err
 	}
 
-	for _, tmval := range allValidators {
+	for _, tmval := range tmValidators.Validators {
 		if bytes.Equal(tmval.Address.Bytes(), block.Block.ProposerAddress.Bytes()) {
 			var result types.Pubkey
 			copy(result[:], tmval.PubKey.Bytes()[5:])
