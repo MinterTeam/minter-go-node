@@ -1,7 +1,7 @@
 version: "3.4"
 services:
   minter:
-    image: tazhate/minter-go-node:latest
+    image: minterteam/minter:latest
     #build: .
     volumes:
       - minter_data:/minter/data
