@@ -164,7 +164,7 @@ func (v *Validators) PayRewards(height uint64) {
 			v.bus.Events().AddEvent(uint32(height), eventsdb.RewardEvent{
 				Role:            eventsdb.RoleDAO,
 				Address:         dao.Address,
-				Amount:          DAOReward.Bytes(),
+				Amount:          DAOReward.String(),
 				ValidatorPubKey: validator.PubKey,
 			})
 
@@ -177,7 +177,7 @@ func (v *Validators) PayRewards(height uint64) {
 			v.bus.Events().AddEvent(uint32(height), eventsdb.RewardEvent{
 				Role:            eventsdb.RoleDevelopers,
 				Address:         developers.Address,
-				Amount:          DevelopersReward.Bytes(),
+				Amount:          DevelopersReward.String(),
 				ValidatorPubKey: validator.PubKey,
 			})
 
@@ -194,7 +194,7 @@ func (v *Validators) PayRewards(height uint64) {
 			v.bus.Events().AddEvent(uint32(height), eventsdb.RewardEvent{
 				Role:            eventsdb.RoleValidator,
 				Address:         candidate.RewardAddress,
-				Amount:          validatorReward.Bytes(),
+				Amount:          validatorReward.String(),
 				ValidatorPubKey: validator.PubKey,
 			})
 
@@ -218,7 +218,7 @@ func (v *Validators) PayRewards(height uint64) {
 				v.bus.Events().AddEvent(uint32(height), eventsdb.RewardEvent{
 					Role:            eventsdb.RoleDelegator,
 					Address:         stake.Owner,
-					Amount:          reward.Bytes(),
+					Amount:          reward.String(),
 					ValidatorPubKey: validator.PubKey,
 				})
 			}

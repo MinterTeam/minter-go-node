@@ -97,7 +97,7 @@ func (f *FrozenFunds) PunishFrozenFundsWithAddress(fromHeight uint64, toHeight u
 
 				f.bus.Events().AddEvent(uint32(fromHeight), eventsdb.SlashEvent{
 					Address:         item.Address,
-					Amount:          slashed.Bytes(),
+					Amount:          slashed.String(),
 					Coin:            item.Coin,
 					ValidatorPubKey: *item.CandidateKey,
 				})

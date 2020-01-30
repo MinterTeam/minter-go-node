@@ -197,7 +197,7 @@ func (c *Candidates) PunishByzantineCandidate(height uint64, tmAddress types.TmA
 
 		c.bus.Events().AddEvent(uint32(height), eventsdb.SlashEvent{
 			Address:         stake.Owner,
-			Amount:          slashed.Bytes(),
+			Amount:          slashed.String(),
 			Coin:            stake.Coin,
 			ValidatorPubKey: candidate.PubKey,
 		})
@@ -270,7 +270,7 @@ func (c *Candidates) RecalculateStakes(height uint64) {
 				if index == -1 || smallestStake.Cmp(update.BipValue) == 1 {
 					c.bus.Events().AddEvent(uint32(height), eventsdb.UnbondEvent{
 						Address:         update.Owner,
-						Amount:          update.Value.Bytes(),
+						Amount:          update.Value.String(),
 						Coin:            update.Coin,
 						ValidatorPubKey: candidate.PubKey,
 					})
@@ -283,7 +283,7 @@ func (c *Candidates) RecalculateStakes(height uint64) {
 				if stakes[index] != nil {
 					c.bus.Events().AddEvent(uint32(height), eventsdb.UnbondEvent{
 						Address:         stakes[index].Owner,
-						Amount:          stakes[index].Value.Bytes(),
+						Amount:          stakes[index].Value.String(),
 						Coin:            stakes[index].Coin,
 						ValidatorPubKey: candidate.PubKey,
 					})
@@ -621,7 +621,7 @@ func (c *Candidates) Punish(height uint64, address types.TmAddress) *big.Int {
 
 		c.bus.Events().AddEvent(uint32(height), eventsdb.SlashEvent{
 			Address:         stake.Owner,
-			Amount:          slashed.Bytes(),
+			Amount:          slashed.String(),
 			Coin:            stake.Coin,
 			ValidatorPubKey: candidate.PubKey,
 		})

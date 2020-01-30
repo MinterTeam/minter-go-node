@@ -5,8 +5,8 @@ github.com/ChainSafe/go-schnorrkel v0.0.0-20200102211924-4bcbc698314f h1:4O1om+U
 github.com/ChainSafe/go-schnorrkel v0.0.0-20200102211924-4bcbc698314f/go.mod h1:URdX5+vg25ts3aCh8H5IFZybJYKWhJHYMTnf+ULtoC4=
 github.com/MinterTeam/events-db v0.1.0/go.mod h1:ZnKNYUSFUgVTTB359LvKQbroYqBiriXmbnyaMsULU2o=
 github.com/MinterTeam/events-db v0.1.1-0.20191113155258-73206cb9a3ea/go.mod h1:INfo4gbiX8/EGfjHmRvvW2+5YuOcTy7Tob69yUhAqU4=
-github.com/MinterTeam/events-db v0.1.3 h1:ARqS/nZu96+w5l56yQy1EGbYLugxg4J1gQmQmUmoGlI=
-github.com/MinterTeam/events-db v0.1.3/go.mod h1:niLCQF2EmB3G27zHj94jUO3p359sXEvTcdZrt8dS2AQ=
+github.com/MinterTeam/events-db v0.1.4 h1:ldvHk8m+OVbcISuIuW6MXgBzUubA18C2jpQy+B0g6D8=
+github.com/MinterTeam/events-db v0.1.4/go.mod h1:niLCQF2EmB3G27zHj94jUO3p359sXEvTcdZrt8dS2AQ=
 github.com/MinterTeam/go-amino v0.14.1/go.mod h1:2sqs1fcf3DcQpvIJarkzVCjALWc11WDwc5oFHCrG5R4=
 github.com/MinterTeam/go-amino v0.14.2-0.20191113110031-d5499d43f453 h1:uHtg6ZR5wVNJhwVI0Gw1RPPip6sj6Mo2SqoAh8scGp0=
 github.com/MinterTeam/go-amino v0.14.2-0.20191113110031-d5499d43f453/go.mod h1:o4p3WDNrrIOapHOfM5pKJNZ1exPI+c6ZvbemrNapJxc=
