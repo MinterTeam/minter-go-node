@@ -68,6 +68,10 @@ func Block(height int64) (*BlockResponse, error) {
 
 	tmValidators, err := client.Validators(&valHeight, 1, 256)
 	if err != nil {
+		return nil, err
+	}
+
+	if len(tmValidators.Validators) == 0 {
 		return nil, rpctypes.RPCError{Code: 404, Message: "Validators for block not found", Data: err.Error()}
 	}
 
