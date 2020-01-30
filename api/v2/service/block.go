@@ -10,7 +10,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	core_types "github.com/tendermint/tendermint/rpc/core/types"
-	tm_types "github.com/tendermint/tendermint/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"time"
@@ -31,16 +30,10 @@ func (s *Service) Block(_ context.Context, req *pb.BlockRequest) (*pb.BlockRespo
 	if valHeight < 1 {
 		valHeight = 1
 	}
-	var allValidators []*tm_types.Validator
-	for i := 1; ; i++ {
-		tmValidators, err := s.client.Validators(&valHeight, i, 256)
-		if err != nil {
-			return new(pb.BlockResponse), status.Error(codes.NotFound, "Validators for block not found")
-		}
-		if len(tmValidators.Validators) == 0 {
-			break
-		}
-		allValidators = append(allValidators, tmValidators.Validators...)
+
+	tmValidators, err := s.client.Validators(&valHeight, 1, 256)
+	if err != nil {
+		return new(pb.BlockResponse), status.Error(codes.NotFound, "Validators for block not found")
 	}
 
 	txs := make([]*pb.BlockResponse_Transaction, 0, len(block.Block.Data.Txs))
@@ -89,8 +82,8 @@ func (s *Service) Block(_ context.Context, req *pb.BlockRequest) (*pb.BlockRespo
 			proposer = str
 		}
 
-		validators = make([]*pb.BlockResponse_Validator, 0, len(allValidators))
-		for _, tmval := range allValidators {
+		validators = make([]*pb.BlockResponse_Validator, 0, len(tmValidators.Validators))
+		for _, tmval := range tmValidators.Validators {
 			signed := false
 			for _, vote := range block.Block.LastCommit.Signatures {
 				if bytes.Equal(vote.ValidatorAddress.Bytes(), tmval.Address.Bytes()) {
@@ -132,7 +125,7 @@ func (s *Service) Block(_ context.Context, req *pb.BlockRequest) (*pb.BlockRespo
 }
 
 func (s *Service) getBlockProposer(block *core_types.ResultBlock) (*types.Pubkey, error) {
-	vals, err := s.client.Validators(&block.Block.Height, 0, 0)
+	vals, err := s.client.Validators(&block.Block.Height, 1, 256)
 	if err != nil {
 		return nil, status.Error(codes.NotFound, "Validators for block not found")
 	}
