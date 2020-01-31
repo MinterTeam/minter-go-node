@@ -1,13 +1,13 @@
 # Node Command Line Interface
 
 ## Manager
-interactive mode
+non-interactive mode
 ```sh
 $ ./node  manager [command] [command options]
 ```
 
 ## Console
-non-interactive mode
+interactive mode
 ```sh
 $ ./node  console
 >>> [command] [command options]
