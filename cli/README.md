@@ -46,7 +46,6 @@ OPTIONS:
    --from value, -f value  (default: 0)
    --to value, -t value    (default: 0)
    --help, -h              show help (default: false)
-   
 ```
 
 #### status
@@ -55,7 +54,6 @@ display the current status of the blockchain
 OPTIONS:
    --json, -j  echo in json format (default: false)
    --help, -h  show help (default: false)
-   
 ```
 
 #### net_info
