@@ -10,7 +10,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/rpc/lib/types"
 	core_types "github.com/tendermint/tendermint/rpc/core/types"
-	"github.com/tendermint/tendermint/state"
 	tmTypes "github.com/tendermint/tendermint/types"
 	"time"
 )
@@ -68,15 +67,9 @@ func Block(height int64) (*BlockResponse, error) {
 	}
 
 	var totalValidators []*tmTypes.Validator
-	for i := 1; ; i++ {
-		tmValidators, err := client.Validators(&valHeight, i, 100)
+	for i := 0; i < (((len(block.Block.LastCommit.Signatures) - 1) / 100) + 1); i++ {
+		tmValidators, err := client.Validators(&valHeight, i+1, 100)
 		if err != nil {
-			if _, ok := err.(state.ErrNoValSetForHeight); ok {
-				if len(totalValidators) == 0 {
-					return nil, rpctypes.RPCError{Code: 404, Message: "Validators for block not found", Data: err.Error()}
-				}
-				break
-			}
 			return nil, rpctypes.RPCError{Code: 500, Message: err.Error()}
 		}
 		totalValidators = append(totalValidators, tmValidators.Validators...)

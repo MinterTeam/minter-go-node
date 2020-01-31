@@ -10,7 +10,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	core_types "github.com/tendermint/tendermint/rpc/core/types"
-	"github.com/tendermint/tendermint/state"
 	tmTypes "github.com/tendermint/tendermint/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -34,15 +33,9 @@ func (s *Service) Block(_ context.Context, req *pb.BlockRequest) (*pb.BlockRespo
 	}
 
 	var totalValidators []*tmTypes.Validator
-	for i := 1; ; i++ {
-		tmValidators, err := s.client.Validators(&valHeight, i, 100)
+	for i := 0; i < (((len(block.Block.LastCommit.Signatures) - 1) / 100) + 1); i++ {
+		tmValidators, err := s.client.Validators(&valHeight, i+1, 100)
 		if err != nil {
-			if _, ok := err.(state.ErrNoValSetForHeight); ok {
-				if len(totalValidators) == 0 {
-					return new(pb.BlockResponse), status.Error(codes.NotFound, err.Error())
-				}
-				break
-			}
 			return new(pb.BlockResponse), status.Error(codes.Internal, err.Error())
 		}
 		totalValidators = append(totalValidators, tmValidators.Validators...)
@@ -131,7 +124,7 @@ func (s *Service) Block(_ context.Context, req *pb.BlockRequest) (*pb.BlockRespo
 		Proposer:          proposer,
 		Validators:        validators,
 		Evidence: &pb.BlockResponse_Evidence{
-			Evidence: evidences, // todo
+			Evidence: evidences,
 		},
 	}, nil
 }
