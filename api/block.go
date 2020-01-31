@@ -146,7 +146,7 @@ func Block(height int64) (*BlockResponse, error) {
 		Hash:         hex.EncodeToString(block.Block.Hash()),
 		Height:       block.Block.Height,
 		Time:         block.Block.Time,
-		TotalTxs:     int64(len(block.Block.Txs)),
+		NumTxs:       int64(len(block.Block.Txs)),
 		Transactions: txs,
 		BlockReward:  rewards.GetRewardForBlock(uint64(height)).String(),
 		Size:         len(cdc.MustMarshalBinaryLengthPrefixed(block)),
