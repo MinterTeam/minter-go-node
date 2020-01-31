@@ -10,6 +10,8 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	core_types "github.com/tendermint/tendermint/rpc/core/types"
+	"github.com/tendermint/tendermint/state"
+	tmTypes "github.com/tendermint/tendermint/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"time"
@@ -31,13 +33,19 @@ func (s *Service) Block(_ context.Context, req *pb.BlockRequest) (*pb.BlockRespo
 		valHeight = 1
 	}
 
-	tmValidators, err := s.client.Validators(&valHeight, 1, 256)
-	if err != nil {
-		return new(pb.BlockResponse), status.Error(codes.Internal, err.Error())
-	}
-
-	if len(tmValidators.Validators) == 0 {
-		return new(pb.BlockResponse), status.Error(codes.NotFound, "Validators for block not found")
+	var totalValidators []*tmTypes.Validator
+	for i := 1; ; i++ {
+		tmValidators, err := s.client.Validators(&valHeight, i, 100)
+		if err != nil {
+			if _, ok := err.(state.ErrNoValSetForHeight); ok {
+				if len(totalValidators) == 0 {
+					return new(pb.BlockResponse), status.Error(codes.NotFound, err.Error())
+				}
+				break
+			}
+			return new(pb.BlockResponse), status.Error(codes.Internal, err.Error())
+		}
+		totalValidators = append(totalValidators, tmValidators.Validators...)
 	}
 
 	txs := make([]*pb.BlockResponse_Transaction, 0, len(block.Block.Data.Txs))
@@ -76,7 +84,7 @@ func (s *Service) Block(_ context.Context, req *pb.BlockRequest) (*pb.BlockRespo
 	var validators []*pb.BlockResponse_Validator
 	var proposer string
 	if req.Height > 1 {
-		p, err := s.getBlockProposer(block)
+		p, err := getBlockProposer(block, totalValidators)
 		if err != nil {
 			return new(pb.BlockResponse), status.Error(codes.FailedPrecondition, err.Error())
 		}
@@ -86,8 +94,8 @@ func (s *Service) Block(_ context.Context, req *pb.BlockRequest) (*pb.BlockRespo
 			proposer = str
 		}
 
-		validators = make([]*pb.BlockResponse_Validator, 0, len(tmValidators.Validators))
-		for _, tmval := range tmValidators.Validators {
+		validators = make([]*pb.BlockResponse_Validator, 0, len(totalValidators))
+		for _, tmval := range totalValidators {
 			signed := false
 			for _, vote := range block.Block.LastCommit.Signatures {
 				if bytes.Equal(vote.ValidatorAddress.Bytes(), tmval.Address.Bytes()) {
@@ -128,13 +136,8 @@ func (s *Service) Block(_ context.Context, req *pb.BlockRequest) (*pb.BlockRespo
 	}, nil
 }
 
-func (s *Service) getBlockProposer(block *core_types.ResultBlock) (*types.Pubkey, error) {
-	vals, err := s.client.Validators(&block.Block.Height, 1, 256)
-	if err != nil {
-		return nil, status.Error(codes.NotFound, "Validators for block not found")
-	}
-
-	for _, tmval := range vals.Validators {
+func getBlockProposer(block *core_types.ResultBlock, vals []*tmTypes.Validator) (*types.Pubkey, error) {
+	for _, tmval := range vals {
 		if bytes.Equal(tmval.Address.Bytes(), block.Block.ProposerAddress.Bytes()) {
 			var result types.Pubkey
 			copy(result[:], tmval.PubKey.Bytes()[5:])

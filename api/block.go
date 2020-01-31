@@ -10,6 +10,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/rpc/lib/types"
 	core_types "github.com/tendermint/tendermint/rpc/core/types"
+	"github.com/tendermint/tendermint/state"
 	tmTypes "github.com/tendermint/tendermint/types"
 	"time"
 )
@@ -66,13 +67,19 @@ func Block(height int64) (*BlockResponse, error) {
 		valHeight = 1
 	}
 
-	tmValidators, err := client.Validators(&valHeight, 1, 256)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(tmValidators.Validators) == 0 {
-		return nil, rpctypes.RPCError{Code: 404, Message: "Validators for block not found", Data: err.Error()}
+	var totalValidators []*tmTypes.Validator
+	for i := 1; ; i++ {
+		tmValidators, err := client.Validators(&valHeight, i, 100)
+		if err != nil {
+			if _, ok := err.(state.ErrNoValSetForHeight); ok {
+				if len(totalValidators) == 0 {
+					return nil, rpctypes.RPCError{Code: 404, Message: "Validators for block not found", Data: err.Error()}
+				}
+				break
+			}
+			return nil, rpctypes.RPCError{Code: 500, Message: err.Error()}
+		}
+		totalValidators = append(totalValidators, tmValidators.Validators...)
 	}
 
 	txs := make([]BlockTransactionResponse, len(block.Block.Data.Txs))
@@ -115,7 +122,7 @@ func Block(height int64) (*BlockResponse, error) {
 	var validators []BlockValidatorResponse
 	var proposer *string
 	if height > 1 {
-		p, err := getBlockProposer(block)
+		p, err := getBlockProposer(block, totalValidators)
 		if err != nil {
 			return nil, err
 		}
@@ -125,8 +132,8 @@ func Block(height int64) (*BlockResponse, error) {
 			proposer = &str
 		}
 
-		validators = make([]BlockValidatorResponse, len(tmValidators.Validators))
-		for i, tmval := range tmValidators.Validators {
+		validators = make([]BlockValidatorResponse, len(totalValidators))
+		for i, tmval := range totalValidators {
 			signed := false
 			for _, vote := range block.Block.LastCommit.Signatures {
 				if bytes.Equal(vote.ValidatorAddress.Bytes(), tmval.Address.Bytes()) {
@@ -156,13 +163,8 @@ func Block(height int64) (*BlockResponse, error) {
 	}, nil
 }
 
-func getBlockProposer(block *core_types.ResultBlock) (*types.Pubkey, error) {
-	tmValidators, err := client.Validators(&block.Block.Height, 1, 256)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, tmval := range tmValidators.Validators {
+func getBlockProposer(block *core_types.ResultBlock, vals []*tmTypes.Validator) (*types.Pubkey, error) {
+	for _, tmval := range vals {
 		if bytes.Equal(tmval.Address.Bytes(), block.Block.ProposerAddress.Bytes()) {
 			var result types.Pubkey
 			copy(result[:], tmval.PubKey.Bytes()[5:])
