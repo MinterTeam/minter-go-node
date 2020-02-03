@@ -98,7 +98,7 @@ func (v *Validator) setTmAddress() {
 }
 
 func (v *Validator) SetPresent(height uint64) {
-	index := int(height)%ValidatorMaxAbsentWindow
+	index := int(height) % ValidatorMaxAbsentWindow
 	if v.AbsentTimes.GetIndex(index) {
 		v.isDirty = true
 	}
@@ -106,7 +106,7 @@ func (v *Validator) SetPresent(height uint64) {
 }
 
 func (v *Validator) SetAbsent(height uint64) {
-	index := int(height)%ValidatorMaxAbsentWindow
+	index := int(height) % ValidatorMaxAbsentWindow
 	if !v.AbsentTimes.GetIndex(index) {
 		v.isDirty = true
 	}
