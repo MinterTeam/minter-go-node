@@ -118,7 +118,6 @@ message BlockResponse {
     string height = 2;
     string time = 3;
     string count_transactions = 4;
-    string total_transactions = 5;
 
     message Transaction {
         string hash = 1;

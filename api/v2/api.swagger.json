@@ -1016,9 +1016,6 @@
         "count_transactions": {
           "type": "string"
         },
-        "total_transactions": {
-          "type": "string"
-        },
         "transactions": {
           "type": "array",
           "items": {
