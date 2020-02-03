@@ -31,6 +31,8 @@ func (v *App) Commit() error {
 		return nil
 	}
 
+	v.isDirty = false
+
 	data, err := rlp.EncodeToBytes(v.model)
 	if err != nil {
 		return fmt.Errorf("can't encode app model: %s", err)

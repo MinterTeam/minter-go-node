@@ -14,8 +14,10 @@ func (model *Model) getMaxGas() uint64 {
 }
 
 func (model *Model) setMaxGas(maxGas uint64) {
+	if model.MaxGas != maxGas {
+		model.markDirty()
+	}
 	model.MaxGas = maxGas
-	model.markDirty()
 }
 
 func (model *Model) getTotalSlashed() *big.Int {
@@ -27,6 +29,8 @@ func (model *Model) getTotalSlashed() *big.Int {
 }
 
 func (model *Model) setTotalSlashed(totalSlashed *big.Int) {
+	if model.TotalSlashed.Cmp(totalSlashed) != 0 {
+		model.markDirty()
+	}
 	model.TotalSlashed = totalSlashed
-	model.markDirty()
 }

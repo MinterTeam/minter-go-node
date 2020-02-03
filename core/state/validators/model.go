@@ -44,9 +44,11 @@ func (v *Validator) IsToDrop() bool {
 }
 
 func (v *Validator) SetAccumReward(value *big.Int) {
+	if v.accumReward.Cmp(value) != 0 {
+		v.isAccumRewardDirty = true
+	}
 	v.bus.Checker().AddCoin(types.GetBaseCoin(), big.NewInt(0).Sub(value, v.accumReward), "reward")
 	v.accumReward = big.NewInt(0).Set(value)
-	v.isAccumRewardDirty = true
 }
 
 func (v *Validator) GetAccumReward() *big.Int {
@@ -62,8 +64,10 @@ func (v *Validator) GetTotalBipStake() *big.Int {
 }
 
 func (v *Validator) SetTotalBipStake(value *big.Int) {
+	if v.totalStake.Cmp(value) != 0 {
+		v.isTotalStakeDirty = true
+	}
 	v.totalStake = value
-	v.isTotalStakeDirty = true
 }
 
 func (v *Validator) AddAccumReward(amount *big.Int) {
@@ -94,11 +98,17 @@ func (v *Validator) setTmAddress() {
 }
 
 func (v *Validator) SetPresent(height uint64) {
-	v.AbsentTimes.SetIndex(int(height)%ValidatorMaxAbsentWindow, false)
-	v.isDirty = true
+	index := int(height)%ValidatorMaxAbsentWindow
+	if v.AbsentTimes.GetIndex(index) {
+		v.isDirty = true
+	}
+	v.AbsentTimes.SetIndex(index, false)
 }
 
 func (v *Validator) SetAbsent(height uint64) {
-	v.AbsentTimes.SetIndex(int(height)%ValidatorMaxAbsentWindow, true)
-	v.isDirty = true
+	index := int(height)%ValidatorMaxAbsentWindow
+	if !v.AbsentTimes.GetIndex(index) {
+		v.isDirty = true
+	}
+	v.AbsentTimes.SetIndex(index, true)
 }
