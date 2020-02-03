@@ -34,13 +34,13 @@ type Candidates struct {
 	iavl tree.Tree
 	bus  *bus.Bus
 
-	lock sync.RWMutex
+	lock   sync.RWMutex
+	loaded bool
 }
 
 func NewCandidates(bus *bus.Bus, iavl tree.Tree) (*Candidates, error) {
 	candidates := &Candidates{iavl: iavl, bus: bus}
 	candidates.bus.SetCandidates(NewBus(candidates))
-	candidates.loadCandidates()
 
 	return candidates, nil
 }
@@ -468,7 +468,12 @@ func (c *Candidates) GetCandidateOwner(pubkey types.Pubkey) types.Address {
 	return c.getFromMap(pubkey).OwnerAddress
 }
 
-func (c *Candidates) loadCandidates() {
+func (c *Candidates) LoadCandidates() {
+	if c.loaded {
+		return
+	}
+	c.loaded = true
+
 	path := []byte{mainPrefix}
 	_, enc := c.iavl.Get(path)
 	if len(enc) == 0 {
@@ -484,6 +489,23 @@ func (c *Candidates) loadCandidates() {
 
 	c.list = map[types.Pubkey]*Candidate{}
 	for _, candidate := range candidates {
+		// load total stake
+		path = append([]byte{mainPrefix}, candidate.PubKey.Bytes()...)
+		path = append(path, totalStakePrefix)
+		_, enc = c.iavl.Get(path)
+		if len(enc) == 0 {
+			candidate.totalBipStake = big.NewInt(0)
+		} else {
+			candidate.totalBipStake = big.NewInt(0).SetBytes(enc)
+		}
+
+		candidate.setTmAddress()
+		c.setToMap(candidate.PubKey, candidate)
+	}
+}
+
+func (c *Candidates) LoadStakes() {
+	for _, candidate := range c.list {
 		// load stakes
 		stakesCount := 0
 		for index := 0; index < MaxDelegatorsPerCandidate; index++ {

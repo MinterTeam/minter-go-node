@@ -44,7 +44,15 @@ func NewState(height uint64, db db.DB, events eventsdb.IEventsDB, keepLastStates
 		return nil, err
 	}
 
-	return newStateForTree(iavlTree, events, db, keepLastStates)
+	state, err := newStateForTree(iavlTree, events, db, keepLastStates)
+	if err != nil {
+		return nil, err
+	}
+
+	state.Candidates.LoadCandidates()
+	state.Candidates.LoadStakes()
+
+	return state, nil
 }
 
 func NewCheckState(state *State) *State {

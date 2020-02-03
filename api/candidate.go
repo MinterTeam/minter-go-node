@@ -56,6 +56,9 @@ func Candidate(pubkey types.Pubkey, height int) (*CandidateResponse, error) {
 		return nil, err
 	}
 
+	cState.Candidates.LoadCandidates()
+	cState.Candidates.LoadStakes()
+
 	candidate := cState.Candidates.GetCandidate(pubkey)
 	if candidate == nil {
 		return nil, rpctypes.RPCError{Code: 404, Message: "Candidate not found"}
