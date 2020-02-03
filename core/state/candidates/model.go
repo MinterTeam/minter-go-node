@@ -42,6 +42,9 @@ func (candidate *Candidate) setReward(address types.Address) {
 
 func (candidate *Candidate) addUpdate(stake *Stake) {
 	candidate.isUpdatesDirty = true
+	stake.markDirty = func(i int) {
+		candidate.isUpdatesDirty = true
+	}
 	candidate.updates = append(candidate.updates, stake)
 }
 

@@ -291,7 +291,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 		app.stateDeliver.Candidates.RecalculateStakes(height)
 
 		valsCount := validators.GetValidatorsCountForBlock(height)
-		newCandidates := app.stateDeliver.Candidates.GetNewCandidates(valsCount, req.Height)
+		newCandidates := app.stateDeliver.Candidates.GetNewCandidates(valsCount)
 		if len(newCandidates) < valsCount {
 			valsCount = len(newCandidates)
 		}

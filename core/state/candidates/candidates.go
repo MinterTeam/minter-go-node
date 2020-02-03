@@ -125,7 +125,7 @@ func (c *Candidates) Commit() error {
 	return nil
 }
 
-func (c *Candidates) GetNewCandidates(valCount int, height int64) []Candidate {
+func (c *Candidates) GetNewCandidates(valCount int) []Candidate {
 	var result []Candidate
 
 	candidates := c.GetCandidates()
@@ -254,7 +254,7 @@ func (c *Candidates) RecalculateStakes(height uint64) {
 			} else {
 				// find and replace smallest stake
 				index := -1
-				var smallestStake *big.Int
+				smallestStake := big.NewInt(0)
 				for i, stake := range stakes {
 					if stake == nil {
 						index = i
@@ -365,11 +365,10 @@ func (c *Candidates) IsDelegatorStakeSufficient(address types.Address, pubkey ty
 
 func (c *Candidates) Delegate(address types.Address, pubkey types.Pubkey, coin types.CoinSymbol, value *big.Int, bipValue *big.Int) {
 	stake := &Stake{
-		Owner:     address,
-		Coin:      coin,
-		Value:     big.NewInt(0).Set(value),
-		BipValue:  big.NewInt(0).Set(bipValue),
-		markDirty: func(i int) {},
+		Owner:    address,
+		Coin:     coin,
+		Value:    big.NewInt(0).Set(value),
+		BipValue: big.NewInt(0).Set(bipValue),
 	}
 
 	candidate := c.GetCandidate(pubkey)
