@@ -254,10 +254,11 @@ func (c *Candidates) RecalculateStakes(height uint64) {
 			} else {
 				// find and replace smallest stake
 				index := -1
-				smallestStake := big.NewInt(0)
+				var smallestStake *big.Int
 				for i, stake := range stakes {
 					if stake == nil {
 						index = i
+						smallestStake = big.NewInt(0)
 						break
 					}
 

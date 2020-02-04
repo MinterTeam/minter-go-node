@@ -121,6 +121,11 @@ func TestComplexDelegate(t *testing.T) {
 		if stake != nil {
 			t.Fatalf("Stake of address %s found, but should not be", replacedAddress.String())
 		}
+
+		stake = st.Candidates.GetStakeOfAddress(pubkey, addr, coin)
+		if stake == nil {
+			t.Fatalf("Stake of address %s not found, but should be", addr.String())
+		}
 	}
 
 	{
