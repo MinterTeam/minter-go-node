@@ -49,7 +49,7 @@ func (candidate *Candidate) addUpdate(stake *Stake) {
 }
 
 func (candidate *Candidate) clearUpdates() {
-	if candidate.updates != nil {
+	if len(candidate.updates) != 0 {
 		candidate.isUpdatesDirty = true
 	}
 
