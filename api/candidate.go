@@ -56,8 +56,10 @@ func Candidate(pubkey types.Pubkey, height int) (*CandidateResponse, error) {
 		return nil, err
 	}
 
-	cState.Candidates.LoadCandidates()
-	cState.Candidates.LoadStakes()
+	if height != 0 {
+		cState.Candidates.LoadCandidates()
+		cState.Candidates.LoadStakes()
+	}
 
 	candidate := cState.Candidates.GetCandidate(pubkey)
 	if candidate == nil {
