@@ -13,6 +13,13 @@ func (s *Service) Candidates(_ context.Context, req *pb.CandidatesRequest) (*pb.
 		return new(pb.CandidatesResponse), status.Error(codes.NotFound, err.Error())
 	}
 
+	if req.Height != 0 {
+		cState.Candidates.LoadCandidates()
+		if req.IncludeStakes {
+			cState.Candidates.LoadStakes()
+		}
+	}
+
 	candidates := cState.Candidates.GetCandidates()
 
 	result := &pb.CandidatesResponse{
