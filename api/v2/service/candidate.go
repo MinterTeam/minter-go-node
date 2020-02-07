@@ -17,6 +17,11 @@ func (s *Service) Candidate(_ context.Context, req *pb.CandidateRequest) (*pb.Ca
 		return new(pb.CandidateResponse), status.Error(codes.NotFound, err.Error())
 	}
 
+	if req.Height != 0 {
+		cState.Candidates.LoadCandidates()
+		cState.Candidates.LoadStakes()
+	}
+
 	candidate := cState.Candidates.GetCandidate(types.BytesToPubkey([]byte(req.PublicKey)))
 	if candidate == nil {
 		return new(pb.CandidateResponse), status.Error(codes.NotFound, "Candidate not found")
