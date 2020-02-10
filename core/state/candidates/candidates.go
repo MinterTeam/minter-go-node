@@ -658,8 +658,17 @@ func (c *Candidates) Punish(height uint64, address types.TmAddress) *big.Int {
 func (c *Candidates) SetStakes(pubkey types.Pubkey, stakes []types.Stake) {
 	candidate := c.GetCandidate(pubkey)
 	candidate.stakesCount = len(stakes)
-	if candidate.stakesCount > 1000 {
-		candidate.stakesCount = 1000
+	if candidate.stakesCount > MaxDelegatorsPerCandidate {
+		candidate.stakesCount = MaxDelegatorsPerCandidate
+		for i := MaxDelegatorsPerCandidate; i < len(stakes); i++ {
+			stake := stakes[i]
+			candidate.addUpdate(&Stake{
+				Owner:    stake.Owner,
+				Coin:     stake.Coin,
+				Value:    helpers.StringToBigInt(stake.Value),
+				BipValue: helpers.StringToBigInt(stake.BipValue),
+			})
+		}
 	}
 	for i := 0; i < candidate.stakesCount; i++ {
 		stake := stakes[i]
