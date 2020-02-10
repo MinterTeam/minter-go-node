@@ -332,3 +332,12 @@ func (v *Validators) Export(state *types.AppState) {
 		})
 	}
 }
+
+func (v *Validators) SetToDrop(pubkey types.Pubkey) {
+	vals := v.GetValidators()
+	for _, val := range vals {
+		if val.PubKey == pubkey {
+			val.toDrop = true
+		}
+	}
+}

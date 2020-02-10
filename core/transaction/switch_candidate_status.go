@@ -198,6 +198,7 @@ func (data SetCandidateOffData) Run(tx *Transaction, context *state.State, isChe
 
 		context.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		context.Candidates.SetOffline(data.PubKey)
+		context.Validators.SetToDrop(data.PubKey)
 		context.Accounts.SetNonce(sender, tx.Nonce)
 	}
 
