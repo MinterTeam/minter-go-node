@@ -2,6 +2,7 @@ package minter
 
 import (
 	"bytes"
+	"fmt"
 	eventsdb "github.com/MinterTeam/events-db"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
@@ -72,6 +73,8 @@ type Blockchain struct {
 	currentMempool sync.Map
 
 	lock sync.RWMutex
+
+	haltHeight uint64
 }
 
 // Creates Minter Blockchain instance, should be only called once
@@ -110,6 +113,8 @@ func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 	// Set start height for rewards and validators
 	rewards.SetStartHeight(applicationDB.GetStartHeight())
 	validators.SetStartHeight(applicationDB.GetStartHeight())
+
+	blockchain.haltHeight = uint64(cfg.HaltHeight)
 
 	return blockchain
 }
@@ -159,6 +164,10 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 // Signals the beginning of a block.
 func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.ResponseBeginBlock {
 	height := uint64(req.Header.Height)
+
+	if app.haltHeight > 0 && height >= app.haltHeight {
+		panic(fmt.Sprintf("Application halted at height %d", height))
+	}
 
 	// compute max gas
 	app.updateBlocksTimeDelta(height, 3)

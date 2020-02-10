@@ -1,7 +1,8 @@
 GOTOOLS = \
 	github.com/mitchellh/gox \
-    github.com/alecthomas/gometalinter \
-    github.com/gogo/protobuf/protoc-gen-gogo \
+	github.com/golang/dep/cmd/dep \
+	github.com/alecthomas/gometalinter \
+	github.com/gogo/protobuf/protoc-gen-gogo \
 	github.com/gobuffalo/packr/packr
 PACKAGES=$(shell go list ./... | grep -v '/vendor/')
 BUILD_TAGS?=minter
@@ -10,6 +11,8 @@ BUILD_FLAGS=-ldflags "-s -w -X minter/version.GitCommit=`git rev-parse --short=8
 all: check build test install
 
 check: check_tools ensure_deps
+
+docker: build_docker
 
 ########################################
 ### Build
@@ -97,13 +100,8 @@ metalinter_all:
 ###########################################################
 ### Docker image
 
-build-docker:
-	cp build/minter DOCKER/minter
-	cd DOCKER && make build
-	rm -f minter
-
-push-docker:
-	cd DOCKER && make push
+build_docker:
+	docker build . --tag minter-go-node:local
 
 ###########################################################
 ### Local testnet using docker

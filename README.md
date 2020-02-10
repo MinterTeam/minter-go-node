@@ -4,8 +4,10 @@
 <a href="https://github.com/MinterTeam/minter-go-node/releases/latest"><img src="https://img.shields.io/github/tag/MinterTeam/minter-go-node.svg" alt="Version"></a>
 <a href="https://github.com/moovweb/gvm"><img src="https://img.shields.io/badge/go-1.10-blue.svg" alt="Go version"></a>
 <a href="https://github.com/MinterTeam/minter-go-node/blob/master/LICENSE"><img src="https://img.shields.io/github/license/MinterTeam/minter-go-node.svg" alt="License"></a>
-  <a href="https://github.com/MinterTeam/minter-go-node/commits/master"><img src="https://img.shields.io/github/last-commit/MinterTeam/minter-go-node.svg" alt="Last commit"></a>
-  <a href="https://goreportcard.com/report/github.com/MinterTeam/minter-go-node"><img src="https://goreportcard.com/badge/github.com/MinterTeam/minter-go-node" alt="Go Report Card"></a>
+<a href="https://github.com/MinterTeam/minter-go-node/commits/master"><img src="https://img.shields.io/github/last-commit/MinterTeam/minter-go-node.svg" alt="Last commit"></a>
+<a href="https://goreportcard.com/report/github.com/MinterTeam/minter-go-node"><img src="https://goreportcard.com/badge/github.com/MinterTeam/minter-go-node" alt="Go Report Card"></a>
+<a href="https://github.com/MinterTeam/minter-go-node/actions"><img src="https://github.com/MinterTeam/minter-go-node/workflows/docker/badge.svg" alt="Github Actions Report Card"></a>
+<a href="https://hub.docker.com/r/MinterTeam/minter-go-node"><img alt="Docker Pulls" src="https://img.shields.io/docker/pulls/minterteam/minter"></a>
 </p>
 
 Minter is a blockchain network that lets people, projects, and companies issue and manage their own coins and trade them at a fair market price with absolute and instant liquidity.
@@ -13,7 +15,13 @@ Minter is a blockchain network that lets people, projects, and companies issue a
 _NOTE: This is alpha software. Please contact us if you intend to run it in production._
 
 ## Installation
+### Docker
+1. Grab latest docker-compose, save <a href="https://raw.githubusercontent.com/MinterTeam/minter-go-node/master/docker-compose.yml">docker-compose.yml</a> and run ```docker-compose up -d```. 
+To run it in production we recommend to use bind host mount instead of volume. 
 
+2. To build from source clone this repo, make your changes and run ```docker-compose up --build -d```
+
+### Manual
 You can get official installation instructions in our [docs](https://docs.minter.network/#section/Install-Minter).
 
 1. Download Minter Node

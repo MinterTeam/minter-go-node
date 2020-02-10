@@ -1,8 +1,0 @@
-version: 2
-
-defaults: &defaults
-  working_directory: /go/src/github.com/MinterTeam/minter-go-node
-  docker:
-    - image: circleci/golang:1.10.0
-  environment:
-    GOBIN: /tmp/workspace/bin
