@@ -18,6 +18,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/tree"
 	db "github.com/tendermint/tm-db"
 	"math/big"
+	"sync"
 )
 
 type State struct {
@@ -35,6 +36,8 @@ type State struct {
 	tree           tree.Tree
 	keepLastStates int64
 	bus            *bus.Bus
+
+	lock sync.RWMutex
 }
 
 func NewState(height uint64, db db.DB, events eventsdb.IEventsDB, keepLastStates int64, cacheSize int) (*State, error) {
@@ -51,6 +54,7 @@ func NewState(height uint64, db db.DB, events eventsdb.IEventsDB, keepLastStates
 
 	state.Candidates.LoadCandidates()
 	state.Candidates.LoadStakes()
+	state.Validators.LoadValidators()
 
 	return state, nil
 }
@@ -67,6 +71,22 @@ func NewCheckStateAtHeight(height uint64, db db.DB) (*State, error) {
 	}
 
 	return newStateForTree(iavlTree.GetImmutable(), nil, nil, 0)
+}
+
+func (s *State) Lock() {
+	s.lock.Lock()
+}
+
+func (s *State) Unlock() {
+	s.lock.Unlock()
+}
+
+func (s *State) RLock() {
+	s.lock.RLock()
+}
+
+func (s *State) RUnlock() {
+	s.lock.RUnlock()
 }
 
 func (s *State) Check() error {

@@ -169,6 +169,8 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 		panic(fmt.Sprintf("Application halted at height %d", height))
 	}
 
+	app.stateDeliver.RLock()
+
 	// compute max gas
 	app.updateBlocksTimeDelta(height, 3)
 	maxGas := app.calcMaxGas(height)
@@ -443,6 +445,8 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 
 	// Clear mempool
 	app.currentMempool = sync.Map{}
+
+	app.stateDeliver.RUnlock()
 
 	return abciTypes.ResponseCommit{
 		Data: hash,

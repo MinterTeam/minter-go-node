@@ -15,6 +15,9 @@ func Address(address types.Address, height int) (*AddressResponse, error) {
 		return nil, err
 	}
 
+	cState.Lock()
+	defer cState.Unlock()
+
 	response := AddressResponse{
 		Balance:          make(map[string]string),
 		TransactionCount: cState.Accounts.GetNonce(address),

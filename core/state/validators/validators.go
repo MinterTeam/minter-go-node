@@ -34,7 +34,6 @@ type Validators struct {
 
 func NewValidators(bus *bus.Bus, iavl tree.Tree) (*Validators, error) {
 	validators := &Validators{iavl: iavl, bus: bus}
-	validators.loadValidators()
 
 	return validators, nil
 }
@@ -244,7 +243,7 @@ func (v *Validators) getByTmAddress(address types.TmAddress) *Validator {
 	return nil
 }
 
-func (v *Validators) loadValidators() {
+func (v *Validators) LoadValidators() {
 	if v.loaded {
 		return
 	}
