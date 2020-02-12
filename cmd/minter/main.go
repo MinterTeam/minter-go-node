@@ -18,6 +18,7 @@ func main() {
 
 	rootCmd.PersistentFlags().StringVar(&utils.MinterHome, "home-dir", "", "base dir (default is $HOME/.minter)")
 	rootCmd.PersistentFlags().StringVar(&utils.MinterConfig, "config", "", "path to config (default is $(home-dir)/config/config.toml)")
+	rootCmd.PersistentFlags().Bool("pprof", false, "enable pprof")
 
 	if err := rootCmd.Execute(); err != nil {
 		panic(err)

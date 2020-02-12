@@ -25,6 +25,8 @@ import (
 	rpc "github.com/tendermint/tendermint/rpc/client"
 	"github.com/tendermint/tendermint/store"
 	tmTypes "github.com/tendermint/tendermint/types"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 )
 
@@ -32,11 +34,29 @@ var RunNode = &cobra.Command{
 	Use:   "node",
 	Short: "Run the Minter node",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runNode()
+		return runNode(cmd)
 	},
 }
 
-func runNode() error {
+func runNode(cmd *cobra.Command) error {
+	logger := log.NewLogger(cfg)
+
+	pprofOn, err := cmd.Flags().GetBool("pprof")
+	if err != nil {
+		return err
+	}
+
+	if pprofOn {
+		pprofMux := http.DefaultServeMux
+		http.DefaultServeMux = http.NewServeMux()
+		go func() {
+			logger.Error((&http.Server{
+				Addr:    "localhost:6060",
+				Handler: pprofMux,
+			}).ListenAndServe().Error())
+		}()
+	}
+
 	tmConfig := config.GetTmConfig(cfg)
 
 	if err := tmos.EnsureDir(utils.GetMinterHome()+"/config", 0777); err != nil {
@@ -52,7 +72,6 @@ func runNode() error {
 	}
 
 	app := minter.NewMinterBlockchain(cfg)
-	logger := log.NewLogger(cfg)
 
 	// update BlocksTimeDelta in case it was corrupted
 	updateBlocksTimeDelta(app, tmConfig)
