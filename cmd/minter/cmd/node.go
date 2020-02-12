@@ -47,11 +47,16 @@ func runNode(cmd *cobra.Command) error {
 	}
 
 	if pprofOn {
+		pprofAddr, err := cmd.Flags().GetString("pprof-addr")
+		if err != nil {
+			return err
+		}
+
 		pprofMux := http.DefaultServeMux
 		http.DefaultServeMux = http.NewServeMux()
 		go func() {
 			logger.Error((&http.Server{
-				Addr:    "localhost:6060",
+				Addr:    pprofAddr,
 				Handler: pprofMux,
 			}).ListenAndServe().Error())
 		}()
