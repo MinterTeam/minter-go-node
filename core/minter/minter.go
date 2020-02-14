@@ -28,6 +28,7 @@ import (
 	"sort"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 const (
@@ -71,7 +72,8 @@ type Blockchain struct {
 	// currentMempool is responsive for prevent sending multiple transactions from one address in one block
 	currentMempool sync.Map
 
-	lock sync.RWMutex
+	timeLastBlock time.Time
+	lock          sync.RWMutex
 }
 
 // Creates Minter Blockchain instance, should be only called once
@@ -159,7 +161,7 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 // Signals the beginning of a block.
 func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.ResponseBeginBlock {
 	height := uint64(req.Header.Height)
-
+	app.timeLastBlock = time.Now()
 	// compute max gas
 	app.updateBlocksTimeDelta(height, 3)
 	maxGas := app.calcMaxGas(height)
@@ -347,7 +349,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 		}
 	}
 
-	return abciTypes.ResponseEndBlock{
+	endBlock := abciTypes.ResponseEndBlock{
 		ValidatorUpdates: updates,
 		ConsensusParamUpdates: &abciTypes.ConsensusParams{
 			Block: &abciTypes.BlockParams{
@@ -356,6 +358,10 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 			},
 		},
 	}
+
+	app.appDB.SetDurationBlock(time.Now().Sub(app.timeLastBlock))
+
+	return endBlock
 }
 
 // Return application info. Used for synchronization between Tendermint and Minter
@@ -550,6 +556,10 @@ func (app *Blockchain) SetBlocksTimeDelta(height uint64, value int) {
 
 func (app *Blockchain) GetBlocksTimeDelta(height, count uint64) (int, error) {
 	return app.appDB.GetLastBlocksTimeDelta(height)
+}
+
+func (app *Blockchain) GetDurationBlock() (uint64, error) {
+	return app.appDB.GetDurationBlock()
 }
 
 func (app *Blockchain) calcMaxGas(height uint64) uint64 {

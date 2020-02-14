@@ -9,6 +9,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/minter"
+	"github.com/MinterTeam/minter-go-node/core/statistics"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/version"
 	"github.com/gobuffalo/packr"
@@ -26,6 +27,7 @@ import (
 	"github.com/tendermint/tendermint/store"
 	tmTypes "github.com/tendermint/tendermint/types"
 	"os"
+	"time"
 )
 
 var RunNode = &cobra.Command{
@@ -89,6 +91,11 @@ func runNode() error {
 			panic(err)
 		}
 	})
+
+	time.Sleep(time.Second * 10)
+	//todo
+	statistics.Statistic(app)
+	select {}
 
 	// Run forever
 	select {}
