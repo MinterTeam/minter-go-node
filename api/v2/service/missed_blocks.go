@@ -14,6 +14,11 @@ func (s *Service) MissedBlocks(_ context.Context, req *pb.MissedBlocksRequest) (
 		return new(pb.MissedBlocksResponse), status.Error(codes.NotFound, err.Error())
 	}
 
+	cState.Lock()
+	defer cState.Unlock()
+
+	cState.Validators.LoadValidators()
+
 	vals := cState.Validators.GetValidators()
 	if vals == nil {
 		return new(pb.MissedBlocksResponse), status.Error(codes.NotFound, "Validators not found")

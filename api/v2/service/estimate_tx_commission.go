@@ -18,6 +18,9 @@ func (s *Service) EstimateTxCommission(_ context.Context, req *pb.EstimateTxComm
 		return new(pb.EstimateTxCommissionResponse), status.Error(codes.NotFound, err.Error())
 	}
 
+	cState.Lock()
+	defer cState.Unlock()
+
 	decodeString, err := hex.DecodeString(req.Tx[2:])
 	if err != nil {
 		return new(pb.EstimateTxCommissionResponse), status.Error(codes.InvalidArgument, err.Error())

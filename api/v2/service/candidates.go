@@ -13,6 +13,9 @@ func (s *Service) Candidates(_ context.Context, req *pb.CandidatesRequest) (*pb.
 		return new(pb.CandidatesResponse), status.Error(codes.NotFound, err.Error())
 	}
 
+	cState.Lock()
+	defer cState.Unlock()
+
 	if req.Height != 0 {
 		cState.Candidates.LoadCandidates()
 		if req.IncludeStakes {
