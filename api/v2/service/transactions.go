@@ -20,7 +20,7 @@ func (s *Service) Transactions(_ context.Context, req *pb.TransactionsRequest) (
 		perPage = 100
 	}
 
-	rpcResult, err := s.client.TxSearch(req.Query, false, page, perPage)
+	rpcResult, err := s.client.TxSearch(req.Query, false, page, perPage, "desc")
 	if err != nil {
 		return new(pb.TransactionsResponse), status.Error(codes.FailedPrecondition, err.Error())
 	}
