@@ -21,6 +21,7 @@ const allowedCoinSymbols = "^[A-Z0-9]{3,10}$"
 var (
 	minCoinSupply  = helpers.BipToPip(big.NewInt(1))
 	minCoinReserve = helpers.BipToPip(big.NewInt(10000))
+	maxCoinSupply  = big.NewInt(0).Exp(big.NewInt(10), big.NewInt(15+18), nil)
 )
 
 type CreateCoinData struct {
@@ -91,11 +92,10 @@ func (data CreateCoinData) BasicCheck(tx *Transaction, context *state.State) *Re
 			Log:  fmt.Sprintf("Coin supply should be between %s and %s", minCoinSupply.String(), data.MaxSupply.String())}
 	}
 
-	MaxCoinSupply := big.NewInt(0).Exp(big.NewInt(10), big.NewInt(15+18), nil)
-	if data.MaxSupply.Cmp(MaxCoinSupply) == 1 {
+	if data.MaxSupply.Cmp(maxCoinSupply) == 1 {
 		return &Response{
 			Code: code.WrongCoinSupply,
-			Log:  fmt.Sprintf("Max coin supply should be less than %s", MaxCoinSupply)}
+			Log:  fmt.Sprintf("Max coin supply should be less than %s", maxCoinSupply)}
 	}
 
 	if data.InitialReserve.Cmp(minCoinReserve) == -1 {
