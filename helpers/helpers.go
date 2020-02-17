@@ -25,3 +25,20 @@ func StringToBigInt(s string) *big.Int {
 
 	return b
 }
+
+func IsValidBigInt(s string) bool {
+	if s == "" {
+		return false
+	}
+
+	b, success := big.NewInt(0).SetString(s, 10)
+	if !success {
+		return false
+	}
+
+	if b.Cmp(big.NewInt(0)) == -1 {
+		return false
+	}
+
+	return true
+}

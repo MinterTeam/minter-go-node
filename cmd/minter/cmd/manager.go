@@ -12,7 +12,7 @@ var ManagerCommand = &cobra.Command{
 	Short:              "Minter manager execute command",
 	DisableFlagParsing: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		newArgs := setParentFlags(cmd,args)
+		newArgs := setParentFlags(cmd, args)
 		console, err := service.ConfigureManagerConsole(utils.GetMinterHome() + "/manager.sock")
 		if err != nil {
 			return nil
@@ -26,7 +26,7 @@ var ManagerConsole = &cobra.Command{
 	Short:              "Minter CLI manager",
 	DisableFlagParsing: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		_ = setParentFlags(cmd,args)
+		_ = setParentFlags(cmd, args)
 		console, err := service.ConfigureManagerConsole(utils.GetMinterHome() + "/manager.sock")
 		if err != nil {
 			return nil
@@ -36,7 +36,7 @@ var ManagerConsole = &cobra.Command{
 	},
 }
 
-func setParentFlags(cmd *cobra.Command, args []string) (newArgs []string){
+func setParentFlags(cmd *cobra.Command, args []string) (newArgs []string) {
 	for _, arg := range args {
 		split := strings.Split(arg, "=")
 		if len(split) == 2 {

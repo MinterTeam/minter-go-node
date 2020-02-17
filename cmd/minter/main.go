@@ -14,6 +14,7 @@ func main() {
 		cmd.ShowValidator,
 		cmd.ManagerCommand,
 		cmd.ManagerConsole,
+		cmd.VerifyGenesis,
 		cmd.Version)
 
 	rootCmd.PersistentFlags().StringVar(&utils.MinterHome, "home-dir", "", "base dir (default is $HOME/.minter)")
