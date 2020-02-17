@@ -32,12 +32,6 @@ const (
 )
 
 func main() {
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Println("Error occurred", r)
-		}
-	}()
-
 	flag.Parse()
 
 	required := []string{"height", "chain_id", "genesis_time"}
