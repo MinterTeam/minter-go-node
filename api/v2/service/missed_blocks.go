@@ -17,7 +17,9 @@ func (s *Service) MissedBlocks(_ context.Context, req *pb.MissedBlocksRequest) (
 	cState.Lock()
 	defer cState.Unlock()
 
-	cState.Validators.LoadValidators()
+	if req.Height != 0 {
+		cState.Validators.LoadValidators()
+	}
 
 	vals := cState.Validators.GetValidators()
 	if vals == nil {
