@@ -304,12 +304,12 @@ message EstimateTxCommissionRequest {
 }
 
 message EventsRequest {
-    int32 height = 1;
+    uint32 height = 1;
 }
 message EventsResponse {
     message Event {
         string type = 1;
-        map<string, string> value = 2;
+        google.protobuf.Struct value = 2;
     }
     repeated Event events = 1;
 }
