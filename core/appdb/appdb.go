@@ -8,7 +8,6 @@ import (
 	"github.com/tendermint/go-amino"
 	"github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tm-db"
-	"time"
 )
 
 var (
@@ -160,21 +159,6 @@ func (appDB *AppDB) SetLastBlocksTimeDelta(height uint64, delta int) {
 	}
 
 	appDB.db.Set([]byte(blockTimeDeltaPath), data)
-}
-
-func (appDB *AppDB) SetDurationBlock(duration time.Duration) {
-	bytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(bytes, uint64(duration.Nanoseconds()))
-	appDB.db.Set([]byte(blockTimePath), bytes)
-}
-
-func (appDB *AppDB) GetDurationBlock() (uint64, error) {
-	bytes, err := appDB.db.Get([]byte(blockTimePath))
-	if err != nil {
-		return 0, err
-	}
-
-	return binary.BigEndian.Uint64(bytes), nil
 }
 
 func NewAppDB(cfg *config.Config) *AppDB {

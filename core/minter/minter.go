@@ -2,6 +2,7 @@ package minter
 
 import (
 	"bytes"
+	"fmt"
 	eventsdb "github.com/MinterTeam/events-db"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
@@ -53,9 +54,34 @@ var (
 	}
 )
 
+type statisticData struct {
+	blockStart struct {
+		sync.Mutex
+		height uint64
+		time   time.Time
+	}
+	blockEnd struct {
+		sync.Mutex
+		height   uint64
+		duration time.Duration
+	}
+
+	api struct {
+		sync.Mutex
+		responseDurations map[string]time.Duration
+	}
+
+	peers struct {
+		sync.Mutex
+		pingDurations map[string]time.Duration
+	}
+}
+
 // Main structure of Minter Blockchain
 type Blockchain struct {
 	abciTypes.BaseApplication
+
+	statisticData *statisticData
 
 	stateDB            db.DB
 	appDB              *appdb.AppDB
@@ -72,8 +98,7 @@ type Blockchain struct {
 	// currentMempool is responsive for prevent sending multiple transactions from one address in one block
 	currentMempool sync.Map
 
-	timeLastBlock time.Time
-	lock          sync.RWMutex
+	lock sync.RWMutex
 }
 
 // Creates Minter Blockchain instance, should be only called once
@@ -161,7 +186,7 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 // Signals the beginning of a block.
 func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.ResponseBeginBlock {
 	height := uint64(req.Header.Height)
-	app.timeLastBlock = time.Now()
+	app.setStartBlock(height, time.Now())
 	// compute max gas
 	app.updateBlocksTimeDelta(height, 3)
 	maxGas := app.calcMaxGas(height)
@@ -359,7 +384,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 		},
 	}
 
-	app.appDB.SetDurationBlock(time.Now().Sub(app.timeLastBlock))
+	app.setEndBlockDuration(time.Now(), app.height)
 
 	return endBlock
 }
@@ -558,10 +583,6 @@ func (app *Blockchain) GetBlocksTimeDelta(height, count uint64) (int, error) {
 	return app.appDB.GetLastBlocksTimeDelta(height)
 }
 
-func (app *Blockchain) GetDurationBlock() (uint64, error) {
-	return app.appDB.GetDurationBlock()
-}
-
 func (app *Blockchain) calcMaxGas(height uint64) uint64 {
 	const targetTime = 7
 	const blockDelta = 3
@@ -596,4 +617,59 @@ func (app *Blockchain) calcMaxGas(height uint64) uint64 {
 
 func (app *Blockchain) GetEventsDB() eventsdb.IEventsDB {
 	return app.eventsDB
+}
+
+func (app *Blockchain) SetApiTime(duration time.Duration, path string) {
+	if app.statisticData == nil {
+		return
+	}
+
+	app.statisticData.api.Lock()
+	defer app.statisticData.api.Unlock()
+
+	app.statisticData.api.responseDurations[path] = duration
+}
+func (app *Blockchain) GetApiTime() map[string]time.Duration {
+	if app.statisticData == nil {
+		return nil
+	}
+
+	app.statisticData.api.Lock()
+	defer app.statisticData.api.Unlock()
+
+	return app.statisticData.api.responseDurations
+}
+
+func (app *Blockchain) setEndBlockDuration(timeEnd time.Time, height uint64) {
+	if app.statisticData == nil {
+		return
+	}
+
+	app.statisticData.blockStart.Lock()
+	defer app.statisticData.blockStart.Unlock()
+	app.statisticData.blockEnd.Lock()
+	defer app.statisticData.blockEnd.Unlock()
+
+	if height == app.statisticData.blockStart.height {
+		app.statisticData.blockEnd.height = height
+		app.statisticData.blockEnd.duration = timeEnd.Sub(app.statisticData.blockStart.time)
+		return
+	}
+
+	panic(fmt.Errorf("wip: setEndBlockDuration: blockStart %v, blockEnd% %v ", app.statisticData.blockStart, app.statisticData.blockEnd)) //todo
+}
+
+func (app *Blockchain) GetLastBlockDuration() (uint64, time.Duration) {
+	if app.statisticData == nil {
+		return 0, 0
+	}
+
+	app.statisticData.blockEnd.Lock()
+	defer app.statisticData.blockEnd.Unlock()
+
+	return app.statisticData.blockEnd.height, app.statisticData.blockEnd.duration
+}
+
+func (app *Blockchain) setStartBlock(height uint64, now time.Time) {
+
 }

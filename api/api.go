@@ -55,6 +55,16 @@ var Routes = map[string]*rpcserver.RPCFunc{
 	"missed_blocks":          rpcserver.NewRPCFunc(MissedBlocks, "pub_key,height"),
 }
 
+func responseTime(b *minter.Blockchain) func(f func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
+	return func(f func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
+		return func(w http.ResponseWriter, r *http.Request) {
+			start := time.Now()
+			f(w, r)
+			b.SetApiTime(time.Now().Sub(start), r.URL.Path)
+		}
+	}
+}
+
 func RunAPI(b *minter.Blockchain, tmRPC *rpc.Local, cfg *config.Config, logger log.Logger) {
 	minterCfg = cfg
 	RegisterCryptoAmino(cdc)
@@ -66,7 +76,8 @@ func RunAPI(b *minter.Blockchain, tmRPC *rpc.Local, cfg *config.Config, logger l
 	waitForTendermint()
 
 	m := http.NewServeMux()
-	rpcserver.RegisterRPCFuncs(m, Routes, cdc, logger.With("module", "rpc"))
+
+	rpcserver.RegisterRPCFuncs(m, Routes, cdc, logger.With("module", "rpc"), responseTime(b))
 	listener, err := rpcserver.Listen(cfg.APIListenAddress, rpcserver.Config{
 		MaxOpenConnections: cfg.APISimultaneousRequests,
 	})
