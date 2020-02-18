@@ -14,7 +14,7 @@ func (s *Service) UnconfirmedTxs(_ context.Context, req *pb.UnconfirmedTxsReques
 		return new(pb.UnconfirmedTxsResponse), status.Error(codes.Internal, err.Error())
 	}
 	return &pb.UnconfirmedTxsResponse{
-		CountTransactions: fmt.Sprintf("%d", txs.Count),
+		TransactionsCount: fmt.Sprintf("%d", txs.Count),
 		TotalTransactions: fmt.Sprintf("%d", txs.Total),
 		TotalBytes:        fmt.Sprintf("%d", txs.TotalBytes),
 	}, nil

@@ -7,6 +7,8 @@ protoc -I/usr/local/include -I. \
     -I"$GOPATH"/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis \
     --go_out=plugins=grpc:. ./api.proto
 
+sed -i "" -e "s/,omitempty//g" ./api_pb/api.pb.go
+
 protoc -I/usr/local/include -I. \
     -I"$GOPATH"/src \
     -I"$GOPATH"/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis \
