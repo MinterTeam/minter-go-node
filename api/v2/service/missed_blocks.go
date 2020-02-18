@@ -1,7 +1,9 @@
 package service
 
 import (
+	"bytes"
 	"context"
+	"encoding/hex"
 	"fmt"
 	pb "github.com/MinterTeam/minter-go-node/api/v2/api_pb"
 	"google.golang.org/grpc/codes"
@@ -27,7 +29,11 @@ func (s *Service) MissedBlocks(_ context.Context, req *pb.MissedBlocksRequest) (
 	}
 
 	for _, val := range vals {
-		if string(val.PubKey[:]) == req.PublicKey {
+		decodeString, err := hex.DecodeString(req.PublicKey[2:])
+		if err != nil {
+			return new(pb.MissedBlocksResponse), status.Error(codes.InvalidArgument, err.Error())
+		}
+		if bytes.Compare(val.PubKey[:], decodeString) == 0 {
 			return &pb.MissedBlocksResponse{
 				MissedBlocks:      val.AbsentTimes.String(),
 				MissedBlocksCount: fmt.Sprintf("%d", val.CountAbsentTimes()),

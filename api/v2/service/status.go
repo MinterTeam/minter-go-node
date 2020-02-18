@@ -24,9 +24,7 @@ func (s *Service) Status(context.Context, *empty.Empty) (*pb.StatusResponse, err
 		LatestBlockTime:   result.SyncInfo.LatestBlockTime.Format(time.RFC3339Nano),
 		KeepLastStates:    fmt.Sprintf("%d", s.minterCfg.BaseConfig.KeepLastStates),
 		CatchingUp:        result.SyncInfo.CatchingUp,
-		PublicKey: &pb.StatusResponse_PubKey{
-			//Type:  "todo",
-			Value: fmt.Sprintf("Mp%x", result.ValidatorInfo.PubKey.Bytes()[5:]),
-		},
+		PublicKey:         fmt.Sprintf("Mp%x", result.ValidatorInfo.PubKey.Bytes()[5:]),
+		NodeId:            string(result.NodeInfo.ID()),
 	}, nil
 }

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	pb "github.com/MinterTeam/minter-go-node/api/v2/api_pb"
 	"github.com/MinterTeam/minter-go-node/core/types"
@@ -10,6 +11,11 @@ import (
 )
 
 func (s *Service) Address(_ context.Context, req *pb.AddressRequest) (*pb.AddressResponse, error) {
+	decodeString, err := hex.DecodeString(req.Address[2:])
+	if err != nil {
+		return new(pb.AddressResponse), status.Error(codes.InvalidArgument, err.Error())
+	}
+
 	cState, err := s.getStateForHeight(req.Height)
 	if err != nil {
 		return new(pb.AddressResponse), status.Error(codes.NotFound, err.Error())
@@ -18,10 +24,10 @@ func (s *Service) Address(_ context.Context, req *pb.AddressRequest) (*pb.Addres
 	cState.Lock()
 	defer cState.Unlock()
 
-	address := types.StringToAddress(req.Address)
+	address := types.BytesToAddress(decodeString)
 	response := &pb.AddressResponse{
 		Balance:           make(map[string]string),
-		CountTransactions: fmt.Sprintf("%d", cState.Accounts.GetNonce(address)),
+		TransactionsCount: fmt.Sprintf("%d", cState.Accounts.GetNonce(address)),
 	}
 
 	balances := cState.Accounts.GetBalances(address)
