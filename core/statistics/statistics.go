@@ -13,10 +13,6 @@ import (
 )
 
 func Statistic(app *minter.Blockchain) {
-	height, durationBlock := app.GetLastBlockDuration()
-	log.Println(height, durationBlock)
-	log.Println(app.GetApiTime())
-
 	state, err := core.NetInfo(&rpctypes.Context{})
 	if err != nil {
 		log.Fatalln(err)
@@ -24,20 +20,17 @@ func Statistic(app *minter.Blockchain) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
 	for _, peer := range state.Peers {
-		u := &url.URL{
-			Scheme:     "http",
-			Opaque:     "",
-			User:       nil,
-			Host:       peer.RemoteIP,
-			Path:       "",
-			RawPath:    "",
-			ForceQuery: false,
-			RawQuery:   "",
-			Fragment:   "",
-		}
-		log.Println(u.String(), timeGet(u.String()))
+		u := &url.URL{Scheme: "http", Host: peer.RemoteIP}
+		app.SetApiTime(timeGet(u.String()), u.String())
 	}
 
+	statistic := app.GetStatistic()
+	_ = statistic
+
+	//height, durationBlock := app.GetLastBlockDuration()
+	//log.Println(height, durationBlock)
+	//log.Println(app.GetApiTime())
+	return
 }
 
 func timeGet(url string) time.Duration {

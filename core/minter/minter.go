@@ -60,20 +60,20 @@ type statisticData struct {
 		height uint64
 		time   time.Time
 	}
-	blockEnd struct {
+	BlockEnd struct {
 		sync.Mutex
-		height   uint64
-		duration time.Duration
+		Height   uint64
+		Duration time.Duration
 	}
 
-	api struct {
+	Api struct {
 		sync.Mutex
-		responseDurations map[string]time.Duration
+		ResponseDurations map[string]time.Duration
 	}
 
-	peers struct {
+	Peers struct {
 		sync.Mutex
-		pingDurations map[string]time.Duration
+		PingDurations map[string]time.Duration
 	}
 }
 
@@ -88,7 +88,7 @@ type Blockchain struct {
 	eventsDB           eventsdb.IEventsDB
 	stateDeliver       *state.State
 	stateCheck         *state.State
-	height             uint64   // current Blockchain height
+	height             uint64   // current Blockchain Height
 	rewards            *big.Int // Rewards pool
 	validatorsStatuses map[types.TmAddress]int8
 
@@ -136,7 +136,7 @@ func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 
 	blockchain.stateCheck = state.NewCheckState(blockchain.stateDeliver)
 
-	// Set start height for rewards and validators
+	// Set start Height for rewards and validators
 	rewards.SetStartHeight(applicationDB.GetStartHeight())
 	validators.SetStartHeight(applicationDB.GetStartHeight())
 
@@ -192,12 +192,12 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 	height := uint64(req.Header.Height)
 
 	if app.haltHeight > 0 && height >= app.haltHeight {
-		panic(fmt.Sprintf("Application halted at height %d", height))
+		panic(fmt.Sprintf("Application halted at Height %d", height))
 	}
 
-	app.stateDeliver.RLock()
-
 	app.setStartBlock(height, time.Now())
+
+	app.stateDeliver.RLock()
 
 	// compute max gas
 	app.updateBlocksTimeDelta(height, 3)
@@ -468,11 +468,11 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 	// Flush events db
 	_ = app.eventsDB.CommitEvents()
 
-	// Persist application hash and height
+	// Persist application hash and Height
 	app.appDB.SetLastBlockHash(hash)
 	app.appDB.SetLastHeight(app.height)
 
-	// Resetting check state to be consistent with current height
+	// Resetting check state to be consistent with current Height
 	app.resetCheckState()
 
 	// Clear mempool
@@ -509,20 +509,20 @@ func (app *Blockchain) CurrentState() *state.State {
 	return state.NewCheckState(app.stateCheck)
 }
 
-// Get immutable state of Minter Blockchain for given height
+// Get immutable state of Minter Blockchain for given Height
 func (app *Blockchain) GetStateForHeight(height uint64) (*state.State, error) {
 	app.lock.RLock()
 	defer app.lock.RUnlock()
 
 	s, err := state.NewCheckStateAtHeight(height, app.stateDB)
 	if err != nil {
-		return nil, rpctypes.RPCError{Code: 404, Message: "State at given height not found", Data: err.Error()}
+		return nil, rpctypes.RPCError{Code: 404, Message: "State at given Height not found", Data: err.Error()}
 	}
 
 	return s, nil
 }
 
-// Get current height of Minter Blockchain
+// Get current Height of Minter Blockchain
 func (app *Blockchain) Height() uint64 {
 	return atomic.LoadUint64(&app.height)
 }
@@ -638,20 +638,20 @@ func (app *Blockchain) SetApiTime(duration time.Duration, path string) {
 		return
 	}
 
-	app.statisticData.api.Lock()
-	defer app.statisticData.api.Unlock()
+	app.statisticData.Api.Lock()
+	defer app.statisticData.Api.Unlock()
 
-	app.statisticData.api.responseDurations[path] = duration
+	app.statisticData.Api.ResponseDurations[path] = duration
 }
 func (app *Blockchain) GetApiTime() map[string]time.Duration {
 	if app.statisticData == nil {
 		return nil
 	}
 
-	app.statisticData.api.Lock()
-	defer app.statisticData.api.Unlock()
+	app.statisticData.Api.Lock()
+	defer app.statisticData.Api.Unlock()
 
-	return app.statisticData.api.responseDurations
+	return app.statisticData.Api.ResponseDurations
 }
 
 func (app *Blockchain) setEndBlockDuration(timeEnd time.Time, height uint64) {
@@ -661,16 +661,16 @@ func (app *Blockchain) setEndBlockDuration(timeEnd time.Time, height uint64) {
 
 	app.statisticData.blockStart.Lock()
 	defer app.statisticData.blockStart.Unlock()
-	app.statisticData.blockEnd.Lock()
-	defer app.statisticData.blockEnd.Unlock()
+	app.statisticData.BlockEnd.Lock()
+	defer app.statisticData.BlockEnd.Unlock()
 
 	if height == app.statisticData.blockStart.height {
-		app.statisticData.blockEnd.height = height
-		app.statisticData.blockEnd.duration = timeEnd.Sub(app.statisticData.blockStart.time)
+		app.statisticData.BlockEnd.Height = height
+		app.statisticData.BlockEnd.Duration = timeEnd.Sub(app.statisticData.blockStart.time)
 		return
 	}
 
-	panic(fmt.Errorf("wip: setEndBlockDuration: blockStart %v, blockEnd% %v ", app.statisticData.blockStart, app.statisticData.blockEnd)) //todo
+	panic(fmt.Errorf("wip: setEndBlockDuration: blockStart %v, BlockEnd% %v ", app.statisticData.blockStart, app.statisticData.BlockEnd)) //todo
 }
 
 func (app *Blockchain) GetLastBlockDuration() (uint64, time.Duration) {
@@ -678,12 +678,24 @@ func (app *Blockchain) GetLastBlockDuration() (uint64, time.Duration) {
 		return 0, 0
 	}
 
-	app.statisticData.blockEnd.Lock()
-	defer app.statisticData.blockEnd.Unlock()
+	app.statisticData.BlockEnd.Lock()
+	defer app.statisticData.BlockEnd.Unlock()
 
-	return app.statisticData.blockEnd.height, app.statisticData.blockEnd.duration
+	return app.statisticData.BlockEnd.Height, app.statisticData.BlockEnd.Duration
 }
 
 func (app *Blockchain) setStartBlock(height uint64, now time.Time) {
+	if app.statisticData == nil {
+		return
+	}
 
+	app.statisticData.blockStart.Lock()
+	defer app.statisticData.blockStart.Unlock()
+
+	app.statisticData.blockStart.height = height
+	app.statisticData.blockStart.time = now
+}
+
+func (app *Blockchain) GetStatistic() *statisticData {
+	return app.statisticData
 }
