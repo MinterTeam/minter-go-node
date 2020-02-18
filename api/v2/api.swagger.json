@@ -948,17 +948,6 @@
         }
       }
     },
-    "StatusResponsePubKey": {
-      "type": "object",
-      "properties": {
-        "type": {
-          "type": "string"
-        },
-        "value": {
-          "type": "string"
-        }
-      }
-    },
     "api_pbAddressResponse": {
       "type": "object",
       "properties": {
@@ -968,7 +957,7 @@
             "type": "string"
           }
         },
-        "count_transactions": {
+        "transactions_count": {
           "type": "string"
         }
       }
@@ -996,7 +985,7 @@
             "type": "string"
           }
         },
-        "count_transactions": {
+        "transactions_count": {
           "type": "string"
         }
       }
@@ -1013,7 +1002,7 @@
         "time": {
           "type": "string"
         },
-        "count_transactions": {
+        "transactions_count": {
           "type": "string"
         },
         "transactions": {
@@ -1328,7 +1317,10 @@
           "format": "boolean"
         },
         "public_key": {
-          "$ref": "#/definitions/StatusResponsePubKey"
+          "type": "string"
+        },
+        "node_id": {
+          "type": "string"
         }
       }
     },
@@ -1431,7 +1423,7 @@
     "api_pbUnconfirmedTxsResponse": {
       "type": "object",
       "properties": {
-        "count_transactions": {
+        "transactions_count": {
           "type": "string"
         },
         "total_transactions": {

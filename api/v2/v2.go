@@ -30,7 +30,7 @@ func Run(srv *service.Service, addrGRPC, addrApi string) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	mux := runtime.NewServeMux()
-	opts := []grpc.DialOption{grpc.WithInsecure()}
+	opts := []grpc.DialOption{grpc.WithInsecure(), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(50000000))}
 
 	group.Go(func() error {
 		return gw.RegisterApiServiceHandlerFromEndpoint(ctx, mux, addrGRPC, opts)

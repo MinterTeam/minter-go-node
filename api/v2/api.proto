@@ -73,13 +73,10 @@ message StatusResponse {
     string latest_app_hash = 2;
     string latest_block_height = 3;
     string latest_block_time = 4;
-    message PubKey {
-        string type = 2;
-        string value = 1;
-    }
     string keep_last_states = 5;
     bool catching_up = 6;
-    PubKey public_key = 7;
+    string public_key = 7;
+    string node_id = 9;
 }
 message GenesisResponse {
     string genesis_time = 1;
@@ -117,7 +114,7 @@ message BlockResponse {
     string hash = 1;
     string height = 2;
     string time = 3;
-    string count_transactions = 4;
+    string transactions_count = 4;
 
     message Transaction {
         string hash = 1;
@@ -170,7 +167,7 @@ message AddressRequest {
 }
 message AddressResponse {
     map<string, string> balance = 1;
-    string count_transactions = 2;
+    string transactions_count = 2;
 }
 
 message AddressesRequest {
@@ -181,7 +178,7 @@ message AddressesResponse {
     message Result {
         string address = 1;
         map<string, string> balance = 2;
-        string count_transactions = 3;
+        string transactions_count = 3;
     }
     repeated Result addresses = 3;
 }
@@ -327,7 +324,7 @@ message MissedBlocksResponse {
 }
 
 message UnconfirmedTxsResponse {
-    string count_transactions = 1;
+    string transactions_count = 1;
     string total_transactions = 2;
     string total_bytes = 3;
     repeated string transactions = 4;

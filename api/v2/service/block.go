@@ -117,10 +117,10 @@ func (s *Service) Block(_ context.Context, req *pb.BlockRequest) (*pb.BlockRespo
 		Hash:              hex.EncodeToString(block.Block.Hash()),
 		Height:            fmt.Sprintf("%d", block.Block.Height),
 		Time:              block.Block.Time.Format(time.RFC3339Nano),
-		CountTransactions: fmt.Sprintf("%d", len(block.Block.Txs)),
+		TransactionsCount: fmt.Sprintf("%d", len(block.Block.Txs)),
 		Transactions:      txs,
 		BlockReward:       rewards.GetRewardForBlock(uint64(req.Height)).String(),
-		Size:              fmt.Sprintf("%d", s.cdc.MustMarshalBinaryLengthPrefixed(block)),
+		Size:              fmt.Sprintf("%d", len(s.cdc.MustMarshalBinaryLengthPrefixed(block))),
 		Proposer:          proposer,
 		Validators:        validators,
 		Evidence: &pb.BlockResponse_Evidence{

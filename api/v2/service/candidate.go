@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	pb "github.com/MinterTeam/minter-go-node/api/v2/api_pb"
 	"github.com/MinterTeam/minter-go-node/core/state"
@@ -12,6 +13,11 @@ import (
 )
 
 func (s *Service) Candidate(_ context.Context, req *pb.CandidateRequest) (*pb.CandidateResponse, error) {
+	decodeString, err := hex.DecodeString(req.PublicKey)
+	if err != nil {
+		return new(pb.CandidateResponse), status.Error(codes.InvalidArgument, err.Error())
+	}
+
 	cState, err := s.getStateForHeight(req.Height)
 	if err != nil {
 		return new(pb.CandidateResponse), status.Error(codes.NotFound, err.Error())
@@ -25,7 +31,7 @@ func (s *Service) Candidate(_ context.Context, req *pb.CandidateRequest) (*pb.Ca
 		cState.Candidates.LoadStakes()
 	}
 
-	candidate := cState.Candidates.GetCandidate(types.BytesToPubkey([]byte(req.PublicKey)))
+	candidate := cState.Candidates.GetCandidate(types.BytesToPubkey(decodeString))
 	if candidate == nil {
 		return new(pb.CandidateResponse), status.Error(codes.NotFound, "Candidate not found")
 	}
@@ -45,7 +51,7 @@ func makeResponseCandidate(state *state.State, c candidates.Candidate, includeSt
 
 	if includeStakes {
 		stakes := state.Candidates.GetStakes(c.PubKey)
-		candidate.Stakes = make([]*pb.CandidateResponse_Stake, len(stakes))
+		candidate.Stakes = make([]*pb.CandidateResponse_Stake, 0, len(stakes))
 		for _, stake := range stakes {
 			candidate.Stakes = append(candidate.Stakes, &pb.CandidateResponse_Stake{
 				Owner:    stake.Owner.String(),
