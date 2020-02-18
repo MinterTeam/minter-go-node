@@ -19,6 +19,9 @@ func (s *Service) EstimateCoinSell(_ context.Context, req *pb.EstimateCoinSellRe
 		return new(pb.EstimateCoinSellResponse), status.Error(codes.NotFound, err.Error())
 	}
 
+	cState.Lock()
+	defer cState.Unlock()
+
 	coinToSell := types.StrToCoinSymbol(req.CoinToSell)
 	coinToBuy := types.StrToCoinSymbol(req.CoinToBuy)
 

@@ -236,6 +236,8 @@ type BaseConfig struct {
 	LogPath string `mapstructure:"log_path"`
 
 	StateCacheSize int `mapstructure:"state_cache_size"`
+
+	HaltHeight int `mapstructure:"halt_height"`
 }
 
 // DefaultBaseConfig returns a default base configuration for a Tendermint node

@@ -34,7 +34,6 @@ type Validators struct {
 
 func NewValidators(bus *bus.Bus, iavl tree.Tree) (*Validators, error) {
 	validators := &Validators{iavl: iavl, bus: bus}
-	validators.loadValidators()
 
 	return validators, nil
 }
@@ -244,7 +243,7 @@ func (v *Validators) getByTmAddress(address types.TmAddress) *Validator {
 	return nil
 }
 
-func (v *Validators) loadValidators() {
+func (v *Validators) LoadValidators() {
 	if v.loaded {
 		return
 	}
@@ -330,5 +329,14 @@ func (v *Validators) Export(state *types.AppState) {
 			AccumReward:   val.GetAccumReward().String(),
 			AbsentTimes:   val.AbsentTimes,
 		})
+	}
+}
+
+func (v *Validators) SetToDrop(pubkey types.Pubkey) {
+	vals := v.GetValidators()
+	for _, val := range vals {
+		if val.PubKey == pubkey {
+			val.toDrop = true
+		}
 	}
 }

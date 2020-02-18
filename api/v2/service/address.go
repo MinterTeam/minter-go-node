@@ -15,6 +15,9 @@ func (s *Service) Address(_ context.Context, req *pb.AddressRequest) (*pb.Addres
 		return new(pb.AddressResponse), status.Error(codes.NotFound, err.Error())
 	}
 
+	cState.Lock()
+	defer cState.Unlock()
+
 	address := types.StringToAddress(req.Address)
 	response := &pb.AddressResponse{
 		Balance:           make(map[string]string),

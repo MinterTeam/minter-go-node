@@ -1,0 +1,21 @@
+name: docker
+
+on: push
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+
+      - name: Build & Push to Docker Hub
+        uses: opspresso/action-docker@master
+        env:
+          USERNAME: ${{ secrets.DOCKER_HUB_USER }}
+          PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
+          IMAGE_NAME: "minterteam/minter"
+          LATEST: "true" 
+          TAG_NAME: "v1.0.5"

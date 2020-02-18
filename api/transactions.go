@@ -39,7 +39,7 @@ func Transactions(query string, page, perPage int) (*[]TransactionResponse, erro
 		perPage = 100
 	}
 
-	rpcResult, err := client.TxSearch(query, false, page, perPage)
+	rpcResult, err := client.TxSearch(query, false, page, perPage, "desc")
 	if err != nil {
 		return nil, err
 	}

@@ -16,6 +16,13 @@ func MissedBlocks(pubkey types.Pubkey, height int) (*MissedBlocksResponse, error
 		return nil, err
 	}
 
+	cState.Lock()
+	defer cState.Unlock()
+
+	if height != 0 {
+		cState.Validators.LoadValidators()
+	}
+
 	vals := cState.Validators.GetValidators()
 	if vals == nil {
 		return nil, rpctypes.RPCError{Code: 404, Message: "Validators not found"}

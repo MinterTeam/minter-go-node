@@ -21,6 +21,9 @@ func EstimateCoinSellAll(
 		return nil, err
 	}
 
+	cState.Lock()
+	defer cState.Unlock()
+
 	if gasPrice < 1 {
 		gasPrice = 1
 	}

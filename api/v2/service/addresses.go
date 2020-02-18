@@ -15,6 +15,9 @@ func (s *Service) Addresses(_ context.Context, req *pb.AddressesRequest) (*pb.Ad
 		return new(pb.AddressesResponse), status.Error(codes.NotFound, err.Error())
 	}
 
+	cState.Lock()
+	defer cState.Unlock()
+
 	response := &pb.AddressesResponse{
 		Addresses: make([]*pb.AddressesResponse_Result, 0, len(req.Addresses)),
 	}
