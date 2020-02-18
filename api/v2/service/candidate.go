@@ -13,7 +13,7 @@ import (
 )
 
 func (s *Service) Candidate(_ context.Context, req *pb.CandidateRequest) (*pb.CandidateResponse, error) {
-	decodeString, err := hex.DecodeString(req.PublicKey)
+	decodeString, err := hex.DecodeString(req.PublicKey[2:])
 	if err != nil {
 		return new(pb.CandidateResponse), status.Error(codes.InvalidArgument, err.Error())
 	}
