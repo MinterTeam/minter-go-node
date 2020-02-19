@@ -13,6 +13,9 @@ import (
 )
 
 func (s *Service) Candidate(_ context.Context, req *pb.CandidateRequest) (*pb.CandidateResponse, error) {
+	if len(req.PublicKey) < 3 {
+		return new(pb.CandidateResponse), status.Error(codes.InvalidArgument, "invalid public_key")
+	}
 	decodeString, err := hex.DecodeString(req.PublicKey[2:])
 	if err != nil {
 		return new(pb.CandidateResponse), status.Error(codes.InvalidArgument, err.Error())

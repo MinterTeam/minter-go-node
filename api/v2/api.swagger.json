@@ -493,8 +493,34 @@
       }
     },
     "/send_transaction": {
+      "post": {
+        "operationId": "SendPostTransaction",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/api_pbSendTransactionResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/api_pbSendTransactionRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ApiService"
+        ]
+      }
+    },
+    "/send_transaction/{tx}": {
       "get": {
-        "operationId": "SendTransaction",
+        "operationId": "SendGetTransaction",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -506,8 +532,8 @@
         "parameters": [
           {
             "name": "tx",
-            "in": "query",
-            "required": false,
+            "in": "path",
+            "required": true,
             "type": "string"
           }
         ],
@@ -1268,6 +1294,14 @@
         },
         "other": {
           "$ref": "#/definitions/NodeInfoOther"
+        }
+      }
+    },
+    "api_pbSendTransactionRequest": {
+      "type": "object",
+      "properties": {
+        "tx": {
+          "type": "string"
         }
       }
     },
