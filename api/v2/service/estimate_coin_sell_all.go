@@ -19,8 +19,8 @@ func (s *Service) EstimateCoinSellAll(_ context.Context, req *pb.EstimateCoinSel
 		return new(pb.EstimateCoinSellAllResponse), status.Error(codes.NotFound, err.Error())
 	}
 
-	cState.Lock()
-	defer cState.Unlock()
+	cState.RLock()
+	defer cState.RUnlock()
 
 	gasPrice := req.GasPrice
 	if gasPrice < 1 {

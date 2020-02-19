@@ -16,8 +16,8 @@ func Addresses(addresses []types.Address, height int) (*[]AddressesResponse, err
 		return nil, err
 	}
 
-	cState.Lock()
-	defer cState.Unlock()
+	cState.RLock()
+	defer cState.RUnlock()
 
 	response := make([]AddressesResponse, len(addresses))
 

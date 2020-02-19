@@ -26,13 +26,15 @@ func (s *Service) Candidate(_ context.Context, req *pb.CandidateRequest) (*pb.Ca
 		return new(pb.CandidateResponse), status.Error(codes.NotFound, err.Error())
 	}
 
-	cState.Lock()
-	defer cState.Unlock()
-
 	if req.Height != 0 {
+		cState.Lock()
 		cState.Candidates.LoadCandidates()
 		cState.Candidates.LoadStakes()
+		cState.Unlock()
 	}
+
+	cState.RLock()
+	defer cState.RUnlock()
 
 	candidate := cState.Candidates.GetCandidate(types.BytesToPubkey(decodeString))
 	if candidate == nil {

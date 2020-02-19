@@ -15,8 +15,8 @@ func Address(address types.Address, height int) (*AddressResponse, error) {
 		return nil, err
 	}
 
-	cState.Lock()
-	defer cState.Unlock()
+	cState.RLock()
+	defer cState.RUnlock()
 
 	response := AddressResponse{
 		Balance:          make(map[string]string),

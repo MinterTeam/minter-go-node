@@ -18,8 +18,8 @@ func (s *Service) EstimateTxCommission(_ context.Context, req *pb.EstimateTxComm
 		return new(pb.EstimateTxCommissionResponse), status.Error(codes.NotFound, err.Error())
 	}
 
-	cState.Lock()
-	defer cState.Unlock()
+	cState.RLock()
+	defer cState.RUnlock()
 
 	if len(req.Tx) < 3 {
 		return new(pb.EstimateTxCommissionResponse), status.Error(codes.InvalidArgument, "invalid tx")

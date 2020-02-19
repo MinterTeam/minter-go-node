@@ -25,8 +25,8 @@ func (s *Service) Address(_ context.Context, req *pb.AddressRequest) (*pb.Addres
 		return new(pb.AddressResponse), status.Error(codes.NotFound, err.Error())
 	}
 
-	cState.Lock()
-	defer cState.Unlock()
+	cState.RLock()
+	defer cState.RUnlock()
 
 	address := types.BytesToAddress(decodeString)
 	response := &pb.AddressResponse{
