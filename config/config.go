@@ -227,6 +227,12 @@ type BaseConfig struct {
 	// Address to listen for API connections
 	APIListenAddress string `mapstructure:"api_listen_addr"`
 
+	// Address to listen for gRPC connections
+	GRPCListenAddress string `mapstructure:"grpc_listen_addr"`
+
+	// Address to listen for API v2 connections
+	APIv2ListenAddress string `mapstructure:"api_v2_listen_addr"`
+
 	ValidatorMode bool `mapstructure:"validator_mode"`
 
 	KeepLastStates int64 `mapstructure:"keep_last_states"`
@@ -255,6 +261,8 @@ func DefaultBaseConfig() BaseConfig {
 		DBBackend:               "goleveldb",
 		DBPath:                  "data",
 		APIListenAddress:        "tcp://0.0.0.0:8841",
+		GRPCListenAddress:       "tcp://0.0.0.0:8842",
+		APIv2ListenAddress:      "tcp://0.0.0.0:8843",
 		ValidatorMode:           false,
 		KeepLastStates:          120,
 		StateCacheSize:          1000000,
