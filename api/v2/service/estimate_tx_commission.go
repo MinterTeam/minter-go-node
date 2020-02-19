@@ -21,12 +21,16 @@ func (s *Service) EstimateTxCommission(_ context.Context, req *pb.EstimateTxComm
 	cState.Lock()
 	defer cState.Unlock()
 
+	if len(req.Tx) < 3 {
+		return new(pb.EstimateTxCommissionResponse), status.Error(codes.InvalidArgument, "invalid tx")
+	}
+
 	decodeString, err := hex.DecodeString(req.Tx[2:])
 	if err != nil {
 		return new(pb.EstimateTxCommissionResponse), status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	decodedTx, err := transaction.TxDecoder.DecodeFromBytes(decodeString)
+	decodedTx, err := transaction.TxDecoder.DecodeFromBytesWithoutSig(decodeString)
 	if err != nil {
 		return new(pb.EstimateTxCommissionResponse), status.Error(codes.InvalidArgument, "Cannot decode transaction")
 	}

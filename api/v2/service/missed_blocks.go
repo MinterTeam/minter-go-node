@@ -29,6 +29,9 @@ func (s *Service) MissedBlocks(_ context.Context, req *pb.MissedBlocksRequest) (
 	}
 
 	for _, val := range vals {
+		if len(req.PublicKey) < 3 {
+			return new(pb.MissedBlocksResponse), status.Error(codes.InvalidArgument, "invalid public_key")
+		}
 		decodeString, err := hex.DecodeString(req.PublicKey[2:])
 		if err != nil {
 			return new(pb.MissedBlocksResponse), status.Error(codes.InvalidArgument, err.Error())

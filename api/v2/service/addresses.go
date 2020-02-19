@@ -24,6 +24,10 @@ func (s *Service) Addresses(_ context.Context, req *pb.AddressesRequest) (*pb.Ad
 	}
 
 	for _, address := range req.Addresses {
+		if len(address) < 3 {
+			return new(pb.AddressesResponse), status.Error(codes.InvalidArgument, fmt.Sprintf("invalid address %s", address))
+		}
+
 		decodeString, err := hex.DecodeString(address[2:])
 		if err != nil {
 			return new(pb.AddressesResponse), status.Error(codes.InvalidArgument, err.Error())
