@@ -10,6 +10,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/rewards"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/state/candidates"
+	"github.com/MinterTeam/minter-go-node/core/statistics"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/core/validators"
@@ -54,34 +55,11 @@ var (
 	}
 )
 
-type statisticData struct {
-	blockStart struct {
-		sync.Mutex
-		height uint64
-		time   time.Time
-	}
-	BlockEnd struct {
-		sync.Mutex
-		Height   uint64
-		Duration time.Duration
-	}
-
-	Api struct {
-		sync.Mutex
-		ResponseDurations map[string]time.Duration
-	}
-
-	Peers struct {
-		sync.Mutex
-		PingDurations map[string]time.Duration
-	}
-}
-
 // Main structure of Minter Blockchain
 type Blockchain struct {
 	abciTypes.BaseApplication
 
-	statisticData *statisticData
+	statisticData *statistics.Data
 
 	stateDB            db.DB
 	appDB              *appdb.AppDB
@@ -101,6 +79,10 @@ type Blockchain struct {
 	lock sync.RWMutex
 
 	haltHeight uint64
+}
+
+func (app *Blockchain) SetStatisticData(statisticData *statistics.Data) {
+	app.statisticData = statisticData
 }
 
 // Creates Minter Blockchain instance, should be only called once
@@ -633,105 +615,32 @@ func (app *Blockchain) GetEventsDB() eventsdb.IEventsDB {
 	return app.eventsDB
 }
 
-func (app *Blockchain) SetPeerTime(duration time.Duration, path string) {
-	if app.statisticData == nil {
-		return
-	}
-
-	app.statisticData.Peers.Lock()
-	defer app.statisticData.Peers.Unlock()
-
-	app.statisticData.Peers.PingDurations[path] = duration
-}
-
 func (app *Blockchain) SetApiTime(duration time.Duration, path string) {
 	if app.statisticData == nil {
 		return
 	}
 
-	app.statisticData.Api.Lock()
-	defer app.statisticData.Api.Unlock()
-
-	app.statisticData.Api.ResponseDurations[path] = duration
+	app.statisticData.SetApiTime(duration, path)
 }
 
-func (app *Blockchain) GetApiTime() map[string]time.Duration {
+func (app *Blockchain) SetStartBlock(height uint64, now time.Time) {
 	if app.statisticData == nil {
-		return nil
+		return
 	}
 
-	app.statisticData.Api.Lock()
-	defer app.statisticData.Api.Unlock()
-
-	return app.statisticData.Api.ResponseDurations
-}
-
-func (app *Blockchain) GetPeerTime() map[string]time.Duration {
-	if app.statisticData == nil {
-		return nil
-	}
-
-	app.statisticData.Peers.Lock()
-	defer app.statisticData.Peers.Unlock()
-
-	return app.statisticData.Peers.PingDurations
+	app.statisticData.SetStartBlock(height, now)
 }
 
 func (app *Blockchain) setEndBlockDuration(timeEnd time.Time, height uint64) {
 	if app.statisticData == nil {
 		return
 	}
-
-	app.statisticData.blockStart.Lock()
-	defer app.statisticData.blockStart.Unlock()
-	app.statisticData.BlockEnd.Lock()
-	defer app.statisticData.BlockEnd.Unlock()
-
-	if /*height%120 != 0 &&*/ height == app.statisticData.blockStart.height {
-		app.statisticData.BlockEnd.Height = height
-		app.statisticData.BlockEnd.Duration = timeEnd.Sub(app.statisticData.blockStart.time)
-		return
-	}
-
-	panic(fmt.Errorf("wip: setEndBlockDuration: blockStart %v, BlockEnd% %v ", app.statisticData.blockStart, app.statisticData.BlockEnd)) //todo
-}
-
-func (app *Blockchain) GetLastBlockDuration() (uint64, time.Duration) {
-	if app.statisticData == nil {
-		return 0, 0
-	}
-
-	app.statisticData.BlockEnd.Lock()
-	defer app.statisticData.BlockEnd.Unlock()
-
-	return app.statisticData.BlockEnd.Height, app.statisticData.BlockEnd.Duration
+	app.statisticData.SetEndBlockDuration(timeEnd, height)
 }
 
 func (app *Blockchain) setStartBlock(height uint64, now time.Time) {
 	if app.statisticData == nil {
 		return
 	}
-
-	app.statisticData.blockStart.Lock()
-	defer app.statisticData.blockStart.Unlock()
-
-	app.statisticData.blockStart.height = height
-	app.statisticData.blockStart.time = now
-}
-
-func (app *Blockchain) GetStatistic() *statisticData {
-	return app.statisticData
-}
-
-func (app *Blockchain) InitStatistic() {
-	app.statisticData = &statisticData{
-		Api: struct {
-			sync.Mutex
-			ResponseDurations map[string]time.Duration
-		}{ResponseDurations: map[string]time.Duration{}},
-		Peers: struct {
-			sync.Mutex
-			PingDurations map[string]time.Duration
-		}{PingDurations: map[string]time.Duration{}},
-	}
+	app.statisticData.SetStartBlock(height, now)
 }

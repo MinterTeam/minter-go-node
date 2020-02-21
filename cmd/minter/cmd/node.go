@@ -105,10 +105,13 @@ func runNode(cmd *cobra.Command) error {
 			panic(err)
 		}
 	}()
-	//todo check ON/OFF
-	app.InitStatistic()
-	ctxStat, _ := context.WithCancel(ctx)
-	go statistics.Statistic(ctxStat, app)
+
+	if true { //todo check ON/OFF
+		data := statistics.New()
+		app.SetStatisticData(data)
+		ctxStat, _ := context.WithCancel(ctx)
+		go data.Statistic(ctxStat)
+	}
 	tmos.TrapSignal(logger.With("module", "trap"), func() {
 		// Cleanup
 		stop()
