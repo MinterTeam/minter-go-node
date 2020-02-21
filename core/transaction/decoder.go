@@ -37,17 +37,20 @@ func (decoder *Decoder) RegisterType(t TxType, d Data) {
 }
 
 func (decoder *Decoder) DecodeFromBytes(buf []byte) (*Transaction, error) {
-	var tx Transaction
-	err := rlp.DecodeBytes(buf, &tx)
-
+	tx, err := decoder.DecodeFromBytesWithoutSig(buf)
 	if err != nil {
 		return nil, err
 	}
 
-	if tx.Data == nil {
-		return nil, errors.New("incorrect tx data")
+	tx, err = DecodeSig(tx)
+	if err != nil {
+		return nil, err
 	}
 
+	return tx, nil
+}
+
+func DecodeSig(tx *Transaction) (*Transaction, error) {
 	switch tx.SignatureType {
 	case SigTypeMulti:
 		{
@@ -65,6 +68,21 @@ func (decoder *Decoder) DecodeFromBytes(buf []byte) (*Transaction, error) {
 		}
 	default:
 		return nil, errors.New("unknown signature type")
+	}
+
+	return tx, nil
+}
+
+func (decoder *Decoder) DecodeFromBytesWithoutSig(buf []byte) (*Transaction, error) {
+	var tx Transaction
+	err := rlp.DecodeBytes(buf, &tx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if tx.Data == nil {
+		return nil, errors.New("incorrect tx data")
 	}
 
 	d, ok := decoder.registeredTypes[tx.Type]

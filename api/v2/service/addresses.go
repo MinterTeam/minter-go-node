@@ -16,14 +16,18 @@ func (s *Service) Addresses(_ context.Context, req *pb.AddressesRequest) (*pb.Ad
 		return new(pb.AddressesResponse), status.Error(codes.NotFound, err.Error())
 	}
 
-	cState.Lock()
-	defer cState.Unlock()
+	cState.RLock()
+	defer cState.RUnlock()
 
 	response := &pb.AddressesResponse{
 		Addresses: make([]*pb.AddressesResponse_Result, 0, len(req.Addresses)),
 	}
 
 	for _, address := range req.Addresses {
+		if len(address) < 3 {
+			return new(pb.AddressesResponse), status.Error(codes.InvalidArgument, fmt.Sprintf("invalid address %s", address))
+		}
+
 		decodeString, err := hex.DecodeString(address[2:])
 		if err != nil {
 			return new(pb.AddressesResponse), status.Error(codes.InvalidArgument, err.Error())

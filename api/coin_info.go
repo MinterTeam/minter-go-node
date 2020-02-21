@@ -20,8 +20,8 @@ func CoinInfo(coinSymbol string, height int) (*CoinInfoResponse, error) {
 		return nil, err
 	}
 
-	cState.Lock()
-	defer cState.Unlock()
+	cState.RLock()
+	defer cState.RUnlock()
 
 	coin := cState.Coins.GetCoin(types.StrToCoinSymbol(coinSymbol))
 	if coin == nil {

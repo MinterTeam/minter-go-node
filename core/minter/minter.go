@@ -136,7 +136,7 @@ func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 
 	blockchain.stateCheck = state.NewCheckState(blockchain.stateDeliver)
 
-	// Set start Height for rewards and validators
+	// Set start height for rewards and validators
 	rewards.SetStartHeight(applicationDB.GetStartHeight())
 	validators.SetStartHeight(applicationDB.GetStartHeight())
 
@@ -192,12 +192,12 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 	height := uint64(req.Header.Height)
 
 	if app.haltHeight > 0 && height >= app.haltHeight {
-		panic(fmt.Sprintf("Application halted at Height %d", height))
+		panic(fmt.Sprintf("Application halted at height %d", height))
 	}
 
 	app.setStartBlock(height, time.Now())
 
-	app.stateDeliver.RLock()
+	app.stateDeliver.Lock()
 
 	// compute max gas
 	app.updateBlocksTimeDelta(height, 3)
@@ -468,17 +468,17 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 	// Flush events db
 	_ = app.eventsDB.CommitEvents()
 
-	// Persist application hash and Height
+	// Persist application hash and height
 	app.appDB.SetLastBlockHash(hash)
 	app.appDB.SetLastHeight(app.height)
 
-	// Resetting check state to be consistent with current Height
+	// Resetting check state to be consistent with current height
 	app.resetCheckState()
 
 	// Clear mempool
 	app.currentMempool = sync.Map{}
 
-	app.stateDeliver.RUnlock()
+	app.stateDeliver.Unlock()
 
 	return abciTypes.ResponseCommit{
 		Data: hash,
@@ -509,20 +509,20 @@ func (app *Blockchain) CurrentState() *state.State {
 	return state.NewCheckState(app.stateCheck)
 }
 
-// Get immutable state of Minter Blockchain for given Height
+// Get immutable state of Minter Blockchain for given height
 func (app *Blockchain) GetStateForHeight(height uint64) (*state.State, error) {
 	app.lock.RLock()
 	defer app.lock.RUnlock()
 
 	s, err := state.NewCheckStateAtHeight(height, app.stateDB)
 	if err != nil {
-		return nil, rpctypes.RPCError{Code: 404, Message: "State at given Height not found", Data: err.Error()}
+		return nil, rpctypes.RPCError{Code: 404, Message: "State at given height not found", Data: err.Error()}
 	}
 
 	return s, nil
 }
 
-// Get current Height of Minter Blockchain
+// Get current height of Minter Blockchain
 func (app *Blockchain) Height() uint64 {
 	return atomic.LoadUint64(&app.height)
 }

@@ -21,8 +21,8 @@ func EstimateCoinBuy(coinToSellString string, coinToBuyString string, valueToBuy
 		return nil, err
 	}
 
-	cState.Lock()
-	defer cState.Unlock()
+	cState.RLock()
+	defer cState.RUnlock()
 
 	coinToSell := types.StrToCoinSymbol(coinToSellString)
 	coinToBuy := types.StrToCoinSymbol(coinToBuyString)

@@ -6,8 +6,8 @@ func MaxGas(height int) (*uint64, error) {
 		return nil, err
 	}
 
-	cState.Lock()
-	defer cState.Unlock()
+	cState.RLock()
+	defer cState.RUnlock()
 
 	maxGas := cState.App.GetMaxGas()
 	return &maxGas, nil

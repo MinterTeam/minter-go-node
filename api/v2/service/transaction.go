@@ -16,7 +16,10 @@ import (
 )
 
 func (s *Service) Transaction(_ context.Context, req *pb.TransactionRequest) (*pb.TransactionResponse, error) {
-	decodeString, err := hex.DecodeString(req.Hash)
+	if len(req.Hash) < 3 {
+		return new(pb.TransactionResponse), status.Error(codes.InvalidArgument, "invalid hash")
+	}
+	decodeString, err := hex.DecodeString(req.Hash[2:])
 	if err != nil {
 		return new(pb.TransactionResponse), status.Error(codes.InvalidArgument, err.Error())
 	}

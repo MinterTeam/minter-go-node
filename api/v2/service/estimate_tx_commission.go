@@ -18,15 +18,19 @@ func (s *Service) EstimateTxCommission(_ context.Context, req *pb.EstimateTxComm
 		return new(pb.EstimateTxCommissionResponse), status.Error(codes.NotFound, err.Error())
 	}
 
-	cState.Lock()
-	defer cState.Unlock()
+	cState.RLock()
+	defer cState.RUnlock()
+
+	if len(req.Tx) < 3 {
+		return new(pb.EstimateTxCommissionResponse), status.Error(codes.InvalidArgument, "invalid tx")
+	}
 
 	decodeString, err := hex.DecodeString(req.Tx[2:])
 	if err != nil {
 		return new(pb.EstimateTxCommissionResponse), status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	decodedTx, err := transaction.TxDecoder.DecodeFromBytes(decodeString)
+	decodedTx, err := transaction.TxDecoder.DecodeFromBytesWithoutSig(decodeString)
 	if err != nil {
 		return new(pb.EstimateTxCommissionResponse), status.Error(codes.InvalidArgument, "Cannot decode transaction")
 	}

@@ -18,10 +18,10 @@ func EstimateTxCommission(tx []byte, height int) (*TxCommissionResponse, error) 
 		return nil, err
 	}
 
-	cState.Lock()
-	defer cState.Unlock()
+	cState.RLock()
+	defer cState.RUnlock()
 
-	decodedTx, err := transaction.TxDecoder.DecodeFromBytes(tx)
+	decodedTx, err := transaction.TxDecoder.DecodeFromBytesWithoutSig(tx)
 	if err != nil {
 		return nil, rpctypes.RPCError{Code: 400, Message: "Cannot decode transaction", Data: err.Error()}
 	}

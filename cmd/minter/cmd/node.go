@@ -91,7 +91,7 @@ func runNode(cmd *cobra.Command) error {
 
 	if !cfg.ValidatorMode {
 		go func(srv *service_api.Service) {
-			logger.Error("Failed to start Api V2 in both gRPC and RESTful", api_v2.Run(srv, ":8842", ":8843"))
+			logger.Error("Failed to start Api V2 in both gRPC and RESTful", api_v2.Run(srv, cfg.GRPCListenAddress, cfg.APIv2ListenAddress))
 		}(service_api.NewService(amino.NewCodec(), app, client, node, cfg, version.Version))
 
 		go api_v1.RunAPI(app, client, cfg, logger)

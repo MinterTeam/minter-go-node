@@ -69,6 +69,12 @@ moniker = "{{ .BaseConfig.Moniker }}"
 # Address to listen for API connections
 api_listen_addr = "{{ .BaseConfig.APIListenAddress }}"
 
+# Address to listen for gRPC connections
+grpc_listen_addr = "{{ .BaseConfig.GRPCListenAddress }}"
+
+# Address to listen for API V2 connections
+api_v2_listen_addr = "{{ .BaseConfig.GRPCListenAddress }}"
+
 # Sets node to be in validator mode. Disables API, events, history of blocks, indexes, etc. 
 validator_mode = {{ .BaseConfig.ValidatorMode }}
 

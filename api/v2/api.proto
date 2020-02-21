@@ -304,12 +304,12 @@ message EstimateTxCommissionRequest {
 }
 
 message EventsRequest {
-    int32 height = 1;
+    uint32 height = 1;
 }
 message EventsResponse {
     message Event {
         string type = 1;
-        map<string, string> value = 2;
+        google.protobuf.Struct value = 2;
     }
     repeated Event events = 1;
 }
@@ -453,9 +453,15 @@ service ApiService {
             get: "/missed_blocks/{public_key}"
         };
     }
-    rpc SendTransaction (SendTransactionRequest) returns (SendTransactionResponse) {
+    rpc SendGetTransaction (SendTransactionRequest) returns (SendTransactionResponse) {
         option (google.api.http) = {
-            get: "/send_transaction"
+            get: "/send_transaction/{tx}"
+        };
+    }
+    rpc SendPostTransaction (SendTransactionRequest) returns (SendTransactionResponse) {
+        option (google.api.http) = {
+            post: "/send_transaction"
+            body: "*"
         };
     }
     rpc Transaction (TransactionRequest) returns (TransactionResponse) {

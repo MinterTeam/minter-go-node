@@ -56,13 +56,15 @@ func Candidate(pubkey types.Pubkey, height int) (*CandidateResponse, error) {
 		return nil, err
 	}
 
-	cState.Lock()
-	defer cState.Unlock()
-
 	if height != 0 {
+		cState.Lock()
 		cState.Candidates.LoadCandidates()
 		cState.Candidates.LoadStakes()
+		cState.Unlock()
 	}
+
+	cState.RLock()
+	defer cState.RUnlock()
 
 	candidate := cState.Candidates.GetCandidate(pubkey)
 	if candidate == nil {
