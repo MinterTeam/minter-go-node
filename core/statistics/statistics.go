@@ -19,16 +19,19 @@ func (d *Data) Statistic(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			return
-		case <-time.After(time.Second * 10):
+		case <-time.After(time.Second * 10): //todo embedded period
 			state, err := core.NetInfo(&rpctypes.Context{})
 			if err != nil {
 				continue
 			}
+
 			var wg sync.WaitGroup
 			wg.Add(len(state.Peers))
+			d.Peer.Lock()
 			for _, peer := range state.Peers {
 				u := &url.URL{Scheme: "http", Host: peer.RemoteIP}
-				func() {
+				go func() {
+					defer wg.Done()
 					s := u.String()
 					duration, err := timeGet(s)
 					if err != nil {
@@ -37,6 +40,9 @@ func (d *Data) Statistic(ctx context.Context) {
 					d.SetPeerTime(duration, s)
 				}()
 			}
+			d.Peer.ping.Reset()
+			d.Peer.Unlock()
+			wg.Wait()
 		}
 	}
 }
@@ -130,10 +136,10 @@ func (d *Data) SetStartBlock(height uint64, now time.Time) {
 func (d *Data) SetEndBlockDuration(timeEnd time.Time, height uint64) {
 	d.BlockStart.Lock()
 	defer d.BlockStart.Unlock()
-	d.BlockEnd.Lock()
-	defer d.BlockEnd.Unlock()
 
 	if height == d.BlockStart.height {
+		d.BlockEnd.Lock()
+		defer d.BlockEnd.Unlock()
 		d.BlockEnd.Height.Set(float64(height))
 		d.BlockEnd.Duration.Set(timeEnd.Sub(d.BlockStart.time).Seconds())
 		return

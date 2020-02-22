@@ -31,7 +31,7 @@ func Run(srv *service.Service, addrGRPC, addrApi string) error {
 	var group errgroup.Group
 
 	group.Go(func() error {
-		return http.ListenAndServe(":2112", promhttp.Handler())
+		return http.ListenAndServe(":2112", promhttp.Handler()) //todo embedded host:port
 	})
 
 	group.Go(func() error {

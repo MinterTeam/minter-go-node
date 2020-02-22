@@ -108,9 +108,8 @@ func runNode(cmd *cobra.Command) error {
 
 	if true { //todo check ON/OFF
 		data := statistics.New()
-		app.SetStatisticData(data)
 		ctxStat, _ := context.WithCancel(ctx)
-		go data.Statistic(ctxStat)
+		go app.SetStatisticData(data).Statistic(ctxStat)
 	}
 	tmos.TrapSignal(logger.With("module", "trap"), func() {
 		// Cleanup

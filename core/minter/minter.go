@@ -81,8 +81,9 @@ type Blockchain struct {
 	haltHeight uint64
 }
 
-func (app *Blockchain) SetStatisticData(statisticData *statistics.Data) {
+func (app *Blockchain) SetStatisticData(statisticData *statistics.Data) *statistics.Data {
 	app.statisticData = statisticData
+	return app.statisticData
 }
 
 // Creates Minter Blockchain instance, should be only called once
