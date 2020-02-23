@@ -19,7 +19,6 @@ type BlockResponse struct {
 	Height       int64                      `json:"height"`
 	Time         time.Time                  `json:"time"`
 	NumTxs       int64                      `json:"num_txs"`
-	TotalTxs     int64                      `json:"total_txs"`
 	Transactions []BlockTransactionResponse `json:"transactions"`
 	BlockReward  string                     `json:"block_reward"`
 	Size         int                        `json:"size"`
