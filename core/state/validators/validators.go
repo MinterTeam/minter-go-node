@@ -10,6 +10,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/tree"
+	"github.com/MinterTeam/minter-go-node/upgrades"
 	"math/big"
 )
 
@@ -88,7 +89,11 @@ func (v *Validators) SetValidatorAbsent(height uint64, address types.TmAddress) 
 	validator.SetAbsent(height)
 
 	if validator.CountAbsentTimes() > ValidatorMaxAbsentTimes {
-		v.punishValidator(height, address)
+		if !upgrades.IsGraceBlock(height) {
+			v.punishValidator(height, address)
+		}
+
+		v.turnValidatorOff(address)
 	}
 }
 
@@ -308,9 +313,6 @@ func (v *Validators) uncheckDirtyValidators() {
 
 func (v *Validators) punishValidator(height uint64, tmAddress types.TmAddress) {
 	validator := v.getByTmAddress(tmAddress)
-	validator.AbsentTimes = types.NewBitArray(ValidatorMaxAbsentWindow)
-	validator.toDrop = true
-	validator.isDirty = true
 
 	totalStake := v.bus.Candidates().Punish(height, tmAddress)
 	validator.SetTotalBipStake(totalStake)
@@ -339,4 +341,13 @@ func (v *Validators) SetToDrop(pubkey types.Pubkey) {
 			val.toDrop = true
 		}
 	}
+}
+
+func (v *Validators) turnValidatorOff(tmAddress types.TmAddress) {
+	validator := v.getByTmAddress(tmAddress)
+	validator.AbsentTimes = types.NewBitArray(ValidatorMaxAbsentWindow)
+	validator.toDrop = true
+	validator.isDirty = true
+
+	v.bus.Candidates().SetOffline(v.bus.Candidates().GetCandidateByTendermintAddress(tmAddress).PubKey)
 }

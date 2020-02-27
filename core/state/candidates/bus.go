@@ -48,3 +48,22 @@ func (b *Bus) GetCandidate(pubkey types.Pubkey) *bus.Candidate {
 		Status:        candidate.Status,
 	}
 }
+
+func (b *Bus) SetOffline(pubkey types.Pubkey) {
+	b.candidates.SetOffline(pubkey)
+}
+
+func (b *Bus) GetCandidateByTendermintAddress(tmAddress types.TmAddress) *bus.Candidate {
+	candidate := b.candidates.GetCandidateByTendermintAddress(tmAddress)
+	if candidate == nil {
+		return nil
+	}
+
+	return &bus.Candidate{
+		PubKey:        candidate.PubKey,
+		RewardAddress: candidate.RewardAddress,
+		OwnerAddress:  candidate.OwnerAddress,
+		Commission:    candidate.Commission,
+		Status:        candidate.Status,
+	}
+}
