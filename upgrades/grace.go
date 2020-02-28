@@ -1,7 +1,7 @@
 package upgrades
 
 var gracePeriods = []*gracePeriod{
-	NewGracePeriod(1, 15),
+	NewGracePeriod(1, 120),
 }
 
 type gracePeriod struct {
