@@ -55,4 +55,5 @@ const (
 	MultisigNotExists       uint32 = 603
 	IncorrectMultiSignature uint32 = 604
 	TooLargeOwnersList      uint32 = 605
+	DuplicatedAddresses     uint32 = 606
 )
