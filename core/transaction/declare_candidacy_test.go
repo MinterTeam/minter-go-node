@@ -1,8 +1,10 @@
 package transaction
 
 import (
+	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/state/candidates"
 	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/core/validators"
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
@@ -98,5 +100,70 @@ func TestDeclareCandidacyTx(t *testing.T) {
 
 	if candidate.Status != candidates.CandidateStatusOffline {
 		t.Fatalf("Incorrect candidate status")
+	}
+}
+
+func TestDeclareCandidacyTxOverflow(t *testing.T) {
+	cState := getState()
+	maxCandidatesCount := validators.GetCandidatesCountForBlock(0)
+
+	for i := 0; i < maxCandidatesCount; i++ {
+		pubkey := types.Pubkey{byte(i)}
+		cState.Candidates.Create(types.Address{}, types.Address{}, pubkey, 10)
+		cState.Candidates.Delegate(types.Address{}, pubkey, types.GetBaseCoin(), helpers.BipToPip(big.NewInt(10)), helpers.BipToPip(big.NewInt(10)))
+	}
+
+	cState.Candidates.RecalculateStakes(0)
+
+	privateKey, _ := crypto.GenerateKey()
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+
+	coin := types.GetBaseCoin()
+
+	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
+
+	pkey, _ := crypto.GenerateKey()
+	publicKeyBytes := crypto.FromECDSAPub(&pkey.PublicKey)[:32]
+	var publicKey types.Pubkey
+	copy(publicKey[:], publicKeyBytes)
+
+	data := DeclareCandidacyData{
+		Address:    addr,
+		PubKey:     publicKey,
+		Commission: uint(10),
+		Coin:       coin,
+		Stake:      helpers.BipToPip(big.NewInt(10)),
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := Transaction{
+		Nonce:         1,
+		GasPrice:      1,
+		ChainID:       types.CurrentChainID,
+		GasCoin:       coin,
+		Type:          TypeDeclareCandidacy,
+		Data:          encodedData,
+		SignatureType: SigTypeSingle,
+	}
+
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, sync.Map{}, 0)
+
+	if response.Code != code.TooLowStake {
+		t.Fatalf("Response code is not %d. Got %d", code.TooLowStake, response.Code)
 	}
 }

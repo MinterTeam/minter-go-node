@@ -328,15 +328,23 @@ func (c *Candidates) Count() int {
 	return len(c.list)
 }
 
-func (c *Candidates) IsNewCandidateStakeSufficient(coin types.CoinSymbol, stake *big.Int) bool {
+func (c *Candidates) IsNewCandidateStakeSufficient(coin types.CoinSymbol, stake *big.Int, limit int) bool {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
 	bipValue := c.calculateBipValue(coin, stake, true, true, nil)
-	candidates := c.list
+	var stakes []*big.Int
 
-	for _, candidate := range candidates {
-		if candidate.totalBipStake.Cmp(bipValue) == -1 {
+	for _, candidate := range c.list {
+		stakes = append(stakes, big.NewInt(0).Set(candidate.totalBipStake))
+	}
+
+	sort.SliceStable(stakes, func(i, j int) bool {
+		return stakes[i].Cmp(stakes[j]) == 1
+	})
+
+	for _, stake := range stakes[:limit] {
+		if stake.Cmp(bipValue) == -1 {
 			return true
 		}
 	}

@@ -105,7 +105,7 @@ func (data DeclareCandidacyData) Run(tx *Transaction, context *state.State, isCh
 
 	maxCandidatesCount := validators.GetCandidatesCountForBlock(currentBlock)
 
-	if context.Candidates.Count() >= maxCandidatesCount && !context.Candidates.IsNewCandidateStakeSufficient(data.Coin, data.Stake) {
+	if context.Candidates.Count() >= maxCandidatesCount && !context.Candidates.IsNewCandidateStakeSufficient(data.Coin, data.Stake, maxCandidatesCount) {
 		return Response{
 			Code: code.TooLowStake,
 			Log:  fmt.Sprintf("Given stake is too low")}
