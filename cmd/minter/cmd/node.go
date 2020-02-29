@@ -11,7 +11,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/minter"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/version"
-	"github.com/gobuffalo/packr"
 	"github.com/spf13/cobra"
 	"github.com/tendermint/go-amino"
 	"github.com/tendermint/tendermint/abci/types"
@@ -170,19 +169,5 @@ func startTendermintNode(app types.Application, cfg *tmCfg.Config, logger tmlog.
 }
 
 func getGenesis() (doc *tmTypes.GenesisDoc, e error) {
-	genesisFile := utils.GetMinterHome() + "/config/genesis.json"
-
-	if !tmos.FileExists(genesisFile) {
-		box := packr.NewBox("../../../genesis/current/")
-		bytes, err := box.MustBytes("genesis.json")
-		if err != nil {
-			panic(err)
-		}
-
-		if err := tmos.WriteFile(genesisFile, bytes, 0644); err != nil {
-			return nil, err
-		}
-	}
-
-	return tmTypes.GenesisDocFromFile(genesisFile)
+	return tmTypes.GenesisDocFromFile(utils.GetMinterHome() + "/config/genesis.json")
 }
