@@ -44,13 +44,6 @@ const (
 
 var (
 	blockchain *Blockchain
-
-	dbOpts = &opt.Options{
-		OpenFilesCacheCapacity: 1024,
-		BlockCacheCapacity:     1024 / 2 * opt.MiB,
-		WriteBuffer:            1024 / 4 * opt.MiB, // Two of these are used internally
-		Filter:                 filter.NewBloomFilter(10),
-	}
 )
 
 // Main structure of Minter Blockchain
@@ -81,7 +74,7 @@ type Blockchain struct {
 func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 	var err error
 
-	ldb, err := db.NewGoLevelDBWithOpts("state", utils.GetMinterHome()+"/data", dbOpts)
+	ldb, err := db.NewGoLevelDBWithOpts("state", utils.GetMinterHome()+"/data", getDbOpts())
 	if err != nil {
 		panic(err)
 	}
@@ -89,7 +82,7 @@ func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 	// Initiate Application DB. Used for persisting data like current block, validators, etc.
 	applicationDB := appdb.NewAppDB(cfg)
 
-	edb, err := db.NewGoLevelDBWithOpts("events", utils.GetMinterHome()+"/data", dbOpts)
+	edb, err := db.NewGoLevelDBWithOpts("events", utils.GetMinterHome()+"/data", getDbOpts())
 	if err != nil {
 		panic(err)
 	}
@@ -599,4 +592,13 @@ func (app *Blockchain) calcMaxGas(height uint64) uint64 {
 
 func (app *Blockchain) GetEventsDB() eventsdb.IEventsDB {
 	return app.eventsDB
+}
+
+func getDbOpts() *opt.Options {
+	return &opt.Options{
+		OpenFilesCacheCapacity: 1024,
+		BlockCacheCapacity:     1024 / 2 * opt.MiB,
+		WriteBuffer:            1024 / 4 * opt.MiB, // Two of these are used internally
+		Filter:                 filter.NewBloomFilter(10),
+	}
 }
