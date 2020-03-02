@@ -970,8 +970,10 @@ type GenesisResponse_ConsensusParams_Validator struct {
 func (m *GenesisResponse_ConsensusParams_Validator) Reset() {
 	*m = GenesisResponse_ConsensusParams_Validator{}
 }
-func (m *GenesisResponse_ConsensusParams_Validator) String() string { return proto.CompactTextString(m) }
-func (*GenesisResponse_ConsensusParams_Validator) ProtoMessage()    {}
+func (m *GenesisResponse_ConsensusParams_Validator) String() string {
+	return proto.CompactTextString(m)
+}
+func (*GenesisResponse_ConsensusParams_Validator) ProtoMessage() {}
 func (*GenesisResponse_ConsensusParams_Validator) Descriptor() ([]byte, []int) {
 	return fileDescriptor_00212fb1f9d3bf1c, []int{3, 0, 2}
 }

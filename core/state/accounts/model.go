@@ -27,8 +27,8 @@ type Model struct {
 }
 
 type Multisig struct {
-	Weights   []uint
 	Threshold uint
+	Weights   []uint
 	Addresses []types.Address
 }
 
