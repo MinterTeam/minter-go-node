@@ -39,7 +39,7 @@ func RunTx(context *state.State,
 	rawTx []byte,
 	rewardPool *big.Int,
 	currentBlock uint64,
-	currentMempool sync.Map,
+	currentMempool *sync.Map,
 	minGasPrice uint32) Response {
 	lenRawTx := len(rawTx)
 	if lenRawTx > maxTxLength {

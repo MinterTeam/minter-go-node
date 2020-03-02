@@ -63,7 +63,7 @@ type Blockchain struct {
 	tmNode *tmNode.Node
 
 	// currentMempool is responsive for prevent sending multiple transactions from one address in one block
-	currentMempool sync.Map
+	currentMempool *sync.Map
 
 	lock sync.RWMutex
 
@@ -92,7 +92,7 @@ func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 		appDB:          applicationDB,
 		height:         applicationDB.GetLastHeight(),
 		eventsDB:       eventsdb.NewEventsStore(edb),
-		currentMempool: sync.Map{},
+		currentMempool: &sync.Map{},
 	}
 
 	// Set stateDeliver and stateCheck
@@ -374,7 +374,7 @@ func (app *Blockchain) Info(req abciTypes.RequestInfo) (resInfo abciTypes.Respon
 
 // Deliver a tx for full processing
 func (app *Blockchain) DeliverTx(req abciTypes.RequestDeliverTx) abciTypes.ResponseDeliverTx {
-	response := transaction.RunTx(app.stateDeliver, false, req.Tx, app.rewards, app.height, sync.Map{}, 0)
+	response := transaction.RunTx(app.stateDeliver, false, req.Tx, app.rewards, app.height, &sync.Map{}, 0)
 
 	return abciTypes.ResponseDeliverTx{
 		Code:      response.Code,
@@ -437,7 +437,7 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 	app.resetCheckState()
 
 	// Clear mempool
-	app.currentMempool = sync.Map{}
+	app.currentMempool = &sync.Map{}
 
 	app.stateDeliver.Unlock()
 

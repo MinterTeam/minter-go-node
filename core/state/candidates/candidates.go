@@ -492,7 +492,6 @@ func (c *Candidates) LoadCandidates() {
 	var candidates []*Candidate
 	if err := rlp.DecodeBytes(enc, &candidates); err != nil {
 		panic(fmt.Sprintf("failed to decode candidates: %s", err))
-		return
 	}
 
 	c.list = map[types.Pubkey]*Candidate{}

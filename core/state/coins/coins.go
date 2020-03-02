@@ -155,7 +155,6 @@ func (c *Coins) get(symbol types.CoinSymbol) *Model {
 	coin := &Model{}
 	if err := rlp.DecodeBytes(enc, coin); err != nil {
 		panic(fmt.Sprintf("failed to decode coin at %s: %s", symbol.String(), err))
-		return nil
 	}
 
 	coin.symbol = symbol
