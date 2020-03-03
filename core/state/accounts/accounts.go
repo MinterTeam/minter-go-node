@@ -201,7 +201,6 @@ func (a *Accounts) get(address types.Address) *Model {
 	account := &Model{}
 	if err := rlp.DecodeBytes(enc, account); err != nil {
 		panic(fmt.Sprintf("failed to decode account at address %s: %s", address.String(), err))
-		return nil
 	}
 
 	account.address = address

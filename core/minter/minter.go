@@ -46,13 +46,6 @@ const (
 
 var (
 	blockchain *Blockchain
-
-	dbOpts = &opt.Options{
-		OpenFilesCacheCapacity: 1024,
-		BlockCacheCapacity:     1024 / 2 * opt.MiB,
-		WriteBuffer:            1024 / 4 * opt.MiB, // Two of these are used internally
-		Filter:                 filter.NewBloomFilter(10),
-	}
 )
 
 // Main structure of Minter Blockchain
@@ -66,7 +59,7 @@ type Blockchain struct {
 	eventsDB           eventsdb.IEventsDB
 	stateDeliver       *state.State
 	stateCheck         *state.State
-	height             uint64   // current Blockchain Height
+	height             uint64   // current Blockchain height
 	rewards            *big.Int // Rewards pool
 	validatorsStatuses map[types.TmAddress]int8
 
@@ -74,7 +67,7 @@ type Blockchain struct {
 	tmNode *tmNode.Node
 
 	// currentMempool is responsive for prevent sending multiple transactions from one address in one block
-	currentMempool sync.Map
+	currentMempool *sync.Map
 
 	lock sync.RWMutex
 
@@ -85,7 +78,7 @@ type Blockchain struct {
 func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 	var err error
 
-	ldb, err := db.NewGoLevelDBWithOpts("state", utils.GetMinterHome()+"/data", dbOpts)
+	ldb, err := db.NewGoLevelDBWithOpts("state", utils.GetMinterHome()+"/data", getDbOpts())
 	if err != nil {
 		panic(err)
 	}
@@ -93,7 +86,7 @@ func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 	// Initiate Application DB. Used for persisting data like current block, validators, etc.
 	applicationDB := appdb.NewAppDB(cfg)
 
-	edb, err := db.NewGoLevelDBWithOpts("events", utils.GetMinterHome()+"/data", dbOpts)
+	edb, err := db.NewGoLevelDBWithOpts("events", utils.GetMinterHome()+"/data", getDbOpts())
 	if err != nil {
 		panic(err)
 	}
@@ -103,7 +96,7 @@ func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 		appDB:          applicationDB,
 		height:         applicationDB.GetLastHeight(),
 		eventsDB:       eventsdb.NewEventsStore(edb),
-		currentMempool: sync.Map{},
+		currentMempool: &sync.Map{},
 	}
 
 	// Set stateDeliver and stateCheck
@@ -389,7 +382,7 @@ func (app *Blockchain) Info(req abciTypes.RequestInfo) (resInfo abciTypes.Respon
 
 // Deliver a tx for full processing
 func (app *Blockchain) DeliverTx(req abciTypes.RequestDeliverTx) abciTypes.ResponseDeliverTx {
-	response := transaction.RunTx(app.stateDeliver, false, req.Tx, app.rewards, app.height, sync.Map{}, 0)
+	response := transaction.RunTx(app.stateDeliver, false, req.Tx, app.rewards, app.height, &sync.Map{}, 0)
 
 	return abciTypes.ResponseDeliverTx{
 		Code:      response.Code,
@@ -452,7 +445,7 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 	app.resetCheckState()
 
 	// Clear mempool
-	app.currentMempool = sync.Map{}
+	app.currentMempool = &sync.Map{}
 
 	app.stateDeliver.Unlock()
 
@@ -616,4 +609,13 @@ func (app *Blockchain) SetStatisticData(statisticData *statistics.Data) *statist
 
 func (app *Blockchain) StatisticData() *statistics.Data {
 	return app.statisticData
+}
+
+func getDbOpts() *opt.Options {
+	return &opt.Options{
+		OpenFilesCacheCapacity: 1024,
+		BlockCacheCapacity:     1024 / 2 * opt.MiB,
+		WriteBuffer:            1024 / 4 * opt.MiB, // Two of these are used internally
+		Filter:                 filter.NewBloomFilter(10),
+	}
 }

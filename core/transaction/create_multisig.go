@@ -70,6 +70,17 @@ func (data CreateMultisigData) BasicCheck(tx *Transaction, context *state.State)
 		}
 	}
 
+	usedAddresses := map[types.Address]bool{}
+	for _, address := range data.Addresses {
+		if usedAddresses[address] {
+			return &Response{
+				Code: code.DuplicatedAddresses,
+				Log:  fmt.Sprintf("Duplicated multisig addresses")}
+		}
+
+		usedAddresses[address] = true
+	}
+
 	return nil
 }
 

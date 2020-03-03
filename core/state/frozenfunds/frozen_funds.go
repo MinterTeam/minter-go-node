@@ -140,7 +140,6 @@ func (f *FrozenFunds) get(height uint64) *Model {
 	ff := &Model{}
 	if err := rlp.DecodeBytes(enc, ff); err != nil {
 		panic(fmt.Sprintf("failed to decode frozen funds at height %d: %s", height, err))
-		return nil
 	}
 
 	ff.height = height

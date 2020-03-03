@@ -85,7 +85,6 @@ func (v *App) get() *Model {
 	model := &Model{}
 	if err := rlp.DecodeBytes(enc, model); err != nil {
 		panic(fmt.Sprintf("failed to decode app model at: %s", err))
-		return nil
 	}
 
 	v.model = model

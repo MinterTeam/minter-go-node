@@ -44,9 +44,6 @@ You can get official installation instructions in our [docs](https://docs.minter
 - [Telegram Bot Wallet](https://t.me/BipWallet_Bot)
 - [Android Wallet](https://play.google.com/store/apps/details?id=network.minter.bipwallet)
 
-### Unofficial
-- [Magnum Wallet](http://app.magnumwallet.co/?utm_source=gh&utm_medium=res&utm_campaign=mi)
-
 ### Community
 - [Telegram Channel (English)](https://t.me/MinterTeam)
 - [Telegram Channel (Russian)](https://t.me/MinterNetwork)

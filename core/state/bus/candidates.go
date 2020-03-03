@@ -9,6 +9,8 @@ type Candidates interface {
 	GetStakes(types.Pubkey) []Stake
 	Punish(uint64, types.TmAddress) *big.Int
 	GetCandidate(types.Pubkey) *Candidate
+	SetOffline(types.Pubkey)
+	GetCandidateByTendermintAddress(types.TmAddress) *Candidate
 }
 
 type Stake struct {
