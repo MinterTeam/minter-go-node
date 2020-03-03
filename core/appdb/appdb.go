@@ -19,8 +19,6 @@ const (
 	heightPath         = "height"
 	startHeightPath    = "startHeight"
 	blockTimeDeltaPath = "blockDelta"
-	blockTimeBeginPath = "blockBegin"
-	blockTimePath      = "blockTime"
 	validatorsPath     = "validators"
 
 	dbName = "app"

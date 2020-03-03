@@ -81,11 +81,6 @@ type Blockchain struct {
 	haltHeight uint64
 }
 
-func (app *Blockchain) SetStatisticData(statisticData *statistics.Data) *statistics.Data {
-	app.statisticData = statisticData
-	return app.statisticData
-}
-
 // Creates Minter Blockchain instance, should be only called once
 func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 	var err error
@@ -178,7 +173,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 		panic(fmt.Sprintf("Application halted at height %d", height))
 	}
 
-	app.setStartBlock(height, time.Now())
+	app.StatisticData().SetStartBlock(height, time.Now())
 
 	app.stateDeliver.Lock()
 
@@ -369,7 +364,9 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 		}
 	}
 
-	endBlock := abciTypes.ResponseEndBlock{
+	defer func() { app.StatisticData().SetEndBlockDuration(time.Now(), app.height) }()
+
+	return abciTypes.ResponseEndBlock{
 		ValidatorUpdates: updates,
 		ConsensusParamUpdates: &abciTypes.ConsensusParams{
 			Block: &abciTypes.BlockParams{
@@ -378,10 +375,6 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 			},
 		},
 	}
-
-	app.setEndBlockDuration(time.Now(), app.height)
-
-	return endBlock
 }
 
 // Return application info. Used for synchronization between Tendermint and Minter
@@ -616,32 +609,11 @@ func (app *Blockchain) GetEventsDB() eventsdb.IEventsDB {
 	return app.eventsDB
 }
 
-func (app *Blockchain) SetApiTime(duration time.Duration, path string) {
-	if app.statisticData == nil {
-		return
-	}
-
-	app.statisticData.SetApiTime(duration, path)
+func (app *Blockchain) SetStatisticData(statisticData *statistics.Data) *statistics.Data {
+	app.statisticData = statisticData
+	return app.statisticData
 }
 
-func (app *Blockchain) SetStartBlock(height uint64, now time.Time) {
-	if app.statisticData == nil {
-		return
-	}
-
-	app.statisticData.SetStartBlock(height, now)
-}
-
-func (app *Blockchain) setEndBlockDuration(timeEnd time.Time, height uint64) {
-	if app.statisticData == nil {
-		return
-	}
-	app.statisticData.SetEndBlockDuration(timeEnd, height)
-}
-
-func (app *Blockchain) setStartBlock(height uint64, now time.Time) {
-	if app.statisticData == nil {
-		return
-	}
-	app.statisticData.SetStartBlock(height, now)
+func (app *Blockchain) StatisticData() *statistics.Data {
+	return app.statisticData
 }

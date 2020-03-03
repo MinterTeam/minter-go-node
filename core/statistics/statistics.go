@@ -126,6 +126,10 @@ func New() *Data {
 }
 
 func (d *Data) SetStartBlock(height uint64, now time.Time) {
+	if d == nil {
+		return
+	}
+
 	d.BlockStart.Lock()
 	defer d.BlockStart.Unlock()
 
@@ -134,6 +138,10 @@ func (d *Data) SetStartBlock(height uint64, now time.Time) {
 }
 
 func (d *Data) SetEndBlockDuration(timeEnd time.Time, height uint64) {
+	if d == nil {
+		return
+	}
+
 	d.BlockStart.Lock()
 	defer d.BlockStart.Unlock()
 
@@ -149,6 +157,10 @@ func (d *Data) SetEndBlockDuration(timeEnd time.Time, height uint64) {
 }
 
 func (d *Data) SetApiTime(duration time.Duration, path string) {
+	if d == nil {
+		return
+	}
+
 	d.Api.Lock()
 	defer d.Api.Unlock()
 
@@ -156,6 +168,10 @@ func (d *Data) SetApiTime(duration time.Duration, path string) {
 }
 
 func (d *Data) SetPeerTime(duration time.Duration, network string) {
+	if d == nil {
+		return
+	}
+
 	d.Peer.Lock()
 	defer d.Peer.Unlock()
 

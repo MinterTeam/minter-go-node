@@ -106,7 +106,7 @@ func runNode(cmd *cobra.Command) error {
 		}
 	}()
 
-	if true { //todo check ON/OFF
+	if cfg.Instrumentation.Prometheus {
 		data := statistics.New()
 		ctxStat, _ := context.WithCancel(ctx)
 		go app.SetStatisticData(data).Statistic(ctxStat)
