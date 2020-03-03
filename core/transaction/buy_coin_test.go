@@ -620,6 +620,7 @@ func TestBuyCoinTxCustomToBaseBaseCommission(t *testing.T) {
 	coinToBuy := types.StrToCoinSymbol("MNT")
 	gasCoin := types.StrToCoinSymbol("MNT")
 	initialBalance := helpers.BipToPip(big.NewInt(10000000))
+	initialGasBalance, _ := big.NewInt(0).SetString("100000000000000000", 10)
 	toBuy := helpers.BipToPip(big.NewInt(100))
 
 	cState := getState()
@@ -627,7 +628,7 @@ func TestBuyCoinTxCustomToBaseBaseCommission(t *testing.T) {
 
 	privateKey, addr := getAccount()
 	cState.Accounts.AddBalance(addr, coinToSell, initialBalance)
-	cState.Accounts.AddBalance(addr, gasCoin, big.NewInt(0).Div(helpers.BipToPip(big.NewInt(1)), big.NewInt(10)))
+	cState.Accounts.AddBalance(addr, gasCoin, initialGasBalance)
 
 	tx := createBuyCoinTx(coinToSell, coinToBuy, gasCoin, toBuy, 1)
 	if err := tx.Sign(privateKey); err != nil {
@@ -684,6 +685,8 @@ func TestBuyCoinTxCustomToCustomBaseCommission(t *testing.T) {
 	coinToBuy := types.StrToCoinSymbol("TEST12")
 	gasCoin := types.StrToCoinSymbol("MNT")
 	initialBalance := helpers.BipToPip(big.NewInt(10000000))
+	initialGasBalance, _ := big.NewInt(0).SetString("100000000000000000", 10)
+
 	toBuy := helpers.BipToPip(big.NewInt(100))
 
 	cState := getState()
@@ -692,7 +695,7 @@ func TestBuyCoinTxCustomToCustomBaseCommission(t *testing.T) {
 
 	privateKey, addr := getAccount()
 	cState.Accounts.AddBalance(addr, coinToSell, initialBalance)
-	cState.Accounts.AddBalance(addr, gasCoin, big.NewInt(0).Div(helpers.BipToPip(big.NewInt(1)), big.NewInt(10)))
+	cState.Accounts.AddBalance(addr, gasCoin, initialGasBalance)
 
 	tx := createBuyCoinTx(coinToSell, coinToBuy, gasCoin, toBuy, 1)
 	if err := tx.Sign(privateKey); err != nil {
@@ -858,7 +861,6 @@ func TestBuyCoinTxCustomToBaseCustomCommission(t *testing.T) {
 	estimatedSellCoinBalance := big.NewInt(0).Set(initialBalance)
 	shouldGive := formula.CalculateSaleAmount(initialVolume, initialReserve, crr, toBuy)
 	estimatedSellCoinBalance.Sub(estimatedSellCoinBalance, shouldGive)
-
 	commission := formula.CalculateSaleAmount(big.NewInt(0).Sub(initialVolume, shouldGive), big.NewInt(0).Sub(initialReserve, toBuy), crr, tx.CommissionInBaseCoin())
 	estimatedSellCoinBalance.Sub(estimatedSellCoinBalance, commission)
 	if sellCoinBalance.Cmp(estimatedSellCoinBalance) != 0 {
