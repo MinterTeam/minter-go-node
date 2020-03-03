@@ -73,3 +73,45 @@ func TestSellCoinTx(t *testing.T) {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", getTestCoinSymbol(), targetTestBalance, testBalance)
 	}
 }
+
+func TestSellCoinTxBaseToCustomBaseCommission(t *testing.T) {
+	// sell_coin: MNT
+	// buy_coin: TEST
+	// gas_coin: MNT
+}
+
+func TestSellCoinTxCustomToBaseBaseCommission(t *testing.T) {
+	// sell_coin: TEST
+	// buy_coin: MNT
+	// gas_coin: MNT
+}
+
+func TestSellCoinTxCustomToCustomBaseCommission(t *testing.T) {
+	// sell_coin: TEST1
+	// buy_coin: TEST2
+	// gas_coin: MNT
+}
+
+func TestSellCoinTxBaseToCustomCustomCommission(t *testing.T) {
+	// sell_coin: MNT
+	// buy_coin: TEST
+	// gas_coin: TEST
+}
+
+func TestSellCoinTxCustomToBaseCustomCommission(t *testing.T) {
+	// sell_coin: TEST
+	// buy_coin: MNT
+	// gas_coin: TEST
+}
+
+func TestSellCoinTxCustomToCustomCustom1Commission(t *testing.T) {
+	// sell_coin: TEST1
+	// buy_coin: TEST2
+	// gas_coin: TEST1
+}
+
+func TestSellCoinTxCustomToCustomCustom2Commission(t *testing.T) {
+	// sell_coin: TEST1
+	// buy_coin: TEST2
+	// gas_coin: TEST2
+}
