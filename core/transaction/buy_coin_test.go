@@ -552,9 +552,9 @@ func TestBuyCoinTxBaseToCustomBaseCommission(t *testing.T) {
 	// buy_coin: TEST
 	// gas_coin: MNT
 
-	coinToSell := types.StrToCoinSymbol("MNT")
+	coinToSell := types.GetBaseCoin()
 	coinToBuy := types.StrToCoinSymbol("TEST")
-	gasCoin := types.StrToCoinSymbol("MNT")
+	gasCoin := types.GetBaseCoin()
 	initialBalance := helpers.BipToPip(big.NewInt(10000000))
 	toBuy := helpers.BipToPip(big.NewInt(100))
 
@@ -617,8 +617,8 @@ func TestBuyCoinTxCustomToBaseBaseCommission(t *testing.T) {
 	// gas_coin: MNT
 
 	coinToSell := types.StrToCoinSymbol("TEST")
-	coinToBuy := types.StrToCoinSymbol("MNT")
-	gasCoin := types.StrToCoinSymbol("MNT")
+	coinToBuy := types.GetBaseCoin()
+	gasCoin := types.GetBaseCoin()
 	initialBalance := helpers.BipToPip(big.NewInt(10000000))
 	initialGasBalance, _ := big.NewInt(0).SetString("100000000000000000", 10)
 	toBuy := helpers.BipToPip(big.NewInt(100))
@@ -683,7 +683,7 @@ func TestBuyCoinTxCustomToCustomBaseCommission(t *testing.T) {
 
 	coinToSell := types.StrToCoinSymbol("TEST1")
 	coinToBuy := types.StrToCoinSymbol("TEST12")
-	gasCoin := types.StrToCoinSymbol("MNT")
+	gasCoin := types.GetBaseCoin()
 	initialBalance := helpers.BipToPip(big.NewInt(10000000))
 	initialGasBalance, _ := big.NewInt(0).SetString("100000000000000000", 10)
 
@@ -750,7 +750,7 @@ func TestBuyCoinTxBaseToCustomCustomCommission(t *testing.T) {
 	// buy_coin: TEST
 	// gas_coin: TEST
 
-	coinToSell := types.StrToCoinSymbol("MNT")
+	coinToSell := types.GetBaseCoin()
 	coinToBuy := types.StrToCoinSymbol("TEST")
 	gasCoin := types.StrToCoinSymbol("TEST")
 	initialBalance := helpers.BipToPip(big.NewInt(10000000))
@@ -823,7 +823,7 @@ func TestBuyCoinTxCustomToBaseCustomCommission(t *testing.T) {
 	// gas_coin: TEST
 
 	coinToSell := types.StrToCoinSymbol("TEST")
-	coinToBuy := types.StrToCoinSymbol("MNT")
+	coinToBuy := types.GetBaseCoin()
 	gasCoin := types.StrToCoinSymbol("TEST")
 	initialBalance := helpers.BipToPip(big.NewInt(10000000))
 	toBuy := helpers.BipToPip(big.NewInt(100))
