@@ -437,6 +437,88 @@ func TestSellCoinTxCustomToCustomCustom1Commission(t *testing.T) {
 	// sell_coin: TEST1
 	// buy_coin: TEST2
 	// gas_coin: TEST1
+
+	coinToSell := types.StrToCoinSymbol("TEST1")
+	coinToBuy := types.StrToCoinSymbol("TEST2")
+	gasCoin := types.StrToCoinSymbol("TEST1")
+	initialBalance := helpers.BipToPip(big.NewInt(10000000))
+	toSell := helpers.BipToPip(big.NewInt(100))
+
+	cState := getState()
+	initialVolume1, initialReserve1, crr1 := createTestCoinWithSymbol(cState, coinToSell)
+	initialVolume2, initialReserve2, crr2 := createTestCoinWithSymbol(cState, coinToBuy)
+
+	privateKey, addr := getAccount()
+	cState.Accounts.AddBalance(addr, coinToSell, initialBalance)
+
+	tx := createSellCoinTx(coinToSell, coinToBuy, gasCoin, toSell, 1)
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// check response
+	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.OK {
+		t.Fatalf("Response code is not 0. Error %s", response.Log)
+	}
+
+	// check received coins
+	buyCoinBalance := cState.Accounts.GetBalance(addr, coinToBuy)
+	bipReturn := formula.CalculateSaleReturn(initialVolume1, initialReserve1, crr1, toSell)
+	estimatedBuyBalance := formula.CalculatePurchaseReturn(initialVolume2, initialReserve2, crr2, bipReturn)
+	if buyCoinBalance.Cmp(estimatedBuyBalance) != 0 {
+		t.Fatalf("Buy coin balance is not correct. Expected %s, got %s", estimatedBuyBalance.String(), buyCoinBalance.String())
+	}
+
+	// check sold coins
+	sellCoinBalance := cState.Accounts.GetBalance(addr, coinToSell)
+	estimatedSellCoinBalance := big.NewInt(0).Set(initialBalance)
+	estimatedSellCoinBalance.Sub(estimatedSellCoinBalance, toSell)
+	commission := formula.CalculateSaleAmount(big.NewInt(0).Sub(initialVolume1, toSell), big.NewInt(0).Sub(initialReserve1, bipReturn), crr1, tx.CommissionInBaseCoin())
+	estimatedSellCoinBalance.Sub(estimatedSellCoinBalance, commission)
+	if sellCoinBalance.Cmp(estimatedSellCoinBalance) != 0 {
+		t.Fatalf("Sell coin balance is not correct. Expected %s, got %s", estimatedSellCoinBalance.String(), sellCoinBalance.String())
+	}
+
+	// check reserve and supply
+	{
+		coinData := cState.Coins.GetCoin(coinToSell)
+
+		estimatedReserve := big.NewInt(0).Set(initialReserve1)
+		estimatedReserve.Sub(estimatedReserve, formula.CalculateSaleReturn(initialVolume1, initialReserve1, crr1, toSell))
+		estimatedReserve.Sub(estimatedReserve, tx.CommissionInBaseCoin())
+		if coinData.Reserve().Cmp(estimatedReserve) != 0 {
+			t.Fatalf("Wrong coin reserve")
+		}
+
+		estimatedSupply := big.NewInt(0).Set(initialVolume1)
+		estimatedSupply.Sub(estimatedSupply, toSell)
+		estimatedSupply.Sub(estimatedSupply, commission)
+		if coinData.Volume().Cmp(estimatedSupply) != 0 {
+			t.Fatalf("Wrong coin supply")
+		}
+	}
+
+	{
+		coinData := cState.Coins.GetCoin(coinToBuy)
+
+		estimatedReserve := big.NewInt(0).Set(initialReserve2)
+		estimatedReserve.Add(estimatedReserve, formula.CalculateSaleReturn(initialVolume1, initialReserve1, crr1, toSell))
+		if coinData.Reserve().Cmp(estimatedReserve) != 0 {
+			t.Fatalf("Wrong coin reserve")
+		}
+
+		estimatedSupply := big.NewInt(0).Set(initialVolume2)
+		estimatedSupply.Add(estimatedSupply, formula.CalculatePurchaseReturn(initialVolume2, initialReserve2, crr2, formula.CalculateSaleReturn(initialVolume1, initialReserve1, crr1, toSell)))
+		if coinData.Volume().Cmp(estimatedSupply) != 0 {
+			t.Fatalf("Wrong coin supply")
+		}
+	}
 }
 
 func TestSellCoinTxCustomToCustomCustom2Commission(t *testing.T) {
