@@ -6,7 +6,12 @@ const (
 	ChainTestnet = 0x02
 	ChainMainnet = 0x01
 
-	CurrentChainID = ChainTestnet
+	CurrentChainID = ChainMainnet
+)
+
+var (
+	coinTestnet = StrToCoinSymbol("MNT")
+	coinMainnet = StrToCoinSymbol("BIP")
 )
 
 func GetBaseCoin() CoinSymbol {
@@ -14,16 +19,12 @@ func GetBaseCoin() CoinSymbol {
 }
 
 func getBaseCoin(chainID ChainID) CoinSymbol {
-	var coin CoinSymbol
-
 	switch chainID {
 	case ChainMainnet:
-		copy(coin[:], "BIP")
+		return coinMainnet
 	case ChainTestnet:
-		copy(coin[:], "MNT")
+		return coinTestnet
 	}
 
-	coin[4] = byte(0)
-
-	return coin
+	panic("Unknown chain id")
 }
