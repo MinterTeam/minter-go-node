@@ -4,7 +4,9 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	eventsdb "github.com/MinterTeam/events-db"
+	"github.com/MinterTeam/minter-go-node/core/state/candidates"
 	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/tendermint/tendermint/crypto/ed25519"
 	db "github.com/tendermint/tm-db"
 	"math/big"
 	"testing"
@@ -211,6 +213,83 @@ func TestStakeSufficiency(t *testing.T) {
 		if !result {
 			t.Fatalf("Stake of %s %s of address %s shold be sufficient", stake.String(), coin.String(), addr.String())
 		}
+	}
+}
+
+func TestDoubleSignPenalty(t *testing.T) {
+	st := getState()
+
+	pubkey := createTestCandidate(st)
+
+	coin := types.GetBaseCoin()
+	amount := big.NewInt(100)
+	var addr types.Address
+	binary.BigEndian.PutUint64(addr[:], 1)
+	st.Candidates.Delegate(addr, pubkey, coin, amount, big.NewInt(0))
+
+	st.Candidates.RecalculateStakes(1)
+
+	var pk ed25519.PubKeyEd25519
+	copy(pk[:], pubkey[:])
+
+	var tmAddr types.TmAddress
+	copy(tmAddr[:], pk.Address().Bytes())
+
+	st.Candidates.PunishByzantineCandidate(1, tmAddr)
+
+	stake := st.Candidates.GetStakeValueOfAddress(pubkey, addr, coin)
+	if stake.Cmp(big.NewInt(0)) != 0 {
+		t.Fatalf("Stake is not correct. Expected 0, got %s", stake.String())
+	}
+
+	ffs := st.FrozenFunds.GetFrozenFunds(1 + candidates.UnbondPeriod)
+	exists := false
+	for _, ff := range ffs.List {
+		if ff.Address == addr {
+			exists = true
+
+			newValue := big.NewInt(0).Set(amount)
+			newValue.Mul(newValue, big.NewInt(95))
+			newValue.Div(newValue, big.NewInt(100))
+			newValue.Sub(newValue, ff.Value)
+			if newValue.Cmp(big.NewInt(0)) != 0 {
+				t.Fatalf("Wrong frozen fund value. Expected %s, got %s", newValue.String(), ff.Value.String())
+			}
+		}
+	}
+
+	if !exists {
+		t.Fatalf("Frozen fund not found")
+	}
+}
+
+func TestAbsentPenalty(t *testing.T) {
+	st := getState()
+
+	pubkey := createTestCandidate(st)
+
+	coin := types.GetBaseCoin()
+	amount := big.NewInt(100)
+	var addr types.Address
+	binary.BigEndian.PutUint64(addr[:], 1)
+	st.Candidates.Delegate(addr, pubkey, coin, amount, big.NewInt(0))
+
+	st.Candidates.RecalculateStakes(1)
+
+	var pk ed25519.PubKeyEd25519
+	copy(pk[:], pubkey[:])
+
+	var tmAddr types.TmAddress
+	copy(tmAddr[:], pk.Address().Bytes())
+
+	st.Candidates.Punish(1, tmAddr)
+
+	stake := st.Candidates.GetStakeValueOfAddress(pubkey, addr, coin)
+	newValue := big.NewInt(0).Set(amount)
+	newValue.Mul(newValue, big.NewInt(99))
+	newValue.Div(newValue, big.NewInt(100))
+	if stake.Cmp(newValue) != 0 {
+		t.Fatalf("Stake is not correct. Expected %s, got %s", newValue, stake.String())
 	}
 }
 
