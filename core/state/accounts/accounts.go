@@ -161,8 +161,19 @@ func (a *Accounts) SetNonce(address types.Address, nonce uint64) {
 
 func (a *Accounts) ExistsMultisig(msigAddress types.Address) bool {
 	acc := a.get(msigAddress)
+	if acc == nil {
+		return false
+	}
 
-	return acc == nil || (!acc.IsMultisig() && acc.Nonce == 0)
+	if acc.IsMultisig() {
+		return true
+	}
+
+	if acc.Nonce > 0 {
+		return true
+	}
+
+	return false
 }
 
 func (a *Accounts) CreateMultisig(weights []uint, addresses []types.Address, threshold uint) types.Address {
@@ -173,16 +184,23 @@ func (a *Accounts) CreateMultisig(weights []uint, addresses []types.Address, thr
 	}
 	address := msig.Address()
 
-	account := &Model{
-		Nonce:         0,
-		MultisigData:  msig,
-		address:       address,
-		coins:         []types.CoinSymbol{},
-		balances:      map[types.CoinSymbol]*big.Int{},
-		markDirty:     a.markDirty,
-		dirtyBalances: map[types.CoinSymbol]struct{}{},
-		isNew:         true,
+	account := a.get(address)
+
+	if account == nil {
+		account = &Model{
+			Nonce:         0,
+			MultisigData:  msig,
+			address:       address,
+			coins:         []types.CoinSymbol{},
+			balances:      map[types.CoinSymbol]*big.Int{},
+			markDirty:     a.markDirty,
+			dirtyBalances: map[types.CoinSymbol]struct{}{},
+		}
 	}
+
+	account.MultisigData = msig
+	account.isNew = true
+
 	a.setToMap(address, account)
 
 	return address
