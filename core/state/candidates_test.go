@@ -293,6 +293,42 @@ func TestAbsentPenalty(t *testing.T) {
 	}
 }
 
+func TestDoubleAbsentPenalty(t *testing.T) {
+	st := getState()
+
+	pubkey := createTestCandidate(st)
+
+	coin := types.GetBaseCoin()
+	amount := big.NewInt(100)
+	var addr types.Address
+	binary.BigEndian.PutUint64(addr[:], 1)
+	st.Candidates.Delegate(addr, pubkey, coin, amount, big.NewInt(0))
+	st.Candidates.SetOnline(pubkey)
+
+	st.Candidates.RecalculateStakes(1)
+
+	var pk ed25519.PubKeyEd25519
+	copy(pk[:], pubkey[:])
+
+	var tmAddr types.TmAddress
+	copy(tmAddr[:], pk.Address().Bytes())
+
+	st.Validators.SetNewValidators(st.Candidates.GetNewCandidates(1))
+
+	for i := 1000; i < 1050; i++ {
+		st.Validators.SetValidatorAbsent(uint64(i), tmAddr)
+		st.Validators.SetNewValidators(st.Candidates.GetNewCandidates(1))
+	}
+
+	stake := st.Candidates.GetStakeValueOfAddress(pubkey, addr, coin)
+	newValue := big.NewInt(0).Set(amount)
+	newValue.Mul(newValue, big.NewInt(99))
+	newValue.Div(newValue, big.NewInt(100))
+	if stake.Cmp(newValue) != 0 {
+		t.Fatalf("Stake is not correct. Expected %s, got %s", newValue, stake.String())
+	}
+}
+
 func getState() *State {
 	s, err := NewState(0, db.NewMemDB(), emptyEvents{}, 1, 1)
 
