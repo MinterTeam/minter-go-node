@@ -186,10 +186,6 @@ func TestInvalidSigTx(t *testing.T) {
 }
 
 func TestNotExistMultiSigTx(t *testing.T) {
-	if true {
-		return
-	}
-
 	txData := SendData{
 		Coin:  types.GetBaseCoin(),
 		To:    types.Address{},
@@ -229,9 +225,6 @@ func TestNotExistMultiSigTx(t *testing.T) {
 }
 
 func TestMultiSigTx(t *testing.T) {
-	if true {
-		return
-	}
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -276,10 +269,6 @@ func TestMultiSigTx(t *testing.T) {
 }
 
 func TestMultiSigDoubleSignTx(t *testing.T) {
-	if true {
-		return
-	}
-
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -328,10 +317,6 @@ func TestMultiSigDoubleSignTx(t *testing.T) {
 }
 
 func TestMultiSigTooManySignsTx(t *testing.T) {
-	if true {
-		return
-	}
-
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -383,10 +368,6 @@ func TestMultiSigTooManySignsTx(t *testing.T) {
 }
 
 func TestMultiSigNotEnoughTx(t *testing.T) {
-	if true {
-		return
-	}
-
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -431,10 +412,6 @@ func TestMultiSigNotEnoughTx(t *testing.T) {
 }
 
 func TestMultiSigIncorrectSignsTx(t *testing.T) {
-	if true {
-		return
-	}
-
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
