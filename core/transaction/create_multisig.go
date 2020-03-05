@@ -144,7 +144,7 @@ func (data CreateMultisigData) Run(tx *Transaction, context *state.State, isChec
 		Addresses: data.Addresses,
 	}).Address()
 
-	if context.Accounts.Exists(msigAddress) {
+	if context.Accounts.ExistsMultisig(msigAddress) {
 		return Response{
 			Code: code.MultisigExists,
 			Log:  fmt.Sprintf("Multisig %s already exists", msigAddress.String()),

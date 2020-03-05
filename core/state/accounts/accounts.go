@@ -159,8 +159,10 @@ func (a *Accounts) SetNonce(address types.Address, nonce uint64) {
 	account.setNonce(nonce)
 }
 
-func (a *Accounts) Exists(msigAddress types.Address) bool {
-	return a.get(msigAddress) != nil
+func (a *Accounts) ExistsMultisig(msigAddress types.Address) bool {
+	acc := a.get(msigAddress)
+
+	return acc == nil || (!acc.IsMultisig() && acc.Nonce == 0)
 }
 
 func (a *Accounts) CreateMultisig(weights []uint, addresses []types.Address, threshold uint) types.Address {
