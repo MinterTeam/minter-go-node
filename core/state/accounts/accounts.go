@@ -199,7 +199,7 @@ func (a *Accounts) CreateMultisig(weights []uint, addresses []types.Address, thr
 	}
 
 	account.MultisigData = msig
-	account.isNew = true
+	account.markDirty(account.address)
 
 	a.setToMap(address, account)
 
