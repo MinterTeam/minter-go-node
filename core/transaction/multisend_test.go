@@ -17,7 +17,7 @@ func TestMultisendTx(t *testing.T) {
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 	coin := types.GetBaseCoin()
 
-	cState.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
+	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
 	value := helpers.BipToPip(big.NewInt(10))
 	to := types.Address([20]byte{1})
@@ -58,20 +58,20 @@ func TestMultisendTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, sync.Map{}, 0)
+	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error: %s", response.Log)
 	}
 
 	targetBalance, _ := big.NewInt(0).SetString("999989990000000000000000", 10)
-	balance := cState.GetBalance(addr, coin)
+	balance := cState.Accounts.GetBalance(addr, coin)
 	if balance.Cmp(targetBalance) != 0 {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", addr.String(), targetBalance, balance)
 	}
 
 	targetTestBalance, _ := big.NewInt(0).SetString("10000000000000000000", 10)
-	testBalance := cState.GetBalance(to, coin)
+	testBalance := cState.Accounts.GetBalance(to, coin)
 	if testBalance.Cmp(targetTestBalance) != 0 {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", to.String(), targetTestBalance, testBalance)
 	}

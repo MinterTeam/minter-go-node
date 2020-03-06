@@ -1,16 +1,15 @@
 package api
 
 import (
-	"github.com/MinterTeam/minter-go-node/eventsdb"
-	"github.com/MinterTeam/minter-go-node/eventsdb/events"
+	eventsdb "github.com/MinterTeam/events-db"
 )
 
 type EventsResponse struct {
-	Events events.Events `json:"events"`
+	Events eventsdb.Events `json:"events"`
 }
 
 func Events(height uint64) (*EventsResponse, error) {
 	return &EventsResponse{
-		Events: eventsdb.GetCurrent().LoadEvents(height),
+		Events: blockchain.GetEventsDB().LoadEvents(uint32(height)),
 	}, nil
 }

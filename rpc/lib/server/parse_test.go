@@ -3,13 +3,13 @@ package rpcserver
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/tendermint/tendermint/libs/bytes"
 	"net/http"
 	"strconv"
 	"testing"
 
-	amino "github.com/MinterTeam/go-amino"
 	"github.com/stretchr/testify/assert"
-	cmn "github.com/tendermint/tendermint/libs/common"
+	amino "github.com/tendermint/go-amino"
 )
 
 func TestParseJSONMap(t *testing.T) {
@@ -34,7 +34,7 @@ func TestParseJSONMap(t *testing.T) {
 	// preloading map with values doesn't help
 	tmp := 0
 	p2 := map[string]interface{}{
-		"value":  &cmn.HexBytes{},
+		"value":  &bytes.HexBytes{},
 		"height": &tmp,
 	}
 	err = json.Unmarshal(input, &p2)
@@ -57,7 +57,7 @@ func TestParseJSONMap(t *testing.T) {
 		Height interface{} `json:"height"`
 	}{
 		Height: &tmp,
-		Value:  &cmn.HexBytes{},
+		Value:  &bytes.HexBytes{},
 	}
 	err = json.Unmarshal(input, &p3)
 	if assert.Nil(err) {
@@ -65,7 +65,7 @@ func TestParseJSONMap(t *testing.T) {
 		if assert.True(ok, "%#v", p3.Height) {
 			assert.Equal(22, *h)
 		}
-		v, ok := p3.Value.(*cmn.HexBytes)
+		v, ok := p3.Value.(*bytes.HexBytes)
 		if assert.True(ok, "%#v", p3.Value) {
 			assert.EqualValues([]byte{0x12, 0x34}, *v)
 		}
@@ -73,8 +73,8 @@ func TestParseJSONMap(t *testing.T) {
 
 	// simplest solution, but hard-coded
 	p4 := struct {
-		Value  cmn.HexBytes `json:"value"`
-		Height int          `json:"height"`
+		Value  bytes.HexBytes `json:"value"`
+		Height int            `json:"height"`
 	}{}
 	err = json.Unmarshal(input, &p4)
 	if assert.Nil(err) {
@@ -93,10 +93,10 @@ func TestParseJSONMap(t *testing.T) {
 			assert.Equal(22, h)
 		}
 
-		var v cmn.HexBytes
+		var v bytes.HexBytes
 		err = json.Unmarshal(*p5["value"], &v)
 		if assert.Nil(err) {
-			assert.Equal(cmn.HexBytes{0x12, 0x34}, v)
+			assert.Equal(bytes.HexBytes{0x12, 0x34}, v)
 		}
 	}
 }
@@ -122,10 +122,10 @@ func TestParseJSONArray(t *testing.T) {
 
 	// preloading map with values helps here (unlike map - p2 above)
 	tmp := 0
-	p2 := []interface{}{&cmn.HexBytes{}, &tmp}
+	p2 := []interface{}{&bytes.HexBytes{}, &tmp}
 	err = json.Unmarshal(input, &p2)
 	if assert.Nil(err) {
-		v, ok := p2[0].(*cmn.HexBytes)
+		v, ok := p2[0].(*bytes.HexBytes)
 		if assert.True(ok, "%#v", p2[0]) {
 			assert.EqualValues([]byte{0x12, 0x34}, *v)
 		}

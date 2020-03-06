@@ -6,6 +6,8 @@ import (
 	crand "crypto/rand"
 	"encoding/json"
 	"fmt"
+	tmbytes "github.com/tendermint/tendermint/libs/bytes"
+	"github.com/tendermint/tendermint/libs/rand"
 	"net/http"
 	"os"
 	"os/exec"
@@ -17,7 +19,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	amino "github.com/tendermint/go-amino"
-	cmn "github.com/tendermint/tendermint/libs/common"
 	"github.com/tendermint/tendermint/libs/log"
 
 	client "github.com/tendermint/tendermint/rpc/lib/client"
@@ -48,7 +49,7 @@ type ResultEchoBytes struct {
 }
 
 type ResultEchoDataBytes struct {
-	Value cmn.HexBytes `json:"value"`
+	Value tmbytes.HexBytes `json:"value"`
 }
 
 // Define some routes
@@ -79,7 +80,7 @@ func EchoBytesResult(ctx *types.Context, v []byte) (*ResultEchoBytes, error) {
 	return &ResultEchoBytes{v}, nil
 }
 
-func EchoDataBytesResult(ctx *types.Context, v cmn.HexBytes) (*ResultEchoDataBytes, error) {
+func EchoDataBytesResult(ctx *types.Context, v tmbytes.HexBytes) (*ResultEchoDataBytes, error) {
 	return &ResultEchoDataBytes{v}, nil
 }
 
@@ -177,7 +178,7 @@ func echoBytesViaHTTP(cl client.HTTPClient, bytes []byte) ([]byte, error) {
 	return result.Value, nil
 }
 
-func echoDataBytesViaHTTP(cl client.HTTPClient, bytes cmn.HexBytes) (cmn.HexBytes, error) {
+func echoDataBytesViaHTTP(cl client.HTTPClient, bytes tmbytes.HexBytes) (tmbytes.HexBytes, error) {
 	params := map[string]interface{}{
 		"arg": bytes,
 	}
@@ -199,12 +200,12 @@ func testWithHTTPClient(t *testing.T, cl client.HTTPClient) {
 	require.Nil(t, err)
 	assert.Equal(t, got2, val2)
 
-	val3 := cmn.HexBytes(randBytes(t))
+	val3 := tmbytes.HexBytes(randBytes(t))
 	got3, err := echoDataBytesViaHTTP(cl, val3)
 	require.Nil(t, err)
 	assert.Equal(t, got3, val3)
 
-	val4 := cmn.RandIntn(10000)
+	val4 := rand.Intn(10000)
 	got4, err := echoIntViaHTTP(cl, val4)
 	require.Nil(t, err)
 	assert.Equal(t, got4, val4)
@@ -271,15 +272,15 @@ func testWithWSClient(t *testing.T, cl *client.WSClient) {
 func TestServersAndClientsBasic(t *testing.T) {
 	serverAddrs := [...]string{tcpAddr, unixAddr}
 	for _, addr := range serverAddrs {
-		cl1 := client.NewURIClient(addr)
+		cl1, _ := client.NewURIClient(addr)
 		fmt.Printf("=== testing server on %s using URI client", addr)
 		testWithHTTPClient(t, cl1)
 
-		cl2 := client.NewJSONRPCClient(addr)
+		cl2, _ := client.NewJSONRPCClient(addr)
 		fmt.Printf("=== testing server on %s using JSONRPC client", addr)
 		testWithHTTPClient(t, cl2)
 
-		cl3 := client.NewWSClient(addr, websocketEndpoint)
+		cl3, _ := client.NewWSClient(addr, websocketEndpoint)
 		cl3.SetLogger(log.TestingLogger())
 		err := cl3.Start()
 		require.Nil(t, err)
@@ -290,7 +291,7 @@ func TestServersAndClientsBasic(t *testing.T) {
 }
 
 func TestHexStringArg(t *testing.T) {
-	cl := client.NewURIClient(tcpAddr)
+	cl, _ := client.NewURIClient(tcpAddr)
 	// should NOT be handled as hex
 	val := "0xabc"
 	got, err := echoViaHTTP(cl, val)
@@ -299,7 +300,7 @@ func TestHexStringArg(t *testing.T) {
 }
 
 func TestQuotedStringArg(t *testing.T) {
-	cl := client.NewURIClient(tcpAddr)
+	cl, _ := client.NewURIClient(tcpAddr)
 	// should NOT be unquoted
 	val := "\"abc\""
 	got, err := echoViaHTTP(cl, val)
@@ -308,7 +309,7 @@ func TestQuotedStringArg(t *testing.T) {
 }
 
 func TestWSNewWSRPCFunc(t *testing.T) {
-	cl := client.NewWSClient(tcpAddr, websocketEndpoint)
+	cl, _ := client.NewWSClient(tcpAddr, websocketEndpoint)
 	cl.SetLogger(log.TestingLogger())
 	err := cl.Start()
 	require.Nil(t, err)
@@ -333,7 +334,7 @@ func TestWSNewWSRPCFunc(t *testing.T) {
 }
 
 func TestWSHandlesArrayParams(t *testing.T) {
-	cl := client.NewWSClient(tcpAddr, websocketEndpoint)
+	cl, _ := client.NewWSClient(tcpAddr, websocketEndpoint)
 	cl.SetLogger(log.TestingLogger())
 	err := cl.Start()
 	require.Nil(t, err)
@@ -358,7 +359,7 @@ func TestWSHandlesArrayParams(t *testing.T) {
 // TestWSClientPingPong checks that a client & server exchange pings
 // & pongs so connection stays alive.
 func TestWSClientPingPong(t *testing.T) {
-	cl := client.NewWSClient(tcpAddr, websocketEndpoint)
+	cl, _ := client.NewWSClient(tcpAddr, websocketEndpoint)
 	cl.SetLogger(log.TestingLogger())
 	err := cl.Start()
 	require.Nil(t, err)
@@ -368,7 +369,7 @@ func TestWSClientPingPong(t *testing.T) {
 }
 
 func randBytes(t *testing.T) []byte {
-	n := cmn.RandIntn(10) + 2
+	n := rand.Intn(10) + 2
 	buf := make([]byte, n)
 	_, err := crand.Read(buf)
 	require.Nil(t, err)

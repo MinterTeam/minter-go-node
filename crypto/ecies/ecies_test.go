@@ -35,20 +35,11 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
-	"flag"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"math/big"
 	"testing"
 )
-
-var dumpEnc bool
-
-func init() {
-	flDump := flag.Bool("dump", false, "write encrypted test message to file")
-	flag.Parse()
-	dumpEnc = *flDump
-}
 
 // Ensure the KDF generates appropriately sized keys.
 func TestKDF(t *testing.T) {

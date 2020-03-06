@@ -23,8 +23,8 @@ func init() {
 	TxDecoder.RegisterType(TypeRedeemCheck, RedeemCheckData{})
 	TxDecoder.RegisterType(TypeSetCandidateOnline, SetCandidateOnData{})
 	TxDecoder.RegisterType(TypeSetCandidateOffline, SetCandidateOffData{})
-	TxDecoder.RegisterType(TypeCreateMultisig, CreateMultisigData{})
 	TxDecoder.RegisterType(TypeMultisend, MultisendData{})
+	TxDecoder.RegisterType(TypeCreateMultisig, CreateMultisigData{})
 	TxDecoder.RegisterType(TypeEditCandidate, EditCandidateData{})
 }
 
@@ -37,24 +37,23 @@ func (decoder *Decoder) RegisterType(t TxType, d Data) {
 }
 
 func (decoder *Decoder) DecodeFromBytes(buf []byte) (*Transaction, error) {
-	var tx Transaction
-	err := rlp.DecodeBytes(buf, &tx)
-
+	tx, err := decoder.DecodeFromBytesWithoutSig(buf)
 	if err != nil {
 		return nil, err
 	}
 
-	if tx.Data == nil {
-		return nil, errors.New("incorrect tx data")
+	tx, err = DecodeSig(tx)
+	if err != nil {
+		return nil, err
 	}
 
+	return tx, nil
+}
+
+func DecodeSig(tx *Transaction) (*Transaction, error) {
 	switch tx.SignatureType {
 	case SigTypeMulti:
 		{
-			if true {
-				return nil, errors.New("multisig transactions are not supported yet")
-			}
-
 			tx.multisig = &SignatureMulti{}
 			if err := rlp.DecodeBytes(tx.SignatureData, tx.multisig); err != nil {
 				return nil, err
@@ -69,6 +68,21 @@ func (decoder *Decoder) DecodeFromBytes(buf []byte) (*Transaction, error) {
 		}
 	default:
 		return nil, errors.New("unknown signature type")
+	}
+
+	return tx, nil
+}
+
+func (decoder *Decoder) DecodeFromBytesWithoutSig(buf []byte) (*Transaction, error) {
+	var tx Transaction
+	err := rlp.DecodeBytes(buf, &tx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if tx.Data == nil {
+		return nil, errors.New("incorrect tx data")
 	}
 
 	d, ok := decoder.registeredTypes[tx.Type]

@@ -19,7 +19,7 @@ func TestRedeemCheckTx(t *testing.T) {
 
 	senderPrivateKey, _ := crypto.GenerateKey()
 	senderAddr := crypto.PubkeyToAddress(senderPrivateKey.PublicKey)
-	cState.AddBalance(senderAddr, coin, helpers.BipToPip(big.NewInt(1000000)))
+	cState.Accounts.AddBalance(senderAddr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
 	receiverPrivateKey, _ := crypto.GenerateKey()
 	receiverAddr := crypto.PubkeyToAddress(receiverPrivateKey.PublicKey)
@@ -36,9 +36,11 @@ func TestRedeemCheckTx(t *testing.T) {
 
 	check := c.Check{
 		Nonce:    []byte{1, 2, 3},
+		ChainID:  types.CurrentChainID,
 		DueBlock: 1,
 		Coin:     coin,
 		Value:    checkValue,
+		GasCoin:  types.GetBaseCoin(),
 	}
 
 	lock, err := crypto.Sign(check.HashWithoutLock().Bytes(), passphrasePk)
@@ -103,13 +105,13 @@ func TestRedeemCheckTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, sync.Map{}, 0)
+	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
 
-	balance := cState.GetBalance(receiverAddr, coin)
+	balance := cState.Accounts.GetBalance(receiverAddr, coin)
 	if balance.Cmp(checkValue) != 0 {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", coin, checkValue, balance)
 	}

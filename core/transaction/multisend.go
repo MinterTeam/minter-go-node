@@ -2,14 +2,14 @@ package transaction
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
-	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/common"
+	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
 	"sort"
 	"strings"
@@ -19,30 +19,48 @@ type MultisendData struct {
 	List []MultisendDataItem `json:"list"`
 }
 
-func (data MultisendData) TotalSpend(tx *Transaction, context *state.StateDB) (TotalSpends, []Conversion, *big.Int, *Response) {
+func (data MultisendData) TotalSpend(tx *Transaction, context *state.State) (TotalSpends, []Conversion, *big.Int, *Response) {
 	panic("implement me")
 }
 
-func (data MultisendData) BasicCheck(tx *Transaction, context *state.StateDB) *Response {
-	if len(data.List) < 1 || len(data.List) > 100 {
+func (data MultisendData) BasicCheck(tx *Transaction, context *state.State) *Response {
+	quantity := len(data.List)
+	if quantity < 1 || quantity > 100 {
 		return &Response{
 			Code: code.InvalidMultisendData,
-			Log:  "List length must be between 1 and 100"}
+			Log:  "List length must be between 1 and 100",
+			Info: EncodeError(map[string]string{
+				"code":         fmt.Sprintf("%d", code.InvalidMultisendData),
+				"description":  "invalid_multisend_data",
+				"min_quantity": "1",
+				"max_quantity": "100",
+				"got_quantity": fmt.Sprintf("%d", quantity),
+			}),
+		}
 	}
 
-	if err := checkCoins(context, data.List); err != nil {
-		return &Response{
-			Code: code.CoinNotExists,
-			Log:  err.Error()}
+	if errResp := checkCoins(context, data.List); errResp != nil {
+		return errResp
 	}
-
 	return nil
 }
 
 type MultisendDataItem struct {
-	Coin  types.CoinSymbol `json:"coin"`
-	To    types.Address    `json:"to"`
-	Value *big.Int         `json:"value"`
+	Coin  types.CoinSymbol
+	To    types.Address
+	Value *big.Int
+}
+
+func (item MultisendDataItem) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Coin  string `json:"coin"`
+		To    string `json:"to"`
+		Value string `json:"value"`
+	}{
+		Coin:  item.Coin.String(),
+		To:    item.To.String(),
+		Value: item.Value.String(),
+	})
 }
 
 func (data MultisendData) String() string {
@@ -53,7 +71,7 @@ func (data MultisendData) Gas() int64 {
 	return commissions.SendTx + ((int64(len(data.List)) - 1) * commissions.MultisendDelta)
 }
 
-func (data MultisendData) Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
+func (data MultisendData) Run(tx *Transaction, context *state.State, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
 	sender, _ := tx.Sender()
 
 	response := data.BasicCheck(tx, context)
@@ -65,42 +83,50 @@ func (data MultisendData) Run(tx *Transaction, context *state.StateDB, isCheck b
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
 	if !tx.GasCoin.IsBaseCoin() {
-		coin := context.GetStateCoin(tx.GasCoin)
+		coin := context.Coins.GetCoin(tx.GasCoin)
 
-		if coin.ReserveBalance().Cmp(commissionInBaseCoin) < 0 {
+		errResp := CheckReserveUnderflow(coin, commissionInBaseCoin)
+		if errResp != nil {
+			return *errResp
+		}
+
+		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
 			return Response{
 				Code: code.CoinReserveNotSufficient,
-				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.ReserveBalance().String(), commissionInBaseCoin.String())}
+				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.Reserve().String(), commissionInBaseCoin.String()),
+				Info: EncodeError(map[string]string{
+					"has_reserve": coin.Reserve().String(),
+					"commission":  commissionInBaseCoin.String(),
+					"gas_coin":    coin.CName,
+				}),
+			}
 		}
 
-		commission = formula.CalculateSaleAmount(coin.Volume(), coin.ReserveBalance(), coin.Data().Crr, commissionInBaseCoin)
+		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
 	}
 
-	if err := checkBalances(context, sender, data.List, commission, tx.GasCoin); err != nil {
-		return Response{
-			Code: code.InsufficientFunds,
-			Log:  err.Error(),
-		}
+	if errResp := checkBalances(context, sender, data.List, commission, tx.GasCoin); errResp != nil {
+		return *errResp
 	}
 
 	if !isCheck {
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		context.SubCoinVolume(tx.GasCoin, commission)
-		context.SubCoinReserve(tx.GasCoin, commissionInBaseCoin)
+		context.Coins.SubVolume(tx.GasCoin, commission)
+		context.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
 
-		context.SubBalance(sender, tx.GasCoin, commission)
+		context.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		for _, item := range data.List {
-			context.SubBalance(sender, item.Coin, item.Value)
-			context.AddBalance(item.To, item.Coin, item.Value)
+			context.Accounts.SubBalance(sender, item.Coin, item.Value)
+			context.Accounts.AddBalance(item.To, item.Coin, item.Value)
 		}
-		context.SetNonce(sender, tx.Nonce)
+		context.Accounts.SetNonce(sender, tx.Nonce)
 	}
 
-	tags := common.KVPairs{
-		common.KVPair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeMultisend)}))},
-		common.KVPair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
-		common.KVPair{Key: []byte("tx.to"), Value: []byte(pluckRecipients(data.List))},
+	tags := kv.Pairs{
+		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeMultisend)}))},
+		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
+		kv.Pair{Key: []byte("tx.to"), Value: []byte(pluckRecipients(data.List))},
 	}
 
 	return Response{
@@ -111,7 +137,7 @@ func (data MultisendData) Run(tx *Transaction, context *state.StateDB, isCheck b
 	}
 }
 
-func checkBalances(context *state.StateDB, sender types.Address, items []MultisendDataItem, commission *big.Int, gasCoin types.CoinSymbol) error {
+func checkBalances(context *state.State, sender types.Address, items []MultisendDataItem, commission *big.Int, gasCoin types.CoinSymbol) *Response {
 	total := map[types.CoinSymbol]*big.Int{}
 	total[gasCoin] = big.NewInt(0).Set(commission)
 
@@ -134,18 +160,32 @@ func checkBalances(context *state.StateDB, sender types.Address, items []Multise
 
 	for _, coin := range coins {
 		value := total[coin]
-		if context.GetBalance(sender, coin).Cmp(value) < 0 {
-			return errors.New(fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), value, coin))
+		if context.Accounts.GetBalance(sender, coin).Cmp(value) < 0 {
+			return &Response{
+				Code: code.InsufficientFunds,
+				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), value, coin),
+				Info: EncodeError(map[string]string{
+					"sender":       sender.String(),
+					"needed_value": fmt.Sprintf("%d", value),
+					"coin":         fmt.Sprintf("%d", coin),
+				}),
+			}
 		}
 	}
 
 	return nil
 }
 
-func checkCoins(context *state.StateDB, items []MultisendDataItem) error {
+func checkCoins(context *state.State, items []MultisendDataItem) *Response {
 	for _, item := range items {
-		if !context.CoinExists(item.Coin) {
-			return errors.New(fmt.Sprintf("Coin %s not exists", item.Coin))
+		if !context.Coins.Exists(item.Coin) {
+			return &Response{
+				Code: code.CoinNotExists,
+				Log:  fmt.Sprintf("Coin %s not exists", item.Coin),
+				Info: EncodeError(map[string]string{
+					"coin": fmt.Sprintf("%s", item.Coin),
+				}),
+			}
 		}
 	}
 

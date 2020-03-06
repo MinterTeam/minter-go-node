@@ -24,21 +24,15 @@ To run it in production we recommend to use bind host mount instead of volume.
 ### Manual
 You can get official installation instructions in our [docs](https://docs.minter.network/#section/Install-Minter).
 
-1. Install LevelDB: https://github.com/google/leveldb
-
-2. Download Minter
+1. Download Minter Node
 
     Get [latest binary build](https://github.com/MinterTeam/minter-go-node/releases) suitable for your architecture and unpack it to desired folder.
 
-3. Run Minter Node
+2. Run Minter Node
 
 ```bash
 ./minter node
 ```
-
-4. Use GUI
-
-    Open http://localhost:3000/ in local browser to see node’s GUI.
 
 ## Resources
 
@@ -49,9 +43,6 @@ You can get official installation instructions in our [docs](https://docs.minter
 - [Minter Explorer](https://explorer.minter.network/)
 - [Telegram Bot Wallet](https://t.me/BipWallet_Bot)
 - [Android Wallet](https://play.google.com/store/apps/details?id=network.minter.bipwallet)
-
-### Unofficial
-- [Magnum Wallet](http://app.magnumwallet.co/?utm_source=gh&utm_medium=res&utm_campaign=mi)
 
 ### Community
 - [Telegram Channel (English)](https://t.me/MinterTeam)

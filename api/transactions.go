@@ -4,27 +4,26 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
-	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/tendermint/tendermint/libs/common"
-	"github.com/tendermint/tendermint/rpc/core/types"
+	"github.com/tendermint/tendermint/libs/bytes"
+	core_types "github.com/tendermint/tendermint/rpc/core/types"
 )
 
 type TransactionResponse struct {
-	Hash     common.HexBytes    `json:"hash"`
-	RawTx    string             `json:"raw_tx"`
-	Height   int64              `json:"height"`
-	Index    uint32             `json:"index"`
-	From     string             `json:"from"`
-	Nonce    uint64             `json:"nonce"`
-	Gas      int64              `json:"gas"`
-	GasPrice uint32             `json:"gas_price"`
-	GasCoin  types.CoinSymbol   `json:"gas_coin"`
-	Type     transaction.TxType `json:"type"`
-	Data     json.RawMessage    `json:"data"`
-	Payload  []byte             `json:"payload"`
-	Tags     map[string]string  `json:"tags"`
-	Code     uint32             `json:"code,omitempty"`
-	Log      string             `json:"log,omitempty"`
+	Hash     string            `json:"hash"`
+	RawTx    string            `json:"raw_tx"`
+	Height   int64             `json:"height"`
+	Index    uint32            `json:"index"`
+	From     string            `json:"from"`
+	Nonce    uint64            `json:"nonce"`
+	Gas      int64             `json:"gas"`
+	GasPrice uint32            `json:"gas_price"`
+	GasCoin  string            `json:"gas_coin"`
+	Type     uint8             `json:"type"`
+	Data     json.RawMessage   `json:"data"`
+	Payload  []byte            `json:"payload"`
+	Tags     map[string]string `json:"tags"`
+	Code     uint32            `json:"code,omitempty"`
+	Log      string            `json:"log,omitempty"`
 }
 
 type ResultTxSearch struct {
@@ -40,7 +39,7 @@ func Transactions(query string, page, perPage int) (*[]TransactionResponse, erro
 		perPage = 100
 	}
 
-	rpcResult, err := client.TxSearch(query, false, page, perPage)
+	rpcResult, err := client.TxSearch(query, false, page, perPage, "desc")
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +60,7 @@ func Transactions(query string, page, perPage int) (*[]TransactionResponse, erro
 		}
 
 		result[i] = TransactionResponse{
-			Hash:     common.HexBytes(tx.Tx.Hash()),
+			Hash:     bytes.HexBytes(tx.Tx.Hash()).String(),
 			RawTx:    fmt.Sprintf("%x", []byte(tx.Tx)),
 			Height:   tx.Height,
 			Index:    tx.Index,
@@ -69,8 +68,8 @@ func Transactions(query string, page, perPage int) (*[]TransactionResponse, erro
 			Nonce:    decodedTx.Nonce,
 			Gas:      decodedTx.Gas(),
 			GasPrice: decodedTx.GasPrice,
-			GasCoin:  decodedTx.GasCoin,
-			Type:     decodedTx.Type,
+			GasCoin:  decodedTx.GasCoin.String(),
+			Type:     uint8(decodedTx.Type),
 			Data:     data,
 			Payload:  decodedTx.Payload,
 			Tags:     tags,

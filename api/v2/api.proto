@@ -1,0 +1,487 @@
+syntax = "proto3";
+
+package api_pb;
+
+option go_package = "./api_pb";
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/struct.proto";
+
+message NodeInfo {
+    message ProtocolVersion {
+        string p2p = 3;
+        string block = 1;
+        string app = 2;
+    }
+    ProtocolVersion protocol_version = 8;
+    string id = 1;
+    string listen_addr = 2;
+    string network = 3;
+    string version = 4;
+    string channels = 5;
+    string moniker = 6;
+    message Other {
+        string tx_index = 2;
+        string rpc_address = 1;
+    }
+    Other other = 7;
+}
+message NetInfoResponse {
+    bool listening = 4;
+    repeated string listeners = 1;
+    string count_peers = 2;
+    message Peer {
+        NodeInfo node_info = 4;
+        bool is_outbound = 1;
+        message ConnectionStatus {
+            string duration = 4;
+            message Monitor {
+                bool active = 13;
+                string start = 1;
+                string duration = 2;
+                string idle = 3;
+                string bytes = 4;
+                string samples = 5;
+                string inst_rate = 6;
+                string cur_rate = 7;
+                string avg_rate = 8;
+                string peak_rate = 9;
+                string bytes_rem = 10;
+                string time_rem = 11;
+                string progress = 12;
+            }
+            Monitor SendMonitor = 1;
+            Monitor RecvMonitor = 2;
+            message Channel {
+                string id = 5;
+                string send_queue_capacity = 1;
+                string send_queue_size = 2;
+                string priority = 3;
+                string recently_sent = 4;
+            }
+            repeated Channel channels = 3;
+        }
+        ConnectionStatus connection_status = 2;
+        string remote_ip = 3;
+    }
+    repeated Peer peers = 3;
+}
+message StatusResponse {
+    string version = 8;
+    string latest_block_hash = 1;
+    string latest_app_hash = 2;
+    string latest_block_height = 3;
+    string latest_block_time = 4;
+    string keep_last_states = 5;
+    bool catching_up = 6;
+    string public_key = 7;
+    string node_id = 9;
+}
+message GenesisResponse {
+    string genesis_time = 1;
+    string chain_id = 2;
+    message ConsensusParams {
+        message Block {
+            string max_bytes = 1;
+            string max_gas = 2;
+            string time_iota_ms = 3;
+        }
+        Block block = 1;
+        message Evidence {
+            string max_age_num_blocks = 1;
+            string max_age_duration = 2;
+        }
+        Evidence evidence = 2;
+        message Validator {
+            repeated string public_key_types = 1;
+        }
+        Validator validator = 3;
+    }
+    ConsensusParams consensus_params = 3;
+    string app_hash = 4;
+    google.protobuf.Struct app_state = 5;
+}
+
+message MinGasPriceResponse {
+    string min_gas_price = 3;
+}
+
+message BlockRequest {
+    int64 height = 1;
+}
+message BlockResponse {
+    string hash = 1;
+    string height = 2;
+    string time = 3;
+    string transactions_count = 4;
+
+    message Transaction {
+        string hash = 1;
+        string raw_tx = 2;
+        string from = 3;
+        string nonce = 4;
+        string gas_price = 5;
+        string type = 6;
+        google.protobuf.Struct data = 7;
+        bytes payload = 8;
+        bytes service_data = 9;
+        string gas = 10;
+        string gas_coin = 11;
+        map<string, string> tags = 12;
+        string code = 13;
+        string log = 14;
+    }
+
+    repeated Transaction transactions = 6;
+    string block_reward = 7;
+    string size = 8;
+    string proposer = 9;
+    message Validator {
+        string public_key = 1;
+        bool signed = 2;
+    }
+    repeated Validator validators = 10;
+    message Evidence {
+        message Evidence {
+            string height = 1;
+            string time = 2;
+            string address = 3;
+            string hash = 4;
+        }
+        repeated Evidence evidence = 1;
+    }
+    Evidence evidence = 11;
+}
+
+message MaxGasRequest {
+    int32 height = 1;
+}
+message MaxGasResponse {
+    string max_gas = 3;
+}
+
+message AddressRequest {
+    string address = 1;
+    int32 height = 2;
+}
+message AddressResponse {
+    map<string, string> balance = 1;
+    string transactions_count = 2;
+}
+
+message AddressesRequest {
+    repeated string addresses = 1;
+    int32 height = 2;
+}
+message AddressesResponse {
+    message Result {
+        string address = 1;
+        map<string, string> balance = 2;
+        string transactions_count = 3;
+    }
+    repeated Result addresses = 3;
+}
+
+message CandidateRequest {
+    string public_key = 1;
+    int32 height = 2;
+}
+message CandidateResponse {
+    string reward_address = 1;
+    string total_stake = 2;
+    string public_key = 3;
+    string commission = 4;
+    message Stake {
+        string owner = 1;
+        string coin = 2;
+        string value = 3;
+        string bip_value = 4;
+    }
+    repeated Stake stakes = 5;
+    string status = 6;
+}
+
+message CandidatesRequest {
+    int32 height = 1;
+    bool include_stakes = 2;
+}
+message CandidatesResponse {
+    repeated CandidateResponse candidates = 3;
+}
+
+message CoinInfoRequest {
+    int32 height = 1;
+    string symbol = 2;
+}
+message CoinInfoResponse {
+    string name = 1;
+    string symbol = 2;
+    string volume = 3;
+    string crr = 4;
+    string reserve_balance = 5;
+}
+
+message SendTransactionResponse {
+    string code = 1;
+    string data = 2;
+    string log = 3;
+    string hash = 4;
+}
+message SendTransactionRequest {
+    string tx = 1;
+}
+
+message TransactionResponse {
+    string hash = 1;
+    string raw_tx = 2;
+    string height = 3;
+    string index = 4;
+    string from = 5;
+    string nonce = 6;
+    string gas = 7;
+    string gas_price = 8;
+    string gas_coin = 9;
+    string type = 10;
+    google.protobuf.Struct data = 11;
+    bytes payload = 12;
+    map<string, string> tags = 13;
+    string code = 14;
+    string log = 15;
+}
+message TransactionRequest {
+    string hash = 1;
+}
+
+message TransactionsResponse {
+    repeated TransactionResponse transactions = 3;
+}
+message TransactionsRequest {
+    string query = 1;
+    int32 page = 2;
+    int32 per_page = 3;
+}
+
+message EstimateCoinBuyRequest {
+    string coin_to_buy = 1;
+    string coin_to_sell = 2;
+    string value_to_buy = 3;
+    int32 height = 4;
+}
+message EstimateCoinBuyResponse {
+    string will_pay = 1;
+    string commission = 2;
+}
+
+message EstimateCoinSellRequest {
+    string coin_to_sell = 1;
+    string coin_to_buy = 2;
+    string value_to_sell = 3;
+    int32 height = 4;
+}
+message EstimateCoinSellResponse {
+    string will_get = 1;
+    string commission = 2;
+}
+
+message EstimateCoinSellAllResponse {
+    string will_get = 1;
+}
+message EstimateCoinSellAllRequest {
+    string coin_to_sell = 1;
+    string coin_to_buy = 2;
+    string value_to_sell = 3;
+    uint64 gas_price = 4;
+    int32 height = 5;
+}
+
+message EstimateTxCommissionResponse {
+    string commission = 1;
+}
+message EstimateTxCommissionRequest {
+    string tx = 1;
+    int32 height = 2;
+}
+
+message EventsRequest {
+    uint32 height = 1;
+}
+message EventsResponse {
+    message Event {
+        string type = 1;
+        google.protobuf.Struct value = 2;
+    }
+    repeated Event events = 1;
+}
+
+message MissedBlocksRequest {
+    string public_key = 1;
+    int32 height = 2;
+}
+message MissedBlocksResponse {
+    string missed_blocks = 1;
+    string missed_blocks_count = 2;
+}
+
+message UnconfirmedTxsResponse {
+    string transactions_count = 1;
+    string total_transactions = 2;
+    string total_bytes = 3;
+    repeated string transactions = 4;
+}
+message UnconfirmedTxsRequest {
+    int32 limit = 1;
+}
+
+message ValidatorsRequest {
+    int64 height = 1;
+    int32 page = 2;
+    int32 per_page = 3;
+}
+message ValidatorsResponse {
+    message Result {
+        string public_key = 1;
+        string voting_power = 2;
+    }
+    repeated Result validators = 3;
+}
+
+message SubscribeRequest {
+    string query = 1;
+}
+
+message SubscribeResponse {
+    string query = 1;
+    google.protobuf.Struct data = 2;
+    message Event {
+        string key = 1;
+        repeated string events = 2;
+    }
+    repeated Event events = 3;
+}
+
+
+service ApiService {
+    rpc Subscribe (SubscribeRequest) returns (stream SubscribeResponse) {
+        option (google.api.http) = {
+            get: "/subscribe"
+        };
+    }
+
+    rpc Genesis (google.protobuf.Empty) returns (GenesisResponse) {
+        option (google.api.http) = {
+            get: "/genesis"
+        };
+    }
+    rpc MinGasPrice (google.protobuf.Empty) returns (MinGasPriceResponse) {
+        option (google.api.http) = {
+            get: "/min_gas_price"
+        };
+    }
+    rpc NetInfo (google.protobuf.Empty) returns (NetInfoResponse) {
+        option (google.api.http) = {
+            get: "/net_info"
+        };
+    }
+    rpc Status (google.protobuf.Empty) returns (StatusResponse) {
+        option (google.api.http) = {
+            get: "/status"
+        };
+    }
+    rpc Address (AddressRequest) returns (AddressResponse) {
+        option (google.api.http) = {
+            get: "/address/{address}"
+        };
+    }
+    rpc Addresses (AddressesRequest) returns (AddressesResponse) {
+        option (google.api.http) = {
+            get: "/addresses"
+        };
+    }
+    rpc Block (BlockRequest) returns (BlockResponse) {
+        option (google.api.http) = {
+            get: "/block/{height}"
+        };
+    }
+    rpc Candidate (CandidateRequest) returns (CandidateResponse) {
+        option (google.api.http) = {
+            get: "/candidate/{public_key}"
+        };
+    }
+    rpc Candidates (CandidatesRequest) returns (CandidatesResponse) {
+        option (google.api.http) = {
+            get: "/candidates"
+        };
+    }
+    rpc CoinInfo (CoinInfoRequest) returns (CoinInfoResponse) {
+        option (google.api.http) = {
+            get: "/coin_info/{symbol}"
+        };
+    }
+    rpc EstimateCoinBuy (EstimateCoinBuyRequest) returns (EstimateCoinBuyResponse) {
+        option (google.api.http) = {
+            get: "/estimate_coin_buy"
+        };
+    }
+    rpc EstimateCoinSell (EstimateCoinSellRequest) returns (EstimateCoinSellResponse) {
+        option (google.api.http) = {
+            get: "/estimate_coin_sell"
+        };
+    }
+    rpc EstimateCoinSellAll (EstimateCoinSellAllRequest) returns (EstimateCoinSellAllResponse) {
+        option (google.api.http) = {
+            get: "/estimate_coin_sell_all"
+        };
+    }
+    rpc EstimateTxCommission (EstimateTxCommissionRequest) returns (EstimateTxCommissionResponse) {
+        option (google.api.http) = {
+            get: "/estimate_tx_commission/{tx}"
+        };
+    }
+    rpc Events (EventsRequest) returns (EventsResponse) {
+        option (google.api.http) = {
+            get: "/events/{height}"
+        };
+    }
+    rpc MaxGas (MaxGasRequest) returns (MaxGasResponse) {
+        option (google.api.http) = {
+            get: "/max_gas"
+        };
+    }
+    rpc MissedBlocks (MissedBlocksRequest) returns (MissedBlocksResponse) {
+        option (google.api.http) = {
+            get: "/missed_blocks/{public_key}"
+        };
+    }
+    rpc SendGetTransaction (SendTransactionRequest) returns (SendTransactionResponse) {
+        option (google.api.http) = {
+            get: "/send_transaction/{tx}"
+        };
+    }
+    rpc SendPostTransaction (SendTransactionRequest) returns (SendTransactionResponse) {
+        option (google.api.http) = {
+            post: "/send_transaction"
+            body: "*"
+        };
+    }
+    rpc Transaction (TransactionRequest) returns (TransactionResponse) {
+        option (google.api.http) = {
+            get: "/transaction/{hash}"
+        };
+    }
+    rpc Transactions (TransactionsRequest) returns (TransactionsResponse) {
+        option (google.api.http) = {
+            get: "/transactions"
+        };
+    }
+    rpc UnconfirmedTxs (UnconfirmedTxsRequest) returns (UnconfirmedTxsResponse) {
+        option (google.api.http) = {
+            get: "/unconfirmed_txs"
+        };
+    }
+    rpc Validators (ValidatorsRequest) returns (ValidatorsResponse) {
+        option (google.api.http) = {
+            get: "/validators"
+        };
+    }
+}

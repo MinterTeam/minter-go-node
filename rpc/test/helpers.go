@@ -3,6 +3,7 @@ package rpctest
 import (
 	"context"
 	"fmt"
+	"github.com/tendermint/tendermint/libs/rand"
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,7 +12,6 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 
 	abci "github.com/tendermint/tendermint/abci/types"
-	cmn "github.com/tendermint/tendermint/libs/common"
 
 	cfg "github.com/tendermint/tendermint/config"
 	nm "github.com/tendermint/tendermint/node"
@@ -27,7 +27,7 @@ var globalConfig *cfg.Config
 
 func waitForRPC() {
 	laddr := GetConfig().RPC.ListenAddress
-	client := rpcclient.NewJSONRPCClient(laddr)
+	client, _ := rpcclient.NewJSONRPCClient(laddr)
 	ctypes.RegisterAmino(client.Codec())
 	result := new(ctypes.ResultStatus)
 	for {
@@ -64,7 +64,7 @@ func makePathname() string {
 }
 
 func randPort() int {
-	return int(cmn.RandUint16()/2 + 10000)
+	return int(rand.Uint16()/2 + 10000)
 }
 
 func makeAddrs() (string, string, string) {
@@ -86,7 +86,7 @@ func GetConfig() *cfg.Config {
 		globalConfig.RPC.ListenAddress = rpc
 		globalConfig.RPC.CORSAllowedOrigins = []string{"https://tendermint.com/"}
 		globalConfig.RPC.GRPCListenAddress = grpc
-		globalConfig.TxIndex.IndexTags = "app.creator,tx.height" // see kvstore application
+		globalConfig.TxIndex.IndexKeys = "app.creator,tx.height" // see kvstore application
 	}
 	return globalConfig
 }

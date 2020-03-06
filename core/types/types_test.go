@@ -19,7 +19,7 @@ package types
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/MinterTeam/go-amino"
+	"github.com/tendermint/go-amino"
 	"math/big"
 	"strings"
 	"testing"
@@ -137,11 +137,9 @@ func TestAppState(t *testing.T) {
 	appState := AppState{
 		Validators: []Validator{
 			{
-				RewardAddress: testAddr,
-				TotalBipStake: big.NewInt(1),
+				TotalBipStake: big.NewInt(1).String(),
 				PubKey:        pubkey,
-				Commission:    1,
-				AccumReward:   big.NewInt(1),
+				AccumReward:   big.NewInt(1).String(),
 				AbsentTimes:   ba,
 			},
 		},
@@ -149,19 +147,18 @@ func TestAppState(t *testing.T) {
 			{
 				RewardAddress: testAddr,
 				OwnerAddress:  testAddr,
-				TotalBipStake: big.NewInt(1),
+				TotalBipStake: big.NewInt(1).String(),
 				PubKey:        pubkey,
 				Commission:    1,
 				Stakes: []Stake{
 					{
 						Owner:    testAddr,
 						Coin:     GetBaseCoin(),
-						Value:    big.NewInt(1),
-						BipValue: big.NewInt(1),
+						Value:    big.NewInt(1).String(),
+						BipValue: big.NewInt(1).String(),
 					},
 				},
-				CreatedAtBlock: 1,
-				Status:         1,
+				Status: 1,
 			},
 		},
 		Accounts: []Account{
@@ -170,7 +167,7 @@ func TestAppState(t *testing.T) {
 				Balance: []Balance{
 					{
 						Coin:  GetBaseCoin(),
-						Value: big.NewInt(1),
+						Value: big.NewInt(1).String(),
 					},
 				},
 				Nonce: 1,
@@ -183,20 +180,20 @@ func TestAppState(t *testing.T) {
 		},
 		Coins: []Coin{
 			{
-				Name:           "ASD",
-				Symbol:         GetBaseCoin(),
-				Volume:         big.NewInt(1),
-				Crr:            1,
-				ReserveBalance: big.NewInt(1),
+				Name:    "ASD",
+				Symbol:  GetBaseCoin(),
+				Volume:  big.NewInt(1).String(),
+				Crr:     1,
+				Reserve: big.NewInt(1).String(),
 			},
 		},
 		FrozenFunds: []FrozenFund{
 			{
 				Height:       1,
 				Address:      testAddr,
-				CandidateKey: pubkey,
+				CandidateKey: &pubkey,
 				Coin:         GetBaseCoin(),
-				Value:        big.NewInt(1),
+				Value:        big.NewInt(1).String(),
 			},
 		},
 		UsedChecks: []UsedCheck{

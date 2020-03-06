@@ -4,17 +4,13 @@ import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/rpc/lib/types"
-	"github.com/tendermint/tendermint/libs/common"
+	"github.com/tendermint/tendermint/libs/bytes"
 )
 
 func Transaction(hash []byte) (*TransactionResponse, error) {
 	tx, err := client.Tx(hash, false)
 	if err != nil {
 		return nil, err
-	}
-
-	if uint64(tx.Height) > blockchain.LastCommittedHeight() {
-		return nil, rpctypes.RPCError{Code: 404, Message: "Tx not found"}
 	}
 
 	decodedTx, _ := transaction.TxDecoder.DecodeFromBytes(tx.Tx)
@@ -31,16 +27,16 @@ func Transaction(hash []byte) (*TransactionResponse, error) {
 	}
 
 	return &TransactionResponse{
-		Hash:     common.HexBytes(tx.Tx.Hash()),
+		Hash:     bytes.HexBytes(tx.Tx.Hash()).String(),
 		RawTx:    fmt.Sprintf("%x", []byte(tx.Tx)),
 		Height:   tx.Height,
 		Index:    tx.Index,
 		From:     sender.String(),
 		Nonce:    decodedTx.Nonce,
 		GasPrice: decodedTx.GasPrice,
-		GasCoin:  decodedTx.GasCoin,
+		GasCoin:  decodedTx.GasCoin.String(),
 		Gas:      decodedTx.Gas(),
-		Type:     decodedTx.Type,
+		Type:     uint8(decodedTx.Type),
 		Data:     data,
 		Payload:  decodedTx.Payload,
 		Tags:     tags,
@@ -73,10 +69,10 @@ func encodeTxData(decodedTx *transaction.Transaction) ([]byte, error) {
 		return cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.SetCandidateOffData))
 	case transaction.TypeUnbond:
 		return cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.UnbondData))
-	case transaction.TypeCreateMultisig:
-		return cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.CreateMultisigData))
 	case transaction.TypeMultisend:
 		return cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.MultisendData))
+	case transaction.TypeCreateMultisig:
+		return cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.CreateMultisigData))
 	case transaction.TypeEditCandidate:
 		return cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.EditCandidateData))
 	}

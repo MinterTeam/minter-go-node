@@ -1,9 +1,7 @@
 GOTOOLS = \
 	github.com/mitchellh/gox \
-	github.com/golang/dep/cmd/dep \
 	github.com/alecthomas/gometalinter \
-	github.com/gogo/protobuf/protoc-gen-gogo \
-	github.com/gobuffalo/packr/packr
+	github.com/gogo/protobuf/protoc-gen-gogo
 PACKAGES=$(shell go list ./... | grep -v '/vendor/')
 BUILD_TAGS?=minter
 BUILD_FLAGS=-ldflags "-s -w -X minter/version.GitCommit=`git rev-parse --short=8 HEAD`"
@@ -31,7 +29,7 @@ install:
 ### Tools & dependencies
 
 test:
-	CGO_ENABLED=1 CGO_LDFLAGS="-lsnappy" go test --count 1 --tags "gcc cleveldb" ./...
+	CGO_ENABLED=1 go test --count 1 --tags "gcc" ./...
 
 check_tools:
 	@# https://stackoverflow.com/a/25668869
@@ -50,13 +48,13 @@ update_tools:
 get_vendor_deps:
 	@rm -rf vendor/
 	@echo "--> Running dep"
-	@dep ensure -vendor-only
+	@go mod vendor
 
 #Run this locally.
 ensure_deps:
 	@rm -rf vendor/
 	@echo "--> Running dep"
-	@dep ensure
+	@go mod vendor
 
 ########################################
 ### Formatting, linting, and vetting

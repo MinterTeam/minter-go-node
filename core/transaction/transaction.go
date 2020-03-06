@@ -4,8 +4,10 @@ import (
 	"crypto/ecdsa"
 	"errors"
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
+	"github.com/MinterTeam/minter-go-node/core/state/coins"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/crypto/sha3"
@@ -38,7 +40,6 @@ const (
 
 var (
 	ErrInvalidSig = errors.New("invalid transaction v, r, s values")
-	MaxCoinSupply = big.NewInt(0).Exp(big.NewInt(10), big.NewInt(15+18), nil) // 1,000,000,000,000,000 bips
 )
 
 type Transaction struct {
@@ -105,9 +106,9 @@ type Conversion struct {
 type Data interface {
 	String() string
 	Gas() int64
-	TotalSpend(tx *Transaction, context *state.StateDB) (TotalSpends, []Conversion, *big.Int, *Response)
-	BasicCheck(tx *Transaction, context *state.StateDB) *Response
-	Run(tx *Transaction, context *state.StateDB, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response
+	TotalSpend(tx *Transaction, context *state.State) (TotalSpends, []Conversion, *big.Int, *Response)
+	BasicCheck(tx *Transaction, context *state.State) *Response
+	Run(tx *Transaction, context *state.State, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response
 }
 
 func (tx *Transaction) Serialize() ([]byte, error) {
@@ -291,12 +292,39 @@ func rlpHash(x interface{}) (h types.Hash) {
 	return h
 }
 
-func CheckForCoinSupplyOverflow(current *big.Int, delta *big.Int) error {
+func CheckForCoinSupplyOverflow(current *big.Int, delta *big.Int, max *big.Int) *Response {
 	total := big.NewInt(0).Set(current)
 	total.Add(total, delta)
 
-	if total.Cmp(MaxCoinSupply) != -1 {
-		return errors.New("сoin supply overflow")
+	if total.Cmp(max) != -1 {
+		return &Response{
+			Code: code.CoinSupplyOverflow,
+			Log:  "coin supply overflow",
+			Info: EncodeError(map[string]string{
+				"current": total.String(),
+				"delta":   delta.String(),
+				"max":     max.String(),
+			}),
+		}
+	}
+
+	return nil
+}
+
+func CheckReserveUnderflow(m *coins.Model, delta *big.Int) *Response {
+	total := big.NewInt(0).Sub(m.Reserve(), delta)
+
+	if total.Cmp(minCoinReserve) == -1 {
+		min := big.NewInt(0).Add(minCoinReserve, delta)
+		return &Response{
+			Code: code.CoinReserveUnderflow,
+			Log:  fmt.Sprintf("coin %s reserve is too small (%s, required at least %s)", m.Symbol().String(), m.Reserve().String(), min.String()),
+			Info: EncodeError(map[string]string{
+				"coin":             m.Symbol().String(),
+				"coin_reserve":     m.Reserve().String(),
+				"min_coin_reserve": min.String(),
+			}),
+		}
 	}
 
 	return nil

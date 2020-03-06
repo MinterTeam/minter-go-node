@@ -2,10 +2,9 @@ package config
 
 import (
 	"bytes"
+	"github.com/tendermint/tendermint/libs/os"
 	"path/filepath"
 	"text/template"
-
-	cmn "github.com/tendermint/tendermint/libs/common"
 )
 
 var configTemplate *template.Template
@@ -22,20 +21,20 @@ func init() {
 // EnsureRoot creates the root, config, and data directories if they don't exist,
 // and panics if it fails.
 func EnsureRoot(rootDir string) {
-	if err := cmn.EnsureDir(rootDir, 0700); err != nil {
+	if err := os.EnsureDir(rootDir, 0700); err != nil {
 		panic(err.Error())
 	}
-	if err := cmn.EnsureDir(filepath.Join(rootDir, defaultConfigDir), 0700); err != nil {
+	if err := os.EnsureDir(filepath.Join(rootDir, defaultConfigDir), 0700); err != nil {
 		panic(err.Error())
 	}
-	if err := cmn.EnsureDir(filepath.Join(rootDir, defaultDataDir), 0700); err != nil {
+	if err := os.EnsureDir(filepath.Join(rootDir, defaultDataDir), 0700); err != nil {
 		panic(err.Error())
 	}
 
 	configFilePath := filepath.Join(rootDir, defaultConfigFilePath)
 
 	// Write default config file if missing.
-	if !cmn.FileExists(configFilePath) {
+	if !os.FileExists(configFilePath) {
 		writeDefaultConfigFile(configFilePath)
 	}
 }
@@ -54,7 +53,7 @@ func WriteConfigFile(configFilePath string, config *Config) {
 		panic(err)
 	}
 
-	cmn.MustWriteFile(configFilePath, buffer.Bytes(), 0644)
+	os.MustWriteFile(configFilePath, buffer.Bytes(), 0644)
 }
 
 // Note: any changes to the comments/variables/mapstructure
@@ -67,17 +66,23 @@ const defaultConfigTemplate = `# This is a TOML config file.
 # A custom human readable name for this node
 moniker = "{{ .BaseConfig.Moniker }}"
 
-# Address to listen for GUI connections
-gui_listen_addr = "{{ .BaseConfig.GUIListenAddress }}"
-
 # Address to listen for API connections
 api_listen_addr = "{{ .BaseConfig.APIListenAddress }}"
+
+# Address to listen for gRPC connections
+grpc_listen_addr = "{{ .BaseConfig.GRPCListenAddress }}"
+
+# Address to listen for API V2 connections
+api_v2_listen_addr = "{{ .BaseConfig.GRPCListenAddress }}"
 
 # Sets node to be in validator mode. Disables API, events, history of blocks, indexes, etc. 
 validator_mode = {{ .BaseConfig.ValidatorMode }}
 
-# If set to true node will save old states. This can be useful for applications which need all blockchain history data. 
-keep_state_history = {{ .BaseConfig.KeepStateHistory }}
+# Sets number of last stated to be saved
+keep_last_states = {{ .BaseConfig.KeepLastStates }}
+
+# State cache size 
+state_cache_size = {{ .BaseConfig.StateCacheSize }}
 
 # Limit for simultaneous requests to API
 api_simultaneous_requests = {{ .BaseConfig.APISimultaneousRequests }}

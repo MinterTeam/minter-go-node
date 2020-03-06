@@ -16,6 +16,7 @@ const (
 	TxFromSenderAlreadyInMempool uint32 = 113
 	TooLowGasPrice               uint32 = 114
 	WrongChainID                 uint32 = 115
+	CoinReserveUnderflow         uint32 = 116
 
 	// coin creation
 	CoinAlreadyExists uint32 = 201
@@ -54,4 +55,5 @@ const (
 	MultisigNotExists       uint32 = 603
 	IncorrectMultiSignature uint32 = 604
 	TooLargeOwnersList      uint32 = 605
+	DuplicatedAddresses     uint32 = 606
 )

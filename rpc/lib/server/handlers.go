@@ -6,8 +6,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/tendermint/tendermint/libs/service"
 	"io/ioutil"
-	"math/big"
 	"net/http"
 	"reflect"
 	"runtime/debug"
@@ -18,9 +18,8 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
 
-	amino "github.com/MinterTeam/go-amino"
 	types "github.com/MinterTeam/minter-go-node/rpc/lib/types"
-	cmn "github.com/tendermint/tendermint/libs/common"
+	"github.com/tendermint/go-amino"
 	"github.com/tendermint/tendermint/libs/log"
 )
 
@@ -314,10 +313,6 @@ func httpParamsToArgs(rpcFunc *RPCFunc, cdc *amino.Codec, r *http.Request) ([]re
 }
 
 func jsonStringToArg(cdc *amino.Codec, rt reflect.Type, arg string) (reflect.Value, error) {
-	if rt == reflect.TypeOf(&big.Int{}) {
-		arg = fmt.Sprintf(`"%s"`, arg)
-	}
-
 	rv := reflect.New(rt)
 	err := cdc.UnmarshalJSON([]byte(arg), rv.Interface())
 	if err != nil {
@@ -423,7 +418,7 @@ const (
 //
 // In case of an error, the connection is stopped.
 type wsConnection struct {
-	cmn.BaseService
+	service.BaseService
 
 	remoteAddr string
 	baseConn   *websocket.Conn
@@ -474,7 +469,7 @@ func NewWSConnection(
 	for _, option := range options {
 		option(wsc)
 	}
-	wsc.BaseService = *cmn.NewBaseService(nil, "wsConnection", wsc)
+	wsc.BaseService = *service.NewBaseService(nil, "wsConnection", wsc)
 	return wsc
 }
 
