@@ -163,7 +163,7 @@ func (data CreateMultisigData) Run(tx *Transaction, context *state.State, isChec
 		context.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		context.Accounts.SetNonce(sender, tx.Nonce)
 
-		context.Accounts.CreateMultisig(data.Weights, data.Addresses, data.Threshold)
+		context.Accounts.CreateMultisig(data.Weights, data.Addresses, data.Threshold, currentBlock)
 	}
 
 	tags := kv.Pairs{
