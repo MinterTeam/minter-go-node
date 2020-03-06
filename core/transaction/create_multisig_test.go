@@ -233,7 +233,7 @@ func TestCreateExistingMultisigTx(t *testing.T) {
 		},
 	}
 
-	cState.Accounts.CreateMultisig(data.Weights, data.Addresses, data.Threshold)
+	cState.Accounts.CreateMultisig(data.Weights, data.Addresses, data.Threshold, 1)
 
 	encodedData, err := rlp.EncodeToBytes(data)
 	if err != nil {
