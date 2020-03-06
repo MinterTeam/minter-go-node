@@ -151,7 +151,7 @@ func (s *State) Import(state types.AppState) error {
 
 	for _, a := range state.Accounts {
 		if a.MultisigData != nil {
-			s.Accounts.CreateMultisig(a.MultisigData.Weights, a.MultisigData.Addresses, a.MultisigData.Threshold)
+			s.Accounts.CreateMultisig(a.MultisigData.Weights, a.MultisigData.Addresses, a.MultisigData.Threshold, 1)
 		}
 
 		s.Accounts.SetNonce(a.Address, a.Nonce)
