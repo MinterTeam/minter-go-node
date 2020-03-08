@@ -4,7 +4,7 @@ package version
 const (
 	Maj = "1"
 	Min = "1"
-	Fix = "0"
+	Fix = "2"
 
 	AppVer = 6
 )
