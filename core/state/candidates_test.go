@@ -6,11 +6,14 @@ import (
 	eventsdb "github.com/MinterTeam/events-db"
 	"github.com/MinterTeam/minter-go-node/core/state/candidates"
 	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/upgrades"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	db "github.com/tendermint/tm-db"
 	"math/big"
 	"testing"
 )
+
+const height = upgrades.UpgradeBlock2
 
 func TestSimpleDelegate(t *testing.T) {
 	st := getState()
@@ -21,7 +24,7 @@ func TestSimpleDelegate(t *testing.T) {
 	pubkey := createTestCandidate(st)
 
 	st.Candidates.Delegate(address, pubkey, coin, amount, big.NewInt(0))
-	st.Candidates.RecalculateStakes(1)
+	st.Candidates.RecalculateStakes(height)
 
 	stake := st.Candidates.GetStakeOfAddress(pubkey, address, coin)
 	if stake == nil {
@@ -51,7 +54,7 @@ func TestDelegate(t *testing.T) {
 		totalAmount.Add(totalAmount, amount)
 	}
 
-	st.Candidates.RecalculateStakes(1)
+	st.Candidates.RecalculateStakes(height)
 
 	stake := st.Candidates.GetStakeOfAddress(pubkey, address, coin)
 	if stake == nil {
@@ -80,7 +83,7 @@ func TestComplexDelegate(t *testing.T) {
 		st.Candidates.Delegate(addr, pubkey, coin, amount, big.NewInt(0))
 	}
 
-	st.Candidates.RecalculateStakes(1)
+	st.Candidates.RecalculateStakes(height)
 
 	for i := uint64(0); i < 1000; i++ {
 		var addr types.Address
@@ -116,7 +119,7 @@ func TestComplexDelegate(t *testing.T) {
 		binary.BigEndian.PutUint64(addr[:], 3000)
 		st.Candidates.Delegate(addr, pubkey, coin, big.NewInt(3000), big.NewInt(0))
 
-		st.Candidates.RecalculateStakes(1)
+		st.Candidates.RecalculateStakes(height)
 
 		replacedAddress := types.HexToAddress("Mx00000000000003e7000000000000000000000000")
 		stake := st.Candidates.GetStakeOfAddress(pubkey, replacedAddress, coin)
@@ -139,7 +142,7 @@ func TestComplexDelegate(t *testing.T) {
 		binary.BigEndian.PutUint64(addr2[:], 3500)
 		st.Candidates.Delegate(addr2, pubkey, coin, big.NewInt(3500), big.NewInt(0))
 
-		st.Candidates.RecalculateStakes(1)
+		st.Candidates.RecalculateStakes(height)
 
 		stake := st.Candidates.GetStakeOfAddress(pubkey, addr, coin)
 		if stake == nil {
@@ -158,7 +161,7 @@ func TestComplexDelegate(t *testing.T) {
 		binary.BigEndian.PutUint64(addr[:], 4001)
 		st.Candidates.Delegate(addr, pubkey, coin, big.NewInt(900), big.NewInt(0))
 
-		st.Candidates.RecalculateStakes(1)
+		st.Candidates.RecalculateStakes(height)
 
 		stake := st.Candidates.GetStakeOfAddress(pubkey, addr, coin)
 		if stake != nil {
@@ -180,7 +183,7 @@ func TestStakeSufficiency(t *testing.T) {
 		st.Candidates.Delegate(addr, pubkey, coin, amount, big.NewInt(0))
 	}
 
-	st.Candidates.RecalculateStakes(1)
+	st.Candidates.RecalculateStakes(height)
 
 	{
 		stake := big.NewInt(1)
@@ -227,7 +230,7 @@ func TestDoubleSignPenalty(t *testing.T) {
 	binary.BigEndian.PutUint64(addr[:], 1)
 	st.Candidates.Delegate(addr, pubkey, coin, amount, big.NewInt(0))
 
-	st.Candidates.RecalculateStakes(1)
+	st.Candidates.RecalculateStakes(height)
 
 	var pk ed25519.PubKeyEd25519
 	copy(pk[:], pubkey[:])
@@ -274,7 +277,7 @@ func TestAbsentPenalty(t *testing.T) {
 	binary.BigEndian.PutUint64(addr[:], 1)
 	st.Candidates.Delegate(addr, pubkey, coin, amount, big.NewInt(0))
 
-	st.Candidates.RecalculateStakes(1)
+	st.Candidates.RecalculateStakes(height)
 
 	var pk ed25519.PubKeyEd25519
 	copy(pk[:], pubkey[:])
@@ -305,7 +308,7 @@ func TestDoubleAbsentPenalty(t *testing.T) {
 	st.Candidates.Delegate(addr, pubkey, coin, amount, big.NewInt(0))
 	st.Candidates.SetOnline(pubkey)
 
-	st.Candidates.RecalculateStakes(1)
+	st.Candidates.RecalculateStakes(height)
 
 	var pk ed25519.PubKeyEd25519
 	copy(pk[:], pubkey[:])

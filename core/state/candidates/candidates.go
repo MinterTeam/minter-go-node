@@ -10,6 +10,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/tree"
+	"github.com/MinterTeam/minter-go-node/upgrades"
 	"math/big"
 	"sort"
 	"sync"
@@ -219,6 +220,14 @@ func (c *Candidates) GetCandidateByTendermintAddress(address types.TmAddress) *C
 }
 
 func (c *Candidates) RecalculateStakes(height uint64) {
+	if height < upgrades.UpgradeBlock2 {
+		c.recalculateStakesOld(height)
+	} else {
+		c.recalculateStakesNew(height)
+	}
+}
+
+func (c *Candidates) recalculateStakesOld(height uint64) {
 	coinsCache := newCoinsCache()
 
 	for _, pubkey := range c.getOrderedCandidates() {
@@ -296,6 +305,111 @@ func (c *Candidates) RecalculateStakes(height uint64) {
 				candidate.SetStakeAtIndex(index, update, true)
 				stakes = c.GetStakes(candidate.PubKey)
 			}
+		}
+
+		candidate.clearUpdates()
+
+		totalBipValue := big.NewInt(0)
+		for _, stake := range c.GetStakes(candidate.PubKey) {
+			if stake == nil {
+				continue
+			}
+			totalBipValue.Add(totalBipValue, stake.BipValue)
+		}
+
+		candidate.setTotalBipStake(totalBipValue)
+		candidate.updateStakesCount()
+	}
+}
+
+func (c *Candidates) recalculateStakesNew(height uint64) {
+	coinsCache := newCoinsCache()
+
+	for _, pubkey := range c.getOrderedCandidates() {
+		candidate := c.getFromMap(pubkey)
+		stakes := c.GetStakes(candidate.PubKey)
+		for _, stake := range stakes {
+			stake.setBipValue(c.calculateBipValue(stake.Coin, stake.Value, false, true, coinsCache))
+		}
+
+		// apply updates for existing stakes
+		candidate.FilterUpdates()
+		for _, update := range candidate.updates {
+			stake := c.GetStakeOfAddress(candidate.PubKey, update.Owner, update.Coin)
+			if stake != nil {
+				stake.addValue(update.Value)
+				update.setValue(big.NewInt(0))
+				stake.setBipValue(c.calculateBipValue(stake.Coin, stake.Value, false, true, coinsCache))
+			}
+		}
+
+		candidate.FilterUpdates()
+		for _, update := range candidate.updates {
+			update.setBipValue(c.calculateBipValue(update.Coin, update.Value, false, true, coinsCache))
+		}
+
+		for _, update := range candidate.updates {
+			// find and replace smallest stake
+			index := -1
+			var smallestStake *big.Int
+
+			if len(stakes) == 0 {
+				index = 0
+				smallestStake = big.NewInt(0)
+			} else if len(stakes) < MaxDelegatorsPerCandidate {
+				for i, stake := range stakes {
+					if stake == nil {
+						index = i
+						break
+					}
+				}
+
+				if index == -1 {
+					index = len(stakes)
+				}
+
+				smallestStake = big.NewInt(0)
+			} else {
+				for i, stake := range stakes {
+					if stake == nil {
+						index = i
+						smallestStake = big.NewInt(0)
+						break
+					}
+
+					if smallestStake == nil || smallestStake.Cmp(stake.BipValue) == 1 {
+						smallestStake = big.NewInt(0).Set(stake.BipValue)
+						index = i
+					}
+				}
+			}
+
+			if index == -1 || smallestStake.Cmp(update.BipValue) == 1 {
+				c.bus.Events().AddEvent(uint32(height), eventsdb.UnbondEvent{
+					Address:         update.Owner,
+					Amount:          update.Value.String(),
+					Coin:            update.Coin,
+					ValidatorPubKey: candidate.PubKey,
+				})
+				c.bus.Accounts().AddBalance(update.Owner, update.Coin, update.Value)
+				c.bus.Checker().AddCoin(update.Coin, big.NewInt(0).Neg(update.Value))
+				update.setValue(big.NewInt(0))
+				continue
+			}
+
+			if len(stakes) > index && stakes[index] != nil {
+				c.bus.Events().AddEvent(uint32(height), eventsdb.UnbondEvent{
+					Address:         stakes[index].Owner,
+					Amount:          stakes[index].Value.String(),
+					Coin:            stakes[index].Coin,
+					ValidatorPubKey: candidate.PubKey,
+				})
+				c.bus.Accounts().AddBalance(stakes[index].Owner, stakes[index].Coin, stakes[index].Value)
+				c.bus.Checker().AddCoin(stakes[index].Coin, big.NewInt(0).Neg(stakes[index].Value))
+			}
+
+			candidate.SetStakeAtIndex(index, update, true)
+			stakes = c.GetStakes(candidate.PubKey)
 		}
 
 		candidate.clearUpdates()

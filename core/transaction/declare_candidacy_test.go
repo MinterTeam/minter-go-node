@@ -8,6 +8,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
+	"github.com/MinterTeam/minter-go-node/upgrades"
 	"math/big"
 	"sync"
 	"testing"
@@ -113,7 +114,7 @@ func TestDeclareCandidacyTxOverflow(t *testing.T) {
 		cState.Candidates.Delegate(types.Address{}, pubkey, types.GetBaseCoin(), helpers.BipToPip(big.NewInt(10)), helpers.BipToPip(big.NewInt(10)))
 	}
 
-	cState.Candidates.RecalculateStakes(0)
+	cState.Candidates.RecalculateStakes(upgrades.UpgradeBlock2)
 
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
