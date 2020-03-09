@@ -411,6 +411,7 @@ func (c *Candidates) recalculateStakesOld2(height uint64) {
 			}
 
 			candidate.SetStakeAtIndex(index, update, true)
+			stakes = c.GetStakes(candidate.PubKey)
 		}
 
 		candidate.clearUpdates()
