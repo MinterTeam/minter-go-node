@@ -505,7 +505,7 @@ func (c *Candidates) recalculateStakesNew(height uint64) {
 		candidate.clearUpdates()
 
 		totalBipValue := big.NewInt(0)
-		for _, stake := range c.GetStakes(candidate.PubKey) {
+		for _, stake := range stakes {
 			if stake == nil {
 				continue
 			}
