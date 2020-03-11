@@ -513,7 +513,6 @@ func (c *Candidates) recalculateStakesNew(height uint64) {
 		}
 
 		candidate.setTotalBipStake(totalBipValue)
-		candidate.updateStakesCount()
 	}
 }
 
