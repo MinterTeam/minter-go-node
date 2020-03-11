@@ -488,7 +488,7 @@ func (c *Candidates) recalculateStakesNew(height uint64) {
 				continue
 			}
 
-			if len(stakes) > index && stakes[index] != nil {
+			if stakes[index] != nil {
 				c.bus.Events().AddEvent(uint32(height), eventsdb.UnbondEvent{
 					Address:         stakes[index].Owner,
 					Amount:          stakes[index].Value.String(),
@@ -513,7 +513,6 @@ func (c *Candidates) recalculateStakesNew(height uint64) {
 		}
 
 		candidate.setTotalBipStake(totalBipValue)
-		candidate.updateStakesCount()
 	}
 }
 

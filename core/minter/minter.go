@@ -14,6 +14,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/core/validators"
 	"github.com/MinterTeam/minter-go-node/helpers"
+	"github.com/MinterTeam/minter-go-node/upgrades"
 	"github.com/MinterTeam/minter-go-node/version"
 	"github.com/syndtr/goleveldb/leveldb/filter"
 	"github.com/syndtr/goleveldb/leveldb/opt"
@@ -228,6 +229,10 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 // Signals the end of a block, returns changes to the validator set
 func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.ResponseEndBlock {
 	height := uint64(req.Height)
+
+	if height == upgrades.UpgradeBlock3 {
+		ApplyUpgrade3(app.stateDeliver, app.eventsDB)
+	}
 
 	var updates []abciTypes.ValidatorUpdate
 
