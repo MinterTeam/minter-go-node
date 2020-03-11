@@ -460,7 +460,7 @@ func (c *Candidates) recalculateStakesNew(height uint64) {
 		for _, update := range candidate.updates {
 			// find and replace smallest stake
 			index := -1
-			var smallestStake *big.Int
+			smallestStake := big.NewInt(0)
 
 			for i, stake := range stakes {
 				if stake == nil {
@@ -469,13 +469,13 @@ func (c *Candidates) recalculateStakesNew(height uint64) {
 					break
 				}
 
-				if smallestStake == nil || smallestStake.Cmp(stake.BipValue) == 1 {
+				if index == -1 || smallestStake.Cmp(stake.BipValue) == 1 {
 					smallestStake = big.NewInt(0).Set(stake.BipValue)
 					index = i
 				}
 			}
 
-			if index == -1 || smallestStake.Cmp(update.BipValue) == 1 {
+			if smallestStake.Cmp(update.BipValue) == 1 {
 				c.bus.Events().AddEvent(uint32(height), eventsdb.UnbondEvent{
 					Address:         update.Owner,
 					Amount:          update.Value.String(),
