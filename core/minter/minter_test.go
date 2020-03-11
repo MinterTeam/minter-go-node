@@ -69,6 +69,8 @@ func initNode() {
 	cfg.Consensus.TimeoutPrevoteDelta = 0
 	cfg.Consensus.TimeoutProposeDelta = 0
 	cfg.Consensus.SkipTimeoutCommit = true
+	cfg.RPC.ListenAddress = ""
+	cfg.P2P.ListenAddress = "0.0.0.0:25566"
 	cfg.P2P.Seeds = ""
 	cfg.P2P.PersistentPeers = ""
 	cfg.DBBackend = "memdb"
