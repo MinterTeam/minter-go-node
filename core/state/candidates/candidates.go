@@ -657,8 +657,12 @@ func (c *Candidates) StakesCount(pubkey types.Pubkey) int {
 }
 
 func (c *Candidates) GetStakeOfAddress(pubkey types.Pubkey, address types.Address, coin types.CoinSymbol) *Stake {
-	stakes := c.GetStakes(pubkey)
-	for _, stake := range stakes {
+	candidate := c.GetCandidate(pubkey)
+	for _, stake := range candidate.stakes {
+		if stake == nil {
+			continue
+		}
+
 		if stake.Owner == address && stake.Coin == coin {
 			return stake
 		}
@@ -798,9 +802,8 @@ func (c *Candidates) calculateBipValue(coinSymbol types.CoinSymbol, amount *big.
 	} else {
 		candidates := c.GetCandidates()
 		for _, candidate := range candidates {
-			stakes := c.GetStakes(candidate.PubKey)
-			for _, stake := range stakes {
-				if stake.Coin == coinSymbol {
+			for _, stake := range candidate.stakes {
+				if stake != nil && stake.Coin == coinSymbol {
 					totalAmount.Add(totalAmount, stake.Value)
 				}
 			}
