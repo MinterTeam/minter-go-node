@@ -26,6 +26,7 @@ import (
 	tmTypes "github.com/tendermint/tendermint/types"
 	"net/http"
 	_ "net/http/pprof"
+	"net/url"
 	"os"
 )
 
@@ -89,7 +90,15 @@ func runNode(cmd *cobra.Command) error {
 
 	if !cfg.ValidatorMode {
 		go func(srv *service_api.Service) {
-			logger.Error("Failed to start Api V2 in both gRPC and RESTful", api_v2.Run(srv, cfg.GRPCListenAddress, cfg.APIv2ListenAddress))
+			grpcUrl, err := url.Parse(cfg.GRPCListenAddress)
+			if err != nil {
+				logger.Error("Failed to parse gRPC address", err)
+			}
+			apiV2url, err := url.Parse(cfg.APIv2ListenAddress)
+			if err != nil {
+				logger.Error("Failed to parse API v2 address", err)
+			}
+			logger.Error("Failed to start Api V2 in both gRPC and RESTful", api_v2.Run(srv, grpcUrl.Host, apiV2url.Host))
 		}(service_api.NewService(amino.NewCodec(), app, client, node, cfg, version.Version))
 
 		go api_v1.RunAPI(app, client, cfg, logger)
