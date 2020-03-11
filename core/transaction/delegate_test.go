@@ -81,7 +81,7 @@ func TestDelegateTx(t *testing.T) {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", coin, targetBalance, balance)
 	}
 
-	cState.Candidates.RecalculateStakes(upgrades.UpgradeBlock2)
+	cState.Candidates.RecalculateStakes(upgrades.UpgradeBlock3)
 
 	stake := cState.Candidates.GetStakeOfAddress(pubkey, addr, coin)
 
