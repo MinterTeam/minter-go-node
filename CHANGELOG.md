@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.3
+
+BREAKING CHANGES
+
+- [core] Fixed stakes recalculation
+
+IMPROVEMENT
+
+- [tendermint] Upgrade to [v0.33.2](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0332) 
+
 ## 1.1.0
 
 BREAKING CHANGES
