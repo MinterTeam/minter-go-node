@@ -73,7 +73,7 @@ api_listen_addr = "{{ .BaseConfig.APIListenAddress }}"
 grpc_listen_addr = "{{ .BaseConfig.GRPCListenAddress }}"
 
 # Address to listen for API V2 connections
-api_v2_listen_addr = "{{ .BaseConfig.GRPCListenAddress }}"
+api_v2_listen_addr = "{{ .BaseConfig.APIv2ListenAddress }}"
 
 # Sets node to be in validator mode. Disables API, events, history of blocks, indexes, etc. 
 validator_mode = {{ .BaseConfig.ValidatorMode }}
