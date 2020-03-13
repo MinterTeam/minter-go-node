@@ -25,10 +25,14 @@ import (
 
 // RegisterRPCFuncs adds a route for each function in the funcMap, as well as general jsonrpc and websocket handlers for all functions.
 // "result" is the interface on which the result objects are registered, and is popualted with every RPCResponse
-func RegisterRPCFuncs(mux *http.ServeMux, funcMap map[string]*RPCFunc, cdc *amino.Codec, logger log.Logger) {
+func RegisterRPCFuncs(mux *http.ServeMux, funcMap map[string]*RPCFunc, cdc *amino.Codec, logger log.Logger, middleware func(f func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request)) {
 	// HTTP endpoints
 	for funcName, rpcFunc := range funcMap {
-		mux.HandleFunc("/"+funcName, makeHTTPHandler(rpcFunc, cdc, logger))
+		handler := makeHTTPHandler(rpcFunc, cdc, logger)
+		if middleware != nil {
+			handler = middleware(handler)
+		}
+		mux.HandleFunc("/"+funcName, handler)
 	}
 
 	// JSONRPC endpoints

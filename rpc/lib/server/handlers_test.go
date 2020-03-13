@@ -15,7 +15,7 @@ import (
 
 	rs "github.com/MinterTeam/minter-go-node/rpc/lib/server"
 	types "github.com/MinterTeam/minter-go-node/rpc/lib/types"
-	amino "github.com/tendermint/go-amino"
+	"github.com/tendermint/go-amino"
 	"github.com/tendermint/tendermint/libs/log"
 )
 
@@ -34,7 +34,7 @@ func testMux() *http.ServeMux {
 	mux := http.NewServeMux()
 	buf := new(bytes.Buffer)
 	logger := log.NewTMLogger(buf)
-	rs.RegisterRPCFuncs(mux, funcMap, cdc, logger)
+	rs.RegisterRPCFuncs(mux, funcMap, cdc, logger, nil)
 
 	return mux
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/minter"
+	"github.com/MinterTeam/minter-go-node/core/statistics"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/version"
 	"github.com/spf13/cobra"
@@ -104,7 +105,8 @@ func runNode(cmd *cobra.Command) error {
 		go api_v1.RunAPI(app, client, cfg, logger)
 	}
 
-	ctxCli, stopCli := context.WithCancel(context.Background())
+	ctx, stop := context.WithCancel(context.Background())
+	ctxCli, _ := context.WithCancel(ctx)
 	go func() {
 		err := service.StartCLIServer(utils.GetMinterHome()+"/manager.sock", service.NewManager(app, client, cfg), ctxCli)
 		if err != nil {
@@ -112,9 +114,14 @@ func runNode(cmd *cobra.Command) error {
 		}
 	}()
 
+	if cfg.Instrumentation.Prometheus {
+		data := statistics.New()
+		ctxStat, _ := context.WithCancel(ctx)
+		go app.SetStatisticData(data).Statistic(ctxStat)
+	}
 	tmos.TrapSignal(logger.With("module", "trap"), func() {
 		// Cleanup
-		stopCli()
+		stop()
 		err := node.Stop()
 		app.Stop()
 		if err != nil {

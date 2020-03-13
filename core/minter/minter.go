@@ -10,6 +10,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/rewards"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/state/candidates"
+	"github.com/MinterTeam/minter-go-node/core/statistics"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/core/validators"
@@ -30,6 +31,7 @@ import (
 	"sort"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 const (
@@ -50,6 +52,8 @@ var (
 // Main structure of Minter Blockchain
 type Blockchain struct {
 	abciTypes.BaseApplication
+
+	statisticData *statistics.Data
 
 	stateDB            db.DB
 	appDB              *appdb.AppDB
@@ -162,6 +166,8 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 	if app.haltHeight > 0 && height >= app.haltHeight {
 		panic(fmt.Sprintf("Application halted at height %d", height))
 	}
+
+	app.StatisticData().SetStartBlock(height, time.Now())
 
 	app.stateDeliver.Lock()
 
@@ -355,6 +361,8 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 			}
 		}
 	}
+
+	defer func() { app.StatisticData().SetEndBlockDuration(time.Now(), app.height) }()
 
 	return abciTypes.ResponseEndBlock{
 		ValidatorUpdates: updates,
@@ -597,6 +605,15 @@ func (app *Blockchain) calcMaxGas(height uint64) uint64 {
 
 func (app *Blockchain) GetEventsDB() eventsdb.IEventsDB {
 	return app.eventsDB
+}
+
+func (app *Blockchain) SetStatisticData(statisticData *statistics.Data) *statistics.Data {
+	app.statisticData = statisticData
+	return app.statisticData
+}
+
+func (app *Blockchain) StatisticData() *statistics.Data {
+	return app.statisticData
 }
 
 func getDbOpts() *opt.Options {
