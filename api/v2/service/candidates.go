@@ -16,7 +16,9 @@ func (s *Service) Candidates(_ context.Context, req *pb.CandidatesRequest) (*pb.
 	if req.Height != 0 {
 		cState.Lock()
 		cState.Candidates.LoadCandidates()
-		cState.Candidates.LoadStakes()
+		if req.IncludeStakes {
+			cState.Candidates.LoadStakes()
+		}
 		cState.Unlock()
 	}
 

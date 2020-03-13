@@ -257,6 +257,8 @@ func (a UnprefixedAddress) MarshalText() ([]byte, error) {
 
 type Pubkey [32]byte
 
+func HexToPubkey(s string) Pubkey { return BytesToPubkey(FromHex(s, "Mp")) }
+
 func BytesToPubkey(b []byte) Pubkey {
 	var p Pubkey
 	p.SetBytes(b)

@@ -9,7 +9,9 @@ func Candidates(height int, includeStakes bool) (*[]CandidateResponse, error) {
 	if height != 0 {
 		cState.Lock()
 		cState.Candidates.LoadCandidates()
-		cState.Candidates.LoadStakes()
+		if includeStakes {
+			cState.Candidates.LoadStakes()
+		}
 		cState.Unlock()
 	}
 

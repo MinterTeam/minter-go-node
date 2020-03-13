@@ -8,6 +8,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/tree"
+	"github.com/MinterTeam/minter-go-node/upgrades"
 	"math/big"
 	"sort"
 	"sync"
@@ -159,11 +160,24 @@ func (a *Accounts) SetNonce(address types.Address, nonce uint64) {
 	account.setNonce(nonce)
 }
 
-func (a *Accounts) Exists(msigAddress types.Address) bool {
-	return a.get(msigAddress) != nil
+func (a *Accounts) ExistsMultisig(msigAddress types.Address) bool {
+	acc := a.get(msigAddress)
+	if acc == nil {
+		return false
+	}
+
+	if acc.IsMultisig() {
+		return true
+	}
+
+	if acc.Nonce > 0 {
+		return true
+	}
+
+	return false
 }
 
-func (a *Accounts) CreateMultisig(weights []uint, addresses []types.Address, threshold uint) types.Address {
+func (a *Accounts) CreateMultisig(weights []uint, addresses []types.Address, threshold uint, height uint64) types.Address {
 	msig := Multisig{
 		Weights:   weights,
 		Threshold: threshold,
@@ -171,16 +185,27 @@ func (a *Accounts) CreateMultisig(weights []uint, addresses []types.Address, thr
 	}
 	address := msig.Address()
 
-	account := &Model{
-		Nonce:         0,
-		MultisigData:  msig,
-		address:       address,
-		coins:         []types.CoinSymbol{},
-		balances:      map[types.CoinSymbol]*big.Int{},
-		markDirty:     a.markDirty,
-		dirtyBalances: map[types.CoinSymbol]struct{}{},
-		isNew:         true,
+	account := a.get(address)
+
+	if account == nil {
+		account = &Model{
+			Nonce:         0,
+			MultisigData:  msig,
+			address:       address,
+			coins:         []types.CoinSymbol{},
+			balances:      map[types.CoinSymbol]*big.Int{},
+			markDirty:     a.markDirty,
+			dirtyBalances: map[types.CoinSymbol]struct{}{},
+		}
 	}
+
+	account.MultisigData = msig
+	account.markDirty(account.address)
+
+	if height > upgrades.UpgradeBlock1 {
+		account.isDirty = true
+	}
+
 	a.setToMap(address, account)
 
 	return address

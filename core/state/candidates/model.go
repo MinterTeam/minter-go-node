@@ -4,6 +4,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	"math/big"
+	"sort"
 )
 
 type Candidate struct {
@@ -103,6 +104,37 @@ func (candidate *Candidate) GetFilteredUpdates() []*Stake {
 	}
 
 	return updates
+}
+
+func (candidate *Candidate) FilterUpdates() {
+	var updates []*Stake
+	for _, update := range candidate.updates {
+		// skip updates with 0 stakes
+		if update.Value.Cmp(big.NewInt(0)) != 1 {
+			continue
+		}
+
+		// merge updates
+		merged := false
+		for _, u := range updates {
+			if u.Coin == update.Coin && u.Owner == update.Owner {
+				u.Value.Add(u.Value, update.Value)
+				merged = true
+				break
+			}
+		}
+
+		if !merged {
+			updates = append(updates, update)
+		}
+	}
+
+	sort.SliceStable(updates, func(i, j int) bool {
+		return updates[i].BipValue.Cmp(updates[j].BipValue) == 1
+	})
+
+	candidate.updates = updates
+	candidate.isUpdatesDirty = true
 }
 
 func (candidate *Candidate) updateStakesCount() {
