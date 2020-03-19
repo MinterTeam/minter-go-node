@@ -454,6 +454,8 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 
 	app.stateDeliver.Unlock()
 
+	app.StatisticData().SetLastBlockTimestamp(app.tmNode.BlockStore().LoadBlockMeta(int64(app.height)-1).Header.Time, app.height)
+
 	return abciTypes.ResponseCommit{
 		Data: hash,
 	}

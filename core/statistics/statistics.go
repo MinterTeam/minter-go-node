@@ -117,13 +117,14 @@ func New() *Data {
 			Help: "Current height",
 		},
 	)
+	prometheus.MustRegister(height)
 	timeBlock := prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Name: "last_block_timestamp",
 			Help: "Timestamp last block",
 		},
 	)
-	prometheus.MustRegister(height)
+	prometheus.MustRegister(timeBlock)
 
 	return &Data{
 		Api:      apiResponseTime{responseTime: apiVec},
@@ -157,7 +158,6 @@ func (d *Data) SetEndBlockDuration(timeEnd time.Time, height uint64) {
 		defer d.BlockEnd.Unlock()
 		d.BlockEnd.Height.Set(float64(height))
 		d.BlockEnd.Duration.Set(timeEnd.Sub(d.BlockStart.time).Seconds())
-		d.BlockEnd.Timestamp.Set(float64(timeEnd.UnixNano()) / 1e9)
 		return
 	}
 
@@ -184,4 +184,17 @@ func (d *Data) SetPeerTime(duration time.Duration, network string) {
 	defer d.Peer.Unlock()
 
 	d.Peer.ping.With(prometheus.Labels{"network": network}).Set(duration.Seconds())
+}
+
+func (d *Data) SetLastBlockTimestamp(time time.Time, height uint64) {
+	if d == nil {
+		return
+	}
+
+	d.BlockStart.Lock()
+	defer d.BlockStart.Unlock()
+
+	if height == d.BlockStart.height {
+		d.BlockEnd.Timestamp.Set(float64(time.UnixNano() / 1e9))
+	}
 }
