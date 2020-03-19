@@ -167,7 +167,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 		panic(fmt.Sprintf("Application halted at height %d", height))
 	}
 
-	app.StatisticData().SetStartBlock(height, time.Now())
+	app.StatisticData().SetStartBlock(height, time.Now(), req.Header.Time)
 
 	app.stateDeliver.Lock()
 
@@ -453,8 +453,6 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 	app.currentMempool = &sync.Map{}
 
 	app.stateDeliver.Unlock()
-
-	app.StatisticData().SetLastBlockTimestamp(app.tmNode.BlockStore().LoadBlockMeta(int64(app.height)-1).Header.Time, app.height)
 
 	return abciTypes.ResponseCommit{
 		Data: hash,

@@ -64,8 +64,9 @@ func timeGet(url string) (time.Duration, error) {
 type Data struct {
 	BlockStart struct {
 		sync.Mutex
-		height uint64
-		time   time.Time
+		height    uint64
+		time      time.Time
+		timestamp float64
 	}
 	BlockEnd blockEnd
 
@@ -133,7 +134,7 @@ func New() *Data {
 	}
 }
 
-func (d *Data) SetStartBlock(height uint64, now time.Time) {
+func (d *Data) SetStartBlock(height uint64, now time.Time, headerTime time.Time) {
 	if d == nil {
 		return
 	}
@@ -143,6 +144,7 @@ func (d *Data) SetStartBlock(height uint64, now time.Time) {
 
 	d.BlockStart.height = height
 	d.BlockStart.time = now
+	d.BlockStart.timestamp = float64(headerTime.UnixNano() / 1e09)
 }
 
 func (d *Data) SetEndBlockDuration(timeEnd time.Time, height uint64) {
@@ -158,6 +160,7 @@ func (d *Data) SetEndBlockDuration(timeEnd time.Time, height uint64) {
 		defer d.BlockEnd.Unlock()
 		d.BlockEnd.Height.Set(float64(height))
 		d.BlockEnd.Duration.Set(timeEnd.Sub(d.BlockStart.time).Seconds())
+		d.BlockEnd.Timestamp.Set(d.BlockStart.timestamp)
 		return
 	}
 
@@ -184,17 +187,4 @@ func (d *Data) SetPeerTime(duration time.Duration, network string) {
 	defer d.Peer.Unlock()
 
 	d.Peer.ping.With(prometheus.Labels{"network": network}).Set(duration.Seconds())
-}
-
-func (d *Data) SetLastBlockTimestamp(time time.Time, height uint64) {
-	if d == nil {
-		return
-	}
-
-	d.BlockStart.Lock()
-	defer d.BlockStart.Unlock()
-
-	if height == d.BlockStart.height {
-		d.BlockEnd.Timestamp.Set(float64(time.UnixNano() / 1e9))
-	}
 }
