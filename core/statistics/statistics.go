@@ -74,8 +74,9 @@ type Data struct {
 }
 type blockEnd struct {
 	sync.Mutex
-	Height   prometheus.Gauge
-	Duration prometheus.Gauge
+	Height    prometheus.Gauge
+	Duration  prometheus.Gauge
+	Timestamp prometheus.Gauge
 }
 type apiResponseTime struct {
 	sync.Mutex
@@ -98,7 +99,7 @@ func New() *Data {
 	peerVec := prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "peers",
-			Help: "Ping Peers",
+			Help: "Ping to Peers",
 		},
 		[]string{"network"},
 	)
@@ -106,14 +107,20 @@ func New() *Data {
 	lastBlockDuration := prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Name: "last_block_duration",
-			Help: "Help LastBlockDuration",
+			Help: "Last block duration",
 		},
 	)
 	prometheus.MustRegister(lastBlockDuration)
 	height := prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Name: "height",
-			Help: "Help height",
+			Help: "Current height",
+		},
+	)
+	timeBlock := prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "last_block_timestamp",
+			Help: "Timestamp last block",
 		},
 	)
 	prometheus.MustRegister(height)
@@ -121,7 +128,7 @@ func New() *Data {
 	return &Data{
 		Api:      apiResponseTime{responseTime: apiVec},
 		Peer:     peerPing{ping: peerVec},
-		BlockEnd: blockEnd{Height: height, Duration: lastBlockDuration},
+		BlockEnd: blockEnd{Height: height, Duration: lastBlockDuration, Timestamp: timeBlock},
 	}
 }
 
@@ -150,6 +157,7 @@ func (d *Data) SetEndBlockDuration(timeEnd time.Time, height uint64) {
 		defer d.BlockEnd.Unlock()
 		d.BlockEnd.Height.Set(float64(height))
 		d.BlockEnd.Duration.Set(timeEnd.Sub(d.BlockStart.time).Seconds())
+		d.BlockEnd.Timestamp.Set(float64(timeEnd.UnixNano()) / 1e9)
 		return
 	}
 
