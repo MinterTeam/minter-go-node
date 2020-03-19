@@ -25,6 +25,7 @@ import (
 	rpc "github.com/tendermint/tendermint/rpc/client"
 	"github.com/tendermint/tendermint/store"
 	tmTypes "github.com/tendermint/tendermint/types"
+	"io"
 	"net/http"
 	_ "net/http/pprof"
 	"net/url"
@@ -185,5 +186,32 @@ func startTendermintNode(app types.Application, cfg *tmCfg.Config, logger tmlog.
 }
 
 func getGenesis() (doc *tmTypes.GenesisDoc, e error) {
-	return tmTypes.GenesisDocFromFile(utils.GetMinterHome() + "/config/genesis.json")
+	genDocFile := utils.GetMinterHome() + "/config/genesis.json"
+	if _, err := os.Stat(genDocFile); os.IsNotExist(err) {
+		if err := downloadFile(genDocFile, "https://raw.githubusercontent.com/MinterTeam/minter-network-migrate/master/minter-mainnet-2/genesis.json"); err != nil {
+			panic(err)
+		}
+	}
+	return tmTypes.GenesisDocFromFile(genDocFile)
+}
+
+func downloadFile(filepath string, url string) error {
+
+	// Get the data
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	// Create the file
+	out, err := os.Create(filepath)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	// Write the body to file
+	_, err = io.Copy(out, resp.Body)
+	return err
 }
