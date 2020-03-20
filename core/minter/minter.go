@@ -73,6 +73,7 @@ type Blockchain struct {
 	lock sync.RWMutex
 
 	haltHeight uint64
+	cfg        *config.Config
 }
 
 // Creates Minter Blockchain instance, should be only called once
@@ -98,6 +99,7 @@ func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 		height:         applicationDB.GetLastHeight(),
 		eventsDB:       eventsdb.NewEventsStore(edb),
 		currentMempool: &sync.Map{},
+		cfg:            cfg,
 	}
 
 	// Set stateDeliver and stateCheck
@@ -165,6 +167,15 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 
 	if app.haltHeight > 0 && height >= app.haltHeight {
 		panic(fmt.Sprintf("Application halted at height %d", height))
+	}
+
+	if upgrades.IsUpgradeBlock(height) {
+		var err error
+		app.stateDeliver, err = state.NewState(app.height, app.stateDB, app.eventsDB, app.cfg.KeepLastStates, app.cfg.StateCacheSize)
+		if err != nil {
+			panic(err)
+		}
+		app.stateCheck = state.NewCheckState(app.stateDeliver)
 	}
 
 	app.StatisticData().SetStartBlock(height, time.Now())
