@@ -64,8 +64,9 @@ func timeGet(url string) (time.Duration, error) {
 type Data struct {
 	BlockStart struct {
 		sync.Mutex
-		height uint64
-		time   time.Time
+		height    uint64
+		time      time.Time
+		timestamp float64
 	}
 	BlockEnd blockEnd
 
@@ -74,8 +75,9 @@ type Data struct {
 }
 type blockEnd struct {
 	sync.Mutex
-	Height   prometheus.Gauge
-	Duration prometheus.Gauge
+	Height    prometheus.Gauge
+	Duration  prometheus.Gauge
+	Timestamp prometheus.Gauge
 }
 type apiResponseTime struct {
 	sync.Mutex
@@ -98,7 +100,7 @@ func New() *Data {
 	peerVec := prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "peers",
-			Help: "Ping Peers",
+			Help: "Ping to Peers",
 		},
 		[]string{"network"},
 	)
@@ -106,26 +108,33 @@ func New() *Data {
 	lastBlockDuration := prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Name: "last_block_duration",
-			Help: "Help LastBlockDuration",
+			Help: "Last block duration",
 		},
 	)
 	prometheus.MustRegister(lastBlockDuration)
 	height := prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Name: "height",
-			Help: "Help height",
+			Help: "Current height",
 		},
 	)
 	prometheus.MustRegister(height)
+	timeBlock := prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "last_block_timestamp",
+			Help: "Timestamp last block",
+		},
+	)
+	prometheus.MustRegister(timeBlock)
 
 	return &Data{
 		Api:      apiResponseTime{responseTime: apiVec},
 		Peer:     peerPing{ping: peerVec},
-		BlockEnd: blockEnd{Height: height, Duration: lastBlockDuration},
+		BlockEnd: blockEnd{Height: height, Duration: lastBlockDuration, Timestamp: timeBlock},
 	}
 }
 
-func (d *Data) SetStartBlock(height uint64, now time.Time) {
+func (d *Data) SetStartBlock(height uint64, now time.Time, headerTime time.Time) {
 	if d == nil {
 		return
 	}
@@ -135,6 +144,7 @@ func (d *Data) SetStartBlock(height uint64, now time.Time) {
 
 	d.BlockStart.height = height
 	d.BlockStart.time = now
+	d.BlockStart.timestamp = float64(headerTime.UnixNano() / 1e09)
 }
 
 func (d *Data) SetEndBlockDuration(timeEnd time.Time, height uint64) {
@@ -150,6 +160,7 @@ func (d *Data) SetEndBlockDuration(timeEnd time.Time, height uint64) {
 		defer d.BlockEnd.Unlock()
 		d.BlockEnd.Height.Set(float64(height))
 		d.BlockEnd.Duration.Set(timeEnd.Sub(d.BlockStart.time).Seconds())
+		d.BlockEnd.Timestamp.Set(d.BlockStart.timestamp)
 		return
 	}
 

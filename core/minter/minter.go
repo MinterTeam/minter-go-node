@@ -169,6 +169,8 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 		panic(fmt.Sprintf("Application halted at height %d", height))
 	}
 
+	app.StatisticData().SetStartBlock(height, time.Now(), req.Header.Time)
+
 	if upgrades.IsUpgradeBlock(height) {
 		var err error
 		app.stateDeliver, err = state.NewState(app.height, app.stateDB, app.eventsDB, app.cfg.KeepLastStates, app.cfg.StateCacheSize)
@@ -179,6 +181,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 	}
 
 	app.StatisticData().SetStartBlock(height, time.Now())
+
 
 	app.stateDeliver.Lock()
 
