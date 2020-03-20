@@ -9,6 +9,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/minter"
+	"github.com/MinterTeam/minter-go-node/core/statistics"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/version"
 	"github.com/spf13/cobra"
@@ -24,8 +25,10 @@ import (
 	rpc "github.com/tendermint/tendermint/rpc/client"
 	"github.com/tendermint/tendermint/store"
 	tmTypes "github.com/tendermint/tendermint/types"
+	"io"
 	"net/http"
 	_ "net/http/pprof"
+	"net/url"
 	"os"
 )
 
@@ -89,13 +92,22 @@ func runNode(cmd *cobra.Command) error {
 
 	if !cfg.ValidatorMode {
 		go func(srv *service_api.Service) {
-			logger.Error("Failed to start Api V2 in both gRPC and RESTful", api_v2.Run(srv, cfg.GRPCListenAddress, cfg.APIv2ListenAddress))
+			grpcUrl, err := url.Parse(cfg.GRPCListenAddress)
+			if err != nil {
+				logger.Error("Failed to parse gRPC address", err)
+			}
+			apiV2url, err := url.Parse(cfg.APIv2ListenAddress)
+			if err != nil {
+				logger.Error("Failed to parse API v2 address", err)
+			}
+			logger.Error("Failed to start Api V2 in both gRPC and RESTful", api_v2.Run(srv, grpcUrl.Host, apiV2url.Host))
 		}(service_api.NewService(amino.NewCodec(), app, client, node, cfg, version.Version))
 
 		go api_v1.RunAPI(app, client, cfg, logger)
 	}
 
-	ctxCli, stopCli := context.WithCancel(context.Background())
+	ctx, stop := context.WithCancel(context.Background())
+	ctxCli, _ := context.WithCancel(ctx)
 	go func() {
 		err := service.StartCLIServer(utils.GetMinterHome()+"/manager.sock", service.NewManager(app, client, cfg), ctxCli)
 		if err != nil {
@@ -103,9 +115,14 @@ func runNode(cmd *cobra.Command) error {
 		}
 	}()
 
+	if cfg.Instrumentation.Prometheus {
+		data := statistics.New()
+		ctxStat, _ := context.WithCancel(ctx)
+		go app.SetStatisticData(data).Statistic(ctxStat)
+	}
 	tmos.TrapSignal(logger.With("module", "trap"), func() {
 		// Cleanup
-		stopCli()
+		stop()
 		err := node.Stop()
 		app.Stop()
 		if err != nil {
@@ -169,5 +186,32 @@ func startTendermintNode(app types.Application, cfg *tmCfg.Config, logger tmlog.
 }
 
 func getGenesis() (doc *tmTypes.GenesisDoc, e error) {
-	return tmTypes.GenesisDocFromFile(utils.GetMinterHome() + "/config/genesis.json")
+	genDocFile := utils.GetMinterHome() + "/config/genesis.json"
+	if _, err := os.Stat(genDocFile); os.IsNotExist(err) {
+		if err := downloadFile(genDocFile, "https://raw.githubusercontent.com/MinterTeam/minter-network-migrate/master/minter-mainnet-2/genesis.json"); err != nil {
+			panic(err)
+		}
+	}
+	return tmTypes.GenesisDocFromFile(genDocFile)
+}
+
+func downloadFile(filepath string, url string) error {
+
+	// Get the data
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	// Create the file
+	out, err := os.Create(filepath)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	// Write the body to file
+	_, err = io.Copy(out, resp.Body)
+	return err
 }

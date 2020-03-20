@@ -243,6 +243,8 @@ type BaseConfig struct {
 
 	StateCacheSize int `mapstructure:"state_cache_size"`
 
+	StateMemAvailable int `mapstructure:"state_mem_available"`
+
 	HaltHeight int `mapstructure:"halt_height"`
 }
 
@@ -266,6 +268,7 @@ func DefaultBaseConfig() BaseConfig {
 		ValidatorMode:           false,
 		KeepLastStates:          120,
 		StateCacheSize:          1000000,
+		StateMemAvailable:       1024,
 		APISimultaneousRequests: 100,
 		LogPath:                 "stdout",
 		LogFormat:               LogFormatPlain,
@@ -308,7 +311,7 @@ func DefaultLogLevel() string {
 // DefaultPackageLogLevels returns a default log level setting so all packages
 // log at "error", while the `state` and `main` packages log at "info"
 func DefaultPackageLogLevels() string {
-	return fmt.Sprintf("consensus:info,main:info,blockchain:info,state:info,*:%s", DefaultLogLevel())
+	return fmt.Sprintf("consensus:info,main:info,state:info,*:%s", DefaultLogLevel())
 }
 
 //-----------------------------------------------------------------------------

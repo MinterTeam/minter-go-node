@@ -10,6 +10,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/rewards"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/state/candidates"
+	"github.com/MinterTeam/minter-go-node/core/statistics"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/core/validators"
@@ -30,6 +31,7 @@ import (
 	"sort"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 const (
@@ -51,6 +53,8 @@ var (
 type Blockchain struct {
 	abciTypes.BaseApplication
 
+	statisticData *statistics.Data
+
 	stateDB            db.DB
 	appDB              *appdb.AppDB
 	eventsDB           eventsdb.IEventsDB
@@ -69,13 +73,14 @@ type Blockchain struct {
 	lock sync.RWMutex
 
 	haltHeight uint64
+	cfg        *config.Config
 }
 
 // Creates Minter Blockchain instance, should be only called once
 func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 	var err error
 
-	ldb, err := db.NewGoLevelDBWithOpts("state", utils.GetMinterHome()+"/data", getDbOpts())
+	ldb, err := db.NewGoLevelDBWithOpts("state", utils.GetMinterHome()+"/data", getDbOpts(cfg.StateMemAvailable))
 	if err != nil {
 		panic(err)
 	}
@@ -83,7 +88,7 @@ func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 	// Initiate Application DB. Used for persisting data like current block, validators, etc.
 	applicationDB := appdb.NewAppDB(cfg)
 
-	edb, err := db.NewGoLevelDBWithOpts("events", utils.GetMinterHome()+"/data", getDbOpts())
+	edb, err := db.NewGoLevelDBWithOpts("events", utils.GetMinterHome()+"/data", getDbOpts(1024))
 	if err != nil {
 		panic(err)
 	}
@@ -94,6 +99,7 @@ func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 		height:         applicationDB.GetLastHeight(),
 		eventsDB:       eventsdb.NewEventsStore(edb),
 		currentMempool: &sync.Map{},
+		cfg:            cfg,
 	}
 
 	// Set stateDeliver and stateCheck
@@ -161,6 +167,17 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 
 	if app.haltHeight > 0 && height >= app.haltHeight {
 		panic(fmt.Sprintf("Application halted at height %d", height))
+	}
+
+	app.StatisticData().SetStartBlock(height, time.Now(), req.Header.Time)
+
+	if upgrades.IsUpgradeBlock(height) {
+		var err error
+		app.stateDeliver, err = state.NewState(app.height, app.stateDB, app.eventsDB, app.cfg.KeepLastStates, app.cfg.StateCacheSize)
+		if err != nil {
+			panic(err)
+		}
+		app.stateCheck = state.NewCheckState(app.stateDeliver)
 	}
 
 	app.stateDeliver.Lock()
@@ -355,6 +372,8 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 			}
 		}
 	}
+
+	defer func() { app.StatisticData().SetEndBlockDuration(time.Now(), app.height) }()
 
 	return abciTypes.ResponseEndBlock{
 		ValidatorUpdates: updates,
@@ -599,11 +618,23 @@ func (app *Blockchain) GetEventsDB() eventsdb.IEventsDB {
 	return app.eventsDB
 }
 
-func getDbOpts() *opt.Options {
+func (app *Blockchain) SetStatisticData(statisticData *statistics.Data) *statistics.Data {
+	app.statisticData = statisticData
+	return app.statisticData
+}
+
+func (app *Blockchain) StatisticData() *statistics.Data {
+	return app.statisticData
+}
+
+func getDbOpts(memLimit int) *opt.Options {
+	if memLimit < 1024 {
+		panic(fmt.Sprintf("Not enough memory given to StateDB. Expected >1024M, given %d", memLimit))
+	}
 	return &opt.Options{
-		OpenFilesCacheCapacity: 1024,
-		BlockCacheCapacity:     1024 / 2 * opt.MiB,
-		WriteBuffer:            1024 / 4 * opt.MiB, // Two of these are used internally
+		OpenFilesCacheCapacity: memLimit,
+		BlockCacheCapacity:     memLimit / 2 * opt.MiB,
+		WriteBuffer:            memLimit / 4 * opt.MiB, // Two of these are used internally
 		Filter:                 filter.NewBloomFilter(10),
 	}
 }

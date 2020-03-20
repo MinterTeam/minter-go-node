@@ -73,7 +73,7 @@ api_listen_addr = "{{ .BaseConfig.APIListenAddress }}"
 grpc_listen_addr = "{{ .BaseConfig.GRPCListenAddress }}"
 
 # Address to listen for API V2 connections
-api_v2_listen_addr = "{{ .BaseConfig.GRPCListenAddress }}"
+api_v2_listen_addr = "{{ .BaseConfig.APIv2ListenAddress }}"
 
 # Sets node to be in validator mode. Disables API, events, history of blocks, indexes, etc. 
 validator_mode = {{ .BaseConfig.ValidatorMode }}
@@ -83,6 +83,9 @@ keep_last_states = {{ .BaseConfig.KeepLastStates }}
 
 # State cache size 
 state_cache_size = {{ .BaseConfig.StateCacheSize }}
+
+# State memory in MB
+state_mem_available = {{ .BaseConfig.StateMemAvailable }}
 
 # Limit for simultaneous requests to API
 api_simultaneous_requests = {{ .BaseConfig.APISimultaneousRequests }}

@@ -720,68 +720,8 @@ func (c *Candidates) LoadCandidates() {
 }
 
 func (c *Candidates) LoadStakes() {
-	for _, candidate := range c.list {
-		// load stakes
-		stakesCount := 0
-		for index := 0; index < MaxDelegatorsPerCandidate; index++ {
-			path := []byte{mainPrefix}
-			path = append(path, candidate.PubKey.Bytes()...)
-			path = append(path, stakesPrefix)
-			path = append(path, []byte(fmt.Sprintf("%d", index))...)
-			_, enc := c.iavl.Get(path)
-			if len(enc) == 0 {
-				candidate.stakes[index] = nil
-				continue
-			}
-
-			stake := &Stake{}
-			if err := rlp.DecodeBytes(enc, stake); err != nil {
-				panic(fmt.Sprintf("failed to decode stake: %s", err))
-			}
-
-			candidate.SetStakeAtIndex(index, stake, false)
-
-			stakesCount++
-		}
-
-		candidate.stakesCount = stakesCount
-
-		// load updates
-		path := []byte{mainPrefix}
-		path = append(path, candidate.PubKey.Bytes()...)
-		path = append(path, updatesPrefix)
-		_, enc := c.iavl.Get(path)
-		if len(enc) == 0 {
-			candidate.updates = nil
-		} else {
-			var updates []*Stake
-			if err := rlp.DecodeBytes(enc, &updates); err != nil {
-				panic(fmt.Sprintf("failed to decode updated: %s", err))
-			}
-
-			for _, update := range updates {
-				update.markDirty = (func(candidate *Candidate) func(int) {
-					return func(i int) {
-						candidate.isUpdatesDirty = true
-					}
-				})(candidate)
-			}
-
-			candidate.updates = updates
-		}
-
-		// load total stake
-		path = append([]byte{mainPrefix}, candidate.PubKey.Bytes()...)
-		path = append(path, totalStakePrefix)
-		_, enc = c.iavl.Get(path)
-		if len(enc) == 0 {
-			candidate.totalBipStake = big.NewInt(0)
-		} else {
-			candidate.totalBipStake = big.NewInt(0).SetBytes(enc)
-		}
-
-		candidate.setTmAddress()
-		c.setToMap(candidate.PubKey, candidate)
+	for pubkey := range c.list {
+		c.LoadStakesOfCandidate(pubkey)
 	}
 }
 
@@ -957,4 +897,70 @@ func (c *Candidates) setToMap(pubkey types.Pubkey, model *Candidate) {
 
 func (c *Candidates) SetTotalStake(pubkey types.Pubkey, stake *big.Int) {
 	c.GetCandidate(pubkey).setTotalBipStake(stake)
+}
+
+func (c *Candidates) LoadStakesOfCandidate(pubkey types.Pubkey) {
+	candidate := c.GetCandidate(pubkey)
+
+	// load stakes
+	stakesCount := 0
+	for index := 0; index < MaxDelegatorsPerCandidate; index++ {
+		path := []byte{mainPrefix}
+		path = append(path, candidate.PubKey.Bytes()...)
+		path = append(path, stakesPrefix)
+		path = append(path, []byte(fmt.Sprintf("%d", index))...)
+		_, enc := c.iavl.Get(path)
+		if len(enc) == 0 {
+			candidate.stakes[index] = nil
+			continue
+		}
+
+		stake := &Stake{}
+		if err := rlp.DecodeBytes(enc, stake); err != nil {
+			panic(fmt.Sprintf("failed to decode stake: %s", err))
+		}
+
+		candidate.SetStakeAtIndex(index, stake, false)
+
+		stakesCount++
+	}
+
+	candidate.stakesCount = stakesCount
+
+	// load updates
+	path := []byte{mainPrefix}
+	path = append(path, candidate.PubKey.Bytes()...)
+	path = append(path, updatesPrefix)
+	_, enc := c.iavl.Get(path)
+	if len(enc) == 0 {
+		candidate.updates = nil
+	} else {
+		var updates []*Stake
+		if err := rlp.DecodeBytes(enc, &updates); err != nil {
+			panic(fmt.Sprintf("failed to decode updated: %s", err))
+		}
+
+		for _, update := range updates {
+			update.markDirty = (func(candidate *Candidate) func(int) {
+				return func(i int) {
+					candidate.isUpdatesDirty = true
+				}
+			})(candidate)
+		}
+
+		candidate.updates = updates
+	}
+
+	// load total stake
+	path = append([]byte{mainPrefix}, candidate.PubKey.Bytes()...)
+	path = append(path, totalStakePrefix)
+	_, enc = c.iavl.Get(path)
+	if len(enc) == 0 {
+		candidate.totalBipStake = big.NewInt(0)
+	} else {
+		candidate.totalBipStake = big.NewInt(0).SetBytes(enc)
+	}
+
+	candidate.setTmAddress()
+	c.setToMap(candidate.PubKey, candidate)
 }
