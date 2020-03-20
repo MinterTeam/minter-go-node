@@ -21,6 +21,8 @@ func (s *Service) Candidate(_ context.Context, req *pb.CandidateRequest) (*pb.Ca
 		return new(pb.CandidateResponse), status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	pubkey := types.BytesToPubkey(decodeString)
+
 	cState, err := s.getStateForHeight(req.Height)
 	if err != nil {
 		return new(pb.CandidateResponse), status.Error(codes.NotFound, err.Error())
@@ -29,14 +31,14 @@ func (s *Service) Candidate(_ context.Context, req *pb.CandidateRequest) (*pb.Ca
 	if req.Height != 0 {
 		cState.Lock()
 		cState.Candidates.LoadCandidates()
-		cState.Candidates.LoadStakes()
+		cState.Candidates.LoadStakesOfCandidate(pubkey)
 		cState.Unlock()
 	}
 
 	cState.RLock()
 	defer cState.RUnlock()
 
-	candidate := cState.Candidates.GetCandidate(types.BytesToPubkey(decodeString))
+	candidate := cState.Candidates.GetCandidate(pubkey)
 	if candidate == nil {
 		return new(pb.CandidateResponse), status.Error(codes.NotFound, "Candidate not found")
 	}
