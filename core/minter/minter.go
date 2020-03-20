@@ -180,9 +180,6 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 		app.stateCheck = state.NewCheckState(app.stateDeliver)
 	}
 
-	app.StatisticData().SetStartBlock(height, time.Now())
-
-
 	app.stateDeliver.Lock()
 
 	// compute max gas
