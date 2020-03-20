@@ -80,7 +80,7 @@ type Blockchain struct {
 func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 	var err error
 
-	ldb, err := db.NewGoLevelDBWithOpts("state", utils.GetMinterHome()+"/data", getDbOpts())
+	ldb, err := db.NewGoLevelDBWithOpts("state", utils.GetMinterHome()+"/data", getDbOpts(cfg.StateMemAvailable))
 	if err != nil {
 		panic(err)
 	}
@@ -88,7 +88,7 @@ func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 	// Initiate Application DB. Used for persisting data like current block, validators, etc.
 	applicationDB := appdb.NewAppDB(cfg)
 
-	edb, err := db.NewGoLevelDBWithOpts("events", utils.GetMinterHome()+"/data", getDbOpts())
+	edb, err := db.NewGoLevelDBWithOpts("events", utils.GetMinterHome()+"/data", getDbOpts(1024))
 	if err != nil {
 		panic(err)
 	}
@@ -627,11 +627,14 @@ func (app *Blockchain) StatisticData() *statistics.Data {
 	return app.statisticData
 }
 
-func getDbOpts() *opt.Options {
+func getDbOpts(memLimit int) *opt.Options {
+	if memLimit < 1024 {
+		panic(fmt.Sprintf("Not enough memory given to StateDB. Expected >1024M, given %d", memLimit))
+	}
 	return &opt.Options{
-		OpenFilesCacheCapacity: 1024,
-		BlockCacheCapacity:     1024 / 2 * opt.MiB,
-		WriteBuffer:            1024 / 4 * opt.MiB, // Two of these are used internally
+		OpenFilesCacheCapacity: memLimit,
+		BlockCacheCapacity:     memLimit / 2 * opt.MiB,
+		WriteBuffer:            memLimit / 4 * opt.MiB, // Two of these are used internally
 		Filter:                 filter.NewBloomFilter(10),
 	}
 }

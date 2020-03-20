@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.4
+
+IMPROVEMENT
+
+- [core] Load genesis from github if not exists
+- [config] Add `state_mem_available` param
+
 ## 1.1.3
 
 BREAKING CHANGES

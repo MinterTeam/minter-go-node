@@ -84,6 +84,9 @@ keep_last_states = {{ .BaseConfig.KeepLastStates }}
 # State cache size 
 state_cache_size = {{ .BaseConfig.StateCacheSize }}
 
+# State memory in MB
+state_mem_available = {{ .BaseConfig.StateMemAvailable }}
+
 # Limit for simultaneous requests to API
 api_simultaneous_requests = {{ .BaseConfig.APISimultaneousRequests }}
 
