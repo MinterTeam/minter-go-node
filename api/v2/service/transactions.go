@@ -3,8 +3,8 @@ package service
 import (
 	"context"
 	"fmt"
-	pb "github.com/MinterTeam/minter-go-node/api/v2/api_pb"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
+	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"github.com/tendermint/tendermint/libs/bytes"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
