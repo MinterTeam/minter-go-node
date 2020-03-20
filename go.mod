@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	github.com/MinterTeam/events-db v0.1.6
+	github.com/MinterTeam/node-grpc-gateway v1.0.0
 	github.com/btcsuite/btcd v0.0.0-20190115013929-ed77733ec07d
 	github.com/c-bata/go-prompt v0.2.3
 	github.com/go-kit/kit v0.10.0
@@ -29,7 +30,6 @@ require (
 	golang.org/x/net v0.0.0-20191002035440-2ec189313ef0
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 	golang.org/x/sys v0.0.0-20200122134326-e047566fdf82
-	google.golang.org/genproto v0.0.0-20190927181202-20e1ac93f88c
 	google.golang.org/grpc v1.27.1
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15
 )

@@ -2,8 +2,8 @@ package v2
 
 import (
 	"context"
-	gw "github.com/MinterTeam/minter-go-node/api/v2/api_pb"
 	"github.com/MinterTeam/minter-go-node/api/v2/service"
+	gw "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/tmc/grpc-websocket-proxy/wsproxy"

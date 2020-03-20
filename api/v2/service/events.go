@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	compact_db "github.com/MinterTeam/events-db"
-	pb "github.com/MinterTeam/minter-go-node/api/v2/api_pb"
+	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"github.com/golang/protobuf/jsonpb"
 	_struct "github.com/golang/protobuf/ptypes/struct"
 )
