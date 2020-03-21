@@ -17,8 +17,6 @@ github.com/MinterTeam/minter-go-node v1.0.5-0.20191113110340-a46b8ef88084/go.mod
 github.com/MinterTeam/minter-go-node v1.1.0-beta5/go.mod h1:MeO8y1SPL2uk/znxFPauMB4karv/xQeI1O1SPeEycrU=
 github.com/MinterTeam/minter-node-cli v0.0.0-20191202172005-309e9d40a5a3 h1:2ndNow11LzKNggx2JNh2Fhb0NKEQ2kVt+HL9jdEBLOg=
 github.com/MinterTeam/minter-node-cli v0.0.0-20191202172005-309e9d40a5a3/go.mod h1:6iFtZjWsvR9ZaXaogfDkIYVSrQAHQBk/tU1L5yKS5/8=
-github.com/MinterTeam/node-grpc-gateway v0.0.0-20200320103855-001a3503e431 h1:2JL9LjPJfLXESdYGuyosoIRVtNCkBygUrELEI013GtM=
-github.com/MinterTeam/node-grpc-gateway v0.0.0-20200320103855-001a3503e431/go.mod h1:LJJNHzYkAbWsoWZw3VMgs+NQTnJ3f0YawF2UZxevTOE=
 github.com/MinterTeam/node-grpc-gateway v1.0.0 h1:E2Vn3wC0kv/zgzA1biC84+M2Y4h0k2etLXzTM6jJyeI=
 github.com/MinterTeam/node-grpc-gateway v1.0.0/go.mod h1:LJJNHzYkAbWsoWZw3VMgs+NQTnJ3f0YawF2UZxevTOE=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
