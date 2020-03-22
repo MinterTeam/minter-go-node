@@ -122,12 +122,9 @@ func runNode(cmd *cobra.Command) error {
 	}
 	tmos.TrapSignal(logger.With("module", "trap"), func() {
 		// Cleanup
-		stop()
-		err := node.Stop()
+		node.Stop()
 		app.Stop()
-		if err != nil {
-			panic(err)
-		}
+		stop()
 	})
 
 	// Run forever
