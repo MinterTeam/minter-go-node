@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.5
+
+IMPROVEMENT
+
+- [core] Check open files limits before starting the node
+
 ## 1.1.4
 
 IMPROVEMENT
