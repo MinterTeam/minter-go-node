@@ -124,8 +124,10 @@ func runNode(cmd *cobra.Command) error {
 		go api_v1.RunAPI(app, client, cfg, logger)
 	}
 
+	ctx, stop := context.WithCancel(context.Background())
+	ctxCli, _ := context.WithCancel(ctx)
 	go func() {
-		err := service.StartCLIServer(utils.GetMinterHome()+"/manager.sock", service.NewManager(app, client, cfg), context.TODO())
+		err := service.StartCLIServer(utils.GetMinterHome()+"/manager.sock", service.NewManager(app, client, cfg), ctxCli)
 		if err != nil {
 			panic(err)
 		}
@@ -133,10 +135,12 @@ func runNode(cmd *cobra.Command) error {
 
 	if cfg.Instrumentation.Prometheus {
 		data := statistics.New()
-		go app.SetStatisticData(data).Statistic(context.TODO())
+		ctxStat, _ := context.WithCancel(ctx)
+		go app.SetStatisticData(data).Statistic(ctxStat)
 	}
+
 	tmos.TrapSignal(logger.With("module", "trap"), func() {
-		// Cleanup
+		stop()
 		node.Stop()
 		app.Stop()
 	})
