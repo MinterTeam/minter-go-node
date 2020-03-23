@@ -1,17 +1,22 @@
 package service
 
 import (
+	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/cli/pb"
 	"github.com/c-bata/go-prompt"
+	ui "github.com/gizak/termui/v3"
+	"github.com/gizak/termui/v3/widgets"
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/grpc"
 	"os"
 	"strings"
+	"time"
 )
 
 type ManagerConsole struct {
@@ -158,11 +163,12 @@ func ConfigureManagerConsole(socketPath string) (*ManagerConsole, error) {
 					return err
 				}
 				if c.Bool("json") {
-					bytes, err := json.Marshal(response)
+					bb := new(bytes.Buffer)
+					err := (&jsonpb.Marshaler{EmitDefaults: true}).Marshal(bb, response)
 					if err != nil {
 						return err
 					}
-					fmt.Println(string(bytes))
+					fmt.Println(string(bb.Bytes()))
 					return nil
 				}
 				fmt.Println(proto.MarshalTextString(response))
@@ -182,15 +188,45 @@ func ConfigureManagerConsole(socketPath string) (*ManagerConsole, error) {
 					return err
 				}
 				if c.Bool("json") {
-					bytes, err := json.Marshal(response)
+					bb := new(bytes.Buffer)
+					err := (&jsonpb.Marshaler{EmitDefaults: true}).Marshal(bb, response)
 					if err != nil {
 						return err
 					}
-					fmt.Println(string(bytes))
+					fmt.Println(string(bb.Bytes()))
 					return nil
 				}
 				fmt.Println(proto.MarshalTextString(response))
 				return nil
+			},
+		},
+		{
+			Name:    "dashboard",
+			Aliases: []string{"db"},
+			Usage:   "Show dashboard", //todo
+			Action: func(c *cli.Context) error {
+				response, err := client.Dashboard(context.Background(), &empty.Empty{})
+				if err != nil {
+					return err
+				}
+
+				if err := ui.Init(); err != nil {
+					return err
+				}
+				defer ui.Close()
+
+				p := widgets.NewParagraph()
+				p.SetRect(0, 0, 35, 5)
+				for {
+					recv, err := response.Recv()
+					if err != nil {
+						return err
+					}
+					timestamp, _ := ptypes.Timestamp(recv.Timestamp)
+					p.Text = fmt.Sprintf("Height: %d,\nTimestamp: %s,\nDuration: %f s",
+						recv.Height, timestamp.Format(time.RFC3339Nano), recv.Duration)
+					ui.Render(p)
+				}
 			},
 		},
 		{

@@ -7,6 +7,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/minter"
 	"github.com/MinterTeam/minter-go-node/version"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/empty"
 	rpc "github.com/tendermint/tendermint/rpc/client"
 	"google.golang.org/grpc/codes"
@@ -22,6 +23,17 @@ type Manager struct {
 
 func NewManager(blockchain *minter.Blockchain, tmRPC *rpc.Local, cfg *config.Config) pb.ManagerServiceServer {
 	return &Manager{blockchain: blockchain, tmRPC: tmRPC, cfg: cfg}
+}
+
+func (m *Manager) Dashboard(_ *empty.Empty, stream pb.ManagerService_DashboardServer) error {
+	for {
+		info := m.blockchain.StatisticData().GetLastBlockInfo()
+		protoTime, _ := ptypes.TimestampProto(time.Unix(0, int64(info.Timestamp*1e09)))
+		if err := stream.Send(&pb.DashboardResponse{Height: info.Height, Duration: float32(info.Duration), Timestamp: protoTime}); err != nil {
+			return err
+		}
+		time.Sleep(time.Second)
+	}
 }
 
 func (m *Manager) Status(context.Context, *empty.Empty) (*pb.StatusResponse, error) {

@@ -63,7 +63,7 @@ func timeGet(url string) (time.Duration, error) {
 
 type Data struct {
 	BlockStart struct {
-		sync.Mutex
+		sync.RWMutex
 		height    uint64
 		time      time.Time
 		timestamp float64
@@ -73,11 +73,19 @@ type Data struct {
 	Api  apiResponseTime
 	Peer peerPing
 }
+
+type LastBlockInfo struct {
+	Height    uint64
+	Duration  float64
+	Timestamp float64
+}
+
 type blockEnd struct {
-	sync.Mutex
-	Height    prometheus.Gauge
-	Duration  prometheus.Gauge
-	Timestamp prometheus.Gauge
+	sync.RWMutex
+	HeightProm    prometheus.Gauge
+	DurationProm  prometheus.Gauge
+	TimestampProm prometheus.Gauge
+	LastBlockInfo LastBlockInfo
 }
 type apiResponseTime struct {
 	sync.Mutex
@@ -92,7 +100,7 @@ func New() *Data {
 	apiVec := prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "api",
-			Help: "Api Duration Paths",
+			Help: "Api DurationProm Paths",
 		},
 		[]string{"path"},
 	)
@@ -122,7 +130,7 @@ func New() *Data {
 	timeBlock := prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Name: "last_block_timestamp",
-			Help: "Timestamp last block",
+			Help: "TimestampProm last block",
 		},
 	)
 	prometheus.MustRegister(timeBlock)
@@ -130,7 +138,7 @@ func New() *Data {
 	return &Data{
 		Api:      apiResponseTime{responseTime: apiVec},
 		Peer:     peerPing{ping: peerVec},
-		BlockEnd: blockEnd{Height: height, Duration: lastBlockDuration, Timestamp: timeBlock},
+		BlockEnd: blockEnd{HeightProm: height, DurationProm: lastBlockDuration, TimestampProm: timeBlock},
 	}
 }
 
@@ -152,15 +160,23 @@ func (d *Data) SetEndBlockDuration(timeEnd time.Time, height uint64) {
 		return
 	}
 
-	d.BlockStart.Lock()
-	defer d.BlockStart.Unlock()
+	d.BlockStart.RLock()
+	defer d.BlockStart.RUnlock()
 
 	if height == d.BlockStart.height {
 		d.BlockEnd.Lock()
 		defer d.BlockEnd.Unlock()
-		d.BlockEnd.Height.Set(float64(height))
-		d.BlockEnd.Duration.Set(timeEnd.Sub(d.BlockStart.time).Seconds())
-		d.BlockEnd.Timestamp.Set(d.BlockStart.timestamp)
+
+		durationSeconds := timeEnd.Sub(d.BlockStart.time).Seconds()
+
+		d.BlockEnd.HeightProm.Set(float64(height))
+		d.BlockEnd.DurationProm.Set(durationSeconds)
+		d.BlockEnd.TimestampProm.Set(d.BlockStart.timestamp)
+
+		d.BlockEnd.LastBlockInfo.Height = height
+		d.BlockEnd.LastBlockInfo.Duration = durationSeconds
+		d.BlockEnd.LastBlockInfo.Timestamp = d.BlockStart.timestamp
+
 		return
 	}
 
@@ -187,4 +203,15 @@ func (d *Data) SetPeerTime(duration time.Duration, network string) {
 	defer d.Peer.Unlock()
 
 	d.Peer.ping.With(prometheus.Labels{"network": network}).Set(duration.Seconds())
+}
+
+func (d *Data) GetLastBlockInfo() LastBlockInfo {
+	if d == nil {
+		return LastBlockInfo{}
+	}
+
+	d.BlockEnd.RLock()
+	defer d.BlockEnd.RUnlock()
+
+	return d.BlockEnd.LastBlockInfo
 }

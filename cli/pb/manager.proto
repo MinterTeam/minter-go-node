@@ -1,9 +1,10 @@
 syntax = "proto3";
 
-// protoc --go_out=plugins=grpc:. *.proto && sed -i "" -e "s/,omitempty//g" ./*.go
+// protoc --go_out=plugins=grpc:. *.proto
 package pb;
 
 import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
 
 message NodeInfo {
 
@@ -131,9 +132,16 @@ message DealPeerRequest {
     bool persistent = 2;
 }
 
+message DashboardResponse {
+    uint64 height = 1;
+    google.protobuf.Timestamp timestamp = 2;
+    float duration = 3;
+}
+
 service ManagerService {
     rpc Status (google.protobuf.Empty) returns (StatusResponse);
     rpc NetInfo (google.protobuf.Empty) returns (NetInfoResponse);
     rpc PruneBlocks (PruneBlocksRequest) returns (google.protobuf.Empty);
     rpc DealPeer (DealPeerRequest) returns (google.protobuf.Empty);
+    rpc Dashboard (google.protobuf.Empty) returns (stream DashboardResponse);
 }
