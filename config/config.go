@@ -155,7 +155,7 @@ func GetTmConfig(cfg *Config) *tmConfig.Config {
 		RPC:             cfg.RPC,
 		P2P:             cfg.P2P,
 		Mempool:         cfg.Mempool,
-		FastSync:        &tmConfig.FastSyncConfig{Version: "v1"},
+		FastSync:        &tmConfig.FastSyncConfig{Version: "v0"},
 		Consensus:       cfg.Consensus,
 		TxIndex:         cfg.TxIndex,
 		Instrumentation: cfg.Instrumentation,

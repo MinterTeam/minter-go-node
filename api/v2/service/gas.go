@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
-	pb "github.com/MinterTeam/minter-go-node/api/v2/api_pb"
+	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

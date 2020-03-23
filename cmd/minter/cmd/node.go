@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	api_v1 "github.com/MinterTeam/minter-go-node/api"
 	api_v2 "github.com/MinterTeam/minter-go-node/api/v2"
 	service_api "github.com/MinterTeam/minter-go-node/api/v2/service"
@@ -30,7 +31,10 @@ import (
 	_ "net/http/pprof"
 	"net/url"
 	"os"
+	"syscall"
 )
+
+const RequiredOpenFilesLimit = 10000
 
 var RunNode = &cobra.Command{
 	Use:   "node",
@@ -42,6 +46,20 @@ var RunNode = &cobra.Command{
 
 func runNode(cmd *cobra.Command) error {
 	logger := log.NewLogger(cfg)
+
+	// check open files limits
+	{
+		var rLimit syscall.Rlimit
+		err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rLimit)
+		if err != nil {
+			return err
+		}
+
+		required := RequiredOpenFilesLimit + uint64(cfg.StateMemAvailable)
+		if rLimit.Cur < required {
+			return fmt.Errorf("open files limit is too low: required %d, got %d", required, rLimit.Cur)
+		}
+	}
 
 	pprofOn, err := cmd.Flags().GetBool("pprof")
 	if err != nil {
@@ -120,14 +138,11 @@ func runNode(cmd *cobra.Command) error {
 		ctxStat, _ := context.WithCancel(ctx)
 		go app.SetStatisticData(data).Statistic(ctxStat)
 	}
+
 	tmos.TrapSignal(logger.With("module", "trap"), func() {
-		// Cleanup
 		stop()
-		err := node.Stop()
+		node.Stop()
 		app.Stop()
-		if err != nil {
-			panic(err)
-		}
 	})
 
 	// Run forever

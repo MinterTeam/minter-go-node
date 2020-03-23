@@ -17,6 +17,8 @@ github.com/MinterTeam/minter-go-node v1.0.5-0.20191113110340-a46b8ef88084/go.mod
 github.com/MinterTeam/minter-go-node v1.1.0-beta5/go.mod h1:MeO8y1SPL2uk/znxFPauMB4karv/xQeI1O1SPeEycrU=
 github.com/MinterTeam/minter-node-cli v0.0.0-20191202172005-309e9d40a5a3 h1:2ndNow11LzKNggx2JNh2Fhb0NKEQ2kVt+HL9jdEBLOg=
 github.com/MinterTeam/minter-node-cli v0.0.0-20191202172005-309e9d40a5a3/go.mod h1:6iFtZjWsvR9ZaXaogfDkIYVSrQAHQBk/tU1L5yKS5/8=
+github.com/MinterTeam/node-grpc-gateway v1.0.0 h1:E2Vn3wC0kv/zgzA1biC84+M2Y4h0k2etLXzTM6jJyeI=
+github.com/MinterTeam/node-grpc-gateway v1.0.0/go.mod h1:LJJNHzYkAbWsoWZw3VMgs+NQTnJ3f0YawF2UZxevTOE=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/Shopify/sarama v1.19.0/go.mod h1:FVkBWblsNy7DGZRfXLU0O9RCGt5g3g3yEuWXgklEdEo=
 github.com/Shopify/toxiproxy v2.1.4+incompatible/go.mod h1:OXgGpZ6Cli1/URJOF1DMxUHB2q5Ap20/P/eIdh4G0pI=
@@ -341,6 +343,8 @@ github.com/prometheus/client_golang v1.0.0/go.mod h1:db9x61etRT2tGnBNRi70OPL5Fsn
 github.com/prometheus/client_golang v1.3.0/go.mod h1:hJaj2vgQTGQmVCsAACORcieXFeDPbaTKGT+JTgUa3og=
 github.com/prometheus/client_golang v1.5.0 h1:Ctq0iGpCmr3jeP77kbF2UxgvRwzWWz+4Bh9/vJTyg1A=
 github.com/prometheus/client_golang v1.5.0/go.mod h1:e9GMxYsXl05ICDXkRhurwBS4Q3OK1iX/F2sw+iXX5zU=
+github.com/prometheus/client_golang v1.5.1 h1:bdHYieyGlH+6OLEk2YQha8THib30KP0/yD0YH9m6xcA=
+github.com/prometheus/client_golang v1.5.1/go.mod h1:e9GMxYsXl05ICDXkRhurwBS4Q3OK1iX/F2sw+iXX5zU=
 github.com/prometheus/client_model v0.0.0-20180712105110-5c3871d89910/go.mod h1:MbSGuTsp3dbXC40dX6PRTWyKYBIrTGTE9sqQNg2J8bo=
 github.com/prometheus/client_model v0.0.0-20190115171406-56726106282f/go.mod h1:MbSGuTsp3dbXC40dX6PRTWyKYBIrTGTE9sqQNg2J8bo=
 github.com/prometheus/client_model v0.0.0-20190129233127-fd36f4220a90/go.mod h1:xMI15A0UPsDsEKsMN9yxemIoYk6Tm2C1GtYGdfGttqA=

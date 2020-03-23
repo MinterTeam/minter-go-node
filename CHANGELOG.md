@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.5
+
+IMPROVEMENT
+
+- [core] Check open files limits before starting the node
+- [tendermint] Rollback to v0 blockchain reactor
+
 ## 1.1.4
 
 IMPROVEMENT
