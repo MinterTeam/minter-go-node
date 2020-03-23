@@ -198,9 +198,13 @@ func startTendermintNode(app types.Application, cfg *tmCfg.Config, logger tmlog.
 
 func getGenesis() (doc *tmTypes.GenesisDoc, e error) {
 	genDocFile := utils.GetMinterHome() + "/config/genesis.json"
-	if _, err := os.Stat(genDocFile); os.IsNotExist(err) {
+	_, err := os.Stat(genDocFile)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return nil, err
+		}
 		if err := downloadFile(genDocFile, "https://raw.githubusercontent.com/MinterTeam/minter-network-migrate/master/minter-mainnet-2/genesis.json"); err != nil {
-			panic(err)
+			return nil, err
 		}
 	}
 	return tmTypes.GenesisDocFromFile(genDocFile)
