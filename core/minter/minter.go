@@ -44,7 +44,7 @@ const (
 	DefaultMaxGas = 100000
 	MinMaxGas     = 5000
 
-	VotingPowerConsensus = 2 / 3
+	VotingPowerConsensus = 2. / 3.
 )
 
 var (
