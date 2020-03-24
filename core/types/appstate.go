@@ -264,6 +264,5 @@ type Multisig struct {
 
 type HaltBlock struct {
 	Height       uint64 `json:"height"`
-	HaltHeight   uint64 `json:"halt_height"`
 	CandidateKey Pubkey `json:"candidate_key"`
 }
