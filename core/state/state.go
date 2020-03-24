@@ -138,6 +138,10 @@ func (s *State) Commit() ([]byte, error) {
 		return nil, err
 	}
 
+	if err := s.Halts.Commit(); err != nil {
+		return nil, err
+	}
+
 	hash, version, err := s.tree.SaveVersion()
 
 	if s.keepLastStates < version-1 {
