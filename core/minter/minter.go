@@ -179,7 +179,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 			}
 
 			for _, halt := range halts.List {
-				if halt.CandidateKey == val.PubKey {
+				if halt.Pubkey == val.PubKey {
 					totalVotingPower.Add(totalVotingPower, val.GetTotalBipStake())
 				}
 			}

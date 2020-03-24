@@ -5,7 +5,7 @@ import (
 )
 
 type Item struct {
-	CandidateKey types.Pubkey
+	Pubkey types.Pubkey
 }
 
 type Model struct {
@@ -23,7 +23,7 @@ func (m *Model) delete() {
 
 func (m *Model) addHaltBlock(pubkey types.Pubkey) {
 	m.List = append(m.List, Item{
-		CandidateKey: pubkey,
+		Pubkey: pubkey,
 	})
 	m.markDirty(m.height)
 }

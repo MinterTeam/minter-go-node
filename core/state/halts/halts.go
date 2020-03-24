@@ -36,14 +36,14 @@ func NewHalts(stateBus *bus.Bus, iavl tree.Tree) (*HaltBlocks, error) {
 	return halts, nil
 }
 
-func (f *HaltBlocks) Commit() error {
-	dirty := f.getOrderedDirty()
+func (hb *HaltBlocks) Commit() error {
+	dirty := hb.getOrderedDirty()
 	for _, height := range dirty {
-		ff := f.getFromMap(height)
+		ff := hb.getFromMap(height)
 
-		f.lock.Lock()
-		delete(f.dirty, height)
-		f.lock.Unlock()
+		hb.lock.Lock()
+		delete(hb.dirty, height)
+		hb.lock.Unlock()
 
 		data, err := rlp.EncodeToBytes(ff)
 		if err != nil {
@@ -51,59 +51,59 @@ func (f *HaltBlocks) Commit() error {
 		}
 
 		path := getPath(height)
-		f.iavl.Set(path, data)
+		hb.iavl.Set(path, data)
 	}
 
 	return nil
 }
 
-func (f *HaltBlocks) GetHaltBlocks(height uint64) *Model {
-	return f.get(height)
+func (hb *HaltBlocks) GetHaltBlocks(height uint64) *Model {
+	return hb.get(height)
 }
 
-func (f *HaltBlocks) GetOrNew(height uint64) *Model {
-	ff := f.get(height)
-	if ff == nil {
-		ff = &Model{
+func (hb *HaltBlocks) GetOrNew(height uint64) *Model {
+	haltBlock := hb.get(height)
+	if haltBlock == nil {
+		haltBlock = &Model{
 			height:    height,
-			markDirty: f.markDirty,
+			markDirty: hb.markDirty,
 		}
-		f.setToMap(height, ff)
+		hb.setToMap(height, haltBlock)
 	}
 
-	return ff
+	return haltBlock
 }
 
-func (f *HaltBlocks) get(height uint64) *Model {
-	if ff := f.getFromMap(height); ff != nil {
-		return ff
+func (hb *HaltBlocks) get(height uint64) *Model {
+	if haltBlock := hb.getFromMap(height); haltBlock != nil {
+		return haltBlock
 	}
 
-	_, enc := f.iavl.Get(getPath(height))
+	_, enc := hb.iavl.Get(getPath(height))
 	if len(enc) == 0 {
 		return nil
 	}
 
-	ff := &Model{}
-	if err := rlp.DecodeBytes(enc, ff); err != nil {
+	haltBlock := &Model{}
+	if err := rlp.DecodeBytes(enc, haltBlock); err != nil {
 		panic(fmt.Sprintf("failed to decode halt blocks at height %d: %s", height, err))
 	}
 
-	ff.height = height
-	ff.markDirty = f.markDirty
+	haltBlock.height = height
+	haltBlock.markDirty = hb.markDirty
 
-	f.setToMap(height, ff)
+	hb.setToMap(height, haltBlock)
 
-	return ff
+	return haltBlock
 }
 
-func (f *HaltBlocks) markDirty(height uint64) {
-	f.dirty[height] = struct{}{}
+func (hb *HaltBlocks) markDirty(height uint64) {
+	hb.dirty[height] = struct{}{}
 }
 
-func (f *HaltBlocks) getOrderedDirty() []uint64 {
-	keys := make([]uint64, 0, len(f.dirty))
-	for k := range f.dirty {
+func (hb *HaltBlocks) getOrderedDirty() []uint64 {
+	keys := make([]uint64, 0, len(hb.dirty))
+	for k := range hb.dirty {
 		keys = append(keys, k)
 	}
 
@@ -114,22 +114,22 @@ func (f *HaltBlocks) getOrderedDirty() []uint64 {
 	return keys
 }
 
-func (f *HaltBlocks) AddHaltBlock(height uint64, pubkey types.Pubkey) {
-	f.GetOrNew(height).addHaltBlock(pubkey)
+func (hb *HaltBlocks) AddHaltBlock(height uint64, pubkey types.Pubkey) {
+	hb.GetOrNew(height).addHaltBlock(pubkey)
 }
 
-func (f *HaltBlocks) Delete(height uint64) {
-	ff := f.get(height)
-	if ff == nil {
+func (hb *HaltBlocks) Delete(height uint64) {
+	haltBlock := hb.get(height)
+	if haltBlock == nil {
 		return
 	}
 
-	ff.delete()
+	haltBlock.delete()
 }
 
-func (f *HaltBlocks) Export(state *types.AppState, height uint64) {
+func (hb *HaltBlocks) Export(state *types.AppState, height uint64) {
 	for i := height; i <= height; i++ {
-		halts := f.get(i)
+		halts := hb.get(i)
 		if halts == nil {
 			continue
 		}
@@ -137,24 +137,24 @@ func (f *HaltBlocks) Export(state *types.AppState, height uint64) {
 		for _, haltBlock := range halts.List {
 			state.HaltBlocks = append(state.HaltBlocks, types.HaltBlock{
 				Height:       i,
-				CandidateKey: haltBlock.CandidateKey,
+				CandidateKey: haltBlock.Pubkey,
 			})
 		}
 	}
 }
 
-func (f *HaltBlocks) getFromMap(height uint64) *Model {
-	f.lock.RLock()
-	defer f.lock.RUnlock()
+func (hb *HaltBlocks) getFromMap(height uint64) *Model {
+	hb.lock.RLock()
+	defer hb.lock.RUnlock()
 
-	return f.list[height]
+	return hb.list[height]
 }
 
-func (f *HaltBlocks) setToMap(height uint64, model *Model) {
-	f.lock.Lock()
-	defer f.lock.Unlock()
+func (hb *HaltBlocks) setToMap(height uint64, model *Model) {
+	hb.lock.Lock()
+	defer hb.lock.Unlock()
 
-	f.list[height] = model
+	hb.list[height] = model
 }
 
 func getPath(height uint64) []byte {

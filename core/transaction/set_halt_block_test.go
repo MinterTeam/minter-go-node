@@ -78,7 +78,7 @@ func TestSetHaltBlockTx(t *testing.T) {
 	}
 
 	haltBlock := haltBlocks[0]
-	if haltBlock.CandidateKey != pubkey {
-		t.Fatalf("Wront halt block pubkey. Expected pubkey: %s, got %s", pubkey, haltBlock.CandidateKey.String()+"asd")
+	if haltBlock.Pubkey != pubkey {
+		t.Fatalf("Wront halt block pubkey. Expected pubkey: %s, got %s", pubkey, haltBlock.Pubkey.String()+"asd")
 	}
 }
