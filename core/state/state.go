@@ -12,6 +12,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/state/checks"
 	"github.com/MinterTeam/minter-go-node/core/state/coins"
 	"github.com/MinterTeam/minter-go-node/core/state/frozenfunds"
+	"github.com/MinterTeam/minter-go-node/core/state/halts"
 	"github.com/MinterTeam/minter-go-node/core/state/validators"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/helpers"
@@ -26,6 +27,7 @@ type State struct {
 	Validators  *validators.Validators
 	Candidates  *candidates.Candidates
 	FrozenFunds *frozenfunds.FrozenFunds
+	Halts       *halts.HaltBlocks
 	Accounts    *accounts.Accounts
 	Coins       *coins.Coins
 	Checks      *checks.Checks
@@ -262,6 +264,11 @@ func newStateForTree(iavlTree tree.Tree, events eventsdb.IEventsDB, db db.DB, ke
 		return nil, err
 	}
 
+	haltsState, err := halts.NewHalts(stateBus, iavlTree)
+	if err != nil {
+		return nil, err
+	}
+
 	state := &State{
 		Validators:  validatorsState,
 		App:         appState,
@@ -271,6 +278,7 @@ func newStateForTree(iavlTree tree.Tree, events eventsdb.IEventsDB, db db.DB, ke
 		Coins:       coinsState,
 		Checks:      checksState,
 		Checker:     stateChecker,
+		Halts:       haltsState,
 		bus:         stateBus,
 
 		db:             db,

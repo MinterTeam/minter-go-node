@@ -43,6 +43,8 @@ const (
 
 	DefaultMaxGas = 100000
 	MinMaxGas     = 5000
+
+	VotingPowerConsensus = 2 / 3
 )
 
 var (
@@ -165,8 +167,38 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.ResponseBeginBlock {
 	height := uint64(req.Header.Height)
 
-	if app.haltHeight > 0 && height >= app.haltHeight {
-		panic(fmt.Sprintf("Application halted at height %d", height))
+	halts := app.stateDeliver.Halts.GetHaltBlocks(height)
+	if halts != nil {
+		// calculate total power of validators
+		validators := app.stateDeliver.Validators.GetValidators()
+		totalPower, totalVotingPower := big.NewInt(0), big.NewInt(0)
+		for _, val := range validators {
+			// skip if candidate is not present
+			if val.IsToDrop() || app.validatorsStatuses[val.GetAddress()] != ValidatorPresent {
+				continue
+			}
+
+			for _, halt := range halts.List {
+				if halt.CandidateKey == val.PubKey {
+					totalVotingPower.Add(totalVotingPower, val.GetTotalBipStake())
+				}
+			}
+
+			totalPower.Add(totalPower, val.GetTotalBipStake())
+		}
+
+		if totalPower.Cmp(types.Big0) == 0 {
+			totalPower = big.NewInt(1)
+		}
+
+		votingResult := new(big.Float).Quo(
+			new(big.Float).SetInt(totalVotingPower),
+			new(big.Float).SetInt(totalPower),
+		)
+
+		if votingResult.Cmp(big.NewFloat(VotingPowerConsensus)) == 1 {
+			panic(fmt.Sprintf("Application halted at height %d", height))
+		}
 	}
 
 	app.StatisticData().SetStartBlock(height, time.Now(), req.Header.Time)
