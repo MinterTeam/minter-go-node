@@ -33,7 +33,7 @@ const (
 	TypeCreateMultisig      TxType = 0x0C
 	TypeMultisend           TxType = 0x0D
 	TypeEditCandidate       TxType = 0x0E
-	TypeSetHaltBlock        TxType = 0x10
+	TypeSetHaltBlock        TxType = 0x0F
 
 	SigTypeSingle SigType = 0x01
 	SigTypeMulti  SigType = 0x02
