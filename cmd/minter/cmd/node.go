@@ -52,12 +52,16 @@ func runNode(cmd *cobra.Command) error {
 		var rLimit syscall.Rlimit
 		err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rLimit)
 		if err != nil {
-			return err
+			panic(err)
 		}
 
 		required := RequiredOpenFilesLimit + uint64(cfg.StateMemAvailable)
 		if rLimit.Cur < required {
-			return fmt.Errorf("open files limit is too low: required %d, got %d", required, rLimit.Cur)
+			rLimit.Cur = required
+			err = syscall.Setrlimit(syscall.RLIMIT_NOFILE, &rLimit)
+			if err != nil {
+				panic(fmt.Errorf("cannot set RLIMIT_NOFILE to %d", rLimit.Cur))
+			}
 		}
 	}
 
