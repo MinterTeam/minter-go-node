@@ -29,6 +29,7 @@ import (
 	_ "github.com/tendermint/tendermint/types"
 	types2 "github.com/tendermint/tendermint/types"
 	"math/big"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"sync"
@@ -380,6 +381,44 @@ FORLOOP2:
 	err = tmCli.UnsubscribeAll(context.TODO(), "test-client")
 	if err != nil {
 		panic(err)
+	}
+}
+
+func TestStopNetworkByHaltBlocks(t *testing.T) {
+	haltHeight := uint64(5)
+
+	v1Pubkey := [32]byte{}
+	v2Pubkey := [32]byte{}
+	v3Pubkey := [32]byte{}
+
+	rand.Read(v1Pubkey[:])
+	rand.Read(v2Pubkey[:])
+	rand.Read(v3Pubkey[:])
+
+	app.stateDeliver.Validators.Create(v1Pubkey, helpers.BipToPip(big.NewInt(3)))
+	app.stateDeliver.Validators.Create(v2Pubkey, helpers.BipToPip(big.NewInt(5)))
+	app.stateDeliver.Validators.Create(v3Pubkey, helpers.BipToPip(big.NewInt(3)))
+
+	v1Address := app.stateDeliver.Validators.GetValidators()[1].GetAddress()
+	v2Address := app.stateDeliver.Validators.GetValidators()[2].GetAddress()
+	v3Address := app.stateDeliver.Validators.GetValidators()[3].GetAddress()
+
+	app.validatorsStatuses = map[types.TmAddress]int8{}
+	app.validatorsStatuses[v1Address] = ValidatorPresent
+	app.validatorsStatuses[v2Address] = ValidatorPresent
+	app.validatorsStatuses[v3Address] = ValidatorPresent
+
+	app.stateDeliver.Halts.AddHaltBlock(haltHeight, v1Pubkey)
+	app.stateDeliver.Halts.AddHaltBlock(haltHeight, v3Pubkey)
+	if app.isApplicationHalted(haltHeight) {
+		t.Fatalf("Application halted at height %d", haltHeight)
+	}
+
+	haltHeight++
+	app.stateDeliver.Halts.AddHaltBlock(haltHeight, v1Pubkey)
+	app.stateDeliver.Halts.AddHaltBlock(haltHeight, v2Pubkey)
+	if !app.isApplicationHalted(haltHeight) {
+		t.Fatalf("Application not halted at height %d", haltHeight)
 	}
 }
 
