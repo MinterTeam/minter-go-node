@@ -1,10 +1,13 @@
 package transaction
 
 import (
+	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
+	"github.com/MinterTeam/minter-go-node/upgrades"
+	db "github.com/tendermint/tm-db"
 	"math/big"
 	"math/rand"
 	"sync"
@@ -12,9 +15,12 @@ import (
 )
 
 func TestSetHaltBlockTx(t *testing.T) {
-	cState := getState()
+	cState, err := state.NewState(upgrades.UpgradeBlock4, db.NewMemDB(), nil, 1, 1)
+	if err != nil {
+		t.Fatalf("Cannot load state. Error %s", err)
+	}
 
-	haltHeight := uint64(100)
+	haltHeight := upgrades.UpgradeBlock4 + uint64(100)
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 	coin := types.GetBaseCoin()
@@ -56,7 +62,7 @@ func TestSetHaltBlockTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, false, encodedTx, big.NewInt(0), upgrades.UpgradeBlock4, &sync.Map{}, 0)
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}

@@ -13,7 +13,7 @@ import (
 	"testing"
 )
 
-const height = upgrades.UpgradeBlock3
+const height = upgrades.UpgradeBlock4
 
 func TestSimpleDelegate(t *testing.T) {
 	st := getState()

@@ -167,7 +167,7 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.ResponseBeginBlock {
 	height := uint64(req.Header.Height)
 
-	if app.isApplicationHalted(height) {
+	if height >= upgrades.UpgradeBlock4 && app.isApplicationHalted(height) {
 		panic(fmt.Sprintf("Application halted at height %d", height))
 	}
 
@@ -242,8 +242,10 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 		app.stateDeliver.FrozenFunds.Delete(frozenFunds.Height())
 	}
 
-	// delete halts from db
-	app.stateDeliver.Halts.Delete(height)
+	if height >= upgrades.UpgradeBlock4 {
+		// delete halts from db
+		app.stateDeliver.Halts.Delete(height)
+	}
 
 	return abciTypes.ResponseBeginBlock{}
 }
