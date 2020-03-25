@@ -10,10 +10,10 @@ import (
 	"github.com/gizak/termui/v3/widgets"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/grpc"
+	"io"
 	"os"
 	"strings"
 	"time"
@@ -80,18 +80,23 @@ func completer(commands cli.Commands) prompt.Completer {
 	}
 }
 
-func (mc *ManagerConsole) Cli() {
+func (mc *ManagerConsole) Cli(ctx context.Context) {
 	completer := completer(mc.cli.Commands)
 	var history []string
 	for {
-		t := prompt.Input(">>> ", completer,
-			prompt.OptionHistory(history),
-			prompt.OptionShowCompletionAtStart(),
-		)
-		if err := mc.Execute(strings.Fields(t)); err != nil {
-			_, _ = fmt.Fprintln(os.Stderr, err)
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			t := prompt.Input(">>> ", completer,
+				prompt.OptionHistory(history),
+				prompt.OptionShowCompletionAtStart(),
+			)
+			if err := mc.Execute(strings.Fields(t)); err != nil {
+				_, _ = fmt.Fprintln(os.Stderr, err)
+			}
+			history = append(history, t)
 		}
-		history = append(history, t)
 	}
 }
 
@@ -109,6 +114,7 @@ func ConfigureManagerConsole(socketPath string) (*ManagerConsole, error) {
 	}
 	app.UseShortOptionHandling = true
 	jsonFlag := &cli.BoolFlag{Name: "json", Aliases: []string{"j"}, Required: false, Usage: "echo in json format"}
+
 	app.Commands = []*cli.Command{
 		{
 			Name:    "dial_peer",
@@ -118,17 +124,7 @@ func ConfigureManagerConsole(socketPath string) (*ManagerConsole, error) {
 				&cli.StringFlag{Name: "address", Aliases: []string{"a"}, Required: true, Usage: "id@ip:port"},
 				&cli.BoolFlag{Name: "persistent", Aliases: []string{"p"}, Required: false},
 			},
-			Action: func(c *cli.Context) error {
-				_, err := client.DealPeer(context.Background(), &pb.DealPeerRequest{
-					Address:    c.String("address"),
-					Persistent: c.Bool("persistent"),
-				})
-				if err != nil {
-					return err
-				}
-				fmt.Println("OK")
-				return nil
-			},
+			Action: dealPeerCMD(client),
 		},
 		{
 			Name:    "prune_blocks",
@@ -138,42 +134,16 @@ func ConfigureManagerConsole(socketPath string) (*ManagerConsole, error) {
 				&cli.IntFlag{Name: "from", Aliases: []string{"f"}, Required: true},
 				&cli.IntFlag{Name: "to", Aliases: []string{"t"}, Required: true},
 			},
-			Action: func(c *cli.Context) error {
-				_, err := client.PruneBlocks(context.Background(), &pb.PruneBlocksRequest{
-					FromHeight: c.Int64("from"),
-					ToHeight:   c.Int64("to"),
-				})
-				if err != nil {
-					return err
-				}
-				fmt.Println("OK")
-				return nil
-			},
+			Action: pruneBlocksCMD(client),
 		},
 		{
-			Name:    "status",
+			Name:    "statusCMD",
 			Aliases: []string{"s"},
-			Usage:   "display the current status of the blockchain",
+			Usage:   "display the current statusCMD of the blockchain",
 			Flags: []cli.Flag{
 				jsonFlag,
 			},
-			Action: func(c *cli.Context) error {
-				response, err := client.Status(context.Background(), &empty.Empty{})
-				if err != nil {
-					return err
-				}
-				if c.Bool("json") {
-					bb := new(bytes.Buffer)
-					err := (&jsonpb.Marshaler{EmitDefaults: true}).Marshal(bb, response)
-					if err != nil {
-						return err
-					}
-					fmt.Println(string(bb.Bytes()))
-					return nil
-				}
-				fmt.Println(proto.MarshalTextString(response))
-				return nil
-			},
+			Action: statusCMD(client),
 		},
 		{
 			Name:    "net_info",
@@ -182,61 +152,19 @@ func ConfigureManagerConsole(socketPath string) (*ManagerConsole, error) {
 			Flags: []cli.Flag{
 				jsonFlag,
 			},
-			Action: func(c *cli.Context) error {
-				response, err := client.NetInfo(context.Background(), &empty.Empty{})
-				if err != nil {
-					return err
-				}
-				if c.Bool("json") {
-					bb := new(bytes.Buffer)
-					err := (&jsonpb.Marshaler{EmitDefaults: true}).Marshal(bb, response)
-					if err != nil {
-						return err
-					}
-					fmt.Println(string(bb.Bytes()))
-					return nil
-				}
-				fmt.Println(proto.MarshalTextString(response))
-				return nil
-			},
+			Action: netInfoCMD(client),
 		},
 		{
 			Name:    "dashboard",
 			Aliases: []string{"db"},
 			Usage:   "Show dashboard", //todo
-			Action: func(c *cli.Context) error {
-				response, err := client.Dashboard(context.Background(), &empty.Empty{})
-				if err != nil {
-					return err
-				}
-
-				if err := ui.Init(); err != nil {
-					return err
-				}
-				defer ui.Close()
-
-				p := widgets.NewParagraph()
-				p.SetRect(0, 0, 35, 5)
-				for {
-					recv, err := response.Recv()
-					if err != nil {
-						return err
-					}
-					timestamp, _ := ptypes.Timestamp(recv.Timestamp)
-					p.Text = fmt.Sprintf("Height: %d,\nTimestamp: %s,\nDuration: %f s",
-						recv.Height, timestamp.Format(time.RFC3339Nano), recv.Duration)
-					ui.Render(p)
-				}
-			},
+			Action:  dashboard(client),
 		},
 		{
 			Name:    "exit",
 			Aliases: []string{"e"},
 			Usage:   "exit",
-			Action: func(c *cli.Context) error {
-				os.Exit(0)
-				return nil
-			},
+			Action:  exit,
 		},
 	}
 
@@ -246,4 +174,134 @@ func ConfigureManagerConsole(socketPath string) (*ManagerConsole, error) {
 
 	app.Setup()
 	return NewManagerConsole(app), nil
+}
+
+func exit(_ *cli.Context) error {
+	os.Exit(0)
+	return nil
+}
+
+func dashboard(client pb.ManagerServiceClient) func(c *cli.Context) error {
+	return func(c *cli.Context) error {
+		ctx, cancel := context.WithCancel(c.Context)
+		response, err := client.Dashboard(ctx, &empty.Empty{})
+		if err != nil {
+			return err
+		}
+
+		defer cancel()
+
+		if err := ui.Init(); err != nil {
+			return err
+		}
+		defer ui.Close()
+
+		for {
+			select {
+			case <-c.Done():
+				return c.Err()
+			case <-time.After(time.Second):
+				recv, err := response.Recv()
+				if err == io.EOF {
+					return nil
+				}
+				if err != nil {
+					return err
+				}
+				ui.Render(recvToDashboard(recv)()...)
+			}
+		}
+	}
+}
+
+func recvToDashboard(recv *pb.DashboardResponse) func() []ui.Drawable {
+	p := widgets.NewParagraph()
+	p.SetRect(0, 0, 35, 8)
+	p.Text = ""
+	gauge := widgets.NewGauge()
+	gauge.Title = "Network synchronization"
+	gauge.SetRect(1, 1, 10, 10)
+
+	table1 := widgets.NewTable()
+	table1.Rows = [][]string{
+		{"header1", "header2", "header3"},
+		{"你好吗", "Go-lang is so cool", "Im working on Ruby"},
+		{"2016", "10", "11"},
+	}
+	table1.TextStyle = ui.NewStyle(ui.ColorWhite)
+	table1.SetRect(0, 0, 60, 10)
+
+	return func() (items []ui.Drawable) {
+		gauge.Percent = int(400000 / recv.Height)
+		return append(items, gauge, table1)
+	}
+}
+
+func netInfoCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
+	return func(c *cli.Context) error {
+		response, err := client.NetInfo(c.Context, &empty.Empty{})
+
+		if err != nil {
+			return err
+		}
+		if c.Bool("json") {
+			bb := new(bytes.Buffer)
+			err := (&jsonpb.Marshaler{EmitDefaults: true}).Marshal(bb, response)
+			if err != nil {
+				return err
+			}
+			fmt.Println(string(bb.Bytes()))
+			return nil
+		}
+		fmt.Println(proto.MarshalTextString(response))
+		return nil
+	}
+}
+
+func statusCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
+	return func(c *cli.Context) error {
+		response, err := client.Status(c.Context, &empty.Empty{})
+		if err != nil {
+			return err
+		}
+		if c.Bool("json") {
+			bb := new(bytes.Buffer)
+			err := (&jsonpb.Marshaler{EmitDefaults: true}).Marshal(bb, response)
+			if err != nil {
+				return err
+			}
+			fmt.Println(string(bb.Bytes()))
+			return nil
+		}
+		fmt.Println(proto.MarshalTextString(response))
+		return nil
+	}
+}
+
+func pruneBlocksCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
+	return func(c *cli.Context) error {
+		_, err := client.PruneBlocks(c.Context, &pb.PruneBlocksRequest{
+			FromHeight: c.Int64("from"),
+			ToHeight:   c.Int64("to"),
+		})
+		if err != nil {
+			return err
+		}
+		fmt.Println("OK")
+		return nil
+	}
+}
+
+func dealPeerCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
+	return func(c *cli.Context) error {
+		_, err := client.DealPeer(c.Context, &pb.DealPeerRequest{
+			Address:    c.String("address"),
+			Persistent: c.Bool("persistent"),
+		})
+		if err != nil {
+			return err
+		}
+		fmt.Println("OK")
+		return nil
+	}
 }

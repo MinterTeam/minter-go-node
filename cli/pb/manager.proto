@@ -136,6 +136,7 @@ message DashboardResponse {
     uint64 height = 1;
     google.protobuf.Timestamp timestamp = 2;
     float duration = 3;
+    uint64 mem_sys = 4;
 }
 
 service ManagerService {

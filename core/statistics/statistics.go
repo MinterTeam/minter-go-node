@@ -6,6 +6,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/tendermint/tendermint/rpc/core"
 	rpctypes "github.com/tendermint/tendermint/rpc/lib/types"
+	"net"
 	"net/http"
 	"net/http/httptrace"
 	"net/url"
@@ -13,36 +14,51 @@ import (
 	"time"
 )
 
+type ping struct {
+	duration time.Duration
+	url      string
+}
+
 func (d *Data) Statistic(ctx context.Context) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case <-time.After(time.Second * 10): //todo embedded period
+		case <-time.After(time.Second * 10):
 			state, err := core.NetInfo(&rpctypes.Context{})
 			if err != nil {
 				continue
 			}
 
 			var wg sync.WaitGroup
-			wg.Add(len(state.Peers))
-			d.Peer.Lock()
+			countPeers := len(state.Peers)
+			wg.Add(countPeers)
+			c := make(chan *ping, countPeers)
 			for _, peer := range state.Peers {
-				u := &url.URL{Scheme: "http", Host: peer.RemoteIP}
-				go func() {
+				parse, err := url.Parse(peer.NodeInfo.ListenAddr)
+				if err != nil {
+					continue
+				}
+				u := &url.URL{Scheme: "http", Host: net.JoinHostPort(peer.RemoteIP, parse.Port())}
+				go func(s string) {
 					defer wg.Done()
-					s := u.String()
 					duration, err := timeGet(s)
 					if err != nil {
 						return
 					}
-					d.SetPeerTime(duration, s)
-				}()
+					c <- &ping{
+						duration: duration,
+						url:      s,
+					}
+				}(u.String())
 			}
-			d.Peer.ping.Reset()
-			d.Peer.Unlock()
 			wg.Wait()
+			d.ResetPeersPing()
+			close(c)
+			for ping := range c {
+				d.SetPeerTime(ping.duration, ping.url)
+			}
 		}
 	}
 }
@@ -214,4 +230,15 @@ func (d *Data) GetLastBlockInfo() LastBlockInfo {
 	defer d.BlockEnd.RUnlock()
 
 	return d.BlockEnd.LastBlockInfo
+}
+
+func (d *Data) ResetPeersPing() {
+	if d == nil {
+		return
+	}
+
+	d.Peer.Lock()
+	defer d.Peer.Unlock()
+
+	d.Peer.ping.Reset()
 }

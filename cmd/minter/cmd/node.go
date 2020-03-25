@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	api_v1 "github.com/MinterTeam/minter-go-node/api"
 	api_v2 "github.com/MinterTeam/minter-go-node/api/v2"
@@ -39,7 +38,7 @@ const RequiredOpenFilesLimit = 10000
 var RunNode = &cobra.Command{
 	Use:   "node",
 	Short: "Run the Minter node",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, _ []string) error {
 		return runNode(cmd)
 	},
 }
@@ -125,7 +124,7 @@ func runNode(cmd *cobra.Command) error {
 	}
 
 	go func() {
-		err := service.StartCLIServer(utils.GetMinterHome()+"/manager.sock", service.NewManager(app, client, cfg), context.TODO())
+		err := service.StartCLIServer(utils.GetMinterHome()+"/manager.sock", service.NewManager(app, client, cfg), cmd.Context())
 		if err != nil {
 			panic(err)
 		}
@@ -133,16 +132,17 @@ func runNode(cmd *cobra.Command) error {
 
 	if cfg.Instrumentation.Prometheus {
 		data := statistics.New()
-		go app.SetStatisticData(data).Statistic(context.TODO())
+		go app.SetStatisticData(data).Statistic(cmd.Context())
 	}
-	tmos.TrapSignal(logger.With("module", "trap"), func() {
-		// Cleanup
-		node.Stop()
-		app.Stop()
-	})
 
-	// Run forever
-	select {}
+	<-cmd.Context().Done()
+
+	defer app.Stop()
+	if err := node.Stop(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func updateBlocksTimeDelta(app *minter.Blockchain, config *tmCfg.Config) {

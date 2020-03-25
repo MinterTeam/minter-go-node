@@ -12,6 +12,7 @@ import (
 	rpc "github.com/tendermint/tendermint/rpc/client"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"runtime"
 	"time"
 )
 
@@ -27,12 +28,24 @@ func NewManager(blockchain *minter.Blockchain, tmRPC *rpc.Local, cfg *config.Con
 
 func (m *Manager) Dashboard(_ *empty.Empty, stream pb.ManagerService_DashboardServer) error {
 	for {
-		info := m.blockchain.StatisticData().GetLastBlockInfo()
-		protoTime, _ := ptypes.TimestampProto(time.Unix(0, int64(info.Timestamp*1e09)))
-		if err := stream.Send(&pb.DashboardResponse{Height: info.Height, Duration: float32(info.Duration), Timestamp: protoTime}); err != nil {
-			return err
+		select {
+		case <-stream.Context().Done():
+			return stream.Context().Err()
+		default:
+			info := m.blockchain.StatisticData().GetLastBlockInfo()
+			protoTime, _ := ptypes.TimestampProto(time.Unix(0, int64(info.Timestamp*1e09)))
+			var m runtime.MemStats
+			runtime.ReadMemStats(&m)
+			if err := stream.Send(&pb.DashboardResponse{
+				Height:    info.Height,
+				Duration:  float32(info.Duration),
+				Timestamp: protoTime,
+				MemSys:    m.Sys,
+			}); err != nil {
+				return err
+			}
+			time.Sleep(time.Second)
 		}
-		time.Sleep(time.Second)
 	}
 }
 

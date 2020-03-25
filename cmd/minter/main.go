@@ -1,12 +1,20 @@
 package main
 
 import (
+	"context"
 	"github.com/MinterTeam/minter-go-node/cmd/minter/cmd"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
+	tmos "github.com/tendermint/tendermint/libs/os"
 )
 
 func main() {
 	rootCmd := cmd.RootCmd
+
+	ctx, cancelFunc := context.WithCancel(context.Background())
+
+	tmos.TrapSignal(nil /*todo*/, func() {
+		cancelFunc()
+	})
 
 	rootCmd.AddCommand(
 		cmd.RunNode,
@@ -22,7 +30,7 @@ func main() {
 	rootCmd.PersistentFlags().Bool("pprof", false, "enable pprof")
 	rootCmd.PersistentFlags().String("pprof-addr", "0.0.0.0:6060", "pprof listen addr")
 
-	if err := rootCmd.Execute(); err != nil {
+	if err := rootCmd.ExecuteContext(ctx); err != nil {
 		panic(err)
 	}
 }
