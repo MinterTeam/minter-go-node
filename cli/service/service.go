@@ -31,20 +31,32 @@ func (m *Manager) Dashboard(_ *empty.Empty, stream pb.ManagerService_DashboardSe
 		select {
 		case <-stream.Context().Done():
 			return stream.Context().Err()
-		default:
+		case <-time.After(time.Second):
 			info := m.blockchain.StatisticData().GetLastBlockInfo()
 			protoTime, _ := ptypes.TimestampProto(time.Unix(0, int64(info.Timestamp*1e09)))
-			var m runtime.MemStats
-			runtime.ReadMemStats(&m)
+			var mem runtime.MemStats
+			runtime.ReadMemStats(&mem)
+			resultStatus, err := m.tmRPC.Status()
+			if err != nil {
+				return status.Error(codes.Internal, err.Error())
+			}
+			netInfo, err := m.tmRPC.NetInfo()
+			if err != nil {
+				return status.Error(codes.Internal, err.Error())
+			}
+
 			if err := stream.Send(&pb.DashboardResponse{
-				Height:    info.Height,
-				Duration:  float32(info.Duration),
-				Timestamp: protoTime,
-				MemSys:    m.Sys,
+				CurrentHeight: info.Height,
+				Timestamp:     protoTime,
+				Duration:      float32(info.Duration),
+				Memory:        mem.Sys,
+				PubKey:        fmt.Sprintf("Mp%x", resultStatus.ValidatorInfo.PubKey.Bytes()[5:]),
+				LastHeight:    400000, //todo
+				CountPeers:    uint32(netInfo.NPeers),
+				MissedBlocks:  nil,
 			}); err != nil {
 				return err
 			}
-			time.Sleep(time.Second)
 		}
 	}
 }

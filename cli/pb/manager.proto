@@ -133,10 +133,14 @@ message DealPeerRequest {
 }
 
 message DashboardResponse {
-    uint64 height = 1;
+    uint64 current_height = 1;
     google.protobuf.Timestamp timestamp = 2;
     float duration = 3;
-    uint64 mem_sys = 4;
+    uint64 memory = 4;
+    string pub_key = 5;
+    uint64 last_height = 6;
+    uint32 count_peers = 7;
+    repeated string missed_blocks = 8;
 }
 
 service ManagerService {

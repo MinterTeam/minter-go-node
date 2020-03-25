@@ -10,6 +10,7 @@ import (
 	"github.com/gizak/termui/v3/widgets"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/grpc"
@@ -137,7 +138,7 @@ func ConfigureManagerConsole(socketPath string) (*ManagerConsole, error) {
 			Action: pruneBlocksCMD(client),
 		},
 		{
-			Name:    "statusCMD",
+			Name:    "status",
 			Aliases: []string{"s"},
 			Usage:   "display the current statusCMD of the blockchain",
 			Flags: []cli.Flag{
@@ -158,13 +159,13 @@ func ConfigureManagerConsole(socketPath string) (*ManagerConsole, error) {
 			Name:    "dashboard",
 			Aliases: []string{"db"},
 			Usage:   "Show dashboard", //todo
-			Action:  dashboard(client),
+			Action:  dashboardCMD(client),
 		},
 		{
 			Name:    "exit",
 			Aliases: []string{"e"},
 			Usage:   "exit",
-			Action:  exit,
+			Action:  exitCMD,
 		},
 	}
 
@@ -176,12 +177,12 @@ func ConfigureManagerConsole(socketPath string) (*ManagerConsole, error) {
 	return NewManagerConsole(app), nil
 }
 
-func exit(_ *cli.Context) error {
+func exitCMD(_ *cli.Context) error {
 	os.Exit(0)
 	return nil
 }
 
-func dashboard(client pb.ManagerServiceClient) func(c *cli.Context) error {
+func dashboardCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 	return func(c *cli.Context) error {
 		ctx, cancel := context.WithCancel(c.Context)
 		response, err := client.Dashboard(ctx, &empty.Empty{})
@@ -215,25 +216,34 @@ func dashboard(client pb.ManagerServiceClient) func(c *cli.Context) error {
 }
 
 func recvToDashboard(recv *pb.DashboardResponse) func() []ui.Drawable {
-	p := widgets.NewParagraph()
-	p.SetRect(0, 0, 35, 8)
-	p.Text = ""
+	pubKeyText := widgets.NewParagraph()
+	pubKeyText.Title = "Public Key Validator"
+	pubKeyText.SetRect(0, 0, 110, 3)
+
 	gauge := widgets.NewGauge()
 	gauge.Title = "Network synchronization"
-	gauge.SetRect(1, 1, 10, 10)
+	gauge.SetRect(0, 3, 40, 6)
 
 	table1 := widgets.NewTable()
 	table1.Rows = [][]string{
-		{"header1", "header2", "header3"},
-		{"你好吗", "Go-lang is so cool", "Im working on Ruby"},
-		{"2016", "10", "11"},
+		{"Height (Timestamp)", ""},
+		{"Duration block", ""},
+		{"Memory", ""},
+		{"Count peers", ""},
 	}
-	table1.TextStyle = ui.NewStyle(ui.ColorWhite)
-	table1.SetRect(0, 0, 60, 10)
+	table1.SetRect(40, 3, 110, 12)
 
 	return func() (items []ui.Drawable) {
-		gauge.Percent = int(400000 / recv.Height)
-		return append(items, gauge, table1)
+		gauge.Percent = int((float64(recv.CurrentHeight) / float64(recv.LastHeight)) * 100)
+
+		pubKeyText.Text = recv.PubKey
+
+		timestamp, _ := ptypes.Timestamp(recv.Timestamp)
+		table1.Rows[0][1] = fmt.Sprintf("%d (%s)", recv.CurrentHeight, timestamp.Format(time.RFC3339Nano))
+		table1.Rows[1][1] = fmt.Sprintf("%f", recv.Duration)
+		table1.Rows[2][1] = fmt.Sprintf("%d MB", recv.Memory/1024/1024)
+		table1.Rows[3][1] = fmt.Sprintf("%d", recv.CountPeers)
+		return append(items, gauge, pubKeyText, table1)
 	}
 }
 

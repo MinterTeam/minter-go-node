@@ -2,13 +2,10 @@ package statistics
 
 import (
 	"context"
-	"crypto/tls"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/tendermint/tendermint/rpc/core"
 	rpctypes "github.com/tendermint/tendermint/rpc/lib/types"
 	"net"
-	"net/http"
-	"net/http/httptrace"
 	"net/url"
 	"sync"
 	"time"
@@ -20,7 +17,6 @@ type ping struct {
 }
 
 func (d *Data) Statistic(ctx context.Context) {
-	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	for {
 		select {
 		case <-ctx.Done():
@@ -30,20 +26,17 @@ func (d *Data) Statistic(ctx context.Context) {
 			if err != nil {
 				continue
 			}
-
 			var wg sync.WaitGroup
-			countPeers := len(state.Peers)
-			wg.Add(countPeers)
-			c := make(chan *ping, countPeers)
+			wg.Add(state.NPeers)
+			c := make(chan *ping, state.NPeers)
 			for _, peer := range state.Peers {
 				parse, err := url.Parse(peer.NodeInfo.ListenAddr)
 				if err != nil {
 					continue
 				}
-				u := &url.URL{Scheme: "http", Host: net.JoinHostPort(peer.RemoteIP, parse.Port())}
 				go func(s string) {
 					defer wg.Done()
-					duration, err := timeGet(s)
+					duration, err := pingTCP(s)
 					if err != nil {
 						return
 					}
@@ -51,7 +44,7 @@ func (d *Data) Statistic(ctx context.Context) {
 						duration: duration,
 						url:      s,
 					}
-				}(u.String())
+				}(net.JoinHostPort(peer.RemoteIP, parse.Port()))
 			}
 			wg.Wait()
 			d.ResetPeersPing()
@@ -63,17 +56,13 @@ func (d *Data) Statistic(ctx context.Context) {
 	}
 }
 
-func timeGet(url string) (time.Duration, error) {
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return 0, err
-	}
-	req = req.WithContext(httptrace.WithClientTrace(req.Context(), &httptrace.ClientTrace{}))
+func pingTCP(url string) (time.Duration, error) {
 	start := time.Now()
-	_, err = http.DefaultTransport.RoundTrip(req)
+	conn, err := net.Dial("tcp", url)
 	if err != nil {
 		return 0, err
 	}
+	defer conn.Close()
 	return time.Since(start), nil
 }
 
