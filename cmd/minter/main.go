@@ -4,16 +4,18 @@ import (
 	"context"
 	"github.com/MinterTeam/minter-go-node/cmd/minter/cmd"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
+	"github.com/tendermint/tendermint/libs/log"
 	tmos "github.com/tendermint/tendermint/libs/os"
+	"os"
 )
 
 func main() {
 	rootCmd := cmd.RootCmd
 
-	ctx, cancelFunc := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
 
-	tmos.TrapSignal(nil /*todo*/, func() {
-		cancelFunc()
+	tmos.TrapSignal(log.NewTMLogger(os.Stdout), func() {
+		cancel()
 	})
 
 	rootCmd.AddCommand(
