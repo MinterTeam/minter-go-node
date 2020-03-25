@@ -17,6 +17,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/rlp"
+	"github.com/MinterTeam/minter-go-node/upgrades"
 	"github.com/tendermint/go-amino"
 	tmConfig "github.com/tendermint/tendermint/config"
 	log2 "github.com/tendermint/tendermint/libs/log"
@@ -385,7 +386,7 @@ FORLOOP2:
 }
 
 func TestStopNetworkByHaltBlocks(t *testing.T) {
-	haltHeight := uint64(5)
+	haltHeight := upgrades.UpgradeBlock4 + uint64(5)
 
 	v1Pubkey := [32]byte{}
 	v2Pubkey := [32]byte{}
