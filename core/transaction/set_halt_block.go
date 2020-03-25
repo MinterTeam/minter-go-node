@@ -66,7 +66,7 @@ func (data SetHaltBlockData) Run(tx *Transaction, context *state.State, isCheck 
 	if currentBlock < upgrades.UpgradeBlock4 {
 		return Response{
 			Code: code.DecodeError,
-			Log:  fmt.Sprint("Unknown transaction type"),
+			Log:  "Unknown transaction type",
 		}
 	}
 
