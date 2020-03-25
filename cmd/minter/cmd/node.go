@@ -51,12 +51,16 @@ func runNode(cmd *cobra.Command) error {
 		var rLimit syscall.Rlimit
 		err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rLimit)
 		if err != nil {
-			return err
+			panic(err)
 		}
 
 		required := RequiredOpenFilesLimit + uint64(cfg.StateMemAvailable)
 		if rLimit.Cur < required {
-			return fmt.Errorf("open files limit is too low: required %d, got %d", required, rLimit.Cur)
+			rLimit.Cur = required
+			err = syscall.Setrlimit(syscall.RLIMIT_NOFILE, &rLimit)
+			if err != nil {
+				panic(fmt.Errorf("cannot set RLIMIT_NOFILE to %d", rLimit.Cur))
+			}
 		}
 	}
 
@@ -201,10 +205,10 @@ func getGenesis() (doc *tmTypes.GenesisDoc, e error) {
 	_, err := os.Stat(genDocFile)
 	if err != nil {
 		if !os.IsNotExist(err) {
-			return nil, err
+			panic(err)
 		}
 		if err := downloadFile(genDocFile, "https://raw.githubusercontent.com/MinterTeam/minter-network-migrate/master/minter-mainnet-2/genesis.json"); err != nil {
-			return nil, err
+			panic(err)
 		}
 	}
 	return tmTypes.GenesisDocFromFile(genDocFile)
