@@ -167,7 +167,7 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.ResponseBeginBlock {
 	height := uint64(req.Header.Height)
 
-	if height >= upgrades.UpgradeBlock4 && app.isApplicationHalted(height) {
+	if app.isApplicationHalted(height) {
 		panic(fmt.Sprintf("Application halted at height %d", height))
 	}
 
@@ -647,6 +647,14 @@ func getDbOpts(memLimit int) *opt.Options {
 }
 
 func (app *Blockchain) isApplicationHalted(height uint64) bool {
+	if app.haltHeight > 0 && height >= app.haltHeight {
+		return true
+	}
+
+	if height < upgrades.UpgradeBlock4 {
+		return false
+	}
+
 	halts := app.stateDeliver.Halts.GetHaltBlocks(height)
 	if halts != nil {
 		// calculate total power of validators
