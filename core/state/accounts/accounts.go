@@ -9,7 +9,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/tree"
 	"github.com/MinterTeam/minter-go-node/upgrades"
-	"log"
 	"math/big"
 	"sort"
 	"sync"
@@ -250,43 +249,6 @@ func (a *Accounts) get(address types.Address) *Model {
 
 	a.setToMap(address, account)
 	return account
-}
-
-func (a *Accounts) getAll() []*Model {
-	_, enc := a.iavl.Get([]byte{mainPrefix})
-	if len(enc) == 0 {
-		return nil
-	}
-
-	var accounts []*Model
-	if err := rlp.DecodeBytes(enc, &accounts); err != nil {
-		log.Panicf("failed to decode accounts: %s", err)
-	}
-
-	for _, account := range accounts {
-		account.balances = map[types.CoinSymbol]*big.Int{}
-		account.markDirty = a.markDirty
-		account.dirtyBalances = map[types.CoinSymbol]struct{}{}
-
-		// load coins
-		path := []byte{mainPrefix}
-		path = append(path, account.address[:]...)
-		path = append(path, coinsPrefix)
-
-		_, enc = a.iavl.Get(path)
-		if len(enc) != 0 {
-			var coins []types.CoinSymbol
-			if err := rlp.DecodeBytes(enc, &coins); err != nil {
-				log.Panicf("failed to decode coins list at address: %s", err)
-			}
-
-			account.coins = coins
-		}
-
-		a.setToMap(account.address, account)
-	}
-
-	return accounts
 }
 
 func (a *Accounts) getOrNew(address types.Address) *Model {
