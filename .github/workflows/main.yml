@@ -11,11 +11,15 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Set envs
+        run: |
+          echo "::set-env name=VERSION::$(awk -F\\" '/Version =/ { print $2; exit }' < version/version.go)"
+
       - name: Build & Push to Docker Hub
         uses: opspresso/action-docker@master
         env:
-          USERNAME: ${{ secrets.DOCKER_HUB_USER }}
-          PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
-          IMAGE_NAME: "minterteam/minter"
-          LATEST: "true" 
-          TAG_NAME: "v1.0.5"
+          USERNAME: "${{ secrets.DOCKER_HUB_USER }}"
+          PASSWORD: "${{ secrets.DOCKER_HUB_PASSWORD }}"
+          IMAGE_NAME: "${{ secrets.DOCKER_HUB_USER }}/minter"
+          LATEST: "true"
+          TAG_NAME: "${{ env.VERSION }}"
