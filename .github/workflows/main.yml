@@ -13,7 +13,7 @@ jobs:
 
       - name: Set envs
         run: |
-          echo "::set-env name=VERSION::$(awk -F\\" '/Version =/ { print $2; exit }' < version/version.go)"
+          echo "::set-env name=VERSION::$(awk -F\\\" '/Version =/ { print $2; exit }' < version/version.go)"
 
       - name: Build & Push to Docker Hub
         uses: opspresso/action-docker@master
