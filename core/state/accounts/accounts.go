@@ -9,6 +9,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/tree"
 	"github.com/MinterTeam/minter-go-node/upgrades"
+	"log"
 	"math/big"
 	"sort"
 	"sync"
@@ -251,6 +252,43 @@ func (a *Accounts) get(address types.Address) *Model {
 	return account
 }
 
+func (a *Accounts) getAll() []*Model {
+	_, enc := a.iavl.Get([]byte{mainPrefix})
+	if len(enc) == 0 {
+		return nil
+	}
+
+	var accounts []*Model
+	if err := rlp.DecodeBytes(enc, &accounts); err != nil {
+		log.Panicf("failed to decode accounts: %s", err)
+	}
+
+	for _, account := range accounts {
+		account.balances = map[types.CoinSymbol]*big.Int{}
+		account.markDirty = a.markDirty
+		account.dirtyBalances = map[types.CoinSymbol]struct{}{}
+
+		// load coins
+		path := []byte{mainPrefix}
+		path = append(path, account.address[:]...)
+		path = append(path, coinsPrefix)
+
+		_, enc = a.iavl.Get(path)
+		if len(enc) != 0 {
+			var coins []types.CoinSymbol
+			if err := rlp.DecodeBytes(enc, &coins); err != nil {
+				log.Panicf("failed to decode coins list at address: %s", err)
+			}
+
+			account.coins = coins
+		}
+
+		a.setToMap(account.address, account)
+	}
+
+	return accounts
+}
+
 func (a *Accounts) getOrNew(address types.Address) *Model {
 	account := a.get(address)
 	if account == nil {
@@ -278,7 +316,7 @@ func (a *Accounts) GetNonce(address types.Address) uint64 {
 func (a *Accounts) GetBalances(address types.Address) map[types.CoinSymbol]*big.Int {
 	account := a.getOrNew(address)
 
-	balances := map[types.CoinSymbol]*big.Int{}
+	balances := make(map[types.CoinSymbol]*big.Int, len(account.coins))
 	for _, coin := range account.coins {
 		balances[coin] = a.GetBalance(address, coin)
 	}
@@ -304,7 +342,13 @@ func (a *Accounts) Export(state *types.AppState) {
 	// todo: iterate range?
 	a.iavl.Iterate(func(key []byte, value []byte) bool {
 		if key[0] == mainPrefix {
-			account := a.get(types.BytesToAddress(key[1:]))
+			addressPath := key[1:]
+			if len(addressPath) > types.AddressLength {
+				return false
+			}
+
+			address := types.BytesToAddress(addressPath)
+			account := a.get(address)
 
 			var balance []types.Balance
 			for coin, value := range a.GetBalances(account.address) {
@@ -313,6 +357,11 @@ func (a *Accounts) Export(state *types.AppState) {
 					Value: value.String(),
 				})
 			}
+
+			// sort balances by coin symbol
+			sort.SliceStable(balance, func(i, j int) bool {
+				return bytes.Compare(balance[i].Coin.Bytes(), balance[j].Coin.Bytes()) == 1
+			})
 
 			acc := types.Account{
 				Address: account.address,
@@ -332,6 +381,11 @@ func (a *Accounts) Export(state *types.AppState) {
 		}
 
 		return false
+	})
+
+	// sort accounts by address
+	sort.SliceStable(state.Accounts, func(i, j int) bool {
+		return bytes.Compare(state.Accounts[i].Address.Bytes(), state.Accounts[j].Address.Bytes()) == 1
 	})
 }
 
