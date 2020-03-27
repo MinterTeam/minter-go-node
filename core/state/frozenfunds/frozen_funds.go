@@ -191,6 +191,7 @@ func (f *FrozenFunds) Export(state *types.AppState, height uint64) {
 		if frozenFunds == nil {
 			continue
 		}
+
 		for _, frozenFund := range frozenFunds.List {
 			state.FrozenFunds = append(state.FrozenFunds, types.FrozenFund{
 				Height:       i,

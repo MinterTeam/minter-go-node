@@ -165,8 +165,8 @@ func (c *Candidates) Create(ownerAddress types.Address, rewardAddress types.Addr
 		isDirty:           true,
 		isTotalStakeDirty: true,
 	}
-	candidate.setTmAddress()
 
+	candidate.setTmAddress()
 	c.setToMap(pubkey, candidate)
 }
 
@@ -840,9 +840,13 @@ func (c *Candidates) SetStakes(pubkey types.Pubkey, stakes []types.Stake) {
 }
 
 func (c *Candidates) Export(state *types.AppState) {
+	c.LoadCandidates()
+	c.LoadStakes()
+
 	candidates := c.GetCandidates()
 	for _, candidate := range candidates {
 		var stakes []types.Stake
+
 		for _, s := range c.GetStakes(candidate.PubKey) {
 			stakes = append(stakes, types.Stake{
 				Owner:    s.Owner,
