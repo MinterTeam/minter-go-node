@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.6
+
+IMPROVEMENT
+
+- [export] Added export command
+- [db] Update IAVL to v0.13.2
+
 ## 1.1.5
 
 IMPROVEMENT
