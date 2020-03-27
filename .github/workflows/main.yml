@@ -1,6 +1,9 @@
 name: docker
 
-on: push
+on:
+  push:
+    branches:
+      - master
 
 jobs:
   docker:
@@ -23,3 +26,5 @@ jobs:
           IMAGE_NAME: "${{ secrets.DOCKER_HUB_USER }}/minter"
           LATEST: "true"
           TAG_NAME: "${{ env.VERSION }}"
+        # for future
+        # if: github.ref == 'refs/heads/master'
