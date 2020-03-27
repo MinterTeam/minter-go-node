@@ -200,7 +200,12 @@ func (c *Coins) Export(state *types.AppState) {
 	// todo: iterate range?
 	c.iavl.Iterate(func(key []byte, value []byte) bool {
 		if key[0] == mainPrefix {
-			coin := c.GetCoin(types.StrToCoinSymbol(string(key[1:])))
+			if len(key[1:]) > types.CoinSymbolLength {
+				return false
+			}
+
+			coinSymbol := types.StrToCoinSymbol(string(key[1:]))
+			coin := c.GetCoin(coinSymbol)
 
 			state.Coins = append(state.Coins, types.Coin{
 				Name:      coin.Name(),

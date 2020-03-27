@@ -141,11 +141,15 @@ func (v *Validators) PunishByzantineValidator(tmAddress [20]byte) {
 
 func (v *Validators) Create(pubkey types.Pubkey, stake *big.Int) {
 	val := &Validator{
-		PubKey:      pubkey,
-		AbsentTimes: types.NewBitArray(ValidatorMaxAbsentWindow),
-		totalStake:  stake,
-		accumReward: big.NewInt(0),
+		PubKey:             pubkey,
+		AbsentTimes:        types.NewBitArray(ValidatorMaxAbsentWindow),
+		totalStake:         stake,
+		accumReward:        big.NewInt(0),
+		isDirty:            true,
+		isTotalStakeDirty:  true,
+		isAccumRewardDirty: true,
 	}
+
 	val.setTmAddress()
 	v.list = append(v.list, val)
 }
@@ -322,8 +326,9 @@ func (v *Validators) SetValidators(vals []*Validator) {
 }
 
 func (v *Validators) Export(state *types.AppState) {
-	vals := v.GetValidators()
-	for _, val := range vals {
+	v.LoadValidators()
+
+	for _, val := range v.GetValidators() {
 		state.Validators = append(state.Validators, types.Validator{
 			TotalBipStake: val.GetTotalBipStake().String(),
 			PubKey:        val.PubKey,

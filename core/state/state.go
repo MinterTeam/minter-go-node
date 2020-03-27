@@ -17,6 +17,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/tree"
 	db "github.com/tendermint/tm-db"
+	"log"
 	"math/big"
 	"sync"
 )
@@ -206,19 +207,19 @@ func (s *State) Import(state types.AppState) error {
 func (s *State) Export(height uint64) types.AppState {
 	state, err := NewCheckStateAtHeight(height, s.db)
 	if err != nil {
-		panic(err)
+		log.Panicf("Create new state at height %d failed: %s", height, err)
 	}
-	appState := types.AppState{}
 
-	state.App.Export(&appState, height)
-	state.Validators.Export(&appState)
-	state.Candidates.Export(&appState)
-	state.FrozenFunds.Export(&appState, height)
-	state.Accounts.Export(&appState)
-	state.Coins.Export(&appState)
-	state.Checks.Export(&appState)
+	appState := new(types.AppState)
+	state.App.Export(appState, height)
+	state.Validators.Export(appState)
+	state.Candidates.Export(appState)
+	state.FrozenFunds.Export(appState, height)
+	state.Accounts.Export(appState)
+	state.Coins.Export(appState)
+	state.Checks.Export(appState)
 
-	return appState
+	return *appState
 }
 
 func newStateForTree(iavlTree tree.Tree, events eventsdb.IEventsDB, db db.DB, keepLastStates int64) (*State, error) {
