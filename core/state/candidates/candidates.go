@@ -841,6 +841,7 @@ func (c *Candidates) SetStakes(pubkey types.Pubkey, stakes []types.Stake) {
 
 func (c *Candidates) Export(state *types.AppState) {
 	c.LoadCandidates()
+	c.LoadStakes()
 
 	candidates := c.GetCandidates()
 	for _, candidate := range candidates {

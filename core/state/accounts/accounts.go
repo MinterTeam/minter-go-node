@@ -344,11 +344,6 @@ func (a *Accounts) Export(state *types.AppState) {
 
 		return false
 	})
-
-	// sort accounts by address
-	sort.SliceStable(state.Accounts, func(i, j int) bool {
-		return bytes.Compare(state.Accounts[i].Address.Bytes(), state.Accounts[j].Address.Bytes()) == 1
-	})
 }
 
 func (a *Accounts) GetAccount(address types.Address) *Model {
