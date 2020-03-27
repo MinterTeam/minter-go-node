@@ -169,7 +169,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 		panic(fmt.Sprintf("Application halted at height %d", height))
 	}
 
-	app.StatisticData().SetStartBlock(height, time.Now(), req.Header.Time)
+	go app.StatisticData().SetStartBlock(height, time.Now(), req.Header.Time)
 
 	if upgrades.IsUpgradeBlock(height) {
 		var err error
@@ -373,7 +373,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 		}
 	}
 
-	defer func() { app.StatisticData().SetEndBlockDuration(time.Now(), app.height) }()
+	go app.StatisticData().SetEndBlockDuration(time.Now(), app.height)
 
 	return abciTypes.ResponseEndBlock{
 		ValidatorUpdates: updates,

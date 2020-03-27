@@ -226,23 +226,26 @@ func recvToDashboard(recv *pb.DashboardResponse) func() []ui.Drawable {
 
 	table1 := widgets.NewTable()
 	table1.Rows = [][]string{
-		{"Height (Timestamp)", ""},
+		{"Height (HeaderTimestamp)", ""},
 		{"Duration block", ""},
 		{"Memory", ""},
 		{"Count peers", ""},
+		{"Average block processing speed", ""},
 	}
-	table1.SetRect(40, 3, 110, 12)
+	table1.SetRect(40, 3, 110, 14)
 
 	return func() (items []ui.Drawable) {
 		gauge.Percent = int((float64(recv.CurrentHeight) / float64(recv.LastHeight)) * 100)
-
+		gauge.Title += fmt.Sprintf(" (%d%%)", gauge.Percent)
+		gauge.Label = fmt.Sprintf("%s", time.Duration(float32(recv.LastHeight-recv.CurrentHeight)*recv.AverageTimeBlock).Truncate(time.Second).String())
 		pubKeyText.Text = recv.PubKey
 
 		timestamp, _ := ptypes.Timestamp(recv.Timestamp)
 		table1.Rows[0][1] = fmt.Sprintf("%d (%s)", recv.CurrentHeight, timestamp.Format(time.RFC3339Nano))
-		table1.Rows[1][1] = fmt.Sprintf("%f", recv.Duration)
+		table1.Rows[1][1] = fmt.Sprintf("%f sec", time.Duration(recv.Duration).Seconds())
 		table1.Rows[2][1] = fmt.Sprintf("%d MB", recv.Memory/1024/1024)
 		table1.Rows[3][1] = fmt.Sprintf("%d", recv.CountPeers)
+		table1.Rows[4][1] = fmt.Sprintf("%f sec", time.Duration(recv.AverageTimeBlock).Seconds())
 		return append(items, gauge, pubKeyText, table1)
 	}
 }

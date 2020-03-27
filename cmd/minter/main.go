@@ -14,7 +14,7 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	tmos.TrapSignal(log.NewTMLogger(os.Stdout), func() {
+	tmos.TrapSignal(log.NewTMLogger(os.Stdout).With("module", "consensus"), func() {
 		cancel()
 	})
 

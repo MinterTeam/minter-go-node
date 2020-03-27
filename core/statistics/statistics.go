@@ -58,7 +58,7 @@ func (d *Data) Statistic(ctx context.Context) {
 
 func pingTCP(url string) (time.Duration, error) {
 	start := time.Now()
-	conn, err := net.Dial("tcp", url)
+	conn, err := net.DialTimeout("tcp", url, 5*time.Second)
 	if err != nil {
 		return 0, err
 	}
@@ -69,20 +69,27 @@ func pingTCP(url string) (time.Duration, error) {
 type Data struct {
 	BlockStart struct {
 		sync.RWMutex
-		height    uint64
-		time      time.Time
-		timestamp float64
+		height          uint64
+		time            time.Time
+		headerTimestamp time.Time
 	}
 	BlockEnd blockEnd
+
+	Speed struct {
+		sync.RWMutex
+		startTime   time.Time
+		startHeight uint64
+		duration    int64
+	}
 
 	Api  apiResponseTime
 	Peer peerPing
 }
 
 type LastBlockInfo struct {
-	Height    uint64
-	Duration  float64
-	Timestamp float64
+	Height          uint64
+	Duration        int64
+	HeaderTimestamp time.Time
 }
 
 type blockEnd struct {
@@ -92,10 +99,12 @@ type blockEnd struct {
 	TimestampProm prometheus.Gauge
 	LastBlockInfo LastBlockInfo
 }
+
 type apiResponseTime struct {
 	sync.Mutex
 	responseTime *prometheus.GaugeVec
 }
+
 type peerPing struct {
 	sync.Mutex
 	ping *prometheus.GaugeVec
@@ -157,7 +166,7 @@ func (d *Data) SetStartBlock(height uint64, now time.Time, headerTime time.Time)
 
 	d.BlockStart.height = height
 	d.BlockStart.time = now
-	d.BlockStart.timestamp = float64(headerTime.UnixNano() / 1e09)
+	d.BlockStart.headerTimestamp = headerTime
 }
 
 func (d *Data) SetEndBlockDuration(timeEnd time.Time, height uint64) {
@@ -165,25 +174,46 @@ func (d *Data) SetEndBlockDuration(timeEnd time.Time, height uint64) {
 		return
 	}
 
-	d.BlockStart.RLock()
-	defer d.BlockStart.RUnlock()
-
-	if height == d.BlockStart.height {
-		d.BlockEnd.Lock()
-		defer d.BlockEnd.Unlock()
-
-		durationSeconds := timeEnd.Sub(d.BlockStart.time).Seconds()
-
-		d.BlockEnd.HeightProm.Set(float64(height))
-		d.BlockEnd.DurationProm.Set(durationSeconds)
-		d.BlockEnd.TimestampProm.Set(d.BlockStart.timestamp)
-
-		d.BlockEnd.LastBlockInfo.Height = height
-		d.BlockEnd.LastBlockInfo.Duration = durationSeconds
-		d.BlockEnd.LastBlockInfo.Timestamp = d.BlockStart.timestamp
-
+	if height != d.BlockStart.height {
 		return
 	}
+
+	d.BlockStart.RLock()
+	blockStartTime := d.BlockStart.time
+	d.BlockStart.RUnlock()
+
+	duration := timeEnd.Sub(blockStartTime)
+
+	d.BlockEnd.Lock()
+	{
+		d.BlockEnd.HeightProm.Set(float64(height))
+		d.BlockEnd.DurationProm.Set(duration.Seconds())
+		d.BlockEnd.TimestampProm.Set(float64(d.BlockStart.headerTimestamp.UnixNano()))
+
+		d.BlockEnd.LastBlockInfo.Height = height
+		d.BlockEnd.LastBlockInfo.Duration = duration.Nanoseconds()
+		d.BlockEnd.LastBlockInfo.HeaderTimestamp = d.BlockStart.headerTimestamp
+	}
+	d.BlockEnd.Unlock()
+
+	d.Speed.Lock()
+	defer d.Speed.Unlock()
+
+	if time.Since(d.Speed.startTime) < 24*time.Hour {
+		d.Speed.duration += duration.Nanoseconds()
+		return
+	}
+
+	if d.Speed.startHeight == 0 {
+		d.Speed.startTime = time.Now()
+		d.Speed.startHeight = height
+		d.Speed.duration = duration.Nanoseconds()
+		return
+	}
+
+	d.Speed.startTime = time.Now().Add(-12 * time.Hour)
+	d.Speed.startHeight = height - (height-d.Speed.startHeight)/2
+	d.Speed.duration = d.Speed.duration/2 + duration.Nanoseconds()
 
 	return
 }
@@ -208,6 +238,20 @@ func (d *Data) SetPeerTime(duration time.Duration, network string) {
 	defer d.Peer.Unlock()
 
 	d.Peer.ping.With(prometheus.Labels{"network": network}).Set(duration.Seconds())
+}
+
+func (d *Data) GetAverageTimeBlock() int64 {
+	if d == nil {
+		return 0
+	}
+
+	d.Speed.RLock()
+	defer d.Speed.RUnlock()
+
+	d.BlockEnd.RLock()
+	defer d.BlockEnd.RUnlock()
+
+	return d.Speed.duration / int64(d.BlockEnd.LastBlockInfo.Height-d.Speed.startHeight)
 }
 
 func (d *Data) GetLastBlockInfo() LastBlockInfo {

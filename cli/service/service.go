@@ -32,8 +32,10 @@ func (m *Manager) Dashboard(_ *empty.Empty, stream pb.ManagerService_DashboardSe
 		case <-stream.Context().Done():
 			return stream.Context().Err()
 		case <-time.After(time.Second):
-			info := m.blockchain.StatisticData().GetLastBlockInfo()
-			protoTime, _ := ptypes.TimestampProto(time.Unix(0, int64(info.Timestamp*1e09)))
+			statisticData := m.blockchain.StatisticData()
+			info := statisticData.GetLastBlockInfo()
+			speed := statisticData.GetAverageTimeBlock()
+			protoTime, _ := ptypes.TimestampProto(info.HeaderTimestamp)
 			var mem runtime.MemStats
 			runtime.ReadMemStats(&mem)
 			resultStatus, err := m.tmRPC.Status()
@@ -45,15 +47,18 @@ func (m *Manager) Dashboard(_ *empty.Empty, stream pb.ManagerService_DashboardSe
 				return status.Error(codes.Internal, err.Error())
 			}
 
+			maxPeersHeight := uint64(400000) //todo
+
 			if err := stream.Send(&pb.DashboardResponse{
-				CurrentHeight: info.Height,
-				Timestamp:     protoTime,
-				Duration:      float32(info.Duration),
-				Memory:        mem.Sys,
-				PubKey:        fmt.Sprintf("Mp%x", resultStatus.ValidatorInfo.PubKey.Bytes()[5:]),
-				LastHeight:    400000, //todo
-				CountPeers:    uint32(netInfo.NPeers),
-				MissedBlocks:  nil,
+				CurrentHeight:    info.Height,
+				Timestamp:        protoTime,
+				Duration:         info.Duration,
+				Memory:           mem.Sys,
+				PubKey:           fmt.Sprintf("Mp%x", resultStatus.ValidatorInfo.PubKey.Bytes()[5:]),
+				LastHeight:       maxPeersHeight,
+				CountPeers:       uint32(netInfo.NPeers),
+				AverageTimeBlock: float32(speed),
+				MissedBlocks:     nil,
 			}); err != nil {
 				return err
 			}
