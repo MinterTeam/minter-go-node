@@ -34,7 +34,8 @@ func (m *Manager) Dashboard(_ *empty.Empty, stream pb.ManagerService_DashboardSe
 		case <-time.After(time.Second):
 			statisticData := m.blockchain.StatisticData()
 			info := statisticData.GetLastBlockInfo()
-			speed := statisticData.GetAverageTimeBlock()
+			averageTimeBlock := statisticData.GetAverageBlockProcessingTime()
+			timePerBlock := statisticData.GetTimePerBlock()
 			maxPeersHeight := m.blockchain.MaxPeerHeight()
 			protoTime, _ := ptypes.TimestampProto(info.HeaderTimestamp)
 			var mem runtime.MemStats
@@ -49,15 +50,15 @@ func (m *Manager) Dashboard(_ *empty.Empty, stream pb.ManagerService_DashboardSe
 			}
 
 			if err := stream.Send(&pb.DashboardResponse{
-				CurrentHeight:    info.Height,
-				Timestamp:        protoTime,
-				Duration:         info.Duration,
-				Memory:           mem.Sys,
-				PubKey:           fmt.Sprintf("Mp%x", resultStatus.ValidatorInfo.PubKey.Bytes()[5:]),
-				LastHeight:       maxPeersHeight,
-				CountPeers:       uint32(netInfo.NPeers),
-				AverageTimeBlock: float32(speed),
-				MissedBlocks:     nil,
+				LatestHeight:           info.Height,
+				Timestamp:              protoTime,
+				Duration:               info.Duration,
+				MemoryUsage:            mem.Sys,
+				ValidatorPubKey:        fmt.Sprintf("Mp%x", resultStatus.ValidatorInfo.PubKey.Bytes()[5:]),
+				MaxPeerHeight:          maxPeersHeight,
+				PeersCount:             int32(netInfo.NPeers),
+				AvgBlockProcessingTime: averageTimeBlock,
+				TimePerBlock:           timePerBlock,
 			}); err != nil {
 				return err
 			}

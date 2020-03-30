@@ -69,7 +69,7 @@ func pingTCP(url string) (time.Duration, error) {
 type Data struct {
 	BlockStart struct {
 		sync.RWMutex
-		height          uint64
+		height          int64
 		time            time.Time
 		headerTimestamp time.Time
 	}
@@ -77,9 +77,12 @@ type Data struct {
 
 	Speed struct {
 		sync.RWMutex
-		startTime   time.Time
-		startHeight uint64
-		duration    int64
+		startTime         time.Time
+		startHeight       int64
+		duration          int64
+		timerMin          <-chan time.Time
+		blocksCountPerMin int64
+		avgTimePerBlock   int64
 	}
 
 	Api  apiResponseTime
@@ -87,7 +90,7 @@ type Data struct {
 }
 
 type LastBlockInfo struct {
-	Height          uint64
+	Height          int64
 	Duration        int64
 	HeaderTimestamp time.Time
 }
@@ -156,7 +159,7 @@ func New() *Data {
 	}
 }
 
-func (d *Data) SetStartBlock(height uint64, now time.Time, headerTime time.Time) {
+func (d *Data) SetStartBlock(height int64, now time.Time, headerTime time.Time) {
 	if d == nil {
 		return
 	}
@@ -169,7 +172,7 @@ func (d *Data) SetStartBlock(height uint64, now time.Time, headerTime time.Time)
 	d.BlockStart.headerTimestamp = headerTime
 }
 
-func (d *Data) SetEndBlockDuration(timeEnd time.Time, height uint64) {
+func (d *Data) SetEndBlockDuration(timeEnd time.Time, height int64) {
 	if d == nil {
 		return
 	}
@@ -199,6 +202,16 @@ func (d *Data) SetEndBlockDuration(timeEnd time.Time, height uint64) {
 	d.Speed.Lock()
 	defer d.Speed.Unlock()
 
+	min := time.Minute
+	select {
+	case <-d.Speed.timerMin:
+		d.Speed.avgTimePerBlock = int64(min) / d.Speed.blocksCountPerMin
+		d.Speed.timerMin = time.After(min)
+		d.Speed.blocksCountPerMin = 1
+	default:
+		d.Speed.blocksCountPerMin++
+	}
+
 	if time.Since(d.Speed.startTime) < 24*time.Hour {
 		d.Speed.duration += duration.Nanoseconds()
 		return
@@ -208,6 +221,7 @@ func (d *Data) SetEndBlockDuration(timeEnd time.Time, height uint64) {
 		d.Speed.startTime = time.Now()
 		d.Speed.startHeight = height
 		d.Speed.duration = duration.Nanoseconds()
+		d.Speed.timerMin = time.After(min)
 		return
 	}
 
@@ -240,7 +254,7 @@ func (d *Data) SetPeerTime(duration time.Duration, network string) {
 	d.Peer.ping.With(prometheus.Labels{"network": network}).Set(duration.Seconds())
 }
 
-func (d *Data) GetAverageTimeBlock() int64 {
+func (d *Data) GetAverageBlockProcessingTime() int64 {
 	if d == nil {
 		return 0
 	}
@@ -251,7 +265,18 @@ func (d *Data) GetAverageTimeBlock() int64 {
 	d.BlockEnd.RLock()
 	defer d.BlockEnd.RUnlock()
 
-	return d.Speed.duration / int64(d.BlockEnd.LastBlockInfo.Height-d.Speed.startHeight)
+	return d.Speed.duration / (d.BlockEnd.LastBlockInfo.Height - d.Speed.startHeight)
+}
+
+func (d *Data) GetTimePerBlock() int64 {
+	if d == nil {
+		return 0
+	}
+
+	d.Speed.RLock()
+	defer d.Speed.RUnlock()
+
+	return d.Speed.avgTimePerBlock
 }
 
 func (d *Data) GetLastBlockInfo() LastBlockInfo {

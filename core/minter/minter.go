@@ -166,7 +166,7 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.ResponseBeginBlock {
 	height := uint64(req.Header.Height)
 
-	go app.StatisticData().SetStartBlock(height, time.Now(), req.Header.Time)
+	go app.StatisticData().SetStartBlock(int64(height), time.Now(), req.Header.Time)
 
 	if app.haltHeight > 0 && height >= app.haltHeight {
 		panic(fmt.Sprintf("Application halted at height %d", height))
@@ -374,7 +374,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 		}
 	}
 
-	defer func() { go app.StatisticData().SetEndBlockDuration(time.Now(), app.height) }()
+	defer func() { go app.StatisticData().SetEndBlockDuration(time.Now(), int64(app.height)) }()
 
 	return abciTypes.ResponseEndBlock{
 		ValidatorUpdates: updates,
@@ -628,7 +628,7 @@ func (app *Blockchain) StatisticData() *statistics.Data {
 	return app.statisticData
 }
 
-func (app *Blockchain) MaxPeerHeight() uint64 {
+func (app *Blockchain) MaxPeerHeight() int64 {
 	var max int64
 	for _, peer := range app.tmNode.Switch().Peers().List() {
 		height := peer.Get(types2.PeerStateKey).(evidence.PeerState).GetHeight()
@@ -636,7 +636,7 @@ func (app *Blockchain) MaxPeerHeight() uint64 {
 			max = height
 		}
 	}
-	return uint64(max)
+	return max
 }
 
 func getDbOpts(memLimit int) *opt.Options {

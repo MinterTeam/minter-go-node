@@ -133,16 +133,17 @@ message DealPeerRequest {
 }
 
 message DashboardResponse {
-    uint64 current_height = 1;
+    int64 latest_height = 1;
     google.protobuf.Timestamp timestamp = 2;
     int64 duration = 3;
-    uint64 memory = 4;
-    string pub_key = 5;
-    uint64 last_height = 6;
-    uint32 count_peers = 7;
-    float average_time_block = 8;
-    repeated string missed_blocks = 10;
-
+    uint64 memory_usage = 4;
+    string validator_pub_key = 5;
+    int64 max_peer_height = 6;
+    int32 peers_count = 7;
+    int64 avg_block_processing_time = 8;
+    int64 time_per_block = 9;
+    reserved 10;
+    reserved "missed_blocks";
 }
 
 service ManagerService {

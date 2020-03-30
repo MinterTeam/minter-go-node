@@ -217,7 +217,7 @@ func dashboardCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 
 func recvToDashboard(recv *pb.DashboardResponse) func() []ui.Drawable {
 	pubKeyText := widgets.NewParagraph()
-	pubKeyText.Title = "Public Key Validator"
+	pubKeyText.Title = "Validator's Pubkey"
 	pubKeyText.SetRect(0, 0, 110, 3)
 
 	gauge := widgets.NewGauge()
@@ -226,28 +226,28 @@ func recvToDashboard(recv *pb.DashboardResponse) func() []ui.Drawable {
 
 	table1 := widgets.NewTable()
 	table1.Rows = [][]string{
-		{"Height (HeaderTimestamp)", ""},
-		{"Duration block", ""},
-		{"Memory", ""},
-		{"Count peers", ""},
-		{"Average block processing speed", ""},
+		{"Latest Block Height", ""},
+		{"Latest Block Time", ""},
+		{"Block Processing Time (avg)", ""},
+		{"Memory Usage", ""},
+		{"Peers Count", ""},
 		{"Max Peer Height", ""},
 	}
 	table1.SetRect(40, 3, 110, 16)
 
 	return func() (items []ui.Drawable) {
-		gauge.Percent = int((float64(recv.CurrentHeight) / float64(recv.LastHeight)) * 100)
+		gauge.Percent = int((float64(recv.LatestHeight) / float64(recv.MaxPeerHeight)) * 100)
 		gauge.Title += fmt.Sprintf(" (%d%%)", gauge.Percent)
-		gauge.Label = fmt.Sprintf("%s", time.Duration(float32(recv.LastHeight-recv.CurrentHeight)*recv.AverageTimeBlock).Truncate(time.Second).String())
-		pubKeyText.Text = recv.PubKey
+		gauge.Label = fmt.Sprintf("%s", time.Duration((recv.MaxPeerHeight-recv.LatestHeight)*recv.TimePerBlock).Truncate(time.Second).String())
+		pubKeyText.Text = recv.ValidatorPubKey
 
 		timestamp, _ := ptypes.Timestamp(recv.Timestamp)
-		table1.Rows[0][1] = fmt.Sprintf("%d (%s)", recv.CurrentHeight, timestamp.Format(time.RFC3339Nano))
-		table1.Rows[1][1] = fmt.Sprintf("%f sec", time.Duration(recv.Duration).Seconds())
-		table1.Rows[2][1] = fmt.Sprintf("%d MB", recv.Memory/1024/1024)
-		table1.Rows[3][1] = fmt.Sprintf("%d", recv.CountPeers)
-		table1.Rows[4][1] = fmt.Sprintf("%f sec", time.Duration(recv.AverageTimeBlock).Seconds())
-		table1.Rows[5][1] = fmt.Sprintf("%d", recv.LastHeight)
+		table1.Rows[0][1] = fmt.Sprintf("%d", recv.LatestHeight)
+		table1.Rows[1][1] = timestamp.Format(time.RFC3339Nano)
+		table1.Rows[2][1] = fmt.Sprintf("%f sec, (%f sec)", time.Duration(recv.Duration).Seconds(), time.Duration(recv.AvgBlockProcessingTime).Seconds())
+		table1.Rows[3][1] = fmt.Sprintf("%d MB", recv.MemoryUsage/1024/1024)
+		table1.Rows[4][1] = fmt.Sprintf("%d", recv.PeersCount)
+		table1.Rows[5][1] = fmt.Sprintf("%d", recv.MaxPeerHeight)
 		return append(items, gauge, pubKeyText, table1)
 	}
 }
