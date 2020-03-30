@@ -32,7 +32,7 @@ jobs:
       - name: Start docker container
         run: docker run -d --name $CONTAINER_NAME -p $API_RUN_PORT:8841 ${{ secrets.DOCKER_HUB_USER }}/minter:${{ env.VERSION }}
 
-      - name: Check container is still running (after $CONTAINER_TIMEOUT_SEC seconds)
+      - name: Check container is still running
         run: |
           echo ::set-env name=RUN_TEST_RESULT::$(sleep $CONTAINER_TIMEOUT_SEC && if [[ $(docker inspect -f "{{.State.Running}}" $CONTAINER_NAME 2> /dev/null) == true ]]; then echo OK; else echo FAIL; fi;)
 
