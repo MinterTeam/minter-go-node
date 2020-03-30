@@ -187,7 +187,7 @@ func (s *State) Import(state types.AppState) error {
 		}
 
 		s.Candidates.SetTotalStake(c.PubKey, helpers.StringToBigInt(c.TotalBipStake))
-		s.Candidates.SetStakes(c.PubKey, c.Stakes)
+		s.Candidates.SetStakes(c.PubKey, c.Stakes, c.Updates)
 	}
 
 	for _, hashString := range state.UsedChecks {
