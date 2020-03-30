@@ -23,6 +23,7 @@ import (
 	abciTypes "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	cryptoAmino "github.com/tendermint/tendermint/crypto/encoding/amino"
+	"github.com/tendermint/tendermint/evidence"
 	tmNode "github.com/tendermint/tendermint/node"
 	rpctypes "github.com/tendermint/tendermint/rpc/lib/types"
 	types2 "github.com/tendermint/tendermint/types"
@@ -165,11 +166,11 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.ResponseBeginBlock {
 	height := uint64(req.Header.Height)
 
+	go app.StatisticData().SetStartBlock(height, time.Now(), req.Header.Time)
+
 	if app.haltHeight > 0 && height >= app.haltHeight {
 		panic(fmt.Sprintf("Application halted at height %d", height))
 	}
-
-	go app.StatisticData().SetStartBlock(height, time.Now(), req.Header.Time)
 
 	if upgrades.IsUpgradeBlock(height) {
 		var err error
@@ -373,7 +374,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 		}
 	}
 
-	go app.StatisticData().SetEndBlockDuration(time.Now(), app.height)
+	defer func() { go app.StatisticData().SetEndBlockDuration(time.Now(), app.height) }()
 
 	return abciTypes.ResponseEndBlock{
 		ValidatorUpdates: updates,
@@ -625,6 +626,17 @@ func (app *Blockchain) SetStatisticData(statisticData *statistics.Data) *statist
 
 func (app *Blockchain) StatisticData() *statistics.Data {
 	return app.statisticData
+}
+
+func (app *Blockchain) MaxPeerHeight() uint64 {
+	var max int64
+	for _, peer := range app.tmNode.Switch().Peers().List() {
+		height := peer.Get(types2.PeerStateKey).(evidence.PeerState).GetHeight()
+		if height > max {
+			max = height
+		}
+	}
+	return uint64(max)
 }
 
 func getDbOpts(memLimit int) *opt.Options {

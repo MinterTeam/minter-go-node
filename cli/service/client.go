@@ -231,8 +231,9 @@ func recvToDashboard(recv *pb.DashboardResponse) func() []ui.Drawable {
 		{"Memory", ""},
 		{"Count peers", ""},
 		{"Average block processing speed", ""},
+		{"Max Peer Height", ""},
 	}
-	table1.SetRect(40, 3, 110, 14)
+	table1.SetRect(40, 3, 110, 16)
 
 	return func() (items []ui.Drawable) {
 		gauge.Percent = int((float64(recv.CurrentHeight) / float64(recv.LastHeight)) * 100)
@@ -246,6 +247,7 @@ func recvToDashboard(recv *pb.DashboardResponse) func() []ui.Drawable {
 		table1.Rows[2][1] = fmt.Sprintf("%d MB", recv.Memory/1024/1024)
 		table1.Rows[3][1] = fmt.Sprintf("%d", recv.CountPeers)
 		table1.Rows[4][1] = fmt.Sprintf("%f sec", time.Duration(recv.AverageTimeBlock).Seconds())
+		table1.Rows[5][1] = fmt.Sprintf("%d", recv.LastHeight)
 		return append(items, gauge, pubKeyText, table1)
 	}
 }

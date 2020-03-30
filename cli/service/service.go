@@ -35,6 +35,7 @@ func (m *Manager) Dashboard(_ *empty.Empty, stream pb.ManagerService_DashboardSe
 			statisticData := m.blockchain.StatisticData()
 			info := statisticData.GetLastBlockInfo()
 			speed := statisticData.GetAverageTimeBlock()
+			maxPeersHeight := m.blockchain.MaxPeerHeight()
 			protoTime, _ := ptypes.TimestampProto(info.HeaderTimestamp)
 			var mem runtime.MemStats
 			runtime.ReadMemStats(&mem)
@@ -46,8 +47,6 @@ func (m *Manager) Dashboard(_ *empty.Empty, stream pb.ManagerService_DashboardSe
 			if err != nil {
 				return status.Error(codes.Internal, err.Error())
 			}
-
-			maxPeersHeight := uint64(400000) //todo
 
 			if err := stream.Send(&pb.DashboardResponse{
 				CurrentHeight:    info.Height,
