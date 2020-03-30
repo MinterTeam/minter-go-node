@@ -845,15 +845,25 @@ func (c *Candidates) Export(state *types.AppState) {
 
 	candidates := c.GetCandidates()
 	for _, candidate := range candidates {
-		var stakes []types.Stake
-
-		for _, s := range c.GetStakes(candidate.PubKey) {
-			stakes = append(stakes, types.Stake{
+		candidateStakes := c.GetStakes(candidate.PubKey)
+		stakes := make([]types.Stake, len(candidateStakes))
+		for i, s := range candidateStakes {
+			stakes[i] = types.Stake{
 				Owner:    s.Owner,
 				Coin:     s.Coin,
 				Value:    s.Value.String(),
 				BipValue: s.BipValue.String(),
-			})
+			}
+		}
+
+		updates := make([]types.Stake, len(candidate.updates))
+		for i, u := range candidate.updates {
+			updates[i] = types.Stake{
+				Owner:    u.Owner,
+				Coin:     u.Coin,
+				Value:    u.Value.String(),
+				BipValue: u.BipValue.String(),
+			}
 		}
 
 		state.Candidates = append(state.Candidates, types.Candidate{
@@ -862,8 +872,9 @@ func (c *Candidates) Export(state *types.AppState) {
 			TotalBipStake: candidate.GetTotalBipStake().String(),
 			PubKey:        candidate.PubKey,
 			Commission:    candidate.Commission,
-			Stakes:        stakes,
 			Status:        candidate.Status,
+			Updates:       updates,
+			Stakes:        stakes,
 		})
 	}
 
