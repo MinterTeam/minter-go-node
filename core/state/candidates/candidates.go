@@ -808,33 +808,31 @@ func (c *Candidates) Punish(height uint64, address types.TmAddress) *big.Int {
 	return totalStake
 }
 
-func (c *Candidates) SetStakes(pubkey types.Pubkey, stakes []types.Stake) {
+func (c *Candidates) SetStakes(pubkey types.Pubkey, stakes []types.Stake, updates []types.Stake) {
 	candidate := c.GetCandidate(pubkey)
 	candidate.stakesCount = len(stakes)
-	if candidate.stakesCount > MaxDelegatorsPerCandidate {
-		candidate.stakesCount = MaxDelegatorsPerCandidate
-		for i := MaxDelegatorsPerCandidate; i < len(stakes); i++ {
-			stake := stakes[i]
-			candidate.addUpdate(&Stake{
-				Owner:    stake.Owner,
-				Coin:     stake.Coin,
-				Value:    helpers.StringToBigInt(stake.Value),
-				BipValue: helpers.StringToBigInt(stake.BipValue),
-			})
-		}
+
+	for _, u := range updates {
+		candidate.addUpdate(&Stake{
+			Owner:    u.Owner,
+			Coin:     u.Coin,
+			Value:    helpers.StringToBigInt(u.Value),
+			BipValue: helpers.StringToBigInt(u.BipValue),
+		})
 	}
-	for i := 0; i < candidate.stakesCount; i++ {
-		stake := stakes[i]
+
+	for i, s := range stakes {
 		candidate.stakes[i] = &Stake{
-			Owner:    stake.Owner,
-			Coin:     stake.Coin,
-			Value:    helpers.StringToBigInt(stake.Value),
-			BipValue: helpers.StringToBigInt(stake.BipValue),
-			index:    i,
+			Owner:    s.Owner,
+			Coin:     s.Coin,
+			Value:    helpers.StringToBigInt(s.Value),
+			BipValue: helpers.StringToBigInt(s.BipValue),
 			markDirty: func(index int) {
 				candidate.dirtyStakes[index] = true
 			},
+			index: i,
 		}
+
 		candidate.stakes[i].markDirty(i)
 	}
 }
