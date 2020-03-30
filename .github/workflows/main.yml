@@ -5,8 +5,16 @@ on:
     branches:
       - master
 
+  pull_request:
+    branches:
+      - master
+
 jobs:
   docker:
+    env:
+      CONTAINER_NAME: minter_node
+      CONTAINER_TIMEOUT_SEC: 10
+      API_RUN_PORT: 8841
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -18,13 +26,22 @@ jobs:
         run: |
           echo "::set-env name=VERSION::$(awk -F\\\" '/Version =/ { print $2; exit }' < version/version.go)"
 
-      - name: Build & Push to Docker Hub
-        uses: opspresso/action-docker@master
-        env:
-          USERNAME: "${{ secrets.DOCKER_HUB_USER }}"
-          PASSWORD: "${{ secrets.DOCKER_HUB_PASSWORD }}"
-          IMAGE_NAME: "${{ secrets.DOCKER_HUB_USER }}/minter"
-          LATEST: "true"
-          TAG_NAME: "${{ env.VERSION }}"
-        # for future
-        # if: github.ref == 'refs/heads/master'
+      - name: Docker build
+        run: docker build -t ${{ secrets.DOCKER_HUB_USER }}/minter:${{ env.VERSION }} .
+
+      - name: Start docker container
+        run: docker run -d --name $CONTAINER_NAME -p $API_RUN_PORT:8841 ${{ secrets.DOCKER_HUB_USER }}/minter:${{ env.VERSION }}
+
+      - name: Check container is still running
+        run: sleep $CONTAINER_TIMEOUT_SEC && docker inspect -f '{{.State.Running}}' $CONTAINER_NAME
+
+      - name: Check api is available by HTTP (response code is 200)
+        run: if [[ $(curl -LIs localhost:$API_RUN_PORT -o /dev/null -w '%{http_code}') == 200 ]]; then echo OK; else exit 1; fi
+
+      - name: Docker push versioned image
+        run: docker push ${{ secrets.DOCKER_HUB_USER }}/minter:${{ env.VERSION }}
+        if: github.ref == 'refs/heads/master'
+
+      - name: Docker push latest image
+        run: docker push ${{ secrets.DOCKER_HUB_USER }}/minter:latest
+        if: github.ref == 'refs/heads/master'
