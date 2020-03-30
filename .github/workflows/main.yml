@@ -24,7 +24,7 @@ jobs:
 
       - name: Set envs
         run: |
-          echo "::set-env name=VERSION::$(awk -F\\\" '/Version =/ { print $2; exit }' < version/version.go)"
+          echo ::set-env name=VERSION::$(awk -F\" '/Version =/ { print $2; exit }' < version/version.go)
 
       - name: Docker build
         run: docker build -t ${{ secrets.DOCKER_HUB_USER }}/minter:${{ env.VERSION }} .
@@ -32,11 +32,22 @@ jobs:
       - name: Start docker container
         run: docker run -d --name $CONTAINER_NAME -p $API_RUN_PORT:8841 ${{ secrets.DOCKER_HUB_USER }}/minter:${{ env.VERSION }}
 
-      - name: Check container is still running
-        run: sleep $CONTAINER_TIMEOUT_SEC && docker inspect -f '{{.State.Running}}' $CONTAINER_NAME
+      - name: Check container is still running (after $CONTAINER_TIMEOUT_SEC seconds)
+        run: |
+          echo ::set-env name=RUN_TEST_RESULT::$(sleep $CONTAINER_TIMEOUT_SEC && if [[ $(docker inspect -f "{{.State.Running}}" $CONTAINER_NAME 2> /dev/null) == true ]]; then echo OK; else echo FAIL; fi;)
 
       - name: Check api is available by HTTP (response code is 200)
-        run: if [[ $(curl -LIs localhost:$API_RUN_PORT -o /dev/null -w '%{http_code}') == 200 ]]; then echo OK; else exit 1; fi
+        run: |
+          echo ::set-env name=API_TEST_RESULT::$(if [[ $(curl -LIs localhost:$API_RUN_PORT -o /dev/null -w '%{http_code}') == 200 ]]; then echo OK; else echo FAIL; fi)
+
+      - name: Print test results
+        run: |
+          echo $RUN_TEST_RESULT
+          echo $API_TEST_RESULT
+
+      - name: Tests fail
+        run: docker logs $CONTAINER_NAME && exit 1
+        if: ${{ env.RUN_TEST_RESULT }} == 'FAIL' || ${{ env.API_TEST_RESULT }} == 'FAIL'
 
       - name: Docker push versioned image
         run: docker push ${{ secrets.DOCKER_HUB_USER }}/minter:${{ env.VERSION }}
