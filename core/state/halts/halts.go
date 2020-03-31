@@ -39,13 +39,13 @@ func NewHalts(stateBus *bus.Bus, iavl tree.Tree) (*HaltBlocks, error) {
 func (hb *HaltBlocks) Commit() error {
 	dirty := hb.getOrderedDirty()
 	for _, height := range dirty {
-		ff := hb.getFromMap(height)
+		haltBlock := hb.getFromMap(height)
 
 		hb.lock.Lock()
 		delete(hb.dirty, height)
 		hb.lock.Unlock()
 
-		data, err := rlp.EncodeToBytes(ff)
+		data, err := rlp.EncodeToBytes(haltBlock)
 		if err != nil {
 			return fmt.Errorf("can't encode object at %d: %v", height, err)
 		}
