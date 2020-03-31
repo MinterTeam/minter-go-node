@@ -7,6 +7,7 @@ import (
 	rpctypes "github.com/tendermint/tendermint/rpc/lib/types"
 	"net"
 	"net/url"
+	"runtime"
 	"sync"
 	"time"
 )
@@ -164,6 +165,14 @@ func (d *Data) SetStartBlock(height int64, now time.Time, headerTime time.Time) 
 		return
 	}
 
+	var ok bool
+	for !ok {
+		d.BlockStart.RLock()
+		ok = (height == d.BlockStart.height+1) || 0 == d.BlockStart.height
+		d.BlockStart.RUnlock()
+		runtime.Gosched()
+	}
+
 	d.BlockStart.Lock()
 	defer d.BlockStart.Unlock()
 
@@ -177,8 +186,14 @@ func (d *Data) SetEndBlockDuration(timeEnd time.Time, height int64) {
 		return
 	}
 
-	if height != d.BlockStart.height {
-		return
+	var ok bool
+	for !ok {
+		d.BlockStart.RLock()
+		d.BlockEnd.RLock()
+		ok = height == d.BlockStart.height
+		d.BlockEnd.RUnlock()
+		d.BlockStart.RUnlock()
+		runtime.Gosched()
 	}
 
 	d.BlockStart.RLock()
