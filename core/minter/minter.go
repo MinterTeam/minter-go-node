@@ -195,6 +195,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 	app.rewards = big.NewInt(0)
 
 	// clear absent candidates
+	app.lock.Lock()
 	app.validatorsStatuses = map[types.TmAddress]int8{}
 
 	// give penalty to absent validators
@@ -210,6 +211,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 			app.validatorsStatuses[address] = ValidatorAbsent
 		}
 	}
+	app.lock.Unlock()
 
 	// give penalty to Byzantine validators
 	for _, byzVal := range req.ByzantineValidators {
@@ -275,7 +277,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 	totalPower := big.NewInt(0)
 	for _, val := range vals {
 		// skip if candidate is not present
-		if val.IsToDrop() || app.validatorsStatuses[val.GetAddress()] != ValidatorPresent {
+		if val.IsToDrop() || app.GetValidatorStatus(val.GetAddress()) != ValidatorPresent {
 			continue
 		}
 
@@ -296,7 +298,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 
 	for i, val := range vals {
 		// skip if candidate is not present
-		if val.IsToDrop() || app.validatorsStatuses[val.GetAddress()] != ValidatorPresent {
+		if val.IsToDrop() || app.GetValidatorStatus(val.GetAddress()) != ValidatorPresent {
 			continue
 		}
 
@@ -662,6 +664,8 @@ func (app *Blockchain) StatisticData() *statistics.Data {
 }
 
 func (app *Blockchain) GetValidatorStatus(address types.TmAddress) int8 {
+	app.lock.RLock()
+	defer app.lock.RUnlock()
 	return app.validatorsStatuses[address]
 }
 func (app *Blockchain) MaxPeerHeight() int64 {
