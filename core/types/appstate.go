@@ -214,6 +214,7 @@ type Candidate struct {
 	PubKey        Pubkey  `json:"pub_key"`
 	Commission    uint    `json:"commission"`
 	Stakes        []Stake `json:"stakes"`
+	Updates       []Stake `json:"updates"`
 	Status        byte    `json:"status"`
 }
 
