@@ -237,12 +237,18 @@ func recvToDashboard(recv *pb.DashboardResponse) func() []ui.Drawable {
 
 	validatorTable := widgets.NewTable()
 	validatorTable.Rows = [][]string{
-		{"Validator Status", ""},
-		{"Stake", ""},
-		{"Voting Power", ""},
-		{"Missed Blocks", ""},
+		{"Validator Status", recv.ValidatorStatus.String()},
 	}
-	validatorTable.SetRect(0, 6, 39, 16)
+	validatorTable.SetRect(0, 6, 39, 9)
+
+	if recv.ValidatorStatus != pb.DashboardResponse_NotDeclared {
+		validatorTable.Rows = append(validatorTable.Rows, [][]string{
+			{"Stake", ""},
+			{"Voting Power", ""},
+			{"Missed Blocks", ""},
+		}...)
+		validatorTable.SetRect(0, 6, 39, 16)
+	}
 
 	return func() (items []ui.Drawable) {
 		gauge.Percent = int((float64(recv.LatestHeight) / float64(recv.MaxPeerHeight)) * 100)
@@ -259,10 +265,12 @@ func recvToDashboard(recv *pb.DashboardResponse) func() []ui.Drawable {
 		commonTable.Rows[4][1] = fmt.Sprintf("%d", recv.PeersCount)
 		commonTable.Rows[5][1] = fmt.Sprintf("%d", recv.MaxPeerHeight)
 
-		validatorTable.Rows[0][1] = recv.ValidatorStatus.String()
-		validatorTable.Rows[1][1] = recv.Stake
-		validatorTable.Rows[2][1] = fmt.Sprintf("%d", recv.VotingPower)
-		validatorTable.Rows[3][1] = recv.MissedBlocks
+		if recv.ValidatorStatus != pb.DashboardResponse_NotDeclared {
+			validatorTable.Rows[1][1] = recv.Stake
+			validatorTable.Rows[2][1] = fmt.Sprintf("%d", recv.VotingPower)
+			validatorTable.Rows[3][1] = recv.MissedBlocks
+		}
+
 		return append(items, gauge, pubKeyText, commonTable, validatorTable)
 	}
 }

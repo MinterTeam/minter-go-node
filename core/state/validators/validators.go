@@ -252,6 +252,16 @@ func (v *Validators) GetByTmAddress(address types.TmAddress) *Validator {
 	return nil
 }
 
+func (v *Validators) GetByPublicKey(pubKey types.Pubkey) *Validator {
+	for _, val := range v.list {
+		if val.PubKey == pubKey {
+			return val
+		}
+	}
+
+	return nil
+}
+
 func (v *Validators) LoadValidators() {
 	if v.loaded {
 		return

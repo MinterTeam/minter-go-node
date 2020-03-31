@@ -2,7 +2,6 @@ package minter
 
 import (
 	"bytes"
-	"encoding/hex"
 	"fmt"
 	eventsdb "github.com/MinterTeam/events-db"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
@@ -33,6 +32,7 @@ import (
 	"google.golang.org/grpc/status"
 	"math/big"
 	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -514,13 +514,10 @@ func (app *Blockchain) GetStateForHeight(height uint64) (*state.State, error) {
 }
 
 func (app *Blockchain) MissedBlocks(pubKey string, height uint64) (missedBlocks string, missedBlocksCount int, err error) {
-	if len(pubKey) < 3 {
-		return "", 0, status.Error(codes.InvalidArgument, "invalid public_key")
+	if !strings.HasPrefix(pubKey, "Mp") {
+		return "", 0, status.Error(codes.InvalidArgument, "public key don't has prefix 'Mp'")
 	}
-	decodePubKey, err := hex.DecodeString(pubKey[2:])
-	if err != nil {
-		return "", 0, status.Error(codes.InvalidArgument, err.Error())
-	}
+
 	cState, err := blockchain.GetStateForHeight(height)
 	if err != nil {
 		return "", 0, status.Error(codes.NotFound, err.Error())
@@ -535,10 +532,7 @@ func (app *Blockchain) MissedBlocks(pubKey string, height uint64) (missedBlocks 
 	cState.RLock()
 	defer cState.RUnlock()
 
-	var address types.TmAddress
-	copy(address[:], decodePubKey)
-
-	val := cState.Validators.GetByTmAddress(address)
+	val := cState.Validators.GetByPublicKey(types.HexToPubkey(pubKey))
 	if val == nil {
 		return "", 0, status.Error(codes.NotFound, "Validator not found")
 	}

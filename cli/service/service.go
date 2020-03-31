@@ -62,13 +62,17 @@ func (m *Manager) Dashboard(_ *empty.Empty, stream pb.ManagerService_DashboardSe
 			validator := state.Validators.GetByTmAddress(address)
 			validatorStatus := m.blockchain.GetValidatorStatus(address)
 
-			pbValidatorStatus := pb.DashboardResponse_Offline
+			var pbValidatorStatus pb.DashboardResponse_ValidatorStatus
 
-			if validator != nil && validatorStatus == minter.ValidatorAbsent {
+			switch true {
+			case validator != nil && validatorStatus == minter.ValidatorAbsent:
 				pbValidatorStatus = pb.DashboardResponse_Validating
-			}
-			if validator == nil && validatorStatus == minter.ValidatorAbsent {
+			case validator == nil && validatorStatus == minter.ValidatorAbsent:
 				pbValidatorStatus = pb.DashboardResponse_Challenger
+			case validator == nil && validatorStatus == minter.ValidatorPresent:
+				pbValidatorStatus = pb.DashboardResponse_Offline
+			default:
+				pbValidatorStatus = pb.DashboardResponse_NotDeclared
 			}
 
 			var missedBlocks string

@@ -149,6 +149,7 @@ message DashboardResponse {
         Validating = 0;
         Challenger = 1;
         Offline = 2;
+        NotDeclared = 3;
     }
     ValidatorStatus validator_status = 13;
 }
