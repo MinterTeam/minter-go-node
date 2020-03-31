@@ -142,8 +142,15 @@ message DashboardResponse {
     int32 peers_count = 7;
     int64 avg_block_processing_time = 8;
     int64 time_per_block = 9;
-    reserved 10;
-    reserved "missed_blocks";
+    string missed_blocks = 10;
+    int64 voting_power = 11;
+    string stake = 12;
+    enum ValidatorStatus {
+        Validating = 0;
+        Challenger = 1;
+        Offline = 2;
+    }
+    ValidatorStatus validator_status = 13;
 }
 
 service ManagerService {

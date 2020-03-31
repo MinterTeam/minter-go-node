@@ -224,8 +224,8 @@ func recvToDashboard(recv *pb.DashboardResponse) func() []ui.Drawable {
 	gauge.Title = "Network synchronization"
 	gauge.SetRect(0, 3, 40, 6)
 
-	table1 := widgets.NewTable()
-	table1.Rows = [][]string{
+	commonTable := widgets.NewTable()
+	commonTable.Rows = [][]string{
 		{"Latest Block Height", ""},
 		{"Latest Block Time", ""},
 		{"Block Processing Time (avg)", ""},
@@ -233,22 +233,37 @@ func recvToDashboard(recv *pb.DashboardResponse) func() []ui.Drawable {
 		{"Peers Count", ""},
 		{"Max Peer Height", ""},
 	}
-	table1.SetRect(40, 3, 110, 16)
+	commonTable.SetRect(40, 3, 110, 16)
+
+	validatorTable := widgets.NewTable()
+	validatorTable.Rows = [][]string{
+		{"Validator Status", ""},
+		{"Stake", ""},
+		{"Voting Power", ""},
+		{"Missed Blocks", ""},
+	}
+	validatorTable.SetRect(0, 6, 39, 16)
 
 	return func() (items []ui.Drawable) {
 		gauge.Percent = int((float64(recv.LatestHeight) / float64(recv.MaxPeerHeight)) * 100)
 		gauge.Title += fmt.Sprintf(" (%d%%)", gauge.Percent)
 		gauge.Label = fmt.Sprintf("%s", time.Duration((recv.MaxPeerHeight-recv.LatestHeight)*recv.TimePerBlock).Truncate(time.Second).String())
+
 		pubKeyText.Text = recv.ValidatorPubKey
 
 		timestamp, _ := ptypes.Timestamp(recv.Timestamp)
-		table1.Rows[0][1] = fmt.Sprintf("%d", recv.LatestHeight)
-		table1.Rows[1][1] = timestamp.Format(time.RFC3339Nano)
-		table1.Rows[2][1] = fmt.Sprintf("%f sec, (%f sec)", time.Duration(recv.Duration).Seconds(), time.Duration(recv.AvgBlockProcessingTime).Seconds())
-		table1.Rows[3][1] = fmt.Sprintf("%d MB", recv.MemoryUsage/1024/1024)
-		table1.Rows[4][1] = fmt.Sprintf("%d", recv.PeersCount)
-		table1.Rows[5][1] = fmt.Sprintf("%d", recv.MaxPeerHeight)
-		return append(items, gauge, pubKeyText, table1)
+		commonTable.Rows[0][1] = fmt.Sprintf("%d", recv.LatestHeight)
+		commonTable.Rows[1][1] = timestamp.Format(time.RFC3339Nano)
+		commonTable.Rows[2][1] = fmt.Sprintf("%f sec, (%f sec)", time.Duration(recv.Duration).Seconds(), time.Duration(recv.AvgBlockProcessingTime).Seconds())
+		commonTable.Rows[3][1] = fmt.Sprintf("%d MB", recv.MemoryUsage/1024/1024)
+		commonTable.Rows[4][1] = fmt.Sprintf("%d", recv.PeersCount)
+		commonTable.Rows[5][1] = fmt.Sprintf("%d", recv.MaxPeerHeight)
+
+		validatorTable.Rows[0][1] = recv.ValidatorStatus.String()
+		validatorTable.Rows[1][1] = recv.Stake
+		validatorTable.Rows[2][1] = fmt.Sprintf("%d", recv.VotingPower)
+		validatorTable.Rows[3][1] = recv.MissedBlocks
+		return append(items, gauge, pubKeyText, commonTable, validatorTable)
 	}
 }
 

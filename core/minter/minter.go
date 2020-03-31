@@ -2,6 +2,7 @@ package minter
 
 import (
 	"bytes"
+	"encoding/hex"
 	"fmt"
 	eventsdb "github.com/MinterTeam/events-db"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
@@ -28,6 +29,8 @@ import (
 	rpctypes "github.com/tendermint/tendermint/rpc/lib/types"
 	types2 "github.com/tendermint/tendermint/types"
 	"github.com/tendermint/tm-db"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"math/big"
 	"sort"
 	"sync"
@@ -500,12 +503,48 @@ func (app *Blockchain) GetStateForHeight(height uint64) (*state.State, error) {
 	app.lock.RLock()
 	defer app.lock.RUnlock()
 
-	s, err := state.NewCheckStateAtHeight(height, app.stateDB)
+	if height != 0 {
+		s, err := state.NewCheckStateAtHeight(height, app.stateDB)
+		if err != nil {
+			return nil, rpctypes.RPCError{Code: 404, Message: "State at given height not found", Data: err.Error()}
+		}
+		return s, nil
+	}
+	return blockchain.CurrentState(), nil
+}
+
+func (app *Blockchain) MissedBlocks(pubKey string, height uint64) (missedBlocks string, missedBlocksCount int, err error) {
+	if len(pubKey) < 3 {
+		return "", 0, status.Error(codes.InvalidArgument, "invalid public_key")
+	}
+	decodePubKey, err := hex.DecodeString(pubKey[2:])
 	if err != nil {
-		return nil, rpctypes.RPCError{Code: 404, Message: "State at given height not found", Data: err.Error()}
+		return "", 0, status.Error(codes.InvalidArgument, err.Error())
+	}
+	cState, err := blockchain.GetStateForHeight(height)
+	if err != nil {
+		return "", 0, status.Error(codes.NotFound, err.Error())
 	}
 
-	return s, nil
+	if height != 0 {
+		cState.Lock()
+		cState.Validators.LoadValidators()
+		cState.Unlock()
+	}
+
+	cState.RLock()
+	defer cState.RUnlock()
+
+	var address types.TmAddress
+	copy(address[:], decodePubKey)
+
+	val := cState.Validators.GetByTmAddress(address)
+	if val == nil {
+		return "", 0, status.Error(codes.NotFound, "Validator not found")
+	}
+
+	return val.AbsentTimes.String(), val.CountAbsentTimes(), nil
+
 }
 
 // Get current height of Minter Blockchain
@@ -628,6 +667,9 @@ func (app *Blockchain) StatisticData() *statistics.Data {
 	return app.statisticData
 }
 
+func (app *Blockchain) GetValidatorStatus(address types.TmAddress) int8 {
+	return app.validatorsStatuses[address]
+}
 func (app *Blockchain) MaxPeerHeight() int64 {
 	var max int64
 	for _, peer := range app.tmNode.Switch().Peers().List() {

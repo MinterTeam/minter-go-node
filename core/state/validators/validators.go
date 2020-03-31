@@ -74,7 +74,7 @@ func (v *Validators) Commit() error {
 }
 
 func (v *Validators) SetValidatorPresent(height uint64, address types.TmAddress) {
-	validator := v.getByTmAddress(address)
+	validator := v.GetByTmAddress(address)
 	if validator == nil {
 		return
 	}
@@ -82,7 +82,7 @@ func (v *Validators) SetValidatorPresent(height uint64, address types.TmAddress)
 }
 
 func (v *Validators) SetValidatorAbsent(height uint64, address types.TmAddress) {
-	validator := v.getByTmAddress(address)
+	validator := v.GetByTmAddress(address)
 	if validator == nil {
 		return
 	}
@@ -133,7 +133,7 @@ func (v *Validators) SetNewValidators(candidates []candidates.Candidate) {
 }
 
 func (v *Validators) PunishByzantineValidator(tmAddress [20]byte) {
-	validator := v.getByTmAddress(tmAddress)
+	validator := v.GetByTmAddress(tmAddress)
 	validator.SetTotalBipStake(big.NewInt(0))
 	validator.toDrop = true
 	validator.isDirty = true
@@ -242,7 +242,7 @@ func (v *Validators) PayRewards(height uint64) {
 	}
 }
 
-func (v *Validators) getByTmAddress(address types.TmAddress) *Validator {
+func (v *Validators) GetByTmAddress(address types.TmAddress) *Validator {
 	for _, val := range v.list {
 		if val.tmAddress == address {
 			return val
@@ -315,7 +315,7 @@ func (v *Validators) uncheckDirtyValidators() {
 }
 
 func (v *Validators) punishValidator(height uint64, tmAddress types.TmAddress) {
-	validator := v.getByTmAddress(tmAddress)
+	validator := v.GetByTmAddress(tmAddress)
 
 	totalStake := v.bus.Candidates().Punish(height, tmAddress)
 	validator.SetTotalBipStake(totalStake)
@@ -348,7 +348,7 @@ func (v *Validators) SetToDrop(pubkey types.Pubkey) {
 }
 
 func (v *Validators) turnValidatorOff(tmAddress types.TmAddress) {
-	validator := v.getByTmAddress(tmAddress)
+	validator := v.GetByTmAddress(tmAddress)
 	validator.AbsentTimes = types.NewBitArray(ValidatorMaxAbsentWindow)
 	validator.toDrop = true
 	validator.isDirty = true

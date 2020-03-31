@@ -6,6 +6,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/cli/pb"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/minter"
+	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/version"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/empty"
@@ -32,6 +33,7 @@ func (m *Manager) Dashboard(_ *empty.Empty, stream pb.ManagerService_DashboardSe
 		case <-stream.Context().Done():
 			return stream.Context().Err()
 		case <-time.After(time.Second):
+
 			statisticData := m.blockchain.StatisticData()
 			info := statisticData.GetLastBlockInfo()
 			averageTimeBlock := statisticData.GetAverageBlockProcessingTime()
@@ -48,17 +50,48 @@ func (m *Manager) Dashboard(_ *empty.Empty, stream pb.ManagerService_DashboardSe
 			if err != nil {
 				return status.Error(codes.Internal, err.Error())
 			}
+			pubKey := fmt.Sprintf("Mp%x", resultStatus.ValidatorInfo.PubKey.Bytes()[5:])
+
+			state, err := m.blockchain.GetStateForHeight(0)
+			if err != nil {
+				return status.Error(codes.NotFound, err.Error())
+			}
+
+			var address types.TmAddress
+			copy(address[:], resultStatus.ValidatorInfo.Address)
+			validator := state.Validators.GetByTmAddress(address)
+			validatorStatus := m.blockchain.GetValidatorStatus(address)
+
+			pbValidatorStatus := pb.DashboardResponse_Offline
+
+			if validator != nil && validatorStatus == minter.ValidatorAbsent {
+				pbValidatorStatus = pb.DashboardResponse_Validating
+			}
+			if validator == nil && validatorStatus == minter.ValidatorAbsent {
+				pbValidatorStatus = pb.DashboardResponse_Challenger
+			}
+
+			var missedBlocks string
+			var stake string
+			if pbValidatorStatus == pb.DashboardResponse_Validating {
+				missedBlocks = validator.AbsentTimes.String()
+				stake = validator.GetTotalBipStake().String()
+			}
 
 			if err := stream.Send(&pb.DashboardResponse{
 				LatestHeight:           info.Height,
 				Timestamp:              protoTime,
 				Duration:               info.Duration,
 				MemoryUsage:            mem.Sys,
-				ValidatorPubKey:        fmt.Sprintf("Mp%x", resultStatus.ValidatorInfo.PubKey.Bytes()[5:]),
+				ValidatorPubKey:        pubKey,
 				MaxPeerHeight:          maxPeersHeight,
 				PeersCount:             int32(netInfo.NPeers),
 				AvgBlockProcessingTime: averageTimeBlock,
 				TimePerBlock:           timePerBlock,
+				MissedBlocks:           missedBlocks,
+				Stake:                  stake,
+				VotingPower:            resultStatus.ValidatorInfo.VotingPower,
+				ValidatorStatus:        pbValidatorStatus,
 			}); err != nil {
 				return err
 			}
@@ -107,7 +140,7 @@ func (m *Manager) Status(context.Context, *empty.Empty) (*pb.StatusResponse, err
 			ValidatorInfo: &pb.StatusResponse_TmStatus_ValidatorInfo{
 				Address: fmt.Sprintf("%X", resultStatus.ValidatorInfo.Address),
 				PubKey: &pb.StatusResponse_TmStatus_ValidatorInfo_PubKey{
-					Type:  "", //todo
+					Type:  "tendermint/PubKeyEd25519",
 					Value: fmt.Sprintf("%X", resultStatus.ValidatorInfo.PubKey.Bytes()),
 				},
 				VotingPower: resultStatus.ValidatorInfo.VotingPower,
