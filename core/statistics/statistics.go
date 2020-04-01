@@ -165,11 +165,13 @@ func (d *Data) SetStartBlock(height int64, now time.Time, headerTime time.Time) 
 		return
 	}
 
-	var ok bool
-	for !ok {
+	for {
 		d.BlockStart.RLock()
-		ok = (height == d.BlockStart.height+1) || 0 == d.BlockStart.height
+		ok := (height == d.BlockStart.height+1) || 0 == d.BlockStart.height
 		d.BlockStart.RUnlock()
+		if ok {
+			break
+		}
 		runtime.Gosched()
 	}
 
@@ -186,33 +188,33 @@ func (d *Data) SetEndBlockDuration(timeEnd time.Time, height int64) {
 		return
 	}
 
-	var ok bool
-	for !ok {
+	for {
 		d.BlockStart.RLock()
 		d.BlockEnd.RLock()
-		ok = height == d.BlockStart.height
+		ok := height == d.BlockStart.height
 		d.BlockEnd.RUnlock()
 		d.BlockStart.RUnlock()
+		if ok {
+			break
+		}
 		runtime.Gosched()
 	}
 
-	d.BlockStart.RLock()
-	blockStartTime := d.BlockStart.time
-	d.BlockStart.RUnlock()
+	d.BlockStart.Lock()
+	defer d.BlockStart.Unlock()
 
-	duration := timeEnd.Sub(blockStartTime)
+	duration := timeEnd.Sub(d.BlockStart.time)
 
 	d.BlockEnd.Lock()
-	{
-		d.BlockEnd.HeightProm.Set(float64(height))
-		d.BlockEnd.DurationProm.Set(duration.Seconds())
-		d.BlockEnd.TimestampProm.Set(float64(d.BlockStart.headerTimestamp.UnixNano()))
+	defer d.BlockEnd.Unlock()
 
-		d.BlockEnd.LastBlockInfo.Height = height
-		d.BlockEnd.LastBlockInfo.Duration = duration.Nanoseconds()
-		d.BlockEnd.LastBlockInfo.HeaderTimestamp = d.BlockStart.headerTimestamp
-	}
-	d.BlockEnd.Unlock()
+	d.BlockEnd.HeightProm.Set(float64(height))
+	d.BlockEnd.DurationProm.Set(duration.Seconds())
+	d.BlockEnd.TimestampProm.Set(float64(d.BlockStart.headerTimestamp.UnixNano()))
+
+	d.BlockEnd.LastBlockInfo.Height = height
+	d.BlockEnd.LastBlockInfo.Duration = duration.Nanoseconds()
+	d.BlockEnd.LastBlockInfo.HeaderTimestamp = d.BlockStart.headerTimestamp
 
 	d.Speed.Lock()
 	defer d.Speed.Unlock()
