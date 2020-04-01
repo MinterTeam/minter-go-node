@@ -253,8 +253,10 @@ func recvToDashboard(recv *pb.DashboardResponse) func() []ui.Drawable {
 	return func() (items []ui.Drawable) {
 		gauge.Percent = int((float64(recv.LatestHeight) / float64(recv.MaxPeerHeight)) * 100)
 		gauge.Title += fmt.Sprintf(" (%d%%)", gauge.Percent)
-		gauge.Label = fmt.Sprintf("%s", time.Duration((recv.MaxPeerHeight-recv.LatestHeight)*recv.TimePerBlock).Truncate(time.Second).String())
-
+		gauge.Label = "Timing..."
+		if recv.TimePerBlock != 0 {
+			gauge.Label = fmt.Sprintf("%s", time.Duration((recv.MaxPeerHeight-recv.LatestHeight)*recv.TimePerBlock).Truncate(time.Second).String())
+		}
 		pubKeyText.Text = recv.ValidatorPubKey
 
 		timestamp, _ := ptypes.Timestamp(recv.Timestamp)
