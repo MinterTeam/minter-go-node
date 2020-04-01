@@ -11,7 +11,8 @@ import (
 )
 
 func (s *Service) Events(_ context.Context, req *pb.EventsRequest) (*pb.EventsResponse, error) {
-	events := s.blockchain.GetEventsDB().LoadEvents(req.Height)
+	height := uint32(req.Height)
+	events := s.blockchain.GetEventsDB().LoadEvents(height)
 	resultEvents := make([]*pb.EventsResponse_Event, 0, len(events))
 	for _, event := range events {
 		byteData, err := json.Marshal(event)
