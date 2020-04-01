@@ -39,10 +39,15 @@ You can get official installation instructions in our [docs](https://docs.minter
 - [Documentation](https://docs.minter.network)
 - [Official site](https://minter.network)
 - [About Minter Blockchain](https://about.minter.network)
-- [Minter Console](https://testnet.console.minter.network)
+- [Minter Console](https://console.minter.network)
 - [Minter Explorer](https://explorer.minter.network/)
 - [Telegram Bot Wallet](https://t.me/BipWallet_Bot)
 - [Android Wallet](https://play.google.com/store/apps/details?id=network.minter.bipwallet)
+
+### Related repositories
+
+- [minter-go-node-docs](https://github.com/MinterTeam/minter-go-node-docs) - Docs for Minter Node
+- [node-grpc-gateway](https://github.com/MinterTeam/node-grpc-gateway) - gRPC interface and Swagger for Node API v2
 
 ### Community
 - [Telegram Channel (English)](https://t.me/MinterTeam)
