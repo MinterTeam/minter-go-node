@@ -100,6 +100,10 @@ func WriteRPCResponseHTTP(w http.ResponseWriter, res types.RPCResponse) {
 		panic(err)
 	}
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Deprecation", "version=\"v1\"")
+	// todo: w.Header().Set("Link", fmt.Sprintf("<%s>; rel=\"successor-version\"",""))
+	// todo: w.Header().Set("Link", fmt.Sprintf("<%s>; rel=\"deprecation\"",""))
+	// todo: w.Header().Set("Sunset", time.Unix(0,0).Format(time.RFC1123))
 	status := 200
 	if res.Error != nil && res.Error.Code != 0 {
 		if res.Error.Code > 0 {
