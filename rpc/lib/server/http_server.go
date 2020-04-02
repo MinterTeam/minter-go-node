@@ -100,10 +100,6 @@ func WriteRPCResponseHTTP(w http.ResponseWriter, res types.RPCResponse) {
 		panic(err)
 	}
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Deprecation", "version=\"v1\"")
-	// todo: w.Header().Set("Link", fmt.Sprintf("<%s>; rel=\"successor-version\"",""))
-	// todo: w.Header().Set("Link", fmt.Sprintf("<%s>; rel=\"deprecation\"",""))
-	// todo: w.Header().Set("Sunset", time.Unix(0,0).Format(time.RFC1123))
 	status := 200
 	if res.Error != nil && res.Error.Code != 0 {
 		if res.Error.Code > 0 {
@@ -128,6 +124,10 @@ func RecoverAndLogHandler(handler http.Handler, logger log.Logger) http.Handler 
 		begin := time.Now()
 
 		rww.Header().Set("X-Server-Time", fmt.Sprintf("%v", begin.Unix()))
+		rww.Header().Set("Deprecation", "version=\"v1\"")
+		// todo: rww.Header().Set("Link", fmt.Sprintf("<%s>; rel=\"successor-version\"",""))
+		// todo: rww.Header().Set("Link", fmt.Sprintf("<%s>; rel=\"deprecation\"",""))
+		// todo: rww.Header().Set("Sunset", time.Unix(0,0).Format(time.RFC1123))
 
 		defer func() {
 			// Send a 500 error if a panic happens during a handler.
