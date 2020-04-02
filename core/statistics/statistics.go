@@ -18,6 +18,8 @@ type ping struct {
 }
 
 func (d *Data) Statistic(ctx context.Context) {
+	go d.handleStartBlocks(ctx)
+	go d.handleEndBlock(ctx)
 	for {
 		select {
 		case <-ctx.Done():
@@ -75,8 +77,9 @@ type Data struct {
 		headerTimestamp time.Time
 	}
 	BlockEnd blockEnd
-
-	Speed struct {
+	cS       chan StartRequest
+	cE       chan EndRequest
+	Speed    struct {
 		sync.RWMutex
 		startTime         time.Time
 		startHeight       int64
@@ -88,6 +91,16 @@ type Data struct {
 
 	Api  apiResponseTime
 	Peer peerPing
+}
+
+type StartRequest struct {
+	Height     int64
+	Now        time.Time
+	HeaderTime time.Time
+}
+type EndRequest struct {
+	TimeEnd time.Time
+	Height  int64
 }
 
 type LastBlockInfo struct {
@@ -157,96 +170,136 @@ func New() *Data {
 		Api:      apiResponseTime{responseTime: apiVec},
 		Peer:     peerPing{ping: peerVec},
 		BlockEnd: blockEnd{HeightProm: height, DurationProm: lastBlockDuration, TimestampProm: timeBlock},
+		cS:       make(chan StartRequest),
+		cE:       make(chan EndRequest),
 	}
 }
 
-func (d *Data) SetStartBlock(height int64, now time.Time, headerTime time.Time) {
+func (d *Data) PushStartBlock(req StartRequest) {
+	if d == nil {
+		return
+	}
+	d.cS <- req
+}
+
+func (d *Data) handleStartBlocks(ctx context.Context) {
 	if d == nil {
 		return
 	}
 
 	for {
-		d.BlockStart.RLock()
-		ok := (height == d.BlockStart.height+1) || 0 == d.BlockStart.height
-		d.BlockStart.RUnlock()
-		if ok {
-			break
+		select {
+		case <-ctx.Done():
+			return
+		case req := <-d.cS:
+			func() {
+				height := req.Height
+				now := req.Now
+				headerTime := req.HeaderTime
+
+				for {
+					d.BlockStart.RLock()
+					ok := (height == d.BlockStart.height+1) || 0 == d.BlockStart.height
+					d.BlockStart.RUnlock()
+					if ok {
+						break
+					}
+					runtime.Gosched()
+				}
+
+				d.BlockStart.Lock()
+				defer d.BlockStart.Unlock()
+
+				d.BlockStart.height = height
+				d.BlockStart.time = now
+				d.BlockStart.headerTimestamp = headerTime
+			}()
 		}
-		runtime.Gosched()
 	}
-
-	d.BlockStart.Lock()
-	defer d.BlockStart.Unlock()
-
-	d.BlockStart.height = height
-	d.BlockStart.time = now
-	d.BlockStart.headerTimestamp = headerTime
 }
 
-func (d *Data) SetEndBlockDuration(timeEnd time.Time, height int64) {
+func (d *Data) PushEndBlock(req EndRequest) {
 	if d == nil {
 		return
 	}
+	d.cE <- req
+}
 
+func (d *Data) handleEndBlock(ctx context.Context) {
+	if d == nil {
+		return
+	}
 	for {
-		d.BlockStart.RLock()
-		d.BlockEnd.RLock()
-		ok := height == d.BlockStart.height
-		d.BlockEnd.RUnlock()
-		d.BlockStart.RUnlock()
-		if ok {
-			break
+		select {
+		case <-ctx.Done():
+			return
+		case req := <-d.cE:
+			func() {
+				height := req.Height
+				timeEnd := req.TimeEnd
+
+				for {
+					d.BlockStart.RLock()
+					d.BlockEnd.RLock()
+					ok := height == d.BlockStart.height
+					d.BlockEnd.RUnlock()
+					d.BlockStart.RUnlock()
+					if ok {
+						break
+					}
+					runtime.Gosched()
+				}
+
+				d.BlockStart.Lock()
+				defer d.BlockStart.Unlock()
+
+				duration := timeEnd.Sub(d.BlockStart.time)
+
+				d.BlockEnd.Lock()
+				defer d.BlockEnd.Unlock()
+
+				d.BlockEnd.HeightProm.Set(float64(height))
+				d.BlockEnd.DurationProm.Set(duration.Seconds())
+				d.BlockEnd.TimestampProm.Set(float64(d.BlockStart.headerTimestamp.UnixNano()))
+
+				d.BlockEnd.LastBlockInfo.Height = height
+				d.BlockEnd.LastBlockInfo.Duration = duration.Nanoseconds()
+				d.BlockEnd.LastBlockInfo.HeaderTimestamp = d.BlockStart.headerTimestamp
+
+				d.Speed.Lock()
+				defer d.Speed.Unlock()
+
+				min := time.Minute
+				select {
+				case <-d.Speed.timerMin:
+					d.Speed.avgTimePerBlock = int64(min) / d.Speed.blocksCountPerMin
+					d.Speed.timerMin = time.After(min)
+					d.Speed.blocksCountPerMin = 1
+				default:
+					d.Speed.blocksCountPerMin++
+				}
+
+				if time.Since(d.Speed.startTime) < 24*time.Hour {
+					d.Speed.duration += duration.Nanoseconds()
+					return
+				}
+
+				if d.Speed.startHeight == 0 {
+					d.Speed.startTime = time.Now()
+					d.Speed.startHeight = height
+					d.Speed.duration = duration.Nanoseconds()
+					d.Speed.timerMin = time.After(min)
+					return
+				}
+
+				d.Speed.startTime = time.Now().Add(-12 * time.Hour)
+				d.Speed.startHeight = height - (height-d.Speed.startHeight)/2
+				d.Speed.duration = d.Speed.duration/2 + duration.Nanoseconds()
+
+				return
+			}()
 		}
-		runtime.Gosched()
 	}
-
-	d.BlockStart.Lock()
-	defer d.BlockStart.Unlock()
-
-	duration := timeEnd.Sub(d.BlockStart.time)
-
-	d.BlockEnd.Lock()
-	defer d.BlockEnd.Unlock()
-
-	d.BlockEnd.HeightProm.Set(float64(height))
-	d.BlockEnd.DurationProm.Set(duration.Seconds())
-	d.BlockEnd.TimestampProm.Set(float64(d.BlockStart.headerTimestamp.UnixNano()))
-
-	d.BlockEnd.LastBlockInfo.Height = height
-	d.BlockEnd.LastBlockInfo.Duration = duration.Nanoseconds()
-	d.BlockEnd.LastBlockInfo.HeaderTimestamp = d.BlockStart.headerTimestamp
-
-	d.Speed.Lock()
-	defer d.Speed.Unlock()
-
-	min := time.Minute
-	select {
-	case <-d.Speed.timerMin:
-		d.Speed.avgTimePerBlock = int64(min) / d.Speed.blocksCountPerMin
-		d.Speed.timerMin = time.After(min)
-		d.Speed.blocksCountPerMin = 1
-	default:
-		d.Speed.blocksCountPerMin++
-	}
-
-	if time.Since(d.Speed.startTime) < 24*time.Hour {
-		d.Speed.duration += duration.Nanoseconds()
-		return
-	}
-
-	if d.Speed.startHeight == 0 {
-		d.Speed.startTime = time.Now()
-		d.Speed.startHeight = height
-		d.Speed.duration = duration.Nanoseconds()
-		d.Speed.timerMin = time.After(min)
-		return
-	}
-
-	d.Speed.startTime = time.Now().Add(-12 * time.Hour)
-	d.Speed.startHeight = height - (height-d.Speed.startHeight)/2
-	d.Speed.duration = d.Speed.duration/2 + duration.Nanoseconds()
-
-	return
 }
 
 func (d *Data) SetApiTime(duration time.Duration, path string) {

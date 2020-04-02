@@ -209,6 +209,7 @@ func dashboardCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 				if err != nil {
 					return err
 				}
+				ui.Clear()
 				ui.Render(recvToDashboard(recv)()...)
 			}
 		}
@@ -226,14 +227,13 @@ func recvToDashboard(recv *pb.DashboardResponse) func() []ui.Drawable {
 
 	commonTable := widgets.NewTable()
 	commonTable.Rows = [][]string{
-		{"Latest Block Height", ""},
+		{"Block Height", ""},
 		{"Latest Block Time", ""},
 		{"Block Processing Time (avg)", ""},
 		{"Memory Usage", ""},
 		{"Peers Count", ""},
-		{"Max Peer Height", ""},
 	}
-	commonTable.SetRect(40, 3, 110, 16)
+	commonTable.SetRect(40, 3, 110, 14)
 
 	validatorTable := widgets.NewTable()
 	validatorTable.Rows = [][]string{
@@ -247,7 +247,7 @@ func recvToDashboard(recv *pb.DashboardResponse) func() []ui.Drawable {
 			{"Voting Power", ""},
 			{"Missed Blocks", ""},
 		}...)
-		validatorTable.SetRect(0, 6, 39, 16)
+		validatorTable.SetRect(0, 6, 39, 14)
 	}
 
 	return func() (items []ui.Drawable) {
@@ -260,12 +260,11 @@ func recvToDashboard(recv *pb.DashboardResponse) func() []ui.Drawable {
 		pubKeyText.Text = recv.ValidatorPubKey
 
 		timestamp, _ := ptypes.Timestamp(recv.Timestamp)
-		commonTable.Rows[0][1] = fmt.Sprintf("%d", recv.LatestHeight)
+		commonTable.Rows[0][1] = fmt.Sprintf("%d of %d", recv.LatestHeight, recv.MaxPeerHeight)
 		commonTable.Rows[1][1] = timestamp.Format(time.RFC3339Nano)
-		commonTable.Rows[2][1] = fmt.Sprintf("%f sec, (%f sec)", time.Duration(recv.Duration).Seconds(), time.Duration(recv.AvgBlockProcessingTime).Seconds())
+		commonTable.Rows[2][1] = fmt.Sprintf("%f sec (%f sec)", time.Duration(recv.Duration).Seconds(), time.Duration(recv.AvgBlockProcessingTime).Seconds())
 		commonTable.Rows[3][1] = fmt.Sprintf("%d MB", recv.MemoryUsage/1024/1024)
 		commonTable.Rows[4][1] = fmt.Sprintf("%d", recv.PeersCount)
-		commonTable.Rows[5][1] = fmt.Sprintf("%d", recv.MaxPeerHeight)
 
 		if recv.ValidatorStatus != pb.DashboardResponse_NotDeclared {
 			validatorTable.Rows[1][1] = recv.Stake
