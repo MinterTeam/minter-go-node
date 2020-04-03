@@ -198,7 +198,6 @@ func dashboardCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 		}
 		ui.SetKeybinding("Esc", func() { ui.Quit() })
 		ui.SetKeybinding("q", func() { ui.Quit() })
-		ui.SetKeybinding("Ctrl+C", func() { ui.Quit() })
 		errCh := make(chan error)
 
 		recv, err := response.Recv()
