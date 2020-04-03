@@ -35,10 +35,14 @@ func (m *Manager) Dashboard(_ *empty.Empty, stream pb.ManagerService_DashboardSe
 		case <-time.After(time.Second):
 
 			statisticData := m.blockchain.StatisticData()
+			if statisticData == nil {
+				return status.Error(codes.Unavailable, "Dashboard is not available, please enable prometheus in configuration")
+			}
 			info := statisticData.GetLastBlockInfo()
 			averageTimeBlock := statisticData.GetAverageBlockProcessingTime()
 			timePerBlock := statisticData.GetTimePerBlock()
 			maxPeersHeight := m.blockchain.MaxPeerHeight()
+			maxPeersHeight = maxPeersHeight - 1
 			protoTime, _ := ptypes.TimestampProto(info.HeaderTimestamp)
 			var mem runtime.MemStats
 			runtime.ReadMemStats(&mem)
