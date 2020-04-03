@@ -1,12 +1,22 @@
 package main
 
 import (
+	"context"
 	"github.com/MinterTeam/minter-go-node/cmd/minter/cmd"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
+	"github.com/tendermint/tendermint/libs/log"
+	tmos "github.com/tendermint/tendermint/libs/os"
+	"os"
 )
 
 func main() {
 	rootCmd := cmd.RootCmd
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	tmos.TrapSignal(log.NewTMLogger(os.Stdout).With("module", "consensus"), func() {
+		cancel()
+	})
 
 	rootCmd.AddCommand(
 		cmd.RunNode,
@@ -28,7 +38,7 @@ func main() {
 	cmd.ExportCommand.Flags().String("chain_id", "", "export chain id")
 	cmd.ExportCommand.Flags().Duration("genesis_time", 0, "export height")
 
-	if err := rootCmd.Execute(); err != nil {
+	if err := rootCmd.ExecuteContext(ctx); err != nil {
 		panic(err)
 	}
 }

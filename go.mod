@@ -7,6 +7,7 @@ require (
 	github.com/MinterTeam/node-grpc-gateway v1.0.0
 	github.com/btcsuite/btcd v0.0.0-20190115013929-ed77733ec07d
 	github.com/c-bata/go-prompt v0.2.3
+	github.com/gizak/termui/v3 v3.1.0
 	github.com/go-kit/kit v0.10.0
 	github.com/golang/protobuf v1.3.4
 	github.com/google/uuid v1.1.1

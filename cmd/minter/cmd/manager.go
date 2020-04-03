@@ -31,7 +31,7 @@ var ManagerConsole = &cobra.Command{
 		if err != nil {
 			return nil
 		}
-		console.Cli()
+		console.Cli(cmd.Context())
 		return nil
 	},
 }

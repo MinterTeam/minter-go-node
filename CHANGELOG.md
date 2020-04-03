@@ -6,6 +6,7 @@ IMPROVEMENT
 
 - [export] Added export command
 - [db] Update IAVL to v0.13.2
+- [console] Added dashboard command
 - [docker] Fix docker build config (@dmitry-ee)
 
 ## 1.1.5
