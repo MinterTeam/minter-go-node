@@ -10,7 +10,7 @@ RUN make build
 FROM ubuntu:bionic
 
 COPY --from=builder /gopath/src/github.com/MinterTeam/minter-go-node/build/minter/ /usr/bin/minter
-RUN apt update && apt install libleveldb1v5 -y --no-install-recommends -q && \
+RUN apt update && apt install libleveldb1v5 ca-certificates -y --no-install-recommends -q && \
     addgroup minteruser && \
     useradd --no-log-init -r -m -d /minter -g minteruser minteruser && \
     chown -R minteruser:minteruser /minter && \
