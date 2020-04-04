@@ -139,7 +139,7 @@ func ConfigureManagerConsole(socketPath string) (*ManagerConsole, error) {
 		{
 			Name:    "status",
 			Aliases: []string{"s"},
-			Usage:   "display the current statusCMD of the blockchain",
+			Usage:   "display the current status of the blockchain",
 			Flags: []cli.Flag{
 				jsonFlag,
 			},
