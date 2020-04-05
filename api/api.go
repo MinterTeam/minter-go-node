@@ -53,6 +53,18 @@ var Routes = map[string]*rpcserver.RPCFunc{
 	"min_gas_price":          rpcserver.NewRPCFunc(MinGasPrice, ""),
 	"genesis":                rpcserver.NewRPCFunc(Genesis, ""),
 	"missed_blocks":          rpcserver.NewRPCFunc(MissedBlocks, "pub_key,height"),
+	"userstakes":             rpcserver.NewRPCFunc(Userstakes, "height,address"),
+	"userstake":              rpcserver.NewRPCFunc(Userstake, "pub_key,height,address"),
+	"coinstakes":             rpcserver.NewRPCFunc(Coinstakes, "height,symbol"),
+	"coinstake":              rpcserver.NewRPCFunc(Coinstake, "pub_key,height,symbol"),
+	"userbalance":            rpcserver.NewRPCFunc(Userbalance, "height,address"),
+	"mcandidate":              rpcserver.NewRPCFunc(mCandidate, "pub_key,height"),
+	"mcandidates":             rpcserver.NewRPCFunc(mCandidates, "height"),
+	"mevents":                 rpcserver.NewRPCFunc(mEvents, "height,find_ui"),
+	"convertmx":                rpcserver.NewRPCFunc(MXconvert, "wlt"),
+	"revents":                 rpcserver.NewRPCFunc(rEvents, "height"),
+
+
 }
 
 func responseTime(b *minter.Blockchain) func(f func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
