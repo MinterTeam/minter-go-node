@@ -20,6 +20,8 @@ type mCandidateResponse struct {
 	UniqUsers 	int 	`json:"uniq_users"`
 	MinStake	string	`json:"minstake"`
 	Status        	byte    `json:"status"`
+	IsValidate	int	`json:"isvalidate"`
+
 }
 
 func mmakeResponseCandidate(state *state.State, c candidates.Candidate) mCandidateResponse {
@@ -29,6 +31,14 @@ var candidate mCandidateResponse
 		candidate.PubKey = c.PubKey.String()
 		candidate.Commission = c.Commission
 		candidate.Status = c.Status
+		candidate.IsValidate =0
+		for _,bbb := range state.Validators.GetValidators(){
+			if bbb.PubKey.String() == candidate.PubKey {
+				candidate.IsValidate = 1
+				break
+			} 
+		}
+
  		mnum:=big.NewInt(0)
 		var hhh string
 		kkk:=0
@@ -76,6 +86,7 @@ func mCandidate(pubkey types.Pubkey, height int) (*mCandidateResponse, error) {
 		cState.Lock()
 		cState.Candidates.LoadCandidates()
 		cState.Candidates.LoadStakes()
+		cState.Validators.LoadValidators()
 		cState.Unlock()
 	}
 
