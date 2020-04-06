@@ -10,6 +10,7 @@ func mCandidates(height int) (*[]mCandidateResponse, error) {
 		cState.Lock()
 		cState.Candidates.LoadCandidates()
 		cState.Candidates.LoadStakes()
+		cState.Validators.LoadValidators()
 		cState.Unlock()
 	}
 
