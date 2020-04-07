@@ -58,5 +58,7 @@ jobs:
         if: github.ref == 'refs/heads/master'
 
       - name: Docker push latest image
-        run: docker push ${{ secrets.DOCKER_HUB_USER }}/minter:latest
+        run: |
+          docker tag ${{ secrets.DOCKER_HUB_USER }}/minter:${{ env.VERSION }} ${{ secrets.DOCKER_HUB_USER }}/minter:latest
+          docker push ${{ secrets.DOCKER_HUB_USER }}/minter:latest
         if: github.ref == 'refs/heads/master'
