@@ -276,7 +276,7 @@ func updateDashboard(box *tui.Box, recv *pb.DashboardResponse) func(recv *pb.Das
 		ofBlocks := ""
 		progressBox.Remove(0)
 		progressBox.Prepend(tui.NewEntry())
-		if perSync < 100 {
+		if perSync < 100 && recv.MaxPeerHeight > 0 {
 			timeLeft = "Timing..."
 			if recv.TimePerBlock != 0 {
 				timeLeft = fmt.Sprintf("(%s left)", time.Duration((recv.MaxPeerHeight-recv.LatestHeight)*recv.TimePerBlock).Truncate(time.Second).String())
