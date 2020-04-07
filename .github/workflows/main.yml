@@ -13,7 +13,7 @@ jobs:
   docker:
     env:
       CONTAINER_NAME: minter_node
-      CONTAINER_TIMEOUT_SEC: 10
+      CONTAINER_TIMEOUT_SEC: 30
       API_RUN_PORT: 8841
     runs-on: ubuntu-latest
     steps:
@@ -48,6 +48,10 @@ jobs:
       - name: Tests fail
         run: docker logs $CONTAINER_NAME && exit 1
         if: env.RUN_TEST_RESULT == 'FAIL' || env.API_TEST_RESULT == 'FAIL'
+
+      - name: Docker login
+        run: echo ${{ secrets.DOCKER_HUB_PASSWORD }} | docker login -u ${{ secrets.DOCKER_HUB_USER }} --password-stdin
+        if: github.ref == 'refs/heads/master'
 
       - name: Docker push versioned image
         run: docker push ${{ secrets.DOCKER_HUB_USER }}/minter:${{ env.VERSION }}
