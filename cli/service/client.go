@@ -235,26 +235,25 @@ func dashboardCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 func updateDashboard(box *tui.Box, recv *pb.DashboardResponse) func(recv *pb.DashboardResponse) {
 	pubKeyText := tui.NewHBox(tui.NewLabel("Validator's Pubkey: "), tui.NewLabel(recv.ValidatorPubKey), tui.NewSpacer())
 	box.Append(pubKeyText)
-
-	progress := tui.NewProgress(int(recv.MaxPeerHeight))
-	box.Append(tui.NewHBox(progress, tui.NewSpacer()))
+	maxProgress := pubKeyText.SizeHint().X
+	progressBox := tui.NewHBox(tui.NewEntry(), tui.NewSpacer())
+	box.Append(progressBox)
 
 	table := tui.NewTable(0, 0)
-	labelNetworkSynchronizationPercent := tui.NewLabel(fmt.Sprintf("%d%% ", int((float64(recv.LatestHeight)/float64(recv.MaxPeerHeight))*100)))
-	labelNetworkSynchronizationTime := tui.NewLabel(fmt.Sprintf("(%s left)", time.Duration((recv.MaxPeerHeight-recv.LatestHeight)*recv.TimePerBlock).Truncate(time.Second).String()))
+	labelNetworkSynchronizationPercent := tui.NewLabel("")
+	labelNetworkSynchronizationTime := tui.NewLabel("")
 	table.AppendRow(tui.NewLabel("Network Synchronization"), tui.NewHBox(labelNetworkSynchronizationPercent, labelNetworkSynchronizationTime, tui.NewSpacer()))
-	labelBlockHeight := tui.NewLabel(fmt.Sprintf("%d of %d", recv.LatestHeight, recv.MaxPeerHeight))
+	labelBlockHeight := tui.NewLabel("")
 	table.AppendRow(tui.NewLabel("Block Height"), labelBlockHeight)
-	timestamp, _ := ptypes.Timestamp(recv.Timestamp)
-	labelLastBlockTime := tui.NewLabel(timestamp.Format(time.RFC3339Nano) + strings.Repeat(" ", len(time.RFC3339Nano)-len(timestamp.Format(time.RFC3339Nano))))
+	labelLastBlockTime := tui.NewLabel("")
 	table.AppendRow(tui.NewLabel("Latest Block Time"), labelLastBlockTime)
-	labelBlockProcessingTimeAvg := tui.NewLabel(fmt.Sprintf("%f sec (%f sec)", time.Duration(recv.Duration).Seconds(), time.Duration(recv.AvgBlockProcessingTime).Seconds()))
+	labelBlockProcessingTimeAvg := tui.NewLabel("")
 	table.AppendRow(tui.NewLabel("Block Processing Time (avg)"), labelBlockProcessingTimeAvg)
-	labelMemoryUsage := tui.NewLabel(fmt.Sprintf("%d MB", recv.MemoryUsage/1024/1024))
+	labelMemoryUsage := tui.NewLabel("")
 	table.AppendRow(tui.NewLabel("Memory Usage"), labelMemoryUsage)
-	labelPeersCount := tui.NewLabel(fmt.Sprintf("%d", recv.PeersCount))
+	labelPeersCount := tui.NewLabel("")
 	table.AppendRow(tui.NewLabel("Peers Count"), labelPeersCount)
-	labelValidatorStatus := tui.NewLabel(recv.ValidatorStatus.String())
+	labelValidatorStatus := tui.NewLabel("")
 	table.AppendRow(tui.NewLabel("Validator Status: "), labelValidatorStatus)
 
 	labelStakeName := tui.NewLabel("")
@@ -263,14 +262,7 @@ func updateDashboard(box *tui.Box, recv *pb.DashboardResponse) func(recv *pb.Das
 	labelStake := tui.NewLabel("")
 	labelVotingPower := tui.NewLabel("")
 	labelMissedBlocks := tui.NewLabel("")
-	if recv.ValidatorStatus != pb.DashboardResponse_NotDeclared {
-		labelStakeName.SetText("Stake")
-		labelVotingPowerName.SetText("Voting Power")
-		labelMissedBlocksName.SetText("Missed Blocks")
-		labelStake.SetText(recv.Stake)
-		labelVotingPower.SetText(fmt.Sprintf("%d", recv.VotingPower))
-		labelMissedBlocks.SetText(recv.MissedBlocks)
-	}
+
 	table.AppendRow(labelStakeName, labelStake)
 	table.AppendRow(labelVotingPowerName, labelVotingPower)
 	table.AppendRow(labelMissedBlocksName, labelMissedBlocks)
@@ -278,29 +270,52 @@ func updateDashboard(box *tui.Box, recv *pb.DashboardResponse) func(recv *pb.Das
 	box.Append(tui.NewSpacer())
 
 	return func(recv *pb.DashboardResponse) {
-		labelNetworkSynchronizationPercent.SetText(fmt.Sprintf("%d%% ", int((float64(recv.LatestHeight)/float64(recv.MaxPeerHeight))*100)))
-		timeLeft := "Timing..."
-		if recv.TimePerBlock != 0 {
-			timeLeft = fmt.Sprintf("(%s left)", time.Duration((recv.MaxPeerHeight-recv.LatestHeight)*recv.TimePerBlock).Truncate(time.Second).String())
+		perSync := int((float64(recv.LatestHeight) / float64(recv.MaxPeerHeight)) * 100)
+		labelNetworkSynchronizationPercent.SetText(fmt.Sprintf("%d%% ", perSync))
+		timeLeft := ""
+		ofBlocks := ""
+		progressBox.Remove(0)
+		progressBox.Prepend(tui.NewEntry())
+		if perSync < 100 && recv.MaxPeerHeight > 0 {
+			timeLeft = "Timing..."
+			if recv.TimePerBlock != 0 {
+				timeLeft = fmt.Sprintf("(%s left)", time.Duration((recv.MaxPeerHeight-recv.LatestHeight)*recv.TimePerBlock).Truncate(time.Second).String())
+			}
+			ofBlocks = fmt.Sprintf(" of %d", recv.MaxPeerHeight)
+			progress := tui.NewProgress(maxProgress)
+			progress.SetCurrent(int(recv.LatestHeight) / (int(recv.MaxPeerHeight) / maxProgress))
+			progressBox.Remove(0)
+			progressBox.Prepend(progress)
 		}
 		labelNetworkSynchronizationTime.SetText(timeLeft)
-		labelBlockHeight.SetText(fmt.Sprintf("%d of %d", recv.LatestHeight, recv.MaxPeerHeight))
+
+		labelBlockHeight.SetText(fmt.Sprintf("%d", recv.LatestHeight) + ofBlocks)
 		timestamp, _ := ptypes.Timestamp(recv.Timestamp)
 		labelLastBlockTime.SetText(timestamp.Format(time.RFC3339Nano) + strings.Repeat(" ", len(time.RFC3339Nano)-len(timestamp.Format(time.RFC3339Nano))))
 		labelBlockProcessingTimeAvg.SetText(fmt.Sprintf("%f sec (%f sec)", time.Duration(recv.Duration).Seconds(), time.Duration(recv.AvgBlockProcessingTime).Seconds()))
 		labelMemoryUsage.SetText(fmt.Sprintf("%d MB", recv.MemoryUsage/1024/1024))
 		labelPeersCount.SetText(fmt.Sprintf("%d", recv.PeersCount))
-		labelValidatorStatus.SetText(recv.ValidatorStatus.String())
+		labelValidatorStatus.SetText("Not Declared")
+
+		labelStakeName.SetText("")
+		labelVotingPowerName.SetText("")
+		labelMissedBlocksName.SetText("")
+
+		labelStake.SetText("")
+		labelVotingPower.SetText("")
+		labelMissedBlocks.SetText("")
+
 		if recv.ValidatorStatus != pb.DashboardResponse_NotDeclared {
+			labelValidatorStatus.SetText(recv.ValidatorStatus.String())
+
 			labelStakeName.SetText("Stake")
 			labelVotingPowerName.SetText("Voting Power")
 			labelMissedBlocksName.SetText("Missed Blocks")
+
 			labelStake.SetText(recv.Stake)
 			labelVotingPower.SetText(fmt.Sprintf("%d", recv.VotingPower))
 			labelMissedBlocks.SetText(recv.MissedBlocks)
 		}
-		progress.SetMax(int(recv.MaxPeerHeight))
-		progress.SetCurrent(int(recv.LatestHeight))
 	}
 }
 
