@@ -6,12 +6,11 @@ import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/cli/pb"
 	"github.com/c-bata/go-prompt"
-	ui "github.com/gizak/termui/v3"
-	"github.com/gizak/termui/v3/widgets"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/empty"
+	"github.com/marcusolsson/tui-go"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/grpc"
 	"io"
@@ -140,7 +139,7 @@ func ConfigureManagerConsole(socketPath string) (*ManagerConsole, error) {
 		{
 			Name:    "status",
 			Aliases: []string{"s"},
-			Usage:   "display the current statusCMD of the blockchain",
+			Usage:   "display the current status of the blockchain",
 			Flags: []cli.Flag{
 				jsonFlag,
 			},
@@ -192,15 +191,32 @@ func dashboardCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 
 		defer cancel()
 
-		if err := ui.Init(); err != nil {
+		box := tui.NewVBox()
+		ui, err := tui.New(tui.NewHBox(box, tui.NewSpacer()))
+		if err != nil {
 			return err
 		}
-		defer ui.Close()
+		ui.SetKeybinding("Esc", func() { ui.Quit() })
+		ui.SetKeybinding("q", func() { ui.Quit() })
+		errCh := make(chan error)
+
+		recv, err := response.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		dashboard := updateDashboard(box, recv)
+
+		go func() { errCh <- ui.Run() }()
 
 		for {
 			select {
 			case <-c.Done():
 				return c.Err()
+			case err := <-errCh:
+				return err
 			case <-time.After(time.Second):
 				recv, err := response.Recv()
 				if err == io.EOF {
@@ -209,70 +225,82 @@ func dashboardCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 				if err != nil {
 					return err
 				}
-				ui.Clear()
-				ui.Render(recvToDashboard(recv)()...)
+				dashboard(recv)
+				ui.Repaint()
 			}
 		}
 	}
 }
 
-func recvToDashboard(recv *pb.DashboardResponse) func() []ui.Drawable {
-	pubKeyText := widgets.NewParagraph()
-	pubKeyText.Title = "Validator's Pubkey"
-	pubKeyText.SetRect(0, 0, 110, 3)
+func updateDashboard(box *tui.Box, recv *pb.DashboardResponse) func(recv *pb.DashboardResponse) {
+	pubKeyText := tui.NewHBox(tui.NewLabel("Validator's Pubkey: "), tui.NewLabel(recv.ValidatorPubKey), tui.NewSpacer())
+	box.Append(pubKeyText)
 
-	gauge := widgets.NewGauge()
-	gauge.Title = "Network synchronization"
-	gauge.SetRect(0, 3, 40, 6)
+	progress := tui.NewProgress(int(recv.MaxPeerHeight))
+	box.Append(tui.NewHBox(progress, tui.NewSpacer()))
 
-	commonTable := widgets.NewTable()
-	commonTable.Rows = [][]string{
-		{"Block Height", ""},
-		{"Latest Block Time", ""},
-		{"Block Processing Time (avg)", ""},
-		{"Memory Usage", ""},
-		{"Peers Count", ""},
-	}
-	commonTable.SetRect(40, 3, 110, 14)
+	table := tui.NewTable(0, 0)
+	labelNetworkSynchronizationPercent := tui.NewLabel(fmt.Sprintf("%d%% ", int((float64(recv.LatestHeight)/float64(recv.MaxPeerHeight))*100)))
+	labelNetworkSynchronizationTime := tui.NewLabel(fmt.Sprintf("(%s left)", time.Duration((recv.MaxPeerHeight-recv.LatestHeight)*recv.TimePerBlock).Truncate(time.Second).String()))
+	table.AppendRow(tui.NewLabel("Network Synchronization"), tui.NewHBox(labelNetworkSynchronizationPercent, labelNetworkSynchronizationTime, tui.NewSpacer()))
+	labelBlockHeight := tui.NewLabel(fmt.Sprintf("%d of %d", recv.LatestHeight, recv.MaxPeerHeight))
+	table.AppendRow(tui.NewLabel("Block Height"), labelBlockHeight)
+	timestamp, _ := ptypes.Timestamp(recv.Timestamp)
+	labelLastBlockTime := tui.NewLabel(timestamp.Format(time.RFC3339Nano) + strings.Repeat(" ", len(time.RFC3339Nano)-len(timestamp.Format(time.RFC3339Nano))))
+	table.AppendRow(tui.NewLabel("Latest Block Time"), labelLastBlockTime)
+	labelBlockProcessingTimeAvg := tui.NewLabel(fmt.Sprintf("%f sec (%f sec)", time.Duration(recv.Duration).Seconds(), time.Duration(recv.AvgBlockProcessingTime).Seconds()))
+	table.AppendRow(tui.NewLabel("Block Processing Time (avg)"), labelBlockProcessingTimeAvg)
+	labelMemoryUsage := tui.NewLabel(fmt.Sprintf("%d MB", recv.MemoryUsage/1024/1024))
+	table.AppendRow(tui.NewLabel("Memory Usage"), labelMemoryUsage)
+	labelPeersCount := tui.NewLabel(fmt.Sprintf("%d", recv.PeersCount))
+	table.AppendRow(tui.NewLabel("Peers Count"), labelPeersCount)
+	labelValidatorStatus := tui.NewLabel(recv.ValidatorStatus.String())
+	table.AppendRow(tui.NewLabel("Validator Status: "), labelValidatorStatus)
 
-	validatorTable := widgets.NewTable()
-	validatorTable.Rows = [][]string{
-		{"Validator Status", recv.ValidatorStatus.String()},
-	}
-	validatorTable.SetRect(0, 6, 39, 9)
-
+	labelStakeName := tui.NewLabel("")
+	labelVotingPowerName := tui.NewLabel("")
+	labelMissedBlocksName := tui.NewLabel("")
+	labelStake := tui.NewLabel("")
+	labelVotingPower := tui.NewLabel("")
+	labelMissedBlocks := tui.NewLabel("")
 	if recv.ValidatorStatus != pb.DashboardResponse_NotDeclared {
-		validatorTable.Rows = append(validatorTable.Rows, [][]string{
-			{"Stake", ""},
-			{"Voting Power", ""},
-			{"Missed Blocks", ""},
-		}...)
-		validatorTable.SetRect(0, 6, 39, 14)
+		labelStakeName.SetText("Stake")
+		labelVotingPowerName.SetText("Voting Power")
+		labelMissedBlocksName.SetText("Missed Blocks")
+		labelStake.SetText(recv.Stake)
+		labelVotingPower.SetText(fmt.Sprintf("%d", recv.VotingPower))
+		labelMissedBlocks.SetText(recv.MissedBlocks)
 	}
+	table.AppendRow(labelStakeName, labelStake)
+	table.AppendRow(labelVotingPowerName, labelVotingPower)
+	table.AppendRow(labelMissedBlocksName, labelMissedBlocks)
+	box.Append(tui.NewHBox(table, tui.NewSpacer()))
+	box.Append(tui.NewSpacer())
 
-	return func() (items []ui.Drawable) {
-		gauge.Percent = int((float64(recv.LatestHeight) / float64(recv.MaxPeerHeight)) * 100)
-		gauge.Title += fmt.Sprintf(" (%d%%)", gauge.Percent)
-		gauge.Label = "Timing..."
+	return func(recv *pb.DashboardResponse) {
+		labelNetworkSynchronizationPercent.SetText(fmt.Sprintf("%d%% ", int((float64(recv.LatestHeight)/float64(recv.MaxPeerHeight))*100)))
+		timeLeft := "Timing..."
 		if recv.TimePerBlock != 0 {
-			gauge.Label = fmt.Sprintf("%s", time.Duration((recv.MaxPeerHeight-recv.LatestHeight)*recv.TimePerBlock).Truncate(time.Second).String())
+			timeLeft = fmt.Sprintf("(%s left)", time.Duration((recv.MaxPeerHeight-recv.LatestHeight)*recv.TimePerBlock).Truncate(time.Second).String())
 		}
-		pubKeyText.Text = recv.ValidatorPubKey
-
+		labelNetworkSynchronizationTime.SetText(timeLeft)
+		labelBlockHeight.SetText(fmt.Sprintf("%d of %d", recv.LatestHeight, recv.MaxPeerHeight))
 		timestamp, _ := ptypes.Timestamp(recv.Timestamp)
-		commonTable.Rows[0][1] = fmt.Sprintf("%d of %d", recv.LatestHeight, recv.MaxPeerHeight)
-		commonTable.Rows[1][1] = timestamp.Format(time.RFC3339Nano)
-		commonTable.Rows[2][1] = fmt.Sprintf("%f sec (%f sec)", time.Duration(recv.Duration).Seconds(), time.Duration(recv.AvgBlockProcessingTime).Seconds())
-		commonTable.Rows[3][1] = fmt.Sprintf("%d MB", recv.MemoryUsage/1024/1024)
-		commonTable.Rows[4][1] = fmt.Sprintf("%d", recv.PeersCount)
-
+		labelLastBlockTime.SetText(timestamp.Format(time.RFC3339Nano) + strings.Repeat(" ", len(time.RFC3339Nano)-len(timestamp.Format(time.RFC3339Nano))))
+		labelBlockProcessingTimeAvg.SetText(fmt.Sprintf("%f sec (%f sec)", time.Duration(recv.Duration).Seconds(), time.Duration(recv.AvgBlockProcessingTime).Seconds()))
+		labelMemoryUsage.SetText(fmt.Sprintf("%d MB", recv.MemoryUsage/1024/1024))
+		labelPeersCount.SetText(fmt.Sprintf("%d", recv.PeersCount))
+		labelValidatorStatus.SetText(recv.ValidatorStatus.String())
 		if recv.ValidatorStatus != pb.DashboardResponse_NotDeclared {
-			validatorTable.Rows[1][1] = recv.Stake
-			validatorTable.Rows[2][1] = fmt.Sprintf("%d", recv.VotingPower)
-			validatorTable.Rows[3][1] = recv.MissedBlocks
+			labelStakeName.SetText("Stake")
+			labelVotingPowerName.SetText("Voting Power")
+			labelMissedBlocksName.SetText("Missed Blocks")
+			labelStake.SetText(recv.Stake)
+			labelVotingPower.SetText(fmt.Sprintf("%d", recv.VotingPower))
+			labelMissedBlocks.SetText(recv.MissedBlocks)
 		}
-
-		return append(items, gauge, pubKeyText, commonTable, validatorTable)
+		progress.SetMax(int(recv.MaxPeerHeight))
+		progress.SetCurrent(int(recv.LatestHeight))
 	}
 }
 
