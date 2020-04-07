@@ -60,7 +60,7 @@ func responseTime(b *minter.Blockchain) func(f func(http.ResponseWriter, *http.R
 		return func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
 			f(w, r)
-			b.StatisticData().SetApiTime(time.Now().Sub(start), r.URL.Path)
+			go b.StatisticData().SetApiTime(time.Now().Sub(start), r.URL.Path)
 		}
 	}
 }

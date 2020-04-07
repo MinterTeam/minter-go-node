@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	api_v1 "github.com/MinterTeam/minter-go-node/api"
 	api_v2 "github.com/MinterTeam/minter-go-node/api/v2"
@@ -39,7 +38,7 @@ const RequiredOpenFilesLimit = 10000
 var RunNode = &cobra.Command{
 	Use:   "node",
 	Short: "Run the Minter node",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, _ []string) error {
 		return runNode(cmd)
 	},
 }
@@ -52,12 +51,16 @@ func runNode(cmd *cobra.Command) error {
 		var rLimit syscall.Rlimit
 		err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rLimit)
 		if err != nil {
-			return err
+			panic(err)
 		}
 
 		required := RequiredOpenFilesLimit + uint64(cfg.StateMemAvailable)
 		if rLimit.Cur < required {
-			return fmt.Errorf("open files limit is too low: required %d, got %d", required, rLimit.Cur)
+			rLimit.Cur = required
+			err = syscall.Setrlimit(syscall.RLIMIT_NOFILE, &rLimit)
+			if err != nil {
+				panic(fmt.Errorf("cannot set RLIMIT_NOFILE to %d", rLimit.Cur))
+			}
 		}
 	}
 
@@ -124,10 +127,8 @@ func runNode(cmd *cobra.Command) error {
 		go api_v1.RunAPI(app, client, cfg, logger)
 	}
 
-	ctx, stop := context.WithCancel(context.Background())
-	ctxCli, _ := context.WithCancel(ctx)
 	go func() {
-		err := service.StartCLIServer(utils.GetMinterHome()+"/manager.sock", service.NewManager(app, client, cfg), ctxCli)
+		err := service.StartCLIServer(utils.GetMinterHome()+"/manager.sock", service.NewManager(app, client, cfg), cmd.Context())
 		if err != nil {
 			panic(err)
 		}
@@ -135,18 +136,17 @@ func runNode(cmd *cobra.Command) error {
 
 	if cfg.Instrumentation.Prometheus {
 		data := statistics.New()
-		ctxStat, _ := context.WithCancel(ctx)
-		go app.SetStatisticData(data).Statistic(ctxStat)
+		go app.SetStatisticData(data).Statistic(cmd.Context())
 	}
 
-	tmos.TrapSignal(logger.With("module", "trap"), func() {
-		stop()
-		node.Stop()
-		app.Stop()
-	})
+	<-cmd.Context().Done()
 
-	// Run forever
-	select {}
+	defer app.Stop()
+	if err := node.Stop(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func updateBlocksTimeDelta(app *minter.Blockchain, config *tmCfg.Config) {
@@ -202,7 +202,11 @@ func startTendermintNode(app types.Application, cfg *tmCfg.Config, logger tmlog.
 
 func getGenesis() (doc *tmTypes.GenesisDoc, e error) {
 	genDocFile := utils.GetMinterHome() + "/config/genesis.json"
-	if _, err := os.Stat(genDocFile); os.IsNotExist(err) {
+	_, err := os.Stat(genDocFile)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			panic(err)
+		}
 		if err := downloadFile(genDocFile, "https://raw.githubusercontent.com/MinterTeam/minter-network-migrate/master/minter-mainnet-2/genesis.json"); err != nil {
 			panic(err)
 		}

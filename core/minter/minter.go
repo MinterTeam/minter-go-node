@@ -23,12 +23,16 @@ import (
 	abciTypes "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	cryptoAmino "github.com/tendermint/tendermint/crypto/encoding/amino"
+	"github.com/tendermint/tendermint/evidence"
 	tmNode "github.com/tendermint/tendermint/node"
 	rpctypes "github.com/tendermint/tendermint/rpc/lib/types"
 	types2 "github.com/tendermint/tendermint/types"
 	"github.com/tendermint/tm-db"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"math/big"
 	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -165,11 +169,11 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.ResponseBeginBlock {
 	height := uint64(req.Header.Height)
 
+	app.StatisticData().PushStartBlock(statistics.StartRequest{Height: int64(height), Now: time.Now(), HeaderTime: req.Header.Time})
+
 	if app.haltHeight > 0 && height >= app.haltHeight {
 		panic(fmt.Sprintf("Application halted at height %d", height))
 	}
-
-	app.StatisticData().SetStartBlock(height, time.Now(), req.Header.Time)
 
 	if upgrades.IsUpgradeBlock(height) {
 		var err error
@@ -191,6 +195,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 	app.rewards = big.NewInt(0)
 
 	// clear absent candidates
+	app.lock.Lock()
 	app.validatorsStatuses = map[types.TmAddress]int8{}
 
 	// give penalty to absent validators
@@ -206,6 +211,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 			app.validatorsStatuses[address] = ValidatorAbsent
 		}
 	}
+	app.lock.Unlock()
 
 	// give penalty to Byzantine validators
 	for _, byzVal := range req.ByzantineValidators {
@@ -271,7 +277,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 	totalPower := big.NewInt(0)
 	for _, val := range vals {
 		// skip if candidate is not present
-		if val.IsToDrop() || app.validatorsStatuses[val.GetAddress()] != ValidatorPresent {
+		if val.IsToDrop() || app.GetValidatorStatus(val.GetAddress()) != ValidatorPresent {
 			continue
 		}
 
@@ -292,7 +298,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 
 	for i, val := range vals {
 		// skip if candidate is not present
-		if val.IsToDrop() || app.validatorsStatuses[val.GetAddress()] != ValidatorPresent {
+		if val.IsToDrop() || app.GetValidatorStatus(val.GetAddress()) != ValidatorPresent {
 			continue
 		}
 
@@ -373,7 +379,9 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 		}
 	}
 
-	defer func() { app.StatisticData().SetEndBlockDuration(time.Now(), app.height) }()
+	defer func() {
+		app.StatisticData().PushEndBlock(statistics.EndRequest{TimeEnd: time.Now(), Height: int64(app.height)})
+	}()
 
 	return abciTypes.ResponseEndBlock{
 		ValidatorUpdates: updates,
@@ -499,12 +507,42 @@ func (app *Blockchain) GetStateForHeight(height uint64) (*state.State, error) {
 	app.lock.RLock()
 	defer app.lock.RUnlock()
 
-	s, err := state.NewCheckStateAtHeight(height, app.stateDB)
-	if err != nil {
-		return nil, rpctypes.RPCError{Code: 404, Message: "State at given height not found", Data: err.Error()}
+	if height != 0 {
+		s, err := state.NewCheckStateAtHeight(height, app.stateDB)
+		if err != nil {
+			return nil, rpctypes.RPCError{Code: 404, Message: "State at given height not found", Data: err.Error()}
+		}
+		return s, nil
+	}
+	return blockchain.CurrentState(), nil
+}
+
+func (app *Blockchain) MissedBlocks(pubKey string, height uint64) (missedBlocks string, missedBlocksCount int, err error) {
+	if !strings.HasPrefix(pubKey, "Mp") {
+		return "", 0, status.Error(codes.InvalidArgument, "public key don't has prefix 'Mp'")
 	}
 
-	return s, nil
+	cState, err := blockchain.GetStateForHeight(height)
+	if err != nil {
+		return "", 0, status.Error(codes.NotFound, err.Error())
+	}
+
+	if height != 0 {
+		cState.Lock()
+		cState.Validators.LoadValidators()
+		cState.Unlock()
+	}
+
+	cState.RLock()
+	defer cState.RUnlock()
+
+	val := cState.Validators.GetByPublicKey(types.HexToPubkey(pubKey))
+	if val == nil {
+		return "", 0, status.Error(codes.NotFound, "Validator not found")
+	}
+
+	return val.AbsentTimes.String(), val.CountAbsentTimes(), nil
+
 }
 
 // Get current height of Minter Blockchain
@@ -625,6 +663,22 @@ func (app *Blockchain) SetStatisticData(statisticData *statistics.Data) *statist
 
 func (app *Blockchain) StatisticData() *statistics.Data {
 	return app.statisticData
+}
+
+func (app *Blockchain) GetValidatorStatus(address types.TmAddress) int8 {
+	app.lock.RLock()
+	defer app.lock.RUnlock()
+	return app.validatorsStatuses[address]
+}
+func (app *Blockchain) MaxPeerHeight() int64 {
+	var max int64
+	for _, peer := range app.tmNode.Switch().Peers().List() {
+		height := peer.Get(types2.PeerStateKey).(evidence.PeerState).GetHeight()
+		if height > max {
+			max = height
+		}
+	}
+	return max
 }
 
 func getDbOpts(memLimit int) *opt.Options {

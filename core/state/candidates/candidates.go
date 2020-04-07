@@ -165,8 +165,8 @@ func (c *Candidates) Create(ownerAddress types.Address, rewardAddress types.Addr
 		isDirty:           true,
 		isTotalStakeDirty: true,
 	}
-	candidate.setTmAddress()
 
+	candidate.setTmAddress()
 	c.setToMap(pubkey, candidate)
 }
 
@@ -808,48 +808,74 @@ func (c *Candidates) Punish(height uint64, address types.TmAddress) *big.Int {
 	return totalStake
 }
 
-func (c *Candidates) SetStakes(pubkey types.Pubkey, stakes []types.Stake) {
+func (c *Candidates) SetStakes(pubkey types.Pubkey, stakes []types.Stake, updates []types.Stake) {
 	candidate := c.GetCandidate(pubkey)
 	candidate.stakesCount = len(stakes)
-	if candidate.stakesCount > MaxDelegatorsPerCandidate {
-		candidate.stakesCount = MaxDelegatorsPerCandidate
-		for i := MaxDelegatorsPerCandidate; i < len(stakes); i++ {
-			stake := stakes[i]
+
+	for _, u := range updates {
+		candidate.addUpdate(&Stake{
+			Owner:    u.Owner,
+			Coin:     u.Coin,
+			Value:    helpers.StringToBigInt(u.Value),
+			BipValue: helpers.StringToBigInt(u.BipValue),
+		})
+	}
+
+	count := len(stakes)
+	if count > MaxDelegatorsPerCandidate {
+		count = MaxDelegatorsPerCandidate
+
+		for _, u := range stakes[1000:] {
 			candidate.addUpdate(&Stake{
-				Owner:    stake.Owner,
-				Coin:     stake.Coin,
-				Value:    helpers.StringToBigInt(stake.Value),
-				BipValue: helpers.StringToBigInt(stake.BipValue),
+				Owner:    u.Owner,
+				Coin:     u.Coin,
+				Value:    helpers.StringToBigInt(u.Value),
+				BipValue: helpers.StringToBigInt(u.BipValue),
 			})
 		}
 	}
-	for i := 0; i < candidate.stakesCount; i++ {
-		stake := stakes[i]
+
+	for i, s := range stakes[:count] {
 		candidate.stakes[i] = &Stake{
-			Owner:    stake.Owner,
-			Coin:     stake.Coin,
-			Value:    helpers.StringToBigInt(stake.Value),
-			BipValue: helpers.StringToBigInt(stake.BipValue),
-			index:    i,
+			Owner:    s.Owner,
+			Coin:     s.Coin,
+			Value:    helpers.StringToBigInt(s.Value),
+			BipValue: helpers.StringToBigInt(s.BipValue),
 			markDirty: func(index int) {
 				candidate.dirtyStakes[index] = true
 			},
+			index: i,
 		}
+
 		candidate.stakes[i].markDirty(i)
 	}
 }
 
 func (c *Candidates) Export(state *types.AppState) {
+	c.LoadCandidates()
+	c.LoadStakes()
+
 	candidates := c.GetCandidates()
 	for _, candidate := range candidates {
-		var stakes []types.Stake
-		for _, s := range c.GetStakes(candidate.PubKey) {
-			stakes = append(stakes, types.Stake{
+		candidateStakes := c.GetStakes(candidate.PubKey)
+		stakes := make([]types.Stake, len(candidateStakes))
+		for i, s := range candidateStakes {
+			stakes[i] = types.Stake{
 				Owner:    s.Owner,
 				Coin:     s.Coin,
 				Value:    s.Value.String(),
 				BipValue: s.BipValue.String(),
-			})
+			}
+		}
+
+		updates := make([]types.Stake, len(candidate.updates))
+		for i, u := range candidate.updates {
+			updates[i] = types.Stake{
+				Owner:    u.Owner,
+				Coin:     u.Coin,
+				Value:    u.Value.String(),
+				BipValue: u.BipValue.String(),
+			}
 		}
 
 		state.Candidates = append(state.Candidates, types.Candidate{
@@ -858,8 +884,9 @@ func (c *Candidates) Export(state *types.AppState) {
 			TotalBipStake: candidate.GetTotalBipStake().String(),
 			PubKey:        candidate.PubKey,
 			Commission:    candidate.Commission,
-			Stakes:        stakes,
 			Status:        candidate.Status,
+			Updates:       updates,
+			Stakes:        stakes,
 		})
 	}
 
