@@ -821,7 +821,21 @@ func (c *Candidates) SetStakes(pubkey types.Pubkey, stakes []types.Stake, update
 		})
 	}
 
-	for i, s := range stakes {
+	count := len(stakes)
+	if count > MaxDelegatorsPerCandidate {
+		count = MaxDelegatorsPerCandidate
+
+		for _, u := range stakes[1000:] {
+			candidate.addUpdate(&Stake{
+				Owner:    u.Owner,
+				Coin:     u.Coin,
+				Value:    helpers.StringToBigInt(u.Value),
+				BipValue: helpers.StringToBigInt(u.BipValue),
+			})
+		}
+	}
+
+	for i, s := range stakes[:count] {
 		candidate.stakes[i] = &Stake{
 			Owner:    s.Owner,
 			Coin:     s.Coin,
