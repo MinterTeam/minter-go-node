@@ -47,7 +47,7 @@ jobs:
 
       - name: Tests fail
         run: docker logs $CONTAINER_NAME && exit 1
-        if: ${{ env.RUN_TEST_RESULT }} == 'FAIL' || ${{ env.API_TEST_RESULT }} == 'FAIL'
+        if: env.RUN_TEST_RESULT == 'FAIL' || env.API_TEST_RESULT == 'FAIL'
 
       - name: Docker push versioned image
         run: docker push ${{ secrets.DOCKER_HUB_USER }}/minter:${{ env.VERSION }}
