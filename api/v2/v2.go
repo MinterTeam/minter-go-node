@@ -24,7 +24,6 @@ func Run(srv *service.Service, addrGRPC, addrApi string) error {
 		grpc.UnaryInterceptor(grpc_prometheus.UnaryServerInterceptor),
 	)
 	gw.RegisterApiServiceServer(grpcServer, srv)
-	grpc_prometheus.EnableHandlingTimeHistogram()
 	grpc_prometheus.Register(grpcServer)
 
 	var group errgroup.Group
