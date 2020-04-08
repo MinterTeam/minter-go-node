@@ -62,17 +62,59 @@ func Userbalance(
 	if err != nil {
 		return nil, err
 	}
-	
-	balances := cState.Accounts.GetBalances(address)
-	
-	var coinsbipvalue *big.Int
-	var response UserbalanceResponse
- 
 		cState.RLock()
 		defer cState.RUnlock()
-		
+
+	balances := cState.Accounts.GetBalances(address)
+	var response UserbalanceResponse
+	coinsbipvalue := big.NewInt(0)
+ 	response.Freecoins = make([]UStake, len(balances))
+	n := 0 	
 	for k, valueToSell := range balances {
 		coinToSell := k.String()
+		result := CustomCoinBipBalance(coinToSell, valueToSell, height)
+		response.Freecoins[n] = UStake{
+			Coin: 	k.String(),
+			Value: valueToSell.String(),
+			BipValue: result.String(),
+			}
+		n = n + 1
+ 
+	} 
+ 	
+	
+	response.Delegated = GroupUserStakes(height, address.String())
+
+
+	for _, coin := range response.Freecoins{
+		response.Total = append(response.Total,coin)
+	}
+
+	n = 0 
+	t1:=big.NewInt(0)
+	t2:=big.NewInt(0)
+
+	for _,coin:= range response.Delegated {
+		for i,_:= range response.Total{
+			if response.Total[i].Coin == coin.Coin {
+				fmt.Sscan(response.Total[i].Value, t1)
+				fmt.Sscan(coin.Value, t2)
+				t1.Add(t1,t2)
+				response.Total[i].Value = t1.String()
+				n=1
+				break
+			}
+		}
+		if n == 0 {
+			response.Total= append(response.Total,coin)
+		}
+	}
+	coinsbipvalue = big.NewInt(0)
+	n = 0 	
+	for _, coin := range response.Total {
+		coinToSell := coin.Coin
+		valueToSell:=big.NewInt(0)
+		fmt.Sscan(coin.Value, valueToSell)
 		result := CustomCoinBipBalance(coinToSell, valueToSell, height)
 
 		if coinsbipvalue == nil {
@@ -80,63 +122,16 @@ func Userbalance(
 		} else {
 			coinsbipvalue.Add(coinsbipvalue , result)
 		}
-	} 
+		response.Total[n] = UStake{
+				Coin: coinToSell,
+				Value: valueToSell.String(),
+				BipValue: result.String(),
+			}
+		
+			n = n + 1
  
-	balances = cState.Accounts.GetBalances(address)
-	response.Freecoins = make([]UStake, len(balances))
+	} 
 
-		fff := 0 
-		for i, k := range balances{
-			response.Freecoins[fff] = UStake{
-				Coin: 	i.String(),
-				Value: k.String(),
-				BipValue: CustomCoinBipBalance(i.String(), k, height).String(),
-			}
-			fff= fff+1
-		}
-
-
-response.Delegated = GroupUserStakes(height, address.String())
-
-qqq:=response.Freecoins
-ddd:=response.Delegated
-
-	t1:=big.NewInt(0)
-	t2:=big.NewInt(0)
-
-	for k:= range ddd {
-		rrr:=0
-	
-//		t1:=big.NewInt(ddd[k].Value)
-		fmt.Sscan(ddd[k].Value, t2)
-		for m:= range qqq {
-			if ddd[k].Coin == qqq[m].Coin{
-				fmt.Sscan(qqq[m].Value, t2)
-//				t1:=big.NewInt(qqq[m].Value)
-				t1.Add(t1,t2)
-				qqq[m].Value = t1.String()
-				rrr = 1
-			}
-		}
-		if rrr == 0 {
-			qqq = append(qqq , ddd[k])
-		}
-	}
-
-
-coinsbipvalue = big.NewInt(0)
-result1:= new(big.Int)
-	for i:= range qqq {
-		fmt.Sscan(qqq[i].Value, t1)
-		if len(qqq[i].Coin) != 0 {
-			result1 = CustomCoinBipBalance(qqq[i].Coin, t1, height)
-			if coinsbipvalue == nil {
-				coinsbipvalue = result1 
-			} else {
-				coinsbipvalue.Add(coinsbipvalue , result1)
-			}
-		}
-	}
 
 
 	response.TransactionCount = cState.Accounts.GetNonce(address)
