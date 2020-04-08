@@ -91,6 +91,12 @@ func (mc *ManagerConsole) Cli(ctx context.Context) {
 			t := prompt.Input(">>> ", completer,
 				prompt.OptionHistory(history),
 				prompt.OptionShowCompletionAtStart(),
+				prompt.OptionAddKeyBind(prompt.KeyBind{
+					Key: prompt.ControlC,
+					Fn: func(b *prompt.Buffer) {
+						os.Exit(0)
+					},
+				}),
 			)
 			if err := mc.Execute(strings.Fields(t)); err != nil {
 				_, _ = fmt.Fprintln(os.Stderr, err)
