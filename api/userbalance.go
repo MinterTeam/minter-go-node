@@ -13,6 +13,7 @@ import (
 type UserbalanceResponse struct {
 	Freecoins         	[]UStake  `json:"freecoins"`
 	Delegated         	[]UStake  `json:"delegated"`
+	Total         		[]UStake  `json:"total"`
 	TransactionCount 	uint64         `json:"transaction_count"`
 	Bipvalue     		*big.Int       `json:"bipvalue"`
 } 
