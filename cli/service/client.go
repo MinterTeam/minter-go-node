@@ -197,6 +197,7 @@ func dashboardCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 			return err
 		}
 		ui.SetKeybinding("Esc", func() { ui.Quit() })
+		ui.SetKeybinding("Ctrl+C", func() { ui.Quit() })
 		ui.SetKeybinding("q", func() { ui.Quit() })
 		errCh := make(chan error)
 
