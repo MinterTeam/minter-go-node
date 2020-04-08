@@ -31,6 +31,10 @@ func TestApplyUpgrade3(t *testing.T) {
 			t.Fatalf("Balance of %s is not correct", address)
 		}
 	}
+
+	if err := cState.Check(); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func getState() *state.State {

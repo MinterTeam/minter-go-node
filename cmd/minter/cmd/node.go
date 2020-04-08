@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"context"
+	"fmt"
 	api_v1 "github.com/MinterTeam/minter-go-node/api"
 	api_v2 "github.com/MinterTeam/minter-go-node/api/v2"
 	service_api "github.com/MinterTeam/minter-go-node/api/v2/service"
@@ -9,6 +9,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/minter"
+	"github.com/MinterTeam/minter-go-node/core/statistics"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/version"
 	"github.com/spf13/cobra"
@@ -24,21 +25,44 @@ import (
 	rpc "github.com/tendermint/tendermint/rpc/client"
 	"github.com/tendermint/tendermint/store"
 	tmTypes "github.com/tendermint/tendermint/types"
+	"io"
 	"net/http"
 	_ "net/http/pprof"
+	"net/url"
 	"os"
+	"syscall"
 )
+
+const RequiredOpenFilesLimit = 10000
 
 var RunNode = &cobra.Command{
 	Use:   "node",
 	Short: "Run the Minter node",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, _ []string) error {
 		return runNode(cmd)
 	},
 }
 
 func runNode(cmd *cobra.Command) error {
 	logger := log.NewLogger(cfg)
+
+	// check open files limits
+	{
+		var rLimit syscall.Rlimit
+		err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rLimit)
+		if err != nil {
+			panic(err)
+		}
+
+		required := RequiredOpenFilesLimit + uint64(cfg.StateMemAvailable)
+		if rLimit.Cur < required {
+			rLimit.Cur = required
+			err = syscall.Setrlimit(syscall.RLIMIT_NOFILE, &rLimit)
+			if err != nil {
+				panic(fmt.Errorf("cannot set RLIMIT_NOFILE to %d", rLimit.Cur))
+			}
+		}
+	}
 
 	pprofOn, err := cmd.Flags().GetBool("pprof")
 	if err != nil {
@@ -89,32 +113,40 @@ func runNode(cmd *cobra.Command) error {
 
 	if !cfg.ValidatorMode {
 		go func(srv *service_api.Service) {
-			logger.Error("Failed to start Api V2 in both gRPC and RESTful", api_v2.Run(srv, cfg.GRPCListenAddress, cfg.APIv2ListenAddress))
+			grpcUrl, err := url.Parse(cfg.GRPCListenAddress)
+			if err != nil {
+				logger.Error("Failed to parse gRPC address", err)
+			}
+			apiV2url, err := url.Parse(cfg.APIv2ListenAddress)
+			if err != nil {
+				logger.Error("Failed to parse API v2 address", err)
+			}
+			logger.Error("Failed to start Api V2 in both gRPC and RESTful", api_v2.Run(srv, grpcUrl.Host, apiV2url.Host))
 		}(service_api.NewService(amino.NewCodec(), app, client, node, cfg, version.Version))
 
 		go api_v1.RunAPI(app, client, cfg, logger)
 	}
 
-	ctxCli, stopCli := context.WithCancel(context.Background())
 	go func() {
-		err := service.StartCLIServer(utils.GetMinterHome()+"/manager.sock", service.NewManager(app, client, cfg), ctxCli)
+		err := service.StartCLIServer(utils.GetMinterHome()+"/manager.sock", service.NewManager(app, client, cfg), cmd.Context())
 		if err != nil {
 			panic(err)
 		}
 	}()
 
-	tmos.TrapSignal(logger.With("module", "trap"), func() {
-		// Cleanup
-		stopCli()
-		err := node.Stop()
-		app.Stop()
-		if err != nil {
-			panic(err)
-		}
-	})
+	if cfg.Instrumentation.Prometheus {
+		data := statistics.New()
+		go app.SetStatisticData(data).Statistic(cmd.Context())
+	}
 
-	// Run forever
-	select {}
+	<-cmd.Context().Done()
+
+	defer app.Stop()
+	if err := node.Stop(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func updateBlocksTimeDelta(app *minter.Blockchain, config *tmCfg.Config) {
@@ -169,5 +201,36 @@ func startTendermintNode(app types.Application, cfg *tmCfg.Config, logger tmlog.
 }
 
 func getGenesis() (doc *tmTypes.GenesisDoc, e error) {
-	return tmTypes.GenesisDocFromFile(utils.GetMinterHome() + "/config/genesis.json")
+	genDocFile := utils.GetMinterHome() + "/config/genesis.json"
+	_, err := os.Stat(genDocFile)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			panic(err)
+		}
+		if err := downloadFile(genDocFile, "https://raw.githubusercontent.com/MinterTeam/minter-network-migrate/master/minter-mainnet-2/genesis.json"); err != nil {
+			panic(err)
+		}
+	}
+	return tmTypes.GenesisDocFromFile(genDocFile)
+}
+
+func downloadFile(filepath string, url string) error {
+
+	// Get the data
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	// Create the file
+	out, err := os.Create(filepath)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	// Write the body to file
+	_, err = io.Copy(out, resp.Body)
+	return err
 }

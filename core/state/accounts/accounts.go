@@ -278,7 +278,7 @@ func (a *Accounts) GetNonce(address types.Address) uint64 {
 func (a *Accounts) GetBalances(address types.Address) map[types.CoinSymbol]*big.Int {
 	account := a.getOrNew(address)
 
-	balances := map[types.CoinSymbol]*big.Int{}
+	balances := make(map[types.CoinSymbol]*big.Int, len(account.coins))
 	for _, coin := range account.coins {
 		balances[coin] = a.GetBalance(address, coin)
 	}
@@ -304,7 +304,13 @@ func (a *Accounts) Export(state *types.AppState) {
 	// todo: iterate range?
 	a.iavl.Iterate(func(key []byte, value []byte) bool {
 		if key[0] == mainPrefix {
-			account := a.get(types.BytesToAddress(key[1:]))
+			addressPath := key[1:]
+			if len(addressPath) > types.AddressLength {
+				return false
+			}
+
+			address := types.BytesToAddress(addressPath)
+			account := a.get(address)
 
 			var balance []types.Balance
 			for coin, value := range a.GetBalances(account.address) {
@@ -313,6 +319,11 @@ func (a *Accounts) Export(state *types.AppState) {
 					Value: value.String(),
 				})
 			}
+
+			// sort balances by coin symbol
+			sort.SliceStable(balance, func(i, j int) bool {
+				return bytes.Compare(balance[i].Coin.Bytes(), balance[j].Coin.Bytes()) == 1
+			})
 
 			acc := types.Account{
 				Address: account.address,

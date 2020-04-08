@@ -6,11 +6,14 @@ import (
 	"github.com/MinterTeam/minter-go-node/cli/pb"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/minter"
+	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/version"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/empty"
 	rpc "github.com/tendermint/tendermint/rpc/client"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"runtime"
 	"time"
 )
 
@@ -22,6 +25,86 @@ type Manager struct {
 
 func NewManager(blockchain *minter.Blockchain, tmRPC *rpc.Local, cfg *config.Config) pb.ManagerServiceServer {
 	return &Manager{blockchain: blockchain, tmRPC: tmRPC, cfg: cfg}
+}
+
+func (m *Manager) Dashboard(_ *empty.Empty, stream pb.ManagerService_DashboardServer) error {
+	for {
+		select {
+		case <-stream.Context().Done():
+			return stream.Context().Err()
+		case <-time.After(time.Second):
+
+			statisticData := m.blockchain.StatisticData()
+			if statisticData == nil {
+				return status.Error(codes.Unavailable, "Dashboard is not available, please enable prometheus in configuration")
+			}
+			info := statisticData.GetLastBlockInfo()
+			averageTimeBlock := statisticData.GetAverageBlockProcessingTime()
+			timePerBlock := statisticData.GetTimePerBlock()
+			maxPeersHeight := m.blockchain.MaxPeerHeight()
+			maxPeersHeight = maxPeersHeight - 1
+			protoTime, _ := ptypes.TimestampProto(info.HeaderTimestamp)
+			var mem runtime.MemStats
+			runtime.ReadMemStats(&mem)
+			resultStatus, err := m.tmRPC.Status()
+			if err != nil {
+				return status.Error(codes.Internal, err.Error())
+			}
+			netInfo, err := m.tmRPC.NetInfo()
+			if err != nil {
+				return status.Error(codes.Internal, err.Error())
+			}
+			pubKey := fmt.Sprintf("Mp%x", resultStatus.ValidatorInfo.PubKey.Bytes()[5:])
+
+			state, err := m.blockchain.GetStateForHeight(0)
+			if err != nil {
+				return status.Error(codes.NotFound, err.Error())
+			}
+
+			var address types.TmAddress
+			copy(address[:], resultStatus.ValidatorInfo.Address)
+			validator := state.Validators.GetByTmAddress(address)
+			validatorStatus := m.blockchain.GetValidatorStatus(address)
+
+			var pbValidatorStatus pb.DashboardResponse_ValidatorStatus
+
+			switch true {
+			case validator != nil && validatorStatus == minter.ValidatorAbsent:
+				pbValidatorStatus = pb.DashboardResponse_Validating
+			case validator == nil && validatorStatus == minter.ValidatorAbsent:
+				pbValidatorStatus = pb.DashboardResponse_Challenger
+			case validator == nil && validatorStatus == minter.ValidatorPresent:
+				pbValidatorStatus = pb.DashboardResponse_Offline
+			default:
+				pbValidatorStatus = pb.DashboardResponse_NotDeclared
+			}
+
+			var missedBlocks string
+			var stake string
+			if pbValidatorStatus == pb.DashboardResponse_Validating {
+				missedBlocks = validator.AbsentTimes.String()
+				stake = validator.GetTotalBipStake().String()
+			}
+
+			if err := stream.Send(&pb.DashboardResponse{
+				LatestHeight:           info.Height,
+				Timestamp:              protoTime,
+				Duration:               info.Duration,
+				MemoryUsage:            mem.Sys,
+				ValidatorPubKey:        pubKey,
+				MaxPeerHeight:          maxPeersHeight,
+				PeersCount:             int32(netInfo.NPeers),
+				AvgBlockProcessingTime: averageTimeBlock,
+				TimePerBlock:           timePerBlock,
+				MissedBlocks:           missedBlocks,
+				Stake:                  stake,
+				VotingPower:            resultStatus.ValidatorInfo.VotingPower,
+				ValidatorStatus:        pbValidatorStatus,
+			}); err != nil {
+				return err
+			}
+		}
+	}
 }
 
 func (m *Manager) Status(context.Context, *empty.Empty) (*pb.StatusResponse, error) {
@@ -65,7 +148,7 @@ func (m *Manager) Status(context.Context, *empty.Empty) (*pb.StatusResponse, err
 			ValidatorInfo: &pb.StatusResponse_TmStatus_ValidatorInfo{
 				Address: fmt.Sprintf("%X", resultStatus.ValidatorInfo.Address),
 				PubKey: &pb.StatusResponse_TmStatus_ValidatorInfo_PubKey{
-					Type:  "", //todo
+					Type:  "tendermint/PubKeyEd25519",
 					Value: fmt.Sprintf("%X", resultStatus.ValidatorInfo.PubKey.Bytes()),
 				},
 				VotingPower: resultStatus.ValidatorInfo.VotingPower,

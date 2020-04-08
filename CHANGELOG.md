@@ -1,5 +1,39 @@
 # Changelog
 
+## 1.1.6
+
+IMPROVEMENT
+
+- [export] Added export command
+- [db] Update IAVL to v0.13.2
+- [console] Added dashboard command
+- [docker] Fix docker build config (@dmitry-ee)
+
+BUG FIXES
+
+- [prometheus] Fix too many open descriptors problem
+
+## 1.1.5
+
+IMPROVEMENT
+
+- [core] Check open files limits before starting the node
+- [tendermint] Rollback to v0 blockchain reactor
+
+## 1.1.4
+
+IMPROVEMENT
+
+- [core] Load genesis from github if not exists
+- [core] Reset state on upgrades
+- [config] Add `state_mem_available` param
+- [api] Optimize `/candidate` endpoint
+- [prometheus] Add latest block timestamp
+
+BUG FIXES
+
+- [config] Fix default config
+
 ## 1.1.3
 
 BREAKING CHANGES

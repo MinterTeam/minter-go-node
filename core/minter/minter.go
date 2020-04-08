@@ -10,6 +10,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/rewards"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/state/candidates"
+	"github.com/MinterTeam/minter-go-node/core/statistics"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/core/validators"
@@ -22,14 +23,19 @@ import (
 	abciTypes "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	cryptoAmino "github.com/tendermint/tendermint/crypto/encoding/amino"
+	"github.com/tendermint/tendermint/evidence"
 	tmNode "github.com/tendermint/tendermint/node"
 	rpctypes "github.com/tendermint/tendermint/rpc/lib/types"
 	types2 "github.com/tendermint/tendermint/types"
 	"github.com/tendermint/tm-db"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"math/big"
 	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 const (
@@ -51,6 +57,8 @@ var (
 type Blockchain struct {
 	abciTypes.BaseApplication
 
+	statisticData *statistics.Data
+
 	stateDB            db.DB
 	appDB              *appdb.AppDB
 	eventsDB           eventsdb.IEventsDB
@@ -69,13 +77,14 @@ type Blockchain struct {
 	lock sync.RWMutex
 
 	haltHeight uint64
+	cfg        *config.Config
 }
 
 // Creates Minter Blockchain instance, should be only called once
 func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 	var err error
 
-	ldb, err := db.NewGoLevelDBWithOpts("state", utils.GetMinterHome()+"/data", getDbOpts())
+	ldb, err := db.NewGoLevelDBWithOpts("state", utils.GetMinterHome()+"/data", getDbOpts(cfg.StateMemAvailable))
 	if err != nil {
 		panic(err)
 	}
@@ -83,7 +92,7 @@ func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 	// Initiate Application DB. Used for persisting data like current block, validators, etc.
 	applicationDB := appdb.NewAppDB(cfg)
 
-	edb, err := db.NewGoLevelDBWithOpts("events", utils.GetMinterHome()+"/data", getDbOpts())
+	edb, err := db.NewGoLevelDBWithOpts("events", utils.GetMinterHome()+"/data", getDbOpts(1024))
 	if err != nil {
 		panic(err)
 	}
@@ -94,6 +103,7 @@ func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 		height:         applicationDB.GetLastHeight(),
 		eventsDB:       eventsdb.NewEventsStore(edb),
 		currentMempool: &sync.Map{},
+		cfg:            cfg,
 	}
 
 	// Set stateDeliver and stateCheck
@@ -159,8 +169,19 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.ResponseBeginBlock {
 	height := uint64(req.Header.Height)
 
+	app.StatisticData().PushStartBlock(statistics.StartRequest{Height: int64(height), Now: time.Now(), HeaderTime: req.Header.Time})
+
 	if app.haltHeight > 0 && height >= app.haltHeight {
 		panic(fmt.Sprintf("Application halted at height %d", height))
+	}
+
+	if upgrades.IsUpgradeBlock(height) {
+		var err error
+		app.stateDeliver, err = state.NewState(app.height, app.stateDB, app.eventsDB, app.cfg.KeepLastStates, app.cfg.StateCacheSize)
+		if err != nil {
+			panic(err)
+		}
+		app.stateCheck = state.NewCheckState(app.stateDeliver)
 	}
 
 	app.stateDeliver.Lock()
@@ -174,6 +195,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 	app.rewards = big.NewInt(0)
 
 	// clear absent candidates
+	app.lock.Lock()
 	app.validatorsStatuses = map[types.TmAddress]int8{}
 
 	// give penalty to absent validators
@@ -189,6 +211,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 			app.validatorsStatuses[address] = ValidatorAbsent
 		}
 	}
+	app.lock.Unlock()
 
 	// give penalty to Byzantine validators
 	for _, byzVal := range req.ByzantineValidators {
@@ -254,7 +277,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 	totalPower := big.NewInt(0)
 	for _, val := range vals {
 		// skip if candidate is not present
-		if val.IsToDrop() || app.validatorsStatuses[val.GetAddress()] != ValidatorPresent {
+		if val.IsToDrop() || app.GetValidatorStatus(val.GetAddress()) != ValidatorPresent {
 			continue
 		}
 
@@ -275,7 +298,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 
 	for i, val := range vals {
 		// skip if candidate is not present
-		if val.IsToDrop() || app.validatorsStatuses[val.GetAddress()] != ValidatorPresent {
+		if val.IsToDrop() || app.GetValidatorStatus(val.GetAddress()) != ValidatorPresent {
 			continue
 		}
 
@@ -355,6 +378,10 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 			}
 		}
 	}
+
+	defer func() {
+		app.StatisticData().PushEndBlock(statistics.EndRequest{TimeEnd: time.Now(), Height: int64(app.height)})
+	}()
 
 	return abciTypes.ResponseEndBlock{
 		ValidatorUpdates: updates,
@@ -480,12 +507,42 @@ func (app *Blockchain) GetStateForHeight(height uint64) (*state.State, error) {
 	app.lock.RLock()
 	defer app.lock.RUnlock()
 
-	s, err := state.NewCheckStateAtHeight(height, app.stateDB)
-	if err != nil {
-		return nil, rpctypes.RPCError{Code: 404, Message: "State at given height not found", Data: err.Error()}
+	if height != 0 {
+		s, err := state.NewCheckStateAtHeight(height, app.stateDB)
+		if err != nil {
+			return nil, rpctypes.RPCError{Code: 404, Message: "State at given height not found", Data: err.Error()}
+		}
+		return s, nil
+	}
+	return blockchain.CurrentState(), nil
+}
+
+func (app *Blockchain) MissedBlocks(pubKey string, height uint64) (missedBlocks string, missedBlocksCount int, err error) {
+	if !strings.HasPrefix(pubKey, "Mp") {
+		return "", 0, status.Error(codes.InvalidArgument, "public key don't has prefix 'Mp'")
 	}
 
-	return s, nil
+	cState, err := blockchain.GetStateForHeight(height)
+	if err != nil {
+		return "", 0, status.Error(codes.NotFound, err.Error())
+	}
+
+	if height != 0 {
+		cState.Lock()
+		cState.Validators.LoadValidators()
+		cState.Unlock()
+	}
+
+	cState.RLock()
+	defer cState.RUnlock()
+
+	val := cState.Validators.GetByPublicKey(types.HexToPubkey(pubKey))
+	if val == nil {
+		return "", 0, status.Error(codes.NotFound, "Validator not found")
+	}
+
+	return val.AbsentTimes.String(), val.CountAbsentTimes(), nil
+
 }
 
 // Get current height of Minter Blockchain
@@ -599,11 +656,39 @@ func (app *Blockchain) GetEventsDB() eventsdb.IEventsDB {
 	return app.eventsDB
 }
 
-func getDbOpts() *opt.Options {
+func (app *Blockchain) SetStatisticData(statisticData *statistics.Data) *statistics.Data {
+	app.statisticData = statisticData
+	return app.statisticData
+}
+
+func (app *Blockchain) StatisticData() *statistics.Data {
+	return app.statisticData
+}
+
+func (app *Blockchain) GetValidatorStatus(address types.TmAddress) int8 {
+	app.lock.RLock()
+	defer app.lock.RUnlock()
+	return app.validatorsStatuses[address]
+}
+func (app *Blockchain) MaxPeerHeight() int64 {
+	var max int64
+	for _, peer := range app.tmNode.Switch().Peers().List() {
+		height := peer.Get(types2.PeerStateKey).(evidence.PeerState).GetHeight()
+		if height > max {
+			max = height
+		}
+	}
+	return max
+}
+
+func getDbOpts(memLimit int) *opt.Options {
+	if memLimit < 1024 {
+		panic(fmt.Sprintf("Not enough memory given to StateDB. Expected >1024M, given %d", memLimit))
+	}
 	return &opt.Options{
-		OpenFilesCacheCapacity: 1024,
-		BlockCacheCapacity:     1024 / 2 * opt.MiB,
-		WriteBuffer:            1024 / 4 * opt.MiB, // Two of these are used internally
+		OpenFilesCacheCapacity: memLimit,
+		BlockCacheCapacity:     memLimit / 2 * opt.MiB,
+		WriteBuffer:            memLimit / 4 * opt.MiB, // Two of these are used internally
 		Filter:                 filter.NewBloomFilter(10),
 	}
 }

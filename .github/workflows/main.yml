@@ -1,9 +1,20 @@
 name: docker
 
-on: push
+on:
+  push:
+    branches:
+      - master
+
+  pull_request:
+    branches:
+      - master
 
 jobs:
   docker:
+    env:
+      CONTAINER_NAME: minter_node
+      CONTAINER_TIMEOUT_SEC: 30
+      API_RUN_PORT: 8841
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -11,11 +22,43 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Build & Push to Docker Hub
-        uses: opspresso/action-docker@master
-        env:
-          USERNAME: ${{ secrets.DOCKER_HUB_USER }}
-          PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
-          IMAGE_NAME: "minterteam/minter"
-          LATEST: "true" 
-          TAG_NAME: "v1.0.5"
+      - name: Set envs
+        run: |
+          echo ::set-env name=VERSION::$(awk -F\" '/Version =/ { print $2; exit }' < version/version.go)
+
+      - name: Docker build
+        run: docker build -t ${{ secrets.DOCKER_HUB_USER }}/minter:${{ env.VERSION }} .
+
+      - name: Start docker container
+        run: docker run -d --name $CONTAINER_NAME -p $API_RUN_PORT:8841 ${{ secrets.DOCKER_HUB_USER }}/minter:${{ env.VERSION }}
+
+      - name: Check container is still running
+        run: |
+          echo ::set-env name=RUN_TEST_RESULT::$(sleep $CONTAINER_TIMEOUT_SEC && if [[ $(docker inspect -f "{{.State.Running}}" $CONTAINER_NAME 2> /dev/null) == true ]]; then echo OK; else echo FAIL; fi;)
+
+      - name: Check api is available by HTTP (response code is 200)
+        run: |
+          echo ::set-env name=API_TEST_RESULT::$(if [[ $(curl -LIs localhost:$API_RUN_PORT -o /dev/null -w '%{http_code}') == 200 ]]; then echo OK; else echo FAIL; fi)
+
+      - name: Print test results
+        run: |
+          echo $RUN_TEST_RESULT
+          echo $API_TEST_RESULT
+
+      - name: Tests fail
+        run: docker logs $CONTAINER_NAME && exit 1
+        if: env.RUN_TEST_RESULT == 'FAIL' || env.API_TEST_RESULT == 'FAIL'
+
+      - name: Docker login
+        run: echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_HUB_USER }} --password-stdin
+        if: github.ref == 'refs/heads/master'
+
+      - name: Docker push versioned image
+        run: docker push ${{ secrets.DOCKER_HUB_USER }}/minter:${{ env.VERSION }}
+        if: github.ref == 'refs/heads/master'
+
+      - name: Docker push latest image
+        run: |
+          docker tag ${{ secrets.DOCKER_HUB_USER }}/minter:${{ env.VERSION }} ${{ secrets.DOCKER_HUB_USER }}/minter:latest
+          docker push ${{ secrets.DOCKER_HUB_USER }}/minter:latest
+        if: github.ref == 'refs/heads/master'

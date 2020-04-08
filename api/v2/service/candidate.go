@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	pb "github.com/MinterTeam/minter-go-node/api/v2/api_pb"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/state/candidates"
 	"github.com/MinterTeam/minter-go-node/core/types"
+	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -21,6 +21,8 @@ func (s *Service) Candidate(_ context.Context, req *pb.CandidateRequest) (*pb.Ca
 		return new(pb.CandidateResponse), status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	pubkey := types.BytesToPubkey(decodeString)
+
 	cState, err := s.getStateForHeight(req.Height)
 	if err != nil {
 		return new(pb.CandidateResponse), status.Error(codes.NotFound, err.Error())
@@ -29,14 +31,14 @@ func (s *Service) Candidate(_ context.Context, req *pb.CandidateRequest) (*pb.Ca
 	if req.Height != 0 {
 		cState.Lock()
 		cState.Candidates.LoadCandidates()
-		cState.Candidates.LoadStakes()
+		cState.Candidates.LoadStakesOfCandidate(pubkey)
 		cState.Unlock()
 	}
 
 	cState.RLock()
 	defer cState.RUnlock()
 
-	candidate := cState.Candidates.GetCandidate(types.BytesToPubkey(decodeString))
+	candidate := cState.Candidates.GetCandidate(pubkey)
 	if candidate == nil {
 		return new(pb.CandidateResponse), status.Error(codes.NotFound, "Candidate not found")
 	}

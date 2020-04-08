@@ -13,7 +13,7 @@ import (
 	"testing"
 )
 
-const height = upgrades.UpgradeBlock2
+const height = upgrades.UpgradeBlock3
 
 func TestSimpleDelegate(t *testing.T) {
 	st := getState()
@@ -330,6 +330,63 @@ func TestDoubleAbsentPenalty(t *testing.T) {
 	if stake.Cmp(newValue) != 0 {
 		t.Fatalf("Stake is not correct. Expected %s, got %s", newValue, stake.String())
 	}
+}
+
+func TestDelegationAfterUnbond(t *testing.T) {
+	st := getState()
+
+	coin := types.GetBaseCoin()
+	pubkey := createTestCandidate(st)
+
+	for i := uint64(0); i < 1000; i++ {
+		amount := big.NewInt(int64(1000 - i))
+		var addr types.Address
+		binary.BigEndian.PutUint64(addr[:], i)
+		st.Candidates.Delegate(addr, pubkey, coin, amount, big.NewInt(0))
+	}
+
+	st.Candidates.RecalculateStakes(height)
+
+	// unbond
+	{
+		var addr types.Address
+		binary.BigEndian.PutUint64(addr[:], 2)
+		amount := big.NewInt(int64(1000 - 2))
+
+		st.Candidates.SubStake(addr, pubkey, coin, amount)
+		st.Candidates.RecalculateStakes(height)
+		st.Candidates.Commit()
+	}
+
+	// delegate
+	{
+		var addr types.Address
+		binary.BigEndian.PutUint64(addr[:], 2000)
+		amount := big.NewInt(2000)
+
+		st.Candidates.Delegate(addr, pubkey, coin, amount, big.NewInt(0))
+		st.Candidates.RecalculateStakes(height)
+
+		value := st.Candidates.GetStakeValueOfAddress(pubkey, addr, coin)
+		if value == nil || value.Cmp(amount) != 0 {
+			t.Fatalf("Stake of address %s is not correct", addr.String())
+		}
+	}
+
+	for i := uint64(0); i < 1000; i++ {
+		if i == 2 {
+			continue
+		}
+
+		amount := big.NewInt(int64(1000 - i))
+		var addr types.Address
+		binary.BigEndian.PutUint64(addr[:], i)
+		value := st.Candidates.GetStakeValueOfAddress(pubkey, addr, coin)
+		if value == nil || value.Cmp(amount) != 0 {
+			t.Fatalf("Stake of address %s is not correct", addr.String())
+		}
+	}
+
 }
 
 func getState() *State {
