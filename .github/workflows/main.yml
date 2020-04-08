@@ -15,6 +15,9 @@ jobs:
       CONTAINER_NAME: minter_node
       CONTAINER_TIMEOUT_SEC: 30
       API_RUN_PORT: 8841
+      SECRET_DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
+      SECRET_DOCKER_HUB_USER: ${{ secrets.DOCKER_HUB_USER }}
+      DOCKER_IMAGE: minter
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -25,12 +28,13 @@ jobs:
       - name: Set envs
         run: |
           echo ::set-env name=VERSION::$(awk -F\" '/Version =/ { print $2; exit }' < version/version.go)
+          echo ::set-env name=DOCKER_REPO::$(if [[ "$SECRET_DOCKER_HUB_USER" == "" ]]; then echo "prbuild"; else echo "$SECRET_DOCKER_HUB_USER"; fi;)
 
       - name: Docker build
-        run: docker build -t ${{ secrets.DOCKER_HUB_USER }}/minter:${{ env.VERSION }} .
+        run: docker build -t $DOCKER_REPO/$DOCKER_IMAGE:$VERSION .
 
       - name: Start docker container
-        run: docker run -d --name $CONTAINER_NAME -p $API_RUN_PORT:8841 ${{ secrets.DOCKER_HUB_USER }}/minter:${{ env.VERSION }}
+        run: docker run -d --name $CONTAINER_NAME -p $API_RUN_PORT:8841 $DOCKER_REPO/$DOCKER_IMAGE:$VERSION
 
       - name: Check container is still running
         run: |
@@ -50,15 +54,15 @@ jobs:
         if: env.RUN_TEST_RESULT == 'FAIL' || env.API_TEST_RESULT == 'FAIL'
 
       - name: Docker login
-        run: echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_HUB_USER }} --password-stdin
+        run: echo "$SECRET_DOCKER_HUB_PASSWORD" | docker login -u $DOCKER_REPO --password-stdin
         if: github.ref == 'refs/heads/master'
 
       - name: Docker push versioned image
-        run: docker push ${{ secrets.DOCKER_HUB_USER }}/minter:${{ env.VERSION }}
+        run: docker push $DOCKER_REPO/$DOCKER_IMAGE:$VERSION
         if: github.ref == 'refs/heads/master'
 
       - name: Docker push latest image
         run: |
-          docker tag ${{ secrets.DOCKER_HUB_USER }}/minter:${{ env.VERSION }} ${{ secrets.DOCKER_HUB_USER }}/minter:latest
-          docker push ${{ secrets.DOCKER_HUB_USER }}/minter:latest
+          docker tag $DOCKER_REPO/$DOCKER_IMAGE:$VERSION $DOCKER_REPO/$DOCKER_IMAGE:latest
+          docker push $DOCKER_REPO/$DOCKER_IMAGE:latest
         if: github.ref == 'refs/heads/master'
