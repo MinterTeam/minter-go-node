@@ -206,33 +206,36 @@ func dashboardCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 		ui.SetKeybinding("Ctrl+C", func() { ui.Quit() })
 		ui.SetKeybinding("q", func() { ui.Quit() })
 		errCh := make(chan error)
-
-		recv, err := response.Recv()
-		if err == io.EOF {
-			return nil
-		}
-		if err != nil {
-			return err
-		}
-		dashboard := updateDashboard(box, recv)
+		recvCh := make(chan *pb.DashboardResponse)
 
 		go func() { errCh <- ui.Run() }()
+		go func() {
+			for {
+				recv, err := response.Recv()
+				if err == io.EOF {
+					close(errCh)
+					return
+				}
+				if err != nil {
+					errCh <- err
+					return
+				}
+				recvCh <- recv
+			}
+		}()
 
+		var dashboardFunc func(recv *pb.DashboardResponse)
 		for {
 			select {
 			case <-c.Done():
 				return c.Err()
 			case err := <-errCh:
 				return err
-			case <-time.After(time.Second):
-				recv, err := response.Recv()
-				if err == io.EOF {
-					return nil
+			case recv := <-recvCh:
+				if dashboardFunc == nil {
+					dashboardFunc = updateDashboard(box, recv)
 				}
-				if err != nil {
-					return err
-				}
-				dashboard(recv)
+				dashboardFunc(recv)
 				ui.Repaint()
 			}
 		}
