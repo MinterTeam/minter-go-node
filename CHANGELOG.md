@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.7
+
+IMPROVEMENT
+
+- [tendermint] Upgrade to [v0.33.3](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0333) 
+
+BUG FIXES
+
+- [dashboard] Some minor fixes
+
 ## 1.1.6
 
 IMPROVEMENT
