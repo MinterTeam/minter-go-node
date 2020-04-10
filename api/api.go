@@ -64,7 +64,6 @@ var Routes = map[string]*rpcserver.RPCFunc{
 	"convertmx":                rpcserver.NewRPCFunc(MXconvert, "wlt"),
 	"revents":                 rpcserver.NewRPCFunc(rEvents, "height"),
 	"slashed":      	    rpcserver.NewRPCFunc(AllSlashed, "height"),
-	"frozzen":      	  rpcserver.NewRPCFunc(Frozzen, "address"),
 }
 
 func responseTime(b *minter.Blockchain) func(f func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
