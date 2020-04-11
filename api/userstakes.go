@@ -6,18 +6,15 @@ import (
 	
 )
 
-
 type AllUserStakes struct {
 	PubKey        string	`json:"pub_key"`
 	Stakes        []UStake 	`json:"stakes,omitempty"`
 }
 
+func Userstakes(height int, address string) ([]AllUserStakes , error) {
+	var	tmresult AllUserStakes
+	var 	result  []AllUserStakes
 
-
-
-
-
-func Userstakes(height int, address string) (*[]AllUserStakes , error) {
 	cState, err := GetStateForHeight(height)
 	if err != nil {
 		return nil, err
@@ -35,34 +32,19 @@ func Userstakes(height int, address string) (*[]AllUserStakes , error) {
 
 	candidates := cState.Candidates.GetCandidates()
  
-	hhh := make([]UserstakeResponse, 1)
-
-	tmp := 0
-		for _, candidate := range candidates {
-			if len(ResponseUserstake(cState, *candidate, address)) > len(hhh)  {
-				tmp = tmp + 1 
-			}
+	for _, candidate := range candidates {
+		if len(ResponseUserstake(cState, *candidate, address)) > 0 {
+			tmresult.PubKey	= candidate.PubKey.String()
+			tmresult.Stakes	= ResponseUserstake(cState, *candidate, address)
+			result = append(result, tmresult)
 		}
-
-	result := make([]AllUserStakes, tmp)
- 	tmp = 0
-
-	for i, candidate := range candidates {
-		if len(ResponseUserstake(cState, *candidate, address)) > len(hhh) {
-			result[tmp].PubKey	= candidate.PubKey.String()
-			result[tmp].Stakes	= ResponseUserstake(cState, *candidate, address)
-			i=i
-			tmp = tmp + 1
-		}
-	}
-
-	return &result, nil
+	} 
+	return result, nil
 }
  
 
 func GroupUserStakes(height int, address string) ([]UStake) {
-
-
+	
 	cState, _ := GetStateForHeight(height)
 
 	if height != 0 {
@@ -76,7 +58,12 @@ func GroupUserStakes(height int, address string) ([]UStake) {
 	defer cState.RUnlock()
 
 	candidates := cState.Candidates.GetCandidates()
- 
+ 	var result []UStake
+	t1:=big.NewInt(0)
+	t2:=big.NewInt(0)
+	t3:=big.NewInt(0)
+	t4:=big.NewInt(0)
+
 	hhh := make([]UserstakeResponse, 1)
 	result := []UStake{
 }
@@ -85,41 +72,29 @@ func GroupUserStakes(height int, address string) ([]UStake) {
 					t2:=big.NewInt(0)
 					t3:=big.NewInt(0)
 					t4:=big.NewInt(0)
-ttt:=0
-	for _, candidate := range candidates {
-		kkk:=ResponseUserstake(cState, *candidate, address)
-		if len(kkk) > len(hhh) {
-			for l:= range kkk{
-				if ttt==0 {
-					result = append(result , kkk[l])
-					ttt=ttt+1
-				} else {
-					rrr:=0
-
-					fmt.Sscan(kkk[l].Value, t1)
-					fmt.Sscan(kkk[l].BipValue, t2)
-
-					for f:= range result{
-						if result[f].Coin == kkk[l].Coin {
-							fmt.Sscan(result[f].Value, t3)
-							fmt.Sscan(result[f].BipValue, t4)
-							t1.Add(t1,t3)
-							t2.Add(t2,t4)
-							result[f].Value = t1.String()
-							result[f].BipValue = t2.String()						
-							rrr = 1	
-							break
-						}
-
+for _, candidate := range candidates {
+		tmstakes :=ResponseUserstake(cState, *candidate, address)
+		if len(tmstakes) > 0 {
+			for _,tmstake:= range tmstakes{
+				fmt.Sscan(tmstake.Value, t1)
+				fmt.Sscan(tmstake.BipValue, t2)
+				r:=0
+				for _,res:= range result{
+					if res.Coin == tmstake.Coin {
+						fmt.Sscan(res.Value, t3)
+						fmt.Sscan(res.BipValue, t4)
+						t1.Add(t1,t3)
+						t2.Add(t2,t4)
+						res.Value = t1.String()
+						res.BipValue = t2.String()						
+						r = 1	
+						break
 					}
-
-					if rrr == 0 {
-						result = append(result , kkk[l])
-					}
- 
+				}
+				if r == 0 {
+					result = append(result , tmstake)
 				}
 
-				
 			}
 		}
 	}
