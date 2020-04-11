@@ -9,53 +9,30 @@ import (
 )
 
 type UStake struct {
-//	Address  string `json:"address"`
-//	PubKey   string  `json:"pub_key"`
 	Coin     string `json:"coin"`
 	Value    string `json:"value"`
 	BipValue string `json:"bip_value"`
 }
 
+func ResponseUserstake(state *state.State, c candidates.Candidate, address string) []UStake{
+var tmstakes UStake
+	var userstake []UStake
 
+	stakes := state.Candidates.GetStakes(c.PubKey)
 
-type UserstakeResponse []UStake
-
-func ResponseUserstake(state *state.State, c candidates.Candidate, address string) UserstakeResponse {
-
-
-
-	tmp := 0
-
-		stakes := state.Candidates.GetStakes(c.PubKey)
-
-
-for _, stake := range stakes {
-if stake.Owner.String()==address{
-tmp = tmp + 1 
-}
-}
-
-		userstake := make([]UStake, tmp)
-	nstk := 0
-		for _,stake := range stakes {
-			if stake.Owner.String()==address{
-				userstake[nstk] = UStake{
-//					Address:  stake.Owner.String(),
-//					PubKey:	  c.PubKey.String(),
-					Coin:     stake.Coin.String(),
-					Value:    stake.Value.String(),
-					BipValue: stake.BipValue.String(),
-				}
-			nstk=nstk+1
-			
-			}
+	for _,stake := range stakes {
+		if stake.Owner.String()==address{
+			tmstakes.Coin    = stake.Coin.String()
+			tmstakes.Value   = stake.Value.String()
+			tmstakes.BipValue= stake.BipValue.String()
+			userstake=append(userstake,tmstakes)
 		}
+	}
 	
-
 	return userstake
 }
 
-func Userstake(pubkey types.Pubkey, height int, address string) (*UserstakeResponse, error) {
+func Userstake(pubkey types.Pubkey, height int, address string) ([]UStake, error) {
 	cState, err := GetStateForHeight(height)
 	if err != nil {
 		return nil, err
@@ -73,9 +50,9 @@ func Userstake(pubkey types.Pubkey, height int, address string) (*UserstakeRespo
 
 	candidate := cState.Candidates.GetCandidate(pubkey)
 	if candidate == nil {
-		return nil, rpctypes.RPCError{Code: 404, Message: "Adress stakes not found"}
+		return nil, rpctypes.RPCError{Code: 404, Message: "Stakes of address not found"}
 	}
 
 	response := ResponseUserstake(cState, *candidate, address)
-	return &response, nil
+	return response, nil
 }
