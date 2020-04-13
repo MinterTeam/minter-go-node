@@ -45,9 +45,6 @@ func Run(srv *service.Service, addrGRPC, addrApi string) error {
 		return gw.RegisterApiServiceHandlerFromEndpoint(ctx, mux, addrGRPC, opts)
 	})
 	group.Go(func() error {
-		return http.ListenAndServe(addrApi, mux)
-	})
-	group.Go(func() error {
 		return http.ListenAndServe(addrApi, wsproxy.WebsocketProxy(mux))
 	})
 
