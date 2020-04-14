@@ -41,14 +41,14 @@ type State struct {
 	lock sync.RWMutex
 }
 
-func NewState(height uint64, db db.DB, events eventsdb.IEventsDB, keepLastStates int64, cacheSize int) (*State, error) {
-	iavlTree := tree.NewMutableTree(db, cacheSize)
+func NewState(height uint64, db db.DB, events eventsdb.IEventsDB, cacheSize int, keepEvery, keepRecent int64) (*State, error) {
+	iavlTree := tree.NewMutableTree(db, cacheSize, keepEvery, keepRecent)
 	_, err := iavlTree.LoadVersion(int64(height))
 	if err != nil {
 		return nil, err
 	}
 
-	state, err := newStateForTree(iavlTree, events, db, keepLastStates)
+	state, err := newStateForTree(iavlTree, events, db, keepRecent)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func NewCheckState(state *State) *State {
 }
 
 func NewCheckStateAtHeight(height uint64, db db.DB) (*State, error) {
-	iavlTree := tree.NewMutableTree(db, 1024)
+	iavlTree := tree.NewMutableTree(db, 1024, 1, 0)
 	_, err := iavlTree.LazyLoadVersion(int64(height))
 	if err != nil {
 		return nil, err

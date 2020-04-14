@@ -21,11 +21,12 @@ type Tree interface {
 	Iterate(fn func(key []byte, value []byte) bool) (stopped bool)
 }
 
-func NewMutableTree(db dbm.DB, cacheSize int) *MutableTree {
-	tree, err := iavl.NewMutableTree(db, cacheSize)
+func NewMutableTree(db dbm.DB, cacheSize int, keepEvery, keepRecent int64) *MutableTree {
+	tree, err := iavl.NewMutableTreeWithOpts(db, dbm.NewMemDB(), cacheSize, iavl.PruningOptions(keepEvery, keepRecent))
 	if err != nil {
 		panic(err)
 	}
+
 	return &MutableTree{
 		tree: tree,
 	}
