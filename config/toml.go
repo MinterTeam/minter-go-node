@@ -82,10 +82,10 @@ validator_mode = {{ .BaseConfig.ValidatorMode }}
 state_cache_size = {{ .BaseConfig.StateCacheSize }}
 
 # State keep ever
-state_cache_size = {{ .BaseConfig.StateKeepEver }}
+state_keep_ever = {{ .BaseConfig.StateKeepEver }}
 
 # State keep recent 
-state_cache_size = {{ .BaseConfig.StateKeepRecent }}
+state_keep_recent = {{ .BaseConfig.StateKeepRecent }}
 
 # State memory in MB
 state_mem_available = {{ .BaseConfig.StateMemAvailable }}
