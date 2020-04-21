@@ -22,7 +22,6 @@ func (s *Service) Status(context.Context, *empty.Empty) (*pb.StatusResponse, err
 		LatestAppHash:     fmt.Sprintf("%X", result.SyncInfo.LatestAppHash),
 		LatestBlockHeight: fmt.Sprintf("%d", result.SyncInfo.LatestBlockHeight),
 		LatestBlockTime:   result.SyncInfo.LatestBlockTime.Format(time.RFC3339Nano),
-		KeepLastStates:    fmt.Sprintf("%d", s.minterCfg.BaseConfig.KeepLastStates),
 		CatchingUp:        result.SyncInfo.CatchingUp,
 		PublicKey:         fmt.Sprintf("Mp%x", result.ValidatorInfo.PubKey.Bytes()[5:]),
 		NodeId:            string(result.NodeInfo.ID()),

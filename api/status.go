@@ -29,7 +29,6 @@ func Status() (*StatusResponse, error) {
 		LatestAppHash:     fmt.Sprintf("%X", result.SyncInfo.LatestAppHash),
 		LatestBlockHeight: result.SyncInfo.LatestBlockHeight,
 		LatestBlockTime:   result.SyncInfo.LatestBlockTime,
-		KeepLastStates:    minterCfg.BaseConfig.KeepLastStates,
 		TmStatus:          result,
 	}, nil
 }
