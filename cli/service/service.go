@@ -119,7 +119,6 @@ func (m *Manager) Status(context.Context, *empty.Empty) (*pb.StatusResponse, err
 		LatestAppHash:     fmt.Sprintf("%X", resultStatus.SyncInfo.LatestAppHash),
 		LatestBlockHeight: resultStatus.SyncInfo.LatestBlockHeight,
 		LatestBlockTime:   resultStatus.SyncInfo.LatestBlockTime.Format(time.RFC3339),
-		KeepLastStates:    m.cfg.KeepLastStates,
 		TmStatus: &pb.StatusResponse_TmStatus{
 			NodeInfo: &pb.NodeInfo{
 				ProtocolVersion: &pb.NodeInfo_ProtocolVersion{
