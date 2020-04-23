@@ -18,17 +18,24 @@ const mainPrefix = byte('a')
 const coinsPrefix = byte('c')
 const balancePrefix = byte('b')
 
+type RAccounts interface {
+	Export(state *types.AppState)
+	GetAccount(address types.Address) *Model
+	GetNonce(address types.Address) uint64
+	GetBalance(address types.Address, coin types.CoinSymbol) *big.Int
+}
+
 type Accounts struct {
 	list  map[types.Address]*Model
 	dirty map[types.Address]struct{}
 
-	iavl tree.Tree
+	iavl tree.MTree
 	bus  *bus.Bus
 
 	lock sync.RWMutex
 }
 
-func NewAccounts(stateBus *bus.Bus, iavl tree.Tree) (*Accounts, error) {
+func NewAccounts(stateBus *bus.Bus, iavl tree.MTree) (*Accounts, error) {
 	accounts := &Accounts{iavl: iavl, bus: stateBus, list: map[types.Address]*Model{}, dirty: map[types.Address]struct{}{}}
 	accounts.bus.SetAccounts(NewBus(accounts))
 

@@ -63,7 +63,7 @@ type Blockchain struct {
 	appDB              *appdb.AppDB
 	eventsDB           eventsdb.IEventsDB
 	stateDeliver       *state.State
-	stateCheck         *state.State
+	stateCheck         *state.CheckState
 	height             uint64   // current Blockchain height
 	rewards            *big.Int // Rewards pool
 	validatorsStatuses map[types.TmAddress]int8

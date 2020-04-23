@@ -18,17 +18,21 @@ import (
 
 const mainPrefix = byte('f')
 
+type RFrozenFunds interface {
+	Export(state *types.AppState, height uint64)
+}
+
 type FrozenFunds struct {
 	list  map[uint64]*Model
 	dirty map[uint64]interface{}
 
 	bus  *bus.Bus
-	iavl tree.Tree
+	iavl tree.MTree
 
 	lock sync.RWMutex
 }
 
-func NewFrozenFunds(stateBus *bus.Bus, iavl tree.Tree) (*FrozenFunds, error) {
+func NewFrozenFunds(stateBus *bus.Bus, iavl tree.MTree) (*FrozenFunds, error) {
 	frozenfunds := &FrozenFunds{bus: stateBus, iavl: iavl, list: map[uint64]*Model{}, dirty: map[uint64]interface{}{}}
 	frozenfunds.bus.SetFrozenFunds(NewBus(frozenfunds))
 

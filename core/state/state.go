@@ -22,6 +22,45 @@ import (
 	"sync"
 )
 
+type Interface interface {
+	isValue_State()
+}
+
+type CheckState struct {
+	state *State
+}
+
+func NewCheckState(state *State) *CheckState {
+	return &CheckState{state: state}
+}
+
+func (cs *CheckState) isValue_State() {}
+
+func (cs *CheckState) Validators() validators.RValidators {
+	return cs.state.Validators
+}
+func (cs *CheckState) App() app.RApp {
+	return cs.state.App
+}
+func (cs *CheckState) Candidates() candidates.RCandidates {
+	return cs.state.Candidates
+}
+func (cs *CheckState) FrozenFunds() frozenfunds.RFrozenFunds {
+	return cs.state.FrozenFunds
+}
+func (cs *CheckState) Accounts() accounts.RAccounts {
+	return cs.state.Accounts
+}
+func (cs *CheckState) Coins() coins.RCoins {
+	return cs.state.Coins
+}
+func (cs *CheckState) Checks() checks.RChecks {
+	return cs.state.Checks
+}
+func (cs *CheckState) Tree() tree.ITree {
+	return cs.state.Tree()
+}
+
 type State struct {
 	App         *app.App
 	Validators  *validators.Validators
@@ -34,12 +73,14 @@ type State struct {
 
 	db             db.DB
 	events         eventsdb.IEventsDB
-	tree           tree.Tree
+	tree           tree.MTree
 	keepLastStates int64
 	bus            *bus.Bus
 
 	lock sync.RWMutex
 }
+
+func (s *State) isValue_State() {}
 
 func NewState(height uint64, db db.DB, events eventsdb.IEventsDB, cacheSize int, keepEvery, keepRecent int64) (*State, error) {
 	iavlTree := tree.NewMutableTree(db, cacheSize, keepEvery, keepRecent)
@@ -60,18 +101,18 @@ func NewState(height uint64, db db.DB, events eventsdb.IEventsDB, cacheSize int,
 	return state, nil
 }
 
-func NewCheckState(state *State) *State {
-	return state
-}
-
-func NewCheckStateAtHeight(height uint64, db db.DB) (*State, error) {
+func NewCheckStateAtHeight(height uint64, db db.DB) (*CheckState, error) {
 	iavlTree := tree.NewMutableTree(db, 1024, 1, 0)
 	_, err := iavlTree.LazyLoadVersion(int64(height))
 	if err != nil {
 		return nil, err
 	}
 
-	return newStateForTree(iavlTree.GetImmutable(), nil, nil, 0)
+	return newCheckStateForTree(iavlTree, nil, nil, 0)
+}
+
+func (s *State) Tree() tree.MTree {
+	return s.tree
 }
 
 func (s *State) Lock() {
@@ -211,18 +252,27 @@ func (s *State) Export(height uint64) types.AppState {
 	}
 
 	appState := new(types.AppState)
-	state.App.Export(appState, height)
-	state.Validators.Export(appState)
-	state.Candidates.Export(appState)
-	state.FrozenFunds.Export(appState, height)
-	state.Accounts.Export(appState)
-	state.Coins.Export(appState)
-	state.Checks.Export(appState)
+	state.App().Export(appState, height)
+	state.Validators().Export(appState)
+	state.Candidates().Export(appState)
+	state.FrozenFunds().Export(appState, height)
+	state.Accounts().Export(appState)
+	state.Coins().Export(appState)
+	state.Checks().Export(appState)
 
 	return *appState
 }
 
-func newStateForTree(iavlTree tree.Tree, events eventsdb.IEventsDB, db db.DB, keepLastStates int64) (*State, error) {
+func newCheckStateForTree(iavlTree tree.MTree, events eventsdb.IEventsDB, db db.DB, keepLastStates int64) (*CheckState, error) {
+	stateForTree, err := newStateForTree(iavlTree, events, db, keepLastStates)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewCheckState(stateForTree), nil
+}
+
+func newStateForTree(iavlTree tree.MTree, events eventsdb.IEventsDB, db db.DB, keepLastStates int64) (*State, error) {
 	stateBus := bus.NewBus()
 	stateBus.SetEvents(events)
 

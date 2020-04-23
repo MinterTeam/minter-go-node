@@ -29,17 +29,21 @@ const (
 	updatesPrefix    = 'u'
 )
 
+type RCandidates interface {
+	Export(state *types.AppState)
+}
+
 type Candidates struct {
 	list map[types.Pubkey]*Candidate
 
-	iavl tree.Tree
+	iavl tree.MTree
 	bus  *bus.Bus
 
 	lock   sync.RWMutex
 	loaded bool
 }
 
-func NewCandidates(bus *bus.Bus, iavl tree.Tree) (*Candidates, error) {
+func NewCandidates(bus *bus.Bus, iavl tree.MTree) (*Candidates, error) {
 	candidates := &Candidates{iavl: iavl, bus: bus}
 	candidates.bus.SetCandidates(NewBus(candidates))
 

@@ -29,11 +29,32 @@ type Validators struct {
 	list   []*Validator
 	loaded bool
 
-	iavl tree.Tree
+	iavl tree.MTree
 	bus  *bus.Bus
 }
 
-func NewValidators(bus *bus.Bus, iavl tree.Tree) (*Validators, error) {
+type RValidators interface {
+	GetValidators() []*Validator
+	Export(state *types.AppState)
+}
+
+func NewReadValidators(bus *bus.Bus, iavl tree.MTree) (RValidators, error) {
+	validators := &Validators{iavl: iavl, bus: bus}
+
+	return validators, nil
+}
+
+type RWValidators interface {
+	RValidators
+	Commit() error
+	SetValidatorPresent(height uint64, address types.TmAddress)
+	SetValidatorAbsent(height uint64, address types.TmAddress)
+	PunishByzantineValidator(tmAddress [20]byte)
+	PayRewards(height uint64)
+	SetNewValidators(candidates []candidates.Candidate)
+}
+
+func NewValidators(bus *bus.Bus, iavl tree.MTree) (*Validators, error) {
 	validators := &Validators{iavl: iavl, bus: bus}
 
 	return validators, nil
