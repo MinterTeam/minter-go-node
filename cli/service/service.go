@@ -117,6 +117,7 @@ func (m *Manager) Status(context.Context, *empty.Empty) (*pb.StatusResponse, err
 		Version:           version.Version,
 		LatestBlockHash:   fmt.Sprintf("%X", resultStatus.SyncInfo.LatestBlockHash),
 		LatestAppHash:     fmt.Sprintf("%X", resultStatus.SyncInfo.LatestAppHash),
+		KeepLastStates:    int64(m.blockchain.CurrentState().Tree().KeepLastHeight()),
 		LatestBlockHeight: resultStatus.SyncInfo.LatestBlockHeight,
 		LatestBlockTime:   resultStatus.SyncInfo.LatestBlockTime.Format(time.RFC3339),
 		TmStatus: &pb.StatusResponse_TmStatus{

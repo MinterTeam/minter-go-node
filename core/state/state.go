@@ -73,7 +73,7 @@ func (cs *CheckState) Coins() coins.RCoins {
 func (cs *CheckState) Checks() checks.RChecks {
 	return cs.state.Checks
 }
-func (cs *CheckState) Tree() tree.ITree {
+func (cs *CheckState) Tree() tree.ReadOnlyTree {
 	return cs.state.Tree()
 }
 

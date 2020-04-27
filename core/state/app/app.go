@@ -16,7 +16,7 @@ type RApp interface {
 	GetMaxGas() uint64
 }
 
-func (v *App) Tree() tree.ITree {
+func (v *App) Tree() tree.ReadOnlyTree {
 	return v.iavl
 }
 

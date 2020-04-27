@@ -6,23 +6,24 @@ import (
 	"sync"
 )
 
-type ITree interface {
+type ReadOnlyTree interface {
 	Get(key []byte) (index int64, value []byte)
 	Version() int64
 	Hash() []byte
 	Iterate(fn func(key []byte, value []byte) bool) (stopped bool)
+	KeepLastHeight() int
 }
 
 type MTree interface {
-	ITree
+	ReadOnlyTree
 	Set(key, value []byte) bool
 	Remove(key []byte) ([]byte, bool)
 	LoadVersion(targetVersion int64) (int64, error)
 	LazyLoadVersion(targetVersion int64) (int64, error)
 	SaveVersion() ([]byte, int64, error)
 	DeleteVersion(version int64) error
-	GetImmutable() ITree
-	GetImmutableAtHeight(version int64) (ITree, error)
+	GetImmutable() *ImmutableTree
+	GetImmutableAtHeight(version int64) (*ImmutableTree, error)
 }
 
 func NewMutableTree(db dbm.DB, cacheSize int, keepEvery, keepRecent int64) MTree {
@@ -42,7 +43,7 @@ type mutableTree struct {
 	lock sync.RWMutex
 }
 
-func (t *mutableTree) GetImmutableAtHeight(version int64) (ITree, error) {
+func (t *mutableTree) GetImmutableAtHeight(version int64) (*ImmutableTree, error) {
 	tree, err := t.tree.GetImmutable(version)
 	if err != nil {
 		return nil, err
@@ -71,7 +72,7 @@ func (t *mutableTree) Version() int64 {
 	return t.tree.Version()
 }
 
-func (t *mutableTree) GetImmutable() ITree {
+func (t *mutableTree) GetImmutable() *ImmutableTree {
 	t.lock.RLock()
 	defer t.lock.RUnlock()
 
@@ -129,17 +130,20 @@ func (t *mutableTree) DeleteVersion(version int64) error {
 	return t.tree.DeleteVersion(version)
 }
 
-//todo
-//func (t *mutableTree) KeepLastHeight() string {
-//	t.lock.Lock()
-//	defer t.lock.Unlock()
-//
-//	versions := t.tree.AvailableVersions()
-//	//for _, version := range versions {
-//	//	t.tree.LazyLoadVersion()
-//	//}
-//	return fmt.Sprint(versions)
-//}
+func (t *mutableTree) KeepLastHeight() int {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+
+	versions := t.tree.AvailableVersions()
+	prev := 1
+	for _, version := range versions {
+		if version-prev == 1 {
+			break
+		}
+		prev = version
+	}
+	return prev
+}
 
 func NewImmutableTree(db dbm.DB) *ImmutableTree {
 	return &ImmutableTree{
