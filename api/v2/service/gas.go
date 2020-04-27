@@ -22,6 +22,6 @@ func (s *Service) MaxGas(_ context.Context, req *pb.MaxGasRequest) (*pb.MaxGasRe
 	}
 
 	return &pb.MaxGasResponse{
-		MaxGas: fmt.Sprintf("%d", cState.App.GetMaxGas()),
+		MaxGas: fmt.Sprintf("%d", cState.App().GetMaxGas()),
 	}, nil
 }

@@ -23,6 +23,8 @@ type RAccounts interface {
 	GetAccount(address types.Address) *Model
 	GetNonce(address types.Address) uint64
 	GetBalance(address types.Address, coin types.CoinSymbol) *big.Int
+	GetBalances(address types.Address) map[types.CoinSymbol]*big.Int
+	ExistsMultisig(msigAddress types.Address) bool
 }
 
 type Accounts struct {

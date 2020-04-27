@@ -26,7 +26,7 @@ func NewService(cdc *amino.Codec, blockchain *minter.Blockchain, client *rpc.Loc
 	return &Service{cdc: cdc, blockchain: blockchain, client: client, minterCfg: minterCfg, version: version, tmNode: node}
 }
 
-func (s *Service) getStateForHeight(height int32) (*state.State, error) {
+func (s *Service) getStateForHeight(height int32) (*state.CheckState, error) {
 	if height > 0 {
 		cState, err := s.blockchain.GetStateForHeight(uint64(height))
 		if err != nil {

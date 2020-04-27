@@ -43,13 +43,13 @@ func (s *Service) EstimateCoinSellAll(_ context.Context, req *pb.EstimateCoinSel
 		}))
 	}
 
-	if !cState.Coins.Exists(coinToSell) {
+	if !cState.Coins().Exists(coinToSell) {
 		return new(pb.EstimateCoinSellAllResponse), s.createError(status.New(codes.InvalidArgument, "Coin to sell not exists"), transaction.EncodeError(map[string]string{
 			"coin_to_sell": coinToSell.String(),
 		}))
 	}
 
-	if !cState.Coins.Exists(coinToBuy) {
+	if !cState.Coins().Exists(coinToBuy) {
 		return new(pb.EstimateCoinSellAllResponse), s.createError(status.New(codes.InvalidArgument, "Coin to buy not exists"), transaction.EncodeError(map[string]string{
 			"coin_to_buy": coinToBuy.String(),
 		}))
@@ -61,7 +61,7 @@ func (s *Service) EstimateCoinSellAll(_ context.Context, req *pb.EstimateCoinSel
 
 	switch {
 	case coinToSell == types.GetBaseCoin():
-		coin := cState.Coins.GetCoin(coinToBuy)
+		coin := cState.Coins().GetCoin(coinToBuy)
 
 		valueToSell.Sub(valueToSell, commission)
 		if valueToSell.Cmp(big.NewInt(0)) != 1 {
@@ -74,7 +74,7 @@ func (s *Service) EstimateCoinSellAll(_ context.Context, req *pb.EstimateCoinSel
 
 		result = formula.CalculatePurchaseReturn(coin.Volume(), coin.Reserve(), coin.Crr(), valueToSell)
 	case coinToBuy == types.GetBaseCoin():
-		coin := cState.Coins.GetCoin(coinToSell)
+		coin := cState.Coins().GetCoin(coinToSell)
 		result = formula.CalculateSaleReturn(coin.Volume(), coin.Reserve(), coin.Crr(), valueToSell)
 
 		result.Sub(result, commission)
@@ -89,8 +89,8 @@ func (s *Service) EstimateCoinSellAll(_ context.Context, req *pb.EstimateCoinSel
 			}))
 		}
 	default:
-		coinFrom := cState.Coins.GetCoin(coinToSell)
-		coinTo := cState.Coins.GetCoin(coinToBuy)
+		coinFrom := cState.Coins().GetCoin(coinToSell)
+		coinTo := cState.Coins().GetCoin(coinToBuy)
 		basecoinValue := formula.CalculateSaleReturn(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), valueToSell)
 
 		basecoinValue.Sub(basecoinValue, commission)

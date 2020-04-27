@@ -63,7 +63,7 @@ func (m *Manager) Dashboard(_ *empty.Empty, stream pb.ManagerService_DashboardSe
 
 			var address types.TmAddress
 			copy(address[:], resultStatus.ValidatorInfo.Address)
-			validator := state.Validators.GetByTmAddress(address)
+			validator := state.Validators().GetByTmAddress(address)
 			validatorStatus := m.blockchain.GetValidatorStatus(address)
 
 			var pbValidatorStatus pb.DashboardResponse_ValidatorStatus

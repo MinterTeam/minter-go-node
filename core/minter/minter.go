@@ -495,15 +495,15 @@ func (app *Blockchain) Stop() {
 }
 
 // Get immutable state of Minter Blockchain
-func (app *Blockchain) CurrentState() *state.State {
+func (app *Blockchain) CurrentState() *state.CheckState {
 	app.lock.RLock()
 	defer app.lock.RUnlock()
 
-	return state.NewCheckState(app.stateCheck)
+	return app.stateCheck
 }
 
 // Get immutable state of Minter Blockchain for given height
-func (app *Blockchain) GetStateForHeight(height uint64) (*state.State, error) {
+func (app *Blockchain) GetStateForHeight(height uint64) (*state.CheckState, error) {
 	app.lock.RLock()
 	defer app.lock.RUnlock()
 
@@ -529,14 +529,14 @@ func (app *Blockchain) MissedBlocks(pubKey string, height uint64) (missedBlocks 
 
 	if height != 0 {
 		cState.Lock()
-		cState.Validators.LoadValidators()
+		cState.Validators().LoadValidators()
 		cState.Unlock()
 	}
 
 	cState.RLock()
 	defer cState.RUnlock()
 
-	val := cState.Validators.GetByPublicKey(types.HexToPubkey(pubKey))
+	val := cState.Validators().GetByPublicKey(types.HexToPubkey(pubKey))
 	if val == nil {
 		return "", 0, status.Error(codes.NotFound, "Validator not found")
 	}
@@ -630,7 +630,7 @@ func (app *Blockchain) calcMaxGas(height uint64) uint64 {
 	}
 
 	// get current max gas
-	newMaxGas := app.stateCheck.App.GetMaxGas()
+	newMaxGas := app.stateCheck.App().GetMaxGas()
 
 	// check if blocks are created in time
 	if delta, _ := app.GetBlocksTimeDelta(height, blockDelta); delta > targetTime*blockDelta {

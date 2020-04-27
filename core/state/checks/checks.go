@@ -14,6 +14,7 @@ const mainPrefix = byte('t')
 
 type RChecks interface {
 	Export(state *types.AppState)
+	IsCheckUsed(check *check.Check) bool
 }
 
 type Checks struct {

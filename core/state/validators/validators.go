@@ -36,6 +36,9 @@ type Validators struct {
 type RValidators interface {
 	GetValidators() []*Validator
 	Export(state *types.AppState)
+	GetByPublicKey(pubKey types.Pubkey) *Validator
+	LoadValidators()
+	GetByTmAddress(address types.TmAddress) *Validator
 }
 
 func NewReadValidators(bus *bus.Bus, iavl tree.MTree) (RValidators, error) {

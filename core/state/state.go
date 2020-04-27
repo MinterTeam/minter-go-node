@@ -36,6 +36,22 @@ func NewCheckState(state *State) *CheckState {
 
 func (cs *CheckState) isValue_State() {}
 
+func (cs *CheckState) Lock() {
+	cs.state.lock.Lock()
+}
+
+func (cs *CheckState) Unlock() {
+	cs.state.lock.Unlock()
+}
+
+func (cs *CheckState) RLock() {
+	cs.state.lock.RLock()
+}
+
+func (cs *CheckState) RUnlock() {
+	cs.state.lock.RUnlock()
+}
+
 func (cs *CheckState) Validators() validators.RValidators {
 	return cs.state.Validators
 }
