@@ -462,8 +462,10 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 	_ = app.eventsDB.CommitEvents()
 
 	// Persist application hash and height
-	app.appDB.SetLastBlockHash(hash)
-	app.appDB.SetLastHeight(app.height)
+	if app.height%uint64(app.cfg.StateKeepEver) == 0 {
+		app.appDB.SetLastBlockHash(hash)
+		app.appDB.SetLastHeight(app.height)
+	}
 
 	// Resetting check state to be consistent with current height
 	app.resetCheckState()
