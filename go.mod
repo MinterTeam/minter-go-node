@@ -4,10 +4,11 @@ go 1.13
 
 require (
 	github.com/MinterTeam/events-db v0.1.6
-	github.com/MinterTeam/node-grpc-gateway v1.1.0
+	github.com/MinterTeam/node-grpc-gateway v1.1.2-0.20200428160150-a7c2b4519ce6
 	github.com/btcsuite/btcd v0.0.0-20190115013929-ed77733ec07d
 	github.com/c-bata/go-prompt v0.2.3
 	github.com/go-kit/kit v0.10.0
+	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/golang/protobuf v1.3.5
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/websocket v1.4.1
@@ -15,6 +16,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway v1.14.3
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.5.1
+	github.com/rakyll/statik v0.1.7
 	github.com/rs/cors v1.7.0
 	github.com/spf13/cobra v0.0.6
 	github.com/spf13/viper v1.6.2

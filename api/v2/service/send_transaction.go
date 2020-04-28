@@ -14,11 +14,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (s *Service) SendPostTransaction(ctx context.Context, req *pb.SendTransactionRequest) (*pb.SendTransactionResponse, error) {
-	return s.SendGetTransaction(ctx, req)
-}
-
-func (s *Service) SendGetTransaction(_ context.Context, req *pb.SendTransactionRequest) (*pb.SendTransactionResponse, error) {
+func (s *Service) SendTransaction(ctx context.Context, req *pb.SendTransactionRequest) (*pb.SendTransactionResponse, error) {
 	if len(req.Tx) < 3 {
 		return new(pb.SendTransactionResponse), status.Error(codes.InvalidArgument, "invalid tx")
 	}
@@ -42,6 +38,14 @@ func (s *Service) SendGetTransaction(_ context.Context, req *pb.SendTransactionR
 	default:
 		return new(pb.SendTransactionResponse), s.createError(status.New(codes.InvalidArgument, result.Log), result.Info)
 	}
+}
+
+func (s *Service) SendPostTransaction(ctx context.Context, req *pb.SendTransactionRequest) (*pb.SendTransactionResponse, error) {
+	return s.SendTransaction(ctx, req)
+}
+
+func (s *Service) SendGetTransaction(ctx context.Context, req *pb.SendTransactionRequest) (*pb.SendTransactionResponse, error) {
+	return s.SendTransaction(ctx, req)
 }
 
 type ResultBroadcastTx struct {

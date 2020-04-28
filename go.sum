@@ -17,10 +17,10 @@ github.com/MinterTeam/minter-go-node v1.0.5-0.20191113110340-a46b8ef88084/go.mod
 github.com/MinterTeam/minter-go-node v1.1.0-beta5/go.mod h1:MeO8y1SPL2uk/znxFPauMB4karv/xQeI1O1SPeEycrU=
 github.com/MinterTeam/minter-node-cli v0.0.0-20191202172005-309e9d40a5a3 h1:2ndNow11LzKNggx2JNh2Fhb0NKEQ2kVt+HL9jdEBLOg=
 github.com/MinterTeam/minter-node-cli v0.0.0-20191202172005-309e9d40a5a3/go.mod h1:6iFtZjWsvR9ZaXaogfDkIYVSrQAHQBk/tU1L5yKS5/8=
-github.com/MinterTeam/node-grpc-gateway v1.0.0 h1:E2Vn3wC0kv/zgzA1biC84+M2Y4h0k2etLXzTM6jJyeI=
-github.com/MinterTeam/node-grpc-gateway v1.0.0/go.mod h1:LJJNHzYkAbWsoWZw3VMgs+NQTnJ3f0YawF2UZxevTOE=
-github.com/MinterTeam/node-grpc-gateway v1.1.0 h1:fEkYq1IpmzQTh1gYopUTTdx6AhVeCd2CVJlDebHxgmY=
-github.com/MinterTeam/node-grpc-gateway v1.1.0/go.mod h1:WWdGy/bxMgnaTlDWaemx4Z7tc2/4IjPOKdlmC8QRH2M=
+github.com/MinterTeam/node-grpc-gateway v1.1.2-0.20200428135003-fb191622cca4 h1:MVfr0yWq3nFisXXdMcfvQjKSdWWHoCl95vbBEIBc0n0=
+github.com/MinterTeam/node-grpc-gateway v1.1.2-0.20200428135003-fb191622cca4/go.mod h1:tfJiYOCloZD+Q8nSplqVQFQNs3ggFgBBVQa0hOVCsjg=
+github.com/MinterTeam/node-grpc-gateway v1.1.2-0.20200428160150-a7c2b4519ce6 h1:TwDOIgh8DYu4nLrfK+PAml3oYm+wdN/HxEUa4B7KKXA=
+github.com/MinterTeam/node-grpc-gateway v1.1.2-0.20200428160150-a7c2b4519ce6/go.mod h1:tfJiYOCloZD+Q8nSplqVQFQNs3ggFgBBVQa0hOVCsjg=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/Shopify/sarama v1.19.0/go.mod h1:FVkBWblsNy7DGZRfXLU0O9RCGt5g3g3yEuWXgklEdEo=
 github.com/Shopify/toxiproxy v2.1.4+incompatible/go.mod h1:OXgGpZ6Cli1/URJOF1DMxUHB2q5Ap20/P/eIdh4G0pI=
@@ -198,8 +198,6 @@ github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0/go.mod h1:8NvIoxWQoOIhqOTXgf
 github.com/grpc-ecosystem/grpc-gateway v1.9.0 h1:bM6ZAFZmc/wPFaRDi0d5L7hGEZEx/2u+Tmr2evNHDiI=
 github.com/grpc-ecosystem/grpc-gateway v1.9.0/go.mod h1:vNeuVxBJEsws4ogUvrchl83t/GYV9WGTSLVdBhOQFDY=
 github.com/grpc-ecosystem/grpc-gateway v1.9.5/go.mod h1:vNeuVxBJEsws4ogUvrchl83t/GYV9WGTSLVdBhOQFDY=
-github.com/grpc-ecosystem/grpc-gateway v1.12.0 h1:SFRyYOyhgiU1kJG/PmbkWP/iSlizvDJEz531dq5kneg=
-github.com/grpc-ecosystem/grpc-gateway v1.12.0/go.mod h1:8XEsbTttt/W+VvjtQhLACqCisSPWTxCZ7sBRjU6iH9c=
 github.com/grpc-ecosystem/grpc-gateway v1.14.3 h1:OCJlWkOUoTnl0neNGlf4fUm3TmbEtguw7vR+nGtnDjY=
 github.com/grpc-ecosystem/grpc-gateway v1.14.3/go.mod h1:6CwZWGDSPRJidgKAtJVvND6soZe6fT7iteq8wDPdhb0=
 github.com/gtank/merlin v0.1.1-0.20191105220539-8318aed1a79f h1:8N8XWLZelZNibkhM1FuF+3Ad3YIbgirjdMiVA0eUkaM=
@@ -379,6 +377,8 @@ github.com/prometheus/procfs v0.0.2/go.mod h1:TjEm7ze935MbeOT/UhFTIMYKhuLP4wbCsT
 github.com/prometheus/procfs v0.0.8 h1:+fpWZdT24pJBiqJdAwYBjPSk+5YmQzYNPYzQsdzLkt8=
 github.com/prometheus/procfs v0.0.8/go.mod h1:7Qr8sr6344vo1JqZ6HhLceV9o3AJ1Ff+GxbHq6oeK9A=
 github.com/prometheus/tsdb v0.7.1/go.mod h1:qhTCs0VvXwvX/y3TZrWD7rabWM+ijKTux40TwIPHuXU=
+github.com/rakyll/statik v0.1.7 h1:OF3QCZUuyPxuGEP7B4ypUa7sB/iHtqOTDYZXGM8KOdQ=
+github.com/rakyll/statik v0.1.7/go.mod h1:AlZONWzMtEnMs7W4e/1LURLiI49pIMmp6V9Unghqrcc=
 github.com/rcrowley/go-metrics v0.0.0-20180503174638-e2704e165165 h1:nkcn14uNmFEuGCb2mBZbBb24RdNRL08b/wb+xBOYpuk=
 github.com/rcrowley/go-metrics v0.0.0-20180503174638-e2704e165165/go.mod h1:bCqnVzQkZxMG4s8nGwiZ5l3QUCyqpo9Y+/ZMZ9VjZe4=
 github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a h1:9ZKAASQSHhDYGoxY8uLVpewe1GDZ2vu2Tr/vTdVAkFQ=
