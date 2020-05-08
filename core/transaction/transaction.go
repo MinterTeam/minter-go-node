@@ -106,8 +106,6 @@ type Conversion struct {
 type Data interface {
 	String() string
 	Gas() int64
-	TotalSpend(tx *Transaction, context *state.CheckState) (TotalSpends, []Conversion, *big.Int, *Response)
-	BasicCheck(tx *Transaction, context *state.CheckState) *Response
 	Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response
 }
 
