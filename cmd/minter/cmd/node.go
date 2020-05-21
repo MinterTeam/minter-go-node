@@ -121,7 +121,9 @@ func runNode(cmd *cobra.Command) error {
 			if err != nil {
 				logger.Error("Failed to parse API v2 address", err)
 			}
-			logger.Error("Failed to start Api V2 in both gRPC and RESTful", api_v2.Run(srv, grpcUrl.Host, apiV2url.Host))
+			traceLog := os.Getenv("API_V2_LOG_LEVEL") == "trace"
+			logger.Error("Failed to start Api V2 in both gRPC and RESTful",
+				api_v2.Run(srv, grpcUrl.Host, apiV2url.Host, traceLog))
 		}(service_api.NewService(amino.NewCodec(), app, client, node, cfg, version.Version))
 
 		go api_v1.RunAPI(app, client, cfg, logger)

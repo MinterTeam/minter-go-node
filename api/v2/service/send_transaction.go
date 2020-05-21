@@ -18,7 +18,11 @@ func (s *Service) SendPostTransaction(ctx context.Context, req *pb.SendTransacti
 	return s.SendGetTransaction(ctx, req)
 }
 
-func (s *Service) SendGetTransaction(_ context.Context, req *pb.SendTransactionRequest) (*pb.SendTransactionResponse, error) {
+func (s *Service) SendGetTransaction(ctx context.Context, req *pb.SendTransactionRequest) (*pb.SendTransactionResponse, error) {
+	return s.SendTransaction(ctx, req)
+}
+
+func (s *Service) SendTransaction(_ context.Context, req *pb.SendTransactionRequest) (*pb.SendTransactionResponse, error) {
 	if len(req.Tx) < 3 {
 		return new(pb.SendTransactionResponse), status.Error(codes.InvalidArgument, "invalid tx")
 	}
