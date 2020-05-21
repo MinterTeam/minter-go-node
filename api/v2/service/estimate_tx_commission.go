@@ -39,7 +39,7 @@ func (s *Service) EstimateTxCommission(_ context.Context, req *pb.EstimateTxComm
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
 	if !decodedTx.GasCoin.IsBaseCoin() {
-		coin := cState.Coins.GetCoin(decodedTx.GasCoin)
+		coin := cState.Coins().GetCoin(decodedTx.GasCoin)
 
 		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
 			return new(pb.EstimateTxCommissionResponse), s.createError(status.New(codes.InvalidArgument, fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s",

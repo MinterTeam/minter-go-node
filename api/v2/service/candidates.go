@@ -15,9 +15,9 @@ func (s *Service) Candidates(_ context.Context, req *pb.CandidatesRequest) (*pb.
 
 	if req.Height != 0 {
 		cState.Lock()
-		cState.Candidates.LoadCandidates()
+		cState.Candidates().LoadCandidates()
 		if req.IncludeStakes {
-			cState.Candidates.LoadStakes()
+			cState.Candidates().LoadStakes()
 		}
 		cState.Unlock()
 	}
@@ -25,7 +25,7 @@ func (s *Service) Candidates(_ context.Context, req *pb.CandidatesRequest) (*pb.
 	cState.RLock()
 	defer cState.RUnlock()
 
-	candidates := cState.Candidates.GetCandidates()
+	candidates := cState.Candidates().GetCandidates()
 
 	result := &pb.CandidatesResponse{
 		Candidates: make([]*pb.CandidateResponse, 0, len(candidates)),

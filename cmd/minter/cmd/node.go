@@ -95,8 +95,8 @@ func runNode(cmd *cobra.Command) error {
 		return err
 	}
 
-	if cfg.KeepLastStates < 1 {
-		panic("keep_last_states field should be greater than 0")
+	if cfg.StateKeepEver < 1 {
+		panic("state_keep_ever field should be greater than 0")
 	}
 
 	app := minter.NewMinterBlockchain(cfg)

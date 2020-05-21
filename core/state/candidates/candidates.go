@@ -29,17 +29,34 @@ const (
 	updatesPrefix    = 'u'
 )
 
+type RCandidates interface {
+	Export(state *types.AppState)
+	Exists(pubkey types.Pubkey) bool
+	Count() int
+	IsNewCandidateStakeSufficient(coin types.CoinSymbol, stake *big.Int, limit int) bool
+	IsDelegatorStakeSufficient(address types.Address, pubkey types.Pubkey, coin types.CoinSymbol, amount *big.Int) bool
+	GetStakeValueOfAddress(pubkey types.Pubkey, address types.Address, coin types.CoinSymbol) *big.Int
+	GetCandidateOwner(pubkey types.Pubkey) types.Address
+	GetTotalStake(pubkey types.Pubkey) *big.Int
+	LoadCandidates()
+	LoadStakesOfCandidate(pubkey types.Pubkey)
+	GetCandidate(pubkey types.Pubkey) *Candidate
+	LoadStakes()
+	GetCandidates() []*Candidate
+	GetStakes(pubkey types.Pubkey) []*Stake
+}
+
 type Candidates struct {
 	list map[types.Pubkey]*Candidate
 
-	iavl tree.Tree
+	iavl tree.MTree
 	bus  *bus.Bus
 
 	lock   sync.RWMutex
 	loaded bool
 }
 
-func NewCandidates(bus *bus.Bus, iavl tree.Tree) (*Candidates, error) {
+func NewCandidates(bus *bus.Bus, iavl tree.MTree) (*Candidates, error) {
 	candidates := &Candidates{iavl: iavl, bus: bus}
 	candidates.bus.SetCandidates(NewBus(candidates))
 

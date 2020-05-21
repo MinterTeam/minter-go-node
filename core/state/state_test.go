@@ -15,7 +15,7 @@ import (
 func TestStateExport(t *testing.T) {
 	height := uint64(0)
 
-	state, err := NewState(height, db.NewMemDB(), emptyEvents{}, 1, 1)
+	state, err := NewState(height, db.NewMemDB(), emptyEvents{}, 1, 1, 0)
 	if err != nil {
 		log.Panic("Cannot create state")
 	}

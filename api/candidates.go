@@ -8,9 +8,9 @@ func Candidates(height int, includeStakes bool) (*[]CandidateResponse, error) {
 
 	if height != 0 {
 		cState.Lock()
-		cState.Candidates.LoadCandidates()
+		cState.Candidates().LoadCandidates()
 		if includeStakes {
-			cState.Candidates.LoadStakes()
+			cState.Candidates().LoadStakes()
 		}
 		cState.Unlock()
 	}
@@ -18,7 +18,7 @@ func Candidates(height int, includeStakes bool) (*[]CandidateResponse, error) {
 	cState.RLock()
 	defer cState.RUnlock()
 
-	candidates := cState.Candidates.GetCandidates()
+	candidates := cState.Candidates().GetCandidates()
 
 	result := make([]CandidateResponse, len(candidates))
 	for i, candidate := range candidates {

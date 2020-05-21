@@ -138,7 +138,7 @@ type Response struct {
 	Log    string      `json:"log,omitempty"`
 }
 
-func GetStateForHeight(height int) (*state.State, error) {
+func GetStateForHeight(height int) (*state.CheckState, error) {
 	if height > 0 {
 		cState, err := blockchain.GetStateForHeight(uint64(height))
 

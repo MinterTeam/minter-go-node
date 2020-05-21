@@ -8,6 +8,7 @@ require (
 	github.com/btcsuite/btcd v0.0.0-20190115013929-ed77733ec07d
 	github.com/c-bata/go-prompt v0.2.3
 	github.com/go-kit/kit v0.10.0
+	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/golang/protobuf v1.3.4
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/handlers v1.4.2

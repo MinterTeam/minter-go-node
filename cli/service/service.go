@@ -63,7 +63,7 @@ func (m *Manager) Dashboard(_ *empty.Empty, stream pb.ManagerService_DashboardSe
 
 			var address types.TmAddress
 			copy(address[:], resultStatus.ValidatorInfo.Address)
-			validator := state.Validators.GetByTmAddress(address)
+			validator := state.Validators().GetByTmAddress(address)
 			validatorStatus := m.blockchain.GetValidatorStatus(address)
 
 			var pbValidatorStatus pb.DashboardResponse_ValidatorStatus
@@ -117,9 +117,9 @@ func (m *Manager) Status(context.Context, *empty.Empty) (*pb.StatusResponse, err
 		Version:           version.Version,
 		LatestBlockHash:   fmt.Sprintf("%X", resultStatus.SyncInfo.LatestBlockHash),
 		LatestAppHash:     fmt.Sprintf("%X", resultStatus.SyncInfo.LatestAppHash),
+		KeepLastStates:    int64(m.blockchain.CurrentState().Tree().KeepLastHeight()),
 		LatestBlockHeight: resultStatus.SyncInfo.LatestBlockHeight,
 		LatestBlockTime:   resultStatus.SyncInfo.LatestBlockTime.Format(time.RFC3339),
-		KeepLastStates:    m.cfg.KeepLastStates,
 		TmStatus: &pb.StatusResponse_TmStatus{
 			NodeInfo: &pb.NodeInfo{
 				ProtocolVersion: &pb.NodeInfo_ProtocolVersion{

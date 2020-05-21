@@ -34,7 +34,7 @@ type Response struct {
 	GasPrice  uint32    `json:"gas_price"`
 }
 
-func RunTx(context *state.State,
+func RunTx(context state.Interface,
 	isCheck bool,
 	rawTx []byte,
 	rewardPool *big.Int,
@@ -72,7 +72,13 @@ func RunTx(context *state.State,
 		}
 	}
 
-	if !context.Coins.Exists(tx.GasCoin) {
+	var checkState *state.CheckState
+	//var isCheck bool
+	if checkState, isCheck = context.(*state.CheckState); !isCheck {
+		checkState = state.NewCheckState(context.(*state.State))
+	}
+
+	if !checkState.Coins().Exists(tx.GasCoin) {
 		return Response{
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin),
@@ -142,7 +148,7 @@ func RunTx(context *state.State,
 
 	// check multi-signature
 	if tx.SignatureType == SigTypeMulti {
-		multisig := context.Accounts.GetAccount(tx.multisig.Multisig)
+		multisig := checkState.Accounts().GetAccount(tx.multisig.Multisig)
 
 		if !multisig.IsMultisig() {
 			return Response{
@@ -195,7 +201,7 @@ func RunTx(context *state.State,
 
 	}
 
-	if expectedNonce := context.Accounts.GetNonce(sender) + 1; expectedNonce != tx.Nonce {
+	if expectedNonce := checkState.Accounts().GetNonce(sender) + 1; expectedNonce != tx.Nonce {
 		return Response{
 			Code: code.WrongNonce,
 			Log:  fmt.Sprintf("Unexpected nonce. Expected: %d, got %d.", expectedNonce, tx.Nonce),
@@ -206,7 +212,7 @@ func RunTx(context *state.State,
 		}
 	}
 
-	response := tx.decodedData.Run(tx, context, isCheck, rewardPool, currentBlock)
+	response := tx.decodedData.Run(tx, context, rewardPool, currentBlock)
 
 	if response.Code != code.TxFromSenderAlreadyInMempool && response.Code != code.OK {
 		currentMempool.Delete(sender)

@@ -15,6 +15,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strings"
 )
 
 func Run(srv *service.Service, addrGRPC, addrApi string, traceLog bool) error {
@@ -50,7 +51,6 @@ func Run(srv *service.Service, addrGRPC, addrApi string, traceLog bool) error {
 		grpc.WithInsecure(),
 		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(50000000)),
 	}
-
 	group.Go(func() error {
 		return gw.RegisterApiServiceHandlerFromEndpoint(ctx, gwmux, addrGRPC, opts)
 	})
@@ -61,9 +61,31 @@ func Run(srv *service.Service, addrGRPC, addrApi string, traceLog bool) error {
 		handler = handlers.CombinedLoggingHandler(os.Stdout, handler)
 	}
 	mux.Handle("/", handler)
+	allowCORS(mux)
 	group.Go(func() error {
 		return http.ListenAndServe(addrApi, mux)
 	})
 
 	return group.Wait()
+}
+
+func allowCORS(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if origin := r.Header.Get("Origin"); origin != "" {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			if r.Method == "OPTIONS" && r.Header.Get("Access-Control-Request-Method") != "" {
+				preflightHandler(w, r)
+				return
+			}
+		}
+		h.ServeHTTP(w, r)
+	})
+}
+
+func preflightHandler(w http.ResponseWriter, r *http.Request) {
+	headers := []string{"Content-Type", "Accept"}
+	w.Header().Set("Access-Control-Allow-Headers", strings.Join(headers, ","))
+	methods := []string{"GET", "HEAD", "POST", "PUT", "DELETE"}
+	w.Header().Set("Access-Control-Allow-Methods", strings.Join(methods, ","))
+	return
 }

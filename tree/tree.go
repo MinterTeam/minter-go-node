@@ -6,8 +6,16 @@ import (
 	"sync"
 )
 
-type Tree interface {
+type ReadOnlyTree interface {
 	Get(key []byte) (index int64, value []byte)
+	Version() int64
+	Hash() []byte
+	Iterate(fn func(key []byte, value []byte) bool) (stopped bool)
+	KeepLastHeight() int
+}
+
+type MTree interface {
+	ReadOnlyTree
 	Set(key, value []byte) bool
 	Remove(key []byte) ([]byte, bool)
 	LoadVersion(targetVersion int64) (int64, error)
@@ -16,28 +24,26 @@ type Tree interface {
 	DeleteVersion(version int64) error
 	GetImmutable() *ImmutableTree
 	GetImmutableAtHeight(version int64) (*ImmutableTree, error)
-	Version() int64
-	Hash() []byte
-	Iterate(fn func(key []byte, value []byte) bool) (stopped bool)
 }
 
-func NewMutableTree(db dbm.DB, cacheSize int) *MutableTree {
-	tree, err := iavl.NewMutableTree(db, cacheSize)
+func NewMutableTree(db dbm.DB, cacheSize int, keepEvery, keepRecent int64) MTree {
+	tree, err := iavl.NewMutableTreeWithOpts(db, dbm.NewMemDB(), cacheSize, iavl.PruningOptions(keepEvery, keepRecent))
 	if err != nil {
 		panic(err)
 	}
-	return &MutableTree{
+
+	return &mutableTree{
 		tree: tree,
 	}
 }
 
-type MutableTree struct {
+type mutableTree struct {
 	tree *iavl.MutableTree
 
 	lock sync.RWMutex
 }
 
-func (t *MutableTree) GetImmutableAtHeight(version int64) (*ImmutableTree, error) {
+func (t *mutableTree) GetImmutableAtHeight(version int64) (*ImmutableTree, error) {
 	tree, err := t.tree.GetImmutable(version)
 	if err != nil {
 		return nil, err
@@ -48,25 +54,25 @@ func (t *MutableTree) GetImmutableAtHeight(version int64) (*ImmutableTree, error
 	}, nil
 }
 
-func (t *MutableTree) Iterate(fn func(key []byte, value []byte) bool) (stopped bool) {
+func (t *mutableTree) Iterate(fn func(key []byte, value []byte) bool) (stopped bool) {
 	return t.tree.Iterate(fn)
 }
 
-func (t *MutableTree) Hash() []byte {
+func (t *mutableTree) Hash() []byte {
 	t.lock.RLock()
 	defer t.lock.RUnlock()
 
 	return t.tree.Hash()
 }
 
-func (t *MutableTree) Version() int64 {
+func (t *mutableTree) Version() int64 {
 	t.lock.RLock()
 	defer t.lock.RUnlock()
 
 	return t.tree.Version()
 }
 
-func (t *MutableTree) GetImmutable() *ImmutableTree {
+func (t *mutableTree) GetImmutable() *ImmutableTree {
 	t.lock.RLock()
 	defer t.lock.RUnlock()
 
@@ -75,53 +81,68 @@ func (t *MutableTree) GetImmutable() *ImmutableTree {
 	}
 }
 
-func (t *MutableTree) Get(key []byte) (index int64, value []byte) {
+func (t *mutableTree) Get(key []byte) (index int64, value []byte) {
 	t.lock.RLock()
 	defer t.lock.RUnlock()
 
 	return t.tree.Get(key)
 }
 
-func (t *MutableTree) Set(key, value []byte) bool {
+func (t *mutableTree) Set(key, value []byte) bool {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
 	return t.tree.Set(key, value)
 }
 
-func (t *MutableTree) Remove(key []byte) ([]byte, bool) {
+func (t *mutableTree) Remove(key []byte) ([]byte, bool) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
 	return t.tree.Remove(key)
 }
 
-func (t *MutableTree) LoadVersion(targetVersion int64) (int64, error) {
+func (t *mutableTree) LoadVersion(targetVersion int64) (int64, error) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
 	return t.tree.LoadVersion(targetVersion)
 }
 
-func (t *MutableTree) LazyLoadVersion(targetVersion int64) (int64, error) {
+func (t *mutableTree) LazyLoadVersion(targetVersion int64) (int64, error) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
 	return t.tree.LazyLoadVersion(targetVersion)
 }
 
-func (t *MutableTree) SaveVersion() ([]byte, int64, error) {
+func (t *mutableTree) SaveVersion() ([]byte, int64, error) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
 	return t.tree.SaveVersion()
 }
 
-func (t *MutableTree) DeleteVersion(version int64) error {
+func (t *mutableTree) DeleteVersion(version int64) error {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
 	return t.tree.DeleteVersion(version)
+}
+
+func (t *mutableTree) KeepLastHeight() int {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+
+	versions := t.tree.AvailableVersions()
+	prev := 1
+	for _, version := range versions {
+		if version-prev == 1 {
+			break
+		}
+		prev = version
+	}
+	return prev
 }
 
 func NewImmutableTree(db dbm.DB) *ImmutableTree {
@@ -146,38 +167,6 @@ func (t *ImmutableTree) Version() int64 {
 	return t.tree.Version()
 }
 
-func (t *ImmutableTree) GetImmutable() *ImmutableTree {
-	return t
-}
-
 func (t *ImmutableTree) Get(key []byte) (index int64, value []byte) {
 	return t.tree.Get(key)
-}
-
-func (t *ImmutableTree) GetImmutableAtHeight(version int64) (*ImmutableTree, error) {
-	panic("Not implemented")
-}
-
-func (t *ImmutableTree) Set(key, value []byte) bool {
-	panic("Not implemented")
-}
-
-func (t *ImmutableTree) Remove(key []byte) ([]byte, bool) {
-	panic("Not implemented")
-}
-
-func (t *ImmutableTree) LoadVersion(targetVersion int64) (int64, error) {
-	panic("Not implemented")
-}
-
-func (t *ImmutableTree) LazyLoadVersion(targetVersion int64) (int64, error) {
-	panic("Not implemented")
-}
-
-func (t *ImmutableTree) SaveVersion() ([]byte, int64, error) {
-	panic("Not implemented")
-}
-
-func (t *ImmutableTree) DeleteVersion(version int64) error {
-	panic("Not implemented")
 }

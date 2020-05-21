@@ -18,7 +18,7 @@ func (s *Service) CoinInfo(_ context.Context, req *pb.CoinInfoRequest) (*pb.Coin
 	cState.RLock()
 	defer cState.RUnlock()
 
-	coin := cState.Coins.GetCoin(types.StrToCoinSymbol(req.Symbol))
+	coin := cState.Coins().GetCoin(types.StrToCoinSymbol(req.Symbol))
 	if coin == nil {
 		return new(pb.CoinInfoResponse), status.Error(codes.FailedPrecondition, "Coin not found")
 	}

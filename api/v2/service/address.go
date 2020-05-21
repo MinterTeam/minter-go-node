@@ -31,10 +31,10 @@ func (s *Service) Address(_ context.Context, req *pb.AddressRequest) (*pb.Addres
 	address := types.BytesToAddress(decodeString)
 	response := &pb.AddressResponse{
 		Balance:           make(map[string]string),
-		TransactionsCount: fmt.Sprintf("%d", cState.Accounts.GetNonce(address)),
+		TransactionsCount: fmt.Sprintf("%d", cState.Accounts().GetNonce(address)),
 	}
 
-	balances := cState.Accounts.GetBalances(address)
+	balances := cState.Accounts().GetBalances(address)
 
 	for k, v := range balances {
 		response.Balance[k.String()] = v.String()

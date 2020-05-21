@@ -63,7 +63,7 @@ type Blockchain struct {
 	appDB              *appdb.AppDB
 	eventsDB           eventsdb.IEventsDB
 	stateDeliver       *state.State
-	stateCheck         *state.State
+	stateCheck         *state.CheckState
 	height             uint64   // current Blockchain height
 	rewards            *big.Int // Rewards pool
 	validatorsStatuses map[types.TmAddress]int8
@@ -107,7 +107,7 @@ func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 	}
 
 	// Set stateDeliver and stateCheck
-	blockchain.stateDeliver, err = state.NewState(blockchain.height, blockchain.stateDB, blockchain.eventsDB, cfg.KeepLastStates, cfg.StateCacheSize)
+	blockchain.stateDeliver, err = state.NewState(blockchain.height, blockchain.stateDB, blockchain.eventsDB, cfg.StateCacheSize, cfg.StateKeepEver, cfg.StateKeepRecent)
 	if err != nil {
 		panic(err)
 	}
@@ -177,7 +177,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 
 	if upgrades.IsUpgradeBlock(height) {
 		var err error
-		app.stateDeliver, err = state.NewState(app.height, app.stateDB, app.eventsDB, app.cfg.KeepLastStates, app.cfg.StateCacheSize)
+		app.stateDeliver, err = state.NewState(app.height, app.stateDB, app.eventsDB, app.cfg.StateCacheSize, app.cfg.StateKeepEver, app.cfg.StateKeepRecent)
 		if err != nil {
 			panic(err)
 		}
@@ -462,8 +462,10 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 	_ = app.eventsDB.CommitEvents()
 
 	// Persist application hash and height
-	app.appDB.SetLastBlockHash(hash)
-	app.appDB.SetLastHeight(app.height)
+	if app.height%uint64(app.cfg.StateKeepEver) == 0 {
+		app.appDB.SetLastBlockHash(hash)
+		app.appDB.SetLastHeight(app.height)
+	}
 
 	// Resetting check state to be consistent with current height
 	app.resetCheckState()
@@ -495,15 +497,15 @@ func (app *Blockchain) Stop() {
 }
 
 // Get immutable state of Minter Blockchain
-func (app *Blockchain) CurrentState() *state.State {
+func (app *Blockchain) CurrentState() *state.CheckState {
 	app.lock.RLock()
 	defer app.lock.RUnlock()
 
-	return state.NewCheckState(app.stateCheck)
+	return app.stateCheck
 }
 
 // Get immutable state of Minter Blockchain for given height
-func (app *Blockchain) GetStateForHeight(height uint64) (*state.State, error) {
+func (app *Blockchain) GetStateForHeight(height uint64) (*state.CheckState, error) {
 	app.lock.RLock()
 	defer app.lock.RUnlock()
 
@@ -529,14 +531,14 @@ func (app *Blockchain) MissedBlocks(pubKey string, height uint64) (missedBlocks 
 
 	if height != 0 {
 		cState.Lock()
-		cState.Validators.LoadValidators()
+		cState.Validators().LoadValidators()
 		cState.Unlock()
 	}
 
 	cState.RLock()
 	defer cState.RUnlock()
 
-	val := cState.Validators.GetByPublicKey(types.HexToPubkey(pubKey))
+	val := cState.Validators().GetByPublicKey(types.HexToPubkey(pubKey))
 	if val == nil {
 		return "", 0, status.Error(codes.NotFound, "Validator not found")
 	}
@@ -630,7 +632,7 @@ func (app *Blockchain) calcMaxGas(height uint64) uint64 {
 	}
 
 	// get current max gas
-	newMaxGas := app.stateCheck.App.GetMaxGas()
+	newMaxGas := app.stateCheck.App().GetMaxGas()
 
 	// check if blocks are created in time
 	if delta, _ := app.GetBlocksTimeDelta(height, blockDelta); delta > targetTime*blockDelta {
