@@ -335,6 +335,10 @@ func (d *Data) GetAverageBlockProcessingTime() int64 {
 	d.BlockEnd.RLock()
 	defer d.BlockEnd.RUnlock()
 
+	if d.BlockEnd.LastBlockInfo.Height == d.Speed.startHeight {
+		return 0
+	}
+
 	return d.Speed.duration / (d.BlockEnd.LastBlockInfo.Height - d.Speed.startHeight)
 }
 
