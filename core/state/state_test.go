@@ -81,7 +81,7 @@ func TestStateExport(t *testing.T) {
 
 	state.Checks.UseCheck(newCheck)
 
-	_, err = state.Commit(height)
+	_, err = state.Commit()
 	if err != nil {
 		log.Panicf("Cannot commit state: %s", err)
 	}

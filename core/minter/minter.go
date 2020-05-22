@@ -453,7 +453,7 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 	}
 
 	// Committing Minter Blockchain state
-	hash, err := app.stateDeliver.Commit(app.height)
+	hash, err := app.stateDeliver.Commit()
 	if err != nil {
 		panic(err)
 	}

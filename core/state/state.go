@@ -159,7 +159,7 @@ func (s *State) Check() error {
 	return nil
 }
 
-func (s *State) Commit(height uint64) ([]byte, error) {
+func (s *State) Commit() ([]byte, error) {
 	s.Checker.Reset()
 
 	if err := s.Accounts.Commit(); err != nil {
