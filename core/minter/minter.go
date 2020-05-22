@@ -169,7 +169,7 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.ResponseBeginBlock {
 	height := uint64(req.Header.Height)
 
-	app.StatisticData().PushStartBlock(statistics.StartRequest{Height: int64(height), Now: time.Now(), HeaderTime: req.Header.Time})
+	app.StatisticData().PushStartBlock(&statistics.StartRequest{Height: int64(height), Now: time.Now(), HeaderTime: req.Header.Time})
 
 	if app.haltHeight > 0 && height >= app.haltHeight {
 		panic(fmt.Sprintf("Application halted at height %d", height))
@@ -380,7 +380,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 	}
 
 	defer func() {
-		app.StatisticData().PushEndBlock(statistics.EndRequest{TimeEnd: time.Now(), Height: int64(app.height)})
+		app.StatisticData().PushEndBlock(&statistics.EndRequest{TimeEnd: time.Now(), Height: int64(app.height)})
 	}()
 
 	return abciTypes.ResponseEndBlock{
