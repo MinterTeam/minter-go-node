@@ -99,11 +99,7 @@ type State struct {
 func (s *State) isValue_State() {}
 
 func NewState(height uint64, db db.DB, events eventsdb.IEventsDB, cacheSize int, keepEvery, keepRecent int64) (*State, error) {
-	iavlTree := tree.NewMutableTree(db, cacheSize, keepEvery, keepRecent)
-	_, err := iavlTree.LoadVersion(int64(height))
-	if err != nil {
-		return nil, err
-	}
+	iavlTree := tree.NewMutableTree(height, db, cacheSize, keepEvery, keepRecent)
 
 	state, err := newStateForTree(iavlTree, events, db, keepRecent)
 	if err != nil {
@@ -118,7 +114,7 @@ func NewState(height uint64, db db.DB, events eventsdb.IEventsDB, cacheSize int,
 }
 
 func NewCheckStateAtHeight(height uint64, db db.DB) (*CheckState, error) {
-	iavlTree := tree.NewMutableTree(db, 1024, 1, 0)
+	iavlTree := tree.NewMutableTree(0, db, 1024, 1, 0)
 	_, err := iavlTree.LazyLoadVersion(int64(height))
 	if err != nil {
 		return nil, err
@@ -163,7 +159,7 @@ func (s *State) Check() error {
 	return nil
 }
 
-func (s *State) Commit() ([]byte, error) {
+func (s *State) Commit(height uint64) ([]byte, error) {
 	s.Checker.Reset()
 
 	if err := s.Accounts.Commit(); err != nil {
@@ -194,9 +190,10 @@ func (s *State) Commit() ([]byte, error) {
 		return nil, err
 	}
 
+	versions := s.tree.AvailableVersions()
+
 	hash, version, err := s.tree.SaveVersion()
 
-	versions := s.tree.AvailableVersions()
 	for _, v := range versions {
 		if v < int(version-s.keepLastStates) {
 			_ = s.tree.DeleteVersion(int64(v))

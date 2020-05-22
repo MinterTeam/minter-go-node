@@ -27,8 +27,13 @@ type MTree interface {
 	GetImmutableAtHeight(version int64) (*ImmutableTree, error)
 }
 
-func NewMutableTree(db dbm.DB, cacheSize int, keepEvery, keepRecent int64) MTree {
+func NewMutableTree(height uint64, db dbm.DB, cacheSize int, keepEvery, keepRecent int64) MTree {
 	tree, err := iavl.NewMutableTreeWithOpts(db, dbm.NewMemDB(), cacheSize, iavl.PruningOptions(keepEvery, keepRecent))
+	if err != nil {
+		panic(err)
+	}
+
+	_, err = tree.LoadVersionForOverwriting(int64(height))
 	if err != nil {
 		panic(err)
 	}
