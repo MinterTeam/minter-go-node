@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/minter"
-	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/golang/protobuf/jsonpb"
 	_struct "github.com/golang/protobuf/ptypes/struct"
 	"github.com/tendermint/go-amino"
@@ -24,18 +23,6 @@ type Service struct {
 
 func NewService(cdc *amino.Codec, blockchain *minter.Blockchain, client *rpc.Local, node *tmNode.Node, minterCfg *config.Config, version string) *Service {
 	return &Service{cdc: cdc, blockchain: blockchain, client: client, minterCfg: minterCfg, version: version, tmNode: node}
-}
-
-func (s *Service) getStateForHeight(height int32) (*state.CheckState, error) {
-	if height > 0 {
-		cState, err := s.blockchain.GetStateForHeight(uint64(height))
-		if err != nil {
-			return nil, err
-		}
-		return cState, nil
-	}
-
-	return s.blockchain.CurrentState(), nil
 }
 
 func (s *Service) createError(statusErr *status.Status, data string) error {

@@ -12,6 +12,7 @@ type ReadOnlyTree interface {
 	Hash() []byte
 	Iterate(fn func(key []byte, value []byte) bool) (stopped bool)
 	KeepLastHeight() int
+	AvailableVersions() []int
 }
 
 type MTree interface {
@@ -143,6 +144,13 @@ func (t *mutableTree) KeepLastHeight() int {
 		prev = version
 	}
 	return prev
+}
+func (t *mutableTree) AvailableVersions() []int {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+
+	return t.tree.AvailableVersions()
+
 }
 
 func NewImmutableTree(db dbm.DB) *ImmutableTree {

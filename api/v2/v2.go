@@ -4,14 +4,17 @@ import (
 	"context"
 	"github.com/MinterTeam/minter-go-node/api/v2/service"
 	gw "github.com/MinterTeam/node-grpc-gateway/api_pb"
+	_ "github.com/MinterTeam/node-grpc-gateway/statik"
 	"github.com/gorilla/handlers"
 	"github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/rakyll/statik/fs"
 	"github.com/tmc/grpc-websocket-proxy/wsproxy"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
+	"mime"
 	"net"
 	"net/http"
 	"os"
@@ -57,13 +60,13 @@ func Run(srv *service.Service, addrGRPC, addrApi string, traceLog bool) error {
 	mux := http.NewServeMux()
 	handler := wsproxy.WebsocketProxy(gwmux)
 
-	if traceLog { //todo
+	if traceLog {
 		handler = handlers.CombinedLoggingHandler(os.Stdout, handler)
 	}
 	mux.Handle("/", handler)
-	allowCORS(mux)
+	serveOpenAPI(mux)
 	group.Go(func() error {
-		return http.ListenAndServe(addrApi, mux)
+		return http.ListenAndServe(addrApi, allowCORS(mux))
 	})
 
 	return group.Wait()
@@ -88,4 +91,19 @@ func preflightHandler(w http.ResponseWriter, r *http.Request) {
 	methods := []string{"GET", "HEAD", "POST", "PUT", "DELETE"}
 	w.Header().Set("Access-Control-Allow-Methods", strings.Join(methods, ","))
 	return
+}
+
+func serveOpenAPI(mux *http.ServeMux) error {
+	mime.AddExtensionType(".svg", "image/svg+xml")
+
+	statikFS, err := fs.New()
+	if err != nil {
+		return err
+	}
+
+	// Expose files in static on <host>/openapi-ui
+	fileServer := http.FileServer(statikFS)
+	prefix := "/openapi-ui/"
+	mux.Handle(prefix, http.StripPrefix(prefix, fileServer))
+	return nil
 }

@@ -14,7 +14,7 @@ import (
 )
 
 func (s *Service) EstimateCoinSell(_ context.Context, req *pb.EstimateCoinSellRequest) (*pb.EstimateCoinSellResponse, error) {
-	cState, err := s.getStateForHeight(req.Height)
+	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {
 		return new(pb.EstimateCoinSellResponse), status.Error(codes.NotFound, err.Error())
 	}

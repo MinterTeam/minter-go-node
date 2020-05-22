@@ -11,7 +11,7 @@ import (
 )
 
 func (s *Service) Addresses(_ context.Context, req *pb.AddressesRequest) (*pb.AddressesResponse, error) {
-	cState, err := s.getStateForHeight(req.Height)
+	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {
 		return new(pb.AddressesResponse), status.Error(codes.NotFound, err.Error())
 	}

@@ -2,6 +2,7 @@ package minter
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	eventsdb "github.com/MinterTeam/events-db"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
@@ -25,7 +26,6 @@ import (
 	cryptoAmino "github.com/tendermint/tendermint/crypto/encoding/amino"
 	"github.com/tendermint/tendermint/evidence"
 	tmNode "github.com/tendermint/tendermint/node"
-	rpctypes "github.com/tendermint/tendermint/rpc/lib/types"
 	types2 "github.com/tendermint/tendermint/types"
 	"github.com/tendermint/tm-db"
 	"google.golang.org/grpc/codes"
@@ -506,13 +506,12 @@ func (app *Blockchain) CurrentState() *state.CheckState {
 
 // Get immutable state of Minter Blockchain for given height
 func (app *Blockchain) GetStateForHeight(height uint64) (*state.CheckState, error) {
-	app.lock.RLock()
-	defer app.lock.RUnlock()
-
-	if height != 0 {
+	if height > 0 {
+		app.lock.RLock()
+		defer app.lock.RUnlock()
 		s, err := state.NewCheckStateAtHeight(height, app.stateDB)
 		if err != nil {
-			return nil, rpctypes.RPCError{Code: 404, Message: "State at given height not found", Data: err.Error()}
+			return nil, errors.New("state at given height not found")
 		}
 		return s, nil
 	}

@@ -17,17 +17,18 @@ import (
 )
 
 func (s *Service) Block(_ context.Context, req *pb.BlockRequest) (*pb.BlockResponse, error) {
-	block, err := s.client.Block(&req.Height)
+	height := int64(req.Height)
+	block, err := s.client.Block(&height)
 	if err != nil {
 		return new(pb.BlockResponse), status.Error(codes.NotFound, "Block not found")
 	}
 
-	blockResults, err := s.client.BlockResults(&req.Height)
+	blockResults, err := s.client.BlockResults(&height)
 	if err != nil {
 		return new(pb.BlockResponse), status.Error(codes.NotFound, "Block results not found")
 	}
 
-	valHeight := req.Height - 1
+	valHeight := height - 1
 	if valHeight < 1 {
 		valHeight = 1
 	}
@@ -76,7 +77,7 @@ func (s *Service) Block(_ context.Context, req *pb.BlockRequest) (*pb.BlockRespo
 
 	var validators []*pb.BlockResponse_Validator
 	var proposer string
-	if req.Height > 1 {
+	if height > 1 {
 		p, err := getBlockProposer(block, totalValidators)
 		if err != nil {
 			return new(pb.BlockResponse), status.Error(codes.FailedPrecondition, err.Error())
@@ -119,7 +120,7 @@ func (s *Service) Block(_ context.Context, req *pb.BlockRequest) (*pb.BlockRespo
 		Time:              block.Block.Time.Format(time.RFC3339Nano),
 		TransactionsCount: fmt.Sprintf("%d", len(block.Block.Txs)),
 		Transactions:      txs,
-		BlockReward:       rewards.GetRewardForBlock(uint64(req.Height)).String(),
+		BlockReward:       rewards.GetRewardForBlock(uint64(height)).String(),
 		Size:              fmt.Sprintf("%d", len(s.cdc.MustMarshalBinaryLengthPrefixed(block))),
 		Proposer:          proposer,
 		Validators:        validators,

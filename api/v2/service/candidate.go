@@ -23,7 +23,7 @@ func (s *Service) Candidate(_ context.Context, req *pb.CandidateRequest) (*pb.Ca
 
 	pubkey := types.BytesToPubkey(decodeString)
 
-	cState, err := s.getStateForHeight(req.Height)
+	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {
 		return new(pb.CandidateResponse), status.Error(codes.NotFound, err.Error())
 	}

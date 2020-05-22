@@ -196,8 +196,11 @@ func (s *State) Commit() ([]byte, error) {
 
 	hash, version, err := s.tree.SaveVersion()
 
-	if s.keepLastStates < version-1 {
-		_ = s.tree.DeleteVersion(version - s.keepLastStates)
+	versions := s.tree.AvailableVersions()
+	for _, v := range versions {
+		if v < int(version-s.keepLastStates) {
+			_ = s.tree.DeleteVersion(int64(v))
+		}
 	}
 
 	return hash, err

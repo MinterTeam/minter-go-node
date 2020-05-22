@@ -13,7 +13,7 @@ import (
 )
 
 func (s *Service) EstimateTxCommission(_ context.Context, req *pb.EstimateTxCommissionRequest) (*pb.EstimateTxCommissionResponse, error) {
-	cState, err := s.getStateForHeight(req.Height)
+	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {
 		return new(pb.EstimateTxCommissionResponse), status.Error(codes.NotFound, err.Error())
 	}

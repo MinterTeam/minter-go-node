@@ -10,7 +10,7 @@ import (
 )
 
 func (s *Service) Validators(_ context.Context, req *pb.ValidatorsRequest) (*pb.ValidatorsResponse, error) {
-	height := req.Height
+	height := int64(req.Height)
 	if height == 0 {
 		height = int64(s.blockchain.Height())
 	}

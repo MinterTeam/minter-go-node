@@ -8,19 +8,20 @@ import (
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"strings"
 )
 
 func (s *Service) Address(_ context.Context, req *pb.AddressRequest) (*pb.AddressResponse, error) {
-	if len(req.Address) < 3 {
+	if !strings.HasPrefix(strings.Title(req.Address), "Mx") {
 		return new(pb.AddressResponse), status.Error(codes.InvalidArgument, "invalid address")
 	}
 
 	decodeString, err := hex.DecodeString(req.Address[2:])
 	if err != nil {
-		return new(pb.AddressResponse), status.Error(codes.InvalidArgument, err.Error())
+		return new(pb.AddressResponse), status.Error(codes.InvalidArgument, "invalid address")
 	}
 
-	cState, err := s.getStateForHeight(req.Height)
+	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {
 		return new(pb.AddressResponse), status.Error(codes.NotFound, err.Error())
 	}

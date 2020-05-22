@@ -8,7 +8,7 @@ import (
 )
 
 func (s *Service) Candidates(_ context.Context, req *pb.CandidatesRequest) (*pb.CandidatesResponse, error) {
-	cState, err := s.getStateForHeight(req.Height)
+	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {
 		return new(pb.CandidatesResponse), status.Error(codes.NotFound, err.Error())
 	}

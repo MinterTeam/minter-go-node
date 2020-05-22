@@ -95,10 +95,6 @@ func runNode(cmd *cobra.Command) error {
 		return err
 	}
 
-	if cfg.StateKeepEver < 1 {
-		panic("state_keep_ever field should be greater than 0")
-	}
-
 	app := minter.NewMinterBlockchain(cfg)
 
 	// update BlocksTimeDelta in case it was corrupted
