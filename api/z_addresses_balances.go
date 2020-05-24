@@ -107,14 +107,14 @@ func MakeAddressBalance(height int, address types.Address) (*AddressBalanceRespo
 				fmt.Sscan(tmstake.Value, t1) 
 				fmt.Sscan(tmstake.BipValue, t2)
 				coinfound:=false
-				for _,res:= range response.Delegated{
+				for i,res:= range response.Delegated{
 					if res.Coin == tmstake.Coin {
 						fmt.Sscan(res.Value, t3)
 						fmt.Sscan(res.BipValue, t4)
 						t1.Add(t1,t3)
 						t2.Add(t2,t4)
-						res.Value = t1.String()
-						res.BipValue = t2.String()						
+						response.Delegated[i].Value = t1.String()
+						response.Delegated[i].BipValue = t2.String()						
 						coinfound = true	
 						break
 					}
