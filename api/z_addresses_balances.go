@@ -32,8 +32,6 @@ type AddressesBalancesResponse struct {
 
 
 func CustomCoinBipBalance(coinToSellString string, valueToSell *big.Int, cState *state.State)(*big.Int) {
-cState, err := GetStateForHeight(height)
-	err = err
 
 	var result *big.Int
 
