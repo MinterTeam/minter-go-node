@@ -20,7 +20,7 @@ type AddressBalanceResponse struct {
 	Delegated         	[]CoinBalance 	`json:"delegated"`
 	Total         		[]CoinBalance 	`json:"total"`
 	TransactionCount 	uint64         	`json:"transaction_count"`
-	Bipvalue     		*big.Int       	`json:"bipvalue"`
+	Bipvalue     		string       	`json:"bipvalue"`
 } 
 
 type AddressesBalancesResponse struct {
@@ -171,7 +171,7 @@ func MakeAddressBalance(height int, address types.Address) (*AddressBalanceRespo
 	} 
 
 	response.TransactionCount = cState.Accounts.GetNonce(address)
-	response.Bipvalue = coinsbipvalue
+	response.Bipvalue = coinsbipvalue.String()
 
 	return &response, nil
 }
