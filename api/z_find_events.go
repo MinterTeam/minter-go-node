@@ -13,7 +13,11 @@ type FindEventsResponse struct {
 
 func FindEvents(height uint64, find []string) (*FindEventsResponse , error) {
 	var result FindEventsResponse 
-	
+	if len(find)>0 {
+	}else{
+	find=append(find,"")
+	}
+
 	for i,_:= range find{
 		if strings.Contains(find[i], "Mx"){
 			find[i] = AddressToBytesConvert(find[i])
