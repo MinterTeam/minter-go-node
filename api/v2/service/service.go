@@ -8,7 +8,7 @@ import (
 	_struct "github.com/golang/protobuf/ptypes/struct"
 	"github.com/tendermint/go-amino"
 	tmNode "github.com/tendermint/tendermint/node"
-	rpc "github.com/tendermint/tendermint/rpc/client"
+	rpc "github.com/tendermint/tendermint/rpc/client/local"
 	"google.golang.org/grpc/status"
 )
 

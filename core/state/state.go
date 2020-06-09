@@ -190,17 +190,12 @@ func (s *State) Commit() ([]byte, error) {
 		return nil, err
 	}
 
-	versions := s.tree.AvailableVersions()
-
-	hash, version, err := s.tree.SaveVersion()
-
-	for _, v := range versions {
-		if v < int(version-s.keepLastStates) {
-			_ = s.tree.DeleteVersion(int64(v))
-		}
+	hash, _, err := s.tree.SaveVersion()
+	if err != nil {
+		return hash, err
 	}
 
-	return hash, err
+	return hash, nil
 }
 
 func (s *State) Import(state types.AppState) error {

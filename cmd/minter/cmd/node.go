@@ -22,7 +22,7 @@ import (
 	"github.com/tendermint/tendermint/p2p"
 	"github.com/tendermint/tendermint/privval"
 	"github.com/tendermint/tendermint/proxy"
-	rpc "github.com/tendermint/tendermint/rpc/client"
+	rpc "github.com/tendermint/tendermint/rpc/client/local"
 	"github.com/tendermint/tendermint/store"
 	tmTypes "github.com/tendermint/tendermint/types"
 	"io"
@@ -95,6 +95,10 @@ func runNode(cmd *cobra.Command) error {
 		return err
 	}
 
+	if cfg.StateKeepEver < 1 {
+		logger.Error("state_keep_ever field should be greater than 0. All state will be stored in memory. Data will not be saved to disk.")
+	}
+
 	app := minter.NewMinterBlockchain(cfg)
 
 	// update BlocksTimeDelta in case it was corrupted
@@ -103,7 +107,7 @@ func runNode(cmd *cobra.Command) error {
 	// start TM node
 	node := startTendermintNode(app, tmConfig, logger)
 
-	client := rpc.NewLocal(node)
+	client := rpc.New(node)
 
 	app.SetTmNode(node)
 

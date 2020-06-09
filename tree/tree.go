@@ -11,7 +11,7 @@ type ReadOnlyTree interface {
 	Version() int64
 	Hash() []byte
 	Iterate(fn func(key []byte, value []byte) bool) (stopped bool)
-	KeepLastHeight() int
+	KeepLastHeight() int64
 	AvailableVersions() []int
 }
 
@@ -45,7 +45,6 @@ func NewMutableTree(height uint64, db dbm.DB, cacheSize int, keepEvery, keepRece
 
 type mutableTree struct {
 	tree *iavl.MutableTree
-
 	lock sync.RWMutex
 }
 
@@ -136,7 +135,7 @@ func (t *mutableTree) DeleteVersion(version int64) error {
 	return t.tree.DeleteVersion(version)
 }
 
-func (t *mutableTree) KeepLastHeight() int {
+func (t *mutableTree) KeepLastHeight() int64 {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
@@ -148,8 +147,10 @@ func (t *mutableTree) KeepLastHeight() int {
 		}
 		prev = version
 	}
-	return prev
+
+	return int64(prev)
 }
+
 func (t *mutableTree) AvailableVersions() []int {
 	t.lock.Lock()
 	defer t.lock.Unlock()

@@ -671,6 +671,7 @@ func (app *Blockchain) GetValidatorStatus(address types.TmAddress) int8 {
 	defer app.lock.RUnlock()
 	return app.validatorsStatuses[address]
 }
+
 func (app *Blockchain) MaxPeerHeight() int64 {
 	var max int64
 	for _, peer := range app.tmNode.Switch().Peers().List() {
@@ -680,6 +681,33 @@ func (app *Blockchain) MaxPeerHeight() int64 {
 		}
 	}
 	return max
+}
+
+func (app *Blockchain) PruneBlocks(from int64, to int64) error {
+	app.stateDeliver.Lock()
+	defer app.stateDeliver.Unlock()
+
+	versions := app.stateDeliver.Tree().AvailableVersions()
+
+	lastSnapshotVersion := app.appDB.GetLastHeight()
+	if uint64(to) >= lastSnapshotVersion {
+		return fmt.Errorf("cannot delete last version saved in disk (%d)", lastSnapshotVersion)
+	}
+
+	for _, v := range versions {
+		v := int64(v)
+		if v < from {
+			continue
+		}
+		if v >= to {
+			break
+		}
+		if err := app.stateDeliver.Tree().DeleteVersion(v); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func getDbOpts(memLimit int) *opt.Options {

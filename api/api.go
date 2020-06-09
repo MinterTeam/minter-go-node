@@ -15,7 +15,7 @@ import (
 	"github.com/tendermint/tendermint/crypto/secp256k1"
 	"github.com/tendermint/tendermint/evidence"
 	"github.com/tendermint/tendermint/libs/log"
-	rpc "github.com/tendermint/tendermint/rpc/client"
+	rpc "github.com/tendermint/tendermint/rpc/client/local"
 	"github.com/tendermint/tendermint/types"
 	"net/http"
 	"net/url"
@@ -27,7 +27,6 @@ var (
 	cdc        = amino.NewCodec()
 	blockchain *minter.Blockchain
 	client     *rpc.Local
-	minterCfg  *config.Config
 )
 
 var Routes = map[string]*rpcserver.RPCFunc{
@@ -66,7 +65,6 @@ func responseTime(b *minter.Blockchain) func(f func(http.ResponseWriter, *http.R
 }
 
 func RunAPI(b *minter.Blockchain, tmRPC *rpc.Local, cfg *config.Config, logger log.Logger) {
-	minterCfg = cfg
 	RegisterCryptoAmino(cdc)
 	eventsdb.RegisterAminoEvents(cdc)
 	RegisterEvidenceMessages(cdc)

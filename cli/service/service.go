@@ -10,7 +10,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/version"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/empty"
-	rpc "github.com/tendermint/tendermint/rpc/client"
+	rpc "github.com/tendermint/tendermint/rpc/client/local"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"runtime"
@@ -117,7 +117,7 @@ func (m *Manager) Status(context.Context, *empty.Empty) (*pb.StatusResponse, err
 		Version:           version.Version,
 		LatestBlockHash:   fmt.Sprintf("%X", resultStatus.SyncInfo.LatestBlockHash),
 		LatestAppHash:     fmt.Sprintf("%X", resultStatus.SyncInfo.LatestAppHash),
-		KeepLastStates:    int64(m.blockchain.CurrentState().Tree().KeepLastHeight()),
+		KeepLastStates:    m.blockchain.CurrentState().Tree().KeepLastHeight(),
 		LatestBlockHeight: resultStatus.SyncInfo.LatestBlockHeight,
 		LatestBlockTime:   resultStatus.SyncInfo.LatestBlockTime.Format(time.RFC3339),
 		TmStatus: &pb.StatusResponse_TmStatus{
@@ -245,7 +245,12 @@ func (m *Manager) NetInfo(context.Context, *empty.Empty) (*pb.NetInfoResponse, e
 }
 
 func (m *Manager) PruneBlocks(ctx context.Context, req *pb.PruneBlocksRequest) (*empty.Empty, error) {
-	return new(empty.Empty), status.Error(codes.Unimplemented, "todo")
+	res := new(empty.Empty)
+	err := m.blockchain.PruneBlocks(req.FromHeight, req.ToHeight)
+	if err != nil {
+		return res, status.Error(codes.FailedPrecondition, err.Error())
+	}
+	return res, nil
 }
 
 func (m *Manager) DealPeer(ctx context.Context, req *pb.DealPeerRequest) (*empty.Empty, error) {
