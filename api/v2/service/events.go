@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	compact_db "github.com/MinterTeam/events-db"
+	eventsdb "github.com/MinterTeam/minter-go-node/core/events"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"github.com/golang/protobuf/jsonpb"
 	_struct "github.com/golang/protobuf/ptypes/struct"
@@ -29,11 +29,11 @@ func (s *Service) Events(_ context.Context, req *pb.EventsRequest) (*pb.EventsRe
 
 		var t string
 		switch event.(type) {
-		case *compact_db.RewardEvent:
+		case *eventsdb.RewardEvent:
 			t = "minter/RewardEvent"
-		case *compact_db.SlashEvent:
+		case *eventsdb.SlashEvent:
 			t = "minter/SlashEvent"
-		case *compact_db.UnbondEvent:
+		case *eventsdb.UnbondEvent:
 			t = "minter/UnbondEvent"
 		default:
 			t = "Undefined Type"

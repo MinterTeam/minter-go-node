@@ -3,7 +3,6 @@ module github.com/MinterTeam/minter-go-node
 go 1.13
 
 require (
-	github.com/MinterTeam/events-db v0.1.6
 	github.com/MinterTeam/node-grpc-gateway v1.1.2
 	github.com/btcsuite/btcd v0.20.1-beta
 	github.com/c-bata/go-prompt v0.2.3
@@ -16,7 +15,9 @@ require (
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/grpc-ecosystem/grpc-gateway v1.14.3
 	github.com/marcusolsson/tui-go v0.4.0
+	github.com/mattn/go-tty v0.0.3 // indirect
 	github.com/pkg/errors v0.9.1
+	github.com/pkg/term v0.0.0-20190109203006-aa71e9d9e942 // indirect
 	github.com/prometheus/client_golang v1.5.1
 	github.com/rakyll/statik v0.1.7
 	github.com/rs/cors v1.7.0

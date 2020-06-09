@@ -1,6 +1,6 @@
 package bus
 
-import eventsdb "github.com/MinterTeam/events-db"
+import eventsdb "github.com/MinterTeam/minter-go-node/core/events"
 
 type Bus struct {
 	coins       Coins

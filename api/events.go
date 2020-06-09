@@ -1,7 +1,7 @@
 package api
 
 import (
-	eventsdb "github.com/MinterTeam/events-db"
+	eventsdb "github.com/MinterTeam/minter-go-node/core/events"
 )
 
 type EventsResponse struct {
