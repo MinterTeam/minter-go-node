@@ -14,6 +14,7 @@ type StatusResponse struct {
 	LatestBlockHeight int64                    `json:"latest_block_height"`
 	LatestBlockTime   time.Time                `json:"latest_block_time"`
 	KeepLastStates    int64                    `json:"keep_last_states"`
+	TotalSlashed      string                   `json:"total_slashed"`
 	TmStatus          *core_types.ResultStatus `json:"tm_status"`
 }
 
@@ -23,6 +24,14 @@ func Status() (*StatusResponse, error) {
 		return nil, err
 	}
 
+	cState, err := GetStateForHeight(0)
+	if err != nil {
+		return nil, err
+	}
+
+	cState.RLock()
+	defer cState.RUnlock()
+
 	return &StatusResponse{
 		MinterVersion:     version.Version,
 		LatestBlockHash:   fmt.Sprintf("%X", result.SyncInfo.LatestBlockHash),
@@ -30,6 +39,7 @@ func Status() (*StatusResponse, error) {
 		LatestBlockHeight: result.SyncInfo.LatestBlockHeight,
 		LatestBlockTime:   result.SyncInfo.LatestBlockTime,
 		KeepLastStates:    minterCfg.BaseConfig.KeepLastStates,
+		TotalSlashed:      cState.App.GetTotalSlashed().String(),
 		TmStatus:          result,
 	}, nil
 }
