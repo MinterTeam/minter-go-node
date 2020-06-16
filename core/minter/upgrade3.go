@@ -434,7 +434,7 @@ func ApplyUpgrade3(state *state.State, events eventsdb.IEventsDB) {
 		value := helpers.StringToBigInt(data[3])
 		coin := types.StrToCoinSymbol(data[4])
 
-		events.AddEvent(upgrades.UpgradeBlock3, eventsdb.UnbondEvent{
+		events.AddEvent(upgrades.UpgradeBlock3, &eventsdb.UnbondEvent{
 			Address:         owner,
 			Amount:          value.String(),
 			Coin:            coin,

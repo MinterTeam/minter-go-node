@@ -233,7 +233,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 	frozenFunds := app.stateDeliver.FrozenFunds.GetFrozenFunds(uint64(req.Header.Height))
 	if frozenFunds != nil {
 		for _, item := range frozenFunds.List {
-			app.eventsDB.AddEvent(uint32(req.Header.Height), eventsdb.UnbondEvent{
+			app.eventsDB.AddEvent(uint32(req.Header.Height), &eventsdb.UnbondEvent{
 				Address:         item.Address,
 				Amount:          item.Value.String(),
 				Coin:            item.Coin,

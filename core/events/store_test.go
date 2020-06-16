@@ -12,7 +12,7 @@ func TestIEventsDB(t *testing.T) {
 
 	{
 		amount, _ := big.NewInt(0).SetString("111497225000000000000", 10)
-		event := RewardEvent{
+		event := &RewardEvent{
 			Role:            RoleDevelopers.String(),
 			Address:         [20]byte{},
 			Amount:          amount.String(),
@@ -32,7 +32,7 @@ func TestIEventsDB(t *testing.T) {
 	}
 	{
 		amount, _ := big.NewInt(0).SetString("891977800000000000000", 10)
-		event := RewardEvent{
+		event := &RewardEvent{
 			Role:            RoleValidator.String(),
 			Address:         [20]byte{},
 			Amount:          amount.String(),

@@ -213,7 +213,7 @@ func (c *Candidates) PunishByzantineCandidate(height uint64, tmAddress types.TmA
 			c.bus.Checker().AddCoin(stake.Coin, big.NewInt(0).Neg(slashed))
 		}
 
-		c.bus.Events().AddEvent(uint32(height), eventsdb.SlashEvent{
+		c.bus.Events().AddEvent(uint32(height), &eventsdb.SlashEvent{
 			Address:         stake.Owner,
 			Amount:          slashed.String(),
 			Coin:            stake.Coin,
@@ -298,7 +298,7 @@ func (c *Candidates) recalculateStakesOld1(height uint64) {
 				}
 
 				if index == -1 || smallestStake.Cmp(update.BipValue) == 1 {
-					c.bus.Events().AddEvent(uint32(height), eventsdb.UnbondEvent{
+					c.bus.Events().AddEvent(uint32(height), &eventsdb.UnbondEvent{
 						Address:         update.Owner,
 						Amount:          update.Value.String(),
 						Coin:            update.Coin,
@@ -311,7 +311,7 @@ func (c *Candidates) recalculateStakesOld1(height uint64) {
 				}
 
 				if stakes[index] != nil {
-					c.bus.Events().AddEvent(uint32(height), eventsdb.UnbondEvent{
+					c.bus.Events().AddEvent(uint32(height), &eventsdb.UnbondEvent{
 						Address:         stakes[index].Owner,
 						Amount:          stakes[index].Value.String(),
 						Coin:            stakes[index].Coin,
@@ -404,7 +404,7 @@ func (c *Candidates) recalculateStakesOld2(height uint64) {
 			}
 
 			if index == -1 || smallestStake.Cmp(update.BipValue) == 1 {
-				c.bus.Events().AddEvent(uint32(height), eventsdb.UnbondEvent{
+				c.bus.Events().AddEvent(uint32(height), &eventsdb.UnbondEvent{
 					Address:         update.Owner,
 					Amount:          update.Value.String(),
 					Coin:            update.Coin,
@@ -417,7 +417,7 @@ func (c *Candidates) recalculateStakesOld2(height uint64) {
 			}
 
 			if len(stakes) > index && stakes[index] != nil {
-				c.bus.Events().AddEvent(uint32(height), eventsdb.UnbondEvent{
+				c.bus.Events().AddEvent(uint32(height), &eventsdb.UnbondEvent{
 					Address:         stakes[index].Owner,
 					Amount:          stakes[index].Value.String(),
 					Coin:            stakes[index].Coin,
@@ -493,7 +493,7 @@ func (c *Candidates) recalculateStakesNew(height uint64) {
 			}
 
 			if smallestStake.Cmp(update.BipValue) == 1 {
-				c.bus.Events().AddEvent(uint32(height), eventsdb.UnbondEvent{
+				c.bus.Events().AddEvent(uint32(height), &eventsdb.UnbondEvent{
 					Address:         update.Owner,
 					Amount:          update.Value.String(),
 					Coin:            update.Coin,
@@ -506,7 +506,7 @@ func (c *Candidates) recalculateStakesNew(height uint64) {
 			}
 
 			if stakes[index] != nil {
-				c.bus.Events().AddEvent(uint32(height), eventsdb.UnbondEvent{
+				c.bus.Events().AddEvent(uint32(height), &eventsdb.UnbondEvent{
 					Address:         stakes[index].Owner,
 					Amount:          stakes[index].Value.String(),
 					Coin:            stakes[index].Coin,
@@ -811,7 +811,7 @@ func (c *Candidates) Punish(height uint64, address types.TmAddress) *big.Int {
 			c.bus.Checker().AddCoin(stake.Coin, big.NewInt(0).Neg(slashed))
 		}
 
-		c.bus.Events().AddEvent(uint32(height), eventsdb.SlashEvent{
+		c.bus.Events().AddEvent(uint32(height), &eventsdb.SlashEvent{
 			Address:         stake.Owner,
 			Amount:          slashed.String(),
 			Coin:            stake.Coin,
