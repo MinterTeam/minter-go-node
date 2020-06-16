@@ -14,6 +14,7 @@ const mainPrefix = 'd'
 type RApp interface {
 	Export(state *types.AppState, height uint64)
 	GetMaxGas() uint64
+	GetTotalSlashed() *big.Int
 }
 
 func (v *App) Tree() tree.ReadOnlyTree {
