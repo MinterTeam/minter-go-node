@@ -16,6 +16,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/tree"
+	"github.com/tendermint/iavl"
 	db "github.com/tendermint/tm-db"
 	"log"
 	"math/big"
@@ -98,10 +99,15 @@ type State struct {
 
 func (s *State) isValue_State() {}
 
-func NewState(height uint64, db db.DB, events eventsdb.IEventsDB, cacheSize int, keepEvery, keepRecent int64) (*State, error) {
-	iavlTree := tree.NewMutableTree(height, db, cacheSize, keepEvery, keepRecent)
+func NewState(height uint64, db db.DB, events eventsdb.IEventsDB, cacheSize int, keepEvery, keepRecent, keepLastStates int64) (*State, error) {
+	options := iavl.DefaultOptions()
+	if keepLastStates == 0 {
+		options = iavl.PruningOptions(keepEvery, keepRecent)
+	}
 
-	state, err := newStateForTree(iavlTree, events, db, keepRecent)
+	iavlTree := tree.NewMutableTree(height, db, cacheSize, options)
+
+	state, err := newStateForTree(iavlTree, events, db, keepLastStates)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +120,7 @@ func NewState(height uint64, db db.DB, events eventsdb.IEventsDB, cacheSize int,
 }
 
 func NewCheckStateAtHeight(height uint64, db db.DB) (*CheckState, error) {
-	iavlTree := tree.NewMutableTree(0, db, 1024, 1, 0)
+	iavlTree := tree.NewMutableTree(0, db, 1024, nil)
 	_, err := iavlTree.LazyLoadVersion(int64(height))
 	if err != nil {
 		return nil, err
@@ -190,9 +196,22 @@ func (s *State) Commit() ([]byte, error) {
 		return nil, err
 	}
 
-	hash, _, err := s.tree.SaveVersion()
+	hash, version, err := s.tree.SaveVersion()
 	if err != nil {
 		return hash, err
+	}
+
+	if s.keepLastStates == 0 {
+		return hash, nil
+	}
+
+	versions := s.tree.AvailableVersions()
+	for _, v := range versions {
+		if v < int(version-s.keepLastStates) {
+			if err := s.tree.DeleteVersion(int64(v)); err != nil {
+				return hash, err
+			}
+		}
 	}
 
 	return hash, nil

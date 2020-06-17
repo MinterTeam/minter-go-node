@@ -78,13 +78,16 @@ api_v2_listen_addr = "{{ .BaseConfig.APIv2ListenAddress }}"
 # Sets node to be in validator mode. Disables API, events, history of blocks, indexes, etc. 
 validator_mode = {{ .BaseConfig.ValidatorMode }}
 
+# Sets number of last stated to be saved on disk. If the value is 0, then the KeepEver and KeepRecent strategies are used.
+keep_last_states = {{ .BaseConfig.KeepLastStates }}
+
 # State cache size 
 state_cache_size = {{ .BaseConfig.StateCacheSize }}
 
-# State keep ever
+# Sets periodicity to save state on disk
 state_keep_ever = {{ .BaseConfig.StateKeepEver }}
 
-# State keep recent 
+# Sets the number of stores the last state in the memory
 state_keep_recent = {{ .BaseConfig.StateKeepRecent }}
 
 # State memory in MB

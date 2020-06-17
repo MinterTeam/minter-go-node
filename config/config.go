@@ -235,6 +235,8 @@ type BaseConfig struct {
 
 	ValidatorMode bool `mapstructure:"validator_mode"`
 
+	KeepLastStates int64 `mapstructure:"keep_last_states"`
+
 	APISimultaneousRequests int `mapstructure:"api_simultaneous_requests"`
 
 	LogPath string `mapstructure:"log_path"`
@@ -268,6 +270,7 @@ func DefaultBaseConfig() BaseConfig {
 		GRPCListenAddress:       "tcp://0.0.0.0:8842",
 		APIv2ListenAddress:      "tcp://0.0.0.0:8843",
 		ValidatorMode:           false,
+		KeepLastStates:          120,
 		StateCacheSize:          1000000,
 		StateKeepEver:           120,
 		StateKeepRecent:         1200,

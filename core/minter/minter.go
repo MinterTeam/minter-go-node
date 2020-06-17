@@ -107,7 +107,7 @@ func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 	}
 
 	// Set stateDeliver and stateCheck
-	blockchain.stateDeliver, err = state.NewState(blockchain.height, blockchain.stateDB, blockchain.eventsDB, cfg.StateCacheSize, cfg.StateKeepEver, cfg.StateKeepRecent)
+	blockchain.stateDeliver, err = state.NewState(blockchain.height, blockchain.stateDB, blockchain.eventsDB, cfg.StateCacheSize, cfg.StateKeepEver, cfg.StateKeepRecent, cfg.KeepLastStates)
 	if err != nil {
 		panic(err)
 	}
@@ -177,7 +177,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 
 	if upgrades.IsUpgradeBlock(height) {
 		var err error
-		app.stateDeliver, err = state.NewState(app.height, app.stateDB, app.eventsDB, app.cfg.StateCacheSize, app.cfg.StateKeepEver, app.cfg.StateKeepRecent)
+		app.stateDeliver, err = state.NewState(app.height, app.stateDB, app.eventsDB, app.cfg.StateCacheSize, app.cfg.StateKeepEver, app.cfg.StateKeepRecent, app.cfg.KeepLastStates)
 		if err != nil {
 			panic(err)
 		}
