@@ -270,7 +270,7 @@ func DefaultBaseConfig() BaseConfig {
 		GRPCListenAddress:       "tcp://0.0.0.0:8842",
 		APIv2ListenAddress:      "tcp://0.0.0.0:8843",
 		ValidatorMode:           false,
-		KeepLastStates:          120,
+		KeepLastStates:          0,
 		StateCacheSize:          1000000,
 		StateKeepEver:           120,
 		StateKeepRecent:         1200,
