@@ -87,7 +87,7 @@ func CandidateAlt(pubkey types.Pubkey, height int) (*CandidateResponseAlt, error
 	return ResponseCandidateAlt(candidate, cState), nil
 }
 
-func CandidatesAlt(height int, status int) ([]*CandidateResponseAlt, error) {
+func CandidatesAlt(status int, height int) ([]*CandidateResponseAlt, error) {
 	cState, err := GetStateForHeight(height)
 	if err != nil {
 		return nil, err

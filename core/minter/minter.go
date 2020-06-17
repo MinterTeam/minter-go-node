@@ -2,6 +2,7 @@ package minter
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
@@ -31,6 +32,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"math/big"
+	"runtime"
 	"sort"
 	"strings"
 	"sync"
@@ -507,8 +509,6 @@ func (app *Blockchain) CurrentState() *state.CheckState {
 // Get immutable state of Minter Blockchain for given height
 func (app *Blockchain) GetStateForHeight(height uint64) (*state.CheckState, error) {
 	if height > 0 {
-		app.lock.RLock()
-		defer app.lock.RUnlock()
 		s, err := state.NewCheckStateAtHeight(height, app.stateDB)
 		if err != nil {
 			return nil, errors.New("state at given height not found")
@@ -683,17 +683,13 @@ func (app *Blockchain) MaxPeerHeight() int64 {
 	return max
 }
 
-func (app *Blockchain) PruneBlocks(from int64, to int64) error {
-	app.stateDeliver.Lock()
-	defer app.stateDeliver.Unlock()
-
-	versions := app.stateDeliver.Tree().AvailableVersions()
-
+func (app *Blockchain) PruneBlocks(ctx context.Context, from int64, to int64) error {
 	lastSnapshotVersion := app.appDB.GetLastHeight()
 	if uint64(to) >= lastSnapshotVersion {
 		return fmt.Errorf("cannot delete last version saved in disk (%d)", lastSnapshotVersion)
 	}
 
+	versions := app.stateDeliver.Tree().AvailableVersions()
 	for _, v := range versions {
 		v := int64(v)
 		if v < from {
@@ -702,8 +698,16 @@ func (app *Blockchain) PruneBlocks(from int64, to int64) error {
 		if v >= to {
 			break
 		}
+
 		if err := app.stateDeliver.Tree().DeleteVersion(v); err != nil {
 			return err
+		}
+
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+			runtime.Gosched()
 		}
 	}
 

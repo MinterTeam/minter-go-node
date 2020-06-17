@@ -46,7 +46,7 @@ func ResponseStakes(state *state.CheckState, c *candidates.Candidate, coin strin
 	return coinStakes
 }
 
-func GetStakes(pubkey types.Pubkey, height int, coin string, address types.Address) ([]*CStake, error) {
+func GetStakes(pubkey types.Pubkey, coin string, address types.Address, height int) ([]*CStake, error) {
 	var coinStakes []*CStake
 
 	cState, err := GetStateForHeight(height)

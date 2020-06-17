@@ -246,7 +246,7 @@ func (m *Manager) NetInfo(context.Context, *empty.Empty) (*pb.NetInfoResponse, e
 
 func (m *Manager) PruneBlocks(ctx context.Context, req *pb.PruneBlocksRequest) (*empty.Empty, error) {
 	res := new(empty.Empty)
-	err := m.blockchain.PruneBlocks(req.FromHeight, req.ToHeight)
+	err := m.blockchain.PruneBlocks(ctx, req.FromHeight, req.ToHeight)
 	if err != nil {
 		return res, status.Error(codes.FailedPrecondition, err.Error())
 	}

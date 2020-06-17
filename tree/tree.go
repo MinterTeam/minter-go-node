@@ -156,13 +156,6 @@ func (t *mutableTree) AvailableVersions() []int {
 	defer t.lock.Unlock()
 
 	return t.tree.AvailableVersions()
-
-}
-
-func NewImmutableTree(db dbm.DB) *ImmutableTree {
-	return &ImmutableTree{
-		tree: iavl.NewImmutableTree(db, 1024),
-	}
 }
 
 type ImmutableTree struct {

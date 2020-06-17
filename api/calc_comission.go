@@ -17,7 +17,7 @@ type UseMaxResponse struct {
 	EndValue         string `json:"endvalue"`
 }
 
-func CalcTxCommission(gasCoin string, height int, txType string, payload []byte, mtxs int64) (string, error) {
+func CalcTxCommission(gasCoin string, txType string, payload []byte, mtxs int64, height int) (string, error) {
 	var commissionInBaseCoin *big.Int
 	switch txType {
 	case "SendTx":
@@ -79,9 +79,9 @@ func CalcTxCommission(gasCoin string, height int, txType string, payload []byte,
 
 }
 
-func CalcFreeCoinForTx(gasCoin string, gasCoinAmount string, height int, txType string, payload []byte, mtxs int64) (*UseMaxResponse, error) {
+func CalcFreeCoinForTx(gasCoin string, gasCoinAmount string, txType string, payload []byte, mtxs int64, height int) (*UseMaxResponse, error) {
 
-	commission, err := CalcTxCommission(gasCoin, height, txType, payload, mtxs)
+	commission, err := CalcTxCommission(gasCoin, txType, payload, mtxs, height)
 
 	if err != nil {
 		return new(UseMaxResponse), err
