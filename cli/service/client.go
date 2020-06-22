@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/cli/pb"
+	pb "github.com/MinterTeam/minter-go-node/cli/cli_pb"
 	"github.com/c-bata/go-prompt"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
@@ -190,12 +190,12 @@ func exitCMD(_ *cli.Context) error {
 func dashboardCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 	return func(c *cli.Context) error {
 		ctx, cancel := context.WithCancel(c.Context)
+		defer cancel()
+
 		response, err := client.Dashboard(ctx, &empty.Empty{})
 		if err != nil {
 			return err
 		}
-
-		defer cancel()
 
 		box := tui.NewVBox()
 		ui, err := tui.New(tui.NewHBox(box, tui.NewSpacer()))
@@ -372,15 +372,87 @@ func statusCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 
 func pruneBlocksCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 	return func(c *cli.Context) error {
-		_, err := client.PruneBlocks(c.Context, &pb.PruneBlocksRequest{
+		ctx, cancel := context.WithCancel(c.Context)
+		defer cancel()
+
+		stream, err := client.PruneBlocks(ctx, &pb.PruneBlocksRequest{
 			FromHeight: c.Int64("from"),
 			ToHeight:   c.Int64("to"),
 		})
 		if err != nil {
 			return err
 		}
-		fmt.Println("OK")
-		return nil
+
+		box := tui.NewVBox()
+		progress := tui.NewProgress(100)
+		text := tui.NewLabel(fmt.Sprintf("%d, %d of %d"))
+		progressBox := tui.NewHBox(progress, text, tui.NewSpacer())
+		box.Append(progressBox)
+		ui, err := tui.New(tui.NewHBox(box, tui.NewSpacer()))
+		if err != nil {
+			return err
+		}
+		ui.SetKeybinding("Esc", func() { ui.Quit() })
+		ui.SetKeybinding("Ctrl+C", func() { ui.Quit() })
+		ui.SetKeybinding("q", func() { ui.Quit() })
+
+		errCh := make(chan error)
+		quitUI := make(chan error)
+		recvCh := make(chan *pb.PruneBlocksResponse)
+
+		next := make(chan struct{})
+		go func() {
+			close(next)
+			quitUI <- ui.Run()
+		}()
+		<-next
+
+		go func() {
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				default:
+					recv, err := stream.Recv()
+					if err == io.EOF {
+						close(errCh)
+						return
+					}
+					if err != nil {
+						errCh <- err
+						return
+					}
+					recvCh <- recv
+					time.Sleep(1 * time.Second)
+				}
+			}
+		}()
+
+		for {
+			select {
+			case <-c.Done():
+				ui.Quit()
+				return c.Err()
+			case err := <-quitUI:
+				close(errCh)
+				return err
+			case err, more := <-errCh:
+				ui.Quit()
+				_ = stream.CloseSend()
+				if more {
+					close(errCh)
+					return err
+				}
+				fmt.Println(text.Text())
+				fmt.Println("OK")
+				return nil
+			case recv := <-recvCh:
+				progress.SetMax(int(recv.Total))
+				progress.SetCurrent(int(recv.Current))
+				text.SetText(fmt.Sprintf("%d%%, %d of %d", recv.Total/recv.Current, recv.Current, recv.Total))
+				ui.Repaint()
+			}
+		}
 	}
 }
 
