@@ -2,7 +2,6 @@ package minter
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
@@ -32,7 +31,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"math/big"
-	"runtime"
 	"sort"
 	"strings"
 	"sync"
@@ -464,7 +462,7 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 	_ = app.eventsDB.CommitEvents()
 
 	// Persist application hash and height
-	if app.height%uint64(app.cfg.StateKeepEver) == 0 {
+	if app.cfg.KeepLastStates != 0 || app.height%uint64(app.cfg.StateKeepEver) == 0 {
 		app.appDB.SetLastBlockHash(hash)
 		app.appDB.SetLastHeight(app.height)
 	}
@@ -683,35 +681,29 @@ func (app *Blockchain) MaxPeerHeight() int64 {
 	return max
 }
 
-func (app *Blockchain) PruneBlocks(ctx context.Context, from int64, to int64) error {
+func (app *Blockchain) PruneBlocksNumber(from, to int64) ([]int, error) {
 	lastSnapshotVersion := app.appDB.GetLastHeight()
-	if uint64(to) >= lastSnapshotVersion {
-		return fmt.Errorf("cannot delete last version saved in disk (%d)", lastSnapshotVersion)
+	if to >= int64(lastSnapshotVersion) {
+		return nil, fmt.Errorf("cannot delete last version saved in disk (%d)", lastSnapshotVersion)
 	}
-
 	versions := app.stateDeliver.Tree().AvailableVersions()
-	for _, v := range versions {
-		v := int64(v)
-		if v < from {
+
+	var indexFrom, indexTo int
+	for i, v := range versions {
+		if int64(v) < from {
+			indexFrom = i
 			continue
 		}
-		if v >= to {
+		if int64(v) >= to {
+			indexTo = i
 			break
 		}
-
-		if err := app.stateDeliver.Tree().DeleteVersion(v); err != nil {
-			return err
-		}
-
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
-			runtime.Gosched()
-		}
 	}
+	return versions[indexFrom:indexTo], nil
+}
 
-	return nil
+func (app *Blockchain) DeleteStateVersion(v int64) error {
+	return app.stateDeliver.Tree().DeleteVersion(v)
 }
 
 func getDbOpts(memLimit int) *opt.Options {
