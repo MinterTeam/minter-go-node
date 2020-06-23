@@ -12,6 +12,7 @@ import (
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/marcusolsson/tui-go"
 	"github.com/urfave/cli/v2"
+	"gitlab.com/tslocum/cview"
 	"google.golang.org/grpc"
 	"io"
 	"os"
@@ -383,18 +384,8 @@ func pruneBlocksCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 			return err
 		}
 
-		box := tui.NewVBox()
-		progress := tui.NewProgress(100)
-		text := tui.NewLabel(fmt.Sprintf("%d, %d of %d"))
-		progressBox := tui.NewHBox(progress, text, tui.NewSpacer())
-		box.Append(progressBox)
-		ui, err := tui.New(tui.NewHBox(box, tui.NewSpacer()))
-		if err != nil {
-			return err
-		}
-		ui.SetKeybinding("Esc", func() { ui.Quit() })
-		ui.SetKeybinding("Ctrl+C", func() { ui.Quit() })
-		ui.SetKeybinding("q", func() { ui.Quit() })
+		progress := cview.NewProgressBar()
+		app := cview.NewApplication().SetRoot(progress, true)
 
 		errCh := make(chan error)
 		quitUI := make(chan error)
@@ -403,7 +394,7 @@ func pruneBlocksCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 		next := make(chan struct{})
 		go func() {
 			close(next)
-			quitUI <- ui.Run()
+			quitUI <- app.Run()
 		}()
 		<-next
 
@@ -431,26 +422,29 @@ func pruneBlocksCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 		for {
 			select {
 			case <-c.Done():
-				ui.Quit()
+				app.Stop()
 				return c.Err()
 			case err := <-quitUI:
-				close(errCh)
+				fmt.Println(progress.GetTitle())
 				return err
 			case err, more := <-errCh:
-				ui.Quit()
+				app.Stop()
 				_ = stream.CloseSend()
 				if more {
 					close(errCh)
 					return err
 				}
-				fmt.Println(text.Text())
 				fmt.Println("OK")
 				return nil
 			case recv := <-recvCh:
 				progress.SetMax(int(recv.Total))
-				progress.SetCurrent(int(recv.Current))
-				text.SetText(fmt.Sprintf("%d%%, %d of %d", recv.Total/recv.Current, recv.Current, recv.Total))
-				ui.Repaint()
+				progress.SetProgress(int(recv.Current))
+				total := int64(0)
+				if recv.Total != 0 {
+					total = recv.Current * 100 / recv.Total
+				}
+				progress.SetTitle(fmt.Sprintf("Compleated %d%%, %d of %d", total, recv.Current, recv.Total))
+				app.QueueUpdateDraw(func() {})
 			}
 		}
 	}
