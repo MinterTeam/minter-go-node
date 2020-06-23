@@ -690,11 +690,11 @@ func (app *Blockchain) PruneBlocksNumber(from, to int64) ([]int, error) {
 
 	var indexFrom, indexTo int
 	for i, v := range versions {
-		if int64(v) < from {
+		if int64(v) <= from {
 			indexFrom = i
 			continue
 		}
-		if int64(v) >= to {
+		if int64(v) > to {
 			indexTo = i
 			break
 		}
