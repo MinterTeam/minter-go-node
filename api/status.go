@@ -24,10 +24,7 @@ func Status() (*StatusResponse, error) {
 		return nil, err
 	}
 
-	cState, err := GetStateForHeight(0)
-	if err != nil {
-		return nil, err
-	}
+	cState := blockchain.CurrentState()
 
 	cState.RLock()
 	defer cState.RUnlock()
