@@ -65,6 +65,9 @@ func (cs *CheckState) Candidates() candidates.RCandidates {
 func (cs *CheckState) FrozenFunds() frozenfunds.RFrozenFunds {
 	return cs.state.FrozenFunds
 }
+func (cs *CheckState) Halts() halts.RHalts {
+	return cs.state.Halts
+}
 func (cs *CheckState) Accounts() accounts.RAccounts {
 	return cs.state.Accounts
 }
@@ -116,7 +119,7 @@ func NewState(height uint64, db db.DB, events eventsdb.IEventsDB, cacheSize int,
 }
 
 func NewCheckStateAtHeight(height uint64, db db.DB) (*CheckState, error) {
-	iavlTree := tree.NewMutableTree(0, db, 1024)
+	iavlTree := tree.NewMutableTree(height, db, 1024)
 	_, err := iavlTree.LazyLoadVersion(int64(height))
 	if err != nil {
 		return nil, err

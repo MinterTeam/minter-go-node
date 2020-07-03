@@ -47,6 +47,8 @@ const (
 
 	DefaultMaxGas = 100000
 	MinMaxGas     = 5000
+
+	VotingPowerConsensus = 2. / 3.
 )
 
 var (
@@ -171,7 +173,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 
 	app.StatisticData().PushStartBlock(&statistics.StartRequest{Height: int64(height), Now: time.Now(), HeaderTime: req.Header.Time})
 
-	if app.haltHeight > 0 && height >= app.haltHeight {
+	if app.isApplicationHalted(height) {
 		panic(fmt.Sprintf("Application halted at height %d", height))
 	}
 
@@ -244,6 +246,11 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 
 		// delete from db
 		app.stateDeliver.FrozenFunds.Delete(frozenFunds.Height())
+	}
+
+	if height >= upgrades.UpgradeBlock4 {
+		// delete halts from db
+		app.stateDeliver.Halts.Delete(height)
 	}
 
 	return abciTypes.ResponseBeginBlock{}
@@ -693,4 +700,50 @@ func getDbOpts(memLimit int) *opt.Options {
 		WriteBuffer:            memLimit / 4 * opt.MiB, // Two of these are used internally
 		Filter:                 filter.NewBloomFilter(10),
 	}
+}
+
+func (app *Blockchain) isApplicationHalted(height uint64) bool {
+	if app.haltHeight > 0 && height >= app.haltHeight {
+		return true
+	}
+
+	if height < upgrades.UpgradeBlock4 {
+		return false
+	}
+
+	halts := app.stateDeliver.Halts.GetHaltBlocks(height)
+	if halts != nil {
+		// calculate total power of validators
+		vals := app.stateDeliver.Validators.GetValidators()
+		totalPower, totalVotingPower := big.NewInt(0), big.NewInt(0)
+		for _, val := range vals {
+			// skip if candidate is not present
+			if val.IsToDrop() || app.validatorsStatuses[val.GetAddress()] != ValidatorPresent {
+				continue
+			}
+
+			for _, halt := range halts.List {
+				if halt.Pubkey == val.PubKey {
+					totalVotingPower.Add(totalVotingPower, val.GetTotalBipStake())
+				}
+			}
+
+			totalPower.Add(totalPower, val.GetTotalBipStake())
+		}
+
+		if totalPower.Cmp(types.Big0) == 0 {
+			totalPower = big.NewInt(1)
+		}
+
+		votingResult := new(big.Float).Quo(
+			new(big.Float).SetInt(totalVotingPower),
+			new(big.Float).SetInt(totalPower),
+		)
+
+		if votingResult.Cmp(big.NewFloat(VotingPowerConsensus)) == 1 {
+			return true
+		}
+	}
+
+	return false
 }

@@ -3,6 +3,7 @@ package tree
 import (
 	"github.com/tendermint/iavl"
 	dbm "github.com/tendermint/tm-db"
+	"log"
 	"sync"
 )
 
@@ -33,9 +34,10 @@ func NewMutableTree(height uint64, db dbm.DB, cacheSize int) MTree {
 		panic(err)
 	}
 
-	_, err = tree.LoadVersionForOverwriting(int64(height))
-	if err != nil {
-		panic(err)
+	if _, err1 := tree.LoadVersion(int64(height)); err1 != nil {
+		if _, err2 := tree.LoadVersionForOverwriting(int64(height)); err2 != nil {
+			log.Panicln(err1, err2)
+		}
 	}
 
 	return &mutableTree{

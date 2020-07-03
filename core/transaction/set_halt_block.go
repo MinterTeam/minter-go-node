@@ -39,8 +39,8 @@ func (data SetHaltBlockData) TotalSpend(tx *Transaction, context *state.State) (
 	panic("implement me")
 }
 
-func (data SetHaltBlockData) BasicCheck(tx *Transaction, context *state.State) *Response {
-	if !context.Candidates.Exists(data.PubKey) {
+func (data SetHaltBlockData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
+	if !context.Candidates().Exists(data.PubKey) {
 		return &Response{
 			Code: code.CandidateNotFound,
 			Log:  fmt.Sprintf("Candidate with such public key not found"),
@@ -62,7 +62,7 @@ func (data SetHaltBlockData) Gas() int64 {
 	return commissions.SetHaltBlock
 }
 
-func (data SetHaltBlockData) Run(tx *Transaction, context *state.State, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
+func (data SetHaltBlockData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
 	if currentBlock < upgrades.UpgradeBlock4 {
 		return Response{
 			Code: code.DecodeError,
@@ -72,7 +72,13 @@ func (data SetHaltBlockData) Run(tx *Transaction, context *state.State, isCheck 
 
 	sender, _ := tx.Sender()
 
-	response := data.BasicCheck(tx, context)
+	var checkState *state.CheckState
+	var isCheck bool
+	if checkState, isCheck = context.(*state.CheckState); !isCheck {
+		checkState = state.NewCheckState(context.(*state.State))
+	}
+
+	response := data.BasicCheck(tx, checkState)
 	if response != nil {
 		return *response
 	}
@@ -91,7 +97,7 @@ func (data SetHaltBlockData) Run(tx *Transaction, context *state.State, isCheck 
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
 	if !tx.GasCoin.IsBaseCoin() {
-		coin := context.Coins.GetCoin(tx.GasCoin)
+		coin := checkState.Coins().GetCoin(tx.GasCoin)
 
 		errResp := CheckReserveUnderflow(coin, commissionInBaseCoin)
 		if errResp != nil {
@@ -113,7 +119,7 @@ func (data SetHaltBlockData) Run(tx *Transaction, context *state.State, isCheck 
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
 	}
 
-	if context.Accounts.GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
+	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
 		return Response{
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, tx.GasCoin),
@@ -125,15 +131,15 @@ func (data SetHaltBlockData) Run(tx *Transaction, context *state.State, isCheck 
 		}
 	}
 
-	if !isCheck {
+	if deliveryState, ok := context.(*state.State); ok {
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		context.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
-		context.Coins.SubVolume(tx.GasCoin, commission)
+		deliveryState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
+		deliveryState.Coins.SubVolume(tx.GasCoin, commission)
 
-		context.Accounts.SubBalance(sender, tx.GasCoin, commission)
-		context.Halts.AddHaltBlock(data.Height, data.PubKey)
-		context.Accounts.SetNonce(sender, tx.Nonce)
+		deliveryState.Accounts.SubBalance(sender, tx.GasCoin, commission)
+		deliveryState.Halts.AddHaltBlock(data.Height, data.PubKey)
+		deliveryState.Accounts.SetNonce(sender, tx.Nonce)
 	}
 
 	tags := kv.Pairs{
