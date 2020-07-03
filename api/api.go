@@ -27,6 +27,7 @@ var (
 	cdc        = amino.NewCodec()
 	blockchain *minter.Blockchain
 	client     *rpc.Local
+	minterCfg  *config.Config
 )
 
 var Routes = map[string]*rpcserver.RPCFunc{
@@ -78,6 +79,8 @@ func responseTime(b *minter.Blockchain) func(f func(http.ResponseWriter, *http.R
 }
 
 func RunAPI(b *minter.Blockchain, tmRPC *rpc.Local, cfg *config.Config, logger log.Logger) {
+	minterCfg = cfg
+
 	RegisterCryptoAmino(cdc)
 	eventsdb.RegisterAminoEvents(cdc)
 	RegisterEvidenceMessages(cdc)

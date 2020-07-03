@@ -84,12 +84,6 @@ keep_last_states = {{ .BaseConfig.KeepLastStates }}
 # State cache size 
 state_cache_size = {{ .BaseConfig.StateCacheSize }}
 
-# Sets periodicity to save state on disk
-state_keep_ever = {{ .BaseConfig.StateKeepEver }}
-
-# Sets the number of stores the last state in the memory
-state_keep_recent = {{ .BaseConfig.StateKeepRecent }}
-
 # State memory in MB
 state_mem_available = {{ .BaseConfig.StateMemAvailable }}
 

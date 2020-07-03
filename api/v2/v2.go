@@ -19,6 +19,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 )
 
 func Run(srv *service.Service, addrGRPC, addrApi string, traceLog bool) error {
@@ -35,8 +36,11 @@ func Run(srv *service.Service, addrGRPC, addrApi string, traceLog bool) error {
 		grpc_middleware.WithUnaryServerChain(
 			grpc_prometheus.UnaryServerInterceptor,
 			grpc_recovery.UnaryServerInterceptor(),
+			contextWithTimeoutInterceptor(srv.TimeoutDuration()),
 		),
 	)
+	runtime.DefaultContextTimeout = 10 * time.Second
+
 	gw.RegisterApiServiceServer(grpcServer, srv)
 	grpc_prometheus.Register(grpcServer)
 
@@ -49,7 +53,9 @@ func Run(srv *service.Service, addrGRPC, addrApi string, traceLog bool) error {
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	gwmux := runtime.NewServeMux(runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{OrigName: true, EmitDefaults: true}))
+	gwmux := runtime.NewServeMux(
+		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{OrigName: true, EmitDefaults: true}),
+	)
 	opts := []grpc.DialOption{
 		grpc.WithInsecure(),
 		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(50000000)),
@@ -64,7 +70,10 @@ func Run(srv *service.Service, addrGRPC, addrApi string, traceLog bool) error {
 		handler = handlers.CombinedLoggingHandler(os.Stdout, handler)
 	}
 	mux.Handle("/", handler)
-	serveOpenAPI(mux)
+	if err := serveOpenAPI(mux); err != nil {
+		//ignore
+	}
+
 	group.Go(func() error {
 		return http.ListenAndServe(addrApi, allowCORS(mux))
 	})
@@ -85,7 +94,7 @@ func allowCORS(h http.Handler) http.Handler {
 	})
 }
 
-func preflightHandler(w http.ResponseWriter, r *http.Request) {
+func preflightHandler(w http.ResponseWriter, _ *http.Request) {
 	headers := []string{"Content-Type", "Accept"}
 	w.Header().Set("Access-Control-Allow-Headers", strings.Join(headers, ","))
 	methods := []string{"GET", "HEAD", "POST", "PUT", "DELETE"}
@@ -94,7 +103,7 @@ func preflightHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func serveOpenAPI(mux *http.ServeMux) error {
-	mime.AddExtensionType(".svg", "image/svg+xml")
+	_ = mime.AddExtensionType(".svg", "image/svg+xml")
 
 	statikFS, err := fs.New()
 	if err != nil {
@@ -106,4 +115,11 @@ func serveOpenAPI(mux *http.ServeMux) error {
 	prefix := "/openapi-ui/"
 	mux.Handle(prefix, http.StripPrefix(prefix, fileServer))
 	return nil
+}
+
+func contextWithTimeoutInterceptor(timeout time.Duration) func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+		withTimeout, _ := context.WithTimeout(ctx, timeout)
+		return handler(withTimeout, req)
+	}
 }

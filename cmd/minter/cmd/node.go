@@ -95,8 +95,8 @@ func runNode(cmd *cobra.Command) error {
 		return err
 	}
 
-	if cfg.StateKeepEver < 1 {
-		logger.Error("state_keep_ever field should be greater than 0. All state will be stored in memory. Data will not be saved to disk.")
+	if cfg.KeepLastStates < 1 {
+		panic("keep_last_states field should be greater than 0")
 	}
 
 	app := minter.NewMinterBlockchain(cfg)
@@ -137,8 +137,7 @@ func runNode(cmd *cobra.Command) error {
 	}()
 
 	if cfg.Instrumentation.Prometheus {
-		data := statistics.New()
-		go app.SetStatisticData(data).Statistic(cmd.Context())
+		go app.SetStatisticData(statistics.New()).Statistic(cmd.Context())
 	}
 
 	<-cmd.Context().Done()

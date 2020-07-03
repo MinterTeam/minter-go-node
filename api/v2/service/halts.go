@@ -9,5 +9,6 @@ import (
 )
 
 func (s *Service) Halts(_ context.Context, _ *pb.HaltsRequest) (*pb.HaltsResponse, error) {
+	//todo
 	return &pb.HaltsResponse{}, status.Error(codes.Unimplemented, fmt.Sprintf("method Halts not implemented in version %s", s.version))
 }

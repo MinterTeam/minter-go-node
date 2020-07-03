@@ -24,7 +24,7 @@ type ManagerConsole struct {
 	cli *cli.App
 }
 
-func NewManagerConsole(cli *cli.App) *ManagerConsole {
+func newManagerConsole(cli *cli.App) *ManagerConsole {
 	return &ManagerConsole{cli: cli}
 }
 
@@ -107,7 +107,7 @@ func (mc *ManagerConsole) Cli(ctx context.Context) {
 	}
 }
 
-func ConfigureManagerConsole(socketPath string) (*ManagerConsole, error) {
+func NewCLI(socketPath string) (*ManagerConsole, error) {
 	cc, err := grpc.Dial("passthrough:///unix:///"+socketPath, grpc.WithInsecure())
 	if err != nil {
 		return nil, err
@@ -180,7 +180,7 @@ func ConfigureManagerConsole(socketPath string) (*ManagerConsole, error) {
 	}
 
 	app.Setup()
-	return NewManagerConsole(app), nil
+	return newManagerConsole(app), nil
 }
 
 func exitCMD(_ *cli.Context) error {
@@ -434,6 +434,7 @@ func pruneBlocksCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 					close(errCh)
 					return err
 				}
+				fmt.Println(progress.GetTitle())
 				fmt.Println("OK")
 				return nil
 			case recv := <-recvCh:

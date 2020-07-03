@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (s *Service) Transactions(_ context.Context, req *pb.TransactionsRequest) (*pb.TransactionsResponse, error) {
+func (s *Service) Transactions(ctx context.Context, req *pb.TransactionsRequest) (*pb.TransactionsResponse, error) {
 	page := int(req.Page)
 	if page == 0 {
 		page = 1
@@ -27,6 +27,11 @@ func (s *Service) Transactions(_ context.Context, req *pb.TransactionsRequest) (
 
 	result := make([]*pb.TransactionResponse, 0, len(rpcResult.Txs))
 	for _, tx := range rpcResult.Txs {
+
+		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+			return new(pb.TransactionsResponse), timeoutStatus.Err()
+		}
+
 		decodedTx, _ := transaction.TxDecoder.DecodeFromBytes(tx.Tx)
 		sender, _ := decodedTx.Sender()
 

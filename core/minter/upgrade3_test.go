@@ -38,7 +38,7 @@ func TestApplyUpgrade3(t *testing.T) {
 }
 
 func getState() *state.State {
-	s, err := state.NewState(0, db.NewMemDB(), emptyEvents{}, 1, 1, 0, 1)
+	s, err := state.NewState(0, db.NewMemDB(), emptyEvents{}, 1, 1)
 
 	if err != nil {
 		panic(err)

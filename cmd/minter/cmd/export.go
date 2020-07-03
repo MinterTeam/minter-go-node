@@ -58,7 +58,7 @@ func export(cmd *cobra.Command, args []string) error {
 		log.Panicf("Cannot load db: %s", err)
 	}
 
-	currentState, err := state.NewState(height, ldb, nil, 1, 1, 0, 1)
+	currentState, err := state.NewState(height, ldb, nil, 1, 1)
 	if err != nil {
 		log.Panicf("Cannot new state at given height: %s", err)
 	}

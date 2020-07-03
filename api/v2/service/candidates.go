@@ -7,7 +7,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (s *Service) Candidates(_ context.Context, req *pb.CandidatesRequest) (*pb.CandidatesResponse, error) {
+func (s *Service) Candidates(ctx context.Context, req *pb.CandidatesRequest) (*pb.CandidatesResponse, error) {
 	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {
 		return new(pb.CandidatesResponse), status.Error(codes.NotFound, err.Error())
@@ -27,12 +27,17 @@ func (s *Service) Candidates(_ context.Context, req *pb.CandidatesRequest) (*pb.
 
 	candidates := cState.Candidates().GetCandidates()
 
-	result := &pb.CandidatesResponse{
+	response := &pb.CandidatesResponse{
 		Candidates: make([]*pb.CandidateResponse, 0, len(candidates)),
 	}
 	for _, candidate := range candidates {
-		result.Candidates = append(result.Candidates, makeResponseCandidate(cState, *candidate, req.IncludeStakes))
+
+		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+			return new(pb.CandidatesResponse), timeoutStatus.Err()
+		}
+
+		response.Candidates = append(response.Candidates, makeResponseCandidate(cState, *candidate, req.IncludeStakes))
 	}
 
-	return result, nil
+	return response, nil
 }

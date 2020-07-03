@@ -12,7 +12,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (s *Service) Candidate(_ context.Context, req *pb.CandidateRequest) (*pb.CandidateResponse, error) {
+func (s *Service) Candidate(ctx context.Context, req *pb.CandidateRequest) (*pb.CandidateResponse, error) {
 	if len(req.PublicKey) < 3 {
 		return new(pb.CandidateResponse), status.Error(codes.InvalidArgument, "invalid public_key")
 	}

@@ -13,7 +13,7 @@ import (
 	"math/big"
 )
 
-func (s *Service) EstimateCoinSell(_ context.Context, req *pb.EstimateCoinSellRequest) (*pb.EstimateCoinSellResponse, error) {
+func (s *Service) EstimateCoinSell(ctx context.Context, req *pb.EstimateCoinSellRequest) (*pb.EstimateCoinSellResponse, error) {
 	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {
 		return new(pb.EstimateCoinSellResponse), status.Error(codes.NotFound, err.Error())

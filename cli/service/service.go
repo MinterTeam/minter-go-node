@@ -119,7 +119,7 @@ func (m *Manager) Status(context.Context, *empty.Empty) (*pb.StatusResponse, err
 		LatestAppHash:     fmt.Sprintf("%X", result.SyncInfo.LatestAppHash),
 		LatestBlockHeight: fmt.Sprintf("%d", result.SyncInfo.LatestBlockHeight),
 		LatestBlockTime:   result.SyncInfo.LatestBlockTime.Format(time.RFC3339Nano),
-		KeepLastStates:    fmt.Sprintf("%d", m.blockchain.CurrentState().Tree().KeepLastHeight()),
+		KeepLastStates:    fmt.Sprintf("%d", m.cfg.BaseConfig.KeepLastStates),
 		CatchingUp:        result.SyncInfo.CatchingUp,
 		PublicKey:         fmt.Sprintf("Mp%x", result.ValidatorInfo.PubKey.Bytes()[5:]),
 		NodeId:            string(result.NodeInfo.ID()),
@@ -214,28 +214,26 @@ func (m *Manager) NetInfo(context.Context, *empty.Empty) (*pb.NetInfoResponse, e
 }
 
 func (m *Manager) PruneBlocks(req *pb.PruneBlocksRequest, stream pb.ManagerService_PruneBlocksServer) error {
-	versions, err := m.blockchain.PruneBlocksNumber(req.FromHeight, req.ToHeight)
-	if err != nil {
-		return status.Error(codes.FailedPrecondition, err.Error())
+	current := m.blockchain.Height()
+	if req.ToHeight >= int64(current) {
+		return status.Errorf(codes.FailedPrecondition, "cannot delete latest saved version (%d)", current)
 	}
 
-	total := int64(len(versions))
-	for i, v := range versions {
-		if err := m.blockchain.DeleteStateVersion(int64(v)); err != nil {
-			return err
-		}
+	min := req.FromHeight - 1
+	total := req.ToHeight - min
+	for i := req.FromHeight; i <= req.ToHeight; i++ {
+		_ = m.blockchain.DeleteStateVersion(i)
 
-		err := stream.Send(&pb.PruneBlocksResponse{
+		if err := stream.Send(&pb.PruneBlocksResponse{
 			Total:   total,
-			Current: int64(i),
-		})
-		if err != nil {
+			Current: i - min,
+		}); err != nil {
 			return err
 		}
 
 		select {
 		case <-stream.Context().Done():
-			return stream.Context().Err()
+			return status.Error(codes.Canceled, stream.Context().Err().Error())
 		default:
 			runtime.Gosched()
 		}

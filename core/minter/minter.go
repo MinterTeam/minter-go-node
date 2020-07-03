@@ -107,7 +107,7 @@ func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 	}
 
 	// Set stateDeliver and stateCheck
-	blockchain.stateDeliver, err = state.NewState(blockchain.height, blockchain.stateDB, blockchain.eventsDB, cfg.StateCacheSize, cfg.StateKeepEver, cfg.StateKeepRecent, cfg.KeepLastStates)
+	blockchain.stateDeliver, err = state.NewState(blockchain.height, blockchain.stateDB, blockchain.eventsDB, cfg.StateCacheSize, cfg.KeepLastStates)
 	if err != nil {
 		panic(err)
 	}
@@ -177,7 +177,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 
 	if upgrades.IsUpgradeBlock(height) {
 		var err error
-		app.stateDeliver, err = state.NewState(app.height, app.stateDB, app.eventsDB, app.cfg.StateCacheSize, app.cfg.StateKeepEver, app.cfg.StateKeepRecent, app.cfg.KeepLastStates)
+		app.stateDeliver, err = state.NewState(app.height, app.stateDB, app.eventsDB, app.cfg.StateCacheSize, app.cfg.KeepLastStates)
 		if err != nil {
 			panic(err)
 		}
@@ -462,10 +462,8 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 	_ = app.eventsDB.CommitEvents()
 
 	// Persist application hash and height
-	if app.cfg.KeepLastStates != 0 || app.height%uint64(app.cfg.StateKeepEver) == 0 {
-		app.appDB.SetLastBlockHash(hash)
-		app.appDB.SetLastHeight(app.height)
-	}
+	app.appDB.SetLastBlockHash(hash)
+	app.appDB.SetLastHeight(app.height)
 
 	// Resetting check state to be consistent with current height
 	app.resetCheckState()
@@ -535,7 +533,7 @@ func (app *Blockchain) MissedBlocks(pubKey string, height uint64) (missedBlocks 
 	cState.RLock()
 	defer cState.RUnlock()
 
-	val := cState.Validators().GetByPublicKey(types.HexToPubkey(pubKey))
+	val := cState.Validators().GetByPublicKey(types.HexToPubkey(pubKey[2:]))
 	if val == nil {
 		return "", 0, status.Error(codes.NotFound, "Validator not found")
 	}
@@ -679,27 +677,6 @@ func (app *Blockchain) MaxPeerHeight() int64 {
 		}
 	}
 	return max
-}
-
-func (app *Blockchain) PruneBlocksNumber(from, to int64) ([]int, error) {
-	lastSnapshotVersion := app.appDB.GetLastHeight()
-	if to >= int64(lastSnapshotVersion) {
-		return nil, fmt.Errorf("cannot delete last version saved in disk (%d)", lastSnapshotVersion)
-	}
-	versions := app.stateDeliver.Tree().AvailableVersions()
-
-	var indexFrom, indexTo int
-	for i, v := range versions {
-		if int64(v) <= from {
-			indexFrom = i
-			continue
-		}
-		if int64(v) > to {
-			indexTo = i
-			break
-		}
-	}
-	return versions[indexFrom:indexTo], nil
 }
 
 func (app *Blockchain) DeleteStateVersion(v int64) error {
