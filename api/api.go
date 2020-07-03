@@ -52,20 +52,6 @@ var Routes = map[string]*rpcserver.RPCFunc{
 	"max_gas":                rpcserver.NewRPCFunc(MaxGas, "height"),
 	"min_gas_price":          rpcserver.NewRPCFunc(MinGasPrice, ""),
 	"genesis":                rpcserver.NewRPCFunc(Genesis, ""),
-	"missed_blocks":          rpcserver.NewRPCFunc(MissedBlocks, "pub_key,height"),
-	"get_stakes":             rpcserver.NewRPCFunc(GetStakes, "pub_key,coin,address,height"),
-	"total_slashed":          rpcserver.NewRPCFunc(TotalSlashed, "height"),
-	"height_by_time":         rpcserver.NewRPCFunc(HeightByTime, "query,height"),
-	"frozzed":                rpcserver.NewRPCFunc(FrozzedFunds, "address,coin"),
-	"calc_tx_commission":     rpcserver.NewRPCFunc(CalcTxCommission, "gas_coin,tx_type,payload,mtxs,height"),
-	"calc_tx_free_coin":      rpcserver.NewRPCFunc(CalcFreeCoinForTx, "gas_coin,gas_coin_amount,tx_type,payload,mtxs,height"),
-	"address_balance":        rpcserver.NewRPCFunc(MakeAddressBalance, "address,height"),
-	"txs_from_block":         rpcserver.NewRPCFunc(TxsFromBlock, "height"),
-	"candidate_info":         rpcserver.NewRPCFunc(CandidateAlt, "pub_key,height"),
-	"candidates_info":        rpcserver.NewRPCFunc(CandidatesAlt, "status,height"),
-	"nosign":                 rpcserver.NewRPCFunc(NoSign, "height"),
-	"find_events":            rpcserver.NewRPCFunc(FindEvents, "search,height"),
-	//"grouped_events":         rpcserver.NewRPCFunc(GroupedEvents, "height"),
 }
 
 func responseTime(b *minter.Blockchain) func(f func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
