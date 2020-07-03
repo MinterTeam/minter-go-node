@@ -93,6 +93,8 @@ func (s *Service) encodeTxData(decodedTx *transaction.Transaction) (*_struct.Str
 		b, err = s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.CreateMultisigData))
 	case transaction.TypeEditCandidate:
 		b, err = s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.EditCandidateData))
+	case transaction.TypeSetHaltBlock:
+		b, err = s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.SetHaltBlockData))
 	default:
 		return nil, errors.New("unknown tx type")
 	}

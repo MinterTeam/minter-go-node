@@ -17,6 +17,7 @@ const (
 	TooLowGasPrice               uint32 = 114
 	WrongChainID                 uint32 = 115
 	CoinReserveUnderflow         uint32 = 116
+	WrongHaltHeight              uint32 = 117
 
 	// coin creation
 	CoinAlreadyExists uint32 = 201
