@@ -27,6 +27,8 @@ type MTree interface {
 	DeleteVersionIfExists(version int64) error
 	GetImmutable() *ImmutableTree
 	GetImmutableAtHeight(version int64) (*ImmutableTree, error)
+	GlobalLock()
+	GlobalUnlock()
 }
 
 func NewMutableTree(height uint64, db dbm.DB, cacheSize int) MTree {
@@ -53,6 +55,7 @@ func NewMutableTree(height uint64, db dbm.DB, cacheSize int) MTree {
 type mutableTree struct {
 	tree *iavl.MutableTree
 	lock sync.RWMutex
+	sync.Mutex
 }
 
 func (t *mutableTree) GetImmutableAtHeight(version int64) (*ImmutableTree, error) {
@@ -67,6 +70,14 @@ func (t *mutableTree) GetImmutableAtHeight(version int64) (*ImmutableTree, error
 	return &ImmutableTree{
 		tree: tree,
 	}, nil
+}
+
+func (t *mutableTree) GlobalLock() {
+	t.Lock()
+}
+
+func (t *mutableTree) GlobalUnlock() {
+	t.Unlock()
 }
 
 func (t *mutableTree) Iterate(fn func(key []byte, value []byte) bool) (stopped bool) {
@@ -134,6 +145,7 @@ func (t *mutableTree) LazyLoadVersion(targetVersion int64) (int64, error) {
 	return t.tree.LazyLoadVersion(targetVersion)
 }
 
+// Should use GlobalLock() and GlobalUnlock
 func (t *mutableTree) SaveVersion() ([]byte, int64, error) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
@@ -141,6 +153,7 @@ func (t *mutableTree) SaveVersion() ([]byte, int64, error) {
 	return t.tree.SaveVersion()
 }
 
+//Should use GlobalLock() and GlobalUnlock
 func (t *mutableTree) DeleteVersions(versions []int64) error {
 	t.lock.Lock()
 	defer t.lock.Unlock()
@@ -148,6 +161,7 @@ func (t *mutableTree) DeleteVersions(versions []int64) error {
 	return t.tree.DeleteVersions(versions...)
 }
 
+//Should use GlobalLock() and GlobalUnlock
 func (t *mutableTree) DeleteVersionIfExists(version int64) error {
 	t.lock.Lock()
 	defer t.lock.Unlock()

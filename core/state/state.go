@@ -167,6 +167,9 @@ func (s *State) Check() error {
 func (s *State) Commit() ([]byte, error) {
 	s.Checker.Reset()
 
+	s.tree.GlobalLock()
+	defer s.tree.GlobalUnlock()
+
 	if err := s.Accounts.Commit(); err != nil {
 		return nil, err
 	}
