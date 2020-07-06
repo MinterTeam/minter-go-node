@@ -690,8 +690,8 @@ func (app *Blockchain) MaxPeerHeight() int64 {
 }
 
 func (app *Blockchain) DeleteStateVersions(versions []int64) error {
-	app.lock.Lock()
-	defer app.lock.Unlock()
+	app.lock.RLock()
+	defer app.lock.RUnlock()
 
 	return app.stateDeliver.Tree().DeleteVersions(versions)
 }
