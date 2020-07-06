@@ -221,21 +221,26 @@ func (m *Manager) PruneBlocks(req *pb.PruneBlocksRequest, stream pb.ManagerServi
 
 	min := req.FromHeight - 1
 	total := req.ToHeight - min
-	for i := req.FromHeight; i <= req.ToHeight; i++ {
-		_ = m.blockchain.DeleteStateVersion(i)
 
-		if err := stream.Send(&pb.PruneBlocksResponse{
-			Total:   total,
-			Current: i - min,
-		}); err != nil {
-			return err
-		}
+	var deleteVersions []int64
+	for i := req.FromHeight; i <= req.ToHeight; i++ {
+		deleteVersions = append(deleteVersions, i)
 
 		select {
 		case <-stream.Context().Done():
 			return status.Error(codes.Canceled, stream.Context().Err().Error())
+		case <-time.After(time.Second):
+			_ = m.blockchain.DeleteStateVersions(deleteVersions)
+			if err := stream.Send(&pb.PruneBlocksResponse{
+				Total:   total,
+				Current: i - min,
+			}); err != nil {
+				return err
+			}
+
+			deleteVersions = []int64{}
 		default:
-			runtime.Gosched()
+
 		}
 	}
 

@@ -3,7 +3,6 @@ package tree
 import (
 	"github.com/tendermint/iavl"
 	dbm "github.com/tendermint/tm-db"
-	"log"
 	"sync"
 )
 
@@ -14,6 +13,7 @@ type ReadOnlyTree interface {
 	Iterate(fn func(key []byte, value []byte) bool) (stopped bool)
 	KeepLastHeight() int64
 	AvailableVersions() []int
+	VersionExists(v int64) bool
 }
 
 type MTree interface {
@@ -23,7 +23,8 @@ type MTree interface {
 	LoadVersion(targetVersion int64) (int64, error)
 	LazyLoadVersion(targetVersion int64) (int64, error)
 	SaveVersion() ([]byte, int64, error)
-	DeleteVersion(version int64) error
+	DeleteVersions(versions []int64) error
+	DeleteVersionIfExists(version int64) error
 	GetImmutable() *ImmutableTree
 	GetImmutableAtHeight(version int64) (*ImmutableTree, error)
 }
@@ -34,10 +35,14 @@ func NewMutableTree(height uint64, db dbm.DB, cacheSize int) MTree {
 		panic(err)
 	}
 
-	if _, err1 := tree.LoadVersion(int64(height)); err1 != nil {
-		if _, err2 := tree.LoadVersionForOverwriting(int64(height)); err2 != nil {
-			log.Panicln(err1, err2)
+	if height == 0 {
+		return &mutableTree{
+			tree: tree,
 		}
+	}
+
+	if _, err := tree.LoadVersionForOverwriting(int64(height)); err != nil {
+		panic(err)
 	}
 
 	return &mutableTree{
@@ -51,6 +56,9 @@ type mutableTree struct {
 }
 
 func (t *mutableTree) GetImmutableAtHeight(version int64) (*ImmutableTree, error) {
+	t.lock.RLock()
+	defer t.lock.RUnlock()
+
 	tree, err := t.tree.GetImmutable(version)
 	if err != nil {
 		return nil, err
@@ -62,6 +70,9 @@ func (t *mutableTree) GetImmutableAtHeight(version int64) (*ImmutableTree, error
 }
 
 func (t *mutableTree) Iterate(fn func(key []byte, value []byte) bool) (stopped bool) {
+	t.lock.RLock()
+	defer t.lock.RUnlock()
+
 	return t.tree.Iterate(fn)
 }
 
@@ -130,16 +141,26 @@ func (t *mutableTree) SaveVersion() ([]byte, int64, error) {
 	return t.tree.SaveVersion()
 }
 
-func (t *mutableTree) DeleteVersion(version int64) error {
+func (t *mutableTree) DeleteVersions(versions []int64) error {
 	t.lock.Lock()
 	defer t.lock.Unlock()
+
+	return t.tree.DeleteVersions(versions...)
+}
+
+func (t *mutableTree) DeleteVersionIfExists(version int64) error {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+	if !t.tree.VersionExists(version) {
+		return nil
+	}
 
 	return t.tree.DeleteVersion(version)
 }
 
 func (t *mutableTree) KeepLastHeight() int64 {
-	t.lock.Lock()
-	defer t.lock.Unlock()
+	t.lock.RLock()
+	defer t.lock.RUnlock()
 
 	versions := t.tree.AvailableVersions()
 	prev := 1
@@ -154,10 +175,16 @@ func (t *mutableTree) KeepLastHeight() int64 {
 }
 
 func (t *mutableTree) AvailableVersions() []int {
-	t.lock.Lock()
-	defer t.lock.Unlock()
+	t.lock.RLock()
+	defer t.lock.RUnlock()
 
 	return t.tree.AvailableVersions()
+}
+
+func (t *mutableTree) VersionExists(v int64) bool {
+	t.lock.RLock()
+	defer t.lock.RUnlock()
+	return t.tree.VersionExists(v)
 }
 
 type ImmutableTree struct {

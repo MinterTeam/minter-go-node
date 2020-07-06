@@ -177,6 +177,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 		panic(fmt.Sprintf("Application halted at height %d", height))
 	}
 
+	app.lock.Lock()
 	if upgrades.IsUpgradeBlock(height) {
 		var err error
 		app.stateDeliver, err = state.NewState(app.height, app.stateDB, app.eventsDB, app.cfg.StateCacheSize, app.cfg.KeepLastStates)
@@ -185,6 +186,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 		}
 		app.stateCheck = state.NewCheckState(app.stateDeliver)
 	}
+	app.lock.Unlock()
 
 	app.stateDeliver.Lock()
 
@@ -672,6 +674,7 @@ func (app *Blockchain) StatisticData() *statistics.Data {
 func (app *Blockchain) GetValidatorStatus(address types.TmAddress) int8 {
 	app.lock.RLock()
 	defer app.lock.RUnlock()
+
 	return app.validatorsStatuses[address]
 }
 
@@ -686,8 +689,11 @@ func (app *Blockchain) MaxPeerHeight() int64 {
 	return max
 }
 
-func (app *Blockchain) DeleteStateVersion(v int64) error {
-	return app.stateDeliver.Tree().DeleteVersion(v)
+func (app *Blockchain) DeleteStateVersions(versions []int64) error {
+	app.lock.RLock()
+	defer app.lock.Unlock()
+
+	return app.stateDeliver.Tree().DeleteVersions(versions)
 }
 
 func getDbOpts(memLimit int) *opt.Options {

@@ -434,17 +434,11 @@ func pruneBlocksCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 					close(errCh)
 					return err
 				}
-				fmt.Println(progress.GetTitle())
 				fmt.Println("OK")
 				return nil
 			case recv := <-recvCh:
 				progress.SetMax(int(recv.Total))
 				progress.SetProgress(int(recv.Current))
-				total := int64(0)
-				if recv.Total != 0 {
-					total = recv.Current * 100 / recv.Total
-				}
-				progress.SetTitle(fmt.Sprintf("Compleated %d%%, %d of %d", total, recv.Current, recv.Total))
 				app.QueueUpdateDraw(func() {})
 			}
 		}

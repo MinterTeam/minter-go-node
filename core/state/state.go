@@ -205,7 +205,9 @@ func (s *State) Commit() ([]byte, error) {
 	}
 
 	if s.keepLastStates < version-1 {
-		_ = s.tree.DeleteVersion(version - s.keepLastStates)
+		if err := s.tree.DeleteVersionIfExists(version - s.keepLastStates); err != nil {
+			return hash, err
+		}
 	}
 
 	return hash, nil

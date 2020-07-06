@@ -75,6 +75,9 @@ grpc_listen_addr = "{{ .BaseConfig.GRPCListenAddress }}"
 # Address to listen for API V2 connections
 api_v2_listen_addr = "{{ .BaseConfig.APIv2ListenAddress }}"
 
+# API v2 Timeout
+api_v2_timeout_duration = "{{ .BaseConfig.APIv2TimeoutDuration }}"
+
 # Sets node to be in validator mode. Disables API, events, history of blocks, indexes, etc. 
 validator_mode = {{ .BaseConfig.ValidatorMode }}
 
