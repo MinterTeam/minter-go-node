@@ -119,7 +119,7 @@ func NewState(height uint64, db db.DB, events eventsdb.IEventsDB, cacheSize int,
 }
 
 func NewCheckStateAtHeight(height uint64, db db.DB) (*CheckState, error) {
-	iavlTree := tree.NewMutableTree(height, db, 1024)
+	iavlTree := tree.NewMutableTree(0, db, 1024)
 	_, err := iavlTree.LazyLoadVersion(int64(height))
 	if err != nil {
 		return nil, err
@@ -164,6 +164,8 @@ func (s *State) Check() error {
 	return nil
 }
 
+const countBatchBlocksDelete = 100
+
 func (s *State) Commit() ([]byte, error) {
 	s.Checker.Reset()
 
@@ -207,8 +209,8 @@ func (s *State) Commit() ([]byte, error) {
 		return hash, err
 	}
 
-	if s.keepLastStates < version-1 {
-		if err := s.tree.DeleteVersionIfExists(version - s.keepLastStates); err != nil {
+	if version%countBatchBlocksDelete == 0 && version-countBatchBlocksDelete > s.keepLastStates {
+		if err := s.tree.DeleteVersionsIfExists(version-countBatchBlocksDelete-s.keepLastStates, version-s.keepLastStates); err != nil {
 			return hash, err
 		}
 	}

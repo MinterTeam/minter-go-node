@@ -213,6 +213,8 @@ func (m *Manager) NetInfo(context.Context, *empty.Empty) (*pb.NetInfoResponse, e
 	return response, nil
 }
 
+const countBatchBlocksDelete = 250
+
 func (m *Manager) PruneBlocks(req *pb.PruneBlocksRequest, stream pb.ManagerService_PruneBlocksServer) error {
 	current := m.blockchain.Height()
 	if req.ToHeight >= int64(current) {
@@ -222,25 +224,37 @@ func (m *Manager) PruneBlocks(req *pb.PruneBlocksRequest, stream pb.ManagerServi
 	min := req.FromHeight - 1
 	total := req.ToHeight - min
 
-	var deleteVersions []int64
-	for i := req.FromHeight; i <= req.ToHeight; i++ {
-		deleteVersions = append(deleteVersions, i)
+	from := req.FromHeight
+	last := make(chan struct{})
 
+	for i := req.FromHeight; i <= req.ToHeight; i++ {
+		if i == req.ToHeight {
+			close(last)
+		}
 		select {
 		case <-stream.Context().Done():
 			return status.Error(codes.Canceled, stream.Context().Err().Error())
-		case <-time.After(time.Second):
-			_ = m.blockchain.DeleteStateVersions(deleteVersions)
+		case <-last:
+			_ = m.blockchain.DeleteStateVersions(from, i)
 			if err := stream.Send(&pb.PruneBlocksResponse{
 				Total:   total,
 				Current: i - min,
 			}); err != nil {
 				return err
 			}
-
-			deleteVersions = []int64{}
+			return nil
 		default:
-
+			if i-from != countBatchBlocksDelete {
+				continue
+			}
+			_ = m.blockchain.DeleteStateVersions(from, i)
+			if err := stream.Send(&pb.PruneBlocksResponse{
+				Total:   total,
+				Current: i - min,
+			}); err != nil {
+				return err
+			}
+			from = i
 		}
 	}
 

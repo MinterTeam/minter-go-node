@@ -414,7 +414,6 @@ func pruneBlocksCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 						return
 					}
 					recvCh <- recv
-					time.Sleep(1 * time.Second)
 				}
 			}
 		}()

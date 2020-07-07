@@ -13,7 +13,6 @@ type ReadOnlyTree interface {
 	Iterate(fn func(key []byte, value []byte) bool) (stopped bool)
 	KeepLastHeight() int64
 	AvailableVersions() []int
-	VersionExists(v int64) bool
 }
 
 type MTree interface {
@@ -23,7 +22,7 @@ type MTree interface {
 	LoadVersion(targetVersion int64) (int64, error)
 	LazyLoadVersion(targetVersion int64) (int64, error)
 	SaveVersion() ([]byte, int64, error)
-	DeleteVersions(versions []int64) error
+	DeleteVersionsIfExists(from, to int64) error
 	DeleteVersionIfExists(version int64) error
 	GetImmutable() *ImmutableTree
 	GetImmutableAtHeight(version int64) (*ImmutableTree, error)
@@ -31,6 +30,7 @@ type MTree interface {
 	GlobalUnlock()
 }
 
+//Should use height = 0 and LazyLoadVersion(version)
 func NewMutableTree(height uint64, db dbm.DB, cacheSize int) MTree {
 	tree, err := iavl.NewMutableTree(db, cacheSize)
 	if err != nil {
@@ -154,11 +154,17 @@ func (t *mutableTree) SaveVersion() ([]byte, int64, error) {
 }
 
 //Should use GlobalLock() and GlobalUnlock
-func (t *mutableTree) DeleteVersions(versions []int64) error {
+func (t *mutableTree) DeleteVersionsIfExists(from, to int64) error {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
-	return t.tree.DeleteVersions(versions...)
+	var existsVersions = make([]int64, 0, to-from)
+	for i := from; i < to; i++ {
+		if t.tree.VersionExists(i) {
+			existsVersions = append(existsVersions, i)
+		}
+	}
+	return t.tree.DeleteVersions(existsVersions...)
 }
 
 //Should use GlobalLock() and GlobalUnlock
@@ -193,12 +199,6 @@ func (t *mutableTree) AvailableVersions() []int {
 	defer t.lock.RUnlock()
 
 	return t.tree.AvailableVersions()
-}
-
-func (t *mutableTree) VersionExists(v int64) bool {
-	t.lock.RLock()
-	defer t.lock.RUnlock()
-	return t.tree.VersionExists(v)
 }
 
 type ImmutableTree struct {
