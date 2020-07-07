@@ -14,4 +14,5 @@ const (
 	EditCandidate         int64 = 10000
 	MultisendDelta        int64 = 5
 	RedeemCheckTx         int64 = SendTx * 3
+	SetHaltBlock          int64 = 1000
 )

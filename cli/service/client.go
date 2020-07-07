@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/cli/pb"
+	pb "github.com/MinterTeam/minter-go-node/cli/cli_pb"
 	"github.com/c-bata/go-prompt"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
@@ -12,6 +12,7 @@ import (
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/marcusolsson/tui-go"
 	"github.com/urfave/cli/v2"
+	"gitlab.com/tslocum/cview"
 	"google.golang.org/grpc"
 	"io"
 	"os"
@@ -23,7 +24,7 @@ type ManagerConsole struct {
 	cli *cli.App
 }
 
-func NewManagerConsole(cli *cli.App) *ManagerConsole {
+func newManagerConsole(cli *cli.App) *ManagerConsole {
 	return &ManagerConsole{cli: cli}
 }
 
@@ -106,7 +107,7 @@ func (mc *ManagerConsole) Cli(ctx context.Context) {
 	}
 }
 
-func ConfigureManagerConsole(socketPath string) (*ManagerConsole, error) {
+func NewCLI(socketPath string) (*ManagerConsole, error) {
 	cc, err := grpc.Dial("passthrough:///unix:///"+socketPath, grpc.WithInsecure())
 	if err != nil {
 		return nil, err
@@ -179,7 +180,7 @@ func ConfigureManagerConsole(socketPath string) (*ManagerConsole, error) {
 	}
 
 	app.Setup()
-	return NewManagerConsole(app), nil
+	return newManagerConsole(app), nil
 }
 
 func exitCMD(_ *cli.Context) error {
@@ -190,12 +191,12 @@ func exitCMD(_ *cli.Context) error {
 func dashboardCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 	return func(c *cli.Context) error {
 		ctx, cancel := context.WithCancel(c.Context)
+		defer cancel()
+
 		response, err := client.Dashboard(ctx, &empty.Empty{})
 		if err != nil {
 			return err
 		}
-
-		defer cancel()
 
 		box := tui.NewVBox()
 		ui, err := tui.New(tui.NewHBox(box, tui.NewSpacer()))
@@ -372,15 +373,74 @@ func statusCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 
 func pruneBlocksCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 	return func(c *cli.Context) error {
-		_, err := client.PruneBlocks(c.Context, &pb.PruneBlocksRequest{
+		ctx, cancel := context.WithCancel(c.Context)
+		defer cancel()
+
+		stream, err := client.PruneBlocks(ctx, &pb.PruneBlocksRequest{
 			FromHeight: c.Int64("from"),
 			ToHeight:   c.Int64("to"),
 		})
 		if err != nil {
 			return err
 		}
-		fmt.Println("OK")
-		return nil
+
+		progress := cview.NewProgressBar()
+		app := cview.NewApplication().SetRoot(progress, true)
+
+		errCh := make(chan error)
+		quitUI := make(chan error)
+		recvCh := make(chan *pb.PruneBlocksResponse)
+
+		next := make(chan struct{})
+		go func() {
+			close(next)
+			quitUI <- app.Run()
+		}()
+		<-next
+
+		go func() {
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				default:
+					recv, err := stream.Recv()
+					if err == io.EOF {
+						close(errCh)
+						return
+					}
+					if err != nil {
+						errCh <- err
+						return
+					}
+					recvCh <- recv
+				}
+			}
+		}()
+
+		for {
+			select {
+			case <-c.Done():
+				app.Stop()
+				return c.Err()
+			case err := <-quitUI:
+				fmt.Println(progress.GetTitle())
+				return err
+			case err, more := <-errCh:
+				app.Stop()
+				_ = stream.CloseSend()
+				if more {
+					close(errCh)
+					return err
+				}
+				fmt.Println("OK")
+				return nil
+			case recv := <-recvCh:
+				progress.SetMax(int(recv.Total))
+				progress.SetProgress(int(recv.Current))
+				app.QueueUpdateDraw(func() {})
+			}
+		}
 	}
 }
 

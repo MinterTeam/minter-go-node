@@ -233,6 +233,9 @@ type BaseConfig struct {
 	// Address to listen for API v2 connections
 	APIv2ListenAddress string `mapstructure:"api_v2_listen_addr"`
 
+	// API v2 Timeout
+	APIv2TimeoutDuration int64 `mapstructure:"api_v2_timeout_duration"`
+
 	ValidatorMode bool `mapstructure:"validator_mode"`
 
 	KeepLastStates int64 `mapstructure:"keep_last_states"`
@@ -265,6 +268,7 @@ func DefaultBaseConfig() BaseConfig {
 		APIListenAddress:        "tcp://0.0.0.0:8841",
 		GRPCListenAddress:       "tcp://0.0.0.0:8842",
 		APIv2ListenAddress:      "tcp://0.0.0.0:8843",
+		APIv2TimeoutDuration:    10 * time.Second.Nanoseconds(),
 		ValidatorMode:           false,
 		KeepLastStates:          120,
 		StateCacheSize:          1000000,

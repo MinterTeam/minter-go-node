@@ -3,7 +3,7 @@ package state
 import (
 	"crypto/rand"
 	"encoding/binary"
-	eventsdb "github.com/MinterTeam/events-db"
+	eventsdb "github.com/MinterTeam/minter-go-node/core/events"
 	"github.com/MinterTeam/minter-go-node/core/state/candidates"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/upgrades"
@@ -13,7 +13,7 @@ import (
 	"testing"
 )
 
-const height = upgrades.UpgradeBlock3
+const height = upgrades.UpgradeBlock4
 
 func TestSimpleDelegate(t *testing.T) {
 	st := getState()

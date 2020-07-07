@@ -24,18 +24,18 @@ type CandidateResponse struct {
 	Status        byte    `json:"status"`
 }
 
-func makeResponseCandidate(state *state.State, c candidates.Candidate, includeStakes bool) CandidateResponse {
+func makeResponseCandidate(state *state.CheckState, c candidates.Candidate, includeStakes bool) CandidateResponse {
 	candidate := CandidateResponse{
 		RewardAddress: c.RewardAddress.String(),
 		OwnerAddress:  c.OwnerAddress.String(),
-		TotalStake:    state.Candidates.GetTotalStake(c.PubKey).String(),
+		TotalStake:    state.Candidates().GetTotalStake(c.PubKey).String(),
 		PubKey:        c.PubKey.String(),
 		Commission:    c.Commission,
 		Status:        c.Status,
 	}
 
 	if includeStakes {
-		stakes := state.Candidates.GetStakes(c.PubKey)
+		stakes := state.Candidates().GetStakes(c.PubKey)
 		candidate.Stakes = make([]Stake, len(stakes))
 		for i, stake := range stakes {
 			candidate.Stakes[i] = Stake{
@@ -58,15 +58,15 @@ func Candidate(pubkey types.Pubkey, height int) (*CandidateResponse, error) {
 
 	if height != 0 {
 		cState.Lock()
-		cState.Candidates.LoadCandidates()
-		cState.Candidates.LoadStakesOfCandidate(pubkey)
+		cState.Candidates().LoadCandidates()
+		cState.Candidates().LoadStakesOfCandidate(pubkey)
 		cState.Unlock()
 	}
 
 	cState.RLock()
 	defer cState.RUnlock()
 
-	candidate := cState.Candidates.GetCandidate(pubkey)
+	candidate := cState.Candidates().GetCandidate(pubkey)
 	if candidate == nil {
 		return nil, rpctypes.RPCError{Code: 404, Message: "Candidate not found"}
 	}
