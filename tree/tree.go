@@ -11,12 +11,12 @@ type ReadOnlyTree interface {
 	Version() int64
 	Hash() []byte
 	Iterate(fn func(key []byte, value []byte) bool) (stopped bool)
-	KeepLastHeight() int64
-	AvailableVersions() []int
 }
 
 type MTree interface {
 	ReadOnlyTree
+	KeepLastHeight() int64
+	AvailableVersions() []int
 	Set(key, value []byte) bool
 	Remove(key []byte) ([]byte, bool)
 	LoadVersion(targetVersion int64) (int64, error)
@@ -30,7 +30,7 @@ type MTree interface {
 	GlobalUnlock()
 }
 
-//Should use height = 0 and LazyLoadVersion(version)
+// If you want to get read-only state, you should use height = 0 and LazyLoadVersion (version), see NewImmutableTree
 func NewMutableTree(height uint64, db dbm.DB, cacheSize int) MTree {
 	tree, err := iavl.NewMutableTree(db, cacheSize)
 	if err != nil {
@@ -203,6 +203,16 @@ func (t *mutableTree) AvailableVersions() []int {
 
 type ImmutableTree struct {
 	tree *iavl.ImmutableTree
+}
+
+//Warning: returns the MTree interface, but you should only use ReadOnlyTree
+func NewImmutableTree(height uint64, db dbm.DB) MTree {
+	tree := NewMutableTree(0, db, 1024)
+	_, err := tree.LazyLoadVersion(int64(height))
+	if err != nil {
+		panic(err)
+	}
+	return tree
 }
 
 func (t *ImmutableTree) Iterate(fn func(key []byte, value []byte) bool) (stopped bool) {
