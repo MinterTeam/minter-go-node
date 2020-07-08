@@ -118,7 +118,6 @@ func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 
 	// Set start height for rewards and validators
 	rewards.SetStartHeight(applicationDB.GetStartHeight())
-	validators.SetStartHeight(applicationDB.GetStartHeight())
 
 	blockchain.haltHeight = uint64(cfg.HaltHeight)
 
@@ -160,7 +159,6 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 	app.appDB.SetStartHeight(genesisState.StartHeight)
 	app.appDB.SaveValidators(vals)
 	rewards.SetStartHeight(genesisState.StartHeight)
-	validators.SetStartHeight(genesisState.StartHeight)
 
 	return abciTypes.ResponseInitChain{
 		Validators: vals,
