@@ -20,14 +20,14 @@ import (
 	"github.com/tendermint/tendermint/proxy"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	core_grpc "github.com/tendermint/tendermint/rpc/grpc"
-	rpcclient "github.com/tendermint/tendermint/rpc/lib/client"
+	rpcclient "github.com/tendermint/tendermint/rpc/jsonrpc/client"
 )
 
 var globalConfig *cfg.Config
 
 func waitForRPC() {
 	laddr := GetConfig().RPC.ListenAddress
-	client, _ := rpcclient.NewJSONRPCClient(laddr)
+	client, _ := rpcclient.New(laddr)
 	ctypes.RegisterAmino(client.Codec())
 	result := new(ctypes.ResultStatus)
 	for {

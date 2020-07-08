@@ -13,7 +13,7 @@ var ManagerCommand = &cobra.Command{
 	DisableFlagParsing: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		newArgs := setParentFlags(cmd, args)
-		console, err := service.ConfigureManagerConsole(utils.GetMinterHome() + "/manager.sock")
+		console, err := service.NewCLI(utils.GetMinterHome() + "/manager.sock")
 		if err != nil {
 			return nil
 		}
@@ -27,11 +27,11 @@ var ManagerConsole = &cobra.Command{
 	DisableFlagParsing: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		_ = setParentFlags(cmd, args)
-		console, err := service.ConfigureManagerConsole(utils.GetMinterHome() + "/manager.sock")
+		console, err := service.NewCLI(utils.GetMinterHome() + "/manager.sock")
 		if err != nil {
 			return nil
 		}
-		console.Cli()
+		console.Cli(cmd.Context())
 		return nil
 	},
 }

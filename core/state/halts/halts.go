@@ -13,17 +13,21 @@ import (
 
 const mainPrefix = byte('h')
 
+type RHalts interface {
+	GetHaltBlocks(height uint64) *Model
+}
+
 type HaltBlocks struct {
 	list  map[uint64]*Model
 	dirty map[uint64]interface{}
 
 	bus  *bus.Bus
-	iavl tree.Tree
+	iavl tree.MTree
 
 	lock sync.RWMutex
 }
 
-func NewHalts(stateBus *bus.Bus, iavl tree.Tree) (*HaltBlocks, error) {
+func NewHalts(stateBus *bus.Bus, iavl tree.MTree) (*HaltBlocks, error) {
 	halts := &HaltBlocks{
 		bus:   stateBus,
 		iavl:  iavl,

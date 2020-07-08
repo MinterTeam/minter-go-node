@@ -2,8 +2,8 @@ package api
 
 import (
 	"fmt"
-	eventsdb "github.com/MinterTeam/events-db"
 	"github.com/MinterTeam/minter-go-node/config"
+	eventsdb "github.com/MinterTeam/minter-go-node/core/events"
 	"github.com/MinterTeam/minter-go-node/core/minter"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/rpc/lib/server"
@@ -15,7 +15,7 @@ import (
 	"github.com/tendermint/tendermint/crypto/secp256k1"
 	"github.com/tendermint/tendermint/evidence"
 	"github.com/tendermint/tendermint/libs/log"
-	rpc "github.com/tendermint/tendermint/rpc/client"
+	rpc "github.com/tendermint/tendermint/rpc/client/local"
 	"github.com/tendermint/tendermint/types"
 	"net/http"
 	"net/url"
@@ -52,7 +52,6 @@ var Routes = map[string]*rpcserver.RPCFunc{
 	"max_gas":                rpcserver.NewRPCFunc(MaxGas, "height"),
 	"min_gas_price":          rpcserver.NewRPCFunc(MinGasPrice, ""),
 	"genesis":                rpcserver.NewRPCFunc(Genesis, ""),
-	"missed_blocks":          rpcserver.NewRPCFunc(MissedBlocks, "pub_key,height"),
 }
 
 func responseTime(b *minter.Blockchain) func(f func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
@@ -60,13 +59,14 @@ func responseTime(b *minter.Blockchain) func(f func(http.ResponseWriter, *http.R
 		return func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
 			f(w, r)
-			b.StatisticData().SetApiTime(time.Now().Sub(start), r.URL.Path)
+			go b.StatisticData().SetApiTime(time.Now().Sub(start), r.URL.Path)
 		}
 	}
 }
 
 func RunAPI(b *minter.Blockchain, tmRPC *rpc.Local, cfg *config.Config, logger log.Logger) {
 	minterCfg = cfg
+
 	RegisterCryptoAmino(cdc)
 	eventsdb.RegisterAminoEvents(cdc)
 	RegisterEvidenceMessages(cdc)
@@ -138,7 +138,7 @@ type Response struct {
 	Log    string      `json:"log,omitempty"`
 }
 
-func GetStateForHeight(height int) (*state.State, error) {
+func GetStateForHeight(height int) (*state.CheckState, error) {
 	if height > 0 {
 		cState, err := blockchain.GetStateForHeight(uint64(height))
 

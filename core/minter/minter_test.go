@@ -26,7 +26,7 @@ import (
 	"github.com/tendermint/tendermint/p2p"
 	"github.com/tendermint/tendermint/privval"
 	"github.com/tendermint/tendermint/proxy"
-	rpc "github.com/tendermint/tendermint/rpc/client"
+	rpc "github.com/tendermint/tendermint/rpc/client/local"
 	_ "github.com/tendermint/tendermint/types"
 	types2 "github.com/tendermint/tendermint/types"
 	"math/big"
@@ -110,7 +110,7 @@ func initNode() {
 
 	logger.Info("Started node", "nodeInfo", node.Switch().NodeInfo())
 	app.SetTmNode(node)
-	tmCli = rpc.NewLocal(node)
+	tmCli = rpc.New(node)
 	l.Unlock()
 }
 

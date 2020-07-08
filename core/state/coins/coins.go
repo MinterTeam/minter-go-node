@@ -17,17 +17,24 @@ const (
 	infoPrefix = byte('i')
 )
 
+type RCoins interface {
+	Export(state *types.AppState)
+	Exists(symbol types.CoinSymbol) bool
+	SubReserve(symbol types.CoinSymbol, amount *big.Int)
+	GetCoin(symbol types.CoinSymbol) *Model
+}
+
 type Coins struct {
 	list  map[types.CoinSymbol]*Model
 	dirty map[types.CoinSymbol]struct{}
 
 	bus  *bus.Bus
-	iavl tree.Tree
+	iavl tree.MTree
 
 	lock sync.RWMutex
 }
 
-func NewCoins(stateBus *bus.Bus, iavl tree.Tree) (*Coins, error) {
+func NewCoins(stateBus *bus.Bus, iavl tree.MTree) (*Coins, error) {
 	coins := &Coins{bus: stateBus, iavl: iavl, list: map[types.CoinSymbol]*Model{}, dirty: map[types.CoinSymbol]struct{}{}}
 	coins.bus.SetCoins(NewBus(coins))
 
@@ -200,7 +207,12 @@ func (c *Coins) Export(state *types.AppState) {
 	// todo: iterate range?
 	c.iavl.Iterate(func(key []byte, value []byte) bool {
 		if key[0] == mainPrefix {
-			coin := c.GetCoin(types.StrToCoinSymbol(string(key[1:])))
+			if len(key[1:]) > types.CoinSymbolLength {
+				return false
+			}
+
+			coinSymbol := types.StrToCoinSymbol(string(key[1:]))
+			coin := c.GetCoin(coinSymbol)
 
 			state.Coins = append(state.Coins, types.Coin{
 				Name:      coin.Name(),

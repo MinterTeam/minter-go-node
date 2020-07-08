@@ -8,10 +8,11 @@ import (
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"math/big"
 )
 
-func (s *Service) Addresses(_ context.Context, req *pb.AddressesRequest) (*pb.AddressesResponse, error) {
-	cState, err := s.getStateForHeight(req.Height)
+func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.AddressesResponse, error) {
+	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {
 		return new(pb.AddressesResponse), status.Error(codes.NotFound, err.Error())
 	}
@@ -19,36 +20,111 @@ func (s *Service) Addresses(_ context.Context, req *pb.AddressesRequest) (*pb.Ad
 	cState.RLock()
 	defer cState.RUnlock()
 
-	response := &pb.AddressesResponse{
-		Addresses: make([]*pb.AddressesResponse_Result, 0, len(req.Addresses)),
+	if req.Height != 0 && req.Delegated {
+		cState.Lock()
+		cState.Candidates().LoadCandidates()
+		cState.Candidates().LoadStakes()
+		cState.Unlock()
 	}
 
-	for _, address := range req.Addresses {
-		if len(address) < 3 {
-			return new(pb.AddressesResponse), status.Error(codes.InvalidArgument, fmt.Sprintf("invalid address %s", address))
+	response := &pb.AddressesResponse{
+		Addresses: make(map[string]*pb.AddressesResponse_Result, len(req.Addresses)),
+	}
+
+	for _, addr := range req.Addresses {
+
+		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+			return response, timeoutStatus.Err()
 		}
 
-		decodeString, err := hex.DecodeString(address[2:])
+		if len(addr) < 3 {
+			return new(pb.AddressesResponse), status.Error(codes.InvalidArgument, fmt.Sprintf("invalid address %s", addr))
+		}
+
+		decodeString, err := hex.DecodeString(addr[2:])
 		if err != nil {
 			return new(pb.AddressesResponse), status.Error(codes.InvalidArgument, err.Error())
 		}
-		addr := types.BytesToAddress(decodeString)
-		data := &pb.AddressesResponse_Result{
-			Address:           address,
-			Balance:           make(map[string]string),
-			TransactionsCount: fmt.Sprintf("%d", cState.Accounts.GetNonce(addr)),
+		address := types.BytesToAddress(decodeString)
+
+		balances := cState.Accounts().GetBalances(address)
+		var res pb.AddressesResponse_Result
+
+		totalStakesGroupByCoin := map[types.CoinSymbol]*big.Int{}
+
+		res.Balance = make(map[string]*pb.AddressBalance, len(balances))
+		for coin, value := range balances {
+			totalStakesGroupByCoin[coin] = value
+			res.Balance[coin.String()] = &pb.AddressBalance{
+				Value:    value.String(),
+				BipValue: customCoinBipBalance(coin, value, cState).String(),
+			}
 		}
 
-		balances := cState.Accounts.GetBalances(addr)
-		for k, v := range balances {
-			data.Balance[k.String()] = v.String()
+		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+			return new(pb.AddressesResponse), timeoutStatus.Err()
 		}
 
-		if _, exists := data.Balance[types.GetBaseCoin().String()]; !exists {
-			data.Balance[types.GetBaseCoin().String()] = "0"
+		if req.Delegated {
+			var userDelegatedStakesGroupByCoin = map[types.CoinSymbol]*UserStake{}
+			allCandidates := cState.Candidates().GetCandidates()
+			for _, candidate := range allCandidates {
+				userStakes := userStakes(candidate.PubKey, address, cState)
+				for coin, userStake := range userStakes {
+					stake, ok := userDelegatedStakesGroupByCoin[coin]
+					if !ok {
+						stake = &UserStake{
+							Value:    big.NewInt(0),
+							BipValue: big.NewInt(0),
+						}
+					}
+					stake.Value.Add(stake.Value, userStake.Value)
+					stake.BipValue.Add(stake.BipValue, userStake.BipValue)
+					userDelegatedStakesGroupByCoin[coin] = stake
+				}
+			}
+
+			if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+				return new(pb.AddressesResponse), timeoutStatus.Err()
+			}
+
+			res.Delegated = make(map[string]*pb.AddressDelegatedBalance, len(userDelegatedStakesGroupByCoin))
+			for coin, delegatedStake := range userDelegatedStakesGroupByCoin {
+				res.Delegated[coin.String()] = &pb.AddressDelegatedBalance{
+					Value:            delegatedStake.Value.String(),
+					DelegateBipValue: delegatedStake.BipValue.String(),
+					BipValue:         customCoinBipBalance(coin, delegatedStake.Value, cState).String(),
+				}
+
+				totalStake, ok := totalStakesGroupByCoin[coin]
+				if !ok {
+					totalStake = big.NewInt(0)
+					totalStakesGroupByCoin[coin] = totalStake
+				}
+				totalStake.Add(totalStake, delegatedStake.Value)
+			}
 		}
 
-		response.Addresses = append(response.Addresses, data)
+		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+			return response, timeoutStatus.Err()
+		}
+
+		coinsBipValue := big.NewInt(0)
+		res.Total = make(map[string]*pb.AddressBalance, len(totalStakesGroupByCoin))
+		for coin, stake := range totalStakesGroupByCoin {
+			balance := customCoinBipBalance(coin, stake, cState)
+			if req.Delegated {
+				res.Total[coin.String()] = &pb.AddressBalance{
+					Value:    stake.String(),
+					BipValue: balance.String(),
+				}
+			}
+			coinsBipValue.Add(coinsBipValue, balance)
+		}
+		res.BipValue = coinsBipValue.String()
+		res.TransactionsCount = fmt.Sprintf("%d", cState.Accounts().GetNonce(address))
+
+		response.Addresses[addr] = &res
 	}
 
 	return response, nil

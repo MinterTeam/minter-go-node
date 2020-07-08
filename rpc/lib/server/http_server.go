@@ -124,6 +124,10 @@ func RecoverAndLogHandler(handler http.Handler, logger log.Logger) http.Handler 
 		begin := time.Now()
 
 		rww.Header().Set("X-Server-Time", fmt.Sprintf("%v", begin.Unix()))
+		rww.Header().Set("Deprecation", "version=\"v1\"")
+		// rww.Header().Set("Link", fmt.Sprintf("<%s>; rel=\"successor-version\"",""))
+		// rww.Header().Set("Link", fmt.Sprintf("<%s>; rel=\"deprecation\"",""))
+		// rww.Header().Set("Sunset", time.Unix(0,0).Format(time.RFC1123))
 
 		defer func() {
 			// Send a 500 error if a panic happens during a handler.

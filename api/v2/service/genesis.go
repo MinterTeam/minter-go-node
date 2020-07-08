@@ -1,11 +1,9 @@
 package service
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
-	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/ptypes/empty"
 	_struct "github.com/golang/protobuf/ptypes/struct"
 	"google.golang.org/grpc/codes"
@@ -13,19 +11,23 @@ import (
 	"time"
 )
 
-func (s *Service) Genesis(context.Context, *empty.Empty) (*pb.GenesisResponse, error) {
+func (s *Service) Genesis(ctx context.Context, _ *empty.Empty) (*pb.GenesisResponse, error) {
 	result, err := s.client.Genesis()
 	if err != nil {
 		return new(pb.GenesisResponse), status.Error(codes.FailedPrecondition, err.Error())
 	}
 
-	var bb bytes.Buffer
-	if _, err := bb.Write(result.Genesis.AppState); err != nil {
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+		return new(pb.GenesisResponse), timeoutStatus.Err()
+	}
+
+	appState := &_struct.Struct{}
+	if err := appState.UnmarshalJSON(result.Genesis.AppState); err != nil {
 		return new(pb.GenesisResponse), status.Error(codes.Internal, err.Error())
 	}
-	appState := &_struct.Struct{Fields: make(map[string]*_struct.Value)}
-	if err := (&jsonpb.Unmarshaler{}).Unmarshal(&bb, appState); err != nil {
-		return new(pb.GenesisResponse), status.Error(codes.Internal, err.Error())
+
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+		return new(pb.GenesisResponse), timeoutStatus.Err()
 	}
 
 	return &pb.GenesisResponse{

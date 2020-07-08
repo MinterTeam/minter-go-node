@@ -1,9 +1,9 @@
 syntax = "proto3";
 
-// protoc --go_out=plugins=grpc:. *.proto && sed -i "" -e "s/,omitempty//g" ./*.go
-package pb;
-
+package cli_pb;
+option go_package = ".;cli_pb";
 import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
 
 message NodeInfo {
 
@@ -82,43 +82,15 @@ message NetInfoResponse {
 }
 
 message StatusResponse {
-    string version = 7;
+    string version = 8;
     string latest_block_hash = 1;
     string latest_app_hash = 2;
-    int64 latest_block_height = 3;
+    string latest_block_height = 3;
     string latest_block_time = 4;
-    int64 keep_last_states = 5;
-
-    message TmStatus {
-
-        NodeInfo node_info = 3;
-
-        message SyncInfo {
-            string latest_block_hash = 5;
-            string latest_app_hash = 1;
-            int64 latest_block_height = 2;
-            string latest_block_time = 3;
-            bool catching_up = 4;
-        }
-
-        SyncInfo sync_info = 1;
-
-        message ValidatorInfo {
-            string address = 3;
-
-            message PubKey {
-                string type = 2;
-                string value = 1;
-            }
-
-            PubKey pub_key = 1;
-            int64 voting_power = 2;
-        }
-
-        ValidatorInfo validator_info = 2;
-    }
-
-    TmStatus tm_status = 6;
+    string keep_last_states = 5;
+    bool catching_up = 6;
+    string public_key = 7;
+    string node_id = 9;
 }
 
 message PruneBlocksRequest {
@@ -131,9 +103,37 @@ message DealPeerRequest {
     bool persistent = 2;
 }
 
+message DashboardResponse {
+    int64 latest_height = 1;
+    google.protobuf.Timestamp timestamp = 2;
+    int64 duration = 3;
+    uint64 memory_usage = 4;
+    string validator_pub_key = 5;
+    int64 max_peer_height = 6;
+    int32 peers_count = 7;
+    int64 avg_block_processing_time = 8;
+    int64 time_per_block = 9;
+    string missed_blocks = 10;
+    int64 voting_power = 11;
+    string stake = 12;
+    enum ValidatorStatus {
+        Validating = 0;
+        Challenger = 1;
+        Offline = 2;
+        NotDeclared = 3;
+    }
+    ValidatorStatus validator_status = 13;
+}
+
+message PruneBlocksResponse {
+    int64 total = 1;
+    int64 current = 2;
+}
+
 service ManagerService {
     rpc Status (google.protobuf.Empty) returns (StatusResponse);
     rpc NetInfo (google.protobuf.Empty) returns (NetInfoResponse);
-    rpc PruneBlocks (PruneBlocksRequest) returns (google.protobuf.Empty);
+    rpc PruneBlocks (PruneBlocksRequest) returns (stream PruneBlocksResponse);
     rpc DealPeer (DealPeerRequest) returns (google.protobuf.Empty);
+    rpc Dashboard (google.protobuf.Empty) returns (stream DashboardResponse);
 }

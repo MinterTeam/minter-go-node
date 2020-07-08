@@ -14,11 +14,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (s *Service) SendPostTransaction(ctx context.Context, req *pb.SendTransactionRequest) (*pb.SendTransactionResponse, error) {
-	return s.SendGetTransaction(ctx, req)
-}
-
-func (s *Service) SendGetTransaction(_ context.Context, req *pb.SendTransactionRequest) (*pb.SendTransactionResponse, error) {
+func (s *Service) SendTransaction(ctx context.Context, req *pb.SendTransactionRequest) (*pb.SendTransactionResponse, error) {
 	if len(req.Tx) < 3 {
 		return new(pb.SendTransactionResponse), status.Error(codes.InvalidArgument, "invalid tx")
 	}
@@ -27,8 +23,11 @@ func (s *Service) SendGetTransaction(_ context.Context, req *pb.SendTransactionR
 		return new(pb.SendTransactionResponse), status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	result, err := s.broadcastTxSync(decodeString)
+	result, err := s.broadcastTxSync(decodeString, ctx /*timeout*/)
 	if err != nil {
+		if _, ok := status.FromError(err); ok {
+			return new(pb.SendTransactionResponse), err
+		}
 		return new(pb.SendTransactionResponse), status.Error(codes.FailedPrecondition, err.Error())
 	}
 
@@ -52,7 +51,7 @@ type ResultBroadcastTx struct {
 	Hash bytes.HexBytes `json:"hash"`
 }
 
-func (s *Service) broadcastTxSync(tx types.Tx) (*ResultBroadcastTx, error) {
+func (s *Service) broadcastTxSync(tx types.Tx, ctx context.Context) (*ResultBroadcastTx, error) {
 	resCh := make(chan *abci.Response, 1)
 	err := s.tmNode.Mempool().CheckTx(tx, func(res *abci.Response) {
 		resCh <- res
@@ -60,13 +59,22 @@ func (s *Service) broadcastTxSync(tx types.Tx) (*ResultBroadcastTx, error) {
 	if err != nil {
 		return nil, err
 	}
-	res := <-resCh
-	r := res.GetCheckTx()
-	return &ResultBroadcastTx{
-		Code: r.Code,
-		Data: r.Data,
-		Log:  r.Log,
-		Info: r.Info,
-		Hash: tx.Hash(),
-	}, nil
+
+	select {
+	case res := <-resCh:
+		r := res.GetCheckTx()
+		return &ResultBroadcastTx{
+			Code: r.Code,
+			Data: r.Data,
+			Log:  r.Log,
+			Info: r.Info,
+			Hash: tx.Hash(),
+		}, nil
+	case <-ctx.Done():
+		if ctx.Err() != context.DeadlineExceeded {
+			return nil, status.New(codes.Canceled, ctx.Err().Error()).Err()
+		}
+		return nil, status.New(codes.DeadlineExceeded, ctx.Err().Error()).Err()
+	}
+
 }

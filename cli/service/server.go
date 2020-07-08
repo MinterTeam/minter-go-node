@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"github.com/MinterTeam/minter-go-node/cli/pb"
+	pb "github.com/MinterTeam/minter-go-node/cli/cli_pb"
 	"google.golang.org/grpc"
 	"net"
 	"os"

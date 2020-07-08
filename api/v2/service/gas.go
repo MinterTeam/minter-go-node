@@ -15,13 +15,13 @@ func (s *Service) MinGasPrice(context.Context, *empty.Empty) (*pb.MinGasPriceRes
 	}, nil
 }
 
-func (s *Service) MaxGas(_ context.Context, req *pb.MaxGasRequest) (*pb.MaxGasResponse, error) {
-	cState, err := s.getStateForHeight(req.Height)
+func (s *Service) MaxGas(ctx context.Context, req *pb.MaxGasRequest) (*pb.MaxGasResponse, error) {
+	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {
 		return new(pb.MaxGasResponse), status.Error(codes.NotFound, err.Error())
 	}
 
 	return &pb.MaxGasResponse{
-		MaxGas: fmt.Sprintf("%d", cState.App.GetMaxGas()),
+		MaxGas: fmt.Sprintf("%d", cState.App().GetMaxGas()),
 	}, nil
 }

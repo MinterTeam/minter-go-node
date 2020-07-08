@@ -13,7 +13,7 @@ func (s *Service) Halts(_ context.Context, req *pb.HaltsRequest) (*pb.HaltsRespo
 		return new(pb.HaltsResponse), status.Error(codes.NotFound, err.Error())
 	}
 
-	blocks := cState.Halts.GetHaltBlocks(req.Height)
+	blocks := cState.Halts().GetHaltBlocks(req.Height)
 
 	if blocks == nil {
 		return &pb.HaltsResponse{}, nil
