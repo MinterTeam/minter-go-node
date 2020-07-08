@@ -29,12 +29,8 @@ func (data SetCandidateOnData) GetPubKey() types.Pubkey {
 	return data.PubKey
 }
 
-func (data SetCandidateOnData) TotalSpend(tx *Transaction, context *state.CheckState) (TotalSpends, []Conversion, *big.Int, *Response) {
-	panic("implement me")
-}
-
 func (data SetCandidateOnData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
-	return checkCandidateOwnership(data, tx, context)
+	return checkCandidateControl(data, tx, context)
 }
 
 func (data SetCandidateOnData) String() string {
@@ -138,12 +134,8 @@ func (data SetCandidateOffData) GetPubKey() types.Pubkey {
 	return data.PubKey
 }
 
-func (data SetCandidateOffData) TotalSpend(tx *Transaction, context *state.CheckState) (TotalSpends, []Conversion, *big.Int, *Response) {
-	panic("implement me")
-}
-
 func (data SetCandidateOffData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
-	return checkCandidateOwnership(data, tx, context)
+	return checkCandidateControl(data, tx, context)
 }
 
 func (data SetCandidateOffData) String() string {
@@ -225,4 +217,29 @@ func (data SetCandidateOffData) Run(tx *Transaction, context state.Interface, re
 		GasWanted: tx.Gas(),
 		Tags:      tags,
 	}
+}
+
+func checkCandidateControl(data CandidateTx, tx *Transaction, context *state.CheckState) *Response {
+	if !context.Candidates().Exists(data.GetPubKey()) {
+		return &Response{
+			Code: code.CandidateNotFound,
+			Log:  fmt.Sprintf("Candidate with such public key (%s) not found", data.GetPubKey().String()),
+			Info: EncodeError(map[string]string{
+				"public_key": data.GetPubKey().String(),
+			}),
+		}
+	}
+
+	owner := context.Candidates().GetCandidateOwner(data.GetPubKey())
+	control := context.Candidates().GetCandidateControl(data.GetPubKey())
+	sender, _ := tx.Sender()
+	switch sender {
+	case owner, control:
+	default:
+		return &Response{
+			Code: code.IsNotOwnerOfCandidate,
+			Log:  fmt.Sprintf("Sender is not an owner of a candidate")}
+	}
+
+	return nil
 }

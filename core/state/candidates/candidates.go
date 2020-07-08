@@ -37,6 +37,7 @@ type RCandidates interface {
 	IsDelegatorStakeSufficient(address types.Address, pubkey types.Pubkey, coin types.CoinSymbol, amount *big.Int) bool
 	GetStakeValueOfAddress(pubkey types.Pubkey, address types.Address, coin types.CoinSymbol) *big.Int
 	GetCandidateOwner(pubkey types.Pubkey) types.Address
+	GetCandidateControl(pubkey types.Pubkey) types.Address
 	GetTotalStake(pubkey types.Pubkey) *big.Int
 	LoadCandidates()
 	LoadStakesOfCandidate(pubkey types.Pubkey)
@@ -175,6 +176,7 @@ func (c *Candidates) Create(ownerAddress types.Address, rewardAddress types.Addr
 		PubKey:            pubkey,
 		RewardAddress:     rewardAddress,
 		OwnerAddress:      ownerAddress,
+		ControlAddress:    ownerAddress,
 		Commission:        commission,
 		Status:            CandidateStatusOffline,
 		totalBipStake:     big.NewInt(0),
@@ -607,10 +609,11 @@ func (c *Candidates) Delegate(address types.Address, pubkey types.Pubkey, coin t
 	c.bus.Checker().AddCoin(coin, value)
 }
 
-func (c *Candidates) Edit(pubkey types.Pubkey, rewardAddress types.Address, ownerAddress types.Address) {
+func (c *Candidates) Edit(pubkey types.Pubkey, rewardAddress types.Address, ownerAddress types.Address, controlAddress types.Address) {
 	candidate := c.getFromMap(pubkey)
 	candidate.setOwner(ownerAddress)
 	candidate.setReward(rewardAddress)
+	candidate.setControl(controlAddress)
 }
 
 func (c *Candidates) SetOnline(pubkey types.Pubkey) {
@@ -699,6 +702,10 @@ func (c *Candidates) GetStakeValueOfAddress(pubkey types.Pubkey, address types.A
 
 func (c *Candidates) GetCandidateOwner(pubkey types.Pubkey) types.Address {
 	return c.getFromMap(pubkey).OwnerAddress
+}
+
+func (c *Candidates) GetCandidateControl(pubkey types.Pubkey) types.Address {
+	return c.getFromMap(pubkey).ControlAddress
 }
 
 func (c *Candidates) LoadCandidates() {
@@ -896,14 +903,15 @@ func (c *Candidates) Export(state *types.AppState) {
 		}
 
 		state.Candidates = append(state.Candidates, types.Candidate{
-			RewardAddress: candidate.RewardAddress,
-			OwnerAddress:  candidate.OwnerAddress,
-			TotalBipStake: candidate.GetTotalBipStake().String(),
-			PubKey:        candidate.PubKey,
-			Commission:    candidate.Commission,
-			Status:        candidate.Status,
-			Updates:       updates,
-			Stakes:        stakes,
+			RewardAddress:  candidate.RewardAddress,
+			OwnerAddress:   candidate.OwnerAddress,
+			ControlAddress: candidate.ControlAddress,
+			TotalBipStake:  candidate.GetTotalBipStake().String(),
+			PubKey:         candidate.PubKey,
+			Commission:     candidate.Commission,
+			Status:         candidate.Status,
+			Updates:        updates,
+			Stakes:         stakes,
 		})
 	}
 

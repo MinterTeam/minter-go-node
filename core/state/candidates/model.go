@@ -8,11 +8,12 @@ import (
 )
 
 type Candidate struct {
-	PubKey        types.Pubkey
-	RewardAddress types.Address
-	OwnerAddress  types.Address
-	Commission    uint
-	Status        byte
+	PubKey         types.Pubkey
+	RewardAddress  types.Address
+	OwnerAddress   types.Address
+	ControlAddress types.Address
+	Commission     uint
+	Status         byte
 
 	totalBipStake *big.Int
 	stakesCount   int
@@ -39,6 +40,11 @@ func (candidate *Candidate) setOwner(address types.Address) {
 func (candidate *Candidate) setReward(address types.Address) {
 	candidate.isDirty = true
 	candidate.RewardAddress = address
+}
+
+func (candidate *Candidate) setControl(address types.Address) {
+	candidate.isDirty = true
+	candidate.ControlAddress = address
 }
 
 func (candidate *Candidate) addUpdate(stake *Stake) {

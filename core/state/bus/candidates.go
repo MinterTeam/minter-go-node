@@ -21,9 +21,10 @@ type Stake struct {
 }
 
 type Candidate struct {
-	PubKey        types.Pubkey
-	RewardAddress types.Address
-	OwnerAddress  types.Address
-	Commission    uint
-	Status        byte
+	PubKey         types.Pubkey
+	RewardAddress  types.Address
+	OwnerAddress   types.Address
+	ControlAddress types.Address
+	Commission     uint
+	Status         byte
 }

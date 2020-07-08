@@ -209,14 +209,15 @@ type Validator struct {
 }
 
 type Candidate struct {
-	RewardAddress Address `json:"reward_address"`
-	OwnerAddress  Address `json:"owner_address"`
-	TotalBipStake string  `json:"total_bip_stake"`
-	PubKey        Pubkey  `json:"pub_key"`
-	Commission    uint    `json:"commission"`
-	Stakes        []Stake `json:"stakes"`
-	Updates       []Stake `json:"updates"`
-	Status        byte    `json:"status"`
+	RewardAddress  Address `json:"reward_address"`
+	OwnerAddress   Address `json:"owner_address"`
+	ControlAddress Address `json:"control_address"`
+	TotalBipStake  string  `json:"total_bip_stake"`
+	PubKey         Pubkey  `json:"pub_key"`
+	Commission     uint    `json:"commission"`
+	Stakes         []Stake `json:"stakes"`
+	Updates        []Stake `json:"updates"`
+	Status         byte    `json:"status"`
 }
 
 type Stake struct {

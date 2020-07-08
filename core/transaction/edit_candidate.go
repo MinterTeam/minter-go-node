@@ -18,29 +18,36 @@ type CandidateTx interface {
 }
 
 type EditCandidateData struct {
-	PubKey        types.Pubkey
-	RewardAddress types.Address
-	OwnerAddress  types.Address
+	PubKey         types.Pubkey
+	NewPubKey      *types.Pubkey
+	RewardAddress  types.Address
+	OwnerAddress   types.Address
+	ControlAddress types.Address
 }
 
 func (data EditCandidateData) MarshalJSON() ([]byte, error) {
+	newPubKey := data.NewPubKey
+	newPubKeyStr := ""
+	if newPubKey != nil {
+		newPubKeyStr = newPubKey.String()
+	}
 	return json.Marshal(struct {
-		PubKey        string `json:"pub_key"`
-		RewardAddress string `json:"reward_address"`
-		OwnerAddress  string `json:"owner_address"`
+		PubKey         string `json:"pub_key"`
+		NewPubKey      string `json:"new_pub_key"`
+		RewardAddress  string `json:"reward_address"`
+		OwnerAddress   string `json:"owner_address"`
+		ControlAddress string `json:"owner_address"`
 	}{
-		PubKey:        data.PubKey.String(),
-		RewardAddress: data.RewardAddress.String(),
-		OwnerAddress:  data.OwnerAddress.String(),
+		PubKey:         data.PubKey.String(),
+		NewPubKey:      newPubKeyStr,
+		RewardAddress:  data.RewardAddress.String(),
+		OwnerAddress:   data.OwnerAddress.String(),
+		ControlAddress: data.ControlAddress.String(),
 	})
 }
 
 func (data EditCandidateData) GetPubKey() types.Pubkey {
 	return data.PubKey
-}
-
-func (data EditCandidateData) TotalSpend(tx *Transaction, context *state.CheckState) (TotalSpends, []Conversion, *big.Int, *Response) {
-	panic("implement me")
 }
 
 func (data EditCandidateData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
@@ -115,7 +122,7 @@ func (data EditCandidateData) Run(tx *Transaction, context state.Interface, rewa
 		deliveryState.Coins.SubVolume(tx.GasCoin, commission)
 
 		deliveryState.Accounts.SubBalance(sender, tx.GasCoin, commission)
-		deliveryState.Candidates.Edit(data.PubKey, data.RewardAddress, data.OwnerAddress)
+		deliveryState.Candidates.Edit(data.PubKey, data.RewardAddress, data.OwnerAddress, data.ControlAddress)
 		deliveryState.Accounts.SetNonce(sender, tx.Nonce)
 	}
 
