@@ -1,6 +1,7 @@
 package candidates
 
 import (
+	"encoding/binary"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	"math/big"
@@ -31,6 +32,12 @@ type Candidate struct {
 	isTotalStakeDirty bool
 	isUpdatesDirty    bool
 	dirtyStakes       [MaxDelegatorsPerCandidate]bool
+}
+
+func (candidate *Candidate) idBytes() []byte {
+	bs := make([]byte, 4)
+	binary.LittleEndian.PutUint32(bs, uint32(candidate.ID))
+	return bs
 }
 
 func (candidate *Candidate) setStatus(status byte) {

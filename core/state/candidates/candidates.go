@@ -111,7 +111,7 @@ func (c *Candidates) Commit() error {
 
 		if candidate.isTotalStakeDirty {
 			path := []byte{mainPrefix}
-			path = append(path, pubkey[:]...)
+			path = append(path, candidate.idBytes()...)
 			path = append(path, totalStakePrefix)
 			c.iavl.Set(path, candidate.totalBipStake.Bytes())
 			candidate.isTotalStakeDirty = false
@@ -125,7 +125,7 @@ func (c *Candidates) Commit() error {
 			candidate.dirtyStakes[index] = false
 
 			path := []byte{mainPrefix}
-			path = append(path, pubkey[:]...)
+			path = append(path, candidate.idBytes()...)
 			path = append(path, stakesPrefix)
 			path = append(path, []byte(fmt.Sprintf("%d", index))...)
 
@@ -150,7 +150,7 @@ func (c *Candidates) Commit() error {
 			}
 
 			path := []byte{mainPrefix}
-			path = append(path, pubkey[:]...)
+			path = append(path, candidate.idBytes()...)
 			path = append(path, updatesPrefix)
 			c.iavl.Set(path, data)
 			candidate.isUpdatesDirty = false
@@ -782,7 +782,7 @@ func (c *Candidates) LoadCandidates() {
 
 	for _, candidate := range candidates {
 		// load total stake
-		path = append([]byte{mainPrefix}, candidate.PubKey.Bytes()...)
+		path = append([]byte{mainPrefix}, candidate.idBytes()...)
 		path = append(path, totalStakePrefix)
 		_, enc = c.iavl.Get(path)
 		if len(enc) == 0 {
@@ -999,7 +999,6 @@ func (c *Candidates) Export(state *types.AppState) {
 			Stakes:         stakes,
 		})
 	}
-
 }
 
 func (c *Candidates) getOrderedCandidates() []types.Pubkey {
@@ -1067,7 +1066,7 @@ func (c *Candidates) LoadStakesOfCandidate(pubkey types.Pubkey) {
 	stakesCount := 0
 	for index := 0; index < MaxDelegatorsPerCandidate; index++ {
 		path := []byte{mainPrefix}
-		path = append(path, candidate.PubKey.Bytes()...)
+		path = append(path, candidate.idBytes()...)
 		path = append(path, stakesPrefix)
 		path = append(path, []byte(fmt.Sprintf("%d", index))...)
 		_, enc := c.iavl.Get(path)
@@ -1090,7 +1089,7 @@ func (c *Candidates) LoadStakesOfCandidate(pubkey types.Pubkey) {
 
 	// load updates
 	path := []byte{mainPrefix}
-	path = append(path, candidate.PubKey.Bytes()...)
+	path = append(path, candidate.idBytes()...)
 	path = append(path, updatesPrefix)
 	_, enc := c.iavl.Get(path)
 	if len(enc) == 0 {
@@ -1113,7 +1112,7 @@ func (c *Candidates) LoadStakesOfCandidate(pubkey types.Pubkey) {
 	}
 
 	// load total stake
-	path = append([]byte{mainPrefix}, candidate.PubKey.Bytes()...)
+	path = append([]byte{mainPrefix}, candidate.idBytes()...)
 	path = append(path, totalStakePrefix)
 	_, enc = c.iavl.Get(path)
 	if len(enc) == 0 {
