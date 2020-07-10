@@ -5,13 +5,18 @@ import (
 	"fmt"
 	eventsdb "github.com/MinterTeam/minter-go-node/core/events"
 	"github.com/MinterTeam/minter-go-node/core/state/accounts"
+	legacyAccounts "github.com/MinterTeam/minter-go-node/core/state/legacy/accounts"
 	"github.com/MinterTeam/minter-go-node/core/state/app"
+	legacyApp "github.com/MinterTeam/minter-go-node/core/state/legacy/app"
 	"github.com/MinterTeam/minter-go-node/core/state/bus"
 	"github.com/MinterTeam/minter-go-node/core/state/candidates"
+	legacyCandidates "github.com/MinterTeam/minter-go-node/core/state/legacy/candidates"
 	"github.com/MinterTeam/minter-go-node/core/state/checker"
 	"github.com/MinterTeam/minter-go-node/core/state/checks"
 	"github.com/MinterTeam/minter-go-node/core/state/coins"
+	legacyCoins "github.com/MinterTeam/minter-go-node/core/state/legacy/coins"
 	"github.com/MinterTeam/minter-go-node/core/state/frozenfunds"
+	legacyFrozenfunds "github.com/MinterTeam/minter-go-node/core/state/legacy/frozenfunds"
 	"github.com/MinterTeam/minter-go-node/core/state/halts"
 	"github.com/MinterTeam/minter-go-node/core/state/validators"
 	"github.com/MinterTeam/minter-go-node/core/types"
@@ -280,14 +285,64 @@ func (s *State) Export(height uint64) types.AppState {
 
 	appState := new(types.AppState)
 	state.App().Export(appState, height)
-	//state.Validators().Export(appState)
-	//state.Candidates().Export(appState)
-	//state.FrozenFunds().Export(appState, height)
-	//state.Accounts().Export(appState)
+	state.Validators().Export(appState)
+	state.Candidates().Export(appState)
+	state.FrozenFunds().Export(appState, height)
+	state.Accounts().Export(appState)
 	state.Coins().Export(appState)
-	//state.Checks().Export(appState)
+	state.Checks().Export(appState)
 
 	return *appState
+}
+
+func (s *State) Export11To12(height uint64) types.AppState {
+	iavlTree := tree.NewImmutableTree(height, s.db)
+
+	candidatesState, err := legacyCandidates.NewCandidates(nil, iavlTree)
+	if err != nil {
+		log.Panicf("Create new state at height %d failed: %s", height, err)
+	}
+
+	validatorsState, err := validators.NewValidators(nil, iavlTree)
+	if err != nil {
+		log.Panicf("Create new state at height %d failed: %s", height, err)
+	}
+
+	appState, err := legacyApp.NewApp(nil, iavlTree)
+	if err != nil {
+		log.Panicf("Create new state at height %d failed: %s", height, err)
+	}
+
+	frozenFundsState, err := legacyFrozenfunds.NewFrozenFunds(nil, iavlTree)
+	if err != nil {
+		log.Panicf("Create new state at height %d failed: %s", height, err)
+	}
+
+	accountsState, err := legacyAccounts.NewAccounts(nil, iavlTree)
+	if err != nil {
+		log.Panicf("Create new state at height %d failed: %s", height, err)
+	}
+
+	coinsState, err := legacyCoins.NewCoins(nil, iavlTree)
+	if err != nil {
+		log.Panicf("Create new state at height %d failed: %s", height, err)
+	}
+
+	checksState, err := checks.NewChecks(iavlTree)
+	if err != nil {
+		log.Panicf("Create new state at height %d failed: %s", height, err)
+	}
+
+	state := new(types.AppState)
+	appState.Export(state, height)
+	coinsState.Export(state)
+	validatorsState.Export(state)
+	candidatesState.Export(state)
+	frozenFundsState.Export(state, height)
+	accountsState.Export(state)
+	checksState.Export(state)
+
+	return *state
 }
 
 func newCheckStateForTree(iavlTree tree.MTree, events eventsdb.IEventsDB, db db.DB, keepLastStates int64) (*CheckState, error) {

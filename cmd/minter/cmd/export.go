@@ -63,7 +63,7 @@ func export(cmd *cobra.Command, args []string) error {
 		log.Panicf("Cannot new state at given height: %s", err)
 	}
 
-	exportTimeStart, newState := time.Now(), currentState.Export(height)
+	exportTimeStart, newState := time.Now(), currentState.Export11To12(height)
 	fmt.Printf("State has been exported. Took %s", time.Since(exportTimeStart))
 
 	jsonBytes, err := amino.NewCodec().MarshalJSONIndent(newState, "", "	")
