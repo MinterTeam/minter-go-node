@@ -14,11 +14,11 @@ type Model struct {
 	MultisigData Multisig
 
 	address  types.Address
-	coins    []types.CoinSymbol
-	balances map[types.CoinSymbol]*big.Int
+	coins    []types.CoinID
+	balances map[types.CoinID]*big.Int
 
 	hasDirtyCoins bool
-	dirtyBalances map[types.CoinSymbol]struct{}
+	dirtyBalances map[types.CoinID]struct{}
 	isDirty       bool // nonce or multisig data
 
 	isNew bool
@@ -60,7 +60,7 @@ func (model *Model) setNonce(nonce uint64) {
 	model.markDirty(model.address)
 }
 
-func (model *Model) getBalance(coin types.CoinSymbol) *big.Int {
+func (model *Model) getBalance(coin types.CoinID) *big.Int {
 	return model.balances[coin]
 }
 
@@ -68,13 +68,13 @@ func (model *Model) hasDirtyBalances() bool {
 	return len(model.dirtyBalances) > 0
 }
 
-func (model *Model) isBalanceDirty(coin types.CoinSymbol) bool {
+func (model *Model) isBalanceDirty(coin types.CoinID) bool {
 	_, exists := model.dirtyBalances[coin]
 	return exists
 }
 
-func (model *Model) getOrderedCoins() []types.CoinSymbol {
-	keys := make([]types.CoinSymbol, 0, len(model.balances))
+func (model *Model) getOrderedCoins() []types.CoinID {
+	keys := make([]types.CoinID, 0, len(model.balances))
 	for k := range model.balances {
 		keys = append(keys, k)
 	}
@@ -86,13 +86,13 @@ func (model *Model) getOrderedCoins() []types.CoinSymbol {
 	return keys
 }
 
-func (model *Model) setBalance(coin types.CoinSymbol, amount *big.Int) {
+func (model *Model) setBalance(coin types.CoinID, amount *big.Int) {
 	if amount.Cmp(big.NewInt(0)) == 0 {
 		if !model.hasCoin(coin) {
 			return
 		}
 
-		var newCoins []types.CoinSymbol
+		var newCoins []types.CoinID
 		for _, c := range model.coins {
 			if coin == c {
 				continue
@@ -119,7 +119,7 @@ func (model *Model) setBalance(coin types.CoinSymbol, amount *big.Int) {
 	model.balances[coin] = amount
 }
 
-func (model *Model) hasCoin(coin types.CoinSymbol) bool {
+func (model *Model) hasCoin(coin types.CoinID) bool {
 	for _, c := range model.coins {
 		if c == coin {
 			return true

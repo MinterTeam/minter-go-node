@@ -49,7 +49,7 @@ func (s *Service) Address(ctx context.Context, req *pb.AddressRequest) (*pb.Addr
 	balances := cState.Accounts().GetBalances(address)
 	var response pb.AddressResponse
 
-	totalStakesGroupByCoin := map[types.CoinSymbol]*big.Int{}
+	totalStakesGroupByCoin := map[types.CoinID]*big.Int{}
 
 	response.Balance = make(map[string]*pb.AddressBalance, len(balances))
 	for coin, value := range balances {
@@ -65,7 +65,7 @@ func (s *Service) Address(ctx context.Context, req *pb.AddressRequest) (*pb.Addr
 	}
 
 	if req.Delegated {
-		var userDelegatedStakesGroupByCoin = map[types.CoinSymbol]*UserStake{}
+		var userDelegatedStakesGroupByCoin = map[types.CoinID]*UserStake{}
 		allCandidates := cState.Candidates().GetCandidates()
 		for _, candidate := range allCandidates {
 			userStakes := userStakes(candidate.PubKey, address, cState)
@@ -126,19 +126,19 @@ func (s *Service) Address(ctx context.Context, req *pb.AddressRequest) (*pb.Addr
 	return &response, nil
 }
 
-func customCoinBipBalance(coinToSell types.CoinSymbol, valueToSell *big.Int, cState *state.CheckState) *big.Int {
-	coinToBuy := types.StrToCoinSymbol("BIP")
+func customCoinBipBalance(coinToSell types.CoinID, valueToSell *big.Int, cState *state.CheckState) *big.Int {
+	coinToBuy := types.GetBaseCoinID()
 
 	if coinToSell == coinToBuy {
 		return valueToSell
 	}
 
-	if coinToSell == types.GetBaseCoin() {
+	if coinToSell == types.GetBaseCoinID() {
 		coin := cState.Coins().GetCoin(coinToBuy)
 		return formula.CalculatePurchaseReturn(coin.Volume(), coin.Reserve(), coin.Crr(), valueToSell)
 	}
 
-	if coinToBuy == types.GetBaseCoin() {
+	if coinToBuy == types.GetBaseCoinID() {
 		coin := cState.Coins().GetCoin(coinToSell)
 		return formula.CalculateSaleReturn(coin.Volume(), coin.Reserve(), coin.Crr(), valueToSell)
 	}
@@ -149,8 +149,8 @@ func customCoinBipBalance(coinToSell types.CoinSymbol, valueToSell *big.Int, cSt
 	return formula.CalculatePurchaseReturn(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), basecoinValue)
 }
 
-func userStakes(c types.Pubkey, address types.Address, state *state.CheckState) map[types.CoinSymbol]*UserStake {
-	var userStakes = map[types.CoinSymbol]*UserStake{}
+func userStakes(c types.Pubkey, address types.Address, state *state.CheckState) map[types.CoinID]*UserStake {
+	var userStakes = map[types.CoinID]*UserStake{}
 
 	stakes := state.Candidates().GetStakes(c)
 

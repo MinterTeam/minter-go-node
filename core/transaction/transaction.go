@@ -47,7 +47,7 @@ type Transaction struct {
 	Nonce         uint64
 	ChainID       types.ChainID
 	GasPrice      uint32
-	GasCoin       types.CoinSymbol
+	GasCoin       types.CoinID
 	Type          TxType
 	Data          RawData
 	Payload       []byte
@@ -76,7 +76,7 @@ type RawData []byte
 
 type TotalSpends []TotalSpend
 
-func (tss *TotalSpends) Add(coin types.CoinSymbol, value *big.Int) {
+func (tss *TotalSpends) Add(coin types.CoinID, value *big.Int) {
 	for i, t := range *tss {
 		if t.Coin == coin {
 			(*tss)[i].Value.Add((*tss)[i].Value, big.NewInt(0).Set(value))
@@ -91,15 +91,15 @@ func (tss *TotalSpends) Add(coin types.CoinSymbol, value *big.Int) {
 }
 
 type TotalSpend struct {
-	Coin  types.CoinSymbol
+	Coin  types.CoinID
 	Value *big.Int
 }
 
 type Conversion struct {
-	FromCoin    types.CoinSymbol
+	FromCoin    types.CoinID
 	FromAmount  *big.Int
 	FromReserve *big.Int
-	ToCoin      types.CoinSymbol
+	ToCoin      types.CoinID
 	ToAmount    *big.Int
 	ToReserve   *big.Int
 }

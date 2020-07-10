@@ -14,9 +14,9 @@ import (
 )
 
 type BuyCoinData struct {
-	CoinToBuy          types.CoinSymbol
+	CoinToBuy          types.CoinID
 	ValueToBuy         *big.Int
-	CoinToSell         types.CoinSymbol
+	CoinToSell         types.CoinID
 	MaximumValueToSell *big.Int
 }
 
@@ -111,7 +111,7 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.CheckState) (
 				FromCoin:    tx.GasCoin,
 				FromAmount:  commission,
 				FromReserve: commissionInBaseCoin,
-				ToCoin:      types.GetBaseCoin(),
+				ToCoin:      types.GetBaseCoinID(),
 			})
 		}
 
@@ -208,7 +208,7 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.CheckState) (
 				FromCoin:    tx.GasCoin,
 				FromAmount:  commission,
 				FromReserve: commissionInBaseCoin,
-				ToCoin:      types.GetBaseCoin(),
+				ToCoin:      types.GetBaseCoinID(),
 			})
 		}
 
@@ -258,7 +258,7 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.CheckState) (
 				FromCoin:    tx.GasCoin,
 				FromAmount:  commission,
 				FromReserve: commissionInBaseCoin,
-				ToCoin:      types.GetBaseCoin(),
+				ToCoin:      types.GetBaseCoinID(),
 			})
 
 			totalValue := big.NewInt(0).Add(value, commission)
@@ -312,7 +312,7 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.CheckState) (
 				FromCoin:    tx.GasCoin,
 				FromAmount:  commission,
 				FromReserve: commissionInBaseCoin,
-				ToCoin:      types.GetBaseCoin(),
+				ToCoin:      types.GetBaseCoinID(),
 			})
 		}
 
@@ -434,8 +434,8 @@ func (data BuyCoinData) Run(tx *Transaction, context state.Interface, rewardPool
 }
 
 func checkConversionsReserveUnderflow(conversions []Conversion, context *state.CheckState) *Response {
-	var totalReserveCoins []types.CoinSymbol
-	totalReserveSub := make(map[types.CoinSymbol]*big.Int)
+	var totalReserveCoins []types.CoinID
+	totalReserveSub := make(map[types.CoinID]*big.Int)
 	for _, conversion := range conversions {
 		if conversion.FromCoin.IsBaseCoin() {
 			continue

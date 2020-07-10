@@ -14,9 +14,11 @@ type Model struct {
 	CCrr       uint
 	CMaxSupply *big.Int
 
+	id        types.CoinID
 	symbol    types.CoinSymbol
+	version   uint16
 	info      *Info
-	markDirty func(symbol types.CoinSymbol)
+	markDirty func(symbol types.CoinID)
 	isDirty   bool
 }
 
@@ -26,6 +28,10 @@ func (m Model) Name() string {
 
 func (m Model) Symbol() types.CoinSymbol {
 	return m.symbol
+}
+
+func (m Model) ID() types.CoinID {
+	return m.id
 }
 
 func (m Model) Crr() uint {
@@ -40,39 +46,43 @@ func (m Model) Reserve() *big.Int {
 	return big.NewInt(0).Set(m.info.Reserve)
 }
 
+func (m Model) Version() uint16 {
+	return m.version
+}
+
 func (m *Model) SubVolume(amount *big.Int) {
 	m.info.Volume.Sub(m.info.Volume, amount)
-	m.markDirty(m.symbol)
+	m.markDirty(m.id)
 	m.info.isDirty = true
 }
 
 func (m *Model) AddVolume(amount *big.Int) {
 	m.info.Volume.Add(m.info.Volume, amount)
-	m.markDirty(m.symbol)
+	m.markDirty(m.id)
 	m.info.isDirty = true
 }
 
 func (m *Model) SubReserve(amount *big.Int) {
 	m.info.Reserve.Sub(m.info.Reserve, amount)
-	m.markDirty(m.symbol)
+	m.markDirty(m.id)
 	m.info.isDirty = true
 }
 
 func (m *Model) AddReserve(amount *big.Int) {
 	m.info.Reserve.Add(m.info.Reserve, amount)
-	m.markDirty(m.symbol)
+	m.markDirty(m.id)
 	m.info.isDirty = true
 }
 
 func (m *Model) SetReserve(reserve *big.Int) {
 	m.info.Reserve.Set(reserve)
-	m.markDirty(m.symbol)
+	m.markDirty(m.id)
 	m.info.isDirty = true
 }
 
 func (m *Model) SetVolume(volume *big.Int) {
 	m.info.Volume.Set(volume)
-	m.markDirty(m.symbol)
+	m.markDirty(m.id)
 	m.info.isDirty = true
 }
 

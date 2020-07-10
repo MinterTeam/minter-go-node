@@ -6,6 +6,7 @@ import (
 )
 
 type CoinInfoResponse struct {
+	ID             uint64 `json:"id"`
 	Name           string `json:"name"`
 	Symbol         string `json:"symbol"`
 	Volume         string `json:"volume"`
@@ -23,7 +24,7 @@ func CoinInfo(coinSymbol string, height int) (*CoinInfoResponse, error) {
 	cState.RLock()
 	defer cState.RUnlock()
 
-	coin := cState.Coins().GetCoin(types.StrToCoinSymbol(coinSymbol))
+	coin := cState.Coins().GetCoinBySymbol(types.StrToCoinSymbol(coinSymbol))
 	if coin == nil {
 		return nil, rpctypes.RPCError{Code: 404, Message: "Coin not found"}
 	}

@@ -14,7 +14,7 @@ import (
 )
 
 type SendData struct {
-	Coin  types.CoinSymbol
+	Coin  types.CoinID
 	To    types.Address
 	Value *big.Int
 }
@@ -64,7 +64,7 @@ func (data SendData) TotalSpend(tx *Transaction, context *state.CheckState) (Tot
 			FromCoin:    tx.GasCoin,
 			FromAmount:  commission,
 			FromReserve: commissionInBaseCoin,
-			ToCoin:      types.GetBaseCoin(),
+			ToCoin:      types.GetBaseCoinID(),
 		})
 	}
 

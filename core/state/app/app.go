@@ -15,6 +15,7 @@ type RApp interface {
 	Export(state *types.AppState, height uint64)
 	GetMaxGas() uint64
 	GetTotalSlashed() *big.Int
+	GetCoinsCount() uint64
 }
 
 func (v *App) Tree() tree.ReadOnlyTree {
@@ -78,7 +79,7 @@ func (v *App) AddTotalSlashed(amount *big.Int) {
 
 	model := v.getOrNew()
 	model.setTotalSlashed(big.NewInt(0).Add(model.getTotalSlashed(), amount))
-	v.bus.Checker().AddCoin(types.GetBaseCoin(), amount)
+	v.bus.Checker().AddCoin(types.GetBaseCoinID(), amount)
 }
 
 func (v *App) get() *Model {
@@ -107,6 +108,7 @@ func (v *App) getOrNew() *Model {
 	if model == nil {
 		model = &Model{
 			TotalSlashed: big.NewInt(0),
+			CoinsCount:   0,
 			MaxGas:       0,
 			markDirty:    v.markDirty,
 		}
@@ -122,6 +124,14 @@ func (v *App) markDirty() {
 
 func (v *App) SetTotalSlashed(amount *big.Int) {
 	v.getOrNew().setTotalSlashed(amount)
+}
+
+func (v *App) GetCoinsCount() uint64 {
+	return v.getOrNew().getCoinsCount()
+}
+
+func (v *App) SetCoinsCount(count uint64) {
+	v.getOrNew().setCoinsCount(count)
 }
 
 func (v *App) Export(state *types.AppState, height uint64) {

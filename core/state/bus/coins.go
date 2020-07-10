@@ -6,12 +6,13 @@ import (
 )
 
 type Coins interface {
-	GetCoin(types.CoinSymbol) *Coin
-	SubCoinVolume(types.CoinSymbol, *big.Int)
-	SubCoinReserve(types.CoinSymbol, *big.Int)
+	GetCoin(types.CoinID) *Coin
+	SubCoinVolume(types.CoinID, *big.Int)
+	SubCoinReserve(types.CoinID, *big.Int)
 }
 
 type Coin struct {
+	ID      types.CoinID
 	Name    string
 	Crr     uint
 	Symbol  types.CoinSymbol

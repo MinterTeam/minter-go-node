@@ -231,7 +231,7 @@ func (s *State) Import(state types.AppState) error {
 	}
 
 	for _, c := range state.Coins {
-		s.Coins.Create(c.Symbol, c.Name, helpers.StringToBigInt(c.Volume), c.Crr, helpers.StringToBigInt(c.Reserve), helpers.StringToBigInt(c.MaxSupply))
+		s.Coins.Create(c.ID, c.Symbol, c.Name, helpers.StringToBigInt(c.Volume), c.Crr, helpers.StringToBigInt(c.Reserve), helpers.StringToBigInt(c.MaxSupply))
 	}
 
 	var vals []*validators.Validator
@@ -280,12 +280,12 @@ func (s *State) Export(height uint64) types.AppState {
 
 	appState := new(types.AppState)
 	state.App().Export(appState, height)
-	state.Validators().Export(appState)
-	state.Candidates().Export(appState)
-	state.FrozenFunds().Export(appState, height)
-	state.Accounts().Export(appState)
+	//state.Validators().Export(appState)
+	//state.Candidates().Export(appState)
+	//state.FrozenFunds().Export(appState, height)
+	//state.Accounts().Export(appState)
 	state.Coins().Export(appState)
-	state.Checks().Export(appState)
+	//state.Checks().Export(appState)
 
 	return *appState
 }

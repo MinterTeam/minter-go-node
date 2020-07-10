@@ -84,7 +84,7 @@ func (s *AppState) Verify() error {
 				// check not existing coins
 				foundCoin := false
 				for _, coin := range s.Coins {
-					if coin.Symbol == bal.Coin {
+					if coin.ID == bal.Coin {
 						foundCoin = true
 						break
 					}
@@ -111,7 +111,7 @@ func (s *AppState) Verify() error {
 			if !stake.Coin.IsBaseCoin() {
 				foundCoin := false
 				for _, coin := range s.Coins {
-					if coin.Symbol == stake.Coin {
+					if coin.ID == stake.Coin {
 						foundCoin = true
 						break
 					}
@@ -139,14 +139,14 @@ func (s *AppState) Verify() error {
 		// check coins' volume
 		volume := big.NewInt(0)
 		for _, ff := range s.FrozenFunds {
-			if ff.Coin == coin.Symbol {
+			if ff.Coin == coin.ID {
 				volume.Add(volume, helpers.StringToBigInt(ff.Value))
 			}
 		}
 
 		for _, candidate := range s.Candidates {
 			for _, stake := range candidate.Stakes {
-				if stake.Coin == coin.Symbol {
+				if stake.Coin == coin.ID {
 					volume.Add(volume, helpers.StringToBigInt(stake.Value))
 				}
 			}
@@ -154,7 +154,7 @@ func (s *AppState) Verify() error {
 
 		for _, account := range s.Accounts {
 			for _, bal := range account.Balance {
-				if bal.Coin == coin.Symbol {
+				if bal.Coin == coin.ID {
 					volume.Add(volume, helpers.StringToBigInt(bal.Value))
 				}
 			}
@@ -174,7 +174,7 @@ func (s *AppState) Verify() error {
 		if !ff.Coin.IsBaseCoin() {
 			foundCoin := false
 			for _, coin := range s.Coins {
-				if coin.Symbol == ff.Coin {
+				if coin.ID == ff.Coin {
 					foundCoin = true
 					break
 				}
@@ -221,25 +221,27 @@ type Candidate struct {
 
 type Stake struct {
 	Owner    Address    `json:"owner"`
-	Coin     CoinSymbol `json:"coin"`
+	Coin     CoinID     `json:"coin"`
 	Value    string     `json:"value"`
 	BipValue string     `json:"bip_value"`
 }
 
 type Coin struct {
-	Name      string     `json:"name"`
-	Symbol    CoinSymbol `json:"symbol"`
-	Volume    string     `json:"volume"`
-	Crr       uint       `json:"crr"`
-	Reserve   string     `json:"reserve"`
-	MaxSupply string     `json:"max_supply"`
+	ID           CoinID     `json:"id"`
+	Name         string     `json:"name"`
+	Symbol       CoinSymbol `json:"symbol"`
+	Volume       string     `json:"volume"`
+	Crr          uint       `json:"crr"`
+	Reserve      string     `json:"reserve"`
+	MaxSupply    string     `json:"max_supply"`
+	OwnerAddress *Address   `json:"owner_address"`
 }
 
 type FrozenFund struct {
 	Height       uint64     `json:"height"`
 	Address      Address    `json:"address"`
 	CandidateKey *Pubkey    `json:"candidate_key,omitempty"`
-	Coin         CoinSymbol `json:"coin"`
+	Coin         CoinID     `json:"coin"`
 	Value        string     `json:"value"`
 }
 
@@ -253,7 +255,7 @@ type Account struct {
 }
 
 type Balance struct {
-	Coin  CoinSymbol `json:"coin"`
+	Coin  CoinID     `json:"coin"`
 	Value string     `json:"value"`
 }
 

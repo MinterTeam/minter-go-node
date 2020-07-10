@@ -1,10 +1,11 @@
 package coins
 
 import (
-	"bytes"
+	"encoding/binary"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/state/bus"
 	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/tree"
 	"math/big"
@@ -13,20 +14,22 @@ import (
 )
 
 const (
-	mainPrefix = byte('q')
-	infoPrefix = byte('i')
+	mainPrefix    = byte('q')
+	infoPrefix    = byte('i')
 )
 
 type RCoins interface {
 	Export(state *types.AppState)
-	Exists(symbol types.CoinSymbol) bool
-	SubReserve(symbol types.CoinSymbol, amount *big.Int)
-	GetCoin(symbol types.CoinSymbol) *Model
+	Exists(id types.CoinID) bool
+	ExistsBySymbol(symbol types.CoinSymbol) bool
+	SubReserve(symbol types.CoinID, amount *big.Int)
+	GetCoin(id types.CoinID) *Model
+	GetCoinBySymbol(symbol types.CoinSymbol) *Model
 }
 
 type Coins struct {
-	list  map[types.CoinSymbol]*Model
-	dirty map[types.CoinSymbol]struct{}
+	list  map[types.CoinID]*Model
+	dirty map[types.CoinID]struct{}
 
 	bus  *bus.Bus
 	iavl tree.MTree
@@ -35,7 +38,7 @@ type Coins struct {
 }
 
 func NewCoins(stateBus *bus.Bus, iavl tree.MTree) (*Coins, error) {
-	coins := &Coins{bus: stateBus, iavl: iavl, list: map[types.CoinSymbol]*Model{}, dirty: map[types.CoinSymbol]struct{}{}}
+	coins := &Coins{bus: stateBus, iavl: iavl, list: map[types.CoinID]*Model{}, dirty: map[types.CoinID]struct{}{}}
 	coins.bus.SetCoins(NewBus(coins))
 
 	return coins, nil
@@ -43,34 +46,29 @@ func NewCoins(stateBus *bus.Bus, iavl tree.MTree) (*Coins, error) {
 
 func (c *Coins) Commit() error {
 	coins := c.getOrderedDirtyCoins()
-	for _, symbol := range coins {
-		coin := c.getFromMap(symbol)
+	for _, id := range coins {
+		coin := c.getFromMap(id)
 		c.lock.Lock()
-		delete(c.dirty, symbol)
+		delete(c.dirty, id)
 		c.lock.Unlock()
 
 		if coin.IsDirty() {
 			data, err := rlp.EncodeToBytes(coin)
 			if err != nil {
-				return fmt.Errorf("can't encode object at %x: %v", symbol[:], err)
+				return fmt.Errorf("can't encode object at %d: %v", id, err)
 			}
 
-			path := []byte{mainPrefix}
-			path = append(path, symbol[:]...)
-			c.iavl.Set(path, data)
+			c.iavl.Set(getCoinPath(id), data)
 			coin.isDirty = false
 		}
 
 		if coin.IsInfoDirty() {
 			data, err := rlp.EncodeToBytes(coin.info)
 			if err != nil {
-				return fmt.Errorf("can't encode object at %x: %v", symbol[:], err)
+				return fmt.Errorf("can't encode object at %d: %v", id, err)
 			}
 
-			path := []byte{mainPrefix}
-			path = append(path, symbol[:]...)
-			path = append(path, infoPrefix)
-			c.iavl.Set(path, data)
+			c.iavl.Set(getCoinInfoPath(id), data)
 			coin.info.isDirty = false
 		}
 	}
@@ -78,55 +76,84 @@ func (c *Coins) Commit() error {
 	return nil
 }
 
-func (c *Coins) GetCoin(symbol types.CoinSymbol) *Model {
-	return c.get(symbol)
+func (c *Coins) GetCoin(id types.CoinID) *Model {
+	return c.get(id)
 }
 
-func (c *Coins) Exists(symbol types.CoinSymbol) bool {
+func (c *Coins) Exists(id types.CoinID) bool {
+	if id.IsBaseCoin() {
+		return true
+	}
+
+	return c.get(id) != nil
+}
+
+func (c *Coins) ExistsBySymbol(symbol types.CoinSymbol) bool {
 	if symbol.IsBaseCoin() {
 		return true
 	}
 
-	return c.get(symbol) != nil
+	return c.getBySymbol(symbol) != nil
 }
 
-func (c *Coins) SubVolume(symbol types.CoinSymbol, amount *big.Int) {
-	if symbol.IsBaseCoin() {
+func (c *Coins) GetCoinBySymbol(symbol types.CoinSymbol) *Model {
+	coins := c.getBySymbol(symbol.GetBaseSymbol())
+	if coins == nil {
+		return nil
+	}
+
+	for _, c := range *coins {
+		if c.Version() == symbol.GetVersion() {
+			return &c
+		}
+	}
+
+	return nil
+}
+
+func (c *Coins) SubVolume(id types.CoinID, amount *big.Int) {
+	if id.IsBaseCoin() {
 		return
 	}
-	c.get(symbol).SubVolume(amount)
-	c.bus.Checker().AddCoinVolume(symbol, big.NewInt(0).Neg(amount))
+
+	c.get(id).SubVolume(amount)
+	c.bus.Checker().AddCoinVolume(id, big.NewInt(0).Neg(amount))
 }
 
-func (c *Coins) AddVolume(symbol types.CoinSymbol, amount *big.Int) {
-	if symbol.IsBaseCoin() {
+func (c *Coins) AddVolume(id types.CoinID, amount *big.Int) {
+	if id.IsBaseCoin() {
 		return
 	}
-	c.get(symbol).AddVolume(amount)
-	c.bus.Checker().AddCoinVolume(symbol, amount)
+
+	c.get(id).AddVolume(amount)
+	c.bus.Checker().AddCoinVolume(id, amount)
 }
 
-func (c *Coins) SubReserve(symbol types.CoinSymbol, amount *big.Int) {
-	if symbol.IsBaseCoin() {
+func (c *Coins) SubReserve(id types.CoinID, amount *big.Int) {
+	if id.IsBaseCoin() {
 		return
 	}
-	c.get(symbol).SubReserve(amount)
-	c.bus.Checker().AddCoin(types.GetBaseCoin(), big.NewInt(0).Neg(amount))
+
+	c.get(id).SubReserve(amount)
+	c.bus.Checker().AddCoin(types.GetBaseCoinID(), big.NewInt(0).Neg(amount))
 }
 
-func (c *Coins) AddReserve(symbol types.CoinSymbol, amount *big.Int) {
-	if symbol.IsBaseCoin() {
+func (c *Coins) AddReserve(id types.CoinID, amount *big.Int) {
+	if id.IsBaseCoin() {
 		return
 	}
-	c.get(symbol).AddReserve(amount)
-	c.bus.Checker().AddCoin(types.GetBaseCoin(), amount)
+
+	c.get(id).AddReserve(amount)
+	c.bus.Checker().AddCoin(types.GetBaseCoinID(), amount)
 }
 
-func (c *Coins) Create(symbol types.CoinSymbol, name string, volume *big.Int, crr uint, reserve *big.Int, maxSupply *big.Int) {
+func (c *Coins) Create(id types.CoinID, symbol types.CoinSymbol, name string,
+	volume *big.Int, crr uint, reserve *big.Int, maxSupply *big.Int) {
 	coin := &Model{
 		CName:      name,
 		CCrr:       crr,
 		CMaxSupply: maxSupply,
+		id:         id,
 		symbol:     symbol,
 		markDirty:  c.markDirty,
 		isDirty:    true,
@@ -137,107 +164,162 @@ func (c *Coins) Create(symbol types.CoinSymbol, name string, volume *big.Int, cr
 		},
 	}
 
-	c.setToMap(coin.symbol, coin)
+	c.setToMap(coin.id, coin)
 
 	coin.SetReserve(reserve)
 	coin.SetVolume(volume)
-	c.markDirty(symbol)
+	c.markDirty(coin.id)
 
-	c.bus.Checker().AddCoin(types.GetBaseCoin(), reserve)
-	c.bus.Checker().AddCoinVolume(symbol, volume)
+	c.bus.Checker().AddCoin(types.GetBaseCoinID(), reserve)
+	c.bus.Checker().AddCoinVolume(coin.id, volume)
 }
 
-func (c *Coins) get(symbol types.CoinSymbol) *Model {
-	if coin := c.getFromMap(symbol); coin != nil {
+func (c *Coins) get(id types.CoinID) *Model {
+	if coin := c.getFromMap(id); coin != nil {
 		return coin
 	}
 
-	path := []byte{mainPrefix}
-	path = append(path, symbol[:]...)
-	_, enc := c.iavl.Get(path)
+	_, enc := c.iavl.Get(getCoinPath(id))
 	if len(enc) == 0 {
 		return nil
 	}
 
 	coin := &Model{}
 	if err := rlp.DecodeBytes(enc, coin); err != nil {
-		panic(fmt.Sprintf("failed to decode coin at %s: %s", symbol.String(), err))
+		panic(fmt.Sprintf("failed to decode coin at %d: %s", id, err))
 	}
 
-	coin.symbol = symbol
+	coin.id = id
 	coin.markDirty = c.markDirty
 
 	// load info
-	path = []byte{mainPrefix}
-	path = append(path, symbol[:]...)
-	path = append(path, infoPrefix)
-	_, enc = c.iavl.Get(path)
+	_, enc = c.iavl.Get(getCoinInfoPath(id))
 	if len(enc) != 0 {
 		var info Info
 		if err := rlp.DecodeBytes(enc, &info); err != nil {
-			panic(fmt.Sprintf("failed to decode coin info %s: %s", symbol.String(), err))
+			panic(fmt.Sprintf("failed to decode coin info %d: %s", id, err))
 		}
 
 		coin.info = &info
 	}
 
-	c.setToMap(symbol, coin)
+	c.setToMap(id, coin)
 
 	return coin
 }
 
-func (c *Coins) markDirty(symbol types.CoinSymbol) {
-	c.dirty[symbol] = struct{}{}
+func (c *Coins) getBySymbol(symbol types.CoinSymbol) *[]Model {
+	coins := &[]Model{}
+
+	path := []byte{mainPrefix}
+	path = append(path, symbol.Bytes()...)
+	_, enc := c.iavl.Get(path)
+	if len(enc) == 0 {
+		return nil
+	}
+
+	if err := rlp.DecodeBytes(enc, coins); err != nil {
+		panic(fmt.Sprintf("failed to decode coins by symbol %s: %s", symbol, err))
+	}
+
+	return coins
 }
 
-func (c *Coins) getOrderedDirtyCoins() []types.CoinSymbol {
-	keys := make([]types.CoinSymbol, 0, len(c.dirty))
+func (c *Coins) markDirty(id types.CoinID) {
+	c.dirty[id] = struct{}{}
+}
+
+func (c *Coins) getOrderedDirtyCoins() []types.CoinID {
+	keys := make([]types.CoinID, 0, len(c.dirty))
 	for k := range c.dirty {
 		keys = append(keys, k)
 	}
 
 	sort.SliceStable(keys, func(i, j int) bool {
-		return bytes.Compare(keys[i].Bytes(), keys[j].Bytes()) == 1
+		return keys[i] > keys[j]
 	})
 
 	return keys
 }
 
 func (c *Coins) Export(state *types.AppState) {
-	// todo: iterate range?
+	var coins []types.Coin
+	isSortingRequired := true
+
 	c.iavl.Iterate(func(key []byte, value []byte) bool {
 		if key[0] == mainPrefix {
 			if len(key[1:]) > types.CoinSymbolLength {
 				return false
 			}
 
-			coinSymbol := types.StrToCoinSymbol(string(key[1:]))
-			coin := c.GetCoin(coinSymbol)
+			coinID := types.CoinID(binary.LittleEndian.Uint32(key[1:]))
+			coin := c.GetCoin(coinID)
 
-			state.Coins = append(state.Coins, types.Coin{
+			coinModel := types.Coin{
+				ID:        coinID,
 				Name:      coin.Name(),
 				Symbol:    coin.Symbol(),
 				Volume:    coin.Volume().String(),
 				Crr:       coin.Crr(),
 				Reserve:   coin.Reserve().String(),
 				MaxSupply: coin.MaxSupply().String(),
-			})
+			}
+
+			if coin.ID() != 0 {
+				isSortingRequired = false
+			}
+
+			if isSortingRequired {
+				for _, account := range state.Accounts {
+					for _, balance := range account.Balance {
+						if balance.Coin.String() == coin.Symbol().String() && balance.Value == coin.Volume().String() {
+							coinModel.OwnerAddress = &account.Address
+						}
+					}
+				}
+			}
+
+			coins = append(coins, coinModel)
 		}
 
 		return false
 	})
+
+	if isSortingRequired {
+		sort.Slice(coins[:], func(i, j int) bool {
+			return helpers.StringToBigInt(coins[i].Reserve).Cmp(helpers.StringToBigInt(coins[j].Reserve)) == 1
+		})
+
+		for i, _ := range coins {
+			coins[i].ID = types.CoinID(i + 1)
+		}
+	}
+
+	state.Coins = coins
 }
 
-func (c *Coins) getFromMap(symbol types.CoinSymbol) *Model {
+func (c *Coins) getFromMap(id types.CoinID) *Model {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
-	return c.list[symbol]
+	return c.list[id]
 }
 
-func (c *Coins) setToMap(symbol types.CoinSymbol, model *Model) {
+func (c *Coins) setToMap(id types.CoinID, model *Model) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	c.list[symbol] = model
+	c.list[id] = model
+}
+
+func getCoinPath(id types.CoinID) []byte {
+	path := []byte{mainPrefix}
+	return append(path, id.Bytes()...)
+}
+
+func getCoinInfoPath(id types.CoinID) []byte {
+	path := getCoinInfoPath(id)
+	path = append(path, infoPrefix)
+	path = append(path, id.Bytes()...)
+	return path
 }

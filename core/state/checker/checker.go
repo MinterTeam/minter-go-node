@@ -7,21 +7,21 @@ import (
 )
 
 type Checker struct {
-	delta       map[types.CoinSymbol]*big.Int
-	volumeDelta map[types.CoinSymbol]*big.Int
+	delta       map[types.CoinID]*big.Int
+	volumeDelta map[types.CoinID]*big.Int
 }
 
 func NewChecker(bus *bus.Bus) *Checker {
 	checker := &Checker{
-		delta:       map[types.CoinSymbol]*big.Int{},
-		volumeDelta: map[types.CoinSymbol]*big.Int{},
+		delta:       map[types.CoinID]*big.Int{},
+		volumeDelta: map[types.CoinID]*big.Int{},
 	}
 	bus.SetChecker(checker)
 
 	return checker
 }
 
-func (c *Checker) AddCoin(coin types.CoinSymbol, value *big.Int, msg ...string) {
+func (c *Checker) AddCoin(coin types.CoinID, value *big.Int, msg ...string) {
 	cValue, exists := c.delta[coin]
 
 	if !exists {
@@ -32,7 +32,7 @@ func (c *Checker) AddCoin(coin types.CoinSymbol, value *big.Int, msg ...string) 
 	cValue.Add(cValue, value)
 }
 
-func (c *Checker) AddCoinVolume(coin types.CoinSymbol, value *big.Int) {
+func (c *Checker) AddCoinVolume(coin types.CoinID, value *big.Int) {
 	cValue, exists := c.volumeDelta[coin]
 
 	if !exists {
@@ -44,14 +44,14 @@ func (c *Checker) AddCoinVolume(coin types.CoinSymbol, value *big.Int) {
 }
 
 func (c *Checker) Reset() {
-	c.delta = map[types.CoinSymbol]*big.Int{}
-	c.volumeDelta = map[types.CoinSymbol]*big.Int{}
+	c.delta = map[types.CoinID]*big.Int{}
+	c.volumeDelta = map[types.CoinID]*big.Int{}
 }
 
-func (c *Checker) Deltas() map[types.CoinSymbol]*big.Int {
+func (c *Checker) Deltas() map[types.CoinID]*big.Int {
 	return c.delta
 }
 
-func (c *Checker) VolumeDeltas() map[types.CoinSymbol]*big.Int {
+func (c *Checker) VolumeDeltas() map[types.CoinID]*big.Int {
 	return c.volumeDelta
 }

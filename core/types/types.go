@@ -2,12 +2,15 @@ package types
 
 import (
 	"bytes"
+	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/hexutil"
 	"math/big"
 	"math/rand"
 	"reflect"
+	"strconv"
+	"strings"
 )
 
 const (
@@ -15,6 +18,7 @@ const (
 	AddressLength    = 20
 	PubKeyLength     = 32
 	CoinSymbolLength = 10
+	BasecoinID       = 0
 )
 
 var (
@@ -147,10 +151,39 @@ func (c CoinSymbol) IsBaseCoin() bool {
 	return c.Compare(GetBaseCoin()) == 0
 }
 
+func (c CoinSymbol) GetBaseSymbol() CoinSymbol {
+	return StrToCoinSymbol(strings.Split(c.String(), "-")[0])
+}
+
+func (c CoinSymbol) GetVersion() uint16 {
+	parts := strings.Split(c.String(), "-")
+	if len(parts) == 1 {
+		return 0
+	}
+
+	return 1
+}
+
 func StrToCoinSymbol(s string) CoinSymbol {
 	var symbol CoinSymbol
 	copy(symbol[:], []byte(s))
 	return symbol
+}
+
+type CoinID uint32
+
+func (c CoinID) IsBaseCoin() bool {
+	return c == GetBaseCoinID()
+}
+
+func (c CoinID) String() string {
+	return strconv.Itoa(int(c))
+}
+
+func (c CoinID) Bytes() []byte {
+	var b []byte
+	binary.LittleEndian.PutUint32(b, uint32(c))
+	return b
 }
 
 /////////// Address
