@@ -141,6 +141,7 @@ func (v *Validators) SetNewValidators(candidates []candidates.Candidate) {
 		}
 
 		newVals = append(newVals, &Validator{
+
 			PubKey:             candidate.PubKey,
 			AbsentTimes:        absentTimes,
 			totalStake:         candidate.GetTotalBipStake(),

@@ -73,6 +73,16 @@ func (data DeclareCandidacyData) BasicCheck(tx *Transaction, context *state.Chec
 		}
 	}
 
+	if context.Candidates().IsBlockPubKey(&data.PubKey) {
+		return &Response{
+			Code: code.PublicKeyInBlockList,
+			Log:  fmt.Sprintf("Candidate with such public key (%s) exists in block list", data.PubKey.String()),
+			Info: EncodeError(map[string]string{
+				"public_key": data.PubKey.String(),
+			}),
+		}
+	}
+
 	if data.Commission < minCommission || data.Commission > maxCommission {
 		return &Response{
 			Code: code.WrongCommission,

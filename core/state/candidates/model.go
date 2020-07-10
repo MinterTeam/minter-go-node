@@ -7,6 +7,11 @@ import (
 	"sort"
 )
 
+type pubkeyID struct {
+	PubKey types.Pubkey
+	ID     uint
+}
+
 type Candidate struct {
 	PubKey         types.Pubkey
 	RewardAddress  types.Address
@@ -14,6 +19,7 @@ type Candidate struct {
 	ControlAddress types.Address
 	Commission     uint
 	Status         byte
+	ID             uint
 
 	totalBipStake *big.Int
 	stakesCount   int

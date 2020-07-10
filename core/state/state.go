@@ -290,6 +290,24 @@ func (s *State) Export(height uint64) types.AppState {
 	return *appState
 }
 
+func (s *State) Export11To12(height uint64) types.AppState {
+	state, err := NewCheckStateAtHeight(height, s.db)
+	if err != nil {
+		log.Panicf("Create new state at height %d failed: %s", height, err)
+	}
+
+	appState := new(types.AppState)
+	state.App().Export(appState, height)
+	state.Validators().Export(appState)
+	state.Candidates().Export11To12(appState)
+	state.FrozenFunds().Export(appState, height)
+	state.Accounts().Export(appState)
+	state.Coins().Export(appState)
+	state.Checks().Export(appState)
+
+	return *appState
+}
+
 func newCheckStateForTree(iavlTree tree.MTree, events eventsdb.IEventsDB, db db.DB, keepLastStates int64) (*CheckState, error) {
 	stateForTree, err := newStateForTree(iavlTree, events, db, keepLastStates)
 	if err != nil {

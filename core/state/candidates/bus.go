@@ -41,6 +41,7 @@ func (b *Bus) GetCandidate(pubkey types.Pubkey) *bus.Candidate {
 	}
 
 	return &bus.Candidate{
+		ID:             candidate.ID,
 		PubKey:         candidate.PubKey,
 		RewardAddress:  candidate.RewardAddress,
 		OwnerAddress:   candidate.OwnerAddress,
@@ -61,6 +62,7 @@ func (b *Bus) GetCandidateByTendermintAddress(tmAddress types.TmAddress) *bus.Ca
 	}
 
 	return &bus.Candidate{
+		ID:             candidate.ID,
 		PubKey:         candidate.PubKey,
 		RewardAddress:  candidate.RewardAddress,
 		OwnerAddress:   candidate.OwnerAddress,
