@@ -192,12 +192,13 @@ func (c *Candidates) GetNewCandidates(valCount int) []Candidate {
 	return result
 }
 
-func (c *Candidates) Create(ownerAddress types.Address, rewardAddress types.Address, pubkey types.Pubkey, commission uint) {
+func (c *Candidates) Create(ownerAddress, rewardAddress, controlAddress types.Address, pubkey types.Pubkey, commission uint) {
 	candidate := &Candidate{
+		ID:                c.getOrNewID(pubkey),
 		PubKey:            pubkey,
 		RewardAddress:     rewardAddress,
 		OwnerAddress:      ownerAddress,
-		ControlAddress:    ownerAddress,
+		ControlAddress:    controlAddress,
 		Commission:        commission,
 		Status:            CandidateStatusOffline,
 		totalBipStake:     big.NewInt(0),

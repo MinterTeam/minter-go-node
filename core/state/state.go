@@ -249,7 +249,7 @@ func (s *State) Import(state types.AppState) error {
 	s.Validators.SetValidators(vals)
 
 	for _, c := range state.Candidates {
-		s.Candidates.Create(c.OwnerAddress, c.RewardAddress, c.PubKey, c.Commission)
+		s.Candidates.Create(c.OwnerAddress, c.RewardAddress, c.ControlAddress, c.PubKey, c.Commission)
 		if c.Status == candidates.CandidateStatusOnline {
 			s.Candidates.SetOnline(c.PubKey)
 		}

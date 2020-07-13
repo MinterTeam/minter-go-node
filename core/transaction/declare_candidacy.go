@@ -42,10 +42,6 @@ func (data DeclareCandidacyData) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (data DeclareCandidacyData) TotalSpend(tx *Transaction, context *state.CheckState) (TotalSpends, []Conversion, *big.Int, *Response) {
-	panic("implement me")
-}
-
 func (data DeclareCandidacyData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.Stake == nil {
 		return &Response{
@@ -204,7 +200,7 @@ func (data DeclareCandidacyData) Run(tx *Transaction, context state.Interface, r
 
 		deliveryState.Accounts.SubBalance(sender, data.Coin, data.Stake)
 		deliveryState.Accounts.SubBalance(sender, tx.GasCoin, commission)
-		deliveryState.Candidates.Create(data.Address, sender, data.PubKey, data.Commission)
+		deliveryState.Candidates.Create(data.Address, sender, sender, data.PubKey, data.Commission)
 		deliveryState.Candidates.Delegate(sender, data.PubKey, data.Coin, data.Stake, big.NewInt(0))
 		deliveryState.Accounts.SetNonce(sender, tx.Nonce)
 	}
