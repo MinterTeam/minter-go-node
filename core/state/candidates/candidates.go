@@ -2,6 +2,7 @@ package candidates
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
 	eventsdb "github.com/MinterTeam/minter-go-node/core/events"
 	"github.com/MinterTeam/minter-go-node/core/state/bus"
@@ -24,11 +25,12 @@ const (
 	MaxDelegatorsPerCandidate = 1000
 
 	mainPrefix       = 'c'
-	pubKeyIDPrefix   = 'i'
+	pubKeyIDPrefix   = 'p'
 	blockListPrefix  = 'b'
 	stakesPrefix     = 's'
 	totalStakePrefix = 't'
 	updatesPrefix    = 'u'
+	maxIDPrefix      = 'i'
 )
 
 type RCandidates interface {
@@ -55,6 +57,7 @@ type Candidates struct {
 	list      map[uint]*Candidate
 	blockList map[types.Pubkey]struct{}
 	pubKeyIDs map[types.Pubkey]uint
+	maxID     uint
 
 	iavl tree.MTree
 	bus  *bus.Bus
@@ -104,6 +107,8 @@ func (c *Candidates) Commit() error {
 		return fmt.Errorf("can't encode block list of candidates: %v", err)
 	}
 	c.iavl.Set([]byte{blockListPrefix}, blockListData)
+
+	c.iavl.Set([]byte{maxIDPrefix}, c.maxIDBytes())
 
 	for _, pubkey := range keys {
 		candidate := c.getFromMap(pubkey)
@@ -772,7 +777,6 @@ func (c *Candidates) LoadCandidates() {
 	_, enc := c.iavl.Get(path)
 	if len(enc) == 0 {
 		c.list = map[uint]*Candidate{}
-		return
 	}
 
 	var candidates []*Candidate
@@ -798,7 +802,6 @@ func (c *Candidates) LoadCandidates() {
 	_, blockListEnc := c.iavl.Get([]byte{blockListPrefix})
 	if len(blockListEnc) == 0 {
 		c.blockList = map[types.Pubkey]struct{}{}
-		return
 	}
 
 	var blockList []types.Pubkey
@@ -811,6 +814,9 @@ func (c *Candidates) LoadCandidates() {
 		blockListMap[pubkey] = struct{}{}
 	}
 	c.setBlockList(blockListMap)
+
+	_, valueMaxID := c.iavl.Get([]byte{maxIDPrefix})
+	c.maxID = uint(binary.LittleEndian.Uint32(valueMaxID))
 }
 
 func (c *Candidates) checkAndSetLoaded() bool {
@@ -1149,7 +1155,8 @@ func (c *Candidates) getOrNewID(pubKey types.Pubkey) uint {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	id = uint(len(c.list)) + 1
+	c.maxID++
+	id = c.maxID
 	c.setPubKeyID(pubKey, id)
 	return id
 }
@@ -1177,4 +1184,10 @@ func (c *Candidates) setBlockPybKey(p types.Pubkey) {
 		c.blockList = map[types.Pubkey]struct{}{}
 	}
 	c.blockList[p] = struct{}{}
+}
+
+func (c *Candidates) maxIDBytes() []byte {
+	bs := make([]byte, 4)
+	binary.LittleEndian.PutUint32(bs, uint32(c.maxID))
+	return bs
 }
