@@ -160,7 +160,7 @@ func (s *State) Check() error {
 	return nil
 }
 
-const countBatchBlocksDelete = 100
+const countBatchBlocksDelete = 60
 
 func (s *State) Commit() ([]byte, error) {
 	s.Checker.Reset()
@@ -205,7 +205,7 @@ func (s *State) Commit() ([]byte, error) {
 		return hash, err
 	}
 
-	if version%countBatchBlocksDelete == 0 && version-countBatchBlocksDelete > s.keepLastStates {
+	if version%countBatchBlocksDelete == 30 && version-countBatchBlocksDelete > s.keepLastStates {
 		if err := s.tree.DeleteVersionsIfExists(version-countBatchBlocksDelete-s.keepLastStates, version-s.keepLastStates); err != nil {
 			return hash, err
 		}
