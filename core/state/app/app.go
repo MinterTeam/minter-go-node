@@ -15,7 +15,7 @@ type RApp interface {
 	Export(state *types.AppState, height uint64)
 	GetMaxGas() uint64
 	GetTotalSlashed() *big.Int
-	GetCoinsCount() uint64
+	GetCoinsCount() uint32
 }
 
 func (v *App) Tree() tree.ReadOnlyTree {
@@ -126,11 +126,11 @@ func (v *App) SetTotalSlashed(amount *big.Int) {
 	v.getOrNew().setTotalSlashed(amount)
 }
 
-func (v *App) GetCoinsCount() uint64 {
+func (v *App) GetCoinsCount() uint32 {
 	return v.getOrNew().getCoinsCount()
 }
 
-func (v *App) SetCoinsCount(count uint64) {
+func (v *App) SetCoinsCount(count uint32) {
 	v.getOrNew().setCoinsCount(count)
 }
 

@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	mainPrefix    = byte('q')
-	infoPrefix    = byte('i')
+	mainPrefix = byte('q')
+	infoPrefix = byte('i')
 )
 
 type RCoins interface {
@@ -49,6 +49,19 @@ func (c *Coins) Commit() error {
 		c.lock.Lock()
 		delete(c.dirty, id)
 		c.lock.Unlock()
+
+		if coin.IsCreated() {
+			ids := c.getBySymbol(coin.Symbol())
+			ids = append(ids, coin.ID())
+
+			data, err := rlp.EncodeToBytes(ids)
+			if err != nil {
+				return fmt.Errorf("can't encode object at %d: %v", id, err)
+			}
+
+			c.iavl.Set(getSymbolCoinsPath(coin.Symbol()), data)
+			coin.isCreated = false
+		}
 
 		if coin.IsDirty() {
 			data, err := rlp.EncodeToBytes(coin)
@@ -96,13 +109,15 @@ func (c *Coins) ExistsBySymbol(symbol types.CoinSymbol) bool {
 
 func (c *Coins) GetCoinBySymbol(symbol types.CoinSymbol) *Model {
 	coins := c.getBySymbol(symbol.GetBaseSymbol())
-	if coins == nil {
+	if len(coins) == 0 {
 		return nil
 	}
 
-	for _, c := range *coins {
-		if c.Version() == symbol.GetVersion() {
-			return &c
+	for _, coinID := range coins {
+		coin := c.get(coinID)
+		if coin.Version() == symbol.GetVersion() {
+			coin.symbol = symbol
+			return coin
 		}
 	}
 
@@ -155,6 +170,7 @@ func (c *Coins) Create(id types.CoinID, symbol types.CoinSymbol, name string,
 		symbol:     symbol,
 		markDirty:  c.markDirty,
 		isDirty:    true,
+		isCreated:  true,
 		info: &Info{
 			Volume:  big.NewInt(0),
 			Reserve: big.NewInt(0),
@@ -206,17 +222,15 @@ func (c *Coins) get(id types.CoinID) *Model {
 	return coin
 }
 
-func (c *Coins) getBySymbol(symbol types.CoinSymbol) *[]Model {
-	coins := &[]Model{}
+func (c *Coins) getBySymbol(symbol types.CoinSymbol) []types.CoinID {
+	var coins []types.CoinID
 
-	path := []byte{mainPrefix}
-	path = append(path, symbol.Bytes()...)
-	_, enc := c.iavl.Get(path)
+	_, enc := c.iavl.Get(getSymbolCoinsPath(symbol))
 	if len(enc) == 0 {
-		return nil
+		return coins
 	}
 
-	if err := rlp.DecodeBytes(enc, coins); err != nil {
+	if err := rlp.DecodeBytes(enc, &coins); err != nil {
 		panic(fmt.Sprintf("failed to decode coins by symbol %s: %s", symbol, err))
 	}
 
@@ -307,14 +321,16 @@ func (c *Coins) setToMap(id types.CoinID, model *Model) {
 	c.list[id] = model
 }
 
+func getSymbolCoinsPath(symbol types.CoinSymbol) []byte {
+	return append([]byte{mainPrefix}, symbol.Bytes()...)
+}
+
 func getCoinPath(id types.CoinID) []byte {
-	path := []byte{mainPrefix}
-	return append(path, id.Bytes()...)
+	return append([]byte{mainPrefix}, id.Bytes()...)
 }
 
 func getCoinInfoPath(id types.CoinID) []byte {
-	path := getCoinInfoPath(id)
+	path := getCoinPath(id)
 	path = append(path, infoPrefix)
-	path = append(path, id.Bytes()...)
 	return path
 }

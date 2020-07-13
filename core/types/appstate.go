@@ -221,10 +221,10 @@ type Candidate struct {
 }
 
 type Stake struct {
-	Owner    Address    `json:"owner"`
-	Coin     CoinID     `json:"coin"`
-	Value    string     `json:"value"`
-	BipValue string     `json:"bip_value"`
+	Owner    Address `json:"owner"`
+	Coin     CoinID  `json:"coin"`
+	Value    string  `json:"value"`
+	BipValue string  `json:"bip_value"`
 }
 
 type Coin struct {
@@ -239,11 +239,11 @@ type Coin struct {
 }
 
 type FrozenFund struct {
-	Height       uint64     `json:"height"`
-	Address      Address    `json:"address"`
-	CandidateKey *Pubkey    `json:"candidate_key,omitempty"`
-	Coin         CoinID     `json:"coin"`
-	Value        string     `json:"value"`
+	Height       uint64  `json:"height"`
+	Address      Address `json:"address"`
+	CandidateKey *Pubkey `json:"candidate_key,omitempty"`
+	Coin         CoinID  `json:"coin"`
+	Value        string  `json:"value"`
 }
 
 type UsedCheck string
@@ -256,8 +256,8 @@ type Account struct {
 }
 
 type Balance struct {
-	Coin  CoinID     `json:"coin"`
-	Value string     `json:"value"`
+	Coin  CoinID `json:"coin"`
+	Value string `json:"value"`
 }
 
 type Multisig struct {

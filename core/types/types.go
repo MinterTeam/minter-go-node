@@ -181,9 +181,13 @@ func (c CoinID) String() string {
 }
 
 func (c CoinID) Bytes() []byte {
-	var b []byte
-	binary.LittleEndian.PutUint32(b, uint32(c))
+	b := make([]byte, 4)
+	binary.BigEndian.PutUint32(b, c.Uint32())
 	return b
+}
+
+func (c CoinID) Uint32() uint32 {
+	return uint32(c)
 }
 
 /////////// Address

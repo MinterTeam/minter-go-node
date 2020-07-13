@@ -6,7 +6,7 @@ import (
 )
 
 type CoinInfoResponse struct {
-	ID             uint64 `json:"id"`
+	ID             uint32 `json:"id"`
 	Name           string `json:"name"`
 	Symbol         string `json:"symbol"`
 	Volume         string `json:"volume"`
@@ -30,8 +30,9 @@ func CoinInfo(coinSymbol string, height int) (*CoinInfoResponse, error) {
 	}
 
 	return &CoinInfoResponse{
+		ID:             coin.ID().Uint32(),
 		Name:           coin.Name(),
-		Symbol:         coin.Symbol().String(),
+		Symbol:         coin.GetFullSymbol(),
 		Volume:         coin.Volume().String(),
 		Crr:            coin.Crr(),
 		ReserveBalance: coin.Reserve().String(),

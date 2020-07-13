@@ -13,13 +13,16 @@ type Model struct {
 	CName      string
 	CCrr       uint
 	CMaxSupply *big.Int
+	CVersion   uint16
 
-	id        types.CoinID
-	symbol    types.CoinSymbol
-	version   uint16
-	info      *Info
+	id     types.CoinID
+	symbol types.CoinSymbol
+	info   *Info
+
 	markDirty func(symbol types.CoinID)
+
 	isDirty   bool
+	isCreated bool
 }
 
 func (m Model) Name() string {
@@ -47,7 +50,7 @@ func (m Model) Reserve() *big.Int {
 }
 
 func (m Model) Version() uint16 {
-	return m.version
+	return m.CVersion
 }
 
 func (m *Model) SubVolume(amount *big.Int) {
@@ -105,8 +108,20 @@ func (m Model) IsDirty() bool {
 	return m.isDirty
 }
 
+func (m Model) IsCreated() bool {
+	return m.isCreated
+}
+
 func (m Model) MaxSupply() *big.Int {
 	return m.CMaxSupply
+}
+
+func (m Model) GetFullSymbol() string {
+	if m.Version() == 0 {
+		return m.Symbol().String()
+	}
+
+	return fmt.Sprintf("%s-%d", m.Symbol(), m.Version())
 }
 
 type Info struct {

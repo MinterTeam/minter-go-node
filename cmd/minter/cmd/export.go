@@ -97,10 +97,10 @@ func export(cmd *cobra.Command, args []string) error {
 		AppState: json.RawMessage(jsonBytes),
 	}
 
-	//err = genesis.ValidateAndComplete()
-	//if err != nil {
-	//	log.Panicf("Failed to validate: %s", err)
-	//}
+	err = genesis.ValidateAndComplete()
+	if err != nil {
+		log.Panicf("Failed to validate: %s", err)
+	}
 
 	if err := genesis.SaveAs(genesisPath); err != nil {
 		log.Panicf("Failed to save genesis file: %s", err)

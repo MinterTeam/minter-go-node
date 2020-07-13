@@ -154,10 +154,10 @@ func (s *slash) pubKeyID() uint16 {
 }
 
 type SlashEvent struct {
-	Address         types.Address    `json:"address"`
-	Amount          string           `json:"amount"`
-	Coin            types.CoinID     `json:"coin"`
-	ValidatorPubKey types.Pubkey     `json:"validator_pub_key"`
+	Address         types.Address `json:"address"`
+	Amount          string        `json:"amount"`
+	Coin            types.CoinID  `json:"coin"`
+	ValidatorPubKey types.Pubkey  `json:"validator_pub_key"`
 }
 
 func (se *SlashEvent) AddressString() string {
@@ -211,10 +211,10 @@ func (u *unbond) pubKeyID() uint16 {
 }
 
 type UnbondEvent struct {
-	Address         types.Address    `json:"address"`
-	Amount          string           `json:"amount"`
-	Coin            types.CoinID     `json:"coin"`
-	ValidatorPubKey types.Pubkey     `json:"validator_pub_key"`
+	Address         types.Address `json:"address"`
+	Amount          string        `json:"amount"`
+	Coin            types.CoinID  `json:"coin"`
+	ValidatorPubKey types.Pubkey  `json:"validator_pub_key"`
 }
 
 func (ue *UnbondEvent) AddressString() string {

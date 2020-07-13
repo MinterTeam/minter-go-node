@@ -5,19 +5,19 @@ import (
 	"fmt"
 	eventsdb "github.com/MinterTeam/minter-go-node/core/events"
 	"github.com/MinterTeam/minter-go-node/core/state/accounts"
-	legacyAccounts "github.com/MinterTeam/minter-go-node/core/state/legacy/accounts"
 	"github.com/MinterTeam/minter-go-node/core/state/app"
-	legacyApp "github.com/MinterTeam/minter-go-node/core/state/legacy/app"
 	"github.com/MinterTeam/minter-go-node/core/state/bus"
 	"github.com/MinterTeam/minter-go-node/core/state/candidates"
-	legacyCandidates "github.com/MinterTeam/minter-go-node/core/state/legacy/candidates"
 	"github.com/MinterTeam/minter-go-node/core/state/checker"
 	"github.com/MinterTeam/minter-go-node/core/state/checks"
 	"github.com/MinterTeam/minter-go-node/core/state/coins"
-	legacyCoins "github.com/MinterTeam/minter-go-node/core/state/legacy/coins"
 	"github.com/MinterTeam/minter-go-node/core/state/frozenfunds"
-	legacyFrozenfunds "github.com/MinterTeam/minter-go-node/core/state/legacy/frozenfunds"
 	"github.com/MinterTeam/minter-go-node/core/state/halts"
+	legacyAccounts "github.com/MinterTeam/minter-go-node/core/state/legacy/accounts"
+	legacyApp "github.com/MinterTeam/minter-go-node/core/state/legacy/app"
+	legacyCandidates "github.com/MinterTeam/minter-go-node/core/state/legacy/candidates"
+	legacyCoins "github.com/MinterTeam/minter-go-node/core/state/legacy/coins"
+	legacyFrozenfunds "github.com/MinterTeam/minter-go-node/core/state/legacy/frozenfunds"
 	"github.com/MinterTeam/minter-go-node/core/state/validators"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/helpers"
@@ -222,6 +222,7 @@ func (s *State) Commit() ([]byte, error) {
 func (s *State) Import(state types.AppState) error {
 	s.App.SetMaxGas(state.MaxGas)
 	s.App.SetTotalSlashed(helpers.StringToBigInt(state.TotalSlashed))
+	s.App.SetCoinsCount(state.CoinsCount)
 
 	for _, a := range state.Accounts {
 		if a.MultisigData != nil {
