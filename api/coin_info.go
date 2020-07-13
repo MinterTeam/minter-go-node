@@ -6,13 +6,14 @@ import (
 )
 
 type CoinInfoResponse struct {
-	ID             uint32 `json:"id"`
-	Name           string `json:"name"`
-	Symbol         string `json:"symbol"`
-	Volume         string `json:"volume"`
-	Crr            uint   `json:"crr"`
-	ReserveBalance string `json:"reserve_balance"`
-	MaxSupply      string `json:"max_supply"`
+	ID             uint32  `json:"id"`
+	Name           string  `json:"name"`
+	Symbol         string  `json:"symbol"`
+	Volume         string  `json:"volume"`
+	Crr            uint    `json:"crr"`
+	ReserveBalance string  `json:"reserve_balance"`
+	MaxSupply      string  `json:"max_supply"`
+	OwnerAddress   *string `json:"owner_address"`
 }
 
 func CoinInfo(coinSymbol string, height int) (*CoinInfoResponse, error) {
@@ -29,6 +30,11 @@ func CoinInfo(coinSymbol string, height int) (*CoinInfoResponse, error) {
 		return nil, rpctypes.RPCError{Code: 404, Message: "Coin not found"}
 	}
 
+	var ownerAddress string
+	if coin.OwnerAddress() != (types.Address{}) {
+		ownerAddress = coin.OwnerAddress().String()
+	}
+
 	return &CoinInfoResponse{
 		ID:             coin.ID().Uint32(),
 		Name:           coin.Name(),
@@ -37,5 +43,6 @@ func CoinInfo(coinSymbol string, height int) (*CoinInfoResponse, error) {
 		Crr:            coin.Crr(),
 		ReserveBalance: coin.Reserve().String(),
 		MaxSupply:      coin.MaxSupply().String(),
+		OwnerAddress:   &ownerAddress,
 	}, nil
 }

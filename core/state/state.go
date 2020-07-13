@@ -237,7 +237,8 @@ func (s *State) Import(state types.AppState) error {
 	}
 
 	for _, c := range state.Coins {
-		s.Coins.Create(c.ID, c.Symbol, c.Name, helpers.StringToBigInt(c.Volume), c.Crr, helpers.StringToBigInt(c.Reserve), helpers.StringToBigInt(c.MaxSupply))
+		s.Coins.Create(c.ID, c.Symbol, c.Name, helpers.StringToBigInt(c.Volume),
+			c.Crr, helpers.StringToBigInt(c.Reserve), helpers.StringToBigInt(c.MaxSupply), c.OwnerAddress)
 	}
 
 	var vals []*validators.Validator

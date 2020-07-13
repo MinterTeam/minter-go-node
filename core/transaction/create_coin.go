@@ -228,6 +228,7 @@ func (data CreateCoinData) Run(tx *Transaction, context state.Interface, rewardP
 			data.ConstantReserveRatio,
 			data.InitialReserve,
 			data.MaxSupply,
+			&sender,
 		)
 
 		deliveryState.App.SetCoinsCount(coinID)

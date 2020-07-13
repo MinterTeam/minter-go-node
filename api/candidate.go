@@ -7,9 +7,14 @@ import (
 	"github.com/MinterTeam/minter-go-node/rpc/lib/types"
 )
 
+type Coin struct {
+	ID     uint32 `json:"id"`
+	Symbol string `json:"symbol"`
+}
+
 type Stake struct {
 	Owner    string `json:"owner"`
-	Coin     string `json:"coin"`
+	Coin     Coin   `json:"coin"`
 	Value    string `json:"value"`
 	BipValue string `json:"bip_value"`
 }
@@ -40,7 +45,10 @@ func makeResponseCandidate(state *state.CheckState, c candidates.Candidate, incl
 		for i, stake := range stakes {
 			candidate.Stakes[i] = Stake{
 				Owner:    stake.Owner.String(),
-				Coin:     stake.Coin.String(),
+				Coin:     Coin{
+					ID:     stake.Coin.Uint32(),
+					Symbol: state.Coins().GetCoin(stake.Coin).GetFullSymbol(),
+				},
 				Value:    stake.Value.String(),
 				BipValue: stake.BipValue.String(),
 			}

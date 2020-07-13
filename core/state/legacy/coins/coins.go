@@ -120,6 +120,7 @@ func (c *Coins) Export(state *types.AppState) {
 				Crr:       coin.Crr(),
 				Reserve:   coin.Reserve().String(),
 				MaxSupply: coin.MaxSupply().String(),
+				Version:   0,
 			}
 
 			coins = append(coins, coinModel)

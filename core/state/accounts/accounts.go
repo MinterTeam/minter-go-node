@@ -23,7 +23,7 @@ type RAccounts interface {
 	GetAccount(address types.Address) *Model
 	GetNonce(address types.Address) uint64
 	GetBalance(address types.Address, coin types.CoinID) *big.Int
-	GetBalances(address types.Address) map[types.CoinID]*big.Int
+	GetBalances(address types.Address) []Balance
 	ExistsMultisig(msigAddress types.Address) bool
 }
 
@@ -35,6 +35,11 @@ type Accounts struct {
 	bus  *bus.Bus
 
 	lock sync.RWMutex
+}
+
+type Balance struct {
+	Coin   bus.Coin
+	Value  *big.Int
 }
 
 func NewAccounts(stateBus *bus.Bus, iavl tree.MTree) (*Accounts, error) {
@@ -284,12 +289,15 @@ func (a *Accounts) GetNonce(address types.Address) uint64 {
 	return account.Nonce
 }
 
-func (a *Accounts) GetBalances(address types.Address) map[types.CoinID]*big.Int {
+func (a *Accounts) GetBalances(address types.Address) []Balance {
 	account := a.getOrNew(address)
 
-	balances := make(map[types.CoinID]*big.Int, len(account.coins))
-	for _, coin := range account.coins {
-		balances[coin] = a.GetBalance(address, coin)
+	balances := make([]Balance, len(account.coins))
+	for key, id := range account.coins {
+		balances[key] = Balance{
+			Coin:   *a.bus.Coins().GetCoin(id),
+			Value:  a.GetBalance(address, id),
+		}
 	}
 
 	return balances
@@ -322,10 +330,10 @@ func (a *Accounts) Export(state *types.AppState) {
 			account := a.get(address)
 
 			var balance []types.Balance
-			for coin, value := range a.GetBalances(account.address) {
+			for _, b := range a.GetBalances(account.address) {
 				balance = append(balance, types.Balance{
-					Coin:  coin,
-					Value: value.String(),
+					Coin:  b.Coin.ID,
+					Value: b.Value.String(),
 				})
 			}
 

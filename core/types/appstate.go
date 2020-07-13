@@ -235,6 +235,7 @@ type Coin struct {
 	Crr          uint       `json:"crr"`
 	Reserve      string     `json:"reserve"`
 	MaxSupply    string     `json:"max_supply"`
+	Version      CoinVersion `json:"version"`
 	OwnerAddress *Address   `json:"owner_address"`
 }
 

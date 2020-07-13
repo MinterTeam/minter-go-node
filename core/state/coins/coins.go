@@ -116,7 +116,6 @@ func (c *Coins) GetCoinBySymbol(symbol types.CoinSymbol) *Model {
 	for _, coinID := range coins {
 		coin := c.get(coinID)
 		if coin.Version() == symbol.GetVersion() {
-			coin.symbol = symbol
 			return coin
 		}
 	}
@@ -161,16 +160,22 @@ func (c *Coins) AddReserve(id types.CoinID, amount *big.Int) {
 }
 
 func (c *Coins) Create(id types.CoinID, symbol types.CoinSymbol, name string,
-	volume *big.Int, crr uint, reserve *big.Int, maxSupply *big.Int) {
+	volume *big.Int, crr uint, reserve *big.Int, maxSupply *big.Int, owner *types.Address,
+) {
+	if owner == nil {
+		owner = &types.Address{}
+	}
+
 	coin := &Model{
-		CName:      name,
-		CCrr:       crr,
-		CMaxSupply: maxSupply,
-		id:         id,
-		symbol:     symbol,
-		markDirty:  c.markDirty,
-		isDirty:    true,
-		isCreated:  true,
+		CName:         name,
+		CCrr:          crr,
+		CMaxSupply:    maxSupply,
+		CSymbol:       symbol,
+		COwnerAddress: *owner,
+		id:            id,
+		markDirty:     c.markDirty,
+		isDirty:       true,
+		isCreated:     true,
 		info: &Info{
 			Volume:  big.NewInt(0),
 			Reserve: big.NewInt(0),
@@ -189,6 +194,18 @@ func (c *Coins) Create(id types.CoinID, symbol types.CoinSymbol, name string,
 }
 
 func (c *Coins) get(id types.CoinID) *Model {
+	if id.IsBaseCoin() {
+		// TODO: refactor
+		return &Model{
+			id:      types.GetBaseCoinID(),
+			CSymbol: types.GetBaseCoin(),
+			info: &Info{
+				Volume:  big.NewInt(0),
+				Reserve: big.NewInt(0),
+			},
+		}
+	}
+
 	if coin := c.getFromMap(id); coin != nil {
 		return coin
 	}

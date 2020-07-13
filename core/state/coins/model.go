@@ -10,14 +10,15 @@ import (
 var minCoinReserve = helpers.BipToPip(big.NewInt(10000))
 
 type Model struct {
-	CName      string
-	CCrr       uint
-	CMaxSupply *big.Int
-	CVersion   uint16
+	CName         string
+	CCrr          uint
+	CMaxSupply    *big.Int
+	CVersion      types.CoinVersion
+	CSymbol       types.CoinSymbol
+	COwnerAddress types.Address
 
-	id     types.CoinID
-	symbol types.CoinSymbol
-	info   *Info
+	id   types.CoinID
+	info *Info
 
 	markDirty func(symbol types.CoinID)
 
@@ -30,7 +31,7 @@ func (m Model) Name() string {
 }
 
 func (m Model) Symbol() types.CoinSymbol {
-	return m.symbol
+	return m.CSymbol
 }
 
 func (m Model) ID() types.CoinID {
@@ -51,6 +52,10 @@ func (m Model) Reserve() *big.Int {
 
 func (m Model) Version() uint16 {
 	return m.CVersion
+}
+
+func (m Model) OwnerAddress() types.Address {
+	return m.COwnerAddress
 }
 
 func (m *Model) SubVolume(amount *big.Int) {
@@ -94,7 +99,7 @@ func (m *Model) CheckReserveUnderflow(delta *big.Int) error {
 
 	if total.Cmp(minCoinReserve) == -1 {
 		min := big.NewInt(0).Add(minCoinReserve, delta)
-		return fmt.Errorf("coin %s reserve is too small (%s, required at least %s)", m.symbol.String(), m.Reserve().String(), min.String())
+		return fmt.Errorf("coin %s reserve is too small (%s, required at least %s)", m.CSymbol.String(), m.Reserve().String(), min.String())
 	}
 
 	return nil

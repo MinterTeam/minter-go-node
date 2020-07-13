@@ -190,6 +190,8 @@ func (c CoinID) Uint32() uint32 {
 	return uint32(c)
 }
 
+type CoinVersion = uint16
+
 /////////// Address
 
 type Address [AddressLength]byte
