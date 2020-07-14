@@ -26,6 +26,16 @@ func Transaction(hash []byte) (*TransactionResponse, error) {
 		return nil, err
 	}
 
+	cState, err := GetStateForHeight(int(tx.Height))
+	if err != nil {
+		return nil, err
+	}
+
+	gasCoin := Coin{
+		ID:     decodedTx.GasCoin.Uint32(),
+		Symbol: cState.Coins().GetCoin(decodedTx.GasCoin).GetFullSymbol(),
+	}
+
 	return &TransactionResponse{
 		Hash:     bytes.HexBytes(tx.Tx.Hash()).String(),
 		RawTx:    fmt.Sprintf("%x", []byte(tx.Tx)),
@@ -34,7 +44,7 @@ func Transaction(hash []byte) (*TransactionResponse, error) {
 		From:     sender.String(),
 		Nonce:    decodedTx.Nonce,
 		GasPrice: decodedTx.GasPrice,
-		GasCoin:  decodedTx.GasCoin.String(),
+		GasCoin:  gasCoin,
 		Gas:      decodedTx.Gas(),
 		Type:     uint8(decodedTx.Type),
 		Data:     data,

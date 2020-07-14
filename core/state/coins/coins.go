@@ -12,8 +12,9 @@ import (
 )
 
 const (
-	mainPrefix = byte('q')
-	infoPrefix = byte('i')
+	mainPrefix   = byte('q')
+	infoPrefix   = byte('i')
+	symbolPrefix = byte('s')
 )
 
 type RCoins interface {
@@ -272,56 +273,30 @@ func (c *Coins) getOrderedDirtyCoins() []types.CoinID {
 }
 
 func (c *Coins) Export(state *types.AppState) {
-	//c.iavl.Iterate(func(key []byte, value []byte) bool {
-	//	if key[0] == mainPrefix {
-	//		if len(key[1:]) > types.CoinSymbolLength {
-	//			return false
-	//		}
-	//
-	//		coinID := types.CoinID(binary.LittleEndian.Uint32(key[1:]))
-	//		coin := c.GetCoin(coinID)
-	//
-	//		coinModel := types.Coin{
-	//			ID:        coinID,
-	//			Name:      coin.Name(),
-	//			Symbol:    coin.Symbol(),
-	//			Volume:    coin.Volume().String(),
-	//			Crr:       coin.Crr(),
-	//			Reserve:   coin.Reserve().String(),
-	//			MaxSupply: coin.MaxSupply().String(),
-	//		}
-	//
-	//		if coin.ID() != 0 {
-	//			isSortingRequired = false
-	//		}
-	//
-	//		if isSortingRequired {
-	//			for _, account := range state.Accounts {
-	//				for _, balance := range account.Balance {
-	//					if balance.Coin.String() == coin.Symbol().String() && balance.Value == coin.Volume().String() {
-	//						coinModel.OwnerAddress = &account.Address
-	//					}
-	//				}
-	//			}
-	//		}
-	//
-	//		coins = append(coins, coinModel)
-	//	}
-	//
-	//	return false
-	//})
-	//
-	//if isSortingRequired {
-	//	sort.Slice(coins[:], func(i, j int) bool {
-	//		return helpers.StringToBigInt(coins[i].Reserve).Cmp(helpers.StringToBigInt(coins[j].Reserve)) == 1
-	//	})
-	//
-	//	for i, _ := range coins {
-	//		coins[i].ID = types.CoinID(i + 1)
-	//	}
-	//}
-	//
-	//state.Coins = coins
+	c.iavl.Iterate(func(key []byte, value []byte) bool {
+		if key[0] == mainPrefix {
+			if key[1] == symbolPrefix {
+				return false
+			}
+
+			coinID := types.BytesToCoinID(key[1:])
+			coin := c.GetCoin(coinID)
+
+			state.Coins = append(state.Coins, types.Coin{
+				ID:           coin.ID(),
+				Name:         coin.Name(),
+				Symbol:       coin.Symbol(),
+				Volume:       coin.Volume().String(),
+				Crr:          coin.Crr(),
+				Reserve:      coin.Reserve().String(),
+				MaxSupply:    coin.MaxSupply().String(),
+				Version:      coin.Version(),
+				OwnerAddress: &coin.COwnerAddress,
+			})
+		}
+
+		return false
+	})
 }
 
 func (c *Coins) getFromMap(id types.CoinID) *Model {
@@ -339,7 +314,8 @@ func (c *Coins) setToMap(id types.CoinID, model *Model) {
 }
 
 func getSymbolCoinsPath(symbol types.CoinSymbol) []byte {
-	return append([]byte{mainPrefix}, symbol.Bytes()...)
+	path := append([]byte{mainPrefix}, []byte{symbolPrefix}...)
+	return append(path, symbol.Bytes()...)
 }
 
 func getCoinPath(id types.CoinID) []byte {
@@ -347,7 +323,5 @@ func getCoinPath(id types.CoinID) []byte {
 }
 
 func getCoinInfoPath(id types.CoinID) []byte {
-	path := getCoinPath(id)
-	path = append(path, infoPrefix)
-	return path
+	return append(getCoinPath(id), infoPrefix)
 }

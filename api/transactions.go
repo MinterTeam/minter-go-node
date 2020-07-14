@@ -17,7 +17,7 @@ type TransactionResponse struct {
 	Nonce    uint64            `json:"nonce"`
 	Gas      int64             `json:"gas"`
 	GasPrice uint32            `json:"gas_price"`
-	GasCoin  string            `json:"gas_coin"`
+	GasCoin  Coin              `json:"gas_coin"`
 	Type     uint8             `json:"type"`
 	Data     json.RawMessage   `json:"data"`
 	Payload  []byte            `json:"payload"`
@@ -68,7 +68,10 @@ func Transactions(query string, page, perPage int) (*[]TransactionResponse, erro
 			Nonce:    decodedTx.Nonce,
 			Gas:      decodedTx.Gas(),
 			GasPrice: decodedTx.GasPrice,
-			GasCoin:  decodedTx.GasCoin.String(),
+			GasCoin:  Coin{
+				ID:     decodedTx.GasCoin.Uint32(),
+				Symbol: "",
+			},
 			Type:     uint8(decodedTx.Type),
 			Data:     data,
 			Payload:  decodedTx.Payload,

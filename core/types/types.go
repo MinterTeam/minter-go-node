@@ -190,6 +190,10 @@ func (c CoinID) Uint32() uint32 {
 	return uint32(c)
 }
 
+func BytesToCoinID(bytes []byte) CoinID {
+	return CoinID(binary.BigEndian.Uint32(bytes))
+}
+
 type CoinVersion = uint16
 
 /////////// Address
