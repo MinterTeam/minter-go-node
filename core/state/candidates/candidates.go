@@ -98,10 +98,30 @@ func (c *Candidates) Commit() error {
 		c.iavl.Set(path, data)
 	}
 
+	var pubIDs []pubkeyID
+	for pk, v := range c.pubKeyIDs {
+		pubIDs = append(pubIDs, pubkeyID{
+			PubKey: pk,
+			ID:     v,
+		})
+	}
+	sort.SliceStable(pubIDs, func(i, j int) bool {
+		return pubIDs[i].ID < pubIDs[j].ID
+	})
+	pubIDenc, err := rlp.EncodeToBytes(pubIDs)
+	if err != nil {
+		panic(fmt.Sprintf("failed to encode candidates public key with ID: %s", err))
+	}
+
+	c.iavl.Set([]byte{pubKeyIDPrefix}, pubIDenc)
+
 	var blockList []types.Pubkey
 	for pubKey := range c.blockList {
 		blockList = append(blockList, pubKey)
 	}
+	sort.SliceStable(blockList, func(i, j int) bool {
+		return bytes.Compare(blockList[i].Bytes(), blockList[j].Bytes()) == 1
+	})
 	blockListData, err := rlp.EncodeToBytes(blockList)
 	if err != nil {
 		return fmt.Errorf("can't encode block list of candidates: %v", err)
@@ -758,66 +778,61 @@ func (c *Candidates) LoadCandidates() {
 	}
 
 	_, pubIDenc := c.iavl.Get([]byte{pubKeyIDPrefix})
-	if len(pubIDenc) == 0 {
-		c.pubKeyIDs = map[types.Pubkey]uint{}
-		return
-	}
+	if len(pubIDenc) != 0 {
+		var pubIDs []pubkeyID
+		if err := rlp.DecodeBytes(pubIDenc, &pubIDs); err != nil {
+			panic(fmt.Sprintf("failed to decode candidates: %s", err))
+		}
 
-	var pubIDs []*pubkeyID
-	if err := rlp.DecodeBytes(pubIDenc, &pubIDs); err != nil {
-		panic(fmt.Sprintf("failed to decode candidates: %s", err))
+		pubKeyIDs := map[types.Pubkey]uint{}
+		for _, v := range pubIDs {
+			pubKeyIDs[v.PubKey] = v.ID
+		}
+		c.setPubKeyIDs(pubKeyIDs)
 	}
-
-	pubKeyIDs := map[types.Pubkey]uint{}
-	for _, v := range pubIDs {
-		pubKeyIDs[v.PubKey] = v.ID
-	}
-	c.setPubKeyIDs(pubKeyIDs)
 
 	path := []byte{mainPrefix}
 	_, enc := c.iavl.Get(path)
-	if len(enc) == 0 {
-		c.list = map[uint]*Candidate{}
-	}
-
-	var candidates []*Candidate
-	if err := rlp.DecodeBytes(enc, &candidates); err != nil {
-		panic(fmt.Sprintf("failed to decode candidates: %s", err))
-	}
-
-	for _, candidate := range candidates {
-		// load total stake
-		path = append([]byte{mainPrefix}, candidate.idBytes()...)
-		path = append(path, totalStakePrefix)
-		_, enc = c.iavl.Get(path)
-		if len(enc) == 0 {
-			candidate.totalBipStake = big.NewInt(0)
-		} else {
-			candidate.totalBipStake = big.NewInt(0).SetBytes(enc)
+	if len(enc) != 0 {
+		var candidates []*Candidate
+		if err := rlp.DecodeBytes(enc, &candidates); err != nil {
+			panic(fmt.Sprintf("failed to decode candidates: %s", err))
 		}
 
-		candidate.setTmAddress()
-		c.setToMap(candidate.PubKey, candidate)
+		for _, candidate := range candidates {
+			// load total stake
+			path = append([]byte{mainPrefix}, candidate.idBytes()...)
+			path = append(path, totalStakePrefix)
+			_, enc = c.iavl.Get(path)
+			if len(enc) == 0 {
+				candidate.totalBipStake = big.NewInt(0)
+			} else {
+				candidate.totalBipStake = big.NewInt(0).SetBytes(enc)
+			}
+
+			candidate.setTmAddress()
+			c.setToMap(candidate.PubKey, candidate)
+		}
 	}
 
 	_, blockListEnc := c.iavl.Get([]byte{blockListPrefix})
-	if len(blockListEnc) == 0 {
-		c.blockList = map[types.Pubkey]struct{}{}
-	}
+	if len(blockListEnc) != 0 {
+		var blockList []types.Pubkey
+		if err := rlp.DecodeBytes(blockListEnc, &blockList); err != nil {
+			panic(fmt.Sprintf("failed to decode candidates block list: %s", err))
+		}
 
-	var blockList []types.Pubkey
-	if err := rlp.DecodeBytes(enc, &blockList); err != nil {
-		panic(fmt.Sprintf("failed to decode candidates block list: %s", err))
+		blockListMap := map[types.Pubkey]struct{}{}
+		for _, pubkey := range blockList {
+			blockListMap[pubkey] = struct{}{}
+		}
+		c.setBlockList(blockListMap)
 	}
-
-	blockListMap := map[types.Pubkey]struct{}{}
-	for _, pubkey := range blockList {
-		blockListMap[pubkey] = struct{}{}
-	}
-	c.setBlockList(blockListMap)
 
 	_, valueMaxID := c.iavl.Get([]byte{maxIDPrefix})
-	c.maxID = uint(binary.LittleEndian.Uint32(valueMaxID))
+	if len(valueMaxID) != 0 {
+		c.maxID = uint(binary.LittleEndian.Uint32(valueMaxID))
+	}
 }
 
 func (c *Candidates) checkAndSetLoaded() bool {
@@ -1006,6 +1021,13 @@ func (c *Candidates) Export(state *types.AppState) {
 			Stakes:         stakes,
 		})
 	}
+
+	for pubkey := range c.blockList {
+		state.BlockListCandidates = append(state.BlockListCandidates, pubkey)
+	}
+	sort.SliceStable(state.BlockListCandidates, func(i, j int) bool {
+		return bytes.Compare(state.BlockListCandidates[i].Bytes(), state.BlockListCandidates[j].Bytes()) == 1
+	})
 }
 
 func (c *Candidates) getOrderedCandidates() []types.Pubkey {
@@ -1185,6 +1207,13 @@ func (c *Candidates) setBlockPybKey(p types.Pubkey) {
 		c.blockList = map[types.Pubkey]struct{}{}
 	}
 	c.blockList[p] = struct{}{}
+}
+
+func (c *Candidates) AddToBlockPybKey(p types.Pubkey) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	c.setBlockPybKey(p)
 }
 
 func (c *Candidates) maxIDBytes() []byte {

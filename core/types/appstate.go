@@ -8,17 +8,18 @@ import (
 )
 
 type AppState struct {
-	Note         string       `json:"note"`
-	StartHeight  uint64       `json:"start_height"`
-	Validators   []Validator  `json:"validators,omitempty"`
-	Candidates   []Candidate  `json:"candidates,omitempty"`
-	Accounts     []Account    `json:"accounts,omitempty"`
-	Coins        []Coin       `json:"coins,omitempty"`
-	FrozenFunds  []FrozenFund `json:"frozen_funds,omitempty"`
-	HaltBlocks   []HaltBlock  `json:"halt_blocks,omitempty"`
-	UsedChecks   []UsedCheck  `json:"used_checks,omitempty"`
-	MaxGas       uint64       `json:"max_gas"`
-	TotalSlashed string       `json:"total_slashed"`
+	Note                string       `json:"note"`
+	StartHeight         uint64       `json:"start_height"`
+	Validators          []Validator  `json:"validators,omitempty"`
+	Candidates          []Candidate  `json:"candidates,omitempty"`
+	BlockListCandidates []Pubkey     `json:"block_list_candidates,omitempty"`
+	Accounts            []Account    `json:"accounts,omitempty"`
+	Coins               []Coin       `json:"coins,omitempty"`
+	FrozenFunds         []FrozenFund `json:"frozen_funds,omitempty"`
+	HaltBlocks          []HaltBlock  `json:"halt_blocks,omitempty"`
+	UsedChecks          []UsedCheck  `json:"used_checks,omitempty"`
+	MaxGas              uint64       `json:"max_gas"`
+	TotalSlashed        string       `json:"total_slashed"`
 }
 
 func (s *AppState) Verify() error {

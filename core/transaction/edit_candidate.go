@@ -19,7 +19,7 @@ type CandidateTx interface {
 
 type EditCandidateData struct {
 	PubKey         types.Pubkey
-	NewPubKey      *types.Pubkey
+	NewPubKey      *types.Pubkey `rlp:"nil"`
 	RewardAddress  types.Address
 	OwnerAddress   types.Address
 	ControlAddress types.Address

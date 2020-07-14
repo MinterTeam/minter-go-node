@@ -10,6 +10,7 @@ import (
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"math/big"
 )
 
 func (s *Service) Candidate(ctx context.Context, req *pb.CandidateRequest) (*pb.CandidateResponse, error) {
@@ -55,6 +56,24 @@ func makeResponseCandidate(state *state.CheckState, c candidates.Candidate, incl
 		Commission:    fmt.Sprintf("%d", c.Commission),
 		Status:        fmt.Sprintf("%d", c.Status),
 	}
+
+	stakes := state.Candidates().GetStakes(c.PubKey)
+	usedSlots := len(stakes)
+	candidate.UsedSlots = fmt.Sprintf("%d", usedSlots)
+	addresses := map[types.Address]struct{}{}
+	minStake := big.NewInt(0)
+	for i, stake := range stakes {
+		addresses[stake.Owner] = struct{}{}
+		if usedSlots >= candidates.MaxDelegatorsPerCandidate {
+			if i != 0 && minStake.Cmp(stake.BipValue) != 1 {
+				continue
+			}
+			minStake = stake.BipValue
+		}
+	}
+
+	candidate.UniqUsers = fmt.Sprintf("%d", len(addresses))
+	candidate.MinStake = minStake.String()
 
 	if includeStakes {
 		stakes := state.Candidates().GetStakes(c.PubKey)

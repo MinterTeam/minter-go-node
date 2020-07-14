@@ -258,6 +258,10 @@ func (s *State) Import(state types.AppState) error {
 		s.Candidates.SetStakes(c.PubKey, c.Stakes, c.Updates)
 	}
 
+	for _, pubkey := range state.BlockListCandidates {
+		s.Candidates.AddToBlockPybKey(pubkey)
+	}
+
 	for _, hashString := range state.UsedChecks {
 		bytes, _ := hex.DecodeString(string(hashString))
 		var hash types.Hash
