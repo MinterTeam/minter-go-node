@@ -30,7 +30,7 @@ func (data SendData) MarshalJSON() ([]byte, error) {
 		To    string `json:"to"`
 		Value string `json:"value"`
 	}{
-		Coin:  Coin{
+		Coin: Coin{
 			ID:     data.Coin.Uint32(),
 			Symbol: "",
 		},

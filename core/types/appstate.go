@@ -228,15 +228,15 @@ type Stake struct {
 }
 
 type Coin struct {
-	ID           CoinID     `json:"id"`
-	Name         string     `json:"name"`
-	Symbol       CoinSymbol `json:"symbol"`
-	Volume       string     `json:"volume"`
-	Crr          uint       `json:"crr"`
-	Reserve      string     `json:"reserve"`
-	MaxSupply    string     `json:"max_supply"`
+	ID           CoinID      `json:"id"`
+	Name         string      `json:"name"`
+	Symbol       CoinSymbol  `json:"symbol"`
+	Volume       string      `json:"volume"`
+	Crr          uint        `json:"crr"`
+	Reserve      string      `json:"reserve"`
+	MaxSupply    string      `json:"max_supply"`
 	Version      CoinVersion `json:"version"`
-	OwnerAddress *Address   `json:"owner_address"`
+	OwnerAddress *Address    `json:"owner_address"`
 }
 
 type FrozenFund struct {

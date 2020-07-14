@@ -44,8 +44,8 @@ func makeResponseCandidate(state *state.CheckState, c candidates.Candidate, incl
 		candidate.Stakes = make([]Stake, len(stakes))
 		for i, stake := range stakes {
 			candidate.Stakes[i] = Stake{
-				Owner:    stake.Owner.String(),
-				Coin:     Coin{
+				Owner: stake.Owner.String(),
+				Coin: Coin{
 					ID:     stake.Coin.Uint32(),
 					Symbol: state.Coins().GetCoin(stake.Coin).GetFullSymbol(),
 				},

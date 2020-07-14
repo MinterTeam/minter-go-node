@@ -5,9 +5,9 @@ import (
 )
 
 type AddressesResponse struct {
-	Address          string            `json:"address"`
-	Balance          []BalanceItem     `json:"balances"`
-	TransactionCount uint64            `json:"transaction_count"`
+	Address          string        `json:"address"`
+	Balance          []BalanceItem `json:"balances"`
+	TransactionCount uint64        `json:"transaction_count"`
 }
 
 func Addresses(addresses []types.Address, height int) (*[]AddressesResponse, error) {

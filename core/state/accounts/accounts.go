@@ -38,8 +38,8 @@ type Accounts struct {
 }
 
 type Balance struct {
-	Coin   bus.Coin
-	Value  *big.Int
+	Coin  bus.Coin
+	Value *big.Int
 }
 
 func NewAccounts(stateBus *bus.Bus, iavl tree.MTree) (*Accounts, error) {
@@ -295,8 +295,8 @@ func (a *Accounts) GetBalances(address types.Address) []Balance {
 	balances := make([]Balance, len(account.coins))
 	for key, id := range account.coins {
 		balances[key] = Balance{
-			Coin:   *a.bus.Coins().GetCoin(id),
-			Value:  a.GetBalance(address, id),
+			Coin:  *a.bus.Coins().GetCoin(id),
+			Value: a.GetBalance(address, id),
 		}
 	}
 
