@@ -221,46 +221,31 @@ func (c *Coins) Create(id types.CoinID, symbol types.CoinSymbol, name string,
 	c.bus.Checker().AddCoinVolume(coin.id, volume)
 }
 
-func (c *Coins) Recreate(newID types.CoinID, recreateID types.CoinID,
+func (c *Coins) Recreate(newID types.CoinID, symbol types.CoinSymbol,
 	volume *big.Int, crr uint, reserve *big.Int, maxSupply *big.Int,
 ) {
-	recreateCoin := c.GetCoin(recreateID)
+	recreateCoin := c.GetCoinBySymbol(symbol)
 	if recreateCoin == nil {
 		panic("coin to recreate does not exists")
 	}
 
 	// update version for recreating coin
-	symbolCoins := c.getBySymbol(recreateCoin.Symbol())
-	lastRecreatedCoin := c.GetCoin(symbolCoins[len(symbolCoins)-1])
-	recreateCoin.CVersion = lastRecreatedCoin.Version() + 1
+	symbolCoins := c.getBySymbol(symbol)
+
+	// TODO: change array to sorted array by version and get the last one
+	lastVersion := uint16(0)
+	for _, id := range symbolCoins {
+		coin := c.GetCoin(id)
+		if coin.Version() > lastVersion {
+			lastVersion = coin.Version()
+		}
+	}
+
+	recreateCoin.CVersion = lastVersion + 1
 	c.setToMap(recreateCoin.id, recreateCoin)
 	c.markDirty(recreateCoin.id)
 
-	coin := &Model{
-		CName:      "",
-		CCrr:       crr,
-		CMaxSupply: maxSupply,
-		CSymbol:    recreateCoin.Symbol(),
-		CVersion:   BaseVersion,
-		id:         newID,
-		markDirty:  c.markDirty,
-		isDirty:    true,
-		isCreated:  true,
-		info: &Info{
-			Volume:  big.NewInt(0),
-			Reserve: big.NewInt(0),
-			isDirty: false,
-		},
-	}
-
-	c.setToMap(coin.id, coin)
-
-	coin.SetReserve(reserve)
-	coin.SetVolume(volume)
-	c.markDirty(coin.id)
-
-	c.bus.Checker().AddCoin(types.GetBaseCoinID(), reserve)
-	c.bus.Checker().AddCoinVolume(coin.id, volume)
+	c.Create(newID, recreateCoin.Symbol(), "", volume, crr, reserve, maxSupply, nil)
 }
 
 func (c *Coins) ChangeOwner(symbol types.CoinSymbol, owner types.Address) {

@@ -44,6 +44,7 @@ var Routes = map[string]*rpcserver.RPCFunc{
 	"events":                 rpcserver.NewRPCFunc(Events, "height"),
 	"net_info":               rpcserver.NewRPCFunc(NetInfo, ""),
 	"coin_info":              rpcserver.NewRPCFunc(CoinInfo, "symbol,height"),
+	"coin_id":                rpcserver.NewRPCFunc(CoinIdInfo, "id,height"),
 	"estimate_coin_sell":     rpcserver.NewRPCFunc(EstimateCoinSell, "coin_to_sell,coin_to_buy,value_to_sell,height"),
 	"estimate_coin_sell_all": rpcserver.NewRPCFunc(EstimateCoinSellAll, "coin_to_sell,coin_to_buy,value_to_sell,gas_price,height"),
 	"estimate_coin_buy":      rpcserver.NewRPCFunc(EstimateCoinBuy, "coin_to_sell,coin_to_buy,value_to_buy,height"),

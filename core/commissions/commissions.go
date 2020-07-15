@@ -15,6 +15,6 @@ const (
 	MultisendDelta        int64 = 5
 	RedeemCheckTx         int64 = SendTx * 3
 	SetHaltBlock          int64 = 1000
-	RecreateCoin          int64 = 10000000
-	ChangeOwner           int64 = 10000000
+	RecreateCoin          int64 = 10
+	ChangeOwner           int64 = 10
 )

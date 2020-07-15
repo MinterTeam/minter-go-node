@@ -13,7 +13,7 @@ import (
 )
 
 type RecreateCoinData struct {
-	Coin                 types.CoinID
+	Symbol               types.CoinSymbol
 	InitialAmount        *big.Int
 	InitialReserve       *big.Int
 	ConstantReserveRatio uint
@@ -57,11 +57,11 @@ func (data RecreateCoinData) BasicCheck(tx *Transaction, context *state.CheckSta
 
 	sender, _ := tx.Sender()
 
-	coin := context.Coins().GetCoin(data.Coin)
+	coin := context.Coins().GetCoinBySymbol(data.Symbol)
 	if coin == nil {
 		return &Response{
 			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin %s not exists", data.Coin),
+			Log:  fmt.Sprintf("Coin %s not exists", data.Symbol),
 		}
 	}
 
@@ -78,7 +78,7 @@ func (data RecreateCoinData) BasicCheck(tx *Transaction, context *state.CheckSta
 
 func (data RecreateCoinData) String() string {
 	return fmt.Sprintf("RECREATE COIN symbol:%s reserve:%s amount:%s crr:%d",
-		data.Coin.String(), data.InitialReserve, data.InitialAmount, data.ConstantReserveRatio)
+		data.Symbol.String(), data.InitialReserve, data.InitialAmount, data.ConstantReserveRatio)
 }
 
 func (data RecreateCoinData) Gas() int64 {
@@ -184,7 +184,7 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 		coinID := deliveryState.App.GetNextCoinID()
 		deliveryState.Coins.Recreate(
 			coinID,
-			data.Coin,
+			data.Symbol,
 			data.InitialAmount,
 			data.ConstantReserveRatio,
 			data.InitialReserve,
