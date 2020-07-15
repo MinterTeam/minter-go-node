@@ -9,8 +9,8 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (s *Service) CoinInfo(_ context.Context, req *pb.CoinInfoRequest) (*pb.CoinInfoResponse, error) {
-	cState, err := s.getStateForHeight(req.Height)
+func (s *Service) CoinInfo(ctx context.Context, req *pb.CoinInfoRequest) (*pb.CoinInfoResponse, error) {
+	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {
 		return new(pb.CoinInfoResponse), status.Error(codes.NotFound, err.Error())
 	}
@@ -18,7 +18,7 @@ func (s *Service) CoinInfo(_ context.Context, req *pb.CoinInfoRequest) (*pb.Coin
 	cState.RLock()
 	defer cState.RUnlock()
 
-	coin := cState.Coins.GetCoin(types.StrToCoinSymbol(req.Symbol))
+	coin := cState.Coins().GetCoin(types.StrToCoinSymbol(req.Symbol))
 	if coin == nil {
 		return new(pb.CoinInfoResponse), status.Error(codes.FailedPrecondition, "Coin not found")
 	}

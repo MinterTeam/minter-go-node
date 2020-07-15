@@ -2,11 +2,12 @@ package minter
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
-	eventsdb "github.com/MinterTeam/events-db"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/appdb"
+	eventsdb "github.com/MinterTeam/minter-go-node/core/events"
 	"github.com/MinterTeam/minter-go-node/core/rewards"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/state/candidates"
@@ -25,7 +26,6 @@ import (
 	cryptoAmino "github.com/tendermint/tendermint/crypto/encoding/amino"
 	"github.com/tendermint/tendermint/evidence"
 	tmNode "github.com/tendermint/tendermint/node"
-	rpctypes "github.com/tendermint/tendermint/rpc/lib/types"
 	types2 "github.com/tendermint/tendermint/types"
 	"github.com/tendermint/tm-db"
 	"google.golang.org/grpc/codes"
@@ -47,6 +47,8 @@ const (
 
 	DefaultMaxGas = 100000
 	MinMaxGas     = 5000
+
+	VotingPowerConsensus = 2. / 3.
 )
 
 var (
@@ -63,7 +65,7 @@ type Blockchain struct {
 	appDB              *appdb.AppDB
 	eventsDB           eventsdb.IEventsDB
 	stateDeliver       *state.State
-	stateCheck         *state.State
+	stateCheck         *state.CheckState
 	height             uint64   // current Blockchain height
 	rewards            *big.Int // Rewards pool
 	validatorsStatuses map[types.TmAddress]int8
@@ -107,7 +109,7 @@ func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 	}
 
 	// Set stateDeliver and stateCheck
-	blockchain.stateDeliver, err = state.NewState(blockchain.height, blockchain.stateDB, blockchain.eventsDB, cfg.KeepLastStates, cfg.StateCacheSize)
+	blockchain.stateDeliver, err = state.NewState(blockchain.height, blockchain.stateDB, blockchain.eventsDB, cfg.StateCacheSize, cfg.KeepLastStates)
 	if err != nil {
 		panic(err)
 	}
@@ -169,20 +171,22 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.ResponseBeginBlock {
 	height := uint64(req.Header.Height)
 
-	app.StatisticData().PushStartBlock(statistics.StartRequest{Height: int64(height), Now: time.Now(), HeaderTime: req.Header.Time})
+	app.StatisticData().PushStartBlock(&statistics.StartRequest{Height: int64(height), Now: time.Now(), HeaderTime: req.Header.Time})
 
-	if app.haltHeight > 0 && height >= app.haltHeight {
+	if app.isApplicationHalted(height) {
 		panic(fmt.Sprintf("Application halted at height %d", height))
 	}
 
+	app.lock.Lock()
 	if upgrades.IsUpgradeBlock(height) {
 		var err error
-		app.stateDeliver, err = state.NewState(app.height, app.stateDB, app.eventsDB, app.cfg.KeepLastStates, app.cfg.StateCacheSize)
+		app.stateDeliver, err = state.NewState(app.height, app.stateDB, app.eventsDB, app.cfg.StateCacheSize, app.cfg.KeepLastStates)
 		if err != nil {
 			panic(err)
 		}
 		app.stateCheck = state.NewCheckState(app.stateDeliver)
 	}
+	app.lock.Unlock()
 
 	app.stateDeliver.Lock()
 
@@ -233,7 +237,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 	frozenFunds := app.stateDeliver.FrozenFunds.GetFrozenFunds(uint64(req.Header.Height))
 	if frozenFunds != nil {
 		for _, item := range frozenFunds.List {
-			app.eventsDB.AddEvent(uint32(req.Header.Height), eventsdb.UnbondEvent{
+			app.eventsDB.AddEvent(uint32(req.Header.Height), &eventsdb.UnbondEvent{
 				Address:         item.Address,
 				Amount:          item.Value.String(),
 				Coin:            item.Coin,
@@ -244,6 +248,11 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 
 		// delete from db
 		app.stateDeliver.FrozenFunds.Delete(frozenFunds.Height())
+	}
+
+	if height >= upgrades.UpgradeBlock4 {
+		// delete halts from db
+		app.stateDeliver.Halts.Delete(height)
 	}
 
 	return abciTypes.ResponseBeginBlock{}
@@ -380,7 +389,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 	}
 
 	defer func() {
-		app.StatisticData().PushEndBlock(statistics.EndRequest{TimeEnd: time.Now(), Height: int64(app.height)})
+		app.StatisticData().PushEndBlock(&statistics.EndRequest{TimeEnd: time.Now(), Height: int64(app.height)})
 	}()
 
 	return abciTypes.ResponseEndBlock{
@@ -495,22 +504,19 @@ func (app *Blockchain) Stop() {
 }
 
 // Get immutable state of Minter Blockchain
-func (app *Blockchain) CurrentState() *state.State {
+func (app *Blockchain) CurrentState() *state.CheckState {
 	app.lock.RLock()
 	defer app.lock.RUnlock()
 
-	return state.NewCheckState(app.stateCheck)
+	return app.stateCheck
 }
 
 // Get immutable state of Minter Blockchain for given height
-func (app *Blockchain) GetStateForHeight(height uint64) (*state.State, error) {
-	app.lock.RLock()
-	defer app.lock.RUnlock()
-
-	if height != 0 {
+func (app *Blockchain) GetStateForHeight(height uint64) (*state.CheckState, error) {
+	if height > 0 {
 		s, err := state.NewCheckStateAtHeight(height, app.stateDB)
 		if err != nil {
-			return nil, rpctypes.RPCError{Code: 404, Message: "State at given height not found", Data: err.Error()}
+			return nil, errors.New("state at given height not found")
 		}
 		return s, nil
 	}
@@ -529,14 +535,14 @@ func (app *Blockchain) MissedBlocks(pubKey string, height uint64) (missedBlocks 
 
 	if height != 0 {
 		cState.Lock()
-		cState.Validators.LoadValidators()
+		cState.Validators().LoadValidators()
 		cState.Unlock()
 	}
 
 	cState.RLock()
 	defer cState.RUnlock()
 
-	val := cState.Validators.GetByPublicKey(types.HexToPubkey(pubKey))
+	val := cState.Validators().GetByPublicKey(types.HexToPubkey(pubKey[2:]))
 	if val == nil {
 		return "", 0, status.Error(codes.NotFound, "Validator not found")
 	}
@@ -630,7 +636,7 @@ func (app *Blockchain) calcMaxGas(height uint64) uint64 {
 	}
 
 	// get current max gas
-	newMaxGas := app.stateCheck.App.GetMaxGas()
+	newMaxGas := app.stateCheck.App().GetMaxGas()
 
 	// check if blocks are created in time
 	if delta, _ := app.GetBlocksTimeDelta(height, blockDelta); delta > targetTime*blockDelta {
@@ -668,8 +674,10 @@ func (app *Blockchain) StatisticData() *statistics.Data {
 func (app *Blockchain) GetValidatorStatus(address types.TmAddress) int8 {
 	app.lock.RLock()
 	defer app.lock.RUnlock()
+
 	return app.validatorsStatuses[address]
 }
+
 func (app *Blockchain) MaxPeerHeight() int64 {
 	var max int64
 	for _, peer := range app.tmNode.Switch().Peers().List() {
@@ -679,6 +687,16 @@ func (app *Blockchain) MaxPeerHeight() int64 {
 		}
 	}
 	return max
+}
+
+func (app *Blockchain) DeleteStateVersions(from, to int64) error {
+	app.lock.RLock()
+	defer app.lock.RUnlock()
+
+	app.stateDeliver.Tree().GlobalLock()
+	defer app.stateDeliver.Tree().GlobalUnlock()
+
+	return app.stateDeliver.Tree().DeleteVersionsIfExists(from, to)
 }
 
 func getDbOpts(memLimit int) *opt.Options {
@@ -691,4 +709,50 @@ func getDbOpts(memLimit int) *opt.Options {
 		WriteBuffer:            memLimit / 4 * opt.MiB, // Two of these are used internally
 		Filter:                 filter.NewBloomFilter(10),
 	}
+}
+
+func (app *Blockchain) isApplicationHalted(height uint64) bool {
+	if app.haltHeight > 0 && height >= app.haltHeight {
+		return true
+	}
+
+	if height < upgrades.UpgradeBlock4 {
+		return false
+	}
+
+	halts := app.stateDeliver.Halts.GetHaltBlocks(height)
+	if halts != nil {
+		// calculate total power of validators
+		vals := app.stateDeliver.Validators.GetValidators()
+		totalPower, totalVotingPower := big.NewInt(0), big.NewInt(0)
+		for _, val := range vals {
+			// skip if candidate is not present
+			if val.IsToDrop() || app.validatorsStatuses[val.GetAddress()] != ValidatorPresent {
+				continue
+			}
+
+			for _, halt := range halts.List {
+				if halt.Pubkey == val.PubKey {
+					totalVotingPower.Add(totalVotingPower, val.GetTotalBipStake())
+				}
+			}
+
+			totalPower.Add(totalPower, val.GetTotalBipStake())
+		}
+
+		if totalPower.Cmp(types.Big0) == 0 {
+			totalPower = big.NewInt(1)
+		}
+
+		votingResult := new(big.Float).Quo(
+			new(big.Float).SetInt(totalVotingPower),
+			new(big.Float).SetInt(totalPower),
+		)
+
+		if votingResult.Cmp(big.NewFloat(VotingPowerConsensus)) == 1 {
+			return true
+		}
+	}
+
+	return false
 }

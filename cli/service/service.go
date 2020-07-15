@@ -3,14 +3,14 @@ package service
 import (
 	"context"
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/cli/pb"
+	pb "github.com/MinterTeam/minter-go-node/cli/cli_pb"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/minter"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/version"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/empty"
-	rpc "github.com/tendermint/tendermint/rpc/client"
+	rpc "github.com/tendermint/tendermint/rpc/client/local"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"runtime"
@@ -63,7 +63,7 @@ func (m *Manager) Dashboard(_ *empty.Empty, stream pb.ManagerService_DashboardSe
 
 			var address types.TmAddress
 			copy(address[:], resultStatus.ValidatorInfo.Address)
-			validator := state.Validators.GetByTmAddress(address)
+			validator := state.Validators().GetByTmAddress(address)
 			validatorStatus := m.blockchain.GetValidatorStatus(address)
 
 			var pbValidatorStatus pb.DashboardResponse_ValidatorStatus
@@ -108,52 +108,21 @@ func (m *Manager) Dashboard(_ *empty.Empty, stream pb.ManagerService_DashboardSe
 }
 
 func (m *Manager) Status(context.Context, *empty.Empty) (*pb.StatusResponse, error) {
-	resultStatus, err := m.tmRPC.Status()
+	result, err := m.tmRPC.Status()
 	if err != nil {
 		return new(pb.StatusResponse), status.Error(codes.Internal, err.Error())
 	}
 
 	response := &pb.StatusResponse{
 		Version:           version.Version,
-		LatestBlockHash:   fmt.Sprintf("%X", resultStatus.SyncInfo.LatestBlockHash),
-		LatestAppHash:     fmt.Sprintf("%X", resultStatus.SyncInfo.LatestAppHash),
-		LatestBlockHeight: resultStatus.SyncInfo.LatestBlockHeight,
-		LatestBlockTime:   resultStatus.SyncInfo.LatestBlockTime.Format(time.RFC3339),
-		KeepLastStates:    m.cfg.KeepLastStates,
-		TmStatus: &pb.StatusResponse_TmStatus{
-			NodeInfo: &pb.NodeInfo{
-				ProtocolVersion: &pb.NodeInfo_ProtocolVersion{
-					P2P:   uint64(resultStatus.NodeInfo.ProtocolVersion.P2P),
-					Block: uint64(resultStatus.NodeInfo.ProtocolVersion.Block),
-					App:   uint64(resultStatus.NodeInfo.ProtocolVersion.App),
-				},
-				Id:         fmt.Sprintf("%X", resultStatus.NodeInfo.ID()),
-				ListenAddr: resultStatus.NodeInfo.ListenAddr,
-				Network:    resultStatus.NodeInfo.Network,
-				Version:    resultStatus.NodeInfo.Version,
-				Channels:   fmt.Sprintf("%X", resultStatus.NodeInfo.Channels),
-				Moniker:    resultStatus.NodeInfo.Moniker,
-				Other: &pb.NodeInfo_Other{
-					TxIndex:    resultStatus.NodeInfo.Other.TxIndex,
-					RpcAddress: resultStatus.NodeInfo.Other.RPCAddress,
-				},
-			},
-			SyncInfo: &pb.StatusResponse_TmStatus_SyncInfo{
-				LatestBlockHash:   fmt.Sprintf("%X", resultStatus.SyncInfo.LatestBlockHash),
-				LatestAppHash:     fmt.Sprintf("%X", resultStatus.SyncInfo.LatestAppHash),
-				LatestBlockHeight: resultStatus.SyncInfo.LatestBlockHeight,
-				LatestBlockTime:   resultStatus.SyncInfo.LatestBlockTime.Format(time.RFC3339),
-				CatchingUp:        resultStatus.SyncInfo.CatchingUp,
-			},
-			ValidatorInfo: &pb.StatusResponse_TmStatus_ValidatorInfo{
-				Address: fmt.Sprintf("%X", resultStatus.ValidatorInfo.Address),
-				PubKey: &pb.StatusResponse_TmStatus_ValidatorInfo_PubKey{
-					Type:  "tendermint/PubKeyEd25519",
-					Value: fmt.Sprintf("%X", resultStatus.ValidatorInfo.PubKey.Bytes()),
-				},
-				VotingPower: resultStatus.ValidatorInfo.VotingPower,
-			},
-		},
+		LatestBlockHash:   fmt.Sprintf("%X", result.SyncInfo.LatestBlockHash),
+		LatestAppHash:     fmt.Sprintf("%X", result.SyncInfo.LatestAppHash),
+		LatestBlockHeight: fmt.Sprintf("%d", result.SyncInfo.LatestBlockHeight),
+		LatestBlockTime:   result.SyncInfo.LatestBlockTime.Format(time.RFC3339Nano),
+		KeepLastStates:    fmt.Sprintf("%d", m.cfg.BaseConfig.KeepLastStates),
+		CatchingUp:        result.SyncInfo.CatchingUp,
+		PublicKey:         fmt.Sprintf("Mp%x", result.ValidatorInfo.PubKey.Bytes()[5:]),
+		NodeId:            string(result.NodeInfo.ID()),
 	}
 
 	return response, nil
@@ -244,11 +213,55 @@ func (m *Manager) NetInfo(context.Context, *empty.Empty) (*pb.NetInfoResponse, e
 	return response, nil
 }
 
-func (m *Manager) PruneBlocks(ctx context.Context, req *pb.PruneBlocksRequest) (*empty.Empty, error) {
-	return new(empty.Empty), status.Error(codes.Unimplemented, "todo")
+const countBatchBlocksDelete = 250
+
+func (m *Manager) PruneBlocks(req *pb.PruneBlocksRequest, stream pb.ManagerService_PruneBlocksServer) error {
+	current := m.blockchain.Height()
+	if req.ToHeight >= int64(current) {
+		return status.Errorf(codes.FailedPrecondition, "cannot delete latest saved version (%d)", current)
+	}
+
+	min := req.FromHeight - 1
+	total := req.ToHeight - min
+
+	from := req.FromHeight
+	last := make(chan struct{})
+
+	for i := req.FromHeight; i <= req.ToHeight; i++ {
+		if i == req.ToHeight {
+			close(last)
+		}
+		select {
+		case <-stream.Context().Done():
+			return status.Error(codes.Canceled, stream.Context().Err().Error())
+		case <-last:
+			_ = m.blockchain.DeleteStateVersions(from, i)
+			if err := stream.Send(&pb.PruneBlocksResponse{
+				Total:   total,
+				Current: i - min,
+			}); err != nil {
+				return err
+			}
+			return nil
+		default:
+			if i-from != countBatchBlocksDelete {
+				continue
+			}
+			_ = m.blockchain.DeleteStateVersions(from, i)
+			if err := stream.Send(&pb.PruneBlocksResponse{
+				Total:   total,
+				Current: i - min,
+			}); err != nil {
+				return err
+			}
+			from = i
+		}
+	}
+
+	return nil
 }
 
-func (m *Manager) DealPeer(ctx context.Context, req *pb.DealPeerRequest) (*empty.Empty, error) {
+func (m *Manager) DealPeer(_ context.Context, req *pb.DealPeerRequest) (*empty.Empty, error) {
 	res := new(empty.Empty)
 	_, err := m.tmRPC.DialPeers([]string{req.Address}, req.Persistent)
 	if err != nil {

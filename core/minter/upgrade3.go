@@ -1,7 +1,7 @@
 package minter
 
 import (
-	eventsdb "github.com/MinterTeam/events-db"
+	eventsdb "github.com/MinterTeam/minter-go-node/core/events"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/helpers"
@@ -434,7 +434,7 @@ func ApplyUpgrade3(state *state.State, events eventsdb.IEventsDB) {
 		value := helpers.StringToBigInt(data[3])
 		coin := types.StrToCoinSymbol(data[4])
 
-		events.AddEvent(upgrades.UpgradeBlock3, eventsdb.UnbondEvent{
+		events.AddEvent(upgrades.UpgradeBlock3, &eventsdb.UnbondEvent{
 			Address:         owner,
 			Amount:          value.String(),
 			Coin:            coin,

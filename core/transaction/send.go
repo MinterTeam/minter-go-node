@@ -31,7 +31,7 @@ func (data SendData) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (data SendData) TotalSpend(tx *Transaction, context *state.State) (TotalSpends, []Conversion, *big.Int, *Response) {
+func (data SendData) TotalSpend(tx *Transaction, context *state.CheckState) (TotalSpends, []Conversion, *big.Int, *Response) {
 	total := TotalSpends{}
 	var conversions []Conversion
 
@@ -39,7 +39,7 @@ func (data SendData) TotalSpend(tx *Transaction, context *state.State) (TotalSpe
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
 	if !tx.GasCoin.IsBaseCoin() {
-		coin := context.Coins.GetCoin(tx.GasCoin)
+		coin := context.Coins().GetCoin(tx.GasCoin)
 
 		errResp := CheckReserveUnderflow(coin, commissionInBaseCoin)
 		if errResp != nil {
@@ -74,14 +74,14 @@ func (data SendData) TotalSpend(tx *Transaction, context *state.State) (TotalSpe
 	return total, conversions, nil, nil
 }
 
-func (data SendData) BasicCheck(tx *Transaction, context *state.State) *Response {
+func (data SendData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.Value == nil {
 		return &Response{
 			Code: code.DecodeError,
 			Log:  "Incorrect tx data"}
 	}
 
-	if !context.Coins.Exists(data.Coin) {
+	if !context.Coins().Exists(data.Coin) {
 		return &Response{
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin %s not exists", data.Coin),
@@ -103,21 +103,27 @@ func (data SendData) Gas() int64 {
 	return commissions.SendTx
 }
 
-func (data SendData) Run(tx *Transaction, context *state.State, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
+func (data SendData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
 	sender, _ := tx.Sender()
 
-	response := data.BasicCheck(tx, context)
+	var checkState *state.CheckState
+	var isCheck bool
+	if checkState, isCheck = context.(*state.CheckState); !isCheck {
+		checkState = state.NewCheckState(context.(*state.State))
+	}
+
+	response := data.BasicCheck(tx, checkState)
 	if response != nil {
 		return *response
 	}
 
-	totalSpends, conversions, _, response := data.TotalSpend(tx, context)
+	totalSpends, conversions, _, response := data.TotalSpend(tx, checkState)
 	if response != nil {
 		return *response
 	}
 
 	for _, ts := range totalSpends {
-		if context.Accounts.GetBalance(sender, ts.Coin).Cmp(ts.Value) < 0 {
+		if checkState.Accounts().GetBalance(sender, ts.Coin).Cmp(ts.Value) < 0 {
 			return Response{
 				Code: code.InsufficientFunds,
 				Log: fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s.",
@@ -133,22 +139,22 @@ func (data SendData) Run(tx *Transaction, context *state.State, isCheck bool, re
 		}
 	}
 
-	if !isCheck {
+	if deliveryState, ok := context.(*state.State); ok {
 		for _, ts := range totalSpends {
-			context.Accounts.SubBalance(sender, ts.Coin, ts.Value)
+			deliveryState.Accounts.SubBalance(sender, ts.Coin, ts.Value)
 		}
 
 		for _, conversion := range conversions {
-			context.Coins.SubVolume(conversion.FromCoin, conversion.FromAmount)
-			context.Coins.SubReserve(conversion.FromCoin, conversion.FromReserve)
+			deliveryState.Coins.SubVolume(conversion.FromCoin, conversion.FromAmount)
+			deliveryState.Coins.SubReserve(conversion.FromCoin, conversion.FromReserve)
 
-			context.Coins.AddVolume(conversion.ToCoin, conversion.ToAmount)
-			context.Coins.AddReserve(conversion.ToCoin, conversion.ToReserve)
+			deliveryState.Coins.AddVolume(conversion.ToCoin, conversion.ToAmount)
+			deliveryState.Coins.AddReserve(conversion.ToCoin, conversion.ToReserve)
 		}
 
 		rewardPool.Add(rewardPool, tx.CommissionInBaseCoin())
-		context.Accounts.AddBalance(data.To, data.Coin, data.Value)
-		context.Accounts.SetNonce(sender, tx.Nonce)
+		deliveryState.Accounts.AddBalance(data.To, data.Coin, data.Value)
+		deliveryState.Accounts.SetNonce(sender, tx.Nonce)
 	}
 
 	tags := kv.Pairs{

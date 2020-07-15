@@ -75,6 +75,8 @@ func encodeTxData(decodedTx *transaction.Transaction) ([]byte, error) {
 		return cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.CreateMultisigData))
 	case transaction.TypeEditCandidate:
 		return cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.EditCandidateData))
+	case transaction.TypeSetHaltBlock:
+		return cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.SetHaltBlockData))
 	}
 
 	return nil, rpctypes.RPCError{Code: 500, Message: "unknown tx type"}

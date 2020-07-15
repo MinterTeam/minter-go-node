@@ -30,7 +30,7 @@ func EstimateTxCommission(tx []byte, height int) (*TxCommissionResponse, error) 
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
 	if !decodedTx.GasCoin.IsBaseCoin() {
-		coin := cState.Coins.GetCoin(decodedTx.GasCoin)
+		coin := cState.Coins().GetCoin(decodedTx.GasCoin)
 
 		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
 			return nil, rpctypes.RPCError{Code: 400, Message: fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s",

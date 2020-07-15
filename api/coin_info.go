@@ -23,7 +23,7 @@ func CoinInfo(coinSymbol string, height int) (*CoinInfoResponse, error) {
 	cState.RLock()
 	defer cState.RUnlock()
 
-	coin := cState.Coins.GetCoin(types.StrToCoinSymbol(coinSymbol))
+	coin := cState.Coins().GetCoin(types.StrToCoinSymbol(coinSymbol))
 	if coin == nil {
 		return nil, rpctypes.RPCError{Code: 404, Message: "Coin not found"}
 	}

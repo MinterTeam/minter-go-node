@@ -33,6 +33,7 @@ const (
 	TypeCreateMultisig      TxType = 0x0C
 	TypeMultisend           TxType = 0x0D
 	TypeEditCandidate       TxType = 0x0E
+	TypeSetHaltBlock        TxType = 0x0F
 
 	SigTypeSingle SigType = 0x01
 	SigTypeMulti  SigType = 0x02
@@ -106,9 +107,7 @@ type Conversion struct {
 type Data interface {
 	String() string
 	Gas() int64
-	TotalSpend(tx *Transaction, context *state.State) (TotalSpends, []Conversion, *big.Int, *Response)
-	BasicCheck(tx *Transaction, context *state.State) *Response
-	Run(tx *Transaction, context *state.State, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response
+	Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response
 }
 
 func (tx *Transaction) Serialize() ([]byte, error) {
