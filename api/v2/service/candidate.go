@@ -57,35 +57,30 @@ func makeResponseCandidate(state *state.CheckState, c candidates.Candidate, incl
 		Status:        fmt.Sprintf("%d", c.Status),
 	}
 
-	stakes := state.Candidates().GetStakes(c.PubKey)
-	usedSlots := len(stakes)
-	candidate.UsedSlots = fmt.Sprintf("%d", usedSlots)
-	addresses := map[types.Address]struct{}{}
-	minStake := big.NewInt(0)
-	for i, stake := range stakes {
-		addresses[stake.Owner] = struct{}{}
-		if usedSlots >= candidates.MaxDelegatorsPerCandidate {
-			if i != 0 && minStake.Cmp(stake.BipValue) != 1 {
-				continue
-			}
-			minStake = stake.BipValue
-		}
-	}
-
-	candidate.UniqUsers = fmt.Sprintf("%d", len(addresses))
-	candidate.MinStake = minStake.String()
-
 	if includeStakes {
+		addresses := map[types.Address]struct{}{}
+		minStake := big.NewInt(0)
 		stakes := state.Candidates().GetStakes(c.PubKey)
-		candidate.Stakes = make([]*pb.CandidateResponse_Stake, 0, len(stakes))
-		for _, stake := range stakes {
+		usedSlots := len(stakes)
+		candidate.UsedSlots = fmt.Sprintf("%d", usedSlots)
+		candidate.Stakes = make([]*pb.CandidateResponse_Stake, 0, usedSlots)
+		for i, stake := range stakes {
 			candidate.Stakes = append(candidate.Stakes, &pb.CandidateResponse_Stake{
 				Owner:    stake.Owner.String(),
 				Coin:     stake.Coin.String(),
 				Value:    stake.Value.String(),
 				BipValue: stake.BipValue.String(),
 			})
+			addresses[stake.Owner] = struct{}{}
+			if usedSlots >= candidates.MaxDelegatorsPerCandidate {
+				if i != 0 && minStake.Cmp(stake.BipValue) != 1 {
+					continue
+				}
+				minStake = stake.BipValue
+			}
 		}
+		candidate.UniqUsers = fmt.Sprintf("%d", len(addresses))
+		candidate.MinStake = minStake.String()
 	}
 
 	return candidate
