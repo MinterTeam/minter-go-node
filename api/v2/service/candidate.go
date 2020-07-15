@@ -44,11 +44,11 @@ func (s *Service) Candidate(ctx context.Context, req *pb.CandidateRequest) (*pb.
 		return new(pb.CandidateResponse), status.Error(codes.NotFound, "Candidate not found")
 	}
 
-	result := makeResponseCandidate(cState, *candidate, true)
+	result := makeResponseCandidate(cState, candidate, true)
 	return result, nil
 }
 
-func makeResponseCandidate(state *state.CheckState, c candidates.Candidate, includeStakes bool) *pb.CandidateResponse {
+func makeResponseCandidate(state *state.CheckState, c *candidates.Candidate, includeStakes bool) *pb.CandidateResponse {
 	candidate := &pb.CandidateResponse{
 		RewardAddress: c.RewardAddress.String(),
 		TotalStake:    state.Candidates().GetTotalStake(c.PubKey).String(),
