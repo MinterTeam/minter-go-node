@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
+	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
@@ -81,7 +82,7 @@ func (data RecreateCoinData) String() string {
 }
 
 func (data RecreateCoinData) Gas() int64 {
-	return 10000000 // 10k bips
+	return commissions.RecreateCoin
 }
 
 func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
