@@ -142,6 +142,11 @@ type SymbolInfo struct {
 	isDirty bool
 }
 
+func (i SymbolInfo) SetOwnerAddress(address *types.Address) {
+	i.COwnerAddress = address
+	i.isDirty = true
+}
+
 func (i SymbolInfo) OwnerAddress() *types.Address {
 	return i.COwnerAddress
 }

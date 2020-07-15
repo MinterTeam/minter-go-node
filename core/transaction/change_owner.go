@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
@@ -16,16 +15,6 @@ import (
 type ChangeOwnerData struct {
 	Symbol   types.CoinSymbol
 	NewOwner types.Address
-}
-
-func (data ChangeOwnerData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		Symbol   types.CoinSymbol `json:"address"`
-		NewOwner types.Address    `json:"pub_key"`
-	}{
-		Symbol:   data.Symbol,
-		NewOwner: data.NewOwner,
-	})
 }
 
 func (data ChangeOwnerData) TotalSpend(tx *Transaction, context *state.CheckState) (TotalSpends, []Conversion, *big.Int, *Response) {

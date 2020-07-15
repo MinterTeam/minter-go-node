@@ -155,13 +155,14 @@ func (c CoinSymbol) GetBaseSymbol() CoinSymbol {
 	return StrToCoinSymbol(strings.Split(c.String(), "-")[0])
 }
 
-func (c CoinSymbol) GetVersion() uint16 {
+func (c CoinSymbol) GetVersion() (CoinVersion, error) {
 	parts := strings.Split(c.String(), "-")
 	if len(parts) == 1 {
-		return 0
+		return 0, nil
 	}
 
-	return 1
+	v, err := strconv.ParseUint(parts[1], 10, 16)
+	return CoinVersion(v), err
 }
 
 func StrToCoinSymbol(s string) CoinSymbol {

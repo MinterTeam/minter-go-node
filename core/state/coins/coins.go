@@ -133,9 +133,14 @@ func (c *Coins) GetCoinBySymbol(symbol types.CoinSymbol) *Model {
 		return nil
 	}
 
+	version, err := symbol.GetVersion()
+	if err != nil {
+		return nil
+	}
+
 	for _, coinID := range coins {
 		coin := c.get(coinID)
-		if coin.Version() == symbol.GetVersion() {
+		if coin.Version() == version {
 			return coin
 		}
 	}
@@ -260,10 +265,12 @@ func (c *Coins) Recreate(newID types.CoinID, recreateID types.CoinID,
 
 func (c *Coins) ChangeOwner(symbol types.CoinSymbol, owner types.Address) {
 	info := c.getSymbolInfo(symbol)
-	info.COwnerAddress = &owner
-	info.isDirty = true
+	info.SetOwnerAddress(&owner)
 
 	coin := c.GetCoinBySymbol(symbol)
+	coin.symbolInfo = info
+
+	c.setToMap(coin.id, coin)
 	c.markDirty(coin.ID())
 }
 
