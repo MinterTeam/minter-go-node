@@ -302,24 +302,6 @@ func (s *State) Export(height uint64) types.AppState {
 }
 
 func (s *State) Export11To12(height uint64) types.AppState {
-	state, err := NewCheckStateAtHeight(height, s.db)
-	if err != nil {
-		log.Panicf("Create new state at height %d failed: %s", height, err)
-	}
-
-	appState := new(types.AppState)
-	state.App().Export(appState, height)
-	state.Validators().Export(appState)
-	state.Candidates().Export11To12(appState)
-	state.FrozenFunds().Export(appState, height)
-	state.Accounts().Export(appState)
-	state.Coins().Export(appState)
-	state.Checks().Export(appState)
-
-	return *appState
-}
-
-func (s *State) Export11To12(height uint64) types.AppState {
 	iavlTree := tree.NewImmutableTree(height, s.db)
 
 	candidatesState, err := legacyCandidates.NewCandidates(nil, iavlTree)
@@ -361,7 +343,7 @@ func (s *State) Export11To12(height uint64) types.AppState {
 	appState.Export(state, height)
 	coinsState.Export(state)
 	validatorsState.Export(state)
-	candidatesState.Export11To12(state)
+	candidatesState.Export(state)
 	frozenFundsState.Export(state, height)
 	accountsState.Export(state)
 	checksState.Export(state)

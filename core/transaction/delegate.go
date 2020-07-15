@@ -166,16 +166,16 @@ func (data DelegateData) Run(tx *Transaction, context state.Interface, rewardPoo
 		}
 	}
 
-	if deliveryState, ok := context.(*state.State); ok {
+	if deliverState, ok := context.(*state.State); ok {
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		deliveryState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
-		deliveryState.Coins.SubVolume(tx.GasCoin, commission)
+		deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
+		deliverState.Coins.SubVolume(tx.GasCoin, commission)
 
-		deliveryState.Accounts.SubBalance(sender, tx.GasCoin, commission)
-		deliveryState.Accounts.SubBalance(sender, data.Coin, data.Value)
-		deliveryState.Candidates.Delegate(sender, data.PubKey, data.Coin, data.Value, big.NewInt(0))
-		deliveryState.Accounts.SetNonce(sender, tx.Nonce)
+		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
+		deliverState.Accounts.SubBalance(sender, data.Coin, data.Value)
+		deliverState.Candidates.Delegate(sender, data.PubKey, data.Coin, data.Value, big.NewInt(0))
+		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}
 
 	tags := kv.Pairs{

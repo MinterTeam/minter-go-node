@@ -409,7 +409,7 @@ func (app *Blockchain) Info(req abciTypes.RequestInfo) (resInfo abciTypes.Respon
 
 // Deliver a tx for full processing
 func (app *Blockchain) DeliverTx(req abciTypes.RequestDeliverTx) abciTypes.ResponseDeliverTx {
-	response := transaction.RunTx(app.stateDeliver, false, req.Tx, app.rewards, app.height, &sync.Map{}, 0)
+	response := transaction.RunTx(app.stateDeliver, req.Tx, app.rewards, app.height, &sync.Map{}, 0)
 
 	return abciTypes.ResponseDeliverTx{
 		Code:      response.Code,
@@ -429,7 +429,7 @@ func (app *Blockchain) DeliverTx(req abciTypes.RequestDeliverTx) abciTypes.Respo
 
 // Validate a tx for the mempool
 func (app *Blockchain) CheckTx(req abciTypes.RequestCheckTx) abciTypes.ResponseCheckTx {
-	response := transaction.RunTx(app.stateCheck, true, req.Tx, nil, app.height, app.currentMempool, app.MinGasPrice())
+	response := transaction.RunTx(app.stateCheck, req.Tx, nil, app.height, app.currentMempool, app.MinGasPrice())
 
 	return abciTypes.ResponseCheckTx{
 		Code:      response.Code,

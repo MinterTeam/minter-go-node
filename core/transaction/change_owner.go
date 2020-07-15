@@ -102,13 +102,13 @@ func (data ChangeOwnerData) Run(tx *Transaction, context state.Interface, reward
 		}
 	}
 
-	if deliveryState, ok := context.(*state.State); ok {
+	if deliverState, ok := context.(*state.State); ok {
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
-		deliveryState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
-		deliveryState.Coins.SubVolume(tx.GasCoin, commission)
-		deliveryState.Accounts.SubBalance(sender, tx.GasCoin, commission)
-		deliveryState.Coins.ChangeOwner(data.Symbol, data.NewOwner)
-		deliveryState.Accounts.SetNonce(sender, tx.Nonce)
+		deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
+		deliverState.Coins.SubVolume(tx.GasCoin, commission)
+		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
+		deliverState.Coins.ChangeOwner(data.Symbol, data.NewOwner)
+		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}
 
 	tags := kv.Pairs{
