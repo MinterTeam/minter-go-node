@@ -1,11 +1,12 @@
 package api
 
 import (
+	"encoding/json"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/transaction/encoder"
 )
 
-func Transaction(hash []byte) (*encoder.TransactionResponse, error) {
+func Transaction(hash []byte) (json.RawMessage, error) {
 	tx, err := client.Tx(hash, false)
 	if err != nil {
 		return nil, err

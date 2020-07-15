@@ -30,7 +30,7 @@ type ResultTxSearch struct {
 	TotalCount int                    `json:"total_count"`
 }
 
-func Transactions(query string, page, perPage int) (*[]encoder.TransactionResponse, error) {
+func Transactions(query string, page, perPage int) (*[]json.RawMessage, error) {
 	if page == 0 {
 		page = 1
 	}
@@ -43,7 +43,7 @@ func Transactions(query string, page, perPage int) (*[]encoder.TransactionRespon
 		return nil, err
 	}
 
-	result := make([]encoder.TransactionResponse, len(rpcResult.Txs))
+	result := make([]json.RawMessage, len(rpcResult.Txs))
 	for i, tx := range rpcResult.Txs {
 		cState, err := GetStateForHeight(int(tx.Height))
 		if err != nil {
@@ -57,7 +57,7 @@ func Transactions(query string, page, perPage int) (*[]encoder.TransactionRespon
 			return nil, err
 		}
 
-		result[i] = *response
+		result[i] = response
 	}
 
 	return &result, nil

@@ -56,7 +56,7 @@ func NewTxEncoderJSON(context *state.CheckState) *TxEncoderJSON {
 	return &TxEncoderJSON{context}
 }
 
-func (encoder *TxEncoderJSON) Encode(transaction *transaction.Transaction, tmTx *coretypes.ResultTx) (*TransactionResponse, error) {
+func (encoder *TxEncoderJSON) Encode(transaction *transaction.Transaction, tmTx *coretypes.ResultTx) (json.RawMessage, error) {
 	sender, _ := transaction.Sender()
 
 	// prepare transaction data resource
@@ -74,7 +74,7 @@ func (encoder *TxEncoderJSON) Encode(transaction *transaction.Transaction, tmTx 
 	gasCoin := encoder.context.Coins().GetCoin(transaction.GasCoin)
 	txGasCoin := CoinResource{gasCoin.ID().Uint32(), gasCoin.GetFullSymbol()}
 
-	return &TransactionResponse{
+	tx := TransactionResponse{
 		Hash:     bytes.HexBytes(tmTx.Tx.Hash()).String(),
 		RawTx:    fmt.Sprintf("%x", []byte(tmTx.Tx)),
 		Height:   tmTx.Height,
@@ -90,7 +90,9 @@ func (encoder *TxEncoderJSON) Encode(transaction *transaction.Transaction, tmTx 
 		Tags:     tags,
 		Code:     tmTx.TxResult.Code,
 		Log:      tmTx.TxResult.Log,
-	}, nil
+	}
+
+	return json.Marshal(tx)
 }
 
 func (encoder *TxEncoderJSON) EncodeData(decodedTx *transaction.Transaction) ([]byte, error) {

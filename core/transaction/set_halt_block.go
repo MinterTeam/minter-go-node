@@ -10,7 +10,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/hexutil"
-	"github.com/MinterTeam/minter-go-node/upgrades"
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
 	"strconv"
@@ -63,13 +62,6 @@ func (data SetHaltBlockData) Gas() int64 {
 }
 
 func (data SetHaltBlockData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
-	if currentBlock < upgrades.UpgradeBlock4 {
-		return Response{
-			Code: code.DecodeError,
-			Log:  "Unknown transaction type",
-		}
-	}
-
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
