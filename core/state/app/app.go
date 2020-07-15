@@ -130,6 +130,10 @@ func (v *App) GetCoinsCount() uint32 {
 	return v.getOrNew().getCoinsCount()
 }
 
+func (v *App) GetNextCoinID() types.CoinID {
+	return types.CoinID(v.GetCoinsCount() + 1)
+}
+
 func (v *App) SetCoinsCount(count uint32) {
 	v.getOrNew().setCoinsCount(count)
 }

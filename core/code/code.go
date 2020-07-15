@@ -26,6 +26,9 @@ const (
 	InvalidCoinName   uint32 = 204
 	WrongCoinSupply   uint32 = 205
 
+	// recreate coin
+	IsNotOwnerOfCoin uint32 = 206
+
 	// convert
 	CrossConvert              uint32 = 301
 	MaximumValueToSellReached uint32 = 302

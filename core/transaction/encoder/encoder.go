@@ -11,7 +11,7 @@ import (
 )
 
 type TxEncoderJSON struct {
-	state *state.CheckState
+	context *state.CheckState
 }
 
 type TransactionResponse struct {
@@ -48,10 +48,12 @@ var resourcesConfig = map[transaction.TxType]TxDataResource{
 	transaction.TypeMultisend:           new(MultiSendDataResource),
 	transaction.TypeEditCandidate:       new(EditCandidateDataResource),
 	transaction.TypeSetHaltBlock:        new(SetHaltBlockDataResource),
+	transaction.TypeRecreateCoin:        new(RecreateCoinDataResource),
+	transaction.TypeChangeOwner:         new(ChangeOwnerDataResource),
 }
 
-func NewTxEncoderJSON(state *state.CheckState) *TxEncoderJSON {
-	return &TxEncoderJSON{state}
+func NewTxEncoderJSON(context *state.CheckState) *TxEncoderJSON {
+	return &TxEncoderJSON{context}
 }
 
 func (encoder *TxEncoderJSON) Encode(transaction *transaction.Transaction, tmTx *coretypes.ResultTx) (*TransactionResponse, error) {
@@ -69,7 +71,7 @@ func (encoder *TxEncoderJSON) Encode(transaction *transaction.Transaction, tmTx 
 		tags[string(tag.Key)] = string(tag.Value)
 	}
 
-	gasCoin := encoder.state.Coins().GetCoin(transaction.GasCoin)
+	gasCoin := encoder.context.Coins().GetCoin(transaction.GasCoin)
 	txGasCoin := CoinResource{gasCoin.ID().Uint32(), gasCoin.GetFullSymbol()}
 
 	return &TransactionResponse{
@@ -94,7 +96,7 @@ func (encoder *TxEncoderJSON) Encode(transaction *transaction.Transaction, tmTx 
 func (encoder *TxEncoderJSON) EncodeData(decodedTx *transaction.Transaction) ([]byte, error) {
 	if resource, exists := resourcesConfig[decodedTx.Type]; exists {
 		return json.Marshal(
-			resource.Transform(decodedTx.GetDecodedData(), encoder.state),
+			resource.Transform(decodedTx.GetDecodedData(), encoder.context),
 		)
 	}
 

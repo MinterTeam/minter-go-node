@@ -17,6 +17,10 @@ const (
 	symbolPrefix = byte('s')
 )
 
+const (
+	BaseVersion types.CoinVersion = 0
+)
+
 type RCoins interface {
 	Export(state *types.AppState)
 	Exists(id types.CoinID) bool
@@ -24,6 +28,7 @@ type RCoins interface {
 	SubReserve(symbol types.CoinID, amount *big.Int)
 	GetCoin(id types.CoinID) *Model
 	GetCoinBySymbol(symbol types.CoinSymbol) *Model
+	GetSymbolInfo(symbol types.CoinSymbol) *SymbolInfo
 }
 
 type Coins struct {
@@ -83,6 +88,16 @@ func (c *Coins) Commit() error {
 			c.iavl.Set(getCoinInfoPath(id), data)
 			coin.info.isDirty = false
 		}
+
+		if coin.IsSymbolInfoDirty() {
+			data, err := rlp.EncodeToBytes(coin.symbolInfo)
+			if err != nil {
+				return fmt.Errorf("can't encode object at %d: %v", id, err)
+			}
+
+			c.iavl.Set(getSymbolInfoPath(coin.Symbol()), data)
+			coin.symbolInfo.isDirty = false
+		}
 	}
 
 	return nil
@@ -90,6 +105,10 @@ func (c *Coins) Commit() error {
 
 func (c *Coins) GetCoin(id types.CoinID) *Model {
 	return c.get(id)
+}
+
+func (c *Coins) GetSymbolInfo(symbol types.CoinSymbol) *SymbolInfo {
+	return c.getSymbolInfo(symbol)
 }
 
 func (c *Coins) Exists(id types.CoinID) bool {
@@ -163,20 +182,65 @@ func (c *Coins) AddReserve(id types.CoinID, amount *big.Int) {
 func (c *Coins) Create(id types.CoinID, symbol types.CoinSymbol, name string,
 	volume *big.Int, crr uint, reserve *big.Int, maxSupply *big.Int, owner *types.Address,
 ) {
-	if owner == nil {
-		owner = &types.Address{}
+	coin := &Model{
+		CName:      name,
+		CCrr:       crr,
+		CMaxSupply: maxSupply,
+		CSymbol:    symbol,
+		id:         id,
+		markDirty:  c.markDirty,
+		isDirty:    true,
+		isCreated:  true,
+		info: &Info{
+			Volume:  big.NewInt(0),
+			Reserve: big.NewInt(0),
+			isDirty: false,
+		},
 	}
 
+	if owner != nil {
+		coin.symbolInfo = &SymbolInfo{
+			COwnerAddress: owner,
+			isDirty:       true,
+		}
+	}
+
+	c.setToMap(coin.id, coin)
+
+	coin.SetReserve(reserve)
+	coin.SetVolume(volume)
+
+	c.markDirty(coin.id)
+
+	c.bus.Checker().AddCoin(types.GetBaseCoinID(), reserve)
+	c.bus.Checker().AddCoinVolume(coin.id, volume)
+}
+
+func (c *Coins) Recreate(newID types.CoinID, recreateID types.CoinID,
+	volume *big.Int, crr uint, reserve *big.Int, maxSupply *big.Int,
+) {
+	recreateCoin := c.GetCoin(recreateID)
+	if recreateCoin == nil {
+		panic("coin to recreate does not exists")
+	}
+
+	// update version for recreating coin
+	symbolCoins := c.getBySymbol(recreateCoin.Symbol())
+	lastRecreatedCoin := c.GetCoin(symbolCoins[len(symbolCoins)-1])
+	recreateCoin.CVersion = lastRecreatedCoin.Version() + 1
+	c.setToMap(recreateCoin.id, recreateCoin)
+	c.markDirty(recreateCoin.id)
+
 	coin := &Model{
-		CName:         name,
-		CCrr:          crr,
-		CMaxSupply:    maxSupply,
-		CSymbol:       symbol,
-		COwnerAddress: *owner,
-		id:            id,
-		markDirty:     c.markDirty,
-		isDirty:       true,
-		isCreated:     true,
+		CName:      "",
+		CCrr:       crr,
+		CMaxSupply: maxSupply,
+		CSymbol:    recreateCoin.Symbol(),
+		CVersion:   BaseVersion,
+		id:         newID,
+		markDirty:  c.markDirty,
+		isDirty:    true,
+		isCreated:  true,
 		info: &Info{
 			Volume:  big.NewInt(0),
 			Reserve: big.NewInt(0),
@@ -192,6 +256,15 @@ func (c *Coins) Create(id types.CoinID, symbol types.CoinSymbol, name string,
 
 	c.bus.Checker().AddCoin(types.GetBaseCoinID(), reserve)
 	c.bus.Checker().AddCoinVolume(coin.id, volume)
+}
+
+func (c *Coins) ChangeOwner(symbol types.CoinSymbol, owner types.Address) {
+	info := c.getSymbolInfo(symbol)
+	info.COwnerAddress = &owner
+	info.isDirty = true
+
+	coin := c.GetCoinBySymbol(symbol)
+	c.markDirty(coin.ID())
 }
 
 func (c *Coins) get(id types.CoinID) *Model {
@@ -240,6 +313,21 @@ func (c *Coins) get(id types.CoinID) *Model {
 	return coin
 }
 
+func (c *Coins) getSymbolInfo(symbol types.CoinSymbol) *SymbolInfo {
+	info := &SymbolInfo{}
+
+	_, enc := c.iavl.Get(getSymbolInfoPath(symbol))
+	if len(enc) == 0 {
+		return info
+	}
+
+	if err := rlp.DecodeBytes(enc, info); err != nil {
+		panic(fmt.Sprintf("failed to decode coin symbol %s: %s", symbol.String(), err))
+	}
+
+	return info
+}
+
 func (c *Coins) getBySymbol(symbol types.CoinSymbol) []types.CoinID {
 	var coins []types.CoinID
 
@@ -280,7 +368,9 @@ func (c *Coins) Export(state *types.AppState) {
 			}
 
 			coinID := types.BytesToCoinID(key[1:])
-			coin := c.GetCoin(coinID)
+			coin := c.get(coinID)
+
+			owner := c.getSymbolInfo(coin.Symbol()).OwnerAddress()
 
 			state.Coins = append(state.Coins, types.Coin{
 				ID:           coin.ID(),
@@ -291,7 +381,7 @@ func (c *Coins) Export(state *types.AppState) {
 				Reserve:      coin.Reserve().String(),
 				MaxSupply:    coin.MaxSupply().String(),
 				Version:      coin.Version(),
-				OwnerAddress: &coin.COwnerAddress,
+				OwnerAddress: owner,
 			})
 		}
 
@@ -316,6 +406,12 @@ func (c *Coins) setToMap(id types.CoinID, model *Model) {
 func getSymbolCoinsPath(symbol types.CoinSymbol) []byte {
 	path := append([]byte{mainPrefix}, []byte{symbolPrefix}...)
 	return append(path, symbol.Bytes()...)
+}
+
+func getSymbolInfoPath(symbol types.CoinSymbol) []byte {
+	path := append([]byte{mainPrefix}, []byte{symbolPrefix}...)
+	path = append(path, symbol.Bytes()...)
+	return append(path, []byte{infoPrefix}...)
 }
 
 func getCoinPath(id types.CoinID) []byte {

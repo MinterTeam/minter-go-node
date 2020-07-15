@@ -28,7 +28,6 @@ func (b *Bus) GetCoin(id types.CoinID) *bus.Coin {
 		Volume:       coin.Volume(),
 		Reserve:      coin.Reserve(),
 		Version:      coin.Version(),
-		OwnerAddress: coin.OwnerAddress(),
 	}
 }
 

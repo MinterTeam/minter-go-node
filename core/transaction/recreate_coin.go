@@ -2,82 +2,32 @@ package transaction
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
-	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
-	"regexp"
-	"strconv"
 )
 
-const maxCoinNameBytes = 64
-const allowedCoinSymbols = "^[A-Z0-9]{3,10}$"
-
-var (
-	minCoinSupply  = helpers.BipToPip(big.NewInt(1))
-	minCoinReserve = helpers.BipToPip(big.NewInt(10000))
-	maxCoinSupply  = big.NewInt(0).Exp(big.NewInt(10), big.NewInt(15+18), nil)
-)
-
-type CreateCoinData struct {
-	Name                 string
-	Symbol               types.CoinSymbol
+type RecreateCoinData struct {
+	Coin                 types.CoinID
 	InitialAmount        *big.Int
 	InitialReserve       *big.Int
 	ConstantReserveRatio uint
 	MaxSupply            *big.Int
 }
 
-func (data CreateCoinData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		Name                 string `json:"name"`
-		Symbol               string `json:"symbol"`
-		InitialAmount        string `json:"initial_amount"`
-		InitialReserve       string `json:"initial_reserve"`
-		ConstantReserveRatio string `json:"constant_reserve_ratio"`
-		MaxSupply            string `json:"max_supply"`
-	}{
-		Name:                 data.Name,
-		Symbol:               data.Symbol.String(),
-		InitialAmount:        data.InitialAmount.String(),
-		InitialReserve:       data.InitialReserve.String(),
-		ConstantReserveRatio: strconv.Itoa(int(data.ConstantReserveRatio)),
-		MaxSupply:            data.MaxSupply.String(),
-	})
-}
-
-func (data CreateCoinData) TotalSpend(tx *Transaction, context *state.CheckState) (TotalSpends, []Conversion, *big.Int, *Response) {
+func (data RecreateCoinData) TotalSpend(tx *Transaction, context *state.CheckState) (TotalSpends, []Conversion, *big.Int, *Response) {
 	panic("implement me")
 }
 
-func (data CreateCoinData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data RecreateCoinData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.InitialReserve == nil || data.InitialAmount == nil || data.MaxSupply == nil {
 		return &Response{
 			Code: code.DecodeError,
 			Log:  "Incorrect tx data"}
-	}
-
-	if len(data.Name) > maxCoinNameBytes {
-		return &Response{
-			Code: code.InvalidCoinName,
-			Log:  fmt.Sprintf("Coin name is invalid. Allowed up to %d bytes.", maxCoinNameBytes)}
-	}
-
-	if match, _ := regexp.MatchString(allowedCoinSymbols, data.Symbol.String()); !match {
-		return &Response{
-			Code: code.InvalidCoinSymbol,
-			Log:  fmt.Sprintf("Invalid coin symbol. Should be %s", allowedCoinSymbols)}
-	}
-
-	if context.Coins().ExistsBySymbol(data.Symbol) {
-		return &Response{
-			Code: code.CoinAlreadyExists,
-			Log:  fmt.Sprintf("Coin already exists")}
 	}
 
 	if data.ConstantReserveRatio < 10 || data.ConstantReserveRatio > 100 {
@@ -104,30 +54,37 @@ func (data CreateCoinData) BasicCheck(tx *Transaction, context *state.CheckState
 			Log:  fmt.Sprintf("Coin reserve should be greater than or equal to %s", minCoinReserve.String())}
 	}
 
+	sender, _ := tx.Sender()
+
+	coin := context.Coins().GetCoin(data.Coin)
+	if coin == nil {
+		return &Response{
+			Code: code.CoinNotExists,
+			Log:  fmt.Sprintf("Coin %s not exists", data.Coin),
+		}
+	}
+
+	symbolInfo := context.Coins().GetSymbolInfo(coin.Symbol())
+	if symbolInfo == nil || symbolInfo.OwnerAddress() == nil || symbolInfo.OwnerAddress().Compare(sender) != 0 {
+		return &Response{
+			Code: code.IsNotOwnerOfCoin,
+			Log:  "Sender is not owner of coin",
+		}
+	}
+
 	return nil
 }
 
-func (data CreateCoinData) String() string {
-	return fmt.Sprintf("CREATE COIN symbol:%s reserve:%s amount:%s crr:%d",
-		data.Symbol.String(), data.InitialReserve, data.InitialAmount, data.ConstantReserveRatio)
+func (data RecreateCoinData) String() string {
+	return fmt.Sprintf("RECREATE COIN symbol:%s reserve:%s amount:%s crr:%d",
+		data.Coin.String(), data.InitialReserve, data.InitialAmount, data.ConstantReserveRatio)
 }
 
-func (data CreateCoinData) Gas() int64 {
-	switch len(data.Symbol.String()) {
-	case 3:
-		return 1000000000 // 1mln bips
-	case 4:
-		return 100000000 // 100k bips
-	case 5:
-		return 10000000 // 10k bips
-	case 6:
-		return 1000000 // 1k bips
-	}
-
-	return 100000 // 100 bips
+func (data RecreateCoinData) Gas() int64 {
+	return 10000000 // 10k bips
 }
 
-func (data CreateCoinData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
+func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -135,6 +92,7 @@ func (data CreateCoinData) Run(tx *Transaction, context state.Interface, rewardP
 	if checkState, isCheck = context.(*state.CheckState); !isCheck {
 		checkState = state.NewCheckState(context.(*state.State))
 	}
+
 	response := data.BasicCheck(tx, checkState)
 	if response != nil {
 		return *response
@@ -208,6 +166,11 @@ func (data CreateCoinData) Run(tx *Transaction, context state.Interface, rewardP
 		}
 	}
 
+	tags := kv.Pairs{
+		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeRecreateCoin)}))},
+		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
+	}
+
 	if deliveryState, ok := context.(*state.State); ok {
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
@@ -217,27 +180,24 @@ func (data CreateCoinData) Run(tx *Transaction, context state.Interface, rewardP
 		deliveryState.Accounts.SubBalance(sender, types.GetBaseCoinID(), data.InitialReserve)
 		deliveryState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 
-		coinID := deliveryState.App.GetCoinsCount() + 1
-		deliveryState.Coins.Create(
-			types.CoinID(coinID),
-			data.Symbol,
-			data.Name,
+		coinID := deliveryState.App.GetNextCoinID()
+		deliveryState.Coins.Recreate(
+			coinID,
+			data.Coin,
 			data.InitialAmount,
 			data.ConstantReserveRatio,
 			data.InitialReserve,
 			data.MaxSupply,
-			&sender,
 		)
 
-		deliveryState.App.SetCoinsCount(coinID)
-		deliveryState.Accounts.AddBalance(sender, types.CoinID(coinID), data.InitialAmount)
+		deliveryState.App.SetCoinsCount(coinID.Uint32())
+		deliveryState.Accounts.AddBalance(sender, coinID, data.InitialAmount)
 		deliveryState.Accounts.SetNonce(sender, tx.Nonce)
-	}
 
-	tags := kv.Pairs{
-		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeCreateCoin)}))},
-		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
-		kv.Pair{Key: []byte("tx.coin"), Value: []byte(data.Symbol.String())},
+		tags = append(tags, kv.Pair{
+			Key:   []byte("tx.coin"),
+			Value: coinID.Bytes(),
+		})
 	}
 
 	return Response{

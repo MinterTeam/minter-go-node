@@ -10,15 +10,15 @@ import (
 var minCoinReserve = helpers.BipToPip(big.NewInt(10000))
 
 type Model struct {
-	CName         string
-	CCrr          uint
-	CMaxSupply    *big.Int
-	CVersion      types.CoinVersion
-	CSymbol       types.CoinSymbol
-	COwnerAddress types.Address
+	CName      string
+	CCrr       uint
+	CMaxSupply *big.Int
+	CVersion   types.CoinVersion
+	CSymbol    types.CoinSymbol
 
-	id   types.CoinID
-	info *Info
+	id         types.CoinID
+	info       *Info
+	symbolInfo *SymbolInfo
 
 	markDirty func(symbol types.CoinID)
 
@@ -52,10 +52,6 @@ func (m Model) Reserve() *big.Int {
 
 func (m Model) Version() uint16 {
 	return m.CVersion
-}
-
-func (m Model) OwnerAddress() types.Address {
-	return m.COwnerAddress
 }
 
 func (m *Model) SubVolume(amount *big.Int) {
@@ -109,6 +105,10 @@ func (m Model) IsInfoDirty() bool {
 	return m.info.isDirty
 }
 
+func (m Model) IsSymbolInfoDirty() bool {
+	return m.symbolInfo != nil && m.symbolInfo.isDirty
+}
+
 func (m Model) IsDirty() bool {
 	return m.isDirty
 }
@@ -134,4 +134,14 @@ type Info struct {
 	Reserve *big.Int
 
 	isDirty bool
+}
+
+type SymbolInfo struct {
+	COwnerAddress *types.Address
+
+	isDirty bool
+}
+
+func (i SymbolInfo) OwnerAddress() *types.Address {
+	return i.COwnerAddress
 }

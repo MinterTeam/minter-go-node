@@ -9,7 +9,7 @@ import (
 )
 
 type TxDataResource interface {
-	Transform(txData interface{}, state *state.CheckState) TxDataResource
+	Transform(txData interface{}, context *state.CheckState) TxDataResource
 }
 
 type CoinResource struct {
@@ -25,9 +25,9 @@ type SendDataResource struct {
 	Value string       `json:"value"`
 }
 
-func (SendDataResource) Transform(txData interface{}, state *state.CheckState) TxDataResource {
+func (SendDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
 	data := txData.(*transaction.SendData)
-	coin := state.Coins().GetCoin(data.Coin)
+	coin := context.Coins().GetCoin(data.Coin)
 
 	return SendDataResource{
 		To:    data.To.String(),
@@ -45,10 +45,10 @@ type SellCoinDataResource struct {
 	MinimumValueToBuy string       `json:"minimum_value_to_buy"`
 }
 
-func (SellCoinDataResource) Transform(txData interface{}, state *state.CheckState) TxDataResource {
+func (SellCoinDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
 	data := txData.(*transaction.SellCoinData)
-	buyCoin := state.Coins().GetCoin(data.CoinToBuy)
-	sellCoin := state.Coins().GetCoin(data.CoinToSell)
+	buyCoin := context.Coins().GetCoin(data.CoinToBuy)
+	sellCoin := context.Coins().GetCoin(data.CoinToSell)
 
 	return SellCoinDataResource{
 		ValueToSell:       data.ValueToSell.String(),
@@ -66,10 +66,10 @@ type SellAllCoinDataResource struct {
 	MinimumValueToBuy string       `json:"minimum_value_to_buy"`
 }
 
-func (SellAllCoinDataResource) Transform(txData interface{}, state *state.CheckState) TxDataResource {
+func (SellAllCoinDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
 	data := txData.(*transaction.SellAllCoinData)
-	buyCoin := state.Coins().GetCoin(data.CoinToBuy)
-	sellCoin := state.Coins().GetCoin(data.CoinToSell)
+	buyCoin := context.Coins().GetCoin(data.CoinToBuy)
+	sellCoin := context.Coins().GetCoin(data.CoinToSell)
 
 	return SellAllCoinDataResource{
 		MinimumValueToBuy: data.MinimumValueToBuy.String(),
@@ -87,10 +87,10 @@ type BuyCoinDataResource struct {
 	MaximumValueToSell string       `json:"maximum_value_to_sell"`
 }
 
-func (BuyCoinDataResource) Transform(txData interface{}, state *state.CheckState) TxDataResource {
+func (BuyCoinDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
 	data := txData.(*transaction.BuyCoinData)
-	buyCoin := state.Coins().GetCoin(data.CoinToBuy)
-	sellCoin := state.Coins().GetCoin(data.CoinToSell)
+	buyCoin := context.Coins().GetCoin(data.CoinToBuy)
+	sellCoin := context.Coins().GetCoin(data.CoinToSell)
 
 	return BuyCoinDataResource{
 		ValueToBuy:         data.ValueToBuy.String(),
@@ -111,7 +111,7 @@ type CreateCoinDataResource struct {
 	MaxSupply            string `json:"max_supply"`
 }
 
-func (CreateCoinDataResource) Transform(txData interface{}, state *state.CheckState) TxDataResource {
+func (CreateCoinDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
 	data := txData.(*transaction.CreateCoinData)
 
 	return CreateCoinDataResource{
@@ -134,9 +134,9 @@ type DeclareCandidacyDataResource struct {
 	Stake      string       `json:"stake"`
 }
 
-func (DeclareCandidacyDataResource) Transform(txData interface{}, state *state.CheckState) TxDataResource {
+func (DeclareCandidacyDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
 	data := txData.(*transaction.DeclareCandidacyData)
-	coin := state.Coins().GetCoin(data.Coin)
+	coin := context.Coins().GetCoin(data.Coin)
 
 	return DeclareCandidacyDataResource{
 		Address:    data.Address.String(),
@@ -155,9 +155,9 @@ type DelegateDataResource struct {
 	Value  string       `json:"value"`
 }
 
-func (DelegateDataResource) Transform(txData interface{}, state *state.CheckState) TxDataResource {
+func (DelegateDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
 	data := txData.(*transaction.DelegateData)
-	coin := state.Coins().GetCoin(data.Coin)
+	coin := context.Coins().GetCoin(data.Coin)
 
 	return DelegateDataResource{
 		PubKey: data.PubKey.String(),
@@ -174,9 +174,9 @@ type UnbondDataResource struct {
 	Value  string       `json:"value"`
 }
 
-func (UnbondDataResource) Transform(txData interface{}, state *state.CheckState) TxDataResource {
+func (UnbondDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
 	data := txData.(*transaction.UnbondData)
-	coin := state.Coins().GetCoin(data.Coin)
+	coin := context.Coins().GetCoin(data.Coin)
 
 	return UnbondDataResource{
 		PubKey: data.PubKey.String(),
@@ -192,7 +192,7 @@ type RedeemCheckDataResource struct {
 	Proof    string `json:"proof"`
 }
 
-func (RedeemCheckDataResource) Transform(txData interface{}, state *state.CheckState) TxDataResource {
+func (RedeemCheckDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
 	data := txData.(*transaction.RedeemCheckData)
 
 	return RedeemCheckDataResource{
@@ -207,7 +207,7 @@ type SetCandidateOnDataResource struct {
 	PubKey string `json:"pub_key"`
 }
 
-func (SetCandidateOnDataResource) Transform(txData interface{}, state *state.CheckState) TxDataResource {
+func (SetCandidateOnDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
 	data := txData.(*transaction.SetCandidateOnData)
 	return SetCandidateOnDataResource{data.PubKey.String()}
 }
@@ -218,7 +218,7 @@ type SetCandidateOffDataResource struct {
 	PubKey string `json:"pub_key"`
 }
 
-func (SetCandidateOffDataResource) Transform(txData interface{}, state *state.CheckState) TxDataResource {
+func (SetCandidateOffDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
 	data := txData.(*transaction.SetCandidateOffData)
 	return SetCandidateOffDataResource{data.PubKey.String()}
 }
@@ -231,7 +231,7 @@ type CreateMultisigDataResource struct {
 	Addresses []types.Address `json:"addresses"`
 }
 
-func (CreateMultisigDataResource) Transform(txData interface{}, state *state.CheckState) TxDataResource {
+func (CreateMultisigDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
 	data := txData.(*transaction.CreateMultisigData)
 
 	var weights []string
@@ -252,11 +252,11 @@ type MultiSendDataResource struct {
 	List []SendDataResource `json:"list"`
 }
 
-func (resource MultiSendDataResource) Transform(txData interface{}, state *state.CheckState) TxDataResource {
+func (resource MultiSendDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
 	data := txData.(*transaction.MultisendData)
 
 	for _, v := range data.List {
-		coin := state.Coins().GetCoin(v.Coin)
+		coin := context.Coins().GetCoin(v.Coin)
 
 		resource.List = append(resource.List, SendDataResource{
 			Coin:  CoinResource{coin.ID().Uint32(), coin.GetFullSymbol()},
@@ -276,7 +276,7 @@ type EditCandidateDataResource struct {
 	OwnerAddress  string `json:"owner_address"`
 }
 
-func (EditCandidateDataResource) Transform(txData interface{}, state *state.CheckState) TxDataResource {
+func (EditCandidateDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
 	data := txData.(*transaction.EditCandidateData)
 
 	return EditCandidateDataResource{
@@ -293,11 +293,53 @@ type SetHaltBlockDataResource struct {
 	Height string `json:"height"`
 }
 
-func (SetHaltBlockDataResource) Transform(txData interface{}, state *state.CheckState) TxDataResource {
+func (SetHaltBlockDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
 	data := txData.(*transaction.SetHaltBlockData)
 
 	return SetHaltBlockDataResource{
 		PubKey: data.PubKey.String(),
 		Height: strconv.FormatUint(data.Height, 10),
+	}
+}
+
+// TxType 0x10
+
+type RecreateCoinDataResource struct {
+	Coin                 CoinResource `json:"coin"`
+	InitialAmount        string       `json:"initial_amount"`
+	InitialReserve       string       `json:"initial_reserve"`
+	ConstantReserveRatio string       `json:"constant_reserve_ratio"`
+	MaxSupply            string       `json:"max_supply"`
+}
+
+func (RecreateCoinDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
+	data := txData.(*transaction.RecreateCoinData)
+	coin := context.Coins().GetCoin(data.Coin)
+
+	return RecreateCoinDataResource{
+		Coin: CoinResource{
+			ID:     coin.ID().Uint32(),
+			Symbol: coin.GetFullSymbol(),
+		},
+		InitialAmount:        data.InitialAmount.String(),
+		InitialReserve:       data.InitialReserve.String(),
+		ConstantReserveRatio: strconv.Itoa(int(data.ConstantReserveRatio)),
+		MaxSupply:            data.MaxSupply.String(),
+	}
+}
+
+// TxType 0x11
+
+type ChangeOwnerDataResource struct {
+	Symbol   types.CoinSymbol `json:"symbol"`
+	NewOwner types.Address    `json:"new_owner"`
+}
+
+func (ChangeOwnerDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
+	data := txData.(*transaction.ChangeOwnerData)
+
+	return ChangeOwnerDataResource{
+		Symbol:   data.Symbol,
+		NewOwner: data.NewOwner,
 	}
 }
