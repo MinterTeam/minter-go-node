@@ -30,17 +30,26 @@ func Addresses(addresses []types.Address, height int) (*[]AddressesResponse, err
 			TransactionCount: cState.Accounts().GetNonce(address),
 		}
 
+		isBaseCoinExists := false
 		for k, b := range balances {
 			data.Balance[k] = BalanceItem{
 				CoinID: b.Coin.ID.Uint32(),
 				Symbol: b.Coin.GetFullSymbol(),
 				Value:  b.Value.String(),
 			}
+
+			if b.Coin.ID.IsBaseCoin() {
+				isBaseCoinExists = true
+			}
 		}
 
-		//if _, exists := data.Balance[types.GetBaseCoin().String()]; !exists {
-		//	data.Balance[types.GetBaseCoin().String()] = "0"
-		//}
+		if !isBaseCoinExists {
+			data.Balance = append(data.Balance, BalanceItem{
+				CoinID: types.GetBaseCoinID().Uint32(),
+				Symbol: types.GetBaseCoin().String(),
+				Value:  "0",
+			})
+		}
 
 		response[i] = data
 	}
