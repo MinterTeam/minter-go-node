@@ -118,9 +118,9 @@ func (data EditCandidateData) Run(tx *Transaction, context state.Interface, rewa
 	if checkState.Candidates().IsBlockPubKey(data.NewPubKey) {
 		return Response{
 			Code: code.PublicKeyInBlockList,
-			Log:  fmt.Sprintf("Candidate with such public key (%s) exists in block list", data.PubKey.String()),
+			Log:  fmt.Sprintf("Candidate with such public key (%s) exists in block list", data.NewPubKey.String()),
 			Info: EncodeError(map[string]string{
-				"public_key": data.PubKey.String(),
+				"public_key": data.NewPubKey.String(),
 			}),
 		}
 	}
@@ -132,10 +132,10 @@ func (data EditCandidateData) Run(tx *Transaction, context state.Interface, rewa
 		deliveryState.Coins.SubVolume(tx.GasCoin, commission)
 
 		deliveryState.Accounts.SubBalance(sender, tx.GasCoin, commission)
+		deliveryState.Candidates.Edit(data.PubKey, data.RewardAddress, data.OwnerAddress, data.ControlAddress)
 		if data.NewPubKey != nil {
 			deliveryState.Candidates.ChangePubKey(data.PubKey, *data.NewPubKey)
 		}
-		deliveryState.Candidates.Edit(data.PubKey, data.RewardAddress, data.OwnerAddress, data.ControlAddress)
 		deliveryState.Accounts.SetNonce(sender, tx.Nonce)
 	}
 
