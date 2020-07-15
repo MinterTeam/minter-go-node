@@ -7,11 +7,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/rpc/lib/types"
 )
 
-type Coin struct {
-	ID     uint32 `json:"id"`
-	Symbol string `json:"symbol"`
-}
-
 type Stake struct {
 	Owner    string `json:"owner"`
 	Coin     Coin   `json:"coin"`

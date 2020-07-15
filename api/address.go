@@ -15,6 +15,11 @@ type BalanceItem struct {
 	Value  string `json:"value"`
 }
 
+type Coin struct {
+	ID     uint32 `json:"id"`
+	Symbol string `json:"symbol"`
+}
+
 func Address(address types.Address, height int) (*AddressResponse, error) {
 	cState, err := GetStateForHeight(height)
 	if err != nil {
