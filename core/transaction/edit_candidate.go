@@ -118,9 +118,9 @@ func (data EditCandidateData) Run(tx *Transaction, context state.Interface, rewa
 	if checkState.Candidates().IsBlockPubKey(data.NewPubKey) {
 		return Response{
 			Code: code.PublicKeyInBlockList,
-			Log:  fmt.Sprintf("Candidate with such public key (%s) exists in block list", data.NewPubKey.String()),
+			Log:  fmt.Sprintf("Public key (%s) exists in block list", data.NewPubKey.String()),
 			Info: EncodeError(map[string]string{
-				"public_key": data.NewPubKey.String(),
+				"new_public_key": data.NewPubKey.String(),
 			}),
 		}
 	}
