@@ -18,6 +18,10 @@ func GetBaseCoin() CoinSymbol {
 	return getBaseCoin(CurrentChainID)
 }
 
+func GetBaseCoinID() CoinID {
+	return BasecoinID
+}
+
 func getBaseCoin(chainID ChainID) CoinSymbol {
 	switch chainID {
 	case ChainMainnet:

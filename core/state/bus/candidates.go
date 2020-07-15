@@ -16,7 +16,7 @@ type Candidates interface {
 type Stake struct {
 	Owner    types.Address
 	Value    *big.Int
-	Coin     types.CoinSymbol
+	Coin     types.CoinID
 	BipValue *big.Int
 }
 

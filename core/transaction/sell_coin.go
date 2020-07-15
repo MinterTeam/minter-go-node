@@ -14,9 +14,9 @@ import (
 )
 
 type SellCoinData struct {
-	CoinToSell        types.CoinSymbol
+	CoinToSell        types.CoinID
 	ValueToSell       *big.Int
-	CoinToBuy         types.CoinSymbol
+	CoinToBuy         types.CoinID
 	MinimumValueToBuy *big.Int
 }
 
@@ -70,7 +70,7 @@ func (data SellCoinData) TotalSpend(tx *Transaction, context *state.CheckState) 
 				FromCoin:    tx.GasCoin,
 				FromAmount:  commission,
 				FromReserve: commissionInBaseCoin,
-				ToCoin:      types.GetBaseCoin(),
+				ToCoin:      types.GetBaseCoinID(),
 			})
 		}
 
@@ -135,7 +135,7 @@ func (data SellCoinData) TotalSpend(tx *Transaction, context *state.CheckState) 
 				FromCoin:    tx.GasCoin,
 				FromAmount:  c,
 				FromReserve: commissionInBaseCoin,
-				ToCoin:      types.GetBaseCoin(),
+				ToCoin:      types.GetBaseCoinID(),
 			})
 		}
 
@@ -186,7 +186,7 @@ func (data SellCoinData) TotalSpend(tx *Transaction, context *state.CheckState) 
 				FromCoin:    tx.GasCoin,
 				FromAmount:  c,
 				FromReserve: commissionInBaseCoin,
-				ToCoin:      types.GetBaseCoin(),
+				ToCoin:      types.GetBaseCoinID(),
 			})
 		}
 
@@ -219,7 +219,7 @@ func (data SellCoinData) TotalSpend(tx *Transaction, context *state.CheckState) 
 				FromCoin:    tx.GasCoin,
 				FromAmount:  commission,
 				FromReserve: commissionInBaseCoin,
-				ToCoin:      types.GetBaseCoin(),
+				ToCoin:      types.GetBaseCoinID(),
 			})
 		}
 
@@ -266,7 +266,7 @@ func (data SellCoinData) TotalSpend(tx *Transaction, context *state.CheckState) 
 				FromCoin:    tx.GasCoin,
 				FromAmount:  commission,
 				FromReserve: commissionInBaseCoin,
-				ToCoin:      types.GetBaseCoin(),
+				ToCoin:      types.GetBaseCoinID(),
 			})
 		}
 

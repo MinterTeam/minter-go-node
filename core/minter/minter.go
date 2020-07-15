@@ -260,10 +260,6 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.ResponseEndBlock {
 	height := uint64(req.Height)
 
-	if height == upgrades.UpgradeBlock3 {
-		ApplyUpgrade3(app.stateDeliver, app.eventsDB)
-	}
-
 	var updates []abciTypes.ValidatorUpdate
 
 	vals := app.stateDeliver.Validators.GetValidators()
@@ -297,7 +293,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 
 	// accumulate rewards
 	reward := rewards.GetRewardForBlock(height)
-	app.stateDeliver.Checker.AddCoinVolume(types.GetBaseCoin(), reward)
+	app.stateDeliver.Checker.AddCoinVolume(types.GetBaseCoinID(), reward)
 	reward.Add(reward, app.rewards)
 
 	// compute remainder to keep total emission consist

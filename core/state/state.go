@@ -13,6 +13,11 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/state/coins"
 	"github.com/MinterTeam/minter-go-node/core/state/frozenfunds"
 	"github.com/MinterTeam/minter-go-node/core/state/halts"
+	legacyAccounts "github.com/MinterTeam/minter-go-node/core/state/legacy/accounts"
+	legacyApp "github.com/MinterTeam/minter-go-node/core/state/legacy/app"
+	legacyCandidates "github.com/MinterTeam/minter-go-node/core/state/legacy/candidates"
+	legacyCoins "github.com/MinterTeam/minter-go-node/core/state/legacy/coins"
+	legacyFrozenfunds "github.com/MinterTeam/minter-go-node/core/state/legacy/frozenfunds"
 	"github.com/MinterTeam/minter-go-node/core/state/validators"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/helpers"
@@ -160,7 +165,7 @@ func (s *State) Check() error {
 	return nil
 }
 
-const countBatchBlocksDelete = 100
+const countBatchBlocksDelete = 60
 
 func (s *State) Commit() ([]byte, error) {
 	s.Checker.Reset()
@@ -205,7 +210,7 @@ func (s *State) Commit() ([]byte, error) {
 		return hash, err
 	}
 
-	if version%countBatchBlocksDelete == 0 && version-countBatchBlocksDelete > s.keepLastStates {
+	if version%countBatchBlocksDelete == 30 && version-countBatchBlocksDelete > s.keepLastStates {
 		if err := s.tree.DeleteVersionsIfExists(version-countBatchBlocksDelete-s.keepLastStates, version-s.keepLastStates); err != nil {
 			return hash, err
 		}
@@ -217,6 +222,7 @@ func (s *State) Commit() ([]byte, error) {
 func (s *State) Import(state types.AppState) error {
 	s.App.SetMaxGas(state.MaxGas)
 	s.App.SetTotalSlashed(helpers.StringToBigInt(state.TotalSlashed))
+	s.App.SetCoinsCount(state.CoinsCount)
 
 	for _, a := range state.Accounts {
 		if a.MultisigData != nil {
@@ -231,7 +237,8 @@ func (s *State) Import(state types.AppState) error {
 	}
 
 	for _, c := range state.Coins {
-		s.Coins.Create(c.Symbol, c.Name, helpers.StringToBigInt(c.Volume), c.Crr, helpers.StringToBigInt(c.Reserve), helpers.StringToBigInt(c.MaxSupply))
+		s.Coins.Create(c.ID, c.Symbol, c.Name, helpers.StringToBigInt(c.Volume),
+			c.Crr, helpers.StringToBigInt(c.Reserve), helpers.StringToBigInt(c.MaxSupply), c.OwnerAddress)
 	}
 
 	var vals []*validators.Validator
@@ -310,6 +317,56 @@ func (s *State) Export11To12(height uint64) types.AppState {
 	state.Checks().Export(appState)
 
 	return *appState
+}
+
+func (s *State) Export11To12(height uint64) types.AppState {
+	iavlTree := tree.NewImmutableTree(height, s.db)
+
+	candidatesState, err := legacyCandidates.NewCandidates(nil, iavlTree)
+	if err != nil {
+		log.Panicf("Create new state at height %d failed: %s", height, err)
+	}
+
+	validatorsState, err := validators.NewValidators(nil, iavlTree)
+	if err != nil {
+		log.Panicf("Create new state at height %d failed: %s", height, err)
+	}
+
+	appState, err := legacyApp.NewApp(nil, iavlTree)
+	if err != nil {
+		log.Panicf("Create new state at height %d failed: %s", height, err)
+	}
+
+	frozenFundsState, err := legacyFrozenfunds.NewFrozenFunds(nil, iavlTree)
+	if err != nil {
+		log.Panicf("Create new state at height %d failed: %s", height, err)
+	}
+
+	accountsState, err := legacyAccounts.NewAccounts(nil, iavlTree)
+	if err != nil {
+		log.Panicf("Create new state at height %d failed: %s", height, err)
+	}
+
+	coinsState, err := legacyCoins.NewCoins(nil, iavlTree)
+	if err != nil {
+		log.Panicf("Create new state at height %d failed: %s", height, err)
+	}
+
+	checksState, err := checks.NewChecks(iavlTree)
+	if err != nil {
+		log.Panicf("Create new state at height %d failed: %s", height, err)
+	}
+
+	state := new(types.AppState)
+	appState.Export(state, height)
+	coinsState.Export(state)
+	validatorsState.Export(state)
+	candidatesState.Export11To12(state)
+	frozenFundsState.Export(state, height)
+	accountsState.Export(state)
+	checksState.Export(state)
+
+	return *state
 }
 
 func newCheckStateForTree(iavlTree tree.MTree, events eventsdb.IEventsDB, db db.DB, keepLastStates int64) (*CheckState, error) {

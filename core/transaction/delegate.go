@@ -16,7 +16,7 @@ import (
 
 type DelegateData struct {
 	PubKey types.Pubkey
-	Coin   types.CoinSymbol
+	Coin   types.CoinID
 	Value  *big.Int
 }
 

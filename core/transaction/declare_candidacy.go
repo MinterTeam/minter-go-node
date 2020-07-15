@@ -22,7 +22,7 @@ type DeclareCandidacyData struct {
 	Address    types.Address
 	PubKey     types.Pubkey
 	Commission uint
-	Coin       types.CoinSymbol
+	Coin       types.CoinID
 	Stake      *big.Int
 }
 

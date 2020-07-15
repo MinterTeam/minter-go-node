@@ -46,7 +46,7 @@ func (data MultisendData) BasicCheck(tx *Transaction, context *state.CheckState)
 }
 
 type MultisendDataItem struct {
-	Coin  types.CoinSymbol
+	Coin  types.CoinID
 	To    types.Address
 	Value *big.Int
 }
@@ -143,8 +143,8 @@ func (data MultisendData) Run(tx *Transaction, context state.Interface, rewardPo
 	}
 }
 
-func checkBalances(context *state.CheckState, sender types.Address, items []MultisendDataItem, commission *big.Int, gasCoin types.CoinSymbol) *Response {
-	total := map[types.CoinSymbol]*big.Int{}
+func checkBalances(context *state.CheckState, sender types.Address, items []MultisendDataItem, commission *big.Int, gasCoin types.CoinID) *Response {
+	total := map[types.CoinID]*big.Int{}
 	total[gasCoin] = big.NewInt(0).Set(commission)
 
 	for _, item := range items {
@@ -155,13 +155,13 @@ func checkBalances(context *state.CheckState, sender types.Address, items []Mult
 		total[item.Coin].Add(total[item.Coin], item.Value)
 	}
 
-	coins := make([]types.CoinSymbol, 0, len(total))
+	coins := make([]types.CoinID, 0, len(total))
 	for k := range total {
 		coins = append(coins, k)
 	}
 
 	sort.SliceStable(coins, func(i, j int) bool {
-		return coins[i].Compare(coins[j]) == 1
+		return coins[i] > coins[j]
 	})
 
 	for _, coin := range coins {

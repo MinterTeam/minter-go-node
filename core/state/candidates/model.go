@@ -185,7 +185,7 @@ func (candidate *Candidate) SetStakeAtIndex(index int, stake *Stake, isDirty boo
 
 type Stake struct {
 	Owner    types.Address
-	Coin     types.CoinSymbol
+	Coin     types.CoinID
 	Value    *big.Int
 	BipValue *big.Int
 
@@ -211,7 +211,7 @@ func (stake *Stake) setBipValue(value *big.Int) {
 	stake.BipValue.Set(value)
 }
 
-func (stake *Stake) setNewOwner(coin types.CoinSymbol, owner types.Address) {
+func (stake *Stake) setNewOwner(coin types.CoinID, owner types.Address) {
 	stake.Coin = coin
 	stake.Owner = owner
 	stake.BipValue = big.NewInt(0)
@@ -224,17 +224,17 @@ func (stake *Stake) setValue(ret *big.Int) {
 	stake.Value.Set(ret)
 }
 
-func (stake *Stake) setCoin(coin types.CoinSymbol) {
+func (stake *Stake) setCoin(coin types.CoinID) {
 	stake.markDirty(stake.index)
 	stake.Coin = coin
 }
 
 type coinsCache struct {
-	list map[types.CoinSymbol]*coinsCacheItem
+	list map[types.CoinID]*coinsCacheItem
 }
 
 func newCoinsCache() *coinsCache {
-	return &coinsCache{list: map[types.CoinSymbol]*coinsCacheItem{}}
+	return &coinsCache{list: map[types.CoinID]*coinsCacheItem{}}
 }
 
 type coinsCacheItem struct {
@@ -242,29 +242,29 @@ type coinsCacheItem struct {
 	totalAmount *big.Int
 }
 
-func (c *coinsCache) Exists(symbol types.CoinSymbol) bool {
+func (c *coinsCache) Exists(id types.CoinID) bool {
 	if c == nil {
 		return false
 	}
 
-	_, exists := c.list[symbol]
+	_, exists := c.list[id]
 
 	return exists
 }
 
-func (c *coinsCache) Get(symbol types.CoinSymbol) (totalPower *big.Int, totalAmount *big.Int) {
-	return c.list[symbol].totalPower, c.list[symbol].totalAmount
+func (c *coinsCache) Get(id types.CoinID) (totalPower *big.Int, totalAmount *big.Int) {
+	return c.list[id].totalPower, c.list[id].totalAmount
 }
 
-func (c *coinsCache) Set(symbol types.CoinSymbol, totalPower *big.Int, totalAmount *big.Int) {
+func (c *coinsCache) Set(id types.CoinID, totalPower *big.Int, totalAmount *big.Int) {
 	if c == nil {
 		return
 	}
 
-	if c.list[symbol] == nil {
-		c.list[symbol] = &coinsCacheItem{}
+	if c.list[id] == nil {
+		c.list[id] = &coinsCacheItem{}
 	}
 
-	c.list[symbol].totalAmount = totalAmount
-	c.list[symbol].totalPower = totalPower
+	c.list[id].totalAmount = totalAmount
+	c.list[id].totalPower = totalPower
 }
