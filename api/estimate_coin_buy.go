@@ -15,7 +15,7 @@ type EstimateCoinBuyResponse struct {
 	Commission string `json:"commission"`
 }
 
-func EstimateCoinBuy(coinToSellString string, coinToBuyString string, valueToBuy *big.Int, height int) (*EstimateCoinBuyResponse, error) {
+func EstimateCoinBuy(coinIdToSell uint64, coinIdToBuy uint64, valueToBuy *big.Int, height int) (*EstimateCoinBuyResponse, error) {
 	cState, err := GetStateForHeight(height)
 	if err != nil {
 		return nil, err
@@ -24,8 +24,8 @@ func EstimateCoinBuy(coinToSellString string, coinToBuyString string, valueToBuy
 	cState.RLock()
 	defer cState.RUnlock()
 
-	coinToSell := types.StrToCoinSymbol(coinToSellString)
-	coinToBuy := types.StrToCoinSymbol(coinToBuyString)
+	coinToSell := types.CoinID(coinIdToSell)
+	coinToBuy := types.CoinID(coinIdToBuy)
 
 	var result *big.Int
 
@@ -45,7 +45,7 @@ func EstimateCoinBuy(coinToSellString string, coinToBuyString string, valueToBuy
 	commissionInBaseCoin.Mul(commissionInBaseCoin, transaction.CommissionMultiplier)
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
-	if coinToSell != types.GetBaseCoin() {
+	if coinToSell != types.GetBaseCoinID() {
 		coin := cState.Coins().GetCoin(coinToSell)
 
 		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
@@ -57,10 +57,10 @@ func EstimateCoinBuy(coinToSellString string, coinToBuyString string, valueToBuy
 	}
 
 	switch {
-	case coinToSell == types.GetBaseCoin():
+	case coinToSell == types.GetBaseCoinID():
 		coin := cState.Coins().GetCoin(coinToBuy)
 		result = formula.CalculatePurchaseAmount(coin.Volume(), coin.Reserve(), coin.Crr(), valueToBuy)
-	case coinToBuy == types.GetBaseCoin():
+	case coinToBuy == types.GetBaseCoinID():
 		coin := cState.Coins().GetCoin(coinToSell)
 
 		if coin.Reserve().Cmp(valueToBuy) < 0 {

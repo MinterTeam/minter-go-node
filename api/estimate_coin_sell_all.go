@@ -13,8 +13,7 @@ type EstimateCoinSellAllResponse struct {
 	WillGet string `json:"will_get"`
 }
 
-func EstimateCoinSellAll(
-	coinToSellString string, coinToBuyString string, valueToSell *big.Int, gasPrice uint64, height int) (*EstimateCoinSellAllResponse,
+func EstimateCoinSellAll(coinIdToSell uint64, coinIdToBuy uint64, valueToSell *big.Int, gasPrice uint64, height int) (*EstimateCoinSellAllResponse,
 	error) {
 	cState, err := GetStateForHeight(height)
 	if err != nil {
@@ -28,8 +27,8 @@ func EstimateCoinSellAll(
 		gasPrice = 1
 	}
 
-	coinToSell := types.StrToCoinSymbol(coinToSellString)
-	coinToBuy := types.StrToCoinSymbol(coinToBuyString)
+	coinToSell := types.CoinID(coinIdToSell)
+	coinToBuy := types.CoinID(coinIdToBuy)
 
 	var result *big.Int
 
@@ -50,7 +49,7 @@ func EstimateCoinSellAll(
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
 	switch {
-	case coinToSell == types.GetBaseCoin():
+	case coinToSell == types.GetBaseCoinID():
 		coin := cState.Coins().GetCoin(coinToBuy)
 
 		valueToSell.Sub(valueToSell, commission)
@@ -59,7 +58,7 @@ func EstimateCoinSellAll(
 		}
 
 		result = formula.CalculatePurchaseReturn(coin.Volume(), coin.Reserve(), coin.Crr(), valueToSell)
-	case coinToBuy == types.GetBaseCoin():
+	case coinToBuy == types.GetBaseCoinID():
 		coin := cState.Coins().GetCoin(coinToSell)
 		result = formula.CalculateSaleReturn(coin.Volume(), coin.Reserve(), coin.Crr(), valueToSell)
 

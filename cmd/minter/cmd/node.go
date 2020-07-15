@@ -3,17 +3,13 @@ package cmd
 import (
 	"fmt"
 	api_v1 "github.com/MinterTeam/minter-go-node/api"
-	api_v2 "github.com/MinterTeam/minter-go-node/api/v2"
-	service_api "github.com/MinterTeam/minter-go-node/api/v2/service"
 	"github.com/MinterTeam/minter-go-node/cli/service"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/minter"
 	"github.com/MinterTeam/minter-go-node/core/statistics"
 	"github.com/MinterTeam/minter-go-node/log"
-	"github.com/MinterTeam/minter-go-node/version"
 	"github.com/spf13/cobra"
-	"github.com/tendermint/go-amino"
 	"github.com/tendermint/tendermint/abci/types"
 	tmCfg "github.com/tendermint/tendermint/config"
 	tmlog "github.com/tendermint/tendermint/libs/log"
@@ -28,7 +24,6 @@ import (
 	"io"
 	"net/http"
 	_ "net/http/pprof"
-	"net/url"
 	"os"
 	"syscall"
 )
@@ -112,19 +107,19 @@ func runNode(cmd *cobra.Command) error {
 	app.SetTmNode(node)
 
 	if !cfg.ValidatorMode {
-		go func(srv *service_api.Service) {
-			grpcUrl, err := url.Parse(cfg.GRPCListenAddress)
-			if err != nil {
-				logger.Error("Failed to parse gRPC address", err)
-			}
-			apiV2url, err := url.Parse(cfg.APIv2ListenAddress)
-			if err != nil {
-				logger.Error("Failed to parse API v2 address", err)
-			}
-			traceLog := os.Getenv("API_V2_LOG_LEVEL") == "trace"
-			logger.Error("Failed to start Api V2 in both gRPC and RESTful",
-				api_v2.Run(srv, grpcUrl.Host, apiV2url.Host, traceLog))
-		}(service_api.NewService(amino.NewCodec(), app, client, node, cfg, version.Version))
+		//go func(srv *service_api.Service) {
+		//	grpcUrl, err := url.Parse(cfg.GRPCListenAddress)
+		//	if err != nil {
+		//		logger.Error("Failed to parse gRPC address", err)
+		//	}
+		//	apiV2url, err := url.Parse(cfg.APIv2ListenAddress)
+		//	if err != nil {
+		//		logger.Error("Failed to parse API v2 address", err)
+		//	}
+		//	traceLog := os.Getenv("API_V2_LOG_LEVEL") == "trace"
+		//	logger.Error("Failed to start Api V2 in both gRPC and RESTful",
+		//		api_v2.Run(srv, grpcUrl.Host, apiV2url.Host, traceLog))
+		//}(service_api.NewService(amino.NewCodec(), app, client, node, cfg, version.Version))
 
 		go api_v1.RunAPI(app, client, cfg, logger)
 	}

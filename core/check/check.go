@@ -20,9 +20,9 @@ type Check struct {
 	Nonce    []byte
 	ChainID  types.ChainID
 	DueBlock uint64
-	Coin     types.CoinSymbol
+	Coin     types.CoinID
 	Value    *big.Int
-	GasCoin  types.CoinSymbol
+	GasCoin  types.CoinID
 	Lock     *big.Int
 	V        *big.Int
 	R        *big.Int

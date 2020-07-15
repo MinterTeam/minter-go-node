@@ -140,7 +140,7 @@ func (s *slash) compile(pubKey string, address [20]byte) Event {
 	event := new(SlashEvent)
 	copy(event.ValidatorPubKey[:], pubKey)
 	copy(event.Address[:], address[:])
-	copy(event.Coin[:], s.Coin[:])
+	copy(event.Coin.Bytes(), s.Coin[:])
 	event.Amount = big.NewInt(0).SetBytes(s.Amount).String()
 	return event
 }
@@ -154,10 +154,10 @@ func (s *slash) pubKeyID() uint16 {
 }
 
 type SlashEvent struct {
-	Address         types.Address    `json:"address"`
-	Amount          string           `json:"amount"`
-	Coin            types.CoinSymbol `json:"coin"`
-	ValidatorPubKey types.Pubkey     `json:"validator_pub_key"`
+	Address         types.Address `json:"address"`
+	Amount          string        `json:"amount"`
+	Coin            types.CoinID  `json:"coin"`
+	ValidatorPubKey types.Pubkey  `json:"validator_pub_key"`
 }
 
 func (se *SlashEvent) AddressString() string {
@@ -179,7 +179,7 @@ func (se *SlashEvent) validatorPubKey() types.Pubkey {
 func (se *SlashEvent) convert(pubKeyID uint16, addressID uint32) compactEvent {
 	result := new(slash)
 	result.AddressID = addressID
-	copy(result.Coin[:], se.Coin[:])
+	copy(result.Coin[:], se.Coin.Bytes())
 	bi, _ := big.NewInt(0).SetString(se.Amount, 10)
 	result.Amount = bi.Bytes()
 	result.PubKeyID = pubKeyID
@@ -197,7 +197,7 @@ func (u *unbond) compile(pubKey string, address [20]byte) Event {
 	event := new(UnbondEvent)
 	copy(event.ValidatorPubKey[:], pubKey)
 	copy(event.Address[:], address[:])
-	copy(event.Coin[:], u.Coin[:])
+	copy(event.Coin.Bytes(), u.Coin[:])
 	event.Amount = big.NewInt(0).SetBytes(u.Amount).String()
 	return event
 }
@@ -211,10 +211,10 @@ func (u *unbond) pubKeyID() uint16 {
 }
 
 type UnbondEvent struct {
-	Address         types.Address    `json:"address"`
-	Amount          string           `json:"amount"`
-	Coin            types.CoinSymbol `json:"coin"`
-	ValidatorPubKey types.Pubkey     `json:"validator_pub_key"`
+	Address         types.Address `json:"address"`
+	Amount          string        `json:"amount"`
+	Coin            types.CoinID  `json:"coin"`
+	ValidatorPubKey types.Pubkey  `json:"validator_pub_key"`
 }
 
 func (ue *UnbondEvent) AddressString() string {
@@ -236,7 +236,7 @@ func (ue *UnbondEvent) validatorPubKey() types.Pubkey {
 func (ue *UnbondEvent) convert(pubKeyID uint16, addressID uint32) compactEvent {
 	result := new(unbond)
 	result.AddressID = addressID
-	copy(result.Coin[:], ue.Coin[:])
+	copy(result.Coin[:], ue.Coin.Bytes())
 	bi, _ := big.NewInt(0).SetString(ue.Amount, 10)
 	result.Amount = bi.Bytes()
 	result.PubKeyID = pubKeyID

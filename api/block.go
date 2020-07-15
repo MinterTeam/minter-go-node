@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/rewards"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
+	"github.com/MinterTeam/minter-go-node/core/transaction/encoder"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/rpc/lib/types"
 	core_types "github.com/tendermint/tendermint/rpc/core/types"
@@ -88,7 +89,13 @@ func Block(height int64) (*BlockResponse, error) {
 			tags[string(tag.Key)] = string(tag.Value)
 		}
 
-		data, err := encodeTxData(tx)
+		cState, err := GetStateForHeight(int(height))
+		if err != nil {
+			return nil, err
+		}
+
+		txJsonEncoder := encoder.NewTxEncoderJSON(cState)
+		data, err := txJsonEncoder.EncodeData(tx)
 		if err != nil {
 			return nil, err
 		}

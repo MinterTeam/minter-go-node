@@ -18,7 +18,7 @@ const unbondPeriod = 518400
 
 type UnbondData struct {
 	PubKey types.Pubkey
-	Coin   types.CoinSymbol
+	Coin   types.CoinID
 	Value  *big.Int
 }
 

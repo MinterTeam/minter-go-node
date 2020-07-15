@@ -50,7 +50,7 @@ func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.
 		balances := cState.Accounts().GetBalances(address)
 		var res pb.AddressesResponse_Result
 
-		totalStakesGroupByCoin := map[types.CoinSymbol]*big.Int{}
+		totalStakesGroupByCoin := map[types.CoinID]*big.Int{}
 
 		res.Balance = make(map[string]*pb.AddressBalance, len(balances))
 		for coin, value := range balances {
@@ -66,7 +66,7 @@ func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.
 		}
 
 		if req.Delegated {
-			var userDelegatedStakesGroupByCoin = map[types.CoinSymbol]*UserStake{}
+			var userDelegatedStakesGroupByCoin = map[types.CoinID]*UserStake{}
 			allCandidates := cState.Candidates().GetCandidates()
 			for _, candidate := range allCandidates {
 				userStakes := userStakes(candidate.PubKey, address, cState)

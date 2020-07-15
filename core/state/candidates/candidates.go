@@ -33,9 +33,9 @@ type RCandidates interface {
 	Export(state *types.AppState)
 	Exists(pubkey types.Pubkey) bool
 	Count() int
-	IsNewCandidateStakeSufficient(coin types.CoinSymbol, stake *big.Int, limit int) bool
-	IsDelegatorStakeSufficient(address types.Address, pubkey types.Pubkey, coin types.CoinSymbol, amount *big.Int) bool
-	GetStakeValueOfAddress(pubkey types.Pubkey, address types.Address, coin types.CoinSymbol) *big.Int
+	IsNewCandidateStakeSufficient(coin types.CoinID, stake *big.Int, limit int) bool
+	IsDelegatorStakeSufficient(address types.Address, pubkey types.Pubkey, coin types.CoinID, amount *big.Int) bool
+	GetStakeValueOfAddress(pubkey types.Pubkey, address types.Address, coin types.CoinID) *big.Int
 	GetCandidateOwner(pubkey types.Pubkey) types.Address
 	GetTotalStake(pubkey types.Pubkey) *big.Int
 	LoadCandidates()
@@ -203,8 +203,8 @@ func (c *Candidates) PunishByzantineCandidate(height uint64, tmAddress types.TmA
 			coin := c.bus.Coins().GetCoin(stake.Coin)
 			ret := formula.CalculateSaleReturn(coin.Volume, coin.Reserve, coin.Crr, slashed)
 
-			c.bus.Coins().SubCoinVolume(coin.Symbol, slashed)
-			c.bus.Coins().SubCoinReserve(coin.Symbol, ret)
+			c.bus.Coins().SubCoinVolume(coin.ID, slashed)
+			c.bus.Coins().SubCoinReserve(coin.ID, ret)
 
 			c.bus.App().AddTotalSlashed(ret)
 			c.bus.Checker().AddCoin(stake.Coin, big.NewInt(0).Neg(ret))
@@ -549,7 +549,7 @@ func (c *Candidates) Count() int {
 	return len(c.list)
 }
 
-func (c *Candidates) IsNewCandidateStakeSufficient(coin types.CoinSymbol, stake *big.Int, limit int) bool {
+func (c *Candidates) IsNewCandidateStakeSufficient(coin types.CoinID, stake *big.Int, limit int) bool {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
@@ -577,7 +577,7 @@ func (c *Candidates) GetCandidate(pubkey types.Pubkey) *Candidate {
 	return c.getFromMap(pubkey)
 }
 
-func (c *Candidates) IsDelegatorStakeSufficient(address types.Address, pubkey types.Pubkey, coin types.CoinSymbol, amount *big.Int) bool {
+func (c *Candidates) IsDelegatorStakeSufficient(address types.Address, pubkey types.Pubkey, coin types.CoinID, amount *big.Int) bool {
 	stakes := c.GetStakes(pubkey)
 	if len(stakes) < MaxDelegatorsPerCandidate {
 		return true
@@ -593,7 +593,7 @@ func (c *Candidates) IsDelegatorStakeSufficient(address types.Address, pubkey ty
 	return false
 }
 
-func (c *Candidates) Delegate(address types.Address, pubkey types.Pubkey, coin types.CoinSymbol, value *big.Int, bipValue *big.Int) {
+func (c *Candidates) Delegate(address types.Address, pubkey types.Pubkey, coin types.CoinID, value *big.Int, bipValue *big.Int) {
 	stake := &Stake{
 		Owner:    address,
 		Coin:     coin,
@@ -621,7 +621,7 @@ func (c *Candidates) SetOffline(pubkey types.Pubkey) {
 	c.getFromMap(pubkey).setStatus(CandidateStatusOffline)
 }
 
-func (c *Candidates) SubStake(address types.Address, pubkey types.Pubkey, coin types.CoinSymbol, value *big.Int) {
+func (c *Candidates) SubStake(address types.Address, pubkey types.Pubkey, coin types.CoinID, value *big.Int) {
 	stake := c.GetStakeOfAddress(pubkey, address, coin)
 	stake.subValue(value)
 	c.bus.Checker().AddCoin(coin, big.NewInt(0).Neg(value))
@@ -673,7 +673,7 @@ func (c *Candidates) StakesCount(pubkey types.Pubkey) int {
 	return c.GetCandidate(pubkey).stakesCount
 }
 
-func (c *Candidates) GetStakeOfAddress(pubkey types.Pubkey, address types.Address, coin types.CoinSymbol) *Stake {
+func (c *Candidates) GetStakeOfAddress(pubkey types.Pubkey, address types.Address, coin types.CoinID) *Stake {
 	candidate := c.GetCandidate(pubkey)
 	for _, stake := range candidate.stakes {
 		if stake == nil {
@@ -688,7 +688,7 @@ func (c *Candidates) GetStakeOfAddress(pubkey types.Pubkey, address types.Addres
 	return nil
 }
 
-func (c *Candidates) GetStakeValueOfAddress(pubkey types.Pubkey, address types.Address, coin types.CoinSymbol) *big.Int {
+func (c *Candidates) GetStakeValueOfAddress(pubkey types.Pubkey, address types.Address, coin types.CoinID) *big.Int {
 	stake := c.GetStakeOfAddress(pubkey, address, coin)
 	if stake == nil {
 		return nil
@@ -742,8 +742,8 @@ func (c *Candidates) LoadStakes() {
 	}
 }
 
-func (c *Candidates) calculateBipValue(coinSymbol types.CoinSymbol, amount *big.Int, includeSelf, includeUpdates bool, coinsCache *coinsCache) *big.Int {
-	if coinSymbol.IsBaseCoin() {
+func (c *Candidates) calculateBipValue(CoinID types.CoinID, amount *big.Int, includeSelf, includeUpdates bool, coinsCache *coinsCache) *big.Int {
+	if CoinID.IsBaseCoin() {
 		return big.NewInt(0).Set(amount)
 	}
 
@@ -754,30 +754,30 @@ func (c *Candidates) calculateBipValue(coinSymbol types.CoinSymbol, amount *big.
 
 	var totalPower *big.Int
 
-	if coinsCache.Exists(coinSymbol) {
-		totalPower, totalAmount = coinsCache.Get(coinSymbol)
+	if coinsCache.Exists(CoinID) {
+		totalPower, totalAmount = coinsCache.Get(CoinID)
 	} else {
 		candidates := c.GetCandidates()
 		for _, candidate := range candidates {
 			for _, stake := range candidate.stakes {
-				if stake != nil && stake.Coin == coinSymbol {
+				if stake != nil && stake.Coin == CoinID {
 					totalAmount.Add(totalAmount, stake.Value)
 				}
 			}
 
 			if includeUpdates {
 				for _, update := range candidate.updates {
-					if update.Coin == coinSymbol {
+					if update.Coin == CoinID {
 						totalAmount.Add(totalAmount, update.Value)
 					}
 				}
 			}
 		}
 
-		coin := c.bus.Coins().GetCoin(coinSymbol)
+		coin := c.bus.Coins().GetCoin(CoinID)
 
 		totalPower = formula.CalculateSaleReturn(coin.Volume, coin.Reserve, coin.Crr, totalAmount)
-		coinsCache.Set(coinSymbol, totalPower, totalAmount)
+		coinsCache.Set(CoinID, totalPower, totalAmount)
 	}
 
 	return big.NewInt(0).Div(big.NewInt(0).Mul(totalPower, amount), totalAmount)
@@ -801,8 +801,8 @@ func (c *Candidates) Punish(height uint64, address types.TmAddress) *big.Int {
 			coin := c.bus.Coins().GetCoin(stake.Coin)
 			ret := formula.CalculateSaleReturn(coin.Volume, coin.Reserve, coin.Crr, slashed)
 
-			c.bus.Coins().SubCoinVolume(coin.Symbol, slashed)
-			c.bus.Coins().SubCoinReserve(coin.Symbol, ret)
+			c.bus.Coins().SubCoinVolume(coin.ID, slashed)
+			c.bus.Coins().SubCoinReserve(coin.ID, ret)
 
 			c.bus.App().AddTotalSlashed(ret)
 			c.bus.Checker().AddCoin(stake.Coin, big.NewInt(0).Neg(ret))

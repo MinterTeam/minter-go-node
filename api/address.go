@@ -5,8 +5,14 @@ import (
 )
 
 type AddressResponse struct {
-	Balance          map[string]string `json:"balance"`
-	TransactionCount uint64            `json:"transaction_count"`
+	Balance          []BalanceItem `json:"balances"`
+	TransactionCount uint64        `json:"transaction_count"`
+}
+
+type BalanceItem struct {
+	CoinID uint32 `json:"coin_id"`
+	Symbol string `json:"symbol"`
+	Value  string `json:"value"`
 }
 
 func Address(address types.Address, height int) (*AddressResponse, error) {
@@ -18,20 +24,24 @@ func Address(address types.Address, height int) (*AddressResponse, error) {
 	cState.RLock()
 	defer cState.RUnlock()
 
+	balances := cState.Accounts().GetBalances(address)
+
 	response := AddressResponse{
-		Balance:          make(map[string]string),
+		Balance:          make([]BalanceItem, len(balances)),
 		TransactionCount: cState.Accounts().GetNonce(address),
 	}
 
-	balances := cState.Accounts().GetBalances(address)
-
-	for k, v := range balances {
-		response.Balance[k.String()] = v.String()
+	for k, b := range balances {
+		response.Balance[k] = BalanceItem{
+			CoinID: b.Coin.ID.Uint32(),
+			Symbol: b.Coin.GetFullSymbol(),
+			Value:  b.Value.String(),
+		}
 	}
 
-	if _, exists := response.Balance[types.GetBaseCoin().String()]; !exists {
-		response.Balance[types.GetBaseCoin().String()] = "0"
-	}
+	//if _, exists := response.Balance[types.GetBaseCoin().String()]; !exists {
+	//	response.Balance[types.GetBaseCoin().String()] = "0"
+	//}
 
 	return &response, nil
 }

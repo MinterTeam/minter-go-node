@@ -14,8 +14,8 @@ import (
 )
 
 type SellAllCoinData struct {
-	CoinToSell        types.CoinSymbol
-	CoinToBuy         types.CoinSymbol
+	CoinToSell        types.CoinID
+	CoinToBuy         types.CoinID
 	MinimumValueToBuy *big.Int
 }
 

@@ -14,18 +14,26 @@ import (
 )
 
 type SendData struct {
-	Coin  types.CoinSymbol
+	Coin  types.CoinID
 	To    types.Address
 	Value *big.Int
 }
 
+type Coin struct {
+	ID     uint32 `json:"id"`
+	Symbol string `json:"symbol"`
+}
+
 func (data SendData) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Coin  string `json:"coin"`
+		Coin  Coin   `json:"coin"`
 		To    string `json:"to"`
 		Value string `json:"value"`
 	}{
-		Coin:  data.Coin.String(),
+		Coin: Coin{
+			ID:     data.Coin.Uint32(),
+			Symbol: "",
+		},
 		To:    data.To.String(),
 		Value: data.Value.String(),
 	})
@@ -64,7 +72,7 @@ func (data SendData) TotalSpend(tx *Transaction, context *state.CheckState) (Tot
 			FromCoin:    tx.GasCoin,
 			FromAmount:  commission,
 			FromReserve: commissionInBaseCoin,
-			ToCoin:      types.GetBaseCoin(),
+			ToCoin:      types.GetBaseCoinID(),
 		})
 	}
 
