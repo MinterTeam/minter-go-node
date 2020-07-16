@@ -36,7 +36,7 @@ func (s *Service) Candidates(ctx context.Context, req *pb.CandidatesRequest) (*p
 			return new(pb.CandidatesResponse), timeoutStatus.Err()
 		}
 
-		response.Candidates = append(response.Candidates, makeResponseCandidate(cState, *candidate, req.IncludeStakes))
+		response.Candidates = append(response.Candidates, makeResponseCandidate(cState, candidate, req.IncludeStakes))
 	}
 
 	return response, nil

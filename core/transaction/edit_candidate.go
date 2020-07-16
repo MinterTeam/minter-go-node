@@ -18,29 +18,36 @@ type CandidateTx interface {
 }
 
 type EditCandidateData struct {
-	PubKey        types.Pubkey
-	RewardAddress types.Address
-	OwnerAddress  types.Address
+	PubKey         types.Pubkey
+	NewPubKey      *types.Pubkey `rlp:"nil"`
+	RewardAddress  types.Address
+	OwnerAddress   types.Address
+	ControlAddress types.Address
 }
 
 func (data EditCandidateData) MarshalJSON() ([]byte, error) {
+	newPubKey := data.NewPubKey
+	newPubKeyStr := ""
+	if newPubKey != nil {
+		newPubKeyStr = newPubKey.String()
+	}
 	return json.Marshal(struct {
-		PubKey        string `json:"pub_key"`
-		RewardAddress string `json:"reward_address"`
-		OwnerAddress  string `json:"owner_address"`
+		PubKey         string `json:"pub_key"`
+		NewPubKey      string `json:"new_pub_key"`
+		RewardAddress  string `json:"reward_address"`
+		OwnerAddress   string `json:"owner_address"`
+		ControlAddress string `json:"owner_address"`
 	}{
-		PubKey:        data.PubKey.String(),
-		RewardAddress: data.RewardAddress.String(),
-		OwnerAddress:  data.OwnerAddress.String(),
+		PubKey:         data.PubKey.String(),
+		NewPubKey:      newPubKeyStr,
+		RewardAddress:  data.RewardAddress.String(),
+		OwnerAddress:   data.OwnerAddress.String(),
+		ControlAddress: data.ControlAddress.String(),
 	})
 }
 
 func (data EditCandidateData) GetPubKey() types.Pubkey {
 	return data.PubKey
-}
-
-func (data EditCandidateData) TotalSpend(tx *Transaction, context *state.CheckState) (TotalSpends, []Conversion, *big.Int, *Response) {
-	panic("implement me")
 }
 
 func (data EditCandidateData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
@@ -108,15 +115,28 @@ func (data EditCandidateData) Run(tx *Transaction, context state.Interface, rewa
 		}
 	}
 
-	if deliveryState, ok := context.(*state.State); ok {
+	if checkState.Candidates().IsBlockPubKey(data.NewPubKey) {
+		return Response{
+			Code: code.PublicKeyInBlockList,
+			Log:  fmt.Sprintf("Public key (%s) exists in block list", data.NewPubKey.String()),
+			Info: EncodeError(map[string]string{
+				"new_public_key": data.NewPubKey.String(),
+			}),
+		}
+	}
+
+	if deliverState, ok := context.(*state.State); ok {
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		deliveryState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
-		deliveryState.Coins.SubVolume(tx.GasCoin, commission)
+		deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
+		deliverState.Coins.SubVolume(tx.GasCoin, commission)
 
-		deliveryState.Accounts.SubBalance(sender, tx.GasCoin, commission)
-		deliveryState.Candidates.Edit(data.PubKey, data.RewardAddress, data.OwnerAddress)
-		deliveryState.Accounts.SetNonce(sender, tx.Nonce)
+		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
+		deliverState.Candidates.Edit(data.PubKey, data.RewardAddress, data.OwnerAddress, data.ControlAddress)
+		if data.NewPubKey != nil {
+			deliverState.Candidates.ChangePubKey(data.PubKey, *data.NewPubKey)
+		}
+		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}
 
 	tags := kv.Pairs{

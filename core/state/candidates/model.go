@@ -1,18 +1,26 @@
 package candidates
 
 import (
+	"encoding/binary"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	"math/big"
 	"sort"
 )
 
+type pubkeyID struct {
+	PubKey types.Pubkey
+	ID     uint
+}
+
 type Candidate struct {
-	PubKey        types.Pubkey
-	RewardAddress types.Address
-	OwnerAddress  types.Address
-	Commission    uint
-	Status        byte
+	PubKey         types.Pubkey
+	RewardAddress  types.Address
+	OwnerAddress   types.Address
+	ControlAddress types.Address
+	Commission     uint
+	Status         byte
+	ID             uint
 
 	totalBipStake *big.Int
 	stakesCount   int
@@ -24,6 +32,12 @@ type Candidate struct {
 	isTotalStakeDirty bool
 	isUpdatesDirty    bool
 	dirtyStakes       [MaxDelegatorsPerCandidate]bool
+}
+
+func (candidate *Candidate) idBytes() []byte {
+	bs := make([]byte, 4)
+	binary.LittleEndian.PutUint32(bs, uint32(candidate.ID))
+	return bs
 }
 
 func (candidate *Candidate) setStatus(status byte) {
@@ -39,6 +53,11 @@ func (candidate *Candidate) setOwner(address types.Address) {
 func (candidate *Candidate) setReward(address types.Address) {
 	candidate.isDirty = true
 	candidate.RewardAddress = address
+}
+
+func (candidate *Candidate) setControl(address types.Address) {
+	candidate.isDirty = true
+	candidate.ControlAddress = address
 }
 
 func (candidate *Candidate) addUpdate(stake *Stake) {

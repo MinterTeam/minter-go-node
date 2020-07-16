@@ -115,18 +115,18 @@ func (data MultisendData) Run(tx *Transaction, context state.Interface, rewardPo
 		return *errResp
 	}
 
-	if deliveryState, ok := context.(*state.State); ok {
+	if deliverState, ok := context.(*state.State); ok {
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		deliveryState.Coins.SubVolume(tx.GasCoin, commission)
-		deliveryState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
+		deliverState.Coins.SubVolume(tx.GasCoin, commission)
+		deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
 
-		deliveryState.Accounts.SubBalance(sender, tx.GasCoin, commission)
+		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		for _, item := range data.List {
-			deliveryState.Accounts.SubBalance(sender, item.Coin, item.Value)
-			deliveryState.Accounts.AddBalance(item.To, item.Coin, item.Value)
+			deliverState.Accounts.SubBalance(sender, item.Coin, item.Value)
+			deliverState.Accounts.AddBalance(item.To, item.Coin, item.Value)
 		}
-		deliveryState.Accounts.SetNonce(sender, tx.Nonce)
+		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}
 
 	tags := kv.Pairs{

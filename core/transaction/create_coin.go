@@ -208,17 +208,17 @@ func (data CreateCoinData) Run(tx *Transaction, context state.Interface, rewardP
 		}
 	}
 
-	if deliveryState, ok := context.(*state.State); ok {
+	if deliverState, ok := context.(*state.State); ok {
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		deliveryState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
-		deliveryState.Coins.SubVolume(tx.GasCoin, commission)
+		deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
+		deliverState.Coins.SubVolume(tx.GasCoin, commission)
 
-		deliveryState.Accounts.SubBalance(sender, types.GetBaseCoinID(), data.InitialReserve)
-		deliveryState.Accounts.SubBalance(sender, tx.GasCoin, commission)
+		deliverState.Accounts.SubBalance(sender, types.GetBaseCoinID(), data.InitialReserve)
+		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 
-		coinID := deliveryState.App.GetCoinsCount() + 1
-		deliveryState.Coins.Create(
+		coinID := deliverState.App.GetCoinsCount() + 1
+		deliverState.Coins.Create(
 			types.CoinID(coinID),
 			data.Symbol,
 			data.Name,
@@ -229,9 +229,9 @@ func (data CreateCoinData) Run(tx *Transaction, context state.Interface, rewardP
 			&sender,
 		)
 
-		deliveryState.App.SetCoinsCount(coinID)
-		deliveryState.Accounts.AddBalance(sender, types.CoinID(coinID), data.InitialAmount)
-		deliveryState.Accounts.SetNonce(sender, tx.Nonce)
+		deliverState.App.SetCoinsCount(coinID)
+		deliverState.Accounts.AddBalance(sender, types.CoinID(coinID), data.InitialAmount)
+		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}
 
 	tags := kv.Pairs{
