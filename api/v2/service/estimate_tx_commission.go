@@ -106,13 +106,13 @@ func commissionCoinForData(data *pb.EstimateTxCommissionRequest_TransactionData,
 
 	totalCommissionInBaseCoin := new(big.Int).Mul(big.NewInt(0).Add(commissionInBaseCoin, big.NewInt(int64(lenPayload))), transaction.CommissionMultiplier)
 
-	if data.GasCoin == "BIP" {
+	if types.CoinID(data.GasCoinId).IsBaseCoin() {
 		return &pb.EstimateTxCommissionResponse{
 			Commission: totalCommissionInBaseCoin.String(),
 		}, nil
 	}
 
-	coin := cState.Coins().GetCoin(types.StrToCoinSymbol(data.GasCoin))
+	coin := cState.Coins().GetCoin(types.CoinID(data.GasCoinId))
 
 	if coin == nil {
 		return new(pb.EstimateTxCommissionResponse), status.Error(codes.InvalidArgument, "Gas Coin not found")

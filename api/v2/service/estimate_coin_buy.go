@@ -22,8 +22,8 @@ func (s *Service) EstimateCoinBuy(ctx context.Context, req *pb.EstimateCoinBuyRe
 	cState.RLock()
 	defer cState.RUnlock()
 
-	coinToSell := types.StrToCoinSymbol(req.CoinToSell)
-	coinToBuy := types.StrToCoinSymbol(req.CoinToBuy)
+	coinToSell := types.CoinID(req.CoinIdToSell)
+	coinToBuy := types.CoinID(req.CoinIdToBuy)
 
 	if coinToSell == coinToBuy {
 		return new(pb.EstimateCoinBuyResponse), status.Error(codes.FailedPrecondition, "\"From\" coin equals to \"to\" coin")
@@ -44,7 +44,7 @@ func (s *Service) EstimateCoinBuy(ctx context.Context, req *pb.EstimateCoinBuyRe
 	coinFrom := cState.Coins().GetCoin(coinToSell)
 	coinTo := cState.Coins().GetCoin(coinToBuy)
 
-	if coinToSell != types.GetBaseCoin() {
+	if !coinToSell.IsBaseCoin() {
 		if coinFrom.Reserve().Cmp(commissionInBaseCoin) < 0 {
 			return new(pb.EstimateCoinBuyResponse), s.createError(status.New(codes.InvalidArgument, fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s",
 				coinFrom.Reserve().String(), commissionInBaseCoin.String())), transaction.EncodeError(map[string]string{
@@ -62,14 +62,14 @@ func (s *Service) EstimateCoinBuy(ctx context.Context, req *pb.EstimateCoinBuyRe
 	}
 
 	value := valueToBuy
-	if coinToSell != types.GetBaseCoin() {
+	if !coinToSell.IsBaseCoin() {
 		value = formula.CalculatePurchaseAmount(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), valueToBuy)
 		if errResp := transaction.CheckReserveUnderflow(coinFrom, value); errResp != nil {
 			return new(pb.EstimateCoinBuyResponse), s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
 		}
 	}
 
-	if coinToBuy != types.GetBaseCoin() {
+	if !coinToBuy.IsBaseCoin() {
 		if errResp := transaction.CheckForCoinSupplyOverflow(coinTo.Volume(), value, coinTo.MaxSupply()); errResp != nil {
 			return new(pb.EstimateCoinBuyResponse), s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
 		}
