@@ -21,13 +21,13 @@ func (b *Bus) GetCoin(id types.CoinID) *bus.Coin {
 	}
 
 	return &bus.Coin{
-		ID:           coin.id,
-		Name:         coin.Name(),
-		Crr:          coin.Crr(),
-		Symbol:       coin.Symbol(),
-		Volume:       coin.Volume(),
-		Reserve:      coin.Reserve(),
-		Version:      coin.Version(),
+		ID:      coin.id,
+		Name:    coin.Name(),
+		Crr:     coin.Crr(),
+		Symbol:  coin.Symbol(),
+		Volume:  coin.Volume(),
+		Reserve: coin.Reserve(),
+		Version: coin.Version(),
 	}
 }
 

@@ -305,22 +305,18 @@ func (SetHaltBlockDataResource) Transform(txData interface{}, context *state.Che
 // TxType 0x10
 
 type RecreateCoinDataResource struct {
-	Coin                 CoinResource `json:"coin"`
-	InitialAmount        string       `json:"initial_amount"`
-	InitialReserve       string       `json:"initial_reserve"`
-	ConstantReserveRatio string       `json:"constant_reserve_ratio"`
-	MaxSupply            string       `json:"max_supply"`
+	Symbol               types.CoinSymbol `json:"symbol"`
+	InitialAmount        string           `json:"initial_amount"`
+	InitialReserve       string           `json:"initial_reserve"`
+	ConstantReserveRatio string           `json:"constant_reserve_ratio"`
+	MaxSupply            string           `json:"max_supply"`
 }
 
 func (RecreateCoinDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
 	data := txData.(*transaction.RecreateCoinData)
-	coin := context.Coins().GetCoin(data.Coin)
 
 	return RecreateCoinDataResource{
-		Coin: CoinResource{
-			ID:     coin.ID().Uint32(),
-			Symbol: coin.GetFullSymbol(),
-		},
+		Symbol:               data.Symbol,
 		InitialAmount:        data.InitialAmount.String(),
 		InitialReserve:       data.InitialReserve.String(),
 		ConstantReserveRatio: strconv.Itoa(int(data.ConstantReserveRatio)),
