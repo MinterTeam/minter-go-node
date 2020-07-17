@@ -66,8 +66,11 @@ func makeResponseCandidate(state *state.CheckState, c *candidates.Candidate, inc
 		candidate.Stakes = make([]*pb.CandidateResponse_Stake, 0, usedSlots)
 		for i, stake := range stakes {
 			candidate.Stakes = append(candidate.Stakes, &pb.CandidateResponse_Stake{
-				Owner:    stake.Owner.String(),
-				Coin:     stake.Coin.String(),
+				Owner: stake.Owner.String(),
+				Coin: &pb.Coin{
+					Id:     stake.Coin.String(),
+					Symbol: state.Coins().GetCoin(stake.Coin).Symbol().String(),
+				},
 				Value:    stake.Value.String(),
 				BipValue: stake.BipValue.String(),
 			})
