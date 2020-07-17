@@ -15,7 +15,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/state/halts"
 	legacyAccounts "github.com/MinterTeam/minter-go-node/core/state/legacy/accounts"
 	legacyApp "github.com/MinterTeam/minter-go-node/core/state/legacy/app"
-	legacyCandidates "github.com/MinterTeam/minter-go-node/core/state/legacy/candidates"
 	legacyCoins "github.com/MinterTeam/minter-go-node/core/state/legacy/coins"
 	legacyFrozenfunds "github.com/MinterTeam/minter-go-node/core/state/legacy/frozenfunds"
 	"github.com/MinterTeam/minter-go-node/core/state/validators"
@@ -89,7 +88,7 @@ func (cs *CheckState) Tree() tree.ReadOnlyTree {
 func (cs *CheckState) Export11To12(height uint64) types.AppState {
 	iavlTree := cs.state.tree
 
-	candidatesState, err := legacyCandidates.NewCandidates(nil, iavlTree)
+	candidatesState, err := candidates.NewCandidates(nil, iavlTree)
 	if err != nil {
 		log.Panicf("Create new state at height %d failed: %s", height, err)
 	}
@@ -128,7 +127,7 @@ func (cs *CheckState) Export11To12(height uint64) types.AppState {
 	appState.Export(state, height)
 	coinsState.Export(state)
 	validatorsState.Export(state)
-	candidatesState.Export(state)
+	candidatesState.Export11To12(state)
 	frozenFundsState.Export(state, height)
 	accountsState.Export(state)
 	checksState.Export(state)
