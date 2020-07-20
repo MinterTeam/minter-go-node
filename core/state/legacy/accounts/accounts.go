@@ -134,7 +134,7 @@ func (a *Accounts) markDirty(addr types.Address) {
 	a.dirty[addr] = struct{}{}
 }
 
-func (a *Accounts) Export(state *types.AppState) {
+func (a *Accounts) Export(state *types.AppState, coinsMap map[types.CoinSymbol]types.Coin) {
 	// todo: iterate range?
 	a.iavl.Iterate(func(key []byte, value []byte) bool {
 		if key[0] == mainPrefix {
@@ -147,22 +147,16 @@ func (a *Accounts) Export(state *types.AppState) {
 			account := a.get(address)
 
 			var balance []types.Balance
-			for coin, value := range a.GetBalances(account.address) {
-				id := types.GetBaseCoinID()
-				for key, c := range state.Coins {
-					if c.Symbol == coin {
-						id = c.ID
+			for coinSymbol, value := range a.GetBalances(account.address) {
+				coin := coinsMap[coinSymbol]
 
-						// save owner address for coin
-						// accounts are not available during coins export
-						if c.Volume == value.String() {
-							state.Coins[key].OwnerAddress = &account.address
-						}
-					}
+				// set account address as owner address of coin if account contains whole volume
+				if coin.Reserve == value.String() {
+					state.Coins[coin.ID - 1].OwnerAddress = &account.address
 				}
 
 				balance = append(balance, types.Balance{
-					Coin:  id,
+					Coin:  coin.ID,
 					Value: value.String(),
 				})
 			}

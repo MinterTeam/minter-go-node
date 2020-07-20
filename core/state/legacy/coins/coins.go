@@ -101,7 +101,7 @@ func (c *Coins) getOrderedDirtyCoins() []types.CoinSymbol {
 	return keys
 }
 
-func (c *Coins) Export(state *types.AppState) {
+func (c *Coins) Export(state *types.AppState) map[types.CoinSymbol]types.Coin {
 	var coins []types.Coin
 
 	c.iavl.Iterate(func(key []byte, value []byte) bool {
@@ -133,12 +133,18 @@ func (c *Coins) Export(state *types.AppState) {
 		return helpers.StringToBigInt(coins[i].Reserve).Cmp(helpers.StringToBigInt(coins[j].Reserve)) == 1
 	})
 
+	coinsMap := make(map[types.CoinSymbol]types.Coin, len(coins))
+	coinsMap[types.GetBaseCoin()] = types.Coin{ID: types.GetBaseCoinID()}
+
 	for i, _ := range coins {
 		coins[i].ID = types.CoinID(i + 1)
+		coinsMap[coins[i].Symbol] = coins[i]
 	}
 
 	state.Coins = coins
 	state.CoinsCount = uint32(len(state.Coins))
+
+	return coinsMap
 }
 
 func (c *Coins) getFromMap(symbol types.CoinSymbol) *Model {
