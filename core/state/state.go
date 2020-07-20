@@ -86,6 +86,56 @@ func (cs *CheckState) Tree() tree.ReadOnlyTree {
 	return cs.state.Tree()
 }
 
+func (cs *CheckState) Export11To12(height uint64) types.AppState {
+	iavlTree := cs.state.tree
+
+	candidatesState, err := legacyCandidates.NewCandidates(nil, iavlTree)
+	if err != nil {
+		log.Panicf("Create new state at height %d failed: %s", height, err)
+	}
+
+	validatorsState, err := validators.NewValidators(nil, iavlTree)
+	if err != nil {
+		log.Panicf("Create new state at height %d failed: %s", height, err)
+	}
+
+	appState, err := legacyApp.NewApp(nil, iavlTree)
+	if err != nil {
+		log.Panicf("Create new state at height %d failed: %s", height, err)
+	}
+
+	frozenFundsState, err := legacyFrozenfunds.NewFrozenFunds(nil, iavlTree)
+	if err != nil {
+		log.Panicf("Create new state at height %d failed: %s", height, err)
+	}
+
+	accountsState, err := legacyAccounts.NewAccounts(nil, iavlTree)
+	if err != nil {
+		log.Panicf("Create new state at height %d failed: %s", height, err)
+	}
+
+	coinsState, err := legacyCoins.NewCoins(nil, iavlTree)
+	if err != nil {
+		log.Panicf("Create new state at height %d failed: %s", height, err)
+	}
+
+	checksState, err := checks.NewChecks(iavlTree)
+	if err != nil {
+		log.Panicf("Create new state at height %d failed: %s", height, err)
+	}
+
+	state := new(types.AppState)
+	appState.Export(state, height)
+	coinsMap := coinsState.Export(state)
+	validatorsState.Export(state)
+	candidatesState.Export(state, coinsMap)
+	frozenFundsState.Export(state, height, coinsMap)
+	accountsState.Export(state, coinsMap)
+	checksState.Export(state)
+
+	return *state
+}
+
 type State struct {
 	App         *app.App
 	Validators  *validators.Validators
@@ -165,7 +215,7 @@ func (s *State) Check() error {
 	return nil
 }
 
-const countBatchBlocksDelete = 100
+const countBatchBlocksDelete = 60
 
 func (s *State) Commit() ([]byte, error) {
 	s.Checker.Reset()
@@ -210,7 +260,7 @@ func (s *State) Commit() ([]byte, error) {
 		return hash, err
 	}
 
-	if version%countBatchBlocksDelete == 0 && version-countBatchBlocksDelete > s.keepLastStates {
+	if version%countBatchBlocksDelete == 30 && version-countBatchBlocksDelete > s.keepLastStates {
 		if err := s.tree.DeleteVersionsIfExists(version-countBatchBlocksDelete-s.keepLastStates, version-s.keepLastStates); err != nil {
 			return hash, err
 		}
@@ -256,13 +306,17 @@ func (s *State) Import(state types.AppState) error {
 	s.Validators.SetValidators(vals)
 
 	for _, c := range state.Candidates {
-		s.Candidates.Create(c.OwnerAddress, c.RewardAddress, c.PubKey, c.Commission)
+		s.Candidates.Create(c.OwnerAddress, c.RewardAddress, c.ControlAddress, c.PubKey, c.Commission)
 		if c.Status == candidates.CandidateStatusOnline {
 			s.Candidates.SetOnline(c.PubKey)
 		}
 
 		s.Candidates.SetTotalStake(c.PubKey, helpers.StringToBigInt(c.TotalBipStake))
 		s.Candidates.SetStakes(c.PubKey, c.Stakes, c.Updates)
+	}
+
+	for _, pubkey := range state.BlockListCandidates {
+		s.Candidates.AddToBlockPybKey(pubkey)
 	}
 
 	for _, hashString := range state.UsedChecks {
@@ -295,56 +349,6 @@ func (s *State) Export(height uint64) types.AppState {
 	state.Checks().Export(appState)
 
 	return *appState
-}
-
-func (s *State) Export11To12(height uint64) types.AppState {
-	iavlTree := tree.NewImmutableTree(height, s.db)
-
-	candidatesState, err := legacyCandidates.NewCandidates(nil, iavlTree)
-	if err != nil {
-		log.Panicf("Create new state at height %d failed: %s", height, err)
-	}
-
-	validatorsState, err := validators.NewValidators(nil, iavlTree)
-	if err != nil {
-		log.Panicf("Create new state at height %d failed: %s", height, err)
-	}
-
-	appState, err := legacyApp.NewApp(nil, iavlTree)
-	if err != nil {
-		log.Panicf("Create new state at height %d failed: %s", height, err)
-	}
-
-	frozenFundsState, err := legacyFrozenfunds.NewFrozenFunds(nil, iavlTree)
-	if err != nil {
-		log.Panicf("Create new state at height %d failed: %s", height, err)
-	}
-
-	accountsState, err := legacyAccounts.NewAccounts(nil, iavlTree)
-	if err != nil {
-		log.Panicf("Create new state at height %d failed: %s", height, err)
-	}
-
-	coinsState, err := legacyCoins.NewCoins(nil, iavlTree)
-	if err != nil {
-		log.Panicf("Create new state at height %d failed: %s", height, err)
-	}
-
-	checksState, err := checks.NewChecks(iavlTree)
-	if err != nil {
-		log.Panicf("Create new state at height %d failed: %s", height, err)
-	}
-
-	state := new(types.AppState)
-	appState.Export(state, height)
-	coinsMap := coinsState.Export(state)
-	validatorsState.Export(state)
-	candidatesState.Export(state, coinsMap)
-	frozenFundsState.Export(state, height, coinsMap)
-	accountsState.Export(state)
-	checksState.Export(state)
-
-	return *state
 }
 
 func newCheckStateForTree(iavlTree tree.MTree, events eventsdb.IEventsDB, db db.DB, keepLastStates int64) (*CheckState, error) {

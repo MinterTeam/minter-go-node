@@ -22,25 +22,29 @@ func (s *Service) EstimateCoinSell(ctx context.Context, req *pb.EstimateCoinSell
 	cState.RLock()
 	defer cState.RUnlock()
 
-	coinToSell := types.StrToCoinSymbol(req.CoinToSell)
-	coinToBuy := types.StrToCoinSymbol(req.CoinToBuy)
+	coinToSell := types.CoinID(req.CoinIdToSell)
+	coinToBuy := types.CoinID(req.CoinIdToBuy)
 
 	if coinToSell == coinToBuy {
 		return new(pb.EstimateCoinSellResponse), s.createError(status.New(codes.InvalidArgument, "\"From\" coin equals to \"to\" coin"), transaction.EncodeError(map[string]string{
-			"coin_to_sell": coinToSell.String(),
-			"coin_to_buy":  coinToBuy.String(),
+			"coin_id_to_sell": coinToSell.String(),
+			"coin_to_sell":    cState.Coins().GetCoin(coinToSell).Symbol().String(),
+			"coin_id_to_buy":  coinToBuy.String(),
+			"coin_to_buy":     cState.Coins().GetCoin(coinToBuy).Symbol().String(),
 		}))
 	}
 
 	if !cState.Coins().Exists(coinToSell) {
 		return new(pb.EstimateCoinSellResponse), s.createError(status.New(codes.InvalidArgument, "Coin to sell not exists"), transaction.EncodeError(map[string]string{
-			"coin_to_sell": coinToSell.String(),
+			"coin_id_to_sell": coinToSell.String(),
+			"coin_to_sell":    cState.Coins().GetCoin(coinToSell).Symbol().String(),
 		}))
 	}
 
 	if !cState.Coins().Exists(coinToBuy) {
 		return new(pb.EstimateCoinSellResponse), s.createError(status.New(codes.InvalidArgument, "Coin to buy not exists"), transaction.EncodeError(map[string]string{
-			"coin_to_buy": coinToSell.String(),
+			"coin_id_to_buy": coinToBuy.String(),
+			"coin_to_buy":    cState.Coins().GetCoin(coinToBuy).Symbol().String(),
 		}))
 
 	}
@@ -56,7 +60,7 @@ func (s *Service) EstimateCoinSell(ctx context.Context, req *pb.EstimateCoinSell
 	coinFrom := cState.Coins().GetCoin(coinToSell)
 	coinTo := cState.Coins().GetCoin(coinToBuy)
 
-	if coinToSell != types.GetBaseCoin() {
+	if !coinToSell.IsBaseCoin() {
 
 		if coinFrom.Volume().Cmp(valueToSell) < 0 {
 			return new(pb.EstimateCoinSellResponse), s.createError(status.New(codes.InvalidArgument, fmt.Sprintf("Coin volume balance is not sufficient for transaction. Has: %s, required %s",
@@ -78,14 +82,14 @@ func (s *Service) EstimateCoinSell(ctx context.Context, req *pb.EstimateCoinSell
 	}
 
 	value := valueToSell
-	if coinToSell != types.GetBaseCoin() {
+	if !coinToSell.IsBaseCoin() {
 		value = formula.CalculateSaleReturn(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), valueToSell)
 		if errResp := transaction.CheckReserveUnderflow(coinFrom, value); errResp != nil {
 			return new(pb.EstimateCoinSellResponse), s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
 		}
 	}
 
-	if coinToBuy != types.GetBaseCoin() {
+	if !coinToBuy.IsBaseCoin() {
 		if errResp := transaction.CheckForCoinSupplyOverflow(coinTo.Volume(), value, coinTo.MaxSupply()); errResp != nil {
 			return new(pb.EstimateCoinSellResponse), s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
 		}

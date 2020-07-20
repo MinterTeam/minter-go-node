@@ -26,8 +26,8 @@ func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinS
 		gasPrice = 1
 	}
 
-	coinToSell := types.StrToCoinSymbol(req.CoinToSell)
-	coinToBuy := types.StrToCoinSymbol(req.CoinToBuy)
+	coinToSell := types.CoinID(req.CoinIdToSell)
+	coinToBuy := types.CoinID(req.CoinIdToBuy)
 	valueToSell, ok := big.NewInt(0).SetString(req.ValueToSell, 10) //todo: mb delete?
 	if !ok {
 		return new(pb.EstimateCoinSellAllResponse), status.Error(codes.InvalidArgument, "Value to sell not specified")
@@ -59,14 +59,14 @@ func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinS
 	coinTo := cState.Coins().GetCoin(coinToBuy)
 
 	value := valueToSell
-	if coinToSell != types.GetBaseCoin() {
+	if !coinToSell.IsBaseCoin() {
 		value = formula.CalculateSaleReturn(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), valueToSell)
 		if errResp := transaction.CheckReserveUnderflow(coinFrom, value); errResp != nil {
 			return new(pb.EstimateCoinSellAllResponse), s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
 		}
 	}
 
-	if coinToBuy != types.GetBaseCoin() {
+	if !coinToBuy.IsBaseCoin() {
 		if errResp := transaction.CheckForCoinSupplyOverflow(coinTo.Volume(), value, coinTo.MaxSupply()); errResp != nil {
 			return new(pb.EstimateCoinSellAllResponse), s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
 		}

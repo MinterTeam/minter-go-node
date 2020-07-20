@@ -12,6 +12,7 @@ type AppState struct {
 	StartHeight  uint64       `json:"start_height"`
 	Validators   []Validator  `json:"validators,omitempty"`
 	Candidates   []Candidate  `json:"candidates,omitempty"`
+	BlockListCandidates []Pubkey     `json:"block_list_candidates,omitempty"`
 	Accounts     []Account    `json:"accounts,omitempty"`
 	Coins        []Coin       `json:"coins,omitempty"`
 	FrozenFunds  []FrozenFund `json:"frozen_funds,omitempty"`
@@ -210,14 +211,16 @@ type Validator struct {
 }
 
 type Candidate struct {
-	RewardAddress Address `json:"reward_address"`
-	OwnerAddress  Address `json:"owner_address"`
-	TotalBipStake string  `json:"total_bip_stake"`
-	PubKey        Pubkey  `json:"pub_key"`
-	Commission    uint    `json:"commission"`
-	Stakes        []Stake `json:"stakes"`
-	Updates       []Stake `json:"updates"`
-	Status        byte    `json:"status"`
+	ID             uint    `json:"id"`
+	RewardAddress  Address `json:"reward_address"`
+	OwnerAddress   Address `json:"owner_address"`
+	ControlAddress Address `json:"control_address"`
+	TotalBipStake  string  `json:"total_bip_stake"`
+	PubKey         Pubkey  `json:"pub_key"`
+	Commission     uint    `json:"commission"`
+	Stakes         []Stake `json:"stakes"`
+	Updates        []Stake `json:"updates"`
+	Status         byte    `json:"status"`
 }
 
 type Stake struct {

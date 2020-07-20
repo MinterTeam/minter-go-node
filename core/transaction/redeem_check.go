@@ -246,17 +246,17 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 		}
 	}
 
-	if deliveryState, ok := context.(*state.State); ok {
-		deliveryState.Checks.UseCheck(decodedCheck)
+	if deliverState, ok := context.(*state.State); ok {
+		deliverState.Checks.UseCheck(decodedCheck)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		deliveryState.Coins.SubVolume(decodedCheck.GasCoin, commission)
-		deliveryState.Coins.SubReserve(decodedCheck.GasCoin, commissionInBaseCoin)
+		deliverState.Coins.SubVolume(decodedCheck.GasCoin, commission)
+		deliverState.Coins.SubReserve(decodedCheck.GasCoin, commissionInBaseCoin)
 
-		deliveryState.Accounts.SubBalance(checkSender, decodedCheck.GasCoin, commission)
-		deliveryState.Accounts.SubBalance(checkSender, decodedCheck.Coin, decodedCheck.Value)
-		deliveryState.Accounts.AddBalance(sender, decodedCheck.Coin, decodedCheck.Value)
-		deliveryState.Accounts.SetNonce(sender, tx.Nonce)
+		deliverState.Accounts.SubBalance(checkSender, decodedCheck.GasCoin, commission)
+		deliverState.Accounts.SubBalance(checkSender, decodedCheck.Coin, decodedCheck.Value)
+		deliverState.Accounts.AddBalance(sender, decodedCheck.Coin, decodedCheck.Value)
+		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}
 
 	tags := kv.Pairs{

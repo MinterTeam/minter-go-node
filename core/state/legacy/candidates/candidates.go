@@ -231,18 +231,18 @@ func (c *Candidates) LoadStakes() {
 	}
 }
 
-func (c *Candidates) Export(state *types.AppState, coinsMap map[types.CoinSymbol]types.CoinID) {
+func (c *Candidates) Export(state *types.AppState, coinsMap map[types.CoinSymbol]types.Coin) {
 	c.LoadCandidates()
 	c.LoadStakes()
 
-	candidates := c.GetCandidates()
+	candidates, maxID := c.GetCandidates(), uint(1)
 	for _, candidate := range candidates {
 		candidateStakes := c.GetStakes(candidate.PubKey)
 		stakes := make([]types.Stake, len(candidateStakes))
 		for i, s := range candidateStakes {
 			stakes[i] = types.Stake{
 				Owner:    s.Owner,
-				Coin:     coinsMap[s.Coin],
+				Coin:     coinsMap[s.Coin].ID,
 				Value:    s.Value.String(),
 				BipValue: s.BipValue.String(),
 			}
@@ -252,13 +252,14 @@ func (c *Candidates) Export(state *types.AppState, coinsMap map[types.CoinSymbol
 		for i, u := range candidate.updates {
 			updates[i] = types.Stake{
 				Owner:    u.Owner,
-				Coin:     coinsMap[u.Coin],
+				Coin:     coinsMap[u.Coin].ID,
 				Value:    u.Value.String(),
 				BipValue: u.BipValue.String(),
 			}
 		}
 
 		state.Candidates = append(state.Candidates, types.Candidate{
+			ID:            maxID,
 			RewardAddress: candidate.RewardAddress,
 			OwnerAddress:  candidate.OwnerAddress,
 			TotalBipStake: candidate.GetTotalBipStake().String(),
@@ -268,6 +269,8 @@ func (c *Candidates) Export(state *types.AppState, coinsMap map[types.CoinSymbol
 			Updates:       updates,
 			Stakes:        stakes,
 		})
+
+		maxID++
 	}
 
 }
