@@ -35,7 +35,6 @@ type Response struct {
 }
 
 func RunTx(context state.Interface,
-	isCheck bool,
 	rawTx []byte,
 	rewardPool *big.Int,
 	currentBlock uint64,
@@ -73,7 +72,7 @@ func RunTx(context state.Interface,
 	}
 
 	var checkState *state.CheckState
-	//var isCheck bool
+	var isCheck bool
 	if checkState, isCheck = context.(*state.CheckState); !isCheck {
 		checkState = state.NewCheckState(context.(*state.State))
 	}

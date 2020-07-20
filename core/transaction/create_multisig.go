@@ -160,16 +160,16 @@ func (data CreateMultisigData) Run(tx *Transaction, context state.Interface, rew
 		}
 	}
 
-	if deliveryState, ok := context.(*state.State); ok {
+	if deliverState, ok := context.(*state.State); ok {
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		deliveryState.Coins.SubVolume(tx.GasCoin, commission)
-		deliveryState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
+		deliverState.Coins.SubVolume(tx.GasCoin, commission)
+		deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
 
-		deliveryState.Accounts.SubBalance(sender, tx.GasCoin, commission)
-		deliveryState.Accounts.SetNonce(sender, tx.Nonce)
+		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
+		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 
-		deliveryState.Accounts.CreateMultisig(data.Weights, data.Addresses, data.Threshold, currentBlock)
+		deliverState.Accounts.CreateMultisig(data.Weights, data.Addresses, data.Threshold, currentBlock)
 	}
 
 	tags := kv.Pairs{

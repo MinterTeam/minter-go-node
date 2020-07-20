@@ -52,13 +52,13 @@ func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.
 
 		totalStakesGroupByCoin := map[types.CoinID]*big.Int{}
 
-		res.Balance = make(map[string]*pb.AddressBalance, len(balances))
-		for coin, value := range balances {
-			totalStakesGroupByCoin[coin] = value
-			res.Balance[coin.String()] = &pb.AddressBalance{
-				Value:    value.String(),
-				BipValue: customCoinBipBalance(coin, value, cState).String(),
-			}
+		res.Balance = make([]*pb.AddressBalance, 0, len(balances))
+		for _, coin := range balances {
+			totalStakesGroupByCoin[coin.Coin.ID] = coin.Value
+			res.Balance = append(res.Balance, &pb.AddressBalance{
+				Value:    coin.Value.String(),
+				BipValue: customCoinBipBalance(coin.Coin.ID, coin.Value, cState).String(),
+			})
 		}
 
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
@@ -88,36 +88,44 @@ func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.
 				return new(pb.AddressesResponse), timeoutStatus.Err()
 			}
 
-			res.Delegated = make(map[string]*pb.AddressDelegatedBalance, len(userDelegatedStakesGroupByCoin))
-			for coin, delegatedStake := range userDelegatedStakesGroupByCoin {
-				res.Delegated[coin.String()] = &pb.AddressDelegatedBalance{
+			res.Delegated = make([]*pb.AddressDelegatedBalance, 0, len(userDelegatedStakesGroupByCoin))
+			for coinID, delegatedStake := range userDelegatedStakesGroupByCoin {
+				res.Delegated = append(res.Delegated, &pb.AddressDelegatedBalance{
+					Coin: &pb.Coin{
+						Id:     coinID.String(),
+						Symbol: cState.Coins().GetCoin(coinID).Symbol().String(),
+					},
 					Value:            delegatedStake.Value.String(),
 					DelegateBipValue: delegatedStake.BipValue.String(),
-					BipValue:         customCoinBipBalance(coin, delegatedStake.Value, cState).String(),
-				}
+					BipValue:         customCoinBipBalance(coinID, delegatedStake.Value, cState).String(),
+				})
 
-				totalStake, ok := totalStakesGroupByCoin[coin]
+				totalStake, ok := totalStakesGroupByCoin[coinID]
 				if !ok {
 					totalStake = big.NewInt(0)
-					totalStakesGroupByCoin[coin] = totalStake
+					totalStakesGroupByCoin[coinID] = totalStake
 				}
 				totalStake.Add(totalStake, delegatedStake.Value)
 			}
 		}
 
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-			return response, timeoutStatus.Err()
+			return new(pb.AddressesResponse), timeoutStatus.Err()
 		}
 
 		coinsBipValue := big.NewInt(0)
-		res.Total = make(map[string]*pb.AddressBalance, len(totalStakesGroupByCoin))
-		for coin, stake := range totalStakesGroupByCoin {
-			balance := customCoinBipBalance(coin, stake, cState)
+		res.Total = make([]*pb.AddressBalance, 0, len(totalStakesGroupByCoin))
+		for coinID, stake := range totalStakesGroupByCoin {
+			balance := customCoinBipBalance(coinID, stake, cState)
 			if req.Delegated {
-				res.Total[coin.String()] = &pb.AddressBalance{
+				res.Total = append(res.Total, &pb.AddressBalance{
+					Coin: &pb.Coin{
+						Id:     coinID.String(),
+						Symbol: cState.Coins().GetCoin(coinID).Symbol().String(),
+					},
 					Value:    stake.String(),
 					BipValue: balance.String(),
-				}
+				})
 			}
 			coinsBipValue.Add(coinsBipValue, balance)
 		}

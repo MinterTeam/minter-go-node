@@ -42,10 +42,6 @@ func (data DeclareCandidacyData) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (data DeclareCandidacyData) TotalSpend(tx *Transaction, context *state.CheckState) (TotalSpends, []Conversion, *big.Int, *Response) {
-	panic("implement me")
-}
-
 func (data DeclareCandidacyData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.Stake == nil {
 		return &Response{
@@ -67,6 +63,16 @@ func (data DeclareCandidacyData) BasicCheck(tx *Transaction, context *state.Chec
 		return &Response{
 			Code: code.CandidateExists,
 			Log:  fmt.Sprintf("Candidate with such public key (%s) already exists", data.PubKey.String()),
+			Info: EncodeError(map[string]string{
+				"public_key": data.PubKey.String(),
+			}),
+		}
+	}
+
+	if context.Candidates().IsBlockPubKey(&data.PubKey) {
+		return &Response{
+			Code: code.PublicKeyInBlockList,
+			Log:  fmt.Sprintf("Candidate with such public key (%s) exists in block list", data.PubKey.String()),
 			Info: EncodeError(map[string]string{
 				"public_key": data.PubKey.String(),
 			}),
@@ -186,17 +192,17 @@ func (data DeclareCandidacyData) Run(tx *Transaction, context state.Interface, r
 		}
 	}
 
-	if deliveryState, ok := context.(*state.State); ok {
+	if deliverState, ok := context.(*state.State); ok {
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		deliveryState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
-		deliveryState.Coins.SubVolume(tx.GasCoin, commission)
+		deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
+		deliverState.Coins.SubVolume(tx.GasCoin, commission)
 
-		deliveryState.Accounts.SubBalance(sender, data.Coin, data.Stake)
-		deliveryState.Accounts.SubBalance(sender, tx.GasCoin, commission)
-		deliveryState.Candidates.Create(data.Address, sender, data.PubKey, data.Commission)
-		deliveryState.Candidates.Delegate(sender, data.PubKey, data.Coin, data.Stake, big.NewInt(0))
-		deliveryState.Accounts.SetNonce(sender, tx.Nonce)
+		deliverState.Accounts.SubBalance(sender, data.Coin, data.Stake)
+		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
+		deliverState.Candidates.Create(data.Address, sender, sender, data.PubKey, data.Commission)
+		deliverState.Candidates.Delegate(sender, data.PubKey, data.Coin, data.Stake, big.NewInt(0))
+		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}
 
 	tags := kv.Pairs{
