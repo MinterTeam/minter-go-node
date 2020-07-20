@@ -19,6 +19,9 @@ func Transaction(hash []byte) (json.RawMessage, error) {
 		return nil, err
 	}
 
+	cState.RLock()
+	defer cState.RUnlock()
+
 	txJsonEncoder := encoder.NewTxEncoderJSON(cState)
 
 	return txJsonEncoder.Encode(decodedTx, tx)
