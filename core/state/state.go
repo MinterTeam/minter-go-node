@@ -337,10 +337,10 @@ func (s *State) Export11To12(height uint64) types.AppState {
 
 	state := new(types.AppState)
 	appState.Export(state, height)
-	coinsState.Export(state)
+	coinsMap := coinsState.Export(state)
 	validatorsState.Export(state)
-	candidatesState.Export(state)
-	frozenFundsState.Export(state, height)
+	candidatesState.Export(state, coinsMap)
+	frozenFundsState.Export(state, height, coinsMap)
 	accountsState.Export(state)
 	checksState.Export(state)
 

@@ -134,7 +134,7 @@ func (a *Accounts) markDirty(addr types.Address) {
 	a.dirty[addr] = struct{}{}
 }
 
-func (a *Accounts) Export(state *types.AppState) {
+func (a *Accounts) Export(state *types.AppState, coinsMap map[types.CoinSymbol]types.CoinID) {
 	// todo: iterate range?
 	a.iavl.Iterate(func(key []byte, value []byte) bool {
 		if key[0] == mainPrefix {
@@ -159,7 +159,7 @@ func (a *Accounts) Export(state *types.AppState) {
 							state.Coins[key].OwnerAddress = &account.address
 						}
 					}
-				}
+				}	
 
 				balance = append(balance, types.Balance{
 					Coin:  id,
