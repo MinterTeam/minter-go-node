@@ -235,13 +235,15 @@ func (c *Coins) Recreate(newID types.CoinID, symbol types.CoinSymbol,
 	// TODO: change array to sorted array by version and get the last one
 	lastVersion := uint16(0)
 	for _, id := range symbolCoins {
-		coin := c.GetCoin(id)
+		coin := c.get(id)
 		if coin.Version() > lastVersion {
 			lastVersion = coin.Version()
 		}
 	}
 
 	recreateCoin.CVersion = lastVersion + 1
+	recreateCoin.isDirty = true
+
 	c.setToMap(recreateCoin.id, recreateCoin)
 	c.markDirty(recreateCoin.id)
 

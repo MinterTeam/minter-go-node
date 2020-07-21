@@ -197,7 +197,7 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 
 		tags = append(tags, kv.Pair{
 			Key:   []byte("tx.coin"),
-			Value: coinID.Bytes(),
+			Value: []byte(data.Symbol.String()),
 		})
 	}
 
