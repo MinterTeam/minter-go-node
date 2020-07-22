@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
-	_struct "github.com/golang/protobuf/ptypes/struct"
 	"github.com/google/uuid"
 	core_types "github.com/tendermint/tendermint/rpc/core/types"
 	"google.golang.org/grpc/codes"
@@ -71,9 +70,8 @@ func subscribeResponse(msg core_types.ResultEvent) (*pb.SubscribeResponse, error
 		return nil, err
 	}
 
-	data := &_struct.Struct{}
-
-	if err := data.UnmarshalJSON(byteData); err != nil {
+	data, err := encodeToStruct(byteData)
+	if err != nil {
 		return nil, err
 	}
 

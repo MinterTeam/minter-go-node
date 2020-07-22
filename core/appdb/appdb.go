@@ -45,7 +45,9 @@ func (appDB *AppDB) GetLastBlockHash() []byte {
 }
 
 func (appDB *AppDB) SetLastBlockHash(hash []byte) {
-	appDB.db.Set([]byte(hashPath), hash)
+	if err := appDB.db.Set([]byte(hashPath), hash); err != nil {
+		panic(err)
+	}
 }
 
 func (appDB *AppDB) GetLastHeight() uint64 {
@@ -65,7 +67,9 @@ func (appDB *AppDB) GetLastHeight() uint64 {
 func (appDB *AppDB) SetLastHeight(height uint64) {
 	h := make([]byte, 8)
 	binary.BigEndian.PutUint64(h, height)
-	appDB.db.Set([]byte(heightPath), h)
+	if err := appDB.db.Set([]byte(heightPath), h); err != nil {
+		panic(err)
+	}
 }
 
 func (appDB *AppDB) SetStartHeight(height uint64) {
