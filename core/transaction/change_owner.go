@@ -17,10 +17,6 @@ type ChangeOwnerData struct {
 	NewOwner types.Address
 }
 
-func (data ChangeOwnerData) TotalSpend(tx *Transaction, context *state.CheckState) (TotalSpends, []Conversion, *big.Int, *Response) {
-	panic("implement me")
-}
-
 func (data ChangeOwnerData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
 	sender, _ := tx.Sender()
 
@@ -103,6 +99,8 @@ func (data ChangeOwnerData) Run(tx *Transaction, context state.Interface, reward
 	}
 
 	if deliverState, ok := context.(*state.State); ok {
+		deliverState.Lock()
+		defer deliverState.Unlock()
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 		deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
 		deliverState.Coins.SubVolume(tx.GasCoin, commission)

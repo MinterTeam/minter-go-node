@@ -166,7 +166,7 @@ func NewState(height uint64, db db.DB, events eventsdb.IEventsDB, cacheSize int,
 		return nil, err
 	}
 
-	state.Candidates.LoadCandidates()
+	state.Candidates.LoadCandidatesDeliver()
 	state.Candidates.LoadStakes()
 	state.Validators.LoadValidators()
 
