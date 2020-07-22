@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/minter"
-	_struct "github.com/golang/protobuf/ptypes/struct"
 	"github.com/tendermint/go-amino"
 	tmNode "github.com/tendermint/tendermint/node"
 	rpc "github.com/tendermint/tendermint/rpc/client/local"
@@ -38,8 +37,8 @@ func (s *Service) createError(statusErr *status.Status, data string) error {
 		return statusErr.Err()
 	}
 
-	detailsMap := &_struct.Struct{}
-	if err := detailsMap.UnmarshalJSON([]byte(data)); err != nil {
+	detailsMap, err := encodeToStruct([]byte(data))
+	if err != nil {
 		s.client.Logger.Error(err.Error())
 		return statusErr.Err()
 	}
