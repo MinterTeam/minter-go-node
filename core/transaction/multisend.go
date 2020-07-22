@@ -116,6 +116,8 @@ func (data MultisendData) Run(tx *Transaction, context state.Interface, rewardPo
 	}
 
 	if deliverState, ok := context.(*state.State); ok {
+		deliverState.Lock()
+		defer deliverState.Unlock()
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
 		deliverState.Coins.SubVolume(tx.GasCoin, commission)

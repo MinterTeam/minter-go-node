@@ -64,6 +64,8 @@ type Candidates struct {
 
 	lock   sync.RWMutex
 	loaded bool
+
+	isDirty bool
 }
 
 func NewCandidates(bus *bus.Bus, iavl tree.MTree) (*Candidates, error) {
@@ -98,37 +100,40 @@ func (c *Candidates) Commit() error {
 		c.iavl.Set(path, data)
 	}
 
-	var pubIDs []pubkeyID
-	for pk, v := range c.pubKeyIDs {
-		pubIDs = append(pubIDs, pubkeyID{
-			PubKey: pk,
-			ID:     v,
+	if c.isDirty {
+
+		var pubIDs []pubkeyID
+		for pk, v := range c.pubKeyIDs {
+			pubIDs = append(pubIDs, pubkeyID{
+				PubKey: pk,
+				ID:     v,
+			})
+		}
+		sort.SliceStable(pubIDs, func(i, j int) bool {
+			return pubIDs[i].ID < pubIDs[j].ID
 		})
-	}
-	sort.SliceStable(pubIDs, func(i, j int) bool {
-		return pubIDs[i].ID < pubIDs[j].ID
-	})
-	pubIDenc, err := rlp.EncodeToBytes(pubIDs)
-	if err != nil {
-		panic(fmt.Sprintf("failed to encode candidates public key with ID: %s", err))
-	}
+		pubIDenc, err := rlp.EncodeToBytes(pubIDs)
+		if err != nil {
+			panic(fmt.Sprintf("failed to encode candidates public key with ID: %s", err))
+		}
 
-	c.iavl.Set([]byte{pubKeyIDPrefix}, pubIDenc)
+		c.iavl.Set([]byte{pubKeyIDPrefix}, pubIDenc)
 
-	var blockList []types.Pubkey
-	for pubKey := range c.blockList {
-		blockList = append(blockList, pubKey)
-	}
-	sort.SliceStable(blockList, func(i, j int) bool {
-		return bytes.Compare(blockList[i].Bytes(), blockList[j].Bytes()) == 1
-	})
-	blockListData, err := rlp.EncodeToBytes(blockList)
-	if err != nil {
-		return fmt.Errorf("can't encode block list of candidates: %v", err)
-	}
-	c.iavl.Set([]byte{blockListPrefix}, blockListData)
+		var blockList []types.Pubkey
+		for pubKey := range c.blockList {
+			blockList = append(blockList, pubKey)
+		}
+		sort.SliceStable(blockList, func(i, j int) bool {
+			return bytes.Compare(blockList[i].Bytes(), blockList[j].Bytes()) == 1
+		})
+		blockListData, err := rlp.EncodeToBytes(blockList)
+		if err != nil {
+			return fmt.Errorf("can't encode block list of candidates: %v", err)
+		}
+		c.iavl.Set([]byte{blockListPrefix}, blockListData)
 
-	c.iavl.Set([]byte{maxIDPrefix}, c.maxIDBytes())
+		c.iavl.Set([]byte{maxIDPrefix}, c.maxIDBytes())
+	}
 
 	for _, pubkey := range keys {
 		candidate := c.getFromMap(pubkey)
@@ -772,11 +777,45 @@ func (c *Candidates) GetCandidateControl(pubkey types.Pubkey) types.Address {
 	return c.getFromMap(pubkey).ControlAddress
 }
 
+// Load only list candidates (for read)
 func (c *Candidates) LoadCandidates() {
 	if c.checkAndSetLoaded() {
 		return
 	}
 
+	c.loadCandidatesList()
+}
+
+// Load full info about candidates (for edit)
+func (c *Candidates) LoadCandidatesDeliver() {
+	if c.checkAndSetLoaded() {
+		return
+	}
+
+	c.loadCandidatesList()
+
+	_, blockListEnc := c.iavl.Get([]byte{blockListPrefix})
+	if len(blockListEnc) != 0 {
+		var blockList []types.Pubkey
+		if err := rlp.DecodeBytes(blockListEnc, &blockList); err != nil {
+			panic(fmt.Sprintf("failed to decode candidates block list: %s", err))
+		}
+
+		blockListMap := map[types.Pubkey]struct{}{}
+		for _, pubkey := range blockList {
+			blockListMap[pubkey] = struct{}{}
+		}
+		c.setBlockList(blockListMap)
+	}
+
+	_, valueMaxID := c.iavl.Get([]byte{maxIDPrefix})
+	if len(valueMaxID) != 0 {
+		c.maxID = uint(binary.LittleEndian.Uint32(valueMaxID))
+	}
+
+}
+
+func (c *Candidates) loadCandidatesList() {
 	_, pubIDenc := c.iavl.Get([]byte{pubKeyIDPrefix})
 	if len(pubIDenc) != 0 {
 		var pubIDs []pubkeyID
@@ -813,25 +852,6 @@ func (c *Candidates) LoadCandidates() {
 			candidate.setTmAddress()
 			c.setToMap(candidate.PubKey, candidate)
 		}
-	}
-
-	_, blockListEnc := c.iavl.Get([]byte{blockListPrefix})
-	if len(blockListEnc) != 0 {
-		var blockList []types.Pubkey
-		if err := rlp.DecodeBytes(blockListEnc, &blockList); err != nil {
-			panic(fmt.Sprintf("failed to decode candidates block list: %s", err))
-		}
-
-		blockListMap := map[types.Pubkey]struct{}{}
-		for _, pubkey := range blockList {
-			blockListMap[pubkey] = struct{}{}
-		}
-		c.setBlockList(blockListMap)
-	}
-
-	_, valueMaxID := c.iavl.Get([]byte{maxIDPrefix})
-	if len(valueMaxID) != 0 {
-		c.maxID = uint(binary.LittleEndian.Uint32(valueMaxID))
 	}
 }
 
@@ -981,7 +1001,7 @@ func (c *Candidates) SetStakes(pubkey types.Pubkey, stakes []types.Stake, update
 }
 
 func (c *Candidates) Export(state *types.AppState) {
-	c.LoadCandidates()
+	c.LoadCandidatesDeliver()
 	c.LoadStakes()
 
 	candidates := c.GetCandidates()
@@ -1155,13 +1175,18 @@ func (c *Candidates) LoadStakesOfCandidate(pubkey types.Pubkey) {
 }
 
 func (c *Candidates) ChangePubKey(old types.Pubkey, new types.Pubkey) {
-	c.getFromMap(old).PubKey = new
+	if old == new {
+		return
+	}
+
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
 	if c.isBlock(new) {
 		panic("Candidate with such public key (" + new.String() + ") exists in block list")
 	}
+
+	c.getFromMap(old).PubKey = new
 	c.setBlockPybKey(old)
 	c.setPubKeyID(new, c.pubKeyIDs[old])
 	delete(c.pubKeyIDs, old)
@@ -1178,6 +1203,7 @@ func (c *Candidates) getOrNewID(pubKey types.Pubkey) uint {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
+	c.isDirty = true
 	c.maxID++
 	id = c.maxID
 	c.setPubKeyID(pubKey, id)
@@ -1200,6 +1226,7 @@ func (c *Candidates) setPubKeyID(pubkey types.Pubkey, u uint) {
 		c.pubKeyIDs = map[types.Pubkey]uint{}
 	}
 	c.pubKeyIDs[pubkey] = u
+	c.isDirty = true
 }
 
 func (c *Candidates) setBlockPybKey(p types.Pubkey) {
@@ -1207,6 +1234,7 @@ func (c *Candidates) setBlockPybKey(p types.Pubkey) {
 		c.blockList = map[types.Pubkey]struct{}{}
 	}
 	c.blockList[p] = struct{}{}
+	c.isDirty = true
 }
 
 func (c *Candidates) AddToBlockPybKey(p types.Pubkey) {
