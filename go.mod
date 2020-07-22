@@ -3,7 +3,7 @@ module github.com/MinterTeam/minter-go-node
 go 1.13
 
 require (
-	github.com/MinterTeam/node-grpc-gateway v1.1.3-0.20200721223527-f6c600c7be2f
+	github.com/MinterTeam/node-grpc-gateway v1.1.3-0.20200722132702-359ed49dcb7e
 	github.com/btcsuite/btcd v0.20.1-beta
 	github.com/c-bata/go-prompt v0.2.3
 	github.com/go-kit/kit v0.10.0
@@ -39,8 +39,4 @@ require (
 	google.golang.org/grpc v1.30.0
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15
-)
-
-replace (
-	github.com/MinterTeam/node-grpc-gateway => /Users/klim0v/GolandProjects/node-grpc-gateway
 )
