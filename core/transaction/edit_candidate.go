@@ -137,8 +137,6 @@ func (data EditCandidateData) Run(tx *Transaction, context state.Interface, rewa
 	}
 
 	if deliverState, ok := context.(*state.State); ok {
-		deliverState.Lock()
-		defer deliverState.Unlock()
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
 		deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)

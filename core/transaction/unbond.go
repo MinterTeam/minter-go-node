@@ -148,8 +148,6 @@ func (data UnbondData) Run(tx *Transaction, context state.Interface, rewardPool 
 	}
 
 	if deliverState, ok := context.(*state.State); ok {
-		deliverState.Lock()
-		defer deliverState.Unlock()
 		// now + 30 days
 		unbondAtBlock := currentBlock + unbondPeriod
 

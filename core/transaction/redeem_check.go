@@ -247,8 +247,6 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 	}
 
 	if deliverState, ok := context.(*state.State); ok {
-		deliverState.Lock()
-		defer deliverState.Unlock()
 		deliverState.Checks.UseCheck(decodedCheck)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
