@@ -54,7 +54,9 @@ type RCandidates interface {
 }
 
 type Candidates struct {
-	list      map[uint]*Candidate
+	list map[uint]*Candidate
+
+	isDirty   bool
 	blockList map[types.Pubkey]struct{}
 	pubKeyIDs map[types.Pubkey]uint
 	maxID     uint
@@ -64,8 +66,6 @@ type Candidates struct {
 
 	lock   sync.RWMutex
 	loaded bool
-
-	isDirty bool
 }
 
 func NewCandidates(bus *bus.Bus, iavl tree.MTree) (*Candidates, error) {
@@ -101,7 +101,7 @@ func (c *Candidates) Commit() error {
 	}
 
 	if c.isDirty {
-
+		c.isDirty = false
 		var pubIDs []pubkeyID
 		for pk, v := range c.pubKeyIDs {
 			pubIDs = append(pubIDs, pubkeyID{
@@ -783,7 +783,7 @@ func (c *Candidates) LoadCandidates() {
 		return
 	}
 
-	c.loadCandidatesList()
+	_ = c.loadCandidatesList()
 }
 
 // Load full info about candidates (for edit)
@@ -792,7 +792,7 @@ func (c *Candidates) LoadCandidatesDeliver() {
 		return
 	}
 
-	c.loadCandidatesList()
+	c.maxID = c.loadCandidatesList()
 
 	_, blockListEnc := c.iavl.Get([]byte{blockListPrefix})
 	if len(blockListEnc) != 0 {
@@ -815,7 +815,7 @@ func (c *Candidates) LoadCandidatesDeliver() {
 
 }
 
-func (c *Candidates) loadCandidatesList() {
+func (c *Candidates) loadCandidatesList() (maxID uint) {
 	_, pubIDenc := c.iavl.Get([]byte{pubKeyIDPrefix})
 	if len(pubIDenc) != 0 {
 		var pubIDs []pubkeyID
@@ -826,6 +826,9 @@ func (c *Candidates) loadCandidatesList() {
 		pubKeyIDs := map[types.Pubkey]uint{}
 		for _, v := range pubIDs {
 			pubKeyIDs[v.PubKey] = v.ID
+			if v.ID > maxID {
+				maxID = v.ID
+			}
 		}
 		c.setPubKeyIDs(pubKeyIDs)
 	}
@@ -853,6 +856,8 @@ func (c *Candidates) loadCandidatesList() {
 			c.setToMap(candidate.PubKey, candidate)
 		}
 	}
+
+	return maxID
 }
 
 func (c *Candidates) checkAndSetLoaded() bool {
