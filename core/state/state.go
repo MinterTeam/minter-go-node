@@ -305,6 +305,10 @@ func (s *State) Import(state types.AppState) error {
 	}
 	s.Validators.SetValidators(vals)
 
+	for _, pubkey := range state.BlockListCandidates {
+		s.Candidates.AddToBlockPybKey(pubkey)
+	}
+
 	for _, c := range state.Candidates {
 		s.Candidates.Create(c.OwnerAddress, c.RewardAddress, c.ControlAddress, c.PubKey, c.Commission)
 		if c.Status == candidates.CandidateStatusOnline {
@@ -313,10 +317,6 @@ func (s *State) Import(state types.AppState) error {
 
 		s.Candidates.SetTotalStake(c.PubKey, helpers.StringToBigInt(c.TotalBipStake))
 		s.Candidates.SetStakes(c.PubKey, c.Stakes, c.Updates)
-	}
-
-	for _, pubkey := range state.BlockListCandidates {
-		s.Candidates.AddToBlockPybKey(pubkey)
 	}
 
 	for _, hashString := range state.UsedChecks {
