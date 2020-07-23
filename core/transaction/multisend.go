@@ -168,14 +168,15 @@ func checkBalances(context *state.CheckState, sender types.Address, items []Mult
 
 	for _, coin := range coins {
 		value := total[coin]
+		coinData := context.Coins().GetCoin(coin)
 		if context.Accounts().GetBalance(sender, coin).Cmp(value) < 0 {
 			return &Response{
 				Code: code.InsufficientFunds,
-				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), value, coin),
+				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), value, coinData.GetFullSymbol()),
 				Info: EncodeError(map[string]string{
 					"sender":       sender.String(),
 					"needed_value": fmt.Sprintf("%d", value),
-					"coin":         fmt.Sprintf("%d", coin),
+					"coin":         coinData.GetFullSymbol(),
 				}),
 			}
 		}

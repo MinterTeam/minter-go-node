@@ -319,7 +319,7 @@ func CheckReserveUnderflow(m *coins.Model, delta *big.Int) *Response {
 		min := big.NewInt(0).Add(minCoinReserve, delta)
 		return &Response{
 			Code: code.CoinReserveUnderflow,
-			Log:  fmt.Sprintf("coin %s reserve is too small (%s, required at least %s)", m.Symbol().String(), m.Reserve().String(), min.String()),
+			Log:  fmt.Sprintf("coin %s reserve is too small (%s, required at least %s)", m.GetFullSymbol(), m.Reserve().String(), min.String()),
 			Info: EncodeError(map[string]string{
 				"coin":             m.Symbol().String(),
 				"coin_reserve":     m.Reserve().String(),

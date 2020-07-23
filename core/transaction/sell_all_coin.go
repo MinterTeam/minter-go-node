@@ -215,16 +215,18 @@ func (data SellAllCoinData) Run(tx *Transaction, context state.Interface, reward
 
 	for _, ts := range totalSpends {
 		if checkState.Accounts().GetBalance(sender, ts.Coin).Cmp(ts.Value) < 0 {
+			coin := checkState.Coins().GetCoin(ts.Coin)
+
 			return Response{
 				Code: code.InsufficientFunds,
 				Log: fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s.",
 					sender.String(),
 					ts.Value.String(),
-					ts.Coin),
+					coin.GetFullSymbol()),
 				Info: EncodeError(map[string]string{
 					"sender":       sender.String(),
 					"needed_value": ts.Value.String(),
-					"coin":         fmt.Sprintf("%s", ts.Coin),
+					"coin":         coin.GetFullSymbol(),
 				}),
 			}
 		}
