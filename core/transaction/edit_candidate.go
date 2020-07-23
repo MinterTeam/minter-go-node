@@ -26,10 +26,9 @@ type EditCandidateData struct {
 }
 
 func (data EditCandidateData) MarshalJSON() ([]byte, error) {
-	newPubKey := data.NewPubKey
 	newPubKeyStr := ""
-	if newPubKey != nil {
-		newPubKeyStr = newPubKey.String()
+	if data.NewPubKey != nil {
+		newPubKeyStr = data.NewPubKey.String()
 	}
 	return json.Marshal(struct {
 		PubKey         string `json:"pub_key"`
