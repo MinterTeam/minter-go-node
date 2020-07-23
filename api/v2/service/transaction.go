@@ -3,9 +3,9 @@ package service
 import (
 	"context"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
+	"github.com/MinterTeam/minter-go-node/core/transaction/encoder"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	_struct "github.com/golang/protobuf/ptypes/struct"
 	tmbytes "github.com/tendermint/tendermint/libs/bytes"
@@ -35,7 +35,18 @@ func (s *Service) Transaction(ctx context.Context, req *pb.TransactionRequest) (
 		tags[string(tag.Key)] = string(tag.Value)
 	}
 
-	dataStruct, err := s.encodeTxData(decodedTx)
+	cState, err := s.blockchain.GetStateForHeight(uint64(tx.Height))
+	if err != nil {
+		return new(pb.TransactionResponse), status.Error(codes.Internal, err.Error())
+	}
+
+	txJsonEncoder := encoder.NewTxEncoderJSON(cState)
+	data, err := txJsonEncoder.Encode(decodedTx, tx)
+	if err != nil {
+		return new(pb.TransactionResponse), status.Error(codes.Internal, err.Error())
+	}
+
+	dataStruct, err := encodeToStruct(data)
 	if err != nil {
 		return new(pb.TransactionResponse), status.Error(codes.FailedPrecondition, err.Error())
 	}
@@ -59,50 +70,7 @@ func (s *Service) Transaction(ctx context.Context, req *pb.TransactionRequest) (
 	}, nil
 }
 
-func (s *Service) encodeTxData(decodedTx *transaction.Transaction) (*_struct.Struct, error) {
-	var (
-		err error
-		b   []byte
-	)
-	switch decodedTx.Type {
-	case transaction.TypeSend:
-		b, err = s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.SendData))
-	case transaction.TypeRedeemCheck:
-		b, err = s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.RedeemCheckData))
-	case transaction.TypeSellCoin:
-		b, err = s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.SellCoinData))
-	case transaction.TypeSellAllCoin:
-		b, err = s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.SellAllCoinData))
-	case transaction.TypeBuyCoin:
-		b, err = s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.BuyCoinData))
-	case transaction.TypeCreateCoin:
-		b, err = s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.CreateCoinData))
-	case transaction.TypeDeclareCandidacy:
-		b, err = s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.DeclareCandidacyData))
-	case transaction.TypeDelegate:
-		b, err = s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.DelegateData))
-	case transaction.TypeSetCandidateOnline:
-		b, err = s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.SetCandidateOnData))
-	case transaction.TypeSetCandidateOffline:
-		b, err = s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.SetCandidateOffData))
-	case transaction.TypeUnbond:
-		b, err = s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.UnbondData))
-	case transaction.TypeMultisend:
-		b, err = s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.MultisendData))
-	case transaction.TypeCreateMultisig:
-		b, err = s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.CreateMultisigData))
-	case transaction.TypeEditCandidate:
-		b, err = s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.EditCandidateData))
-	case transaction.TypeSetHaltBlock:
-		b, err = s.cdc.MarshalJSON(decodedTx.GetDecodedData().(*transaction.SetHaltBlockData))
-	default:
-		return nil, errors.New("unknown tx type")
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
+func encodeToStruct(b []byte) (*_struct.Struct, error) {
 	dataStruct := &_struct.Struct{}
 	if err := dataStruct.UnmarshalJSON(b); err != nil {
 		return nil, err

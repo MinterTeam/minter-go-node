@@ -5,7 +5,6 @@ import (
 	"fmt"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"github.com/golang/protobuf/ptypes/empty"
-	_struct "github.com/golang/protobuf/ptypes/struct"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"time"
@@ -21,8 +20,8 @@ func (s *Service) Genesis(ctx context.Context, _ *empty.Empty) (*pb.GenesisRespo
 		return new(pb.GenesisResponse), timeoutStatus.Err()
 	}
 
-	appState := &_struct.Struct{}
-	if err := appState.UnmarshalJSON(result.Genesis.AppState); err != nil {
+	appState, err := encodeToStruct(result.Genesis.AppState)
+	if err != nil {
 		return new(pb.GenesisResponse), status.Error(codes.Internal, err.Error())
 	}
 

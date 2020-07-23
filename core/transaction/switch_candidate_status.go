@@ -97,6 +97,8 @@ func (data SetCandidateOnData) Run(tx *Transaction, context state.Interface, rew
 	}
 
 	if deliverState, ok := context.(*state.State); ok {
+		deliverState.Lock()
+		defer deliverState.Unlock()
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
 		deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
@@ -197,6 +199,8 @@ func (data SetCandidateOffData) Run(tx *Transaction, context state.Interface, re
 	}
 
 	if deliverState, ok := context.(*state.State); ok {
+		deliverState.Lock()
+		defer deliverState.Unlock()
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
 		deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)

@@ -77,6 +77,17 @@ func (data EditCandidateData) Run(tx *Transaction, context state.Interface, rewa
 		return *response
 	}
 
+	if data.NewPubKey != nil && data.PubKey == *data.NewPubKey {
+		return Response{
+			Code: code.NewPublicKeyIsBad,
+			Log:  fmt.Sprintf("Current public key (%s) equals new public key (%s)", data.PubKey.String(), data.NewPubKey.String()),
+			Info: EncodeError(map[string]string{
+				"public_key":     data.PubKey.String(),
+				"new_public_key": data.NewPubKey.String(),
+			}),
+		}
+	}
+
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
@@ -126,6 +137,8 @@ func (data EditCandidateData) Run(tx *Transaction, context state.Interface, rewa
 	}
 
 	if deliverState, ok := context.(*state.State); ok {
+		deliverState.Lock()
+		defer deliverState.Unlock()
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
 		deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)

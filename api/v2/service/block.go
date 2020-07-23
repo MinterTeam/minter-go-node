@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/rewards"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
+	"github.com/MinterTeam/minter-go-node/core/transaction/encoder"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	core_types "github.com/tendermint/tendermint/rpc/core/types"
@@ -50,7 +51,13 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 			return new(pb.BlockResponse), timeoutStatus.Err()
 		}
 
-		response.Transactions, err = s.blockTransaction(block, blockResults)
+		cState, err := s.blockchain.GetStateForHeight(uint64(height))
+		if err != nil {
+			return nil, err
+		}
+
+		txJsonEncoder := encoder.NewTxEncoderJSON(cState)
+		response.Transactions, err = s.blockTransaction(block, blockResults, txJsonEncoder)
 		if err != nil {
 			return new(pb.BlockResponse), err
 		}
@@ -99,7 +106,7 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 		case pb.BlockRequest_block_reward:
 			response.BlockReward = rewards.GetRewardForBlock(uint64(height)).String()
 		case pb.BlockRequest_transactions:
-			response.Transactions, err = s.blockTransaction(block, blockResults)
+			response.Transactions, err = s.blockTransaction(block, blockResults, nil)
 			if err != nil {
 				return new(pb.BlockResponse), err
 			}
@@ -174,8 +181,9 @@ func blockProposer(block *core_types.ResultBlock, totalValidators []*tmTypes.Val
 	return "", nil
 }
 
-func (s *Service) blockTransaction(block *core_types.ResultBlock, blockResults *core_types.ResultBlockResults) ([]*pb.BlockResponse_Transaction, error) {
+func (s *Service) blockTransaction(block *core_types.ResultBlock, blockResults *core_types.ResultBlockResults, jsonEncoder *encoder.TxEncoderJSON) ([]*pb.BlockResponse_Transaction, error) {
 	txs := make([]*pb.BlockResponse_Transaction, 0, len(block.Block.Data.Txs))
+
 	for i, rawTx := range block.Block.Data.Txs {
 		tx, _ := transaction.TxDecoder.DecodeFromBytes(rawTx)
 		sender, _ := tx.Sender()
@@ -185,9 +193,14 @@ func (s *Service) blockTransaction(block *core_types.ResultBlock, blockResults *
 			tags[string(tag.Key)] = string(tag.Value)
 		}
 
-		dataStruct, err := s.encodeTxData(tx)
+		data, err := jsonEncoder.EncodeData(tx)
 		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
+		dataStruct, err := encodeToStruct(data)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
 		}
 
 		txs = append(txs, &pb.BlockResponse_Transaction{

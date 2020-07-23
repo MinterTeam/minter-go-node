@@ -75,6 +75,13 @@ func Block(height int64) (*BlockResponse, error) {
 		totalValidators = append(totalValidators, tmValidators.Validators...)
 	}
 
+	cState, err := GetStateForHeight(int(height))
+	if err != nil {
+		return nil, err
+	}
+
+	txJsonEncoder := encoder.NewTxEncoderJSON(cState)
+
 	txs := make([]BlockTransactionResponse, len(block.Block.Data.Txs))
 	for i, rawTx := range block.Block.Data.Txs {
 		tx, _ := transaction.TxDecoder.DecodeFromBytes(rawTx)
@@ -89,12 +96,6 @@ func Block(height int64) (*BlockResponse, error) {
 			tags[string(tag.Key)] = string(tag.Value)
 		}
 
-		cState, err := GetStateForHeight(int(height))
-		if err != nil {
-			return nil, err
-		}
-
-		txJsonEncoder := encoder.NewTxEncoderJSON(cState)
 		data, err := txJsonEncoder.EncodeData(tx)
 		if err != nil {
 			return nil, err

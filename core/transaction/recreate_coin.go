@@ -177,6 +177,8 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 	}
 
 	if deliverState, ok := context.(*state.State); ok {
+		deliverState.Lock()
+		defer deliverState.Unlock()
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
 		deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
