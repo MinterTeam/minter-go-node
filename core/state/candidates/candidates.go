@@ -609,9 +609,6 @@ func (c *Candidates) IsBlockPubKey(pubkey *types.Pubkey) bool {
 		return false
 	}
 
-	c.lock.RLock()
-	defer c.lock.RUnlock()
-
 	return c.isBlock(*pubkey)
 }
 
