@@ -167,13 +167,15 @@ func (data CreateCoinData) Run(tx *Transaction, context state.Interface, rewardP
 	}
 
 	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
+		gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
+
 		return Response{
 			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission.String(), tx.GasCoin),
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission.String(), gasCoin.GetFullSymbol()),
 			Info: EncodeError(map[string]string{
 				"sender":       sender.String(),
 				"needed_value": commission.String(),
-				"gas_coin":     fmt.Sprintf("%s", tx.GasCoin),
+				"gas_coin":     gasCoin.GetFullSymbol(),
 			}),
 		}
 	}
@@ -196,13 +198,15 @@ func (data CreateCoinData) Run(tx *Transaction, context state.Interface, rewardP
 		totalTxCost.Add(totalTxCost, commission)
 
 		if checkState.Accounts().GetBalance(sender, types.GetBaseCoinID()).Cmp(totalTxCost) < 0 {
+			gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
+
 			return Response{
 				Code: code.InsufficientFunds,
-				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), totalTxCost.String(), tx.GasCoin),
+				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), totalTxCost.String(), gasCoin.GetFullSymbol()),
 				Info: EncodeError(map[string]string{
 					"sender":       sender.String(),
 					"needed_value": totalTxCost.String(),
-					"gas_coin":     fmt.Sprintf("%s", tx.GasCoin),
+					"gas_coin":     gasCoin.GetFullSymbol(),
 				}),
 			}
 		}

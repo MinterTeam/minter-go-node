@@ -198,13 +198,15 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
+	gasCoin := checkState.Coins().GetCoin(decodedCheck.GasCoin)
+	coin := checkState.Coins().GetCoin(decodedCheck.Coin)
+
 	if !decodedCheck.GasCoin.IsBaseCoin() {
-		coin := checkState.Coins().GetCoin(decodedCheck.GasCoin)
-		errResp := CheckReserveUnderflow(coin, commissionInBaseCoin)
+		errResp := CheckReserveUnderflow(gasCoin, commissionInBaseCoin)
 		if errResp != nil {
 			return *errResp
 		}
-		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
+		commission = formula.CalculateSaleAmount(gasCoin.Volume(), gasCoin.Reserve(), gasCoin.Crr(), commissionInBaseCoin)
 	}
 
 	if decodedCheck.Coin == decodedCheck.GasCoin {
@@ -212,10 +214,10 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 		if checkState.Accounts().GetBalance(checkSender, decodedCheck.Coin).Cmp(totalTxCost) < 0 {
 			return Response{
 				Code: code.InsufficientFunds,
-				Log:  fmt.Sprintf("Insufficient funds for check issuer account: %s %s. Wanted %s %s", decodedCheck.Coin, checkSender.String(), totalTxCost.String(), decodedCheck.Coin),
+				Log:  fmt.Sprintf("Insufficient funds for check issuer account: %s %s. Wanted %s %s", decodedCheck.Coin, checkSender.String(), totalTxCost.String(), coin.GetFullSymbol()),
 				Info: EncodeError(map[string]string{
 					"sender":        checkSender.String(),
-					"coin":          fmt.Sprintf("%s", decodedCheck.Coin),
+					"coin":          coin.GetFullSymbol(),
 					"total_tx_cost": totalTxCost.String(),
 				}),
 			}
@@ -224,10 +226,10 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 		if checkState.Accounts().GetBalance(checkSender, decodedCheck.Coin).Cmp(decodedCheck.Value) < 0 {
 			return Response{
 				Code: code.InsufficientFunds,
-				Log:  fmt.Sprintf("Insufficient funds for check issuer account: %s %s. Wanted %s %s", checkSender.String(), decodedCheck.Coin, decodedCheck.Value.String(), decodedCheck.Coin),
+				Log:  fmt.Sprintf("Insufficient funds for check issuer account: %s %s. Wanted %s %s", checkSender.String(), decodedCheck.Coin, decodedCheck.Value.String(), coin.GetFullSymbol()),
 				Info: EncodeError(map[string]string{
 					"sender": checkSender.String(),
-					"coin":   fmt.Sprintf("%s", decodedCheck.Coin),
+					"coin":   coin.GetFullSymbol(),
 					"value":  decodedCheck.Value.String(),
 				}),
 			}
@@ -236,10 +238,10 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 		if checkState.Accounts().GetBalance(checkSender, decodedCheck.GasCoin).Cmp(commission) < 0 {
 			return Response{
 				Code: code.InsufficientFunds,
-				Log:  fmt.Sprintf("Insufficient funds for check issuer account: %s %s. Wanted %s %s", checkSender.String(), decodedCheck.GasCoin, commission.String(), decodedCheck.GasCoin),
+				Log:  fmt.Sprintf("Insufficient funds for check issuer account: %s %s. Wanted %s %s", checkSender.String(), decodedCheck.GasCoin, commission.String(), gasCoin.GetFullSymbol()),
 				Info: EncodeError(map[string]string{
 					"sender":     sender.String(),
-					"gas_coin":   fmt.Sprintf("%s", decodedCheck.GasCoin),
+					"gas_coin":   gasCoin.GetFullSymbol(),
 					"commission": commission.String(),
 				}),
 			}

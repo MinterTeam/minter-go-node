@@ -152,7 +152,7 @@ func (a *Accounts) Export(state *types.AppState, coinsMap map[types.CoinSymbol]t
 
 				// set account address as owner address of coin if account contains whole volume
 				if coin.Reserve == value.String() {
-					state.Coins[coin.ID - 1].OwnerAddress = &account.address
+					state.Coins[coin.ID-1].OwnerAddress = &account.address
 				}
 
 				balance = append(balance, types.Balance{
