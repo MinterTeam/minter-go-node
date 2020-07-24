@@ -492,11 +492,13 @@ func makeValidatorsAndCandidates(pubkeys []string, stake *big.Int) ([]types.Vali
 		}
 
 		candidates[i] = types.Candidate{
-			RewardAddress: addr,
-			OwnerAddress:  addr,
-			TotalBipStake: big.NewInt(1).String(),
-			PubKey:        pkey,
-			Commission:    100,
+			ID:             uint(i) + 1,
+			RewardAddress:  addr,
+			OwnerAddress:   addr,
+			ControlAddress: addr,
+			TotalBipStake:  big.NewInt(1).String(),
+			PubKey:         pkey,
+			Commission:     100,
 			Stakes: []types.Stake{
 				{
 					Owner:    addr,
