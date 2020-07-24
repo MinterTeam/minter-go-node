@@ -15,7 +15,7 @@ import (
 
 func TestRedeemCheckTx(t *testing.T) {
 	cState := getState()
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 
 	senderPrivateKey, _ := crypto.GenerateKey()
 	senderAddr := crypto.PubkeyToAddress(senderPrivateKey.PublicKey)
@@ -40,7 +40,7 @@ func TestRedeemCheckTx(t *testing.T) {
 		DueBlock: 1,
 		Coin:     coin,
 		Value:    checkValue,
-		GasCoin:  types.GetBaseCoin(),
+		GasCoin:  types.GetBaseCoinID(),
 	}
 
 	lock, err := crypto.Sign(check.HashWithoutLock().Bytes(), passphrasePk)
@@ -105,7 +105,7 @@ func TestRedeemCheckTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)

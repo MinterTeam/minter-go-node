@@ -20,7 +20,7 @@ func TestDeclareCandidacyTx(t *testing.T) {
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
@@ -65,7 +65,7 @@ func TestDeclareCandidacyTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
@@ -110,8 +110,8 @@ func TestDeclareCandidacyTxOverflow(t *testing.T) {
 
 	for i := 0; i < maxCandidatesCount; i++ {
 		pubkey := types.Pubkey{byte(i)}
-		cState.Candidates.Create(types.Address{}, types.Address{}, pubkey, 10)
-		cState.Candidates.Delegate(types.Address{}, pubkey, types.GetBaseCoin(), helpers.BipToPip(big.NewInt(10)), helpers.BipToPip(big.NewInt(10)))
+		cState.Candidates.Create(types.Address{}, types.Address{}, types.Address{}, pubkey, 10)
+		cState.Candidates.Delegate(types.Address{}, pubkey, types.GetBaseCoinID(), helpers.BipToPip(big.NewInt(10)), helpers.BipToPip(big.NewInt(10)))
 	}
 
 	cState.Candidates.RecalculateStakes(upgrades.UpgradeBlock3)
@@ -119,7 +119,7 @@ func TestDeclareCandidacyTxOverflow(t *testing.T) {
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
@@ -162,7 +162,7 @@ func TestDeclareCandidacyTxOverflow(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != code.TooLowStake {
 		t.Fatalf("Response code is not %d. Got %d", code.TooLowStake, response.Code)

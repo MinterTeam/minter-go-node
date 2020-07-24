@@ -17,13 +17,13 @@ func TestSwitchCandidateStatusTx(t *testing.T) {
 
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
 	pubkey := types.Pubkey{}
 	rand.Read(pubkey[:])
 
-	cState.Candidates.Create(addr, addr, pubkey, 10)
+	cState.Candidates.Create(addr, addr, addr, pubkey, 10)
 
 	data := SetCandidateOnData{
 		PubKey: pubkey,
@@ -55,7 +55,7 @@ func TestSwitchCandidateStatusTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
