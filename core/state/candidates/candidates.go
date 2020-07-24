@@ -236,6 +236,13 @@ func (c *Candidates) Create(ownerAddress, rewardAddress, controlAddress types.Ad
 	c.setToMap(pubkey, candidate)
 }
 
+func (c *Candidates) CreateWithID(ownerAddress, rewardAddress, controlAddress types.Address, pubkey types.Pubkey, commission uint, id uint) {
+	if id != 0 {
+		c.setPubKeyID(pubkey, id)
+	}
+	c.Create(ownerAddress, rewardAddress, controlAddress, pubkey, commission)
+}
+
 func (c *Candidates) PunishByzantineCandidate(height uint64, tmAddress types.TmAddress) {
 	candidate := c.GetCandidateByTendermintAddress(tmAddress)
 	stakes := c.GetStakes(candidate.PubKey)
@@ -602,13 +609,13 @@ func (c *Candidates) IsBlockPubKey(pubkey *types.Pubkey) bool {
 		return false
 	}
 
-	c.lock.RLock()
-	defer c.lock.RUnlock()
-
 	return c.isBlock(*pubkey)
 }
 
 func (c *Candidates) isBlock(pubKey types.Pubkey) bool {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
 	_, exists := c.blockList[pubKey]
 	return exists
 }
@@ -1082,12 +1089,11 @@ func (c *Candidates) setToMap(pubkey types.Pubkey, model *Candidate) {
 	id := model.ID
 	if id == 0 {
 		id = c.getOrNewID(pubkey)
-
-		c.lock.Lock()
-		defer c.lock.Unlock()
-
 		model.ID = id
 	}
+
+	c.lock.Lock()
+	defer c.lock.Unlock()
 
 	if c.list == nil {
 		c.list = map[uint]*Candidate{}
@@ -1184,9 +1190,6 @@ func (c *Candidates) ChangePubKey(old types.Pubkey, new types.Pubkey) {
 		return
 	}
 
-	c.lock.Lock()
-	defer c.lock.Unlock()
-
 	if c.isBlock(new) {
 		panic("Candidate with such public key (" + new.String() + ") exists in block list")
 	}
@@ -1206,10 +1209,10 @@ func (c *Candidates) getOrNewID(pubKey types.Pubkey) uint {
 	}
 
 	c.lock.Lock()
-	defer c.lock.Unlock()
-
 	c.isDirty = true
 	c.maxID++
+	c.lock.Unlock()
+
 	id = c.maxID
 	c.setPubKeyID(pubKey, id)
 	return id
@@ -1227,6 +1230,9 @@ func (c *Candidates) ID(pubKey types.Pubkey) uint {
 }
 
 func (c *Candidates) setPubKeyID(pubkey types.Pubkey, u uint) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
 	if c.pubKeyIDs == nil {
 		c.pubKeyIDs = map[types.Pubkey]uint{}
 	}
@@ -1235,6 +1241,8 @@ func (c *Candidates) setPubKeyID(pubkey types.Pubkey, u uint) {
 }
 
 func (c *Candidates) setBlockPybKey(p types.Pubkey) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	if c.blockList == nil {
 		c.blockList = map[types.Pubkey]struct{}{}
 	}
@@ -1243,9 +1251,6 @@ func (c *Candidates) setBlockPybKey(p types.Pubkey) {
 }
 
 func (c *Candidates) AddToBlockPybKey(p types.Pubkey) {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-
 	c.setBlockPybKey(p)
 }
 

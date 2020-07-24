@@ -271,18 +271,25 @@ func (resource MultiSendDataResource) Transform(txData interface{}, context *sta
 // TxType 0x0E
 
 type EditCandidateDataResource struct {
-	PubKey        string `json:"pub_key"`
-	RewardAddress string `json:"reward_address"`
-	OwnerAddress  string `json:"owner_address"`
+	PubKey         string `json:"pub_key"`
+	NewPubKey      string `json:"new_pub_key"`
+	RewardAddress  string `json:"reward_address"`
+	OwnerAddress   string `json:"owner_address"`
+	ControlAddress string `json:"control_address"`
 }
 
 func (EditCandidateDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
 	data := txData.(*transaction.EditCandidateData)
-
+	newPubKeyStr := ""
+	if data.NewPubKey != nil {
+		newPubKeyStr = data.NewPubKey.String()
+	}
 	return EditCandidateDataResource{
-		PubKey:        data.PubKey.String(),
-		RewardAddress: data.RewardAddress.String(),
-		OwnerAddress:  data.OwnerAddress.String(),
+		PubKey:         data.PubKey.String(),
+		NewPubKey:      newPubKeyStr,
+		RewardAddress:  data.RewardAddress.String(),
+		OwnerAddress:   data.OwnerAddress.String(),
+		ControlAddress: data.ControlAddress.String(),
 	}
 }
 

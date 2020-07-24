@@ -402,8 +402,6 @@ func (data BuyCoinData) Run(tx *Transaction, context state.Interface, rewardPool
 	}
 
 	if deliverState, ok := context.(*state.State); ok {
-		deliverState.Lock()
-		defer deliverState.Unlock()
 		for _, ts := range totalSpends {
 			deliverState.Accounts.SubBalance(sender, ts.Coin, ts.Value)
 		}

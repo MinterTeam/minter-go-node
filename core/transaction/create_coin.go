@@ -213,8 +213,6 @@ func (data CreateCoinData) Run(tx *Transaction, context state.Interface, rewardP
 	}
 
 	if deliverState, ok := context.(*state.State); ok {
-		deliverState.Lock()
-		defer deliverState.Unlock()
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
 		deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)

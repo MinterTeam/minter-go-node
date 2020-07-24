@@ -26,10 +26,9 @@ type EditCandidateData struct {
 }
 
 func (data EditCandidateData) MarshalJSON() ([]byte, error) {
-	newPubKey := data.NewPubKey
 	newPubKeyStr := ""
-	if newPubKey != nil {
-		newPubKeyStr = newPubKey.String()
+	if data.NewPubKey != nil {
+		newPubKeyStr = data.NewPubKey.String()
 	}
 	return json.Marshal(struct {
 		PubKey         string `json:"pub_key"`
@@ -137,8 +136,6 @@ func (data EditCandidateData) Run(tx *Transaction, context state.Interface, rewa
 	}
 
 	if deliverState, ok := context.(*state.State); ok {
-		deliverState.Lock()
-		defer deliverState.Unlock()
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
 		deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)

@@ -310,7 +310,7 @@ func (s *State) Import(state types.AppState) error {
 	}
 
 	for _, c := range state.Candidates {
-		s.Candidates.Create(c.OwnerAddress, c.RewardAddress, c.ControlAddress, c.PubKey, c.Commission)
+		s.Candidates.CreateWithID(c.OwnerAddress, c.RewardAddress, c.ControlAddress, c.PubKey, c.Commission, c.ID)
 		if c.Status == candidates.CandidateStatusOnline {
 			s.Candidates.SetOnline(c.PubKey)
 		}

@@ -101,8 +101,6 @@ func (data ChangeOwnerData) Run(tx *Transaction, context state.Interface, reward
 	}
 
 	if deliverState, ok := context.(*state.State); ok {
-		deliverState.Lock()
-		defer deliverState.Unlock()
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 		deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
 		deliverState.Coins.SubVolume(tx.GasCoin, commission)

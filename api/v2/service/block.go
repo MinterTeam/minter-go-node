@@ -106,7 +106,13 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 		case pb.BlockRequest_block_reward:
 			response.BlockReward = rewards.GetRewardForBlock(uint64(height)).String()
 		case pb.BlockRequest_transactions:
-			response.Transactions, err = s.blockTransaction(block, blockResults, nil)
+			cState, err := s.blockchain.GetStateForHeight(uint64(height))
+			if err != nil {
+				return nil, err
+			}
+
+			txJsonEncoder := encoder.NewTxEncoderJSON(cState)
+			response.Transactions, err = s.blockTransaction(block, blockResults, txJsonEncoder)
 			if err != nil {
 				return new(pb.BlockResponse), err
 			}
