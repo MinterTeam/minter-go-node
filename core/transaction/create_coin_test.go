@@ -97,4 +97,13 @@ func TestCreateCoinTx(t *testing.T) {
 	if stateCoin.Name() != name {
 		t.Fatalf("Name in state is not correct. Expected %s, got %s", name, stateCoin.Name())
 	}
+
+	symbolInfo := cState.Coins.GetSymbolInfo(toCreate)
+	if symbolInfo == nil {
+		t.Fatalf("Symbol %s info not found in state", toCreate)
+	}
+
+	if *symbolInfo.OwnerAddress() != addr {
+		t.Fatalf("Target owner address is not correct. Expected %s, got %s", addr.String(), symbolInfo.OwnerAddress().String())
+	}
 }
