@@ -13,6 +13,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/tendermint/go-amino"
 	"github.com/tendermint/tm-db"
+	"log"
 	"math/big"
 	"math/rand"
 	"sync"
@@ -51,6 +52,23 @@ func createTestCoin(stateDB *state.State) types.CoinID {
 	stateDB.Coins.Create(id, getTestCoinSymbol(), "TEST COIN", volume, 10, reserve,
 		big.NewInt(0).Mul(volume, big.NewInt(10)), nil)
 	stateDB.App.SetCoinsCount(id.Uint32())
+
+	return id
+}
+
+func createTestCoinWithOwner(stateDB *state.State, owner types.Address) types.CoinID {
+	volume := helpers.BipToPip(big.NewInt(100000))
+	reserve := helpers.BipToPip(big.NewInt(100000))
+
+	id := stateDB.App.GetNextCoinID()
+	stateDB.Coins.Create(id, getTestCoinSymbol(), "TEST COIN", volume, 10, reserve,
+		big.NewInt(0).Mul(volume, big.NewInt(10)), &owner)
+	stateDB.App.SetCoinsCount(id.Uint32())
+
+	err := stateDB.Coins.Commit()
+	if err != nil {
+		log.Fatalf("failed to commit coins: %s", err)
+	}
 
 	return id
 }

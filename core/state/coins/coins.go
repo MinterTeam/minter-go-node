@@ -312,7 +312,7 @@ func (c *Coins) getSymbolInfo(symbol types.CoinSymbol) *SymbolInfo {
 
 	_, enc := c.iavl.Get(getSymbolInfoPath(symbol))
 	if len(enc) == 0 {
-		return info
+		return nil
 	}
 
 	if err := rlp.DecodeBytes(enc, info); err != nil {
