@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"crypto/ecdsa"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
@@ -36,31 +37,12 @@ func TestChangeOwnerTx(t *testing.T) {
 		NewOwner: newOwner,
 	}
 
-	encodedData, err := rlp.EncodeToBytes(data)
+	tx, err := makeTestChangeOwnerTx(data, privateKey)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	tx := Transaction{
-		Nonce:         1,
-		GasPrice:      1,
-		ChainID:       types.CurrentChainID,
-		GasCoin:       gasCoin,
-		Type:          TypeChangeOwner,
-		Data:          encodedData,
-		SignatureType: SigTypeSingle,
-	}
-
-	if err := tx.Sign(privateKey); err != nil {
-		t.Fatal(err)
-	}
-
-	encodedTx, err := rlp.EncodeToBytes(tx)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	response := RunTx(cState, encodedTx, big.NewInt(0), upgrades.UpgradeBlock4, &sync.Map{}, 0)
+	response := RunTx(cState, tx, big.NewInt(0), upgrades.UpgradeBlock4, &sync.Map{}, 0)
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
@@ -99,38 +81,17 @@ func TestChangeOwnerTxWithWrongOwner(t *testing.T) {
 
 	createTestCoinWithOwner(cState, newOwner)
 
-	gasCoin := types.GetBaseCoinID()
-
 	data := ChangeOwnerData{
 		Symbol:   getTestCoinSymbol(),
 		NewOwner: newOwner,
 	}
 
-	encodedData, err := rlp.EncodeToBytes(data)
+	tx, err := makeTestChangeOwnerTx(data, privateKey)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	tx := Transaction{
-		Nonce:         1,
-		GasPrice:      1,
-		ChainID:       types.CurrentChainID,
-		GasCoin:       gasCoin,
-		Type:          TypeChangeOwner,
-		Data:          encodedData,
-		SignatureType: SigTypeSingle,
-	}
-
-	if err := tx.Sign(privateKey); err != nil {
-		t.Fatal(err)
-	}
-
-	encodedTx, err := rlp.EncodeToBytes(tx)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	response := RunTx(cState, encodedTx, big.NewInt(0), upgrades.UpgradeBlock4, &sync.Map{}, 0)
+	response := RunTx(cState, tx, big.NewInt(0), upgrades.UpgradeBlock4, &sync.Map{}, 0)
 	if response.Code != code.IsNotOwnerOfCoin {
 		t.Fatalf("Response code is not 206. Error %s", response.Log)
 	}
@@ -150,39 +111,46 @@ func TestChangeOwnerTxWithWrongSymbol(t *testing.T) {
 
 	createTestCoinWithOwner(cState, addr)
 
-	gasCoin := types.GetBaseCoinID()
-
 	data := ChangeOwnerData{
-		Symbol:   types.StrToCoinSymbol("TESTCOIN"),
+		Symbol:   types.StrToCoinSymbol("UNKNOWN"),
 		NewOwner: newOwner,
 	}
 
-	encodedData, err := rlp.EncodeToBytes(data)
+	tx, err := makeTestChangeOwnerTx(data, privateKey)
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	response := RunTx(cState, tx, big.NewInt(0), upgrades.UpgradeBlock4, &sync.Map{}, 0)
+	if response.Code != code.CoinNotExists {
+		t.Fatalf("Response code is not 102. Error %s", response.Log)
+	}
+}
+
+func makeTestChangeOwnerTx(data ChangeOwnerData, privateKey *ecdsa.PrivateKey) ([]byte, error) {
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		return nil, err
 	}
 
 	tx := Transaction{
 		Nonce:         1,
 		GasPrice:      1,
 		ChainID:       types.CurrentChainID,
-		GasCoin:       gasCoin,
+		GasCoin:       types.GetBaseCoinID(),
 		Type:          TypeChangeOwner,
 		Data:          encodedData,
 		SignatureType: SigTypeSingle,
 	}
 
 	if err := tx.Sign(privateKey); err != nil {
-		t.Fatal(err)
+		return nil, err
 	}
 
 	encodedTx, err := rlp.EncodeToBytes(tx)
 	if err != nil {
-		t.Fatal(err)
+		return nil, err
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), upgrades.UpgradeBlock4, &sync.Map{}, 0)
-	if response.Code != code.CoinNotExists {
-		t.Fatalf("Response code is not 102. Error %s", response.Log)
-	}
+	return encodedTx, nil
 }

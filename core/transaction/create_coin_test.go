@@ -27,7 +27,7 @@ func TestCreateCoinTx(t *testing.T) {
 
 	data := CreateCoinData{
 		Name:                 name,
-		Symbol:               types.StrToCoinSymbol("ABCDEF"),
+		Symbol:               toCreate,
 		InitialAmount:        amount,
 		InitialReserve:       reserve,
 		ConstantReserveRatio: crr,
@@ -96,6 +96,10 @@ func TestCreateCoinTx(t *testing.T) {
 
 	if stateCoin.Name() != name {
 		t.Fatalf("Name in state is not correct. Expected %s, got %s", name, stateCoin.Name())
+	}
+
+	if stateCoin.Version() != 0 {
+		t.Fatalf("Version in state is not correct. Expected %d, got %d", 0, stateCoin.Version())
 	}
 
 	symbolInfo := cState.Coins.GetSymbolInfo(toCreate)
