@@ -22,7 +22,7 @@ func TestCreateMultisigTx(t *testing.T) {
 	privateKey2, _ := crypto.GenerateKey()
 	addr2 := crypto.PubkeyToAddress(privateKey2.PublicKey)
 
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
@@ -65,7 +65,7 @@ func TestCreateMultisigTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
@@ -115,7 +115,7 @@ func TestCreateMultisigFromExistingAccountTx(t *testing.T) {
 	privateKey2, _ := crypto.GenerateKey()
 	addr2 := crypto.PubkeyToAddress(privateKey2.PublicKey)
 
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
@@ -139,7 +139,7 @@ func TestCreateMultisigFromExistingAccountTx(t *testing.T) {
 	}).Address()
 
 	initialBalance := big.NewInt(10)
-	cState.Accounts.AddBalance(msigAddr, types.GetBaseCoin(), initialBalance)
+	cState.Accounts.AddBalance(msigAddr, types.GetBaseCoinID(), initialBalance)
 
 	encodedData, err := rlp.EncodeToBytes(data)
 	if err != nil {
@@ -166,7 +166,7 @@ func TestCreateMultisigFromExistingAccountTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
@@ -206,7 +206,7 @@ func TestCreateMultisigFromExistingAccountTx(t *testing.T) {
 		t.Fatalf("Threshold is not correct")
 	}
 
-	if cState.Accounts.GetBalance(msigAddr, types.GetBaseCoin()).Cmp(initialBalance) != 0 {
+	if cState.Accounts.GetBalance(msigAddr, types.GetBaseCoinID()).Cmp(initialBalance) != 0 {
 		t.Fatalf("Msig balance was not persisted")
 	}
 }
@@ -220,7 +220,7 @@ func TestCreateExistingMultisigTx(t *testing.T) {
 	privateKey2, _ := crypto.GenerateKey()
 	addr2 := crypto.PubkeyToAddress(privateKey2.PublicKey)
 
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
@@ -260,7 +260,7 @@ func TestCreateExistingMultisigTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != code.MultisigExists {
 		t.Fatalf("Response code is not %d. Got %d", code.MultisigExists, response.Code)

@@ -153,7 +153,7 @@ func TestAppState(t *testing.T) {
 				Stakes: []Stake{
 					{
 						Owner:    testAddr,
-						Coin:     GetBaseCoin(),
+						Coin:     GetBaseCoinID(),
 						Value:    big.NewInt(1).String(),
 						BipValue: big.NewInt(1).String(),
 					},
@@ -166,7 +166,7 @@ func TestAppState(t *testing.T) {
 				Address: testAddr,
 				Balance: []Balance{
 					{
-						Coin:  GetBaseCoin(),
+						Coin:  GetBaseCoinID(),
 						Value: big.NewInt(1).String(),
 					},
 				},
@@ -192,7 +192,7 @@ func TestAppState(t *testing.T) {
 				Height:       1,
 				Address:      testAddr,
 				CandidateKey: &pubkey,
-				Coin:         GetBaseCoin(),
+				Coin:         GetBaseCoinID(),
 				Value:        big.NewInt(1).String(),
 			},
 		},

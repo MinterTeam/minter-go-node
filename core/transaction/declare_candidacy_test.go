@@ -20,7 +20,7 @@ func TestDeclareCandidacyTx(t *testing.T) {
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
@@ -65,7 +65,7 @@ func TestDeclareCandidacyTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
@@ -91,6 +91,10 @@ func TestDeclareCandidacyTx(t *testing.T) {
 		t.Fatalf("Reward address is not correct")
 	}
 
+	if candidate.ControlAddress != addr {
+		t.Fatalf("Control address is not correct")
+	}
+
 	if candidate.GetTotalBipStake() != nil && candidate.GetTotalBipStake().Cmp(types.Big0) != 0 {
 		t.Fatalf("Total stake is not correct")
 	}
@@ -110,8 +114,8 @@ func TestDeclareCandidacyTxOverflow(t *testing.T) {
 
 	for i := 0; i < maxCandidatesCount; i++ {
 		pubkey := types.Pubkey{byte(i)}
-		cState.Candidates.Create(types.Address{}, types.Address{}, pubkey, 10)
-		cState.Candidates.Delegate(types.Address{}, pubkey, types.GetBaseCoin(), helpers.BipToPip(big.NewInt(10)), helpers.BipToPip(big.NewInt(10)))
+		cState.Candidates.Create(types.Address{}, types.Address{}, types.Address{}, pubkey, 10)
+		cState.Candidates.Delegate(types.Address{}, pubkey, types.GetBaseCoinID(), helpers.BipToPip(big.NewInt(10)), helpers.BipToPip(big.NewInt(10)))
 	}
 
 	cState.Candidates.RecalculateStakes(upgrades.UpgradeBlock3)
@@ -119,7 +123,7 @@ func TestDeclareCandidacyTxOverflow(t *testing.T) {
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
@@ -162,9 +166,98 @@ func TestDeclareCandidacyTxOverflow(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != code.TooLowStake {
 		t.Fatalf("Response code is not %d. Got %d", code.TooLowStake, response.Code)
 	}
+}
+
+func TestDeclareCandidacyTxWithBlockPybKey(t *testing.T) {
+	cState := getState()
+
+	pkey, _ := crypto.GenerateKey()
+	publicKeyBytes := crypto.FromECDSAPub(&pkey.PublicKey)[:32]
+	var publicKey types.Pubkey
+	copy(publicKey[:], publicKeyBytes)
+
+	cState.Candidates.Create(types.Address{}, types.Address{}, types.Address{}, publicKey, 10)
+	pkeyNew, _ := crypto.GenerateKey()
+	publicKeyNewBytes := crypto.FromECDSAPub(&pkeyNew.PublicKey)[:32]
+	var publicKeyNew types.Pubkey
+	copy(publicKeyNew[:], publicKeyNewBytes)
+
+	cState.Candidates.ChangePubKey(publicKey, publicKeyNew)
+
+	privateKey, _ := crypto.GenerateKey()
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+
+	coin := types.GetBaseCoinID()
+
+	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
+
+	commission := uint(10)
+
+	data := DeclareCandidacyData{
+		Address:    addr,
+		PubKey:     publicKey,
+		Commission: commission,
+		Coin:       coin,
+		Stake:      helpers.BipToPip(big.NewInt(100)),
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := Transaction{
+		Nonce:         1,
+		GasPrice:      1,
+		ChainID:       types.CurrentChainID,
+		GasCoin:       coin,
+		Type:          TypeDeclareCandidacy,
+		Data:          encodedData,
+		SignatureType: SigTypeSingle,
+	}
+
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+
+	if response.Code == 0 {
+		t.Fatal("Response code is not 1. Want error")
+	}
+
+	if cState.Candidates.GetCandidate(publicKey) != nil {
+		t.Fatalf("Candidate found with old pub key")
+	}
+
+	candidate := cState.Candidates.GetCandidate(publicKeyNew)
+
+	if candidate == nil {
+		t.Fatalf("Candidate not found")
+	}
+
+	if candidate.OwnerAddress == addr {
+		t.Fatalf("OwnerAddress has changed")
+	}
+
+	if candidate.RewardAddress == addr {
+		t.Fatalf("RewardAddress has changed")
+	}
+
+	if candidate.ControlAddress == addr {
+		t.Fatalf("ControlAddress has changed")
+	}
+
 }

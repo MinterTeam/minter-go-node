@@ -18,7 +18,7 @@ func createTestCandidate(stateDB *state.State) types.Pubkey {
 	pubkey := types.Pubkey{}
 	rand.Read(pubkey[:])
 
-	stateDB.Candidates.Create(address, address, pubkey, 10)
+	stateDB.Candidates.Create(address, address, address, pubkey, 10)
 
 	return pubkey
 }
@@ -31,7 +31,7 @@ func TestDelegateTx(t *testing.T) {
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
@@ -69,7 +69,7 @@ func TestDelegateTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)

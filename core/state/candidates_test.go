@@ -19,7 +19,7 @@ func TestSimpleDelegate(t *testing.T) {
 	st := getState()
 
 	address := types.Address{}
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 	amount := big.NewInt(1)
 	pubkey := createTestCandidate(st)
 
@@ -44,7 +44,7 @@ func TestDelegate(t *testing.T) {
 	st := getState()
 
 	address := types.Address{}
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 	amount := big.NewInt(1)
 	totalAmount := big.NewInt(0)
 	pubkey := createTestCandidate(st)
@@ -73,7 +73,7 @@ func TestDelegate(t *testing.T) {
 func TestComplexDelegate(t *testing.T) {
 	st := getState()
 
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 	pubkey := createTestCandidate(st)
 
 	for i := uint64(0); i < 2000; i++ {
@@ -173,7 +173,7 @@ func TestComplexDelegate(t *testing.T) {
 func TestStakeSufficiency(t *testing.T) {
 	st := getState()
 
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 	pubkey := createTestCandidate(st)
 
 	for i := uint64(0); i < 1000; i++ {
@@ -224,7 +224,7 @@ func TestDoubleSignPenalty(t *testing.T) {
 
 	pubkey := createTestCandidate(st)
 
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 	amount := big.NewInt(100)
 	var addr types.Address
 	binary.BigEndian.PutUint64(addr[:], 1)
@@ -271,7 +271,7 @@ func TestAbsentPenalty(t *testing.T) {
 
 	pubkey := createTestCandidate(st)
 
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 	amount := big.NewInt(100)
 	var addr types.Address
 	binary.BigEndian.PutUint64(addr[:], 1)
@@ -301,7 +301,7 @@ func TestDoubleAbsentPenalty(t *testing.T) {
 
 	pubkey := createTestCandidate(st)
 
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 	amount := big.NewInt(100)
 	var addr types.Address
 	binary.BigEndian.PutUint64(addr[:], 1)
@@ -335,7 +335,7 @@ func TestDoubleAbsentPenalty(t *testing.T) {
 func TestDelegationAfterUnbond(t *testing.T) {
 	st := getState()
 
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 	pubkey := createTestCandidate(st)
 
 	for i := uint64(0); i < 1000; i++ {
@@ -404,7 +404,7 @@ func createTestCandidate(stateDB *State) types.Pubkey {
 	pubkey := types.Pubkey{}
 	_, _ = rand.Read(pubkey[:])
 
-	stateDB.Candidates.Create(address, address, pubkey, 10)
+	stateDB.Candidates.Create(address, address, address, pubkey, 10)
 
 	return pubkey
 }

@@ -15,13 +15,11 @@ func TestCreateCoinTx(t *testing.T) {
 
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
-	var toCreate types.CoinSymbol
-	copy(toCreate[:], []byte("ABCDEF"))
-
+	toCreate := types.StrToCoinSymbol("ABCDEF")
 	reserve := helpers.BipToPip(big.NewInt(10000))
 	amount := helpers.BipToPip(big.NewInt(100))
 	crr := uint(50)
@@ -62,10 +60,14 @@ func TestCreateCoinTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
-
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
+	}
+
+	err = cState.Coins.Commit()
+	if err != nil {
+		t.Fatalf("Commit coins failed. Error %s", err)
 	}
 
 	targetBalance, _ := big.NewInt(0).SetString("989000000000000000000000", 10)
@@ -74,7 +76,7 @@ func TestCreateCoinTx(t *testing.T) {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", coin, targetBalance, balance)
 	}
 
-	stateCoin := cState.Coins.GetCoin(toCreate)
+	stateCoin := cState.Coins.GetCoinBySymbol(toCreate)
 
 	if stateCoin == nil {
 		t.Fatalf("Coin %s not found in state", toCreate)
@@ -94,5 +96,18 @@ func TestCreateCoinTx(t *testing.T) {
 
 	if stateCoin.Name() != name {
 		t.Fatalf("Name in state is not correct. Expected %s, got %s", name, stateCoin.Name())
+	}
+
+	if stateCoin.Version() != 0 {
+		t.Fatalf("Version in state is not correct. Expected %d, got %d", 0, stateCoin.Version())
+	}
+
+	symbolInfo := cState.Coins.GetSymbolInfo(toCreate)
+	if symbolInfo == nil {
+		t.Fatalf("Symbol %s info not found in state", toCreate)
+	}
+
+	if *symbolInfo.OwnerAddress() != addr {
+		t.Fatalf("Target owner address is not correct. Expected %s, got %s", addr.String(), symbolInfo.OwnerAddress().String())
 	}
 }

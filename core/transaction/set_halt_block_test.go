@@ -24,12 +24,12 @@ func TestSetHaltBlockTx(t *testing.T) {
 	haltHeight := upgrades.UpgradeBlock4 + uint64(100)
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 
 	pubkey := [32]byte{}
 	rand.Read(pubkey[:])
 
-	cState.Candidates.Create(addr, addr, pubkey, 10)
+	cState.Candidates.Create(addr, addr, addr, pubkey, 10)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1)))
 
@@ -63,7 +63,7 @@ func TestSetHaltBlockTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), upgrades.UpgradeBlock4, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), upgrades.UpgradeBlock4, &sync.Map{}, 0)
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
@@ -100,12 +100,12 @@ func TestSetHaltBlockTxWithWrongHeight(t *testing.T) {
 	haltHeight := currentHeight - 1
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 
 	pubkey := [32]byte{}
 	rand.Read(pubkey[:])
 
-	cState.Candidates.Create(addr, addr, pubkey, 10)
+	cState.Candidates.Create(addr, addr, addr, pubkey, 10)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1)))
 
@@ -139,7 +139,7 @@ func TestSetHaltBlockTxWithWrongHeight(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), currentHeight, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), currentHeight, &sync.Map{}, 0)
 	if response.Code != code.WrongHaltHeight {
 		t.Fatalf("Response code is not %d", code.WrongHaltHeight)
 	}
@@ -160,12 +160,12 @@ func TestSetHaltBlockTxWithWrongOwnership(t *testing.T) {
 	haltHeight := currentHeight + 1
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 
 	pubkey := [32]byte{}
 	rand.Read(pubkey[:])
 
-	cState.Candidates.Create(addr, addr, pubkey, 10)
+	cState.Candidates.Create(addr, addr, addr, pubkey, 10)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1)))
 
@@ -200,7 +200,7 @@ func TestSetHaltBlockTxWithWrongOwnership(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), currentHeight, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), currentHeight, &sync.Map{}, 0)
 	if response.Code != code.IsNotOwnerOfCandidate {
 		t.Fatalf("Response code is not %d", code.IsNotOwnerOfCandidate)
 	}

@@ -259,15 +259,16 @@ func (c *Candidates) Export(state *types.AppState, coinsMap map[types.CoinSymbol
 		}
 
 		state.Candidates = append(state.Candidates, types.Candidate{
-			ID:            maxID,
-			RewardAddress: candidate.RewardAddress,
-			OwnerAddress:  candidate.OwnerAddress,
-			TotalBipStake: candidate.GetTotalBipStake().String(),
-			PubKey:        candidate.PubKey,
-			Commission:    candidate.Commission,
-			Status:        candidate.Status,
-			Updates:       updates,
-			Stakes:        stakes,
+			ID:             maxID,
+			RewardAddress:  candidate.RewardAddress,
+			OwnerAddress:   candidate.OwnerAddress,
+			ControlAddress: candidate.OwnerAddress,
+			TotalBipStake:  candidate.GetTotalBipStake().String(),
+			PubKey:         candidate.PubKey,
+			Commission:     candidate.Commission,
+			Status:         candidate.Status,
+			Updates:        updates,
+			Stakes:         stakes,
 		})
 
 		maxID++

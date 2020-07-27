@@ -143,7 +143,7 @@ func TestSendTx(t *testing.T) {
 	to := types.Address([20]byte{1})
 
 	data := transaction.SendData{
-		Coin:  types.GetBaseCoin(),
+		Coin:  types.GetBaseCoinID(),
 		To:    to,
 		Value: value,
 	}
@@ -157,7 +157,7 @@ func TestSendTx(t *testing.T) {
 		Nonce:         nonce,
 		ChainID:       types.CurrentChainID,
 		GasPrice:      1,
-		GasCoin:       types.GetBaseCoin(),
+		GasCoin:       types.GetBaseCoinID(),
 		Type:          transaction.TypeSend,
 		Data:          encodedData,
 		SignatureType: transaction.SigTypeSingle,
@@ -209,7 +209,7 @@ func TestSmallStakeValidator(t *testing.T) {
 		Address:    crypto.PubkeyToAddress(privateKey.PublicKey),
 		PubKey:     pubkey,
 		Commission: 10,
-		Coin:       types.GetBaseCoin(),
+		Coin:       types.GetBaseCoinID(),
 		Stake:      big.NewInt(0),
 	}
 
@@ -222,7 +222,7 @@ func TestSmallStakeValidator(t *testing.T) {
 		Nonce:         nonce,
 		ChainID:       types.CurrentChainID,
 		GasPrice:      1,
-		GasCoin:       types.GetBaseCoin(),
+		GasCoin:       types.GetBaseCoinID(),
 		Type:          transaction.TypeDeclareCandidacy,
 		Data:          encodedData,
 		SignatureType: transaction.SigTypeSingle,
@@ -257,7 +257,7 @@ func TestSmallStakeValidator(t *testing.T) {
 		Nonce:         nonce,
 		GasPrice:      1,
 		ChainID:       types.CurrentChainID,
-		GasCoin:       types.GetBaseCoin(),
+		GasCoin:       types.GetBaseCoinID(),
 		Type:          transaction.TypeSetCandidateOnline,
 		Data:          encodedData,
 		SignatureType: transaction.SigTypeSingle,
@@ -325,7 +325,7 @@ func TestSmallStakeValidator(t *testing.T) {
 		Nonce:         nonce,
 		GasPrice:      1,
 		ChainID:       types.CurrentChainID,
-		GasCoin:       types.GetBaseCoin(),
+		GasCoin:       types.GetBaseCoinID(),
 		Type:          transaction.TypeSetCandidateOnline,
 		Data:          encodedData,
 		SignatureType: transaction.SigTypeSingle,
@@ -435,7 +435,7 @@ func getGenesis() (*types2.GenesisDoc, error) {
 				Address: crypto.PubkeyToAddress(privateKey.PublicKey),
 				Balance: []types.Balance{
 					{
-						Coin:  types.GetBaseCoin(),
+						Coin:  types.GetBaseCoinID(),
 						Value: helpers.BipToPip(big.NewInt(1000000)).String(),
 					},
 				},
@@ -492,15 +492,17 @@ func makeValidatorsAndCandidates(pubkeys []string, stake *big.Int) ([]types.Vali
 		}
 
 		candidates[i] = types.Candidate{
-			RewardAddress: addr,
-			OwnerAddress:  addr,
-			TotalBipStake: big.NewInt(1).String(),
-			PubKey:        pkey,
-			Commission:    100,
+			ID:             uint(i) + 1,
+			RewardAddress:  addr,
+			OwnerAddress:   addr,
+			ControlAddress: addr,
+			TotalBipStake:  big.NewInt(1).String(),
+			PubKey:         pkey,
+			Commission:     100,
 			Stakes: []types.Stake{
 				{
 					Owner:    addr,
-					Coin:     types.GetBaseCoin(),
+					Coin:     types.GetBaseCoinID(),
 					Value:    stake.String(),
 					BipValue: stake.String(),
 				},

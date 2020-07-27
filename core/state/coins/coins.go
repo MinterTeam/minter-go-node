@@ -312,7 +312,7 @@ func (c *Coins) getSymbolInfo(symbol types.CoinSymbol) *SymbolInfo {
 
 	_, enc := c.iavl.Get(getSymbolInfoPath(symbol))
 	if len(enc) == 0 {
-		return info
+		return nil
 	}
 
 	if err := rlp.DecodeBytes(enc, info); err != nil {
@@ -357,14 +357,18 @@ func (c *Coins) getOrderedDirtyCoins() []types.CoinID {
 func (c *Coins) Export(state *types.AppState) {
 	c.iavl.Iterate(func(key []byte, value []byte) bool {
 		if key[0] == mainPrefix {
-			if key[1] == symbolPrefix {
+			if key[1] == symbolPrefix || key[len(key) - 1] == infoPrefix {
 				return false
 			}
 
 			coinID := types.BytesToCoinID(key[1:])
 			coin := c.get(coinID)
 
-			owner := c.getSymbolInfo(coin.Symbol()).OwnerAddress()
+			owner := &types.Address{}
+			info := c.getSymbolInfo(coin.Symbol())
+			if info != nil {
+				owner = info.OwnerAddress()
+			}
 
 			state.Coins = append(state.Coins, types.Coin{
 				ID:           coin.ID(),
