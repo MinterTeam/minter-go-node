@@ -125,7 +125,7 @@ func (data EditCandidateData) Run(tx *Transaction, context state.Interface, rewa
 		}
 	}
 
-	if checkState.Candidates().IsBlockPubKey(data.NewPubKey) {
+	if data.NewPubKey != nil && checkState.Candidates().IsBlockedPubKey(*data.NewPubKey) {
 		return Response{
 			Code: code.PublicKeyInBlockList,
 			Log:  fmt.Sprintf("Public key (%s) exists in block list", data.NewPubKey.String()),

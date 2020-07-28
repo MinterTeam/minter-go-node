@@ -25,19 +25,19 @@ const (
 	MaxDelegatorsPerCandidate = 1000
 
 	mainPrefix       = 'c'
-	pubKeyIDPrefix   = 'p'
-	blockListPrefix  = 'b'
+	pubKeyIDPrefix   = mainPrefix + 'p'
+	blockListPrefix  = mainPrefix + 'b'
 	stakesPrefix     = 's'
 	totalStakePrefix = 't'
 	updatesPrefix    = 'u'
-	maxIDPrefix      = 'i'
+	maxIDPrefix      = mainPrefix + 'i'
 )
 
 type RCandidates interface {
 	Export11To12(state *types.AppState) //todo: delete after start Node v1.1
 	Export(state *types.AppState)
 	Exists(pubkey types.Pubkey) bool
-	IsBlockPubKey(pubkey *types.Pubkey) bool
+	IsBlockedPubKey(pubkey types.Pubkey) bool
 	Count() int
 	IsNewCandidateStakeSufficient(coin types.CoinID, stake *big.Int, limit int) bool
 	IsDelegatorStakeSufficient(address types.Address, pubkey types.Pubkey, coin types.CoinID, amount *big.Int) bool
@@ -112,12 +112,12 @@ func (c *Candidates) Commit() error {
 		sort.SliceStable(pubIDs, func(i, j int) bool {
 			return pubIDs[i].ID < pubIDs[j].ID
 		})
-		pubIDenc, err := rlp.EncodeToBytes(pubIDs)
+		pubIdData, err := rlp.EncodeToBytes(pubIDs)
 		if err != nil {
 			panic(fmt.Sprintf("failed to encode candidates public key with ID: %s", err))
 		}
 
-		c.iavl.Set([]byte{pubKeyIDPrefix}, pubIDenc)
+		c.iavl.Set([]byte{pubKeyIDPrefix}, pubIdData)
 
 		var blockList []types.Pubkey
 		for pubKey := range c.blockList {
@@ -237,9 +237,7 @@ func (c *Candidates) Create(ownerAddress, rewardAddress, controlAddress types.Ad
 }
 
 func (c *Candidates) CreateWithID(ownerAddress, rewardAddress, controlAddress types.Address, pubkey types.Pubkey, commission uint, id uint32) {
-	if id != 0 {
-		c.setPubKeyID(pubkey, id)
-	}
+	c.setPubKeyID(pubkey, id)
 	c.Create(ownerAddress, rewardAddress, controlAddress, pubkey, commission)
 }
 
@@ -604,15 +602,11 @@ func (c *Candidates) existPubKey(pubKey types.Pubkey) bool {
 	return exists
 }
 
-func (c *Candidates) IsBlockPubKey(pubkey *types.Pubkey) bool {
-	if pubkey == nil {
-		return false
-	}
-
-	return c.isBlock(*pubkey)
+func (c *Candidates) IsBlockedPubKey(pubkey types.Pubkey) bool {
+	return c.isBlocked(pubkey)
 }
 
-func (c *Candidates) isBlock(pubKey types.Pubkey) bool {
+func (c *Candidates) isBlocked(pubKey types.Pubkey) bool {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
@@ -870,7 +864,7 @@ func (c *Candidates) loadCandidatesList() (maxID uint32) {
 func (c *Candidates) checkAndSetLoaded() bool {
 	c.lock.RLock()
 	if c.loaded {
-		c.lock.RLock()
+		c.lock.RUnlock()
 		return true
 	}
 	c.lock.RUnlock()
@@ -1186,11 +1180,7 @@ func (c *Candidates) LoadStakesOfCandidate(pubkey types.Pubkey) {
 }
 
 func (c *Candidates) ChangePubKey(old types.Pubkey, new types.Pubkey) {
-	if old == new {
-		return
-	}
-
-	if c.isBlock(new) {
+	if c.isBlocked(new) {
 		panic("Candidate with such public key (" + new.String() + ") exists in block list")
 	}
 
@@ -1230,6 +1220,10 @@ func (c *Candidates) ID(pubKey types.Pubkey) uint32 {
 }
 
 func (c *Candidates) setPubKeyID(pubkey types.Pubkey, u uint32) {
+	if u == 0 {
+		panic("public key of candidate cannot be equal 0")
+	}
+
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
