@@ -27,10 +27,10 @@ const (
 	mainPrefix       = 'c'
 	pubKeyIDPrefix   = mainPrefix + 'p'
 	blockListPrefix  = mainPrefix + 'b'
+	maxIDPrefix      = mainPrefix + 'i'
 	stakesPrefix     = 's'
 	totalStakePrefix = 't'
 	updatesPrefix    = 'u'
-	maxIDPrefix      = mainPrefix + 'i'
 )
 
 type RCandidates interface {
