@@ -53,6 +53,7 @@ var Routes = map[string]*rpcserver.RPCFunc{
 	"max_gas":                rpcserver.NewRPCFunc(MaxGas, "height"),
 	"min_gas_price":          rpcserver.NewRPCFunc(MinGasPrice, ""),
 	"genesis":                rpcserver.NewRPCFunc(Genesis, ""),
+	"missed_blocks":          rpcserver.NewRPCFunc(MissedBlocks, "pub_key,height"),
 }
 
 func responseTime(b *minter.Blockchain) func(f func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
