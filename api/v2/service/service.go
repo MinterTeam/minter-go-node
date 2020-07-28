@@ -53,7 +53,7 @@ func (s *Service) createError(statusErr *status.Status, data string) error {
 }
 
 func (s *Service) TimeoutDuration() time.Duration {
-	return time.Duration(s.minterCfg.APIv2TimeoutDuration)
+	return s.minterCfg.APIv2TimeoutDuration
 }
 
 func (s *Service) checkTimeout(ctx context.Context) *status.Status {
