@@ -192,12 +192,12 @@ func blockValidators(totalValidators []*tmTypes.Validator, block *core_types.Res
 }
 
 func missedBlockValidators(s *state.CheckState) []string {
-	var missedBloks []string
+	var missedBlocks []string
 	for _, val := range s.Validators().GetValidators() {
-		missedBloks = append(missedBloks, val.AbsentTimes.String())
+		missedBlocks = append(missedBlocks, val.AbsentTimes.String())
 	}
 
-	return missedBloks
+	return missedBlocks
 }
 
 func blockProposer(block *core_types.ResultBlock, totalValidators []*tmTypes.Validator) (string, error) {
