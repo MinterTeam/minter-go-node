@@ -95,6 +95,12 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 
 		response.Evidence = blockEvidence(block)
 
+		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+			return new(pb.BlockResponse), timeoutStatus.Err()
+		}
+
+		response.Missed = missedBlockValidators(cState)
+
 		return response, nil
 	}
 
