@@ -11,7 +11,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/tree"
-	"github.com/MinterTeam/minter-go-node/upgrades"
+
 	"math/big"
 	"sort"
 	"sync"
@@ -291,13 +291,7 @@ func (c *Candidates) GetCandidateByTendermintAddress(address types.TmAddress) *C
 }
 
 func (c *Candidates) RecalculateStakes(height uint64) {
-	if height >= upgrades.UpgradeBlock3 {
-		c.recalculateStakesNew(height)
-	} else if height >= upgrades.UpgradeBlock2 {
-		c.recalculateStakesOld2(height)
-	} else {
-		c.recalculateStakesOld1(height)
-	}
+	c.recalculateStakesNew(height)
 }
 
 func (c *Candidates) recalculateStakesOld1(height uint64) {

@@ -6,14 +6,14 @@ import (
 	eventsdb "github.com/MinterTeam/minter-go-node/core/events"
 	"github.com/MinterTeam/minter-go-node/core/state/candidates"
 	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/MinterTeam/minter-go-node/upgrades"
+
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	db "github.com/tendermint/tm-db"
 	"math/big"
 	"testing"
 )
 
-const height = upgrades.UpgradeBlock4
+const height = 500000
 
 func TestSimpleDelegate(t *testing.T) {
 	st := getState()
