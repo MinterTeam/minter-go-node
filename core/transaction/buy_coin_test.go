@@ -1,9 +1,7 @@
 package transaction
 
 import (
-	"bytes"
 	"crypto/ecdsa"
-	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
@@ -418,30 +416,6 @@ func TestBuyCoinTxNotGasCoin(t *testing.T) {
 
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
-	}
-}
-
-func TestBuyCoinTxJSON(t *testing.T) {
-	str := "{\"coin_to_buy\":\"%d\",\"value_to_buy\":\"1\",\"coin_to_sell\":\"1\",\"maximum_value_to_sell\":\"1\"}"
-	out := []byte(fmt.Sprintf(str, types.GetBaseCoinID()))
-
-	coinID := createTestCoin(getState())
-
-	buyCoinData := BuyCoinData{
-		CoinToBuy:          types.GetBaseCoinID(),
-		ValueToBuy:         big.NewInt(1),
-		CoinToSell:         coinID,
-		MaximumValueToSell: big.NewInt(1),
-	}
-
-	result, err := cdc.MarshalJSON(buyCoinData)
-
-	if err != nil {
-		t.Fatalf("Error: %s", err.Error())
-	}
-
-	if !bytes.Equal(out, result) {
-		t.Fatalf("Error: result is not correct %s, expected %s", string(result), string(out))
 	}
 }
 

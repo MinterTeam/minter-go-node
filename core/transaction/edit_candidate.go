@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
@@ -23,26 +22,6 @@ type EditCandidateData struct {
 	RewardAddress  types.Address
 	OwnerAddress   types.Address
 	ControlAddress types.Address
-}
-
-func (data EditCandidateData) MarshalJSON() ([]byte, error) {
-	newPubKeyStr := ""
-	if data.NewPubKey != nil {
-		newPubKeyStr = data.NewPubKey.String()
-	}
-	return json.Marshal(struct {
-		PubKey         string `json:"pub_key"`
-		NewPubKey      string `json:"new_pub_key"`
-		RewardAddress  string `json:"reward_address"`
-		OwnerAddress   string `json:"owner_address"`
-		ControlAddress string `json:"owner_address"`
-	}{
-		PubKey:         data.PubKey.String(),
-		NewPubKey:      newPubKeyStr,
-		RewardAddress:  data.RewardAddress.String(),
-		OwnerAddress:   data.OwnerAddress.String(),
-		ControlAddress: data.ControlAddress.String(),
-	})
 }
 
 func (data EditCandidateData) GetPubKey() types.Pubkey {
