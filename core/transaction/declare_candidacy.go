@@ -69,7 +69,7 @@ func (data DeclareCandidacyData) BasicCheck(tx *Transaction, context *state.Chec
 		}
 	}
 
-	if context.Candidates().IsBlockPubKey(&data.PubKey) {
+	if context.Candidates().IsBlockedPubKey(data.PubKey) {
 		return &Response{
 			Code: code.PublicKeyInBlockList,
 			Log:  fmt.Sprintf("Candidate with such public key (%s) exists in block list", data.PubKey.String()),

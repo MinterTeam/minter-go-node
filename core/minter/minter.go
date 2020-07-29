@@ -536,7 +536,7 @@ func (app *Blockchain) MissedBlocks(pubKey string, height uint64) (missedBlocks 
 	cState.RLock()
 	defer cState.RUnlock()
 
-	val := cState.Validators().GetByPublicKey(types.HexToPubkey(pubKey[2:]))
+	val := cState.Validators().GetByPublicKey(types.HexToPubkey(pubKey))
 	if val == nil {
 		return "", 0, status.Error(codes.NotFound, "Validator not found")
 	}

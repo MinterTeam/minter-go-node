@@ -21,7 +21,7 @@ type Stake struct {
 }
 
 type Candidate struct {
-	ID             uint
+	ID             uint32
 	PubKey         types.Pubkey
 	RewardAddress  types.Address
 	OwnerAddress   types.Address

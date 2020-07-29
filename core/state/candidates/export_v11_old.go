@@ -91,7 +91,7 @@ func (c *Candidates) LoadCandidates11() {
 	path := []byte{mainPrefix}
 	_, enc := c.iavl.Get(path)
 	if len(enc) == 0 {
-		c.list = map[uint]*Candidate{}
+		c.list = map[uint32]*Candidate{}
 		return
 	}
 
@@ -100,7 +100,7 @@ func (c *Candidates) LoadCandidates11() {
 		panic(fmt.Sprintf("failed to decode candidates: %s", err))
 	}
 
-	c.list = map[uint]*Candidate{}
+	c.list = map[uint32]*Candidate{}
 	for _, candidate := range candidates {
 		// load total stake
 		path = append([]byte{mainPrefix}, candidate.PubKey.Bytes()...)
