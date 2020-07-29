@@ -13,6 +13,7 @@ import (
 )
 
 type RecreateCoinData struct {
+	Name                 string
 	Symbol               types.CoinSymbol
 	InitialAmount        *big.Int
 	InitialReserve       *big.Int
@@ -29,6 +30,12 @@ func (data RecreateCoinData) BasicCheck(tx *Transaction, context *state.CheckSta
 		return &Response{
 			Code: code.DecodeError,
 			Log:  "Incorrect tx data"}
+	}
+
+	if len(data.Name) > maxCoinNameBytes {
+		return &Response{
+			Code: code.InvalidCoinName,
+			Log:  fmt.Sprintf("Coin name is invalid. Allowed up to %d bytes.", maxCoinNameBytes)}
 	}
 
 	if data.ConstantReserveRatio < 10 || data.ConstantReserveRatio > 100 {
@@ -188,6 +195,7 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 		coinID := deliverState.App.GetNextCoinID()
 		deliverState.Coins.Recreate(
 			coinID,
+			data.Name,
 			data.Symbol,
 			data.InitialAmount,
 			data.ConstantReserveRatio,

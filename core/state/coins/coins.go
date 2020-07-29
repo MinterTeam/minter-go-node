@@ -221,7 +221,7 @@ func (c *Coins) Create(id types.CoinID, symbol types.CoinSymbol, name string,
 	c.bus.Checker().AddCoinVolume(coin.id, volume)
 }
 
-func (c *Coins) Recreate(newID types.CoinID, symbol types.CoinSymbol,
+func (c *Coins) Recreate(newID types.CoinID, name string, symbol types.CoinSymbol,
 	volume *big.Int, crr uint, reserve *big.Int, maxSupply *big.Int,
 ) {
 	recreateCoin := c.GetCoinBySymbol(symbol)
@@ -247,7 +247,7 @@ func (c *Coins) Recreate(newID types.CoinID, symbol types.CoinSymbol,
 	c.setToMap(recreateCoin.id, recreateCoin)
 	c.markDirty(recreateCoin.id)
 
-	c.Create(newID, recreateCoin.Symbol(), "", volume, crr, reserve, maxSupply, nil)
+	c.Create(newID, recreateCoin.Symbol(), name, volume, crr, reserve, maxSupply, nil)
 }
 
 func (c *Coins) ChangeOwner(symbol types.CoinSymbol, owner types.Address) {

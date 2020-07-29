@@ -29,6 +29,7 @@ func TestRecreateCoinTx(t *testing.T) {
 	crr := uint(50)
 
 	data := RecreateCoinData{
+		Name:                 "TEST",
 		Symbol:               getTestCoinSymbol(),
 		InitialAmount:        amount,
 		InitialReserve:       reserve,
@@ -84,6 +85,10 @@ func TestRecreateCoinTx(t *testing.T) {
 
 	if stateCoin.Version() != 0 {
 		t.Fatalf("Version in state is not correct. Expected %d, got %d", 0, stateCoin.Version())
+	}
+
+	if stateCoin.Name() != "TEST" {
+		t.Fatalf("Name in state is not correct. Expected TEST, got %s", stateCoin.Name())
 	}
 
 	archiveCoinSymbol := types.StrToCoinSymbol(fmt.Sprintf("%s-1", getTestCoinSymbol()))
