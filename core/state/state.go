@@ -306,7 +306,7 @@ func (s *State) Import(state types.AppState) error {
 	s.Validators.SetValidators(vals)
 
 	for _, pubkey := range state.BlockListCandidates {
-		s.Candidates.AddToBlockPybKey(pubkey)
+		s.Candidates.AddToBlockPubKey(pubkey)
 	}
 
 	for _, c := range state.Candidates {
