@@ -163,7 +163,7 @@ func (hb *HaltBlocks) setToMap(height uint64, model *Model) {
 
 func getPath(height uint64) []byte {
 	b := make([]byte, 8)
-	binary.BigEndian.PutUint64(b, height)
+	binary.LittleEndian.PutUint64(b, height)
 
 	return append([]byte{mainPrefix}, b...)
 }

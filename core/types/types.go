@@ -179,7 +179,7 @@ func (c CoinID) String() string {
 
 func (c CoinID) Bytes() []byte {
 	b := make([]byte, 4)
-	binary.BigEndian.PutUint32(b, c.Uint32())
+	binary.LittleEndian.PutUint32(b, c.Uint32())
 	return b
 }
 
@@ -188,7 +188,7 @@ func (c CoinID) Uint32() uint32 {
 }
 
 func BytesToCoinID(bytes []byte) CoinID {
-	return CoinID(binary.BigEndian.Uint32(bytes))
+	return CoinID(binary.LittleEndian.Uint32(bytes))
 }
 
 type CoinVersion = uint16
