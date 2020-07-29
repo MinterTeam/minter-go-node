@@ -237,6 +237,8 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 		app.stateDeliver.FrozenFunds.Delete(frozenFunds.Height())
 	}
 
+	app.stateDeliver.Halts.Delete(height)
+
 	return abciTypes.ResponseBeginBlock{}
 }
 

@@ -34,7 +34,6 @@ const (
 )
 
 type RCandidates interface {
-	Export11To12(state *types.AppState) //todo: delete after start Node v1.1
 	Export(state *types.AppState)
 	Exists(pubkey types.Pubkey) bool
 	IsBlockedPubKey(pubkey types.Pubkey) bool

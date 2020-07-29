@@ -215,7 +215,7 @@ func (a *Accounts) CreateMultisig(weights []uint, addresses []types.Address, thr
 
 	account.MultisigData = msig
 	account.markDirty(account.address)
-
+	account.isDirty = true
 	a.setToMap(address, account)
 
 	return address
