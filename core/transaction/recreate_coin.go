@@ -64,7 +64,7 @@ func (data RecreateCoinData) BasicCheck(tx *Transaction, context *state.CheckSta
 
 	sender, _ := tx.Sender()
 
-	coin := context.Coins().GetCoinBySymbol(data.Symbol)
+	coin := context.Coins().GetCoinBySymbol(data.Symbol, 0)
 	if coin == nil {
 		return &Response{
 			Code: code.CoinNotExists,

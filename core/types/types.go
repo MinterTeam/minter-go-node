@@ -151,24 +151,20 @@ func (c CoinSymbol) IsBaseCoin() bool {
 	return c.Compare(GetBaseCoin()) == 0
 }
 
-func (c CoinSymbol) GetBaseSymbol() CoinSymbol {
-	return StrToCoinSymbol(strings.Split(c.String(), "-")[0])
-}
-
-func (c CoinSymbol) GetVersion() (CoinVersion, error) {
-	parts := strings.Split(c.String(), "-")
-	if len(parts) == 1 {
-		return 0, nil
-	}
-
-	v, err := strconv.ParseUint(parts[1], 10, 16)
-	return CoinVersion(v), err
-}
-
 func StrToCoinSymbol(s string) CoinSymbol {
 	var symbol CoinSymbol
 	copy(symbol[:], []byte(s))
 	return symbol
+}
+
+func GetVersionFromSymbol(s string) CoinVersion {
+	parts := strings.Split(s, "-")
+	if len(parts) == 1 {
+		return 0
+	}
+
+	v, _ := strconv.ParseUint(parts[1], 10, 16)
+	return CoinVersion(v)
 }
 
 type CoinID uint32

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/MinterTeam/minter-go-node/core/state/coins"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/rpc/lib/types"
 )
@@ -16,7 +17,9 @@ type CoinInfoResponse struct {
 	OwnerAddress   *types.Address `json:"owner_address"`
 }
 
-func CoinInfo(coinSymbol string, height int) (*CoinInfoResponse, error) {
+func CoinInfo(coinSymbol *string, id *int, height int) (*CoinInfoResponse, error) {
+	var coin *coins.Model
+
 	cState, err := GetStateForHeight(height)
 	if err != nil {
 		return nil, err
@@ -25,9 +28,18 @@ func CoinInfo(coinSymbol string, height int) (*CoinInfoResponse, error) {
 	cState.RLock()
 	defer cState.RUnlock()
 
-	coin := cState.Coins().GetCoinBySymbol(types.StrToCoinSymbol(coinSymbol))
-	if coin == nil {
-		return nil, rpctypes.RPCError{Code: 404, Message: "Coin not found"}
+	if coinSymbol != nil {
+		coin = cState.Coins().GetCoinBySymbol(types.StrToCoinSymbol(*coinSymbol), types.GetVersionFromSymbol(*coinSymbol))
+		if coin == nil {
+			return nil, rpctypes.RPCError{Code: 404, Message: "Coin not found"}
+		}
+	}
+
+	if id != nil {
+		coin = cState.Coins().GetCoin(types.CoinID(*id))
+		if coin == nil {
+			return nil, rpctypes.RPCError{Code: 404, Message: "Coin not found"}
+		}
 	}
 
 	var ownerAddress *types.Address
