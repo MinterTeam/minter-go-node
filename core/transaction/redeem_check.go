@@ -22,14 +22,6 @@ type RedeemCheckData struct {
 	Proof    [65]byte
 }
 
-func (data RedeemCheckData) TotalSpend(tx *Transaction, context *state.CheckState) (TotalSpends, []Conversion, *big.Int, *Response) {
-	panic("implement me")
-}
-
-func (data RedeemCheckData) CommissionInBaseCoin(tx *Transaction) *big.Int {
-	panic("implement me")
-}
-
 func (data RedeemCheckData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.RawCheck == nil {
 		return &Response{

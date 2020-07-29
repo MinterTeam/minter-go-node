@@ -21,10 +21,6 @@ type RecreateCoinData struct {
 	MaxSupply            *big.Int
 }
 
-func (data RecreateCoinData) TotalSpend(tx *Transaction, context *state.CheckState) (TotalSpends, []Conversion, *big.Int, *Response) {
-	panic("implement me")
-}
-
 func (data RecreateCoinData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.InitialReserve == nil || data.InitialAmount == nil || data.MaxSupply == nil {
 		return &Response{
