@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
@@ -12,30 +11,12 @@ import (
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
-	"strconv"
 )
 
 type CreateMultisigData struct {
 	Threshold uint
 	Weights   []uint
 	Addresses []types.Address
-}
-
-func (data CreateMultisigData) MarshalJSON() ([]byte, error) {
-	var weights []string
-	for _, weight := range data.Weights {
-		weights = append(weights, strconv.Itoa(int(weight)))
-	}
-
-	return json.Marshal(struct {
-		Threshold string          `json:"threshold"`
-		Weights   []string        `json:"weights"`
-		Addresses []types.Address `json:"addresses"`
-	}{
-		Threshold: strconv.Itoa(int(data.Threshold)),
-		Weights:   weights,
-		Addresses: data.Addresses,
-	})
 }
 
 func (data CreateMultisigData) TotalSpend(tx *Transaction, context *state.CheckState) (TotalSpends, []Conversion, *big.Int, *Response) {

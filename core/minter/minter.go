@@ -710,15 +710,11 @@ func (app *Blockchain) isApplicationHalted(height uint64) bool {
 		return true
 	}
 
-	if height < upgrades.UpgradeBlock4 {
-		return false
-	}
-
 	halts := app.stateDeliver.Halts.GetHaltBlocks(height)
 	if halts != nil {
 		// calculate total power of validators
 		vals := app.stateDeliver.Validators.GetValidators()
-		totalPower, totalVotingPower := big.NewInt(0), big.NewInt(0)
+		totalPower, totalVotedPower := big.NewInt(0), big.NewInt(0)
 		for _, val := range vals {
 			// skip if candidate is not present
 			if val.IsToDrop() || app.validatorsStatuses[val.GetAddress()] != ValidatorPresent {
@@ -727,7 +723,7 @@ func (app *Blockchain) isApplicationHalted(height uint64) bool {
 
 			for _, halt := range halts.List {
 				if halt.Pubkey == val.PubKey {
-					totalVotingPower.Add(totalVotingPower, val.GetTotalBipStake())
+					totalVotedPower.Add(totalVotedPower, val.GetTotalBipStake())
 				}
 			}
 
@@ -739,7 +735,7 @@ func (app *Blockchain) isApplicationHalted(height uint64) bool {
 		}
 
 		votingResult := new(big.Float).Quo(
-			new(big.Float).SetInt(totalVotingPower),
+			new(big.Float).SetInt(totalVotedPower),
 			new(big.Float).SetInt(totalPower),
 		)
 

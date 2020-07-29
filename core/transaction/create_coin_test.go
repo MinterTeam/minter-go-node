@@ -76,7 +76,7 @@ func TestCreateCoinTx(t *testing.T) {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", coin, targetBalance, balance)
 	}
 
-	stateCoin := cState.Coins.GetCoinBySymbol(toCreate)
+	stateCoin := cState.Coins.GetCoinBySymbol(toCreate, 0)
 
 	if stateCoin == nil {
 		t.Fatalf("Coin %s not found in state", toCreate)

@@ -6,7 +6,7 @@ import (
 
 type AddressesResponse struct {
 	Address          string        `json:"address"`
-	Balance          []BalanceItem `json:"balances"`
+	Balance          []BalanceItem `json:"balance"`
 	TransactionCount uint64        `json:"transaction_count"`
 }
 

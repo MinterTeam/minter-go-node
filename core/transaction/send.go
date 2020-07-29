@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
@@ -22,21 +21,6 @@ type SendData struct {
 type Coin struct {
 	ID     uint32 `json:"id"`
 	Symbol string `json:"symbol"`
-}
-
-func (data SendData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		Coin  Coin   `json:"coin"`
-		To    string `json:"to"`
-		Value string `json:"value"`
-	}{
-		Coin: Coin{
-			ID:     data.Coin.Uint32(),
-			Symbol: "",
-		},
-		To:    data.To.String(),
-		Value: data.Value.String(),
-	})
 }
 
 func (data SendData) TotalSpend(tx *Transaction, context *state.CheckState) (TotalSpends, []Conversion, *big.Int, *Response) {

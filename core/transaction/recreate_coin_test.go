@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"crypto/ecdsa"
-	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
@@ -29,6 +28,7 @@ func TestRecreateCoinTx(t *testing.T) {
 	crr := uint(50)
 
 	data := RecreateCoinData{
+		Name:                 "TEST",
 		Symbol:               getTestCoinSymbol(),
 		InitialAmount:        amount,
 		InitialReserve:       reserve,
@@ -64,7 +64,7 @@ func TestRecreateCoinTx(t *testing.T) {
 	}
 
 	newCoinSymbol := getTestCoinSymbol()
-	stateCoin := cState.Coins.GetCoinBySymbol(newCoinSymbol)
+	stateCoin := cState.Coins.GetCoinBySymbol(newCoinSymbol, 0)
 
 	if stateCoin == nil {
 		t.Fatalf("Coin %s not found in state", newCoinSymbol)
@@ -86,8 +86,11 @@ func TestRecreateCoinTx(t *testing.T) {
 		t.Fatalf("Version in state is not correct. Expected %d, got %d", 0, stateCoin.Version())
 	}
 
-	archiveCoinSymbol := types.StrToCoinSymbol(fmt.Sprintf("%s-1", getTestCoinSymbol()))
-	stateCoin = cState.Coins.GetCoinBySymbol(archiveCoinSymbol)
+	if stateCoin.Name() != "TEST" {
+		t.Fatalf("Name in state is not correct. Expected TEST, got %s", stateCoin.Name())
+	}
+
+	stateCoin = cState.Coins.GetCoinBySymbol(newCoinSymbol, 1)
 
 	if stateCoin == nil {
 		t.Fatalf("Coin %s not found in state", newCoinSymbol)
