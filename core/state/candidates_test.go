@@ -302,7 +302,7 @@ func TestDoubleAbsentPenalty(t *testing.T) {
 	pubkey := createTestCandidate(st)
 
 	coin := types.GetBaseCoinID()
-	amount := big.NewInt(100)
+	amount := big.NewInt(1000)
 	var addr types.Address
 	binary.BigEndian.PutUint64(addr[:], 1)
 	st.Candidates.Delegate(addr, pubkey, coin, amount, big.NewInt(0))

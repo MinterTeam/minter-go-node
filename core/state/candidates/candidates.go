@@ -202,7 +202,7 @@ func (c *Candidates) GetNewCandidates(valCount int) []Candidate {
 			continue
 		}
 
-		if candidate.totalBipStake.Cmp(helpers.BipToPip(minValidatorBipStake)) == -1 {
+		if candidate.totalBipStake.Cmp(minValidatorBipStake) == -1 {
 			continue
 		}
 
