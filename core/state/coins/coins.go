@@ -227,7 +227,6 @@ func (c *Coins) Recreate(newID types.CoinID, name string, symbol types.CoinSymbo
 	// update version for recreating coin
 	symbolCoins := c.getBySymbol(symbol)
 
-	// TODO: change array to sorted array by version and get the last one
 	lastVersion := uint16(0)
 	for _, id := range symbolCoins {
 		coin := c.get(id)
