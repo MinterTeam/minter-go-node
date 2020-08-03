@@ -199,7 +199,7 @@ func (c *Candidates) GetNewCandidates(valCount int) []Candidate {
 			continue
 		}
 
-		if candidate.totalBipStake.Cmp(big.NewInt(0)) == 0 {
+		if candidate.totalBipStake.Cmp(helpers.BipToPip(big.NewInt(1000))) == 1 {
 			continue
 		}
 
