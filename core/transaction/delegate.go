@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
@@ -18,22 +17,6 @@ type DelegateData struct {
 	PubKey types.Pubkey
 	Coin   types.CoinID
 	Value  *big.Int
-}
-
-func (data DelegateData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		PubKey string `json:"pub_key"`
-		Coin   string `json:"coin"`
-		Value  string `json:"value"`
-	}{
-		PubKey: data.PubKey.String(),
-		Coin:   data.Coin.String(),
-		Value:  data.Value.String(),
-	})
-}
-
-func (data DelegateData) TotalSpend(tx *Transaction, context *state.CheckState) (TotalSpends, []Conversion, *big.Int, *Response) {
-	panic("implement me")
 }
 
 func (data DelegateData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {

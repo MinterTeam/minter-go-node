@@ -2,9 +2,7 @@ package transaction
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/check"
 	"github.com/MinterTeam/minter-go-node/core/code"
@@ -22,24 +20,6 @@ import (
 type RedeemCheckData struct {
 	RawCheck []byte
 	Proof    [65]byte
-}
-
-func (data RedeemCheckData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		RawCheck string `json:"raw_check"`
-		Proof    string `json:"proof"`
-	}{
-		RawCheck: base64.StdEncoding.EncodeToString(data.RawCheck),
-		Proof:    base64.StdEncoding.EncodeToString(data.Proof[:]),
-	})
-}
-
-func (data RedeemCheckData) TotalSpend(tx *Transaction, context *state.CheckState) (TotalSpends, []Conversion, *big.Int, *Response) {
-	panic("implement me")
-}
-
-func (data RedeemCheckData) CommissionInBaseCoin(tx *Transaction) *big.Int {
-	panic("implement me")
 }
 
 func (data RedeemCheckData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {

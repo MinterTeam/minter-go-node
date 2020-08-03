@@ -13,6 +13,7 @@ import (
 )
 
 type RecreateCoinData struct {
+	Name                 string
 	Symbol               types.CoinSymbol
 	InitialAmount        *big.Int
 	InitialReserve       *big.Int
@@ -20,15 +21,17 @@ type RecreateCoinData struct {
 	MaxSupply            *big.Int
 }
 
-func (data RecreateCoinData) TotalSpend(tx *Transaction, context *state.CheckState) (TotalSpends, []Conversion, *big.Int, *Response) {
-	panic("implement me")
-}
-
 func (data RecreateCoinData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.InitialReserve == nil || data.InitialAmount == nil || data.MaxSupply == nil {
 		return &Response{
 			Code: code.DecodeError,
 			Log:  "Incorrect tx data"}
+	}
+
+	if len(data.Name) > maxCoinNameBytes {
+		return &Response{
+			Code: code.InvalidCoinName,
+			Log:  fmt.Sprintf("Coin name is invalid. Allowed up to %d bytes.", maxCoinNameBytes)}
 	}
 
 	if data.ConstantReserveRatio < 10 || data.ConstantReserveRatio > 100 {
@@ -57,7 +60,7 @@ func (data RecreateCoinData) BasicCheck(tx *Transaction, context *state.CheckSta
 
 	sender, _ := tx.Sender()
 
-	coin := context.Coins().GetCoinBySymbol(data.Symbol)
+	coin := context.Coins().GetCoinBySymbol(data.Symbol, 0)
 	if coin == nil {
 		return &Response{
 			Code: code.CoinNotExists,
@@ -188,6 +191,7 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 		coinID := deliverState.App.GetNextCoinID()
 		deliverState.Coins.Recreate(
 			coinID,
+			data.Name,
 			data.Symbol,
 			data.InitialAmount,
 			data.ConstantReserveRatio,

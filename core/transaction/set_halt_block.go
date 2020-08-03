@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
@@ -20,22 +19,8 @@ type SetHaltBlockData struct {
 	Height uint64
 }
 
-func (data SetHaltBlockData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		PubKey string `json:"pub_key"`
-		Height string `json:"height"`
-	}{
-		PubKey: data.PubKey.String(),
-		Height: strconv.FormatUint(data.Height, 10),
-	})
-}
-
 func (data SetHaltBlockData) GetPubKey() types.Pubkey {
 	return data.PubKey
-}
-
-func (data SetHaltBlockData) TotalSpend(tx *Transaction, context *state.State) (TotalSpends, []Conversion, *big.Int, *Response) {
-	panic("implement me")
 }
 
 func (data SetHaltBlockData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {

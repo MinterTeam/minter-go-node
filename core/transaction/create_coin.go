@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/state"
@@ -12,7 +11,6 @@ import (
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
 	"regexp"
-	"strconv"
 )
 
 const maxCoinNameBytes = 64
@@ -31,28 +29,6 @@ type CreateCoinData struct {
 	InitialReserve       *big.Int
 	ConstantReserveRatio uint
 	MaxSupply            *big.Int
-}
-
-func (data CreateCoinData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		Name                 string `json:"name"`
-		Symbol               string `json:"symbol"`
-		InitialAmount        string `json:"initial_amount"`
-		InitialReserve       string `json:"initial_reserve"`
-		ConstantReserveRatio string `json:"constant_reserve_ratio"`
-		MaxSupply            string `json:"max_supply"`
-	}{
-		Name:                 data.Name,
-		Symbol:               data.Symbol.String(),
-		InitialAmount:        data.InitialAmount.String(),
-		InitialReserve:       data.InitialReserve.String(),
-		ConstantReserveRatio: strconv.Itoa(int(data.ConstantReserveRatio)),
-		MaxSupply:            data.MaxSupply.String(),
-	})
-}
-
-func (data CreateCoinData) TotalSpend(tx *Transaction, context *state.CheckState) (TotalSpends, []Conversion, *big.Int, *Response) {
-	panic("implement me")
 }
 
 func (data CreateCoinData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {

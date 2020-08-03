@@ -11,7 +11,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/tree"
-	"github.com/MinterTeam/minter-go-node/upgrades"
+
 	"math/big"
 	"sort"
 	"sync"
@@ -34,7 +34,6 @@ const (
 )
 
 type RCandidates interface {
-	Export11To12(state *types.AppState) //todo: delete after start Node v1.1
 	Export(state *types.AppState)
 	Exists(pubkey types.Pubkey) bool
 	IsBlockedPubKey(pubkey types.Pubkey) bool
@@ -291,13 +290,7 @@ func (c *Candidates) GetCandidateByTendermintAddress(address types.TmAddress) *C
 }
 
 func (c *Candidates) RecalculateStakes(height uint64) {
-	if height >= upgrades.UpgradeBlock3 {
-		c.recalculateStakesNew(height)
-	} else if height >= upgrades.UpgradeBlock2 {
-		c.recalculateStakesOld2(height)
-	} else {
-		c.recalculateStakesOld1(height)
-	}
+	c.recalculateStakesNew(height)
 }
 
 func (c *Candidates) recalculateStakesOld1(height uint64) {
@@ -1185,7 +1178,7 @@ func (c *Candidates) ChangePubKey(old types.Pubkey, new types.Pubkey) {
 	}
 
 	c.getFromMap(old).PubKey = new
-	c.setBlockPybKey(old)
+	c.setBlockPubKey(old)
 	c.setPubKeyID(new, c.pubKeyIDs[old])
 	delete(c.pubKeyIDs, old)
 }
@@ -1234,7 +1227,7 @@ func (c *Candidates) setPubKeyID(pubkey types.Pubkey, u uint32) {
 	c.isDirty = true
 }
 
-func (c *Candidates) setBlockPybKey(p types.Pubkey) {
+func (c *Candidates) setBlockPubKey(p types.Pubkey) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	if c.blockList == nil {
@@ -1244,8 +1237,8 @@ func (c *Candidates) setBlockPybKey(p types.Pubkey) {
 	c.isDirty = true
 }
 
-func (c *Candidates) AddToBlockPybKey(p types.Pubkey) {
-	c.setBlockPybKey(p)
+func (c *Candidates) AddToBlockPubKey(p types.Pubkey) {
+	c.setBlockPubKey(p)
 }
 
 func (c *Candidates) maxIDBytes() []byte {

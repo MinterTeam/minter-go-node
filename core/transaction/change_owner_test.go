@@ -8,7 +8,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
-	"github.com/MinterTeam/minter-go-node/upgrades"
+
 	db "github.com/tendermint/tm-db"
 	"math/big"
 	"sync"
@@ -42,7 +42,7 @@ func TestChangeOwnerTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, tx, big.NewInt(0), upgrades.UpgradeBlock4, &sync.Map{}, 0)
+	response := RunTx(cState, tx, big.NewInt(0), 500000, &sync.Map{}, 0)
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
@@ -91,7 +91,7 @@ func TestChangeOwnerTxWithWrongOwner(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, tx, big.NewInt(0), upgrades.UpgradeBlock4, &sync.Map{}, 0)
+	response := RunTx(cState, tx, big.NewInt(0), 500000, &sync.Map{}, 0)
 	if response.Code != code.IsNotOwnerOfCoin {
 		t.Fatalf("Response code is not 206. Error %s", response.Log)
 	}
@@ -121,7 +121,7 @@ func TestChangeOwnerTxWithWrongSymbol(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, tx, big.NewInt(0), upgrades.UpgradeBlock4, &sync.Map{}, 0)
+	response := RunTx(cState, tx, big.NewInt(0), 500000, &sync.Map{}, 0)
 	if response.Code != code.CoinNotExists {
 		t.Fatalf("Response code is not 102. Error %s", response.Log)
 	}

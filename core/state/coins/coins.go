@@ -27,7 +27,7 @@ type RCoins interface {
 	ExistsBySymbol(symbol types.CoinSymbol) bool
 	SubReserve(symbol types.CoinID, amount *big.Int)
 	GetCoin(id types.CoinID) *Model
-	GetCoinBySymbol(symbol types.CoinSymbol) *Model
+	GetCoinBySymbol(symbol types.CoinSymbol, version types.CoinVersion) *Model
 	GetSymbolInfo(symbol types.CoinSymbol) *SymbolInfo
 }
 
@@ -127,14 +127,9 @@ func (c *Coins) ExistsBySymbol(symbol types.CoinSymbol) bool {
 	return c.getBySymbol(symbol) != nil
 }
 
-func (c *Coins) GetCoinBySymbol(symbol types.CoinSymbol) *Model {
-	coins := c.getBySymbol(symbol.GetBaseSymbol())
+func (c *Coins) GetCoinBySymbol(symbol types.CoinSymbol, version types.CoinVersion) *Model {
+	coins := c.getBySymbol(symbol)
 	if len(coins) == 0 {
-		return nil
-	}
-
-	version, err := symbol.GetVersion()
-	if err != nil {
 		return nil
 	}
 
@@ -221,10 +216,10 @@ func (c *Coins) Create(id types.CoinID, symbol types.CoinSymbol, name string,
 	c.bus.Checker().AddCoinVolume(coin.id, volume)
 }
 
-func (c *Coins) Recreate(newID types.CoinID, symbol types.CoinSymbol,
+func (c *Coins) Recreate(newID types.CoinID, name string, symbol types.CoinSymbol,
 	volume *big.Int, crr uint, reserve *big.Int, maxSupply *big.Int,
 ) {
-	recreateCoin := c.GetCoinBySymbol(symbol)
+	recreateCoin := c.GetCoinBySymbol(symbol, 0)
 	if recreateCoin == nil {
 		panic("coin to recreate does not exists")
 	}
@@ -247,14 +242,14 @@ func (c *Coins) Recreate(newID types.CoinID, symbol types.CoinSymbol,
 	c.setToMap(recreateCoin.id, recreateCoin)
 	c.markDirty(recreateCoin.id)
 
-	c.Create(newID, recreateCoin.Symbol(), "", volume, crr, reserve, maxSupply, nil)
+	c.Create(newID, recreateCoin.Symbol(), name, volume, crr, reserve, maxSupply, nil)
 }
 
 func (c *Coins) ChangeOwner(symbol types.CoinSymbol, owner types.Address) {
 	info := c.getSymbolInfo(symbol)
 	info.SetOwnerAddress(&owner)
 
-	coin := c.GetCoinBySymbol(symbol)
+	coin := c.GetCoinBySymbol(symbol, 0)
 	coin.symbolInfo = info
 
 	c.setToMap(coin.id, coin)
@@ -357,7 +352,7 @@ func (c *Coins) getOrderedDirtyCoins() []types.CoinID {
 func (c *Coins) Export(state *types.AppState) {
 	c.iavl.Iterate(func(key []byte, value []byte) bool {
 		if key[0] == mainPrefix {
-			if key[1] == symbolPrefix || key[len(key) - 1] == infoPrefix {
+			if key[1] == symbolPrefix || key[len(key)-1] == infoPrefix {
 				return false
 			}
 

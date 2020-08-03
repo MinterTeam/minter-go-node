@@ -151,24 +151,20 @@ func (c CoinSymbol) IsBaseCoin() bool {
 	return c.Compare(GetBaseCoin()) == 0
 }
 
-func (c CoinSymbol) GetBaseSymbol() CoinSymbol {
-	return StrToCoinSymbol(strings.Split(c.String(), "-")[0])
-}
-
-func (c CoinSymbol) GetVersion() (CoinVersion, error) {
-	parts := strings.Split(c.String(), "-")
-	if len(parts) == 1 {
-		return 0, nil
-	}
-
-	v, err := strconv.ParseUint(parts[1], 10, 16)
-	return CoinVersion(v), err
-}
-
 func StrToCoinSymbol(s string) CoinSymbol {
 	var symbol CoinSymbol
 	copy(symbol[:], []byte(s))
 	return symbol
+}
+
+func GetVersionFromSymbol(s string) CoinVersion {
+	parts := strings.Split(s, "-")
+	if len(parts) == 1 {
+		return 0
+	}
+
+	v, _ := strconv.ParseUint(parts[1], 10, 16)
+	return CoinVersion(v)
 }
 
 type CoinID uint32
@@ -183,7 +179,7 @@ func (c CoinID) String() string {
 
 func (c CoinID) Bytes() []byte {
 	b := make([]byte, 4)
-	binary.BigEndian.PutUint32(b, c.Uint32())
+	binary.LittleEndian.PutUint32(b, c.Uint32())
 	return b
 }
 
@@ -192,7 +188,7 @@ func (c CoinID) Uint32() uint32 {
 }
 
 func BytesToCoinID(bytes []byte) CoinID {
-	return CoinID(binary.BigEndian.Uint32(bytes))
+	return CoinID(binary.LittleEndian.Uint32(bytes))
 }
 
 type CoinVersion = uint16

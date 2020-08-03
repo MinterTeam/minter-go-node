@@ -6,7 +6,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
-	"github.com/MinterTeam/minter-go-node/upgrades"
+
 	"math/big"
 	"math/rand"
 	"sync"
@@ -81,7 +81,7 @@ func TestDelegateTx(t *testing.T) {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", coin, targetBalance, balance)
 	}
 
-	cState.Candidates.RecalculateStakes(upgrades.UpgradeBlock3)
+	cState.Candidates.RecalculateStakes(109000)
 
 	stake := cState.Candidates.GetStakeOfAddress(pubkey, addr, coin)
 

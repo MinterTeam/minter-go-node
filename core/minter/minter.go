@@ -16,7 +16,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/core/validators"
 	"github.com/MinterTeam/minter-go-node/helpers"
-	"github.com/MinterTeam/minter-go-node/upgrades"
+
 	"github.com/MinterTeam/minter-go-node/version"
 	"github.com/syndtr/goleveldb/leveldb/filter"
 	"github.com/syndtr/goleveldb/leveldb/opt"
@@ -175,17 +175,6 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 		panic(fmt.Sprintf("Application halted at height %d", height))
 	}
 
-	app.lock.Lock()
-	if upgrades.IsUpgradeBlock(height) {
-		var err error
-		app.stateDeliver, err = state.NewState(app.height, app.stateDB, app.eventsDB, app.cfg.StateCacheSize, app.cfg.KeepLastStates)
-		if err != nil {
-			panic(err)
-		}
-		app.stateCheck = state.NewCheckState(app.stateDeliver)
-	}
-	app.lock.Unlock()
-
 	app.stateDeliver.Lock()
 
 	// compute max gas
@@ -248,10 +237,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 		app.stateDeliver.FrozenFunds.Delete(frozenFunds.Height())
 	}
 
-	if height >= upgrades.UpgradeBlock4 {
-		// delete halts from db
-		app.stateDeliver.Halts.Delete(height)
-	}
+	app.stateDeliver.Halts.Delete(height)
 
 	return abciTypes.ResponseBeginBlock{}
 }
@@ -710,15 +696,11 @@ func (app *Blockchain) isApplicationHalted(height uint64) bool {
 		return true
 	}
 
-	if height < upgrades.UpgradeBlock4 {
-		return false
-	}
-
 	halts := app.stateDeliver.Halts.GetHaltBlocks(height)
 	if halts != nil {
 		// calculate total power of validators
 		vals := app.stateDeliver.Validators.GetValidators()
-		totalPower, totalVotingPower := big.NewInt(0), big.NewInt(0)
+		totalPower, totalVotedPower := big.NewInt(0), big.NewInt(0)
 		for _, val := range vals {
 			// skip if candidate is not present
 			if val.IsToDrop() || app.validatorsStatuses[val.GetAddress()] != ValidatorPresent {
@@ -727,7 +709,7 @@ func (app *Blockchain) isApplicationHalted(height uint64) bool {
 
 			for _, halt := range halts.List {
 				if halt.Pubkey == val.PubKey {
-					totalVotingPower.Add(totalVotingPower, val.GetTotalBipStake())
+					totalVotedPower.Add(totalVotedPower, val.GetTotalBipStake())
 				}
 			}
 
@@ -739,7 +721,7 @@ func (app *Blockchain) isApplicationHalted(height uint64) bool {
 		}
 
 		votingResult := new(big.Float).Quo(
-			new(big.Float).SetInt(totalVotingPower),
+			new(big.Float).SetInt(totalVotedPower),
 			new(big.Float).SetInt(totalPower),
 		)
 

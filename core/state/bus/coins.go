@@ -20,7 +20,6 @@ type Coin struct {
 	Version      types.CoinVersion
 	Volume       *big.Int
 	Reserve      *big.Int
-	OwnerAddress types.Address
 }
 
 func (m Coin) GetFullSymbol() string {
