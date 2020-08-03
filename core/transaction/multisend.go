@@ -19,10 +19,6 @@ type MultisendData struct {
 	List []MultisendDataItem `json:"list"`
 }
 
-func (data MultisendData) TotalSpend(tx *Transaction, context *state.CheckState) (TotalSpends, []Conversion, *big.Int, *Response) {
-	panic("implement me")
-}
-
 func (data MultisendData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
 	quantity := len(data.List)
 	if quantity < 1 || quantity > 100 {

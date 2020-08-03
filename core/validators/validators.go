@@ -5,5 +5,5 @@ func GetValidatorsCountForBlock(block uint64) int {
 }
 
 func GetCandidatesCountForBlock(block uint64) int {
-	return GetValidatorsCountForBlock(block) * 3
+	return 192
 }

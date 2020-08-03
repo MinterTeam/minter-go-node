@@ -58,7 +58,7 @@ func WriteConfigFile(configFilePath string, config *Config) {
 
 // Note: any changes to the comments/variables/mapstructure
 // must be reflected in the appropriate struct in config/config.go
-const defaultConfigTemplate = `# This is a TOML config file.
+const defaultConfigTemplate string = `# This is a TOML config file.
 # For more information, see https://github.com/toml-lang/toml
 
 ##### main base config options #####
@@ -81,7 +81,7 @@ api_v2_timeout_duration = "{{ .BaseConfig.APIv2TimeoutDuration }}"
 # Sets node to be in validator mode. Disables API, events, history of blocks, indexes, etc. 
 validator_mode = {{ .BaseConfig.ValidatorMode }}
 
-# Sets number of last stated to be saved on disk. If the value is 0, then the KeepEver and KeepRecent strategies are used.
+# Sets number of last stated to be saved on disk.
 keep_last_states = {{ .BaseConfig.KeepLastStates }}
 
 # State cache size 

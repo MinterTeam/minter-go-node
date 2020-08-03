@@ -235,7 +235,7 @@ func (c *Candidates) Export(state *types.AppState, coinsMap map[types.CoinSymbol
 	c.LoadCandidates()
 	c.LoadStakes()
 
-	candidates, maxID := c.GetCandidates(), uint(1)
+	candidates, maxID := c.GetCandidates(), uint32(1)
 	for _, candidate := range candidates {
 		candidateStakes := c.GetStakes(candidate.PubKey)
 		stakes := make([]types.Stake, len(candidateStakes))

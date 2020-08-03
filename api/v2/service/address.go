@@ -144,12 +144,12 @@ func customCoinBipBalance(coinToSell types.CoinID, valueToSell *big.Int, cState 
 		return valueToSell
 	}
 
-	if coinToSell == types.GetBaseCoinID() {
+	if coinToSell.IsBaseCoin() {
 		coin := cState.Coins().GetCoin(coinToBuy)
 		return formula.CalculatePurchaseReturn(coin.Volume(), coin.Reserve(), coin.Crr(), valueToSell)
 	}
 
-	if coinToBuy == types.GetBaseCoinID() {
+	if coinToBuy.IsBaseCoin() {
 		coin := cState.Coins().GetCoin(coinToSell)
 		return formula.CalculateSaleReturn(coin.Volume(), coin.Reserve(), coin.Crr(), valueToSell)
 	}

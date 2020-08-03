@@ -21,10 +21,6 @@ type UnbondData struct {
 	Value  *big.Int
 }
 
-func (data UnbondData) TotalSpend(tx *Transaction, context *state.CheckState) (TotalSpends, []Conversion, *big.Int, *Response) {
-	panic("implement me")
-}
-
 func (data UnbondData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.Value == nil {
 		return &Response{

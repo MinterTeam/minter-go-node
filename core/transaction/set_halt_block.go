@@ -23,10 +23,6 @@ func (data SetHaltBlockData) GetPubKey() types.Pubkey {
 	return data.PubKey
 }
 
-func (data SetHaltBlockData) TotalSpend(tx *Transaction, context *state.State) (TotalSpends, []Conversion, *big.Int, *Response) {
-	panic("implement me")
-}
-
 func (data SetHaltBlockData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if !context.Candidates().Exists(data.PubKey) {
 		return &Response{

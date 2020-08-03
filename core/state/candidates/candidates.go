@@ -11,7 +11,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/tree"
-	"github.com/MinterTeam/minter-go-node/upgrades"
+
 	"math/big"
 	"sort"
 	"sync"
@@ -25,19 +25,18 @@ const (
 	MaxDelegatorsPerCandidate = 1000
 
 	mainPrefix       = 'c'
-	pubKeyIDPrefix   = 'p'
-	blockListPrefix  = 'b'
+	pubKeyIDPrefix   = mainPrefix + 'p'
+	blockListPrefix  = mainPrefix + 'b'
+	maxIDPrefix      = mainPrefix + 'i'
 	stakesPrefix     = 's'
 	totalStakePrefix = 't'
 	updatesPrefix    = 'u'
-	maxIDPrefix      = 'i'
 )
 
 type RCandidates interface {
-	Export11To12(state *types.AppState) //todo: delete after start Node v1.1
 	Export(state *types.AppState)
 	Exists(pubkey types.Pubkey) bool
-	IsBlockPubKey(pubkey *types.Pubkey) bool
+	IsBlockedPubKey(pubkey types.Pubkey) bool
 	Count() int
 	IsNewCandidateStakeSufficient(coin types.CoinID, stake *big.Int, limit int) bool
 	IsDelegatorStakeSufficient(address types.Address, pubkey types.Pubkey, coin types.CoinID, amount *big.Int) bool
@@ -54,12 +53,12 @@ type RCandidates interface {
 }
 
 type Candidates struct {
-	list map[uint]*Candidate
+	list map[uint32]*Candidate
 
 	isDirty   bool
 	blockList map[types.Pubkey]struct{}
-	pubKeyIDs map[types.Pubkey]uint
-	maxID     uint
+	pubKeyIDs map[types.Pubkey]uint32
+	maxID     uint32
 
 	iavl tree.MTree
 	bus  *bus.Bus
@@ -112,12 +111,12 @@ func (c *Candidates) Commit() error {
 		sort.SliceStable(pubIDs, func(i, j int) bool {
 			return pubIDs[i].ID < pubIDs[j].ID
 		})
-		pubIDenc, err := rlp.EncodeToBytes(pubIDs)
+		pubIdData, err := rlp.EncodeToBytes(pubIDs)
 		if err != nil {
 			panic(fmt.Sprintf("failed to encode candidates public key with ID: %s", err))
 		}
 
-		c.iavl.Set([]byte{pubKeyIDPrefix}, pubIDenc)
+		c.iavl.Set([]byte{pubKeyIDPrefix}, pubIdData)
 
 		var blockList []types.Pubkey
 		for pubKey := range c.blockList {
@@ -236,10 +235,8 @@ func (c *Candidates) Create(ownerAddress, rewardAddress, controlAddress types.Ad
 	c.setToMap(pubkey, candidate)
 }
 
-func (c *Candidates) CreateWithID(ownerAddress, rewardAddress, controlAddress types.Address, pubkey types.Pubkey, commission uint, id uint) {
-	if id != 0 {
-		c.setPubKeyID(pubkey, id)
-	}
+func (c *Candidates) CreateWithID(ownerAddress, rewardAddress, controlAddress types.Address, pubkey types.Pubkey, commission uint, id uint32) {
+	c.setPubKeyID(pubkey, id)
 	c.Create(ownerAddress, rewardAddress, controlAddress, pubkey, commission)
 }
 
@@ -293,13 +290,7 @@ func (c *Candidates) GetCandidateByTendermintAddress(address types.TmAddress) *C
 }
 
 func (c *Candidates) RecalculateStakes(height uint64) {
-	if height >= upgrades.UpgradeBlock3 {
-		c.recalculateStakesNew(height)
-	} else if height >= upgrades.UpgradeBlock2 {
-		c.recalculateStakesOld2(height)
-	} else {
-		c.recalculateStakesOld1(height)
-	}
+	c.recalculateStakesNew(height)
 }
 
 func (c *Candidates) recalculateStakesOld1(height uint64) {
@@ -604,15 +595,11 @@ func (c *Candidates) existPubKey(pubKey types.Pubkey) bool {
 	return exists
 }
 
-func (c *Candidates) IsBlockPubKey(pubkey *types.Pubkey) bool {
-	if pubkey == nil {
-		return false
-	}
-
-	return c.isBlock(*pubkey)
+func (c *Candidates) IsBlockedPubKey(pubkey types.Pubkey) bool {
+	return c.isBlocked(pubkey)
 }
 
-func (c *Candidates) isBlock(pubKey types.Pubkey) bool {
+func (c *Candidates) isBlocked(pubKey types.Pubkey) bool {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
@@ -817,12 +804,12 @@ func (c *Candidates) LoadCandidatesDeliver() {
 
 	_, valueMaxID := c.iavl.Get([]byte{maxIDPrefix})
 	if len(valueMaxID) != 0 {
-		c.maxID = uint(binary.LittleEndian.Uint32(valueMaxID))
+		c.maxID = binary.LittleEndian.Uint32(valueMaxID)
 	}
 
 }
 
-func (c *Candidates) loadCandidatesList() (maxID uint) {
+func (c *Candidates) loadCandidatesList() (maxID uint32) {
 	_, pubIDenc := c.iavl.Get([]byte{pubKeyIDPrefix})
 	if len(pubIDenc) != 0 {
 		var pubIDs []pubkeyID
@@ -830,7 +817,7 @@ func (c *Candidates) loadCandidatesList() (maxID uint) {
 			panic(fmt.Sprintf("failed to decode candidates: %s", err))
 		}
 
-		pubKeyIDs := map[types.Pubkey]uint{}
+		pubKeyIDs := map[types.Pubkey]uint32{}
 		for _, v := range pubIDs {
 			pubKeyIDs[v.PubKey] = v.ID
 			if v.ID > maxID {
@@ -870,7 +857,7 @@ func (c *Candidates) loadCandidatesList() (maxID uint) {
 func (c *Candidates) checkAndSetLoaded() bool {
 	c.lock.RLock()
 	if c.loaded {
-		c.lock.RLock()
+		c.lock.RUnlock()
 		return true
 	}
 	c.lock.RUnlock()
@@ -1096,7 +1083,7 @@ func (c *Candidates) setToMap(pubkey types.Pubkey, model *Candidate) {
 	defer c.lock.Unlock()
 
 	if c.list == nil {
-		c.list = map[uint]*Candidate{}
+		c.list = map[uint32]*Candidate{}
 	}
 	c.list[id] = model
 }
@@ -1108,7 +1095,7 @@ func (c *Candidates) setBlockList(blockList map[types.Pubkey]struct{}) {
 	c.blockList = blockList
 }
 
-func (c *Candidates) setPubKeyIDs(list map[types.Pubkey]uint) {
+func (c *Candidates) setPubKeyIDs(list map[types.Pubkey]uint32) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
@@ -1186,21 +1173,17 @@ func (c *Candidates) LoadStakesOfCandidate(pubkey types.Pubkey) {
 }
 
 func (c *Candidates) ChangePubKey(old types.Pubkey, new types.Pubkey) {
-	if old == new {
-		return
-	}
-
-	if c.isBlock(new) {
+	if c.isBlocked(new) {
 		panic("Candidate with such public key (" + new.String() + ") exists in block list")
 	}
 
 	c.getFromMap(old).PubKey = new
-	c.setBlockPybKey(old)
+	c.setBlockPubKey(old)
 	c.setPubKeyID(new, c.pubKeyIDs[old])
 	delete(c.pubKeyIDs, old)
 }
 
-func (c *Candidates) getOrNewID(pubKey types.Pubkey) uint {
+func (c *Candidates) getOrNewID(pubKey types.Pubkey) uint32 {
 	c.lock.RLock()
 	id := c.id(pubKey)
 	c.lock.RUnlock()
@@ -1218,29 +1201,33 @@ func (c *Candidates) getOrNewID(pubKey types.Pubkey) uint {
 	return id
 }
 
-func (c *Candidates) id(pubKey types.Pubkey) uint {
+func (c *Candidates) id(pubKey types.Pubkey) uint32 {
 	return c.pubKeyIDs[pubKey]
 }
 
-func (c *Candidates) ID(pubKey types.Pubkey) uint {
+func (c *Candidates) ID(pubKey types.Pubkey) uint32 {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
 	return c.pubKeyIDs[pubKey]
 }
 
-func (c *Candidates) setPubKeyID(pubkey types.Pubkey, u uint) {
+func (c *Candidates) setPubKeyID(pubkey types.Pubkey, u uint32) {
+	if u == 0 {
+		panic("public key of candidate cannot be equal 0")
+	}
+
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
 	if c.pubKeyIDs == nil {
-		c.pubKeyIDs = map[types.Pubkey]uint{}
+		c.pubKeyIDs = map[types.Pubkey]uint32{}
 	}
 	c.pubKeyIDs[pubkey] = u
 	c.isDirty = true
 }
 
-func (c *Candidates) setBlockPybKey(p types.Pubkey) {
+func (c *Candidates) setBlockPubKey(p types.Pubkey) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	if c.blockList == nil {
@@ -1250,8 +1237,8 @@ func (c *Candidates) setBlockPybKey(p types.Pubkey) {
 	c.isDirty = true
 }
 
-func (c *Candidates) AddToBlockPybKey(p types.Pubkey) {
-	c.setBlockPybKey(p)
+func (c *Candidates) AddToBlockPubKey(p types.Pubkey) {
+	c.setBlockPubKey(p)
 }
 
 func (c *Candidates) maxIDBytes() []byte {
