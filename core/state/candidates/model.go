@@ -10,7 +10,7 @@ import (
 
 type pubkeyID struct {
 	PubKey types.Pubkey
-	ID     uint
+	ID     uint32
 }
 
 type Candidate struct {
@@ -20,7 +20,7 @@ type Candidate struct {
 	ControlAddress types.Address
 	Commission     uint
 	Status         byte
-	ID             uint
+	ID             uint32
 
 	totalBipStake *big.Int
 	stakesCount   int
@@ -36,7 +36,7 @@ type Candidate struct {
 
 func (candidate *Candidate) idBytes() []byte {
 	bs := make([]byte, 4)
-	binary.LittleEndian.PutUint32(bs, uint32(candidate.ID))
+	binary.LittleEndian.PutUint32(bs, candidate.ID)
 	return bs
 }
 

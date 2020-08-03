@@ -8,7 +8,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/tree"
-	"github.com/MinterTeam/minter-go-node/upgrades"
+
 	"math/big"
 	"sort"
 	"sync"
@@ -215,11 +215,7 @@ func (a *Accounts) CreateMultisig(weights []uint, addresses []types.Address, thr
 
 	account.MultisigData = msig
 	account.markDirty(account.address)
-
-	if height > upgrades.UpgradeBlock1 {
-		account.isDirty = true
-	}
-
+	account.isDirty = true
 	a.setToMap(address, account)
 
 	return address

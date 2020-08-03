@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/rewards"
+	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/transaction/encoder"
 	"github.com/MinterTeam/minter-go-node/core/types"
@@ -42,6 +43,7 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 	}
 
 	var totalValidators []*tmTypes.Validator
+	var cState *state.CheckState
 
 	if len(req.Fields) == 0 {
 		response.Size = fmt.Sprintf("%d", len(s.cdc.MustMarshalBinaryLengthPrefixed(block)))
@@ -51,7 +53,7 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 			return new(pb.BlockResponse), timeoutStatus.Err()
 		}
 
-		cState, err := s.blockchain.GetStateForHeight(uint64(height))
+		cState, err = s.blockchain.GetStateForHeight(uint64(height))
 		if err != nil {
 			return nil, err
 		}
@@ -93,6 +95,12 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 
 		response.Evidence = blockEvidence(block)
 
+		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+			return new(pb.BlockResponse), timeoutStatus.Err()
+		}
+
+		response.Missed = missedBlockValidators(cState)
+
 		return response, nil
 	}
 
@@ -105,10 +113,17 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 			response.Size = fmt.Sprintf("%d", len(s.cdc.MustMarshalBinaryLengthPrefixed(block)))
 		case pb.BlockRequest_block_reward:
 			response.BlockReward = rewards.GetRewardForBlock(uint64(height)).String()
-		case pb.BlockRequest_transactions:
-			cState, err := s.blockchain.GetStateForHeight(uint64(height))
-			if err != nil {
-				return nil, err
+		case pb.BlockRequest_transactions, pb.BlockRequest_missed:
+			if cState == nil {
+				cState, err = s.blockchain.GetStateForHeight(uint64(height))
+				if err != nil {
+					return nil, err
+				}
+			}
+
+			if pb.BlockRequest_missed == field {
+				response.Missed = missedBlockValidators(cState)
+				continue
 			}
 
 			txJsonEncoder := encoder.NewTxEncoderJSON(cState)
@@ -116,6 +131,7 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 			if err != nil {
 				return new(pb.BlockResponse), err
 			}
+
 		case pb.BlockRequest_proposer, pb.BlockRequest_validators:
 			if len(totalValidators) == 0 {
 				tmValidators, err := s.client.Validators(&valHeight, 1, 100)
@@ -173,6 +189,15 @@ func blockValidators(totalValidators []*tmTypes.Validator, block *core_types.Res
 	}
 
 	return validators
+}
+
+func missedBlockValidators(s *state.CheckState) []string {
+	var missedBlocks []string
+	for _, val := range s.Validators().GetValidators() {
+		missedBlocks = append(missedBlocks, val.AbsentTimes.String())
+	}
+
+	return missedBlocks
 }
 
 func blockProposer(block *core_types.ResultBlock, totalValidators []*tmTypes.Validator) (string, error) {

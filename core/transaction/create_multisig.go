@@ -19,10 +19,6 @@ type CreateMultisigData struct {
 	Addresses []types.Address
 }
 
-func (data CreateMultisigData) TotalSpend(tx *Transaction, context *state.CheckState) (TotalSpends, []Conversion, *big.Int, *Response) {
-	panic("implement me")
-}
-
 func (data CreateMultisigData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
 	lenWeights := len(data.Weights)
 	if lenWeights > 32 {
