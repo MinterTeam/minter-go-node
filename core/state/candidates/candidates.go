@@ -33,6 +33,10 @@ const (
 	updatesPrefix    = 'u'
 )
 
+var (
+	minValidatorBipStake = big.NewInt(1000)
+)
+
 type RCandidates interface {
 	Export(state *types.AppState)
 	Exists(pubkey types.Pubkey) bool
@@ -198,7 +202,7 @@ func (c *Candidates) GetNewCandidates(valCount int) []Candidate {
 			continue
 		}
 
-		if candidate.totalBipStake.Cmp(helpers.BipToPip(big.NewInt(1000))) == 1 {
+		if candidate.totalBipStake.Cmp(helpers.BipToPip(minValidatorBipStake)) == 1 {
 			continue
 		}
 
