@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"github.com/MinterTeam/minter-go-node/core/code"
+	"github.com/MinterTeam/minter-go-node/core/state/accounts"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/helpers"
@@ -82,7 +83,7 @@ func TestSendMultisigTx(t *testing.T) {
 
 	coin := types.GetBaseCoinID()
 
-	msig := cState.Accounts.CreateMultisig([]uint{1, 1}, []types.Address{addr1, addr2}, 1, 1)
+	msig := cState.Accounts.CreateMultisig([]uint{1, 1}, []types.Address{addr1, addr2}, 1, 1, accounts.CreateMultisigAddress(addr1, 1))
 
 	cState.Accounts.AddBalance(msig, coin, helpers.BipToPip(big.NewInt(1000000)))
 
@@ -150,7 +151,7 @@ func TestSendFailedMultisigTx(t *testing.T) {
 
 	coin := types.GetBaseCoinID()
 
-	msig := cState.Accounts.CreateMultisig([]uint{1, 3}, []types.Address{addr1, addr2}, 3, 1)
+	msig := cState.Accounts.CreateMultisig([]uint{1, 3}, []types.Address{addr1, addr2}, 3, 1, accounts.CreateMultisigAddress(addr1, 1))
 
 	cState.Accounts.AddBalance(msig, coin, helpers.BipToPip(big.NewInt(1000000)))
 

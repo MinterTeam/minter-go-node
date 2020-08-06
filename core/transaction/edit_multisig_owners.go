@@ -6,70 +6,41 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
-	"github.com/MinterTeam/minter-go-node/core/state/accounts"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
 )
 
-type CreateMultisigData struct {
-	Threshold uint
-	Weights   []uint
-	Addresses []types.Address
+type EditMultisigOwnersData struct {
+	MultisigAddress types.Address
+	Weights         []uint
+	Addresses       []types.Address
 }
 
-func (data CreateMultisigData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
-	lenWeights := len(data.Weights)
-	if lenWeights > 32 {
+func (data EditMultisigOwnersData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
+	if context.Accounts().GetAccount(data.MultisigAddress).IsMultisig() {
 		return &Response{
-			Code: code.TooLargeOwnersList,
-			Log:  fmt.Sprintf("Owners list is limited to 32 items")}
-	}
-
-	lenAddresses := len(data.Addresses)
-	if lenAddresses != lenWeights {
-		return &Response{
-			Code: code.IncorrectWeights,
-			Log:  fmt.Sprintf("Incorrect multisig weights"),
+			Code: code.MultisigNotExists,
+			Log:  "Multisig does not exists",
 			Info: EncodeError(map[string]string{
-				"count_weights":   fmt.Sprintf("%d", lenWeights),
-				"count_addresses": fmt.Sprintf("%d", lenAddresses),
+				"multisig_address": data.MultisigAddress.String(),
 			}),
 		}
-	}
-
-	for _, weight := range data.Weights {
-		if weight > 1023 {
-			return &Response{
-				Code: code.IncorrectWeights,
-				Log:  fmt.Sprintf("Incorrect multisig weights")}
-		}
-	}
-
-	usedAddresses := map[types.Address]bool{}
-	for _, address := range data.Addresses {
-		if usedAddresses[address] {
-			return &Response{
-				Code: code.DuplicatedAddresses,
-				Log:  fmt.Sprintf("Duplicated multisig addresses")}
-		}
-
-		usedAddresses[address] = true
 	}
 
 	return nil
 }
 
-func (data CreateMultisigData) String() string {
-	return fmt.Sprintf("CREATE MULTISIG")
+func (data EditMultisigOwnersData) String() string {
+	return fmt.Sprintf("EDIT MULTISIG OWNERS address: %x", data.MultisigAddress)
 }
 
-func (data CreateMultisigData) Gas() int64 {
-	return commissions.CreateMultisig
+func (data EditMultisigOwnersData) Gas() int64 {
+	return commissions.EditMultisigOwnersData
 }
 
-func (data CreateMultisigData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
+func (data EditMultisigOwnersData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -112,23 +83,11 @@ func (data CreateMultisigData) Run(tx *Transaction, context state.Interface, rew
 	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
 		return Response{
 			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, gasCoin.GetFullSymbol()),
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission.String(), gasCoin.GetFullSymbol()),
 			Info: EncodeError(map[string]string{
 				"sender":       sender.String(),
 				"needed_value": commission.String(),
 				"gas_coin":     gasCoin.GetFullSymbol(),
-			}),
-		}
-	}
-
-	msigAddress := accounts.CreateMultisigAddress(sender, tx.Nonce)
-
-	if checkState.Accounts().ExistsMultisig(msigAddress) {
-		return Response{
-			Code: code.MultisigExists,
-			Log:  fmt.Sprintf("Multisig %s already exists", msigAddress.String()),
-			Info: EncodeError(map[string]string{
-				"multisig_address": msigAddress.String(),
 			}),
 		}
 	}
@@ -142,19 +101,19 @@ func (data CreateMultisigData) Run(tx *Transaction, context state.Interface, rew
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 
-		deliverState.Accounts.CreateMultisig(data.Weights, data.Addresses, data.Threshold, currentBlock, msigAddress)
+		deliverState.Accounts.EditMultisig(data.Weights, data.Addresses, sender)
 	}
 
+	address := []byte(hex.EncodeToString(sender[:]))
 	tags := kv.Pairs{
-		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeCreateMultisig)}))},
-		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
-		kv.Pair{Key: []byte("tx.created_multisig"), Value: []byte(hex.EncodeToString(msigAddress[:]))},
+		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeEditMultisigOwner)}))},
+		kv.Pair{Key: []byte("tx.from"), Value: address},
 	}
 
 	return Response{
 		Code:      code.OK,
-		Tags:      tags,
 		GasUsed:   tx.Gas(),
 		GasWanted: tx.Gas(),
+		Tags:      tags,
 	}
 }

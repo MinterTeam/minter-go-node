@@ -153,6 +153,9 @@ func RunTx(context state.Interface,
 			return Response{
 				Code: code.MultisigNotExists,
 				Log:  "Multisig does not exists",
+				Info: EncodeError(map[string]string{
+					"multisig_address": tx.multisig.Multisig.String(),
+				}),
 			}
 		}
 
