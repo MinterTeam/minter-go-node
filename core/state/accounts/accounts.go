@@ -218,6 +218,7 @@ func (a *Accounts) CreateMultisig(weights []uint, addresses []types.Address, thr
 
 	return address
 }
+
 func (a *Accounts) EditMultisig(weights []uint, addresses []types.Address, address types.Address) types.Address {
 	account := a.get(address)
 

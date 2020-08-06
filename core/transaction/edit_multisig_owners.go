@@ -19,7 +19,7 @@ type EditMultisigOwnersData struct {
 }
 
 func (data EditMultisigOwnersData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
-	if context.Accounts().GetAccount(data.MultisigAddress).IsMultisig() {
+	if !context.Accounts().GetAccount(data.MultisigAddress).IsMultisig() {
 		return &Response{
 			Code: code.MultisigNotExists,
 			Log:  "Multisig does not exists",
