@@ -302,7 +302,7 @@ func TestDoubleAbsentPenalty(t *testing.T) {
 	pubkey := createTestCandidate(st)
 
 	coin := types.GetBaseCoinID()
-	amount := big.NewInt(100)
+	amount := big.NewInt(1000)
 	var addr types.Address
 	binary.BigEndian.PutUint64(addr[:], 1)
 	st.Candidates.Delegate(addr, pubkey, coin, amount, big.NewInt(0))
@@ -327,6 +327,38 @@ func TestDoubleAbsentPenalty(t *testing.T) {
 	newValue := big.NewInt(0).Set(amount)
 	newValue.Mul(newValue, big.NewInt(99))
 	newValue.Div(newValue, big.NewInt(100))
+	if stake.Cmp(newValue) != 0 {
+		t.Fatalf("Stake is not correct. Expected %s, got %s", newValue, stake.String())
+	}
+}
+
+func TestZeroStakePenalty(t *testing.T) {
+	st := getState()
+
+	pubkey := createTestCandidate(st)
+
+	coin := types.GetBaseCoinID()
+	amount := big.NewInt(10000)
+	var addr types.Address
+	binary.BigEndian.PutUint64(addr[:], 1)
+	st.Candidates.Delegate(addr, pubkey, coin, amount, big.NewInt(0))
+
+	st.Candidates.RecalculateStakes(height)
+
+	st.Candidates.SubStake(addr, pubkey, coin, amount)
+	st.FrozenFunds.AddFund(518400, addr, pubkey,  coin, amount)
+
+	var pk ed25519.PubKeyEd25519
+	copy(pk[:], pubkey[:])
+
+	var tmAddr types.TmAddress
+	copy(tmAddr[:], pk.Address().Bytes())
+
+	st.Candidates.Punish(1, tmAddr)
+
+	stake := st.Candidates.GetStakeValueOfAddress(pubkey, addr, coin)
+	newValue := big.NewInt(0)
+
 	if stake.Cmp(newValue) != 0 {
 		t.Fatalf("Stake is not correct. Expected %s, got %s", newValue, stake.String())
 	}
