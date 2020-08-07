@@ -32,8 +32,24 @@ type Multisig struct {
 	Addresses []types.Address
 }
 
+// Deprecated. Don't use. Use CreateMultisigAddress(owner types.Address, nonce uint64)
 func (m *Multisig) Address() types.Address {
 	b, err := rlp.EncodeToBytes(m)
+	if err != nil {
+		panic(err)
+	}
+
+	var addr types.Address
+	copy(addr[:], crypto.Keccak256(b)[12:])
+
+	return addr
+}
+
+func CreateMultisigAddress(owner types.Address, nonce uint64) types.Address {
+	b, err := rlp.EncodeToBytes(&struct {
+		Owner types.Address
+		Nonce uint64
+	}{Owner: owner, Nonce: nonce})
 	if err != nil {
 		panic(err)
 	}

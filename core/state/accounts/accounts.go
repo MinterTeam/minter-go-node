@@ -191,26 +191,41 @@ func (a *Accounts) ExistsMultisig(msigAddress types.Address) bool {
 	return false
 }
 
-func (a *Accounts) CreateMultisig(weights []uint, addresses []types.Address, threshold uint, height uint64) types.Address {
+func (a *Accounts) CreateMultisig(weights []uint, addresses []types.Address, threshold uint, height uint64, address types.Address) types.Address {
 	msig := Multisig{
 		Weights:   weights,
 		Threshold: threshold,
 		Addresses: addresses,
 	}
-	address := msig.Address()
 
 	account := a.get(address)
 
 	if account == nil {
 		account = &Model{
 			Nonce:         0,
-			MultisigData:  msig,
 			address:       address,
 			coins:         []types.CoinID{},
 			balances:      map[types.CoinID]*big.Int{},
 			markDirty:     a.markDirty,
 			dirtyBalances: map[types.CoinID]struct{}{},
 		}
+	}
+
+	account.MultisigData = msig
+	account.markDirty(account.address)
+	account.isDirty = true
+	a.setToMap(address, account)
+
+	return address
+}
+
+func (a *Accounts) EditMultisig(weights []uint, addresses []types.Address, address types.Address) types.Address {
+	account := a.get(address)
+
+	msig := Multisig{
+		Threshold: account.Multisig().Threshold,
+		Weights:   weights,
+		Addresses: addresses,
 	}
 
 	account.MultisigData = msig

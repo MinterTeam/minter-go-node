@@ -50,6 +50,8 @@ var resourcesConfig = map[transaction.TxType]TxDataResource{
 	transaction.TypeSetHaltBlock:        new(SetHaltBlockDataResource),
 	transaction.TypeRecreateCoin:        new(RecreateCoinDataResource),
 	transaction.TypeChangeOwner:         new(ChangeOwnerDataResource),
+	transaction.TypeEditMultisigOwner:   new(EditMultisigOwnersResource),
+	transaction.TypePriceVote:           new(PriceVoteResource),
 }
 
 func NewTxEncoderJSON(context *state.CheckState) *TxEncoderJSON {
