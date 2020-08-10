@@ -297,6 +297,7 @@ func (c *Candidates) RecalculateStakes(height uint64) {
 	c.recalculateStakesNew(height)
 }
 
+// todo: wip
 func (c *Candidates) recalculateStakesNew(height uint64) {
 	coinsCache := newCoinsCache()
 
@@ -690,8 +691,9 @@ func (c *Candidates) calculateBipValue(coinID types.CoinID, amount *big.Int, inc
 
 	coin := c.bus.Coins().GetCoin(coinID)
 
+	var saleReturn *big.Int
 	if coinsCache.Exists(coinID) {
-		totalDelegatedValue = coinsCache.Get(coinID)
+		saleReturn, totalDelegatedValue = coinsCache.Get(coinID)
 	} else {
 		candidates := c.GetCandidates()
 		for _, candidate := range candidates {
@@ -709,12 +711,11 @@ func (c *Candidates) calculateBipValue(coinID types.CoinID, amount *big.Int, inc
 				}
 			}
 		}
-
-		coinsCache.Set(coinID, totalDelegatedValue)
+		nonLockedSupply := big.NewInt(0).Sub(coin.Volume, totalDelegatedValue)
+		saleReturn = formula.CalculateSaleReturn(coin.Volume, coin.Reserve, coin.Crr, nonLockedSupply)
+		coinsCache.Set(coinID, saleReturn, totalDelegatedValue)
 	}
 
-	nonLockedSupply := big.NewInt(0).Sub(coin.Volume, totalDelegatedValue)
-	saleReturn := formula.CalculateSaleReturn(coin.Volume, coin.Reserve, coin.Crr, nonLockedSupply)
 	return big.NewInt(0).Div(big.NewInt(0).Mul(big.NewInt(0).Sub(coin.Reserve, saleReturn), amount), totalDelegatedValue)
 }
 
