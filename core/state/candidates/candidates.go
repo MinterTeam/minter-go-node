@@ -873,8 +873,9 @@ func (c *Candidates) LoadStakes() {
 	}
 }
 
-func (c *Candidates) calculateBipValue(CoinID types.CoinID, amount *big.Int, includeSelf, includeUpdates bool, coinsCache *coinsCache) *big.Int {
-	if CoinID.IsBaseCoin() {
+func (c *Candidates) calculateBipValue(coinID types.CoinID, amount *big.Int, includeSelf, includeUpdates bool, coinsCache *coinsCache) *big.Int {
+
+	if coinID.IsBaseCoin() {
 		return big.NewInt(0).Set(amount)
 	}
 
@@ -883,35 +884,38 @@ func (c *Candidates) calculateBipValue(CoinID types.CoinID, amount *big.Int, inc
 		totalAmount.Set(amount)
 	}
 
-	var totalPower *big.Int
+	var totalDelegatedValue *big.Int
+	coin := c.bus.Coins().GetCoin(coinID)
 
-	if coinsCache.Exists(CoinID) {
-		totalPower, totalAmount = coinsCache.Get(CoinID)
+	if coinsCache.Exists(coinID) {
+		totalDelegatedValue, totalAmount = coinsCache.Get(coinID)
 	} else {
 		candidates := c.GetCandidates()
 		for _, candidate := range candidates {
 			for _, stake := range candidate.stakes {
-				if stake != nil && stake.Coin == CoinID {
+				if stake != nil && stake.Coin == coinID {
 					totalAmount.Add(totalAmount, stake.Value)
 				}
 			}
 
 			if includeUpdates {
 				for _, update := range candidate.updates {
-					if update.Coin == CoinID {
+					if update.Coin == coinID {
 						totalAmount.Add(totalAmount, update.Value)
 					}
 				}
 			}
 		}
 
-		coin := c.bus.Coins().GetCoin(CoinID)
+		coin := c.bus.Coins().GetCoin(coinID)
 
-		totalPower = formula.CalculateSaleReturn(coin.Volume, coin.Reserve, coin.Crr, totalAmount)
-		coinsCache.Set(CoinID, totalPower, totalAmount)
+		totalDelegatedValue = formula.CalculateSaleReturn(coin.Volume, coin.Reserve, coin.Crr, totalAmount)
+		coinsCache.Set(coinID, totalDelegatedValue, totalAmount)
 	}
 
-	return big.NewInt(0).Div(big.NewInt(0).Mul(totalPower, amount), totalAmount)
+	nonLockedSupply := big.NewInt(0).Sub(coin.Reserve, totalDelegatedValue)
+	saleReturn := formula.CalculateSaleReturn(coin.Volume, coin.Reserve, coin.Crr, nonLockedSupply)
+	return big.NewInt(0).Div(big.NewInt(0).Mul(big.NewInt(0).Sub(coin.Reserve, saleReturn), amount), totalDelegatedValue)
 }
 
 func (c *Candidates) Punish(height uint64, address types.TmAddress) *big.Int {
