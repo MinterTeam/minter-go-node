@@ -297,206 +297,6 @@ func (c *Candidates) RecalculateStakes(height uint64) {
 	c.recalculateStakesNew(height)
 }
 
-func (c *Candidates) recalculateStakesOld1(height uint64) {
-	coinsCache := newCoinsCache()
-
-	for _, pubkey := range c.getOrderedCandidates() {
-		candidate := c.getFromMap(pubkey)
-		stakes := c.GetStakes(candidate.PubKey)
-		for _, stake := range stakes {
-			stake.setBipValue(c.calculateBipValue(stake.Coin, stake.Value, false, true, coinsCache))
-		}
-
-		// apply updates for existing stakes
-		for _, update := range candidate.updates {
-			stake := c.GetStakeOfAddress(candidate.PubKey, update.Owner, update.Coin)
-			if stake != nil {
-				stake.addValue(update.Value)
-				update.setValue(big.NewInt(0))
-				stake.setBipValue(c.calculateBipValue(stake.Coin, stake.Value, false, true, coinsCache))
-			}
-		}
-
-		updates := candidate.GetFilteredUpdates()
-		for _, update := range updates {
-			update.setBipValue(c.calculateBipValue(update.Coin, update.Value, false, true, coinsCache))
-		}
-		// Sort updates in descending order
-		sort.SliceStable(updates, func(i, j int) bool {
-			return updates[i].BipValue.Cmp(updates[j].BipValue) == 1
-		})
-
-		for _, update := range updates {
-			if candidate.stakesCount < MaxDelegatorsPerCandidate {
-				candidate.SetStakeAtIndex(candidate.stakesCount, update, true)
-				candidate.stakesCount++
-				stakes = c.GetStakes(candidate.PubKey)
-			} else {
-				// find and replace smallest stake
-				index := -1
-				var smallestStake *big.Int
-				for i, stake := range stakes {
-					if stake == nil {
-						index = i
-						smallestStake = big.NewInt(0)
-						break
-					}
-
-					if smallestStake == nil || smallestStake.Cmp(stake.BipValue) == 1 {
-						smallestStake = big.NewInt(0).Set(stake.BipValue)
-						index = i
-					}
-				}
-
-				if index == -1 || smallestStake.Cmp(update.BipValue) == 1 {
-					c.bus.Events().AddEvent(uint32(height), &eventsdb.UnbondEvent{
-						Address:         update.Owner,
-						Amount:          update.Value.String(),
-						Coin:            update.Coin,
-						ValidatorPubKey: candidate.PubKey,
-					})
-					c.bus.Accounts().AddBalance(update.Owner, update.Coin, update.Value)
-					c.bus.Checker().AddCoin(update.Coin, big.NewInt(0).Neg(update.Value))
-					update.setValue(big.NewInt(0))
-					continue
-				}
-
-				if stakes[index] != nil {
-					c.bus.Events().AddEvent(uint32(height), &eventsdb.UnbondEvent{
-						Address:         stakes[index].Owner,
-						Amount:          stakes[index].Value.String(),
-						Coin:            stakes[index].Coin,
-						ValidatorPubKey: candidate.PubKey,
-					})
-					c.bus.Accounts().AddBalance(stakes[index].Owner, stakes[index].Coin, stakes[index].Value)
-					c.bus.Checker().AddCoin(stakes[index].Coin, big.NewInt(0).Neg(stakes[index].Value))
-				}
-
-				candidate.SetStakeAtIndex(index, update, true)
-				stakes = c.GetStakes(candidate.PubKey)
-			}
-		}
-
-		candidate.clearUpdates()
-
-		totalBipValue := big.NewInt(0)
-		for _, stake := range c.GetStakes(candidate.PubKey) {
-			if stake == nil {
-				continue
-			}
-			totalBipValue.Add(totalBipValue, stake.BipValue)
-		}
-
-		candidate.setTotalBipStake(totalBipValue)
-		candidate.updateStakesCount()
-	}
-}
-
-func (c *Candidates) recalculateStakesOld2(height uint64) {
-	coinsCache := newCoinsCache()
-
-	for _, pubkey := range c.getOrderedCandidates() {
-		candidate := c.getFromMap(pubkey)
-		stakes := c.GetStakes(candidate.PubKey)
-		for _, stake := range stakes {
-			stake.setBipValue(c.calculateBipValue(stake.Coin, stake.Value, false, true, coinsCache))
-		}
-
-		// apply updates for existing stakes
-		candidate.FilterUpdates()
-		for _, update := range candidate.updates {
-			stake := c.GetStakeOfAddress(candidate.PubKey, update.Owner, update.Coin)
-			if stake != nil {
-				stake.addValue(update.Value)
-				update.setValue(big.NewInt(0))
-				stake.setBipValue(c.calculateBipValue(stake.Coin, stake.Value, false, true, coinsCache))
-			}
-		}
-
-		candidate.FilterUpdates()
-		for _, update := range candidate.updates {
-			update.setBipValue(c.calculateBipValue(update.Coin, update.Value, false, true, coinsCache))
-		}
-
-		for _, update := range candidate.updates {
-			// find and replace smallest stake
-			index := -1
-			var smallestStake *big.Int
-
-			if len(stakes) == 0 {
-				index = 0
-				smallestStake = big.NewInt(0)
-			} else if len(stakes) < MaxDelegatorsPerCandidate {
-				for i, stake := range stakes {
-					if stake == nil {
-						index = i
-						break
-					}
-				}
-
-				if index == -1 {
-					index = len(stakes)
-				}
-
-				smallestStake = big.NewInt(0)
-			} else {
-				for i, stake := range stakes {
-					if stake == nil {
-						index = i
-						smallestStake = big.NewInt(0)
-						break
-					}
-
-					if smallestStake == nil || smallestStake.Cmp(stake.BipValue) == 1 {
-						smallestStake = big.NewInt(0).Set(stake.BipValue)
-						index = i
-					}
-				}
-			}
-
-			if index == -1 || smallestStake.Cmp(update.BipValue) == 1 {
-				c.bus.Events().AddEvent(uint32(height), &eventsdb.UnbondEvent{
-					Address:         update.Owner,
-					Amount:          update.Value.String(),
-					Coin:            update.Coin,
-					ValidatorPubKey: candidate.PubKey,
-				})
-				c.bus.Accounts().AddBalance(update.Owner, update.Coin, update.Value)
-				c.bus.Checker().AddCoin(update.Coin, big.NewInt(0).Neg(update.Value))
-				update.setValue(big.NewInt(0))
-				continue
-			}
-
-			if len(stakes) > index && stakes[index] != nil {
-				c.bus.Events().AddEvent(uint32(height), &eventsdb.UnbondEvent{
-					Address:         stakes[index].Owner,
-					Amount:          stakes[index].Value.String(),
-					Coin:            stakes[index].Coin,
-					ValidatorPubKey: candidate.PubKey,
-				})
-				c.bus.Accounts().AddBalance(stakes[index].Owner, stakes[index].Coin, stakes[index].Value)
-				c.bus.Checker().AddCoin(stakes[index].Coin, big.NewInt(0).Neg(stakes[index].Value))
-			}
-
-			candidate.SetStakeAtIndex(index, update, true)
-			stakes = c.GetStakes(candidate.PubKey)
-		}
-
-		candidate.clearUpdates()
-
-		totalBipValue := big.NewInt(0)
-		for _, stake := range c.GetStakes(candidate.PubKey) {
-			if stake == nil {
-				continue
-			}
-			totalBipValue.Add(totalBipValue, stake.BipValue)
-		}
-
-		candidate.setTotalBipStake(totalBipValue)
-		candidate.updateStakesCount()
-	}
-}
-
 func (c *Candidates) recalculateStakesNew(height uint64) {
 	coinsCache := newCoinsCache()
 
@@ -883,41 +683,37 @@ func (c *Candidates) calculateBipValue(coinID types.CoinID, amount *big.Int, inc
 		return big.NewInt(0).Set(amount)
 	}
 
-	totalAmount := big.NewInt(0)
+	totalDelegatedValue := big.NewInt(0)
 	if includeSelf {
-		totalAmount.Set(amount)
+		totalDelegatedValue.Set(amount)
 	}
 
-	var totalDelegatedValue *big.Int
 	coin := c.bus.Coins().GetCoin(coinID)
 
 	if coinsCache.Exists(coinID) {
-		totalDelegatedValue, totalAmount = coinsCache.Get(coinID)
+		totalDelegatedValue = coinsCache.Get(coinID)
 	} else {
 		candidates := c.GetCandidates()
 		for _, candidate := range candidates {
 			for _, stake := range candidate.stakes {
 				if stake != nil && stake.Coin == coinID {
-					totalAmount.Add(totalAmount, stake.Value)
+					totalDelegatedValue.Add(totalDelegatedValue, stake.Value)
 				}
 			}
 
 			if includeUpdates {
 				for _, update := range candidate.updates {
 					if update.Coin == coinID {
-						totalAmount.Add(totalAmount, update.Value)
+						totalDelegatedValue.Add(totalDelegatedValue, update.Value)
 					}
 				}
 			}
 		}
 
-		coin := c.bus.Coins().GetCoin(coinID)
-
-		totalDelegatedValue = formula.CalculateSaleReturn(coin.Volume, coin.Reserve, coin.Crr, totalAmount)
-		coinsCache.Set(coinID, totalDelegatedValue, totalAmount)
+		coinsCache.Set(coinID, totalDelegatedValue)
 	}
 
-	nonLockedSupply := big.NewInt(0).Sub(coin.Reserve, totalDelegatedValue)
+	nonLockedSupply := big.NewInt(0).Sub(coin.Volume, totalDelegatedValue)
 	saleReturn := formula.CalculateSaleReturn(coin.Volume, coin.Reserve, coin.Crr, nonLockedSupply)
 	return big.NewInt(0).Div(big.NewInt(0).Mul(big.NewInt(0).Sub(coin.Reserve, saleReturn), amount), totalDelegatedValue)
 }
