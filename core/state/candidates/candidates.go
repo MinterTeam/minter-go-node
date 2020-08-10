@@ -297,7 +297,6 @@ func (c *Candidates) RecalculateStakes(height uint64) {
 	c.recalculateStakesNew(height)
 }
 
-// todo: wip
 func (c *Candidates) recalculateStakesNew(height uint64) {
 	coinsCache := newCoinsCache()
 
@@ -345,27 +344,13 @@ func (c *Candidates) recalculateStakesNew(height uint64) {
 			}
 
 			if smallestStake.Cmp(update.BipValue) == 1 {
-				c.bus.Events().AddEvent(uint32(height), &eventsdb.UnbondEvent{
-					Address:         update.Owner,
-					Amount:          update.Value.String(),
-					Coin:            update.Coin,
-					ValidatorPubKey: candidate.PubKey,
-				})
-				c.bus.Accounts().AddBalance(update.Owner, update.Coin, update.Value)
-				c.bus.Checker().AddCoin(update.Coin, big.NewInt(0).Neg(update.Value))
+				c.unbond(update.Owner, update.Value, update.Coin, candidate.PubKey, height)
 				update.setValue(big.NewInt(0))
 				continue
 			}
 
 			if stakes[index] != nil {
-				c.bus.Events().AddEvent(uint32(height), &eventsdb.UnbondEvent{
-					Address:         stakes[index].Owner,
-					Amount:          stakes[index].Value.String(),
-					Coin:            stakes[index].Coin,
-					ValidatorPubKey: candidate.PubKey,
-				})
-				c.bus.Accounts().AddBalance(stakes[index].Owner, stakes[index].Coin, stakes[index].Value)
-				c.bus.Checker().AddCoin(stakes[index].Coin, big.NewInt(0).Neg(stakes[index].Value))
+				c.unbond(update.Owner, update.Value, update.Coin, candidate.PubKey, height)
 			}
 
 			candidate.SetStakeAtIndex(index, update, true)
@@ -383,6 +368,19 @@ func (c *Candidates) recalculateStakesNew(height uint64) {
 
 		candidate.setTotalBipStake(totalBipValue)
 	}
+}
+
+func (c *Candidates) unbond(owner types.Address, value *big.Int, coin types.CoinID, pubKey types.Pubkey, height uint64) {
+	c.bus.WatchList().AddFrozenFund(owner, pubKey, coin, value)
+	//todo rename event
+	c.bus.Events().AddEvent(uint32(height), &eventsdb.UnbondEvent{
+		Address:         owner,
+		Amount:          value.String(),
+		Coin:            coin,
+		ValidatorPubKey: pubKey,
+	})
+	c.bus.Accounts().AddBalance(owner, coin, value)
+	c.bus.Checker().AddCoin(coin, big.NewInt(0).Neg(value))
 }
 
 func (c *Candidates) Exists(pubkey types.Pubkey) bool {
@@ -472,6 +470,7 @@ func (c *Candidates) Delegate(address types.Address, pubkey types.Pubkey, coin t
 	}
 
 	candidate := c.GetCandidate(pubkey)
+
 	candidate.addUpdate(stake)
 
 	c.bus.Checker().AddCoin(coin, value)
@@ -1048,6 +1047,6 @@ func (c *Candidates) AddToBlockPubKey(p types.Pubkey) {
 
 func (c *Candidates) maxIDBytes() []byte {
 	bs := make([]byte, 4)
-	binary.LittleEndian.PutUint32(bs, uint32(c.maxID))
+	binary.LittleEndian.PutUint32(bs, c.maxID)
 	return bs
 }

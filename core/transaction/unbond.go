@@ -140,8 +140,15 @@ func (data UnbondData) Run(tx *Transaction, context state.Interface, rewardPool 
 		deliverState.Coins.SubVolume(tx.GasCoin, commission)
 
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
-		deliverState.Candidates.SubStake(sender, data.PubKey, data.Coin, data.Value)
-		deliverState.FrozenFunds.AddFund(unbondAtBlock, sender, data.PubKey, data.Coin, data.Value)
+
+		value := data.Value
+		if watchList := deliverState.Watchlist.GetByAddress(sender); watchList != nil {
+			watchListValue := watchList.GetValue(data.PubKey, data.Coin)
+			value.Add(value, watchListValue)
+			deliverState.Watchlist.Delete(sender, data.PubKey, data.Coin)
+		}
+		deliverState.Candidates.SubStake(sender, data.PubKey, data.Coin, value)
+		deliverState.FrozenFunds.AddFund(unbondAtBlock, sender, data.PubKey, data.Coin, value)
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}
 

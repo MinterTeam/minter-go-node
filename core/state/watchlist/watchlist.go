@@ -80,10 +80,10 @@ func (wl *WatchList) Delete(address types.Address, pubkey types.Pubkey, coin typ
 		log.Panicf("Watchlist not found for %s", address.String())
 	}
 
-	items := make([]Item, len(w.List)-1)
-	for i, item := range w.List {
+	items := make([]Item, 0, len(w.List))
+	for _, item := range w.List {
 		if item.PublicKey != pubkey && item.Coin != coin {
-			items[i] = item
+			items = append(items, item)
 		}
 	}
 

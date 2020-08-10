@@ -19,6 +19,7 @@ import (
 	legacyCoins "github.com/MinterTeam/minter-go-node/core/state/legacy/coins"
 	legacyFrozenfunds "github.com/MinterTeam/minter-go-node/core/state/legacy/frozenfunds"
 	"github.com/MinterTeam/minter-go-node/core/state/validators"
+	"github.com/MinterTeam/minter-go-node/core/state/watchlist"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/tree"
@@ -146,6 +147,7 @@ type State struct {
 	Coins       *coins.Coins
 	Checks      *checks.Checks
 	Checker     *checker.Checker
+	Watchlist   *watchlist.WatchList
 
 	db             db.DB
 	events         eventsdb.IEventsDB
@@ -406,6 +408,11 @@ func newStateForTree(iavlTree tree.MTree, events eventsdb.IEventsDB, db db.DB, k
 		return nil, err
 	}
 
+	watchlistState, err := watchlist.NewWatchList(stateBus, iavlTree)
+	if err != nil {
+		return nil, err
+	}
+
 	state := &State{
 		Validators:  validatorsState,
 		App:         appState,
@@ -416,7 +423,9 @@ func newStateForTree(iavlTree tree.MTree, events eventsdb.IEventsDB, db db.DB, k
 		Checks:      checksState,
 		Checker:     stateChecker,
 		Halts:       haltsState,
-		bus:         stateBus,
+		Watchlist:   watchlistState,
+
+		bus: stateBus,
 
 		db:             db,
 		events:         events,

@@ -25,3 +25,15 @@ func (m *Model) AddToList(publicKey types.Pubkey, coin types.CoinID, value *big.
 		Value:     value,
 	})
 }
+
+func (m *Model) GetValue(pubkey types.Pubkey, coin types.CoinID) *big.Int {
+	value := big.NewInt(0)
+
+	for _, item := range m.List {
+		if item.PublicKey == pubkey && item.Coin == coin {
+			value.Add(value, item.Value)
+		}
+	}
+
+	return value
+}
