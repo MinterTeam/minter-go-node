@@ -6,7 +6,6 @@ import (
 	eventsdb "github.com/MinterTeam/minter-go-node/core/events"
 	"github.com/MinterTeam/minter-go-node/core/state/candidates"
 	"github.com/MinterTeam/minter-go-node/core/types"
-
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	db "github.com/tendermint/tm-db"
 	"math/big"
@@ -419,6 +418,39 @@ func TestDelegationAfterUnbond(t *testing.T) {
 		}
 	}
 
+}
+
+func TestDelegationWithWatchList(t *testing.T) {
+	st := getState()
+
+	coin := types.GetBaseCoinID()
+	pubkey := createTestCandidate(st)
+	stakeAmount := big.NewInt(10000)
+	watchlistAmount := big.NewInt(1000)
+	amount := new(big.Int).Add(stakeAmount, watchlistAmount)
+
+	var addr types.Address
+	binary.BigEndian.PutUint64(addr[:], 1)
+
+	st.Watchlist.AddWatchList(addr, pubkey, coin, watchlistAmount)
+
+	if watchList := st.Watchlist.Get(addr, pubkey, coin); watchList != nil {
+		stakeAmount.Add(stakeAmount, watchList.Value)
+		st.Watchlist.Delete(addr, pubkey, coin)
+	}
+
+	st.Candidates.Delegate(addr, pubkey, coin, stakeAmount, stakeAmount)
+	st.Candidates.RecalculateStakes(height)
+
+	value := st.Candidates.GetStakeValueOfAddress(pubkey, addr, coin)
+	if value == nil || value.Cmp(amount) != 0 {
+		t.Fatalf("Stake of address %s is not correct. Expected %s, got %s", addr.String(), amount, value)
+	}
+
+	wl := st.Watchlist.Get(addr, pubkey, coin)
+	if wl != nil {
+		t.Fatalf("Watchlist is not deleted")
+	}
 }
 
 func getState() *State {

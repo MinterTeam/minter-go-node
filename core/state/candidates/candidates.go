@@ -371,7 +371,7 @@ func (c *Candidates) recalculateStakesNew(height uint64) {
 }
 
 func (c *Candidates) unbond(owner types.Address, value *big.Int, coin types.CoinID, pubKey types.Pubkey, height uint64) {
-	c.bus.WatchList().AddFrozenFund(owner, pubKey, coin, value)
+	c.bus.WatchList().AddToWatchList(owner, pubKey, coin, value)
 	//todo rename event
 	c.bus.Events().AddEvent(uint32(height), &eventsdb.UnbondEvent{
 		Address:         owner,
