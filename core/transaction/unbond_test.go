@@ -81,7 +81,7 @@ func TestUnbondTx(t *testing.T) {
 	}
 }
 
-func TestUnbondTxWithWatchlist(t *testing.T) {
+func TestFullUnbondTxWithWatchlist(t *testing.T) {
 	cState := getState()
 	pubkey := createTestCandidate(cState)
 
@@ -144,6 +144,84 @@ func TestUnbondTxWithWatchlist(t *testing.T) {
 
 	amount := new(big.Int).Add(value, watchlistAmount)
 	if funds.List[0].Value.Cmp(amount) != 0 {
-		t.Fatalf("Stake value is not corrent. Expected %s, got %s", amount, funds.List[0].Value)
+		t.Fatalf("Frozen funds value is not corrent. Expected %s, got %s", amount, funds.List[0].Value)
+	}
+
+	wl := cState.Watchlist.Get(addr, pubkey, coin)
+	if wl != nil {
+		t.Fatalf("Watchlist is not deleted")
+	}
+}
+
+func TestUnbondTxWithWatchlist(t *testing.T) {
+	cState := getState()
+	pubkey := createTestCandidate(cState)
+
+	privateKey, _ := crypto.GenerateKey()
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+	coin := types.GetBaseCoinID()
+	watchlistAmount := helpers.BipToPip(big.NewInt(1000))
+	value := helpers.BipToPip(big.NewInt(100))
+	unbondAmount := helpers.BipToPip(big.NewInt(50))
+
+	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
+	cState.Candidates.Delegate(addr, pubkey, coin, value, value)
+	cState.Watchlist.AddWatchList(addr, pubkey, coin, watchlistAmount)
+	cState.Candidates.RecalculateStakes(109000)
+
+	data := UnbondData{
+		PubKey: pubkey,
+		Coin:   coin,
+		Value:  unbondAmount,
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := Transaction{
+		Nonce:         1,
+		GasPrice:      1,
+		ChainID:       types.CurrentChainID,
+		GasCoin:       coin,
+		Type:          TypeUnbond,
+		Data:          encodedData,
+		SignatureType: SigTypeSingle,
+	}
+
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != 0 {
+		t.Fatalf("Response code is not 0. Error %s", response.Log)
+	}
+
+	cState.Candidates.RecalculateStakes(109000)
+	funds := cState.FrozenFunds.GetFrozenFunds(candidates.UnbondPeriod)
+	if funds == nil || len(funds.List) != 1 {
+		t.Fatalf("Frozen funds are not correct")
+	}
+
+	stake := cState.Candidates.GetStakeOfAddress(pubkey, addr, coin)
+	if stake.Value.Cmp(unbondAmount) != 0 {
+		t.Fatalf("Stake value is not corrent. Expected %s, got %s", unbondAmount, stake.Value)
+	}
+
+	amount := new(big.Int).Add(unbondAmount, watchlistAmount)
+	if funds.List[0].Value.Cmp(amount) != 0 {
+		t.Fatalf("Frozen funds value is not corrent. Expected %s, got %s", amount, funds.List[0].Value)
+	}
+
+	wl := cState.Watchlist.Get(addr, pubkey, coin)
+	if wl != nil {
+		t.Fatalf("Watchlist is not deleted")
 	}
 }
