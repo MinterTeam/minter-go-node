@@ -83,6 +83,9 @@ func (cs *CheckState) Coins() coins.RCoins {
 func (cs *CheckState) Checks() checks.RChecks {
 	return cs.state.Checks
 }
+func (cs *CheckState) Watchlist() watchlist.RWatchList {
+	return cs.state.Watchlist
+}
 func (cs *CheckState) Tree() tree.ReadOnlyTree {
 	return cs.state.Tree()
 }
@@ -254,6 +257,10 @@ func (s *State) Commit() ([]byte, error) {
 	}
 
 	if err := s.Halts.Commit(); err != nil {
+		return nil, err
+	}
+
+	if err := s.Watchlist.Commit(); err != nil {
 		return nil, err
 	}
 

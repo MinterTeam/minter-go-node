@@ -19,8 +19,6 @@ type RWatchList interface {
 	Get(address types.Address, pubkey types.Pubkey, coin types.CoinID) *Item
 	GetByAddress(address types.Address) *Model
 	GetByAddressAndPubKey(address types.Address, pubkey types.Pubkey) []Item
-	AddWatchList(address types.Address, pubkey types.Pubkey, coin types.CoinID, value *big.Int)
-	Delete(address types.Address, pubkey types.Pubkey, coin types.CoinID)
 }
 
 type WatchList struct {
