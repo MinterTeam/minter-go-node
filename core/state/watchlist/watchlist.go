@@ -16,7 +16,9 @@ import (
 const mainPrefix = byte('w')
 
 type RWatchList interface {
+	Get(address types.Address, pubkey types.Pubkey, coin types.CoinID) *Item
 	GetByAddress(address types.Address) *Model
+	GetByAddressAndPubKey(address types.Address, pubkey types.Pubkey) []Item
 	AddWatchList(address types.Address, pubkey types.Pubkey, coin types.CoinID, value *big.Int)
 	Delete(address types.Address, pubkey types.Pubkey, coin types.CoinID)
 }
@@ -65,6 +67,41 @@ func (wl *WatchList) Commit() error {
 
 func (wl *WatchList) GetByAddress(address types.Address) *Model {
 	return wl.get(address)
+}
+
+func (wl *WatchList) Get(address types.Address, pubkey types.Pubkey, coin types.CoinID) *Item {
+	watchlist := wl.get(address)
+	if watchlist == nil {
+		return nil
+	}
+
+	for _, item := range watchlist.List {
+		if item.PublicKey == pubkey && item.Coin == coin {
+			return &item
+		}
+	}
+
+	return nil
+}
+
+func (wl *WatchList) GetByAddressAndPubKey(address types.Address, pubkey types.Pubkey) []Item {
+	watchlist := wl.get(address)
+	if watchlist == nil {
+		return nil
+	}
+
+	items := make([]Item, 0)
+	for i, item := range watchlist.List {
+		if item.PublicKey == pubkey {
+			items[i] = item
+		}
+	}
+
+	if len(items) == 0 {
+		return nil
+	}
+
+	return items
 }
 
 func (wl *WatchList) AddWatchList(address types.Address, pubkey types.Pubkey, coin types.CoinID, value *big.Int) {

@@ -346,7 +346,7 @@ func TestZeroStakePenalty(t *testing.T) {
 	st.Candidates.RecalculateStakes(height)
 
 	st.Candidates.SubStake(addr, pubkey, coin, amount)
-	st.FrozenFunds.AddFund(518400, addr, pubkey,  coin, amount)
+	st.FrozenFunds.AddFund(518400, addr, pubkey, coin, amount)
 
 	var pk ed25519.PubKeyEd25519
 	copy(pk[:], pubkey[:])

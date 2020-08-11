@@ -9,7 +9,7 @@ type Bus struct {
 	watchlist *WatchList
 }
 
-func (b *Bus) AddFrozenFund(address types.Address, pubkey types.Pubkey, coin types.CoinID, value *big.Int) {
+func (b *Bus) AddToWatchList(address types.Address, pubkey types.Pubkey, coin types.CoinID, value *big.Int) {
 	b.watchlist.AddWatchList(address, pubkey, coin, value)
 }
 
