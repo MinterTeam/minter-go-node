@@ -6,5 +6,5 @@ import (
 )
 
 type WatchList interface {
-	AddFrozenFund(address types.Address, pubkey types.Pubkey, coin types.CoinID, value *big.Int)
+	AddToWatchList(address types.Address, pubkey types.Pubkey, coin types.CoinID, value *big.Int)
 }
