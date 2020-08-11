@@ -90,7 +90,7 @@ func (wl *WatchList) GetByAddressAndPubKey(address types.Address, pubkey types.P
 		return nil
 	}
 
-	items := make([]Item, 0)
+	items := make([]Item, 0, len(watchlist.List))
 	for i, item := range watchlist.List {
 		if item.PublicKey == pubkey {
 			items[i] = item
