@@ -41,7 +41,7 @@ func (s *Service) Transaction(ctx context.Context, req *pb.TransactionRequest) (
 	}
 
 	txJsonEncoder := encoder.NewTxEncoderJSON(cState)
-	data, err := txJsonEncoder.Encode(decodedTx, tx)
+	data, err := txJsonEncoder.EncodeData(decodedTx)
 	if err != nil {
 		return new(pb.TransactionResponse), status.Error(codes.Internal, err.Error())
 	}
