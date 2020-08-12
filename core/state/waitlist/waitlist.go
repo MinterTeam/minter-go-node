@@ -151,7 +151,7 @@ func (wl *WaitList) get(address types.Address) *Model {
 
 	m := new(Model)
 	if err := rlp.DecodeBytes(enc, m); err != nil {
-		panic(fmt.Sprintf("failed to decode waitlists for address %d: %s", address.String(), err))
+		panic(fmt.Sprintf("failed to decode waitlists for address %s: %s", address.String(), err))
 	}
 
 	m.address = address
