@@ -420,6 +420,43 @@ func TestDelegationAfterUnbond(t *testing.T) {
 
 }
 
+func TestStakeKick(t *testing.T) {
+	st := getState()
+
+	coin := types.GetBaseCoinID()
+	pubkey := createTestCandidate(st)
+
+	for i := uint64(0); i < 1000; i++ {
+		amount := big.NewInt(int64(1000 - i))
+		var addr types.Address
+		binary.BigEndian.PutUint64(addr[:], i)
+		st.Candidates.Delegate(addr, pubkey, coin, amount, big.NewInt(0))
+	}
+
+	st.Candidates.RecalculateStakes(height)
+
+	{
+		amount := big.NewInt(1001)
+		var addr types.Address
+		binary.BigEndian.PutUint64(addr[:], 1001)
+		st.Candidates.Delegate(addr, pubkey, coin, amount, big.NewInt(0))
+	}
+
+	st.Candidates.RecalculateStakes(height)
+
+	var addr types.Address
+	binary.BigEndian.PutUint64(addr[:], 999)
+	wl := st.Waitlist.Get(addr, pubkey, coin)
+
+	if wl == nil {
+		t.Fatalf("Waitlist is empty")
+	}
+
+	if wl.Value.Cmp(big.NewInt(1)) != 0 {
+		t.Fatalf("Waitlist is not correct")
+	}
+}
+
 func getState() *State {
 	s, err := NewState(0, db.NewMemDB(), emptyEvents{}, 1, 1)
 

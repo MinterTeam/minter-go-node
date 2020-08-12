@@ -66,11 +66,11 @@ func (b *Bus) Halts() HaltBlocks {
 	return b.halts
 }
 
-func (b *Bus) SetWatchList(watchList WaitList) {
-	b.waitlist = watchList
+func (b *Bus) SetWaitList(waitList WaitList) {
+	b.waitlist = waitList
 }
 
-func (b *Bus) WatchList() WaitList {
+func (b *Bus) WaitList() WaitList {
 	return b.waitlist
 }
 

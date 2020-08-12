@@ -92,7 +92,7 @@ func TestFullUnbondTxWithWatchlist(t *testing.T) {
 	value := helpers.BipToPip(big.NewInt(1000))
 
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
-	cState.Watchlist.AddWaitList(addr, pubkey, coin, waitlistAmount)
+	cState.Waitlist.AddWaitList(addr, pubkey, coin, waitlistAmount)
 	cState.Candidates.RecalculateStakes(109000)
 
 	data := UnbondData{
@@ -145,9 +145,9 @@ func TestFullUnbondTxWithWatchlist(t *testing.T) {
 		t.Fatalf("Frozen funds value is not corrent. Expected %s, got %s", value, funds.List[0].Value)
 	}
 
-	wl := cState.Watchlist.Get(addr, pubkey, coin)
+	wl := cState.Waitlist.Get(addr, pubkey, coin)
 	if wl != nil {
-		t.Fatalf("Watchlist is not deleted")
+		t.Fatalf("Waitlist is not deleted")
 	}
 }
 
@@ -162,7 +162,7 @@ func TestUnbondTxWithWatchlist(t *testing.T) {
 	unbondAmount := helpers.BipToPip(big.NewInt(50))
 
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
-	cState.Watchlist.AddWaitList(addr, pubkey, coin, waitlistAmount)
+	cState.Waitlist.AddWaitList(addr, pubkey, coin, waitlistAmount)
 	cState.Candidates.RecalculateStakes(109000)
 
 	data := UnbondData{
@@ -210,13 +210,13 @@ func TestUnbondTxWithWatchlist(t *testing.T) {
 		t.Fatalf("Frozen funds value is not corrent. Expected %s, got %s", unbondAmount, funds.List[0].Value)
 	}
 
-	wl := cState.Watchlist.Get(addr, pubkey, coin)
+	wl := cState.Waitlist.Get(addr, pubkey, coin)
 	if wl == nil {
-		t.Fatalf("Watchlist is empty")
+		t.Fatalf("Waitlist is empty")
 	}
 
 	amount := new(big.Int).Sub(waitlistAmount, unbondAmount)
 	if wl.Value.Cmp(amount) != 0 {
-		t.Fatalf("Watchlist is not correct")
+		t.Fatalf("Waitlist is not correct")
 	}
 }

@@ -31,13 +31,14 @@ type WaitList struct {
 	lock sync.RWMutex
 }
 
-func NewWatchList(stateBus *bus.Bus, iavl tree.MTree) (*WaitList, error) {
+func NewWaitList(stateBus *bus.Bus, iavl tree.MTree) (*WaitList, error) {
 	waitlist := &WaitList{
 		bus:   stateBus,
 		iavl:  iavl,
 		list:  map[types.Address]*Model{},
 		dirty: map[types.Address]interface{}{},
 	}
+	waitlist.bus.SetWaitList(NewBus(waitlist))
 
 	return waitlist, nil
 }
@@ -112,7 +113,7 @@ func (wl *WaitList) AddWaitList(address types.Address, pubkey types.Pubkey, coin
 func (wl *WaitList) Delete(address types.Address, pubkey types.Pubkey, coin types.CoinID) {
 	w := wl.get(address)
 	if w == nil || len(w.List) == 0 {
-		log.Panicf("Watchlist not found for %s", address.String())
+		log.Panicf("Waitlist not found for %s", address.String())
 	}
 
 	items := make([]Item, 0, len(w.List))

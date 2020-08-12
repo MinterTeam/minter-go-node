@@ -160,9 +160,9 @@ func (data DelegateData) Run(tx *Transaction, context state.Interface, rewardPoo
 		deliverState.Accounts.SubBalance(sender, data.Coin, data.Value)
 
 		value := big.NewInt(0).Set(data.Value)
-		if watchList := deliverState.Watchlist.Get(sender, data.PubKey, data.Coin); watchList != nil {
+		if watchList := deliverState.Waitlist.Get(sender, data.PubKey, data.Coin); watchList != nil {
 			value.Add(value, watchList.Value)
-			deliverState.Watchlist.Delete(sender, data.PubKey, data.Coin)
+			deliverState.Waitlist.Delete(sender, data.PubKey, data.Coin)
 		}
 
 		deliverState.Candidates.Delegate(sender, data.PubKey, data.Coin, value, big.NewInt(0))

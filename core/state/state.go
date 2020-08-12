@@ -84,7 +84,7 @@ func (cs *CheckState) Checks() checks.RChecks {
 	return cs.state.Checks
 }
 func (cs *CheckState) Watchlist() waitlist.RWaitList {
-	return cs.state.Watchlist
+	return cs.state.Waitlist
 }
 func (cs *CheckState) Tree() tree.ReadOnlyTree {
 	return cs.state.Tree()
@@ -150,7 +150,7 @@ type State struct {
 	Coins       *coins.Coins
 	Checks      *checks.Checks
 	Checker     *checker.Checker
-	Watchlist   *waitlist.WaitList
+	Waitlist    *waitlist.WaitList
 
 	db             db.DB
 	events         eventsdb.IEventsDB
@@ -260,7 +260,7 @@ func (s *State) Commit() ([]byte, error) {
 		return nil, err
 	}
 
-	if err := s.Watchlist.Commit(); err != nil {
+	if err := s.Waitlist.Commit(); err != nil {
 		return nil, err
 	}
 
@@ -415,7 +415,7 @@ func newStateForTree(iavlTree tree.MTree, events eventsdb.IEventsDB, db db.DB, k
 		return nil, err
 	}
 
-	waitlistState, err := waitlist.NewWatchList(stateBus, iavlTree)
+	waitlistState, err := waitlist.NewWaitList(stateBus, iavlTree)
 	if err != nil {
 		return nil, err
 	}
@@ -430,7 +430,7 @@ func newStateForTree(iavlTree tree.MTree, events eventsdb.IEventsDB, db db.DB, k
 		Checks:      checksState,
 		Checker:     stateChecker,
 		Halts:       haltsState,
-		Watchlist:   waitlistState,
+		Waitlist:    waitlistState,
 
 		bus: stateBus,
 

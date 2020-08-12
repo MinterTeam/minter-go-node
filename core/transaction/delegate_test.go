@@ -103,7 +103,7 @@ func TestDelegateTxWithWatchlist(t *testing.T) {
 	value := helpers.BipToPip(big.NewInt(100))
 	waitlistAmount := helpers.BipToPip(big.NewInt(1000))
 
-	cState.Watchlist.AddWaitList(addr, pubkey, coin, waitlistAmount)
+	cState.Waitlist.AddWaitList(addr, pubkey, coin, waitlistAmount)
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
 	data := DelegateData{
@@ -152,8 +152,8 @@ func TestDelegateTxWithWatchlist(t *testing.T) {
 		t.Fatalf("Stake value is not corrent. Expected %s, got %s", amount, stake.Value)
 	}
 
-	wl := cState.Watchlist.Get(addr, pubkey, coin)
+	wl := cState.Waitlist.Get(addr, pubkey, coin)
 	if wl != nil {
-		t.Fatalf("Watchlist is not deleted")
+		t.Fatalf("Waitlist is not deleted")
 	}
 }

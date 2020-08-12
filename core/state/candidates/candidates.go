@@ -371,7 +371,7 @@ func (c *Candidates) recalculateStakesNew(height uint64) {
 }
 
 func (c *Candidates) stakeKick(owner types.Address, value *big.Int, coin types.CoinID, pubKey types.Pubkey, height uint64) {
-	c.bus.WatchList().AddToWaitList(owner, pubKey, coin, value)
+	c.bus.WaitList().AddToWaitList(owner, pubKey, coin, value)
 	c.bus.Events().AddEvent(uint32(height), &eventsdb.StakeKickEvent{
 		Address:         owner,
 		Amount:          value.String(),
