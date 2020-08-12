@@ -1,4 +1,4 @@
-package watchlist
+package waitlist
 
 import (
 	"bytes"
@@ -15,13 +15,13 @@ import (
 
 const mainPrefix = byte('w')
 
-type RWatchList interface {
+type RWaitList interface {
 	Get(address types.Address, pubkey types.Pubkey, coin types.CoinID) *Item
 	GetByAddress(address types.Address) *Model
 	GetByAddressAndPubKey(address types.Address, pubkey types.Pubkey) []Item
 }
 
-type WatchList struct {
+type WaitList struct {
 	list  map[types.Address]*Model
 	dirty map[types.Address]interface{}
 
@@ -31,18 +31,18 @@ type WatchList struct {
 	lock sync.RWMutex
 }
 
-func NewWatchList(stateBus *bus.Bus, iavl tree.MTree) (*WatchList, error) {
-	watchlist := &WatchList{
+func NewWatchList(stateBus *bus.Bus, iavl tree.MTree) (*WaitList, error) {
+	waitlist := &WaitList{
 		bus:   stateBus,
 		iavl:  iavl,
 		list:  map[types.Address]*Model{},
 		dirty: map[types.Address]interface{}{},
 	}
 
-	return watchlist, nil
+	return waitlist, nil
 }
 
-func (wl *WatchList) Commit() error {
+func (wl *WaitList) Commit() error {
 	dirty := wl.getOrderedDirty()
 	for _, address := range dirty {
 		w := wl.getFromMap(address)
@@ -63,17 +63,17 @@ func (wl *WatchList) Commit() error {
 	return nil
 }
 
-func (wl *WatchList) GetByAddress(address types.Address) *Model {
+func (wl *WaitList) GetByAddress(address types.Address) *Model {
 	return wl.get(address)
 }
 
-func (wl *WatchList) Get(address types.Address, pubkey types.Pubkey, coin types.CoinID) *Item {
-	watchlist := wl.get(address)
-	if watchlist == nil {
+func (wl *WaitList) Get(address types.Address, pubkey types.Pubkey, coin types.CoinID) *Item {
+	waitlist := wl.get(address)
+	if waitlist == nil {
 		return nil
 	}
 
-	for _, item := range watchlist.List {
+	for _, item := range waitlist.List {
 		if item.PublicKey == pubkey && item.Coin == coin {
 			return &item
 		}
@@ -82,14 +82,14 @@ func (wl *WatchList) Get(address types.Address, pubkey types.Pubkey, coin types.
 	return nil
 }
 
-func (wl *WatchList) GetByAddressAndPubKey(address types.Address, pubkey types.Pubkey) []Item {
-	watchlist := wl.get(address)
-	if watchlist == nil {
+func (wl *WaitList) GetByAddressAndPubKey(address types.Address, pubkey types.Pubkey) []Item {
+	waitlist := wl.get(address)
+	if waitlist == nil {
 		return nil
 	}
 
-	items := make([]Item, 0, len(watchlist.List))
-	for i, item := range watchlist.List {
+	items := make([]Item, 0, len(waitlist.List))
+	for i, item := range waitlist.List {
 		if item.PublicKey == pubkey {
 			items[i] = item
 		}
@@ -102,14 +102,14 @@ func (wl *WatchList) GetByAddressAndPubKey(address types.Address, pubkey types.P
 	return items
 }
 
-func (wl *WatchList) AddWatchList(address types.Address, pubkey types.Pubkey, coin types.CoinID, value *big.Int) {
+func (wl *WaitList) AddWaitList(address types.Address, pubkey types.Pubkey, coin types.CoinID, value *big.Int) {
 	w := wl.getOrNew(address)
 	w.AddToList(pubkey, coin, value)
 	wl.setToMap(address, w)
 	w.markDirty(address)
 }
 
-func (wl *WatchList) Delete(address types.Address, pubkey types.Pubkey, coin types.CoinID) {
+func (wl *WaitList) Delete(address types.Address, pubkey types.Pubkey, coin types.CoinID) {
 	w := wl.get(address)
 	if w == nil || len(w.List) == 0 {
 		log.Panicf("Watchlist not found for %s", address.String())
@@ -127,7 +127,7 @@ func (wl *WatchList) Delete(address types.Address, pubkey types.Pubkey, coin typ
 	wl.setToMap(address, w)
 }
 
-func (wl *WatchList) getOrNew(address types.Address) *Model {
+func (wl *WaitList) getOrNew(address types.Address) *Model {
 	w := wl.get(address)
 	if w == nil {
 		w = &Model{List: make([]Item, 0), address: address, markDirty: wl.markDirty}
@@ -137,7 +137,7 @@ func (wl *WatchList) getOrNew(address types.Address) *Model {
 	return w
 }
 
-func (wl *WatchList) get(address types.Address) *Model {
+func (wl *WaitList) get(address types.Address) *Model {
 	if ff := wl.getFromMap(address); ff != nil {
 		return ff
 	}
@@ -150,7 +150,7 @@ func (wl *WatchList) get(address types.Address) *Model {
 
 	m := new(Model)
 	if err := rlp.DecodeBytes(enc, m); err != nil {
-		panic(fmt.Sprintf("failed to decode watchlists for address %d: %s", address.String(), err))
+		panic(fmt.Sprintf("failed to decode waitlists for address %d: %s", address.String(), err))
 	}
 
 	m.address = address
@@ -160,25 +160,25 @@ func (wl *WatchList) get(address types.Address) *Model {
 	return m
 }
 
-func (wl *WatchList) getFromMap(address types.Address) *Model {
+func (wl *WaitList) getFromMap(address types.Address) *Model {
 	wl.lock.RLock()
 	defer wl.lock.RUnlock()
 
 	return wl.list[address]
 }
 
-func (wl *WatchList) setToMap(address types.Address, model *Model) {
+func (wl *WaitList) setToMap(address types.Address, model *Model) {
 	wl.lock.Lock()
 	defer wl.lock.Unlock()
 
 	wl.list[address] = model
 }
 
-func (wl *WatchList) markDirty(address types.Address) {
+func (wl *WaitList) markDirty(address types.Address) {
 	wl.dirty[address] = struct{}{}
 }
 
-func (wl *WatchList) getOrderedDirty() []types.Address {
+func (wl *WaitList) getOrderedDirty() []types.Address {
 	keys := make([]types.Address, 0, len(wl.dirty))
 	for k := range wl.dirty {
 		keys = append(keys, k)

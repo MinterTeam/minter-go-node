@@ -1,4 +1,4 @@
-package watchlist
+package waitlist
 
 import (
 	"github.com/MinterTeam/minter-go-node/core/types"

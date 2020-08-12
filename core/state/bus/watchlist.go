@@ -5,6 +5,6 @@ import (
 	"math/big"
 )
 
-type WatchList interface {
-	AddToWatchList(address types.Address, pubkey types.Pubkey, coin types.CoinID, value *big.Int)
+type WaitList interface {
+	AddToWaitList(address types.Address, pubkey types.Pubkey, coin types.CoinID, value *big.Int)
 }

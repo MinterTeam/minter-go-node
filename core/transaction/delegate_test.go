@@ -101,9 +101,9 @@ func TestDelegateTxWithWatchlist(t *testing.T) {
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 	coin := types.GetBaseCoinID()
 	value := helpers.BipToPip(big.NewInt(100))
-	watchlistAmount := helpers.BipToPip(big.NewInt(1000))
+	waitlistAmount := helpers.BipToPip(big.NewInt(1000))
 
-	cState.Watchlist.AddWatchList(addr, pubkey, coin, watchlistAmount)
+	cState.Watchlist.AddWaitList(addr, pubkey, coin, waitlistAmount)
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
 	data := DelegateData{
@@ -147,7 +147,7 @@ func TestDelegateTxWithWatchlist(t *testing.T) {
 		t.Fatalf("Stake not found")
 	}
 
-	amount := new(big.Int).Add(value, watchlistAmount)
+	amount := new(big.Int).Add(value, waitlistAmount)
 	if stake.Value.Cmp(amount) != 0 {
 		t.Fatalf("Stake value is not corrent. Expected %s, got %s", amount, stake.Value)
 	}

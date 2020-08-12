@@ -88,11 +88,11 @@ func TestFullUnbondTxWithWatchlist(t *testing.T) {
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 	coin := types.GetBaseCoinID()
-	watchlistAmount := helpers.BipToPip(big.NewInt(1000))
+	waitlistAmount := helpers.BipToPip(big.NewInt(1000))
 	value := helpers.BipToPip(big.NewInt(1000))
 
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
-	cState.Watchlist.AddWatchList(addr, pubkey, coin, watchlistAmount)
+	cState.Watchlist.AddWaitList(addr, pubkey, coin, waitlistAmount)
 	cState.Candidates.RecalculateStakes(109000)
 
 	data := UnbondData{
@@ -158,11 +158,11 @@ func TestUnbondTxWithWatchlist(t *testing.T) {
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 	coin := types.GetBaseCoinID()
-	watchlistAmount := helpers.BipToPip(big.NewInt(1000))
+	waitlistAmount := helpers.BipToPip(big.NewInt(1000))
 	unbondAmount := helpers.BipToPip(big.NewInt(50))
 
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
-	cState.Watchlist.AddWatchList(addr, pubkey, coin, watchlistAmount)
+	cState.Watchlist.AddWaitList(addr, pubkey, coin, waitlistAmount)
 	cState.Candidates.RecalculateStakes(109000)
 
 	data := UnbondData{
@@ -215,7 +215,7 @@ func TestUnbondTxWithWatchlist(t *testing.T) {
 		t.Fatalf("Watchlist is empty")
 	}
 
-	amount := new(big.Int).Sub(watchlistAmount, unbondAmount)
+	amount := new(big.Int).Sub(waitlistAmount, unbondAmount)
 	if wl.Value.Cmp(amount) != 0 {
 		t.Fatalf("Watchlist is not correct")
 	}

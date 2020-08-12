@@ -52,15 +52,15 @@ func (data UnbondData) BasicCheck(tx *Transaction, context *state.CheckState) *R
 
 	sender, _ := tx.Sender()
 
-	if watchlist := context.Watchlist().Get(sender, data.PubKey, data.Coin); watchlist != nil {
-		value := big.NewInt(0).Sub(data.Value, watchlist.Value)
+	if waitlist := context.Watchlist().Get(sender, data.PubKey, data.Coin); waitlist != nil {
+		value := big.NewInt(0).Sub(data.Value, waitlist.Value)
 		if value.Sign() < 1 {
 			return nil
 		}
-		errorInfo["watchlist_value"] = watchlist.Value.String()
+		errorInfo["waitlist_value"] = waitlist.Value.String()
 		return &Response{
-			Code: code.InsufficientWatchList,
-			Log:  fmt.Sprintf("Insufficient amount at watchlist for sender account"),
+			Code: code.InsufficientWaitList,
+			Log:  fmt.Sprintf("Insufficient amount at waitlist for sender account"),
 			Info: EncodeError(errorInfo),
 		}
 	}
@@ -163,7 +163,7 @@ func (data UnbondData) Run(tx *Transaction, context state.Interface, rewardPool 
 			diffValue := big.NewInt(0).Sub(data.Value, watchList.Value)
 			deliverState.Watchlist.Delete(sender, data.PubKey, data.Coin)
 			if diffValue.Sign() == -1 {
-				deliverState.Watchlist.AddWatchList(sender, data.PubKey, data.Coin, big.NewInt(0).Neg(diffValue))
+				deliverState.Watchlist.AddWaitList(sender, data.PubKey, data.Coin, big.NewInt(0).Neg(diffValue))
 			}
 		} else {
 			deliverState.Candidates.SubStake(sender, data.PubKey, data.Coin, data.Value)
