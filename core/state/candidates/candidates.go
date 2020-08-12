@@ -1023,6 +1023,10 @@ func (c *Candidates) setPubKeyID(pubkey types.Pubkey, u uint32) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
+	if c.maxID < u {
+		c.maxID = u
+	}
+
 	if c.pubKeyIDs == nil {
 		c.pubKeyIDs = map[types.Pubkey]uint32{}
 	}
