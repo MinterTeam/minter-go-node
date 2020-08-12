@@ -344,13 +344,13 @@ func (c *Candidates) recalculateStakesNew(height uint64) {
 			}
 
 			if smallestStake.Cmp(update.BipValue) == 1 {
-				c.unbond(update.Owner, update.Value, update.Coin, candidate.PubKey, height)
+				c.stakeKick(update.Owner, update.Value, update.Coin, candidate.PubKey, height)
 				update.setValue(big.NewInt(0))
 				continue
 			}
 
 			if stakes[index] != nil {
-				c.unbond(update.Owner, update.Value, update.Coin, candidate.PubKey, height)
+				c.stakeKick(update.Owner, update.Value, update.Coin, candidate.PubKey, height)
 			}
 
 			candidate.SetStakeAtIndex(index, update, true)
@@ -370,7 +370,7 @@ func (c *Candidates) recalculateStakesNew(height uint64) {
 	}
 }
 
-func (c *Candidates) unbond(owner types.Address, value *big.Int, coin types.CoinID, pubKey types.Pubkey, height uint64) {
+func (c *Candidates) stakeKick(owner types.Address, value *big.Int, coin types.CoinID, pubKey types.Pubkey, height uint64) {
 	c.bus.WatchList().AddToWatchList(owner, pubKey, coin, value)
 	c.bus.Events().AddEvent(uint32(height), &eventsdb.StakeKickEvent{
 		Address:         owner,
