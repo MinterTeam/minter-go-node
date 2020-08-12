@@ -350,7 +350,7 @@ func (c *Candidates) recalculateStakesNew(height uint64) {
 			}
 
 			if stakes[index] != nil {
-				c.stakeKick(update.Owner, update.Value, update.Coin, candidate.PubKey, height)
+				c.stakeKick(stakes[index].Owner, stakes[index].Value, stakes[index].Coin, candidate.PubKey, height)
 			}
 
 			candidate.SetStakeAtIndex(index, update, true)

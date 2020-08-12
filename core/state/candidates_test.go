@@ -443,7 +443,7 @@ func TestStakeKick(t *testing.T) {
 	}
 
 	st.Candidates.RecalculateStakes(height)
-
+	st.Waitlist.Commit()
 	var addr types.Address
 	binary.BigEndian.PutUint64(addr[:], 999)
 	wl := st.Waitlist.Get(addr, pubkey, coin)
