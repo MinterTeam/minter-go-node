@@ -47,6 +47,10 @@ func (cs *CheckState) Lock() {
 	cs.state.lock.Lock()
 }
 
+func (cs *CheckState) Export(height uint64) types.AppState {
+	return cs.state.Export(height)
+}
+
 func (cs *CheckState) Unlock() {
 	cs.state.lock.Unlock()
 }
@@ -181,7 +185,7 @@ func NewState(height uint64, db db.DB, events eventsdb.IEventsDB, cacheSize int,
 func NewCheckStateAtHeight(height uint64, db db.DB) (*CheckState, error) {
 	iavlTree := tree.NewImmutableTree(height, db)
 
-	return newCheckStateForTree(iavlTree, nil, nil, 0)
+	return newCheckStateForTree(iavlTree, nil, db, 0)
 }
 
 func (s *State) Tree() tree.MTree {
