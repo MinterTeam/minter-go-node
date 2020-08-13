@@ -187,6 +187,12 @@ func (c CoinID) Uint32() uint32 {
 	return uint32(c)
 }
 
+// UnmarshalJSON parses a hash in hex syntax.
+func (a *CoinID) UnmarshalJSON(input []byte) error {
+	*a = BytesToCoinID(input)
+	return nil
+}
+
 func BytesToCoinID(bytes []byte) CoinID {
 	return CoinID(binary.LittleEndian.Uint32(bytes))
 }
