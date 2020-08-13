@@ -70,6 +70,38 @@ func TestDelegate(t *testing.T) {
 	}
 }
 
+func TestCustomDelegate(t *testing.T) {
+	st := getState()
+
+	volume := helpers.BipToPip(big.NewInt(1000000))
+	reserve := helpers.BipToPip(big.NewInt(1000000))
+
+	coinID := st.App.GetNextCoinID()
+	st.Coins.Create(coinID, types.StrToCoinSymbol("TEST"), "TEST COIN", volume, 10, reserve, volume, nil)
+	st.App.SetCoinsCount(coinID.Uint32())
+
+	address := types.Address{}
+	amount := helpers.BipToPip(big.NewInt(500000))
+	pubkey := createTestCandidate(st)
+
+	st.Candidates.Delegate(address, pubkey, coinID, amount, big.NewInt(0))
+	st.Candidates.RecalculateStakes(height)
+
+	stake := st.Candidates.GetStakeOfAddress(pubkey, address, coinID)
+	if stake == nil {
+		t.Fatalf("Stake of address %s not found", address.String())
+	}
+
+	if stake.Value.Cmp(amount) != 0 {
+		t.Errorf("Stake of address %s should be %s, got %s", address.String(), amount.String(), stake.Value.String())
+	}
+
+	bipValue := big.NewInt(0).Mul(big.NewInt(9765625), big.NewInt(100000000000000))
+	if stake.BipValue.Cmp(bipValue) != 0 {
+		t.Errorf("Bip value of stake of address %s should be %s, got %s", address.String(), bipValue.String(), stake.BipValue.String())
+	}
+}
+
 func TestComplexDelegate(t *testing.T) {
 	st := getState()
 

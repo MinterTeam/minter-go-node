@@ -677,22 +677,22 @@ func (c *Candidates) LoadStakes() {
 }
 
 func (c *Candidates) calculateBipValue(coinID types.CoinID, amount *big.Int, includeSelf, includeUpdates bool, coinsCache *coinsCache) *big.Int {
-
 	if coinID.IsBaseCoin() {
 		return big.NewInt(0).Set(amount)
 	}
 
-	totalDelegatedValue := big.NewInt(0)
-	if includeSelf {
-		totalDelegatedValue.Set(amount)
-	}
-
 	coin := c.bus.Coins().GetCoin(coinID)
 
-	var saleReturn *big.Int
+	saleReturn, totalDelegatedValue := big.NewInt(0), big.NewInt(0)
 	if coinsCache.Exists(coinID) {
 		saleReturn, totalDelegatedValue = coinsCache.Get(coinID)
-	} else {
+	}
+
+	if includeSelf {
+		totalDelegatedValue.Add(totalDelegatedValue, amount)
+	}
+
+	if !coinsCache.Exists(coinID) {
 		candidates := c.GetCandidates()
 		for _, candidate := range candidates {
 			for _, stake := range candidate.stakes {
@@ -709,6 +709,7 @@ func (c *Candidates) calculateBipValue(coinID types.CoinID, amount *big.Int, inc
 				}
 			}
 		}
+
 		nonLockedSupply := big.NewInt(0).Sub(coin.Volume, totalDelegatedValue)
 		saleReturn = formula.CalculateSaleReturn(coin.Volume, coin.Reserve, coin.Crr, nonLockedSupply)
 		coinsCache.Set(coinID, saleReturn, totalDelegatedValue)
