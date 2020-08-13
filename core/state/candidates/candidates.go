@@ -689,7 +689,7 @@ func (c *Candidates) calculateBipValue(coinID types.CoinID, amount *big.Int, inc
 	}
 
 	if includeSelf {
-		totalDelegatedValue.Set(amount)
+		totalDelegatedValue.Add(totalDelegatedValue, amount)
 	}
 
 	if !coinsCache.Exists(coinID) {
