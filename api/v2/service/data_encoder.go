@@ -8,6 +8,7 @@ import (
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"github.com/golang/protobuf/ptypes/any"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"strconv"
 )
@@ -213,8 +214,8 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 		return nil, errors.New("unknown tx type")
 	}
 
-	a := &any.Any{}
-	if err := a.MarshalFrom(m); err != nil {
+	a, err := anypb.New(m)
+	if err != nil {
 		return nil, err
 	}
 

@@ -6,6 +6,7 @@ import (
 	eventsdb "github.com/MinterTeam/minter-go-node/core/events"
 	"github.com/MinterTeam/minter-go-node/core/state/candidates"
 	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	db "github.com/tendermint/tm-db"
 	"math/big"
@@ -455,6 +456,26 @@ func TestStakeKick(t *testing.T) {
 	if wl.Value.Cmp(big.NewInt(1)) != 0 {
 		t.Fatalf("Waitlist is not correct")
 	}
+}
+
+func TestRecalculateStakes(t *testing.T) {
+	st := getState()
+
+	st.Coins.Create(1, [10]byte{1}, "TestCoin", helpers.BipToPip(big.NewInt(100000)), 70, helpers.BipToPip(big.NewInt(10000)), nil, nil)
+	pubkey := createTestCandidate(st)
+
+	amount := helpers.BipToPip(big.NewInt(1000))
+	st.Candidates.Delegate([20]byte{1}, pubkey, 1, amount, big.NewInt(0))
+
+	st.Candidates.RecalculateStakes(height)
+	err := st.Candidates.Commit()
+	if err != nil {
+		t.Fatal(err)
+	}
+	stake := st.Candidates.GetStakeOfAddress(pubkey, [20]byte{1}, 1)
+
+	t.Log(stake.Value.String())
+	t.Log(stake.BipValue.String())
 }
 
 func getState() *State {
