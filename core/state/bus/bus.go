@@ -9,6 +9,7 @@ type Bus struct {
 	candidates  Candidates
 	frozenfunds FrozenFunds
 	halts       HaltBlocks
+	waitlist    WaitList
 	events      eventsdb.IEventsDB
 	checker     Checker
 }
@@ -63,6 +64,14 @@ func (b *Bus) SetHaltBlocks(halts HaltBlocks) {
 
 func (b *Bus) Halts() HaltBlocks {
 	return b.halts
+}
+
+func (b *Bus) SetWaitList(waitList WaitList) {
+	b.waitlist = waitList
+}
+
+func (b *Bus) WaitList() WaitList {
+	return b.waitlist
 }
 
 func (b *Bus) SetEvents(events eventsdb.IEventsDB) {

@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"github.com/MinterTeam/minter-go-node/core/state/candidates"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/helpers"
@@ -77,5 +78,145 @@ func TestUnbondTx(t *testing.T) {
 
 	if stake.Value.Cmp(types.Big0) != 0 {
 		t.Fatalf("Stake value is not corrent. Expected %s, got %s", types.Big0, stake.Value)
+	}
+}
+
+func TestFullUnbondTxWithWatchlist(t *testing.T) {
+	cState := getState()
+	pubkey := createTestCandidate(cState)
+
+	privateKey, _ := crypto.GenerateKey()
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+	coin := types.GetBaseCoinID()
+	waitlistAmount := helpers.BipToPip(big.NewInt(1000))
+	value := helpers.BipToPip(big.NewInt(1000))
+
+	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
+	cState.Waitlist.AddWaitList(addr, pubkey, coin, waitlistAmount)
+	cState.Candidates.RecalculateStakes(109000)
+
+	data := UnbondData{
+		PubKey: pubkey,
+		Coin:   coin,
+		Value:  value,
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := Transaction{
+		Nonce:         1,
+		GasPrice:      1,
+		ChainID:       types.CurrentChainID,
+		GasCoin:       coin,
+		Type:          TypeUnbond,
+		Data:          encodedData,
+		SignatureType: SigTypeSingle,
+	}
+
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != 0 {
+		t.Fatalf("Response code is not 0. Error %s", response.Log)
+	}
+
+	cState.Candidates.RecalculateStakes(109000)
+	funds := cState.FrozenFunds.GetFrozenFunds(candidates.UnbondPeriod)
+	if funds == nil || len(funds.List) != 1 {
+		t.Fatalf("Frozen funds are not correct")
+	}
+
+	stake := cState.Candidates.GetStakeOfAddress(pubkey, addr, coin)
+	if stake != nil {
+		t.Fatalf("Stake value is not empty.")
+	}
+
+	if funds.List[0].Value.Cmp(value) != 0 {
+		t.Fatalf("Frozen funds value is not corrent. Expected %s, got %s", value, funds.List[0].Value)
+	}
+
+	wl := cState.Waitlist.Get(addr, pubkey, coin)
+	if wl != nil {
+		t.Fatalf("Waitlist is not deleted")
+	}
+}
+
+func TestUnbondTxWithWatchlist(t *testing.T) {
+	cState := getState()
+	pubkey := createTestCandidate(cState)
+
+	privateKey, _ := crypto.GenerateKey()
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+	coin := types.GetBaseCoinID()
+	waitlistAmount := helpers.BipToPip(big.NewInt(1000))
+	unbondAmount := helpers.BipToPip(big.NewInt(50))
+
+	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
+	cState.Waitlist.AddWaitList(addr, pubkey, coin, waitlistAmount)
+	cState.Candidates.RecalculateStakes(109000)
+
+	data := UnbondData{
+		PubKey: pubkey,
+		Coin:   coin,
+		Value:  unbondAmount,
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := Transaction{
+		Nonce:         1,
+		GasPrice:      1,
+		ChainID:       types.CurrentChainID,
+		GasCoin:       coin,
+		Type:          TypeUnbond,
+		Data:          encodedData,
+		SignatureType: SigTypeSingle,
+	}
+
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != 0 {
+		t.Fatalf("Response code is not 0. Error %s", response.Log)
+	}
+
+	cState.Candidates.RecalculateStakes(109000)
+	funds := cState.FrozenFunds.GetFrozenFunds(candidates.UnbondPeriod)
+	if funds == nil || len(funds.List) != 1 {
+		t.Fatalf("Frozen funds are not correct")
+	}
+
+	if funds.List[0].Value.Cmp(unbondAmount) != 0 {
+		t.Fatalf("Frozen funds value is not corrent. Expected %s, got %s", unbondAmount, funds.List[0].Value)
+	}
+
+	wl := cState.Waitlist.Get(addr, pubkey, coin)
+	if wl == nil {
+		t.Fatalf("Waitlist is empty")
+	}
+
+	amount := new(big.Int).Sub(waitlistAmount, unbondAmount)
+	if wl.Value.Cmp(amount) != 0 {
+		t.Fatalf("Waitlist is not correct")
 	}
 }

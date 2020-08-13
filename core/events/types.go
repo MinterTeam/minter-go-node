@@ -15,6 +15,8 @@ func RegisterAminoEvents(codec *amino.Codec) {
 		"minter/SlashEvent", nil)
 	codec.RegisterConcrete(UnbondEvent{},
 		"minter/UnbondEvent", nil)
+	codec.RegisterConcrete(StakeKickEvent{},
+		"minter/StakeKick", nil)
 }
 
 type Event interface {
@@ -235,6 +237,63 @@ func (ue *UnbondEvent) validatorPubKey() types.Pubkey {
 
 func (ue *UnbondEvent) convert(pubKeyID uint16, addressID uint32) compactEvent {
 	result := new(unbond)
+	result.AddressID = addressID
+	copy(result.Coin[:], ue.Coin.Bytes())
+	bi, _ := big.NewInt(0).SetString(ue.Amount, 10)
+	result.Amount = bi.Bytes()
+	result.PubKeyID = pubKeyID
+	return result
+}
+
+type stakeKick struct {
+	AddressID uint32
+	Amount    []byte
+	Coin      [10]byte
+	PubKeyID  uint16
+}
+
+func (u *stakeKick) compile(pubKey string, address [20]byte) Event {
+	event := new(StakeKickEvent)
+	copy(event.ValidatorPubKey[:], pubKey)
+	copy(event.Address[:], address[:])
+	copy(event.Coin.Bytes(), u.Coin[:])
+	event.Amount = big.NewInt(0).SetBytes(u.Amount).String()
+	return event
+}
+
+func (u *stakeKick) addressID() uint32 {
+	return u.AddressID
+}
+
+func (u *stakeKick) pubKeyID() uint16 {
+	return u.PubKeyID
+}
+
+type StakeKickEvent struct {
+	Address         types.Address `json:"address"`
+	Amount          string        `json:"amount"`
+	Coin            types.CoinID  `json:"coin"`
+	ValidatorPubKey types.Pubkey  `json:"validator_pub_key"`
+}
+
+func (ue *StakeKickEvent) AddressString() string {
+	return ue.Address.String()
+}
+
+func (ue *StakeKickEvent) address() types.Address {
+	return ue.Address
+}
+
+func (ue *StakeKickEvent) ValidatorPubKeyString() string {
+	return ue.ValidatorPubKey.String()
+}
+
+func (ue *StakeKickEvent) validatorPubKey() types.Pubkey {
+	return ue.ValidatorPubKey
+}
+
+func (ue *StakeKickEvent) convert(pubKeyID uint16, addressID uint32) compactEvent {
+	result := new(stakeKick)
 	result.AddressID = addressID
 	copy(result.Coin[:], ue.Coin.Bytes())
 	bi, _ := big.NewInt(0).SetString(ue.Amount, 10)

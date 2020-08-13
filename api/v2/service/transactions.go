@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
-	"github.com/MinterTeam/minter-go-node/core/transaction/encoder"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"github.com/tendermint/tendermint/libs/bytes"
 	"google.golang.org/grpc/codes"
@@ -48,15 +47,9 @@ func (s *Service) Transactions(ctx context.Context, req *pb.TransactionsRequest)
 				tags[string(tag.Key)] = string(tag.Value)
 			}
 
-			txJsonEncoder := encoder.NewTxEncoderJSON(cState)
-			data, err := txJsonEncoder.Encode(decodedTx, tx)
+			data, err := encode(decodedTx.GetDecodedData(), cState.Coins())
 			if err != nil {
 				return new(pb.TransactionsResponse), status.Error(codes.Internal, err.Error())
-			}
-
-			dataStruct, err := encodeToStruct(data)
-			if err != nil {
-				return new(pb.TransactionsResponse), status.Error(codes.FailedPrecondition, err.Error())
 			}
 
 			result = append(result, &pb.TransactionResponse{
@@ -70,7 +63,7 @@ func (s *Service) Transactions(ctx context.Context, req *pb.TransactionsRequest)
 				GasCoin:  decodedTx.GasCoin.String(),
 				Gas:      fmt.Sprintf("%d", decodedTx.Gas()),
 				Type:     fmt.Sprintf("%d", uint8(decodedTx.Type)),
-				Data:     dataStruct,
+				Data:     data,
 				Payload:  decodedTx.Payload,
 				Tags:     tags,
 				Code:     fmt.Sprintf("%d", tx.TxResult.Code),

@@ -13,13 +13,13 @@ type Coins interface {
 }
 
 type Coin struct {
-	ID           types.CoinID
-	Name         string
-	Crr          uint
-	Symbol       types.CoinSymbol
-	Version      types.CoinVersion
-	Volume       *big.Int
-	Reserve      *big.Int
+	ID      types.CoinID
+	Name    string
+	Crr     uint
+	Symbol  types.CoinSymbol
+	Version types.CoinVersion
+	Volume  *big.Int
+	Reserve *big.Int
 }
 
 func (m Coin) GetFullSymbol() string {

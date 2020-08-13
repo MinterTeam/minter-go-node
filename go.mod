@@ -3,7 +3,7 @@ module github.com/MinterTeam/minter-go-node
 go 1.13
 
 require (
-	github.com/MinterTeam/node-grpc-gateway v1.1.3-0.20200730101125-365dbd271301
+	github.com/MinterTeam/node-grpc-gateway v1.1.3-0.20200813111959-9b43734535eb
 	github.com/btcsuite/btcd v0.20.1-beta
 	github.com/c-bata/go-prompt v0.2.3
 	github.com/go-kit/kit v0.10.0
@@ -27,7 +27,7 @@ require (
 	github.com/syndtr/goleveldb v1.0.1-0.20190923125748-758128399b1d
 	github.com/tendermint/go-amino v0.15.1
 	github.com/tendermint/iavl v0.14.0
-	github.com/tendermint/tendermint v0.33.6
+	github.com/tendermint/tendermint v0.33.8
 	github.com/tendermint/tm-db v0.5.1
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5
 	github.com/urfave/cli/v2 v2.0.0
