@@ -423,6 +423,153 @@ func TestStopNetworkByHaltBlocks(t *testing.T) {
 	}
 }
 
+func TestRecalculateStakes(t *testing.T) {
+	for blockchain.Height() < 2 {
+		time.Sleep(time.Millisecond)
+	}
+
+	symbol := types.StrToCoinSymbol("AAA123")
+	data := transaction.CreateCoinData{
+		Name:                 "nAAA123",
+		Symbol:               symbol,
+		InitialAmount:        helpers.BipToPip(big.NewInt(1000000)),
+		InitialReserve:       helpers.BipToPip(big.NewInt(10000)),
+		ConstantReserveRatio: 70,
+		MaxSupply:            big.NewInt(0).Exp(big.NewInt(10), big.NewInt(15+18), nil),
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := transaction.Transaction{
+		Nonce:         nonce,
+		ChainID:       types.CurrentChainID,
+		GasPrice:      1,
+		GasCoin:       types.GetBaseCoinID(),
+		Type:          transaction.TypeCreateCoin,
+		Data:          encodedData,
+		SignatureType: transaction.SigTypeSingle,
+	}
+	nonce++
+
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	txBytes, _ := tx.Serialize()
+	res, err := tmCli.BroadcastTxSync(txBytes)
+	if err != nil {
+		t.Fatalf("Failed: %s", err.Error())
+	}
+	if res.Code != 0 {
+		t.Fatalf("CheckTx code is not 0: %d", res.Code)
+	}
+
+	time.Sleep(time.Second)
+
+	coinID := blockchain.stateCheck.Coins().GetCoinBySymbol(symbol, 0).ID()
+	buyCoinData := transaction.BuyCoinData{
+		CoinToBuy:          coinID,
+		ValueToBuy:         helpers.BipToPip(big.NewInt(10000000)),
+		CoinToSell:         0,
+		MaximumValueToSell: helpers.BipToPip(big.NewInt(10000000000000000)),
+	}
+
+	encodedData, err = rlp.EncodeToBytes(buyCoinData)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx = transaction.Transaction{
+		Nonce:         nonce,
+		GasPrice:      1,
+		ChainID:       types.CurrentChainID,
+		GasCoin:       types.GetBaseCoinID(),
+		Type:          transaction.TypeBuyCoin,
+		Data:          encodedData,
+		SignatureType: transaction.SigTypeSingle,
+	}
+	nonce++
+
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	txBytes, _ = tx.Serialize()
+	res, err = tmCli.BroadcastTxSync(txBytes)
+	if err != nil {
+		t.Fatalf("Failed: %s", err.Error())
+	}
+	if res.Code != 0 {
+		t.Fatalf("CheckTx code is not 0: %d", res.Code)
+	}
+
+	time.Sleep(time.Second)
+
+	delegateData := transaction.DelegateData{
+		PubKey: blockchain.stateCheck.Candidates().GetCandidates()[0].PubKey,
+		Coin:   coinID,
+		Value:  helpers.BipToPip(big.NewInt(9000000)),
+	}
+
+	encodedData, err = rlp.EncodeToBytes(delegateData)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx = transaction.Transaction{
+		Nonce:         nonce,
+		GasPrice:      1,
+		ChainID:       types.CurrentChainID,
+		GasCoin:       types.GetBaseCoinID(),
+		Type:          transaction.TypeDelegate,
+		Data:          encodedData,
+		SignatureType: transaction.SigTypeSingle,
+	}
+	nonce++
+
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	txBytes, _ = tx.Serialize()
+	res, err = tmCli.BroadcastTxSync(txBytes)
+	if err != nil {
+		t.Fatalf("Failed: %s", err.Error())
+	}
+	if res.Code != 0 {
+		t.Fatalf("CheckTx code is not 0: %d", res.Code)
+	}
+
+	time.Sleep(time.Second)
+
+	blocks, err := tmCli.Subscribe(context.TODO(), "test-client", "tm.event = 'NewBlock'")
+	if err != nil {
+		panic(err)
+	}
+
+	defer func() {
+		err = tmCli.UnsubscribeAll(context.TODO(), "test-client")
+		if err != nil {
+			panic(err)
+		}
+	}()
+	for {
+		select {
+		case block := <-blocks:
+			if block.Data.(types2.EventDataNewBlock).Block.Height < 150 {
+				continue
+			}
+
+			return
+		case <-time.After(10 * time.Second):
+			t.Fatalf("Timeout waiting for the block")
+		}
+	}
+}
+
 func getGenesis() (*types2.GenesisDoc, error) {
 	appHash := [32]byte{}
 

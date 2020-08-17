@@ -347,3 +347,41 @@ func (ChangeOwnerDataResource) Transform(txData interface{}, context *state.Chec
 		NewOwner: data.NewOwner,
 	}
 }
+
+// TxType 0x12
+
+type EditMultisigOwnersResource struct {
+	MultisigAddress types.Address   `json:"multisig_address"`
+	Weights         []uint32        `json:"weight"`
+	Addresses       []types.Address `json:"addresses"`
+}
+
+func (EditMultisigOwnersResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
+	data := txData.(*transaction.EditMultisigOwnersData)
+
+	resource := EditMultisigOwnersResource{
+		MultisigAddress: data.MultisigAddress,
+		Addresses:       data.Addresses,
+	}
+
+	resource.Weights = make([]uint32, 0, len(data.Weights))
+	for _, weight := range data.Weights {
+		resource.Weights = append(resource.Weights, uint32(weight))
+	}
+
+	return resource
+}
+
+// TxType 0x13
+
+type PriceVoteResource struct {
+	Price uint32 `json:"price"`
+}
+
+func (PriceVoteResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
+	data := txData.(*transaction.PriceVoteData)
+
+	return PriceVoteResource{
+		Price: uint32(data.Price),
+	}
+}

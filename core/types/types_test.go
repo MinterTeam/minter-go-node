@@ -180,6 +180,7 @@ func TestAppState(t *testing.T) {
 		},
 		Coins: []Coin{
 			{
+				ID:      GetBaseCoinID(),
 				Name:    "ASD",
 				Symbol:  GetBaseCoin(),
 				Volume:  big.NewInt(1).String(),

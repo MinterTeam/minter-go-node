@@ -19,6 +19,7 @@ import (
 	legacyCoins "github.com/MinterTeam/minter-go-node/core/state/legacy/coins"
 	legacyFrozenfunds "github.com/MinterTeam/minter-go-node/core/state/legacy/frozenfunds"
 	"github.com/MinterTeam/minter-go-node/core/state/validators"
+	"github.com/MinterTeam/minter-go-node/core/state/waitlist"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/tree"
@@ -44,6 +45,10 @@ func (cs *CheckState) isValue_State() {}
 
 func (cs *CheckState) Lock() {
 	cs.state.lock.Lock()
+}
+
+func (cs *CheckState) Export(height uint64) types.AppState {
+	return cs.state.Export(height)
 }
 
 func (cs *CheckState) Unlock() {
@@ -81,6 +86,9 @@ func (cs *CheckState) Coins() coins.RCoins {
 }
 func (cs *CheckState) Checks() checks.RChecks {
 	return cs.state.Checks
+}
+func (cs *CheckState) Watchlist() waitlist.RWaitList {
+	return cs.state.Waitlist
 }
 func (cs *CheckState) Tree() tree.ReadOnlyTree {
 	return cs.state.Tree()
@@ -146,6 +154,7 @@ type State struct {
 	Coins       *coins.Coins
 	Checks      *checks.Checks
 	Checker     *checker.Checker
+	Waitlist    *waitlist.WaitList
 
 	db             db.DB
 	events         eventsdb.IEventsDB
@@ -176,7 +185,7 @@ func NewState(height uint64, db db.DB, events eventsdb.IEventsDB, cacheSize int,
 func NewCheckStateAtHeight(height uint64, db db.DB) (*CheckState, error) {
 	iavlTree := tree.NewImmutableTree(height, db)
 
-	return newCheckStateForTree(iavlTree, nil, nil, 0)
+	return newCheckStateForTree(iavlTree, nil, db, 0)
 }
 
 func (s *State) Tree() tree.MTree {
@@ -255,6 +264,10 @@ func (s *State) Commit() ([]byte, error) {
 		return nil, err
 	}
 
+	if err := s.Waitlist.Commit(); err != nil {
+		return nil, err
+	}
+
 	hash, version, err := s.tree.SaveVersion()
 	if err != nil {
 		return hash, err
@@ -276,7 +289,7 @@ func (s *State) Import(state types.AppState) error {
 
 	for _, a := range state.Accounts {
 		if a.MultisigData != nil {
-			s.Accounts.CreateMultisig(a.MultisigData.Weights, a.MultisigData.Addresses, a.MultisigData.Threshold, 1)
+			s.Accounts.CreateMultisig(a.MultisigData.Weights, a.MultisigData.Addresses, a.MultisigData.Threshold, 1, a.Address)
 		}
 
 		s.Accounts.SetNonce(a.Address, a.Nonce)
@@ -406,6 +419,11 @@ func newStateForTree(iavlTree tree.MTree, events eventsdb.IEventsDB, db db.DB, k
 		return nil, err
 	}
 
+	waitlistState, err := waitlist.NewWaitList(stateBus, iavlTree)
+	if err != nil {
+		return nil, err
+	}
+
 	state := &State{
 		Validators:  validatorsState,
 		App:         appState,
@@ -416,7 +434,9 @@ func newStateForTree(iavlTree tree.MTree, events eventsdb.IEventsDB, db db.DB, k
 		Checks:      checksState,
 		Checker:     stateChecker,
 		Halts:       haltsState,
-		bus:         stateBus,
+		Waitlist:    waitlistState,
+
+		bus: stateBus,
 
 		db:             db,
 		events:         events,

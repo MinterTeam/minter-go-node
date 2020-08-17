@@ -38,32 +38,50 @@ func (data UnbondData) BasicCheck(tx *Transaction, context *state.CheckState) *R
 		}
 	}
 
+	errorInfo := map[string]string{
+		"pub_key":       data.PubKey.String(),
+		"unbound_value": data.Value.String(),
+	}
 	if !context.Candidates().Exists(data.PubKey) {
 		return &Response{
 			Code: code.CandidateNotFound,
 			Log:  fmt.Sprintf("Candidate with such public key not found"),
-			Info: EncodeError(map[string]string{
-				"pub_key": data.PubKey.String(),
-			}),
+			Info: EncodeError(errorInfo),
 		}
 	}
 
 	sender, _ := tx.Sender()
+
+	if waitlist := context.Watchlist().Get(sender, data.PubKey, data.Coin); waitlist != nil {
+		value := big.NewInt(0).Sub(data.Value, waitlist.Value)
+		if value.Sign() < 1 {
+			return nil
+		}
+		errorInfo["waitlist_value"] = waitlist.Value.String()
+		return &Response{
+			Code: code.InsufficientWaitList,
+			Log:  fmt.Sprintf("Insufficient amount at waitlist for sender account"),
+			Info: EncodeError(errorInfo),
+		}
+	}
+
 	stake := context.Candidates().GetStakeValueOfAddress(data.PubKey, sender, data.Coin)
 
 	if stake == nil {
 		return &Response{
 			Code: code.StakeNotFound,
-			Log:  fmt.Sprintf("Stake of current user not found")}
+			Log:  fmt.Sprintf("Stake of current user not found"),
+			Info: EncodeError(errorInfo),
+		}
 	}
 
 	if stake.Cmp(data.Value) < 0 {
+		errorInfo["stake_value"] = stake.String()
 		return &Response{
 			Code: code.InsufficientStake,
 			Log:  fmt.Sprintf("Insufficient stake for sender account"),
-			Info: EncodeError(map[string]string{
-				"pub_key": data.PubKey.String(),
-			})}
+			Info: EncodeError(errorInfo),
+		}
 	}
 
 	return nil
@@ -140,7 +158,17 @@ func (data UnbondData) Run(tx *Transaction, context state.Interface, rewardPool 
 		deliverState.Coins.SubVolume(tx.GasCoin, commission)
 
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
-		deliverState.Candidates.SubStake(sender, data.PubKey, data.Coin, data.Value)
+
+		if watchList := deliverState.Waitlist.Get(sender, data.PubKey, data.Coin); watchList != nil {
+			diffValue := big.NewInt(0).Sub(data.Value, watchList.Value)
+			deliverState.Waitlist.Delete(sender, data.PubKey, data.Coin)
+			if diffValue.Sign() == -1 {
+				deliverState.Waitlist.AddWaitList(sender, data.PubKey, data.Coin, big.NewInt(0).Neg(diffValue))
+			}
+		} else {
+			deliverState.Candidates.SubStake(sender, data.PubKey, data.Coin, data.Value)
+		}
+
 		deliverState.FrozenFunds.AddFund(unbondAtBlock, sender, data.PubKey, data.Coin, data.Value)
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}

@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
-	"github.com/MinterTeam/minter-go-node/core/transaction/encoder"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	_struct "github.com/golang/protobuf/ptypes/struct"
 	tmbytes "github.com/tendermint/tendermint/libs/bytes"
@@ -40,15 +39,15 @@ func (s *Service) Transaction(ctx context.Context, req *pb.TransactionRequest) (
 		return new(pb.TransactionResponse), status.Error(codes.Internal, err.Error())
 	}
 
-	txJsonEncoder := encoder.NewTxEncoderJSON(cState)
-	data, err := txJsonEncoder.Encode(decodedTx, tx)
+	cState.RLock()
+	defer cState.RUnlock()
+
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+		return new(pb.TransactionResponse), timeoutStatus.Err()
+	}
+	dataStruct, err := encode(decodedTx.GetDecodedData(), cState.Coins())
 	if err != nil {
 		return new(pb.TransactionResponse), status.Error(codes.Internal, err.Error())
-	}
-
-	dataStruct, err := encodeToStruct(data)
-	if err != nil {
-		return new(pb.TransactionResponse), status.Error(codes.FailedPrecondition, err.Error())
 	}
 
 	return &pb.TransactionResponse{

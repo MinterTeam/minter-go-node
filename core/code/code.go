@@ -46,6 +46,7 @@ const (
 	TooLowStake           uint32 = 409
 	PublicKeyInBlockList  uint32 = 410
 	NewPublicKeyIsBad     uint32 = 411
+	InsufficientWaitList  uint32 = 412
 
 	// check
 	CheckInvalidLock uint32 = 501
