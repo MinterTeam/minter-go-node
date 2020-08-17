@@ -36,10 +36,10 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 	}
 
 	response := &pb.BlockResponse{
-		Hash:              hex.EncodeToString(block.Block.Hash()),
-		Height:            fmt.Sprintf("%d", block.Block.Height),
-		Time:              block.Block.Time.Format(time.RFC3339Nano),
-		TransactionsCount: fmt.Sprintf("%d", len(block.Block.Txs)),
+		Hash:             hex.EncodeToString(block.Block.Hash()),
+		Height:           fmt.Sprintf("%d", block.Block.Height),
+		Time:             block.Block.Time.Format(time.RFC3339Nano),
+		TransactionCount: fmt.Sprintf("%d", len(block.Block.Txs)),
 	}
 
 	var totalValidators []*tmTypes.Validator
