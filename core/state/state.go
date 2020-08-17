@@ -285,7 +285,7 @@ func (s *State) Commit() ([]byte, error) {
 func (s *State) Import(state types.AppState) error {
 	s.App.SetMaxGas(state.MaxGas)
 	s.App.SetTotalSlashed(helpers.StringToBigInt(state.TotalSlashed))
-	s.App.SetCoinsCount(state.CoinsCount)
+	s.App.SetCoinsCount(uint32(len(state.Coins)))
 
 	for _, a := range state.Accounts {
 		if a.MultisigData != nil {
