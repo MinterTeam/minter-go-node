@@ -12,12 +12,12 @@ import (
 	"math/big"
 )
 
-type ChangeOwnerData struct {
+type ChangeCoinOwnerData struct {
 	Symbol   types.CoinSymbol
 	NewOwner types.Address
 }
 
-func (data ChangeOwnerData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data ChangeCoinOwnerData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
 	sender, _ := tx.Sender()
 
 	info := context.Coins().GetSymbolInfo(data.Symbol)
@@ -38,15 +38,15 @@ func (data ChangeOwnerData) BasicCheck(tx *Transaction, context *state.CheckStat
 	return nil
 }
 
-func (data ChangeOwnerData) String() string {
+func (data ChangeCoinOwnerData) String() string {
 	return fmt.Sprintf("CHANGE OWNER COIN symbol:%s new owner:%s", data.Symbol.String(), data.NewOwner.String())
 }
 
-func (data ChangeOwnerData) Gas() int64 {
+func (data ChangeCoinOwnerData) Gas() int64 {
 	return commissions.ChangeOwner
 }
 
-func (data ChangeOwnerData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
+func (data ChangeCoinOwnerData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
