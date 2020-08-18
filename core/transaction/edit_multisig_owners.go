@@ -13,32 +13,20 @@ import (
 )
 
 type EditMultisigOwnersData struct {
-	MultisigAddress types.Address
-	Threshold       uint
-	Weights         []uint
-	Addresses       []types.Address
+	Threshold uint
+	Weights   []uint
+	Addresses []types.Address
 }
 
 func (data EditMultisigOwnersData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
 	sender, _ := tx.Sender()
 
-	if sender != data.MultisigAddress {
-		return &Response{
-			Code: code.IncorrectMultiSignature,
-			Log:  "Sender is not multisig address",
-			Info: EncodeError(map[string]string{
-				"multisig_address": data.MultisigAddress.String(),
-				"sender":           sender.String(),
-			}),
-		}
-	}
-
-	if !context.Accounts().GetAccount(data.MultisigAddress).IsMultisig() {
+	if !context.Accounts().GetAccount(sender).IsMultisig() {
 		return &Response{
 			Code: code.MultisigNotExists,
 			Log:  "Multisig does not exists",
 			Info: EncodeError(map[string]string{
-				"multisig_address": data.MultisigAddress.String(),
+				"multisig_address": sender.String(),
 			}),
 		}
 	}
@@ -100,7 +88,7 @@ func (data EditMultisigOwnersData) BasicCheck(tx *Transaction, context *state.Ch
 }
 
 func (data EditMultisigOwnersData) String() string {
-	return fmt.Sprintf("EDIT MULTISIG OWNERS address: %x", data.MultisigAddress)
+	return "EDIT MULTISIG OWNERS"
 }
 
 func (data EditMultisigOwnersData) Gas() int64 {

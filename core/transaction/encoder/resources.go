@@ -361,16 +361,14 @@ func (EditMultisigOwnersResource) Transform(txData interface{}, context *state.C
 	data := txData.(*transaction.EditMultisigOwnersData)
 
 	resource := EditMultisigOwnersResource{
-		MultisigAddress: data.MultisigAddress,
-		Addresses:       data.Addresses,
+		Addresses: data.Addresses,
+		Threshold: strconv.Itoa(int(data.Threshold)),
 	}
 
 	resource.Weights = make([]string, 0, len(data.Weights))
 	for _, weight := range data.Weights {
 		resource.Weights = append(resource.Weights, strconv.Itoa(int(weight)))
 	}
-
-	resource.Threshold = strconv.Itoa(int(data.Threshold))
 
 	return resource
 }

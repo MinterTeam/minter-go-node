@@ -62,7 +62,7 @@ func (data CreateMultisigData) BasicCheck(tx *Transaction, context *state.CheckS
 }
 
 func (data CreateMultisigData) String() string {
-	return fmt.Sprintf("CREATE MULTISIG")
+	return "CREATE MULTISIG"
 }
 
 func (data CreateMultisigData) Gas() int64 {
