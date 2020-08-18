@@ -134,7 +134,7 @@ func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.
 			coinsBipValue.Add(coinsBipValue, balance)
 		}
 		res.BipValue = coinsBipValue.String()
-		res.TransactionsCount = fmt.Sprintf("%d", cState.Accounts().GetNonce(address))
+		res.TransactionCount = fmt.Sprintf("%d", cState.Accounts().GetNonce(address))
 
 		response.Addresses[addr] = &res
 	}

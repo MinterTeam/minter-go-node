@@ -227,7 +227,7 @@ func RunTx(context state.Interface,
 		response.GasWanted = coinGas
 	}
 
-	if tx.Type == TypeChangeOwner {
+	if tx.Type == TypeChangeCoinOwner {
 		response.GasUsed = coinGas
 		response.GasWanted = coinGas
 	}

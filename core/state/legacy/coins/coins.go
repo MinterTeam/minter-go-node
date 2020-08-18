@@ -142,7 +142,6 @@ func (c *Coins) Export(state *types.AppState) map[types.CoinSymbol]types.Coin {
 	}
 
 	state.Coins = coins
-	state.CoinsCount = uint32(len(state.Coins))
 
 	return coinsMap
 }

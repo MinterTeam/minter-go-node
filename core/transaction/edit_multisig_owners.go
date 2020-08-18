@@ -13,18 +13,73 @@ import (
 )
 
 type EditMultisigOwnersData struct {
-	MultisigAddress types.Address
-	Weights         []uint
-	Addresses       []types.Address
+	Threshold uint
+	Weights   []uint
+	Addresses []types.Address
 }
 
 func (data EditMultisigOwnersData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
-	if !context.Accounts().GetAccount(data.MultisigAddress).IsMultisig() {
+	sender, _ := tx.Sender()
+
+	if !context.Accounts().GetAccount(sender).IsMultisig() {
 		return &Response{
 			Code: code.MultisigNotExists,
 			Log:  "Multisig does not exists",
 			Info: EncodeError(map[string]string{
-				"multisig_address": data.MultisigAddress.String(),
+				"multisig_address": sender.String(),
+			}),
+		}
+	}
+
+	lenWeights := len(data.Weights)
+	if lenWeights > 32 {
+		return &Response{
+			Code: code.TooLargeOwnersList,
+			Log:  fmt.Sprintf("Owners list is limited to 32 items")}
+	}
+
+	lenAddresses := len(data.Addresses)
+	if lenAddresses != lenWeights {
+		return &Response{
+			Code: code.IncorrectWeights,
+			Log:  fmt.Sprintf("Incorrect multisig weights"),
+			Info: EncodeError(map[string]string{
+				"count_weights":   fmt.Sprintf("%d", lenWeights),
+				"count_addresses": fmt.Sprintf("%d", lenAddresses),
+			}),
+		}
+	}
+
+	for _, weight := range data.Weights {
+		if weight > 1023 {
+			return &Response{
+				Code: code.IncorrectWeights,
+				Log:  "Incorrect multisig weights"}
+		}
+	}
+
+	usedAddresses := map[types.Address]bool{}
+	for _, address := range data.Addresses {
+		if usedAddresses[address] {
+			return &Response{
+				Code: code.DuplicatedAddresses,
+				Log:  fmt.Sprintf("Duplicated multisig addresses")}
+		}
+
+		usedAddresses[address] = true
+	}
+
+	var totalWeight uint
+	for _, weight := range data.Weights {
+		totalWeight += weight
+	}
+	if data.Threshold > totalWeight {
+		return &Response{
+			Code: code.IncorrectWeights,
+			Log:  "Incorrect multisig weights",
+			Info: EncodeError(map[string]string{
+				"total_weight": fmt.Sprintf("%d", totalWeight),
+				"threshold":    fmt.Sprintf("%d", data.Threshold),
 			}),
 		}
 	}
@@ -33,7 +88,7 @@ func (data EditMultisigOwnersData) BasicCheck(tx *Transaction, context *state.Ch
 }
 
 func (data EditMultisigOwnersData) String() string {
-	return fmt.Sprintf("EDIT MULTISIG OWNERS address: %x", data.MultisigAddress)
+	return "EDIT MULTISIG OWNERS"
 }
 
 func (data EditMultisigOwnersData) Gas() int64 {
@@ -101,7 +156,7 @@ func (data EditMultisigOwnersData) Run(tx *Transaction, context state.Interface,
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 
-		deliverState.Accounts.EditMultisig(data.Weights, data.Addresses, sender)
+		deliverState.Accounts.EditMultisig(data.Threshold, data.Weights, data.Addresses, sender)
 	}
 
 	address := []byte(hex.EncodeToString(sender[:]))

@@ -334,15 +334,15 @@ func (RecreateCoinDataResource) Transform(txData interface{}, context *state.Che
 
 // TxType 0x11
 
-type ChangeOwnerDataResource struct {
+type ChangeCoinOwnerDataResource struct {
 	Symbol   types.CoinSymbol `json:"symbol"`
 	NewOwner types.Address    `json:"new_owner"`
 }
 
-func (ChangeOwnerDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
-	data := txData.(*transaction.ChangeOwnerData)
+func (ChangeCoinOwnerDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
+	data := txData.(*transaction.ChangeCoinOwnerData)
 
-	return ChangeOwnerDataResource{
+	return ChangeCoinOwnerDataResource{
 		Symbol:   data.Symbol,
 		NewOwner: data.NewOwner,
 	}
@@ -352,7 +352,8 @@ func (ChangeOwnerDataResource) Transform(txData interface{}, context *state.Chec
 
 type EditMultisigOwnersResource struct {
 	MultisigAddress types.Address   `json:"multisig_address"`
-	Weights         []uint32        `json:"weight"`
+	Threshold       string          `json:"threshold"`
+	Weights         []string        `json:"weights"`
 	Addresses       []types.Address `json:"addresses"`
 }
 
@@ -360,13 +361,13 @@ func (EditMultisigOwnersResource) Transform(txData interface{}, context *state.C
 	data := txData.(*transaction.EditMultisigOwnersData)
 
 	resource := EditMultisigOwnersResource{
-		MultisigAddress: data.MultisigAddress,
-		Addresses:       data.Addresses,
+		Addresses: data.Addresses,
+		Threshold: strconv.Itoa(int(data.Threshold)),
 	}
 
-	resource.Weights = make([]uint32, 0, len(data.Weights))
+	resource.Weights = make([]string, 0, len(data.Weights))
 	for _, weight := range data.Weights {
-		resource.Weights = append(resource.Weights, uint32(weight))
+		resource.Weights = append(resource.Weights, strconv.Itoa(int(weight)))
 	}
 
 	return resource
