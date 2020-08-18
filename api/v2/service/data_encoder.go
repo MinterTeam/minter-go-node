@@ -30,8 +30,8 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 			},
 			MaximumValueToSell: d.MaximumValueToSell.String(),
 		}
-	case *transaction.ChangeOwnerData:
-		d := data.(*transaction.ChangeOwnerData)
+	case *transaction.ChangeCoinOwnerData:
+		d := data.(*transaction.ChangeCoinOwnerData)
 		m = &pb.ChangeCoinOwnerData{
 			Symbol:   d.Symbol.String(),
 			NewOwner: d.NewOwner.String(),

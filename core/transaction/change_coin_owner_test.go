@@ -32,7 +32,7 @@ func TestChangeOwnerTx(t *testing.T) {
 	gasCoin := types.GetBaseCoinID()
 	cState.Accounts.AddBalance(addr, gasCoin, helpers.BipToPip(big.NewInt(10000)))
 
-	data := ChangeOwnerData{
+	data := ChangeCoinOwnerData{
 		Symbol:   getTestCoinSymbol(),
 		NewOwner: newOwner,
 	}
@@ -81,7 +81,7 @@ func TestChangeOwnerTxWithWrongOwner(t *testing.T) {
 
 	createTestCoinWithOwner(cState, newOwner)
 
-	data := ChangeOwnerData{
+	data := ChangeCoinOwnerData{
 		Symbol:   getTestCoinSymbol(),
 		NewOwner: newOwner,
 	}
@@ -111,7 +111,7 @@ func TestChangeOwnerTxWithWrongSymbol(t *testing.T) {
 
 	createTestCoinWithOwner(cState, addr)
 
-	data := ChangeOwnerData{
+	data := ChangeCoinOwnerData{
 		Symbol:   types.StrToCoinSymbol("UNKNOWN"),
 		NewOwner: newOwner,
 	}
@@ -127,7 +127,7 @@ func TestChangeOwnerTxWithWrongSymbol(t *testing.T) {
 	}
 }
 
-func makeTestChangeOwnerTx(data ChangeOwnerData, privateKey *ecdsa.PrivateKey) ([]byte, error) {
+func makeTestChangeOwnerTx(data ChangeCoinOwnerData, privateKey *ecdsa.PrivateKey) ([]byte, error) {
 	encodedData, err := rlp.EncodeToBytes(data)
 	if err != nil {
 		return nil, err
@@ -138,7 +138,7 @@ func makeTestChangeOwnerTx(data ChangeOwnerData, privateKey *ecdsa.PrivateKey) (
 		GasPrice:      1,
 		ChainID:       types.CurrentChainID,
 		GasCoin:       types.GetBaseCoinID(),
-		Type:          TypeChangeOwner,
+		Type:          TypeChangeCoinOwner,
 		Data:          encodedData,
 		SignatureType: SigTypeSingle,
 	}

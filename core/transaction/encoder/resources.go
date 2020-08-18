@@ -334,15 +334,15 @@ func (RecreateCoinDataResource) Transform(txData interface{}, context *state.Che
 
 // TxType 0x11
 
-type ChangeOwnerDataResource struct {
+type ChangeCoinOwnerDataResource struct {
 	Symbol   types.CoinSymbol `json:"symbol"`
 	NewOwner types.Address    `json:"new_owner"`
 }
 
-func (ChangeOwnerDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
-	data := txData.(*transaction.ChangeOwnerData)
+func (ChangeCoinOwnerDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
+	data := txData.(*transaction.ChangeCoinOwnerData)
 
-	return ChangeOwnerDataResource{
+	return ChangeCoinOwnerDataResource{
 		Symbol:   data.Symbol,
 		NewOwner: data.NewOwner,
 	}
