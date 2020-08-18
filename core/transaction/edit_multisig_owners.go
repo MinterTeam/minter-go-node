@@ -25,7 +25,7 @@ func (data EditMultisigOwnersData) BasicCheck(tx *Transaction, context *state.Ch
 	if sender != data.MultisigAddress {
 		return &Response{
 			Code: code.IncorrectMultiSignature,
-			Log:  "Sender is not multisig adress",
+			Log:  "Sender is not multisig address",
 			Info: EncodeError(map[string]string{
 				"multisig_address": data.MultisigAddress.String(),
 				"sender":           sender.String(),
