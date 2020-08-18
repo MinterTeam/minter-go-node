@@ -32,7 +32,7 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 		}
 	case *transaction.ChangeOwnerData:
 		d := data.(*transaction.ChangeOwnerData)
-		m = &pb.ChangeOwnerData{
+		m = &pb.ChangeCoinOwnerData{
 			Symbol:   d.Symbol.String(),
 			NewOwner: d.NewOwner.String(),
 		}
@@ -108,7 +108,8 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 		}
 		m = &pb.EditMultisigOwnersData{
 			MultisigAddress: d.MultisigAddress.String(),
-			Weight:          weights,
+			Threshold:       strconv.Itoa(int(d.Threshold)),
+			Weights:         weights,
 			Addresses:       addresses,
 		}
 	case *transaction.MultisendData:
