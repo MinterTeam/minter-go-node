@@ -49,7 +49,7 @@ var resourcesConfig = map[transaction.TxType]TxDataResource{
 	transaction.TypeEditCandidate:       new(EditCandidateDataResource),
 	transaction.TypeSetHaltBlock:        new(SetHaltBlockDataResource),
 	transaction.TypeRecreateCoin:        new(RecreateCoinDataResource),
-	transaction.TypeChangeOwner:         new(ChangeCoinOwnerDataResource),
+	transaction.TypeChangeCoinOwner:         new(ChangeCoinOwnerDataResource),
 	transaction.TypeEditMultisigOwner:   new(EditMultisigOwnersResource),
 	transaction.TypePriceVote:           new(PriceVoteResource),
 }

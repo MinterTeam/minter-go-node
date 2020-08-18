@@ -35,7 +35,7 @@ const (
 	TypeEditCandidate       TxType = 0x0E
 	TypeSetHaltBlock        TxType = 0x0F
 	TypeRecreateCoin        TxType = 0x10
-	TypeChangeOwner         TxType = 0x11
+	TypeChangeCoinOwner     TxType = 0x11
 	TypeEditMultisigOwner   TxType = 0x12
 	TypePriceVote           TxType = 0x13
 

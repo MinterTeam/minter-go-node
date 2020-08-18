@@ -138,7 +138,7 @@ func makeTestChangeOwnerTx(data ChangeCoinOwnerData, privateKey *ecdsa.PrivateKe
 		GasPrice:      1,
 		ChainID:       types.CurrentChainID,
 		GasCoin:       types.GetBaseCoinID(),
-		Type:          TypeChangeOwner,
+		Type:          TypeChangeCoinOwner,
 		Data:          encodedData,
 		SignatureType: SigTypeSingle,
 	}
