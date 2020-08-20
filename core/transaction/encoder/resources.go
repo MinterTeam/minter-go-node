@@ -313,6 +313,7 @@ func (SetHaltBlockDataResource) Transform(txData interface{}, context *state.Che
 // TxType 0x10
 
 type RecreateCoinDataResource struct {
+	Name                 string           `json:"name"`
 	Symbol               types.CoinSymbol `json:"symbol"`
 	InitialAmount        string           `json:"initial_amount"`
 	InitialReserve       string           `json:"initial_reserve"`
@@ -324,6 +325,7 @@ func (RecreateCoinDataResource) Transform(txData interface{}, context *state.Che
 	data := txData.(*transaction.RecreateCoinData)
 
 	return RecreateCoinDataResource{
+		Name:                 data.Name,
 		Symbol:               data.Symbol,
 		InitialAmount:        data.InitialAmount.String(),
 		InitialReserve:       data.InitialReserve.String(),
