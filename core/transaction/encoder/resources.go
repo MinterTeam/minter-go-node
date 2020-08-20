@@ -354,7 +354,8 @@ func (ChangeCoinOwnerDataResource) Transform(txData interface{}, context *state.
 
 type EditMultisigOwnersResource struct {
 	MultisigAddress types.Address   `json:"multisig_address"`
-	Weights         []uint32        `json:"weight"`
+	Threshold       string          `json:"threshold"`
+	Weights         []string        `json:"weights"`
 	Addresses       []types.Address `json:"addresses"`
 }
 
@@ -362,13 +363,13 @@ func (EditMultisigOwnersResource) Transform(txData interface{}, context *state.C
 	data := txData.(*transaction.EditMultisigOwnersData)
 
 	resource := EditMultisigOwnersResource{
-		MultisigAddress: data.MultisigAddress,
-		Addresses:       data.Addresses,
+		Addresses: data.Addresses,
+		Threshold: strconv.Itoa(int(data.Threshold)),
 	}
 
-	resource.Weights = make([]uint32, 0, len(data.Weights))
+	resource.Weights = make([]string, 0, len(data.Weights))
 	for _, weight := range data.Weights {
-		resource.Weights = append(resource.Weights, uint32(weight))
+		resource.Weights = append(resource.Weights, strconv.Itoa(int(weight)))
 	}
 
 	return resource

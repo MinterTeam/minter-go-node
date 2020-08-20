@@ -24,7 +24,7 @@ func (data CreateMultisigData) BasicCheck(tx *Transaction, context *state.CheckS
 	if lenWeights > 32 {
 		return &Response{
 			Code: code.TooLargeOwnersList,
-			Log:  fmt.Sprintf("Owners list is limited to 32 items")}
+			Log:  "Owners list is limited to 32 items"}
 	}
 
 	lenAddresses := len(data.Addresses)
@@ -43,7 +43,7 @@ func (data CreateMultisigData) BasicCheck(tx *Transaction, context *state.CheckS
 		if weight > 1023 {
 			return &Response{
 				Code: code.IncorrectWeights,
-				Log:  fmt.Sprintf("Incorrect multisig weights")}
+				Log:  "Incorrect multisig weights"}
 		}
 	}
 
@@ -52,7 +52,7 @@ func (data CreateMultisigData) BasicCheck(tx *Transaction, context *state.CheckS
 		if usedAddresses[address] {
 			return &Response{
 				Code: code.DuplicatedAddresses,
-				Log:  fmt.Sprintf("Duplicated multisig addresses")}
+				Log:  "Duplicated multisig addresses"}
 		}
 
 		usedAddresses[address] = true
@@ -62,7 +62,7 @@ func (data CreateMultisigData) BasicCheck(tx *Transaction, context *state.CheckS
 }
 
 func (data CreateMultisigData) String() string {
-	return fmt.Sprintf("CREATE MULTISIG")
+	return "CREATE MULTISIG"
 }
 
 func (data CreateMultisigData) Gas() int64 {
