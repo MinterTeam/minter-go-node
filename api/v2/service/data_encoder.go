@@ -135,7 +135,6 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 	case *transaction.RecreateCoinData:
 		d := data.(*transaction.RecreateCoinData)
 		m = &pb.RecreateCoinData{
-			Name:                 d.Name,
 			Symbol:               d.Symbol.String(),
 			InitialAmount:        d.InitialAmount.String(),
 			InitialReserve:       d.InitialReserve.String(),
