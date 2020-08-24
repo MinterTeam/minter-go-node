@@ -74,8 +74,13 @@ func (wl *WaitList) Get(address types.Address, pubkey types.Pubkey, coin types.C
 		return nil
 	}
 
+	candidate := wl.bus.Candidates().GetCandidate(pubkey)
+	if candidate == nil {
+		log.Panicf("Candidate not found: %s", pubkey.String())
+	}
+
 	for _, item := range waitlist.List {
-		if item.PublicKey == pubkey && item.Coin == coin {
+		if item.CandidateId == candidate.ID && item.Coin == coin {
 			return &item
 		}
 	}
@@ -89,9 +94,14 @@ func (wl *WaitList) GetByAddressAndPubKey(address types.Address, pubkey types.Pu
 		return nil
 	}
 
+	candidate := wl.bus.Candidates().GetCandidate(pubkey)
+	if candidate == nil {
+		log.Panicf("Candidate not found: %s", pubkey.String())
+	}
+
 	items := make([]Item, 0, len(waitlist.List))
 	for i, item := range waitlist.List {
-		if item.PublicKey == pubkey {
+		if item.CandidateId == candidate.ID {
 			items[i] = item
 		}
 	}
@@ -105,7 +115,13 @@ func (wl *WaitList) GetByAddressAndPubKey(address types.Address, pubkey types.Pu
 
 func (wl *WaitList) AddWaitList(address types.Address, pubkey types.Pubkey, coin types.CoinID, value *big.Int) {
 	w := wl.getOrNew(address)
-	w.AddToList(pubkey, coin, value)
+
+	candidate := wl.bus.Candidates().GetCandidate(pubkey)
+	if candidate == nil {
+		log.Panicf("Candidate not found: %s", pubkey.String())
+	}
+
+	w.AddToList(candidate.ID, coin, value)
 	wl.setToMap(address, w)
 	w.markDirty(address)
 }
@@ -116,9 +132,14 @@ func (wl *WaitList) Delete(address types.Address, pubkey types.Pubkey, coin type
 		log.Panicf("Waitlist not found for %s", address.String())
 	}
 
+	candidate := wl.bus.Candidates().GetCandidate(pubkey)
+	if candidate == nil {
+		log.Panicf("Candidate not found: %s", pubkey.String())
+	}
+
 	items := make([]Item, 0, len(w.List))
 	for _, item := range w.List {
-		if item.PublicKey != pubkey && item.Coin != coin {
+		if item.CandidateId != candidate.ID && item.Coin != coin {
 			items = append(items, item)
 		}
 	}

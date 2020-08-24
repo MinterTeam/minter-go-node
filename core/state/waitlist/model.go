@@ -6,9 +6,9 @@ import (
 )
 
 type Item struct {
-	PublicKey types.Pubkey
-	Coin      types.CoinID
-	Value     *big.Int
+	CandidateId uint32
+	Coin        types.CoinID
+	Value       *big.Int
 }
 
 type Model struct {
@@ -18,19 +18,19 @@ type Model struct {
 	markDirty func(address types.Address)
 }
 
-func (m *Model) AddToList(publicKey types.Pubkey, coin types.CoinID, value *big.Int) {
+func (m *Model) AddToList(candidateId uint32, coin types.CoinID, value *big.Int) {
 	m.List = append(m.List, Item{
-		PublicKey: publicKey,
-		Coin:      coin,
-		Value:     value,
+		CandidateId: candidateId,
+		Coin:        coin,
+		Value:       value,
 	})
 }
 
-func (m *Model) GetValue(pubkey types.Pubkey, coin types.CoinID) *big.Int {
+func (m *Model) GetValue(candidateId uint32, coin types.CoinID) *big.Int {
 	value := big.NewInt(0)
 
 	for _, item := range m.List {
-		if item.PublicKey == pubkey && item.Coin == coin {
+		if item.CandidateId == candidateId && item.Coin == coin {
 			value.Add(value, item.Value)
 		}
 	}
