@@ -18,7 +18,7 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 	switch data.(type) {
 	case *transaction.BuyCoinData:
 		d := data.(*transaction.BuyCoinData)
-		m = &pb.BuyCoin{
+		m = &pb.BuyCoinData{
 			CoinToBuy: &pb.Coin{
 				Id:     d.CoinToBuy.String(),
 				Symbol: coins.GetCoin(d.CoinToBuy).Symbol().String(),
