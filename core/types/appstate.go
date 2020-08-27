@@ -204,7 +204,7 @@ func (s *AppState) Verify() error {
 
 type Validator struct {
 	TotalBipStake string    `json:"total_bip_stake"`
-	PubKey        Pubkey    `json:"pub_key"`
+	PubKey        Pubkey    `json:"public_key"`
 	AccumReward   string    `json:"accum_reward"`
 	AbsentTimes   *BitArray `json:"absent_times"`
 }
@@ -215,7 +215,7 @@ type Candidate struct {
 	OwnerAddress   Address `json:"owner_address"`
 	ControlAddress Address `json:"control_address"`
 	TotalBipStake  string  `json:"total_bip_stake"`
-	PubKey         Pubkey  `json:"pub_key"`
+	PubKey         Pubkey  `json:"public_key"`
 	Commission     uint    `json:"commission"`
 	Stakes         []Stake `json:"stakes"`
 	Updates        []Stake `json:"updates"`
