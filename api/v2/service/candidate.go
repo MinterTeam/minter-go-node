@@ -50,12 +50,13 @@ func (s *Service) Candidate(ctx context.Context, req *pb.CandidateRequest) (*pb.
 
 func makeResponseCandidate(state *state.CheckState, c *candidates.Candidate, includeStakes bool) *pb.CandidateResponse {
 	candidate := &pb.CandidateResponse{
-		RewardAddress: c.RewardAddress.String(),
-		OwnerAddress:  c.OwnerAddress.String(),
-		TotalStake:    state.Candidates().GetTotalStake(c.PubKey).String(),
-		PublicKey:     c.PubKey.String(),
-		Commission:    fmt.Sprintf("%d", c.Commission),
-		Status:        fmt.Sprintf("%d", c.Status),
+		RewardAddress:  c.RewardAddress.String(),
+		OwnerAddress:   c.OwnerAddress.String(),
+		ControlAddress: c.ControlAddress.String(),
+		TotalStake:     state.Candidates().GetTotalStake(c.PubKey).String(),
+		PublicKey:      c.PubKey.String(),
+		Commission:     fmt.Sprintf("%d", c.Commission),
+		Status:         fmt.Sprintf("%d", c.Status),
 	}
 
 	if includeStakes {
