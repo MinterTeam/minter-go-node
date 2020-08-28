@@ -730,6 +730,10 @@ func (c *Candidates) calculateBipValue(coinSymbol types.CoinSymbol, amount *big.
 		return big.NewInt(0).Set(amount)
 	}
 
+	if amount.Cmp(big.NewInt(0)) == 0 {
+		return big.NewInt(0)
+	}
+
 	totalAmount := big.NewInt(0)
 	if includeSelf {
 		totalAmount.Set(amount)
