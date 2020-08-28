@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.8
+
+BUG FIXES
+
+- [core] Handle coins with 0-total-valued stakes
+
 ## 1.1.7
 
 IMPROVEMENT
