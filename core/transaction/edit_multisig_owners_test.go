@@ -35,9 +35,9 @@ func TestEditMultisigOwnersTx(t *testing.T) {
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(initialBalance))
 
 	data := EditMultisigOwnersData{
-		Threshold:       3,
-		Weights:         []uint{2, 1, 2},
-		Addresses:       []types.Address{addr1, addr2, addr4},
+		Threshold: 3,
+		Weights:   []uint{2, 1, 2},
+		Addresses: []types.Address{addr1, addr2, addr4},
 	}
 
 	encodedData, err := rlp.EncodeToBytes(data)

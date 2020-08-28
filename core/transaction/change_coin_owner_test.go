@@ -127,6 +127,36 @@ func TestChangeOwnerTxWithWrongSymbol(t *testing.T) {
 	}
 }
 
+func TestChangeOwnerTxWithInsufficientFunds(t *testing.T) {
+	cState, err := state.NewState(0, db.NewMemDB(), nil, 1, 1)
+	if err != nil {
+		t.Fatalf("Cannot load state. Error %s", err)
+	}
+
+	privateKey, _ := crypto.GenerateKey()
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+
+	newOwnerPrivateKey, _ := crypto.GenerateKey()
+	newOwner := crypto.PubkeyToAddress(newOwnerPrivateKey.PublicKey)
+
+	createTestCoinWithOwner(cState, addr)
+
+	data := ChangeCoinOwnerData{
+		Symbol:   getTestCoinSymbol(),
+		NewOwner: newOwner,
+	}
+
+	tx, err := makeTestChangeOwnerTx(data, privateKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, tx, big.NewInt(0), 500000, &sync.Map{}, 0)
+	if response.Code != code.InsufficientFunds {
+		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
+	}
+}
+
 func makeTestChangeOwnerTx(data ChangeCoinOwnerData, privateKey *ecdsa.PrivateKey) ([]byte, error) {
 	encodedData, err := rlp.EncodeToBytes(data)
 	if err != nil {
