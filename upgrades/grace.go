@@ -5,6 +5,7 @@ var gracePeriods = []*gracePeriod{
 	NewGracePeriod(UpgradeBlock1, UpgradeBlock1+120),
 	NewGracePeriod(UpgradeBlock2, UpgradeBlock2+120),
 	NewGracePeriod(UpgradeBlock3, UpgradeBlock3+120),
+	NewGracePeriod(UpgradeBlock4, UpgradeBlock4+120),
 }
 
 type gracePeriod struct {
