@@ -15,6 +15,7 @@ type AppState struct {
 	Accounts     []Account    `json:"accounts,omitempty"`
 	Coins        []Coin       `json:"coins,omitempty"`
 	FrozenFunds  []FrozenFund `json:"frozen_funds,omitempty"`
+	HaltBlocks   []HaltBlock  `json:"halt_blocks,omitempty"`
 	UsedChecks   []UsedCheck  `json:"used_checks,omitempty"`
 	MaxGas       uint64       `json:"max_gas"`
 	TotalSlashed string       `json:"total_slashed"`
@@ -260,4 +261,9 @@ type Multisig struct {
 	Weights   []uint    `json:"weights"`
 	Threshold uint      `json:"threshold"`
 	Addresses []Address `json:"addresses"`
+}
+
+type HaltBlock struct {
+	Height       uint64 `json:"height"`
+	CandidateKey Pubkey `json:"candidate_key"`
 }

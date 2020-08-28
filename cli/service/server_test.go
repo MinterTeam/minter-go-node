@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/minter"
-	rpc "github.com/tendermint/tendermint/rpc/client"
+	rpc "github.com/tendermint/tendermint/rpc/client/local"
 	"io/ioutil"
 	"path/filepath"
 	"testing"
@@ -27,7 +27,7 @@ func TestStartCLIServer(t *testing.T) {
 		}
 	}()
 	time.Sleep(time.Millisecond)
-	console, err := ConfigureManagerConsole(socketPath)
+	console, err := NewCLI(socketPath)
 	if err != nil {
 		t.Log(err)
 	}

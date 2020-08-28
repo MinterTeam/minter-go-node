@@ -1,38 +1,54 @@
 package service
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	compact_db "github.com/MinterTeam/events-db"
+	eventsdb "github.com/MinterTeam/minter-go-node/core/events"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
-	"github.com/golang/protobuf/jsonpb"
 	_struct "github.com/golang/protobuf/ptypes/struct"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
-func (s *Service) Events(_ context.Context, req *pb.EventsRequest) (*pb.EventsResponse, error) {
-	events := s.blockchain.GetEventsDB().LoadEvents(req.Height)
+func (s *Service) Events(ctx context.Context, req *pb.EventsRequest) (*pb.EventsResponse, error) {
+	height := uint32(req.Height)
+	events := s.blockchain.GetEventsDB().LoadEvents(height)
 	resultEvents := make([]*pb.EventsResponse_Event, 0, len(events))
 	for _, event := range events {
-		byteData, err := json.Marshal(event)
-		if err != nil {
-			return nil, err
+
+		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+			return new(pb.EventsResponse), timeoutStatus.Err()
 		}
 
-		var bb bytes.Buffer
-		bb.Write(byteData)
-		data := &_struct.Struct{Fields: make(map[string]*_struct.Value)}
-		if err := (&jsonpb.Unmarshaler{}).Unmarshal(&bb, data); err != nil {
-			return nil, err
+		var find = true
+		for _, s := range req.Search {
+			if event.AddressString() == s || event.ValidatorPubKeyString() == s {
+				find = true
+				break
+			}
+			find = false
+		}
+		if !find {
+			continue
+		}
+
+		b, err := json.Marshal(event)
+		if err != nil {
+			return new(pb.EventsResponse), status.Error(codes.Internal, err.Error())
+		}
+
+		data := &_struct.Struct{}
+		if err := data.UnmarshalJSON(b); err != nil {
+			return new(pb.EventsResponse), status.Error(codes.Internal, err.Error())
 		}
 
 		var t string
 		switch event.(type) {
-		case *compact_db.RewardEvent:
+		case *eventsdb.RewardEvent:
 			t = "minter/RewardEvent"
-		case *compact_db.SlashEvent:
+		case *eventsdb.SlashEvent:
 			t = "minter/SlashEvent"
-		case *compact_db.UnbondEvent:
+		case *eventsdb.UnbondEvent:
 			t = "minter/UnbondEvent"
 		default:
 			t = "Undefined Type"

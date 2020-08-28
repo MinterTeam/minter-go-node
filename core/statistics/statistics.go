@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/tendermint/tendermint/rpc/core"
-	rpctypes "github.com/tendermint/tendermint/rpc/lib/types"
+	rpctypes "github.com/tendermint/tendermint/rpc/jsonrpc/types"
 	"net"
 	"net/url"
 	"runtime"
@@ -77,8 +77,8 @@ type Data struct {
 		headerTimestamp time.Time
 	}
 	BlockEnd blockEnd
-	cS       chan StartRequest
-	cE       chan EndRequest
+	cS       chan *StartRequest
+	cE       chan *EndRequest
 	Speed    struct {
 		sync.RWMutex
 		startTime         time.Time
@@ -170,12 +170,12 @@ func New() *Data {
 		Api:      apiResponseTime{responseTime: apiVec},
 		Peer:     peerPing{ping: peerVec},
 		BlockEnd: blockEnd{HeightProm: height, DurationProm: lastBlockDuration, TimestampProm: timeBlock},
-		cS:       make(chan StartRequest),
-		cE:       make(chan EndRequest),
+		cS:       make(chan *StartRequest, 120),
+		cE:       make(chan *EndRequest, 120),
 	}
 }
 
-func (d *Data) PushStartBlock(req StartRequest) {
+func (d *Data) PushStartBlock(req *StartRequest) {
 	if d == nil {
 		return
 	}
@@ -218,7 +218,7 @@ func (d *Data) handleStartBlocks(ctx context.Context) {
 	}
 }
 
-func (d *Data) PushEndBlock(req EndRequest) {
+func (d *Data) PushEndBlock(req *EndRequest) {
 	if d == nil {
 		return
 	}
