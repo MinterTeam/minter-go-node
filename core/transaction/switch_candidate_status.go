@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
@@ -114,14 +113,6 @@ func (data SetCandidateOnData) Run(tx *Transaction, context state.Interface, rew
 
 type SetCandidateOffData struct {
 	PubKey types.Pubkey `json:"pub_key"`
-}
-
-func (data SetCandidateOffData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		PubKey string `json:"pub_key"`
-	}{
-		PubKey: data.PubKey.String(),
-	})
 }
 
 func (data SetCandidateOffData) GetPubKey() types.Pubkey {

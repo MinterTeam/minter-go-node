@@ -26,10 +26,10 @@ func (data DelegateData) BasicCheck(tx *Transaction, context *state.CheckState) 
 			Log:  "Incorrect tx data"}
 	}
 
-	if !context.Coins().Exists(tx.GasCoin) {
+	if !context.Coins().Exists(data.Coin) {
 		return &Response{
 			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin)}
+			Log:  fmt.Sprintf("Coin %d not exists", data.Coin)}
 	}
 
 	if data.Value.Cmp(types.Big0) < 1 {
