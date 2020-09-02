@@ -536,3 +536,53 @@ func TestUnbondTxToInsufficientAmountAtWaitlist(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientWaitList, response.Log)
 	}
 }
+
+func TestUnbondTxToGasCoinReserveUnderflow(t *testing.T) {
+	cState := getState()
+	pubkey := createTestCandidate(cState)
+	privateKey, _ := crypto.GenerateKey()
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+	coin := types.GetBaseCoinID()
+	value := helpers.BipToPip(big.NewInt(100))
+
+	cState.Candidates.Delegate(addr, pubkey, coin, value, big.NewInt(0))
+	cState.Candidates.RecalculateStakes(109000)
+
+	data := UnbondData{
+		PubKey: pubkey,
+		Coin:   coin,
+		Value:  value,
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	gasCoin := createTestCoin(cState)
+	cState.Coins.SubReserve(gasCoin, helpers.BipToPip(big.NewInt(90000)))
+
+	tx := Transaction{
+		Nonce:         1,
+		GasPrice:      1,
+		ChainID:       types.CurrentChainID,
+		GasCoin:       gasCoin,
+		Type:          TypeUnbond,
+		Data:          encodedData,
+		SignatureType: SigTypeSingle,
+	}
+
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.CoinReserveUnderflow {
+		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveUnderflow, response.Log)
+	}
+}

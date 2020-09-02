@@ -312,3 +312,52 @@ func TestSendTxWithCustomCoin(t *testing.T) {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", to.String(), targetTestBalance, testBalance)
 	}
 }
+
+func TestSendTxToGasCoinReserveUnderflow(t *testing.T) {
+	cState := getState()
+
+	privateKey, _ := crypto.GenerateKey()
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+	coin := createTestCoin(cState)
+
+	cState.Coins.SubReserve(coin, helpers.BipToPip(big.NewInt(90000)))
+	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
+
+	value := helpers.BipToPip(big.NewInt(10))
+	to := types.Address([20]byte{1})
+
+	data := SendData{
+		Coin:  coin,
+		To:    to,
+		Value: value,
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := Transaction{
+		Nonce:         1,
+		GasPrice:      1,
+		ChainID:       types.CurrentChainID,
+		GasCoin:       coin,
+		Type:          TypeSend,
+		Data:          encodedData,
+		SignatureType: SigTypeSingle,
+	}
+
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.CoinReserveUnderflow {
+		t.Fatalf("Response code is not %d. Error: %s", code.CoinReserveUnderflow, response.Log)
+	}
+}

@@ -575,3 +575,164 @@ func TestCreateCoinWithInsufficientFundsForGas(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
 }
+
+func TestCreateCoinTxToGasCoinReserveUnderflow(t *testing.T) {
+	cState := getState()
+
+	privateKey, _ := crypto.GenerateKey()
+
+	customCoin := createTestCoin(cState)
+	cState.Coins.SubReserve(customCoin, helpers.BipToPip(big.NewInt(90000)))
+
+	toCreate := types.StrToCoinSymbol("ABCDEF")
+	reserve := helpers.BipToPip(big.NewInt(10000))
+	crr := uint(50)
+	name := "My Test Coin"
+
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+	cState.Accounts.AddBalance(addr, customCoin, helpers.BipToPip(big.NewInt(105)))
+	cState.Accounts.AddBalance(addr, types.GetBaseCoinID(), helpers.BipToPip(big.NewInt(10000)))
+	cState.Commit()
+
+	data := CreateCoinData{
+		Name:                 name,
+		Symbol:               toCreate,
+		InitialAmount:        helpers.BipToPip(big.NewInt(10)),
+		InitialReserve:       reserve,
+		ConstantReserveRatio: crr,
+		MaxSupply:            helpers.BipToPip(big.NewInt(100)),
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := Transaction{
+		Nonce:         1,
+		GasPrice:      1,
+		ChainID:       types.CurrentChainID,
+		GasCoin:       customCoin,
+		Type:          TypeCreateCoin,
+		Data:          encodedData,
+		SignatureType: SigTypeSingle,
+	}
+
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.CoinReserveUnderflow {
+		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveUnderflow, response.Log)
+	}
+}
+
+func TestCreateCoinToInsufficientFundsForGasCoin(t *testing.T) {
+	cState := getState()
+
+	privateKey, _ := crypto.GenerateKey()
+
+	toCreate := types.StrToCoinSymbol("ABCDEF")
+	reserve := helpers.BipToPip(big.NewInt(10000))
+	crr := uint(50)
+	name := "My Test Coin"
+
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+	cState.Accounts.AddBalance(addr, types.GetBaseCoinID(), helpers.BipToPip(big.NewInt(10000)))
+
+	data := CreateCoinData{
+		Name:                 name,
+		Symbol:               toCreate,
+		InitialAmount:        helpers.BipToPip(big.NewInt(10)),
+		InitialReserve:       reserve,
+		ConstantReserveRatio: crr,
+		MaxSupply:            helpers.BipToPip(big.NewInt(100)),
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := Transaction{
+		Nonce:         1,
+		GasPrice:      1,
+		ChainID:       types.CurrentChainID,
+		GasCoin:       types.GetBaseCoinID(),
+		Type:          TypeCreateCoin,
+		Data:          encodedData,
+		SignatureType: SigTypeSingle,
+	}
+
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.InsufficientFunds {
+		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
+	}
+}
+
+func TestCreateCoinToInsufficientFundsForInitialReserve(t *testing.T) {
+	cState := getState()
+
+	privateKey, _ := crypto.GenerateKey()
+
+	toCreate := types.StrToCoinSymbol("ABCDEF")
+	reserve := helpers.BipToPip(big.NewInt(11000))
+	crr := uint(50)
+	name := "My Test Coin"
+
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+	cState.Accounts.AddBalance(addr, types.GetBaseCoinID(), helpers.BipToPip(big.NewInt(10000)))
+
+	data := CreateCoinData{
+		Name:                 name,
+		Symbol:               toCreate,
+		InitialAmount:        helpers.BipToPip(big.NewInt(10)),
+		InitialReserve:       reserve,
+		ConstantReserveRatio: crr,
+		MaxSupply:            helpers.BipToPip(big.NewInt(100)),
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := Transaction{
+		Nonce:         1,
+		GasPrice:      1,
+		ChainID:       types.CurrentChainID,
+		GasCoin:       types.GetBaseCoinID(),
+		Type:          TypeCreateCoin,
+		Data:          encodedData,
+		SignatureType: SigTypeSingle,
+	}
+
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.InsufficientFunds {
+		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
+	}
+}

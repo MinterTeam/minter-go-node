@@ -401,3 +401,57 @@ func TestEditMultisigOwnersTxToInsufficientFunds(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
 }
+
+func TestEditMultisigOwnersTxToGasCoinReserveUnderflow(t *testing.T) {
+	cState := getState()
+
+	addr := types.Address{0}
+	privateKey1, _ := crypto.GenerateKey()
+	addr1 := crypto.PubkeyToAddress(privateKey1.PublicKey)
+	privateKey2, _ := crypto.GenerateKey()
+	addr2 := crypto.PubkeyToAddress(privateKey2.PublicKey)
+	privateKey3, _ := crypto.GenerateKey()
+	addr3 := crypto.PubkeyToAddress(privateKey3.PublicKey)
+
+	coin := createTestCoin(cState)
+	cState.Coins.SubReserve(coin, helpers.BipToPip(big.NewInt(90000)))
+
+	cState.Accounts.CreateMultisig([]uint{1, 2, 3}, []types.Address{addr1, addr2, addr3}, 3, 1, addr)
+
+	data := EditMultisigOwnersData{
+		Threshold: 3,
+		Weights:   []uint{1, 2, 3},
+		Addresses: []types.Address{addr1, addr2, addr3},
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := Transaction{
+		Nonce:         1,
+		GasPrice:      1,
+		ChainID:       types.CurrentChainID,
+		GasCoin:       coin,
+		Type:          TypeEditMultisigOwner,
+		Data:          encodedData,
+		SignatureType: SigTypeMulti,
+	}
+
+	tx.SetMultisigAddress(addr)
+
+	if err := tx.Sign(privateKey3); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.CoinReserveUnderflow {
+		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveUnderflow, response.Log)
+	}
+}
