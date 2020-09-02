@@ -15,7 +15,7 @@ type EstimateCoinBuyResponse struct {
 	Commission string `json:"commission"`
 }
 
-func EstimateCoinBuy(coinIdToSell uint32, coinIdToBuy uint32, valueToBuy *big.Int, height int) (*EstimateCoinBuyResponse, error) {
+func EstimateCoinBuy(coinIdToSell uint64, coinIdToBuy uint64, valueToBuy *big.Int, height int) (*EstimateCoinBuyResponse, error) {
 	cState, err := GetStateForHeight(height)
 	if err != nil {
 		return nil, err
