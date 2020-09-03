@@ -109,10 +109,10 @@ func (data CreateMultisigData) Run(tx *Transaction, context state.Interface, rew
 				Code: code.CoinReserveNotSufficient,
 				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", gasCoin.Reserve().String(), commissionInBaseCoin.String()),
 				Info: EncodeError(map[string]string{
-					"code":        strconv.Itoa(int(code.CoinReserveNotSufficient)),
-					"has_reserve": gasCoin.Reserve().String(),
-					"commission":  commissionInBaseCoin.String(),
-					"gas_coin":    gasCoin.GetFullSymbol(),
+					"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
+					"has_reserve":    gasCoin.Reserve().String(),
+					"required_value": commissionInBaseCoin.String(),
+					"coin":           gasCoin.GetFullSymbol(),
 				}),
 			}
 		}

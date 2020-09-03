@@ -46,9 +46,10 @@ func (data SendData) TotalSpend(tx *Transaction, context *state.CheckState) (Tot
 					coin.Reserve().String(),
 					commissionInBaseCoin.String()),
 				Info: EncodeError(map[string]string{
-					"code":     strconv.Itoa(int(code.CoinReserveNotSufficient)),
-					"has":      coin.Reserve().String(),
-					"required": commissionInBaseCoin.String(),
+					"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
+					"has_value":      coin.Reserve().String(),
+					"required_value": commissionInBaseCoin.String(),
+					"coin":           fmt.Sprintf("%s", types.GetBaseCoin()),
 				}),
 			}
 		}

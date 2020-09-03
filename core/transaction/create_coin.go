@@ -11,6 +11,7 @@ import (
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
 	"regexp"
+	"strconv"
 )
 
 const maxCoinNameBytes = 64
@@ -132,9 +133,10 @@ func (data CreateCoinData) Run(tx *Transaction, context state.Interface, rewardP
 				Code: code.CoinReserveNotSufficient,
 				Log:  fmt.Sprintf("Gas coin reserve balance is not sufficient for transaction. Has: %s %s, required %s %s", coin.Reserve().String(), types.GetBaseCoin(), commissionInBaseCoin.String(), types.GetBaseCoin()),
 				Info: EncodeError(map[string]string{
+					"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
 					"has_value":      coin.Reserve().String(),
 					"required_value": commissionInBaseCoin.String(),
-					"gas_coin":       fmt.Sprintf("%s", types.GetBaseCoin()),
+					"coin":           fmt.Sprintf("%s", types.GetBaseCoin()),
 				}),
 			}
 		}

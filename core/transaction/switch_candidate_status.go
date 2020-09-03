@@ -64,9 +64,9 @@ func (data SetCandidateOnData) Run(tx *Transaction, context state.Interface, rew
 				Code: code.CoinReserveNotSufficient,
 				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", gasCoin.Reserve().String(), commissionInBaseCoin.String()),
 				Info: EncodeError(map[string]string{
-					"has_reserve": gasCoin.Reserve().String(),
-					"commission":  commissionInBaseCoin.String(),
-					"gas_coin":    gasCoin.GetFullSymbol(),
+					"has_value":      gasCoin.Reserve().String(),
+					"required_value": commissionInBaseCoin.String(),
+					"coin":           gasCoin.GetFullSymbol(),
 				}),
 			}
 		}
@@ -166,9 +166,9 @@ func (data SetCandidateOffData) Run(tx *Transaction, context state.Interface, re
 				Code: code.CoinReserveNotSufficient,
 				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.Reserve().String(), commissionInBaseCoin.String()),
 				Info: EncodeError(map[string]string{
-					"has_reserve": coin.Reserve().String(),
-					"commission":  commissionInBaseCoin.String(),
-					"gas_coin":    coin.CName,
+					"has_value":      coin.Reserve().String(),
+					"required_value": commissionInBaseCoin.String(),
+					"coin":           coin.CName,
 				}),
 			}
 		}

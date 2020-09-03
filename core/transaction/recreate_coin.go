@@ -152,7 +152,7 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 					"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
 					"has_value":      gasCoin.Reserve().String(),
 					"required_value": commissionInBaseCoin.String(),
-					"gas_coin":       gasCoin.GetFullSymbol(),
+					"coin":           gasCoin.GetFullSymbol(),
 				}),
 			}
 		}

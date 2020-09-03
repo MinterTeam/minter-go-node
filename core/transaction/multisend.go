@@ -12,6 +12,7 @@ import (
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -97,9 +98,10 @@ func (data MultisendData) Run(tx *Transaction, context state.Interface, rewardPo
 				Code: code.CoinReserveNotSufficient,
 				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.Reserve().String(), commissionInBaseCoin.String()),
 				Info: EncodeError(map[string]string{
-					"has_reserve": coin.Reserve().String(),
-					"commission":  commissionInBaseCoin.String(),
-					"gas_coin":    coin.CName,
+					"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
+					"has_value":      coin.Reserve().String(),
+					"required_value": commissionInBaseCoin.String(),
+					"coin":           coin.CName,
 				}),
 			}
 		}

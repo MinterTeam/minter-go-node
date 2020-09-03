@@ -10,6 +10,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
+	"strconv"
 )
 
 type ChangeCoinOwnerData struct {
@@ -76,9 +77,10 @@ func (data ChangeCoinOwnerData) Run(tx *Transaction, context state.Interface, re
 				Code: code.CoinReserveNotSufficient,
 				Log:  fmt.Sprintf("Gas coin reserve balance is not sufficient for transaction. Has: %s %s, required %s %s", gasCoin.Reserve().String(), types.GetBaseCoin(), commissionInBaseCoin.String(), types.GetBaseCoin()),
 				Info: EncodeError(map[string]string{
+					"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
 					"has_value":      gasCoin.Reserve().String(),
 					"required_value": commissionInBaseCoin.String(),
-					"gas_coin":       fmt.Sprintf("%s", types.GetBaseCoin()),
+					"coin":           fmt.Sprintf("%s", types.GetBaseCoin()),
 				}),
 			}
 		}

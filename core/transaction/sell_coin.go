@@ -114,7 +114,7 @@ func (data SellCoinData) TotalSpend(tx *Transaction, context *state.CheckState) 
 						"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
 						"has_value":      coin.Reserve().String(),
 						"required_value": commissionInBaseCoin.String(),
-						"gas_coin":       fmt.Sprintf("%s", types.GetBaseCoin()),
+						"coin":           fmt.Sprintf("%s", types.GetBaseCoin()),
 					}),
 				}
 			}
@@ -163,10 +163,10 @@ func (data SellCoinData) TotalSpend(tx *Transaction, context *state.CheckState) 
 						commissionInBaseCoin.String(),
 						types.GetBaseCoin()),
 					Info: EncodeError(map[string]string{
-						"code":     strconv.Itoa(int(code.CoinReserveNotSufficient)),
-						"has":      coinFrom.Reserve().String(),
-						"required": commissionInBaseCoin.String(),
-						"gas_coin": fmt.Sprintf("%s", types.GetBaseCoin()),
+						"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
+						"has_value":      coinFrom.Reserve().String(),
+						"required_value": commissionInBaseCoin.String(),
+						"coin":           fmt.Sprintf("%s", types.GetBaseCoin()),
 					}),
 				}
 			}
@@ -250,7 +250,7 @@ func (data SellCoinData) TotalSpend(tx *Transaction, context *state.CheckState) 
 						"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
 						"has_value":      coin.Reserve().String(),
 						"required_value": commissionInBaseCoin.String(),
-						"gas_coin":       fmt.Sprintf("%s", types.GetBaseCoin()),
+						"coin":           fmt.Sprintf("%s", types.GetBaseCoin()),
 					}),
 				}
 			}

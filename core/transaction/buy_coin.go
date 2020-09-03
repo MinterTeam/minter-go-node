@@ -87,7 +87,7 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.CheckState) (
 						"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
 						"has_value":      coin.Reserve().String(),
 						"required_value": commissionInBaseCoin.String(),
-						"gas_coin":       fmt.Sprintf("%s", types.GetBaseCoin()),
+						"coin":           fmt.Sprintf("%s", types.GetBaseCoin()),
 					}),
 				}
 			}
