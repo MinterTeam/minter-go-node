@@ -13,6 +13,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/crypto/sha3"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"math/big"
+	"strconv"
 )
 
 type TxType byte
@@ -304,6 +305,7 @@ func CheckForCoinSupplyOverflow(current *big.Int, delta *big.Int, max *big.Int) 
 			Code: code.CoinSupplyOverflow,
 			Log:  "coin supply overflow",
 			Info: EncodeError(map[string]string{
+				"code":    strconv.Itoa(int(code.CoinSupplyOverflow)),
 				"current": total.String(),
 				"delta":   delta.String(),
 				"max":     max.String(),
@@ -323,6 +325,7 @@ func CheckReserveUnderflow(m *coins.Model, delta *big.Int) *Response {
 			Code: code.CoinReserveUnderflow,
 			Log:  fmt.Sprintf("coin %s reserve is too small (%s, required at least %s)", m.GetFullSymbol(), m.Reserve().String(), min.String()),
 			Info: EncodeError(map[string]string{
+				"code":             strconv.Itoa(int(code.CoinReserveUnderflow)),
 				"coin":             m.Symbol().String(),
 				"coin_reserve":     m.Reserve().String(),
 				"min_coin_reserve": min.String(),
