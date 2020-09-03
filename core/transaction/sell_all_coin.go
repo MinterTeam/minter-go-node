@@ -84,7 +84,10 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.CheckStat
 				Code: code.InsufficientFunds,
 				Log:  fmt.Sprintf("Insufficient funds for sender account"),
 				Info: EncodeError(map[string]string{
-					"code": strconv.Itoa(int(code.InsufficientFunds)),
+					"code":         strconv.Itoa(int(code.InsufficientFunds)),
+					"sender":       sender.String(),
+					"coin":         coin.GetFullSymbol(),
+					"needed_value": commissionInBaseCoin.String(),
 				}),
 			}
 		}
@@ -110,7 +113,10 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.CheckStat
 				Code: code.InsufficientFunds,
 				Log:  fmt.Sprintf("Insufficient funds for sender account"),
 				Info: EncodeError(map[string]string{
-					"code": strconv.Itoa(int(code.InsufficientFunds)),
+					"code":         strconv.Itoa(int(code.InsufficientFunds)),
+					"sender":       sender.String(),
+					"coin":         coinFrom.GetFullSymbol(),
+					"needed_value": commissionInBaseCoin.String(),
 				}),
 			}
 		}

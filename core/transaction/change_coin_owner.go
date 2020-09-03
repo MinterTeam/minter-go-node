@@ -95,9 +95,10 @@ func (data ChangeCoinOwnerData) Run(tx *Transaction, context state.Interface, re
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission.String(), gasCoin.GetFullSymbol()),
 			Info: EncodeError(map[string]string{
+				"code":         strconv.Itoa(int(code.InsufficientFunds)),
 				"sender":       sender.String(),
 				"needed_value": commission.String(),
-				"gas_coin":     gasCoin.GetFullSymbol(),
+				"coin":         gasCoin.GetFullSymbol(),
 			}),
 		}
 	}

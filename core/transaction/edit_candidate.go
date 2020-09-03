@@ -103,7 +103,7 @@ func (data EditCandidateData) Run(tx *Transaction, context state.Interface, rewa
 				"code":         strconv.Itoa(int(code.InsufficientFunds)),
 				"sender":       sender.String(),
 				"needed_value": commission.String(),
-				"gas_coin":     gasCoin.GetFullSymbol(),
+				"coin":         gasCoin.GetFullSymbol(),
 			}),
 		}
 	}

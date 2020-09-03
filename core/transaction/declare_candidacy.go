@@ -166,7 +166,7 @@ func (data DeclareCandidacyData) Run(tx *Transaction, context state.Interface, r
 				"code":         strconv.Itoa(int(code.InsufficientFunds)),
 				"sender":       sender.String(),
 				"needed_value": commission.String(),
-				"gas_coin":     gasCoin.GetFullSymbol(),
+				"coin":         gasCoin.GetFullSymbol(),
 			}),
 		}
 	}
@@ -184,7 +184,7 @@ func (data DeclareCandidacyData) Run(tx *Transaction, context state.Interface, r
 					"code":         strconv.Itoa(int(code.InsufficientFunds)),
 					"sender":       sender.String(),
 					"needed_value": totalTxCost.String(),
-					"gas_coin":     gasCoin.GetFullSymbol(),
+					"coin":         gasCoin.GetFullSymbol(),
 				}),
 			}
 		}

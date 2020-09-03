@@ -151,7 +151,7 @@ func (data UnbondData) Run(tx *Transaction, context state.Interface, rewardPool 
 				"code":         strconv.Itoa(int(code.InsufficientFunds)),
 				"sender":       sender.String(),
 				"needed_value": commission.String(),
-				"gas_coin":     gasCoin.GetFullSymbol(),
+				"coin":         gasCoin.GetFullSymbol(),
 			}),
 		}
 	}

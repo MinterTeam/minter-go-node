@@ -229,10 +229,10 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 				Code: code.InsufficientFunds,
 				Log:  fmt.Sprintf("Insufficient funds for check issuer account: %s %s. Wanted %s %s", decodedCheck.Coin, checkSender.String(), totalTxCost.String(), coin.GetFullSymbol()),
 				Info: EncodeError(map[string]string{
-					"code":          strconv.Itoa(int(code.InsufficientFunds)),
-					"sender":        checkSender.String(),
-					"coin":          coin.GetFullSymbol(),
-					"total_tx_cost": totalTxCost.String(),
+					"code":         strconv.Itoa(int(code.InsufficientFunds)),
+					"sender":       checkSender.String(),
+					"coin":         coin.GetFullSymbol(),
+					"needed_value": totalTxCost.String(),
 				}),
 			}
 		}
@@ -242,10 +242,10 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 				Code: code.InsufficientFunds,
 				Log:  fmt.Sprintf("Insufficient funds for check issuer account: %s %s. Wanted %s %s", checkSender.String(), decodedCheck.Coin, decodedCheck.Value.String(), coin.GetFullSymbol()),
 				Info: EncodeError(map[string]string{
-					"code":   strconv.Itoa(int(code.InsufficientFunds)),
-					"sender": checkSender.String(),
-					"coin":   coin.GetFullSymbol(),
-					"value":  decodedCheck.Value.String(),
+					"code":         strconv.Itoa(int(code.InsufficientFunds)),
+					"sender":       checkSender.String(),
+					"coin":         coin.GetFullSymbol(),
+					"needed_value": decodedCheck.Value.String(),
 				}),
 			}
 		}
@@ -255,10 +255,10 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 				Code: code.InsufficientFunds,
 				Log:  fmt.Sprintf("Insufficient funds for check issuer account: %s %s. Wanted %s %s", checkSender.String(), decodedCheck.GasCoin, commission.String(), gasCoin.GetFullSymbol()),
 				Info: EncodeError(map[string]string{
-					"code":       strconv.Itoa(int(code.InsufficientFunds)),
-					"sender":     sender.String(),
-					"gas_coin":   gasCoin.GetFullSymbol(),
-					"commission": commission.String(),
+					"code":         strconv.Itoa(int(code.InsufficientFunds)),
+					"sender":       sender.String(),
+					"coin":         gasCoin.GetFullSymbol(),
+					"needed_value": commission.String(),
 				}),
 			}
 		}

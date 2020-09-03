@@ -11,6 +11,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
+	"strconv"
 )
 
 type SetCandidateOnData struct {
@@ -81,9 +82,10 @@ func (data SetCandidateOnData) Run(tx *Transaction, context state.Interface, rew
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, gasCoin.GetFullSymbol()),
 			Info: EncodeError(map[string]string{
+				"code":         strconv.Itoa(int(code.InsufficientFunds)),
 				"sender":       sender.String(),
 				"needed_value": commission.String(),
-				"gas_coin":     gasCoin.GetFullSymbol(),
+				"coin":         gasCoin.GetFullSymbol(),
 			}),
 		}
 	}
@@ -181,9 +183,10 @@ func (data SetCandidateOffData) Run(tx *Transaction, context state.Interface, re
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, tx.GasCoin),
 			Info: EncodeError(map[string]string{
+				"code":         strconv.Itoa(int(code.InsufficientFunds)),
 				"sender":       sender.String(),
 				"needed_value": commission.String(),
-				"gas_coin":     fmt.Sprintf("%s", tx.GasCoin),
+				"coin":         fmt.Sprintf("%s", tx.GasCoin),
 			}),
 		}
 	}
