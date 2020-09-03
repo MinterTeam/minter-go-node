@@ -38,19 +38,6 @@ func (data SendData) TotalSpend(tx *Transaction, context *state.CheckState) (Tot
 			return nil, nil, nil, errResp
 		}
 
-		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
-			return nil, nil, nil, &Response{
-				Code: code.CoinReserveNotSufficient,
-				Log: fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s",
-					coin.Reserve().String(),
-					commissionInBaseCoin.String()),
-				Info: EncodeError(map[string]string{
-					"has":      coin.Reserve().String(),
-					"required": commissionInBaseCoin.String(),
-				}),
-			}
-		}
-
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
 		conversions = append(conversions, Conversion{
 			FromCoin:    tx.GasCoin,
