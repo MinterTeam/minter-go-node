@@ -10,6 +10,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
+	"strconv"
 )
 
 type SendData struct {
@@ -45,6 +46,7 @@ func (data SendData) TotalSpend(tx *Transaction, context *state.CheckState) (Tot
 					coin.Reserve().String(),
 					commissionInBaseCoin.String()),
 				Info: EncodeError(map[string]string{
+					"code":     strconv.Itoa(int(code.CoinReserveNotSufficient)),
 					"has":      coin.Reserve().String(),
 					"required": commissionInBaseCoin.String(),
 				}),
@@ -70,7 +72,11 @@ func (data SendData) BasicCheck(tx *Transaction, context *state.CheckState) *Res
 	if data.Value == nil {
 		return &Response{
 			Code: code.DecodeError,
-			Log:  "Incorrect tx data"}
+			Log:  "Incorrect tx data",
+			Info: EncodeError(map[string]string{
+				"code": strconv.Itoa(int(code.CoinNotExists)),
+			}),
+		}
 	}
 
 	if !context.Coins().Exists(data.Coin) {
@@ -78,6 +84,7 @@ func (data SendData) BasicCheck(tx *Transaction, context *state.CheckState) *Res
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin %s not exists", data.Coin),
 			Info: EncodeError(map[string]string{
+				"code": strconv.Itoa(int(code.CoinNotExists)),
 				"coin": fmt.Sprintf("%s", data.Coin),
 			}),
 		}
@@ -125,6 +132,7 @@ func (data SendData) Run(tx *Transaction, context state.Interface, rewardPool *b
 					ts.Value.String(),
 					coin.GetFullSymbol()),
 				Info: EncodeError(map[string]string{
+					"code":         strconv.Itoa(int(code.InsufficientFunds)),
 					"sender":       sender.String(),
 					"needed_value": ts.Value.String(),
 					"coin":         coin.GetFullSymbol(),

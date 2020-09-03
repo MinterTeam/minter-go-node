@@ -10,6 +10,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
+	"strconv"
 )
 
 type BuyCoinData struct {
@@ -58,6 +59,7 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.CheckState) (
 					"You wanted to sell maximum %s, but currently you need to spend %s to complete tx",
 					data.MaximumValueToSell.String(), value.String()),
 				Info: EncodeError(map[string]string{
+					"code":                  strconv.Itoa(int(code.MaximumValueToSellReached)),
 					"maximum_value_to_sell": data.MaximumValueToSell.String(),
 					"needed_spend_value":    value.String(),
 				}),
@@ -82,6 +84,7 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.CheckState) (
 						commissionInBaseCoin.String(),
 						types.GetBaseCoin()),
 					Info: EncodeError(map[string]string{
+						"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
 						"has_value":      coin.Reserve().String(),
 						"required_value": commissionInBaseCoin.String(),
 						"gas_coin":       fmt.Sprintf("%s", types.GetBaseCoin()),
@@ -125,6 +128,7 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.CheckState) (
 					"You wanted to sell maximum %s, but currently you need to spend %s to complete tx",
 					data.MaximumValueToSell.String(), value.String()),
 				Info: EncodeError(map[string]string{
+					"code":                  strconv.Itoa(int(code.MaximumValueToSellReached)),
 					"maximum_value_to_sell": data.MaximumValueToSell.String(),
 					"needed_spend_value":    value.String(),
 				}),

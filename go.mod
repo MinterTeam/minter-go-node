@@ -29,6 +29,7 @@ require (
 	github.com/tendermint/iavl v0.14.0
 	github.com/tendermint/tendermint v0.33.8
 	github.com/tendermint/tm-db v0.5.1
+	github.com/tidwall/gjson v1.6.1
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5
 	github.com/urfave/cli/v2 v2.0.0
 	gitlab.com/tslocum/cview v1.4.7

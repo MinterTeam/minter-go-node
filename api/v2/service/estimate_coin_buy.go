@@ -25,16 +25,28 @@ func (s *Service) EstimateCoinBuy(ctx context.Context, req *pb.EstimateCoinBuyRe
 	coinToSell := types.CoinID(req.CoinIdToSell)
 	coinToBuy := types.CoinID(req.CoinIdToBuy)
 
-	if coinToSell == coinToBuy {
-		return new(pb.EstimateCoinBuyResponse), status.Error(codes.FailedPrecondition, "\"From\" coin equals to \"to\" coin")
-	}
-
 	if !cState.Coins().Exists(coinToSell) {
-		return new(pb.EstimateCoinBuyResponse), status.Error(codes.FailedPrecondition, "Coin to sell not exists")
+		return new(pb.EstimateCoinBuyResponse), s.createError(status.New(codes.InvalidArgument, "Coin to sell not exists"), transaction.EncodeError(map[string]string{
+			"code":            "404",
+			"coin_id_to_sell": coinToSell.String(),
+		}))
 	}
 
 	if !cState.Coins().Exists(coinToBuy) {
-		return new(pb.EstimateCoinBuyResponse), status.Error(codes.FailedPrecondition, "Coin to buy not exists")
+		return new(pb.EstimateCoinBuyResponse), s.createError(status.New(codes.InvalidArgument, "Coin to buy not exists"), transaction.EncodeError(map[string]string{
+			"code":           "404",
+			"coin_id_to_buy": coinToBuy.String(),
+		}))
+	}
+
+	if coinToSell == coinToBuy {
+		return new(pb.EstimateCoinBuyResponse), s.createError(status.New(codes.InvalidArgument, "\"From\" coin equals to \"to\" coin"), transaction.EncodeError(map[string]string{
+			"code":            "400",
+			"coin_id_to_sell": coinToSell.String(),
+			"coin_to_sell":    cState.Coins().GetCoin(coinToSell).Symbol().String(),
+			"coin_id_to_buy":  coinToBuy.String(),
+			"coin_to_buy":     cState.Coins().GetCoin(coinToBuy).Symbol().String(),
+		}))
 	}
 
 	commissionInBaseCoin := big.NewInt(commissions.ConvertTx)
@@ -48,6 +60,7 @@ func (s *Service) EstimateCoinBuy(ctx context.Context, req *pb.EstimateCoinBuyRe
 		if coinFrom.Reserve().Cmp(commissionInBaseCoin) < 0 {
 			return new(pb.EstimateCoinBuyResponse), s.createError(status.New(codes.InvalidArgument, fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s",
 				coinFrom.Reserve().String(), commissionInBaseCoin.String())), transaction.EncodeError(map[string]string{
+				"code":     "400",
 				"has":      coinFrom.Reserve().String(),
 				"required": commissionInBaseCoin.String(),
 			}))
