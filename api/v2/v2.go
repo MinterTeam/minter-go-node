@@ -131,7 +131,7 @@ func contextWithTimeoutInterceptor(timeout time.Duration) func(ctx context.Conte
 }
 
 func parseStatus(s *status.Status) (string, map[string]interface{}) {
-	codeString := strconv.Itoa(int(s.Code()))
+	codeString := strconv.Itoa(runtime.HTTPStatusFromCode(s.Code()))
 	var data map[string]interface{}
 	details := s.Details()
 	if len(details) != 0 {
