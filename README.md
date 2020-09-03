@@ -10,7 +10,7 @@
 <a href="https://hub.docker.com/r/minterteam/minter"><img alt="Docker Pulls" src="https://img.shields.io/docker/pulls/minterteam/minter"></a>
 </p>
 
-Minter is a blockchain network that lets people, projects, and companies issue and manage their own coins and trade them at a fair market price with absolute and instant liquidity.
+Minter is a global rewards and loyalty points network powered by a fast blockchain. Any brand, community, or blogger can create their own coins and launch their reward or loyalty system in minutes.
 
 _NOTE: This is alpha software. Please contact us if you intend to run it in production._
 
