@@ -51,17 +51,17 @@ for PLATFORM in $(find ./build/pkg -mindepth 1 -maxdepth 1 -type d); do
 	popd >/dev/null 2>&1
 done
 
-# Add "minter" and $VERSION prefix to package name.
+# Add "minter" and $VERSION, $GIT_COMMIT prefix to package name.
 rm -rf ./build/dist
 mkdir -p ./build/dist
 for FILENAME in $(find ./build/pkg -mindepth 1 -maxdepth 1 -type f); do
   FILENAME=$(basename "$FILENAME")
-	cp "./build/pkg/${FILENAME}" "./build/dist/minter_${VERSION}_${FILENAME}"
+	cp "./build/pkg/${FILENAME}" "./build/dist/minter_${VERSION}_${GIT_COMMIT}_${FILENAME}"
 done
 
 # Make the checksums.
 pushd ./build/dist
-shasum -a256 ./* > "./minter_${VERSION}_SHA256SUMS"
+shasum -a256 ./* > "./minter_${VERSION}_${GIT_COMMIT}_SHA256SUMS"
 popd
 
 # Done
