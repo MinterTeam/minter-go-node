@@ -681,6 +681,10 @@ func (c *Candidates) calculateBipValue(coinID types.CoinID, amount *big.Int, inc
 		return big.NewInt(0).Set(amount)
 	}
 
+	if amount.Cmp(big.NewInt(0)) == 0 {
+		return big.NewInt(0)
+	}
+
 	coin := c.bus.Coins().GetCoin(coinID)
 
 	saleReturn, totalDelegatedValue := big.NewInt(0), big.NewInt(0)

@@ -211,7 +211,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 
 		// skip already offline candidates to prevent double punishing
 		candidate := app.stateDeliver.Candidates.GetCandidateByTendermintAddress(address)
-		if candidate == nil || candidate.Status == candidates.CandidateStatusOffline {
+		if candidate == nil || candidate.Status == candidates.CandidateStatusOffline || app.stateDeliver.Validators.GetByTmAddress(address) == nil {
 			continue
 		}
 
