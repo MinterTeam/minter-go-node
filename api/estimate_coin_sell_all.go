@@ -13,7 +13,7 @@ type EstimateCoinSellAllResponse struct {
 	WillGet string `json:"will_get"`
 }
 
-func EstimateCoinSellAll(coinIdToSell uint32, coinIdToBuy uint32, valueToSell *big.Int, gasPrice uint64, height int) (*EstimateCoinSellAllResponse,
+func EstimateCoinSellAll(coinIdToSell uint64, coinIdToBuy uint64, valueToSell *big.Int, gasPrice uint64, height int) (*EstimateCoinSellAllResponse,
 	error) {
 	cState, err := GetStateForHeight(height)
 	if err != nil {
