@@ -149,7 +149,8 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 		return Response{
 			Code: code.CheckExpired,
 			Log:  fmt.Sprintf("Check expired"),
-			Info: EncodeError(map[string]string{"code": strconv.Itoa(int(code.CheckExpired)),
+			Info: EncodeError(map[string]string{
+				"code":          strconv.Itoa(int(code.CheckExpired)),
 				"due_block":     fmt.Sprintf("%d", decodedCheck.DueBlock),
 				"current_block": fmt.Sprintf("%d", currentBlock),
 			}),
