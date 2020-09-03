@@ -38,24 +38,26 @@ import (
 	"time"
 )
 
+// Statuses of validators
 const (
-	// Global validator's statuses
 	ValidatorPresent = 1
 	ValidatorAbsent  = 2
-
-	BlockMaxBytes = 10000000
-
-	DefaultMaxGas = 100000
-	MinMaxGas     = 5000
-
-	VotingPowerConsensus = 2. / 3.
 )
+
+// Block params
+const (
+	blockMaxBytes = 10000000
+	defaultMaxGas = 100000
+	minMaxGas     = 5000
+)
+
+const votingPowerConsensus = 2. / 3.
 
 var (
 	blockchain *Blockchain
 )
 
-// Main structure of Minter Blockchain
+// Blockchain is a main structure of Minter
 type Blockchain struct {
 	abciTypes.BaseApplication
 
@@ -82,7 +84,7 @@ type Blockchain struct {
 	cfg        *config.Config
 }
 
-// Creates Minter Blockchain instance, should be only called once
+// NewMinterBlockchain creates Minter Blockchain instance, should be only called once
 func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 	var err error
 
@@ -124,7 +126,7 @@ func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 	return blockchain
 }
 
-// Initialize blockchain with validators and other info. Only called once.
+// InitChain initialize blockchain with validators and other info. Only called once.
 func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.ResponseInitChain {
 	var genesisState types.AppState
 	if err := amino.UnmarshalJSON(req.AppStateBytes, &genesisState); err != nil {
@@ -165,7 +167,7 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 	}
 }
 
-// Signals the beginning of a block.
+// BeginBlock signals the beginning of a block.
 func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.ResponseBeginBlock {
 	height := uint64(req.Header.Height)
 
@@ -242,7 +244,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 	return abciTypes.ResponseBeginBlock{}
 }
 
-// Signals the end of a block, returns changes to the validator set
+// EndBlock signals the end of a block, returns changes to the validator set
 func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.ResponseEndBlock {
 	height := uint64(req.Height)
 
@@ -376,14 +378,14 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 		ValidatorUpdates: updates,
 		ConsensusParamUpdates: &abciTypes.ConsensusParams{
 			Block: &abciTypes.BlockParams{
-				MaxBytes: BlockMaxBytes,
+				MaxBytes: blockMaxBytes,
 				MaxGas:   int64(app.stateDeliver.App.GetMaxGas()),
 			},
 		},
 	}
 }
 
-// Return application info. Used for synchronization between Tendermint and Minter
+// Info return application info. Used for synchronization between Tendermint and Minter
 func (app *Blockchain) Info(req abciTypes.RequestInfo) (resInfo abciTypes.ResponseInfo) {
 	return abciTypes.ResponseInfo{
 		Version:          version.Version,
@@ -393,7 +395,7 @@ func (app *Blockchain) Info(req abciTypes.RequestInfo) (resInfo abciTypes.Respon
 	}
 }
 
-// Deliver a tx for full processing
+// DeliverTx deliver a tx for full processing
 func (app *Blockchain) DeliverTx(req abciTypes.RequestDeliverTx) abciTypes.ResponseDeliverTx {
 	response := transaction.RunTx(app.stateDeliver, req.Tx, app.rewards, app.height, &sync.Map{}, 0)
 
@@ -413,7 +415,7 @@ func (app *Blockchain) DeliverTx(req abciTypes.RequestDeliverTx) abciTypes.Respo
 	}
 }
 
-// Validate a tx for the mempool
+// CheckTx validates a tx for the mempool
 func (app *Blockchain) CheckTx(req abciTypes.RequestCheckTx) abciTypes.ResponseCheckTx {
 	response := transaction.RunTx(app.stateCheck, req.Tx, nil, app.height, app.currentMempool, app.MinGasPrice())
 
@@ -467,23 +469,25 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 	}
 }
 
-// Unused method, required by Tendermint
+// Query Unused method, required by Tendermint
 func (app *Blockchain) Query(reqQuery abciTypes.RequestQuery) abciTypes.ResponseQuery {
 	return abciTypes.ResponseQuery{}
 }
 
-// Unused method, required by Tendermint
+// SetOption Unused method, required by Tendermint
 func (app *Blockchain) SetOption(req abciTypes.RequestSetOption) abciTypes.ResponseSetOption {
 	return abciTypes.ResponseSetOption{}
 }
 
-// Gracefully stopping Minter Blockchain instance
+// Stop gracefully stopping Minter Blockchain instance
 func (app *Blockchain) Stop() {
 	app.appDB.Close()
-	app.stateDB.Close()
+	if err := app.stateDB.Close(); err != nil {
+		panic(err)
+	}
 }
 
-// Get immutable state of Minter Blockchain
+// CurrentState returns immutable state of Minter Blockchain
 func (app *Blockchain) CurrentState() *state.CheckState {
 	app.lock.RLock()
 	defer app.lock.RUnlock()
@@ -491,7 +495,7 @@ func (app *Blockchain) CurrentState() *state.CheckState {
 	return app.stateCheck
 }
 
-// Get immutable state of Minter Blockchain for given height
+// GetStateForHeight returns immutable state of Minter Blockchain for given height
 func (app *Blockchain) GetStateForHeight(height uint64) (*state.CheckState, error) {
 	if height > 0 {
 		s, err := state.NewCheckStateAtHeight(height, app.stateDB)
@@ -503,6 +507,7 @@ func (app *Blockchain) GetStateForHeight(height uint64) (*state.CheckState, erro
 	return blockchain.CurrentState(), nil
 }
 
+// MissedBlocks returns aggregated info about block which has no signature of given validator
 func (app *Blockchain) MissedBlocks(pubKey string, height uint64) (missedBlocks string, missedBlocksCount int, err error) {
 	if !strings.HasPrefix(pubKey, "Mp") {
 		return "", 0, status.Error(codes.InvalidArgument, "public key don't has prefix 'Mp'")
@@ -531,17 +536,17 @@ func (app *Blockchain) MissedBlocks(pubKey string, height uint64) (missedBlocks 
 
 }
 
-// Get current height of Minter Blockchain
+// Height returns current height of Minter Blockchain
 func (app *Blockchain) Height() uint64 {
 	return atomic.LoadUint64(&app.height)
 }
 
-// Set Tendermint node
+// SetTmNode sets Tendermint node
 func (app *Blockchain) SetTmNode(node *tmNode.Node) {
 	app.tmNode = node
 }
 
-// Get minimal acceptable gas price
+// MinGasPrice returns minimal acceptable gas price
 func (app *Blockchain) MinGasPrice() uint32 {
 	mempoolSize := app.tmNode.Mempool().Size()
 
@@ -598,10 +603,12 @@ func (app *Blockchain) updateBlocksTimeDelta(height uint64, count int64) {
 	app.appDB.SetLastBlocksTimeDelta(height, delta)
 }
 
+// SetBlocksTimeDelta sets current blocks time delta
 func (app *Blockchain) SetBlocksTimeDelta(height uint64, value int) {
 	app.appDB.SetLastBlocksTimeDelta(height, value)
 }
 
+// GetBlocksTimeDelta returns current blocks time delta
 func (app *Blockchain) GetBlocksTimeDelta(height, count uint64) (int, error) {
 	return app.appDB.GetLastBlocksTimeDelta(height)
 }
@@ -612,7 +619,7 @@ func (app *Blockchain) calcMaxGas(height uint64) uint64 {
 
 	// skip first 20 blocks
 	if height <= 20 {
-		return DefaultMaxGas
+		return defaultMaxGas
 	}
 
 	// get current max gas
@@ -626,31 +633,35 @@ func (app *Blockchain) calcMaxGas(height uint64) uint64 {
 	}
 
 	// check if max gas is too high
-	if newMaxGas > DefaultMaxGas {
-		newMaxGas = DefaultMaxGas
+	if newMaxGas > defaultMaxGas {
+		newMaxGas = defaultMaxGas
 	}
 
 	// check if max gas is too low
-	if newMaxGas < MinMaxGas {
-		newMaxGas = MinMaxGas
+	if newMaxGas < minMaxGas {
+		newMaxGas = minMaxGas
 	}
 
 	return newMaxGas
 }
 
+// GetEventsDB returns current EventsDB
 func (app *Blockchain) GetEventsDB() eventsdb.IEventsDB {
 	return app.eventsDB
 }
 
+// SetStatisticData used for collection statistics about blockchain operations
 func (app *Blockchain) SetStatisticData(statisticData *statistics.Data) *statistics.Data {
 	app.statisticData = statisticData
 	return app.statisticData
 }
 
+// StatisticData used for collection statistics about blockchain operations
 func (app *Blockchain) StatisticData() *statistics.Data {
 	return app.statisticData
 }
 
+// GetValidatorStatus returns given validator's status
 func (app *Blockchain) GetValidatorStatus(address types.TmAddress) int8 {
 	app.lock.RLock()
 	defer app.lock.RUnlock()
@@ -658,6 +669,7 @@ func (app *Blockchain) GetValidatorStatus(address types.TmAddress) int8 {
 	return app.validatorsStatuses[address]
 }
 
+// MaxPeerHeight returns max height of connected peers
 func (app *Blockchain) MaxPeerHeight() int64 {
 	var max int64
 	for _, peer := range app.tmNode.Switch().Peers().List() {
@@ -669,6 +681,7 @@ func (app *Blockchain) MaxPeerHeight() int64 {
 	return max
 }
 
+// DeleteStateVersions deletes states in given range
 func (app *Blockchain) DeleteStateVersions(from, to int64) error {
 	app.lock.RLock()
 	defer app.lock.RUnlock()
@@ -725,7 +738,7 @@ func (app *Blockchain) isApplicationHalted(height uint64) bool {
 			new(big.Float).SetInt(totalPower),
 		)
 
-		if votingResult.Cmp(big.NewFloat(VotingPowerConsensus)) == 1 {
+		if votingResult.Cmp(big.NewFloat(votingPowerConsensus)) == 1 {
 			return true
 		}
 	}

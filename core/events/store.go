@@ -7,6 +7,7 @@ import (
 	"sync"
 )
 
+// IEventsDB is an interface of Events
 type IEventsDB interface {
 	AddEvent(height uint32, event Event)
 	LoadEvents(height uint32) Events
@@ -30,6 +31,7 @@ type pendingEvents struct {
 	items  Events
 }
 
+// NewEventsStore creates new events store in given DB
 func NewEventsStore(db db.DB) IEventsDB {
 	codec := amino.NewCodec()
 	codec.RegisterInterface((*Event)(nil), nil)
