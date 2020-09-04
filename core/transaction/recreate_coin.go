@@ -10,6 +10,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
+	"strconv"
 )
 
 type RecreateCoinData struct {
@@ -25,37 +26,61 @@ func (data RecreateCoinData) BasicCheck(tx *Transaction, context *state.CheckSta
 	if data.InitialReserve == nil || data.InitialAmount == nil || data.MaxSupply == nil {
 		return &Response{
 			Code: code.DecodeError,
-			Log:  "Incorrect tx data"}
+			Log:  "Incorrect tx data",
+			Info: EncodeError(map[string]string{
+				"code": strconv.Itoa(int(code.DecodeError)),
+			}),
+		}
 	}
 
 	if len(data.Name) > maxCoinNameBytes {
 		return &Response{
 			Code: code.InvalidCoinName,
-			Log:  fmt.Sprintf("Coin name is invalid. Allowed up to %d bytes.", maxCoinNameBytes)}
+			Log:  fmt.Sprintf("Coin name is invalid. Allowed up to %d bytes.", maxCoinNameBytes),
+			Info: EncodeError(map[string]string{
+				"code": strconv.Itoa(int(code.InvalidCoinName)),
+			}),
+		}
 	}
 
 	if data.ConstantReserveRatio < 10 || data.ConstantReserveRatio > 100 {
 		return &Response{
 			Code: code.WrongCrr,
-			Log:  fmt.Sprintf("Constant Reserve Ratio should be between 10 and 100")}
+			Log:  fmt.Sprintf("Constant Reserve Ratio should be between 10 and 100"),
+			Info: EncodeError(map[string]string{
+				"code": strconv.Itoa(int(code.WrongCrr)),
+			}),
+		}
 	}
 
 	if data.InitialAmount.Cmp(minCoinSupply) == -1 || data.InitialAmount.Cmp(data.MaxSupply) == 1 {
 		return &Response{
 			Code: code.WrongCoinSupply,
-			Log:  fmt.Sprintf("Coin supply should be between %s and %s", minCoinSupply.String(), data.MaxSupply.String())}
+			Log:  fmt.Sprintf("Coin supply should be between %s and %s", minCoinSupply.String(), data.MaxSupply.String()),
+			Info: EncodeError(map[string]string{
+				"code": strconv.Itoa(int(code.WrongCoinSupply)),
+			}),
+		}
 	}
 
 	if data.MaxSupply.Cmp(maxCoinSupply) == 1 {
 		return &Response{
 			Code: code.WrongCoinSupply,
-			Log:  fmt.Sprintf("Max coin supply should be less than %s", maxCoinSupply)}
+			Log:  fmt.Sprintf("Max coin supply should be less than %s", maxCoinSupply),
+			Info: EncodeError(map[string]string{
+				"code": strconv.Itoa(int(code.WrongCoinSupply)),
+			}),
+		}
 	}
 
 	if data.InitialReserve.Cmp(minCoinReserve) == -1 {
 		return &Response{
 			Code: code.WrongCoinSupply,
-			Log:  fmt.Sprintf("Coin reserve should be greater than or equal to %s", minCoinReserve.String())}
+			Log:  fmt.Sprintf("Coin reserve should be greater than or equal to %s", minCoinReserve.String()),
+			Info: EncodeError(map[string]string{
+				"code": strconv.Itoa(int(code.WrongCoinSupply)),
+			}),
+		}
 	}
 
 	sender, _ := tx.Sender()
@@ -65,6 +90,9 @@ func (data RecreateCoinData) BasicCheck(tx *Transaction, context *state.CheckSta
 		return &Response{
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin %s not exists", data.Symbol),
+			Info: EncodeError(map[string]string{
+				"code": strconv.Itoa(int(code.CoinNotExists)),
+			}),
 		}
 	}
 
@@ -73,6 +101,9 @@ func (data RecreateCoinData) BasicCheck(tx *Transaction, context *state.CheckSta
 		return &Response{
 			Code: code.IsNotOwnerOfCoin,
 			Log:  "Sender is not owner of coin",
+			Info: EncodeError(map[string]string{
+				"code": strconv.Itoa(int(code.IsNotOwnerOfCoin)),
+			}),
 		}
 	}
 
@@ -118,9 +149,10 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 				Code: code.CoinReserveNotSufficient,
 				Log:  fmt.Sprintf("Gas coin reserve balance is not sufficient for transaction. Has: %s %s, required %s %s", gasCoin.Reserve().String(), types.GetBaseCoin(), commissionInBaseCoin.String(), types.GetBaseCoin()),
 				Info: EncodeError(map[string]string{
+					"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
 					"has_value":      gasCoin.Reserve().String(),
 					"required_value": commissionInBaseCoin.String(),
-					"gas_coin":       gasCoin.GetFullSymbol(),
+					"coin":           gasCoin.GetFullSymbol(),
 				}),
 			}
 		}
@@ -135,9 +167,10 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission.String(), gasCoin.GetFullSymbol()),
 			Info: EncodeError(map[string]string{
+				"code":         strconv.Itoa(int(code.InsufficientFunds)),
 				"sender":       sender.String(),
 				"needed_value": commission.String(),
-				"gas_coin":     gasCoin.GetFullSymbol(),
+				"coin":         gasCoin.GetFullSymbol(),
 			}),
 		}
 	}
@@ -147,9 +180,10 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), data.InitialReserve.String(), types.GetBaseCoin()),
 			Info: EncodeError(map[string]string{
+				"code":           strconv.Itoa(int(code.InsufficientFunds)),
 				"sender":         sender.String(),
 				"needed_reserve": data.InitialReserve.String(),
-				"base_coin":      fmt.Sprintf("%s", types.GetBaseCoin()),
+				"coin":           fmt.Sprintf("%s", types.GetBaseCoin()),
 			}),
 		}
 	}
@@ -166,9 +200,10 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 				Code: code.InsufficientFunds,
 				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), totalTxCost.String(), gasCoin.GetFullSymbol()),
 				Info: EncodeError(map[string]string{
+					"code":         strconv.Itoa(int(code.InsufficientFunds)),
 					"sender":       sender.String(),
 					"needed_value": totalTxCost.String(),
-					"gas_coin":     gasCoin.GetFullSymbol(),
+					"coin":         gasCoin.GetFullSymbol(),
 				}),
 			}
 		}

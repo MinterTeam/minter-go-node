@@ -1,5 +1,6 @@
 package code
 
+// Codes for transaction checks and delivers responses
 const (
 	// general
 	OK                           uint32 = 0

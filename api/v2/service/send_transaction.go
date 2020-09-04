@@ -12,23 +12,21 @@ import (
 	"github.com/tendermint/tendermint/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"strings"
 )
 
 func (s *Service) SendTransaction(ctx context.Context, req *pb.SendTransactionRequest) (*pb.SendTransactionResponse, error) {
-	if len(req.Tx) < 3 {
-		return new(pb.SendTransactionResponse), status.Error(codes.InvalidArgument, "invalid tx")
+	if !strings.HasPrefix(strings.Title(req.GetTx()), "0x") {
+		return new(pb.SendTransactionResponse), status.Error(codes.InvalidArgument, "invalid transaction")
 	}
 	decodeString, err := hex.DecodeString(req.Tx[2:])
 	if err != nil {
 		return new(pb.SendTransactionResponse), status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	result, err := s.broadcastTxSync(decodeString, ctx /*timeout*/)
-	if err != nil {
-		if _, ok := status.FromError(err); ok {
-			return new(pb.SendTransactionResponse), err
-		}
-		return new(pb.SendTransactionResponse), status.Error(codes.FailedPrecondition, err.Error())
+	result, statusErr := s.broadcastTxSync(decodeString, ctx /*timeout*/)
+	if statusErr != nil {
+		return new(pb.SendTransactionResponse), statusErr.Err()
 	}
 
 	switch result.Code {
@@ -51,13 +49,16 @@ type ResultBroadcastTx struct {
 	Hash bytes.HexBytes `json:"hash"`
 }
 
-func (s *Service) broadcastTxSync(tx types.Tx, ctx context.Context) (*ResultBroadcastTx, error) {
+func (s *Service) broadcastTxSync(tx types.Tx, ctx context.Context) (*ResultBroadcastTx, *status.Status) {
 	resCh := make(chan *abci.Response, 1)
 	err := s.tmNode.Mempool().CheckTx(tx, func(res *abci.Response) {
 		resCh <- res
 	}, mempool.TxInfo{})
 	if err != nil {
-		return nil, err
+		if err.Error() == mempool.ErrTxInCache.Error() {
+			return nil, status.New(codes.AlreadyExists, err.Error())
+		}
+		return nil, status.New(codes.FailedPrecondition, err.Error())
 	}
 
 	select {
@@ -72,9 +73,9 @@ func (s *Service) broadcastTxSync(tx types.Tx, ctx context.Context) (*ResultBroa
 		}, nil
 	case <-ctx.Done():
 		if ctx.Err() != context.DeadlineExceeded {
-			return nil, status.New(codes.Canceled, ctx.Err().Error()).Err()
+			return nil, status.New(codes.Canceled, ctx.Err().Error())
 		}
-		return nil, status.New(codes.DeadlineExceeded, ctx.Err().Error()).Err()
+		return nil, status.New(codes.DeadlineExceeded, ctx.Err().Error())
 	}
 
 }

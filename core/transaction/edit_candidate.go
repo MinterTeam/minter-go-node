@@ -10,6 +10,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
+	"strconv"
 )
 
 type CandidateTx interface {
@@ -60,6 +61,7 @@ func (data EditCandidateData) Run(tx *Transaction, context state.Interface, rewa
 			Code: code.NewPublicKeyIsBad,
 			Log:  fmt.Sprintf("Current public key (%s) equals new public key (%s)", data.PubKey.String(), data.NewPubKey.String()),
 			Info: EncodeError(map[string]string{
+				"code":           strconv.Itoa(int(code.NewPublicKeyIsBad)),
 				"public_key":     data.PubKey.String(),
 				"new_public_key": data.NewPubKey.String(),
 			}),
@@ -82,9 +84,10 @@ func (data EditCandidateData) Run(tx *Transaction, context state.Interface, rewa
 				Code: code.CoinReserveNotSufficient,
 				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", gasCoin.Reserve().String(), commissionInBaseCoin.String()),
 				Info: EncodeError(map[string]string{
-					"has_reserve": gasCoin.Reserve().String(),
-					"commission":  commissionInBaseCoin.String(),
-					"gas_coin":    gasCoin.GetFullSymbol(),
+					"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
+					"has_reserve":    gasCoin.Reserve().String(),
+					"required_value": commissionInBaseCoin.String(),
+					"coin":           gasCoin.GetFullSymbol(),
 				}),
 			}
 		}
@@ -97,9 +100,10 @@ func (data EditCandidateData) Run(tx *Transaction, context state.Interface, rewa
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission.String(), gasCoin.GetFullSymbol()),
 			Info: EncodeError(map[string]string{
+				"code":         strconv.Itoa(int(code.InsufficientFunds)),
 				"sender":       sender.String(),
 				"needed_value": commission.String(),
-				"gas_coin":     gasCoin.GetFullSymbol(),
+				"coin":         gasCoin.GetFullSymbol(),
 			}),
 		}
 	}
@@ -109,6 +113,7 @@ func (data EditCandidateData) Run(tx *Transaction, context state.Interface, rewa
 			Code: code.PublicKeyInBlockList,
 			Log:  fmt.Sprintf("Public key (%s) exists in block list", data.NewPubKey.String()),
 			Info: EncodeError(map[string]string{
+				"code":           strconv.Itoa(int(code.PublicKeyInBlockList)),
 				"new_public_key": data.NewPubKey.String(),
 			}),
 		}
@@ -147,6 +152,7 @@ func checkCandidateOwnership(data CandidateTx, tx *Transaction, context *state.C
 			Code: code.CandidateNotFound,
 			Log:  fmt.Sprintf("Candidate with such public key (%s) not found", data.GetPubKey().String()),
 			Info: EncodeError(map[string]string{
+				"code":       strconv.Itoa(int(code.CandidateNotFound)),
 				"public_key": data.GetPubKey().String(),
 			}),
 		}
@@ -157,7 +163,11 @@ func checkCandidateOwnership(data CandidateTx, tx *Transaction, context *state.C
 	if owner != sender {
 		return &Response{
 			Code: code.IsNotOwnerOfCandidate,
-			Log:  fmt.Sprintf("Sender is not an owner of a candidate")}
+			Log:  fmt.Sprintf("Sender is not an owner of a candidate"),
+			Info: EncodeError(map[string]string{
+				"code": strconv.Itoa(int(code.IsNotOwnerOfCandidate)),
+			}),
+		}
 	}
 
 	return nil

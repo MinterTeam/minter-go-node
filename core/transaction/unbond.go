@@ -11,6 +11,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/hexutil"
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
+	"strconv"
 )
 
 const unbondPeriod = 518400
@@ -33,6 +34,7 @@ func (data UnbondData) BasicCheck(tx *Transaction, context *state.CheckState) *R
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin %s not exists", data.Coin),
 			Info: EncodeError(map[string]string{
+				"code": strconv.Itoa(int(code.CoinNotExists)),
 				"coin": fmt.Sprintf("%s", data.Coin),
 			}),
 		}
@@ -43,6 +45,7 @@ func (data UnbondData) BasicCheck(tx *Transaction, context *state.CheckState) *R
 		"unbound_value": data.Value.String(),
 	}
 	if !context.Candidates().Exists(data.PubKey) {
+		errorInfo["code"] = strconv.Itoa(int(code.CandidateNotFound))
 		return &Response{
 			Code: code.CandidateNotFound,
 			Log:  fmt.Sprintf("Candidate with such public key not found"),
@@ -58,6 +61,7 @@ func (data UnbondData) BasicCheck(tx *Transaction, context *state.CheckState) *R
 			return nil
 		}
 		errorInfo["waitlist_value"] = waitlist.Value.String()
+		errorInfo["code"] = strconv.Itoa(int(code.InsufficientWaitList))
 		return &Response{
 			Code: code.InsufficientWaitList,
 			Log:  fmt.Sprintf("Insufficient amount at waitlist for sender account"),
@@ -68,6 +72,7 @@ func (data UnbondData) BasicCheck(tx *Transaction, context *state.CheckState) *R
 	stake := context.Candidates().GetStakeValueOfAddress(data.PubKey, sender, data.Coin)
 
 	if stake == nil {
+		errorInfo["code"] = strconv.Itoa(int(code.StakeNotFound))
 		return &Response{
 			Code: code.StakeNotFound,
 			Log:  fmt.Sprintf("Stake of current user not found"),
@@ -77,6 +82,7 @@ func (data UnbondData) BasicCheck(tx *Transaction, context *state.CheckState) *R
 
 	if stake.Cmp(data.Value) < 0 {
 		errorInfo["stake_value"] = stake.String()
+		errorInfo["code"] = strconv.Itoa(int(code.InsufficientStake))
 		return &Response{
 			Code: code.InsufficientStake,
 			Log:  fmt.Sprintf("Insufficient stake for sender account"),
@@ -126,9 +132,10 @@ func (data UnbondData) Run(tx *Transaction, context state.Interface, rewardPool 
 				Code: code.CoinReserveNotSufficient,
 				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", gasCoin.Reserve().String(), commissionInBaseCoin.String()),
 				Info: EncodeError(map[string]string{
-					"has_reserve": gasCoin.Reserve().String(),
-					"commission":  commissionInBaseCoin.String(),
-					"gas_coin":    gasCoin.GetFullSymbol(),
+					"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
+					"has_value":      gasCoin.Reserve().String(),
+					"required_value": commissionInBaseCoin.String(),
+					"coin":           gasCoin.GetFullSymbol(),
 				}),
 			}
 		}
@@ -141,9 +148,10 @@ func (data UnbondData) Run(tx *Transaction, context state.Interface, rewardPool 
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, gasCoin.GetFullSymbol()),
 			Info: EncodeError(map[string]string{
+				"code":         strconv.Itoa(int(code.InsufficientFunds)),
 				"sender":       sender.String(),
 				"needed_value": commission.String(),
-				"gas_coin":     gasCoin.GetFullSymbol(),
+				"coin":         gasCoin.GetFullSymbol(),
 			}),
 		}
 	}

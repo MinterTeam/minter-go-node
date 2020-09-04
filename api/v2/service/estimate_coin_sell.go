@@ -25,28 +25,28 @@ func (s *Service) EstimateCoinSell(ctx context.Context, req *pb.EstimateCoinSell
 	coinToSell := types.CoinID(req.CoinIdToSell)
 	coinToBuy := types.CoinID(req.CoinIdToBuy)
 
-	if coinToSell == coinToBuy {
-		return new(pb.EstimateCoinSellResponse), s.createError(status.New(codes.InvalidArgument, "\"From\" coin equals to \"to\" coin"), transaction.EncodeError(map[string]string{
-			"coin_id_to_sell": coinToSell.String(),
-			"coin_to_sell":    cState.Coins().GetCoin(coinToSell).Symbol().String(),
-			"coin_id_to_buy":  coinToBuy.String(),
-			"coin_to_buy":     cState.Coins().GetCoin(coinToBuy).Symbol().String(),
-		}))
-	}
-
 	if !cState.Coins().Exists(coinToSell) {
 		return new(pb.EstimateCoinSellResponse), s.createError(status.New(codes.InvalidArgument, "Coin to sell not exists"), transaction.EncodeError(map[string]string{
+			"code":            "404",
 			"coin_id_to_sell": coinToSell.String(),
-			"coin_to_sell":    cState.Coins().GetCoin(coinToSell).Symbol().String(),
 		}))
 	}
 
 	if !cState.Coins().Exists(coinToBuy) {
 		return new(pb.EstimateCoinSellResponse), s.createError(status.New(codes.InvalidArgument, "Coin to buy not exists"), transaction.EncodeError(map[string]string{
+			"code":           "404",
 			"coin_id_to_buy": coinToBuy.String(),
-			"coin_to_buy":    cState.Coins().GetCoin(coinToBuy).Symbol().String(),
 		}))
+	}
 
+	if coinToSell == coinToBuy {
+		return new(pb.EstimateCoinSellResponse), s.createError(status.New(codes.InvalidArgument, "\"From\" coin equals to \"to\" coin"), transaction.EncodeError(map[string]string{
+			"code":            "400",
+			"coin_id_to_sell": coinToSell.String(),
+			"coin_to_sell":    cState.Coins().GetCoin(coinToSell).Symbol().String(),
+			"coin_id_to_buy":  coinToBuy.String(),
+			"coin_to_buy":     cState.Coins().GetCoin(coinToBuy).Symbol().String(),
+		}))
 	}
 
 	commissionInBaseCoin := big.NewInt(commissions.ConvertTx)
