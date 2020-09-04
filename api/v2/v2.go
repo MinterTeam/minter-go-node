@@ -167,6 +167,9 @@ func httpError(ctx context.Context, mux *runtime.ServeMux, marshaler runtime.Mar
 	w.WriteHeader(st)
 
 	codeString, data := parseStatus(s)
+	if _, ok := data["code"]; ok {
+		delete(data, "code")
+	}
 
 	jErr := json.NewEncoder(w).Encode(gw.ErrorBody{
 		Error: &gw.ErrorBody_Error{
