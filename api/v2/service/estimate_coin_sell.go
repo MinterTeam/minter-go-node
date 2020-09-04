@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
@@ -11,6 +12,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"math/big"
+	"strconv"
 )
 
 func (s *Service) EstimateCoinSell(ctx context.Context, req *pb.EstimateCoinSellRequest) (*pb.EstimateCoinSellResponse, error) {
@@ -22,21 +24,44 @@ func (s *Service) EstimateCoinSell(ctx context.Context, req *pb.EstimateCoinSell
 	cState.RLock()
 	defer cState.RUnlock()
 
-	coinToSell := types.CoinID(req.CoinIdToSell)
-	coinToBuy := types.CoinID(req.CoinIdToBuy)
-
-	if !cState.Coins().Exists(coinToSell) {
-		return new(pb.EstimateCoinSellResponse), s.createError(status.New(codes.NotFound, "Coin to sell not exists"), transaction.EncodeError(map[string]string{
-			"code":            "404",
-			"coin_id_to_sell": coinToSell.String(),
-		}))
+	var coinToBuy types.CoinID
+	if req.GetCoinToBuy() != "" {
+		symbol := cState.Coins().GetCoinBySymbol(types.StrToCoinSymbol(req.GetCoinToBuy()), 0)
+		if symbol == nil {
+			return new(pb.EstimateCoinSellResponse), s.createError(status.New(codes.NotFound, "Coin to sell not exists"), transaction.EncodeError(map[string]string{
+				"code":        strconv.Itoa(int(code.CoinNotExists)),
+				"coin_symbol": req.GetCoinToBuy(),
+			}))
+		}
+		coinToBuy = symbol.ID()
+	} else {
+		coinToBuy = types.CoinID(req.GetCoinIdToBuy())
+		if !cState.Coins().Exists(coinToBuy) {
+			return new(pb.EstimateCoinSellResponse), s.createError(status.New(codes.NotFound, "Coin to buy not exists"), transaction.EncodeError(map[string]string{
+				"code":    "404",
+				"coin_id": coinToBuy.String(),
+			}))
+		}
 	}
 
-	if !cState.Coins().Exists(coinToBuy) {
-		return new(pb.EstimateCoinSellResponse), s.createError(status.New(codes.NotFound, "Coin to buy not exists"), transaction.EncodeError(map[string]string{
-			"code":           "404",
-			"coin_id_to_buy": coinToBuy.String(),
-		}))
+	var coinToSell types.CoinID
+	if req.GetCoinToSell() != "" {
+		symbol := cState.Coins().GetCoinBySymbol(types.StrToCoinSymbol(req.GetCoinToSell()), 0)
+		if symbol == nil {
+			return new(pb.EstimateCoinSellResponse), s.createError(status.New(codes.NotFound, "Coin to sell not exists"), transaction.EncodeError(map[string]string{
+				"code":        strconv.Itoa(int(code.CoinNotExists)),
+				"coin_symbol": req.GetCoinToSell(),
+			}))
+		}
+		coinToSell = symbol.ID()
+	} else {
+		coinToSell = types.CoinID(req.GetCoinIdToSell())
+		if !cState.Coins().Exists(coinToSell) {
+			return new(pb.EstimateCoinSellResponse), s.createError(status.New(codes.NotFound, "Coin to sell not exists"), transaction.EncodeError(map[string]string{
+				"code":    "404",
+				"coin_id": coinToSell.String(),
+			}))
+		}
 	}
 
 	if coinToSell == coinToBuy {
