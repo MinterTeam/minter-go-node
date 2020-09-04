@@ -11,6 +11,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
+	"strconv"
 )
 
 type CreateMultisigData struct {
@@ -24,7 +25,10 @@ func (data CreateMultisigData) BasicCheck(tx *Transaction, context *state.CheckS
 	if lenWeights > 32 {
 		return &Response{
 			Code: code.TooLargeOwnersList,
-			Log:  "Owners list is limited to 32 items"}
+			Log:  "Owners list is limited to 32 items",
+			Info: EncodeError(map[string]string{
+				"code": strconv.Itoa(int(code.TooLargeOwnersList)),
+			})}
 	}
 
 	lenAddresses := len(data.Addresses)
@@ -33,6 +37,7 @@ func (data CreateMultisigData) BasicCheck(tx *Transaction, context *state.CheckS
 			Code: code.IncorrectWeights,
 			Log:  fmt.Sprintf("Incorrect multisig weights"),
 			Info: EncodeError(map[string]string{
+				"code":            strconv.Itoa(int(code.IncorrectWeights)),
 				"count_weights":   fmt.Sprintf("%d", lenWeights),
 				"count_addresses": fmt.Sprintf("%d", lenAddresses),
 			}),
@@ -43,7 +48,9 @@ func (data CreateMultisigData) BasicCheck(tx *Transaction, context *state.CheckS
 		if weight > 1023 {
 			return &Response{
 				Code: code.IncorrectWeights,
-				Log:  "Incorrect multisig weights"}
+				Log:  "Incorrect multisig weights", Info: EncodeError(map[string]string{
+					"code": strconv.Itoa(int(code.IncorrectWeights)),
+				})}
 		}
 	}
 
@@ -52,7 +59,10 @@ func (data CreateMultisigData) BasicCheck(tx *Transaction, context *state.CheckS
 		if usedAddresses[address] {
 			return &Response{
 				Code: code.DuplicatedAddresses,
-				Log:  "Duplicated multisig addresses"}
+				Log:  "Duplicated multisig addresses",
+				Info: EncodeError(map[string]string{
+					"code": strconv.Itoa(int(code.DuplicatedAddresses)),
+				})}
 		}
 
 		usedAddresses[address] = true
@@ -102,9 +112,10 @@ func (data CreateMultisigData) Run(tx *Transaction, context state.Interface, rew
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, gasCoin.GetFullSymbol()),
 			Info: EncodeError(map[string]string{
+				"code":         strconv.Itoa(int(code.InsufficientFunds)),
 				"sender":       sender.String(),
 				"needed_value": commission.String(),
-				"gas_coin":     gasCoin.GetFullSymbol(),
+				"coin":         gasCoin.GetFullSymbol(),
 			}),
 		}
 	}
@@ -116,6 +127,7 @@ func (data CreateMultisigData) Run(tx *Transaction, context state.Interface, rew
 			Code: code.MultisigExists,
 			Log:  fmt.Sprintf("Multisig %s already exists", msigAddress.String()),
 			Info: EncodeError(map[string]string{
+				"code":             strconv.Itoa(int(code.MultisigExists)),
 				"multisig_address": msigAddress.String(),
 			}),
 		}

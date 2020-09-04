@@ -29,6 +29,7 @@ func (data SetHaltBlockData) BasicCheck(tx *Transaction, context *state.CheckSta
 			Code: code.CandidateNotFound,
 			Log:  fmt.Sprintf("Candidate with such public key not found"),
 			Info: EncodeError(map[string]string{
+				"code":    strconv.Itoa(int(code.CandidateNotFound)),
 				"pub_key": data.PubKey.String(),
 			}),
 		}
@@ -65,6 +66,7 @@ func (data SetHaltBlockData) Run(tx *Transaction, context state.Interface, rewar
 			Code: code.WrongHaltHeight,
 			Log:  fmt.Sprintf("Halt height should be equal or bigger than current: %d", currentBlock),
 			Info: EncodeError(map[string]string{
+				"code":   strconv.Itoa(int(code.WrongHaltHeight)),
 				"height": strconv.FormatUint(data.Height, 10),
 			}),
 		}
@@ -91,9 +93,10 @@ func (data SetHaltBlockData) Run(tx *Transaction, context state.Interface, rewar
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, gasCoin.GetFullSymbol()),
 			Info: EncodeError(map[string]string{
+				"code":         strconv.Itoa(int(code.InsufficientFunds)),
 				"sender":       sender.String(),
 				"needed_value": commission.String(),
-				"gas_coin":     gasCoin.GetFullSymbol(),
+				"coin":         gasCoin.GetFullSymbol(),
 			}),
 		}
 	}

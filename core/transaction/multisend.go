@@ -11,6 +11,7 @@ import (
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -143,6 +144,7 @@ func checkBalances(context *state.CheckState, sender types.Address, items []Mult
 				Code: code.InsufficientFunds,
 				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), value, coinData.GetFullSymbol()),
 				Info: EncodeError(map[string]string{
+					"code":         strconv.Itoa(int(code.InsufficientFunds)),
 					"sender":       sender.String(),
 					"needed_value": fmt.Sprintf("%d", value),
 					"coin":         coinData.GetFullSymbol(),
@@ -161,6 +163,7 @@ func checkCoins(context *state.CheckState, items []MultisendDataItem) *Response 
 				Code: code.CoinNotExists,
 				Log:  fmt.Sprintf("Coin %s not exists", item.Coin),
 				Info: EncodeError(map[string]string{
+					"code": strconv.Itoa(int(code.CoinNotExists)),
 					"coin": fmt.Sprintf("%s", item.Coin),
 				}),
 			}

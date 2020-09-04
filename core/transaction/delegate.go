@@ -11,6 +11,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/hexutil"
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
+	"strconv"
 )
 
 type DelegateData struct {
@@ -23,19 +24,28 @@ func (data DelegateData) BasicCheck(tx *Transaction, context *state.CheckState) 
 	if data.Value == nil {
 		return &Response{
 			Code: code.DecodeError,
-			Log:  "Incorrect tx data"}
+			Log:  "Incorrect tx data",
+			Info: EncodeError(map[string]string{
+				"code": strconv.Itoa(int(code.DecodeError)),
+			})}
 	}
 
 	if !context.Coins().Exists(data.Coin) {
 		return &Response{
 			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin %d not exists", data.Coin)}
+			Log:  fmt.Sprintf("Coin %d not exists", data.Coin),
+			Info: EncodeError(map[string]string{
+				"code": strconv.Itoa(int(code.CoinNotExists)),
+			})}
 	}
 
 	if data.Value.Cmp(types.Big0) < 1 {
 		return &Response{
 			Code: code.StakeShouldBePositive,
-			Log:  fmt.Sprintf("Stake should be positive")}
+			Log:  fmt.Sprintf("Stake should be positive"),
+			Info: EncodeError(map[string]string{
+				"code": strconv.Itoa(int(code.StakeShouldBePositive)),
+			})}
 	}
 
 	if !context.Candidates().Exists(data.PubKey) {
@@ -43,6 +53,7 @@ func (data DelegateData) BasicCheck(tx *Transaction, context *state.CheckState) 
 			Code: code.CandidateNotFound,
 			Log:  fmt.Sprintf("Candidate with such public key not found"),
 			Info: EncodeError(map[string]string{
+				"code":    strconv.Itoa(int(code.CandidateNotFound)),
 				"pub_key": data.PubKey.String(),
 			}),
 		}
@@ -52,7 +63,11 @@ func (data DelegateData) BasicCheck(tx *Transaction, context *state.CheckState) 
 	if !context.Candidates().IsDelegatorStakeSufficient(sender, data.PubKey, data.Coin, data.Value) {
 		return &Response{
 			Code: code.TooLowStake,
-			Log:  fmt.Sprintf("Stake is too low")}
+			Log:  fmt.Sprintf("Stake is too low"),
+			Info: EncodeError(map[string]string{
+				"code":    strconv.Itoa(int(code.TooLowStake)),
+				"pub_key": data.PubKey.String(),
+			})}
 	}
 
 	return nil
@@ -101,9 +116,10 @@ func (data DelegateData) Run(tx *Transaction, context state.Interface, rewardPoo
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, gasCoin.GetFullSymbol()),
 			Info: EncodeError(map[string]string{
+				"code":         strconv.Itoa(int(code.InsufficientFunds)),
 				"sender":       sender.String(),
 				"needed_value": commission.String(),
-				"gas_coin":     gasCoin.GetFullSymbol(),
+				"coin":         gasCoin.GetFullSymbol(),
 			}),
 		}
 	}
@@ -113,6 +129,7 @@ func (data DelegateData) Run(tx *Transaction, context state.Interface, rewardPoo
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), data.Value, coin.GetFullSymbol()),
 			Info: EncodeError(map[string]string{
+				"code":         strconv.Itoa(int(code.InsufficientFunds)),
 				"sender":       sender.String(),
 				"needed_value": data.Value.String(),
 				"coin":         coin.GetFullSymbol(),
@@ -130,9 +147,10 @@ func (data DelegateData) Run(tx *Transaction, context state.Interface, rewardPoo
 				Code: code.InsufficientFunds,
 				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), totalTxCost.String(), gasCoin.GetFullSymbol()),
 				Info: EncodeError(map[string]string{
+					"code":         strconv.Itoa(int(code.InsufficientFunds)),
 					"sender":       sender.String(),
 					"needed_value": totalTxCost.String(),
-					"gas_coin":     gasCoin.GetFullSymbol(),
+					"coin":         gasCoin.GetFullSymbol(),
 				}),
 			}
 		}

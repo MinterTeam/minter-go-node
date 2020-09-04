@@ -156,9 +156,11 @@ func (v *Validators) SetNewValidators(candidates []candidates.Candidate) {
 
 func (v *Validators) PunishByzantineValidator(tmAddress [20]byte) {
 	validator := v.GetByTmAddress(tmAddress)
-	validator.SetTotalBipStake(big.NewInt(0))
-	validator.toDrop = true
-	validator.isDirty = true
+	if validator != nil {
+		validator.SetTotalBipStake(big.NewInt(0))
+		validator.toDrop = true
+		validator.isDirty = true
+	}
 }
 
 func (v *Validators) Create(pubkey types.Pubkey, stake *big.Int) {

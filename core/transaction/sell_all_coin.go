@@ -10,6 +10,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
+	"strconv"
 )
 
 type SellAllCoinData struct {
@@ -43,6 +44,7 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.CheckStat
 				Code: code.MinimumValueToBuyReached,
 				Log:  fmt.Sprintf("You wanted to get minimum %s, but currently you will get %s", data.MinimumValueToBuy.String(), value.String()),
 				Info: EncodeError(map[string]string{
+					"code":                 strconv.Itoa(int(code.MinimumValueToBuyReached)),
 					"minimum_value_to_buy": data.MinimumValueToBuy.String(),
 					"coin":                 value.String(),
 				}),
@@ -70,6 +72,7 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.CheckStat
 				Code: code.MinimumValueToBuyReached,
 				Log:  fmt.Sprintf("You wanted to get minimum %s, but currently you will get %s", data.MinimumValueToBuy.String(), ret.String()),
 				Info: EncodeError(map[string]string{
+					"code":                 strconv.Itoa(int(code.MinimumValueToBuyReached)),
 					"minimum_value_to_buy": data.MinimumValueToBuy.String(),
 					"will_get_value":       ret.String(),
 				}),
@@ -80,6 +83,12 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.CheckStat
 			return nil, nil, nil, &Response{
 				Code: code.InsufficientFunds,
 				Log:  fmt.Sprintf("Insufficient funds for sender account"),
+				Info: EncodeError(map[string]string{
+					"code":         strconv.Itoa(int(code.InsufficientFunds)),
+					"sender":       sender.String(),
+					"coin":         coin.GetFullSymbol(),
+					"needed_value": commissionInBaseCoin.String(),
+				}),
 			}
 		}
 
@@ -103,6 +112,12 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.CheckStat
 			return nil, nil, nil, &Response{
 				Code: code.InsufficientFunds,
 				Log:  fmt.Sprintf("Insufficient funds for sender account"),
+				Info: EncodeError(map[string]string{
+					"code":         strconv.Itoa(int(code.InsufficientFunds)),
+					"sender":       sender.String(),
+					"coin":         coinFrom.GetFullSymbol(),
+					"needed_value": commissionInBaseCoin.String(),
+				}),
 			}
 		}
 
@@ -114,6 +129,7 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.CheckStat
 				Code: code.MinimumValueToBuyReached,
 				Log:  fmt.Sprintf("You wanted to get minimum %s, but currently you will get %s", data.MinimumValueToBuy.String(), value.String()),
 				Info: EncodeError(map[string]string{
+					"code":                 strconv.Itoa(int(code.MinimumValueToBuyReached)),
 					"minimum_value_to_buy": data.MinimumValueToBuy.String(),
 					"will_get_value":       value.String(),
 				}),
@@ -143,6 +159,7 @@ func (data SellAllCoinData) BasicCheck(tx *Transaction, context *state.CheckStat
 			Code: code.CrossConvert,
 			Log:  fmt.Sprintf("\"From\" coin equals to \"to\" coin"),
 			Info: EncodeError(map[string]string{
+				"code":         strconv.Itoa(int(code.CrossConvert)),
 				"coin_to_sell": fmt.Sprintf("%s", data.CoinToSell),
 				"coin_to_buy":  fmt.Sprintf("%s", data.CoinToBuy),
 			}),
@@ -154,6 +171,7 @@ func (data SellAllCoinData) BasicCheck(tx *Transaction, context *state.CheckStat
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin to sell not exists"),
 			Info: EncodeError(map[string]string{
+				"code":         strconv.Itoa(int(code.CoinNotExists)),
 				"coin_to_sell": fmt.Sprintf("%s", data.CoinToSell),
 			}),
 		}
@@ -164,6 +182,7 @@ func (data SellAllCoinData) BasicCheck(tx *Transaction, context *state.CheckStat
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin to buy not exists"),
 			Info: EncodeError(map[string]string{
+				"code":        strconv.Itoa(int(code.CoinNotExists)),
 				"coin_to_buy": fmt.Sprintf("%s", data.CoinToBuy),
 			}),
 		}
@@ -211,6 +230,7 @@ func (data SellAllCoinData) Run(tx *Transaction, context state.Interface, reward
 					ts.Value.String(),
 					coin.GetFullSymbol()),
 				Info: EncodeError(map[string]string{
+					"code":         strconv.Itoa(int(code.InsufficientFunds)),
 					"sender":       sender.String(),
 					"needed_value": ts.Value.String(),
 					"coin":         coin.GetFullSymbol(),

@@ -341,7 +341,7 @@ func TestRedeemCheckTxToWrongChainID(t *testing.T) {
 
 	check := c.Check{
 		Nonce:    []byte{1, 2, 3},
-		ChainID:  types.ChainTestnet,
+		ChainID:  types.ChainMainnet,
 		DueBlock: 1,
 		Coin:     coin,
 		Value:    checkValue,

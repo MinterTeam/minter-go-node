@@ -2,6 +2,7 @@ package v2
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/MinterTeam/minter-go-node/api/v2/service"
 	gw "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	_ "github.com/MinterTeam/node-grpc-gateway/statik"
@@ -14,10 +15,15 @@ import (
 	"github.com/tmc/grpc-websocket-proxy/wsproxy"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/grpclog"
+	"google.golang.org/grpc/status"
+	_struct "google.golang.org/protobuf/types/known/structpb"
 	"mime"
 	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -40,7 +46,7 @@ func Run(srv *service.Service, addrGRPC, addrApi string, traceLog bool) error {
 		),
 	)
 	runtime.DefaultContextTimeout = 10 * time.Second
-
+	runtime.GlobalHTTPErrorHandler = httpError
 	gw.RegisterApiServiceServer(grpcServer, srv)
 	grpc_prometheus.Register(grpcServer)
 
@@ -121,5 +127,61 @@ func contextWithTimeoutInterceptor(timeout time.Duration) func(ctx context.Conte
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		withTimeout, _ := context.WithTimeout(ctx, timeout)
 		return handler(withTimeout, req)
+	}
+}
+
+func parseStatus(s *status.Status) (string, map[string]interface{}) {
+	codeString := strconv.Itoa(runtime.HTTPStatusFromCode(s.Code()))
+	var data map[string]interface{}
+	details := s.Details()
+	if len(details) != 0 {
+		detail, ok := details[0].(*_struct.Struct)
+		if !ok {
+			return codeString, data
+		}
+
+		data = detail.AsMap()
+
+		code, ok := detail.GetFields()["code"]
+		if ok {
+			codeString = code.GetStringValue()
+		}
+	}
+	return codeString, data
+}
+
+func httpError(ctx context.Context, mux *runtime.ServeMux, marshaler runtime.Marshaler, w http.ResponseWriter, r *http.Request, err error) {
+	const fallback = `{"error": "failed to marshal error message"}`
+	type errorHTTPResponse struct {
+		Error interface{} `json:"error"`
+	}
+
+	contentType := marshaler.ContentType()
+	w.Header().Set("Content-Type", contentType)
+
+	s, ok := status.FromError(err)
+	if !ok {
+		s = status.New(codes.Unknown, err.Error())
+	}
+	st := runtime.HTTPStatusFromCode(s.Code())
+	w.WriteHeader(st)
+
+	codeString, data := parseStatus(s)
+
+	jErr := json.NewEncoder(w).Encode(errorHTTPResponse{
+		Error: struct {
+			Code    string                 `json:"code"`
+			Message string                 `json:"message"`
+			Data    map[string]interface{} `json:"data"`
+		}{
+			Code:    codeString,
+			Message: s.Message(),
+			Data:    data,
+		},
+	})
+
+	if jErr != nil {
+		grpclog.Infof("Failed to write response: %v", err)
+		w.Write([]byte(fallback))
 	}
 }

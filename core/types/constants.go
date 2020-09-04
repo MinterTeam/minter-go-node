@@ -6,7 +6,7 @@ const (
 	ChainTestnet = 0x02
 	ChainMainnet = 0x01
 
-	CurrentChainID = ChainMainnet
+	CurrentChainID = ChainTestnet
 )
 
 var (
