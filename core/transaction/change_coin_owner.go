@@ -26,6 +26,10 @@ func (data ChangeCoinOwnerData) BasicCheck(tx *Transaction, context *state.Check
 		return &Response{
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin %s not exists", data.Symbol),
+			Info: EncodeError(map[string]string{
+				"code":        strconv.Itoa(int(code.CoinNotExists)),
+				"coin_symbol": data.Symbol.String(),
+			}),
 		}
 	}
 
@@ -33,6 +37,9 @@ func (data ChangeCoinOwnerData) BasicCheck(tx *Transaction, context *state.Check
 		return &Response{
 			Code: code.IsNotOwnerOfCoin,
 			Log:  "Sender is not owner of coin",
+			Info: EncodeError(map[string]string{
+				"code": strconv.Itoa(int(code.IsNotOwnerOfCoin)),
+			}),
 		}
 	}
 
@@ -98,7 +105,7 @@ func (data ChangeCoinOwnerData) Run(tx *Transaction, context state.Interface, re
 				"code":         strconv.Itoa(int(code.InsufficientFunds)),
 				"sender":       sender.String(),
 				"needed_value": commission.String(),
-				"coin":         gasCoin.GetFullSymbol(),
+				"coin_symbol":  gasCoin.GetFullSymbol(),
 			}),
 		}
 	}

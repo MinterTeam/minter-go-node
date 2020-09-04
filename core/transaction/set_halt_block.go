@@ -109,7 +109,7 @@ func (data SetHaltBlockData) Run(tx *Transaction, context state.Interface, rewar
 				"code":         strconv.Itoa(int(code.InsufficientFunds)),
 				"sender":       sender.String(),
 				"needed_value": commission.String(),
-				"coin":         gasCoin.GetFullSymbol(),
+				"coin_symbol":  gasCoin.GetFullSymbol(),
 			}),
 		}
 	}
