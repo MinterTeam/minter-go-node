@@ -1,12 +1,7 @@
 package upgrades
 
-const UpgradeBlock1 = 5000
-const UpgradeBlock2 = 38519
-const UpgradeBlock3 = 109000
-const UpgradeBlock4 = 3183842
-
 func IsUpgradeBlock(height uint64) bool {
-	upgradeBlocks := []uint64{UpgradeBlock1, UpgradeBlock2, UpgradeBlock3, UpgradeBlock4}
+	upgradeBlocks := []uint64{} // fill this
 
 	for _, block := range upgradeBlocks {
 		if height == block {

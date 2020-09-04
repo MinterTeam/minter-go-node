@@ -13,7 +13,13 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/state/coins"
 	"github.com/MinterTeam/minter-go-node/core/state/frozenfunds"
 	"github.com/MinterTeam/minter-go-node/core/state/halts"
+	legacyAccounts "github.com/MinterTeam/minter-go-node/core/state/legacy/accounts"
+	legacyApp "github.com/MinterTeam/minter-go-node/core/state/legacy/app"
+	legacyCandidates "github.com/MinterTeam/minter-go-node/core/state/legacy/candidates"
+	legacyCoins "github.com/MinterTeam/minter-go-node/core/state/legacy/coins"
+	legacyFrozenfunds "github.com/MinterTeam/minter-go-node/core/state/legacy/frozenfunds"
 	"github.com/MinterTeam/minter-go-node/core/state/validators"
+	"github.com/MinterTeam/minter-go-node/core/state/waitlist"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/tree"
@@ -39,6 +45,10 @@ func (cs *CheckState) isValue_State() {}
 
 func (cs *CheckState) Lock() {
 	cs.state.lock.Lock()
+}
+
+func (cs *CheckState) Export(height uint64) types.AppState {
+	return cs.state.Export(height)
 }
 
 func (cs *CheckState) Unlock() {
@@ -77,8 +87,61 @@ func (cs *CheckState) Coins() coins.RCoins {
 func (cs *CheckState) Checks() checks.RChecks {
 	return cs.state.Checks
 }
+func (cs *CheckState) Watchlist() waitlist.RWaitList {
+	return cs.state.Waitlist
+}
 func (cs *CheckState) Tree() tree.ReadOnlyTree {
 	return cs.state.Tree()
+}
+
+func (cs *CheckState) Export11To12(height uint64) types.AppState {
+	iavlTree := cs.state.tree
+
+	candidatesState, err := legacyCandidates.NewCandidates(nil, iavlTree)
+	if err != nil {
+		log.Panicf("Create new state at height %d failed: %s", height, err)
+	}
+
+	validatorsState, err := validators.NewValidators(nil, iavlTree)
+	if err != nil {
+		log.Panicf("Create new state at height %d failed: %s", height, err)
+	}
+
+	appState, err := legacyApp.NewApp(nil, iavlTree)
+	if err != nil {
+		log.Panicf("Create new state at height %d failed: %s", height, err)
+	}
+
+	frozenFundsState, err := legacyFrozenfunds.NewFrozenFunds(nil, iavlTree)
+	if err != nil {
+		log.Panicf("Create new state at height %d failed: %s", height, err)
+	}
+
+	accountsState, err := legacyAccounts.NewAccounts(nil, iavlTree)
+	if err != nil {
+		log.Panicf("Create new state at height %d failed: %s", height, err)
+	}
+
+	coinsState, err := legacyCoins.NewCoins(nil, iavlTree)
+	if err != nil {
+		log.Panicf("Create new state at height %d failed: %s", height, err)
+	}
+
+	checksState, err := checks.NewChecks(iavlTree)
+	if err != nil {
+		log.Panicf("Create new state at height %d failed: %s", height, err)
+	}
+
+	state := new(types.AppState)
+	appState.Export(state, height)
+	coinsMap := coinsState.Export(state)
+	validatorsState.Export(state)
+	candidatesState.Export(state, coinsMap)
+	frozenFundsState.Export(state, height, coinsMap)
+	accountsState.Export(state, coinsMap)
+	checksState.Export(state)
+
+	return *state
 }
 
 type State struct {
@@ -91,6 +154,7 @@ type State struct {
 	Coins       *coins.Coins
 	Checks      *checks.Checks
 	Checker     *checker.Checker
+	Waitlist    *waitlist.WaitList
 
 	db             db.DB
 	events         eventsdb.IEventsDB
@@ -111,7 +175,7 @@ func NewState(height uint64, db db.DB, events eventsdb.IEventsDB, cacheSize int,
 		return nil, err
 	}
 
-	state.Candidates.LoadCandidates()
+	state.Candidates.LoadCandidatesDeliver()
 	state.Candidates.LoadStakes()
 	state.Validators.LoadValidators()
 
@@ -121,7 +185,7 @@ func NewState(height uint64, db db.DB, events eventsdb.IEventsDB, cacheSize int,
 func NewCheckStateAtHeight(height uint64, db db.DB) (*CheckState, error) {
 	iavlTree := tree.NewImmutableTree(height, db)
 
-	return newCheckStateForTree(iavlTree, nil, nil, 0)
+	return newCheckStateForTree(iavlTree, nil, db, 0)
 }
 
 func (s *State) Tree() tree.MTree {
@@ -160,7 +224,7 @@ func (s *State) Check() error {
 	return nil
 }
 
-const countBatchBlocksDelete = 100
+const countBatchBlocksDelete = 60
 
 func (s *State) Commit() ([]byte, error) {
 	s.Checker.Reset()
@@ -200,12 +264,16 @@ func (s *State) Commit() ([]byte, error) {
 		return nil, err
 	}
 
+	if err := s.Waitlist.Commit(); err != nil {
+		return nil, err
+	}
+
 	hash, version, err := s.tree.SaveVersion()
 	if err != nil {
 		return hash, err
 	}
 
-	if version%countBatchBlocksDelete == 0 && version-countBatchBlocksDelete > s.keepLastStates {
+	if version%countBatchBlocksDelete == 30 && version-countBatchBlocksDelete > s.keepLastStates {
 		if err := s.tree.DeleteVersionsIfExists(version-countBatchBlocksDelete-s.keepLastStates, version-s.keepLastStates); err != nil {
 			return hash, err
 		}
@@ -217,10 +285,11 @@ func (s *State) Commit() ([]byte, error) {
 func (s *State) Import(state types.AppState) error {
 	s.App.SetMaxGas(state.MaxGas)
 	s.App.SetTotalSlashed(helpers.StringToBigInt(state.TotalSlashed))
+	s.App.SetCoinsCount(uint32(len(state.Coins)))
 
 	for _, a := range state.Accounts {
 		if a.MultisigData != nil {
-			s.Accounts.CreateMultisig(a.MultisigData.Weights, a.MultisigData.Addresses, a.MultisigData.Threshold, 1)
+			s.Accounts.CreateMultisig(a.MultisigData.Weights, a.MultisigData.Addresses, a.MultisigData.Threshold, 1, a.Address)
 		}
 
 		s.Accounts.SetNonce(a.Address, a.Nonce)
@@ -231,7 +300,8 @@ func (s *State) Import(state types.AppState) error {
 	}
 
 	for _, c := range state.Coins {
-		s.Coins.Create(c.Symbol, c.Name, helpers.StringToBigInt(c.Volume), c.Crr, helpers.StringToBigInt(c.Reserve), helpers.StringToBigInt(c.MaxSupply))
+		s.Coins.Create(c.ID, c.Symbol, c.Name, helpers.StringToBigInt(c.Volume),
+			c.Crr, helpers.StringToBigInt(c.Reserve), helpers.StringToBigInt(c.MaxSupply), c.OwnerAddress)
 	}
 
 	var vals []*validators.Validator
@@ -248,8 +318,12 @@ func (s *State) Import(state types.AppState) error {
 	}
 	s.Validators.SetValidators(vals)
 
+	for _, pubkey := range state.BlockListCandidates {
+		s.Candidates.AddToBlockPubKey(pubkey)
+	}
+
 	for _, c := range state.Candidates {
-		s.Candidates.Create(c.OwnerAddress, c.RewardAddress, c.PubKey, c.Commission)
+		s.Candidates.CreateWithID(c.OwnerAddress, c.RewardAddress, c.ControlAddress, c.PubKey, c.Commission, c.ID)
 		if c.Status == candidates.CandidateStatusOnline {
 			s.Candidates.SetOnline(c.PubKey)
 		}
@@ -345,6 +419,11 @@ func newStateForTree(iavlTree tree.MTree, events eventsdb.IEventsDB, db db.DB, k
 		return nil, err
 	}
 
+	waitlistState, err := waitlist.NewWaitList(stateBus, iavlTree)
+	if err != nil {
+		return nil, err
+	}
+
 	state := &State{
 		Validators:  validatorsState,
 		App:         appState,
@@ -355,7 +434,9 @@ func newStateForTree(iavlTree tree.MTree, events eventsdb.IEventsDB, db db.DB, k
 		Checks:      checksState,
 		Checker:     stateChecker,
 		Halts:       haltsState,
-		bus:         stateBus,
+		Waitlist:    waitlistState,
+
+		bus: stateBus,
 
 		db:             db,
 		events:         events,

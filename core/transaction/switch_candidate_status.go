@@ -11,30 +11,19 @@ import (
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
+	"strconv"
 )
 
 type SetCandidateOnData struct {
 	PubKey types.Pubkey
 }
 
-func (data SetCandidateOnData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		PubKey string `json:"pub_key"`
-	}{
-		PubKey: data.PubKey.String(),
-	})
-}
-
 func (data SetCandidateOnData) GetPubKey() types.Pubkey {
 	return data.PubKey
 }
 
-func (data SetCandidateOnData) TotalSpend(tx *Transaction, context *state.CheckState) (TotalSpends, []Conversion, *big.Int, *Response) {
-	panic("implement me")
-}
-
 func (data SetCandidateOnData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
-	return checkCandidateOwnership(data, tx, context)
+	return checkCandidateControl(data, tx, context)
 }
 
 func (data SetCandidateOnData) String() string {
@@ -64,49 +53,52 @@ func (data SetCandidateOnData) Run(tx *Transaction, context state.Interface, rew
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
 	if !tx.GasCoin.IsBaseCoin() {
-		coin := checkState.Coins().GetCoin(tx.GasCoin)
+		gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
 
-		errResp := CheckReserveUnderflow(coin, commissionInBaseCoin)
+		errResp := CheckReserveUnderflow(gasCoin, commissionInBaseCoin)
 		if errResp != nil {
 			return *errResp
 		}
 
-		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
+		if gasCoin.Reserve().Cmp(commissionInBaseCoin) < 0 {
 			return Response{
 				Code: code.CoinReserveNotSufficient,
-				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.Reserve().String(), commissionInBaseCoin.String()),
+				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", gasCoin.Reserve().String(), commissionInBaseCoin.String()),
 				Info: EncodeError(map[string]string{
-					"has_reserve": coin.Reserve().String(),
-					"commission":  commissionInBaseCoin.String(),
-					"gas_coin":    coin.CName,
+					"has_value":      gasCoin.Reserve().String(),
+					"required_value": commissionInBaseCoin.String(),
+					"coin":           gasCoin.GetFullSymbol(),
 				}),
 			}
 		}
 
-		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
+		commission = formula.CalculateSaleAmount(gasCoin.Volume(), gasCoin.Reserve(), gasCoin.Crr(), commissionInBaseCoin)
 	}
 
 	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
+		gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
+
 		return Response{
 			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, tx.GasCoin),
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, gasCoin.GetFullSymbol()),
 			Info: EncodeError(map[string]string{
+				"code":         strconv.Itoa(int(code.InsufficientFunds)),
 				"sender":       sender.String(),
 				"needed_value": commission.String(),
-				"gas_coin":     fmt.Sprintf("%s", tx.GasCoin),
+				"coin":         gasCoin.GetFullSymbol(),
 			}),
 		}
 	}
 
-	if deliveryState, ok := context.(*state.State); ok {
+	if deliverState, ok := context.(*state.State); ok {
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		deliveryState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
-		deliveryState.Coins.SubVolume(tx.GasCoin, commission)
+		deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
+		deliverState.Coins.SubVolume(tx.GasCoin, commission)
 
-		deliveryState.Accounts.SubBalance(sender, tx.GasCoin, commission)
-		deliveryState.Candidates.SetOnline(data.PubKey)
-		deliveryState.Accounts.SetNonce(sender, tx.Nonce)
+		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
+		deliverState.Candidates.SetOnline(data.PubKey)
+		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}
 
 	tags := kv.Pairs{
@@ -138,12 +130,8 @@ func (data SetCandidateOffData) GetPubKey() types.Pubkey {
 	return data.PubKey
 }
 
-func (data SetCandidateOffData) TotalSpend(tx *Transaction, context *state.CheckState) (TotalSpends, []Conversion, *big.Int, *Response) {
-	panic("implement me")
-}
-
 func (data SetCandidateOffData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
-	return checkCandidateOwnership(data, tx, context)
+	return checkCandidateControl(data, tx, context)
 }
 
 func (data SetCandidateOffData) String() string {
@@ -180,9 +168,9 @@ func (data SetCandidateOffData) Run(tx *Transaction, context state.Interface, re
 				Code: code.CoinReserveNotSufficient,
 				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.Reserve().String(), commissionInBaseCoin.String()),
 				Info: EncodeError(map[string]string{
-					"has_reserve": coin.Reserve().String(),
-					"commission":  commissionInBaseCoin.String(),
-					"gas_coin":    coin.CName,
+					"has_value":      coin.Reserve().String(),
+					"required_value": commissionInBaseCoin.String(),
+					"coin":           coin.CName,
 				}),
 			}
 		}
@@ -195,23 +183,24 @@ func (data SetCandidateOffData) Run(tx *Transaction, context state.Interface, re
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, tx.GasCoin),
 			Info: EncodeError(map[string]string{
+				"code":         strconv.Itoa(int(code.InsufficientFunds)),
 				"sender":       sender.String(),
 				"needed_value": commission.String(),
-				"gas_coin":     fmt.Sprintf("%s", tx.GasCoin),
+				"coin":         fmt.Sprintf("%s", tx.GasCoin),
 			}),
 		}
 	}
 
-	if deliveryState, ok := context.(*state.State); ok {
+	if deliverState, ok := context.(*state.State); ok {
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		deliveryState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
-		deliveryState.Coins.SubVolume(tx.GasCoin, commission)
+		deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
+		deliverState.Coins.SubVolume(tx.GasCoin, commission)
 
-		deliveryState.Accounts.SubBalance(sender, tx.GasCoin, commission)
-		deliveryState.Candidates.SetOffline(data.PubKey)
-		deliveryState.Validators.SetToDrop(data.PubKey)
-		deliveryState.Accounts.SetNonce(sender, tx.Nonce)
+		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
+		deliverState.Candidates.SetOffline(data.PubKey)
+		deliverState.Validators.SetToDrop(data.PubKey)
+		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}
 
 	tags := kv.Pairs{
@@ -225,4 +214,29 @@ func (data SetCandidateOffData) Run(tx *Transaction, context state.Interface, re
 		GasWanted: tx.Gas(),
 		Tags:      tags,
 	}
+}
+
+func checkCandidateControl(data CandidateTx, tx *Transaction, context *state.CheckState) *Response {
+	if !context.Candidates().Exists(data.GetPubKey()) {
+		return &Response{
+			Code: code.CandidateNotFound,
+			Log:  fmt.Sprintf("Candidate with such public key (%s) not found", data.GetPubKey().String()),
+			Info: EncodeError(map[string]string{
+				"public_key": data.GetPubKey().String(),
+			}),
+		}
+	}
+
+	owner := context.Candidates().GetCandidateOwner(data.GetPubKey())
+	control := context.Candidates().GetCandidateControl(data.GetPubKey())
+	sender, _ := tx.Sender()
+	switch sender {
+	case owner, control:
+	default:
+		return &Response{
+			Code: code.IsNotOwnerOfCandidate,
+			Log:  fmt.Sprintf("Sender is not an owner of a candidate")}
+	}
+
+	return nil
 }

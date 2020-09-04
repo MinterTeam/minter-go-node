@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
@@ -12,30 +11,15 @@ import (
 	"github.com/MinterTeam/minter-go-node/hexutil"
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
+	"strconv"
 )
 
 const unbondPeriod = 518400
 
 type UnbondData struct {
 	PubKey types.Pubkey
-	Coin   types.CoinSymbol
+	Coin   types.CoinID
 	Value  *big.Int
-}
-
-func (data UnbondData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		PubKey string `json:"pub_key"`
-		Coin   string `json:"coin"`
-		Value  string `json:"value"`
-	}{
-		PubKey: data.PubKey.String(),
-		Coin:   data.Coin.String(),
-		Value:  data.Value.String(),
-	})
-}
-
-func (data UnbondData) TotalSpend(tx *Transaction, context *state.CheckState) (TotalSpends, []Conversion, *big.Int, *Response) {
-	panic("implement me")
 }
 
 func (data UnbondData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
@@ -50,37 +34,60 @@ func (data UnbondData) BasicCheck(tx *Transaction, context *state.CheckState) *R
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin %s not exists", data.Coin),
 			Info: EncodeError(map[string]string{
+				"code": strconv.Itoa(int(code.CoinNotExists)),
 				"coin": fmt.Sprintf("%s", data.Coin),
 			}),
 		}
 	}
 
+	errorInfo := map[string]string{
+		"pub_key":       data.PubKey.String(),
+		"unbound_value": data.Value.String(),
+	}
 	if !context.Candidates().Exists(data.PubKey) {
+		errorInfo["code"] = strconv.Itoa(int(code.CandidateNotFound))
 		return &Response{
 			Code: code.CandidateNotFound,
 			Log:  fmt.Sprintf("Candidate with such public key not found"),
-			Info: EncodeError(map[string]string{
-				"pub_key": data.PubKey.String(),
-			}),
+			Info: EncodeError(errorInfo),
 		}
 	}
 
 	sender, _ := tx.Sender()
+
+	if waitlist := context.Watchlist().Get(sender, data.PubKey, data.Coin); waitlist != nil {
+		value := big.NewInt(0).Sub(data.Value, waitlist.Value)
+		if value.Sign() < 1 {
+			return nil
+		}
+		errorInfo["waitlist_value"] = waitlist.Value.String()
+		errorInfo["code"] = strconv.Itoa(int(code.InsufficientWaitList))
+		return &Response{
+			Code: code.InsufficientWaitList,
+			Log:  fmt.Sprintf("Insufficient amount at waitlist for sender account"),
+			Info: EncodeError(errorInfo),
+		}
+	}
+
 	stake := context.Candidates().GetStakeValueOfAddress(data.PubKey, sender, data.Coin)
 
 	if stake == nil {
+		errorInfo["code"] = strconv.Itoa(int(code.StakeNotFound))
 		return &Response{
 			Code: code.StakeNotFound,
-			Log:  fmt.Sprintf("Stake of current user not found")}
+			Log:  fmt.Sprintf("Stake of current user not found"),
+			Info: EncodeError(errorInfo),
+		}
 	}
 
 	if stake.Cmp(data.Value) < 0 {
+		errorInfo["stake_value"] = stake.String()
+		errorInfo["code"] = strconv.Itoa(int(code.InsufficientStake))
 		return &Response{
 			Code: code.InsufficientStake,
 			Log:  fmt.Sprintf("Insufficient stake for sender account"),
-			Info: EncodeError(map[string]string{
-				"pub_key": data.PubKey.String(),
-			})}
+			Info: EncodeError(errorInfo),
+		}
 	}
 
 	return nil
@@ -112,54 +119,66 @@ func (data UnbondData) Run(tx *Transaction, context state.Interface, rewardPool 
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
-	if !tx.GasCoin.IsBaseCoin() {
-		coin := checkState.Coins().GetCoin(tx.GasCoin)
+	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
 
-		errResp := CheckReserveUnderflow(coin, commissionInBaseCoin)
+	if !tx.GasCoin.IsBaseCoin() {
+		errResp := CheckReserveUnderflow(gasCoin, commissionInBaseCoin)
 		if errResp != nil {
 			return *errResp
 		}
 
-		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
+		if gasCoin.Reserve().Cmp(commissionInBaseCoin) < 0 {
 			return Response{
 				Code: code.CoinReserveNotSufficient,
-				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.Reserve().String(), commissionInBaseCoin.String()),
+				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", gasCoin.Reserve().String(), commissionInBaseCoin.String()),
 				Info: EncodeError(map[string]string{
-					"has_reserve": coin.Reserve().String(),
-					"commission":  commissionInBaseCoin.String(),
-					"gas_coin":    coin.CName,
+					"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
+					"has_value":      gasCoin.Reserve().String(),
+					"required_value": commissionInBaseCoin.String(),
+					"coin":           gasCoin.GetFullSymbol(),
 				}),
 			}
 		}
 
-		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
+		commission = formula.CalculateSaleAmount(gasCoin.Volume(), gasCoin.Reserve(), gasCoin.Crr(), commissionInBaseCoin)
 	}
 
 	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
 		return Response{
 			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, tx.GasCoin),
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, gasCoin.GetFullSymbol()),
 			Info: EncodeError(map[string]string{
+				"code":         strconv.Itoa(int(code.InsufficientFunds)),
 				"sender":       sender.String(),
 				"needed_value": commission.String(),
-				"gas_coin":     fmt.Sprintf("%s", tx.GasCoin),
+				"coin":         gasCoin.GetFullSymbol(),
 			}),
 		}
 	}
 
-	if deliveryState, ok := context.(*state.State); ok {
+	if deliverState, ok := context.(*state.State); ok {
 		// now + 30 days
 		unbondAtBlock := currentBlock + unbondPeriod
 
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		deliveryState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
-		deliveryState.Coins.SubVolume(tx.GasCoin, commission)
+		deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
+		deliverState.Coins.SubVolume(tx.GasCoin, commission)
 
-		deliveryState.Accounts.SubBalance(sender, tx.GasCoin, commission)
-		deliveryState.Candidates.SubStake(sender, data.PubKey, data.Coin, data.Value)
-		deliveryState.FrozenFunds.AddFund(unbondAtBlock, sender, data.PubKey, data.Coin, data.Value)
-		deliveryState.Accounts.SetNonce(sender, tx.Nonce)
+		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
+
+		if watchList := deliverState.Waitlist.Get(sender, data.PubKey, data.Coin); watchList != nil {
+			diffValue := big.NewInt(0).Sub(data.Value, watchList.Value)
+			deliverState.Waitlist.Delete(sender, data.PubKey, data.Coin)
+			if diffValue.Sign() == -1 {
+				deliverState.Waitlist.AddWaitList(sender, data.PubKey, data.Coin, big.NewInt(0).Neg(diffValue))
+			}
+		} else {
+			deliverState.Candidates.SubStake(sender, data.PubKey, data.Coin, data.Value)
+		}
+
+		deliverState.FrozenFunds.AddFund(unbondAtBlock, sender, data.PubKey, data.Coin, data.Value)
+		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}
 
 	tags := kv.Pairs{

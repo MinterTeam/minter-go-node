@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"github.com/MinterTeam/minter-go-node/core/code"
+	"github.com/MinterTeam/minter-go-node/core/state/accounts"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/helpers"
@@ -16,7 +17,7 @@ func TestSendTx(t *testing.T) {
 
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
@@ -53,7 +54,7 @@ func TestSendTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error: %s", response.Log)
 	}
@@ -80,9 +81,9 @@ func TestSendMultisigTx(t *testing.T) {
 	privateKey2, _ := crypto.GenerateKey()
 	addr2 := crypto.PubkeyToAddress(privateKey2.PublicKey)
 
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 
-	msig := cState.Accounts.CreateMultisig([]uint{1, 1}, []types.Address{addr1, addr2}, 1, 1)
+	msig := cState.Accounts.CreateMultisig([]uint{1, 1}, []types.Address{addr1, addr2}, 1, 1, accounts.CreateMultisigAddress(addr1, 1))
 
 	cState.Accounts.AddBalance(msig, coin, helpers.BipToPip(big.NewInt(1000000)))
 
@@ -121,7 +122,7 @@ func TestSendMultisigTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error: %s", response.Log)
 	}
@@ -148,9 +149,9 @@ func TestSendFailedMultisigTx(t *testing.T) {
 	privateKey2, _ := crypto.GenerateKey()
 	addr2 := crypto.PubkeyToAddress(privateKey2.PublicKey)
 
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 
-	msig := cState.Accounts.CreateMultisig([]uint{1, 3}, []types.Address{addr1, addr2}, 3, 1)
+	msig := cState.Accounts.CreateMultisig([]uint{1, 3}, []types.Address{addr1, addr2}, 3, 1, accounts.CreateMultisigAddress(addr1, 1))
 
 	cState.Accounts.AddBalance(msig, coin, helpers.BipToPip(big.NewInt(1000000)))
 
@@ -189,7 +190,7 @@ func TestSendFailedMultisigTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.IncorrectMultiSignature {
 		t.Fatalf("Response code is not %d. Gor: %d", code.IncorrectMultiSignature, response.Code)
 	}

@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
@@ -11,24 +10,18 @@ import (
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
+	"strconv"
 )
 
 type SendData struct {
-	Coin  types.CoinSymbol
+	Coin  types.CoinID
 	To    types.Address
 	Value *big.Int
 }
 
-func (data SendData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		Coin  string `json:"coin"`
-		To    string `json:"to"`
-		Value string `json:"value"`
-	}{
-		Coin:  data.Coin.String(),
-		To:    data.To.String(),
-		Value: data.Value.String(),
-	})
+type Coin struct {
+	ID     uint32 `json:"id"`
+	Symbol string `json:"symbol"`
 }
 
 func (data SendData) TotalSpend(tx *Transaction, context *state.CheckState) (TotalSpends, []Conversion, *big.Int, *Response) {
@@ -53,8 +46,10 @@ func (data SendData) TotalSpend(tx *Transaction, context *state.CheckState) (Tot
 					coin.Reserve().String(),
 					commissionInBaseCoin.String()),
 				Info: EncodeError(map[string]string{
-					"has":      coin.Reserve().String(),
-					"required": commissionInBaseCoin.String(),
+					"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
+					"has_value":      coin.Reserve().String(),
+					"required_value": commissionInBaseCoin.String(),
+					"coin":           fmt.Sprintf("%s", types.GetBaseCoin()),
 				}),
 			}
 		}
@@ -64,7 +59,7 @@ func (data SendData) TotalSpend(tx *Transaction, context *state.CheckState) (Tot
 			FromCoin:    tx.GasCoin,
 			FromAmount:  commission,
 			FromReserve: commissionInBaseCoin,
-			ToCoin:      types.GetBaseCoin(),
+			ToCoin:      types.GetBaseCoinID(),
 		})
 	}
 
@@ -78,7 +73,11 @@ func (data SendData) BasicCheck(tx *Transaction, context *state.CheckState) *Res
 	if data.Value == nil {
 		return &Response{
 			Code: code.DecodeError,
-			Log:  "Incorrect tx data"}
+			Log:  "Incorrect tx data",
+			Info: EncodeError(map[string]string{
+				"code": strconv.Itoa(int(code.CoinNotExists)),
+			}),
+		}
 	}
 
 	if !context.Coins().Exists(data.Coin) {
@@ -86,6 +85,7 @@ func (data SendData) BasicCheck(tx *Transaction, context *state.CheckState) *Res
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin %s not exists", data.Coin),
 			Info: EncodeError(map[string]string{
+				"code": strconv.Itoa(int(code.CoinNotExists)),
 				"coin": fmt.Sprintf("%s", data.Coin),
 			}),
 		}
@@ -124,37 +124,40 @@ func (data SendData) Run(tx *Transaction, context state.Interface, rewardPool *b
 
 	for _, ts := range totalSpends {
 		if checkState.Accounts().GetBalance(sender, ts.Coin).Cmp(ts.Value) < 0 {
+			coin := checkState.Coins().GetCoin(ts.Coin)
+
 			return Response{
 				Code: code.InsufficientFunds,
 				Log: fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s.",
 					sender.String(),
 					ts.Value.String(),
-					ts.Coin),
+					coin.GetFullSymbol()),
 				Info: EncodeError(map[string]string{
+					"code":         strconv.Itoa(int(code.InsufficientFunds)),
 					"sender":       sender.String(),
 					"needed_value": ts.Value.String(),
-					"coin":         fmt.Sprintf("%s", ts.Coin),
+					"coin":         coin.GetFullSymbol(),
 				}),
 			}
 		}
 	}
 
-	if deliveryState, ok := context.(*state.State); ok {
+	if deliverState, ok := context.(*state.State); ok {
 		for _, ts := range totalSpends {
-			deliveryState.Accounts.SubBalance(sender, ts.Coin, ts.Value)
+			deliverState.Accounts.SubBalance(sender, ts.Coin, ts.Value)
 		}
 
 		for _, conversion := range conversions {
-			deliveryState.Coins.SubVolume(conversion.FromCoin, conversion.FromAmount)
-			deliveryState.Coins.SubReserve(conversion.FromCoin, conversion.FromReserve)
+			deliverState.Coins.SubVolume(conversion.FromCoin, conversion.FromAmount)
+			deliverState.Coins.SubReserve(conversion.FromCoin, conversion.FromReserve)
 
-			deliveryState.Coins.AddVolume(conversion.ToCoin, conversion.ToAmount)
-			deliveryState.Coins.AddReserve(conversion.ToCoin, conversion.ToReserve)
+			deliverState.Coins.AddVolume(conversion.ToCoin, conversion.ToAmount)
+			deliverState.Coins.AddReserve(conversion.ToCoin, conversion.ToReserve)
 		}
 
 		rewardPool.Add(rewardPool, tx.CommissionInBaseCoin())
-		deliveryState.Accounts.AddBalance(data.To, data.Coin, data.Value)
-		deliveryState.Accounts.SetNonce(sender, tx.Nonce)
+		deliverState.Accounts.AddBalance(data.To, data.Coin, data.Value)
+		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}
 
 	tags := kv.Pairs{

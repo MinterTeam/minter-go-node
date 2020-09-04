@@ -6,6 +6,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/rewards"
+	"github.com/MinterTeam/minter-go-node/core/state"
+	"github.com/MinterTeam/minter-go-node/core/state/coins"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
@@ -34,13 +36,14 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 	}
 
 	response := &pb.BlockResponse{
-		Hash:              hex.EncodeToString(block.Block.Hash()),
-		Height:            fmt.Sprintf("%d", block.Block.Height),
-		Time:              block.Block.Time.Format(time.RFC3339Nano),
-		TransactionsCount: fmt.Sprintf("%d", len(block.Block.Txs)),
+		Hash:             hex.EncodeToString(block.Block.Hash()),
+		Height:           fmt.Sprintf("%d", block.Block.Height),
+		Time:             block.Block.Time.Format(time.RFC3339Nano),
+		TransactionCount: fmt.Sprintf("%d", len(block.Block.Txs)),
 	}
 
 	var totalValidators []*tmTypes.Validator
+	var cState *state.CheckState
 
 	if len(req.Fields) == 0 {
 		response.Size = fmt.Sprintf("%d", len(s.cdc.MustMarshalBinaryLengthPrefixed(block)))
@@ -50,7 +53,12 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 			return new(pb.BlockResponse), timeoutStatus.Err()
 		}
 
-		response.Transactions, err = s.blockTransaction(block, blockResults)
+		cState, err = s.blockchain.GetStateForHeight(uint64(height))
+		if err != nil {
+			return nil, err
+		}
+
+		response.Transactions, err = s.blockTransaction(block, blockResults, cState.Coins())
 		if err != nil {
 			return new(pb.BlockResponse), err
 		}
@@ -86,6 +94,12 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 
 		response.Evidence = blockEvidence(block)
 
+		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+			return new(pb.BlockResponse), timeoutStatus.Err()
+		}
+
+		response.Missed = missedBlockValidators(cState)
+
 		return response, nil
 	}
 
@@ -98,11 +112,24 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 			response.Size = fmt.Sprintf("%d", len(s.cdc.MustMarshalBinaryLengthPrefixed(block)))
 		case pb.BlockRequest_block_reward:
 			response.BlockReward = rewards.GetRewardForBlock(uint64(height)).String()
-		case pb.BlockRequest_transactions:
-			response.Transactions, err = s.blockTransaction(block, blockResults)
+		case pb.BlockRequest_transactions, pb.BlockRequest_missed:
+			if cState == nil {
+				cState, err = s.blockchain.GetStateForHeight(uint64(height))
+				if err != nil {
+					return nil, err
+				}
+			}
+
+			if pb.BlockRequest_missed == field {
+				response.Missed = missedBlockValidators(cState)
+				continue
+			}
+
+			response.Transactions, err = s.blockTransaction(block, blockResults, cState.Coins())
 			if err != nil {
 				return new(pb.BlockResponse), err
 			}
+
 		case pb.BlockRequest_proposer, pb.BlockRequest_validators:
 			if len(totalValidators) == 0 {
 				tmValidators, err := s.client.Validators(&valHeight, 1, 100)
@@ -162,6 +189,15 @@ func blockValidators(totalValidators []*tmTypes.Validator, block *core_types.Res
 	return validators
 }
 
+func missedBlockValidators(s *state.CheckState) []string {
+	var missedBlocks []string
+	for _, val := range s.Validators().GetValidators() {
+		missedBlocks = append(missedBlocks, val.AbsentTimes.String())
+	}
+
+	return missedBlocks
+}
+
 func blockProposer(block *core_types.ResultBlock, totalValidators []*tmTypes.Validator) (string, error) {
 	p, err := getBlockProposer(block, totalValidators)
 	if err != nil {
@@ -174,8 +210,9 @@ func blockProposer(block *core_types.ResultBlock, totalValidators []*tmTypes.Val
 	return "", nil
 }
 
-func (s *Service) blockTransaction(block *core_types.ResultBlock, blockResults *core_types.ResultBlockResults) ([]*pb.BlockResponse_Transaction, error) {
+func (s *Service) blockTransaction(block *core_types.ResultBlock, blockResults *core_types.ResultBlockResults, coins coins.RCoins) ([]*pb.BlockResponse_Transaction, error) {
 	txs := make([]*pb.BlockResponse_Transaction, 0, len(block.Block.Data.Txs))
+
 	for i, rawTx := range block.Block.Data.Txs {
 		tx, _ := transaction.TxDecoder.DecodeFromBytes(rawTx)
 		sender, _ := tx.Sender()
@@ -185,9 +222,9 @@ func (s *Service) blockTransaction(block *core_types.ResultBlock, blockResults *
 			tags[string(tag.Key)] = string(tag.Value)
 		}
 
-		dataStruct, err := s.encodeTxData(tx)
+		data, err := encode(tx.GetDecodedData(), coins)
 		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
+			return nil, status.Error(codes.Internal, err.Error())
 		}
 
 		txs = append(txs, &pb.BlockResponse_Transaction{
@@ -197,7 +234,7 @@ func (s *Service) blockTransaction(block *core_types.ResultBlock, blockResults *
 			Nonce:       fmt.Sprintf("%d", tx.Nonce),
 			GasPrice:    fmt.Sprintf("%d", tx.GasPrice),
 			Type:        fmt.Sprintf("%d", tx.Type),
-			Data:        dataStruct,
+			Data:        data,
 			Payload:     tx.Payload,
 			ServiceData: tx.ServiceData,
 			Gas:         fmt.Sprintf("%d", tx.Gas()),

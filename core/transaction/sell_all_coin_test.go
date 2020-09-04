@@ -13,18 +13,18 @@ import (
 func TestSellAllCoinTx(t *testing.T) {
 	cState := getState()
 
-	createTestCoin(cState)
+	coinID := createTestCoin(cState)
 
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
 	minValToBuy, _ := big.NewInt(0).SetString("151191152412701306252", 10)
 	data := SellAllCoinData{
 		CoinToSell:        coin,
-		CoinToBuy:         getTestCoinSymbol(),
+		CoinToBuy:         coinID,
 		MinimumValueToBuy: minValToBuy,
 	}
 
@@ -54,7 +54,7 @@ func TestSellAllCoinTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
@@ -66,7 +66,7 @@ func TestSellAllCoinTx(t *testing.T) {
 	}
 
 	targetTestBalance, _ := big.NewInt(0).SetString("27098160365576186275223", 10)
-	testBalance := cState.Accounts.GetBalance(addr, getTestCoinSymbol())
+	testBalance := cState.Accounts.GetBalance(addr, coinID)
 	if testBalance.Cmp(targetTestBalance) != 0 {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", getTestCoinSymbol(), targetTestBalance, testBalance)
 	}

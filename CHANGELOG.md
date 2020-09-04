@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.2.0
+
+- [core] Added ControlAddress for Candidate
+- [core] Added changing candidate’s public key functionality
+- [core] Coins now identified by ID, not by symbols
+- [core] Added RecreateCoin tx
+- [core] Added ChangeCoinOwner tx
+- [core] Limit validators slots to 64
+- [core] Add EditMultisigOwnersData tx
+- [core] Add PriceVoteData tx
+- [core] Stake value calculation changes
+
 ## 1.1.8
 
 BUG FIXES

@@ -6,7 +6,7 @@ const (
 	ChainTestnet = 0x02
 	ChainMainnet = 0x01
 
-	CurrentChainID = ChainMainnet
+	CurrentChainID = ChainTestnet
 )
 
 var (
@@ -16,6 +16,10 @@ var (
 
 func GetBaseCoin() CoinSymbol {
 	return getBaseCoin(CurrentChainID)
+}
+
+func GetBaseCoinID() CoinID {
+	return BasecoinID
 }
 
 func getBaseCoin(chainID ChainID) CoinSymbol {

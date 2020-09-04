@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
@@ -11,6 +10,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
+	"strconv"
 )
 
 type CandidateTx interface {
@@ -18,29 +18,15 @@ type CandidateTx interface {
 }
 
 type EditCandidateData struct {
-	PubKey        types.Pubkey
-	RewardAddress types.Address
-	OwnerAddress  types.Address
-}
-
-func (data EditCandidateData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		PubKey        string `json:"pub_key"`
-		RewardAddress string `json:"reward_address"`
-		OwnerAddress  string `json:"owner_address"`
-	}{
-		PubKey:        data.PubKey.String(),
-		RewardAddress: data.RewardAddress.String(),
-		OwnerAddress:  data.OwnerAddress.String(),
-	})
+	PubKey         types.Pubkey
+	NewPubKey      *types.Pubkey `rlp:"nil"`
+	RewardAddress  types.Address
+	OwnerAddress   types.Address
+	ControlAddress types.Address
 }
 
 func (data EditCandidateData) GetPubKey() types.Pubkey {
 	return data.PubKey
-}
-
-func (data EditCandidateData) TotalSpend(tx *Transaction, context *state.CheckState) (TotalSpends, []Conversion, *big.Int, *Response) {
-	panic("implement me")
 }
 
 func (data EditCandidateData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
@@ -70,53 +56,81 @@ func (data EditCandidateData) Run(tx *Transaction, context state.Interface, rewa
 		return *response
 	}
 
+	if data.NewPubKey != nil && data.PubKey == *data.NewPubKey {
+		return Response{
+			Code: code.NewPublicKeyIsBad,
+			Log:  fmt.Sprintf("Current public key (%s) equals new public key (%s)", data.PubKey.String(), data.NewPubKey.String()),
+			Info: EncodeError(map[string]string{
+				"code":           strconv.Itoa(int(code.NewPublicKeyIsBad)),
+				"public_key":     data.PubKey.String(),
+				"new_public_key": data.NewPubKey.String(),
+			}),
+		}
+	}
+
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
-	if !tx.GasCoin.IsBaseCoin() {
-		coin := checkState.Coins().GetCoin(tx.GasCoin)
+	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
 
-		errResp := CheckReserveUnderflow(coin, commissionInBaseCoin)
+	if !tx.GasCoin.IsBaseCoin() {
+		errResp := CheckReserveUnderflow(gasCoin, commissionInBaseCoin)
 		if errResp != nil {
 			return *errResp
 		}
 
-		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
+		if gasCoin.Reserve().Cmp(commissionInBaseCoin) < 0 {
 			return Response{
 				Code: code.CoinReserveNotSufficient,
-				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.Reserve().String(), commissionInBaseCoin.String()),
+				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", gasCoin.Reserve().String(), commissionInBaseCoin.String()),
 				Info: EncodeError(map[string]string{
-					"has_reserve": coin.Reserve().String(),
-					"commission":  commissionInBaseCoin.String(),
-					"gas_coin":    coin.CName,
+					"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
+					"has_reserve":    gasCoin.Reserve().String(),
+					"required_value": commissionInBaseCoin.String(),
+					"coin":           gasCoin.GetFullSymbol(),
 				}),
 			}
 		}
 
-		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
+		commission = formula.CalculateSaleAmount(gasCoin.Volume(), gasCoin.Reserve(), gasCoin.Crr(), commissionInBaseCoin)
 	}
 
 	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
 		return Response{
 			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission.String(), tx.GasCoin),
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission.String(), gasCoin.GetFullSymbol()),
 			Info: EncodeError(map[string]string{
+				"code":         strconv.Itoa(int(code.InsufficientFunds)),
 				"sender":       sender.String(),
 				"needed_value": commission.String(),
-				"gas_coin":     fmt.Sprintf("%s", tx.GasCoin),
+				"coin":         gasCoin.GetFullSymbol(),
 			}),
 		}
 	}
 
-	if deliveryState, ok := context.(*state.State); ok {
+	if data.NewPubKey != nil && checkState.Candidates().IsBlockedPubKey(*data.NewPubKey) {
+		return Response{
+			Code: code.PublicKeyInBlockList,
+			Log:  fmt.Sprintf("Public key (%s) exists in block list", data.NewPubKey.String()),
+			Info: EncodeError(map[string]string{
+				"code":           strconv.Itoa(int(code.PublicKeyInBlockList)),
+				"new_public_key": data.NewPubKey.String(),
+			}),
+		}
+	}
+
+	if deliverState, ok := context.(*state.State); ok {
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		deliveryState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
-		deliveryState.Coins.SubVolume(tx.GasCoin, commission)
+		deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
+		deliverState.Coins.SubVolume(tx.GasCoin, commission)
 
-		deliveryState.Accounts.SubBalance(sender, tx.GasCoin, commission)
-		deliveryState.Candidates.Edit(data.PubKey, data.RewardAddress, data.OwnerAddress)
-		deliveryState.Accounts.SetNonce(sender, tx.Nonce)
+		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
+		deliverState.Candidates.Edit(data.PubKey, data.RewardAddress, data.OwnerAddress, data.ControlAddress)
+		if data.NewPubKey != nil {
+			deliverState.Candidates.ChangePubKey(data.PubKey, *data.NewPubKey)
+		}
+		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}
 
 	tags := kv.Pairs{
@@ -138,6 +152,7 @@ func checkCandidateOwnership(data CandidateTx, tx *Transaction, context *state.C
 			Code: code.CandidateNotFound,
 			Log:  fmt.Sprintf("Candidate with such public key (%s) not found", data.GetPubKey().String()),
 			Info: EncodeError(map[string]string{
+				"code":       strconv.Itoa(int(code.CandidateNotFound)),
 				"public_key": data.GetPubKey().String(),
 			}),
 		}
@@ -148,7 +163,11 @@ func checkCandidateOwnership(data CandidateTx, tx *Transaction, context *state.C
 	if owner != sender {
 		return &Response{
 			Code: code.IsNotOwnerOfCandidate,
-			Log:  fmt.Sprintf("Sender is not an owner of a candidate")}
+			Log:  fmt.Sprintf("Sender is not an owner of a candidate"),
+			Info: EncodeError(map[string]string{
+				"code": strconv.Itoa(int(code.IsNotOwnerOfCandidate)),
+			}),
+		}
 	}
 
 	return nil

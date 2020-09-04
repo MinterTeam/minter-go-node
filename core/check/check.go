@@ -13,26 +13,40 @@ import (
 )
 
 var (
+	// ErrInvalidSig represents error on given v, r, s values
 	ErrInvalidSig = errors.New("invalid transaction v, r, s values")
 )
 
+// Check is like an ordinary bank check.
+// Each user of network can issue check with any amount of coins and pass it to another person.
+// Receiver will be able to cash a check from arbitrary account.
+//
+// Nonce - unique "id" of the check.
+// Coin Symbol - symbol of coin.
+// Value - amount of coins.
+// GasCoin - symbol of a coin to pay fee.
+// DueBlock - defines last block height in which the check can be used.
+// Lock - secret to prevent hijacking.
+// V, R, S - signature of issuer.
 type Check struct {
 	Nonce    []byte
 	ChainID  types.ChainID
 	DueBlock uint64
-	Coin     types.CoinSymbol
+	Coin     types.CoinID
 	Value    *big.Int
-	GasCoin  types.CoinSymbol
+	GasCoin  types.CoinID
 	Lock     *big.Int
 	V        *big.Int
 	R        *big.Int
 	S        *big.Int
 }
 
+// Sender returns sender's address of a Check, recovered from signature
 func (check *Check) Sender() (types.Address, error) {
 	return recoverPlain(check.Hash(), check.R, check.S, check.V)
 }
 
+// LockPubKey returns bytes of public key, which is used for proving check's recipient rights
 func (check *Check) LockPubKey() ([]byte, error) {
 	sig := check.Lock.Bytes()
 
@@ -53,6 +67,7 @@ func (check *Check) LockPubKey() ([]byte, error) {
 	return pub, nil
 }
 
+// HashWithoutLock returns a types.Hash to be used in process of signing and checking Lock
 func (check *Check) HashWithoutLock() types.Hash {
 	return rlpHash([]interface{}{
 		check.Nonce,
@@ -64,6 +79,7 @@ func (check *Check) HashWithoutLock() types.Hash {
 	})
 }
 
+// Hash returns a types.Hash to be used in process of signing a Check by sender
 func (check *Check) Hash() types.Hash {
 	return rlpHash([]interface{}{
 		check.Nonce,
@@ -76,6 +92,7 @@ func (check *Check) Hash() types.Hash {
 	})
 }
 
+// Sign signs the check with given private key, returns error
 func (check *Check) Sign(prv *ecdsa.PrivateKey) error {
 	h := check.Hash()
 	sig, err := crypto.Sign(h[:], prv)
@@ -83,12 +100,12 @@ func (check *Check) Sign(prv *ecdsa.PrivateKey) error {
 		return err
 	}
 
-	check.SetSignature(sig)
+	check.setSignature(sig)
 
 	return nil
 }
 
-func (check *Check) SetSignature(sig []byte) {
+func (check *Check) setSignature(sig []byte) {
 	check.R = new(big.Int).SetBytes(sig[:32])
 	check.S = new(big.Int).SetBytes(sig[32:64])
 	check.V = new(big.Int).SetBytes([]byte{sig[64] + 27})
@@ -101,6 +118,7 @@ func (check *Check) String() string {
 		check.DueBlock, check.Value.String(), check.Coin.String())
 }
 
+// DecodeFromBytes decodes check from bytes
 func DecodeFromBytes(buf []byte) (*Check, error) {
 	var check Check
 	err := rlp.Decode(bytes.NewReader(buf), &check)

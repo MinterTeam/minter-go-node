@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
@@ -10,7 +9,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/hexutil"
-	"github.com/MinterTeam/minter-go-node/upgrades"
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
 	"strconv"
@@ -21,22 +19,8 @@ type SetHaltBlockData struct {
 	Height uint64
 }
 
-func (data SetHaltBlockData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		PubKey string `json:"pub_key"`
-		Height string `json:"height"`
-	}{
-		PubKey: data.PubKey.String(),
-		Height: strconv.FormatUint(data.Height, 10),
-	})
-}
-
 func (data SetHaltBlockData) GetPubKey() types.Pubkey {
 	return data.PubKey
-}
-
-func (data SetHaltBlockData) TotalSpend(tx *Transaction, context *state.State) (TotalSpends, []Conversion, *big.Int, *Response) {
-	panic("implement me")
 }
 
 func (data SetHaltBlockData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
@@ -45,6 +29,7 @@ func (data SetHaltBlockData) BasicCheck(tx *Transaction, context *state.CheckSta
 			Code: code.CandidateNotFound,
 			Log:  fmt.Sprintf("Candidate with such public key not found"),
 			Info: EncodeError(map[string]string{
+				"code":    strconv.Itoa(int(code.CandidateNotFound)),
 				"pub_key": data.PubKey.String(),
 			}),
 		}
@@ -63,13 +48,6 @@ func (data SetHaltBlockData) Gas() int64 {
 }
 
 func (data SetHaltBlockData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
-	if currentBlock < upgrades.UpgradeBlock4 {
-		return Response{
-			Code: code.DecodeError,
-			Log:  "Unknown transaction type",
-		}
-	}
-
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -88,6 +66,7 @@ func (data SetHaltBlockData) Run(tx *Transaction, context state.Interface, rewar
 			Code: code.WrongHaltHeight,
 			Log:  fmt.Sprintf("Halt height should be equal or bigger than current: %d", currentBlock),
 			Info: EncodeError(map[string]string{
+				"code":   strconv.Itoa(int(code.WrongHaltHeight)),
 				"height": strconv.FormatUint(data.Height, 10),
 			}),
 		}
@@ -97,53 +76,57 @@ func (data SetHaltBlockData) Run(tx *Transaction, context state.Interface, rewar
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
 	if !tx.GasCoin.IsBaseCoin() {
-		coin := checkState.Coins().GetCoin(tx.GasCoin)
+		gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
 
-		errResp := CheckReserveUnderflow(coin, commissionInBaseCoin)
+		errResp := CheckReserveUnderflow(gasCoin, commissionInBaseCoin)
 		if errResp != nil {
 			return *errResp
 		}
 
-		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
+		if gasCoin.Reserve().Cmp(commissionInBaseCoin) < 0 {
 			return Response{
 				Code: code.CoinReserveNotSufficient,
-				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.Reserve().String(), commissionInBaseCoin.String()),
+				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", gasCoin.Reserve().String(), commissionInBaseCoin.String()),
 				Info: EncodeError(map[string]string{
-					"has_reserve": coin.Reserve().String(),
-					"commission":  commissionInBaseCoin.String(),
-					"gas_coin":    coin.CName,
+					"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
+					"has_value":      gasCoin.Reserve().String(),
+					"required_value": commissionInBaseCoin.String(),
+					"coin":           gasCoin.GetFullSymbol(),
 				}),
 			}
 		}
 
-		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
+		commission = formula.CalculateSaleAmount(gasCoin.Volume(), gasCoin.Reserve(), gasCoin.Crr(), commissionInBaseCoin)
 	}
 
 	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
+		gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
+
 		return Response{
 			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, tx.GasCoin),
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, gasCoin.GetFullSymbol()),
 			Info: EncodeError(map[string]string{
+				"code":         strconv.Itoa(int(code.InsufficientFunds)),
 				"sender":       sender.String(),
 				"needed_value": commission.String(),
-				"gas_coin":     fmt.Sprintf("%s", tx.GasCoin),
+				"coin":         gasCoin.GetFullSymbol(),
 			}),
 		}
 	}
 
-	if deliveryState, ok := context.(*state.State); ok {
+	if deliverState, ok := context.(*state.State); ok {
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		deliveryState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
-		deliveryState.Coins.SubVolume(tx.GasCoin, commission)
+		deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
+		deliverState.Coins.SubVolume(tx.GasCoin, commission)
 
-		deliveryState.Accounts.SubBalance(sender, tx.GasCoin, commission)
-		deliveryState.Halts.AddHaltBlock(data.Height, data.PubKey)
-		deliveryState.Accounts.SetNonce(sender, tx.Nonce)
+		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
+		deliverState.Halts.AddHaltBlock(data.Height, data.PubKey)
+		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}
 
 	tags := kv.Pairs{
-		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeUnbond)}))},
+		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeSetHaltBlock)}))},
 		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
 	}
 

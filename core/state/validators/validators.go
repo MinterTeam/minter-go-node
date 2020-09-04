@@ -10,7 +10,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/tree"
-	"github.com/MinterTeam/minter-go-node/upgrades"
+
 	"math/big"
 )
 
@@ -113,10 +113,7 @@ func (v *Validators) SetValidatorAbsent(height uint64, address types.TmAddress) 
 	validator.SetAbsent(height)
 
 	if validator.CountAbsentTimes() > ValidatorMaxAbsentTimes {
-		if !upgrades.IsGraceBlock(height) {
-			v.punishValidator(height, address)
-		}
-
+		v.punishValidator(height, address)
 		v.turnValidatorOff(address)
 	}
 }
@@ -141,6 +138,7 @@ func (v *Validators) SetNewValidators(candidates []candidates.Candidate) {
 		}
 
 		newVals = append(newVals, &Validator{
+
 			PubKey:             candidate.PubKey,
 			AbsentTimes:        absentTimes,
 			totalStake:         candidate.GetTotalBipStake(),
@@ -193,7 +191,7 @@ func (v *Validators) PayRewards(height uint64) {
 			DAOReward := big.NewInt(0).Set(totalReward)
 			DAOReward.Mul(DAOReward, big.NewInt(int64(dao.Commission)))
 			DAOReward.Div(DAOReward, big.NewInt(100))
-			v.bus.Accounts().AddBalance(dao.Address, types.GetBaseCoin(), DAOReward)
+			v.bus.Accounts().AddBalance(dao.Address, types.GetBaseCoinID(), DAOReward)
 			remainder.Sub(remainder, DAOReward)
 			v.bus.Events().AddEvent(uint32(height), &eventsdb.RewardEvent{
 				Role:            eventsdb.RoleDAO.String(),
@@ -206,7 +204,7 @@ func (v *Validators) PayRewards(height uint64) {
 			DevelopersReward := big.NewInt(0).Set(totalReward)
 			DevelopersReward.Mul(DevelopersReward, big.NewInt(int64(developers.Commission)))
 			DevelopersReward.Div(DevelopersReward, big.NewInt(100))
-			v.bus.Accounts().AddBalance(developers.Address, types.GetBaseCoin(), DevelopersReward)
+			v.bus.Accounts().AddBalance(developers.Address, types.GetBaseCoinID(), DevelopersReward)
 			remainder.Sub(remainder, DevelopersReward)
 			v.bus.Events().AddEvent(uint32(height), &eventsdb.RewardEvent{
 				Role:            eventsdb.RoleDevelopers.String(),
@@ -223,7 +221,7 @@ func (v *Validators) PayRewards(height uint64) {
 			validatorReward.Mul(validatorReward, big.NewInt(int64(candidate.Commission)))
 			validatorReward.Div(validatorReward, big.NewInt(100))
 			totalReward.Sub(totalReward, validatorReward)
-			v.bus.Accounts().AddBalance(candidate.RewardAddress, types.GetBaseCoin(), validatorReward)
+			v.bus.Accounts().AddBalance(candidate.RewardAddress, types.GetBaseCoinID(), validatorReward)
 			remainder.Sub(remainder, validatorReward)
 			v.bus.Events().AddEvent(uint32(height), &eventsdb.RewardEvent{
 				Role:            eventsdb.RoleValidator.String(),
@@ -246,7 +244,7 @@ func (v *Validators) PayRewards(height uint64) {
 					continue
 				}
 
-				v.bus.Accounts().AddBalance(stake.Owner, types.GetBaseCoin(), reward)
+				v.bus.Accounts().AddBalance(stake.Owner, types.GetBaseCoinID(), reward)
 				remainder.Sub(remainder, reward)
 
 				v.bus.Events().AddEvent(uint32(height), &eventsdb.RewardEvent{

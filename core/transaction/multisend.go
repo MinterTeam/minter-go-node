@@ -12,15 +12,12 @@ import (
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
 	"sort"
+	"strconv"
 	"strings"
 )
 
 type MultisendData struct {
 	List []MultisendDataItem `json:"list"`
-}
-
-func (data MultisendData) TotalSpend(tx *Transaction, context *state.CheckState) (TotalSpends, []Conversion, *big.Int, *Response) {
-	panic("implement me")
 }
 
 func (data MultisendData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
@@ -46,7 +43,7 @@ func (data MultisendData) BasicCheck(tx *Transaction, context *state.CheckState)
 }
 
 type MultisendDataItem struct {
-	Coin  types.CoinSymbol
+	Coin  types.CoinID
 	To    types.Address
 	Value *big.Int
 }
@@ -101,9 +98,10 @@ func (data MultisendData) Run(tx *Transaction, context state.Interface, rewardPo
 				Code: code.CoinReserveNotSufficient,
 				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.Reserve().String(), commissionInBaseCoin.String()),
 				Info: EncodeError(map[string]string{
-					"has_reserve": coin.Reserve().String(),
-					"commission":  commissionInBaseCoin.String(),
-					"gas_coin":    coin.CName,
+					"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
+					"has_value":      coin.Reserve().String(),
+					"required_value": commissionInBaseCoin.String(),
+					"coin":           coin.CName,
 				}),
 			}
 		}
@@ -115,18 +113,18 @@ func (data MultisendData) Run(tx *Transaction, context state.Interface, rewardPo
 		return *errResp
 	}
 
-	if deliveryState, ok := context.(*state.State); ok {
+	if deliverState, ok := context.(*state.State); ok {
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		deliveryState.Coins.SubVolume(tx.GasCoin, commission)
-		deliveryState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
+		deliverState.Coins.SubVolume(tx.GasCoin, commission)
+		deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
 
-		deliveryState.Accounts.SubBalance(sender, tx.GasCoin, commission)
+		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		for _, item := range data.List {
-			deliveryState.Accounts.SubBalance(sender, item.Coin, item.Value)
-			deliveryState.Accounts.AddBalance(item.To, item.Coin, item.Value)
+			deliverState.Accounts.SubBalance(sender, item.Coin, item.Value)
+			deliverState.Accounts.AddBalance(item.To, item.Coin, item.Value)
 		}
-		deliveryState.Accounts.SetNonce(sender, tx.Nonce)
+		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}
 
 	tags := kv.Pairs{
@@ -143,8 +141,8 @@ func (data MultisendData) Run(tx *Transaction, context state.Interface, rewardPo
 	}
 }
 
-func checkBalances(context *state.CheckState, sender types.Address, items []MultisendDataItem, commission *big.Int, gasCoin types.CoinSymbol) *Response {
-	total := map[types.CoinSymbol]*big.Int{}
+func checkBalances(context *state.CheckState, sender types.Address, items []MultisendDataItem, commission *big.Int, gasCoin types.CoinID) *Response {
+	total := map[types.CoinID]*big.Int{}
 	total[gasCoin] = big.NewInt(0).Set(commission)
 
 	for _, item := range items {
@@ -155,25 +153,27 @@ func checkBalances(context *state.CheckState, sender types.Address, items []Mult
 		total[item.Coin].Add(total[item.Coin], item.Value)
 	}
 
-	coins := make([]types.CoinSymbol, 0, len(total))
+	coins := make([]types.CoinID, 0, len(total))
 	for k := range total {
 		coins = append(coins, k)
 	}
 
 	sort.SliceStable(coins, func(i, j int) bool {
-		return coins[i].Compare(coins[j]) == 1
+		return coins[i] > coins[j]
 	})
 
 	for _, coin := range coins {
 		value := total[coin]
+		coinData := context.Coins().GetCoin(coin)
 		if context.Accounts().GetBalance(sender, coin).Cmp(value) < 0 {
 			return &Response{
 				Code: code.InsufficientFunds,
-				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), value, coin),
+				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), value, coinData.GetFullSymbol()),
 				Info: EncodeError(map[string]string{
+					"code":         strconv.Itoa(int(code.InsufficientFunds)),
 					"sender":       sender.String(),
 					"needed_value": fmt.Sprintf("%d", value),
-					"coin":         fmt.Sprintf("%d", coin),
+					"coin":         coinData.GetFullSymbol(),
 				}),
 			}
 		}
@@ -189,6 +189,7 @@ func checkCoins(context *state.CheckState, items []MultisendDataItem) *Response 
 				Code: code.CoinNotExists,
 				Log:  fmt.Sprintf("Coin %s not exists", item.Coin),
 				Info: EncodeError(map[string]string{
+					"code": strconv.Itoa(int(code.CoinNotExists)),
 					"coin": fmt.Sprintf("%s", item.Coin),
 				}),
 			}

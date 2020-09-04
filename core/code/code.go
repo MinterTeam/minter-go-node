@@ -1,5 +1,6 @@
 package code
 
+// Codes for transaction checks and delivers responses
 const (
 	// general
 	OK                           uint32 = 0
@@ -26,6 +27,9 @@ const (
 	InvalidCoinName   uint32 = 204
 	WrongCoinSupply   uint32 = 205
 
+	// recreate coin
+	IsNotOwnerOfCoin uint32 = 206
+
 	// convert
 	CrossConvert              uint32 = 301
 	MaximumValueToSellReached uint32 = 302
@@ -41,6 +45,9 @@ const (
 	IncorrectPubKey       uint32 = 407
 	StakeShouldBePositive uint32 = 408
 	TooLowStake           uint32 = 409
+	PublicKeyInBlockList  uint32 = 410
+	NewPublicKeyIsBad     uint32 = 411
+	InsufficientWaitList  uint32 = 412
 
 	// check
 	CheckInvalidLock uint32 = 501

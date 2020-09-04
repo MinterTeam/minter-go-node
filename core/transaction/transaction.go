@@ -13,6 +13,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/crypto/sha3"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"math/big"
+	"strconv"
 )
 
 type TxType byte
@@ -34,6 +35,10 @@ const (
 	TypeMultisend           TxType = 0x0D
 	TypeEditCandidate       TxType = 0x0E
 	TypeSetHaltBlock        TxType = 0x0F
+	TypeRecreateCoin        TxType = 0x10
+	TypeChangeCoinOwner     TxType = 0x11
+	TypeEditMultisigOwner   TxType = 0x12
+	TypePriceVote           TxType = 0x13
 
 	SigTypeSingle SigType = 0x01
 	SigTypeMulti  SigType = 0x02
@@ -47,7 +52,7 @@ type Transaction struct {
 	Nonce         uint64
 	ChainID       types.ChainID
 	GasPrice      uint32
-	GasCoin       types.CoinSymbol
+	GasCoin       types.CoinID
 	Type          TxType
 	Data          RawData
 	Payload       []byte
@@ -76,7 +81,7 @@ type RawData []byte
 
 type TotalSpends []TotalSpend
 
-func (tss *TotalSpends) Add(coin types.CoinSymbol, value *big.Int) {
+func (tss *TotalSpends) Add(coin types.CoinID, value *big.Int) {
 	for i, t := range *tss {
 		if t.Coin == coin {
 			(*tss)[i].Value.Add((*tss)[i].Value, big.NewInt(0).Set(value))
@@ -91,15 +96,15 @@ func (tss *TotalSpends) Add(coin types.CoinSymbol, value *big.Int) {
 }
 
 type TotalSpend struct {
-	Coin  types.CoinSymbol
+	Coin  types.CoinID
 	Value *big.Int
 }
 
 type Conversion struct {
-	FromCoin    types.CoinSymbol
+	FromCoin    types.CoinID
 	FromAmount  *big.Int
 	FromReserve *big.Int
-	ToCoin      types.CoinSymbol
+	ToCoin      types.CoinID
 	ToAmount    *big.Int
 	ToReserve   *big.Int
 }
@@ -300,6 +305,7 @@ func CheckForCoinSupplyOverflow(current *big.Int, delta *big.Int, max *big.Int) 
 			Code: code.CoinSupplyOverflow,
 			Log:  "coin supply overflow",
 			Info: EncodeError(map[string]string{
+				"code":    strconv.Itoa(int(code.CoinSupplyOverflow)),
 				"current": total.String(),
 				"delta":   delta.String(),
 				"max":     max.String(),
@@ -317,8 +323,9 @@ func CheckReserveUnderflow(m *coins.Model, delta *big.Int) *Response {
 		min := big.NewInt(0).Add(minCoinReserve, delta)
 		return &Response{
 			Code: code.CoinReserveUnderflow,
-			Log:  fmt.Sprintf("coin %s reserve is too small (%s, required at least %s)", m.Symbol().String(), m.Reserve().String(), min.String()),
+			Log:  fmt.Sprintf("coin %s reserve is too small (%s, required at least %s)", m.GetFullSymbol(), m.Reserve().String(), min.String()),
 			Info: EncodeError(map[string]string{
+				"code":             strconv.Itoa(int(code.CoinReserveUnderflow)),
 				"coin":             m.Symbol().String(),
 				"coin_reserve":     m.Reserve().String(),
 				"min_coin_reserve": min.String(),

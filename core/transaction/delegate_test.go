@@ -6,7 +6,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
-	"github.com/MinterTeam/minter-go-node/upgrades"
+
 	"math/big"
 	"math/rand"
 	"sync"
@@ -18,7 +18,7 @@ func createTestCandidate(stateDB *state.State) types.Pubkey {
 	pubkey := types.Pubkey{}
 	rand.Read(pubkey[:])
 
-	stateDB.Candidates.Create(address, address, pubkey, 10)
+	stateDB.Candidates.Create(address, address, address, pubkey, 10)
 
 	return pubkey
 }
@@ -31,7 +31,7 @@ func TestDelegateTx(t *testing.T) {
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
@@ -69,7 +69,7 @@ func TestDelegateTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
@@ -81,7 +81,7 @@ func TestDelegateTx(t *testing.T) {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", coin, targetBalance, balance)
 	}
 
-	cState.Candidates.RecalculateStakes(upgrades.UpgradeBlock3)
+	cState.Candidates.RecalculateStakes(109000)
 
 	stake := cState.Candidates.GetStakeOfAddress(pubkey, addr, coin)
 
@@ -91,5 +91,69 @@ func TestDelegateTx(t *testing.T) {
 
 	if stake.Value.Cmp(value) != 0 {
 		t.Fatalf("Stake value is not corrent. Expected %s, got %s", value, stake.Value)
+	}
+}
+
+func TestDelegateTxWithWatchlist(t *testing.T) {
+	cState := getState()
+	pubkey := createTestCandidate(cState)
+	privateKey, _ := crypto.GenerateKey()
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+	coin := types.GetBaseCoinID()
+	value := helpers.BipToPip(big.NewInt(100))
+	waitlistAmount := helpers.BipToPip(big.NewInt(1000))
+
+	cState.Waitlist.AddWaitList(addr, pubkey, coin, waitlistAmount)
+	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
+
+	data := DelegateData{
+		PubKey: pubkey,
+		Coin:   coin,
+		Value:  value,
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := Transaction{
+		Nonce:         1,
+		GasPrice:      1,
+		ChainID:       types.CurrentChainID,
+		GasCoin:       coin,
+		Type:          TypeDelegate,
+		Data:          encodedData,
+		SignatureType: SigTypeSingle,
+	}
+
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != 0 {
+		t.Fatalf("Response code is not 0. Error %s", response.Log)
+	}
+
+	cState.Candidates.RecalculateStakes(109000)
+	stake := cState.Candidates.GetStakeOfAddress(pubkey, addr, coin)
+	if stake == nil {
+		t.Fatalf("Stake not found")
+	}
+
+	amount := new(big.Int).Add(value, waitlistAmount)
+	if stake.Value.Cmp(amount) != 0 {
+		t.Fatalf("Stake value is not corrent. Expected %s, got %s", amount, stake.Value)
+	}
+
+	wl := cState.Waitlist.Get(addr, pubkey, coin)
+	if wl != nil {
+		t.Fatalf("Waitlist is not deleted")
 	}
 }

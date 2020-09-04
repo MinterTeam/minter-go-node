@@ -25,45 +25,52 @@ func (s *Service) Transactions(ctx context.Context, req *pb.TransactionsRequest)
 		return new(pb.TransactionsResponse), status.Error(codes.FailedPrecondition, err.Error())
 	}
 
-	result := make([]*pb.TransactionResponse, 0, len(rpcResult.Txs))
-	for _, tx := range rpcResult.Txs {
+	lenTx := len(rpcResult.Txs)
+	result := make([]*pb.TransactionResponse, 0, lenTx)
+	if lenTx != 0 {
 
-		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-			return new(pb.TransactionsResponse), timeoutStatus.Err()
-		}
-
-		decodedTx, _ := transaction.TxDecoder.DecodeFromBytes(tx.Tx)
-		sender, _ := decodedTx.Sender()
-
-		tags := make(map[string]string)
-		for _, tag := range tx.TxResult.Events[0].Attributes {
-			tags[string(tag.Key)] = string(tag.Value)
-		}
-
-		dataStruct, err := s.encodeTxData(decodedTx)
+		cState, err := s.blockchain.GetStateForHeight(uint64(rpcResult.Txs[0].Height))
 		if err != nil {
-			return new(pb.TransactionsResponse), status.Error(codes.FailedPrecondition, err.Error())
+			return new(pb.TransactionsResponse), status.Error(codes.Internal, err.Error())
 		}
+		for _, tx := range rpcResult.Txs {
 
-		result = append(result, &pb.TransactionResponse{
-			Hash:     bytes.HexBytes(tx.Tx.Hash()).String(),
-			RawTx:    fmt.Sprintf("%x", []byte(tx.Tx)),
-			Height:   fmt.Sprintf("%d", tx.Height),
-			Index:    fmt.Sprintf("%d", tx.Index),
-			From:     sender.String(),
-			Nonce:    fmt.Sprintf("%d", decodedTx.Nonce),
-			GasPrice: fmt.Sprintf("%d", decodedTx.GasPrice),
-			GasCoin:  decodedTx.GasCoin.String(),
-			Gas:      fmt.Sprintf("%d", decodedTx.Gas()),
-			Type:     fmt.Sprintf("%d", uint8(decodedTx.Type)),
-			Data:     dataStruct,
-			Payload:  decodedTx.Payload,
-			Tags:     tags,
-			Code:     fmt.Sprintf("%d", tx.TxResult.Code),
-			Log:      tx.TxResult.Log,
-		})
+			if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+				return new(pb.TransactionsResponse), timeoutStatus.Err()
+			}
+
+			decodedTx, _ := transaction.TxDecoder.DecodeFromBytes(tx.Tx)
+			sender, _ := decodedTx.Sender()
+
+			tags := make(map[string]string)
+			for _, tag := range tx.TxResult.Events[0].Attributes {
+				tags[string(tag.Key)] = string(tag.Value)
+			}
+
+			data, err := encode(decodedTx.GetDecodedData(), cState.Coins())
+			if err != nil {
+				return new(pb.TransactionsResponse), status.Error(codes.Internal, err.Error())
+			}
+
+			result = append(result, &pb.TransactionResponse{
+				Hash:     bytes.HexBytes(tx.Tx.Hash()).String(),
+				RawTx:    fmt.Sprintf("%x", []byte(tx.Tx)),
+				Height:   fmt.Sprintf("%d", tx.Height),
+				Index:    fmt.Sprintf("%d", tx.Index),
+				From:     sender.String(),
+				Nonce:    fmt.Sprintf("%d", decodedTx.Nonce),
+				GasPrice: fmt.Sprintf("%d", decodedTx.GasPrice),
+				GasCoin:  decodedTx.GasCoin.String(),
+				Gas:      fmt.Sprintf("%d", decodedTx.Gas()),
+				Type:     fmt.Sprintf("%d", uint8(decodedTx.Type)),
+				Data:     data,
+				Payload:  decodedTx.Payload,
+				Tags:     tags,
+				Code:     fmt.Sprintf("%d", tx.TxResult.Code),
+				Log:      tx.TxResult.Log,
+			})
+		}
 	}
-
 	return &pb.TransactionsResponse{
 		Transactions: result,
 	}, nil

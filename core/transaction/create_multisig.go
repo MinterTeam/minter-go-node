@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
@@ -21,33 +20,15 @@ type CreateMultisigData struct {
 	Addresses []types.Address
 }
 
-func (data CreateMultisigData) MarshalJSON() ([]byte, error) {
-	var weights []string
-	for _, weight := range data.Weights {
-		weights = append(weights, strconv.Itoa(int(weight)))
-	}
-
-	return json.Marshal(struct {
-		Threshold string          `json:"threshold"`
-		Weights   []string        `json:"weights"`
-		Addresses []types.Address `json:"addresses"`
-	}{
-		Threshold: strconv.Itoa(int(data.Threshold)),
-		Weights:   weights,
-		Addresses: data.Addresses,
-	})
-}
-
-func (data CreateMultisigData) TotalSpend(tx *Transaction, context *state.CheckState) (TotalSpends, []Conversion, *big.Int, *Response) {
-	panic("implement me")
-}
-
 func (data CreateMultisigData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
 	lenWeights := len(data.Weights)
 	if lenWeights > 32 {
 		return &Response{
 			Code: code.TooLargeOwnersList,
-			Log:  fmt.Sprintf("Owners list is limited to 32 items")}
+			Log:  "Owners list is limited to 32 items",
+			Info: EncodeError(map[string]string{
+				"code": strconv.Itoa(int(code.TooLargeOwnersList)),
+			})}
 	}
 
 	lenAddresses := len(data.Addresses)
@@ -56,6 +37,7 @@ func (data CreateMultisigData) BasicCheck(tx *Transaction, context *state.CheckS
 			Code: code.IncorrectWeights,
 			Log:  fmt.Sprintf("Incorrect multisig weights"),
 			Info: EncodeError(map[string]string{
+				"code":            strconv.Itoa(int(code.IncorrectWeights)),
 				"count_weights":   fmt.Sprintf("%d", lenWeights),
 				"count_addresses": fmt.Sprintf("%d", lenAddresses),
 			}),
@@ -66,7 +48,9 @@ func (data CreateMultisigData) BasicCheck(tx *Transaction, context *state.CheckS
 		if weight > 1023 {
 			return &Response{
 				Code: code.IncorrectWeights,
-				Log:  fmt.Sprintf("Incorrect multisig weights")}
+				Log:  "Incorrect multisig weights", Info: EncodeError(map[string]string{
+					"code": strconv.Itoa(int(code.IncorrectWeights)),
+				})}
 		}
 	}
 
@@ -75,7 +59,10 @@ func (data CreateMultisigData) BasicCheck(tx *Transaction, context *state.CheckS
 		if usedAddresses[address] {
 			return &Response{
 				Code: code.DuplicatedAddresses,
-				Log:  fmt.Sprintf("Duplicated multisig addresses")}
+				Log:  "Duplicated multisig addresses",
+				Info: EncodeError(map[string]string{
+					"code": strconv.Itoa(int(code.DuplicatedAddresses)),
+				})}
 		}
 
 		usedAddresses[address] = true
@@ -85,7 +72,7 @@ func (data CreateMultisigData) BasicCheck(tx *Transaction, context *state.CheckS
 }
 
 func (data CreateMultisigData) String() string {
-	return fmt.Sprintf("CREATE MULTISIG")
+	return "CREATE MULTISIG"
 }
 
 func (data CreateMultisigData) Gas() int64 {
@@ -109,67 +96,66 @@ func (data CreateMultisigData) Run(tx *Transaction, context state.Interface, rew
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
-	if !tx.GasCoin.IsBaseCoin() {
-		coin := checkState.Coins().GetCoin(tx.GasCoin)
+	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
 
-		errResp := CheckReserveUnderflow(coin, commissionInBaseCoin)
+	if !tx.GasCoin.IsBaseCoin() {
+		errResp := CheckReserveUnderflow(gasCoin, commissionInBaseCoin)
 		if errResp != nil {
 			return *errResp
 		}
 
-		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
+		if gasCoin.Reserve().Cmp(commissionInBaseCoin) < 0 {
 			return Response{
 				Code: code.CoinReserveNotSufficient,
-				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.Reserve().String(), commissionInBaseCoin.String()),
+				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", gasCoin.Reserve().String(), commissionInBaseCoin.String()),
 				Info: EncodeError(map[string]string{
-					"has_reserve": coin.Reserve().String(),
-					"commission":  commissionInBaseCoin.String(),
-					"gas_coin":    coin.CName,
+					"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
+					"has_value":      gasCoin.Reserve().String(),
+					"required_value": commissionInBaseCoin.String(),
+					"coin":           gasCoin.GetFullSymbol(),
 				}),
 			}
 		}
 
-		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
+		commission = formula.CalculateSaleAmount(gasCoin.Volume(), gasCoin.Reserve(), gasCoin.Crr(), commissionInBaseCoin)
 	}
 
 	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
 		return Response{
 			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, tx.GasCoin),
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, gasCoin.GetFullSymbol()),
 			Info: EncodeError(map[string]string{
+				"code":         strconv.Itoa(int(code.InsufficientFunds)),
 				"sender":       sender.String(),
 				"needed_value": commission.String(),
-				"gas_coin":     fmt.Sprintf("%s", tx.GasCoin),
+				"coin":         gasCoin.GetFullSymbol(),
 			}),
 		}
 	}
 
-	msigAddress := (&accounts.Multisig{
-		Weights:   data.Weights,
-		Threshold: data.Threshold,
-		Addresses: data.Addresses,
-	}).Address()
+	msigAddress := accounts.CreateMultisigAddress(sender, tx.Nonce)
 
 	if checkState.Accounts().ExistsMultisig(msigAddress) {
 		return Response{
 			Code: code.MultisigExists,
 			Log:  fmt.Sprintf("Multisig %s already exists", msigAddress.String()),
 			Info: EncodeError(map[string]string{
+				"code":             strconv.Itoa(int(code.MultisigExists)),
 				"multisig_address": msigAddress.String(),
 			}),
 		}
 	}
 
-	if deliveryState, ok := context.(*state.State); ok {
+	if deliverState, ok := context.(*state.State); ok {
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		deliveryState.Coins.SubVolume(tx.GasCoin, commission)
-		deliveryState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
+		deliverState.Coins.SubVolume(tx.GasCoin, commission)
+		deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
 
-		deliveryState.Accounts.SubBalance(sender, tx.GasCoin, commission)
-		deliveryState.Accounts.SetNonce(sender, tx.Nonce)
+		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
+		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 
-		deliveryState.Accounts.CreateMultisig(data.Weights, data.Addresses, data.Threshold, currentBlock)
+		deliverState.Accounts.CreateMultisig(data.Weights, data.Addresses, data.Threshold, currentBlock, msigAddress)
 	}
 
 	tags := kv.Pairs{

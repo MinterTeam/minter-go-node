@@ -4,8 +4,6 @@ import (
 	"context"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/minter"
-	_struct "github.com/golang/protobuf/ptypes/struct"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/tendermint/go-amino"
 	tmNode "github.com/tendermint/tendermint/node"
 	rpc "github.com/tendermint/tendermint/rpc/client/local"
@@ -24,12 +22,8 @@ type Service struct {
 }
 
 func NewService(cdc *amino.Codec, blockchain *minter.Blockchain, client *rpc.Local, node *tmNode.Node, minterCfg *config.Config, version string) *Service {
-	prometheusTimeoutErrorsTotal := prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "timeout_errors_total",
-		Help: "A counter of the occurred timeout errors separated by requests.",
-	}, []string{"path"})
-	prometheus.MustRegister(prometheusTimeoutErrorsTotal)
-	return &Service{cdc: cdc,
+	return &Service{
+		cdc:        cdc,
 		blockchain: blockchain,
 		client:     client,
 		minterCfg:  minterCfg,
@@ -43,8 +37,8 @@ func (s *Service) createError(statusErr *status.Status, data string) error {
 		return statusErr.Err()
 	}
 
-	detailsMap := &_struct.Struct{}
-	if err := detailsMap.UnmarshalJSON([]byte(data)); err != nil {
+	detailsMap, err := encodeToStruct([]byte(data))
+	if err != nil {
 		s.client.Logger.Error(err.Error())
 		return statusErr.Err()
 	}
@@ -59,7 +53,7 @@ func (s *Service) createError(statusErr *status.Status, data string) error {
 }
 
 func (s *Service) TimeoutDuration() time.Duration {
-	return time.Duration(s.minterCfg.APIv2TimeoutDuration)
+	return s.minterCfg.APIv2TimeoutDuration
 }
 
 func (s *Service) checkTimeout(ctx context.Context) *status.Status {

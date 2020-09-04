@@ -43,15 +43,17 @@ var Routes = map[string]*rpcserver.RPCFunc{
 	"block":                  rpcserver.NewRPCFunc(Block, "height"),
 	"events":                 rpcserver.NewRPCFunc(Events, "height"),
 	"net_info":               rpcserver.NewRPCFunc(NetInfo, ""),
-	"coin_info":              rpcserver.NewRPCFunc(CoinInfo, "symbol,height"),
-	"estimate_coin_sell":     rpcserver.NewRPCFunc(EstimateCoinSell, "coin_to_sell,coin_to_buy,value_to_sell,height"),
-	"estimate_coin_sell_all": rpcserver.NewRPCFunc(EstimateCoinSellAll, "coin_to_sell,coin_to_buy,value_to_sell,gas_price,height"),
-	"estimate_coin_buy":      rpcserver.NewRPCFunc(EstimateCoinBuy, "coin_to_sell,coin_to_buy,value_to_buy,height"),
+	"coin_info":              rpcserver.NewRPCFunc(CoinInfo, "symbol,id,height"),
+	"estimate_coin_sell":     rpcserver.NewRPCFunc(EstimateCoinSell, "coin_id_to_sell,coin_id_to_buy,value_to_sell,height"),
+	"estimate_coin_sell_all": rpcserver.NewRPCFunc(EstimateCoinSellAll, "coin_id_to_sell,coin_id_to_buy,value_to_sell,gas_price,height"),
+	"estimate_coin_buy":      rpcserver.NewRPCFunc(EstimateCoinBuy, "coin_id_to_sell,coin_id_to_buy,value_to_buy,height"),
 	"estimate_tx_commission": rpcserver.NewRPCFunc(EstimateTxCommission, "tx,height"),
 	"unconfirmed_txs":        rpcserver.NewRPCFunc(UnconfirmedTxs, "limit"),
 	"max_gas":                rpcserver.NewRPCFunc(MaxGas, "height"),
 	"min_gas_price":          rpcserver.NewRPCFunc(MinGasPrice, ""),
 	"genesis":                rpcserver.NewRPCFunc(Genesis, ""),
+	"missed_blocks":          rpcserver.NewRPCFunc(MissedBlocks, "pub_key,height"),
+	"waitlist":               rpcserver.NewRPCFunc(Waitlist, "pub_key,address,height"),
 }
 
 func responseTime(b *minter.Blockchain) func(f func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {

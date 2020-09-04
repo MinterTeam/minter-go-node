@@ -7,7 +7,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
-	"github.com/MinterTeam/minter-go-node/upgrades"
+
 	db "github.com/tendermint/tm-db"
 	"math/big"
 	"math/rand"
@@ -16,20 +16,20 @@ import (
 )
 
 func TestSetHaltBlockTx(t *testing.T) {
-	cState, err := state.NewState(upgrades.UpgradeBlock4, db.NewMemDB(), nil, 1, 1)
+	cState, err := state.NewState(500000, db.NewMemDB(), nil, 1, 1)
 	if err != nil {
 		t.Fatalf("Cannot load state. Error %s", err)
 	}
 
-	haltHeight := upgrades.UpgradeBlock4 + uint64(100)
+	haltHeight := 500000 + uint64(100)
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 
 	pubkey := [32]byte{}
 	rand.Read(pubkey[:])
 
-	cState.Candidates.Create(addr, addr, pubkey, 10)
+	cState.Candidates.Create(addr, addr, addr, pubkey, 10)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1)))
 
@@ -63,7 +63,7 @@ func TestSetHaltBlockTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), upgrades.UpgradeBlock4, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 500000, &sync.Map{}, 0)
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
@@ -91,7 +91,7 @@ func TestSetHaltBlockTx(t *testing.T) {
 }
 
 func TestSetHaltBlockTxWithWrongHeight(t *testing.T) {
-	currentHeight := uint64(upgrades.UpgradeBlock4 + 5)
+	currentHeight := uint64(500000 + 5)
 	cState, err := state.NewState(currentHeight, db.NewMemDB(), nil, 1, 1)
 	if err != nil {
 		t.Fatalf("Cannot load state. Error %s", err)
@@ -100,12 +100,12 @@ func TestSetHaltBlockTxWithWrongHeight(t *testing.T) {
 	haltHeight := currentHeight - 1
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 
 	pubkey := [32]byte{}
 	rand.Read(pubkey[:])
 
-	cState.Candidates.Create(addr, addr, pubkey, 10)
+	cState.Candidates.Create(addr, addr, addr, pubkey, 10)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1)))
 
@@ -139,7 +139,7 @@ func TestSetHaltBlockTxWithWrongHeight(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), currentHeight, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), currentHeight, &sync.Map{}, 0)
 	if response.Code != code.WrongHaltHeight {
 		t.Fatalf("Response code is not %d", code.WrongHaltHeight)
 	}
@@ -151,7 +151,7 @@ func TestSetHaltBlockTxWithWrongHeight(t *testing.T) {
 }
 
 func TestSetHaltBlockTxWithWrongOwnership(t *testing.T) {
-	currentHeight := uint64(upgrades.UpgradeBlock4 + 5)
+	currentHeight := uint64(500000 + 5)
 	cState, err := state.NewState(currentHeight, db.NewMemDB(), nil, 1, 1)
 	if err != nil {
 		t.Fatalf("Cannot load state. Error %s", err)
@@ -160,12 +160,12 @@ func TestSetHaltBlockTxWithWrongOwnership(t *testing.T) {
 	haltHeight := currentHeight + 1
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 
 	pubkey := [32]byte{}
 	rand.Read(pubkey[:])
 
-	cState.Candidates.Create(addr, addr, pubkey, 10)
+	cState.Candidates.Create(addr, addr, addr, pubkey, 10)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1)))
 
@@ -200,7 +200,7 @@ func TestSetHaltBlockTxWithWrongOwnership(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), currentHeight, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), currentHeight, &sync.Map{}, 0)
 	if response.Code != code.IsNotOwnerOfCandidate {
 		t.Fatalf("Response code is not %d", code.IsNotOwnerOfCandidate)
 	}

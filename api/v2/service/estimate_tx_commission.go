@@ -13,6 +13,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"math/big"
+	"strings"
 )
 
 func (s *Service) EstimateTxCommission(ctx context.Context, req *pb.EstimateTxCommissionRequest) (*pb.EstimateTxCommissionResponse, error) {
@@ -24,13 +25,17 @@ func (s *Service) EstimateTxCommission(ctx context.Context, req *pb.EstimateTxCo
 	cState.RLock()
 	defer cState.RUnlock()
 
-	if len(req.GetTx()) < 3 {
+	if req.GetTx() == "" {
 		data := req.GetData()
 		if data == nil {
 			return new(pb.EstimateTxCommissionResponse), status.Error(codes.InvalidArgument, "invalid tx and data")
 		}
 
 		return commissionCoinForData(data, cState)
+	}
+
+	if !strings.HasPrefix(strings.Title(req.GetTx()), "0x") {
+		return new(pb.EstimateTxCommissionResponse), status.Error(codes.InvalidArgument, "invalid transaction")
 	}
 
 	decodeString, err := hex.DecodeString(req.GetTx()[2:])
@@ -40,7 +45,7 @@ func (s *Service) EstimateTxCommission(ctx context.Context, req *pb.EstimateTxCo
 
 	decodedTx, err := transaction.TxDecoder.DecodeFromBytesWithoutSig(decodeString)
 	if err != nil {
-		return new(pb.EstimateTxCommissionResponse), status.Error(codes.InvalidArgument, "Cannot decode transaction")
+		return new(pb.EstimateTxCommissionResponse), status.Errorf(codes.InvalidArgument, "Cannot decode transaction: %s", err.Error())
 	}
 
 	commissionInBaseCoin := decodedTx.CommissionInBaseCoin()
@@ -52,7 +57,7 @@ func (s *Service) EstimateTxCommission(ctx context.Context, req *pb.EstimateTxCo
 		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
 			return new(pb.EstimateTxCommissionResponse), s.createError(status.New(codes.InvalidArgument, fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s",
 				coin.Reserve().String(), commissionInBaseCoin.String())), transaction.EncodeError(map[string]string{
-				"commission_in_base_coin": coin.Reserve().String(),
+				"commission_in_base_coin": commissionInBaseCoin.String(),
 				"value_has":               coin.Reserve().String(),
 				"value_required":          commissionInBaseCoin.String(),
 			}))
@@ -92,27 +97,27 @@ func commissionCoinForData(data *pb.EstimateTxCommissionRequest_TransactionData,
 		commissionInBaseCoin = big.NewInt(commissions.CreateMultisig)
 	case pb.EstimateTxCommissionRequest_TransactionData_Multisend:
 		if data.Mtxs <= 0 {
-			return new(pb.EstimateTxCommissionResponse), status.Error(codes.InvalidArgument, "Set number of txs for multisend (mtxs)")
+			return new(pb.EstimateTxCommissionResponse), status.Error(codes.InvalidArgument, "Set number of transactions for multisend (mtxs)")
 		}
 		commissionInBaseCoin = big.NewInt(commissions.MultisendDelta*(data.Mtxs-1) + 10)
 	default:
-		return new(pb.EstimateTxCommissionResponse), status.Error(codes.InvalidArgument, "Set correct txtype for tx")
+		return new(pb.EstimateTxCommissionResponse), status.Error(codes.InvalidArgument, "Set correct transaction type for tx")
 	}
 
 	lenPayload := len(data.Payload)
 	if lenPayload > 1024 {
-		return new(pb.EstimateTxCommissionResponse), status.Errorf(codes.InvalidArgument, "TX payload length is over %d bytes", 1024)
+		return new(pb.EstimateTxCommissionResponse), status.Errorf(codes.InvalidArgument, "Transaction payload length is over %d bytes", 1024)
 	}
 
 	totalCommissionInBaseCoin := new(big.Int).Mul(big.NewInt(0).Add(commissionInBaseCoin, big.NewInt(int64(lenPayload))), transaction.CommissionMultiplier)
 
-	if data.GasCoin == "BIP" {
+	if types.CoinID(data.GasCoinId).IsBaseCoin() {
 		return &pb.EstimateTxCommissionResponse{
 			Commission: totalCommissionInBaseCoin.String(),
 		}, nil
 	}
 
-	coin := cState.Coins().GetCoin(types.StrToCoinSymbol(data.GasCoin))
+	coin := cState.Coins().GetCoin(types.CoinID(data.GasCoinId))
 
 	if coin == nil {
 		return new(pb.EstimateTxCommissionResponse), status.Error(codes.InvalidArgument, "Gas Coin not found")

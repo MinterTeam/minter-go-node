@@ -17,7 +17,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/rlp"
-	"github.com/MinterTeam/minter-go-node/upgrades"
+
 	"github.com/tendermint/go-amino"
 	tmConfig "github.com/tendermint/tendermint/config"
 	log2 "github.com/tendermint/tendermint/libs/log"
@@ -143,7 +143,7 @@ func TestSendTx(t *testing.T) {
 	to := types.Address([20]byte{1})
 
 	data := transaction.SendData{
-		Coin:  types.GetBaseCoin(),
+		Coin:  types.GetBaseCoinID(),
 		To:    to,
 		Value: value,
 	}
@@ -157,7 +157,7 @@ func TestSendTx(t *testing.T) {
 		Nonce:         nonce,
 		ChainID:       types.CurrentChainID,
 		GasPrice:      1,
-		GasCoin:       types.GetBaseCoin(),
+		GasCoin:       types.GetBaseCoinID(),
 		Type:          transaction.TypeSend,
 		Data:          encodedData,
 		SignatureType: transaction.SigTypeSingle,
@@ -209,7 +209,7 @@ func TestSmallStakeValidator(t *testing.T) {
 		Address:    crypto.PubkeyToAddress(privateKey.PublicKey),
 		PubKey:     pubkey,
 		Commission: 10,
-		Coin:       types.GetBaseCoin(),
+		Coin:       types.GetBaseCoinID(),
 		Stake:      big.NewInt(0),
 	}
 
@@ -222,7 +222,7 @@ func TestSmallStakeValidator(t *testing.T) {
 		Nonce:         nonce,
 		ChainID:       types.CurrentChainID,
 		GasPrice:      1,
-		GasCoin:       types.GetBaseCoin(),
+		GasCoin:       types.GetBaseCoinID(),
 		Type:          transaction.TypeDeclareCandidacy,
 		Data:          encodedData,
 		SignatureType: transaction.SigTypeSingle,
@@ -257,7 +257,7 @@ func TestSmallStakeValidator(t *testing.T) {
 		Nonce:         nonce,
 		GasPrice:      1,
 		ChainID:       types.CurrentChainID,
-		GasCoin:       types.GetBaseCoin(),
+		GasCoin:       types.GetBaseCoinID(),
 		Type:          transaction.TypeSetCandidateOnline,
 		Data:          encodedData,
 		SignatureType: transaction.SigTypeSingle,
@@ -325,7 +325,7 @@ func TestSmallStakeValidator(t *testing.T) {
 		Nonce:         nonce,
 		GasPrice:      1,
 		ChainID:       types.CurrentChainID,
-		GasCoin:       types.GetBaseCoin(),
+		GasCoin:       types.GetBaseCoinID(),
 		Type:          transaction.TypeSetCandidateOnline,
 		Data:          encodedData,
 		SignatureType: transaction.SigTypeSingle,
@@ -386,7 +386,7 @@ FORLOOP2:
 }
 
 func TestStopNetworkByHaltBlocks(t *testing.T) {
-	haltHeight := upgrades.UpgradeBlock4 + uint64(5)
+	haltHeight := 500000 + uint64(5)
 
 	v1Pubkey := [32]byte{}
 	v2Pubkey := [32]byte{}
@@ -423,6 +423,153 @@ func TestStopNetworkByHaltBlocks(t *testing.T) {
 	}
 }
 
+func TestRecalculateStakes(t *testing.T) {
+	for blockchain.Height() < 2 {
+		time.Sleep(time.Millisecond)
+	}
+
+	symbol := types.StrToCoinSymbol("AAA123")
+	data := transaction.CreateCoinData{
+		Name:                 "nAAA123",
+		Symbol:               symbol,
+		InitialAmount:        helpers.BipToPip(big.NewInt(1000000)),
+		InitialReserve:       helpers.BipToPip(big.NewInt(10000)),
+		ConstantReserveRatio: 70,
+		MaxSupply:            big.NewInt(0).Exp(big.NewInt(10), big.NewInt(15+18), nil),
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := transaction.Transaction{
+		Nonce:         nonce,
+		ChainID:       types.CurrentChainID,
+		GasPrice:      1,
+		GasCoin:       types.GetBaseCoinID(),
+		Type:          transaction.TypeCreateCoin,
+		Data:          encodedData,
+		SignatureType: transaction.SigTypeSingle,
+	}
+	nonce++
+
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	txBytes, _ := tx.Serialize()
+	res, err := tmCli.BroadcastTxSync(txBytes)
+	if err != nil {
+		t.Fatalf("Failed: %s", err.Error())
+	}
+	if res.Code != 0 {
+		t.Fatalf("CheckTx code is not 0: %d", res.Code)
+	}
+
+	time.Sleep(time.Second)
+
+	coinID := blockchain.stateCheck.Coins().GetCoinBySymbol(symbol, 0).ID()
+	buyCoinData := transaction.BuyCoinData{
+		CoinToBuy:          coinID,
+		ValueToBuy:         helpers.BipToPip(big.NewInt(10000000)),
+		CoinToSell:         0,
+		MaximumValueToSell: helpers.BipToPip(big.NewInt(10000000000000000)),
+	}
+
+	encodedData, err = rlp.EncodeToBytes(buyCoinData)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx = transaction.Transaction{
+		Nonce:         nonce,
+		GasPrice:      1,
+		ChainID:       types.CurrentChainID,
+		GasCoin:       types.GetBaseCoinID(),
+		Type:          transaction.TypeBuyCoin,
+		Data:          encodedData,
+		SignatureType: transaction.SigTypeSingle,
+	}
+	nonce++
+
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	txBytes, _ = tx.Serialize()
+	res, err = tmCli.BroadcastTxSync(txBytes)
+	if err != nil {
+		t.Fatalf("Failed: %s", err.Error())
+	}
+	if res.Code != 0 {
+		t.Fatalf("CheckTx code is not 0: %d", res.Code)
+	}
+
+	time.Sleep(time.Second)
+
+	delegateData := transaction.DelegateData{
+		PubKey: blockchain.stateCheck.Candidates().GetCandidates()[0].PubKey,
+		Coin:   coinID,
+		Value:  helpers.BipToPip(big.NewInt(9000000)),
+	}
+
+	encodedData, err = rlp.EncodeToBytes(delegateData)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx = transaction.Transaction{
+		Nonce:         nonce,
+		GasPrice:      1,
+		ChainID:       types.CurrentChainID,
+		GasCoin:       types.GetBaseCoinID(),
+		Type:          transaction.TypeDelegate,
+		Data:          encodedData,
+		SignatureType: transaction.SigTypeSingle,
+	}
+	nonce++
+
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	txBytes, _ = tx.Serialize()
+	res, err = tmCli.BroadcastTxSync(txBytes)
+	if err != nil {
+		t.Fatalf("Failed: %s", err.Error())
+	}
+	if res.Code != 0 {
+		t.Fatalf("CheckTx code is not 0: %d", res.Code)
+	}
+
+	time.Sleep(time.Second)
+
+	blocks, err := tmCli.Subscribe(context.TODO(), "test-client", "tm.event = 'NewBlock'")
+	if err != nil {
+		panic(err)
+	}
+
+	defer func() {
+		err = tmCli.UnsubscribeAll(context.TODO(), "test-client")
+		if err != nil {
+			panic(err)
+		}
+	}()
+	for {
+		select {
+		case block := <-blocks:
+			if block.Data.(types2.EventDataNewBlock).Block.Height < 150 {
+				continue
+			}
+
+			return
+		case <-time.After(10 * time.Second):
+			t.Fatalf("Timeout waiting for the block")
+		}
+	}
+}
+
 func getGenesis() (*types2.GenesisDoc, error) {
 	appHash := [32]byte{}
 
@@ -435,7 +582,7 @@ func getGenesis() (*types2.GenesisDoc, error) {
 				Address: crypto.PubkeyToAddress(privateKey.PublicKey),
 				Balance: []types.Balance{
 					{
-						Coin:  types.GetBaseCoin(),
+						Coin:  types.GetBaseCoinID(),
 						Value: helpers.BipToPip(big.NewInt(1000000)).String(),
 					},
 				},
@@ -492,15 +639,17 @@ func makeValidatorsAndCandidates(pubkeys []string, stake *big.Int) ([]types.Vali
 		}
 
 		candidates[i] = types.Candidate{
-			RewardAddress: addr,
-			OwnerAddress:  addr,
-			TotalBipStake: big.NewInt(1).String(),
-			PubKey:        pkey,
-			Commission:    100,
+			ID:             uint32(i) + 1,
+			RewardAddress:  addr,
+			OwnerAddress:   addr,
+			ControlAddress: addr,
+			TotalBipStake:  big.NewInt(1).String(),
+			PubKey:         pkey,
+			Commission:     100,
 			Stakes: []types.Stake{
 				{
 					Owner:    addr,
-					Coin:     types.GetBaseCoin(),
+					Coin:     types.GetBaseCoinID(),
 					Value:    stake.String(),
 					BipValue: stake.String(),
 				},

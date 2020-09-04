@@ -15,7 +15,7 @@ type EstimateCoinSellResponse struct {
 	Commission string `json:"commission"`
 }
 
-func EstimateCoinSell(coinToSellString string, coinToBuyString string, valueToSell *big.Int, height int) (*EstimateCoinSellResponse, error) {
+func EstimateCoinSell(coinIdToSell uint64, coinIdToBuy uint64, valueToSell *big.Int, height int) (*EstimateCoinSellResponse, error) {
 	cState, err := GetStateForHeight(height)
 	if err != nil {
 		return nil, err
@@ -24,20 +24,20 @@ func EstimateCoinSell(coinToSellString string, coinToBuyString string, valueToSe
 	cState.RLock()
 	defer cState.RUnlock()
 
-	coinToSell := types.StrToCoinSymbol(coinToSellString)
-	coinToBuy := types.StrToCoinSymbol(coinToBuyString)
+	sellCoinID := types.CoinID(coinIdToSell)
+	buyCoinID := types.CoinID(coinIdToBuy)
 
 	var result *big.Int
 
-	if coinToSell == coinToBuy {
+	if sellCoinID == buyCoinID {
 		return nil, rpctypes.RPCError{Code: 400, Message: "\"From\" coin equals to \"to\" coin"}
 	}
 
-	if !cState.Coins().Exists(coinToSell) {
+	if !cState.Coins().Exists(sellCoinID) {
 		return nil, rpctypes.RPCError{Code: 404, Message: "Coin to sell not exists"}
 	}
 
-	if !cState.Coins().Exists(coinToBuy) {
+	if !cState.Coins().Exists(buyCoinID) {
 		return nil, rpctypes.RPCError{Code: 404, Message: "Coin to buy not exists"}
 	}
 
@@ -45,8 +45,8 @@ func EstimateCoinSell(coinToSellString string, coinToBuyString string, valueToSe
 	commissionInBaseCoin.Mul(commissionInBaseCoin, transaction.CommissionMultiplier)
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
-	if coinToSell != types.GetBaseCoin() {
-		coin := cState.Coins().GetCoin(coinToSell)
+	if !sellCoinID.IsBaseCoin() {
+		coin := cState.Coins().GetCoin(sellCoinID)
 
 		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
 			return nil, rpctypes.RPCError{Code: 400, Message: fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s",
@@ -62,15 +62,15 @@ func EstimateCoinSell(coinToSellString string, coinToBuyString string, valueToSe
 	}
 
 	switch {
-	case coinToSell == types.GetBaseCoin():
-		coin := cState.Coins().GetCoin(coinToBuy)
+	case sellCoinID.IsBaseCoin():
+		coin := cState.Coins().GetCoin(buyCoinID)
 		result = formula.CalculatePurchaseReturn(coin.Volume(), coin.Reserve(), coin.Crr(), valueToSell)
-	case coinToBuy == types.GetBaseCoin():
-		coin := cState.Coins().GetCoin(coinToSell)
+	case buyCoinID.IsBaseCoin():
+		coin := cState.Coins().GetCoin(sellCoinID)
 		result = formula.CalculateSaleReturn(coin.Volume(), coin.Reserve(), coin.Crr(), valueToSell)
 	default:
-		coinFrom := cState.Coins().GetCoin(coinToSell)
-		coinTo := cState.Coins().GetCoin(coinToBuy)
+		coinFrom := cState.Coins().GetCoin(sellCoinID)
+		coinTo := cState.Coins().GetCoin(buyCoinID)
 		basecoinValue := formula.CalculateSaleReturn(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), valueToSell)
 		result = formula.CalculatePurchaseReturn(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), basecoinValue)
 	}

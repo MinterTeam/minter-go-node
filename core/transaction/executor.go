@@ -20,7 +20,7 @@ const (
 	maxPayloadLength     = 1024
 	maxServiceDataLength = 128
 
-	createCoinGas = 5000
+	coinGas = 5000
 )
 
 type Response struct {
@@ -35,7 +35,6 @@ type Response struct {
 }
 
 func RunTx(context state.Interface,
-	isCheck bool,
 	rawTx []byte,
 	rewardPool *big.Int,
 	currentBlock uint64,
@@ -73,7 +72,7 @@ func RunTx(context state.Interface,
 	}
 
 	var checkState *state.CheckState
-	//var isCheck bool
+	var isCheck bool
 	if checkState, isCheck = context.(*state.CheckState); !isCheck {
 		checkState = state.NewCheckState(context.(*state.State))
 	}
@@ -154,6 +153,9 @@ func RunTx(context state.Interface,
 			return Response{
 				Code: code.MultisigNotExists,
 				Log:  "Multisig does not exists",
+				Info: EncodeError(map[string]string{
+					"multisig_address": tx.multisig.Multisig.String(),
+				}),
 			}
 		}
 
@@ -221,8 +223,18 @@ func RunTx(context state.Interface,
 	response.GasPrice = tx.GasPrice
 
 	if tx.Type == TypeCreateCoin {
-		response.GasUsed = createCoinGas
-		response.GasWanted = createCoinGas
+		response.GasUsed = coinGas
+		response.GasWanted = coinGas
+	}
+
+	if tx.Type == TypeChangeCoinOwner {
+		response.GasUsed = coinGas
+		response.GasWanted = coinGas
+	}
+
+	if tx.Type == TypeRecreateCoin {
+		response.GasUsed = coinGas
+		response.GasWanted = coinGas
 	}
 
 	return response

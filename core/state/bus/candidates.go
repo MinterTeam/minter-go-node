@@ -16,14 +16,16 @@ type Candidates interface {
 type Stake struct {
 	Owner    types.Address
 	Value    *big.Int
-	Coin     types.CoinSymbol
+	Coin     types.CoinID
 	BipValue *big.Int
 }
 
 type Candidate struct {
-	PubKey        types.Pubkey
-	RewardAddress types.Address
-	OwnerAddress  types.Address
-	Commission    uint
-	Status        byte
+	ID             uint32
+	PubKey         types.Pubkey
+	RewardAddress  types.Address
+	OwnerAddress   types.Address
+	ControlAddress types.Address
+	Commission     uint
+	Status         byte
 }

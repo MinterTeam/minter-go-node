@@ -13,19 +13,19 @@ func TestGetValidatorsCountForBlock(t *testing.T) {
 	data := []Results{
 		{
 			Block:  1,
-			Result: 16,
+			Result: 64,
 		},
 		{
 			Block:  518400 * 2,
-			Result: 24,
+			Result: 64,
 		},
 		{
 			Block:  31104000,
-			Result: 256,
+			Result: 64,
 		},
 		{
 			Block:  31104000 * 2,
-			Result: 256,
+			Result: 64,
 		},
 	}
 

@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
@@ -12,47 +11,41 @@ import (
 	"github.com/MinterTeam/minter-go-node/hexutil"
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
+	"strconv"
 )
 
 type DelegateData struct {
 	PubKey types.Pubkey
-	Coin   types.CoinSymbol
+	Coin   types.CoinID
 	Value  *big.Int
-}
-
-func (data DelegateData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		PubKey string `json:"pub_key"`
-		Coin   string `json:"coin"`
-		Value  string `json:"value"`
-	}{
-		PubKey: data.PubKey.String(),
-		Coin:   data.Coin.String(),
-		Value:  data.Value.String(),
-	})
-}
-
-func (data DelegateData) TotalSpend(tx *Transaction, context *state.CheckState) (TotalSpends, []Conversion, *big.Int, *Response) {
-	panic("implement me")
 }
 
 func (data DelegateData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.Value == nil {
 		return &Response{
 			Code: code.DecodeError,
-			Log:  "Incorrect tx data"}
+			Log:  "Incorrect tx data",
+			Info: EncodeError(map[string]string{
+				"code": strconv.Itoa(int(code.DecodeError)),
+			})}
 	}
 
 	if !context.Coins().Exists(tx.GasCoin) {
 		return &Response{
 			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin)}
+			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin),
+			Info: EncodeError(map[string]string{
+				"code": strconv.Itoa(int(code.CoinNotExists)),
+			})}
 	}
 
 	if data.Value.Cmp(types.Big0) < 1 {
 		return &Response{
 			Code: code.StakeShouldBePositive,
-			Log:  fmt.Sprintf("Stake should be positive")}
+			Log:  fmt.Sprintf("Stake should be positive"),
+			Info: EncodeError(map[string]string{
+				"code": strconv.Itoa(int(code.StakeShouldBePositive)),
+			})}
 	}
 
 	if !context.Candidates().Exists(data.PubKey) {
@@ -60,6 +53,7 @@ func (data DelegateData) BasicCheck(tx *Transaction, context *state.CheckState) 
 			Code: code.CandidateNotFound,
 			Log:  fmt.Sprintf("Candidate with such public key not found"),
 			Info: EncodeError(map[string]string{
+				"code":    strconv.Itoa(int(code.CandidateNotFound)),
 				"pub_key": data.PubKey.String(),
 			}),
 		}
@@ -69,7 +63,11 @@ func (data DelegateData) BasicCheck(tx *Transaction, context *state.CheckState) 
 	if !context.Candidates().IsDelegatorStakeSufficient(sender, data.PubKey, data.Coin, data.Value) {
 		return &Response{
 			Code: code.TooLowStake,
-			Log:  fmt.Sprintf("Stake is too low")}
+			Log:  fmt.Sprintf("Stake is too low"),
+			Info: EncodeError(map[string]string{
+				"code":    strconv.Itoa(int(code.TooLowStake)),
+				"pub_key": data.PubKey.String(),
+			})}
 	}
 
 	return nil
@@ -101,37 +99,40 @@ func (data DelegateData) Run(tx *Transaction, context state.Interface, rewardPoo
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
-	if !tx.GasCoin.IsBaseCoin() {
-		coin := checkState.Coins().GetCoin(tx.GasCoin)
+	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
+	coin := checkState.Coins().GetCoin(data.Coin)
 
-		errResp := CheckReserveUnderflow(coin, commissionInBaseCoin)
+	if !tx.GasCoin.IsBaseCoin() {
+		errResp := CheckReserveUnderflow(gasCoin, commissionInBaseCoin)
 		if errResp != nil {
 			return *errResp
 		}
 
-		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
+		if gasCoin.Reserve().Cmp(commissionInBaseCoin) < 0 {
 			return Response{
 				Code: code.CoinReserveNotSufficient,
-				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.Reserve().String(), commissionInBaseCoin.String()),
+				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", gasCoin.Reserve().String(), commissionInBaseCoin.String()),
 				Info: EncodeError(map[string]string{
-					"has_reserve": coin.Reserve().String(),
-					"commission":  commissionInBaseCoin.String(),
-					"gas_coin":    coin.CName,
+					"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
+					"has_reserve":    gasCoin.Reserve().String(),
+					"required_value": commissionInBaseCoin.String(),
+					"coin":           gasCoin.GetFullSymbol(),
 				}),
 			}
 		}
 
-		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
+		commission = formula.CalculateSaleAmount(gasCoin.Volume(), gasCoin.Reserve(), gasCoin.Crr(), commissionInBaseCoin)
 	}
 
 	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
 		return Response{
 			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, tx.GasCoin),
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, gasCoin.GetFullSymbol()),
 			Info: EncodeError(map[string]string{
+				"code":         strconv.Itoa(int(code.InsufficientFunds)),
 				"sender":       sender.String(),
 				"needed_value": commission.String(),
-				"gas_coin":     fmt.Sprintf("%s", tx.GasCoin),
+				"coin":         gasCoin.GetFullSymbol(),
 			}),
 		}
 	}
@@ -139,11 +140,12 @@ func (data DelegateData) Run(tx *Transaction, context state.Interface, rewardPoo
 	if checkState.Accounts().GetBalance(sender, data.Coin).Cmp(data.Value) < 0 {
 		return Response{
 			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), data.Value, data.Coin),
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), data.Value, coin.GetFullSymbol()),
 			Info: EncodeError(map[string]string{
+				"code":         strconv.Itoa(int(code.InsufficientFunds)),
 				"sender":       sender.String(),
 				"needed_value": data.Value.String(),
-				"coin":         fmt.Sprintf("%s", data.Coin),
+				"coin":         coin.GetFullSymbol(),
 			}),
 		}
 	}
@@ -156,26 +158,34 @@ func (data DelegateData) Run(tx *Transaction, context state.Interface, rewardPoo
 		if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(totalTxCost) < 0 {
 			return Response{
 				Code: code.InsufficientFunds,
-				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), totalTxCost.String(), tx.GasCoin),
+				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), totalTxCost.String(), gasCoin.GetFullSymbol()),
 				Info: EncodeError(map[string]string{
+					"code":         strconv.Itoa(int(code.InsufficientFunds)),
 					"sender":       sender.String(),
 					"needed_value": totalTxCost.String(),
-					"gas_coin":     fmt.Sprintf("%s", tx.GasCoin),
+					"coin":         gasCoin.GetFullSymbol(),
 				}),
 			}
 		}
 	}
 
-	if deliveryState, ok := context.(*state.State); ok {
+	if deliverState, ok := context.(*state.State); ok {
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		deliveryState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
-		deliveryState.Coins.SubVolume(tx.GasCoin, commission)
+		deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
+		deliverState.Coins.SubVolume(tx.GasCoin, commission)
 
-		deliveryState.Accounts.SubBalance(sender, tx.GasCoin, commission)
-		deliveryState.Accounts.SubBalance(sender, data.Coin, data.Value)
-		deliveryState.Candidates.Delegate(sender, data.PubKey, data.Coin, data.Value, big.NewInt(0))
-		deliveryState.Accounts.SetNonce(sender, tx.Nonce)
+		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
+		deliverState.Accounts.SubBalance(sender, data.Coin, data.Value)
+
+		value := big.NewInt(0).Set(data.Value)
+		if watchList := deliverState.Waitlist.Get(sender, data.PubKey, data.Coin); watchList != nil {
+			value.Add(value, watchList.Value)
+			deliverState.Waitlist.Delete(sender, data.PubKey, data.Coin)
+		}
+
+		deliverState.Candidates.Delegate(sender, data.PubKey, data.Coin, value, big.NewInt(0))
+		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}
 
 	tags := kv.Pairs{
