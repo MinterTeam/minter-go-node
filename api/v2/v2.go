@@ -3,6 +3,7 @@ package v2
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/MinterTeam/minter-go-node/api/v2/service"
 	gw "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	_ "github.com/MinterTeam/node-grpc-gateway/statik"
@@ -130,31 +131,30 @@ func contextWithTimeoutInterceptor(timeout time.Duration) func(ctx context.Conte
 	}
 }
 
-func parseStatus(s *status.Status) (string, map[string]interface{}) {
+func parseStatus(s *status.Status) (string, map[string]string) {
 	codeString := strconv.Itoa(runtime.HTTPStatusFromCode(s.Code()))
-	var data map[string]interface{}
+	dataString := map[string]string{}
 	details := s.Details()
 	if len(details) != 0 {
 		detail, ok := details[0].(*_struct.Struct)
 		if !ok {
-			return codeString, data
+			return codeString, dataString
 		}
 
-		data = detail.AsMap()
-
+		data := detail.AsMap()
+		for k, v := range data {
+			dataString[k] = fmt.Sprintf("%s", v)
+		}
 		code, ok := detail.GetFields()["code"]
 		if ok {
 			codeString = code.GetStringValue()
 		}
 	}
-	return codeString, data
+	return codeString, dataString
 }
 
 func httpError(ctx context.Context, mux *runtime.ServeMux, marshaler runtime.Marshaler, w http.ResponseWriter, r *http.Request, err error) {
-	const fallback = `{"error": "failed to marshal error message"}`
-	type errorHTTPResponse struct {
-		Error interface{} `json:"error"`
-	}
+	const fallback = `{"error": {"code": "500", "message": "failed to marshal error message"}}`
 
 	contentType := marshaler.ContentType()
 	w.Header().Set("Content-Type", contentType)
@@ -168,12 +168,8 @@ func httpError(ctx context.Context, mux *runtime.ServeMux, marshaler runtime.Mar
 
 	codeString, data := parseStatus(s)
 
-	jErr := json.NewEncoder(w).Encode(errorHTTPResponse{
-		Error: struct {
-			Code    string                 `json:"code"`
-			Message string                 `json:"message"`
-			Data    map[string]interface{} `json:"data"`
-		}{
+	jErr := json.NewEncoder(w).Encode(gw.ErrorBody{
+		Error: &gw.ErrorBody_Error{
 			Code:    codeString,
 			Message: s.Message(),
 			Data:    data,

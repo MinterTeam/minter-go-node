@@ -86,7 +86,7 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.CheckStat
 				Info: EncodeError(map[string]string{
 					"code":         strconv.Itoa(int(code.InsufficientFunds)),
 					"sender":       sender.String(),
-					"coin":         coin.GetFullSymbol(),
+					"coin_symbol":  coin.GetFullSymbol(),
 					"needed_value": commissionInBaseCoin.String(),
 				}),
 			}
@@ -115,7 +115,7 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.CheckStat
 				Info: EncodeError(map[string]string{
 					"code":         strconv.Itoa(int(code.InsufficientFunds)),
 					"sender":       sender.String(),
-					"coin":         coinFrom.GetFullSymbol(),
+					"coin_symbol":  coinFrom.GetFullSymbol(),
 					"needed_value": commissionInBaseCoin.String(),
 				}),
 			}
@@ -171,8 +171,8 @@ func (data SellAllCoinData) BasicCheck(tx *Transaction, context *state.CheckStat
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin to sell not exists"),
 			Info: EncodeError(map[string]string{
-				"code":         strconv.Itoa(int(code.CoinNotExists)),
-				"coin_to_sell": fmt.Sprintf("%s", data.CoinToSell),
+				"code":    strconv.Itoa(int(code.CoinNotExists)),
+				"coin_id": fmt.Sprintf("%s", data.CoinToSell.String()),
 			}),
 		}
 	}
@@ -182,8 +182,8 @@ func (data SellAllCoinData) BasicCheck(tx *Transaction, context *state.CheckStat
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin to buy not exists"),
 			Info: EncodeError(map[string]string{
-				"code":        strconv.Itoa(int(code.CoinNotExists)),
-				"coin_to_buy": fmt.Sprintf("%s", data.CoinToBuy),
+				"code":    strconv.Itoa(int(code.CoinNotExists)),
+				"coin_id": fmt.Sprintf("%s", data.CoinToBuy.String()),
 			}),
 		}
 	}
@@ -233,7 +233,7 @@ func (data SellAllCoinData) Run(tx *Transaction, context state.Interface, reward
 					"code":         strconv.Itoa(int(code.InsufficientFunds)),
 					"sender":       sender.String(),
 					"needed_value": ts.Value.String(),
-					"coin":         coin.GetFullSymbol(),
+					"coin_symbol":  coin.GetFullSymbol(),
 				}),
 			}
 		}

@@ -117,8 +117,8 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin not exists"),
 			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.CoinNotExists)),
-				"coin": fmt.Sprintf("%s", decodedCheck.Coin),
+				"code":    strconv.Itoa(int(code.CoinNotExists)),
+				"coin_id": fmt.Sprintf("%s", decodedCheck.Coin.String()),
 			}),
 		}
 	}
@@ -128,8 +128,8 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Gas coin not exists"),
 			Info: EncodeError(map[string]string{
-				"code":     strconv.Itoa(int(code.CoinNotExists)),
-				"gas_coin": fmt.Sprintf("%s", decodedCheck.GasCoin),
+				"code":    strconv.Itoa(int(code.CoinNotExists)),
+				"coin_id": fmt.Sprintf("%s", decodedCheck.GasCoin.String()),
 			}),
 		}
 	}
@@ -139,8 +139,8 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 			Code: code.WrongGasCoin,
 			Log:  fmt.Sprintf("Gas coin for redeem check transaction can only be %s", decodedCheck.GasCoin),
 			Info: EncodeError(map[string]string{
-				"code":     strconv.Itoa(int(code.WrongGasCoin)),
-				"gas_coin": fmt.Sprintf("%s", decodedCheck.GasCoin),
+				"code": strconv.Itoa(int(code.WrongGasCoin)),
+				"coin": fmt.Sprintf("%s", decodedCheck.GasCoin),
 			}),
 		}
 	}
@@ -231,7 +231,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 				Info: EncodeError(map[string]string{
 					"code":         strconv.Itoa(int(code.InsufficientFunds)),
 					"sender":       checkSender.String(),
-					"coin":         coin.GetFullSymbol(),
+					"coin_symbol":  coin.GetFullSymbol(),
 					"needed_value": totalTxCost.String(),
 				}),
 			}
@@ -244,7 +244,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 				Info: EncodeError(map[string]string{
 					"code":         strconv.Itoa(int(code.InsufficientFunds)),
 					"sender":       checkSender.String(),
-					"coin":         coin.GetFullSymbol(),
+					"coin_symbol":  coin.GetFullSymbol(),
 					"needed_value": decodedCheck.Value.String(),
 				}),
 			}
@@ -257,7 +257,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 				Info: EncodeError(map[string]string{
 					"code":         strconv.Itoa(int(code.InsufficientFunds)),
 					"sender":       sender.String(),
-					"coin":         gasCoin.GetFullSymbol(),
+					"coin_symbol":  gasCoin.GetFullSymbol(),
 					"needed_value": commission.String(),
 				}),
 			}

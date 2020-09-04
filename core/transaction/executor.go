@@ -8,6 +8,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
+	"strconv"
 	"sync"
 )
 
@@ -46,6 +47,7 @@ func RunTx(context state.Interface,
 			Code: code.TxTooLarge,
 			Log:  fmt.Sprintf("TX length is over %d bytes", maxTxLength),
 			Info: EncodeError(map[string]string{
+				"code":          strconv.Itoa(int(code.TxTooLarge)),
 				"max_tx_length": fmt.Sprintf("%d", maxTxLength),
 				"got_tx_length": fmt.Sprintf("%d", lenRawTx),
 			}),
@@ -57,6 +59,9 @@ func RunTx(context state.Interface,
 		return Response{
 			Code: code.DecodeError,
 			Log:  err.Error(),
+			Info: EncodeError(map[string]string{
+				"code": strconv.Itoa(int(code.DecodeError)),
+			}),
 		}
 	}
 
@@ -65,6 +70,7 @@ func RunTx(context state.Interface,
 			Code: code.WrongChainID,
 			Log:  "Wrong chain id",
 			Info: EncodeError(map[string]string{
+				"code":             strconv.Itoa(int(code.WrongChainID)),
 				"current_chain_id": fmt.Sprintf("%d", types.CurrentChainID),
 				"got_chain_id":     fmt.Sprintf("%d", tx.ChainID),
 			}),
@@ -82,7 +88,8 @@ func RunTx(context state.Interface,
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin),
 			Info: EncodeError(map[string]string{
-				"gas_coin": fmt.Sprintf("%d", tx.GasCoin),
+				"code":    strconv.Itoa(int(code.CoinNotExists)),
+				"coin_id": tx.GasCoin.String(),
 			}),
 		}
 	}

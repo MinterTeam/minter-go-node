@@ -85,7 +85,7 @@ func (data SetCandidateOnData) Run(tx *Transaction, context state.Interface, rew
 				"code":         strconv.Itoa(int(code.InsufficientFunds)),
 				"sender":       sender.String(),
 				"needed_value": commission.String(),
-				"coin":         gasCoin.GetFullSymbol(),
+				"coin_symbol":  gasCoin.GetFullSymbol(),
 			}),
 		}
 	}
@@ -186,7 +186,7 @@ func (data SetCandidateOffData) Run(tx *Transaction, context state.Interface, re
 				"code":         strconv.Itoa(int(code.InsufficientFunds)),
 				"sender":       sender.String(),
 				"needed_value": commission.String(),
-				"coin":         fmt.Sprintf("%s", tx.GasCoin),
+				"coin_symbol":  fmt.Sprintf("%s", tx.GasCoin),
 			}),
 		}
 	}

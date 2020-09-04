@@ -112,7 +112,7 @@ func (data CreateMultisigData) Run(tx *Transaction, context state.Interface, rew
 					"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
 					"has_value":      gasCoin.Reserve().String(),
 					"required_value": commissionInBaseCoin.String(),
-					"coin":           gasCoin.GetFullSymbol(),
+					"coin_symbol":    gasCoin.GetFullSymbol(),
 				}),
 			}
 		}
@@ -128,7 +128,7 @@ func (data CreateMultisigData) Run(tx *Transaction, context state.Interface, rew
 				"code":         strconv.Itoa(int(code.InsufficientFunds)),
 				"sender":       sender.String(),
 				"needed_value": commission.String(),
-				"coin":         gasCoin.GetFullSymbol(),
+				"coin_symbol":  gasCoin.GetFullSymbol(),
 			}),
 		}
 	}
