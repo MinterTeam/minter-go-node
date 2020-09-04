@@ -21,7 +21,7 @@ func (s *Service) CoinInfo(ctx context.Context, req *pb.CoinInfoRequest) (*pb.Co
 
 	coin := cState.Coins().GetCoinBySymbol(types.StrToCoinSymbol(req.Symbol), 0)
 	if coin == nil {
-		return new(pb.CoinInfoResponse), status.Error(codes.FailedPrecondition, "Coin not found")
+		return new(pb.CoinInfoResponse), status.Error(codes.NotFound, "Coin not found")
 	}
 
 	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
@@ -59,7 +59,7 @@ func (s *Service) CoinInfoById(ctx context.Context, req *pb.CoinIdRequest) (*pb.
 
 	coin := cState.Coins().GetCoin(types.CoinID(req.Id))
 	if coin == nil {
-		return new(pb.CoinInfoResponse), status.Error(codes.FailedPrecondition, "Coin not found")
+		return new(pb.CoinInfoResponse), status.Error(codes.NotFound, "Coin not found")
 	}
 
 	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {

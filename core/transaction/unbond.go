@@ -26,7 +26,11 @@ func (data UnbondData) BasicCheck(tx *Transaction, context *state.CheckState) *R
 	if data.Value == nil {
 		return &Response{
 			Code: code.DecodeError,
-			Log:  "Incorrect tx data"}
+			Log:  "Incorrect tx data",
+			Info: EncodeError(map[string]string{
+				"code": strconv.Itoa(int(code.DecodeError)),
+			}),
+		}
 	}
 
 	if !context.Coins().Exists(data.Coin) {

@@ -65,6 +65,7 @@ func (data SetCandidateOnData) Run(tx *Transaction, context state.Interface, rew
 				Code: code.CoinReserveNotSufficient,
 				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", gasCoin.Reserve().String(), commissionInBaseCoin.String()),
 				Info: EncodeError(map[string]string{
+					"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
 					"has_value":      gasCoin.Reserve().String(),
 					"required_value": commissionInBaseCoin.String(),
 					"coin":           gasCoin.GetFullSymbol(),
@@ -168,6 +169,7 @@ func (data SetCandidateOffData) Run(tx *Transaction, context state.Interface, re
 				Code: code.CoinReserveNotSufficient,
 				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.Reserve().String(), commissionInBaseCoin.String()),
 				Info: EncodeError(map[string]string{
+					"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
 					"has_value":      coin.Reserve().String(),
 					"required_value": commissionInBaseCoin.String(),
 					"coin":           coin.CName,
@@ -222,6 +224,7 @@ func checkCandidateControl(data CandidateTx, tx *Transaction, context *state.Che
 			Code: code.CandidateNotFound,
 			Log:  fmt.Sprintf("Candidate with such public key (%s) not found", data.GetPubKey().String()),
 			Info: EncodeError(map[string]string{
+				"code":       strconv.Itoa(int(code.CandidateNotFound)),
 				"public_key": data.GetPubKey().String(),
 			}),
 		}
@@ -235,7 +238,11 @@ func checkCandidateControl(data CandidateTx, tx *Transaction, context *state.Che
 	default:
 		return &Response{
 			Code: code.IsNotOwnerOfCandidate,
-			Log:  fmt.Sprintf("Sender is not an owner of a candidate")}
+			Log:  fmt.Sprintf("Sender is not an owner of a candidate"),
+			Info: EncodeError(map[string]string{
+				"code": strconv.Itoa(int(code.IsNotOwnerOfCandidate)),
+			}),
+		}
 	}
 
 	return nil
