@@ -34,14 +34,14 @@ func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinS
 	}
 
 	if !cState.Coins().Exists(coinToSell) {
-		return new(pb.EstimateCoinSellAllResponse), s.createError(status.New(codes.InvalidArgument, "Coin to sell not exists"), transaction.EncodeError(map[string]string{
+		return new(pb.EstimateCoinSellAllResponse), s.createError(status.New(codes.NotFound, "Coin to sell not exists"), transaction.EncodeError(map[string]string{
 			"code":            "404",
 			"coin_id_to_sell": coinToSell.String(),
 		}))
 	}
 
 	if !cState.Coins().Exists(coinToBuy) {
-		return new(pb.EstimateCoinSellAllResponse), s.createError(status.New(codes.InvalidArgument, "Coin to buy not exists"), transaction.EncodeError(map[string]string{
+		return new(pb.EstimateCoinSellAllResponse), s.createError(status.New(codes.NotFound, "Coin to buy not exists"), transaction.EncodeError(map[string]string{
 			"code":           "404",
 			"coin_id_to_buy": coinToBuy.String(),
 		}))
