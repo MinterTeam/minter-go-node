@@ -4,12 +4,14 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/formula"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"math/big"
+	"strconv"
 	"strings"
 )
 
@@ -45,9 +47,10 @@ func (s *Service) EstimateTxCommission(ctx context.Context, req *pb.EstimateTxCo
 		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
 			return new(pb.EstimateTxCommissionResponse), s.createError(status.New(codes.InvalidArgument, fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s",
 				coin.Reserve().String(), commissionInBaseCoin.String())), transaction.EncodeError(map[string]string{
-				"commission_in_base_coin": commissionInBaseCoin.String(),
-				"value_has":               coin.Reserve().String(),
-				"value_required":          commissionInBaseCoin.String(),
+				"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
+				"coin":           coin.GetFullSymbol(),
+				"value_has":      coin.Reserve().String(),
+				"value_required": commissionInBaseCoin.String(),
 			}))
 		}
 
