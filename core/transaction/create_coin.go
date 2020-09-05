@@ -36,19 +36,31 @@ func (data CreateCoinData) BasicCheck(tx *Transaction, context *state.CheckState
 	if data.InitialReserve == nil || data.InitialAmount == nil || data.MaxSupply == nil {
 		return &Response{
 			Code: code.DecodeError,
-			Log:  "Incorrect tx data"}
+			Log:  "Incorrect tx data",
+			Info: EncodeError(map[string]string{
+				"code": strconv.Itoa(int(code.DecodeError)),
+			}),
+		}
 	}
 
 	if len(data.Name) > maxCoinNameBytes {
 		return &Response{
 			Code: code.InvalidCoinName,
-			Log:  fmt.Sprintf("Coin name is invalid. Allowed up to %d bytes.", maxCoinNameBytes)}
+			Log:  fmt.Sprintf("Coin name is invalid. Allowed up to %d bytes.", maxCoinNameBytes),
+			Info: EncodeError(map[string]string{
+				"code": strconv.Itoa(int(code.InvalidCoinName)),
+			}),
+		}
 	}
 
 	if match, _ := regexp.MatchString(allowedCoinSymbols, data.Symbol.String()); !match {
 		return &Response{
 			Code: code.InvalidCoinSymbol,
-			Log:  fmt.Sprintf("Invalid coin symbol. Should be %s", allowedCoinSymbols)}
+			Log:  fmt.Sprintf("Invalid coin symbol. Should be %s", allowedCoinSymbols),
+			Info: EncodeError(map[string]string{
+				"code": strconv.Itoa(int(code.InvalidCoinSymbol)),
+			}),
+		}
 	}
 
 	if context.Coins().ExistsBySymbol(data.Symbol) {

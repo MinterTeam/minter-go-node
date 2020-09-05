@@ -99,6 +99,7 @@ func RunTx(context state.Interface,
 			Code: code.TooLowGasPrice,
 			Log:  fmt.Sprintf("Gas price of tx is too low to be included in mempool. Expected %d", minGasPrice),
 			Info: EncodeError(map[string]string{
+				"code":          strconv.Itoa(int(code.TooLowGasPrice)),
 				"min_gas_price": fmt.Sprintf("%d", minGasPrice),
 				"got_gas_price": fmt.Sprintf("%d", tx.GasPrice),
 			}),
@@ -111,6 +112,7 @@ func RunTx(context state.Interface,
 			Code: code.TxPayloadTooLarge,
 			Log:  fmt.Sprintf("TX payload length is over %d bytes", maxPayloadLength),
 			Info: EncodeError(map[string]string{
+				"code":               strconv.Itoa(int(code.TxPayloadTooLarge)),
 				"max_payload_length": fmt.Sprintf("%d", maxPayloadLength),
 				"got_payload_length": fmt.Sprintf("%d", lenPayload),
 			}),
@@ -123,6 +125,7 @@ func RunTx(context state.Interface,
 			Code: code.TxServiceDataTooLarge,
 			Log:  fmt.Sprintf("TX service data length is over %d bytes", maxServiceDataLength),
 			Info: EncodeError(map[string]string{
+				"code":                    strconv.Itoa(int(code.TxServiceDataTooLarge)),
 				"max_service_data_length": fmt.Sprintf("%d", maxServiceDataLength),
 				"got_service_data_length": fmt.Sprintf("%d", lenServiceData),
 			}),
@@ -134,6 +137,9 @@ func RunTx(context state.Interface,
 		return Response{
 			Code: code.DecodeError,
 			Log:  err.Error(),
+			Info: EncodeError(map[string]string{
+				"code": strconv.Itoa(int(code.DecodeError)),
+			}),
 		}
 	}
 
@@ -143,6 +149,7 @@ func RunTx(context state.Interface,
 			Code: code.TxFromSenderAlreadyInMempool,
 			Log:  fmt.Sprintf("Tx from %s already exists in mempool", sender.String()),
 			Info: EncodeError(map[string]string{
+				"code":   strconv.Itoa(int(code.TxFromSenderAlreadyInMempool)),
 				"sender": sender.String(),
 			}),
 		}
@@ -161,6 +168,7 @@ func RunTx(context state.Interface,
 				Code: code.MultisigNotExists,
 				Log:  "Multisig does not exists",
 				Info: EncodeError(map[string]string{
+					"code":             strconv.Itoa(int(code.MultisigNotExists)),
 					"multisig_address": tx.multisig.Multisig.String(),
 				}),
 			}
@@ -171,7 +179,11 @@ func RunTx(context state.Interface,
 		if len(tx.multisig.Signatures) > 32 || len(multisigData.Weights) < len(tx.multisig.Signatures) {
 			return Response{
 				Code: code.IncorrectMultiSignature,
-				Log:  "Incorrect multi-signature"}
+				Log:  "Incorrect multi-signature",
+				Info: EncodeError(map[string]string{
+					"code": strconv.Itoa(int(code.IncorrectMultiSignature)),
+				}),
+			}
 		}
 
 		txHash := tx.Hash()
@@ -184,13 +196,21 @@ func RunTx(context state.Interface,
 			if err != nil {
 				return Response{
 					Code: code.IncorrectMultiSignature,
-					Log:  "Incorrect multi-signature"}
+					Log:  "Incorrect multi-signature",
+					Info: EncodeError(map[string]string{
+						"code": strconv.Itoa(int(code.IncorrectMultiSignature)),
+					}),
+				}
 			}
 
 			if usedAccounts[signer] {
 				return Response{
 					Code: code.IncorrectMultiSignature,
-					Log:  "Incorrect multi-signature"}
+					Log:  "Incorrect multi-signature",
+					Info: EncodeError(map[string]string{
+						"code": strconv.Itoa(int(code.IncorrectMultiSignature)),
+					}),
+				}
 			}
 
 			usedAccounts[signer] = true
@@ -202,6 +222,7 @@ func RunTx(context state.Interface,
 				Code: code.IncorrectMultiSignature,
 				Log:  fmt.Sprintf("Not enough multisig votes. Needed %d, has %d", multisigData.Threshold, totalWeight),
 				Info: EncodeError(map[string]string{
+					"code":         strconv.Itoa(int(code.IncorrectMultiSignature)),
 					"needed_votes": fmt.Sprintf("%d", multisigData.Threshold),
 					"got_votes":    fmt.Sprintf("%d", totalWeight),
 				}),
@@ -215,6 +236,7 @@ func RunTx(context state.Interface,
 			Code: code.WrongNonce,
 			Log:  fmt.Sprintf("Unexpected nonce. Expected: %d, got %d.", expectedNonce, tx.Nonce),
 			Info: EncodeError(map[string]string{
+				"code":           strconv.Itoa(int(code.WrongNonce)),
 				"expected_nonce": fmt.Sprintf("%d", expectedNonce),
 				"got_nonce":      fmt.Sprintf("%d", tx.Nonce),
 			}),
