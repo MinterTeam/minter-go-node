@@ -158,19 +158,6 @@ func (data CreateCoinData) Run(tx *Transaction, context state.Interface, rewardP
 			return *errResp
 		}
 
-		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
-			return Response{
-				Code: code.CoinReserveNotSufficient,
-				Log:  fmt.Sprintf("Gas coin reserve balance is not sufficient for transaction. Has: %s %s, required %s %s", coin.Reserve().String(), types.GetBaseCoin(), commissionInBaseCoin.String(), types.GetBaseCoin()),
-				Info: EncodeError(map[string]string{
-					"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
-					"has_value":      coin.Reserve().String(),
-					"required_value": commissionInBaseCoin.String(),
-					"coin_symbol":    fmt.Sprintf("%s", types.GetBaseCoin()),
-				}),
-			}
-		}
-
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
 	}
 

@@ -54,18 +54,6 @@ func (data PriceVoteData) Run(tx *Transaction, context state.Interface, rewardPo
 			return *errResp
 		}
 
-		if gasCoin.Reserve().Cmp(commissionInBaseCoin) < 0 {
-			return Response{
-				Code: code.CoinReserveNotSufficient,
-				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", gasCoin.Reserve().String(), commissionInBaseCoin.String()),
-				Info: EncodeError(map[string]string{
-					"has_reserve":    gasCoin.Reserve().String(),
-					"required_value": commissionInBaseCoin.String(),
-					"coin":           gasCoin.GetFullSymbol(),
-				}),
-			}
-		}
-
 		commission = formula.CalculateSaleAmount(gasCoin.Volume(), gasCoin.Reserve(), gasCoin.Crr(), commissionInBaseCoin)
 	}
 

@@ -94,19 +94,6 @@ func (data MultisendData) Run(tx *Transaction, context state.Interface, rewardPo
 			return *errResp
 		}
 
-		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
-			return Response{
-				Code: code.CoinReserveNotSufficient,
-				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.Reserve().String(), commissionInBaseCoin.String()),
-				Info: EncodeError(map[string]string{
-					"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
-					"has_value":      coin.Reserve().String(),
-					"required_value": commissionInBaseCoin.String(),
-					"coin_symbol":    coin.CName,
-				}),
-			}
-		}
-
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
 	}
 

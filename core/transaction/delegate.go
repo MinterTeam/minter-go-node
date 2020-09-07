@@ -41,6 +41,16 @@ func (data DelegateData) BasicCheck(tx *Transaction, context *state.CheckState) 
 			})}
 	}
 
+	if !context.Coins().Exists(data.Coin) {
+		return &Response{
+			Code: code.CoinNotExists,
+			Log:  fmt.Sprintf("Coin %s not exists", data.Coin),
+			Info: EncodeError(map[string]string{
+				"code":    strconv.Itoa(int(code.CoinNotExists)),
+				"coin_id": fmt.Sprintf("%s", data.Coin.String()),
+			})}
+	}
+
 	if data.Value.Cmp(types.Big0) < 1 {
 		return &Response{
 			Code: code.StakeShouldBePositive,
@@ -108,19 +118,6 @@ func (data DelegateData) Run(tx *Transaction, context state.Interface, rewardPoo
 		errResp := CheckReserveUnderflow(gasCoin, commissionInBaseCoin)
 		if errResp != nil {
 			return *errResp
-		}
-
-		if gasCoin.Reserve().Cmp(commissionInBaseCoin) < 0 {
-			return Response{
-				Code: code.CoinReserveNotSufficient,
-				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", gasCoin.Reserve().String(), commissionInBaseCoin.String()),
-				Info: EncodeError(map[string]string{
-					"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
-					"has_reserve":    gasCoin.Reserve().String(),
-					"required_value": commissionInBaseCoin.String(),
-					"coin_symbol":    gasCoin.GetFullSymbol(),
-				}),
-			}
 		}
 
 		commission = formula.CalculateSaleAmount(gasCoin.Volume(), gasCoin.Reserve(), gasCoin.Crr(), commissionInBaseCoin)
