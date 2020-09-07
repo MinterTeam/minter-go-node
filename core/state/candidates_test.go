@@ -419,7 +419,9 @@ func TestDelegationAfterUnbond(t *testing.T) {
 
 		st.Candidates.SubStake(addr, pubkey, coin, amount)
 		st.Candidates.RecalculateStakes(height)
-		st.Candidates.Commit()
+		if err := st.Candidates.Commit(); err != nil {
+			panic(err)
+		}
 	}
 
 	// delegate

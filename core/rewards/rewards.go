@@ -1,9 +1,10 @@
 package rewards
 
 import (
+	"math/big"
+
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/helpers"
-	"math/big"
 )
 
 const lastBlock = 43702611

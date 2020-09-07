@@ -3,6 +3,9 @@ package transaction
 import (
 	"encoding/hex"
 	"fmt"
+	"math/big"
+	"strconv"
+
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
@@ -10,8 +13,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/hexutil"
 	"github.com/tendermint/tendermint/libs/kv"
-	"math/big"
-	"strconv"
 )
 
 type DelegateData struct {
@@ -37,6 +38,16 @@ func (data DelegateData) BasicCheck(tx *Transaction, context *state.CheckState) 
 			Info: EncodeError(map[string]string{
 				"code":    strconv.Itoa(int(code.CoinNotExists)),
 				"coin_id": fmt.Sprintf("%s", tx.GasCoin.String()),
+			})}
+	}
+
+	if !context.Coins().Exists(data.Coin) {
+		return &Response{
+			Code: code.CoinNotExists,
+			Log:  fmt.Sprintf("Coin %s not exists", data.Coin),
+			Info: EncodeError(map[string]string{
+				"code":    strconv.Itoa(int(code.CoinNotExists)),
+				"coin_id": fmt.Sprintf("%s", data.Coin.String()),
 			})}
 	}
 
@@ -107,19 +118,6 @@ func (data DelegateData) Run(tx *Transaction, context state.Interface, rewardPoo
 		errResp := CheckReserveUnderflow(gasCoin, commissionInBaseCoin)
 		if errResp != nil {
 			return *errResp
-		}
-
-		if gasCoin.Reserve().Cmp(commissionInBaseCoin) < 0 {
-			return Response{
-				Code: code.CoinReserveNotSufficient,
-				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", gasCoin.Reserve().String(), commissionInBaseCoin.String()),
-				Info: EncodeError(map[string]string{
-					"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
-					"has_reserve":    gasCoin.Reserve().String(),
-					"required_value": commissionInBaseCoin.String(),
-					"coin_symbol":    gasCoin.GetFullSymbol(),
-				}),
-			}
 		}
 
 		commission = formula.CalculateSaleAmount(gasCoin.Volume(), gasCoin.Reserve(), gasCoin.Crr(), commissionInBaseCoin)
