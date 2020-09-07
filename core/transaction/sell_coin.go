@@ -114,7 +114,7 @@ func (data SellCoinData) TotalSpend(tx *Transaction, context *state.CheckState) 
 						"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
 						"has_value":      coin.Reserve().String(),
 						"required_value": commissionInBaseCoin.String(),
-						"coin":           fmt.Sprintf("%s", types.GetBaseCoin()),
+						"coin_symbol":    fmt.Sprintf("%s", types.GetBaseCoin()),
 					}),
 				}
 			}
@@ -166,7 +166,7 @@ func (data SellCoinData) TotalSpend(tx *Transaction, context *state.CheckState) 
 						"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
 						"has_value":      coinFrom.Reserve().String(),
 						"required_value": commissionInBaseCoin.String(),
-						"coin":           fmt.Sprintf("%s", types.GetBaseCoin()),
+						"coin_symbol":    fmt.Sprintf("%s", types.GetBaseCoin()),
 					}),
 				}
 			}
@@ -250,7 +250,7 @@ func (data SellCoinData) TotalSpend(tx *Transaction, context *state.CheckState) 
 						"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
 						"has_value":      coin.Reserve().String(),
 						"required_value": commissionInBaseCoin.String(),
-						"coin":           fmt.Sprintf("%s", types.GetBaseCoin()),
+						"coin_symbol":    fmt.Sprintf("%s", types.GetBaseCoin()),
 					}),
 				}
 			}
@@ -298,8 +298,8 @@ func (data SellCoinData) BasicCheck(tx *Transaction, context *state.CheckState) 
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin not exists"),
 			Info: EncodeError(map[string]string{
-				"code":         strconv.Itoa(int(code.CoinNotExists)),
-				"coin_to_sell": fmt.Sprintf("%s", data.CoinToSell),
+				"code":    strconv.Itoa(int(code.CoinNotExists)),
+				"coin_id": fmt.Sprintf("%s", data.CoinToSell.String()),
 			}),
 		}
 	}
@@ -309,8 +309,8 @@ func (data SellCoinData) BasicCheck(tx *Transaction, context *state.CheckState) 
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin not exists"),
 			Info: EncodeError(map[string]string{
-				"code":        strconv.Itoa(int(code.CoinNotExists)),
-				"coin_to_buy": fmt.Sprintf("%s", data.CoinToBuy),
+				"code":    strconv.Itoa(int(code.CoinNotExists)),
+				"coin_id": fmt.Sprintf("%s", data.CoinToBuy.String()),
 			}),
 		}
 	}
@@ -360,7 +360,7 @@ func (data SellCoinData) Run(tx *Transaction, context state.Interface, rewardPoo
 					"code":         strconv.Itoa(int(code.InsufficientFunds)),
 					"sender":       sender.String(),
 					"needed_value": ts.Value.String(),
-					"coin":         coin.GetFullSymbol(),
+					"coin_symbol":  coin.GetFullSymbol(),
 				}),
 			}
 		}

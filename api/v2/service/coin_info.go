@@ -3,11 +3,14 @@ package service
 import (
 	"context"
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/core/code"
+	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"strconv"
 )
 
 func (s *Service) CoinInfo(ctx context.Context, req *pb.CoinInfoRequest) (*pb.CoinInfoResponse, error) {
@@ -21,7 +24,10 @@ func (s *Service) CoinInfo(ctx context.Context, req *pb.CoinInfoRequest) (*pb.Co
 
 	coin := cState.Coins().GetCoinBySymbol(types.StrToCoinSymbol(req.Symbol), 0)
 	if coin == nil {
-		return new(pb.CoinInfoResponse), status.Error(codes.FailedPrecondition, "Coin not found")
+		return new(pb.CoinInfoResponse), s.createError(status.New(codes.NotFound, "Coin not found"), transaction.EncodeError(map[string]string{
+			"code":        strconv.Itoa(int(code.CoinNotExists)),
+			"coin_symbol": req.Symbol,
+		}))
 	}
 
 	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
@@ -59,7 +65,10 @@ func (s *Service) CoinInfoById(ctx context.Context, req *pb.CoinIdRequest) (*pb.
 
 	coin := cState.Coins().GetCoin(types.CoinID(req.Id))
 	if coin == nil {
-		return new(pb.CoinInfoResponse), status.Error(codes.FailedPrecondition, "Coin not found")
+		return new(pb.CoinInfoResponse), s.createError(status.New(codes.NotFound, "Coin not found"), transaction.EncodeError(map[string]string{
+			"code":    strconv.Itoa(int(code.CoinNotExists)),
+			"coin_id": strconv.Itoa(int(req.Id)),
+		}))
 	}
 
 	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {

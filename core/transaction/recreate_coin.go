@@ -91,7 +91,8 @@ func (data RecreateCoinData) BasicCheck(tx *Transaction, context *state.CheckSta
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin %s not exists", data.Symbol),
 			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.CoinNotExists)),
+				"code":        strconv.Itoa(int(code.CoinNotExists)),
+				"coin_symbol": fmt.Sprintf("%s", data.Symbol.String()),
 			}),
 		}
 	}
@@ -152,7 +153,7 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 					"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
 					"has_value":      gasCoin.Reserve().String(),
 					"required_value": commissionInBaseCoin.String(),
-					"coin":           gasCoin.GetFullSymbol(),
+					"coin_symbol":    gasCoin.GetFullSymbol(),
 				}),
 			}
 		}
@@ -170,7 +171,7 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 				"code":         strconv.Itoa(int(code.InsufficientFunds)),
 				"sender":       sender.String(),
 				"needed_value": commission.String(),
-				"coin":         gasCoin.GetFullSymbol(),
+				"coin_symbol":  gasCoin.GetFullSymbol(),
 			}),
 		}
 	}
@@ -183,7 +184,7 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 				"code":           strconv.Itoa(int(code.InsufficientFunds)),
 				"sender":         sender.String(),
 				"needed_reserve": data.InitialReserve.String(),
-				"coin":           fmt.Sprintf("%s", types.GetBaseCoin()),
+				"coin_symbol":    fmt.Sprintf("%s", types.GetBaseCoin()),
 			}),
 		}
 	}
@@ -203,7 +204,7 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 					"code":         strconv.Itoa(int(code.InsufficientFunds)),
 					"sender":       sender.String(),
 					"needed_value": totalTxCost.String(),
-					"coin":         gasCoin.GetFullSymbol(),
+					"coin_symbol":  gasCoin.GetFullSymbol(),
 				}),
 			}
 		}

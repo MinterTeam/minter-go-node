@@ -26,7 +26,11 @@ func (data UnbondData) BasicCheck(tx *Transaction, context *state.CheckState) *R
 	if data.Value == nil {
 		return &Response{
 			Code: code.DecodeError,
-			Log:  "Incorrect tx data"}
+			Log:  "Incorrect tx data",
+			Info: EncodeError(map[string]string{
+				"code": strconv.Itoa(int(code.DecodeError)),
+			}),
+		}
 	}
 
 	if !context.Coins().Exists(data.Coin) {
@@ -34,15 +38,14 @@ func (data UnbondData) BasicCheck(tx *Transaction, context *state.CheckState) *R
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin %s not exists", data.Coin),
 			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.CoinNotExists)),
-				"coin": fmt.Sprintf("%s", data.Coin),
+				"code":    strconv.Itoa(int(code.CoinNotExists)),
+				"coin_id": fmt.Sprintf("%s", data.Coin.String()),
 			}),
 		}
 	}
 
 	errorInfo := map[string]string{
-		"pub_key":       data.PubKey.String(),
-		"unbound_value": data.Value.String(),
+		"pub_key": data.PubKey.String(),
 	}
 	if !context.Candidates().Exists(data.PubKey) {
 		errorInfo["code"] = strconv.Itoa(int(code.CandidateNotFound))
@@ -53,6 +56,7 @@ func (data UnbondData) BasicCheck(tx *Transaction, context *state.CheckState) *R
 		}
 	}
 
+	errorInfo["unbound_value"] = data.Value.String()
 	sender, _ := tx.Sender()
 
 	if waitlist := context.Watchlist().Get(sender, data.PubKey, data.Coin); waitlist != nil {
@@ -135,7 +139,7 @@ func (data UnbondData) Run(tx *Transaction, context state.Interface, rewardPool 
 					"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
 					"has_value":      gasCoin.Reserve().String(),
 					"required_value": commissionInBaseCoin.String(),
-					"coin":           gasCoin.GetFullSymbol(),
+					"coin_symbol":    gasCoin.GetFullSymbol(),
 				}),
 			}
 		}
@@ -151,7 +155,7 @@ func (data UnbondData) Run(tx *Transaction, context state.Interface, rewardPool 
 				"code":         strconv.Itoa(int(code.InsufficientFunds)),
 				"sender":       sender.String(),
 				"needed_value": commission.String(),
-				"coin":         gasCoin.GetFullSymbol(),
+				"coin_symbol":  gasCoin.GetFullSymbol(),
 			}),
 		}
 	}
