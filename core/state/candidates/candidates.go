@@ -17,13 +17,16 @@ import (
 	"sync"
 )
 
+// Common constants
 const (
 	CandidateStatusOffline = 0x01
 	CandidateStatusOnline  = 0x02
 
 	UnbondPeriod              = 518400
 	MaxDelegatorsPerCandidate = 1000
+)
 
+const (
 	mainPrefix       = 'c'
 	pubKeyIDPrefix   = mainPrefix + 'p'
 	blockListPrefix  = mainPrefix + 'b'
@@ -37,6 +40,7 @@ var (
 	minValidatorBipStake = big.NewInt(1000)
 )
 
+// RCandidates interface represents Candidates state
 type RCandidates interface {
 	Export(state *types.AppState)
 	Exists(pubkey types.Pubkey) bool
@@ -53,9 +57,10 @@ type RCandidates interface {
 	GetCandidate(pubkey types.Pubkey) *Candidate
 	LoadStakes()
 	GetCandidates() []*Candidate
-	GetStakes(pubkey types.Pubkey) []*Stake
+	GetStakes(pubkey types.Pubkey) []*stake
 }
 
+// Candidates struct is a store of Candidates state
 type Candidates struct {
 	list map[uint32]*Candidate
 
@@ -71,6 +76,7 @@ type Candidates struct {
 	loaded bool
 }
 
+// NewCandidates returns newly created Candidates state with a given bus and iavl
 func NewCandidates(bus *bus.Bus, iavl tree.MTree) (*Candidates, error) {
 	candidates := &Candidates{iavl: iavl, bus: bus}
 	candidates.bus.SetCandidates(NewBus(candidates))
@@ -78,6 +84,7 @@ func NewCandidates(bus *bus.Bus, iavl tree.MTree) (*Candidates, error) {
 	return candidates, nil
 }
 
+// Commit writes changes to iavl, may return an error
 func (c *Candidates) Commit() error {
 	keys := c.getOrderedCandidates()
 
@@ -115,12 +122,12 @@ func (c *Candidates) Commit() error {
 		sort.SliceStable(pubIDs, func(i, j int) bool {
 			return pubIDs[i].ID < pubIDs[j].ID
 		})
-		pubIdData, err := rlp.EncodeToBytes(pubIDs)
+		pubIDData, err := rlp.EncodeToBytes(pubIDs)
 		if err != nil {
 			panic(fmt.Sprintf("failed to encode candidates public key with ID: %s", err))
 		}
 
-		c.iavl.Set([]byte{pubKeyIDPrefix}, pubIdData)
+		c.iavl.Set([]byte{pubKeyIDPrefix}, pubIDData)
 
 		var blockList []types.Pubkey
 		for pubKey := range c.blockList {
@@ -193,6 +200,9 @@ func (c *Candidates) Commit() error {
 	return nil
 }
 
+// GetNewCandidates returns list of candidates that can be the new validators
+// Skips offline candidates and candidates with stake less than minValidatorBipStake
+// Result is sorted by candidates stakes and limited to valCount
 func (c *Candidates) GetNewCandidates(valCount int) []Candidate {
 	var result []Candidate
 
@@ -220,6 +230,7 @@ func (c *Candidates) GetNewCandidates(valCount int) []Candidate {
 	return result
 }
 
+// Create creates a new candidate with given params and adds it to state
 func (c *Candidates) Create(ownerAddress, rewardAddress, controlAddress types.Address, pubkey types.Pubkey, commission uint) {
 	candidate := &Candidate{
 		ID:                c.getOrNewID(pubkey),
@@ -230,7 +241,7 @@ func (c *Candidates) Create(ownerAddress, rewardAddress, controlAddress types.Ad
 		Commission:        commission,
 		Status:            CandidateStatusOffline,
 		totalBipStake:     big.NewInt(0),
-		stakes:            [MaxDelegatorsPerCandidate]*Stake{},
+		stakes:            [MaxDelegatorsPerCandidate]*stake{},
 		isDirty:           true,
 		isTotalStakeDirty: true,
 	}
@@ -239,11 +250,16 @@ func (c *Candidates) Create(ownerAddress, rewardAddress, controlAddress types.Ad
 	c.setToMap(pubkey, candidate)
 }
 
+// CreateWithID creates a new candidate with given params and adds it to state
+// CreateWithID uses given ID to be associated with public key of a candidate
 func (c *Candidates) CreateWithID(ownerAddress, rewardAddress, controlAddress types.Address, pubkey types.Pubkey, commission uint, id uint32) {
 	c.setPubKeyID(pubkey, id)
 	c.Create(ownerAddress, rewardAddress, controlAddress, pubkey, commission)
 }
 
+// PunishByzantineCandidate finds candidate with given tmAddress and punishes it:
+// 1. Subs 5% of each stake of a candidate
+// 2. Unbond each stake of a candidate
 func (c *Candidates) PunishByzantineCandidate(height uint64, tmAddress types.TmAddress) {
 	candidate := c.GetCandidateByTendermintAddress(tmAddress)
 	stakes := c.GetStakes(candidate.PubKey)
@@ -282,6 +298,7 @@ func (c *Candidates) PunishByzantineCandidate(height uint64, tmAddress types.TmA
 	}
 }
 
+// GetCandidateByTendermintAddress finds and returns candidate with given tendermint-address
 func (c *Candidates) GetCandidateByTendermintAddress(address types.TmAddress) *Candidate {
 	candidates := c.GetCandidates()
 	for _, candidate := range candidates {
@@ -293,11 +310,14 @@ func (c *Candidates) GetCandidateByTendermintAddress(address types.TmAddress) *C
 	return nil
 }
 
+// RecalculateStakes recalculate stakes of all candidates:
+// 1. Updates bip-value of each stake
+// 2. Applies updates
 func (c *Candidates) RecalculateStakes(height uint64) {
-	c.recalculateStakesNew(height)
+	c.recalculateStakes(height)
 }
 
-func (c *Candidates) recalculateStakesNew(height uint64) {
+func (c *Candidates) recalculateStakes(height uint64) {
 	coinsCache := newCoinsCache()
 
 	for _, pubkey := range c.getOrderedCandidates() {
@@ -353,7 +373,7 @@ func (c *Candidates) recalculateStakesNew(height uint64) {
 				c.stakeKick(stakes[index].Owner, stakes[index].Value, stakes[index].Coin, candidate.PubKey, height)
 			}
 
-			candidate.SetStakeAtIndex(index, update, true)
+			candidate.setStakeAtIndex(index, update, true)
 		}
 
 		candidate.clearUpdates()
@@ -382,6 +402,7 @@ func (c *Candidates) stakeKick(owner types.Address, value *big.Int, coin types.C
 	c.bus.Checker().AddCoin(coin, big.NewInt(0).Neg(value))
 }
 
+// Exists returns wherever a candidate with given public key exists
 func (c *Candidates) Exists(pubkey types.Pubkey) bool {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
@@ -397,6 +418,7 @@ func (c *Candidates) existPubKey(pubKey types.Pubkey) bool {
 	return exists
 }
 
+// IsBlockedPubKey returns if given public key is blacklisted
 func (c *Candidates) IsBlockedPubKey(pubkey types.Pubkey) bool {
 	return c.isBlocked(pubkey)
 }
@@ -409,6 +431,7 @@ func (c *Candidates) isBlocked(pubKey types.Pubkey) bool {
 	return exists
 }
 
+// Count returns current amount of candidates
 func (c *Candidates) Count() int {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
@@ -416,6 +439,7 @@ func (c *Candidates) Count() int {
 	return len(c.list)
 }
 
+// IsNewCandidateStakeSufficient determines if given stake is sufficient to create new candidate
 func (c *Candidates) IsNewCandidateStakeSufficient(coin types.CoinID, stake *big.Int, limit int) bool {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
@@ -440,10 +464,12 @@ func (c *Candidates) IsNewCandidateStakeSufficient(coin types.CoinID, stake *big
 	return false
 }
 
+// GetCandidate returns candidate by a public key
 func (c *Candidates) GetCandidate(pubkey types.Pubkey) *Candidate {
 	return c.getFromMap(pubkey)
 }
 
+// IsDelegatorStakeSufficient determines if given stake is sufficient to add it to a candidate
 func (c *Candidates) IsDelegatorStakeSufficient(address types.Address, pubkey types.Pubkey, coin types.CoinID, amount *big.Int) bool {
 	stakes := c.GetStakes(pubkey)
 	if len(stakes) < MaxDelegatorsPerCandidate {
@@ -460,8 +486,9 @@ func (c *Candidates) IsDelegatorStakeSufficient(address types.Address, pubkey ty
 	return false
 }
 
+// Delegate adds a stake to a candidate
 func (c *Candidates) Delegate(address types.Address, pubkey types.Pubkey, coin types.CoinID, value *big.Int, bipValue *big.Int) {
-	stake := &Stake{
+	stake := &stake{
 		Owner:    address,
 		Coin:     coin,
 		Value:    big.NewInt(0).Set(value),
@@ -469,12 +496,12 @@ func (c *Candidates) Delegate(address types.Address, pubkey types.Pubkey, coin t
 	}
 
 	candidate := c.GetCandidate(pubkey)
-
 	candidate.addUpdate(stake)
 
 	c.bus.Checker().AddCoin(coin, value)
 }
 
+// Edit edits a candidate
 func (c *Candidates) Edit(pubkey types.Pubkey, rewardAddress types.Address, ownerAddress types.Address, controlAddress types.Address) {
 	candidate := c.getFromMap(pubkey)
 	candidate.setOwner(ownerAddress)
@@ -482,20 +509,24 @@ func (c *Candidates) Edit(pubkey types.Pubkey, rewardAddress types.Address, owne
 	candidate.setControl(controlAddress)
 }
 
+// SetOnline sets candidate status to CandidateStatusOnline
 func (c *Candidates) SetOnline(pubkey types.Pubkey) {
 	c.getFromMap(pubkey).setStatus(CandidateStatusOnline)
 }
 
+// SetOffline sets candidate status to CandidateStatusOffline
 func (c *Candidates) SetOffline(pubkey types.Pubkey) {
 	c.getFromMap(pubkey).setStatus(CandidateStatusOffline)
 }
 
+// SubStake subs given value from delegator's stake
 func (c *Candidates) SubStake(address types.Address, pubkey types.Pubkey, coin types.CoinID, value *big.Int) {
 	stake := c.GetStakeOfAddress(pubkey, address, coin)
 	stake.subValue(value)
 	c.bus.Checker().AddCoin(coin, big.NewInt(0).Neg(value))
 }
 
+// GetCandidates returns a list of all candidates
 func (c *Candidates) GetCandidates() []*Candidate {
 	var candidates []*Candidate
 	for _, pubkey := range c.getOrderedCandidates() {
@@ -505,6 +536,7 @@ func (c *Candidates) GetCandidates() []*Candidate {
 	return candidates
 }
 
+// GetTotalStake calculates and returns total stake of a candidate
 func (c *Candidates) GetTotalStake(pubkey types.Pubkey) *big.Int {
 	candidate := c.getFromMap(pubkey)
 	if candidate.totalBipStake == nil {
@@ -523,10 +555,11 @@ func (c *Candidates) GetTotalStake(pubkey types.Pubkey) *big.Int {
 	return candidate.totalBipStake
 }
 
-func (c *Candidates) GetStakes(pubkey types.Pubkey) []*Stake {
+// GetStakes returns list of stakes of candidate with given public key
+func (c *Candidates) GetStakes(pubkey types.Pubkey) []*stake {
 	candidate := c.GetCandidate(pubkey)
 
-	var stakes []*Stake
+	var stakes []*stake
 	for i := 0; i < MaxDelegatorsPerCandidate; i++ {
 		stake := candidate.stakes[i]
 		if stake == nil {
@@ -538,11 +571,8 @@ func (c *Candidates) GetStakes(pubkey types.Pubkey) []*Stake {
 	return stakes
 }
 
-func (c *Candidates) StakesCount(pubkey types.Pubkey) int {
-	return c.GetCandidate(pubkey).stakesCount
-}
-
-func (c *Candidates) GetStakeOfAddress(pubkey types.Pubkey, address types.Address, coin types.CoinID) *Stake {
+// GetStakeOfAddress returns stake of address in given candidate and in given coin
+func (c *Candidates) GetStakeOfAddress(pubkey types.Pubkey, address types.Address, coin types.CoinID) *stake {
 	candidate := c.GetCandidate(pubkey)
 	for _, stake := range candidate.stakes {
 		if stake == nil {
@@ -557,6 +587,7 @@ func (c *Candidates) GetStakeOfAddress(pubkey types.Pubkey, address types.Addres
 	return nil
 }
 
+// GetStakeValueOfAddress returns stake VALUE of address in given candidate and in given coin
 func (c *Candidates) GetStakeValueOfAddress(pubkey types.Pubkey, address types.Address, coin types.CoinID) *big.Int {
 	stake := c.GetStakeOfAddress(pubkey, address, coin)
 	if stake == nil {
@@ -566,15 +597,17 @@ func (c *Candidates) GetStakeValueOfAddress(pubkey types.Pubkey, address types.A
 	return stake.Value
 }
 
+// GetCandidateOwner returns candidate's owner address
 func (c *Candidates) GetCandidateOwner(pubkey types.Pubkey) types.Address {
 	return c.getFromMap(pubkey).OwnerAddress
 }
 
+// GetCandidateControl returns candidate's control address
 func (c *Candidates) GetCandidateControl(pubkey types.Pubkey) types.Address {
 	return c.getFromMap(pubkey).ControlAddress
 }
 
-// Load only list candidates (for read)
+// LoadCandidates Loads only list of candidates (for read)
 func (c *Candidates) LoadCandidates() {
 	if c.checkAndSetLoaded() {
 		return
@@ -583,7 +616,7 @@ func (c *Candidates) LoadCandidates() {
 	_ = c.loadCandidatesList()
 }
 
-// Load full info about candidates (for edit)
+// LoadCandidatesDeliver Loads full info about candidates (for edit)
 func (c *Candidates) LoadCandidatesDeliver() {
 	if c.checkAndSetLoaded() {
 		return
@@ -670,6 +703,7 @@ func (c *Candidates) checkAndSetLoaded() bool {
 	return false
 }
 
+// LoadStakes loads all stakes of candidates
 func (c *Candidates) LoadStakes() {
 	for pubkey := range c.pubKeyIDs {
 		c.LoadStakesOfCandidate(pubkey)
@@ -722,11 +756,13 @@ func (c *Candidates) calculateBipValue(coinID types.CoinID, amount *big.Int, inc
 	return big.NewInt(0).Div(big.NewInt(0).Mul(big.NewInt(0).Sub(coin.Reserve, saleReturn), amount), totalDelegatedValue)
 }
 
+// Punish punished a candidate with given tendermint-address
+// 1. Subs 1% from each stake
+// 2. Calculate and return new total stake
 func (c *Candidates) Punish(height uint64, address types.TmAddress) *big.Int {
 	totalStake := big.NewInt(0)
 
 	candidate := c.GetCandidateByTendermintAddress(address)
-
 	stakes := c.GetStakes(candidate.PubKey)
 	for _, stake := range stakes {
 		newValue := big.NewInt(0).Set(stake.Value)
@@ -764,12 +800,13 @@ func (c *Candidates) Punish(height uint64, address types.TmAddress) *big.Int {
 	return totalStake
 }
 
+// SetStakes Sets stakes and updates of a candidate. Used in Import.
 func (c *Candidates) SetStakes(pubkey types.Pubkey, stakes []types.Stake, updates []types.Stake) {
 	candidate := c.GetCandidate(pubkey)
 	candidate.stakesCount = len(stakes)
 
 	for _, u := range updates {
-		candidate.addUpdate(&Stake{
+		candidate.addUpdate(&stake{
 			Owner:    u.Owner,
 			Coin:     u.Coin,
 			Value:    helpers.StringToBigInt(u.Value),
@@ -782,7 +819,7 @@ func (c *Candidates) SetStakes(pubkey types.Pubkey, stakes []types.Stake, update
 		count = MaxDelegatorsPerCandidate
 
 		for _, u := range stakes[1000:] {
-			candidate.addUpdate(&Stake{
+			candidate.addUpdate(&stake{
 				Owner:    u.Owner,
 				Coin:     u.Coin,
 				Value:    helpers.StringToBigInt(u.Value),
@@ -792,7 +829,7 @@ func (c *Candidates) SetStakes(pubkey types.Pubkey, stakes []types.Stake, update
 	}
 
 	for i, s := range stakes[:count] {
-		candidate.stakes[i] = &Stake{
+		candidate.stakes[i] = &stake{
 			Owner:    s.Owner,
 			Coin:     s.Coin,
 			Value:    helpers.StringToBigInt(s.Value),
@@ -807,6 +844,7 @@ func (c *Candidates) SetStakes(pubkey types.Pubkey, stakes []types.Stake, update
 	}
 }
 
+// Export exports all data to the given state
 func (c *Candidates) Export(state *types.AppState) {
 	c.LoadCandidatesDeliver()
 	c.LoadStakes()
@@ -910,10 +948,12 @@ func (c *Candidates) setPubKeyIDs(list map[types.Pubkey]uint32) {
 	c.pubKeyIDs = list
 }
 
+// SetTotalStake sets candidate's total bip stake. Used in Import.
 func (c *Candidates) SetTotalStake(pubkey types.Pubkey, stake *big.Int) {
 	c.GetCandidate(pubkey).setTotalBipStake(stake)
 }
 
+// LoadStakesOfCandidate loads stakes of given candidate from disk
 func (c *Candidates) LoadStakesOfCandidate(pubkey types.Pubkey) {
 	candidate := c.GetCandidate(pubkey)
 
@@ -930,12 +970,12 @@ func (c *Candidates) LoadStakesOfCandidate(pubkey types.Pubkey) {
 			continue
 		}
 
-		stake := &Stake{}
+		stake := &stake{}
 		if err := rlp.DecodeBytes(enc, stake); err != nil {
 			panic(fmt.Sprintf("failed to decode stake: %s", err))
 		}
 
-		candidate.SetStakeAtIndex(index, stake, false)
+		candidate.setStakeAtIndex(index, stake, false)
 
 		stakesCount++
 	}
@@ -950,7 +990,7 @@ func (c *Candidates) LoadStakesOfCandidate(pubkey types.Pubkey) {
 	if len(enc) == 0 {
 		candidate.updates = nil
 	} else {
-		var updates []*Stake
+		var updates []*stake
 		if err := rlp.DecodeBytes(enc, &updates); err != nil {
 			panic(fmt.Sprintf("failed to decode updated: %s", err))
 		}
@@ -980,6 +1020,7 @@ func (c *Candidates) LoadStakesOfCandidate(pubkey types.Pubkey) {
 	c.setToMap(candidate.PubKey, candidate)
 }
 
+// ChangePubKey change public key of a candidate from old to new
 func (c *Candidates) ChangePubKey(old types.Pubkey, new types.Pubkey) {
 	if c.isBlocked(new) {
 		panic("Candidate with such public key (" + new.String() + ") exists in block list")
@@ -1013,6 +1054,7 @@ func (c *Candidates) id(pubKey types.Pubkey) uint32 {
 	return c.pubKeyIDs[pubKey]
 }
 
+// ID returns an id of candidate by it's public key
 func (c *Candidates) ID(pubKey types.Pubkey) uint32 {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
@@ -1049,6 +1091,7 @@ func (c *Candidates) setBlockPubKey(p types.Pubkey) {
 	c.isDirty = true
 }
 
+// AddToBlockPubKey blacklists given publickey
 func (c *Candidates) AddToBlockPubKey(p types.Pubkey) {
 	c.setBlockPubKey(p)
 }

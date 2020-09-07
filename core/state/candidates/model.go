@@ -13,6 +13,7 @@ type pubkeyID struct {
 	ID     uint32
 }
 
+// Candidate represents candidate object which is stored on disk
 type Candidate struct {
 	PubKey         types.Pubkey
 	RewardAddress  types.Address
@@ -24,8 +25,8 @@ type Candidate struct {
 
 	totalBipStake *big.Int
 	stakesCount   int
-	stakes        [MaxDelegatorsPerCandidate]*Stake
-	updates       []*Stake
+	stakes        [MaxDelegatorsPerCandidate]*stake
+	updates       []*stake
 	tmAddress     *types.TmAddress
 
 	isDirty           bool
@@ -60,7 +61,7 @@ func (candidate *Candidate) setControl(address types.Address) {
 	candidate.ControlAddress = address
 }
 
-func (candidate *Candidate) addUpdate(stake *Stake) {
+func (candidate *Candidate) addUpdate(stake *stake) {
 	candidate.isUpdatesDirty = true
 	stake.markDirty = func(i int) {
 		candidate.isUpdatesDirty = true
@@ -84,6 +85,7 @@ func (candidate *Candidate) setTotalBipStake(totalBipValue *big.Int) {
 	candidate.totalBipStake.Set(totalBipValue)
 }
 
+// GetTmAddress returns tendermint-address of a candidate
 func (candidate *Candidate) GetTmAddress() types.TmAddress {
 	return *candidate.tmAddress
 }
@@ -99,8 +101,9 @@ func (candidate *Candidate) setTmAddress() {
 	candidate.tmAddress = &address
 }
 
-func (candidate *Candidate) GetFilteredUpdates() []*Stake {
-	var updates []*Stake
+// GetFilteredUpdates returns updates which is > 0 in their value + merge similar updates
+func (candidate *Candidate) GetFilteredUpdates() []*stake {
+	var updates []*stake
 	for _, update := range candidate.updates {
 		// skip updates with 0 stakes
 		if update.Value.Cmp(big.NewInt(0)) != 1 {
@@ -125,8 +128,9 @@ func (candidate *Candidate) GetFilteredUpdates() []*Stake {
 	return updates
 }
 
+// FilterUpdates filters candidate updates: remove 0-valued updates and merge similar ones
 func (candidate *Candidate) FilterUpdates() {
-	var updates []*Stake
+	var updates []*stake
 	for _, update := range candidate.updates {
 		// skip updates with 0 stakes
 		if update.Value.Cmp(big.NewInt(0)) != 1 {
@@ -156,21 +160,12 @@ func (candidate *Candidate) FilterUpdates() {
 	candidate.isUpdatesDirty = true
 }
 
-func (candidate *Candidate) updateStakesCount() {
-	count := 0
-	for _, stake := range candidate.stakes {
-		if stake != nil {
-			count++
-		}
-	}
-	candidate.stakesCount = count
-}
-
+// GetTotalBipStake returns total stake value of a candidate
 func (candidate *Candidate) GetTotalBipStake() *big.Int {
 	return big.NewInt(0).Set(candidate.totalBipStake)
 }
 
-func (candidate *Candidate) SetStakeAtIndex(index int, stake *Stake, isDirty bool) {
+func (candidate *Candidate) setStakeAtIndex(index int, stake *stake, isDirty bool) {
 	stake.markDirty = func(i int) {
 		candidate.dirtyStakes[i] = true
 	}
@@ -183,7 +178,7 @@ func (candidate *Candidate) SetStakeAtIndex(index int, stake *Stake, isDirty boo
 	}
 }
 
-type Stake struct {
+type stake struct {
 	Owner    types.Address
 	Coin     types.CoinID
 	Value    *big.Int
@@ -193,17 +188,17 @@ type Stake struct {
 	markDirty func(int)
 }
 
-func (stake *Stake) addValue(value *big.Int) {
+func (stake *stake) addValue(value *big.Int) {
 	stake.markDirty(stake.index)
 	stake.Value.Add(stake.Value, value)
 }
 
-func (stake *Stake) subValue(value *big.Int) {
+func (stake *stake) subValue(value *big.Int) {
 	stake.markDirty(stake.index)
 	stake.Value.Sub(stake.Value, value)
 }
 
-func (stake *Stake) setBipValue(value *big.Int) {
+func (stake *stake) setBipValue(value *big.Int) {
 	if stake.BipValue.Cmp(value) != 0 {
 		stake.markDirty(stake.index)
 	}
@@ -211,22 +206,9 @@ func (stake *Stake) setBipValue(value *big.Int) {
 	stake.BipValue.Set(value)
 }
 
-func (stake *Stake) setNewOwner(coin types.CoinID, owner types.Address) {
-	stake.Coin = coin
-	stake.Owner = owner
-	stake.BipValue = big.NewInt(0)
-	stake.Value = big.NewInt(0)
-	stake.markDirty(stake.index)
-}
-
-func (stake *Stake) setValue(ret *big.Int) {
+func (stake *stake) setValue(ret *big.Int) {
 	stake.markDirty(stake.index)
 	stake.Value.Set(ret)
-}
-
-func (stake *Stake) setCoin(coin types.CoinID) {
-	stake.markDirty(stake.index)
-	stake.Coin = coin
 }
 
 type coinsCache struct {
@@ -253,7 +235,7 @@ func (c *coinsCache) Exists(id types.CoinID) bool {
 }
 
 func (c *coinsCache) Get(id types.CoinID) (saleReturn *big.Int, totalAmount *big.Int) {
-	return c.list[id].totalAmount, c.list[id].totalAmount
+	return big.NewInt(0).Set(c.list[id].totalAmount), big.NewInt(0).Set(c.list[id].totalAmount)
 }
 
 func (c *coinsCache) Set(id types.CoinID, saleReturn *big.Int, totalAmount *big.Int) {
