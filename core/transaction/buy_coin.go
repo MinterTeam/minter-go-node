@@ -3,14 +3,15 @@ package transaction
 import (
 	"encoding/hex"
 	"fmt"
+	"math/big"
+	"strconv"
+
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/tendermint/tendermint/libs/kv"
-	"math/big"
-	"strconv"
 )
 
 type BuyCoinData struct {
@@ -161,7 +162,7 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.CheckState) (
 					"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
 					"has_value":      coinFrom.Reserve().String(),
 					"required_value": commissionInBaseCoin.String(),
-					"gas_coin":       fmt.Sprintf("%s", types.GetBaseCoin()),
+					"coin":           fmt.Sprintf("%s", types.GetBaseCoin()),
 				}),
 			}
 		}
@@ -187,7 +188,7 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.CheckState) (
 						"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
 						"has_value":      coinTo.Reserve().String(),
 						"required_value": commissionInBaseCoin.String(),
-						"gas_coin":       fmt.Sprintf("%s", types.GetBaseCoin()),
+						"coin":           fmt.Sprintf("%s", types.GetBaseCoin()),
 					}),
 				}
 			}
@@ -239,7 +240,7 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.CheckState) (
 						"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
 						"has_value":      coinFrom.Reserve().String(),
 						"required_value": commissionInBaseCoin.String(),
-						"gas_coin":       fmt.Sprintf("%s", types.GetBaseCoin()),
+						"coin":           fmt.Sprintf("%s", types.GetBaseCoin()),
 					}),
 				}
 			}
@@ -297,7 +298,7 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.CheckState) (
 						"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
 						"has_value":      coin.Reserve().String(),
 						"required_value": commissionInBaseCoin.String(),
-						"gas_coin":       fmt.Sprintf("%s", types.GetBaseCoin()),
+						"coin":           fmt.Sprintf("%s", types.GetBaseCoin()),
 					}),
 				}
 			}
@@ -344,8 +345,8 @@ func (data BuyCoinData) BasicCheck(tx *Transaction, context *state.CheckState) *
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin %s not exists", data.CoinToSell),
 			Info: EncodeError(map[string]string{
-				"code":         strconv.Itoa(int(code.CoinNotExists)),
-				"coin_to_sell": fmt.Sprintf("%s", data.CoinToSell),
+				"code":    strconv.Itoa(int(code.CoinNotExists)),
+				"coin_id": fmt.Sprintf("%s", data.CoinToSell.String()),
 			}),
 		}
 	}
@@ -355,8 +356,8 @@ func (data BuyCoinData) BasicCheck(tx *Transaction, context *state.CheckState) *
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin %s not exists", data.CoinToBuy),
 			Info: EncodeError(map[string]string{
-				"code":        strconv.Itoa(int(code.CoinNotExists)),
-				"coin_to_buy": fmt.Sprintf("%s", data.CoinToBuy),
+				"code":    strconv.Itoa(int(code.CoinNotExists)),
+				"coin_id": fmt.Sprintf("%s", data.CoinToBuy.String()),
 			}),
 		}
 	}
@@ -397,7 +398,7 @@ func (data BuyCoinData) Run(tx *Transaction, context state.Interface, rewardPool
 					"code":         strconv.Itoa(int(code.InsufficientFunds)),
 					"sender":       sender.String(),
 					"needed_value": ts.Value.String(),
-					"coin":         coin.GetFullSymbol(),
+					"coin_symbol":  coin.GetFullSymbol(),
 				}),
 			}
 		}

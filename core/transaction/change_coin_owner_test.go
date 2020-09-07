@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"crypto/ecdsa"
+
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
@@ -9,10 +10,11 @@ import (
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
 
-	db "github.com/tendermint/tm-db"
 	"math/big"
 	"sync"
 	"testing"
+
+	db "github.com/tendermint/tm-db"
 )
 
 func TestChangeOwnerTx(t *testing.T) {

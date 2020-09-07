@@ -91,7 +91,8 @@ func (data RecreateCoinData) BasicCheck(tx *Transaction, context *state.CheckSta
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin %s not exists", data.Symbol),
 			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.CoinNotExists)),
+				"code":        strconv.Itoa(int(code.CoinNotExists)),
+				"coin_symbol": fmt.Sprintf("%s", data.Symbol.String()),
 			}),
 		}
 	}
@@ -144,6 +145,19 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 			return *errResp
 		}
 
+		if gasCoin.Reserve().Cmp(commissionInBaseCoin) < 0 {
+			return Response{
+				Code: code.CoinReserveNotSufficient,
+				Log:  fmt.Sprintf("Gas coin reserve balance is not sufficient for transaction. Has: %s %s, required %s %s", gasCoin.Reserve().String(), types.GetBaseCoin(), commissionInBaseCoin.String(), types.GetBaseCoin()),
+				Info: EncodeError(map[string]string{
+					"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
+					"has_value":      gasCoin.Reserve().String(),
+					"required_value": commissionInBaseCoin.String(),
+					"coin_symbol":    gasCoin.GetFullSymbol(),
+				}),
+			}
+		}
+
 		commission = formula.CalculateSaleAmount(gasCoin.Volume(), gasCoin.Reserve(), gasCoin.Crr(), commissionInBaseCoin)
 	}
 
@@ -157,7 +171,7 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 				"code":         strconv.Itoa(int(code.InsufficientFunds)),
 				"sender":       sender.String(),
 				"needed_value": commission.String(),
-				"coin":         gasCoin.GetFullSymbol(),
+				"coin_symbol":  gasCoin.GetFullSymbol(),
 			}),
 		}
 	}
@@ -170,7 +184,7 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 				"code":           strconv.Itoa(int(code.InsufficientFunds)),
 				"sender":         sender.String(),
 				"needed_reserve": data.InitialReserve.String(),
-				"coin":           fmt.Sprintf("%s", types.GetBaseCoin()),
+				"coin_symbol":    fmt.Sprintf("%s", types.GetBaseCoin()),
 			}),
 		}
 	}
@@ -190,7 +204,7 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 					"code":         strconv.Itoa(int(code.InsufficientFunds)),
 					"sender":       sender.String(),
 					"needed_value": totalTxCost.String(),
-					"coin":         gasCoin.GetFullSymbol(),
+					"coin_symbol":  gasCoin.GetFullSymbol(),
 				}),
 			}
 		}

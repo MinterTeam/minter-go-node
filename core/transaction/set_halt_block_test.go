@@ -8,11 +8,12 @@ import (
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
 
-	db "github.com/tendermint/tm-db"
 	"math/big"
 	"math/rand"
 	"sync"
 	"testing"
+
+	db "github.com/tendermint/tm-db"
 )
 
 func TestSetHaltBlockTx(t *testing.T) {

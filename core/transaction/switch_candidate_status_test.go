@@ -1,16 +1,17 @@
 package transaction
 
 import (
+	"math/big"
+	"math/rand"
+	"sync"
+	"testing"
+
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/state/candidates"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
-	"math/big"
-	"math/rand"
-	"sync"
-	"testing"
 )
 
 func TestSwitchCandidateStatusTx(t *testing.T) {

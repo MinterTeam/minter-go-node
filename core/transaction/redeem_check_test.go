@@ -2,6 +2,10 @@ package transaction
 
 import (
 	"crypto/sha256"
+	"math/big"
+	"sync"
+	"testing"
+
 	c "github.com/MinterTeam/minter-go-node/core/check"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/state"
@@ -10,9 +14,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/crypto/sha3"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
-	"math/big"
-	"sync"
-	"testing"
 )
 
 func TestRedeemCheckTx(t *testing.T) {

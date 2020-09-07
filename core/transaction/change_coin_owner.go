@@ -3,14 +3,15 @@ package transaction
 import (
 	"encoding/hex"
 	"fmt"
+	"math/big"
+	"strconv"
+
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/tendermint/tendermint/libs/kv"
-	"math/big"
-	"strconv"
 )
 
 type ChangeCoinOwnerData struct {
@@ -26,6 +27,10 @@ func (data ChangeCoinOwnerData) BasicCheck(tx *Transaction, context *state.Check
 		return &Response{
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin %s not exists", data.Symbol),
+			Info: EncodeError(map[string]string{
+				"code":        strconv.Itoa(int(code.CoinNotExists)),
+				"coin_symbol": data.Symbol.String(),
+			}),
 		}
 	}
 
@@ -33,6 +38,9 @@ func (data ChangeCoinOwnerData) BasicCheck(tx *Transaction, context *state.Check
 		return &Response{
 			Code: code.IsNotOwnerOfCoin,
 			Log:  "Sender is not owner of coin",
+			Info: EncodeError(map[string]string{
+				"code": strconv.Itoa(int(code.IsNotOwnerOfCoin)),
+			}),
 		}
 	}
 
@@ -85,7 +93,7 @@ func (data ChangeCoinOwnerData) Run(tx *Transaction, context state.Interface, re
 				"code":         strconv.Itoa(int(code.InsufficientFunds)),
 				"sender":       sender.String(),
 				"needed_value": commission.String(),
-				"coin":         gasCoin.GetFullSymbol(),
+				"coin_symbol":  gasCoin.GetFullSymbol(),
 			}),
 		}
 	}

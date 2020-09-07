@@ -40,8 +40,8 @@ func (data DeclareCandidacyData) BasicCheck(tx *Transaction, context *state.Chec
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin %s not exists", data.Coin),
 			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.CoinNotExists)),
-				"coin": fmt.Sprintf("%s", data.Coin),
+				"code":    strconv.Itoa(int(code.CoinNotExists)),
+				"coin_id": fmt.Sprintf("%s", data.Coin.String()),
 			}),
 		}
 	}
@@ -129,6 +129,19 @@ func (data DeclareCandidacyData) Run(tx *Transaction, context state.Interface, r
 			return *errResp
 		}
 
+		if gasCoin.Reserve().Cmp(commissionInBaseCoin) < 0 {
+			return Response{
+				Code: code.CoinReserveNotSufficient,
+				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", gasCoin.Reserve().String(), commissionInBaseCoin.String()),
+				Info: EncodeError(map[string]string{
+					"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
+					"has_reserve":    gasCoin.Reserve().String(),
+					"required_value": commissionInBaseCoin.String(),
+					"coin_symbol":    gasCoin.GetFullSymbol(),
+				}),
+			}
+		}
+
 		commission = formula.CalculateSaleAmount(gasCoin.Volume(), gasCoin.Reserve(), gasCoin.Crr(), commissionInBaseCoin)
 	}
 
@@ -140,7 +153,7 @@ func (data DeclareCandidacyData) Run(tx *Transaction, context state.Interface, r
 				"code":         strconv.Itoa(int(code.InsufficientFunds)),
 				"sender":       sender.String(),
 				"needed_value": data.Stake.String(),
-				"coin":         coin.GetFullSymbol(),
+				"coin_symbol":  coin.GetFullSymbol(),
 			}),
 		}
 	}
@@ -153,7 +166,7 @@ func (data DeclareCandidacyData) Run(tx *Transaction, context state.Interface, r
 				"code":         strconv.Itoa(int(code.InsufficientFunds)),
 				"sender":       sender.String(),
 				"needed_value": commission.String(),
-				"coin":         gasCoin.GetFullSymbol(),
+				"coin_symbol":  gasCoin.GetFullSymbol(),
 			}),
 		}
 	}
@@ -171,7 +184,7 @@ func (data DeclareCandidacyData) Run(tx *Transaction, context state.Interface, r
 					"code":         strconv.Itoa(int(code.InsufficientFunds)),
 					"sender":       sender.String(),
 					"needed_value": totalTxCost.String(),
-					"coin":         gasCoin.GetFullSymbol(),
+					"coin_symbol":  gasCoin.GetFullSymbol(),
 				}),
 			}
 		}

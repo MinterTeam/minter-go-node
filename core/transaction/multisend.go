@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
@@ -47,6 +48,18 @@ type MultisendDataItem struct {
 	Value *big.Int
 }
 
+func (item MultisendDataItem) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Coin  string `json:"coin"`
+		To    string `json:"to"`
+		Value string `json:"value"`
+	}{
+		Coin:  item.Coin.String(),
+		To:    item.To.String(),
+		Value: item.Value.String(),
+	})
+}
+
 func (data MultisendData) String() string {
 	return fmt.Sprintf("MULTISEND")
 }
@@ -78,6 +91,19 @@ func (data MultisendData) Run(tx *Transaction, context state.Interface, rewardPo
 		errResp := CheckReserveUnderflow(coin, commissionInBaseCoin)
 		if errResp != nil {
 			return *errResp
+		}
+
+		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
+			return Response{
+				Code: code.CoinReserveNotSufficient,
+				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.Reserve().String(), commissionInBaseCoin.String()),
+				Info: EncodeError(map[string]string{
+					"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
+					"has_value":      coin.Reserve().String(),
+					"required_value": commissionInBaseCoin.String(),
+					"coin_symbol":    coin.CName,
+				}),
+			}
 		}
 
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
@@ -147,7 +173,7 @@ func checkBalances(context *state.CheckState, sender types.Address, items []Mult
 					"code":         strconv.Itoa(int(code.InsufficientFunds)),
 					"sender":       sender.String(),
 					"needed_value": fmt.Sprintf("%d", value),
-					"coin":         coinData.GetFullSymbol(),
+					"coin_symbol":  coinData.GetFullSymbol(),
 				}),
 			}
 		}
@@ -163,8 +189,8 @@ func checkCoins(context *state.CheckState, items []MultisendDataItem) *Response 
 				Code: code.CoinNotExists,
 				Log:  fmt.Sprintf("Coin %s not exists", item.Coin),
 				Info: EncodeError(map[string]string{
-					"code": strconv.Itoa(int(code.CoinNotExists)),
-					"coin": fmt.Sprintf("%s", item.Coin),
+					"code":    strconv.Itoa(int(code.CoinNotExists)),
+					"coin_id": fmt.Sprintf("%s", item.Coin.String()),
 				}),
 			}
 		}

@@ -36,19 +36,31 @@ func (data CreateCoinData) BasicCheck(tx *Transaction, context *state.CheckState
 	if data.InitialReserve == nil || data.InitialAmount == nil || data.MaxSupply == nil {
 		return &Response{
 			Code: code.DecodeError,
-			Log:  "Incorrect tx data"}
+			Log:  "Incorrect tx data",
+			Info: EncodeError(map[string]string{
+				"code": strconv.Itoa(int(code.DecodeError)),
+			}),
+		}
 	}
 
 	if len(data.Name) > maxCoinNameBytes {
 		return &Response{
 			Code: code.InvalidCoinName,
-			Log:  fmt.Sprintf("Coin name is invalid. Allowed up to %d bytes.", maxCoinNameBytes)}
+			Log:  fmt.Sprintf("Coin name is invalid. Allowed up to %d bytes.", maxCoinNameBytes),
+			Info: EncodeError(map[string]string{
+				"code": strconv.Itoa(int(code.InvalidCoinName)),
+			}),
+		}
 	}
 
 	if match, _ := regexp.MatchString(allowedCoinSymbols, data.Symbol.String()); !match {
 		return &Response{
 			Code: code.InvalidCoinSymbol,
-			Log:  fmt.Sprintf("Invalid coin symbol. Should be %s", allowedCoinSymbols)}
+			Log:  fmt.Sprintf("Invalid coin symbol. Should be %s", allowedCoinSymbols),
+			Info: EncodeError(map[string]string{
+				"code": strconv.Itoa(int(code.InvalidCoinSymbol)),
+			}),
+		}
 	}
 
 	if context.Coins().ExistsBySymbol(data.Symbol) {
@@ -145,6 +157,19 @@ func (data CreateCoinData) Run(tx *Transaction, context state.Interface, rewardP
 			return *errResp
 		}
 
+		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
+			return Response{
+				Code: code.CoinReserveNotSufficient,
+				Log:  fmt.Sprintf("Gas coin reserve balance is not sufficient for transaction. Has: %s %s, required %s %s", coin.Reserve().String(), types.GetBaseCoin(), commissionInBaseCoin.String(), types.GetBaseCoin()),
+				Info: EncodeError(map[string]string{
+					"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
+					"has_value":      coin.Reserve().String(),
+					"required_value": commissionInBaseCoin.String(),
+					"coin_symbol":    fmt.Sprintf("%s", types.GetBaseCoin()),
+				}),
+			}
+		}
+
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
 	}
 
@@ -158,7 +183,7 @@ func (data CreateCoinData) Run(tx *Transaction, context state.Interface, rewardP
 				"code":         strconv.Itoa(int(code.InsufficientFunds)),
 				"sender":       sender.String(),
 				"needed_value": commission.String(),
-				"coin":         gasCoin.GetFullSymbol(),
+				"coin_symbol":  gasCoin.GetFullSymbol(),
 			}),
 		}
 	}
@@ -171,7 +196,7 @@ func (data CreateCoinData) Run(tx *Transaction, context state.Interface, rewardP
 				"code":           strconv.Itoa(int(code.InsufficientFunds)),
 				"sender":         sender.String(),
 				"needed_reserve": data.InitialReserve.String(),
-				"coin":           fmt.Sprintf("%s", types.GetBaseCoin()),
+				"coin_symbol":    fmt.Sprintf("%s", types.GetBaseCoin().String()),
 			}),
 		}
 	}
@@ -191,7 +216,7 @@ func (data CreateCoinData) Run(tx *Transaction, context state.Interface, rewardP
 					"code":         strconv.Itoa(int(code.InsufficientFunds)),
 					"sender":       sender.String(),
 					"needed_value": totalTxCost.String(),
-					"coin":         gasCoin.GetFullSymbol(),
+					"coin_symbol":  gasCoin.GetFullSymbol(),
 				}),
 			}
 		}

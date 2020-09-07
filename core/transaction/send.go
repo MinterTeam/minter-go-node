@@ -39,6 +39,21 @@ func (data SendData) TotalSpend(tx *Transaction, context *state.CheckState) (Tot
 			return nil, nil, nil, errResp
 		}
 
+		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
+			return nil, nil, nil, &Response{
+				Code: code.CoinReserveNotSufficient,
+				Log: fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s",
+					coin.Reserve().String(),
+					commissionInBaseCoin.String()),
+				Info: EncodeError(map[string]string{
+					"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
+					"has_value":      coin.Reserve().String(),
+					"required_value": commissionInBaseCoin.String(),
+					"coin_symbol":    fmt.Sprintf("%s", types.GetBaseCoin().String()),
+				}),
+			}
+		}
+
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
 		conversions = append(conversions, Conversion{
 			FromCoin:    tx.GasCoin,
@@ -60,7 +75,7 @@ func (data SendData) BasicCheck(tx *Transaction, context *state.CheckState) *Res
 			Code: code.DecodeError,
 			Log:  "Incorrect tx data",
 			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.CoinNotExists)),
+				"code": strconv.Itoa(int(code.DecodeError)),
 			}),
 		}
 	}
@@ -70,8 +85,8 @@ func (data SendData) BasicCheck(tx *Transaction, context *state.CheckState) *Res
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin %s not exists", data.Coin),
 			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.CoinNotExists)),
-				"coin": fmt.Sprintf("%s", data.Coin),
+				"code":    strconv.Itoa(int(code.CoinNotExists)),
+				"coin_id": fmt.Sprintf("%s", data.Coin.String()),
 			}),
 		}
 	}
@@ -121,7 +136,7 @@ func (data SendData) Run(tx *Transaction, context state.Interface, rewardPool *b
 					"code":         strconv.Itoa(int(code.InsufficientFunds)),
 					"sender":       sender.String(),
 					"needed_value": ts.Value.String(),
-					"coin":         coin.GetFullSymbol(),
+					"coin_symbol":  coin.GetFullSymbol(),
 				}),
 			}
 		}

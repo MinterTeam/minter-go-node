@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"encoding/binary"
+
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
