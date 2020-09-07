@@ -3,6 +3,9 @@ package transaction
 import (
 	"encoding/hex"
 	"fmt"
+	"math/big"
+	"strconv"
+
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
@@ -10,8 +13,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/validators"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/tendermint/tendermint/libs/kv"
-	"math/big"
-	"strconv"
 )
 
 const minCommission = 0
@@ -127,19 +128,6 @@ func (data DeclareCandidacyData) Run(tx *Transaction, context state.Interface, r
 		errResp := CheckReserveUnderflow(gasCoin, commissionInBaseCoin)
 		if errResp != nil {
 			return *errResp
-		}
-
-		if gasCoin.Reserve().Cmp(commissionInBaseCoin) < 0 {
-			return Response{
-				Code: code.CoinReserveNotSufficient,
-				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", gasCoin.Reserve().String(), commissionInBaseCoin.String()),
-				Info: EncodeError(map[string]string{
-					"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
-					"has_reserve":    gasCoin.Reserve().String(),
-					"required_value": commissionInBaseCoin.String(),
-					"coin_symbol":    gasCoin.GetFullSymbol(),
-				}),
-			}
 		}
 
 		commission = formula.CalculateSaleAmount(gasCoin.Volume(), gasCoin.Reserve(), gasCoin.Crr(), commissionInBaseCoin)

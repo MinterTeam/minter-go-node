@@ -4,15 +4,16 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"math/big"
+	"strconv"
+	"strings"
+
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/formula"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"math/big"
-	"strconv"
-	"strings"
 )
 
 func (s *Service) EstimateTxCommission(ctx context.Context, req *pb.EstimateTxCommissionRequest) (*pb.EstimateTxCommissionResponse, error) {

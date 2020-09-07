@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"fmt"
+	"strconv"
+
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
@@ -10,7 +12,6 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"strconv"
 )
 
 func (s *Service) CoinInfo(ctx context.Context, req *pb.CoinInfoRequest) (*pb.CoinInfoResponse, error) {

@@ -3,14 +3,15 @@ package transaction
 import (
 	"encoding/hex"
 	"fmt"
+	"math/big"
+	"strconv"
+
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/tendermint/tendermint/libs/kv"
-	"math/big"
-	"strconv"
 )
 
 type RecreateCoinData struct {
@@ -143,19 +144,6 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 		errResp := CheckReserveUnderflow(gasCoin, commissionInBaseCoin)
 		if errResp != nil {
 			return *errResp
-		}
-
-		if gasCoin.Reserve().Cmp(commissionInBaseCoin) < 0 {
-			return Response{
-				Code: code.CoinReserveNotSufficient,
-				Log:  fmt.Sprintf("Gas coin reserve balance is not sufficient for transaction. Has: %s %s, required %s %s", gasCoin.Reserve().String(), types.GetBaseCoin(), commissionInBaseCoin.String(), types.GetBaseCoin()),
-				Info: EncodeError(map[string]string{
-					"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
-					"has_value":      gasCoin.Reserve().String(),
-					"required_value": commissionInBaseCoin.String(),
-					"coin_symbol":    gasCoin.GetFullSymbol(),
-				}),
-			}
 		}
 
 		commission = formula.CalculateSaleAmount(gasCoin.Volume(), gasCoin.Reserve(), gasCoin.Crr(), commissionInBaseCoin)

@@ -2,6 +2,9 @@ package service
 
 import (
 	"context"
+	"math/big"
+	"strconv"
+
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
@@ -10,8 +13,6 @@ import (
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"math/big"
-	"strconv"
 )
 
 func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinSellAllRequest) (*pb.EstimateCoinSellAllResponse, error) {
