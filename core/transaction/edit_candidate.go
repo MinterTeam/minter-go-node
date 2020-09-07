@@ -3,14 +3,15 @@ package transaction
 import (
 	"encoding/hex"
 	"fmt"
+	"math/big"
+	"strconv"
+
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/tendermint/tendermint/libs/kv"
-	"math/big"
-	"strconv"
 )
 
 type CandidateTx interface {
@@ -79,8 +80,6 @@ func (data EditCandidateData) Run(tx *Transaction, context state.Interface, rewa
 			return *errResp
 		}
 
-<<<<<<< HEAD
-=======
 		if gasCoin.Reserve().Cmp(commissionInBaseCoin) < 0 {
 			return Response{
 				Code: code.CoinReserveNotSufficient,
@@ -94,7 +93,6 @@ func (data EditCandidateData) Run(tx *Transaction, context state.Interface, rewa
 			}
 		}
 
->>>>>>> alpha/v1.2
 		commission = formula.CalculateSaleAmount(gasCoin.Volume(), gasCoin.Reserve(), gasCoin.Crr(), commissionInBaseCoin)
 	}
 

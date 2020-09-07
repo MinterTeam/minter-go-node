@@ -3,6 +3,9 @@ package transaction
 import (
 	"encoding/hex"
 	"fmt"
+	"math/big"
+	"strconv"
+
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
@@ -10,8 +13,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/hexutil"
 	"github.com/tendermint/tendermint/libs/kv"
-	"math/big"
-	"strconv"
 )
 
 const unbondPeriod = 518400

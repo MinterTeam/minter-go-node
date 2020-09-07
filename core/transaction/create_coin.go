@@ -3,15 +3,16 @@ package transaction
 import (
 	"encoding/hex"
 	"fmt"
+	"math/big"
+	"regexp"
+	"strconv"
+
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/tendermint/tendermint/libs/kv"
-	"math/big"
-	"regexp"
-	"strconv"
 )
 
 const maxCoinNameBytes = 64
