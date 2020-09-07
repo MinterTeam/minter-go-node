@@ -10,6 +10,7 @@ import (
 	"strings"
 )
 
+// Returns the list of address stakes in waitlist.
 func (s *Service) WaitList(ctx context.Context, req *pb.WaitListRequest) (*pb.WaitListResponse, error) {
 	if !strings.HasPrefix(strings.Title(req.Address), "Mx") {
 		return new(pb.WaitListResponse), status.Error(codes.InvalidArgument, "invalid address")

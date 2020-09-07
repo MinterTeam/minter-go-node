@@ -35,6 +35,7 @@ message NetInfoResponse {
     int64 n_peers = 2;
 
     message Peer {
+        int64 latest_block_height = 5;
 
         NodeInfo node_info = 4;
 

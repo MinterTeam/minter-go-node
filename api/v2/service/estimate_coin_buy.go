@@ -16,6 +16,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// Return estimate of buy coin transaction.
 func (s *Service) EstimateCoinBuy(ctx context.Context, req *pb.EstimateCoinBuyRequest) (*pb.EstimateCoinBuyResponse, error) {
 	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {

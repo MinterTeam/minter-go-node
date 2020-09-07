@@ -16,6 +16,7 @@ const (
 	SubscribeTimeout = 5 * time.Second
 )
 
+// Returns a subscription for events by query.
 func (s *Service) Subscribe(request *pb.SubscribeRequest, stream pb.ApiService_SubscribeServer) error {
 
 	if s.client.NumClients() >= s.minterCfg.RPC.MaxSubscriptionClients {

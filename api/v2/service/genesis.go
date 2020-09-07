@@ -10,6 +10,7 @@ import (
 	"time"
 )
 
+// Returns genesis file.
 func (s *Service) Genesis(ctx context.Context, _ *empty.Empty) (*pb.GenesisResponse, error) {
 	result, err := s.client.Genesis()
 	if err != nil {

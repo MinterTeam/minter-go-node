@@ -30,6 +30,7 @@ import (
 	_struct "google.golang.org/protobuf/types/known/structpb"
 )
 
+// Start gRPC and API v2
 func Run(srv *service.Service, addrGRPC, addrApi string, traceLog bool) error {
 	lis, err := net.Listen("tcp", addrGRPC)
 	if err != nil {
@@ -136,20 +137,22 @@ func parseStatus(s *status.Status) (string, map[string]string) {
 	codeString := strconv.Itoa(runtime.HTTPStatusFromCode(s.Code()))
 	dataString := map[string]string{}
 	details := s.Details()
-	if len(details) != 0 {
-		detail, ok := details[0].(*_struct.Struct)
-		if !ok {
-			return codeString, dataString
-		}
+	if len(details) == 0 {
+		return codeString, dataString
+	}
 
-		data := detail.AsMap()
-		for k, v := range data {
-			dataString[k] = fmt.Sprintf("%s", v)
-		}
-		code, ok := detail.GetFields()["code"]
-		if ok {
-			codeString = code.GetStringValue()
-		}
+	detail, ok := details[0].(*_struct.Struct)
+	if !ok {
+		return codeString, dataString
+	}
+
+	data := detail.AsMap()
+	for k, v := range data {
+		dataString[k] = fmt.Sprintf("%s", v)
+	}
+	code, ok := detail.GetFields()["code"]
+	if ok {
+		codeString = code.GetStringValue()
 	}
 	return codeString, dataString
 }

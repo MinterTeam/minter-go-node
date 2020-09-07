@@ -11,6 +11,7 @@ import (
 	"math/big"
 )
 
+// Returns list of addresses.
 func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.AddressesResponse, error) {
 	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {
@@ -70,14 +71,14 @@ func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.
 		}
 
 		if req.Delegated {
-			var userDelegatedStakesGroupByCoin = map[types.CoinID]*UserStake{}
+			var userDelegatedStakesGroupByCoin = map[types.CoinID]*stakeUser{}
 			allCandidates := cState.Candidates().GetCandidates()
 			for _, candidate := range allCandidates {
 				userStakes := userStakes(candidate.PubKey, address, cState)
 				for coin, userStake := range userStakes {
 					stake, ok := userDelegatedStakesGroupByCoin[coin]
 					if !ok {
-						stake = &UserStake{
+						stake = &stakeUser{
 							Value:    big.NewInt(0),
 							BipValue: big.NewInt(0),
 						}

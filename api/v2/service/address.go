@@ -14,11 +14,12 @@ import (
 	"strings"
 )
 
-type UserStake struct {
+type stakeUser struct {
 	Value    *big.Int
 	BipValue *big.Int
 }
 
+// Returns coins list, balance and transaction count of an address.
 func (s *Service) Address(ctx context.Context, req *pb.AddressRequest) (*pb.AddressResponse, error) {
 	if !strings.HasPrefix(strings.Title(req.Address), "Mx") {
 		return new(pb.AddressResponse), status.Error(codes.InvalidArgument, "invalid address")
@@ -69,14 +70,14 @@ func (s *Service) Address(ctx context.Context, req *pb.AddressRequest) (*pb.Addr
 	}
 
 	if req.Delegated {
-		var userDelegatedStakesGroupByCoin = map[types.CoinID]*UserStake{}
+		var userDelegatedStakesGroupByCoin = map[types.CoinID]*stakeUser{}
 		allCandidates := cState.Candidates().GetCandidates()
 		for _, candidate := range allCandidates {
 			userStakes := userStakes(candidate.PubKey, address, cState)
 			for coin, userStake := range userStakes {
 				stake, ok := userDelegatedStakesGroupByCoin[coin]
 				if !ok {
-					stake = &UserStake{
+					stake = &stakeUser{
 						Value:    big.NewInt(0),
 						BipValue: big.NewInt(0),
 					}
@@ -160,8 +161,8 @@ func customCoinBipBalance(coinToSell types.CoinID, valueToSell *big.Int, cState 
 	return formula.CalculatePurchaseReturn(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), basecoinValue)
 }
 
-func userStakes(c types.Pubkey, address types.Address, state *state.CheckState) map[types.CoinID]*UserStake {
-	var userStakes = map[types.CoinID]*UserStake{}
+func userStakes(c types.Pubkey, address types.Address, state *state.CheckState) map[types.CoinID]*stakeUser {
+	var userStakes = map[types.CoinID]*stakeUser{}
 
 	stakes := state.Candidates().GetStakes(c)
 
@@ -169,7 +170,7 @@ func userStakes(c types.Pubkey, address types.Address, state *state.CheckState) 
 		if stake.Owner != address {
 			continue
 		}
-		userStakes[stake.Coin] = &UserStake{
+		userStakes[stake.Coin] = &stakeUser{
 			Value:    stake.Value,
 			BipValue: stake.BipValue,
 		}

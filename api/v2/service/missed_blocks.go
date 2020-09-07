@@ -6,6 +6,7 @@ import (
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 )
 
+// Returns missed blocks by validator public key.
 func (s *Service) MissedBlocks(ctx context.Context, req *pb.MissedBlocksRequest) (*pb.MissedBlocksResponse, error) {
 	blocks, count, err := s.blockchain.MissedBlocks(req.PublicKey, req.Height)
 	if err != nil {
