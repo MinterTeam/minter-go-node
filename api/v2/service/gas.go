@@ -9,12 +9,14 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// Returns current min gas price.
 func (s *Service) MinGasPrice(context.Context, *empty.Empty) (*pb.MinGasPriceResponse, error) {
 	return &pb.MinGasPriceResponse{
 		MinGasPrice: fmt.Sprintf("%d", s.blockchain.MinGasPrice()),
 	}, nil
 }
 
+// Returns current max gas.
 func (s *Service) MaxGas(ctx context.Context, req *pb.MaxGasRequest) (*pb.MaxGasResponse, error) {
 	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {

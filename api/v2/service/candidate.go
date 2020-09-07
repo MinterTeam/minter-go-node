@@ -13,6 +13,7 @@ import (
 	"math/big"
 )
 
+// Returns candidate’s info by provided public_key. It will respond with 404 code if candidate is not found.
 func (s *Service) Candidate(ctx context.Context, req *pb.CandidateRequest) (*pb.CandidateResponse, error) {
 	if len(req.PublicKey) < 3 {
 		return new(pb.CandidateResponse), status.Error(codes.InvalidArgument, "invalid public_key")

@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
-	_struct "github.com/golang/protobuf/ptypes/struct"
 	tmbytes "github.com/tendermint/tendermint/libs/bytes"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
+// Returns transaction info.
 func (s *Service) Transaction(ctx context.Context, req *pb.TransactionRequest) (*pb.TransactionResponse, error) {
 	if len(req.Hash) < 3 {
 		return new(pb.TransactionResponse), status.Error(codes.InvalidArgument, "invalid hash")
@@ -67,13 +67,4 @@ func (s *Service) Transaction(ctx context.Context, req *pb.TransactionRequest) (
 		Code:     fmt.Sprintf("%d", tx.TxResult.Code),
 		Log:      tx.TxResult.Log,
 	}, nil
-}
-
-func encodeToStruct(b []byte) (*_struct.Struct, error) {
-	dataStruct := &_struct.Struct{}
-	if err := dataStruct.UnmarshalJSON(b); err != nil {
-		return nil, err
-	}
-
-	return dataStruct, nil
 }

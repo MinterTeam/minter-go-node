@@ -15,6 +15,7 @@ import (
 	"strconv"
 )
 
+// Return estimate of sell coin transaction.
 func (s *Service) EstimateCoinSell(ctx context.Context, req *pb.EstimateCoinSellRequest) (*pb.EstimateCoinSellResponse, error) {
 	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {

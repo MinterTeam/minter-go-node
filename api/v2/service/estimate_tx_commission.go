@@ -15,6 +15,7 @@ import (
 	"strings"
 )
 
+// Return estimate of transaction.
 func (s *Service) EstimateTxCommission(ctx context.Context, req *pb.EstimateTxCommissionRequest) (*pb.EstimateTxCommissionResponse, error) {
 	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {
