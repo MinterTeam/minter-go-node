@@ -456,13 +456,13 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 	app.appDB.SetLastBlockHash(hash)
 	app.appDB.SetLastHeight(app.height)
 
+	app.stateDeliver.Unlock()
+
 	// Resetting check state to be consistent with current height
 	app.resetCheckState()
 
 	// Clear mempool
 	app.currentMempool = &sync.Map{}
-
-	app.stateDeliver.Unlock()
 
 	return abciTypes.ResponseCommit{
 		Data: hash,
