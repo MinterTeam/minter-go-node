@@ -31,6 +31,7 @@ func main() {
 
 	rootCmd.PersistentFlags().StringVar(&utils.MinterHome, "home-dir", "", "base dir (default is $HOME/.minter)")
 	rootCmd.PersistentFlags().StringVar(&utils.MinterConfig, "config", "", "path to config (default is $(home-dir)/config/config.toml)")
+	rootCmd.PersistentFlags().Bool("testnet", false, "use \"true\" for testnet, mainnet is default")
 	rootCmd.PersistentFlags().Bool("pprof", false, "enable pprof")
 	rootCmd.PersistentFlags().String("pprof-addr", "0.0.0.0:6060", "pprof listen addr")
 
