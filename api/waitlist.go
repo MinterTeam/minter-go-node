@@ -23,7 +23,7 @@ func Waitlist(pubkey types.Pubkey, address types.Address, height int) (*Waitlist
 	defer cState.RUnlock()
 
 	response := new(WaitlistResponse)
-	items := cState.Watchlist().GetByAddressAndPubKey(address, pubkey)
+	items := cState.WaitList().GetByAddressAndPubKey(address, pubkey)
 	response.List = make([]*Wait, 0, len(items))
 	for _, item := range items {
 		response.List = append(response.List, &Wait{

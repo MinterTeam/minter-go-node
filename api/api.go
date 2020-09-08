@@ -44,9 +44,9 @@ var Routes = map[string]*rpcserver.RPCFunc{
 	"events":                 rpcserver.NewRPCFunc(Events, "height"),
 	"net_info":               rpcserver.NewRPCFunc(NetInfo, ""),
 	"coin_info":              rpcserver.NewRPCFunc(CoinInfo, "symbol,id,height"),
-	"estimate_coin_sell":     rpcserver.NewRPCFunc(EstimateCoinSell, "coin_id_to_sell,coin_id_to_buy,value_to_sell,height"),
-	"estimate_coin_sell_all": rpcserver.NewRPCFunc(EstimateCoinSellAll, "coin_id_to_sell,coin_id_to_buy,value_to_sell,gas_price,height"),
-	"estimate_coin_buy":      rpcserver.NewRPCFunc(EstimateCoinBuy, "coin_id_to_sell,coin_id_to_buy,value_to_buy,height"),
+	"estimate_coin_sell":     rpcserver.NewRPCFunc(EstimateCoinSell, "coin_to_sell,coin_to_buy,value_to_sell,height"),
+	"estimate_coin_sell_all": rpcserver.NewRPCFunc(EstimateCoinSellAll, "coin_to_sell,coin_to_buy,value_to_sell,gas_price,height"),
+	"estimate_coin_buy":      rpcserver.NewRPCFunc(EstimateCoinBuy, "coin_to_sell,coin_to_buy,value_to_buy,height"),
 	"estimate_tx_commission": rpcserver.NewRPCFunc(EstimateTxCommission, "tx,height"),
 	"unconfirmed_txs":        rpcserver.NewRPCFunc(UnconfirmedTxs, "limit"),
 	"max_gas":                rpcserver.NewRPCFunc(MaxGas, "height"),
@@ -66,6 +66,7 @@ func responseTime(b *minter.Blockchain) func(f func(http.ResponseWriter, *http.R
 	}
 }
 
+// RunAPI start
 func RunAPI(b *minter.Blockchain, tmRPC *rpc.Local, cfg *config.Config, logger log.Logger) {
 	minterCfg = cfg
 

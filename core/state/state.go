@@ -87,7 +87,7 @@ func (cs *CheckState) Coins() coins.RCoins {
 func (cs *CheckState) Checks() checks.RChecks {
 	return cs.state.Checks
 }
-func (cs *CheckState) Watchlist() waitlist.RWaitList {
+func (cs *CheckState) WaitList() waitlist.RWaitList {
 	return cs.state.Waitlist
 }
 func (cs *CheckState) Tree() tree.ReadOnlyTree {
@@ -332,6 +332,14 @@ func (s *State) Import(state types.AppState) error {
 		s.Candidates.SetStakes(c.PubKey, c.Stakes, c.Updates)
 	}
 
+	for _, w := range state.Waitlist {
+		value, ok := big.NewInt(0).SetString(w.Value, 10)
+		if !ok {
+			panic(fmt.Sprintf("Cannot decode %s into big.Int", w.Value))
+		}
+		s.Waitlist.AddWaitList(w.Owner, s.Candidates.PubKey(w.CandidateID), w.Coin, value)
+	}
+
 	for _, hashString := range state.UsedChecks {
 		bytes, _ := hex.DecodeString(string(hashString))
 		var hash types.Hash
@@ -356,6 +364,7 @@ func (s *State) Export(height uint64) types.AppState {
 	state.App().Export(appState, height)
 	state.Validators().Export(appState)
 	state.Candidates().Export(appState)
+	state.WaitList().Export(appState)
 	state.FrozenFunds().Export(appState, height)
 	state.Accounts().Export(appState)
 	state.Coins().Export(appState)

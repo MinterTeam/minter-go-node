@@ -56,9 +56,25 @@ func TestIEventsDB(t *testing.T) {
 	}
 
 	loadEvents := store.LoadEvents(12)
-	for _, v := range loadEvents {
-		t.Logf("%+v", v)
-		t.Logf("%+v", v.(*RewardEvent).Amount)
-		t.Logf("%+v", v.(*RewardEvent).Address.String())
+
+	if len(loadEvents) != 2 {
+		t.Fatal("count of events not equal 2")
 	}
+
+	if loadEvents[0].(*RewardEvent).Amount != "111497225000000000000" {
+		t.Fatal("invalid Amount")
+	}
+
+	if loadEvents[0].(*RewardEvent).Address.String() != "Mx04bea23efb744dc93b4fda4c20bf4a21c6e195f1" {
+		t.Fatal("invalid Address")
+	}
+
+	if loadEvents[1].(*RewardEvent).Amount != "891977800000000000000" {
+		t.Fatal("invalid Amount")
+	}
+
+	if loadEvents[1].(*RewardEvent).Address.String() != "Mx18467bbb64a8edf890201d526c35957d82be3d95" {
+		t.Fatal("invalid Address")
+	}
+
 }

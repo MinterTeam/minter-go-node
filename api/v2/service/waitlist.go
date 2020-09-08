@@ -42,7 +42,7 @@ func (s *Service) WaitList(ctx context.Context, req *pb.WaitListRequest) (*pb.Wa
 	}
 
 	response := new(pb.WaitListResponse)
-	items := cState.Watchlist().GetByAddressAndPubKey(address, publickKey)
+	items := cState.WaitList().GetByAddressAndPubKey(address, publickKey)
 	response.List = make([]*pb.WaitListResponse_Wait, 0, len(items))
 	for _, item := range items {
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
