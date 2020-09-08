@@ -2,10 +2,11 @@ package encoder
 
 import (
 	"encoding/base64"
+	"strconv"
+
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
-	"strconv"
 )
 
 type TxDataResource interface {
