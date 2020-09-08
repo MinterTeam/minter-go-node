@@ -233,7 +233,7 @@ func (c *Candidates) GetNewCandidates(valCount int) []Candidate {
 // Create creates a new candidate with given params and adds it to state
 func (c *Candidates) Create(ownerAddress, rewardAddress, controlAddress types.Address, pubkey types.Pubkey, commission uint) {
 	candidate := &Candidate{
-		ID:                c.getOrNewID(pubkey),
+		ID:                0,
 		PubKey:            pubkey,
 		RewardAddress:     rewardAddress,
 		OwnerAddress:      ownerAddress,
@@ -1059,7 +1059,20 @@ func (c *Candidates) ID(pubKey types.Pubkey) uint32 {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
-	return c.pubKeyIDs[pubKey]
+	return c.id(pubKey)
+}
+
+// PubKey returns a public key of candidate by it's ID
+func (c *Candidates) PubKey(id uint32) types.Pubkey {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
+	candidate, ok := c.list[id]
+	if !ok {
+		panic(fmt.Sprintf("candidate by ID %d not found", id))
+	}
+
+	return candidate.PubKey
 }
 
 func (c *Candidates) setPubKeyID(pubkey types.Pubkey, u uint32) {

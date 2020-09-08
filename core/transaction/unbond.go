@@ -60,7 +60,7 @@ func (data UnbondData) BasicCheck(tx *Transaction, context *state.CheckState) *R
 	errorInfo["unbound_value"] = data.Value.String()
 	sender, _ := tx.Sender()
 
-	if waitlist := context.Watchlist().Get(sender, data.PubKey, data.Coin); waitlist != nil {
+	if waitlist := context.WaitList().Get(sender, data.PubKey, data.Coin); waitlist != nil {
 		value := big.NewInt(0).Sub(data.Value, waitlist.Value)
 		if value.Sign() < 1 {
 			return nil

@@ -13,6 +13,7 @@ type AppState struct {
 	Validators          []Validator  `json:"validators,omitempty"`
 	Candidates          []Candidate  `json:"candidates,omitempty"`
 	BlockListCandidates []Pubkey     `json:"block_list_candidates,omitempty"`
+	Waitlist            []Waitlist   `json:"waitlist,omitempty"`
 	Accounts            []Account    `json:"accounts,omitempty"`
 	Coins               []Coin       `json:"coins,omitempty"`
 	FrozenFunds         []FrozenFund `json:"frozen_funds,omitempty"`
@@ -227,6 +228,13 @@ type Stake struct {
 	Coin     CoinID  `json:"coin"`
 	Value    string  `json:"value"`
 	BipValue string  `json:"bip_value"`
+}
+
+type Waitlist struct {
+	CandidateID uint32  `json:"candidate_id"`
+	Owner       Address `json:"owner"`
+	Coin        CoinID  `json:"coin"`
+	Value       string  `json:"value"`
 }
 
 type Coin struct {

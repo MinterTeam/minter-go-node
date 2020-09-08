@@ -19,6 +19,7 @@ type RWaitList interface {
 	Get(address types.Address, pubkey types.Pubkey, coin types.CoinID) *Item
 	GetByAddress(address types.Address) *Model
 	GetByAddressAndPubKey(address types.Address, pubkey types.Pubkey) []Item
+	Export(state *types.AppState)
 }
 
 type WaitList struct {
@@ -41,6 +42,26 @@ func NewWaitList(stateBus *bus.Bus, iavl tree.MTree) (*WaitList, error) {
 	waitlist.bus.SetWaitList(NewBus(waitlist))
 
 	return waitlist, nil
+}
+
+func (wl *WaitList) Export(state *types.AppState) {
+	var waitlist []*Model
+	for _, model := range wl.list {
+		waitlist = append(waitlist, model)
+	}
+	sort.Slice(waitlist, func(i, j int) bool {
+		return waitlist[i].address.Compare(waitlist[j].address) > 0
+	})
+	for _, model := range waitlist {
+		for _, item := range model.List {
+			state.Waitlist = append(state.Waitlist, types.Waitlist{
+				CandidateID: item.CandidateId,
+				Owner:       model.address,
+				Coin:        item.Coin,
+				Value:       item.Value.String(),
+			})
+		}
+	}
 }
 
 func (wl *WaitList) Commit() error {

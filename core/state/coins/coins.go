@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/state/bus"
 	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/tree"
 	"math/big"
@@ -259,8 +260,9 @@ func (c *Coins) get(id types.CoinID) *Model {
 	if id.IsBaseCoin() {
 		// TODO: refactor
 		return &Model{
-			id:      types.GetBaseCoinID(),
-			CSymbol: types.GetBaseCoin(),
+			id:         types.GetBaseCoinID(),
+			CSymbol:    types.GetBaseCoin(),
+			CMaxSupply: helpers.BipToPip(big.NewInt(10000000000)),
 			info: &Info{
 				Volume:  big.NewInt(0),
 				Reserve: big.NewInt(0),

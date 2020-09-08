@@ -391,7 +391,7 @@ func TestRedeemCheckTxToWrongChainID(t *testing.T) {
 	tx := Transaction{
 		Nonce:         1,
 		GasPrice:      1,
-		ChainID:       types.CurrentChainID,
+		ChainID:       types.ChainTestnet,
 		GasCoin:       coin,
 		Type:          TypeRedeemCheck,
 		Data:          encodedData,
