@@ -1,15 +1,16 @@
 package transaction
 
 import (
+	"math/big"
+	"sync"
+	"testing"
+
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
-	"math/big"
-	"sync"
-	"testing"
 )
 
 func TestSellCoinTx(t *testing.T) {
@@ -607,6 +608,333 @@ func TestSellCoinTxCustomToCustomCustom2Commission(t *testing.T) {
 		if coinData.Volume().Cmp(estimatedSupply) != 0 {
 			t.Fatalf("Wrong coin supply")
 		}
+	}
+}
+
+func TestSellCoinTxToCoinSupplyOverflow(t *testing.T) {
+	cState := getState()
+	privateKey, addr := getAccount()
+	coinToBuyID, sellCoinID := createTestCoin(cState), types.GetBaseCoinID()
+
+	cState.Accounts.AddBalance(addr, sellCoinID, helpers.BipToPip(big.NewInt(100)))
+
+	coinToBuy := cState.Coins.GetCoin(coinToBuyID)
+	coinToBuy.CMaxSupply = big.NewInt(1)
+
+	tx := createSellCoinTx(sellCoinID, coinToBuyID, sellCoinID, helpers.BipToPip(big.NewInt(90)), 1)
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.CoinSupplyOverflow {
+		t.Fatalf("Response code is not %d. Error %s", code.CoinSupplyOverflow, response.Log)
+	}
+
+	// custom buy and sell coins
+
+	cState.Coins.Create(
+		cState.App.GetNextCoinID(),
+		types.StrToCoinSymbol("TEST9"),
+		"TEST COIN",
+		helpers.BipToPip(big.NewInt(100000)),
+		10,
+		helpers.BipToPip(big.NewInt(100000)),
+		helpers.BipToPip(big.NewInt(1000000)),
+		nil,
+	)
+
+	coinToSellID := cState.App.GetNextCoinID()
+	cState.App.SetCoinsCount(coinToSellID.Uint32())
+
+	tx = createSellCoinTx(coinToSellID, coinToBuyID, coinToSellID, helpers.BipToPip(big.NewInt(90)), 1)
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err = rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.CoinSupplyOverflow {
+		t.Fatalf("Response code is not %d. Error %s", code.CoinSupplyOverflow, response.Log)
+	}
+}
+
+func TestSellCoinTxToMinimumValueToBuyReached(t *testing.T) {
+	cState := getState()
+	privateKey, addr := getAccount()
+	coinToBuyID, sellCoinID := createTestCoin(cState), types.GetBaseCoinID()
+
+	valueToSell := big.NewInt(2e18)
+	cState.Accounts.AddBalance(addr, sellCoinID, helpers.BipToPip(big.NewInt(2)))
+
+	data := SellCoinData{
+		CoinToBuy:         coinToBuyID,
+		ValueToSell:       valueToSell,
+		CoinToSell:        sellCoinID,
+		MinimumValueToBuy: big.NewInt(9e18),
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		panic(err)
+	}
+
+	tx := &Transaction{
+		Nonce:         1,
+		GasPrice:      1,
+		ChainID:       types.CurrentChainID,
+		GasCoin:       sellCoinID,
+		Type:          TypeSellCoin,
+		Data:          encodedData,
+		SignatureType: SigTypeSingle,
+		decodedData:   data,
+	}
+
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.MinimumValueToBuyReached {
+		t.Fatalf("Response code is not %d. Error %s", code.MinimumValueToBuyReached, response.Log)
+	}
+
+	// coin to buy == base coin
+
+	cState.Accounts.AddBalance(addr, coinToBuyID, helpers.BipToPip(big.NewInt(100000)))
+
+	data.CoinToBuy = sellCoinID
+	data.CoinToSell = coinToBuyID
+	data.MinimumValueToBuy = big.NewInt(9e18)
+	data.ValueToSell = big.NewInt(1)
+	encodedData, err = rlp.EncodeToBytes(data)
+	if err != nil {
+		panic(err)
+	}
+
+	tx.Data = encodedData
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err = rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.MinimumValueToBuyReached {
+		t.Fatalf("Response code is not %d. Error %s", code.MinimumValueToBuyReached, response.Log)
+	}
+
+	// custom buy and sell coins
+
+	cState.Coins.Create(
+		cState.App.GetNextCoinID(),
+		types.StrToCoinSymbol("TEST9"),
+		"TEST COIN",
+		helpers.BipToPip(big.NewInt(100000)),
+		10,
+		helpers.BipToPip(big.NewInt(100000)),
+		helpers.BipToPip(big.NewInt(1000000)),
+		nil,
+	)
+
+	coinToSellID := cState.App.GetNextCoinID()
+	cState.App.SetCoinsCount(coinToSellID.Uint32())
+
+	data.CoinToBuy = coinToBuyID
+	data.CoinToSell = coinToSellID
+	data.MinimumValueToBuy = big.NewInt(9e18)
+	data.ValueToSell = big.NewInt(1)
+
+	encodedData, err = rlp.EncodeToBytes(data)
+	if err != nil {
+		panic(err)
+	}
+
+	tx.Data = encodedData
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err = rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.MinimumValueToBuyReached {
+		t.Fatalf("Response code is not %d. Error %s", code.MinimumValueToBuyReached, response.Log)
+	}
+}
+
+func TestSellCoinTxToCoinReserveNotSufficient(t *testing.T) {
+	cState := getState()
+	privateKey, addr := getAccount()
+	coinToBuyID, coinToSellID := createTestCoin(cState), types.GetBaseCoinID()
+
+	cState.Coins.Create(
+		cState.App.GetNextCoinID(),
+		types.StrToCoinSymbol("TEST9"),
+		"TEST COIN",
+		helpers.BipToPip(big.NewInt(100000)),
+		10,
+		helpers.BipToPip(big.NewInt(100000)),
+		helpers.BipToPip(big.NewInt(1000000)),
+		nil,
+	)
+
+	customCoinToSellID := cState.App.GetNextCoinID()
+	cState.App.SetCoinsCount(customCoinToSellID.Uint32())
+
+	cState.Accounts.AddBalance(addr, coinToSellID, helpers.BipToPip(big.NewInt(5000000)))
+
+	tx := createSellCoinTx(coinToBuyID, coinToSellID, coinToBuyID, helpers.BipToPip(big.NewInt(100000)), 1)
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.CoinReserveNotSufficient {
+		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveNotSufficient, response.Log)
+	}
+
+	// gas coin == coin to sell
+
+	cState.Coins.SubReserve(coinToBuyID, helpers.BipToPip(big.NewInt(100000)))
+
+	tx = createSellCoinTx(coinToBuyID, customCoinToSellID, coinToBuyID, helpers.BipToPip(big.NewInt(1)), 1)
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err = rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.CoinReserveNotSufficient {
+		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveNotSufficient, response.Log)
+	}
+}
+
+func TestSellCoinTxInsufficientFunds(t *testing.T) {
+	cState := getState()
+
+	coinToBuyID, coinToSellID := createTestCoin(cState), types.GetBaseCoinID()
+
+	privateKey, _ := crypto.GenerateKey()
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+	coin := types.GetBaseCoinID()
+
+	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1)))
+
+	tx := createSellCoinTx(coinToSellID, coinToBuyID, coinToSellID, helpers.BipToPip(big.NewInt(1000)), 1)
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.InsufficientFunds {
+		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
+	}
+}
+
+func TestSellCoinTxEqualCoins(t *testing.T) {
+	cState := getState()
+	coinID := createTestCoin(cState)
+	privateKey, _ := crypto.GenerateKey()
+
+	tx := createSellCoinTx(coinID, coinID, coinID, big.NewInt(1), 1)
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.CrossConvert {
+		t.Fatalf("Response code is not %d. Error %s", code.CrossConvert, response.Log)
+	}
+}
+
+func TestSellCoinTxToNonExistenCoins(t *testing.T) {
+	cState := getState()
+	coinID := createTestCoin(cState)
+	privateKey, _ := crypto.GenerateKey()
+
+	tx := createSellCoinTx(5, coinID, coinID, big.NewInt(1), 1)
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.CoinNotExists {
+		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
+	}
+
+	tx = createSellCoinTx(coinID, 5, coinID, big.NewInt(1), 1)
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err = rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.CoinNotExists {
+		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
+	}
+
+	tx = createSellCoinTx(coinID, types.GetBaseCoinID(), 5, big.NewInt(1), 1)
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err = rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.CoinNotExists {
+		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
 	}
 }
 

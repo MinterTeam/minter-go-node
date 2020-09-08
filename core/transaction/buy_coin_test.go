@@ -1089,12 +1089,12 @@ func TestBuyCoinTxToMaximumValueToSellReached(t *testing.T) {
 	privateKey, addr := getAccount()
 	coinToBuyID, sellCoinID := createTestCoin(cState), types.GetBaseCoinID()
 
-	valueToSell := big.NewInt(2e18)
-	cState.Accounts.AddBalance(addr, sellCoinID, valueToSell)
+	valueToBuy := big.NewInt(2e18)
+	cState.Accounts.AddBalance(addr, sellCoinID, valueToBuy)
 
 	data := BuyCoinData{
 		CoinToBuy:          coinToBuyID,
-		ValueToBuy:         valueToSell,
+		ValueToBuy:         valueToBuy,
 		CoinToSell:         sellCoinID,
 		MaximumValueToSell: big.NewInt(1e18),
 	}
