@@ -10,13 +10,13 @@ import (
 	"math/big"
 )
 
-// EstimateCoinSellResponse is estimate of sell coin transaction
+// EstimateCoinSellResponse returns an estimate of sell coin transaction
 type EstimateCoinSellResponse struct {
 	WillGet    string `json:"will_get"`
 	Commission string `json:"commission"`
 }
 
-// EstimateCoinSell returns estimate of sell coin transaction
+// EstimateCoinSell returns an estimate of sell coin transaction
 func EstimateCoinSell(coinToSell, coinToBuy string, valueToSell *big.Int, height int) (*EstimateCoinSellResponse, error) {
 	cState, err := GetStateForHeight(height)
 	if err != nil {
