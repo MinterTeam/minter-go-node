@@ -311,7 +311,7 @@ func (c *Candidates) GetCandidateByTendermintAddress(address types.TmAddress) *C
 }
 
 // RecalculateStakes recalculate stakes of all candidates:
-// 1. Updates bip-value of each stake
+// 1. Updates bip-unbounds of each stake
 // 2. Applies updates
 func (c *Candidates) RecalculateStakes(height uint64) {
 	c.recalculateStakes(height)
@@ -519,7 +519,7 @@ func (c *Candidates) SetOffline(pubkey types.Pubkey) {
 	c.getFromMap(pubkey).setStatus(CandidateStatusOffline)
 }
 
-// SubStake subs given value from delegator's stake
+// SubStake subs given unbounds from delegator's stake
 func (c *Candidates) SubStake(address types.Address, pubkey types.Pubkey, coin types.CoinID, value *big.Int) {
 	stake := c.GetStakeOfAddress(pubkey, address, coin)
 	stake.subValue(value)
@@ -541,7 +541,7 @@ func (c *Candidates) GetTotalStake(pubkey types.Pubkey) *big.Int {
 	candidate := c.getFromMap(pubkey)
 	if candidate.totalBipStake == nil {
 		path := []byte{mainPrefix}
-		path = append(path, pubkey[:]...)
+		path = append(path, candidate.idBytes()...)
 		path = append(path, totalStakePrefix)
 		_, enc := c.iavl.Get(path)
 		if len(enc) == 0 {

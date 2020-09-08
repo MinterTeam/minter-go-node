@@ -28,7 +28,7 @@ func (s *Service) EstimateCoinBuy(ctx context.Context, req *pb.EstimateCoinBuyRe
 
 	var coinToBuy types.CoinID
 	if req.GetCoinToBuy() != "" {
-		symbol := cState.Coins().GetCoinBySymbol(types.StrToCoinSymbol(req.GetCoinToBuy()), 0)
+		symbol := cState.Coins().GetCoinBySymbol(types.StrToCoinSymbol(req.GetCoinToBuy()), types.GetVersionFromSymbol(req.GetCoinToBuy()))
 		if symbol == nil {
 			return new(pb.EstimateCoinBuyResponse), s.createError(status.New(codes.NotFound, "Coin to sell not exists"), transaction.EncodeError(map[string]string{
 				"code":        strconv.Itoa(int(code.CoinNotExists)),
@@ -48,7 +48,7 @@ func (s *Service) EstimateCoinBuy(ctx context.Context, req *pb.EstimateCoinBuyRe
 
 	var coinToSell types.CoinID
 	if req.GetCoinToSell() != "" {
-		symbol := cState.Coins().GetCoinBySymbol(types.StrToCoinSymbol(req.GetCoinToSell()), 0)
+		symbol := cState.Coins().GetCoinBySymbol(types.StrToCoinSymbol(req.GetCoinToSell()), types.GetVersionFromSymbol(req.GetCoinToSell()))
 		if symbol == nil {
 			return new(pb.EstimateCoinBuyResponse), s.createError(status.New(codes.NotFound, "Coin to sell not exists"), transaction.EncodeError(map[string]string{
 				"code":        strconv.Itoa(int(code.CoinNotExists)),
