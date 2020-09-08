@@ -101,8 +101,8 @@ func (candidate *Candidate) setTmAddress() {
 	candidate.tmAddress = &address
 }
 
-// GetFilteredUpdates returns updates which is > 0 in their value + merge similar updates
-func (candidate *Candidate) GetFilteredUpdates() []*stake {
+// getFilteredUpdates returns updates which is > 0 in their unbounds + merge similar updates
+func (candidate *Candidate) getFilteredUpdates() []*stake {
 	var updates []*stake
 	for _, update := range candidate.updates {
 		// skip updates with 0 stakes
@@ -130,27 +130,7 @@ func (candidate *Candidate) GetFilteredUpdates() []*stake {
 
 // FilterUpdates filters candidate updates: remove 0-valued updates and merge similar ones
 func (candidate *Candidate) FilterUpdates() {
-	var updates []*stake
-	for _, update := range candidate.updates {
-		// skip updates with 0 stakes
-		if update.Value.Cmp(big.NewInt(0)) != 1 {
-			continue
-		}
-
-		// merge updates
-		merged := false
-		for _, u := range updates {
-			if u.Coin == update.Coin && u.Owner == update.Owner {
-				u.Value.Add(u.Value, update.Value)
-				merged = true
-				break
-			}
-		}
-
-		if !merged {
-			updates = append(updates, update)
-		}
-	}
+	updates := candidate.getFilteredUpdates()
 
 	sort.SliceStable(updates, func(i, j int) bool {
 		return updates[i].BipValue.Cmp(updates[j].BipValue) == 1
@@ -160,7 +140,7 @@ func (candidate *Candidate) FilterUpdates() {
 	candidate.isUpdatesDirty = true
 }
 
-// GetTotalBipStake returns total stake value of a candidate
+// GetTotalBipStake returns total stake unbounds of a candidate
 func (candidate *Candidate) GetTotalBipStake() *big.Int {
 	return big.NewInt(0).Set(candidate.totalBipStake)
 }

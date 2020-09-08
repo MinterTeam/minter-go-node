@@ -5,6 +5,7 @@ import (
 	"fmt"
 	eventsdb "github.com/MinterTeam/minter-go-node/core/events"
 	"github.com/MinterTeam/minter-go-node/core/state/accounts"
+	"github.com/MinterTeam/minter-go-node/core/state/app"
 	"github.com/MinterTeam/minter-go-node/core/state/bus"
 	"github.com/MinterTeam/minter-go-node/core/state/checker"
 	"github.com/MinterTeam/minter-go-node/core/state/coins"
@@ -32,21 +33,13 @@ func TestCandidates_Commit_createOneCandidate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	hash, version, err := mutableTree.SaveVersion()
-	if err != nil {
-		t.Fatal(err)
+	candidate := candidates.GetCandidate([32]byte{4})
+	if candidate == nil {
+		t.Fatal("candidate not found")
 	}
 
-	if version != 1 {
-		t.Fatalf("version %d", version)
-	}
-
-	if fmt.Sprintf("%X", hash) != "FCF3853839873D3EC344016C04A5E75166F51063745670DF5D561C060E7F45A1" {
-		t.Fatalf("hash %X", hash)
-	}
-
-	if !candidates.Exists([32]byte{4}) {
-		t.Fatal("candidate not found by pub_key")
+	if candidates.PubKey(candidate.ID) != [32]byte{4} {
+		t.Fatal("candidate error ID or PubKey")
 	}
 }
 
@@ -227,70 +220,6 @@ func TestCandidates_Commit_withStakeAndUpdate(t *testing.T) {
 	}
 }
 
-func TestCandidates_Commit_withStakesMoreMaxDelegatorsPerCandidate(t *testing.T) {
-	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
-	candidates, err := NewCandidates(bus.NewBus(), mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10)
-
-	err = candidates.Commit()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	hash, version, err := mutableTree.SaveVersion()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if version != 1 {
-		t.Fatalf("version %d", version)
-	}
-
-	if fmt.Sprintf("%X", hash) != "FCF3853839873D3EC344016C04A5E75166F51063745670DF5D561C060E7F45A1" {
-		t.Fatalf("hash %X", hash)
-	}
-
-	var stakes []types.Stake
-	for i := 0; i < 1010; i++ {
-		value := strconv.Itoa(i + 2000)
-		stakes = append(stakes, types.Stake{
-			Owner:    types.StringToAddress(strconv.Itoa(i)),
-			Coin:     0,
-			Value:    value,
-			BipValue: value,
-		})
-	}
-	candidates.SetStakes([32]byte{4}, stakes, []types.Stake{
-		{
-			Owner:    [20]byte{2},
-			Coin:     0,
-			Value:    "100",
-			BipValue: "100",
-		},
-	})
-	err = candidates.Commit()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	hash, version, err = mutableTree.SaveVersion()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if version != 2 {
-		t.Fatalf("version %d", version)
-	}
-
-	if fmt.Sprintf("%X", hash) != "51022ED08FD976D0305B3BD8CB90C0139CDC4970CD9548237DF358ECD54BA6D1" {
-		t.Fatalf("hash %X", hash)
-	}
-}
-
 func TestCandidates_Commit_edit(t *testing.T) {
 	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	candidates, err := NewCandidates(bus.NewBus(), mutableTree)
@@ -431,7 +360,7 @@ func TestCandidates_Commit_Delegate(t *testing.T) {
 	}
 }
 
-func TestCandidates_Commit_setOnline(t *testing.T) {
+func TestCandidates_SetOnlineAndBusSetOffline(t *testing.T) {
 	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
@@ -445,89 +374,20 @@ func TestCandidates_Commit_setOnline(t *testing.T) {
 	err = candidates.Commit()
 	if err != nil {
 		t.Fatal(err)
-	}
-
-	hash, version, err := mutableTree.SaveVersion()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if version != 1 {
-		t.Fatalf("version %d", version)
-	}
-
-	if fmt.Sprintf("%X", hash) != "FCF3853839873D3EC344016C04A5E75166F51063745670DF5D561C060E7F45A1" {
-		t.Fatalf("hash %X", hash)
 	}
 
 	candidates.SetOnline([32]byte{4})
 
-	err = candidates.Commit()
-	if err != nil {
-		t.Fatal(err)
+	candidate := candidates.GetCandidate([32]byte{4})
+	if candidate == nil {
+		t.Fatal("candidate not found")
 	}
-
-	hash, version, err = mutableTree.SaveVersion()
-	if err != nil {
-		t.Fatal(err)
+	if candidate.Status != CandidateStatusOnline {
+		t.Fatal("candidate not change status to online")
 	}
-
-	if version != 2 {
-		t.Fatalf("version %d", version)
-	}
-
-	if fmt.Sprintf("%X", hash) != "B7CDFAE03E151CA2CD105295E101D4BD00F64CD55D2D8E1AD853853C623BEC23" {
-		t.Fatalf("hash %X", hash)
-	}
-}
-
-func TestCandidates_Commit_setOffline(t *testing.T) {
-	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
-	b := bus.NewBus()
-	b.SetChecker(checker.NewChecker(b))
-	candidates, err := NewCandidates(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10)
-
-	err = candidates.Commit()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	hash, version, err := mutableTree.SaveVersion()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if version != 1 {
-		t.Fatalf("version %d", version)
-	}
-
-	if fmt.Sprintf("%X", hash) != "FCF3853839873D3EC344016C04A5E75166F51063745670DF5D561C060E7F45A1" {
-		t.Fatalf("hash %X", hash)
-	}
-
-	candidates.SetOffline([32]byte{4})
-
-	err = candidates.Commit()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	hash, version, err = mutableTree.SaveVersion()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if version != 2 {
-		t.Fatalf("version %d", version)
-	}
-
-	if fmt.Sprintf("%X", hash) != "17D06535CC123FDF2DA9B97D272E683EC143CEEC73C143D151D0311388E82CBC" {
-		t.Fatalf("hash %X", hash)
+	candidates.bus.Candidates().SetOffline([32]byte{4})
+	if candidate.Status != CandidateStatusOffline {
+		t.Fatal("candidate not change status to offline")
 	}
 }
 
@@ -575,8 +435,8 @@ func TestCandidates_GetTotalStake_fromModelAndFromDB(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	b.SetEvents(eventsdb.NewEventsStore(db.NewMemDB()))
 	b.SetWaitList(waitlist.NewBus(wl))
+	b.SetEvents(eventsdb.NewEventsStore(db.NewMemDB()))
 	accs, err := accounts.NewAccounts(b, mutableTree)
 	if err != nil {
 		t.Fatal(err)
@@ -589,24 +449,6 @@ func TestCandidates_GetTotalStake_fromModelAndFromDB(t *testing.T) {
 	}
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10)
-
-	err = candidates.Commit()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	hash, version, err := mutableTree.SaveVersion()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if version != 1 {
-		t.Fatalf("version %d", version)
-	}
-
-	if fmt.Sprintf("%X", hash) != "FCF3853839873D3EC344016C04A5E75166F51063745670DF5D561C060E7F45A1" {
-		t.Fatalf("hash %X", hash)
-	}
 
 	var stakes []types.Stake
 	for i := 0; i < 1010; i++ {
@@ -625,31 +467,24 @@ func TestCandidates_GetTotalStake_fromModelAndFromDB(t *testing.T) {
 			Value:    "100",
 			BipValue: "100",
 		},
+		{
+			Owner:    types.StringToAddress("1"),
+			Coin:     0,
+			Value:    "100",
+			BipValue: "100",
+		},
 	})
 
-	candidates.RecalculateStakes(1)
+	candidates.RecalculateStakes(0)
 
 	err = candidates.Commit()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	hash, version, err = mutableTree.SaveVersion()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if version != 2 {
-		t.Fatalf("version %d", version)
-	}
-
-	if fmt.Sprintf("%X", hash) != "5DDA783086104DCC15B5825F0C2BD559EA813A3024AEB8E8A3D336A24676887B" {
-		t.Fatalf("hash %X", hash)
-	}
-
 	totalStake := candidates.GetTotalStake([32]byte{4})
 	totalStakeString := totalStake.String()
-	if totalStakeString != "2509500" {
+	if totalStakeString != "2509591" {
 		t.Fatalf("total stake %s", totalStakeString)
 	}
 
@@ -658,9 +493,10 @@ func TestCandidates_GetTotalStake_fromModelAndFromDB(t *testing.T) {
 		t.Fatal(err)
 	}
 	candidates.LoadCandidates()
+	candidates.GetCandidate([32]byte{4}).totalBipStake = nil
 	totalStake = candidates.GetTotalStake([32]byte{4})
 	totalStakeString = totalStake.String()
-	if totalStakeString != "2509500" {
+	if totalStakeString != "2509591" {
 		t.Fatalf("total stake %s", totalStakeString)
 	}
 }
@@ -723,7 +559,7 @@ func TestCandidates_GetTotalStake_forCustomCoins(t *testing.T) {
 	}
 	candidates.SetStakes([32]byte{4}, stakes, nil)
 
-	candidates.RecalculateStakes(1)
+	candidates.RecalculateStakes(0)
 
 	candidates.LoadCandidates()
 	totalStake := candidates.GetTotalStake([32]byte{4})
@@ -757,7 +593,7 @@ func TestCandidates_Export(t *testing.T) {
 			BipValue: "100",
 		},
 	})
-
+	candidates.recalculateStakes(0)
 	err = candidates.Commit()
 	if err != nil {
 		t.Fatal(err)
@@ -771,7 +607,8 @@ func TestCandidates_Export(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if string(bytes) != "[{\"id\":1,\"reward_address\":\"Mx0200000000000000000000000000000000000000\",\"owner_address\":\"Mx0100000000000000000000000000000000000000\",\"control_address\":\"Mx0300000000000000000000000000000000000000\",\"total_bip_stake\":\"0\",\"public_key\":\"Mp0400000000000000000000000000000000000000000000000000000000000000\",\"commission\":10,\"stakes\":[{\"owner\":\"Mx0100000000000000000000000000000000000000\",\"coin\":0,\"value\":\"100\",\"bip_value\":\"100\"}],\"updates\":[{\"owner\":\"Mx0200000000000000000000000000000000000000\",\"coin\":0,\"value\":\"100\",\"bip_value\":\"100\"}],\"status\":1}]" {
+	if string(bytes) != "[{\"id\":1,\"reward_address\":\"Mx0200000000000000000000000000000000000000\",\"owner_address\":\"Mx0100000000000000000000000000000000000000\",\"control_address\":\"Mx0300000000000000000000000000000000000000\",\"total_bip_stake\":\"200\",\"public_key\":\"Mp0400000000000000000000000000000000000000000000000000000000000000\",\"commission\":10,\"stakes\":[{\"owner\":\"Mx0100000000000000000000000000000000000000\",\"coin\":0,\"value\":\"100\",\"bip_value\":\"100\"},{\"owner\":\"Mx0200000000000000000000000000000000000000\",\"coin\":0,\"value\":\"100\",\"bip_value\":\"100\"}],\"updates\":[],\"status\":1}]" {
+		t.Log(string(bytes))
 		t.Fatal("not equal JSON")
 	}
 
@@ -785,7 +622,7 @@ func TestCandidates_Export(t *testing.T) {
 	}
 }
 
-func TestCandidates_bus(t *testing.T) {
+func TestCandidates_busGetStakes(t *testing.T) {
 	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	candidates, err := NewCandidates(bus.NewBus(), mutableTree)
 	if err != nil {
@@ -838,8 +675,461 @@ func TestCandidates_GetCandidateByTendermintAddress(t *testing.T) {
 		t.Fatal("candidate not found")
 	}
 
-	candidateByTmAddr := candidates.GetCandidateByTendermintAddress(*candidate.tmAddress)
+	candidateByTmAddr := candidates.GetCandidateByTendermintAddress(candidate.GetTmAddress())
 	if candidate.ID != candidateByTmAddr.ID {
 		t.Fatal("candidate ID != candidateByTmAddr.ID")
+	}
+}
+func TestCandidates_busGetCandidateByTendermintAddress(t *testing.T) {
+	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	candidates, err := NewCandidates(bus.NewBus(), mutableTree)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10)
+
+	candidate := candidates.GetCandidate([32]byte{4})
+	if candidate == nil {
+		t.Fatal("candidate not found")
+	}
+
+	candidateByTmAddr := candidates.bus.Candidates().GetCandidateByTendermintAddress(candidate.GetTmAddress())
+	if candidate.ID != candidateByTmAddr.ID {
+		t.Fatal("candidate ID != candidateByTmAddr.ID")
+	}
+}
+
+func TestCandidates_Punish(t *testing.T) {
+	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	b := bus.NewBus()
+	wl, err := waitlist.NewWaitList(b, mutableTree)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b.SetEvents(eventsdb.NewEventsStore(db.NewMemDB()))
+	b.SetWaitList(waitlist.NewBus(wl))
+	accs, err := accounts.NewAccounts(b, mutableTree)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b.SetAccounts(accounts.NewBus(accs))
+	appBus, err := app.NewApp(b, mutableTree)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b.SetApp(appBus)
+	b.SetChecker(checker.NewChecker(b))
+	candidates, err := NewCandidates(b, mutableTree)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	coinsState, err := coins.NewCoins(b, mutableTree)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10)
+	coinsState.Create(1,
+		types.StrToCoinSymbol("AAA"),
+		"AAACOIN",
+		helpers.BipToPip(big.NewInt(10)),
+		10,
+		helpers.BipToPip(big.NewInt(10000)),
+		big.NewInt(0).Exp(big.NewInt(10), big.NewInt(10+18), nil),
+		nil)
+
+	err = coinsState.Commit()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	symbol := coinsState.GetCoinBySymbol(types.StrToCoinSymbol("AAA"), 0)
+	if symbol == nil {
+		t.Fatal("coin not found")
+	}
+
+	candidates.SetStakes([32]byte{4}, []types.Stake{
+		{
+			Owner:    [20]byte{1},
+			Coin:     0,
+			Value:    "100",
+			BipValue: "100",
+		},
+		{
+			Owner:    [20]byte{1},
+			Coin:     symbol.ID(),
+			Value:    "100",
+			BipValue: "0",
+		},
+	}, nil)
+
+	candidates.RecalculateStakes(1)
+	candidate := candidates.GetCandidate([32]byte{4})
+	if candidate == nil {
+		t.Fatal("candidate not found")
+	}
+	candidates.bus.Candidates().Punish(0, candidate.GetTmAddress())
+
+	if candidate.stakesCount != 2 {
+		t.Fatalf("stakes count %d", candidate.stakesCount)
+	}
+
+	if candidate.stakes[0].Value.String() != "99" {
+		t.Fatalf("stakes[0] == %s", candidate.stakes[0].Value.String())
+	}
+}
+
+type fr struct {
+	unbounds []*big.Int
+}
+
+func (fr *fr) AddFrozenFund(_ uint64, _ types.Address, _ types.Pubkey, _ types.CoinID, value *big.Int) {
+	fr.unbounds = append(fr.unbounds, value)
+}
+func TestCandidates_PunishByzantineCandidate(t *testing.T) {
+	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	b := bus.NewBus()
+	frozenfunds := &fr{}
+	b.SetFrozenFunds(frozenfunds)
+	wl, err := waitlist.NewWaitList(b, mutableTree)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b.SetEvents(eventsdb.NewEventsStore(db.NewMemDB()))
+	b.SetWaitList(waitlist.NewBus(wl))
+	accs, err := accounts.NewAccounts(b, mutableTree)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b.SetAccounts(accounts.NewBus(accs))
+	appBus, err := app.NewApp(b, mutableTree)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b.SetApp(appBus)
+	b.SetChecker(checker.NewChecker(b))
+	candidates, err := NewCandidates(b, mutableTree)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	coinsState, err := coins.NewCoins(b, mutableTree)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10)
+	coinsState.Create(1,
+		types.StrToCoinSymbol("AAA"),
+		"AAACOIN",
+		helpers.BipToPip(big.NewInt(10)),
+		10,
+		helpers.BipToPip(big.NewInt(10000)),
+		big.NewInt(0).Exp(big.NewInt(10), big.NewInt(10+18), nil),
+		nil)
+
+	err = coinsState.Commit()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	symbol := coinsState.GetCoinBySymbol(types.StrToCoinSymbol("AAA"), 0)
+	if symbol == nil {
+		t.Fatal("coin not found")
+	}
+
+	candidates.SetStakes([32]byte{4}, []types.Stake{
+		{
+			Owner:    [20]byte{1},
+			Coin:     0,
+			Value:    "100",
+			BipValue: "100",
+		},
+		{
+			Owner:    [20]byte{1},
+			Coin:     symbol.ID(),
+			Value:    "100",
+			BipValue: "0",
+		},
+	}, nil)
+
+	candidates.RecalculateStakes(1)
+
+	candidate := candidates.GetCandidate([32]byte{4})
+	if candidate == nil {
+		t.Fatal("candidate not found")
+	}
+	candidates.PunishByzantineCandidate(0, candidate.GetTmAddress())
+
+	if candidates.GetStakeValueOfAddress([32]byte{4}, [20]byte{1}, symbol.ID()).String() != "0" {
+		t.Error("stake[0] not unbound")
+	}
+	if candidates.GetStakeValueOfAddress([32]byte{4}, [20]byte{1}, 0).String() != "0" {
+		t.Error("stake[1] not unbound")
+	}
+
+	if len(frozenfunds.unbounds) != 2 {
+		t.Fatalf("count unbounds == %d", len(frozenfunds.unbounds))
+	}
+
+	if frozenfunds.unbounds[0].String() != "95" {
+		t.Fatalf("frozenfunds.unbounds[0] == %s", frozenfunds.unbounds[0].String())
+	}
+	if frozenfunds.unbounds[1].String() != "95" {
+		t.Fatalf("frozenfunds.unbounds[1] == %s", frozenfunds.unbounds[1].String())
+	}
+}
+
+func TestCandidates_SubStake(t *testing.T) {
+	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	b := bus.NewBus()
+	b.SetChecker(checker.NewChecker(b))
+	candidates, err := NewCandidates(b, mutableTree)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10)
+	candidates.SetStakes([32]byte{4}, []types.Stake{
+		{
+			Owner:    [20]byte{1},
+			Coin:     0,
+			Value:    "100",
+			BipValue: "100",
+		},
+	}, nil)
+	err = candidates.Commit()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	candidates.SubStake([20]byte{1}, [32]byte{4}, 0, big.NewInt(10))
+	stake := candidates.GetStakeOfAddress([32]byte{4}, [20]byte{1}, 0)
+	if stake == nil {
+		t.Fatal("stake not found")
+	}
+
+	if stake.Value.String() != "90" {
+		t.Fatal("sub stake error")
+	}
+}
+
+func TestCandidates_IsNewCandidateStakeSufficient(t *testing.T) {
+	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	b := bus.NewBus()
+	b.SetChecker(checker.NewChecker(b))
+	candidates, err := NewCandidates(b, mutableTree)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10)
+	candidates.SetStakes([32]byte{4}, []types.Stake{
+		{
+			Owner:    [20]byte{1},
+			Coin:     0,
+			Value:    "100",
+			BipValue: "100",
+		},
+	}, nil)
+	err = candidates.Commit()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// todo: validators.GetCandidatesCountForBlock(1)
+	if !candidates.IsNewCandidateStakeSufficient(0, big.NewInt(1000), 1) {
+		t.Log("is not new candidate stake sufficient")
+	}
+}
+
+func TestCandidates_IsDelegatorStakeSufficient(t *testing.T) {
+	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	b := bus.NewBus()
+	wl, err := waitlist.NewWaitList(b, mutableTree)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b.SetWaitList(waitlist.NewBus(wl))
+	b.SetChecker(checker.NewChecker(b))
+	accs, err := accounts.NewAccounts(b, mutableTree)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b.SetAccounts(accounts.NewBus(accs))
+	b.SetEvents(eventsdb.NewEventsStore(db.NewMemDB()))
+	candidates, err := NewCandidates(b, mutableTree)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10)
+
+	var stakes []types.Stake
+	for i := 0; i < 1010; i++ {
+		value := strconv.Itoa(i + 2000)
+		stakes = append(stakes, types.Stake{
+			Owner:    types.StringToAddress(strconv.Itoa(i)),
+			Coin:     0,
+			Value:    value,
+			BipValue: value,
+		})
+	}
+	candidates.SetStakes([32]byte{4}, stakes, []types.Stake{
+		{
+			Owner:    [20]byte{2},
+			Coin:     0,
+			Value:    "100",
+			BipValue: "100",
+		},
+	})
+	err = candidates.Commit()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	candidates.SetStakes([32]byte{4}, []types.Stake{
+		{
+			Owner:    types.StringToAddress("10000"),
+			Coin:     0,
+			Value:    "10000",
+			BipValue: "10000",
+		},
+	}, nil)
+
+	candidates.recalculateStakes(0)
+	err = candidates.Commit()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if candidates.IsDelegatorStakeSufficient([20]byte{1}, [32]byte{4}, 0, big.NewInt(10)) {
+		t.Fatal("is not delegator stake sufficient")
+	}
+}
+func TestCandidates_IsDelegatorStakeSufficient_false(t *testing.T) {
+	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	b := bus.NewBus()
+	b.SetChecker(checker.NewChecker(b))
+	candidates, err := NewCandidates(b, mutableTree)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10)
+	candidates.SetStakes([32]byte{4}, []types.Stake{
+		{
+			Owner:    [20]byte{1},
+			Coin:     0,
+			Value:    "100",
+			BipValue: "100",
+		},
+	}, nil)
+
+	candidates.recalculateStakes(0)
+	err = candidates.Commit()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !candidates.IsDelegatorStakeSufficient([20]byte{1}, [32]byte{4}, 0, big.NewInt(10)) {
+		t.Fatal("is delegator stake sufficient")
+	}
+}
+
+func TestCandidates_GetNewCandidates(t *testing.T) {
+	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	b := bus.NewBus()
+	b.SetChecker(checker.NewChecker(b))
+	candidates, err := NewCandidates(b, mutableTree)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10)
+	candidates.SetStakes([32]byte{4}, []types.Stake{
+		{
+			Owner:    [20]byte{1},
+			Coin:     0,
+			Value:    "1000000000000000",
+			BipValue: "1000000000000000",
+		},
+	}, nil)
+	candidates.SetOnline([32]byte{4})
+
+	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{5}, 10)
+	candidates.SetStakes([32]byte{5}, []types.Stake{
+		{
+			Owner:    [20]byte{1},
+			Coin:     0,
+			Value:    "1000000000000000",
+			BipValue: "1000000000000000",
+		},
+	}, nil)
+	candidates.SetOnline([32]byte{5})
+
+	candidates.RecalculateStakes(1)
+	err = candidates.Commit()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	newCandidates := candidates.GetNewCandidates(2)
+	if len(newCandidates) != 2 {
+		t.Fatal("error count of new candidates")
+	}
+}
+
+func TestCandidate_GetFilteredUpdates(t *testing.T) {
+	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	b := bus.NewBus()
+	b.SetChecker(checker.NewChecker(b))
+	candidates, err := NewCandidates(b, mutableTree)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10)
+	candidates.SetStakes([32]byte{4}, []types.Stake{
+		{
+			Owner:    [20]byte{1},
+			Coin:     0,
+			Value:    "100",
+			BipValue: "100",
+		},
+	}, []types.Stake{
+		{
+			Owner:    [20]byte{1},
+			Coin:     0,
+			Value:    "100",
+			BipValue: "100",
+		},
+		{
+			Owner:    [20]byte{1},
+			Coin:     0,
+			Value:    "100",
+			BipValue: "100",
+		},
+	})
+	err = candidates.Commit()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	candidate := candidates.GetCandidate([32]byte{4})
+	if candidate == nil {
+		t.Fatal("candidate not found")
+	}
+
+	candidate.FilterUpdates()
+
+	if len(candidate.updates) != 1 {
+		t.Fatal("updates not merged")
+	}
+
+	if candidate.updates[0].Value.String() != "200" {
+		t.Fatal("error merge updates")
 	}
 }
