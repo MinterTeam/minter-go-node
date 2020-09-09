@@ -129,6 +129,10 @@ func (c *Coins) ExistsBySymbol(symbol types.CoinSymbol) bool {
 }
 
 func (c *Coins) GetCoinBySymbol(symbol types.CoinSymbol, version types.CoinVersion) *Model {
+	if symbol.IsBaseCoin() {
+		return c.get(types.GetBaseCoinID())
+	}
+
 	coins := c.getBySymbol(symbol)
 	if len(coins) == 0 {
 		return nil
