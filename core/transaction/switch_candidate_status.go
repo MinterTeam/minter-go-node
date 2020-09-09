@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"math/big"
 	"strconv"
@@ -107,14 +106,6 @@ type SetCandidateOffData struct {
 	PubKey types.Pubkey `json:"pub_key"`
 }
 
-func (data SetCandidateOffData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		PubKey string `json:"pub_key"`
-	}{
-		PubKey: data.PubKey.String(),
-	})
-}
-
 func (data SetCandidateOffData) GetPubKey() types.Pubkey {
 	return data.PubKey
 }
@@ -152,17 +143,9 @@ func (data SetCandidateOffData) Run(tx *Transaction, context state.Interface, re
 	if !tx.GasCoin.IsBaseCoin() {
 		coin := checkState.Coins().GetCoin(tx.GasCoin)
 
-		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
-			return Response{
-				Code: code.CoinReserveNotSufficient,
-				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.Reserve().String(), commissionInBaseCoin.String()),
-				Info: EncodeError(map[string]string{
-					"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
-					"has_value":      coin.Reserve().String(),
-					"required_value": commissionInBaseCoin.String(),
-					"coin":           coin.CName,
-				}),
-			}
+		errResp := CheckReserveUnderflow(coin, commissionInBaseCoin)
+		if errResp != nil {
+			return *errResp
 		}
 
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)

@@ -342,7 +342,7 @@ func TestRedeemCheckTxToWrongChainID(t *testing.T) {
 
 	check := c.Check{
 		Nonce:    []byte{1, 2, 3},
-		ChainID:  types.ChainMainnet,
+		ChainID:  types.ChainTestnet,
 		DueBlock: 1,
 		Coin:     coin,
 		Value:    checkValue,
@@ -391,7 +391,7 @@ func TestRedeemCheckTxToWrongChainID(t *testing.T) {
 	tx := Transaction{
 		Nonce:         1,
 		GasPrice:      1,
-		ChainID:       types.ChainTestnet,
+		ChainID:       types.CurrentChainID,
 		GasCoin:       coin,
 		Type:          TypeRedeemCheck,
 		Data:          encodedData,
@@ -879,6 +879,285 @@ func TestRedeemCheckTxToInsufficientFunds(t *testing.T) {
 		GasPrice:      1,
 		ChainID:       types.CurrentChainID,
 		GasCoin:       coin,
+		Type:          TypeRedeemCheck,
+		Data:          encodedData,
+		SignatureType: SigTypeSingle,
+	}
+
+	if err := tx.Sign(receiverPrivateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.InsufficientFunds {
+		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
+	}
+}
+
+func TestRedeemCheckTxToCoinReserveUnderflow(t *testing.T) {
+	cState := getState()
+	coin := createTestCoin(cState)
+	cState.Coins.SubReserve(coin, helpers.BipToPip(big.NewInt(90000)))
+
+	senderPrivateKey, _ := crypto.GenerateKey()
+
+	receiverPrivateKey, _ := crypto.GenerateKey()
+	receiverAddr := crypto.PubkeyToAddress(receiverPrivateKey.PublicKey)
+
+	passphrase := "password"
+	passphraseHash := sha256.Sum256([]byte(passphrase))
+	passphrasePk, err := crypto.ToECDSA(passphraseHash[:])
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	checkValue := helpers.BipToPip(big.NewInt(10))
+
+	check := c.Check{
+		Nonce:    []byte{1, 2, 3},
+		ChainID:  types.CurrentChainID,
+		DueBlock: 1,
+		Coin:     coin,
+		Value:    checkValue,
+		GasCoin:  coin,
+	}
+
+	lock, err := crypto.Sign(check.HashWithoutLock().Bytes(), passphrasePk)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	check.Lock = big.NewInt(0).SetBytes(lock)
+
+	err = check.Sign(senderPrivateKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rawCheck, _ := rlp.EncodeToBytes(check)
+
+	var senderAddressHash types.Hash
+	hw := sha3.NewKeccak256()
+	_ = rlp.Encode(hw, []interface{}{
+		receiverAddr,
+	})
+	hw.Sum(senderAddressHash[:0])
+
+	sig, err := crypto.Sign(senderAddressHash.Bytes(), passphrasePk)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	proof := [65]byte{}
+	copy(proof[:], sig)
+
+	data := RedeemCheckData{
+		RawCheck: rawCheck,
+		Proof:    proof,
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := Transaction{
+		Nonce:         1,
+		GasPrice:      1,
+		ChainID:       types.CurrentChainID,
+		GasCoin:       coin,
+		Type:          TypeRedeemCheck,
+		Data:          encodedData,
+		SignatureType: SigTypeSingle,
+	}
+
+	if err := tx.Sign(receiverPrivateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.CoinReserveUnderflow {
+		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveUnderflow, response.Log)
+	}
+}
+
+func TestRedeemCheckTxToInsufficientFundsForCheckCoin(t *testing.T) {
+	cState := getState()
+	coin := createTestCoin(cState)
+
+	senderPrivateKey, _ := crypto.GenerateKey()
+
+	receiverPrivateKey, _ := crypto.GenerateKey()
+	receiverAddr := crypto.PubkeyToAddress(receiverPrivateKey.PublicKey)
+
+	passphrase := "password"
+	passphraseHash := sha256.Sum256([]byte(passphrase))
+	passphrasePk, err := crypto.ToECDSA(passphraseHash[:])
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	checkValue := helpers.BipToPip(big.NewInt(10))
+
+	check := c.Check{
+		Nonce:    []byte{1, 2, 3},
+		ChainID:  types.CurrentChainID,
+		DueBlock: 1,
+		Coin:     coin,
+		Value:    checkValue,
+		GasCoin:  types.GetBaseCoinID(),
+	}
+
+	lock, err := crypto.Sign(check.HashWithoutLock().Bytes(), passphrasePk)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	check.Lock = big.NewInt(0).SetBytes(lock)
+
+	err = check.Sign(senderPrivateKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rawCheck, _ := rlp.EncodeToBytes(check)
+
+	var senderAddressHash types.Hash
+	hw := sha3.NewKeccak256()
+	_ = rlp.Encode(hw, []interface{}{
+		receiverAddr,
+	})
+	hw.Sum(senderAddressHash[:0])
+
+	sig, err := crypto.Sign(senderAddressHash.Bytes(), passphrasePk)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	proof := [65]byte{}
+	copy(proof[:], sig)
+
+	data := RedeemCheckData{
+		RawCheck: rawCheck,
+		Proof:    proof,
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := Transaction{
+		Nonce:         1,
+		GasPrice:      1,
+		ChainID:       types.CurrentChainID,
+		GasCoin:       types.GetBaseCoinID(),
+		Type:          TypeRedeemCheck,
+		Data:          encodedData,
+		SignatureType: SigTypeSingle,
+	}
+
+	if err := tx.Sign(receiverPrivateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.InsufficientFunds {
+		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
+	}
+}
+
+func TestRedeemCheckTxToInsufficientFundsForCheckGasCoin(t *testing.T) {
+	cState := getState()
+	coin := createTestCoin(cState)
+
+	senderPrivateKey, senderAddr := getAccount()
+
+	receiverPrivateKey, _ := crypto.GenerateKey()
+	receiverAddr := crypto.PubkeyToAddress(receiverPrivateKey.PublicKey)
+
+	passphrase := "password"
+	passphraseHash := sha256.Sum256([]byte(passphrase))
+	passphrasePk, err := crypto.ToECDSA(passphraseHash[:])
+
+	cState.Accounts.AddBalance(senderAddr, coin, helpers.BipToPip(big.NewInt(100)))
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	checkValue := helpers.BipToPip(big.NewInt(10))
+
+	check := c.Check{
+		Nonce:    []byte{1, 2, 3},
+		ChainID:  types.CurrentChainID,
+		DueBlock: 1,
+		Coin:     coin,
+		Value:    checkValue,
+		GasCoin:  types.GetBaseCoinID(),
+	}
+
+	lock, err := crypto.Sign(check.HashWithoutLock().Bytes(), passphrasePk)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	check.Lock = big.NewInt(0).SetBytes(lock)
+
+	err = check.Sign(senderPrivateKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rawCheck, _ := rlp.EncodeToBytes(check)
+
+	var senderAddressHash types.Hash
+	hw := sha3.NewKeccak256()
+	_ = rlp.Encode(hw, []interface{}{
+		receiverAddr,
+	})
+	hw.Sum(senderAddressHash[:0])
+
+	sig, err := crypto.Sign(senderAddressHash.Bytes(), passphrasePk)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	proof := [65]byte{}
+	copy(proof[:], sig)
+
+	data := RedeemCheckData{
+		RawCheck: rawCheck,
+		Proof:    proof,
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := Transaction{
+		Nonce:         1,
+		GasPrice:      1,
+		ChainID:       types.CurrentChainID,
+		GasCoin:       types.GetBaseCoinID(),
 		Type:          TypeRedeemCheck,
 		Data:          encodedData,
 		SignatureType: SigTypeSingle,
