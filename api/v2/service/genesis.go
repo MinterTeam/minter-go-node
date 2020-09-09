@@ -44,7 +44,7 @@ func (s *Service) Genesis(ctx context.Context, _ *empty.Empty) (*pb.GenesisRespo
 				MaxAgeDuration:  fmt.Sprintf("%d", result.Genesis.ConsensusParams.Evidence.MaxAgeDuration),
 			},
 			Validator: &pb.GenesisResponse_ConsensusParams_Validator{
-				PublicKeyTypes: result.Genesis.ConsensusParams.Validator.PubKeyTypes,
+				PubKeyTypes: result.Genesis.ConsensusParams.Validator.PubKeyTypes,
 			},
 		},
 		AppHash:  result.Genesis.AppHash.String(),
