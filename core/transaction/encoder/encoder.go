@@ -3,6 +3,7 @@ package encoder
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	rpctypes "github.com/MinterTeam/minter-go-node/rpc/lib/types"

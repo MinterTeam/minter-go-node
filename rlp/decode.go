@@ -28,6 +28,7 @@ import (
 	"strings"
 )
 
+// Set of Errors
 var (
 	// EOL is returned when the end of the current list
 	// has been reached during streaming.

@@ -5,6 +5,7 @@ import (
 	"math/big"
 )
 
+// BipToPip converts BIP to PIP (multiplies input by 1e18)
 func BipToPip(bip *big.Int) *big.Int {
 	p := big.NewInt(10)
 	p.Exp(p, big.NewInt(18), nil)
@@ -13,6 +14,7 @@ func BipToPip(bip *big.Int) *big.Int {
 	return p
 }
 
+// StringToBigInt converts string to BigInt, panics on empty strings and errors
 func StringToBigInt(s string) *big.Int {
 	if s == "" {
 		panic("string is empty")
@@ -26,6 +28,7 @@ func StringToBigInt(s string) *big.Int {
 	return b
 }
 
+// IsValidBigInt verifies that string is a valid int
 func IsValidBigInt(s string) bool {
 	if s == "" {
 		return false

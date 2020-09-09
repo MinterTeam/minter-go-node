@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/transaction/encoder"
 	core_types "github.com/tendermint/tendermint/rpc/core/types"

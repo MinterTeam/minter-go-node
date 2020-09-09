@@ -6,6 +6,7 @@ import (
 	"sync"
 )
 
+// ReadOnlyTree used for CheckState: API and CheckTx calls. Immutable.
 type ReadOnlyTree interface {
 	Get(key []byte) (index int64, value []byte)
 	Version() int64
@@ -13,6 +14,7 @@ type ReadOnlyTree interface {
 	Iterate(fn func(key []byte, value []byte) bool) (stopped bool)
 }
 
+// MTree mutable tree, used for txs delivery
 type MTree interface {
 	ReadOnlyTree
 	KeepLastHeight() int64
@@ -30,6 +32,7 @@ type MTree interface {
 	GlobalUnlock()
 }
 
+// NewMutableTree creates and returns new MutableTree using given db. Panics on error.
 // If you want to get read-only state, you should use height = 0 and LazyLoadVersion (version), see NewImmutableTree
 func NewMutableTree(height uint64, db dbm.DB, cacheSize int) MTree {
 	tree, err := iavl.NewMutableTree(db, cacheSize)
@@ -201,11 +204,13 @@ func (t *mutableTree) AvailableVersions() []int {
 	return t.tree.AvailableVersions()
 }
 
+// ImmutableTree used for CheckState: API and CheckTx calls.
 type ImmutableTree struct {
 	tree *iavl.ImmutableTree
 }
 
-//Warning: returns the MTree interface, but you should only use ReadOnlyTree
+// NewImmutableTree returns MTree from given db at given height
+// Warning: returns the MTree interface, but you should only use ReadOnlyTree
 func NewImmutableTree(height uint64, db dbm.DB) MTree {
 	tree := NewMutableTree(0, db, 1024)
 	_, err := tree.LazyLoadVersion(int64(height))
@@ -215,18 +220,25 @@ func NewImmutableTree(height uint64, db dbm.DB) MTree {
 	return tree
 }
 
+// Iterate iterates over all keys of the tree, in order. The keys and values must not be modified,
+// since they may point to data stored within IAVL.
 func (t *ImmutableTree) Iterate(fn func(key []byte, value []byte) bool) (stopped bool) {
 	return t.tree.Iterate(fn)
 }
 
+// Hash returns the root hash.
 func (t *ImmutableTree) Hash() []byte {
 	return t.tree.Hash()
 }
 
+// Version returns the version of the tree.
 func (t *ImmutableTree) Version() int64 {
 	return t.tree.Version()
 }
 
+// Get returns the index and value of the specified key if it exists, or nil and the next index
+// otherwise. The returned value must not be modified, since it may point to data stored within
+// IAVL.
 func (t *ImmutableTree) Get(key []byte) (index int64, value []byte) {
 	return t.tree.Get(key)
 }
