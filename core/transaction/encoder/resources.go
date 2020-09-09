@@ -9,23 +9,25 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 )
 
+// TxDataResource is an interface for preparing JSON representation of TxData
 type TxDataResource interface {
 	Transform(txData interface{}, context *state.CheckState) TxDataResource
 }
 
+// CoinResource is a JSON representation of a coin
 type CoinResource struct {
 	ID     uint32 `json:"id"`
 	Symbol string `json:"symbol"`
 }
 
-// TxType 0x01
-
+// SendDataResource is JSON representation of TxType 0x01
 type SendDataResource struct {
 	Coin  CoinResource `json:"coin"`
 	To    string       `json:"to"`
 	Value string       `json:"value"`
 }
 
+// Transform returns TxDataResource from given txData. Used for JSON encoder.
 func (SendDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
 	data := txData.(*transaction.SendData)
 	coin := context.Coins().GetCoin(data.Coin)
@@ -37,8 +39,7 @@ func (SendDataResource) Transform(txData interface{}, context *state.CheckState)
 	}
 }
 
-// TxType 0x02
-
+// SellCoinDataResource is JSON representation of TxType 0x02
 type SellCoinDataResource struct {
 	CoinToSell        CoinResource `json:"coin_to_sell"`
 	ValueToSell       string       `json:"value_to_sell"`
@@ -46,6 +47,7 @@ type SellCoinDataResource struct {
 	MinimumValueToBuy string       `json:"minimum_value_to_buy"`
 }
 
+// Transform returns TxDataResource from given txData. Used for JSON encoder.
 func (SellCoinDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
 	data := txData.(*transaction.SellCoinData)
 	buyCoin := context.Coins().GetCoin(data.CoinToBuy)
@@ -59,14 +61,14 @@ func (SellCoinDataResource) Transform(txData interface{}, context *state.CheckSt
 	}
 }
 
-// TxType 0x03
-
+// SellAllCoinDataResource is JSON representation of TxType 0x03
 type SellAllCoinDataResource struct {
 	CoinToSell        CoinResource `json:"coin_to_sell"`
 	CoinToBuy         CoinResource `json:"coin_to_buy"`
 	MinimumValueToBuy string       `json:"minimum_value_to_buy"`
 }
 
+// Transform returns TxDataResource from given txData. Used for JSON encoder.
 func (SellAllCoinDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
 	data := txData.(*transaction.SellAllCoinData)
 	buyCoin := context.Coins().GetCoin(data.CoinToBuy)
@@ -79,8 +81,7 @@ func (SellAllCoinDataResource) Transform(txData interface{}, context *state.Chec
 	}
 }
 
-// TxType 0x04
-
+// BuyCoinDataResource is JSON representation of TxType 0x04
 type BuyCoinDataResource struct {
 	CoinToBuy          CoinResource `json:"coin_to_buy"`
 	ValueToBuy         string       `json:"value_to_buy"`
@@ -88,6 +89,7 @@ type BuyCoinDataResource struct {
 	MaximumValueToSell string       `json:"maximum_value_to_sell"`
 }
 
+// Transform returns TxDataResource from given txData. Used for JSON encoder.
 func (BuyCoinDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
 	data := txData.(*transaction.BuyCoinData)
 	buyCoin := context.Coins().GetCoin(data.CoinToBuy)
@@ -101,8 +103,7 @@ func (BuyCoinDataResource) Transform(txData interface{}, context *state.CheckSta
 	}
 }
 
-// TxType 0x05
-
+// CreateCoinDataResource is JSON representation of TxType 0x05
 type CreateCoinDataResource struct {
 	Name                 string `json:"name"`
 	Symbol               string `json:"symbol"`
@@ -112,6 +113,7 @@ type CreateCoinDataResource struct {
 	MaxSupply            string `json:"max_supply"`
 }
 
+// Transform returns TxDataResource from given txData. Used for JSON encoder.
 func (CreateCoinDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
 	data := txData.(*transaction.CreateCoinData)
 
@@ -125,8 +127,7 @@ func (CreateCoinDataResource) Transform(txData interface{}, context *state.Check
 	}
 }
 
-// TxType 0x06
-
+// DeclareCandidacyDataResource is JSON representation of TxType 0x06
 type DeclareCandidacyDataResource struct {
 	Address    string       `json:"address"`
 	PubKey     string       `json:"pub_key"`
@@ -135,6 +136,7 @@ type DeclareCandidacyDataResource struct {
 	Stake      string       `json:"stake"`
 }
 
+// Transform returns TxDataResource from given txData. Used for JSON encoder.
 func (DeclareCandidacyDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
 	data := txData.(*transaction.DeclareCandidacyData)
 	coin := context.Coins().GetCoin(data.Coin)
@@ -148,14 +150,14 @@ func (DeclareCandidacyDataResource) Transform(txData interface{}, context *state
 	}
 }
 
-// TxType 0x07
-
+// DelegateDataResource is JSON representation of TxType 0x07
 type DelegateDataResource struct {
 	PubKey string       `json:"pub_key"`
 	Coin   CoinResource `json:"coin"`
 	Value  string       `json:"value"`
 }
 
+// Transform returns TxDataResource from given txData. Used for JSON encoder.
 func (DelegateDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
 	data := txData.(*transaction.DelegateData)
 	coin := context.Coins().GetCoin(data.Coin)
@@ -167,14 +169,14 @@ func (DelegateDataResource) Transform(txData interface{}, context *state.CheckSt
 	}
 }
 
-// TxType 0x08
-
+// UnbondDataResource is JSON representation of TxType 0x08
 type UnbondDataResource struct {
 	PubKey string       `json:"pub_key"`
 	Coin   CoinResource `json:"coin"`
 	Value  string       `json:"value"`
 }
 
+// Transform returns TxDataResource from given txData. Used for JSON encoder.
 func (UnbondDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
 	data := txData.(*transaction.UnbondData)
 	coin := context.Coins().GetCoin(data.Coin)
@@ -186,13 +188,13 @@ func (UnbondDataResource) Transform(txData interface{}, context *state.CheckStat
 	}
 }
 
-// TxType 0x09
-
+// RedeemCheckDataResource is JSON representation of TxType 0x09
 type RedeemCheckDataResource struct {
 	RawCheck string `json:"raw_check"`
 	Proof    string `json:"proof"`
 }
 
+// Transform returns TxDataResource from given txData. Used for JSON encoder.
 func (RedeemCheckDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
 	data := txData.(*transaction.RedeemCheckData)
 
@@ -202,36 +204,36 @@ func (RedeemCheckDataResource) Transform(txData interface{}, context *state.Chec
 	}
 }
 
-// TxType 0x0A
-
+// SetCandidateOnDataResource is JSON representation of TxType 0x0A
 type SetCandidateOnDataResource struct {
 	PubKey string `json:"pub_key"`
 }
 
+// Transform returns TxDataResource from given txData. Used for JSON encoder.
 func (SetCandidateOnDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
 	data := txData.(*transaction.SetCandidateOnData)
 	return SetCandidateOnDataResource{data.PubKey.String()}
 }
 
-// TxType 0x0B
-
+// SetCandidateOffDataResource is JSON representation of TxType 0x0B
 type SetCandidateOffDataResource struct {
 	PubKey string `json:"pub_key"`
 }
 
+// Transform returns TxDataResource from given txData. Used for JSON encoder.
 func (SetCandidateOffDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
 	data := txData.(*transaction.SetCandidateOffData)
 	return SetCandidateOffDataResource{data.PubKey.String()}
 }
 
-// TxType 0x0C
-
+// CreateMultisigDataResource is JSON representation of TxType 0x0C
 type CreateMultisigDataResource struct {
 	Threshold string          `json:"threshold"`
 	Weights   []string        `json:"weights"`
 	Addresses []types.Address `json:"addresses"`
 }
 
+// Transform returns TxDataResource from given txData. Used for JSON encoder.
 func (CreateMultisigDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
 	data := txData.(*transaction.CreateMultisigData)
 
@@ -247,12 +249,12 @@ func (CreateMultisigDataResource) Transform(txData interface{}, context *state.C
 	}
 }
 
-// TxType 0x0D
-
+// MultiSendDataResource is JSON representation of TxType 0x0D
 type MultiSendDataResource struct {
 	List []SendDataResource `json:"list"`
 }
 
+// Transform returns TxDataResource from given txData. Used for JSON encoder.
 func (resource MultiSendDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
 	data := txData.(*transaction.MultisendData)
 
@@ -269,8 +271,7 @@ func (resource MultiSendDataResource) Transform(txData interface{}, context *sta
 	return resource
 }
 
-// TxType 0x0E
-
+// EditCandidateDataResource is JSON representation of TxType 0x0E
 type EditCandidateDataResource struct {
 	PubKey         string  `json:"pub_key"`
 	NewPubKey      *string `json:"new_pub_key"`
@@ -279,6 +280,7 @@ type EditCandidateDataResource struct {
 	ControlAddress string  `json:"control_address"`
 }
 
+// Transform returns TxDataResource from given txData. Used for JSON encoder.
 func (EditCandidateDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
 	data := txData.(*transaction.EditCandidateData)
 	var newPubKeyStr *string
@@ -295,13 +297,13 @@ func (EditCandidateDataResource) Transform(txData interface{}, context *state.Ch
 	}
 }
 
-// TxType 0x0F
-
+// SetHaltBlockDataResource is JSON representation of TxType 0x0F
 type SetHaltBlockDataResource struct {
 	PubKey string `json:"pub_key"`
 	Height string `json:"height"`
 }
 
+// Transform returns TxDataResource from given txData. Used for JSON encoder.
 func (SetHaltBlockDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
 	data := txData.(*transaction.SetHaltBlockData)
 
@@ -311,8 +313,7 @@ func (SetHaltBlockDataResource) Transform(txData interface{}, context *state.Che
 	}
 }
 
-// TxType 0x10
-
+// RecreateCoinDataResource is JSON representation of TxType 0x10
 type RecreateCoinDataResource struct {
 	Name                 string           `json:"name"`
 	Symbol               types.CoinSymbol `json:"symbol"`
@@ -322,6 +323,7 @@ type RecreateCoinDataResource struct {
 	MaxSupply            string           `json:"max_supply"`
 }
 
+// Transform returns TxDataResource from given txData. Used for JSON encoder.
 func (RecreateCoinDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
 	data := txData.(*transaction.RecreateCoinData)
 
@@ -335,13 +337,13 @@ func (RecreateCoinDataResource) Transform(txData interface{}, context *state.Che
 	}
 }
 
-// TxType 0x11
-
+// ChangeCoinOwnerDataResource is JSON representation of TxType 0x11
 type ChangeCoinOwnerDataResource struct {
 	Symbol   types.CoinSymbol `json:"symbol"`
 	NewOwner types.Address    `json:"new_owner"`
 }
 
+// Transform returns TxDataResource from given txData. Used for JSON encoder.
 func (ChangeCoinOwnerDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
 	data := txData.(*transaction.ChangeCoinOwnerData)
 
@@ -351,15 +353,14 @@ func (ChangeCoinOwnerDataResource) Transform(txData interface{}, context *state.
 	}
 }
 
-// TxType 0x12
-
+// EditMultisigOwnersResource is JSON representation of TxType 0x12
 type EditMultisigOwnersResource struct {
-	MultisigAddress types.Address   `json:"multisig_address"`
-	Threshold       string          `json:"threshold"`
-	Weights         []string        `json:"weights"`
-	Addresses       []types.Address `json:"addresses"`
+	Threshold string          `json:"threshold"`
+	Weights   []string        `json:"weights"`
+	Addresses []types.Address `json:"addresses"`
 }
 
+// Transform returns TxDataResource from given txData. Used for JSON encoder.
 func (EditMultisigOwnersResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
 	data := txData.(*transaction.EditMultisigOwnersData)
 
@@ -376,12 +377,12 @@ func (EditMultisigOwnersResource) Transform(txData interface{}, context *state.C
 	return resource
 }
 
-// TxType 0x13
-
+// PriceVoteResource is JSON representation of TxType 0x13
 type PriceVoteResource struct {
 	Price uint32 `json:"price"`
 }
 
+// Transform returns TxDataResource from given txData. Used for JSON encoder.
 func (PriceVoteResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
 	data := txData.(*transaction.PriceVoteData)
 
