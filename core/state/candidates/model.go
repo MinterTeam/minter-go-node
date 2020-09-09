@@ -101,7 +101,7 @@ func (candidate *Candidate) setTmAddress() {
 	candidate.tmAddress = &address
 }
 
-// getFilteredUpdates returns updates which is > 0 in their unbounds + merge similar updates
+// getFilteredUpdates returns updates which is > 0 in their value + merge similar updates
 func (candidate *Candidate) getFilteredUpdates() []*stake {
 	var updates []*stake
 	for _, update := range candidate.updates {
@@ -140,7 +140,7 @@ func (candidate *Candidate) FilterUpdates() {
 	candidate.isUpdatesDirty = true
 }
 
-// GetTotalBipStake returns total stake unbounds of a candidate
+// GetTotalBipStake returns total stake value of a candidate
 func (candidate *Candidate) GetTotalBipStake() *big.Int {
 	return big.NewInt(0).Set(candidate.totalBipStake)
 }

@@ -207,6 +207,7 @@ func (a *Accounts) CreateMultisig(weights []uint, addresses []types.Address, thr
 			coins:         []types.CoinID{},
 			balances:      map[types.CoinID]*big.Int{},
 			markDirty:     a.markDirty,
+			isNew:         true,
 			dirtyBalances: map[types.CoinID]struct{}{},
 		}
 	}
