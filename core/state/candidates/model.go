@@ -130,6 +130,10 @@ func (candidate *Candidate) getFilteredUpdates() []*stake {
 
 // FilterUpdates filters candidate updates: remove 0-valued updates and merge similar ones
 func (candidate *Candidate) FilterUpdates() {
+	if len(candidate.updates) == 0 {
+		return
+	}
+
 	updates := candidate.getFilteredUpdates()
 
 	sort.SliceStable(updates, func(i, j int) bool {

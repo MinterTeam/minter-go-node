@@ -311,7 +311,7 @@ func (c *Candidates) GetCandidateByTendermintAddress(address types.TmAddress) *C
 }
 
 // RecalculateStakes recalculate stakes of all candidates:
-// 1. Updates bip-unbounds of each stake
+// 1. Updates bip-values of each stake
 // 2. Applies updates
 func (c *Candidates) RecalculateStakes(height uint64) {
 	c.recalculateStakes(height)
