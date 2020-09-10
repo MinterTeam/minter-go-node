@@ -19,7 +19,7 @@ type stakeUser struct {
 	BipValue *big.Int
 }
 
-// Returns coins list, balance and transaction count of an address.
+// Address returns coins list, balance and transaction count of an address.
 func (s *Service) Address(ctx context.Context, req *pb.AddressRequest) (*pb.AddressResponse, error) {
 	if !strings.HasPrefix(strings.Title(req.Address), "Mx") {
 		return new(pb.AddressResponse), status.Error(codes.InvalidArgument, "invalid address")

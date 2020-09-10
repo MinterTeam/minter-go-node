@@ -11,7 +11,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// Returns transaction info.
+// Transaction returns transaction info.
 func (s *Service) Transaction(ctx context.Context, req *pb.TransactionRequest) (*pb.TransactionResponse, error) {
 	if len(req.Hash) < 3 {
 		return new(pb.TransactionResponse), status.Error(codes.InvalidArgument, "invalid hash")

@@ -10,6 +10,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/empty"
+	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/marcusolsson/tui-go"
 	"github.com/urfave/cli/v2"
 	"gitlab.com/tslocum/cview"
@@ -108,7 +109,10 @@ func (mc *ManagerConsole) Cli(ctx context.Context) {
 }
 
 func NewCLI(socketPath string) (*ManagerConsole, error) {
-	cc, err := grpc.Dial("passthrough:///unix:///"+socketPath, grpc.WithInsecure())
+	cc, err := grpc.Dial("passthrough:///unix:///"+socketPath,
+		grpc.WithStreamInterceptor(grpc_retry.StreamClientInterceptor()),
+		grpc.WithUnaryInterceptor(grpc_retry.UnaryClientInterceptor()),
+		grpc.WithInsecure())
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +168,7 @@ func NewCLI(socketPath string) (*ManagerConsole, error) {
 		{
 			Name:    "dashboard",
 			Aliases: []string{"db"},
-			Usage:   "Show dashboard", //todo
+			Usage:   "Show dashboard",
 			Action:  dashboardCMD(client),
 		},
 		{

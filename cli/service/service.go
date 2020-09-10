@@ -10,10 +10,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/version"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/empty"
-	"github.com/tendermint/tendermint/evidence"
-	tmNode "github.com/tendermint/tendermint/node"
 	rpc "github.com/tendermint/tendermint/rpc/client/local"
-	types2 "github.com/tendermint/tendermint/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"runtime"
@@ -23,12 +20,11 @@ import (
 type Manager struct {
 	blockchain *minter.Blockchain
 	tmRPC      *rpc.Local
-	tmNode     *tmNode.Node
 	cfg        *config.Config
 }
 
-func NewManager(blockchain *minter.Blockchain, tmRPC *rpc.Local, tmNode *tmNode.Node, cfg *config.Config) pb.ManagerServiceServer {
-	return &Manager{blockchain: blockchain, tmRPC: tmRPC, tmNode: tmNode, cfg: cfg}
+func NewManager(blockchain *minter.Blockchain, tmRPC *rpc.Local, cfg *config.Config) pb.ManagerServiceServer {
+	return &Manager{blockchain: blockchain, tmRPC: tmRPC, cfg: cfg}
 }
 
 func (m *Manager) Dashboard(_ *empty.Empty, stream pb.ManagerService_DashboardServer) error {
@@ -154,10 +150,9 @@ func (m *Manager) NetInfo(context.Context, *empty.Empty) (*pb.NetInfoResponse, e
 				RecentlySent:      channel.RecentlySent,
 			})
 		}
-		peerTM := m.tmNode.Switch().Peers().Get(peer.NodeInfo.ID())
-		currentHeight := peerTM.Get(types2.PeerStateKey).(evidence.PeerState).GetHeight()
+		peerHeight := m.blockchain.PeerHeight(peer.NodeInfo.ID())
 		peers = append(peers, &pb.NetInfoResponse_Peer{
-			LatestBlockHeight: currentHeight,
+			LatestBlockHeight: peerHeight,
 			NodeInfo: &pb.NodeInfo{
 				ProtocolVersion: &pb.NodeInfo_ProtocolVersion{
 					P2P:   uint64(peer.NodeInfo.ProtocolVersion.P2P),

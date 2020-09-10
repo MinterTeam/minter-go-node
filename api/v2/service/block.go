@@ -18,7 +18,7 @@ import (
 	"time"
 )
 
-// Returns block data at given height.
+// Block returns block data at given height.
 func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockResponse, error) {
 	height := int64(req.Height)
 	block, err := s.client.Block(&height)

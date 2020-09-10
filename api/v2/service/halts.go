@@ -7,7 +7,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// Returns
+// Halts returns votes
 func (s *Service) Halts(_ context.Context, req *pb.HaltsRequest) (*pb.HaltsResponse, error) {
 	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {

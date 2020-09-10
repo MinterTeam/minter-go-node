@@ -14,7 +14,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// Returns information about coin symbol.
+// CoinInfo returns information about coin symbol.
 func (s *Service) CoinInfo(ctx context.Context, req *pb.CoinInfoRequest) (*pb.CoinInfoResponse, error) {
 	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {

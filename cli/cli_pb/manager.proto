@@ -4,6 +4,7 @@ package cli_pb;
 option go_package = ".;cli_pb";
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
 
 message NodeInfo {
 
