@@ -16,6 +16,8 @@ import (
 	"time"
 )
 
+// CreateApp creates and returns new Blockchain instance
+// Recreates $HOME/.minter_test dir
 func CreateApp(state types.AppState) *minter.Blockchain {
 	utils.MinterHome = os.ExpandEnv(filepath.Join("$HOME", ".minter_test"))
 	_ = os.RemoveAll(utils.MinterHome)
@@ -42,10 +44,12 @@ func CreateApp(state types.AppState) *minter.Blockchain {
 	return app
 }
 
+// SendCommit sends Commit message to given Blockchain instance
 func SendCommit(app *minter.Blockchain) tmTypes.ResponseCommit {
 	return app.Commit()
 }
 
+// SendBeginBlock sends BeginBlock message to given Blockchain instance
 func SendBeginBlock(app *minter.Blockchain) tmTypes.ResponseBeginBlock {
 	return app.BeginBlock(tmTypes.RequestBeginBlock{
 		Hash: nil,
@@ -73,12 +77,15 @@ func SendBeginBlock(app *minter.Blockchain) tmTypes.ResponseBeginBlock {
 	})
 }
 
+// SendEndBlock sends EndBlock message to given Blockchain instance
 func SendEndBlock(app *minter.Blockchain) tmTypes.ResponseEndBlock {
 	return app.EndBlock(tmTypes.RequestEndBlock{
 		Height: 0,
 	})
 }
 
+// CreateTx composes and returns Tx with given params.
+// Nonce, chain id, gas price, gas coin and signature type fields are auto-filled.
 func CreateTx(app *minter.Blockchain, address types.Address, txType transaction.TxType, data interface{}) transaction.Transaction {
 	nonce := app.CurrentState().Accounts().GetNonce(address) + 1
 	bData, err := rlp.EncodeToBytes(data)
@@ -99,12 +106,14 @@ func CreateTx(app *minter.Blockchain, address types.Address, txType transaction.
 	return tx
 }
 
+// SendTx sends DeliverTx message to given Blockchain instance
 func SendTx(app *minter.Blockchain, bytes []byte) tmTypes.ResponseDeliverTx {
 	return app.DeliverTx(tmTypes.RequestDeliverTx{
 		Tx: bytes,
 	})
 }
 
+// SignTx returns bytes of signed with given pk transaction
 func SignTx(pk *ecdsa.PrivateKey, tx transaction.Transaction) []byte {
 	err := tx.Sign(pk)
 	if err != nil {
@@ -116,12 +125,14 @@ func SignTx(pk *ecdsa.PrivateKey, tx transaction.Transaction) []byte {
 	return b
 }
 
+// CreateAddress returns random address and corresponding private key
 func CreateAddress() (types.Address, *ecdsa.PrivateKey) {
 	pk, _ := crypto.GenerateKey()
 
 	return crypto.PubkeyToAddress(pk.PublicKey), pk
 }
 
+// DefaultAppState returns new AppState with some predefined values
 func DefaultAppState() types.AppState {
 	return types.AppState{
 		Note:                "",

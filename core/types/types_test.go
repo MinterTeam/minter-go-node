@@ -221,7 +221,7 @@ func TestAppState(t *testing.T) {
 		panic(err)
 	}
 
-	if bytes.Compare(b1, b2) != 0 {
+	if !bytes.Equal(b1, b2) {
 		t.Errorf("Bytes are not the same")
 	}
 }
