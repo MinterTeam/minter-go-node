@@ -14,6 +14,7 @@ import (
 const mainPrefix = byte('h')
 
 type RHalts interface {
+	Export(state *types.AppState)
 	GetHaltBlocks(height uint64) *Model
 }
 
@@ -47,15 +48,21 @@ func (hb *HaltBlocks) Commit() error {
 
 		hb.lock.Lock()
 		delete(hb.dirty, height)
+		delete(hb.list, height)
 		hb.lock.Unlock()
 
-		data, err := rlp.EncodeToBytes(haltBlock)
-		if err != nil {
-			return fmt.Errorf("can't encode object at %d: %v", height, err)
-		}
-
 		path := getPath(height)
-		hb.iavl.Set(path, data)
+
+		if haltBlock.deleted {
+			hb.iavl.Remove(path)
+		} else {
+			data, err := rlp.EncodeToBytes(haltBlock)
+			if err != nil {
+				return fmt.Errorf("can't encode object at %d: %v", height, err)
+			}
+
+			hb.iavl.Set(path, data)
+		}
 	}
 
 	return nil
@@ -131,20 +138,27 @@ func (hb *HaltBlocks) Delete(height uint64) {
 	haltBlock.delete()
 }
 
-func (hb *HaltBlocks) Export(state *types.AppState, height uint64) {
-	for i := height; i <= height; i++ {
-		halts := hb.get(i)
+func (hb *HaltBlocks) Export(state *types.AppState) {
+	hb.iavl.Iterate(func(key []byte, value []byte) bool {
+		if key[0] != mainPrefix {
+			return false
+		}
+
+		height := binary.LittleEndian.Uint64(key[1:])
+		halts := hb.get(height)
 		if halts == nil {
-			continue
+			return false
 		}
 
 		for _, haltBlock := range halts.List {
 			state.HaltBlocks = append(state.HaltBlocks, types.HaltBlock{
-				Height:       i,
+				Height:       height,
 				CandidateKey: haltBlock.Pubkey,
 			})
 		}
-	}
+
+		return false
+	})
 }
 
 func (hb *HaltBlocks) getFromMap(height uint64) *Model {
