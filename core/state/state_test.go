@@ -90,6 +90,10 @@ func TestStateExport(t *testing.T) {
 
 	state.Checks.UseCheck(newCheck)
 
+	state.Halts.AddHaltBlock(height, types.Pubkey{0})
+	state.Halts.AddHaltBlock(height+1, types.Pubkey{1})
+	state.Halts.AddHaltBlock(height+2, types.Pubkey{2})
+
 	_, err = state.Commit()
 	if err != nil {
 		log.Panicf("Cannot commit state: %s", err)
@@ -246,5 +250,24 @@ func TestStateExport(t *testing.T) {
 		newStateCandidate2.RewardAddress != address2 ||
 		newStateCandidate2.Commission != 30 {
 		t.Fatal("Wrong new state candidate data")
+	}
+
+	if len(newState.HaltBlocks) != 3 {
+		t.Fatalf("Invalid amount of halts: %d. Expected 3", len(newState.HaltBlocks))
+	}
+
+	pubkey := types.Pubkey{0}
+	if newState.HaltBlocks[0].Height != height && newState.HaltBlocks[0].CandidateKey != pubkey {
+		t.Fatal("Wrong new state halt blocks")
+	}
+
+	pubkey = types.Pubkey{1}
+	if newState.HaltBlocks[1].Height != height+1 && newState.HaltBlocks[1].CandidateKey != pubkey {
+		t.Fatal("Wrong new state halt blocks")
+	}
+
+	pubkey = types.Pubkey{2}
+	if newState.HaltBlocks[2].Height != height+2 && newState.HaltBlocks[2].CandidateKey != pubkey {
+		t.Fatal("Wrong new state halt blocks")
 	}
 }

@@ -369,6 +369,7 @@ func (s *State) Export(height uint64) types.AppState {
 	state.Accounts().Export(appState)
 	state.Coins().Export(appState)
 	state.Checks().Export(appState)
+	state.Halts().Export(appState)
 
 	return *appState
 }
