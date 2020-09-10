@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/state/bus"
 	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/tree"
 
@@ -313,16 +312,6 @@ func (a *Accounts) GetBalances(address types.Address) []Balance {
 	}
 
 	return balances
-}
-
-func (a *Accounts) DeleteCoin(address types.Address, id types.CoinID) {
-	balance := a.GetBalance(address, id)
-	coin := a.bus.Coins().GetCoin(id)
-
-	ret := formula.CalculateSaleReturn(coin.Volume, coin.Reserve, 100, balance)
-
-	a.AddBalance(address, types.GetBaseCoinID(), ret)
-	a.SetBalance(address, id, big.NewInt(0))
 }
 
 func (a *Accounts) markDirty(addr types.Address) {
