@@ -94,6 +94,12 @@ func TestStateExport(t *testing.T) {
 	state.Halts.AddHaltBlock(height+1, types.Pubkey{1})
 	state.Halts.AddHaltBlock(height+2, types.Pubkey{2})
 
+	wlAddr1 := types.StringToAddress("1")
+	wlAddr2 := types.StringToAddress("2")
+
+	state.Waitlist.AddWaitList(wlAddr1, candidatePubKey1, coinTestID, big.NewInt(1e18))
+	state.Waitlist.AddWaitList(wlAddr2, candidatePubKey2, coinTest2ID, big.NewInt(2e18))
+
 	_, err = state.Commit()
 	if err != nil {
 		log.Panicf("Cannot commit state: %s", err)
@@ -269,5 +275,17 @@ func TestStateExport(t *testing.T) {
 	pubkey = types.Pubkey{2}
 	if newState.HaltBlocks[2].Height != height+2 || !newState.HaltBlocks[2].CandidateKey.Equals(pubkey) {
 		t.Fatal("Wrong new state halt blocks")
+	}
+
+	if len(newState.Waitlist) != 2 {
+		t.Fatalf("Invalid amount of waitlist: %d. Expected 2", len(newState.Waitlist))
+	}
+
+	if newState.Waitlist[0].Coin != coinTest2ID || newState.Waitlist[0].Value != big.NewInt(2e18).String() || newState.Waitlist[0].Owner.Compare(wlAddr2) != 0 {
+		t.Fatal("Invalid waitlist data")
+	}
+
+	if newState.Waitlist[1].Coin != coinTestID || newState.Waitlist[1].Value != big.NewInt(1e18).String() || newState.Waitlist[1].Owner.Compare(wlAddr1) != 0 {
+		t.Fatal("Invalid waitlist data")
 	}
 }
