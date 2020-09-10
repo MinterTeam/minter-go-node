@@ -257,17 +257,17 @@ func TestStateExport(t *testing.T) {
 	}
 
 	pubkey := types.Pubkey{0}
-	if newState.HaltBlocks[0].Height != height && newState.HaltBlocks[0].CandidateKey != pubkey {
+	if newState.HaltBlocks[0].Height != height || !newState.HaltBlocks[0].CandidateKey.Equals(pubkey) {
 		t.Fatal("Wrong new state halt blocks")
 	}
 
 	pubkey = types.Pubkey{1}
-	if newState.HaltBlocks[1].Height != height+1 && newState.HaltBlocks[1].CandidateKey != pubkey {
+	if newState.HaltBlocks[1].Height != height+1 || !newState.HaltBlocks[1].CandidateKey.Equals(pubkey) {
 		t.Fatal("Wrong new state halt blocks")
 	}
 
 	pubkey = types.Pubkey{2}
-	if newState.HaltBlocks[2].Height != height+2 && newState.HaltBlocks[2].CandidateKey != pubkey {
+	if newState.HaltBlocks[2].Height != height+2 || !newState.HaltBlocks[2].CandidateKey.Equals(pubkey) {
 		t.Fatal("Wrong new state halt blocks")
 	}
 }

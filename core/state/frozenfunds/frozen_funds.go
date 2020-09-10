@@ -46,15 +46,25 @@ func (f *FrozenFunds) Commit() error {
 
 		f.lock.Lock()
 		delete(f.dirty, height)
+		delete(f.list, height)
 		f.lock.Unlock()
 
-		data, err := rlp.EncodeToBytes(ff)
-		if err != nil {
-			return fmt.Errorf("can't encode object at %d: %v", height, err)
-		}
-
 		path := getPath(height)
-		f.iavl.Set(path, data)
+
+		if ff.deleted {
+			f.lock.Lock()
+			delete(f.list, height)
+			f.lock.Unlock()
+
+			f.iavl.Remove(path)
+		} else {
+			data, err := rlp.EncodeToBytes(ff)
+			if err != nil {
+				return fmt.Errorf("can't encode object at %d: %v", height, err)
+			}
+
+			f.iavl.Set(path, data)
+		}
 	}
 
 	return nil

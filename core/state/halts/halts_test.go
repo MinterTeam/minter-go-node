@@ -81,7 +81,7 @@ func TestBusToAddHaltBlock(t *testing.T) {
 	}
 
 	hbPubKey := halt.List[0].Pubkey
-	if hbPubKey != pubkey {
+	if !hbPubKey.Equals(pubkey) {
 		t.Fatalf("Invalid public key %s. Expected %s", hbPubKey.String(), pubkey.String())
 	}
 }

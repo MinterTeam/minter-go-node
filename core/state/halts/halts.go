@@ -48,12 +48,15 @@ func (hb *HaltBlocks) Commit() error {
 
 		hb.lock.Lock()
 		delete(hb.dirty, height)
-		delete(hb.list, height)
 		hb.lock.Unlock()
 
 		path := getPath(height)
 
 		if haltBlock.deleted {
+			hb.lock.Lock()
+			delete(hb.list, height)
+			hb.lock.Unlock()
+
 			hb.iavl.Remove(path)
 		} else {
 			data, err := rlp.EncodeToBytes(haltBlock)
