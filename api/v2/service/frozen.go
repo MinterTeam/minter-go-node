@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-// Returns frozen balance.
+// Frozen returns frozen balance.
 func (s *Service) Frozen(ctx context.Context, req *pb.FrozenRequest) (*pb.FrozenResponse, error) {
 	if !strings.HasPrefix(strings.Title(req.Address), "Mx") {
 		return new(pb.FrozenResponse), status.Error(codes.InvalidArgument, "invalid address")

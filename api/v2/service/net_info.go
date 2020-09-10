@@ -5,14 +5,13 @@ import (
 	"fmt"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"github.com/golang/protobuf/ptypes/empty"
-	"github.com/tendermint/tendermint/evidence"
-	types2 "github.com/tendermint/tendermint/types"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"time"
 )
 
-// Returns network info.
+// NetInfo returns network info.
 func (s *Service) NetInfo(ctx context.Context, _ *empty.Empty) (*pb.NetInfoResponse, error) {
 	result, err := s.client.NetInfo()
 	if err != nil {
@@ -21,8 +20,13 @@ func (s *Service) NetInfo(ctx context.Context, _ *empty.Empty) (*pb.NetInfoRespo
 
 	var peers []*pb.NetInfoResponse_Peer
 	for _, peer := range result.Peers {
-		peerTM := s.tmNode.Switch().Peers().Get(peer.NodeInfo.ID())
-		currentHeight := peerTM.Get(types2.PeerStateKey).(evidence.PeerState).GetHeight()
+
+		var currentHeight *wrappers.StringValue
+		peerHeight := s.blockchain.PeerHeight(peer.NodeInfo.ID())
+		if peerHeight != 0 {
+			currentHeight = &wrappers.StringValue{Value: fmt.Sprintf("%d", peerHeight)}
+		}
+
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
 			return new(pb.NetInfoResponse), timeoutStatus.Err()
 		}
@@ -39,7 +43,7 @@ func (s *Service) NetInfo(ctx context.Context, _ *empty.Empty) (*pb.NetInfoRespo
 		}
 
 		peers = append(peers, &pb.NetInfoResponse_Peer{
-			LatestBlockHeight: fmt.Sprintf("%d", currentHeight),
+			LatestBlockHeight: currentHeight,
 			NodeInfo: &pb.NodeInfo{
 				ProtocolVersion: &pb.NodeInfo_ProtocolVersion{
 					P2P:   fmt.Sprintf("%d", peer.NodeInfo.ProtocolVersion.P2P),

@@ -15,7 +15,7 @@ import (
 	"strings"
 )
 
-// Returns the result of sending signed tx. To ensure that transaction was successfully committed to the blockchain, you need to find the transaction by the hash and ensure that the status code equals to 0.
+// SendTransaction returns the result of sending signed tx. To ensure that transaction was successfully committed to the blockchain, you need to find the transaction by the hash and ensure that the status code equals to 0.
 func (s *Service) SendTransaction(ctx context.Context, req *pb.SendTransactionRequest) (*pb.SendTransactionResponse, error) {
 	if !strings.HasPrefix(strings.Title(req.GetTx()), "0x") {
 		return new(pb.SendTransactionResponse), status.Error(codes.InvalidArgument, "invalid transaction")

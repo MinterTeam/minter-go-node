@@ -519,7 +519,7 @@ func (c *Candidates) SetOffline(pubkey types.Pubkey) {
 	c.getFromMap(pubkey).setStatus(CandidateStatusOffline)
 }
 
-// SubStake subs given unbounds from delegator's stake
+// SubStake subs given value from delegator's stake
 func (c *Candidates) SubStake(address types.Address, pubkey types.Pubkey, coin types.CoinID, value *big.Int) {
 	stake := c.GetStakeOfAddress(pubkey, address, coin)
 	stake.subValue(value)

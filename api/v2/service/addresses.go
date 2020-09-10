@@ -11,7 +11,7 @@ import (
 	"math/big"
 )
 
-// Returns list of addresses.
+// Addresses returns list of addresses.
 func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.AddressesResponse, error) {
 	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {

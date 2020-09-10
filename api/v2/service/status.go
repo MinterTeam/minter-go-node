@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// Returns current min gas price.
+// Status returns current min gas price.
 func (s *Service) Status(context.Context, *empty.Empty) (*pb.StatusResponse, error) {
 	result, err := s.client.Status()
 	if err != nil {

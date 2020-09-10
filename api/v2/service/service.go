@@ -23,6 +23,7 @@ type Service struct {
 	version    string
 }
 
+// NewService create gRPC implementation
 func NewService(cdc *amino.Codec, blockchain *minter.Blockchain, client *rpc.Local, node *tmNode.Node, minterCfg *config.Config, version string) *Service {
 	return &Service{
 		cdc:        cdc,

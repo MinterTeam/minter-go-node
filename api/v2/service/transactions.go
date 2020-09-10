@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// Return transactions by query.
+// Transactions return transactions by query.
 func (s *Service) Transactions(ctx context.Context, req *pb.TransactionsRequest) (*pb.TransactionsResponse, error) {
 	page := int(req.Page)
 	if page == 0 {
