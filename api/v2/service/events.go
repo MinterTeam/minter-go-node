@@ -9,7 +9,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// Returns events at given height.
+// Events returns events at given height.
 func (s *Service) Events(ctx context.Context, req *pb.EventsRequest) (*pb.EventsResponse, error) {
 	height := uint32(req.Height)
 	events := s.blockchain.GetEventsDB().LoadEvents(height)

@@ -9,7 +9,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// Returns list of active validators.
+// Validators returns list of active validators.
 func (s *Service) Validators(ctx context.Context, req *pb.ValidatorsRequest) (*pb.ValidatorsResponse, error) {
 	height := int64(req.Height)
 	if height == 0 {

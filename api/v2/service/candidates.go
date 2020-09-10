@@ -7,7 +7,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// Returns list of candidates.
+// Candidates returns list of candidates.
 func (s *Service) Candidates(ctx context.Context, req *pb.CandidatesRequest) (*pb.CandidatesResponse, error) {
 	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {
