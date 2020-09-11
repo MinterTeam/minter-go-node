@@ -607,7 +607,7 @@ func (c *Candidates) GetCandidateControl(pubkey types.Pubkey) types.Address {
 	return c.getFromMap(pubkey).ControlAddress
 }
 
-// LoadCandidates Loads only list of candidates (for read)
+// LoadCandidates loads only list of candidates (for read)
 func (c *Candidates) LoadCandidates() {
 	if c.checkAndSetLoaded() {
 		return
@@ -616,7 +616,7 @@ func (c *Candidates) LoadCandidates() {
 	_ = c.loadCandidatesList()
 }
 
-// LoadCandidatesDeliver Loads full info about candidates (for edit)
+// LoadCandidatesDeliver loads full info about candidates (for edit)
 func (c *Candidates) LoadCandidatesDeliver() {
 	if c.checkAndSetLoaded() {
 		return

@@ -55,14 +55,17 @@ func (v *Validator) GetAccumReward() *big.Int {
 	return big.NewInt(0).Set(v.accumReward)
 }
 
+// GetAddress returns tendermint-address of a validator
 func (v *Validator) GetAddress() types.TmAddress {
 	return v.tmAddress
 }
 
+// GetTotalBipStake returns total bip stake
 func (v *Validator) GetTotalBipStake() *big.Int {
 	return big.NewInt(0).Set(v.totalStake)
 }
 
+// SetTotalBipStake sets total bip stake
 func (v *Validator) SetTotalBipStake(value *big.Int) {
 	if v.totalStake.Cmp(value) != 0 {
 		v.isTotalStakeDirty = true
