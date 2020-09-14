@@ -639,6 +639,7 @@ func (app *Blockchain) GetValidatorStatus(address types.TmAddress) int8 {
 }
 
 // MaxPeerHeight returns max height of connected peers
+// TODO: move outside Blockchain struct
 func (app *Blockchain) MaxPeerHeight() int64 {
 	var max int64
 	for _, peer := range app.tmNode.Switch().Peers().List() {
@@ -655,6 +656,7 @@ func (app *Blockchain) MaxPeerHeight() int64 {
 }
 
 // PeerHeight returns height of peer by ID.  If peer is fast_syncing, height equal 0
+// TODO: move outside Blockchain struct
 func (app *Blockchain) PeerHeight(id p2p.ID) int64 {
 	peerTM := app.tmNode.Switch().Peers().Get(id)
 	if peerTM == nil {
@@ -680,18 +682,6 @@ func (app *Blockchain) DeleteStateVersions(from, to int64) error {
 	defer app.stateDeliver.Tree().GlobalUnlock()
 
 	return app.stateDeliver.Tree().DeleteVersionsIfExists(from, to)
-}
-
-func getDbOpts(memLimit int) *opt.Options {
-	if memLimit < 1024 {
-		panic(fmt.Sprintf("Not enough memory given to StateDB. Expected >1024M, given %d", memLimit))
-	}
-	return &opt.Options{
-		OpenFilesCacheCapacity: memLimit,
-		BlockCacheCapacity:     memLimit / 2 * opt.MiB,
-		WriteBuffer:            memLimit / 4 * opt.MiB, // Two of these are used internally
-		Filter:                 filter.NewBloomFilter(10),
-	}
 }
 
 func (app *Blockchain) isApplicationHalted(height uint64) bool {
@@ -734,4 +724,16 @@ func (app *Blockchain) isApplicationHalted(height uint64) bool {
 	}
 
 	return false
+}
+
+func getDbOpts(memLimit int) *opt.Options {
+	if memLimit < 1024 {
+		panic(fmt.Sprintf("Not enough memory given to StateDB. Expected >1024M, given %d", memLimit))
+	}
+	return &opt.Options{
+		OpenFilesCacheCapacity: memLimit,
+		BlockCacheCapacity:     memLimit / 2 * opt.MiB,
+		WriteBuffer:            memLimit / 4 * opt.MiB, // Two of these are used internally
+		Filter:                 filter.NewBloomFilter(10),
+	}
 }
