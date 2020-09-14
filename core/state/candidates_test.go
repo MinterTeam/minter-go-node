@@ -264,12 +264,16 @@ func TestDoubleSignPenalty(t *testing.T) {
 
 	st.Candidates.RecalculateStakes(height)
 
+	st.FrozenFunds.AddFund(1, addr, pubkey, coin, amount)
+
 	var pk ed25519.PubKeyEd25519
 	copy(pk[:], pubkey[:])
 
 	var tmAddr types.TmAddress
 	copy(tmAddr[:], pk.Address().Bytes())
 
+	st.Validators.PunishByzantineValidator(tmAddr)
+	st.FrozenFunds.PunishFrozenFundsWithAddress(1, 1+candidates.UnbondPeriod, tmAddr)
 	st.Candidates.PunishByzantineCandidate(1, tmAddr)
 
 	stake := st.Candidates.GetStakeValueOfAddress(pubkey, addr, coin)

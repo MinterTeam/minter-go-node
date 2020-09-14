@@ -25,15 +25,3 @@ func (m *Model) AddToList(candidateId uint32, coin types.CoinID, value *big.Int)
 		Value:       value,
 	})
 }
-
-func (m *Model) GetValue(candidateId uint32, coin types.CoinID) *big.Int {
-	value := big.NewInt(0)
-
-	for _, item := range m.List {
-		if item.CandidateId == candidateId && item.Coin == coin {
-			value.Add(value, item.Value)
-		}
-	}
-
-	return value
-}

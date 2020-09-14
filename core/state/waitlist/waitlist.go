@@ -45,23 +45,29 @@ func NewWaitList(stateBus *bus.Bus, iavl tree.MTree) (*WaitList, error) {
 }
 
 func (wl *WaitList) Export(state *types.AppState) {
-	var waitlist []*Model
-	for _, model := range wl.list {
-		waitlist = append(waitlist, model)
-	}
-	sort.Slice(waitlist, func(i, j int) bool {
-		return waitlist[i].address.Compare(waitlist[j].address) > 0
-	})
-	for _, model := range waitlist {
-		for _, item := range model.List {
-			state.Waitlist = append(state.Waitlist, types.Waitlist{
-				CandidateID: item.CandidateId,
-				Owner:       model.address,
-				Coin:        item.Coin,
-				Value:       item.Value.String(),
-			})
+	wl.iavl.Iterate(func(key []byte, value []byte) bool {
+		if key[0] == mainPrefix {
+			address := types.BytesToAddress(key[1:])
+
+			model := wl.GetByAddress(address)
+			if model != nil && len(model.List) != 0 {
+				for _, w := range model.List {
+					state.Waitlist = append(state.Waitlist, types.Waitlist{
+						CandidateID: w.CandidateId,
+						Owner:       address,
+						Coin:        w.Coin,
+						Value:       w.Value.String(),
+					})
+				}
+			}
 		}
-	}
+
+		return false
+	})
+
+	sort.SliceStable(state.Waitlist, func(i, j int) bool {
+		return bytes.Compare(state.Waitlist[i].Owner.Bytes(), state.Waitlist[j].Owner.Bytes()) == 1
+	})
 }
 
 func (wl *WaitList) Commit() error {
@@ -120,7 +126,7 @@ func (wl *WaitList) GetByAddressAndPubKey(address types.Address, pubkey types.Pu
 		log.Panicf("Candidate not found: %s", pubkey.String())
 	}
 
-	items := make([]Item, 0, len(waitlist.List))
+	items := make([]Item, len(waitlist.List))
 	for i, item := range waitlist.List {
 		if item.CandidateId == candidate.ID {
 			items[i] = item
