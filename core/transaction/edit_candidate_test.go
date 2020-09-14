@@ -115,10 +115,8 @@ func TestEditCandidateNewPubKeyTx(t *testing.T) {
 	newOwnerAddress := types.Address{2}
 	newControlAddress := types.Address{3}
 
-	p := types.Pubkey(newpubkey)
 	data := EditCandidateData{
 		PubKey:         pubkey,
-		NewPubKey:      &p,
 		RewardAddress:  newRewardAddress,
 		OwnerAddress:   newOwnerAddress,
 		ControlAddress: newControlAddress,
@@ -310,11 +308,9 @@ func TestEditCandidateTxToNewPublicKey(t *testing.T) {
 	newRewardAddress := types.Address{1}
 	newOwnerAddress := types.Address{2}
 	newControlAddress := types.Address{3}
-	newPubKey := types.Pubkey(pubkey)
 
 	data := EditCandidateData{
 		PubKey:         pubkey,
-		NewPubKey:      &newPubKey,
 		RewardAddress:  newRewardAddress,
 		OwnerAddress:   newOwnerAddress,
 		ControlAddress: newControlAddress,
@@ -427,7 +423,6 @@ func TestEditCandidateTxToNewPublicKeyInBlockList(t *testing.T) {
 
 	data := EditCandidateData{
 		PubKey:         pubkey,
-		NewPubKey:      &pubkey2,
 		RewardAddress:  newRewardAddress,
 		OwnerAddress:   newOwnerAddress,
 		ControlAddress: newControlAddress,
@@ -475,8 +470,6 @@ func TestEditCandidateTxToGasCoinReserveUnderflow(t *testing.T) {
 	pubkey := [32]byte{}
 	rand.Read(pubkey[:])
 
-	pubkey2 := types.Pubkey{1}
-
 	cState.Candidates.Create(addr, addr, addr, pubkey, 10)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 
@@ -486,7 +479,6 @@ func TestEditCandidateTxToGasCoinReserveUnderflow(t *testing.T) {
 
 	data := EditCandidateData{
 		PubKey:         pubkey,
-		NewPubKey:      &pubkey2,
 		RewardAddress:  newRewardAddress,
 		OwnerAddress:   newOwnerAddress,
 		ControlAddress: newControlAddress,
