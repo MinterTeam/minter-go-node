@@ -17,7 +17,7 @@ import (
 	db "github.com/tendermint/tm-db"
 )
 
-func TestChangeOwnerTx(t *testing.T) {
+func TestEditOwnerTx(t *testing.T) {
 	cState, err := state.NewState(0, db.NewMemDB(), nil, 1, 1)
 	if err != nil {
 		t.Fatalf("Cannot load state. Error %s", err)
@@ -39,7 +39,7 @@ func TestChangeOwnerTx(t *testing.T) {
 		NewOwner: newOwner,
 	}
 
-	tx, err := makeTestChangeOwnerTx(data, privateKey)
+	tx, err := makeTestEditOwnerTx(data, privateKey)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -70,7 +70,7 @@ func TestChangeOwnerTx(t *testing.T) {
 	}
 }
 
-func TestChangeOwnerTxWithWrongOwner(t *testing.T) {
+func TestEditOwnerTxWithWrongOwner(t *testing.T) {
 	cState, err := state.NewState(0, db.NewMemDB(), nil, 1, 1)
 	if err != nil {
 		t.Fatalf("Cannot load state. Error %s", err)
@@ -88,7 +88,7 @@ func TestChangeOwnerTxWithWrongOwner(t *testing.T) {
 		NewOwner: newOwner,
 	}
 
-	tx, err := makeTestChangeOwnerTx(data, privateKey)
+	tx, err := makeTestEditOwnerTx(data, privateKey)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -99,7 +99,7 @@ func TestChangeOwnerTxWithWrongOwner(t *testing.T) {
 	}
 }
 
-func TestChangeOwnerTxWithWrongSymbol(t *testing.T) {
+func TestEditOwnerTxWithWrongSymbol(t *testing.T) {
 	cState, err := state.NewState(0, db.NewMemDB(), nil, 1, 1)
 	if err != nil {
 		t.Fatalf("Cannot load state. Error %s", err)
@@ -118,7 +118,7 @@ func TestChangeOwnerTxWithWrongSymbol(t *testing.T) {
 		NewOwner: newOwner,
 	}
 
-	tx, err := makeTestChangeOwnerTx(data, privateKey)
+	tx, err := makeTestEditOwnerTx(data, privateKey)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -129,7 +129,7 @@ func TestChangeOwnerTxWithWrongSymbol(t *testing.T) {
 	}
 }
 
-func TestChangeOwnerTxWithInsufficientFunds(t *testing.T) {
+func TestEditCOwnerTxWithInsufficientFunds(t *testing.T) {
 	cState, err := state.NewState(0, db.NewMemDB(), nil, 1, 1)
 	if err != nil {
 		t.Fatalf("Cannot load state. Error %s", err)
@@ -148,7 +148,7 @@ func TestChangeOwnerTxWithInsufficientFunds(t *testing.T) {
 		NewOwner: newOwner,
 	}
 
-	tx, err := makeTestChangeOwnerTx(data, privateKey)
+	tx, err := makeTestEditOwnerTx(data, privateKey)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -159,7 +159,7 @@ func TestChangeOwnerTxWithInsufficientFunds(t *testing.T) {
 	}
 }
 
-func TestChangeCoinOwnerTxToGasCoinReserveUnderflow(t *testing.T) {
+func TestEditCoinOwnerTxToGasCoinReserveUnderflow(t *testing.T) {
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -206,7 +206,7 @@ func TestChangeCoinOwnerTxToGasCoinReserveUnderflow(t *testing.T) {
 	}
 }
 
-func makeTestChangeOwnerTx(data EditCoinOwnerData, privateKey *ecdsa.PrivateKey) ([]byte, error) {
+func makeTestEditOwnerTx(data EditCoinOwnerData, privateKey *ecdsa.PrivateKey) ([]byte, error) {
 	encodedData, err := rlp.EncodeToBytes(data)
 	if err != nil {
 		return nil, err
