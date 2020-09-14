@@ -283,14 +283,8 @@ type EditCandidateDataResource struct {
 // Transform returns TxDataResource from given txData. Used for JSON encoder.
 func (EditCandidateDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
 	data := txData.(*transaction.EditCandidateData)
-	var newPubKeyStr *string
-	if data.NewPubKey != nil {
-		s := data.NewPubKey.String()
-		newPubKeyStr = &s
-	}
 	return EditCandidateDataResource{
 		PubKey:         data.PubKey.String(),
-		NewPubKey:      newPubKeyStr,
 		RewardAddress:  data.RewardAddress.String(),
 		OwnerAddress:   data.OwnerAddress.String(),
 		ControlAddress: data.ControlAddress.String(),
@@ -337,17 +331,17 @@ func (RecreateCoinDataResource) Transform(txData interface{}, context *state.Che
 	}
 }
 
-// ChangeCoinOwnerDataResource is JSON representation of TxType 0x11
-type ChangeCoinOwnerDataResource struct {
+// EditCoinOwnerDataResource is JSON representation of TxType 0x11
+type EditCoinOwnerDataResource struct {
 	Symbol   types.CoinSymbol `json:"symbol"`
 	NewOwner types.Address    `json:"new_owner"`
 }
 
 // Transform returns TxDataResource from given txData. Used for JSON encoder.
-func (ChangeCoinOwnerDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
-	data := txData.(*transaction.ChangeCoinOwnerData)
+func (EditCoinOwnerDataResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
+	data := txData.(*transaction.EditCoinOwnerData)
 
-	return ChangeCoinOwnerDataResource{
+	return EditCoinOwnerDataResource{
 		Symbol:   data.Symbol,
 		NewOwner: data.NewOwner,
 	}
@@ -388,5 +382,21 @@ func (PriceVoteResource) Transform(txData interface{}, context *state.CheckState
 
 	return PriceVoteResource{
 		Price: uint32(data.Price),
+	}
+}
+
+// EditCandidatePublicKeyResource is JSON representation of TxType 0x14
+type EditCandidatePublicKeyResource struct {
+	PubKey    string `json:"pub_key"`
+	NewPubKey string `json:"new_pub_key"`
+}
+
+// Transform returns TxDataResource from given txData. Used for JSON encoder.
+func (EditCandidatePublicKeyResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
+	data := txData.(*transaction.EditCandidatePublicKeyData)
+
+	return EditCandidatePublicKeyResource{
+		PubKey:    data.PubKey.String(),
+		NewPubKey: data.NewPubKey.String(),
 	}
 }

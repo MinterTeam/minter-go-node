@@ -9,7 +9,6 @@ import (
 	"github.com/golang/protobuf/ptypes/any"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 	"strconv"
 )
 
@@ -30,9 +29,9 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 			},
 			MaximumValueToSell: d.MaximumValueToSell.String(),
 		}
-	case *transaction.ChangeCoinOwnerData:
-		d := data.(*transaction.ChangeCoinOwnerData)
-		m = &pb.ChangeCoinOwnerData{
+	case *transaction.EditCoinOwnerData:
+		d := data.(*transaction.EditCoinOwnerData)
+		m = &pb.EditCoinOwnerData{
 			Symbol:   d.Symbol.String(),
 			NewOwner: d.NewOwner.String(),
 		}
@@ -85,16 +84,17 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 		}
 	case *transaction.EditCandidateData:
 		d := data.(*transaction.EditCandidateData)
-		var newPubKey *wrapperspb.StringValue
-		if d.NewPubKey != nil {
-			newPubKey = wrapperspb.String(d.NewPubKey.String())
-		}
 		m = &pb.EditCandidateData{
 			PubKey:         d.PubKey.String(),
-			NewPubKey:      newPubKey,
 			RewardAddress:  d.RewardAddress.String(),
 			OwnerAddress:   d.OwnerAddress.String(),
 			ControlAddress: d.ControlAddress.String(),
+		}
+	case *transaction.EditCandidatePublicKeyData:
+		d := data.(*transaction.EditCandidatePublicKeyData)
+		m = &pb.EditCandidatePublicKeyData{
+			PubKey:    d.PubKey.String(),
+			NewPubKey: d.NewPubKey.String(),
 		}
 	case *transaction.EditMultisigOwnersData:
 		d := data.(*transaction.EditMultisigOwnersData)
