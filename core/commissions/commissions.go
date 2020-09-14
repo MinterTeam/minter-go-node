@@ -12,11 +12,12 @@ const (
 	PayloadByte            int64 = 2
 	ToggleCandidateStatus  int64 = 100
 	EditCandidate          int64 = 10000
+	EditCandidatePublicKey int64 = 10000
 	MultisendDelta         int64 = 5
 	RedeemCheckTx                = SendTx * 3
 	SetHaltBlock           int64 = 1000
 	RecreateCoin           int64 = 10000000
-	ChangeOwner            int64 = 10000000
+	EditOwner              int64 = 10000000
 	EditMultisigOwnersData int64 = 1000
 	PriceVoteData          int64 = 10
 )

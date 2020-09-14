@@ -14,35 +14,29 @@ import (
 	"github.com/tendermint/tendermint/libs/kv"
 )
 
-type CandidateTx interface {
-	GetPubKey() types.Pubkey
+type EditCandidatePublicKeyData struct {
+	PubKey    types.Pubkey
+	NewPubKey types.Pubkey
 }
 
-type EditCandidateData struct {
-	PubKey         types.Pubkey
-	RewardAddress  types.Address
-	OwnerAddress   types.Address
-	ControlAddress types.Address
-}
-
-func (data EditCandidateData) GetPubKey() types.Pubkey {
+func (data EditCandidatePublicKeyData) GetPubKey() types.Pubkey {
 	return data.PubKey
 }
 
-func (data EditCandidateData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data EditCandidatePublicKeyData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
 	return checkCandidateOwnership(data, tx, context)
 }
 
-func (data EditCandidateData) String() string {
-	return fmt.Sprintf("EDIT CANDIDATE pubkey: %x",
-		data.PubKey)
+func (data EditCandidatePublicKeyData) String() string {
+	return fmt.Sprintf("EDIT CANDIDATE PUB KEY old: %x, new: %x",
+		data.PubKey, data.NewPubKey)
 }
 
-func (data EditCandidateData) Gas() int64 {
-	return commissions.EditCandidate
+func (data EditCandidatePublicKeyData) Gas() int64 {
+	return commissions.EditCandidatePublicKey
 }
 
-func (data EditCandidateData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
+func (data EditCandidatePublicKeyData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -54,6 +48,18 @@ func (data EditCandidateData) Run(tx *Transaction, context state.Interface, rewa
 	response := data.BasicCheck(tx, checkState)
 	if response != nil {
 		return *response
+	}
+
+	if data.PubKey == data.NewPubKey {
+		return Response{
+			Code: code.NewPublicKeyIsBad,
+			Log:  fmt.Sprintf("Current public key (%s) equals new public key (%s)", data.PubKey.String(), data.NewPubKey.String()),
+			Info: EncodeError(map[string]string{
+				"code":           strconv.Itoa(int(code.NewPublicKeyIsBad)),
+				"public_key":     data.PubKey.String(),
+				"new_public_key": data.NewPubKey.String(),
+			}),
+		}
 	}
 
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
@@ -83,6 +89,17 @@ func (data EditCandidateData) Run(tx *Transaction, context state.Interface, rewa
 		}
 	}
 
+	if checkState.Candidates().IsBlockedPubKey(data.NewPubKey) {
+		return Response{
+			Code: code.PublicKeyInBlockList,
+			Log:  fmt.Sprintf("Public key (%s) exists in block list", data.NewPubKey.String()),
+			Info: EncodeError(map[string]string{
+				"code":           strconv.Itoa(int(code.PublicKeyInBlockList)),
+				"new_public_key": data.NewPubKey.String(),
+			}),
+		}
+	}
+
 	if deliverState, ok := context.(*state.State); ok {
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
@@ -90,12 +107,13 @@ func (data EditCandidateData) Run(tx *Transaction, context state.Interface, rewa
 		deliverState.Coins.SubVolume(tx.GasCoin, commission)
 
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
-		deliverState.Candidates.Edit(data.PubKey, data.RewardAddress, data.OwnerAddress, data.ControlAddress)
+		deliverState.Candidates.ChangePubKey(data.PubKey, data.NewPubKey)
+
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}
 
 	tags := kv.Pairs{
-		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeEditCandidate)}))},
+		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeEditCandidatePublicKey)}))},
 		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
 	}
 
@@ -105,31 +123,4 @@ func (data EditCandidateData) Run(tx *Transaction, context state.Interface, rewa
 		GasWanted: tx.Gas(),
 		Tags:      tags,
 	}
-}
-
-func checkCandidateOwnership(data CandidateTx, tx *Transaction, context *state.CheckState) *Response {
-	if !context.Candidates().Exists(data.GetPubKey()) {
-		return &Response{
-			Code: code.CandidateNotFound,
-			Log:  fmt.Sprintf("Candidate with such public key (%s) not found", data.GetPubKey().String()),
-			Info: EncodeError(map[string]string{
-				"code":       strconv.Itoa(int(code.CandidateNotFound)),
-				"public_key": data.GetPubKey().String(),
-			}),
-		}
-	}
-
-	owner := context.Candidates().GetCandidateOwner(data.GetPubKey())
-	sender, _ := tx.Sender()
-	if owner != sender {
-		return &Response{
-			Code: code.IsNotOwnerOfCandidate,
-			Log:  fmt.Sprintf("Sender is not an owner of a candidate"),
-			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.IsNotOwnerOfCandidate)),
-			}),
-		}
-	}
-
-	return nil
 }

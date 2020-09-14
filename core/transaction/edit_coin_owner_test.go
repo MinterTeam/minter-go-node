@@ -34,7 +34,7 @@ func TestChangeOwnerTx(t *testing.T) {
 	gasCoin := types.GetBaseCoinID()
 	cState.Accounts.AddBalance(addr, gasCoin, helpers.BipToPip(big.NewInt(10000)))
 
-	data := ChangeCoinOwnerData{
+	data := EditCoinOwnerData{
 		Symbol:   getTestCoinSymbol(),
 		NewOwner: newOwner,
 	}
@@ -83,7 +83,7 @@ func TestChangeOwnerTxWithWrongOwner(t *testing.T) {
 
 	createTestCoinWithOwner(cState, newOwner)
 
-	data := ChangeCoinOwnerData{
+	data := EditCoinOwnerData{
 		Symbol:   getTestCoinSymbol(),
 		NewOwner: newOwner,
 	}
@@ -113,7 +113,7 @@ func TestChangeOwnerTxWithWrongSymbol(t *testing.T) {
 
 	createTestCoinWithOwner(cState, addr)
 
-	data := ChangeCoinOwnerData{
+	data := EditCoinOwnerData{
 		Symbol:   types.StrToCoinSymbol("UNKNOWN"),
 		NewOwner: newOwner,
 	}
@@ -143,7 +143,7 @@ func TestChangeOwnerTxWithInsufficientFunds(t *testing.T) {
 
 	createTestCoinWithOwner(cState, addr)
 
-	data := ChangeCoinOwnerData{
+	data := EditCoinOwnerData{
 		Symbol:   getTestCoinSymbol(),
 		NewOwner: newOwner,
 	}
@@ -171,7 +171,7 @@ func TestChangeCoinOwnerTxToGasCoinReserveUnderflow(t *testing.T) {
 	customCoin := createTestCoinWithOwner(cState, addr)
 	cState.Coins.SubReserve(customCoin, helpers.BipToPip(big.NewInt(90000)))
 
-	data := ChangeCoinOwnerData{
+	data := EditCoinOwnerData{
 		Symbol:   types.StrToCoinSymbol("TEST"),
 		NewOwner: newOwner,
 	}
@@ -186,7 +186,7 @@ func TestChangeCoinOwnerTxToGasCoinReserveUnderflow(t *testing.T) {
 		GasPrice:      1,
 		ChainID:       types.CurrentChainID,
 		GasCoin:       customCoin,
-		Type:          TypeChangeCoinOwner,
+		Type:          TypeEditCoinOwner,
 		Data:          encodedData,
 		SignatureType: SigTypeSingle,
 	}
@@ -206,7 +206,7 @@ func TestChangeCoinOwnerTxToGasCoinReserveUnderflow(t *testing.T) {
 	}
 }
 
-func makeTestChangeOwnerTx(data ChangeCoinOwnerData, privateKey *ecdsa.PrivateKey) ([]byte, error) {
+func makeTestChangeOwnerTx(data EditCoinOwnerData, privateKey *ecdsa.PrivateKey) ([]byte, error) {
 	encodedData, err := rlp.EncodeToBytes(data)
 	if err != nil {
 		return nil, err
@@ -217,7 +217,7 @@ func makeTestChangeOwnerTx(data ChangeCoinOwnerData, privateKey *ecdsa.PrivateKe
 		GasPrice:      1,
 		ChainID:       types.CurrentChainID,
 		GasCoin:       types.GetBaseCoinID(),
-		Type:          TypeChangeCoinOwner,
+		Type:          TypeEditCoinOwner,
 		Data:          encodedData,
 		SignatureType: SigTypeSingle,
 	}

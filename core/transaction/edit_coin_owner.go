@@ -14,12 +14,12 @@ import (
 	"github.com/tendermint/tendermint/libs/kv"
 )
 
-type ChangeCoinOwnerData struct {
+type EditCoinOwnerData struct {
 	Symbol   types.CoinSymbol
 	NewOwner types.Address
 }
 
-func (data ChangeCoinOwnerData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data EditCoinOwnerData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
 	sender, _ := tx.Sender()
 
 	info := context.Coins().GetSymbolInfo(data.Symbol)
@@ -47,15 +47,15 @@ func (data ChangeCoinOwnerData) BasicCheck(tx *Transaction, context *state.Check
 	return nil
 }
 
-func (data ChangeCoinOwnerData) String() string {
-	return fmt.Sprintf("CHANGE OWNER COIN symbol:%s new owner:%s", data.Symbol.String(), data.NewOwner.String())
+func (data EditCoinOwnerData) String() string {
+	return fmt.Sprintf("EDIT OWNER COIN symbol:%s new owner:%s", data.Symbol.String(), data.NewOwner.String())
 }
 
-func (data ChangeCoinOwnerData) Gas() int64 {
-	return commissions.ChangeOwner
+func (data EditCoinOwnerData) Gas() int64 {
+	return commissions.EditOwner
 }
 
-func (data ChangeCoinOwnerData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
+func (data EditCoinOwnerData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -108,7 +108,7 @@ func (data ChangeCoinOwnerData) Run(tx *Transaction, context state.Interface, re
 	}
 
 	tags := kv.Pairs{
-		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeChangeCoinOwner)}))},
+		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeEditCoinOwner)}))},
 		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
 		kv.Pair{Key: []byte("tx.coin"), Value: []byte(data.Symbol.String())},
 	}
