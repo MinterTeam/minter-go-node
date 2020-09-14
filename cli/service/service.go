@@ -143,7 +143,7 @@ func (m *Manager) NetInfo(context.Context, *empty.Empty) (*pb.NetInfoResponse, e
 		channels := make([]*pb.NetInfoResponse_Peer_ConnectionStatus_Channel, 0, len(peer.ConnectionStatus.Channels))
 		for _, channel := range peer.ConnectionStatus.Channels {
 			channels = append(channels, &pb.NetInfoResponse_Peer_ConnectionStatus_Channel{
-				ID:                int32(channel.ID),
+				Id:                int32(channel.ID),
 				SendQueueCapacity: int64(channel.SendQueueCapacity),
 				SendQueueSize:     int64(channel.SendQueueSize),
 				Priority:          int64(channel.Priority),
@@ -210,10 +210,10 @@ func (m *Manager) NetInfo(context.Context, *empty.Empty) (*pb.NetInfoResponse, e
 	}
 
 	response := &pb.NetInfoResponse{
-		Listening: resultNetInfo.Listening,
-		Listeners: resultNetInfo.Listeners,
-		NPeers:    int64(resultNetInfo.NPeers),
-		Peers:     peers,
+		Listening:  resultNetInfo.Listening,
+		Listeners:  resultNetInfo.Listeners,
+		CountPeers: int64(resultNetInfo.NPeers),
+		Peers:      peers,
 	}
 
 	return response, nil
