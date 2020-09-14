@@ -29,11 +29,8 @@ import (
 	types2 "github.com/tendermint/tendermint/types"
 	typesT "github.com/tendermint/tendermint/types"
 	"github.com/tendermint/tm-db"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"math/big"
 	"sort"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -506,35 +503,6 @@ func (app *Blockchain) GetStateForHeight(height uint64) (*state.CheckState, erro
 		return s, nil
 	}
 	return blockchain.CurrentState(), nil
-}
-
-// MissedBlocks returns aggregated info about block which has no signature of given validator
-func (app *Blockchain) MissedBlocks(pubKey string, height uint64) (missedBlocks string, missedBlocksCount int, err error) {
-	if !strings.HasPrefix(pubKey, "Mp") {
-		return "", 0, status.Error(codes.InvalidArgument, "public key don't has prefix 'Mp'")
-	}
-
-	cState, err := blockchain.GetStateForHeight(height)
-	if err != nil {
-		return "", 0, status.Error(codes.NotFound, err.Error())
-	}
-
-	if height != 0 {
-		cState.Lock()
-		cState.Validators().LoadValidators()
-		cState.Unlock()
-	}
-
-	cState.RLock()
-	defer cState.RUnlock()
-
-	val := cState.Validators().GetByPublicKey(types.HexToPubkey(pubKey))
-	if val == nil {
-		return "", 0, status.Error(codes.NotFound, "Validator not found")
-	}
-
-	return val.AbsentTimes.String(), val.CountAbsentTimes(), nil
-
 }
 
 // Height returns current height of Minter Blockchain
