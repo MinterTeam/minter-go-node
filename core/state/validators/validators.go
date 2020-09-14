@@ -25,6 +25,7 @@ const (
 	ValidatorMaxAbsentTimes  = 12
 )
 
+// Validators struct is a store of Validators state
 type Validators struct {
 	list   []*Validator
 	loaded bool
@@ -33,6 +34,7 @@ type Validators struct {
 	bus  *bus.Bus
 }
 
+// RValidators interface represents Validator state
 type RValidators interface {
 	GetValidators() []*Validator
 	Export(state *types.AppState)
@@ -41,28 +43,14 @@ type RValidators interface {
 	GetByTmAddress(address types.TmAddress) *Validator
 }
 
-func NewReadValidators(bus *bus.Bus, iavl tree.MTree) (RValidators, error) {
-	validators := &Validators{iavl: iavl, bus: bus}
-
-	return validators, nil
-}
-
-type RWValidators interface {
-	RValidators
-	Commit() error
-	SetValidatorPresent(height uint64, address types.TmAddress)
-	SetValidatorAbsent(height uint64, address types.TmAddress)
-	PunishByzantineValidator(tmAddress [20]byte)
-	PayRewards(height uint64)
-	SetNewValidators(candidates []candidates.Candidate)
-}
-
+// NewValidators returns newly created Validators state with a given bus and iavl
 func NewValidators(bus *bus.Bus, iavl tree.MTree) (*Validators, error) {
 	validators := &Validators{iavl: iavl, bus: bus}
 
 	return validators, nil
 }
 
+// Commit writes changes to iavl, may return an error
 func (v *Validators) Commit() error {
 	if v.hasDirtyValidators() {
 		data, err := rlp.EncodeToBytes(v.list)
@@ -118,6 +106,7 @@ func (v *Validators) SetValidatorAbsent(height uint64, address types.TmAddress) 
 	}
 }
 
+// GetValidators returns list of validators
 func (v *Validators) GetValidators() []*Validator {
 	return v.list
 }
@@ -138,7 +127,6 @@ func (v *Validators) SetNewValidators(candidates []candidates.Candidate) {
 		}
 
 		newVals = append(newVals, &Validator{
-
 			PubKey:             candidate.PubKey,
 			AbsentTimes:        absentTimes,
 			totalStake:         candidate.GetTotalBipStake(),
@@ -151,9 +139,12 @@ func (v *Validators) SetNewValidators(candidates []candidates.Candidate) {
 		})
 	}
 
-	v.list = newVals
+	v.SetValidators(newVals)
 }
 
+// PunishByzantineValidator find validator with given tmAddress and punishes it:
+// 1. Set total stake 0
+// 2. Drop validator
 func (v *Validators) PunishByzantineValidator(tmAddress [20]byte) {
 	validator := v.GetByTmAddress(tmAddress)
 	if validator != nil {
@@ -163,6 +154,7 @@ func (v *Validators) PunishByzantineValidator(tmAddress [20]byte) {
 	}
 }
 
+// Create creates a new validator with given params and adds it to state
 func (v *Validators) Create(pubkey types.Pubkey, stake *big.Int) {
 	val := &Validator{
 		PubKey:             pubkey,
@@ -266,6 +258,7 @@ func (v *Validators) PayRewards(height uint64) {
 	}
 }
 
+// GetByTmAddress finds and returns validator with given tendermint-address
 func (v *Validators) GetByTmAddress(address types.TmAddress) *Validator {
 	for _, val := range v.list {
 		if val.tmAddress == address {
@@ -276,6 +269,7 @@ func (v *Validators) GetByTmAddress(address types.TmAddress) *Validator {
 	return nil
 }
 
+// GetByPublicKey finds and returns validator
 func (v *Validators) GetByPublicKey(pubKey types.Pubkey) *Validator {
 	for _, val := range v.list {
 		if val.PubKey == pubKey {
@@ -286,6 +280,7 @@ func (v *Validators) GetByPublicKey(pubKey types.Pubkey) *Validator {
 	return nil
 }
 
+// LoadValidators loads only list of validators (for read)
 func (v *Validators) LoadValidators() {
 	if v.loaded {
 		return
@@ -359,6 +354,7 @@ func (v *Validators) SetValidators(vals []*Validator) {
 	v.list = vals
 }
 
+// Export exports all data to the given state
 func (v *Validators) Export(state *types.AppState) {
 	v.LoadValidators()
 

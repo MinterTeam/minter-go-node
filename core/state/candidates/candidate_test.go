@@ -19,7 +19,7 @@ import (
 	"testing"
 )
 
-func TestCandidates_Commit_createOneCandidate(t *testing.T) {
+func TestCandidates_Create_oneCandidate(t *testing.T) {
 	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	candidates, err := NewCandidates(bus.NewBus(), mutableTree)
 	if err != nil {
@@ -145,7 +145,7 @@ func TestCandidates_Commit_changePubKeyAndCheckBlockList(t *testing.T) {
 		t.Fatal("pub_key is not blocked")
 	}
 }
-func TestCandidates_Commit_addBlockList(t *testing.T) {
+func TestCandidates_AddToBlockPubKey(t *testing.T) {
 	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	candidates, err := NewCandidates(bus.NewBus(), mutableTree)
 	if err != nil {
@@ -608,7 +608,6 @@ func TestCandidates_Export(t *testing.T) {
 	}
 
 	if string(bytes) != "[{\"id\":1,\"reward_address\":\"Mx0200000000000000000000000000000000000000\",\"owner_address\":\"Mx0100000000000000000000000000000000000000\",\"control_address\":\"Mx0300000000000000000000000000000000000000\",\"total_bip_stake\":\"200\",\"public_key\":\"Mp0400000000000000000000000000000000000000000000000000000000000000\",\"commission\":10,\"stakes\":[{\"owner\":\"Mx0100000000000000000000000000000000000000\",\"coin\":0,\"value\":\"100\",\"bip_value\":\"100\"},{\"owner\":\"Mx0200000000000000000000000000000000000000\",\"coin\":0,\"value\":\"100\",\"bip_value\":\"100\"}],\"updates\":[],\"status\":1}]" {
-		t.Log(string(bytes))
 		t.Fatal("not equal JSON")
 	}
 
