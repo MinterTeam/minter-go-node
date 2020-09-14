@@ -26,10 +26,7 @@ func (s *Service) CoinInfo(ctx context.Context, req *pb.CoinInfoRequest) (*pb.Co
 
 	coin := cState.Coins().GetCoinBySymbol(types.StrToCoinSymbol(req.Symbol), types.GetVersionFromSymbol(req.Symbol))
 	if coin == nil {
-		return new(pb.CoinInfoResponse), s.createError(status.New(codes.NotFound, "Coin not found"), transaction.EncodeError(map[string]string{
-			"code":        strconv.Itoa(int(code.CoinNotExists)),
-			"coin_symbol": req.Symbol,
-		}))
+		return new(pb.CoinInfoResponse), s.createError(status.New(codes.NotFound, "Coin not found"), transaction.EncodeError(code.NewCoinNotExists(req.Symbol, "")))
 	}
 
 	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
@@ -68,10 +65,7 @@ func (s *Service) CoinInfoById(ctx context.Context, req *pb.CoinIdRequest) (*pb.
 
 	coin := cState.Coins().GetCoin(types.CoinID(req.Id))
 	if coin == nil {
-		return new(pb.CoinInfoResponse), s.createError(status.New(codes.NotFound, "Coin not found"), transaction.EncodeError(map[string]string{
-			"code":    strconv.Itoa(int(code.CoinNotExists)),
-			"coin_id": strconv.Itoa(int(req.Id)),
-		}))
+		return new(pb.CoinInfoResponse), s.createError(status.New(codes.NotFound, "Coin not found"), transaction.EncodeError(transaction.EncodeError(code.NewCoinNotExists("", strconv.Itoa(int(req.Id))))))
 	}
 
 	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {

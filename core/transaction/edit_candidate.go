@@ -74,12 +74,7 @@ func (data EditCandidateData) Run(tx *Transaction, context state.Interface, rewa
 		return Response{
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission.String(), gasCoin.GetFullSymbol()),
-			Info: EncodeError(map[string]string{
-				"code":         strconv.Itoa(int(code.InsufficientFunds)),
-				"sender":       sender.String(),
-				"needed_value": commission.String(),
-				"coin_symbol":  gasCoin.GetFullSymbol(),
-			}),
+			Info: EncodeError(code.NewInsufficientFunds(sender.String(), commission.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
 		}
 	}
 

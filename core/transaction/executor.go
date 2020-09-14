@@ -47,11 +47,7 @@ func RunTx(context state.Interface,
 		return Response{
 			Code: code.TxTooLarge,
 			Log:  fmt.Sprintf("TX length is over %d bytes", maxTxLength),
-			Info: EncodeError(map[string]string{
-				"code":          strconv.Itoa(int(code.TxTooLarge)),
-				"max_tx_length": fmt.Sprintf("%d", maxTxLength),
-				"got_tx_length": fmt.Sprintf("%d", lenRawTx),
-			}),
+			Info: EncodeError(code.NewTxTooLarge(fmt.Sprintf("%d", maxTxLength), fmt.Sprintf("%d", lenRawTx))),
 		}
 	}
 
@@ -60,9 +56,7 @@ func RunTx(context state.Interface,
 		return Response{
 			Code: code.DecodeError,
 			Log:  err.Error(),
-			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.DecodeError)),
-			}),
+			Info: EncodeError(code.NewDecodeError()),
 		}
 	}
 
@@ -70,11 +64,7 @@ func RunTx(context state.Interface,
 		return Response{
 			Code: code.WrongChainID,
 			Log:  "Wrong chain id",
-			Info: EncodeError(map[string]string{
-				"code":             strconv.Itoa(int(code.WrongChainID)),
-				"current_chain_id": fmt.Sprintf("%d", types.CurrentChainID),
-				"got_chain_id":     fmt.Sprintf("%d", tx.ChainID),
-			}),
+			Info: EncodeError(code.NewWrongChainID(fmt.Sprintf("%d", types.CurrentChainID), fmt.Sprintf("%d", tx.ChainID))),
 		}
 	}
 
@@ -88,10 +78,7 @@ func RunTx(context state.Interface,
 		return Response{
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin),
-			Info: EncodeError(map[string]string{
-				"code":    strconv.Itoa(int(code.CoinNotExists)),
-				"coin_id": tx.GasCoin.String(),
-			}),
+			Info: EncodeError(code.NewCoinNotExists("", tx.GasCoin.String())),
 		}
 	}
 
@@ -99,11 +86,7 @@ func RunTx(context state.Interface,
 		return Response{
 			Code: code.TooLowGasPrice,
 			Log:  fmt.Sprintf("Gas price of tx is too low to be included in mempool. Expected %d", minGasPrice),
-			Info: EncodeError(map[string]string{
-				"code":          strconv.Itoa(int(code.TooLowGasPrice)),
-				"min_gas_price": fmt.Sprintf("%d", minGasPrice),
-				"got_gas_price": fmt.Sprintf("%d", tx.GasPrice),
-			}),
+			Info: EncodeError(code.NewTooLowGasPrice(fmt.Sprintf("%d", minGasPrice), fmt.Sprintf("%d", tx.GasPrice))),
 		}
 	}
 
@@ -112,11 +95,7 @@ func RunTx(context state.Interface,
 		return Response{
 			Code: code.TxPayloadTooLarge,
 			Log:  fmt.Sprintf("TX payload length is over %d bytes", maxPayloadLength),
-			Info: EncodeError(map[string]string{
-				"code":               strconv.Itoa(int(code.TxPayloadTooLarge)),
-				"max_payload_length": fmt.Sprintf("%d", maxPayloadLength),
-				"got_payload_length": fmt.Sprintf("%d", lenPayload),
-			}),
+			Info: EncodeError(code.NewTxPayloadTooLarge(fmt.Sprintf("%d", maxPayloadLength), fmt.Sprintf("%d", lenPayload))),
 		}
 	}
 
@@ -125,11 +104,7 @@ func RunTx(context state.Interface,
 		return Response{
 			Code: code.TxServiceDataTooLarge,
 			Log:  fmt.Sprintf("TX service data length is over %d bytes", maxServiceDataLength),
-			Info: EncodeError(map[string]string{
-				"code":                    strconv.Itoa(int(code.TxServiceDataTooLarge)),
-				"max_service_data_length": fmt.Sprintf("%d", maxServiceDataLength),
-				"got_service_data_length": fmt.Sprintf("%d", lenServiceData),
-			}),
+			Info: EncodeError(code.NewTxServiceDataTooLarge(fmt.Sprintf("%d", maxServiceDataLength), fmt.Sprintf("%d", lenServiceData))),
 		}
 	}
 
@@ -138,9 +113,7 @@ func RunTx(context state.Interface,
 		return Response{
 			Code: code.DecodeError,
 			Log:  err.Error(),
-			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.DecodeError)),
-			}),
+			Info: EncodeError(code.NewDecodeError()),
 		}
 	}
 
@@ -149,10 +122,7 @@ func RunTx(context state.Interface,
 		return Response{
 			Code: code.TxFromSenderAlreadyInMempool,
 			Log:  fmt.Sprintf("Tx from %s already exists in mempool", sender.String()),
-			Info: EncodeError(map[string]string{
-				"code":   strconv.Itoa(int(code.TxFromSenderAlreadyInMempool)),
-				"sender": sender.String(),
-			}),
+			Info: EncodeError(code.NewTxFromSenderAlreadyInMempool(sender.String(), strconv.Itoa(int(currentBlock)))),
 		}
 	}
 
@@ -236,11 +206,7 @@ func RunTx(context state.Interface,
 		return Response{
 			Code: code.WrongNonce,
 			Log:  fmt.Sprintf("Unexpected nonce. Expected: %d, got %d.", expectedNonce, tx.Nonce),
-			Info: EncodeError(map[string]string{
-				"code":           strconv.Itoa(int(code.WrongNonce)),
-				"expected_nonce": fmt.Sprintf("%d", expectedNonce),
-				"got_nonce":      fmt.Sprintf("%d", tx.Nonce),
-			}),
+			Info: EncodeError(code.NewWrongNonce(fmt.Sprintf("%d", expectedNonce), fmt.Sprintf("%d", tx.Nonce))),
 		}
 	}
 
@@ -270,7 +236,7 @@ func RunTx(context state.Interface,
 	return response
 }
 
-func EncodeError(data map[string]string) string {
+func EncodeError(data interface{}) string {
 	marshal, err := json.Marshal(data)
 	if err != nil {
 		panic(err)

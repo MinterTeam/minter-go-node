@@ -28,9 +28,7 @@ func (data RecreateCoinData) BasicCheck(tx *Transaction, context *state.CheckSta
 		return &Response{
 			Code: code.DecodeError,
 			Log:  "Incorrect tx data",
-			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.DecodeError)),
-			}),
+			Info: EncodeError(code.NewDecodeError()),
 		}
 	}
 
@@ -38,9 +36,7 @@ func (data RecreateCoinData) BasicCheck(tx *Transaction, context *state.CheckSta
 		return &Response{
 			Code: code.InvalidCoinName,
 			Log:  fmt.Sprintf("Coin name is invalid. Allowed up to %d bytes.", maxCoinNameBytes),
-			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.InvalidCoinName)),
-			}),
+			Info: EncodeError(code.NewInvalidCoinName(strconv.Itoa(maxCoinNameBytes), strconv.Itoa(len(data.Name)))),
 		}
 	}
 
@@ -91,10 +87,7 @@ func (data RecreateCoinData) BasicCheck(tx *Transaction, context *state.CheckSta
 		return &Response{
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin %s not exists", data.Symbol),
-			Info: EncodeError(map[string]string{
-				"code":        strconv.Itoa(int(code.CoinNotExists)),
-				"coin_symbol": fmt.Sprintf("%s", data.Symbol.String()),
-			}),
+			Info: EncodeError(code.NewCoinNotExists(data.Symbol.String(), "")),
 		}
 	}
 
@@ -155,12 +148,7 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 		return Response{
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission.String(), gasCoin.GetFullSymbol()),
-			Info: EncodeError(map[string]string{
-				"code":         strconv.Itoa(int(code.InsufficientFunds)),
-				"sender":       sender.String(),
-				"needed_value": commission.String(),
-				"coin_symbol":  gasCoin.GetFullSymbol(),
-			}),
+			Info: EncodeError(code.NewInsufficientFunds(sender.String(), commission.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
 		}
 	}
 
@@ -168,12 +156,7 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 		return Response{
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), data.InitialReserve.String(), types.GetBaseCoin()),
-			Info: EncodeError(map[string]string{
-				"code":           strconv.Itoa(int(code.InsufficientFunds)),
-				"sender":         sender.String(),
-				"needed_reserve": data.InitialReserve.String(),
-				"coin_symbol":    fmt.Sprintf("%s", types.GetBaseCoin()),
-			}),
+			Info: EncodeError(code.NewInsufficientFunds(sender.String(), data.InitialReserve.String(), types.GetBaseCoin().String(), types.GetBaseCoinID().String())),
 		}
 	}
 
@@ -188,12 +171,7 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 			return Response{
 				Code: code.InsufficientFunds,
 				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), totalTxCost.String(), gasCoin.GetFullSymbol()),
-				Info: EncodeError(map[string]string{
-					"code":         strconv.Itoa(int(code.InsufficientFunds)),
-					"sender":       sender.String(),
-					"needed_value": totalTxCost.String(),
-					"coin_symbol":  gasCoin.GetFullSymbol(),
-				}),
+				Info: EncodeError(code.NewInsufficientFunds(sender.String(), totalTxCost.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
 			}
 		}
 	}

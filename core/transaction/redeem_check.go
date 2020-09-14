@@ -29,9 +29,8 @@ func (data RedeemCheckData) BasicCheck(tx *Transaction, context *state.CheckStat
 		return &Response{
 			Code: code.DecodeError,
 			Log:  "Incorrect tx data",
-			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.DecodeError)),
-			})}
+			Info: EncodeError(code.NewDecodeError()),
+		}
 	}
 
 	// fixed potential problem with making too high commission for sender
@@ -39,9 +38,8 @@ func (data RedeemCheckData) BasicCheck(tx *Transaction, context *state.CheckStat
 		return &Response{
 			Code: code.TooHighGasPrice,
 			Log:  fmt.Sprintf("Gas price for check is limited to 1"),
-			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.TooHighGasPrice)),
-			})}
+			Info: EncodeError(code.NewTooHighGasPrice()),
+		}
 	}
 
 	return nil
@@ -74,9 +72,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 		return Response{
 			Code: code.DecodeError,
 			Log:  err.Error(),
-			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.DecodeError)),
-			}),
+			Info: EncodeError(code.NewDecodeError()),
 		}
 	}
 
@@ -84,11 +80,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 		return Response{
 			Code: code.WrongChainID,
 			Log:  "Wrong chain id",
-			Info: EncodeError(map[string]string{
-				"code":             strconv.Itoa(int(code.WrongChainID)),
-				"current_chain_id": fmt.Sprintf("%d", types.CurrentChainID),
-				"got_chain_id":     fmt.Sprintf("%d", decodedCheck.ChainID),
-			}),
+			Info: EncodeError(code.NewWrongChainID(fmt.Sprintf("%d", types.CurrentChainID), fmt.Sprintf("%d", tx.ChainID))),
 		}
 	}
 
@@ -108,19 +100,15 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 		return Response{
 			Code: code.DecodeError,
 			Log:  err.Error(),
-			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.DecodeError)),
-			})}
+			Info: EncodeError(code.NewDecodeError()),
+		}
 	}
 
 	if !checkState.Coins().Exists(decodedCheck.Coin) {
 		return Response{
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin not exists"),
-			Info: EncodeError(map[string]string{
-				"code":    strconv.Itoa(int(code.CoinNotExists)),
-				"coin_id": fmt.Sprintf("%s", decodedCheck.Coin.String()),
-			}),
+			Info: EncodeError(code.NewCoinNotExists("", decodedCheck.Coin.String())),
 		}
 	}
 
@@ -128,10 +116,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 		return Response{
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Gas coin not exists"),
-			Info: EncodeError(map[string]string{
-				"code":    strconv.Itoa(int(code.CoinNotExists)),
-				"coin_id": fmt.Sprintf("%s", decodedCheck.GasCoin.String()),
-			}),
+			Info: EncodeError(code.NewCoinNotExists("", decodedCheck.GasCoin.String())),
 		}
 	}
 
@@ -174,9 +159,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 		return Response{
 			Code: code.DecodeError,
 			Log:  err.Error(),
-			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.DecodeError)),
-			}),
+			Info: EncodeError(code.NewDecodeError()),
 		}
 	}
 
@@ -193,9 +176,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 		return Response{
 			Code: code.DecodeError,
 			Log:  err.Error(),
-			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.DecodeError)),
-			}),
+			Info: EncodeError(code.NewDecodeError()),
 		}
 	}
 
@@ -229,12 +210,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 			return Response{
 				Code: code.InsufficientFunds,
 				Log:  fmt.Sprintf("Insufficient funds for check issuer account: %s %s. Wanted %s %s", decodedCheck.Coin, checkSender.String(), totalTxCost.String(), coin.GetFullSymbol()),
-				Info: EncodeError(map[string]string{
-					"code":         strconv.Itoa(int(code.InsufficientFunds)),
-					"sender":       checkSender.String(),
-					"coin_symbol":  coin.GetFullSymbol(),
-					"needed_value": totalTxCost.String(),
-				}),
+				Info: EncodeError(code.NewInsufficientFunds(sender.String(), totalTxCost.String(), coin.GetFullSymbol(), coin.ID().String())),
 			}
 		}
 	} else {
@@ -242,12 +218,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 			return Response{
 				Code: code.InsufficientFunds,
 				Log:  fmt.Sprintf("Insufficient funds for check issuer account: %s %s. Wanted %s %s", checkSender.String(), decodedCheck.Coin, decodedCheck.Value.String(), coin.GetFullSymbol()),
-				Info: EncodeError(map[string]string{
-					"code":         strconv.Itoa(int(code.InsufficientFunds)),
-					"sender":       checkSender.String(),
-					"coin_symbol":  coin.GetFullSymbol(),
-					"needed_value": decodedCheck.Value.String(),
-				}),
+				Info: EncodeError(code.NewInsufficientFunds(checkSender.String(), decodedCheck.Value.String(), coin.GetFullSymbol(), coin.ID().String())),
 			}
 		}
 
@@ -255,12 +226,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 			return Response{
 				Code: code.InsufficientFunds,
 				Log:  fmt.Sprintf("Insufficient funds for check issuer account: %s %s. Wanted %s %s", checkSender.String(), decodedCheck.GasCoin, commission.String(), gasCoin.GetFullSymbol()),
-				Info: EncodeError(map[string]string{
-					"code":         strconv.Itoa(int(code.InsufficientFunds)),
-					"sender":       sender.String(),
-					"coin_symbol":  gasCoin.GetFullSymbol(),
-					"needed_value": commission.String(),
-				}),
+				Info: EncodeError(code.NewInsufficientFunds(sender.String(), commission.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
 			}
 		}
 	}

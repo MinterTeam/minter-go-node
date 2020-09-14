@@ -52,9 +52,9 @@ func (data SetCandidateOnData) Run(tx *Transaction, context state.Interface, rew
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
-	if !tx.GasCoin.IsBaseCoin() {
-		gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
+	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
 
+	if !tx.GasCoin.IsBaseCoin() {
 		errResp := CheckReserveUnderflow(gasCoin, commissionInBaseCoin)
 		if errResp != nil {
 			return *errResp
@@ -64,17 +64,10 @@ func (data SetCandidateOnData) Run(tx *Transaction, context state.Interface, rew
 	}
 
 	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
-		gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
-
 		return Response{
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, gasCoin.GetFullSymbol()),
-			Info: EncodeError(map[string]string{
-				"code":         strconv.Itoa(int(code.InsufficientFunds)),
-				"sender":       sender.String(),
-				"needed_value": commission.String(),
-				"coin_symbol":  gasCoin.GetFullSymbol(),
-			}),
+			Info: EncodeError(code.NewInsufficientFunds(sender.String(), commission.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
 		}
 	}
 
@@ -140,27 +133,21 @@ func (data SetCandidateOffData) Run(tx *Transaction, context state.Interface, re
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
+	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
 	if !tx.GasCoin.IsBaseCoin() {
-		coin := checkState.Coins().GetCoin(tx.GasCoin)
-
-		errResp := CheckReserveUnderflow(coin, commissionInBaseCoin)
+		errResp := CheckReserveUnderflow(gasCoin, commissionInBaseCoin)
 		if errResp != nil {
 			return *errResp
 		}
 
-		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
+		commission = formula.CalculateSaleAmount(gasCoin.Volume(), gasCoin.Reserve(), gasCoin.Crr(), commissionInBaseCoin)
 	}
 
 	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
 		return Response{
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, tx.GasCoin),
-			Info: EncodeError(map[string]string{
-				"code":         strconv.Itoa(int(code.InsufficientFunds)),
-				"sender":       sender.String(),
-				"needed_value": commission.String(),
-				"coin_symbol":  fmt.Sprintf("%s", tx.GasCoin),
-			}),
+			Info: EncodeError(code.NewInsufficientFunds(sender.String(), commission.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
 		}
 	}
 

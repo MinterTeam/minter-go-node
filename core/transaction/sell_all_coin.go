@@ -47,12 +47,14 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.CheckStat
 				Info: EncodeError(map[string]string{
 					"code":                 strconv.Itoa(int(code.MinimumValueToBuyReached)),
 					"minimum_value_to_buy": data.MinimumValueToBuy.String(),
-					"coin":                 value.String(),
+					"will_get_value":       value.String(),
+					"coin_symbol":          coin.GetFullSymbol(),
+					"coin_id":              coin.ID().String(),
 				}),
 			}
 		}
 
-		if errResp := CheckForCoinSupplyOverflow(coin.Volume(), value, coin.MaxSupply()); errResp != nil {
+		if errResp := CheckForCoinSupplyOverflow(coin, value); errResp != nil {
 			return nil, nil, nil, errResp
 		}
 
@@ -76,6 +78,8 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.CheckStat
 					"code":                 strconv.Itoa(int(code.MinimumValueToBuyReached)),
 					"minimum_value_to_buy": data.MinimumValueToBuy.String(),
 					"will_get_value":       ret.String(),
+					"coin_symbol":          coin.GetFullSymbol(),
+					"coin_id":              coin.ID().String(),
 				}),
 			}
 		}
@@ -84,12 +88,7 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.CheckStat
 			return nil, nil, nil, &Response{
 				Code: code.InsufficientFunds,
 				Log:  fmt.Sprintf("Insufficient funds for sender account"),
-				Info: EncodeError(map[string]string{
-					"code":         strconv.Itoa(int(code.InsufficientFunds)),
-					"sender":       sender.String(),
-					"coin_symbol":  coin.GetFullSymbol(),
-					"needed_value": commissionInBaseCoin.String(),
-				}),
+				Info: EncodeError(code.NewInsufficientFunds(sender.String(), commissionInBaseCoin.String(), coin.GetFullSymbol(), coin.ID().String())),
 			}
 		}
 
@@ -113,12 +112,7 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.CheckStat
 			return nil, nil, nil, &Response{
 				Code: code.InsufficientFunds,
 				Log:  fmt.Sprintf("Insufficient funds for sender account"),
-				Info: EncodeError(map[string]string{
-					"code":         strconv.Itoa(int(code.InsufficientFunds)),
-					"sender":       sender.String(),
-					"coin_symbol":  coinFrom.GetFullSymbol(),
-					"needed_value": commissionInBaseCoin.String(),
-				}),
+				Info: EncodeError(code.NewInsufficientFunds(sender.String(), commissionInBaseCoin.String(), coinFrom.GetFullSymbol(), coinFrom.ID().String())),
 			}
 		}
 
@@ -133,11 +127,13 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.CheckStat
 					"code":                 strconv.Itoa(int(code.MinimumValueToBuyReached)),
 					"minimum_value_to_buy": data.MinimumValueToBuy.String(),
 					"will_get_value":       value.String(),
+					"coin_symbol":          coinTo.GetFullSymbol(),
+					"coin_id":              coinTo.ID().String(),
 				}),
 			}
 		}
 
-		if errResp := CheckForCoinSupplyOverflow(coinTo.Volume(), value, coinTo.MaxSupply()); errResp != nil {
+		if errResp := CheckForCoinSupplyOverflow(coinTo, value); errResp != nil {
 			return nil, nil, nil, errResp
 		}
 
@@ -171,10 +167,7 @@ func (data SellAllCoinData) BasicCheck(tx *Transaction, context *state.CheckStat
 		return &Response{
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin to sell not exists"),
-			Info: EncodeError(map[string]string{
-				"code":    strconv.Itoa(int(code.CoinNotExists)),
-				"coin_id": fmt.Sprintf("%s", data.CoinToSell.String()),
-			}),
+			Info: EncodeError(code.NewCoinNotExists("", data.CoinToSell.String())),
 		}
 	}
 
@@ -182,10 +175,7 @@ func (data SellAllCoinData) BasicCheck(tx *Transaction, context *state.CheckStat
 		return &Response{
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin to buy not exists"),
-			Info: EncodeError(map[string]string{
-				"code":    strconv.Itoa(int(code.CoinNotExists)),
-				"coin_id": fmt.Sprintf("%s", data.CoinToBuy.String()),
-			}),
+			Info: EncodeError(code.NewCoinNotExists("", data.CoinToBuy.String())),
 		}
 	}
 
@@ -230,12 +220,7 @@ func (data SellAllCoinData) Run(tx *Transaction, context state.Interface, reward
 					sender.String(),
 					ts.Value.String(),
 					coin.GetFullSymbol()),
-				Info: EncodeError(map[string]string{
-					"code":         strconv.Itoa(int(code.InsufficientFunds)),
-					"sender":       sender.String(),
-					"needed_value": ts.Value.String(),
-					"coin_symbol":  coin.GetFullSymbol(),
-				}),
+				Info: EncodeError(code.NewInsufficientFunds(sender.String(), ts.Value.String(), coin.GetFullSymbol(), coin.ID().String())),
 			}
 		}
 	}

@@ -27,10 +27,7 @@ func (data EditCoinOwnerData) BasicCheck(tx *Transaction, context *state.CheckSt
 		return &Response{
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin %s not exists", data.Symbol),
-			Info: EncodeError(map[string]string{
-				"code":        strconv.Itoa(int(code.CoinNotExists)),
-				"coin_symbol": data.Symbol.String(),
-			}),
+			Info: EncodeError(code.NewCoinNotExists(data.Symbol.String(), "")),
 		}
 	}
 
@@ -89,12 +86,7 @@ func (data EditCoinOwnerData) Run(tx *Transaction, context state.Interface, rewa
 		return Response{
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission.String(), gasCoin.GetFullSymbol()),
-			Info: EncodeError(map[string]string{
-				"code":         strconv.Itoa(int(code.InsufficientFunds)),
-				"sender":       sender.String(),
-				"needed_value": commission.String(),
-				"coin_symbol":  gasCoin.GetFullSymbol(),
-			}),
+			Info: EncodeError(code.NewInsufficientFunds(sender.String(), commission.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
 		}
 	}
 
