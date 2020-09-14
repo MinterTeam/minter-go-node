@@ -134,11 +134,7 @@ func TestCreateMultisigFromExistingAccountTx(t *testing.T) {
 		Addresses: addresses,
 	}
 
-	msigAddr := (&accounts.Multisig{
-		Threshold: data.Threshold,
-		Weights:   data.Weights,
-		Addresses: data.Addresses,
-	}).Address()
+	msigAddr := accounts.CreateMultisigAddress(addr, 1)
 
 	initialBalance := big.NewInt(10)
 	cState.Accounts.AddBalance(msigAddr, types.GetBaseCoinID(), initialBalance)
