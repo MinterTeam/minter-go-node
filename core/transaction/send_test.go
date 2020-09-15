@@ -192,8 +192,8 @@ func TestSendFailedMultisigTx(t *testing.T) {
 	}
 
 	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
-	if response.Code != code.IncorrectMultiSignature {
-		t.Fatalf("Response code is not %d. Gor: %d", code.IncorrectMultiSignature, response.Code)
+	if response.Code != code.NotEnoughMultisigVotes {
+		t.Fatalf("Response code is not %d. Gor: %d", code.NotEnoughMultisigVotes, response.Code)
 	}
 
 	targetBalance, _ := big.NewInt(0).SetString("1000000000000000000000000", 10)

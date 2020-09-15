@@ -137,7 +137,7 @@ func TestCandidates_Commit_changePubKeyAndCheckBlockList(t *testing.T) {
 		t.Fatalf("version %d", version)
 	}
 
-	if fmt.Sprintf("%X", hash) != "C0DC396CF17399CF3E05EAFFD29D94A99698633C9160D46C469D5F6575DC66E0" {
+	if fmt.Sprintf("%X", hash) != "BB335E1AA631D9540C2CB0AC9C959B556C366B79D39B828B07106CF2DACE5A2D" {
 		t.Fatalf("hash %X", hash)
 	}
 

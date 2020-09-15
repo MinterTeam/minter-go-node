@@ -404,8 +404,8 @@ func TestCreateMultisigOwnersTxIncorrectWeights(t *testing.T) {
 	}
 
 	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
-	if response.Code != code.IncorrectWeights {
-		t.Fatalf("Response code is not %d. Error %s", code.IncorrectWeights, response.Log)
+	if response.Code != code.DifferentCountAddressesAndWeights {
+		t.Fatalf("Response code is not %d. Error %s", code.DifferentCountAddressesAndWeights, response.Log)
 	}
 
 	data.Weights = []uint{1, 2, 1024}
