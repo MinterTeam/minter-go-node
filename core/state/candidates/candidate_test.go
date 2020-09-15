@@ -144,6 +144,21 @@ func TestCandidates_Commit_changePubKeyAndCheckBlockList(t *testing.T) {
 	if !candidates.IsBlockedPubKey([32]byte{4}) {
 		t.Fatal("pub_key is not blocked")
 	}
+
+	candidates, err = NewCandidates(bus.NewBus(), mutableTree)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	candidates.LoadCandidates()
+	candidate := candidates.GetCandidate([32]byte{5})
+	if candidate == nil {
+		t.Fatal("candidate not found")
+	}
+	if candidates.PubKey(candidate.ID) != [32]byte{5} {
+		t.Fatal("candidate map ids and pubKeys invalid")
+	}
+
 }
 func TestCandidates_AddToBlockPubKey(t *testing.T) {
 	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
