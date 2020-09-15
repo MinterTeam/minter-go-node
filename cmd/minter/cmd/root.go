@@ -24,5 +24,9 @@ var RootCmd = &cobra.Command{
 		if err := v.Unmarshal(cfg); err != nil {
 			panic(err)
 		}
+
+		if cfg.KeepLastStates < 1 {
+			panic("keep_last_states field should be greater than 0")
+		}
 	},
 }
