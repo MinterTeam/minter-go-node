@@ -1026,7 +1026,7 @@ func (c *Candidates) ChangePubKey(old types.Pubkey, new types.Pubkey) {
 		panic("Candidate with such public key (" + new.String() + ") exists in block list")
 	}
 
-	c.getFromMap(old).PubKey = new
+	c.getFromMap(old).setPublicKey(new)
 	c.setBlockPubKey(old)
 	c.setPubKeyID(new, c.pubKeyIDs[old])
 	delete(c.pubKeyIDs, old)
