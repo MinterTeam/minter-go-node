@@ -3,15 +3,13 @@ package transaction
 import (
 	"encoding/hex"
 	"fmt"
-	"math/big"
-	"strconv"
-
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/tendermint/tendermint/libs/kv"
+	"math/big"
 )
 
 type SendData struct {
@@ -60,9 +58,7 @@ func (data SendData) BasicCheck(tx *Transaction, context *state.CheckState) *Res
 		return &Response{
 			Code: code.DecodeError,
 			Log:  "Incorrect tx data",
-			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.DecodeError)),
-			}),
+			Info: EncodeError(code.NewDecodeError()),
 		}
 	}
 
@@ -70,10 +66,7 @@ func (data SendData) BasicCheck(tx *Transaction, context *state.CheckState) *Res
 		return &Response{
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin %s not exists", data.Coin),
-			Info: EncodeError(map[string]string{
-				"code":    strconv.Itoa(int(code.CoinNotExists)),
-				"coin_id": fmt.Sprintf("%s", data.Coin.String()),
-			}),
+			Info: EncodeError(code.NewCoinNotExists("", data.Coin.String())),
 		}
 	}
 
@@ -118,12 +111,7 @@ func (data SendData) Run(tx *Transaction, context state.Interface, rewardPool *b
 					sender.String(),
 					ts.Value.String(),
 					coin.GetFullSymbol()),
-				Info: EncodeError(map[string]string{
-					"code":         strconv.Itoa(int(code.InsufficientFunds)),
-					"sender":       sender.String(),
-					"needed_value": ts.Value.String(),
-					"coin_symbol":  coin.GetFullSymbol(),
-				}),
+				Info: EncodeError(code.NewInsufficientFunds(sender.String(), ts.Value.String(), coin.GetFullSymbol(), coin.ID().String())),
 			}
 		}
 	}

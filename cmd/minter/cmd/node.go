@@ -89,7 +89,7 @@ func runNode(cmd *cobra.Command) error {
 		runAPI(logger, app, client, node)
 	}
 
-	runCLI(cmd, app, client)
+	runCLI(cmd, app, client, node)
 
 	if cfg.Instrumentation.Prometheus {
 		go app.SetStatisticData(statistics.New()).Statistic(cmd.Context())
@@ -105,9 +105,9 @@ func runNode(cmd *cobra.Command) error {
 	return nil
 }
 
-func runCLI(cmd *cobra.Command, app *minter.Blockchain, client *rpc.Local) {
+func runCLI(cmd *cobra.Command, app *minter.Blockchain, client *rpc.Local, tmNode *tmNode.Node) {
 	go func() {
-		err := service.StartCLIServer(utils.GetMinterHome()+"/manager.sock", service.NewManager(app, client, cfg), cmd.Context())
+		err := service.StartCLIServer(utils.GetMinterHome()+"/manager.sock", service.NewManager(app, client, tmNode, cfg), cmd.Context())
 		if err != nil {
 			panic(err)
 		}

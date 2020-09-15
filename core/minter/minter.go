@@ -23,11 +23,8 @@ import (
 	abciTypes "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	cryptoAmino "github.com/tendermint/tendermint/crypto/encoding/amino"
-	"github.com/tendermint/tendermint/evidence"
 	tmNode "github.com/tendermint/tendermint/node"
-	"github.com/tendermint/tendermint/p2p"
 	types2 "github.com/tendermint/tendermint/types"
-	typesT "github.com/tendermint/tendermint/types"
 	"github.com/tendermint/tm-db"
 	"math/big"
 	"sort"
@@ -636,41 +633,6 @@ func (app *Blockchain) GetValidatorStatus(address types.TmAddress) int8 {
 	defer app.lock.RUnlock()
 
 	return app.validatorsStatuses[address]
-}
-
-// MaxPeerHeight returns max height of connected peers
-// TODO: move outside Blockchain struct
-func (app *Blockchain) MaxPeerHeight() int64 {
-	var max int64
-	for _, peer := range app.tmNode.Switch().Peers().List() {
-		peerState, ok := peer.Get(typesT.PeerStateKey).(evidence.PeerState)
-		if !ok {
-			continue
-		}
-		height := peerState.GetHeight()
-		if height > max {
-			max = height
-		}
-	}
-	return max
-}
-
-// PeerHeight returns height of peer by ID.  If peer is fast_syncing, height equal 0
-// TODO: move outside Blockchain struct
-func (app *Blockchain) PeerHeight(id p2p.ID) int64 {
-	peerTM := app.tmNode.Switch().Peers().Get(id)
-	if peerTM == nil {
-		return 0
-	}
-	ps := peerTM.Get(typesT.PeerStateKey)
-	if ps == nil {
-		return 0
-	}
-	peerState, ok := ps.(evidence.PeerState)
-	if !ok {
-		return 0
-	}
-	return peerState.GetHeight()
 }
 
 // DeleteStateVersions deletes states in given range

@@ -6,6 +6,9 @@ import (
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/tendermint/tendermint/evidence"
+	"github.com/tendermint/tendermint/p2p"
+	typesTM "github.com/tendermint/tendermint/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"time"
@@ -22,7 +25,7 @@ func (s *Service) NetInfo(ctx context.Context, _ *empty.Empty) (*pb.NetInfoRespo
 	for _, peer := range result.Peers {
 
 		var currentHeight *wrappers.StringValue
-		peerHeight := s.blockchain.PeerHeight(peer.NodeInfo.ID())
+		peerHeight := peerHeight(s.tmNode.Switch(), peer.NodeInfo.ID())
 		if peerHeight != 0 {
 			currentHeight = &wrappers.StringValue{Value: fmt.Sprintf("%d", peerHeight)}
 		}
@@ -92,4 +95,20 @@ func (s *Service) NetInfo(ctx context.Context, _ *empty.Empty) (*pb.NetInfoRespo
 		CountPeers: fmt.Sprintf("%d", result.NPeers),
 		Peers:      peers,
 	}, nil
+}
+
+func peerHeight(sw *p2p.Switch, id p2p.ID) int64 {
+	peerTM := sw.Peers().Get(id)
+	if peerTM == nil {
+		return 0
+	}
+	ps := peerTM.Get(typesTM.PeerStateKey)
+	if ps == nil {
+		return 0
+	}
+	peerState, ok := ps.(evidence.PeerState)
+	if !ok {
+		return 0
+	}
+	return peerState.GetHeight()
 }

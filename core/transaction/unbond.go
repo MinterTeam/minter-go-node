@@ -3,9 +3,6 @@ package transaction
 import (
 	"encoding/hex"
 	"fmt"
-	"math/big"
-	"strconv"
-
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
@@ -13,6 +10,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/hexutil"
 	"github.com/tendermint/tendermint/libs/kv"
+	"math/big"
 )
 
 const unbondPeriod = 518400
@@ -28,9 +26,7 @@ func (data UnbondData) BasicCheck(tx *Transaction, context *state.CheckState) *R
 		return &Response{
 			Code: code.DecodeError,
 			Log:  "Incorrect tx data",
-			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.DecodeError)),
-			}),
+			Info: EncodeError(code.NewDecodeError()),
 		}
 	}
 
@@ -38,26 +34,18 @@ func (data UnbondData) BasicCheck(tx *Transaction, context *state.CheckState) *R
 		return &Response{
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin %s not exists", data.Coin),
-			Info: EncodeError(map[string]string{
-				"code":    strconv.Itoa(int(code.CoinNotExists)),
-				"coin_id": fmt.Sprintf("%s", data.Coin.String()),
-			}),
+			Info: EncodeError(code.NewCoinNotExists("", data.Coin.String())),
 		}
 	}
 
-	errorInfo := map[string]string{
-		"pub_key": data.PubKey.String(),
-	}
 	if !context.Candidates().Exists(data.PubKey) {
-		errorInfo["code"] = strconv.Itoa(int(code.CandidateNotFound))
 		return &Response{
 			Code: code.CandidateNotFound,
 			Log:  fmt.Sprintf("Candidate with such public key not found"),
-			Info: EncodeError(errorInfo),
+			Info: EncodeError(code.NewCandidateNotFound(data.PubKey.String())),
 		}
 	}
 
-	errorInfo["unbound_value"] = data.Value.String()
 	sender, _ := tx.Sender()
 
 	if waitlist := context.WaitList().Get(sender, data.PubKey, data.Coin); waitlist != nil {
@@ -65,33 +53,28 @@ func (data UnbondData) BasicCheck(tx *Transaction, context *state.CheckState) *R
 		if value.Sign() < 1 {
 			return nil
 		}
-		errorInfo["waitlist_value"] = waitlist.Value.String()
-		errorInfo["code"] = strconv.Itoa(int(code.InsufficientWaitList))
 		return &Response{
 			Code: code.InsufficientWaitList,
 			Log:  fmt.Sprintf("Insufficient amount at waitlist for sender account"),
-			Info: EncodeError(errorInfo),
+			Info: EncodeError(code.NewInsufficientWaitList(waitlist.Value.String(), data.Value.String())),
 		}
 	}
 
 	stake := context.Candidates().GetStakeValueOfAddress(data.PubKey, sender, data.Coin)
 
 	if stake == nil {
-		errorInfo["code"] = strconv.Itoa(int(code.StakeNotFound))
 		return &Response{
 			Code: code.StakeNotFound,
 			Log:  fmt.Sprintf("Stake of current user not found"),
-			Info: EncodeError(errorInfo),
+			Info: EncodeError(EncodeError(code.NewStakeNotFound(data.PubKey.String(), sender.String(), data.Coin.String(), context.Coins().GetCoin(data.Coin).GetFullSymbol()))),
 		}
 	}
 
 	if stake.Cmp(data.Value) < 0 {
-		errorInfo["stake_value"] = stake.String()
-		errorInfo["code"] = strconv.Itoa(int(code.InsufficientStake))
 		return &Response{
 			Code: code.InsufficientStake,
 			Log:  fmt.Sprintf("Insufficient stake for sender account"),
-			Info: EncodeError(errorInfo),
+			Info: EncodeError(code.NewInsufficientStake(data.PubKey.String(), sender.String(), data.Coin.String(), context.Coins().GetCoin(data.Coin).GetFullSymbol(), stake.String(), data.Value.String())),
 		}
 	}
 
@@ -139,12 +122,7 @@ func (data UnbondData) Run(tx *Transaction, context state.Interface, rewardPool 
 		return Response{
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, gasCoin.GetFullSymbol()),
-			Info: EncodeError(map[string]string{
-				"code":         strconv.Itoa(int(code.InsufficientFunds)),
-				"sender":       sender.String(),
-				"needed_value": commission.String(),
-				"coin_symbol":  gasCoin.GetFullSymbol(),
-			}),
+			Info: EncodeError(code.NewInsufficientFunds(sender.String(), commission.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
 		}
 	}
 
