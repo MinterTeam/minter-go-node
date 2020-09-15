@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math/big"
 	"sort"
-	"strconv"
 	"strings"
 
 	"github.com/MinterTeam/minter-go-node/core/code"
@@ -27,13 +26,7 @@ func (data MultisendData) BasicCheck(tx *Transaction, context *state.CheckState)
 		return &Response{
 			Code: code.InvalidMultisendData,
 			Log:  "List length must be between 1 and 100",
-			Info: EncodeError(map[string]string{
-				"code":         fmt.Sprintf("%d", code.InvalidMultisendData),
-				"description":  "invalid_multisend_data",
-				"min_quantity": "1",
-				"max_quantity": "100",
-				"got_quantity": fmt.Sprintf("%d", quantity),
-			}),
+			Info: EncodeError(code.NewInvalidMultisendData("1", "100", fmt.Sprintf("%d", quantity))),
 		}
 	}
 
@@ -157,12 +150,7 @@ func checkBalances(context *state.CheckState, sender types.Address, items []Mult
 			return &Response{
 				Code: code.InsufficientFunds,
 				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), value, coinData.GetFullSymbol()),
-				Info: EncodeError(map[string]string{
-					"code":         strconv.Itoa(int(code.InsufficientFunds)),
-					"sender":       sender.String(),
-					"needed_value": fmt.Sprintf("%d", value),
-					"coin_symbol":  coinData.GetFullSymbol(),
-				}),
+				Info: EncodeError(code.NewInsufficientFunds(sender.String(), value.String(), coinData.GetFullSymbol(), coinData.ID().String())),
 			}
 		}
 	}
@@ -176,10 +164,7 @@ func checkCoins(context *state.CheckState, items []MultisendDataItem) *Response 
 			return &Response{
 				Code: code.CoinNotExists,
 				Log:  fmt.Sprintf("Coin %s not exists", item.Coin),
-				Info: EncodeError(map[string]string{
-					"code":    strconv.Itoa(int(code.CoinNotExists)),
-					"coin_id": fmt.Sprintf("%s", item.Coin.String()),
-				}),
+				Info: EncodeError(code.NewCoinNotExists("", item.Coin.String())),
 			}
 		}
 	}

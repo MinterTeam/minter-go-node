@@ -3,15 +3,13 @@ package transaction
 import (
 	"encoding/hex"
 	"fmt"
-	"math/big"
-	"strconv"
-
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/tendermint/tendermint/libs/kv"
+	"math/big"
 )
 
 type EditCoinOwnerData struct {
@@ -27,20 +25,16 @@ func (data EditCoinOwnerData) BasicCheck(tx *Transaction, context *state.CheckSt
 		return &Response{
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin %s not exists", data.Symbol),
-			Info: EncodeError(map[string]string{
-				"code":        strconv.Itoa(int(code.CoinNotExists)),
-				"coin_symbol": data.Symbol.String(),
-			}),
+			Info: EncodeError(code.NewCoinNotExists(data.Symbol.String(), "")),
 		}
 	}
 
 	if info.OwnerAddress() == nil || info.OwnerAddress().Compare(sender) != 0 {
+		owner := info.OwnerAddress().String()
 		return &Response{
 			Code: code.IsNotOwnerOfCoin,
 			Log:  "Sender is not owner of coin",
-			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.IsNotOwnerOfCoin)),
-			}),
+			Info: EncodeError(code.NewIsNotOwnerOfCoin(data.Symbol.String(), &owner)),
 		}
 	}
 
@@ -89,12 +83,7 @@ func (data EditCoinOwnerData) Run(tx *Transaction, context state.Interface, rewa
 		return Response{
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission.String(), gasCoin.GetFullSymbol()),
-			Info: EncodeError(map[string]string{
-				"code":         strconv.Itoa(int(code.InsufficientFunds)),
-				"sender":       sender.String(),
-				"needed_value": commission.String(),
-				"coin_symbol":  gasCoin.GetFullSymbol(),
-			}),
+			Info: EncodeError(code.NewInsufficientFunds(sender.String(), commission.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
 		}
 	}
 

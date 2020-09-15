@@ -3,15 +3,13 @@ package transaction
 import (
 	"encoding/hex"
 	"fmt"
-	"math/big"
-	"strconv"
-
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/tendermint/tendermint/libs/kv"
+	"math/big"
 )
 
 type SetCandidateOnData struct {
@@ -52,9 +50,9 @@ func (data SetCandidateOnData) Run(tx *Transaction, context state.Interface, rew
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
-	if !tx.GasCoin.IsBaseCoin() {
-		gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
+	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
 
+	if !tx.GasCoin.IsBaseCoin() {
 		errResp := CheckReserveUnderflow(gasCoin, commissionInBaseCoin)
 		if errResp != nil {
 			return *errResp
@@ -64,17 +62,10 @@ func (data SetCandidateOnData) Run(tx *Transaction, context state.Interface, rew
 	}
 
 	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
-		gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
-
 		return Response{
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, gasCoin.GetFullSymbol()),
-			Info: EncodeError(map[string]string{
-				"code":         strconv.Itoa(int(code.InsufficientFunds)),
-				"sender":       sender.String(),
-				"needed_value": commission.String(),
-				"coin_symbol":  gasCoin.GetFullSymbol(),
-			}),
+			Info: EncodeError(code.NewInsufficientFunds(sender.String(), commission.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
 		}
 	}
 
@@ -140,27 +131,21 @@ func (data SetCandidateOffData) Run(tx *Transaction, context state.Interface, re
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
+	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
 	if !tx.GasCoin.IsBaseCoin() {
-		coin := checkState.Coins().GetCoin(tx.GasCoin)
-
-		errResp := CheckReserveUnderflow(coin, commissionInBaseCoin)
+		errResp := CheckReserveUnderflow(gasCoin, commissionInBaseCoin)
 		if errResp != nil {
 			return *errResp
 		}
 
-		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
+		commission = formula.CalculateSaleAmount(gasCoin.Volume(), gasCoin.Reserve(), gasCoin.Crr(), commissionInBaseCoin)
 	}
 
 	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
 		return Response{
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, tx.GasCoin),
-			Info: EncodeError(map[string]string{
-				"code":         strconv.Itoa(int(code.InsufficientFunds)),
-				"sender":       sender.String(),
-				"needed_value": commission.String(),
-				"coin_symbol":  fmt.Sprintf("%s", tx.GasCoin),
-			}),
+			Info: EncodeError(code.NewInsufficientFunds(sender.String(), commission.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
 		}
 	}
 
@@ -194,10 +179,7 @@ func checkCandidateControl(data CandidateTx, tx *Transaction, context *state.Che
 		return &Response{
 			Code: code.CandidateNotFound,
 			Log:  fmt.Sprintf("Candidate with such public key (%s) not found", data.GetPubKey().String()),
-			Info: EncodeError(map[string]string{
-				"code":       strconv.Itoa(int(code.CandidateNotFound)),
-				"public_key": data.GetPubKey().String(),
-			}),
+			Info: EncodeError(code.NewCandidateNotFound(data.GetPubKey().String())),
 		}
 	}
 
@@ -210,9 +192,7 @@ func checkCandidateControl(data CandidateTx, tx *Transaction, context *state.Che
 		return &Response{
 			Code: code.IsNotOwnerOfCandidate,
 			Log:  fmt.Sprintf("Sender is not an owner of a candidate"),
-			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.IsNotOwnerOfCandidate)),
-			}),
+			Info: EncodeError(code.NewIsNotOwnerOfCandidate(sender.String(), data.GetPubKey().String(), owner.String(), control.String())),
 		}
 	}
 

@@ -28,9 +28,7 @@ func (data RecreateCoinData) BasicCheck(tx *Transaction, context *state.CheckSta
 		return &Response{
 			Code: code.DecodeError,
 			Log:  "Incorrect tx data",
-			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.DecodeError)),
-			}),
+			Info: EncodeError(code.NewDecodeError()),
 		}
 	}
 
@@ -38,9 +36,7 @@ func (data RecreateCoinData) BasicCheck(tx *Transaction, context *state.CheckSta
 		return &Response{
 			Code: code.InvalidCoinName,
 			Log:  fmt.Sprintf("Coin name is invalid. Allowed up to %d bytes.", maxCoinNameBytes),
-			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.InvalidCoinName)),
-			}),
+			Info: EncodeError(code.NewInvalidCoinName(strconv.Itoa(maxCoinNameBytes), strconv.Itoa(len(data.Name)))),
 		}
 	}
 
@@ -48,9 +44,7 @@ func (data RecreateCoinData) BasicCheck(tx *Transaction, context *state.CheckSta
 		return &Response{
 			Code: code.WrongCrr,
 			Log:  fmt.Sprintf("Constant Reserve Ratio should be between 10 and 100"),
-			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.WrongCrr)),
-			}),
+			Info: EncodeError(code.NewWrongCrr("10", "100", strconv.Itoa(int(data.ConstantReserveRatio)))),
 		}
 	}
 
@@ -58,9 +52,7 @@ func (data RecreateCoinData) BasicCheck(tx *Transaction, context *state.CheckSta
 		return &Response{
 			Code: code.WrongCoinSupply,
 			Log:  fmt.Sprintf("Coin supply should be between %s and %s", minCoinSupply.String(), data.MaxSupply.String()),
-			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.WrongCoinSupply)),
-			}),
+			Info: EncodeError(code.NewWrongCoinSupply(maxCoinSupply.String(), data.MaxSupply.String(), minCoinReserve.String(), data.InitialReserve.String(), minCoinSupply.String(), data.MaxSupply.String(), data.InitialAmount.String())),
 		}
 	}
 
@@ -68,9 +60,7 @@ func (data RecreateCoinData) BasicCheck(tx *Transaction, context *state.CheckSta
 		return &Response{
 			Code: code.WrongCoinSupply,
 			Log:  fmt.Sprintf("Max coin supply should be less than %s", maxCoinSupply),
-			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.WrongCoinSupply)),
-			}),
+			Info: EncodeError(code.NewWrongCoinSupply(maxCoinSupply.String(), data.MaxSupply.String(), minCoinReserve.String(), data.InitialReserve.String(), minCoinSupply.String(), data.MaxSupply.String(), data.InitialAmount.String())),
 		}
 	}
 
@@ -78,9 +68,7 @@ func (data RecreateCoinData) BasicCheck(tx *Transaction, context *state.CheckSta
 		return &Response{
 			Code: code.WrongCoinSupply,
 			Log:  fmt.Sprintf("Coin reserve should be greater than or equal to %s", minCoinReserve.String()),
-			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.WrongCoinSupply)),
-			}),
+			Info: EncodeError(code.NewWrongCoinSupply(maxCoinSupply.String(), data.MaxSupply.String(), minCoinReserve.String(), data.InitialReserve.String(), minCoinSupply.String(), data.MaxSupply.String(), data.InitialAmount.String())),
 		}
 	}
 
@@ -91,21 +79,21 @@ func (data RecreateCoinData) BasicCheck(tx *Transaction, context *state.CheckSta
 		return &Response{
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin %s not exists", data.Symbol),
-			Info: EncodeError(map[string]string{
-				"code":        strconv.Itoa(int(code.CoinNotExists)),
-				"coin_symbol": fmt.Sprintf("%s", data.Symbol.String()),
-			}),
+			Info: EncodeError(code.NewCoinNotExists(data.Symbol.String(), "")),
 		}
 	}
 
 	symbolInfo := context.Coins().GetSymbolInfo(coin.Symbol())
 	if symbolInfo == nil || symbolInfo.OwnerAddress() == nil || symbolInfo.OwnerAddress().Compare(sender) != 0 {
+		var owner *string
+		if symbolInfo != nil && symbolInfo.OwnerAddress() != nil {
+			own := symbolInfo.OwnerAddress().String()
+			owner = &own
+		}
 		return &Response{
 			Code: code.IsNotOwnerOfCoin,
 			Log:  "Sender is not owner of coin",
-			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.IsNotOwnerOfCoin)),
-			}),
+			Info: EncodeError(code.NewIsNotOwnerOfCoin(data.Symbol.String(), owner)),
 		}
 	}
 
@@ -155,12 +143,7 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 		return Response{
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission.String(), gasCoin.GetFullSymbol()),
-			Info: EncodeError(map[string]string{
-				"code":         strconv.Itoa(int(code.InsufficientFunds)),
-				"sender":       sender.String(),
-				"needed_value": commission.String(),
-				"coin_symbol":  gasCoin.GetFullSymbol(),
-			}),
+			Info: EncodeError(code.NewInsufficientFunds(sender.String(), commission.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
 		}
 	}
 
@@ -168,12 +151,7 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 		return Response{
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), data.InitialReserve.String(), types.GetBaseCoin()),
-			Info: EncodeError(map[string]string{
-				"code":           strconv.Itoa(int(code.InsufficientFunds)),
-				"sender":         sender.String(),
-				"needed_reserve": data.InitialReserve.String(),
-				"coin_symbol":    fmt.Sprintf("%s", types.GetBaseCoin()),
-			}),
+			Info: EncodeError(code.NewInsufficientFunds(sender.String(), data.InitialReserve.String(), types.GetBaseCoin().String(), types.GetBaseCoinID().String())),
 		}
 	}
 
@@ -188,12 +166,7 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 			return Response{
 				Code: code.InsufficientFunds,
 				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), totalTxCost.String(), gasCoin.GetFullSymbol()),
-				Info: EncodeError(map[string]string{
-					"code":         strconv.Itoa(int(code.InsufficientFunds)),
-					"sender":       sender.String(),
-					"needed_value": totalTxCost.String(),
-					"coin_symbol":  gasCoin.GetFullSymbol(),
-				}),
+				Info: EncodeError(code.NewInsufficientFunds(sender.String(), totalTxCost.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
 			}
 		}
 	}

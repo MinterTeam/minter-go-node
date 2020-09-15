@@ -312,8 +312,8 @@ func TestMultiSigDoubleSignTx(t *testing.T) {
 
 	response := RunTx(cState, txBytes, big.NewInt(0), 0, &sync.Map{}, 0)
 
-	if response.Code != code.IncorrectMultiSignature {
-		t.Fatalf("Error code is not %d, got %d", code.IncorrectMultiSignature, response.Code)
+	if response.Code != code.DuplicatedAddresses {
+		t.Fatalf("Error code is not %d, got %d", code.DuplicatedAddresses, response.Code)
 	}
 }
 
@@ -407,8 +407,8 @@ func TestMultiSigNotEnoughTx(t *testing.T) {
 
 	response := RunTx(cState, txBytes, big.NewInt(0), 0, &sync.Map{}, 0)
 
-	if response.Code != code.IncorrectMultiSignature {
-		t.Fatalf("Error code is not %d. Error: %d", code.IncorrectMultiSignature, response.Code)
+	if response.Code != code.NotEnoughMultisigVotes {
+		t.Fatalf("Error code is not %d. Error: %d", code.NotEnoughMultisigVotes, response.Code)
 	}
 }
 

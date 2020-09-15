@@ -10,7 +10,11 @@ import (
 	"github.com/MinterTeam/minter-go-node/version"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/empty"
+	"github.com/tendermint/tendermint/evidence"
+	tmNode "github.com/tendermint/tendermint/node"
+	"github.com/tendermint/tendermint/p2p"
 	rpc "github.com/tendermint/tendermint/rpc/client/local"
+	typesTM "github.com/tendermint/tendermint/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"runtime"
@@ -20,11 +24,12 @@ import (
 type Manager struct {
 	blockchain *minter.Blockchain
 	tmRPC      *rpc.Local
+	tmNode     *tmNode.Node
 	cfg        *config.Config
 }
 
-func NewManager(blockchain *minter.Blockchain, tmRPC *rpc.Local, cfg *config.Config) pb.ManagerServiceServer {
-	return &Manager{blockchain: blockchain, tmRPC: tmRPC, cfg: cfg}
+func NewManager(blockchain *minter.Blockchain, tmRPC *rpc.Local, tmNode *tmNode.Node, cfg *config.Config) pb.ManagerServiceServer {
+	return &Manager{blockchain: blockchain, tmRPC: tmRPC, tmNode: tmNode, cfg: cfg}
 }
 
 func (m *Manager) Dashboard(_ *empty.Empty, stream pb.ManagerService_DashboardServer) error {
@@ -41,7 +46,7 @@ func (m *Manager) Dashboard(_ *empty.Empty, stream pb.ManagerService_DashboardSe
 			info := statisticData.GetLastBlockInfo()
 			averageTimeBlock := statisticData.GetAverageBlockProcessingTime()
 			timePerBlock := statisticData.GetTimePerBlock()
-			maxPeersHeight := m.blockchain.MaxPeerHeight()
+			maxPeersHeight := maxPeerHeight(m.tmNode.Switch())
 			if maxPeersHeight == 0 {
 				maxPeersHeight = info.Height
 			} else {
@@ -150,7 +155,7 @@ func (m *Manager) NetInfo(context.Context, *empty.Empty) (*pb.NetInfoResponse, e
 				RecentlySent:      channel.RecentlySent,
 			})
 		}
-		peerHeight := m.blockchain.PeerHeight(peer.NodeInfo.ID())
+		peerHeight := peerHeight(m.tmNode.Switch(), peer.NodeInfo.ID())
 		peers = append(peers, &pb.NetInfoResponse_Peer{
 			LatestBlockHeight: peerHeight,
 			NodeInfo: &pb.NodeInfo{
@@ -274,4 +279,35 @@ func (m *Manager) DealPeer(_ context.Context, req *pb.DealPeerRequest) (*empty.E
 		return res, status.Error(codes.FailedPrecondition, err.Error())
 	}
 	return res, nil
+}
+
+func maxPeerHeight(sw *p2p.Switch) int64 {
+	var max int64
+	for _, peer := range sw.Peers().List() {
+		peerState, ok := peer.Get(typesTM.PeerStateKey).(evidence.PeerState)
+		if !ok {
+			continue
+		}
+		height := peerState.GetHeight()
+		if height > max {
+			max = height
+		}
+	}
+	return max
+}
+
+func peerHeight(sw *p2p.Switch, id p2p.ID) int64 {
+	peerTM := sw.Peers().Get(id)
+	if peerTM == nil {
+		return 0
+	}
+	ps := peerTM.Get(typesTM.PeerStateKey)
+	if ps == nil {
+		return 0
+	}
+	peerState, ok := ps.(evidence.PeerState)
+	if !ok {
+		return 0
+	}
+	return peerState.GetHeight()
 }

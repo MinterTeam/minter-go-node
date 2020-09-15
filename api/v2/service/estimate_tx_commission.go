@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
-	"strconv"
 	"strings"
 
 	"github.com/MinterTeam/minter-go-node/core/code"
@@ -47,13 +46,16 @@ func (s *Service) EstimateTxCommission(ctx context.Context, req *pb.EstimateTxCo
 		coin := cState.Coins().GetCoin(decodedTx.GasCoin)
 
 		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
-			return new(pb.EstimateTxCommissionResponse), s.createError(status.New(codes.InvalidArgument, fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s",
-				coin.Reserve().String(), commissionInBaseCoin.String())), transaction.EncodeError(map[string]string{
-				"code":           strconv.Itoa(int(code.CoinReserveNotSufficient)),
-				"coin":           coin.GetFullSymbol(),
-				"value_has":      coin.Reserve().String(),
-				"value_required": commissionInBaseCoin.String(),
-			}))
+			return new(pb.EstimateTxCommissionResponse), s.createError(
+				status.New(codes.InvalidArgument, fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s",
+					coin.Reserve().String(), commissionInBaseCoin.String())),
+				transaction.EncodeError(code.NewCoinReserveNotSufficient(
+					coin.GetFullSymbol(),
+					coin.ID().String(),
+					coin.Reserve().String(),
+					commissionInBaseCoin.String(),
+				)),
+			)
 		}
 
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)

@@ -3,15 +3,13 @@ package transaction
 import (
 	"encoding/hex"
 	"fmt"
-	"math/big"
-	"strconv"
-
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/tendermint/tendermint/libs/kv"
+	"math/big"
 )
 
 type EditCandidatePublicKeyData struct {
@@ -54,11 +52,7 @@ func (data EditCandidatePublicKeyData) Run(tx *Transaction, context state.Interf
 		return Response{
 			Code: code.NewPublicKeyIsBad,
 			Log:  fmt.Sprintf("Current public key (%s) equals new public key (%s)", data.PubKey.String(), data.NewPubKey.String()),
-			Info: EncodeError(map[string]string{
-				"code":           strconv.Itoa(int(code.NewPublicKeyIsBad)),
-				"public_key":     data.PubKey.String(),
-				"new_public_key": data.NewPubKey.String(),
-			}),
+			Info: EncodeError(code.NewNewPublicKeyIsBad(data.PubKey.String(), data.NewPubKey.String())),
 		}
 	}
 
@@ -80,12 +74,7 @@ func (data EditCandidatePublicKeyData) Run(tx *Transaction, context state.Interf
 		return Response{
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission.String(), gasCoin.GetFullSymbol()),
-			Info: EncodeError(map[string]string{
-				"code":         strconv.Itoa(int(code.InsufficientFunds)),
-				"sender":       sender.String(),
-				"needed_value": commission.String(),
-				"coin_symbol":  gasCoin.GetFullSymbol(),
-			}),
+			Info: EncodeError(code.NewInsufficientFunds(sender.String(), commission.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
 		}
 	}
 
@@ -93,10 +82,7 @@ func (data EditCandidatePublicKeyData) Run(tx *Transaction, context state.Interf
 		return Response{
 			Code: code.PublicKeyInBlockList,
 			Log:  fmt.Sprintf("Public key (%s) exists in block list", data.NewPubKey.String()),
-			Info: EncodeError(map[string]string{
-				"code":           strconv.Itoa(int(code.PublicKeyInBlockList)),
-				"new_public_key": data.NewPubKey.String(),
-			}),
+			Info: EncodeError(code.NewPublicKeyInBlockList(data.NewPubKey.String())),
 		}
 	}
 
