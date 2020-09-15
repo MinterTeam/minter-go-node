@@ -268,3 +268,86 @@ type tooHighGasPrice struct {
 func NewTooHighGasPrice() *tooHighGasPrice {
 	return &tooHighGasPrice{Code: strconv.Itoa(int(TooHighGasPrice))}
 }
+
+type candidateExists struct {
+	Code      string `json:"code,omitempty"`
+	PublicKey string `json:"public_key,omitempty"`
+}
+
+func NewCandidateExists(publicKey string) *candidateExists {
+	return &candidateExists{Code: strconv.Itoa(int(CandidateExists)), PublicKey: publicKey}
+}
+
+type candidateNotFound struct {
+	Code      string `json:"code,omitempty"`
+	PublicKey string `json:"public_key,omitempty"`
+}
+
+func NewCandidateNotFound(publicKey string) *candidateNotFound {
+	return &candidateNotFound{Code: strconv.Itoa(int(CandidateNotFound)), PublicKey: publicKey}
+}
+
+type publicKeyInBlockList struct {
+	Code      string `json:"code,omitempty"`
+	PublicKey string `json:"public_key,omitempty"`
+}
+
+func NewPublicKeyInBlockList(publicKey string) *publicKeyInBlockList {
+	return &publicKeyInBlockList{Code: strconv.Itoa(int(PublicKeyInBlockList)), PublicKey: publicKey}
+}
+
+type newPublicKeyIsBad struct {
+	Code         string `json:"code,omitempty"`
+	PublicKey    string `json:"public_key,omitempty"`
+	NewPublicKey string `json:"new_public_key,omitempty"`
+}
+
+func NewNewPublicKeyIsBad(publicKey, newPublicKey string) *newPublicKeyIsBad {
+	return &newPublicKeyIsBad{Code: strconv.Itoa(int(NewPublicKeyIsBad)), PublicKey: publicKey, NewPublicKey: newPublicKey}
+}
+
+type insufficientWaitList struct {
+	Code          string `json:"code,omitempty"`
+	WaitlistValue string `json:"waitlist_value,omitempty"`
+	NeededValue   string `json:"needed_value,omitempty"`
+}
+
+func NewInsufficientWaitList(waitlistValue, neededValue string) *insufficientWaitList {
+	return &insufficientWaitList{Code: strconv.Itoa(int(InsufficientWaitList)), WaitlistValue: waitlistValue}
+}
+
+type stakeNotFound struct {
+	Code       string `json:"code,omitempty"`
+	PublicKey  string `json:"public_key,omitempty"`
+	Owner      string `json:"owner,omitempty"`
+	CoinSymbol string `json:"coin_symbol,omitempty"`
+	CoinId     string `json:"coin_id,omitempty"`
+}
+
+func NewStakeNotFound(publicKey string, owner string, coinId string, coinSymbol string) *stakeNotFound {
+	return &stakeNotFound{Code: strconv.Itoa(int(StakeNotFound)), PublicKey: publicKey, Owner: owner, CoinId: coinId, CoinSymbol: coinSymbol}
+}
+
+type insufficientStake struct {
+	Code        string `json:"code,omitempty"`
+	PublicKey   string `json:"public_key,omitempty"`
+	Owner       string `json:"owner,omitempty"`
+	CoinSymbol  string `json:"coin_symbol,omitempty"`
+	CoinId      string `json:"coin_id,omitempty"`
+	StakeValue  string `json:"stake_value,omitempty"`
+	NeededValue string `json:"needed_value,omitempty"`
+}
+
+func NewInsufficientStake(publicKey string, owner string, coinId string, coinSymbol string, stakeValue string, neededValue string) *insufficientStake {
+	return &insufficientStake{Code: strconv.Itoa(int(InsufficientStake)), PublicKey: publicKey, Owner: owner, CoinId: coinId, CoinSymbol: coinSymbol, StakeValue: stakeValue, NeededValue: neededValue}
+}
+
+type tooLongNonce struct {
+	Code          string `json:"code,omitempty"`
+	NonceBytes    string `json:"nonce_bytes,omitempty"`
+	MaxNonceBytes string `json:"max_nonce_bytes,omitempty"`
+}
+
+func NewTooLongNonce(nonceBytes string, maxNonceBytes string) *tooLongNonce {
+	return &tooLongNonce{Code: strconv.Itoa(int(TooLongNonce)), NonceBytes: nonceBytes, MaxNonceBytes: maxNonceBytes}
+}

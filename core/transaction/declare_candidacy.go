@@ -47,10 +47,7 @@ func (data DeclareCandidacyData) BasicCheck(tx *Transaction, context *state.Chec
 		return &Response{
 			Code: code.CandidateExists,
 			Log:  fmt.Sprintf("Candidate with such public key (%s) already exists", data.PubKey.String()),
-			Info: EncodeError(map[string]string{
-				"code":       strconv.Itoa(int(code.CandidateExists)),
-				"public_key": data.PubKey.String(),
-			}),
+			Info: EncodeError(code.NewCandidateExists(data.PubKey.String())),
 		}
 	}
 
@@ -58,10 +55,7 @@ func (data DeclareCandidacyData) BasicCheck(tx *Transaction, context *state.Chec
 		return &Response{
 			Code: code.PublicKeyInBlockList,
 			Log:  fmt.Sprintf("Candidate with such public key (%s) exists in block list", data.PubKey.String()),
-			Info: EncodeError(map[string]string{
-				"code":       strconv.Itoa(int(code.PublicKeyInBlockList)),
-				"public_key": data.PubKey.String(),
-			}),
+			Info: EncodeError(code.NewCandidateExists(data.PubKey.String())),
 		}
 	}
 

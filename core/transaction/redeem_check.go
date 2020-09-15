@@ -88,9 +88,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 		return Response{
 			Code: code.TooLongNonce,
 			Log:  "Nonce is too big. Should be up to 16 bytes.",
-			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.TooLongNonce)),
-			}),
+			Info: EncodeError(code.NewTooLongNonce(strconv.Itoa(len(decodedCheck.Nonce)), "16")),
 		}
 	}
 
