@@ -44,9 +44,7 @@ func (data RecreateCoinData) BasicCheck(tx *Transaction, context *state.CheckSta
 		return &Response{
 			Code: code.WrongCrr,
 			Log:  fmt.Sprintf("Constant Reserve Ratio should be between 10 and 100"),
-			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.WrongCrr)),
-			}),
+			Info: EncodeError(code.NewWrongCrr("10", "100", strconv.Itoa(int(data.ConstantReserveRatio)))),
 		}
 	}
 
@@ -54,9 +52,7 @@ func (data RecreateCoinData) BasicCheck(tx *Transaction, context *state.CheckSta
 		return &Response{
 			Code: code.WrongCoinSupply,
 			Log:  fmt.Sprintf("Coin supply should be between %s and %s", minCoinSupply.String(), data.MaxSupply.String()),
-			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.WrongCoinSupply)),
-			}),
+			Info: EncodeError(code.NewWrongCoinSupply(maxCoinSupply.String(), data.MaxSupply.String(), minCoinReserve.String(), data.InitialReserve.String(), minCoinSupply.String(), data.MaxSupply.String(), data.InitialAmount.String())),
 		}
 	}
 
@@ -64,9 +60,7 @@ func (data RecreateCoinData) BasicCheck(tx *Transaction, context *state.CheckSta
 		return &Response{
 			Code: code.WrongCoinSupply,
 			Log:  fmt.Sprintf("Max coin supply should be less than %s", maxCoinSupply),
-			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.WrongCoinSupply)),
-			}),
+			Info: EncodeError(code.NewWrongCoinSupply(maxCoinSupply.String(), data.MaxSupply.String(), minCoinReserve.String(), data.InitialReserve.String(), minCoinSupply.String(), data.MaxSupply.String(), data.InitialAmount.String())),
 		}
 	}
 
@@ -74,9 +68,7 @@ func (data RecreateCoinData) BasicCheck(tx *Transaction, context *state.CheckSta
 		return &Response{
 			Code: code.WrongCoinSupply,
 			Log:  fmt.Sprintf("Coin reserve should be greater than or equal to %s", minCoinReserve.String()),
-			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.WrongCoinSupply)),
-			}),
+			Info: EncodeError(code.NewWrongCoinSupply(maxCoinSupply.String(), data.MaxSupply.String(), minCoinReserve.String(), data.InitialReserve.String(), minCoinSupply.String(), data.MaxSupply.String(), data.InitialAmount.String())),
 		}
 	}
 
@@ -93,12 +85,15 @@ func (data RecreateCoinData) BasicCheck(tx *Transaction, context *state.CheckSta
 
 	symbolInfo := context.Coins().GetSymbolInfo(coin.Symbol())
 	if symbolInfo == nil || symbolInfo.OwnerAddress() == nil || symbolInfo.OwnerAddress().Compare(sender) != 0 {
+		var owner *string
+		if symbolInfo != nil && symbolInfo.OwnerAddress() != nil {
+			own := symbolInfo.OwnerAddress().String()
+			owner = &own
+		}
 		return &Response{
 			Code: code.IsNotOwnerOfCoin,
 			Log:  "Sender is not owner of coin",
-			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.IsNotOwnerOfCoin)),
-			}),
+			Info: EncodeError(code.NewIsNotOwnerOfCoin(data.Symbol.String(), owner)),
 		}
 	}
 

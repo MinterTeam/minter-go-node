@@ -38,7 +38,7 @@ func (data RedeemCheckData) BasicCheck(tx *Transaction, context *state.CheckStat
 		return &Response{
 			Code: code.TooHighGasPrice,
 			Log:  fmt.Sprintf("Gas price for check is limited to 1"),
-			Info: EncodeError(code.NewTooHighGasPrice()),
+			Info: EncodeError(code.NewTooHighGasPrice("1", strconv.Itoa(int(tx.GasPrice)))),
 		}
 	}
 
@@ -122,10 +122,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 		return Response{
 			Code: code.WrongGasCoin,
 			Log:  fmt.Sprintf("Gas coin for redeem check transaction can only be %s", decodedCheck.GasCoin),
-			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.WrongGasCoin)),
-				"coin": fmt.Sprintf("%s", decodedCheck.GasCoin),
-			}),
+			Info: EncodeError(code.NewWrongGasCoin(checkState.Coins().GetCoin(tx.GasCoin).GetFullSymbol(), tx.GasCoin.String(), checkState.Coins().GetCoin(decodedCheck.GasCoin).GetFullSymbol(), decodedCheck.GasCoin.String())),
 		}
 	}
 
@@ -133,11 +130,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 		return Response{
 			Code: code.CheckExpired,
 			Log:  fmt.Sprintf("Check expired"),
-			Info: EncodeError(map[string]string{
-				"code":          strconv.Itoa(int(code.CheckExpired)),
-				"due_block":     fmt.Sprintf("%d", decodedCheck.DueBlock),
-				"current_block": fmt.Sprintf("%d", currentBlock),
-			}),
+			Info: EncodeError(code.MewCheckExpired(fmt.Sprintf("%d", decodedCheck.DueBlock), fmt.Sprintf("%d", currentBlock))),
 		}
 	}
 
@@ -145,9 +138,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 		return Response{
 			Code: code.CheckUsed,
 			Log:  fmt.Sprintf("Check already redeemed"),
-			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.CheckUsed)),
-			}),
+			Info: EncodeError(code.NewCheckUsed()),
 		}
 	}
 
@@ -181,9 +172,8 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 	if !bytes.Equal(lockPublicKey, pub) {
 		return Response{
 			Code: code.CheckInvalidLock,
-			Log:  "Invalid proof", Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.CheckInvalidLock)),
-			}),
+			Log:  "Invalid proof",
+			Info: EncodeError(code.NewCheckInvalidLock()),
 		}
 	}
 

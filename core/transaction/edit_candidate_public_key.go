@@ -82,7 +82,7 @@ func (data EditCandidatePublicKeyData) Run(tx *Transaction, context state.Interf
 		return Response{
 			Code: code.PublicKeyInBlockList,
 			Log:  fmt.Sprintf("Public key (%s) exists in block list", data.NewPubKey.String()),
-			Info: EncodeError(code.NewCandidateExists(data.NewPubKey.String())),
+			Info: EncodeError(code.NewPublicKeyInBlockList(data.NewPubKey.String())),
 		}
 	}
 

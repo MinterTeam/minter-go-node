@@ -3,15 +3,13 @@ package transaction
 import (
 	"encoding/hex"
 	"fmt"
-	"math/big"
-	"strconv"
-
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/tendermint/tendermint/libs/kv"
+	"math/big"
 )
 
 type EditCoinOwnerData struct {
@@ -32,12 +30,11 @@ func (data EditCoinOwnerData) BasicCheck(tx *Transaction, context *state.CheckSt
 	}
 
 	if info.OwnerAddress() == nil || info.OwnerAddress().Compare(sender) != 0 {
+		owner := info.OwnerAddress().String()
 		return &Response{
 			Code: code.IsNotOwnerOfCoin,
 			Log:  "Sender is not owner of coin",
-			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.IsNotOwnerOfCoin)),
-			}),
+			Info: EncodeError(code.NewIsNotOwnerOfCoin(data.Symbol.String(), &owner)),
 		}
 	}
 

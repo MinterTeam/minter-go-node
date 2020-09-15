@@ -3,15 +3,13 @@ package transaction
 import (
 	"encoding/hex"
 	"fmt"
-	"math/big"
-	"strconv"
-
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/tendermint/tendermint/libs/kv"
+	"math/big"
 )
 
 type BuyCoinData struct {
@@ -59,13 +57,7 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.CheckState) (
 				Log: fmt.Sprintf(
 					"You wanted to sell maximum %s, but currently you need to spend %s to complete tx",
 					data.MaximumValueToSell.String(), value.String()),
-				Info: EncodeError(map[string]string{
-					"code":                  strconv.Itoa(int(code.MaximumValueToSellReached)),
-					"coin_symbol":           coin.GetFullSymbol(),
-					"coin_id":               coin.ID().String(),
-					"maximum_value_to_sell": data.MaximumValueToSell.String(),
-					"needed_spend_value":    value.String(),
-				}),
+				Info: EncodeError(code.NewMaximumValueToSellReached(data.MaximumValueToSell.String(), value.String(), coin.GetFullSymbol(), coin.ID().String())),
 			}
 		}
 
@@ -130,13 +122,7 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.CheckState) (
 				Log: fmt.Sprintf(
 					"You wanted to sell maximum %s, but currently you need to spend %s to complete tx",
 					data.MaximumValueToSell.String(), value.String()),
-				Info: EncodeError(map[string]string{
-					"code":                  strconv.Itoa(int(code.MaximumValueToSellReached)),
-					"coin_symbol":           coin.GetFullSymbol(),
-					"coin_id":               coin.ID().String(),
-					"maximum_value_to_sell": data.MaximumValueToSell.String(),
-					"needed_spend_value":    value.String(),
-				}),
+				Info: EncodeError(code.NewMaximumValueToSellReached(data.MaximumValueToSell.String(), value.String(), coin.GetFullSymbol(), coin.ID().String())),
 			}
 		}
 
@@ -215,13 +201,7 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.CheckState) (
 				Code: code.MaximumValueToSellReached,
 				Log: fmt.Sprintf("You wanted to sell maximum %s, but currently you need to spend %s to complete tx",
 					data.MaximumValueToSell.String(), value.String()),
-				Info: EncodeError(map[string]string{
-					"code":                  strconv.Itoa(int(code.MaximumValueToSellReached)),
-					"coin_symbol":           coinFrom.GetFullSymbol(),
-					"coin_id":               coinFrom.ID().String(),
-					"maximum_value_to_sell": data.MaximumValueToSell.String(),
-					"needed_spend_value":    value.String(),
-				}),
+				Info: EncodeError(code.NewMaximumValueToSellReached(data.MaximumValueToSell.String(), value.String(), coinFrom.GetFullSymbol(), coinFrom.ID().String())),
 			}
 		}
 
@@ -266,13 +246,7 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.CheckState) (
 				return nil, nil, nil, &Response{
 					Code: code.MaximumValueToSellReached,
 					Log:  fmt.Sprintf("You wanted to sell maximum %s, but currently you need to spend %s to complete tx", data.MaximumValueToSell.String(), totalValue.String()),
-					Info: EncodeError(map[string]string{
-						"code":                  strconv.Itoa(int(code.MaximumValueToSellReached)),
-						"coin_symbol":           coinFrom.GetFullSymbol(),
-						"coin_id":               coinFrom.ID().String(),
-						"maximum_value_to_sell": data.MaximumValueToSell.String(),
-						"needed_spend_value":    value.String(),
-					}),
+					Info: EncodeError(code.NewMaximumValueToSellReached(data.MaximumValueToSell.String(), value.String(), coinFrom.GetFullSymbol(), coinFrom.ID().String())),
 				}
 			}
 		}
@@ -336,16 +310,6 @@ func (data BuyCoinData) BasicCheck(tx *Transaction, context *state.CheckState) *
 
 	}
 
-	if data.CoinToSell == data.CoinToBuy {
-		return &Response{
-			Code: code.CrossConvert,
-			Log:  fmt.Sprintf("\"From\" coin equals to \"to\" coin"),
-			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.CrossConvert)),
-			}),
-		}
-	}
-
 	if !context.Coins().Exists(data.CoinToSell) {
 		return &Response{
 			Code: code.CoinNotExists,
@@ -359,6 +323,19 @@ func (data BuyCoinData) BasicCheck(tx *Transaction, context *state.CheckState) *
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin %s not exists", data.CoinToBuy),
 			Info: EncodeError(code.NewCoinNotExists("", data.CoinToBuy.String())),
+		}
+	}
+
+	if data.CoinToSell == data.CoinToBuy {
+		return &Response{
+			Code: code.CrossConvert,
+			Log:  fmt.Sprintf("\"From\" coin equals to \"to\" coin"),
+			Info: EncodeError(code.NewCrossConvert(
+				data.CoinToSell.String(),
+				context.Coins().GetCoin(data.CoinToSell).Symbol().String(),
+				data.CoinToBuy.String(),
+				context.Coins().GetCoin(data.CoinToBuy).Symbol().String()),
+			),
 		}
 	}
 

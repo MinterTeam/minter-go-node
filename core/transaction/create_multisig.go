@@ -27,31 +27,25 @@ func (data CreateMultisigData) BasicCheck(tx *Transaction, context *state.CheckS
 		return &Response{
 			Code: code.TooLargeOwnersList,
 			Log:  "Owners list is limited to 32 items",
-			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.TooLargeOwnersList)),
-			})}
+			Info: EncodeError(code.NewTooLargeOwnersList(strconv.Itoa(lenWeights), "32"))}
 	}
 
 	lenAddresses := len(data.Addresses)
 	if lenAddresses != lenWeights {
 		return &Response{
-			Code: code.IncorrectWeights,
-			Log:  fmt.Sprintf("Incorrect multisig weights"),
-			Info: EncodeError(map[string]string{
-				"code":            strconv.Itoa(int(code.IncorrectWeights)),
-				"count_weights":   fmt.Sprintf("%d", lenWeights),
-				"count_addresses": fmt.Sprintf("%d", lenAddresses),
-			}),
+			Code: code.DifferentCountAddressesAndWeights,
+			Log:  fmt.Sprintf("Different count addresses and weights"),
+			Info: EncodeError(code.NewDifferentCountAddressesAndWeights(fmt.Sprintf("%d", lenAddresses), fmt.Sprintf("%d", lenWeights))),
 		}
 	}
 
-	for _, weight := range data.Weights {
+	for i, weight := range data.Weights {
 		if weight > 1023 {
 			return &Response{
 				Code: code.IncorrectWeights,
-				Log:  "Incorrect multisig weights", Info: EncodeError(map[string]string{
-					"code": strconv.Itoa(int(code.IncorrectWeights)),
-				})}
+				Log:  "Incorrect multisig weights",
+				Info: EncodeError(code.NewIncorrectWeights(data.Addresses[i].String(), strconv.Itoa(int(weight)), "1024")),
+			}
 		}
 	}
 
@@ -61,9 +55,8 @@ func (data CreateMultisigData) BasicCheck(tx *Transaction, context *state.CheckS
 			return &Response{
 				Code: code.DuplicatedAddresses,
 				Log:  "Duplicated multisig addresses",
-				Info: EncodeError(map[string]string{
-					"code": strconv.Itoa(int(code.DuplicatedAddresses)),
-				})}
+				Info: EncodeError(code.NewDuplicatedAddresses(address.String())),
+			}
 		}
 
 		usedAddresses[address] = true
@@ -122,10 +115,7 @@ func (data CreateMultisigData) Run(tx *Transaction, context state.Interface, rew
 		return Response{
 			Code: code.MultisigExists,
 			Log:  fmt.Sprintf("Multisig %s already exists", msigAddress.String()),
-			Info: EncodeError(map[string]string{
-				"code":             strconv.Itoa(int(code.MultisigExists)),
-				"multisig_address": msigAddress.String(),
-			}),
+			Info: EncodeError(code.NewMultisigExists(msigAddress.String())),
 		}
 	}
 

@@ -3,9 +3,6 @@ package transaction
 import (
 	"encoding/hex"
 	"fmt"
-	"math/big"
-	"strconv"
-
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
@@ -13,6 +10,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/validators"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/tendermint/tendermint/libs/kv"
+	"math/big"
 )
 
 const minCommission = 0
@@ -55,7 +53,7 @@ func (data DeclareCandidacyData) BasicCheck(tx *Transaction, context *state.Chec
 		return &Response{
 			Code: code.PublicKeyInBlockList,
 			Log:  fmt.Sprintf("Candidate with such public key (%s) exists in block list", data.PubKey.String()),
-			Info: EncodeError(code.NewCandidateExists(data.PubKey.String())),
+			Info: EncodeError(code.NewPublicKeyInBlockList(data.PubKey.String())),
 		}
 	}
 
@@ -63,10 +61,7 @@ func (data DeclareCandidacyData) BasicCheck(tx *Transaction, context *state.Chec
 		return &Response{
 			Code: code.WrongCommission,
 			Log:  fmt.Sprintf("Commission should be between 0 and 100"),
-			Info: EncodeError(map[string]string{
-				"code":           strconv.Itoa(int(code.WrongCommission)),
-				"got_commission": fmt.Sprintf("%d", data.Commission),
-			}),
+			Info: EncodeError(code.NewWrongCommission(fmt.Sprintf("%d", data.Commission), "0", "100")),
 		}
 	}
 
@@ -102,9 +97,8 @@ func (data DeclareCandidacyData) Run(tx *Transaction, context state.Interface, r
 		return Response{
 			Code: code.TooLowStake,
 			Log:  fmt.Sprintf("Given stake is too low"),
-			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.TooLowStake)),
-			})}
+			Info: EncodeError(code.NewTooLowStake(sender.String(), data.PubKey.String(), data.Stake.String(), data.Coin.String(), checkState.Coins().GetCoin(data.Coin).GetFullSymbol())),
+		}
 	}
 
 	commissionInBaseCoin := big.NewInt(0).Mul(big.NewInt(int64(tx.GasPrice)), big.NewInt(tx.Gas()))

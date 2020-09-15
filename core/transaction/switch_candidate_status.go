@@ -3,15 +3,13 @@ package transaction
 import (
 	"encoding/hex"
 	"fmt"
-	"math/big"
-	"strconv"
-
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/tendermint/tendermint/libs/kv"
+	"math/big"
 )
 
 type SetCandidateOnData struct {
@@ -181,10 +179,7 @@ func checkCandidateControl(data CandidateTx, tx *Transaction, context *state.Che
 		return &Response{
 			Code: code.CandidateNotFound,
 			Log:  fmt.Sprintf("Candidate with such public key (%s) not found", data.GetPubKey().String()),
-			Info: EncodeError(map[string]string{
-				"code":       strconv.Itoa(int(code.CandidateNotFound)),
-				"public_key": data.GetPubKey().String(),
-			}),
+			Info: EncodeError(code.NewCandidateNotFound(data.GetPubKey().String())),
 		}
 	}
 
@@ -197,9 +192,7 @@ func checkCandidateControl(data CandidateTx, tx *Transaction, context *state.Che
 		return &Response{
 			Code: code.IsNotOwnerOfCandidate,
 			Log:  fmt.Sprintf("Sender is not an owner of a candidate"),
-			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.IsNotOwnerOfCandidate)),
-			}),
+			Info: EncodeError(code.NewIsNotOwnerOfCandidate(sender.String(), data.GetPubKey().String(), owner.String(), control.String())),
 		}
 	}
 

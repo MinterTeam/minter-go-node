@@ -53,13 +53,8 @@ func (s *Service) EstimateCoinBuy(ctx context.Context, req *pb.EstimateCoinBuyRe
 	}
 
 	if coinToSell == coinToBuy {
-		return new(pb.EstimateCoinBuyResponse), s.createError(status.New(codes.InvalidArgument, "\"From\" coin equals to \"to\" coin"), transaction.EncodeError(map[string]string{
-			"code":            "400",
-			"coin_id_to_sell": coinToSell.String(),
-			"coin_to_sell":    cState.Coins().GetCoin(coinToSell).Symbol().String(),
-			"coin_id_to_buy":  coinToBuy.String(),
-			"coin_to_buy":     cState.Coins().GetCoin(coinToBuy).Symbol().String(),
-		}))
+		return new(pb.EstimateCoinBuyResponse), s.createError(status.New(codes.InvalidArgument, "\"From\" coin equals to \"to\" coin"),
+			transaction.EncodeError(code.NewCrossConvert(coinToSell.String(), cState.Coins().GetCoin(coinToSell).Symbol().String(), coinToBuy.String(), cState.Coins().GetCoin(coinToBuy).Symbol().String())))
 	}
 
 	commissionInBaseCoin := big.NewInt(commissions.ConvertTx)

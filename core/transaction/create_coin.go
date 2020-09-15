@@ -71,43 +71,32 @@ func (data CreateCoinData) BasicCheck(tx *Transaction, context *state.CheckState
 		return &Response{
 			Code: code.WrongCrr,
 			Log:  fmt.Sprintf("Constant Reserve Ratio should be between 10 and 100"),
-			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.WrongCrr)),
-			})}
+			Info: EncodeError(code.NewWrongCrr("10", "100", strconv.Itoa(int(data.ConstantReserveRatio)))),
+		}
 	}
 
 	if data.MaxSupply.Cmp(maxCoinSupply) == 1 {
 		return &Response{
 			Code: code.WrongCoinSupply,
 			Log:  fmt.Sprintf("Max coin supply should be less than %s", maxCoinSupply),
-			Info: EncodeError(map[string]string{
-				"code":                strconv.Itoa(int(code.WrongCoinSupply)),
-				"max_coin_supply":     maxCoinSupply.String(),
-				"current_coin_supply": data.MaxSupply.String(),
-			})}
+			Info: EncodeError(code.NewWrongCoinSupply(maxCoinSupply.String(), data.MaxSupply.String(), minCoinReserve.String(), data.InitialReserve.String(), minCoinSupply.String(), data.MaxSupply.String(), data.InitialAmount.String())),
+		}
 	}
 
 	if data.InitialAmount.Cmp(minCoinSupply) == -1 || data.InitialAmount.Cmp(data.MaxSupply) == 1 {
 		return &Response{
 			Code: code.WrongCoinSupply,
 			Log:  fmt.Sprintf("Coin supply should be between %s and %s", minCoinSupply.String(), data.MaxSupply.String()),
-			Info: EncodeError(map[string]string{
-				"code":                   strconv.Itoa(int(code.WrongCoinSupply)),
-				"min_initial_amount":     minCoinSupply.String(),
-				"current_initial_amount": data.InitialAmount.String(),
-				"max_initial_amount":     data.MaxSupply.String(),
-			})}
+			Info: EncodeError(code.NewWrongCoinSupply(maxCoinSupply.String(), data.MaxSupply.String(), minCoinReserve.String(), data.InitialReserve.String(), minCoinSupply.String(), data.MaxSupply.String(), data.InitialAmount.String())),
+		}
 	}
 
 	if data.InitialReserve.Cmp(minCoinReserve) == -1 {
 		return &Response{
 			Code: code.WrongCoinSupply,
 			Log:  fmt.Sprintf("Coin reserve should be greater than or equal to %s", minCoinReserve.String()),
-			Info: EncodeError(map[string]string{
-				"code":                    strconv.Itoa(int(code.WrongCoinSupply)),
-				"min_initial_reserve":     minCoinReserve.String(),
-				"current_initial_reserve": data.InitialReserve.String(),
-			})}
+			Info: EncodeError(code.NewWrongCoinSupply(maxCoinSupply.String(), data.MaxSupply.String(), minCoinReserve.String(), data.InitialReserve.String(), minCoinSupply.String(), data.MaxSupply.String(), data.InitialAmount.String())),
+		}
 	}
 
 	return nil

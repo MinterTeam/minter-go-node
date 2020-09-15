@@ -3,9 +3,6 @@ package transaction
 import (
 	"encoding/hex"
 	"fmt"
-	"math/big"
-	"strconv"
-
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
@@ -13,6 +10,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/hexutil"
 	"github.com/tendermint/tendermint/libs/kv"
+	"math/big"
 )
 
 type DelegateData struct {
@@ -50,19 +48,15 @@ func (data DelegateData) BasicCheck(tx *Transaction, context *state.CheckState) 
 		return &Response{
 			Code: code.StakeShouldBePositive,
 			Log:  fmt.Sprintf("Stake should be positive"),
-			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.StakeShouldBePositive)),
-			})}
+			Info: EncodeError(code.NewStakeShouldBePositive(data.Value.String())),
+		}
 	}
 
 	if !context.Candidates().Exists(data.PubKey) {
 		return &Response{
 			Code: code.CandidateNotFound,
 			Log:  fmt.Sprintf("Candidate with such public key not found"),
-			Info: EncodeError(map[string]string{
-				"code":    strconv.Itoa(int(code.CandidateNotFound)),
-				"pub_key": data.PubKey.String(),
-			}),
+			Info: EncodeError(code.NewCandidateNotFound(data.PubKey.String())),
 		}
 	}
 
@@ -71,10 +65,8 @@ func (data DelegateData) BasicCheck(tx *Transaction, context *state.CheckState) 
 		return &Response{
 			Code: code.TooLowStake,
 			Log:  fmt.Sprintf("Stake is too low"),
-			Info: EncodeError(map[string]string{
-				"code":    strconv.Itoa(int(code.TooLowStake)),
-				"pub_key": data.PubKey.String(),
-			})}
+			Info: EncodeError(code.NewTooLowStake(sender.String(), data.PubKey.String(), data.Value.String(), data.Coin.String(), context.Coins().GetCoin(data.Coin).GetFullSymbol())),
+		}
 	}
 
 	return nil

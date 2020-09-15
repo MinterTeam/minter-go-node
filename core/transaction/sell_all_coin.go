@@ -3,15 +3,13 @@ package transaction
 import (
 	"encoding/hex"
 	"fmt"
-	"math/big"
-	"strconv"
-
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/tendermint/tendermint/libs/kv"
+	"math/big"
 )
 
 type SellAllCoinData struct {
@@ -44,13 +42,7 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.CheckStat
 			return nil, nil, nil, &Response{
 				Code: code.MinimumValueToBuyReached,
 				Log:  fmt.Sprintf("You wanted to get minimum %s, but currently you will get %s", data.MinimumValueToBuy.String(), value.String()),
-				Info: EncodeError(map[string]string{
-					"code":                 strconv.Itoa(int(code.MinimumValueToBuyReached)),
-					"minimum_value_to_buy": data.MinimumValueToBuy.String(),
-					"will_get_value":       value.String(),
-					"coin_symbol":          coin.GetFullSymbol(),
-					"coin_id":              coin.ID().String(),
-				}),
+				Info: EncodeError(code.NewMinimumValueToBuyReached(data.MinimumValueToBuy.String(), value.String(), coin.GetFullSymbol(), coin.ID().String())),
 			}
 		}
 
@@ -74,13 +66,7 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.CheckStat
 			return nil, nil, nil, &Response{
 				Code: code.MinimumValueToBuyReached,
 				Log:  fmt.Sprintf("You wanted to get minimum %s, but currently you will get %s", data.MinimumValueToBuy.String(), ret.String()),
-				Info: EncodeError(map[string]string{
-					"code":                 strconv.Itoa(int(code.MinimumValueToBuyReached)),
-					"minimum_value_to_buy": data.MinimumValueToBuy.String(),
-					"will_get_value":       ret.String(),
-					"coin_symbol":          coin.GetFullSymbol(),
-					"coin_id":              coin.ID().String(),
-				}),
+				Info: EncodeError(code.NewMinimumValueToBuyReached(data.MinimumValueToBuy.String(), ret.String(), coin.GetFullSymbol(), coin.ID().String())),
 			}
 		}
 
@@ -123,13 +109,7 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.CheckStat
 			return nil, nil, nil, &Response{
 				Code: code.MinimumValueToBuyReached,
 				Log:  fmt.Sprintf("You wanted to get minimum %s, but currently you will get %s", data.MinimumValueToBuy.String(), value.String()),
-				Info: EncodeError(map[string]string{
-					"code":                 strconv.Itoa(int(code.MinimumValueToBuyReached)),
-					"minimum_value_to_buy": data.MinimumValueToBuy.String(),
-					"will_get_value":       value.String(),
-					"coin_symbol":          coinTo.GetFullSymbol(),
-					"coin_id":              coinTo.ID().String(),
-				}),
+				Info: EncodeError(code.NewMinimumValueToBuyReached(data.MinimumValueToBuy.String(), value.String(), coinTo.GetFullSymbol(), coinTo.ID().String())),
 			}
 		}
 
@@ -151,18 +131,6 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.CheckStat
 }
 
 func (data SellAllCoinData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
-	if data.CoinToSell == data.CoinToBuy {
-		return &Response{
-			Code: code.CrossConvert,
-			Log:  fmt.Sprintf("\"From\" coin equals to \"to\" coin"),
-			Info: EncodeError(map[string]string{
-				"code":         strconv.Itoa(int(code.CrossConvert)),
-				"coin_to_sell": fmt.Sprintf("%s", data.CoinToSell),
-				"coin_to_buy":  fmt.Sprintf("%s", data.CoinToBuy),
-			}),
-		}
-	}
-
 	if !context.Coins().Exists(data.CoinToSell) {
 		return &Response{
 			Code: code.CoinNotExists,
@@ -176,6 +144,19 @@ func (data SellAllCoinData) BasicCheck(tx *Transaction, context *state.CheckStat
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin to buy not exists"),
 			Info: EncodeError(code.NewCoinNotExists("", data.CoinToBuy.String())),
+		}
+	}
+
+	if data.CoinToSell == data.CoinToBuy {
+		return &Response{
+			Code: code.CrossConvert,
+			Log:  fmt.Sprintf("\"From\" coin equals to \"to\" coin"),
+			Info: EncodeError(code.NewCrossConvert(
+				data.CoinToSell.String(),
+				context.Coins().GetCoin(data.CoinToSell).Symbol().String(),
+				data.CoinToBuy.String(),
+				context.Coins().GetCoin(data.CoinToBuy).Symbol().String()),
+			),
 		}
 	}
 

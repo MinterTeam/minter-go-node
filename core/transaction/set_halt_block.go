@@ -29,10 +29,7 @@ func (data SetHaltBlockData) BasicCheck(tx *Transaction, context *state.CheckSta
 		return &Response{
 			Code: code.CandidateNotFound,
 			Log:  fmt.Sprintf("Candidate with such public key not found"),
-			Info: EncodeError(map[string]string{
-				"code":    strconv.Itoa(int(code.CandidateNotFound)),
-				"pub_key": data.PubKey.String(),
-			}),
+			Info: EncodeError(code.NewCandidateNotFound(data.PubKey.String())),
 		}
 	}
 
@@ -66,10 +63,7 @@ func (data SetHaltBlockData) Run(tx *Transaction, context state.Interface, rewar
 		return Response{
 			Code: code.WrongHaltHeight,
 			Log:  fmt.Sprintf("Halt height should be equal or bigger than current: %d", currentBlock),
-			Info: EncodeError(map[string]string{
-				"code":   strconv.Itoa(int(code.WrongHaltHeight)),
-				"height": strconv.FormatUint(data.Height, 10),
-			}),
+			Info: EncodeError(code.NewWrongHaltHeight(strconv.FormatUint(data.Height, 10))),
 		}
 	}
 

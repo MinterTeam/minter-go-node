@@ -138,10 +138,7 @@ func RunTx(context state.Interface,
 			return Response{
 				Code: code.MultisigNotExists,
 				Log:  "Multisig does not exists",
-				Info: EncodeError(map[string]string{
-					"code":             strconv.Itoa(int(code.MultisigNotExists)),
-					"multisig_address": tx.multisig.Multisig.String(),
-				}),
+				Info: EncodeError(code.NewMultisigNotExists(tx.multisig.Multisig.String())),
 			}
 		}
 
@@ -151,9 +148,7 @@ func RunTx(context state.Interface,
 			return Response{
 				Code: code.IncorrectMultiSignature,
 				Log:  "Incorrect multi-signature",
-				Info: EncodeError(map[string]string{
-					"code": strconv.Itoa(int(code.IncorrectMultiSignature)),
-				}),
+				Info: EncodeError(code.NewIncorrectMultiSignature()),
 			}
 		}
 
@@ -163,24 +158,19 @@ func RunTx(context state.Interface,
 
 		for _, sig := range tx.multisig.Signatures {
 			signer, err := RecoverPlain(txHash, sig.R, sig.S, sig.V)
-
 			if err != nil {
 				return Response{
 					Code: code.IncorrectMultiSignature,
 					Log:  "Incorrect multi-signature",
-					Info: EncodeError(map[string]string{
-						"code": strconv.Itoa(int(code.IncorrectMultiSignature)),
-					}),
+					Info: EncodeError(code.NewIncorrectMultiSignature()),
 				}
 			}
 
 			if usedAccounts[signer] {
 				return Response{
-					Code: code.IncorrectMultiSignature,
-					Log:  "Incorrect multi-signature",
-					Info: EncodeError(map[string]string{
-						"code": strconv.Itoa(int(code.IncorrectMultiSignature)),
-					}),
+					Code: code.DuplicatedAddresses,
+					Log:  "Duplicated multisig addresses",
+					Info: EncodeError(code.NewDuplicatedAddresses(signer.String())),
 				}
 			}
 
@@ -190,13 +180,9 @@ func RunTx(context state.Interface,
 
 		if totalWeight < multisigData.Threshold {
 			return Response{
-				Code: code.IncorrectMultiSignature,
+				Code: code.NotEnoughMultisigVotes,
 				Log:  fmt.Sprintf("Not enough multisig votes. Needed %d, has %d", multisigData.Threshold, totalWeight),
-				Info: EncodeError(map[string]string{
-					"code":         strconv.Itoa(int(code.IncorrectMultiSignature)),
-					"needed_votes": fmt.Sprintf("%d", multisigData.Threshold),
-					"got_votes":    fmt.Sprintf("%d", totalWeight),
-				}),
+				Info: EncodeError(code.NewNotEnoughMultisigVotes(fmt.Sprintf("%d", multisigData.Threshold), fmt.Sprintf("%d", totalWeight))),
 			}
 		}
 

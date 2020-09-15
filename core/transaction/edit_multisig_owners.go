@@ -27,10 +27,7 @@ func (data EditMultisigOwnersData) BasicCheck(tx *Transaction, context *state.Ch
 		return &Response{
 			Code: code.MultisigNotExists,
 			Log:  "Multisig does not exists",
-			Info: EncodeError(map[string]string{
-				"code":             strconv.Itoa(int(code.MultisigNotExists)),
-				"multisig_address": sender.String(),
-			}),
+			Info: EncodeError(code.NewMultisigNotExists(sender.String())),
 		}
 	}
 
@@ -39,33 +36,25 @@ func (data EditMultisigOwnersData) BasicCheck(tx *Transaction, context *state.Ch
 		return &Response{
 			Code: code.TooLargeOwnersList,
 			Log:  fmt.Sprintf("Owners list is limited to 32 items"),
-			Info: EncodeError(map[string]string{
-				"code": strconv.Itoa(int(code.TooLargeOwnersList)),
-			}),
+			Info: EncodeError(code.NewTooLargeOwnersList(strconv.Itoa(lenWeights), "32")),
 		}
 	}
 
 	lenAddresses := len(data.Addresses)
 	if lenAddresses != lenWeights {
 		return &Response{
-			Code: code.IncorrectWeights,
-			Log:  fmt.Sprintf("Incorrect multisig weights"),
-			Info: EncodeError(map[string]string{
-				"code":            strconv.Itoa(int(code.IncorrectWeights)),
-				"count_weights":   fmt.Sprintf("%d", lenWeights),
-				"count_addresses": fmt.Sprintf("%d", lenAddresses),
-			}),
+			Code: code.DifferentCountAddressesAndWeights,
+			Log:  fmt.Sprintf("Different count addresses and weights"),
+			Info: EncodeError(code.NewDifferentCountAddressesAndWeights(fmt.Sprintf("%d", lenAddresses), fmt.Sprintf("%d", lenWeights))),
 		}
 	}
 
-	for _, weight := range data.Weights {
+	for i, weight := range data.Weights {
 		if weight > 1023 {
 			return &Response{
 				Code: code.IncorrectWeights,
 				Log:  "Incorrect multisig weights",
-				Info: EncodeError(map[string]string{
-					"code": strconv.Itoa(int(code.IncorrectWeights)),
-				}),
+				Info: EncodeError(code.NewIncorrectWeights(data.Addresses[i].String(), strconv.Itoa(int(weight)), "1024")),
 			}
 		}
 	}
@@ -76,9 +65,7 @@ func (data EditMultisigOwnersData) BasicCheck(tx *Transaction, context *state.Ch
 			return &Response{
 				Code: code.DuplicatedAddresses,
 				Log:  fmt.Sprintf("Duplicated multisig addresses"),
-				Info: EncodeError(map[string]string{
-					"code": strconv.Itoa(int(code.DuplicatedAddresses)),
-				}),
+				Info: EncodeError(code.NewDuplicatedAddresses(address.String())),
 			}
 		}
 
@@ -91,13 +78,9 @@ func (data EditMultisigOwnersData) BasicCheck(tx *Transaction, context *state.Ch
 	}
 	if data.Threshold > totalWeight {
 		return &Response{
-			Code: code.IncorrectWeights,
+			Code: code.IncorrectTotalWeights,
 			Log:  "Incorrect multisig weights",
-			Info: EncodeError(map[string]string{
-				"code":         strconv.Itoa(int(code.IncorrectWeights)),
-				"total_weight": fmt.Sprintf("%d", totalWeight),
-				"threshold":    fmt.Sprintf("%d", data.Threshold),
-			}),
+			Info: EncodeError(code.NewIncorrectTotalWeights(fmt.Sprintf("%d", totalWeight), fmt.Sprintf("%d", data.Threshold))),
 		}
 	}
 
