@@ -62,7 +62,7 @@ func TestEditCandidateNewPublicKeyTx(t *testing.T) {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
 
-	targetBalance, _ := big.NewInt(0).SetString("999990000000000000000000", 10)
+	targetBalance, _ := big.NewInt(0).SetString("900000000000000000000000", 10)
 	balance := cState.Accounts.GetBalance(addr, coin)
 	if balance.Cmp(targetBalance) != 0 {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", coin, targetBalance, balance)
