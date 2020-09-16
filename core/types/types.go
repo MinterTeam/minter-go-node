@@ -42,15 +42,6 @@ func BytesToHash(b []byte) Hash {
 	return h
 }
 
-// StringToHash converts given string to Hash
-func StringToHash(s string) Hash { return BytesToHash([]byte(s)) }
-
-// BigToHash converts given big.Int to Hash
-func BigToHash(b *big.Int) Hash { return BytesToHash(b.Bytes()) }
-
-// HexToHash converts given hex string to Hash
-func HexToHash(s string) Hash { return BytesToHash(FromHex(s, "Mh")) }
-
 // Str returns the string representation of the underlying hash
 func (h Hash) Str() string { return string(h[:]) }
 
