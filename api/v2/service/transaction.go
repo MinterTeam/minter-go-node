@@ -36,7 +36,7 @@ func (s *Service) Transaction(ctx context.Context, req *pb.TransactionRequest) (
 
 	cState, err := s.blockchain.GetStateForHeight(uint64(tx.Height))
 	if err != nil {
-		return new(pb.TransactionResponse), status.Error(codes.Internal, err.Error())
+		return new(pb.TransactionResponse), status.Error(codes.NotFound, err.Error())
 	}
 
 	cState.RLock()

@@ -31,7 +31,7 @@ func (s *Service) WaitList(ctx context.Context, req *pb.WaitListRequest) (*pb.Wa
 
 	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {
-		return nil, err
+		return new(pb.WaitListResponse), status.Error(codes.NotFound, err.Error())
 	}
 
 	cState.RLock()

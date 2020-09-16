@@ -56,7 +56,7 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 
 		cState, err = s.blockchain.GetStateForHeight(uint64(height))
 		if err != nil {
-			return nil, err
+			return new(pb.BlockResponse), status.Error(codes.NotFound, err.Error())
 		}
 
 		response.Transactions, err = s.blockTransaction(block, blockResults, cState.Coins())
@@ -117,7 +117,7 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 			if cState == nil {
 				cState, err = s.blockchain.GetStateForHeight(uint64(height))
 				if err != nil {
-					return nil, err
+					return new(pb.BlockResponse), status.Error(codes.NotFound, err.Error())
 				}
 			}
 

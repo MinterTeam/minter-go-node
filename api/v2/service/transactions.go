@@ -32,7 +32,7 @@ func (s *Service) Transactions(ctx context.Context, req *pb.TransactionsRequest)
 
 		cState, err := s.blockchain.GetStateForHeight(uint64(rpcResult.Txs[0].Height))
 		if err != nil {
-			return new(pb.TransactionsResponse), status.Error(codes.Internal, err.Error())
+			return new(pb.TransactionsResponse), status.Error(codes.NotFound, err.Error())
 		}
 		for _, tx := range rpcResult.Txs {
 

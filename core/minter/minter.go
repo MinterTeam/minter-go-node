@@ -2,7 +2,6 @@ package minter
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
@@ -166,11 +165,11 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.ResponseBeginBlock {
 	height := uint64(req.Header.Height)
 
-	app.StatisticData().PushStartBlock(&statistics.StartRequest{Height: int64(height), Now: time.Now(), HeaderTime: req.Header.Time})
-
 	if app.isApplicationHalted(height) {
 		panic(fmt.Sprintf("Application halted at height %d", height))
 	}
+
+	app.StatisticData().PushStartBlock(&statistics.StartRequest{Height: int64(height), Now: time.Now(), HeaderTime: req.Header.Time})
 
 	app.stateDeliver.Lock()
 
@@ -495,7 +494,7 @@ func (app *Blockchain) GetStateForHeight(height uint64) (*state.CheckState, erro
 	if height > 0 {
 		s, err := state.NewCheckStateAtHeight(height, app.stateDB)
 		if err != nil {
-			return nil, errors.New("state at given height not found")
+			return nil, err
 		}
 		return s, nil
 	}
