@@ -230,7 +230,7 @@ func (s *Service) blockTransaction(block *core_types.ResultBlock, blockResults *
 		}
 
 		txs = append(txs, &pb.BlockResponse_Transaction{
-			Hash:        "Mt" + strings.ToLower(tx.Hash().String()),
+			Hash:        strings.Title(fmt.Sprintf("Mt%x", rawTx.Hash())),
 			RawTx:       fmt.Sprintf("%x", []byte(rawTx)),
 			From:        sender.String(),
 			Nonce:       fmt.Sprintf("%d", tx.Nonce),
