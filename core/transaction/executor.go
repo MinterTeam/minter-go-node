@@ -22,7 +22,7 @@ const (
 	maxPayloadLength     = 1024
 	maxServiceDataLength = 128
 
-	coinGas = 5000
+	stdGas = 5000
 )
 
 type Response struct {
@@ -204,19 +204,10 @@ func RunTx(context state.Interface,
 
 	response.GasPrice = tx.GasPrice
 
-	if tx.Type == TypeCreateCoin {
-		response.GasUsed = coinGas
-		response.GasWanted = coinGas
-	}
-
-	if tx.Type == TypeEditCoinOwner {
-		response.GasUsed = coinGas
-		response.GasWanted = coinGas
-	}
-
-	if tx.Type == TypeRecreateCoin {
-		response.GasUsed = coinGas
-		response.GasWanted = coinGas
+	switch tx.Type {
+	case TypeCreateCoin, TypeEditCoinOwner, TypeRecreateCoin, TypeEditCandidatePublicKey:
+		response.GasUsed = stdGas
+		response.GasWanted = stdGas
 	}
 
 	return response
