@@ -13,18 +13,14 @@ import (
 	"github.com/tendermint/tendermint/libs/kv"
 )
 
-var (
-	CommissionMultiplier = big.NewInt(10e14)
-)
-
 const (
 	maxTxLength          = 7168
 	maxPayloadLength     = 1024
 	maxServiceDataLength = 128
-
-	coinGas = 5000
+	stdGas               = 5000
 )
 
+// Response represents standard response from tx delivery/check
 type Response struct {
 	Code      uint32    `json:"code,omitempty"`
 	Data      []byte    `json:"data,omitempty"`
@@ -36,6 +32,7 @@ type Response struct {
 	GasPrice  uint32    `json:"gas_price"`
 }
 
+// RunTx executes transaction in given context
 func RunTx(context state.Interface,
 	rawTx []byte,
 	rewardPool *big.Int,
@@ -204,28 +201,20 @@ func RunTx(context state.Interface,
 
 	response.GasPrice = tx.GasPrice
 
-	if tx.Type == TypeCreateCoin {
-		response.GasUsed = coinGas
-		response.GasWanted = coinGas
-	}
-
-	if tx.Type == TypeEditCoinOwner {
-		response.GasUsed = coinGas
-		response.GasWanted = coinGas
-	}
-
-	if tx.Type == TypeRecreateCoin {
-		response.GasUsed = coinGas
-		response.GasWanted = coinGas
+	switch tx.Type {
+	case TypeCreateCoin, TypeEditCoinOwner, TypeRecreateCoin, TypeEditCandidatePublicKey:
+		response.GasUsed = stdGas
+		response.GasWanted = stdGas
 	}
 
 	return response
 }
 
+// EncodeError encodes error to json
 func EncodeError(data interface{}) string {
-	marshal, err := json.Marshal(data)
+	marshaled, err := json.Marshal(data)
 	if err != nil {
 		panic(err)
 	}
-	return string(marshal)
+	return string(marshaled)
 }

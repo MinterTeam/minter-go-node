@@ -273,11 +273,10 @@ func (resource MultiSendDataResource) Transform(txData interface{}, context *sta
 
 // EditCandidateDataResource is JSON representation of TxType 0x0E
 type EditCandidateDataResource struct {
-	PubKey         string  `json:"pub_key"`
-	NewPubKey      *string `json:"new_pub_key"`
-	RewardAddress  string  `json:"reward_address"`
-	OwnerAddress   string  `json:"owner_address"`
-	ControlAddress string  `json:"control_address"`
+	PubKey         string `json:"pub_key"`
+	RewardAddress  string `json:"reward_address"`
+	OwnerAddress   string `json:"owner_address"`
+	ControlAddress string `json:"control_address"`
 }
 
 // Transform returns TxDataResource from given txData. Used for JSON encoder.

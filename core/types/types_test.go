@@ -19,6 +19,7 @@ package types
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/tendermint/go-amino"
 	"math/big"
 	"strings"
@@ -169,6 +170,10 @@ func TestAppState(t *testing.T) {
 						Coin:  GetBaseCoinID(),
 						Value: big.NewInt(1).String(),
 					},
+					{
+						Coin:  GetBaseCoinID() + 1,
+						Value: big.NewInt(1).String(),
+					},
 				},
 				Nonce: 1,
 				MultisigData: &Multisig{
@@ -180,12 +185,13 @@ func TestAppState(t *testing.T) {
 		},
 		Coins: []Coin{
 			{
-				ID:      GetBaseCoinID(),
-				Name:    "ASD",
-				Symbol:  GetBaseCoin(),
-				Volume:  big.NewInt(1).String(),
-				Crr:     1,
-				Reserve: big.NewInt(1).String(),
+				ID:        GetBaseCoinID() + 1,
+				Name:      "ASD",
+				Symbol:    StrToCoinSymbol("TEST"),
+				Volume:    big.NewInt(2).String(),
+				Crr:       1,
+				Reserve:   helpers.BipToPip(big.NewInt(100000)).String(),
+				MaxSupply: helpers.BipToPip(big.NewInt(100000)).String(),
 			},
 		},
 		FrozenFunds: []FrozenFund{
@@ -193,17 +199,22 @@ func TestAppState(t *testing.T) {
 				Height:       1,
 				Address:      testAddr,
 				CandidateKey: &pubkey,
-				Coin:         GetBaseCoinID(),
+				Coin:         GetBaseCoinID() + 1,
 				Value:        big.NewInt(1).String(),
 			},
 		},
 		UsedChecks: []UsedCheck{
-			"123",
+			"00004601d10c33eda76bb16a54a0d8882a57ec34e964aa23e2b5d9aa10957fee",
 		},
-		MaxGas: 10,
+		MaxGas:       10,
+		TotalSlashed: big.NewInt(1e18).String(),
 	}
 
 	cdc := amino.NewCodec()
+
+	if err := appState.Verify(); err != nil {
+		t.Error(err)
+	}
 
 	b1, err := cdc.MarshalJSON(appState)
 	if err != nil {
@@ -223,5 +234,540 @@ func TestAppState(t *testing.T) {
 
 	if !bytes.Equal(b1, b2) {
 		t.Errorf("Bytes are not the same")
+	}
+}
+
+func TestAppStateToInvalidState(t *testing.T) {
+	testAddr := HexToAddress("Mx5aaeb6053f3e94c9b9a09f33669435e7ef1beaed")
+	pubkey := Pubkey{1, 2, 3}
+	ba := NewBitArray(24)
+	ba.SetIndex(3, true)
+
+	appState := AppState{}
+	if appState.Verify() == nil {
+		t.Error("State is not correct")
+	}
+
+	appState = AppState{
+		TotalSlashed: big.NewInt(1e18).String(),
+	}
+	if appState.Verify() == nil {
+		t.Error("State is not correct")
+	}
+
+	appState = AppState{
+		TotalSlashed: big.NewInt(1e18).String(),
+		Validators: []Validator{
+			{
+				TotalBipStake: big.NewInt(1).String(),
+				PubKey:        pubkey,
+				AccumReward:   big.NewInt(1).String(),
+				AbsentTimes:   ba,
+			},
+			{
+				TotalBipStake: big.NewInt(1).String(),
+				PubKey:        pubkey,
+				AccumReward:   big.NewInt(1).String(),
+				AbsentTimes:   ba,
+			},
+		},
+		Candidates: []Candidate{
+			{
+				RewardAddress: testAddr,
+				OwnerAddress:  testAddr,
+				TotalBipStake: big.NewInt(1).String(),
+				PubKey:        pubkey,
+				Commission:    1,
+				Stakes: []Stake{
+					{
+						Owner:    testAddr,
+						Coin:     GetBaseCoinID(),
+						Value:    big.NewInt(1).String(),
+						BipValue: big.NewInt(1).String(),
+					},
+				},
+				Status: 1,
+			},
+		},
+	}
+
+	if appState.Verify() == nil {
+		t.Error("State is not correct")
+	}
+
+	appState = AppState{
+		TotalSlashed: big.NewInt(1e18).String(),
+		Validators: []Validator{
+			{
+				TotalBipStake: big.NewInt(1).String(),
+				PubKey:        pubkey,
+				AccumReward:   big.NewInt(1).String(),
+				AbsentTimes:   ba,
+			},
+		},
+	}
+
+	if appState.Verify() == nil {
+		t.Error("State is not correct")
+	}
+
+	appState = AppState{
+		TotalSlashed: big.NewInt(1e18).String(),
+		Validators: []Validator{
+			{
+				TotalBipStake: "",
+				PubKey:        pubkey,
+				AccumReward:   big.NewInt(1).String(),
+				AbsentTimes:   ba,
+			},
+		},
+		Candidates: []Candidate{
+			{
+				RewardAddress: testAddr,
+				OwnerAddress:  testAddr,
+				TotalBipStake: big.NewInt(1).String(),
+				PubKey:        pubkey,
+				Commission:    1,
+				Stakes: []Stake{
+					{
+						Owner:    testAddr,
+						Coin:     GetBaseCoinID(),
+						Value:    big.NewInt(1).String(),
+						BipValue: big.NewInt(1).String(),
+					},
+				},
+				Status: 1,
+			},
+		},
+	}
+
+	if appState.Verify() == nil {
+		t.Error("State is not correct")
+	}
+
+	appState.Validators[0].TotalBipStake = big.NewInt(1e18).String()
+	appState.Validators[0].AccumReward = ""
+	if appState.Verify() == nil {
+		t.Error("State is not correct")
+	}
+
+	appState.Validators[0].AccumReward = big.NewInt(1e18).String()
+	appState.Validators[0].AbsentTimes = nil
+	if appState.Verify() == nil {
+		t.Error("State is not correct")
+	}
+
+	appState.Accounts = []Account{
+		{
+			Address: testAddr,
+			Balance: []Balance{
+				{
+					Coin:  GetBaseCoinID(),
+					Value: big.NewInt(1).String(),
+				},
+			},
+			Nonce: 1,
+		}, {
+			Address: testAddr,
+			Balance: []Balance{
+				{
+					Coin:  GetBaseCoinID(),
+					Value: big.NewInt(1).String(),
+				},
+			},
+			Nonce: 1,
+		},
+	}
+
+	appState.Validators[0].AbsentTimes = ba
+	if appState.Verify() == nil {
+		t.Error("State is not correct")
+	}
+
+	appState.Accounts = []Account{
+		{
+			Address: testAddr,
+			Balance: []Balance{
+				{
+					Coin:  GetBaseCoinID(),
+					Value: "",
+				},
+			},
+			Nonce: 1,
+		},
+	}
+
+	if appState.Verify() == nil {
+		t.Error("State is not correct")
+	}
+
+	appState.Accounts = []Account{
+		{
+			Address: testAddr,
+			Balance: []Balance{
+				{
+					Coin:  GetBaseCoinID() + 1,
+					Value: big.NewInt(1).String(),
+				},
+			},
+			Nonce: 1,
+		},
+	}
+
+	if appState.Verify() == nil {
+		t.Error("State is not correct")
+	}
+
+	appState.Accounts = []Account{
+		{
+			Address: testAddr,
+			Balance: []Balance{
+				{
+					Coin:  GetBaseCoinID(),
+					Value: big.NewInt(1).String(),
+				},
+			},
+			Nonce: 1,
+		},
+	}
+
+	appState.Candidates[0].Stakes = []Stake{
+		{
+			Owner:    testAddr,
+			Coin:     GetBaseCoinID(),
+			Value:    big.NewInt(1).String(),
+			BipValue: big.NewInt(1).String(),
+		},
+		{
+			Owner:    testAddr,
+			Coin:     GetBaseCoinID(),
+			Value:    big.NewInt(1).String(),
+			BipValue: big.NewInt(1).String(),
+		},
+	}
+
+	if appState.Verify() == nil {
+		t.Error("State is not correct")
+	}
+
+	appState.Candidates[0].Stakes = []Stake{
+		{
+			Owner:    testAddr,
+			Coin:     GetBaseCoinID() + 1,
+			Value:    big.NewInt(1).String(),
+			BipValue: big.NewInt(1).String(),
+		},
+	}
+
+	appState.Coins = []Coin{
+		{
+			ID: GetBaseCoinID() + 2,
+		},
+	}
+
+	if appState.Verify() == nil {
+		t.Error("State is not correct")
+	}
+
+	appState.Candidates[0].Stakes = []Stake{
+		{
+			Owner:    testAddr,
+			Coin:     GetBaseCoinID() + 1,
+			Value:    big.NewInt(1).String(),
+			BipValue: big.NewInt(1).String(),
+		},
+	}
+
+	appState.Coins = []Coin{
+		{
+			ID:        GetBaseCoinID() + 1,
+			Name:      "ASD",
+			Symbol:    StrToCoinSymbol("TEST"),
+			Volume:    big.NewInt(1).String(),
+			Crr:       1,
+			Reserve:   helpers.BipToPip(big.NewInt(100000)).String(),
+			MaxSupply: helpers.BipToPip(big.NewInt(100000)).String(),
+		},
+		{
+			ID:     GetBaseCoinID(),
+			Symbol: GetBaseCoin(),
+		},
+	}
+
+	if appState.Verify() == nil {
+		t.Error("State is not correct")
+	}
+
+	appState.Coins = []Coin{
+		{
+			ID:        GetBaseCoinID() + 1,
+			Name:      "ASD",
+			Symbol:    StrToCoinSymbol("TEST"),
+			Volume:    big.NewInt(1).String(),
+			Crr:       1,
+			Reserve:   helpers.BipToPip(big.NewInt(100000)).String(),
+			MaxSupply: helpers.BipToPip(big.NewInt(100000)).String(),
+		},
+		{
+			ID:        GetBaseCoinID() + 1,
+			Name:      "ASD",
+			Symbol:    StrToCoinSymbol("TEST"),
+			Volume:    big.NewInt(1).String(),
+			Crr:       1,
+			Reserve:   helpers.BipToPip(big.NewInt(100000)).String(),
+			MaxSupply: helpers.BipToPip(big.NewInt(100000)).String(),
+		},
+		{
+			ID:     GetBaseCoinID(),
+			Symbol: GetBaseCoin(),
+		},
+	}
+
+	if appState.Verify() == nil {
+		t.Error("State is not correct")
+	}
+
+	appState.Coins = []Coin{
+		{
+			ID:        GetBaseCoinID() + 1,
+			Name:      "ASD",
+			Symbol:    StrToCoinSymbol("TEST"),
+			Volume:    big.NewInt(1).String(),
+			Crr:       1,
+			Reserve:   helpers.BipToPip(big.NewInt(100000)).String(),
+			MaxSupply: helpers.BipToPip(big.NewInt(100000)).String(),
+		},
+	}
+
+	appState.FrozenFunds = []FrozenFund{
+		{
+			Height:       1,
+			Address:      testAddr,
+			CandidateKey: &pubkey,
+			Coin:         GetBaseCoinID() + 1,
+			Value:        big.NewInt(1e18).String(),
+		},
+	}
+
+	if appState.Verify() == nil {
+		t.Error("State is not correct")
+	}
+
+	appState.FrozenFunds = []FrozenFund{
+		{
+			Height:       1,
+			Address:      testAddr,
+			CandidateKey: &pubkey,
+			Coin:         GetBaseCoinID(),
+			Value:        "",
+		},
+	}
+
+	if appState.Verify() == nil {
+		t.Error("State is not correct")
+	}
+
+	appState.FrozenFunds = []FrozenFund{
+		{
+			Height:       1,
+			Address:      testAddr,
+			CandidateKey: &pubkey,
+			Coin:         GetBaseCoinID() + 3,
+			Value:        big.NewInt(1e18).String(),
+		},
+	}
+
+	if appState.Verify() == nil {
+		t.Error("State is not correct")
+	}
+
+	appState.FrozenFunds = []FrozenFund{
+		{
+			Height:       1,
+			Address:      testAddr,
+			CandidateKey: &pubkey,
+			Coin:         GetBaseCoinID(),
+			Value:        big.NewInt(1e18).String(),
+		},
+	}
+
+	appState.UsedChecks = []UsedCheck{
+		"00004601d10c33eda76bb16a54a0asddsd8882a57ec34e964aa23e2b5d9aa10957feea",
+	}
+
+	if appState.Verify() == nil {
+		t.Error("State is not correct")
+	}
+
+}
+
+func TestHashToString(t *testing.T) {
+	hash := Hash{5}
+	if hash.String() != "Mx0500000000000000000000000000000000000000000000000000000000000000" {
+		t.Error("Hash hex not the same")
+	}
+}
+
+func TestHashToBytes(t *testing.T) {
+	b := []byte{5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	hash := BytesToHash(b)
+
+	if !bytes.Equal(b, hash.Bytes()) {
+		t.Error("Bytes are the same")
+	}
+}
+
+func TestEmptyHash(t *testing.T) {
+	if EmptyHash(Hash{}) != true {
+		t.Error("Hash is not empty")
+	}
+}
+
+func TestHashToSetBytes(t *testing.T) {
+	b1 := []byte{1, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+
+	h := Hash{}
+	h.SetBytes(b1)
+
+	if !bytes.Equal(b1, h.Bytes()) {
+		t.Error("Bytes are not the same")
+	}
+
+	b2 := []byte{2, 1, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	h.SetBytes(b2)
+
+	if !bytes.Equal(b1, h.Bytes()) {
+		t.Error("Bytes are not the same")
+	}
+}
+
+func TestHashToSet(t *testing.T) {
+	h1, h2 := Hash{5}, Hash{}
+	h2.Set(h1)
+
+	if !bytes.Equal(h1.Bytes(), h2.Bytes()) {
+		t.Error("Bytes are not the same")
+	}
+}
+
+func TestHashToMarshalText(t *testing.T) {
+	b := []byte{77, 120, 48, 53, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48}
+	h := Hash{5}
+	hashBytes, err := h.MarshalText()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !bytes.Equal(hashBytes, b) {
+		t.Error("Bytes are not the same")
+	}
+
+	h2 := Hash{}
+	if err = h2.UnmarshalText(hashBytes); err != nil {
+		t.Fatal(err)
+	}
+
+	if !bytes.Equal(h2.Bytes(), h.Bytes()) {
+		t.Error("Bytes are not the same")
+	}
+}
+
+func TestGetVersionFromSymbol(t *testing.T) {
+	if GetVersionFromSymbol("BIP-5") != 5 {
+		t.Error("Coin version is incorrect")
+	}
+
+	if GetVersionFromSymbol("BIP") != 0 {
+		t.Error("Coin version is incorrect")
+	}
+}
+
+func TestAddressToSetBytes(t *testing.T) {
+	b1 := []byte{5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+
+	a := Address{}
+	a.SetBytes(b1)
+	if !bytes.Equal(b1, a.Bytes()) {
+		t.Error("Bytes are not the same")
+	}
+
+	b2 := []byte{1, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	a.SetBytes(b2)
+
+	if !bytes.Equal(b1, a.Bytes()) {
+		t.Error("Bytes are not the same")
+	}
+}
+
+func TestAddressToSet(t *testing.T) {
+	a1, a2 := Address{5}, Address{}
+	a2.Set(a1)
+
+	if !bytes.Equal(a1.Bytes(), a2.Bytes()) {
+		t.Error("Bytes are not the same")
+	}
+}
+
+func TestAddressToMarshalText(t *testing.T) {
+	b := []byte{77, 120, 48, 49, 48, 50, 48, 51, 48, 52, 48, 53, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48}
+	a := Address{1, 2, 3, 4, 5}
+	hashBytes, err := a.MarshalText()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !bytes.Equal(hashBytes, b) {
+		t.Error("Bytes are not the same")
+	}
+
+	a2 := Address{}
+	if err := a2.UnmarshalText(hashBytes); err != nil {
+		t.Fatal(err)
+	}
+
+	if !bytes.Equal(a2.Bytes(), a.Bytes()) {
+		t.Error("Bytes are not the same")
+	}
+}
+
+func TestHexToPubkey(t *testing.T) {
+	p1, p2 := Pubkey{10, 12}, HexToPubkey("Mp0a0c000000000000000000000000000000000000000000000000000000000000")
+	if !p1.Equals(p2) {
+		t.Error("Pubkeys are not equal")
+	}
+}
+
+func TestBytesToPubkey(t *testing.T) {
+	b := []byte{1, 2, 3, 4, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	p := BytesToPubkey(b)
+	if !bytes.Equal(p.Bytes(), b) {
+		t.Error("Bytes are not the same")
+	}
+}
+
+func TestPubkeyToSetBytes(t *testing.T) {
+	b, p := []byte{1, 2, 3, 4, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Pubkey{}
+	p.SetBytes(b)
+	if !bytes.Equal(p.Bytes(), b) {
+		t.Error("Bytes are not the same")
+	}
+
+	b2 := []byte{5, 1, 2, 3, 4, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	p.SetBytes(b2)
+	if !bytes.Equal(p.Bytes(), b) {
+		t.Error("Bytes are not the same")
+	}
+}
+
+func TestPubkeyToMarshalText(t *testing.T) {
+	b := []byte{77, 112, 48, 53, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48}
+	p := Pubkey{5}
+	hashBytes, err := p.MarshalText()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !bytes.Equal(hashBytes, b) {
+		t.Error("Bytes are not the same")
 	}
 }

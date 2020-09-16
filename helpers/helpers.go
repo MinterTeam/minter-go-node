@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 )
@@ -16,16 +17,25 @@ func BipToPip(bip *big.Int) *big.Int {
 
 // StringToBigInt converts string to BigInt, panics on empty strings and errors
 func StringToBigInt(s string) *big.Int {
+	result, err := stringToBigInt(s)
+	if err != nil {
+		panic(err)
+	}
+
+	return result
+}
+
+func stringToBigInt(s string) (*big.Int, error) {
 	if s == "" {
-		panic("string is empty")
+		return nil, errors.New("string is empty")
 	}
 
 	b, success := big.NewInt(0).SetString(s, 10)
 	if !success {
-		panic(fmt.Sprintf("Cannot decode %s into big.Int", s))
+		return nil, fmt.Errorf("cannot decode %s into big.Int", s)
 	}
 
-	return b
+	return b, nil
 }
 
 // IsValidBigInt verifies that string is a valid int

@@ -13,10 +13,10 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
-	"github.com/MinterTeam/minter-go-node/crypto/sha3"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/tendermint/tendermint/libs/kv"
+	"golang.org/x/crypto/sha3"
 )
 
 type RedeemCheckData struct {
@@ -153,7 +153,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 	}
 
 	var senderAddressHash types.Hash
-	hw := sha3.NewKeccak256()
+	hw := sha3.NewLegacyKeccak256()
 	_ = rlp.Encode(hw, []interface{}{
 		sender,
 	})
@@ -177,8 +177,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 		}
 	}
 
-	commissionInBaseCoin := big.NewInt(0).Mul(big.NewInt(int64(tx.GasPrice)), big.NewInt(tx.Gas()))
-	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
+	commissionInBaseCoin := tx.CommissionInBaseCoin()
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
 	gasCoin := checkState.Coins().GetCoin(decodedCheck.GasCoin)
