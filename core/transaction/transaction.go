@@ -48,6 +48,10 @@ var (
 	ErrInvalidSig = errors.New("invalid transaction v, r, s values")
 )
 
+var (
+	CommissionMultiplier = big.NewInt(10e14)
+)
+
 type Transaction struct {
 	Nonce         uint64
 	ChainID       types.ChainID

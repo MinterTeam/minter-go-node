@@ -101,8 +101,7 @@ func (data DeclareCandidacyData) Run(tx *Transaction, context state.Interface, r
 		}
 	}
 
-	commissionInBaseCoin := big.NewInt(0).Mul(big.NewInt(int64(tx.GasPrice)), big.NewInt(tx.Gas()))
-	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
+	commissionInBaseCoin := tx.CommissionInBaseCoin()
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
 	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)

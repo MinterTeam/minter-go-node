@@ -177,8 +177,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 		}
 	}
 
-	commissionInBaseCoin := big.NewInt(0).Mul(big.NewInt(int64(tx.GasPrice)), big.NewInt(tx.Gas()))
-	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
+	commissionInBaseCoin := tx.CommissionInBaseCoin()
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
 	gasCoin := checkState.Coins().GetCoin(decodedCheck.GasCoin)
