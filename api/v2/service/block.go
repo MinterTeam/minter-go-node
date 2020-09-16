@@ -15,6 +15,7 @@ import (
 	tmTypes "github.com/tendermint/tendermint/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"strings"
 	"time"
 )
 
@@ -229,7 +230,7 @@ func (s *Service) blockTransaction(block *core_types.ResultBlock, blockResults *
 		}
 
 		txs = append(txs, &pb.BlockResponse_Transaction{
-			Hash:        fmt.Sprintf("Mt%x", rawTx.Hash()),
+			Hash:        "Mt" + strings.ToLower(tx.Hash().String()),
 			RawTx:       fmt.Sprintf("%x", []byte(rawTx)),
 			From:        sender.String(),
 			Nonce:       fmt.Sprintf("%d", tx.Nonce),
