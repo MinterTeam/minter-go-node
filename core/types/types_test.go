@@ -188,7 +188,7 @@ func TestAppState(t *testing.T) {
 				ID:        GetBaseCoinID() + 1,
 				Name:      "ASD",
 				Symbol:    StrToCoinSymbol("TEST"),
-				Volume:    big.NewInt(1).String(),
+				Volume:    big.NewInt(2).String(),
 				Crr:       1,
 				Reserve:   helpers.BipToPip(big.NewInt(100000)).String(),
 				MaxSupply: helpers.BipToPip(big.NewInt(100000)).String(),
@@ -199,7 +199,7 @@ func TestAppState(t *testing.T) {
 				Height:       1,
 				Address:      testAddr,
 				CandidateKey: &pubkey,
-				Coin:         GetBaseCoinID(),
+				Coin:         GetBaseCoinID() + 1,
 				Value:        big.NewInt(1).String(),
 			},
 		},
@@ -539,6 +539,58 @@ func TestAppStateToInvalidState(t *testing.T) {
 		},
 	}
 
+	appState.FrozenFunds = []FrozenFund{
+		{
+			Height:       1,
+			Address:      testAddr,
+			CandidateKey: &pubkey,
+			Coin:         GetBaseCoinID() + 1,
+			Value:        big.NewInt(1e18).String(),
+		},
+	}
+
+	if appState.Verify() == nil {
+		t.Error("State is not correct")
+	}
+
+	appState.FrozenFunds = []FrozenFund{
+		{
+			Height:       1,
+			Address:      testAddr,
+			CandidateKey: &pubkey,
+			Coin:         GetBaseCoinID(),
+			Value:        "",
+		},
+	}
+
+	if appState.Verify() == nil {
+		t.Error("State is not correct")
+	}
+
+	appState.FrozenFunds = []FrozenFund{
+		{
+			Height:       1,
+			Address:      testAddr,
+			CandidateKey: &pubkey,
+			Coin:         GetBaseCoinID() + 3,
+			Value:        big.NewInt(1e18).String(),
+		},
+	}
+
+	if appState.Verify() == nil {
+		t.Error("State is not correct")
+	}
+
+	appState.FrozenFunds = []FrozenFund{
+		{
+			Height:       1,
+			Address:      testAddr,
+			CandidateKey: &pubkey,
+			Coin:         GetBaseCoinID(),
+			Value:        big.NewInt(1e18).String(),
+		},
+	}
+
 	appState.UsedChecks = []UsedCheck{
 		"00004601d10c33eda76bb16a54a0asddsd8882a57ec34e964aa23e2b5d9aa10957feea",
 	}
@@ -546,6 +598,7 @@ func TestAppStateToInvalidState(t *testing.T) {
 	if appState.Verify() == nil {
 		t.Error("State is not correct")
 	}
+
 }
 
 func TestHashToString(t *testing.T) {
