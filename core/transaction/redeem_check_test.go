@@ -11,9 +11,9 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
-	"github.com/MinterTeam/minter-go-node/crypto/sha3"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
+	"golang.org/x/crypto/sha3"
 )
 
 func TestRedeemCheckTx(t *testing.T) {
@@ -63,7 +63,7 @@ func TestRedeemCheckTx(t *testing.T) {
 	rawCheck, _ := rlp.EncodeToBytes(check)
 
 	var senderAddressHash types.Hash
-	hw := sha3.NewKeccak256()
+	hw := sha3.NewLegacyKeccak256()
 	_ = rlp.Encode(hw, []interface{}{
 		receiverAddr,
 	})
@@ -165,7 +165,7 @@ func TestRedeemCheckTxToDecodeError(t *testing.T) {
 	}
 
 	var senderAddressHash types.Hash
-	hw := sha3.NewKeccak256()
+	hw := sha3.NewLegacyKeccak256()
 	_ = rlp.Encode(hw, []interface{}{
 		receiverAddr,
 	})
@@ -270,7 +270,7 @@ func TestRedeemCheckTxToHighGasPrice(t *testing.T) {
 	rawCheck, _ := rlp.EncodeToBytes(check)
 
 	var senderAddressHash types.Hash
-	hw := sha3.NewKeccak256()
+	hw := sha3.NewLegacyKeccak256()
 	_ = rlp.Encode(hw, []interface{}{
 		receiverAddr,
 	})
@@ -364,7 +364,7 @@ func TestRedeemCheckTxToWrongChainID(t *testing.T) {
 	rawCheck, _ := rlp.EncodeToBytes(check)
 
 	var senderAddressHash types.Hash
-	hw := sha3.NewKeccak256()
+	hw := sha3.NewLegacyKeccak256()
 	_ = rlp.Encode(hw, []interface{}{
 		receiverAddr,
 	})
@@ -458,7 +458,7 @@ func TestRedeemCheckTxToNonceLength(t *testing.T) {
 	rawCheck, _ := rlp.EncodeToBytes(check)
 
 	var senderAddressHash types.Hash
-	hw := sha3.NewKeccak256()
+	hw := sha3.NewLegacyKeccak256()
 	_ = rlp.Encode(hw, []interface{}{
 		receiverAddr,
 	})
@@ -552,7 +552,7 @@ func TestRedeemCheckTxToCheckData(t *testing.T) {
 	rawCheck, _ := rlp.EncodeToBytes(check)
 
 	var senderAddressHash types.Hash
-	hw := sha3.NewKeccak256()
+	hw := sha3.NewLegacyKeccak256()
 	_ = rlp.Encode(hw, []interface{}{
 		receiverAddr,
 	})
@@ -758,7 +758,7 @@ func TestRedeemCheckTxToUsed(t *testing.T) {
 	cState.Checks.UseCheck(&check)
 
 	var senderAddressHash types.Hash
-	hw := sha3.NewKeccak256()
+	hw := sha3.NewLegacyKeccak256()
 	_ = rlp.Encode(hw, []interface{}{
 		receiverAddr,
 	})
@@ -850,7 +850,7 @@ func TestRedeemCheckTxToInsufficientFunds(t *testing.T) {
 	rawCheck, _ := rlp.EncodeToBytes(check)
 
 	var senderAddressHash types.Hash
-	hw := sha3.NewKeccak256()
+	hw := sha3.NewLegacyKeccak256()
 	_ = rlp.Encode(hw, []interface{}{
 		receiverAddr,
 	})
@@ -943,7 +943,7 @@ func TestRedeemCheckTxToCoinReserveUnderflow(t *testing.T) {
 	rawCheck, _ := rlp.EncodeToBytes(check)
 
 	var senderAddressHash types.Hash
-	hw := sha3.NewKeccak256()
+	hw := sha3.NewLegacyKeccak256()
 	_ = rlp.Encode(hw, []interface{}{
 		receiverAddr,
 	})
@@ -1035,7 +1035,7 @@ func TestRedeemCheckTxToInsufficientFundsForCheckCoin(t *testing.T) {
 	rawCheck, _ := rlp.EncodeToBytes(check)
 
 	var senderAddressHash types.Hash
-	hw := sha3.NewKeccak256()
+	hw := sha3.NewLegacyKeccak256()
 	_ = rlp.Encode(hw, []interface{}{
 		receiverAddr,
 	})
@@ -1129,7 +1129,7 @@ func TestRedeemCheckTxToInsufficientFundsForCheckGasCoin(t *testing.T) {
 	rawCheck, _ := rlp.EncodeToBytes(check)
 
 	var senderAddressHash types.Hash
-	hw := sha3.NewKeccak256()
+	hw := sha3.NewLegacyKeccak256()
 	_ = rlp.Encode(hw, []interface{}{
 		receiverAddr,
 	})

@@ -10,8 +10,8 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/state/coins"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
-	"github.com/MinterTeam/minter-go-node/crypto/sha3"
 	"github.com/MinterTeam/minter-go-node/rlp"
+	"golang.org/x/crypto/sha3"
 	"math/big"
 )
 
@@ -291,7 +291,7 @@ func RecoverPlain(sighash types.Hash, R, S, Vb *big.Int) (types.Address, error) 
 }
 
 func rlpHash(x interface{}) (h types.Hash) {
-	hw := sha3.NewKeccak256()
+	hw := sha3.NewLegacyKeccak256()
 	err := rlp.Encode(hw, x)
 	if err != nil {
 		panic(err)

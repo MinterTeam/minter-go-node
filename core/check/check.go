@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
-	"github.com/MinterTeam/minter-go-node/crypto/sha3"
 	"github.com/MinterTeam/minter-go-node/rlp"
+	"golang.org/x/crypto/sha3"
 	"math/big"
 )
 
@@ -134,7 +134,7 @@ func DecodeFromBytes(buf []byte) (*Check, error) {
 }
 
 func rlpHash(x interface{}) (h types.Hash) {
-	hw := sha3.NewKeccak256()
+	hw := sha3.NewLegacyKeccak256()
 	err := rlp.Encode(hw, x)
 	if err != nil {
 		panic(err)
