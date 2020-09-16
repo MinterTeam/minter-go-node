@@ -35,7 +35,7 @@ func (s *Service) SendTransaction(ctx context.Context, req *pb.SendTransactionRe
 		return &pb.SendTransactionResponse{
 			Code: fmt.Sprintf("%d", result.Code),
 			Log:  result.Log,
-			Hash: result.Hash.String(),
+			Hash: "Mt" + strings.ToLower(result.Hash.String()),
 		}, nil
 	default:
 		return new(pb.SendTransactionResponse), s.createError(status.New(codes.InvalidArgument, result.Log), result.Info)

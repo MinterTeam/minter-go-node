@@ -183,8 +183,10 @@ func NewState(height uint64, db db.DB, events eventsdb.IEventsDB, cacheSize int,
 }
 
 func NewCheckStateAtHeight(height uint64, db db.DB) (*CheckState, error) {
-	iavlTree := tree.NewImmutableTree(height, db)
-
+	iavlTree, err := tree.NewImmutableTree(height, db)
+	if err != nil {
+		return nil, err
+	}
 	return newCheckStateForTree(iavlTree, nil, db, 0)
 }
 

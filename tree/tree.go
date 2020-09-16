@@ -156,7 +156,7 @@ func (t *mutableTree) SaveVersion() ([]byte, int64, error) {
 	return t.tree.SaveVersion()
 }
 
-//Should use GlobalLock() and GlobalUnlock
+// Should use GlobalLock() and GlobalUnlock
 func (t *mutableTree) DeleteVersionsIfExists(from, to int64) error {
 	t.lock.Lock()
 	defer t.lock.Unlock()
@@ -170,7 +170,7 @@ func (t *mutableTree) DeleteVersionsIfExists(from, to int64) error {
 	return t.tree.DeleteVersions(existsVersions...)
 }
 
-//Should use GlobalLock() and GlobalUnlock
+// Should use GlobalLock() and GlobalUnlock
 func (t *mutableTree) DeleteVersionIfExists(version int64) error {
 	t.lock.Lock()
 	defer t.lock.Unlock()
@@ -211,13 +211,13 @@ type ImmutableTree struct {
 
 // NewImmutableTree returns MTree from given db at given height
 // Warning: returns the MTree interface, but you should only use ReadOnlyTree
-func NewImmutableTree(height uint64, db dbm.DB) MTree {
+func NewImmutableTree(height uint64, db dbm.DB) (MTree, error) {
 	tree := NewMutableTree(0, db, 1024)
 	_, err := tree.LazyLoadVersion(int64(height))
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return tree
+	return tree, nil
 }
 
 // Iterate iterates over all keys of the tree, in order. The keys and values must not be modified,

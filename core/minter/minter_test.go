@@ -10,16 +10,18 @@ import (
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/developers"
+	eventsdb "github.com/MinterTeam/minter-go-node/core/events"
 	candidates2 "github.com/MinterTeam/minter-go-node/core/state/candidates"
+	"github.com/MinterTeam/minter-go-node/core/state/validators"
+	"github.com/MinterTeam/minter-go-node/core/statistics"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/helpers"
+	"github.com/MinterTeam/minter-go-node/legacy/candidates"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/rlp"
-
 	"github.com/tendermint/go-amino"
-	tmConfig "github.com/tendermint/tendermint/config"
 	log2 "github.com/tendermint/tendermint/libs/log"
 	tmos "github.com/tendermint/tendermint/libs/os"
 	tmNode "github.com/tendermint/tendermint/node"
@@ -32,29 +34,120 @@ import (
 	"math/big"
 	"math/rand"
 	"os"
-	"path/filepath"
-	"sync"
+	"strconv"
 	"testing"
 	"time"
 )
 
-var pv *privval.FilePV
-var cfg *tmConfig.Config
-var tmCli *rpc.Local
-var app *Blockchain
-var privateKey *ecdsa.PrivateKey
-var l sync.Mutex
-var nonce = uint64(1)
-
-func init() {
-	l.Lock()
-	go initNode()
-	l.Lock()
+func getPrivateKey() *ecdsa.PrivateKey {
+	b, _ := hex.DecodeString("825ca965c34ef1c8343e8e377959108370c23ba6194d858452b63432456403f9")
+	privateKey, _ := crypto.ToECDSA(b)
+	return privateKey
 }
 
-func initNode() {
-	utils.MinterHome = os.ExpandEnv(filepath.Join("$HOME", ".minter_test"))
-	_ = os.RemoveAll(utils.MinterHome)
+func makeTestValidatorsAndCandidates(pubkeys []string, stake *big.Int) ([]types.Validator, []types.Candidate) {
+	vals := make([]types.Validator, len(pubkeys))
+	cands := make([]types.Candidate, len(pubkeys))
+
+	for i, val := range pubkeys {
+		pkeyBytes, err := base64.StdEncoding.DecodeString(val)
+		if err != nil {
+			panic(err)
+		}
+
+		var pkey types.Pubkey
+		copy(pkey[:], pkeyBytes)
+		addr := developers.Address
+
+		vals[i] = types.Validator{
+			TotalBipStake: stake.String(),
+			PubKey:        pkey,
+			AccumReward:   big.NewInt(0).String(),
+			AbsentTimes:   types.NewBitArray(24),
+		}
+
+		cands[i] = types.Candidate{
+			ID:             uint32(i) + 1,
+			RewardAddress:  addr,
+			OwnerAddress:   crypto.PubkeyToAddress(getPrivateKey().PublicKey),
+			ControlAddress: addr,
+			TotalBipStake:  big.NewInt(1).String(),
+			PubKey:         pkey,
+			Commission:     100,
+			Stakes: []types.Stake{
+				{
+					Owner:    addr,
+					Coin:     types.GetBaseCoinID(),
+					Value:    stake.String(),
+					BipValue: stake.String(),
+				},
+			},
+			Status: candidates2.CandidateStatusOnline,
+		}
+	}
+
+	return vals, cands
+}
+
+func getTestGenesis(pv *privval.FilePV) func() (*types2.GenesisDoc, error) {
+	return func() (*types2.GenesisDoc, error) {
+
+		appHash := [32]byte{}
+
+		validators, candidates := makeTestValidatorsAndCandidates([]string{base64.StdEncoding.EncodeToString(pv.Key.PubKey.Bytes()[5:])}, big.NewInt(10000000))
+
+		appState := types.AppState{
+			TotalSlashed: "0",
+			Accounts: []types.Account{
+				{
+					Address: crypto.PubkeyToAddress(getPrivateKey().PublicKey),
+					Balance: []types.Balance{
+						{
+							Coin:  types.GetBaseCoinID(),
+							Value: helpers.BipToPip(big.NewInt(1000000)).String(),
+						},
+					},
+				},
+			},
+			Validators: validators,
+			Candidates: candidates,
+		}
+
+		appStateJSON, err := amino.MarshalJSON(appState)
+		if err != nil {
+			return nil, err
+		}
+
+		genesisDoc := types2.GenesisDoc{
+			ChainID:     "minter-test-network",
+			GenesisTime: time.Now(),
+			AppHash:     appHash[:],
+			AppState:    json.RawMessage(appStateJSON),
+		}
+
+		err = genesisDoc.ValidateAndComplete()
+		if err != nil {
+			return nil, err
+		}
+
+		genesisFile := utils.GetMinterHome() + "/config/genesis.json"
+		if err := genesisDoc.SaveAs(genesisFile); err != nil {
+			panic(err)
+		}
+
+		return &genesisDoc, nil
+	}
+}
+
+var port = 0
+
+func getPort() string {
+	port++
+	return strconv.Itoa(port)
+}
+
+func initTestNode(t *testing.T) (*Blockchain, *rpc.Local, *privval.FilePV) {
+	utils.MinterHome = os.ExpandEnv(t.TempDir())
 
 	if err := tmos.EnsureDir(utils.GetMinterHome()+"/tmdata/blockstore.db", 0777); err != nil {
 		panic(err.Error())
@@ -62,7 +155,7 @@ func initNode() {
 
 	minterCfg := config.GetConfig()
 	logger := log.NewLogger(minterCfg)
-	cfg = config.GetTmConfig(minterCfg)
+	cfg := config.GetTmConfig(minterCfg)
 	cfg.Consensus.TimeoutPropose = 0
 	cfg.Consensus.TimeoutPrecommit = 0
 	cfg.Consensus.TimeoutPrevote = 0
@@ -72,18 +165,15 @@ func initNode() {
 	cfg.Consensus.TimeoutProposeDelta = 0
 	cfg.Consensus.SkipTimeoutCommit = true
 	cfg.RPC.ListenAddress = ""
-	cfg.P2P.ListenAddress = "0.0.0.0:25566"
+	cfg.P2P.ListenAddress = "0.0.0.0:2556" + getPort() // todo
 	cfg.P2P.Seeds = ""
 	cfg.P2P.PersistentPeers = ""
 	cfg.DBBackend = "memdb"
 
-	pv = privval.GenFilePV(cfg.PrivValidatorKeyFile(), cfg.PrivValidatorStateFile())
+	pv := privval.GenFilePV(cfg.PrivValidatorKeyFile(), cfg.PrivValidatorStateFile())
 	pv.Save()
 
-	b, _ := hex.DecodeString("825ca965c34ef1c8343e8e377959108370c23ba6194d858452b63432456403f9")
-	privateKey, _ = crypto.ToECDSA(b)
-
-	app = NewMinterBlockchain(minterCfg)
+	app := NewMinterBlockchain(minterCfg)
 	nodeKey, err := p2p.LoadOrGenNodeKey(cfg.NodeKeyFile())
 	if err != nil {
 		panic(err)
@@ -94,7 +184,7 @@ func initNode() {
 		pv,
 		nodeKey,
 		proxy.NewLocalClientCreator(app),
-		getGenesis,
+		getTestGenesis(pv),
 		tmNode.DefaultDBProvider,
 		tmNode.DefaultMetricsProvider(cfg.Instrumentation),
 		log2.NewTMLogger(os.Stdout),
@@ -110,323 +200,119 @@ func initNode() {
 
 	logger.Info("Started node", "nodeInfo", node.Switch().NodeInfo())
 	app.SetTmNode(node)
-	tmCli = rpc.New(node)
-	l.Unlock()
-}
 
-func TestBlocksCreation(t *testing.T) {
-	// Wait for blocks
-	blocks, err := tmCli.Subscribe(context.TODO(), "test-client", "tm.event = 'NewBlock'")
+	tmCli := rpc.New(blockchain.tmNode)
+
+	blocks, err := tmCli.Subscribe(context.Background(), "test-client", "tm.event = 'NewBlock'")
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 
 	select {
 	case <-blocks:
-		// got block
-	case <-time.After(10 * time.Second):
-		t.Fatalf("Timeout waiting for the first block")
-	}
-
-	err = tmCli.UnsubscribeAll(context.TODO(), "test-client")
-	if err != nil {
-		panic(err)
-	}
-}
-
-func TestSendTx(t *testing.T) {
-	for blockchain.Height() < 2 {
-		time.Sleep(time.Millisecond)
-	}
-
-	value := helpers.BipToPip(big.NewInt(10))
-	to := types.Address([20]byte{1})
-
-	data := transaction.SendData{
-		Coin:  types.GetBaseCoinID(),
-		To:    to,
-		Value: value,
-	}
-
-	encodedData, err := rlp.EncodeToBytes(data)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	tx := transaction.Transaction{
-		Nonce:         nonce,
-		ChainID:       types.CurrentChainID,
-		GasPrice:      1,
-		GasCoin:       types.GetBaseCoinID(),
-		Type:          transaction.TypeSend,
-		Data:          encodedData,
-		SignatureType: transaction.SigTypeSingle,
-	}
-	nonce++
-
-	if err := tx.Sign(privateKey); err != nil {
-		t.Fatal(err)
-	}
-
-	txBytes, _ := tx.Serialize()
-
-	res, err := tmCli.BroadcastTxSync(txBytes)
-	if err != nil {
-		t.Fatalf("Failed: %s", err.Error())
-	}
-
-	if res.Code != 0 {
-		t.Fatalf("CheckTx code is not 0: %d", res.Code)
-	}
-
-	txs, err := tmCli.Subscribe(context.TODO(), "test-client", "tm.event = 'Tx'")
-	if err != nil {
-		panic(err)
-	}
-
-	select {
-	case <-txs:
-		// got tx
-	case <-time.After(10 * time.Second):
-		t.Fatalf("Timeout waiting for the tx to be committed")
-	}
-
-	err = tmCli.UnsubscribeAll(context.TODO(), "test-client")
-	if err != nil {
-		panic(err)
-	}
-}
-
-// TODO: refactor
-func TestSmallStakeValidator(t *testing.T) {
-	for blockchain.Height() < 2 {
-		time.Sleep(time.Millisecond)
-	}
-
-	pubkey := types.Pubkey{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
-
-	data := transaction.DeclareCandidacyData{
-		Address:    crypto.PubkeyToAddress(privateKey.PublicKey),
-		PubKey:     pubkey,
-		Commission: 10,
-		Coin:       types.GetBaseCoinID(),
-		Stake:      big.NewInt(0),
-	}
-
-	encodedData, err := rlp.EncodeToBytes(data)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	tx := transaction.Transaction{
-		Nonce:         nonce,
-		ChainID:       types.CurrentChainID,
-		GasPrice:      1,
-		GasCoin:       types.GetBaseCoinID(),
-		Type:          transaction.TypeDeclareCandidacy,
-		Data:          encodedData,
-		SignatureType: transaction.SigTypeSingle,
-	}
-	nonce++
-
-	if err := tx.Sign(privateKey); err != nil {
-		t.Fatal(err)
-	}
-
-	txBytes, _ := tx.Serialize()
-	res, err := tmCli.BroadcastTxSync(txBytes)
-	if err != nil {
-		t.Fatalf("Failed: %s", err.Error())
-	}
-	if res.Code != 0 {
-		t.Fatalf("CheckTx code is not 0: %d", res.Code)
-	}
-
-	time.Sleep(time.Second)
-
-	setOnData := transaction.SetCandidateOnData{
-		PubKey: pubkey,
-	}
-
-	encodedData, err = rlp.EncodeToBytes(setOnData)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	tx = transaction.Transaction{
-		Nonce:         nonce,
-		GasPrice:      1,
-		ChainID:       types.CurrentChainID,
-		GasCoin:       types.GetBaseCoinID(),
-		Type:          transaction.TypeSetCandidateOnline,
-		Data:          encodedData,
-		SignatureType: transaction.SigTypeSingle,
-	}
-	nonce++
-
-	if err := tx.Sign(privateKey); err != nil {
-		t.Fatal(err)
-	}
-
-	txBytes, _ = tx.Serialize()
-	res, err = tmCli.BroadcastTxSync(txBytes)
-	if err != nil {
-		t.Fatalf("Failed: %s", err.Error())
-	}
-	if res.Code != 0 {
-		t.Fatalf("CheckTx code is not 0: %d", res.Code)
-	}
-
-	status, _ := tmCli.Status()
-	targetBlockHeight := status.SyncInfo.LatestBlockHeight - (status.SyncInfo.LatestBlockHeight % 120) + 150
-	println("target block", targetBlockHeight)
-
-	blocks, err := tmCli.Subscribe(context.TODO(), "test-client", "tm.event = 'NewBlock'")
-	if err != nil {
-		panic(err)
-	}
-
-	ready := false
-	for !ready {
-		select {
-		case block := <-blocks:
-			if block.Data.(types2.EventDataNewBlock).Block.Height < targetBlockHeight {
-				continue
-			}
-
-			vals, _ := tmCli.Validators(&targetBlockHeight, 1, 1000)
-
-			if len(vals.Validators) > 1 {
-				t.Errorf("There are should be 1 validator (has %d)", len(vals.Validators))
-			}
-
-			if len(app.stateDeliver.Validators.GetValidators()) > 1 {
-				t.Errorf("There are should be 1 validator (has %d)", len(app.stateDeliver.Validators.GetValidators()))
-			}
-
-			ready = true
-		case <-time.After(10 * time.Second):
-			t.Fatalf("Timeout waiting for the block")
+		err = tmCli.UnsubscribeAll(context.Background(), "test-client")
+		if err != nil {
+			t.Fatal(err)
 		}
-	}
-	err = tmCli.UnsubscribeAll(context.TODO(), "test-client")
-	if err != nil {
-		panic(err)
+	case <-time.After(10 * time.Second):
+		t.Fatal("Timeout waiting for the first block")
 	}
 
-	time.Sleep(time.Second)
+	return app, tmCli, pv
+}
 
-	encodedData, err = rlp.EncodeToBytes(setOnData)
+func TestBlockchain_Height(t *testing.T) {
+	blockchain, tmCli, _ := initTestNode(t)
+	defer blockchain.Stop()
+
+	blocks, err := tmCli.Subscribe(context.Background(), "test-client", "tm.event = 'NewBlock'")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	tx = transaction.Transaction{
-		Nonce:         nonce,
-		GasPrice:      1,
+	block := <-blocks
+	if block.Data.(types2.EventDataNewBlock).Block.Height != int64(blockchain.Height()) {
+		t.Fatal("invalid blockchain height")
+	}
+}
+
+func TestBlockchain_SetStatisticData(t *testing.T) {
+	blockchain, tmCli, _ := initTestNode(t)
+	defer blockchain.Stop()
+
+	ctx, _ := context.WithTimeout(context.Background(), time.Second*3)
+	blockchain.SetStatisticData(statistics.New()).Statistic(ctx)
+	blocks, err := tmCli.Subscribe(context.Background(), "test-client", "tm.event = 'NewBlock'")
+	if err != nil {
+		t.Fatal(err)
+	}
+	block := <-blocks
+	if block.Data.(types2.EventDataNewBlock).Block.Header.Time.Nanosecond() != blockchain.StatisticData().BlockEnd.LastBlockInfo.HeaderTimestamp.Nanosecond() {
+		t.Fatal("statistic last block and event event last block header time not equal")
+	}
+}
+
+func TestBlockchain_IsApplicationHalted(t *testing.T) {
+	blockchain, tmCli, pv := initTestNode(t)
+	defer blockchain.Stop()
+
+	data := transaction.SetHaltBlockData{
+		PubKey: types.BytesToPubkey(pv.Key.PubKey.Bytes()[5:]),
+		Height: 5,
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := transaction.Transaction{
+		Nonce:         1,
 		ChainID:       types.CurrentChainID,
+		GasPrice:      1,
 		GasCoin:       types.GetBaseCoinID(),
-		Type:          transaction.TypeSetCandidateOnline,
+		Type:          transaction.TypeSetHaltBlock,
 		Data:          encodedData,
 		SignatureType: transaction.SigTypeSingle,
 	}
-	nonce++
 
-	if err := tx.Sign(privateKey); err != nil {
+	if err := tx.Sign(getPrivateKey()); err != nil {
 		t.Fatal(err)
 	}
 
-	txBytes, _ = tx.Serialize()
-	res, err = tmCli.BroadcastTxSync(txBytes)
+	txBytes, _ := tx.Serialize()
+	res, err := tmCli.BroadcastTxSync(txBytes)
 	if err != nil {
 		t.Fatalf("Failed: %s", err.Error())
 	}
 	if res.Code != 0 {
-		t.Fatalf("CheckTx code is not 0: %d", res.Code)
+		t.Fatalf("CheckTx code is not 0: %d, %s", res.Code, res.Log)
 	}
 
-	status, _ = tmCli.Status()
-	targetBlockHeight = status.SyncInfo.LatestBlockHeight - (status.SyncInfo.LatestBlockHeight % 120) + 120 + 5
-	println("target block", targetBlockHeight)
-
-	blocks, err = tmCli.Subscribe(context.TODO(), "test-client", "tm.event = 'NewBlock'")
+	blocks, err := tmCli.Subscribe(context.Background(), "test-client", "tm.event = 'NewBlock'")
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 
-FORLOOP2:
 	for {
 		select {
 		case block := <-blocks:
-			if block.Data.(types2.EventDataNewBlock).Block.Height < targetBlockHeight {
-				continue FORLOOP2
+			height := block.Data.(types2.EventDataNewBlock).Block.Height
+			if height < int64(data.Height) {
+				continue
 			}
 
-			vals, _ := tmCli.Validators(&targetBlockHeight, 1, 100)
-
-			if len(vals.Validators) > 1 {
-				t.Errorf("There should be only 1 validator, got %d", len(vals.Validators))
-			}
-
-			mvals := app.stateDeliver.Validators.GetValidators()
-			if len(mvals) > 1 {
-				t.Errorf("There should be only 1 validator, got %d", len(mvals))
-			}
-
-			break FORLOOP2
-		case <-time.After(10 * time.Second):
-			t.Fatalf("Timeout waiting for the block")
+			t.Fatalf("don't stop on block %d", height)
+			return
+		case <-time.After(2 * time.Second):
+			return
 		}
 	}
-
-	err = tmCli.UnsubscribeAll(context.TODO(), "test-client")
-	if err != nil {
-		panic(err)
-	}
 }
 
-func TestStopNetworkByHaltBlocks(t *testing.T) {
-	haltHeight := 500000 + uint64(5)
-
-	v1Pubkey := [32]byte{}
-	v2Pubkey := [32]byte{}
-	v3Pubkey := [32]byte{}
-
-	rand.Read(v1Pubkey[:])
-	rand.Read(v2Pubkey[:])
-	rand.Read(v3Pubkey[:])
-
-	app.stateDeliver.Validators.Create(v1Pubkey, helpers.BipToPip(big.NewInt(3)))
-	app.stateDeliver.Validators.Create(v2Pubkey, helpers.BipToPip(big.NewInt(5)))
-	app.stateDeliver.Validators.Create(v3Pubkey, helpers.BipToPip(big.NewInt(3)))
-
-	v1Address := app.stateDeliver.Validators.GetValidators()[1].GetAddress()
-	v2Address := app.stateDeliver.Validators.GetValidators()[2].GetAddress()
-	v3Address := app.stateDeliver.Validators.GetValidators()[3].GetAddress()
-
-	app.validatorsStatuses = map[types.TmAddress]int8{}
-	app.validatorsStatuses[v1Address] = ValidatorPresent
-	app.validatorsStatuses[v2Address] = ValidatorPresent
-	app.validatorsStatuses[v3Address] = ValidatorPresent
-
-	app.stateDeliver.Halts.AddHaltBlock(haltHeight, v1Pubkey)
-	app.stateDeliver.Halts.AddHaltBlock(haltHeight, v3Pubkey)
-	if app.isApplicationHalted(haltHeight) {
-		t.Fatalf("Application halted at height %d", haltHeight)
-	}
-
-	haltHeight++
-	app.stateDeliver.Halts.AddHaltBlock(haltHeight, v1Pubkey)
-	app.stateDeliver.Halts.AddHaltBlock(haltHeight, v2Pubkey)
-	if !app.isApplicationHalted(haltHeight) {
-		t.Fatalf("Application not halted at height %d", haltHeight)
-	}
-}
-
-func TestRecalculateStakes(t *testing.T) {
-	for blockchain.Height() < 2 {
-		time.Sleep(time.Millisecond)
-	}
+func TestBlockchain_GetStateForHeightAndDeleteStateVersions(t *testing.T) {
+	blockchain, tmCli, _ := initTestNode(t)
+	defer blockchain.Stop()
 
 	symbol := types.StrToCoinSymbol("AAA123")
 	data := transaction.CreateCoinData{
@@ -444,7 +330,7 @@ func TestRecalculateStakes(t *testing.T) {
 	}
 
 	tx := transaction.Transaction{
-		Nonce:         nonce,
+		Nonce:         1,
 		ChainID:       types.CurrentChainID,
 		GasPrice:      1,
 		GasCoin:       types.GetBaseCoinID(),
@@ -452,211 +338,428 @@ func TestRecalculateStakes(t *testing.T) {
 		Data:          encodedData,
 		SignatureType: transaction.SigTypeSingle,
 	}
-	nonce++
 
-	if err := tx.Sign(privateKey); err != nil {
+	if err := tx.Sign(getPrivateKey()); err != nil {
 		t.Fatal(err)
 	}
 
 	txBytes, _ := tx.Serialize()
+	res, err := tmCli.BroadcastTxCommit(txBytes)
+	if err != nil {
+		t.Fatalf("Failed: %s", err.Error())
+	}
+
+	time.Sleep(time.Second)
+
+	resultTx, err := tmCli.Tx(res.Hash.Bytes(), false)
+	if err != nil {
+		t.Fatalf("Failed: %s", err.Error())
+	}
+
+	checkState := blockchain.CurrentState()
+
+	if !checkState.Coins().ExistsBySymbol(symbol) {
+		t.Fatalf("Failed: %s", "state invalid")
+	}
+
+	checkState, err = blockchain.GetStateForHeight(uint64(resultTx.Height - 1))
+	if err != nil {
+		t.Fatalf("Failed: %s", err.Error())
+	}
+
+	if checkState.Coins().ExistsBySymbol(symbol) {
+		t.Fatalf("Failed: %s", "state invalid")
+	}
+
+	err = blockchain.DeleteStateVersions(0, resultTx.Height)
+	if err != nil {
+		t.Fatalf("Failed: %s", err.Error())
+	}
+
+	checkState, err = blockchain.GetStateForHeight(uint64(resultTx.Height - 1))
+	if err == nil {
+		t.Fatalf("Failed: %s", "state not deleted")
+	}
+}
+
+func TestBlockchain_SendTx(t *testing.T) {
+	blockchain, tmCli, _ := initTestNode(t)
+	defer blockchain.Stop()
+
+	value := helpers.BipToPip(big.NewInt(10))
+	to := types.Address([20]byte{1})
+
+	data := transaction.SendData{
+		Coin:  types.GetBaseCoinID(),
+		To:    to,
+		Value: value,
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	nonce := uint64(1)
+	tx := transaction.Transaction{
+		Nonce:         nonce,
+		ChainID:       types.CurrentChainID,
+		GasPrice:      1,
+		GasCoin:       types.GetBaseCoinID(),
+		Type:          transaction.TypeSend,
+		Data:          encodedData,
+		SignatureType: transaction.SigTypeSingle,
+	}
+	nonce++
+
+	if err := tx.Sign(getPrivateKey()); err != nil {
+		t.Fatal(err)
+	}
+
+	txBytes, _ := tx.Serialize()
+
 	res, err := tmCli.BroadcastTxSync(txBytes)
 	if err != nil {
 		t.Fatalf("Failed: %s", err.Error())
 	}
+
 	if res.Code != 0 {
 		t.Fatalf("CheckTx code is not 0: %d", res.Code)
 	}
 
-	time.Sleep(time.Second)
-
-	coinID := blockchain.stateCheck.Coins().GetCoinBySymbol(symbol, 0).ID()
-	buyCoinData := transaction.BuyCoinData{
-		CoinToBuy:          coinID,
-		ValueToBuy:         helpers.BipToPip(big.NewInt(10000000)),
-		CoinToSell:         0,
-		MaximumValueToSell: helpers.BipToPip(big.NewInt(10000000000000000)),
-	}
-
-	encodedData, err = rlp.EncodeToBytes(buyCoinData)
+	txs, err := tmCli.Subscribe(context.Background(), "test-client", "tm.event = 'Tx'")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	tx = transaction.Transaction{
-		Nonce:         nonce,
-		GasPrice:      1,
-		ChainID:       types.CurrentChainID,
-		GasCoin:       types.GetBaseCoinID(),
-		Type:          transaction.TypeBuyCoin,
-		Data:          encodedData,
-		SignatureType: transaction.SigTypeSingle,
-	}
-	nonce++
-
-	if err := tx.Sign(privateKey); err != nil {
-		t.Fatal(err)
-	}
-
-	txBytes, _ = tx.Serialize()
-	res, err = tmCli.BroadcastTxSync(txBytes)
-	if err != nil {
-		t.Fatalf("Failed: %s", err.Error())
-	}
-	if res.Code != 0 {
-		t.Fatalf("CheckTx code is not 0: %d", res.Code)
-	}
-
-	time.Sleep(time.Second)
-
-	delegateData := transaction.DelegateData{
-		PubKey: blockchain.stateCheck.Candidates().GetCandidates()[0].PubKey,
-		Coin:   coinID,
-		Value:  helpers.BipToPip(big.NewInt(9000000)),
-	}
-
-	encodedData, err = rlp.EncodeToBytes(delegateData)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	tx = transaction.Transaction{
-		Nonce:         nonce,
-		GasPrice:      1,
-		ChainID:       types.CurrentChainID,
-		GasCoin:       types.GetBaseCoinID(),
-		Type:          transaction.TypeDelegate,
-		Data:          encodedData,
-		SignatureType: transaction.SigTypeSingle,
-	}
-	nonce++
-
-	if err := tx.Sign(privateKey); err != nil {
-		t.Fatal(err)
-	}
-
-	txBytes, _ = tx.Serialize()
-	res, err = tmCli.BroadcastTxSync(txBytes)
-	if err != nil {
-		t.Fatalf("Failed: %s", err.Error())
-	}
-	if res.Code != 0 {
-		t.Fatalf("CheckTx code is not 0: %d", res.Code)
-	}
-
-	time.Sleep(time.Second)
-
-	blocks, err := tmCli.Subscribe(context.TODO(), "test-client", "tm.event = 'NewBlock'")
-	if err != nil {
-		panic(err)
-	}
-
-	defer func() {
-		err = tmCli.UnsubscribeAll(context.TODO(), "test-client")
-		if err != nil {
-			panic(err)
-		}
-	}()
-	for {
-		select {
-		case block := <-blocks:
-			if block.Data.(types2.EventDataNewBlock).Block.Height < 150 {
-				continue
-			}
-
-			return
-		case <-time.After(10 * time.Second):
-			t.Fatalf("Timeout waiting for the block")
-		}
+	select {
+	case <-txs:
+		// got tx
+	case <-time.After(10 * time.Second):
+		t.Fatalf("Timeout waiting for the tx to be committed")
 	}
 }
 
-func getGenesis() (*types2.GenesisDoc, error) {
-	appHash := [32]byte{}
+func TestBlockchain_FrozenFunds(t *testing.T) {
+	blockchain, tmCli, pv := initTestNode(t)
+	defer blockchain.Stop()
 
-	validators, candidates := makeValidatorsAndCandidates([]string{base64.StdEncoding.EncodeToString(pv.Key.PubKey.Bytes()[5:])}, big.NewInt(10000000))
+	targetHeight := uint64(10)
+	value := big.NewInt(1000)
+	pubkey := types.BytesToPubkey(pv.Key.PubKey.Bytes()[5:])
+	blockchain.stateDeliver.Lock()
+	blockchain.stateDeliver.Candidates.SubStake(developers.Address, pubkey, 0, value)
+	blockchain.stateDeliver.FrozenFunds.AddFund(targetHeight, developers.Address, pubkey, 0, value)
+	blockchain.stateDeliver.Unlock()
 
-	appState := types.AppState{
-		TotalSlashed: "0",
-		Accounts: []types.Account{
-			{
-				Address: crypto.PubkeyToAddress(privateKey.PublicKey),
-				Balance: []types.Balance{
-					{
-						Coin:  types.GetBaseCoinID(),
-						Value: helpers.BipToPip(big.NewInt(1000000)).String(),
-					},
-				},
-			},
-		},
-		Validators: validators,
-		Candidates: candidates,
-	}
-
-	appStateJSON, err := amino.MarshalJSON(appState)
+	blocks, err := tmCli.Subscribe(context.Background(), "test-client", "tm.event = 'NewBlock'")
 	if err != nil {
-		return nil, err
+		t.Fatal(err)
 	}
 
-	genesisDoc := types2.GenesisDoc{
-		ChainID:     "minter-test-network",
-		GenesisTime: time.Now(),
-		AppHash:     appHash[:],
-		AppState:    json.RawMessage(appStateJSON),
+	for block := range blocks {
+		if block.Data.(types2.EventDataNewBlock).Block.Height < int64(targetHeight) {
+			continue
+		}
+		break
 	}
 
-	err = genesisDoc.ValidateAndComplete()
-	if err != nil {
-		return nil, err
+	blockchain.lock.RLock()
+	defer blockchain.lock.RLock()
+
+	events := blockchain.GetEventsDB().LoadEvents(uint32(targetHeight))
+
+	if len(events) == 0 {
+		t.Errorf("empty events for %d block", targetHeight)
+	}
+	if _, ok := events[0].(*eventsdb.UnbondEvent); !ok {
+		t.Fatal("event is not UnbondEvent")
+	}
+	if events[0].AddressString() != developers.Address.String() {
+		t.Error("event address invalid")
+	}
+	if events[0].ValidatorPubKeyString() != pubkey.String() {
+		t.Error("event validator pubkey invalid")
 	}
 
-	genesisFile := utils.GetMinterHome() + "/config/genesis.json"
-	if err := genesisDoc.SaveAs(genesisFile); err != nil {
-		panic(err)
+	balance := blockchain.CurrentState().Accounts().GetBalance(developers.Address, 0)
+	if balance.String() != value.String() {
+		t.Fatal("balance is empty")
 	}
-
-	return &genesisDoc, nil
 }
 
-func makeValidatorsAndCandidates(pubkeys []string, stake *big.Int) ([]types.Validator, []types.Candidate) {
-	validators := make([]types.Validator, len(pubkeys))
-	candidates := make([]types.Candidate, len(pubkeys))
-	addr := developers.Address
+func TestBlockchain_RecalculateStakes_andRemoveValidator(t *testing.T) {
+	blockchain, tmCli, pv := initTestNode(t)
+	defer blockchain.Stop()
 
-	for i, val := range pubkeys {
-		pkeyBytes, err := base64.StdEncoding.DecodeString(val)
+	txs, err := tmCli.Subscribe(context.Background(), "test-client", "tm.event = 'Tx'")
+	if err != nil {
+		t.Fatal(err)
+	}
+	symbol := types.StrToCoinSymbol("AAA123")
+	nonce := uint64(1)
+	{
+		data := transaction.CreateCoinData{
+			Name:                 "nAAA123",
+			Symbol:               symbol,
+			InitialAmount:        helpers.BipToPip(big.NewInt(1000000)),
+			InitialReserve:       helpers.BipToPip(big.NewInt(10000)),
+			ConstantReserveRatio: 70,
+			MaxSupply:            big.NewInt(0).Exp(big.NewInt(10), big.NewInt(15+18), nil),
+		}
+
+		encodedData, err := rlp.EncodeToBytes(data)
 		if err != nil {
-			panic(err)
+			t.Fatal(err)
 		}
 
-		var pkey types.Pubkey
-		copy(pkey[:], pkeyBytes)
-
-		validators[i] = types.Validator{
-			TotalBipStake: stake.String(),
-			PubKey:        pkey,
-			AccumReward:   big.NewInt(0).String(),
-			AbsentTimes:   types.NewBitArray(24),
+		tx := transaction.Transaction{
+			Nonce:         nonce,
+			ChainID:       types.CurrentChainID,
+			GasPrice:      1,
+			GasCoin:       types.GetBaseCoinID(),
+			Type:          transaction.TypeCreateCoin,
+			Data:          encodedData,
+			SignatureType: transaction.SigTypeSingle,
 		}
 
-		candidates[i] = types.Candidate{
-			ID:             uint32(i) + 1,
-			RewardAddress:  addr,
-			OwnerAddress:   addr,
-			ControlAddress: addr,
-			TotalBipStake:  big.NewInt(1).String(),
-			PubKey:         pkey,
-			Commission:     100,
-			Stakes: []types.Stake{
-				{
-					Owner:    addr,
-					Coin:     types.GetBaseCoinID(),
-					Value:    stake.String(),
-					BipValue: stake.String(),
-				},
-			},
-			Status: candidates2.CandidateStatusOnline,
+		if err := tx.Sign(getPrivateKey()); err != nil {
+			t.Fatal(err)
+		}
+
+		txBytes, _ := tx.Serialize()
+		res, err := tmCli.BroadcastTxSync(txBytes)
+		if err != nil {
+			t.Fatalf("Failed: %s", err.Error())
+		}
+		if res.Code != 0 {
+			t.Fatalf("CheckTx code is not 0: %d", res.Code)
 		}
 	}
+	<-txs
+	nonce++
+	blockchain.lock.RLock()
+	coinID := blockchain.CurrentState().Coins().GetCoinBySymbol(symbol, 0).ID()
+	blockchain.lock.RUnlock()
+	{
+		buyCoinData := transaction.BuyCoinData{
+			CoinToBuy:          coinID,
+			ValueToBuy:         helpers.BipToPip(big.NewInt(10000000)),
+			CoinToSell:         0,
+			MaximumValueToSell: helpers.BipToPip(big.NewInt(10000000000000000)),
+		}
 
-	return validators, candidates
+		encodedData, err := rlp.EncodeToBytes(buyCoinData)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		tx := transaction.Transaction{
+			Nonce:         nonce,
+			GasPrice:      1,
+			ChainID:       types.CurrentChainID,
+			GasCoin:       types.GetBaseCoinID(),
+			Type:          transaction.TypeBuyCoin,
+			Data:          encodedData,
+			SignatureType: transaction.SigTypeSingle,
+		}
+
+		if err := tx.Sign(getPrivateKey()); err != nil {
+			t.Fatal(err)
+		}
+
+		txBytes, _ := tx.Serialize()
+		res, err := tmCli.BroadcastTxSync(txBytes)
+		if err != nil {
+			t.Fatalf("Failed: %s", err.Error())
+		}
+		if res.Code != 0 {
+			t.Fatalf("CheckTx code is not 0: %d", res.Code)
+		}
+	}
+	<-txs
+	nonce++
+	{
+		delegateData := transaction.DelegateData{
+			PubKey: types.BytesToPubkey(pv.Key.PubKey.Bytes()[5:]),
+			Coin:   coinID,
+			Value:  helpers.BipToPip(big.NewInt(9000000)),
+		}
+
+		encodedData, err := rlp.EncodeToBytes(delegateData)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		tx := transaction.Transaction{
+			Nonce:         nonce,
+			GasPrice:      1,
+			ChainID:       types.CurrentChainID,
+			GasCoin:       types.GetBaseCoinID(),
+			Type:          transaction.TypeDelegate,
+			Data:          encodedData,
+			SignatureType: transaction.SigTypeSingle,
+		}
+
+		if err := tx.Sign(getPrivateKey()); err != nil {
+			t.Fatal(err)
+		}
+
+		txBytes, _ := tx.Serialize()
+		res, err := tmCli.BroadcastTxSync(txBytes)
+		if err != nil {
+			t.Fatalf("Failed: %s", err.Error())
+		}
+		if res.Code != 0 {
+			t.Fatalf("CheckTx code is not 0: %d", res.Code)
+		}
+	}
+	<-txs
+	nonce++
+	{
+		data := transaction.DeclareCandidacyData{
+			Address:    types.Address{1},
+			PubKey:     types.Pubkey{1},
+			Commission: 10,
+			Coin:       0,
+			Stake:      big.NewInt(10000),
+		}
+
+		encodedData, err := rlp.EncodeToBytes(data)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		tx := transaction.Transaction{
+			Nonce:         nonce,
+			ChainID:       types.CurrentChainID,
+			GasPrice:      1,
+			GasCoin:       types.GetBaseCoinID(),
+			Type:          transaction.TypeDeclareCandidacy,
+			Data:          encodedData,
+			SignatureType: transaction.SigTypeSingle,
+		}
+
+		if err := tx.Sign(getPrivateKey()); err != nil {
+			t.Fatal(err)
+		}
+
+		txBytes, _ := tx.Serialize()
+
+		res, err := tmCli.BroadcastTxSync(txBytes)
+		if err != nil {
+			t.Fatalf("Failed: %s", err.Error())
+		}
+
+		if res.Code != 0 {
+			t.Fatalf("CheckTx code is not 0: %d, %s", res.Code, res.Log)
+		}
+	}
+	<-txs
+	nonce++
+	{
+		data := transaction.SetCandidateOnData{
+			PubKey: types.Pubkey{1},
+		}
+
+		encodedData, err := rlp.EncodeToBytes(data)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		tx := transaction.Transaction{
+			Nonce:         nonce,
+			ChainID:       types.CurrentChainID,
+			GasPrice:      1,
+			GasCoin:       types.GetBaseCoinID(),
+			Type:          transaction.TypeSetCandidateOnline,
+			Data:          encodedData,
+			SignatureType: transaction.SigTypeSingle,
+		}
+
+		if err := tx.Sign(getPrivateKey()); err != nil {
+			t.Fatal(err)
+		}
+
+		txBytes, _ := tx.Serialize()
+
+		res, err := tmCli.BroadcastTxSync(txBytes)
+		if err != nil {
+			t.Fatalf("Failed: %s", err.Error())
+		}
+
+		if res.Code != 0 {
+			t.Fatalf("CheckTx code is not 0: %d, %s", res.Code, res.Log)
+		}
+	}
+	<-txs
+
+	err = tmCli.Unsubscribe(context.Background(), "test-client", "tm.event = 'Tx'")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	blocks, err := tmCli.Subscribe(context.Background(), "test-client", "tm.event = 'NewBlock'")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	targetHeight := int64(123 + validators.ValidatorMaxAbsentTimes)
+	for block := range blocks {
+		if block.Data.(types2.EventDataNewBlock).Block.Height <= targetHeight {
+			continue
+		}
+		return
+	}
+	blockchain.lock.RLock()
+	candidate := blockchain.CurrentState().Candidates().GetCandidate(types.Pubkey{1})
+	if candidate == nil {
+		t.Fatal("candidate not found")
+	}
+	blockchain.lock.RUnlock()
+
+	if candidate.Status == candidates.CandidateStatusOnline {
+		t.Fatal("candidate not Offline")
+	}
+}
+
+func TestStopNetworkByHaltBlocks(t *testing.T) {
+	blockchain, _, _ := initTestNode(t)
+	blockchain.Stop()
+
+	haltHeight := uint64(50)
+
+	v1Pubkey := [32]byte{}
+	v2Pubkey := [32]byte{}
+	v3Pubkey := [32]byte{}
+
+	rand.Read(v1Pubkey[:])
+	rand.Read(v2Pubkey[:])
+	rand.Read(v3Pubkey[:])
+
+	blockchain.stateDeliver.Validators.Create(v1Pubkey, helpers.BipToPip(big.NewInt(3)))
+	blockchain.stateDeliver.Validators.Create(v2Pubkey, helpers.BipToPip(big.NewInt(5)))
+	blockchain.stateDeliver.Validators.Create(v3Pubkey, helpers.BipToPip(big.NewInt(3)))
+
+	v1Address := blockchain.stateDeliver.Validators.GetValidators()[1].GetAddress()
+	v2Address := blockchain.stateDeliver.Validators.GetValidators()[2].GetAddress()
+	v3Address := blockchain.stateDeliver.Validators.GetValidators()[3].GetAddress()
+
+	blockchain.validatorsStatuses = map[types.TmAddress]int8{}
+	blockchain.validatorsStatuses[v1Address] = ValidatorPresent
+	blockchain.validatorsStatuses[v2Address] = ValidatorPresent
+	blockchain.validatorsStatuses[v3Address] = ValidatorPresent
+
+	blockchain.stateDeliver.Halts.AddHaltBlock(haltHeight, v1Pubkey)
+	blockchain.stateDeliver.Halts.AddHaltBlock(haltHeight, v3Pubkey)
+	if blockchain.isApplicationHalted(haltHeight) {
+		t.Fatalf("Application halted at height %d", haltHeight)
+	}
+
+	haltHeight++
+	blockchain.stateDeliver.Halts.AddHaltBlock(haltHeight, v1Pubkey)
+	blockchain.stateDeliver.Halts.AddHaltBlock(haltHeight, v2Pubkey)
+	if !blockchain.isApplicationHalted(haltHeight) {
+		t.Fatalf("Application not halted at height %d", haltHeight)
+	}
 }
