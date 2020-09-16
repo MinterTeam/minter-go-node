@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
@@ -54,7 +55,7 @@ func (s *Service) Transactions(ctx context.Context, req *pb.TransactionsRequest)
 			}
 
 			result = append(result, &pb.TransactionResponse{
-				Hash:     "Mt" + strings.ToLower(tx.Tx.String()),
+				Hash:     "Mt" + strings.ToLower(hex.EncodeToString(tx.Tx.Hash())),
 				RawTx:    fmt.Sprintf("%x", []byte(tx.Tx)),
 				Height:   fmt.Sprintf("%d", tx.Height),
 				Index:    fmt.Sprintf("%d", tx.Index),

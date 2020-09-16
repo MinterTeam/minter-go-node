@@ -51,7 +51,7 @@ func (s *Service) Transaction(ctx context.Context, req *pb.TransactionRequest) (
 	}
 
 	return &pb.TransactionResponse{
-		Hash:     "Mt" + strings.ToLower(tx.Tx.String()),
+		Hash:     "Mt" + strings.ToLower(hex.EncodeToString(tx.Tx.Hash())),
 		RawTx:    fmt.Sprintf("%x", []byte(tx.Tx)),
 		Height:   fmt.Sprintf("%d", tx.Height),
 		Index:    fmt.Sprintf("%d", tx.Index),
