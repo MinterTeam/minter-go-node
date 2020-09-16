@@ -19,41 +19,44 @@ package types
 import (
 	"bytes"
 	"testing"
-
-	checker "gopkg.in/check.v1"
 )
 
-type BytesSuite struct{}
-
-var _ = checker.Suite(&BytesSuite{})
-
-func (s *BytesSuite) TestCopyBytes(c *checker.C) {
+func TestCopyBytes(t *testing.T) {
 	data1 := []byte{1, 2, 3, 4}
 	exp1 := []byte{1, 2, 3, 4}
 	res1 := CopyBytes(data1)
-	c.Assert(res1, checker.DeepEquals, exp1)
+
+	if !bytes.Equal(res1, exp1) {
+		t.Error("Bytes are not the same")
+	}
+
+	if CopyBytes(nil) != nil {
+		t.Error("Incorrect result of copy bytes")
+	}
 }
 
-func (s *BytesSuite) TestLeftPadBytes(c *checker.C) {
+func TestLeftPadBytes(t *testing.T) {
 	val1 := []byte{1, 2, 3, 4}
 	exp1 := []byte{0, 0, 0, 0, 1, 2, 3, 4}
 
 	res1 := LeftPadBytes(val1, 8)
 	res2 := LeftPadBytes(val1, 2)
 
-	c.Assert(res1, checker.DeepEquals, exp1)
-	c.Assert(res2, checker.DeepEquals, val1)
+	if !bytes.Equal(res1, exp1) || !bytes.Equal(res2, val1) {
+		t.Error("Bytes are not the same")
+	}
 }
 
-func (s *BytesSuite) TestRightPadBytes(c *checker.C) {
+func TestRightPadBytes(t *testing.T) {
 	val := []byte{1, 2, 3, 4}
 	exp := []byte{1, 2, 3, 4, 0, 0, 0, 0}
 
 	resstd := RightPadBytes(val, 8)
 	resshrt := RightPadBytes(val, 2)
 
-	c.Assert(resstd, checker.DeepEquals, exp)
-	c.Assert(resshrt, checker.DeepEquals, val)
+	if !bytes.Equal(resstd, exp) || !bytes.Equal(resshrt, val) {
+		t.Error("Bytes are not the same")
+	}
 }
 
 func TestFromHex(t *testing.T) {
@@ -101,5 +104,42 @@ func TestNoPrefixShortHexOddLength(t *testing.T) {
 	result := FromHex(input, "Mx")
 	if !bytes.Equal(expected, result) {
 		t.Errorf("Expected %x got %x", expected, result)
+	}
+}
+
+func TestToHex(t *testing.T) {
+	b := []byte{1, 2, 3, 4, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	if ToHex(b, "Mx") != "Mx0102030405000000000000000000000000000000" {
+		t.Error("Incorrect hex representation")
+	}
+
+	if ToHex(nil, "Mx") != "Mx0" {
+		t.Error("Incorrect hex representation")
+	}
+}
+
+func TestBytes2Hex(t *testing.T) {
+	if Bytes2Hex([]byte{1, 2, 3, 4, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}) != "0102030405000000000000000000000000000000" {
+		t.Error("Incorrect hex representation")
+	}
+}
+
+func TestHex2BytesFixed(t *testing.T) {
+	b := []byte{1, 2, 3, 4, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	b2 := Hex2BytesFixed("0102030405000000000000000000000000000000", 20)
+	if !bytes.Equal(b2, b) {
+		t.Error("Incorrect hex representation")
+	}
+
+	b = []byte{0, 1, 2, 3, 4, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	b2 = Hex2BytesFixed("0102030405000000000000000000000000000000", 21)
+	if !bytes.Equal(b2, b) {
+		t.Error("Incorrect hex representation")
+	}
+
+	b = []byte{2, 3, 4, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	b2 = Hex2BytesFixed("0102030405000000000000000000000000000000", 19)
+	if !bytes.Equal(b2, b) {
+		t.Error("Incorrect hex representation")
 	}
 }
