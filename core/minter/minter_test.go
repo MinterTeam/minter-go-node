@@ -147,7 +147,7 @@ func getPort() string {
 }
 
 func initTestNode(t *testing.T) (*Blockchain, *rpc.Local, *privval.FilePV) {
-	utils.MinterHome = os.ExpandEnv(t.TempDir())
+	utils.MinterHome = t.TempDir()
 
 	if err := tmos.EnsureDir(utils.GetMinterHome()+"/tmdata/blockstore.db", 0777); err != nil {
 		panic(err.Error())
