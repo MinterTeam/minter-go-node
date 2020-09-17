@@ -346,18 +346,18 @@ func (EditCoinOwnerDataResource) Transform(txData interface{}, context *state.Ch
 	}
 }
 
-// EditMultisigOwnersResource is JSON representation of TxType 0x12
-type EditMultisigOwnersResource struct {
+// EditMultisigResource is JSON representation of TxType 0x12
+type EditMultisigResource struct {
 	Threshold string          `json:"threshold"`
 	Weights   []string        `json:"weights"`
 	Addresses []types.Address `json:"addresses"`
 }
 
 // Transform returns TxDataResource from given txData. Used for JSON encoder.
-func (EditMultisigOwnersResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
-	data := txData.(*transaction.EditMultisigOwnersData)
+func (EditMultisigResource) Transform(txData interface{}, context *state.CheckState) TxDataResource {
+	data := txData.(*transaction.EditMultisigData)
 
-	resource := EditMultisigOwnersResource{
+	resource := EditMultisigResource{
 		Addresses: data.Addresses,
 		Threshold: strconv.Itoa(int(data.Threshold)),
 	}

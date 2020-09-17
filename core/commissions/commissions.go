@@ -18,6 +18,6 @@ const (
 	SetHaltBlock           int64 = 1000
 	RecreateCoin           int64 = 10000000
 	EditOwner              int64 = 10000000
-	EditMultisigOwnersData int64 = 1000
+	EditMultisigData       int64 = 1000
 	PriceVoteData          int64 = 10
 )

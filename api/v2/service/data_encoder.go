@@ -96,8 +96,8 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 			PubKey:    d.PubKey.String(),
 			NewPubKey: d.NewPubKey.String(),
 		}
-	case *transaction.EditMultisigOwnersData:
-		d := data.(*transaction.EditMultisigOwnersData)
+	case *transaction.EditMultisigData:
+		d := data.(*transaction.EditMultisigData)
 		weights := make([]string, 0, len(d.Weights))
 		for _, weight := range d.Weights {
 			weights = append(weights, strconv.Itoa(int(weight)))
@@ -106,7 +106,7 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 		for _, address := range d.Addresses {
 			addresses = append(addresses, address.String())
 		}
-		m = &pb.EditMultisigOwnersData{
+		m = &pb.EditMultisigData{
 			Threshold: strconv.Itoa(int(d.Threshold)),
 			Weights:   weights,
 			Addresses: addresses,
