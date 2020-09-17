@@ -232,7 +232,7 @@ func (m *Manager) PruneBlocks(req *pb.PruneBlocksRequest, stream pb.ManagerServi
 		return status.Errorf(codes.FailedPrecondition, "cannot delete latest saved version (%d)", current)
 	}
 
-	min := req.FromHeight - 1
+	min := req.FromHeight
 	total := req.ToHeight - min
 
 	from := req.FromHeight

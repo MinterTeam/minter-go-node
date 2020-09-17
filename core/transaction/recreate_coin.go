@@ -171,11 +171,7 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 		}
 	}
 
-	tags := kv.Pairs{
-		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeRecreateCoin)}))},
-		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
-	}
-
+	var coinId types.CoinID
 	if deliverState, ok := context.(*state.State); ok {
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
@@ -185,9 +181,9 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 		deliverState.Accounts.SubBalance(sender, types.GetBaseCoinID(), data.InitialReserve)
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 
-		coinID := deliverState.App.GetNextCoinID()
+		coinId = deliverState.App.GetNextCoinID()
 		deliverState.Coins.Recreate(
-			coinID,
+			coinId,
 			data.Name,
 			data.Symbol,
 			data.InitialAmount,
@@ -196,14 +192,17 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 			data.MaxSupply,
 		)
 
-		deliverState.App.SetCoinsCount(coinID.Uint32())
-		deliverState.Accounts.AddBalance(sender, coinID, data.InitialAmount)
+		deliverState.App.SetCoinsCount(coinId.Uint32())
+		deliverState.Accounts.AddBalance(sender, coinId, data.InitialAmount)
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 
-		tags = append(tags, kv.Pair{
-			Key:   []byte("tx.coin"),
-			Value: []byte(data.Symbol.String()),
-		})
+	}
+
+	tags := kv.Pairs{
+		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeRecreateCoin)}))},
+		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
+		kv.Pair{Key: []byte("tx.coin_symbol"), Value: []byte(data.Symbol.String())},
+		kv.Pair{Key: []byte("tx.coin_id"), Value: []byte(coinId.String())},
 	}
 
 	return Response{
