@@ -13,9 +13,9 @@ import (
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/marcusolsson/tui-go"
 	"github.com/urfave/cli/v2"
-	"gitlab.com/tslocum/cview"
 	"google.golang.org/grpc"
 	"io"
+	"log"
 	"os"
 	"strings"
 	"time"
@@ -388,19 +388,8 @@ func pruneBlocksCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 			return err
 		}
 
-		progress := cview.NewProgressBar()
-		app := cview.NewApplication().SetRoot(progress, true)
-
 		errCh := make(chan error)
-		quitUI := make(chan error)
 		recvCh := make(chan *pb.PruneBlocksResponse)
-
-		next := make(chan struct{})
-		go func() {
-			close(next)
-			quitUI <- app.Run()
-		}()
-		<-next
 
 		go func() {
 			for {
@@ -425,13 +414,8 @@ func pruneBlocksCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 		for {
 			select {
 			case <-c.Done():
-				app.Stop()
 				return c.Err()
-			case err := <-quitUI:
-				fmt.Println(progress.GetTitle())
-				return err
 			case err, more := <-errCh:
-				app.Stop()
 				_ = stream.CloseSend()
 				if more {
 					close(errCh)
@@ -440,9 +424,12 @@ func pruneBlocksCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 				fmt.Println("OK")
 				return nil
 			case recv := <-recvCh:
-				progress.SetMax(int(recv.Total))
-				progress.SetProgress(int(recv.Current))
-				app.QueueUpdateDraw(func() {})
+				var percent int64
+				if recv.Total != 0 {
+					percent = int64(float64(recv.Current) / float64(recv.Total) * 100.0)
+				}
+				log.Println()
+				fmt.Printf("%d%% successfully removed (%d of %d)\n", percent, recv.Current, recv.Total)
 			}
 		}
 	}
