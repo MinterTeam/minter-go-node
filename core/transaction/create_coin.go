@@ -183,6 +183,7 @@ func (data CreateCoinData) Run(tx *Transaction, context state.Interface, rewardP
 		}
 	}
 
+	var coinId types.CoinID
 	if deliverState, ok := context.(*state.State); ok {
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
@@ -193,8 +194,9 @@ func (data CreateCoinData) Run(tx *Transaction, context state.Interface, rewardP
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 
 		coinID := deliverState.App.GetCoinsCount() + 1
+		coinId = types.CoinID(coinID)
 		deliverState.Coins.Create(
-			types.CoinID(coinID),
+			coinId,
 			data.Symbol,
 			data.Name,
 			data.InitialAmount,
@@ -205,14 +207,15 @@ func (data CreateCoinData) Run(tx *Transaction, context state.Interface, rewardP
 		)
 
 		deliverState.App.SetCoinsCount(coinID)
-		deliverState.Accounts.AddBalance(sender, types.CoinID(coinID), data.InitialAmount)
+		deliverState.Accounts.AddBalance(sender, coinId, data.InitialAmount)
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}
 
 	tags := kv.Pairs{
 		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeCreateCoin)}))},
 		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
-		kv.Pair{Key: []byte("tx.coin"), Value: []byte(data.Symbol.String())},
+		kv.Pair{Key: []byte("tx.coin_symbol"), Value: []byte(data.Symbol.String())},
+		kv.Pair{Key: []byte("tx.coin_id"), Value: []byte(coinId.String())},
 	}
 
 	return Response{
