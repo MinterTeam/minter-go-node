@@ -15,7 +15,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/rlp"
 )
 
-func TestEditMultisigOwnersTx(t *testing.T) {
+func TestEditMultisigTx(t *testing.T) {
 	cState := getState()
 
 	pubkey := [32]byte{}
@@ -37,7 +37,7 @@ func TestEditMultisigOwnersTx(t *testing.T) {
 	initialBalance := big.NewInt(1)
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(initialBalance))
 
-	data := EditMultisigOwnersData{
+	data := EditMultisigData{
 		Threshold: 3,
 		Weights:   []uint{2, 1, 2},
 		Addresses: []types.Address{addr1, addr2, addr4},
@@ -54,7 +54,7 @@ func TestEditMultisigOwnersTx(t *testing.T) {
 		GasPrice:      1,
 		ChainID:       types.CurrentChainID,
 		GasCoin:       coin,
-		Type:          TypeEditMultisigOwner,
+		Type:          TypeEditMultisig,
 		Data:          encodedData,
 		SignatureType: SigTypeMulti,
 	}
@@ -98,7 +98,7 @@ func TestEditMultisigOwnersTx(t *testing.T) {
 	}
 }
 
-func TestEditMultisigOwnersTxToNonExistenAddress(t *testing.T) {
+func TestEditMultisigTxToNonExistenAddress(t *testing.T) {
 	cState := getState()
 
 	addr := types.Address{0}
@@ -109,7 +109,7 @@ func TestEditMultisigOwnersTxToNonExistenAddress(t *testing.T) {
 	privateKey3, _ := crypto.GenerateKey()
 	addr3 := crypto.PubkeyToAddress(privateKey3.PublicKey)
 
-	data := EditMultisigOwnersData{
+	data := EditMultisigData{
 		Threshold: 3,
 		Weights:   []uint{2, 1, 2},
 		Addresses: []types.Address{addr1, addr2, addr3},
@@ -125,7 +125,7 @@ func TestEditMultisigOwnersTxToNonExistenAddress(t *testing.T) {
 		GasPrice:      1,
 		ChainID:       types.CurrentChainID,
 		GasCoin:       types.GetBaseCoinID(),
-		Type:          TypeEditMultisigOwner,
+		Type:          TypeEditMultisig,
 		Data:          encodedData,
 		SignatureType: SigTypeMulti,
 	}
@@ -143,7 +143,7 @@ func TestEditMultisigOwnersTxToNonExistenAddress(t *testing.T) {
 	}
 }
 
-func TestEditMultisigOwnersTxToTooLargeOwnersList(t *testing.T) {
+func TestEditMultisigTxToTooLargeOwnersList(t *testing.T) {
 	cState := getState()
 
 	addr := types.Address{0}
@@ -163,7 +163,7 @@ func TestEditMultisigOwnersTxToTooLargeOwnersList(t *testing.T) {
 		weights[i] = i
 	}
 
-	data := EditMultisigOwnersData{
+	data := EditMultisigData{
 		Threshold: 3,
 		Weights:   weights,
 		Addresses: []types.Address{addr1, addr2, addr3},
@@ -179,7 +179,7 @@ func TestEditMultisigOwnersTxToTooLargeOwnersList(t *testing.T) {
 		GasPrice:      1,
 		ChainID:       types.CurrentChainID,
 		GasCoin:       coin,
-		Type:          TypeEditMultisigOwner,
+		Type:          TypeEditMultisig,
 		Data:          encodedData,
 		SignatureType: SigTypeMulti,
 	}
@@ -201,7 +201,7 @@ func TestEditMultisigOwnersTxToTooLargeOwnersList(t *testing.T) {
 	}
 }
 
-func TestEditMultisigOwnersTxIncorrectWeights(t *testing.T) {
+func TestEditMultisigTxIncorrectWeights(t *testing.T) {
 	cState := getState()
 
 	addr := types.Address{0}
@@ -216,7 +216,7 @@ func TestEditMultisigOwnersTxIncorrectWeights(t *testing.T) {
 
 	cState.Accounts.CreateMultisig([]uint{1, 2, 3}, []types.Address{addr1, addr2, addr3}, 3, 1, addr)
 
-	data := EditMultisigOwnersData{
+	data := EditMultisigData{
 		Threshold: 3,
 		Weights:   []uint{1, 2, 3, 4},
 		Addresses: []types.Address{addr1, addr2, addr3},
@@ -232,7 +232,7 @@ func TestEditMultisigOwnersTxIncorrectWeights(t *testing.T) {
 		GasPrice:      1,
 		ChainID:       types.CurrentChainID,
 		GasCoin:       coin,
-		Type:          TypeEditMultisigOwner,
+		Type:          TypeEditMultisig,
 		Data:          encodedData,
 		SignatureType: SigTypeMulti,
 	}
@@ -297,7 +297,7 @@ func TestEditMultisigOwnersTxIncorrectWeights(t *testing.T) {
 	}
 }
 
-func TestEditMultisigOwnersTxToAddressDuplication(t *testing.T) {
+func TestEditMultisigTxToAddressDuplication(t *testing.T) {
 	cState := getState()
 
 	addr := types.Address{0}
@@ -312,7 +312,7 @@ func TestEditMultisigOwnersTxToAddressDuplication(t *testing.T) {
 
 	cState.Accounts.CreateMultisig([]uint{1, 2, 3}, []types.Address{addr1, addr2, addr3}, 3, 1, addr)
 
-	data := EditMultisigOwnersData{
+	data := EditMultisigData{
 		Threshold: 3,
 		Weights:   []uint{1, 2, 3},
 		Addresses: []types.Address{addr1, addr1, addr3},
@@ -328,7 +328,7 @@ func TestEditMultisigOwnersTxToAddressDuplication(t *testing.T) {
 		GasPrice:      1,
 		ChainID:       types.CurrentChainID,
 		GasCoin:       coin,
-		Type:          TypeEditMultisigOwner,
+		Type:          TypeEditMultisig,
 		Data:          encodedData,
 		SignatureType: SigTypeMulti,
 	}
@@ -350,7 +350,7 @@ func TestEditMultisigOwnersTxToAddressDuplication(t *testing.T) {
 	}
 }
 
-func TestEditMultisigOwnersTxToInsufficientFunds(t *testing.T) {
+func TestEditMultisigTxToInsufficientFunds(t *testing.T) {
 	cState := getState()
 
 	addr := types.Address{0}
@@ -365,7 +365,7 @@ func TestEditMultisigOwnersTxToInsufficientFunds(t *testing.T) {
 
 	cState.Accounts.CreateMultisig([]uint{1, 2, 3}, []types.Address{addr1, addr2, addr3}, 3, 1, addr)
 
-	data := EditMultisigOwnersData{
+	data := EditMultisigData{
 		Threshold: 3,
 		Weights:   []uint{1, 2, 3},
 		Addresses: []types.Address{addr1, addr2, addr3},
@@ -381,7 +381,7 @@ func TestEditMultisigOwnersTxToInsufficientFunds(t *testing.T) {
 		GasPrice:      1,
 		ChainID:       types.CurrentChainID,
 		GasCoin:       coin,
-		Type:          TypeEditMultisigOwner,
+		Type:          TypeEditMultisig,
 		Data:          encodedData,
 		SignatureType: SigTypeMulti,
 	}
@@ -403,7 +403,7 @@ func TestEditMultisigOwnersTxToInsufficientFunds(t *testing.T) {
 	}
 }
 
-func TestEditMultisigOwnersTxToGasCoinReserveUnderflow(t *testing.T) {
+func TestEditMultisigTxToGasCoinReserveUnderflow(t *testing.T) {
 	cState := getState()
 
 	addr := types.Address{0}
@@ -419,7 +419,7 @@ func TestEditMultisigOwnersTxToGasCoinReserveUnderflow(t *testing.T) {
 
 	cState.Accounts.CreateMultisig([]uint{1, 2, 3}, []types.Address{addr1, addr2, addr3}, 3, 1, addr)
 
-	data := EditMultisigOwnersData{
+	data := EditMultisigData{
 		Threshold: 3,
 		Weights:   []uint{1, 2, 3},
 		Addresses: []types.Address{addr1, addr2, addr3},
@@ -435,7 +435,7 @@ func TestEditMultisigOwnersTxToGasCoinReserveUnderflow(t *testing.T) {
 		GasPrice:      1,
 		ChainID:       types.CurrentChainID,
 		GasCoin:       coin,
-		Type:          TypeEditMultisigOwner,
+		Type:          TypeEditMultisig,
 		Data:          encodedData,
 		SignatureType: SigTypeMulti,
 	}

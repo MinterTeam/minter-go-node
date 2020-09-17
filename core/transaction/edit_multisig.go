@@ -14,13 +14,13 @@ import (
 	"github.com/tendermint/tendermint/libs/kv"
 )
 
-type EditMultisigOwnersData struct {
+type EditMultisigData struct {
 	Threshold uint
 	Weights   []uint
 	Addresses []types.Address
 }
 
-func (data EditMultisigOwnersData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data EditMultisigData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
 	sender, _ := tx.Sender()
 
 	if !context.Accounts().GetAccount(sender).IsMultisig() {
@@ -87,15 +87,15 @@ func (data EditMultisigOwnersData) BasicCheck(tx *Transaction, context *state.Ch
 	return nil
 }
 
-func (data EditMultisigOwnersData) String() string {
+func (data EditMultisigData) String() string {
 	return "EDIT MULTISIG OWNERS"
 }
 
-func (data EditMultisigOwnersData) Gas() int64 {
-	return commissions.EditMultisigOwnersData
+func (data EditMultisigData) Gas() int64 {
+	return commissions.EditMultisigData
 }
 
-func (data EditMultisigOwnersData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
+func (data EditMultisigData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -145,7 +145,7 @@ func (data EditMultisigOwnersData) Run(tx *Transaction, context state.Interface,
 
 	address := []byte(hex.EncodeToString(sender[:]))
 	tags := kv.Pairs{
-		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeEditMultisigOwner)}))},
+		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeEditMultisig)}))},
 		kv.Pair{Key: []byte("tx.from"), Value: address},
 	}
 

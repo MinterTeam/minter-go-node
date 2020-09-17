@@ -276,7 +276,7 @@ func TestCreateMultisigOwnersTxToNonExistenAddress(t *testing.T) {
 	privateKey3, _ := crypto.GenerateKey()
 	addr3 := crypto.PubkeyToAddress(privateKey3.PublicKey)
 
-	data := EditMultisigOwnersData{
+	data := EditMultisigData{
 		Threshold: 3,
 		Weights:   []uint{2, 1, 2},
 		Addresses: []types.Address{addr1, addr2, addr3},
@@ -292,7 +292,7 @@ func TestCreateMultisigOwnersTxToNonExistenAddress(t *testing.T) {
 		GasPrice:      1,
 		ChainID:       types.CurrentChainID,
 		GasCoin:       types.GetBaseCoinID(),
-		Type:          TypeEditMultisigOwner,
+		Type:          TypeEditMultisig,
 		Data:          encodedData,
 		SignatureType: SigTypeMulti,
 	}
