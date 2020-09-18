@@ -25,10 +25,10 @@ func (s *Service) Subscribe(request *pb.SubscribeRequest, stream pb.ApiService_S
 
 	s.client.Logger.Info("Subscribe to query", "query", request.Query)
 
-	subCtx, cancel := context.WithTimeout(stream.Context(), SubscribeTimeout)
+	ctx, cancel := context.WithTimeout(stream.Context(), SubscribeTimeout)
 	defer cancel()
 	subscriber := uuid.New().String()
-	sub, err := s.client.Subscribe(subCtx, subscriber, request.Query)
+	sub, err := s.client.Subscribe(ctx, subscriber, request.Query)
 	if err != nil {
 		return status.Error(codes.Internal, err.Error())
 	}
@@ -40,10 +40,8 @@ func (s *Service) Subscribe(request *pb.SubscribeRequest, stream pb.ApiService_S
 
 	for {
 		select {
-		case <-stream.Context().Done():
-			return stream.Context().Err()
-		case <-subCtx.Done():
-			return stream.Context().Err()
+		case <-ctx.Done():
+			return status.FromContextError(stream.Context().Err()).Err()
 		case msg, ok := <-sub:
 			if !ok {
 				return nil

@@ -39,7 +39,6 @@ func Run(srv *service.Service, addrGRPC, addrApi string, logger log.Logger) erro
 		return err
 	}
 
-	// kitLogger := kit_log.NewJSONLogger(os.Stdout) // &kitLogger{logger}
 	kitLogger := &kitLogger{logger}
 
 	loggerOpts := []kit.Option{
