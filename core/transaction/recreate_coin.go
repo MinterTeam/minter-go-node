@@ -171,7 +171,7 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 		}
 	}
 
-	var coinId types.CoinID
+	var coinId = checkState.App().GetNextCoinID()
 	if deliverState, ok := context.(*state.State); ok {
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
@@ -181,7 +181,6 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 		deliverState.Accounts.SubBalance(sender, types.GetBaseCoinID(), data.InitialReserve)
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 
-		coinId = deliverState.App.GetNextCoinID()
 		deliverState.Coins.Recreate(
 			coinId,
 			data.Name,

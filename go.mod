@@ -31,7 +31,6 @@ require (
 	github.com/tendermint/tm-db v0.5.1
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5
 	github.com/urfave/cli/v2 v2.0.0
-	gitlab.com/tslocum/cview v1.4.7
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 	golang.org/x/net v0.0.0-20200822124328-c89045814202
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208

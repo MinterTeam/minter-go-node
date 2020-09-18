@@ -48,7 +48,6 @@ func Run(srv *service.Service, addrGRPC, addrApi string, traceLog bool) error {
 			contextWithTimeoutInterceptor(srv.TimeoutDuration()),
 		),
 	)
-	runtime.DefaultContextTimeout = 10 * time.Second
 	runtime.GlobalHTTPErrorHandler = httpError
 	gw.RegisterApiServiceServer(grpcServer, srv)
 	grpc_prometheus.Register(grpcServer)

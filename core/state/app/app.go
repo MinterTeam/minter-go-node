@@ -16,6 +16,7 @@ type RApp interface {
 	GetMaxGas() uint64
 	GetTotalSlashed() *big.Int
 	GetCoinsCount() uint32
+	GetNextCoinID() types.CoinID
 }
 
 func (v *App) Tree() tree.ReadOnlyTree {

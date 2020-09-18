@@ -99,7 +99,7 @@ func (data EditCoinOwnerData) Run(tx *Transaction, context state.Interface, rewa
 	tags := kv.Pairs{
 		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeEditCoinOwner)}))},
 		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
-		kv.Pair{Key: []byte("tx.coin"), Value: []byte(data.Symbol.String())},
+		kv.Pair{Key: []byte("tx.coin_symbol"), Value: []byte(data.Symbol.String())},
 	}
 
 	return Response{
