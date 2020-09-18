@@ -8,7 +8,6 @@ import (
 	"github.com/tendermint/go-amino"
 	tmNode "github.com/tendermint/tendermint/node"
 	rpc "github.com/tendermint/tendermint/rpc/client/local"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"time"
 )
@@ -72,11 +71,7 @@ func (s *Service) TimeoutDuration() time.Duration {
 func (s *Service) checkTimeout(ctx context.Context) *status.Status {
 	select {
 	case <-ctx.Done():
-		if ctx.Err() != context.DeadlineExceeded {
-			return status.New(codes.Canceled, ctx.Err().Error())
-		}
-
-		return status.New(codes.DeadlineExceeded, ctx.Err().Error())
+		return status.FromContextError(ctx.Err())
 	default:
 		return nil
 	}
