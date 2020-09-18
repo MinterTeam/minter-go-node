@@ -183,7 +183,7 @@ func (data CreateCoinData) Run(tx *Transaction, context state.Interface, rewardP
 		}
 	}
 
-	var coinId types.CoinID
+	var coinId = checkState.App().GetNextCoinID()
 	if deliverState, ok := context.(*state.State); ok {
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
@@ -193,8 +193,6 @@ func (data CreateCoinData) Run(tx *Transaction, context state.Interface, rewardP
 		deliverState.Accounts.SubBalance(sender, types.GetBaseCoinID(), data.InitialReserve)
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 
-		coinID := deliverState.App.GetCoinsCount() + 1
-		coinId = types.CoinID(coinID)
 		deliverState.Coins.Create(
 			coinId,
 			data.Symbol,
@@ -206,7 +204,7 @@ func (data CreateCoinData) Run(tx *Transaction, context state.Interface, rewardP
 			&sender,
 		)
 
-		deliverState.App.SetCoinsCount(coinID)
+		deliverState.App.SetCoinsCount(coinId.Uint32())
 		deliverState.Accounts.AddBalance(sender, coinId, data.InitialAmount)
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}
