@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	SubscribeTimeout = 5 * time.Second
+	SubscribeTimeout = 15 * time.Second
 )
 
 // Subscribe returns a subscription for events by query.
@@ -41,6 +41,8 @@ func (s *Service) Subscribe(request *pb.SubscribeRequest, stream pb.ApiService_S
 	for {
 		select {
 		case <-stream.Context().Done():
+			return stream.Context().Err()
+		case <-subCtx.Done():
 			return stream.Context().Err()
 		case msg, ok := <-sub:
 			if !ok {

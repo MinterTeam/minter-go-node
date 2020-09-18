@@ -48,16 +48,16 @@ func Run(srv *service.Service, addrGRPC, addrApi string, logger log.Logger) erro
 	grpcServer := grpc.NewServer(
 		grpc_middleware.WithStreamServerChain(
 			grpc_prometheus.StreamServerInterceptor,
+			grpc_recovery.StreamServerInterceptor(),
 			grpc_ctxtags.StreamServerInterceptor(requestExtractorFields()),
 			kit.StreamServerInterceptor(kitLogger, loggerOpts...),
-			grpc_recovery.StreamServerInterceptor(),
 		),
 		grpc_middleware.WithUnaryServerChain(
 			grpc_prometheus.UnaryServerInterceptor,
 			grpc_recovery.UnaryServerInterceptor(),
 			grpc_ctxtags.UnaryServerInterceptor(requestExtractorFields()),
 			kit.UnaryServerInterceptor(kitLogger, loggerOpts...),
-			contextWithTimeoutInterceptor(srv.TimeoutDuration()),
+			unaryTimeoutInterceptor(srv.TimeoutDuration()),
 		),
 	)
 	runtime.GlobalHTTPErrorHandler = httpError
@@ -134,7 +134,7 @@ func serveOpenAPI(mux *http.ServeMux) error {
 	return nil
 }
 
-func contextWithTimeoutInterceptor(timeout time.Duration) func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+func unaryTimeoutInterceptor(timeout time.Duration) func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		withTimeout, _ := context.WithTimeout(ctx, timeout)
 		return handler(withTimeout, req)
