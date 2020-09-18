@@ -124,9 +124,8 @@ func runAPI(logger tmLog.Logger, app *minter.Blockchain, client *rpc.Local, node
 		if err != nil {
 			logger.Error("Failed to parse API v2 address", err)
 		}
-		traceLog := os.Getenv("API_V2_LOG_LEVEL") == "trace"
 		logger.Error("Failed to start Api V2 in both gRPC and RESTful",
-			apiV2.Run(srv, grpcURL.Host, apiV2url.Host, traceLog))
+			apiV2.Run(srv, grpcURL.Host, apiV2url.Host, logger.With("module", "api")))
 	}(serviceApi.NewService(amino.NewCodec(), app, client, node, cfg, version.Version))
 
 	go apiV1.RunAPI(app, client, cfg, logger)

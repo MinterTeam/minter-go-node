@@ -4,23 +4,19 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"mime"
-	"net"
-	"net/http"
-	"os"
-	"strconv"
-	"strings"
-	"time"
-
 	"github.com/MinterTeam/minter-go-node/api/v2/service"
 	gw "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	_ "github.com/MinterTeam/node-grpc-gateway/statik"
+	kit_log "github.com/go-kit/kit/log"
 	"github.com/gorilla/handlers"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	"github.com/grpc-ecosystem/go-grpc-middleware/logging/kit"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
+	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/rakyll/statik/fs"
+	"github.com/tendermint/tendermint/libs/log"
 	"github.com/tmc/grpc-websocket-proxy/wsproxy"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
@@ -28,23 +24,39 @@ import (
 	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/status"
 	_struct "google.golang.org/protobuf/types/known/structpb"
+	"mime"
+	"net"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
 )
 
 // Start gRPC and API v2
-func Run(srv *service.Service, addrGRPC, addrApi string, traceLog bool) error {
+func Run(srv *service.Service, addrGRPC, addrApi string, logger log.Logger) error {
 	lis, err := net.Listen("tcp", addrGRPC)
 	if err != nil {
 		return err
 	}
 
+	// kitLogger := kit_log.NewJSONLogger(os.Stdout) // &kitLogger{logger}
+	kitLogger := &kitLogger{logger}
+
+	loggerOpts := []kit.Option{
+		kit.WithLevels(func(code codes.Code, logger kit_log.Logger) kit_log.Logger { return logger }),
+	}
 	grpcServer := grpc.NewServer(
 		grpc_middleware.WithStreamServerChain(
 			grpc_prometheus.StreamServerInterceptor,
+			grpc_ctxtags.StreamServerInterceptor(requestExtractorFields()),
+			kit.StreamServerInterceptor(kitLogger, loggerOpts...),
 			grpc_recovery.StreamServerInterceptor(),
 		),
 		grpc_middleware.WithUnaryServerChain(
 			grpc_prometheus.UnaryServerInterceptor,
 			grpc_recovery.UnaryServerInterceptor(),
+			grpc_ctxtags.UnaryServerInterceptor(requestExtractorFields()),
+			kit.UnaryServerInterceptor(kitLogger, loggerOpts...),
 			contextWithTimeoutInterceptor(srv.TimeoutDuration()),
 		),
 	)
@@ -74,12 +86,9 @@ func Run(srv *service.Service, addrGRPC, addrApi string, traceLog bool) error {
 	mux := http.NewServeMux()
 	handler := wsproxy.WebsocketProxy(gwmux)
 
-	if traceLog {
-		handler = handlers.CombinedLoggingHandler(os.Stdout, handler)
-	}
-	mux.Handle("/", handler)
+	mux.Handle("/", handlers.CompressHandler(handler))
 	if err := serveOpenAPI(mux); err != nil {
-		//ignore
+		// ignore
 	}
 
 	group.Go(func() error {
@@ -184,4 +193,25 @@ func httpError(ctx context.Context, mux *runtime.ServeMux, marshaler runtime.Mar
 		grpclog.Infof("Failed to write response: %v", err)
 		w.Write([]byte(fallback))
 	}
+}
+
+func requestExtractorFields() grpc_ctxtags.Option {
+	return grpc_ctxtags.WithFieldExtractorForInitialReq(func(fullMethod string, req interface{}) map[string]interface{} {
+		retMap := make(map[string]interface{})
+		marshal, _ := json.Marshal(req)
+		_ = json.Unmarshal(marshal, &retMap)
+		if len(retMap) == 0 {
+			return nil
+		}
+		return retMap
+	})
+}
+
+type kitLogger struct {
+	log.Logger
+}
+
+func (l *kitLogger) Log(keyvals ...interface{}) error {
+	l.Info("API", keyvals...)
+	return nil
 }
