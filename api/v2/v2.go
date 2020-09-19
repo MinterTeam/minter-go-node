@@ -83,13 +83,13 @@ func Run(srv *service.Service, addrGRPC, addrApi string, logger log.Logger) erro
 		return gw.RegisterApiServiceHandlerFromEndpoint(ctx, gwmux, addrGRPC, opts)
 	})
 	mux := http.NewServeMux()
-	mux.Handle("/v2/", http.StripPrefix("/v2", handlers.CompressHandler(wsproxy.WebsocketProxy(gwmux))))
+	mux.Handle("/v2/", http.StripPrefix("/v2", handlers.CompressHandler(allowCORS(wsproxy.WebsocketProxy(gwmux)))))
 	if err := serveOpenAPI(mux); err != nil {
 		// ignore
 	}
 
 	group.Go(func() error {
-		return http.ListenAndServe(addrApi, allowCORS(mux))
+		return http.ListenAndServe(addrApi, mux)
 	})
 
 	return group.Wait()
