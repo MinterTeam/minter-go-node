@@ -83,9 +83,7 @@ func Run(srv *service.Service, addrGRPC, addrApi string, logger log.Logger) erro
 		return gw.RegisterApiServiceHandlerFromEndpoint(ctx, gwmux, addrGRPC, opts)
 	})
 	mux := http.NewServeMux()
-	handler := wsproxy.WebsocketProxy(gwmux)
-
-	mux.Handle("/", handlers.CompressHandler(handler))
+	mux.Handle("/v2/", http.StripPrefix("/v2", handlers.CompressHandler(wsproxy.WebsocketProxy(gwmux))))
 	if err := serveOpenAPI(mux); err != nil {
 		// ignore
 	}
@@ -126,9 +124,9 @@ func serveOpenAPI(mux *http.ServeMux) error {
 		return err
 	}
 
-	// Expose files in static on <host>/openapi-ui
+	// Expose files in static on <host>/v2/openapi-ui
 	fileServer := http.FileServer(statikFS)
-	prefix := "/openapi-ui/"
+	prefix := "/v2/openapi-ui/"
 	mux.Handle(prefix, http.StripPrefix(prefix, fileServer))
 	return nil
 }
