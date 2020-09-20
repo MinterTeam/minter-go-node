@@ -20,6 +20,7 @@ const mainPrefix = byte('f')
 
 type RFrozenFunds interface {
 	Export(state *types.AppState, height uint64)
+	GetFrozenFunds(height uint64) *Model
 }
 
 type FrozenFunds struct {

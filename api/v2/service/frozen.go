@@ -2,8 +2,11 @@ package service
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/core/code"
+	"github.com/MinterTeam/minter-go-node/core/state/candidates"
+	"github.com/MinterTeam/minter-go-node/core/state/coins"
+	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"google.golang.org/grpc/codes"
@@ -17,68 +20,58 @@ func (s *Service) Frozen(ctx context.Context, req *pb.FrozenRequest) (*pb.Frozen
 		return new(pb.FrozenResponse), status.Error(codes.InvalidArgument, "invalid address")
 	}
 
-	decodeString, err := hex.DecodeString(req.Address[2:])
-	if err != nil {
-		return new(pb.FrozenResponse), status.Error(codes.InvalidArgument, "invalid address")
-	}
-
-	address := types.BytesToAddress(decodeString)
-
 	cState := s.blockchain.CurrentState()
 	cState.RLock()
 	defer cState.RUnlock()
 
+	var reqCoin *coins.Model
+
+	if req.CoinId != nil {
+		coinID := types.CoinID(req.CoinId.GetValue())
+		reqCoin = cState.Coins().GetCoin(coinID)
+		if reqCoin == nil {
+			return new(pb.FrozenResponse), s.createError(status.New(codes.NotFound, "Coin not found"), transaction.EncodeError(transaction.EncodeError(code.NewCoinNotExists("", coinID.String()))))
+		}
+	}
 	var frozen []*pb.FrozenResponse_Frozen
 
-	appState := new(types.AppState)
-	cState.FrozenFunds().Export(appState, s.blockchain.Height())
+	cState.FrozenFunds().GetFrozenFunds(s.blockchain.Height())
 
-	var emptyAddress types.Address
+	for i := s.blockchain.Height(); i <= s.blockchain.Height()+candidates.UnbondPeriod; i++ {
 
-	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-		return new(pb.FrozenResponse), timeoutStatus.Err()
-	}
-
-	if req.Coin == "" && address == emptyAddress {
-		for _, fund := range appState.FrozenFunds {
-			frozen = append(frozen, &pb.FrozenResponse_Frozen{
-				Height:       fmt.Sprintf("%d", fund.Height),
-				Address:      fund.Address.String(),
-				CandidateKey: fund.CandidateKey.String(),
-				Coin:         fund.Coin.String(),
-				Value:        fund.Value,
-			})
+		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+			return new(pb.FrozenResponse), timeoutStatus.Err()
 		}
-		return &pb.FrozenResponse{Frozen: frozen}, nil
-	}
 
-	if req.Coin != "" && address != emptyAddress {
-		for _, fund := range appState.FrozenFunds {
-			if fund.Coin.String() != req.Coin || fund.Address != address {
-				continue
-			}
-			frozen = append(frozen, &pb.FrozenResponse_Frozen{
-				Height:       fmt.Sprintf("%d", fund.Height),
-				Address:      fund.Address.String(),
-				CandidateKey: fund.CandidateKey.String(),
-				Coin:         fund.Coin.String(),
-				Value:        fund.Value,
-			})
-		}
-		return &pb.FrozenResponse{Frozen: frozen}, nil
-	}
-
-	for _, fund := range appState.FrozenFunds {
-		if fund.Coin.String() != req.Coin && fund.Address != address {
+		funds := cState.FrozenFunds().GetFrozenFunds(i)
+		if funds == nil {
 			continue
 		}
-		frozen = append(frozen, &pb.FrozenResponse_Frozen{
-			Height:       fmt.Sprintf("%d", fund.Height),
-			Address:      fund.Address.String(),
-			CandidateKey: fund.CandidateKey.String(),
-			Coin:         fund.Coin.String(),
-			Value:        fund.Value,
-		})
+
+		for _, fund := range funds.List {
+			if fund.Address.String() != req.Address {
+				continue
+			}
+			coin := reqCoin
+			if coin == nil {
+				coin = cState.Coins().GetCoin(fund.Coin)
+			} else {
+				if coin.ID() != fund.Coin {
+					continue
+				}
+			}
+			frozen = append(frozen, &pb.FrozenResponse_Frozen{
+				Height:       fmt.Sprintf("%d", funds.Height()),
+				Address:      fund.Address.String(),
+				CandidateKey: fund.CandidateKey.String(),
+				Coin: &pb.Coin{
+					Id:     fund.Coin.String(),
+					Symbol: coin.GetFullSymbol(),
+				},
+				Value: fund.Value.String(),
+			})
+		}
 	}
+
 	return &pb.FrozenResponse{Frozen: frozen}, nil
 }
