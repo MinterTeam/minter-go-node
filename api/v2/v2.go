@@ -79,9 +79,10 @@ func Run(srv *service.Service, addrGRPC, addrApi string, logger log.Logger) erro
 		grpc.WithInsecure(),
 		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(50000000)),
 	}
-	group.Go(func() error {
-		return gw.RegisterApiServiceHandlerFromEndpoint(ctx, gwmux, addrGRPC, opts)
-	})
+	err = gw.RegisterApiServiceHandlerFromEndpoint(ctx, gwmux, addrGRPC, opts)
+	if err != nil {
+		return err
+	}
 	mux := http.NewServeMux()
 	mux.Handle("/v2/", http.StripPrefix("/v2", handlers.CompressHandler(allowCORS(wsproxy.WebsocketProxy(gwmux)))))
 	if err := serveOpenAPI(mux); err != nil {
