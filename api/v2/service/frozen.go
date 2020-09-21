@@ -30,7 +30,7 @@ func (s *Service) Frozen(ctx context.Context, req *pb.FrozenRequest) (*pb.Frozen
 		coinID := types.CoinID(req.CoinId.GetValue())
 		reqCoin = cState.Coins().GetCoin(coinID)
 		if reqCoin == nil {
-			return new(pb.FrozenResponse), s.createError(status.New(codes.NotFound, "Coin not found"), transaction.EncodeError(transaction.EncodeError(code.NewCoinNotExists("", coinID.String()))))
+			return new(pb.FrozenResponse), s.createError(status.New(codes.NotFound, "Coin not found"), transaction.EncodeError(code.NewCoinNotExists("", coinID.String())))
 		}
 	}
 	var frozen []*pb.FrozenResponse_Frozen

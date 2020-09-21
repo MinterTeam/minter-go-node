@@ -44,7 +44,7 @@ func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinS
 	} else {
 		coinToBuy = types.CoinID(req.GetCoinIdToBuy())
 		if !cState.Coins().Exists(coinToBuy) {
-			return new(pb.EstimateCoinSellAllResponse), s.createError(status.New(codes.NotFound, "Coin to buy not exists"), transaction.EncodeError(transaction.EncodeError(code.NewCoinNotExists("", coinToBuy.String()))))
+			return new(pb.EstimateCoinSellAllResponse), s.createError(status.New(codes.NotFound, "Coin to buy not exists"), transaction.EncodeError(code.NewCoinNotExists("", coinToBuy.String())))
 		}
 	}
 
