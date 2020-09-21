@@ -66,7 +66,7 @@ func (data UnbondData) BasicCheck(tx *Transaction, context *state.CheckState) *R
 		return &Response{
 			Code: code.StakeNotFound,
 			Log:  fmt.Sprintf("Stake of current user not found"),
-			Info: EncodeError(EncodeError(code.NewStakeNotFound(data.PubKey.String(), sender.String(), data.Coin.String(), context.Coins().GetCoin(data.Coin).GetFullSymbol()))),
+			Info: EncodeError(code.NewStakeNotFound(data.PubKey.String(), sender.String(), data.Coin.String(), context.Coins().GetCoin(data.Coin).GetFullSymbol())),
 		}
 	}
 
