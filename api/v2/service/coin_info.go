@@ -44,7 +44,7 @@ func (s *Service) CoinInfo(ctx context.Context, req *pb.CoinInfoRequest) (*pb.Co
 	return &pb.CoinInfoResponse{
 		Id:             coin.ID().String(),
 		Name:           coin.Name(),
-		Symbol:         coin.Symbol().String(),
+		Symbol:         coin.GetFullSymbol(),
 		Volume:         coin.Volume().String(),
 		Crr:            fmt.Sprintf("%d", coin.Crr()),
 		ReserveBalance: coin.Reserve().String(),
@@ -53,7 +53,7 @@ func (s *Service) CoinInfo(ctx context.Context, req *pb.CoinInfoRequest) (*pb.Co
 	}, nil
 }
 
-// Returns information about coin ID.
+// CoinInfoById returns information about coin ID.
 func (s *Service) CoinInfoById(ctx context.Context, req *pb.CoinIdRequest) (*pb.CoinInfoResponse, error) {
 	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {
@@ -83,7 +83,7 @@ func (s *Service) CoinInfoById(ctx context.Context, req *pb.CoinIdRequest) (*pb.
 	return &pb.CoinInfoResponse{
 		Id:             coin.ID().String(),
 		Name:           coin.Name(),
-		Symbol:         coin.Symbol().String(),
+		Symbol:         coin.GetFullSymbol(),
 		Volume:         coin.Volume().String(),
 		Crr:            fmt.Sprintf("%d", coin.Crr()),
 		ReserveBalance: coin.Reserve().String(),
