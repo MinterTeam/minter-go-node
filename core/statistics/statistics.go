@@ -199,7 +199,7 @@ func (d *Data) handleStartBlocks(ctx context.Context) {
 
 				for {
 					d.BlockStart.RLock()
-					ok := (height == d.BlockStart.height+1) || 0 == d.BlockStart.height
+					ok := (height == d.BlockStart.height+1) || d.BlockStart.height == 0
 					d.BlockStart.RUnlock()
 					if ok {
 						break
@@ -295,8 +295,6 @@ func (d *Data) handleEndBlock(ctx context.Context) {
 				d.Speed.startTime = time.Now().Add(-12 * time.Hour)
 				d.Speed.startHeight = height - (height-d.Speed.startHeight)/2
 				d.Speed.duration = d.Speed.duration/2 + duration.Nanoseconds()
-
-				return
 			}()
 		}
 	}

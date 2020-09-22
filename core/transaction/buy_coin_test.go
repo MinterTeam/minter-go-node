@@ -16,13 +16,10 @@ import (
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
-	"github.com/tendermint/go-amino"
 	db "github.com/tendermint/tm-db"
 )
 
 var (
-	cdc = amino.NewCodec()
-
 	rnd = rand.New(rand.NewSource(time.Now().Unix()))
 )
 

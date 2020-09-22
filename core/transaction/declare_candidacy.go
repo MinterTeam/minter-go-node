@@ -60,7 +60,7 @@ func (data DeclareCandidacyData) BasicCheck(tx *Transaction, context *state.Chec
 	if data.Commission < minCommission || data.Commission > maxCommission {
 		return &Response{
 			Code: code.WrongCommission,
-			Log:  fmt.Sprintf("Commission should be between 0 and 100"),
+			Log:  "Commission should be between 0 and 100",
 			Info: EncodeError(code.NewWrongCommission(fmt.Sprintf("%d", data.Commission), "0", "100")),
 		}
 	}
@@ -96,7 +96,7 @@ func (data DeclareCandidacyData) Run(tx *Transaction, context state.Interface, r
 	if checkState.Candidates().Count() >= maxCandidatesCount && !checkState.Candidates().IsNewCandidateStakeSufficient(data.Coin, data.Stake, maxCandidatesCount) {
 		return Response{
 			Code: code.TooLowStake,
-			Log:  fmt.Sprintf("Given stake is too low"),
+			Log:  "Given stake is too low",
 			Info: EncodeError(code.NewTooLowStake(sender.String(), data.PubKey.String(), data.Stake.String(), data.Coin.String(), checkState.Coins().GetCoin(data.Coin).GetFullSymbol())),
 		}
 	}

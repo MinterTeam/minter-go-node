@@ -34,7 +34,7 @@ func (data CreateMultisigData) BasicCheck(tx *Transaction, context *state.CheckS
 	if lenAddresses != lenWeights {
 		return &Response{
 			Code: code.DifferentCountAddressesAndWeights,
-			Log:  fmt.Sprintf("Different count addresses and weights"),
+			Log:  "Different count addresses and weights",
 			Info: EncodeError(code.NewDifferentCountAddressesAndWeights(fmt.Sprintf("%d", lenAddresses), fmt.Sprintf("%d", lenWeights))),
 		}
 	}

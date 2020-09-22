@@ -55,7 +55,7 @@ func (item MultisendDataItem) MarshalJSON() ([]byte, error) {
 }
 
 func (data MultisendData) String() string {
-	return fmt.Sprintf("MULTISEND")
+	return "MULTISEND"
 }
 
 func (data MultisendData) Gas() int64 {

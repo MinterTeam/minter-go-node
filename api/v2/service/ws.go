@@ -30,7 +30,7 @@ func (s *Service) Subscribe(request *pb.SubscribeRequest, stream pb.ApiService_S
 	subscriber := uuid.New().String()
 	sub, err := s.client.Subscribe(ctx, subscriber, request.Query)
 	if err != nil {
-		return status.Error(codes.Internal, err.Error())
+		return status.Error(codes.InvalidArgument, err.Error())
 	}
 	defer func() {
 		if err := s.client.UnsubscribeAll(context.Background(), subscriber); err != nil {

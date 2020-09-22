@@ -73,7 +73,7 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.CheckStat
 		if ret.Cmp(commissionInBaseCoin) == -1 {
 			return nil, nil, nil, &Response{
 				Code: code.InsufficientFunds,
-				Log:  fmt.Sprintf("Insufficient funds for sender account"),
+				Log:  "Insufficient funds for sender account",
 				Info: EncodeError(code.NewInsufficientFunds(sender.String(), commissionInBaseCoin.String(), coin.GetFullSymbol(), coin.ID().String())),
 			}
 		}
@@ -97,7 +97,7 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.CheckStat
 		if basecoinValue.Cmp(commissionInBaseCoin) == -1 {
 			return nil, nil, nil, &Response{
 				Code: code.InsufficientFunds,
-				Log:  fmt.Sprintf("Insufficient funds for sender account"),
+				Log:  "Insufficient funds for sender account",
 				Info: EncodeError(code.NewInsufficientFunds(sender.String(), commissionInBaseCoin.String(), coinFrom.GetFullSymbol(), coinFrom.ID().String())),
 			}
 		}
@@ -134,7 +134,7 @@ func (data SellAllCoinData) BasicCheck(tx *Transaction, context *state.CheckStat
 	if !context.Coins().Exists(data.CoinToSell) {
 		return &Response{
 			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin to sell not exists"),
+			Log:  "Coin to sell not exists",
 			Info: EncodeError(code.NewCoinNotExists("", data.CoinToSell.String())),
 		}
 	}
@@ -142,7 +142,7 @@ func (data SellAllCoinData) BasicCheck(tx *Transaction, context *state.CheckStat
 	if !context.Coins().Exists(data.CoinToBuy) {
 		return &Response{
 			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin to buy not exists"),
+			Log:  "Coin to buy not exists",
 			Info: EncodeError(code.NewCoinNotExists("", data.CoinToBuy.String())),
 		}
 	}
@@ -150,7 +150,7 @@ func (data SellAllCoinData) BasicCheck(tx *Transaction, context *state.CheckStat
 	if data.CoinToSell == data.CoinToBuy {
 		return &Response{
 			Code: code.CrossConvert,
-			Log:  fmt.Sprintf("\"From\" coin equals to \"to\" coin"),
+			Log:  "\"From\" coin equals to \"to\" coin",
 			Info: EncodeError(code.NewCrossConvert(
 				data.CoinToSell.String(),
 				context.Coins().GetCoin(data.CoinToSell).Symbol().String(),

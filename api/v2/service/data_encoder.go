@@ -14,9 +14,8 @@ import (
 
 func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 	var m proto.Message
-	switch data.(type) {
+	switch d := data.(type) {
 	case *transaction.BuyCoinData:
-		d := data.(*transaction.BuyCoinData)
 		m = &pb.BuyCoinData{
 			CoinToBuy: &pb.Coin{
 				Id:     d.CoinToBuy.String(),
@@ -30,13 +29,11 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 			MaximumValueToSell: d.MaximumValueToSell.String(),
 		}
 	case *transaction.EditCoinOwnerData:
-		d := data.(*transaction.EditCoinOwnerData)
 		m = &pb.EditCoinOwnerData{
 			Symbol:   d.Symbol.String(),
 			NewOwner: d.NewOwner.String(),
 		}
 	case *transaction.CreateCoinData:
-		d := data.(*transaction.CreateCoinData)
 		m = &pb.CreateCoinData{
 			Name:                 d.Name,
 			Symbol:               d.Symbol.String(),
@@ -46,7 +43,6 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 			MaxSupply:            d.MaxSupply.String(),
 		}
 	case *transaction.CreateMultisigData:
-		d := data.(*transaction.CreateMultisigData)
 		weights := make([]string, 0, len(d.Weights))
 		for _, weight := range d.Weights {
 			weights = append(weights, strconv.Itoa(int(weight)))
@@ -61,7 +57,6 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 			Addresses: addresses,
 		}
 	case *transaction.DeclareCandidacyData:
-		d := data.(*transaction.DeclareCandidacyData)
 		m = &pb.DeclareCandidacyData{
 			Address:    d.Address.String(),
 			PubKey:     d.PubKey.String(),
@@ -73,7 +68,6 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 			Stake: d.Stake.String(),
 		}
 	case *transaction.DelegateData:
-		d := data.(*transaction.DelegateData)
 		m = &pb.DelegateData{
 			PubKey: d.PubKey.String(),
 			Coin: &pb.Coin{
@@ -83,7 +77,6 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 			Value: d.Value.String(),
 		}
 	case *transaction.EditCandidateData:
-		d := data.(*transaction.EditCandidateData)
 		m = &pb.EditCandidateData{
 			PubKey:         d.PubKey.String(),
 			RewardAddress:  d.RewardAddress.String(),
@@ -91,13 +84,11 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 			ControlAddress: d.ControlAddress.String(),
 		}
 	case *transaction.EditCandidatePublicKeyData:
-		d := data.(*transaction.EditCandidatePublicKeyData)
 		m = &pb.EditCandidatePublicKeyData{
 			PubKey:    d.PubKey.String(),
 			NewPubKey: d.NewPubKey.String(),
 		}
 	case *transaction.EditMultisigData:
-		d := data.(*transaction.EditMultisigData)
 		weights := make([]string, 0, len(d.Weights))
 		for _, weight := range d.Weights {
 			weights = append(weights, strconv.Itoa(int(weight)))
@@ -112,7 +103,6 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 			Addresses: addresses,
 		}
 	case *transaction.MultisendData:
-		d := data.(*transaction.MultisendData)
 		list := make([]*pb.SendData, 0, len(d.List))
 		for _, item := range d.List {
 			list = append(list, &pb.SendData{
@@ -128,12 +118,10 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 			List: list,
 		}
 	case *transaction.PriceVoteData:
-		d := data.(*transaction.PriceVoteData)
 		m = &pb.PriceVoteData{
 			Price: strconv.Itoa(int(d.Price)),
 		}
 	case *transaction.RecreateCoinData:
-		d := data.(*transaction.RecreateCoinData)
 		m = &pb.RecreateCoinData{
 			Name:                 d.Name,
 			Symbol:               d.Symbol.String(),
@@ -143,13 +131,11 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 			MaxSupply:            d.MaxSupply.String(),
 		}
 	case *transaction.RedeemCheckData:
-		d := data.(*transaction.RedeemCheckData)
 		m = &pb.RedeemCheckData{
 			RawCheck: base64.StdEncoding.EncodeToString(d.RawCheck),
 			Proof:    base64.StdEncoding.EncodeToString(d.Proof[:]),
 		}
 	case *transaction.SellAllCoinData:
-		d := data.(*transaction.SellAllCoinData)
 		m = &pb.SellAllCoinData{
 			CoinToSell: &pb.Coin{
 				Id:     d.CoinToSell.String(),
@@ -162,7 +148,6 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 			MinimumValueToBuy: d.MinimumValueToBuy.String(),
 		}
 	case *transaction.SellCoinData:
-		d := data.(*transaction.SellCoinData)
 		m = &pb.SellCoinData{
 			CoinToSell: &pb.Coin{
 				Id:     d.CoinToSell.String(),
@@ -176,7 +161,6 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 			MinimumValueToBuy: d.MinimumValueToBuy.String(),
 		}
 	case *transaction.SendData:
-		d := data.(*transaction.SendData)
 		m = &pb.SendData{
 			Coin: &pb.Coin{
 				Id:     d.Coin.String(),
@@ -186,23 +170,19 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 			Value: d.Value.String(),
 		}
 	case *transaction.SetHaltBlockData:
-		d := data.(*transaction.SetHaltBlockData)
 		m = &pb.SetHaltBlockData{
 			PubKey: d.PubKey.String(),
 			Height: strconv.Itoa(int(d.Height)),
 		}
 	case *transaction.SetCandidateOnData:
-		d := data.(*transaction.SetCandidateOnData)
 		m = &pb.SetCandidateOnData{
 			PubKey: d.PubKey.String(),
 		}
 	case *transaction.SetCandidateOffData:
-		d := data.(*transaction.SetCandidateOffData)
 		m = &pb.SetCandidateOffData{
 			PubKey: d.PubKey.String(),
 		}
 	case *transaction.UnbondData:
-		d := data.(*transaction.UnbondData)
 		m = &pb.UnbondData{
 			PubKey: d.PubKey.String(),
 			Coin: &pb.Coin{

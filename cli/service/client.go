@@ -121,7 +121,7 @@ func NewCLI(socketPath string) (*ManagerConsole, error) {
 
 	app := cli.NewApp()
 	app.CommandNotFound = func(ctx *cli.Context, cmd string) {
-		fmt.Println(fmt.Sprintf("No help topic for '%v'", cmd))
+		fmt.Printf("No help topic for '%v'\n", cmd)
 	}
 	app.UseShortOptionHandling = true
 	jsonFlag := &cli.BoolFlag{Name: "json", Aliases: []string{"j"}, Required: false, Usage: "echo in json format"}
@@ -347,7 +347,7 @@ func netInfoCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 			if err != nil {
 				return err
 			}
-			fmt.Println(string(bb.Bytes()))
+			fmt.Println(bb.String())
 			return nil
 		}
 		fmt.Println(proto.MarshalTextString(response))
@@ -367,7 +367,7 @@ func statusCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 			if err != nil {
 				return err
 			}
-			fmt.Println(string(bb.Bytes()))
+			fmt.Println(bb.String())
 			return nil
 		}
 		fmt.Println(proto.MarshalTextString(response))

@@ -39,7 +39,6 @@ func StartCLIServer(socketPath string, manager pb.ManagerServiceServer, ctx cont
 			server.GracefulStop()
 		case <-kill:
 		}
-		return
 	}()
 
 	if err := server.Serve(lis); err != nil {

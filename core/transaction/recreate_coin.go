@@ -43,7 +43,7 @@ func (data RecreateCoinData) BasicCheck(tx *Transaction, context *state.CheckSta
 	if data.ConstantReserveRatio < 10 || data.ConstantReserveRatio > 100 {
 		return &Response{
 			Code: code.WrongCrr,
-			Log:  fmt.Sprintf("Constant Reserve Ratio should be between 10 and 100"),
+			Log:  "Constant Reserve Ratio should be between 10 and 100",
 			Info: EncodeError(code.NewWrongCrr("10", "100", strconv.Itoa(int(data.ConstantReserveRatio)))),
 		}
 	}

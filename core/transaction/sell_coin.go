@@ -271,7 +271,7 @@ func (data SellCoinData) BasicCheck(tx *Transaction, context *state.CheckState) 
 	if !context.Coins().Exists(data.CoinToSell) {
 		return &Response{
 			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin not exists"),
+			Log:  "Coin not exists",
 			Info: EncodeError(code.NewCoinNotExists("", data.CoinToSell.String())),
 		}
 	}
@@ -279,7 +279,7 @@ func (data SellCoinData) BasicCheck(tx *Transaction, context *state.CheckState) 
 	if !context.Coins().Exists(data.CoinToBuy) {
 		return &Response{
 			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin not exists"),
+			Log:  "Coin not exists",
 			Info: EncodeError(code.NewCoinNotExists("", data.CoinToBuy.String())),
 		}
 	}
@@ -287,7 +287,7 @@ func (data SellCoinData) BasicCheck(tx *Transaction, context *state.CheckState) 
 	if data.CoinToSell == data.CoinToBuy {
 		return &Response{
 			Code: code.CrossConvert,
-			Log:  fmt.Sprintf("\"From\" coin equals to \"to\" coin"),
+			Log:  "\"From\" coin equals to \"to\" coin",
 			Info: EncodeError(code.NewCrossConvert(
 				data.CoinToSell.String(),
 				context.Coins().GetCoin(data.CoinToSell).Symbol().String(),

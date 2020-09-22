@@ -329,7 +329,7 @@ func (data BuyCoinData) BasicCheck(tx *Transaction, context *state.CheckState) *
 	if data.CoinToSell == data.CoinToBuy {
 		return &Response{
 			Code: code.CrossConvert,
-			Log:  fmt.Sprintf("\"From\" coin equals to \"to\" coin"),
+			Log:  "\"From\" coin equals to \"to\" coin",
 			Info: EncodeError(code.NewCrossConvert(
 				data.CoinToSell.String(),
 				context.Coins().GetCoin(data.CoinToSell).Symbol().String(),

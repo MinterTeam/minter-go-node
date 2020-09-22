@@ -47,7 +47,7 @@ func (data DelegateData) BasicCheck(tx *Transaction, context *state.CheckState) 
 	if data.Value.Cmp(types.Big0) < 1 {
 		return &Response{
 			Code: code.StakeShouldBePositive,
-			Log:  fmt.Sprintf("Stake should be positive"),
+			Log:  "Stake should be positive",
 			Info: EncodeError(code.NewStakeShouldBePositive(data.Value.String())),
 		}
 	}
@@ -55,7 +55,7 @@ func (data DelegateData) BasicCheck(tx *Transaction, context *state.CheckState) 
 	if !context.Candidates().Exists(data.PubKey) {
 		return &Response{
 			Code: code.CandidateNotFound,
-			Log:  fmt.Sprintf("Candidate with such public key not found"),
+			Log:  "Candidate with such public key not found",
 			Info: EncodeError(code.NewCandidateNotFound(data.PubKey.String())),
 		}
 	}
@@ -64,7 +64,7 @@ func (data DelegateData) BasicCheck(tx *Transaction, context *state.CheckState) 
 	if !context.Candidates().IsDelegatorStakeSufficient(sender, data.PubKey, data.Coin, data.Value) {
 		return &Response{
 			Code: code.TooLowStake,
-			Log:  fmt.Sprintf("Stake is too low"),
+			Log:  "Stake is too low",
 			Info: EncodeError(code.NewTooLowStake(sender.String(), data.PubKey.String(), data.Value.String(), data.Coin.String(), context.Coins().GetCoin(data.Coin).GetFullSymbol())),
 		}
 	}
