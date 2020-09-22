@@ -114,7 +114,7 @@ func checkCandidateOwnership(data CandidateTx, tx *Transaction, context *state.C
 	if owner != sender {
 		return &Response{
 			Code: code.IsNotOwnerOfCandidate,
-			Log:  fmt.Sprintf("Sender is not an owner of a candidate"),
+			Log:  "Sender is not an owner of a candidate",
 			Info: EncodeError(code.NewIsNotOwnerOfCandidate(sender.String(), data.GetPubKey().String(), owner.String(), "")),
 		}
 	}

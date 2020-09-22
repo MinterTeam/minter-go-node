@@ -28,7 +28,7 @@ func (data SetHaltBlockData) BasicCheck(tx *Transaction, context *state.CheckSta
 	if !context.Candidates().Exists(data.PubKey) {
 		return &Response{
 			Code: code.CandidateNotFound,
-			Log:  fmt.Sprintf("Candidate with such public key not found"),
+			Log:  "Candidate with such public key not found",
 			Info: EncodeError(code.NewCandidateNotFound(data.PubKey.String())),
 		}
 	}

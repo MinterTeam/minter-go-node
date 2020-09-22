@@ -85,10 +85,7 @@ func Run(srv *service.Service, addrGRPC, addrApi string, logger log.Logger) erro
 	}
 	mux := http.NewServeMux()
 	mux.Handle("/v2/", http.StripPrefix("/v2", handlers.CompressHandler(allowCORS(wsproxy.WebsocketProxy(gwmux)))))
-	if err := serveOpenAPI(mux); err != nil {
-		// ignore
-	}
-
+	_ = serveOpenAPI(mux)
 	group.Go(func() error {
 		return http.ListenAndServe(addrApi, mux)
 	})
@@ -114,7 +111,6 @@ func preflightHandler(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Access-Control-Allow-Headers", strings.Join(headers, ","))
 	methods := []string{"GET", "HEAD", "POST", "PUT", "DELETE"}
 	w.Header().Set("Access-Control-Allow-Methods", strings.Join(methods, ","))
-	return
 }
 
 func serveOpenAPI(mux *http.ServeMux) error {

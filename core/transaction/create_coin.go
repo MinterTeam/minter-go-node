@@ -62,7 +62,7 @@ func (data CreateCoinData) BasicCheck(tx *Transaction, context *state.CheckState
 	if context.Coins().ExistsBySymbol(data.Symbol) {
 		return &Response{
 			Code: code.CoinAlreadyExists,
-			Log:  fmt.Sprintf("Coin already exists"),
+			Log:  "Coin already exists",
 			Info: EncodeError(code.NewCoinAlreadyExists(types.StrToCoinSymbol(data.Symbol.String()).String(), context.Coins().GetCoinBySymbol(data.Symbol, 0).ID().String())),
 		}
 	}
@@ -70,7 +70,7 @@ func (data CreateCoinData) BasicCheck(tx *Transaction, context *state.CheckState
 	if data.ConstantReserveRatio < 10 || data.ConstantReserveRatio > 100 {
 		return &Response{
 			Code: code.WrongCrr,
-			Log:  fmt.Sprintf("Constant Reserve Ratio should be between 10 and 100"),
+			Log:  "Constant Reserve Ratio should be between 10 and 100",
 			Info: EncodeError(code.NewWrongCrr("10", "100", strconv.Itoa(int(data.ConstantReserveRatio)))),
 		}
 	}

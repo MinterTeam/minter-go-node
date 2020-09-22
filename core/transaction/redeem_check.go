@@ -37,7 +37,7 @@ func (data RedeemCheckData) BasicCheck(tx *Transaction, context *state.CheckStat
 	if tx.GasPrice != 1 {
 		return &Response{
 			Code: code.TooHighGasPrice,
-			Log:  fmt.Sprintf("Gas price for check is limited to 1"),
+			Log:  "Gas price for check is limited to 1",
 			Info: EncodeError(code.NewTooHighGasPrice("1", strconv.Itoa(int(tx.GasPrice)))),
 		}
 	}
@@ -105,7 +105,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 	if !checkState.Coins().Exists(decodedCheck.Coin) {
 		return Response{
 			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin not exists"),
+			Log:  "Coin not exists",
 			Info: EncodeError(code.NewCoinNotExists("", decodedCheck.Coin.String())),
 		}
 	}
@@ -113,7 +113,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 	if !checkState.Coins().Exists(decodedCheck.GasCoin) {
 		return Response{
 			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Gas coin not exists"),
+			Log:  "Gas coin not exists",
 			Info: EncodeError(code.NewCoinNotExists("", decodedCheck.GasCoin.String())),
 		}
 	}
@@ -129,7 +129,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 	if decodedCheck.DueBlock < currentBlock {
 		return Response{
 			Code: code.CheckExpired,
-			Log:  fmt.Sprintf("Check expired"),
+			Log:  "Check expired",
 			Info: EncodeError(code.MewCheckExpired(fmt.Sprintf("%d", decodedCheck.DueBlock), fmt.Sprintf("%d", currentBlock))),
 		}
 	}
@@ -137,7 +137,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 	if checkState.Checks().IsCheckUsed(decodedCheck) {
 		return Response{
 			Code: code.CheckUsed,
-			Log:  fmt.Sprintf("Check already redeemed"),
+			Log:  "Check already redeemed",
 			Info: EncodeError(code.NewCheckUsed()),
 		}
 	}

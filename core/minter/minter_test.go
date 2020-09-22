@@ -29,7 +29,6 @@ import (
 	"github.com/tendermint/tendermint/privval"
 	"github.com/tendermint/tendermint/proxy"
 	rpc "github.com/tendermint/tendermint/rpc/client/local"
-	_ "github.com/tendermint/tendermint/types"
 	types2 "github.com/tendermint/tendermint/types"
 	"math/big"
 	"math/rand"
@@ -376,7 +375,7 @@ func TestBlockchain_GetStateForHeightAndDeleteStateVersions(t *testing.T) {
 		t.Fatalf("Failed: %s", err.Error())
 	}
 
-	checkState, err = blockchain.GetStateForHeight(uint64(resultTx.Height - 1))
+	_, err = blockchain.GetStateForHeight(uint64(resultTx.Height - 1))
 	if err == nil {
 		t.Fatalf("Failed: %s", "state not deleted")
 	}

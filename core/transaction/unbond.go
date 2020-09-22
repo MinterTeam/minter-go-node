@@ -41,7 +41,7 @@ func (data UnbondData) BasicCheck(tx *Transaction, context *state.CheckState) *R
 	if !context.Candidates().Exists(data.PubKey) {
 		return &Response{
 			Code: code.CandidateNotFound,
-			Log:  fmt.Sprintf("Candidate with such public key not found"),
+			Log:  "Candidate with such public key not found",
 			Info: EncodeError(code.NewCandidateNotFound(data.PubKey.String())),
 		}
 	}
@@ -55,7 +55,7 @@ func (data UnbondData) BasicCheck(tx *Transaction, context *state.CheckState) *R
 		}
 		return &Response{
 			Code: code.InsufficientWaitList,
-			Log:  fmt.Sprintf("Insufficient amount at waitlist for sender account"),
+			Log:  "Insufficient amount at waitlist for sender account",
 			Info: EncodeError(code.NewInsufficientWaitList(waitlist.Value.String(), data.Value.String())),
 		}
 	}
@@ -65,7 +65,7 @@ func (data UnbondData) BasicCheck(tx *Transaction, context *state.CheckState) *R
 	if stake == nil {
 		return &Response{
 			Code: code.StakeNotFound,
-			Log:  fmt.Sprintf("Stake of current user not found"),
+			Log:  "Stake of current user not found",
 			Info: EncodeError(code.NewStakeNotFound(data.PubKey.String(), sender.String(), data.Coin.String(), context.Coins().GetCoin(data.Coin).GetFullSymbol())),
 		}
 	}
@@ -73,7 +73,7 @@ func (data UnbondData) BasicCheck(tx *Transaction, context *state.CheckState) *R
 	if stake.Cmp(data.Value) < 0 {
 		return &Response{
 			Code: code.InsufficientStake,
-			Log:  fmt.Sprintf("Insufficient stake for sender account"),
+			Log:  "Insufficient stake for sender account",
 			Info: EncodeError(code.NewInsufficientStake(data.PubKey.String(), sender.String(), data.Coin.String(), context.Coins().GetCoin(data.Coin).GetFullSymbol(), stake.String(), data.Value.String())),
 		}
 	}

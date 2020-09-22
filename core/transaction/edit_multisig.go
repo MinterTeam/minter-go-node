@@ -35,7 +35,7 @@ func (data EditMultisigData) BasicCheck(tx *Transaction, context *state.CheckSta
 	if lenWeights > 32 {
 		return &Response{
 			Code: code.TooLargeOwnersList,
-			Log:  fmt.Sprintf("Owners list is limited to 32 items"),
+			Log:  "Owners list is limited to 32 items",
 			Info: EncodeError(code.NewTooLargeOwnersList(strconv.Itoa(lenWeights), "32")),
 		}
 	}
@@ -44,7 +44,7 @@ func (data EditMultisigData) BasicCheck(tx *Transaction, context *state.CheckSta
 	if lenAddresses != lenWeights {
 		return &Response{
 			Code: code.DifferentCountAddressesAndWeights,
-			Log:  fmt.Sprintf("Different count addresses and weights"),
+			Log:  "Different count addresses and weights",
 			Info: EncodeError(code.NewDifferentCountAddressesAndWeights(fmt.Sprintf("%d", lenAddresses), fmt.Sprintf("%d", lenWeights))),
 		}
 	}
@@ -64,7 +64,7 @@ func (data EditMultisigData) BasicCheck(tx *Transaction, context *state.CheckSta
 		if usedAddresses[address] {
 			return &Response{
 				Code: code.DuplicatedAddresses,
-				Log:  fmt.Sprintf("Duplicated multisig addresses"),
+				Log:  "Duplicated multisig addresses",
 				Info: EncodeError(code.NewDuplicatedAddresses(address.String())),
 			}
 		}
