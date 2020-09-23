@@ -15,7 +15,9 @@ import (
 	"math/big"
 )
 
+// TxType of transaction is determined by a single byte.
 type TxType byte
+
 type SigType byte
 
 const (

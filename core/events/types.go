@@ -16,7 +16,7 @@ func RegisterAminoEvents(codec *amino.Codec) {
 	codec.RegisterConcrete(UnbondEvent{},
 		"minter/UnbondEvent", nil)
 	codec.RegisterConcrete(StakeKickEvent{},
-		"minter/StakeKick", nil)
+		"minter/StakeKickEvent", nil)
 }
 
 type Event interface {
