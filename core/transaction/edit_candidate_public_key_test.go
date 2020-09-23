@@ -376,3 +376,71 @@ func TestEditCandidatePublicKeyTxToCandidateOwnership(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.IsNotOwnerOfCandidate, response.Log)
 	}
 }
+
+func TestEditCandidatePublicKeyData_Exists(t *testing.T) {
+	cState := getState()
+
+	privateKey, _ := crypto.GenerateKey()
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+	coin := types.GetBaseCoinID()
+	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
+
+	pubkey := [32]byte{}
+	rand.Read(pubkey[:])
+	newpubkey := [32]byte{}
+	rand.Read(newpubkey[:])
+
+	cState.Candidates.Create(addr, addr, addr, newpubkey, 10)
+	cState.Validators.Create(newpubkey, helpers.BipToPip(big.NewInt(1)))
+
+	cState.Candidates.Create(addr, addr, addr, pubkey, 10)
+	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
+
+	candidate1 := cState.Candidates.GetCandidate(newpubkey)
+	if candidate1 == nil {
+		t.Fatalf("Candidate not found")
+	}
+	candidate2 := cState.Candidates.GetCandidate(pubkey)
+	if candidate2 == nil {
+		t.Fatalf("Candidate not found")
+	}
+
+	data := EditCandidatePublicKeyData{
+		PubKey:    pubkey,
+		NewPubKey: newpubkey,
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := Transaction{
+		Nonce:         1,
+		GasPrice:      1,
+		ChainID:       types.CurrentChainID,
+		GasCoin:       coin,
+		Type:          TypeEditCandidatePublicKey,
+		Data:          encodedData,
+		SignatureType: SigTypeSingle,
+	}
+
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.CandidateExists {
+		t.Fatalf("Response code is %d. Error %s", response.Code, response.Log)
+	}
+
+	if candidate1.PubKey == candidate2.PubKey {
+		t.Fatalf("Candidates pulic keys are equal")
+	}
+
+}
