@@ -56,6 +56,14 @@ func (data EditCandidatePublicKeyData) Run(tx *Transaction, context state.Interf
 		}
 	}
 
+	if checkState.Candidates().Exists(data.NewPubKey) {
+		return Response{
+			Code: code.CandidateExists,
+			Log:  fmt.Sprintf("Candidate with such public key (%s) already exists", data.NewPubKey.String()),
+			Info: EncodeError(code.NewCandidateExists(data.NewPubKey.String())),
+		}
+	}
+
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
