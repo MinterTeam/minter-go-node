@@ -50,6 +50,8 @@ func (s *Service) Events(ctx context.Context, req *pb.EventsRequest) (*pb.Events
 			t = "minter/SlashEvent"
 		case *eventsdb.UnbondEvent:
 			t = "minter/UnbondEvent"
+		case *eventsdb.StakeKickEvent:
+			t = "minter/StakeKickEvent"
 		default:
 			t = "Undefined Type"
 		}
