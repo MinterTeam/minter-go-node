@@ -297,13 +297,13 @@ func (s *State) Import(state types.AppState) error {
 		s.Accounts.SetNonce(a.Address, a.Nonce)
 
 		for _, b := range a.Balance {
-			s.Accounts.SetBalance(a.Address, b.Coin, helpers.StringToBigInt(b.Value))
+			s.Accounts.SetBalance(a.Address, types.CoinID(b.Coin), helpers.StringToBigInt(b.Value))
 		}
 	}
 
 	for _, c := range state.Coins {
-		s.Coins.Create(c.ID, c.Symbol, c.Name, helpers.StringToBigInt(c.Volume),
-			c.Crr, helpers.StringToBigInt(c.Reserve), helpers.StringToBigInt(c.MaxSupply), c.OwnerAddress)
+		s.Coins.Create(types.CoinID(c.ID), c.Symbol, c.Name, helpers.StringToBigInt(c.Volume),
+			uint32(c.Crr), helpers.StringToBigInt(c.Reserve), helpers.StringToBigInt(c.MaxSupply), c.OwnerAddress)
 	}
 
 	var vals []*validators.Validator
@@ -325,7 +325,7 @@ func (s *State) Import(state types.AppState) error {
 	}
 
 	for _, c := range state.Candidates {
-		s.Candidates.CreateWithID(c.OwnerAddress, c.RewardAddress, c.ControlAddress, c.PubKey, c.Commission, c.ID)
+		s.Candidates.CreateWithID(c.OwnerAddress, c.RewardAddress, c.ControlAddress, c.PubKey, uint32(c.Commission), uint32(c.ID))
 		if c.Status == candidates.CandidateStatusOnline {
 			s.Candidates.SetOnline(c.PubKey)
 		}
@@ -339,7 +339,7 @@ func (s *State) Import(state types.AppState) error {
 		if !ok {
 			panic(fmt.Sprintf("Cannot decode %s into big.Int", w.Value))
 		}
-		s.Waitlist.AddWaitList(w.Owner, s.Candidates.PubKey(w.CandidateID), w.Coin, value)
+		s.Waitlist.AddWaitList(w.Owner, s.Candidates.PubKey(uint32(w.CandidateID)), types.CoinID(w.Coin), value)
 	}
 
 	for _, hashString := range state.UsedChecks {
@@ -350,7 +350,7 @@ func (s *State) Import(state types.AppState) error {
 	}
 
 	for _, ff := range state.FrozenFunds {
-		s.FrozenFunds.AddFund(ff.Height, ff.Address, *ff.CandidateKey, ff.Coin, helpers.StringToBigInt(ff.Value))
+		s.FrozenFunds.AddFund(ff.Height, ff.Address, *ff.CandidateKey, types.CoinID(ff.Coin), helpers.StringToBigInt(ff.Value))
 	}
 
 	return nil

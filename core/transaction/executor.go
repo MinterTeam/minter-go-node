@@ -150,7 +150,7 @@ func RunTx(context state.Interface,
 		}
 
 		txHash := tx.Hash()
-		var totalWeight uint
+		var totalWeight uint32
 		var usedAccounts = map[types.Address]bool{}
 
 		for _, sig := range tx.multisig.Signatures {

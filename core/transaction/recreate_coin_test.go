@@ -27,7 +27,7 @@ func TestRecreateCoinTx(t *testing.T) {
 
 	reserve := helpers.BipToPip(big.NewInt(10000))
 	amount := helpers.BipToPip(big.NewInt(100))
-	crr := uint(50)
+	crr := uint32(50)
 
 	data := RecreateCoinData{
 		Name:                 "TEST",
@@ -118,7 +118,7 @@ func TestRecreateCoinTxWithWrongOwner(t *testing.T) {
 
 	reserve := helpers.BipToPip(big.NewInt(10000))
 	amount := helpers.BipToPip(big.NewInt(100))
-	crr := uint(50)
+	crr := uint32(50)
 
 	data := RecreateCoinData{
 		Symbol:               getTestCoinSymbol(),
@@ -152,7 +152,7 @@ func TestRecreateCoinTxWithWrongSymbol(t *testing.T) {
 
 	reserve := helpers.BipToPip(big.NewInt(10000))
 	amount := helpers.BipToPip(big.NewInt(100))
-	crr := uint(50)
+	crr := uint32(50)
 
 	data := RecreateCoinData{
 		Symbol:               types.StrToCoinSymbol("UNKNOWN"),
@@ -185,7 +185,7 @@ func TestRecreateCoinWithIncorrectName(t *testing.T) {
 	toCreate := types.StrToCoinSymbol("ABCDEF")
 	reserve := helpers.BipToPip(big.NewInt(10000))
 	amount := helpers.BipToPip(big.NewInt(100))
-	crr := uint(50)
+	crr := uint32(50)
 
 	var name [65]byte
 	binary.BigEndian.PutUint64(name[:], 0)
@@ -243,7 +243,7 @@ func TestRecreateCoinWithWrongCrr(t *testing.T) {
 	toCreate := types.StrToCoinSymbol("ABCDEF")
 	reserve := helpers.BipToPip(big.NewInt(10000))
 	amount := helpers.BipToPip(big.NewInt(100))
-	crr := uint(9)
+	crr := uint32(9)
 	name := "My Test Coin"
 
 	data := RecreateCoinData{
@@ -284,7 +284,7 @@ func TestRecreateCoinWithWrongCrr(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.WrongCrr, response.Log)
 	}
 
-	data.ConstantReserveRatio = uint(101)
+	data.ConstantReserveRatio = uint32(101)
 	encodedData, err = rlp.EncodeToBytes(data)
 	if err != nil {
 		t.Fatal(err)
@@ -326,7 +326,7 @@ func TestRecreateCoinWithWrongCoinSupply(t *testing.T) {
 
 	toCreate := types.StrToCoinSymbol("ABCDEF")
 	reserve := helpers.BipToPip(big.NewInt(10000))
-	crr := uint(50)
+	crr := uint32(50)
 	name := "My Test Coin"
 
 	data := RecreateCoinData{
@@ -452,7 +452,7 @@ func TestRecreateCoinWithInsufficientFundsForGas(t *testing.T) {
 
 	toCreate := types.StrToCoinSymbol("TEST")
 	reserve := helpers.BipToPip(big.NewInt(10000))
-	crr := uint(50)
+	crr := uint32(50)
 	name := "My Test Coin"
 
 	data := RecreateCoinData{
@@ -525,7 +525,7 @@ func TestRecreateCoinToInsufficientFundsForInitialReserve(t *testing.T) {
 
 	toCreate := types.StrToCoinSymbol("TEST")
 	reserve := helpers.BipToPip(big.NewInt(100000))
-	crr := uint(50)
+	crr := uint32(50)
 	name := "My Test Coin"
 
 	data := RecreateCoinData{
@@ -563,7 +563,7 @@ func TestRecreateCoinToGasCoinReserveUnderflow(t *testing.T) {
 
 	toCreate := types.StrToCoinSymbol("TEST")
 	reserve := helpers.BipToPip(big.NewInt(100000))
-	crr := uint(50)
+	crr := uint32(50)
 	name := "My Test Coin"
 
 	data := RecreateCoinData{

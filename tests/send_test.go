@@ -19,7 +19,7 @@ func TestSend(t *testing.T) {
 		Address: address,
 		Balance: []types.Balance{
 			{
-				Coin:  types.GetBaseCoinID(),
+				Coin:  uint64(types.GetBaseCoinID()),
 				Value: helpers.BipToPip(big.NewInt(1)).String(),
 			},
 		},

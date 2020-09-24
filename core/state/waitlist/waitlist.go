@@ -53,9 +53,9 @@ func (wl *WaitList) Export(state *types.AppState) {
 			if model != nil && len(model.List) != 0 {
 				for _, w := range model.List {
 					state.Waitlist = append(state.Waitlist, types.Waitlist{
-						CandidateID: w.CandidateId,
+						CandidateID: uint64(w.CandidateId),
 						Owner:       address,
-						Coin:        w.Coin,
+						Coin:        uint64(w.Coin),
 						Value:       w.Value.String(),
 					})
 				}

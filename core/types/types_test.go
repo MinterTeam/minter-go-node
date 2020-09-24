@@ -154,7 +154,7 @@ func TestAppState(t *testing.T) {
 				Stakes: []Stake{
 					{
 						Owner:    testAddr,
-						Coin:     GetBaseCoinID(),
+						Coin:     uint64(GetBaseCoinID()),
 						Value:    big.NewInt(1).String(),
 						BipValue: big.NewInt(1).String(),
 					},
@@ -167,17 +167,17 @@ func TestAppState(t *testing.T) {
 				Address: testAddr,
 				Balance: []Balance{
 					{
-						Coin:  GetBaseCoinID(),
+						Coin:  uint64(GetBaseCoinID()),
 						Value: big.NewInt(1).String(),
 					},
 					{
-						Coin:  GetBaseCoinID() + 1,
+						Coin:  uint64(GetBaseCoinID() + 1),
 						Value: big.NewInt(1).String(),
 					},
 				},
 				Nonce: 1,
 				MultisigData: &Multisig{
-					Weights:   []uint{1, 2, 3},
+					Weights:   []uint32{1, 2, 3},
 					Threshold: 1,
 					Addresses: []Address{testAddr, testAddr},
 				},
@@ -185,7 +185,7 @@ func TestAppState(t *testing.T) {
 		},
 		Coins: []Coin{
 			{
-				ID:        GetBaseCoinID() + 1,
+				ID:        uint64(GetBaseCoinID() + 1),
 				Name:      "ASD",
 				Symbol:    StrToCoinSymbol("TEST"),
 				Volume:    big.NewInt(2).String(),
@@ -199,7 +199,7 @@ func TestAppState(t *testing.T) {
 				Height:       1,
 				Address:      testAddr,
 				CandidateKey: &pubkey,
-				Coin:         GetBaseCoinID() + 1,
+				Coin:         uint64(GetBaseCoinID() + 1),
 				Value:        big.NewInt(1).String(),
 			},
 		},
@@ -281,7 +281,7 @@ func TestAppStateToInvalidState(t *testing.T) {
 				Stakes: []Stake{
 					{
 						Owner:    testAddr,
-						Coin:     GetBaseCoinID(),
+						Coin:     uint64(GetBaseCoinID()),
 						Value:    big.NewInt(1).String(),
 						BipValue: big.NewInt(1).String(),
 					},
@@ -331,7 +331,7 @@ func TestAppStateToInvalidState(t *testing.T) {
 				Stakes: []Stake{
 					{
 						Owner:    testAddr,
-						Coin:     GetBaseCoinID(),
+						Coin:     uint64(GetBaseCoinID()),
 						Value:    big.NewInt(1).String(),
 						BipValue: big.NewInt(1).String(),
 					},
@@ -362,7 +362,7 @@ func TestAppStateToInvalidState(t *testing.T) {
 			Address: testAddr,
 			Balance: []Balance{
 				{
-					Coin:  GetBaseCoinID(),
+					Coin:  uint64(GetBaseCoinID()),
 					Value: big.NewInt(1).String(),
 				},
 			},
@@ -371,7 +371,7 @@ func TestAppStateToInvalidState(t *testing.T) {
 			Address: testAddr,
 			Balance: []Balance{
 				{
-					Coin:  GetBaseCoinID(),
+					Coin:  uint64(GetBaseCoinID()),
 					Value: big.NewInt(1).String(),
 				},
 			},
@@ -389,7 +389,7 @@ func TestAppStateToInvalidState(t *testing.T) {
 			Address: testAddr,
 			Balance: []Balance{
 				{
-					Coin:  GetBaseCoinID(),
+					Coin:  uint64(GetBaseCoinID()),
 					Value: "",
 				},
 			},
@@ -406,7 +406,7 @@ func TestAppStateToInvalidState(t *testing.T) {
 			Address: testAddr,
 			Balance: []Balance{
 				{
-					Coin:  GetBaseCoinID() + 1,
+					Coin:  uint64(GetBaseCoinID() + 1),
 					Value: big.NewInt(1).String(),
 				},
 			},
@@ -423,7 +423,7 @@ func TestAppStateToInvalidState(t *testing.T) {
 			Address: testAddr,
 			Balance: []Balance{
 				{
-					Coin:  GetBaseCoinID(),
+					Coin:  uint64(GetBaseCoinID()),
 					Value: big.NewInt(1).String(),
 				},
 			},
@@ -434,13 +434,13 @@ func TestAppStateToInvalidState(t *testing.T) {
 	appState.Candidates[0].Stakes = []Stake{
 		{
 			Owner:    testAddr,
-			Coin:     GetBaseCoinID(),
+			Coin:     uint64(GetBaseCoinID()),
 			Value:    big.NewInt(1).String(),
 			BipValue: big.NewInt(1).String(),
 		},
 		{
 			Owner:    testAddr,
-			Coin:     GetBaseCoinID(),
+			Coin:     uint64(GetBaseCoinID()),
 			Value:    big.NewInt(1).String(),
 			BipValue: big.NewInt(1).String(),
 		},
@@ -453,7 +453,7 @@ func TestAppStateToInvalidState(t *testing.T) {
 	appState.Candidates[0].Stakes = []Stake{
 		{
 			Owner:    testAddr,
-			Coin:     GetBaseCoinID() + 1,
+			Coin:     uint64(GetBaseCoinID() + 1),
 			Value:    big.NewInt(1).String(),
 			BipValue: big.NewInt(1).String(),
 		},
@@ -461,7 +461,7 @@ func TestAppStateToInvalidState(t *testing.T) {
 
 	appState.Coins = []Coin{
 		{
-			ID: GetBaseCoinID() + 2,
+			ID: uint64(GetBaseCoinID() + 2),
 		},
 	}
 
@@ -472,7 +472,7 @@ func TestAppStateToInvalidState(t *testing.T) {
 	appState.Candidates[0].Stakes = []Stake{
 		{
 			Owner:    testAddr,
-			Coin:     GetBaseCoinID() + 1,
+			Coin:     uint64(GetBaseCoinID() + 1),
 			Value:    big.NewInt(1).String(),
 			BipValue: big.NewInt(1).String(),
 		},
@@ -480,7 +480,7 @@ func TestAppStateToInvalidState(t *testing.T) {
 
 	appState.Coins = []Coin{
 		{
-			ID:        GetBaseCoinID() + 1,
+			ID:        uint64(GetBaseCoinID() + 1),
 			Name:      "ASD",
 			Symbol:    StrToCoinSymbol("TEST"),
 			Volume:    big.NewInt(1).String(),
@@ -489,7 +489,7 @@ func TestAppStateToInvalidState(t *testing.T) {
 			MaxSupply: helpers.BipToPip(big.NewInt(100000)).String(),
 		},
 		{
-			ID:     GetBaseCoinID(),
+			ID:     uint64(GetBaseCoinID()),
 			Symbol: GetBaseCoin(),
 		},
 	}
@@ -500,7 +500,7 @@ func TestAppStateToInvalidState(t *testing.T) {
 
 	appState.Coins = []Coin{
 		{
-			ID:        GetBaseCoinID() + 1,
+			ID:        uint64(GetBaseCoinID() + 1),
 			Name:      "ASD",
 			Symbol:    StrToCoinSymbol("TEST"),
 			Volume:    big.NewInt(1).String(),
@@ -509,7 +509,7 @@ func TestAppStateToInvalidState(t *testing.T) {
 			MaxSupply: helpers.BipToPip(big.NewInt(100000)).String(),
 		},
 		{
-			ID:        GetBaseCoinID() + 1,
+			ID:        uint64(GetBaseCoinID() + 1),
 			Name:      "ASD",
 			Symbol:    StrToCoinSymbol("TEST"),
 			Volume:    big.NewInt(1).String(),
@@ -518,7 +518,7 @@ func TestAppStateToInvalidState(t *testing.T) {
 			MaxSupply: helpers.BipToPip(big.NewInt(100000)).String(),
 		},
 		{
-			ID:     GetBaseCoinID(),
+			ID:     uint64(GetBaseCoinID()),
 			Symbol: GetBaseCoin(),
 		},
 	}
@@ -529,7 +529,7 @@ func TestAppStateToInvalidState(t *testing.T) {
 
 	appState.Coins = []Coin{
 		{
-			ID:        GetBaseCoinID() + 1,
+			ID:        uint64(GetBaseCoinID() + 1),
 			Name:      "ASD",
 			Symbol:    StrToCoinSymbol("TEST"),
 			Volume:    big.NewInt(1).String(),
@@ -544,7 +544,7 @@ func TestAppStateToInvalidState(t *testing.T) {
 			Height:       1,
 			Address:      testAddr,
 			CandidateKey: &pubkey,
-			Coin:         GetBaseCoinID() + 1,
+			Coin:         uint64(GetBaseCoinID() + 1),
 			Value:        big.NewInt(1e18).String(),
 		},
 	}
@@ -558,7 +558,7 @@ func TestAppStateToInvalidState(t *testing.T) {
 			Height:       1,
 			Address:      testAddr,
 			CandidateKey: &pubkey,
-			Coin:         GetBaseCoinID(),
+			Coin:         uint64(GetBaseCoinID()),
 			Value:        "",
 		},
 	}
@@ -572,7 +572,7 @@ func TestAppStateToInvalidState(t *testing.T) {
 			Height:       1,
 			Address:      testAddr,
 			CandidateKey: &pubkey,
-			Coin:         GetBaseCoinID() + 3,
+			Coin:         uint64(GetBaseCoinID() + 3),
 			Value:        big.NewInt(1e18).String(),
 		},
 	}
@@ -586,7 +586,7 @@ func TestAppStateToInvalidState(t *testing.T) {
 			Height:       1,
 			Address:      testAddr,
 			CandidateKey: &pubkey,
-			Coin:         GetBaseCoinID(),
+			Coin:         uint64(GetBaseCoinID()),
 			Value:        big.NewInt(1e18).String(),
 		},
 	}

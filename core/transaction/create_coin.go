@@ -30,7 +30,7 @@ type CreateCoinData struct {
 	Symbol               types.CoinSymbol
 	InitialAmount        *big.Int
 	InitialReserve       *big.Int
-	ConstantReserveRatio uint
+	ConstantReserveRatio uint32
 	MaxSupply            *big.Int
 }
 

@@ -16,8 +16,8 @@ import (
 )
 
 type CreateMultisigData struct {
-	Threshold uint
-	Weights   []uint
+	Threshold uint32
+	Weights   []uint32
 	Addresses []types.Address
 }
 

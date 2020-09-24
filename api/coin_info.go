@@ -11,7 +11,7 @@ type CoinInfoResponse struct {
 	Name           string  `json:"name"`
 	Symbol         string  `json:"symbol"`
 	Volume         string  `json:"volume"`
-	Crr            uint    `json:"crr"`
+	Crr            uint32  `json:"crr"`
 	ReserveBalance string  `json:"reserve_balance"`
 	MaxSupply      string  `json:"max_supply"`
 	OwnerAddress   *string `json:"owner_address"`

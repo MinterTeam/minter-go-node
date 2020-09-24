@@ -190,7 +190,7 @@ func (a *Accounts) ExistsMultisig(msigAddress types.Address) bool {
 	return false
 }
 
-func (a *Accounts) CreateMultisig(weights []uint, addresses []types.Address, threshold uint, height uint64, address types.Address) types.Address {
+func (a *Accounts) CreateMultisig(weights []uint32, addresses []types.Address, threshold uint32, height uint64, address types.Address) types.Address {
 	msig := Multisig{
 		Weights:   weights,
 		Threshold: threshold,
@@ -219,7 +219,7 @@ func (a *Accounts) CreateMultisig(weights []uint, addresses []types.Address, thr
 	return address
 }
 
-func (a *Accounts) EditMultisig(threshold uint, weights []uint, addresses []types.Address, address types.Address) types.Address {
+func (a *Accounts) EditMultisig(threshold uint32, weights []uint32, addresses []types.Address, address types.Address) types.Address {
 	account := a.get(address)
 
 	msig := Multisig{
@@ -333,14 +333,14 @@ func (a *Accounts) Export(state *types.AppState) {
 			var balance []types.Balance
 			for _, b := range a.GetBalances(account.address) {
 				balance = append(balance, types.Balance{
-					Coin:  b.Coin.ID,
+					Coin:  uint64(b.Coin.ID),
 					Value: b.Value.String(),
 				})
 			}
 
 			// sort balances by coin symbol
 			sort.SliceStable(balance, func(i, j int) bool {
-				return bytes.Compare(balance[i].Coin.Bytes(), balance[j].Coin.Bytes()) == 1
+				return bytes.Compare(types.CoinID(balance[i].Coin).Bytes(), types.CoinID(balance[j].Coin).Bytes()) == 1
 			})
 
 			acc := types.Account{

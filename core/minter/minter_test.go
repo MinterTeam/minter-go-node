@@ -66,7 +66,7 @@ func makeTestValidatorsAndCandidates(pubkeys []string, stake *big.Int) ([]types.
 		}
 
 		cands[i] = types.Candidate{
-			ID:             uint32(i) + 1,
+			ID:             uint64(i) + 1,
 			RewardAddress:  addr,
 			OwnerAddress:   crypto.PubkeyToAddress(getPrivateKey().PublicKey),
 			ControlAddress: addr,
@@ -76,7 +76,7 @@ func makeTestValidatorsAndCandidates(pubkeys []string, stake *big.Int) ([]types.
 			Stakes: []types.Stake{
 				{
 					Owner:    addr,
-					Coin:     types.GetBaseCoinID(),
+					Coin:     uint64(types.GetBaseCoinID()),
 					Value:    stake.String(),
 					BipValue: stake.String(),
 				},
@@ -102,7 +102,7 @@ func getTestGenesis(pv *privval.FilePV) func() (*types2.GenesisDoc, error) {
 					Address: crypto.PubkeyToAddress(getPrivateKey().PublicKey),
 					Balance: []types.Balance{
 						{
-							Coin:  types.GetBaseCoinID(),
+							Coin:  uint64(types.GetBaseCoinID()),
 							Value: helpers.BipToPip(big.NewInt(1000000)).String(),
 						},
 					},

@@ -15,7 +15,7 @@ type Coins interface {
 type Coin struct {
 	ID      types.CoinID
 	Name    string
-	Crr     uint
+	Crr     uint32
 	Symbol  types.CoinSymbol
 	Version types.CoinVersion
 	Volume  *big.Int

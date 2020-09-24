@@ -567,7 +567,7 @@ func TestCandidates_GetTotalStake_forCustomCoins(t *testing.T) {
 		value := strconv.Itoa(i + 2000)
 		stakes = append(stakes, types.Stake{
 			Owner:    types.StringToAddress(strconv.Itoa(i)),
-			Coin:     symbol.ID(),
+			Coin:     uint64(symbol.ID()),
 			Value:    value,
 			BipValue: "0",
 		})
@@ -773,7 +773,7 @@ func TestCandidates_Punish(t *testing.T) {
 		},
 		{
 			Owner:    [20]byte{1},
-			Coin:     symbol.ID(),
+			Coin:     uint64(symbol.ID()),
 			Value:    "100",
 			BipValue: "0",
 		},
@@ -863,7 +863,7 @@ func TestCandidates_PunishByzantineCandidate(t *testing.T) {
 		},
 		{
 			Owner:    [20]byte{1},
-			Coin:     symbol.ID(),
+			Coin:     uint64(symbol.ID()),
 			Value:    "100",
 			BipValue: "0",
 		},

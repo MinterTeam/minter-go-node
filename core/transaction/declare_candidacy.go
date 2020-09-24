@@ -19,7 +19,7 @@ const maxCommission = 100
 type DeclareCandidacyData struct {
 	Address    types.Address
 	PubKey     types.Pubkey
-	Commission uint
+	Commission uint32
 	Coin       types.CoinID
 	Stake      *big.Int
 }

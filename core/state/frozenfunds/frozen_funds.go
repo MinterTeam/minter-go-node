@@ -212,7 +212,7 @@ func (f *FrozenFunds) Export(state *types.AppState, height uint64) {
 				Height:       i,
 				Address:      frozenFund.Address,
 				CandidateKey: frozenFund.CandidateKey,
-				Coin:         frozenFund.Coin,
+				Coin:         uint64(frozenFund.Coin),
 				Value:        frozenFund.Value.String(),
 			})
 		}

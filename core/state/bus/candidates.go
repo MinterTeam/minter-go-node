@@ -26,6 +26,6 @@ type Candidate struct {
 	RewardAddress  types.Address
 	OwnerAddress   types.Address
 	ControlAddress types.Address
-	Commission     uint
+	Commission     uint32
 	Status         byte
 }
