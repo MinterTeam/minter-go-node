@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"google.golang.org/grpc/codes"
@@ -37,6 +36,6 @@ func (s *Service) MissedBlocks(ctx context.Context, req *pb.MissedBlocksRequest)
 
 	return &pb.MissedBlocksResponse{
 		MissedBlocks:      val.AbsentTimes.String(),
-		MissedBlocksCount: fmt.Sprintf("%d", val.CountAbsentTimes()),
+		MissedBlocksCount: int64(val.CountAbsentTimes()),
 	}, nil
 }

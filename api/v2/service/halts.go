@@ -26,6 +26,6 @@ func (s *Service) Halts(_ context.Context, req *pb.HaltsRequest) (*pb.HaltsRespo
 	}
 
 	return &pb.HaltsResponse{
-		Votes: votes,
+		PublicKeys: votes,
 	}, nil
 }

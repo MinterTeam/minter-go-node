@@ -244,15 +244,15 @@ type Waitlist struct {
 }
 
 type Coin struct {
-	ID           uint64      `json:"id"`
-	Name         string      `json:"name"`
-	Symbol       CoinSymbol  `json:"symbol"`
-	Volume       string      `json:"volume"`
-	Crr          uint64      `json:"crr"`
-	Reserve      string      `json:"reserve"`
-	MaxSupply    string      `json:"max_supply"`
-	Version      CoinVersion `json:"version"`
-	OwnerAddress *Address    `json:"owner_address"`
+	ID           uint64     `json:"id"`
+	Name         string     `json:"name"`
+	Symbol       CoinSymbol `json:"symbol"`
+	Volume       string     `json:"volume"`
+	Crr          uint64     `json:"crr"`
+	Reserve      string     `json:"reserve"`
+	MaxSupply    string     `json:"max_supply"`
+	Version      uint64     `json:"version"`
+	OwnerAddress *Address   `json:"owner_address"`
 }
 
 type FrozenFund struct {

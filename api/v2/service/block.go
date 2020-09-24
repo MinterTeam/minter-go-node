@@ -39,16 +39,16 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 
 	response := &pb.BlockResponse{
 		Hash:             hex.EncodeToString(block.Block.Hash()),
-		Height:           fmt.Sprintf("%d", block.Block.Height),
+		Height:           uint64(block.Block.Height),
 		Time:             block.Block.Time.Format(time.RFC3339Nano),
-		TransactionCount: fmt.Sprintf("%d", len(block.Block.Txs)),
+		TransactionCount: uint64(len(block.Block.Txs)),
 	}
 
 	var totalValidators []*tmTypes.Validator
 	var cState *state.CheckState
 
 	if len(req.Fields) == 0 {
-		response.Size = fmt.Sprintf("%d", len(s.cdc.MustMarshalBinaryLengthPrefixed(block)))
+		response.Size = uint64(len(s.cdc.MustMarshalBinaryLengthPrefixed(block)))
 		response.BlockReward = rewards.GetRewardForBlock(uint64(height)).String()
 
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
@@ -111,7 +111,7 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 		}
 		switch field {
 		case pb.BlockRequest_size:
-			response.Size = fmt.Sprintf("%d", len(s.cdc.MustMarshalBinaryLengthPrefixed(block)))
+			response.Size = uint64(len(s.cdc.MustMarshalBinaryLengthPrefixed(block)))
 		case pb.BlockRequest_block_reward:
 			response.BlockReward = rewards.GetRewardForBlock(uint64(height)).String()
 		case pb.BlockRequest_transactions, pb.BlockRequest_missed:
@@ -163,7 +163,7 @@ func blockEvidence(block *core_types.ResultBlock) *pb.BlockResponse_Evidence {
 	evidences := make([]*pb.BlockResponse_Evidence_Evidence, 0, len(block.Block.Evidence.Evidence))
 	for _, evidence := range block.Block.Evidence.Evidence {
 		evidences = append(evidences, &pb.BlockResponse_Evidence_Evidence{
-			Height:  fmt.Sprintf("%d", evidence.Height()),
+			Height:  uint64(evidence.Height()),
 			Time:    evidence.Time().Format(time.RFC3339Nano),
 			Address: fmt.Sprintf("%s", evidence.Address()),
 			Hash:    fmt.Sprintf("%s", evidence.Hash()),
@@ -233,17 +233,20 @@ func (s *Service) blockTransaction(block *core_types.ResultBlock, blockResults *
 			Hash:        strings.Title(fmt.Sprintf("Mt%x", rawTx.Hash())),
 			RawTx:       fmt.Sprintf("%x", []byte(rawTx)),
 			From:        sender.String(),
-			Nonce:       fmt.Sprintf("%d", tx.Nonce),
-			GasPrice:    fmt.Sprintf("%d", tx.GasPrice),
-			Type:        fmt.Sprintf("%d", tx.Type),
+			Nonce:       uint64(tx.Nonce),
+			GasPrice:    uint64(tx.GasPrice),
+			Type:        uint64(tx.Type),
 			Data:        data,
 			Payload:     tx.Payload,
 			ServiceData: tx.ServiceData,
-			Gas:         fmt.Sprintf("%d", tx.Gas()),
-			GasCoin:     tx.GasCoin.String(),
-			Tags:        tags,
-			Code:        fmt.Sprintf("%d", blockResults.TxsResults[i].Code),
-			Log:         blockResults.TxsResults[i].Log,
+			Gas:         uint64(tx.Gas()),
+			GasCoin: &pb.Coin{
+				Id:     uint64(tx.Gas()),
+				Symbol: coins.GetCoin(types.CoinID(tx.Gas())).GetFullSymbol(),
+			},
+			Tags: tags,
+			Code: uint64(blockResults.TxsResults[i].Code),
+			Log:  blockResults.TxsResults[i].Log,
 		})
 	}
 	return txs, nil

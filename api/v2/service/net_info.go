@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -24,10 +23,10 @@ func (s *Service) NetInfo(ctx context.Context, _ *empty.Empty) (*pb.NetInfoRespo
 	var peers []*pb.NetInfoResponse_Peer
 	for _, peer := range result.Peers {
 
-		var currentHeight *wrappers.StringValue
+		var currentHeight *wrappers.UInt64Value
 		peerHeight := peerHeight(s.tmNode.Switch(), peer.NodeInfo.ID())
 		if peerHeight != 0 {
-			currentHeight = &wrappers.StringValue{Value: fmt.Sprintf("%d", peerHeight)}
+			currentHeight = &wrappers.UInt64Value{Value: uint64(peerHeight)}
 		}
 
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
@@ -37,11 +36,11 @@ func (s *Service) NetInfo(ctx context.Context, _ *empty.Empty) (*pb.NetInfoRespo
 		var channels []*pb.NetInfoResponse_Peer_ConnectionStatus_Channel
 		for _, channel := range peer.ConnectionStatus.Channels {
 			channels = append(channels, &pb.NetInfoResponse_Peer_ConnectionStatus_Channel{
-				Id:                fmt.Sprintf("%d", channel.ID),
-				SendQueueCapacity: fmt.Sprintf("%d", channel.SendQueueCapacity),
-				SendQueueSize:     fmt.Sprintf("%d", channel.SendQueueSize),
-				Priority:          fmt.Sprintf("%d", channel.Priority),
-				RecentlySent:      fmt.Sprintf("%d", channel.RecentlySent),
+				Id:                int64(channel.ID),
+				SendQueueCapacity: int64(channel.SendQueueCapacity),
+				SendQueueSize:     int64(channel.SendQueueSize),
+				Priority:          int64(channel.Priority),
+				RecentlySent:      channel.RecentlySent,
 			})
 		}
 
@@ -49,9 +48,9 @@ func (s *Service) NetInfo(ctx context.Context, _ *empty.Empty) (*pb.NetInfoRespo
 			LatestBlockHeight: currentHeight,
 			NodeInfo: &pb.NodeInfo{
 				ProtocolVersion: &pb.NodeInfo_ProtocolVersion{
-					P2P:   fmt.Sprintf("%d", peer.NodeInfo.ProtocolVersion.P2P),
-					Block: fmt.Sprintf("%d", peer.NodeInfo.ProtocolVersion.Block),
-					App:   fmt.Sprintf("%d", peer.NodeInfo.ProtocolVersion.App),
+					P2P:   uint64(peer.NodeInfo.ProtocolVersion.P2P),
+					Block: uint64(peer.NodeInfo.ProtocolVersion.Block),
+					App:   uint64(peer.NodeInfo.ProtocolVersion.App),
 				},
 				Id:         string(peer.NodeInfo.ID()),
 				ListenAddr: peer.NodeInfo.ListenAddr,
@@ -66,24 +65,38 @@ func (s *Service) NetInfo(ctx context.Context, _ *empty.Empty) (*pb.NetInfoRespo
 			},
 			IsOutbound: peer.IsOutbound,
 			ConnectionStatus: &pb.NetInfoResponse_Peer_ConnectionStatus{
-				Duration: fmt.Sprintf("%d", peer.ConnectionStatus.Duration),
+				Duration: uint64(peer.ConnectionStatus.Duration),
 				SendMonitor: &pb.NetInfoResponse_Peer_ConnectionStatus_Monitor{
-					Active:   false,
+					Active:   peer.ConnectionStatus.SendMonitor.Active,
 					Start:    peer.ConnectionStatus.SendMonitor.Start.Format(time.RFC3339Nano),
-					Duration: fmt.Sprintf("%d", peer.ConnectionStatus.SendMonitor.Duration.Nanoseconds()),
-					Idle:     fmt.Sprintf("%d", peer.ConnectionStatus.SendMonitor.Idle.Nanoseconds()),
-					Bytes:    fmt.Sprintf("%d", peer.ConnectionStatus.SendMonitor.Bytes),
-					Samples:  fmt.Sprintf("%d", peer.ConnectionStatus.SendMonitor.Samples),
-					InstRate: fmt.Sprintf("%d", peer.ConnectionStatus.SendMonitor.InstRate),
-					CurRate:  fmt.Sprintf("%d", peer.ConnectionStatus.SendMonitor.CurRate),
-					AvgRate:  fmt.Sprintf("%d", peer.ConnectionStatus.SendMonitor.AvgRate),
-					PeakRate: fmt.Sprintf("%d", peer.ConnectionStatus.SendMonitor.PeakRate),
-					BytesRem: fmt.Sprintf("%d", peer.ConnectionStatus.SendMonitor.BytesRem),
-					TimeRem:  fmt.Sprintf("%d", peer.ConnectionStatus.SendMonitor.TimeRem.Nanoseconds()),
-					Progress: fmt.Sprintf("%d", peer.ConnectionStatus.SendMonitor.Progress),
+					Duration: peer.ConnectionStatus.SendMonitor.Duration.Nanoseconds(),
+					Idle:     peer.ConnectionStatus.SendMonitor.Idle.Nanoseconds(),
+					Bytes:    peer.ConnectionStatus.SendMonitor.Bytes,
+					Samples:  peer.ConnectionStatus.SendMonitor.Samples,
+					InstRate: peer.ConnectionStatus.SendMonitor.InstRate,
+					CurRate:  peer.ConnectionStatus.SendMonitor.CurRate,
+					AvgRate:  peer.ConnectionStatus.SendMonitor.AvgRate,
+					PeakRate: peer.ConnectionStatus.SendMonitor.PeakRate,
+					BytesRem: peer.ConnectionStatus.SendMonitor.BytesRem,
+					TimeRem:  peer.ConnectionStatus.SendMonitor.TimeRem.Nanoseconds(),
+					Progress: uint64(peer.ConnectionStatus.SendMonitor.Progress),
 				},
-				RecvMonitor: nil,
-				Channels:    channels,
+				RecvMonitor: &pb.NetInfoResponse_Peer_ConnectionStatus_Monitor{
+					Active:   peer.ConnectionStatus.RecvMonitor.Active,
+					Start:    peer.ConnectionStatus.RecvMonitor.Start.Format(time.RFC3339Nano),
+					Duration: peer.ConnectionStatus.RecvMonitor.Duration.Nanoseconds(),
+					Idle:     peer.ConnectionStatus.RecvMonitor.Idle.Nanoseconds(),
+					Bytes:    peer.ConnectionStatus.RecvMonitor.Bytes,
+					Samples:  peer.ConnectionStatus.RecvMonitor.Samples,
+					InstRate: peer.ConnectionStatus.RecvMonitor.InstRate,
+					CurRate:  peer.ConnectionStatus.RecvMonitor.CurRate,
+					AvgRate:  peer.ConnectionStatus.RecvMonitor.AvgRate,
+					PeakRate: peer.ConnectionStatus.RecvMonitor.PeakRate,
+					BytesRem: peer.ConnectionStatus.RecvMonitor.BytesRem,
+					TimeRem:  peer.ConnectionStatus.RecvMonitor.TimeRem.Nanoseconds(),
+					Progress: uint64(peer.ConnectionStatus.RecvMonitor.Progress),
+				},
+				Channels: channels,
 			},
 			RemoteIp: peer.RemoteIP,
 		})
@@ -92,7 +105,7 @@ func (s *Service) NetInfo(ctx context.Context, _ *empty.Empty) (*pb.NetInfoRespo
 	return &pb.NetInfoResponse{
 		Listening:  result.Listening,
 		Listeners:  result.Listeners,
-		CountPeers: fmt.Sprintf("%d", result.NPeers),
+		CountPeers: int64(result.NPeers),
 		Peers:      peers,
 	}, nil
 }

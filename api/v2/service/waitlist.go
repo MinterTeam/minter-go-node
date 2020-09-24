@@ -51,7 +51,7 @@ func (s *Service) WaitList(ctx context.Context, req *pb.WaitListRequest) (*pb.Wa
 
 		response.List = append(response.List, &pb.WaitListResponse_Wait{
 			Coin: &pb.Coin{
-				Id:     item.Coin.String(),
+				Id:     uint64(item.Coin),
 				Symbol: cState.Coins().GetCoin(item.Coin).CSymbol.String(),
 			},
 			Value: item.Value.String(),

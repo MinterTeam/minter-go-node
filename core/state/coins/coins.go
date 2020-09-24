@@ -378,7 +378,7 @@ func (c *Coins) Export(state *types.AppState) {
 				Crr:          uint64(coin.Crr()),
 				Reserve:      coin.Reserve().String(),
 				MaxSupply:    coin.MaxSupply().String(),
-				Version:      coin.Version(),
+				Version:      uint64(coin.Version()),
 				OwnerAddress: owner,
 			})
 		}

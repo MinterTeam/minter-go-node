@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
@@ -57,7 +56,7 @@ func (s *Service) Address(ctx context.Context, req *pb.AddressRequest) (*pb.Addr
 		totalStakesGroupByCoin[coin.Coin.ID] = coin.Value
 		res.Balance = append(res.Balance, &pb.AddressBalance{
 			Coin: &pb.Coin{
-				Id:     coin.Coin.ID.String(),
+				Id:     uint64(coin.Coin.ID),
 				Symbol: cState.Coins().GetCoin(coin.Coin.ID).Symbol().String(),
 			},
 			Value:    coin.Value.String(),
@@ -96,7 +95,7 @@ func (s *Service) Address(ctx context.Context, req *pb.AddressRequest) (*pb.Addr
 		for coinID, delegatedStake := range userDelegatedStakesGroupByCoin {
 			res.Delegated = append(res.Delegated, &pb.AddressDelegatedBalance{
 				Coin: &pb.Coin{
-					Id:     coinID.String(),
+					Id:     uint64(coinID),
 					Symbol: cState.Coins().GetCoin(coinID).Symbol().String(),
 				},
 				Value:            delegatedStake.Value.String(),
@@ -124,7 +123,7 @@ func (s *Service) Address(ctx context.Context, req *pb.AddressRequest) (*pb.Addr
 		if req.Delegated {
 			res.Total = append(res.Total, &pb.AddressBalance{
 				Coin: &pb.Coin{
-					Id:     coinID.String(),
+					Id:     uint64(coinID),
 					Symbol: cState.Coins().GetCoin(coinID).Symbol().String(),
 				},
 				Value:    stake.String(),
@@ -134,7 +133,7 @@ func (s *Service) Address(ctx context.Context, req *pb.AddressRequest) (*pb.Addr
 		coinsBipValue.Add(coinsBipValue, balance)
 	}
 	res.BipValue = coinsBipValue.String()
-	res.TransactionCount = fmt.Sprintf("%d", cState.Accounts().GetNonce(address))
+	res.TransactionCount = cState.Accounts().GetNonce(address)
 	return &res, nil
 }
 
