@@ -2,11 +2,11 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
 	"time"
 )
 
@@ -22,7 +22,7 @@ func (s *Service) Genesis(ctx context.Context, _ *empty.Empty) (*pb.GenesisRespo
 	}
 
 	var appState pb.GenesisResponse_AppState
-	err = json.Unmarshal(result.Genesis.AppState, &appState)
+	err = protojson.Unmarshal(result.Genesis.AppState, &appState)
 	if err != nil {
 		return new(pb.GenesisResponse), status.Error(codes.Internal, err.Error())
 	}
@@ -49,6 +49,6 @@ func (s *Service) Genesis(ctx context.Context, _ *empty.Empty) (*pb.GenesisRespo
 			},
 		},
 		AppHash:  result.Genesis.AppHash.String(),
-		AppState: &appState, // todo
+		AppState: &appState,
 	}, nil
 }
