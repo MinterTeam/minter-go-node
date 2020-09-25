@@ -103,7 +103,7 @@ func (wl *WaitList) Get(address types.Address, pubkey types.Pubkey, coin types.C
 
 	candidate := wl.bus.Candidates().GetCandidate(pubkey)
 	if candidate == nil {
-		log.Panicf("Candidate not found: %s", pubkey.String())
+		return nil
 	}
 
 	for _, item := range waitlist.List {
@@ -123,18 +123,14 @@ func (wl *WaitList) GetByAddressAndPubKey(address types.Address, pubkey types.Pu
 
 	candidate := wl.bus.Candidates().GetCandidate(pubkey)
 	if candidate == nil {
-		log.Panicf("Candidate not found: %s", pubkey.String())
-	}
-
-	items := make([]Item, len(waitlist.List))
-	for i, item := range waitlist.List {
-		if item.CandidateId == candidate.ID {
-			items[i] = item
-		}
-	}
-
-	if len(items) == 0 {
 		return nil
+	}
+
+	var items []Item
+	for _, item := range waitlist.List {
+		if item.CandidateId == candidate.ID {
+			items = append(items, item)
+		}
 	}
 
 	return items
