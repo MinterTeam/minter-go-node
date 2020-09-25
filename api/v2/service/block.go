@@ -241,8 +241,8 @@ func (s *Service) blockTransaction(block *core_types.ResultBlock, blockResults *
 			ServiceData: tx.ServiceData,
 			Gas:         uint64(tx.Gas()),
 			GasCoin: &pb.Coin{
-				Id:     uint64(tx.Gas()),
-				Symbol: coins.GetCoin(types.CoinID(tx.Gas())).GetFullSymbol(),
+				Id:     uint64(tx.GasCoin),
+				Symbol: coins.GetCoin(tx.GasCoin).GetFullSymbol(),
 			},
 			Tags: tags,
 			Code: uint64(blockResults.TxsResults[i].Code),
