@@ -18,15 +18,15 @@ func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.
 		return new(pb.AddressesResponse), status.Error(codes.NotFound, err.Error())
 	}
 
-	cState.RLock()
-	defer cState.RUnlock()
-
 	if req.Height != 0 && req.Delegated {
 		cState.Lock()
 		cState.Candidates().LoadCandidates()
 		cState.Candidates().LoadStakes()
 		cState.Unlock()
 	}
+
+	cState.RLock()
+	defer cState.RUnlock()
 
 	response := &pb.AddressesResponse{
 		Addresses: make(map[string]*pb.AddressesResponse_Result, len(req.Addresses)),

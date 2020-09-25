@@ -36,15 +36,15 @@ func (s *Service) Address(ctx context.Context, req *pb.AddressRequest) (*pb.Addr
 		return new(pb.AddressResponse), status.Error(codes.NotFound, err.Error())
 	}
 
-	cState.RLock()
-	defer cState.RUnlock()
-
 	if req.Height != 0 && req.Delegated {
 		cState.Lock()
 		cState.Candidates().LoadCandidates()
 		cState.Candidates().LoadStakes()
 		cState.Unlock()
 	}
+
+	cState.RLock()
+	defer cState.RUnlock()
 
 	balances := cState.Accounts().GetBalances(address)
 	var res pb.AddressResponse
