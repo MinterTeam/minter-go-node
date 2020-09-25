@@ -164,16 +164,20 @@ func (wl *WaitList) Delete(address types.Address, pubkey types.Pubkey, coin type
 		log.Panicf("Candidate not found: %s", pubkey.String())
 	}
 
+	value := big.NewInt(0)
 	items := make([]Item, 0, len(w.List))
 	for _, item := range w.List {
 		if item.CandidateId != candidate.ID && item.Coin != coin {
 			items = append(items, item)
+		} else {
+			value.Add(value, item.Value)
 		}
 	}
 
 	w.List = items
 	wl.markDirty(address)
 	wl.setToMap(address, w)
+	wl.bus.Checker().AddCoinVolume(coin, value)
 }
 
 func (wl *WaitList) getOrNew(address types.Address) *Model {

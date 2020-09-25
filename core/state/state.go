@@ -168,7 +168,10 @@ type State struct {
 func (s *State) isValue_State() {}
 
 func NewState(height uint64, db db.DB, events eventsdb.IEventsDB, cacheSize int, keepLastStates int64) (*State, error) {
-	iavlTree := tree.NewMutableTree(height, db, cacheSize)
+	iavlTree, err := tree.NewMutableTree(height, db, cacheSize)
+	if err != nil {
+		return nil, err
+	}
 
 	state, err := newStateForTree(iavlTree, events, db, keepLastStates)
 	if err != nil {
@@ -219,7 +222,7 @@ func (s *State) Check() error {
 		}
 
 		if delta.Cmp(volume) != 0 {
-			return fmt.Errorf("invariants error on coin %s: %s", coin.String(), big.NewInt(0).Sub(volumeDeltas[coin], delta).String())
+			return fmt.Errorf("invariants error on coin %s: %s", coin.String(), big.NewInt(0).Sub(volume, delta).String())
 		}
 	}
 

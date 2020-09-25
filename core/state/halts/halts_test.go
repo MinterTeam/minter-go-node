@@ -9,7 +9,7 @@ import (
 )
 
 func TestHaltsToDeleteModel(t *testing.T) {
-	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	h, err := NewHalts(bus.NewBus(), mutableTree)
 	if err != nil {
 		t.Fatal(err)
@@ -47,7 +47,7 @@ func TestHaltsToDeleteModel(t *testing.T) {
 }
 
 func TestBusToAddHaltBlock(t *testing.T) {
-	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	h, err := NewHalts(bus.NewBus(), mutableTree)
 	if err != nil {
 		t.Fatal(err)

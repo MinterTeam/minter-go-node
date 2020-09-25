@@ -20,7 +20,7 @@ import (
 )
 
 func TestCandidates_Create_oneCandidate(t *testing.T) {
-	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	candidates, err := NewCandidates(bus.NewBus(), mutableTree)
 	if err != nil {
 		t.Fatal(err)
@@ -44,7 +44,7 @@ func TestCandidates_Create_oneCandidate(t *testing.T) {
 }
 
 func TestCandidates_Commit_createThreeCandidates(t *testing.T) {
-	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	candidates, err := NewCandidates(bus.NewBus(), mutableTree)
 	if err != nil {
 		t.Fatal(err)
@@ -93,7 +93,7 @@ func TestCandidates_Commit_createThreeCandidates(t *testing.T) {
 }
 
 func TestCandidates_Commit_changePubKeyAndCheckBlockList(t *testing.T) {
-	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	candidates, err := NewCandidates(bus.NewBus(), mutableTree)
 	if err != nil {
 		t.Fatal(err)
@@ -161,7 +161,7 @@ func TestCandidates_Commit_changePubKeyAndCheckBlockList(t *testing.T) {
 
 }
 func TestCandidates_AddToBlockPubKey(t *testing.T) {
-	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	candidates, err := NewCandidates(bus.NewBus(), mutableTree)
 	if err != nil {
 		t.Fatal(err)
@@ -175,7 +175,7 @@ func TestCandidates_AddToBlockPubKey(t *testing.T) {
 }
 
 func TestCandidates_Commit_withStakeAndUpdate(t *testing.T) {
-	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	candidates, err := NewCandidates(bus.NewBus(), mutableTree)
 	if err != nil {
 		t.Fatal(err)
@@ -236,7 +236,7 @@ func TestCandidates_Commit_withStakeAndUpdate(t *testing.T) {
 }
 
 func TestCandidates_Commit_edit(t *testing.T) {
-	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	candidates, err := NewCandidates(bus.NewBus(), mutableTree)
 	if err != nil {
 		t.Fatal(err)
@@ -293,7 +293,7 @@ func TestCandidates_Commit_edit(t *testing.T) {
 }
 
 func TestCandidates_Commit_createOneCandidateWithID(t *testing.T) {
-	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	candidates, err := NewCandidates(bus.NewBus(), mutableTree)
 	if err != nil {
 		t.Fatal(err)
@@ -326,7 +326,7 @@ func TestCandidates_Commit_createOneCandidateWithID(t *testing.T) {
 }
 
 func TestCandidates_Commit_Delegate(t *testing.T) {
-	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
 	candidates, err := NewCandidates(b, mutableTree)
@@ -376,7 +376,7 @@ func TestCandidates_Commit_Delegate(t *testing.T) {
 }
 
 func TestCandidates_SetOnlineAndBusSetOffline(t *testing.T) {
-	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
 	candidates, err := NewCandidates(b, mutableTree)
@@ -407,7 +407,7 @@ func TestCandidates_SetOnlineAndBusSetOffline(t *testing.T) {
 }
 
 func TestCandidates_Count(t *testing.T) {
-	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
 	candidates, err := NewCandidates(b, mutableTree)
@@ -444,7 +444,7 @@ func TestCandidates_Count(t *testing.T) {
 }
 
 func TestCandidates_GetTotalStake_fromModelAndFromDB(t *testing.T) {
-	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 	wl, err := waitlist.NewWaitList(b, mutableTree)
 	if err != nil {
@@ -518,7 +518,7 @@ func TestCandidates_GetTotalStake_fromModelAndFromDB(t *testing.T) {
 
 func TestCandidates_GetTotalStake_forCustomCoins(t *testing.T) {
 
-	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 	wl, err := waitlist.NewWaitList(b, mutableTree)
 	if err != nil {
@@ -585,7 +585,7 @@ func TestCandidates_GetTotalStake_forCustomCoins(t *testing.T) {
 }
 
 func TestCandidates_Export(t *testing.T) {
-	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	candidates, err := NewCandidates(bus.NewBus(), mutableTree)
 	if err != nil {
 		t.Fatal(err)
@@ -637,7 +637,7 @@ func TestCandidates_Export(t *testing.T) {
 }
 
 func TestCandidates_busGetStakes(t *testing.T) {
-	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	candidates, err := NewCandidates(bus.NewBus(), mutableTree)
 	if err != nil {
 		t.Fatal(err)
@@ -676,7 +676,7 @@ func TestCandidates_busGetStakes(t *testing.T) {
 }
 
 func TestCandidates_GetCandidateByTendermintAddress(t *testing.T) {
-	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	candidates, err := NewCandidates(bus.NewBus(), mutableTree)
 	if err != nil {
 		t.Fatal(err)
@@ -695,7 +695,7 @@ func TestCandidates_GetCandidateByTendermintAddress(t *testing.T) {
 	}
 }
 func TestCandidates_busGetCandidateByTendermintAddress(t *testing.T) {
-	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	candidates, err := NewCandidates(bus.NewBus(), mutableTree)
 	if err != nil {
 		t.Fatal(err)
@@ -715,7 +715,7 @@ func TestCandidates_busGetCandidateByTendermintAddress(t *testing.T) {
 }
 
 func TestCandidates_Punish(t *testing.T) {
-	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 	wl, err := waitlist.NewWaitList(b, mutableTree)
 	if err != nil {
@@ -803,7 +803,7 @@ func (fr *fr) AddFrozenFund(_ uint64, _ types.Address, _ types.Pubkey, _ types.C
 	fr.unbounds = append(fr.unbounds, value)
 }
 func TestCandidates_PunishByzantineCandidate(t *testing.T) {
-	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 	frozenfunds := &fr{}
 	b.SetFrozenFunds(frozenfunds)
@@ -897,7 +897,7 @@ func TestCandidates_PunishByzantineCandidate(t *testing.T) {
 }
 
 func TestCandidates_SubStake(t *testing.T) {
-	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
 	candidates, err := NewCandidates(b, mutableTree)
@@ -931,7 +931,7 @@ func TestCandidates_SubStake(t *testing.T) {
 }
 
 func TestCandidates_IsNewCandidateStakeSufficient(t *testing.T) {
-	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
 	candidates, err := NewCandidates(b, mutableTree)
@@ -960,7 +960,7 @@ func TestCandidates_IsNewCandidateStakeSufficient(t *testing.T) {
 }
 
 func TestCandidates_IsDelegatorStakeSufficient(t *testing.T) {
-	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 	wl, err := waitlist.NewWaitList(b, mutableTree)
 	if err != nil {
@@ -1024,7 +1024,7 @@ func TestCandidates_IsDelegatorStakeSufficient(t *testing.T) {
 	}
 }
 func TestCandidates_IsDelegatorStakeSufficient_false(t *testing.T) {
-	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
 	candidates, err := NewCandidates(b, mutableTree)
@@ -1054,7 +1054,7 @@ func TestCandidates_IsDelegatorStakeSufficient_false(t *testing.T) {
 }
 
 func TestCandidates_GetNewCandidates(t *testing.T) {
-	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
 	candidates, err := NewCandidates(b, mutableTree)
@@ -1097,7 +1097,7 @@ func TestCandidates_GetNewCandidates(t *testing.T) {
 }
 
 func TestCandidate_GetFilteredUpdates(t *testing.T) {
-	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
 	candidates, err := NewCandidates(b, mutableTree)

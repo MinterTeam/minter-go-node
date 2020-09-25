@@ -25,7 +25,6 @@ var (
 
 func getState() *state.State {
 	s, err := state.NewState(0, db.NewMemDB(), nil, 1, 1)
-
 	if err != nil {
 		panic(err)
 	}
