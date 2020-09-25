@@ -155,7 +155,7 @@ func TestStateExport(t *testing.T) {
 
 	if funds.Height != height ||
 		funds.Address != address1 ||
-		funds.Coin != coinTestID ||
+		funds.Coin != uint64(coinTestID) ||
 		*funds.CandidateKey != types.Pubkey(candidatePubKey1) ||
 		funds.Value != helpers.BipToPip(big.NewInt(100)).String() {
 		t.Fatalf("Wrong new state frozen fund data")
@@ -163,7 +163,7 @@ func TestStateExport(t *testing.T) {
 
 	if funds1.Height != height+10 ||
 		funds1.Address != address1 ||
-		funds1.Coin != types.GetBaseCoinID() ||
+		funds1.Coin != uint64(types.GetBaseCoinID()) ||
 		*funds1.CandidateKey != types.Pubkey(candidatePubKey1) ||
 		funds1.Value != helpers.BipToPip(big.NewInt(3)).String() {
 		t.Fatalf("Wrong new state frozen fund data")
@@ -171,7 +171,7 @@ func TestStateExport(t *testing.T) {
 
 	if funds2.Height != height+100 ||
 		funds2.Address != address2 ||
-		funds2.Coin != coinTestID ||
+		funds2.Coin != uint64(coinTestID) ||
 		*funds2.CandidateKey != types.Pubkey(candidatePubKey1) ||
 		funds2.Value != helpers.BipToPip(big.NewInt(500)).String() {
 		t.Fatalf("Wrong new state frozen fund data")
@@ -179,7 +179,7 @@ func TestStateExport(t *testing.T) {
 
 	if funds3.Height != height+150 ||
 		funds3.Address != address2 ||
-		funds3.Coin != coinTest2ID ||
+		funds3.Coin != uint64(coinTest2ID) ||
 		*funds3.CandidateKey != types.Pubkey(candidatePubKey1) ||
 		funds3.Value != helpers.BipToPip(big.NewInt(1000)).String() {
 		t.Fatalf("Wrong new state frozen fund data")
@@ -217,15 +217,15 @@ func TestStateExport(t *testing.T) {
 		t.Fatal("Wrong new state account balances size")
 	}
 
-	if account1.Balance[0].Coin != coinTestID || account1.Balance[0].Value != helpers.BipToPip(big.NewInt(1)).String() {
+	if account1.Balance[0].Coin != uint64(coinTestID) || account1.Balance[0].Value != helpers.BipToPip(big.NewInt(1)).String() {
 		t.Fatal("Wrong new state account balance data")
 	}
 
-	if account1.Balance[1].Coin != types.GetBaseCoinID() || account1.Balance[1].Value != helpers.BipToPip(big.NewInt(1)).String() {
+	if account1.Balance[1].Coin != uint64(types.GetBaseCoinID()) || account1.Balance[1].Value != helpers.BipToPip(big.NewInt(1)).String() {
 		t.Fatal("Wrong new state account balance data")
 	}
 
-	if account2.Balance[0].Coin != coinTest2ID || account2.Balance[0].Value != helpers.BipToPip(big.NewInt(2)).String() {
+	if account2.Balance[0].Coin != uint64(coinTest2ID) || account2.Balance[0].Value != helpers.BipToPip(big.NewInt(2)).String() {
 		t.Fatal("Wrong new state account balance data")
 	}
 
@@ -281,11 +281,11 @@ func TestStateExport(t *testing.T) {
 		t.Fatalf("Invalid amount of waitlist: %d. Expected 2", len(newState.Waitlist))
 	}
 
-	if newState.Waitlist[0].Coin != coinTest2ID || newState.Waitlist[0].Value != big.NewInt(2e18).String() || newState.Waitlist[0].Owner.Compare(wlAddr2) != 0 {
+	if newState.Waitlist[0].Coin != uint64(coinTest2ID) || newState.Waitlist[0].Value != big.NewInt(2e18).String() || newState.Waitlist[0].Owner.Compare(wlAddr2) != 0 {
 		t.Fatal("Invalid waitlist data")
 	}
 
-	if newState.Waitlist[1].Coin != coinTestID || newState.Waitlist[1].Value != big.NewInt(1e18).String() || newState.Waitlist[1].Owner.Compare(wlAddr1) != 0 {
+	if newState.Waitlist[1].Coin != uint64(coinTestID) || newState.Waitlist[1].Value != big.NewInt(1e18).String() || newState.Waitlist[1].Owner.Compare(wlAddr1) != 0 {
 		t.Fatal("Invalid waitlist data")
 	}
 }

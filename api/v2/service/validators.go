@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"google.golang.org/grpc/codes"
@@ -31,7 +30,7 @@ func (s *Service) Validators(ctx context.Context, req *pb.ValidatorsRequest) (*p
 		copy(pk[:], val.PubKey.Bytes()[5:])
 		responseValidators = append(responseValidators, &pb.ValidatorsResponse_Result{
 			PublicKey:   pk.String(),
-			VotingPower: fmt.Sprintf("%d", val.VotingPower),
+			VotingPower: uint64(val.VotingPower),
 		})
 	}
 	return &pb.ValidatorsResponse{Validators: responseValidators}, nil

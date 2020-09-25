@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"encoding/binary"
-
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
@@ -491,5 +490,60 @@ func TestDelegateTxToGasCoinReserveUnderflow(t *testing.T) {
 	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.CoinReserveUnderflow {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveUnderflow, response.Log)
+	}
+}
+
+func TestDelegateData_addFromWaitlist(t *testing.T) {
+	cState := getState()
+
+	pubkey := createTestCandidate(cState)
+
+	privateKey, _ := crypto.GenerateKey()
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+	cState.Waitlist.AddWaitList(addr, pubkey, 0, big.NewInt(100))
+	cState.Accounts.AddBalance(addr, 0, helpers.BipToPip(big.NewInt(1000000)))
+	cState.Checker.AddCoinVolume(0, helpers.BipToPip(big.NewInt(1000000)))
+
+	value := big.NewInt(10000000000)
+	data := DelegateData{
+		PubKey: pubkey,
+		Coin:   0,
+		Value:  value,
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := Transaction{
+		Nonce:         1,
+		GasPrice:      1,
+		ChainID:       types.CurrentChainID,
+		GasCoin:       0,
+		Type:          TypeDelegate,
+		Data:          encodedData,
+		SignatureType: SigTypeSingle,
+	}
+
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rewards := big.NewInt(0)
+	response := RunTx(cState, encodedTx, rewards, 0, &sync.Map{}, 0)
+	if response.Code != 0 {
+		t.Fatalf("Response code is not %d. Error %s", code.OK, response.Log)
+	}
+	cState.Checker.AddCoin(0, rewards)
+
+	err = cState.Check()
+	if err != nil {
+		t.Fatal(err)
 	}
 }

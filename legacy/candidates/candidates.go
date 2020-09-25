@@ -68,7 +68,7 @@ func (c *Candidates) GetNewCandidates(valCount int) []Candidate {
 	return result
 }
 
-func (c *Candidates) Create(ownerAddress types.Address, rewardAddress types.Address, pubkey types.Pubkey, commission uint) {
+func (c *Candidates) Create(ownerAddress types.Address, rewardAddress types.Address, pubkey types.Pubkey, commission uint32) {
 	candidate := &Candidate{
 		PubKey:            pubkey,
 		RewardAddress:     rewardAddress,
@@ -259,14 +259,14 @@ func (c *Candidates) Export(state *types.AppState, coinsMap map[types.CoinSymbol
 		}
 
 		state.Candidates = append(state.Candidates, types.Candidate{
-			ID:             maxID,
+			ID:             uint64(maxID),
 			RewardAddress:  candidate.RewardAddress,
 			OwnerAddress:   candidate.OwnerAddress,
 			ControlAddress: candidate.OwnerAddress,
 			TotalBipStake:  candidate.GetTotalBipStake().String(),
 			PubKey:         candidate.PubKey,
-			Commission:     candidate.Commission,
-			Status:         candidate.Status,
+			Commission:     uint64(candidate.Commission),
+			Status:         uint64(candidate.Status),
 			Updates:        updates,
 			Stakes:         stakes,
 		})

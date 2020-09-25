@@ -30,7 +30,7 @@ func TestDeclareCandidacyTx(t *testing.T) {
 	var publicKey types.Pubkey
 	copy(publicKey[:], publicKeyBytes)
 
-	commission := uint(10)
+	commission := uint32(10)
 
 	data := DeclareCandidacyData{
 		Address:    addr,
@@ -136,7 +136,7 @@ func TestDeclareCandidacyTxOverflow(t *testing.T) {
 	data := DeclareCandidacyData{
 		Address:    addr,
 		PubKey:     publicKey,
-		Commission: uint(10),
+		Commission: uint32(10),
 		Coin:       coin,
 		Stake:      helpers.BipToPip(big.NewInt(10)),
 	}
@@ -197,7 +197,7 @@ func TestDeclareCandidacyTxWithBlockPybKey(t *testing.T) {
 
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
-	commission := uint(10)
+	commission := uint32(10)
 
 	data := DeclareCandidacyData{
 		Address:    addr,
@@ -277,7 +277,7 @@ func TestDeclareCandidacyToNonExistenCoin(t *testing.T) {
 	var publicKey types.Pubkey
 	copy(publicKey[:], publicKeyBytes)
 
-	commission := uint(10)
+	commission := uint32(10)
 
 	data := DeclareCandidacyData{
 		Address:    addr,
@@ -332,9 +332,9 @@ func TestDeclareCandidacyToExistenCandidate(t *testing.T) {
 	var publicKey types.Pubkey
 	copy(publicKey[:], publicKeyBytes)
 
-	cState.Candidates.Create(addr, addr, addr, publicKey, uint(10))
+	cState.Candidates.Create(addr, addr, addr, publicKey, uint32(10))
 
-	commission := uint(10)
+	commission := uint32(10)
 
 	data := DeclareCandidacyData{
 		Address:    addr,
@@ -389,7 +389,7 @@ func TestDeclareCandidacyToDecodeError(t *testing.T) {
 	var publicKey types.Pubkey
 	copy(publicKey[:], publicKeyBytes)
 
-	commission := uint(10)
+	commission := uint32(10)
 
 	data := DeclareCandidacyData{
 		Address:    addr,
@@ -492,7 +492,7 @@ func TestDeclareCandidacyToInsufficientFunds(t *testing.T) {
 	data := DeclareCandidacyData{
 		Address:    addr,
 		PubKey:     publicKey,
-		Commission: uint(10),
+		Commission: uint32(10),
 		Coin:       coin,
 		Stake:      stake,
 	}
@@ -592,7 +592,7 @@ func TestDeclareCandidacyTxToGasCoinReserveUnderflow(t *testing.T) {
 	data := DeclareCandidacyData{
 		Address:    addr,
 		PubKey:     publicKey,
-		Commission: uint(10),
+		Commission: uint32(10),
 		Coin:       coin,
 		Stake:      stake,
 	}

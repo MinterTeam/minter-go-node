@@ -19,7 +19,7 @@ type CandidateResponse struct {
 	OwnerAddress  string  `json:"owner_address"`
 	TotalStake    string  `json:"total_stake"`
 	PubKey        string  `json:"pub_key"`
-	Commission    uint    `json:"commission"`
+	Commission    uint32  `json:"commission"`
 	Stakes        []Stake `json:"stakes,omitempty"`
 	Status        byte    `json:"status"`
 }

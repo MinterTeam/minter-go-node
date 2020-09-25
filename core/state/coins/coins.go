@@ -185,7 +185,7 @@ func (c *Coins) AddReserve(id types.CoinID, amount *big.Int) {
 }
 
 func (c *Coins) Create(id types.CoinID, symbol types.CoinSymbol, name string,
-	volume *big.Int, crr uint, reserve *big.Int, maxSupply *big.Int, owner *types.Address,
+	volume *big.Int, crr uint32, reserve *big.Int, maxSupply *big.Int, owner *types.Address,
 ) {
 	coin := &Model{
 		CName:      name,
@@ -222,7 +222,7 @@ func (c *Coins) Create(id types.CoinID, symbol types.CoinSymbol, name string,
 }
 
 func (c *Coins) Recreate(newID types.CoinID, name string, symbol types.CoinSymbol,
-	volume *big.Int, crr uint, reserve *big.Int, maxSupply *big.Int,
+	volume *big.Int, crr uint32, reserve *big.Int, maxSupply *big.Int,
 ) {
 	recreateCoin := c.GetCoinBySymbol(symbol, 0)
 	if recreateCoin == nil {
@@ -371,14 +371,14 @@ func (c *Coins) Export(state *types.AppState) {
 			}
 
 			state.Coins = append(state.Coins, types.Coin{
-				ID:           coin.ID(),
+				ID:           uint64(coin.ID()),
 				Name:         coin.Name(),
 				Symbol:       coin.Symbol(),
 				Volume:       coin.Volume().String(),
-				Crr:          coin.Crr(),
+				Crr:          uint64(coin.Crr()),
 				Reserve:      coin.Reserve().String(),
 				MaxSupply:    coin.MaxSupply().String(),
-				Version:      coin.Version(),
+				Version:      uint64(coin.Version()),
 				OwnerAddress: owner,
 			})
 		}

@@ -31,7 +31,7 @@ func TestEditMultisigTx(t *testing.T) {
 	privateKey4, _ := crypto.GenerateKey()
 	addr4 := crypto.PubkeyToAddress(privateKey4.PublicKey)
 
-	cState.Accounts.CreateMultisig([]uint{1, 2, 3}, []types.Address{addr1, addr2, addr3}, 3, 1, addr)
+	cState.Accounts.CreateMultisig([]uint32{1, 2, 3}, []types.Address{addr1, addr2, addr3}, 3, 1, addr)
 
 	coin := types.GetBaseCoinID()
 	initialBalance := big.NewInt(1)
@@ -39,7 +39,7 @@ func TestEditMultisigTx(t *testing.T) {
 
 	data := EditMultisigData{
 		Threshold: 3,
-		Weights:   []uint{2, 1, 2},
+		Weights:   []uint32{2, 1, 2},
 		Addresses: []types.Address{addr1, addr2, addr4},
 	}
 
@@ -111,7 +111,7 @@ func TestEditMultisigTxToNonExistenAddress(t *testing.T) {
 
 	data := EditMultisigData{
 		Threshold: 3,
-		Weights:   []uint{2, 1, 2},
+		Weights:   []uint32{2, 1, 2},
 		Addresses: []types.Address{addr1, addr2, addr3},
 	}
 
@@ -156,10 +156,10 @@ func TestEditMultisigTxToTooLargeOwnersList(t *testing.T) {
 
 	coin := types.GetBaseCoinID()
 
-	cState.Accounts.CreateMultisig([]uint{1, 2, 3}, []types.Address{addr1, addr2, addr3}, 3, 1, addr)
+	cState.Accounts.CreateMultisig([]uint32{1, 2, 3}, []types.Address{addr1, addr2, addr3}, 3, 1, addr)
 
-	weights := make([]uint, 33)
-	for i := uint(0); i <= 32; i++ {
+	weights := make([]uint32, 33)
+	for i := uint32(0); i <= 32; i++ {
 		weights[i] = i
 	}
 
@@ -214,11 +214,11 @@ func TestEditMultisigTxIncorrectWeights(t *testing.T) {
 
 	coin := types.GetBaseCoinID()
 
-	cState.Accounts.CreateMultisig([]uint{1, 2, 3}, []types.Address{addr1, addr2, addr3}, 3, 1, addr)
+	cState.Accounts.CreateMultisig([]uint32{1, 2, 3}, []types.Address{addr1, addr2, addr3}, 3, 1, addr)
 
 	data := EditMultisigData{
 		Threshold: 3,
-		Weights:   []uint{1, 2, 3, 4},
+		Weights:   []uint32{1, 2, 3, 4},
 		Addresses: []types.Address{addr1, addr2, addr3},
 	}
 
@@ -253,7 +253,7 @@ func TestEditMultisigTxIncorrectWeights(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.DifferentCountAddressesAndWeights, response.Log)
 	}
 
-	data.Weights = []uint{1, 2, 1024}
+	data.Weights = []uint32{1, 2, 1024}
 	encodedData, err = rlp.EncodeToBytes(data)
 	if err != nil {
 		t.Fatal(err)
@@ -274,7 +274,7 @@ func TestEditMultisigTxIncorrectWeights(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.IncorrectWeights, response.Log)
 	}
 
-	data.Weights = []uint{1, 2, 3}
+	data.Weights = []uint32{1, 2, 3}
 	data.Threshold = 7
 	encodedData, err = rlp.EncodeToBytes(data)
 	if err != nil {
@@ -310,11 +310,11 @@ func TestEditMultisigTxToAddressDuplication(t *testing.T) {
 
 	coin := types.GetBaseCoinID()
 
-	cState.Accounts.CreateMultisig([]uint{1, 2, 3}, []types.Address{addr1, addr2, addr3}, 3, 1, addr)
+	cState.Accounts.CreateMultisig([]uint32{1, 2, 3}, []types.Address{addr1, addr2, addr3}, 3, 1, addr)
 
 	data := EditMultisigData{
 		Threshold: 3,
-		Weights:   []uint{1, 2, 3},
+		Weights:   []uint32{1, 2, 3},
 		Addresses: []types.Address{addr1, addr1, addr3},
 	}
 
@@ -363,11 +363,11 @@ func TestEditMultisigTxToInsufficientFunds(t *testing.T) {
 
 	coin := types.GetBaseCoinID()
 
-	cState.Accounts.CreateMultisig([]uint{1, 2, 3}, []types.Address{addr1, addr2, addr3}, 3, 1, addr)
+	cState.Accounts.CreateMultisig([]uint32{1, 2, 3}, []types.Address{addr1, addr2, addr3}, 3, 1, addr)
 
 	data := EditMultisigData{
 		Threshold: 3,
-		Weights:   []uint{1, 2, 3},
+		Weights:   []uint32{1, 2, 3},
 		Addresses: []types.Address{addr1, addr2, addr3},
 	}
 
@@ -417,11 +417,11 @@ func TestEditMultisigTxToGasCoinReserveUnderflow(t *testing.T) {
 	coin := createTestCoin(cState)
 	cState.Coins.SubReserve(coin, helpers.BipToPip(big.NewInt(90000)))
 
-	cState.Accounts.CreateMultisig([]uint{1, 2, 3}, []types.Address{addr1, addr2, addr3}, 3, 1, addr)
+	cState.Accounts.CreateMultisig([]uint32{1, 2, 3}, []types.Address{addr1, addr2, addr3}, 3, 1, addr)
 
 	data := EditMultisigData{
 		Threshold: 3,
-		Weights:   []uint{1, 2, 3},
+		Weights:   []uint32{1, 2, 3},
 		Addresses: []types.Address{addr1, addr2, addr3},
 	}
 

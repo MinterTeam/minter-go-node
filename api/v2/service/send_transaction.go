@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -33,7 +32,7 @@ func (s *Service) SendTransaction(ctx context.Context, req *pb.SendTransactionRe
 	switch result.Code {
 	case code.OK:
 		return &pb.SendTransactionResponse{
-			Code: fmt.Sprintf("%d", result.Code),
+			Code: uint64(result.Code),
 			Log:  result.Log,
 			Hash: "Mt" + strings.ToLower(result.Hash.String()),
 		}, nil

@@ -12,7 +12,7 @@ import (
 
 func TestWaitListToGetByAddressAndPubKey(t *testing.T) {
 	b := bus.NewBus()
-	mutableTree := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 
 	wl, err := NewWaitList(b, mutableTree)
 	if err != nil {

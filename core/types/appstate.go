@@ -82,18 +82,20 @@ func (s *AppState) Verify() error {
 				return fmt.Errorf("not valid balance for account %s", acc.Address.String())
 			}
 
-			if !bal.Coin.IsBaseCoin() {
+			coinID := CoinID(bal.Coin)
+			if !coinID.IsBaseCoin() {
 				// check not existing coins
 				foundCoin := false
 				for _, coin := range s.Coins {
-					if coin.ID == bal.Coin {
+					id := CoinID(coin.ID)
+					if id == coinID {
 						foundCoin = true
 						break
 					}
 				}
 
 				if !foundCoin {
-					return fmt.Errorf("coin %s not found", bal.Coin)
+					return fmt.Errorf("coin %s not found", coinID)
 				}
 			}
 		}
@@ -103,24 +105,26 @@ func (s *AppState) Verify() error {
 		stakes := map[string]struct{}{}
 		for _, stake := range candidate.Stakes {
 			// check duplicated stakes
-			key := fmt.Sprintf("%s:%s", stake.Owner.String(), stake.Coin.String())
+			coinID := CoinID(stake.Coin)
+			key := fmt.Sprintf("%s:%s", stake.Owner.String(), coinID.String())
 			if _, exists := stakes[key]; exists {
 				return fmt.Errorf("duplicated stake %s", key)
 			}
 			stakes[key] = struct{}{}
 
 			// check not existing coins
-			if !stake.Coin.IsBaseCoin() {
+			if !coinID.IsBaseCoin() {
 				foundCoin := false
 				for _, coin := range s.Coins {
-					if coin.ID == stake.Coin {
+					id := CoinID(coin.ID)
+					if id == coinID {
 						foundCoin = true
 						break
 					}
 				}
 
 				if !foundCoin {
-					return fmt.Errorf("coin %s not found", stake.Coin)
+					return fmt.Errorf("coin %s not found", coinID)
 				}
 			}
 		}
@@ -173,17 +177,19 @@ func (s *AppState) Verify() error {
 		}
 
 		// check not existing coins
-		if !ff.Coin.IsBaseCoin() {
+		coinID := CoinID(ff.Coin)
+		if !coinID.IsBaseCoin() {
 			foundCoin := false
 			for _, coin := range s.Coins {
-				if coin.ID == ff.Coin {
+				id := CoinID(coin.ID)
+				if id == coinID {
 					foundCoin = true
 					break
 				}
 			}
 
 			if !foundCoin {
-				return fmt.Errorf("coin %s not found", ff.Coin)
+				return fmt.Errorf("coin %s not found", coinID)
 			}
 		}
 	}
@@ -211,49 +217,49 @@ type Validator struct {
 }
 
 type Candidate struct {
-	ID             uint32  `json:"id"`
+	ID             uint64  `json:"id"`
 	RewardAddress  Address `json:"reward_address"`
 	OwnerAddress   Address `json:"owner_address"`
 	ControlAddress Address `json:"control_address"`
 	TotalBipStake  string  `json:"total_bip_stake"`
 	PubKey         Pubkey  `json:"public_key"`
-	Commission     uint    `json:"commission"`
+	Commission     uint64  `json:"commission"`
 	Stakes         []Stake `json:"stakes"`
 	Updates        []Stake `json:"updates"`
-	Status         byte    `json:"status"`
+	Status         uint64  `json:"status"`
 }
 
 type Stake struct {
 	Owner    Address `json:"owner"`
-	Coin     CoinID  `json:"coin"`
+	Coin     uint64  `json:"coin"`
 	Value    string  `json:"value"`
 	BipValue string  `json:"bip_value"`
 }
 
 type Waitlist struct {
-	CandidateID uint32  `json:"candidate_id"`
+	CandidateID uint64  `json:"candidate_id"`
 	Owner       Address `json:"owner"`
-	Coin        CoinID  `json:"coin"`
+	Coin        uint64  `json:"coin"`
 	Value       string  `json:"value"`
 }
 
 type Coin struct {
-	ID           CoinID      `json:"id"`
-	Name         string      `json:"name"`
-	Symbol       CoinSymbol  `json:"symbol"`
-	Volume       string      `json:"volume"`
-	Crr          uint        `json:"crr"`
-	Reserve      string      `json:"reserve"`
-	MaxSupply    string      `json:"max_supply"`
-	Version      CoinVersion `json:"version"`
-	OwnerAddress *Address    `json:"owner_address"`
+	ID           uint64     `json:"id"`
+	Name         string     `json:"name"`
+	Symbol       CoinSymbol `json:"symbol"`
+	Volume       string     `json:"volume"`
+	Crr          uint64     `json:"crr"`
+	Reserve      string     `json:"reserve"`
+	MaxSupply    string     `json:"max_supply"`
+	Version      uint64     `json:"version"`
+	OwnerAddress *Address   `json:"owner_address"`
 }
 
 type FrozenFund struct {
 	Height       uint64  `json:"height"`
 	Address      Address `json:"address"`
 	CandidateKey *Pubkey `json:"candidate_key,omitempty"`
-	Coin         CoinID  `json:"coin"`
+	Coin         uint64  `json:"coin"`
 	Value        string  `json:"value"`
 }
 
@@ -267,13 +273,13 @@ type Account struct {
 }
 
 type Balance struct {
-	Coin  CoinID `json:"coin"`
+	Coin  uint64 `json:"coin"`
 	Value string `json:"value"`
 }
 
 type Multisig struct {
-	Weights   []uint    `json:"weights"`
-	Threshold uint      `json:"threshold"`
+	Weights   []uint32  `json:"weights"`
+	Threshold uint32    `json:"threshold"`
 	Addresses []Address `json:"addresses"`
 }
 

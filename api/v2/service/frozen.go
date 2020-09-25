@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/state/candidates"
 	"github.com/MinterTeam/minter-go-node/core/state/coins"
@@ -61,11 +60,11 @@ func (s *Service) Frozen(ctx context.Context, req *pb.FrozenRequest) (*pb.Frozen
 				}
 			}
 			frozen = append(frozen, &pb.FrozenResponse_Frozen{
-				Height:       fmt.Sprintf("%d", funds.Height()),
+				Height:       funds.Height(),
 				Address:      fund.Address.String(),
 				CandidateKey: fund.CandidateKey.String(),
 				Coin: &pb.Coin{
-					Id:     fund.Coin.String(),
+					Id:     uint64(fund.Coin),
 					Symbol: coin.GetFullSymbol(),
 				},
 				Value: fund.Value.String(),

@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 
 	"github.com/MinterTeam/minter-go-node/core/code"
@@ -42,11 +41,11 @@ func (s *Service) CoinInfo(ctx context.Context, req *pb.CoinInfoRequest) (*pb.Co
 	}
 
 	return &pb.CoinInfoResponse{
-		Id:             coin.ID().String(),
+		Id:             uint64(coin.ID()),
 		Name:           coin.Name(),
 		Symbol:         coin.GetFullSymbol(),
 		Volume:         coin.Volume().String(),
-		Crr:            fmt.Sprintf("%d", coin.Crr()),
+		Crr:            uint64(coin.Crr()),
 		ReserveBalance: coin.Reserve().String(),
 		MaxSupply:      coin.MaxSupply().String(),
 		OwnerAddress:   ownerAddress,
@@ -81,11 +80,11 @@ func (s *Service) CoinInfoById(ctx context.Context, req *pb.CoinIdRequest) (*pb.
 	}
 
 	return &pb.CoinInfoResponse{
-		Id:             coin.ID().String(),
+		Id:             uint64(coin.ID()),
 		Name:           coin.Name(),
 		Symbol:         coin.GetFullSymbol(),
 		Volume:         coin.Volume().String(),
-		Crr:            fmt.Sprintf("%d", coin.Crr()),
+		Crr:            uint64(coin.Crr()),
 		ReserveBalance: coin.Reserve().String(),
 		MaxSupply:      coin.MaxSupply().String(),
 		OwnerAddress:   ownerAddress,

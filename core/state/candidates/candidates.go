@@ -45,6 +45,7 @@ type RCandidates interface {
 	Export(state *types.AppState)
 	Exists(pubkey types.Pubkey) bool
 	IsBlockedPubKey(pubkey types.Pubkey) bool
+	PubKey(id uint32) types.Pubkey
 	Count() int
 	IsNewCandidateStakeSufficient(coin types.CoinID, stake *big.Int, limit int) bool
 	IsDelegatorStakeSufficient(address types.Address, pubkey types.Pubkey, coin types.CoinID, amount *big.Int) bool
@@ -231,7 +232,7 @@ func (c *Candidates) GetNewCandidates(valCount int) []Candidate {
 }
 
 // Create creates a new candidate with given params and adds it to state
-func (c *Candidates) Create(ownerAddress, rewardAddress, controlAddress types.Address, pubkey types.Pubkey, commission uint) {
+func (c *Candidates) Create(ownerAddress, rewardAddress, controlAddress types.Address, pubkey types.Pubkey, commission uint32) {
 	candidate := &Candidate{
 		ID:                0,
 		PubKey:            pubkey,
@@ -252,7 +253,7 @@ func (c *Candidates) Create(ownerAddress, rewardAddress, controlAddress types.Ad
 
 // CreateWithID creates a new candidate with given params and adds it to state
 // CreateWithID uses given ID to be associated with public key of a candidate
-func (c *Candidates) CreateWithID(ownerAddress, rewardAddress, controlAddress types.Address, pubkey types.Pubkey, commission uint, id uint32) {
+func (c *Candidates) CreateWithID(ownerAddress, rewardAddress, controlAddress types.Address, pubkey types.Pubkey, commission uint32, id uint32) {
 	c.setPubKeyID(pubkey, id)
 	c.Create(ownerAddress, rewardAddress, controlAddress, pubkey, commission)
 }
@@ -808,7 +809,7 @@ func (c *Candidates) SetStakes(pubkey types.Pubkey, stakes []types.Stake, update
 	for _, u := range updates {
 		candidate.addUpdate(&stake{
 			Owner:    u.Owner,
-			Coin:     u.Coin,
+			Coin:     types.CoinID(u.Coin),
 			Value:    helpers.StringToBigInt(u.Value),
 			BipValue: helpers.StringToBigInt(u.BipValue),
 		})
@@ -821,7 +822,7 @@ func (c *Candidates) SetStakes(pubkey types.Pubkey, stakes []types.Stake, update
 		for _, u := range stakes[1000:] {
 			candidate.addUpdate(&stake{
 				Owner:    u.Owner,
-				Coin:     u.Coin,
+				Coin:     types.CoinID(u.Coin),
 				Value:    helpers.StringToBigInt(u.Value),
 				BipValue: helpers.StringToBigInt(u.BipValue),
 			})
@@ -831,7 +832,7 @@ func (c *Candidates) SetStakes(pubkey types.Pubkey, stakes []types.Stake, update
 	for i, s := range stakes[:count] {
 		candidate.stakes[i] = &stake{
 			Owner:    s.Owner,
-			Coin:     s.Coin,
+			Coin:     types.CoinID(s.Coin),
 			Value:    helpers.StringToBigInt(s.Value),
 			BipValue: helpers.StringToBigInt(s.BipValue),
 			markDirty: func(index int) {
@@ -857,7 +858,7 @@ func (c *Candidates) Export(state *types.AppState) {
 		for i, s := range candidateStakes {
 			stakes[i] = types.Stake{
 				Owner:    s.Owner,
-				Coin:     s.Coin,
+				Coin:     uint64(s.Coin),
 				Value:    s.Value.String(),
 				BipValue: s.BipValue.String(),
 			}
@@ -867,21 +868,21 @@ func (c *Candidates) Export(state *types.AppState) {
 		for i, u := range candidate.updates {
 			updates[i] = types.Stake{
 				Owner:    u.Owner,
-				Coin:     u.Coin,
+				Coin:     uint64(u.Coin),
 				Value:    u.Value.String(),
 				BipValue: u.BipValue.String(),
 			}
 		}
 
 		state.Candidates = append(state.Candidates, types.Candidate{
-			ID:             candidate.ID,
+			ID:             uint64(candidate.ID),
 			RewardAddress:  candidate.RewardAddress,
 			OwnerAddress:   candidate.OwnerAddress,
 			ControlAddress: candidate.ControlAddress,
 			TotalBipStake:  candidate.GetTotalBipStake().String(),
 			PubKey:         candidate.PubKey,
-			Commission:     candidate.Commission,
-			Status:         candidate.Status,
+			Commission:     uint64(candidate.Commission),
+			Status:         uint64(candidate.Status),
 			Updates:        updates,
 			Stakes:         stakes,
 		})

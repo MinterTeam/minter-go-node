@@ -1,12 +1,10 @@
 package service
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	pb "github.com/MinterTeam/minter-go-node/cli/cli_pb"
 	"github.com/c-bata/go-prompt"
-	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/empty"
@@ -14,6 +12,7 @@ import (
 	"github.com/marcusolsson/tui-go"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/encoding/protojson"
 	"io"
 	"log"
 	"os"
@@ -342,12 +341,11 @@ func netInfoCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 			return err
 		}
 		if c.Bool("json") {
-			bb := new(bytes.Buffer)
-			err := (&jsonpb.Marshaler{EmitDefaults: true}).Marshal(bb, response)
+			bb, err := protojson.Marshal(response)
 			if err != nil {
 				return err
 			}
-			fmt.Println(bb.String())
+			fmt.Println(string(bb))
 			return nil
 		}
 		fmt.Println(proto.MarshalTextString(response))
@@ -362,12 +360,11 @@ func statusCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 			return err
 		}
 		if c.Bool("json") {
-			bb := new(bytes.Buffer)
-			err := (&jsonpb.Marshaler{EmitDefaults: true}).Marshal(bb, response)
+			bb, err := protojson.Marshal(response)
 			if err != nil {
 				return err
 			}
-			fmt.Println(bb.String())
+			fmt.Println(string(bb))
 			return nil
 		}
 		fmt.Println(proto.MarshalTextString(response))

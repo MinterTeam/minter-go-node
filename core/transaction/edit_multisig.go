@@ -15,8 +15,8 @@ import (
 )
 
 type EditMultisigData struct {
-	Threshold uint
-	Weights   []uint
+	Threshold uint32
+	Weights   []uint32
 	Addresses []types.Address
 }
 
@@ -72,7 +72,7 @@ func (data EditMultisigData) BasicCheck(tx *Transaction, context *state.CheckSta
 		usedAddresses[address] = true
 	}
 
-	var totalWeight uint
+	var totalWeight uint32
 	for _, weight := range data.Weights {
 		totalWeight += weight
 	}

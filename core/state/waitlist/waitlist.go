@@ -53,9 +53,9 @@ func (wl *WaitList) Export(state *types.AppState) {
 			if model != nil && len(model.List) != 0 {
 				for _, w := range model.List {
 					state.Waitlist = append(state.Waitlist, types.Waitlist{
-						CandidateID: w.CandidateId,
+						CandidateID: uint64(w.CandidateId),
 						Owner:       address,
-						Coin:        w.Coin,
+						Coin:        uint64(w.Coin),
 						Value:       w.Value.String(),
 					})
 				}
@@ -164,16 +164,20 @@ func (wl *WaitList) Delete(address types.Address, pubkey types.Pubkey, coin type
 		log.Panicf("Candidate not found: %s", pubkey.String())
 	}
 
+	value := big.NewInt(0)
 	items := make([]Item, 0, len(w.List))
 	for _, item := range w.List {
 		if item.CandidateId != candidate.ID && item.Coin != coin {
 			items = append(items, item)
+		} else {
+			value.Add(value, item.Value)
 		}
 	}
 
 	w.List = items
 	wl.markDirty(address)
 	wl.setToMap(address, w)
+	wl.bus.Checker().AddCoinVolume(coin, value)
 }
 
 func (wl *WaitList) getOrNew(address types.Address) *Model {

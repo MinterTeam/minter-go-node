@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/state/candidates"
 	"github.com/MinterTeam/minter-go-node/core/types"
@@ -56,8 +55,8 @@ func makeResponseCandidate(state *state.CheckState, c *candidates.Candidate, inc
 		ControlAddress: c.ControlAddress.String(),
 		TotalStake:     state.Candidates().GetTotalStake(c.PubKey).String(),
 		PublicKey:      c.PubKey.String(),
-		Commission:     fmt.Sprintf("%d", c.Commission),
-		Status:         fmt.Sprintf("%d", c.Status),
+		Commission:     uint64(c.Commission),
+		Status:         uint64(c.Status),
 	}
 
 	if includeStakes {
@@ -65,13 +64,13 @@ func makeResponseCandidate(state *state.CheckState, c *candidates.Candidate, inc
 		minStake := big.NewInt(0)
 		stakes := state.Candidates().GetStakes(c.PubKey)
 		usedSlots := len(stakes)
-		candidate.UsedSlots = fmt.Sprintf("%d", usedSlots)
+		candidate.UsedSlots = uint64(usedSlots)
 		candidate.Stakes = make([]*pb.CandidateResponse_Stake, 0, usedSlots)
 		for i, stake := range stakes {
 			candidate.Stakes = append(candidate.Stakes, &pb.CandidateResponse_Stake{
 				Owner: stake.Owner.String(),
 				Coin: &pb.Coin{
-					Id:     stake.Coin.String(),
+					Id:     uint64(stake.Coin),
 					Symbol: state.Coins().GetCoin(stake.Coin).Symbol().String(),
 				},
 				Value:    stake.Value.String(),
@@ -85,7 +84,7 @@ func makeResponseCandidate(state *state.CheckState, c *candidates.Candidate, inc
 				minStake = stake.BipValue
 			}
 		}
-		candidate.UniqUsers = fmt.Sprintf("%d", len(addresses))
+		candidate.UniqUsers = uint64(len(addresses))
 		candidate.MinStake = minStake.String()
 	}
 

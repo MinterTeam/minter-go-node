@@ -11,7 +11,7 @@ type Candidate struct {
 	PubKey        types.Pubkey
 	RewardAddress types.Address
 	OwnerAddress  types.Address
-	Commission    uint
+	Commission    uint32
 	Status        byte
 
 	totalBipStake *big.Int

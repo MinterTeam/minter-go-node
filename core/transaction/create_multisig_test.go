@@ -33,7 +33,7 @@ func TestCreateMultisigTx(t *testing.T) {
 		addr2,
 	}
 
-	weights := []uint{1, 1}
+	weights := []uint32{1, 1}
 
 	data := CreateMultisigData{
 		Threshold: 1,
@@ -126,7 +126,7 @@ func TestCreateMultisigFromExistingAccountTx(t *testing.T) {
 		addr2,
 	}
 
-	weights := []uint{1, 1}
+	weights := []uint32{1, 1}
 
 	data := CreateMultisigData{
 		Threshold: 1,
@@ -224,7 +224,7 @@ func TestCreateExistingMultisigTx(t *testing.T) {
 
 	data := CreateMultisigData{
 		Threshold: 1,
-		Weights:   []uint{1, 1},
+		Weights:   []uint32{1, 1},
 		Addresses: []types.Address{
 			addr,
 			addr2,
@@ -278,7 +278,7 @@ func TestCreateMultisigOwnersTxToNonExistenAddress(t *testing.T) {
 
 	data := EditMultisigData{
 		Threshold: 3,
-		Weights:   []uint{2, 1, 2},
+		Weights:   []uint32{2, 1, 2},
 		Addresses: []types.Address{addr1, addr2, addr3},
 	}
 
@@ -322,8 +322,8 @@ func TestCreateMultisigOwnersTxToTooLargeOwnersList(t *testing.T) {
 
 	coin := types.GetBaseCoinID()
 
-	weights := make([]uint, 33)
-	for i := uint(0); i <= 32; i++ {
+	weights := make([]uint32, 33)
+	for i := uint32(0); i <= 32; i++ {
 		weights[i] = i
 	}
 
@@ -375,7 +375,7 @@ func TestCreateMultisigOwnersTxIncorrectWeights(t *testing.T) {
 
 	data := CreateMultisigData{
 		Threshold: 3,
-		Weights:   []uint{1, 2, 3, 4},
+		Weights:   []uint32{1, 2, 3, 4},
 		Addresses: []types.Address{addr1, addr2, addr3},
 	}
 
@@ -408,7 +408,7 @@ func TestCreateMultisigOwnersTxIncorrectWeights(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.DifferentCountAddressesAndWeights, response.Log)
 	}
 
-	data.Weights = []uint{1, 2, 1024}
+	data.Weights = []uint32{1, 2, 1024}
 	encodedData, err = rlp.EncodeToBytes(data)
 	if err != nil {
 		t.Fatal(err)
@@ -440,7 +440,7 @@ func TestCreateMultisigOwnersTxToAddressDuplication(t *testing.T) {
 
 	data := CreateMultisigData{
 		Threshold: 3,
-		Weights:   []uint{1, 2, 3},
+		Weights:   []uint32{1, 2, 3},
 		Addresses: []types.Address{addr1, addr1, addr3},
 	}
 
@@ -486,7 +486,7 @@ func TestCreateMultisigOwnersTxToInsufficientFunds(t *testing.T) {
 
 	data := CreateMultisigData{
 		Threshold: 3,
-		Weights:   []uint{1, 2, 3},
+		Weights:   []uint32{1, 2, 3},
 		Addresses: []types.Address{addr1, addr2, addr3},
 	}
 
@@ -537,7 +537,7 @@ func TestCreateMultisigTxToGasCoinReserveUnderflow(t *testing.T) {
 
 	data := CreateMultisigData{
 		Threshold: 3,
-		Weights:   []uint{1, 2, 3},
+		Weights:   []uint32{1, 2, 3},
 		Addresses: []types.Address{addr1, addr2, addr3},
 	}
 

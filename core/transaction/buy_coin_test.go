@@ -25,7 +25,6 @@ var (
 
 func getState() *state.State {
 	s, err := state.NewState(0, db.NewMemDB(), nil, 1, 1)
-
 	if err != nil {
 		panic(err)
 	}
@@ -1341,13 +1340,13 @@ func getAccount() (*ecdsa.PrivateKey, types.Address) {
 	return privateKey, addr
 }
 
-func createTestCoinWithSymbol(stateDB *state.State, symbol types.CoinSymbol) (types.CoinID, *big.Int, *big.Int, uint) {
+func createTestCoinWithSymbol(stateDB *state.State, symbol types.CoinSymbol) (types.CoinID, *big.Int, *big.Int, uint32) {
 	volume := helpers.BipToPip(big.NewInt(100000))
 	reserve := helpers.BipToPip(big.NewInt(100000))
 	volume.Mul(volume, big.NewInt(int64(rnd.Intn(9))+1))
 	reserve.Mul(reserve, big.NewInt(int64(rnd.Intn(9))+1))
 
-	crr := uint(10 + rnd.Intn(90))
+	crr := uint32(10 + rnd.Intn(90))
 
 	id := stateDB.App.GetNextCoinID()
 	stateDB.Coins.Create(id, symbol, "TEST COIN", volume, crr, reserve, big.NewInt(0).Mul(volume, big.NewInt(10)), nil)

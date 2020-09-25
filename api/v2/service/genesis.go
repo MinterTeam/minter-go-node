@@ -2,11 +2,11 @@ package service
 
 import (
 	"context"
-	"fmt"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
 	"time"
 )
 
@@ -21,7 +21,8 @@ func (s *Service) Genesis(ctx context.Context, _ *empty.Empty) (*pb.GenesisRespo
 		return new(pb.GenesisResponse), timeoutStatus.Err()
 	}
 
-	appState, err := encodeToStruct(result.Genesis.AppState)
+	var appState pb.GenesisResponse_AppState
+	err = protojson.Unmarshal(result.Genesis.AppState, &appState)
 	if err != nil {
 		return new(pb.GenesisResponse), status.Error(codes.Internal, err.Error())
 	}
@@ -35,19 +36,19 @@ func (s *Service) Genesis(ctx context.Context, _ *empty.Empty) (*pb.GenesisRespo
 		ChainId:     result.Genesis.ChainID,
 		ConsensusParams: &pb.GenesisResponse_ConsensusParams{
 			Block: &pb.GenesisResponse_ConsensusParams_Block{
-				MaxBytes:   fmt.Sprintf("%d", result.Genesis.ConsensusParams.Block.MaxBytes),
-				MaxGas:     fmt.Sprintf("%d", result.Genesis.ConsensusParams.Block.MaxGas),
-				TimeIotaMs: fmt.Sprintf("%d", result.Genesis.ConsensusParams.Block.TimeIotaMs),
+				MaxBytes:   result.Genesis.ConsensusParams.Block.MaxBytes,
+				MaxGas:     result.Genesis.ConsensusParams.Block.MaxGas,
+				TimeIotaMs: result.Genesis.ConsensusParams.Block.TimeIotaMs,
 			},
 			Evidence: &pb.GenesisResponse_ConsensusParams_Evidence{
-				MaxAgeNumBlocks: fmt.Sprintf("%d", result.Genesis.ConsensusParams.Evidence.MaxAgeNumBlocks),
-				MaxAgeDuration:  fmt.Sprintf("%d", result.Genesis.ConsensusParams.Evidence.MaxAgeDuration),
+				MaxAgeNumBlocks: result.Genesis.ConsensusParams.Evidence.MaxAgeNumBlocks,
+				MaxAgeDuration:  int64(result.Genesis.ConsensusParams.Evidence.MaxAgeDuration),
 			},
 			Validator: &pb.GenesisResponse_ConsensusParams_Validator{
 				PubKeyTypes: result.Genesis.ConsensusParams.Validator.PubKeyTypes,
 			},
 		},
 		AppHash:  result.Genesis.AppHash.String(),
-		AppState: appState,
+		AppState: &appState,
 	}, nil
 }

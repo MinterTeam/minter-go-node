@@ -18,12 +18,12 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 	case *transaction.BuyCoinData:
 		m = &pb.BuyCoinData{
 			CoinToBuy: &pb.Coin{
-				Id:     d.CoinToBuy.String(),
+				Id:     uint64(d.CoinToBuy),
 				Symbol: coins.GetCoin(d.CoinToBuy).Symbol().String(),
 			},
 			ValueToBuy: d.ValueToBuy.String(),
 			CoinToSell: &pb.Coin{
-				Id:     d.CoinToSell.String(),
+				Id:     uint64(d.CoinToSell),
 				Symbol: coins.GetCoin(d.CoinToSell).Symbol().String(),
 			},
 			MaximumValueToSell: d.MaximumValueToSell.String(),
@@ -39,20 +39,20 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 			Symbol:               d.Symbol.String(),
 			InitialAmount:        d.InitialAmount.String(),
 			InitialReserve:       d.InitialReserve.String(),
-			ConstantReserveRatio: strconv.Itoa(int(d.ConstantReserveRatio)),
+			ConstantReserveRatio: uint64(d.ConstantReserveRatio),
 			MaxSupply:            d.MaxSupply.String(),
 		}
 	case *transaction.CreateMultisigData:
-		weights := make([]string, 0, len(d.Weights))
+		weights := make([]uint64, 0, len(d.Weights))
 		for _, weight := range d.Weights {
-			weights = append(weights, strconv.Itoa(int(weight)))
+			weights = append(weights, uint64(weight))
 		}
 		addresses := make([]string, 0, len(d.Addresses))
 		for _, address := range d.Addresses {
 			addresses = append(addresses, address.String())
 		}
 		m = &pb.CreateMultisigData{
-			Threshold: strconv.Itoa(int(d.Threshold)),
+			Threshold: uint64(d.Threshold),
 			Weights:   weights,
 			Addresses: addresses,
 		}
@@ -60,9 +60,9 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 		m = &pb.DeclareCandidacyData{
 			Address:    d.Address.String(),
 			PubKey:     d.PubKey.String(),
-			Commission: strconv.Itoa(int(d.Commission)),
+			Commission: uint64(d.Commission),
 			Coin: &pb.Coin{
-				Id:     d.Coin.String(),
+				Id:     uint64(d.Coin),
 				Symbol: coins.GetCoin(d.Coin).Symbol().String(),
 			},
 			Stake: d.Stake.String(),
@@ -71,7 +71,7 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 		m = &pb.DelegateData{
 			PubKey: d.PubKey.String(),
 			Coin: &pb.Coin{
-				Id:     d.Coin.String(),
+				Id:     uint64(d.Coin),
 				Symbol: coins.GetCoin(d.Coin).Symbol().String(),
 			},
 			Value: d.Value.String(),
@@ -89,16 +89,16 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 			NewPubKey: d.NewPubKey.String(),
 		}
 	case *transaction.EditMultisigData:
-		weights := make([]string, 0, len(d.Weights))
+		weights := make([]uint64, 0, len(d.Weights))
 		for _, weight := range d.Weights {
-			weights = append(weights, strconv.Itoa(int(weight)))
+			weights = append(weights, uint64(weight))
 		}
 		addresses := make([]string, 0, len(d.Addresses))
 		for _, address := range d.Addresses {
 			addresses = append(addresses, address.String())
 		}
 		m = &pb.EditMultisigData{
-			Threshold: strconv.Itoa(int(d.Threshold)),
+			Threshold: uint64(d.Threshold),
 			Weights:   weights,
 			Addresses: addresses,
 		}
@@ -107,7 +107,7 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 		for _, item := range d.List {
 			list = append(list, &pb.SendData{
 				Coin: &pb.Coin{
-					Id:     item.Coin.String(),
+					Id:     uint64(item.Coin),
 					Symbol: coins.GetCoin(item.Coin).Symbol().String(),
 				},
 				To:    item.To.String(),
@@ -127,7 +127,7 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 			Symbol:               d.Symbol.String(),
 			InitialAmount:        d.InitialAmount.String(),
 			InitialReserve:       d.InitialReserve.String(),
-			ConstantReserveRatio: strconv.Itoa(int(d.ConstantReserveRatio)),
+			ConstantReserveRatio: uint64(d.ConstantReserveRatio),
 			MaxSupply:            d.MaxSupply.String(),
 		}
 	case *transaction.RedeemCheckData:
@@ -138,11 +138,11 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 	case *transaction.SellAllCoinData:
 		m = &pb.SellAllCoinData{
 			CoinToSell: &pb.Coin{
-				Id:     d.CoinToSell.String(),
+				Id:     uint64(d.CoinToSell),
 				Symbol: coins.GetCoin(d.CoinToSell).Symbol().String(),
 			},
 			CoinToBuy: &pb.Coin{
-				Id:     d.CoinToBuy.String(),
+				Id:     uint64(d.CoinToBuy),
 				Symbol: coins.GetCoin(d.CoinToBuy).Symbol().String(),
 			},
 			MinimumValueToBuy: d.MinimumValueToBuy.String(),
@@ -150,12 +150,12 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 	case *transaction.SellCoinData:
 		m = &pb.SellCoinData{
 			CoinToSell: &pb.Coin{
-				Id:     d.CoinToSell.String(),
+				Id:     uint64(d.CoinToSell),
 				Symbol: coins.GetCoin(d.CoinToSell).Symbol().String(),
 			},
 			ValueToSell: d.ValueToSell.String(),
 			CoinToBuy: &pb.Coin{
-				Id:     d.CoinToBuy.String(),
+				Id:     uint64(d.CoinToBuy),
 				Symbol: coins.GetCoin(d.CoinToBuy).Symbol().String(),
 			},
 			MinimumValueToBuy: d.MinimumValueToBuy.String(),
@@ -163,7 +163,7 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 	case *transaction.SendData:
 		m = &pb.SendData{
 			Coin: &pb.Coin{
-				Id:     d.Coin.String(),
+				Id:     uint64(d.Coin),
 				Symbol: coins.GetCoin(d.Coin).Symbol().String(),
 			},
 			To:    d.To.String(),
@@ -172,7 +172,7 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 	case *transaction.SetHaltBlockData:
 		m = &pb.SetHaltBlockData{
 			PubKey: d.PubKey.String(),
-			Height: strconv.Itoa(int(d.Height)),
+			Height: uint64(d.Height),
 		}
 	case *transaction.SetCandidateOnData:
 		m = &pb.SetCandidateOnData{
@@ -186,7 +186,7 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 		m = &pb.UnbondData{
 			PubKey: d.PubKey.String(),
 			Coin: &pb.Coin{
-				Id:     d.Coin.String(),
+				Id:     uint64(d.Coin),
 				Symbol: coins.GetCoin(d.Coin).Symbol().String(),
 			},
 			Value: d.Value.String(),

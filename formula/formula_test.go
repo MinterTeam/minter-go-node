@@ -8,7 +8,7 @@ import (
 type PurchaseReturnData struct {
 	Supply  *big.Int
 	Reserve *big.Int
-	Crr     uint
+	Crr     uint32
 	Deposit *big.Int
 	Result  *big.Int
 }
@@ -50,7 +50,7 @@ func TestCalculatePurchaseReturn(t *testing.T) {
 type PurchaseAmountData struct {
 	Supply      *big.Int
 	Reserve     *big.Int
-	Crr         uint
+	Crr         uint32
 	WantReceive *big.Int
 	Deposit     *big.Int
 }
@@ -92,7 +92,7 @@ func TestCalculatePurchaseAmount(t *testing.T) {
 type CalculateSaleReturnData struct {
 	Supply     *big.Int
 	Reserve    *big.Int
-	Crr        uint
+	Crr        uint32
 	SellAmount *big.Int
 	Result     *big.Int
 }
@@ -141,7 +141,7 @@ func TestCalculateSaleReturn(t *testing.T) {
 type CalculateBuyDepositData struct {
 	Supply      *big.Int
 	Reserve     *big.Int
-	Crr         uint
+	Crr         uint32
 	WantReceive *big.Int
 	Result      *big.Int
 }

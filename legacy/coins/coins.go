@@ -117,7 +117,7 @@ func (c *Coins) Export(state *types.AppState) map[types.CoinSymbol]types.Coin {
 				Name:      coin.Name(),
 				Symbol:    coin.Symbol(),
 				Volume:    coin.Volume().String(),
-				Crr:       coin.Crr(),
+				Crr:       uint64(coin.Crr()),
 				Reserve:   coin.Reserve().String(),
 				MaxSupply: coin.MaxSupply().String(),
 				Version:   0,
@@ -134,10 +134,10 @@ func (c *Coins) Export(state *types.AppState) map[types.CoinSymbol]types.Coin {
 	})
 
 	coinsMap := make(map[types.CoinSymbol]types.Coin, len(coins))
-	coinsMap[types.GetBaseCoin()] = types.Coin{ID: types.GetBaseCoinID()}
+	coinsMap[types.GetBaseCoin()] = types.Coin{ID: uint64(types.GetBaseCoinID())}
 
-	for i, _ := range coins {
-		coins[i].ID = types.CoinID(i + 1)
+	for i := range coins {
+		coins[i].ID = uint64(i + 1)
 		coinsMap[coins[i].Symbol] = coins[i]
 	}
 

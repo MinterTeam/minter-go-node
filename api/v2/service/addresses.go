@@ -58,7 +58,7 @@ func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.
 			totalStakesGroupByCoin[coin.Coin.ID] = coin.Value
 			res.Balance = append(res.Balance, &pb.AddressBalance{
 				Coin: &pb.Coin{
-					Id:     coin.Coin.ID.String(),
+					Id:     uint64(coin.Coin.ID),
 					Symbol: cState.Coins().GetCoin(coin.Coin.ID).Symbol().String(),
 				},
 				Value:    coin.Value.String(),
@@ -97,7 +97,7 @@ func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.
 			for coinID, delegatedStake := range userDelegatedStakesGroupByCoin {
 				res.Delegated = append(res.Delegated, &pb.AddressDelegatedBalance{
 					Coin: &pb.Coin{
-						Id:     coinID.String(),
+						Id:     uint64(coinID),
 						Symbol: cState.Coins().GetCoin(coinID).Symbol().String(),
 					},
 					Value:            delegatedStake.Value.String(),
@@ -125,7 +125,7 @@ func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.
 			if req.Delegated {
 				res.Total = append(res.Total, &pb.AddressBalance{
 					Coin: &pb.Coin{
-						Id:     coinID.String(),
+						Id:     uint64(coinID),
 						Symbol: cState.Coins().GetCoin(coinID).Symbol().String(),
 					},
 					Value:    stake.String(),
@@ -135,7 +135,7 @@ func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.
 			coinsBipValue.Add(coinsBipValue, balance)
 		}
 		res.BipValue = coinsBipValue.String()
-		res.TransactionCount = fmt.Sprintf("%d", cState.Accounts().GetNonce(address))
+		res.TransactionCount = uint64(cState.Accounts().GetNonce(address))
 
 		response.Addresses[addr] = &res
 	}

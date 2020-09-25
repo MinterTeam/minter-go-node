@@ -27,8 +27,8 @@ type Model struct {
 }
 
 type Multisig struct {
-	Threshold uint
-	Weights   []uint
+	Threshold uint32
+	Weights   []uint32
 	Addresses []types.Address
 }
 
@@ -47,7 +47,7 @@ func CreateMultisigAddress(owner types.Address, nonce uint64) types.Address {
 	return addr
 }
 
-func (m *Multisig) GetWeight(address types.Address) uint {
+func (m *Multisig) GetWeight(address types.Address) uint32 {
 	for i, addr := range m.Addresses {
 		if addr == address {
 			return m.Weights[i]

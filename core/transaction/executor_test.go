@@ -232,7 +232,7 @@ func TestMultiSigTx(t *testing.T) {
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 	coin := types.GetBaseCoinID()
 
-	msigAddress := cState.Accounts.CreateMultisig([]uint{1}, []types.Address{addr}, 1, 1, accounts.CreateMultisigAddress(addr, 1))
+	msigAddress := cState.Accounts.CreateMultisig([]uint32{1}, []types.Address{addr}, 1, 1, accounts.CreateMultisigAddress(addr, 1))
 	cState.Accounts.AddBalance(msigAddress, coin, helpers.BipToPip(big.NewInt(1000000)))
 
 	txData := SendData{
@@ -276,7 +276,7 @@ func TestMultiSigDoubleSignTx(t *testing.T) {
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 	coin := types.GetBaseCoinID()
 
-	msigAddress := cState.Accounts.CreateMultisig([]uint{1, 1}, []types.Address{addr, {}}, 2, 1, accounts.CreateMultisigAddress(addr, 1))
+	msigAddress := cState.Accounts.CreateMultisig([]uint32{1, 1}, []types.Address{addr, {}}, 2, 1, accounts.CreateMultisigAddress(addr, 1))
 	cState.Accounts.AddBalance(msigAddress, coin, helpers.BipToPip(big.NewInt(1000000)))
 
 	txData := SendData{
@@ -324,7 +324,7 @@ func TestMultiSigTooManySignsTx(t *testing.T) {
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 	coin := types.GetBaseCoinID()
 
-	msigAddress := cState.Accounts.CreateMultisig([]uint{1, 1}, []types.Address{addr, {}}, 2, 1, accounts.CreateMultisigAddress(addr, 1))
+	msigAddress := cState.Accounts.CreateMultisig([]uint32{1, 1}, []types.Address{addr, {}}, 2, 1, accounts.CreateMultisigAddress(addr, 1))
 	cState.Accounts.AddBalance(msigAddress, coin, helpers.BipToPip(big.NewInt(1000000)))
 
 	txData := SendData{
@@ -375,7 +375,7 @@ func TestMultiSigNotEnoughTx(t *testing.T) {
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 	coin := types.GetBaseCoinID()
 
-	msigAddress := cState.Accounts.CreateMultisig([]uint{1}, []types.Address{addr}, 2, 1, accounts.CreateMultisigAddress(addr, 1))
+	msigAddress := cState.Accounts.CreateMultisig([]uint32{1}, []types.Address{addr}, 2, 1, accounts.CreateMultisigAddress(addr, 1))
 	cState.Accounts.AddBalance(msigAddress, coin, helpers.BipToPip(big.NewInt(1000000)))
 
 	txData := SendData{
@@ -419,7 +419,7 @@ func TestMultiSigIncorrectSignsTx(t *testing.T) {
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 	coin := types.GetBaseCoinID()
 
-	msigAddress := cState.Accounts.CreateMultisig([]uint{1}, []types.Address{addr}, 1, 1, accounts.CreateMultisigAddress(addr, 1))
+	msigAddress := cState.Accounts.CreateMultisig([]uint32{1}, []types.Address{addr}, 1, 1, accounts.CreateMultisigAddress(addr, 1))
 	cState.Accounts.AddBalance(msigAddress, coin, helpers.BipToPip(big.NewInt(1000000)))
 
 	txData := SendData{

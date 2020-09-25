@@ -11,7 +11,7 @@ var minCoinReserve = helpers.BipToPip(big.NewInt(10000))
 
 type Model struct {
 	CName      string
-	CCrr       uint
+	CCrr       uint32
 	CMaxSupply *big.Int
 	CVersion   types.CoinVersion
 	CSymbol    types.CoinSymbol
@@ -38,7 +38,7 @@ func (m Model) ID() types.CoinID {
 	return m.id
 }
 
-func (m Model) Crr() uint {
+func (m Model) Crr() uint32 {
 	return m.CCrr
 }
 
