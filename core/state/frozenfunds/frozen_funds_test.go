@@ -12,7 +12,9 @@ import (
 )
 
 func TestFrozenFundsToAddModel(t *testing.T) {
-	b, mutableTree := bus.NewBus(), tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	b := bus.NewBus()
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+
 	ff, err := NewFrozenFunds(b, mutableTree)
 	if err != nil {
 		t.Fatal(err)
@@ -58,7 +60,8 @@ func TestFrozenFundsToAddModel(t *testing.T) {
 }
 
 func TestFrozenFundsToDeleteModel(t *testing.T) {
-	b, mutableTree := bus.NewBus(), tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	b := bus.NewBus()
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	ff, err := NewFrozenFunds(b, mutableTree)
 	if err != nil {
 		t.Fatal(err)
@@ -104,8 +107,9 @@ func TestFrozenFundsToDeleteModel(t *testing.T) {
 	}
 }
 
-func TestFrozenFundsToDeleteNotExistenFund(t *testing.T) {
-	b, mutableTree := bus.NewBus(), tree.NewMutableTree(0, db.NewMemDB(), 1024)
+func TestFrozenFundsToDeleteNotExistingFund(t *testing.T) {
+	b := bus.NewBus()
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	ff, err := NewFrozenFunds(b, mutableTree)
 	if err != nil {
 		t.Fatal(err)
