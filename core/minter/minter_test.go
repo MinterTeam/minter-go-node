@@ -149,7 +149,7 @@ func initTestNode(t *testing.T) (*Blockchain, *rpc.Local, *privval.FilePV) {
 	utils.MinterHome = t.TempDir()
 
 	if err := tmos.EnsureDir(utils.GetMinterHome()+"/tmdata/blockstore.db", 0777); err != nil {
-		panic(err.Error())
+		t.Fatal(err)
 	}
 
 	minterCfg := config.GetConfig()
@@ -175,7 +175,7 @@ func initTestNode(t *testing.T) (*Blockchain, *rpc.Local, *privval.FilePV) {
 	app := NewMinterBlockchain(minterCfg)
 	nodeKey, err := p2p.LoadOrGenNodeKey(cfg.NodeKeyFile())
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 
 	node, err := tmNode.NewNode(
@@ -190,11 +190,11 @@ func initTestNode(t *testing.T) (*Blockchain, *rpc.Local, *privval.FilePV) {
 	)
 
 	if err != nil {
-		panic(fmt.Sprintf("Failed to create a node: %v", err))
+		t.Fatal(fmt.Sprintf("Failed to create a node: %v", err))
 	}
 
 	if err = node.Start(); err != nil {
-		panic(fmt.Sprintf("Failed to start node: %v", err))
+		t.Fatal(fmt.Sprintf("Failed to start node: %v", err))
 	}
 
 	logger.Info("Started node", "nodeInfo", node.Switch().NodeInfo())
