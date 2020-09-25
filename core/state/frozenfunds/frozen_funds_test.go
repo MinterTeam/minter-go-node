@@ -12,7 +12,11 @@ import (
 )
 
 func TestFrozenFundsToAddModel(t *testing.T) {
-	b, mutableTree := bus.NewBus(), tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	mutableTree, err := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b := bus.NewBus()
 	ff, err := NewFrozenFunds(b, mutableTree)
 	if err != nil {
 		t.Fatal(err)
@@ -58,7 +62,11 @@ func TestFrozenFundsToAddModel(t *testing.T) {
 }
 
 func TestFrozenFundsToDeleteModel(t *testing.T) {
-	b, mutableTree := bus.NewBus(), tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	mutableTree, err := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b := bus.NewBus()
 	ff, err := NewFrozenFunds(b, mutableTree)
 	if err != nil {
 		t.Fatal(err)
@@ -105,7 +113,11 @@ func TestFrozenFundsToDeleteModel(t *testing.T) {
 }
 
 func TestFrozenFundsToDeleteNotExistenFund(t *testing.T) {
-	b, mutableTree := bus.NewBus(), tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	mutableTree, err := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b := bus.NewBus()
 	ff, err := NewFrozenFunds(b, mutableTree)
 	if err != nil {
 		t.Fatal(err)
