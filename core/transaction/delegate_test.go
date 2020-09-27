@@ -501,8 +501,9 @@ func TestDelegateData_addFromWaitlist(t *testing.T) {
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 	cState.Waitlist.AddWaitList(addr, pubkey, 0, big.NewInt(100))
+	cState.Checker.AddCoin(0, big.NewInt(0).Neg(big.NewInt(100)))
 	cState.Accounts.AddBalance(addr, 0, helpers.BipToPip(big.NewInt(1000000)))
-	cState.Checker.AddCoinVolume(0, helpers.BipToPip(big.NewInt(1000000)))
+	cState.Checker.AddCoin(0, helpers.BipToPip(big.NewInt(0).Neg(big.NewInt(1000000))))
 
 	value := big.NewInt(10000000000)
 	data := DelegateData{
