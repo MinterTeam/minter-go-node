@@ -399,7 +399,6 @@ func (c *Candidates) stakeKick(owner types.Address, value *big.Int, coin types.C
 		Coin:            coin,
 		ValidatorPubKey: pubKey,
 	})
-	c.bus.Accounts().AddBalance(owner, coin, value)
 	c.bus.Checker().AddCoin(coin, big.NewInt(0).Neg(value))
 }
 

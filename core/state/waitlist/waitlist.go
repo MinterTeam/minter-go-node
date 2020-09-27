@@ -147,6 +147,7 @@ func (wl *WaitList) AddWaitList(address types.Address, pubkey types.Pubkey, coin
 	w.AddToList(candidate.ID, coin, value)
 	wl.setToMap(address, w)
 	w.markDirty(address)
+	wl.bus.Checker().AddCoin(coin, value)
 }
 
 func (wl *WaitList) Delete(address types.Address, pubkey types.Pubkey, coin types.CoinID) {
@@ -173,7 +174,7 @@ func (wl *WaitList) Delete(address types.Address, pubkey types.Pubkey, coin type
 	w.List = items
 	wl.markDirty(address)
 	wl.setToMap(address, w)
-	wl.bus.Checker().AddCoinVolume(coin, value)
+	wl.bus.Checker().AddCoin(coin, big.NewInt(0).Neg(value))
 }
 
 func (wl *WaitList) getOrNew(address types.Address) *Model {
