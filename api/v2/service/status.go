@@ -23,6 +23,7 @@ func (s *Service) Status(context.Context, *empty.Empty) (*pb.StatusResponse, err
 
 	return &pb.StatusResponse{
 		Version:           s.version,
+		Network:           result.NodeInfo.Network,
 		LatestBlockHash:   fmt.Sprintf("%X", result.SyncInfo.LatestBlockHash),
 		LatestAppHash:     fmt.Sprintf("%X", result.SyncInfo.LatestAppHash),
 		LatestBlockHeight: uint64(result.SyncInfo.LatestBlockHeight),
