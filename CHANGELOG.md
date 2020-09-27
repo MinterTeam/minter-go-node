@@ -8,9 +8,12 @@
 - [core] Added RecreateCoin tx
 - [core] Added ChangeCoinOwner tx
 - [core] Limit validators slots to 64
-- [core] Add EditMultisigOwnersData tx
+- [core] Add EditMultisigData tx
 - [core] Add PriceVoteData tx
 - [core] Stake value calculation changes
+- [console] Added PruneBlocks command
+- [api] Marked as deprecated version of API v1
+- [api] Added Swagger UI for API v2
 
 ## 1.1.8
 

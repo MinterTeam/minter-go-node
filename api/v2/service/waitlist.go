@@ -29,6 +29,12 @@ func (s *Service) WaitList(ctx context.Context, req *pb.WaitListRequest) (*pb.Wa
 		return new(pb.WaitListResponse), status.Error(codes.NotFound, err.Error())
 	}
 
+	if req.Height != 0 {
+		cState.Lock()
+		cState.Candidates().LoadCandidates()
+		cState.Unlock()
+	}
+
 	cState.RLock()
 	defer cState.RUnlock()
 
