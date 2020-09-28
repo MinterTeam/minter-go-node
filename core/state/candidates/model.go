@@ -64,6 +64,7 @@ func (candidate *Candidate) setControl(address types.Address) {
 func (candidate *Candidate) setPublicKey(pubKey types.Pubkey) {
 	candidate.isDirty = true
 	candidate.PubKey = pubKey
+	candidate.setTmAddress()
 }
 
 func (candidate *Candidate) addUpdate(stake *stake) {
