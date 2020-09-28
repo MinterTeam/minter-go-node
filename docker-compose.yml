@@ -4,7 +4,7 @@ services:
     image: minterteam/minter:latest
     #build: .
     volumes:
-      - minter_data:/minter/data
+      - minter_data:/minter/.minter
     ports:
       - "8841:8841"
       - "127.0.0.1:3000:3000"
