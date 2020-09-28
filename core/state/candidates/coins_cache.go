@@ -29,7 +29,7 @@ func (c *coinsCache) Exists(id types.CoinID) bool {
 }
 
 func (c *coinsCache) Get(id types.CoinID) (saleReturn *big.Int, totalAmount *big.Int) {
-	return big.NewInt(0).Set(c.list[id].totalAmount), big.NewInt(0).Set(c.list[id].totalAmount)
+	return big.NewInt(0).Set(c.list[id].saleReturn), big.NewInt(0).Set(c.list[id].totalAmount)
 }
 
 func (c *coinsCache) Set(id types.CoinID, saleReturn *big.Int, totalAmount *big.Int) {
@@ -41,6 +41,6 @@ func (c *coinsCache) Set(id types.CoinID, saleReturn *big.Int, totalAmount *big.
 		c.list[id] = &coinsCacheItem{}
 	}
 
-	c.list[id].totalAmount = totalAmount
-	c.list[id].saleReturn = saleReturn
+	c.list[id].totalAmount = big.NewInt(0).Set(totalAmount)
+	c.list[id].saleReturn = big.NewInt(0).Set(saleReturn)
 }

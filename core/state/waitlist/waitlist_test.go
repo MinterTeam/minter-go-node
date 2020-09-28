@@ -3,6 +3,7 @@ package waitlist
 import (
 	"github.com/MinterTeam/minter-go-node/core/state/bus"
 	"github.com/MinterTeam/minter-go-node/core/state/candidates"
+	"github.com/MinterTeam/minter-go-node/core/state/checker"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/tree"
 	db "github.com/tendermint/tm-db"
@@ -12,6 +13,7 @@ import (
 
 func TestWaitListToGetByAddressAndPubKey(t *testing.T) {
 	b := bus.NewBus()
+	b.SetChecker(checker.NewChecker(b))
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 
 	wl, err := NewWaitList(b, mutableTree)

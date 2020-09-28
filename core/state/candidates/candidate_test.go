@@ -516,74 +516,6 @@ func TestCandidates_GetTotalStake_fromModelAndFromDB(t *testing.T) {
 	}
 }
 
-func TestCandidates_GetTotalStake_forCustomCoins(t *testing.T) {
-
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
-	b := bus.NewBus()
-	wl, err := waitlist.NewWaitList(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
-	b.SetEvents(eventsdb.NewEventsStore(db.NewMemDB()))
-	b.SetWaitList(waitlist.NewBus(wl))
-	accs, err := accounts.NewAccounts(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
-	b.SetAccounts(accounts.NewBus(accs))
-	b.SetChecker(checker.NewChecker(b))
-	candidates, err := NewCandidates(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	coinsState, err := coins.NewCoins(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10)
-	coinsState.Create(1,
-		types.StrToCoinSymbol("AAA"),
-		"AAACOIN",
-		helpers.BipToPip(big.NewInt(10)),
-		10,
-		helpers.BipToPip(big.NewInt(10000)),
-		big.NewInt(0).Exp(big.NewInt(10), big.NewInt(10+18), nil),
-		nil)
-
-	err = coinsState.Commit()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	symbol := coinsState.GetCoinBySymbol(types.StrToCoinSymbol("AAA"), 0)
-	if symbol == nil {
-		t.Fatal("coin not found")
-	}
-
-	var stakes []types.Stake
-	for i := 0; i < 50; i++ {
-		value := strconv.Itoa(i + 2000)
-		stakes = append(stakes, types.Stake{
-			Owner:    types.StringToAddress(strconv.Itoa(i)),
-			Coin:     uint64(symbol.ID()),
-			Value:    value,
-			BipValue: "0",
-		})
-	}
-	candidates.SetStakes([32]byte{4}, stakes, nil)
-
-	candidates.RecalculateStakes(0)
-
-	candidates.LoadCandidates()
-	totalStake := candidates.GetTotalStake([32]byte{4})
-	totalStakeString := totalStake.String()
-	if totalStakeString != "9802420350703877401368" {
-		t.Fatalf("total stake %s", totalStakeString)
-	}
-}
-
 func TestCandidates_Export(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	candidates, err := NewCandidates(bus.NewBus(), mutableTree)
@@ -953,7 +885,6 @@ func TestCandidates_IsNewCandidateStakeSufficient(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// todo: validators.GetCandidatesCountForBlock(1)
 	if !candidates.IsNewCandidateStakeSufficient(0, big.NewInt(1000), 1) {
 		t.Log("is not new candidate stake sufficient")
 	}
@@ -1145,5 +1076,160 @@ func TestCandidate_GetFilteredUpdates(t *testing.T) {
 
 	if candidate.updates[0].Value.String() != "200" {
 		t.Fatal("error merge updates")
+	}
+}
+
+func TestCandidates_CalculateBipValue_RecalculateStakes_GetTotalStake(t *testing.T) {
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	b := bus.NewBus()
+	b.SetChecker(checker.NewChecker(b))
+	busCoins, err := coins.NewCoins(b, mutableTree)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b.SetCoins(coins.NewBus(busCoins))
+	candidates, err := NewCandidates(b, mutableTree)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	coinsState, err := coins.NewCoins(b, mutableTree)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	candidates.Create([20]byte{1}, [20]byte{1}, [20]byte{1}, [32]byte{1}, 1)
+	candidates.SetStakes([32]byte{1}, []types.Stake{
+		{
+			Owner:    types.Address{1},
+			Coin:     52,
+			Value:    "27331500301898443574821601",
+			BipValue: "0",
+		},
+		{
+			Owner:    types.Address{1},
+			Coin:     52,
+			Value:    "26788352158593847436109305",
+			BipValue: "0",
+		},
+		{
+			Owner:    types.Address{1},
+			Coin:     52,
+			Value:    "23056159980819190092008573",
+			BipValue: "0",
+		},
+		{
+			Owner:    types.Address{1},
+			Coin:     52,
+			Value:    "11588709101209768903338862",
+			BipValue: "0",
+		},
+		{
+			Owner:    types.Address{1},
+			Coin:     52,
+			Value:    "10699458018244407488345007",
+			BipValue: "0",
+		},
+		{
+			Owner:    types.Address{1},
+			Coin:     52,
+			Value:    "10178615801247206484340203",
+			BipValue: "0",
+		},
+		{
+			Owner:    types.Address{1},
+			Coin:     52,
+			Value:    "9695040709408605598614475",
+			BipValue: "0",
+		},
+		{
+			Owner:    types.Address{1},
+			Coin:     52,
+			Value:    "9311613733840163086812673",
+			BipValue: "0",
+		},
+		{
+			Owner:    types.Address{1},
+			Coin:     52,
+			Value:    "8035237015568850680085714",
+			BipValue: "0",
+		},
+		{
+			Owner:    types.Address{1},
+			Coin:     52,
+			Value:    "7751636678470495902806639",
+			BipValue: "0",
+		},
+		{
+			Owner:    types.Address{1},
+			Coin:     52,
+			Value:    "7729118857616059555215844",
+			BipValue: "0",
+		},
+		{
+			Owner:    types.Address{1},
+			Coin:     52,
+			Value:    "7246351659896715230790480",
+			BipValue: "0",
+		},
+		{
+			Owner:    types.Address{1},
+			Coin:     52,
+			Value:    "5634000000000000000000000",
+			BipValue: "0",
+		},
+		{
+			Owner:    types.Address{1},
+			Coin:     52,
+			Value:    "5111293424492290525817483",
+			BipValue: "0",
+		},
+		{
+			Owner:    types.Address{1},
+			Coin:     52,
+			Value:    "4636302767358508700208179",
+			BipValue: "0",
+		},
+		{
+			Owner:    types.Address{1},
+			Coin:     52,
+			Value:    "4375153667350433703873779",
+			BipValue: "0",
+		},
+		{
+			Owner:    types.Address{1},
+			Coin:     52,
+			Value:    "6468592759016388938414535",
+			BipValue: "0",
+		},
+	}, nil)
+	volume, _ := big.NewInt(0).SetString("235304453408778922901904166", 10)
+	reserve, _ := big.NewInt(0).SetString("3417127836274022127064945", 10)
+	maxSupply, _ := big.NewInt(0).SetString("1000000000000000000000000000000000", 10)
+	coinsState.Create(52,
+		types.StrToCoinSymbol("ONLY1"),
+		"ONLY1",
+		volume,
+		70,
+		reserve,
+		maxSupply,
+		nil)
+
+	amount, _ := big.NewInt(0).SetString("407000000000000000000000", 10)
+	cache := newCoinsCache()
+
+	bipValue := candidates.calculateBipValue(52, amount, false, true, cache)
+	if bipValue.Sign() < 0 {
+		t.Fatalf("%s", bipValue.String())
+	}
+	bipValue = candidates.calculateBipValue(52, amount, false, true, cache)
+	if bipValue.Sign() < 0 {
+		t.Fatalf("%s", bipValue.String())
+	}
+
+	candidates.RecalculateStakes(0)
+	totalStake := candidates.GetTotalStake([32]byte{1})
+	if totalStake.String() != "2435386873327199834002556" {
+		t.Fatalf("total stake %s", totalStake.String())
 	}
 }
