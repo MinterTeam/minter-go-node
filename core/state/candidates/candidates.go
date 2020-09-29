@@ -37,7 +37,7 @@ const (
 )
 
 var (
-	minValidatorBipStake = big.NewInt(1000)
+	minValidatorBipStake = helpers.BipToPip(big.NewInt(1000))
 )
 
 // RCandidates interface represents Candidates state

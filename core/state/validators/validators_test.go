@@ -12,6 +12,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/state/candidates"
 	"github.com/MinterTeam/minter-go-node/core/state/checker"
 	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/tree"
 	db "github.com/tendermint/tm-db"
 	"math/big"
@@ -244,8 +245,8 @@ func TestValidators_PayRewards(t *testing.T) {
 		{
 			Owner:    [20]byte{1},
 			Coin:     0,
-			Value:    "10000",
-			BipValue: "10000",
+			Value:    "1000000000000000000000",
+			BipValue: "1000000000000000000000",
 		},
 	}, nil)
 	candidatesS.RecalculateStakes(0)
@@ -308,8 +309,8 @@ func TestValidators_SetValidatorAbsent(t *testing.T) {
 		{
 			Owner:    [20]byte{1},
 			Coin:     0,
-			Value:    "10000",
-			BipValue: "10000",
+			Value:    "1000000000000000000000",
+			BipValue: "1000000000000000000000",
 		},
 	}, nil)
 	candidatesS.RecalculateStakes(0)
@@ -402,7 +403,7 @@ func TestValidators_Export(t *testing.T) {
 	newValidator := NewValidator(
 		[32]byte{4},
 		types.NewBitArray(ValidatorMaxAbsentWindow),
-		big.NewInt(1000000),
+		helpers.BipToPip(big.NewInt(1000000)),
 		big.NewInt(100),
 		true,
 		true,
@@ -420,8 +421,8 @@ func TestValidators_Export(t *testing.T) {
 		{
 			Owner:    [20]byte{1},
 			Coin:     0,
-			Value:    "10000",
-			BipValue: "10000",
+			Value:    "1000000000000000000000",
+			BipValue: "1000000000000000000000",
 		},
 	}, nil)
 	candidatesS.RecalculateStakes(0)
@@ -440,7 +441,7 @@ func TestValidators_Export(t *testing.T) {
 		t.Fatalf("version %d", version)
 	}
 
-	if fmt.Sprintf("%X", hash) != "9387AD1250A4943193BCB44AFF1F4EBFEC626B53FD5A980181AFD7E03079862E" {
+	if fmt.Sprintf("%X", hash) != "1D50F5F03FAB5D800DBF8D9254DDC68AEAC589BD30F2839A3A5B68887CE0E34C" {
 		t.Fatalf("hash %X", hash)
 	}
 
@@ -452,7 +453,7 @@ func TestValidators_Export(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if string(bytes) != "[{\"total_bip_stake\":\"10000\",\"public_key\":\"Mp0400000000000000000000000000000000000000000000000000000000000000\",\"accum_reward\":\"100\",\"absent_times\":\"________________________\"}]" {
+	if string(bytes) != "[{\"total_bip_stake\":\"1000000000000000000000\",\"public_key\":\"Mp0400000000000000000000000000000000000000000000000000000000000000\",\"accum_reward\":\"100\",\"absent_times\":\"________________________\"}]" {
 		t.Log(string(bytes))
 		t.Fatal("not equal JSON")
 	}

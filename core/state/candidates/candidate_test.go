@@ -1006,8 +1006,8 @@ func TestCandidates_GetNewCandidates(t *testing.T) {
 		{
 			Owner:    [20]byte{1},
 			Coin:     0,
-			Value:    "1000000000000000",
-			BipValue: "1000000000000000",
+			Value:    "1000000000000000000000",
+			BipValue: "1000000000000000000000",
 		},
 	}, nil)
 	candidates.SetOnline([32]byte{4})
@@ -1017,8 +1017,8 @@ func TestCandidates_GetNewCandidates(t *testing.T) {
 		{
 			Owner:    [20]byte{1},
 			Coin:     0,
-			Value:    "1000000000000000",
-			BipValue: "1000000000000000",
+			Value:    "1000000000000000000000",
+			BipValue: "1000000000000000000000",
 		},
 	}, nil)
 	candidates.SetOnline([32]byte{5})
