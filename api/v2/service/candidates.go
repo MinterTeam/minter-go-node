@@ -37,6 +37,10 @@ func (s *Service) Candidates(ctx context.Context, req *pb.CandidatesRequest) (*p
 			return new(pb.CandidatesResponse), timeoutStatus.Err()
 		}
 
+		if req.Status != pb.CandidateStatus(0) && req.Status != pb.CandidateStatus(candidate.Status) {
+			continue
+		}
+
 		response.Candidates = append(response.Candidates, makeResponseCandidate(cState, candidate, req.IncludeStakes))
 	}
 
