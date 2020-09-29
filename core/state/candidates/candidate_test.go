@@ -13,6 +13,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/tree"
+	"github.com/tendermint/tendermint/crypto/ed25519"
 	db "github.com/tendermint/tm-db"
 	"math/big"
 	"strconv"
@@ -154,6 +155,13 @@ func TestCandidates_Commit_changePubKeyAndCheckBlockList(t *testing.T) {
 	candidate := candidates.GetCandidate([32]byte{5})
 	if candidate == nil {
 		t.Fatal("candidate not found")
+	}
+	var pubkey ed25519.PubKeyEd25519
+	copy(pubkey[:], types.Pubkey{5}.Bytes())
+	var address types.TmAddress
+	copy(address[:], pubkey.Address().Bytes())
+	if *(candidate.tmAddress) != address {
+		t.Fatal("tmAddress not change")
 	}
 	if candidates.PubKey(candidate.ID) != [32]byte{5} {
 		t.Fatal("candidate map ids and pubKeys invalid")
