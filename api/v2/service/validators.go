@@ -17,7 +17,7 @@ func (s *Service) Validators(ctx context.Context, req *pb.ValidatorsRequest) (*p
 
 	tmVals, err := s.client.Validators(&height, 1, 100)
 	if err != nil {
-		return new(pb.ValidatorsResponse), status.Error(codes.FailedPrecondition, err.Error())
+		return new(pb.ValidatorsResponse), status.Error(codes.Internal, err.Error())
 	}
 
 	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
