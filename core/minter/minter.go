@@ -444,7 +444,10 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 	}
 
 	// Flush events db
-	_ = app.eventsDB.CommitEvents()
+	err = app.eventsDB.CommitEvents()
+	if err != nil {
+		panic(err)
+	}
 
 	// Persist application hash and height
 	app.appDB.SetLastBlockHash(hash)
