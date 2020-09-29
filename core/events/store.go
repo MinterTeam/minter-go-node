@@ -39,6 +39,7 @@ func NewEventsStore(db db.DB) IEventsDB {
 	codec.RegisterConcrete(&reward{}, "reward", nil)
 	codec.RegisterConcrete(&slash{}, "slash", nil)
 	codec.RegisterConcrete(&unbond{}, "unbond", nil)
+	codec.RegisterConcrete(&stakeKick{}, "stakeKick", nil)
 
 	return &eventsStore{
 		cdc:       codec,
@@ -117,7 +118,7 @@ func (store *eventsStore) CommitEvents() error {
 	store.Lock()
 	defer store.Unlock()
 	if err := store.db.Set(uint32ToBytes(store.pending.height), bytes); err != nil {
-		panic(err)
+		return err
 	}
 	return nil
 }
