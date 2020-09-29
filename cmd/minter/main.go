@@ -38,8 +38,8 @@ func main() {
 	cmd.ExportCommand.Flags().Uint64("height", 0, "export height")
 	cmd.ExportCommand.Flags().Uint64("start-height", 0, "height for starting a new chain")
 	cmd.ExportCommand.Flags().Bool("indent", false, "using indent")
-	cmd.ExportCommand.Flags().String("chain_id", "", "export chain id")
-	cmd.ExportCommand.Flags().Duration("genesis_time", 0, "export height")
+	cmd.ExportCommand.Flags().String("chain-id", "", "export chain id")
+	cmd.ExportCommand.Flags().Duration("genesis-time", 0, "export height")
 
 	if err := rootCmd.ExecuteContext(ctx); err != nil {
 		panic(err)

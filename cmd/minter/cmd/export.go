@@ -46,12 +46,12 @@ func export(cmd *cobra.Command, args []string) error {
 		log.Panicf("Cannot parse start-height: %s", err)
 	}
 
-	chainID, err := cmd.Flags().GetString("chain_id")
+	chainID, err := cmd.Flags().GetString("chain-id")
 	if err != nil {
 		log.Panicf("Cannot parse chain id: %s", err)
 	}
 
-	genesisTime, err := cmd.Flags().GetDuration("genesis_time")
+	genesisTime, err := cmd.Flags().GetDuration("genesis-time")
 	if err != nil {
 		log.Panicf("Cannot parse genesis time: %s", err)
 	}
