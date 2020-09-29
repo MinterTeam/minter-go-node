@@ -11,13 +11,13 @@ type ValidatorResponse struct {
 
 type ResponseValidators []ValidatorResponse
 
-func Validators(height uint64, page, perPage int) (*ResponseValidators, error) {
+func Validators(height uint64) (*ResponseValidators, error) {
 	if height == 0 {
 		height = blockchain.Height()
 	}
 
 	h := int64(height)
-	tmVals, err := client.Validators(&h, page, perPage)
+	tmVals, err := client.Validators(&h, 1, 100)
 	if err != nil {
 		return nil, err
 	}

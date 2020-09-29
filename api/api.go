@@ -34,7 +34,7 @@ var Routes = map[string]*rpcserver.RPCFunc{
 	"status":                 rpcserver.NewRPCFunc(Status, ""),
 	"candidates":             rpcserver.NewRPCFunc(Candidates, "height,include_stakes"),
 	"candidate":              rpcserver.NewRPCFunc(Candidate, "pub_key,height"),
-	"validators":             rpcserver.NewRPCFunc(Validators, "height,page,perPage"),
+	"validators":             rpcserver.NewRPCFunc(Validators, "height"),
 	"address":                rpcserver.NewRPCFunc(Address, "address,height"),
 	"addresses":              rpcserver.NewRPCFunc(Addresses, "addresses,height"),
 	"send_transaction":       rpcserver.NewRPCFunc(SendTransaction, "tx"),
