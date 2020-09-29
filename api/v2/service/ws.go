@@ -13,19 +13,19 @@ import (
 )
 
 const (
-	SubscribeTimeout = 15 * time.Second
+	subscribeTimeout = 15 * time.Second
 )
 
 // Subscribe returns a subscription for events by query.
 func (s *Service) Subscribe(request *pb.SubscribeRequest, stream pb.ApiService_SubscribeServer) error {
 
 	if s.client.NumClients() >= s.minterCfg.RPC.MaxSubscriptionClients {
-		return status.Error(codes.Internal, fmt.Sprintf("max_subscription_clients %d reached", s.minterCfg.RPC.MaxSubscriptionClients))
+		return status.Error(codes.Canceled, fmt.Sprintf("max_subscription_clients %d reached", s.minterCfg.RPC.MaxSubscriptionClients))
 	}
 
 	s.client.Logger.Info("Subscribe to query", "query", request.Query)
 
-	ctx, cancel := context.WithTimeout(stream.Context(), SubscribeTimeout)
+	ctx, cancel := context.WithTimeout(stream.Context(), subscribeTimeout)
 	defer cancel()
 	subscriber := uuid.New().String()
 	sub, err := s.client.Subscribe(ctx, subscriber, request.Query)
@@ -41,7 +41,7 @@ func (s *Service) Subscribe(request *pb.SubscribeRequest, stream pb.ApiService_S
 	for {
 		select {
 		case <-ctx.Done():
-			return status.FromContextError(stream.Context().Err()).Err()
+			return status.FromContextError(ctx.Err()).Err()
 		case msg, ok := <-sub:
 			if !ok {
 				return nil
