@@ -18,12 +18,12 @@ import (
 func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinSellAllRequest) (*pb.EstimateCoinSellAllResponse, error) {
 	valueToSell, ok := big.NewInt(0).SetString(req.ValueToSell, 10)
 	if !ok {
-		return new(pb.EstimateCoinSellAllResponse), status.Error(codes.InvalidArgument, "Value to sell not specified")
+		return nil, status.Error(codes.InvalidArgument, "Value to sell not specified")
 	}
 
 	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {
-		return new(pb.EstimateCoinSellAllResponse), status.Error(codes.NotFound, err.Error())
+		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
 	cState.RLock()

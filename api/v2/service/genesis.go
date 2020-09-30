@@ -14,7 +14,7 @@ import (
 func (s *Service) Genesis(ctx context.Context, _ *empty.Empty) (*pb.GenesisResponse, error) {
 	result, err := s.client.Genesis()
 	if err != nil {
-		return new(pb.GenesisResponse), status.Error(codes.FailedPrecondition, err.Error())
+		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
 
 	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
@@ -24,7 +24,7 @@ func (s *Service) Genesis(ctx context.Context, _ *empty.Empty) (*pb.GenesisRespo
 	var appState pb.GenesisResponse_AppState
 	err = protojson.Unmarshal(result.Genesis.AppState, &appState)
 	if err != nil {
-		return new(pb.GenesisResponse), status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {

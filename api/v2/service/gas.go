@@ -19,7 +19,7 @@ func (s *Service) MinGasPrice(context.Context, *empty.Empty) (*pb.MinGasPriceRes
 func (s *Service) MaxGasPrice(ctx context.Context, req *pb.MaxGasPriceRequest) (*pb.MaxGasPriceResponse, error) {
 	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {
-		return new(pb.MaxGasPriceResponse), status.Error(codes.NotFound, err.Error())
+		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
 	return &pb.MaxGasPriceResponse{

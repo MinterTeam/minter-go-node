@@ -15,7 +15,7 @@ import (
 func (s *Service) Transactions(ctx context.Context, req *pb.TransactionsRequest) (*pb.TransactionsResponse, error) {
 	rpcResult, err := s.client.TxSearch(req.Query, false, int(req.Page), int(req.PerPage), "desc")
 	if err != nil {
-		return new(pb.TransactionsResponse), status.Error(codes.FailedPrecondition, err.Error())
+		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
 
 	lenTx := len(rpcResult.Txs)
@@ -24,7 +24,7 @@ func (s *Service) Transactions(ctx context.Context, req *pb.TransactionsRequest)
 
 		cState, err := s.blockchain.GetStateForHeight(uint64(rpcResult.Txs[0].Height))
 		if err != nil {
-			return new(pb.TransactionsResponse), status.Error(codes.NotFound, err.Error())
+			return nil, status.Error(codes.NotFound, err.Error())
 		}
 		for _, tx := range rpcResult.Txs {
 
@@ -42,7 +42,7 @@ func (s *Service) Transactions(ctx context.Context, req *pb.TransactionsRequest)
 
 			data, err := encode(decodedTx.GetDecodedData(), cState.Coins())
 			if err != nil {
-				return new(pb.TransactionsResponse), status.Error(codes.Internal, err.Error())
+				return nil, status.Error(codes.Internal, err.Error())
 			}
 
 			result = append(result, &pb.TransactionResponse{

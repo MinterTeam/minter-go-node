@@ -34,12 +34,12 @@ func (s *Service) Events(ctx context.Context, req *pb.EventsRequest) (*pb.Events
 
 		b, err := json.Marshal(event)
 		if err != nil {
-			return new(pb.EventsResponse), status.Error(codes.Internal, err.Error())
+			return nil, status.Error(codes.Internal, err.Error())
 		}
 
 		data, err := encodeToStruct(b)
 		if err != nil {
-			return new(pb.EventsResponse), status.Error(codes.Internal, err.Error())
+			return nil, status.Error(codes.Internal, err.Error())
 		}
 
 		var t string

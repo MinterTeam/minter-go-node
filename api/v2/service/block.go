@@ -24,12 +24,12 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 	height := int64(req.Height)
 	block, err := s.client.Block(&height)
 	if err != nil {
-		return new(pb.BlockResponse), status.Error(codes.NotFound, "Block not found")
+		return nil, status.Error(codes.NotFound, "Block not found")
 	}
 
 	blockResults, err := s.client.BlockResults(&height)
 	if err != nil {
-		return new(pb.BlockResponse), status.Error(codes.NotFound, "Block results not found")
+		return nil, status.Error(codes.NotFound, "Block results not found")
 	}
 
 	valHeight := height - 1
@@ -57,7 +57,7 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 
 		cState, err = s.blockchain.GetStateForHeight(uint64(height))
 		if err != nil {
-			return new(pb.BlockResponse), status.Error(codes.NotFound, err.Error())
+			return nil, status.Error(codes.NotFound, err.Error())
 		}
 
 		response.Transactions, err = s.blockTransaction(block, blockResults, cState.Coins())
@@ -71,7 +71,7 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 
 		tmValidators, err := s.client.Validators(&valHeight, 1, 100)
 		if err != nil {
-			return new(pb.BlockResponse), status.Error(codes.Internal, err.Error())
+			return nil, status.Error(codes.Internal, err.Error())
 		}
 		totalValidators = tmValidators.Validators
 
@@ -118,7 +118,7 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 			if cState == nil {
 				cState, err = s.blockchain.GetStateForHeight(uint64(height))
 				if err != nil {
-					return new(pb.BlockResponse), status.Error(codes.NotFound, err.Error())
+					return nil, status.Error(codes.NotFound, err.Error())
 				}
 			}
 
@@ -136,7 +136,7 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 			if len(totalValidators) == 0 {
 				tmValidators, err := s.client.Validators(&valHeight, 1, 100)
 				if err != nil {
-					return new(pb.BlockResponse), status.Error(codes.Internal, err.Error())
+					return nil, status.Error(codes.Internal, err.Error())
 				}
 				totalValidators = tmValidators.Validators
 			}

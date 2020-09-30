@@ -14,7 +14,7 @@ import (
 func (s *Service) Status(context.Context, *empty.Empty) (*pb.StatusResponse, error) {
 	result, err := s.client.Status()
 	if err != nil {
-		return new(pb.StatusResponse), status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	cState := s.blockchain.CurrentState()

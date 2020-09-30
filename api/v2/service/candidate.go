@@ -15,18 +15,18 @@ import (
 // Candidate returns candidate’s info by provided public_key. It will respond with 404 code if candidate is not found.
 func (s *Service) Candidate(ctx context.Context, req *pb.CandidateRequest) (*pb.CandidateResponse, error) {
 	if len(req.PublicKey) < 3 {
-		return new(pb.CandidateResponse), status.Error(codes.InvalidArgument, "invalid public_key")
+		return nil, status.Error(codes.InvalidArgument, "invalid public_key")
 	}
 	decodeString, err := hex.DecodeString(req.PublicKey[2:])
 	if err != nil {
-		return new(pb.CandidateResponse), status.Error(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	pubkey := types.BytesToPubkey(decodeString)
 
 	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {
-		return new(pb.CandidateResponse), status.Error(codes.NotFound, err.Error())
+		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
 	if req.Height != 0 {
@@ -41,7 +41,7 @@ func (s *Service) Candidate(ctx context.Context, req *pb.CandidateRequest) (*pb.
 
 	candidate := cState.Candidates().GetCandidate(pubkey)
 	if candidate == nil {
-		return new(pb.CandidateResponse), status.Error(codes.NotFound, "Candidate not found")
+		return nil, status.Error(codes.NotFound, "Candidate not found")
 	}
 
 	result := makeResponseCandidate(cState, candidate, true)
