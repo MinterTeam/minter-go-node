@@ -140,6 +140,7 @@ func (s *AppState) Verify() error {
 		if _, exists := coins[coin.Symbol]; exists {
 			return fmt.Errorf("duplicated coin %s", coin.Symbol)
 		}
+
 		coins[coin.Symbol] = struct{}{}
 
 		// check coins' volume
