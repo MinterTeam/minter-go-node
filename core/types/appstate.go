@@ -157,6 +157,12 @@ func (s *AppState) Verify() error {
 					volume.Add(volume, helpers.StringToBigInt(stake.Value))
 				}
 			}
+
+			for _, stake := range candidate.Updates {
+				if stake.Coin == coin.ID {
+					volume.Add(volume, helpers.StringToBigInt(stake.Value))
+				}
+			}
 		}
 
 		for _, account := range s.Accounts {
