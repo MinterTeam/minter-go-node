@@ -28,16 +28,14 @@ func (s *Service) Candidates(ctx context.Context, req *pb.CandidatesRequest) (*p
 
 	candidates := cState.Candidates().GetCandidates()
 
-	response := &pb.CandidatesResponse{
-		Candidates: make([]*pb.CandidateResponse, 0, len(candidates)),
-	}
+	response := &pb.CandidatesResponse{}
 	for _, candidate := range candidates {
 
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
 			return new(pb.CandidatesResponse), timeoutStatus.Err()
 		}
 
-		if req.Status != pb.CandidateStatus(0) && req.Status != pb.CandidateStatus(candidate.Status) {
+		if req.Status != pb.CandidatesRequest_all && req.Status != pb.CandidatesRequest_CandidateStatus(candidate.Status) {
 			continue
 		}
 

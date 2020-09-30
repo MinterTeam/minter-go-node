@@ -62,9 +62,9 @@ func EstimateCoinSell(coinToSell, coinToBuy string, valueToSell *big.Int, height
 
 	switch {
 	case coinFrom.ID().IsBaseCoin():
-		result = formula.CalculatePurchaseReturn(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), valueToSell)
+		result = formula.CalculatePurchaseReturn(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), valueToSell)
 	case coinTo.ID().IsBaseCoin():
-		result = formula.CalculateSaleReturn(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), valueToSell)
+		result = formula.CalculateSaleReturn(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), valueToSell)
 	default:
 		basecoinValue := formula.CalculateSaleReturn(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), valueToSell)
 		result = formula.CalculatePurchaseReturn(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), basecoinValue)
