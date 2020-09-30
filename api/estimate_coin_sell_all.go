@@ -15,7 +15,7 @@ type EstimateCoinSellAllResponse struct {
 }
 
 // EstimateCoinSellAll returns an estimate of sell all coin transaction
-func EstimateCoinSellAll(coinToSell, coinToBuy string, valueToSell *big.Int, gasPrice uint64, height int) (*EstimateCoinSellAllResponse,
+func EstimateCoinSellAll(coinToSell, coinToBuy string, valueToSell *big.Int, height int) (*EstimateCoinSellAllResponse,
 	error) {
 	cState, err := GetStateForHeight(height)
 	if err != nil {
@@ -24,10 +24,6 @@ func EstimateCoinSellAll(coinToSell, coinToBuy string, valueToSell *big.Int, gas
 
 	cState.RLock()
 	defer cState.RUnlock()
-
-	if gasPrice < 1 {
-		gasPrice = 1
-	}
 
 	coinFrom := cState.Coins().GetCoinBySymbol(types.StrToCoinSymbol(coinToSell), types.GetVersionFromSymbol(coinToSell))
 	if coinFrom == nil {
@@ -52,13 +48,13 @@ func EstimateCoinSellAll(coinToSell, coinToBuy string, valueToSell *big.Int, gas
 	switch {
 	case coinFrom.ID().IsBaseCoin():
 		valueToSell.Sub(valueToSell, commission)
-		if valueToSell.Cmp(big.NewInt(0)) != 1 {
+		if valueToSell.Sign() != 1 {
 			return nil, rpctypes.RPCError{Code: 400, Message: "Not enough coins to pay commission"}
 		}
 
-		result = formula.CalculatePurchaseReturn(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), valueToSell)
+		result = formula.CalculatePurchaseReturn(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), valueToSell)
 	case coinTo.ID().IsBaseCoin():
-		result = formula.CalculateSaleReturn(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), valueToSell)
+		result = formula.CalculateSaleReturn(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), valueToSell)
 
 		result.Sub(result, commission)
 		if result.Cmp(big.NewInt(0)) != 1 {

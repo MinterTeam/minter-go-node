@@ -16,6 +16,11 @@ import (
 
 // EstimateCoinBuy return estimate of buy coin transaction.
 func (s *Service) EstimateCoinBuy(ctx context.Context, req *pb.EstimateCoinBuyRequest) (*pb.EstimateCoinBuyResponse, error) {
+	valueToBuy, ok := big.NewInt(0).SetString(req.ValueToBuy, 10)
+	if !ok {
+		return new(pb.EstimateCoinBuyResponse), status.Error(codes.InvalidArgument, "Value to buy not specified")
+	}
+
 	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {
 		return new(pb.EstimateCoinBuyResponse), status.Error(codes.NotFound, err.Error())
@@ -57,8 +62,7 @@ func (s *Service) EstimateCoinBuy(ctx context.Context, req *pb.EstimateCoinBuyRe
 			transaction.EncodeError(code.NewCrossConvert(coinToSell.String(), cState.Coins().GetCoin(coinToSell).Symbol().String(), coinToBuy.String(), cState.Coins().GetCoin(coinToBuy).Symbol().String())))
 	}
 
-	commissionInBaseCoin := big.NewInt(commissions.ConvertTx)
-	commissionInBaseCoin.Mul(commissionInBaseCoin, transaction.CommissionMultiplier)
+	commissionInBaseCoin := big.NewInt(0).Mul(big.NewInt(commissions.ConvertTx), transaction.CommissionMultiplier)
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
 	coinFrom := cState.Coins().GetCoin(coinToSell)
@@ -81,24 +85,20 @@ func (s *Service) EstimateCoinBuy(ctx context.Context, req *pb.EstimateCoinBuyRe
 		commission = formula.CalculateSaleAmount(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), commissionInBaseCoin)
 	}
 
-	valueToBuy, ok := big.NewInt(0).SetString(req.ValueToBuy, 10)
-	if !ok {
-		return new(pb.EstimateCoinBuyResponse), status.Error(codes.InvalidArgument, "Value to buy not specified")
-	}
-
 	value := valueToBuy
-	if !coinToSell.IsBaseCoin() {
-		value = formula.CalculatePurchaseAmount(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), valueToBuy)
-		if errResp := transaction.CheckReserveUnderflow(coinFrom, value); errResp != nil {
-			return new(pb.EstimateCoinBuyResponse), s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
-		}
-	}
 
 	if !coinToBuy.IsBaseCoin() {
 		if errResp := transaction.CheckForCoinSupplyOverflow(coinTo, value); errResp != nil {
 			return new(pb.EstimateCoinBuyResponse), s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
 		}
-		value = formula.CalculateSaleAmount(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), value)
+		value = formula.CalculatePurchaseAmount(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), value)
+	}
+
+	if !coinToSell.IsBaseCoin() {
+		value = formula.CalculateSaleAmount(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), valueToBuy)
+		if errResp := transaction.CheckReserveUnderflow(coinFrom, value); errResp != nil {
+			return new(pb.EstimateCoinBuyResponse), s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
+		}
 	}
 
 	return &pb.EstimateCoinBuyResponse{

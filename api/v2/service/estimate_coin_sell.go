@@ -16,6 +16,11 @@ import (
 
 // EstimateCoinSell return estimate of sell coin transaction.
 func (s *Service) EstimateCoinSell(ctx context.Context, req *pb.EstimateCoinSellRequest) (*pb.EstimateCoinSellResponse, error) {
+	valueToSell, ok := big.NewInt(0).SetString(req.ValueToSell, 10)
+	if !ok {
+		return new(pb.EstimateCoinSellResponse), status.Error(codes.InvalidArgument, "Value to sell not specified")
+	}
+
 	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {
 		return new(pb.EstimateCoinSellResponse), status.Error(codes.NotFound, err.Error())
@@ -57,13 +62,8 @@ func (s *Service) EstimateCoinSell(ctx context.Context, req *pb.EstimateCoinSell
 			transaction.EncodeError(code.NewCrossConvert(coinToSell.String(), cState.Coins().GetCoin(coinToSell).Symbol().String(), coinToBuy.String(), cState.Coins().GetCoin(coinToBuy).Symbol().String())))
 	}
 
-	commissionInBaseCoin := big.NewInt(commissions.ConvertTx)
-	commissionInBaseCoin.Mul(commissionInBaseCoin, transaction.CommissionMultiplier)
+	commissionInBaseCoin := big.NewInt(0).Mul(big.NewInt(commissions.ConvertTx), transaction.CommissionMultiplier)
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
-	valueToSell, ok := big.NewInt(0).SetString(req.ValueToSell, 10)
-	if !ok {
-		return new(pb.EstimateCoinSellResponse), status.Error(codes.InvalidArgument, "Value to sell not specified")
-	}
 
 	coinFrom := cState.Coins().GetCoin(coinToSell)
 	coinTo := cState.Coins().GetCoin(coinToBuy)

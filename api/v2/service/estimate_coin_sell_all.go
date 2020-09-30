@@ -16,6 +16,11 @@ import (
 
 // EstimateCoinSellAll return estimate of sell all coin transaction.
 func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinSellAllRequest) (*pb.EstimateCoinSellAllResponse, error) {
+	valueToSell, ok := big.NewInt(0).SetString(req.ValueToSell, 10)
+	if !ok {
+		return new(pb.EstimateCoinSellAllResponse), status.Error(codes.InvalidArgument, "Value to sell not specified")
+	}
+
 	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {
 		return new(pb.EstimateCoinSellAllResponse), status.Error(codes.NotFound, err.Error())
@@ -23,16 +28,6 @@ func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinS
 
 	cState.RLock()
 	defer cState.RUnlock()
-
-	gasPrice := req.GasPrice
-	if gasPrice < 1 {
-		gasPrice = 1
-	}
-
-	valueToSell, ok := big.NewInt(0).SetString(req.ValueToSell, 10)
-	if !ok {
-		return new(pb.EstimateCoinSellAllResponse), status.Error(codes.InvalidArgument, "Value to sell not specified")
-	}
 
 	var coinToBuy types.CoinID
 	if req.GetCoinToBuy() != "" {
@@ -68,8 +63,7 @@ func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinS
 			transaction.EncodeError(code.NewCrossConvert(coinToSell.String(), cState.Coins().GetCoin(coinToSell).Symbol().String(), coinToBuy.String(), cState.Coins().GetCoin(coinToBuy).Symbol().String())))
 	}
 
-	commissionInBaseCoin := big.NewInt(commissions.ConvertTx)
-	commissionInBaseCoin.Mul(commissionInBaseCoin, transaction.CommissionMultiplier)
+	commissionInBaseCoin := big.NewInt(0).Mul(big.NewInt(commissions.ConvertTx), transaction.CommissionMultiplier)
 
 	coinFrom := cState.Coins().GetCoin(coinToSell)
 	coinTo := cState.Coins().GetCoin(coinToBuy)
@@ -98,6 +92,10 @@ func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinS
 	if !coinToBuy.IsBaseCoin() {
 		if errResp := transaction.CheckForCoinSupplyOverflow(coinTo, value); errResp != nil {
 			return new(pb.EstimateCoinSellAllResponse), s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
+		}
+		value.Sub(value, valueToSell)
+		if value.Sign() != 1 {
+			return new(pb.EstimateCoinSellAllResponse), status.New(codes.FailedPrecondition, "Not enough coins to pay commission").Err()
 		}
 		value = formula.CalculatePurchaseReturn(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), value)
 	}

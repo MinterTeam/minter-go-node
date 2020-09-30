@@ -56,14 +56,13 @@ func EstimateCoinBuy(coinToSell, coinToBuy string, valueToBuy *big.Int, height i
 
 	switch {
 	case coinTo.ID().IsBaseCoin():
-		result = formula.CalculatePurchaseAmount(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), valueToBuy)
-	case coinFrom.ID().IsBaseCoin():
 		if coinFrom.Reserve().Cmp(valueToBuy) < 0 {
 			return nil, rpctypes.RPCError{Code: 400, Message: fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s",
 				coinFrom.Reserve().String(), valueToBuy.String())}
 		}
-
 		result = formula.CalculateSaleAmount(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), valueToBuy)
+	case coinFrom.ID().IsBaseCoin():
+		result = formula.CalculatePurchaseAmount(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), valueToBuy)
 	default:
 		baseCoinNeeded := formula.CalculatePurchaseAmount(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), valueToBuy)
 		if coinFrom.Reserve().Cmp(baseCoinNeeded) < 0 {

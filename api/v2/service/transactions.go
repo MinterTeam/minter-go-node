@@ -13,16 +13,7 @@ import (
 
 // Transactions return transactions by query.
 func (s *Service) Transactions(ctx context.Context, req *pb.TransactionsRequest) (*pb.TransactionsResponse, error) {
-	page := int(req.Page)
-	if page == 0 {
-		page = 1
-	}
-	perPage := int(req.PerPage)
-	if perPage == 0 {
-		perPage = 100
-	}
-
-	rpcResult, err := s.client.TxSearch(req.Query, false, page, perPage, "desc")
+	rpcResult, err := s.client.TxSearch(req.Query, false, int(req.Page), int(req.PerPage), "desc")
 	if err != nil {
 		return new(pb.TransactionsResponse), status.Error(codes.FailedPrecondition, err.Error())
 	}
