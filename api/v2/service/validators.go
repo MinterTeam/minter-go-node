@@ -15,9 +15,9 @@ func (s *Service) Validators(ctx context.Context, req *pb.ValidatorsRequest) (*p
 		height = int64(s.blockchain.Height())
 	}
 
-	tmVals, err := s.client.Validators(&height, int(req.Page), int(req.PerPage))
+	tmVals, err := s.client.Validators(&height, 1, 100)
 	if err != nil {
-		return new(pb.ValidatorsResponse), status.Error(codes.FailedPrecondition, err.Error())
+		return new(pb.ValidatorsResponse), status.Error(codes.Internal, err.Error())
 	}
 
 	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {

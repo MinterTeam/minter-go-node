@@ -67,14 +67,11 @@ func Block(height int64) (*BlockResponse, error) {
 		valHeight = 1
 	}
 
-	var totalValidators []*tmTypes.Validator
-	for i := 0; i < (((len(block.Block.LastCommit.Signatures) - 1) / 100) + 1); i++ {
-		tmValidators, err := client.Validators(&valHeight, i+1, 100)
-		if err != nil {
-			return nil, rpctypes.RPCError{Code: 500, Message: err.Error()}
-		}
-		totalValidators = append(totalValidators, tmValidators.Validators...)
+	tmValidators, err := client.Validators(&valHeight, 1, 100)
+	if err != nil {
+		return nil, rpctypes.RPCError{Code: 500, Message: err.Error()}
 	}
+	totalValidators := tmValidators.Validators
 
 	cState, err := GetStateForHeight(int(height))
 	if err != nil {
