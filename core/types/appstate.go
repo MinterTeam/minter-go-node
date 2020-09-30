@@ -140,6 +140,7 @@ func (s *AppState) Verify() error {
 		if _, exists := coins[coin.Symbol]; exists {
 			return fmt.Errorf("duplicated coin %s", coin.Symbol)
 		}
+
 		coins[coin.Symbol] = struct{}{}
 
 		// check coins' volume
@@ -152,6 +153,12 @@ func (s *AppState) Verify() error {
 
 		for _, candidate := range s.Candidates {
 			for _, stake := range candidate.Stakes {
+				if stake.Coin == coin.ID {
+					volume.Add(volume, helpers.StringToBigInt(stake.Value))
+				}
+			}
+
+			for _, stake := range candidate.Updates {
 				if stake.Coin == coin.ID {
 					volume.Add(volume, helpers.StringToBigInt(stake.Value))
 				}

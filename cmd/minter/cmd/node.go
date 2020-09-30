@@ -10,7 +10,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/minter"
 	"github.com/MinterTeam/minter-go-node/core/statistics"
-	minterTypes "github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/version"
 	"github.com/spf13/cobra"
@@ -54,12 +53,6 @@ func runNode(cmd *cobra.Command) error {
 	// ensure /config and /tmdata dirs
 	if err := ensureDirs(); err != nil {
 		return err
-	}
-
-	isTestnet, _ := cmd.Flags().GetBool("testnet")
-	if isTestnet {
-		minterTypes.CurrentChainID = minterTypes.ChainTestnet
-		version.Version += "-testnet"
 	}
 
 	pprofOn, err := cmd.Flags().GetBool("pprof")
