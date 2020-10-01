@@ -14,16 +14,12 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/core/validators"
-	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/version"
 	"github.com/syndtr/goleveldb/leveldb/filter"
 	"github.com/syndtr/goleveldb/leveldb/opt"
 	"github.com/tendermint/go-amino"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/crypto/ed25519"
-	cryptoAmino "github.com/tendermint/tendermint/crypto/encoding/amino"
 	tmNode "github.com/tendermint/tendermint/node"
-	types2 "github.com/tendermint/tendermint/types"
 	"github.com/tendermint/tm-db"
 	"math/big"
 	"sort"
@@ -131,26 +127,7 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 		panic(err)
 	}
 
-	totalPower := big.NewInt(0)
-	for _, val := range genesisState.Validators {
-		totalPower.Add(totalPower, helpers.StringToBigInt(val.TotalBipStake))
-	}
-
-	vals := make([]abciTypes.ValidatorUpdate, len(genesisState.Validators))
-	for i, val := range genesisState.Validators {
-		var validatorPubKey ed25519.PubKeyEd25519
-		copy(validatorPubKey[:], val.PubKey[:])
-		pkey, err := cryptoAmino.PubKeyFromBytes(validatorPubKey.Bytes())
-		if err != nil {
-			panic(err)
-		}
-
-		vals[i] = abciTypes.ValidatorUpdate{
-			PubKey: types2.TM2PB.PubKey(pkey),
-			Power: big.NewInt(0).Div(big.NewInt(0).Mul(helpers.StringToBigInt(val.TotalBipStake),
-				big.NewInt(100000000)), totalPower).Int64(),
-		}
-	}
+	vals := app.updateValidators(0)
 
 	app.appDB.SetStartHeight(genesisState.StartHeight)
 	app.appDB.SaveValidators(vals)
@@ -242,8 +219,6 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.ResponseEndBlock {
 	height := uint64(req.Height)
 
-	var updates []abciTypes.ValidatorUpdate
-
 	vals := app.stateDeliver.Validators.GetValidators()
 
 	hasDroppedValidators := false
@@ -304,64 +279,9 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 	}
 
 	// update validators
+	var updates []abciTypes.ValidatorUpdate
 	if req.Height%120 == 0 || hasDroppedValidators {
-		app.stateDeliver.Candidates.RecalculateStakes(height)
-
-		valsCount := validators.GetValidatorsCountForBlock(height)
-		newCandidates := app.stateDeliver.Candidates.GetNewCandidates(valsCount)
-		if len(newCandidates) < valsCount {
-			valsCount = len(newCandidates)
-		}
-
-		newValidators := make([]abciTypes.ValidatorUpdate, valsCount)
-
-		// calculate total power
-		totalPower := big.NewInt(0)
-		for _, candidate := range newCandidates {
-			totalPower.Add(totalPower, app.stateDeliver.Candidates.GetTotalStake(candidate.PubKey))
-		}
-
-		for i := range newCandidates {
-			power := big.NewInt(0).Div(big.NewInt(0).Mul(app.stateDeliver.Candidates.GetTotalStake(newCandidates[i].PubKey),
-				big.NewInt(100000000)), totalPower).Int64()
-
-			if power == 0 {
-				power = 1
-			}
-
-			newValidators[i] = abciTypes.Ed25519ValidatorUpdate(newCandidates[i].PubKey[:], power)
-		}
-
-		sort.SliceStable(newValidators, func(i, j int) bool {
-			return newValidators[i].Power > newValidators[j].Power
-		})
-
-		// update validators in state
-		app.stateDeliver.Validators.SetNewValidators(newCandidates)
-
-		activeValidators := app.getCurrentValidators()
-
-		app.saveCurrentValidators(newValidators)
-
-		updates = newValidators
-
-		for _, validator := range activeValidators {
-			persisted := false
-			for _, newValidator := range newValidators {
-				if bytes.Equal(validator.PubKey.Data, newValidator.PubKey.Data) {
-					persisted = true
-					break
-				}
-			}
-
-			// remove validator
-			if !persisted {
-				updates = append(updates, abciTypes.ValidatorUpdate{
-					PubKey: validator.PubKey,
-					Power:  0,
-				})
-			}
-		}
+		updates = app.updateValidators(height)
 	}
 
 	defer func() {
@@ -377,6 +297,67 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 			},
 		},
 	}
+}
+
+func (app *Blockchain) updateValidators(height uint64) []abciTypes.ValidatorUpdate {
+	app.stateDeliver.Candidates.RecalculateStakes(height)
+
+	valsCount := validators.GetValidatorsCountForBlock(height)
+	newCandidates := app.stateDeliver.Candidates.GetNewCandidates(valsCount)
+	if len(newCandidates) < valsCount {
+		valsCount = len(newCandidates)
+	}
+
+	newValidators := make([]abciTypes.ValidatorUpdate, valsCount)
+
+	// calculate total power
+	totalPower := big.NewInt(0)
+	for _, candidate := range newCandidates {
+		totalPower.Add(totalPower, app.stateDeliver.Candidates.GetTotalStake(candidate.PubKey))
+	}
+
+	for i := range newCandidates {
+		power := big.NewInt(0).Div(big.NewInt(0).Mul(app.stateDeliver.Candidates.GetTotalStake(newCandidates[i].PubKey),
+			big.NewInt(100000000)), totalPower).Int64()
+
+		if power == 0 {
+			power = 1
+		}
+
+		newValidators[i] = abciTypes.Ed25519ValidatorUpdate(newCandidates[i].PubKey[:], power)
+	}
+
+	sort.SliceStable(newValidators, func(i, j int) bool {
+		return newValidators[i].Power > newValidators[j].Power
+	})
+
+	// update validators in state
+	app.stateDeliver.Validators.SetNewValidators(newCandidates)
+
+	activeValidators := app.getCurrentValidators()
+
+	app.saveCurrentValidators(newValidators)
+
+	updates := newValidators
+
+	for _, validator := range activeValidators {
+		persisted := false
+		for _, newValidator := range newValidators {
+			if bytes.Equal(validator.PubKey.Data, newValidator.PubKey.Data) {
+				persisted = true
+				break
+			}
+		}
+
+		// remove validator
+		if !persisted {
+			updates = append(updates, abciTypes.ValidatorUpdate{
+				PubKey: validator.PubKey,
+				Power:  0,
+			})
+		}
+	}
+	return updates
 }
 
 // Info return application info. Used for synchronization between Tendermint and Minter
