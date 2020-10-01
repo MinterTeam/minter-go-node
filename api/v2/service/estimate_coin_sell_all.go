@@ -33,13 +33,13 @@ func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinS
 	if req.GetCoinToBuy() != "" {
 		symbol := cState.Coins().GetCoinBySymbol(types.StrToCoinSymbol(req.GetCoinToBuy()), types.GetVersionFromSymbol(req.GetCoinToBuy()))
 		if symbol == nil {
-			return new(pb.EstimateCoinSellAllResponse), s.createError(status.New(codes.NotFound, "Coin to buy not exists"), transaction.EncodeError(code.NewCoinNotExists(req.GetCoinToBuy(), "")))
+			return nil, s.createError(status.New(codes.NotFound, "Coin to buy not exists"), transaction.EncodeError(code.NewCoinNotExists(req.GetCoinToBuy(), "")))
 		}
 		coinToBuy = symbol.ID()
 	} else {
 		coinToBuy = types.CoinID(req.GetCoinIdToBuy())
 		if !cState.Coins().Exists(coinToBuy) {
-			return new(pb.EstimateCoinSellAllResponse), s.createError(status.New(codes.NotFound, "Coin to buy not exists"), transaction.EncodeError(code.NewCoinNotExists("", coinToBuy.String())))
+			return nil, s.createError(status.New(codes.NotFound, "Coin to buy not exists"), transaction.EncodeError(code.NewCoinNotExists("", coinToBuy.String())))
 		}
 	}
 
@@ -47,19 +47,19 @@ func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinS
 	if req.GetCoinToSell() != "" {
 		symbol := cState.Coins().GetCoinBySymbol(types.StrToCoinSymbol(req.GetCoinToSell()), types.GetVersionFromSymbol(req.GetCoinToSell()))
 		if symbol == nil {
-			return new(pb.EstimateCoinSellAllResponse), s.createError(status.New(codes.NotFound, "Coin to sell not exists"), transaction.EncodeError(code.NewCoinNotExists(req.GetCoinToSell(), "")))
+			return nil, s.createError(status.New(codes.NotFound, "Coin to sell not exists"), transaction.EncodeError(code.NewCoinNotExists(req.GetCoinToSell(), "")))
 		}
 		coinToSell = symbol.ID()
 	} else {
 		coinToSell = types.CoinID(req.GetCoinIdToSell())
 		if !cState.Coins().Exists(coinToSell) {
-			return new(pb.EstimateCoinSellAllResponse),
+			return nil,
 				s.createError(status.New(codes.NotFound, "Coin to sell not exists"), transaction.EncodeError(code.NewCoinNotExists("", coinToSell.String())))
 		}
 	}
 
 	if coinToSell == coinToBuy {
-		return new(pb.EstimateCoinSellAllResponse), s.createError(status.New(codes.InvalidArgument, "\"From\" coin equals to \"to\" coin"),
+		return nil, s.createError(status.New(codes.InvalidArgument, "\"From\" coin equals to \"to\" coin"),
 			transaction.EncodeError(code.NewCrossConvert(coinToSell.String(), cState.Coins().GetCoin(coinToSell).Symbol().String(), coinToBuy.String(), cState.Coins().GetCoin(coinToBuy).Symbol().String())))
 	}
 
@@ -71,7 +71,7 @@ func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinS
 	value := valueToSell
 	if !coinToSell.IsBaseCoin() {
 		if coinFrom.Reserve().Cmp(commissionInBaseCoin) < 0 {
-			return new(pb.EstimateCoinSellAllResponse), s.createError(
+			return nil, s.createError(
 				status.New(codes.InvalidArgument, fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s",
 					coinFrom.Reserve().String(), commissionInBaseCoin.String())),
 				transaction.EncodeError(code.NewCoinReserveNotSufficient(
@@ -85,17 +85,17 @@ func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinS
 
 		value = formula.CalculateSaleReturn(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), valueToSell)
 		if errResp := transaction.CheckReserveUnderflow(coinFrom, value); errResp != nil {
-			return new(pb.EstimateCoinSellAllResponse), s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
+			return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
 		}
 	}
 
 	if !coinToBuy.IsBaseCoin() {
 		if errResp := transaction.CheckForCoinSupplyOverflow(coinTo, value); errResp != nil {
-			return new(pb.EstimateCoinSellAllResponse), s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
+			return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
 		}
 		value.Sub(value, valueToSell)
 		if value.Sign() != 1 {
-			return new(pb.EstimateCoinSellAllResponse), status.New(codes.FailedPrecondition, "Not enough coins to pay commission").Err()
+			return nil, status.New(codes.FailedPrecondition, "Not enough coins to pay commission").Err()
 		}
 		value = formula.CalculatePurchaseReturn(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), value)
 	}

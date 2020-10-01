@@ -29,7 +29,7 @@ func (s *Service) Transactions(ctx context.Context, req *pb.TransactionsRequest)
 		for _, tx := range rpcResult.Txs {
 
 			if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-				return new(pb.TransactionsResponse), timeoutStatus.Err()
+				return nil, timeoutStatus.Err()
 			}
 
 			decodedTx, _ := transaction.TxDecoder.DecodeFromBytes(tx.Tx)

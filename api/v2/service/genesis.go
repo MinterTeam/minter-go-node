@@ -18,7 +18,7 @@ func (s *Service) Genesis(ctx context.Context, _ *empty.Empty) (*pb.GenesisRespo
 	}
 
 	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-		return new(pb.GenesisResponse), timeoutStatus.Err()
+		return nil, timeoutStatus.Err()
 	}
 
 	var appState pb.GenesisResponse_AppState
@@ -28,7 +28,7 @@ func (s *Service) Genesis(ctx context.Context, _ *empty.Empty) (*pb.GenesisRespo
 	}
 
 	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-		return new(pb.GenesisResponse), timeoutStatus.Err()
+		return nil, timeoutStatus.Err()
 	}
 
 	return &pb.GenesisResponse{

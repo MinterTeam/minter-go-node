@@ -32,7 +32,7 @@ func (s *Service) Candidates(ctx context.Context, req *pb.CandidatesRequest) (*p
 	for _, candidate := range candidates {
 
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-			return new(pb.CandidatesResponse), timeoutStatus.Err()
+			return nil, timeoutStatus.Err()
 		}
 
 		if req.Status != pb.CandidatesRequest_all && req.Status != pb.CandidatesRequest_CandidateStatus(candidate.Status) {

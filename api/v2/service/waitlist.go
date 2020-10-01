@@ -39,7 +39,7 @@ func (s *Service) WaitList(ctx context.Context, req *pb.WaitListRequest) (*pb.Wa
 	defer cState.RUnlock()
 
 	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-		return new(pb.WaitListResponse), timeoutStatus.Err()
+		return nil, timeoutStatus.Err()
 	}
 
 	response := new(pb.WaitListResponse)
@@ -60,7 +60,7 @@ func (s *Service) WaitList(ctx context.Context, req *pb.WaitListRequest) (*pb.Wa
 	response.List = make([]*pb.WaitListResponse_Wait, 0, len(items))
 	for _, item := range items {
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-			return new(pb.WaitListResponse), timeoutStatus.Err()
+			return nil, timeoutStatus.Err()
 		}
 
 		response.List = append(response.List, &pb.WaitListResponse_Wait{

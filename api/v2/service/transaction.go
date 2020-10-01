@@ -43,7 +43,7 @@ func (s *Service) Transaction(ctx context.Context, req *pb.TransactionRequest) (
 	defer cState.RUnlock()
 
 	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-		return new(pb.TransactionResponse), timeoutStatus.Err()
+		return nil, timeoutStatus.Err()
 	}
 	dataStruct, err := encode(decodedTx.GetDecodedData(), cState.Coins())
 	if err != nil {

@@ -25,11 +25,11 @@ func (s *Service) CoinInfo(ctx context.Context, req *pb.CoinInfoRequest) (*pb.Co
 
 	coin := cState.Coins().GetCoinBySymbol(types.StrToCoinSymbol(req.Symbol), types.GetVersionFromSymbol(req.Symbol))
 	if coin == nil {
-		return new(pb.CoinInfoResponse), s.createError(status.New(codes.NotFound, "Coin not found"), transaction.EncodeError(code.NewCoinNotExists(req.Symbol, "")))
+		return nil, s.createError(status.New(codes.NotFound, "Coin not found"), transaction.EncodeError(code.NewCoinNotExists(req.Symbol, "")))
 	}
 
 	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-		return new(pb.CoinInfoResponse), timeoutStatus.Err()
+		return nil, timeoutStatus.Err()
 	}
 
 	var ownerAddress *wrappers.StringValue
@@ -64,11 +64,11 @@ func (s *Service) CoinInfoById(ctx context.Context, req *pb.CoinIdRequest) (*pb.
 
 	coin := cState.Coins().GetCoin(types.CoinID(req.Id))
 	if coin == nil {
-		return new(pb.CoinInfoResponse), s.createError(status.New(codes.NotFound, "Coin not found"), transaction.EncodeError(code.NewCoinNotExists("", strconv.Itoa(int(req.Id)))))
+		return nil, s.createError(status.New(codes.NotFound, "Coin not found"), transaction.EncodeError(code.NewCoinNotExists("", strconv.Itoa(int(req.Id)))))
 	}
 
 	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-		return new(pb.CoinInfoResponse), timeoutStatus.Err()
+		return nil, timeoutStatus.Err()
 	}
 
 	var ownerAddress *wrappers.StringValue

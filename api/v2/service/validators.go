@@ -21,7 +21,7 @@ func (s *Service) Validators(ctx context.Context, req *pb.ValidatorsRequest) (*p
 	}
 
 	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-		return new(pb.ValidatorsResponse), timeoutStatus.Err()
+		return nil, timeoutStatus.Err()
 	}
 
 	responseValidators := make([]*pb.ValidatorsResponse_Result, 0, len(tmVals.Validators))

@@ -65,7 +65,7 @@ func (s *Service) Address(ctx context.Context, req *pb.AddressRequest) (*pb.Addr
 	}
 
 	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-		return new(pb.AddressResponse), timeoutStatus.Err()
+		return nil, timeoutStatus.Err()
 	}
 
 	if req.Delegated {
@@ -88,7 +88,7 @@ func (s *Service) Address(ctx context.Context, req *pb.AddressRequest) (*pb.Addr
 		}
 
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-			return new(pb.AddressResponse), timeoutStatus.Err()
+			return nil, timeoutStatus.Err()
 		}
 
 		res.Delegated = make([]*pb.AddressDelegatedBalance, 0, len(userDelegatedStakesGroupByCoin))
@@ -113,7 +113,7 @@ func (s *Service) Address(ctx context.Context, req *pb.AddressRequest) (*pb.Addr
 	}
 
 	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-		return new(pb.AddressResponse), timeoutStatus.Err()
+		return nil, timeoutStatus.Err()
 	}
 
 	coinsBipValue := big.NewInt(0)

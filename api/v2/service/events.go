@@ -17,7 +17,7 @@ func (s *Service) Events(ctx context.Context, req *pb.EventsRequest) (*pb.Events
 	for _, event := range events {
 
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-			return new(pb.EventsResponse), timeoutStatus.Err()
+			return nil, timeoutStatus.Err()
 		}
 
 		var find = true

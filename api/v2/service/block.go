@@ -52,7 +52,7 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 		response.BlockReward = rewards.GetRewardForBlock(uint64(height)).String()
 
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-			return new(pb.BlockResponse), timeoutStatus.Err()
+			return nil, timeoutStatus.Err()
 		}
 
 		cState, err = s.blockchain.GetStateForHeight(uint64(height))
@@ -62,11 +62,11 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 
 		response.Transactions, err = s.blockTransaction(block, blockResults, cState.Coins())
 		if err != nil {
-			return new(pb.BlockResponse), err
+			return nil, err
 		}
 
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-			return new(pb.BlockResponse), timeoutStatus.Err()
+			return nil, timeoutStatus.Err()
 		}
 
 		tmValidators, err := s.client.Validators(&valHeight, 1, 100)
@@ -76,28 +76,28 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 		totalValidators = tmValidators.Validators
 
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-			return new(pb.BlockResponse), timeoutStatus.Err()
+			return nil, timeoutStatus.Err()
 		}
 
 		response.Proposer, err = blockProposer(block, totalValidators)
 		if err != nil {
-			return new(pb.BlockResponse), err
+			return nil, err
 		}
 
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-			return new(pb.BlockResponse), timeoutStatus.Err()
+			return nil, timeoutStatus.Err()
 		}
 
 		response.Validators = blockValidators(totalValidators, block)
 
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-			return new(pb.BlockResponse), timeoutStatus.Err()
+			return nil, timeoutStatus.Err()
 		}
 
 		response.Evidence = blockEvidence(block)
 
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-			return new(pb.BlockResponse), timeoutStatus.Err()
+			return nil, timeoutStatus.Err()
 		}
 
 		response.Missed = missedBlockValidators(cState)
@@ -107,7 +107,7 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 
 	for _, field := range req.Fields {
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-			return new(pb.BlockResponse), timeoutStatus.Err()
+			return nil, timeoutStatus.Err()
 		}
 		switch field {
 		case pb.BlockRequest_size:
@@ -129,7 +129,7 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 
 			response.Transactions, err = s.blockTransaction(block, blockResults, cState.Coins())
 			if err != nil {
-				return new(pb.BlockResponse), err
+				return nil, err
 			}
 
 		case pb.BlockRequest_proposer, pb.BlockRequest_validators:
@@ -148,7 +148,7 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 
 			response.Proposer, err = blockProposer(block, totalValidators)
 			if err != nil {
-				return new(pb.BlockResponse), err
+				return nil, err
 			}
 		case pb.BlockRequest_evidence:
 			response.Evidence = blockEvidence(block)

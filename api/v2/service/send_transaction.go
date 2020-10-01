@@ -26,7 +26,7 @@ func (s *Service) SendTransaction(ctx context.Context, req *pb.SendTransactionRe
 
 	result, statusErr := s.broadcastTxSync(decodeString, ctx /*timeout*/)
 	if statusErr != nil {
-		return new(pb.SendTransactionResponse), statusErr.Err()
+		return nil, statusErr.Err()
 	}
 
 	switch result.Code {
@@ -37,7 +37,7 @@ func (s *Service) SendTransaction(ctx context.Context, req *pb.SendTransactionRe
 			Hash: "Mt" + strings.ToLower(result.Hash.String()),
 		}, nil
 	default:
-		return new(pb.SendTransactionResponse), s.createError(status.New(codes.InvalidArgument, result.Log), result.Info)
+		return nil, s.createError(status.New(codes.InvalidArgument, result.Log), result.Info)
 	}
 }
 
