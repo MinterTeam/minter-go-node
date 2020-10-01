@@ -11,7 +11,7 @@ import (
 func (s *Service) UnconfirmedTxs(ctx context.Context, req *pb.UnconfirmedTxsRequest) (*pb.UnconfirmedTxsResponse, error) {
 	txs, err := s.client.UnconfirmedTxs(int(req.Limit))
 	if err != nil {
-		return new(pb.UnconfirmedTxsResponse), status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	transactions := make([]string, 0, len(txs.Txs))
 	for _, tx := range txs.Txs {

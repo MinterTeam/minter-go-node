@@ -11,7 +11,7 @@ import (
 func (s *Service) Candidates(ctx context.Context, req *pb.CandidatesRequest) (*pb.CandidatesResponse, error) {
 	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {
-		return new(pb.CandidatesResponse), status.Error(codes.NotFound, err.Error())
+		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
 	if req.Height != 0 {
@@ -32,7 +32,7 @@ func (s *Service) Candidates(ctx context.Context, req *pb.CandidatesRequest) (*p
 	for _, candidate := range candidates {
 
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-			return new(pb.CandidatesResponse), timeoutStatus.Err()
+			return nil, timeoutStatus.Err()
 		}
 
 		if req.Status != pb.CandidatesRequest_all && req.Status != pb.CandidatesRequest_CandidateStatus(candidate.Status) {

@@ -14,16 +14,16 @@ import (
 // Transaction returns transaction info.
 func (s *Service) Transaction(ctx context.Context, req *pb.TransactionRequest) (*pb.TransactionResponse, error) {
 	if len(req.Hash) < 3 {
-		return new(pb.TransactionResponse), status.Error(codes.InvalidArgument, "invalid hash")
+		return nil, status.Error(codes.InvalidArgument, "invalid hash")
 	}
 	decodeString, err := hex.DecodeString(req.Hash[2:])
 	if err != nil {
-		return new(pb.TransactionResponse), status.Error(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	tx, err := s.client.Tx(decodeString, false)
 	if err != nil {
-		return new(pb.TransactionResponse), status.Error(codes.FailedPrecondition, err.Error())
+		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
 
 	decodedTx, _ := transaction.TxDecoder.DecodeFromBytes(tx.Tx)
@@ -36,18 +36,18 @@ func (s *Service) Transaction(ctx context.Context, req *pb.TransactionRequest) (
 
 	cState, err := s.blockchain.GetStateForHeight(uint64(tx.Height))
 	if err != nil {
-		return new(pb.TransactionResponse), status.Error(codes.NotFound, err.Error())
+		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
 	cState.RLock()
 	defer cState.RUnlock()
 
 	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-		return new(pb.TransactionResponse), timeoutStatus.Err()
+		return nil, timeoutStatus.Err()
 	}
 	dataStruct, err := encode(decodedTx.GetDecodedData(), cState.Coins())
 	if err != nil {
-		return new(pb.TransactionResponse), status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &pb.TransactionResponse{

@@ -17,16 +17,16 @@ import (
 // SendTransaction returns the result of sending signed tx. To ensure that transaction was successfully committed to the blockchain, you need to find the transaction by the hash and ensure that the status code equals to 0.
 func (s *Service) SendTransaction(ctx context.Context, req *pb.SendTransactionRequest) (*pb.SendTransactionResponse, error) {
 	if !strings.HasPrefix(strings.Title(req.GetTx()), "0x") {
-		return new(pb.SendTransactionResponse), status.Error(codes.InvalidArgument, "invalid transaction")
+		return nil, status.Error(codes.InvalidArgument, "invalid transaction")
 	}
 	decodeString, err := hex.DecodeString(req.Tx[2:])
 	if err != nil {
-		return new(pb.SendTransactionResponse), status.Error(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	result, statusErr := s.broadcastTxSync(decodeString, ctx /*timeout*/)
 	if statusErr != nil {
-		return new(pb.SendTransactionResponse), statusErr.Err()
+		return nil, statusErr.Err()
 	}
 
 	switch result.Code {
@@ -37,7 +37,7 @@ func (s *Service) SendTransaction(ctx context.Context, req *pb.SendTransactionRe
 			Hash: "Mt" + strings.ToLower(result.Hash.String()),
 		}, nil
 	default:
-		return new(pb.SendTransactionResponse), s.createError(status.New(codes.InvalidArgument, result.Log), result.Info)
+		return nil, s.createError(status.New(codes.InvalidArgument, result.Log), result.Info)
 	}
 }
 

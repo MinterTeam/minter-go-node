@@ -21,19 +21,19 @@ type stakeUser struct {
 // Address returns coins list, balance and transaction count of an address.
 func (s *Service) Address(ctx context.Context, req *pb.AddressRequest) (*pb.AddressResponse, error) {
 	if !strings.HasPrefix(strings.Title(req.Address), "Mx") {
-		return new(pb.AddressResponse), status.Error(codes.InvalidArgument, "invalid address")
+		return nil, status.Error(codes.InvalidArgument, "invalid address")
 	}
 
 	decodeString, err := hex.DecodeString(req.Address[2:])
 	if err != nil {
-		return new(pb.AddressResponse), status.Error(codes.InvalidArgument, "invalid address")
+		return nil, status.Error(codes.InvalidArgument, "invalid address")
 	}
 
 	address := types.BytesToAddress(decodeString)
 
 	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {
-		return new(pb.AddressResponse), status.Error(codes.NotFound, err.Error())
+		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
 	if req.Height != 0 && req.Delegated {
@@ -65,7 +65,7 @@ func (s *Service) Address(ctx context.Context, req *pb.AddressRequest) (*pb.Addr
 	}
 
 	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-		return new(pb.AddressResponse), timeoutStatus.Err()
+		return nil, timeoutStatus.Err()
 	}
 
 	if req.Delegated {
@@ -88,7 +88,7 @@ func (s *Service) Address(ctx context.Context, req *pb.AddressRequest) (*pb.Addr
 		}
 
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-			return new(pb.AddressResponse), timeoutStatus.Err()
+			return nil, timeoutStatus.Err()
 		}
 
 		res.Delegated = make([]*pb.AddressDelegatedBalance, 0, len(userDelegatedStakesGroupByCoin))
@@ -113,7 +113,7 @@ func (s *Service) Address(ctx context.Context, req *pb.AddressRequest) (*pb.Addr
 	}
 
 	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-		return new(pb.AddressResponse), timeoutStatus.Err()
+		return nil, timeoutStatus.Err()
 	}
 
 	coinsBipValue := big.NewInt(0)

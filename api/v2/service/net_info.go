@@ -17,7 +17,7 @@ import (
 func (s *Service) NetInfo(ctx context.Context, _ *empty.Empty) (*pb.NetInfoResponse, error) {
 	result, err := s.client.NetInfo()
 	if err != nil {
-		return new(pb.NetInfoResponse), status.Error(codes.FailedPrecondition, err.Error())
+		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
 
 	var peers []*pb.NetInfoResponse_Peer
@@ -30,7 +30,7 @@ func (s *Service) NetInfo(ctx context.Context, _ *empty.Empty) (*pb.NetInfoRespo
 		}
 
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-			return new(pb.NetInfoResponse), timeoutStatus.Err()
+			return nil, timeoutStatus.Err()
 		}
 
 		var channels []*pb.NetInfoResponse_Peer_ConnectionStatus_Channel

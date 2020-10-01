@@ -16,7 +16,7 @@ import (
 // Frozen returns frozen balance.
 func (s *Service) Frozen(ctx context.Context, req *pb.FrozenRequest) (*pb.FrozenResponse, error) {
 	if !strings.HasPrefix(strings.Title(req.Address), "Mx") {
-		return new(pb.FrozenResponse), status.Error(codes.InvalidArgument, "invalid address")
+		return nil, status.Error(codes.InvalidArgument, "invalid address")
 	}
 
 	cState := s.blockchain.CurrentState()
@@ -29,7 +29,7 @@ func (s *Service) Frozen(ctx context.Context, req *pb.FrozenRequest) (*pb.Frozen
 		coinID := types.CoinID(req.CoinId.GetValue())
 		reqCoin = cState.Coins().GetCoin(coinID)
 		if reqCoin == nil {
-			return new(pb.FrozenResponse), s.createError(status.New(codes.NotFound, "Coin not found"), transaction.EncodeError(code.NewCoinNotExists("", coinID.String())))
+			return nil, s.createError(status.New(codes.NotFound, "Coin not found"), transaction.EncodeError(code.NewCoinNotExists("", coinID.String())))
 		}
 	}
 	var frozen []*pb.FrozenResponse_Frozen
@@ -39,7 +39,7 @@ func (s *Service) Frozen(ctx context.Context, req *pb.FrozenRequest) (*pb.Frozen
 	for i := s.blockchain.Height(); i <= s.blockchain.Height()+candidates.UnbondPeriod; i++ {
 
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-			return new(pb.FrozenResponse), timeoutStatus.Err()
+			return nil, timeoutStatus.Err()
 		}
 
 		funds := cState.FrozenFunds().GetFrozenFunds(i)

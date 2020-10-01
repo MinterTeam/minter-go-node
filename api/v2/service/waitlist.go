@@ -14,19 +14,19 @@ import (
 // WaitList returns the list of address stakes in waitlist.
 func (s *Service) WaitList(ctx context.Context, req *pb.WaitListRequest) (*pb.WaitListResponse, error) {
 	if !strings.HasPrefix(strings.Title(req.Address), "Mx") {
-		return new(pb.WaitListResponse), status.Error(codes.InvalidArgument, "invalid address")
+		return nil, status.Error(codes.InvalidArgument, "invalid address")
 	}
 
 	decodeString, err := hex.DecodeString(req.Address[2:])
 	if err != nil {
-		return new(pb.WaitListResponse), status.Error(codes.InvalidArgument, "invalid address")
+		return nil, status.Error(codes.InvalidArgument, "invalid address")
 	}
 
 	address := types.BytesToAddress(decodeString)
 
 	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {
-		return new(pb.WaitListResponse), status.Error(codes.NotFound, err.Error())
+		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
 	if req.Height != 0 {
@@ -39,7 +39,7 @@ func (s *Service) WaitList(ctx context.Context, req *pb.WaitListRequest) (*pb.Wa
 	defer cState.RUnlock()
 
 	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-		return new(pb.WaitListResponse), timeoutStatus.Err()
+		return nil, timeoutStatus.Err()
 	}
 
 	response := new(pb.WaitListResponse)
@@ -47,7 +47,7 @@ func (s *Service) WaitList(ctx context.Context, req *pb.WaitListRequest) (*pb.Wa
 	publicKey := req.PublicKey
 	if publicKey != "" {
 		if !strings.HasPrefix(publicKey, "Mp") {
-			return new(pb.WaitListResponse), status.Error(codes.InvalidArgument, "public key don't has prefix 'Mp'")
+			return nil, status.Error(codes.InvalidArgument, "public key don't has prefix 'Mp'")
 		}
 		items = cState.WaitList().GetByAddressAndPubKey(address, types.HexToPubkey(publicKey))
 	} else {
@@ -60,7 +60,7 @@ func (s *Service) WaitList(ctx context.Context, req *pb.WaitListRequest) (*pb.Wa
 	response.List = make([]*pb.WaitListResponse_Wait, 0, len(items))
 	for _, item := range items {
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-			return new(pb.WaitListResponse), timeoutStatus.Err()
+			return nil, timeoutStatus.Err()
 		}
 
 		response.List = append(response.List, &pb.WaitListResponse_Wait{

@@ -19,24 +19,24 @@ import (
 func (s *Service) EstimateTxCommission(ctx context.Context, req *pb.EstimateTxCommissionRequest) (*pb.EstimateTxCommissionResponse, error) {
 	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {
-		return new(pb.EstimateTxCommissionResponse), status.Error(codes.NotFound, err.Error())
+		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
 	cState.RLock()
 	defer cState.RUnlock()
 
 	if !strings.HasPrefix(strings.Title(req.GetTx()), "0x") {
-		return new(pb.EstimateTxCommissionResponse), status.Error(codes.InvalidArgument, "invalid transaction")
+		return nil, status.Error(codes.InvalidArgument, "invalid transaction")
 	}
 
 	decodeString, err := hex.DecodeString(req.GetTx()[2:])
 	if err != nil {
-		return new(pb.EstimateTxCommissionResponse), status.Error(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	decodedTx, err := transaction.TxDecoder.DecodeFromBytesWithoutSig(decodeString)
 	if err != nil {
-		return new(pb.EstimateTxCommissionResponse), status.Errorf(codes.InvalidArgument, "Cannot decode transaction: %s", err.Error())
+		return nil, status.Errorf(codes.InvalidArgument, "Cannot decode transaction: %s", err.Error())
 	}
 
 	commissionInBaseCoin := decodedTx.CommissionInBaseCoin()
@@ -46,7 +46,7 @@ func (s *Service) EstimateTxCommission(ctx context.Context, req *pb.EstimateTxCo
 		coin := cState.Coins().GetCoin(decodedTx.GasCoin)
 
 		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
-			return new(pb.EstimateTxCommissionResponse), s.createError(
+			return nil, s.createError(
 				status.New(codes.InvalidArgument, fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s",
 					coin.Reserve().String(), commissionInBaseCoin.String())),
 				transaction.EncodeError(code.NewCoinReserveNotSufficient(

@@ -15,7 +15,7 @@ import (
 func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.AddressesResponse, error) {
 	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {
-		return new(pb.AddressesResponse), status.Error(codes.NotFound, err.Error())
+		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
 	if req.Height != 0 && req.Delegated {
@@ -39,12 +39,12 @@ func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.
 		}
 
 		if len(addr) < 3 {
-			return new(pb.AddressesResponse), status.Error(codes.InvalidArgument, fmt.Sprintf("invalid address %s", addr))
+			return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid address %s", addr))
 		}
 
 		decodeString, err := hex.DecodeString(addr[2:])
 		if err != nil {
-			return new(pb.AddressesResponse), status.Error(codes.InvalidArgument, err.Error())
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		address := types.BytesToAddress(decodeString)
 
@@ -67,7 +67,7 @@ func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.
 		}
 
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-			return new(pb.AddressesResponse), timeoutStatus.Err()
+			return nil, timeoutStatus.Err()
 		}
 
 		if req.Delegated {
@@ -90,7 +90,7 @@ func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.
 			}
 
 			if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-				return new(pb.AddressesResponse), timeoutStatus.Err()
+				return nil, timeoutStatus.Err()
 			}
 
 			res.Delegated = make([]*pb.AddressDelegatedBalance, 0, len(userDelegatedStakesGroupByCoin))
@@ -115,7 +115,7 @@ func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.
 		}
 
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-			return new(pb.AddressesResponse), timeoutStatus.Err()
+			return nil, timeoutStatus.Err()
 		}
 
 		coinsBipValue := big.NewInt(0)
