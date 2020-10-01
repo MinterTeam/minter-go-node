@@ -63,7 +63,11 @@ func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinS
 			transaction.EncodeError(code.NewCrossConvert(coinToSell.String(), cState.Coins().GetCoin(coinToSell).Symbol().String(), coinToBuy.String(), cState.Coins().GetCoin(coinToBuy).Symbol().String())))
 	}
 
-	commissionInBaseCoin := big.NewInt(0).Mul(big.NewInt(commissions.ConvertTx), transaction.CommissionMultiplier)
+	commissionInBaseCoin := big.NewInt(commissions.ConvertTx)
+	if req.GasPrice > 1 {
+		commissionInBaseCoin.Mul(commissionInBaseCoin, big.NewInt(int64(req.GasPrice)))
+	}
+	commissionInBaseCoin = big.NewInt(0).Mul(commissionInBaseCoin, transaction.CommissionMultiplier)
 
 	coinFrom := cState.Coins().GetCoin(coinToSell)
 	coinTo := cState.Coins().GetCoin(coinToBuy)
