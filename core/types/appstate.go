@@ -285,8 +285,8 @@ type Balance struct {
 }
 
 type Multisig struct {
-	Weights   []uint32  `json:"weights"`
-	Threshold uint32    `json:"threshold"`
+	Weights   []uint64  `json:"weights"`
+	Threshold uint64    `json:"threshold"`
 	Addresses []Address `json:"addresses"`
 }
 

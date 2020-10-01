@@ -4,12 +4,12 @@ import (
 	"context"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"github.com/golang/protobuf/ptypes/empty"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/tendermint/tendermint/evidence"
 	"github.com/tendermint/tendermint/p2p"
 	typesTM "github.com/tendermint/tendermint/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"time"
 )
 
@@ -23,10 +23,10 @@ func (s *Service) NetInfo(ctx context.Context, _ *empty.Empty) (*pb.NetInfoRespo
 	var peers []*pb.NetInfoResponse_Peer
 	for _, peer := range result.Peers {
 
-		var currentHeight *wrappers.UInt64Value
+		var currentHeight *wrapperspb.UInt64Value
 		peerHeight := peerHeight(s.tmNode.Switch(), peer.NodeInfo.ID())
 		if peerHeight != 0 {
-			currentHeight = &wrappers.UInt64Value{Value: uint64(peerHeight)}
+			currentHeight = wrapperspb.UInt64(uint64(peerHeight))
 		}
 
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {

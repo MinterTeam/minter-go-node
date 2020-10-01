@@ -2,13 +2,13 @@ package service
 
 import (
 	"context"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"strconv"
 
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -32,12 +32,10 @@ func (s *Service) CoinInfo(ctx context.Context, req *pb.CoinInfoRequest) (*pb.Co
 		return nil, timeoutStatus.Err()
 	}
 
-	var ownerAddress *wrappers.StringValue
+	var ownerAddress *wrapperspb.StringValue
 	info := cState.Coins().GetSymbolInfo(coin.Symbol())
 	if info != nil && info.OwnerAddress() != nil {
-		ownerAddress = &wrappers.StringValue{
-			Value: info.OwnerAddress().String(),
-		}
+		ownerAddress = wrapperspb.String(info.OwnerAddress().String())
 	}
 
 	return &pb.CoinInfoResponse{
@@ -71,12 +69,10 @@ func (s *Service) CoinInfoById(ctx context.Context, req *pb.CoinIdRequest) (*pb.
 		return nil, timeoutStatus.Err()
 	}
 
-	var ownerAddress *wrappers.StringValue
+	var ownerAddress *wrapperspb.StringValue
 	info := cState.Coins().GetSymbolInfo(coin.Symbol())
 	if info != nil && info.OwnerAddress() != nil {
-		ownerAddress = &wrappers.StringValue{
-			Value: info.OwnerAddress().String(),
-		}
+		ownerAddress = wrapperspb.String(info.OwnerAddress().String())
 	}
 
 	return &pb.CoinInfoResponse{
