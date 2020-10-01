@@ -11,6 +11,11 @@ import (
 
 // Events returns events at given height.
 func (s *Service) Events(ctx context.Context, req *pb.EventsRequest) (*pb.EventsResponse, error) {
+	currentHeight := s.blockchain.Height()
+	if req.Height > currentHeight {
+		return nil, status.Errorf(codes.NotFound, "wanted to load target %d but only found up to %d", req.Height, currentHeight)
+	}
+
 	height := uint32(req.Height)
 	events := s.blockchain.GetEventsDB().LoadEvents(height)
 	resultEvents := make([]*pb.EventsResponse_Event, 0, len(events))
