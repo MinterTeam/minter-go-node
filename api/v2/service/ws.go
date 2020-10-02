@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	core_types "github.com/tendermint/tendermint/rpc/core/types"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
 	"time"
 )
@@ -20,20 +21,25 @@ const (
 func (s *Service) Subscribe(request *pb.SubscribeRequest, stream pb.ApiService_SubscribeServer) error {
 
 	if s.client.NumClients() >= s.minterCfg.RPC.MaxSubscriptionClients {
-		return status.Error(codes.Canceled, fmt.Sprintf("max_subscription_clients %d reached", s.minterCfg.RPC.MaxSubscriptionClients))
+		return status.Error(codes.ResourceExhausted, fmt.Sprintf("max_subscription_clients %d reached", s.minterCfg.RPC.MaxSubscriptionClients))
 	}
 
 	s.client.Logger.Info("Subscribe to query", "query", request.Query)
 
 	ctx, cancel := context.WithTimeout(stream.Context(), subscribeTimeout)
 	defer cancel()
-	subscriber := uuid.New().String()
-	sub, err := s.client.Subscribe(ctx, subscriber, request.Query)
+
+	remote := uuid.New().String()
+	subscriber, ok := peer.FromContext(ctx)
+	if ok {
+		remote = subscriber.Addr.String()
+	}
+	sub, err := s.client.Subscribe(ctx, remote, request.Query)
 	if err != nil {
 		return status.Error(codes.InvalidArgument, err.Error())
 	}
 	defer func() {
-		if err := s.client.UnsubscribeAll(context.Background(), subscriber); err != nil {
+		if err := s.client.UnsubscribeAll(context.Background(), remote); err != nil {
 			s.client.Logger.Error(err.Error())
 		}
 	}()
