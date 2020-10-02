@@ -177,7 +177,7 @@ func TestAppState(t *testing.T) {
 				},
 				Nonce: 1,
 				MultisigData: &Multisig{
-					Weights:   []uint32{1, 2, 3},
+					Weights:   []uint64{1, 2, 3},
 					Threshold: 1,
 					Addresses: []Address{testAddr, testAddr},
 				},

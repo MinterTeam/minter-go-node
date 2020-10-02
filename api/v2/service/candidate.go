@@ -9,6 +9,7 @@ import (
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"math/big"
 )
 
@@ -64,7 +65,7 @@ func makeResponseCandidate(state *state.CheckState, c *candidates.Candidate, inc
 		minStake := big.NewInt(0)
 		stakes := state.Candidates().GetStakes(c.PubKey)
 		usedSlots := len(stakes)
-		candidate.UsedSlots = uint64(usedSlots)
+		candidate.UsedSlots = wrapperspb.UInt64(uint64(usedSlots))
 		candidate.Stakes = make([]*pb.CandidateResponse_Stake, 0, usedSlots)
 		for i, stake := range stakes {
 			candidate.Stakes = append(candidate.Stakes, &pb.CandidateResponse_Stake{
@@ -84,8 +85,8 @@ func makeResponseCandidate(state *state.CheckState, c *candidates.Candidate, inc
 				minStake = stake.BipValue
 			}
 		}
-		candidate.UniqUsers = uint64(len(addresses))
-		candidate.MinStake = minStake.String()
+		candidate.UniqUsers = wrapperspb.UInt64(uint64(len(addresses)))
+		candidate.MinStake = wrapperspb.String(minStake.String())
 	}
 
 	return candidate

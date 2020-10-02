@@ -173,9 +173,13 @@ func (a *Accounts) Export(state *types.AppState, coinsMap map[types.CoinSymbol]t
 			}
 
 			if account.IsMultisig() {
+				var weights []uint64
+				for _, weight := range account.MultisigData.Weights {
+					weights = append(weights, uint64(weight))
+				}
 				acc.MultisigData = &types.Multisig{
-					Weights:   account.MultisigData.Weights,
-					Threshold: account.MultisigData.Threshold,
+					Weights:   weights,
+					Threshold: uint64(account.MultisigData.Threshold),
 					Addresses: account.MultisigData.Addresses,
 				}
 			}
