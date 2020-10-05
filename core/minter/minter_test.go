@@ -471,7 +471,7 @@ func TestBlockchain_FrozenFunds(t *testing.T) {
 	if len(events) == 0 {
 		t.Errorf("empty events for %d block", targetHeight)
 	}
-	if _, ok := events[0].(*eventsdb.UnbondEvent); !ok {
+	if events[0].Type() != eventsdb.TypeUnbondEvent {
 		t.Fatal("event is not UnbondEvent")
 	}
 	if events[0].AddressString() != developers.Address.String() {
