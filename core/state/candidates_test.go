@@ -512,8 +512,12 @@ func TestRecalculateStakes(t *testing.T) {
 	}
 	stake := st.Candidates.GetStakeOfAddress(pubkey, [20]byte{1}, 1)
 
-	t.Log(stake.Value.String())
-	t.Log(stake.BipValue.String())
+	if stake.Value.String() != "1000000000000000000000" {
+		t.Errorf("stake value is %s", stake.Value.String())
+	}
+	if stake.BipValue.String() != "13894954943731374342" {
+		t.Errorf("stake bip value is %s", stake.BipValue.String())
+	}
 }
 
 func getState() *State {

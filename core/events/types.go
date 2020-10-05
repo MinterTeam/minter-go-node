@@ -7,23 +7,32 @@ import (
 	"math/big"
 )
 
+// Event type names
+const (
+	TypeRewardEvent    = "minter/RewardEvent"
+	TypeSlashEvent     = "minter/SlashEvent"
+	TypeUnbondEvent    = "minter/UnbondEvent"
+	TypeStakeKickEvent = "minter/StakeKickEvent"
+)
+
 func RegisterAminoEvents(codec *amino.Codec) {
 	codec.RegisterInterface((*Event)(nil), nil)
 	codec.RegisterConcrete(RewardEvent{},
-		"minter/RewardEvent", nil)
+		TypeRewardEvent, nil)
 	codec.RegisterConcrete(SlashEvent{},
-		"minter/SlashEvent", nil)
+		TypeSlashEvent, nil)
 	codec.RegisterConcrete(UnbondEvent{},
-		"minter/UnbondEvent", nil)
+		TypeUnbondEvent, nil)
 	codec.RegisterConcrete(StakeKickEvent{},
-		"minter/StakeKickEvent", nil)
+		TypeStakeKickEvent, nil)
 }
 
 type Event interface {
-	address() types.Address
-	validatorPubKey() types.Pubkey
+	Type() string
 	AddressString() string
 	ValidatorPubKeyString() string
+	validatorPubKey() types.Pubkey
+	address() types.Address
 	convert(pubKeyID uint16, addressID uint32) compactEvent
 }
 
@@ -105,6 +114,10 @@ type RewardEvent struct {
 	ValidatorPubKey types.Pubkey  `json:"validator_pub_key"`
 }
 
+func (re *RewardEvent) Type() string {
+	return TypeRewardEvent
+}
+
 func (re *RewardEvent) AddressString() string {
 	return re.Address.String()
 }
@@ -160,6 +173,10 @@ type SlashEvent struct {
 	Amount          string        `json:"amount"`
 	Coin            types.CoinID  `json:"coin"`
 	ValidatorPubKey types.Pubkey  `json:"validator_pub_key"`
+}
+
+func (se *SlashEvent) Type() string {
+	return TypeSlashEvent
 }
 
 func (se *SlashEvent) AddressString() string {
@@ -219,6 +236,10 @@ type UnbondEvent struct {
 	ValidatorPubKey types.Pubkey  `json:"validator_pub_key"`
 }
 
+func (ue *UnbondEvent) Type() string {
+	return TypeUnbondEvent
+}
+
 func (ue *UnbondEvent) AddressString() string {
 	return ue.Address.String()
 }
@@ -274,6 +295,10 @@ type StakeKickEvent struct {
 	Amount          string        `json:"amount"`
 	Coin            types.CoinID  `json:"coin"`
 	ValidatorPubKey types.Pubkey  `json:"validator_pub_key"`
+}
+
+func (ue *StakeKickEvent) Type() string {
+	return TypeStakeKickEvent
 }
 
 func (ue *StakeKickEvent) AddressString() string {
