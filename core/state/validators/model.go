@@ -67,9 +67,10 @@ func (v *Validator) GetTotalBipStake() *big.Int {
 
 // SetTotalBipStake sets total bip stake
 func (v *Validator) SetTotalBipStake(value *big.Int) {
-	if v.totalStake.Cmp(value) != 0 {
-		v.isTotalStakeDirty = true
+	if v.totalStake.Cmp(value) == 0 {
+		return
 	}
+	v.isTotalStakeDirty = true
 	v.totalStake = value
 }
 

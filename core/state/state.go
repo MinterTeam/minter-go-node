@@ -24,6 +24,7 @@ import (
 	legacyFrozenfunds "github.com/MinterTeam/minter-go-node/legacy/frozenfunds"
 	"github.com/MinterTeam/minter-go-node/tree"
 	db "github.com/tendermint/tm-db"
+	"gopkg.in/errgo.v2/fmt/errors"
 	"log"
 	"math/big"
 	"sync"
@@ -340,11 +341,12 @@ func (s *State) Import(state types.AppState) error {
 		s.Candidates.SetTotalStake(c.PubKey, helpers.StringToBigInt(c.TotalBipStake))
 		s.Candidates.SetStakes(c.PubKey, c.Stakes, c.Updates)
 	}
+	s.Candidates.RecalculateStakes(state.StartHeight)
 
 	for _, w := range state.Waitlist {
 		value, ok := big.NewInt(0).SetString(w.Value, 10)
 		if !ok {
-			panic(fmt.Sprintf("Cannot decode %s into big.Int", w.Value))
+			return errors.Newf("Cannot decode %s into big.Int", w.Value)
 		}
 		s.Waitlist.AddWaitList(w.Owner, s.Candidates.PubKey(uint32(w.CandidateID)), types.CoinID(w.Coin), value)
 	}
