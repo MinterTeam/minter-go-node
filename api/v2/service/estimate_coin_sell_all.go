@@ -73,6 +73,7 @@ func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinS
 	coinTo := cState.Coins().GetCoin(coinToBuy)
 
 	value := valueToSell
+
 	if !coinToSell.IsBaseCoin() {
 		if coinFrom.Reserve().Cmp(commissionInBaseCoin) < 0 {
 			return nil, s.createError(

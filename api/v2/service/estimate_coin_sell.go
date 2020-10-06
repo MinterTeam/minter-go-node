@@ -86,6 +86,7 @@ func (s *Service) EstimateCoinSell(ctx context.Context, req *pb.EstimateCoinSell
 	}
 
 	value := valueToSell
+
 	if !coinToSell.IsBaseCoin() {
 		value = formula.CalculateSaleReturn(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), valueToSell)
 		if errResp := transaction.CheckReserveUnderflow(coinFrom, value); errResp != nil {
