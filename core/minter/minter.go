@@ -142,10 +142,6 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.ResponseBeginBlock {
 	height := uint64(req.Header.Height)
 
-	if app.isApplicationHalted(height) {
-		panic(fmt.Sprintf("Application halted at height %d", height))
-	}
-
 	app.StatisticData().PushStartBlock(&statistics.StartRequest{Height: int64(height), Now: time.Now(), HeaderTime: req.Header.Time})
 
 	app.stateDeliver.Lock()
@@ -176,6 +172,10 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 		}
 	}
 	app.lock.Unlock()
+
+	if app.isApplicationHalted(height) {
+		panic(fmt.Sprintf("Application halted at height %d", height))
+	}
 
 	// give penalty to Byzantine validators
 	for _, byzVal := range req.ByzantineValidators {
