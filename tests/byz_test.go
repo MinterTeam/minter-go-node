@@ -2,8 +2,10 @@ package tests
 
 import (
 	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/helpers"
 	tmTypes "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto/ed25519"
+	"math/big"
 	"testing"
 	"time"
 )
@@ -11,8 +13,9 @@ import (
 func TestBlockchain_ByzantineValidators(t *testing.T) {
 	state := DefaultAppState() // generate default state
 
+	stake := helpers.BipToPip(big.NewInt(1000)).String()
 	state.Validators = append(state.Validators, types.Validator{
-		TotalBipStake: "10000",
+		TotalBipStake: stake,
 		PubKey:        types.Pubkey{1},
 		AccumReward:   "10",
 		AbsentTimes:   nil,
@@ -22,15 +25,15 @@ func TestBlockchain_ByzantineValidators(t *testing.T) {
 		RewardAddress:  types.Address{},
 		OwnerAddress:   types.Address{},
 		ControlAddress: types.Address{},
-		TotalBipStake:  "10000",
+		TotalBipStake:  stake,
 		PubKey:         types.Pubkey{1},
 		Commission:     10,
 		Stakes: []types.Stake{
 			{
 				Owner:    types.Address{},
 				Coin:     0,
-				Value:    "10000",
-				BipValue: "10000",
+				Value:    stake,
+				BipValue: stake,
 			},
 		},
 		Updates: nil,
