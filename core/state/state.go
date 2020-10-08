@@ -141,6 +141,7 @@ func (cs *CheckState) Export11To12(height uint64) types.AppState {
 	frozenFundsState.Export(state, height, coinsMap)
 	accountsState.Export(state, coinsMap)
 	checksState.Export(state)
+	coinsState.Export(state)
 
 	return *state
 }
