@@ -16,10 +16,20 @@ const (
 	mainPrefix   = byte('q')
 	infoPrefix   = byte('i')
 	symbolPrefix = byte('s')
+
+	BaseVersion types.CoinVersion = 0
 )
 
-const (
-	BaseVersion types.CoinVersion = 0
+var (
+	baseModel = &Model{
+		id:         types.GetBaseCoinID(),
+		CSymbol:    types.GetBaseCoin(),
+		CMaxSupply: helpers.BipToPip(big.NewInt(10000000000)),
+		info: &Info{
+			Volume:  big.NewInt(0),
+			Reserve: big.NewInt(0),
+		},
+	}
 )
 
 type RCoins interface {
@@ -33,8 +43,9 @@ type RCoins interface {
 }
 
 type Coins struct {
-	list  map[types.CoinID]*Model
-	dirty map[types.CoinID]struct{}
+	list        map[types.CoinID]*Model
+	dirty       map[types.CoinID]struct{}
+	symbolsList map[types.CoinSymbol]types.CoinID
 
 	bus  *bus.Bus
 	iavl tree.MTree
@@ -43,7 +54,12 @@ type Coins struct {
 }
 
 func NewCoins(stateBus *bus.Bus, iavl tree.MTree) (*Coins, error) {
-	coins := &Coins{bus: stateBus, iavl: iavl, list: map[types.CoinID]*Model{}, dirty: map[types.CoinID]struct{}{}}
+	coins := &Coins{
+		bus: stateBus, iavl: iavl,
+		list:        map[types.CoinID]*Model{},
+		dirty:       map[types.CoinID]struct{}{},
+		symbolsList: map[types.CoinSymbol]types.CoinID{},
+	}
 	coins.bus.SetCoins(NewBus(coins))
 
 	return coins, nil
@@ -101,6 +117,9 @@ func (c *Coins) Commit() error {
 		}
 	}
 
+	// clear list
+	c.symbolsList = make(map[types.CoinSymbol]types.CoinID)
+
 	return nil
 }
 
@@ -125,12 +144,20 @@ func (c *Coins) ExistsBySymbol(symbol types.CoinSymbol) bool {
 		return true
 	}
 
+	if _, ok := c.getSymbolFromMap(symbol); ok {
+		return true
+	}
+
 	return c.getBySymbol(symbol) != nil
 }
 
 func (c *Coins) GetCoinBySymbol(symbol types.CoinSymbol, version types.CoinVersion) *Model {
 	if symbol.IsBaseCoin() {
 		return c.get(types.GetBaseCoinID())
+	}
+
+	if id, ok := c.getSymbolFromMap(symbol); ok {
+		return c.getFromMap(id)
 	}
 
 	coins := c.getBySymbol(symbol)
@@ -211,6 +238,7 @@ func (c *Coins) Create(id types.CoinID, symbol types.CoinSymbol, name string,
 	}
 
 	c.setToMap(coin.id, coin)
+	c.setSymbolToMap(coin.id, coin.CSymbol)
 
 	coin.SetReserve(reserve)
 	coin.SetVolume(volume)
@@ -262,16 +290,7 @@ func (c *Coins) ChangeOwner(symbol types.CoinSymbol, owner types.Address) {
 
 func (c *Coins) get(id types.CoinID) *Model {
 	if id.IsBaseCoin() {
-		// TODO: refactor
-		return &Model{
-			id:         types.GetBaseCoinID(),
-			CSymbol:    types.GetBaseCoin(),
-			CMaxSupply: helpers.BipToPip(big.NewInt(10000000000)),
-			info: &Info{
-				Volume:  big.NewInt(0),
-				Reserve: big.NewInt(0),
-			},
-		}
+		return baseModel
 	}
 
 	if coin := c.getFromMap(id); coin != nil {
@@ -399,6 +418,21 @@ func (c *Coins) setToMap(id types.CoinID, model *Model) {
 	defer c.lock.Unlock()
 
 	c.list[id] = model
+}
+
+func (c *Coins) getSymbolFromMap(symbol types.CoinSymbol) (types.CoinID, bool) {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
+	id, ok := c.symbolsList[symbol]
+	return id, ok
+}
+
+func (c *Coins) setSymbolToMap(id types.CoinID, symbol types.CoinSymbol) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	c.symbolsList[symbol] = id
 }
 
 func getSymbolCoinsPath(symbol types.CoinSymbol) []byte {
