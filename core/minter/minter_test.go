@@ -45,8 +45,8 @@ func getPrivateKey() *ecdsa.PrivateKey {
 }
 
 func makeTestValidatorsAndCandidates(pubkeys []string, stake *big.Int) ([]types.Validator, []types.Candidate) {
-	vals := make([]types.Validator, len(pubkeys))
-	cands := make([]types.Candidate, len(pubkeys))
+	vals := make([]types.Validator, 0, len(pubkeys))
+	cands := make([]types.Candidate, 0, len(pubkeys))
 
 	for i, val := range pubkeys {
 		pkeyBytes, err := base64.StdEncoding.DecodeString(val)
@@ -58,19 +58,19 @@ func makeTestValidatorsAndCandidates(pubkeys []string, stake *big.Int) ([]types.
 		copy(pkey[:], pkeyBytes)
 		addr := developers.Address
 
-		vals[i] = types.Validator{
+		vals = append(vals, types.Validator{
 			TotalBipStake: stake.String(),
 			PubKey:        pkey,
 			AccumReward:   big.NewInt(0).String(),
 			AbsentTimes:   types.NewBitArray(24),
-		}
+		})
 
-		cands[i] = types.Candidate{
+		cands = append(cands, types.Candidate{
 			ID:             uint64(i) + 1,
 			RewardAddress:  addr,
 			OwnerAddress:   crypto.PubkeyToAddress(getPrivateKey().PublicKey),
 			ControlAddress: addr,
-			TotalBipStake:  big.NewInt(1).String(),
+			TotalBipStake:  stake.String(),
 			PubKey:         pkey,
 			Commission:     100,
 			Stakes: []types.Stake{
@@ -82,7 +82,7 @@ func makeTestValidatorsAndCandidates(pubkeys []string, stake *big.Int) ([]types.
 				},
 			},
 			Status: candidates2.CandidateStatusOnline,
-		}
+		})
 	}
 
 	return vals, cands
@@ -93,7 +93,7 @@ func getTestGenesis(pv *privval.FilePV) func() (*types2.GenesisDoc, error) {
 
 		appHash := [32]byte{}
 
-		validators, candidates := makeTestValidatorsAndCandidates([]string{base64.StdEncoding.EncodeToString(pv.Key.PubKey.Bytes()[5:])}, big.NewInt(10000000))
+		validators, candidates := makeTestValidatorsAndCandidates([]string{base64.StdEncoding.EncodeToString(pv.Key.PubKey.Bytes()[5:])}, helpers.BipToPip(big.NewInt(1000)))
 
 		appState := types.AppState{
 			TotalSlashed: "0",
