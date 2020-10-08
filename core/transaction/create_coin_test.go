@@ -737,3 +737,74 @@ func TestCreateCoinToInsufficientFundsForInitialReserve(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
 }
+
+func TestCreateCoinToSameSymbolInOneBlock(t *testing.T) {
+	cState := getState()
+	coin := types.GetBaseCoinID()
+
+	privateKey, _ := crypto.GenerateKey()
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+	privateKey2, _ := crypto.GenerateKey()
+	addr2 := crypto.PubkeyToAddress(privateKey2.PublicKey)
+
+	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
+	cState.Accounts.AddBalance(addr2, coin, helpers.BipToPip(big.NewInt(1000000)))
+
+	toCreate := types.StrToCoinSymbol("TEST")
+	reserve := helpers.BipToPip(big.NewInt(10000))
+	amount := helpers.BipToPip(big.NewInt(100))
+	crr := uint32(50)
+	name := "My Test Coin"
+
+	data := CreateCoinData{
+		Name:                 name,
+		Symbol:               toCreate,
+		InitialAmount:        amount,
+		InitialReserve:       reserve,
+		ConstantReserveRatio: crr,
+		MaxSupply:            big.NewInt(0).Mul(amount, big.NewInt(10)),
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := Transaction{
+		Nonce:         1,
+		GasPrice:      1,
+		ChainID:       types.CurrentChainID,
+		GasCoin:       coin,
+		Type:          TypeCreateCoin,
+		Data:          encodedData,
+		SignatureType: SigTypeSingle,
+	}
+
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != 0 {
+		t.Fatalf("Response code is not success. Error %s", response.Log)
+	}
+
+	if err := tx.Sign(privateKey2); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err = rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.CoinAlreadyExists {
+		t.Fatalf("Response code is not %d. Error %s", code.CoinAlreadyExists, response.Log)
+	}
+}
