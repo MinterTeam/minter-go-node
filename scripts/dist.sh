@@ -23,12 +23,6 @@ mkdir -p build/pkg
 GIT_COMMIT="$(git rev-parse --short=8 HEAD)"
 GIT_IMPORT="github.com/MinterTeam/minter-go-node/version"
 
-# Make sure build tools are available.
-make get_tools
-
-# Get VENDORED dependencies
-make get_vendor_deps
-
 #packr
 
 # Build!
