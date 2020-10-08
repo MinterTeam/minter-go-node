@@ -8,6 +8,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/tree"
+	"math/big"
 	"sort"
 	"sync"
 )
@@ -103,6 +104,44 @@ func (c *Coins) getOrderedDirtyCoins() []types.CoinSymbol {
 
 func (c *Coins) Export(state *types.AppState) map[types.CoinSymbol]types.Coin {
 	var coins []types.Coin
+
+	if len(state.Coins) != 0 {
+		for k, coin := range state.Coins {
+			// check coins' volume
+			volume := big.NewInt(0)
+			for _, ff := range state.FrozenFunds {
+				if ff.Coin == coin.ID {
+					volume.Add(volume, helpers.StringToBigInt(ff.Value))
+				}
+			}
+
+			for _, candidate := range state.Candidates {
+				for _, stake := range candidate.Stakes {
+					if stake.Coin == coin.ID {
+						volume.Add(volume, helpers.StringToBigInt(stake.Value))
+					}
+				}
+
+				for _, stake := range candidate.Updates {
+					if stake.Coin == coin.ID {
+						volume.Add(volume, helpers.StringToBigInt(stake.Value))
+					}
+				}
+			}
+
+			for _, account := range state.Accounts {
+				for _, bal := range account.Balance {
+					if bal.Coin == coin.ID {
+						volume.Add(volume, helpers.StringToBigInt(bal.Value))
+					}
+				}
+			}
+
+			state.Coins[k].Volume = volume.String()
+		}
+
+		return nil
+	}
 
 	c.iavl.Iterate(func(key []byte, value []byte) bool {
 		if key[0] == mainPrefix {
