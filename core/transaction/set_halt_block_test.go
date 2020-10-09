@@ -212,7 +212,7 @@ func TestSetHaltBlockTxWithWrongOwnership(t *testing.T) {
 	}
 }
 
-func TestSetHaltBlockTxToNonExistenCandidate(t *testing.T) {
+func TestSetHaltBlockTxToNonExistCandidate(t *testing.T) {
 	cState, err := state.NewState(500000, db.NewMemDB(), nil, 1, 1)
 	if err != nil {
 		t.Fatalf("Cannot load state. Error %s", err)

@@ -160,7 +160,7 @@ func TestDelegateTxWithWatchlist(t *testing.T) {
 	}
 }
 
-func TestDelegateTxToNonExistenCoin(t *testing.T) {
+func TestDelegateTxToNonExistCoin(t *testing.T) {
 	cState := getState()
 
 	pubkey := createTestCandidate(cState)

@@ -140,7 +140,7 @@ func TestSetCandidateOffTx(t *testing.T) {
 	}
 }
 
-func TestSwitchCandidateStatusTxToNonExistenCandidate(t *testing.T) {
+func TestSwitchCandidateStatusTxToNonExistCandidate(t *testing.T) {
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()

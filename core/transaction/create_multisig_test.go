@@ -265,7 +265,7 @@ func TestCreateExistingMultisigTx(t *testing.T) {
 	}
 }
 
-func TestCreateMultisigOwnersTxToNonExistenAddress(t *testing.T) {
+func TestCreateMultisigOwnersTxToNonExistAddress(t *testing.T) {
 	cState := getState()
 
 	addr := types.Address{0}

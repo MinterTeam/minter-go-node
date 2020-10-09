@@ -267,7 +267,7 @@ func TestUnbondTxToDecodeError(t *testing.T) {
 	}
 }
 
-func TestUnbondTxToNotExistenCoin(t *testing.T) {
+func TestUnbondTxToNotExistCoin(t *testing.T) {
 	cState := getState()
 	pubkey := createTestCandidate(cState)
 	privateKey, _ := crypto.GenerateKey()
@@ -353,7 +353,7 @@ func TestUnbondTxToNotExistCandidate(t *testing.T) {
 	}
 }
 
-func TestUnbondTxToNotExistenStake(t *testing.T) {
+func TestUnbondTxToNotExistStake(t *testing.T) {
 	cState := getState()
 	pubkey := createTestCandidate(cState)
 	privateKey, _ := crypto.GenerateKey()

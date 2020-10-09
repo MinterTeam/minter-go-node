@@ -887,7 +887,7 @@ func TestSellCoinTxEqualCoins(t *testing.T) {
 	}
 }
 
-func TestSellCoinTxToNonExistenCoins(t *testing.T) {
+func TestSellCoinTxToNonExistCoins(t *testing.T) {
 	cState := getState()
 	coinID := createTestCoin(cState)
 	privateKey, _ := crypto.GenerateKey()
