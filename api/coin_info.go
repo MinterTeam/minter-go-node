@@ -35,7 +35,7 @@ func CoinInfo(coinSymbol *string, id *int, height int) (*CoinInfoResponse, error
 	if coinSymbol != nil {
 		coin = cState.Coins().GetCoinBySymbol(types.StrToCoinBaseSymbol(*coinSymbol), types.GetVersionFromSymbol(*coinSymbol))
 		if coin == nil {
-			return nil, rpctypes.RPCError{Code: 404, Message: "Coin not found", Data: types.StrToCoinSymbol(*coinSymbol).String()}
+			return nil, rpctypes.RPCError{Code: 404, Message: "Coin not found"}
 		}
 	}
 
