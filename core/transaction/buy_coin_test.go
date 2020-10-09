@@ -29,6 +29,9 @@ func getState() *state.State {
 		panic(err)
 	}
 
+	s.Validators.Create(types.Pubkey{}, big.NewInt(1))
+	s.Candidates.Create(types.Address{}, types.Address{}, types.Address{}, types.Pubkey{}, 10)
+
 	return s
 }
 
@@ -47,6 +50,7 @@ func createTestCoin(stateDB *state.State) types.CoinID {
 	stateDB.Coins.Create(id, getTestCoinSymbol(), "TEST COIN", volume, 10, reserve,
 		big.NewInt(0).Mul(volume, big.NewInt(10)), nil)
 	stateDB.App.SetCoinsCount(id.Uint32())
+	stateDB.Accounts.AddBalance(types.Address{}, id, volume)
 
 	return id
 }
@@ -68,6 +72,17 @@ func createTestCoinWithOwner(stateDB *state.State, owner types.Address) types.Co
 	return id
 }
 
+func checkState(t *testing.T, cState *state.State) {
+	if _, err := cState.Commit(); err != nil {
+		t.Fatal(err)
+	}
+
+	exportedState := cState.Export(1)
+	if err := exportedState.Verify(); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestBuyCoinTxBaseToCustom(t *testing.T) {
 	cState := getState()
 
@@ -77,7 +92,9 @@ func TestBuyCoinTxBaseToCustom(t *testing.T) {
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 	coin := types.GetBaseCoinID()
 
-	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
+	initBalance := helpers.BipToPip(big.NewInt(1000000))
+	cState.Accounts.AddBalance(addr, coin, initBalance)
+	cState.Coins.AddVolume(coin, initBalance)
 
 	toBuy := helpers.BipToPip(big.NewInt(10))
 	maxValToSell, _ := big.NewInt(0).SetString("159374246010000000000", 10)
@@ -130,6 +147,8 @@ func TestBuyCoinTxBaseToCustom(t *testing.T) {
 	if testBalance.Cmp(toBuy) != 0 {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", getTestCoinSymbol(), toBuy, testBalance)
 	}
+
+	checkState(t, cState)
 }
 
 func TestBuyCoinTxInsufficientFunds(t *testing.T) {
@@ -184,6 +203,8 @@ func TestBuyCoinTxInsufficientFunds(t *testing.T) {
 	if response.Code != code.InsufficientFunds {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestBuyCoinTxEqualCoins(t *testing.T) {
@@ -230,6 +251,8 @@ func TestBuyCoinTxEqualCoins(t *testing.T) {
 	if response.Code != code.CrossConvert {
 		t.Fatalf("Response code is not %d. Error %s", code.CrossConvert, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestBuyCoinTxNotExistsBuyCoin(t *testing.T) {
@@ -274,6 +297,8 @@ func TestBuyCoinTxNotExistsBuyCoin(t *testing.T) {
 	if response.Code != code.CoinNotExists {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestBuyCoinTxNotExistsSellCoin(t *testing.T) {
@@ -318,6 +343,8 @@ func TestBuyCoinTxNotExistsSellCoin(t *testing.T) {
 	if response.Code != code.CoinNotExists {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestBuyCoinTxNotExistsGasCoin(t *testing.T) {
@@ -364,6 +391,8 @@ func TestBuyCoinTxNotExistsGasCoin(t *testing.T) {
 	if response.Code != code.CoinNotExists {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestBuyCoinTxNotGasCoin(t *testing.T) {
@@ -374,13 +403,15 @@ func TestBuyCoinTxNotGasCoin(t *testing.T) {
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 
-	cState.Accounts.AddBalance(addr, coinToSellID, helpers.BipToPip(big.NewInt(1000)))
+	initBal := helpers.BipToPip(big.NewInt(1000))
+	cState.Accounts.AddBalance(addr, coinToSellID, initBal)
+	cState.Coins.AddVolume(coinToSellID, initBal)
 
 	data := BuyCoinData{
 		CoinToBuy:          types.GetBaseCoinID(),
 		ValueToBuy:         big.NewInt(1),
 		CoinToSell:         coinToSellID,
-		MaximumValueToSell: big.NewInt(10004502852067863),
+		MaximumValueToSell: big.NewInt(10100004545002879),
 	}
 
 	encodedData, err := rlp.EncodeToBytes(data)
@@ -414,6 +445,8 @@ func TestBuyCoinTxNotGasCoin(t *testing.T) {
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestBuyCoinTxCustomToBase(t *testing.T) {
@@ -424,7 +457,9 @@ func TestBuyCoinTxCustomToBase(t *testing.T) {
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 
-	cState.Accounts.AddBalance(addr, coinToSellID, helpers.BipToPip(big.NewInt(10000000)))
+	initBal := helpers.BipToPip(big.NewInt(10000000))
+	cState.Accounts.AddBalance(addr, coinToSellID, initBal)
+	cState.Coins.AddVolume(coinToSellID, initBal)
 
 	toBuy := helpers.BipToPip(big.NewInt(10))
 	maxValToSell, _ := big.NewInt(0).SetString("159374246010000000000", 10)
@@ -467,7 +502,7 @@ func TestBuyCoinTxCustomToBase(t *testing.T) {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
 
-	targetBalance, _ := big.NewInt(0).SetString("9999998989954092563427063", 10)
+	targetBalance, _ := big.NewInt(0).SetString("9999897985363348906133281", 10)
 	balance := cState.Accounts.GetBalance(addr, coinToSellID)
 	if balance.Cmp(targetBalance) != 0 {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", coinToSellID.String(), targetBalance, balance)
@@ -485,10 +520,12 @@ func TestBuyCoinTxCustomToBase(t *testing.T) {
 		t.Fatalf("Target %s reserve is not correct. Expected %s, got %s", coinToSellID.String(), targetBalance, coinData.Reserve())
 	}
 
-	targetVolume, _ := big.NewInt(0).SetString("99998989954092563427063", 10)
+	targetVolume, _ := big.NewInt(0).SetString("10099897985363348906133281", 10)
 	if coinData.Volume().Cmp(targetVolume) != 0 {
 		t.Fatalf("Target %s volume is not correct. Expected %s, got %s", coinToSellID.String(), targetVolume, coinData.Volume())
 	}
+
+	checkState(t, cState)
 }
 
 func TestBuyCoinReserveUnderflow(t *testing.T) {
@@ -499,10 +536,12 @@ func TestBuyCoinReserveUnderflow(t *testing.T) {
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 
-	cState.Accounts.AddBalance(addr, coinToSellID, helpers.BipToPip(big.NewInt(10000000)))
+	initBal := helpers.BipToPip(big.NewInt(10000000))
+	cState.Accounts.AddBalance(addr, coinToSellID, initBal)
+	cState.Coins.AddVolume(coinToSellID, initBal)
 
 	toBuy := helpers.BipToPip(big.NewInt(99000))
-	maxValToSell, _ := big.NewInt(0).SetString("36904896537720035723223", 10)
+	maxValToSell, _ := big.NewInt(0).SetString("3727394550309723608045536", 10)
 	data := BuyCoinData{
 		CoinToBuy:          types.GetBaseCoinID(),
 		ValueToBuy:         toBuy,
@@ -541,6 +580,8 @@ func TestBuyCoinReserveUnderflow(t *testing.T) {
 	if response.Code != code.CoinReserveUnderflow {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveUnderflow, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestBuyCoinTxBaseToCustomBaseCommission(t *testing.T) {
@@ -558,7 +599,9 @@ func TestBuyCoinTxBaseToCustomBaseCommission(t *testing.T) {
 	coinToBuyID, initialVolume, initialReserve, crr := createTestCoinWithSymbol(cState, coinToBuy)
 
 	privateKey, addr := getAccount()
+
 	cState.Accounts.AddBalance(addr, coinToSell, initialBalance)
+	cState.Coins.AddVolume(coinToSell, initialBalance)
 
 	tx := createBuyCoinTx(coinToSell, coinToBuyID, gasCoin, toBuy, 1)
 	if err := tx.Sign(privateKey); err != nil {
@@ -605,6 +648,8 @@ func TestBuyCoinTxBaseToCustomBaseCommission(t *testing.T) {
 	if coinData.Volume().Cmp(estimatedSupply) != 0 {
 		t.Fatalf("Wrong coin supply")
 	}
+
+	checkState(t, cState)
 }
 
 func TestBuyCoinTxCustomToBaseBaseCommission(t *testing.T) {
@@ -623,8 +668,13 @@ func TestBuyCoinTxCustomToBaseBaseCommission(t *testing.T) {
 	coinToSellID, initialVolume, initialReserve, crr := createTestCoinWithSymbol(cState, coinToSell)
 
 	privateKey, addr := getAccount()
+
 	cState.Accounts.AddBalance(addr, coinToSellID, initialBalance)
+	cState.Coins.AddVolume(coinToSellID, initialBalance)
+	initialVolume.Add(initialVolume, initialBalance)
+
 	cState.Accounts.AddBalance(addr, gasCoin, initialGasBalance)
+	cState.Coins.AddVolume(gasCoin, initialGasBalance)
 
 	tx := createBuyCoinTx(coinToSellID, coinToBuy, gasCoin, toBuy, 1)
 	if err := tx.Sign(privateKey); err != nil {
@@ -670,6 +720,8 @@ func TestBuyCoinTxCustomToBaseBaseCommission(t *testing.T) {
 	if coinData.Volume().Cmp(estimatedSupply) != 0 {
 		t.Fatalf("Wrong coin supply")
 	}
+
+	checkState(t, cState)
 }
 
 func TestBuyCoinTxCustomToCustomBaseCommission(t *testing.T) {
@@ -691,6 +743,9 @@ func TestBuyCoinTxCustomToCustomBaseCommission(t *testing.T) {
 
 	privateKey, addr := getAccount()
 	cState.Accounts.AddBalance(addr, coinToSellID, initialBalance)
+	cState.Coins.AddVolume(coinToSellID, initialBalance)
+	initialVolume1.Add(initialVolume1, initialBalance)
+
 	cState.Accounts.AddBalance(addr, gasCoin, initialGasBalance)
 
 	tx := createBuyCoinTx(coinToSellID, coinToBuyID, gasCoin, toBuy, 1)
@@ -739,6 +794,8 @@ func TestBuyCoinTxCustomToCustomBaseCommission(t *testing.T) {
 	if coinData.Volume().Cmp(estimatedSupply) != 0 {
 		t.Fatalf("Wrong coin supply")
 	}
+
+	checkState(t, cState)
 }
 
 func TestBuyCoinTxBaseToCustomCustomCommission(t *testing.T) {
@@ -758,6 +815,8 @@ func TestBuyCoinTxBaseToCustomCustomCommission(t *testing.T) {
 	privateKey, addr := getAccount()
 	cState.Accounts.AddBalance(addr, coinToSell, initialBalance)
 	cState.Accounts.AddBalance(addr, coinToBuyID, initialGasBalance)
+	cState.Coins.AddVolume(coinToBuyID, initialGasBalance)
+	initialVolume.Add(initialVolume, initialGasBalance)
 
 	tx := createBuyCoinTx(coinToSell, coinToBuyID, coinToBuyID, toBuy, 1)
 	if err := tx.Sign(privateKey); err != nil {
@@ -810,6 +869,8 @@ func TestBuyCoinTxBaseToCustomCustomCommission(t *testing.T) {
 	if coinData.Volume().Cmp(estimatedSupply) != 0 {
 		t.Fatalf("Wrong coin supply. Expected %s, got %s", estimatedSupply.String(), coinData.Volume().String())
 	}
+
+	checkState(t, cState)
 }
 
 func TestBuyCoinTxCustomToBaseCustomCommission(t *testing.T) {
@@ -827,6 +888,8 @@ func TestBuyCoinTxCustomToBaseCustomCommission(t *testing.T) {
 
 	privateKey, addr := getAccount()
 	cState.Accounts.AddBalance(addr, coinToSellID, initialBalance)
+	cState.Coins.AddVolume(coinToSellID, initialBalance)
+	initialVolume.Add(initialVolume, initialBalance)
 
 	tx := createBuyCoinTx(coinToSellID, coinToBuy, coinToSellID, toBuy, 1)
 	if err := tx.Sign(privateKey); err != nil {
@@ -877,6 +940,8 @@ func TestBuyCoinTxCustomToBaseCustomCommission(t *testing.T) {
 			t.Fatalf("Wrong coin supply. Expected %s, got %s", estimatedSupply.String(), coinData.Volume().String())
 		}
 	}
+
+	checkState(t, cState)
 }
 
 func TestBuyCoinTxCustomToCustomCustom1Commission(t *testing.T) {
@@ -895,6 +960,8 @@ func TestBuyCoinTxCustomToCustomCustom1Commission(t *testing.T) {
 
 	privateKey, addr := getAccount()
 	cState.Accounts.AddBalance(addr, coinToSellID, initialBalance)
+	cState.Coins.AddVolume(coinToSellID, initialBalance)
+	initialVolume1.Add(initialVolume1, initialBalance)
 
 	tx := createBuyCoinTx(coinToSellID, coinToBuyID, coinToSellID, toBuy, 1)
 	if err := tx.Sign(privateKey); err != nil {
@@ -964,6 +1031,8 @@ func TestBuyCoinTxCustomToCustomCustom1Commission(t *testing.T) {
 			t.Fatalf("Wrong coin supply")
 		}
 	}
+
+	checkState(t, cState)
 }
 
 func TestBuyCoinTxCustomToCustomCustom2Commission(t *testing.T) {
@@ -983,7 +1052,12 @@ func TestBuyCoinTxCustomToCustomCustom2Commission(t *testing.T) {
 
 	privateKey, addr := getAccount()
 	cState.Accounts.AddBalance(addr, coinToSellID, initialBalance)
+	cState.Coins.AddVolume(coinToSellID, initialBalance)
+	initialVolume1.Add(initialVolume1, initialBalance)
+
 	cState.Accounts.AddBalance(addr, coinToBuyID, initialGasBalance)
+	cState.Coins.AddVolume(coinToBuyID, initialGasBalance)
+	initialVolume2.Add(initialVolume2, initialGasBalance)
 
 	tx := createBuyCoinTx(coinToSellID, coinToBuyID, coinToBuyID, toBuy, 1)
 	if err := tx.Sign(privateKey); err != nil {
@@ -1055,6 +1129,8 @@ func TestBuyCoinTxCustomToCustomCustom2Commission(t *testing.T) {
 			t.Fatalf("Wrong coin supply")
 		}
 	}
+
+	checkState(t, cState)
 }
 
 func TestBuyCoinTxToCoinSupplyOverflow(t *testing.T) {
@@ -1078,6 +1154,8 @@ func TestBuyCoinTxToCoinSupplyOverflow(t *testing.T) {
 	if response.Code != code.CoinSupplyOverflow {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinSupplyOverflow, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestBuyCoinTxToMaximumValueToSellReached(t *testing.T) {
@@ -1087,6 +1165,7 @@ func TestBuyCoinTxToMaximumValueToSellReached(t *testing.T) {
 
 	valueToBuy := big.NewInt(2e18)
 	cState.Accounts.AddBalance(addr, sellCoinID, valueToBuy)
+	cState.Coins.AddVolume(sellCoinID, valueToBuy)
 
 	data := BuyCoinData{
 		CoinToBuy:          coinToBuyID,
@@ -1126,6 +1205,7 @@ func TestBuyCoinTxToMaximumValueToSellReached(t *testing.T) {
 	}
 
 	cState.Accounts.AddBalance(addr, coinToBuyID, helpers.BipToPip(big.NewInt(100000)))
+	cState.Coins.AddVolume(coinToBuyID, helpers.BipToPip(big.NewInt(100000)))
 
 	data.CoinToBuy = sellCoinID
 	data.CoinToSell = coinToBuyID
@@ -1208,6 +1288,8 @@ func TestBuyCoinTxToMaximumValueToSellReached(t *testing.T) {
 	if response.Code != code.MaximumValueToSellReached {
 		t.Fatalf("Response code is not %d. Error %s", code.MaximumValueToSellReached, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestBuyCoinTxToCoinReserveNotSufficient(t *testing.T) {
@@ -1219,10 +1301,10 @@ func TestBuyCoinTxToCoinReserveNotSufficient(t *testing.T) {
 		cState.App.GetNextCoinID(),
 		types.StrToCoinSymbol("TEST9"),
 		"TEST COIN",
-		helpers.BipToPip(big.NewInt(100000)),
+		helpers.BipToPip(big.NewInt(5000000)),
 		10,
 		helpers.BipToPip(big.NewInt(100000)),
-		helpers.BipToPip(big.NewInt(1000000)),
+		helpers.BipToPip(big.NewInt(10000000)),
 		nil,
 	)
 
@@ -1303,6 +1385,8 @@ func TestBuyCoinTxToCoinReserveNotSufficient(t *testing.T) {
 	if response.Code != code.CoinReserveNotSufficient {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveNotSufficient, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func createBuyCoinTx(sellCoin, buyCoin, gasCoin types.CoinID, valueToBuy *big.Int, nonce uint64) *Transaction {
@@ -1351,6 +1435,7 @@ func createTestCoinWithSymbol(stateDB *state.State, symbol types.CoinSymbol) (ty
 	id := stateDB.App.GetNextCoinID()
 	stateDB.Coins.Create(id, symbol, "TEST COIN", volume, crr, reserve, big.NewInt(0).Mul(volume, big.NewInt(10)), nil)
 	stateDB.App.SetCoinsCount(id.Uint32())
+	stateDB.Accounts.AddBalance(types.Address{}, id, volume)
 
 	return id, big.NewInt(0).Set(volume), big.NewInt(0).Set(reserve), crr
 }

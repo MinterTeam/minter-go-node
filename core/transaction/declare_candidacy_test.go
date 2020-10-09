@@ -262,7 +262,7 @@ func TestDeclareCandidacyTxWithBlockPybKey(t *testing.T) {
 	}
 }
 
-func TestDeclareCandidacyToNonExistenCoin(t *testing.T) {
+func TestDeclareCandidacyToNonExistCoin(t *testing.T) {
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -317,7 +317,7 @@ func TestDeclareCandidacyToNonExistenCoin(t *testing.T) {
 	}
 }
 
-func TestDeclareCandidacyToExistenCandidate(t *testing.T) {
+func TestDeclareCandidacyToExistCandidate(t *testing.T) {
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()

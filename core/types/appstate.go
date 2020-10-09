@@ -174,7 +174,7 @@ func (s *AppState) Verify() error {
 		}
 
 		if volume.Cmp(helpers.StringToBigInt(coin.Volume)) != 0 {
-			return fmt.Errorf("wrong coin %s volume", coin.Symbol.String())
+			return fmt.Errorf("wrong coin %s volume (%s)", coin.Symbol.String(), big.NewInt(0).Sub(volume, helpers.StringToBigInt(coin.Volume)))
 		}
 	}
 

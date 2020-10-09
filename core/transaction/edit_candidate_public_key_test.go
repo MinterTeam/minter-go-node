@@ -281,7 +281,7 @@ func TestEditCandidatePublicKeyTxToGasCoinReserveUnderflow(t *testing.T) {
 	}
 }
 
-func TestEditCandidatePublicKeyToNotExistenCandidate(t *testing.T) {
+func TestEditCandidatePublicKeyToNotExistCandidate(t *testing.T) {
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()

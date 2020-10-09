@@ -98,7 +98,7 @@ func TestEditMultisigTx(t *testing.T) {
 	}
 }
 
-func TestEditMultisigTxToNonExistenAddress(t *testing.T) {
+func TestEditMultisigTxToNonExistAddress(t *testing.T) {
 	cState := getState()
 
 	addr := types.Address{0}

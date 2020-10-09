@@ -160,7 +160,7 @@ func TestDelegateTxWithWatchlist(t *testing.T) {
 	}
 }
 
-func TestDelegateTxToNonExistenCoin(t *testing.T) {
+func TestDelegateTxToNonExistCoin(t *testing.T) {
 	cState := getState()
 
 	pubkey := createTestCandidate(cState)
@@ -254,10 +254,10 @@ func TestDelegateTxToPositiveStake(t *testing.T) {
 	}
 }
 
-func TestDelegateTxToNonExistenCandidate(t *testing.T) {
+func TestDelegateTxToNonExistCandidate(t *testing.T) {
 	cState := getState()
 
-	pubkey := types.Pubkey{0}
+	pubkey := types.Pubkey{1}
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 	coin := types.GetBaseCoinID()

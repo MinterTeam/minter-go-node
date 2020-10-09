@@ -95,7 +95,7 @@ func TestEditCandidateTx(t *testing.T) {
 	}
 }
 
-func TestEditCandidateTxToNonExistenCandidate(t *testing.T) {
+func TestEditCandidateTxToNonExistCandidate(t *testing.T) {
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
