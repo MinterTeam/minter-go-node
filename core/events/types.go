@@ -37,7 +37,7 @@ type Event interface {
 }
 
 type compactEvent interface {
-	compile(pubKey string, address [20]byte) Event
+	compile(pubKey [32]byte, address [20]byte) Event
 	addressID() uint32
 	pubKeyID() uint16
 }
@@ -90,10 +90,10 @@ type reward struct {
 	PubKeyID  uint16
 }
 
-func (r *reward) compile(pubKey string, address [20]byte) Event {
+func (r *reward) compile(pubKey [32]byte, address [20]byte) Event {
 	event := new(RewardEvent)
-	copy(event.ValidatorPubKey[:], pubKey)
-	copy(event.Address[:], address[:])
+	event.ValidatorPubKey = pubKey
+	event.Address = address
 	event.Role = r.Role.String()
 	event.Amount = big.NewInt(0).SetBytes(r.Amount).String()
 	return event
@@ -147,15 +147,15 @@ func (re *RewardEvent) convert(pubKeyID uint16, addressID uint32) compactEvent {
 type slash struct {
 	AddressID uint32
 	Amount    []byte
-	Coin      [10]byte
+	Coin      uint32
 	PubKeyID  uint16
 }
 
-func (s *slash) compile(pubKey string, address [20]byte) Event {
+func (s *slash) compile(pubKey [32]byte, address [20]byte) Event {
 	event := new(SlashEvent)
-	copy(event.ValidatorPubKey[:], pubKey)
-	copy(event.Address[:], address[:])
-	copy(event.Coin.Bytes(), s.Coin[:])
+	event.ValidatorPubKey = pubKey
+	event.Address = address
+	event.Coin = types.CoinID(s.Coin)
 	event.Amount = big.NewInt(0).SetBytes(s.Amount).String()
 	return event
 }
@@ -198,7 +198,7 @@ func (se *SlashEvent) validatorPubKey() types.Pubkey {
 func (se *SlashEvent) convert(pubKeyID uint16, addressID uint32) compactEvent {
 	result := new(slash)
 	result.AddressID = addressID
-	copy(result.Coin[:], se.Coin.Bytes())
+	result.Coin = se.Coin.Uint32()
 	bi, _ := big.NewInt(0).SetString(se.Amount, 10)
 	result.Amount = bi.Bytes()
 	result.PubKeyID = pubKeyID
@@ -208,15 +208,15 @@ func (se *SlashEvent) convert(pubKeyID uint16, addressID uint32) compactEvent {
 type unbond struct {
 	AddressID uint32
 	Amount    []byte
-	Coin      [10]byte
+	Coin      uint32
 	PubKeyID  uint16
 }
 
-func (u *unbond) compile(pubKey string, address [20]byte) Event {
+func (u *unbond) compile(pubKey [32]byte, address [20]byte) Event {
 	event := new(UnbondEvent)
-	copy(event.ValidatorPubKey[:], pubKey)
-	copy(event.Address[:], address[:])
-	copy(event.Coin.Bytes(), u.Coin[:])
+	event.ValidatorPubKey = pubKey
+	event.Address = address
+	event.Coin = types.CoinID(u.Coin)
 	event.Amount = big.NewInt(0).SetBytes(u.Amount).String()
 	return event
 }
@@ -259,7 +259,7 @@ func (ue *UnbondEvent) validatorPubKey() types.Pubkey {
 func (ue *UnbondEvent) convert(pubKeyID uint16, addressID uint32) compactEvent {
 	result := new(unbond)
 	result.AddressID = addressID
-	copy(result.Coin[:], ue.Coin.Bytes())
+	result.Coin = ue.Coin.Uint32()
 	bi, _ := big.NewInt(0).SetString(ue.Amount, 10)
 	result.Amount = bi.Bytes()
 	result.PubKeyID = pubKeyID
@@ -269,15 +269,15 @@ func (ue *UnbondEvent) convert(pubKeyID uint16, addressID uint32) compactEvent {
 type stakeKick struct {
 	AddressID uint32
 	Amount    []byte
-	Coin      [10]byte
+	Coin      uint32
 	PubKeyID  uint16
 }
 
-func (u *stakeKick) compile(pubKey string, address [20]byte) Event {
+func (u *stakeKick) compile(pubKey [32]byte, address [20]byte) Event {
 	event := new(StakeKickEvent)
-	copy(event.ValidatorPubKey[:], pubKey)
-	copy(event.Address[:], address[:])
-	copy(event.Coin.Bytes(), u.Coin[:])
+	event.ValidatorPubKey = pubKey
+	event.Address = address
+	event.Coin = types.CoinID(u.Coin)
 	event.Amount = big.NewInt(0).SetBytes(u.Amount).String()
 	return event
 }
@@ -320,7 +320,7 @@ func (ue *StakeKickEvent) validatorPubKey() types.Pubkey {
 func (ue *StakeKickEvent) convert(pubKeyID uint16, addressID uint32) compactEvent {
 	result := new(stakeKick)
 	result.AddressID = addressID
-	copy(result.Coin[:], ue.Coin.Bytes())
+	result.Coin = ue.Coin.Uint32()
 	bi, _ := big.NewInt(0).SetString(ue.Amount, 10)
 	result.Amount = bi.Bytes()
 	result.PubKeyID = pubKeyID
