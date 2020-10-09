@@ -310,9 +310,9 @@ func TestUnbondTxToNotExistenCoin(t *testing.T) {
 	}
 }
 
-func TestUnbondTxToNotExistenCandidate(t *testing.T) {
+func TestUnbondTxToNotExistCandidate(t *testing.T) {
 	cState := getState()
-	pubkey := types.Pubkey{0}
+	pubkey := types.Pubkey{1}
 	privateKey, _ := crypto.GenerateKey()
 	coin := types.GetBaseCoinID()
 	value := helpers.BipToPip(big.NewInt(100))
