@@ -23,7 +23,7 @@ func (s *Service) CoinInfo(ctx context.Context, req *pb.CoinInfoRequest) (*pb.Co
 	cState.RLock()
 	defer cState.RUnlock()
 
-	coin := cState.Coins().GetCoinBySymbol(types.StrToCoinSymbol(req.Symbol), types.GetVersionFromSymbol(req.Symbol))
+	coin := cState.Coins().GetCoinBySymbol(types.StrToCoinBaseSymbol(req.Symbol), types.GetVersionFromSymbol(req.Symbol))
 	if coin == nil {
 		return nil, s.createError(status.New(codes.NotFound, "Coin not found"), transaction.EncodeError(code.NewCoinNotExists(req.Symbol, "")))
 	}
