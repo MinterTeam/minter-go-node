@@ -20,18 +20,6 @@ const (
 	BaseVersion types.CoinVersion = 0
 )
 
-var (
-	baseModel = &Model{
-		id:         types.GetBaseCoinID(),
-		CSymbol:    types.GetBaseCoin(),
-		CMaxSupply: helpers.BipToPip(big.NewInt(10000000000)),
-		info: &Info{
-			Volume:  big.NewInt(0),
-			Reserve: big.NewInt(0),
-		},
-	}
-)
-
 type RCoins interface {
 	Export(state *types.AppState)
 	Exists(id types.CoinID) bool
@@ -290,7 +278,15 @@ func (c *Coins) ChangeOwner(symbol types.CoinSymbol, owner types.Address) {
 
 func (c *Coins) get(id types.CoinID) *Model {
 	if id.IsBaseCoin() {
-		return baseModel
+		return &Model{
+			id:         types.GetBaseCoinID(),
+			CSymbol:    types.GetBaseCoin(),
+			CMaxSupply: helpers.BipToPip(big.NewInt(10000000000)),
+			info: &Info{
+				Volume:  big.NewInt(0),
+				Reserve: big.NewInt(0),
+			},
+		}
 	}
 
 	if coin := c.getFromMap(id); coin != nil {
