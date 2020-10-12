@@ -29,7 +29,7 @@ func Waitlist(pubkey types.Pubkey, address types.Address, height int) (*Waitlist
 		response.List = append(response.List, &Wait{
 			Coin: Coin{
 				ID:     item.Coin.Uint32(),
-				Symbol: cState.Coins().GetCoin(item.Coin).CSymbol.String(),
+				Symbol: cState.Coins().GetCoin(item.Coin).GetFullSymbol(),
 			},
 			Value: item.Value.String(),
 		})
