@@ -44,11 +44,17 @@ func (data DelegateData) BasicCheck(tx *Transaction, context *state.CheckState) 
 		}
 	}
 
-	if data.Value.Cmp(types.Big0) < 1 {
+	sender, _ := tx.Sender()
+	value := big.NewInt(0).Set(data.Value)
+	if watchList := context.WaitList().Get(sender, data.PubKey, data.Coin); watchList != nil {
+		value.Add(value, watchList.Value)
+	}
+
+	if value.Cmp(types.Big0) < 1 {
 		return &Response{
 			Code: code.StakeShouldBePositive,
 			Log:  "Stake should be positive",
-			Info: EncodeError(code.NewStakeShouldBePositive(data.Value.String())),
+			Info: EncodeError(code.NewStakeShouldBePositive(value.String())),
 		}
 	}
 
@@ -60,12 +66,11 @@ func (data DelegateData) BasicCheck(tx *Transaction, context *state.CheckState) 
 		}
 	}
 
-	sender, _ := tx.Sender()
-	if !context.Candidates().IsDelegatorStakeSufficient(sender, data.PubKey, data.Coin, data.Value) {
+	if !context.Candidates().IsDelegatorStakeSufficient(sender, data.PubKey, data.Coin, value) {
 		return &Response{
 			Code: code.TooLowStake,
 			Log:  "Stake is too low",
-			Info: EncodeError(code.NewTooLowStake(sender.String(), data.PubKey.String(), data.Value.String(), data.Coin.String(), context.Coins().GetCoin(data.Coin).GetFullSymbol())),
+			Info: EncodeError(code.NewTooLowStake(sender.String(), data.PubKey.String(), value.String(), data.Coin.String(), context.Coins().GetCoin(data.Coin).GetFullSymbol())),
 		}
 	}
 
