@@ -3,8 +3,6 @@ FROM tazhate/dockerfile-gox as builder
 COPY . /gopath/src/github.com/MinterTeam/minter-go-node
 WORKDIR /gopath/src/github.com/MinterTeam/minter-go-node
 RUN apt-get update && apt-get install libleveldb-dev -y --no-install-recommends -q
-RUN make get_tools
-RUN make get_vendor_deps
 RUN make build
 
 FROM ubuntu:bionic
