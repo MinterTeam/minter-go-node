@@ -72,7 +72,7 @@ func makeResponseCandidate(state *state.CheckState, c *candidates.Candidate, inc
 				Owner: stake.Owner.String(),
 				Coin: &pb.Coin{
 					Id:     uint64(stake.Coin),
-					Symbol: state.Coins().GetCoin(stake.Coin).Symbol().String(),
+					Symbol: state.Coins().GetCoin(stake.Coin).GetFullSymbol(),
 				},
 				Value:    stake.Value.String(),
 				BipValue: stake.BipValue.String(),
