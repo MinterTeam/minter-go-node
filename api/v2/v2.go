@@ -32,7 +32,7 @@ import (
 	"time"
 )
 
-// Start gRPC and API v2
+// Run initialises gRPC and API v2 interfaces
 func Run(srv *service.Service, addrGRPC, addrApi string, logger log.Logger) error {
 	lis, err := net.Listen("tcp", addrGRPC)
 	if err != nil {
@@ -84,8 +84,15 @@ func Run(srv *service.Service, addrGRPC, addrApi string, logger log.Logger) erro
 		return err
 	}
 	mux := http.NewServeMux()
-	mux.Handle("/v2/", http.StripPrefix("/v2", handlers.CompressHandler(allowCORS(wsproxy.WebsocketProxy(gwmux)))))
-	_ = serveOpenAPI(mux)
+	openapi := "/v2/openapi-ui/"
+	_ = serveOpenAPI(openapi, mux)
+	mux.HandleFunc("/v2/", func(writer http.ResponseWriter, request *http.Request) {
+		if request.URL.Path == "/v2/" {
+			http.Redirect(writer, request, openapi, 302)
+			return
+		}
+		http.StripPrefix("/v2", handlers.CompressHandler(allowCORS(wsproxy.WebsocketProxy(gwmux))))
+	})
 	group.Go(func() error {
 		return http.ListenAndServe(addrApi, mux)
 	})
@@ -113,7 +120,7 @@ func preflightHandler(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Access-Control-Allow-Methods", strings.Join(methods, ","))
 }
 
-func serveOpenAPI(mux *http.ServeMux) error {
+func serveOpenAPI(prefix string, mux *http.ServeMux) error {
 	_ = mime.AddExtensionType(".svg", "image/svg+xml")
 
 	statikFS, err := fs.New()
@@ -123,7 +130,6 @@ func serveOpenAPI(mux *http.ServeMux) error {
 
 	// Expose files in static on <host>/v2/openapi-ui
 	fileServer := http.FileServer(statikFS)
-	prefix := "/v2/openapi-ui/"
 	mux.Handle(prefix, http.StripPrefix(prefix, fileServer))
 	return nil
 }
