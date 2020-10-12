@@ -290,9 +290,9 @@ func (data SellCoinData) BasicCheck(tx *Transaction, context *state.CheckState) 
 			Log:  "\"From\" coin equals to \"to\" coin",
 			Info: EncodeError(code.NewCrossConvert(
 				data.CoinToSell.String(),
-				context.Coins().GetCoin(data.CoinToSell).Symbol().String(),
+				context.Coins().GetCoin(data.CoinToSell).GetFullSymbol(),
 				data.CoinToBuy.String(),
-				context.Coins().GetCoin(data.CoinToBuy).Symbol().String()),
+				context.Coins().GetCoin(data.CoinToBuy).GetFullSymbol()),
 			),
 		}
 	}
