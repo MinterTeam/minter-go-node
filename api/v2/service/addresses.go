@@ -59,7 +59,7 @@ func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.
 			res.Balance = append(res.Balance, &pb.AddressBalance{
 				Coin: &pb.Coin{
 					Id:     uint64(coin.Coin.ID),
-					Symbol: cState.Coins().GetCoin(coin.Coin.ID).Symbol().String(),
+					Symbol: cState.Coins().GetCoin(coin.Coin.ID).GetFullSymbol(),
 				},
 				Value:    coin.Value.String(),
 				BipValue: customCoinBipBalance(coin.Coin.ID, coin.Value, cState).String(),
@@ -98,7 +98,7 @@ func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.
 				res.Delegated = append(res.Delegated, &pb.AddressDelegatedBalance{
 					Coin: &pb.Coin{
 						Id:     uint64(coinID),
-						Symbol: cState.Coins().GetCoin(coinID).Symbol().String(),
+						Symbol: cState.Coins().GetCoin(coinID).GetFullSymbol(),
 					},
 					Value:            delegatedStake.Value.String(),
 					DelegateBipValue: delegatedStake.BipValue.String(),
@@ -126,7 +126,7 @@ func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.
 				res.Total = append(res.Total, &pb.AddressBalance{
 					Coin: &pb.Coin{
 						Id:     uint64(coinID),
-						Symbol: cState.Coins().GetCoin(coinID).Symbol().String(),
+						Symbol: cState.Coins().GetCoin(coinID).GetFullSymbol(),
 					},
 					Value:    stake.String(),
 					BipValue: balance.String(),
