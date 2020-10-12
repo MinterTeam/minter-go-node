@@ -91,7 +91,7 @@ func Run(srv *service.Service, addrGRPC, addrApi string, logger log.Logger) erro
 			http.Redirect(writer, request, openapi, 302)
 			return
 		}
-		http.StripPrefix("/v2", handlers.CompressHandler(allowCORS(wsproxy.WebsocketProxy(gwmux))))
+		http.StripPrefix("/v2", handlers.CompressHandler(allowCORS(wsproxy.WebsocketProxy(gwmux)))).ServeHTTP(writer, request)
 	})
 	group.Go(func() error {
 		return http.ListenAndServe(addrApi, mux)
