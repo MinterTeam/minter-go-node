@@ -230,10 +230,16 @@ func getGenesis() (doc *tmTypes.GenesisDoc, e error) {
 	_, err := os.Stat(genDocFile)
 	if err != nil {
 		if !os.IsNotExist(err) {
-			panic(err)
+			return nil, err
 		}
-		if err := downloadFile(genDocFile, "https://raw.githubusercontent.com/MinterTeam/minter-network-migrate/master/minter-mainnet-2/genesis.json"); err != nil {
-			panic(err)
+
+		genesis, err := RootCmd.Flags().GetString("genesis")
+		if err != nil {
+			return nil, err
+		}
+
+		if err := downloadFile(genDocFile, genesis); err != nil {
+			return nil, err
 		}
 	}
 	return tmTypes.GenesisDocFromFile(genDocFile)
