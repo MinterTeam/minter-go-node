@@ -3,20 +3,13 @@ package api
 import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/config"
-	eventsdb "github.com/MinterTeam/minter-go-node/core/events"
 	"github.com/MinterTeam/minter-go-node/core/minter"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/rpc/lib/server"
 	"github.com/rs/cors"
 	"github.com/tendermint/go-amino"
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/ed25519"
-	"github.com/tendermint/tendermint/crypto/multisig"
-	"github.com/tendermint/tendermint/crypto/secp256k1"
-	"github.com/tendermint/tendermint/evidence"
 	"github.com/tendermint/tendermint/libs/log"
 	rpc "github.com/tendermint/tendermint/rpc/client/local"
-	"github.com/tendermint/tendermint/types"
 	"net/http"
 	"net/url"
 	"strings"
@@ -67,13 +60,9 @@ func responseTime(b *minter.Blockchain) func(f func(http.ResponseWriter, *http.R
 }
 
 // RunAPI start
-func RunAPI(b *minter.Blockchain, tmRPC *rpc.Local, cfg *config.Config, logger log.Logger) {
+func RunAPI(codec *amino.Codec, b *minter.Blockchain, tmRPC *rpc.Local, cfg *config.Config, logger log.Logger) {
+	cdc = codec
 	minterCfg = cfg
-
-	RegisterCryptoAmino(cdc)
-	eventsdb.RegisterAminoEvents(cdc)
-	RegisterEvidenceMessages(cdc)
-
 	client = tmRPC
 	blockchain = b
 	waitForTendermint()
@@ -149,30 +138,4 @@ func GetStateForHeight(height int) (*state.CheckState, error) {
 	}
 
 	return blockchain.CurrentState(), nil
-}
-
-// RegisterAmino registers all crypto related types in the given (amino) codec.
-func RegisterCryptoAmino(cdc *amino.Codec) {
-	// These are all written here instead of
-	cdc.RegisterInterface((*crypto.PubKey)(nil), nil)
-	cdc.RegisterConcrete(ed25519.PubKeyEd25519{},
-		ed25519.PubKeyAminoName, nil)
-	cdc.RegisterConcrete(secp256k1.PubKeySecp256k1{},
-		secp256k1.PubKeyAminoName, nil)
-	cdc.RegisterConcrete(multisig.PubKeyMultisigThreshold{},
-		multisig.PubKeyMultisigThresholdAminoRoute, nil)
-
-	cdc.RegisterInterface((*crypto.PrivKey)(nil), nil)
-	cdc.RegisterConcrete(ed25519.PrivKeyEd25519{},
-		ed25519.PrivKeyAminoName, nil)
-	cdc.RegisterConcrete(secp256k1.PrivKeySecp256k1{},
-		secp256k1.PrivKeyAminoName, nil)
-}
-
-func RegisterEvidenceMessages(cdc *amino.Codec) {
-	cdc.RegisterInterface((*evidence.Message)(nil), nil)
-	cdc.RegisterConcrete(&evidence.ListMessage{},
-		"tendermint/evidence/EvidenceListMessage", nil)
-	cdc.RegisterInterface((*types.Evidence)(nil), nil)
-	cdc.RegisterConcrete(&types.DuplicateVoteEvidence{}, "tendermint/DuplicateVoteEvidence", nil)
 }
