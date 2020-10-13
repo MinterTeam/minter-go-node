@@ -22,6 +22,6 @@ func (m *Model) AddToList(candidateId uint32, coin types.CoinID, value *big.Int)
 	m.List = append(m.List, Item{
 		CandidateId: candidateId,
 		Coin:        coin,
-		Value:       value,
+		Value:       new(big.Int).Set(value),
 	})
 }
