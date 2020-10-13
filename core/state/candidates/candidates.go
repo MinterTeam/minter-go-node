@@ -79,7 +79,12 @@ type Candidates struct {
 
 // NewCandidates returns newly created Candidates state with a given bus and iavl
 func NewCandidates(bus *bus.Bus, iavl tree.MTree) (*Candidates, error) {
-	candidates := &Candidates{iavl: iavl, bus: bus}
+	candidates := &Candidates{
+		iavl:      iavl,
+		bus:       bus,
+		blockList: map[types.Pubkey]struct{}{},
+		pubKeyIDs: map[types.Pubkey]uint32{},
+	}
 	candidates.bus.SetCandidates(NewBus(candidates))
 
 	return candidates, nil
@@ -411,9 +416,6 @@ func (c *Candidates) Exists(pubkey types.Pubkey) bool {
 }
 
 func (c *Candidates) existPubKey(pubKey types.Pubkey) bool {
-	if c.pubKeyIDs == nil {
-		return false
-	}
 	_, exists := c.pubKeyIDs[pubKey]
 	return exists
 }
@@ -1075,31 +1077,26 @@ func (c *Candidates) PubKey(id uint32) types.Pubkey {
 	return candidate.PubKey
 }
 
-func (c *Candidates) setPubKeyID(pubkey types.Pubkey, u uint32) {
-	if u == 0 {
+func (c *Candidates) setPubKeyID(pubkey types.Pubkey, id uint32) {
+	if id == 0 {
 		panic("public key of candidate cannot be equal 0")
 	}
 
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	if c.maxID < u {
-		c.maxID = u
+	if c.maxID < id {
+		c.maxID = id
 	}
 
-	if c.pubKeyIDs == nil {
-		c.pubKeyIDs = map[types.Pubkey]uint32{}
-	}
-	c.pubKeyIDs[pubkey] = u
+	c.pubKeyIDs[pubkey] = id
 	c.isDirty = true
 }
 
 func (c *Candidates) setBlockPubKey(p types.Pubkey) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
-	if c.blockList == nil {
-		c.blockList = map[types.Pubkey]struct{}{}
-	}
+
 	c.blockList[p] = struct{}{}
 	c.isDirty = true
 }
