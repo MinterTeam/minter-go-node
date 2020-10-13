@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/rewards"
 	"github.com/MinterTeam/minter-go-node/core/state"
@@ -174,12 +173,7 @@ func blockEvidence(block *core_types.ResultBlock) (*pb.BlockResponse_Evidence, e
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-		marshal, err := json.Marshal(proto)
-		if err != nil {
-			return nil, err
-		}
-
-		str, err := encodeToStruct(marshal)
+		str, err := toStruct(proto)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
