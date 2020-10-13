@@ -173,7 +173,7 @@ func blockEvidence(block *core_types.ResultBlock) (*pb.BlockResponse_Evidence, e
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-		str, err := toStruct(proto)
+		str, err := toStruct(proto.GetSum())
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
