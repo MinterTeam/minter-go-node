@@ -11,6 +11,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
+	_struct "github.com/golang/protobuf/ptypes/struct"
 	core_types "github.com/tendermint/tendermint/rpc/core/types"
 	tmTypes "github.com/tendermint/tendermint/types"
 	"google.golang.org/grpc/codes"
@@ -94,7 +95,10 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 			return nil, timeoutStatus.Err()
 		}
 
-		response.Evidence = blockEvidence(block)
+		response.Evidence, err = blockEvidence(block)
+		if err != nil {
+			return nil, err
+		}
 
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
 			return nil, timeoutStatus.Err()
@@ -151,7 +155,10 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 				return nil, err
 			}
 		case pb.BlockRequest_evidence:
-			response.Evidence = blockEvidence(block)
+			response.Evidence, err = blockEvidence(block)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 	}
@@ -159,17 +166,16 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 	return response, nil
 }
 
-func blockEvidence(block *core_types.ResultBlock) *pb.BlockResponse_Evidence {
-	evidences := make([]*pb.BlockResponse_Evidence_Evidence, 0, len(block.Block.Evidence.Evidence))
+func blockEvidence(block *core_types.ResultBlock) (*pb.BlockResponse_Evidence, error) {
+	evidences := make([]*_struct.Struct, 0, len(block.Block.Evidence.Evidence))
 	for _, evidence := range block.Block.Evidence.Evidence {
-		evidences = append(evidences, &pb.BlockResponse_Evidence_Evidence{
-			Height:  uint64(evidence.Height()),
-			Time:    evidence.Time().Format(time.RFC3339Nano),
-			Address: fmt.Sprintf("%s", evidence.Address()),
-			Hash:    fmt.Sprintf("%s", evidence.Hash()),
-		})
+		str, err := toStruct(evidence)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		evidences = append(evidences, str)
 	}
-	return &pb.BlockResponse_Evidence{Evidence: evidences}
+	return &pb.BlockResponse_Evidence{Evidence: evidences}, nil
 }
 
 func blockValidators(totalValidators []*tmTypes.Validator, block *core_types.ResultBlock) []*pb.BlockResponse_Validator {
@@ -201,11 +207,7 @@ func missedBlockValidators(s *state.CheckState) []string {
 }
 
 func blockProposer(block *core_types.ResultBlock, totalValidators []*tmTypes.Validator) (string, error) {
-	p, err := getBlockProposer(block, totalValidators)
-	if err != nil {
-		return "", status.Error(codes.FailedPrecondition, err.Error())
-	}
-
+	p := getBlockProposer(block, totalValidators)
 	if p != nil {
 		return p.String(), nil
 	}
@@ -233,7 +235,7 @@ func (s *Service) blockTransaction(block *core_types.ResultBlock, blockResults *
 			Hash:        strings.Title(fmt.Sprintf("Mt%x", rawTx.Hash())),
 			RawTx:       fmt.Sprintf("%x", []byte(rawTx)),
 			From:        sender.String(),
-			Nonce:       uint64(tx.Nonce),
+			Nonce:       tx.Nonce,
 			GasPrice:    uint64(tx.GasPrice),
 			Type:        uint64(tx.Type),
 			Data:        data,
@@ -252,14 +254,14 @@ func (s *Service) blockTransaction(block *core_types.ResultBlock, blockResults *
 	return txs, nil
 }
 
-func getBlockProposer(block *core_types.ResultBlock, vals []*tmTypes.Validator) (*types.Pubkey, error) {
+func getBlockProposer(block *core_types.ResultBlock, vals []*tmTypes.Validator) *types.Pubkey {
 	for _, tmval := range vals {
 		if bytes.Equal(tmval.Address.Bytes(), block.Block.ProposerAddress.Bytes()) {
 			var result types.Pubkey
 			copy(result[:], tmval.PubKey.Bytes()[5:])
-			return &result, nil
+			return &result
 		}
 	}
 
-	return nil, status.Error(codes.NotFound, "Block proposer not found")
+	return nil
 }

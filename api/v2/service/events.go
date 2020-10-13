@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -36,12 +35,7 @@ func (s *Service) Events(ctx context.Context, req *pb.EventsRequest) (*pb.Events
 			continue
 		}
 
-		b, err := json.Marshal(event)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-
-		data, err := encodeToStruct(b)
+		data, err := toStruct(event)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}

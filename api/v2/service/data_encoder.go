@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"github.com/MinterTeam/minter-go-node/core/state/coins"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
@@ -9,6 +10,7 @@ import (
 	"github.com/golang/protobuf/ptypes/any"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
+	_struct "google.golang.org/protobuf/types/known/structpb"
 	"strconv"
 )
 
@@ -201,4 +203,26 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 	}
 
 	return a, nil
+}
+
+func encodeToStruct(b []byte) (*_struct.Struct, error) {
+	dataStruct := &_struct.Struct{}
+	if err := dataStruct.UnmarshalJSON(b); err != nil {
+		return nil, err
+	}
+
+	return dataStruct, nil
+}
+
+func toStruct(d interface{}) (*_struct.Struct, error) {
+	byteData, err := json.Marshal(d)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := encodeToStruct(byteData)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
 }

@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"github.com/google/uuid"
@@ -72,12 +71,7 @@ func subscribeResponse(msg core_types.ResultEvent) (*pb.SubscribeResponse, error
 		})
 	}
 
-	byteData, err := json.Marshal(msg.Data)
-	if err != nil {
-		return nil, err
-	}
-
-	data, err := encodeToStruct(byteData)
+	data, err := toStruct(msg.Data)
 	if err != nil {
 		return nil, err
 	}

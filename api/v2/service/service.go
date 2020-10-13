@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/minter"
-	_struct "github.com/golang/protobuf/ptypes/struct"
 	"github.com/tendermint/go-amino"
 	tmNode "github.com/tendermint/tendermint/node"
 	rpc "github.com/tendermint/tendermint/rpc/client/local"
@@ -12,7 +11,7 @@ import (
 	"time"
 )
 
-// gRPC implementation ApiServiceServer
+// Service is gRPC implementation ApiServiceServer
 type Service struct {
 	cdc        *amino.Codec
 	blockchain *minter.Blockchain
@@ -22,7 +21,7 @@ type Service struct {
 	version    string
 }
 
-// NewService create gRPC implementation
+// NewService create gRPC server implementation
 func NewService(cdc *amino.Codec, blockchain *minter.Blockchain, client *rpc.Local, node *tmNode.Node, minterCfg *config.Config, version string) *Service {
 	return &Service{
 		cdc:        cdc,
@@ -32,6 +31,11 @@ func NewService(cdc *amino.Codec, blockchain *minter.Blockchain, client *rpc.Loc
 		version:    version,
 		tmNode:     node,
 	}
+}
+
+// TimeoutDuration gRPC
+func (s *Service) TimeoutDuration() time.Duration {
+	return s.minterCfg.APIv2TimeoutDuration
 }
 
 func (s *Service) createError(statusErr *status.Status, data string) error {
@@ -52,20 +56,6 @@ func (s *Service) createError(statusErr *status.Status, data string) error {
 	}
 
 	return withDetails.Err()
-}
-
-func encodeToStruct(b []byte) (*_struct.Struct, error) {
-	dataStruct := &_struct.Struct{}
-	if err := dataStruct.UnmarshalJSON(b); err != nil {
-		return nil, err
-	}
-
-	return dataStruct, nil
-}
-
-// TimeoutDuration gRPC
-func (s *Service) TimeoutDuration() time.Duration {
-	return s.minterCfg.APIv2TimeoutDuration
 }
 
 func (s *Service) checkTimeout(ctx context.Context) *status.Status {
