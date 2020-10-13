@@ -164,7 +164,7 @@ func (wl *WaitList) Delete(address types.Address, pubkey types.Pubkey, coin type
 	value := big.NewInt(0)
 	items := make([]Item, 0, len(w.List)-1)
 	for _, item := range w.List {
-		if item.CandidateId != candidate.ID && item.Coin != coin {
+		if item.CandidateId != candidate.ID || item.Coin != coin {
 			items = append(items, item)
 		} else {
 			value.Add(value, item.Value)
