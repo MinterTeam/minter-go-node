@@ -10,6 +10,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/tree"
+	"github.com/MinterTeam/minter-go-node/upgrades"
 
 	"math/big"
 )
@@ -101,7 +102,10 @@ func (v *Validators) SetValidatorAbsent(height uint64, address types.TmAddress) 
 	validator.SetAbsent(height)
 
 	if validator.CountAbsentTimes() > ValidatorMaxAbsentTimes {
-		v.punishValidator(height, address)
+		if !upgrades.IsGraceBlock(height) {
+			v.punishValidator(height, address)
+		}
+
 		v.turnValidatorOff(address)
 	}
 }
