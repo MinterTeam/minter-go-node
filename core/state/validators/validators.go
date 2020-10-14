@@ -22,8 +22,8 @@ const (
 )
 
 const (
-	ValidatorMaxAbsentWindow = 24
-	ValidatorMaxAbsentTimes  = 12
+	validatorMaxAbsentWindow = 24
+	validatorMaxAbsentTimes  = 12
 )
 
 // Validators struct is a store of Validators state
@@ -86,6 +86,7 @@ func (v *Validators) Commit() error {
 	return nil
 }
 
+// SetValidatorPresent marks validator as present at current height
 func (v *Validators) SetValidatorPresent(height uint64, address types.TmAddress) {
 	validator := v.GetByTmAddress(address)
 	if validator == nil {
@@ -94,6 +95,8 @@ func (v *Validators) SetValidatorPresent(height uint64, address types.TmAddress)
 	validator.SetPresent(height)
 }
 
+// SetValidatorAbsent marks validator as absent at current height
+// if validator misses signs of more than validatorMaxAbsentTimes, it will receive penalty and will be swithed off
 func (v *Validators) SetValidatorAbsent(height uint64, address types.TmAddress) {
 	validator := v.GetByTmAddress(address)
 	if validator == nil {
@@ -101,7 +104,7 @@ func (v *Validators) SetValidatorAbsent(height uint64, address types.TmAddress) 
 	}
 	validator.SetAbsent(height)
 
-	if validator.CountAbsentTimes() > ValidatorMaxAbsentTimes {
+	if validator.CountAbsentTimes() > validatorMaxAbsentTimes {
 		if !upgrades.IsGraceBlock(height) {
 			v.punishValidator(height, address)
 		}
@@ -115,13 +118,14 @@ func (v *Validators) GetValidators() []*Validator {
 	return v.list
 }
 
+// SetNewValidators updated validators list with new candidates
 func (v *Validators) SetNewValidators(candidates []candidates.Candidate) {
 	old := v.GetValidators()
 
 	var newVals []*Validator
 	for _, candidate := range candidates {
 		accumReward := big.NewInt(0)
-		absentTimes := types.NewBitArray(ValidatorMaxAbsentWindow)
+		absentTimes := types.NewBitArray(validatorMaxAbsentWindow)
 
 		for _, oldVal := range old {
 			if oldVal.GetAddress() == candidate.GetTmAddress() {
@@ -162,8 +166,8 @@ func (v *Validators) PunishByzantineValidator(tmAddress [20]byte) {
 func (v *Validators) Create(pubkey types.Pubkey, stake *big.Int) {
 	val := &Validator{
 		PubKey:             pubkey,
-		AbsentTimes:        types.NewBitArray(ValidatorMaxAbsentWindow),
-		totalStake:         stake,
+		AbsentTimes:        types.NewBitArray(validatorMaxAbsentWindow),
+		totalStake:         big.NewInt(0).Set(stake),
 		accumReward:        big.NewInt(0),
 		isDirty:            true,
 		isTotalStakeDirty:  true,
@@ -174,6 +178,7 @@ func (v *Validators) Create(pubkey types.Pubkey, stake *big.Int) {
 	v.list = append(v.list, val)
 }
 
+// PayRewards distributes accumulated rewards between validator, delegators, DAO and developers addresses
 func (v *Validators) PayRewards(height uint64) {
 	vals := v.GetValidators()
 	for _, validator := range vals {
@@ -354,6 +359,7 @@ func (v *Validators) punishValidator(height uint64, tmAddress types.TmAddress) {
 	validator.SetTotalBipStake(totalStake)
 }
 
+// SetValidators updates validators list
 func (v *Validators) SetValidators(vals []*Validator) {
 	v.list = vals
 }
@@ -372,6 +378,7 @@ func (v *Validators) Export(state *types.AppState) {
 	}
 }
 
+// SetToDrop marks given validator as inactive for dropping it in the next block
 func (v *Validators) SetToDrop(pubkey types.Pubkey) {
 	vals := v.GetValidators()
 	for _, val := range vals {
@@ -383,9 +390,9 @@ func (v *Validators) SetToDrop(pubkey types.Pubkey) {
 
 func (v *Validators) turnValidatorOff(tmAddress types.TmAddress) {
 	validator := v.GetByTmAddress(tmAddress)
-	validator.AbsentTimes = types.NewBitArray(ValidatorMaxAbsentWindow)
+	validator.AbsentTimes = types.NewBitArray(validatorMaxAbsentWindow)
 	validator.toDrop = true
 	validator.isDirty = true
 
-	v.bus.Candidates().SetOffline(v.bus.Candidates().GetCandidateByTendermintAddress(tmAddress).PubKey)
+	v.bus.Candidates().SetOffline(validator.PubKey)
 }

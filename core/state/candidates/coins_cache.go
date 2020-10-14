@@ -14,8 +14,8 @@ func newCoinsCache() *coinsCache {
 }
 
 type coinsCacheItem struct {
-	saleReturn  *big.Int
-	totalAmount *big.Int
+	totalBasecoin *big.Int
+	totalAmount   *big.Int
 }
 
 func (c *coinsCache) Exists(id types.CoinID) bool {
@@ -28,11 +28,11 @@ func (c *coinsCache) Exists(id types.CoinID) bool {
 	return exists
 }
 
-func (c *coinsCache) Get(id types.CoinID) (saleReturn *big.Int, totalAmount *big.Int) {
-	return big.NewInt(0).Set(c.list[id].saleReturn), big.NewInt(0).Set(c.list[id].totalAmount)
+func (c *coinsCache) Get(id types.CoinID) (totalBasecoin *big.Int, totalAmount *big.Int) {
+	return big.NewInt(0).Set(c.list[id].totalBasecoin), big.NewInt(0).Set(c.list[id].totalAmount)
 }
 
-func (c *coinsCache) Set(id types.CoinID, saleReturn *big.Int, totalAmount *big.Int) {
+func (c *coinsCache) Set(id types.CoinID, totalBasecoin *big.Int, totalAmount *big.Int) {
 	if c == nil {
 		return
 	}
@@ -42,5 +42,5 @@ func (c *coinsCache) Set(id types.CoinID, saleReturn *big.Int, totalAmount *big.
 	}
 
 	c.list[id].totalAmount = big.NewInt(0).Set(totalAmount)
-	c.list[id].saleReturn = big.NewInt(0).Set(saleReturn)
+	c.list[id].totalBasecoin = big.NewInt(0).Set(totalBasecoin)
 }

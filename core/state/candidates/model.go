@@ -120,7 +120,7 @@ func (candidate *Candidate) getFilteredUpdates() []*stake {
 		merged := false
 		for _, u := range updates {
 			if u.Coin == update.Coin && u.Owner == update.Owner {
-				u.Value.Add(u.Value, update.Value)
+				u.Value = big.NewInt(0).Add(u.Value, update.Value)
 				merged = true
 				break
 			}
@@ -180,12 +180,12 @@ type stake struct {
 
 func (stake *stake) addValue(value *big.Int) {
 	stake.markDirty(stake.index)
-	stake.Value.Add(stake.Value, value)
+	stake.Value = big.NewInt(0).Add(stake.Value, value)
 }
 
 func (stake *stake) subValue(value *big.Int) {
 	stake.markDirty(stake.index)
-	stake.Value.Sub(stake.Value, value)
+	stake.Value = big.NewInt(0).Sub(stake.Value, value)
 }
 
 func (stake *stake) setBipValue(value *big.Int) {
@@ -193,10 +193,10 @@ func (stake *stake) setBipValue(value *big.Int) {
 		stake.markDirty(stake.index)
 	}
 
-	stake.BipValue.Set(value)
+	stake.BipValue = big.NewInt(0).Set(value)
 }
 
 func (stake *stake) setValue(ret *big.Int) {
 	stake.markDirty(stake.index)
-	stake.Value.Set(ret)
+	stake.Value = big.NewInt(0).Set(ret)
 }

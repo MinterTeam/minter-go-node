@@ -127,7 +127,7 @@ func TestValidators_LoadValidators(t *testing.T) {
 
 	newValidator := NewValidator(
 		[32]byte{1},
-		types.NewBitArray(ValidatorMaxAbsentWindow),
+		types.NewBitArray(validatorMaxAbsentWindow),
 		big.NewInt(1000000),
 		big.NewInt(0),
 		true,
@@ -180,7 +180,7 @@ func TestValidators_SetValidators(t *testing.T) {
 
 	newValidator := NewValidator(
 		[32]byte{1},
-		types.NewBitArray(ValidatorMaxAbsentWindow),
+		types.NewBitArray(validatorMaxAbsentWindow),
 		big.NewInt(1000000),
 		big.NewInt(0),
 		true,
@@ -222,7 +222,7 @@ func TestValidators_PayRewards(t *testing.T) {
 	}
 	newValidator := NewValidator(
 		[32]byte{4},
-		types.NewBitArray(ValidatorMaxAbsentWindow),
+		types.NewBitArray(validatorMaxAbsentWindow),
 		big.NewInt(1000000),
 		big.NewInt(10),
 		true,
@@ -290,7 +290,7 @@ func TestValidators_SetValidatorAbsent(t *testing.T) {
 	}
 	newValidator := NewValidator(
 		[32]byte{4},
-		types.NewBitArray(ValidatorMaxAbsentWindow),
+		types.NewBitArray(validatorMaxAbsentWindow),
 		big.NewInt(1000000),
 		big.NewInt(100),
 		true,
@@ -320,7 +320,7 @@ func TestValidators_SetValidatorAbsent(t *testing.T) {
 	if validator == nil {
 		t.Fatal("validator not found")
 	}
-	for i := uint64(0); i < ValidatorMaxAbsentTimes+1; i++ {
+	for i := uint64(0); i < validatorMaxAbsentTimes+1; i++ {
 		validators.SetValidatorAbsent(i, validator.tmAddress)
 	}
 	if !validator.IsToDrop() {
@@ -402,7 +402,7 @@ func TestValidators_Export(t *testing.T) {
 	}
 	newValidator := NewValidator(
 		[32]byte{4},
-		types.NewBitArray(ValidatorMaxAbsentWindow),
+		types.NewBitArray(validatorMaxAbsentWindow),
 		helpers.BipToPip(big.NewInt(1000000)),
 		big.NewInt(100),
 		true,

@@ -84,6 +84,7 @@ func NewCandidates(bus *bus.Bus, iavl tree.MTree) (*Candidates, error) {
 		bus:       bus,
 		blockList: map[types.Pubkey]struct{}{},
 		pubKeyIDs: map[types.Pubkey]uint32{},
+		list:      map[uint32]*Candidate{},
 	}
 	candidates.bus.SetCandidates(NewBus(candidates))
 
@@ -490,15 +491,13 @@ func (c *Candidates) IsDelegatorStakeSufficient(address types.Address, pubkey ty
 
 // Delegate adds a stake to a candidate
 func (c *Candidates) Delegate(address types.Address, pubkey types.Pubkey, coin types.CoinID, value *big.Int, bipValue *big.Int) {
-	stake := &stake{
+	candidate := c.GetCandidate(pubkey)
+	candidate.addUpdate(&stake{
 		Owner:    address,
 		Coin:     coin,
 		Value:    big.NewInt(0).Set(value),
 		BipValue: big.NewInt(0).Set(bipValue),
-	}
-
-	candidate := c.GetCandidate(pubkey)
-	candidate.addUpdate(stake)
+	})
 
 	c.bus.Checker().AddCoin(coin, value)
 }
@@ -523,8 +522,7 @@ func (c *Candidates) SetOffline(pubkey types.Pubkey) {
 
 // SubStake subs given value from delegator's stake
 func (c *Candidates) SubStake(address types.Address, pubkey types.Pubkey, coin types.CoinID, value *big.Int) {
-	stake := c.GetStakeOfAddress(pubkey, address, coin)
-	stake.subValue(value)
+	c.GetStakeOfAddress(pubkey, address, coin).subValue(value)
 	c.bus.Checker().AddCoin(coin, big.NewInt(0).Neg(value))
 }
 
@@ -723,9 +721,9 @@ func (c *Candidates) calculateBipValue(coinID types.CoinID, amount *big.Int, inc
 
 	coin := c.bus.Coins().GetCoin(coinID)
 
-	saleReturn, totalDelegatedValue := big.NewInt(0), big.NewInt(0)
+	totalDelegatedBasecoin, totalDelegatedValue := big.NewInt(0), big.NewInt(0)
 	if coinsCache.Exists(coinID) {
-		saleReturn, totalDelegatedValue = coinsCache.Get(coinID)
+		totalDelegatedBasecoin, totalDelegatedValue = coinsCache.Get(coinID)
 	}
 
 	if includeSelf {
@@ -751,11 +749,11 @@ func (c *Candidates) calculateBipValue(coinID types.CoinID, amount *big.Int, inc
 		}
 
 		nonLockedSupply := big.NewInt(0).Sub(coin.Volume, totalDelegatedValue)
-		saleReturn = formula.CalculateSaleReturn(coin.Volume, coin.Reserve, coin.Crr, nonLockedSupply)
-		coinsCache.Set(coinID, saleReturn, totalDelegatedValue)
+		totalDelegatedBasecoin = big.NewInt(0).Sub(coin.Reserve, formula.CalculateSaleReturn(coin.Volume, coin.Reserve, coin.Crr, nonLockedSupply))
+		coinsCache.Set(coinID, totalDelegatedBasecoin, totalDelegatedValue)
 	}
 
-	return big.NewInt(0).Div(big.NewInt(0).Mul(big.NewInt(0).Sub(coin.Reserve, saleReturn), amount), totalDelegatedValue)
+	return big.NewInt(0).Div(big.NewInt(0).Mul(totalDelegatedBasecoin, amount), totalDelegatedValue)
 }
 
 // Punish punished a candidate with given tendermint-address
@@ -930,9 +928,6 @@ func (c *Candidates) setToMap(pubkey types.Pubkey, model *Candidate) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	if c.list == nil {
-		c.list = map[uint32]*Candidate{}
-	}
 	c.list[id] = model
 }
 

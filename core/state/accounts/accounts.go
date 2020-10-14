@@ -190,15 +190,8 @@ func (a *Accounts) ExistsMultisig(msigAddress types.Address) bool {
 	return false
 }
 
-func (a *Accounts) CreateMultisig(weights []uint32, addresses []types.Address, threshold uint32, height uint64, address types.Address) types.Address {
-	msig := Multisig{
-		Weights:   weights,
-		Threshold: threshold,
-		Addresses: addresses,
-	}
-
+func (a *Accounts) CreateMultisig(weights []uint32, addresses []types.Address, threshold uint32, address types.Address) types.Address {
 	account := a.get(address)
-
 	if account == nil {
 		account = &Model{
 			Nonce:         0,
@@ -211,7 +204,11 @@ func (a *Accounts) CreateMultisig(weights []uint32, addresses []types.Address, t
 		}
 	}
 
-	account.MultisigData = msig
+	account.MultisigData = Multisig{
+		Weights:   weights,
+		Threshold: threshold,
+		Addresses: addresses,
+	}
 	account.markDirty(account.address)
 	account.isDirty = true
 	a.setToMap(address, account)

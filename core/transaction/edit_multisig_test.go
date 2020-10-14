@@ -31,7 +31,7 @@ func TestEditMultisigTx(t *testing.T) {
 	privateKey4, _ := crypto.GenerateKey()
 	addr4 := crypto.PubkeyToAddress(privateKey4.PublicKey)
 
-	cState.Accounts.CreateMultisig([]uint32{1, 2, 3}, []types.Address{addr1, addr2, addr3}, 3, 1, addr)
+	cState.Accounts.CreateMultisig([]uint32{1, 2, 3}, []types.Address{addr1, addr2, addr3}, 3, addr)
 
 	coin := types.GetBaseCoinID()
 	initialBalance := big.NewInt(1)
@@ -156,7 +156,7 @@ func TestEditMultisigTxToTooLargeOwnersList(t *testing.T) {
 
 	coin := types.GetBaseCoinID()
 
-	cState.Accounts.CreateMultisig([]uint32{1, 2, 3}, []types.Address{addr1, addr2, addr3}, 3, 1, addr)
+	cState.Accounts.CreateMultisig([]uint32{1, 2, 3}, []types.Address{addr1, addr2, addr3}, 3, addr)
 
 	weights := make([]uint32, 33)
 	for i := uint32(0); i <= 32; i++ {
@@ -214,7 +214,7 @@ func TestEditMultisigTxIncorrectWeights(t *testing.T) {
 
 	coin := types.GetBaseCoinID()
 
-	cState.Accounts.CreateMultisig([]uint32{1, 2, 3}, []types.Address{addr1, addr2, addr3}, 3, 1, addr)
+	cState.Accounts.CreateMultisig([]uint32{1, 2, 3}, []types.Address{addr1, addr2, addr3}, 3, addr)
 
 	data := EditMultisigData{
 		Threshold: 3,
@@ -310,7 +310,7 @@ func TestEditMultisigTxToAddressDuplication(t *testing.T) {
 
 	coin := types.GetBaseCoinID()
 
-	cState.Accounts.CreateMultisig([]uint32{1, 2, 3}, []types.Address{addr1, addr2, addr3}, 3, 1, addr)
+	cState.Accounts.CreateMultisig([]uint32{1, 2, 3}, []types.Address{addr1, addr2, addr3}, 3, addr)
 
 	data := EditMultisigData{
 		Threshold: 3,
@@ -363,7 +363,7 @@ func TestEditMultisigTxToInsufficientFunds(t *testing.T) {
 
 	coin := types.GetBaseCoinID()
 
-	cState.Accounts.CreateMultisig([]uint32{1, 2, 3}, []types.Address{addr1, addr2, addr3}, 3, 1, addr)
+	cState.Accounts.CreateMultisig([]uint32{1, 2, 3}, []types.Address{addr1, addr2, addr3}, 3, addr)
 
 	data := EditMultisigData{
 		Threshold: 3,
@@ -417,7 +417,7 @@ func TestEditMultisigTxToGasCoinReserveUnderflow(t *testing.T) {
 	coin := createTestCoin(cState)
 	cState.Coins.SubReserve(coin, helpers.BipToPip(big.NewInt(90000)))
 
-	cState.Accounts.CreateMultisig([]uint32{1, 2, 3}, []types.Address{addr1, addr2, addr3}, 3, 1, addr)
+	cState.Accounts.CreateMultisig([]uint32{1, 2, 3}, []types.Address{addr1, addr2, addr3}, 3, addr)
 
 	data := EditMultisigData{
 		Threshold: 3,
