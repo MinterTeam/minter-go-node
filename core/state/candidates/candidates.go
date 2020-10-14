@@ -721,9 +721,9 @@ func (c *Candidates) calculateBipValue(coinID types.CoinID, amount *big.Int, inc
 
 	coin := c.bus.Coins().GetCoin(coinID)
 
-	saleReturn, totalDelegatedValue := big.NewInt(0), big.NewInt(0)
+	totalDelegatedBasecoin, totalDelegatedValue := big.NewInt(0), big.NewInt(0)
 	if coinsCache.Exists(coinID) {
-		saleReturn, totalDelegatedValue = coinsCache.Get(coinID)
+		totalDelegatedBasecoin, totalDelegatedValue = coinsCache.Get(coinID)
 	}
 
 	if includeSelf {
@@ -749,11 +749,11 @@ func (c *Candidates) calculateBipValue(coinID types.CoinID, amount *big.Int, inc
 		}
 
 		nonLockedSupply := big.NewInt(0).Sub(coin.Volume, totalDelegatedValue)
-		saleReturn = formula.CalculateSaleReturn(coin.Volume, coin.Reserve, coin.Crr, nonLockedSupply)
-		coinsCache.Set(coinID, saleReturn, totalDelegatedValue)
+		totalDelegatedBasecoin = big.NewInt(0).Sub(coin.Reserve, formula.CalculateSaleReturn(coin.Volume, coin.Reserve, coin.Crr, nonLockedSupply))
+		coinsCache.Set(coinID, totalDelegatedBasecoin, totalDelegatedValue)
 	}
 
-	return big.NewInt(0).Div(big.NewInt(0).Mul(big.NewInt(0).Sub(coin.Reserve, saleReturn), amount), totalDelegatedValue)
+	return big.NewInt(0).Div(big.NewInt(0).Mul(totalDelegatedBasecoin, amount), totalDelegatedValue)
 }
 
 // Punish punished a candidate with given tendermint-address
