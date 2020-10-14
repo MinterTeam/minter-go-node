@@ -71,6 +71,8 @@ func TestSendTx(t *testing.T) {
 	if testBalance.Cmp(targetTestBalance) != 0 {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", to.String(), targetTestBalance, testBalance)
 	}
+
+	checkState(t, cState)
 }
 
 func TestSendMultisigTx(t *testing.T) {
@@ -139,6 +141,8 @@ func TestSendMultisigTx(t *testing.T) {
 	if testBalance.Cmp(targetTestBalance) != 0 {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", to.String(), targetTestBalance, testBalance)
 	}
+
+	checkState(t, cState)
 }
 
 func TestSendFailedMultisigTx(t *testing.T) {
@@ -207,6 +211,8 @@ func TestSendFailedMultisigTx(t *testing.T) {
 	if testBalance.Cmp(targetTestBalance) != 0 {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", to.String(), targetTestBalance, testBalance)
 	}
+
+	checkState(t, cState)
 }
 
 func TestSendWithNotExistedCoin(t *testing.T) {
@@ -252,6 +258,8 @@ func TestSendWithNotExistedCoin(t *testing.T) {
 	if response.Code != code.CoinNotExists {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestSendTxWithCustomCoin(t *testing.T) {
@@ -261,6 +269,7 @@ func TestSendTxWithCustomCoin(t *testing.T) {
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 	coin := createTestCoin(cState)
 
+	cState.Coins.AddVolume(coin, helpers.BipToPip(big.NewInt(1000000)))
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
 	value := helpers.BipToPip(big.NewInt(10))
@@ -301,7 +310,7 @@ func TestSendTxWithCustomCoin(t *testing.T) {
 		t.Fatalf("Response code is not 0. Error: %s", response.Log)
 	}
 
-	targetBalance, _ := big.NewInt(0).SetString("999989998999999954999998", 10)
+	targetBalance, _ := big.NewInt(0).SetString("999989988999999504999969", 10)
 	balance := cState.Accounts.GetBalance(addr, coin)
 	if balance.Cmp(targetBalance) != 0 {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", addr.String(), targetBalance, balance)
@@ -312,6 +321,8 @@ func TestSendTxWithCustomCoin(t *testing.T) {
 	if testBalance.Cmp(targetTestBalance) != 0 {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", to.String(), targetTestBalance, testBalance)
 	}
+
+	checkState(t, cState)
 }
 
 func TestSendTxToGasCoinReserveUnderflow(t *testing.T) {
@@ -322,6 +333,7 @@ func TestSendTxToGasCoinReserveUnderflow(t *testing.T) {
 	coin := createTestCoin(cState)
 
 	cState.Coins.SubReserve(coin, helpers.BipToPip(big.NewInt(90000)))
+	cState.Coins.AddVolume(coin, helpers.BipToPip(big.NewInt(1000000)))
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
 	value := helpers.BipToPip(big.NewInt(10))
@@ -361,4 +373,6 @@ func TestSendTxToGasCoinReserveUnderflow(t *testing.T) {
 	if response.Code != code.CoinReserveUnderflow {
 		t.Fatalf("Response code is not %d. Error: %s", code.CoinReserveUnderflow, response.Log)
 	}
+
+	checkState(t, cState)
 }

@@ -45,6 +45,8 @@ func TestPriceVoteTx(t *testing.T) {
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error: %s", response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestPriceVoteTxToInsufficientFunds(t *testing.T) {
@@ -80,6 +82,8 @@ func TestPriceVoteTxToInsufficientFunds(t *testing.T) {
 	if response.Code != code.InsufficientFunds {
 		t.Fatalf("Response code is not %d. Error: %s", code.InsufficientFunds, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestPriceVoteTxToCoinReserveUnderflow(t *testing.T) {
@@ -118,4 +122,6 @@ func TestPriceVoteTxToCoinReserveUnderflow(t *testing.T) {
 	if response.Code != code.CoinReserveUnderflow {
 		t.Fatalf("Response code is not %d. Error: %s", code.CoinReserveUnderflow, response.Log)
 	}
+
+	checkState(t, cState)
 }

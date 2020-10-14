@@ -30,6 +30,7 @@ func TestEditOwnerTx(t *testing.T) {
 	newOwner := crypto.PubkeyToAddress(newOwnerPrivateKey.PublicKey)
 
 	createTestCoinWithOwner(cState, addr)
+	createDefaultValidator(cState)
 
 	gasCoin := types.GetBaseCoinID()
 	cState.Accounts.AddBalance(addr, gasCoin, helpers.BipToPip(big.NewInt(10000)))
@@ -68,6 +69,8 @@ func TestEditOwnerTx(t *testing.T) {
 	if *symbol.OwnerAddress() != newOwner {
 		t.Fatalf("Target owner address is not correct. Excpected %s, got %s", newOwner.String(), symbol.OwnerAddress().String())
 	}
+
+	checkState(t, cState)
 }
 
 func TestEditOwnerTxWithWrongOwner(t *testing.T) {
@@ -82,6 +85,7 @@ func TestEditOwnerTxWithWrongOwner(t *testing.T) {
 	newOwner := crypto.PubkeyToAddress(newOwnerPrivateKey.PublicKey)
 
 	createTestCoinWithOwner(cState, newOwner)
+	createDefaultValidator(cState)
 
 	data := EditCoinOwnerData{
 		Symbol:   getTestCoinSymbol(),
@@ -97,6 +101,8 @@ func TestEditOwnerTxWithWrongOwner(t *testing.T) {
 	if response.Code != code.IsNotOwnerOfCoin {
 		t.Fatalf("Response code is not 206. Error %s", response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestEditOwnerTxWithWrongSymbol(t *testing.T) {
@@ -112,6 +118,7 @@ func TestEditOwnerTxWithWrongSymbol(t *testing.T) {
 	newOwner := crypto.PubkeyToAddress(newOwnerPrivateKey.PublicKey)
 
 	createTestCoinWithOwner(cState, addr)
+	createDefaultValidator(cState)
 
 	data := EditCoinOwnerData{
 		Symbol:   types.StrToCoinSymbol("UNKNOWN"),
@@ -127,6 +134,8 @@ func TestEditOwnerTxWithWrongSymbol(t *testing.T) {
 	if response.Code != code.CoinNotExists {
 		t.Fatalf("Response code is not 102. Error %s", response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestEditCOwnerTxWithInsufficientFunds(t *testing.T) {
@@ -142,6 +151,7 @@ func TestEditCOwnerTxWithInsufficientFunds(t *testing.T) {
 	newOwner := crypto.PubkeyToAddress(newOwnerPrivateKey.PublicKey)
 
 	createTestCoinWithOwner(cState, addr)
+	createDefaultValidator(cState)
 
 	data := EditCoinOwnerData{
 		Symbol:   getTestCoinSymbol(),
@@ -157,6 +167,8 @@ func TestEditCOwnerTxWithInsufficientFunds(t *testing.T) {
 	if response.Code != code.InsufficientFunds {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestEditCoinOwnerTxToGasCoinReserveUnderflow(t *testing.T) {
@@ -204,6 +216,8 @@ func TestEditCoinOwnerTxToGasCoinReserveUnderflow(t *testing.T) {
 	if response.Code != code.CoinReserveUnderflow {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveUnderflow, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func makeTestEditOwnerTx(data EditCoinOwnerData, privateKey *ecdsa.PrivateKey) ([]byte, error) {
@@ -232,4 +246,9 @@ func makeTestEditOwnerTx(data EditCoinOwnerData, privateKey *ecdsa.PrivateKey) (
 	}
 
 	return encodedTx, nil
+}
+
+func createDefaultValidator(cState *state.State) {
+	cState.Validators.Create(types.Pubkey{0}, big.NewInt(0))
+	cState.Candidates.Create(types.Address{0}, types.Address{0}, types.Address{0}, types.Pubkey{0}, 0)
 }

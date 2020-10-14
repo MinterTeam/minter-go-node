@@ -75,6 +75,8 @@ func TestSellCoinTx(t *testing.T) {
 	if testBalance.Cmp(targetTestBalance) != 0 {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", getTestCoinSymbol(), targetTestBalance, testBalance)
 	}
+
+	checkState(t, cState)
 }
 
 func TestSellCoinTxBaseToCustomBaseCommission(t *testing.T) {
@@ -140,6 +142,8 @@ func TestSellCoinTxBaseToCustomBaseCommission(t *testing.T) {
 	if coinData.Volume().Cmp(estimatedSupply) != 0 {
 		t.Fatalf("Wrong coin supply")
 	}
+
+	checkState(t, cState)
 }
 
 func TestSellCoinTxCustomToBaseBaseCommission(t *testing.T) {
@@ -158,6 +162,8 @@ func TestSellCoinTxCustomToBaseBaseCommission(t *testing.T) {
 	coinToSellID, initialVolume, initialReserve, crr := createTestCoinWithSymbol(cState, coinToSell)
 
 	privateKey, addr := getAccount()
+	cState.Coins.AddVolume(coinToSellID, initialBalance)
+	initialVolume.Add(initialVolume, initialBalance)
 	cState.Accounts.AddBalance(addr, coinToSellID, initialBalance)
 	cState.Accounts.AddBalance(addr, gasCoin, initialGasBalance)
 
@@ -208,6 +214,8 @@ func TestSellCoinTxCustomToBaseBaseCommission(t *testing.T) {
 	if coinData.Volume().Cmp(estimatedSupply) != 0 {
 		t.Fatalf("Wrong coin supply")
 	}
+
+	checkState(t, cState)
 }
 
 func TestSellCoinTxCustomToCustomBaseCommission(t *testing.T) {
@@ -227,8 +235,10 @@ func TestSellCoinTxCustomToCustomBaseCommission(t *testing.T) {
 	coinToBuyID, initialVolume2, initialReserve2, crr2 := createTestCoinWithSymbol(cState, coinToBuy)
 
 	privateKey, addr := getAccount()
+	cState.Coins.AddVolume(coinToSellID, initialBalance)
 	cState.Accounts.AddBalance(addr, coinToSellID, initialBalance)
 	cState.Accounts.AddBalance(addr, gasCoin, initialGasBalance)
+	initialVolume1.Add(initialVolume1, initialBalance)
 
 	tx := createSellCoinTx(coinToSellID, coinToBuyID, gasCoin, toSell, 1)
 	if err := tx.Sign(privateKey); err != nil {
@@ -293,6 +303,8 @@ func TestSellCoinTxCustomToCustomBaseCommission(t *testing.T) {
 			t.Fatalf("Wrong coin supply")
 		}
 	}
+
+	checkState(t, cState)
 }
 
 func TestSellCoinTxBaseToCustomCustomCommission(t *testing.T) {
@@ -312,6 +324,8 @@ func TestSellCoinTxBaseToCustomCustomCommission(t *testing.T) {
 	privateKey, addr := getAccount()
 	cState.Accounts.AddBalance(addr, coinToSell, initialBalance)
 	cState.Accounts.AddBalance(addr, coinToBuyID, initialGasBalance)
+	cState.Coins.AddVolume(coinToBuyID, initialGasBalance)
+	initialVolume.Add(initialVolume, initialGasBalance)
 
 	tx := createSellCoinTx(coinToSell, coinToBuyID, coinToBuyID, toSell, 1)
 	if err := tx.Sign(privateKey); err != nil {
@@ -363,6 +377,8 @@ func TestSellCoinTxBaseToCustomCustomCommission(t *testing.T) {
 	if coinData.Volume().Cmp(estimatedSupply) != 0 {
 		t.Fatalf("Wrong coin supply")
 	}
+
+	checkState(t, cState)
 }
 
 func TestSellCoinTxCustomToBaseCustomCommission(t *testing.T) {
@@ -380,6 +396,8 @@ func TestSellCoinTxCustomToBaseCustomCommission(t *testing.T) {
 
 	privateKey, addr := getAccount()
 	cState.Accounts.AddBalance(addr, coinToSellID, initialBalance)
+	cState.Coins.AddVolume(coinToSellID, initialBalance)
+	initialVolume.Add(initialVolume, initialBalance)
 
 	tx := createSellCoinTx(coinToSellID, coinToBuy, coinToSellID, toSell, 1)
 	if err := tx.Sign(privateKey); err != nil {
@@ -430,6 +448,8 @@ func TestSellCoinTxCustomToBaseCustomCommission(t *testing.T) {
 	if coinData.Volume().Cmp(estimatedSupply) != 0 {
 		t.Fatalf("Wrong coin supply")
 	}
+
+	checkState(t, cState)
 }
 
 func TestSellCoinTxCustomToCustomCustom1Commission(t *testing.T) {
@@ -448,6 +468,8 @@ func TestSellCoinTxCustomToCustomCustom1Commission(t *testing.T) {
 
 	privateKey, addr := getAccount()
 	cState.Accounts.AddBalance(addr, coinToSellID, initialBalance)
+	cState.Coins.AddVolume(coinToSellID, initialBalance)
+	initialVolume1.Add(initialVolume1, initialBalance)
 
 	tx := createSellCoinTx(coinToSellID, coinToBuyID, coinToSellID, toSell, 1)
 	if err := tx.Sign(privateKey); err != nil {
@@ -517,6 +539,8 @@ func TestSellCoinTxCustomToCustomCustom1Commission(t *testing.T) {
 			t.Fatalf("Wrong coin supply")
 		}
 	}
+
+	checkState(t, cState)
 }
 
 func TestSellCoinTxCustomToCustomCustom2Commission(t *testing.T) {
@@ -536,7 +560,12 @@ func TestSellCoinTxCustomToCustomCustom2Commission(t *testing.T) {
 
 	privateKey, addr := getAccount()
 	cState.Accounts.AddBalance(addr, coinToSellID, initialBalance)
+	cState.Coins.AddVolume(coinToSellID, initialBalance)
+	initialVolume1.Add(initialVolume1, initialBalance)
+
 	cState.Accounts.AddBalance(addr, coinToBuyID, initialGasBalance)
+	cState.Coins.AddVolume(coinToBuyID, initialGasBalance)
+	initialVolume2.Add(initialVolume2, initialGasBalance)
 
 	tx := createSellCoinTx(coinToSellID, coinToBuyID, coinToBuyID, toSell, 1)
 	if err := tx.Sign(privateKey); err != nil {
@@ -609,6 +638,8 @@ func TestSellCoinTxCustomToCustomCustom2Commission(t *testing.T) {
 			t.Fatalf("Wrong coin supply")
 		}
 	}
+
+	checkState(t, cState)
 }
 
 func TestSellCoinTxToCoinSupplyOverflow(t *testing.T) {
@@ -635,6 +666,8 @@ func TestSellCoinTxToCoinSupplyOverflow(t *testing.T) {
 	if response.Code != code.CoinSupplyOverflow {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinSupplyOverflow, response.Log)
 	}
+
+	checkState(t, cState)
 
 	// custom buy and sell coins
 
@@ -666,6 +699,8 @@ func TestSellCoinTxToCoinSupplyOverflow(t *testing.T) {
 	if response.Code != code.CoinSupplyOverflow {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinSupplyOverflow, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestSellCoinTxToMinimumValueToBuyReached(t *testing.T) {
@@ -713,6 +748,8 @@ func TestSellCoinTxToMinimumValueToBuyReached(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.MinimumValueToBuyReached, response.Log)
 	}
 
+	checkState(t, cState)
+
 	// coin to buy == base coin
 
 	cState.Accounts.AddBalance(addr, coinToBuyID, helpers.BipToPip(big.NewInt(100000)))
@@ -740,6 +777,8 @@ func TestSellCoinTxToMinimumValueToBuyReached(t *testing.T) {
 	if response.Code != code.MinimumValueToBuyReached {
 		t.Fatalf("Response code is not %d. Error %s", code.MinimumValueToBuyReached, response.Log)
 	}
+
+	checkState(t, cState)
 
 	// custom buy and sell coins
 
@@ -781,6 +820,8 @@ func TestSellCoinTxToMinimumValueToBuyReached(t *testing.T) {
 	if response.Code != code.MinimumValueToBuyReached {
 		t.Fatalf("Response code is not %d. Error %s", code.MinimumValueToBuyReached, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestSellCoinTxToCoinReserveNotSufficient(t *testing.T) {
@@ -802,6 +843,7 @@ func TestSellCoinTxToCoinReserveNotSufficient(t *testing.T) {
 	customCoinToSellID := cState.App.GetNextCoinID()
 	cState.App.SetCoinsCount(customCoinToSellID.Uint32())
 
+	cState.Accounts.AddBalance(types.Address{0}, customCoinToSellID, helpers.BipToPip(big.NewInt(100000)))
 	cState.Accounts.AddBalance(addr, coinToSellID, helpers.BipToPip(big.NewInt(5000000)))
 
 	tx := createSellCoinTx(coinToBuyID, coinToSellID, coinToBuyID, helpers.BipToPip(big.NewInt(100000)), 1)
@@ -818,6 +860,8 @@ func TestSellCoinTxToCoinReserveNotSufficient(t *testing.T) {
 	if response.Code != code.CoinReserveNotSufficient {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveNotSufficient, response.Log)
 	}
+
+	checkState(t, cState)
 
 	// gas coin == coin to sell
 
@@ -837,6 +881,8 @@ func TestSellCoinTxToCoinReserveNotSufficient(t *testing.T) {
 	if response.Code != code.CoinReserveNotSufficient {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveNotSufficient, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestSellCoinTxInsufficientFunds(t *testing.T) {
@@ -864,6 +910,8 @@ func TestSellCoinTxInsufficientFunds(t *testing.T) {
 	if response.Code != code.InsufficientFunds {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestSellCoinTxEqualCoins(t *testing.T) {
@@ -885,6 +933,8 @@ func TestSellCoinTxEqualCoins(t *testing.T) {
 	if response.Code != code.CrossConvert {
 		t.Fatalf("Response code is not %d. Error %s", code.CrossConvert, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestSellCoinTxToNonExistCoins(t *testing.T) {
@@ -922,6 +972,8 @@ func TestSellCoinTxToNonExistCoins(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
 	}
 
+	checkState(t, cState)
+
 	tx = createSellCoinTx(coinID, types.GetBaseCoinID(), 5, big.NewInt(1), 1)
 	if err := tx.Sign(privateKey); err != nil {
 		t.Fatal(err)
@@ -936,6 +988,8 @@ func TestSellCoinTxToNonExistCoins(t *testing.T) {
 	if response.Code != code.CoinNotExists {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func createSellCoinTx(sellCoin, buyCoin, gasCoin types.CoinID, valueToSell *big.Int, nonce uint64) *Transaction {
