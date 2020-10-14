@@ -200,7 +200,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 			app.eventsDB.AddEvent(uint32(req.Header.Height), &eventsdb.UnbondEvent{
 				Address:         item.Address,
 				Amount:          item.Value.String(),
-				Coin:            item.Coin,
+				Coin:            uint64(item.Coin),
 				ValidatorPubKey: *item.CandidateKey,
 			})
 			app.stateDeliver.Accounts.AddBalance(item.Address, item.Coin, item.Value)
