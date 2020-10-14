@@ -101,6 +101,8 @@ func TestRecreateCoinTx(t *testing.T) {
 	if stateCoin.Version() != 1 {
 		t.Fatalf("Version in state is not correct. Expected %d, got %d", 1, stateCoin.Version())
 	}
+
+	checkState(t, cState)
 }
 
 func TestRecreateCoinTxWithWrongOwner(t *testing.T) {
@@ -137,6 +139,8 @@ func TestRecreateCoinTxWithWrongOwner(t *testing.T) {
 	if response.Code != code.IsNotOwnerOfCoin {
 		t.Fatalf("Response code is not 206. Error %s", response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestRecreateCoinTxWithWrongSymbol(t *testing.T) {
@@ -171,6 +175,8 @@ func TestRecreateCoinTxWithWrongSymbol(t *testing.T) {
 	if response.Code != code.CoinNotExists {
 		t.Fatalf("Response code is not 102. Error %s", response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestRecreateCoinWithIncorrectName(t *testing.T) {
@@ -229,6 +235,8 @@ func TestRecreateCoinWithIncorrectName(t *testing.T) {
 	if response.Code != code.InvalidCoinName {
 		t.Fatalf("Response code is not %d. Error %s", code.InvalidCoinName, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestRecreateCoinWithWrongCrr(t *testing.T) {
@@ -284,6 +292,8 @@ func TestRecreateCoinWithWrongCrr(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.WrongCrr, response.Log)
 	}
 
+	checkState(t, cState)
+
 	data.ConstantReserveRatio = uint32(101)
 	encodedData, err = rlp.EncodeToBytes(data)
 	if err != nil {
@@ -313,6 +323,8 @@ func TestRecreateCoinWithWrongCrr(t *testing.T) {
 	if response.Code != code.WrongCrr {
 		t.Fatalf("Response code is not %d. Error %s", code.WrongCrr, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestRecreateCoinWithWrongCoinSupply(t *testing.T) {
@@ -367,6 +379,8 @@ func TestRecreateCoinWithWrongCoinSupply(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.WrongCoinSupply, response.Log)
 	}
 
+	checkState(t, cState)
+
 	data.InitialAmount = helpers.BipToPip(big.NewInt(1000000))
 	encodedData, err = rlp.EncodeToBytes(data)
 	if err != nil {
@@ -418,6 +432,8 @@ func TestRecreateCoinWithWrongCoinSupply(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.WrongCoinSupply, response.Log)
 	}
 
+	checkState(t, cState)
+
 	data.MaxSupply = maxCoinSupply
 	data.InitialReserve = helpers.BipToPip(big.NewInt(1000))
 	encodedData, err = rlp.EncodeToBytes(data)
@@ -439,6 +455,8 @@ func TestRecreateCoinWithWrongCoinSupply(t *testing.T) {
 	if response.Code != code.WrongCoinSupply {
 		t.Fatalf("Response code is not %d. Error %s", code.WrongCoinSupply, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestRecreateCoinWithInsufficientFundsForGas(t *testing.T) {
@@ -493,6 +511,8 @@ func TestRecreateCoinWithInsufficientFundsForGas(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
 
+	checkState(t, cState)
+
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 	cState.Accounts.SetBalance(addr, types.GetBaseCoinID(), data.InitialReserve)
 	cState.Commit()
@@ -511,6 +531,8 @@ func TestRecreateCoinWithInsufficientFundsForGas(t *testing.T) {
 	if response.Code != code.InsufficientFunds {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestRecreateCoinToInsufficientFundsForInitialReserve(t *testing.T) {
@@ -546,6 +568,8 @@ func TestRecreateCoinToInsufficientFundsForInitialReserve(t *testing.T) {
 	if response.Code != code.InsufficientFunds {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestRecreateCoinToGasCoinReserveUnderflow(t *testing.T) {
@@ -557,6 +581,7 @@ func TestRecreateCoinToGasCoinReserveUnderflow(t *testing.T) {
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 
 	cState.Coins.SubReserve(coin, helpers.BipToPip(big.NewInt(90000)))
+	cState.Coins.AddVolume(coin, helpers.BipToPip(big.NewInt(105)))
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(105)))
 	cState.Accounts.AddBalance(addr, types.GetBaseCoinID(), helpers.BipToPip(big.NewInt(10000)))
 	cState.Commit()
@@ -603,6 +628,8 @@ func TestRecreateCoinToGasCoinReserveUnderflow(t *testing.T) {
 	if response.Code != code.CoinReserveUnderflow {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveUnderflow, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func makeTestRecreateCoinTx(data RecreateCoinData, privateKey *ecdsa.PrivateKey) ([]byte, error) {

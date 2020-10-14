@@ -72,6 +72,8 @@ func TestSellAllCoinTx(t *testing.T) {
 	if testBalance.Cmp(targetTestBalance) != 0 {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", getTestCoinSymbol(), targetTestBalance, testBalance)
 	}
+
+	checkState(t, cState)
 }
 
 func TestSellAllCoinTxWithSameCoins(t *testing.T) {
@@ -118,16 +120,15 @@ func TestSellAllCoinTxWithSameCoins(t *testing.T) {
 	if response.Code != code.CrossConvert {
 		t.Fatalf("Response code is not %d. Error %s", code.CrossConvert, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestSellAllCoinTxWithInvalidCoins(t *testing.T) {
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
-	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 	coin := types.CoinID(5)
-
-	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
 	minValToBuy, _ := big.NewInt(0).SetString("151191152412701306252", 10)
 	data := SellAllCoinData{
@@ -165,6 +166,8 @@ func TestSellAllCoinTxWithInvalidCoins(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
 	}
 
+	checkState(t, cState)
+
 	data.CoinToSell = types.GetBaseCoinID()
 	data.CoinToBuy = types.CoinID(5)
 	encodedData, err = rlp.EncodeToBytes(data)
@@ -186,6 +189,8 @@ func TestSellAllCoinTxWithInvalidCoins(t *testing.T) {
 	if response.Code != code.CoinNotExists {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestSellAllCoinTxWithMinimumValueToBuy(t *testing.T) {
@@ -231,6 +236,8 @@ func TestSellAllCoinTxWithMinimumValueToBuy(t *testing.T) {
 	if response.Code != code.MinimumValueToBuyReached {
 		t.Fatalf("Response code is not %d. Error %s", code.MinimumValueToBuyReached, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestSellAllCoinTxWithInsufficientFunds(t *testing.T) {
@@ -279,6 +286,8 @@ func TestSellAllCoinTxWithInsufficientFunds(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
 
+	checkState(t, cState)
+
 	cState.Coins.Create(
 		cState.App.GetNextCoinID(),
 		types.StrToCoinSymbol("TEST9"),
@@ -318,6 +327,8 @@ func TestSellAllCoinTxWithInsufficientFunds(t *testing.T) {
 	if response.Code != code.InsufficientFunds {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestSellAllCoinTxToCoinSupplyOverflow(t *testing.T) {
@@ -365,6 +376,8 @@ func TestSellAllCoinTxToCoinSupplyOverflow(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinSupplyOverflow, response.Log)
 	}
 
+	checkState(t, cState)
+
 	// custom buy and sell coins
 
 	cState.Coins.Create(
@@ -405,6 +418,8 @@ func TestSellAllCoinTxToCoinSupplyOverflow(t *testing.T) {
 	if response.Code != code.CoinSupplyOverflow {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinSupplyOverflow, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestSellAllCoinTxToMinimumValueToBuyReached(t *testing.T) {
@@ -450,6 +465,8 @@ func TestSellAllCoinTxToMinimumValueToBuyReached(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.MinimumValueToBuyReached, response.Log)
 	}
 
+	checkState(t, cState)
+
 	// coin to buy == base coin
 
 	cState.Accounts.AddBalance(addr, coinToBuyID, big.NewInt(1))
@@ -476,6 +493,8 @@ func TestSellAllCoinTxToMinimumValueToBuyReached(t *testing.T) {
 	if response.Code != code.MinimumValueToBuyReached {
 		t.Fatalf("Response code is not %d. Error %s", code.MinimumValueToBuyReached, response.Log)
 	}
+
+	checkState(t, cState)
 
 	// custom buy and sell coins
 
@@ -518,4 +537,6 @@ func TestSellAllCoinTxToMinimumValueToBuyReached(t *testing.T) {
 	if response.Code != code.MinimumValueToBuyReached {
 		t.Fatalf("Response code is not %d. Error %s", code.MinimumValueToBuyReached, response.Log)
 	}
+
+	checkState(t, cState)
 }

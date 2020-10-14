@@ -106,6 +106,8 @@ func TestCreateMultisigTx(t *testing.T) {
 	if msigData.Threshold != 1 {
 		t.Fatalf("Threshold is not correct")
 	}
+
+	checkState(t, cState)
 }
 
 func TestCreateMultisigFromExistingAccountTx(t *testing.T) {
@@ -207,6 +209,8 @@ func TestCreateMultisigFromExistingAccountTx(t *testing.T) {
 	if cState.Accounts.GetBalance(msigAddr, types.GetBaseCoinID()).Cmp(initialBalance) != 0 {
 		t.Fatalf("Msig balance was not persisted")
 	}
+
+	checkState(t, cState)
 }
 
 func TestCreateExistingMultisigTx(t *testing.T) {
@@ -263,6 +267,8 @@ func TestCreateExistingMultisigTx(t *testing.T) {
 	if response.Code != code.MultisigExists {
 		t.Fatalf("Response code is not %d. Got %d", code.MultisigExists, response.Code)
 	}
+
+	checkState(t, cState)
 }
 
 func TestCreateMultisigOwnersTxToNonExistAddress(t *testing.T) {
@@ -303,11 +309,12 @@ func TestCreateMultisigOwnersTxToNonExistAddress(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	checkState := state.NewCheckState(cState)
-	response := data.BasicCheck(&tx, checkState)
+	response := data.BasicCheck(&tx, state.NewCheckState(cState))
 	if response.Code != code.MultisigNotExists {
 		t.Fatalf("Response code is not %d. Error %s", code.MultisigNotExists, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestCreateMultisigOwnersTxToTooLargeOwnersList(t *testing.T) {
@@ -361,6 +368,8 @@ func TestCreateMultisigOwnersTxToTooLargeOwnersList(t *testing.T) {
 	if response.Code != code.TooLargeOwnersList {
 		t.Fatalf("Response code is not %d. Error %s", code.TooLargeOwnersList, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestCreateMultisigOwnersTxIncorrectWeights(t *testing.T) {
@@ -408,6 +417,8 @@ func TestCreateMultisigOwnersTxIncorrectWeights(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.DifferentCountAddressesAndWeights, response.Log)
 	}
 
+	checkState(t, cState)
+
 	data.Weights = []uint32{1, 2, 1024}
 	encodedData, err = rlp.EncodeToBytes(data)
 	if err != nil {
@@ -428,6 +439,8 @@ func TestCreateMultisigOwnersTxIncorrectWeights(t *testing.T) {
 	if response.Code != code.IncorrectWeights {
 		t.Fatalf("Response code is not %d. Error %s", code.IncorrectWeights, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestCreateMultisigOwnersTxToAddressDuplication(t *testing.T) {
@@ -472,6 +485,8 @@ func TestCreateMultisigOwnersTxToAddressDuplication(t *testing.T) {
 	if response.Code != code.DuplicatedAddresses {
 		t.Fatalf("Response code is not %d. Error %s", code.DuplicatedAddresses, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestCreateMultisigOwnersTxToInsufficientFunds(t *testing.T) {
@@ -518,6 +533,8 @@ func TestCreateMultisigOwnersTxToInsufficientFunds(t *testing.T) {
 	if response.Code != code.InsufficientFunds {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestCreateMultisigTxToGasCoinReserveUnderflow(t *testing.T) {
@@ -569,4 +586,6 @@ func TestCreateMultisigTxToGasCoinReserveUnderflow(t *testing.T) {
 	if response.Code != code.CoinReserveUnderflow {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveUnderflow, response.Log)
 	}
+
+	checkState(t, cState)
 }

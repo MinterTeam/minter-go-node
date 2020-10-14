@@ -60,9 +60,11 @@ func createTestCoinWithOwner(stateDB *state.State, owner types.Address) types.Co
 	reserve := helpers.BipToPip(big.NewInt(100000))
 
 	id := stateDB.App.GetNextCoinID()
+
 	stateDB.Coins.Create(id, getTestCoinSymbol(), "TEST COIN", volume, 10, reserve,
 		big.NewInt(0).Mul(volume, big.NewInt(10)), &owner)
 	stateDB.App.SetCoinsCount(id.Uint32())
+	stateDB.Accounts.AddBalance(types.Address{}, id, volume)
 
 	err := stateDB.Coins.Commit()
 	if err != nil {

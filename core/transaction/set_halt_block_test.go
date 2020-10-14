@@ -89,6 +89,8 @@ func TestSetHaltBlockTx(t *testing.T) {
 	if haltBlock.Pubkey != pubkey {
 		t.Fatalf("Wront halt block pubkey. Expected pubkey: %s, got %s", pubkey, haltBlock.Pubkey.String()+"asd")
 	}
+
+	checkState(t, cState)
 }
 
 func TestSetHaltBlockTxWithWrongHeight(t *testing.T) {
@@ -149,6 +151,8 @@ func TestSetHaltBlockTxWithWrongHeight(t *testing.T) {
 	if halts != nil {
 		t.Fatalf("Halts found at height: %d", haltHeight)
 	}
+
+	checkState(t, cState)
 }
 
 func TestSetHaltBlockTxWithWrongOwnership(t *testing.T) {
@@ -210,6 +214,8 @@ func TestSetHaltBlockTxWithWrongOwnership(t *testing.T) {
 	if halts != nil {
 		t.Fatalf("Halts found at height: %d", haltHeight)
 	}
+
+	checkState(t, cState)
 }
 
 func TestSetHaltBlockTxToNonExistCandidate(t *testing.T) {
@@ -217,6 +223,8 @@ func TestSetHaltBlockTxToNonExistCandidate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Cannot load state. Error %s", err)
 	}
+
+	createDefaultValidator(cState)
 
 	haltHeight := 500000 + uint64(100)
 	privateKey, _ := crypto.GenerateKey()
@@ -262,6 +270,8 @@ func TestSetHaltBlockTxToNonExistCandidate(t *testing.T) {
 	if response.Code != code.CandidateNotFound {
 		t.Fatalf("Response code is not %d. Error %s", code.CandidateNotFound, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestSetHaltBlockTxToInsufficientFunds(t *testing.T) {
@@ -315,6 +325,8 @@ func TestSetHaltBlockTxToInsufficientFunds(t *testing.T) {
 	if response.Code != code.InsufficientFunds {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestSetHaltBlockTxToGasCoinReserveUnderflow(t *testing.T) {
@@ -322,6 +334,8 @@ func TestSetHaltBlockTxToGasCoinReserveUnderflow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Cannot load state. Error %s", err)
 	}
+
+	createDefaultValidator(cState)
 
 	haltHeight := 500000 + uint64(100)
 	privateKey, _ := crypto.GenerateKey()
@@ -370,4 +384,6 @@ func TestSetHaltBlockTxToGasCoinReserveUnderflow(t *testing.T) {
 	if response.Code != code.CoinReserveUnderflow {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveUnderflow, response.Log)
 	}
+
+	checkState(t, cState)
 }

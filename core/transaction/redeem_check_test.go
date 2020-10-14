@@ -118,6 +118,8 @@ func TestRedeemCheckTx(t *testing.T) {
 	if balance.Cmp(checkValue) != 0 {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", coin, checkValue, balance)
 	}
+
+	checkState(t, cState)
 }
 
 func TestRedeemCheckTxToDecodeError(t *testing.T) {
@@ -223,6 +225,8 @@ func TestRedeemCheckTxToDecodeError(t *testing.T) {
 	if txResponse.Code != code.DecodeError {
 		t.Fatalf("Response code is not %d. Error %s", code.DecodeError, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestRedeemCheckTxToHighGasPrice(t *testing.T) {
@@ -317,6 +321,8 @@ func TestRedeemCheckTxToHighGasPrice(t *testing.T) {
 	if response.Code != code.TooHighGasPrice {
 		t.Fatalf("Response code is not %d. Error %s", code.TooHighGasPrice, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestRedeemCheckTxToWrongChainID(t *testing.T) {
@@ -411,6 +417,8 @@ func TestRedeemCheckTxToWrongChainID(t *testing.T) {
 	if response.Code != code.WrongChainID {
 		t.Fatalf("Response code is not %d. Error %s", code.WrongChainID, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestRedeemCheckTxToNonceLength(t *testing.T) {
@@ -505,6 +513,8 @@ func TestRedeemCheckTxToNonceLength(t *testing.T) {
 	if response.Code != code.TooLongNonce {
 		t.Fatalf("Response code is not %d. Error %s", code.TooLongNonce, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestRedeemCheckTxToCheckData(t *testing.T) {
@@ -600,6 +610,8 @@ func TestRedeemCheckTxToCheckData(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
 	}
 
+	checkState(t, cState)
+
 	check.Coin = coin
 	check.GasCoin = 5
 	lock, err = crypto.Sign(check.HashWithoutLock().Bytes(), passphrasePk)
@@ -639,6 +651,8 @@ func TestRedeemCheckTxToCheckData(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
 	}
 
+	checkState(t, cState)
+
 	check.GasCoin = coin
 	lock, err = crypto.Sign(check.HashWithoutLock().Bytes(), passphrasePk)
 	if err != nil {
@@ -675,6 +689,8 @@ func TestRedeemCheckTxToCheckData(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.WrongGasCoin, response.Log)
 	}
 
+	checkState(t, cState)
+
 	check.DueBlock = 1
 	lock, err = crypto.Sign(check.HashWithoutLock().Bytes(), passphrasePk)
 	if err != nil {
@@ -709,6 +725,8 @@ func TestRedeemCheckTxToCheckData(t *testing.T) {
 	if response.Code != code.CheckExpired {
 		t.Fatalf("Response code is not %d. Error %s", code.CheckExpired, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestRedeemCheckTxToUsed(t *testing.T) {
@@ -805,6 +823,8 @@ func TestRedeemCheckTxToUsed(t *testing.T) {
 	if response.Code != code.CheckUsed {
 		t.Fatalf("Response code is not %d. Error %s", code.CheckUsed, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestRedeemCheckTxToInsufficientFunds(t *testing.T) {
@@ -897,6 +917,8 @@ func TestRedeemCheckTxToInsufficientFunds(t *testing.T) {
 	if response.Code != code.InsufficientFunds {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestRedeemCheckTxToCoinReserveUnderflow(t *testing.T) {
@@ -990,6 +1012,8 @@ func TestRedeemCheckTxToCoinReserveUnderflow(t *testing.T) {
 	if response.Code != code.CoinReserveUnderflow {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveUnderflow, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestRedeemCheckTxToInsufficientFundsForCheckCoin(t *testing.T) {
@@ -1082,6 +1106,8 @@ func TestRedeemCheckTxToInsufficientFundsForCheckCoin(t *testing.T) {
 	if response.Code != code.InsufficientFunds {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestRedeemCheckTxToInsufficientFundsForCheckGasCoin(t *testing.T) {
@@ -1097,6 +1123,7 @@ func TestRedeemCheckTxToInsufficientFundsForCheckGasCoin(t *testing.T) {
 	passphraseHash := sha256.Sum256([]byte(passphrase))
 	passphrasePk, err := crypto.ToECDSA(passphraseHash[:])
 
+	cState.Coins.AddVolume(coin, helpers.BipToPip(big.NewInt(100)))
 	cState.Accounts.AddBalance(senderAddr, coin, helpers.BipToPip(big.NewInt(100)))
 
 	if err != nil {
@@ -1176,4 +1203,6 @@ func TestRedeemCheckTxToInsufficientFundsForCheckGasCoin(t *testing.T) {
 	if response.Code != code.InsufficientFunds {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
+
+	checkState(t, cState)
 }

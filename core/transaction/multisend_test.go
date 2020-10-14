@@ -77,6 +77,8 @@ func TestMultisendTx(t *testing.T) {
 	if testBalance.Cmp(targetTestBalance) != 0 {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", to.String(), targetTestBalance, testBalance)
 	}
+
+	checkState(t, cState)
 }
 
 func TestMultisendTxToInvalidDataLength(t *testing.T) {
@@ -147,6 +149,8 @@ func TestMultisendTxToInvalidDataLength(t *testing.T) {
 	if response.Code != code.InvalidMultisendData {
 		t.Fatalf("Response code is not %d. Error %s", code.InvalidMultisendData, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestMultisendTxToInsufficientFunds(t *testing.T) {
@@ -196,6 +200,8 @@ func TestMultisendTxToInsufficientFunds(t *testing.T) {
 	if response.Code != code.InsufficientFunds {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestMultisendToInvalidCoin(t *testing.T) {
@@ -248,6 +254,8 @@ func TestMultisendToInvalidCoin(t *testing.T) {
 	if response.Code != code.CoinNotExists {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestMultisendToInsufficientReserve(t *testing.T) {
@@ -300,6 +308,8 @@ func TestMultisendToInsufficientReserve(t *testing.T) {
 	if response.Code != code.CoinNotExists {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestMultisendTxToGasCoinReserveUnderflow(t *testing.T) {
@@ -310,6 +320,7 @@ func TestMultisendTxToGasCoinReserveUnderflow(t *testing.T) {
 	coin := createTestCoin(cState)
 
 	cState.Coins.SubReserve(coin, helpers.BipToPip(big.NewInt(90000)))
+	cState.Coins.AddVolume(coin, helpers.BipToPip(big.NewInt(1000000)))
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 	cState.Commit()
 
@@ -354,4 +365,6 @@ func TestMultisendTxToGasCoinReserveUnderflow(t *testing.T) {
 	if response.Code != code.CoinReserveUnderflow {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveUnderflow, response.Log)
 	}
+
+	checkState(t, cState)
 }

@@ -130,18 +130,18 @@ func (s *AppState) Verify() error {
 		}
 	}
 
-	coins := map[CoinSymbol]struct{}{}
+	coins := map[uint64]struct{}{}
 	for _, coin := range s.Coins {
 		if coin.Symbol.IsBaseCoin() {
 			return fmt.Errorf("base coin should not be declared")
 		}
 
 		// check duplicated coins
-		if _, exists := coins[coin.Symbol]; exists {
+		if _, exists := coins[coin.ID]; exists {
 			return fmt.Errorf("duplicated coin %s", coin.Symbol)
 		}
 
-		coins[coin.Symbol] = struct{}{}
+		coins[coin.ID] = struct{}{}
 
 		// check coins' volume
 		volume := big.NewInt(0)

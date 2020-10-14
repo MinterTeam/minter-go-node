@@ -67,7 +67,6 @@ func TestDeclareCandidacyTx(t *testing.T) {
 	}
 
 	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
-
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
@@ -107,6 +106,8 @@ func TestDeclareCandidacyTx(t *testing.T) {
 	if candidate.Status != candidates.CandidateStatusOffline {
 		t.Fatalf("Incorrect candidate status")
 	}
+
+	checkState(t, cState)
 }
 
 func TestDeclareCandidacyTxOverflow(t *testing.T) {
@@ -172,6 +173,8 @@ func TestDeclareCandidacyTxOverflow(t *testing.T) {
 	if response.Code != code.TooLowStake {
 		t.Fatalf("Response code is not %d. Got %d", code.TooLowStake, response.Code)
 	}
+
+	checkState(t, cState)
 }
 
 func TestDeclareCandidacyTxWithBlockPybKey(t *testing.T) {
@@ -260,6 +263,8 @@ func TestDeclareCandidacyTxWithBlockPybKey(t *testing.T) {
 	if candidate.ControlAddress == addr {
 		t.Fatalf("ControlAddress has changed")
 	}
+
+	checkState(t, cState)
 }
 
 func TestDeclareCandidacyToNonExistCoin(t *testing.T) {
@@ -315,6 +320,8 @@ func TestDeclareCandidacyToNonExistCoin(t *testing.T) {
 	if response.Code != code.CoinNotExists {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestDeclareCandidacyToExistCandidate(t *testing.T) {
@@ -372,6 +379,8 @@ func TestDeclareCandidacyToExistCandidate(t *testing.T) {
 	if response.Code != code.CandidateExists {
 		t.Fatalf("Response code is not %d. Error %s", code.CandidateExists, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestDeclareCandidacyToDecodeError(t *testing.T) {
@@ -422,6 +431,8 @@ func TestDeclareCandidacyToDecodeError(t *testing.T) {
 	if response.Code != code.DecodeError {
 		t.Fatalf("Response code is not %d. Error %s", code.DecodeError, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestDeclareCandidacyToWrongCommission(t *testing.T) {
@@ -475,6 +486,8 @@ func TestDeclareCandidacyToWrongCommission(t *testing.T) {
 	if response.Code != code.WrongCommission {
 		t.Fatalf("Response code is not %d. Error %s", code.WrongCommission, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestDeclareCandidacyToInsufficientFunds(t *testing.T) {
@@ -526,6 +539,8 @@ func TestDeclareCandidacyToInsufficientFunds(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
 
+	checkState(t, cState)
+
 	cState.Accounts.AddBalance(addr, coin, stake)
 	cState.Commit()
 
@@ -571,6 +586,8 @@ func TestDeclareCandidacyToInsufficientFunds(t *testing.T) {
 	if response.Code != code.InsufficientFunds {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestDeclareCandidacyTxToGasCoinReserveUnderflow(t *testing.T) {
@@ -580,6 +597,7 @@ func TestDeclareCandidacyTxToGasCoinReserveUnderflow(t *testing.T) {
 	coin := createTestCoin(cState)
 	stake := big.NewInt(1e18)
 
+	cState.Coins.AddVolume(coin, helpers.BipToPip(big.NewInt(1000000)))
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 	cState.Coins.SubReserve(coin, helpers.BipToPip(big.NewInt(90000)))
 	cState.Commit()
@@ -625,4 +643,6 @@ func TestDeclareCandidacyTxToGasCoinReserveUnderflow(t *testing.T) {
 	if response.Code != code.CoinReserveUnderflow {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveUnderflow, response.Log)
 	}
+
+	checkState(t, cState)
 }

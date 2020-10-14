@@ -75,6 +75,8 @@ func TestSwitchCandidateStatusTx(t *testing.T) {
 	if candidate.Status != candidates.CandidateStatusOnline {
 		t.Fatalf("Status has not changed")
 	}
+
+	checkState(t, cState)
 }
 
 func TestSetCandidateOffTx(t *testing.T) {
@@ -138,6 +140,8 @@ func TestSetCandidateOffTx(t *testing.T) {
 	if candidate.Status != candidates.CandidateStatusOffline {
 		t.Fatalf("Status has not changed")
 	}
+
+	checkState(t, cState)
 }
 
 func TestSwitchCandidateStatusTxToNonExistCandidate(t *testing.T) {
@@ -183,6 +187,8 @@ func TestSwitchCandidateStatusTxToNonExistCandidate(t *testing.T) {
 	if response.Code != code.CandidateNotFound {
 		t.Fatalf("Response code is not %d. Error %s", code.CandidateNotFound, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestSwitchCandidateStatusTxToCandidateOwnership(t *testing.T) {
@@ -231,6 +237,8 @@ func TestSwitchCandidateStatusTxToCandidateOwnership(t *testing.T) {
 	if response.Code != code.IsNotOwnerOfCandidate {
 		t.Fatalf("Response code is not %d. Error %s", code.IsNotOwnerOfCandidate, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestSwitchCandidateStatusToGasCoinReserveUnderflow(t *testing.T) {
@@ -241,6 +249,7 @@ func TestSwitchCandidateStatusToGasCoinReserveUnderflow(t *testing.T) {
 
 	coin := createTestCoin(cState)
 	cState.Coins.SubReserve(coin, helpers.BipToPip(big.NewInt(90000)))
+	cState.Coins.AddVolume(coin, helpers.BipToPip(big.NewInt(1000000)))
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
 	pubkey := types.Pubkey{}
@@ -280,6 +289,8 @@ func TestSwitchCandidateStatusToGasCoinReserveUnderflow(t *testing.T) {
 	if response.Code != code.CoinReserveUnderflow {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveUnderflow, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestSwitchCandidateStatusToInsufficientFundsForGas(t *testing.T) {
@@ -326,6 +337,8 @@ func TestSwitchCandidateStatusToInsufficientFundsForGas(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
 
+	checkState(t, cState)
+
 	cState.Candidates.SetOnline(pubkey)
 
 	tx.Type = TypeSetCandidateOffline
@@ -342,6 +355,8 @@ func TestSwitchCandidateStatusToInsufficientFundsForGas(t *testing.T) {
 	if response.Code != code.InsufficientFunds {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestSwitchCandidateStatusToCoinReserveUnderflow(t *testing.T) {
@@ -355,6 +370,7 @@ func TestSwitchCandidateStatusToCoinReserveUnderflow(t *testing.T) {
 	rand.Read(pubkey[:])
 	cState.Candidates.Create(addr, addr, addr, pubkey, 10)
 	cState.Candidates.SetOnline(pubkey)
+	cState.Coins.AddVolume(coin, helpers.BipToPip(big.NewInt(1000000)))
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 	cState.Coins.SubReserve(coin, helpers.BipToPip(big.NewInt(100000)))
 
@@ -390,4 +406,6 @@ func TestSwitchCandidateStatusToCoinReserveUnderflow(t *testing.T) {
 	if response.Code != code.CoinReserveUnderflow {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveUnderflow, response.Log)
 	}
+
+	checkState(t, cState)
 }

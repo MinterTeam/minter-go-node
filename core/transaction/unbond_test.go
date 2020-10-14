@@ -81,6 +81,8 @@ func TestUnbondTx(t *testing.T) {
 	if stake.Value.Cmp(types.Big0) != 0 {
 		t.Fatalf("Stake value is not corrent. Expected %s, got %s", types.Big0, stake.Value)
 	}
+
+	checkState(t, cState)
 }
 
 func TestFullUnbondTxWithWatchlist(t *testing.T) {
@@ -151,6 +153,8 @@ func TestFullUnbondTxWithWatchlist(t *testing.T) {
 	if wl != nil {
 		t.Fatalf("Waitlist is not deleted")
 	}
+
+	checkState(t, cState)
 }
 
 func TestUnbondTxWithWatchlist(t *testing.T) {
@@ -221,6 +225,8 @@ func TestUnbondTxWithWatchlist(t *testing.T) {
 	if wl.Value.Cmp(amount) != 0 {
 		t.Fatalf("Waitlist is not correct")
 	}
+
+	checkState(t, cState)
 }
 
 func TestUnbondTxToDecodeError(t *testing.T) {
@@ -265,6 +271,8 @@ func TestUnbondTxToDecodeError(t *testing.T) {
 	if response.Code != code.DecodeError {
 		t.Fatalf("Response code is not %d. Error %s", code.DecodeError, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestUnbondTxToNotExistCoin(t *testing.T) {
@@ -308,6 +316,8 @@ func TestUnbondTxToNotExistCoin(t *testing.T) {
 	if response.Code != code.CoinNotExists {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestUnbondTxToNotExistCandidate(t *testing.T) {
@@ -351,6 +361,8 @@ func TestUnbondTxToNotExistCandidate(t *testing.T) {
 	if response.Code != code.CandidateNotFound {
 		t.Fatalf("Response code is not %d. Error %s", code.CandidateNotFound, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestUnbondTxToNotExistStake(t *testing.T) {
@@ -394,6 +406,8 @@ func TestUnbondTxToNotExistStake(t *testing.T) {
 	if response.Code != code.StakeNotFound {
 		t.Fatalf("Response code is not %d. Error %s", code.StakeNotFound, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestUnbondTxToInsufficientStake(t *testing.T) {
@@ -442,6 +456,8 @@ func TestUnbondTxToInsufficientStake(t *testing.T) {
 	if response.Code != code.InsufficientStake {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientStake, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestUnbondTxToInsufficientFunds(t *testing.T) {
@@ -489,6 +505,8 @@ func TestUnbondTxToInsufficientFunds(t *testing.T) {
 	if response.Code != code.InsufficientFunds {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestUnbondTxToInsufficientAmountAtWaitlist(t *testing.T) {
@@ -535,6 +553,8 @@ func TestUnbondTxToInsufficientAmountAtWaitlist(t *testing.T) {
 	if response.Code != code.InsufficientWaitList {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientWaitList, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestUnbondTxToGasCoinReserveUnderflow(t *testing.T) {
@@ -585,4 +605,6 @@ func TestUnbondTxToGasCoinReserveUnderflow(t *testing.T) {
 	if response.Code != code.CoinReserveUnderflow {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveUnderflow, response.Log)
 	}
+
+	checkState(t, cState)
 }

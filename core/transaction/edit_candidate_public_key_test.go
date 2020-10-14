@@ -27,6 +27,7 @@ func TestEditCandidateNewPublicKeyTx(t *testing.T) {
 
 	cState.Candidates.Create(addr, addr, addr, pubkey, 10)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
+	cState.Commit()
 
 	data := EditCandidatePublicKeyData{
 		PubKey:    pubkey,
@@ -80,6 +81,8 @@ func TestEditCandidateNewPublicKeyTx(t *testing.T) {
 	if !candidate.PubKey.Equals(newpubkey) {
 		t.Fatalf("Public key has not changed")
 	}
+
+	checkState(t, cState)
 }
 
 func TestEditCandidatePublicKeyTxToNewPublicKey(t *testing.T) {
@@ -129,6 +132,8 @@ func TestEditCandidatePublicKeyTxToNewPublicKey(t *testing.T) {
 	if response.Code != code.NewPublicKeyIsBad {
 		t.Fatalf("Response code is not %d. Error %s", code.NewPublicKeyIsBad, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestEditCandidatePublicKeyTxToNewPublicKeyInBlockList(t *testing.T) {
@@ -181,6 +186,8 @@ func TestEditCandidatePublicKeyTxToNewPublicKeyInBlockList(t *testing.T) {
 	if response.Code != code.PublicKeyInBlockList {
 		t.Fatalf("Response code is not %d. Error %s", code.PublicKeyInBlockList, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestEditCandidatePublicKeyTxToInsufficientFunds(t *testing.T) {
@@ -229,6 +236,8 @@ func TestEditCandidatePublicKeyTxToInsufficientFunds(t *testing.T) {
 	if response.Code != code.InsufficientFunds {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestEditCandidatePublicKeyTxToGasCoinReserveUnderflow(t *testing.T) {
@@ -238,6 +247,7 @@ func TestEditCandidatePublicKeyTxToGasCoinReserveUnderflow(t *testing.T) {
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 	coin := createTestCoin(cState)
 	cState.Coins.SubReserve(coin, helpers.BipToPip(big.NewInt(90000)))
+	cState.Coins.AddVolume(coin, helpers.BipToPip(big.NewInt(1000000)))
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
 	pubkey := [32]byte{}
@@ -279,6 +289,8 @@ func TestEditCandidatePublicKeyTxToGasCoinReserveUnderflow(t *testing.T) {
 	if response.Code != code.CoinReserveUnderflow {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveUnderflow, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestEditCandidatePublicKeyToNotExistCandidate(t *testing.T) {
@@ -325,6 +337,8 @@ func TestEditCandidatePublicKeyToNotExistCandidate(t *testing.T) {
 	if response.Code != code.CandidateNotFound {
 		t.Fatalf("Response code is not %d. Error %s", code.CandidateNotFound, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestEditCandidatePublicKeyTxToCandidateOwnership(t *testing.T) {
@@ -375,6 +389,8 @@ func TestEditCandidatePublicKeyTxToCandidateOwnership(t *testing.T) {
 	if response.Code != code.IsNotOwnerOfCandidate {
 		t.Fatalf("Response code is not %d. Error %s", code.IsNotOwnerOfCandidate, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestEditCandidatePublicKeyData_Exists(t *testing.T) {
@@ -443,4 +459,5 @@ func TestEditCandidatePublicKeyData_Exists(t *testing.T) {
 		t.Fatalf("Candidates pulic keys are equal")
 	}
 
+	checkState(t, cState)
 }

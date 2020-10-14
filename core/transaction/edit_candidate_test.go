@@ -93,6 +93,8 @@ func TestEditCandidateTx(t *testing.T) {
 	if candidate.ControlAddress != newControlAddress {
 		t.Fatalf("ControlAddress has not changed")
 	}
+
+	checkState(t, cState)
 }
 
 func TestEditCandidateTxToNonExistCandidate(t *testing.T) {
@@ -145,6 +147,8 @@ func TestEditCandidateTxToNonExistCandidate(t *testing.T) {
 	if response.Code != code.CandidateNotFound {
 		t.Fatalf("Response code is not %d. Error %s", code.CandidateNotFound, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestEditCandidateTxToCandidateOwnership(t *testing.T) {
@@ -201,6 +205,8 @@ func TestEditCandidateTxToCandidateOwnership(t *testing.T) {
 	if response.Code != code.IsNotOwnerOfCandidate {
 		t.Fatalf("Response code is not %d. Error %s", code.IsNotOwnerOfCandidate, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestEditCandidateTxToInsufficientFunds(t *testing.T) {
@@ -255,6 +261,8 @@ func TestEditCandidateTxToInsufficientFunds(t *testing.T) {
 	if response.Code != code.InsufficientFunds {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
+
+	checkState(t, cState)
 }
 
 func TestEditCandidateTxToGasCoinReserveUnderflow(t *testing.T) {
@@ -264,6 +272,7 @@ func TestEditCandidateTxToGasCoinReserveUnderflow(t *testing.T) {
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 	coin := createTestCoin(cState)
 	cState.Coins.SubReserve(coin, helpers.BipToPip(big.NewInt(90000)))
+	cState.Coins.AddVolume(coin, helpers.BipToPip(big.NewInt(1000000)))
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
 	pubkey := [32]byte{}
@@ -311,4 +320,6 @@ func TestEditCandidateTxToGasCoinReserveUnderflow(t *testing.T) {
 	if response.Code != code.CoinReserveUnderflow {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveUnderflow, response.Log)
 	}
+
+	checkState(t, cState)
 }
