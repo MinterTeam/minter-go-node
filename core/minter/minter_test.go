@@ -232,6 +232,13 @@ func TestBlockchain_Height(t *testing.T) {
 	if block.Data.(types2.EventDataNewBlock).Block.Height != int64(blockchain.Height()) {
 		t.Fatal("invalid blockchain height")
 	}
+
+	blockchain.lock.RLock()
+	defer blockchain.lock.RUnlock()
+	exportedState := blockchain.CurrentState().Export(blockchain.Height() - 1)
+	if err := exportedState.Verify(); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestBlockchain_SetStatisticData(t *testing.T) {
@@ -247,6 +254,13 @@ func TestBlockchain_SetStatisticData(t *testing.T) {
 	block := <-blocks
 	if block.Data.(types2.EventDataNewBlock).Block.Header.Time.Nanosecond() != blockchain.StatisticData().BlockEnd.LastBlockInfo.HeaderTimestamp.Nanosecond() {
 		t.Fatal("statistic last block and event event last block header time not equal")
+	}
+
+	blockchain.lock.RLock()
+	defer blockchain.lock.RUnlock()
+	exportedState := blockchain.CurrentState().Export(blockchain.Height() - 1)
+	if err := exportedState.Verify(); err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -303,6 +317,12 @@ func TestBlockchain_IsApplicationHalted(t *testing.T) {
 			t.Fatalf("don't stop on block %d", height)
 			return
 		case <-time.After(2 * time.Second):
+			blockchain.lock.RLock()
+			defer blockchain.lock.RUnlock()
+			exportedState := blockchain.CurrentState().Export(blockchain.Height() - 1)
+			if err := exportedState.Verify(); err != nil {
+				t.Fatal(err)
+			}
 			return
 		}
 	}
@@ -378,6 +398,13 @@ func TestBlockchain_GetStateForHeightAndDeleteStateVersions(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Failed: %s", "state not deleted")
 	}
+
+	blockchain.lock.RLock()
+	defer blockchain.lock.RUnlock()
+	exportedState := blockchain.CurrentState().Export(blockchain.Height() - 1)
+	if err := exportedState.Verify(); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestBlockchain_SendTx(t *testing.T) {
@@ -436,6 +463,13 @@ func TestBlockchain_SendTx(t *testing.T) {
 	case <-time.After(10 * time.Second):
 		t.Fatalf("Timeout waiting for the tx to be committed")
 	}
+
+	blockchain.lock.RLock()
+	defer blockchain.lock.RUnlock()
+	exportedState := blockchain.CurrentState().Export(blockchain.Height() - 1)
+	if err := exportedState.Verify(); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestBlockchain_FrozenFunds(t *testing.T) {
@@ -465,6 +499,11 @@ func TestBlockchain_FrozenFunds(t *testing.T) {
 	blockchain.lock.RLock()
 	defer blockchain.lock.RLock()
 
+	exportedState := blockchain.CurrentState().Export(blockchain.Height() - 1)
+	if err := exportedState.Verify(); err != nil {
+		t.Fatal(err)
+	}
+
 	events := blockchain.GetEventsDB().LoadEvents(uint32(targetHeight))
 
 	if len(events) == 0 {
@@ -480,10 +519,6 @@ func TestBlockchain_FrozenFunds(t *testing.T) {
 		t.Error("event validator pubkey invalid")
 	}
 
-	balance := blockchain.CurrentState().Accounts().GetBalance(developers.Address, 0)
-	if balance.String() != value.String() {
-		t.Fatal("balance is empty")
-	}
 }
 
 func TestBlockchain_RecalculateStakes_andRemoveValidator(t *testing.T) {
@@ -718,6 +753,13 @@ func TestBlockchain_RecalculateStakes_andRemoveValidator(t *testing.T) {
 
 	if candidate.Status == candidates.CandidateStatusOnline {
 		t.Fatal("candidate not Offline")
+	}
+
+	blockchain.lock.RLock()
+	defer blockchain.lock.RUnlock()
+	exportedState := blockchain.CurrentState().Export(blockchain.Height() - 1)
+	if err := exportedState.Verify(); err != nil {
+		t.Fatal(err)
 	}
 }
 
