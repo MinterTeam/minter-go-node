@@ -267,12 +267,12 @@ func (c *Coins) Recreate(newID types.CoinID, name string, symbol types.CoinSymbo
 
 func (c *Coins) ChangeOwner(symbol types.CoinSymbol, owner types.Address) {
 	info := c.getSymbolInfo(symbol)
-	info.SetOwnerAddress(&owner)
+	info.setOwnerAddress(owner)
 
 	coin := c.GetCoinBySymbol(symbol, 0)
 	coin.symbolInfo = info
 
-	c.setToMap(coin.id, coin)
+	c.setToMap(coin.ID(), coin)
 	c.markDirty(coin.ID())
 }
 

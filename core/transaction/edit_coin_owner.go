@@ -29,7 +29,7 @@ func (data EditCoinOwnerData) BasicCheck(tx *Transaction, context *state.CheckSt
 		}
 	}
 
-	if info.OwnerAddress() == nil || info.OwnerAddress().Compare(sender) != 0 {
+	if info.OwnerAddress() == nil || *info.OwnerAddress() != sender {
 		owner := info.OwnerAddress().String()
 		return &Response{
 			Code: code.IsNotOwnerOfCoin,

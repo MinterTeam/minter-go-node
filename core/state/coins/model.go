@@ -142,8 +142,8 @@ type SymbolInfo struct {
 	isDirty bool
 }
 
-func (i *SymbolInfo) SetOwnerAddress(address *types.Address) {
-	i.COwnerAddress = address
+func (i *SymbolInfo) setOwnerAddress(address types.Address) {
+	i.COwnerAddress = &address
 	i.isDirty = true
 }
 
