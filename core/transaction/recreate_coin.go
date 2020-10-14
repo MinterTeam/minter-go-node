@@ -84,7 +84,7 @@ func (data RecreateCoinData) BasicCheck(tx *Transaction, context *state.CheckSta
 	}
 
 	symbolInfo := context.Coins().GetSymbolInfo(coin.Symbol())
-	if symbolInfo == nil || symbolInfo.OwnerAddress() == nil || symbolInfo.OwnerAddress().Compare(sender) != 0 {
+	if symbolInfo == nil || symbolInfo.OwnerAddress() == nil || *symbolInfo.OwnerAddress() != sender {
 		var owner *string
 		if symbolInfo != nil && symbolInfo.OwnerAddress() != nil {
 			own := symbolInfo.OwnerAddress().String()
