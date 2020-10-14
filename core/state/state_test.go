@@ -30,7 +30,7 @@ func TestStateExport(t *testing.T) {
 		coinTestID,
 		coinTest,
 		"TEST",
-		helpers.BipToPip(big.NewInt(1)),
+		helpers.BipToPip(big.NewInt(601)),
 		10,
 		helpers.BipToPip(big.NewInt(100)),
 		helpers.BipToPip(big.NewInt(100)),
@@ -41,7 +41,7 @@ func TestStateExport(t *testing.T) {
 		coinTest2ID,
 		coinTest2,
 		"TEST2",
-		helpers.BipToPip(big.NewInt(2)),
+		helpers.BipToPip(big.NewInt(1002)),
 		50,
 		helpers.BipToPip(big.NewInt(200)),
 		helpers.BipToPip(big.NewInt(200)),
@@ -107,6 +107,10 @@ func TestStateExport(t *testing.T) {
 
 	newState := state.Export(height)
 
+	if err := newState.Verify(); err != nil {
+		t.Error(err)
+	}
+
 	if newState.StartHeight != height {
 		t.Fatalf("Wrong new state start height. Expected %d, got %d", height, newState.StartHeight)
 	}
@@ -128,7 +132,7 @@ func TestStateExport(t *testing.T) {
 
 	if newStateCoin.Name != "TEST" ||
 		newStateCoin.Symbol != coinTest ||
-		newStateCoin.Volume != helpers.BipToPip(big.NewInt(1)).String() ||
+		newStateCoin.Volume != helpers.BipToPip(big.NewInt(601)).String() ||
 		newStateCoin.Reserve != helpers.BipToPip(big.NewInt(100)).String() ||
 		newStateCoin.MaxSupply != helpers.BipToPip(big.NewInt(100)).String() ||
 		newStateCoin.Crr != 10 {
@@ -137,7 +141,7 @@ func TestStateExport(t *testing.T) {
 
 	if newStateCoin1.Name != "TEST2" ||
 		newStateCoin1.Symbol != coinTest2 ||
-		newStateCoin1.Volume != helpers.BipToPip(big.NewInt(2)).String() ||
+		newStateCoin1.Volume != helpers.BipToPip(big.NewInt(1002)).String() ||
 		newStateCoin1.Reserve != helpers.BipToPip(big.NewInt(200)).String() ||
 		newStateCoin1.MaxSupply != helpers.BipToPip(big.NewInt(200)).String() ||
 		newStateCoin1.Crr != 50 {
