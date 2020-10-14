@@ -12,7 +12,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/developers"
 	eventsdb "github.com/MinterTeam/minter-go-node/core/events"
 	candidates2 "github.com/MinterTeam/minter-go-node/core/state/candidates"
-	"github.com/MinterTeam/minter-go-node/core/state/validators"
 	"github.com/MinterTeam/minter-go-node/core/statistics"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
@@ -703,7 +702,7 @@ func TestBlockchain_RecalculateStakes_andRemoveValidator(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	targetHeight := int64(123 + validators.ValidatorMaxAbsentTimes)
+	targetHeight := int64(123 + 12) // 12 = ValidatorMaxAbsentTimes
 	for block := range blocks {
 		if block.Data.(types2.EventDataNewBlock).Block.Height <= targetHeight {
 			continue

@@ -71,7 +71,7 @@ func (v *Validator) SetTotalBipStake(value *big.Int) {
 		return
 	}
 	v.isTotalStakeDirty = true
-	v.totalStake = value
+	v.totalStake = big.NewInt(0).Set(value)
 }
 
 func (v *Validator) AddAccumReward(amount *big.Int) {
@@ -81,7 +81,7 @@ func (v *Validator) AddAccumReward(amount *big.Int) {
 func (v *Validator) CountAbsentTimes() int {
 	count := 0
 
-	for i := 0; i < ValidatorMaxAbsentWindow; i++ {
+	for i := 0; i < validatorMaxAbsentWindow; i++ {
 		if v.AbsentTimes.GetIndex(i) {
 			count++
 		}
@@ -102,7 +102,7 @@ func (v *Validator) setTmAddress() {
 }
 
 func (v *Validator) SetPresent(height uint64) {
-	index := int(height) % ValidatorMaxAbsentWindow
+	index := int(height) % validatorMaxAbsentWindow
 	if v.AbsentTimes.GetIndex(index) {
 		v.isDirty = true
 	}
@@ -110,7 +110,7 @@ func (v *Validator) SetPresent(height uint64) {
 }
 
 func (v *Validator) SetAbsent(height uint64) {
-	index := int(height) % ValidatorMaxAbsentWindow
+	index := int(height) % validatorMaxAbsentWindow
 	if !v.AbsentTimes.GetIndex(index) {
 		v.isDirty = true
 	}
