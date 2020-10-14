@@ -1166,7 +1166,7 @@ func TestBuyCoinTxToMaximumValueToSellReached(t *testing.T) {
 	coinToBuyID, sellCoinID := createTestCoin(cState), types.GetBaseCoinID()
 
 	valueToBuy := big.NewInt(2e18)
-	cState.Accounts.AddBalance(addr, sellCoinID, valueToBuy)
+	//cState.Accounts.AddBalance(addr, sellCoinID, valueToBuy)
 	cState.Coins.AddVolume(sellCoinID, valueToBuy)
 
 	data := BuyCoinData{
@@ -1246,6 +1246,8 @@ func TestBuyCoinTxToMaximumValueToSellReached(t *testing.T) {
 	coinToSellID := cState.App.GetNextCoinID()
 	cState.App.SetCoinsCount(coinToSellID.Uint32())
 
+	cState.Accounts.AddBalance(types.Address{0}, coinToSellID, helpers.BipToPip(big.NewInt(100000)))
+
 	data.CoinToBuy = coinToBuyID
 	data.CoinToSell = coinToSellID
 	data.MaximumValueToSell = big.NewInt(1)
@@ -1269,7 +1271,7 @@ func TestBuyCoinTxToMaximumValueToSellReached(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.MaximumValueToSellReached, response.Log)
 	}
 
-	data.MaximumValueToSell = big.NewInt(2000360064812986923)
+	data.MaximumValueToSell = big.NewInt(1000360064812986923)
 	encodedData, err = rlp.EncodeToBytes(data)
 	if err != nil {
 		panic(err)
