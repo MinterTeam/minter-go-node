@@ -22,7 +22,7 @@ func TestAccounts_CreateMultisig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	multisigAddr := accounts.CreateMultisig([]uint32{1, 1, 2}, []types.Address{[20]byte{1}, [20]byte{2}, [20]byte{3}}, 2, 0, [20]byte{4})
+	multisigAddr := accounts.CreateMultisig([]uint32{1, 1, 2}, []types.Address{[20]byte{1}, [20]byte{2}, [20]byte{3}}, 2, [20]byte{4})
 
 	account := accounts.GetAccount(multisigAddr)
 	if account == nil {
@@ -209,7 +209,7 @@ func TestAccounts_ExistsMultisig(t *testing.T) {
 
 	accounts.SetNonce(msigAddress, 0)
 
-	_ = accounts.CreateMultisig([]uint32{1, 1, 2}, []types.Address{[20]byte{1}, [20]byte{2}, [20]byte{3}}, 2, 0, msigAddress)
+	_ = accounts.CreateMultisig([]uint32{1, 1, 2}, []types.Address{[20]byte{1}, [20]byte{2}, [20]byte{3}}, 2, msigAddress)
 
 	if !accounts.ExistsMultisig(msigAddress) {
 		t.Fatal("multisig address is free")
@@ -265,7 +265,7 @@ func TestAccounts_EditMultisig(t *testing.T) {
 
 	msigAddress := CreateMultisigAddress([20]byte{4}, 12)
 
-	_ = accounts.CreateMultisig([]uint32{3, 3, 6}, []types.Address{[20]byte{1, 1}, [20]byte{2, 3}, [20]byte{3, 3}}, 6, 0, msigAddress)
+	_ = accounts.CreateMultisig([]uint32{3, 3, 6}, []types.Address{[20]byte{1, 1}, [20]byte{2, 3}, [20]byte{3, 3}}, 6, msigAddress)
 	_ = accounts.EditMultisig(2, []uint32{1, 1, 2}, []types.Address{[20]byte{1}, [20]byte{2}, [20]byte{3}}, msigAddress)
 
 	account := accounts.GetAccount(msigAddress)
@@ -361,7 +361,7 @@ func TestAccounts_Export(t *testing.T) {
 	}
 
 	accounts.SetBalance([20]byte{4}, symbol.ID(), big.NewInt(1001))
-	_ = accounts.CreateMultisig([]uint32{1, 1, 2}, []types.Address{[20]byte{1}, [20]byte{2}, [20]byte{3}}, 2, 0, [20]byte{4})
+	_ = accounts.CreateMultisig([]uint32{1, 1, 2}, []types.Address{[20]byte{1}, [20]byte{2}, [20]byte{3}}, 2, [20]byte{4})
 
 	err = accounts.Commit()
 	if err != nil {
