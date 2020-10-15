@@ -65,8 +65,6 @@ func (c *Coins) Commit() error {
 
 		if coin.IsCreated() {
 			ids := c.getBySymbol(coin.Symbol())
-			ids = append(ids, coin.ID())
-
 			data, err := rlp.EncodeToBytes(ids)
 			if err != nil {
 				return fmt.Errorf("can't encode object at %d: %v", id, err)
@@ -222,7 +220,10 @@ func (c *Coins) Create(id types.CoinID, symbol types.CoinSymbol, name string,
 		c.setSymbolInfoToMap(coin.symbolInfo, coin.Symbol())
 	}
 
-	c.setSymbolToMap([]types.CoinID{coin.ID()}, coin.Symbol())
+	ids := c.getBySymbol(coin.Symbol())
+	ids = append(ids, coin.ID())
+
+	c.setSymbolToMap(ids, coin.Symbol())
 	c.setToMap(coin.ID(), coin)
 
 	coin.SetReserve(reserve)
@@ -253,11 +254,9 @@ func (c *Coins) Recreate(newID types.CoinID, name string, symbol types.CoinSymbo
 		}
 	}
 
-	symbolCoins = append(symbolCoins, recreateCoin.id)
 	recreateCoin.CVersion = lastVersion + 1
 	recreateCoin.isDirty = true
 
-	c.setSymbolToMap(symbolCoins, symbol)
 	c.setToMap(recreateCoin.id, recreateCoin)
 	c.markDirty(recreateCoin.id)
 
