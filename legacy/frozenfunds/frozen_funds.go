@@ -82,7 +82,7 @@ func (f *FrozenFunds) Export(state *types.AppState, height uint64, coinsMap map[
 
 		for _, frozenFund := range frozenFunds.List {
 			state.FrozenFunds = append(state.FrozenFunds, types.FrozenFund{
-				Height:       i,
+				Height:       i - height,
 				Address:      frozenFund.Address,
 				CandidateKey: frozenFund.CandidateKey,
 				Coin:         coinsMap[frozenFund.Coin].ID,

@@ -32,7 +32,7 @@ echo "==> Building for mac os..."
 CGO_ENABLED=1 go build -tags "minter gcc" -ldflags "-s -w -X ${GIT_IMPORT}.GitCommit=${GIT_COMMIT}" -o "build/pkg/darwin_amd64/minter" ./cmd/minter
 
 echo "==> Building for linux in docker"
-docker run -t -v ${PWD}:/go/src/github.com/MinterTeam/minter-go-node/ -i minter-builder-1:latest sh -c 'CGO_ENABLED=1 go build -tags "minter gcc" -ldflags "-s -w -X ${GIT_IMPORT}.GitCommit=${GIT_COMMIT}" -o "build/pkg/linux_amd64/minter" ./cmd/minter/'
+docker run -t -v ${PWD}:/go/src/github.com/MinterTeam/minter-go-node/ -i minter-builder-1:latest sh -c "CGO_ENABLED=1 go build -tags 'minter gcc' -ldflags '-s -w -X ${GIT_IMPORT}.GitCommit=${GIT_COMMIT}' -o 'build/pkg/linux_amd64/minter' ./cmd/minter/"
 
 # Zip all the files.
 echo "==> Packaging..."
