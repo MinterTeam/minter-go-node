@@ -1271,6 +1271,8 @@ func TestBuyCoinTxToMaximumValueToSellReached(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.MaximumValueToSellReached, response.Log)
 	}
 
+	checkState(t, cState)
+
 	data.MaximumValueToSell = big.NewInt(1000360064812986923)
 	encodedData, err = rlp.EncodeToBytes(data)
 	if err != nil {
@@ -1332,6 +1334,8 @@ func TestBuyCoinTxToCoinReserveNotSufficient(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveNotSufficient, response.Log)
 	}
 
+	checkState(t, cState)
+
 	// gas coin == coin to buy
 
 	cState.Coins.SubReserve(tx.GasCoin, helpers.BipToPip(big.NewInt(100000)))
@@ -1351,10 +1355,9 @@ func TestBuyCoinTxToCoinReserveNotSufficient(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveNotSufficient, response.Log)
 	}
 
-	// gas coin == coin to sell
+	checkState(t, cState)
 
-	cState.Coins.AddReserve(coinToBuyID, helpers.BipToPip(big.NewInt(11)))
-	cState.Coins.SubReserve(coinToBuyID, big.NewInt(9e17))
+	// gas coin == coin to sell
 
 	tx = createBuyCoinTx(coinToBuyID, coinToSellID, coinToBuyID, helpers.BipToPip(big.NewInt(1)), 1)
 	if err := tx.Sign(privateKey); err != nil {
@@ -1370,6 +1373,8 @@ func TestBuyCoinTxToCoinReserveNotSufficient(t *testing.T) {
 	if response.Code != code.CoinReserveNotSufficient {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveNotSufficient, response.Log)
 	}
+
+	checkState(t, cState)
 
 	// gas coin == coin to buy
 	// sell coin == base coin
