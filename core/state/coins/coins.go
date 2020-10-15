@@ -31,9 +31,10 @@ type RCoins interface {
 }
 
 type Coins struct {
-	list        map[types.CoinID]*Model
-	dirty       map[types.CoinID]struct{}
-	symbolsList map[types.CoinSymbol]types.CoinID
+	list            map[types.CoinID]*Model
+	dirty           map[types.CoinID]struct{}
+	symbolsList     map[types.CoinSymbol][]types.CoinID
+	symbolsInfoList map[types.CoinSymbol]*SymbolInfo
 
 	bus  *bus.Bus
 	iavl tree.MTree
@@ -44,9 +45,10 @@ type Coins struct {
 func NewCoins(stateBus *bus.Bus, iavl tree.MTree) (*Coins, error) {
 	coins := &Coins{
 		bus: stateBus, iavl: iavl,
-		list:        map[types.CoinID]*Model{},
-		dirty:       map[types.CoinID]struct{}{},
-		symbolsList: map[types.CoinSymbol]types.CoinID{},
+		list:            map[types.CoinID]*Model{},
+		dirty:           map[types.CoinID]struct{}{},
+		symbolsList:     map[types.CoinSymbol][]types.CoinID{},
+		symbolsInfoList: map[types.CoinSymbol]*SymbolInfo{},
 	}
 	coins.bus.SetCoins(NewBus(coins))
 
@@ -106,7 +108,8 @@ func (c *Coins) Commit() error {
 	}
 
 	// clear list
-	c.symbolsList = make(map[types.CoinSymbol]types.CoinID)
+	c.symbolsList = make(map[types.CoinSymbol][]types.CoinID)
+	c.symbolsInfoList = make(map[types.CoinSymbol]*SymbolInfo)
 
 	return nil
 }
@@ -132,20 +135,12 @@ func (c *Coins) ExistsBySymbol(symbol types.CoinSymbol) bool {
 		return true
 	}
 
-	if _, ok := c.getSymbolFromMap(symbol); ok {
-		return true
-	}
-
 	return c.getBySymbol(symbol) != nil
 }
 
 func (c *Coins) GetCoinBySymbol(symbol types.CoinSymbol, version types.CoinVersion) *Model {
 	if symbol.IsBaseCoin() {
 		return c.get(types.GetBaseCoinID())
-	}
-
-	if id, ok := c.getSymbolFromMap(symbol); ok {
-		return c.getFromMap(id)
 	}
 
 	coins := c.getBySymbol(symbol)
@@ -223,10 +218,12 @@ func (c *Coins) Create(id types.CoinID, symbol types.CoinSymbol, name string,
 			COwnerAddress: owner,
 			isDirty:       true,
 		}
+
+		c.setSymbolInfoToMap(coin.symbolInfo, coin.Symbol())
 	}
 
-	c.setToMap(coin.id, coin)
-	c.setSymbolToMap(coin.id, coin.CSymbol)
+	c.setSymbolToMap([]types.CoinID{coin.ID()}, coin.Symbol())
+	c.setToMap(coin.ID(), coin)
 
 	coin.SetReserve(reserve)
 	coin.SetVolume(volume)
@@ -256,9 +253,11 @@ func (c *Coins) Recreate(newID types.CoinID, name string, symbol types.CoinSymbo
 		}
 	}
 
+	symbolCoins = append(symbolCoins, recreateCoin.id)
 	recreateCoin.CVersion = lastVersion + 1
 	recreateCoin.isDirty = true
 
+	c.setSymbolToMap(symbolCoins, symbol)
 	c.setToMap(recreateCoin.id, recreateCoin)
 	c.markDirty(recreateCoin.id)
 
@@ -272,6 +271,7 @@ func (c *Coins) ChangeOwner(symbol types.CoinSymbol, owner types.Address) {
 	coin := c.GetCoinBySymbol(symbol, 0)
 	coin.symbolInfo = info
 
+	c.setSymbolInfoToMap(coin.symbolInfo, coin.Symbol())
 	c.setToMap(coin.ID(), coin)
 	c.markDirty(coin.ID())
 }
@@ -323,6 +323,10 @@ func (c *Coins) get(id types.CoinID) *Model {
 }
 
 func (c *Coins) getSymbolInfo(symbol types.CoinSymbol) *SymbolInfo {
+	if info, ok := c.getSymbolInfoFromMap(symbol); ok {
+		return info
+	}
+
 	info := &SymbolInfo{}
 
 	_, enc := c.iavl.Get(getSymbolInfoPath(symbol))
@@ -338,6 +342,10 @@ func (c *Coins) getSymbolInfo(symbol types.CoinSymbol) *SymbolInfo {
 }
 
 func (c *Coins) getBySymbol(symbol types.CoinSymbol) []types.CoinID {
+	if coins, ok := c.getSymbolFromMap(symbol); ok {
+		return coins
+	}
+
 	var coins []types.CoinID
 
 	_, enc := c.iavl.Get(getSymbolCoinsPath(symbol))
@@ -416,19 +424,34 @@ func (c *Coins) setToMap(id types.CoinID, model *Model) {
 	c.list[id] = model
 }
 
-func (c *Coins) getSymbolFromMap(symbol types.CoinSymbol) (types.CoinID, bool) {
+func (c *Coins) getSymbolInfoFromMap(symbol types.CoinSymbol) (*SymbolInfo, bool) {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
-	id, ok := c.symbolsList[symbol]
-	return id, ok
+	info, ok := c.symbolsInfoList[symbol]
+	return info, ok
 }
 
-func (c *Coins) setSymbolToMap(id types.CoinID, symbol types.CoinSymbol) {
+func (c *Coins) setSymbolInfoToMap(info *SymbolInfo, symbol types.CoinSymbol) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	c.symbolsList[symbol] = id
+	c.symbolsInfoList[symbol] = info
+}
+
+func (c *Coins) getSymbolFromMap(symbol types.CoinSymbol) ([]types.CoinID, bool) {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
+	coins, ok := c.symbolsList[symbol]
+	return coins, ok
+}
+
+func (c *Coins) setSymbolToMap(coins []types.CoinID, symbol types.CoinSymbol) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	c.symbolsList[symbol] = coins
 }
 
 func getSymbolCoinsPath(symbol types.CoinSymbol) []byte {
