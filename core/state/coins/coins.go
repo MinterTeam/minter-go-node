@@ -30,6 +30,45 @@ type RCoins interface {
 	GetSymbolInfo(symbol types.CoinSymbol) *SymbolInfo
 }
 
+// Coins represents coins state in blockchain.
+//
+// When a coin is created with a CreateCoinTx transaction, such model is created:
+// Model {
+//  id
+//  info
+//  symbolInfo
+//
+//  Name
+//  Crr
+//  MaxSupply
+//  Version - is the version of the coin
+//  Symbol - is the base symbol of the coin
+// }
+//
+// Also, SymbolInfo is created:
+// SymbolInfo {
+//  OwnerAddress
+// }
+//
+// It is a structure that retains the owner of the ticker (not the coin).
+// coin.symbolInfo is saved in the symbolsInfoList map, in which the key is the symbol,
+// and the value is the owner of the coin, and upon commit is written to the db by this key:
+// mainPrefix + symbolPrefix + symbol + infoPrefix.
+//
+// Also, you need to save all coins for a particular ticker. That is, you need to associate
+// the ticker with all the coins that refer to it. For this, there is a map symbolsList,
+// in which the key is the ticker, and the value is an array of ids of coins that
+// belong to this ticker (just with a different version). When you commit, this array is
+// saved to db by this key: mainPrefix + symbolPrefix + symbol.
+//
+// The coin model is saved at: mainPrefix + id.
+//
+// When a coin is re-created with a RecreateCoinTx transaction, the state retrieves an array of
+// coins that refer to this ticker (getBySymbol). Finds the current current version there, changes
+// it to the new version. And the new coin is assigned version 0. The new coin is also added to symbolsList [ticker].
+//
+// When changing the owner with a ChangeOwnerTx transaction, the state gets the current owner
+// getSymbolInfo (ticker) and changes the owner there and saves it back.
 type Coins struct {
 	list            map[types.CoinID]*Model
 	dirty           map[types.CoinID]struct{}
