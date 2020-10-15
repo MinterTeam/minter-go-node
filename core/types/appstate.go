@@ -173,8 +173,36 @@ func (s *AppState) Verify() error {
 			}
 		}
 
+		for _, wl := range s.Waitlist {
+			if wl.Coin == coin.ID {
+				volume.Add(volume, helpers.StringToBigInt(wl.Value))
+			}
+		}
+
 		if volume.Cmp(helpers.StringToBigInt(coin.Volume)) != 0 {
 			return fmt.Errorf("wrong coin %s volume (%s)", coin.Symbol.String(), big.NewInt(0).Sub(volume, helpers.StringToBigInt(coin.Volume)))
+		}
+	}
+
+	for _, wl := range s.Waitlist {
+		if !helpers.IsValidBigInt(wl.Value) {
+			return fmt.Errorf("wrong waitlist value: %s", wl.Value)
+		}
+
+		// check not existing coins
+		coinID := CoinID(wl.Coin)
+		if !coinID.IsBaseCoin() {
+			foundCoin := false
+			for _, coin := range s.Coins {
+				if CoinID(coin.ID) == coinID {
+					foundCoin = true
+					break
+				}
+			}
+
+			if !foundCoin {
+				return fmt.Errorf("coin %s not found", coinID)
+			}
 		}
 	}
 
