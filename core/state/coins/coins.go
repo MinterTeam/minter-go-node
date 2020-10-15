@@ -418,7 +418,7 @@ func (c *Coins) getOrderedDirtyCoins() []types.CoinID {
 func (c *Coins) Export(state *types.AppState) {
 	c.iavl.Iterate(func(key []byte, value []byte) bool {
 		if key[0] == mainPrefix {
-			if key[1] == symbolPrefix || key[len(key)-1] == infoPrefix {
+			if len(key) > 5 {
 				return false
 			}
 
@@ -445,6 +445,10 @@ func (c *Coins) Export(state *types.AppState) {
 		}
 
 		return false
+	})
+
+	sort.Slice(state.Coins[:], func(i, j int) bool {
+		return helpers.StringToBigInt(state.Coins[i].Reserve).Cmp(helpers.StringToBigInt(state.Coins[j].Reserve)) == 1
 	})
 }
 
