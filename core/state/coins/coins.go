@@ -105,10 +105,6 @@ func (c *Coins) Commit() error {
 		}
 	}
 
-	// clear list
-	c.symbolsList = make(map[types.CoinSymbol][]types.CoinID)
-	c.symbolsInfoList = make(map[types.CoinSymbol]*SymbolInfo)
-
 	return nil
 }
 
@@ -238,7 +234,7 @@ func (c *Coins) Create(id types.CoinID, symbol types.CoinSymbol, name string,
 func (c *Coins) Recreate(newID types.CoinID, name string, symbol types.CoinSymbol,
 	volume *big.Int, crr uint32, reserve *big.Int, maxSupply *big.Int,
 ) {
-	recreateCoin := c.GetCoinBySymbol(symbol, 0)
+	recreateCoin := c.GetCoinBySymbol(symbol, BaseVersion)
 	if recreateCoin == nil {
 		panic("coin to recreate does not exists")
 	}
@@ -267,7 +263,7 @@ func (c *Coins) ChangeOwner(symbol types.CoinSymbol, owner types.Address) {
 	info := c.getSymbolInfo(symbol)
 	info.setOwnerAddress(owner)
 
-	coin := c.GetCoinBySymbol(symbol, 0)
+	coin := c.GetCoinBySymbol(symbol, BaseVersion)
 	coin.symbolInfo = info
 
 	c.setSymbolInfoToMap(coin.symbolInfo, coin.Symbol())
@@ -337,6 +333,8 @@ func (c *Coins) getSymbolInfo(symbol types.CoinSymbol) *SymbolInfo {
 		panic(fmt.Sprintf("failed to decode coin symbol %s: %s", symbol.String(), err))
 	}
 
+	c.setSymbolInfoToMap(info, symbol)
+
 	return info
 }
 
@@ -355,6 +353,8 @@ func (c *Coins) getBySymbol(symbol types.CoinSymbol) []types.CoinID {
 	if err := rlp.DecodeBytes(enc, &coins); err != nil {
 		panic(fmt.Sprintf("failed to decode coins by symbol %s: %s", symbol, err))
 	}
+
+	c.setSymbolToMap(coins, symbol)
 
 	return coins
 }
