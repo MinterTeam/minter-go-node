@@ -137,8 +137,8 @@ func (data UnbondData) Run(tx *Transaction, context state.Interface, rewardPool 
 
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 
-		if watchList := deliverState.Waitlist.Get(sender, data.PubKey, data.Coin); watchList != nil {
-			diffValue := big.NewInt(0).Sub(data.Value, watchList.Value)
+		if waitList := deliverState.Waitlist.Get(sender, data.PubKey, data.Coin); waitList != nil {
+			diffValue := big.NewInt(0).Sub(data.Value, waitList.Value)
 			deliverState.Waitlist.Delete(sender, data.PubKey, data.Coin)
 			if diffValue.Sign() == -1 {
 				deliverState.Waitlist.AddWaitList(sender, data.PubKey, data.Coin, big.NewInt(0).Neg(diffValue))

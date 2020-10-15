@@ -1076,7 +1076,7 @@ func TestCandidate_GetFilteredUpdates(t *testing.T) {
 		t.Fatal("candidate not found")
 	}
 
-	candidate.FilterUpdates()
+	candidate.filterUpdates()
 
 	if len(candidate.updates) != 1 {
 		t.Fatal("updates not merged")

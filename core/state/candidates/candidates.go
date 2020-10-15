@@ -347,7 +347,7 @@ func (c *Candidates) recalculateStakes(height uint64) {
 			}
 		}
 
-		candidate.FilterUpdates()
+		candidate.filterUpdates()
 		for _, update := range candidate.updates {
 			update.setBipValue(c.calculateBipValue(update.Coin, update.Value, false, true, coinsCache))
 		}

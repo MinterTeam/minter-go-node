@@ -98,7 +98,7 @@ func TestDelegateTx(t *testing.T) {
 	checkState(t, cState)
 }
 
-func TestDelegateTxWithWatchlist(t *testing.T) {
+func TestDelegateTxWithWaitlist(t *testing.T) {
 	cState := getState()
 	pubkey := createTestCandidate(cState)
 	privateKey, _ := crypto.GenerateKey()

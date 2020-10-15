@@ -134,8 +134,8 @@ func (candidate *Candidate) getFilteredUpdates() []*stake {
 	return updates
 }
 
-// FilterUpdates filters candidate updates: remove 0-valued updates and merge similar ones
-func (candidate *Candidate) FilterUpdates() {
+// filterUpdates filters candidate updates: remove 0-valued updates and merge similar ones
+func (candidate *Candidate) filterUpdates() {
 	if len(candidate.updates) == 0 {
 		return
 	}

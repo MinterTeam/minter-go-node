@@ -85,7 +85,7 @@ func TestUnbondTx(t *testing.T) {
 	checkState(t, cState)
 }
 
-func TestFullUnbondTxWithWatchlist(t *testing.T) {
+func TestFullUnbondTxWithWaitlist(t *testing.T) {
 	cState := getState()
 	pubkey := createTestCandidate(cState)
 
@@ -157,7 +157,7 @@ func TestFullUnbondTxWithWatchlist(t *testing.T) {
 	checkState(t, cState)
 }
 
-func TestUnbondTxWithWatchlist(t *testing.T) {
+func TestUnbondTxWithWaitlist(t *testing.T) {
 	cState := getState()
 	pubkey := createTestCandidate(cState)
 

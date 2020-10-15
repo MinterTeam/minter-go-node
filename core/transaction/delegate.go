@@ -46,8 +46,8 @@ func (data DelegateData) BasicCheck(tx *Transaction, context *state.CheckState) 
 
 	sender, _ := tx.Sender()
 	value := big.NewInt(0).Set(data.Value)
-	if watchList := context.WaitList().Get(sender, data.PubKey, data.Coin); watchList != nil {
-		value.Add(value, watchList.Value)
+	if waitList := context.WaitList().Get(sender, data.PubKey, data.Coin); waitList != nil {
+		value.Add(value, waitList.Value)
 	}
 
 	if value.Cmp(types.Big0) < 1 {
@@ -155,8 +155,8 @@ func (data DelegateData) Run(tx *Transaction, context state.Interface, rewardPoo
 		deliverState.Accounts.SubBalance(sender, data.Coin, data.Value)
 
 		value := big.NewInt(0).Set(data.Value)
-		if watchList := deliverState.Waitlist.Get(sender, data.PubKey, data.Coin); watchList != nil {
-			value.Add(value, watchList.Value)
+		if waitList := deliverState.Waitlist.Get(sender, data.PubKey, data.Coin); waitList != nil {
+			value.Add(value, waitList.Value)
 			deliverState.Waitlist.Delete(sender, data.PubKey, data.Coin)
 		}
 
