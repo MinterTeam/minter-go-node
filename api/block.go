@@ -73,7 +73,7 @@ func Block(height int64) (*BlockResponse, error) {
 	}
 	totalValidators := tmValidators.Validators
 
-	cState, err := GetStateForHeight(int(height))
+	cState, err := GetStateForHeight(0)
 	if err != nil {
 		return nil, err
 	}

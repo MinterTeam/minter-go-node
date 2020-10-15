@@ -44,13 +44,16 @@ func Transactions(query string, page, perPage int) (*[]json.RawMessage, error) {
 		return nil, err
 	}
 
-	result := make([]json.RawMessage, len(rpcResult.Txs))
-	for i, tx := range rpcResult.Txs {
-		cState, err := GetStateForHeight(int(tx.Height))
-		if err != nil {
-			return nil, err
-		}
+	cState, err := GetStateForHeight(0)
+	if err != nil {
+		return nil, err
+	}
 
+	cState.RLock()
+	defer cState.RUnlock()
+
+	result := make([]json.RawMessage, 0, len(rpcResult.Txs))
+	for _, tx := range rpcResult.Txs {
 		decodedTx, _ := transaction.TxDecoder.DecodeFromBytes(tx.Tx)
 		txJsonEncoder := encoder.NewTxEncoderJSON(cState)
 		response, err := txJsonEncoder.Encode(decodedTx, tx)
@@ -58,7 +61,7 @@ func Transactions(query string, page, perPage int) (*[]json.RawMessage, error) {
 			return nil, err
 		}
 
-		result[i] = response
+		result = append(result, response)
 	}
 
 	return &result, nil

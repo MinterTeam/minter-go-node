@@ -22,10 +22,10 @@ func (s *Service) Transactions(ctx context.Context, req *pb.TransactionsRequest)
 	result := make([]*pb.TransactionResponse, 0, lenTx)
 	if lenTx != 0 {
 
-		cState, err := s.blockchain.GetStateForHeight(uint64(rpcResult.Txs[0].Height))
-		if err != nil {
-			return nil, status.Error(codes.NotFound, err.Error())
-		}
+		cState := s.blockchain.CurrentState()
+		cState.RLock()
+		defer cState.RUnlock()
+
 		for _, tx := range rpcResult.Txs {
 
 			if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
@@ -51,7 +51,7 @@ func (s *Service) Transactions(ctx context.Context, req *pb.TransactionsRequest)
 				Height:   uint64(tx.Height),
 				Index:    uint64(tx.Index),
 				From:     sender.String(),
-				Nonce:    uint64(decodedTx.Nonce),
+				Nonce:    decodedTx.Nonce,
 				GasPrice: uint64(decodedTx.GasPrice),
 				GasCoin: &pb.Coin{
 					Id:     uint64(decodedTx.GasCoin),
