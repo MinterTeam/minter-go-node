@@ -16,6 +16,7 @@ const mainPrefix = byte('h')
 type RHalts interface {
 	Export(state *types.AppState)
 	GetHaltBlocks(height uint64) *Model
+	IsHaltExists(height uint64, pubkey types.Pubkey) bool
 }
 
 type HaltBlocks struct {
@@ -126,6 +127,21 @@ func (hb *HaltBlocks) getOrderedDirty() []uint64 {
 	})
 
 	return keys
+}
+
+func (hb *HaltBlocks) IsHaltExists(height uint64, pubkey types.Pubkey) bool {
+	model := hb.get(height)
+	if model == nil {
+		return false
+	}
+
+	for _, halt := range model.List {
+		if halt.Pubkey == pubkey {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (hb *HaltBlocks) AddHaltBlock(height uint64, pubkey types.Pubkey) {
