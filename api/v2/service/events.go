@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
+	_struct "github.com/golang/protobuf/ptypes/struct"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -16,7 +17,7 @@ func (s *Service) Events(ctx context.Context, req *pb.EventsRequest) (*pb.Events
 
 	height := uint32(req.Height)
 	events := s.blockchain.GetEventsDB().LoadEvents(height)
-	resultEvents := make([]*pb.EventsResponse_Event, 0, len(events))
+	resultEvents := make([]*_struct.Struct, 0, len(events))
 	for _, event := range events {
 
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
@@ -45,7 +46,7 @@ func (s *Service) Events(ctx context.Context, req *pb.EventsRequest) (*pb.Events
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 
-		resultEvents = append(resultEvents, &pb.EventsResponse_Event{Type: event.Type(), Value: data})
+		resultEvents = append(resultEvents, data)
 	}
 	return &pb.EventsResponse{
 		Events: resultEvents,
