@@ -23,6 +23,7 @@ const (
 	WrongChainID                 uint32 = 115
 	CoinReserveUnderflow         uint32 = 116
 	WrongHaltHeight              uint32 = 117
+	HaltAlreadyExists            uint32 = 118
 
 	// coin creation
 	CoinAlreadyExists uint32 = 201
@@ -536,12 +537,13 @@ func NewStakeShouldBePositive(stake string) *stakeShouldBePositive {
 }
 
 type wrongHaltHeight struct {
-	Code   string `json:"code,omitempty"`
-	Height string `json:"height,omitempty"`
+	Code      string `json:"code,omitempty"`
+	PublicKey string `json:"public_key,omitempty"`
+	Height    string `json:"height,omitempty"`
 }
 
-func NewWrongHaltHeight(height string) *wrongHaltHeight {
-	return &wrongHaltHeight{Code: strconv.Itoa(int(WrongHaltHeight)), Height: height}
+func NewWrongHaltHeight(height string, pubkey string) *wrongHaltHeight {
+	return &wrongHaltHeight{Code: strconv.Itoa(int(WrongHaltHeight)), Height: height, PublicKey: pubkey}
 }
 
 type tooLowStake struct {

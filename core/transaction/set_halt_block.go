@@ -33,6 +33,14 @@ func (data SetHaltBlockData) BasicCheck(tx *Transaction, context *state.CheckSta
 		}
 	}
 
+	if context.Halts().IsHaltExists(data.Height, data.PubKey) {
+		return &Response{
+			Code: code.HaltAlreadyExists,
+			Log:  "Halt with such public key and height already exists",
+			Info: EncodeError(code.NewWrongHaltHeight(strconv.FormatUint(data.Height, 10), data.GetPubKey().String())),
+		}
+	}
+
 	return checkCandidateOwnership(data, tx, context)
 }
 
@@ -63,7 +71,7 @@ func (data SetHaltBlockData) Run(tx *Transaction, context state.Interface, rewar
 		return Response{
 			Code: code.WrongHaltHeight,
 			Log:  fmt.Sprintf("Halt height should be equal or bigger than current: %d", currentBlock),
-			Info: EncodeError(code.NewWrongHaltHeight(strconv.FormatUint(data.Height, 10))),
+			Info: EncodeError(code.NewWrongHaltHeight(strconv.FormatUint(data.Height, 10), data.GetPubKey().String())),
 		}
 	}
 
