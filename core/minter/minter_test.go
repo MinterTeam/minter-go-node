@@ -245,12 +245,24 @@ func TestBlockchain_SetStatisticData(t *testing.T) {
 	blockchain, tmCli, _ := initTestNode(t)
 	defer blockchain.Stop()
 
-	ctx, _ := context.WithTimeout(context.Background(), time.Second*3)
-	blockchain.SetStatisticData(statistics.New()).Statistic(ctx)
+	ch := make(chan struct{})
+	blockchain.stateDeliver.Lock()
+	go func() {
+		close(ch)
+		blockchain.SetStatisticData(statistics.New()).Statistic(context.Background())
+	}()
+	<-ch
+	time.Sleep(time.Second)
+	blockchain.stateDeliver.Unlock()
+
 	blocks, err := tmCli.Subscribe(context.Background(), "test-client", "tm.event = 'NewBlock'")
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	<-blocks
+	<-blocks
+	<-blocks
 	block := <-blocks
 	if block.Data.(types2.EventDataNewBlock).Block.Header.Time.Nanosecond() != blockchain.StatisticData().BlockEnd.LastBlockInfo.HeaderTimestamp.Nanosecond() {
 		t.Fatal("statistic last block and event event last block header time not equal")
@@ -258,6 +270,7 @@ func TestBlockchain_SetStatisticData(t *testing.T) {
 
 	blockchain.lock.RLock()
 	defer blockchain.lock.RUnlock()
+
 	exportedState := blockchain.CurrentState().Export(blockchain.Height() - 1)
 	if err := exportedState.Verify(); err != nil {
 		t.Fatal(err)
@@ -474,15 +487,14 @@ func TestBlockchain_SendTx(t *testing.T) {
 
 func TestBlockchain_FrozenFunds(t *testing.T) {
 	blockchain, tmCli, pv := initTestNode(t)
-	defer blockchain.Stop()
 
 	targetHeight := uint64(10)
-	value := big.NewInt(1000)
+	value := helpers.BipToPip(big.NewInt(1000))
 	pubkey := types.BytesToPubkey(pv.Key.PubKey.Bytes()[5:])
-	blockchain.stateDeliver.Lock()
-	blockchain.stateDeliver.Candidates.SubStake(developers.Address, pubkey, 0, value)
-	blockchain.stateDeliver.FrozenFunds.AddFund(targetHeight, developers.Address, pubkey, 0, value)
-	blockchain.stateDeliver.Unlock()
+	blockchain.stateDeliver.RLock()
+	blockchain.stateDeliver.Candidates.SubStake(developers.Address, pubkey, 0, big.NewInt(0).Set(value))
+	blockchain.stateDeliver.FrozenFunds.AddFund(targetHeight, developers.Address, pubkey, 0, big.NewInt(0).Set(value))
+	blockchain.stateDeliver.RUnlock()
 
 	blocks, err := tmCli.Subscribe(context.Background(), "test-client", "tm.event = 'NewBlock'")
 	if err != nil {
@@ -497,8 +509,7 @@ func TestBlockchain_FrozenFunds(t *testing.T) {
 	}
 
 	blockchain.lock.RLock()
-	defer blockchain.lock.RLock()
-
+	defer blockchain.lock.RUnlock()
 	exportedState := blockchain.CurrentState().Export(blockchain.Height() - 1)
 	if err := exportedState.Verify(); err != nil {
 		t.Fatal(err)
@@ -757,6 +768,7 @@ func TestBlockchain_RecalculateStakes_andRemoveValidator(t *testing.T) {
 
 	blockchain.lock.RLock()
 	defer blockchain.lock.RUnlock()
+
 	exportedState := blockchain.CurrentState().Export(blockchain.Height() - 1)
 	if err := exportedState.Verify(); err != nil {
 		t.Fatal(err)
