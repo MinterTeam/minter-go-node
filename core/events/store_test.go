@@ -103,7 +103,7 @@ func TestIEventsDB(t *testing.T) {
 	if loadEvents[1].(*StakeKickEvent).ValidatorPubKey.String() != "Mp738da41ba6a7b7d69b7294afa158b89c5a1b410cbf0c2443c85c5fe24ad1dd1c" {
 		t.Fatal("invalid PubKey")
 	}
-	if loadEvents[1].(*StakeKickEvent).Coin.Uint32() != 1 {
+	if loadEvents[1].(*StakeKickEvent).Coin != 1 {
 		t.Fatal("invalid Coin")
 	}
 
@@ -125,7 +125,7 @@ func TestIEventsDB(t *testing.T) {
 	if loadEvents[0].(*UnbondEvent).ValidatorPubKey.String() != "Mp738da41ba6a7b7d69b7294afa158b89c5a1b410cbf0c2443c85c5fe24ad1dd11" {
 		t.Fatal("invalid PubKey")
 	}
-	if loadEvents[0].(*UnbondEvent).Coin.Uint32() != 1 {
+	if loadEvents[0].(*UnbondEvent).Coin != 1 {
 		t.Fatal("invalid Coin")
 	}
 
@@ -141,7 +141,7 @@ func TestIEventsDB(t *testing.T) {
 	if loadEvents[1].(*UnbondEvent).ValidatorPubKey.String() != "Mp738da41ba6a7b7d69b7294afa158b89c5a1b410cbf0c2443c85c5fe24ad1dd12" {
 		t.Fatal("invalid PubKey")
 	}
-	if loadEvents[1].(*UnbondEvent).Coin.Uint32() != 2 {
+	if loadEvents[1].(*UnbondEvent).Coin != 2 {
 		t.Fatal("invalid Coin")
 	}
 
@@ -163,7 +163,7 @@ func TestIEventsDB(t *testing.T) {
 	if loadEvents[0].(*SlashEvent).ValidatorPubKey.String() != "Mp738da41ba6a7b7d69b7294afa158b89c5a1b410cbf0c2443c85c5fe24ad1dd10" {
 		t.Fatal("invalid PubKey")
 	}
-	if loadEvents[0].(*SlashEvent).Coin.Uint32() != 10 {
+	if loadEvents[0].(*SlashEvent).Coin != 10 {
 		t.Fatal("invalid Coin")
 	}
 }
