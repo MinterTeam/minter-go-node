@@ -35,7 +35,12 @@ func (s *Service) Events(ctx context.Context, req *pb.EventsRequest) (*pb.Events
 			continue
 		}
 
-		data, err := toStruct(event)
+		marshalJSON, err := s.cdc.MarshalJSON(event)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+
+		data, err := encodeToStruct(marshalJSON)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
