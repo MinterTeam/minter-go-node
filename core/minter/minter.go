@@ -634,8 +634,6 @@ func (app *Blockchain) isApplicationHalted(height uint64) bool {
 		return true
 	}
 
-	return false // todo: remove
-
 	halts := app.stateDeliver.Halts.GetHaltBlocks(height)
 	if halts != nil {
 		// calculate total power of validators
