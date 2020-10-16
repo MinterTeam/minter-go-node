@@ -15,7 +15,7 @@ func Transaction(hash []byte) (json.RawMessage, error) {
 
 	decodedTx, _ := transaction.TxDecoder.DecodeFromBytes(tx.Tx)
 
-	cState, err := GetStateForHeight(int(tx.Height))
+	cState, err := GetStateForHeight(0)
 	if err != nil {
 		return nil, err
 	}

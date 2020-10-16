@@ -12,6 +12,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	_struct "github.com/golang/protobuf/ptypes/struct"
+	"github.com/tendermint/iavl"
 	core_types "github.com/tendermint/tendermint/rpc/core/types"
 	tmTypes "github.com/tendermint/tendermint/types"
 	"google.golang.org/grpc/codes"
@@ -46,7 +47,6 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 	}
 
 	var totalValidators []*tmTypes.Validator
-	var cState *state.CheckState
 
 	if len(req.Fields) == 0 {
 		response.Size = uint64(len(s.cdc.MustMarshalBinaryLengthPrefixed(block)))
@@ -56,12 +56,11 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 			return nil, timeoutStatus.Err()
 		}
 
-		cState, err = s.blockchain.GetStateForHeight(uint64(height))
-		if err != nil {
-			return nil, status.Error(codes.NotFound, err.Error())
-		}
+		currentState := s.blockchain.CurrentState()
+		currentState.RLock()
+		defer currentState.RUnlock()
 
-		response.Transactions, err = s.blockTransaction(block, blockResults, cState.Coins())
+		response.Transactions, err = s.blockTransaction(block, blockResults, currentState.Coins())
 		if err != nil {
 			return nil, err
 		}
@@ -104,7 +103,14 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 			return nil, timeoutStatus.Err()
 		}
 
-		response.Missed = missedBlockValidators(cState)
+		cStateOld, err := s.blockchain.GetStateForHeight(uint64(height))
+		if err != iavl.ErrVersionDoesNotExist && err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
+		if err != iavl.ErrVersionDoesNotExist {
+			response.Missed = missedBlockValidators(cStateOld)
+		}
 
 		return response, nil
 	}
@@ -118,22 +124,21 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 			response.Size = uint64(len(s.cdc.MustMarshalBinaryLengthPrefixed(block)))
 		case pb.BlockRequest_block_reward:
 			response.BlockReward = rewards.GetRewardForBlock(uint64(height)).String()
-		case pb.BlockRequest_transactions, pb.BlockRequest_missed:
-			if cState == nil {
-				cState, err = s.blockchain.GetStateForHeight(uint64(height))
-				if err != nil {
-					return nil, status.Error(codes.NotFound, err.Error())
-				}
-			}
-
-			if pb.BlockRequest_missed == field {
-				response.Missed = missedBlockValidators(cState)
-				continue
-			}
+		case pb.BlockRequest_transactions:
+			cState := s.blockchain.CurrentState()
 
 			response.Transactions, err = s.blockTransaction(block, blockResults, cState.Coins())
 			if err != nil {
 				return nil, err
+			}
+		case pb.BlockRequest_missed:
+			cStateOld, err := s.blockchain.GetStateForHeight(uint64(height))
+			if err != iavl.ErrVersionDoesNotExist && err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+
+			if err != iavl.ErrVersionDoesNotExist {
+				response.Missed = missedBlockValidators(cStateOld)
 			}
 
 		case pb.BlockRequest_proposer, pb.BlockRequest_validators:

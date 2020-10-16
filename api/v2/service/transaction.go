@@ -34,10 +34,7 @@ func (s *Service) Transaction(ctx context.Context, req *pb.TransactionRequest) (
 		tags[string(tag.Key)] = string(tag.Value)
 	}
 
-	cState, err := s.blockchain.GetStateForHeight(uint64(tx.Height))
-	if err != nil {
-		return nil, status.Error(codes.NotFound, err.Error())
-	}
+	cState := s.blockchain.CurrentState()
 
 	cState.RLock()
 	defer cState.RUnlock()
@@ -45,6 +42,7 @@ func (s *Service) Transaction(ctx context.Context, req *pb.TransactionRequest) (
 	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
 		return nil, timeoutStatus.Err()
 	}
+
 	dataStruct, err := encode(decodedTx.GetDecodedData(), cState.Coins())
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
