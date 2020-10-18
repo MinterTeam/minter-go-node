@@ -300,7 +300,7 @@ func (c *Candidates) PunishByzantineCandidate(height uint64, tmAddress types.TmA
 			ValidatorPubKey: candidate.PubKey,
 		})
 
-		c.bus.FrozenFunds().AddFrozenFund(height+UnbondPeriod, stake.Owner, candidate.PubKey, stake.Coin, newValue)
+		c.bus.FrozenFunds().AddFrozenFund(height+UnbondPeriod, stake.Owner, candidate.PubKey, candidate.ID, stake.Coin, newValue)
 		stake.setValue(big.NewInt(0))
 	}
 }

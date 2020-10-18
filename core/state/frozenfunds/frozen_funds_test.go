@@ -30,7 +30,7 @@ func TestFrozenFundsToAddModel(t *testing.T) {
 
 	height, addr, pubkey, coin, val := uint64(1), types.Address{0}, types.Pubkey{0}, types.GetBaseCoinID(), big.NewInt(1e18)
 
-	ff.AddFund(height, addr, pubkey, coin, val)
+	ff.AddFund(height, addr, pubkey, 1, coin, val)
 	if err := ff.Commit(); err != nil {
 		t.Fatal(err)
 	}
@@ -77,7 +77,7 @@ func TestFrozenFundsToDeleteModel(t *testing.T) {
 
 	height, addr, pubkey, coin, val := uint64(1), types.Address{0}, types.Pubkey{0}, types.GetBaseCoinID(), big.NewInt(1e18)
 
-	ff.AddFund(height, addr, pubkey, coin, val)
+	ff.AddFund(height, addr, pubkey, 1, coin, val)
 	if err := ff.Commit(); err != nil {
 		t.Fatal(err)
 	}

@@ -73,7 +73,7 @@ func (f *FrozenFunds) getOrderedDirty() []uint64 {
 	return keys
 }
 
-func (f *FrozenFunds) Export(state *types.AppState, height uint64, coinsMap map[types.CoinSymbol]types.Coin) {
+func (f *FrozenFunds) Export(state *types.AppState, height uint64, coinsMap map[types.CoinSymbol]types.Coin, candidatesMap map[types.Pubkey]uint32) {
 	for i := height; i <= height+candidates.UnbondPeriod; i++ {
 		frozenFunds := f.get(i)
 		if frozenFunds == nil {
@@ -85,6 +85,7 @@ func (f *FrozenFunds) Export(state *types.AppState, height uint64, coinsMap map[
 				Height:       i - height,
 				Address:      frozenFund.Address,
 				CandidateKey: frozenFund.CandidateKey,
+				CandidateID:  candidatesMap[*frozenFund.CandidateKey],
 				Coin:         coinsMap[frozenFund.Coin].ID,
 				Value:        frozenFund.Value.String(),
 			})
