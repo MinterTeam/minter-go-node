@@ -777,7 +777,7 @@ func TestBlockchain_RecalculateStakes_andRemoveValidator(t *testing.T) {
 
 func TestStopNetworkByHaltBlocks(t *testing.T) {
 	blockchain, _, _ := initTestNode(t)
-	blockchain.Stop()
+	defer blockchain.Stop()
 
 	haltHeight := uint64(50)
 
