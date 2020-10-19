@@ -85,7 +85,7 @@ func (f *FrozenFunds) Export(state *types.AppState, height uint64, coinsMap map[
 				Height:       i - height,
 				Address:      frozenFund.Address,
 				CandidateKey: frozenFund.CandidateKey,
-				CandidateID:  candidatesMap[*frozenFund.CandidateKey],
+				CandidateID:  uint64(candidatesMap[*frozenFund.CandidateKey]),
 				Coin:         coinsMap[frozenFund.Coin].ID,
 				Value:        frozenFund.Value.String(),
 			})
