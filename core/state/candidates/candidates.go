@@ -73,8 +73,16 @@ type Candidates struct {
 	iavl tree.MTree
 	bus  *bus.Bus
 
-	lock   sync.RWMutex
-	loaded bool
+	lock                sync.RWMutex
+	loaded              bool
+	isChangedPublicKeys bool
+}
+
+func (c *Candidates) IsChangedPublicKeys() bool {
+	return c.isChangedPublicKeys
+}
+func (c *Candidates) ResetIsChangedPublicKeys() {
+	c.isChangedPublicKeys = false
 }
 
 // NewCandidates returns newly created Candidates state with a given bus and iavl
@@ -1027,6 +1035,7 @@ func (c *Candidates) ChangePubKey(old types.Pubkey, new types.Pubkey) {
 	c.setBlockPubKey(old)
 	c.setPubKeyID(new, c.pubKeyIDs[old])
 	delete(c.pubKeyIDs, old)
+	c.isChangedPublicKeys = true
 }
 
 func (c *Candidates) getOrNewID(pubKey types.Pubkey) uint32 {
