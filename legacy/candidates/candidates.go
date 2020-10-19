@@ -231,9 +231,11 @@ func (c *Candidates) LoadStakes() {
 	}
 }
 
-func (c *Candidates) Export(state *types.AppState, coinsMap map[types.CoinSymbol]types.Coin) {
+func (c *Candidates) Export(state *types.AppState, coinsMap map[types.CoinSymbol]types.Coin) map[types.Pubkey]uint32 {
 	c.LoadCandidates()
 	c.LoadStakes()
+
+	candidatesMap := make(map[types.Pubkey]uint32)
 
 	candidates, maxID := c.GetCandidates(), uint32(1)
 	for _, candidate := range candidates {
@@ -270,10 +272,12 @@ func (c *Candidates) Export(state *types.AppState, coinsMap map[types.CoinSymbol
 			Updates:        updates,
 			Stakes:         stakes,
 		})
+		candidatesMap[candidate.PubKey] = maxID
 
 		maxID++
 	}
 
+	return candidatesMap
 }
 
 func (c *Candidates) getOrderedCandidates() []types.Pubkey {

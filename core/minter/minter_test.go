@@ -493,7 +493,7 @@ func TestBlockchain_FrozenFunds(t *testing.T) {
 	pubkey := types.BytesToPubkey(pv.Key.PubKey.Bytes()[5:])
 	blockchain.stateDeliver.RLock()
 	blockchain.stateDeliver.Candidates.SubStake(developers.Address, pubkey, 0, big.NewInt(0).Set(value))
-	blockchain.stateDeliver.FrozenFunds.AddFund(targetHeight, developers.Address, pubkey, 0, big.NewInt(0).Set(value))
+	blockchain.stateDeliver.FrozenFunds.AddFund(targetHeight, developers.Address, pubkey, blockchain.stateDeliver.Candidates.ID(pubkey), 0, big.NewInt(0).Set(value))
 	blockchain.stateDeliver.RUnlock()
 
 	blocks, err := tmCli.Subscribe(context.Background(), "test-client", "tm.event = 'NewBlock'")
@@ -777,7 +777,7 @@ func TestBlockchain_RecalculateStakes_andRemoveValidator(t *testing.T) {
 
 func TestStopNetworkByHaltBlocks(t *testing.T) {
 	blockchain, _, _ := initTestNode(t)
-	blockchain.Stop()
+	defer blockchain.Stop()
 
 	haltHeight := uint64(50)
 

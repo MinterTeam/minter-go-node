@@ -290,7 +290,7 @@ func TestDoubleSignPenalty(t *testing.T) {
 
 	st.Candidates.RecalculateStakes(height)
 
-	st.FrozenFunds.AddFund(1, addr, pubkey, coin, amount)
+	st.FrozenFunds.AddFund(1, addr, pubkey, st.Candidates.ID(pubkey), coin, amount)
 
 	var pk ed25519.PubKeyEd25519
 	copy(pk[:], pubkey[:])
@@ -299,7 +299,7 @@ func TestDoubleSignPenalty(t *testing.T) {
 	copy(tmAddr[:], pk.Address().Bytes())
 
 	st.Validators.PunishByzantineValidator(tmAddr)
-	st.FrozenFunds.PunishFrozenFundsWithAddress(1, 1+candidates.UnbondPeriod, tmAddr)
+	st.FrozenFunds.PunishFrozenFundsWithID(1, 1+candidates.UnbondPeriod, st.Candidates.ID(pubkey))
 	st.Candidates.PunishByzantineCandidate(1, tmAddr)
 
 	stake := st.Candidates.GetStakeValueOfAddress(pubkey, addr, coin)
@@ -425,7 +425,7 @@ func TestZeroStakePenalty(t *testing.T) {
 	st.Candidates.RecalculateStakes(height)
 
 	st.Candidates.SubStake(addr, pubkey, coin, amount)
-	st.FrozenFunds.AddFund(518400, addr, pubkey, coin, amount)
+	st.FrozenFunds.AddFund(518400, addr, pubkey, st.Candidates.ID(pubkey), coin, amount)
 
 	var pk ed25519.PubKeyEd25519
 	copy(pk[:], pubkey[:])

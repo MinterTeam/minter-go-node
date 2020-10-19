@@ -10,7 +10,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/tree"
-	"github.com/tendermint/tendermint/crypto/ed25519"
 	"math/big"
 	"sort"
 	"sync"
@@ -75,7 +74,7 @@ func (f *FrozenFunds) GetFrozenFunds(height uint64) *Model {
 	return f.get(height)
 }
 
-func (f *FrozenFunds) PunishFrozenFundsWithAddress(fromHeight uint64, toHeight uint64, tmAddress types.TmAddress) {
+func (f *FrozenFunds) PunishFrozenFundsWithID(fromHeight uint64, toHeight uint64, candidateID uint32) {
 	for cBlock := fromHeight; cBlock <= toHeight; cBlock++ {
 		ff := f.get(cBlock)
 		if ff == nil {
@@ -84,13 +83,7 @@ func (f *FrozenFunds) PunishFrozenFundsWithAddress(fromHeight uint64, toHeight u
 
 		newList := make([]Item, len(ff.List))
 		for i, item := range ff.List {
-			var pubkey ed25519.PubKeyEd25519
-			copy(pubkey[:], item.CandidateKey[:])
-
-			var address [20]byte
-			copy(address[:], pubkey.Address().Bytes())
-
-			if tmAddress == address {
+			if item.CandidateID == candidateID {
 				newValue := big.NewInt(0).Set(item.Value)
 				newValue.Mul(newValue, big.NewInt(95))
 				newValue.Div(newValue, big.NewInt(100))
@@ -182,8 +175,8 @@ func (f *FrozenFunds) getOrderedDirty() []uint64 {
 	return keys
 }
 
-func (f *FrozenFunds) AddFund(height uint64, address types.Address, pubkey types.Pubkey, coin types.CoinID, value *big.Int) {
-	f.GetOrNew(height).addFund(address, pubkey, coin, value)
+func (f *FrozenFunds) AddFund(height uint64, address types.Address, pubkey types.Pubkey, candidateId uint32, coin types.CoinID, value *big.Int) {
+	f.GetOrNew(height).addFund(address, pubkey, candidateId, coin, value)
 	f.bus.Checker().AddCoin(coin, value)
 }
 
@@ -212,6 +205,7 @@ func (f *FrozenFunds) Export(state *types.AppState, height uint64) {
 				Height:       i,
 				Address:      frozenFund.Address,
 				CandidateKey: frozenFund.CandidateKey,
+				CandidateID:  uint64(frozenFund.CandidateID),
 				Coin:         uint64(frozenFund.Coin),
 				Value:        frozenFund.Value.String(),
 			})

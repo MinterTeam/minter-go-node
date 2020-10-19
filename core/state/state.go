@@ -137,8 +137,8 @@ func (cs *CheckState) Export11To12(height uint64) types.AppState {
 	appState.Export(state, height)
 	coinsMap := coinsState.Export(state)
 	validatorsState.Export(state)
-	candidatesState.Export(state, coinsMap)
-	frozenFundsState.Export(state, height, coinsMap)
+	candidatesMap := candidatesState.Export(state, coinsMap)
+	frozenFundsState.Export(state, height, coinsMap, candidatesMap)
 	accountsState.Export(state, coinsMap)
 	checksState.Export(state)
 	coinsState.Export(state)
@@ -360,7 +360,7 @@ func (s *State) Import(state types.AppState) error {
 	}
 
 	for _, ff := range state.FrozenFunds {
-		s.FrozenFunds.AddFund(ff.Height, ff.Address, *ff.CandidateKey, types.CoinID(ff.Coin), helpers.StringToBigInt(ff.Value))
+		s.FrozenFunds.AddFund(ff.Height, ff.Address, *ff.CandidateKey, uint32(ff.CandidateID), types.CoinID(ff.Coin), helpers.StringToBigInt(ff.Value))
 	}
 
 	return nil
