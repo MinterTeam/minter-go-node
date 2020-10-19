@@ -360,7 +360,7 @@ func (s *State) Import(state types.AppState) error {
 	}
 
 	for _, ff := range state.FrozenFunds {
-		s.FrozenFunds.AddFund(ff.Height, ff.Address, *ff.CandidateKey, ff.CandidateID, types.CoinID(ff.Coin), helpers.StringToBigInt(ff.Value))
+		s.FrozenFunds.AddFund(ff.Height, ff.Address, *ff.CandidateKey, uint32(ff.CandidateID), types.CoinID(ff.Coin), helpers.StringToBigInt(ff.Value))
 	}
 
 	return nil
