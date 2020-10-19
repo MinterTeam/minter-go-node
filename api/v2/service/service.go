@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/minter"
+	"github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"github.com/tendermint/go-amino"
 	tmNode "github.com/tendermint/tendermint/node"
 	rpc "github.com/tendermint/tendermint/rpc/client/local"
@@ -19,6 +20,7 @@ type Service struct {
 	tmNode     *tmNode.Node
 	minterCfg  *config.Config
 	version    string
+	api_pb.UnimplementedApiServiceServer
 }
 
 // NewService create gRPC server implementation

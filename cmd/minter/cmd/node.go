@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 	apiV1 "github.com/MinterTeam/minter-go-node/api"
-	apiV2 "github.com/MinterTeam/minter-go-node/api/v2"
+	"github.com/MinterTeam/minter-go-node/api/v2"
 	serviceApi "github.com/MinterTeam/minter-go-node/api/v2/service"
 	"github.com/MinterTeam/minter-go-node/cli/service"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
@@ -154,7 +154,7 @@ func runAPI(logger tmLog.Logger, app *minter.Blockchain, client *rpc.Local, node
 			logger.Error("Failed to parse API v2 address", err)
 		}
 		logger.Error("Failed to start Api V2 in both gRPC and RESTful",
-			apiV2.Run(srv, grpcURL.Host, apiV2url.Host, logger.With("module", "rpc")))
+			v2.Run(srv, grpcURL.Host, apiV2url.Host, logger.With("module", "rpc")))
 	}(serviceApi.NewService(cdc, app, client, node, cfg, version.Version))
 
 	go apiV1.RunAPI(cdc, app, client, cfg, logger)

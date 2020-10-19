@@ -238,6 +238,7 @@ func dashboardCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 			case <-c.Done():
 				return c.Err()
 			case err := <-errCh:
+				// todo: os.Exit(1)
 				return err
 			case recv := <-recvCh:
 				if dashboardFunc == nil {
