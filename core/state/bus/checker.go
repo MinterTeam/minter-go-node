@@ -6,6 +6,6 @@ import (
 )
 
 type Checker interface {
-	AddCoin(types.CoinSymbol, *big.Int, ...string)
-	AddCoinVolume(types.CoinSymbol, *big.Int)
+	AddCoin(types.CoinID, *big.Int, ...string)
+	AddCoinVolume(types.CoinID, *big.Int)
 }

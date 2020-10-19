@@ -23,23 +23,32 @@ func TestStateExport(t *testing.T) {
 	coinTest := types.StrToCoinSymbol("TEST")
 	coinTest2 := types.StrToCoinSymbol("TEST2")
 
+	coinTestID := state.App.GetNextCoinID()
+	coinTest2ID := coinTestID + 1
+
 	state.Coins.Create(
+		coinTestID,
 		coinTest,
 		"TEST",
-		helpers.BipToPip(big.NewInt(1)),
+		helpers.BipToPip(big.NewInt(602)),
 		10,
 		helpers.BipToPip(big.NewInt(100)),
 		helpers.BipToPip(big.NewInt(100)),
+		nil,
 	)
 
 	state.Coins.Create(
+		coinTest2ID,
 		coinTest2,
 		"TEST2",
-		helpers.BipToPip(big.NewInt(2)),
+		helpers.BipToPip(big.NewInt(1004)),
 		50,
 		helpers.BipToPip(big.NewInt(200)),
 		helpers.BipToPip(big.NewInt(200)),
+		nil,
 	)
+
+	state.App.SetCoinsCount(coinTest2ID.Uint32())
 
 	privateKey1, _ := crypto.GenerateKey()
 	address1 := crypto.PubkeyToAddress(privateKey1.PublicKey)
@@ -47,9 +56,9 @@ func TestStateExport(t *testing.T) {
 	privateKey2, _ := crypto.GenerateKey()
 	address2 := crypto.PubkeyToAddress(privateKey2.PublicKey)
 
-	state.Accounts.AddBalance(address1, types.GetBaseCoin(), helpers.BipToPip(big.NewInt(1)))
-	state.Accounts.AddBalance(address1, coinTest, helpers.BipToPip(big.NewInt(1)))
-	state.Accounts.AddBalance(address2, coinTest2, helpers.BipToPip(big.NewInt(2)))
+	state.Accounts.AddBalance(address1, types.GetBaseCoinID(), helpers.BipToPip(big.NewInt(1)))
+	state.Accounts.AddBalance(address1, coinTestID, helpers.BipToPip(big.NewInt(1)))
+	state.Accounts.AddBalance(address2, coinTest2ID, helpers.BipToPip(big.NewInt(2)))
 
 	candidatePubKey1 := [32]byte{}
 	rand.Read(candidatePubKey1[:])
@@ -57,21 +66,21 @@ func TestStateExport(t *testing.T) {
 	candidatePubKey2 := [32]byte{}
 	rand.Read(candidatePubKey2[:])
 
-	state.Candidates.Create(address1, address1, candidatePubKey1, 10)
-	state.Candidates.Create(address2, address2, candidatePubKey2, 30)
+	state.Candidates.Create(address1, address1, address1, candidatePubKey1, 10)
+	state.Candidates.Create(address2, address2, address2, candidatePubKey2, 30)
 	state.Validators.Create(candidatePubKey1, helpers.BipToPip(big.NewInt(1)))
-	state.FrozenFunds.AddFund(height, address1, candidatePubKey1, coinTest, helpers.BipToPip(big.NewInt(100)))
-	state.FrozenFunds.AddFund(height+10, address1, candidatePubKey1, types.GetBaseCoin(), helpers.BipToPip(big.NewInt(3)))
-	state.FrozenFunds.AddFund(height+100, address2, candidatePubKey1, coinTest, helpers.BipToPip(big.NewInt(500)))
-	state.FrozenFunds.AddFund(height+150, address2, candidatePubKey1, coinTest2, helpers.BipToPip(big.NewInt(1000)))
+	state.FrozenFunds.AddFund(height, address1, candidatePubKey1, state.Candidates.ID(candidatePubKey1), coinTestID, helpers.BipToPip(big.NewInt(100)))
+	state.FrozenFunds.AddFund(height+10, address1, candidatePubKey1, state.Candidates.ID(candidatePubKey1), types.GetBaseCoinID(), helpers.BipToPip(big.NewInt(3)))
+	state.FrozenFunds.AddFund(height+100, address2, candidatePubKey1, state.Candidates.ID(candidatePubKey1), coinTestID, helpers.BipToPip(big.NewInt(500)))
+	state.FrozenFunds.AddFund(height+150, address2, candidatePubKey1, state.Candidates.ID(candidatePubKey1), coinTest2ID, helpers.BipToPip(big.NewInt(1000)))
 
 	newCheck := &check.Check{
 		Nonce:    []byte("test nonce"),
 		ChainID:  types.CurrentChainID,
 		DueBlock: height + 1,
-		Coin:     coinTest,
+		Coin:     coinTestID,
 		Value:    helpers.BipToPip(big.NewInt(100)),
-		GasCoin:  coinTest2,
+		GasCoin:  coinTest2ID,
 	}
 
 	err = newCheck.Sign(privateKey1)
@@ -81,12 +90,25 @@ func TestStateExport(t *testing.T) {
 
 	state.Checks.UseCheck(newCheck)
 
+	state.Halts.AddHaltBlock(height, types.Pubkey{0})
+	state.Halts.AddHaltBlock(height+1, types.Pubkey{1})
+	state.Halts.AddHaltBlock(height+2, types.Pubkey{2})
+
+	wlAddr1 := types.StringToAddress("1")
+	wlAddr2 := types.StringToAddress("2")
+
+	state.Waitlist.AddWaitList(wlAddr1, candidatePubKey1, coinTestID, big.NewInt(1e18))
+	state.Waitlist.AddWaitList(wlAddr2, candidatePubKey2, coinTest2ID, big.NewInt(2e18))
+
 	_, err = state.Commit()
 	if err != nil {
 		log.Panicf("Cannot commit state: %s", err)
 	}
 
 	newState := state.Export(height)
+	if err := newState.Verify(); err != nil {
+		t.Error(err)
+	}
 
 	if newState.StartHeight != height {
 		t.Fatalf("Wrong new state start height. Expected %d, got %d", height, newState.StartHeight)
@@ -104,12 +126,12 @@ func TestStateExport(t *testing.T) {
 		t.Fatalf("Wrong new state coins size. Expected %d, got %d", 2, len(newState.Coins))
 	}
 
-	newStateCoin := newState.Coins[0]
-	newStateCoin1 := newState.Coins[1]
+	newStateCoin := newState.Coins[1]
+	newStateCoin1 := newState.Coins[0]
 
 	if newStateCoin.Name != "TEST" ||
 		newStateCoin.Symbol != coinTest ||
-		newStateCoin.Volume != helpers.BipToPip(big.NewInt(1)).String() ||
+		newStateCoin.Volume != helpers.BipToPip(big.NewInt(602)).String() ||
 		newStateCoin.Reserve != helpers.BipToPip(big.NewInt(100)).String() ||
 		newStateCoin.MaxSupply != helpers.BipToPip(big.NewInt(100)).String() ||
 		newStateCoin.Crr != 10 {
@@ -118,7 +140,7 @@ func TestStateExport(t *testing.T) {
 
 	if newStateCoin1.Name != "TEST2" ||
 		newStateCoin1.Symbol != coinTest2 ||
-		newStateCoin1.Volume != helpers.BipToPip(big.NewInt(2)).String() ||
+		newStateCoin1.Volume != helpers.BipToPip(big.NewInt(1004)).String() ||
 		newStateCoin1.Reserve != helpers.BipToPip(big.NewInt(200)).String() ||
 		newStateCoin1.MaxSupply != helpers.BipToPip(big.NewInt(200)).String() ||
 		newStateCoin1.Crr != 50 {
@@ -136,7 +158,7 @@ func TestStateExport(t *testing.T) {
 
 	if funds.Height != height ||
 		funds.Address != address1 ||
-		funds.Coin != coinTest ||
+		funds.Coin != uint64(coinTestID) ||
 		*funds.CandidateKey != types.Pubkey(candidatePubKey1) ||
 		funds.Value != helpers.BipToPip(big.NewInt(100)).String() {
 		t.Fatalf("Wrong new state frozen fund data")
@@ -144,7 +166,7 @@ func TestStateExport(t *testing.T) {
 
 	if funds1.Height != height+10 ||
 		funds1.Address != address1 ||
-		funds1.Coin != types.GetBaseCoin() ||
+		funds1.Coin != uint64(types.GetBaseCoinID()) ||
 		*funds1.CandidateKey != types.Pubkey(candidatePubKey1) ||
 		funds1.Value != helpers.BipToPip(big.NewInt(3)).String() {
 		t.Fatalf("Wrong new state frozen fund data")
@@ -152,7 +174,7 @@ func TestStateExport(t *testing.T) {
 
 	if funds2.Height != height+100 ||
 		funds2.Address != address2 ||
-		funds2.Coin != coinTest ||
+		funds2.Coin != uint64(coinTestID) ||
 		*funds2.CandidateKey != types.Pubkey(candidatePubKey1) ||
 		funds2.Value != helpers.BipToPip(big.NewInt(500)).String() {
 		t.Fatalf("Wrong new state frozen fund data")
@@ -160,7 +182,7 @@ func TestStateExport(t *testing.T) {
 
 	if funds3.Height != height+150 ||
 		funds3.Address != address2 ||
-		funds3.Coin != coinTest2 ||
+		funds3.Coin != uint64(coinTest2ID) ||
 		*funds3.CandidateKey != types.Pubkey(candidatePubKey1) ||
 		funds3.Value != helpers.BipToPip(big.NewInt(1000)).String() {
 		t.Fatalf("Wrong new state frozen fund data")
@@ -198,15 +220,15 @@ func TestStateExport(t *testing.T) {
 		t.Fatal("Wrong new state account balances size")
 	}
 
-	if account1.Balance[0].Coin != coinTest || account1.Balance[0].Value != helpers.BipToPip(big.NewInt(1)).String() {
+	if account1.Balance[0].Coin != uint64(coinTestID) || account1.Balance[0].Value != helpers.BipToPip(big.NewInt(1)).String() {
 		t.Fatal("Wrong new state account balance data")
 	}
 
-	if account1.Balance[1].Coin != types.GetBaseCoin() || account1.Balance[1].Value != helpers.BipToPip(big.NewInt(1)).String() {
+	if account1.Balance[1].Coin != uint64(types.GetBaseCoinID()) || account1.Balance[1].Value != helpers.BipToPip(big.NewInt(1)).String() {
 		t.Fatal("Wrong new state account balance data")
 	}
 
-	if account2.Balance[0].Coin != coinTest2 || account2.Balance[0].Value != helpers.BipToPip(big.NewInt(2)).String() {
+	if account2.Balance[0].Coin != uint64(coinTest2ID) || account2.Balance[0].Value != helpers.BipToPip(big.NewInt(2)).String() {
 		t.Fatal("Wrong new state account balance data")
 	}
 
@@ -237,5 +259,36 @@ func TestStateExport(t *testing.T) {
 		newStateCandidate2.RewardAddress != address2 ||
 		newStateCandidate2.Commission != 30 {
 		t.Fatal("Wrong new state candidate data")
+	}
+
+	if len(newState.HaltBlocks) != 3 {
+		t.Fatalf("Invalid amount of halts: %d. Expected 3", len(newState.HaltBlocks))
+	}
+
+	pubkey := types.Pubkey{0}
+	if newState.HaltBlocks[0].Height != height || !newState.HaltBlocks[0].CandidateKey.Equals(pubkey) {
+		t.Fatal("Wrong new state halt blocks")
+	}
+
+	pubkey = types.Pubkey{1}
+	if newState.HaltBlocks[1].Height != height+1 || !newState.HaltBlocks[1].CandidateKey.Equals(pubkey) {
+		t.Fatal("Wrong new state halt blocks")
+	}
+
+	pubkey = types.Pubkey{2}
+	if newState.HaltBlocks[2].Height != height+2 || !newState.HaltBlocks[2].CandidateKey.Equals(pubkey) {
+		t.Fatal("Wrong new state halt blocks")
+	}
+
+	if len(newState.Waitlist) != 2 {
+		t.Fatalf("Invalid amount of waitlist: %d. Expected 2", len(newState.Waitlist))
+	}
+
+	if newState.Waitlist[0].Coin != uint64(coinTest2ID) || newState.Waitlist[0].Value != big.NewInt(2e18).String() || newState.Waitlist[0].Owner.Compare(wlAddr2) != 0 {
+		t.Fatal("Invalid waitlist data")
+	}
+
+	if newState.Waitlist[1].Coin != uint64(coinTestID) || newState.Waitlist[1].Value != big.NewInt(1e18).String() || newState.Waitlist[1].Owner.Compare(wlAddr1) != 0 {
+		t.Fatal("Invalid waitlist data")
 	}
 }

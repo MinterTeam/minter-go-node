@@ -47,7 +47,7 @@ func (v *Validator) SetAccumReward(value *big.Int) {
 	if v.accumReward.Cmp(value) != 0 {
 		v.isAccumRewardDirty = true
 	}
-	v.bus.Checker().AddCoin(types.GetBaseCoin(), big.NewInt(0).Sub(value, v.accumReward), "reward")
+	v.bus.Checker().AddCoin(types.GetBaseCoinID(), big.NewInt(0).Sub(value, v.accumReward), "reward")
 	v.accumReward = big.NewInt(0).Set(value)
 }
 
@@ -55,19 +55,23 @@ func (v *Validator) GetAccumReward() *big.Int {
 	return big.NewInt(0).Set(v.accumReward)
 }
 
+// GetAddress returns tendermint-address of a validator
 func (v *Validator) GetAddress() types.TmAddress {
 	return v.tmAddress
 }
 
+// GetTotalBipStake returns total bip stake
 func (v *Validator) GetTotalBipStake() *big.Int {
 	return big.NewInt(0).Set(v.totalStake)
 }
 
+// SetTotalBipStake sets total bip stake
 func (v *Validator) SetTotalBipStake(value *big.Int) {
-	if v.totalStake.Cmp(value) != 0 {
-		v.isTotalStakeDirty = true
+	if v.totalStake.Cmp(value) == 0 {
+		return
 	}
-	v.totalStake = value
+	v.isTotalStakeDirty = true
+	v.totalStake = big.NewInt(0).Set(value)
 }
 
 func (v *Validator) AddAccumReward(amount *big.Int) {
@@ -77,7 +81,7 @@ func (v *Validator) AddAccumReward(amount *big.Int) {
 func (v *Validator) CountAbsentTimes() int {
 	count := 0
 
-	for i := 0; i < ValidatorMaxAbsentWindow; i++ {
+	for i := 0; i < validatorMaxAbsentWindow; i++ {
 		if v.AbsentTimes.GetIndex(i) {
 			count++
 		}
@@ -98,7 +102,7 @@ func (v *Validator) setTmAddress() {
 }
 
 func (v *Validator) SetPresent(height uint64) {
-	index := int(height) % ValidatorMaxAbsentWindow
+	index := int(height) % validatorMaxAbsentWindow
 	if v.AbsentTimes.GetIndex(index) {
 		v.isDirty = true
 	}
@@ -106,7 +110,7 @@ func (v *Validator) SetPresent(height uint64) {
 }
 
 func (v *Validator) SetAbsent(height uint64) {
-	index := int(height) % ValidatorMaxAbsentWindow
+	index := int(height) % validatorMaxAbsentWindow
 	if !v.AbsentTimes.GetIndex(index) {
 		v.isDirty = true
 	}

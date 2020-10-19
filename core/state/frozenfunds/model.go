@@ -8,7 +8,8 @@ import (
 type Item struct {
 	Address      types.Address
 	CandidateKey *types.Pubkey
-	Coin         types.CoinSymbol
+	CandidateID  uint32
+	Coin         types.CoinID
 	Value        *big.Int
 }
 
@@ -25,10 +26,11 @@ func (m *Model) delete() {
 	m.markDirty(m.height)
 }
 
-func (m *Model) addFund(address types.Address, pubkey types.Pubkey, coin types.CoinSymbol, value *big.Int) {
+func (m *Model) addFund(address types.Address, pubkey types.Pubkey, candidateID uint32, coin types.CoinID, value *big.Int) {
 	m.List = append(m.List, Item{
 		Address:      address,
 		CandidateKey: &pubkey,
+		CandidateID:  candidateID,
 		Coin:         coin,
 		Value:        value,
 	})

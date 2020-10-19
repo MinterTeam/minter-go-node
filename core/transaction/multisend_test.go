@@ -1,13 +1,15 @@
 package transaction
 
 import (
+	"math/big"
+	"sync"
+	"testing"
+
+	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
-	"math/big"
-	"sync"
-	"testing"
 )
 
 func TestMultisendTx(t *testing.T) {
@@ -15,7 +17,7 @@ func TestMultisendTx(t *testing.T) {
 
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
@@ -58,7 +60,7 @@ func TestMultisendTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error: %s", response.Log)
@@ -75,4 +77,294 @@ func TestMultisendTx(t *testing.T) {
 	if testBalance.Cmp(targetTestBalance) != 0 {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", to.String(), targetTestBalance, testBalance)
 	}
+
+	checkState(t, cState)
+}
+
+func TestMultisendTxToInvalidDataLength(t *testing.T) {
+	cState := getState()
+
+	privateKey, _ := crypto.GenerateKey()
+	coin := types.GetBaseCoinID()
+
+	data := MultisendData{
+		List: nil,
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := Transaction{
+		Nonce:         1,
+		GasPrice:      1,
+		GasCoin:       coin,
+		ChainID:       types.CurrentChainID,
+		Type:          TypeMultisend,
+		Data:          encodedData,
+		SignatureType: SigTypeSingle,
+	}
+
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.InvalidMultisendData {
+		t.Fatalf("Response code is not %d. Error %s", code.InvalidMultisendData, response.Log)
+	}
+
+	list := make([]MultisendDataItem, 101)
+	for i := 0; i <= 100; i++ {
+		list[i] = MultisendDataItem{
+			Coin:  types.GetBaseCoinID(),
+			To:    [20]byte{1},
+			Value: helpers.BipToPip(big.NewInt(10)),
+		}
+	}
+
+	data.List = list
+	encodedData, err = rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx.Data = encodedData
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err = rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.InvalidMultisendData {
+		t.Fatalf("Response code is not %d. Error %s", code.InvalidMultisendData, response.Log)
+	}
+
+	checkState(t, cState)
+}
+
+func TestMultisendTxToInsufficientFunds(t *testing.T) {
+	cState := getState()
+
+	privateKey, _ := crypto.GenerateKey()
+	coin := types.GetBaseCoinID()
+
+	value := helpers.BipToPip(big.NewInt(10))
+	to := types.Address([20]byte{1})
+
+	data := MultisendData{
+		List: []MultisendDataItem{
+			{
+				Coin:  coin,
+				To:    to,
+				Value: value,
+			},
+		},
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := Transaction{
+		Nonce:         1,
+		GasPrice:      1,
+		GasCoin:       coin,
+		ChainID:       types.CurrentChainID,
+		Type:          TypeMultisend,
+		Data:          encodedData,
+		SignatureType: SigTypeSingle,
+	}
+
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.InsufficientFunds {
+		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
+	}
+
+	checkState(t, cState)
+}
+
+func TestMultisendToInvalidCoin(t *testing.T) {
+	cState := getState()
+
+	privateKey, _ := crypto.GenerateKey()
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+	coin := types.CoinID(5)
+
+	cState.Accounts.AddBalance(addr, types.GetBaseCoinID(), helpers.BipToPip(big.NewInt(1000000)))
+
+	value := helpers.BipToPip(big.NewInt(10))
+	to := types.Address([20]byte{1})
+
+	data := MultisendData{
+		List: []MultisendDataItem{
+			{
+				Coin:  coin,
+				To:    to,
+				Value: value,
+			},
+		},
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := Transaction{
+		Nonce:         1,
+		GasPrice:      1,
+		GasCoin:       types.GetBaseCoinID(),
+		ChainID:       types.CurrentChainID,
+		Type:          TypeMultisend,
+		Data:          encodedData,
+		SignatureType: SigTypeSingle,
+	}
+
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.CoinNotExists {
+		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
+	}
+
+	checkState(t, cState)
+}
+
+func TestMultisendToInsufficientReserve(t *testing.T) {
+	cState := getState()
+
+	privateKey, _ := crypto.GenerateKey()
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+	coin := types.CoinID(5)
+
+	cState.Accounts.AddBalance(addr, types.GetBaseCoinID(), helpers.BipToPip(big.NewInt(1000000)))
+
+	value := helpers.BipToPip(big.NewInt(10))
+	to := types.Address([20]byte{1})
+
+	data := MultisendData{
+		List: []MultisendDataItem{
+			{
+				Coin:  coin,
+				To:    to,
+				Value: value,
+			},
+		},
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := Transaction{
+		Nonce:         1,
+		GasPrice:      1,
+		GasCoin:       types.GetBaseCoinID(),
+		ChainID:       types.CurrentChainID,
+		Type:          TypeMultisend,
+		Data:          encodedData,
+		SignatureType: SigTypeSingle,
+	}
+
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.CoinNotExists {
+		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
+	}
+
+	checkState(t, cState)
+}
+
+func TestMultisendTxToGasCoinReserveUnderflow(t *testing.T) {
+	cState := getState()
+
+	privateKey, _ := crypto.GenerateKey()
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+	coin := createTestCoin(cState)
+
+	cState.Coins.SubReserve(coin, helpers.BipToPip(big.NewInt(90000)))
+	cState.Coins.AddVolume(coin, helpers.BipToPip(big.NewInt(1000000)))
+	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
+	cState.Commit()
+
+	value := helpers.BipToPip(big.NewInt(10))
+	to := types.Address([20]byte{1})
+
+	data := MultisendData{
+		List: []MultisendDataItem{
+			{
+				Coin:  coin,
+				To:    to,
+				Value: value,
+			},
+		},
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := Transaction{
+		Nonce:         1,
+		GasPrice:      1,
+		GasCoin:       coin,
+		ChainID:       types.CurrentChainID,
+		Type:          TypeMultisend,
+		Data:          encodedData,
+		SignatureType: SigTypeSingle,
+	}
+
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.CoinReserveUnderflow {
+		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveUnderflow, response.Log)
+	}
+
+	checkState(t, cState)
 }

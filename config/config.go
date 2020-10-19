@@ -34,6 +34,7 @@ var (
 	defaultNodeKeyPath      = filepath.Join(defaultConfigDir, defaultNodeKeyName)
 )
 
+// DefaultConfig returns config with predefined values
 func DefaultConfig() *Config {
 	cfg := defaultConfig()
 
@@ -74,6 +75,7 @@ func DefaultConfig() *Config {
 	return cfg
 }
 
+// GetConfig returns DefaultConfig with some changes
 func GetConfig() *Config {
 	cfg := DefaultConfig()
 
@@ -132,6 +134,7 @@ func (cfg *Config) SetRoot(root string) *Config {
 	return cfg
 }
 
+// GetTmConfig composes and returns config for Tendermint engine based on given Minter config
 func GetTmConfig(cfg *Config) *tmConfig.Config {
 	return &tmConfig.Config{
 		BaseConfig: tmConfig.BaseConfig{
@@ -233,6 +236,9 @@ type BaseConfig struct {
 	// Address to listen for API v2 connections
 	APIv2ListenAddress string `mapstructure:"api_v2_listen_addr"`
 
+	// API v2 Timeout
+	APIv2TimeoutDuration time.Duration `mapstructure:"api_v2_timeout_duration"`
+
 	ValidatorMode bool `mapstructure:"validator_mode"`
 
 	KeepLastStates int64 `mapstructure:"keep_last_states"`
@@ -265,6 +271,7 @@ func DefaultBaseConfig() BaseConfig {
 		APIListenAddress:        "tcp://0.0.0.0:8841",
 		GRPCListenAddress:       "tcp://0.0.0.0:8842",
 		APIv2ListenAddress:      "tcp://0.0.0.0:8843",
+		APIv2TimeoutDuration:    10 * time.Second,
 		ValidatorMode:           false,
 		KeepLastStates:          120,
 		StateCacheSize:          1000000,
@@ -275,6 +282,7 @@ func DefaultBaseConfig() BaseConfig {
 	}
 }
 
+// ChainID returns the id of a chain
 func (cfg BaseConfig) ChainID() string {
 	return cfg.chainID
 }
@@ -284,7 +292,7 @@ func (cfg BaseConfig) GenesisFile() string {
 	return rootify(cfg.Genesis, cfg.RootDir)
 }
 
-// PrivValidatorFile returns the full path to the priv_validator.json file
+// PrivValidatorStateFile returns the full path to the priv_validator_state.json file
 func (cfg BaseConfig) PrivValidatorStateFile() string {
 	return rootify(cfg.PrivValidatorState, cfg.RootDir)
 }
@@ -294,6 +302,7 @@ func (cfg BaseConfig) NodeKeyFile() string {
 	return rootify(cfg.NodeKey, cfg.RootDir)
 }
 
+// PrivValidatorKeyFile returns the full path to the priv_validator.json file
 func (cfg BaseConfig) PrivValidatorKeyFile() string {
 	return rootify(cfg.PrivValidatorKey, cfg.RootDir)
 }

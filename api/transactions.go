@@ -2,9 +2,9 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
+
 	"github.com/MinterTeam/minter-go-node/core/transaction"
-	"github.com/tendermint/tendermint/libs/bytes"
+	"github.com/MinterTeam/minter-go-node/core/transaction/encoder"
 	core_types "github.com/tendermint/tendermint/rpc/core/types"
 )
 
@@ -17,7 +17,7 @@ type TransactionResponse struct {
 	Nonce    uint64            `json:"nonce"`
 	Gas      int64             `json:"gas"`
 	GasPrice uint32            `json:"gas_price"`
-	GasCoin  string            `json:"gas_coin"`
+	GasCoin  Coin              `json:"gas_coin"`
 	Type     uint8             `json:"type"`
 	Data     json.RawMessage   `json:"data"`
 	Payload  []byte            `json:"payload"`
@@ -31,7 +31,7 @@ type ResultTxSearch struct {
 	TotalCount int                    `json:"total_count"`
 }
 
-func Transactions(query string, page, perPage int) (*[]TransactionResponse, error) {
+func Transactions(query string, page, perPage int) (*[]json.RawMessage, error) {
 	if page == 0 {
 		page = 1
 	}
@@ -44,38 +44,24 @@ func Transactions(query string, page, perPage int) (*[]TransactionResponse, erro
 		return nil, err
 	}
 
-	result := make([]TransactionResponse, len(rpcResult.Txs))
-	for i, tx := range rpcResult.Txs {
+	cState, err := GetStateForHeight(0)
+	if err != nil {
+		return nil, err
+	}
+
+	cState.RLock()
+	defer cState.RUnlock()
+
+	result := make([]json.RawMessage, 0, len(rpcResult.Txs))
+	for _, tx := range rpcResult.Txs {
 		decodedTx, _ := transaction.TxDecoder.DecodeFromBytes(tx.Tx)
-		sender, _ := decodedTx.Sender()
-
-		tags := make(map[string]string)
-		for _, tag := range tx.TxResult.Events[0].Attributes {
-			tags[string(tag.Key)] = string(tag.Value)
-		}
-
-		data, err := encodeTxData(decodedTx)
+		txJsonEncoder := encoder.NewTxEncoderJSON(cState)
+		response, err := txJsonEncoder.Encode(decodedTx, tx)
 		if err != nil {
 			return nil, err
 		}
 
-		result[i] = TransactionResponse{
-			Hash:     bytes.HexBytes(tx.Tx.Hash()).String(),
-			RawTx:    fmt.Sprintf("%x", []byte(tx.Tx)),
-			Height:   tx.Height,
-			Index:    tx.Index,
-			From:     sender.String(),
-			Nonce:    decodedTx.Nonce,
-			Gas:      decodedTx.Gas(),
-			GasPrice: decodedTx.GasPrice,
-			GasCoin:  decodedTx.GasCoin.String(),
-			Type:     uint8(decodedTx.Type),
-			Data:     data,
-			Payload:  decodedTx.Payload,
-			Tags:     tags,
-			Code:     tx.TxResult.Code,
-			Log:      tx.TxResult.Log,
-		}
+		result = append(result, response)
 	}
 
 	return &result, nil

@@ -2,7 +2,9 @@ package service
 
 import (
 	"context"
-	"github.com/MinterTeam/minter-go-node/cli/pb"
+	pb "github.com/MinterTeam/minter-go-node/cli/cli_pb"
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	"google.golang.org/grpc"
 	"net"
 	"os"
@@ -18,7 +20,14 @@ func StartCLIServer(socketPath string, manager pb.ManagerServiceServer, ctx cont
 		return err
 	}
 
-	server := grpc.NewServer()
+	server := grpc.NewServer(
+		grpc_middleware.WithStreamServerChain(
+			grpc_recovery.StreamServerInterceptor(),
+		),
+		grpc_middleware.WithUnaryServerChain(
+			grpc_recovery.UnaryServerInterceptor(),
+		),
+	)
 
 	pb.RegisterManagerServiceServer(server, manager)
 
@@ -30,7 +39,6 @@ func StartCLIServer(socketPath string, manager pb.ManagerServiceServer, ctx cont
 			server.GracefulStop()
 		case <-kill:
 		}
-		return
 	}()
 
 	if err := server.Serve(lis); err != nil {

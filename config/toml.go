@@ -58,7 +58,7 @@ func WriteConfigFile(configFilePath string, config *Config) {
 
 // Note: any changes to the comments/variables/mapstructure
 // must be reflected in the appropriate struct in config/config.go
-const defaultConfigTemplate = `# This is a TOML config file.
+const defaultConfigTemplate string = `# This is a TOML config file.
 # For more information, see https://github.com/toml-lang/toml
 
 ##### main base config options #####
@@ -75,10 +75,13 @@ grpc_listen_addr = "{{ .BaseConfig.GRPCListenAddress }}"
 # Address to listen for API V2 connections
 api_v2_listen_addr = "{{ .BaseConfig.APIv2ListenAddress }}"
 
+# API v2 Timeout
+api_v2_timeout_duration = "{{ .BaseConfig.APIv2TimeoutDuration }}"
+
 # Sets node to be in validator mode. Disables API, events, history of blocks, indexes, etc. 
 validator_mode = {{ .BaseConfig.ValidatorMode }}
 
-# Sets number of last stated to be saved
+# Sets number of last stated to be saved on disk.
 keep_last_states = {{ .BaseConfig.KeepLastStates }}
 
 # State cache size 

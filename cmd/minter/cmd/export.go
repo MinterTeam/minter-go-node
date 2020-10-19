@@ -41,14 +41,24 @@ func export(cmd *cobra.Command, args []string) error {
 		log.Panicf("Cannot parse height: %s", err)
 	}
 
-	chainID, err := cmd.Flags().GetString("chain_id")
+	startHeight, err := cmd.Flags().GetUint64("start-height")
+	if err != nil {
+		log.Panicf("Cannot parse start-height: %s", err)
+	}
+
+	chainID, err := cmd.Flags().GetString("chain-id")
 	if err != nil {
 		log.Panicf("Cannot parse chain id: %s", err)
 	}
 
-	genesisTime, err := cmd.Flags().GetDuration("genesis_time")
+	genesisTime, err := cmd.Flags().GetDuration("genesis-time")
 	if err != nil {
 		log.Panicf("Cannot parse genesis time: %s", err)
+	}
+
+	indent, err := cmd.Flags().GetBool("indent")
+	if err != nil {
+		log.Panicf("Cannot parse indent: %s", err)
 	}
 
 	fmt.Println("Start exporting...")
@@ -58,15 +68,24 @@ func export(cmd *cobra.Command, args []string) error {
 		log.Panicf("Cannot load db: %s", err)
 	}
 
-	currentState, err := state.NewState(height, ldb, nil, 1, 1)
+	currentState, err := state.NewCheckStateAtHeight(height, ldb)
 	if err != nil {
 		log.Panicf("Cannot new state at given height: %s", err)
 	}
 
-	exportTimeStart, newState := time.Now(), currentState.Export(height)
+	exportTimeStart, newState := time.Now(), currentState.Export11To12(height)
 	fmt.Printf("State has been exported. Took %s", time.Since(exportTimeStart))
 
-	jsonBytes, err := amino.NewCodec().MarshalJSONIndent(newState, "", "	")
+	if startHeight > 0 {
+		newState.StartHeight = startHeight
+	}
+
+	var jsonBytes []byte
+	if indent {
+		jsonBytes, err = amino.NewCodec().MarshalJSONIndent(newState, "", "	")
+	} else {
+		jsonBytes, err = amino.NewCodec().MarshalJSON(newState)
+	}
 	if err != nil {
 		log.Panicf("Cannot marshal state to json: %s", err)
 	}

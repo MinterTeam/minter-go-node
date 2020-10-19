@@ -1,19 +1,20 @@
 package service
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/cli/pb"
+	pb "github.com/MinterTeam/minter-go-node/cli/cli_pb"
 	"github.com/c-bata/go-prompt"
-	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/empty"
+	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/marcusolsson/tui-go"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/encoding/protojson"
 	"io"
+	"log"
 	"os"
 	"strings"
 	"time"
@@ -23,7 +24,7 @@ type ManagerConsole struct {
 	cli *cli.App
 }
 
-func NewManagerConsole(cli *cli.App) *ManagerConsole {
+func newManagerConsole(cli *cli.App) *ManagerConsole {
 	return &ManagerConsole{cli: cli}
 }
 
@@ -106,8 +107,11 @@ func (mc *ManagerConsole) Cli(ctx context.Context) {
 	}
 }
 
-func ConfigureManagerConsole(socketPath string) (*ManagerConsole, error) {
-	cc, err := grpc.Dial("passthrough:///unix:///"+socketPath, grpc.WithInsecure())
+func NewCLI(socketPath string) (*ManagerConsole, error) {
+	cc, err := grpc.Dial("passthrough:///unix:///"+socketPath,
+		grpc.WithStreamInterceptor(grpc_retry.StreamClientInterceptor()),
+		grpc.WithUnaryInterceptor(grpc_retry.UnaryClientInterceptor()),
+		grpc.WithInsecure())
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +120,7 @@ func ConfigureManagerConsole(socketPath string) (*ManagerConsole, error) {
 
 	app := cli.NewApp()
 	app.CommandNotFound = func(ctx *cli.Context, cmd string) {
-		fmt.Println(fmt.Sprintf("No help topic for '%v'", cmd))
+		fmt.Printf("No help topic for '%v'\n", cmd)
 	}
 	app.UseShortOptionHandling = true
 	jsonFlag := &cli.BoolFlag{Name: "json", Aliases: []string{"j"}, Required: false, Usage: "echo in json format"}
@@ -163,7 +167,7 @@ func ConfigureManagerConsole(socketPath string) (*ManagerConsole, error) {
 		{
 			Name:    "dashboard",
 			Aliases: []string{"db"},
-			Usage:   "Show dashboard", //todo
+			Usage:   "Show dashboard",
 			Action:  dashboardCMD(client),
 		},
 		{
@@ -179,7 +183,7 @@ func ConfigureManagerConsole(socketPath string) (*ManagerConsole, error) {
 	}
 
 	app.Setup()
-	return NewManagerConsole(app), nil
+	return newManagerConsole(app), nil
 }
 
 func exitCMD(_ *cli.Context) error {
@@ -190,12 +194,12 @@ func exitCMD(_ *cli.Context) error {
 func dashboardCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 	return func(c *cli.Context) error {
 		ctx, cancel := context.WithCancel(c.Context)
+		defer cancel()
+
 		response, err := client.Dashboard(ctx, &empty.Empty{})
 		if err != nil {
 			return err
 		}
-
-		defer cancel()
 
 		box := tui.NewVBox()
 		ui, err := tui.New(tui.NewHBox(box, tui.NewSpacer()))
@@ -337,12 +341,11 @@ func netInfoCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 			return err
 		}
 		if c.Bool("json") {
-			bb := new(bytes.Buffer)
-			err := (&jsonpb.Marshaler{EmitDefaults: true}).Marshal(bb, response)
+			bb, err := protojson.Marshal(response)
 			if err != nil {
 				return err
 			}
-			fmt.Println(string(bb.Bytes()))
+			fmt.Println(string(bb))
 			return nil
 		}
 		fmt.Println(proto.MarshalTextString(response))
@@ -357,12 +360,11 @@ func statusCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 			return err
 		}
 		if c.Bool("json") {
-			bb := new(bytes.Buffer)
-			err := (&jsonpb.Marshaler{EmitDefaults: true}).Marshal(bb, response)
+			bb, err := protojson.Marshal(response)
 			if err != nil {
 				return err
 			}
-			fmt.Println(string(bb.Bytes()))
+			fmt.Println(string(bb))
 			return nil
 		}
 		fmt.Println(proto.MarshalTextString(response))
@@ -372,15 +374,61 @@ func statusCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 
 func pruneBlocksCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 	return func(c *cli.Context) error {
-		_, err := client.PruneBlocks(c.Context, &pb.PruneBlocksRequest{
+		ctx, cancel := context.WithCancel(c.Context)
+		defer cancel()
+
+		stream, err := client.PruneBlocks(ctx, &pb.PruneBlocksRequest{
 			FromHeight: c.Int64("from"),
 			ToHeight:   c.Int64("to"),
 		})
 		if err != nil {
 			return err
 		}
-		fmt.Println("OK")
-		return nil
+
+		errCh := make(chan error)
+		recvCh := make(chan *pb.PruneBlocksResponse)
+
+		go func() {
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				default:
+					recv, err := stream.Recv()
+					if err == io.EOF {
+						close(errCh)
+						return
+					}
+					if err != nil {
+						errCh <- err
+						return
+					}
+					recvCh <- recv
+				}
+			}
+		}()
+
+		for {
+			select {
+			case <-c.Done():
+				return c.Err()
+			case err, more := <-errCh:
+				_ = stream.CloseSend()
+				if more {
+					close(errCh)
+					return err
+				}
+				fmt.Println("OK")
+				return nil
+			case recv := <-recvCh:
+				var percent int64
+				if recv.Total != 0 {
+					percent = int64(float64(recv.Current) / float64(recv.Total) * 100.0)
+				}
+				log.Println()
+				fmt.Printf("%d%% successfully removed (%d of %d)\n", percent, recv.Current, recv.Total)
+			}
+		}
 	}
 }
 

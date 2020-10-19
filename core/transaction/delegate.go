@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
@@ -16,60 +15,63 @@ import (
 
 type DelegateData struct {
 	PubKey types.Pubkey
-	Coin   types.CoinSymbol
+	Coin   types.CoinID
 	Value  *big.Int
 }
 
-func (data DelegateData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		PubKey string `json:"pub_key"`
-		Coin   string `json:"coin"`
-		Value  string `json:"value"`
-	}{
-		PubKey: data.PubKey.String(),
-		Coin:   data.Coin.String(),
-		Value:  data.Value.String(),
-	})
-}
-
-func (data DelegateData) TotalSpend(tx *Transaction, context *state.State) (TotalSpends, []Conversion, *big.Int, *Response) {
-	panic("implement me")
-}
-
-func (data DelegateData) BasicCheck(tx *Transaction, context *state.State) *Response {
+func (data DelegateData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.Value == nil {
 		return &Response{
 			Code: code.DecodeError,
-			Log:  "Incorrect tx data"}
+			Log:  "Incorrect tx data",
+			Info: EncodeError(code.NewDecodeError()),
+		}
 	}
 
-	if !context.Coins.Exists(tx.GasCoin) {
+	if !context.Coins().Exists(tx.GasCoin) {
 		return &Response{
 			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin)}
+			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin),
+			Info: EncodeError(code.NewCoinNotExists("", tx.GasCoin.String())),
+		}
 	}
 
-	if data.Value.Cmp(types.Big0) < 1 {
+	if !context.Coins().Exists(data.Coin) {
 		return &Response{
-			Code: code.StakeShouldBePositive,
-			Log:  fmt.Sprintf("Stake should be positive")}
-	}
-
-	if !context.Candidates.Exists(data.PubKey) {
-		return &Response{
-			Code: code.CandidateNotFound,
-			Log:  fmt.Sprintf("Candidate with such public key not found"),
-			Info: EncodeError(map[string]string{
-				"pub_key": data.PubKey.String(),
-			}),
+			Code: code.CoinNotExists,
+			Log:  fmt.Sprintf("Coin %s not exists", data.Coin),
+			Info: EncodeError(code.NewCoinNotExists("", data.Coin.String())),
 		}
 	}
 
 	sender, _ := tx.Sender()
-	if !context.Candidates.IsDelegatorStakeSufficient(sender, data.PubKey, data.Coin, data.Value) {
+	value := big.NewInt(0).Set(data.Value)
+	if waitList := context.WaitList().Get(sender, data.PubKey, data.Coin); waitList != nil {
+		value.Add(value, waitList.Value)
+	}
+
+	if value.Cmp(types.Big0) < 1 {
+		return &Response{
+			Code: code.StakeShouldBePositive,
+			Log:  "Stake should be positive",
+			Info: EncodeError(code.NewStakeShouldBePositive(value.String())),
+		}
+	}
+
+	if !context.Candidates().Exists(data.PubKey) {
+		return &Response{
+			Code: code.CandidateNotFound,
+			Log:  "Candidate with such public key not found",
+			Info: EncodeError(code.NewCandidateNotFound(data.PubKey.String())),
+		}
+	}
+
+	if !context.Candidates().IsDelegatorStakeSufficient(sender, data.PubKey, data.Coin, value) {
 		return &Response{
 			Code: code.TooLowStake,
-			Log:  fmt.Sprintf("Stake is too low")}
+			Log:  "Stake is too low",
+			Info: EncodeError(code.NewTooLowStake(sender.String(), data.PubKey.String(), value.String(), data.Coin.String(), context.Coins().GetCoin(data.Coin).GetFullSymbol())),
+		}
 	}
 
 	return nil
@@ -84,10 +86,16 @@ func (data DelegateData) Gas() int64 {
 	return commissions.DelegateTx
 }
 
-func (data DelegateData) Run(tx *Transaction, context *state.State, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
+func (data DelegateData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
 	sender, _ := tx.Sender()
 
-	response := data.BasicCheck(tx, context)
+	var checkState *state.CheckState
+	var isCheck bool
+	if checkState, isCheck = context.(*state.CheckState); !isCheck {
+		checkState = state.NewCheckState(context.(*state.State))
+	}
+
+	response := data.BasicCheck(tx, checkState)
 	if response != nil {
 		return *response
 	}
@@ -95,50 +103,31 @@ func (data DelegateData) Run(tx *Transaction, context *state.State, isCheck bool
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
-	if !tx.GasCoin.IsBaseCoin() {
-		coin := context.Coins.GetCoin(tx.GasCoin)
+	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
+	coin := checkState.Coins().GetCoin(data.Coin)
 
-		errResp := CheckReserveUnderflow(coin, commissionInBaseCoin)
+	if !tx.GasCoin.IsBaseCoin() {
+		errResp := CheckReserveUnderflow(gasCoin, commissionInBaseCoin)
 		if errResp != nil {
 			return *errResp
 		}
 
-		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
-			return Response{
-				Code: code.CoinReserveNotSufficient,
-				Log:  fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s", coin.Reserve().String(), commissionInBaseCoin.String()),
-				Info: EncodeError(map[string]string{
-					"has_reserve": coin.Reserve().String(),
-					"commission":  commissionInBaseCoin.String(),
-					"gas_coin":    coin.CName,
-				}),
-			}
-		}
-
-		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
+		commission = formula.CalculateSaleAmount(gasCoin.Volume(), gasCoin.Reserve(), gasCoin.Crr(), commissionInBaseCoin)
 	}
 
-	if context.Accounts.GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
+	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
 		return Response{
 			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, tx.GasCoin),
-			Info: EncodeError(map[string]string{
-				"sender":       sender.String(),
-				"needed_value": commission.String(),
-				"gas_coin":     fmt.Sprintf("%s", tx.GasCoin),
-			}),
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission, gasCoin.GetFullSymbol()),
+			Info: EncodeError(code.NewInsufficientFunds(sender.String(), commission.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
 		}
 	}
 
-	if context.Accounts.GetBalance(sender, data.Coin).Cmp(data.Value) < 0 {
+	if checkState.Accounts().GetBalance(sender, data.Coin).Cmp(data.Value) < 0 {
 		return Response{
 			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), data.Value, data.Coin),
-			Info: EncodeError(map[string]string{
-				"sender":       sender.String(),
-				"needed_value": data.Value.String(),
-				"coin":         fmt.Sprintf("%s", data.Coin),
-			}),
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), data.Value, coin.GetFullSymbol()),
+			Info: EncodeError(code.NewInsufficientFunds(sender.String(), data.Value.String(), coin.GetFullSymbol(), coin.ID().String())),
 		}
 	}
 
@@ -147,29 +136,32 @@ func (data DelegateData) Run(tx *Transaction, context *state.State, isCheck bool
 		totalTxCost.Add(totalTxCost, data.Value)
 		totalTxCost.Add(totalTxCost, commission)
 
-		if context.Accounts.GetBalance(sender, tx.GasCoin).Cmp(totalTxCost) < 0 {
+		if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(totalTxCost) < 0 {
 			return Response{
 				Code: code.InsufficientFunds,
-				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), totalTxCost.String(), tx.GasCoin),
-				Info: EncodeError(map[string]string{
-					"sender":       sender.String(),
-					"needed_value": totalTxCost.String(),
-					"gas_coin":     fmt.Sprintf("%s", tx.GasCoin),
-				}),
+				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), totalTxCost.String(), gasCoin.GetFullSymbol()),
+				Info: EncodeError(code.NewInsufficientFunds(sender.String(), totalTxCost.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
 			}
 		}
 	}
 
-	if !isCheck {
+	if deliverState, ok := context.(*state.State); ok {
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		context.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
-		context.Coins.SubVolume(tx.GasCoin, commission)
+		deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
+		deliverState.Coins.SubVolume(tx.GasCoin, commission)
 
-		context.Accounts.SubBalance(sender, tx.GasCoin, commission)
-		context.Accounts.SubBalance(sender, data.Coin, data.Value)
-		context.Candidates.Delegate(sender, data.PubKey, data.Coin, data.Value, big.NewInt(0))
-		context.Accounts.SetNonce(sender, tx.Nonce)
+		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
+		deliverState.Accounts.SubBalance(sender, data.Coin, data.Value)
+
+		value := big.NewInt(0).Set(data.Value)
+		if waitList := deliverState.Waitlist.Get(sender, data.PubKey, data.Coin); waitList != nil {
+			value.Add(value, waitList.Value)
+			deliverState.Waitlist.Delete(sender, data.PubKey, data.Coin)
+		}
+
+		deliverState.Candidates.Delegate(sender, data.PubKey, data.Coin, value, big.NewInt(0))
+		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}
 
 	tags := kv.Pairs{

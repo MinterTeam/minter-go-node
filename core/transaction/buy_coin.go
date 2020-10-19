@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
@@ -14,24 +13,10 @@ import (
 )
 
 type BuyCoinData struct {
-	CoinToBuy          types.CoinSymbol
+	CoinToBuy          types.CoinID
 	ValueToBuy         *big.Int
-	CoinToSell         types.CoinSymbol
+	CoinToSell         types.CoinID
 	MaximumValueToSell *big.Int
-}
-
-func (data BuyCoinData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		CoinToBuy          string `json:"coin_to_buy"`
-		ValueToBuy         string `json:"value_to_buy"`
-		CoinToSell         string `json:"coin_to_sell"`
-		MaximumValueToSell string `json:"maximum_value_to_sell"`
-	}{
-		CoinToBuy:          data.CoinToBuy.String(),
-		ValueToBuy:         data.ValueToBuy.String(),
-		CoinToSell:         data.CoinToSell.String(),
-		MaximumValueToSell: data.MaximumValueToSell.String(),
-	})
 }
 
 func (data BuyCoinData) String() string {
@@ -43,7 +28,7 @@ func (data BuyCoinData) Gas() int64 {
 	return commissions.ConvertTx
 }
 
-func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.State) (TotalSpends,
+func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.CheckState) (TotalSpends,
 	[]Conversion, *big.Int, *Response) {
 	total := TotalSpends{}
 	var conversions []Conversion
@@ -52,9 +37,9 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.State) (Total
 	commissionIncluded := false
 
 	if !data.CoinToBuy.IsBaseCoin() {
-		coin := context.Coins.GetCoin(data.CoinToBuy)
+		coin := context.Coins().GetCoin(data.CoinToBuy)
 
-		if errResp := CheckForCoinSupplyOverflow(coin.Volume(), data.ValueToBuy, coin.MaxSupply()); errResp != nil {
+		if errResp := CheckForCoinSupplyOverflow(coin, data.ValueToBuy); errResp != nil {
 			return nil, nil, nil, errResp
 		}
 	}
@@ -63,7 +48,7 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.State) (Total
 
 	switch {
 	case data.CoinToSell.IsBaseCoin():
-		coin := context.Coins.GetCoin(data.CoinToBuy)
+		coin := context.Coins().GetCoin(data.CoinToBuy)
 		value = formula.CalculatePurchaseAmount(coin.Volume(), coin.Reserve(), coin.Crr(), data.ValueToBuy)
 
 		if value.Cmp(data.MaximumValueToSell) == 1 {
@@ -72,10 +57,7 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.State) (Total
 				Log: fmt.Sprintf(
 					"You wanted to sell maximum %s, but currently you need to spend %s to complete tx",
 					data.MaximumValueToSell.String(), value.String()),
-				Info: EncodeError(map[string]string{
-					"maximum_value_to_sell": data.MaximumValueToSell.String(),
-					"needed_spend_value":    value.String(),
-				}),
+				Info: EncodeError(code.NewMaximumValueToSellReached(data.MaximumValueToSell.String(), value.String(), coin.GetFullSymbol(), coin.ID().String())),
 			}
 		}
 
@@ -96,11 +78,12 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.State) (Total
 						types.GetBaseCoin(),
 						commissionInBaseCoin.String(),
 						types.GetBaseCoin()),
-					Info: EncodeError(map[string]string{
-						"has_value":      coin.Reserve().String(),
-						"required_value": commissionInBaseCoin.String(),
-						"gas_coin":       fmt.Sprintf("%s", types.GetBaseCoin()),
-					}),
+					Info: EncodeError(code.NewCoinReserveNotSufficient(
+						coin.GetFullSymbol(),
+						coin.ID().String(),
+						coin.Reserve().String(),
+						commissionInBaseCoin.String(),
+					)),
 				}
 			}
 
@@ -111,7 +94,7 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.State) (Total
 				FromCoin:    tx.GasCoin,
 				FromAmount:  commission,
 				FromReserve: commissionInBaseCoin,
-				ToCoin:      types.GetBaseCoin(),
+				ToCoin:      types.GetBaseCoinID(),
 			})
 		}
 
@@ -130,7 +113,7 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.State) (Total
 			valueToBuy.Add(valueToBuy, commissionInBaseCoin)
 		}
 
-		coin := context.Coins.GetCoin(data.CoinToSell)
+		coin := context.Coins().GetCoin(data.CoinToSell)
 		value = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), valueToBuy)
 
 		if value.Cmp(data.MaximumValueToSell) == 1 {
@@ -139,10 +122,7 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.State) (Total
 				Log: fmt.Sprintf(
 					"You wanted to sell maximum %s, but currently you need to spend %s to complete tx",
 					data.MaximumValueToSell.String(), value.String()),
-				Info: EncodeError(map[string]string{
-					"maximum_value_to_sell": data.MaximumValueToSell.String(),
-					"needed_spend_value":    value.String(),
-				}),
+				Info: EncodeError(code.NewMaximumValueToSellReached(data.MaximumValueToSell.String(), value.String(), coin.GetFullSymbol(), coin.ID().String())),
 			}
 		}
 
@@ -156,8 +136,8 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.State) (Total
 	default:
 		valueToBuy := big.NewInt(0).Set(data.ValueToBuy)
 
-		coinFrom := context.Coins.GetCoin(data.CoinToSell)
-		coinTo := context.Coins.GetCoin(data.CoinToBuy)
+		coinFrom := context.Coins().GetCoin(data.CoinToSell)
+		coinTo := context.Coins().GetCoin(data.CoinToBuy)
 		baseCoinNeeded := formula.CalculatePurchaseAmount(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), valueToBuy)
 
 		if coinFrom.Reserve().Cmp(baseCoinNeeded) < 0 {
@@ -168,11 +148,12 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.State) (Total
 					types.GetBaseCoin(),
 					baseCoinNeeded.String(),
 					types.GetBaseCoin()),
-				Info: EncodeError(map[string]string{
-					"has_value":      coinFrom.Reserve().String(),
-					"required_value": commissionInBaseCoin.String(),
-					"gas_coin":       fmt.Sprintf("%s", types.GetBaseCoin()),
-				}),
+				Info: EncodeError(code.NewCoinReserveNotSufficient(
+					coinFrom.GetFullSymbol(),
+					coinFrom.ID().String(),
+					coinFrom.Reserve().String(),
+					commissionInBaseCoin.String(),
+				)),
 			}
 		}
 
@@ -193,11 +174,12 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.State) (Total
 						types.GetBaseCoin(),
 						commissionInBaseCoin.String(),
 						types.GetBaseCoin()),
-					Info: EncodeError(map[string]string{
-						"has_value":      coinTo.Reserve().String(),
-						"required_value": commissionInBaseCoin.String(),
-						"gas_coin":       fmt.Sprintf("%s", types.GetBaseCoin()),
-					}),
+					Info: EncodeError(code.NewCoinReserveNotSufficient(
+						coinTo.GetFullSymbol(),
+						coinTo.ID().String(),
+						coinTo.Reserve().String(),
+						commissionInBaseCoin.String(),
+					)),
 				}
 			}
 
@@ -208,7 +190,7 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.State) (Total
 				FromCoin:    tx.GasCoin,
 				FromAmount:  commission,
 				FromReserve: commissionInBaseCoin,
-				ToCoin:      types.GetBaseCoin(),
+				ToCoin:      types.GetBaseCoinID(),
 			})
 		}
 
@@ -219,10 +201,7 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.State) (Total
 				Code: code.MaximumValueToSellReached,
 				Log: fmt.Sprintf("You wanted to sell maximum %s, but currently you need to spend %s to complete tx",
 					data.MaximumValueToSell.String(), value.String()),
-				Info: EncodeError(map[string]string{
-					"maximum_value_to_sell": data.MaximumValueToSell.String(),
-					"needed_spend_value":    value.String(),
-				}),
+				Info: EncodeError(code.NewMaximumValueToSellReached(data.MaximumValueToSell.String(), value.String(), coinFrom.GetFullSymbol(), coinFrom.ID().String())),
 			}
 		}
 
@@ -243,11 +222,12 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.State) (Total
 						types.GetBaseCoin(),
 						commissionInBaseCoin.String(),
 						types.GetBaseCoin()),
-					Info: EncodeError(map[string]string{
-						"has_value":      coinFrom.Reserve().String(),
-						"required_value": commissionInBaseCoin.String(),
-						"gas_coin":       fmt.Sprintf("%s", types.GetBaseCoin()),
-					}),
+					Info: EncodeError(code.NewCoinReserveNotSufficient(
+						coinFrom.GetFullSymbol(),
+						coinFrom.ID().String(),
+						coinFrom.Reserve().String(),
+						commissionInBaseCoin.String(),
+					)),
 				}
 			}
 
@@ -258,7 +238,7 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.State) (Total
 				FromCoin:    tx.GasCoin,
 				FromAmount:  commission,
 				FromReserve: commissionInBaseCoin,
-				ToCoin:      types.GetBaseCoin(),
+				ToCoin:      types.GetBaseCoinID(),
 			})
 
 			totalValue := big.NewInt(0).Add(value, commission)
@@ -266,10 +246,7 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.State) (Total
 				return nil, nil, nil, &Response{
 					Code: code.MaximumValueToSellReached,
 					Log:  fmt.Sprintf("You wanted to sell maximum %s, but currently you need to spend %s to complete tx", data.MaximumValueToSell.String(), totalValue.String()),
-					Info: EncodeError(map[string]string{
-						"maximum_value_to_sell": data.MaximumValueToSell.String(),
-						"needed_spend_value":    value.String(),
-					}),
+					Info: EncodeError(code.NewMaximumValueToSellReached(data.MaximumValueToSell.String(), value.String(), coinFrom.GetFullSymbol(), coinFrom.ID().String())),
 				}
 			}
 		}
@@ -289,7 +266,7 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.State) (Total
 		commission := big.NewInt(0).Set(commissionInBaseCoin)
 
 		if !tx.GasCoin.IsBaseCoin() {
-			coin := context.Coins.GetCoin(tx.GasCoin)
+			coin := context.Coins().GetCoin(tx.GasCoin)
 
 			if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
 				return nil, nil, nil, &Response{
@@ -299,11 +276,12 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.State) (Total
 						types.GetBaseCoin(),
 						commissionInBaseCoin.String(),
 						types.GetBaseCoin()),
-					Info: EncodeError(map[string]string{
-						"has_value":      coin.Reserve().String(),
-						"required_value": commissionInBaseCoin.String(),
-						"gas_coin":       fmt.Sprintf("%s", types.GetBaseCoin()),
-					}),
+					Info: EncodeError(code.NewCoinReserveNotSufficient(
+						coin.GetFullSymbol(),
+						coin.ID().String(),
+						coin.Reserve().String(),
+						commissionInBaseCoin.String(),
+					)),
 				}
 			}
 
@@ -312,7 +290,7 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.State) (Total
 				FromCoin:    tx.GasCoin,
 				FromAmount:  commission,
 				FromReserve: commissionInBaseCoin,
-				ToCoin:      types.GetBaseCoin(),
+				ToCoin:      types.GetBaseCoinID(),
 			})
 		}
 
@@ -322,93 +300,103 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.State) (Total
 	return total, conversions, value, nil
 }
 
-func (data BuyCoinData) BasicCheck(tx *Transaction, context *state.State) *Response {
+func (data BuyCoinData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.ValueToBuy == nil {
 		return &Response{
 			Code: code.DecodeError,
-			Log:  "Incorrect tx data"}
+			Log:  "Incorrect tx data",
+			Info: EncodeError(code.NewDecodeError()),
+		}
+
+	}
+
+	if !context.Coins().Exists(data.CoinToSell) {
+		return &Response{
+			Code: code.CoinNotExists,
+			Log:  fmt.Sprintf("Coin %s not exists", data.CoinToSell),
+			Info: EncodeError(code.NewCoinNotExists("", data.CoinToSell.String())),
+		}
+	}
+
+	if !context.Coins().Exists(data.CoinToBuy) {
+		return &Response{
+			Code: code.CoinNotExists,
+			Log:  fmt.Sprintf("Coin %s not exists", data.CoinToBuy),
+			Info: EncodeError(code.NewCoinNotExists("", data.CoinToBuy.String())),
+		}
 	}
 
 	if data.CoinToSell == data.CoinToBuy {
 		return &Response{
 			Code: code.CrossConvert,
-			Log:  fmt.Sprintf("\"From\" coin equals to \"to\" coin")}
-	}
-
-	if !context.Coins.Exists(data.CoinToSell) {
-		return &Response{
-			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin %s not exists", data.CoinToSell),
-			Info: EncodeError(map[string]string{
-				"coin_to_sell": fmt.Sprintf("%s", data.CoinToSell),
-			}),
-		}
-	}
-
-	if !context.Coins.Exists(data.CoinToBuy) {
-		return &Response{
-			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin %s not exists", data.CoinToBuy),
-			Info: EncodeError(map[string]string{
-				"coin_to_buy": fmt.Sprintf("%s", data.CoinToBuy),
-			}),
+			Log:  "\"From\" coin equals to \"to\" coin",
+			Info: EncodeError(code.NewCrossConvert(
+				data.CoinToSell.String(),
+				context.Coins().GetCoin(data.CoinToSell).GetFullSymbol(),
+				data.CoinToBuy.String(),
+				context.Coins().GetCoin(data.CoinToBuy).GetFullSymbol()),
+			),
 		}
 	}
 
 	return nil
 }
 
-func (data BuyCoinData) Run(tx *Transaction, context *state.State, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
+func (data BuyCoinData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
 	sender, _ := tx.Sender()
 
-	response := data.BasicCheck(tx, context)
+	var checkState *state.CheckState
+	var isCheck bool
+	if checkState, isCheck = context.(*state.CheckState); !isCheck {
+		checkState = state.NewCheckState(context.(*state.State))
+	}
+
+	response := data.BasicCheck(tx, checkState)
 	if response != nil {
 		return *response
 	}
 
-	totalSpends, conversions, value, response := data.TotalSpend(tx, context)
+	totalSpends, conversions, value, response := data.TotalSpend(tx, checkState)
 	if response != nil {
 		return *response
 	}
 
 	for _, ts := range totalSpends {
-		if context.Accounts.GetBalance(sender, ts.Coin).Cmp(ts.Value) < 0 {
+		if checkState.Accounts().GetBalance(sender, ts.Coin).Cmp(ts.Value) < 0 {
+			coin := checkState.Coins().GetCoin(ts.Coin)
+
 			return Response{
 				Code: code.InsufficientFunds,
 				Log: fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s.",
 					sender.String(),
 					ts.Value.String(),
-					ts.Coin),
-				Info: EncodeError(map[string]string{
-					"sender":       sender.String(),
-					"needed_value": ts.Value.String(),
-					"coin":         fmt.Sprintf("%s", ts.Coin),
-				}),
+					coin.GetFullSymbol()),
+				Info: EncodeError(code.NewInsufficientFunds(sender.String(), ts.Value.String(), coin.GetFullSymbol(), coin.ID().String())),
 			}
 		}
 	}
 
-	errResp := checkConversionsReserveUnderflow(conversions, context)
+	errResp := checkConversionsReserveUnderflow(conversions, checkState)
 	if errResp != nil {
 		return *errResp
 	}
 
-	if !isCheck {
+	if deliverState, ok := context.(*state.State); ok {
 		for _, ts := range totalSpends {
-			context.Accounts.SubBalance(sender, ts.Coin, ts.Value)
+			deliverState.Accounts.SubBalance(sender, ts.Coin, ts.Value)
 		}
 
 		for _, conversion := range conversions {
-			context.Coins.SubVolume(conversion.FromCoin, conversion.FromAmount)
-			context.Coins.SubReserve(conversion.FromCoin, conversion.FromReserve)
+			deliverState.Coins.SubVolume(conversion.FromCoin, conversion.FromAmount)
+			deliverState.Coins.SubReserve(conversion.FromCoin, conversion.FromReserve)
 
-			context.Coins.AddVolume(conversion.ToCoin, conversion.ToAmount)
-			context.Coins.AddReserve(conversion.ToCoin, conversion.ToReserve)
+			deliverState.Coins.AddVolume(conversion.ToCoin, conversion.ToAmount)
+			deliverState.Coins.AddReserve(conversion.ToCoin, conversion.ToReserve)
 		}
 
 		rewardPool.Add(rewardPool, tx.CommissionInBaseCoin())
-		context.Accounts.AddBalance(sender, data.CoinToBuy, data.ValueToBuy)
-		context.Accounts.SetNonce(sender, tx.Nonce)
+		deliverState.Accounts.AddBalance(sender, data.CoinToBuy, data.ValueToBuy)
+		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}
 
 	tags := kv.Pairs{
@@ -427,9 +415,9 @@ func (data BuyCoinData) Run(tx *Transaction, context *state.State, isCheck bool,
 	}
 }
 
-func checkConversionsReserveUnderflow(conversions []Conversion, context *state.State) *Response {
-	var totalReserveCoins []types.CoinSymbol
-	totalReserveSub := make(map[types.CoinSymbol]*big.Int)
+func checkConversionsReserveUnderflow(conversions []Conversion, context *state.CheckState) *Response {
+	var totalReserveCoins []types.CoinID
+	totalReserveSub := make(map[types.CoinID]*big.Int)
 	for _, conversion := range conversions {
 		if conversion.FromCoin.IsBaseCoin() {
 			continue
@@ -444,7 +432,7 @@ func checkConversionsReserveUnderflow(conversions []Conversion, context *state.S
 	}
 
 	for _, coinSymbol := range totalReserveCoins {
-		errResp := CheckReserveUnderflow(context.Coins.GetCoin(coinSymbol), totalReserveSub[coinSymbol])
+		errResp := CheckReserveUnderflow(context.Coins().GetCoin(coinSymbol), totalReserveSub[coinSymbol])
 		if errResp != nil {
 			return errResp
 		}

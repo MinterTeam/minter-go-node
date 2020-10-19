@@ -11,15 +11,27 @@ import (
 
 const mainPrefix = 'd'
 
+type RApp interface {
+	Export(state *types.AppState, height uint64)
+	GetMaxGas() uint64
+	GetTotalSlashed() *big.Int
+	GetCoinsCount() uint32
+	GetNextCoinID() types.CoinID
+}
+
+func (v *App) Tree() tree.ReadOnlyTree {
+	return v.iavl
+}
+
 type App struct {
 	model   *Model
 	isDirty bool
 
 	bus  *bus.Bus
-	iavl tree.Tree
+	iavl tree.MTree
 }
 
-func NewApp(stateBus *bus.Bus, iavl tree.Tree) (*App, error) {
+func NewApp(stateBus *bus.Bus, iavl tree.MTree) (*App, error) {
 	app := &App{bus: stateBus, iavl: iavl}
 	app.bus.SetApp(NewBus(app))
 
@@ -35,7 +47,7 @@ func (v *App) Commit() error {
 
 	data, err := rlp.EncodeToBytes(v.model)
 	if err != nil {
-		return fmt.Errorf("can't encode app model: %s", err)
+		return fmt.Errorf("can't encode legacyApp model: %s", err)
 	}
 
 	path := []byte{mainPrefix}
@@ -68,7 +80,7 @@ func (v *App) AddTotalSlashed(amount *big.Int) {
 
 	model := v.getOrNew()
 	model.setTotalSlashed(big.NewInt(0).Add(model.getTotalSlashed(), amount))
-	v.bus.Checker().AddCoin(types.GetBaseCoin(), amount)
+	v.bus.Checker().AddCoin(types.GetBaseCoinID(), amount)
 }
 
 func (v *App) get() *Model {
@@ -84,7 +96,7 @@ func (v *App) get() *Model {
 
 	model := &Model{}
 	if err := rlp.DecodeBytes(enc, model); err != nil {
-		panic(fmt.Sprintf("failed to decode app model at: %s", err))
+		panic(fmt.Sprintf("failed to decode legacyApp model at: %s", err))
 	}
 
 	v.model = model
@@ -97,6 +109,7 @@ func (v *App) getOrNew() *Model {
 	if model == nil {
 		model = &Model{
 			TotalSlashed: big.NewInt(0),
+			CoinsCount:   0,
 			MaxGas:       0,
 			markDirty:    v.markDirty,
 		}
@@ -112,6 +125,18 @@ func (v *App) markDirty() {
 
 func (v *App) SetTotalSlashed(amount *big.Int) {
 	v.getOrNew().setTotalSlashed(amount)
+}
+
+func (v *App) GetCoinsCount() uint32 {
+	return v.getOrNew().getCoinsCount()
+}
+
+func (v *App) GetNextCoinID() types.CoinID {
+	return types.CoinID(v.GetCoinsCount() + 1)
+}
+
+func (v *App) SetCoinsCount(count uint32) {
+	v.getOrNew().setCoinsCount(count)
 }
 
 func (v *App) Export(state *types.AppState, height uint64) {

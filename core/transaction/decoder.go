@@ -26,6 +26,12 @@ func init() {
 	TxDecoder.RegisterType(TypeMultisend, MultisendData{})
 	TxDecoder.RegisterType(TypeCreateMultisig, CreateMultisigData{})
 	TxDecoder.RegisterType(TypeEditCandidate, EditCandidateData{})
+	TxDecoder.RegisterType(TypeSetHaltBlock, SetHaltBlockData{})
+	TxDecoder.RegisterType(TypeRecreateCoin, RecreateCoinData{})
+	TxDecoder.RegisterType(TypeEditCoinOwner, EditCoinOwnerData{})
+	TxDecoder.RegisterType(TypeEditMultisig, EditMultisigData{})
+	TxDecoder.RegisterType(TypePriceVote, PriceVoteData{})
+	TxDecoder.RegisterType(TypeEditCandidatePublicKey, EditCandidatePublicKeyData{})
 }
 
 type Decoder struct {

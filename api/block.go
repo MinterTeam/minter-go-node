@@ -5,13 +5,15 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/MinterTeam/minter-go-node/core/rewards"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
+	"github.com/MinterTeam/minter-go-node/core/transaction/encoder"
 	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/MinterTeam/minter-go-node/rpc/lib/types"
+	rpctypes "github.com/MinterTeam/minter-go-node/rpc/lib/types"
 	core_types "github.com/tendermint/tendermint/rpc/core/types"
 	tmTypes "github.com/tendermint/tendermint/types"
-	"time"
 )
 
 type BlockResponse struct {
@@ -65,14 +67,18 @@ func Block(height int64) (*BlockResponse, error) {
 		valHeight = 1
 	}
 
-	var totalValidators []*tmTypes.Validator
-	for i := 0; i < (((len(block.Block.LastCommit.Signatures) - 1) / 100) + 1); i++ {
-		tmValidators, err := client.Validators(&valHeight, i+1, 100)
-		if err != nil {
-			return nil, rpctypes.RPCError{Code: 500, Message: err.Error()}
-		}
-		totalValidators = append(totalValidators, tmValidators.Validators...)
+	tmValidators, err := client.Validators(&valHeight, 1, 100)
+	if err != nil {
+		return nil, rpctypes.RPCError{Code: 500, Message: err.Error()}
 	}
+	totalValidators := tmValidators.Validators
+
+	cState, err := GetStateForHeight(0)
+	if err != nil {
+		return nil, err
+	}
+
+	txJsonEncoder := encoder.NewTxEncoderJSON(cState)
 
 	txs := make([]BlockTransactionResponse, len(block.Block.Data.Txs))
 	for i, rawTx := range block.Block.Data.Txs {
@@ -88,7 +94,7 @@ func Block(height int64) (*BlockResponse, error) {
 			tags[string(tag.Key)] = string(tag.Value)
 		}
 
-		data, err := encodeTxData(tx)
+		data, err := txJsonEncoder.EncodeData(tx)
 		if err != nil {
 			return nil, err
 		}

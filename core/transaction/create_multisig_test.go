@@ -1,16 +1,18 @@
 package transaction
 
 import (
+	"math/big"
+	"reflect"
+	"sync"
+	"testing"
+
 	"github.com/MinterTeam/minter-go-node/core/code"
+	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/state/accounts"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
-	"math/big"
-	"reflect"
-	"sync"
-	"testing"
 )
 
 func TestCreateMultisigTx(t *testing.T) {
@@ -22,7 +24,7 @@ func TestCreateMultisigTx(t *testing.T) {
 	privateKey2, _ := crypto.GenerateKey()
 	addr2 := crypto.PubkeyToAddress(privateKey2.PublicKey)
 
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
@@ -31,7 +33,7 @@ func TestCreateMultisigTx(t *testing.T) {
 		addr2,
 	}
 
-	weights := []uint{1, 1}
+	weights := []uint32{1, 1}
 
 	data := CreateMultisigData{
 		Threshold: 1,
@@ -65,7 +67,7 @@ func TestCreateMultisigTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
@@ -104,6 +106,8 @@ func TestCreateMultisigTx(t *testing.T) {
 	if msigData.Threshold != 1 {
 		t.Fatalf("Threshold is not correct")
 	}
+
+	checkState(t, cState)
 }
 
 func TestCreateMultisigFromExistingAccountTx(t *testing.T) {
@@ -115,7 +119,7 @@ func TestCreateMultisigFromExistingAccountTx(t *testing.T) {
 	privateKey2, _ := crypto.GenerateKey()
 	addr2 := crypto.PubkeyToAddress(privateKey2.PublicKey)
 
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
@@ -124,7 +128,7 @@ func TestCreateMultisigFromExistingAccountTx(t *testing.T) {
 		addr2,
 	}
 
-	weights := []uint{1, 1}
+	weights := []uint32{1, 1}
 
 	data := CreateMultisigData{
 		Threshold: 1,
@@ -132,14 +136,10 @@ func TestCreateMultisigFromExistingAccountTx(t *testing.T) {
 		Addresses: addresses,
 	}
 
-	msigAddr := (&accounts.Multisig{
-		Threshold: data.Threshold,
-		Weights:   data.Weights,
-		Addresses: data.Addresses,
-	}).Address()
+	msigAddr := accounts.CreateMultisigAddress(addr, 1)
 
 	initialBalance := big.NewInt(10)
-	cState.Accounts.AddBalance(msigAddr, types.GetBaseCoin(), initialBalance)
+	cState.Accounts.AddBalance(msigAddr, types.GetBaseCoinID(), initialBalance)
 
 	encodedData, err := rlp.EncodeToBytes(data)
 	if err != nil {
@@ -166,7 +166,7 @@ func TestCreateMultisigFromExistingAccountTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
@@ -206,9 +206,11 @@ func TestCreateMultisigFromExistingAccountTx(t *testing.T) {
 		t.Fatalf("Threshold is not correct")
 	}
 
-	if cState.Accounts.GetBalance(msigAddr, types.GetBaseCoin()).Cmp(initialBalance) != 0 {
+	if cState.Accounts.GetBalance(msigAddr, types.GetBaseCoinID()).Cmp(initialBalance) != 0 {
 		t.Fatalf("Msig balance was not persisted")
 	}
+
+	checkState(t, cState)
 }
 
 func TestCreateExistingMultisigTx(t *testing.T) {
@@ -220,20 +222,20 @@ func TestCreateExistingMultisigTx(t *testing.T) {
 	privateKey2, _ := crypto.GenerateKey()
 	addr2 := crypto.PubkeyToAddress(privateKey2.PublicKey)
 
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
 	data := CreateMultisigData{
 		Threshold: 1,
-		Weights:   []uint{1, 1},
+		Weights:   []uint32{1, 1},
 		Addresses: []types.Address{
 			addr,
 			addr2,
 		},
 	}
 
-	cState.Accounts.CreateMultisig(data.Weights, data.Addresses, data.Threshold, 1)
+	cState.Accounts.CreateMultisig(data.Weights, data.Addresses, data.Threshold, accounts.CreateMultisigAddress(addr, 1))
 
 	encodedData, err := rlp.EncodeToBytes(data)
 	if err != nil {
@@ -260,9 +262,330 @@ func TestCreateExistingMultisigTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != code.MultisigExists {
 		t.Fatalf("Response code is not %d. Got %d", code.MultisigExists, response.Code)
 	}
+
+	checkState(t, cState)
+}
+
+func TestCreateMultisigOwnersTxToNonExistAddress(t *testing.T) {
+	cState := getState()
+
+	addr := types.Address{0}
+	privateKey1, _ := crypto.GenerateKey()
+	addr1 := crypto.PubkeyToAddress(privateKey1.PublicKey)
+	privateKey2, _ := crypto.GenerateKey()
+	addr2 := crypto.PubkeyToAddress(privateKey2.PublicKey)
+	privateKey3, _ := crypto.GenerateKey()
+	addr3 := crypto.PubkeyToAddress(privateKey3.PublicKey)
+
+	data := EditMultisigData{
+		Threshold: 3,
+		Weights:   []uint32{2, 1, 2},
+		Addresses: []types.Address{addr1, addr2, addr3},
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := Transaction{
+		Nonce:         1,
+		GasPrice:      1,
+		ChainID:       types.CurrentChainID,
+		GasCoin:       types.GetBaseCoinID(),
+		Type:          TypeEditMultisig,
+		Data:          encodedData,
+		SignatureType: SigTypeMulti,
+	}
+
+	tx.SetMultisigAddress(addr)
+
+	if err := tx.Sign(privateKey3); err != nil {
+		t.Fatal(err)
+	}
+
+	response := data.BasicCheck(&tx, state.NewCheckState(cState))
+	if response.Code != code.MultisigNotExists {
+		t.Fatalf("Response code is not %d. Error %s", code.MultisigNotExists, response.Log)
+	}
+
+	checkState(t, cState)
+}
+
+func TestCreateMultisigOwnersTxToTooLargeOwnersList(t *testing.T) {
+	cState := getState()
+
+	privateKey1, _ := crypto.GenerateKey()
+	addr1 := crypto.PubkeyToAddress(privateKey1.PublicKey)
+	privateKey2, _ := crypto.GenerateKey()
+	addr2 := crypto.PubkeyToAddress(privateKey2.PublicKey)
+	privateKey3, _ := crypto.GenerateKey()
+	addr3 := crypto.PubkeyToAddress(privateKey3.PublicKey)
+
+	coin := types.GetBaseCoinID()
+
+	weights := make([]uint32, 33)
+	for i := uint32(0); i <= 32; i++ {
+		weights[i] = i
+	}
+
+	data := CreateMultisigData{
+		Threshold: 3,
+		Weights:   weights,
+		Addresses: []types.Address{addr1, addr2, addr3},
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := Transaction{
+		Nonce:         1,
+		GasPrice:      1,
+		ChainID:       types.CurrentChainID,
+		GasCoin:       coin,
+		Type:          TypeCreateMultisig,
+		Data:          encodedData,
+		SignatureType: SigTypeSingle,
+	}
+
+	if err := tx.Sign(privateKey3); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.TooLargeOwnersList {
+		t.Fatalf("Response code is not %d. Error %s", code.TooLargeOwnersList, response.Log)
+	}
+
+	checkState(t, cState)
+}
+
+func TestCreateMultisigOwnersTxIncorrectWeights(t *testing.T) {
+	cState := getState()
+
+	privateKey1, _ := crypto.GenerateKey()
+	addr1 := crypto.PubkeyToAddress(privateKey1.PublicKey)
+	privateKey2, _ := crypto.GenerateKey()
+	addr2 := crypto.PubkeyToAddress(privateKey2.PublicKey)
+	privateKey3, _ := crypto.GenerateKey()
+	addr3 := crypto.PubkeyToAddress(privateKey3.PublicKey)
+
+	data := CreateMultisigData{
+		Threshold: 3,
+		Weights:   []uint32{1, 2, 3, 4},
+		Addresses: []types.Address{addr1, addr2, addr3},
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := Transaction{
+		Nonce:         1,
+		GasPrice:      1,
+		ChainID:       types.CurrentChainID,
+		GasCoin:       types.GetBaseCoinID(),
+		Type:          TypeCreateMultisig,
+		Data:          encodedData,
+		SignatureType: SigTypeSingle,
+	}
+
+	if err := tx.Sign(privateKey3); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.DifferentCountAddressesAndWeights {
+		t.Fatalf("Response code is not %d. Error %s", code.DifferentCountAddressesAndWeights, response.Log)
+	}
+
+	checkState(t, cState)
+
+	data.Weights = []uint32{1, 2, 1024}
+	encodedData, err = rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx.Data = encodedData
+	if err := tx.Sign(privateKey3); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err = rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.IncorrectWeights {
+		t.Fatalf("Response code is not %d. Error %s", code.IncorrectWeights, response.Log)
+	}
+
+	checkState(t, cState)
+}
+
+func TestCreateMultisigOwnersTxToAddressDuplication(t *testing.T) {
+	cState := getState()
+
+	privateKey1, _ := crypto.GenerateKey()
+	addr1 := crypto.PubkeyToAddress(privateKey1.PublicKey)
+	privateKey3, _ := crypto.GenerateKey()
+	addr3 := crypto.PubkeyToAddress(privateKey3.PublicKey)
+
+	data := CreateMultisigData{
+		Threshold: 3,
+		Weights:   []uint32{1, 2, 3},
+		Addresses: []types.Address{addr1, addr1, addr3},
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := Transaction{
+		Nonce:         1,
+		GasPrice:      1,
+		ChainID:       types.CurrentChainID,
+		GasCoin:       types.GetBaseCoinID(),
+		Type:          TypeCreateMultisig,
+		Data:          encodedData,
+		SignatureType: SigTypeSingle,
+	}
+
+	if err := tx.Sign(privateKey3); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.DuplicatedAddresses {
+		t.Fatalf("Response code is not %d. Error %s", code.DuplicatedAddresses, response.Log)
+	}
+
+	checkState(t, cState)
+}
+
+func TestCreateMultisigOwnersTxToInsufficientFunds(t *testing.T) {
+	cState := getState()
+
+	privateKey1, _ := crypto.GenerateKey()
+	addr1 := crypto.PubkeyToAddress(privateKey1.PublicKey)
+	privateKey2, _ := crypto.GenerateKey()
+	addr2 := crypto.PubkeyToAddress(privateKey2.PublicKey)
+	privateKey3, _ := crypto.GenerateKey()
+	addr3 := crypto.PubkeyToAddress(privateKey3.PublicKey)
+
+	data := CreateMultisigData{
+		Threshold: 3,
+		Weights:   []uint32{1, 2, 3},
+		Addresses: []types.Address{addr1, addr2, addr3},
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := Transaction{
+		Nonce:         1,
+		GasPrice:      1,
+		ChainID:       types.CurrentChainID,
+		GasCoin:       types.GetBaseCoinID(),
+		Type:          TypeCreateMultisig,
+		Data:          encodedData,
+		SignatureType: SigTypeSingle,
+	}
+
+	if err := tx.Sign(privateKey3); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.InsufficientFunds {
+		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
+	}
+
+	checkState(t, cState)
+}
+
+func TestCreateMultisigTxToGasCoinReserveUnderflow(t *testing.T) {
+	cState := getState()
+
+	privateKey1, _ := crypto.GenerateKey()
+	addr1 := crypto.PubkeyToAddress(privateKey1.PublicKey)
+	privateKey2, _ := crypto.GenerateKey()
+	addr2 := crypto.PubkeyToAddress(privateKey2.PublicKey)
+	privateKey3, _ := crypto.GenerateKey()
+	addr3 := crypto.PubkeyToAddress(privateKey3.PublicKey)
+
+	customCoin := createTestCoin(cState)
+	cState.Coins.SubReserve(customCoin, helpers.BipToPip(big.NewInt(90000)))
+
+	cState.Accounts.AddBalance(addr3, types.GetBaseCoinID(), helpers.BipToPip(big.NewInt(1000000)))
+
+	data := CreateMultisigData{
+		Threshold: 3,
+		Weights:   []uint32{1, 2, 3},
+		Addresses: []types.Address{addr1, addr2, addr3},
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := Transaction{
+		Nonce:         1,
+		GasPrice:      1,
+		ChainID:       types.CurrentChainID,
+		GasCoin:       customCoin,
+		Type:          TypeCreateMultisig,
+		Data:          encodedData,
+		SignatureType: SigTypeSingle,
+	}
+
+	if err := tx.Sign(privateKey3); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.CoinReserveUnderflow {
+		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveUnderflow, response.Log)
+	}
+
+	checkState(t, cState)
 }

@@ -4,6 +4,7 @@ import "math/big"
 
 type Model struct {
 	TotalSlashed *big.Int
+	CoinsCount   uint32
 	MaxGas       uint64
 
 	markDirty func()
@@ -33,4 +34,16 @@ func (model *Model) setTotalSlashed(totalSlashed *big.Int) {
 		model.markDirty()
 	}
 	model.TotalSlashed = totalSlashed
+}
+
+func (model *Model) getCoinsCount() uint32 {
+	return model.CoinsCount
+}
+
+func (model *Model) setCoinsCount(count uint32) {
+	if model.CoinsCount != count {
+		model.markDirty()
+	}
+
+	model.CoinsCount = count
 }

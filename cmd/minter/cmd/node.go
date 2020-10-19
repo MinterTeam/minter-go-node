@@ -2,12 +2,13 @@ package cmd
 
 import (
 	"fmt"
-	api_v1 "github.com/MinterTeam/minter-go-node/api"
-	api_v2 "github.com/MinterTeam/minter-go-node/api/v2"
-	service_api "github.com/MinterTeam/minter-go-node/api/v2/service"
+	apiV1 "github.com/MinterTeam/minter-go-node/api"
+	apiV2 "github.com/MinterTeam/minter-go-node/api/v2"
+	serviceApi "github.com/MinterTeam/minter-go-node/api/v2/service"
 	"github.com/MinterTeam/minter-go-node/cli/service"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
+	eventsdb "github.com/MinterTeam/minter-go-node/core/events"
 	"github.com/MinterTeam/minter-go-node/core/minter"
 	"github.com/MinterTeam/minter-go-node/core/statistics"
 	"github.com/MinterTeam/minter-go-node/log"
@@ -16,25 +17,29 @@ import (
 	"github.com/tendermint/go-amino"
 	"github.com/tendermint/tendermint/abci/types"
 	tmCfg "github.com/tendermint/tendermint/config"
-	tmlog "github.com/tendermint/tendermint/libs/log"
-	tmos "github.com/tendermint/tendermint/libs/os"
+	"github.com/tendermint/tendermint/crypto"
+	"github.com/tendermint/tendermint/crypto/ed25519"
+	"github.com/tendermint/tendermint/crypto/multisig"
+	"github.com/tendermint/tendermint/crypto/secp256k1"
+	"github.com/tendermint/tendermint/evidence"
+	tmLog "github.com/tendermint/tendermint/libs/log"
+	tmOS "github.com/tendermint/tendermint/libs/os"
 	tmNode "github.com/tendermint/tendermint/node"
 	"github.com/tendermint/tendermint/p2p"
 	"github.com/tendermint/tendermint/privval"
 	"github.com/tendermint/tendermint/proxy"
-	rpc "github.com/tendermint/tendermint/rpc/client"
+	rpc "github.com/tendermint/tendermint/rpc/client/local"
 	"github.com/tendermint/tendermint/store"
 	tmTypes "github.com/tendermint/tendermint/types"
 	"io"
 	"net/http"
-	_ "net/http/pprof"
+	_ "net/http/pprof" // nolint: gosec // securely exposed on separate, optional port
 	"net/url"
 	"os"
 	"syscall"
 )
 
-const RequiredOpenFilesLimit = 10000
-
+// RunNode is the command that allows the CLI to start a node.
 var RunNode = &cobra.Command{
 	Use:   "node",
 	Short: "Run the Minter node",
@@ -47,21 +52,13 @@ func runNode(cmd *cobra.Command) error {
 	logger := log.NewLogger(cfg)
 
 	// check open files limits
-	{
-		var rLimit syscall.Rlimit
-		err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rLimit)
-		if err != nil {
-			panic(err)
-		}
+	if err := checkRlimits(); err != nil {
+		panic(err)
+	}
 
-		required := RequiredOpenFilesLimit + uint64(cfg.StateMemAvailable)
-		if rLimit.Cur < required {
-			rLimit.Cur = required
-			err = syscall.Setrlimit(syscall.RLIMIT_NOFILE, &rLimit)
-			if err != nil {
-				panic(fmt.Errorf("cannot set RLIMIT_NOFILE to %d", rLimit.Cur))
-			}
-		}
+	// ensure /config and /tmdata dirs
+	if err := ensureDirs(); err != nil {
+		return err
 	}
 
 	pprofOn, err := cmd.Flags().GetBool("pprof")
@@ -70,34 +67,12 @@ func runNode(cmd *cobra.Command) error {
 	}
 
 	if pprofOn {
-		pprofAddr, err := cmd.Flags().GetString("pprof-addr")
-		if err != nil {
+		if err := enablePprof(cmd, logger); err != nil {
 			return err
 		}
-
-		pprofMux := http.DefaultServeMux
-		http.DefaultServeMux = http.NewServeMux()
-		go func() {
-			logger.Error((&http.Server{
-				Addr:    pprofAddr,
-				Handler: pprofMux,
-			}).ListenAndServe().Error())
-		}()
 	}
 
 	tmConfig := config.GetTmConfig(cfg)
-
-	if err := tmos.EnsureDir(utils.GetMinterHome()+"/config", 0777); err != nil {
-		return err
-	}
-
-	if err := tmos.EnsureDir(utils.GetMinterHome()+"/tmdata", 0777); err != nil {
-		return err
-	}
-
-	if cfg.KeepLastStates < 1 {
-		panic("keep_last_states field should be greater than 0")
-	}
 
 	app := minter.NewMinterBlockchain(cfg)
 
@@ -106,37 +81,17 @@ func runNode(cmd *cobra.Command) error {
 
 	// start TM node
 	node := startTendermintNode(app, tmConfig, logger)
-
-	client := rpc.NewLocal(node)
-
+	client := rpc.New(node)
 	app.SetTmNode(node)
 
 	if !cfg.ValidatorMode {
-		go func(srv *service_api.Service) {
-			grpcUrl, err := url.Parse(cfg.GRPCListenAddress)
-			if err != nil {
-				logger.Error("Failed to parse gRPC address", err)
-			}
-			apiV2url, err := url.Parse(cfg.APIv2ListenAddress)
-			if err != nil {
-				logger.Error("Failed to parse API v2 address", err)
-			}
-			logger.Error("Failed to start Api V2 in both gRPC and RESTful", api_v2.Run(srv, grpcUrl.Host, apiV2url.Host))
-		}(service_api.NewService(amino.NewCodec(), app, client, node, cfg, version.Version))
-
-		go api_v1.RunAPI(app, client, cfg, logger)
+		runAPI(logger, app, client, node)
 	}
 
-	go func() {
-		err := service.StartCLIServer(utils.GetMinterHome()+"/manager.sock", service.NewManager(app, client, cfg), cmd.Context())
-		if err != nil {
-			panic(err)
-		}
-	}()
+	runCLI(cmd, app, client, node)
 
 	if cfg.Instrumentation.Prometheus {
-		data := statistics.New()
-		go app.SetStatisticData(data).Statistic(cmd.Context())
+		go app.SetStatisticData(statistics.New()).Statistic(cmd.Context())
 	}
 
 	<-cmd.Context().Done()
@@ -144,6 +99,112 @@ func runNode(cmd *cobra.Command) error {
 	defer app.Stop()
 	if err := node.Stop(); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func runCLI(cmd *cobra.Command, app *minter.Blockchain, client *rpc.Local, tmNode *tmNode.Node) {
+	go func() {
+		err := service.StartCLIServer(utils.GetMinterHome()+"/manager.sock", service.NewManager(app, client, tmNode, cfg), cmd.Context())
+		if err != nil {
+			panic(err)
+		}
+	}()
+}
+
+// RegisterAmino registers all crypto related types in the given (amino) codec.
+func registerCryptoAmino(cdc *amino.Codec) {
+	// These are all written here instead of
+	cdc.RegisterInterface((*crypto.PubKey)(nil), nil)
+	cdc.RegisterConcrete(ed25519.PubKeyEd25519{},
+		ed25519.PubKeyAminoName, nil)
+	cdc.RegisterConcrete(secp256k1.PubKeySecp256k1{},
+		secp256k1.PubKeyAminoName, nil)
+	cdc.RegisterConcrete(multisig.PubKeyMultisigThreshold{},
+		multisig.PubKeyMultisigThresholdAminoRoute, nil)
+
+	cdc.RegisterInterface((*crypto.PrivKey)(nil), nil)
+	cdc.RegisterConcrete(ed25519.PrivKeyEd25519{},
+		ed25519.PrivKeyAminoName, nil)
+	cdc.RegisterConcrete(secp256k1.PrivKeySecp256k1{},
+		secp256k1.PrivKeyAminoName, nil)
+}
+
+func registerEvidenceMessages(cdc *amino.Codec) {
+	cdc.RegisterInterface((*evidence.Message)(nil), nil)
+	cdc.RegisterConcrete(&evidence.ListMessage{},
+		"tendermint/evidence/EvidenceListMessage", nil)
+	cdc.RegisterInterface((*tmTypes.Evidence)(nil), nil)
+	cdc.RegisterConcrete(&tmTypes.DuplicateVoteEvidence{}, "tendermint/DuplicateVoteEvidence", nil)
+}
+
+func runAPI(logger tmLog.Logger, app *minter.Blockchain, client *rpc.Local, node *tmNode.Node) {
+	cdc := amino.NewCodec()
+	registerCryptoAmino(cdc)
+	eventsdb.RegisterAminoEvents(cdc)
+	registerEvidenceMessages(cdc)
+	go func(srv *serviceApi.Service) {
+		grpcURL, err := url.Parse(cfg.GRPCListenAddress)
+		if err != nil {
+			logger.Error("Failed to parse gRPC address", err)
+		}
+		apiV2url, err := url.Parse(cfg.APIv2ListenAddress)
+		if err != nil {
+			logger.Error("Failed to parse API v2 address", err)
+		}
+		logger.Error("Failed to start Api V2 in both gRPC and RESTful",
+			apiV2.Run(srv, grpcURL.Host, apiV2url.Host, logger.With("module", "rpc")))
+	}(serviceApi.NewService(cdc, app, client, node, cfg, version.Version))
+
+	go apiV1.RunAPI(cdc, app, client, cfg, logger)
+}
+
+func enablePprof(cmd *cobra.Command, logger tmLog.Logger) error {
+	pprofAddr, err := cmd.Flags().GetString("pprof-addr")
+	if err != nil {
+		return err
+	}
+
+	pprofMux := http.DefaultServeMux
+	http.DefaultServeMux = http.NewServeMux()
+	go func() {
+		logger.Error((&http.Server{
+			Addr:    pprofAddr,
+			Handler: pprofMux,
+		}).ListenAndServe().Error())
+	}()
+	return nil
+}
+
+func ensureDirs() error {
+	if err := tmOS.EnsureDir(utils.GetMinterHome()+"/config", 0777); err != nil {
+		return err
+	}
+
+	if err := tmOS.EnsureDir(utils.GetMinterHome()+"/tmdata", 0777); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func checkRlimits() error {
+	const RequiredOpenFilesLimit = 10000
+
+	var rLimit syscall.Rlimit
+	err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rLimit)
+	if err != nil {
+		return err
+	}
+
+	required := RequiredOpenFilesLimit + uint64(cfg.StateMemAvailable)
+	if rLimit.Cur < required {
+		rLimit.Cur = required
+		err = syscall.Setrlimit(syscall.RLIMIT_NOFILE, &rLimit)
+		if err != nil {
+			return fmt.Errorf("cannot set RLIMIT_NOFILE to %d", rLimit.Cur)
+		}
 	}
 
 	return nil
@@ -168,7 +229,7 @@ func updateBlocksTimeDelta(app *minter.Blockchain, config *tmCfg.Config) {
 	blockStoreDB.Close()
 }
 
-func startTendermintNode(app types.Application, cfg *tmCfg.Config, logger tmlog.Logger) *tmNode.Node {
+func startTendermintNode(app types.Application, cfg *tmCfg.Config, logger tmLog.Logger) *tmNode.Node {
 	nodeKey, err := p2p.LoadOrGenNodeKey(cfg.NodeKeyFile())
 	if err != nil {
 		panic(err)
@@ -205,17 +266,22 @@ func getGenesis() (doc *tmTypes.GenesisDoc, e error) {
 	_, err := os.Stat(genDocFile)
 	if err != nil {
 		if !os.IsNotExist(err) {
-			panic(err)
+			return nil, err
 		}
-		if err := downloadFile(genDocFile, "https://raw.githubusercontent.com/MinterTeam/minter-network-migrate/master/minter-mainnet-2/genesis.json"); err != nil {
-			panic(err)
+
+		genesis, err := RootCmd.Flags().GetString("genesis")
+		if err != nil {
+			return nil, err
+		}
+
+		if err := downloadFile(genDocFile, genesis); err != nil {
+			return nil, err
 		}
 	}
 	return tmTypes.GenesisDocFromFile(genDocFile)
 }
 
 func downloadFile(filepath string, url string) error {
-
 	// Get the data
 	resp, err := http.Get(url)
 	if err != nil {

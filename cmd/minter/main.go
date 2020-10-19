@@ -31,12 +31,16 @@ func main() {
 
 	rootCmd.PersistentFlags().StringVar(&utils.MinterHome, "home-dir", "", "base dir (default is $HOME/.minter)")
 	rootCmd.PersistentFlags().StringVar(&utils.MinterConfig, "config", "", "path to config (default is $(home-dir)/config/config.toml)")
+	rootCmd.PersistentFlags().Bool("testnet", false, "use \"true\" for testnet, mainnet is default")
 	rootCmd.PersistentFlags().Bool("pprof", false, "enable pprof")
 	rootCmd.PersistentFlags().String("pprof-addr", "0.0.0.0:6060", "pprof listen addr")
+	rootCmd.PersistentFlags().String("genesis", "https://raw.githubusercontent.com/MinterTeam/minter-network-migrate/master/minter-mainnet-2/genesis.json", "path with the genesis file to download")
 
 	cmd.ExportCommand.Flags().Uint64("height", 0, "export height")
-	cmd.ExportCommand.Flags().String("chain_id", "", "export chain id")
-	cmd.ExportCommand.Flags().Duration("genesis_time", 0, "export height")
+	cmd.ExportCommand.Flags().Uint64("start-height", 0, "height for starting a new chain")
+	cmd.ExportCommand.Flags().Bool("indent", false, "using indent")
+	cmd.ExportCommand.Flags().String("chain-id", "", "export chain id")
+	cmd.ExportCommand.Flags().Duration("genesis-time", 0, "export height")
 
 	if err := rootCmd.ExecuteContext(ctx); err != nil {
 		panic(err)

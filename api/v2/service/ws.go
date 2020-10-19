@@ -1,49 +1,52 @@
 package service
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
-	"github.com/golang/protobuf/jsonpb"
-	_struct "github.com/golang/protobuf/ptypes/struct"
 	"github.com/google/uuid"
 	core_types "github.com/tendermint/tendermint/rpc/core/types"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
 	"time"
 )
 
 const (
-	SubscribeTimeout = 5 * time.Second
+	subscribeTimeout = 15 * time.Second
 )
 
+// Subscribe returns a subscription for events by query.
 func (s *Service) Subscribe(request *pb.SubscribeRequest, stream pb.ApiService_SubscribeServer) error {
 
 	if s.client.NumClients() >= s.minterCfg.RPC.MaxSubscriptionClients {
-		return status.Error(codes.Internal, fmt.Sprintf("max_subscription_clients %d reached", s.minterCfg.RPC.MaxSubscriptionClients))
+		return status.Error(codes.ResourceExhausted, fmt.Sprintf("max_subscription_clients %d reached", s.minterCfg.RPC.MaxSubscriptionClients))
 	}
 
 	s.client.Logger.Info("Subscribe to query", "query", request.Query)
 
-	subCtx, cancel := context.WithTimeout(stream.Context(), SubscribeTimeout)
+	ctx, cancel := context.WithTimeout(stream.Context(), subscribeTimeout)
 	defer cancel()
-	subscriber := uuid.New().String()
-	sub, err := s.client.Subscribe(subCtx, subscriber, request.Query)
+
+	remote := uuid.New().String()
+	subscriber, ok := peer.FromContext(ctx)
+	if ok {
+		remote = subscriber.Addr.String()
+	}
+	sub, err := s.client.Subscribe(ctx, remote, request.Query)
 	if err != nil {
-		return status.Error(codes.Internal, err.Error())
+		return status.Error(codes.InvalidArgument, err.Error())
 	}
 	defer func() {
-		if err := s.client.UnsubscribeAll(stream.Context(), subscriber); err != nil {
+		if err := s.client.UnsubscribeAll(context.Background(), remote); err != nil {
 			s.client.Logger.Error(err.Error())
 		}
 	}()
 
 	for {
 		select {
-		case <-stream.Context().Done():
-			return stream.Context().Err()
+		case <-ctx.Done():
+			return status.FromContextError(ctx.Err()).Err()
 		case msg, ok := <-sub:
 			if !ok {
 				return nil
@@ -60,23 +63,16 @@ func (s *Service) Subscribe(request *pb.SubscribeRequest, stream pb.ApiService_S
 }
 
 func subscribeResponse(msg core_types.ResultEvent) (*pb.SubscribeResponse, error) {
-	var events []*pb.SubscribeResponse_Event
+	events := make([]*pb.SubscribeResponse_Event, 0, len(msg.Events))
 	for key, eventSlice := range msg.Events {
 		events = append(events, &pb.SubscribeResponse_Event{
 			Key:    key,
 			Events: eventSlice,
 		})
 	}
-	byteData, err := json.Marshal(msg.Data)
+
+	data, err := toStruct(msg.Data)
 	if err != nil {
-		return nil, err
-	}
-
-	var bb bytes.Buffer
-	bb.Write(byteData)
-
-	data := &_struct.Struct{Fields: make(map[string]*_struct.Value)}
-	if err := (&jsonpb.Unmarshaler{}).Unmarshal(&bb, data); err != nil {
 		return nil, err
 	}
 

@@ -3,23 +3,23 @@ package state
 import (
 	"crypto/rand"
 	"encoding/binary"
-	eventsdb "github.com/MinterTeam/events-db"
+	eventsdb "github.com/MinterTeam/minter-go-node/core/events"
 	"github.com/MinterTeam/minter-go-node/core/state/candidates"
 	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/MinterTeam/minter-go-node/upgrades"
+	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	db "github.com/tendermint/tm-db"
 	"math/big"
 	"testing"
 )
 
-const height = upgrades.UpgradeBlock3
+const height = 1
 
 func TestSimpleDelegate(t *testing.T) {
 	st := getState()
 
 	address := types.Address{}
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 	amount := big.NewInt(1)
 	pubkey := createTestCandidate(st)
 
@@ -38,13 +38,18 @@ func TestSimpleDelegate(t *testing.T) {
 	if stake.BipValue.Cmp(amount) != 0 {
 		t.Errorf("Bip value of stake of address %s should be %s, got %s", address.String(), amount.String(), stake.BipValue.String())
 	}
+
+	err := checkState(st)
+	if err != nil {
+		t.Error(err)
+	}
 }
 
 func TestDelegate(t *testing.T) {
 	st := getState()
 
 	address := types.Address{}
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 	amount := big.NewInt(1)
 	totalAmount := big.NewInt(0)
 	pubkey := createTestCandidate(st)
@@ -68,12 +73,55 @@ func TestDelegate(t *testing.T) {
 	if stake.BipValue.Cmp(totalAmount) != 0 {
 		t.Errorf("Bip value of stake of address %s should be %s, got %s", address.String(), amount.String(), stake.BipValue.String())
 	}
+
+	err := checkState(st)
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func TestCustomDelegate(t *testing.T) {
+	st := getState()
+
+	volume := helpers.BipToPip(big.NewInt(1000000))
+	reserve := helpers.BipToPip(big.NewInt(1000000))
+
+	coinID := st.App.GetNextCoinID()
+	st.Coins.Create(coinID, types.StrToCoinSymbol("TEST"), "TEST COIN", volume, 10, reserve, volume, nil)
+	st.Accounts.AddBalance([20]byte{1}, 1, helpers.BipToPip(big.NewInt(1000000-500000)))
+	st.App.SetCoinsCount(coinID.Uint32())
+
+	address := types.Address{}
+	amount := helpers.BipToPip(big.NewInt(500000))
+	pubkey := createTestCandidate(st)
+
+	st.Candidates.Delegate(address, pubkey, coinID, amount, big.NewInt(0))
+	st.Candidates.RecalculateStakes(height)
+
+	stake := st.Candidates.GetStakeOfAddress(pubkey, address, coinID)
+	if stake == nil {
+		t.Fatalf("Stake of address %s not found", address.String())
+	}
+
+	if stake.Value.Cmp(amount) != 0 {
+		t.Errorf("Stake of address %s should be %s, got %s", address.String(), amount.String(), stake.Value.String())
+	}
+
+	bipValue := big.NewInt(0).Mul(big.NewInt(9765625), big.NewInt(100000000000000))
+	if stake.BipValue.Cmp(bipValue) != 0 {
+		t.Errorf("Bip value of stake of address %s should be %s, got %s", address.String(), bipValue.String(), stake.BipValue.String())
+	}
+
+	err := checkState(st)
+	if err != nil {
+		t.Error(err)
+	}
 }
 
 func TestComplexDelegate(t *testing.T) {
 	st := getState()
 
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 	pubkey := createTestCandidate(st)
 
 	for i := uint64(0); i < 2000; i++ {
@@ -168,12 +216,17 @@ func TestComplexDelegate(t *testing.T) {
 			t.Fatalf("Stake of address %s found, but should not be", addr.String())
 		}
 	}
+
+	err := checkState(st)
+	if err != nil {
+		t.Error(err)
+	}
 }
 
 func TestStakeSufficiency(t *testing.T) {
 	st := getState()
 
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 	pubkey := createTestCandidate(st)
 
 	for i := uint64(0); i < 1000; i++ {
@@ -217,6 +270,11 @@ func TestStakeSufficiency(t *testing.T) {
 			t.Fatalf("Stake of %s %s of address %s shold be sufficient", stake.String(), coin.String(), addr.String())
 		}
 	}
+
+	err := checkState(st)
+	if err != nil {
+		t.Error(err)
+	}
 }
 
 func TestDoubleSignPenalty(t *testing.T) {
@@ -224,7 +282,7 @@ func TestDoubleSignPenalty(t *testing.T) {
 
 	pubkey := createTestCandidate(st)
 
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 	amount := big.NewInt(100)
 	var addr types.Address
 	binary.BigEndian.PutUint64(addr[:], 1)
@@ -232,12 +290,16 @@ func TestDoubleSignPenalty(t *testing.T) {
 
 	st.Candidates.RecalculateStakes(height)
 
+	st.FrozenFunds.AddFund(1, addr, pubkey, st.Candidates.ID(pubkey), coin, amount)
+
 	var pk ed25519.PubKeyEd25519
 	copy(pk[:], pubkey[:])
 
 	var tmAddr types.TmAddress
 	copy(tmAddr[:], pk.Address().Bytes())
 
+	st.Validators.PunishByzantineValidator(tmAddr)
+	st.FrozenFunds.PunishFrozenFundsWithID(1, 1+candidates.UnbondPeriod, st.Candidates.ID(pubkey))
 	st.Candidates.PunishByzantineCandidate(1, tmAddr)
 
 	stake := st.Candidates.GetStakeValueOfAddress(pubkey, addr, coin)
@@ -264,6 +326,11 @@ func TestDoubleSignPenalty(t *testing.T) {
 	if !exists {
 		t.Fatalf("Frozen fund not found")
 	}
+
+	err := checkState(st)
+	if err != nil {
+		t.Error(err)
+	}
 }
 
 func TestAbsentPenalty(t *testing.T) {
@@ -271,7 +338,7 @@ func TestAbsentPenalty(t *testing.T) {
 
 	pubkey := createTestCandidate(st)
 
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 	amount := big.NewInt(100)
 	var addr types.Address
 	binary.BigEndian.PutUint64(addr[:], 1)
@@ -294,6 +361,11 @@ func TestAbsentPenalty(t *testing.T) {
 	if stake.Cmp(newValue) != 0 {
 		t.Fatalf("Stake is not correct. Expected %s, got %s", newValue, stake.String())
 	}
+
+	err := checkState(st)
+	if err != nil {
+		t.Error(err)
+	}
 }
 
 func TestDoubleAbsentPenalty(t *testing.T) {
@@ -301,11 +373,11 @@ func TestDoubleAbsentPenalty(t *testing.T) {
 
 	pubkey := createTestCandidate(st)
 
-	coin := types.GetBaseCoin()
-	amount := big.NewInt(100)
+	coin := types.GetBaseCoinID()
+	amount := helpers.BipToPip(big.NewInt(10000))
 	var addr types.Address
 	binary.BigEndian.PutUint64(addr[:], 1)
-	st.Candidates.Delegate(addr, pubkey, coin, amount, big.NewInt(0))
+	st.Candidates.Delegate(addr, pubkey, coin, amount, amount)
 	st.Candidates.SetOnline(pubkey)
 
 	st.Candidates.RecalculateStakes(height)
@@ -330,12 +402,56 @@ func TestDoubleAbsentPenalty(t *testing.T) {
 	if stake.Cmp(newValue) != 0 {
 		t.Fatalf("Stake is not correct. Expected %s, got %s", newValue, stake.String())
 	}
+
+	st.Candidates.SetOnline(pubkey)
+	st.Validators.SetNewValidators(st.Candidates.GetNewCandidates(1))
+	err := checkState(st)
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func TestZeroStakePenalty(t *testing.T) {
+	st := getState()
+
+	pubkey := createTestCandidate(st)
+
+	coin := types.GetBaseCoinID()
+	amount := big.NewInt(10000)
+	var addr types.Address
+	binary.BigEndian.PutUint64(addr[:], 1)
+	st.Candidates.Delegate(addr, pubkey, coin, amount, big.NewInt(0))
+
+	st.Candidates.RecalculateStakes(height)
+
+	st.Candidates.SubStake(addr, pubkey, coin, amount)
+	st.FrozenFunds.AddFund(518400, addr, pubkey, st.Candidates.ID(pubkey), coin, amount)
+
+	var pk ed25519.PubKeyEd25519
+	copy(pk[:], pubkey[:])
+
+	var tmAddr types.TmAddress
+	copy(tmAddr[:], pk.Address().Bytes())
+
+	st.Candidates.Punish(1, tmAddr)
+
+	stake := st.Candidates.GetStakeValueOfAddress(pubkey, addr, coin)
+	newValue := big.NewInt(0)
+
+	if stake.Cmp(newValue) != 0 {
+		t.Fatalf("Stake is not correct. Expected %s, got %s", newValue, stake.String())
+	}
+
+	err := checkState(st)
+	if err != nil {
+		t.Error(err)
+	}
 }
 
 func TestDelegationAfterUnbond(t *testing.T) {
 	st := getState()
 
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 	pubkey := createTestCandidate(st)
 
 	for i := uint64(0); i < 1000; i++ {
@@ -355,7 +471,9 @@ func TestDelegationAfterUnbond(t *testing.T) {
 
 		st.Candidates.SubStake(addr, pubkey, coin, amount)
 		st.Candidates.RecalculateStakes(height)
-		st.Candidates.Commit()
+		if err := st.Candidates.Commit(); err != nil {
+			panic(err)
+		}
 	}
 
 	// delegate
@@ -387,6 +505,83 @@ func TestDelegationAfterUnbond(t *testing.T) {
 		}
 	}
 
+	err := checkState(st)
+	if err != nil {
+		t.Error(err)
+	}
+
+}
+
+func TestStakeKick(t *testing.T) {
+	st := getState()
+
+	coin := types.GetBaseCoinID()
+	pubkey := createTestCandidate(st)
+
+	for i := uint64(0); i < 1000; i++ {
+		amount := big.NewInt(int64(1000 - i))
+		var addr types.Address
+		binary.BigEndian.PutUint64(addr[:], i)
+		st.Candidates.Delegate(addr, pubkey, coin, amount, big.NewInt(0))
+	}
+
+	st.Candidates.RecalculateStakes(height)
+
+	{
+		amount := big.NewInt(1001)
+		var addr types.Address
+		binary.BigEndian.PutUint64(addr[:], 1001)
+		st.Candidates.Delegate(addr, pubkey, coin, amount, big.NewInt(0))
+	}
+
+	st.Candidates.RecalculateStakes(height)
+
+	var addr types.Address
+	binary.BigEndian.PutUint64(addr[:], 999)
+	wl := st.Waitlist.Get(addr, pubkey, coin)
+
+	if wl == nil {
+		t.Fatalf("Waitlist is empty")
+	}
+
+	if wl.Value.Cmp(big.NewInt(1)) != 0 {
+		t.Fatalf("Waitlist is not correct")
+	}
+
+	err := checkState(st)
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func TestRecalculateStakes(t *testing.T) {
+	st := getState()
+
+	st.Coins.Create(1, [10]byte{1}, "TestCoin", helpers.BipToPip(big.NewInt(100000)), 70, helpers.BipToPip(big.NewInt(10000)), nil, nil)
+	pubkey := createTestCandidate(st)
+
+	st.Accounts.AddBalance([20]byte{1}, 1, helpers.BipToPip(big.NewInt(100000-1000)))
+	amount := helpers.BipToPip(big.NewInt(1000))
+	st.Candidates.Delegate([20]byte{1}, pubkey, 1, amount, big.NewInt(0))
+
+	st.Candidates.RecalculateStakes(height)
+	err := st.Candidates.Commit()
+	if err != nil {
+		t.Fatal(err)
+	}
+	stake := st.Candidates.GetStakeOfAddress(pubkey, [20]byte{1}, 1)
+
+	if stake.Value.String() != "1000000000000000000000" {
+		t.Errorf("stake value is %s", stake.Value.String())
+	}
+	if stake.BipValue.String() != "13894954943731374342" {
+		t.Errorf("stake bip value is %s", stake.BipValue.String())
+	}
+
+	err = checkState(st)
+	if err != nil {
+		t.Error(err)
+	}
 }
 
 func getState() *State {
@@ -399,12 +594,26 @@ func getState() *State {
 	return s
 }
 
+func checkState(cState *State) error {
+	if _, err := cState.Commit(); err != nil {
+		return err
+	}
+
+	exportedState := cState.Export(height)
+	if err := exportedState.Verify(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func createTestCandidate(stateDB *State) types.Pubkey {
 	address := types.Address{}
 	pubkey := types.Pubkey{}
 	_, _ = rand.Read(pubkey[:])
 
-	stateDB.Candidates.Create(address, address, pubkey, 10)
+	stateDB.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1000)))
+	stateDB.Candidates.Create(address, address, address, pubkey, 10)
 
 	return pubkey
 }

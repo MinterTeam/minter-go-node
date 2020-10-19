@@ -2,21 +2,21 @@ package transaction
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
+	"math/big"
+	"strconv"
+
 	"github.com/MinterTeam/minter-go-node/core/check"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
-	"github.com/MinterTeam/minter-go-node/crypto/sha3"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/tendermint/tendermint/libs/kv"
-	"math/big"
+	"golang.org/x/crypto/sha3"
 )
 
 type RedeemCheckData struct {
@@ -24,36 +24,22 @@ type RedeemCheckData struct {
 	Proof    [65]byte
 }
 
-func (data RedeemCheckData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		RawCheck string `json:"raw_check"`
-		Proof    string `json:"proof"`
-	}{
-		RawCheck: base64.StdEncoding.EncodeToString(data.RawCheck),
-		Proof:    base64.StdEncoding.EncodeToString(data.Proof[:]),
-	})
-}
-
-func (data RedeemCheckData) TotalSpend(tx *Transaction, context *state.State) (TotalSpends, []Conversion, *big.Int, *Response) {
-	panic("implement me")
-}
-
-func (data RedeemCheckData) CommissionInBaseCoin(tx *Transaction) *big.Int {
-	panic("implement me")
-}
-
-func (data RedeemCheckData) BasicCheck(tx *Transaction, context *state.State) *Response {
+func (data RedeemCheckData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.RawCheck == nil {
 		return &Response{
 			Code: code.DecodeError,
-			Log:  "Incorrect tx data"}
+			Log:  "Incorrect tx data",
+			Info: EncodeError(code.NewDecodeError()),
+		}
 	}
 
 	// fixed potential problem with making too high commission for sender
 	if tx.GasPrice != 1 {
 		return &Response{
 			Code: code.TooHighGasPrice,
-			Log:  fmt.Sprintf("Gas price for check is limited to 1")}
+			Log:  "Gas price for check is limited to 1",
+			Info: EncodeError(code.NewTooHighGasPrice("1", strconv.Itoa(int(tx.GasPrice)))),
+		}
 	}
 
 	return nil
@@ -67,10 +53,16 @@ func (data RedeemCheckData) Gas() int64 {
 	return commissions.RedeemCheckTx
 }
 
-func (data RedeemCheckData) Run(tx *Transaction, context *state.State, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response {
+func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
 	sender, _ := tx.Sender()
 
-	response := data.BasicCheck(tx, context)
+	var checkState *state.CheckState
+	var isCheck bool
+	if checkState, isCheck = context.(*state.CheckState); !isCheck {
+		checkState = state.NewCheckState(context.(*state.State))
+	}
+
+	response := data.BasicCheck(tx, checkState)
 	if response != nil {
 		return *response
 	}
@@ -80,6 +72,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context *state.State, isCheck b
 		return Response{
 			Code: code.DecodeError,
 			Log:  err.Error(),
+			Info: EncodeError(code.NewDecodeError()),
 		}
 	}
 
@@ -87,10 +80,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context *state.State, isCheck b
 		return Response{
 			Code: code.WrongChainID,
 			Log:  "Wrong chain id",
-			Info: EncodeError(map[string]string{
-				"current_chain_id": fmt.Sprintf("%d", types.CurrentChainID),
-				"got_chain_id":     fmt.Sprintf("%d", decodedCheck.ChainID),
-			}),
+			Info: EncodeError(code.NewWrongChainID(fmt.Sprintf("%d", types.CurrentChainID), fmt.Sprintf("%d", tx.ChainID))),
 		}
 	}
 
@@ -98,6 +88,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context *state.State, isCheck b
 		return Response{
 			Code: code.TooLongNonce,
 			Log:  "Nonce is too big. Should be up to 16 bytes.",
+			Info: EncodeError(code.NewTooLongNonce(strconv.Itoa(len(decodedCheck.Nonce)), "16")),
 		}
 	}
 
@@ -106,26 +97,24 @@ func (data RedeemCheckData) Run(tx *Transaction, context *state.State, isCheck b
 	if err != nil {
 		return Response{
 			Code: code.DecodeError,
-			Log:  err.Error()}
-	}
-
-	if !context.Coins.Exists(decodedCheck.Coin) {
-		return Response{
-			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin not exists"),
-			Info: EncodeError(map[string]string{
-				"coin": fmt.Sprintf("%s", decodedCheck.Coin),
-			}),
+			Log:  err.Error(),
+			Info: EncodeError(code.NewDecodeError()),
 		}
 	}
 
-	if !context.Coins.Exists(decodedCheck.GasCoin) {
+	if !checkState.Coins().Exists(decodedCheck.Coin) {
 		return Response{
 			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Gas coin not exists"),
-			Info: EncodeError(map[string]string{
-				"gas_coin": fmt.Sprintf("%s", decodedCheck.GasCoin),
-			}),
+			Log:  "Coin not exists",
+			Info: EncodeError(code.NewCoinNotExists("", decodedCheck.Coin.String())),
+		}
+	}
+
+	if !checkState.Coins().Exists(decodedCheck.GasCoin) {
+		return Response{
+			Code: code.CoinNotExists,
+			Log:  "Gas coin not exists",
+			Info: EncodeError(code.NewCoinNotExists("", decodedCheck.GasCoin.String())),
 		}
 	}
 
@@ -133,27 +122,24 @@ func (data RedeemCheckData) Run(tx *Transaction, context *state.State, isCheck b
 		return Response{
 			Code: code.WrongGasCoin,
 			Log:  fmt.Sprintf("Gas coin for redeem check transaction can only be %s", decodedCheck.GasCoin),
-			Info: EncodeError(map[string]string{
-				"gas_coin": fmt.Sprintf("%s", decodedCheck.GasCoin),
-			}),
+			Info: EncodeError(code.NewWrongGasCoin(checkState.Coins().GetCoin(tx.GasCoin).GetFullSymbol(), tx.GasCoin.String(), checkState.Coins().GetCoin(decodedCheck.GasCoin).GetFullSymbol(), decodedCheck.GasCoin.String())),
 		}
 	}
 
 	if decodedCheck.DueBlock < currentBlock {
 		return Response{
 			Code: code.CheckExpired,
-			Log:  fmt.Sprintf("Check expired"),
-			Info: EncodeError(map[string]string{
-				"due_block":     fmt.Sprintf("%d", decodedCheck.DueBlock),
-				"current_block": fmt.Sprintf("%d", currentBlock),
-			}),
+			Log:  "Check expired",
+			Info: EncodeError(code.MewCheckExpired(fmt.Sprintf("%d", decodedCheck.DueBlock), fmt.Sprintf("%d", currentBlock))),
 		}
 	}
 
-	if context.Checks.IsCheckUsed(decodedCheck) {
+	if checkState.Checks().IsCheckUsed(decodedCheck) {
 		return Response{
 			Code: code.CheckUsed,
-			Log:  fmt.Sprintf("Check already redeemed")}
+			Log:  "Check already redeemed",
+			Info: EncodeError(code.NewCheckUsed()),
+		}
 	}
 
 	lockPublicKey, err := decodedCheck.LockPubKey()
@@ -162,11 +148,12 @@ func (data RedeemCheckData) Run(tx *Transaction, context *state.State, isCheck b
 		return Response{
 			Code: code.DecodeError,
 			Log:  err.Error(),
+			Info: EncodeError(code.NewDecodeError()),
 		}
 	}
 
 	var senderAddressHash types.Hash
-	hw := sha3.NewKeccak256()
+	hw := sha3.NewLegacyKeccak256()
 	_ = rlp.Encode(hw, []interface{}{
 		sender,
 	})
@@ -178,6 +165,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context *state.State, isCheck b
 		return Response{
 			Code: code.DecodeError,
 			Log:  err.Error(),
+			Info: EncodeError(code.NewDecodeError()),
 		}
 	}
 
@@ -185,79 +173,69 @@ func (data RedeemCheckData) Run(tx *Transaction, context *state.State, isCheck b
 		return Response{
 			Code: code.CheckInvalidLock,
 			Log:  "Invalid proof",
+			Info: EncodeError(code.NewCheckInvalidLock()),
 		}
 	}
 
-	commissionInBaseCoin := big.NewInt(0).Mul(big.NewInt(int64(tx.GasPrice)), big.NewInt(tx.Gas()))
-	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
+	commissionInBaseCoin := tx.CommissionInBaseCoin()
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
+	gasCoin := checkState.Coins().GetCoin(decodedCheck.GasCoin)
+	coin := checkState.Coins().GetCoin(decodedCheck.Coin)
+
 	if !decodedCheck.GasCoin.IsBaseCoin() {
-		coin := context.Coins.GetCoin(decodedCheck.GasCoin)
-		errResp := CheckReserveUnderflow(coin, commissionInBaseCoin)
+		errResp := CheckReserveUnderflow(gasCoin, commissionInBaseCoin)
 		if errResp != nil {
 			return *errResp
 		}
-		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
+		commission = formula.CalculateSaleAmount(gasCoin.Volume(), gasCoin.Reserve(), gasCoin.Crr(), commissionInBaseCoin)
 	}
 
 	if decodedCheck.Coin == decodedCheck.GasCoin {
 		totalTxCost := big.NewInt(0).Add(decodedCheck.Value, commission)
-		if context.Accounts.GetBalance(checkSender, decodedCheck.Coin).Cmp(totalTxCost) < 0 {
+		if checkState.Accounts().GetBalance(checkSender, decodedCheck.Coin).Cmp(totalTxCost) < 0 {
 			return Response{
 				Code: code.InsufficientFunds,
-				Log:  fmt.Sprintf("Insufficient funds for check issuer account: %s %s. Wanted %s %s", decodedCheck.Coin, checkSender.String(), totalTxCost.String(), decodedCheck.Coin),
-				Info: EncodeError(map[string]string{
-					"sender":        checkSender.String(),
-					"coin":          fmt.Sprintf("%s", decodedCheck.Coin),
-					"total_tx_cost": totalTxCost.String(),
-				}),
+				Log:  fmt.Sprintf("Insufficient funds for check issuer account: %s %s. Wanted %s %s", decodedCheck.Coin, checkSender.String(), totalTxCost.String(), coin.GetFullSymbol()),
+				Info: EncodeError(code.NewInsufficientFunds(sender.String(), totalTxCost.String(), coin.GetFullSymbol(), coin.ID().String())),
 			}
 		}
 	} else {
-		if context.Accounts.GetBalance(checkSender, decodedCheck.Coin).Cmp(decodedCheck.Value) < 0 {
+		if checkState.Accounts().GetBalance(checkSender, decodedCheck.Coin).Cmp(decodedCheck.Value) < 0 {
 			return Response{
 				Code: code.InsufficientFunds,
-				Log:  fmt.Sprintf("Insufficient funds for check issuer account: %s %s. Wanted %s %s", checkSender.String(), decodedCheck.Coin, decodedCheck.Value.String(), decodedCheck.Coin),
-				Info: EncodeError(map[string]string{
-					"sender": checkSender.String(),
-					"coin":   fmt.Sprintf("%s", decodedCheck.Coin),
-					"value":  decodedCheck.Value.String(),
-				}),
+				Log:  fmt.Sprintf("Insufficient funds for check issuer account: %s %s. Wanted %s %s", checkSender.String(), decodedCheck.Coin, decodedCheck.Value.String(), coin.GetFullSymbol()),
+				Info: EncodeError(code.NewInsufficientFunds(checkSender.String(), decodedCheck.Value.String(), coin.GetFullSymbol(), coin.ID().String())),
 			}
 		}
 
-		if context.Accounts.GetBalance(checkSender, decodedCheck.GasCoin).Cmp(commission) < 0 {
+		if checkState.Accounts().GetBalance(checkSender, decodedCheck.GasCoin).Cmp(commission) < 0 {
 			return Response{
 				Code: code.InsufficientFunds,
-				Log:  fmt.Sprintf("Insufficient funds for check issuer account: %s %s. Wanted %s %s", checkSender.String(), decodedCheck.GasCoin, commission.String(), decodedCheck.GasCoin),
-				Info: EncodeError(map[string]string{
-					"sender":     sender.String(),
-					"gas_coin":   fmt.Sprintf("%s", decodedCheck.GasCoin),
-					"commission": commission.String(),
-				}),
+				Log:  fmt.Sprintf("Insufficient funds for check issuer account: %s %s. Wanted %s %s", checkSender.String(), decodedCheck.GasCoin, commission.String(), gasCoin.GetFullSymbol()),
+				Info: EncodeError(code.NewInsufficientFunds(sender.String(), commission.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
 			}
 		}
 	}
 
-	if !isCheck {
-		context.Checks.UseCheck(decodedCheck)
+	if deliverState, ok := context.(*state.State); ok {
+		deliverState.Checks.UseCheck(decodedCheck)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		context.Coins.SubVolume(decodedCheck.GasCoin, commission)
-		context.Coins.SubReserve(decodedCheck.GasCoin, commissionInBaseCoin)
+		deliverState.Coins.SubVolume(decodedCheck.GasCoin, commission)
+		deliverState.Coins.SubReserve(decodedCheck.GasCoin, commissionInBaseCoin)
 
-		context.Accounts.SubBalance(checkSender, decodedCheck.GasCoin, commission)
-		context.Accounts.SubBalance(checkSender, decodedCheck.Coin, decodedCheck.Value)
-		context.Accounts.AddBalance(sender, decodedCheck.Coin, decodedCheck.Value)
-		context.Accounts.SetNonce(sender, tx.Nonce)
+		deliverState.Accounts.SubBalance(checkSender, decodedCheck.GasCoin, commission)
+		deliverState.Accounts.SubBalance(checkSender, decodedCheck.Coin, decodedCheck.Value)
+		deliverState.Accounts.AddBalance(sender, decodedCheck.Coin, decodedCheck.Value)
+		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}
 
 	tags := kv.Pairs{
 		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeRedeemCheck)}))},
 		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(checkSender[:]))},
 		kv.Pair{Key: []byte("tx.to"), Value: []byte(hex.EncodeToString(sender[:]))},
-		kv.Pair{Key: []byte("tx.coin"), Value: []byte(decodedCheck.Coin.String())},
+		kv.Pair{Key: []byte("tx.coin_id"), Value: []byte(decodedCheck.Coin.String())},
 	}
 
 	return Response{

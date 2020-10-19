@@ -10,12 +10,14 @@ import (
 	"math/big"
 )
 
+// EstimateCoinBuyResponse returns an estimate of buy coin transaction
 type EstimateCoinBuyResponse struct {
 	WillPay    string `json:"will_pay"`
 	Commission string `json:"commission"`
 }
 
-func EstimateCoinBuy(coinToSellString string, coinToBuyString string, valueToBuy *big.Int, height int) (*EstimateCoinBuyResponse, error) {
+// EstimateCoinBuy returns an estimate of buy coin transaction
+func EstimateCoinBuy(coinToSell, coinToBuy string, valueToBuy *big.Int, height int) (*EstimateCoinBuyResponse, error) {
 	cState, err := GetStateForHeight(height)
 	if err != nil {
 		return nil, err
@@ -24,56 +26,45 @@ func EstimateCoinBuy(coinToSellString string, coinToBuyString string, valueToBuy
 	cState.RLock()
 	defer cState.RUnlock()
 
-	coinToSell := types.StrToCoinSymbol(coinToSellString)
-	coinToBuy := types.StrToCoinSymbol(coinToBuyString)
-
-	var result *big.Int
-
-	if coinToSell == coinToBuy {
-		return nil, rpctypes.RPCError{Code: 400, Message: "\"From\" coin equals to \"to\" coin"}
-	}
-
-	if !cState.Coins.Exists(coinToSell) {
+	coinFrom := cState.Coins().GetCoinBySymbol(types.StrToCoinBaseSymbol(coinToSell), types.GetVersionFromSymbol(coinToSell))
+	if coinFrom == nil {
 		return nil, rpctypes.RPCError{Code: 404, Message: "Coin to sell not exists"}
 	}
 
-	if !cState.Coins.Exists(coinToBuy) {
+	coinTo := cState.Coins().GetCoinBySymbol(types.StrToCoinBaseSymbol(coinToBuy), types.GetVersionFromSymbol(coinToBuy))
+	if coinTo == nil {
 		return nil, rpctypes.RPCError{Code: 404, Message: "Coin to buy not exists"}
+	}
+
+	if coinFrom.ID() == coinTo.ID() {
+		return nil, rpctypes.RPCError{Code: 400, Message: "\"From\" coin equals to \"to\" coin"}
 	}
 
 	commissionInBaseCoin := big.NewInt(commissions.ConvertTx)
 	commissionInBaseCoin.Mul(commissionInBaseCoin, transaction.CommissionMultiplier)
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
 
-	if coinToSell != types.GetBaseCoin() {
-		coin := cState.Coins.GetCoin(coinToSell)
-
-		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
+	if !coinFrom.ID().IsBaseCoin() {
+		if coinFrom.Reserve().Cmp(commissionInBaseCoin) < 0 {
 			return nil, rpctypes.RPCError{Code: 400, Message: fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s",
-				coin.Reserve().String(), commissionInBaseCoin.String())}
+				coinFrom.Reserve().String(), commissionInBaseCoin.String())}
 		}
-
-		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
+		commission = formula.CalculateSaleAmount(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), commissionInBaseCoin)
 	}
 
+	var result *big.Int
+
 	switch {
-	case coinToSell == types.GetBaseCoin():
-		coin := cState.Coins.GetCoin(coinToBuy)
-		result = formula.CalculatePurchaseAmount(coin.Volume(), coin.Reserve(), coin.Crr(), valueToBuy)
-	case coinToBuy == types.GetBaseCoin():
-		coin := cState.Coins.GetCoin(coinToSell)
-
-		if coin.Reserve().Cmp(valueToBuy) < 0 {
+	case coinTo.ID().IsBaseCoin():
+		if coinFrom.Reserve().Cmp(valueToBuy) < 0 {
 			return nil, rpctypes.RPCError{Code: 400, Message: fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s",
-				coin.Reserve().String(), valueToBuy.String())}
+				coinFrom.Reserve().String(), valueToBuy.String())}
 		}
-
-		result = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), valueToBuy)
+		result = formula.CalculateSaleAmount(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), valueToBuy)
+	case coinFrom.ID().IsBaseCoin():
+		result = formula.CalculatePurchaseAmount(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), valueToBuy)
 	default:
-		coinFrom := cState.Coins.GetCoin(coinToSell)
-		coinTo := cState.Coins.GetCoin(coinToBuy)
 		baseCoinNeeded := formula.CalculatePurchaseAmount(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), valueToBuy)
-
 		if coinFrom.Reserve().Cmp(baseCoinNeeded) < 0 {
 			return nil, rpctypes.RPCError{Code: 400, Message: fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s",
 				coinFrom.Reserve().String(), baseCoinNeeded.String())}

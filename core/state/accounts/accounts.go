@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/state/bus"
 	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/tree"
-	"github.com/MinterTeam/minter-go-node/upgrades"
+
 	"math/big"
 	"sort"
 	"sync"
@@ -18,17 +17,31 @@ const mainPrefix = byte('a')
 const coinsPrefix = byte('c')
 const balancePrefix = byte('b')
 
+type RAccounts interface {
+	Export(state *types.AppState)
+	GetAccount(address types.Address) *Model
+	GetNonce(address types.Address) uint64
+	GetBalance(address types.Address, coin types.CoinID) *big.Int
+	GetBalances(address types.Address) []Balance
+	ExistsMultisig(msigAddress types.Address) bool
+}
+
 type Accounts struct {
 	list  map[types.Address]*Model
 	dirty map[types.Address]struct{}
 
-	iavl tree.Tree
+	iavl tree.MTree
 	bus  *bus.Bus
 
 	lock sync.RWMutex
 }
 
-func NewAccounts(stateBus *bus.Bus, iavl tree.Tree) (*Accounts, error) {
+type Balance struct {
+	Coin  bus.Coin
+	Value *big.Int
+}
+
+func NewAccounts(stateBus *bus.Bus, iavl tree.MTree) (*Accounts, error) {
 	accounts := &Accounts{iavl: iavl, bus: stateBus, list: map[types.Address]*Model{}, dirty: map[types.Address]struct{}{}}
 	accounts.bus.SetAccounts(NewBus(accounts))
 
@@ -82,7 +95,7 @@ func (a *Accounts) Commit() error {
 				path := []byte{mainPrefix}
 				path = append(path, address[:]...)
 				path = append(path, balancePrefix)
-				path = append(path, coin[:]...)
+				path = append(path, coin.Bytes()...)
 
 				balance := account.getBalance(coin)
 				if balance.Cmp(big.NewInt(0)) == 0 {
@@ -92,7 +105,7 @@ func (a *Accounts) Commit() error {
 				}
 			}
 
-			account.dirtyBalances = map[types.CoinSymbol]struct{}{}
+			account.dirtyBalances = map[types.CoinID]struct{}{}
 		}
 	}
 
@@ -112,12 +125,12 @@ func (a *Accounts) getOrderedDirtyAccounts() []types.Address {
 	return keys
 }
 
-func (a *Accounts) AddBalance(address types.Address, coin types.CoinSymbol, amount *big.Int) {
+func (a *Accounts) AddBalance(address types.Address, coin types.CoinID, amount *big.Int) {
 	balance := a.GetBalance(address, coin)
 	a.SetBalance(address, coin, big.NewInt(0).Add(balance, amount))
 }
 
-func (a *Accounts) GetBalance(address types.Address, coin types.CoinSymbol) *big.Int {
+func (a *Accounts) GetBalance(address types.Address, coin types.CoinID) *big.Int {
 	account := a.getOrNew(address)
 	if !account.hasCoin(coin) {
 		return big.NewInt(0)
@@ -129,7 +142,7 @@ func (a *Accounts) GetBalance(address types.Address, coin types.CoinSymbol) *big
 		path := []byte{mainPrefix}
 		path = append(path, address[:]...)
 		path = append(path, balancePrefix)
-		path = append(path, coin[:]...)
+		path = append(path, coin.Bytes()...)
 
 		_, enc := a.iavl.Get(path)
 		if len(enc) != 0 {
@@ -142,12 +155,12 @@ func (a *Accounts) GetBalance(address types.Address, coin types.CoinSymbol) *big
 	return big.NewInt(0).Set(account.balances[coin])
 }
 
-func (a *Accounts) SubBalance(address types.Address, coin types.CoinSymbol, amount *big.Int) {
+func (a *Accounts) SubBalance(address types.Address, coin types.CoinID, amount *big.Int) {
 	balance := big.NewInt(0).Sub(a.GetBalance(address, coin), amount)
 	a.SetBalance(address, coin, balance)
 }
 
-func (a *Accounts) SetBalance(address types.Address, coin types.CoinSymbol, amount *big.Int) {
+func (a *Accounts) SetBalance(address types.Address, coin types.CoinID, amount *big.Int) {
 	account := a.getOrNew(address)
 	oldBalance := a.GetBalance(address, coin)
 	a.bus.Checker().AddCoin(coin, big.NewInt(0).Sub(amount, oldBalance))
@@ -177,35 +190,44 @@ func (a *Accounts) ExistsMultisig(msigAddress types.Address) bool {
 	return false
 }
 
-func (a *Accounts) CreateMultisig(weights []uint, addresses []types.Address, threshold uint, height uint64) types.Address {
-	msig := Multisig{
+func (a *Accounts) CreateMultisig(weights []uint32, addresses []types.Address, threshold uint32, address types.Address) types.Address {
+	account := a.get(address)
+	if account == nil {
+		account = &Model{
+			Nonce:         0,
+			address:       address,
+			coins:         []types.CoinID{},
+			balances:      map[types.CoinID]*big.Int{},
+			markDirty:     a.markDirty,
+			isNew:         true,
+			dirtyBalances: map[types.CoinID]struct{}{},
+		}
+	}
+
+	account.MultisigData = Multisig{
 		Weights:   weights,
 		Threshold: threshold,
 		Addresses: addresses,
 	}
-	address := msig.Address()
+	account.markDirty(account.address)
+	account.isDirty = true
+	a.setToMap(address, account)
 
+	return address
+}
+
+func (a *Accounts) EditMultisig(threshold uint32, weights []uint32, addresses []types.Address, address types.Address) types.Address {
 	account := a.get(address)
 
-	if account == nil {
-		account = &Model{
-			Nonce:         0,
-			MultisigData:  msig,
-			address:       address,
-			coins:         []types.CoinSymbol{},
-			balances:      map[types.CoinSymbol]*big.Int{},
-			markDirty:     a.markDirty,
-			dirtyBalances: map[types.CoinSymbol]struct{}{},
-		}
+	msig := Multisig{
+		Threshold: threshold,
+		Weights:   weights,
+		Addresses: addresses,
 	}
 
 	account.MultisigData = msig
 	account.markDirty(account.address)
-
-	if height > upgrades.UpgradeBlock1 {
-		account.isDirty = true
-	}
-
+	account.isDirty = true
 	a.setToMap(address, account)
 
 	return address
@@ -229,9 +251,9 @@ func (a *Accounts) get(address types.Address) *Model {
 	}
 
 	account.address = address
-	account.balances = map[types.CoinSymbol]*big.Int{}
+	account.balances = map[types.CoinID]*big.Int{}
 	account.markDirty = a.markDirty
-	account.dirtyBalances = map[types.CoinSymbol]struct{}{}
+	account.dirtyBalances = map[types.CoinID]struct{}{}
 
 	// load coins
 	path = []byte{mainPrefix}
@@ -239,7 +261,7 @@ func (a *Accounts) get(address types.Address) *Model {
 	path = append(path, coinsPrefix)
 	_, enc = a.iavl.Get(path)
 	if len(enc) != 0 {
-		var coins []types.CoinSymbol
+		var coins []types.CoinID
 		if err := rlp.DecodeBytes(enc, &coins); err != nil {
 			panic(fmt.Sprintf("failed to decode coins list at address %s: %s", address.String(), err))
 		}
@@ -257,10 +279,10 @@ func (a *Accounts) getOrNew(address types.Address) *Model {
 		account = &Model{
 			Nonce:         0,
 			address:       address,
-			coins:         []types.CoinSymbol{},
-			balances:      map[types.CoinSymbol]*big.Int{},
+			coins:         []types.CoinID{},
+			balances:      map[types.CoinID]*big.Int{},
 			markDirty:     a.markDirty,
-			dirtyBalances: map[types.CoinSymbol]struct{}{},
+			dirtyBalances: map[types.CoinID]struct{}{},
 			isNew:         true,
 		}
 		a.setToMap(address, account)
@@ -275,25 +297,18 @@ func (a *Accounts) GetNonce(address types.Address) uint64 {
 	return account.Nonce
 }
 
-func (a *Accounts) GetBalances(address types.Address) map[types.CoinSymbol]*big.Int {
+func (a *Accounts) GetBalances(address types.Address) []Balance {
 	account := a.getOrNew(address)
 
-	balances := make(map[types.CoinSymbol]*big.Int, len(account.coins))
-	for _, coin := range account.coins {
-		balances[coin] = a.GetBalance(address, coin)
+	balances := make([]Balance, len(account.coins))
+	for key, id := range account.coins {
+		balances[key] = Balance{
+			Coin:  *a.bus.Coins().GetCoin(id),
+			Value: a.GetBalance(address, id),
+		}
 	}
 
 	return balances
-}
-
-func (a *Accounts) DeleteCoin(address types.Address, symbol types.CoinSymbol) {
-	balance := a.GetBalance(address, symbol)
-	coin := a.bus.Coins().GetCoin(symbol)
-
-	ret := formula.CalculateSaleReturn(coin.Volume, coin.Reserve, 100, balance)
-
-	a.AddBalance(address, types.GetBaseCoin(), ret)
-	a.SetBalance(address, symbol, big.NewInt(0))
 }
 
 func (a *Accounts) markDirty(addr types.Address) {
@@ -313,16 +328,16 @@ func (a *Accounts) Export(state *types.AppState) {
 			account := a.get(address)
 
 			var balance []types.Balance
-			for coin, value := range a.GetBalances(account.address) {
+			for _, b := range a.GetBalances(account.address) {
 				balance = append(balance, types.Balance{
-					Coin:  coin,
-					Value: value.String(),
+					Coin:  uint64(b.Coin.ID),
+					Value: b.Value.String(),
 				})
 			}
 
 			// sort balances by coin symbol
 			sort.SliceStable(balance, func(i, j int) bool {
-				return bytes.Compare(balance[i].Coin.Bytes(), balance[j].Coin.Bytes()) == 1
+				return bytes.Compare(types.CoinID(balance[i].Coin).Bytes(), types.CoinID(balance[j].Coin).Bytes()) == 1
 			})
 
 			acc := types.Account{
@@ -332,9 +347,13 @@ func (a *Accounts) Export(state *types.AppState) {
 			}
 
 			if account.IsMultisig() {
+				var weights []uint64
+				for _, weight := range account.MultisigData.Weights {
+					weights = append(weights, uint64(weight))
+				}
 				acc.MultisigData = &types.Multisig{
-					Weights:   account.MultisigData.Weights,
-					Threshold: account.MultisigData.Threshold,
+					Weights:   weights,
+					Threshold: uint64(account.MultisigData.Threshold),
 					Addresses: account.MultisigData.Addresses,
 				}
 			}

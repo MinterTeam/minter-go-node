@@ -5,8 +5,19 @@ import (
 )
 
 type AddressResponse struct {
-	Balance          map[string]string `json:"balance"`
-	TransactionCount uint64            `json:"transaction_count"`
+	Balance          []BalanceItem `json:"balances"`
+	TransactionCount uint64        `json:"transaction_count"`
+}
+
+type BalanceItem struct {
+	CoinID uint32 `json:"coin_id"`
+	Symbol string `json:"symbol"`
+	Value  string `json:"value"`
+}
+
+type Coin struct {
+	ID     uint32 `json:"id"`
+	Symbol string `json:"symbol"`
 }
 
 func Address(address types.Address, height int) (*AddressResponse, error) {
@@ -18,19 +29,32 @@ func Address(address types.Address, height int) (*AddressResponse, error) {
 	cState.RLock()
 	defer cState.RUnlock()
 
+	balances := cState.Accounts().GetBalances(address)
+
 	response := AddressResponse{
-		Balance:          make(map[string]string),
-		TransactionCount: cState.Accounts.GetNonce(address),
+		Balance:          make([]BalanceItem, len(balances)),
+		TransactionCount: cState.Accounts().GetNonce(address),
 	}
 
-	balances := cState.Accounts.GetBalances(address)
+	isBaseCoinExists := false
+	for k, b := range balances {
+		response.Balance[k] = BalanceItem{
+			CoinID: b.Coin.ID.Uint32(),
+			Symbol: b.Coin.GetFullSymbol(),
+			Value:  b.Value.String(),
+		}
 
-	for k, v := range balances {
-		response.Balance[k.String()] = v.String()
+		if b.Coin.ID.IsBaseCoin() {
+			isBaseCoinExists = true
+		}
 	}
 
-	if _, exists := response.Balance[types.GetBaseCoin().String()]; !exists {
-		response.Balance[types.GetBaseCoin().String()] = "0"
+	if !isBaseCoinExists {
+		response.Balance = append(response.Balance, BalanceItem{
+			CoinID: types.GetBaseCoinID().Uint32(),
+			Symbol: types.GetBaseCoin().String(),
+			Value:  "0",
+		})
 	}
 
 	return &response, nil

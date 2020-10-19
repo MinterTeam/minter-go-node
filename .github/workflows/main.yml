@@ -34,7 +34,7 @@ jobs:
           echo ::set-env name=DOCKER_REPO::$(if [[ "$SECRET_DOCKER_HUB_REPO" == "" ]]; then if [[ "$SECRET_DOCKER_HUB_USER" == "" ]]; then echo "testbuild"; else echo "$SECRET_DOCKER_HUB_USER"; fi; else echo "$SECRET_DOCKER_HUB_REPO"; fi)
 
       - name: Docker build
-        run: docker build -t $DOCKER_REPO/$DOCKER_IMAGE:$VERSION .
+        run: docker build -t $DOCKER_REPO/$DOCKER_IMAGE:$VERSION . -f ./Dockerfile-ci
 
       - name: Start docker container
         run: docker run -d --name $CONTAINER_NAME -p $API_RUN_PORT:8841 $DOCKER_REPO/$DOCKER_IMAGE:$VERSION

@@ -6,6 +6,5 @@ import (
 )
 
 type Accounts interface {
-	DeleteCoin(types.Address, types.CoinSymbol)
-	AddBalance(types.Address, types.CoinSymbol, *big.Int)
+	AddBalance(types.Address, types.CoinID, *big.Int)
 }

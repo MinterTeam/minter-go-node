@@ -2,13 +2,14 @@ package transaction
 
 import (
 	"github.com/MinterTeam/minter-go-node/core/code"
+	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/state/candidates"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/core/validators"
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
-	"github.com/MinterTeam/minter-go-node/upgrades"
+
 	"math/big"
 	"sync"
 	"testing"
@@ -20,7 +21,7 @@ func TestDeclareCandidacyTx(t *testing.T) {
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
@@ -29,7 +30,7 @@ func TestDeclareCandidacyTx(t *testing.T) {
 	var publicKey types.Pubkey
 	copy(publicKey[:], publicKeyBytes)
 
-	commission := uint(10)
+	commission := uint32(10)
 
 	data := DeclareCandidacyData{
 		Address:    addr,
@@ -65,8 +66,7 @@ func TestDeclareCandidacyTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
-
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
@@ -91,6 +91,10 @@ func TestDeclareCandidacyTx(t *testing.T) {
 		t.Fatalf("Reward address is not correct")
 	}
 
+	if candidate.ControlAddress != addr {
+		t.Fatalf("Control address is not correct")
+	}
+
 	if candidate.GetTotalBipStake() != nil && candidate.GetTotalBipStake().Cmp(types.Big0) != 0 {
 		t.Fatalf("Total stake is not correct")
 	}
@@ -102,6 +106,8 @@ func TestDeclareCandidacyTx(t *testing.T) {
 	if candidate.Status != candidates.CandidateStatusOffline {
 		t.Fatalf("Incorrect candidate status")
 	}
+
+	checkState(t, cState)
 }
 
 func TestDeclareCandidacyTxOverflow(t *testing.T) {
@@ -110,16 +116,16 @@ func TestDeclareCandidacyTxOverflow(t *testing.T) {
 
 	for i := 0; i < maxCandidatesCount; i++ {
 		pubkey := types.Pubkey{byte(i)}
-		cState.Candidates.Create(types.Address{}, types.Address{}, pubkey, 10)
-		cState.Candidates.Delegate(types.Address{}, pubkey, types.GetBaseCoin(), helpers.BipToPip(big.NewInt(10)), helpers.BipToPip(big.NewInt(10)))
+		cState.Candidates.Create(types.Address{}, types.Address{}, types.Address{}, pubkey, 10)
+		cState.Candidates.Delegate(types.Address{}, pubkey, types.GetBaseCoinID(), helpers.BipToPip(big.NewInt(10)), helpers.BipToPip(big.NewInt(10)))
 	}
 
-	cState.Candidates.RecalculateStakes(upgrades.UpgradeBlock3)
+	cState.Candidates.RecalculateStakes(109000)
 
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 
-	coin := types.GetBaseCoin()
+	coin := types.GetBaseCoinID()
 
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
@@ -131,7 +137,7 @@ func TestDeclareCandidacyTxOverflow(t *testing.T) {
 	data := DeclareCandidacyData{
 		Address:    addr,
 		PubKey:     publicKey,
-		Commission: uint(10),
+		Commission: uint32(10),
 		Coin:       coin,
 		Stake:      helpers.BipToPip(big.NewInt(10)),
 	}
@@ -162,9 +168,481 @@ func TestDeclareCandidacyTxOverflow(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, false, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != code.TooLowStake {
 		t.Fatalf("Response code is not %d. Got %d", code.TooLowStake, response.Code)
 	}
+
+	checkState(t, cState)
+}
+
+func TestDeclareCandidacyTxWithBlockPybKey(t *testing.T) {
+	cState := getState()
+
+	pkey, _ := crypto.GenerateKey()
+	publicKeyBytes := crypto.FromECDSAPub(&pkey.PublicKey)[:32]
+	var publicKey types.Pubkey
+	copy(publicKey[:], publicKeyBytes)
+
+	cState.Candidates.Create(types.Address{}, types.Address{}, types.Address{}, publicKey, 10)
+	pkeyNew, _ := crypto.GenerateKey()
+	publicKeyNewBytes := crypto.FromECDSAPub(&pkeyNew.PublicKey)[:32]
+	var publicKeyNew types.Pubkey
+	copy(publicKeyNew[:], publicKeyNewBytes)
+
+	cState.Candidates.ChangePubKey(publicKey, publicKeyNew)
+
+	privateKey, _ := crypto.GenerateKey()
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+
+	coin := types.GetBaseCoinID()
+
+	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
+
+	commission := uint32(10)
+
+	data := DeclareCandidacyData{
+		Address:    addr,
+		PubKey:     publicKey,
+		Commission: commission,
+		Coin:       coin,
+		Stake:      helpers.BipToPip(big.NewInt(100)),
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := Transaction{
+		Nonce:         1,
+		GasPrice:      1,
+		ChainID:       types.CurrentChainID,
+		GasCoin:       coin,
+		Type:          TypeDeclareCandidacy,
+		Data:          encodedData,
+		SignatureType: SigTypeSingle,
+	}
+
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+
+	if response.Code == 0 {
+		t.Fatal("Response code is not 1. Want error")
+	}
+
+	if cState.Candidates.GetCandidate(publicKey) != nil {
+		t.Fatalf("Candidate found with old pub key")
+	}
+
+	candidate := cState.Candidates.GetCandidate(publicKeyNew)
+
+	if candidate == nil {
+		t.Fatalf("Candidate not found")
+	}
+
+	if candidate.OwnerAddress == addr {
+		t.Fatalf("OwnerAddress has changed")
+	}
+
+	if candidate.RewardAddress == addr {
+		t.Fatalf("RewardAddress has changed")
+	}
+
+	if candidate.ControlAddress == addr {
+		t.Fatalf("ControlAddress has changed")
+	}
+
+	checkState(t, cState)
+}
+
+func TestDeclareCandidacyToNonExistCoin(t *testing.T) {
+	cState := getState()
+
+	privateKey, _ := crypto.GenerateKey()
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+
+	coin := types.GetBaseCoinID()
+
+	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
+
+	pkey, _ := crypto.GenerateKey()
+	publicKeyBytes := crypto.FromECDSAPub(&pkey.PublicKey)[:32]
+	var publicKey types.Pubkey
+	copy(publicKey[:], publicKeyBytes)
+
+	commission := uint32(10)
+
+	data := DeclareCandidacyData{
+		Address:    addr,
+		PubKey:     publicKey,
+		Commission: commission,
+		Coin:       5,
+		Stake:      helpers.BipToPip(big.NewInt(100)),
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := Transaction{
+		Nonce:         1,
+		GasPrice:      1,
+		ChainID:       types.CurrentChainID,
+		GasCoin:       coin,
+		Type:          TypeDeclareCandidacy,
+		Data:          encodedData,
+		SignatureType: SigTypeSingle,
+	}
+
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.CoinNotExists {
+		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
+	}
+
+	checkState(t, cState)
+}
+
+func TestDeclareCandidacyToExistCandidate(t *testing.T) {
+	cState := getState()
+
+	privateKey, _ := crypto.GenerateKey()
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+
+	coin := types.GetBaseCoinID()
+
+	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
+
+	pkey, _ := crypto.GenerateKey()
+	publicKeyBytes := crypto.FromECDSAPub(&pkey.PublicKey)[:32]
+	var publicKey types.Pubkey
+	copy(publicKey[:], publicKeyBytes)
+
+	cState.Candidates.Create(addr, addr, addr, publicKey, uint32(10))
+
+	commission := uint32(10)
+
+	data := DeclareCandidacyData{
+		Address:    addr,
+		PubKey:     publicKey,
+		Commission: commission,
+		Coin:       coin,
+		Stake:      helpers.BipToPip(big.NewInt(100)),
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := Transaction{
+		Nonce:         1,
+		GasPrice:      1,
+		ChainID:       types.CurrentChainID,
+		GasCoin:       coin,
+		Type:          TypeDeclareCandidacy,
+		Data:          encodedData,
+		SignatureType: SigTypeSingle,
+	}
+
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.CandidateExists {
+		t.Fatalf("Response code is not %d. Error %s", code.CandidateExists, response.Log)
+	}
+
+	checkState(t, cState)
+}
+
+func TestDeclareCandidacyToDecodeError(t *testing.T) {
+	cState := getState()
+
+	privateKey, _ := crypto.GenerateKey()
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+
+	coin := types.GetBaseCoinID()
+
+	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
+
+	pkey, _ := crypto.GenerateKey()
+	publicKeyBytes := crypto.FromECDSAPub(&pkey.PublicKey)[:32]
+	var publicKey types.Pubkey
+	copy(publicKey[:], publicKeyBytes)
+
+	commission := uint32(10)
+
+	data := DeclareCandidacyData{
+		Address:    addr,
+		PubKey:     publicKey,
+		Commission: commission,
+		Coin:       5,
+		Stake:      nil,
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := Transaction{
+		Nonce:         1,
+		GasPrice:      1,
+		ChainID:       types.CurrentChainID,
+		GasCoin:       coin,
+		Type:          TypeDeclareCandidacy,
+		Data:          encodedData,
+		SignatureType: SigTypeSingle,
+	}
+
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	response := data.Run(&tx, state.NewCheckState(cState), nil, 0)
+	if response.Code != code.DecodeError {
+		t.Fatalf("Response code is not %d. Error %s", code.DecodeError, response.Log)
+	}
+
+	checkState(t, cState)
+}
+
+func TestDeclareCandidacyToWrongCommission(t *testing.T) {
+	cState := getState()
+
+	privateKey, _ := crypto.GenerateKey()
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+
+	coin := types.GetBaseCoinID()
+
+	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
+
+	pkey, _ := crypto.GenerateKey()
+	publicKeyBytes := crypto.FromECDSAPub(&pkey.PublicKey)[:32]
+	var publicKey types.Pubkey
+	copy(publicKey[:], publicKeyBytes)
+
+	data := DeclareCandidacyData{
+		Address:    addr,
+		PubKey:     publicKey,
+		Commission: maxCommission + 1,
+		Coin:       coin,
+		Stake:      helpers.BipToPip(big.NewInt(100)),
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := Transaction{
+		Nonce:         1,
+		GasPrice:      1,
+		ChainID:       types.CurrentChainID,
+		GasCoin:       coin,
+		Type:          TypeDeclareCandidacy,
+		Data:          encodedData,
+		SignatureType: SigTypeSingle,
+	}
+
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.WrongCommission {
+		t.Fatalf("Response code is not %d. Error %s", code.WrongCommission, response.Log)
+	}
+
+	checkState(t, cState)
+}
+
+func TestDeclareCandidacyToInsufficientFunds(t *testing.T) {
+	cState := getState()
+	privateKey, _ := crypto.GenerateKey()
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+	coin := types.GetBaseCoinID()
+	stake := big.NewInt(1e18)
+
+	pkey, _ := crypto.GenerateKey()
+	publicKeyBytes := crypto.FromECDSAPub(&pkey.PublicKey)[:32]
+	var publicKey types.Pubkey
+	copy(publicKey[:], publicKeyBytes)
+
+	data := DeclareCandidacyData{
+		Address:    addr,
+		PubKey:     publicKey,
+		Commission: uint32(10),
+		Coin:       coin,
+		Stake:      stake,
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := Transaction{
+		Nonce:         1,
+		GasPrice:      1,
+		ChainID:       types.CurrentChainID,
+		GasCoin:       coin,
+		Type:          TypeDeclareCandidacy,
+		Data:          encodedData,
+		SignatureType: SigTypeSingle,
+	}
+
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.InsufficientFunds {
+		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
+	}
+
+	checkState(t, cState)
+
+	cState.Accounts.AddBalance(addr, coin, stake)
+	cState.Commit()
+
+	encodedData, err = rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx.Data = encodedData
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err = rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.InsufficientFunds {
+		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
+	}
+
+	cState.Accounts.SetBalance(addr, coin, new(big.Int).Mul(big.NewInt(1e18), big.NewInt(10)))
+	cState.Commit()
+
+	encodedData, err = rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx.Data = encodedData
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err = rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.InsufficientFunds {
+		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
+	}
+
+	checkState(t, cState)
+}
+
+func TestDeclareCandidacyTxToGasCoinReserveUnderflow(t *testing.T) {
+	cState := getState()
+	privateKey, _ := crypto.GenerateKey()
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+	coin := createTestCoin(cState)
+	stake := big.NewInt(1e18)
+
+	cState.Coins.AddVolume(coin, helpers.BipToPip(big.NewInt(1000000)))
+	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
+	cState.Coins.SubReserve(coin, helpers.BipToPip(big.NewInt(90000)))
+	cState.Commit()
+
+	pkey, _ := crypto.GenerateKey()
+	publicKeyBytes := crypto.FromECDSAPub(&pkey.PublicKey)[:32]
+	var publicKey types.Pubkey
+	copy(publicKey[:], publicKeyBytes)
+
+	data := DeclareCandidacyData{
+		Address:    addr,
+		PubKey:     publicKey,
+		Commission: uint32(10),
+		Coin:       coin,
+		Stake:      stake,
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := Transaction{
+		Nonce:         1,
+		GasPrice:      1,
+		ChainID:       types.CurrentChainID,
+		GasCoin:       coin,
+		Type:          TypeDeclareCandidacy,
+		Data:          encodedData,
+		SignatureType: SigTypeSingle,
+	}
+
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.CoinReserveUnderflow {
+		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveUnderflow, response.Log)
+	}
+
+	checkState(t, cState)
 }

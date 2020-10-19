@@ -3,14 +3,13 @@ package frozenfunds
 import (
 	"encoding/binary"
 	"fmt"
-	eventsdb "github.com/MinterTeam/events-db"
+	eventsdb "github.com/MinterTeam/minter-go-node/core/events"
 	"github.com/MinterTeam/minter-go-node/core/state/bus"
 	"github.com/MinterTeam/minter-go-node/core/state/candidates"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/tree"
-	"github.com/tendermint/tendermint/crypto/ed25519"
 	"math/big"
 	"sort"
 	"sync"
@@ -18,17 +17,22 @@ import (
 
 const mainPrefix = byte('f')
 
+type RFrozenFunds interface {
+	Export(state *types.AppState, height uint64)
+	GetFrozenFunds(height uint64) *Model
+}
+
 type FrozenFunds struct {
 	list  map[uint64]*Model
 	dirty map[uint64]interface{}
 
 	bus  *bus.Bus
-	iavl tree.Tree
+	iavl tree.MTree
 
 	lock sync.RWMutex
 }
 
-func NewFrozenFunds(stateBus *bus.Bus, iavl tree.Tree) (*FrozenFunds, error) {
+func NewFrozenFunds(stateBus *bus.Bus, iavl tree.MTree) (*FrozenFunds, error) {
 	frozenfunds := &FrozenFunds{bus: stateBus, iavl: iavl, list: map[uint64]*Model{}, dirty: map[uint64]interface{}{}}
 	frozenfunds.bus.SetFrozenFunds(NewBus(frozenfunds))
 
@@ -42,15 +46,25 @@ func (f *FrozenFunds) Commit() error {
 
 		f.lock.Lock()
 		delete(f.dirty, height)
+		delete(f.list, height)
 		f.lock.Unlock()
 
-		data, err := rlp.EncodeToBytes(ff)
-		if err != nil {
-			return fmt.Errorf("can't encode object at %d: %v", height, err)
-		}
-
 		path := getPath(height)
-		f.iavl.Set(path, data)
+
+		if ff.deleted {
+			f.lock.Lock()
+			delete(f.list, height)
+			f.lock.Unlock()
+
+			f.iavl.Remove(path)
+		} else {
+			data, err := rlp.EncodeToBytes(ff)
+			if err != nil {
+				return fmt.Errorf("can't encode object at %d: %v", height, err)
+			}
+
+			f.iavl.Set(path, data)
+		}
 	}
 
 	return nil
@@ -60,7 +74,7 @@ func (f *FrozenFunds) GetFrozenFunds(height uint64) *Model {
 	return f.get(height)
 }
 
-func (f *FrozenFunds) PunishFrozenFundsWithAddress(fromHeight uint64, toHeight uint64, tmAddress types.TmAddress) {
+func (f *FrozenFunds) PunishFrozenFundsWithID(fromHeight uint64, toHeight uint64, candidateID uint32) {
 	for cBlock := fromHeight; cBlock <= toHeight; cBlock++ {
 		ff := f.get(cBlock)
 		if ff == nil {
@@ -69,13 +83,7 @@ func (f *FrozenFunds) PunishFrozenFundsWithAddress(fromHeight uint64, toHeight u
 
 		newList := make([]Item, len(ff.List))
 		for i, item := range ff.List {
-			var pubkey ed25519.PubKeyEd25519
-			copy(pubkey[:], item.CandidateKey[:])
-
-			var address [20]byte
-			copy(address[:], pubkey.Address().Bytes())
-
-			if tmAddress == address {
+			if item.CandidateID == candidateID {
 				newValue := big.NewInt(0).Set(item.Value)
 				newValue.Mul(newValue, big.NewInt(95))
 				newValue.Div(newValue, big.NewInt(100))
@@ -95,10 +103,10 @@ func (f *FrozenFunds) PunishFrozenFundsWithAddress(fromHeight uint64, toHeight u
 
 				f.bus.Checker().AddCoin(item.Coin, slashed)
 
-				f.bus.Events().AddEvent(uint32(fromHeight), eventsdb.SlashEvent{
+				f.bus.Events().AddEvent(uint32(fromHeight), &eventsdb.SlashEvent{
 					Address:         item.Address,
 					Amount:          slashed.String(),
-					Coin:            item.Coin,
+					Coin:            uint64(item.Coin),
 					ValidatorPubKey: *item.CandidateKey,
 				})
 
@@ -167,8 +175,8 @@ func (f *FrozenFunds) getOrderedDirty() []uint64 {
 	return keys
 }
 
-func (f *FrozenFunds) AddFund(height uint64, address types.Address, pubkey types.Pubkey, coin types.CoinSymbol, value *big.Int) {
-	f.GetOrNew(height).addFund(address, pubkey, coin, value)
+func (f *FrozenFunds) AddFund(height uint64, address types.Address, pubkey types.Pubkey, candidateId uint32, coin types.CoinID, value *big.Int) {
+	f.GetOrNew(height).addFund(address, pubkey, candidateId, coin, value)
 	f.bus.Checker().AddCoin(coin, value)
 }
 
@@ -197,7 +205,8 @@ func (f *FrozenFunds) Export(state *types.AppState, height uint64) {
 				Height:       i,
 				Address:      frozenFund.Address,
 				CandidateKey: frozenFund.CandidateKey,
-				Coin:         frozenFund.Coin,
+				CandidateID:  uint64(frozenFund.CandidateID),
+				Coin:         uint64(frozenFund.Coin),
 				Value:        frozenFund.Value.String(),
 			})
 		}

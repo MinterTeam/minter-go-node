@@ -13,10 +13,6 @@ func NewBus(accounts *Accounts) *Bus {
 	return &Bus{accounts: accounts}
 }
 
-func (b *Bus) DeleteCoin(address types.Address, coin types.CoinSymbol) {
-	b.accounts.DeleteCoin(address, coin)
-}
-
-func (b *Bus) AddBalance(address types.Address, coin types.CoinSymbol, value *big.Int) {
+func (b *Bus) AddBalance(address types.Address, coin types.CoinID, value *big.Int) {
 	b.accounts.AddBalance(address, coin, value)
 }

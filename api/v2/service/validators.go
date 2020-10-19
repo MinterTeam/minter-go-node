@@ -2,22 +2,26 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-func (s *Service) Validators(_ context.Context, req *pb.ValidatorsRequest) (*pb.ValidatorsResponse, error) {
-	height := req.Height
+// Validators returns list of active validators.
+func (s *Service) Validators(ctx context.Context, req *pb.ValidatorsRequest) (*pb.ValidatorsResponse, error) {
+	height := int64(req.Height)
 	if height == 0 {
 		height = int64(s.blockchain.Height())
 	}
 
-	tmVals, err := s.client.Validators(&height, int(req.Page), int(req.PerPage))
+	tmVals, err := s.client.Validators(&height, 1, 100)
 	if err != nil {
-		return new(pb.ValidatorsResponse), status.Error(codes.FailedPrecondition, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+		return nil, timeoutStatus.Err()
 	}
 
 	responseValidators := make([]*pb.ValidatorsResponse_Result, 0, len(tmVals.Validators))
@@ -26,7 +30,7 @@ func (s *Service) Validators(_ context.Context, req *pb.ValidatorsRequest) (*pb.
 		copy(pk[:], val.PubKey.Bytes()[5:])
 		responseValidators = append(responseValidators, &pb.ValidatorsResponse_Result{
 			PublicKey:   pk.String(),
-			VotingPower: fmt.Sprintf("%d", val.VotingPower),
+			VotingPower: uint64(val.VotingPower),
 		})
 	}
 	return &pb.ValidatorsResponse{Validators: responseValidators}, nil

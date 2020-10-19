@@ -1,44 +1,52 @@
 package service
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	compact_db "github.com/MinterTeam/events-db"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
-	"github.com/golang/protobuf/jsonpb"
 	_struct "github.com/golang/protobuf/ptypes/struct"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
-func (s *Service) Events(_ context.Context, req *pb.EventsRequest) (*pb.EventsResponse, error) {
-	events := s.blockchain.GetEventsDB().LoadEvents(req.Height)
-	resultEvents := make([]*pb.EventsResponse_Event, 0, len(events))
+// Events returns events at given height.
+func (s *Service) Events(ctx context.Context, req *pb.EventsRequest) (*pb.EventsResponse, error) {
+	currentHeight := s.blockchain.Height()
+	if req.Height > currentHeight {
+		return nil, status.Errorf(codes.NotFound, "wanted to load target %d but only found up to %d", req.Height, currentHeight)
+	}
+
+	height := uint32(req.Height)
+	events := s.blockchain.GetEventsDB().LoadEvents(height)
+	resultEvents := make([]*_struct.Struct, 0, len(events))
 	for _, event := range events {
-		byteData, err := json.Marshal(event)
+
+		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+			return nil, timeoutStatus.Err()
+		}
+
+		var find = true
+		for _, s := range req.Search {
+			if event.AddressString() == s || event.ValidatorPubKeyString() == s {
+				find = true
+				break
+			}
+			find = false
+		}
+		if !find {
+			continue
+		}
+
+		marshalJSON, err := s.cdc.MarshalJSON(event)
 		if err != nil {
-			return nil, err
+			return nil, status.Errorf(codes.Internal, err.Error())
 		}
 
-		var bb bytes.Buffer
-		bb.Write(byteData)
-		data := &_struct.Struct{Fields: make(map[string]*_struct.Value)}
-		if err := (&jsonpb.Unmarshaler{}).Unmarshal(&bb, data); err != nil {
-			return nil, err
+		data, err := encodeToStruct(marshalJSON)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
 		}
 
-		var t string
-		switch event.(type) {
-		case *compact_db.RewardEvent:
-			t = "minter/RewardEvent"
-		case *compact_db.SlashEvent:
-			t = "minter/SlashEvent"
-		case *compact_db.UnbondEvent:
-			t = "minter/UnbondEvent"
-		default:
-			t = "Undefined Type"
-		}
-
-		resultEvents = append(resultEvents, &pb.EventsResponse_Event{Type: t, Value: data})
+		resultEvents = append(resultEvents, data)
 	}
 	return &pb.EventsResponse{
 		Events: resultEvents,

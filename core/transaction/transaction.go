@@ -10,29 +10,37 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/state/coins"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
-	"github.com/MinterTeam/minter-go-node/crypto/sha3"
 	"github.com/MinterTeam/minter-go-node/rlp"
+	"golang.org/x/crypto/sha3"
 	"math/big"
 )
 
+// TxType of transaction is determined by a single byte.
 type TxType byte
+
 type SigType byte
 
 const (
-	TypeSend                TxType = 0x01
-	TypeSellCoin            TxType = 0x02
-	TypeSellAllCoin         TxType = 0x03
-	TypeBuyCoin             TxType = 0x04
-	TypeCreateCoin          TxType = 0x05
-	TypeDeclareCandidacy    TxType = 0x06
-	TypeDelegate            TxType = 0x07
-	TypeUnbond              TxType = 0x08
-	TypeRedeemCheck         TxType = 0x09
-	TypeSetCandidateOnline  TxType = 0x0A
-	TypeSetCandidateOffline TxType = 0x0B
-	TypeCreateMultisig      TxType = 0x0C
-	TypeMultisend           TxType = 0x0D
-	TypeEditCandidate       TxType = 0x0E
+	TypeSend                   TxType = 0x01
+	TypeSellCoin               TxType = 0x02
+	TypeSellAllCoin            TxType = 0x03
+	TypeBuyCoin                TxType = 0x04
+	TypeCreateCoin             TxType = 0x05
+	TypeDeclareCandidacy       TxType = 0x06
+	TypeDelegate               TxType = 0x07
+	TypeUnbond                 TxType = 0x08
+	TypeRedeemCheck            TxType = 0x09
+	TypeSetCandidateOnline     TxType = 0x0A
+	TypeSetCandidateOffline    TxType = 0x0B
+	TypeCreateMultisig         TxType = 0x0C
+	TypeMultisend              TxType = 0x0D
+	TypeEditCandidate          TxType = 0x0E
+	TypeSetHaltBlock           TxType = 0x0F
+	TypeRecreateCoin           TxType = 0x10
+	TypeEditCoinOwner          TxType = 0x11
+	TypeEditMultisig           TxType = 0x12
+	TypePriceVote              TxType = 0x13
+	TypeEditCandidatePublicKey TxType = 0x14
 
 	SigTypeSingle SigType = 0x01
 	SigTypeMulti  SigType = 0x02
@@ -42,11 +50,15 @@ var (
 	ErrInvalidSig = errors.New("invalid transaction v, r, s values")
 )
 
+var (
+	CommissionMultiplier = big.NewInt(10e14)
+)
+
 type Transaction struct {
 	Nonce         uint64
 	ChainID       types.ChainID
 	GasPrice      uint32
-	GasCoin       types.CoinSymbol
+	GasCoin       types.CoinID
 	Type          TxType
 	Data          RawData
 	Payload       []byte
@@ -75,7 +87,7 @@ type RawData []byte
 
 type TotalSpends []TotalSpend
 
-func (tss *TotalSpends) Add(coin types.CoinSymbol, value *big.Int) {
+func (tss *TotalSpends) Add(coin types.CoinID, value *big.Int) {
 	for i, t := range *tss {
 		if t.Coin == coin {
 			(*tss)[i].Value.Add((*tss)[i].Value, big.NewInt(0).Set(value))
@@ -90,15 +102,15 @@ func (tss *TotalSpends) Add(coin types.CoinSymbol, value *big.Int) {
 }
 
 type TotalSpend struct {
-	Coin  types.CoinSymbol
+	Coin  types.CoinID
 	Value *big.Int
 }
 
 type Conversion struct {
-	FromCoin    types.CoinSymbol
+	FromCoin    types.CoinID
 	FromAmount  *big.Int
 	FromReserve *big.Int
-	ToCoin      types.CoinSymbol
+	ToCoin      types.CoinID
 	ToAmount    *big.Int
 	ToReserve   *big.Int
 }
@@ -106,9 +118,7 @@ type Conversion struct {
 type Data interface {
 	String() string
 	Gas() int64
-	TotalSpend(tx *Transaction, context *state.State) (TotalSpends, []Conversion, *big.Int, *Response)
-	BasicCheck(tx *Transaction, context *state.State) *Response
-	Run(tx *Transaction, context *state.State, isCheck bool, rewardPool *big.Int, currentBlock uint64) Response
+	Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response
 }
 
 func (tx *Transaction) Serialize() ([]byte, error) {
@@ -283,7 +293,7 @@ func RecoverPlain(sighash types.Hash, R, S, Vb *big.Int) (types.Address, error) 
 }
 
 func rlpHash(x interface{}) (h types.Hash) {
-	hw := sha3.NewKeccak256()
+	hw := sha3.NewLegacyKeccak256()
 	err := rlp.Encode(hw, x)
 	if err != nil {
 		panic(err)
@@ -292,38 +302,30 @@ func rlpHash(x interface{}) (h types.Hash) {
 	return h
 }
 
-func CheckForCoinSupplyOverflow(current *big.Int, delta *big.Int, max *big.Int) *Response {
-	total := big.NewInt(0).Set(current)
+func CheckForCoinSupplyOverflow(coin *coins.Model, delta *big.Int) *Response {
+	total := big.NewInt(0).Set(coin.Volume())
 	total.Add(total, delta)
 
-	if total.Cmp(max) != -1 {
+	if total.Cmp(coin.MaxSupply()) != -1 {
 		return &Response{
 			Code: code.CoinSupplyOverflow,
 			Log:  "coin supply overflow",
-			Info: EncodeError(map[string]string{
-				"current": total.String(),
-				"delta":   delta.String(),
-				"max":     max.String(),
-			}),
+			Info: EncodeError(code.NewCoinSupplyOverflow(delta.String(), coin.Volume().String(), total.String(), coin.MaxSupply().String(), coin.GetFullSymbol(), coin.ID().String())),
 		}
 	}
 
 	return nil
 }
 
-func CheckReserveUnderflow(m *coins.Model, delta *big.Int) *Response {
-	total := big.NewInt(0).Sub(m.Reserve(), delta)
+func CheckReserveUnderflow(coin *coins.Model, delta *big.Int) *Response {
+	total := big.NewInt(0).Sub(coin.Reserve(), delta)
 
 	if total.Cmp(minCoinReserve) == -1 {
 		min := big.NewInt(0).Add(minCoinReserve, delta)
 		return &Response{
 			Code: code.CoinReserveUnderflow,
-			Log:  fmt.Sprintf("coin %s reserve is too small (%s, required at least %s)", m.Symbol().String(), m.Reserve().String(), min.String()),
-			Info: EncodeError(map[string]string{
-				"coin":             m.Symbol().String(),
-				"coin_reserve":     m.Reserve().String(),
-				"min_coin_reserve": min.String(),
-			}),
+			Log:  fmt.Sprintf("coin %s reserve is too small (%s, required at least %s)", coin.GetFullSymbol(), coin.Reserve().String(), min.String()),
+			Info: EncodeError(code.NewCoinReserveUnderflow(delta.String(), coin.Reserve().String(), total.String(), minCoinReserve.String(), coin.GetFullSymbol(), coin.ID().String())),
 		}
 	}
 

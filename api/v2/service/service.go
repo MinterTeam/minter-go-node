@@ -1,18 +1,17 @@
 package service
 
 import (
-	"bytes"
+	"context"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/minter"
-	"github.com/MinterTeam/minter-go-node/core/state"
-	"github.com/golang/protobuf/jsonpb"
-	_struct "github.com/golang/protobuf/ptypes/struct"
 	"github.com/tendermint/go-amino"
 	tmNode "github.com/tendermint/tendermint/node"
-	rpc "github.com/tendermint/tendermint/rpc/client"
+	rpc "github.com/tendermint/tendermint/rpc/client/local"
 	"google.golang.org/grpc/status"
+	"time"
 )
 
+// Service is gRPC implementation ApiServiceServer
 type Service struct {
 	cdc        *amino.Codec
 	blockchain *minter.Blockchain
@@ -22,20 +21,21 @@ type Service struct {
 	version    string
 }
 
+// NewService create gRPC server implementation
 func NewService(cdc *amino.Codec, blockchain *minter.Blockchain, client *rpc.Local, node *tmNode.Node, minterCfg *config.Config, version string) *Service {
-	return &Service{cdc: cdc, blockchain: blockchain, client: client, minterCfg: minterCfg, version: version, tmNode: node}
+	return &Service{
+		cdc:        cdc,
+		blockchain: blockchain,
+		client:     client,
+		minterCfg:  minterCfg,
+		version:    version,
+		tmNode:     node,
+	}
 }
 
-func (s *Service) getStateForHeight(height int32) (*state.State, error) {
-	if height > 0 {
-		cState, err := s.blockchain.GetStateForHeight(uint64(height))
-		if err != nil {
-			return nil, err
-		}
-		return cState, nil
-	}
-
-	return s.blockchain.CurrentState(), nil
+// TimeoutDuration gRPC
+func (s *Service) TimeoutDuration() time.Duration {
+	return s.minterCfg.APIv2TimeoutDuration
 }
 
 func (s *Service) createError(statusErr *status.Status, data string) error {
@@ -43,14 +43,8 @@ func (s *Service) createError(statusErr *status.Status, data string) error {
 		return statusErr.Err()
 	}
 
-	var bb bytes.Buffer
-	if _, err := bb.Write([]byte(data)); err != nil {
-		s.client.Logger.Error(err.Error())
-		return statusErr.Err()
-	}
-
-	detailsMap := &_struct.Struct{Fields: make(map[string]*_struct.Value)}
-	if err := (&jsonpb.Unmarshaler{}).Unmarshal(&bb, detailsMap); err != nil {
+	detailsMap, err := encodeToStruct([]byte(data))
+	if err != nil {
 		s.client.Logger.Error(err.Error())
 		return statusErr.Err()
 	}
@@ -62,4 +56,13 @@ func (s *Service) createError(statusErr *status.Status, data string) error {
 	}
 
 	return withDetails.Err()
+}
+
+func (s *Service) checkTimeout(ctx context.Context) *status.Status {
+	select {
+	case <-ctx.Done():
+		return status.FromContextError(ctx.Err())
+	default:
+		return nil
+	}
 }
