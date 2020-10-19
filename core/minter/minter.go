@@ -278,9 +278,15 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 		app.stateDeliver.Validators.PayRewards(height)
 	}
 
+	hasChangedPublicKeys := false
+	if app.stateDeliver.Candidates.IsChangedPublicKeys() {
+		app.stateDeliver.Candidates.ResetIsChangedPublicKeys()
+		hasChangedPublicKeys = true
+	}
+
 	// update validators
 	var updates []abciTypes.ValidatorUpdate
-	if req.Height%120 == 0 || hasDroppedValidators {
+	if req.Height%120 == 0 || hasDroppedValidators || hasChangedPublicKeys {
 		updates = app.updateValidators(height)
 	}
 
