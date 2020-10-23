@@ -101,6 +101,9 @@ func (mc *ManagerConsole) Cli(ctx context.Context) {
 			)
 			if err := mc.Execute(strings.Fields(t)); err != nil {
 				_, _ = fmt.Fprintln(os.Stderr, err)
+				// if s, ok := status.FromError(err); ok && s.Code() == codes.Unavailable {
+				// 	return
+				// }
 			}
 			history = append(history, t)
 		}
@@ -213,6 +216,7 @@ func dashboardCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 		recvCh := make(chan *pb.DashboardResponse)
 
 		go func() { errCh <- ui.Run() }()
+		defer ui.Quit()
 		go func() {
 			for {
 				recv, err := response.Recv()

@@ -1,9 +1,11 @@
 package cmd
 
 import (
+	"fmt"
 	"github.com/MinterTeam/minter-go-node/cli/service"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/spf13/cobra"
+	"os"
 	"strings"
 )
 
@@ -17,7 +19,14 @@ var ManagerCommand = &cobra.Command{
 		if err != nil {
 			return nil
 		}
-		return console.Execute(newArgs)
+
+		err = console.Execute(newArgs)
+		if err != nil {
+			_, _ = fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+
+		return nil
 	},
 }
 

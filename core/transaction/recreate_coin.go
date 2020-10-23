@@ -170,7 +170,7 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 			}
 		}
 	}
-
+	oldCoinID := checkState.Coins().GetCoinBySymbol(data.Symbol, 0).ID()
 	var coinId = checkState.App().GetNextCoinID()
 	if deliverState, ok := context.(*state.State); ok {
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
@@ -202,6 +202,9 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
 		kv.Pair{Key: []byte("tx.coin_symbol"), Value: []byte(data.Symbol.String())},
 		kv.Pair{Key: []byte("tx.coin_id"), Value: []byte(coinId.String())},
+		kv.Pair{Key: []byte("tx.old_coin_symbol"), Value: []byte(checkState.Coins().GetCoin(oldCoinID).GetFullSymbol())},
+		kv.Pair{Key: []byte("tx.old_coin_id"), Value: []byte(oldCoinID.String())},
+		kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 	}
 
 	return Response{

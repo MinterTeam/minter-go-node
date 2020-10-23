@@ -90,6 +90,7 @@ func (data EditCandidateData) Run(tx *Transaction, context state.Interface, rewa
 	tags := kv.Pairs{
 		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeEditCandidate)}))},
 		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
+		kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 	}
 
 	return Response{

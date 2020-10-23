@@ -236,6 +236,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(checkSender[:]))},
 		kv.Pair{Key: []byte("tx.to"), Value: []byte(hex.EncodeToString(sender[:]))},
 		kv.Pair{Key: []byte("tx.coin_id"), Value: []byte(decodedCheck.Coin.String())},
+		kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 	}
 
 	return Response{

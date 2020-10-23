@@ -214,6 +214,7 @@ func (data CreateCoinData) Run(tx *Transaction, context state.Interface, rewardP
 		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
 		kv.Pair{Key: []byte("tx.coin_symbol"), Value: []byte(data.Symbol.String())},
 		kv.Pair{Key: []byte("tx.coin_id"), Value: []byte(coinId.String())},
+		kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 	}
 
 	return Response{

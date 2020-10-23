@@ -23,9 +23,9 @@ func (data EditCoinOwnerData) BasicCheck(tx *Transaction, context *state.CheckSt
 	info := context.Coins().GetSymbolInfo(data.Symbol)
 	if info == nil {
 		return &Response{
-			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin %s not exists", data.Symbol),
-			Info: EncodeError(code.NewCoinNotExists(data.Symbol.String(), "")),
+			Code: code.IsNotOwnerOfCoin,
+			Log:  fmt.Sprintf("Sender is not owner of coin"),
+			Info: EncodeError(code.NewIsNotOwnerOfCoin(data.Symbol.String(), nil)),
 		}
 	}
 
@@ -100,6 +100,7 @@ func (data EditCoinOwnerData) Run(tx *Transaction, context state.Interface, rewa
 		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeEditCoinOwner)}))},
 		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
 		kv.Pair{Key: []byte("tx.coin_symbol"), Value: []byte(data.Symbol.String())},
+		kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 	}
 
 	return Response{

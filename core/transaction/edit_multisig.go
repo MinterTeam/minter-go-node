@@ -147,6 +147,7 @@ func (data EditMultisigData) Run(tx *Transaction, context state.Interface, rewar
 	tags := kv.Pairs{
 		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeEditMultisig)}))},
 		kv.Pair{Key: []byte("tx.from"), Value: address},
+		kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 	}
 
 	return Response{

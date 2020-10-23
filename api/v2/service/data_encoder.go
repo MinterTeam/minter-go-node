@@ -174,7 +174,7 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 	case *transaction.SetHaltBlockData:
 		m = &pb.SetHaltBlockData{
 			PubKey: d.PubKey.String(),
-			Height: uint64(d.Height),
+			Height: d.Height,
 		}
 	case *transaction.SetCandidateOnData:
 		m = &pb.SetCandidateOnData{

@@ -65,10 +65,7 @@ func (m *Manager) Dashboard(_ *empty.Empty, stream pb.ManagerService_DashboardSe
 			}
 			pubKey := fmt.Sprintf("Mp%x", resultStatus.ValidatorInfo.PubKey.Bytes()[5:])
 
-			state, err := m.blockchain.GetStateForHeight(0)
-			if err != nil {
-				return status.Error(codes.NotFound, err.Error())
-			}
+			state := m.blockchain.CurrentState()
 
 			var address types.TmAddress
 			copy(address[:], resultStatus.ValidatorInfo.Address)

@@ -33,9 +33,14 @@ func NewService(cdc *amino.Codec, blockchain *minter.Blockchain, client *rpc.Loc
 	}
 }
 
-// TimeoutDuration gRPC
+// TimeoutDuration returns timeout gRPC request
 func (s *Service) TimeoutDuration() time.Duration {
 	return s.minterCfg.APIv2TimeoutDuration
+}
+
+// Version returns version app
+func (s *Service) Version() string {
+	return s.version
 }
 
 func (s *Service) createError(statusErr *status.Status, data string) error {
