@@ -371,7 +371,6 @@ func (data SellCoinData) Run(tx *Transaction, context state.Interface, rewardPoo
 		kv.Pair{Key: []byte("tx.coin_to_buy"), Value: []byte(data.CoinToBuy.String())},
 		kv.Pair{Key: []byte("tx.coin_to_sell"), Value: []byte(data.CoinToSell.String())},
 		kv.Pair{Key: []byte("tx.return"), Value: []byte(value.String())},
-		// kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())}, //todo
 	}
 
 	return Response{

@@ -84,7 +84,7 @@ func Run(srv *service.Service, addrGRPC, addrAPI string, logger log.Logger) erro
 				EmitUnpopulated: true,
 			},
 			UnmarshalOptions: protojson.UnmarshalOptions{
-				DiscardUnknown: true, // todo
+				DiscardUnknown: true,
 			},
 		}),
 	)
@@ -100,9 +100,9 @@ func Run(srv *service.Service, addrGRPC, addrAPI string, logger log.Logger) erro
 	mux := http.NewServeMux()
 	openapi := "/v2/openapi-ui/"
 	_ = serveOpenAPI(openapi, mux)
-	// if strings.Contains(srv.Version(), "testnet") { // todo: uncomment to prod
-	gwmux.Handle("GET", runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"test", "block"}, "")), registerTestHandler(context.Background(), gwmux, srv))
-	// }
+	if strings.Contains(srv.Version(), "testnet") {
+		gwmux.Handle("GET", runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"test", "block"}, "")), registerTestHandler(context.Background(), gwmux, srv))
+	}
 	mux.HandleFunc("/v2/", func(writer http.ResponseWriter, request *http.Request) {
 		if request.URL.Path == "/v2/" {
 			http.Redirect(writer, request, openapi, 302)
