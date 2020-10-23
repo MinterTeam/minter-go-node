@@ -3,7 +3,7 @@ module github.com/MinterTeam/minter-go-node
 go 1.15
 
 require (
-	github.com/MinterTeam/node-grpc-gateway v1.2.1-0.20201019202423-e7447b20bc29
+	github.com/MinterTeam/node-grpc-gateway v1.2.1-0.20201023121032-6cbb7eded1a8
 	github.com/btcsuite/btcd v0.20.1-beta
 	github.com/c-bata/go-prompt v0.2.3
 	github.com/go-kit/kit v0.10.0

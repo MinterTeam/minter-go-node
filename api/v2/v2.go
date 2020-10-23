@@ -8,7 +8,6 @@ import (
 	gw "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	_ "github.com/MinterTeam/node-grpc-gateway/statik"
 	kit_log "github.com/go-kit/kit/log"
-	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/gorilla/handlers"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -26,6 +25,7 @@ import (
 	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 	_struct "google.golang.org/protobuf/types/known/structpb"
 	"io"
 	"mime"
@@ -63,7 +63,6 @@ func Run(srv *service.Service, addrGRPC, addrAPI string, logger log.Logger) erro
 			unaryTimeoutInterceptor(srv.TimeoutDuration()),
 		),
 	)
-	runtime.WithErrorHandler(httpError)
 
 	gw.RegisterApiServiceServer(grpcServer, srv)
 	grpc_prometheus.Register(grpcServer)
@@ -78,9 +77,11 @@ func Run(srv *service.Service, addrGRPC, addrAPI string, logger log.Logger) erro
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	gwmux := runtime.NewServeMux(
+		runtime.WithErrorHandler(httpError),
 		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
 			MarshalOptions: protojson.MarshalOptions{
-				UseProtoNames: true,
+				UseProtoNames:   true,
+				EmitUnpopulated: true,
 			},
 			UnmarshalOptions: protojson.UnmarshalOptions{
 				DiscardUnknown: true, // todo
@@ -95,11 +96,12 @@ func Run(srv *service.Service, addrGRPC, addrAPI string, logger log.Logger) erro
 	if err != nil {
 		return err
 	}
+
 	mux := http.NewServeMux()
 	openapi := "/v2/openapi-ui/"
 	_ = serveOpenAPI(openapi, mux)
 	// if strings.Contains(srv.Version(), "testnet") { // todo: uncomment to prod
-	gwmux.Handle("GET", runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"test", "block"}, "", runtime.AssumeColonVerbOpt(true))), registerTestHandler(context.Background(), gwmux, srv))
+	gwmux.Handle("GET", runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"test", "block"}, "")), registerTestHandler(context.Background(), gwmux, srv))
 	// }
 	mux.HandleFunc("/v2/", func(writer http.ResponseWriter, request *http.Request) {
 		if request.URL.Path == "/v2/" {
@@ -240,7 +242,7 @@ func registerTestHandler(ctx context.Context, mux *runtime.ServeMux, client *ser
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/api_pb.ApiService/TestBlock")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
