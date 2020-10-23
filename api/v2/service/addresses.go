@@ -27,7 +27,7 @@ func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.
 		cState.Unlock()
 	}
 
-	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+	if timeoutStatus := s.checkTimeout(ctx, "LoadCandidates", "LoadStakes"); timeoutStatus != nil {
 		return nil, timeoutStatus.Err()
 	}
 
@@ -74,15 +74,16 @@ func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.
 		}
 
 		if req.Delegated {
+			if timeoutStatus := s.checkTimeout(ctx, "Delegated"); timeoutStatus != nil {
+				return nil, timeoutStatus.Err()
+			}
 			var userDelegatedStakesGroupByCoin = map[types.CoinID]*stakeUser{}
 			allCandidates := cState.Candidates().GetCandidates()
-			for _, candidate := range allCandidates {
-
-				if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+			for i, candidate := range allCandidates {
+				userStakes := userStakes(candidate.PubKey, address, cState)
+				if timeoutStatus := s.checkTimeout(ctx, fmt.Sprintf("userStakes of %s [%d]", candidate.PubKey, i)); timeoutStatus != nil {
 					return nil, timeoutStatus.Err()
 				}
-
-				userStakes := userStakes(candidate.PubKey, address, cState)
 				for coin, userStake := range userStakes {
 					stake, ok := userDelegatedStakesGroupByCoin[coin]
 					if !ok {

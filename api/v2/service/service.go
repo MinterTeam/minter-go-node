@@ -8,7 +8,9 @@ import (
 	"github.com/tendermint/go-amino"
 	tmNode "github.com/tendermint/tendermint/node"
 	rpc "github.com/tendermint/tendermint/rpc/client/local"
+	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/status"
+	"strconv"
 	"time"
 )
 
@@ -65,10 +67,35 @@ func (s *Service) createError(statusErr *status.Status, data string) error {
 	return withDetails.Err()
 }
 
-func (s *Service) checkTimeout(ctx context.Context) *status.Status {
+func (s *Service) checkTimeout(ctx context.Context, operations ...string) *status.Status {
 	select {
 	case <-ctx.Done():
-		return status.FromContextError(ctx.Err())
+		timeoutResponse := status.FromContextError(ctx.Err())
+		if len(operations) == 0 {
+			return timeoutResponse
+		}
+
+		detailsMap := map[string]string{}
+		for i, msg := range operations {
+			postfix := ""
+			if i > 0 {
+				postfix = strconv.Itoa(i)
+			}
+			detailsMap["operation"+postfix] = msg
+		}
+		details, err := toStruct(detailsMap)
+		if err != nil {
+			grpclog.Infof("Failed to write response timeout details: %v", err)
+			return timeoutResponse
+		}
+
+		timeoutResponseWithDetails, err := timeoutResponse.WithDetails(details)
+		if err != nil {
+			grpclog.Infof("Failed to write response timeout details: %v", err)
+			return timeoutResponse
+		}
+
+		return timeoutResponseWithDetails
 	default:
 		return nil
 	}
