@@ -239,6 +239,9 @@ type BaseConfig struct {
 	// API v2 Timeout
 	APIv2TimeoutDuration time.Duration `mapstructure:"api_v2_timeout_duration"`
 
+	// WebSocket connection duration
+	WSConnectionDuration time.Duration `mapstructure:"ws_connection_duration"`
+
 	ValidatorMode bool `mapstructure:"validator_mode"`
 
 	KeepLastStates int64 `mapstructure:"keep_last_states"`
@@ -272,6 +275,7 @@ func DefaultBaseConfig() BaseConfig {
 		GRPCListenAddress:       "tcp://0.0.0.0:8842",
 		APIv2ListenAddress:      "tcp://0.0.0.0:8843",
 		APIv2TimeoutDuration:    10 * time.Second,
+		WSConnectionDuration:    15 * time.Second,
 		ValidatorMode:           false,
 		KeepLastStates:          120,
 		StateCacheSize:          1000000,
