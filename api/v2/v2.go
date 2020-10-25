@@ -96,6 +96,8 @@ func Run(srv *service.Service, addrGRPC, addrAPI string, logger log.Logger) erro
 	}
 
 	mux := http.NewServeMux()
+	mux.Handle("/v2/custom/", http.StripPrefix("/v2/custom", srv.CustomHandlers()))
+
 	openapi := "/v2/openapi-ui/"
 	_ = serveOpenAPI(openapi, mux)
 	mux.HandleFunc("/v2/", func(writer http.ResponseWriter, request *http.Request) {
@@ -104,11 +106,12 @@ func Run(srv *service.Service, addrGRPC, addrAPI string, logger log.Logger) erro
 			return
 		}
 		if !strings.Contains(srv.Version(), "testnet") && request.URL.Path == "/v2/test/block" {
-			http.NotFound(writer, request)
+			http.Error(writer, "only testnet mode", http.StatusMethodNotAllowed)
 			return
 		}
 		http.StripPrefix("/v2", handlers.CompressHandler(allowCORS(wsproxy.WebsocketProxy(gwmux)))).ServeHTTP(writer, request)
 	})
+
 	group.Go(func() error {
 		return http.ListenAndServe(addrAPI, mux)
 	})

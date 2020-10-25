@@ -5,11 +5,13 @@ import (
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/minter"
 	"github.com/MinterTeam/node-grpc-gateway/api_pb"
+	"github.com/gin-gonic/gin"
 	"github.com/tendermint/go-amino"
 	tmNode "github.com/tendermint/tendermint/node"
 	rpc "github.com/tendermint/tendermint/rpc/client/local"
 	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/status"
+	"net/http"
 	"strconv"
 	"time"
 )
@@ -35,6 +37,19 @@ func NewService(cdc *amino.Codec, blockchain *minter.Blockchain, client *rpc.Loc
 		version:    version,
 		tmNode:     node,
 	}
+}
+
+func (s *Service) customExample(c *gin.Context) {
+	c.JSON(200, gin.H{
+		"message": "pong",
+	})
+}
+
+// CustomHandlers return custom http methods
+func (s *Service) CustomHandlers() http.Handler {
+	r := gin.Default()
+	r.GET("/ping", s.customExample)
+	return r
 }
 
 // TimeoutDuration returns timeout gRPC request
