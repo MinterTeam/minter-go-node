@@ -99,7 +99,7 @@ func Run(srv *service.Service, addrGRPC, addrAPI string, logger log.Logger) erro
 	openapi := "/v2/openapi-ui/"
 	_ = serveOpenAPI(openapi, mux)
 	mux.HandleFunc("/v2/", func(writer http.ResponseWriter, request *http.Request) {
-		if request.URL.Path == "/v2/" || request.URL.Path == "/" {
+		if request.URL.Path == "/v2/" {
 			http.Redirect(writer, request, openapi, 302)
 			return
 		}
