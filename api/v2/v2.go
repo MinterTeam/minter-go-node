@@ -8,7 +8,6 @@ import (
 	gw "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	_ "github.com/MinterTeam/node-grpc-gateway/statik"
 	kit_log "github.com/go-kit/kit/log"
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/gorilla/handlers"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/kit"
@@ -25,7 +24,6 @@ import (
 	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/proto"
 	_struct "google.golang.org/protobuf/types/known/structpb"
 	"io"
 	"mime"
@@ -100,12 +98,13 @@ func Run(srv *service.Service, addrGRPC, addrAPI string, logger log.Logger) erro
 	mux := http.NewServeMux()
 	openapi := "/v2/openapi-ui/"
 	_ = serveOpenAPI(openapi, mux)
-	if strings.Contains(srv.Version(), "testnet") {
-		gwmux.Handle("GET", runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"test", "block"}, "")), registerTestHandler(context.Background(), gwmux, srv))
-	}
 	mux.HandleFunc("/v2/", func(writer http.ResponseWriter, request *http.Request) {
-		if request.URL.Path == "/v2/" {
+		if request.URL.Path == "/v2/" || request.URL.Path == "/" {
 			http.Redirect(writer, request, openapi, 302)
+			return
+		}
+		if !strings.Contains(srv.Version(), "testnet") && request.URL.Path == "/v2/test/block" {
+			http.NotFound(writer, request)
 			return
 		}
 		http.StripPrefix("/v2", handlers.CompressHandler(allowCORS(wsproxy.WebsocketProxy(gwmux)))).ServeHTTP(writer, request)
@@ -235,35 +234,4 @@ type kitLogger struct {
 func (l *kitLogger) Log(keyvals ...interface{}) error {
 	l.Info("API", keyvals...)
 	return nil
-}
-
-func registerTestHandler(ctx context.Context, mux *runtime.ServeMux, client *service.Service) runtime.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/api_pb.ApiService/TestBlock")
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-
-		resp, md, err := requestTestBlock(rctx, inboundMarshaler, client, req, pathParams)
-		ctx = runtime.NewServerMetadataContext(ctx, md)
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-
-		runtime.ForwardResponseMessage(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-	}
-}
-
-func requestTestBlock(ctx context.Context, _ runtime.Marshaler, server *service.Service, _ *http.Request, _ map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq empty.Empty
-	var metadata runtime.ServerMetadata
-
-	msg, err := server.TestBlock(ctx, &protoReq)
-	return msg, metadata, err
-
 }
