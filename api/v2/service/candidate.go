@@ -15,9 +15,10 @@ import (
 
 // Candidate returns candidate’s info by provided public_key. It will respond with 404 code if candidate is not found.
 func (s *Service) Candidate(ctx context.Context, req *pb.CandidateRequest) (*pb.CandidateResponse, error) {
-	if len(req.PublicKey) < 3 {
+	if !strings.HasPrefix(req.PublicKey, "Mp") {
 		return nil, status.Error(codes.InvalidArgument, "invalid public_key")
 	}
+
 	decodeString, err := hex.DecodeString(req.PublicKey[2:])
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
