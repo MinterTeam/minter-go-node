@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"math/big"
+	"strings"
 )
 
 // Candidate returns candidate’s info by provided public_key. It will respond with 404 code if candidate is not found.
@@ -59,6 +60,10 @@ func makeResponseCandidate(state *state.CheckState, c *candidates.Candidate, inc
 		PublicKey:      c.PubKey.String(),
 		Commission:     uint64(c.Commission),
 		Status:         uint64(c.Status),
+	}
+
+	if state.Validators().GetByPublicKey(c.PubKey) != nil {
+		candidate.Status = 3
 	}
 
 	if includeStakes {
