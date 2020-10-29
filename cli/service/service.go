@@ -229,24 +229,22 @@ func (m *Manager) PruneBlocks(req *pb.PruneBlocksRequest, stream pb.ManagerServi
 		return status.Errorf(codes.FailedPrecondition, "cannot delete latest saved version (%d)", current)
 	}
 
-	min := req.FromHeight
-	total := req.ToHeight - min
+	total := req.ToHeight - req.FromHeight
 
-	from := req.FromHeight
 	last := make(chan struct{})
-
+	from := req.FromHeight
 	for i := req.FromHeight; i <= req.ToHeight; i++ {
 		if i == req.ToHeight {
 			close(last)
 		}
 		select {
 		case <-stream.Context().Done():
-			return status.Error(codes.Canceled, stream.Context().Err().Error())
+			return status.FromContextError(stream.Context().Err()).Err()
 		case <-last:
 			_ = m.blockchain.DeleteStateVersions(from, i)
 			if err := stream.Send(&pb.PruneBlocksResponse{
 				Total:   total,
-				Current: i - min,
+				Current: i - req.FromHeight,
 			}); err != nil {
 				return err
 			}
@@ -258,7 +256,7 @@ func (m *Manager) PruneBlocks(req *pb.PruneBlocksRequest, stream pb.ManagerServi
 			_ = m.blockchain.DeleteStateVersions(from, i)
 			if err := stream.Send(&pb.PruneBlocksResponse{
 				Total:   total,
-				Current: i - min,
+				Current: i - req.FromHeight,
 			}); err != nil {
 				return err
 			}

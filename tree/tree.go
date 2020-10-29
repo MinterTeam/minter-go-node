@@ -162,7 +162,7 @@ func (t *mutableTree) DeleteVersionsIfExists(from, to int64) error {
 	defer t.lock.Unlock()
 
 	var existsVersions = make([]int64, 0, to-from)
-	for i := from; i < to; i++ {
+	for i := from; i <= to; i++ {
 		if t.tree.VersionExists(i) {
 			existsVersions = append(existsVersions, i)
 		}
