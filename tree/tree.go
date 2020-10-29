@@ -12,13 +12,13 @@ type ReadOnlyTree interface {
 	Version() int64
 	Hash() []byte
 	Iterate(fn func(key []byte, value []byte) bool) (stopped bool)
+	AvailableVersions() []int
+	KeepLastHeight() int64
 }
 
 // MTree mutable tree, used for txs delivery
 type MTree interface {
 	ReadOnlyTree
-	KeepLastHeight() int64
-	AvailableVersions() []int
 	Set(key, value []byte) bool
 	Remove(key []byte) ([]byte, bool)
 	LoadVersion(targetVersion int64) (int64, error)
