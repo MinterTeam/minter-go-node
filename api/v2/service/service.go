@@ -47,7 +47,7 @@ func (s *Service) customExample(c *gin.Context) {
 
 // CustomHandlers return custom http methods
 func (s *Service) CustomHandlers() http.Handler {
-	r := gin.New()
+	r := gin.Default()
 	r.GET("/ping", s.customExample)
 	return r
 }
