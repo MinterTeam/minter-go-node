@@ -21,7 +21,7 @@ type RHalts interface {
 
 type HaltBlocks struct {
 	list  map[uint64]*Model
-	dirty map[uint64]interface{}
+	dirty map[uint64]struct{}
 
 	bus  *bus.Bus
 	iavl tree.MTree
@@ -34,7 +34,7 @@ func NewHalts(stateBus *bus.Bus, iavl tree.MTree) (*HaltBlocks, error) {
 		bus:   stateBus,
 		iavl:  iavl,
 		list:  map[uint64]*Model{},
-		dirty: map[uint64]interface{}{},
+		dirty: map[uint64]struct{}{},
 	}
 
 	halts.bus.SetHaltBlocks(NewBus(halts))
