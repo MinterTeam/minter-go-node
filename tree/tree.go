@@ -40,22 +40,22 @@ func NewMutableTree(height uint64, db dbm.DB, cacheSize int) (MTree, error) {
 		return nil, err
 	}
 
+	m := &mutableTree{
+		tree: tree,
+	}
 	if height == 0 {
-		return &mutableTree{
-			tree: tree,
-		}, nil
+		return m, nil
 	}
 
-	if _, err := tree.LoadVersionForOverwriting(int64(height)); err != nil {
+	if _, err := m.tree.LoadVersionForOverwriting(int64(height)); err != nil {
 		return nil, err
 	}
 
-	return &mutableTree{
-		tree: tree,
-	}, nil
+	return m, nil
 }
 
 type mutableTree struct {
+	db   dbm.DB
 	tree *iavl.MutableTree
 	lock sync.RWMutex
 	sync.Mutex
