@@ -2,6 +2,10 @@ module github.com/MinterTeam/minter-go-node
 
 go 1.15
 
+replace github.com/tendermint/iavl v0.14.2 => github.com/klim0v/iavl v0.14.3-0.20201104170501-e4f96eb1ae85
+
+//replace github.com/tendermint/iavl => /Users/klim0v/GolandProjects/iavl
+
 require (
 	github.com/MinterTeam/node-grpc-gateway v1.2.1-0.20201027090738-129103b137d9
 	github.com/btcsuite/btcd v0.20.1-beta

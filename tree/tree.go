@@ -3,6 +3,7 @@ package tree
 import (
 	"github.com/tendermint/iavl"
 	dbm "github.com/tendermint/tm-db"
+	"strings"
 	"sync"
 )
 
@@ -26,6 +27,7 @@ type MTree interface {
 	SaveVersion() ([]byte, int64, error)
 	DeleteVersionsIfExists(from, to int64) error
 	DeleteVersionIfExists(version int64) error
+	DeleteVersionsTo(version int64) error
 	GetImmutable() *ImmutableTree
 	GetImmutableAtHeight(version int64) (*ImmutableTree, error)
 	GlobalLock()
@@ -168,6 +170,22 @@ func (t *mutableTree) DeleteVersionsIfExists(from, to int64) error {
 		}
 	}
 	return t.tree.DeleteVersions(existsVersions...)
+}
+
+// Should use GlobalLock() and GlobalUnlock
+func (t *mutableTree) DeleteVersionsTo(version int64) error {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+
+	err := t.tree.DeleteVersionsFromInterval(0, version)
+	if err != nil {
+		// mb error: unable to delete version %v with %v active readers
+		// FIXME: edit architecture of using MutableTree and ImmutableTree
+		if strings.HasPrefix(err.Error(), "unable to delete version ") && strings.HasSuffix(err.Error(), " active readers") {
+			return nil
+		}
+	}
+	return err
 }
 
 // Should use GlobalLock() and GlobalUnlock
