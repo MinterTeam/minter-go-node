@@ -13,21 +13,20 @@ type ReadOnlyTree interface {
 	Version() int64
 	Hash() []byte
 	Iterate(fn func(key []byte, value []byte) bool) (stopped bool)
+	AvailableVersions() []int
+	KeepLastHeight() int64
 }
 
 // MTree mutable tree, used for txs delivery
 type MTree interface {
 	ReadOnlyTree
-	KeepLastHeight() int64
-	AvailableVersions() []int
 	Set(key, value []byte) bool
 	Remove(key []byte) ([]byte, bool)
 	LoadVersion(targetVersion int64) (int64, error)
 	LazyLoadVersion(targetVersion int64) (int64, error)
 	SaveVersion() ([]byte, int64, error)
-	DeleteVersionsIfExists(from, to int64) error
 	DeleteVersionIfExists(version int64) error
-	DeleteVersionsTo(version int64) error
+	DeleteVersionsFromInterval(fromVersion, toVersion int64) error
 	GetImmutable() *ImmutableTree
 	GetImmutableAtHeight(version int64) (*ImmutableTree, error)
 	GlobalLock()
@@ -42,19 +41,18 @@ func NewMutableTree(height uint64, db dbm.DB, cacheSize int) (MTree, error) {
 		return nil, err
 	}
 
+	m := &mutableTree{
+		tree: tree,
+	}
 	if height == 0 {
-		return &mutableTree{
-			tree: tree,
-		}, nil
+		return m, nil
 	}
 
-	if _, err := tree.LoadVersionForOverwriting(int64(height)); err != nil {
+	if _, err := m.tree.LoadVersionForOverwriting(int64(height)); err != nil {
 		return nil, err
 	}
 
-	return &mutableTree{
-		tree: tree,
-	}, nil
+	return m, nil
 }
 
 type mutableTree struct {
@@ -159,33 +157,20 @@ func (t *mutableTree) SaveVersion() ([]byte, int64, error) {
 }
 
 // Should use GlobalLock() and GlobalUnlock
-func (t *mutableTree) DeleteVersionsIfExists(from, to int64) error {
+func (t *mutableTree) DeleteVersionsFromInterval(fromVersion, toVersion int64) error {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
-	var existsVersions = make([]int64, 0, to-from)
-	for i := from; i < to; i++ {
-		if t.tree.VersionExists(i) {
-			existsVersions = append(existsVersions, i)
-		}
-	}
-	return t.tree.DeleteVersions(existsVersions...)
-}
-
-// Should use GlobalLock() and GlobalUnlock
-func (t *mutableTree) DeleteVersionsTo(version int64) error {
-	t.lock.Lock()
-	defer t.lock.Unlock()
-
-	err := t.tree.DeleteVersionsFromInterval(0, version)
+	err := t.tree.DeleteVersionsFromInterval(fromVersion, toVersion)
 	if err != nil {
 		// mb error: unable to delete version %v with %v active readers
 		// FIXME: edit architecture of using MutableTree and ImmutableTree
 		if strings.HasPrefix(err.Error(), "unable to delete version ") && strings.HasSuffix(err.Error(), " active readers") {
 			return nil
 		}
+		return err
 	}
-	return err
+	return nil
 }
 
 // Should use GlobalLock() and GlobalUnlock

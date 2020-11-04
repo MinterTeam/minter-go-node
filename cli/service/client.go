@@ -213,6 +213,7 @@ func dashboardCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 		recvCh := make(chan *pb.DashboardResponse)
 
 		go func() { errCh <- ui.Run() }()
+		defer ui.Quit()
 		go func() {
 			for {
 				recv, err := response.Recv()

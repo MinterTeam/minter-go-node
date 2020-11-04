@@ -78,6 +78,9 @@ api_v2_listen_addr = "{{ .BaseConfig.APIv2ListenAddress }}"
 # API v2 Timeout
 api_v2_timeout_duration = "{{ .BaseConfig.APIv2TimeoutDuration }}"
 
+# WebSocket connection duration
+ws_connection_duration = "{{ .BaseConfig.WSConnectionDuration }}"
+
 # Sets node to be in validator mode. Disables API, events, history of blocks, indexes, etc. 
 validator_mode = {{ .BaseConfig.ValidatorMode }}
 

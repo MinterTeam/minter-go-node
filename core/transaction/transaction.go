@@ -85,7 +85,7 @@ type SignatureMulti struct {
 
 type RawData []byte
 
-type TotalSpends []TotalSpend
+type TotalSpends []totalSpend
 
 func (tss *TotalSpends) Add(coin types.CoinID, value *big.Int) {
 	for i, t := range *tss {
@@ -95,18 +95,18 @@ func (tss *TotalSpends) Add(coin types.CoinID, value *big.Int) {
 		}
 	}
 
-	*tss = append(*tss, TotalSpend{
+	*tss = append(*tss, totalSpend{
 		Coin:  coin,
 		Value: big.NewInt(0).Set(value),
 	})
 }
 
-type TotalSpend struct {
+type totalSpend struct {
 	Coin  types.CoinID
 	Value *big.Int
 }
 
-type Conversion struct {
+type conversion struct {
 	FromCoin    types.CoinID
 	FromAmount  *big.Int
 	FromReserve *big.Int

@@ -34,7 +34,7 @@ func main() {
 	rootCmd.PersistentFlags().Bool("testnet", false, "use \"true\" for testnet, mainnet is default")
 	rootCmd.PersistentFlags().Bool("pprof", false, "enable pprof")
 	rootCmd.PersistentFlags().String("pprof-addr", "0.0.0.0:6060", "pprof listen addr")
-	rootCmd.PersistentFlags().String("genesis", "https://raw.githubusercontent.com/MinterTeam/minter-network-migrate/master/minter-mainnet-2/genesis.json", "path with the genesis file to download")
+	rootCmd.PersistentFlags().String("genesis", "https://github.com/MinterTeam/minter-go-node/releases/download/v1.2.0/genesis.json", "path with the genesis file to download")
 
 	cmd.ExportCommand.Flags().Uint64("height", 0, "export height")
 	cmd.ExportCommand.Flags().Uint64("start-height", 0, "height for starting a new chain")
