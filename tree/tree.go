@@ -3,6 +3,7 @@ package tree
 import (
 	"github.com/tendermint/iavl"
 	dbm "github.com/tendermint/tm-db"
+	"strings"
 	"sync"
 )
 
@@ -24,8 +25,8 @@ type MTree interface {
 	LoadVersion(targetVersion int64) (int64, error)
 	LazyLoadVersion(targetVersion int64) (int64, error)
 	SaveVersion() ([]byte, int64, error)
-	DeleteVersionsIfExists(from, to int64) error
 	DeleteVersionIfExists(version int64) error
+	DeleteVersionsFromInterval(fromVersion, toVersion int64) error
 	GetImmutable() *ImmutableTree
 	GetImmutableAtHeight(version int64) (*ImmutableTree, error)
 	GlobalLock()
@@ -55,7 +56,6 @@ func NewMutableTree(height uint64, db dbm.DB, cacheSize int) (MTree, error) {
 }
 
 type mutableTree struct {
-	db   dbm.DB
 	tree *iavl.MutableTree
 	lock sync.RWMutex
 	sync.Mutex
@@ -157,17 +157,20 @@ func (t *mutableTree) SaveVersion() ([]byte, int64, error) {
 }
 
 // Should use GlobalLock() and GlobalUnlock
-func (t *mutableTree) DeleteVersionsIfExists(from, to int64) error {
+func (t *mutableTree) DeleteVersionsFromInterval(fromVersion, toVersion int64) error {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
-	var existsVersions = make([]int64, 0, to-from)
-	for i := from; i <= to; i++ {
-		if t.tree.VersionExists(i) {
-			existsVersions = append(existsVersions, i)
+	err := t.tree.DeleteVersionsFromInterval(fromVersion, toVersion)
+	if err != nil {
+		// mb error: unable to delete version %v with %v active readers
+		// FIXME: edit architecture of using MutableTree and ImmutableTree
+		if strings.HasPrefix(err.Error(), "unable to delete version ") && strings.HasSuffix(err.Error(), " active readers") {
+			return nil
 		}
+		return err
 	}
-	return t.tree.DeleteVersions(existsVersions...)
+	return nil
 }
 
 // Should use GlobalLock() and GlobalUnlock

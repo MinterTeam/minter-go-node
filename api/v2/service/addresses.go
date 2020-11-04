@@ -8,7 +8,6 @@ import (
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 	"math/big"
 	"strings"
 )
@@ -58,18 +57,13 @@ func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.
 		res.Balance = make([]*pb.AddressBalance, 0, len(balances))
 		for _, coin := range balances {
 			totalStakesGroupByCoin[coin.Coin.ID] = coin.Value
-			var bipBalance *wrapperspb.StringValue
-			if req.BipValue {
-				balance := customCoinBipBalance(coin.Coin.ID, coin.Value, cState.Coins())
-				bipBalance = wrapperspb.String(balance.String())
-			}
 			res.Balance = append(res.Balance, &pb.AddressBalance{
 				Coin: &pb.Coin{
 					Id:     uint64(coin.Coin.ID),
-					Symbol: coin.Coin.GetFullSymbol(),
+					Symbol: cState.Coins().GetCoin(coin.Coin.ID).GetFullSymbol(),
 				},
 				Value:    coin.Value.String(),
-				BipValue: bipBalance,
+				BipValue: customCoinBipBalance(coin.Coin.ID, coin.Value, cState.Coins()).String(),
 			})
 		}
 
@@ -104,11 +98,6 @@ func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.
 
 			res.Delegated = make([]*pb.AddressDelegatedBalance, 0, len(userDelegatedStakesGroupByCoin))
 			for coinID, delegatedStake := range userDelegatedStakesGroupByCoin {
-				var bipBalance *wrapperspb.StringValue
-				if req.BipValue {
-					balance := customCoinBipBalance(coinID, delegatedStake.Value, cState.Coins())
-					bipBalance = wrapperspb.String(balance.String())
-				}
 				res.Delegated = append(res.Delegated, &pb.AddressDelegatedBalance{
 					Coin: &pb.Coin{
 						Id:     uint64(coinID),
@@ -116,7 +105,7 @@ func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.
 					},
 					Value:            delegatedStake.Value.String(),
 					DelegateBipValue: delegatedStake.BipValue.String(),
-					BipValue:         bipBalance,
+					BipValue:         customCoinBipBalance(coinID, delegatedStake.Value, cState.Coins()).String(),
 				})
 
 				totalStake, ok := totalStakesGroupByCoin[coinID]
@@ -135,12 +124,7 @@ func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.
 		coinsBipValue := big.NewInt(0)
 		res.Total = make([]*pb.AddressBalance, 0, len(totalStakesGroupByCoin))
 		for coinID, stake := range totalStakesGroupByCoin {
-			var bipBalance *wrapperspb.StringValue
-			if req.BipValue {
-				balance := customCoinBipBalance(coinID, stake, cState.Coins())
-				coinsBipValue.Add(coinsBipValue, balance)
-				bipBalance = wrapperspb.String(balance.String())
-			}
+			balance := customCoinBipBalance(coinID, stake, cState.Coins())
 			if req.Delegated {
 				res.Total = append(res.Total, &pb.AddressBalance{
 					Coin: &pb.Coin{
@@ -148,9 +132,10 @@ func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.
 						Symbol: cState.Coins().GetCoin(coinID).GetFullSymbol(),
 					},
 					Value:    stake.String(),
-					BipValue: bipBalance,
+					BipValue: balance.String(),
 				})
 			}
+			coinsBipValue.Add(coinsBipValue, balance)
 		}
 		res.BipValue = coinsBipValue.String()
 		res.TransactionCount = cState.Accounts().GetNonce(address)

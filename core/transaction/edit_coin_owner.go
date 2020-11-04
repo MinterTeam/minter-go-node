@@ -22,6 +22,12 @@ func (data EditCoinOwnerData) BasicCheck(tx *Transaction, context *state.CheckSt
 
 	info := context.Coins().GetSymbolInfo(data.Symbol)
 	if info == nil {
+		// todo: change coin owner error message
+		// return &Response{
+		// 	Code: code.IsNotOwnerOfCoin,
+		// 	Log:  fmt.Sprintf("Sender is not owner of coin"),
+		// 	Info: EncodeError(code.NewIsNotOwnerOfCoin(data.Symbol.String(), nil)),
+		// }
 		return &Response{
 			Code: code.IsNotOwnerOfCoin,
 			Log:  fmt.Sprintf("Sender is not owner of coin"),

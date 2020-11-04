@@ -2,11 +2,12 @@ module github.com/MinterTeam/minter-go-node
 
 go 1.15
 
+replace github.com/tendermint/iavl v0.14.2 => github.com/klim0v/iavl v0.14.3-0.20201104170501-e4f96eb1ae85
+
 require (
-	github.com/MinterTeam/node-grpc-gateway v1.2.1-0.20201027090738-129103b137d9
+	github.com/MinterTeam/node-grpc-gateway v1.2.1-0.20201104180632-65f2438baf4d
 	github.com/btcsuite/btcd v0.20.1-beta
 	github.com/c-bata/go-prompt v0.2.3
-	github.com/gin-gonic/gin v1.6.3
 	github.com/go-kit/kit v0.10.0
 	github.com/golang/protobuf v1.4.2
 	github.com/google/uuid v1.1.1
@@ -16,6 +17,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.0.0
 	github.com/marcusolsson/tui-go v0.4.0
+	github.com/mattn/go-isatty v0.0.12 // indirect
 	github.com/mattn/go-tty v0.0.3 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/term v0.0.0-20190109203006-aa71e9d9e942 // indirect
@@ -39,4 +41,5 @@ require (
 	google.golang.org/grpc v1.32.0
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/errgo.v2 v2.1.0
+	gopkg.in/yaml.v2 v2.2.8 // indirect
 )

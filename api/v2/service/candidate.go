@@ -47,11 +47,11 @@ func (s *Service) Candidate(ctx context.Context, req *pb.CandidateRequest) (*pb.
 		return nil, status.Error(codes.NotFound, "Candidate not found")
 	}
 
-	result := makeResponseCandidate(cState, candidate, true)
+	result := makeResponseCandidate(cState, candidate, true, req.NotShowStakes)
 	return result, nil
 }
 
-func makeResponseCandidate(state *state.CheckState, c *candidates.Candidate, includeStakes bool) *pb.CandidateResponse {
+func makeResponseCandidate(state *state.CheckState, c *candidates.Candidate, includeStakes, NotShowStakes bool) *pb.CandidateResponse {
 	candidate := &pb.CandidateResponse{
 		RewardAddress:  c.RewardAddress.String(),
 		OwnerAddress:   c.OwnerAddress.String(),
@@ -63,7 +63,7 @@ func makeResponseCandidate(state *state.CheckState, c *candidates.Candidate, inc
 	}
 
 	if state.Validators().GetByPublicKey(c.PubKey) != nil {
-		candidate.Status = 3
+		candidate.Validator = true
 	}
 
 	if includeStakes {
@@ -71,18 +71,21 @@ func makeResponseCandidate(state *state.CheckState, c *candidates.Candidate, inc
 		minStake := big.NewInt(0)
 		stakes := state.Candidates().GetStakes(c.PubKey)
 		usedSlots := len(stakes)
-		candidate.UsedSlots = wrapperspb.UInt64(uint64(usedSlots))
-		candidate.Stakes = make([]*pb.CandidateResponse_Stake, 0, usedSlots)
+		if !NotShowStakes {
+			candidate.Stakes = make([]*pb.CandidateResponse_Stake, 0, usedSlots)
+		}
 		for i, stake := range stakes {
-			candidate.Stakes = append(candidate.Stakes, &pb.CandidateResponse_Stake{
-				Owner: stake.Owner.String(),
-				Coin: &pb.Coin{
-					Id:     uint64(stake.Coin),
-					Symbol: state.Coins().GetCoin(stake.Coin).GetFullSymbol(),
-				},
-				Value:    stake.Value.String(),
-				BipValue: stake.BipValue.String(),
-			})
+			if !NotShowStakes {
+				candidate.Stakes = append(candidate.Stakes, &pb.CandidateResponse_Stake{
+					Owner: stake.Owner.String(),
+					Coin: &pb.Coin{
+						Id:     uint64(stake.Coin),
+						Symbol: state.Coins().GetCoin(stake.Coin).GetFullSymbol(),
+					},
+					Value:    stake.Value.String(),
+					BipValue: stake.BipValue.String(),
+				})
+			}
 			addresses[stake.Owner] = struct{}{}
 			if usedSlots >= candidates.MaxDelegatorsPerCandidate {
 				if i != 0 && minStake.Cmp(stake.BipValue) != 1 {
@@ -91,6 +94,7 @@ func makeResponseCandidate(state *state.CheckState, c *candidates.Candidate, inc
 				minStake = stake.BipValue
 			}
 		}
+		candidate.UsedSlots = wrapperspb.UInt64(uint64(usedSlots))
 		candidate.UniqUsers = wrapperspb.UInt64(uint64(len(addresses)))
 		candidate.MinStake = wrapperspb.String(minStake.String())
 	}
