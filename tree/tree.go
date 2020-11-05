@@ -3,7 +3,6 @@ package tree
 import (
 	"github.com/tendermint/iavl"
 	dbm "github.com/tendermint/tm-db"
-	"strings"
 	"sync"
 )
 
@@ -163,13 +162,9 @@ func (t *mutableTree) DeleteVersionsFromInterval(fromVersion, toVersion int64) e
 
 	err := t.tree.DeleteVersionsFromInterval(fromVersion, toVersion)
 	if err != nil {
-		// mb error: unable to delete version %v with %v active readers
-		// FIXME: edit architecture of using MutableTree and ImmutableTree
-		if strings.HasPrefix(err.Error(), "unable to delete version ") && strings.HasSuffix(err.Error(), " active readers") {
-			return nil
-		}
 		return err
 	}
+
 	return nil
 }
 

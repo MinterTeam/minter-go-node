@@ -40,7 +40,11 @@ var ManagerConsole = &cobra.Command{
 		if err != nil {
 			return nil
 		}
-		console.Cli(cmd.Context())
+		err = console.Cli(cmd.Context())
+		if err != nil {
+			_, _ = fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
 		return nil
 	},
 }

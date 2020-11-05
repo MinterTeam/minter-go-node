@@ -12,9 +12,10 @@ import (
 	"github.com/marcusolsson/tui-go"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"io"
-	"log"
 	"os"
 	"strings"
 	"time"
@@ -81,13 +82,13 @@ func completer(commands cli.Commands) prompt.Completer {
 	}
 }
 
-func (mc *ManagerConsole) Cli(ctx context.Context) {
+func (mc *ManagerConsole) Cli(ctx context.Context) error {
 	completer := completer(mc.cli.Commands)
 	var history []string
 	for {
 		select {
 		case <-ctx.Done():
-			return
+			return nil
 		default:
 			t := prompt.Input(">>> ", completer,
 				prompt.OptionHistory(history),
@@ -100,6 +101,9 @@ func (mc *ManagerConsole) Cli(ctx context.Context) {
 				}),
 			)
 			if err := mc.Execute(strings.Fields(t)); err != nil {
+				if status.Code(err) == codes.Unavailable {
+					return err
+				}
 				_, _ = fmt.Fprintln(os.Stderr, err)
 			}
 			history = append(history, t)
@@ -143,6 +147,7 @@ func NewCLI(socketPath string) (*ManagerConsole, error) {
 			Flags: []cli.Flag{
 				&cli.IntFlag{Name: "from", Aliases: []string{"f"}, Required: true},
 				&cli.IntFlag{Name: "to", Aliases: []string{"t"}, Required: true},
+				&cli.IntFlag{Name: "batch", Aliases: []string{"b"}, Required: false, Value: 250, Usage: "the number of blocks to delete in one operation"},
 			},
 			Action: pruneBlocksCMD(client),
 		},
@@ -381,11 +386,13 @@ func pruneBlocksCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 		stream, err := client.PruneBlocks(ctx, &pb.PruneBlocksRequest{
 			FromHeight: c.Int64("from"),
 			ToHeight:   c.Int64("to"),
+			Batch:      c.Int64("batch"),
 		})
 		if err != nil {
 			return err
 		}
 
+		now := time.Now()
 		errCh := make(chan error)
 		recvCh := make(chan *pb.PruneBlocksResponse)
 
@@ -419,15 +426,14 @@ func pruneBlocksCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 					close(errCh)
 					return err
 				}
-				fmt.Println("OK")
+				fmt.Println("OK", time.Since(now).String())
 				return nil
 			case recv := <-recvCh:
 				var percent int64
 				if recv.Total != 0 {
 					percent = int64(float64(recv.Current) / float64(recv.Total) * 100.0)
 				}
-				log.Println()
-				fmt.Printf("%d%% successfully removed (%d of %d)\n", percent, recv.Current, recv.Total)
+				fmt.Printf("%d%% successfully removed (%d of %d) %s\n", percent, recv.Current, recv.Total, time.Since(now).String())
 			}
 		}
 	}

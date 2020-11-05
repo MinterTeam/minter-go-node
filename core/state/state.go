@@ -280,8 +280,8 @@ func (s *State) Commit() ([]byte, error) {
 		return hash, err
 	}
 
-	if version%countBatchBlocksDelete == 30 && version-30 >= s.keepLastStates {
-		if err := s.tree.DeleteVersionsFromInterval(0, version-s.keepLastStates); err != nil {
+	if s.keepLastStates < version-1 {
+		if err := s.tree.DeleteVersionIfExists(version - s.keepLastStates); err != nil {
 			return hash, err
 		}
 	}
