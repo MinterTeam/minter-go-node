@@ -5,17 +5,17 @@ go 1.15
 replace github.com/tendermint/iavl v0.14.2 => github.com/klim0v/iavl v0.14.3-0.20201105112505-7da8d73dcb37
 
 require (
-	github.com/MinterTeam/node-grpc-gateway v1.2.1-0.20201104180632-65f2438baf4d
+	github.com/MinterTeam/node-grpc-gateway v1.2.1-0.20201105130854-87a7f4ef17cd
 	github.com/btcsuite/btcd v0.20.1-beta
 	github.com/c-bata/go-prompt v0.2.3
 	github.com/go-kit/kit v0.10.0
-	github.com/golang/protobuf v1.4.2
-	github.com/google/uuid v1.1.1
+	github.com/golang/protobuf v1.4.3
+	github.com/google/uuid v1.1.2
 	github.com/gorilla/handlers v1.4.2
 	github.com/gorilla/websocket v1.4.2
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.2
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.0.0
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.0.1
 	github.com/marcusolsson/tui-go v0.4.0
 	github.com/mattn/go-isatty v0.0.12 // indirect
 	github.com/mattn/go-tty v0.0.3 // indirect
@@ -38,7 +38,7 @@ require (
 	golang.org/x/net v0.0.0-20200822124328-c89045814202
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
 	golang.org/x/sys v0.0.0-20201020230747-6e5568b54d1a
-	google.golang.org/grpc v1.32.0
+	google.golang.org/grpc v1.33.1
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/errgo.v2 v2.1.0
 	gopkg.in/yaml.v2 v2.2.8 // indirect
