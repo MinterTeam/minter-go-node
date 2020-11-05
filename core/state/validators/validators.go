@@ -67,7 +67,7 @@ func (v *Validators) Commit() error {
 		if val.isDirty || val.isTotalStakeDirty {
 			val.isTotalStakeDirty = false
 			path := []byte{mainPrefix}
-			path = append(path, val.PubKey.Bytes()...)
+			path = append(path, val.PubKey.Bytes()...) // todo: remove after
 			path = append(path, totalStakePrefix)
 			v.iavl.Set(path, val.GetTotalBipStake().Bytes())
 		}
@@ -75,7 +75,7 @@ func (v *Validators) Commit() error {
 		if val.isDirty || val.isAccumRewardDirty {
 			val.isAccumRewardDirty = false
 			path := []byte{mainPrefix}
-			path = append(path, val.PubKey.Bytes()...)
+			path = append(path, val.PubKey.Bytes()...) // todo: remove after
 			path = append(path, accumRewardPrefix)
 			v.iavl.Set(path, val.GetAccumReward().Bytes())
 		}

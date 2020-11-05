@@ -98,7 +98,7 @@ func (a *Accounts) Commit() error {
 				path = append(path, coin.Bytes()...)
 
 				balance := account.getBalance(coin)
-				if balance.Cmp(big.NewInt(0)) == 0 {
+				if balance.Sign() == 0 {
 					a.iavl.Remove(path)
 				} else {
 					a.iavl.Set(path, balance.Bytes())

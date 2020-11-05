@@ -43,9 +43,10 @@ OPTIONS:
 delete block information
 ```text
 OPTIONS:
-   --from value, -f value  (default: 0)
-   --to value, -t value    (default: 0)
-   --help, -h              show help (default: false)
+   --from value, -f value   (default: 0)
+   --to value, -t value     (default: 0)
+   --batch value, -b value  the number of blocks to delete in one operation (default: 250)
+   --help, -h               show help (default: false)
 ```
 
 #### status

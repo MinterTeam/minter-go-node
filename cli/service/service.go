@@ -17,6 +17,7 @@ import (
 	typesTM "github.com/tendermint/tendermint/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"runtime"
 	"time"
 )
@@ -26,6 +27,7 @@ type Manager struct {
 	tmRPC      *rpc.Local
 	tmNode     *tmNode.Node
 	cfg        *config.Config
+	pb.UnimplementedManagerServiceServer
 }
 
 func NewManager(blockchain *minter.Blockchain, tmRPC *rpc.Local, tmNode *tmNode.Node, cfg *config.Config) pb.ManagerServiceServer {
@@ -65,10 +67,7 @@ func (m *Manager) Dashboard(_ *empty.Empty, stream pb.ManagerService_DashboardSe
 			}
 			pubKey := fmt.Sprintf("Mp%x", resultStatus.ValidatorInfo.PubKey.Bytes()[5:])
 
-			state, err := m.blockchain.GetStateForHeight(0)
-			if err != nil {
-				return status.Error(codes.NotFound, err.Error())
-			}
+			state := m.blockchain.CurrentState()
 
 			var address types.TmAddress
 			copy(address[:], resultStatus.ValidatorInfo.Address)
@@ -155,9 +154,13 @@ func (m *Manager) NetInfo(context.Context, *empty.Empty) (*pb.NetInfoResponse, e
 				RecentlySent:      channel.RecentlySent,
 			})
 		}
+		var peerHeightValue *wrapperspb.Int64Value
 		peerHeight := peerHeight(m.tmNode.Switch(), peer.NodeInfo.ID())
+		if peerHeight != 0 {
+			peerHeightValue = wrapperspb.Int64(peerHeight)
+		}
 		peers = append(peers, &pb.NetInfoResponse_Peer{
-			LatestBlockHeight: peerHeight,
+			LatestBlockHeight: peerHeightValue,
 			NodeInfo: &pb.NodeInfo{
 				ProtocolVersion: &pb.NodeInfo_ProtocolVersion{
 					P2P:   uint64(peer.NodeInfo.ProtocolVersion.P2P),
@@ -224,48 +227,43 @@ func (m *Manager) NetInfo(context.Context, *empty.Empty) (*pb.NetInfoResponse, e
 	return response, nil
 }
 
-const countBatchBlocksDelete = 250
-
 func (m *Manager) PruneBlocks(req *pb.PruneBlocksRequest, stream pb.ManagerService_PruneBlocksServer) error {
-	current := m.blockchain.Height()
-	if req.ToHeight >= int64(current) {
-		return status.Errorf(codes.FailedPrecondition, "cannot delete latest saved version (%d)", current)
-	}
+	total := req.ToHeight - req.FromHeight
 
-	min := req.FromHeight
-	total := req.ToHeight - min
-
-	from := req.FromHeight
 	last := make(chan struct{})
-
-	for i := req.FromHeight; i <= req.ToHeight; i++ {
-		if i == req.ToHeight {
+	from := req.FromHeight
+	for i := req.FromHeight + req.Batch; i < req.ToHeight+req.Batch; i += req.Batch {
+		if i >= req.ToHeight {
 			close(last)
 		}
 		select {
 		case <-stream.Context().Done():
-			return status.Error(codes.Canceled, stream.Context().Err().Error())
+			return status.FromContextError(stream.Context().Err()).Err()
 		case <-last:
-			_ = m.blockchain.DeleteStateVersions(from, i)
+			err := m.blockchain.DeleteStateVersions(from, req.ToHeight)
+			if err != nil {
+				return status.Error(codes.Aborted, err.Error())
+			}
 			if err := stream.Send(&pb.PruneBlocksResponse{
 				Total:   total,
-				Current: i - min,
+				Current: total,
 			}); err != nil {
 				return err
 			}
 			return nil
 		default:
-			if i-from != countBatchBlocksDelete {
-				continue
+			err := m.blockchain.DeleteStateVersions(from, i)
+			if err != nil {
+				return status.Error(codes.Aborted, err.Error())
 			}
-			_ = m.blockchain.DeleteStateVersions(from, i)
 			if err := stream.Send(&pb.PruneBlocksResponse{
 				Total:   total,
-				Current: i - min,
+				Current: i - req.FromHeight,
 			}); err != nil {
 				return err
 			}
 			from = i
+			runtime.Gosched()
 		}
 	}
 

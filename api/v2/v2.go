@@ -14,7 +14,7 @@ import (
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/rakyll/statik/fs"
 	"github.com/tendermint/tendermint/libs/log"
 	"github.com/tmc/grpc-websocket-proxy/wsproxy"
@@ -23,7 +23,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
 	_struct "google.golang.org/protobuf/types/known/structpb"
+	"io"
 	"mime"
 	"net"
 	"net/http"
@@ -33,7 +35,7 @@ import (
 )
 
 // Run initialises gRPC and API v2 interfaces
-func Run(srv *service.Service, addrGRPC, addrApi string, logger log.Logger) error {
+func Run(srv *service.Service, addrGRPC, addrAPI string, logger log.Logger) error {
 	lis, err := net.Listen("tcp", addrGRPC)
 	if err != nil {
 		return err
@@ -59,7 +61,7 @@ func Run(srv *service.Service, addrGRPC, addrApi string, logger log.Logger) erro
 			unaryTimeoutInterceptor(srv.TimeoutDuration()),
 		),
 	)
-	runtime.GlobalHTTPErrorHandler = httpError
+
 	gw.RegisterApiServiceServer(grpcServer, srv)
 	grpc_prometheus.Register(grpcServer)
 
@@ -73,7 +75,16 @@ func Run(srv *service.Service, addrGRPC, addrApi string, logger log.Logger) erro
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	gwmux := runtime.NewServeMux(
-		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{OrigName: true, EmitDefaults: true}),
+		runtime.WithErrorHandler(httpError),
+		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
+			MarshalOptions: protojson.MarshalOptions{
+				UseProtoNames:   true,
+				EmitUnpopulated: true,
+			},
+			UnmarshalOptions: protojson.UnmarshalOptions{
+				DiscardUnknown: true,
+			},
+		}),
 	)
 	opts := []grpc.DialOption{
 		grpc.WithInsecure(),
@@ -83,6 +94,7 @@ func Run(srv *service.Service, addrGRPC, addrApi string, logger log.Logger) erro
 	if err != nil {
 		return err
 	}
+
 	mux := http.NewServeMux()
 	openapi := "/v2/openapi-ui/"
 	_ = serveOpenAPI(openapi, mux)
@@ -91,10 +103,15 @@ func Run(srv *service.Service, addrGRPC, addrApi string, logger log.Logger) erro
 			http.Redirect(writer, request, openapi, 302)
 			return
 		}
+		if !strings.Contains(srv.Version(), "testnet") && request.URL.Path == "/v2/test/block" {
+			http.Error(writer, "only testnet mode", http.StatusMethodNotAllowed)
+			return
+		}
 		http.StripPrefix("/v2", handlers.CompressHandler(allowCORS(wsproxy.WebsocketProxy(gwmux)))).ServeHTTP(writer, request)
 	})
+
 	group.Go(func() error {
-		return http.ListenAndServe(addrApi, mux)
+		return http.ListenAndServe(addrAPI, mux)
 	})
 
 	return group.Wait()
@@ -166,10 +183,8 @@ func parseStatus(s *status.Status) (string, map[string]string) {
 }
 
 func httpError(ctx context.Context, mux *runtime.ServeMux, marshaler runtime.Marshaler, w http.ResponseWriter, r *http.Request, err error) {
-	const fallback = `{"error": {"code": "500", "message": "failed to marshal error message"}}`
-
-	contentType := marshaler.ContentType()
-	w.Header().Set("Content-Type", contentType)
+	body := &gw.ErrorBody{}
+	w.Header().Set("Content-Type", marshaler.ContentType(body))
 
 	s, ok := status.FromError(err)
 	if !ok {
@@ -181,17 +196,23 @@ func httpError(ctx context.Context, mux *runtime.ServeMux, marshaler runtime.Mar
 	codeString, data := parseStatus(s)
 	delete(data, "code")
 
-	jErr := json.NewEncoder(w).Encode(gw.ErrorBody{
-		Error: &gw.ErrorBody_Error{
-			Code:    codeString,
-			Message: s.Message(),
-			Data:    data,
-		},
-	})
+	body.Error = &gw.ErrorBody_Error{
+		Code:    codeString,
+		Message: s.Message(),
+		Data:    data,
+	}
 
-	if jErr != nil {
+	buf, merr := marshaler.Marshal(body)
+	if merr != nil {
+		grpclog.Infof("Failed to marshal error message %q: %v", s, merr)
+		w.WriteHeader(http.StatusInternalServerError)
+		if _, err := io.WriteString(w, `{"error": {"code": "500", "message": "failed to marshal error message"}}`); err != nil {
+			grpclog.Infof("Failed to write response: %v", err)
+		}
+		return
+	}
+	if _, err := w.Write(buf); err != nil {
 		grpclog.Infof("Failed to write response: %v", err)
-		w.Write([]byte(fallback))
 	}
 }
 

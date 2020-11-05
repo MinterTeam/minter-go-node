@@ -9,6 +9,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"math/big"
+	"strings"
 )
 
 // Addresses returns list of addresses.
@@ -25,6 +26,10 @@ func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.
 		cState.Unlock()
 	}
 
+	if timeoutStatus := s.checkTimeout(ctx, "LoadCandidates", "LoadStakes"); timeoutStatus != nil {
+		return nil, timeoutStatus.Err()
+	}
+
 	cState.RLock()
 	defer cState.RUnlock()
 
@@ -34,11 +39,7 @@ func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.
 
 	for _, addr := range req.Addresses {
 
-		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-			return response, timeoutStatus.Err()
-		}
-
-		if len(addr) < 3 {
+		if !strings.HasPrefix(strings.Title(addr), "Mx") {
 			return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid address %s", addr))
 		}
 
@@ -62,19 +63,21 @@ func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.
 					Symbol: cState.Coins().GetCoin(coin.Coin.ID).GetFullSymbol(),
 				},
 				Value:    coin.Value.String(),
-				BipValue: customCoinBipBalance(coin.Coin.ID, coin.Value, cState).String(),
+				BipValue: customCoinBipBalance(coin.Coin.ID, coin.Value, cState.Coins()).String(),
 			})
 		}
 
-		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-			return nil, timeoutStatus.Err()
-		}
-
 		if req.Delegated {
+			if timeoutStatus := s.checkTimeout(ctx, "Delegated"); timeoutStatus != nil {
+				return nil, timeoutStatus.Err()
+			}
 			var userDelegatedStakesGroupByCoin = map[types.CoinID]*stakeUser{}
 			allCandidates := cState.Candidates().GetCandidates()
-			for _, candidate := range allCandidates {
+			for i, candidate := range allCandidates {
 				userStakes := userStakes(candidate.PubKey, address, cState)
+				if timeoutStatus := s.checkTimeout(ctx, fmt.Sprintf("userStakes of %s [%d]", candidate.PubKey, i)); timeoutStatus != nil {
+					return nil, timeoutStatus.Err()
+				}
 				for coin, userStake := range userStakes {
 					stake, ok := userDelegatedStakesGroupByCoin[coin]
 					if !ok {
@@ -102,7 +105,7 @@ func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.
 					},
 					Value:            delegatedStake.Value.String(),
 					DelegateBipValue: delegatedStake.BipValue.String(),
-					BipValue:         customCoinBipBalance(coinID, delegatedStake.Value, cState).String(),
+					BipValue:         customCoinBipBalance(coinID, delegatedStake.Value, cState.Coins()).String(),
 				})
 
 				totalStake, ok := totalStakesGroupByCoin[coinID]
@@ -121,7 +124,7 @@ func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.
 		coinsBipValue := big.NewInt(0)
 		res.Total = make([]*pb.AddressBalance, 0, len(totalStakesGroupByCoin))
 		for coinID, stake := range totalStakesGroupByCoin {
-			balance := customCoinBipBalance(coinID, stake, cState)
+			balance := customCoinBipBalance(coinID, stake, cState.Coins())
 			if req.Delegated {
 				res.Total = append(res.Total, &pb.AddressBalance{
 					Coin: &pb.Coin{

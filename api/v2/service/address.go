@@ -3,7 +3,9 @@ package service
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/state"
+	"github.com/MinterTeam/minter-go-node/core/state/coins"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
@@ -43,6 +45,10 @@ func (s *Service) Address(ctx context.Context, req *pb.AddressRequest) (*pb.Addr
 		cState.Unlock()
 	}
 
+	if timeoutStatus := s.checkTimeout(ctx, "LoadCandidates", "LoadStakes"); timeoutStatus != nil {
+		return nil, timeoutStatus.Err()
+	}
+
 	cState.RLock()
 	defer cState.RUnlock()
 
@@ -60,19 +66,23 @@ func (s *Service) Address(ctx context.Context, req *pb.AddressRequest) (*pb.Addr
 				Symbol: cState.Coins().GetCoin(coin.Coin.ID).GetFullSymbol(),
 			},
 			Value:    coin.Value.String(),
-			BipValue: customCoinBipBalance(coin.Coin.ID, coin.Value, cState).String(),
+			BipValue: customCoinBipBalance(coin.Coin.ID, coin.Value, cState.Coins()).String(),
 		})
 	}
 
-	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-		return nil, timeoutStatus.Err()
-	}
-
 	if req.Delegated {
+		if timeoutStatus := s.checkTimeout(ctx, "Delegated"); timeoutStatus != nil {
+			return nil, timeoutStatus.Err()
+		}
 		var userDelegatedStakesGroupByCoin = map[types.CoinID]*stakeUser{}
 		allCandidates := cState.Candidates().GetCandidates()
-		for _, candidate := range allCandidates {
+		for i, candidate := range allCandidates {
 			userStakes := userStakes(candidate.PubKey, address, cState)
+
+			if timeoutStatus := s.checkTimeout(ctx, fmt.Sprintf("userStakes of %s [%d]", candidate.PubKey, i)); timeoutStatus != nil {
+				return nil, timeoutStatus.Err()
+			}
+
 			for coin, userStake := range userStakes {
 				stake, ok := userDelegatedStakesGroupByCoin[coin]
 				if !ok {
@@ -100,7 +110,7 @@ func (s *Service) Address(ctx context.Context, req *pb.AddressRequest) (*pb.Addr
 				},
 				Value:            delegatedStake.Value.String(),
 				DelegateBipValue: delegatedStake.BipValue.String(),
-				BipValue:         customCoinBipBalance(coinID, delegatedStake.Value, cState).String(),
+				BipValue:         customCoinBipBalance(coinID, delegatedStake.Value, cState.Coins()).String(),
 			})
 
 			totalStake, ok := totalStakesGroupByCoin[coinID]
@@ -119,7 +129,7 @@ func (s *Service) Address(ctx context.Context, req *pb.AddressRequest) (*pb.Addr
 	coinsBipValue := big.NewInt(0)
 	res.Total = make([]*pb.AddressBalance, 0, len(totalStakesGroupByCoin))
 	for coinID, stake := range totalStakesGroupByCoin {
-		balance := customCoinBipBalance(coinID, stake, cState)
+		balance := customCoinBipBalance(coinID, stake, cState.Coins())
 		if req.Delegated {
 			res.Total = append(res.Total, &pb.AddressBalance{
 				Coin: &pb.Coin{
@@ -137,27 +147,13 @@ func (s *Service) Address(ctx context.Context, req *pb.AddressRequest) (*pb.Addr
 	return &res, nil
 }
 
-func customCoinBipBalance(coinToSell types.CoinID, valueToSell *big.Int, cState *state.CheckState) *big.Int {
-	coinToBuy := types.GetBaseCoinID()
-
-	if coinToSell == coinToBuy {
+func customCoinBipBalance(coinToSell types.CoinID, valueToSell *big.Int, coins coins.RCoins) *big.Int {
+	if coinToSell.IsBaseCoin() {
 		return valueToSell
 	}
 
-	if coinToSell.IsBaseCoin() {
-		coin := cState.Coins().GetCoin(coinToBuy)
-		return formula.CalculatePurchaseReturn(coin.Volume(), coin.Reserve(), coin.Crr(), valueToSell)
-	}
-
-	if coinToBuy.IsBaseCoin() {
-		coin := cState.Coins().GetCoin(coinToSell)
-		return formula.CalculateSaleReturn(coin.Volume(), coin.Reserve(), coin.Crr(), valueToSell)
-	}
-
-	coinFrom := cState.Coins().GetCoin(coinToSell)
-	coinTo := cState.Coins().GetCoin(coinToBuy)
-	basecoinValue := formula.CalculateSaleReturn(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), valueToSell)
-	return formula.CalculatePurchaseReturn(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), basecoinValue)
+	coinFrom := coins.GetCoin(coinToSell)
+	return formula.CalculateSaleReturn(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), valueToSell)
 }
 
 func userStakes(c types.Pubkey, address types.Address, state *state.CheckState) map[types.CoinID]*stakeUser {

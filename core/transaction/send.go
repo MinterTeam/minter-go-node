@@ -23,9 +23,9 @@ type Coin struct {
 	Symbol string `json:"symbol"`
 }
 
-func (data SendData) TotalSpend(tx *Transaction, context *state.CheckState) (TotalSpends, []Conversion, *big.Int, *Response) {
+func (data SendData) totalSpend(tx *Transaction, context *state.CheckState) (TotalSpends, []conversion, *big.Int, *Response) {
 	total := TotalSpends{}
-	var conversions []Conversion
+	var conversions []conversion
 
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
 	commission := big.NewInt(0).Set(commissionInBaseCoin)
@@ -39,7 +39,7 @@ func (data SendData) TotalSpend(tx *Transaction, context *state.CheckState) (Tot
 		}
 
 		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
-		conversions = append(conversions, Conversion{
+		conversions = append(conversions, conversion{
 			FromCoin:    tx.GasCoin,
 			FromAmount:  commission,
 			FromReserve: commissionInBaseCoin,
@@ -96,7 +96,7 @@ func (data SendData) Run(tx *Transaction, context state.Interface, rewardPool *b
 		return *response
 	}
 
-	totalSpends, conversions, _, response := data.TotalSpend(tx, checkState)
+	totalSpends, conversions, _, response := data.totalSpend(tx, checkState)
 	if response != nil {
 		return *response
 	}

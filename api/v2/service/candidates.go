@@ -39,7 +39,7 @@ func (s *Service) Candidates(ctx context.Context, req *pb.CandidatesRequest) (*p
 			continue
 		}
 
-		response.Candidates = append(response.Candidates, makeResponseCandidate(cState, candidate, req.IncludeStakes))
+		response.Candidates = append(response.Candidates, makeResponseCandidate(cState, candidate, req.IncludeStakes, req.NotShowStakes))
 	}
 
 	return response, nil
