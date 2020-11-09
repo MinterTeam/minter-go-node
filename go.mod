@@ -2,7 +2,10 @@ module github.com/MinterTeam/minter-go-node
 
 go 1.15
 
-replace github.com/tendermint/iavl v0.14.2 => github.com/klim0v/iavl v0.14.3-0.20201105234317-69e21305a688
+replace (
+	github.com/tendermint/iavl v0.14.2 => github.com/klim0v/iavl v0.14.3-0.20201109125152-7d3a16fadc4e
+	github.com/tendermint/tm-db v0.5.1 => github.com/klim0v/tm-db v0.5.2-0.20201109133427-14a070d8b54b
+)
 
 require (
 	github.com/MinterTeam/node-grpc-gateway v1.2.1-0.20201105130854-87a7f4ef17cd
@@ -27,7 +30,7 @@ require (
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/viper v1.6.3
 	github.com/stretchr/testify v1.6.1
-	github.com/syndtr/goleveldb v1.0.1-0.20190923125748-758128399b1d
+	github.com/syndtr/goleveldb v1.0.1-0.20200815110645-5c35d600f0ca
 	github.com/tendermint/go-amino v0.15.1
 	github.com/tendermint/iavl v0.14.2
 	github.com/tendermint/tendermint v0.33.8
@@ -41,5 +44,4 @@ require (
 	google.golang.org/grpc v1.33.1
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/errgo.v2 v2.1.0
-	gopkg.in/yaml.v2 v2.2.8 // indirect
 )

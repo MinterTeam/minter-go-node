@@ -227,6 +227,27 @@ func (m *Manager) NetInfo(context.Context, *empty.Empty) (*pb.NetInfoResponse, e
 	return response, nil
 }
 
+func (m *Manager) AvailableVersions(context.Context, *empty.Empty) (*pb.AvailableVersionsResponse, error) {
+	availableVersions := m.blockchain.CurrentState().Tree().AvailableVersions()
+	var heights []string
+	firstVersion := availableVersions[0]
+	lastVersion := firstVersion
+	for _, currentVersion := range availableVersions {
+		if currentVersion-lastVersion <= 1 {
+			lastVersion = currentVersion
+			continue
+		}
+		if firstVersion == lastVersion {
+			heights = append(heights, fmt.Sprintf("%d", firstVersion))
+		} else {
+			heights = append(heights, fmt.Sprintf("%d-%d", firstVersion, lastVersion))
+		}
+		firstVersion = currentVersion
+		lastVersion = firstVersion
+	}
+	return &pb.AvailableVersionsResponse{Heights: append(heights, fmt.Sprintf("%d-%d", firstVersion, lastVersion))}, nil
+}
+
 func (m *Manager) PruneBlocks(req *pb.PruneBlocksRequest, stream pb.ManagerService_PruneBlocksServer) error {
 	total := req.ToHeight - req.FromHeight
 
