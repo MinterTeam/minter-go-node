@@ -24,7 +24,7 @@ type MTree interface {
 	LoadVersion(targetVersion int64) (int64, error)
 	LazyLoadVersion(targetVersion int64) (int64, error)
 	SaveVersion() ([]byte, int64, error)
-	DeleteVersion(version int64) error
+	DeleteVersionIfExists(version int64) error
 	DeleteVersionsRange(fromVersion, toVersion int64) error
 	GetImmutable() *ImmutableTree
 	GetImmutableAtHeight(version int64) (*ImmutableTree, error)
@@ -169,9 +169,13 @@ func (t *mutableTree) DeleteVersionsRange(fromVersion, toVersion int64) error {
 }
 
 // Should use GlobalLock() and GlobalUnlock
-func (t *mutableTree) DeleteVersion(version int64) error {
+func (t *mutableTree) DeleteVersionIfExists(version int64) error {
 	t.lock.Lock()
 	defer t.lock.Unlock()
+
+	if !t.tree.VersionExists(version) {
+		return nil
+	}
 
 	return t.tree.DeleteVersion(version)
 }
