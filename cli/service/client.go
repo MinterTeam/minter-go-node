@@ -21,15 +21,15 @@ import (
 	"time"
 )
 
-type ManagerConsole struct {
+type managerConsole struct {
 	cli *cli.App
 }
 
-func newManagerConsole(cli *cli.App) *ManagerConsole {
-	return &ManagerConsole{cli: cli}
+func newManagerConsole(cli *cli.App) *managerConsole {
+	return &managerConsole{cli: cli}
 }
 
-func (mc *ManagerConsole) Execute(args []string) error {
+func (mc *managerConsole) Execute(args []string) error {
 	return mc.cli.Run(append(make([]string, 1, len(args)+1), args...))
 }
 
@@ -82,7 +82,7 @@ func completer(commands cli.Commands) prompt.Completer {
 	}
 }
 
-func (mc *ManagerConsole) Cli(ctx context.Context) error {
+func (mc *managerConsole) Cli(ctx context.Context) error {
 	completer := completer(mc.cli.Commands)
 	var history []string
 	for {
@@ -111,7 +111,7 @@ func (mc *ManagerConsole) Cli(ctx context.Context) error {
 	}
 }
 
-func NewCLI(socketPath string) (*ManagerConsole, error) {
+func NewCLI(socketPath string) (*managerConsole, error) {
 	cc, err := grpc.Dial("passthrough:///unix:///"+socketPath,
 		grpc.WithStreamInterceptor(grpc_retry.StreamClientInterceptor()),
 		grpc.WithUnaryInterceptor(grpc_retry.UnaryClientInterceptor()),

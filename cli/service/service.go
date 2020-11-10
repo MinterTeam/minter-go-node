@@ -22,7 +22,7 @@ import (
 	"time"
 )
 
-type Manager struct {
+type manager struct {
 	blockchain *minter.Blockchain
 	tmRPC      *rpc.Local
 	tmNode     *tmNode.Node
@@ -31,10 +31,10 @@ type Manager struct {
 }
 
 func NewManager(blockchain *minter.Blockchain, tmRPC *rpc.Local, tmNode *tmNode.Node, cfg *config.Config) pb.ManagerServiceServer {
-	return &Manager{blockchain: blockchain, tmRPC: tmRPC, tmNode: tmNode, cfg: cfg}
+	return &manager{blockchain: blockchain, tmRPC: tmRPC, tmNode: tmNode, cfg: cfg}
 }
 
-func (m *Manager) Dashboard(_ *empty.Empty, stream pb.ManagerService_DashboardServer) error {
+func (m *manager) Dashboard(_ *empty.Empty, stream pb.ManagerService_DashboardServer) error {
 	for {
 		select {
 		case <-stream.Context().Done():
@@ -115,7 +115,7 @@ func (m *Manager) Dashboard(_ *empty.Empty, stream pb.ManagerService_DashboardSe
 	}
 }
 
-func (m *Manager) Status(context.Context, *empty.Empty) (*pb.StatusResponse, error) {
+func (m *manager) Status(context.Context, *empty.Empty) (*pb.StatusResponse, error) {
 	result, err := m.tmRPC.Status()
 	if err != nil {
 		return new(pb.StatusResponse), status.Error(codes.Internal, err.Error())
@@ -136,7 +136,7 @@ func (m *Manager) Status(context.Context, *empty.Empty) (*pb.StatusResponse, err
 	return response, nil
 }
 
-func (m *Manager) NetInfo(context.Context, *empty.Empty) (*pb.NetInfoResponse, error) {
+func (m *manager) NetInfo(context.Context, *empty.Empty) (*pb.NetInfoResponse, error) {
 	resultNetInfo, err := m.tmRPC.NetInfo()
 	if err != nil {
 		return new(pb.NetInfoResponse), status.Error(codes.Internal, err.Error())
@@ -227,7 +227,7 @@ func (m *Manager) NetInfo(context.Context, *empty.Empty) (*pb.NetInfoResponse, e
 	return response, nil
 }
 
-func (m *Manager) AvailableVersions(context.Context, *empty.Empty) (*pb.AvailableVersionsResponse, error) {
+func (m *manager) AvailableVersions(context.Context, *empty.Empty) (*pb.AvailableVersionsResponse, error) {
 	availableVersions := m.blockchain.CurrentState().Tree().AvailableVersions()
 	var heights []string
 	firstVersion := availableVersions[0]
@@ -248,7 +248,7 @@ func (m *Manager) AvailableVersions(context.Context, *empty.Empty) (*pb.Availabl
 	return &pb.AvailableVersionsResponse{Heights: append(heights, fmt.Sprintf("%d-%d", firstVersion, lastVersion))}, nil
 }
 
-func (m *Manager) PruneBlocks(req *pb.PruneBlocksRequest, stream pb.ManagerService_PruneBlocksServer) error {
+func (m *manager) PruneBlocks(req *pb.PruneBlocksRequest, stream pb.ManagerService_PruneBlocksServer) error {
 	total := req.ToHeight - req.FromHeight
 
 	last := make(chan struct{})
@@ -291,7 +291,7 @@ func (m *Manager) PruneBlocks(req *pb.PruneBlocksRequest, stream pb.ManagerServi
 	return nil
 }
 
-func (m *Manager) DealPeer(_ context.Context, req *pb.DealPeerRequest) (*empty.Empty, error) {
+func (m *manager) DealPeer(_ context.Context, req *pb.DealPeerRequest) (*empty.Empty, error) {
 	res := new(empty.Empty)
 	_, err := m.tmRPC.DialPeers([]string{req.Address}, req.Persistent)
 	if err != nil {
