@@ -22,7 +22,7 @@ import (
 	"time"
 )
 
-type manager struct {
+type managerServer struct {
 	blockchain *minter.Blockchain
 	tmRPC      *rpc.Local
 	tmNode     *tmNode.Node
@@ -31,10 +31,10 @@ type manager struct {
 }
 
 func NewManager(blockchain *minter.Blockchain, tmRPC *rpc.Local, tmNode *tmNode.Node, cfg *config.Config) pb.ManagerServiceServer {
-	return &manager{blockchain: blockchain, tmRPC: tmRPC, tmNode: tmNode, cfg: cfg}
+	return &managerServer{blockchain: blockchain, tmRPC: tmRPC, tmNode: tmNode, cfg: cfg}
 }
 
-func (m *manager) Dashboard(_ *empty.Empty, stream pb.ManagerService_DashboardServer) error {
+func (m *managerServer) Dashboard(_ *empty.Empty, stream pb.ManagerService_DashboardServer) error {
 	for {
 		select {
 		case <-stream.Context().Done():
@@ -115,7 +115,7 @@ func (m *manager) Dashboard(_ *empty.Empty, stream pb.ManagerService_DashboardSe
 	}
 }
 
-func (m *manager) Status(context.Context, *empty.Empty) (*pb.StatusResponse, error) {
+func (m *managerServer) Status(context.Context, *empty.Empty) (*pb.StatusResponse, error) {
 	result, err := m.tmRPC.Status()
 	if err != nil {
 		return new(pb.StatusResponse), status.Error(codes.Internal, err.Error())
@@ -136,7 +136,7 @@ func (m *manager) Status(context.Context, *empty.Empty) (*pb.StatusResponse, err
 	return response, nil
 }
 
-func (m *manager) NetInfo(context.Context, *empty.Empty) (*pb.NetInfoResponse, error) {
+func (m *managerServer) NetInfo(context.Context, *empty.Empty) (*pb.NetInfoResponse, error) {
 	resultNetInfo, err := m.tmRPC.NetInfo()
 	if err != nil {
 		return new(pb.NetInfoResponse), status.Error(codes.Internal, err.Error())
@@ -227,28 +227,32 @@ func (m *manager) NetInfo(context.Context, *empty.Empty) (*pb.NetInfoResponse, e
 	return response, nil
 }
 
-func (m *manager) AvailableVersions(context.Context, *empty.Empty) (*pb.AvailableVersionsResponse, error) {
-	availableVersions := m.blockchain.CurrentState().Tree().AvailableVersions()
-	var heights []string
-	firstVersion := availableVersions[0]
-	lastVersion := firstVersion
-	for _, currentVersion := range availableVersions {
-		if currentVersion-lastVersion <= 1 {
-			lastVersion = currentVersion
+func (m *managerServer) AvailableVersions(context.Context, *empty.Empty) (*pb.AvailableVersionsResponse, error) {
+	versions := m.blockchain.CurrentState().Tree().AvailableVersions()
+	intervals := map[int]int{}
+	var fromVersion int64
+	for i := 0; i < len(versions); i++ {
+		if versions[i]-versions[fromVersion]-1 != intervals[versions[fromVersion]] {
+			fromVersion = int64(i)
+		}
+		if _, ok := intervals[versions[fromVersion]]; !ok {
+			intervals[versions[fromVersion]] = 0
 			continue
 		}
-		if firstVersion == lastVersion {
-			heights = append(heights, fmt.Sprintf("%d", firstVersion))
-		} else {
-			heights = append(heights, fmt.Sprintf("%d-%d", firstVersion, lastVersion))
-		}
-		firstVersion = currentVersion
-		lastVersion = firstVersion
+		intervals[versions[fromVersion]]++
 	}
-	return &pb.AvailableVersionsResponse{Heights: append(heights, fmt.Sprintf("%d-%d", firstVersion, lastVersion))}, nil
+	heights := make([]string, 0, len(intervals))
+	for fromVersion, sortedBatchSize := range intervals {
+		if sortedBatchSize == 0 {
+			heights = append(heights, fmt.Sprintf("%d", fromVersion))
+		} else {
+			heights = append(heights, fmt.Sprintf("%d-%d", fromVersion, fromVersion+sortedBatchSize))
+		}
+	}
+	return &pb.AvailableVersionsResponse{Heights: heights}, nil
 }
 
-func (m *manager) PruneBlocks(req *pb.PruneBlocksRequest, stream pb.ManagerService_PruneBlocksServer) error {
+func (m *managerServer) PruneBlocks(req *pb.PruneBlocksRequest, stream pb.ManagerService_PruneBlocksServer) error {
 	total := req.ToHeight - req.FromHeight
 
 	last := make(chan struct{})
@@ -291,7 +295,7 @@ func (m *manager) PruneBlocks(req *pb.PruneBlocksRequest, stream pb.ManagerServi
 	return nil
 }
 
-func (m *manager) DealPeer(_ context.Context, req *pb.DealPeerRequest) (*empty.Empty, error) {
+func (m *managerServer) DealPeer(_ context.Context, req *pb.DealPeerRequest) (*empty.Empty, error) {
 	res := new(empty.Empty)
 	_, err := m.tmRPC.DialPeers([]string{req.Address}, req.Persistent)
 	if err != nil {
