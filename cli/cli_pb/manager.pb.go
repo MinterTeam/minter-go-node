@@ -563,6 +563,53 @@ func (x *DashboardResponse) GetValidatorStatus() DashboardResponse_ValidatorStat
 	return DashboardResponse_Validating
 }
 
+type AvailableVersionsResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Heights []string `protobuf:"bytes,1,rep,name=heights,proto3" json:"heights,omitempty"`
+}
+
+func (x *AvailableVersionsResponse) Reset() {
+	*x = AvailableVersionsResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_manager_proto_msgTypes[5]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *AvailableVersionsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AvailableVersionsResponse) ProtoMessage() {}
+
+func (x *AvailableVersionsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_manager_proto_msgTypes[5]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AvailableVersionsResponse.ProtoReflect.Descriptor instead.
+func (*AvailableVersionsResponse) Descriptor() ([]byte, []int) {
+	return file_manager_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *AvailableVersionsResponse) GetHeights() []string {
+	if x != nil {
+		return x.Heights
+	}
+	return nil
+}
+
 type PruneBlocksRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -576,7 +623,7 @@ type PruneBlocksRequest struct {
 func (x *PruneBlocksRequest) Reset() {
 	*x = PruneBlocksRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_manager_proto_msgTypes[5]
+		mi := &file_manager_proto_msgTypes[6]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -589,7 +636,7 @@ func (x *PruneBlocksRequest) String() string {
 func (*PruneBlocksRequest) ProtoMessage() {}
 
 func (x *PruneBlocksRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_manager_proto_msgTypes[5]
+	mi := &file_manager_proto_msgTypes[6]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -602,7 +649,7 @@ func (x *PruneBlocksRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PruneBlocksRequest.ProtoReflect.Descriptor instead.
 func (*PruneBlocksRequest) Descriptor() ([]byte, []int) {
-	return file_manager_proto_rawDescGZIP(), []int{5}
+	return file_manager_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *PruneBlocksRequest) GetFromHeight() int64 {
@@ -638,7 +685,7 @@ type PruneBlocksResponse struct {
 func (x *PruneBlocksResponse) Reset() {
 	*x = PruneBlocksResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_manager_proto_msgTypes[6]
+		mi := &file_manager_proto_msgTypes[7]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -651,7 +698,7 @@ func (x *PruneBlocksResponse) String() string {
 func (*PruneBlocksResponse) ProtoMessage() {}
 
 func (x *PruneBlocksResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_manager_proto_msgTypes[6]
+	mi := &file_manager_proto_msgTypes[7]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -664,7 +711,7 @@ func (x *PruneBlocksResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PruneBlocksResponse.ProtoReflect.Descriptor instead.
 func (*PruneBlocksResponse) Descriptor() ([]byte, []int) {
-	return file_manager_proto_rawDescGZIP(), []int{6}
+	return file_manager_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *PruneBlocksResponse) GetTotal() int64 {
@@ -694,7 +741,7 @@ type NodeInfo_ProtocolVersion struct {
 func (x *NodeInfo_ProtocolVersion) Reset() {
 	*x = NodeInfo_ProtocolVersion{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_manager_proto_msgTypes[7]
+		mi := &file_manager_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -707,7 +754,7 @@ func (x *NodeInfo_ProtocolVersion) String() string {
 func (*NodeInfo_ProtocolVersion) ProtoMessage() {}
 
 func (x *NodeInfo_ProtocolVersion) ProtoReflect() protoreflect.Message {
-	mi := &file_manager_proto_msgTypes[7]
+	mi := &file_manager_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -756,7 +803,7 @@ type NodeInfo_Other struct {
 func (x *NodeInfo_Other) Reset() {
 	*x = NodeInfo_Other{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_manager_proto_msgTypes[8]
+		mi := &file_manager_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -769,7 +816,7 @@ func (x *NodeInfo_Other) String() string {
 func (*NodeInfo_Other) ProtoMessage() {}
 
 func (x *NodeInfo_Other) ProtoReflect() protoreflect.Message {
-	mi := &file_manager_proto_msgTypes[8]
+	mi := &file_manager_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -814,7 +861,7 @@ type NetInfoResponse_Peer struct {
 func (x *NetInfoResponse_Peer) Reset() {
 	*x = NetInfoResponse_Peer{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_manager_proto_msgTypes[9]
+		mi := &file_manager_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -827,7 +874,7 @@ func (x *NetInfoResponse_Peer) String() string {
 func (*NetInfoResponse_Peer) ProtoMessage() {}
 
 func (x *NetInfoResponse_Peer) ProtoReflect() protoreflect.Message {
-	mi := &file_manager_proto_msgTypes[9]
+	mi := &file_manager_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -892,7 +939,7 @@ type NetInfoResponse_Peer_ConnectionStatus struct {
 func (x *NetInfoResponse_Peer_ConnectionStatus) Reset() {
 	*x = NetInfoResponse_Peer_ConnectionStatus{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_manager_proto_msgTypes[10]
+		mi := &file_manager_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -905,7 +952,7 @@ func (x *NetInfoResponse_Peer_ConnectionStatus) String() string {
 func (*NetInfoResponse_Peer_ConnectionStatus) ProtoMessage() {}
 
 func (x *NetInfoResponse_Peer_ConnectionStatus) ProtoReflect() protoreflect.Message {
-	mi := &file_manager_proto_msgTypes[10]
+	mi := &file_manager_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -972,7 +1019,7 @@ type NetInfoResponse_Peer_ConnectionStatus_Monitor struct {
 func (x *NetInfoResponse_Peer_ConnectionStatus_Monitor) Reset() {
 	*x = NetInfoResponse_Peer_ConnectionStatus_Monitor{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_manager_proto_msgTypes[11]
+		mi := &file_manager_proto_msgTypes[12]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -985,7 +1032,7 @@ func (x *NetInfoResponse_Peer_ConnectionStatus_Monitor) String() string {
 func (*NetInfoResponse_Peer_ConnectionStatus_Monitor) ProtoMessage() {}
 
 func (x *NetInfoResponse_Peer_ConnectionStatus_Monitor) ProtoReflect() protoreflect.Message {
-	mi := &file_manager_proto_msgTypes[11]
+	mi := &file_manager_proto_msgTypes[12]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1107,7 +1154,7 @@ type NetInfoResponse_Peer_ConnectionStatus_Channel struct {
 func (x *NetInfoResponse_Peer_ConnectionStatus_Channel) Reset() {
 	*x = NetInfoResponse_Peer_ConnectionStatus_Channel{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_manager_proto_msgTypes[12]
+		mi := &file_manager_proto_msgTypes[13]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1120,7 +1167,7 @@ func (x *NetInfoResponse_Peer_ConnectionStatus_Channel) String() string {
 func (*NetInfoResponse_Peer_ConnectionStatus_Channel) ProtoMessage() {}
 
 func (x *NetInfoResponse_Peer_ConnectionStatus_Channel) ProtoReflect() protoreflect.Message {
-	mi := &file_manager_proto_msgTypes[12]
+	mi := &file_manager_proto_msgTypes[13]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1357,40 +1404,49 @@ var file_manager_proto_rawDesc = []byte{
 	0x69, 0x6e, 0x67, 0x10, 0x00, 0x12, 0x0e, 0x0a, 0x0a, 0x43, 0x68, 0x61, 0x6c, 0x6c, 0x65, 0x6e,
 	0x67, 0x65, 0x72, 0x10, 0x01, 0x12, 0x0b, 0x0a, 0x07, 0x4f, 0x66, 0x66, 0x6c, 0x69, 0x6e, 0x65,
 	0x10, 0x02, 0x12, 0x0f, 0x0a, 0x0b, 0x4e, 0x6f, 0x74, 0x44, 0x65, 0x63, 0x6c, 0x61, 0x72, 0x65,
-	0x64, 0x10, 0x03, 0x22, 0x68, 0x0a, 0x12, 0x50, 0x72, 0x75, 0x6e, 0x65, 0x42, 0x6c, 0x6f, 0x63,
-	0x6b, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1f, 0x0a, 0x0b, 0x66, 0x72, 0x6f,
-	0x6d, 0x5f, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x0a,
-	0x66, 0x72, 0x6f, 0x6d, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x12, 0x1b, 0x0a, 0x09, 0x74, 0x6f,
-	0x5f, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x03, 0x52, 0x08, 0x74,
-	0x6f, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x12, 0x14, 0x0a, 0x05, 0x62, 0x61, 0x74, 0x63, 0x68,
-	0x18, 0x03, 0x20, 0x01, 0x28, 0x03, 0x52, 0x05, 0x62, 0x61, 0x74, 0x63, 0x68, 0x22, 0x45, 0x0a,
-	0x13, 0x50, 0x72, 0x75, 0x6e, 0x65, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x73, 0x52, 0x65, 0x73, 0x70,
-	0x6f, 0x6e, 0x73, 0x65, 0x12, 0x14, 0x0a, 0x05, 0x74, 0x6f, 0x74, 0x61, 0x6c, 0x18, 0x01, 0x20,
-	0x01, 0x28, 0x03, 0x52, 0x05, 0x74, 0x6f, 0x74, 0x61, 0x6c, 0x12, 0x18, 0x0a, 0x07, 0x63, 0x75,
-	0x72, 0x72, 0x65, 0x6e, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x03, 0x52, 0x07, 0x63, 0x75, 0x72,
-	0x72, 0x65, 0x6e, 0x74, 0x32, 0xcf, 0x02, 0x0a, 0x0e, 0x4d, 0x61, 0x6e, 0x61, 0x67, 0x65, 0x72,
-	0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x38, 0x0a, 0x06, 0x53, 0x74, 0x61, 0x74, 0x75,
-	0x73, 0x12, 0x16, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x62, 0x75, 0x66, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x1a, 0x16, 0x2e, 0x63, 0x6c, 0x69, 0x5f,
-	0x70, 0x62, 0x2e, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
-	0x65, 0x12, 0x3a, 0x0a, 0x07, 0x4e, 0x65, 0x74, 0x49, 0x6e, 0x66, 0x6f, 0x12, 0x16, 0x2e, 0x67,
-	0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x45,
-	0x6d, 0x70, 0x74, 0x79, 0x1a, 0x17, 0x2e, 0x63, 0x6c, 0x69, 0x5f, 0x70, 0x62, 0x2e, 0x4e, 0x65,
-	0x74, 0x49, 0x6e, 0x66, 0x6f, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x48, 0x0a,
-	0x0b, 0x50, 0x72, 0x75, 0x6e, 0x65, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x73, 0x12, 0x1a, 0x2e, 0x63,
-	0x6c, 0x69, 0x5f, 0x70, 0x62, 0x2e, 0x50, 0x72, 0x75, 0x6e, 0x65, 0x42, 0x6c, 0x6f, 0x63, 0x6b,
-	0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x1b, 0x2e, 0x63, 0x6c, 0x69, 0x5f, 0x70,
-	0x62, 0x2e, 0x50, 0x72, 0x75, 0x6e, 0x65, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x73, 0x52, 0x65, 0x73,
-	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x30, 0x01, 0x12, 0x3b, 0x0a, 0x08, 0x44, 0x65, 0x61, 0x6c, 0x50,
-	0x65, 0x65, 0x72, 0x12, 0x17, 0x2e, 0x63, 0x6c, 0x69, 0x5f, 0x70, 0x62, 0x2e, 0x44, 0x65, 0x61,
-	0x6c, 0x50, 0x65, 0x65, 0x72, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x16, 0x2e, 0x67,
-	0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x45,
-	0x6d, 0x70, 0x74, 0x79, 0x12, 0x40, 0x0a, 0x09, 0x44, 0x61, 0x73, 0x68, 0x62, 0x6f, 0x61, 0x72,
-	0x64, 0x12, 0x16, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x62, 0x75, 0x66, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x1a, 0x19, 0x2e, 0x63, 0x6c, 0x69, 0x5f,
-	0x70, 0x62, 0x2e, 0x44, 0x61, 0x73, 0x68, 0x62, 0x6f, 0x61, 0x72, 0x64, 0x52, 0x65, 0x73, 0x70,
-	0x6f, 0x6e, 0x73, 0x65, 0x30, 0x01, 0x42, 0x0a, 0x5a, 0x08, 0x2e, 0x3b, 0x63, 0x6c, 0x69, 0x5f,
-	0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x64, 0x10, 0x03, 0x22, 0x35, 0x0a, 0x19, 0x41, 0x76, 0x61, 0x69, 0x6c, 0x61, 0x62, 0x6c, 0x65,
+	0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
+	0x12, 0x18, 0x0a, 0x07, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28,
+	0x09, 0x52, 0x07, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x73, 0x22, 0x68, 0x0a, 0x12, 0x50, 0x72,
+	0x75, 0x6e, 0x65, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
+	0x12, 0x1f, 0x0a, 0x0b, 0x66, 0x72, 0x6f, 0x6d, 0x5f, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x18,
+	0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x0a, 0x66, 0x72, 0x6f, 0x6d, 0x48, 0x65, 0x69, 0x67, 0x68,
+	0x74, 0x12, 0x1b, 0x0a, 0x09, 0x74, 0x6f, 0x5f, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x18, 0x02,
+	0x20, 0x01, 0x28, 0x03, 0x52, 0x08, 0x74, 0x6f, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x12, 0x14,
+	0x0a, 0x05, 0x62, 0x61, 0x74, 0x63, 0x68, 0x18, 0x03, 0x20, 0x01, 0x28, 0x03, 0x52, 0x05, 0x62,
+	0x61, 0x74, 0x63, 0x68, 0x22, 0x45, 0x0a, 0x13, 0x50, 0x72, 0x75, 0x6e, 0x65, 0x42, 0x6c, 0x6f,
+	0x63, 0x6b, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x14, 0x0a, 0x05, 0x74,
+	0x6f, 0x74, 0x61, 0x6c, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x05, 0x74, 0x6f, 0x74, 0x61,
+	0x6c, 0x12, 0x18, 0x0a, 0x07, 0x63, 0x75, 0x72, 0x72, 0x65, 0x6e, 0x74, 0x18, 0x02, 0x20, 0x01,
+	0x28, 0x03, 0x52, 0x07, 0x63, 0x75, 0x72, 0x72, 0x65, 0x6e, 0x74, 0x32, 0x9f, 0x03, 0x0a, 0x0e,
+	0x4d, 0x61, 0x6e, 0x61, 0x67, 0x65, 0x72, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x38,
+	0x0a, 0x06, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x12, 0x16, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c,
+	0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79,
+	0x1a, 0x16, 0x2e, 0x63, 0x6c, 0x69, 0x5f, 0x70, 0x62, 0x2e, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73,
+	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x3a, 0x0a, 0x07, 0x4e, 0x65, 0x74, 0x49,
+	0x6e, 0x66, 0x6f, 0x12, 0x16, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f,
+	0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x1a, 0x17, 0x2e, 0x63, 0x6c,
+	0x69, 0x5f, 0x70, 0x62, 0x2e, 0x4e, 0x65, 0x74, 0x49, 0x6e, 0x66, 0x6f, 0x52, 0x65, 0x73, 0x70,
+	0x6f, 0x6e, 0x73, 0x65, 0x12, 0x4e, 0x0a, 0x11, 0x41, 0x76, 0x61, 0x69, 0x6c, 0x61, 0x62, 0x6c,
+	0x65, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x73, 0x12, 0x16, 0x2e, 0x67, 0x6f, 0x6f, 0x67,
+	0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x45, 0x6d, 0x70, 0x74,
+	0x79, 0x1a, 0x21, 0x2e, 0x63, 0x6c, 0x69, 0x5f, 0x70, 0x62, 0x2e, 0x41, 0x76, 0x61, 0x69, 0x6c,
+	0x61, 0x62, 0x6c, 0x65, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x73, 0x52, 0x65, 0x73, 0x70,
+	0x6f, 0x6e, 0x73, 0x65, 0x12, 0x48, 0x0a, 0x0b, 0x50, 0x72, 0x75, 0x6e, 0x65, 0x42, 0x6c, 0x6f,
+	0x63, 0x6b, 0x73, 0x12, 0x1a, 0x2e, 0x63, 0x6c, 0x69, 0x5f, 0x70, 0x62, 0x2e, 0x50, 0x72, 0x75,
+	0x6e, 0x65, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
+	0x1b, 0x2e, 0x63, 0x6c, 0x69, 0x5f, 0x70, 0x62, 0x2e, 0x50, 0x72, 0x75, 0x6e, 0x65, 0x42, 0x6c,
+	0x6f, 0x63, 0x6b, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x30, 0x01, 0x12, 0x3b,
+	0x0a, 0x08, 0x44, 0x65, 0x61, 0x6c, 0x50, 0x65, 0x65, 0x72, 0x12, 0x17, 0x2e, 0x63, 0x6c, 0x69,
+	0x5f, 0x70, 0x62, 0x2e, 0x44, 0x65, 0x61, 0x6c, 0x50, 0x65, 0x65, 0x72, 0x52, 0x65, 0x71, 0x75,
+	0x65, 0x73, 0x74, 0x1a, 0x16, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f,
+	0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x12, 0x40, 0x0a, 0x09, 0x44,
+	0x61, 0x73, 0x68, 0x62, 0x6f, 0x61, 0x72, 0x64, 0x12, 0x16, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c,
+	0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79,
+	0x1a, 0x19, 0x2e, 0x63, 0x6c, 0x69, 0x5f, 0x70, 0x62, 0x2e, 0x44, 0x61, 0x73, 0x68, 0x62, 0x6f,
+	0x61, 0x72, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x30, 0x01, 0x42, 0x0a, 0x5a,
+	0x08, 0x2e, 0x3b, 0x63, 0x6c, 0x69, 0x5f, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x33,
 }
 
 var (
@@ -1406,7 +1462,7 @@ func file_manager_proto_rawDescGZIP() []byte {
 }
 
 var file_manager_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_manager_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_manager_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_manager_proto_goTypes = []interface{}{
 	(DashboardResponse_ValidatorStatus)(0),                // 0: cli_pb.DashboardResponse.ValidatorStatus
 	(*NodeInfo)(nil),                                      // 1: cli_pb.NodeInfo
@@ -1414,42 +1470,45 @@ var file_manager_proto_goTypes = []interface{}{
 	(*StatusResponse)(nil),                                // 3: cli_pb.StatusResponse
 	(*DealPeerRequest)(nil),                               // 4: cli_pb.DealPeerRequest
 	(*DashboardResponse)(nil),                             // 5: cli_pb.DashboardResponse
-	(*PruneBlocksRequest)(nil),                            // 6: cli_pb.PruneBlocksRequest
-	(*PruneBlocksResponse)(nil),                           // 7: cli_pb.PruneBlocksResponse
-	(*NodeInfo_ProtocolVersion)(nil),                      // 8: cli_pb.NodeInfo.ProtocolVersion
-	(*NodeInfo_Other)(nil),                                // 9: cli_pb.NodeInfo.Other
-	(*NetInfoResponse_Peer)(nil),                          // 10: cli_pb.NetInfoResponse.Peer
-	(*NetInfoResponse_Peer_ConnectionStatus)(nil),         // 11: cli_pb.NetInfoResponse.Peer.ConnectionStatus
-	(*NetInfoResponse_Peer_ConnectionStatus_Monitor)(nil), // 12: cli_pb.NetInfoResponse.Peer.ConnectionStatus.Monitor
-	(*NetInfoResponse_Peer_ConnectionStatus_Channel)(nil), // 13: cli_pb.NetInfoResponse.Peer.ConnectionStatus.Channel
-	(*timestamp.Timestamp)(nil),                           // 14: google.protobuf.Timestamp
-	(*wrappers.Int64Value)(nil),                           // 15: google.protobuf.Int64Value
-	(*empty.Empty)(nil),                                   // 16: google.protobuf.Empty
+	(*AvailableVersionsResponse)(nil),                     // 6: cli_pb.AvailableVersionsResponse
+	(*PruneBlocksRequest)(nil),                            // 7: cli_pb.PruneBlocksRequest
+	(*PruneBlocksResponse)(nil),                           // 8: cli_pb.PruneBlocksResponse
+	(*NodeInfo_ProtocolVersion)(nil),                      // 9: cli_pb.NodeInfo.ProtocolVersion
+	(*NodeInfo_Other)(nil),                                // 10: cli_pb.NodeInfo.Other
+	(*NetInfoResponse_Peer)(nil),                          // 11: cli_pb.NetInfoResponse.Peer
+	(*NetInfoResponse_Peer_ConnectionStatus)(nil),         // 12: cli_pb.NetInfoResponse.Peer.ConnectionStatus
+	(*NetInfoResponse_Peer_ConnectionStatus_Monitor)(nil), // 13: cli_pb.NetInfoResponse.Peer.ConnectionStatus.Monitor
+	(*NetInfoResponse_Peer_ConnectionStatus_Channel)(nil), // 14: cli_pb.NetInfoResponse.Peer.ConnectionStatus.Channel
+	(*timestamp.Timestamp)(nil),                           // 15: google.protobuf.Timestamp
+	(*wrappers.Int64Value)(nil),                           // 16: google.protobuf.Int64Value
+	(*empty.Empty)(nil),                                   // 17: google.protobuf.Empty
 }
 var file_manager_proto_depIdxs = []int32{
-	8,  // 0: cli_pb.NodeInfo.protocol_version:type_name -> cli_pb.NodeInfo.ProtocolVersion
-	9,  // 1: cli_pb.NodeInfo.other:type_name -> cli_pb.NodeInfo.Other
-	10, // 2: cli_pb.NetInfoResponse.peers:type_name -> cli_pb.NetInfoResponse.Peer
-	14, // 3: cli_pb.DashboardResponse.timestamp:type_name -> google.protobuf.Timestamp
+	9,  // 0: cli_pb.NodeInfo.protocol_version:type_name -> cli_pb.NodeInfo.ProtocolVersion
+	10, // 1: cli_pb.NodeInfo.other:type_name -> cli_pb.NodeInfo.Other
+	11, // 2: cli_pb.NetInfoResponse.peers:type_name -> cli_pb.NetInfoResponse.Peer
+	15, // 3: cli_pb.DashboardResponse.timestamp:type_name -> google.protobuf.Timestamp
 	0,  // 4: cli_pb.DashboardResponse.validator_status:type_name -> cli_pb.DashboardResponse.ValidatorStatus
-	15, // 5: cli_pb.NetInfoResponse.Peer.latest_block_height:type_name -> google.protobuf.Int64Value
+	16, // 5: cli_pb.NetInfoResponse.Peer.latest_block_height:type_name -> google.protobuf.Int64Value
 	1,  // 6: cli_pb.NetInfoResponse.Peer.node_info:type_name -> cli_pb.NodeInfo
-	11, // 7: cli_pb.NetInfoResponse.Peer.connection_status:type_name -> cli_pb.NetInfoResponse.Peer.ConnectionStatus
-	12, // 8: cli_pb.NetInfoResponse.Peer.ConnectionStatus.SendMonitor:type_name -> cli_pb.NetInfoResponse.Peer.ConnectionStatus.Monitor
-	12, // 9: cli_pb.NetInfoResponse.Peer.ConnectionStatus.RecvMonitor:type_name -> cli_pb.NetInfoResponse.Peer.ConnectionStatus.Monitor
-	13, // 10: cli_pb.NetInfoResponse.Peer.ConnectionStatus.channels:type_name -> cli_pb.NetInfoResponse.Peer.ConnectionStatus.Channel
-	16, // 11: cli_pb.ManagerService.Status:input_type -> google.protobuf.Empty
-	16, // 12: cli_pb.ManagerService.NetInfo:input_type -> google.protobuf.Empty
-	6,  // 13: cli_pb.ManagerService.PruneBlocks:input_type -> cli_pb.PruneBlocksRequest
-	4,  // 14: cli_pb.ManagerService.DealPeer:input_type -> cli_pb.DealPeerRequest
-	16, // 15: cli_pb.ManagerService.Dashboard:input_type -> google.protobuf.Empty
-	3,  // 16: cli_pb.ManagerService.Status:output_type -> cli_pb.StatusResponse
-	2,  // 17: cli_pb.ManagerService.NetInfo:output_type -> cli_pb.NetInfoResponse
-	7,  // 18: cli_pb.ManagerService.PruneBlocks:output_type -> cli_pb.PruneBlocksResponse
-	16, // 19: cli_pb.ManagerService.DealPeer:output_type -> google.protobuf.Empty
-	5,  // 20: cli_pb.ManagerService.Dashboard:output_type -> cli_pb.DashboardResponse
-	16, // [16:21] is the sub-list for method output_type
-	11, // [11:16] is the sub-list for method input_type
+	12, // 7: cli_pb.NetInfoResponse.Peer.connection_status:type_name -> cli_pb.NetInfoResponse.Peer.ConnectionStatus
+	13, // 8: cli_pb.NetInfoResponse.Peer.ConnectionStatus.SendMonitor:type_name -> cli_pb.NetInfoResponse.Peer.ConnectionStatus.Monitor
+	13, // 9: cli_pb.NetInfoResponse.Peer.ConnectionStatus.RecvMonitor:type_name -> cli_pb.NetInfoResponse.Peer.ConnectionStatus.Monitor
+	14, // 10: cli_pb.NetInfoResponse.Peer.ConnectionStatus.channels:type_name -> cli_pb.NetInfoResponse.Peer.ConnectionStatus.Channel
+	17, // 11: cli_pb.ManagerService.Status:input_type -> google.protobuf.Empty
+	17, // 12: cli_pb.ManagerService.NetInfo:input_type -> google.protobuf.Empty
+	17, // 13: cli_pb.ManagerService.AvailableVersions:input_type -> google.protobuf.Empty
+	7,  // 14: cli_pb.ManagerService.PruneBlocks:input_type -> cli_pb.PruneBlocksRequest
+	4,  // 15: cli_pb.ManagerService.DealPeer:input_type -> cli_pb.DealPeerRequest
+	17, // 16: cli_pb.ManagerService.Dashboard:input_type -> google.protobuf.Empty
+	3,  // 17: cli_pb.ManagerService.Status:output_type -> cli_pb.StatusResponse
+	2,  // 18: cli_pb.ManagerService.NetInfo:output_type -> cli_pb.NetInfoResponse
+	6,  // 19: cli_pb.ManagerService.AvailableVersions:output_type -> cli_pb.AvailableVersionsResponse
+	8,  // 20: cli_pb.ManagerService.PruneBlocks:output_type -> cli_pb.PruneBlocksResponse
+	17, // 21: cli_pb.ManagerService.DealPeer:output_type -> google.protobuf.Empty
+	5,  // 22: cli_pb.ManagerService.Dashboard:output_type -> cli_pb.DashboardResponse
+	17, // [17:23] is the sub-list for method output_type
+	11, // [11:17] is the sub-list for method input_type
 	11, // [11:11] is the sub-list for extension type_name
 	11, // [11:11] is the sub-list for extension extendee
 	0,  // [0:11] is the sub-list for field type_name
@@ -1522,7 +1581,7 @@ func file_manager_proto_init() {
 			}
 		}
 		file_manager_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PruneBlocksRequest); i {
+			switch v := v.(*AvailableVersionsResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1534,7 +1593,7 @@ func file_manager_proto_init() {
 			}
 		}
 		file_manager_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PruneBlocksResponse); i {
+			switch v := v.(*PruneBlocksRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1546,7 +1605,7 @@ func file_manager_proto_init() {
 			}
 		}
 		file_manager_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*NodeInfo_ProtocolVersion); i {
+			switch v := v.(*PruneBlocksResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1558,7 +1617,7 @@ func file_manager_proto_init() {
 			}
 		}
 		file_manager_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*NodeInfo_Other); i {
+			switch v := v.(*NodeInfo_ProtocolVersion); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1570,7 +1629,7 @@ func file_manager_proto_init() {
 			}
 		}
 		file_manager_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*NetInfoResponse_Peer); i {
+			switch v := v.(*NodeInfo_Other); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1582,7 +1641,7 @@ func file_manager_proto_init() {
 			}
 		}
 		file_manager_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*NetInfoResponse_Peer_ConnectionStatus); i {
+			switch v := v.(*NetInfoResponse_Peer); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1594,7 +1653,7 @@ func file_manager_proto_init() {
 			}
 		}
 		file_manager_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*NetInfoResponse_Peer_ConnectionStatus_Monitor); i {
+			switch v := v.(*NetInfoResponse_Peer_ConnectionStatus); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1606,6 +1665,18 @@ func file_manager_proto_init() {
 			}
 		}
 		file_manager_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*NetInfoResponse_Peer_ConnectionStatus_Monitor); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_manager_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*NetInfoResponse_Peer_ConnectionStatus_Channel); i {
 			case 0:
 				return &v.state
@@ -1624,7 +1695,7 @@ func file_manager_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_manager_proto_rawDesc,
 			NumEnums:      1,
-			NumMessages:   13,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -141,6 +141,15 @@ func NewCLI(socketPath string) (*ManagerConsole, error) {
 			Action: dealPeerCMD(client),
 		},
 		{
+			Name:    "available_versions",
+			Aliases: []string{"av"},
+			Usage:   "display all available versions",
+			Flags: []cli.Flag{
+				jsonFlag,
+			},
+			Action: availableVersionsCMD(client),
+		},
+		{
 			Name:    "prune_blocks",
 			Aliases: []string{"pb"},
 			Usage:   "delete block information",
@@ -374,6 +383,25 @@ func statusCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 			return nil
 		}
 		fmt.Println(proto.MarshalTextString(response))
+		return nil
+	}
+}
+
+func availableVersionsCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
+	return func(c *cli.Context) error {
+		response, err := client.AvailableVersions(c.Context, &empty.Empty{})
+		if err != nil {
+			return err
+		}
+		if c.Bool("json") {
+			bb, err := protojson.Marshal(response)
+			if err != nil {
+				return err
+			}
+			fmt.Println(string(bb))
+			return nil
+		}
+		fmt.Println(fmt.Sprintf("%v", response.Heights))
 		return nil
 	}
 }

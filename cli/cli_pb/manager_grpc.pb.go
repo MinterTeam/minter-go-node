@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion7
 type ManagerServiceClient interface {
 	Status(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*StatusResponse, error)
 	NetInfo(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*NetInfoResponse, error)
+	AvailableVersions(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*AvailableVersionsResponse, error)
 	PruneBlocks(ctx context.Context, in *PruneBlocksRequest, opts ...grpc.CallOption) (ManagerService_PruneBlocksClient, error)
 	DealPeer(ctx context.Context, in *DealPeerRequest, opts ...grpc.CallOption) (*empty.Empty, error)
 	Dashboard(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (ManagerService_DashboardClient, error)
@@ -45,6 +46,15 @@ func (c *managerServiceClient) Status(ctx context.Context, in *empty.Empty, opts
 func (c *managerServiceClient) NetInfo(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*NetInfoResponse, error) {
 	out := new(NetInfoResponse)
 	err := c.cc.Invoke(ctx, "/cli_pb.ManagerService/NetInfo", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *managerServiceClient) AvailableVersions(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*AvailableVersionsResponse, error) {
+	out := new(AvailableVersionsResponse)
+	err := c.cc.Invoke(ctx, "/cli_pb.ManagerService/AvailableVersions", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -130,6 +140,7 @@ func (x *managerServiceDashboardClient) Recv() (*DashboardResponse, error) {
 type ManagerServiceServer interface {
 	Status(context.Context, *empty.Empty) (*StatusResponse, error)
 	NetInfo(context.Context, *empty.Empty) (*NetInfoResponse, error)
+	AvailableVersions(context.Context, *empty.Empty) (*AvailableVersionsResponse, error)
 	PruneBlocks(*PruneBlocksRequest, ManagerService_PruneBlocksServer) error
 	DealPeer(context.Context, *DealPeerRequest) (*empty.Empty, error)
 	Dashboard(*empty.Empty, ManagerService_DashboardServer) error
@@ -145,6 +156,9 @@ func (UnimplementedManagerServiceServer) Status(context.Context, *empty.Empty) (
 }
 func (UnimplementedManagerServiceServer) NetInfo(context.Context, *empty.Empty) (*NetInfoResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method NetInfo not implemented")
+}
+func (UnimplementedManagerServiceServer) AvailableVersions(context.Context, *empty.Empty) (*AvailableVersionsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AvailableVersions not implemented")
 }
 func (UnimplementedManagerServiceServer) PruneBlocks(*PruneBlocksRequest, ManagerService_PruneBlocksServer) error {
 	return status.Errorf(codes.Unimplemented, "method PruneBlocks not implemented")
@@ -200,6 +214,24 @@ func _ManagerService_NetInfo_Handler(srv interface{}, ctx context.Context, dec f
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ManagerServiceServer).NetInfo(ctx, req.(*empty.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ManagerService_AvailableVersions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(empty.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ManagerServiceServer).AvailableVersions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/cli_pb.ManagerService/AvailableVersions",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ManagerServiceServer).AvailableVersions(ctx, req.(*empty.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -275,6 +307,10 @@ var _ManagerService_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "NetInfo",
 			Handler:    _ManagerService_NetInfo_Handler,
+		},
+		{
+			MethodName: "AvailableVersions",
+			Handler:    _ManagerService_AvailableVersions_Handler,
 		},
 		{
 			MethodName: "DealPeer",
