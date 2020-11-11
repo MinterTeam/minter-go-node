@@ -10,6 +10,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/version"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/empty"
+	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/evidence"
 	tmNode "github.com/tendermint/tendermint/node"
 	"github.com/tendermint/tendermint/p2p"
@@ -30,6 +31,7 @@ type managerServer struct {
 	pb.UnimplementedManagerServiceServer
 }
 
+// NewManager return backend for cli
 func NewManager(blockchain *minter.Blockchain, tmRPC *rpc.Local, tmNode *tmNode.Node, cfg *config.Config) pb.ManagerServiceServer {
 	return &managerServer{blockchain: blockchain, tmRPC: tmRPC, tmNode: tmNode, cfg: cfg}
 }
@@ -65,12 +67,10 @@ func (m *managerServer) Dashboard(_ *empty.Empty, stream pb.ManagerService_Dashb
 				return status.Error(codes.Internal, err.Error())
 			}
 			pubKey := fmt.Sprintf("Mp%x", resultStatus.ValidatorInfo.PubKey.Bytes()[5:])
-
-			state := m.blockchain.CurrentState()
-
 			var address types.TmAddress
-			copy(address[:], resultStatus.ValidatorInfo.PubKey.Address().Bytes())
-			validator := state.Validators().GetByTmAddress(address)
+			copy(address[:], ed25519.PubKeyEd25519(types.HexToPubkey(pubKey)).Address().Bytes())
+
+			validator := m.blockchain.CurrentState().Validators().GetByTmAddress(address)
 			validatorStatus := m.blockchain.GetValidatorStatus(address)
 
 			var pbValidatorStatus pb.DashboardResponse_ValidatorStatus
