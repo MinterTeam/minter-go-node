@@ -111,7 +111,11 @@ func (mc *managerConsoleClient) Cli(ctx context.Context) error {
 	}
 }
 
-func NewCLI(socketPath string) (*managerConsoleClient, error) {
+// NewCLI return
+func NewCLI(socketPath string) (interface {
+	Execute(args []string) error
+	Cli(ctx context.Context) error
+}, error) {
 	cc, err := grpc.Dial("passthrough:///unix:///"+socketPath,
 		grpc.WithStreamInterceptor(grpc_retry.StreamClientInterceptor()),
 		grpc.WithUnaryInterceptor(grpc_retry.UnaryClientInterceptor()),
@@ -209,12 +213,10 @@ func dashboardCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 	return func(c *cli.Context) error {
 		ctx, cancel := context.WithCancel(c.Context)
 		defer cancel()
-
 		response, err := client.Dashboard(ctx, &empty.Empty{})
 		if err != nil {
 			return err
 		}
-
 		box := tui.NewVBox()
 		ui, err := tui.New(tui.NewHBox(box, tui.NewSpacer()))
 		if err != nil {
@@ -224,25 +226,8 @@ func dashboardCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 		ui.SetKeybinding("Ctrl+C", func() { ui.Quit() })
 		ui.SetKeybinding("q", func() { ui.Quit() })
 		errCh := make(chan error)
-		recvCh := make(chan *pb.DashboardResponse)
-
 		go func() { errCh <- ui.Run() }()
 		defer ui.Quit()
-		go func() {
-			for {
-				recv, err := response.Recv()
-				if err == io.EOF {
-					close(errCh)
-					return
-				}
-				if err != nil {
-					errCh <- err
-					return
-				}
-				recvCh <- recv
-			}
-		}()
-
 		var dashboardFunc func(recv *pb.DashboardResponse)
 		for {
 			select {
@@ -250,7 +235,16 @@ func dashboardCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 				return c.Err()
 			case err := <-errCh:
 				return err
-			case recv := <-recvCh:
+			default:
+				recv, err := response.Recv()
+				if err == io.EOF {
+					close(errCh)
+					break
+				}
+				if err != nil {
+					errCh <- err
+					break
+				}
 				if dashboardFunc == nil {
 					dashboardFunc = updateDashboard(box, recv)
 				}
@@ -312,7 +306,7 @@ func updateDashboard(box *tui.Box, recv *pb.DashboardResponse) func(recv *pb.Das
 			}
 			ofBlocks = fmt.Sprintf(" of %d", recv.MaxPeerHeight)
 			progress := tui.NewProgress(maxProgress)
-			progress.SetCurrent(int(recv.LatestHeight) / (int(recv.MaxPeerHeight) / maxProgress))
+			progress.SetCurrent(int(recv.LatestHeight) * maxProgress / (int(recv.MaxPeerHeight)))
 			progressBox.Remove(0)
 			progressBox.Prepend(progress)
 		}

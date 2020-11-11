@@ -40,7 +40,6 @@ func (m *managerServer) Dashboard(_ *empty.Empty, stream pb.ManagerService_Dashb
 		case <-stream.Context().Done():
 			return stream.Context().Err()
 		case <-time.After(time.Second):
-
 			statisticData := m.blockchain.StatisticData()
 			if statisticData == nil {
 				return status.Error(codes.Unavailable, "Dashboard is not available, please enable prometheus in configuration")
@@ -70,7 +69,7 @@ func (m *managerServer) Dashboard(_ *empty.Empty, stream pb.ManagerService_Dashb
 			state := m.blockchain.CurrentState()
 
 			var address types.TmAddress
-			copy(address[:], resultStatus.ValidatorInfo.Address)
+			copy(address[:], resultStatus.ValidatorInfo.PubKey.Address().Bytes())
 			validator := state.Validators().GetByTmAddress(address)
 			validatorStatus := m.blockchain.GetValidatorStatus(address)
 
