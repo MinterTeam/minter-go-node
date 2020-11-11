@@ -7,6 +7,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/minter"
 	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/legacy/candidates"
 	"github.com/MinterTeam/minter-go-node/version"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/empty"
@@ -66,39 +67,41 @@ func (m *managerServer) Dashboard(_ *empty.Empty, stream pb.ManagerService_Dashb
 			if err != nil {
 				return status.Error(codes.Internal, err.Error())
 			}
-			pubKey := fmt.Sprintf("Mp%x", resultStatus.ValidatorInfo.PubKey.Bytes()[5:])
-			var address types.TmAddress
-			copy(address[:], ed25519.PubKeyEd25519(types.HexToPubkey(pubKey)).Address().Bytes())
-
-			validator := m.blockchain.CurrentState().Validators().GetByTmAddress(address)
-			validatorStatus := m.blockchain.GetValidatorStatus(address)
-
-			var pbValidatorStatus pb.DashboardResponse_ValidatorStatus
-
-			switch true {
-			case validator != nil && validatorStatus == minter.ValidatorAbsent:
-				pbValidatorStatus = pb.DashboardResponse_Validating
-			case validator == nil && validatorStatus == minter.ValidatorAbsent:
-				pbValidatorStatus = pb.DashboardResponse_Challenger
-			case validator == nil && validatorStatus == minter.ValidatorPresent:
-				pbValidatorStatus = pb.DashboardResponse_Offline
-			default:
-				pbValidatorStatus = pb.DashboardResponse_NotDeclared
-			}
 
 			var missedBlocks string
 			var stake string
-			if pbValidatorStatus == pb.DashboardResponse_Validating {
-				missedBlocks = validator.AbsentTimes.String()
-				stake = validator.GetTotalBipStake().String()
+			pubkey := types.BytesToPubkey(resultStatus.ValidatorInfo.PubKey.Bytes()[5:])
+			var pbValidatorStatus pb.DashboardResponse_ValidatorStatus
+			cState := m.blockchain.CurrentState()
+			cState.RLock()
+			candidate := cState.Candidates().GetCandidate(pubkey)
+			if candidate == nil {
+				pbValidatorStatus = pb.DashboardResponse_NotDeclared
+			} else {
+				stake = candidate.GetTotalBipStake().String()
+				if candidate.Status == candidates.CandidateStatusOffline {
+					pbValidatorStatus = pb.DashboardResponse_Offline
+				} else {
+					pbValidatorStatus = pb.DashboardResponse_Challenger
+					validator := cState.Validators().GetByPublicKey(pubkey)
+					if validator != nil {
+						missedBlocks = validator.AbsentTimes.String()
+						var address types.TmAddress
+						copy(address[:], ed25519.PubKeyEd25519(pubkey).Address().Bytes())
+						if m.blockchain.GetValidatorStatus(address) == minter.ValidatorPresent {
+							pbValidatorStatus = pb.DashboardResponse_Validating
+						}
+					}
+				}
 			}
+			cState.RUnlock()
 
 			if err := stream.Send(&pb.DashboardResponse{
 				LatestHeight:           info.Height,
 				Timestamp:              protoTime,
 				Duration:               info.Duration,
 				MemoryUsage:            mem.Sys,
-				ValidatorPubKey:        pubKey,
+				ValidatorPubKey:        pubkey.String(),
 				MaxPeerHeight:          maxPeersHeight,
 				PeersCount:             int32(netInfo.NPeers),
 				AvgBlockProcessingTime: averageTimeBlock,
