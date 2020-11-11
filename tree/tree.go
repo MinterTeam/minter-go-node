@@ -13,7 +13,6 @@ type ReadOnlyTree interface {
 	Hash() []byte
 	Iterate(fn func(key []byte, value []byte) bool) (stopped bool)
 	AvailableVersions() []int
-	KeepLastHeight() int64
 }
 
 // MTree mutable tree, used for txs delivery
@@ -178,22 +177,6 @@ func (t *mutableTree) DeleteVersionIfExists(version int64) error {
 	}
 
 	return t.tree.DeleteVersion(version)
-}
-
-func (t *mutableTree) KeepLastHeight() int64 {
-	t.lock.RLock()
-	defer t.lock.RUnlock()
-
-	versions := t.tree.AvailableVersions()
-	prev := 1
-	for _, version := range versions {
-		if version-prev == 1 {
-			break
-		}
-		prev = version
-	}
-
-	return int64(prev)
 }
 
 func (t *mutableTree) AvailableVersions() []int {
