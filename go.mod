@@ -5,7 +5,7 @@ go 1.15
 replace github.com/tendermint/iavl v0.14.2 => github.com/klim0v/iavl v0.14.3-0.20201110164659-796d4a97759a
 
 require (
-	github.com/MinterTeam/node-grpc-gateway v1.2.1-0.20201105130854-87a7f4ef17cd
+	github.com/MinterTeam/node-grpc-gateway v1.2.1
 	github.com/btcsuite/btcd v0.20.1-beta
 	github.com/c-bata/go-prompt v0.2.3
 	github.com/go-kit/kit v0.10.0
