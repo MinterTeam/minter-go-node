@@ -225,8 +225,10 @@ func dashboardCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 		ui.SetKeybinding("Esc", func() { ui.Quit() })
 		ui.SetKeybinding("Ctrl+C", func() { ui.Quit() })
 		ui.SetKeybinding("q", func() { ui.Quit() })
-		errCh := make(chan error)
-		go func() { errCh <- ui.Run() }()
+		errCh := make(chan error, 2)
+		uiStart := make(chan struct{})
+		go func() { uiStart <- struct{}{}; errCh <- ui.Run() }()
+		<-uiStart
 		defer ui.Quit()
 		var dashboardFunc func(recv *pb.DashboardResponse)
 		for {
@@ -238,7 +240,7 @@ func dashboardCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 			default:
 				recv, err := response.Recv()
 				if err == io.EOF {
-					close(errCh)
+					errCh <- err
 					break
 				}
 				if err != nil {
@@ -333,11 +335,13 @@ func updateDashboard(box *tui.Box, recv *pb.DashboardResponse) func(recv *pb.Das
 
 			labelStakeName.SetText("Stake")
 			labelVotingPowerName.SetText("Voting Power")
-			labelMissedBlocksName.SetText("Missed Blocks")
-
 			labelStake.SetText(recv.Stake)
 			labelVotingPower.SetText(fmt.Sprintf("%d", recv.VotingPower))
-			labelMissedBlocks.SetText(recv.MissedBlocks)
+
+			if recv.ValidatorStatus != pb.DashboardResponse_Offline {
+				labelMissedBlocksName.SetText("Missed Blocks")
+				labelMissedBlocks.SetText(recv.MissedBlocks)
+			}
 		}
 	}
 }
