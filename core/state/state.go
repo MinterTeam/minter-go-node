@@ -286,7 +286,8 @@ func (s *State) Commit() ([]byte, error) {
 	}
 
 	if err := s.tree.DeleteVersionIfExists(versionToDelete); err != nil {
-		return hash, err
+		log.Printf("DeleteVersion error: %s", err)
+		return hash, nil
 	}
 
 	return hash, nil
