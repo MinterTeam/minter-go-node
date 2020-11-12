@@ -79,9 +79,10 @@ func checkState(t *testing.T, cState *state.State) {
 		t.Fatal(err)
 	}
 
-	exportedState := cState.Export(1)
+	version := cState.Tree().Version()
+	exportedState := cState.Export(uint64(version))
 	if err := exportedState.Verify(); err != nil {
-		t.Fatal(err)
+		t.Fatalf("error export version %d: %s", version, err)
 	}
 }
 

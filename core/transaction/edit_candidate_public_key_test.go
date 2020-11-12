@@ -20,14 +20,21 @@ func TestEditCandidateNewPublicKeyTx(t *testing.T) {
 	coin := types.GetBaseCoinID()
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
 
-	pubkey := [32]byte{}
-	rand.Read(pubkey[:])
-	newpubkey := [32]byte{}
-	rand.Read(newpubkey[:])
+	pubkey := types.HexToPubkey("Mp11fdfc072182654f163f5f0f9a621d729566c74d10037c4d7bbb0407d1e2c611")
+	newpubkey := types.HexToPubkey("Mp12fdfc072182654f163f5f0f9a621d729566c74d10037c4d7bbb0407d1e2c612")
 
 	cState.Candidates.Create(addr, addr, addr, pubkey, 10)
-	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
-	cState.Commit()
+	cState.Candidates.SetStakes(pubkey, []types.Stake{
+		{
+			Owner:    addr,
+			Coin:     0,
+			Value:    "1000000000000000000000",
+			BipValue: "1000000000000000000000",
+		},
+	}, nil)
+	cState.Candidates.SetOnline(pubkey)
+	cState.Candidates.RecalculateStakes(0)
+	cState.Validators.SetNewValidators(cState.Candidates.GetNewCandidates(1))
 
 	data := EditCandidatePublicKeyData{
 		PubKey:    pubkey,
@@ -82,6 +89,7 @@ func TestEditCandidateNewPublicKeyTx(t *testing.T) {
 		t.Fatalf("Public key has not changed")
 	}
 
+	cState.Validators.SetNewValidators(cState.Candidates.GetNewCandidates(1))
 	checkState(t, cState)
 }
 
