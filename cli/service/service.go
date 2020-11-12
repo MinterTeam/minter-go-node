@@ -20,6 +20,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+	"math/big"
 	"runtime"
 	"time"
 )
@@ -78,7 +79,7 @@ func (m *managerServer) Dashboard(_ *empty.Empty, stream pb.ManagerService_Dashb
 			if candidate == nil {
 				pbValidatorStatus = pb.DashboardResponse_NotDeclared
 			} else {
-				stake = candidate.GetTotalBipStake().String()
+				stake = big.NewInt(0).Div(candidate.GetTotalBipStake(), big.NewInt(1e18)).String() + " BIP"
 				if candidate.Status == candidates.CandidateStatusOffline {
 					pbValidatorStatus = pb.DashboardResponse_Offline
 				} else {
