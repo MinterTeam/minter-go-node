@@ -17,7 +17,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/helpers"
-	"github.com/MinterTeam/minter-go-node/legacy/candidates"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/tendermint/go-amino"
@@ -762,7 +761,7 @@ func TestBlockchain_RecalculateStakes_andRemoveValidator(t *testing.T) {
 	}
 	blockchain.lock.RUnlock()
 
-	if candidate.Status == candidates.CandidateStatusOnline {
+	if candidate.Status == candidates2.CandidateStatusOnline {
 		t.Fatal("candidate not Offline")
 	}
 
