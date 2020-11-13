@@ -17,11 +17,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/state/waitlist"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/helpers"
-	legacyAccounts "github.com/MinterTeam/minter-go-node/legacy/accounts"
-	legacyApp "github.com/MinterTeam/minter-go-node/legacy/app"
-	legacyCandidates "github.com/MinterTeam/minter-go-node/legacy/candidates"
-	legacyCoins "github.com/MinterTeam/minter-go-node/legacy/coins"
-	legacyFrozenfunds "github.com/MinterTeam/minter-go-node/legacy/frozenfunds"
 	"github.com/MinterTeam/minter-go-node/tree"
 	db "github.com/tendermint/tm-db"
 	"gopkg.in/errgo.v2/fmt/errors"
@@ -93,57 +88,6 @@ func (cs *CheckState) WaitList() waitlist.RWaitList {
 }
 func (cs *CheckState) Tree() tree.ReadOnlyTree {
 	return cs.state.Tree()
-}
-
-func (cs *CheckState) Export11To12(height uint64) types.AppState {
-	iavlTree := cs.state.tree
-
-	candidatesState, err := legacyCandidates.NewCandidates(nil, iavlTree)
-	if err != nil {
-		log.Panicf("Create new state at height %d failed: %s", height, err)
-	}
-
-	validatorsState, err := validators.NewValidators(nil, iavlTree)
-	if err != nil {
-		log.Panicf("Create new state at height %d failed: %s", height, err)
-	}
-
-	appState, err := legacyApp.NewApp(nil, iavlTree)
-	if err != nil {
-		log.Panicf("Create new state at height %d failed: %s", height, err)
-	}
-
-	frozenFundsState, err := legacyFrozenfunds.NewFrozenFunds(nil, iavlTree)
-	if err != nil {
-		log.Panicf("Create new state at height %d failed: %s", height, err)
-	}
-
-	accountsState, err := legacyAccounts.NewAccounts(nil, iavlTree)
-	if err != nil {
-		log.Panicf("Create new state at height %d failed: %s", height, err)
-	}
-
-	coinsState, err := legacyCoins.NewCoins(nil, iavlTree)
-	if err != nil {
-		log.Panicf("Create new state at height %d failed: %s", height, err)
-	}
-
-	checksState, err := checks.NewChecks(iavlTree)
-	if err != nil {
-		log.Panicf("Create new state at height %d failed: %s", height, err)
-	}
-
-	state := new(types.AppState)
-	appState.Export(state, height)
-	coinsMap := coinsState.Export(state)
-	validatorsState.Export(state)
-	candidatesMap := candidatesState.Export(state, coinsMap)
-	frozenFundsState.Export(state, height, coinsMap, candidatesMap)
-	accountsState.Export(state, coinsMap)
-	checksState.Export(state)
-	coinsState.Export(state)
-
-	return *state
 }
 
 type State struct {
