@@ -12,7 +12,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	_struct "github.com/golang/protobuf/ptypes/struct"
-	"github.com/tendermint/iavl"
 	core_types "github.com/tendermint/tendermint/rpc/core/types"
 	tmTypes "github.com/tendermint/tendermint/types"
 	"google.golang.org/grpc/codes"
@@ -56,11 +55,11 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 			return nil, timeoutStatus.Err()
 		}
 
-		currentState := s.blockchain.CurrentState()
-		currentState.RLock()
-		defer currentState.RUnlock()
+		// currentState := s.blockchain.CurrentState()
+		// currentState.RLock()
+		// defer currentState.RUnlock()
 
-		response.Transactions, err = s.blockTransaction(block, blockResults, currentState.Coins())
+		response.Transactions, err = s.blockTransaction(block, blockResults, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -94,23 +93,23 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 			return nil, timeoutStatus.Err()
 		}
 
-		response.Evidence, err = blockEvidence(block)
-		if err != nil {
-			return nil, err
-		}
+		// response.Evidence, err = blockEvidence(block)
+		// if err != nil {
+		// 	return nil, err
+		// }
 
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
 			return nil, timeoutStatus.Err()
 		}
 
-		cStateOld, err := s.blockchain.GetStateForHeight(uint64(height))
-		if err != iavl.ErrVersionDoesNotExist && err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-
-		if err != iavl.ErrVersionDoesNotExist {
-			response.Missed = missedBlockValidators(cStateOld)
-		}
+		// cStateOld, err := s.blockchain.GetStateForHeight(uint64(height))
+		// if err != iavl.ErrVersionDoesNotExist && err != nil {
+		// 	return nil, status.Error(codes.Internal, err.Error())
+		// }
+		//
+		// if err != iavl.ErrVersionDoesNotExist {
+		// 	response.Missed = missedBlockValidators(cStateOld)
+		// }
 
 		return response, nil
 	}
@@ -131,15 +130,15 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 			if err != nil {
 				return nil, err
 			}
-		case pb.BlockRequest_missed:
-			cStateOld, err := s.blockchain.GetStateForHeight(uint64(height))
-			if err != iavl.ErrVersionDoesNotExist && err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-
-			if err != iavl.ErrVersionDoesNotExist {
-				response.Missed = missedBlockValidators(cStateOld)
-			}
+		// case pb.BlockRequest_missed:
+		// 	cStateOld, err := s.blockchain.GetStateForHeight(uint64(height))
+		// 	if err != iavl.ErrVersionDoesNotExist && err != nil {
+		// 		return nil, status.Error(codes.Internal, err.Error())
+		// 	}
+		//
+		// 	if err != iavl.ErrVersionDoesNotExist {
+		// 		response.Missed = missedBlockValidators(cStateOld)
+		// 	}
 
 		case pb.BlockRequest_proposer, pb.BlockRequest_validators:
 			if len(totalValidators) == 0 {
@@ -159,11 +158,11 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 			if err != nil {
 				return nil, err
 			}
-		case pb.BlockRequest_evidence:
-			response.Evidence, err = blockEvidence(block)
-			if err != nil {
-				return nil, err
-			}
+			// case pb.BlockRequest_evidence:
+			// 	response.Evidence, err = blockEvidence(block)
+			// 	if err != nil {
+			// 		return nil, err
+			// 	}
 		}
 
 	}
@@ -235,7 +234,7 @@ func (s *Service) blockTransaction(block *core_types.ResultBlock, blockResults *
 			tags[string(tag.Key)] = string(tag.Value)
 		}
 
-		data, err := encode(tx.GetDecodedData(), coins)
+		data, err := encode(tx.GetDecodedData(), nil)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
@@ -252,8 +251,8 @@ func (s *Service) blockTransaction(block *core_types.ResultBlock, blockResults *
 			ServiceData: tx.ServiceData,
 			Gas:         uint64(tx.Gas()),
 			GasCoin: &pb.Coin{
-				Id:     uint64(tx.GasCoin),
-				Symbol: coins.GetCoin(tx.GasCoin).GetFullSymbol(),
+				Id: uint64(tx.GasCoin),
+				// Symbol: coins.GetCoin(tx.GasCoin).GetFullSymbol(),
 			},
 			Tags: tags,
 			Code: uint64(blockResults.TxsResults[i].Code),
