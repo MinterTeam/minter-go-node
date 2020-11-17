@@ -124,9 +124,9 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 		case pb.BlockRequest_block_reward:
 			response.BlockReward = rewards.GetRewardForBlock(uint64(height)).String()
 		case pb.BlockRequest_transactions:
-			cState := s.blockchain.CurrentState()
+			// cState := s.blockchain.CurrentState()
 
-			response.Transactions, err = s.blockTransaction(block, blockResults, cState.Coins())
+			response.Transactions, err = s.blockTransaction(block, blockResults, nil)
 			if err != nil {
 				return nil, err
 			}
@@ -222,7 +222,7 @@ func blockProposer(block *core_types.ResultBlock, totalValidators []*tmTypes.Val
 	return "", nil
 }
 
-func (s *Service) blockTransaction(block *core_types.ResultBlock, blockResults *core_types.ResultBlockResults, coins coins.RCoins) ([]*pb.BlockResponse_Transaction, error) {
+func (s *Service) blockTransaction(block *core_types.ResultBlock, blockResults *core_types.ResultBlockResults, _ coins.RCoins) ([]*pb.BlockResponse_Transaction, error) {
 	txs := make([]*pb.BlockResponse_Transaction, 0, len(block.Block.Data.Txs))
 
 	for i, rawTx := range block.Block.Data.Txs {

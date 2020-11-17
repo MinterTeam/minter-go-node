@@ -59,8 +59,8 @@ func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.
 			totalStakesGroupByCoin[coin.Coin.ID] = coin.Value
 			res.Balance = append(res.Balance, &pb.AddressBalance{
 				Coin: &pb.Coin{
-					Id:     uint64(coin.Coin.ID),
-					Symbol: cState.Coins().GetCoin(coin.Coin.ID).GetFullSymbol(),
+					Id: uint64(coin.Coin.ID),
+					// Symbol: cState.Coins().GetCoin(coin.Coin.ID).GetFullSymbol(),
 				},
 				Value: coin.Value.String(),
 				// BipValue: customCoinBipBalance(coin.Coin.ID, coin.Value, cState.Coins()).String(),
