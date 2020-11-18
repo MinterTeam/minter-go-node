@@ -79,3 +79,11 @@ Return(provider types.Address, xCoin types.CoinID, yCoin types.CoinID, kVolume *
 ```go
 Exchange(fromCoin types.CoinID, toCoin types.CoinID, volume *big.Int, wantVolume *big.Int) (gotVolume *big.Int, err error)
 ```
+
+#TODO
+// Цепочки из кастомок? если нет пула для ZERO, при каких условиях стоит ее менять на BIP и искать пары с ним
+// сначала нужно проверить с резервом они или без. Если резерв есть, то надо найти максимально короткий путь для обмена.
+// Как?
+
+// 
+// что с комиссиями? будут и куда будут капать? и сколько

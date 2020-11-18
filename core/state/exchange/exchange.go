@@ -174,25 +174,11 @@ func (u *Uniswap) Commit() error {
 
 type Exchanger interface {
 	Add(provider types.Address, xCoin types.CoinID, xVolume *big.Int, yCoin types.CoinID, yVolume *big.Int) error
-	Balance(provider types.Address, xCoin types.CoinID, yCoin types.CoinID) (volumes map[types.CoinID]*big.Int, percent *big.Float, err error)
-	Return(provider types.Address, xCoin types.CoinID, yCoin types.CoinID, kVolume *big.Int) (map[types.CoinID]*big.Int, error)
+	Balance(provider types.Address, xCoin types.CoinID, yCoin types.CoinID) (volumes map[types.CoinID]*big.Int, stake *big.Float, err error)
+	Remove(provider types.Address, xCoin types.CoinID, yCoin types.CoinID, kVolume *big.Int) (x, y *big.Int, error)
 	Exchange(fromCoin types.CoinID, toCoin types.CoinID, volume *big.Int, wantVolume *big.Int) (gotVolume *big.Int, err error)
 	Couple(xCoin types.CoinID, yCoin types.CoinID) (kVolume *big.Int, price *big.Float, err error)
 	Couples() ([]*Couple, error)
 	Export(state *types.AppState)
 	Commit() error
 }
-
-// Кастомные цепочки? если нет пула для ZERO, при каких условиях стоит ее менять на BIP и искать пары с ним
-// сначала нужно проверить с резервом они или без. Если резерв есть, то надо найти максимально короткий путь для обмена.
-// Как?
-
-// зачем менять через юнисвоп если можно по-обычному?
-// если у монеты предельный объем или количество приближено к резерву
-
-// Что делать с балансом монеты если ее предоставили в пул юнисвоп?
-// deliverState.Accounts.SubBalance(sender, ts.Coin, ts.Value)
-// но не меняем параметры монеты, такие как Coins.SubVolume и Coins.SubReserve
-// поправить валидацию генезиса
-
-// что с комиссиями? будут и куда будут капать?
