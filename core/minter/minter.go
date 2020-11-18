@@ -78,7 +78,7 @@ type Blockchain struct {
 func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 	var err error
 
-	ldb, err := db.NewGoLevelDBWithOpts("state", utils.GetMinterHome()+"/data", getDbOpts(cfg.StateMemAvailable))
+	ldb, err := db.NewCLevelDB("state", utils.GetMinterHome()+"/data")
 	if err != nil {
 		panic(err)
 	}
@@ -86,7 +86,7 @@ func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 	// Initiate Application DB. Used for persisting data like current block, validators, etc.
 	applicationDB := appdb.NewAppDB(cfg)
 
-	edb, err := db.NewGoLevelDBWithOpts("events", utils.GetMinterHome()+"/data", getDbOpts(1024))
+	edb, err := db.NewCLevelDB("events", utils.GetMinterHome()+"/data")
 	if err != nil {
 		panic(err)
 	}
@@ -448,9 +448,12 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 	// Clear mempool
 	app.currentMempool = &sync.Map{}
 
-	return abciTypes.ResponseCommit{
-		Data: hash,
+	resp := abciTypes.ResponseCommit{Data: hash}
+	if app.height >= uint64(app.cfg.KeepLastStates) {
+		resp.RetainHeight = int64(app.height) - app.cfg.KeepLastStates + 1
 	}
+
+	return resp
 }
 
 // Query Unused method, required by Tendermint

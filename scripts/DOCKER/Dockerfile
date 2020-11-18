@@ -1,6 +1,6 @@
 FROM ubuntu:18.04
 
-RUN apt-get update && apt-get install -y software-properties-common build-essential wget
+RUN apt-get update && apt-get install -y software-properties-common build-essential wget libsnappy-dev libleveldb-dev
 RUN wget https://dl.google.com/go/go1.15.5.linux-amd64.tar.gz && tar -C /usr/local -xzf go1.15.5.linux-amd64.tar.gz
 
 ENV GOPATH=$HOME/go
