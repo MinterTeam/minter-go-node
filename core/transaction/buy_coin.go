@@ -310,19 +310,47 @@ func (data BuyCoinData) BasicCheck(tx *Transaction, context *state.CheckState) *
 
 	}
 
-	if !context.Coins().Exists(data.CoinToSell) {
+	coinToSell := context.Coins().GetCoin(data.CoinToSell)
+	if coinToSell == nil {
 		return &Response{
 			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin %s not exists", data.CoinToSell),
+			Log:  "Coin to sell not exists",
 			Info: EncodeError(code.NewCoinNotExists("", data.CoinToSell.String())),
 		}
 	}
 
-	if !context.Coins().Exists(data.CoinToBuy) {
+	if coinToSell.Reserve() == nil {
+		return &Response{
+			Code: code.CoinReserveNotSufficient, // todo
+			Log:  "todo",                        // todo
+			Info: EncodeError(code.NewCoinReserveNotSufficient(
+				coinToSell.GetFullSymbol(),
+				coinToSell.ID().String(),
+				coinToSell.Reserve().String(),
+				"todo", // todo
+			)),
+		}
+	}
+
+	coinToBuy := context.Coins().GetCoin(data.CoinToBuy)
+	if coinToBuy == nil {
 		return &Response{
 			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin %s not exists", data.CoinToBuy),
+			Log:  "Coin to buy not exists",
 			Info: EncodeError(code.NewCoinNotExists("", data.CoinToBuy.String())),
+		}
+	}
+
+	if coinToBuy.Reserve() == nil {
+		return &Response{
+			Code: code.CoinReserveNotSufficient, // todo
+			Log:  "todo",                        // todo
+			Info: EncodeError(code.NewCoinReserveNotSufficient(
+				coinToBuy.GetFullSymbol(),
+				coinToBuy.ID().String(),
+				coinToBuy.Reserve().String(),
+				"todo", // todo
+			)),
 		}
 	}
 
@@ -332,9 +360,9 @@ func (data BuyCoinData) BasicCheck(tx *Transaction, context *state.CheckState) *
 			Log:  "\"From\" coin equals to \"to\" coin",
 			Info: EncodeError(code.NewCrossConvert(
 				data.CoinToSell.String(),
-				context.Coins().GetCoin(data.CoinToSell).GetFullSymbol(),
+				coinToSell.GetFullSymbol(),
 				data.CoinToBuy.String(),
-				context.Coins().GetCoin(data.CoinToBuy).GetFullSymbol()),
+				coinToBuy.GetFullSymbol()),
 			),
 		}
 	}

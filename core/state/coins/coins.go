@@ -241,7 +241,7 @@ func (c *Coins) Create(id types.CoinID, symbol types.CoinSymbol, name string,
 		isCreated:  true,
 		info: &Info{
 			Volume:  big.NewInt(0),
-			Reserve: big.NewInt(0),
+			Reserve: nil,
 			isDirty: false,
 		},
 	}
@@ -261,13 +261,15 @@ func (c *Coins) Create(id types.CoinID, symbol types.CoinSymbol, name string,
 	c.setSymbolToMap(ids, coin.Symbol())
 	c.setToMap(coin.ID(), coin)
 
-	coin.SetReserve(reserve)
+	if reserve != nil {
+		coin.SetReserve(reserve)
+		c.bus.Checker().AddCoin(types.GetBaseCoinID(), reserve)
+	}
+
 	coin.SetVolume(volume)
+	c.bus.Checker().AddCoinVolume(coin.id, volume)
 
 	c.markDirty(coin.id)
-
-	c.bus.Checker().AddCoin(types.GetBaseCoinID(), reserve)
-	c.bus.Checker().AddCoinVolume(coin.id, volume)
 }
 
 func (c *Coins) Recreate(newID types.CoinID, name string, symbol types.CoinSymbol,

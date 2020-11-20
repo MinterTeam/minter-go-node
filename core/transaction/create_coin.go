@@ -29,13 +29,13 @@ type CreateCoinData struct {
 	Name                 string
 	Symbol               types.CoinSymbol
 	InitialAmount        *big.Int
-	InitialReserve       *big.Int
+	InitialReserve       *big.Int `rlp:"nil"`
 	ConstantReserveRatio uint32
 	MaxSupply            *big.Int
 }
 
 func (data CreateCoinData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
-	if data.InitialReserve == nil || data.InitialAmount == nil || data.MaxSupply == nil {
+	if data.InitialAmount == nil || data.MaxSupply == nil {
 		return &Response{
 			Code: code.DecodeError,
 			Log:  "Incorrect tx data",
@@ -91,7 +91,7 @@ func (data CreateCoinData) BasicCheck(tx *Transaction, context *state.CheckState
 		}
 	}
 
-	if data.InitialReserve.Cmp(minCoinReserve) == -1 {
+	if data.InitialReserve != nil && data.InitialReserve.Cmp(minCoinReserve) == -1 {
 		return &Response{
 			Code: code.WrongCoinSupply,
 			Log:  fmt.Sprintf("Coin reserve should be greater than or equal to %s", minCoinReserve.String()),
@@ -159,7 +159,7 @@ func (data CreateCoinData) Run(tx *Transaction, context state.Interface, rewardP
 		}
 	}
 
-	if checkState.Accounts().GetBalance(sender, types.GetBaseCoinID()).Cmp(data.InitialReserve) < 0 {
+	if data.InitialReserve != nil && checkState.Accounts().GetBalance(sender, types.GetBaseCoinID()).Cmp(data.InitialReserve) < 0 {
 		return Response{
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), data.InitialReserve.String(), types.GetBaseCoin()),
@@ -169,7 +169,9 @@ func (data CreateCoinData) Run(tx *Transaction, context state.Interface, rewardP
 
 	if tx.GasCoin.IsBaseCoin() {
 		totalTxCost := big.NewInt(0)
-		totalTxCost.Add(totalTxCost, data.InitialReserve)
+		if data.InitialReserve != nil {
+			totalTxCost.Add(totalTxCost, data.InitialReserve)
+		}
 		totalTxCost.Add(totalTxCost, commission)
 
 		if checkState.Accounts().GetBalance(sender, types.GetBaseCoinID()).Cmp(totalTxCost) < 0 {
@@ -190,7 +192,9 @@ func (data CreateCoinData) Run(tx *Transaction, context state.Interface, rewardP
 		deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
 		deliverState.Coins.SubVolume(tx.GasCoin, commission)
 
-		deliverState.Accounts.SubBalance(sender, types.GetBaseCoinID(), data.InitialReserve)
+		if data.InitialReserve != nil {
+			deliverState.Accounts.SubBalance(sender, types.GetBaseCoinID(), data.InitialReserve)
+		}
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 
 		deliverState.Coins.Create(
