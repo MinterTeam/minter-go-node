@@ -18,6 +18,7 @@ type ReadOnlyTree interface {
 // MTree mutable tree, used for txs delivery
 type MTree interface {
 	ReadOnlyTree
+	MutableTree() *iavl.MutableTree // todo: test use
 	Set(key, value []byte) bool
 	Remove(key []byte) ([]byte, bool)
 	LoadVersion(targetVersion int64) (int64, error)
@@ -25,10 +26,14 @@ type MTree interface {
 	SaveVersion() ([]byte, int64, error)
 	DeleteVersionIfExists(version int64) error
 	DeleteVersionsRange(fromVersion, toVersion int64) error
-	GetImmutable() *ImmutableTree
-	GetImmutableAtHeight(version int64) (*ImmutableTree, error)
+	GetImmutable() *iavl.ImmutableTree
+	GetImmutableAtHeight(version int64) (*iavl.ImmutableTree, error)
 	GlobalLock()
 	GlobalUnlock()
+}
+
+func (t *mutableTree) MutableTree() *iavl.MutableTree {
+	return t.tree
 }
 
 // NewMutableTree creates and returns new MutableTree using given db. Panics on error.
@@ -59,7 +64,7 @@ type mutableTree struct {
 	sync.Mutex
 }
 
-func (t *mutableTree) GetImmutableAtHeight(version int64) (*ImmutableTree, error) {
+func (t *mutableTree) GetImmutableAtHeight(version int64) (*iavl.ImmutableTree, error) {
 	t.lock.RLock()
 	defer t.lock.RUnlock()
 
@@ -68,9 +73,7 @@ func (t *mutableTree) GetImmutableAtHeight(version int64) (*ImmutableTree, error
 		return nil, err
 	}
 
-	return &ImmutableTree{
-		tree: tree,
-	}, nil
+	return tree, nil
 }
 
 func (t *mutableTree) GlobalLock() {
@@ -102,13 +105,11 @@ func (t *mutableTree) Version() int64 {
 	return t.tree.Version()
 }
 
-func (t *mutableTree) GetImmutable() *ImmutableTree {
+func (t *mutableTree) GetImmutable() *iavl.ImmutableTree {
 	t.lock.RLock()
 	defer t.lock.RUnlock()
 
-	return &ImmutableTree{
-		tree: t.tree.ImmutableTree,
-	}
+	return t.tree.ImmutableTree
 }
 
 func (t *mutableTree) Get(key []byte) (index int64, value []byte) {
@@ -186,11 +187,6 @@ func (t *mutableTree) AvailableVersions() []int {
 	return t.tree.AvailableVersions()
 }
 
-// ImmutableTree used for CheckState: API and CheckTx calls.
-type ImmutableTree struct {
-	tree *iavl.ImmutableTree
-}
-
 // NewImmutableTree returns MTree from given db at given height
 // Warning: returns the MTree interface, but you should only use ReadOnlyTree
 func NewImmutableTree(height uint64, db dbm.DB) (MTree, error) {
@@ -200,27 +196,4 @@ func NewImmutableTree(height uint64, db dbm.DB) (MTree, error) {
 		return nil, err
 	}
 	return tree, nil
-}
-
-// Iterate iterates over all keys of the tree, in order. The keys and values must not be modified,
-// since they may point to data stored within IAVL.
-func (t *ImmutableTree) Iterate(fn func(key []byte, value []byte) bool) (stopped bool) {
-	return t.tree.Iterate(fn)
-}
-
-// Hash returns the root hash.
-func (t *ImmutableTree) Hash() []byte {
-	return t.tree.Hash()
-}
-
-// Version returns the version of the tree.
-func (t *ImmutableTree) Version() int64 {
-	return t.tree.Version()
-}
-
-// Get returns the index and value of the specified key if it exists, or nil and the next index
-// otherwise. The returned value must not be modified, since it may point to data stored within
-// IAVL.
-func (t *ImmutableTree) Get(key []byte) (index int64, value []byte) {
-	return t.tree.Get(key)
 }
