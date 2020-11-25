@@ -10,29 +10,27 @@ import (
 
 func TestHaltsToDeleteModel(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
-	h, err := NewHalts(bus.NewBus(), mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	h := NewHalts(bus.NewBus(), mutableTree.GetLastImmutable())
 
 	pubkey, height := types.Pubkey{0}, uint64(10)
 
 	h.AddHaltBlock(height, pubkey)
-	if err := h.Commit(); err != nil {
+	if err := h.Commit(mutableTree.MutableTree()); err != nil {
 		t.Fatal(err)
 	}
 
-	_, _, err = mutableTree.SaveVersion()
+	_, _, err := mutableTree.SaveVersion()
 	if err != nil {
 		t.Fatal(err)
 	}
+	h.SetImmutableTree(mutableTree.GetLastImmutable())
 
 	if h.GetHaltBlocks(height) == nil {
 		t.Fatal("Halts not found")
 	}
 
 	h.Delete(height)
-	if err := h.Commit(); err != nil {
+	if err := h.Commit(mutableTree.MutableTree()); err != nil {
 		t.Fatal(err)
 	}
 
@@ -40,6 +38,7 @@ func TestHaltsToDeleteModel(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	h.SetImmutableTree(mutableTree.GetLastImmutable())
 
 	if h.GetHaltBlocks(height) != nil {
 		t.Fatal("Halts not deleted")
@@ -48,24 +47,23 @@ func TestHaltsToDeleteModel(t *testing.T) {
 
 func TestBusToAddHaltBlock(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
-	h, err := NewHalts(bus.NewBus(), mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	h := NewHalts(bus.NewBus(), mutableTree.GetLastImmutable())
 
 	pubkey, height := types.Pubkey{0}, uint64(10)
 
 	hbBus := Bus{halts: h}
 	hbBus.AddHaltBlock(height, pubkey)
 
-	if err := h.Commit(); err != nil {
+	if err := h.Commit(mutableTree.MutableTree()); err != nil {
 		t.Fatal(err)
 	}
 
-	_, _, err = mutableTree.SaveVersion()
+	_, _, err := mutableTree.SaveVersion()
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	h.SetImmutableTree(mutableTree.GetLastImmutable())
 
 	halt := h.GetHaltBlocks(height)
 	if halt == nil {

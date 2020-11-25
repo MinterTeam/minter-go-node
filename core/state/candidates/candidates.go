@@ -10,7 +10,8 @@ import (
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
-	"github.com/MinterTeam/minter-go-node/tree"
+	"github.com/tendermint/iavl"
+	"sync/atomic"
 
 	"math/big"
 	"sort"
@@ -70,12 +71,49 @@ type Candidates struct {
 	pubKeyIDs map[types.Pubkey]uint32
 	maxID     uint32
 
-	iavl tree.MTree
-	bus  *bus.Bus
+	db  atomic.Value
+	bus *bus.Bus
 
 	lock                sync.RWMutex
 	loaded              bool
 	isChangedPublicKeys bool
+}
+
+// NewCandidates returns newly created Candidates state with a given bus and iavl
+func NewCandidates(bus *bus.Bus, db *iavl.ImmutableTree) *Candidates {
+	immutableTree := atomic.Value{}
+	loaded := false
+	if db != nil {
+		immutableTree.Store(db)
+	} else {
+		loaded = true
+	}
+	candidates := &Candidates{
+		db:        immutableTree,
+		loaded:    loaded,
+		bus:       bus,
+		blockList: map[types.Pubkey]struct{}{},
+		pubKeyIDs: map[types.Pubkey]uint32{},
+		list:      map[uint32]*Candidate{},
+	}
+	candidates.bus.SetCandidates(NewBus(candidates))
+
+	return candidates
+}
+
+func (c *Candidates) immutableTree() *iavl.ImmutableTree {
+	db := c.db.Load()
+	if db == nil {
+		return nil
+	}
+	return db.(*iavl.ImmutableTree)
+}
+
+func (c *Candidates) SetImmutableTree(immutableTree *iavl.ImmutableTree) {
+	if c.immutableTree() == nil && c.loaded {
+		c.loaded = false
+	}
+	c.db.Store(immutableTree)
 }
 
 func (c *Candidates) IsChangedPublicKeys() bool {
@@ -85,22 +123,8 @@ func (c *Candidates) ResetIsChangedPublicKeys() {
 	c.isChangedPublicKeys = false
 }
 
-// NewCandidates returns newly created Candidates state with a given bus and iavl
-func NewCandidates(bus *bus.Bus, iavl tree.MTree) (*Candidates, error) {
-	candidates := &Candidates{
-		iavl:      iavl,
-		bus:       bus,
-		blockList: map[types.Pubkey]struct{}{},
-		pubKeyIDs: map[types.Pubkey]uint32{},
-		list:      map[uint32]*Candidate{},
-	}
-	candidates.bus.SetCandidates(NewBus(candidates))
-
-	return candidates, nil
-}
-
 // Commit writes changes to iavl, may return an error
-func (c *Candidates) Commit() error {
+func (c *Candidates) Commit(db *iavl.MutableTree) error {
 	keys := c.getOrderedCandidates()
 
 	hasDirty := false
@@ -122,7 +146,7 @@ func (c *Candidates) Commit() error {
 		}
 
 		path := []byte{mainPrefix}
-		c.iavl.Set(path, data)
+		db.Set(path, data)
 	}
 
 	if c.isDirty {
@@ -142,7 +166,7 @@ func (c *Candidates) Commit() error {
 			panic(fmt.Sprintf("failed to encode candidates public key with ID: %s", err))
 		}
 
-		c.iavl.Set([]byte{pubKeyIDPrefix}, pubIDData)
+		db.Set([]byte{pubKeyIDPrefix}, pubIDData)
 
 		var blockList []types.Pubkey
 		for pubKey := range c.blockList {
@@ -155,9 +179,9 @@ func (c *Candidates) Commit() error {
 		if err != nil {
 			return fmt.Errorf("can't encode block list of candidates: %v", err)
 		}
-		c.iavl.Set([]byte{blockListPrefix}, blockListData)
+		db.Set([]byte{blockListPrefix}, blockListData)
 
-		c.iavl.Set([]byte{maxIDPrefix}, c.maxIDBytes())
+		db.Set([]byte{maxIDPrefix}, c.maxIDBytes())
 	}
 
 	for _, pubkey := range keys {
@@ -168,7 +192,7 @@ func (c *Candidates) Commit() error {
 			path := []byte{mainPrefix}
 			path = append(path, candidate.idBytes()...)
 			path = append(path, totalStakePrefix)
-			c.iavl.Set(path, candidate.totalBipStake.Bytes())
+			db.Set(path, candidate.totalBipStake.Bytes())
 			candidate.isTotalStakeDirty = false
 		}
 
@@ -185,7 +209,7 @@ func (c *Candidates) Commit() error {
 			path = append(path, []byte(fmt.Sprintf("%d", index))...) // todo big.NewInt(index).Bytes()
 
 			if stake == nil || stake.Value.Sign() == 0 {
-				c.iavl.Remove(path)
+				db.Remove(path)
 				candidate.stakes[index] = nil
 				continue
 			}
@@ -195,7 +219,7 @@ func (c *Candidates) Commit() error {
 				return fmt.Errorf("can't encode stake: %v", err)
 			}
 
-			c.iavl.Set(path, data)
+			db.Set(path, data)
 		}
 
 		if candidate.isUpdatesDirty {
@@ -207,7 +231,7 @@ func (c *Candidates) Commit() error {
 			path := []byte{mainPrefix}
 			path = append(path, candidate.idBytes()...)
 			path = append(path, updatesPrefix)
-			c.iavl.Set(path, data)
+			db.Set(path, data)
 			candidate.isUpdatesDirty = false
 		}
 	}
@@ -551,7 +575,7 @@ func (c *Candidates) GetTotalStake(pubkey types.Pubkey) *big.Int {
 		path := []byte{mainPrefix}
 		path = append(path, candidate.idBytes()...)
 		path = append(path, totalStakePrefix)
-		_, enc := c.iavl.Get(path)
+		_, enc := c.immutableTree().Get(path)
 		if len(enc) == 0 {
 			candidate.totalBipStake = big.NewInt(0)
 			return big.NewInt(0)
@@ -632,7 +656,7 @@ func (c *Candidates) LoadCandidatesDeliver() {
 
 	c.maxID = c.loadCandidatesList()
 
-	_, blockListEnc := c.iavl.Get([]byte{blockListPrefix})
+	_, blockListEnc := c.immutableTree().Get([]byte{blockListPrefix})
 	if len(blockListEnc) != 0 {
 		var blockList []types.Pubkey
 		if err := rlp.DecodeBytes(blockListEnc, &blockList); err != nil {
@@ -646,7 +670,7 @@ func (c *Candidates) LoadCandidatesDeliver() {
 		c.setBlockList(blockListMap)
 	}
 
-	_, valueMaxID := c.iavl.Get([]byte{maxIDPrefix})
+	_, valueMaxID := c.immutableTree().Get([]byte{maxIDPrefix})
 	if len(valueMaxID) != 0 {
 		c.maxID = binary.LittleEndian.Uint32(valueMaxID)
 	}
@@ -654,7 +678,7 @@ func (c *Candidates) LoadCandidatesDeliver() {
 }
 
 func (c *Candidates) loadCandidatesList() (maxID uint32) {
-	_, pubIDenc := c.iavl.Get([]byte{pubKeyIDPrefix})
+	_, pubIDenc := c.immutableTree().Get([]byte{pubKeyIDPrefix})
 	if len(pubIDenc) != 0 {
 		var pubIDs []pubkeyID
 		if err := rlp.DecodeBytes(pubIDenc, &pubIDs); err != nil {
@@ -672,7 +696,7 @@ func (c *Candidates) loadCandidatesList() (maxID uint32) {
 	}
 
 	path := []byte{mainPrefix}
-	_, enc := c.iavl.Get(path)
+	_, enc := c.immutableTree().Get(path)
 	if len(enc) != 0 {
 		var candidates []*Candidate
 		if err := rlp.DecodeBytes(enc, &candidates); err != nil {
@@ -683,7 +707,7 @@ func (c *Candidates) loadCandidatesList() (maxID uint32) {
 			// load total stake
 			path = append([]byte{mainPrefix}, candidate.idBytes()...)
 			path = append(path, totalStakePrefix)
-			_, enc = c.iavl.Get(path)
+			_, enc = c.immutableTree().Get(path)
 			if len(enc) == 0 {
 				candidate.totalBipStake = big.NewInt(0)
 			} else {
@@ -969,7 +993,7 @@ func (c *Candidates) LoadStakesOfCandidate(pubkey types.Pubkey) {
 		path = append(path, candidate.idBytes()...)
 		path = append(path, stakesPrefix)
 		path = append(path, []byte(fmt.Sprintf("%d", index))...)
-		_, enc := c.iavl.Get(path)
+		_, enc := c.immutableTree().Get(path)
 		if len(enc) == 0 {
 			candidate.stakes[index] = nil
 			continue
@@ -991,7 +1015,7 @@ func (c *Candidates) LoadStakesOfCandidate(pubkey types.Pubkey) {
 	path := []byte{mainPrefix}
 	path = append(path, candidate.idBytes()...)
 	path = append(path, updatesPrefix)
-	_, enc := c.iavl.Get(path)
+	_, enc := c.immutableTree().Get(path)
 	if len(enc) == 0 {
 		candidate.updates = nil
 	} else {
@@ -1014,7 +1038,7 @@ func (c *Candidates) LoadStakesOfCandidate(pubkey types.Pubkey) {
 	// load total stake
 	path = append([]byte{mainPrefix}, candidate.idBytes()...)
 	path = append(path, totalStakePrefix)
-	_, enc = c.iavl.Get(path)
+	_, enc = c.immutableTree().Get(path)
 	if len(enc) == 0 {
 		candidate.totalBipStake = big.NewInt(0)
 	} else {

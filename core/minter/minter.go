@@ -629,9 +629,6 @@ func (app *Blockchain) DeleteStateVersions(from, to int64) error {
 	app.lock.RLock()
 	defer app.lock.RUnlock()
 
-	app.stateDeliver.Tree().GlobalLock()
-	defer app.stateDeliver.Tree().GlobalUnlock()
-
 	return app.stateDeliver.Tree().DeleteVersionsRange(from, to)
 }
 

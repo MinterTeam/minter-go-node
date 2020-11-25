@@ -131,7 +131,7 @@ func (m Model) GetFullSymbol() string {
 
 type Info struct {
 	Volume  *big.Int
-	Reserve *big.Int `rlp:"nilList"`
+	Reserve *big.Int `rlp:"nil"`
 
 	isDirty bool
 }

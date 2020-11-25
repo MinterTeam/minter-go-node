@@ -22,18 +22,15 @@ import (
 
 func TestCandidates_Create_oneCandidate(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
-	candidates, err := NewCandidates(bus.NewBus(), mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	candidates := NewCandidates(bus.NewBus(), mutableTree.GetLastImmutable())
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10)
 
-	err = candidates.Commit()
+	err := candidates.Commit(mutableTree.MutableTree())
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	candidates.SetImmutableTree(mutableTree.GetLastImmutable())
 	candidate := candidates.GetCandidate([32]byte{4})
 	if candidate == nil {
 		t.Fatal("candidate not found")
@@ -46,15 +43,12 @@ func TestCandidates_Create_oneCandidate(t *testing.T) {
 
 func TestCandidates_Commit_createThreeCandidates(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
-	candidates, err := NewCandidates(bus.NewBus(), mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	candidates := NewCandidates(bus.NewBus(), mutableTree.GetLastImmutable())
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10)
 	candidates.Create([20]byte{11}, [20]byte{21}, [20]byte{31}, [32]byte{41}, 10)
 
-	err = candidates.Commit()
+	err := candidates.Commit(mutableTree.MutableTree())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,10 +65,10 @@ func TestCandidates_Commit_createThreeCandidates(t *testing.T) {
 	if fmt.Sprintf("%X", hash) != "D7A17D41EAE39D61D3F85BC3311DA1FE306E885FF03024D0173F23E3739E719B" {
 		t.Fatalf("hash %X", hash)
 	}
-
+	candidates.SetImmutableTree(mutableTree.GetLastImmutable())
 	candidates.Create([20]byte{1, 1}, [20]byte{2, 2}, [20]byte{3, 3}, [32]byte{4, 4}, 10)
 
-	err = candidates.Commit()
+	err = candidates.Commit(mutableTree.MutableTree())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -95,15 +89,12 @@ func TestCandidates_Commit_createThreeCandidates(t *testing.T) {
 
 func TestCandidates_Commit_changePubKeyAndCheckBlockList(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
-	candidates, err := NewCandidates(bus.NewBus(), mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	candidates := NewCandidates(bus.NewBus(), mutableTree.GetLastImmutable())
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10)
 	candidates.Create([20]byte{11}, [20]byte{21}, [20]byte{31}, [32]byte{41}, 10)
 
-	err = candidates.Commit()
+	err := candidates.Commit(mutableTree.MutableTree())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,11 +111,11 @@ func TestCandidates_Commit_changePubKeyAndCheckBlockList(t *testing.T) {
 	if fmt.Sprintf("%X", hash) != "D7A17D41EAE39D61D3F85BC3311DA1FE306E885FF03024D0173F23E3739E719B" {
 		t.Fatalf("hash %X", hash)
 	}
-
+	candidates.SetImmutableTree(mutableTree.GetLastImmutable())
 	candidates.ChangePubKey([32]byte{4}, [32]byte{5})
 	candidates.ChangePubKey([32]byte{41}, [32]byte{6})
 
-	err = candidates.Commit()
+	err = candidates.Commit(mutableTree.MutableTree())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -146,7 +137,7 @@ func TestCandidates_Commit_changePubKeyAndCheckBlockList(t *testing.T) {
 		t.Fatal("pub_key is not blocked")
 	}
 
-	candidates, err = NewCandidates(bus.NewBus(), mutableTree)
+	candidates = NewCandidates(bus.NewBus(), mutableTree.GetLastImmutable())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -170,10 +161,7 @@ func TestCandidates_Commit_changePubKeyAndCheckBlockList(t *testing.T) {
 }
 func TestCandidates_AddToBlockPubKey(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
-	candidates, err := NewCandidates(bus.NewBus(), mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	candidates := NewCandidates(bus.NewBus(), mutableTree.GetLastImmutable())
 
 	candidates.AddToBlockPubKey([32]byte{4})
 
@@ -184,14 +172,11 @@ func TestCandidates_AddToBlockPubKey(t *testing.T) {
 
 func TestCandidates_Commit_withStakeAndUpdate(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
-	candidates, err := NewCandidates(bus.NewBus(), mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	candidates := NewCandidates(bus.NewBus(), mutableTree.GetLastImmutable())
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10)
 
-	err = candidates.Commit()
+	err := candidates.Commit(mutableTree.MutableTree())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -209,6 +194,7 @@ func TestCandidates_Commit_withStakeAndUpdate(t *testing.T) {
 		t.Fatalf("hash %X", hash)
 	}
 
+	candidates.SetImmutableTree(mutableTree.GetLastImmutable())
 	candidates.SetStakes([32]byte{4}, []types.Stake{
 		{
 			Owner:    [20]byte{1},
@@ -224,7 +210,7 @@ func TestCandidates_Commit_withStakeAndUpdate(t *testing.T) {
 			BipValue: "100",
 		},
 	})
-	err = candidates.Commit()
+	err = candidates.Commit(mutableTree.MutableTree())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -245,14 +231,11 @@ func TestCandidates_Commit_withStakeAndUpdate(t *testing.T) {
 
 func TestCandidates_Commit_edit(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
-	candidates, err := NewCandidates(bus.NewBus(), mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	candidates := NewCandidates(bus.NewBus(), mutableTree.GetLastImmutable())
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10)
 
-	err = candidates.Commit()
+	err := candidates.Commit(mutableTree.MutableTree())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -270,9 +253,11 @@ func TestCandidates_Commit_edit(t *testing.T) {
 		t.Fatalf("hash %X", hash)
 	}
 
+	candidates.SetImmutableTree(mutableTree.GetLastImmutable())
+
 	candidates.Edit([32]byte{4}, [20]byte{1, 1}, [20]byte{2, 2}, [20]byte{3, 3})
 
-	err = candidates.Commit()
+	err = candidates.Commit(mutableTree.MutableTree())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -302,14 +287,11 @@ func TestCandidates_Commit_edit(t *testing.T) {
 
 func TestCandidates_Commit_createOneCandidateWithID(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
-	candidates, err := NewCandidates(bus.NewBus(), mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	candidates := NewCandidates(bus.NewBus(), mutableTree.GetLastImmutable())
 
 	candidates.CreateWithID([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10, 1)
 
-	err = candidates.Commit()
+	err := candidates.Commit(mutableTree.MutableTree())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -326,6 +308,8 @@ func TestCandidates_Commit_createOneCandidateWithID(t *testing.T) {
 	if fmt.Sprintf("%X", hash) != "FCF3853839873D3EC344016C04A5E75166F51063745670DF5D561C060E7F45A1" {
 		t.Fatalf("hash %X", hash)
 	}
+
+	candidates.SetImmutableTree(mutableTree.GetLastImmutable())
 
 	id := candidates.ID([32]byte{4})
 	if id != 1 {
@@ -337,14 +321,11 @@ func TestCandidates_Commit_Delegate(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
-	candidates, err := NewCandidates(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	candidates := NewCandidates(b, mutableTree.GetLastImmutable())
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10)
 
-	err = candidates.Commit()
+	err := candidates.Commit(mutableTree.MutableTree())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -361,10 +342,10 @@ func TestCandidates_Commit_Delegate(t *testing.T) {
 	if fmt.Sprintf("%X", hash) != "FCF3853839873D3EC344016C04A5E75166F51063745670DF5D561C060E7F45A1" {
 		t.Fatalf("hash %X", hash)
 	}
-
+	candidates.SetImmutableTree(mutableTree.GetLastImmutable())
 	candidates.Delegate([20]byte{1, 1}, [32]byte{4}, 0, big.NewInt(10000000), big.NewInt(10000000))
 
-	err = candidates.Commit()
+	err = candidates.Commit(mutableTree.MutableTree())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -387,18 +368,19 @@ func TestCandidates_SetOnlineAndBusSetOffline(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
-	candidates, err := NewCandidates(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	candidates := NewCandidates(b, mutableTree.GetLastImmutable())
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10)
 
-	err = candidates.Commit()
+	err := candidates.Commit(mutableTree.MutableTree())
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	_, _, err = mutableTree.SaveVersion()
+	if err != nil {
+		t.Fatal(err)
+	}
+	candidates.SetImmutableTree(mutableTree.GetLastImmutable())
 	candidates.SetOnline([32]byte{4})
 
 	candidate := candidates.GetCandidate([32]byte{4})
@@ -418,16 +400,13 @@ func TestCandidates_Count(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
-	candidates, err := NewCandidates(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	candidates := NewCandidates(b, mutableTree.GetLastImmutable())
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10)
 	candidates.Create([20]byte{1, 1}, [20]byte{2, 2}, [20]byte{3, 3}, [32]byte{4, 4}, 20)
 	candidates.Create([20]byte{1, 1, 1}, [20]byte{2, 2, 2}, [20]byte{3, 3, 3}, [32]byte{4, 4, 4}, 30)
 
-	err = candidates.Commit()
+	err := candidates.Commit(mutableTree.MutableTree())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -445,6 +424,7 @@ func TestCandidates_Count(t *testing.T) {
 		t.Fatalf("hash %X", hash)
 	}
 
+	candidates.SetImmutableTree(mutableTree.GetLastImmutable())
 	count := candidates.Count()
 	if count != 3 {
 		t.Fatalf("coun %d", count)
@@ -454,22 +434,14 @@ func TestCandidates_Count(t *testing.T) {
 func TestCandidates_GetTotalStake_fromModelAndFromDB(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
-	wl, err := waitlist.NewWaitList(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	wl := waitlist.NewWaitList(b, mutableTree.GetLastImmutable())
 	b.SetWaitList(waitlist.NewBus(wl))
 	b.SetEvents(eventsdb.NewEventsStore(db.NewMemDB()))
-	accs, err := accounts.NewAccounts(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	accs := accounts.NewAccounts(b, mutableTree.GetLastImmutable())
+
 	b.SetAccounts(accounts.NewBus(accs))
 	b.SetChecker(checker.NewChecker(b))
-	candidates, err := NewCandidates(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	candidates := NewCandidates(b, mutableTree.GetLastImmutable())
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10)
 
@@ -500,21 +472,23 @@ func TestCandidates_GetTotalStake_fromModelAndFromDB(t *testing.T) {
 
 	candidates.RecalculateStakes(0)
 
-	err = candidates.Commit()
+	err := candidates.Commit(mutableTree.MutableTree())
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	_, _, err = mutableTree.SaveVersion()
+	if err != nil {
+		t.Fatal(err)
+	}
+	candidates.SetImmutableTree(mutableTree.GetLastImmutable())
 	totalStake := candidates.GetTotalStake([32]byte{4})
 	totalStakeString := totalStake.String()
 	if totalStakeString != "2509591" {
 		t.Fatalf("total stake %s", totalStakeString)
 	}
 
-	candidates, err = NewCandidates(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	candidates = NewCandidates(b, mutableTree.GetLastImmutable())
+
 	candidates.LoadCandidates()
 	candidates.GetCandidate([32]byte{4}).totalBipStake = nil
 	totalStake = candidates.GetTotalStake([32]byte{4})
@@ -526,10 +500,7 @@ func TestCandidates_GetTotalStake_fromModelAndFromDB(t *testing.T) {
 
 func TestCandidates_Export(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
-	candidates, err := NewCandidates(bus.NewBus(), mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	candidates := NewCandidates(bus.NewBus(), mutableTree.GetLastImmutable())
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10)
 	candidates.AddToBlockPubKey([32]byte{10})
@@ -549,11 +520,15 @@ func TestCandidates_Export(t *testing.T) {
 		},
 	})
 	candidates.recalculateStakes(0)
-	err = candidates.Commit()
+	err := candidates.Commit(mutableTree.MutableTree())
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	_, _, err = mutableTree.SaveVersion()
+	if err != nil {
+		t.Fatal(err)
+	}
+	candidates.SetImmutableTree(mutableTree.GetLastImmutable())
 	state := new(types.AppState)
 	candidates.Export(state)
 
@@ -578,10 +553,7 @@ func TestCandidates_Export(t *testing.T) {
 
 func TestCandidates_busGetStakes(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
-	candidates, err := NewCandidates(bus.NewBus(), mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	candidates := NewCandidates(bus.NewBus(), mutableTree.GetLastImmutable())
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10)
 	candidates.SetStakes([32]byte{4}, []types.Stake{
@@ -600,11 +572,15 @@ func TestCandidates_busGetStakes(t *testing.T) {
 		},
 	})
 
-	err = candidates.Commit()
+	err := candidates.Commit(mutableTree.MutableTree())
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	_, _, err = mutableTree.SaveVersion()
+	if err != nil {
+		t.Fatal(err)
+	}
+	candidates.SetImmutableTree(mutableTree.GetLastImmutable())
 	stakes := candidates.bus.Candidates().GetStakes([32]byte{4})
 	if len(stakes) != 1 {
 		t.Fatalf("stakes count %d", len(stakes))
@@ -617,10 +593,7 @@ func TestCandidates_busGetStakes(t *testing.T) {
 
 func TestCandidates_GetCandidateByTendermintAddress(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
-	candidates, err := NewCandidates(bus.NewBus(), mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	candidates := NewCandidates(bus.NewBus(), mutableTree.GetLastImmutable())
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10)
 
@@ -636,10 +609,7 @@ func TestCandidates_GetCandidateByTendermintAddress(t *testing.T) {
 }
 func TestCandidates_busGetCandidateByTendermintAddress(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
-	candidates, err := NewCandidates(bus.NewBus(), mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	candidates := NewCandidates(bus.NewBus(), mutableTree.GetLastImmutable())
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10)
 
@@ -657,32 +627,19 @@ func TestCandidates_busGetCandidateByTendermintAddress(t *testing.T) {
 func TestCandidates_Punish(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
-	wl, err := waitlist.NewWaitList(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	wl := waitlist.NewWaitList(b, mutableTree.GetLastImmutable())
 	b.SetEvents(eventsdb.NewEventsStore(db.NewMemDB()))
 	b.SetWaitList(waitlist.NewBus(wl))
-	accs, err := accounts.NewAccounts(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	accs := accounts.NewAccounts(b, mutableTree.GetLastImmutable())
+
 	b.SetAccounts(accounts.NewBus(accs))
-	appBus, err := app.NewApp(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	appBus := app.NewApp(b, mutableTree.GetLastImmutable())
+
 	b.SetApp(appBus)
 	b.SetChecker(checker.NewChecker(b))
-	candidates, err := NewCandidates(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	candidates := NewCandidates(b, mutableTree.GetLastImmutable())
 
-	coinsState, err := coins.NewCoins(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	coinsState := coins.NewCoins(b, mutableTree.GetLastImmutable())
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10)
 	coinsState.Create(1,
@@ -694,10 +651,16 @@ func TestCandidates_Punish(t *testing.T) {
 		big.NewInt(0).Exp(big.NewInt(10), big.NewInt(10+18), nil),
 		nil)
 
-	err = coinsState.Commit()
+	err := coinsState.Commit(mutableTree.MutableTree())
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	_, _, err = mutableTree.SaveVersion()
+	if err != nil {
+		t.Fatal(err)
+	}
+	candidates.SetImmutableTree(mutableTree.GetLastImmutable())
 
 	symbol := coinsState.GetCoinBySymbol(types.StrToCoinSymbol("AAA"), 0)
 	if symbol == nil {
@@ -747,32 +710,20 @@ func TestCandidates_PunishByzantineCandidate(t *testing.T) {
 	b := bus.NewBus()
 	frozenfunds := &fr{}
 	b.SetFrozenFunds(frozenfunds)
-	wl, err := waitlist.NewWaitList(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	wl := waitlist.NewWaitList(b, mutableTree.GetLastImmutable())
+
 	b.SetEvents(eventsdb.NewEventsStore(db.NewMemDB()))
 	b.SetWaitList(waitlist.NewBus(wl))
-	accs, err := accounts.NewAccounts(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	accs := accounts.NewAccounts(b, mutableTree.GetLastImmutable())
+
 	b.SetAccounts(accounts.NewBus(accs))
-	appBus, err := app.NewApp(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	appBus := app.NewApp(b, mutableTree.GetLastImmutable())
+
 	b.SetApp(appBus)
 	b.SetChecker(checker.NewChecker(b))
-	candidates, err := NewCandidates(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	candidates := NewCandidates(b, mutableTree.GetLastImmutable())
 
-	coinsState, err := coins.NewCoins(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	coinsState := coins.NewCoins(b, mutableTree.GetLastImmutable())
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10)
 	coinsState.Create(1,
@@ -784,10 +735,15 @@ func TestCandidates_PunishByzantineCandidate(t *testing.T) {
 		big.NewInt(0).Exp(big.NewInt(10), big.NewInt(10+18), nil),
 		nil)
 
-	err = coinsState.Commit()
+	err := coinsState.Commit(mutableTree.MutableTree())
 	if err != nil {
 		t.Fatal(err)
 	}
+	_, _, err = mutableTree.SaveVersion()
+	if err != nil {
+		t.Fatal(err)
+	}
+	candidates.SetImmutableTree(mutableTree.GetLastImmutable())
 
 	symbol := coinsState.GetCoinBySymbol(types.StrToCoinSymbol("AAA"), 0)
 	if symbol == nil {
@@ -840,10 +796,7 @@ func TestCandidates_SubStake(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
-	candidates, err := NewCandidates(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	candidates := NewCandidates(b, mutableTree.GetLastImmutable())
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10)
 	candidates.SetStakes([32]byte{4}, []types.Stake{
@@ -854,11 +807,15 @@ func TestCandidates_SubStake(t *testing.T) {
 			BipValue: "100",
 		},
 	}, nil)
-	err = candidates.Commit()
+	err := candidates.Commit(mutableTree.MutableTree())
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	_, _, err = mutableTree.SaveVersion()
+	if err != nil {
+		t.Fatal(err)
+	}
+	candidates.SetImmutableTree(mutableTree.GetLastImmutable())
 	candidates.SubStake([20]byte{1}, [32]byte{4}, 0, big.NewInt(10))
 	stake := candidates.GetStakeOfAddress([32]byte{4}, [20]byte{1}, 0)
 	if stake == nil {
@@ -874,10 +831,7 @@ func TestCandidates_IsNewCandidateStakeSufficient(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
-	candidates, err := NewCandidates(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	candidates := NewCandidates(b, mutableTree.GetLastImmutable())
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10)
 	candidates.SetStakes([32]byte{4}, []types.Stake{
@@ -888,11 +842,15 @@ func TestCandidates_IsNewCandidateStakeSufficient(t *testing.T) {
 			BipValue: "100",
 		},
 	}, nil)
-	err = candidates.Commit()
+	err := candidates.Commit(mutableTree.MutableTree())
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	_, _, err = mutableTree.SaveVersion()
+	if err != nil {
+		t.Fatal(err)
+	}
+	candidates.SetImmutableTree(mutableTree.GetLastImmutable())
 	if !candidates.IsNewCandidateStakeSufficient(0, big.NewInt(1000), 1) {
 		t.Log("is not new candidate stake sufficient")
 	}
@@ -901,22 +859,15 @@ func TestCandidates_IsNewCandidateStakeSufficient(t *testing.T) {
 func TestCandidates_IsDelegatorStakeSufficient(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
-	wl, err := waitlist.NewWaitList(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	wl := waitlist.NewWaitList(b, mutableTree.GetLastImmutable())
+
 	b.SetWaitList(waitlist.NewBus(wl))
 	b.SetChecker(checker.NewChecker(b))
-	accs, err := accounts.NewAccounts(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	accs := accounts.NewAccounts(b, mutableTree.GetLastImmutable())
+
 	b.SetAccounts(accounts.NewBus(accs))
 	b.SetEvents(eventsdb.NewEventsStore(db.NewMemDB()))
-	candidates, err := NewCandidates(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	candidates := NewCandidates(b, mutableTree.GetLastImmutable())
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10)
 
@@ -938,11 +889,15 @@ func TestCandidates_IsDelegatorStakeSufficient(t *testing.T) {
 			BipValue: "100",
 		},
 	})
-	err = candidates.Commit()
+	err := candidates.Commit(mutableTree.MutableTree())
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	_, _, err = mutableTree.SaveVersion()
+	if err != nil {
+		t.Fatal(err)
+	}
+	candidates.SetImmutableTree(mutableTree.GetLastImmutable())
 	candidates.SetStakes([32]byte{4}, []types.Stake{
 		{
 			Owner:    types.StringToAddress("10000"),
@@ -953,7 +908,7 @@ func TestCandidates_IsDelegatorStakeSufficient(t *testing.T) {
 	}, nil)
 
 	candidates.recalculateStakes(0)
-	err = candidates.Commit()
+	err = candidates.Commit(mutableTree.MutableTree())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -966,10 +921,7 @@ func TestCandidates_IsDelegatorStakeSufficient_false(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
-	candidates, err := NewCandidates(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	candidates := NewCandidates(b, mutableTree.GetLastImmutable())
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10)
 	candidates.SetStakes([32]byte{4}, []types.Stake{
@@ -982,7 +934,7 @@ func TestCandidates_IsDelegatorStakeSufficient_false(t *testing.T) {
 	}, nil)
 
 	candidates.recalculateStakes(0)
-	err = candidates.Commit()
+	err := candidates.Commit(mutableTree.MutableTree())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -996,10 +948,7 @@ func TestCandidates_GetNewCandidates(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
-	candidates, err := NewCandidates(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	candidates := NewCandidates(b, mutableTree.GetLastImmutable())
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10)
 	candidates.SetStakes([32]byte{4}, []types.Stake{
@@ -1024,11 +973,16 @@ func TestCandidates_GetNewCandidates(t *testing.T) {
 	candidates.SetOnline([32]byte{5})
 
 	candidates.RecalculateStakes(1)
-	err = candidates.Commit()
+	err := candidates.Commit(mutableTree.MutableTree())
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	_, _, err = mutableTree.SaveVersion()
+	if err != nil {
+		t.Fatal(err)
+	}
+	candidates.SetImmutableTree(mutableTree.GetLastImmutable())
 	newCandidates := candidates.GetNewCandidates(2)
 	if len(newCandidates) != 2 {
 		t.Fatal("error count of new candidates")
@@ -1039,10 +993,7 @@ func TestCandidate_GetFilteredUpdates(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
-	candidates, err := NewCandidates(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	candidates := NewCandidates(b, mutableTree.GetLastImmutable())
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10)
 	candidates.SetStakes([32]byte{4}, []types.Stake{
@@ -1066,11 +1017,15 @@ func TestCandidate_GetFilteredUpdates(t *testing.T) {
 			BipValue: "100",
 		},
 	})
-	err = candidates.Commit()
+	err := candidates.Commit(mutableTree.MutableTree())
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	_, _, err = mutableTree.SaveVersion()
+	if err != nil {
+		t.Fatal(err)
+	}
+	candidates.SetImmutableTree(mutableTree.GetLastImmutable())
 	candidate := candidates.GetCandidate([32]byte{4})
 	if candidate == nil {
 		t.Fatal("candidate not found")
@@ -1091,20 +1046,12 @@ func TestCandidates_CalculateBipValue_RecalculateStakes_GetTotalStake(t *testing
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
-	busCoins, err := coins.NewCoins(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
-	b.SetCoins(coins.NewBus(busCoins))
-	candidates, err := NewCandidates(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	busCoins := coins.NewCoins(b, mutableTree.GetLastImmutable())
 
-	coinsState, err := coins.NewCoins(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	b.SetCoins(coins.NewBus(busCoins))
+	candidates := NewCandidates(b, mutableTree.GetLastImmutable())
+
+	coinsState := coins.NewCoins(b, mutableTree.GetLastImmutable())
 
 	candidates.Create([20]byte{1}, [20]byte{1}, [20]byte{1}, [32]byte{1}, 1)
 	candidates.SetStakes([32]byte{1}, []types.Stake{

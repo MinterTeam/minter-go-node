@@ -471,7 +471,7 @@ func TestDelegationAfterUnbond(t *testing.T) {
 
 		st.Candidates.SubStake(addr, pubkey, coin, amount)
 		st.Candidates.RecalculateStakes(height)
-		if err := st.Candidates.Commit(); err != nil {
+		if err := st.Candidates.Commit(st.tree.MutableTree()); err != nil {
 			panic(err)
 		}
 	}
@@ -565,7 +565,7 @@ func TestRecalculateStakes(t *testing.T) {
 	st.Candidates.Delegate([20]byte{1}, pubkey, 1, amount, big.NewInt(0))
 
 	st.Candidates.RecalculateStakes(height)
-	err := st.Candidates.Commit()
+	err := st.Candidates.Commit(st.tree.MutableTree())
 	if err != nil {
 		t.Fatal(err)
 	}

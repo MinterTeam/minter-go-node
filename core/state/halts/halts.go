@@ -6,9 +6,10 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/state/bus"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/rlp"
-	"github.com/MinterTeam/minter-go-node/tree"
+	"github.com/tendermint/iavl"
 	"sort"
 	"sync"
+	"sync/atomic"
 )
 
 const mainPrefix = byte('h')
@@ -23,26 +24,42 @@ type HaltBlocks struct {
 	list  map[uint64]*Model
 	dirty map[uint64]struct{}
 
-	bus  *bus.Bus
-	iavl tree.MTree
+	bus *bus.Bus
+	db  atomic.Value
 
 	lock sync.RWMutex
 }
 
-func NewHalts(stateBus *bus.Bus, iavl tree.MTree) (*HaltBlocks, error) {
+func NewHalts(stateBus *bus.Bus, db *iavl.ImmutableTree) *HaltBlocks {
+	immutableTree := atomic.Value{}
+	if db != nil {
+		immutableTree.Store(db)
+	}
 	halts := &HaltBlocks{
 		bus:   stateBus,
-		iavl:  iavl,
+		db:    immutableTree,
 		list:  map[uint64]*Model{},
 		dirty: map[uint64]struct{}{},
 	}
 
 	halts.bus.SetHaltBlocks(NewBus(halts))
 
-	return halts, nil
+	return halts
 }
 
-func (hb *HaltBlocks) Commit() error {
+func (hb *HaltBlocks) immutableTree() *iavl.ImmutableTree {
+	db := hb.db.Load()
+	if db == nil {
+		return nil
+	}
+	return db.(*iavl.ImmutableTree)
+}
+
+func (hb *HaltBlocks) SetImmutableTree(immutableTree *iavl.ImmutableTree) {
+	hb.db.Store(immutableTree)
+}
+
+func (hb *HaltBlocks) Commit(db *iavl.MutableTree) error {
 	dirty := hb.getOrderedDirty()
 	for _, height := range dirty {
 		haltBlock := hb.getFromMap(height)
@@ -58,14 +75,14 @@ func (hb *HaltBlocks) Commit() error {
 			delete(hb.list, height)
 			hb.lock.Unlock()
 
-			hb.iavl.Remove(path)
+			db.Remove(path)
 		} else {
 			data, err := rlp.EncodeToBytes(haltBlock)
 			if err != nil {
 				return fmt.Errorf("can't encode object at %d: %v", height, err)
 			}
 
-			hb.iavl.Set(path, data)
+			db.Set(path, data)
 		}
 	}
 
@@ -94,7 +111,7 @@ func (hb *HaltBlocks) get(height uint64) *Model {
 		return haltBlock
 	}
 
-	_, enc := hb.iavl.Get(getPath(height))
+	_, enc := hb.immutableTree().Get(getPath(height))
 	if len(enc) == 0 {
 		return nil
 	}
@@ -158,7 +175,7 @@ func (hb *HaltBlocks) Delete(height uint64) {
 }
 
 func (hb *HaltBlocks) Export(state *types.AppState) {
-	hb.iavl.Iterate(func(key []byte, value []byte) bool {
+	hb.immutableTree().Iterate(func(key []byte, value []byte) bool {
 		if key[0] != mainPrefix {
 			return false
 		}

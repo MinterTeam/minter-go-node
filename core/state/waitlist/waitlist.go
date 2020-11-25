@@ -6,11 +6,12 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/state/bus"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/rlp"
-	"github.com/MinterTeam/minter-go-node/tree"
+	"github.com/tendermint/iavl"
 	"log"
 	"math/big"
 	"sort"
 	"sync"
+	"sync/atomic"
 )
 
 const mainPrefix = byte('w')
@@ -26,26 +27,43 @@ type WaitList struct {
 	list  map[types.Address]*Model
 	dirty map[types.Address]interface{}
 
-	bus  *bus.Bus
-	iavl tree.MTree
+	db atomic.Value
+
+	bus *bus.Bus
 
 	lock sync.RWMutex
 }
 
-func NewWaitList(stateBus *bus.Bus, iavl tree.MTree) (*WaitList, error) {
+func NewWaitList(stateBus *bus.Bus, db *iavl.ImmutableTree) *WaitList {
+	immutableTree := atomic.Value{}
+	if db != nil {
+		immutableTree.Store(db)
+	}
 	waitlist := &WaitList{
 		bus:   stateBus,
-		iavl:  iavl,
+		db:    immutableTree,
 		list:  map[types.Address]*Model{},
 		dirty: map[types.Address]interface{}{},
 	}
 	waitlist.bus.SetWaitList(NewBus(waitlist))
 
-	return waitlist, nil
+	return waitlist
+}
+
+func (wl *WaitList) immutableTree() *iavl.ImmutableTree {
+	db := wl.db.Load()
+	if db == nil {
+		return nil
+	}
+	return db.(*iavl.ImmutableTree)
+}
+
+func (wl *WaitList) SetImmutableTree(immutableTree *iavl.ImmutableTree) {
+	wl.db.Store(immutableTree)
 }
 
 func (wl *WaitList) Export(state *types.AppState) {
-	wl.iavl.Iterate(func(key []byte, value []byte) bool {
+	wl.immutableTree().Iterate(func(key []byte, value []byte) bool {
 		if key[0] == mainPrefix {
 			address := types.BytesToAddress(key[1:])
 
@@ -70,7 +88,7 @@ func (wl *WaitList) Export(state *types.AppState) {
 	})
 }
 
-func (wl *WaitList) Commit() error {
+func (wl *WaitList) Commit(db *iavl.MutableTree) error {
 	dirty := wl.getOrderedDirty()
 	for _, address := range dirty {
 		w := wl.getFromMap(address)
@@ -85,7 +103,7 @@ func (wl *WaitList) Commit() error {
 		if err != nil {
 			return fmt.Errorf("can't encode object at %s: %v", address.String(), err)
 		}
-		wl.iavl.Set(path, data)
+		db.Set(path, data)
 		// } else { // todo: remove after
 		// 	wl.iavl.Remove(path)
 		// }
@@ -196,7 +214,7 @@ func (wl *WaitList) get(address types.Address) *Model {
 	}
 
 	path := append([]byte{mainPrefix}, address.Bytes()...)
-	_, enc := wl.iavl.Get(path)
+	_, enc := wl.immutableTree().Get(path)
 	if len(enc) == 0 {
 		return nil
 	}

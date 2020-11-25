@@ -16,30 +16,24 @@ func TestWaitListToGetByAddressAndPubKey(t *testing.T) {
 	b.SetChecker(checker.NewChecker(b))
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 
-	wl, err := NewWaitList(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	wl := NewWaitList(b, mutableTree.GetLastImmutable())
 
-	candidatesState, err := candidates.NewCandidates(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	candidatesState := candidates.NewCandidates(b, mutableTree.GetLastImmutable())
 
 	addr, pubkey, coin, val := types.Address{0}, types.Pubkey{0}, types.GetBaseCoinID(), big.NewInt(1e18)
 
 	candidatesState.Create(addr, addr, addr, pubkey, 10)
 
 	wl.AddWaitList(addr, pubkey, coin, val)
-	if err := wl.Commit(); err != nil {
+	if err := wl.Commit(mutableTree.MutableTree()); err != nil {
 		t.Fatal(err)
 	}
 
-	_, _, err = mutableTree.SaveVersion()
+	_, _, err := mutableTree.SaveVersion()
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	wl.SetImmutableTree(mutableTree.GetLastImmutable())
 	items := wl.GetByAddressAndPubKey(addr, pubkey)
 	if len(items) != 1 {
 		t.Fatal("Incorrect amount of items in waitlist")
@@ -60,15 +54,9 @@ func TestWaitListToPartialDelete(t *testing.T) {
 	b.SetChecker(checker.NewChecker(b))
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 
-	wl, err := NewWaitList(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	wl := NewWaitList(b, mutableTree.GetLastImmutable())
 
-	candidatesState, err := candidates.NewCandidates(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	candidatesState := candidates.NewCandidates(b, mutableTree.GetLastImmutable())
 
 	addr, pubkey, coin, val := types.Address{0}, types.Pubkey{0}, types.GetBaseCoinID(), big.NewInt(1e18)
 	candidatesState.Create(addr, addr, addr, pubkey, 10)
@@ -76,15 +64,15 @@ func TestWaitListToPartialDelete(t *testing.T) {
 	wl.AddWaitList(addr, pubkey, coin, val)
 	wl.AddWaitList(addr, pubkey, 1, val)
 	wl.AddWaitList(addr, pubkey, 2, val)
-	if err := wl.Commit(); err != nil {
+	if err := wl.Commit(mutableTree.MutableTree()); err != nil {
 		t.Fatal(err)
 	}
 
-	_, _, err = mutableTree.SaveVersion()
+	_, _, err := mutableTree.SaveVersion()
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	wl.SetImmutableTree(mutableTree.GetLastImmutable())
 	wl.Delete(addr, pubkey, 0)
 	wl.Delete(addr, pubkey, 1)
 	wl.AddWaitList(addr, pubkey, 1, big.NewInt(1e17))

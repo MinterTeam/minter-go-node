@@ -66,7 +66,7 @@ func createTestCoinWithOwner(stateDB *state.State, owner types.Address) types.Co
 	stateDB.App.SetCoinsCount(id.Uint32())
 	stateDB.Accounts.AddBalance(types.Address{}, id, volume)
 
-	err := stateDB.Coins.Commit()
+	err := stateDB.Coins.Commit(stateDB.Tree().MutableTree())
 	if err != nil {
 		log.Fatalf("failed to commit coins: %s", err)
 	}

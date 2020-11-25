@@ -48,7 +48,7 @@ func TestRecreateCoinTx(t *testing.T) {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
 
-	err = cState.Coins.Commit()
+	err = cState.Coins.Commit(cState.Tree().MutableTree())
 	if err != nil {
 		t.Fatalf("Commit coins failed. Error %s", err)
 	}
