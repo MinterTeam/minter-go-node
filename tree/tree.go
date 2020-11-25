@@ -6,14 +6,6 @@ import (
 	"sync"
 )
 
-// ReadOnlyTree used for CheckState: API and CheckTx calls. Immutable.
-type ReadOnlyTree interface {
-	Get(key []byte) (index int64, value []byte)
-	Version() int64
-	Hash() []byte
-	Iterate(fn func(key []byte, value []byte) bool) (stopped bool)
-}
-
 type saver interface {
 	Commit(db *iavl.MutableTree) error
 	SetImmutableTree(immutableTree *iavl.ImmutableTree)
