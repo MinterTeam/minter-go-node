@@ -106,7 +106,7 @@ func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 		panic(err)
 	}
 
-	blockchain.stateCheck = state.NewCheckState(blockchain.stateDeliver, nil)
+	blockchain.stateCheck = state.NewCheckState(blockchain.stateDeliver, blockchain.stateDeliver.Tree().GetLastImmutable())
 
 	// Set start height for rewards and validators
 	rewards.SetStartHeight(applicationDB.GetStartHeight())
@@ -398,7 +398,7 @@ func (app *Blockchain) DeliverTx(req abciTypes.RequestDeliverTx) abciTypes.Respo
 
 // CheckTx validates a tx for the mempool
 func (app *Blockchain) CheckTx(req abciTypes.RequestCheckTx) abciTypes.ResponseCheckTx {
-	response := transaction.RunTx(app.stateCheck, req.Tx, nil, app.height, app.currentMempool, app.MinGasPrice())
+	response := transaction.RunTx(app.CurrentState(), req.Tx, nil, app.height, app.currentMempool, app.MinGasPrice())
 
 	return abciTypes.ResponseCheckTx{
 		Code:      response.Code,
