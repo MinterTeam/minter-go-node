@@ -258,9 +258,9 @@ func (c *Coins) Create(id types.CoinID, symbol types.CoinSymbol, name string,
 		isDirty:    true,
 		isCreated:  true,
 		info: &Info{
-			Volume:  big.NewInt(0),
+			Volume:  volume,
 			Reserve: reserve,
-			isDirty: false,
+			isDirty: true,
 		},
 	}
 
@@ -283,7 +283,6 @@ func (c *Coins) Create(id types.CoinID, symbol types.CoinSymbol, name string,
 		c.bus.Checker().AddCoin(types.GetBaseCoinID(), reserve)
 	}
 
-	coin.SetVolume(volume)
 	c.bus.Checker().AddCoinVolume(coin.id, volume)
 
 	c.markDirty(coin.id)

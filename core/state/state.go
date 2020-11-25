@@ -183,16 +183,16 @@ func (s *State) Commit() ([]byte, error) {
 	s.Checker.Reset()
 
 	hash, version, err := s.tree.Commit(
-		s.Swap,
+		s.Accounts,
+		s.App,
+		s.Coins,
 		s.Candidates,
 		s.Validators,
-		s.Coins,
-		s.Accounts,
-		s.Halts,
-		s.FrozenFunds,
-		s.Waitlist,
-		s.App,
 		s.Checks,
+		s.FrozenFunds,
+		s.Halts,
+		s.Waitlist,
+		s.Swap,
 	)
 	if err != nil {
 		return hash, err
