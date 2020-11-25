@@ -35,14 +35,13 @@ func (data SellAllCoinData) totalSpend(tx *Transaction, context *state.CheckStat
 		amountToSell := big.NewInt(0).Set(available)
 		amountToSell.Sub(amountToSell, commissionInBaseCoin)
 		coin := context.Coins().GetCoin(data.CoinToBuy)
-		// todo: fix error message with negative value when converting all coins
-		// if amountToSell.Sign() != 1 {
-		// 	return nil, nil, nil, &Response{
-		// 		Code: code.InsufficientFunds,
-		// 		Log:  "Insufficient funds for sender account",
-		// 		Info: EncodeError(code.NewInsufficientFunds(sender.String(), commissionInBaseCoin.String(), coin.GetFullSymbol(), coin.ID().String())),
-		// 	}
-		// }
+		if amountToSell.Sign() != 1 {
+			return nil, nil, nil, &Response{
+				Code: code.InsufficientFunds,
+				Log:  "Insufficient funds for sender account",
+				Info: EncodeError(code.NewInsufficientFunds(sender.String(), commissionInBaseCoin.String(), coin.GetFullSymbol(), coin.ID().String())),
+			}
+		}
 
 		value = formula.CalculatePurchaseReturn(coin.Volume(), coin.Reserve(), coin.Crr(), amountToSell)
 

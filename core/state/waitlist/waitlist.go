@@ -80,15 +80,15 @@ func (wl *WaitList) Commit() error {
 		wl.lock.Unlock()
 
 		path := append([]byte{mainPrefix}, address.Bytes()...)
-		// if len(w.List) != 0 {
-		data, err := rlp.EncodeToBytes(w)
-		if err != nil {
-			return fmt.Errorf("can't encode object at %s: %v", address.String(), err)
+		if len(w.List) != 0 {
+			data, err := rlp.EncodeToBytes(w)
+			if err != nil {
+				return fmt.Errorf("can't encode object at %s: %v", address.String(), err)
+			}
+			wl.iavl.Set(path, data)
+		} else {
+			wl.iavl.Remove(path)
 		}
-		wl.iavl.Set(path, data)
-		// } else { // todo: remove after
-		// 	wl.iavl.Remove(path)
-		// }
 	}
 
 	return nil
