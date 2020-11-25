@@ -9,6 +9,7 @@ import (
 	"github.com/tendermint/iavl"
 	"math/big"
 	"sort"
+	"sync"
 )
 
 type Pair struct {
@@ -21,22 +22,24 @@ func (p *Pair) Bytes() []byte {
 }
 
 type Liquidity struct {
-	XVolume         *big.Int
-	YVolume         *big.Int
-	SupplyStakes    *big.Int
-	providersStakes map[types.Address]*big.Int
-	dirty           bool
+	XVolume              *big.Int
+	YVolume              *big.Int
+	SupplyStakes         *big.Int
+	providersStakes      map[types.Address]*big.Int
+	dirty                bool
+	providersStakesDirty bool
 }
 
 func newLiquidity(provider types.Address, xVolume *big.Int, yVolume *big.Int) *Liquidity {
 	startingStake := startingStake(xVolume, yVolume)
 	providers := map[types.Address]*big.Int{provider: new(big.Int).Set(startingStake)}
 	return &Liquidity{
-		XVolume:         xVolume,
-		YVolume:         yVolume,
-		SupplyStakes:    startingStake,
-		providersStakes: providers,
-		dirty:           true,
+		XVolume:              xVolume,
+		YVolume:              yVolume,
+		SupplyStakes:         startingStake,
+		providersStakes:      providers,
+		dirty:                true,
+		providersStakesDirty: true,
 	}
 }
 
@@ -68,6 +71,8 @@ func (l *Liquidity) stakeToVolumes(stake *big.Int) (xVolume, yVolume *big.Int) {
 type Swap struct {
 	pool          map[Pair]*Liquidity
 	dirtyPairs    bool
+	muMutableTree sync.Mutex
+	mutableTree   *iavl.MutableTree
 	immutableTree *iavl.ImmutableTree
 	loaded        bool
 }
@@ -110,8 +115,8 @@ func (u *Swap) Pairs() (pairs []*Pair) {
 	return pairs
 }
 
-func NewSwap(db *iavl.ImmutableTree) Exchanger {
-	return &Swap{pool: map[Pair]*Liquidity{}, immutableTree: db, loaded: db == nil}
+func NewSwap(db *iavl.MutableTree) Exchanger {
+	return &Swap{pool: map[Pair]*Liquidity{}, mutableTree: db, loaded: db == nil}
 }
 
 func checkCoins(x types.CoinID, y types.CoinID) (reverted bool, err error) {
@@ -179,6 +184,14 @@ func (l *Liquidity) Burn(xVolume, yVolume *big.Int) (burnStake *big.Int) {
 	return burnStake
 }
 
+func (l *Liquidity) updateProviderStake(provider types.Address, volume *big.Int) {
+	l.providersStakes[provider] = volume
+	if volume.Sign() == 0 {
+		delete(l.providersStakes, provider)
+	}
+	l.providersStakesDirty = true
+}
+
 func (u *Swap) pair(xCoin *types.CoinID, yCoin *types.CoinID, xVolume *big.Int, yVolume *big.Int) (pair Pair, reverted bool, err error) {
 	reverted, err = checkCoins(*xCoin, *yCoin)
 	if err != nil {
@@ -213,8 +226,7 @@ func (u *Swap) Add(provider types.Address, xCoin types.CoinID, xVolume *big.Int,
 		return err
 	}
 
-	liquidity.providersStakes[provider] = new(big.Int).Add(liquidity.providersStakes[provider], mintedSupply)
-
+	liquidity.updateProviderStake(provider, new(big.Int).Add(liquidity.providersStakes[provider], mintedSupply))
 	return nil
 }
 
@@ -264,16 +276,12 @@ func (u *Swap) Remove(provider types.Address, xCoin types.CoinID, yCoin types.Co
 		return nil, nil, errors.New("provider's stake not found")
 	}
 
-	switch providerStake.Cmp(stake) {
-	case -1:
+	if providerStake.Cmp(stake) == -1 {
 		return nil, nil, errors.New("provider's stake less")
-	case 0:
-		delete(liquidity.providersStakes, provider)
-		liquidity.dirty = true // todo
-	case 1:
-		liquidity.providersStakes[provider] = providerStake.Sub(providerStake, stake)
-		liquidity.dirty = true // todo
 	}
+
+	liquidity.updateProviderStake(provider, providerStake.Sub(providerStake, stake))
+
 	xVolume, yVolume = liquidity.stakeToVolumes(stake)
 	liquidity.Burn(xVolume, yVolume)
 
@@ -287,9 +295,12 @@ func (u *Swap) Export(state *types.AppState) {
 	panic("implement me")
 }
 
-var basePath = []byte("p")
+var basePath = []byte("p") // todo
 
-func (u *Swap) Commit(db *iavl.MutableTree) error {
+func (u *Swap) Commit() error {
+	u.muMutableTree.Lock()
+	defer u.muMutableTree.Unlock()
+
 	pairs := u.Pairs()
 	if u.dirtyPairs {
 		u.dirtyPairs = false
@@ -297,7 +308,7 @@ func (u *Swap) Commit(db *iavl.MutableTree) error {
 		if err != nil {
 			return err
 		}
-		db.Set(basePath, pairsBytes)
+		u.mutableTree.Set(basePath, pairsBytes)
 	}
 	for _, pair := range pairs {
 		liquidity, _, err := u.liquidity(*pair)
@@ -307,28 +318,31 @@ func (u *Swap) Commit(db *iavl.MutableTree) error {
 		if !liquidity.dirty {
 			continue
 		}
-
 		liquidity.dirty = false
 
 		pairPath := append(basePath, pair.Bytes()...)
 		stakesPath := append(pairPath, []byte("s")...)
 
 		if liquidity.SupplyStakes.Sign() != 1 || liquidity.YVolume.Sign() != 1 || liquidity.XVolume.Sign() != 1 {
-			db.Remove(pairPath)
-			db.Remove(stakesPath)
+			u.mutableTree.Remove(pairPath)
+			u.mutableTree.Remove(stakesPath)
 			continue
 		}
 		liquidityBytes, err := rlp.EncodeToBytes(liquidity)
 		if err != nil {
 			return err
 		}
-		db.Set(pairPath, liquidityBytes)
+		u.mutableTree.Set(pairPath, liquidityBytes)
 
+		if !liquidity.providersStakesDirty {
+			continue
+		}
+		liquidity.providersStakesDirty = false
 		pairStakes, err := rlp.EncodeToBytes(liquidity.ListStakes())
 		if err != nil {
 			return err
 		}
-		db.Set(stakesPath, pairStakes)
+		u.mutableTree.Set(stakesPath, pairStakes)
 	}
 	return nil
 }
@@ -342,6 +356,15 @@ func (u *Swap) liquidity(pair Pair) (liquidity *Liquidity, ok bool, err error) {
 		return nil, false, nil
 	}
 	u.loaded = true
+
+	ok, err = u.loadMutableTree()
+	if err != nil {
+		return nil, false, err
+	}
+	if !ok {
+		return nil, false, nil
+	}
+
 	pairPath := append(basePath, pair.Bytes()...)
 	_, pairBytes := u.immutableTree.Get(pairPath)
 	if len(pairBytes) == 0 {
@@ -367,7 +390,29 @@ func (u *Swap) liquidity(pair Pair) (liquidity *Liquidity, ok bool, err error) {
 		liquidity.providersStakes[provider.Address] = provider.Stake
 	}
 	u.pool[pair] = liquidity
+
 	return liquidity, true, nil
+}
+
+func (u *Swap) loadMutableTree() (ok bool, err error) {
+	u.muMutableTree.Lock()
+	defer u.muMutableTree.Unlock()
+
+	if u.immutableTree != nil {
+		if u.immutableTree.Version() == u.mutableTree.Version() {
+			return true, nil
+		}
+	}
+
+	immutable, err := u.mutableTree.GetImmutable(u.mutableTree.Version())
+	if err != nil {
+		if err == iavl.ErrVersionDoesNotExist {
+			return false, nil
+		}
+		return false, err
+	}
+	u.immutableTree = immutable
+	return true, nil
 }
 
 type Exchanger interface {
@@ -386,5 +431,5 @@ type Exchanger interface {
 	Pair(xCoin types.CoinID, yCoin types.CoinID) (xVolume, yVolume *big.Int, err error)
 	Pairs() []*Pair
 	Export(state *types.AppState)
-	Commit(db *iavl.MutableTree) error
+	Commit() error
 }

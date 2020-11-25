@@ -26,7 +26,7 @@ type MTree interface {
 	SaveVersion() ([]byte, int64, error)
 	DeleteVersionIfExists(version int64) error
 	DeleteVersionsRange(fromVersion, toVersion int64) error
-	GetImmutable() *iavl.ImmutableTree
+	GetImmutable() (*iavl.ImmutableTree, error)
 	GetImmutableAtHeight(version int64) (*iavl.ImmutableTree, error)
 	GlobalLock()
 	GlobalUnlock()
@@ -105,11 +105,15 @@ func (t *mutableTree) Version() int64 {
 	return t.tree.Version()
 }
 
-func (t *mutableTree) GetImmutable() *iavl.ImmutableTree {
+func (t *mutableTree) GetImmutable() (*iavl.ImmutableTree, error) {
 	t.lock.RLock()
 	defer t.lock.RUnlock()
 
-	return t.tree.ImmutableTree
+	immutable, err := t.tree.GetImmutable(t.tree.Version())
+	if err != nil {
+		return nil, err
+	}
+	return immutable, nil
 }
 
 func (t *mutableTree) Get(key []byte) (index int64, value []byte) {

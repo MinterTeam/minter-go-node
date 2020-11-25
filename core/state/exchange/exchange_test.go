@@ -27,6 +27,11 @@ func TestSwap_Add_createFirstLiquidity(t *testing.T) {
 			initialYVolume: big.NewInt(800),
 			initialStake:   big.NewInt(4000000000),
 		},
+		{
+			initialXVolume: big.NewInt(12300),
+			initialYVolume: big.NewInt(23400),
+			initialStake:   big.NewInt(1696525861871),
+		},
 	}
 	for i, test := range tableTests {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
@@ -200,6 +205,19 @@ func TestSwap_Remove(t *testing.T) {
 			supplyStakes:      nil,
 			err:               errors.New("provider's stake less"),
 		},
+		{
+			xCoin:             3,
+			yCoin:             4,
+			initialXVolume:    big.NewInt(12300),
+			initialYVolume:    big.NewInt(23400),
+			wantRemoveXVolume: big.NewInt(5049),
+			wantRemoveYVolume: big.NewInt(9607),
+			removeStake:       big.NewInt(696525861871),
+			supplyXVolume:     big.NewInt(7250),
+			supplyYVolume:     big.NewInt(13791),
+			supplyStakes:      big.NewInt(1000000000000),
+			// todo: 5049+7250=12299 != 12300
+		},
 	}
 	for i, test := range tableTests {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
@@ -254,7 +272,7 @@ func TestSwap_Commit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	swap := NewSwap(mutableTree1.GetImmutable())
+	swap := NewSwap(mutableTree1.MutableTree())
 
 	initialXVolume := big.NewInt(2)
 	initialYVolume := big.NewInt(200)
@@ -264,9 +282,38 @@ func TestSwap_Commit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = swap.Commit(mutableTree1.MutableTree())
+
+	xVolume, yVolume, stake, err := swap.Balance(types.Address{1}, 0, 1)
 	if err != nil {
 		t.Fatal(err)
+	}
+	if xVolume.Cmp(initialXVolume) != 0 {
+		t.Errorf("xVolume want %s, got %s", initialXVolume.String(), xVolume.String())
+	}
+	if yVolume.Cmp(initialYVolume) != 0 {
+		t.Errorf("yVolume want %s, got %s", initialYVolume.String(), yVolume.String())
+	}
+	if stake.Cmp(initialStake) != 0 {
+		t.Errorf("stake want %s, got %s", initialStake.String(), stake.String())
+	}
+
+	err = swap.Commit()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	xVolume, yVolume, stake, err = swap.Balance(types.Address{1}, 0, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if xVolume.Cmp(initialXVolume) != 0 {
+		t.Errorf("xVolume want %s, got %s", initialXVolume.String(), xVolume.String())
+	}
+	if yVolume.Cmp(initialYVolume) != 0 {
+		t.Errorf("yVolume want %s, got %s", initialYVolume.String(), yVolume.String())
+	}
+	if stake.Cmp(initialStake) != 0 {
+		t.Errorf("stake want %s, got %s", initialStake.String(), stake.String())
 	}
 
 	_, version, err := mutableTree1.SaveVersion()
@@ -274,12 +321,26 @@ func TestSwap_Commit(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	xVolume, yVolume, stake, err = swap.Balance(types.Address{1}, 0, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if xVolume.Cmp(initialXVolume) != 0 {
+		t.Errorf("xVolume want %s, got %s", initialXVolume.String(), xVolume.String())
+	}
+	if yVolume.Cmp(initialYVolume) != 0 {
+		t.Errorf("yVolume want %s, got %s", initialYVolume.String(), yVolume.String())
+	}
+	if stake.Cmp(initialStake) != 0 {
+		t.Errorf("stake want %s, got %s", initialStake.String(), stake.String())
+	}
+
 	mutableTree2, err := tree.NewMutableTree(uint64(version), memDB, 1024)
 	if err != nil {
 		t.Fatal(err)
 	}
-	swap = NewSwap(mutableTree2.GetImmutable())
-	xVolume, yVolume, stake, err := swap.Balance(types.Address{1}, 0, 1)
+	swap = NewSwap(mutableTree2.MutableTree())
+	xVolume, yVolume, stake, err = swap.Balance(types.Address{1}, 0, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
