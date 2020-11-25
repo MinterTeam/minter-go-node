@@ -15,17 +15,17 @@ func TestSwap_Add_createFirstLiquidity(t *testing.T) {
 	tableTests := []struct {
 		initialXVolume *big.Int
 		initialYVolume *big.Int
-		initialStake   *big.Float
+		initialStake   *big.Int
 	}{
 		{
 			initialXVolume: big.NewInt(2),
 			initialYVolume: big.NewInt(200),
-			initialStake:   big.NewFloat(20),
+			initialStake:   big.NewInt(2000000000),
 		},
 		{
 			initialXVolume: big.NewInt(2),
 			initialYVolume: big.NewInt(800),
-			initialStake:   big.NewFloat(40),
+			initialStake:   big.NewInt(4000000000),
 		},
 	}
 	for i, test := range tableTests {
@@ -62,7 +62,7 @@ func TestSwap_Add(t *testing.T) {
 		maxAddYVolume  *big.Int
 		supplyXVolume  *big.Int
 		supplyYVolume  *big.Int
-		supplyStakes   *big.Float
+		supplyStakes   *big.Int
 	}{
 		{
 			xCoin:          0,
@@ -73,7 +73,7 @@ func TestSwap_Add(t *testing.T) {
 			maxAddYVolume:  big.NewInt(200),
 			supplyXVolume:  big.NewInt(4),
 			supplyYVolume:  big.NewInt(400),
-			supplyStakes:   big.NewFloat(40),
+			supplyStakes:   big.NewInt(4000000000),
 		},
 		{
 			xCoin:          1,
@@ -84,7 +84,18 @@ func TestSwap_Add(t *testing.T) {
 			maxAddYVolume:  big.NewInt(300),
 			supplyXVolume:  big.NewInt(4),
 			supplyYVolume:  big.NewInt(400),
-			supplyStakes:   big.NewFloat(40),
+			supplyStakes:   big.NewInt(4000000000),
+		},
+		{
+			xCoin:          2,
+			yCoin:          3,
+			initialXVolume: big.NewInt(2),
+			initialYVolume: big.NewInt(3),
+			addXVolume:     big.NewInt(2),
+			maxAddYVolume:  big.NewInt(3),
+			supplyXVolume:  big.NewInt(4),
+			supplyYVolume:  big.NewInt(6),
+			supplyStakes:   big.NewInt(489897948),
 		},
 		{
 			xCoin:          999,
@@ -95,7 +106,7 @@ func TestSwap_Add(t *testing.T) {
 			maxAddYVolume:  big.NewInt(200),
 			supplyXVolume:  big.NewInt(4),
 			supplyYVolume:  big.NewInt(400),
-			supplyStakes:   big.NewFloat(40),
+			supplyStakes:   big.NewInt(4000000000),
 		},
 		{
 			xCoin:          998,
@@ -106,7 +117,7 @@ func TestSwap_Add(t *testing.T) {
 			maxAddYVolume:  big.NewInt(300),
 			supplyXVolume:  big.NewInt(4),
 			supplyYVolume:  big.NewInt(400),
-			supplyStakes:   big.NewFloat(40),
+			supplyStakes:   big.NewInt(4000000000),
 		},
 	}
 	for i, test := range tableTests {
@@ -145,10 +156,10 @@ func TestSwap_Remove(t *testing.T) {
 		initialYVolume    *big.Int
 		wantRemoveXVolume *big.Int
 		wantRemoveYVolume *big.Int
-		removeStake       *big.Float
+		removeStake       *big.Int
 		supplyXVolume     *big.Int
 		supplyYVolume     *big.Int
-		supplyStakes      *big.Float
+		supplyStakes      *big.Int
 		err               error
 	}{
 		{
@@ -158,7 +169,7 @@ func TestSwap_Remove(t *testing.T) {
 			initialYVolume:    big.NewInt(200),
 			wantRemoveXVolume: big.NewInt(2),
 			wantRemoveYVolume: big.NewInt(200),
-			removeStake:       big.NewFloat(20),
+			removeStake:       big.NewInt(2000000000),
 			supplyXVolume:     nil,
 			supplyYVolume:     nil,
 			supplyStakes:      nil,
@@ -171,10 +182,10 @@ func TestSwap_Remove(t *testing.T) {
 			initialYVolume:    big.NewInt(200),
 			wantRemoveXVolume: big.NewInt(1),
 			wantRemoveYVolume: big.NewInt(100),
-			removeStake:       big.NewFloat(10),
+			removeStake:       big.NewInt(1000000000),
 			supplyXVolume:     big.NewInt(1),
 			supplyYVolume:     big.NewInt(100),
-			supplyStakes:      big.NewFloat(10),
+			supplyStakes:      big.NewInt(1000000000),
 		},
 		{
 			xCoin:             2,
@@ -183,10 +194,10 @@ func TestSwap_Remove(t *testing.T) {
 			initialYVolume:    big.NewInt(200),
 			wantRemoveXVolume: nil,
 			wantRemoveYVolume: nil,
-			removeStake:       big.NewFloat(30),
-			supplyXVolume:     big.NewInt(1),
-			supplyYVolume:     big.NewInt(100),
-			supplyStakes:      big.NewFloat(10),
+			removeStake:       big.NewInt(3000000000),
+			supplyXVolume:     nil,
+			supplyYVolume:     nil,
+			supplyStakes:      nil,
 			err:               errors.New("provider's stake less"),
 		},
 	}
@@ -247,7 +258,7 @@ func TestSwap_Commit(t *testing.T) {
 
 	initialXVolume := big.NewInt(2)
 	initialYVolume := big.NewInt(200)
-	initialStake := big.NewFloat(20)
+	initialStake := big.NewInt(2000000000)
 
 	err = swap.Add(types.Address{1}, 0, initialXVolume, 1, initialYVolume)
 	if err != nil {

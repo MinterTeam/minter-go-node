@@ -7,7 +7,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/tendermint/iavl"
-	"log"
 	"math/big"
 	"sort"
 )
@@ -24,14 +23,14 @@ func (p *Pair) Bytes() []byte {
 type Liquidity struct {
 	XVolume         *big.Int
 	YVolume         *big.Int
-	SupplyStakes    *big.Float
-	providersStakes map[types.Address]*big.Float
+	SupplyStakes    *big.Int
+	providersStakes map[types.Address]*big.Int
 	dirty           bool
 }
 
 func newLiquidity(provider types.Address, xVolume *big.Int, yVolume *big.Int) *Liquidity {
 	startingStake := startingStake(xVolume, yVolume)
-	providers := map[types.Address]*big.Float{provider: new(big.Float).Set(startingStake)}
+	providers := map[types.Address]*big.Int{provider: new(big.Int).Set(startingStake)}
 	return &Liquidity{
 		XVolume:         xVolume,
 		YVolume:         yVolume,
@@ -43,7 +42,7 @@ func newLiquidity(provider types.Address, xVolume *big.Int, yVolume *big.Int) *L
 
 type Provider struct {
 	Address types.Address
-	Stake   *big.Float
+	Stake   *big.Int
 }
 
 func (l *Liquidity) ListStakes() []*Provider {
@@ -60,9 +59,9 @@ func (l *Liquidity) ListStakes() []*Provider {
 	return providers
 }
 
-func (l *Liquidity) stakeToVolumes(stake *big.Float) (xVolume, yVolume *big.Int) {
-	xVolume, _ = new(big.Float).Quo(new(big.Float).Mul(new(big.Float).SetInt(l.XVolume), stake), l.SupplyStakes).Int(nil)
-	yVolume, _ = new(big.Float).Quo(new(big.Float).Mul(new(big.Float).SetInt(l.YVolume), stake), l.SupplyStakes).Int(nil)
+func (l *Liquidity) stakeToVolumes(stake *big.Int) (xVolume, yVolume *big.Int) {
+	xVolume = new(big.Int).Div(new(big.Int).Mul(l.XVolume, stake), l.SupplyStakes)
+	yVolume = new(big.Int).Div(new(big.Int).Mul(l.YVolume, stake), l.SupplyStakes)
 	return xVolume, yVolume
 }
 
@@ -112,7 +111,7 @@ func (u *Swap) Pairs() (pairs []*Pair) {
 }
 
 func NewSwap(db *iavl.ImmutableTree) Exchanger {
-	return &Swap{pool: map[Pair]*Liquidity{}, immutableTree: db}
+	return &Swap{pool: map[Pair]*Liquidity{}, immutableTree: db, loaded: db == nil}
 }
 
 func checkCoins(x types.CoinID, y types.CoinID) (reverted bool, err error) {
@@ -122,11 +121,11 @@ func checkCoins(x types.CoinID, y types.CoinID) (reverted bool, err error) {
 	return x > y, nil
 }
 
-func startingStake(x *big.Int, y *big.Int) *big.Float {
-	return new(big.Float).Sqrt(new(big.Float).SetInt(new(big.Int).Mul(x, y)))
+func startingStake(x *big.Int, y *big.Int) *big.Int {
+	return new(big.Int).Sqrt(new(big.Int).Mul(new(big.Int).Mul(x, y), big.NewInt(10e15)))
 }
 
-func (l *Liquidity) checkStake(xVolume *big.Int, maxYVolume *big.Int, revert bool) (yVolume *big.Int, mintedSupply *big.Float, err error) {
+func (l *Liquidity) checkStake(xVolume *big.Int, maxYVolume *big.Int, revert bool) (yVolume *big.Int, mintedSupply *big.Int, err error) {
 	if revert {
 		yVolume, mintedSupply = l.calculateMintingByYVolume(maxYVolume)
 		if yVolume.Cmp(xVolume) == 1 {
@@ -141,21 +140,21 @@ func (l *Liquidity) checkStake(xVolume *big.Int, maxYVolume *big.Int, revert boo
 	return yVolume, mintedSupply, nil
 }
 
-func (l *Liquidity) calculateMintingByXVolume(xVolume *big.Int) (yVolume *big.Int, mintedSupply *big.Float) {
+func (l *Liquidity) calculateMintingByXVolume(xVolume *big.Int) (yVolume *big.Int, mintedSupply *big.Int) {
 	quo := new(big.Float).Quo(new(big.Float).SetInt(xVolume), new(big.Float).SetInt(l.XVolume))
 	yVolume, _ = new(big.Float).Mul(new(big.Float).SetInt(l.YVolume), quo).Int(nil)
-	mintedSupply = new(big.Float).Mul(l.SupplyStakes, quo)
+	mintedSupply, _ = new(big.Float).Mul(new(big.Float).SetInt(l.SupplyStakes), quo).Int(nil)
 	return yVolume, mintedSupply
 }
 
-func (l *Liquidity) calculateMintingByYVolume(yVolume *big.Int) (xVolume *big.Int, mintedSupply *big.Float) {
+func (l *Liquidity) calculateMintingByYVolume(yVolume *big.Int) (xVolume *big.Int, mintedSupply *big.Int) {
 	quo := new(big.Float).Quo(new(big.Float).SetInt(yVolume), new(big.Float).SetInt(l.YVolume))
 	xVolume, _ = new(big.Float).Mul(new(big.Float).SetInt(l.XVolume), quo).Int(nil)
-	mintedSupply = new(big.Float).Mul(l.SupplyStakes, quo)
+	mintedSupply, _ = new(big.Float).Mul(new(big.Float).SetInt(l.SupplyStakes), quo).Int(nil)
 	return xVolume, mintedSupply
 }
 
-func (l *Liquidity) mint(xVolume *big.Int, maxYVolume *big.Int, revert bool) (*big.Float, error) {
+func (l *Liquidity) mint(xVolume *big.Int, maxYVolume *big.Int, revert bool) (*big.Int, error) {
 	yVolume, mintedSupply, err := l.checkStake(xVolume, maxYVolume, revert)
 	if err != nil {
 		return nil, err
@@ -165,15 +164,15 @@ func (l *Liquidity) mint(xVolume *big.Int, maxYVolume *big.Int, revert bool) (*b
 	}
 	l.XVolume = new(big.Int).Add(l.XVolume, xVolume)
 	l.YVolume = new(big.Int).Add(l.YVolume, yVolume)
-	l.SupplyStakes = new(big.Float).Add(l.SupplyStakes, mintedSupply)
+	l.SupplyStakes = new(big.Int).Add(l.SupplyStakes, mintedSupply)
 	l.dirty = true
 	return mintedSupply, nil
 }
 
-func (l *Liquidity) Burn(xVolume, yVolume *big.Int) (burnStake *big.Float) {
+func (l *Liquidity) Burn(xVolume, yVolume *big.Int) (burnStake *big.Int) {
 	quo := new(big.Float).Quo(new(big.Float).SetInt(xVolume), new(big.Float).SetInt(l.XVolume))
-	burnStake = new(big.Float).Mul(l.SupplyStakes, quo)
-	l.SupplyStakes = new(big.Float).Sub(l.SupplyStakes, burnStake)
+	burnStake, _ = new(big.Float).Mul(new(big.Float).SetInt(l.SupplyStakes), quo).Int(nil)
+	l.SupplyStakes = new(big.Int).Sub(l.SupplyStakes, burnStake)
 	l.XVolume = new(big.Int).Sub(l.XVolume, xVolume)
 	l.YVolume = new(big.Int).Sub(l.YVolume, yVolume)
 	l.dirty = true
@@ -214,12 +213,12 @@ func (u *Swap) Add(provider types.Address, xCoin types.CoinID, xVolume *big.Int,
 		return err
 	}
 
-	liquidity.providersStakes[provider] = new(big.Float).Add(liquidity.providersStakes[provider], mintedSupply)
+	liquidity.providersStakes[provider] = new(big.Int).Add(liquidity.providersStakes[provider], mintedSupply)
 
 	return nil
 }
 
-func (u *Swap) Balance(provider types.Address, xCoin types.CoinID, yCoin types.CoinID) (xVolume, yVolume *big.Int, providerStake *big.Float, err error) {
+func (u *Swap) Balance(provider types.Address, xCoin types.CoinID, yCoin types.CoinID) (xVolume, yVolume *big.Int, providerStake *big.Int, err error) {
 	pair, reverted, err := u.pair(&xCoin, &yCoin, nil, nil)
 	if err != nil {
 		return nil, nil, nil, err
@@ -243,10 +242,10 @@ func (u *Swap) Balance(provider types.Address, xCoin types.CoinID, yCoin types.C
 		xVolume, yVolume = yVolume, xVolume
 	}
 
-	return xVolume, yVolume, new(big.Float).Set(providerStake), nil
+	return xVolume, yVolume, new(big.Int).Set(providerStake), nil
 }
 
-func (u *Swap) Remove(provider types.Address, xCoin types.CoinID, yCoin types.CoinID, stake *big.Float) (xVolume, yVolume *big.Int, err error) {
+func (u *Swap) Remove(provider types.Address, xCoin types.CoinID, yCoin types.CoinID, stake *big.Int) (xVolume, yVolume *big.Int, err error) {
 	pair, reverted, err := u.pair(&xCoin, &yCoin, nil, nil)
 	if err != nil {
 		return nil, nil, err
@@ -353,7 +352,6 @@ func (u *Swap) liquidity(pair Pair) (liquidity *Liquidity, ok bool, err error) {
 	if err != nil {
 		return nil, false, err
 	}
-	log.Printf("%#v", liquidity)
 	stakesPath := append(pairPath, []byte("s")...)
 	_, pairStakesBytes := u.immutableTree.Get(stakesPath)
 	if len(pairStakesBytes) == 0 {
@@ -364,10 +362,9 @@ func (u *Swap) liquidity(pair Pair) (liquidity *Liquidity, ok bool, err error) {
 	if err != nil {
 		return nil, false, err
 	}
-	liquidity.providersStakes = map[types.Address]*big.Float{}
+	liquidity.providersStakes = map[types.Address]*big.Int{}
 	for _, provider := range pearStakes {
 		liquidity.providersStakes[provider.Address] = provider.Stake
-		log.Printf("%#v", provider.Stake)
 	}
 	u.pool[pair] = liquidity
 	return liquidity, true, nil
@@ -375,8 +372,8 @@ func (u *Swap) liquidity(pair Pair) (liquidity *Liquidity, ok bool, err error) {
 
 type Exchanger interface {
 	Add(provider types.Address, xCoin types.CoinID, xVolume *big.Int, yCoin types.CoinID, yMaxVolume *big.Int) error
-	Balance(provider types.Address, xCoin types.CoinID, yCoin types.CoinID) (xVolume, yVolume *big.Int, stake *big.Float, err error)
-	Remove(provider types.Address, xCoin types.CoinID, yCoin types.CoinID, stake *big.Float) (xVolume, yVolume *big.Int, err error)
+	Balance(provider types.Address, xCoin types.CoinID, yCoin types.CoinID) (xVolume, yVolume *big.Int, stake *big.Int, err error)
+	Remove(provider types.Address, xCoin types.CoinID, yCoin types.CoinID, stake *big.Int) (xVolume, yVolume *big.Int, err error)
 	// todo: add
 	// SellAll
 	// Sell
