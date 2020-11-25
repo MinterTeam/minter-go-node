@@ -105,12 +105,12 @@ func TestStateExport(t *testing.T) {
 		log.Panicf("Cannot commit state: %s", err)
 	}
 
-	newState := state.Export(uint64(state.tree.MutableTree().Version()))
+	newState := state.Export()
 	if err := newState.Verify(); err != nil {
 		t.Error(err)
 	}
 
-	if newState.StartHeight != uint64(state.tree.MutableTree().Version()) {
+	if newState.StartHeight != uint64(state.tree.Version()) {
 		t.Fatalf("Wrong new state start height. Expected %d, got %d", height, newState.StartHeight)
 	}
 

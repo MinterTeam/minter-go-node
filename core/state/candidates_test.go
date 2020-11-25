@@ -13,8 +13,6 @@ import (
 	"testing"
 )
 
-const height = 1
-
 func TestSimpleDelegate(t *testing.T) {
 	st := getState()
 
@@ -24,7 +22,7 @@ func TestSimpleDelegate(t *testing.T) {
 	pubkey := createTestCandidate(st)
 
 	st.Candidates.Delegate(address, pubkey, coin, amount, big.NewInt(0))
-	st.Candidates.RecalculateStakes(height)
+	st.Candidates.RecalculateStakes(0)
 
 	stake := st.Candidates.GetStakeOfAddress(pubkey, address, coin)
 	if stake == nil {
@@ -59,7 +57,7 @@ func TestDelegate(t *testing.T) {
 		totalAmount.Add(totalAmount, amount)
 	}
 
-	st.Candidates.RecalculateStakes(height)
+	st.Candidates.RecalculateStakes(0)
 
 	stake := st.Candidates.GetStakeOfAddress(pubkey, address, coin)
 	if stake == nil {
@@ -96,7 +94,7 @@ func TestCustomDelegate(t *testing.T) {
 	pubkey := createTestCandidate(st)
 
 	st.Candidates.Delegate(address, pubkey, coinID, amount, big.NewInt(0))
-	st.Candidates.RecalculateStakes(height)
+	st.Candidates.RecalculateStakes(0)
 
 	stake := st.Candidates.GetStakeOfAddress(pubkey, address, coinID)
 	if stake == nil {
@@ -131,7 +129,7 @@ func TestComplexDelegate(t *testing.T) {
 		st.Candidates.Delegate(addr, pubkey, coin, amount, big.NewInt(0))
 	}
 
-	st.Candidates.RecalculateStakes(height)
+	st.Candidates.RecalculateStakes(0)
 
 	for i := uint64(0); i < 1000; i++ {
 		var addr types.Address
@@ -167,7 +165,7 @@ func TestComplexDelegate(t *testing.T) {
 		binary.BigEndian.PutUint64(addr[:], 3000)
 		st.Candidates.Delegate(addr, pubkey, coin, big.NewInt(3000), big.NewInt(0))
 
-		st.Candidates.RecalculateStakes(height)
+		st.Candidates.RecalculateStakes(0)
 
 		replacedAddress := types.HexToAddress("Mx00000000000003e7000000000000000000000000")
 		stake := st.Candidates.GetStakeOfAddress(pubkey, replacedAddress, coin)
@@ -190,7 +188,7 @@ func TestComplexDelegate(t *testing.T) {
 		binary.BigEndian.PutUint64(addr2[:], 3500)
 		st.Candidates.Delegate(addr2, pubkey, coin, big.NewInt(3500), big.NewInt(0))
 
-		st.Candidates.RecalculateStakes(height)
+		st.Candidates.RecalculateStakes(0)
 
 		stake := st.Candidates.GetStakeOfAddress(pubkey, addr, coin)
 		if stake == nil {
@@ -209,7 +207,7 @@ func TestComplexDelegate(t *testing.T) {
 		binary.BigEndian.PutUint64(addr[:], 4001)
 		st.Candidates.Delegate(addr, pubkey, coin, big.NewInt(900), big.NewInt(0))
 
-		st.Candidates.RecalculateStakes(height)
+		st.Candidates.RecalculateStakes(0)
 
 		stake := st.Candidates.GetStakeOfAddress(pubkey, addr, coin)
 		if stake != nil {
@@ -236,7 +234,7 @@ func TestStakeSufficiency(t *testing.T) {
 		st.Candidates.Delegate(addr, pubkey, coin, amount, big.NewInt(0))
 	}
 
-	st.Candidates.RecalculateStakes(height)
+	st.Candidates.RecalculateStakes(0)
 
 	{
 		stake := big.NewInt(1)
@@ -288,7 +286,7 @@ func TestDoubleSignPenalty(t *testing.T) {
 	binary.BigEndian.PutUint64(addr[:], 1)
 	st.Candidates.Delegate(addr, pubkey, coin, amount, big.NewInt(0))
 
-	st.Candidates.RecalculateStakes(height)
+	st.Candidates.RecalculateStakes(0)
 
 	st.FrozenFunds.AddFund(1, addr, pubkey, st.Candidates.ID(pubkey), coin, amount)
 
@@ -344,7 +342,7 @@ func TestAbsentPenalty(t *testing.T) {
 	binary.BigEndian.PutUint64(addr[:], 1)
 	st.Candidates.Delegate(addr, pubkey, coin, amount, big.NewInt(0))
 
-	st.Candidates.RecalculateStakes(height)
+	st.Candidates.RecalculateStakes(0)
 
 	var pk ed25519.PubKeyEd25519
 	copy(pk[:], pubkey[:])
@@ -380,7 +378,7 @@ func TestDoubleAbsentPenalty(t *testing.T) {
 	st.Candidates.Delegate(addr, pubkey, coin, amount, amount)
 	st.Candidates.SetOnline(pubkey)
 
-	st.Candidates.RecalculateStakes(height)
+	st.Candidates.RecalculateStakes(0)
 
 	var pk ed25519.PubKeyEd25519
 	copy(pk[:], pubkey[:])
@@ -422,7 +420,7 @@ func TestZeroStakePenalty(t *testing.T) {
 	binary.BigEndian.PutUint64(addr[:], 1)
 	st.Candidates.Delegate(addr, pubkey, coin, amount, big.NewInt(0))
 
-	st.Candidates.RecalculateStakes(height)
+	st.Candidates.RecalculateStakes(0)
 
 	st.Candidates.SubStake(addr, pubkey, coin, amount)
 	st.FrozenFunds.AddFund(518400, addr, pubkey, st.Candidates.ID(pubkey), coin, amount)
@@ -461,7 +459,7 @@ func TestDelegationAfterUnbond(t *testing.T) {
 		st.Candidates.Delegate(addr, pubkey, coin, amount, big.NewInt(0))
 	}
 
-	st.Candidates.RecalculateStakes(height)
+	st.Candidates.RecalculateStakes(0)
 
 	// unbond
 	{
@@ -470,8 +468,8 @@ func TestDelegationAfterUnbond(t *testing.T) {
 		amount := big.NewInt(int64(1000 - 2))
 
 		st.Candidates.SubStake(addr, pubkey, coin, amount)
-		st.Candidates.RecalculateStakes(height)
-		if err := st.Candidates.Commit(st.tree.MutableTree()); err != nil {
+		st.Candidates.RecalculateStakes(0)
+		if _, _, err := st.tree.Commit(st.Candidates); err != nil {
 			panic(err)
 		}
 	}
@@ -483,7 +481,7 @@ func TestDelegationAfterUnbond(t *testing.T) {
 		amount := big.NewInt(2000)
 
 		st.Candidates.Delegate(addr, pubkey, coin, amount, big.NewInt(0))
-		st.Candidates.RecalculateStakes(height)
+		st.Candidates.RecalculateStakes(0)
 
 		value := st.Candidates.GetStakeValueOfAddress(pubkey, addr, coin)
 		if value == nil || value.Cmp(amount) != 0 {
@@ -525,7 +523,7 @@ func TestStakeKick(t *testing.T) {
 		st.Candidates.Delegate(addr, pubkey, coin, amount, big.NewInt(0))
 	}
 
-	st.Candidates.RecalculateStakes(height)
+	st.Candidates.RecalculateStakes(0)
 
 	{
 		amount := big.NewInt(1001)
@@ -534,7 +532,7 @@ func TestStakeKick(t *testing.T) {
 		st.Candidates.Delegate(addr, pubkey, coin, amount, big.NewInt(0))
 	}
 
-	st.Candidates.RecalculateStakes(height)
+	st.Candidates.RecalculateStakes(0)
 
 	var addr types.Address
 	binary.BigEndian.PutUint64(addr[:], 999)
@@ -564,8 +562,8 @@ func TestRecalculateStakes(t *testing.T) {
 	amount := helpers.BipToPip(big.NewInt(1000))
 	st.Candidates.Delegate([20]byte{1}, pubkey, 1, amount, big.NewInt(0))
 
-	st.Candidates.RecalculateStakes(height)
-	err := st.Candidates.Commit(st.tree.MutableTree())
+	st.Candidates.RecalculateStakes(0)
+	_, _, err := st.tree.Commit(st.Candidates)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -599,7 +597,7 @@ func checkState(cState *State) error {
 		return err
 	}
 
-	exportedState := cState.Export(height)
+	exportedState := cState.Export()
 	if err := exportedState.Verify(); err != nil {
 		return err
 	}

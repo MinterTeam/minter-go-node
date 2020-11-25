@@ -66,7 +66,7 @@ func createTestCoinWithOwner(stateDB *state.State, owner types.Address) types.Co
 	stateDB.App.SetCoinsCount(id.Uint32())
 	stateDB.Accounts.AddBalance(types.Address{}, id, volume)
 
-	err := stateDB.Coins.Commit(stateDB.Tree().MutableTree())
+	_, _, err := stateDB.Tree().Commit(stateDB.Coins)
 	if err != nil {
 		log.Fatalf("failed to commit coins: %s", err)
 	}
@@ -79,10 +79,9 @@ func checkState(t *testing.T, cState *state.State) {
 		t.Fatal(err)
 	}
 
-	version := cState.Tree().Version()
-	exportedState := cState.Export(uint64(version))
+	exportedState := cState.Export()
 	if err := exportedState.Verify(); err != nil {
-		t.Fatalf("error export version %d: %s", version, err)
+		t.Fatalf("error export version %d: %s", cState.Tree().Version(), err)
 	}
 }
 
@@ -938,7 +937,7 @@ func TestBuyCoinTxCustomToBaseCustomCommission(t *testing.T) {
 
 		estimatedSupply := big.NewInt(0).Set(initialVolume)
 		estimatedSupply.Sub(estimatedSupply, formula.CalculateSaleAmount(initialVolume, initialReserve, crr, big.NewInt(0).Add(toBuy, tx.CommissionInBaseCoin())))
-		//estimatedSupply.Sub(estimatedSupply, commission)
+		// estimatedSupply.Sub(estimatedSupply, commission)
 		if coinData.Volume().Cmp(estimatedSupply) != 0 {
 			t.Fatalf("Wrong coin supply. Expected %s, got %s", estimatedSupply.String(), coinData.Volume().String())
 		}
@@ -1167,7 +1166,7 @@ func TestBuyCoinTxToMaximumValueToSellReached(t *testing.T) {
 	coinToBuyID, sellCoinID := createTestCoin(cState), types.GetBaseCoinID()
 
 	valueToBuy := big.NewInt(2e18)
-	//cState.Accounts.AddBalance(addr, sellCoinID, valueToBuy)
+	// cState.Accounts.AddBalance(addr, sellCoinID, valueToBuy)
 	cState.Coins.AddVolume(sellCoinID, valueToBuy)
 
 	data := BuyCoinData{

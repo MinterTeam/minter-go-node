@@ -101,7 +101,7 @@ func (data EditMultisigData) Run(tx *Transaction, context state.Interface, rewar
 	var checkState *state.CheckState
 	var isCheck bool
 	if checkState, isCheck = context.(*state.CheckState); !isCheck {
-		checkState = state.NewCheckState(context.(*state.State))
+		checkState = state.NewCheckState(context.(*state.State), nil)
 	}
 
 	response := data.BasicCheck(tx, checkState)

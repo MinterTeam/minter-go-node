@@ -15,26 +15,19 @@ func TestHaltsToDeleteModel(t *testing.T) {
 	pubkey, height := types.Pubkey{0}, uint64(10)
 
 	h.AddHaltBlock(height, pubkey)
-	if err := h.Commit(mutableTree.MutableTree()); err != nil {
-		t.Fatal(err)
-	}
 
-	_, _, err := mutableTree.SaveVersion()
+	_, _, err := mutableTree.Commit(h)
 	if err != nil {
 		t.Fatal(err)
 	}
-	h.SetImmutableTree(mutableTree.GetLastImmutable())
 
 	if h.GetHaltBlocks(height) == nil {
 		t.Fatal("Halts not found")
 	}
 
 	h.Delete(height)
-	if err := h.Commit(mutableTree.MutableTree()); err != nil {
-		t.Fatal(err)
-	}
 
-	_, _, err = mutableTree.SaveVersion()
+	_, _, err = mutableTree.Commit(h)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -54,16 +47,10 @@ func TestBusToAddHaltBlock(t *testing.T) {
 	hbBus := Bus{halts: h}
 	hbBus.AddHaltBlock(height, pubkey)
 
-	if err := h.Commit(mutableTree.MutableTree()); err != nil {
-		t.Fatal(err)
-	}
-
-	_, _, err := mutableTree.SaveVersion()
+	_, _, err := mutableTree.Commit(h)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	h.SetImmutableTree(mutableTree.GetLastImmutable())
 
 	halt := h.GetHaltBlocks(height)
 	if halt == nil {

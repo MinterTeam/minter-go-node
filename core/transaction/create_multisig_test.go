@@ -309,7 +309,7 @@ func TestCreateMultisigOwnersTxToNonExistAddress(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := data.BasicCheck(&tx, state.NewCheckState(cState))
+	response := data.BasicCheck(&tx, state.NewCheckState(cState, nil))
 	if response.Code != code.MultisigNotExists {
 		t.Fatalf("Response code is not %d. Error %s", code.MultisigNotExists, response.Log)
 	}

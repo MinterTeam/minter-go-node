@@ -25,15 +25,10 @@ func TestWaitListToGetByAddressAndPubKey(t *testing.T) {
 	candidatesState.Create(addr, addr, addr, pubkey, 10)
 
 	wl.AddWaitList(addr, pubkey, coin, val)
-	if err := wl.Commit(mutableTree.MutableTree()); err != nil {
-		t.Fatal(err)
-	}
-
-	_, _, err := mutableTree.SaveVersion()
+	_, _, err := mutableTree.Commit(wl)
 	if err != nil {
 		t.Fatal(err)
 	}
-	wl.SetImmutableTree(mutableTree.GetLastImmutable())
 	items := wl.GetByAddressAndPubKey(addr, pubkey)
 	if len(items) != 1 {
 		t.Fatal("Incorrect amount of items in waitlist")
@@ -64,11 +59,7 @@ func TestWaitListToPartialDelete(t *testing.T) {
 	wl.AddWaitList(addr, pubkey, coin, val)
 	wl.AddWaitList(addr, pubkey, 1, val)
 	wl.AddWaitList(addr, pubkey, 2, val)
-	if err := wl.Commit(mutableTree.MutableTree()); err != nil {
-		t.Fatal(err)
-	}
-
-	_, _, err := mutableTree.SaveVersion()
+	_, _, err := mutableTree.Commit(wl)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -76,7 +67,7 @@ func TestWaitListToPartialDelete(t *testing.T) {
 	wl.Delete(addr, pubkey, 0)
 	wl.Delete(addr, pubkey, 1)
 	wl.AddWaitList(addr, pubkey, 1, big.NewInt(1e17))
-	_, _, err = mutableTree.SaveVersion()
+	_, _, err = mutableTree.Commit(wl)
 	if err != nil {
 		t.Fatal(err)
 	}

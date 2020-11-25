@@ -124,12 +124,7 @@ func TestValidators_LoadValidators(t *testing.T) {
 
 	validators.Create([32]byte{2}, big.NewInt(2000000))
 
-	err := validators.Commit(mutableTree.MutableTree())
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	_, _, err = mutableTree.SaveVersion()
+	_, _, err := mutableTree.Commit(validators)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -377,12 +372,11 @@ func TestValidators_Export(t *testing.T) {
 	candidatesS.RecalculateStakes(0)
 	validators.SetNewValidators(candidatesS.GetNewCandidates(1))
 
-	err := validators.Commit(mutableTree.MutableTree())
-
-	hash, version, err := mutableTree.SaveVersion()
+	hash, version, err := mutableTree.Commit(validators)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if version != 1 {
 		t.Fatalf("version %d", version)
 	}
@@ -391,7 +385,6 @@ func TestValidators_Export(t *testing.T) {
 		t.Fatalf("hash %X", hash)
 	}
 
-	validators.SetImmutableTree(mutableTree.GetLastImmutable())
 	state := new(types.AppState)
 	validators.Export(state)
 

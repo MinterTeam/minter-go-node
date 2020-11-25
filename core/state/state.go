@@ -32,11 +32,12 @@ type Interface interface {
 }
 
 type CheckState struct {
-	state *State
+	state         *State
+	immutableTree *iavl.ImmutableTree
 }
 
-func NewCheckState(state *State) *CheckState {
-	return &CheckState{state: state}
+func NewCheckState(state *State, immutableTree *iavl.ImmutableTree) *CheckState {
+	return &CheckState{state: state, immutableTree: immutableTree}
 }
 
 func (cs *CheckState) isValue_State() {}
@@ -45,8 +46,23 @@ func (cs *CheckState) Lock() {
 	cs.state.lock.Lock()
 }
 
-func (cs *CheckState) Export(height uint64) types.AppState {
-	return cs.state.Export(height)
+func (cs *CheckState) Tree() *iavl.ImmutableTree {
+	return cs.immutableTree
+}
+
+func (cs *CheckState) Export() types.AppState {
+	appState := new(types.AppState)
+	cs.App().Export(appState, uint64(cs.Tree().Version()))
+	cs.Validators().Export(appState)
+	cs.Candidates().Export(appState)
+	cs.WaitList().Export(appState)
+	cs.FrozenFunds().Export(appState, uint64(cs.Tree().Version()))
+	cs.Accounts().Export(appState)
+	cs.Coins().Export(appState)
+	cs.Checks().Export(appState)
+	cs.Halts().Export(appState)
+
+	return *appState
 }
 
 func (cs *CheckState) Unlock() {
@@ -87,9 +103,6 @@ func (cs *CheckState) Checks() checks.RChecks {
 }
 func (cs *CheckState) WaitList() waitlist.RWaitList {
 	return cs.state.Waitlist
-}
-func (cs *CheckState) Tree() tree.ReadOnlyTree {
-	return cs.state.Tree()
 }
 
 type State struct {
@@ -287,24 +300,13 @@ func (s *State) Import(state types.AppState) error {
 	return nil
 }
 
-func (s *State) Export(height uint64) types.AppState {
-	state, err := NewCheckStateAtHeight(height, s.db)
+func (s *State) Export() types.AppState {
+	state, err := NewCheckStateAtHeight(uint64(s.tree.Version()), s.db)
 	if err != nil {
-		log.Panicf("Create new state at height %d failed: %s", height, err)
+		log.Panicf("Create new state at height %d failed: %s", s.tree.Version(), err)
 	}
 
-	appState := new(types.AppState)
-	state.App().Export(appState, height)
-	state.Validators().Export(appState)
-	state.Candidates().Export(appState)
-	state.WaitList().Export(appState)
-	state.FrozenFunds().Export(appState, height)
-	state.Accounts().Export(appState)
-	state.Coins().Export(appState)
-	state.Checks().Export(appState)
-	state.Halts().Export(appState)
-
-	return *appState
+	return state.Export()
 }
 
 func newCheckStateForTree(immutableTree *iavl.ImmutableTree, events eventsdb.IEventsDB, db db.DB, keepLastStates int64) (*CheckState, error) {
@@ -313,7 +315,7 @@ func newCheckStateForTree(immutableTree *iavl.ImmutableTree, events eventsdb.IEv
 		return nil, err
 	}
 
-	return NewCheckState(stateForTree), nil
+	return NewCheckState(stateForTree, immutableTree), nil
 }
 
 func newStateForTree(immutableTree *iavl.ImmutableTree, events eventsdb.IEventsDB, db db.DB, keepLastStates int64) (*State, error) {

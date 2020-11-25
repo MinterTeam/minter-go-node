@@ -50,7 +50,7 @@ func TestEditOwnerTx(t *testing.T) {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
 
-	err = cState.Coins.Commit(cState.Tree().MutableTree())
+	_, _, err = cState.Tree().Commit(cState.Coins)
 	if err != nil {
 		t.Fatalf("Failed to commit coins: %s", err)
 	}

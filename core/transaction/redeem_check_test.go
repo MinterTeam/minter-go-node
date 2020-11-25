@@ -204,7 +204,7 @@ func TestRedeemCheckTxToDecodeError(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := data.BasicCheck(&tx, state.NewCheckState(cState))
+	response := data.BasicCheck(&tx, state.NewCheckState(cState, nil))
 	if response.Code != code.DecodeError {
 		t.Fatalf("Response code is not %d. Error %s", code.DecodeError, response.Log)
 	}

@@ -83,7 +83,7 @@ func (data DeclareCandidacyData) Run(tx *Transaction, context state.Interface, r
 	var checkState *state.CheckState
 	var isCheck bool
 	if checkState, isCheck = context.(*state.CheckState); !isCheck {
-		checkState = state.NewCheckState(context.(*state.State))
+		checkState = state.NewCheckState(context.(*state.State), nil)
 	}
 
 	response := data.BasicCheck(tx, checkState)

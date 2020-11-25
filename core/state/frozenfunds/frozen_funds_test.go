@@ -25,15 +25,11 @@ func TestFrozenFundsToAddModel(t *testing.T) {
 	height, addr, pubkey, coin, val := uint64(1), types.Address{0}, types.Pubkey{0}, types.GetBaseCoinID(), big.NewInt(1e18)
 
 	ff.AddFund(height, addr, pubkey, 1, coin, val)
-	if err := ff.Commit(mutableTree.MutableTree()); err != nil {
-		t.Fatal(err)
-	}
 
-	_, _, err := mutableTree.SaveVersion()
+	_, _, err := mutableTree.Commit(ff)
 	if err != nil {
 		t.Fatal(err)
 	}
-	ff.SetImmutableTree(mutableTree.GetLastImmutable())
 
 	funds := ff.GetFrozenFunds(height)
 	if funds == nil {
@@ -67,11 +63,8 @@ func TestFrozenFundsToDeleteModel(t *testing.T) {
 	height, addr, pubkey, coin, val := uint64(1), types.Address{0}, types.Pubkey{0}, types.GetBaseCoinID(), big.NewInt(1e18)
 
 	ff.AddFund(height, addr, pubkey, 1, coin, val)
-	if err := ff.Commit(mutableTree.MutableTree()); err != nil {
-		t.Fatal(err)
-	}
 
-	_, _, err := mutableTree.SaveVersion()
+	_, _, err := mutableTree.Commit(ff)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,11 +75,7 @@ func TestFrozenFundsToDeleteModel(t *testing.T) {
 
 	ff.Delete(height)
 
-	if err := ff.Commit(mutableTree.MutableTree()); err != nil {
-		t.Fatal(err)
-	}
-
-	_, _, err = mutableTree.SaveVersion()
+	_, _, err = mutableTree.Commit(ff)
 	if err != nil {
 		t.Fatal(err)
 	}

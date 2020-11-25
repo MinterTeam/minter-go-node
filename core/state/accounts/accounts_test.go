@@ -81,11 +81,8 @@ func TestAccounts_SetBalance_fromDB(t *testing.T) {
 	b.SetChecker(checker.NewChecker(b))
 	accounts := NewAccounts(b, mutableTree.GetLastImmutable())
 	accounts.SetBalance([20]byte{4}, 0, big.NewInt(1000))
-	err := accounts.Commit(mutableTree.MutableTree())
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, _, err = mutableTree.SaveVersion()
+
+	_, _, err := mutableTree.Commit(accounts)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -142,14 +139,11 @@ func TestAccounts_GetBalances(t *testing.T) {
 		big.NewInt(0).Exp(big.NewInt(10), big.NewInt(10+18), nil),
 		nil)
 
-	err := coinsState.Commit(mutableTree.MutableTree())
+	_, _, err := mutableTree.Commit(accounts)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, _, err = mutableTree.SaveVersion()
-	if err != nil {
-		t.Fatal(err)
-	}
+
 	accounts.SetImmutableTree(mutableTree.GetLastImmutable())
 	symbol := coinsState.GetCoinBySymbol(types.StrToCoinSymbol("AAA"), 0)
 	if symbol == nil {
@@ -275,12 +269,7 @@ func TestAccounts_Commit(t *testing.T) {
 	accounts := NewAccounts(b, mutableTree.GetLastImmutable())
 	accounts.SetBalance([20]byte{4}, 0, big.NewInt(1000))
 
-	err := accounts.Commit(mutableTree.MutableTree())
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	hash, version, err := mutableTree.SaveVersion()
+	hash, version, err := mutableTree.Commit(accounts)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -314,15 +303,10 @@ func TestAccounts_Export(t *testing.T) {
 		big.NewInt(0).Exp(big.NewInt(10), big.NewInt(10+18), nil),
 		nil)
 
-	err := coinsState.Commit(mutableTree.MutableTree())
+	_, _, err := mutableTree.Commit(accounts)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, _, err = mutableTree.SaveVersion()
-	if err != nil {
-		t.Fatal(err)
-	}
-	accounts.SetImmutableTree(mutableTree.GetLastImmutable())
 	symbol := coinsState.GetCoinBySymbol(types.StrToCoinSymbol("AAA"), 0)
 	if symbol == nil {
 		t.Fatal("coin not found")
@@ -331,15 +315,10 @@ func TestAccounts_Export(t *testing.T) {
 	accounts.SetBalance([20]byte{4}, symbol.ID(), big.NewInt(1001))
 	_ = accounts.CreateMultisig([]uint32{1, 1, 2}, []types.Address{[20]byte{1}, [20]byte{2}, [20]byte{3}}, 2, [20]byte{4})
 
-	err = accounts.Commit(mutableTree.MutableTree())
+	_, _, err = mutableTree.Commit(accounts)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, _, err = mutableTree.SaveVersion()
-	if err != nil {
-		t.Fatal(err)
-	}
-	accounts.SetImmutableTree(mutableTree.GetLastImmutable())
 	state := new(types.AppState)
 	accounts.Export(state)
 
