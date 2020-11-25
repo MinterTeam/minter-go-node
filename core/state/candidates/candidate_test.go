@@ -60,7 +60,6 @@ func TestCandidates_Commit_createThreeCandidates(t *testing.T) {
 	if fmt.Sprintf("%X", hash) != "D7A17D41EAE39D61D3F85BC3311DA1FE306E885FF03024D0173F23E3739E719B" {
 		t.Fatalf("hash %X", hash)
 	}
-	candidates.SetImmutableTree(mutableTree.GetLastImmutable())
 	candidates.Create([20]byte{1, 1}, [20]byte{2, 2}, [20]byte{3, 3}, [32]byte{4, 4}, 10)
 
 	hash, version, err = mutableTree.Commit(candidates)
@@ -169,7 +168,6 @@ func TestCandidates_Commit_withStakeAndUpdate(t *testing.T) {
 		t.Fatalf("hash %X", hash)
 	}
 
-	candidates.SetImmutableTree(mutableTree.GetLastImmutable())
 	candidates.SetStakes([32]byte{4}, []types.Stake{
 		{
 			Owner:    [20]byte{1},
@@ -355,7 +353,6 @@ func TestCandidates_Count(t *testing.T) {
 		t.Fatalf("hash %X", hash)
 	}
 
-	candidates.SetImmutableTree(mutableTree.GetLastImmutable())
 	count := candidates.Count()
 	if count != 3 {
 		t.Fatalf("coun %d", count)
@@ -407,7 +404,7 @@ func TestCandidates_GetTotalStake_fromModelAndFromDB(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	candidates.SetImmutableTree(mutableTree.GetLastImmutable())
+
 	totalStake := candidates.GetTotalStake([32]byte{4})
 	totalStakeString := totalStake.String()
 	if totalStakeString != "2509591" {
@@ -452,7 +449,7 @@ func TestCandidates_Export(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	candidates.SetImmutableTree(mutableTree.GetLastImmutable())
+
 	state := new(types.AppState)
 	candidates.Export(state)
 
@@ -652,7 +649,6 @@ func TestCandidates_PunishByzantineCandidate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	candidates.SetImmutableTree(mutableTree.GetLastImmutable())
 
 	symbol := coinsState.GetCoinBySymbol(types.StrToCoinSymbol("AAA"), 0)
 	if symbol == nil {
@@ -721,7 +717,7 @@ func TestCandidates_SubStake(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	candidates.SetImmutableTree(mutableTree.GetLastImmutable())
+
 	candidates.SubStake([20]byte{1}, [32]byte{4}, 0, big.NewInt(10))
 	stake := candidates.GetStakeOfAddress([32]byte{4}, [20]byte{1}, 0)
 	if stake == nil {
@@ -753,7 +749,6 @@ func TestCandidates_IsNewCandidateStakeSufficient(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	candidates.SetImmutableTree(mutableTree.GetLastImmutable())
 	if !candidates.IsNewCandidateStakeSufficient(0, big.NewInt(1000), 1) {
 		t.Log("is not new candidate stake sufficient")
 	}
@@ -797,7 +792,7 @@ func TestCandidates_IsDelegatorStakeSufficient(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	candidates.SetImmutableTree(mutableTree.GetLastImmutable())
+
 	candidates.SetStakes([32]byte{4}, []types.Stake{
 		{
 			Owner:    types.StringToAddress("10000"),

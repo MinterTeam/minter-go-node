@@ -68,7 +68,7 @@ func TestFrozenFundsToDeleteModel(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ff.SetImmutableTree(mutableTree.GetLastImmutable())
+
 	if funds := ff.GetFrozenFunds(height); funds == nil {
 		t.Fatal("Funds not found")
 	}
@@ -79,7 +79,7 @@ func TestFrozenFundsToDeleteModel(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ff.SetImmutableTree(mutableTree.GetLastImmutable())
+
 	if funds := ff.GetFrozenFunds(height); funds != nil {
 		t.Fatal("Funds not deleted")
 	}

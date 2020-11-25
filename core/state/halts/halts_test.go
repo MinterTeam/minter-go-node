@@ -31,7 +31,6 @@ func TestHaltsToDeleteModel(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	h.SetImmutableTree(mutableTree.GetLastImmutable())
 
 	if h.GetHaltBlocks(height) != nil {
 		t.Fatal("Halts not deleted")

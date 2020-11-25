@@ -86,7 +86,6 @@ func TestAccounts_SetBalance_fromDB(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	accounts.SetImmutableTree(mutableTree.GetLastImmutable())
 	if accounts.GetBalance([20]byte{4}, 0).String() != "1000" {
 		t.Fatal("balance of coin ID '0' not equal 1000")
 	}
@@ -144,7 +143,6 @@ func TestAccounts_GetBalances(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	accounts.SetImmutableTree(mutableTree.GetLastImmutable())
 	symbol := coinsState.GetCoinBySymbol(types.StrToCoinSymbol("AAA"), 0)
 	if symbol == nil {
 		t.Fatal("coin not found")

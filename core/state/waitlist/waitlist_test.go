@@ -63,7 +63,6 @@ func TestWaitListToPartialDelete(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	wl.SetImmutableTree(mutableTree.GetLastImmutable())
 	wl.Delete(addr, pubkey, 0)
 	wl.Delete(addr, pubkey, 1)
 	wl.AddWaitList(addr, pubkey, 1, big.NewInt(1e17))
