@@ -16,7 +16,7 @@ import (
 type RSwap interface {
 	Balance(provider types.Address, xCoin types.CoinID, yCoin types.CoinID) (xVolume, yVolume *big.Int, stake *big.Int, err error)
 	Pair(xCoin, yCoin types.CoinID) (xVolume, yVolume, stakes *big.Int, err error)
-	Pairs() []*pair
+	Pairs() (pairs []*pair, err error)
 }
 
 type Swap struct {
@@ -71,7 +71,26 @@ func (u *Swap) Pair(xCoin, yCoin types.CoinID) (xVolume, yVolume, stakes *big.In
 	return new(big.Int).Set(liquidity.XVolume), new(big.Int).Set(liquidity.YVolume), new(big.Int).Set(liquidity.SupplyStakes), nil
 }
 
-func (u *Swap) Pairs() (pairs []*pair) {
+func (u *Swap) Pairs() (pairs []*pair, err error) {
+	if !u.loaded {
+		u.loaded = true
+		basePath := []byte(mainPrefix)
+		_, value := u.immutableTree().Get(basePath)
+		if len(value) == 0 {
+			return nil, nil
+		}
+		var pairs []*pair
+		err := rlp.DecodeBytes(value, &pairs)
+		if err != nil {
+			return nil, err
+		}
+		for _, pair := range pairs {
+			if _, ok := u.pool[*pair]; !ok {
+				u.pool[*pair] = nil
+			}
+		}
+		return pairs, nil
+	}
 	pairs = make([]*pair, 0, len(u.pool))
 	for p := range u.pool {
 		pair := p
@@ -80,7 +99,7 @@ func (u *Swap) Pairs() (pairs []*pair) {
 	sort.Slice(pairs, func(i, j int) bool {
 		return bytes.Compare(pairs[i].Bytes(), pairs[j].Bytes()) == 1
 	})
-	return pairs
+	return pairs, nil
 }
 
 func checkCoins(x types.CoinID, y types.CoinID) (reverted bool, err error) {
@@ -100,11 +119,11 @@ func (l *liquidity) checkStake(xVolume *big.Int, maxYVolume *big.Int, revert boo
 		if yVolume.Cmp(xVolume) == 1 {
 			return nil, nil, fmt.Errorf("max Y volume %s, calculated Y volume %s", xVolume, yVolume)
 		}
-		return yVolume, mintedSupply, nil
-	}
-	yVolume, mintedSupply = l.calculateMintingByXVolume(xVolume)
-	if yVolume.Cmp(maxYVolume) == 1 {
-		return nil, nil, fmt.Errorf("max Y volume %s, calculated Y volume %s", maxYVolume, yVolume)
+	} else {
+		yVolume, mintedSupply = l.calculateMintingByXVolume(xVolume)
+		if yVolume.Cmp(maxYVolume) == 1 {
+			return nil, nil, fmt.Errorf("max Y volume %s, calculated Y volume %s", maxYVolume, yVolume)
+		}
 	}
 	return yVolume, mintedSupply, nil
 }
@@ -172,6 +191,9 @@ func (u *Swap) pair(xCoin *types.CoinID, yCoin *types.CoinID, xVolume *big.Int, 
 }
 
 func (u *Swap) Add(provider types.Address, xCoin types.CoinID, xVolume *big.Int, yCoin types.CoinID, yMaxVolume *big.Int) error {
+	if xVolume == nil || xVolume.Sign() == 0 || yMaxVolume == nil || yMaxVolume.Sign() == 0 {
+		return errors.New("invalid coin volume")
+	}
 	yVolume := yMaxVolume
 	pair, reverted, err := u.pair(&xCoin, &yCoin, xVolume, yVolume)
 	if err != nil {
@@ -264,7 +286,7 @@ var mainPrefix = "p"
 func (u *Swap) Commit(db *iavl.MutableTree) error {
 
 	basePath := []byte(mainPrefix)
-	pairs := u.Pairs()
+	pairs, _ := u.Pairs()
 	if u.dirtyPairs {
 		u.dirtyPairs = false
 		pairsBytes, err := rlp.EncodeToBytes(pairs)
@@ -310,17 +332,36 @@ func (u *Swap) Commit(db *iavl.MutableTree) error {
 	return nil
 }
 
-func (u *Swap) liquidity(pair pair) (l *liquidity, ok bool, err error) {
-	l, ok = u.pool[pair]
-	if ok {
-		return l, ok, nil
+func (u *Swap) liquidity(p pair) (l *liquidity, ok bool, err error) {
+	l, ok = u.pool[p]
+	if l != nil {
+		return l, true, nil
 	}
-	if u.loaded {
+
+	if !u.loaded {
+		u.loaded = true
+
+		basePath := []byte(mainPrefix)
+		_, value := u.immutableTree().Get(basePath)
+		if len(value) == 0 {
+			return nil, false, nil
+		}
+		var pairs []*pair
+		err = rlp.DecodeBytes(value, &pairs)
+		if err != nil {
+			return nil, false, err
+		}
+
+		for _, pair := range pairs {
+			if _, ok := u.pool[*pair]; !ok {
+				u.pool[*pair] = nil
+			}
+		}
+	} else if !ok {
 		return nil, false, nil
 	}
-	u.loaded = true
 
-	pairPath := append([]byte(mainPrefix), pair.Bytes()...)
+	pairPath := append([]byte(mainPrefix), p.Bytes()...)
 	_, pairBytes := u.immutableTree().Get(pairPath)
 	if len(pairBytes) == 0 {
 		return nil, false, nil
@@ -344,7 +385,7 @@ func (u *Swap) liquidity(pair pair) (l *liquidity, ok bool, err error) {
 	for _, provider := range pearStakes {
 		l.providersStakes[provider.Address] = provider.Stake
 	}
-	u.pool[pair] = l
+	u.pool[p] = l
 
 	return l, true, nil
 }
@@ -427,7 +468,7 @@ type Exchanger interface {
 	// Exchange(path []types.CoinID, fromVolume *big.Int, minToVolume *big.Int) (gotVolume *big.Int, err error)
 
 	Pair(xCoin, yCoin types.CoinID) (xVolume, yVolume, stakes *big.Int, err error)
-	Pairs() []*pair
+	Pairs() ([]*pair, error)
 	Export(state *types.AppState)
 	Commit(db *iavl.MutableTree) error
 }

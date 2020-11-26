@@ -357,3 +357,116 @@ func TestSwap_Commit(t *testing.T) {
 		t.Errorf("stake want %s, got %s", initialStake.String(), stake.String())
 	}
 }
+
+func TestSwap_SetImmutableTree(t *testing.T) {
+	memDB := db.NewMemDB()
+	mutableTree1, err := tree.NewMutableTree(0, memDB, 1024)
+	if err != nil {
+		t.Fatal(err)
+	}
+	swap := NewSwap(nil, mutableTree1.GetLastImmutable())
+	pairs, err := swap.Pairs()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pairs) != 0 {
+		t.Fatal("pairs is not empty")
+	}
+	err = swap.Add(types.Address{1}, 0, big.NewInt(2), 1, big.NewInt(800))
+	if err != nil {
+		t.Fatal(err)
+	}
+	pairs, err = swap.Pairs()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pairs) != 1 {
+		t.Fatal("pairs is empty")
+	}
+	_, _, err = mutableTree1.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pairs, err = swap.Pairs()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pairs) != 1 {
+		t.Fatal("pairs is empty")
+	}
+	swap = NewSwap(nil, mutableTree1.GetLastImmutable())
+
+	xVolume, yVolume, stakes, err := swap.Balance(types.Address{1}, 0, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if xVolume.Cmp(big.NewInt(2)) != 0 {
+		t.Errorf("xVolume want %s, got %s", big.NewInt(2).String(), xVolume.String())
+	}
+	if yVolume.Cmp(big.NewInt(800)) != 0 {
+		t.Errorf("yVolume want %s, got %s", big.NewInt(800).String(), yVolume.String())
+	}
+	if stakes.Cmp(big.NewInt(4000000000)) != 0 {
+		t.Errorf("stake want %s, got %s", big.NewInt(4000000000).String(), stakes.String())
+	}
+
+	pairs, err = swap.Pairs()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pairs) != 1 {
+		t.Fatal("pairs is empty")
+	}
+
+	xVolume, yVolume, stakes, err = swap.Pair(0, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if xVolume.Cmp(big.NewInt(2)) != 0 {
+		t.Errorf("xVolume want %s, got %s", big.NewInt(2).String(), xVolume.String())
+	}
+	if yVolume.Cmp(big.NewInt(800)) != 0 {
+		t.Errorf("yVolume want %s, got %s", big.NewInt(800).String(), yVolume.String())
+	}
+	if stakes.Cmp(big.NewInt(4000000000)) != 0 {
+		t.Errorf("stake want %s, got %s", big.NewInt(4000000000).String(), stakes.String())
+	}
+
+	swap = NewSwap(nil, mutableTree1.GetLastImmutable())
+	xVolume, yVolume, stakes, err = swap.Pair(0, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if xVolume.Cmp(big.NewInt(2)) != 0 {
+		t.Errorf("xVolume want %s, got %s", big.NewInt(2).String(), xVolume.String())
+	}
+	if yVolume.Cmp(big.NewInt(800)) != 0 {
+		t.Errorf("yVolume want %s, got %s", big.NewInt(800).String(), yVolume.String())
+	}
+	if stakes.Cmp(big.NewInt(4000000000)) != 0 {
+		t.Errorf("stake want %s, got %s", big.NewInt(4000000000).String(), stakes.String())
+	}
+
+	xVolume, yVolume, stakes, err = swap.Balance(types.Address{1}, 0, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if xVolume.Cmp(big.NewInt(2)) != 0 {
+		t.Errorf("xVolume want %s, got %s", big.NewInt(2).String(), xVolume.String())
+	}
+	if yVolume.Cmp(big.NewInt(800)) != 0 {
+		t.Errorf("yVolume want %s, got %s", big.NewInt(800).String(), yVolume.String())
+	}
+	if stakes.Cmp(big.NewInt(4000000000)) != 0 {
+		t.Errorf("stake want %s, got %s", big.NewInt(4000000000).String(), stakes.String())
+	}
+
+	pairs, err = swap.Pairs()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pairs) != 1 {
+		t.Fatal("pairs is empty")
+	}
+}
