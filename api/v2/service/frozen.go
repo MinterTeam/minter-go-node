@@ -20,8 +20,6 @@ func (s *Service) Frozen(ctx context.Context, req *pb.FrozenRequest) (*pb.Frozen
 	}
 
 	cState := s.blockchain.CurrentState()
-	cState.RLock()
-	defer cState.RUnlock()
 
 	var reqCoin *coins.Model
 

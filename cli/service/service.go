@@ -74,7 +74,6 @@ func (m *managerServer) Dashboard(_ *empty.Empty, stream pb.ManagerService_Dashb
 			pubkey := types.BytesToPubkey(resultStatus.ValidatorInfo.PubKey.Bytes()[5:])
 			var pbValidatorStatus pb.DashboardResponse_ValidatorStatus
 			cState := m.blockchain.CurrentState()
-			cState.RLock()
 			candidate := cState.Candidates().GetCandidate(pubkey)
 			if candidate == nil {
 				pbValidatorStatus = pb.DashboardResponse_NotDeclared
@@ -95,7 +94,6 @@ func (m *managerServer) Dashboard(_ *empty.Empty, stream pb.ManagerService_Dashb
 					}
 				}
 			}
-			cState.RUnlock()
 
 			if err := stream.Send(&pb.DashboardResponse{
 				LatestHeight:           info.Height,

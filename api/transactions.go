@@ -49,9 +49,6 @@ func Transactions(query string, page, perPage int) (*[]json.RawMessage, error) {
 		return nil, err
 	}
 
-	cState.RLock()
-	defer cState.RUnlock()
-
 	result := make([]json.RawMessage, 0, len(rpcResult.Txs))
 	for _, tx := range rpcResult.Txs {
 		decodedTx, _ := transaction.TxDecoder.DecodeFromBytes(tx.Tx)

@@ -30,13 +30,8 @@ func (s *Service) WaitList(ctx context.Context, req *pb.WaitListRequest) (*pb.Wa
 	}
 
 	if req.Height != 0 {
-		cState.Lock()
 		cState.Candidates().LoadCandidates()
-		cState.Unlock()
 	}
-
-	cState.RLock()
-	defer cState.RUnlock()
 
 	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
 		return nil, timeoutStatus.Err()

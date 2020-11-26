@@ -38,19 +38,9 @@ func (s *Service) Address(ctx context.Context, req *pb.AddressRequest) (*pb.Addr
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
-	if req.Height != 0 && req.Delegated {
-		cState.Lock()
-		cState.Candidates().LoadCandidates()
-		cState.Candidates().LoadStakes()
-		cState.Unlock()
-	}
-
-	if timeoutStatus := s.checkTimeout(ctx, "LoadCandidates", "LoadStakes"); timeoutStatus != nil {
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
 		return nil, timeoutStatus.Err()
 	}
-
-	cState.RLock()
-	defer cState.RUnlock()
 
 	balances := cState.Accounts().GetBalances(address)
 	var res pb.AddressResponse
@@ -71,7 +61,12 @@ func (s *Service) Address(ctx context.Context, req *pb.AddressRequest) (*pb.Addr
 	}
 
 	if req.Delegated {
-		if timeoutStatus := s.checkTimeout(ctx, "Delegated"); timeoutStatus != nil {
+		cState.Candidates().LoadCandidates()
+		if timeoutStatus := s.checkTimeout(ctx, "LoadCandidates"); timeoutStatus != nil {
+			return nil, timeoutStatus.Err()
+		}
+		cState.Candidates().LoadStakes()
+		if timeoutStatus := s.checkTimeout(ctx, "LoadStakes"); timeoutStatus != nil {
 			return nil, timeoutStatus.Err()
 		}
 		var userDelegatedStakesGroupByCoin = map[types.CoinID]*stakeUser{}

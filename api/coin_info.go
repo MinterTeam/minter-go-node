@@ -25,9 +25,6 @@ func CoinInfo(coinSymbol *string, id *int, height int) (*CoinInfoResponse, error
 		return nil, err
 	}
 
-	cState.RLock()
-	defer cState.RUnlock()
-
 	if coinSymbol == nil && id == nil {
 		return nil, rpctypes.RPCError{Code: 404, Message: "Coin not found"}
 	}

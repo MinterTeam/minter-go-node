@@ -57,8 +57,6 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 		}
 
 		currentState := s.blockchain.CurrentState()
-		currentState.RLock()
-		defer currentState.RUnlock()
 
 		response.Transactions, err = s.blockTransaction(block, blockResults, currentState.Coins())
 		if err != nil {

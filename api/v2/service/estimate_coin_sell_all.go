@@ -26,9 +26,6 @@ func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinS
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
-	cState.RLock()
-	defer cState.RUnlock()
-
 	var coinToBuy types.CoinID
 	if req.GetCoinToBuy() != "" {
 		symbol := cState.Coins().GetCoinBySymbol(types.StrToCoinBaseSymbol(req.GetCoinToBuy()), types.GetVersionFromSymbol(req.GetCoinToBuy()))

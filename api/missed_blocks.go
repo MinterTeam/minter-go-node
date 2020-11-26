@@ -17,13 +17,8 @@ func MissedBlocks(pubkey types.Pubkey, height int) (*MissedBlocksResponse, error
 	}
 
 	if height != 0 {
-		cState.Lock()
 		cState.Validators().LoadValidators()
-		cState.Unlock()
 	}
-
-	cState.RLock()
-	defer cState.RUnlock()
 
 	vals := cState.Validators().GetValidators()
 	if vals == nil {

@@ -22,9 +22,6 @@ func (s *Service) EstimateTxCommission(ctx context.Context, req *pb.EstimateTxCo
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
-	cState.RLock()
-	defer cState.RUnlock()
-
 	if !strings.HasPrefix(strings.Title(req.GetTx()), "0x") {
 		return nil, status.Error(codes.InvalidArgument, "invalid transaction")
 	}

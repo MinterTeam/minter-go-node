@@ -20,18 +20,15 @@ func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.
 	}
 
 	if req.Height != 0 && req.Delegated {
-		cState.Lock()
 		cState.Candidates().LoadCandidates()
+		if timeoutStatus := s.checkTimeout(ctx, "LoadCandidates"); timeoutStatus != nil {
+			return nil, timeoutStatus.Err()
+		}
 		cState.Candidates().LoadStakes()
-		cState.Unlock()
+		if timeoutStatus := s.checkTimeout(ctx, "LoadStakes"); timeoutStatus != nil {
+			return nil, timeoutStatus.Err()
+		}
 	}
-
-	if timeoutStatus := s.checkTimeout(ctx, "LoadCandidates", "LoadStakes"); timeoutStatus != nil {
-		return nil, timeoutStatus.Err()
-	}
-
-	cState.RLock()
-	defer cState.RUnlock()
 
 	response := &pb.AddressesResponse{
 		Addresses: make(map[string]*pb.AddressesResponse_Result, len(req.Addresses)),
