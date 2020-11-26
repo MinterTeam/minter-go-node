@@ -338,8 +338,11 @@ func TestSwap_Commit(t *testing.T) {
 
 	swap = NewSwap(nil, nil)
 	xVolume, yVolume, stake, err = swap.Balance(types.Address{1}, 0, 1)
-	if err == nil {
+	if err != nil {
 		t.Fatal(err)
+	}
+	if stake != nil {
+		t.Fatal("stake want NIL")
 	}
 
 	swap.SetImmutableTree(mutableTree2.GetLastImmutable())

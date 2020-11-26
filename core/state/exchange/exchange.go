@@ -191,7 +191,7 @@ func (u *Swap) pair(xCoin *types.CoinID, yCoin *types.CoinID, xVolume *big.Int, 
 }
 
 func (u *Swap) Add(provider types.Address, xCoin types.CoinID, xVolume *big.Int, yCoin types.CoinID, yMaxVolume *big.Int) error {
-	if xVolume == nil || xVolume.Sign() == 0 || yMaxVolume == nil || yMaxVolume.Sign() == 0 {
+	if xVolume == nil || xVolume.Sign() != 1 || yMaxVolume == nil || yMaxVolume.Sign() != 1 {
 		return errors.New("invalid coin volume")
 	}
 	yVolume := yMaxVolume
@@ -227,12 +227,12 @@ func (u *Swap) Balance(provider types.Address, xCoin types.CoinID, yCoin types.C
 		return nil, nil, nil, err
 	}
 	if !ok {
-		return nil, nil, nil, errors.New("liquidity not found")
+		return nil, nil, nil, nil
 	}
 
 	providerStake, ok = liquidity.providersStakes[provider]
 	if !ok {
-		return nil, nil, nil, errors.New("provider's stake not found")
+		return nil, nil, nil, nil
 	}
 
 	xVolume, yVolume = liquidity.stakeToVolumes(providerStake)
@@ -254,12 +254,12 @@ func (u *Swap) Remove(provider types.Address, xCoin types.CoinID, yCoin types.Co
 		return nil, nil, err
 	}
 	if !ok {
-		return nil, nil, errors.New("liquidity not found")
+		return nil, nil, nil
 	}
 
 	providerStake, ok := liquidity.providersStakes[provider]
 	if !ok {
-		return nil, nil, errors.New("provider's stake not found")
+		return nil, nil, nil
 	}
 
 	if providerStake.Cmp(stake) == -1 {

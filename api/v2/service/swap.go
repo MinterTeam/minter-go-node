@@ -15,7 +15,7 @@ func (s *Service) Pairs(context.Context, *empty.Empty) (*pb.PairsResponse, error
 	state := s.blockchain.CurrentState()
 	pairs, err := state.Swap().Pairs()
 	if err != nil {
-		return nil, status.Error(codes.Unknown, err.Error()) // todo
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	ps := make([]*pb.PairsResponse_Pair, 0, len(pairs))
 	for _, pair := range pairs {
@@ -36,12 +36,18 @@ func (s *Service) Pairs(context.Context, *empty.Empty) (*pb.PairsResponse, error
 }
 
 func (s *Service) Pair(_ context.Context, req *pb.PairRequest) (*pb.PairResponse, error) {
+	if req.Y == req.X {
+		return nil, status.Error(codes.InvalidArgument, "equal coins id")
+	}
 	state := s.blockchain.CurrentState()
 	xVolume, yVolume, stakes, err := state.Swap().Pair(types.CoinID(req.X), types.CoinID(req.Y))
 	if err != nil {
-		return nil, status.Error(codes.Unknown, err.Error()) // todo
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	if stakes == nil {
+		return nil, status.Error(codes.NotFound, "pair not found")
+	}
 	return &pb.PairResponse{
 		XVolume: xVolume.String(),
 		YVolume: yVolume.String(),
@@ -54,6 +60,10 @@ func (s *Service) PairFromProvider(_ context.Context, req *pb.PairFromProviderRe
 		return nil, status.Error(codes.InvalidArgument, "invalid address")
 	}
 
+	if req.Y == req.X {
+		return nil, status.Error(codes.InvalidArgument, "equal coins id")
+	}
+
 	decodeString, err := hex.DecodeString(req.Provider[2:])
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid address")
@@ -64,7 +74,11 @@ func (s *Service) PairFromProvider(_ context.Context, req *pb.PairFromProviderRe
 	state := s.blockchain.CurrentState()
 	xVolume, yVolume, stake, err := state.Swap().Balance(address, types.CoinID(req.X), types.CoinID(req.Y))
 	if err != nil {
-		return nil, status.Error(codes.Unknown, err.Error()) // todo
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if stake == nil {
+		return nil, status.Error(codes.NotFound, "pair from provider not found")
 	}
 
 	return &pb.PairFromProviderResponse{
