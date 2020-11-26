@@ -99,6 +99,9 @@ func (cs *CheckState) Checks() checks.RChecks {
 func (cs *CheckState) WaitList() waitlist.RWaitList {
 	return cs.state.Waitlist
 }
+func (cs *CheckState) Swap() exchange.RSwap {
+	return cs.state.Swap
+}
 
 type State struct {
 	App            *app.App
