@@ -106,7 +106,7 @@ func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 		panic(err)
 	}
 
-	blockchain.stateCheck = state.NewCheckState(blockchain.stateDeliver, blockchain.stateDeliver.Tree().GetLastImmutable())
+	blockchain.stateCheck = state.NewCheckState(blockchain.stateDeliver)
 
 	// Set start height for rewards and validators
 	rewards.SetStartHeight(applicationDB.GetStartHeight())
@@ -536,7 +536,7 @@ func (app *Blockchain) resetCheckState() {
 	app.lock.Lock()
 	defer app.lock.Unlock()
 
-	app.stateCheck = state.NewCheckState(app.stateDeliver, app.stateDeliver.Tree().GetLastImmutable())
+	app.stateCheck = state.NewCheckState(app.stateDeliver)
 }
 
 func (app *Blockchain) getCurrentValidators() abciTypes.ValidatorUpdates {

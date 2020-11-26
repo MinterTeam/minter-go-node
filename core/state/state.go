@@ -32,12 +32,11 @@ type Interface interface {
 }
 
 type CheckState struct {
-	state         *State
-	immutableTree *iavl.ImmutableTree
+	state *State
 }
 
-func NewCheckState(state *State, immutableTree *iavl.ImmutableTree) *CheckState {
-	return &CheckState{state: state, immutableTree: immutableTree}
+func NewCheckState(state *State) *CheckState {
+	return &CheckState{state: state}
 }
 
 func (cs *CheckState) isValue_State() {}
@@ -46,17 +45,13 @@ func (cs *CheckState) Lock() {
 	cs.state.lock.Lock()
 }
 
-func (cs *CheckState) Tree() *iavl.ImmutableTree {
-	return cs.immutableTree
-}
-
 func (cs *CheckState) Export() types.AppState {
 	appState := new(types.AppState)
-	cs.App().Export(appState, uint64(cs.Tree().Version()))
+	cs.App().Export(appState, uint64(cs.state.height))
 	cs.Validators().Export(appState)
 	cs.Candidates().Export(appState)
 	cs.WaitList().Export(appState)
-	cs.FrozenFunds().Export(appState, uint64(cs.Tree().Version()))
+	cs.FrozenFunds().Export(appState, uint64(cs.state.height))
 	cs.Accounts().Export(appState)
 	cs.Coins().Export(appState)
 	cs.Checks().Export(appState)
@@ -123,7 +118,8 @@ type State struct {
 	keepLastStates int64
 	bus            *bus.Bus
 
-	lock sync.RWMutex
+	lock   sync.RWMutex
+	height int64
 }
 
 func (s *State) isValue_State() {}
@@ -220,6 +216,8 @@ func (s *State) Commit() ([]byte, error) {
 		log.Printf("DeleteVersion %d error: %s\n", versionToDelete, err)
 	}
 
+	s.height = version
+
 	return hash, nil
 }
 
@@ -315,7 +313,7 @@ func newCheckStateForTree(immutableTree *iavl.ImmutableTree, events eventsdb.IEv
 		return nil, err
 	}
 
-	return NewCheckState(stateForTree, immutableTree), nil
+	return NewCheckState(stateForTree), nil
 }
 
 func newStateForTree(immutableTree *iavl.ImmutableTree, events eventsdb.IEventsDB, db db.DB, keepLastStates int64) (*State, error) {
@@ -357,6 +355,7 @@ func newStateForTree(immutableTree *iavl.ImmutableTree, events eventsdb.IEventsD
 		Waitlist:    waitlistState,
 		Swap:        swap,
 
+		height:         immutableTree.Version(),
 		bus:            stateBus,
 		db:             db,
 		events:         events,

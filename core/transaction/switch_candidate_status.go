@@ -39,7 +39,7 @@ func (data SetCandidateOnData) Run(tx *Transaction, context state.Interface, rew
 	var checkState *state.CheckState
 	var isCheck bool
 	if checkState, isCheck = context.(*state.CheckState); !isCheck {
-		checkState = state.NewCheckState(context.(*state.State), nil)
+		checkState = state.NewCheckState(context.(*state.State))
 	}
 
 	response := data.BasicCheck(tx, checkState)
@@ -120,7 +120,7 @@ func (data SetCandidateOffData) Run(tx *Transaction, context state.Interface, re
 	var checkState *state.CheckState
 	var isCheck bool
 	if checkState, isCheck = context.(*state.CheckState); !isCheck {
-		checkState = state.NewCheckState(context.(*state.State), nil)
+		checkState = state.NewCheckState(context.(*state.State))
 	}
 
 	response := data.BasicCheck(tx, checkState)

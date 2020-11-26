@@ -40,7 +40,7 @@ func (data EditCandidatePublicKeyData) Run(tx *Transaction, context state.Interf
 	var checkState *state.CheckState
 	var isCheck bool
 	if checkState, isCheck = context.(*state.CheckState); !isCheck {
-		checkState = state.NewCheckState(context.(*state.State), nil)
+		checkState = state.NewCheckState(context.(*state.State))
 	}
 
 	response := data.BasicCheck(tx, checkState)
