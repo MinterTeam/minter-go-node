@@ -110,7 +110,7 @@ func checkCoins(x types.CoinID, y types.CoinID) (reverted bool, err error) {
 }
 
 func startingStake(x *big.Int, y *big.Int) *big.Int {
-	return new(big.Int).Sqrt(new(big.Int).Mul(new(big.Int).Mul(x, y), big.NewInt(10e15)))
+	return new(big.Int).Sqrt(new(big.Int).Mul(new(big.Int).Mul(x, y), big.NewInt(1e18)))
 }
 
 func (l *liquidity) checkStake(xVolume *big.Int, maxYVolume *big.Int, revert bool) (yVolume *big.Int, mintedSupply *big.Int, err error) {
@@ -157,10 +157,8 @@ func (l *liquidity) mint(xVolume *big.Int, maxYVolume *big.Int, revert bool) (*b
 	return mintedSupply, nil
 }
 
-func (l *liquidity) Burn(xVolume, yVolume *big.Int) (burnStake *big.Int) {
-	quo := new(big.Float).Quo(new(big.Float).SetInt(xVolume), new(big.Float).SetInt(l.XVolume))
-	burnStake, _ = new(big.Float).Mul(new(big.Float).SetInt(l.SupplyStakes), quo).Int(nil)
-	l.SupplyStakes = new(big.Int).Sub(l.SupplyStakes, burnStake)
+func (l *liquidity) Burn(xVolume, yVolume, stake *big.Int) (burnStake *big.Int) {
+	l.SupplyStakes = new(big.Int).Sub(l.SupplyStakes, stake)
 	l.XVolume = new(big.Int).Sub(l.XVolume, xVolume)
 	l.YVolume = new(big.Int).Sub(l.YVolume, yVolume)
 	l.dirty = true
@@ -269,7 +267,8 @@ func (u *Swap) Remove(provider types.Address, xCoin types.CoinID, yCoin types.Co
 	liquidity.updateProviderStake(provider, providerStake.Sub(providerStake, stake))
 
 	xVolume, yVolume = liquidity.stakeToVolumes(stake)
-	liquidity.Burn(xVolume, yVolume)
+
+	liquidity.Burn(xVolume, yVolume, stake)
 
 	if reverted {
 		xVolume, yVolume = yVolume, xVolume
@@ -449,8 +448,8 @@ func (l *liquidity) ListStakes() []*provider {
 }
 
 func (l *liquidity) stakeToVolumes(stake *big.Int) (xVolume, yVolume *big.Int) {
-	xVolume = new(big.Int).Div(new(big.Int).Mul(l.XVolume, stake), l.SupplyStakes)
-	yVolume = new(big.Int).Div(new(big.Int).Mul(l.YVolume, stake), l.SupplyStakes)
+	xVolume, _ = new(big.Float).Quo(new(big.Float).SetInt(new(big.Int).Mul(l.XVolume, stake)), new(big.Float).SetInt(l.SupplyStakes)).Int(nil)
+	yVolume, _ = new(big.Float).Quo(new(big.Float).SetInt(new(big.Int).Mul(l.YVolume, stake)), new(big.Float).SetInt(l.SupplyStakes)).Int(nil)
 	return xVolume, yVolume
 }
 

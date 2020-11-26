@@ -20,17 +20,17 @@ func TestSwap_Add_createFirstLiquidity(t *testing.T) {
 		{
 			initialXVolume: big.NewInt(2),
 			initialYVolume: big.NewInt(200),
-			initialStake:   big.NewInt(2000000000),
+			initialStake:   big.NewInt(20000000000),
 		},
 		{
 			initialXVolume: big.NewInt(2),
 			initialYVolume: big.NewInt(800),
-			initialStake:   big.NewInt(4000000000),
+			initialStake:   big.NewInt(40000000000),
 		},
 		{
 			initialXVolume: big.NewInt(12300),
 			initialYVolume: big.NewInt(23400),
-			initialStake:   big.NewInt(1696525861871),
+			initialStake:   big.NewInt(16965258618718),
 		},
 	}
 	for i, test := range tableTests {
@@ -78,7 +78,7 @@ func TestSwap_Add(t *testing.T) {
 			maxAddYVolume:  big.NewInt(200),
 			supplyXVolume:  big.NewInt(4),
 			supplyYVolume:  big.NewInt(400),
-			supplyStakes:   big.NewInt(4000000000),
+			supplyStakes:   big.NewInt(40000000000),
 		},
 		{
 			xCoin:          1,
@@ -89,7 +89,7 @@ func TestSwap_Add(t *testing.T) {
 			maxAddYVolume:  big.NewInt(300),
 			supplyXVolume:  big.NewInt(4),
 			supplyYVolume:  big.NewInt(400),
-			supplyStakes:   big.NewInt(4000000000),
+			supplyStakes:   big.NewInt(40000000000),
 		},
 		{
 			xCoin:          2,
@@ -100,7 +100,7 @@ func TestSwap_Add(t *testing.T) {
 			maxAddYVolume:  big.NewInt(3),
 			supplyXVolume:  big.NewInt(4),
 			supplyYVolume:  big.NewInt(6),
-			supplyStakes:   big.NewInt(489897948),
+			supplyStakes:   big.NewInt(4898979484),
 		},
 		{
 			xCoin:          999,
@@ -111,7 +111,7 @@ func TestSwap_Add(t *testing.T) {
 			maxAddYVolume:  big.NewInt(200),
 			supplyXVolume:  big.NewInt(4),
 			supplyYVolume:  big.NewInt(400),
-			supplyStakes:   big.NewInt(4000000000),
+			supplyStakes:   big.NewInt(40000000000),
 		},
 		{
 			xCoin:          998,
@@ -122,7 +122,7 @@ func TestSwap_Add(t *testing.T) {
 			maxAddYVolume:  big.NewInt(300),
 			supplyXVolume:  big.NewInt(4),
 			supplyYVolume:  big.NewInt(400),
-			supplyStakes:   big.NewInt(4000000000),
+			supplyStakes:   big.NewInt(40000000000),
 		},
 	}
 	for i, test := range tableTests {
@@ -159,6 +159,7 @@ func TestSwap_Remove(t *testing.T) {
 		yCoin             types.CoinID
 		initialXVolume    *big.Int
 		initialYVolume    *big.Int
+		initialStake      *big.Int
 		wantRemoveXVolume *big.Int
 		wantRemoveYVolume *big.Int
 		removeStake       *big.Int
@@ -172,34 +173,36 @@ func TestSwap_Remove(t *testing.T) {
 			yCoin:             1,
 			initialXVolume:    big.NewInt(2),
 			initialYVolume:    big.NewInt(200),
+			initialStake:      big.NewInt(20000000000),
 			wantRemoveXVolume: big.NewInt(2),
 			wantRemoveYVolume: big.NewInt(200),
-			removeStake:       big.NewInt(2000000000),
+			removeStake:       big.NewInt(20000000000),
 			supplyXVolume:     nil,
 			supplyYVolume:     nil,
 			supplyStakes:      nil,
-			err:               errors.New("provider's stake not found"),
 		},
 		{
 			xCoin:             1,
 			yCoin:             2,
 			initialXVolume:    big.NewInt(2),
 			initialYVolume:    big.NewInt(200),
+			initialStake:      big.NewInt(20000000000),
 			wantRemoveXVolume: big.NewInt(1),
 			wantRemoveYVolume: big.NewInt(100),
-			removeStake:       big.NewInt(1000000000),
+			removeStake:       big.NewInt(10000000000),
 			supplyXVolume:     big.NewInt(1),
 			supplyYVolume:     big.NewInt(100),
-			supplyStakes:      big.NewInt(1000000000),
+			supplyStakes:      big.NewInt(10000000000),
 		},
 		{
 			xCoin:             2,
 			yCoin:             3,
 			initialXVolume:    big.NewInt(2),
 			initialYVolume:    big.NewInt(200),
+			initialStake:      big.NewInt(20000000000),
 			wantRemoveXVolume: nil,
 			wantRemoveYVolume: nil,
-			removeStake:       big.NewInt(3000000000),
+			removeStake:       big.NewInt(30000000000),
 			supplyXVolume:     nil,
 			supplyYVolume:     nil,
 			supplyStakes:      nil,
@@ -210,13 +213,13 @@ func TestSwap_Remove(t *testing.T) {
 			yCoin:             4,
 			initialXVolume:    big.NewInt(12300),
 			initialYVolume:    big.NewInt(23400),
+			initialStake:      big.NewInt(16965258618718),
 			wantRemoveXVolume: big.NewInt(5049),
 			wantRemoveYVolume: big.NewInt(9607),
-			removeStake:       big.NewInt(696525861871),
-			supplyXVolume:     big.NewInt(7250),
-			supplyYVolume:     big.NewInt(13791),
-			supplyStakes:      big.NewInt(1000000000000),
-			// todo: 5049+7250=12299 != 12300
+			removeStake:       big.NewInt(6965258618718),
+			supplyXVolume:     big.NewInt(7251),
+			supplyYVolume:     big.NewInt(13793),
+			supplyStakes:      big.NewInt(10000000000000),
 		},
 	}
 	for i, test := range tableTests {
@@ -224,6 +227,19 @@ func TestSwap_Remove(t *testing.T) {
 			err := swap.Add(types.Address{1}, test.xCoin, test.initialXVolume, test.yCoin, test.initialYVolume)
 			if err != nil {
 				t.Fatal(err)
+			}
+			xVolume, yVolume, stake, err := swap.Balance(types.Address{1}, test.xCoin, test.yCoin)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if xVolume.Cmp(test.initialXVolume) != 0 {
+				t.Errorf("xVolume want %s, got %s", test.initialXVolume.String(), xVolume.String())
+			}
+			if yVolume.Cmp(test.initialYVolume) != 0 {
+				t.Errorf("yVolume want %s, got %s", test.initialYVolume.String(), yVolume.String())
+			}
+			if stake.Cmp(test.initialStake) != 0 {
+				t.Errorf("stake want %s, got %s", test.initialStake.String(), stake.String())
 			}
 			removedXVolume, removedYVolume, err := swap.Remove(types.Address{1}, test.xCoin, test.yCoin, test.removeStake)
 			if test.err != nil {
@@ -242,14 +258,7 @@ func TestSwap_Remove(t *testing.T) {
 			if removedYVolume.Cmp(test.wantRemoveYVolume) != 0 {
 				t.Errorf("yVolume remove want %s, got %s", test.wantRemoveYVolume.String(), removedYVolume.String())
 			}
-			xVolume, yVolume, stake, err := swap.Balance(types.Address{1}, test.xCoin, test.yCoin)
-			if test.err != nil {
-				if err != nil {
-					if err.Error() == test.err.Error() {
-						return
-					}
-				}
-			}
+			xVolume, yVolume, stake, err = swap.Balance(types.Address{1}, test.xCoin, test.yCoin)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -261,6 +270,35 @@ func TestSwap_Remove(t *testing.T) {
 			}
 			if stake.Cmp(test.supplyStakes) != 0 {
 				t.Errorf("stake want %s, got %s", test.supplyStakes.String(), stake.String())
+			}
+
+			if test.supplyStakes != nil && big.NewInt(0).Sub(test.initialStake, test.removeStake).Cmp(test.supplyStakes) != 0 {
+				t.Errorf("err supply Stakes, want %s-%s=%s, got %s", test.initialStake, test.removeStake, big.NewInt(0).Sub(test.initialStake, test.removeStake), test.supplyStakes)
+			}
+			if xVolume != nil && big.NewInt(0).Sub(test.initialXVolume, removedXVolume).Cmp(xVolume) != 0 {
+				t.Errorf("err supply X volume, want %s-%s=%s, got %s", test.initialXVolume, removedXVolume, big.NewInt(0).Sub(test.initialXVolume, removedXVolume), xVolume)
+			}
+			if yVolume != nil && big.NewInt(0).Sub(test.initialYVolume, removedYVolume).Cmp(yVolume) != 0 {
+				t.Errorf("err supply Y volume, want %s-%s=%s, got %s", test.initialYVolume, removedYVolume, big.NewInt(0).Sub(test.initialYVolume, removedYVolume), yVolume)
+			}
+
+			xVolume, yVolume, err = swap.Remove(types.Address{1}, test.xCoin, test.yCoin, stake)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if xVolume.Cmp(test.supplyXVolume) != 0 {
+				t.Errorf("xVolume want %s, got %s", test.supplyXVolume.String(), xVolume.String())
+			}
+			if yVolume.Cmp(test.supplyYVolume) != 0 {
+				t.Errorf("yVolume want %s, got %s", test.supplyYVolume.String(), yVolume.String())
+			}
+
+			xVolume, yVolume, stake, err = swap.Balance(types.Address{1}, test.xCoin, test.yCoin)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if stake != nil {
+				t.Error("stake is not empty")
 			}
 		})
 	}
@@ -276,7 +314,7 @@ func TestSwap_Commit(t *testing.T) {
 
 	initialXVolume := big.NewInt(2)
 	initialYVolume := big.NewInt(200)
-	initialStake := big.NewInt(2000000000)
+	initialStake := big.NewInt(20000000000)
 
 	err = swap.Add(types.Address{1}, 0, initialXVolume, 1, initialYVolume)
 	if err != nil {
@@ -409,8 +447,8 @@ func TestSwap_SetImmutableTree(t *testing.T) {
 	if yVolume.Cmp(big.NewInt(800)) != 0 {
 		t.Errorf("yVolume want %s, got %s", big.NewInt(800).String(), yVolume.String())
 	}
-	if stakes.Cmp(big.NewInt(4000000000)) != 0 {
-		t.Errorf("stake want %s, got %s", big.NewInt(4000000000).String(), stakes.String())
+	if stakes.Cmp(big.NewInt(40000000000)) != 0 {
+		t.Errorf("stake want %s, got %s", big.NewInt(40000000000).String(), stakes.String())
 	}
 
 	pairs, err = swap.Pairs()
@@ -432,8 +470,8 @@ func TestSwap_SetImmutableTree(t *testing.T) {
 	if yVolume.Cmp(big.NewInt(800)) != 0 {
 		t.Errorf("yVolume want %s, got %s", big.NewInt(800).String(), yVolume.String())
 	}
-	if stakes.Cmp(big.NewInt(4000000000)) != 0 {
-		t.Errorf("stake want %s, got %s", big.NewInt(4000000000).String(), stakes.String())
+	if stakes.Cmp(big.NewInt(40000000000)) != 0 {
+		t.Errorf("stake want %s, got %s", big.NewInt(40000000000).String(), stakes.String())
 	}
 
 	swap = NewSwap(nil, mutableTree1.GetLastImmutable())
@@ -447,8 +485,8 @@ func TestSwap_SetImmutableTree(t *testing.T) {
 	if yVolume.Cmp(big.NewInt(800)) != 0 {
 		t.Errorf("yVolume want %s, got %s", big.NewInt(800).String(), yVolume.String())
 	}
-	if stakes.Cmp(big.NewInt(4000000000)) != 0 {
-		t.Errorf("stake want %s, got %s", big.NewInt(4000000000).String(), stakes.String())
+	if stakes.Cmp(big.NewInt(40000000000)) != 0 {
+		t.Errorf("stake want %s, got %s", big.NewInt(40000000000).String(), stakes.String())
 	}
 
 	xVolume, yVolume, stakes, err = swap.Balance(types.Address{1}, 0, 1)
@@ -461,8 +499,8 @@ func TestSwap_SetImmutableTree(t *testing.T) {
 	if yVolume.Cmp(big.NewInt(800)) != 0 {
 		t.Errorf("yVolume want %s, got %s", big.NewInt(800).String(), yVolume.String())
 	}
-	if stakes.Cmp(big.NewInt(4000000000)) != 0 {
-		t.Errorf("stake want %s, got %s", big.NewInt(4000000000).String(), stakes.String())
+	if stakes.Cmp(big.NewInt(40000000000)) != 0 {
+		t.Errorf("stake want %s, got %s", big.NewInt(40000000000).String(), stakes.String())
 	}
 
 	pairs, err = swap.Pairs()
