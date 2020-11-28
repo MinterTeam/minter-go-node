@@ -20,13 +20,13 @@ func (s *Service) Pairs(context.Context, *empty.Empty) (*pb.PairsResponse, error
 	ps := make([]*pb.PairsResponse_Pair, 0, len(pairs))
 	for _, pair := range pairs {
 		ps = append(ps, &pb.PairsResponse_Pair{
-			X: &pb.Coin{
-				Id:     uint64(pair.XCoin),
-				Symbol: state.Coins().GetCoin(pair.XCoin).GetFullSymbol(),
+			Coin0: &pb.Coin{
+				Id:     uint64(pair.CoinA),
+				Symbol: state.Coins().GetCoin(pair.CoinA).GetFullSymbol(),
 			},
-			Y: &pb.Coin{
-				Id:     uint64(pair.YCoin),
-				Symbol: state.Coins().GetCoin(pair.YCoin).GetFullSymbol(),
+			Coin1: &pb.Coin{
+				Id:     uint64(pair.CoinB),
+				Symbol: state.Coins().GetCoin(pair.CoinB).GetFullSymbol(),
 			},
 		})
 	}
@@ -36,22 +36,22 @@ func (s *Service) Pairs(context.Context, *empty.Empty) (*pb.PairsResponse, error
 }
 
 func (s *Service) Pair(_ context.Context, req *pb.PairRequest) (*pb.PairResponse, error) {
-	if req.Y == req.X {
+	if req.Coin0 == req.Coin1 {
 		return nil, status.Error(codes.InvalidArgument, "equal coins id")
 	}
 	state := s.blockchain.CurrentState()
-	xVolume, yVolume, stakes, err := state.Swap().Pair(types.CoinID(req.X), types.CoinID(req.Y))
+	pair, err := state.Swap().Pair(types.CoinID(req.Coin0), types.CoinID(req.Coin1))
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-
-	if stakes == nil {
+	if pair != nil {
 		return nil, status.Error(codes.NotFound, "pair not found")
 	}
+	reserve0, reserve1 := pair.Reserves()
 	return &pb.PairResponse{
-		XVolume: xVolume.String(),
-		YVolume: yVolume.String(),
-		Stakes:  stakes.String(),
+		Reserve0:    reserve0.String(),
+		Reserve1:    reserve1.String(),
+		TotalSupply: pair.TotalSupply().String(),
 	}, nil
 }
 
@@ -60,7 +60,7 @@ func (s *Service) PairFromProvider(_ context.Context, req *pb.PairFromProviderRe
 		return nil, status.Error(codes.InvalidArgument, "invalid address")
 	}
 
-	if req.Y == req.X {
+	if req.Coin0 == req.Coin1 {
 		return nil, status.Error(codes.InvalidArgument, "equal coins id")
 	}
 
@@ -72,18 +72,18 @@ func (s *Service) PairFromProvider(_ context.Context, req *pb.PairFromProviderRe
 	address := types.BytesToAddress(decodeString)
 
 	state := s.blockchain.CurrentState()
-	xVolume, yVolume, stake, err := state.Swap().Balance(address, types.CoinID(req.X), types.CoinID(req.Y))
+	pair, err := state.Swap().Pair(types.CoinID(req.Coin0), types.CoinID(req.Coin1))
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-
-	if stake == nil {
-		return nil, status.Error(codes.NotFound, "pair from provider not found")
+	if pair != nil {
+		return nil, status.Error(codes.NotFound, "pair not found")
 	}
-
+	balance := pair.Balance(address)
+	amount0, amount1 := pair.Amounts(balance)
 	return &pb.PairFromProviderResponse{
-		XVolume: xVolume.String(),
-		YVolume: yVolume.String(),
-		Stake:   stake.String(),
+		Amount0: amount0.String(),
+		Amount1: amount1.String(),
+		Balance: balance.String(),
 	}, nil
 }

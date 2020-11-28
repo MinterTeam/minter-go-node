@@ -83,6 +83,7 @@ func (cs *CheckState) Checks() checks.RChecks {
 func (cs *CheckState) WaitList() waitlist.RWaitList {
 	return cs.state.Waitlist
 }
+
 func (cs *CheckState) Swap() exchange.RSwap {
 	return cs.state.Swap
 }
@@ -327,7 +328,7 @@ func newStateForTree(immutableTree *iavl.ImmutableTree, events eventsdb.IEventsD
 
 	waitlistState := waitlist.NewWaitList(stateBus, immutableTree)
 
-	swap := exchange.NewSwap(stateBus, immutableTree)
+	swap := exchange.New(stateBus, immutableTree)
 
 	state := &State{
 		Validators:  validatorsState,
