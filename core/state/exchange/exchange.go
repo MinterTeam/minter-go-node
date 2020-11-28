@@ -70,13 +70,13 @@ type pairData struct {
 func (pd *pairData) TotalSupply() *big.Int {
 	pd.RLock()
 	defer pd.RUnlock()
-	return pd.totalSupply
+	return new(big.Int).Set(pd.totalSupply)
 }
 
 func (pd *pairData) Reserves() (reserve0 *big.Int, reserve1 *big.Int) {
 	pd.RLock()
 	defer pd.RUnlock()
-	return pd.reserve0, pd.reserve1
+	return new(big.Int).Set(pd.reserve0), new(big.Int).Set(pd.reserve1)
 }
 
 func (pd *pairData) Revert() pairData {
@@ -349,15 +349,17 @@ func (p *Pair) Balance(address types.Address) (liquidity *big.Int) {
 }
 
 func (p *Pair) Mint(address types.Address, amount0, amount1 *big.Int) (liquidity *big.Int, err error) {
-	if p.TotalSupply().Sign() == 0 {
+	totalSupply := p.TotalSupply()
+	if totalSupply.Sign() == 0 {
 		liquidity = startingSupply(amount0, amount1)
 		if liquidity.Sign() != 1 {
 			return nil, ErrorInsufficientLiquidityMinted
 		}
 		p.mint(types.Address{}, big.NewInt(minimumLiquidity))
 	} else {
-		liquidity := new(big.Int).Div(new(big.Int).Mul(p.totalSupply, amount0), p.reserve0)
-		liquidity1 := new(big.Int).Div(new(big.Int).Mul(p.totalSupply, amount1), p.reserve1)
+		reserve0, reserve1 := p.Reserves()
+		liquidity := new(big.Int).Div(new(big.Int).Mul(totalSupply, amount0), reserve0)
+		liquidity1 := new(big.Int).Div(new(big.Int).Mul(totalSupply, amount1), reserve1)
 		if liquidity.Cmp(liquidity1) == 1 {
 			liquidity = liquidity1
 		}
@@ -366,7 +368,7 @@ func (p *Pair) Mint(address types.Address, amount0, amount1 *big.Int) (liquidity
 	p.mint(address, liquidity)
 	p.update(amount0, amount1)
 
-	return liquidity, nil
+	return new(big.Int).Set(liquidity), nil
 }
 
 var (
@@ -435,7 +437,6 @@ func (p *Pair) Swap(amount0In, amount1In, amount0Out, amount1Out *big.Int) (amou
 func (p *Pair) mint(address types.Address, value *big.Int) {
 	p.pairData.Lock()
 	defer p.pairData.Unlock()
-
 	p.muBalance.Lock()
 	defer p.muBalance.Unlock()
 
