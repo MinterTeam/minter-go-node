@@ -186,9 +186,10 @@ func (s *Swap) pair(key pairKey) (*Pair, bool) {
 		return nil, false
 	}
 	return &Pair{
-		pairData: pair.pairData,
-		balances: pair.balances,
-		dirty:    pair.dirty,
+		muBalance: pair.muBalance,
+		pairData:  pair.pairData,
+		balances:  pair.balances,
+		dirty:     pair.dirty,
 	}, true
 }
 
@@ -248,7 +249,7 @@ func (pk pairKey) sort() pairKey {
 }
 
 func (pk pairKey) isSorted() bool {
-	return pk.CoinA < pk.CoinA
+	return pk.CoinA < pk.CoinB
 }
 
 func (pk pairKey) Revert() pairKey {
@@ -287,9 +288,10 @@ func (s *Swap) CreatePair(coinA, coinB types.CoinID) (*Pair, error) {
 	s.addKeyPair(key)
 	if !key.isSorted() {
 		return &Pair{
-			pairData: pair.Revert(),
-			balances: pair.balances,
-			dirty:    pair.dirty,
+			muBalance: pair.muBalance,
+			pairData:  pair.Revert(),
+			balances:  pair.balances,
+			dirty:     pair.dirty,
 		}, nil
 	}
 	return pair, nil
@@ -302,8 +304,9 @@ func (s *Swap) addPair(key pairKey, data pairData, balances map[types.Address]*b
 	}
 	data.RWMutex = &sync.RWMutex{}
 	pair := &Pair{
-		pairData: data,
-		balances: balances,
+		muBalance: &sync.RWMutex{},
+		pairData:  data,
+		balances:  balances,
 		dirty: &dirty{
 			isDirty:         false,
 			isDirtyBalances: false,
@@ -328,7 +331,7 @@ type dirty struct {
 }
 type Pair struct {
 	pairData
-	muBalance sync.RWMutex
+	muBalance *sync.RWMutex
 	balances  map[types.Address]*big.Int
 	*dirty
 }
