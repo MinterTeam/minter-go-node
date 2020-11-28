@@ -187,7 +187,7 @@ func (s *Swap) pair(key pairKey) (*Pair, bool) {
 	}
 	return &Pair{
 		muBalance: pair.muBalance,
-		pairData:  pair.pairData,
+		pairData:  pair.pairData.Revert(),
 		balances:  pair.balances,
 		dirty:     pair.dirty,
 	}, true

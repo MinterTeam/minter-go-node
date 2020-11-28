@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"math/big"
+	"reflect"
 	"testing"
 )
 
@@ -296,5 +297,74 @@ func TestPair_Burn(t *testing.T) {
 				t.Errorf("total supply want %s, got %s", big.NewInt(minimumLiquidity), pair.TotalSupply())
 			}
 		})
+	}
+}
+
+func TestSwap_Pair_reverseKey(t *testing.T) {
+	service := New(nil, nil)
+	pair, err := service.Pair(0, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if pair != nil {
+		t.Fatal("pair is not nil")
+	}
+	pair, err = service.CreatePair(0, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if pair == nil {
+		t.Fatal("pair is nil")
+	}
+	pair, err = service.Pair(0, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if pair == nil {
+		t.Fatal("pair is nil")
+	}
+	address := types.Address{1}
+	liquidity, err := pair.Mint(address, big.NewInt(1e18), big.NewInt(2e18))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if liquidity == nil {
+		t.Error("liquidity is nil")
+	}
+	if !reflect.DeepEqual(liquidity, pair.Balance(address)) {
+		t.Error("liquidities is equal")
+	}
+	reserve0, reserve1 := pair.Reserves()
+	totalSupply := pair.TotalSupply()
+
+	pairReverted, err := service.Pair(1, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if pairReverted == nil {
+		t.Fatal("pairReverted is nil")
+	}
+	reserve0Reverted, reserve1Reverted := pairReverted.Reserves()
+	totalSupplyReverted := pairReverted.TotalSupply()
+
+	if reserve0.Cmp(reserve1Reverted) != 0 {
+		t.Error(reserve0, reserve1Reverted)
+	}
+	if reserve1.Cmp(reserve0Reverted) != 0 {
+		t.Error(reserve1, reserve0Reverted)
+	}
+	if totalSupply.Cmp(totalSupplyReverted) != 0 {
+		t.Error(totalSupply, totalSupplyReverted)
+	}
+	if !reflect.DeepEqual(pair.balances, pairReverted.balances) {
+		t.Error("balances not equal")
+	}
+
+	if pairReverted.isDirty != pair.isDirty {
+		t.Error("isDirty not equal")
+	}
+	pair.isDirty = !pair.isDirty
+	if pairReverted.isDirty != pair.isDirty {
+		t.Error("isDirty not equal")
 	}
 }
