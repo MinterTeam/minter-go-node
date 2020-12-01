@@ -29,16 +29,15 @@ func (s *Service) SendTransaction(ctx context.Context, req *pb.SendTransactionRe
 		return nil, statusErr.Err()
 	}
 
-	switch result.Code {
-	case code.OK:
-		return &pb.SendTransactionResponse{
-			Code: uint64(result.Code),
-			Log:  result.Log,
-			Hash: "Mt" + strings.ToLower(result.Hash.String()),
-		}, nil
-	default:
+	if result.Code != code.OK {
 		return nil, s.createError(status.New(codes.InvalidArgument, result.Log), result.Info)
 	}
+
+	return &pb.SendTransactionResponse{
+		Code: uint64(result.Code),
+		Log:  result.Log,
+		Hash: "Mt" + strings.ToLower(result.Hash.String()),
+	}, nil
 }
 
 type ResultBroadcastTx struct {
@@ -74,5 +73,4 @@ func (s *Service) broadcastTxSync(tx types.Tx, ctx context.Context) (*ResultBroa
 	case <-ctx.Done():
 		return nil, status.FromContextError(ctx.Err())
 	}
-
 }
