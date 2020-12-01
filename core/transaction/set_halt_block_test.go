@@ -90,7 +90,9 @@ func TestSetHaltBlockTx(t *testing.T) {
 		t.Fatalf("Wront halt block pubkey. Expected pubkey: %s, got %s", pubkey, haltBlock.Pubkey.String()+"asd")
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestSetHaltBlockTxWithWrongHeight(t *testing.T) {
@@ -152,7 +154,9 @@ func TestSetHaltBlockTxWithWrongHeight(t *testing.T) {
 		t.Fatalf("Halts found at height: %d", haltHeight)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestSetHaltBlockTxWithWrongOwnership(t *testing.T) {
@@ -215,7 +219,9 @@ func TestSetHaltBlockTxWithWrongOwnership(t *testing.T) {
 		t.Fatalf("Halts found at height: %d", haltHeight)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestSetHaltBlockTxToNonExistCandidate(t *testing.T) {
@@ -271,7 +277,9 @@ func TestSetHaltBlockTxToNonExistCandidate(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.CandidateNotFound, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestSetHaltBlockTxToInsufficientFunds(t *testing.T) {
@@ -326,7 +334,9 @@ func TestSetHaltBlockTxToInsufficientFunds(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestSetHaltBlockTxToGasCoinReserveUnderflow(t *testing.T) {
@@ -385,7 +395,9 @@ func TestSetHaltBlockTxToGasCoinReserveUnderflow(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveUnderflow, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestSetHaltBlockTxToAlreadyExistenHalt(t *testing.T) {
@@ -442,5 +454,7 @@ func TestSetHaltBlockTxToAlreadyExistenHalt(t *testing.T) {
 		t.Fatalf("response code is not %d. Error %s", code.HaltAlreadyExists, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }

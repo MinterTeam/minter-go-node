@@ -50,6 +50,10 @@ func (m Model) Reserve() *big.Int {
 	return big.NewInt(0).Set(m.info.Reserve)
 }
 
+func (m Model) HasReserve() bool {
+	return m.info.Reserve != nil
+}
+
 func (m Model) Version() uint16 {
 	return m.CVersion
 }

@@ -94,7 +94,9 @@ func TestEditCandidateTx(t *testing.T) {
 		t.Fatalf("ControlAddress has not changed")
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestEditCandidateTxToNonExistCandidate(t *testing.T) {
@@ -148,7 +150,9 @@ func TestEditCandidateTxToNonExistCandidate(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.CandidateNotFound, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestEditCandidateTxToCandidateOwnership(t *testing.T) {
@@ -206,7 +210,9 @@ func TestEditCandidateTxToCandidateOwnership(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.IsNotOwnerOfCandidate, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestEditCandidateTxToInsufficientFunds(t *testing.T) {
@@ -262,7 +268,9 @@ func TestEditCandidateTxToInsufficientFunds(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestEditCandidateTxToGasCoinReserveUnderflow(t *testing.T) {
@@ -321,5 +329,7 @@ func TestEditCandidateTxToGasCoinReserveUnderflow(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveUnderflow, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }

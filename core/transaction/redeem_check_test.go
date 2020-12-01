@@ -119,7 +119,9 @@ func TestRedeemCheckTx(t *testing.T) {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", coin, checkValue, balance)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestRedeemCheckTxToDecodeError(t *testing.T) {
@@ -226,7 +228,9 @@ func TestRedeemCheckTxToDecodeError(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.DecodeError, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestRedeemCheckTxToHighGasPrice(t *testing.T) {
@@ -322,7 +326,9 @@ func TestRedeemCheckTxToHighGasPrice(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.TooHighGasPrice, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestRedeemCheckTxToWrongChainID(t *testing.T) {
@@ -418,7 +424,9 @@ func TestRedeemCheckTxToWrongChainID(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.WrongChainID, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestRedeemCheckTxToNonceLength(t *testing.T) {
@@ -514,7 +522,9 @@ func TestRedeemCheckTxToNonceLength(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.TooLongNonce, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestRedeemCheckTxToCheckData(t *testing.T) {
@@ -610,7 +620,9 @@ func TestRedeemCheckTxToCheckData(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 
 	check.Coin = coin
 	check.GasCoin = 5
@@ -651,7 +663,9 @@ func TestRedeemCheckTxToCheckData(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 
 	check.GasCoin = coin
 	lock, err = crypto.Sign(check.HashWithoutLock().Bytes(), passphrasePk)
@@ -689,7 +703,9 @@ func TestRedeemCheckTxToCheckData(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.WrongGasCoin, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 
 	check.DueBlock = 1
 	lock, err = crypto.Sign(check.HashWithoutLock().Bytes(), passphrasePk)
@@ -726,7 +742,9 @@ func TestRedeemCheckTxToCheckData(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.CheckExpired, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestRedeemCheckTxToUsed(t *testing.T) {
@@ -824,7 +842,9 @@ func TestRedeemCheckTxToUsed(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.CheckUsed, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestRedeemCheckTxToInsufficientFunds(t *testing.T) {
@@ -918,7 +938,9 @@ func TestRedeemCheckTxToInsufficientFunds(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestRedeemCheckTxToCoinReserveUnderflow(t *testing.T) {
@@ -1013,7 +1035,9 @@ func TestRedeemCheckTxToCoinReserveUnderflow(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveUnderflow, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestRedeemCheckTxToInsufficientFundsForCheckCoin(t *testing.T) {
@@ -1107,7 +1131,9 @@ func TestRedeemCheckTxToInsufficientFundsForCheckCoin(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestRedeemCheckTxToInsufficientFundsForCheckGasCoin(t *testing.T) {
@@ -1204,5 +1230,7 @@ func TestRedeemCheckTxToInsufficientFundsForCheckGasCoin(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }

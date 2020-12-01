@@ -58,7 +58,7 @@ func (data RemoveExchangeLiquidity) String() string {
 }
 
 func (data RemoveExchangeLiquidity) Gas() int64 {
-	return commissions.BurnExchangeLiquidityData
+	return commissions.RemoveExchangeLiquidityData
 }
 
 func (data RemoveExchangeLiquidity) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
@@ -114,7 +114,7 @@ func (data RemoveExchangeLiquidity) Run(tx *Transaction, context state.Interface
 	}
 
 	tags := kv.Pairs{
-		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeBurnExchangeLiquidity)}))},
+		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeRemoveExchangeLiquidity)}))},
 		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
 	}
 

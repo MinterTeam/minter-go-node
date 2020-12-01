@@ -97,7 +97,9 @@ func TestEditMultisigTx(t *testing.T) {
 		t.Fatalf("Threshold is not correct")
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestEditMultisigTxToNonExistAddress(t *testing.T) {
@@ -202,7 +204,9 @@ func TestEditMultisigTxToTooLargeOwnersList(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.TooLargeOwnersList, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestEditMultisigTxIncorrectWeights(t *testing.T) {
@@ -257,7 +261,9 @@ func TestEditMultisigTxIncorrectWeights(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.DifferentCountAddressesAndWeights, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 
 	data.Weights = []uint32{1, 2, 1024}
 	encodedData, err = rlp.EncodeToBytes(data)
@@ -280,7 +286,9 @@ func TestEditMultisigTxIncorrectWeights(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.IncorrectWeights, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 
 	data.Weights = []uint32{1, 2, 3}
 	data.Threshold = 7
@@ -304,7 +312,9 @@ func TestEditMultisigTxIncorrectWeights(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.IncorrectTotalWeights, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestEditMultisigTxToAddressDuplication(t *testing.T) {
@@ -359,7 +369,9 @@ func TestEditMultisigTxToAddressDuplication(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.DuplicatedAddresses, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestEditMultisigTxToInsufficientFunds(t *testing.T) {
@@ -414,7 +426,9 @@ func TestEditMultisigTxToInsufficientFunds(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestEditMultisigTxToGasCoinReserveUnderflow(t *testing.T) {
@@ -470,5 +484,7 @@ func TestEditMultisigTxToGasCoinReserveUnderflow(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveUnderflow, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }

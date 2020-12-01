@@ -76,7 +76,9 @@ func TestSwitchCandidateStatusTx(t *testing.T) {
 		t.Fatalf("Status has not changed")
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestSetCandidateOffTx(t *testing.T) {
@@ -141,7 +143,9 @@ func TestSetCandidateOffTx(t *testing.T) {
 		t.Fatalf("Status has not changed")
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestSwitchCandidateStatusTxToNonExistCandidate(t *testing.T) {
@@ -188,7 +192,9 @@ func TestSwitchCandidateStatusTxToNonExistCandidate(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.CandidateNotFound, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestSwitchCandidateStatusTxToCandidateOwnership(t *testing.T) {
@@ -238,7 +244,9 @@ func TestSwitchCandidateStatusTxToCandidateOwnership(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.IsNotOwnerOfCandidate, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestSwitchCandidateStatusToGasCoinReserveUnderflow(t *testing.T) {
@@ -290,7 +298,9 @@ func TestSwitchCandidateStatusToGasCoinReserveUnderflow(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveUnderflow, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestSwitchCandidateStatusToInsufficientFundsForGas(t *testing.T) {
@@ -337,7 +347,9 @@ func TestSwitchCandidateStatusToInsufficientFundsForGas(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 
 	cState.Candidates.SetOnline(pubkey)
 
@@ -356,7 +368,9 @@ func TestSwitchCandidateStatusToInsufficientFundsForGas(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestSwitchCandidateStatusToCoinReserveUnderflow(t *testing.T) {
@@ -407,5 +421,7 @@ func TestSwitchCandidateStatusToCoinReserveUnderflow(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveUnderflow, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }

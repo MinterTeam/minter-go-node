@@ -95,7 +95,9 @@ func TestDelegateTx(t *testing.T) {
 		t.Fatalf("Stake value is not corrent. Expected %s, got %s", value, stake.Value)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestDelegateTxWithWaitlist(t *testing.T) {
@@ -161,7 +163,9 @@ func TestDelegateTxWithWaitlist(t *testing.T) {
 		t.Fatalf("Waitlist is not deleted")
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestDelegateTxToNonExistCoin(t *testing.T) {
@@ -210,7 +214,9 @@ func TestDelegateTxToNonExistCoin(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestDelegateTxToPositiveStake(t *testing.T) {
@@ -259,7 +265,9 @@ func TestDelegateTxToPositiveStake(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.StakeShouldBePositive, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestDelegateTxToNonExistCandidate(t *testing.T) {
@@ -308,7 +316,9 @@ func TestDelegateTxToNonExistCandidate(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.CandidateNotFound, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestDelegateTxToLowStake(t *testing.T) {
@@ -366,7 +376,9 @@ func TestDelegateTxToLowStake(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.TooLowStake, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestDelegateTxToInsufficientFunds(t *testing.T) {
@@ -414,7 +426,9 @@ func TestDelegateTxToInsufficientFunds(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 
 	cState.Accounts.AddBalance(addr, coin, big.NewInt(2e17))
 
@@ -460,7 +474,9 @@ func TestDelegateTxToInsufficientFunds(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestDelegateTxToGasCoinReserveUnderflow(t *testing.T) {
@@ -508,7 +524,9 @@ func TestDelegateTxToGasCoinReserveUnderflow(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveUnderflow, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestDelegateData_addFromWaitlist(t *testing.T) {
@@ -566,5 +584,7 @@ func TestDelegateData_addFromWaitlist(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }

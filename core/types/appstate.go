@@ -14,6 +14,7 @@ type AppState struct {
 	Candidates          []Candidate  `json:"candidates,omitempty"`
 	BlockListCandidates []Pubkey     `json:"block_list_candidates,omitempty"`
 	Waitlist            []Waitlist   `json:"waitlist,omitempty"`
+	Swap                []Swap       `json:"swap,omitempty"`
 	Accounts            []Account    `json:"accounts,omitempty"`
 	Coins               []Coin       `json:"coins,omitempty"`
 	FrozenFunds         []FrozenFund `json:"frozen_funds,omitempty"`
@@ -179,6 +180,15 @@ func (s *AppState) Verify() error {
 			}
 		}
 
+		for _, swap := range s.Swap {
+			if swap.Coin0 == coin.ID {
+				volume.Add(volume, helpers.StringToBigInt(swap.Reserve0))
+			}
+			if swap.Coin1 == coin.ID {
+				volume.Add(volume, helpers.StringToBigInt(swap.Reserve1))
+			}
+		}
+
 		if volume.Cmp(helpers.StringToBigInt(coin.Volume)) != 0 {
 			return fmt.Errorf("wrong coin %s volume (%s)", coin.Symbol.String(), big.NewInt(0).Sub(volume, helpers.StringToBigInt(coin.Volume)))
 		}
@@ -277,6 +287,18 @@ type Waitlist struct {
 	Coin        uint64  `json:"coin"`
 	Value       string  `json:"value"`
 }
+type BalanceProvider struct {
+	Address   Address `json:"address"`
+	Liquidity string  `json:"liquidity"`
+}
+type Swap struct {
+	Providers   []BalanceProvider `json:"providers"`
+	Coin0       uint64            `json:"coin0"`
+	Coin1       uint64            `json:"coin1"`
+	Reserve0    string            `json:"reserve0"`
+	Reserve1    string            `json:"reserve1"`
+	TotalSupply string            `json:"total_supply"`
+}
 
 type Coin struct {
 	ID           uint64     `json:"id"`
@@ -284,7 +306,7 @@ type Coin struct {
 	Symbol       CoinSymbol `json:"symbol"`
 	Volume       string     `json:"volume"`
 	Crr          uint64     `json:"crr"`
-	Reserve      string     `json:"reserve"`
+	Reserve      *string    `json:"reserve,omitempty"`
 	MaxSupply    string     `json:"max_supply"`
 	Version      uint64     `json:"version"`
 	OwnerAddress *Address   `json:"owner_address"`

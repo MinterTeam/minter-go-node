@@ -449,13 +449,18 @@ func (c *Coins) Export(state *types.AppState) {
 				owner = info.OwnerAddress()
 			}
 
+			var reservePointer *string
+			if coin.HasReserve() {
+				reserve := coin.Reserve().String()
+				reservePointer = &reserve
+			}
 			state.Coins = append(state.Coins, types.Coin{
 				ID:           uint64(coin.ID()),
 				Name:         coin.Name(),
 				Symbol:       coin.Symbol(),
 				Volume:       coin.Volume().String(),
 				Crr:          uint64(coin.Crr()),
-				Reserve:      coin.Reserve().String(),
+				Reserve:      reservePointer,
 				MaxSupply:    coin.MaxSupply().String(),
 				Version:      uint64(coin.Version()),
 				OwnerAddress: owner,
@@ -466,7 +471,7 @@ func (c *Coins) Export(state *types.AppState) {
 	})
 
 	sort.Slice(state.Coins[:], func(i, j int) bool {
-		return helpers.StringToBigInt(state.Coins[i].Reserve).Cmp(helpers.StringToBigInt(state.Coins[j].Reserve)) == 1
+		return state.Coins[i].ID < state.Coins[j].ID
 	})
 }
 

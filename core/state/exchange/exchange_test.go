@@ -52,8 +52,8 @@ func TestPair_feeToOff(t *testing.T) {
 			}
 			_, _ = pair.Burn(types.Address{1}, expectedLiquidity)
 
-			if pair.TotalSupply().Cmp(big.NewInt(minimumLiquidity)) != 0 {
-				t.Errorf("liquidity want %s, got %s", big.NewInt(minimumLiquidity), pair.TotalSupply())
+			if pair.GetTotalSupply().Cmp(big.NewInt(minimumLiquidity)) != 0 {
+				t.Errorf("liquidity want %s, got %s", big.NewInt(minimumLiquidity), pair.GetTotalSupply())
 			}
 		})
 	}
@@ -89,22 +89,22 @@ func TestPair_Mint(t *testing.T) {
 				t.Errorf("liquidity want %s, got %s", liquidityExpected, liquidity)
 			}
 
-			reserve0, reserve1 := pair.reserve0, pair.reserve1
+			reserve0, reserve1 := pair.Reserve0, pair.Reserve1
 
 			if reserve0.Cmp(tt.token0Amount) != 0 {
 				t.Errorf("reserve0 want %s, got %s", tt.token0Amount, reserve0)
 			}
 
 			if reserve1.Cmp(tt.token1Amount) != 0 {
-				t.Errorf("reserve1 want %s, got %s", tt.token1Amount, reserve1)
+				t.Errorf("Reserve1 want %s, got %s", tt.token1Amount, reserve1)
 			}
 
 			if pair.balances[types.Address{}].Cmp(big.NewInt(minimumLiquidity)) != 0 {
 				t.Errorf("addressZero liquidity want %s, got %s", big.NewInt(minimumLiquidity), pair.balances[types.Address{}])
 			}
 
-			if pair.TotalSupply().Cmp(tt.expectedLiquidity) != 0 {
-				t.Errorf("total supply want %s, got %s", big.NewInt(minimumLiquidity), pair.TotalSupply())
+			if pair.GetTotalSupply().Cmp(tt.expectedLiquidity) != 0 {
+				t.Errorf("total supply want %s, got %s", big.NewInt(minimumLiquidity), pair.GetTotalSupply())
 			}
 		})
 	}
@@ -161,12 +161,12 @@ func TestPair_Swap_token0(t *testing.T) {
 				t.Errorf("amount1 want %s, got %s", expected1Amount, amount1)
 			}
 
-			if pair.reserve0.Cmp(new(big.Int).Add(tt.token0Amount, expected0Amount)) != 0 {
-				t.Errorf("reserve0 want %s, got %s", new(big.Int).Add(tt.token0Amount, expected0Amount), pair.reserve0)
+			if pair.Reserve0.Cmp(new(big.Int).Add(tt.token0Amount, expected0Amount)) != 0 {
+				t.Errorf("reserve0 want %s, got %s", new(big.Int).Add(tt.token0Amount, expected0Amount), pair.Reserve0)
 			}
 
-			if pair.reserve1.Cmp(new(big.Int).Add(tt.token1Amount, expected1Amount)) != 0 {
-				t.Errorf("reserve1 want %s, got %s", new(big.Int).Add(tt.token1Amount, expected1Amount), pair.reserve1)
+			if pair.Reserve1.Cmp(new(big.Int).Add(tt.token1Amount, expected1Amount)) != 0 {
+				t.Errorf("Reserve1 want %s, got %s", new(big.Int).Add(tt.token1Amount, expected1Amount), pair.Reserve1)
 			}
 		})
 	}
@@ -222,12 +222,12 @@ func TestPair_Swap_token1(t *testing.T) {
 				t.Errorf("amount1 want %s, got %s", expected1Amount, amount1)
 			}
 
-			if pair.reserve0.Cmp(new(big.Int).Add(tt.token0Amount, expected0Amount)) != 0 {
-				t.Errorf("reserve0 want %s, got %s", new(big.Int).Add(tt.token0Amount, expected0Amount), pair.reserve0)
+			if pair.Reserve0.Cmp(new(big.Int).Add(tt.token0Amount, expected0Amount)) != 0 {
+				t.Errorf("reserve0 want %s, got %s", new(big.Int).Add(tt.token0Amount, expected0Amount), pair.Reserve0)
 			}
 
-			if pair.reserve1.Cmp(new(big.Int).Add(tt.token1Amount, expected1Amount)) != 0 {
-				t.Errorf("reserve1 want %s, got %s", new(big.Int).Add(tt.token1Amount, expected1Amount), pair.reserve1)
+			if pair.Reserve1.Cmp(new(big.Int).Add(tt.token1Amount, expected1Amount)) != 0 {
+				t.Errorf("Reserve1 want %s, got %s", new(big.Int).Add(tt.token1Amount, expected1Amount), pair.Reserve1)
 			}
 		})
 	}
@@ -288,8 +288,8 @@ func TestPair_Burn(t *testing.T) {
 				t.Errorf("addressZero liquidity want %s, got %s", big.NewInt(minimumLiquidity), pair.balances[types.Address{}])
 			}
 
-			if pair.TotalSupply().Cmp(big.NewInt(minimumLiquidity)) != 0 {
-				t.Errorf("total supply want %s, got %s", big.NewInt(minimumLiquidity), pair.TotalSupply())
+			if pair.GetTotalSupply().Cmp(big.NewInt(minimumLiquidity)) != 0 {
+				t.Errorf("total supply want %s, got %s", big.NewInt(minimumLiquidity), pair.GetTotalSupply())
 			}
 		})
 	}
@@ -322,14 +322,14 @@ func TestSwap_Pair_reverseKey(t *testing.T) {
 		t.Error("liquidities is equal")
 	}
 	reserve0, reserve1 := pair.Reserves()
-	totalSupply := pair.TotalSupply()
+	totalSupply := pair.GetTotalSupply()
 
 	pairReverted := service.Pair(1, 0)
 	if pairReverted == nil {
 		t.Fatal("pairReverted is nil")
 	}
 	reserve0Reverted, reserve1Reverted := pairReverted.Reserves()
-	totalSupplyReverted := pairReverted.TotalSupply()
+	totalSupplyReverted := pairReverted.GetTotalSupply()
 
 	if reserve0.Cmp(reserve1Reverted) != 0 {
 		t.Error(reserve0, reserve1Reverted)

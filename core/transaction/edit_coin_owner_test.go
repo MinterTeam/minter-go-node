@@ -70,7 +70,9 @@ func TestEditOwnerTx(t *testing.T) {
 		t.Fatalf("Target owner address is not correct. Excpected %s, got %s", newOwner.String(), symbol.OwnerAddress().String())
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestEditOwnerTxWithWrongOwner(t *testing.T) {
@@ -102,7 +104,9 @@ func TestEditOwnerTxWithWrongOwner(t *testing.T) {
 		t.Fatalf("Response code is not 206. Error %s", response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestEditOwnerTxWithWrongSymbol(t *testing.T) {
@@ -135,7 +139,9 @@ func TestEditOwnerTxWithWrongSymbol(t *testing.T) {
 		t.Fatalf("Response code is not 102. Error %s", response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestEditCOwnerTxWithInsufficientFunds(t *testing.T) {
@@ -168,7 +174,9 @@ func TestEditCOwnerTxWithInsufficientFunds(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestEditCoinOwnerTxToGasCoinReserveUnderflow(t *testing.T) {
@@ -217,7 +225,9 @@ func TestEditCoinOwnerTxToGasCoinReserveUnderflow(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveUnderflow, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func makeTestEditOwnerTx(data EditCoinOwnerData, privateKey *ecdsa.PrivateKey) ([]byte, error) {

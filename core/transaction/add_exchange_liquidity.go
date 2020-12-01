@@ -108,14 +108,15 @@ func (data AddExchangeLiquidity) Run(tx *Transaction, context state.Interface, r
 	if deliverState, ok := context.(*state.State); ok {
 		amount0, amount1 := deliverState.Swap.PairMint(sender, data.Coin0, data.Coin1, data.Amount0, data.Amount1)
 
+		deliverState.Accounts.SubBalance(sender, data.Coin0, amount0)
+		deliverState.Accounts.SubBalance(sender, data.Coin1, amount1)
+
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
 		deliverState.Coins.SubVolume(tx.GasCoin, commission)
 		deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
 
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
-		deliverState.Accounts.SubBalance(sender, data.Coin0, amount0)
-		deliverState.Accounts.SubBalance(sender, data.Coin1, amount1)
 
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}

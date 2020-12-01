@@ -135,6 +135,7 @@ func TestAppState(t *testing.T) {
 	ba := NewBitArray(24)
 	ba.SetIndex(3, true)
 
+	coinReserve := helpers.BipToPip(big.NewInt(100000)).String()
 	appState := AppState{
 		Validators: []Validator{
 			{
@@ -190,8 +191,8 @@ func TestAppState(t *testing.T) {
 				Symbol:    StrToCoinSymbol("TEST"),
 				Volume:    big.NewInt(2).String(),
 				Crr:       1,
-				Reserve:   helpers.BipToPip(big.NewInt(100000)).String(),
-				MaxSupply: helpers.BipToPip(big.NewInt(100000)).String(),
+				Reserve:   &coinReserve,
+				MaxSupply: coinReserve,
 			},
 		},
 		FrozenFunds: []FrozenFund{
@@ -478,6 +479,7 @@ func TestAppStateToInvalidState(t *testing.T) {
 		},
 	}
 
+	coinReserve := helpers.BipToPip(big.NewInt(100000)).String()
 	appState.Coins = []Coin{
 		{
 			ID:        uint64(GetBaseCoinID() + 1),
@@ -485,8 +487,8 @@ func TestAppStateToInvalidState(t *testing.T) {
 			Symbol:    StrToCoinSymbol("TEST"),
 			Volume:    big.NewInt(1).String(),
 			Crr:       1,
-			Reserve:   helpers.BipToPip(big.NewInt(100000)).String(),
-			MaxSupply: helpers.BipToPip(big.NewInt(100000)).String(),
+			Reserve:   &coinReserve,
+			MaxSupply: coinReserve,
 		},
 		{
 			ID:     uint64(GetBaseCoinID()),
@@ -505,8 +507,8 @@ func TestAppStateToInvalidState(t *testing.T) {
 			Symbol:    StrToCoinSymbol("TEST"),
 			Volume:    big.NewInt(1).String(),
 			Crr:       1,
-			Reserve:   helpers.BipToPip(big.NewInt(100000)).String(),
-			MaxSupply: helpers.BipToPip(big.NewInt(100000)).String(),
+			Reserve:   &coinReserve,
+			MaxSupply: coinReserve,
 		},
 		{
 			ID:        uint64(GetBaseCoinID() + 1),
@@ -514,8 +516,8 @@ func TestAppStateToInvalidState(t *testing.T) {
 			Symbol:    StrToCoinSymbol("TEST"),
 			Volume:    big.NewInt(1).String(),
 			Crr:       1,
-			Reserve:   helpers.BipToPip(big.NewInt(100000)).String(),
-			MaxSupply: helpers.BipToPip(big.NewInt(100000)).String(),
+			Reserve:   &coinReserve,
+			MaxSupply: coinReserve,
 		},
 		{
 			ID:     uint64(GetBaseCoinID()),
@@ -534,8 +536,8 @@ func TestAppStateToInvalidState(t *testing.T) {
 			Symbol:    StrToCoinSymbol("TEST"),
 			Volume:    big.NewInt(1).String(),
 			Crr:       1,
-			Reserve:   helpers.BipToPip(big.NewInt(100000)).String(),
-			MaxSupply: helpers.BipToPip(big.NewInt(100000)).String(),
+			Reserve:   &coinReserve,
+			MaxSupply: coinReserve,
 		},
 	}
 

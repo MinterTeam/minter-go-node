@@ -76,7 +76,9 @@ func TestSellCoinTx(t *testing.T) {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", getTestCoinSymbol(), targetTestBalance, testBalance)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestSellCoinTxBaseToCustomBaseCommission(t *testing.T) {
@@ -143,7 +145,9 @@ func TestSellCoinTxBaseToCustomBaseCommission(t *testing.T) {
 		t.Fatalf("Wrong coin supply")
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestSellCoinTxCustomToBaseBaseCommission(t *testing.T) {
@@ -215,7 +219,9 @@ func TestSellCoinTxCustomToBaseBaseCommission(t *testing.T) {
 		t.Fatalf("Wrong coin supply")
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestSellCoinTxCustomToCustomBaseCommission(t *testing.T) {
@@ -304,7 +310,9 @@ func TestSellCoinTxCustomToCustomBaseCommission(t *testing.T) {
 		}
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestSellCoinTxBaseToCustomCustomCommission(t *testing.T) {
@@ -378,7 +386,9 @@ func TestSellCoinTxBaseToCustomCustomCommission(t *testing.T) {
 		t.Fatalf("Wrong coin supply")
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestSellCoinTxCustomToBaseCustomCommission(t *testing.T) {
@@ -449,7 +459,9 @@ func TestSellCoinTxCustomToBaseCustomCommission(t *testing.T) {
 		t.Fatalf("Wrong coin supply")
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestSellCoinTxCustomToCustomCustom1Commission(t *testing.T) {
@@ -540,7 +552,9 @@ func TestSellCoinTxCustomToCustomCustom1Commission(t *testing.T) {
 		}
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestSellCoinTxCustomToCustomCustom2Commission(t *testing.T) {
@@ -639,7 +653,9 @@ func TestSellCoinTxCustomToCustomCustom2Commission(t *testing.T) {
 		}
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestSellCoinTxToCoinSupplyOverflow(t *testing.T) {
@@ -667,7 +683,9 @@ func TestSellCoinTxToCoinSupplyOverflow(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinSupplyOverflow, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 
 	// custom buy and sell coins
 
@@ -701,7 +719,9 @@ func TestSellCoinTxToCoinSupplyOverflow(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinSupplyOverflow, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestSellCoinTxToMinimumValueToBuyReached(t *testing.T) {
@@ -749,7 +769,9 @@ func TestSellCoinTxToMinimumValueToBuyReached(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.MinimumValueToBuyReached, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 
 	// coin to buy == base coin
 
@@ -780,7 +802,9 @@ func TestSellCoinTxToMinimumValueToBuyReached(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.MinimumValueToBuyReached, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 
 	// custom buy and sell coins
 
@@ -824,7 +848,9 @@ func TestSellCoinTxToMinimumValueToBuyReached(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.MinimumValueToBuyReached, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestSellCoinTxToCoinReserveNotSufficient(t *testing.T) {
@@ -864,7 +890,9 @@ func TestSellCoinTxToCoinReserveNotSufficient(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveNotSufficient, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 
 	// gas coin == coin to sell
 
@@ -885,7 +913,9 @@ func TestSellCoinTxToCoinReserveNotSufficient(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveNotSufficient, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestSellCoinTxInsufficientFunds(t *testing.T) {
@@ -914,7 +944,9 @@ func TestSellCoinTxInsufficientFunds(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestSellCoinTxEqualCoins(t *testing.T) {
@@ -937,7 +969,9 @@ func TestSellCoinTxEqualCoins(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.CrossConvert, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestSellCoinTxToNonExistCoins(t *testing.T) {
@@ -975,7 +1009,9 @@ func TestSellCoinTxToNonExistCoins(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 
 	tx = createSellCoinTx(coinID, types.GetBaseCoinID(), 5, big.NewInt(1), 1)
 	if err := tx.Sign(privateKey); err != nil {
@@ -992,7 +1028,9 @@ func TestSellCoinTxToNonExistCoins(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func createSellCoinTx(sellCoin, buyCoin, gasCoin types.CoinID, valueToSell *big.Int, nonce uint64) *Transaction {
