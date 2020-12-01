@@ -41,6 +41,8 @@ const (
 	TypeEditMultisig           TxType = 0x12
 	TypePriceVote              TxType = 0x13
 	TypeEditCandidatePublicKey TxType = 0x14
+	TypeAddExchangeLiquidity   TxType = 0x15
+	TypeBurnExchangeLiquidity  TxType = 0x16
 
 	SigTypeSingle SigType = 0x01
 	SigTypeMulti  SigType = 0x02

@@ -28,14 +28,14 @@ func TestPair_feeToOff(t *testing.T) {
 	service := New(nil, nil)
 	for i, tt := range tableTests {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			pair, err := service.CreatePair(tt.token0, tt.token1)
+			err := service.CheckMint(tt.token0, tt.token1, tt.token0Amount, tt.token1Amount)
 			if err != nil {
 				t.Fatal(err)
 			}
-			liquidity, err := pair.Mint(types.Address{1}, tt.token0Amount, tt.token1Amount)
-			if err != nil {
-				t.Fatal(err)
-			}
+			pair := service.ReturnPair(tt.token0, tt.token1)
+
+			liquidity := pair.Mint(types.Address{1}, tt.token0Amount, tt.token1Amount)
+
 			expectedLiquidity := new(big.Int).Sub(tt.expectedLiquidity, big.NewInt(minimumLiquidity))
 			if liquidity.Cmp(expectedLiquidity) != 0 {
 				t.Errorf("liquidity want %s, got %s", expectedLiquidity, liquidity)
@@ -46,10 +46,11 @@ func TestPair_feeToOff(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			_, _, err = pair.Burn(types.Address{1}, expectedLiquidity)
+			err = service.CheckBurn(types.Address{1}, tt.token0, tt.token1, expectedLiquidity)
 			if err != nil {
 				t.Fatal(err)
 			}
+			_, _ = pair.Burn(types.Address{1}, expectedLiquidity)
 
 			if pair.TotalSupply().Cmp(big.NewInt(minimumLiquidity)) != 0 {
 				t.Errorf("liquidity want %s, got %s", big.NewInt(minimumLiquidity), pair.TotalSupply())
@@ -75,15 +76,13 @@ func TestPair_Mint(t *testing.T) {
 	service := New(nil, nil)
 	for i, tt := range tableTests {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			pair, err := service.CreatePair(tt.token0, tt.token1)
+			err := service.CheckMint(tt.token0, tt.token1, tt.token0Amount, tt.token1Amount)
 			if err != nil {
 				t.Fatal(err)
 			}
+			pair := service.ReturnPair(tt.token0, tt.token1)
 
-			liquidity, err := pair.Mint(types.Address{1}, tt.token0Amount, tt.token1Amount)
-			if err != nil {
-				t.Fatal(err)
-			}
+			liquidity := pair.Mint(types.Address{1}, tt.token0Amount, tt.token1Amount)
 
 			liquidityExpected := new(big.Int).Sub(tt.expectedLiquidity, big.NewInt(minimumLiquidity))
 			if liquidity.Cmp(liquidityExpected) != 0 {
@@ -134,15 +133,13 @@ func TestPair_Swap_token0(t *testing.T) {
 	service := New(nil, nil)
 	for i, tt := range tableTests {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			pair, err := service.CreatePair(tt.token0, tt.token1)
+			err := service.CheckMint(tt.token0, tt.token1, tt.token0Amount, tt.token1Amount)
 			if err != nil {
 				t.Fatal(err)
 			}
+			pair := service.ReturnPair(tt.token0, tt.token1)
 
-			_, err = pair.Mint(types.Address{1}, tt.token0Amount, tt.token1Amount)
-			if err != nil {
-				t.Fatal(err)
-			}
+			_ = pair.Mint(types.Address{1}, tt.token0Amount, tt.token1Amount)
 
 			_, _, err = pair.Swap(tt.swap0Amount, tt.swap1Amount, tt.expected0OutputAmount, new(big.Int).Add(tt.expected1OutputAmount, big.NewInt(1)))
 			if err != ErrorK {
@@ -198,15 +195,13 @@ func TestPair_Swap_token1(t *testing.T) {
 	service := New(nil, nil)
 	for i, tt := range tableTests {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			pair, err := service.CreatePair(tt.token0, tt.token1)
+			err := service.CheckMint(tt.token0, tt.token1, tt.token0Amount, tt.token1Amount)
 			if err != nil {
 				t.Fatal(err)
 			}
+			pair := service.ReturnPair(tt.token0, tt.token1)
 
-			_, err = pair.Mint(types.Address{1}, tt.token0Amount, tt.token1Amount)
-			if err != nil {
-				t.Fatal(err)
-			}
+			_ = pair.Mint(types.Address{1}, tt.token0Amount, tt.token1Amount)
 
 			_, _, err = pair.Swap(tt.swap0Amount, tt.swap1Amount, new(big.Int).Add(tt.expected0OutputAmount, big.NewInt(1)), tt.expected1OutputAmount)
 			if err != ErrorK {
@@ -255,25 +250,25 @@ func TestPair_Burn(t *testing.T) {
 	service := New(nil, nil)
 	for i, tt := range tableTests {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			pair, err := service.CreatePair(tt.token0, tt.token1)
+			err := service.CheckMint(tt.token0, tt.token1, tt.token0Amount, tt.token1Amount)
 			if err != nil {
 				t.Fatal(err)
 			}
+			pair := service.ReturnPair(tt.token0, tt.token1)
 
-			liquidity, err := pair.Mint(types.Address{1}, tt.token0Amount, tt.token1Amount)
-			if err != nil {
-				t.Fatal(err)
-			}
+			liquidity := pair.Mint(types.Address{1}, tt.token0Amount, tt.token1Amount)
 
 			liquidityExpected := new(big.Int).Sub(tt.expectedLiquidity, big.NewInt(minimumLiquidity))
 			if liquidity.Cmp(liquidityExpected) != 0 {
 				t.Errorf("liquidity want %s, got %s", liquidityExpected, liquidity)
 			}
 
-			amount0, amount1, err := pair.Burn(types.Address{1}, liquidity)
+			err = service.CheckBurn(types.Address{1}, tt.token0, tt.token1, liquidity)
 			if err != nil {
 				t.Fatal(err)
 			}
+
+			amount0, amount1 := pair.Burn(types.Address{1}, liquidity)
 
 			expectedAmount0 := new(big.Int).Sub(tt.token0Amount, big.NewInt(minimumLiquidity))
 			if amount0.Cmp(expectedAmount0) != 0 {
@@ -302,32 +297,24 @@ func TestPair_Burn(t *testing.T) {
 
 func TestSwap_Pair_reverseKey(t *testing.T) {
 	service := New(nil, nil)
-	pair, err := service.Pair(0, 1)
-	if err != nil {
-		t.Fatal(err)
-	}
+	pair := service.Pair(0, 1)
 	if pair != nil {
 		t.Fatal("pair is not nil")
 	}
-	pair, err = service.CreatePair(0, 1)
-	if err != nil {
-		t.Fatal(err)
-	}
+	pair = service.ReturnPair(0, 1)
 	if pair == nil {
 		t.Fatal("pair is nil")
 	}
-	pair, err = service.Pair(0, 1)
-	if err != nil {
-		t.Fatal(err)
-	}
+	pair = service.Pair(0, 1)
 	if pair == nil {
 		t.Fatal("pair is nil")
 	}
 	address := types.Address{1}
-	liquidity, err := pair.Mint(address, big.NewInt(1e18), big.NewInt(2e18))
+	err := service.CheckMint(0, 1, big.NewInt(1e18), big.NewInt(2e18))
 	if err != nil {
 		t.Fatal(err)
 	}
+	liquidity := pair.Mint(address, big.NewInt(1e18), big.NewInt(2e18))
 	if liquidity == nil {
 		t.Error("liquidity is nil")
 	}
@@ -337,10 +324,7 @@ func TestSwap_Pair_reverseKey(t *testing.T) {
 	reserve0, reserve1 := pair.Reserves()
 	totalSupply := pair.TotalSupply()
 
-	pairReverted, err := service.Pair(1, 0)
-	if err != nil {
-		t.Fatal(err)
-	}
+	pairReverted := service.Pair(1, 0)
 	if pairReverted == nil {
 		t.Fatal("pairReverted is nil")
 	}

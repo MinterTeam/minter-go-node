@@ -13,10 +13,7 @@ import (
 
 func (s *Service) Pairs(context.Context, *empty.Empty) (*pb.PairsResponse, error) {
 	state := s.blockchain.CurrentState()
-	pairs, err := state.Swap().Pairs()
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
+	pairs := state.Swap().Pairs()
 	ps := make([]*pb.PairsResponse_Pair, 0, len(pairs))
 	for _, pair := range pairs {
 		ps = append(ps, &pb.PairsResponse_Pair{
@@ -40,18 +37,14 @@ func (s *Service) Pair(_ context.Context, req *pb.PairRequest) (*pb.PairResponse
 		return nil, status.Error(codes.InvalidArgument, "equal coins id")
 	}
 	state := s.blockchain.CurrentState()
-	pair, err := state.Swap().Pair(types.CoinID(req.Coin0), types.CoinID(req.Coin1))
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	if pair != nil {
+	totalSupply, reserve0, reserve1 := state.Swap().PairInfo(types.CoinID(req.Coin0), types.CoinID(req.Coin1))
+	if totalSupply == nil {
 		return nil, status.Error(codes.NotFound, "pair not found")
 	}
-	reserve0, reserve1 := pair.Reserves()
 	return &pb.PairResponse{
 		Reserve0:    reserve0.String(),
 		Reserve1:    reserve1.String(),
-		TotalSupply: pair.TotalSupply().String(),
+		TotalSupply: totalSupply.String(),
 	}, nil
 }
 
@@ -70,17 +63,11 @@ func (s *Service) PairFromProvider(_ context.Context, req *pb.PairFromProviderRe
 	}
 
 	address := types.BytesToAddress(decodeString)
-
 	state := s.blockchain.CurrentState()
-	pair, err := state.Swap().Pair(types.CoinID(req.Coin0), types.CoinID(req.Coin1))
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+	balance, amount0, amount1 := state.Swap().PairFromProvider(address, types.CoinID(req.Coin0), types.CoinID(req.Coin1))
+	if balance == nil {
+		return nil, status.Error(codes.NotFound, "pair from provider not found")
 	}
-	if pair != nil {
-		return nil, status.Error(codes.NotFound, "pair not found")
-	}
-	balance := pair.Balance(address)
-	amount0, amount1 := pair.Amounts(balance)
 	return &pb.PairFromProviderResponse{
 		Amount0: amount0.String(),
 		Amount1: amount1.String(),
