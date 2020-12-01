@@ -24,7 +24,7 @@ type DeclareCandidacyData struct {
 	Stake      *big.Int
 }
 
-func (data DeclareCandidacyData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data DeclareCandidacyData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.Stake == nil {
 		return &Response{
 			Code: code.DecodeError,
@@ -86,7 +86,7 @@ func (data DeclareCandidacyData) Run(tx *Transaction, context state.Interface, r
 		checkState = state.NewCheckState(context.(*state.State))
 	}
 
-	response := data.BasicCheck(tx, checkState)
+	response := data.basicCheck(tx, checkState)
 	if response != nil {
 		return *response
 	}

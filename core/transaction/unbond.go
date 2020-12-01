@@ -21,7 +21,7 @@ type UnbondData struct {
 	Value  *big.Int
 }
 
-func (data UnbondData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data UnbondData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.Value == nil {
 		return &Response{
 			Code: code.DecodeError,
@@ -99,7 +99,7 @@ func (data UnbondData) Run(tx *Transaction, context state.Interface, rewardPool 
 		checkState = state.NewCheckState(context.(*state.State))
 	}
 
-	response := data.BasicCheck(tx, checkState)
+	response := data.basicCheck(tx, checkState)
 	if response != nil {
 		return *response
 	}

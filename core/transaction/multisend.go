@@ -20,7 +20,7 @@ type MultisendData struct {
 	List []MultisendDataItem `json:"list"`
 }
 
-func (data MultisendData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data MultisendData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	quantity := len(data.List)
 	if quantity < 1 || quantity > 100 {
 		return &Response{
@@ -71,7 +71,7 @@ func (data MultisendData) Run(tx *Transaction, context state.Interface, rewardPo
 		checkState = state.NewCheckState(context.(*state.State))
 	}
 
-	response := data.BasicCheck(tx, checkState)
+	response := data.basicCheck(tx, checkState)
 	if response != nil {
 		return *response
 	}

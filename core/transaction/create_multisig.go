@@ -21,7 +21,7 @@ type CreateMultisigData struct {
 	Addresses []types.Address
 }
 
-func (data CreateMultisigData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data CreateMultisigData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	lenWeights := len(data.Weights)
 	if lenWeights > 32 {
 		return &Response{
@@ -82,7 +82,7 @@ func (data CreateMultisigData) Run(tx *Transaction, context state.Interface, rew
 		checkState = state.NewCheckState(context.(*state.State))
 	}
 
-	response := data.BasicCheck(tx, checkState)
+	response := data.basicCheck(tx, checkState)
 	if response != nil {
 		return *response
 	}

@@ -17,7 +17,7 @@ type EditCoinOwnerData struct {
 	NewOwner types.Address
 }
 
-func (data EditCoinOwnerData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data EditCoinOwnerData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	sender, _ := tx.Sender()
 
 	info := context.Coins().GetSymbolInfo(data.Symbol)
@@ -64,7 +64,7 @@ func (data EditCoinOwnerData) Run(tx *Transaction, context state.Interface, rewa
 		checkState = state.NewCheckState(context.(*state.State))
 	}
 
-	response := data.BasicCheck(tx, checkState)
+	response := data.basicCheck(tx, checkState)
 	if response != nil {
 		return *response
 	}

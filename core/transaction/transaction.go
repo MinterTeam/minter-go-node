@@ -87,9 +87,9 @@ type SignatureMulti struct {
 
 type RawData []byte
 
-type TotalSpends []totalSpend
+type totalSpends []totalSpend
 
-func (tss *TotalSpends) Add(coin types.CoinID, value *big.Int) {
+func (tss *totalSpends) Add(coin types.CoinID, value *big.Int) {
 	for i, t := range *tss {
 		if t.Coin == coin {
 			(*tss)[i].Value.Add((*tss)[i].Value, big.NewInt(0).Set(value))

@@ -9,6 +9,7 @@ import (
 type saver interface {
 	Commit(db *iavl.MutableTree) error
 	SetImmutableTree(immutableTree *iavl.ImmutableTree)
+	// ModuleName() string // todo
 }
 
 // MTree mutable tree, used for txs delivery
@@ -32,6 +33,7 @@ func (t *mutableTree) Commit(savers ...saver) (hash []byte, version int64, err e
 		err := saver.Commit(t.tree)
 		if err != nil {
 			return nil, 0, err
+			// return nil, 0, errors.Wrap(err, saver.ModuleName())
 		}
 	}
 

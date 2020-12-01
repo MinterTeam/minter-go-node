@@ -139,7 +139,7 @@ func TestEditMultisigTxToNonExistAddress(t *testing.T) {
 	}
 
 	checkState := state.NewCheckState(cState)
-	response := data.BasicCheck(&tx, checkState)
+	response := data.basicCheck(&tx, checkState)
 	if response.Code != code.MultisigNotExists {
 		t.Fatalf("Response code is not %d. Error %s", code.MultisigNotExists, response.Log)
 	}

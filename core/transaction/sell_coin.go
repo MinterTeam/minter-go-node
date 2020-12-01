@@ -19,8 +19,8 @@ type SellCoinData struct {
 	MinimumValueToBuy *big.Int
 }
 
-func (data SellCoinData) totalSpend(tx *Transaction, context *state.CheckState) (TotalSpends, []conversion, *big.Int, *Response) {
-	total := TotalSpends{}
+func (data SellCoinData) totalSpend(tx *Transaction, context *state.CheckState) (totalSpends, []conversion, *big.Int, *Response) {
+	total := totalSpends{}
 	var conversions []conversion
 
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
@@ -260,7 +260,7 @@ func (data SellCoinData) totalSpend(tx *Transaction, context *state.CheckState) 
 	return total, conversions, value, nil
 }
 
-func (data SellCoinData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data SellCoinData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.ValueToSell == nil {
 		return &Response{
 			Code: code.DecodeError,
@@ -346,7 +346,7 @@ func (data SellCoinData) Run(tx *Transaction, context state.Interface, rewardPoo
 		checkState = state.NewCheckState(context.(*state.State))
 	}
 
-	response := data.BasicCheck(tx, checkState)
+	response := data.basicCheck(tx, checkState)
 	if response != nil {
 		return *response
 	}

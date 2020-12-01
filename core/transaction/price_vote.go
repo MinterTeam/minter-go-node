@@ -15,7 +15,7 @@ type PriceVoteData struct {
 	Price uint
 }
 
-func (data PriceVoteData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data PriceVoteData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	return nil
 }
 
@@ -36,7 +36,7 @@ func (data PriceVoteData) Run(tx *Transaction, context state.Interface, rewardPo
 		checkState = state.NewCheckState(context.(*state.State))
 	}
 
-	response := data.BasicCheck(tx, checkState)
+	response := data.basicCheck(tx, checkState)
 	if response != nil {
 		return *response
 	}

@@ -23,7 +23,7 @@ type RecreateCoinData struct {
 	MaxSupply            *big.Int
 }
 
-func (data RecreateCoinData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data RecreateCoinData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.InitialReserve == nil || data.InitialAmount == nil || data.MaxSupply == nil {
 		return &Response{
 			Code: code.DecodeError,
@@ -118,7 +118,7 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 		checkState = state.NewCheckState(context.(*state.State))
 	}
 
-	response := data.BasicCheck(tx, checkState)
+	response := data.basicCheck(tx, checkState)
 	if response != nil {
 		return *response
 	}

@@ -28,9 +28,9 @@ func (data BuyCoinData) Gas() int64 {
 	return commissions.ConvertTx
 }
 
-func (data BuyCoinData) totalSpend(tx *Transaction, context *state.CheckState) (TotalSpends,
+func (data BuyCoinData) totalSpend(tx *Transaction, context *state.CheckState) (totalSpends,
 	[]conversion, *big.Int, *Response) {
-	total := TotalSpends{}
+	total := totalSpends{}
 	var conversions []conversion
 
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
@@ -300,7 +300,7 @@ func (data BuyCoinData) totalSpend(tx *Transaction, context *state.CheckState) (
 	return total, conversions, value, nil
 }
 
-func (data BuyCoinData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data BuyCoinData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.ValueToBuy == nil {
 		return &Response{
 			Code: code.DecodeError,
@@ -379,7 +379,7 @@ func (data BuyCoinData) Run(tx *Transaction, context state.Interface, rewardPool
 		checkState = state.NewCheckState(context.(*state.State))
 	}
 
-	response := data.BasicCheck(tx, checkState)
+	response := data.basicCheck(tx, checkState)
 	if response != nil {
 		return *response
 	}

@@ -19,7 +19,7 @@ type DelegateData struct {
 	Value  *big.Int
 }
 
-func (data DelegateData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data DelegateData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.Value == nil {
 		return &Response{
 			Code: code.DecodeError,
@@ -95,7 +95,7 @@ func (data DelegateData) Run(tx *Transaction, context state.Interface, rewardPoo
 		checkState = state.NewCheckState(context.(*state.State))
 	}
 
-	response := data.BasicCheck(tx, checkState)
+	response := data.basicCheck(tx, checkState)
 	if response != nil {
 		return *response
 	}

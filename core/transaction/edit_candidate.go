@@ -27,7 +27,7 @@ func (data EditCandidateData) GetPubKey() types.Pubkey {
 	return data.PubKey
 }
 
-func (data EditCandidateData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data EditCandidateData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	return checkCandidateOwnership(data, tx, context)
 }
 
@@ -49,7 +49,7 @@ func (data EditCandidateData) Run(tx *Transaction, context state.Interface, rewa
 		checkState = state.NewCheckState(context.(*state.State))
 	}
 
-	response := data.BasicCheck(tx, checkState)
+	response := data.basicCheck(tx, checkState)
 	if response != nil {
 		return *response
 	}

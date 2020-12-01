@@ -34,7 +34,7 @@ type CreateCoinData struct {
 	MaxSupply            *big.Int
 }
 
-func (data CreateCoinData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data CreateCoinData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.InitialAmount == nil || data.MaxSupply == nil {
 		return &Response{
 			Code: code.DecodeError,
@@ -130,7 +130,7 @@ func (data CreateCoinData) Run(tx *Transaction, context state.Interface, rewardP
 	if checkState, isCheck = context.(*state.CheckState); !isCheck {
 		checkState = state.NewCheckState(context.(*state.State))
 	}
-	response := data.BasicCheck(tx, checkState)
+	response := data.basicCheck(tx, checkState)
 	if response != nil {
 		return *response
 	}

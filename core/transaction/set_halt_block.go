@@ -24,7 +24,7 @@ func (data SetHaltBlockData) GetPubKey() types.Pubkey {
 	return data.PubKey
 }
 
-func (data SetHaltBlockData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data SetHaltBlockData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if !context.Candidates().Exists(data.PubKey) {
 		return &Response{
 			Code: code.CandidateNotFound,
@@ -62,7 +62,7 @@ func (data SetHaltBlockData) Run(tx *Transaction, context state.Interface, rewar
 		checkState = state.NewCheckState(context.(*state.State))
 	}
 
-	response := data.BasicCheck(tx, checkState)
+	response := data.basicCheck(tx, checkState)
 	if response != nil {
 		return *response
 	}

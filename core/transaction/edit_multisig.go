@@ -20,7 +20,7 @@ type EditMultisigData struct {
 	Addresses []types.Address
 }
 
-func (data EditMultisigData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data EditMultisigData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	sender, _ := tx.Sender()
 
 	if !context.Accounts().GetAccount(sender).IsMultisig() {
@@ -104,7 +104,7 @@ func (data EditMultisigData) Run(tx *Transaction, context state.Interface, rewar
 		checkState = state.NewCheckState(context.(*state.State))
 	}
 
-	response := data.BasicCheck(tx, checkState)
+	response := data.basicCheck(tx, checkState)
 	if response != nil {
 		return *response
 	}

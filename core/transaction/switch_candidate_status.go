@@ -20,7 +20,7 @@ func (data SetCandidateOnData) GetPubKey() types.Pubkey {
 	return data.PubKey
 }
 
-func (data SetCandidateOnData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data SetCandidateOnData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	return checkCandidateControl(data, tx, context)
 }
 
@@ -42,7 +42,7 @@ func (data SetCandidateOnData) Run(tx *Transaction, context state.Interface, rew
 		checkState = state.NewCheckState(context.(*state.State))
 	}
 
-	response := data.BasicCheck(tx, checkState)
+	response := data.basicCheck(tx, checkState)
 	if response != nil {
 		return *response
 	}
@@ -101,7 +101,7 @@ func (data SetCandidateOffData) GetPubKey() types.Pubkey {
 	return data.PubKey
 }
 
-func (data SetCandidateOffData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data SetCandidateOffData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	return checkCandidateControl(data, tx, context)
 }
 
@@ -123,7 +123,7 @@ func (data SetCandidateOffData) Run(tx *Transaction, context state.Interface, re
 		checkState = state.NewCheckState(context.(*state.State))
 	}
 
-	response := data.BasicCheck(tx, checkState)
+	response := data.basicCheck(tx, checkState)
 	if response != nil {
 		return *response
 	}
