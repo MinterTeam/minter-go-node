@@ -181,8 +181,11 @@ func (s *AppState) Verify() error {
 		}
 
 		for _, swap := range s.Swap {
-			if swap.Coin == coin.ID {
-				volume.Add(volume, helpers.StringToBigInt(swap.ReserveCustom))
+			if swap.Coin0 == coin.ID {
+				volume.Add(volume, helpers.StringToBigInt(swap.Reserve0))
+			}
+			if swap.Coin1 == coin.ID {
+				volume.Add(volume, helpers.StringToBigInt(swap.Reserve1))
 			}
 		}
 
@@ -289,11 +292,12 @@ type BalanceProvider struct {
 	Liquidity string  `json:"liquidity"`
 }
 type Swap struct {
-	Providers     []BalanceProvider `json:"providers"`
-	Coin          uint64            `json:"coin"`
-	ReserveBip    string            `json:"reserve_bip"`
-	ReserveCustom string            `json:"reserve_custom"`
-	TotalSupply   string            `json:"total_supply"`
+	Providers   []BalanceProvider `json:"providers"`
+	Coin0       uint64            `json:"coin0"`
+	Coin1       uint64            `json:"coin1"`
+	Reserve0    string            `json:"reserve0"`
+	Reserve1    string            `json:"reserve1"`
+	TotalSupply string            `json:"total_supply"`
 }
 
 type Coin struct {

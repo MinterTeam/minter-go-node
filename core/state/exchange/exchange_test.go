@@ -89,14 +89,14 @@ func TestPair_Mint(t *testing.T) {
 				t.Errorf("liquidity want %s, got %s", liquidityExpected, liquidity)
 			}
 
-			reserve0, reserve1 := pair.ReserveBip, pair.ReserveCustom
+			reserve0, reserve1 := pair.Reserve0, pair.Reserve1
 
 			if reserve0.Cmp(tt.token0Amount) != 0 {
 				t.Errorf("reserve0 want %s, got %s", tt.token0Amount, reserve0)
 			}
 
 			if reserve1.Cmp(tt.token1Amount) != 0 {
-				t.Errorf("ReserveCustom want %s, got %s", tt.token1Amount, reserve1)
+				t.Errorf("Reserve1 want %s, got %s", tt.token1Amount, reserve1)
 			}
 
 			if pair.balances[types.Address{}].Cmp(big.NewInt(minimumLiquidity)) != 0 {
@@ -161,12 +161,12 @@ func TestPair_Swap_token0(t *testing.T) {
 				t.Errorf("amount1 want %s, got %s", expected1Amount, amount1)
 			}
 
-			if pair.ReserveBip.Cmp(new(big.Int).Add(tt.token0Amount, expected0Amount)) != 0 {
-				t.Errorf("reserve0 want %s, got %s", new(big.Int).Add(tt.token0Amount, expected0Amount), pair.ReserveBip)
+			if pair.Reserve0.Cmp(new(big.Int).Add(tt.token0Amount, expected0Amount)) != 0 {
+				t.Errorf("reserve0 want %s, got %s", new(big.Int).Add(tt.token0Amount, expected0Amount), pair.Reserve0)
 			}
 
-			if pair.ReserveCustom.Cmp(new(big.Int).Add(tt.token1Amount, expected1Amount)) != 0 {
-				t.Errorf("ReserveCustom want %s, got %s", new(big.Int).Add(tt.token1Amount, expected1Amount), pair.ReserveCustom)
+			if pair.Reserve1.Cmp(new(big.Int).Add(tt.token1Amount, expected1Amount)) != 0 {
+				t.Errorf("Reserve1 want %s, got %s", new(big.Int).Add(tt.token1Amount, expected1Amount), pair.Reserve1)
 			}
 		})
 	}
@@ -222,12 +222,12 @@ func TestPair_Swap_token1(t *testing.T) {
 				t.Errorf("amount1 want %s, got %s", expected1Amount, amount1)
 			}
 
-			if pair.ReserveBip.Cmp(new(big.Int).Add(tt.token0Amount, expected0Amount)) != 0 {
-				t.Errorf("reserve0 want %s, got %s", new(big.Int).Add(tt.token0Amount, expected0Amount), pair.ReserveBip)
+			if pair.Reserve0.Cmp(new(big.Int).Add(tt.token0Amount, expected0Amount)) != 0 {
+				t.Errorf("reserve0 want %s, got %s", new(big.Int).Add(tt.token0Amount, expected0Amount), pair.Reserve0)
 			}
 
-			if pair.ReserveCustom.Cmp(new(big.Int).Add(tt.token1Amount, expected1Amount)) != 0 {
-				t.Errorf("ReserveCustom want %s, got %s", new(big.Int).Add(tt.token1Amount, expected1Amount), pair.ReserveCustom)
+			if pair.Reserve1.Cmp(new(big.Int).Add(tt.token1Amount, expected1Amount)) != 0 {
+				t.Errorf("Reserve1 want %s, got %s", new(big.Int).Add(tt.token1Amount, expected1Amount), pair.Reserve1)
 			}
 		})
 	}

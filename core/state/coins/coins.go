@@ -443,7 +443,7 @@ func (c *Coins) Export(state *types.AppState) {
 			coinID := types.BytesToCoinID(key[1:])
 			coin := c.get(coinID)
 
-			var owner *types.Address
+			owner := &types.Address{}
 			info := c.getSymbolInfo(coin.Symbol())
 			if info != nil {
 				owner = info.OwnerAddress()
