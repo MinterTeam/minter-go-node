@@ -16,7 +16,6 @@ import (
 const minimumLiquidity int64 = 1000
 
 type RSwap interface {
-	Pairs() (pairs []pairKey)
 	PairInfo(coinA, coinB types.CoinID) (totalSupply, reserve0, reserve1 *big.Int)
 	PairExist(coinA, coinB types.CoinID) bool
 	PairFromProvider(provider types.Address, coinA, coinB types.CoinID) (balance, amount0, amount1 *big.Int)
@@ -26,25 +25,17 @@ type RSwap interface {
 }
 
 type Swap struct {
-	muPairs         sync.RWMutex
-	pairs           map[pairKey]*Pair
-	keyPairs        []pairKey
-	isDirtyKeyPairs bool
+	sync.RWMutex
+	pairs map[pairKey]*Pair
 
-	bus    *bus.Bus
-	db     atomic.Value
-	loaded bool
+	bus *bus.Bus
+	db  atomic.Value
 }
 
 func New(bus *bus.Bus, db *iavl.ImmutableTree) *Swap {
 	immutableTree := atomic.Value{}
-	loaded := false
-	if db != nil {
-		immutableTree.Store(db)
-	} else {
-		loaded = true
-	}
-	return &Swap{pairs: map[pairKey]*Pair{}, bus: bus, db: immutableTree, loaded: loaded}
+	immutableTree.Store(db)
+	return &Swap{pairs: map[pairKey]*Pair{}, bus: bus, db: immutableTree}
 }
 
 func (s *Swap) immutableTree() *iavl.ImmutableTree {
@@ -56,64 +47,33 @@ func (s *Swap) immutableTree() *iavl.ImmutableTree {
 }
 
 func (s *Swap) Export(state *types.AppState) {
-	for _, key := range s.Pairs() {
-		pair := s.Pair(key.CoinA, key.CoinB)
-		if pair == nil {
-			continue
-		}
-
-		balances := pair.Balances()
-		reserve0, reserve1 := pair.Reserves()
-		swap := types.Swap{
-			Providers:   make([]types.BalanceProvider, 0, len(balances)),
-			Coin0:       uint64(key.CoinA),
-			Coin1:       uint64(key.CoinB),
-			Reserve0:    reserve0.String(),
-			Reserve1:    reserve1.String(),
-			TotalSupply: pair.GetTotalSupply().String(),
-		}
-
-		for _, balance := range balances {
-			swap.Providers = append(swap.Providers, types.BalanceProvider{
-				Address:   balance.Address,
-				Liquidity: balance.Liquidity.String(),
-			})
-		}
-
-		state.Swap = append(state.Swap, swap)
-	}
+	// todo
 }
 
 func (s *Swap) Import(state *types.AppState) {
-	s.muPairs.Lock()
-	defer s.muPairs.Unlock()
-	s.loaded = true
+	s.Lock()
+	defer s.Unlock()
+
 	for _, swap := range state.Swap {
 		pair := s.ReturnPair(types.CoinID(swap.Coin0), types.CoinID(swap.Coin1))
 		pair.TotalSupply.Set(helpers.StringToBigInt(swap.TotalSupply))
 		pair.Reserve0.Set(helpers.StringToBigInt(swap.Reserve0))
 		pair.Reserve1.Set(helpers.StringToBigInt(swap.Reserve1))
-		pair.dirty.isDirty = true
-		pair.dirty.isDirtyBalances = true
+		pair.isDirty = true
 		for _, provider := range swap.Providers {
-			pair.balances[provider.Address] = helpers.StringToBigInt(provider.Liquidity)
+			pair.balances[provider.Address] = &Balance{Liquidity: helpers.StringToBigInt(provider.Liquidity), isDirty: true}
 		}
 	}
-
 }
 
 var mainPrefix = "p"
-
-type balance struct {
-	Address   types.Address
-	Liquidity *big.Int
-}
 
 type pairData struct {
 	*sync.RWMutex
 	Reserve0    *big.Int
 	Reserve1    *big.Int
 	TotalSupply *big.Int
+	isDirty     bool
 }
 
 func (pd *pairData) GetTotalSupply() *big.Int {
@@ -134,6 +94,7 @@ func (pd *pairData) Revert() pairData {
 		Reserve0:    pd.Reserve1,
 		Reserve1:    pd.Reserve0,
 		TotalSupply: pd.TotalSupply,
+		isDirty:     pd.isDirty,
 	}
 }
 
@@ -147,80 +108,41 @@ func (s *Swap) CheckMint(coinA, coinB types.CoinID, amount0, amount1 *big.Int) e
 func (s *Swap) Commit(db *iavl.MutableTree) error {
 	basePath := []byte(mainPrefix)
 
-	keyPairs := s.Pairs()
-	s.muPairs.RLock()
-	defer s.muPairs.RUnlock()
+	s.RLock()
+	defer s.RUnlock()
 
-	if s.isDirtyKeyPairs {
-		s.isDirtyKeyPairs = false
-		pairsBytes, err := rlp.EncodeToBytes(keyPairs)
-		if err != nil {
-			return err
-		}
-		db.Set(basePath, pairsBytes)
-	}
-
-	for _, pairKey := range keyPairs {
-		pair := s.pairs[pairKey]
-		pairPath := append(basePath, pairKey.Bytes()...)
-
-		if pair.isDirtyBalances {
-			pair.isDirtyBalances = true
-			balances := pair.Balances()
-			balancesBytes, err := rlp.EncodeToBytes(balances)
-			if err != nil {
-				return err
-			}
-			db.Set(append(pairPath, 'b'), balancesBytes)
-		}
-
+	for coin, pair := range s.pairs {
 		if !pair.isDirty {
 			continue
 		}
+
+		pairPath := append(basePath, coin.Bytes()...)
+
 		pair.isDirty = false
-		pairDataBytes, err := rlp.EncodeToBytes(pair.pairData)
+		pairDataBytes, err := rlp.EncodeToBytes(pair)
 		if err != nil {
 			return err
 		}
 		db.Set(pairPath, pairDataBytes)
+
+		for address, balance := range pair.balances {
+			if !balance.isDirty {
+				continue
+			}
+			balance.isDirty = false
+			balanceBytes, err := rlp.EncodeToBytes(balance)
+			if err != nil {
+				return err
+			}
+			db.Set(append(pairPath, address.Bytes()...), balanceBytes)
+		}
+
 	}
 	return nil
 }
 
 func (s *Swap) SetImmutableTree(immutableTree *iavl.ImmutableTree) {
-	if s.immutableTree() == nil && s.loaded {
-		s.loaded = false
-	}
 	s.db.Store(immutableTree)
-}
-
-func (s *Swap) Pairs() []pairKey {
-	s.muPairs.Lock()
-	defer s.muPairs.Unlock()
-
-	if s.loaded {
-		return s.keyPairs
-	}
-
-	s.loaded = true
-	_, value := s.immutableTree().Get([]byte(mainPrefix))
-	if len(value) == 0 {
-		return s.keyPairs
-	}
-	var pairKeys []pairKey
-	err := rlp.DecodeBytes(value, &pairKeys)
-	if err != nil {
-		panic(err)
-	}
-	for _, keyPair := range pairKeys {
-		if _, ok := s.pairs[keyPair]; ok {
-			continue
-		}
-		s.pairs[keyPair] = nil
-	}
-
-	s.keyPairs = append(pairKeys, s.keyPairs...)
-	return s.keyPairs
 }
 
 func (s *Swap) pair(key pairKey) (*Pair, bool) {
@@ -236,7 +158,6 @@ func (s *Swap) pair(key pairKey) (*Pair, bool) {
 		muBalance: pair.muBalance,
 		pairData:  pair.pairData.Revert(),
 		balances:  pair.balances,
-		dirty:     pair.dirty,
 	}, true
 }
 
@@ -267,8 +188,8 @@ func (s *Swap) PairFromProvider(provider types.Address, coinA, coinB types.CoinI
 }
 
 func (s *Swap) Pair(coinA, coinB types.CoinID) *Pair {
-	s.muPairs.Lock()
-	defer s.muPairs.Unlock()
+	s.Lock()
+	defer s.Unlock()
 
 	key := pairKey{CoinA: coinA, CoinB: coinB}
 	pair, ok := s.pair(key)
@@ -425,15 +346,15 @@ var (
 	ErrorInsufficientLiquidityMinted = errors.New("INSUFFICIENT_LIQUIDITY_MINTED")
 )
 
-type dirty struct {
-	isDirty         bool
-	isDirtyBalances bool
+type Balance struct {
+	Liquidity *big.Int
+	isDirty   bool
 }
+
 type Pair struct {
 	pairData
 	muBalance *sync.RWMutex
-	balances  map[types.Address]*big.Int
-	*dirty
+	balances  map[types.Address]*Balance
 }
 
 func (p *Pair) Balance(address types.Address) (liquidity *big.Int) {
