@@ -8,6 +8,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/tendermint/iavl"
 	"math/big"
+	"sort"
 	"sync"
 	"sync/atomic"
 )
@@ -39,51 +40,48 @@ func New(bus *bus.Bus, db *iavl.ImmutableTree) *Swap {
 
 func (s *Swap) immutableTree() *iavl.ImmutableTree {
 	db := s.db.Load()
-	if db == nil {
-		return nil
-	}
 	return db.(*iavl.ImmutableTree)
 }
 
 func (s *Swap) Export(state *types.AppState) {
-	s.immutableTree().Iterate(func(key []byte, value []byte) bool {
-		if key[0] == mainPrefix[0] {
-			coin := types.BytesToCoinID(key[1:5])
-			pair := s.Pair(coin)
-			if len(key) > 5 {
-				types.BytesToAddress(key[5:])
-			}
-			_ = pair
+	s.immutableTree().IterateRange([]byte(mainPrefix), []byte("t"), true, func(key []byte, value []byte) bool {
+		coin := types.BytesToCoinID(key[1:5])
+		pair := s.ReturnPair(coin)
+		if len(key) > 5 {
+			provider := types.BytesToAddress(key[5:])
+			pair.balances[provider] = pair.loadBalance(provider)
 		}
+
 		return false
 	})
-	// todo: iterateRange
-	// for _, key := range s.Pairs() {
-	// 	pair := s.Pair(key.CoinA, key.CoinB)
-	// 	if pair == nil {
-	// 		continue
-	// 	}
-	//
-	// 	balances := pair.Balances()
-	// 	reserve0, reserve1 := pair.Reserves()
-	// 	swap := types.Swap{
-	// 		Providers:   make([]types.BalanceProvider, 0, len(balances)),
-	// 		Coin0:       uint64(key.CoinA),
-	// 		Coin:        uint64(key.CoinB),
-	// 		ReserveBip:    reserve0.String(),
-	// 		ReserveCustom:    reserve1.String(),
-	// 		TotalSupply: pair.GetTotalSupply().String(),
-	// 	}
-	//
-	// 	for _, balance := range balances {
-	// 		swap.Providers = append(swap.Providers, types.BalanceProvider{
-	// 			Address:   balance.Address,
-	// 			Liquidity: balance.Liquidity.String(),
-	// 		})
-	// 	}
-	//
-	// 	state.Swap = append(state.Swap, swap)
-	// }
+
+	for coin, pair := range s.pairs {
+		reserve0, reserve1 := pair.Reserves()
+		swap := types.Swap{
+			Providers:     make([]types.BalanceProvider, 0, len(pair.balances)),
+			Coin:          uint64(coin),
+			ReserveBase:   reserve0.String(),
+			ReserveCustom: reserve1.String(),
+			TotalSupply:   pair.GetTotalSupply().String(),
+		}
+
+		for address, balance := range pair.balances {
+			swap.Providers = append(swap.Providers, types.BalanceProvider{
+				Address:   address,
+				Liquidity: balance.Liquidity.String(),
+			})
+		}
+
+		sort.Slice(swap.Providers, func(i, j int) bool {
+			return swap.Providers[i].Address.Compare(swap.Providers[j].Address) == -1
+		})
+
+		state.Swap = append(state.Swap, swap)
+	}
+
+	sort.Slice(state.Swap, func(i, j int) bool {
+		return state.Swap[i].Coin < state.Swap[j].Coin
+	})
 }
 
 func (s *Swap) Import(state *types.AppState) {
@@ -92,7 +90,7 @@ func (s *Swap) Import(state *types.AppState) {
 	for _, swap := range state.Swap {
 		pair := s.ReturnPair(types.CoinID(swap.Coin))
 		pair.TotalSupply.Set(helpers.StringToBigInt(swap.TotalSupply))
-		pair.ReserveBip.Set(helpers.StringToBigInt(swap.ReserveBip))
+		pair.ReserveBase.Set(helpers.StringToBigInt(swap.ReserveBase))
 		pair.ReserveCustom.Set(helpers.StringToBigInt(swap.ReserveCustom))
 		pair.isDirty = true
 		for _, provider := range swap.Providers {
@@ -113,7 +111,7 @@ func (p *Pair) GetTotalSupply() *big.Int {
 func (p *Pair) Reserves() (reserve0 *big.Int, reserve1 *big.Int) {
 	p.RLock()
 	defer p.RUnlock()
-	return new(big.Int).Set(p.ReserveBip), new(big.Int).Set(p.ReserveCustom)
+	return new(big.Int).Set(p.ReserveBase), new(big.Int).Set(p.ReserveCustom)
 }
 
 func (s *Swap) CheckBurn(address types.Address, coin types.CoinID, liquidity *big.Int) error {
@@ -177,7 +175,7 @@ func (s *Swap) PairInfo(coin types.CoinID) (totalSupply, reserve0, reserve1 *big
 	return totalSupply, reserve0, reserve1
 }
 
-func (s *Swap) PairFromProvider(provider types.Address, coin types.CoinID) (balance, amountBip, amountCustom *big.Int) {
+func (s *Swap) PairFromProvider(provider types.Address, coin types.CoinID) (balance, amountBase, amountCustom *big.Int) {
 	pair := s.Pair(coin)
 	if pair == nil {
 		return nil, nil, nil
@@ -188,8 +186,8 @@ func (s *Swap) PairFromProvider(provider types.Address, coin types.CoinID) (bala
 		return nil, nil, nil
 	}
 
-	amountBip, amountCustom = pair.Amounts(balance)
-	return balance, amountBip, amountCustom
+	amountBase, amountCustom = pair.Amounts(balance)
+	return balance, amountBase, amountCustom
 }
 
 func (s *Swap) Pair(coin types.CoinID) *Pair {
@@ -208,60 +206,43 @@ func (s *Swap) Pair(coin types.CoinID) *Pair {
 		return nil
 	}
 
-	pair = new(Pair)
+	pair = s.addPair(coin)
 	err := rlp.DecodeBytes(data, &pair)
 	if err != nil {
 		panic(err)
 	}
 
-	pair.loadBalance = func(address types.Address) *Balance {
-		_, balancesBytes := s.immutableTree().Get(append(pathPair, address.Bytes()...))
-		if len(balancesBytes) == 0 {
-			pair.balances[address] = nil
-			return nil
-		}
-
-		balance := new(Balance)
-		err = rlp.DecodeBytes(balancesBytes, balance)
-		if err != nil {
-			panic(err)
-		}
-
-		return balance
-	}
-
-	s.pairs[coin] = pair
 	return pair
 }
 
-func (s *Swap) PairMint(address types.Address, custom types.CoinID, amountBip, amountCustom *big.Int) (*big.Int, *big.Int) {
+func (s *Swap) PairMint(address types.Address, custom types.CoinID, amountBase, amountCustom *big.Int) (*big.Int, *big.Int) {
 	pair := s.ReturnPair(custom)
-	oldReserveBip, oldReserveCustom := pair.Reserves()
-	_ = pair.Mint(address, amountBip, amountCustom)
-	newReserveBip, newReserveCustom := pair.Reserves()
+	oldReserveBase, oldReserveCustom := pair.Reserves()
+	_ = pair.Mint(address, amountBase, amountCustom)
+	newReserveBase, newReserveCustom := pair.Reserves()
 
-	balanceBip := new(big.Int).Sub(newReserveBip, oldReserveBip)
+	balanceBase := new(big.Int).Sub(newReserveBase, oldReserveBase)
 	balanceCustom := new(big.Int).Sub(newReserveCustom, oldReserveCustom)
 
-	s.bus.Checker().AddCoin(types.GetBaseCoinID(), balanceBip)
+	s.bus.Checker().AddCoin(types.GetSwapHubCoinID(), balanceBase)
 	s.bus.Checker().AddCoin(custom, balanceCustom)
 
-	return balanceBip, balanceCustom
+	return balanceBase, balanceCustom
 }
 
 func (s *Swap) PairBurn(address types.Address, custom types.CoinID, liquidity *big.Int) (*big.Int, *big.Int) {
 	pair := s.Pair(custom)
-	oldReserveBip, oldReserveCustom := pair.Reserves()
+	oldReserveBase, oldReserveCustom := pair.Reserves()
 	_, _ = pair.Burn(address, liquidity)
-	newReserveBip, newReserveCustom := pair.Reserves()
+	newReserveBase, newReserveCustom := pair.Reserves()
 
-	balanceBip := new(big.Int).Sub(oldReserveBip, newReserveBip)
+	balanceBase := new(big.Int).Sub(oldReserveBase, newReserveBase)
 	balanceCustom := new(big.Int).Sub(oldReserveCustom, newReserveCustom)
 
-	s.bus.Checker().AddCoin(types.GetBaseCoinID(), new(big.Int).Neg(balanceBip))
+	s.bus.Checker().AddCoin(types.GetSwapHubCoinID(), new(big.Int).Neg(balanceBase))
 	s.bus.Checker().AddCoin(custom, new(big.Int).Neg(balanceCustom))
 
-	return balanceBip, balanceCustom
+	return balanceBase, balanceCustom
 }
 
 var (
@@ -269,7 +250,7 @@ var (
 )
 
 func (s *Swap) ReturnPair(coin types.CoinID) *Pair {
-	if coin == types.GetBaseCoinID() {
+	if coin == types.GetSwapHubCoinID() {
 		panic(ErrorIdenticalAddresses)
 	}
 
@@ -284,13 +265,31 @@ func (s *Swap) ReturnPair(coin types.CoinID) *Pair {
 	return s.addPair(coin)
 }
 
+func (s *Swap) loadBalanceFunc(coin types.CoinID) func(address types.Address) *Balance {
+	return func(address types.Address) *Balance {
+		_, balancesBytes := s.immutableTree().Get(append(append([]byte(mainPrefix), coin.Bytes()...), address.Bytes()...))
+		if len(balancesBytes) == 0 {
+			return nil
+		}
+
+		balance := new(Balance)
+		if err := rlp.DecodeBytes(balancesBytes, balance); err != nil {
+			panic(err)
+		}
+
+		return balance
+	}
+}
 func (s *Swap) addPair(coin types.CoinID) *Pair {
+	balances := map[types.Address]*Balance{}
 	pair := &Pair{
-		ReserveBip:    big.NewInt(0),
+		ReserveBase:   big.NewInt(0),
 		ReserveCustom: big.NewInt(0),
 		TotalSupply:   big.NewInt(0),
-		balances:      map[types.Address]*Balance{},
+		balances:      balances,
+		loadBalance:   s.loadBalanceFunc(coin),
 	}
+
 	s.pairs[coin] = pair
 	return pair
 }
@@ -306,7 +305,7 @@ type Balance struct {
 
 type Pair struct {
 	sync.RWMutex
-	ReserveBip    *big.Int
+	ReserveBase   *big.Int
 	ReserveCustom *big.Int
 	TotalSupply   *big.Int
 	isDirty       bool
@@ -333,27 +332,27 @@ func (p *Pair) Balance(address types.Address) (liquidity *big.Int) {
 	return new(big.Int).Set(balance.Liquidity)
 }
 
-func (p *Pair) liquidity(amountBip, amountCustom *big.Int) (liquidity, a, b *big.Int) {
+func (p *Pair) liquidity(amountBase, amountCustom *big.Int) (liquidity, a, b *big.Int) {
 	totalSupply := p.GetTotalSupply()
-	reserveBip, reserveCustom := p.Reserves()
-	liquidity = new(big.Int).Div(new(big.Int).Mul(totalSupply, amountBip), reserveBip)
+	reserveBase, reserveCustom := p.Reserves()
+	liquidity = new(big.Int).Div(new(big.Int).Mul(totalSupply, amountBase), reserveBase)
 	liquidity1 := new(big.Int).Div(new(big.Int).Mul(totalSupply, amountCustom), reserveCustom)
 	if liquidity.Cmp(liquidity1) == 1 {
 		liquidity = liquidity1
-		amountBip = new(big.Int).Div(new(big.Int).Mul(liquidity, reserveBip), totalSupply)
+		amountBase = new(big.Int).Div(new(big.Int).Mul(liquidity, reserveBase), totalSupply)
 	} else {
 		amountCustom = new(big.Int).Div(new(big.Int).Mul(liquidity, reserveCustom), totalSupply)
 	}
-	return liquidity, amountBip, amountCustom
+	return liquidity, amountBase, amountCustom
 }
 
-func (p *Pair) Mint(address types.Address, amountBip, amountCustom *big.Int) (liquidity *big.Int) {
+func (p *Pair) Mint(address types.Address, amountBase, amountCustom *big.Int) (liquidity *big.Int) {
 	totalSupply := p.GetTotalSupply()
 	if totalSupply.Sign() != 1 {
-		liquidity = startingSupply(amountBip, amountCustom)
+		liquidity = startingSupply(amountBase, amountCustom)
 		p.mint(types.Address{}, big.NewInt(minimumLiquidity))
 	} else {
-		liquidity, amountBip, amountCustom = p.liquidity(amountBip, amountCustom)
+		liquidity, amountBase, amountCustom = p.liquidity(amountBase, amountCustom)
 	}
 
 	if liquidity.Sign() != 1 {
@@ -361,22 +360,22 @@ func (p *Pair) Mint(address types.Address, amountBip, amountCustom *big.Int) (li
 	}
 
 	p.mint(address, liquidity)
-	p.update(amountBip, amountCustom)
+	p.update(amountBase, amountCustom)
 
 	return new(big.Int).Set(liquidity)
 }
 
-func (p *Pair) checkMint(amountBip, amountCustom *big.Int) (err error) {
+func (p *Pair) checkMint(amountBase, amountCustom *big.Int) (err error) {
 	var liquidity *big.Int
 	totalSupply := big.NewInt(0)
 	if p != nil {
 		totalSupply = p.GetTotalSupply()
 	}
 	if totalSupply.Sign() != 1 {
-		liquidity = startingSupply(amountBip, amountCustom)
+		liquidity = startingSupply(amountBase, amountCustom)
 	} else {
-		reserveBip, reserveCustom := p.Reserves()
-		liquidity = new(big.Int).Div(new(big.Int).Mul(totalSupply, amountBip), reserveBip)
+		reserveBase, reserveCustom := p.Reserves()
+		liquidity = new(big.Int).Div(new(big.Int).Mul(totalSupply, amountBase), reserveBase)
 		liquidity1 := new(big.Int).Div(new(big.Int).Mul(totalSupply, amountCustom), reserveCustom)
 		if liquidity.Cmp(liquidity1) == 1 {
 			liquidity = liquidity1
@@ -394,7 +393,7 @@ var (
 	ErrorInsufficientLiquidityBurned = errors.New("INSUFFICIENT_LIQUIDITY_BURNED")
 )
 
-func (p *Pair) Burn(address types.Address, liquidity *big.Int) (amountBip *big.Int, amountCustom *big.Int) {
+func (p *Pair) Burn(address types.Address, liquidity *big.Int) (amountBase *big.Int, amountCustom *big.Int) {
 	balance := p.Balance(address)
 	if balance == nil {
 		panic(ErrorInsufficientLiquidityBurned)
@@ -404,16 +403,16 @@ func (p *Pair) Burn(address types.Address, liquidity *big.Int) (amountBip *big.I
 		panic(ErrorInsufficientLiquidityBurned)
 	}
 
-	amountBip, amountCustom = p.Amounts(liquidity)
+	amountBase, amountCustom = p.Amounts(liquidity)
 
-	if amountBip.Sign() != 1 || amountCustom.Sign() != 1 {
+	if amountBase.Sign() != 1 || amountCustom.Sign() != 1 {
 		panic(ErrorInsufficientLiquidityBurned)
 	}
 
 	p.burn(address, liquidity)
-	p.update(new(big.Int).Neg(amountBip), new(big.Int).Neg(amountCustom))
+	p.update(new(big.Int).Neg(amountBase), new(big.Int).Neg(amountCustom))
 
-	return amountBip, amountCustom
+	return amountBase, amountCustom
 }
 
 func (p *Pair) checkBurn(address types.Address, liquidity *big.Int) (err error) {
@@ -429,9 +428,9 @@ func (p *Pair) checkBurn(address types.Address, liquidity *big.Int) (err error) 
 		return ErrorInsufficientLiquidityBurned
 	}
 
-	amountBip, amountCustom := p.Amounts(liquidity)
+	amountBase, amountCustom := p.Amounts(liquidity)
 
-	if amountBip.Sign() != 1 || amountCustom.Sign() != 1 {
+	if amountBase.Sign() != 1 || amountCustom.Sign() != 1 {
 		return ErrorInsufficientLiquidityBurned
 	}
 
@@ -445,25 +444,25 @@ var (
 	ErrorInsufficientLiquidity    = errors.New("INSUFFICIENT_LIQUIDITY")
 )
 
-func (p *Pair) Swap(amountBipIn, amountCustomIn, amountBipOut, amountCustomOut *big.Int) (amount0, amount1 *big.Int, err error) {
-	if amountBipOut.Sign() != 1 && amountCustomOut.Sign() != 1 {
+func (p *Pair) Swap(amountBaseIn, amountCustomIn, amountBaseOut, amountCustomOut *big.Int) (amount0, amount1 *big.Int, err error) {
+	if amountBaseOut.Sign() != 1 && amountCustomOut.Sign() != 1 {
 		return nil, nil, ErrorInsufficientOutputAmount
 	}
 
 	reserve0, reserve1 := p.Reserves()
 
-	if amountBipOut.Cmp(reserve0) == 1 || amountCustomOut.Cmp(reserve1) == 1 {
+	if amountBaseOut.Cmp(reserve0) == 1 || amountCustomOut.Cmp(reserve1) == 1 {
 		return nil, nil, ErrorInsufficientLiquidity
 	}
 
-	amount0 = new(big.Int).Sub(amountBipIn, amountBipOut)
+	amount0 = new(big.Int).Sub(amountBaseIn, amountBaseOut)
 	amount1 = new(big.Int).Sub(amountCustomIn, amountCustomOut)
 
 	if amount0.Sign() != 1 && amount1.Sign() != 1 {
 		return nil, nil, ErrorInsufficientInputAmount
 	}
 
-	balance0Adjusted := new(big.Int).Sub(new(big.Int).Mul(new(big.Int).Add(amount0, reserve0), big.NewInt(1000)), new(big.Int).Mul(amountBipIn, big.NewInt(3)))
+	balance0Adjusted := new(big.Int).Sub(new(big.Int).Mul(new(big.Int).Add(amount0, reserve0), big.NewInt(1000)), new(big.Int).Mul(amountBaseIn, big.NewInt(3)))
 	balance1Adjusted := new(big.Int).Sub(new(big.Int).Mul(new(big.Int).Add(amount1, reserve1), big.NewInt(1000)), new(big.Int).Mul(amountCustomIn, big.NewInt(3)))
 
 	if new(big.Int).Mul(balance0Adjusted, balance1Adjusted).Cmp(new(big.Int).Mul(new(big.Int).Mul(reserve0, reserve1), big.NewInt(1000000))) == -1 {
@@ -510,30 +509,30 @@ func (p *Pair) burn(address types.Address, value *big.Int) {
 	p.balances[address].Liquidity.Sub(p.balances[address].Liquidity, value)
 }
 
-func (p *Pair) update(amountBip, amountCustom *big.Int) {
+func (p *Pair) update(amountBase, amountCustom *big.Int) {
 	p.Lock()
 	defer p.Unlock()
 
 	p.isDirty = true
-	p.ReserveBip.Add(p.ReserveBip, amountBip)
+	p.ReserveBase.Add(p.ReserveBase, amountBase)
 	p.ReserveCustom.Add(p.ReserveCustom, amountCustom)
 }
 
-func (p *Pair) Amounts(liquidity *big.Int) (amountBip *big.Int, amountCustom *big.Int) {
+func (p *Pair) Amounts(liquidity *big.Int) (amountBase *big.Int, amountCustom *big.Int) {
 	p.RLock()
 	defer p.RUnlock()
-	amountBip = new(big.Int).Div(new(big.Int).Mul(liquidity, p.ReserveBip), p.TotalSupply)
+	amountBase = new(big.Int).Div(new(big.Int).Mul(liquidity, p.ReserveBase), p.TotalSupply)
 	amountCustom = new(big.Int).Div(new(big.Int).Mul(liquidity, p.ReserveCustom), p.TotalSupply)
-	return amountBip, amountCustom
+	return amountBase, amountCustom
 }
 
-func (p *Pair) BoundedAmounts() (amountBip *big.Int, amountCustom *big.Int) {
+func (p *Pair) BoundedAmounts() (amountBase *big.Int, amountCustom *big.Int) {
 	boundedSupply := p.Balance(types.Address{})
 	return p.Amounts(boundedSupply)
 }
 
-func startingSupply(amountBip *big.Int, amountCustom *big.Int) *big.Int {
-	mul := new(big.Int).Mul(amountBip, amountCustom)
+func startingSupply(amountBase *big.Int, amountCustom *big.Int) *big.Int {
+	mul := new(big.Int).Mul(amountBase, amountCustom)
 	sqrt := new(big.Int).Sqrt(mul)
 	return new(big.Int).Sub(sqrt, big.NewInt(minimumLiquidity))
 }

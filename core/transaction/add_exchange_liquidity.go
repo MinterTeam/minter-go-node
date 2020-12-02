@@ -13,29 +13,28 @@ import (
 )
 
 type AddExchangeLiquidity struct {
-	Coin0   types.CoinID
-	Coin1   types.CoinID
-	Amount0 *big.Int
-	Amount1 *big.Int
+	Coin         types.CoinID
+	AmountBase   *big.Int
+	AmountCustom *big.Int
 }
 
 func (data AddExchangeLiquidity) basicCheck(tx *Transaction, context *state.CheckState) *Response {
-	if context.Coins().GetCoin(data.Coin0) == nil {
+	if data.Coin == types.GetSwapHubCoinID() {
 		return &Response{
-			Code: code.CoinNotExists,
-			Log:  "Coin not exists",
-			Info: EncodeError(code.NewCoinNotExists("", data.Coin0.String())),
+			Code: 999,
+			Log:  "identical coin",
+			// Info: EncodeError(),
 		}
 	}
-	if context.Coins().GetCoin(data.Coin1) == nil {
+	if context.Coins().GetCoin(data.Coin) == nil {
 		return &Response{
 			Code: code.CoinNotExists,
 			Log:  "Coin not exists",
-			Info: EncodeError(code.NewCoinNotExists("", data.Coin1.String())),
+			Info: EncodeError(code.NewCoinNotExists("", data.Coin.String())),
 		}
 	}
 
-	if err := context.Swap().CheckMint(data.Coin0, data.Coin1, data.Amount0, data.Amount1); err != nil {
+	if err := context.Swap().CheckMint(data.Coin, data.AmountBase, data.AmountCustom); err != nil {
 		return &Response{
 			Code: 999,
 			Log:  err.Error(),
@@ -81,19 +80,19 @@ func (data AddExchangeLiquidity) Run(tx *Transaction, context state.Interface, r
 		commission = formula.CalculateSaleAmount(gasCoin.Volume(), gasCoin.Reserve(), gasCoin.Crr(), commissionInBaseCoin)
 	}
 
-	amount0 := new(big.Int).Set(data.Amount0)
-	if tx.GasCoin == data.Coin0 {
+	amount0 := new(big.Int).Set(data.AmountBase)
+	if tx.GasCoin == types.GetSwapHubCoinID() {
 		amount0.Add(amount0, commission)
 	}
-	if checkState.Accounts().GetBalance(sender, data.Coin0).Cmp(amount0) == -1 {
+	if checkState.Accounts().GetBalance(sender, types.GetSwapHubCoinID()).Cmp(amount0) == -1 {
 		return Response{Code: code.InsufficientFunds} // todo
 	}
 
-	amount1 := new(big.Int).Set(data.Amount1)
-	if tx.GasCoin == data.Coin1 {
+	amount1 := new(big.Int).Set(data.AmountCustom)
+	if tx.GasCoin == data.Coin {
 		amount0.Add(amount1, commission)
 	}
-	if checkState.Accounts().GetBalance(sender, data.Coin1).Cmp(amount1) == -1 {
+	if checkState.Accounts().GetBalance(sender, data.Coin).Cmp(amount1) == -1 {
 		return Response{Code: code.InsufficientFunds} // todo
 	}
 
@@ -106,10 +105,10 @@ func (data AddExchangeLiquidity) Run(tx *Transaction, context state.Interface, r
 	}
 
 	if deliverState, ok := context.(*state.State); ok {
-		amount0, amount1 := deliverState.Swap.PairMint(sender, data.Coin0, data.Coin1, data.Amount0, data.Amount1)
+		amount0, amount1 := deliverState.Swap.PairMint(sender, data.Coin, data.AmountBase, data.AmountCustom)
 
-		deliverState.Accounts.SubBalance(sender, data.Coin0, amount0)
-		deliverState.Accounts.SubBalance(sender, data.Coin1, amount1)
+		deliverState.Accounts.SubBalance(sender, types.GetSwapHubCoinID(), amount0)
+		deliverState.Accounts.SubBalance(sender, data.Coin, amount1)
 
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 

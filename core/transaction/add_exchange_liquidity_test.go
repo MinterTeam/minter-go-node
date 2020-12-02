@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"github.com/MinterTeam/minter-go-node/core/state"
 	"math/big"
 	"sync"
 	"testing"
@@ -11,25 +12,51 @@ import (
 	"github.com/MinterTeam/minter-go-node/rlp"
 )
 
+func createNonReserveCoin(stateDB *state.State) types.CoinID {
+	volume := helpers.BipToPip(big.NewInt(100000))
+
+	id := stateDB.App.GetNextCoinID()
+	stateDB.Coins.Create(id, getTestCoinSymbol(), "WITHOUT RESERVE COIN", volume, 10, nil,
+		big.NewInt(0).Mul(volume, big.NewInt(10)), nil)
+	stateDB.App.SetCoinsCount(id.Uint32())
+	stateDB.Accounts.AddBalance(types.Address{}, id, volume)
+
+	return id
+}
+
+func createHubCoin(stateDB *state.State) types.CoinID {
+	volume := helpers.BipToPip(big.NewInt(100000))
+	reserve := helpers.BipToPip(big.NewInt(100000))
+
+	stateDB.Coins.Create(types.GetSwapHubCoinID(), types.StrToCoinSymbol("HUB"), "Minter Hub", volume, 10, reserve,
+		big.NewInt(0).Mul(volume, big.NewInt(10)), nil)
+	stateDB.App.SetCoinsCount(types.GetSwapHubCoinID().Uint32())
+	stateDB.Accounts.AddBalance(types.Address{}, types.GetSwapHubCoinID(), volume)
+
+	return types.GetSwapHubCoinID()
+}
+
 func TestAddExchangeLiquidityTx_initialLiquidity(t *testing.T) {
 	cState := getState()
 
-	coin1 := createTestCoin(cState)
+	coin := createHubCoin(cState)
+	coin1 := createNonReserveCoin(cState)
 
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
-	coin := types.GetBaseCoinID()
 
-	cState.Checker.AddCoin(coin, helpers.StringToBigInt("-1099999999000000000000000"))
-	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
+	cState.Checker.AddCoin(types.BasecoinID, helpers.StringToBigInt("-1099999999000000000000000"))
+	cState.Accounts.AddBalance(addr, types.BasecoinID, helpers.BipToPip(big.NewInt(1000000)))
+
+	cState.Accounts.SubBalance(types.Address{}, coin, helpers.BipToPip(big.NewInt(100000)))
+	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(100000)))
 	cState.Accounts.SubBalance(types.Address{}, coin1, helpers.BipToPip(big.NewInt(100000)))
 	cState.Accounts.AddBalance(addr, coin1, helpers.BipToPip(big.NewInt(100000)))
 
 	data := AddExchangeLiquidity{
-		Coin0:   coin,
-		Amount0: helpers.BipToPip(big.NewInt(10)),
-		Coin1:   coin1,
-		Amount1: helpers.BipToPip(big.NewInt(10)),
+		AmountBase:   helpers.BipToPip(big.NewInt(10)),
+		Coin:         coin1,
+		AmountCustom: helpers.BipToPip(big.NewInt(10)),
 	}
 
 	encodedData, err := rlp.EncodeToBytes(data)
@@ -42,7 +69,7 @@ func TestAddExchangeLiquidityTx_initialLiquidity(t *testing.T) {
 		Nonce:         1,
 		GasPrice:      1,
 		ChainID:       types.CurrentChainID,
-		GasCoin:       coin,
+		GasCoin:       types.GetBaseCoinID(),
 		Type:          TypeAddExchangeLiquidity,
 		Data:          encodedData,
 		SignatureType: SigTypeSingle,
@@ -77,21 +104,24 @@ func TestAddExchangeLiquidityTx_initialLiquidity(t *testing.T) {
 func TestAddExchangeLiquidityTx_initialLiquidity_1(t *testing.T) {
 	cState := getState()
 
-	coin1 := createTestCoin(cState)
+	coin := createHubCoin(cState)
+	coin1 := createNonReserveCoin(cState)
 
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
-	coin := types.GetBaseCoinID()
 
-	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
+	cState.Checker.AddCoin(types.BasecoinID, helpers.StringToBigInt("-1099999999000000000000000"))
+	cState.Accounts.AddBalance(addr, types.BasecoinID, helpers.BipToPip(big.NewInt(1000000)))
+
+	cState.Accounts.SubBalance(types.Address{}, coin, helpers.BipToPip(big.NewInt(100000)))
+	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(100000)))
 	cState.Accounts.SubBalance(types.Address{}, coin1, helpers.BipToPip(big.NewInt(100000)))
 	cState.Accounts.AddBalance(addr, coin1, helpers.BipToPip(big.NewInt(100000)))
 
 	data := AddExchangeLiquidity{
-		Coin0:   coin,
-		Amount0: helpers.BipToPip(big.NewInt(9)),
-		Coin1:   coin1,
-		Amount1: helpers.BipToPip(big.NewInt(11)),
+		AmountBase:   helpers.BipToPip(big.NewInt(9)),
+		Coin:         coin1,
+		AmountCustom: helpers.BipToPip(big.NewInt(11)),
 	}
 
 	encodedData, err := rlp.EncodeToBytes(data)
@@ -104,7 +134,7 @@ func TestAddExchangeLiquidityTx_initialLiquidity_1(t *testing.T) {
 		Nonce:         1,
 		GasPrice:      1,
 		ChainID:       types.CurrentChainID,
-		GasCoin:       coin,
+		GasCoin:       types.GetBaseCoinID(),
 		Type:          TypeAddExchangeLiquidity,
 		Data:          encodedData,
 		SignatureType: SigTypeSingle,
@@ -134,25 +164,30 @@ func TestAddExchangeLiquidityTx_initialLiquidity_1(t *testing.T) {
 func TestAddExchangeLiquidityTx_addLiquidity(t *testing.T) {
 	cState := getState()
 
-	coin1 := createTestCoin(cState)
+	coin := createHubCoin(cState)
+	coin1 := createNonReserveCoin(cState)
 
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 	privateKey2, _ := crypto.GenerateKey()
 	addr2 := crypto.PubkeyToAddress(privateKey2.PublicKey)
-	coin := types.GetBaseCoinID()
 
-	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
-	cState.Accounts.AddBalance(addr2, coin, helpers.BipToPip(big.NewInt(1000000)))
+	cState.Checker.AddCoin(types.BasecoinID, helpers.StringToBigInt("-1099999999000000000000000"))
+	cState.Accounts.AddBalance(addr, types.BasecoinID, helpers.BipToPip(big.NewInt(1000000)))
+	cState.Accounts.AddBalance(addr2, types.BasecoinID, helpers.BipToPip(big.NewInt(1000000)))
+
+	cState.Accounts.SubBalance(types.Address{}, coin, helpers.BipToPip(big.NewInt(100000)))
+	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(50000)))
+	cState.Accounts.AddBalance(addr2, coin, helpers.BipToPip(big.NewInt(50000)))
 	cState.Accounts.SubBalance(types.Address{}, coin1, helpers.BipToPip(big.NewInt(100000)))
 	cState.Accounts.AddBalance(addr, coin1, helpers.BipToPip(big.NewInt(50000)))
 	cState.Accounts.AddBalance(addr2, coin1, helpers.BipToPip(big.NewInt(50000)))
+
 	{
 		data := AddExchangeLiquidity{
-			Coin0:   coin,
-			Amount0: big.NewInt(10000),
-			Coin1:   coin1,
-			Amount1: big.NewInt(10000),
+			AmountBase:   big.NewInt(10000),
+			Coin:         coin1,
+			AmountCustom: big.NewInt(10000),
 		}
 
 		encodedData, err := rlp.EncodeToBytes(data)
@@ -165,7 +200,7 @@ func TestAddExchangeLiquidityTx_addLiquidity(t *testing.T) {
 			Nonce:         1,
 			GasPrice:      1,
 			ChainID:       types.CurrentChainID,
-			GasCoin:       coin,
+			GasCoin:       types.GetBaseCoinID(),
 			Type:          TypeAddExchangeLiquidity,
 			Data:          encodedData,
 			SignatureType: SigTypeSingle,
@@ -189,10 +224,9 @@ func TestAddExchangeLiquidityTx_addLiquidity(t *testing.T) {
 	}
 	{
 		data := AddExchangeLiquidity{
-			Coin0:   coin,
-			Amount0: helpers.BipToPip(big.NewInt(10)),
-			Coin1:   coin1,
-			Amount1: helpers.BipToPip(big.NewInt(10)),
+			AmountBase:   helpers.BipToPip(big.NewInt(10)),
+			Coin:         coin1,
+			AmountCustom: helpers.BipToPip(big.NewInt(10)),
 		}
 
 		encodedData, err := rlp.EncodeToBytes(data)
@@ -205,7 +239,7 @@ func TestAddExchangeLiquidityTx_addLiquidity(t *testing.T) {
 			Nonce:         1,
 			GasPrice:      1,
 			ChainID:       types.CurrentChainID,
-			GasCoin:       coin,
+			GasCoin:       types.GetBaseCoinID(),
 			Type:          TypeAddExchangeLiquidity,
 			Data:          encodedData,
 			SignatureType: SigTypeSingle,
@@ -235,25 +269,30 @@ func TestAddExchangeLiquidityTx_addLiquidity(t *testing.T) {
 func TestAddExchangeLiquidityTx_addLiquidity_1(t *testing.T) {
 	cState := getState()
 
-	coin1 := createTestCoin(cState)
+	coin := createHubCoin(cState)
+	coin1 := createNonReserveCoin(cState)
 
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 	privateKey2, _ := crypto.GenerateKey()
 	addr2 := crypto.PubkeyToAddress(privateKey2.PublicKey)
-	coin := types.GetBaseCoinID()
 
-	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
-	cState.Accounts.AddBalance(addr2, coin, helpers.BipToPip(big.NewInt(1000000)))
+	cState.Checker.AddCoin(types.BasecoinID, helpers.StringToBigInt("-1099999999000000000000000"))
+	cState.Accounts.AddBalance(addr, types.BasecoinID, helpers.BipToPip(big.NewInt(1000000)))
+	cState.Accounts.AddBalance(addr2, types.BasecoinID, helpers.BipToPip(big.NewInt(1000000)))
+
+	cState.Accounts.SubBalance(types.Address{}, coin, helpers.BipToPip(big.NewInt(100000)))
+	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(50000)))
+	cState.Accounts.AddBalance(addr2, coin, helpers.BipToPip(big.NewInt(50000)))
 	cState.Accounts.SubBalance(types.Address{}, coin1, helpers.BipToPip(big.NewInt(100000)))
 	cState.Accounts.AddBalance(addr, coin1, helpers.BipToPip(big.NewInt(50000)))
 	cState.Accounts.AddBalance(addr2, coin1, helpers.BipToPip(big.NewInt(50000)))
+
 	{
 		data := AddExchangeLiquidity{
-			Coin0:   coin,
-			Amount0: helpers.BipToPip(big.NewInt(10)),
-			Coin1:   coin1,
-			Amount1: helpers.BipToPip(big.NewInt(10)),
+			AmountBase:   helpers.BipToPip(big.NewInt(10)),
+			Coin:         coin1,
+			AmountCustom: helpers.BipToPip(big.NewInt(10)),
 		}
 
 		encodedData, err := rlp.EncodeToBytes(data)
@@ -266,7 +305,7 @@ func TestAddExchangeLiquidityTx_addLiquidity_1(t *testing.T) {
 			Nonce:         1,
 			GasPrice:      1,
 			ChainID:       types.CurrentChainID,
-			GasCoin:       coin,
+			GasCoin:       types.GetBaseCoinID(),
 			Type:          TypeAddExchangeLiquidity,
 			Data:          encodedData,
 			SignatureType: SigTypeSingle,
@@ -293,10 +332,9 @@ func TestAddExchangeLiquidityTx_addLiquidity_1(t *testing.T) {
 	}
 	{
 		data := AddExchangeLiquidity{
-			Coin0:   coin,
-			Amount0: big.NewInt(10000),
-			Coin1:   coin1,
-			Amount1: big.NewInt(10000),
+			AmountBase:   big.NewInt(10000),
+			Coin:         coin1,
+			AmountCustom: big.NewInt(10000),
 		}
 
 		encodedData, err := rlp.EncodeToBytes(data)
@@ -309,7 +347,7 @@ func TestAddExchangeLiquidityTx_addLiquidity_1(t *testing.T) {
 			Nonce:         1,
 			GasPrice:      1,
 			ChainID:       types.CurrentChainID,
-			GasCoin:       coin,
+			GasCoin:       types.GetBaseCoinID(),
 			Type:          TypeAddExchangeLiquidity,
 			Data:          encodedData,
 			SignatureType: SigTypeSingle,
@@ -339,25 +377,30 @@ func TestAddExchangeLiquidityTx_addLiquidity_1(t *testing.T) {
 func TestAddExchangeLiquidityTx_addLiquidity_2(t *testing.T) {
 	cState := getState()
 
-	coin1 := createTestCoin(cState)
+	coin := createHubCoin(cState)
+	coin1 := createNonReserveCoin(cState)
 
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 	privateKey2, _ := crypto.GenerateKey()
 	addr2 := crypto.PubkeyToAddress(privateKey2.PublicKey)
-	coin := types.GetBaseCoinID()
 
-	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
-	cState.Accounts.AddBalance(addr2, coin, helpers.BipToPip(big.NewInt(1000000)))
+	cState.Checker.AddCoin(types.BasecoinID, helpers.StringToBigInt("-1099999999000000000000000"))
+	cState.Accounts.AddBalance(addr, types.BasecoinID, helpers.BipToPip(big.NewInt(1000000)))
+	cState.Accounts.AddBalance(addr2, types.BasecoinID, helpers.BipToPip(big.NewInt(1000000)))
+
+	cState.Accounts.SubBalance(types.Address{}, coin, helpers.BipToPip(big.NewInt(100000)))
+	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(50000)))
+	cState.Accounts.AddBalance(addr2, coin, helpers.BipToPip(big.NewInt(50000)))
 	cState.Accounts.SubBalance(types.Address{}, coin1, helpers.BipToPip(big.NewInt(100000)))
 	cState.Accounts.AddBalance(addr, coin1, helpers.BipToPip(big.NewInt(50000)))
 	cState.Accounts.AddBalance(addr2, coin1, helpers.BipToPip(big.NewInt(50000)))
+
 	{
 		data := AddExchangeLiquidity{
-			Coin0:   coin,
-			Amount0: helpers.BipToPip(big.NewInt(9)),
-			Coin1:   coin1,
-			Amount1: helpers.BipToPip(big.NewInt(11)),
+			AmountBase:   helpers.BipToPip(big.NewInt(9)),
+			Coin:         coin1,
+			AmountCustom: helpers.BipToPip(big.NewInt(11)),
 		}
 
 		encodedData, err := rlp.EncodeToBytes(data)
@@ -370,7 +413,7 @@ func TestAddExchangeLiquidityTx_addLiquidity_2(t *testing.T) {
 			Nonce:         1,
 			GasPrice:      1,
 			ChainID:       types.CurrentChainID,
-			GasCoin:       coin,
+			GasCoin:       types.GetBaseCoinID(),
 			Type:          TypeAddExchangeLiquidity,
 			Data:          encodedData,
 			SignatureType: SigTypeSingle,
@@ -397,10 +440,9 @@ func TestAddExchangeLiquidityTx_addLiquidity_2(t *testing.T) {
 	}
 	{
 		data := AddExchangeLiquidity{
-			Coin0:   coin,
-			Amount0: big.NewInt(9000),
-			Coin1:   coin1,
-			Amount1: big.NewInt(11000),
+			AmountBase:   big.NewInt(9000),
+			Coin:         coin1,
+			AmountCustom: big.NewInt(11000),
 		}
 
 		encodedData, err := rlp.EncodeToBytes(data)
@@ -413,7 +455,7 @@ func TestAddExchangeLiquidityTx_addLiquidity_2(t *testing.T) {
 			Nonce:         1,
 			GasPrice:      1,
 			ChainID:       types.CurrentChainID,
-			GasCoin:       coin,
+			GasCoin:       types.GetBaseCoinID(),
 			Type:          TypeAddExchangeLiquidity,
 			Data:          encodedData,
 			SignatureType: SigTypeSingle,

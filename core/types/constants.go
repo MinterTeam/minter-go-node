@@ -28,6 +28,13 @@ func GetBaseCoinID() CoinID {
 	return BasecoinID
 }
 
+// GetSwapHubCoinID returns ID of HUB coin
+func GetSwapHubCoinID() CoinID {
+	return BaseSwapCoinID
+}
+
+const BaseSwapCoinID CoinID = 1687 // HUB
+
 func getBaseCoin(chainID ChainID) CoinSymbol {
 	switch chainID {
 	case ChainMainnet:
