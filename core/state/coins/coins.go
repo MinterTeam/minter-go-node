@@ -434,7 +434,7 @@ func (c *Coins) getOrderedDirtyCoins() []types.CoinID {
 }
 
 func (c *Coins) Export(state *types.AppState) {
-	c.immutableTree().IterateRange([]byte(string(mainPrefix)), []byte(string(mainPrefix+1)), true, func(key []byte, value []byte) bool {
+	c.immutableTree().IterateRange([]byte{mainPrefix}, []byte{mainPrefix + 1}, true, func(key []byte, value []byte) bool {
 		if len(key) > 5 {
 			return false
 		}
