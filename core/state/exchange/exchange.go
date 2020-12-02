@@ -44,7 +44,7 @@ func (s *Swap) immutableTree() *iavl.ImmutableTree {
 }
 
 func (s *Swap) Export(state *types.AppState) {
-	s.immutableTree().IterateRange([]byte(mainPrefix), []byte("t"), true, func(key []byte, value []byte) bool {
+	s.immutableTree().IterateRange([]byte(mainPrefix), []byte(string(mainPrefix+1)), true, func(key []byte, value []byte) bool {
 		coin := types.BytesToCoinID(key[1:5])
 		pair := s.ReturnPair(coin)
 		if len(key) > 5 {
@@ -100,7 +100,7 @@ func (s *Swap) Import(state *types.AppState) {
 
 }
 
-var mainPrefix = "s"
+const mainPrefix = byte('s')
 
 func (p *Pair) GetTotalSupply() *big.Int {
 	p.RLock()
