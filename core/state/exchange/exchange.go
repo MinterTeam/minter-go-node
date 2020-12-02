@@ -44,7 +44,7 @@ func (s *Swap) immutableTree() *iavl.ImmutableTree {
 }
 
 func (s *Swap) Export(state *types.AppState) {
-	s.immutableTree().IterateRange([]byte(mainPrefix), []byte(string(mainPrefix+1)), true, func(key []byte, value []byte) bool {
+	s.immutableTree().IterateRange([]byte{mainPrefix}, []byte{mainPrefix + 1}, true, func(key []byte, value []byte) bool {
 		coin := types.BytesToCoinID(key[1:5])
 		pair := s.ReturnPair(coin)
 		if len(key) > 5 {
@@ -122,7 +122,7 @@ func (s *Swap) CheckMint(coin types.CoinID, amount0, amount1 *big.Int) error {
 }
 
 func (s *Swap) Commit(db *iavl.MutableTree) error {
-	basePath := []byte(mainPrefix)
+	basePath := []byte{mainPrefix}
 
 	s.muPairs.RLock()
 	defer s.muPairs.RUnlock()
@@ -199,7 +199,7 @@ func (s *Swap) Pair(coin types.CoinID) *Pair {
 		return pair
 	}
 
-	pathPair := append([]byte(mainPrefix), coin.Bytes()...)
+	pathPair := append([]byte{mainPrefix}, coin.Bytes()...)
 	_, data := s.immutableTree().Get(pathPair)
 	if len(data) == 0 {
 		s.pairs[coin] = nil
@@ -267,7 +267,7 @@ func (s *Swap) ReturnPair(coin types.CoinID) *Pair {
 
 func (s *Swap) loadBalanceFunc(coin types.CoinID) func(address types.Address) *Balance {
 	return func(address types.Address) *Balance {
-		_, balancesBytes := s.immutableTree().Get(append(append([]byte(mainPrefix), coin.Bytes()...), address.Bytes()...))
+		_, balancesBytes := s.immutableTree().Get(append(append([]byte{mainPrefix}, coin.Bytes()...), address.Bytes()...))
 		if len(balancesBytes) == 0 {
 			return nil
 		}
