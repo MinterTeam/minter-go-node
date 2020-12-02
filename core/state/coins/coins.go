@@ -434,38 +434,36 @@ func (c *Coins) getOrderedDirtyCoins() []types.CoinID {
 }
 
 func (c *Coins) Export(state *types.AppState) {
-	c.immutableTree().Iterate(func(key []byte, value []byte) bool {
-		if key[0] == mainPrefix {
-			if len(key) > 5 {
-				return false
-			}
-
-			coinID := types.BytesToCoinID(key[1:])
-			coin := c.get(coinID)
-
-			var owner *types.Address
-			info := c.getSymbolInfo(coin.Symbol())
-			if info != nil {
-				owner = info.OwnerAddress()
-			}
-
-			var reservePointer *string
-			if coin.HasReserve() {
-				reserve := coin.Reserve().String()
-				reservePointer = &reserve
-			}
-			state.Coins = append(state.Coins, types.Coin{
-				ID:           uint64(coin.ID()),
-				Name:         coin.Name(),
-				Symbol:       coin.Symbol(),
-				Volume:       coin.Volume().String(),
-				Crr:          uint64(coin.Crr()),
-				Reserve:      reservePointer,
-				MaxSupply:    coin.MaxSupply().String(),
-				Version:      uint64(coin.Version()),
-				OwnerAddress: owner,
-			})
+	c.immutableTree().IterateRange([]byte(string(mainPrefix)), []byte("r"), true, func(key []byte, value []byte) bool {
+		if len(key) > 5 {
+			return false
 		}
+
+		coinID := types.BytesToCoinID(key[1:])
+		coin := c.get(coinID)
+
+		var owner *types.Address
+		info := c.getSymbolInfo(coin.Symbol())
+		if info != nil {
+			owner = info.OwnerAddress()
+		}
+
+		var reservePointer *string
+		if coin.HasReserve() {
+			reserve := coin.Reserve().String()
+			reservePointer = &reserve
+		}
+		state.Coins = append(state.Coins, types.Coin{
+			ID:           uint64(coin.ID()),
+			Name:         coin.Name(),
+			Symbol:       coin.Symbol(),
+			Volume:       coin.Volume().String(),
+			Crr:          uint64(coin.Crr()),
+			Reserve:      reservePointer,
+			MaxSupply:    coin.MaxSupply().String(),
+			Version:      uint64(coin.Version()),
+			OwnerAddress: owner,
+		})
 
 		return false
 	})
