@@ -11,9 +11,9 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/state/checker"
 	"github.com/MinterTeam/minter-go-node/core/state/checks"
 	"github.com/MinterTeam/minter-go-node/core/state/coins"
-	"github.com/MinterTeam/minter-go-node/core/state/exchange"
 	"github.com/MinterTeam/minter-go-node/core/state/frozenfunds"
 	"github.com/MinterTeam/minter-go-node/core/state/halts"
+	"github.com/MinterTeam/minter-go-node/core/state/swap"
 	"github.com/MinterTeam/minter-go-node/core/state/validators"
 	"github.com/MinterTeam/minter-go-node/core/state/waitlist"
 	"github.com/MinterTeam/minter-go-node/core/types"
@@ -85,7 +85,7 @@ func (cs *CheckState) WaitList() waitlist.RWaitList {
 	return cs.state.Waitlist
 }
 
-func (cs *CheckState) Swap() exchange.RSwap {
+func (cs *CheckState) Swap() swap.RSwap {
 	return cs.state.Swap
 }
 
@@ -100,7 +100,7 @@ type State struct {
 	Checks         *checks.Checks
 	Checker        *checker.Checker
 	Waitlist       *waitlist.WaitList
-	Swap           *exchange.Swap
+	Swap           *swap.Swap
 	db             db.DB
 	events         eventsdb.IEventsDB
 	tree           tree.MTree
@@ -335,7 +335,7 @@ func newStateForTree(immutableTree *iavl.ImmutableTree, events eventsdb.IEventsD
 
 	waitlistState := waitlist.NewWaitList(stateBus, immutableTree)
 
-	swap := exchange.New(stateBus, immutableTree)
+	swap := swap.New(stateBus, immutableTree)
 
 	state := &State{
 		Validators:  validatorsState,
