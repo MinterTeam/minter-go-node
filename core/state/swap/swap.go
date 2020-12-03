@@ -156,7 +156,7 @@ func (s *Swap) Commit(db *iavl.MutableTree) error {
 		pairPath := append(basePath, key.Bytes()...)
 
 		pair.isDirty = false
-		pairDataBytes, err := rlp.EncodeToBytes(pair)
+		pairDataBytes, err := rlp.EncodeToBytes(pair.pairData)
 		if err != nil {
 			return err
 		}
@@ -243,7 +243,7 @@ func (s *Swap) Pair(coin0, coin1 types.CoinID) *Pair {
 	}
 
 	pair = s.addPair(key)
-	err := rlp.DecodeBytes(data, &pair)
+	err := rlp.DecodeBytes(data, pair.pairData)
 	if err != nil {
 		panic(err)
 	}

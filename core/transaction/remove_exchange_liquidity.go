@@ -13,12 +13,13 @@ import (
 )
 
 type RemoveExchangeLiquidity struct {
-	Coin      types.CoinID
+	Coin0     types.CoinID
+	Coin1     types.CoinID
 	Liquidity *big.Int
 }
 
 func (data RemoveExchangeLiquidity) basicCheck(tx *Transaction, context *state.CheckState) *Response {
-	if data.Coin == types.GetSwapHubCoinID() {
+	if data.Coin0 == data.Coin1 {
 		return &Response{
 			Code: 999,
 			Log:  "identical coin",
@@ -26,15 +27,15 @@ func (data RemoveExchangeLiquidity) basicCheck(tx *Transaction, context *state.C
 		}
 	}
 
-	if context.Coins().GetCoin(data.Coin) == nil {
+	if context.Coins().GetCoin(data.Coin0) == nil {
 		return &Response{
 			Code: code.CoinNotExists,
 			Log:  "Coin not exists",
-			Info: EncodeError(code.NewCoinNotExists("", data.Coin.String())),
+			Info: EncodeError(code.NewCoinNotExists("", data.Coin0.String())),
 		}
 	}
 
-	if !context.Swap().PairExist(data.Coin) {
+	if !context.Swap().SwapPoolExist(data.Coin0, data.Coin1) {
 		return &Response{
 			Code: 999,
 			Log:  "pair not found",
@@ -43,7 +44,7 @@ func (data RemoveExchangeLiquidity) basicCheck(tx *Transaction, context *state.C
 	}
 
 	sender, _ := tx.Sender()
-	if err := context.Swap().CheckBurn(sender, data.Coin, data.Liquidity); err != nil {
+	if err := context.Swap().CheckBurn(sender, data.Coin0, data.Coin1, data.Liquidity); err != nil {
 		return &Response{
 			Code: 999,
 			Log:  err.Error(),
@@ -98,7 +99,7 @@ func (data RemoveExchangeLiquidity) Run(tx *Transaction, context state.Interface
 	}
 
 	if deliverState, ok := context.(*state.State); ok {
-		amount0, amount1 := deliverState.Swap.PairBurn(sender, data.Coin, data.Liquidity)
+		amount0, amount1 := deliverState.Swap.PairBurn(sender, data.Coin0, data.Coin1, data.Liquidity)
 
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
@@ -107,8 +108,8 @@ func (data RemoveExchangeLiquidity) Run(tx *Transaction, context state.Interface
 
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 
-		deliverState.Accounts.AddBalance(sender, types.GetSwapHubCoinID(), amount0)
-		deliverState.Accounts.AddBalance(sender, data.Coin, amount1)
+		deliverState.Accounts.AddBalance(sender, data.Coin0, amount0)
+		deliverState.Accounts.AddBalance(sender, data.Coin1, amount1)
 
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}

@@ -24,22 +24,10 @@ func createNonReserveCoin(stateDB *state.State) types.CoinID {
 	return id
 }
 
-func createHubCoin(stateDB *state.State) types.CoinID {
-	volume := helpers.BipToPip(big.NewInt(100000))
-	reserve := helpers.BipToPip(big.NewInt(100000))
-
-	stateDB.Coins.Create(types.GetSwapHubCoinID(), types.StrToCoinSymbol("HUB"), "Minter Hub", volume, 10, reserve,
-		big.NewInt(0).Mul(volume, big.NewInt(10)), nil)
-	stateDB.App.SetCoinsCount(types.GetSwapHubCoinID().Uint32())
-	stateDB.Accounts.AddBalance(types.Address{}, types.GetSwapHubCoinID(), volume)
-
-	return types.GetSwapHubCoinID()
-}
-
 func TestAddExchangeLiquidityTx_initialLiquidity(t *testing.T) {
 	cState := getState()
 
-	coin := createHubCoin(cState)
+	coin := createTestCoin(cState)
 	coin1 := createNonReserveCoin(cState)
 
 	privateKey, _ := crypto.GenerateKey()
@@ -54,9 +42,10 @@ func TestAddExchangeLiquidityTx_initialLiquidity(t *testing.T) {
 	cState.Accounts.AddBalance(addr, coin1, helpers.BipToPip(big.NewInt(100000)))
 
 	data := AddExchangeLiquidity{
-		AmountBase:   helpers.BipToPip(big.NewInt(10)),
-		Coin:         coin1,
-		AmountCustom: helpers.BipToPip(big.NewInt(10)),
+		Coin0:   coin,
+		Amount0: helpers.BipToPip(big.NewInt(10)),
+		Coin1:   coin1,
+		Amount1: helpers.BipToPip(big.NewInt(10)),
 	}
 
 	encodedData, err := rlp.EncodeToBytes(data)
@@ -104,7 +93,7 @@ func TestAddExchangeLiquidityTx_initialLiquidity(t *testing.T) {
 func TestAddExchangeLiquidityTx_initialLiquidity_1(t *testing.T) {
 	cState := getState()
 
-	coin := createHubCoin(cState)
+	coin := createTestCoin(cState)
 	coin1 := createNonReserveCoin(cState)
 
 	privateKey, _ := crypto.GenerateKey()
@@ -119,9 +108,10 @@ func TestAddExchangeLiquidityTx_initialLiquidity_1(t *testing.T) {
 	cState.Accounts.AddBalance(addr, coin1, helpers.BipToPip(big.NewInt(100000)))
 
 	data := AddExchangeLiquidity{
-		AmountBase:   helpers.BipToPip(big.NewInt(9)),
-		Coin:         coin1,
-		AmountCustom: helpers.BipToPip(big.NewInt(11)),
+		Coin0:   coin,
+		Amount0: helpers.BipToPip(big.NewInt(9)),
+		Coin1:   coin1,
+		Amount1: helpers.BipToPip(big.NewInt(11)),
 	}
 
 	encodedData, err := rlp.EncodeToBytes(data)
@@ -164,7 +154,7 @@ func TestAddExchangeLiquidityTx_initialLiquidity_1(t *testing.T) {
 func TestAddExchangeLiquidityTx_addLiquidity(t *testing.T) {
 	cState := getState()
 
-	coin := createHubCoin(cState)
+	coin := createTestCoin(cState)
 	coin1 := createNonReserveCoin(cState)
 
 	privateKey, _ := crypto.GenerateKey()
@@ -185,9 +175,10 @@ func TestAddExchangeLiquidityTx_addLiquidity(t *testing.T) {
 
 	{
 		data := AddExchangeLiquidity{
-			AmountBase:   big.NewInt(10000),
-			Coin:         coin1,
-			AmountCustom: big.NewInt(10000),
+			Coin0:   coin,
+			Amount0: big.NewInt(10000),
+			Coin1:   coin1,
+			Amount1: big.NewInt(10000),
 		}
 
 		encodedData, err := rlp.EncodeToBytes(data)
@@ -224,9 +215,10 @@ func TestAddExchangeLiquidityTx_addLiquidity(t *testing.T) {
 	}
 	{
 		data := AddExchangeLiquidity{
-			AmountBase:   helpers.BipToPip(big.NewInt(10)),
-			Coin:         coin1,
-			AmountCustom: helpers.BipToPip(big.NewInt(10)),
+			Coin0:   coin,
+			Amount0: helpers.BipToPip(big.NewInt(10)),
+			Coin1:   coin1,
+			Amount1: helpers.BipToPip(big.NewInt(10)),
 		}
 
 		encodedData, err := rlp.EncodeToBytes(data)
@@ -269,7 +261,7 @@ func TestAddExchangeLiquidityTx_addLiquidity(t *testing.T) {
 func TestAddExchangeLiquidityTx_addLiquidity_1(t *testing.T) {
 	cState := getState()
 
-	coin := createHubCoin(cState)
+	coin := createTestCoin(cState)
 	coin1 := createNonReserveCoin(cState)
 
 	privateKey, _ := crypto.GenerateKey()
@@ -290,9 +282,10 @@ func TestAddExchangeLiquidityTx_addLiquidity_1(t *testing.T) {
 
 	{
 		data := AddExchangeLiquidity{
-			AmountBase:   helpers.BipToPip(big.NewInt(10)),
-			Coin:         coin1,
-			AmountCustom: helpers.BipToPip(big.NewInt(10)),
+			Coin0:   coin,
+			Amount0: helpers.BipToPip(big.NewInt(10)),
+			Coin1:   coin1,
+			Amount1: helpers.BipToPip(big.NewInt(10)),
 		}
 
 		encodedData, err := rlp.EncodeToBytes(data)
@@ -332,9 +325,10 @@ func TestAddExchangeLiquidityTx_addLiquidity_1(t *testing.T) {
 	}
 	{
 		data := AddExchangeLiquidity{
-			AmountBase:   big.NewInt(10000),
-			Coin:         coin1,
-			AmountCustom: big.NewInt(10000),
+			Coin0:   coin,
+			Amount0: big.NewInt(10000),
+			Coin1:   coin1,
+			Amount1: big.NewInt(10000),
 		}
 
 		encodedData, err := rlp.EncodeToBytes(data)
@@ -377,7 +371,7 @@ func TestAddExchangeLiquidityTx_addLiquidity_1(t *testing.T) {
 func TestAddExchangeLiquidityTx_addLiquidity_2(t *testing.T) {
 	cState := getState()
 
-	coin := createHubCoin(cState)
+	coin := createTestCoin(cState)
 	coin1 := createNonReserveCoin(cState)
 
 	privateKey, _ := crypto.GenerateKey()
@@ -398,9 +392,10 @@ func TestAddExchangeLiquidityTx_addLiquidity_2(t *testing.T) {
 
 	{
 		data := AddExchangeLiquidity{
-			AmountBase:   helpers.BipToPip(big.NewInt(9)),
-			Coin:         coin1,
-			AmountCustom: helpers.BipToPip(big.NewInt(11)),
+			Coin0:   coin,
+			Amount0: helpers.BipToPip(big.NewInt(9)),
+			Coin1:   coin1,
+			Amount1: helpers.BipToPip(big.NewInt(11)),
 		}
 
 		encodedData, err := rlp.EncodeToBytes(data)
@@ -440,9 +435,10 @@ func TestAddExchangeLiquidityTx_addLiquidity_2(t *testing.T) {
 	}
 	{
 		data := AddExchangeLiquidity{
-			AmountBase:   big.NewInt(9000),
-			Coin:         coin1,
-			AmountCustom: big.NewInt(11000),
+			Coin0:   coin,
+			Amount0: big.NewInt(9000),
+			Coin1:   coin1,
+			Amount1: big.NewInt(11000),
 		}
 
 		encodedData, err := rlp.EncodeToBytes(data)
