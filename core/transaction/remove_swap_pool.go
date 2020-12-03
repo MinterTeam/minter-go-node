@@ -12,13 +12,13 @@ import (
 	"math/big"
 )
 
-type RemoveExchangeLiquidity struct {
+type RemoveSwapPool struct {
 	Coin0     types.CoinID
 	Coin1     types.CoinID
 	Liquidity *big.Int
 }
 
-func (data RemoveExchangeLiquidity) basicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data RemoveSwapPool) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.Coin0 == data.Coin1 {
 		return &Response{
 			Code: 999,
@@ -30,7 +30,7 @@ func (data RemoveExchangeLiquidity) basicCheck(tx *Transaction, context *state.C
 	if !context.Swap().SwapPoolExist(data.Coin0, data.Coin1) {
 		return &Response{
 			Code: 999,
-			Log:  "pair not found",
+			Log:  "swap pool not found",
 			// Info: EncodeError(),
 		}
 	}
@@ -46,15 +46,15 @@ func (data RemoveExchangeLiquidity) basicCheck(tx *Transaction, context *state.C
 	return nil
 }
 
-func (data RemoveExchangeLiquidity) String() string {
-	return fmt.Sprintf("BURN LIQUIDITY")
+func (data RemoveSwapPool) String() string {
+	return fmt.Sprintf("REMOVE SWAP POOL")
 }
 
-func (data RemoveExchangeLiquidity) Gas() int64 {
-	return commissions.RemoveExchangeLiquidityData
+func (data RemoveSwapPool) Gas() int64 {
+	return commissions.RemoveSwapPoolData
 }
 
-func (data RemoveExchangeLiquidity) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
+func (data RemoveSwapPool) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -107,7 +107,7 @@ func (data RemoveExchangeLiquidity) Run(tx *Transaction, context state.Interface
 	}
 
 	tags := kv.Pairs{
-		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeRemoveExchangeLiquidity)}))},
+		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeRemoveSwapPool)}))},
 		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
 	}
 

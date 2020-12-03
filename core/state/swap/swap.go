@@ -17,11 +17,12 @@ import (
 const minimumLiquidity int64 = 1000
 
 type RSwap interface {
-	SwapPool(coinA, coinB types.CoinID) (totalSupply, reserve0, reserve1 *big.Int)
-	SwapPoolExist(coinA, coinB types.CoinID) bool
-	SwapPoolFromProvider(provider types.Address, coinA, coinB types.CoinID) (balance, amount0, amount1 *big.Int)
-	CheckMint(coinA, coinB types.CoinID, amount0, amount1 *big.Int) error
-	CheckBurn(address types.Address, coinA, coinB types.CoinID, liquidity *big.Int) error
+	SwapPool(coin0, coin1 types.CoinID) (totalSupply, reserve0, reserve1 *big.Int)
+	SwapPoolExist(coin0, coin1 types.CoinID) bool
+	SwapPoolFromProvider(provider types.Address, coin0, coin1 types.CoinID) (balance, amount0, amount1 *big.Int)
+	CheckMint(coin0, coin1 types.CoinID, amount0, amount1 *big.Int) error
+	CheckBurn(address types.Address, coin0, coin1 types.CoinID, liquidity *big.Int) error
+	CheckSwap(coin0, coin1 types.CoinID, amount0In, amount1Out *big.Int) error
 	Export(state *types.AppState)
 }
 
@@ -135,11 +136,14 @@ func (pd *pairData) Revert() *pairData {
 	}
 }
 
+func (s *Swap) CheckMint(coinA, coinB types.CoinID, amount0, amount1 *big.Int) error {
+	return s.Pair(coinA, coinB).checkMint(amount0, amount1)
+}
 func (s *Swap) CheckBurn(address types.Address, coinA, coinB types.CoinID, liquidity *big.Int) error {
 	return s.Pair(coinA, coinB).checkBurn(address, liquidity)
 }
-func (s *Swap) CheckMint(coinA, coinB types.CoinID, amount0, amount1 *big.Int) error {
-	return s.Pair(coinA, coinB).checkMint(amount0, amount1)
+func (s *Swap) CheckSwap(coinA, coinB types.CoinID, amount0In, amount1Out *big.Int) error {
+	return s.Pair(coinA, coinB).checkSwap(amount0In, big.NewInt(0), big.NewInt(0), amount1Out)
 }
 
 func (s *Swap) Commit(db *iavl.MutableTree) error {
@@ -278,6 +282,14 @@ func (s *Swap) PairBurn(address types.Address, coin0, coin1 types.CoinID, liquid
 	s.bus.Checker().AddCoin(coin0, new(big.Int).Neg(balance0))
 	s.bus.Checker().AddCoin(coin1, new(big.Int).Neg(balance1))
 
+	return balance0, balance1
+}
+
+func (s *Swap) PairSwap(coin0, coin1 types.CoinID, amount0In, amount1Out *big.Int) (*big.Int, *big.Int) {
+	pair := s.Pair(coin0, coin1)
+	balance0, balance1 := pair.Swap(amount0In, amount1Out)
+	s.bus.Checker().AddCoin(coin0, balance0)
+	s.bus.Checker().AddCoin(coin1, new(big.Int).Neg(balance1))
 	return balance0, balance1
 }
 
@@ -524,34 +536,56 @@ var (
 	ErrorInsufficientLiquidity    = errors.New("INSUFFICIENT_LIQUIDITY")
 )
 
-func (p *Pair) Swap(amount0In, amount1In, amount0Out, amount1Out *big.Int) (amount0, amount1 *big.Int, err error) {
+func (p *Pair) Swap(amount0In, amount1Out *big.Int) (amount0, amount1 *big.Int) {
+	reserve0, reserve1 := p.Reserves()
+
+	if amount1Out.Cmp(reserve1) == 1 {
+		panic(ErrorInsufficientLiquidity)
+	}
+
+	if amount0In.Sign() == -1 {
+		panic(ErrorInsufficientInputAmount)
+	}
+
+	kAdjusted := new(big.Int).Mul(new(big.Int).Mul(reserve0, reserve1), big.NewInt(1000000))
+	balance0Adjusted := new(big.Int).Sub(new(big.Int).Mul(new(big.Int).Add(amount0In, reserve0), big.NewInt(1000)), new(big.Int).Mul(amount0In, big.NewInt(3)))
+
+	amount1 = new(big.Int).Sub(new(big.Int).Sub(reserve1, new(big.Int).Quo(kAdjusted, new(big.Int).Mul(balance0Adjusted, big.NewInt(1000)))), big.NewInt(1))
+
+	if amount1Out.Cmp(amount1) == 1 {
+		panic(ErrorK)
+	}
+
+	p.update(amount0In, new(big.Int).Neg(amount1))
+
+	return amount0In, amount1
+}
+
+func (p *Pair) checkSwap(amount0In, amount1In, amount0Out, amount1Out *big.Int) (err error) {
 	if amount0Out.Sign() != 1 && amount1Out.Sign() != 1 {
-		return nil, nil, ErrorInsufficientOutputAmount
+		return ErrorInsufficientOutputAmount
 	}
 
 	reserve0, reserve1 := p.Reserves()
 
 	if amount0Out.Cmp(reserve0) == 1 || amount1Out.Cmp(reserve1) == 1 {
-		return nil, nil, ErrorInsufficientLiquidity
+		return ErrorInsufficientLiquidity
 	}
 
-	amount0 = new(big.Int).Sub(amount0In, amount0Out)
-	amount1 = new(big.Int).Sub(amount1In, amount1Out)
+	amount0 := new(big.Int).Sub(amount0In, amount0Out)
+	amount1 := new(big.Int).Sub(amount1In, amount1Out)
 
 	if amount0.Sign() != 1 && amount1.Sign() != 1 {
-		return nil, nil, ErrorInsufficientInputAmount
+		return ErrorInsufficientInputAmount
 	}
 
 	balance0Adjusted := new(big.Int).Sub(new(big.Int).Mul(new(big.Int).Add(amount0, reserve0), big.NewInt(1000)), new(big.Int).Mul(amount0In, big.NewInt(3)))
 	balance1Adjusted := new(big.Int).Sub(new(big.Int).Mul(new(big.Int).Add(amount1, reserve1), big.NewInt(1000)), new(big.Int).Mul(amount1In, big.NewInt(3)))
 
 	if new(big.Int).Mul(balance0Adjusted, balance1Adjusted).Cmp(new(big.Int).Mul(new(big.Int).Mul(reserve0, reserve1), big.NewInt(1000000))) == -1 {
-		return nil, nil, ErrorK
+		return ErrorK
 	}
-
-	p.update(amount0, amount1)
-
-	return amount0, amount1, nil
+	return nil
 }
 
 func (p *Pair) mint(address types.Address, value *big.Int) {
