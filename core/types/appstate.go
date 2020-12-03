@@ -251,6 +251,16 @@ func (s *AppState) Verify() error {
 		}
 	}
 
+	for _, swap := range s.Swap {
+		totalSupply := big.NewInt(0)
+		for _, provider := range swap.Providers {
+			totalSupply.Add(totalSupply, helpers.StringToBigInt(provider.Liquidity))
+		}
+		if totalSupply.String() != swap.TotalSupply {
+			return fmt.Errorf("TotalSupply %s, sum balance %s", totalSupply, swap.TotalSupply)
+		}
+	}
+
 	return nil
 }
 

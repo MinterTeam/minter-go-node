@@ -27,14 +27,6 @@ func (data RemoveExchangeLiquidity) basicCheck(tx *Transaction, context *state.C
 		}
 	}
 
-	if context.Coins().GetCoin(data.Coin0) == nil {
-		return &Response{
-			Code: code.CoinNotExists,
-			Log:  "Coin not exists",
-			Info: EncodeError(code.NewCoinNotExists("", data.Coin0.String())),
-		}
-	}
-
 	if !context.Swap().SwapPoolExist(data.Coin0, data.Coin1) {
 		return &Response{
 			Code: 999,
