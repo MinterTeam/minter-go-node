@@ -26,7 +26,8 @@ func (data AddExchangeLiquidity) basicCheck(tx *Transaction, context *state.Chec
 			// Info: EncodeError(),
 		}
 	}
-	if context.Coins().GetCoin(data.Coin) == nil {
+	coin := context.Coins().GetCoin(data.Coin)
+	if coin == nil {
 		return &Response{
 			Code: code.CoinNotExists,
 			Log:  "Coin not exists",
@@ -34,6 +35,13 @@ func (data AddExchangeLiquidity) basicCheck(tx *Transaction, context *state.Chec
 		}
 	}
 
+	if coin.ID() != types.GetBaseCoinID() && coin.HasReserve() {
+		return &Response{
+			Code: 999,
+			Log:  "has reserve",
+			// Info: EncodeError(),
+		}
+	}
 	if err := context.Swap().CheckMint(data.Coin, data.AmountBase, data.AmountCustom); err != nil {
 		return &Response{
 			Code: 999,

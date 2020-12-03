@@ -37,8 +37,8 @@ github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym
 github.com/ChainSafe/go-schnorrkel v0.0.0-20200405005733-88cbf1b4c40d h1:nalkkPQcITbvhmL4+C4cKA87NW0tfm3Kl9VXRoPywFg=
 github.com/ChainSafe/go-schnorrkel v0.0.0-20200405005733-88cbf1b4c40d/go.mod h1:URdX5+vg25ts3aCh8H5IFZybJYKWhJHYMTnf+ULtoC4=
 github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible/go.mod h1:r7JcOSlj0wfOMncg0iLm8Leh48TZaKVeNIfJntJ2wa0=
-github.com/MinterTeam/node-grpc-gateway v1.2.2-0.20201128153619-8f7dee11753e h1:j15Dcb8/lKpIaWX0/bB4xRxCdf4tw41FlzqhPYUQO10=
-github.com/MinterTeam/node-grpc-gateway v1.2.2-0.20201128153619-8f7dee11753e/go.mod h1:oyBmm4OA4XyHpfbz7gHmP4j82qO3Xb2Z31hydzP192w=
+github.com/MinterTeam/node-grpc-gateway v1.2.2-0.20201203104324-3e31502eec5c h1:P4AUOBqiXoDWYDGVsM+MDjLWmUSb6gAxwv/YaRN0Ugc=
+github.com/MinterTeam/node-grpc-gateway v1.2.2-0.20201203104324-3e31502eec5c/go.mod h1:oyBmm4OA4XyHpfbz7gHmP4j82qO3Xb2Z31hydzP192w=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/Shopify/sarama v1.19.0/go.mod h1:FVkBWblsNy7DGZRfXLU0O9RCGt5g3g3yEuWXgklEdEo=
 github.com/Shopify/toxiproxy v2.1.4+incompatible/go.mod h1:OXgGpZ6Cli1/URJOF1DMxUHB2q5Ap20/P/eIdh4G0pI=
