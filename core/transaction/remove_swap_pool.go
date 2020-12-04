@@ -16,7 +16,7 @@ type RemoveSwapPool struct {
 	Coin0      types.CoinID
 	Coin1      types.CoinID
 	Liquidity  *big.Int
-	MinAmount0 *big.Int `rlp:"nil"` // todo
+	MinAmount0 *big.Int `rlp:"nil"`
 	MinAmount1 *big.Int `rlp:"nil"`
 }
 
