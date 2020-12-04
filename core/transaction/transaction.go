@@ -43,7 +43,8 @@ const (
 	TypeEditCandidatePublicKey TxType = 0x14
 	TypeAddSwapPool            TxType = 0x15
 	TypeRemoveSwapPool         TxType = 0x16
-	TypeExchangeSwapPool       TxType = 0x17
+	TypeSellSwapPool           TxType = 0x17
+	TypeBuySwapPool            TxType = 0x18
 
 	SigTypeSingle SigType = 0x01
 	SigTypeMulti  SigType = 0x02

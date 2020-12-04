@@ -12,16 +12,15 @@ import (
 	"math/big"
 )
 
-type RemoveSwapPool struct {
-	Coin0      types.CoinID
-	Coin1      types.CoinID
-	Liquidity  *big.Int
-	MinAmount0 *big.Int `rlp:"nil"` // todo
-	MinAmount1 *big.Int `rlp:"nil"`
+type BuySwapPool struct {
+	CoinSell      types.CoinID
+	MaxAmountSell *big.Int
+	CoinBuy       types.CoinID
+	AmountBuy     *big.Int
 }
 
-func (data RemoveSwapPool) basicCheck(tx *Transaction, context *state.CheckState) *Response {
-	if data.Coin0 == data.Coin1 {
+func (data BuySwapPool) basicCheck(tx *Transaction, context *state.CheckState) *Response {
+	if data.CoinBuy == data.CoinSell {
 		return &Response{
 			Code: 999,
 			Log:  "identical coin",
@@ -29,7 +28,7 @@ func (data RemoveSwapPool) basicCheck(tx *Transaction, context *state.CheckState
 		}
 	}
 
-	if !context.Swap().SwapPoolExist(data.Coin0, data.Coin1) {
+	if !context.Swap().SwapPoolExist(data.CoinSell, data.CoinBuy) {
 		return &Response{
 			Code: 999,
 			Log:  "swap pool not found",
@@ -37,8 +36,7 @@ func (data RemoveSwapPool) basicCheck(tx *Transaction, context *state.CheckState
 		}
 	}
 
-	sender, _ := tx.Sender()
-	if err := context.Swap().CheckBurn(sender, data.Coin0, data.Coin1, data.Liquidity, data.MinAmount0, data.MinAmount1); err != nil {
+	if err := context.Swap().CheckSwap(data.CoinSell, data.CoinBuy, data.MaxAmountSell, data.AmountBuy); err != nil {
 		return &Response{
 			Code: 999,
 			Log:  err.Error(),
@@ -48,15 +46,15 @@ func (data RemoveSwapPool) basicCheck(tx *Transaction, context *state.CheckState
 	return nil
 }
 
-func (data RemoveSwapPool) String() string {
-	return fmt.Sprintf("REMOVE SWAP POOL")
+func (data BuySwapPool) String() string {
+	return fmt.Sprintf("EXCHANGE SWAP POOL")
 }
 
-func (data RemoveSwapPool) Gas() int64 {
-	return commissions.RemoveSwapPoolData
+func (data BuySwapPool) Gas() int64 {
+	return commissions.ConvertTx
 }
 
-func (data RemoveSwapPool) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
+func (data BuySwapPool) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -84,6 +82,14 @@ func (data RemoveSwapPool) Run(tx *Transaction, context state.Interface, rewardP
 		commission = formula.CalculateSaleAmount(gasCoin.Volume(), gasCoin.Reserve(), gasCoin.Crr(), commissionInBaseCoin)
 	}
 
+	amount0 := new(big.Int).Set(data.MaxAmountSell)
+	if tx.GasCoin == data.CoinSell {
+		amount0.Add(amount0, commission)
+	}
+	if checkState.Accounts().GetBalance(sender, data.CoinSell).Cmp(amount0) == -1 {
+		return Response{Code: code.InsufficientFunds} // todo
+	}
+
 	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
 		return Response{
 			Code: code.InsufficientFunds,
@@ -93,7 +99,9 @@ func (data RemoveSwapPool) Run(tx *Transaction, context state.Interface, rewardP
 	}
 
 	if deliverState, ok := context.(*state.State); ok {
-		amount0, amount1 := deliverState.Swap.PairBurn(sender, data.Coin0, data.Coin1, data.Liquidity)
+		amountIn, amountOut := deliverState.Swap.PairBuy(data.CoinSell, data.CoinBuy, data.MaxAmountSell, data.AmountBuy)
+		deliverState.Accounts.SubBalance(sender, data.CoinSell, amountIn)
+		deliverState.Accounts.AddBalance(sender, data.CoinBuy, amountOut)
 
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
@@ -102,14 +110,11 @@ func (data RemoveSwapPool) Run(tx *Transaction, context state.Interface, rewardP
 
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 
-		deliverState.Accounts.AddBalance(sender, data.Coin0, amount0)
-		deliverState.Accounts.AddBalance(sender, data.Coin1, amount1)
-
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}
 
 	tags := kv.Pairs{
-		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeRemoveSwapPool)}))},
+		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeBuySwapPool)}))},
 		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
 	}
 

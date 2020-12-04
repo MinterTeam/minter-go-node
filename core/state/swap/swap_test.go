@@ -44,12 +44,9 @@ func TestPair_feeToOff(t *testing.T) {
 				t.Errorf("liquidity want %s, got %s", expectedLiquidity, liquidity)
 			}
 
-			_, _, err = pair.Swap(big.NewInt(0), tt.swapAmount, tt.expectedOutputAmount, big.NewInt(0))
-			if err != nil {
-				t.Fatal(err)
-			}
+			_, _ = pair.Swap(big.NewInt(0), tt.swapAmount, tt.expectedOutputAmount, big.NewInt(0))
 
-			err = service.CheckBurn(types.Address{1}, tt.coin0, tt.coin1, expectedLiquidity)
+			err = service.CheckBurn(types.Address{1}, tt.coin0, tt.coin1, expectedLiquidity, nil, nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -118,8 +115,6 @@ func TestPair_Swap_token0(t *testing.T) {
 		coin0, coin1               types.CoinID
 		token0Amount, token1Amount *big.Int
 		swap0Amount                *big.Int
-		swap1Amount                *big.Int
-		expected0OutputAmount      *big.Int
 		expected1OutputAmount      *big.Int
 	}{
 		{
@@ -128,8 +123,6 @@ func TestPair_Swap_token0(t *testing.T) {
 			token0Amount:          new(big.Int).Add(new(big.Int).Mul(big.NewInt(5), big.NewInt(1e18)), big.NewInt(0)),
 			token1Amount:          new(big.Int).Add(new(big.Int).Mul(big.NewInt(10), big.NewInt(1e18)), big.NewInt(0)),
 			swap0Amount:           new(big.Int).Add(new(big.Int).Mul(big.NewInt(1), big.NewInt(1e18)), big.NewInt(0)),
-			swap1Amount:           big.NewInt(0),
-			expected0OutputAmount: big.NewInt(0),
 			expected1OutputAmount: big.NewInt(1662497915624478906),
 		},
 	}
@@ -144,32 +137,33 @@ func TestPair_Swap_token0(t *testing.T) {
 
 			_ = pair.Mint(types.Address{1}, tt.token0Amount, tt.token1Amount)
 
-			_, _, err = pair.Swap(tt.swap0Amount, tt.swap1Amount, tt.expected0OutputAmount, new(big.Int).Add(tt.expected1OutputAmount, big.NewInt(1)))
+			err = service.CheckSwap(tt.coin0, tt.coin1, tt.swap0Amount, new(big.Int).Add(tt.expected1OutputAmount, big.NewInt(1)))
 			if err != ErrorK {
-				t.Fatalf("failed with %v; want error %v", err, ErrorK)
+				t.Fatalf("failed with %v, want error %v", err, ErrorK)
 			}
 
-			amount0, amount1, err := pair.Swap(tt.swap0Amount, tt.swap1Amount, tt.expected0OutputAmount, tt.expected1OutputAmount)
+			err = service.CheckSwap(tt.coin0, tt.coin1, tt.swap0Amount, tt.expected1OutputAmount)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			expected0Amount := new(big.Int).Add(tt.swap0Amount, tt.expected0OutputAmount)
-			if amount0.Cmp(expected0Amount) != 0 {
-				t.Errorf("amount0 want %s, got %s", expected0Amount, amount0)
+			amount0, amount1 := pair.Swap(tt.swap0Amount, big.NewInt(0), big.NewInt(0), tt.expected1OutputAmount)
+
+			if amount0.Cmp(tt.swap0Amount) != 0 {
+				t.Errorf("amount0 want %s, got %s", tt.swap0Amount, amount0)
 			}
 
-			expected1Amount := new(big.Int).Sub(tt.swap1Amount, tt.expected1OutputAmount)
-			if amount1.Cmp(expected1Amount) != 0 {
-				t.Errorf("amount1 want %s, got %s", expected1Amount, amount1)
+			amount1.Neg(amount1)
+			if amount1.Cmp(tt.expected1OutputAmount) != 0 {
+				t.Errorf("amount1 want %s, got %s", tt.expected1OutputAmount, amount1)
 			}
 
-			if pair.Reserve0.Cmp(new(big.Int).Add(tt.token0Amount, expected0Amount)) != 0 {
-				t.Errorf("reserve0 want %s, got %s", new(big.Int).Add(tt.token0Amount, expected0Amount), pair.Reserve0)
+			if pair.Reserve0.Cmp(new(big.Int).Add(tt.token0Amount, tt.swap0Amount)) != 0 {
+				t.Errorf("reserve0 want %s, got %s", new(big.Int).Add(tt.token0Amount, tt.swap0Amount), pair.Reserve0)
 			}
 
-			if pair.Reserve1.Cmp(new(big.Int).Add(tt.token1Amount, expected1Amount)) != 0 {
-				t.Errorf("Reserve1 want %s, got %s", new(big.Int).Add(tt.token1Amount, expected1Amount), pair.Reserve1)
+			if pair.Reserve1.Cmp(new(big.Int).Sub(tt.token1Amount, tt.expected1OutputAmount)) != 0 {
+				t.Errorf("Reserve1 want %s, got %s", new(big.Int).Add(tt.token1Amount, tt.expected1OutputAmount), pair.Reserve1)
 			}
 		})
 	}
@@ -179,20 +173,16 @@ func TestPair_Swap_token1(t *testing.T) {
 	tableTests := []struct {
 		coin0, coin1               types.CoinID
 		token0Amount, token1Amount *big.Int
-		swap0Amount                *big.Int
 		swap1Amount                *big.Int
 		expected0OutputAmount      *big.Int
-		expected1OutputAmount      *big.Int
 	}{
 		{
 			coin0:                 1,
 			coin1:                 2,
 			token0Amount:          new(big.Int).Add(new(big.Int).Mul(big.NewInt(5), big.NewInt(1e18)), big.NewInt(0)),
 			token1Amount:          new(big.Int).Add(new(big.Int).Mul(big.NewInt(10), big.NewInt(1e18)), big.NewInt(0)),
-			swap0Amount:           big.NewInt(0),
 			swap1Amount:           new(big.Int).Add(new(big.Int).Mul(big.NewInt(1), big.NewInt(1e18)), big.NewInt(0)),
 			expected0OutputAmount: big.NewInt(453305446940074565),
-			expected1OutputAmount: big.NewInt(0),
 		},
 	}
 	service := New(nil, iavl.NewImmutableTree(db.NewMemDB(), 0))
@@ -206,31 +196,33 @@ func TestPair_Swap_token1(t *testing.T) {
 
 			_ = pair.Mint(types.Address{1}, tt.token0Amount, tt.token1Amount)
 
-			_, _, err = pair.Swap(tt.swap0Amount, tt.swap1Amount, new(big.Int).Add(tt.expected0OutputAmount, big.NewInt(1)), tt.expected1OutputAmount)
+			err = service.CheckSwap(tt.coin1, tt.coin0, tt.swap1Amount, new(big.Int).Add(tt.expected0OutputAmount, big.NewInt(1)))
 			if err != ErrorK {
-				t.Fatalf("failed with %v; want error %v", err, ErrorK)
+				t.Fatalf("failed with %v, want error %v", err, ErrorK)
 			}
-			amount0, amount1, err := pair.Swap(tt.swap0Amount, tt.swap1Amount, tt.expected0OutputAmount, tt.expected1OutputAmount)
+
+			err = service.CheckSwap(tt.coin1, tt.coin0, tt.swap1Amount, tt.expected0OutputAmount)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			expected0Amount := new(big.Int).Sub(tt.swap0Amount, tt.expected0OutputAmount)
-			if amount0.Cmp(expected0Amount) != 0 {
-				t.Errorf("amount0 want %s, got %s", expected0Amount, amount0)
+			amount0, amount1 := pair.Swap(big.NewInt(0), tt.swap1Amount, tt.expected0OutputAmount, big.NewInt(0))
+
+			amount0.Neg(amount0)
+			if amount0.Cmp(tt.expected0OutputAmount) != 0 {
+				t.Errorf("amount0 want %s, got %s", tt.expected0OutputAmount, amount0)
 			}
 
-			expected1Amount := new(big.Int).Sub(tt.swap1Amount, tt.expected1OutputAmount)
-			if amount1.Cmp(expected1Amount) != 0 {
-				t.Errorf("amount1 want %s, got %s", expected1Amount, amount1)
+			if amount1.Cmp(tt.swap1Amount) != 0 {
+				t.Errorf("amount1 want %s, got %s", tt.swap1Amount, amount1)
 			}
 
-			if pair.Reserve0.Cmp(new(big.Int).Add(tt.token0Amount, expected0Amount)) != 0 {
-				t.Errorf("reserve0 want %s, got %s", new(big.Int).Add(tt.token0Amount, expected0Amount), pair.Reserve0)
+			if pair.Reserve0.Cmp(new(big.Int).Sub(tt.token0Amount, tt.expected0OutputAmount)) != 0 {
+				t.Errorf("reserve0 want %s, got %s", new(big.Int).Sub(tt.token0Amount, tt.expected0OutputAmount), pair.Reserve0)
 			}
 
-			if pair.Reserve1.Cmp(new(big.Int).Add(tt.token1Amount, expected1Amount)) != 0 {
-				t.Errorf("Reserve1 want %s, got %s", new(big.Int).Add(tt.token1Amount, expected1Amount), pair.Reserve1)
+			if pair.Reserve1.Cmp(new(big.Int).Add(tt.token1Amount, tt.swap1Amount)) != 0 {
+				t.Errorf("reserve1 want %s, got %s", new(big.Int).Add(tt.token1Amount, tt.swap1Amount), pair.Reserve1)
 			}
 		})
 	}
@@ -266,7 +258,7 @@ func TestPair_Burn(t *testing.T) {
 				t.Errorf("liquidity want %s, got %s", liquidityExpected, liquidity)
 			}
 
-			err = service.CheckBurn(types.Address{1}, tt.coin0, tt.coin1, liquidity)
+			err = service.CheckBurn(types.Address{1}, tt.coin0, tt.coin1, liquidity, nil, nil)
 			if err != nil {
 				t.Fatal(err)
 			}

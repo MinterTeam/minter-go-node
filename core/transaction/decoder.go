@@ -34,7 +34,8 @@ func init() {
 	TxDecoder.RegisterType(TypeEditCandidatePublicKey, EditCandidatePublicKeyData{})
 	TxDecoder.RegisterType(TypeAddSwapPool, AddSwapPool{})
 	TxDecoder.RegisterType(TypeRemoveSwapPool, RemoveSwapPool{})
-	TxDecoder.RegisterType(TypeExchangeSwapPool, ExchangeSwapPool{})
+	TxDecoder.RegisterType(TypeSellSwapPool, SellSwapPool{})
+	TxDecoder.RegisterType(TypeBuySwapPool, BuySwapPool{})
 }
 
 type Decoder struct {
