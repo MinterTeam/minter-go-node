@@ -12,14 +12,13 @@ import (
 	"math/big"
 )
 
-type SellSwapPool struct {
+type SellAllSwapPool struct {
 	CoinToSell        types.CoinID
-	ValueToSell       *big.Int
 	CoinToBuy         types.CoinID
 	MinimumValueToBuy *big.Int
 }
 
-func (data SellSwapPool) basicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data SellAllSwapPool) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.CoinToBuy == data.CoinToSell {
 		return &Response{
 			Code: 999,
@@ -35,26 +34,26 @@ func (data SellSwapPool) basicCheck(tx *Transaction, context *state.CheckState) 
 			// Info: EncodeError(),
 		}
 	}
-
-	if err := context.Swap().CheckSwap(data.CoinToSell, data.CoinToBuy, data.ValueToSell, data.MinimumValueToBuy); err != nil {
-		return &Response{
-			Code: 999,
-			Log:  err.Error(),
-			// Info: EncodeError(),
-		}
-	}
+	// todo
+	// if err := context.Swap().CheckSwap(data.CoinToSell, data.CoinToBuy, data.ValueToSell, data.MinimumValueToBuy); err != nil {
+	// 	return &Response{
+	// 		Code: 999,
+	// 		Log:  err.Error(),
+	// 		// Info: EncodeError(),
+	// 	}
+	// }
 	return nil
 }
 
-func (data SellSwapPool) String() string {
+func (data SellAllSwapPool) String() string {
 	return fmt.Sprintf("EXCHANGE SWAP POOL")
 }
 
-func (data SellSwapPool) Gas() int64 {
+func (data SellAllSwapPool) Gas() int64 {
 	return commissions.ConvertTx
 }
 
-func (data SellSwapPool) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
+func (data SellAllSwapPool) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -82,13 +81,13 @@ func (data SellSwapPool) Run(tx *Transaction, context state.Interface, rewardPoo
 		commission = formula.CalculateSaleAmount(gasCoin.Volume(), gasCoin.Reserve(), gasCoin.Crr(), commissionInBaseCoin)
 	}
 
-	amount0 := new(big.Int).Set(data.ValueToSell)
-	if tx.GasCoin == data.CoinToSell {
-		amount0.Add(amount0, commission)
-	}
-	if checkState.Accounts().GetBalance(sender, data.CoinToSell).Cmp(amount0) == -1 {
-		return Response{Code: code.InsufficientFunds} // todo
-	}
+	// amount0 := new(big.Int).Set(data.ValueToSell)
+	// if tx.GasCoin == data.CoinToSell {
+	// 	amount0.Add(amount0, commission)
+	// }
+	// if checkState.Accounts().GetBalance(sender, data.CoinToSell).Cmp(amount0) == -1 {
+	// 	return Response{Code: code.InsufficientFunds} // todo
+	// }
 
 	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
 		return Response{
@@ -99,10 +98,10 @@ func (data SellSwapPool) Run(tx *Transaction, context state.Interface, rewardPoo
 	}
 
 	if deliverState, ok := context.(*state.State); ok {
-		amountIn, amountOut := deliverState.Swap.PairSell(data.CoinToSell, data.CoinToBuy, data.ValueToSell, data.MinimumValueToBuy)
-		deliverState.Accounts.SubBalance(sender, data.CoinToSell, amountIn)
-		deliverState.Accounts.AddBalance(sender, data.CoinToBuy, amountOut)
-
+		// amountIn, amountOut := deliverState.Swap.PairSell(data.CoinToSell, data.CoinToBuy, data.ValueToSell, data.MinimumValueToBuy)
+		// deliverState.Accounts.SubBalance(sender, data.CoinToSell, amountIn)
+		// deliverState.Accounts.AddBalance(sender, data.CoinToBuy, amountOut)
+		// todo
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
 		deliverState.Coins.SubVolume(tx.GasCoin, commission)

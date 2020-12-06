@@ -71,10 +71,10 @@ func TestBuySwapPoolTx_0(t *testing.T) {
 	}
 	{
 		data := BuySwapPool{
-			CoinSell:      coin,
-			MaxAmountSell: big.NewInt(10),
-			CoinBuy:       coin1,
-			AmountBuy:     big.NewInt(99),
+			CoinToSell:         coin,
+			MaximumValueToSell: big.NewInt(10),
+			CoinToBuy:          coin1,
+			ValueToBuy:         big.NewInt(99),
 		}
 
 		encodedData, err := rlp.EncodeToBytes(data)
@@ -176,10 +176,10 @@ func TestBuySwapPoolTx_1(t *testing.T) {
 	}
 	{
 		data := BuySwapPool{
-			CoinSell:      coin1,
-			MaxAmountSell: big.NewInt(10),
-			CoinBuy:       coin,
-			AmountBuy:     big.NewInt(9),
+			CoinToSell:         coin1,
+			MaximumValueToSell: big.NewInt(10),
+			CoinToBuy:          coin,
+			ValueToBuy:         big.NewInt(9),
 		}
 
 		encodedData, err := rlp.EncodeToBytes(data)
@@ -220,10 +220,10 @@ func TestBuySwapPoolTx_1(t *testing.T) {
 	}
 	{
 		data := BuySwapPool{
-			CoinSell:      coin,
-			MaxAmountSell: big.NewInt(10),
-			CoinBuy:       coin1,
-			AmountBuy:     big.NewInt(9),
+			CoinToSell:         coin,
+			MaximumValueToSell: big.NewInt(10),
+			CoinToBuy:          coin1,
+			ValueToBuy:         big.NewInt(9),
 		}
 
 		encodedData, err := rlp.EncodeToBytes(data)
@@ -325,10 +325,10 @@ func TestBuySwapPoolTx_2(t *testing.T) {
 	}
 	{
 		data := BuySwapPool{
-			CoinSell:      coin,
-			MaxAmountSell: new(big.Int).Add(new(big.Int).Mul(big.NewInt(1), big.NewInt(1e18)), big.NewInt(0)),
-			CoinBuy:       coin1,
-			AmountBuy:     big.NewInt(996006981039903216),
+			CoinToSell:         coin,
+			MaximumValueToSell: new(big.Int).Add(new(big.Int).Mul(big.NewInt(1), big.NewInt(1e18)), big.NewInt(0)),
+			CoinToBuy:          coin1,
+			ValueToBuy:         big.NewInt(996006981039903216),
 		}
 
 		encodedData, err := rlp.EncodeToBytes(data)
@@ -430,10 +430,10 @@ func TestBuySwapPoolTx_3(t *testing.T) {
 	}
 	{
 		data := BuySwapPool{
-			CoinSell:      coin,
-			MaxAmountSell: new(big.Int).Add(new(big.Int).Mul(big.NewInt(1), big.NewInt(1e18)), big.NewInt(0)),
-			CoinBuy:       coin1,
-			AmountBuy:     big.NewInt(1662497915624478906),
+			CoinToSell:         coin,
+			MaximumValueToSell: new(big.Int).Add(new(big.Int).Mul(big.NewInt(1), big.NewInt(1e18)), big.NewInt(0)),
+			CoinToBuy:          coin1,
+			ValueToBuy:         big.NewInt(1662497915624478906),
 		}
 
 		encodedData, err := rlp.EncodeToBytes(data)
@@ -535,10 +535,10 @@ func TestBuySwapPoolTx_4(t *testing.T) {
 	}
 	{
 		data := BuySwapPool{
-			CoinSell:      coin,
-			MaxAmountSell: new(big.Int).Add(new(big.Int).Mul(big.NewInt(1), big.NewInt(1e18)), big.NewInt(0)),
-			CoinBuy:       coin1,
-			AmountBuy:     big.NewInt(453305446940074565),
+			CoinToSell:         coin,
+			MaximumValueToSell: new(big.Int).Add(new(big.Int).Mul(big.NewInt(1), big.NewInt(1e18)), big.NewInt(0)),
+			CoinToBuy:          coin1,
+			ValueToBuy:         big.NewInt(453305446940074565),
 		}
 
 		encodedData, err := rlp.EncodeToBytes(data)

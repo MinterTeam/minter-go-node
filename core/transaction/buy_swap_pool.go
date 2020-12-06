@@ -13,14 +13,14 @@ import (
 )
 
 type BuySwapPool struct {
-	CoinSell      types.CoinID
-	MaxAmountSell *big.Int
-	CoinBuy       types.CoinID
-	AmountBuy     *big.Int
+	CoinToBuy          types.CoinID
+	ValueToBuy         *big.Int
+	CoinToSell         types.CoinID
+	MaximumValueToSell *big.Int
 }
 
 func (data BuySwapPool) basicCheck(tx *Transaction, context *state.CheckState) *Response {
-	if data.CoinBuy == data.CoinSell {
+	if data.CoinToBuy == data.CoinToSell {
 		return &Response{
 			Code: 999,
 			Log:  "identical coin",
@@ -28,7 +28,7 @@ func (data BuySwapPool) basicCheck(tx *Transaction, context *state.CheckState) *
 		}
 	}
 
-	if !context.Swap().SwapPoolExist(data.CoinSell, data.CoinBuy) {
+	if !context.Swap().SwapPoolExist(data.CoinToSell, data.CoinToBuy) {
 		return &Response{
 			Code: 999,
 			Log:  "swap pool not found",
@@ -36,7 +36,7 @@ func (data BuySwapPool) basicCheck(tx *Transaction, context *state.CheckState) *
 		}
 	}
 
-	if err := context.Swap().CheckSwap(data.CoinSell, data.CoinBuy, data.MaxAmountSell, data.AmountBuy); err != nil {
+	if err := context.Swap().CheckSwap(data.CoinToSell, data.CoinToBuy, data.MaximumValueToSell, data.ValueToBuy); err != nil {
 		return &Response{
 			Code: 999,
 			Log:  err.Error(),
@@ -82,11 +82,11 @@ func (data BuySwapPool) Run(tx *Transaction, context state.Interface, rewardPool
 		commission = formula.CalculateSaleAmount(gasCoin.Volume(), gasCoin.Reserve(), gasCoin.Crr(), commissionInBaseCoin)
 	}
 
-	amount0 := new(big.Int).Set(data.MaxAmountSell)
-	if tx.GasCoin == data.CoinSell {
+	amount0 := new(big.Int).Set(data.MaximumValueToSell)
+	if tx.GasCoin == data.CoinToSell {
 		amount0.Add(amount0, commission)
 	}
-	if checkState.Accounts().GetBalance(sender, data.CoinSell).Cmp(amount0) == -1 {
+	if checkState.Accounts().GetBalance(sender, data.CoinToSell).Cmp(amount0) == -1 {
 		return Response{Code: code.InsufficientFunds} // todo
 	}
 
@@ -99,9 +99,9 @@ func (data BuySwapPool) Run(tx *Transaction, context state.Interface, rewardPool
 	}
 
 	if deliverState, ok := context.(*state.State); ok {
-		amountIn, amountOut := deliverState.Swap.PairBuy(data.CoinSell, data.CoinBuy, data.MaxAmountSell, data.AmountBuy)
-		deliverState.Accounts.SubBalance(sender, data.CoinSell, amountIn)
-		deliverState.Accounts.AddBalance(sender, data.CoinBuy, amountOut)
+		amountIn, amountOut := deliverState.Swap.PairBuy(data.CoinToSell, data.CoinToBuy, data.MaximumValueToSell, data.ValueToBuy)
+		deliverState.Accounts.SubBalance(sender, data.CoinToSell, amountIn)
+		deliverState.Accounts.AddBalance(sender, data.CoinToBuy, amountOut)
 
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
