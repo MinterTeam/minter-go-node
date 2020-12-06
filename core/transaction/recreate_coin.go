@@ -18,7 +18,7 @@ type RecreateCoinData struct {
 	Name                 string
 	Symbol               types.CoinSymbol
 	InitialAmount        *big.Int
-	InitialReserve       *big.Int
+	InitialReserve       *big.Int `rlp:"nil"`
 	ConstantReserveRatio uint32
 	MaxSupply            *big.Int
 }
