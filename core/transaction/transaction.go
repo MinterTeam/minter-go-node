@@ -45,6 +45,7 @@ const (
 	TypeRemoveSwapPool         TxType = 0x16
 	TypeSellSwapPool           TxType = 0x17
 	TypeBuySwapPool            TxType = 0x18
+	TypeSellAllSwapPool        TxType = 0x19
 
 	SigTypeSingle SigType = 0x01
 	SigTypeMulti  SigType = 0x02

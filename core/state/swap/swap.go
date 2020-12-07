@@ -25,6 +25,8 @@ type RSwap interface {
 	CheckMint(coin0, coin1 types.CoinID, amount0, amount1 *big.Int) error
 	CheckBurn(address types.Address, coin0, coin1 types.CoinID, liquidity, minAmount0, minAmount1 *big.Int) error
 	CheckSwap(coin0, coin1 types.CoinID, amount0In, amount1Out *big.Int) error
+	PairCalculateBuyForSell(coin0, coin1 types.CoinID, amount0In *big.Int) (amount1Out *big.Int, err error)
+	PairCalculateSellForBuy(coin0, coin1 types.CoinID, amount1In *big.Int) (amount0Out *big.Int, err error)
 	Export(state *types.AppState)
 }
 
@@ -60,6 +62,9 @@ func (s *Swap) Export(state *types.AppState) {
 	})
 
 	for key, pair := range s.pairs {
+		if pair == nil {
+			continue
+		}
 		reserve0, reserve1 := pair.Reserves()
 		swap := types.Swap{
 			Providers:   make([]types.BalanceProvider, 0, len(pair.balances)),
@@ -161,7 +166,7 @@ func (s *Swap) Commit(db *iavl.MutableTree) error {
 	defer s.muPairs.RUnlock()
 
 	for key, pair := range s.pairs {
-		if !pair.isDirty {
+		if pair == nil || !pair.isDirty {
 			continue
 		}
 
@@ -206,8 +211,8 @@ func (s *Swap) SwapPoolExist(coin0, coin1 types.CoinID) bool {
 
 func (s *Swap) pair(key pairKey) (*Pair, bool) {
 	pair, ok := s.pairs[key.sort()]
-	if !ok {
-		return nil, false
+	if pair == nil {
+		return nil, ok
 	}
 	if key.isSorted() {
 		return pair, true
@@ -269,6 +274,22 @@ func (s *Swap) Pair(coin0, coin1 types.CoinID) *Pair {
 	return pair
 }
 
+func (s *Swap) PairCalculateSellForBuy(coin0, coin1 types.CoinID, amount1In *big.Int) (amount0Out *big.Int, err error) {
+	pair := s.Pair(coin0, coin1)
+	if pair == nil {
+		return nil, ErrorNotExist
+	}
+	return pair.CalculateSellForBuy(amount1In), nil
+}
+
+func (s *Swap) PairCalculateBuyForSell(coin0, coin1 types.CoinID, amount0In *big.Int) (amount1Out *big.Int, err error) {
+	pair := s.Pair(coin0, coin1)
+	if pair == nil {
+		return nil, ErrorNotExist
+	}
+	return pair.CalculateBuyForSell(amount0In), nil
+}
+
 func (s *Swap) PairMint(address types.Address, coin0, coin1 types.CoinID, amount0, maxAmount1 *big.Int) (*big.Int, *big.Int) {
 	pair := s.ReturnPair(coin0, coin1)
 	oldReserve0, oldReserve1 := pair.Reserves()
@@ -301,7 +322,7 @@ func (s *Swap) PairBurn(address types.Address, coin0, coin1 types.CoinID, liquid
 
 func (s *Swap) PairSell(coin0, coin1 types.CoinID, amount0In, minAmount1Out *big.Int) (*big.Int, *big.Int) {
 	pair := s.Pair(coin0, coin1)
-	calculatedAmount1Out := pair.CalculateSell(amount0In)
+	calculatedAmount1Out := pair.CalculateBuyForSell(amount0In)
 	if calculatedAmount1Out.Cmp(minAmount1Out) == -1 {
 		panic(fmt.Sprintf("calculatedAmount1Out %s less minAmount1Out %s", calculatedAmount1Out, minAmount1Out))
 	}
@@ -313,7 +334,7 @@ func (s *Swap) PairSell(coin0, coin1 types.CoinID, amount0In, minAmount1Out *big
 
 func (s *Swap) PairBuy(coin0, coin1 types.CoinID, maxAmount0In, amount1Out *big.Int) (*big.Int, *big.Int) {
 	pair := s.Pair(coin0, coin1)
-	calculatedAmount0In := pair.CalculateBuy(amount1Out)
+	calculatedAmount0In := pair.CalculateSellForBuy(amount1Out)
 	if calculatedAmount0In.Cmp(maxAmount0In) == 1 {
 		panic(fmt.Sprintf("calculatedAmount0In %s more maxAmount0In %s", calculatedAmount0In, maxAmount0In))
 	}
@@ -403,7 +424,7 @@ func (s *Swap) addPair(key pairKey) *Pair {
 		dirty:       &dirty{},
 	}
 	if !key.isSorted() {
-		key.Revert()
+		key = key.Revert()
 		data = data.Revert()
 	}
 	pair := &Pair{
@@ -514,6 +535,7 @@ func (p *Pair) checkMint(amount0, maxAmount1 *big.Int) (err error) {
 
 var (
 	ErrorInsufficientLiquidityBurned = errors.New("INSUFFICIENT_LIQUIDITY_BURNED")
+	ErrorNotExist                    = errors.New("PAIR_NOT_EXISTS")
 )
 
 func (p *Pair) Burn(address types.Address, liquidity *big.Int) (amount0 *big.Int, amount1 *big.Int) {
@@ -540,7 +562,7 @@ func (p *Pair) Burn(address types.Address, liquidity *big.Int) (amount0 *big.Int
 
 func (p *Pair) checkBurn(address types.Address, liquidity, minAmount0, minAmount1 *big.Int) (err error) {
 	if p == nil {
-		return errors.New("pair not found")
+		return ErrorNotExist
 	}
 	balance := p.Balance(address)
 	if balance == nil {
@@ -567,7 +589,7 @@ var (
 	ErrorInsufficientLiquidity    = errors.New("INSUFFICIENT_LIQUIDITY")
 )
 
-func (p *Pair) CalculateSell(amount0In *big.Int) (amount1Out *big.Int) {
+func (p *Pair) CalculateBuyForSell(amount0In *big.Int) (amount1Out *big.Int) {
 	reserve0, reserve1 := p.Reserves()
 	kAdjusted := new(big.Int).Mul(new(big.Int).Mul(reserve0, reserve1), big.NewInt(1000000))
 	balance0Adjusted := new(big.Int).Sub(new(big.Int).Mul(new(big.Int).Add(amount0In, reserve0), big.NewInt(1000)), new(big.Int).Mul(amount0In, big.NewInt(3)))
@@ -575,7 +597,7 @@ func (p *Pair) CalculateSell(amount0In *big.Int) (amount1Out *big.Int) {
 	return new(big.Int).Sub(amount1Out, big.NewInt(1))
 }
 
-func (p *Pair) CalculateBuy(amount1Out *big.Int) (amount0In *big.Int) {
+func (p *Pair) CalculateSellForBuy(amount1Out *big.Int) (amount0In *big.Int) {
 	reserve0, reserve1 := p.Reserves()
 	kAdjusted := new(big.Int).Mul(new(big.Int).Mul(reserve0, reserve1), big.NewInt(1000000))
 	balance1Adjusted := new(big.Int).Mul(new(big.Int).Add(new(big.Int).Neg(amount1Out), reserve1), big.NewInt(1000))
