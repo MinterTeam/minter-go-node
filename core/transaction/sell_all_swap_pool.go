@@ -63,7 +63,7 @@ func (data SellAllSwapPool) Run(tx *Transaction, context state.Interface, reward
 
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
 	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
-	commission, isGasCommissionFromPoolSwap, errResp := calculateCommission(checkState, gasCoin, commissionInBaseCoin)
+	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, gasCoin, commissionInBaseCoin)
 	if errResp != nil {
 		return *errResp
 	}
@@ -123,7 +123,7 @@ func (data SellAllSwapPool) Run(tx *Transaction, context state.Interface, reward
 	}
 }
 
-func calculateCommission(checkState *state.CheckState, gasCoin *coins.Model, commissionInBaseCoin *big.Int) (commission *big.Int, poolSwap bool, errResp *Response) {
+func CalculateCommission(checkState *state.CheckState, gasCoin *coins.Model, commissionInBaseCoin *big.Int) (commission *big.Int, poolSwap bool, errResp *Response) {
 	if gasCoin.ID().IsBaseCoin() {
 		return new(big.Int).Set(commissionInBaseCoin), false, nil
 	}
