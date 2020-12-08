@@ -8,7 +8,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/core/validators"
-	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
 )
@@ -102,21 +101,14 @@ func (data DeclareCandidacyData) Run(tx *Transaction, context state.Interface, r
 	}
 
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
-	commission := big.NewInt(0).Set(commissionInBaseCoin)
-
 	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
-	coin := checkState.Coins().GetCoin(data.Coin)
-
-	if !tx.GasCoin.IsBaseCoin() {
-		errResp := CheckReserveUnderflow(gasCoin, commissionInBaseCoin)
-		if errResp != nil {
-			return *errResp
-		}
-
-		commission = formula.CalculateSaleAmount(gasCoin.Volume(), gasCoin.Reserve(), gasCoin.Crr(), commissionInBaseCoin)
+	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, gasCoin, commissionInBaseCoin)
+	if errResp != nil {
+		return *errResp
 	}
 
 	if checkState.Accounts().GetBalance(sender, data.Coin).Cmp(data.Stake) < 0 {
+		coin := checkState.Coins().GetCoin(data.Coin)
 		return Response{
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), data.Stake, coin.GetFullSymbol()),
@@ -147,13 +139,16 @@ func (data DeclareCandidacyData) Run(tx *Transaction, context state.Interface, r
 	}
 
 	if deliverState, ok := context.(*state.State); ok {
+		if isGasCommissionFromPoolSwap {
+			commission, commissionInBaseCoin = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
+		} else {
+			deliverState.Coins.SubVolume(tx.GasCoin, commission)
+			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
+		}
+		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
-		deliverState.Coins.SubVolume(tx.GasCoin, commission)
-
 		deliverState.Accounts.SubBalance(sender, data.Coin, data.Stake)
-		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		deliverState.Candidates.Create(data.Address, sender, sender, data.PubKey, data.Commission)
 		deliverState.Candidates.Delegate(sender, data.PubKey, data.Coin, data.Stake, big.NewInt(0))
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)

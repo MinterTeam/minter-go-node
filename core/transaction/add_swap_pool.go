@@ -7,7 +7,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
 )
@@ -79,17 +78,10 @@ func (data AddSwapPool) Run(tx *Transaction, context state.Interface, rewardPool
 	}
 
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
-	commission := big.NewInt(0).Set(commissionInBaseCoin)
-
 	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
-
-	if !tx.GasCoin.IsBaseCoin() {
-		errResp := CheckReserveUnderflow(gasCoin, commissionInBaseCoin)
-		if errResp != nil {
-			return *errResp
-		}
-
-		commission = formula.CalculateSaleAmount(gasCoin.Volume(), gasCoin.Reserve(), gasCoin.Crr(), commissionInBaseCoin)
+	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, gasCoin, commissionInBaseCoin)
+	if errResp != nil {
+		return *errResp
 	}
 
 	amount0 := new(big.Int).Set(data.Amount0)
@@ -122,12 +114,14 @@ func (data AddSwapPool) Run(tx *Transaction, context state.Interface, rewardPool
 		deliverState.Accounts.SubBalance(sender, data.Coin0, amount0)
 		deliverState.Accounts.SubBalance(sender, data.Coin1, amount1)
 
-		rewardPool.Add(rewardPool, commissionInBaseCoin)
-
-		deliverState.Coins.SubVolume(tx.GasCoin, commission)
-		deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
-
+		if isGasCommissionFromPoolSwap {
+			commission, commissionInBaseCoin = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
+		} else {
+			deliverState.Coins.SubVolume(tx.GasCoin, commission)
+			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
+		}
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
+		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}

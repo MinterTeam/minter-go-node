@@ -114,7 +114,8 @@ func (data BuySwapPool) Run(tx *Transaction, context state.Interface, rewardPool
 }
 
 func checkSwap(context *state.CheckState, coinIn types.CoinID, valueIn *big.Int, coinOut types.CoinID, valueOut *big.Int, isBuy bool) *Response {
-	if err := context.Swap().CheckSwap(coinIn, coinOut, valueIn, valueOut); err != nil {
+	rSwap := context.Swap()
+	if err := rSwap.CheckSwap(coinIn, coinOut, valueIn, valueOut); err != nil {
 		if err == swap.ErrorNotExist {
 			return &Response{
 				Code: code.PairNotExists,
@@ -124,7 +125,7 @@ func checkSwap(context *state.CheckState, coinIn types.CoinID, valueIn *big.Int,
 		}
 		if err == swap.ErrorK {
 			if isBuy {
-				value, _ := context.Swap().PairCalculateBuyForSell(coinIn, coinOut, valueOut)
+				value, _ := rSwap.PairCalculateBuyForSell(coinIn, coinOut, valueOut)
 				coin := context.Coins().GetCoin(coinIn)
 				return &Response{
 					Code: code.MaximumValueToSellReached,
@@ -134,7 +135,7 @@ func checkSwap(context *state.CheckState, coinIn types.CoinID, valueIn *big.Int,
 					Info: EncodeError(code.NewMaximumValueToSellReached(valueIn.String(), value.String(), coin.GetFullSymbol(), coin.ID().String())),
 				}
 			} else {
-				value, _ := context.Swap().PairCalculateSellForBuy(coinIn, coinOut, valueOut)
+				value, _ := rSwap.PairCalculateSellForBuy(coinIn, coinOut, valueOut)
 				coin := context.Coins().GetCoin(coinIn)
 				return &Response{
 					Code: code.MaximumValueToSellReached,
@@ -146,7 +147,7 @@ func checkSwap(context *state.CheckState, coinIn types.CoinID, valueIn *big.Int,
 			}
 		}
 		if err == swap.ErrorInsufficientLiquidity {
-			_, reserve0, reserve1 := context.Swap().SwapPool(coinIn, coinOut)
+			_, reserve0, reserve1 := rSwap.SwapPool(coinIn, coinOut)
 			return &Response{
 				Code: code.InsufficientLiquidity,
 				Log:  fmt.Sprintf("You wanted to exchange %s pips of coin %d for %s of coin %d, but pool reserve of coin %d equal %s and reserve of coin %d equal %s", coinIn, valueIn, coinOut, valueOut, coinIn, reserve0.String(), coinOut, reserve1.String()),

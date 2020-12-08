@@ -130,7 +130,7 @@ func CalculateCommission(checkState *state.CheckState, gasCoin *coins.Model, com
 
 	if responseFromPool != nil && responseFromReserve != nil {
 		return nil, false, &Response{
-			Code: 999,
+			Code: code.CoinReserveNotSufficient,
 			Log:  fmt.Sprintf("not possible to pay commission in coin %s %d", gasCoin.GetFullSymbol(), gasCoin.ID()),
 			Info: EncodeError(map[string]string{"reserve": responseFromReserve.Log, "pool": responseFromPool.Log}),
 		}
@@ -153,18 +153,14 @@ func CalculateCommission(checkState *state.CheckState, gasCoin *coins.Model, com
 func commissionFromPool(checkState *state.CheckState, id types.CoinID, commissionInBaseCoin *big.Int) (*big.Int, *Response) {
 	if !checkState.Swap().SwapPoolExist(id, types.GetBaseCoinID()) {
 		return nil, &Response{
-			Code: 999,
-			Log:  "swap pool not found",
-			// Info: EncodeError(),
+			Code: code.PairNotExists,
+			Log:  fmt.Sprintf("swap pair %d %d not exists in pool", id, types.GetBaseCoinID()),
+			Info: EncodeError(code.NewPairNotExists(id.String(), types.GetBaseCoinID().String())),
 		}
 	}
 	commission, _ := checkState.Swap().PairCalculateSellForBuy(id, types.GetBaseCoinID(), commissionInBaseCoin)
-	if err := checkState.Swap().CheckSwap(id, types.GetBaseCoinID(), commission, commissionInBaseCoin); err != nil {
-		return nil, &Response{
-			Code: 999,
-			Log:  err.Error(),
-			// Info: EncodeError(),
-		}
+	if errResp := checkSwap(checkState, id, commission, types.GetBaseCoinID(), commissionInBaseCoin, true); errResp != nil {
+		return nil, errResp
 	}
 	return commission, nil
 }
@@ -172,9 +168,8 @@ func commissionFromPool(checkState *state.CheckState, id types.CoinID, commissio
 func commissionFromReserve(gasCoin *coins.Model, commissionInBaseCoin *big.Int) (*big.Int, *Response) {
 	if !gasCoin.HasReserve() {
 		return nil, &Response{
-			Code: 999,
+			Code: code.CoinReserveNotSufficient,
 			Log:  "gas coin has not reserve",
-			// Info: EncodeError(),
 		}
 	}
 	errResp := CheckReserveUnderflow(gasCoin, commissionInBaseCoin)
