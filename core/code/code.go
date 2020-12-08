@@ -74,13 +74,47 @@ const (
 	NotEnoughMultisigVotes            uint32 = 609
 
 	// swap pool
-	SwapPoolUnknown             uint32 = 700
-	PairNotExists               uint32 = 701
-	InsufficientInputAmount     uint32 = 702
-	InsufficientOutputAmount    uint32 = 703
-	InsufficientLiquidity       uint32 = 704
-	InsufficientLiquidityMinted uint32 = 705
+	SwapPoolUnknown              uint32 = 700
+	PairNotExists                uint32 = 701
+	InsufficientInputAmount      uint32 = 702
+	InsufficientOutputAmount     uint32 = 703
+	InsufficientLiquidity        uint32 = 704
+	InsufficientLiquidityMinted  uint32 = 705
+	InsufficientLiquidityBurned  uint32 = 706
+	IdenticalCoin                uint32 = 707
+	InsufficientLiquidityBalance uint32 = 708
 )
+
+func NewInsufficientLiquidityBalance(liquidity, amount0, coin0, amount1, coin1, requestedLiquidity, wantA0, wantA1 string) *insufficientLiquidityBalance {
+	return &insufficientLiquidityBalance{Code: strconv.Itoa(int(InsufficientLiquidityBalance)), Coin0: coin0, Coin1: coin1, Amount0: amount0, Amount1: amount1, Liquidity: liquidity, RequestedLiquidity: requestedLiquidity, WantedAmount0: wantA0, WantedAmount1: wantA1}
+}
+
+type insufficientLiquidityBalance struct {
+	Code               string `json:"code,omitempty"`
+	Coin0              string `json:"coin0,omitempty"`
+	Amount0            string `json:"amount0,omitempty"`
+	WantedAmount0      string `json:"wanted_amount0,omitempty"`
+	Coin1              string `json:"coin1,omitempty"`
+	Amount1            string `json:"amount1,omitempty"`
+	WantedAmount1      string `json:"wanted_amount1,omitempty"`
+	Liquidity          string `json:"liquidity,omitempty"`
+	RequestedLiquidity string `json:"requested_liquidity,omitempty"`
+}
+
+func NewInsufficientLiquidityBurned(wantGetAmount0 string, coin0 string, wantGetAmount1 string, coin1 string, liquidity string, amount0 string, amount1 string) *insufficientLiquidityBurned {
+	return &insufficientLiquidityBurned{Code: strconv.Itoa(int(InsufficientLiquidityBurned)), Coin0: coin0, Coin1: coin1, WantAmount0: wantGetAmount0, WantAmount1: wantGetAmount1, Amount0Out: amount0, Amount1Out: amount1, RequestedLiquidity: liquidity}
+}
+
+type insufficientLiquidityBurned struct {
+	Code               string `json:"code,omitempty"`
+	Coin0              string `json:"coin0,omitempty"`
+	WantAmount0        string `json:"want_amount0,omitempty"`
+	Amount0Out         string `json:"amount0_out,omitempty"`
+	Coin1              string `json:"coin1,omitempty"`
+	WantAmount1        string `json:"want_amount1,omitempty"`
+	Amount1Out         string `json:"amount1_out,omitempty"`
+	RequestedLiquidity string `json:"requested_liquidity,omitempty"`
+}
 
 func NewInsufficientLiquidity(coin0, value0, coin1, value1, reserve0, reserve1 string) *insufficientLiquidity {
 	return &insufficientLiquidity{Code: strconv.Itoa(int(InsufficientLiquidity)), Coin0: coin0, Coin1: coin1, Reserve0: reserve0, Reserve1: reserve1, Amount0In: value0, Amount1Out: value1}

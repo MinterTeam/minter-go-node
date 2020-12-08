@@ -28,7 +28,7 @@ type RSwap interface {
 	PairCalculateBuyForSell(coin0, coin1 types.CoinID, amount0In *big.Int) (amount1Out *big.Int, err error)
 	PairCalculateSellForBuy(coin0, coin1 types.CoinID, amount1In *big.Int) (amount0Out *big.Int, err error)
 	PairCalculateAddLiquidity(coin0, coin1 types.CoinID, amount0 *big.Int) (liquidity, a0, a1 *big.Int, err error)
-	AmountsOfLiquidity(coin0, coin1 types.CoinID, liquidity *big.Int) (amount0, amount1 *big.Int, err error)
+	AmountsOfLiquidity(coin0, coin1 types.CoinID, liquidity *big.Int) (amount0, amount1 *big.Int)
 	Export(state *types.AppState)
 }
 
@@ -150,10 +150,10 @@ func (s *Swap) CheckMint(coin0, coin1 types.CoinID, amount0, maxAmount1 *big.Int
 }
 func (s *Swap) CheckBurn(address types.Address, coin0, coin1 types.CoinID, liquidity, minAmount0, minAmount1 *big.Int) error {
 	if minAmount0 == nil {
-		minAmount0 = big.NewInt(0)
+		minAmount0 = big.NewInt(1)
 	}
 	if minAmount1 == nil {
-		minAmount1 = big.NewInt(0)
+		minAmount1 = big.NewInt(1)
 	}
 	return s.Pair(coin0, coin1).checkBurn(address, liquidity, minAmount0, minAmount1)
 }
@@ -301,13 +301,13 @@ func (s *Swap) PairCalculateAddLiquidity(coin0, coin1 types.CoinID, amount0 *big
 	return liquidity, amount0, amount1, nil
 }
 
-func (s *Swap) AmountsOfLiquidity(coin0, coin1 types.CoinID, liquidity *big.Int) (amount0, amount1 *big.Int, err error) {
+func (s *Swap) AmountsOfLiquidity(coin0, coin1 types.CoinID, liquidity *big.Int) (amount0, amount1 *big.Int) {
 	pair := s.Pair(coin0, coin1)
 	if pair == nil {
-		return nil, nil, ErrorNotExist
+		return nil, nil
 	}
 	amount0, amount1 = pair.Amounts(liquidity)
-	return amount0, amount1, nil
+	return amount0, amount1
 }
 
 func (s *Swap) PairMint(address types.Address, coin0, coin1 types.CoinID, amount0, maxAmount1 *big.Int) (*big.Int, *big.Int) {
@@ -325,10 +325,16 @@ func (s *Swap) PairMint(address types.Address, coin0, coin1 types.CoinID, amount
 	return balance0, balance1
 }
 
-func (s *Swap) PairBurn(address types.Address, coin0, coin1 types.CoinID, liquidity *big.Int) (*big.Int, *big.Int) {
+func (s *Swap) PairBurn(address types.Address, coin0, coin1 types.CoinID, liquidity, minAmount0, minAmount1 *big.Int) (*big.Int, *big.Int) {
+	if minAmount0 == nil {
+		minAmount0 = big.NewInt(1)
+	}
+	if minAmount1 == nil {
+		minAmount1 = big.NewInt(1)
+	}
 	pair := s.Pair(coin0, coin1)
 	oldReserve0, oldReserve1 := pair.Reserves()
-	_, _ = pair.Burn(address, liquidity)
+	_, _ = pair.Burn(address, liquidity, minAmount0, minAmount1)
 	newReserve0, newReserve1 := pair.Reserves()
 
 	balance0 := new(big.Int).Sub(oldReserve0, newReserve0)
@@ -547,23 +553,20 @@ func (p *Pair) checkMint(amount0, maxAmount1 *big.Int) (err error) {
 }
 
 var (
-	ErrorInsufficientLiquidityBurned = errors.New("INSUFFICIENT_LIQUIDITY_BURNED")
-	ErrorNotExist                    = errors.New("PAIR_NOT_EXISTS")
+	ErrorInsufficientLiquidityBurned  = errors.New("INSUFFICIENT_LIQUIDITY_BURNED")
+	ErrorInsufficientLiquidityBalance = errors.New("INSUFFICIENT_LIQUIDITY_BALANCE")
+	ErrorNotExist                     = errors.New("PAIR_NOT_EXISTS")
 )
 
-func (p *Pair) Burn(address types.Address, liquidity *big.Int) (amount0 *big.Int, amount1 *big.Int) {
+func (p *Pair) Burn(address types.Address, liquidity, minAmount0, minAmount1 *big.Int) (amount0 *big.Int, amount1 *big.Int) {
 	balance := p.Balance(address)
-	if balance == nil {
-		panic(ErrorInsufficientLiquidityBurned)
-	}
-
-	if liquidity.Cmp(balance) == 1 {
-		panic(ErrorInsufficientLiquidityBurned)
+	if balance == nil || liquidity.Cmp(balance) == 1 {
+		panic(ErrorInsufficientLiquidityBalance)
 	}
 
 	amount0, amount1 = p.Amounts(liquidity)
 
-	if amount0.Sign() != 1 || amount1.Sign() != 1 {
+	if amount0.Cmp(minAmount0) == -1 || amount1.Cmp(minAmount1) == -1 {
 		panic(ErrorInsufficientLiquidityBurned)
 	}
 
@@ -578,17 +581,13 @@ func (p *Pair) checkBurn(address types.Address, liquidity, minAmount0, minAmount
 		return ErrorNotExist
 	}
 	balance := p.Balance(address)
-	if balance == nil {
-		return ErrorInsufficientLiquidityBurned
-	}
-
-	if liquidity.Cmp(balance) == 1 {
-		return ErrorInsufficientLiquidityBurned
+	if balance == nil || liquidity.Cmp(balance) == 1 {
+		return ErrorInsufficientLiquidityBalance
 	}
 
 	amount0, amount1 := p.Amounts(liquidity)
 
-	if amount0.Cmp(minAmount0) != 1 || amount1.Cmp(minAmount1) != 1 {
+	if amount0.Cmp(minAmount0) == -1 || amount1.Cmp(minAmount1) == -1 {
 		return ErrorInsufficientLiquidityBurned
 	}
 

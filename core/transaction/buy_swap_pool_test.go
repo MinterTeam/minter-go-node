@@ -28,9 +28,9 @@ func TestBuySwapPoolTx_0(t *testing.T) {
 	{
 		data := AddSwapPool{
 			Coin0:      coin,
-			Amount0:    helpers.BipToPip(big.NewInt(100)),
+			Volume0:    helpers.BipToPip(big.NewInt(100)),
 			Coin1:      coin1,
-			MaxAmount1: helpers.BipToPip(big.NewInt(1000)),
+			MaxVolume1: helpers.BipToPip(big.NewInt(1000)),
 		}
 
 		encodedData, err := rlp.EncodeToBytes(data)
@@ -133,9 +133,9 @@ func TestBuySwapPoolTx_1(t *testing.T) {
 	{
 		data := AddSwapPool{
 			Coin0:      coin,
-			Amount0:    helpers.BipToPip(big.NewInt(10)),
+			Volume0:    helpers.BipToPip(big.NewInt(10)),
 			Coin1:      coin1,
-			MaxAmount1: helpers.BipToPip(big.NewInt(10)),
+			MaxVolume1: helpers.BipToPip(big.NewInt(10)),
 		}
 
 		encodedData, err := rlp.EncodeToBytes(data)
@@ -282,9 +282,9 @@ func TestBuySwapPoolTx_2(t *testing.T) {
 	{
 		data := AddSwapPool{
 			Coin0:      coin,
-			Amount0:    new(big.Int).Add(new(big.Int).Mul(big.NewInt(1000), big.NewInt(1e18)), big.NewInt(0)),
+			Volume0:    new(big.Int).Add(new(big.Int).Mul(big.NewInt(1000), big.NewInt(1e18)), big.NewInt(0)),
 			Coin1:      coin1,
-			MaxAmount1: new(big.Int).Add(new(big.Int).Mul(big.NewInt(1000), big.NewInt(1e18)), big.NewInt(0)),
+			MaxVolume1: new(big.Int).Add(new(big.Int).Mul(big.NewInt(1000), big.NewInt(1e18)), big.NewInt(0)),
 		}
 
 		encodedData, err := rlp.EncodeToBytes(data)
@@ -387,9 +387,9 @@ func TestBuySwapPoolTx_3(t *testing.T) {
 	{
 		data := AddSwapPool{
 			Coin0:      coin,
-			Amount0:    new(big.Int).Add(new(big.Int).Mul(big.NewInt(5), big.NewInt(1e18)), big.NewInt(0)),
+			Volume0:    new(big.Int).Add(new(big.Int).Mul(big.NewInt(5), big.NewInt(1e18)), big.NewInt(0)),
 			Coin1:      coin1,
-			MaxAmount1: new(big.Int).Add(new(big.Int).Mul(big.NewInt(10), big.NewInt(1e18)), big.NewInt(0)),
+			MaxVolume1: new(big.Int).Add(new(big.Int).Mul(big.NewInt(10), big.NewInt(1e18)), big.NewInt(0)),
 		}
 
 		encodedData, err := rlp.EncodeToBytes(data)
@@ -492,9 +492,9 @@ func TestBuySwapPoolTx_4(t *testing.T) {
 	{
 		data := AddSwapPool{
 			Coin0:      coin,
-			Amount0:    new(big.Int).Add(new(big.Int).Mul(big.NewInt(10), big.NewInt(1e18)), big.NewInt(0)),
+			Volume0:    new(big.Int).Add(new(big.Int).Mul(big.NewInt(10), big.NewInt(1e18)), big.NewInt(0)),
 			Coin1:      coin1,
-			MaxAmount1: new(big.Int).Add(new(big.Int).Mul(big.NewInt(5), big.NewInt(1e18)), big.NewInt(0)),
+			MaxVolume1: new(big.Int).Add(new(big.Int).Mul(big.NewInt(5), big.NewInt(1e18)), big.NewInt(0)),
 		}
 
 		encodedData, err := rlp.EncodeToBytes(data)

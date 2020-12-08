@@ -6,6 +6,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
+	"github.com/MinterTeam/minter-go-node/core/state/swap"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
@@ -15,33 +16,54 @@ type RemoveSwapPool struct {
 	Coin0      types.CoinID
 	Coin1      types.CoinID
 	Liquidity  *big.Int
-	MinAmount0 *big.Int `rlp:"nil"`
-	MinAmount1 *big.Int `rlp:"nil"`
+	MinVolume0 *big.Int `rlp:"nil"`
+	MinVolume1 *big.Int `rlp:"nil"`
 }
 
 func (data RemoveSwapPool) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.Coin0 == data.Coin1 {
 		return &Response{
-			Code: 999,
+			Code: code.IdenticalCoin,
 			Log:  "identical coin",
-			// Info: EncodeError(),
 		}
 	}
 
 	if !context.Swap().SwapPoolExist(data.Coin0, data.Coin1) {
 		return &Response{
-			Code: 999,
-			Log:  "swap pool not found",
-			// Info: EncodeError(),
+			Code: code.PairNotExists,
+			Log:  "swap pool for pair not found",
 		}
 	}
 
 	sender, _ := tx.Sender()
-	if err := context.Swap().CheckBurn(sender, data.Coin0, data.Coin1, data.Liquidity, data.MinAmount0, data.MinAmount1); err != nil {
+	if err := context.Swap().CheckBurn(sender, data.Coin0, data.Coin1, data.Liquidity, data.MinVolume0, data.MinVolume1); err != nil {
+		wantAmount0, wantAmount1 := context.Swap().AmountsOfLiquidity(data.Coin0, data.Coin1, data.Liquidity)
+		if err == swap.ErrorInsufficientLiquidityBalance {
+			balance, amount0, amount1 := context.Swap().SwapPoolFromProvider(sender, data.Coin0, data.Coin1)
+			return &Response{
+				Code: code.InsufficientLiquidityBalance,
+				Log:  fmt.Sprintf("Insufficient balance for provider: %s liquidity tokens is equal %s of coin %d and %s of coin %d, but you want to get %s, %s of coin %d and %s of coin %d", balance, amount0, data.Coin0, amount1, data.Coin1, data.Liquidity, wantAmount0, data.Coin0, wantAmount1, data.Coin1),
+				Info: EncodeError(code.NewInsufficientLiquidityBalance(balance.String(), amount0.String(), data.Coin0.String(), amount1.String(), data.Coin1.String(), data.Liquidity.String(), wantAmount0.String(), wantAmount1.String())),
+			}
+		}
+		if err == swap.ErrorInsufficientLiquidityBurned {
+			wantGetAmount0 := "0"
+			if data.MinVolume0 != nil {
+				wantGetAmount0 = data.MinVolume0.String()
+			}
+			wantGetAmount1 := "0"
+			if data.MinVolume1 != nil {
+				wantGetAmount1 = data.MinVolume1.String()
+			}
+			return &Response{
+				Code: code.InsufficientLiquidityBurned,
+				Log:  fmt.Sprintf("You wanted to get more %s of coin %d and more %s of coin %d, but currently liquidity %s is equal %s of coin %d and  %s of coin %d", wantGetAmount0, data.Coin0, wantGetAmount1, data.Coin1, data.Liquidity, wantAmount0, data.Coin0, wantAmount1, data.Coin1),
+				Info: EncodeError(code.NewInsufficientLiquidityBurned(wantGetAmount0, data.Coin0.String(), wantGetAmount1, data.Coin1.String(), data.Liquidity.String(), wantAmount0.String(), wantAmount1.String())),
+			}
+		}
 		return &Response{
-			Code: 999,
+			Code: code.SwapPoolUnknown,
 			Log:  err.Error(),
-			// Info: EncodeError(),
 		}
 	}
 	return nil
@@ -85,7 +107,7 @@ func (data RemoveSwapPool) Run(tx *Transaction, context state.Interface, rewardP
 	}
 
 	if deliverState, ok := context.(*state.State); ok {
-		amount0, amount1 := deliverState.Swap.PairBurn(sender, data.Coin0, data.Coin1, data.Liquidity)
+		amount0, amount1 := deliverState.Swap.PairBurn(sender, data.Coin0, data.Coin1, data.Liquidity, data.MinVolume0, data.MinVolume1)
 
 		if isGasCommissionFromPoolSwap {
 			commission, commissionInBaseCoin = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
