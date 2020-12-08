@@ -28,8 +28,7 @@ func (data BuyCoinData) Gas() int64 {
 	return commissions.ConvertTx
 }
 
-func (data BuyCoinData) totalSpend(tx *Transaction, context *state.CheckState) (totalSpends,
-	[]conversion, *big.Int, *Response) {
+func (data BuyCoinData) totalSpend(tx *Transaction, context *state.CheckState) (totalSpends, []conversion, *big.Int, *Response) {
 	total := totalSpends{}
 	var conversions []conversion
 

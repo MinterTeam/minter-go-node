@@ -23,8 +23,11 @@ type RemoveSwapPool struct {
 func (data RemoveSwapPool) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.Coin0 == data.Coin1 {
 		return &Response{
-			Code: code.IdenticalCoin,
-			Log:  "identical coin",
+			Code: code.CrossConvert,
+			Log:  "\"From\" coin equals to \"to\" coin",
+			Info: EncodeError(code.NewCrossConvert(
+				data.Coin0.String(),
+				data.Coin1.String(), "", "")),
 		}
 	}
 

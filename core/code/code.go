@@ -76,12 +76,11 @@ const (
 	// swap pool
 	SwapPoolUnknown              uint32 = 700
 	PairNotExists                uint32 = 701
-	IdenticalCoin                uint32 = 702
-	InsufficientInputAmount      uint32 = 703
-	InsufficientLiquidity        uint32 = 704
-	InsufficientLiquidityMinted  uint32 = 705
-	InsufficientLiquidityBurned  uint32 = 706
-	InsufficientLiquidityBalance uint32 = 708
+	InsufficientInputAmount      uint32 = 702
+	InsufficientLiquidity        uint32 = 703
+	InsufficientLiquidityMinted  uint32 = 704
+	InsufficientLiquidityBurned  uint32 = 705
+	InsufficientLiquidityBalance uint32 = 706
 )
 
 func NewInsufficientLiquidityBalance(liquidity, amount0, coin0, amount1, coin1, requestedLiquidity, wantA0, wantA1 string) *insufficientLiquidityBalance {
