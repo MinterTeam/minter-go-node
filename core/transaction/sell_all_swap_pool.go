@@ -85,12 +85,10 @@ func (data SellAllSwapPool) Run(tx *Transaction, context state.Interface, reward
 			Info: EncodeError(code.NewInsufficientFunds(sender.String(), commission.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
 		}
 	}
-	if err := checkState.Swap().CheckSwap(data.CoinToSell, data.CoinToBuy, balance, data.MinimumValueToBuy); err != nil {
-		return Response{
-			Code: 999,
-			Log:  err.Error(),
-			// Info: EncodeError(),
-		}
+
+	errResp = checkSwap(checkState, data.CoinToSell, balance, data.CoinToBuy, data.MinimumValueToBuy, false)
+	if errResp != nil {
+		return *errResp
 	}
 
 	if deliverState, ok := context.(*state.State); ok {

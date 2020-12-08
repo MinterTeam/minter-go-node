@@ -6,8 +6,8 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
+	"github.com/MinterTeam/minter-go-node/core/state/swap"
 	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
 )
@@ -28,20 +28,9 @@ func (data BuySwapPool) basicCheck(tx *Transaction, context *state.CheckState) *
 		}
 	}
 
-	if !context.Swap().SwapPoolExist(data.CoinToSell, data.CoinToBuy) {
-		return &Response{
-			Code: 999,
-			Log:  "swap pool not found",
-			// Info: EncodeError(),
-		}
-	}
-
-	if err := context.Swap().CheckSwap(data.CoinToSell, data.CoinToBuy, data.MaximumValueToSell, data.ValueToBuy); err != nil {
-		return &Response{
-			Code: 999,
-			Log:  err.Error(),
-			// Info: EncodeError(),
-		}
+	response := checkSwap(context, data.CoinToSell, data.MaximumValueToSell, data.CoinToBuy, data.ValueToBuy, true)
+	if response != nil {
+		return response
 	}
 	return nil
 }
@@ -69,17 +58,10 @@ func (data BuySwapPool) Run(tx *Transaction, context state.Interface, rewardPool
 	}
 
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
-	commission := big.NewInt(0).Set(commissionInBaseCoin)
-
 	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
-
-	if !tx.GasCoin.IsBaseCoin() {
-		errResp := CheckReserveUnderflow(gasCoin, commissionInBaseCoin)
-		if errResp != nil {
-			return *errResp
-		}
-
-		commission = formula.CalculateSaleAmount(gasCoin.Volume(), gasCoin.Reserve(), gasCoin.Crr(), commissionInBaseCoin)
+	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, gasCoin, commissionInBaseCoin)
+	if errResp != nil {
+		return *errResp
 	}
 
 	amount0 := new(big.Int).Set(data.MaximumValueToSell)
@@ -87,7 +69,10 @@ func (data BuySwapPool) Run(tx *Transaction, context state.Interface, rewardPool
 		amount0.Add(amount0, commission)
 	}
 	if checkState.Accounts().GetBalance(sender, data.CoinToSell).Cmp(amount0) == -1 {
-		return Response{Code: code.InsufficientFunds} // todo
+		return Response{
+			Code: code.InsufficientFunds,
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), amount0.String(), checkState.Coins().GetCoin(data.CoinToSell).GetFullSymbol()),
+		}
 	}
 
 	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
@@ -103,12 +88,14 @@ func (data BuySwapPool) Run(tx *Transaction, context state.Interface, rewardPool
 		deliverState.Accounts.SubBalance(sender, data.CoinToSell, amountIn)
 		deliverState.Accounts.AddBalance(sender, data.CoinToBuy, amountOut)
 
-		rewardPool.Add(rewardPool, commissionInBaseCoin)
-
-		deliverState.Coins.SubVolume(tx.GasCoin, commission)
-		deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
-
+		if isGasCommissionFromPoolSwap {
+			commission, commissionInBaseCoin = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
+		} else {
+			deliverState.Coins.SubVolume(tx.GasCoin, commission)
+			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
+		}
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
+		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}
@@ -124,4 +111,52 @@ func (data BuySwapPool) Run(tx *Transaction, context state.Interface, rewardPool
 		GasWanted: tx.Gas(),
 		Tags:      tags,
 	}
+}
+
+func checkSwap(context *state.CheckState, coinIn types.CoinID, valueIn *big.Int, coinOut types.CoinID, valueOut *big.Int, isBuy bool) *Response {
+	if err := context.Swap().CheckSwap(coinIn, coinOut, valueIn, valueOut); err != nil {
+		if err == swap.ErrorNotExist {
+			return &Response{
+				Code: code.PairNotExists,
+				Log:  fmt.Sprintf("swap pair %d %d not exists in pool", coinIn, coinOut),
+				Info: EncodeError(code.NewPairNotExists(coinIn.String(), coinOut.String())),
+			}
+		}
+		if err == swap.ErrorK {
+			if isBuy {
+				value, _ := context.Swap().PairCalculateBuyForSell(coinIn, coinOut, valueOut)
+				coin := context.Coins().GetCoin(coinIn)
+				return &Response{
+					Code: code.MaximumValueToSellReached,
+					Log: fmt.Sprintf(
+						"You wanted to sell maximum %s, but currently you need to spend %s to complete tx",
+						valueIn.String(), value.String()),
+					Info: EncodeError(code.NewMaximumValueToSellReached(valueIn.String(), value.String(), coin.GetFullSymbol(), coin.ID().String())),
+				}
+			} else {
+				value, _ := context.Swap().PairCalculateSellForBuy(coinIn, coinOut, valueOut)
+				coin := context.Coins().GetCoin(coinIn)
+				return &Response{
+					Code: code.MaximumValueToSellReached,
+					Log: fmt.Sprintf(
+						"You wanted to buy minimum %s, but currently you need to spend %s to complete tx",
+						valueIn.String(), value.String()),
+					Info: EncodeError(code.NewMaximumValueToSellReached(valueIn.String(), value.String(), coin.GetFullSymbol(), coin.ID().String())),
+				}
+			}
+		}
+		if err == swap.ErrorInsufficientLiquidity {
+			_, reserve0, reserve1 := context.Swap().SwapPool(coinIn, coinOut)
+			return &Response{
+				Code: code.InsufficientLiquidity,
+				Log:  fmt.Sprintf("You wanted to exchange %s pips of coin %d for %s of coin %d, but pool reserve of coin %d equal %s and reserve of coin %d equal %s", coinIn, valueIn, coinOut, valueOut, coinIn, reserve0.String(), coinOut, reserve1.String()),
+				Info: EncodeError(code.NewInsufficientLiquidity(coinIn.String(), valueIn.String(), coinOut.String(), valueOut.String(), reserve0.String(), reserve1.String())),
+			}
+		}
+		return &Response{
+			Code: code.SwapPoolUnknown,
+			Log:  err.Error(),
+		}
+	}
+	return nil
 }
