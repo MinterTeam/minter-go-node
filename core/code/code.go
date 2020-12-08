@@ -76,12 +76,11 @@ const (
 	// swap pool
 	SwapPoolUnknown              uint32 = 700
 	PairNotExists                uint32 = 701
-	InsufficientInputAmount      uint32 = 702
-	InsufficientOutputAmount     uint32 = 703
+	IdenticalCoin                uint32 = 702
+	InsufficientInputAmount      uint32 = 703
 	InsufficientLiquidity        uint32 = 704
 	InsufficientLiquidityMinted  uint32 = 705
 	InsufficientLiquidityBurned  uint32 = 706
-	IdenticalCoin                uint32 = 707
 	InsufficientLiquidityBalance uint32 = 708
 )
 

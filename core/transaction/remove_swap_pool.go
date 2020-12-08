@@ -40,6 +40,9 @@ func (data RemoveSwapPool) basicCheck(tx *Transaction, context *state.CheckState
 		wantAmount0, wantAmount1 := context.Swap().AmountsOfLiquidity(data.Coin0, data.Coin1, data.Liquidity)
 		if err == swap.ErrorInsufficientLiquidityBalance {
 			balance, amount0, amount1 := context.Swap().SwapPoolFromProvider(sender, data.Coin0, data.Coin1)
+			if balance == nil {
+				balance, amount0, amount1 = big.NewInt(0), big.NewInt(0), big.NewInt(0)
+			}
 			return &Response{
 				Code: code.InsufficientLiquidityBalance,
 				Log:  fmt.Sprintf("Insufficient balance for provider: %s liquidity tokens is equal %s of coin %d and %s of coin %d, but you want to get %s, %s of coin %d and %s of coin %d", balance, amount0, data.Coin0, amount1, data.Coin1, data.Liquidity, wantAmount0, data.Coin0, wantAmount1, data.Coin1),
