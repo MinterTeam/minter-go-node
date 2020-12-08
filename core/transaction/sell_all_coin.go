@@ -150,13 +150,13 @@ func (data SellAllCoinData) basicCheck(tx *Transaction, context *state.CheckStat
 
 	if coinToSell.Reserve() == nil {
 		return &Response{
-			Code: code.CoinReserveNotSufficient, // todo
-			Log:  "todo",                        // todo
+			Code: code.CoinReserveNotSufficient,
+			Log:  "sell coin has not reserve",
 			Info: EncodeError(code.NewCoinReserveNotSufficient(
 				coinToSell.GetFullSymbol(),
 				coinToSell.ID().String(),
 				coinToSell.Reserve().String(),
-				"todo", // todo
+				"",
 			)),
 		}
 	}
@@ -172,13 +172,13 @@ func (data SellAllCoinData) basicCheck(tx *Transaction, context *state.CheckStat
 
 	if coinToBuy.Reserve() == nil {
 		return &Response{
-			Code: code.CoinReserveNotSufficient, // todo
-			Log:  "todo",                        // todo
+			Code: code.CoinReserveNotSufficient,
+			Log:  "buy coin has not reserve",
 			Info: EncodeError(code.NewCoinReserveNotSufficient(
 				coinToBuy.GetFullSymbol(),
 				coinToBuy.ID().String(),
 				coinToBuy.Reserve().String(),
-				"todo", // todo
+				"",
 			)),
 		}
 	}

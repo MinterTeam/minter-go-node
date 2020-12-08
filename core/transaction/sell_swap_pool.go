@@ -21,7 +21,7 @@ type SellSwapPool struct {
 func (data SellSwapPool) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.CoinToBuy == data.CoinToSell {
 		return &Response{
-			Code: 999,
+			Code: code.IdenticalCoin,
 			Log:  "identical coin",
 			// Info: EncodeError(),
 		}

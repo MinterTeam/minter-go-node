@@ -22,9 +22,8 @@ type BuySwapPool struct {
 func (data BuySwapPool) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.CoinToBuy == data.CoinToSell {
 		return &Response{
-			Code: 999,
+			Code: code.IdenticalCoin,
 			Log:  "identical coin",
-			// Info: EncodeError(),
 		}
 	}
 
@@ -138,7 +137,7 @@ func checkSwap(context *state.CheckState, coinIn types.CoinID, valueIn *big.Int,
 				value, _ := rSwap.PairCalculateSellForBuy(coinIn, coinOut, valueOut)
 				coin := context.Coins().GetCoin(coinIn)
 				return &Response{
-					Code: code.MaximumValueToSellReached,
+					Code: code.MinimumValueToBuyReached,
 					Log: fmt.Sprintf(
 						"You wanted to buy minimum %s, but currently you need to spend %s to complete tx",
 						valueIn.String(), value.String()),
