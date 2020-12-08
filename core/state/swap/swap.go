@@ -27,6 +27,8 @@ type RSwap interface {
 	CheckSwap(coin0, coin1 types.CoinID, amount0In, amount1Out *big.Int) error
 	PairCalculateBuyForSell(coin0, coin1 types.CoinID, amount0In *big.Int) (amount1Out *big.Int, err error)
 	PairCalculateSellForBuy(coin0, coin1 types.CoinID, amount1In *big.Int) (amount0Out *big.Int, err error)
+	PairCalculateAddLiquidity(coin0, coin1 types.CoinID, amount0 *big.Int) (liquidity, a0, a1 *big.Int, err error)
+	AmountsOfLiquidity(coin0, coin1 types.CoinID, liquidity *big.Int) (amount0, amount1 *big.Int, err error)
 	Export(state *types.AppState)
 }
 
@@ -290,6 +292,24 @@ func (s *Swap) PairCalculateBuyForSell(coin0, coin1 types.CoinID, amount0In *big
 	return pair.CalculateBuyForSell(amount0In), nil
 }
 
+func (s *Swap) PairCalculateAddLiquidity(coin0, coin1 types.CoinID, amount0 *big.Int) (*big.Int, *big.Int, *big.Int, error) {
+	pair := s.Pair(coin0, coin1)
+	if pair == nil {
+		return nil, nil, nil, ErrorNotExist
+	}
+	liquidity, _, amount1 := pair.newLiquidity(amount0)
+	return liquidity, amount0, amount1, nil
+}
+
+func (s *Swap) AmountsOfLiquidity(coin0, coin1 types.CoinID, liquidity *big.Int) (amount0, amount1 *big.Int, err error) {
+	pair := s.Pair(coin0, coin1)
+	if pair == nil {
+		return nil, nil, ErrorNotExist
+	}
+	amount0, amount1 = pair.Amounts(liquidity)
+	return amount0, amount1, nil
+}
+
 func (s *Swap) PairMint(address types.Address, coin0, coin1 types.CoinID, amount0, maxAmount1 *big.Int) (*big.Int, *big.Int) {
 	pair := s.ReturnPair(coin0, coin1)
 	oldReserve0, oldReserve1 := pair.Reserves()
@@ -477,18 +497,11 @@ func (p *Pair) Balance(address types.Address) (liquidity *big.Int) {
 	return new(big.Int).Set(balance.Liquidity)
 }
 
-func (p *Pair) liquidity(amount0, amount1 *big.Int) (liquidity, a, b *big.Int) {
+func (p *Pair) newLiquidity(amount0 *big.Int) (*big.Int, *big.Int, *big.Int) {
 	totalSupply := p.GetTotalSupply()
 	reserve0, reserve1 := p.Reserves()
-	liquidity = new(big.Int).Div(new(big.Int).Mul(totalSupply, amount0), reserve0)
-	liquidity1 := new(big.Int).Div(new(big.Int).Mul(totalSupply, amount1), reserve1)
-	if liquidity.Cmp(liquidity1) == 1 {
-		liquidity = liquidity1
-		amount0 = new(big.Int).Div(new(big.Int).Mul(liquidity, reserve0), totalSupply)
-	} else {
-		amount1 = new(big.Int).Div(new(big.Int).Mul(liquidity, reserve1), totalSupply)
-	}
-	return liquidity, amount0, amount1
+	liquidity := new(big.Int).Div(new(big.Int).Mul(totalSupply, amount0), reserve0)
+	return liquidity, amount0, new(big.Int).Div(new(big.Int).Mul(liquidity, reserve1), totalSupply)
 }
 
 func (p *Pair) Mint(address types.Address, amount0, amount1 *big.Int) (liquidity *big.Int) {
@@ -497,7 +510,7 @@ func (p *Pair) Mint(address types.Address, amount0, amount1 *big.Int) (liquidity
 		liquidity = startingSupply(amount0, amount1)
 		p.mint(types.Address{}, big.NewInt(minimumLiquidity))
 	} else {
-		liquidity, amount0, amount1 = p.liquidity(amount0, amount1)
+		liquidity, amount0, amount1 = p.newLiquidity(amount0)
 	}
 
 	if liquidity.Sign() != 1 {
@@ -520,7 +533,7 @@ func (p *Pair) checkMint(amount0, maxAmount1 *big.Int) (err error) {
 		liquidity = startingSupply(amount0, maxAmount1)
 	} else {
 		var amount1 *big.Int
-		liquidity, amount0, amount1 = p.liquidity(amount0, maxAmount1)
+		liquidity, amount0, amount1 = p.newLiquidity(amount0)
 		if amount1.Cmp(maxAmount1) == 1 {
 			return ErrorInsufficientInputAmount
 		}

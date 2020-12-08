@@ -74,12 +74,17 @@ const (
 	NotEnoughMultisigVotes            uint32 = 609
 
 	// swap pool
-	SwapPoolUnknown          uint32 = 700
-	PairNotExists            uint32 = 701
-	InsufficientInputAmount  uint32 = 702
-	InsufficientOutputAmount uint32 = 703
-	InsufficientLiquidity    uint32 = 704
+	SwapPoolUnknown             uint32 = 700
+	PairNotExists               uint32 = 701
+	InsufficientInputAmount     uint32 = 702
+	InsufficientOutputAmount    uint32 = 703
+	InsufficientLiquidity       uint32 = 704
+	InsufficientLiquidityMinted uint32 = 705
 )
+
+func NewInsufficientLiquidity(coin0, value0, coin1, value1, reserve0, reserve1 string) *insufficientLiquidity {
+	return &insufficientLiquidity{Code: strconv.Itoa(int(InsufficientLiquidity)), Coin0: coin0, Coin1: coin1, Reserve0: reserve0, Reserve1: reserve1, Amount0In: value0, Amount1Out: value1}
+}
 
 type insufficientLiquidity struct {
 	Code      string `json:"code,omitempty"`
@@ -92,8 +97,31 @@ type insufficientLiquidity struct {
 	Amount1Out string `json:"amount1_out,omitempty"`
 }
 
-func NewInsufficientLiquidity(coin0, value0, coin1, value1, reserve0, reserve1 string) *insufficientLiquidity {
-	return &insufficientLiquidity{Code: strconv.Itoa(int(PairNotExists)), Coin0: coin0, Coin1: coin1, Reserve0: reserve0, Reserve1: reserve1, Amount0In: value0, Amount1Out: value1}
+func NewInsufficientInputAmount(coin0, value0, coin1, value1, neededValue1 string) *insufficientInputAmount {
+	return &insufficientInputAmount{Code: strconv.Itoa(int(InsufficientInputAmount)), Coin0: coin0, Coin1: coin1, Amount0: value0, Amount1: value1, NeededAmount1: neededValue1}
+}
+
+type insufficientInputAmount struct {
+	Code    string `json:"code,omitempty"`
+	Coin0   string `json:"coin0,omitempty"`
+	Amount0 string `json:"amount0,omitempty"`
+
+	Coin1         string `json:"coin1,omitempty"`
+	Amount1       string `json:"amount1,omitempty"`
+	NeededAmount1 string `json:"needed_amount1,omitempty"`
+}
+
+func NewInsufficientLiquidityMinted(coin0, value0, coin1, value1 string) *insufficientLiquidityMinted {
+	return &insufficientLiquidityMinted{Code: strconv.Itoa(int(InsufficientLiquidityMinted)), Coin0: coin0, Coin1: coin1, NeededAmount0: value0, NeededAmount1: value1}
+}
+
+type insufficientLiquidityMinted struct {
+	Code          string `json:"code,omitempty"`
+	Coin0         string `json:"coin0,omitempty"`
+	NeededAmount0 string `json:"needed_amount0,omitempty"`
+
+	Coin1         string `json:"coin1,omitempty"`
+	NeededAmount1 string `json:"needed_amount1,omitempty"`
 }
 
 type pairNotExists struct {
