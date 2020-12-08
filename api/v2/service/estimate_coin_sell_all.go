@@ -71,7 +71,7 @@ func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinS
 		return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
 	}
 
-	value := new(big.Int).Set(valueToSell)
+	value := new(big.Int).Sub(valueToSell, commission)
 	if !req.FromPool {
 		if !coinToSell.IsBaseCoin() {
 			value = formula.CalculateSaleReturn(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), valueToSell)
@@ -79,7 +79,6 @@ func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinS
 				return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
 			}
 		}
-		value.Sub(value, commissionInBaseCoin)
 		if !coinToBuy.IsBaseCoin() {
 			if errResp := transaction.CheckForCoinSupplyOverflow(coinTo, value); errResp != nil {
 				return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
@@ -91,7 +90,7 @@ func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinS
 		}
 	} else {
 		var err error
-		value, err = cState.Swap().PairCalculateBuyForSell(coinFrom.ID(), coinTo.ID(), valueToSell.Sub(valueToSell, commission))
+		value, err = cState.Swap().PairCalculateBuyForSell(coinFrom.ID(), coinTo.ID(), valueToSell)
 		if err != nil {
 			return nil, status.Error(codes.FailedPrecondition, err.Error())
 		}
