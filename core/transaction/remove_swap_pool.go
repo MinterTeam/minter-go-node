@@ -12,7 +12,7 @@ import (
 	"math/big"
 )
 
-type RemoveSwapPool struct {
+type RemoveSwapPoolData struct {
 	Coin0      types.CoinID
 	Coin1      types.CoinID
 	Liquidity  *big.Int
@@ -20,7 +20,7 @@ type RemoveSwapPool struct {
 	MinVolume1 *big.Int `rlp:"nil"`
 }
 
-func (data RemoveSwapPool) basicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data RemoveSwapPoolData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.Coin0 == data.Coin1 {
 		return &Response{
 			Code: code.CrossConvert,
@@ -75,15 +75,15 @@ func (data RemoveSwapPool) basicCheck(tx *Transaction, context *state.CheckState
 	return nil
 }
 
-func (data RemoveSwapPool) String() string {
+func (data RemoveSwapPoolData) String() string {
 	return fmt.Sprintf("REMOVE SWAP POOL")
 }
 
-func (data RemoveSwapPool) Gas() int64 {
+func (data RemoveSwapPoolData) Gas() int64 {
 	return commissions.RemoveSwapPoolData
 }
 
-func (data RemoveSwapPool) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
+func (data RemoveSwapPoolData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState

@@ -26,7 +26,7 @@ func TestSellAllWithCommissionFromBancor(t *testing.T) {
 	cState.Accounts.SubBalance(types.Address{}, coin1, helpers.BipToPip(big.NewInt(100000)))
 	cState.Accounts.AddBalance(addr, coin1, helpers.BipToPip(big.NewInt(100000)))
 	{
-		data := AddSwapPool{
+		data := AddSwapPoolData{
 			Coin0:      coin,
 			Volume0:    helpers.BipToPip(big.NewInt(100)),
 			Coin1:      coin1,
@@ -70,7 +70,7 @@ func TestSellAllWithCommissionFromBancor(t *testing.T) {
 		}
 	}
 	{
-		data := SellAllSwapPool{
+		data := SellAllSwapPoolData{
 			CoinToSell:        coin,
 			CoinToBuy:         coin1,
 			MinimumValueToBuy: big.NewInt(99),
@@ -130,7 +130,7 @@ func TestSellAllWithCommissionFromPool(t *testing.T) {
 	cState.Accounts.SubBalance(types.Address{}, coin1, helpers.BipToPip(big.NewInt(100000)))
 	cState.Accounts.AddBalance(addr, coin1, helpers.BipToPip(big.NewInt(100000)))
 	{
-		data := AddSwapPool{
+		data := AddSwapPoolData{
 			Coin0:      coin,
 			Volume0:    helpers.BipToPip(big.NewInt(100)),
 			Coin1:      coin1,
@@ -174,7 +174,7 @@ func TestSellAllWithCommissionFromPool(t *testing.T) {
 		}
 	}
 	{
-		data := AddSwapPool{
+		data := AddSwapPoolData{
 			Coin0:      coin,
 			Volume0:    helpers.BipToPip(big.NewInt(1000)),
 			Coin1:      types.GetBaseCoinID(),
@@ -218,7 +218,7 @@ func TestSellAllWithCommissionFromPool(t *testing.T) {
 		}
 	}
 	{
-		data := SellAllSwapPool{
+		data := SellAllSwapPoolData{
 			CoinToSell:        coin,
 			CoinToBuy:         coin1,
 			MinimumValueToBuy: big.NewInt(99),

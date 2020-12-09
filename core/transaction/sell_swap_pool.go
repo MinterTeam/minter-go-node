@@ -11,14 +11,14 @@ import (
 	"math/big"
 )
 
-type SellSwapPool struct {
+type SellSwapPoolData struct {
 	CoinToSell        types.CoinID
 	ValueToSell       *big.Int
 	CoinToBuy         types.CoinID
 	MinimumValueToBuy *big.Int
 }
 
-func (data SellSwapPool) basicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data SellSwapPoolData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.CoinToBuy == data.CoinToSell {
 		return &Response{
 			Code: code.CrossConvert,
@@ -36,15 +36,15 @@ func (data SellSwapPool) basicCheck(tx *Transaction, context *state.CheckState) 
 	return nil
 }
 
-func (data SellSwapPool) String() string {
+func (data SellSwapPoolData) String() string {
 	return fmt.Sprintf("EXCHANGE SWAP POOL: SELL")
 }
 
-func (data SellSwapPool) Gas() int64 {
+func (data SellSwapPoolData) Gas() int64 {
 	return commissions.ConvertTx
 }
 
-func (data SellSwapPool) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
+func (data SellSwapPoolData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
