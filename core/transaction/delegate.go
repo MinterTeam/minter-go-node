@@ -35,11 +35,25 @@ func (data DelegateData) basicCheck(tx *Transaction, context *state.CheckState) 
 		}
 	}
 
-	if !context.Coins().Exists(data.Coin) {
+	coin := context.Coins().GetCoin(data.Coin)
+	if coin == nil {
 		return &Response{
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin %s not exists", data.Coin),
 			Info: EncodeError(code.NewCoinNotExists("", data.Coin.String())),
+		}
+	}
+
+	if !coin.HasReserve() {
+		return &Response{
+			Code: code.CoinReserveNotSufficient,
+			Log:  "coin has not reserve",
+			Info: EncodeError(code.NewCoinReserveNotSufficient(
+				coin.GetFullSymbol(),
+				coin.ID().String(),
+				coin.Reserve().String(),
+				"",
+			)),
 		}
 	}
 
@@ -69,7 +83,7 @@ func (data DelegateData) basicCheck(tx *Transaction, context *state.CheckState) 
 		return &Response{
 			Code: code.TooLowStake,
 			Log:  "Stake is too low",
-			Info: EncodeError(code.NewTooLowStake(sender.String(), data.PubKey.String(), value.String(), data.Coin.String(), context.Coins().GetCoin(data.Coin).GetFullSymbol())),
+			Info: EncodeError(code.NewTooLowStake(sender.String(), data.PubKey.String(), value.String(), data.Coin.String(), coin.GetFullSymbol())),
 		}
 	}
 

@@ -69,13 +69,32 @@ func (s *Service) EstimateCoinBuy(ctx context.Context, req *pb.EstimateCoinBuyRe
 
 	value := valueToBuy
 	if !req.FromPool {
+		if !coinTo.HasReserve() {
+			return nil, s.createError(status.New(codes.FailedPrecondition, "buy coin has not reserve"), transaction.EncodeError(code.NewCoinReserveNotSufficient(
+				coinTo.GetFullSymbol(),
+				coinTo.ID().String(),
+				coinTo.Reserve().String(),
+				"",
+			)))
+		}
+		if !coinFrom.HasReserve() {
+			return nil, s.createError(status.New(codes.FailedPrecondition, "sellcoin has not reserve"), transaction.EncodeError(code.NewCoinReserveNotSufficient(
+				coinFrom.GetFullSymbol(),
+				coinFrom.ID().String(),
+				coinFrom.Reserve().String(),
+				"",
+			)))
+		}
+
 		if !coinToBuy.IsBaseCoin() {
 			if errResp := transaction.CheckForCoinSupplyOverflow(coinTo, valueToBuy); errResp != nil {
 				return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
 			}
 			value = formula.CalculatePurchaseAmount(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), valueToBuy)
 		}
+		if !coinFrom.HasReserve() {
 
+		}
 		if !coinToSell.IsBaseCoin() {
 			value = formula.CalculateSaleAmount(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), value)
 			if errResp := transaction.CheckReserveUnderflow(coinFrom, value); errResp != nil {

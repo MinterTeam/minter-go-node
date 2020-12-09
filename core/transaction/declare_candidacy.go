@@ -32,11 +32,25 @@ func (data DeclareCandidacyData) basicCheck(tx *Transaction, context *state.Chec
 		}
 	}
 
-	if !context.Coins().Exists(data.Coin) {
+	coin := context.Coins().GetCoin(data.Coin)
+	if coin == nil {
 		return &Response{
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin %s not exists", data.Coin),
 			Info: EncodeError(code.NewCoinNotExists("", data.Coin.String())),
+		}
+	}
+
+	if !coin.HasReserve() {
+		return &Response{
+			Code: code.CoinReserveNotSufficient,
+			Log:  "coin has not reserve",
+			Info: EncodeError(code.NewCoinReserveNotSufficient(
+				coin.GetFullSymbol(),
+				coin.ID().String(),
+				coin.Reserve().String(),
+				"",
+			)),
 		}
 	}
 
