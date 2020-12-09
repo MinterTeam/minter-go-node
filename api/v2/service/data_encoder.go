@@ -11,6 +11,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	_struct "google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"strconv"
 )
 
@@ -36,11 +37,15 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 			NewOwner: d.NewOwner.String(),
 		}
 	case *transaction.CreateCoinData:
+		var reserve *wrapperspb.StringValue
+		if d.InitialReserve != nil {
+			reserve = wrapperspb.String(d.InitialReserve.String())
+		}
 		m = &pb.CreateCoinData{
 			Name:                 d.Name,
 			Symbol:               d.Symbol.String(),
 			InitialAmount:        d.InitialAmount.String(),
-			InitialReserve:       d.InitialReserve.String(),
+			InitialReserve:       reserve,
 			ConstantReserveRatio: uint64(d.ConstantReserveRatio),
 			MaxSupply:            d.MaxSupply.String(),
 		}
@@ -124,11 +129,15 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 			Price: strconv.Itoa(int(d.Price)),
 		}
 	case *transaction.RecreateCoinData:
+		var reserve *wrapperspb.StringValue
+		if d.InitialReserve != nil {
+			reserve = wrapperspb.String(d.InitialReserve.String())
+		}
 		m = &pb.RecreateCoinData{
 			Name:                 d.Name,
 			Symbol:               d.Symbol.String(),
 			InitialAmount:        d.InitialAmount.String(),
-			InitialReserve:       d.InitialReserve.String(),
+			InitialReserve:       reserve,
 			ConstantReserveRatio: uint64(d.ConstantReserveRatio),
 			MaxSupply:            d.MaxSupply.String(),
 		}

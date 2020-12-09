@@ -35,13 +35,18 @@ func (s *Service) CoinInfo(ctx context.Context, req *pb.CoinInfoRequest) (*pb.Co
 		ownerAddress = wrapperspb.String(info.OwnerAddress().String())
 	}
 
+	var reserve *wrapperspb.StringValue
+	if coin.HasReserve() {
+		reserve = wrapperspb.String(coin.Reserve().String())
+	}
+
 	return &pb.CoinInfoResponse{
 		Id:             uint64(coin.ID()),
 		Name:           coin.Name(),
 		Symbol:         coin.GetFullSymbol(),
 		Volume:         coin.Volume().String(),
 		Crr:            uint64(coin.Crr()),
-		ReserveBalance: coin.Reserve().String(),
+		ReserveBalance: reserve,
 		MaxSupply:      coin.MaxSupply().String(),
 		OwnerAddress:   ownerAddress,
 	}, nil
@@ -69,13 +74,18 @@ func (s *Service) CoinInfoById(ctx context.Context, req *pb.CoinIdRequest) (*pb.
 		ownerAddress = wrapperspb.String(info.OwnerAddress().String())
 	}
 
+	var reserve *wrapperspb.StringValue
+	if coin.HasReserve() {
+		reserve = wrapperspb.String(coin.Reserve().String())
+	}
+
 	return &pb.CoinInfoResponse{
 		Id:             uint64(coin.ID()),
 		Name:           coin.Name(),
 		Symbol:         coin.GetFullSymbol(),
 		Volume:         coin.Volume().String(),
 		Crr:            uint64(coin.Crr()),
-		ReserveBalance: coin.Reserve().String(),
+		ReserveBalance: reserve,
 		MaxSupply:      coin.MaxSupply().String(),
 		OwnerAddress:   ownerAddress,
 	}, nil

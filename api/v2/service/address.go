@@ -50,13 +50,14 @@ func (s *Service) Address(ctx context.Context, req *pb.AddressRequest) (*pb.Addr
 	res.Balance = make([]*pb.AddressBalance, 0, len(balances))
 	for _, coin := range balances {
 		totalStakesGroupByCoin[coin.Coin.ID] = coin.Value
+		coinModel := cState.Coins().GetCoin(coin.Coin.ID)
 		res.Balance = append(res.Balance, &pb.AddressBalance{
 			Coin: &pb.Coin{
 				Id:     uint64(coin.Coin.ID),
-				Symbol: cState.Coins().GetCoin(coin.Coin.ID).GetFullSymbol(),
+				Symbol: coinModel.GetFullSymbol(),
 			},
 			Value:    coin.Value.String(),
-			BipValue: customCoinBipBalance(coin.Coin.ID, coin.Value, cState.Coins()).String(),
+			BipValue: customCoinBipBalance(coin.Value, coinModel).String(),
 		})
 	}
 
@@ -98,14 +99,15 @@ func (s *Service) Address(ctx context.Context, req *pb.AddressRequest) (*pb.Addr
 
 		res.Delegated = make([]*pb.AddressDelegatedBalance, 0, len(userDelegatedStakesGroupByCoin))
 		for coinID, delegatedStake := range userDelegatedStakesGroupByCoin {
+			coinModel := cState.Coins().GetCoin(coinID)
 			res.Delegated = append(res.Delegated, &pb.AddressDelegatedBalance{
 				Coin: &pb.Coin{
 					Id:     uint64(coinID),
-					Symbol: cState.Coins().GetCoin(coinID).GetFullSymbol(),
+					Symbol: coinModel.GetFullSymbol(),
 				},
 				Value:            delegatedStake.Value.String(),
 				DelegateBipValue: delegatedStake.BipValue.String(),
-				BipValue:         customCoinBipBalance(coinID, delegatedStake.Value, cState.Coins()).String(),
+				BipValue:         customCoinBipBalance(delegatedStake.Value, coinModel).String(),
 			})
 
 			totalStake, ok := totalStakesGroupByCoin[coinID]
@@ -124,12 +126,13 @@ func (s *Service) Address(ctx context.Context, req *pb.AddressRequest) (*pb.Addr
 	coinsBipValue := big.NewInt(0)
 	res.Total = make([]*pb.AddressBalance, 0, len(totalStakesGroupByCoin))
 	for coinID, stake := range totalStakesGroupByCoin {
-		balance := customCoinBipBalance(coinID, stake, cState.Coins())
+		coinModel := cState.Coins().GetCoin(coinID)
+		balance := customCoinBipBalance(stake, coinModel)
 		if req.Delegated {
 			res.Total = append(res.Total, &pb.AddressBalance{
 				Coin: &pb.Coin{
 					Id:     uint64(coinID),
-					Symbol: cState.Coins().GetCoin(coinID).GetFullSymbol(),
+					Symbol: coinModel.GetFullSymbol(),
 				},
 				Value:    stake.String(),
 				BipValue: balance.String(),
@@ -142,12 +145,11 @@ func (s *Service) Address(ctx context.Context, req *pb.AddressRequest) (*pb.Addr
 	return &res, nil
 }
 
-func customCoinBipBalance(coinToSell types.CoinID, valueToSell *big.Int, coins coins.RCoins) *big.Int {
-	if coinToSell.IsBaseCoin() {
+func customCoinBipBalance(valueToSell *big.Int, coinFrom *coins.Model) *big.Int {
+	if coinFrom.ID().IsBaseCoin() {
 		return valueToSell
 	}
 
-	coinFrom := coins.GetCoin(coinToSell)
 	return formula.CalculateSaleReturn(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), valueToSell)
 }
 

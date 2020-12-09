@@ -7,6 +7,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // TestBlock returns test block.
@@ -74,7 +75,7 @@ func (s *Service) TestBlock(context.Context, *empty.Empty) (*pb.BlockResponse, e
 		Name:                 "Custom Coin 2",
 		Symbol:               "CUSTOM2",
 		InitialAmount:        "1234567000000000000000000",
-		InitialReserve:       "123456000000000000000000",
+		InitialReserve:       wrapperspb.String("123456000000000000000000"),
 		ConstantReserveRatio: 45,
 		MaxSupply:            "12345679000000000000000000",
 	})
@@ -195,7 +196,7 @@ func (s *Service) TestBlock(context.Context, *empty.Empty) (*pb.BlockResponse, e
 		Name:                 "CHAIN",
 		Symbol:               "CHAIN",
 		InitialAmount:        "10000000000000000000000",
-		InitialReserve:       "10000000000000000000000",
+		InitialReserve:       wrapperspb.String("10000000000000000000000"),
 		ConstantReserveRatio: 100,
 		MaxSupply:            "10000000000000000000000",
 	})
