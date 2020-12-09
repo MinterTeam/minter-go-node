@@ -316,7 +316,7 @@ type Coin struct {
 	Symbol       CoinSymbol `json:"symbol"`
 	Volume       string     `json:"volume"`
 	Crr          uint64     `json:"crr"`
-	Reserve      *string    `json:"reserve,omitempty"`
+	Reserve      string     `json:"reserve"`
 	MaxSupply    string     `json:"max_supply"`
 	Version      uint64     `json:"version"`
 	OwnerAddress *Address   `json:"owner_address"`

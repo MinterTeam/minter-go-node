@@ -26,6 +26,7 @@ const (
 	HaltAlreadyExists            uint32 = 118
 
 	// coin creation
+	CoinHasNotReserve uint32 = 200
 	CoinAlreadyExists uint32 = 201
 	WrongCrr          uint32 = 202
 	InvalidCoinSymbol uint32 = 203
@@ -208,6 +209,16 @@ type coinReserveNotSufficient struct {
 
 func NewCoinReserveNotSufficient(coinSymbol string, coinId string, hasBipValue string, requiredBipValue string) *coinReserveNotSufficient {
 	return &coinReserveNotSufficient{Code: strconv.Itoa(int(CoinReserveNotSufficient)), CoinSymbol: coinSymbol, CoinId: coinId, HasBipValue: hasBipValue, RequiredBipValue: requiredBipValue}
+}
+
+type coinHasNotReserve struct {
+	Code       string `json:"code,omitempty"`
+	CoinSymbol string `json:"coin_symbol,omitempty"`
+	CoinId     string `json:"coin_id,omitempty"`
+}
+
+func NewCoinHasNotReserve(coinSymbol string, coinId string) *coinHasNotReserve {
+	return &coinHasNotReserve{Code: strconv.Itoa(int(CoinHasNotReserve)), CoinSymbol: coinSymbol, CoinId: coinId}
 }
 
 type txTooLarge struct {

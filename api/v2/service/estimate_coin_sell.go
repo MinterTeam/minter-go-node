@@ -69,20 +69,16 @@ func (s *Service) EstimateCoinSell(ctx context.Context, req *pb.EstimateCoinSell
 
 	value := valueToSell
 	if !req.FromPool {
-		if !coinTo.HasReserve() {
-			return nil, s.createError(status.New(codes.FailedPrecondition, "buy coin has not reserve"), transaction.EncodeError(code.NewCoinReserveNotSufficient(
+		if !coinTo.BaseOrHasReserve() {
+			return nil, s.createError(status.New(codes.FailedPrecondition, "buy coin has not reserve"), transaction.EncodeError(code.NewCoinHasNotReserve(
 				coinTo.GetFullSymbol(),
 				coinTo.ID().String(),
-				coinTo.Reserve().String(),
-				"",
 			)))
 		}
-		if !coinFrom.HasReserve() {
-			return nil, s.createError(status.New(codes.FailedPrecondition, "sellcoin has not reserve"), transaction.EncodeError(code.NewCoinReserveNotSufficient(
+		if !coinFrom.BaseOrHasReserve() {
+			return nil, s.createError(status.New(codes.FailedPrecondition, "sell coin has not reserve"), transaction.EncodeError(code.NewCoinHasNotReserve(
 				coinFrom.GetFullSymbol(),
 				coinFrom.ID().String(),
-				coinFrom.Reserve().String(),
-				"",
 			)))
 		}
 

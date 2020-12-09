@@ -20,6 +20,6 @@ const (
 	EditOwner              int64 = 10000000
 	EditMultisigData       int64 = 1000
 	PriceVoteData          int64 = 10
-	AddSwapPoolData        int64 = 1
-	RemoveSwapPoolData     int64 = 1
+	AddSwapPoolData        int64 = 100
+	RemoveSwapPoolData     int64 = 100
 )

@@ -167,9 +167,9 @@ func commissionFromPool(checkState *state.CheckState, id types.CoinID, commissio
 }
 
 func commissionFromReserve(gasCoin *coins.Model, commissionInBaseCoin *big.Int) (*big.Int, *Response) {
-	if !gasCoin.HasReserve() {
+	if !gasCoin.BaseOrHasReserve() {
 		return nil, &Response{
-			Code: code.CoinReserveNotSufficient,
+			Code: code.CoinHasNotReserve,
 			Log:  "gas coin has not reserve",
 		}
 	}

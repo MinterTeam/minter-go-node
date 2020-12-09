@@ -232,12 +232,8 @@ func (s *State) Import(state types.AppState) error {
 	}
 
 	for _, c := range state.Coins {
-		var reserve *big.Int
-		if c.Reserve != nil {
-			reserve = helpers.StringToBigInt(*c.Reserve)
-		}
 		s.Coins.Create(types.CoinID(c.ID), c.Symbol, c.Name, helpers.StringToBigInt(c.Volume),
-			uint32(c.Crr), reserve, helpers.StringToBigInt(c.MaxSupply), c.OwnerAddress)
+			uint32(c.Crr), helpers.StringToBigInt(c.Reserve), helpers.StringToBigInt(c.MaxSupply), c.OwnerAddress)
 	}
 
 	var vals []*validators.Validator

@@ -110,11 +110,6 @@ func TestRemoveExchangeLiquidityTx_one(t *testing.T) {
 		}
 	}
 
-	err := cState.Check()
-	if err != nil {
-		t.Error(err)
-	}
-
 	if err := checkState(cState); err != nil {
 		t.Error(err)
 	}

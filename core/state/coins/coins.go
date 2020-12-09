@@ -279,10 +279,7 @@ func (c *Coins) Create(id types.CoinID, symbol types.CoinSymbol, name string,
 	c.setSymbolToMap(ids, coin.Symbol())
 	c.setToMap(coin.ID(), coin)
 
-	if reserve != nil {
-		c.bus.Checker().AddCoin(types.GetBaseCoinID(), reserve)
-	}
-
+	c.bus.Checker().AddCoin(types.GetBaseCoinID(), reserve)
 	c.bus.Checker().AddCoinVolume(coin.id, volume)
 
 	c.markDirty(coin.id)
@@ -448,18 +445,13 @@ func (c *Coins) Export(state *types.AppState) {
 			owner = info.OwnerAddress()
 		}
 
-		var reservePointer *string
-		if coin.HasReserve() {
-			reserve := coin.Reserve().String()
-			reservePointer = &reserve
-		}
 		state.Coins = append(state.Coins, types.Coin{
 			ID:           uint64(coin.ID()),
 			Name:         coin.Name(),
 			Symbol:       coin.Symbol(),
 			Volume:       coin.Volume().String(),
 			Crr:          uint64(coin.Crr()),
-			Reserve:      reservePointer,
+			Reserve:      coin.Reserve().String(),
 			MaxSupply:    coin.MaxSupply().String(),
 			Version:      uint64(coin.Version()),
 			OwnerAddress: owner,

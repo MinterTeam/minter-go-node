@@ -149,12 +149,6 @@ func (s *Swap) CheckMint(coin0, coin1 types.CoinID, amount0, maxAmount1 *big.Int
 	return s.Pair(coin0, coin1).checkMint(amount0, maxAmount1)
 }
 func (s *Swap) CheckBurn(address types.Address, coin0, coin1 types.CoinID, liquidity, minAmount0, minAmount1 *big.Int) error {
-	if minAmount0 == nil {
-		minAmount0 = big.NewInt(1)
-	}
-	if minAmount1 == nil {
-		minAmount1 = big.NewInt(1)
-	}
 	return s.Pair(coin0, coin1).checkBurn(address, liquidity, minAmount0, minAmount1)
 }
 func (s *Swap) CheckSwap(coin0, coin1 types.CoinID, amount0In, amount1Out *big.Int) error {
@@ -326,12 +320,6 @@ func (s *Swap) PairMint(address types.Address, coin0, coin1 types.CoinID, amount
 }
 
 func (s *Swap) PairBurn(address types.Address, coin0, coin1 types.CoinID, liquidity, minAmount0, minAmount1 *big.Int) (*big.Int, *big.Int) {
-	if minAmount0 == nil {
-		minAmount0 = big.NewInt(1)
-	}
-	if minAmount1 == nil {
-		minAmount1 = big.NewInt(1)
-	}
 	pair := s.Pair(coin0, coin1)
 	oldReserve0, oldReserve1 := pair.Reserves()
 	_, _ = pair.Burn(address, liquidity, minAmount0, minAmount1)
@@ -566,7 +554,7 @@ func (p *Pair) Burn(address types.Address, liquidity, minAmount0, minAmount1 *bi
 
 	amount0, amount1 = p.Amounts(liquidity)
 
-	if amount0.Cmp(minAmount0) == -1 || amount1.Cmp(minAmount1) == -1 {
+	if amount0.Cmp(minAmount0) != 1 || amount1.Cmp(minAmount1) != 1 {
 		panic(ErrorInsufficientLiquidityBurned)
 	}
 
@@ -587,7 +575,7 @@ func (p *Pair) checkBurn(address types.Address, liquidity, minAmount0, minAmount
 
 	amount0, amount1 := p.Amounts(liquidity)
 
-	if amount0.Cmp(minAmount0) == -1 || amount1.Cmp(minAmount1) == -1 {
+	if amount0.Cmp(minAmount0) != 1 || amount1.Cmp(minAmount1) != 1 {
 		return ErrorInsufficientLiquidityBurned
 	}
 

@@ -44,7 +44,7 @@ func (data DelegateData) basicCheck(tx *Transaction, context *state.CheckState) 
 		}
 	}
 
-	if !coin.HasReserve() {
+	if !coin.BaseOrHasReserve() {
 		return &Response{
 			Code: code.CoinReserveNotSufficient,
 			Log:  "coin has not reserve",

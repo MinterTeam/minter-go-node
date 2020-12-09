@@ -29,7 +29,7 @@ type CreateCoinData struct {
 	Name                 string
 	Symbol               types.CoinSymbol
 	InitialAmount        *big.Int
-	InitialReserve       *big.Int `rlp:"nil"`
+	InitialReserve       *big.Int
 	ConstantReserveRatio uint32
 	MaxSupply            *big.Int
 }
@@ -67,14 +67,6 @@ func (data CreateCoinData) basicCheck(tx *Transaction, context *state.CheckState
 		}
 	}
 
-	if data.ConstantReserveRatio < 10 || data.ConstantReserveRatio > 100 {
-		return &Response{
-			Code: code.WrongCrr,
-			Log:  "Constant Reserve Ratio should be between 10 and 100",
-			Info: EncodeError(code.NewWrongCrr("10", "100", strconv.Itoa(int(data.ConstantReserveRatio)))),
-		}
-	}
-
 	if data.MaxSupply.Cmp(maxCoinSupply) == 1 {
 		return &Response{
 			Code: code.WrongCoinSupply,
@@ -91,14 +83,28 @@ func (data CreateCoinData) basicCheck(tx *Transaction, context *state.CheckState
 		}
 	}
 
-	if data.InitialReserve != nil && data.InitialReserve.Cmp(minCoinReserve) == -1 {
+	if data.InitialReserve.Sign() == 1 {
+		if data.ConstantReserveRatio < 10 || data.ConstantReserveRatio > 100 {
+			return &Response{
+				Code: code.WrongCrr,
+				Log:  "Constant Reserve Ratio should be between 10 and 100",
+				Info: EncodeError(code.NewWrongCrr("10", "100", strconv.Itoa(int(data.ConstantReserveRatio)))),
+			}
+		}
+		if data.InitialReserve.Cmp(minCoinReserve) == -1 {
+			return &Response{
+				Code: code.WrongCoinSupply,
+				Log:  fmt.Sprintf("Coin reserve should be greater than or equal to %s", minCoinReserve.String()),
+				Info: EncodeError(code.NewWrongCoinSupply(maxCoinSupply.String(), data.MaxSupply.String(), minCoinReserve.String(), data.InitialReserve.String(), minCoinSupply.String(), data.MaxSupply.String(), data.InitialAmount.String())),
+			}
+		}
+	} else if data.ConstantReserveRatio != 0 {
 		return &Response{
-			Code: code.WrongCoinSupply,
-			Log:  fmt.Sprintf("Coin reserve should be greater than or equal to %s", minCoinReserve.String()),
-			Info: EncodeError(code.NewWrongCoinSupply(maxCoinSupply.String(), data.MaxSupply.String(), minCoinReserve.String(), data.InitialReserve.String(), minCoinSupply.String(), data.MaxSupply.String(), data.InitialAmount.String())),
+			Code: code.WrongCrr,
+			Log:  "Constant Reserve Ratio should be equal to 0, for a coin without reserve",
+			Info: EncodeError(code.NewWrongCrr("0", "0", strconv.Itoa(int(data.ConstantReserveRatio)))),
 		}
 	}
-
 	return nil
 }
 

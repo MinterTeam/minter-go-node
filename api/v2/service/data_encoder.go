@@ -11,7 +11,6 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	_struct "google.golang.org/protobuf/types/known/structpb"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 	"strconv"
 )
 
@@ -37,15 +36,11 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 			NewOwner: d.NewOwner.String(),
 		}
 	case *transaction.CreateCoinData:
-		var reserve *wrapperspb.StringValue
-		if d.InitialReserve != nil {
-			reserve = wrapperspb.String(d.InitialReserve.String())
-		}
 		m = &pb.CreateCoinData{
 			Name:                 d.Name,
 			Symbol:               d.Symbol.String(),
 			InitialAmount:        d.InitialAmount.String(),
-			InitialReserve:       reserve,
+			InitialReserve:       d.InitialReserve.String(),
 			ConstantReserveRatio: uint64(d.ConstantReserveRatio),
 			MaxSupply:            d.MaxSupply.String(),
 		}
@@ -129,15 +124,11 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 			Price: strconv.Itoa(int(d.Price)),
 		}
 	case *transaction.RecreateCoinData:
-		var reserve *wrapperspb.StringValue
-		if d.InitialReserve != nil {
-			reserve = wrapperspb.String(d.InitialReserve.String())
-		}
 		m = &pb.RecreateCoinData{
 			Name:                 d.Name,
 			Symbol:               d.Symbol.String(),
 			InitialAmount:        d.InitialAmount.String(),
-			InitialReserve:       reserve,
+			InitialReserve:       d.InitialReserve.String(),
 			ConstantReserveRatio: uint64(d.ConstantReserveRatio),
 			MaxSupply:            d.MaxSupply.String(),
 		}
@@ -201,6 +192,71 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 				Symbol: coins.GetCoin(d.Coin).GetFullSymbol(),
 			},
 			Value: d.Value.String(),
+		}
+	case *transaction.AddSwapPoolData:
+		m = &pb.AddSwapPoolData{
+			Coin0: &pb.Coin{
+				Id:     uint64(d.Coin0),
+				Symbol: coins.GetCoin(d.Coin0).GetFullSymbol(),
+			},
+			Coin1: &pb.Coin{
+				Id:     uint64(d.Coin1),
+				Symbol: coins.GetCoin(d.Coin1).GetFullSymbol(),
+			},
+			Volume0:    d.Volume0.String(),
+			MaxVolume1: d.MaxVolume1.String(),
+		}
+	case *transaction.RemoveSwapPoolData:
+		m = &pb.RemoveSwapPoolData{
+			Coin0: &pb.Coin{
+				Id:     uint64(d.Coin0),
+				Symbol: coins.GetCoin(d.Coin0).GetFullSymbol(),
+			},
+			Coin1: &pb.Coin{
+				Id:     uint64(d.Coin1),
+				Symbol: coins.GetCoin(d.Coin1).GetFullSymbol(),
+			},
+			Liquidity:      d.Liquidity.String(),
+			MinimumVolume0: d.MinimumVolume0.String(),
+			MinimumVolume1: d.MinimumVolume1.String(),
+		}
+	case *transaction.BuySwapPoolData:
+		m = &pb.BuySwapPoolData{
+			CoinToBuy: &pb.Coin{
+				Id:     uint64(d.CoinToBuy),
+				Symbol: coins.GetCoin(d.CoinToBuy).GetFullSymbol(),
+			},
+			CoinToSell: &pb.Coin{
+				Id:     uint64(d.CoinToSell),
+				Symbol: coins.GetCoin(d.CoinToSell).GetFullSymbol(),
+			},
+			ValueToBuy:         d.ValueToBuy.String(),
+			MaximumValueToSell: d.MaximumValueToSell.String(),
+		}
+	case *transaction.SellSwapPoolData:
+		m = &pb.SellSwapPoolData{
+			CoinToBuy: &pb.Coin{
+				Id:     uint64(d.CoinToBuy),
+				Symbol: coins.GetCoin(d.CoinToBuy).GetFullSymbol(),
+			},
+			CoinToSell: &pb.Coin{
+				Id:     uint64(d.CoinToSell),
+				Symbol: coins.GetCoin(d.CoinToSell).GetFullSymbol(),
+			},
+			ValueToSell:       d.ValueToSell.String(),
+			MinimumValueToBuy: d.MinimumValueToBuy.String(),
+		}
+	case *transaction.SellAllSwapPoolData:
+		m = &pb.SellAllSwapPoolData{
+			CoinToBuy: &pb.Coin{
+				Id:     uint64(d.CoinToBuy),
+				Symbol: coins.GetCoin(d.CoinToBuy).GetFullSymbol(),
+			},
+			CoinToSell: &pb.Coin{
+				Id:     uint64(d.CoinToSell),
+				Symbol: coins.GetCoin(d.CoinToSell).GetFullSymbol(),
+			},
+			MinimumValueToBuy: d.MinimumValueToBuy.String(),
 		}
 	default:
 		return nil, errors.New("unknown tx type")

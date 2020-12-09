@@ -46,11 +46,11 @@ func TestPair_feeToOff(t *testing.T) {
 
 			_, _ = pair.Swap(big.NewInt(0), tt.swapAmount, tt.expectedOutputAmount, big.NewInt(0))
 
-			err = service.CheckBurn(types.Address{1}, tt.coin0, tt.coin1, expectedLiquidity, nil, nil)
+			err = service.CheckBurn(types.Address{1}, tt.coin0, tt.coin1, expectedLiquidity, big.NewInt(0), big.NewInt(0))
 			if err != nil {
 				t.Fatal(err)
 			}
-			_, _ = pair.Burn(types.Address{1}, expectedLiquidity)
+			_, _ = pair.Burn(types.Address{1}, expectedLiquidity, big.NewInt(0), big.NewInt(0))
 
 			if pair.GetTotalSupply().Cmp(big.NewInt(minimumLiquidity)) != 0 {
 				t.Errorf("liquidity want %s, got %s", big.NewInt(minimumLiquidity), pair.GetTotalSupply())
@@ -258,12 +258,12 @@ func TestPair_Burn(t *testing.T) {
 				t.Errorf("liquidity want %s, got %s", liquidityExpected, liquidity)
 			}
 
-			err = service.CheckBurn(types.Address{1}, tt.coin0, tt.coin1, liquidity, nil, nil)
+			err = service.CheckBurn(types.Address{1}, tt.coin0, tt.coin1, liquidity, big.NewInt(0), big.NewInt(0))
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			amount0, amount1 := pair.Burn(types.Address{1}, liquidity)
+			amount0, amount1 := pair.Burn(types.Address{1}, liquidity, big.NewInt(0), big.NewInt(0))
 
 			expectedAmount0 := new(big.Int).Sub(tt.token0Amount, big.NewInt(minimumLiquidity))
 			if amount0.Cmp(expectedAmount0) != 0 {

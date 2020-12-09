@@ -1394,8 +1394,8 @@ func TestBuyCoinTxToCoinReserveNotSufficient(t *testing.T) {
 	}
 
 	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
-	if response.Code != code.CoinReserveNotSufficient {
-		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveNotSufficient, response.Log)
+	if response.Code != code.CoinHasNotReserve {
+		t.Fatalf("Response code is not %d. Error %s", code.CoinHasNotReserve, response.Log)
 	}
 
 	if err := checkState(cState); err != nil {
@@ -1415,8 +1415,8 @@ func TestBuyCoinTxToCoinReserveNotSufficient(t *testing.T) {
 	}
 
 	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
-	if response.Code != code.CoinReserveNotSufficient {
-		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveNotSufficient, response.Log)
+	if response.Code != code.CoinHasNotReserve {
+		t.Fatalf("Response code is not %d. Error %s", code.CoinHasNotReserve, response.Log)
 	}
 
 	if err := checkState(cState); err != nil {
@@ -1438,8 +1438,8 @@ func TestBuyCoinTxToCoinReserveNotSufficient(t *testing.T) {
 	}
 
 	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
-	if response.Code != code.CoinReserveNotSufficient {
-		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveNotSufficient, response.Log)
+	if response.Code != code.CoinHasNotReserve {
+		t.Fatalf("Response code is not %d. Error %s", code.CoinHasNotReserve, response.Log)
 	}
 
 	if err := checkState(cState); err != nil {

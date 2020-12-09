@@ -41,15 +41,13 @@ func (data DeclareCandidacyData) basicCheck(tx *Transaction, context *state.Chec
 		}
 	}
 
-	if !coin.HasReserve() {
+	if !coin.BaseOrHasReserve() {
 		return &Response{
-			Code: code.CoinReserveNotSufficient,
+			Code: code.CoinHasNotReserve,
 			Log:  "coin has not reserve",
-			Info: EncodeError(code.NewCoinReserveNotSufficient(
+			Info: EncodeError(code.NewCoinHasNotReserve(
 				coin.GetFullSymbol(),
 				coin.ID().String(),
-				coin.Reserve().String(),
-				"",
 			)),
 		}
 	}

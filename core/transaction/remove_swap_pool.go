@@ -13,11 +13,11 @@ import (
 )
 
 type RemoveSwapPoolData struct {
-	Coin0      types.CoinID
-	Coin1      types.CoinID
-	Liquidity  *big.Int
-	MinVolume0 *big.Int `rlp:"nil"`
-	MinVolume1 *big.Int `rlp:"nil"`
+	Coin0          types.CoinID
+	Coin1          types.CoinID
+	Liquidity      *big.Int
+	MinimumVolume0 *big.Int
+	MinimumVolume1 *big.Int
 }
 
 func (data RemoveSwapPoolData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
@@ -39,7 +39,7 @@ func (data RemoveSwapPoolData) basicCheck(tx *Transaction, context *state.CheckS
 	}
 
 	sender, _ := tx.Sender()
-	if err := context.Swap().CheckBurn(sender, data.Coin0, data.Coin1, data.Liquidity, data.MinVolume0, data.MinVolume1); err != nil {
+	if err := context.Swap().CheckBurn(sender, data.Coin0, data.Coin1, data.Liquidity, data.MinimumVolume0, data.MinimumVolume1); err != nil {
 		wantAmount0, wantAmount1 := context.Swap().AmountsOfLiquidity(data.Coin0, data.Coin1, data.Liquidity)
 		if err == swap.ErrorInsufficientLiquidityBalance {
 			balance, amount0, amount1 := context.Swap().SwapPoolFromProvider(sender, data.Coin0, data.Coin1)
@@ -53,14 +53,8 @@ func (data RemoveSwapPoolData) basicCheck(tx *Transaction, context *state.CheckS
 			}
 		}
 		if err == swap.ErrorInsufficientLiquidityBurned {
-			wantGetAmount0 := "0"
-			if data.MinVolume0 != nil {
-				wantGetAmount0 = data.MinVolume0.String()
-			}
-			wantGetAmount1 := "0"
-			if data.MinVolume1 != nil {
-				wantGetAmount1 = data.MinVolume1.String()
-			}
+			wantGetAmount0 := data.MinimumVolume0.String()
+			wantGetAmount1 := data.MinimumVolume1.String()
 			return &Response{
 				Code: code.InsufficientLiquidityBurned,
 				Log:  fmt.Sprintf("You wanted to get more %s of coin %d and more %s of coin %d, but currently liquidity %s is equal %s of coin %d and  %s of coin %d", wantGetAmount0, data.Coin0, wantGetAmount1, data.Coin1, data.Liquidity, wantAmount0, data.Coin0, wantAmount1, data.Coin1),
@@ -113,7 +107,7 @@ func (data RemoveSwapPoolData) Run(tx *Transaction, context state.Interface, rew
 	}
 
 	if deliverState, ok := context.(*state.State); ok {
-		amount0, amount1 := deliverState.Swap.PairBurn(sender, data.Coin0, data.Coin1, data.Liquidity, data.MinVolume0, data.MinVolume1)
+		amount0, amount1 := deliverState.Swap.PairBurn(sender, data.Coin0, data.Coin1, data.Liquidity, data.MinimumVolume0, data.MinimumVolume1)
 
 		if isGasCommissionFromPoolSwap {
 			commission, commissionInBaseCoin = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)

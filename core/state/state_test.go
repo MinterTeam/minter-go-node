@@ -132,7 +132,7 @@ func TestStateExport(t *testing.T) {
 	if newStateCoin.Name != "TEST" ||
 		newStateCoin.Symbol != coinTest ||
 		newStateCoin.Volume != helpers.BipToPip(big.NewInt(701)).String() ||
-		*newStateCoin.Reserve != helpers.BipToPip(big.NewInt(100)).String() ||
+		newStateCoin.Reserve != helpers.BipToPip(big.NewInt(100)).String() ||
 		newStateCoin.MaxSupply != helpers.BipToPip(big.NewInt(100)).String() ||
 		newStateCoin.Crr != 10 {
 		t.Fatalf("Wrong new state coin data")
@@ -141,7 +141,7 @@ func TestStateExport(t *testing.T) {
 	if newStateCoin1.Name != "TEST2" ||
 		newStateCoin1.Symbol != coinTest2 ||
 		newStateCoin1.Volume != helpers.BipToPip(big.NewInt(1202)).String() ||
-		*newStateCoin1.Reserve != helpers.BipToPip(big.NewInt(200)).String() ||
+		newStateCoin1.Reserve != helpers.BipToPip(big.NewInt(200)).String() ||
 		newStateCoin1.MaxSupply != helpers.BipToPip(big.NewInt(200)).String() ||
 		newStateCoin1.Crr != 50 {
 		t.Fatalf("Wrong new state coin data")

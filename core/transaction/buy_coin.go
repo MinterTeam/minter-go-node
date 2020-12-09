@@ -318,15 +318,13 @@ func (data BuyCoinData) basicCheck(tx *Transaction, context *state.CheckState) *
 		}
 	}
 
-	if coinToSell.Reserve() == nil {
+	if !coinToSell.BaseOrHasReserve() {
 		return &Response{
-			Code: code.CoinReserveNotSufficient,
+			Code: code.CoinHasNotReserve,
 			Log:  "sell coin has not reserve",
-			Info: EncodeError(code.NewCoinReserveNotSufficient(
+			Info: EncodeError(code.NewCoinHasNotReserve(
 				coinToSell.GetFullSymbol(),
 				coinToSell.ID().String(),
-				coinToSell.Reserve().String(),
-				"",
 			)),
 		}
 	}
@@ -340,15 +338,13 @@ func (data BuyCoinData) basicCheck(tx *Transaction, context *state.CheckState) *
 		}
 	}
 
-	if coinToBuy.Reserve() == nil {
+	if !coinToBuy.BaseOrHasReserve() {
 		return &Response{
-			Code: code.CoinReserveNotSufficient,
+			Code: code.CoinHasNotReserve,
 			Log:  "buy coin has not reserve",
-			Info: EncodeError(code.NewCoinReserveNotSufficient(
+			Info: EncodeError(code.NewCoinHasNotReserve(
 				coinToBuy.GetFullSymbol(),
 				coinToBuy.ID().String(),
-				coinToBuy.Reserve().String(),
-				"",
 			)),
 		}
 	}
