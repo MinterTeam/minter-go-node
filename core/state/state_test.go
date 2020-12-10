@@ -74,10 +74,26 @@ func TestStateExport(t *testing.T) {
 	state.FrozenFunds.AddFund(height+140, address2, candidatePubKey1, state.Candidates.ID(candidatePubKey1), coinTestID, helpers.BipToPip(big.NewInt(500)))
 	state.FrozenFunds.AddFund(height+150, address2, candidatePubKey1, state.Candidates.ID(candidatePubKey1), coinTest2ID, helpers.BipToPip(big.NewInt(1000)))
 
-	newCheck := &check.Check{
+	newCheck0 := &check.Check{
 		Nonce:    []byte("test nonce"),
 		ChainID:  types.CurrentChainID,
-		DueBlock: height + 1,
+		DueBlock: 1,
+		Coin:     coinTestID,
+		Value:    helpers.BipToPip(big.NewInt(100)),
+		GasCoin:  coinTest2ID,
+	}
+
+	err = newCheck0.Sign(privateKey1)
+	if err != nil {
+		log.Panicf("Cannot sign check: %s", err)
+	}
+
+	state.Checks.UseCheck(newCheck0)
+
+	newCheck := &check.Check{
+		Nonce:    []byte("test nonce 1"),
+		ChainID:  types.CurrentChainID,
+		DueBlock: 999999,
 		Coin:     coinTestID,
 		Value:    helpers.BipToPip(big.NewInt(100)),
 		GasCoin:  coinTest2ID,
@@ -188,7 +204,7 @@ func TestStateExport(t *testing.T) {
 		t.Fatalf("Wrong new state frozen fund data")
 	}
 
-	if len(newState.UsedChecks) != 1 {
+	if len(newState.UsedChecks) != 2 {
 		t.Fatalf("Wrong new state used checks size. Expected %d, got %d", 1, len(newState.UsedChecks))
 	}
 

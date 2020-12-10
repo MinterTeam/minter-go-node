@@ -85,16 +85,7 @@ func (c *Checks) UseCheckHash(hash types.Hash) {
 
 func (c *Checks) Export(state *types.AppState, height uint64) {
 	c.immutableTree().IterateRange([]byte{mainPrefix}, []byte{mainPrefix + 1}, true, func(key []byte, value []byte) bool {
-		encodeCheck := key[1:]
-		decodeCheck, err := check.DecodeWithoutSignature(encodeCheck)
-		if err != nil {
-			return false
-		}
-		if decodeCheck.DueBlock < height {
-			return false
-		}
-		state.UsedChecks = append(state.UsedChecks, types.UsedCheck(fmt.Sprintf("%x", encodeCheck)))
-
+		state.UsedChecks = append(state.UsedChecks, types.UsedCheck(fmt.Sprintf("%x", key[1:])))
 		return false
 	})
 }
