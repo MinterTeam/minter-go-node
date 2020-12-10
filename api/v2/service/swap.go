@@ -15,7 +15,11 @@ func (s *Service) Pair(_ context.Context, req *pb.SwapPoolRequest) (*pb.SwapPool
 		return nil, status.Error(codes.InvalidArgument, "equal coins id")
 	}
 
-	state := s.blockchain.CurrentState()
+	state, err := s.blockchain.GetStateForHeight(req.Height)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, err.Error())
+	}
+
 	totalSupply, reserve0, reserve1 := state.Swap().SwapPool(types.CoinID(req.Coin0), types.CoinID(req.Coin1))
 	if totalSupply == nil {
 		return nil, status.Error(codes.NotFound, "pair not found")
@@ -27,7 +31,7 @@ func (s *Service) Pair(_ context.Context, req *pb.SwapPoolRequest) (*pb.SwapPool
 	}, nil
 }
 
-func (s *Service) PairFromProvider(_ context.Context, req *pb.SwapPoolFromProviderRequest) (*pb.SwapPoolFromProviderResponse, error) {
+func (s *Service) PairFromProvider(_ context.Context, req *pb.SwapPoolProviderRequest) (*pb.SwapPoolProviderResponse, error) {
 	if req.Coin0 == req.Coin1 {
 		return nil, status.Error(codes.InvalidArgument, "equal coins id")
 	}
@@ -41,13 +45,16 @@ func (s *Service) PairFromProvider(_ context.Context, req *pb.SwapPoolFromProvid
 		return nil, status.Error(codes.InvalidArgument, "invalid address")
 	}
 
-	address := types.BytesToAddress(decodeString)
-	state := s.blockchain.CurrentState()
-	balance, amount0, amount1 := state.Swap().SwapPoolFromProvider(address, types.CoinID(req.Coin0), types.CoinID(req.Coin1))
+	state, err := s.blockchain.GetStateForHeight(req.Height)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, err.Error())
+	}
+
+	balance, amount0, amount1 := state.Swap().SwapPoolFromProvider(types.BytesToAddress(decodeString), types.CoinID(req.Coin0), types.CoinID(req.Coin1))
 	if balance == nil {
 		return nil, status.Error(codes.NotFound, "pair from provider not found")
 	}
-	return &pb.SwapPoolFromProviderResponse{
+	return &pb.SwapPoolProviderResponse{
 		Amount0: amount0.String(),
 		Amount1: amount1.String(),
 		Balance: balance.String(),
