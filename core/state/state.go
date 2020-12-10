@@ -50,7 +50,7 @@ func (cs *CheckState) Export() types.AppState {
 	cs.FrozenFunds().Export(appState, uint64(cs.state.height))
 	cs.Accounts().Export(appState)
 	cs.Coins().Export(appState)
-	cs.Checks().Export(appState)
+	cs.Checks().Export(appState, uint64(cs.state.height))
 	cs.Halts().Export(appState)
 	cs.Swap().Export(appState)
 
