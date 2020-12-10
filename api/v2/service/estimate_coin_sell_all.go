@@ -80,10 +80,10 @@ func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinS
 		}
 	}
 	value.Sub(value, commissionInBaseCoin)
+	if value.Sign() != 1 {
+		return nil, status.New(codes.FailedPrecondition, "Not enough coins to pay commission").Err()
+	}
 	if !coinToBuy.IsBaseCoin() {
-		if value.Sign() != 1 {
-			return nil, status.New(codes.FailedPrecondition, "Not enough coins to pay commission").Err()
-		}
 		value = formula.CalculatePurchaseReturn(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), value)
 		if errResp := transaction.CheckForCoinSupplyOverflow(coinTo, value); errResp != nil {
 			return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
