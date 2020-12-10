@@ -92,6 +92,24 @@ func (check *Check) Hash() types.Hash {
 	})
 }
 
+func DecodeWithoutSignature(hash []byte) (*Check, error) {
+	var check Check
+	err := rlp.DecodeBytes(hash, &[]interface{}{
+		check.Nonce,
+		check.ChainID,
+		check.DueBlock,
+		check.Coin,
+		check.Value,
+		check.GasCoin,
+		check.Lock,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &check, nil
+}
+
 // Sign signs the check with given private key, returns error
 func (check *Check) Sign(prv *ecdsa.PrivateKey) error {
 	h := check.Hash()
