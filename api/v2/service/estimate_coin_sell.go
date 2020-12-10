@@ -90,10 +90,10 @@ func (s *Service) EstimateCoinSell(ctx context.Context, req *pb.EstimateCoinSell
 		}
 
 		if !coinToBuy.IsBaseCoin() {
+			value = formula.CalculatePurchaseReturn(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), value)
 			if errResp := transaction.CheckForCoinSupplyOverflow(coinTo, value); errResp != nil {
 				return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
 			}
-			value = formula.CalculatePurchaseReturn(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), value)
 		}
 	} else {
 		var err error
