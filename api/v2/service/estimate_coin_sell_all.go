@@ -93,16 +93,15 @@ func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinS
 			return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
 		}
 	}
-
+	value.Sub(value, commissionInBaseCoin)
 	if !coinToBuy.IsBaseCoin() {
-		if errResp := transaction.CheckForCoinSupplyOverflow(coinTo, value); errResp != nil {
-			return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
-		}
-		value.Sub(value, valueToSell)
 		if value.Sign() != 1 {
 			return nil, status.New(codes.FailedPrecondition, "Not enough coins to pay commission").Err()
 		}
 		value = formula.CalculatePurchaseReturn(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), value)
+		if errResp := transaction.CheckForCoinSupplyOverflow(coinTo, value); errResp != nil {
+			return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
+		}
 	}
 
 	return &pb.EstimateCoinSellAllResponse{
