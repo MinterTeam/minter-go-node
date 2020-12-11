@@ -41,6 +41,11 @@ const (
 	TypeEditMultisig           TxType = 0x12
 	TypePriceVote              TxType = 0x13
 	TypeEditCandidatePublicKey TxType = 0x14
+	TypeAddSwapPool            TxType = 0x15
+	TypeRemoveSwapPool         TxType = 0x16
+	TypeSellSwapPool           TxType = 0x17
+	TypeBuySwapPool            TxType = 0x18
+	TypeSellAllSwapPool        TxType = 0x19
 
 	SigTypeSingle SigType = 0x01
 	SigTypeMulti  SigType = 0x02
@@ -85,9 +90,9 @@ type SignatureMulti struct {
 
 type RawData []byte
 
-type TotalSpends []totalSpend
+type totalSpends []totalSpend
 
-func (tss *TotalSpends) Add(coin types.CoinID, value *big.Int) {
+func (tss *totalSpends) Add(coin types.CoinID, value *big.Int) {
 	for i, t := range *tss {
 		if t.Coin == coin {
 			(*tss)[i].Value.Add((*tss)[i].Value, big.NewInt(0).Set(value))

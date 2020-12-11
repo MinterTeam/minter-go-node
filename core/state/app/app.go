@@ -5,8 +5,9 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/state/bus"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/rlp"
-	"github.com/MinterTeam/minter-go-node/tree"
+	"github.com/tendermint/iavl"
 	"math/big"
+	"sync/atomic"
 )
 
 const mainPrefix = 'd'
@@ -19,77 +20,90 @@ type RApp interface {
 	GetNextCoinID() types.CoinID
 }
 
-func (v *App) Tree() tree.ReadOnlyTree {
-	return v.iavl
-}
-
 type App struct {
 	model   *Model
 	isDirty bool
 
-	bus  *bus.Bus
-	iavl tree.MTree
+	db atomic.Value
+
+	bus *bus.Bus
 }
 
-func NewApp(stateBus *bus.Bus, iavl tree.MTree) (*App, error) {
-	app := &App{bus: stateBus, iavl: iavl}
+func NewApp(stateBus *bus.Bus, db *iavl.ImmutableTree) *App {
+	immutableTree := atomic.Value{}
+	if db != nil {
+		immutableTree.Store(db)
+	}
+	app := &App{bus: stateBus, db: immutableTree}
 	app.bus.SetApp(NewBus(app))
 
-	return app, nil
+	return app
 }
 
-func (v *App) Commit() error {
-	if !v.isDirty {
+func (a *App) immutableTree() *iavl.ImmutableTree {
+	db := a.db.Load()
+	if db == nil {
+		return nil
+	}
+	return db.(*iavl.ImmutableTree)
+}
+
+func (a *App) SetImmutableTree(immutableTree *iavl.ImmutableTree) {
+	a.db.Store(immutableTree)
+}
+
+func (a *App) Commit(db *iavl.MutableTree) error {
+	if !a.isDirty {
 		return nil
 	}
 
-	v.isDirty = false
+	a.isDirty = false
 
-	data, err := rlp.EncodeToBytes(v.model)
+	data, err := rlp.EncodeToBytes(a.model)
 	if err != nil {
 		return fmt.Errorf("can't encode legacyApp model: %s", err)
 	}
 
 	path := []byte{mainPrefix}
-	v.iavl.Set(path, data)
+	db.Set(path, data)
 
 	return nil
 }
 
-func (v *App) GetMaxGas() uint64 {
-	model := v.getOrNew()
+func (a *App) GetMaxGas() uint64 {
+	model := a.getOrNew()
 
 	return model.getMaxGas()
 }
 
-func (v *App) SetMaxGas(gas uint64) {
-	model := v.getOrNew()
+func (a *App) SetMaxGas(gas uint64) {
+	model := a.getOrNew()
 	model.setMaxGas(gas)
 }
 
-func (v *App) GetTotalSlashed() *big.Int {
-	model := v.getOrNew()
+func (a *App) GetTotalSlashed() *big.Int {
+	model := a.getOrNew()
 
 	return model.getTotalSlashed()
 }
 
-func (v *App) AddTotalSlashed(amount *big.Int) {
+func (a *App) AddTotalSlashed(amount *big.Int) {
 	if amount.Cmp(big.NewInt(0)) == 0 {
 		return
 	}
 
-	model := v.getOrNew()
+	model := a.getOrNew()
 	model.setTotalSlashed(big.NewInt(0).Add(model.getTotalSlashed(), amount))
-	v.bus.Checker().AddCoin(types.GetBaseCoinID(), amount)
+	a.bus.Checker().AddCoin(types.GetBaseCoinID(), amount)
 }
 
-func (v *App) get() *Model {
-	if v.model != nil {
-		return v.model
+func (a *App) get() *Model {
+	if a.model != nil {
+		return a.model
 	}
 
 	path := []byte{mainPrefix}
-	_, enc := v.iavl.Get(path)
+	_, enc := a.immutableTree().Get(path)
 	if len(enc) == 0 {
 		return nil
 	}
@@ -99,48 +113,48 @@ func (v *App) get() *Model {
 		panic(fmt.Sprintf("failed to decode legacyApp model at: %s", err))
 	}
 
-	v.model = model
-	v.model.markDirty = v.markDirty
-	return v.model
+	a.model = model
+	a.model.markDirty = a.markDirty
+	return a.model
 }
 
-func (v *App) getOrNew() *Model {
-	model := v.get()
+func (a *App) getOrNew() *Model {
+	model := a.get()
 	if model == nil {
 		model = &Model{
 			TotalSlashed: big.NewInt(0),
 			CoinsCount:   0,
 			MaxGas:       0,
-			markDirty:    v.markDirty,
+			markDirty:    a.markDirty,
 		}
-		v.model = model
+		a.model = model
 	}
 
 	return model
 }
 
-func (v *App) markDirty() {
-	v.isDirty = true
+func (a *App) markDirty() {
+	a.isDirty = true
 }
 
-func (v *App) SetTotalSlashed(amount *big.Int) {
-	v.getOrNew().setTotalSlashed(amount)
+func (a *App) SetTotalSlashed(amount *big.Int) {
+	a.getOrNew().setTotalSlashed(amount)
 }
 
-func (v *App) GetCoinsCount() uint32 {
-	return v.getOrNew().getCoinsCount()
+func (a *App) GetCoinsCount() uint32 {
+	return a.getOrNew().getCoinsCount()
 }
 
-func (v *App) GetNextCoinID() types.CoinID {
-	return types.CoinID(v.GetCoinsCount() + 1)
+func (a *App) GetNextCoinID() types.CoinID {
+	return types.CoinID(a.GetCoinsCount() + 1)
 }
 
-func (v *App) SetCoinsCount(count uint32) {
-	v.getOrNew().setCoinsCount(count)
+func (a *App) SetCoinsCount(count uint32) {
+	a.getOrNew().setCoinsCount(count)
 }
 
-func (v *App) Export(state *types.AppState, height uint64) {
-	state.MaxGas = v.GetMaxGas()
-	state.TotalSlashed = v.GetTotalSlashed().String()
+func (a *App) Export(state *types.AppState, height uint64) {
+	state.MaxGas = a.GetMaxGas()
+	state.TotalSlashed = a.GetTotalSlashed().String()
 	state.StartHeight = height
 }

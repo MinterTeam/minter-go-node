@@ -26,9 +26,6 @@ func Address(address types.Address, height int) (*AddressResponse, error) {
 		return nil, err
 	}
 
-	cState.RLock()
-	defer cState.RUnlock()
-
 	balances := cState.Accounts().GetBalances(address)
 
 	response := AddressResponse{

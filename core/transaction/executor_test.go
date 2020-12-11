@@ -22,7 +22,9 @@ func TestTooLongTx(t *testing.T) {
 		t.Fatalf("Response code is not correct")
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestIncorrectTx(t *testing.T) {
@@ -35,7 +37,9 @@ func TestIncorrectTx(t *testing.T) {
 		t.Fatalf("Response code is not correct")
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestTooLongPayloadTx(t *testing.T) {
@@ -78,7 +82,9 @@ func TestTooLongPayloadTx(t *testing.T) {
 		t.Fatalf("Response code is not correct. Expected %d, got %d", code.TxPayloadTooLarge, response.Code)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestTooLongServiceDataTx(t *testing.T) {
@@ -120,7 +126,9 @@ func TestTooLongServiceDataTx(t *testing.T) {
 		t.Fatalf("Response code is not correct. Expected %d, got %d", code.TxServiceDataTooLarge, response.Code)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestUnexpectedNonceTx(t *testing.T) {
@@ -157,7 +165,9 @@ func TestUnexpectedNonceTx(t *testing.T) {
 		t.Fatalf("Response code is not correct. Expected %d, got %d", code.WrongNonce, response.Code)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestInvalidSigTx(t *testing.T) {
@@ -198,7 +208,9 @@ func TestInvalidSigTx(t *testing.T) {
 		t.Fatalf("Response code is not correct. Expected %d, got %d", code.DecodeError, response.Code)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestNotExistMultiSigTx(t *testing.T) {
@@ -240,7 +252,9 @@ func TestNotExistMultiSigTx(t *testing.T) {
 		t.Fatalf("Response code is not correct. Expected %d, got %d", code.MultisigNotExists, response.Code)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestMultiSigTx(t *testing.T) {
@@ -286,7 +300,9 @@ func TestMultiSigTx(t *testing.T) {
 		t.Fatalf("Error code is not 0. Error: %s", response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestMultiSigDoubleSignTx(t *testing.T) {
@@ -336,7 +352,9 @@ func TestMultiSigDoubleSignTx(t *testing.T) {
 		t.Fatalf("Error code is not %d, got %d", code.DuplicatedAddresses, response.Code)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestMultiSigTooManySignsTx(t *testing.T) {
@@ -389,7 +407,9 @@ func TestMultiSigTooManySignsTx(t *testing.T) {
 		t.Fatalf("Error code is not %d, got %d", code.IncorrectMultiSignature, response.Code)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestMultiSigNotEnoughTx(t *testing.T) {
@@ -435,7 +455,9 @@ func TestMultiSigNotEnoughTx(t *testing.T) {
 		t.Fatalf("Error code is not %d. Error: %d", code.NotEnoughMultisigVotes, response.Code)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestMultiSigIncorrectSignsTx(t *testing.T) {
@@ -482,5 +504,7 @@ func TestMultiSigIncorrectSignsTx(t *testing.T) {
 		t.Fatalf("Error code is not %d, got %d", code.IncorrectMultiSignature, response.Code)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }

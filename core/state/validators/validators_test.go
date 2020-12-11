@@ -23,10 +23,7 @@ func TestValidators_GetValidators(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 
-	validators, err := NewValidators(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	validators := NewValidators(b, mutableTree.GetLastImmutable())
 
 	validators.Create([32]byte{1}, big.NewInt(1000000))
 	validators.Create([32]byte{2}, big.NewInt(2000000))
@@ -52,10 +49,7 @@ func TestValidators_GetByPublicKey(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 
-	validators, err := NewValidators(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	validators := NewValidators(b, mutableTree.GetLastImmutable())
 
 	validators.Create([32]byte{1}, big.NewInt(1000000))
 	validator := validators.GetByPublicKey([32]byte{1})
@@ -74,10 +68,7 @@ func TestValidators_GetByTmAddress(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 
-	validators, err := NewValidators(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	validators := NewValidators(b, mutableTree.GetLastImmutable())
 
 	validators.Create([32]byte{1}, big.NewInt(1000000))
 	validator := validators.GetByPublicKey([32]byte{1})
@@ -98,10 +89,7 @@ func TestValidators_PunishByzantineValidator(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 
-	validators, err := NewValidators(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	validators := NewValidators(b, mutableTree.GetLastImmutable())
 
 	validators.Create([32]byte{1}, big.NewInt(1000000))
 	validator := validators.GetByPublicKey([32]byte{1})
@@ -120,10 +108,7 @@ func TestValidators_LoadValidators(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
-	validators, err := NewValidators(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	validators := NewValidators(b, mutableTree.GetLastImmutable())
 
 	newValidator := NewValidator(
 		[32]byte{1},
@@ -139,15 +124,12 @@ func TestValidators_LoadValidators(t *testing.T) {
 
 	validators.Create([32]byte{2}, big.NewInt(2000000))
 
-	err = validators.Commit()
+	_, _, err := mutableTree.Commit(validators)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	validators, err = NewValidators(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	validators = NewValidators(b, mutableTree.GetLastImmutable())
 
 	validators.LoadValidators()
 
@@ -173,10 +155,7 @@ func TestValidators_SetValidators(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 
-	validators, err := NewValidators(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	validators := NewValidators(b, mutableTree.GetLastImmutable())
 
 	newValidator := NewValidator(
 		[32]byte{1},
@@ -204,22 +183,14 @@ func TestValidators_SetValidators(t *testing.T) {
 func TestValidators_PayRewards(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
-	accs, err := accounts.NewAccounts(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	accs := accounts.NewAccounts(b, mutableTree.GetLastImmutable())
+
 	b.SetAccounts(accounts.NewBus(accs))
 	b.SetChecker(checker.NewChecker(b))
 	b.SetEvents(eventsdb.NewEventsStore(db.NewMemDB()))
-	appBus, err := app.NewApp(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	appBus := app.NewApp(b, mutableTree.GetLastImmutable())
 	b.SetApp(appBus)
-	validators, err := NewValidators(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	validators := NewValidators(b, mutableTree.GetLastImmutable())
 	newValidator := NewValidator(
 		[32]byte{4},
 		types.NewBitArray(validatorMaxAbsentWindow),
@@ -235,10 +206,8 @@ func TestValidators_PayRewards(t *testing.T) {
 		t.Fatal("validator not found")
 	}
 	validator.AddAccumReward(big.NewInt(90))
-	candidatesS, err := candidates.NewCandidates(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	candidatesS := candidates.NewCandidates(b, mutableTree.GetLastImmutable())
+
 	candidatesS.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10)
 	candidatesS.SetOnline([32]byte{4})
 	candidatesS.SetStakes([32]byte{4}, []types.Stake{
@@ -272,22 +241,14 @@ func TestValidators_PayRewards(t *testing.T) {
 func TestValidators_SetValidatorAbsent(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
-	accs, err := accounts.NewAccounts(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	accs := accounts.NewAccounts(b, mutableTree.GetLastImmutable())
+
 	b.SetAccounts(accounts.NewBus(accs))
 	b.SetChecker(checker.NewChecker(b))
 	b.SetEvents(eventsdb.NewEventsStore(db.NewMemDB()))
-	appBus, err := app.NewApp(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	appBus := app.NewApp(b, mutableTree.GetLastImmutable())
 	b.SetApp(appBus)
-	validators, err := NewValidators(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	validators := NewValidators(b, mutableTree.GetLastImmutable())
 	newValidator := NewValidator(
 		[32]byte{4},
 		types.NewBitArray(validatorMaxAbsentWindow),
@@ -299,10 +260,8 @@ func TestValidators_SetValidatorAbsent(t *testing.T) {
 		b)
 	validators.SetValidators([]*Validator{newValidator})
 
-	candidatesS, err := candidates.NewCandidates(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	candidatesS := candidates.NewCandidates(b, mutableTree.GetLastImmutable())
+
 	candidatesS.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10)
 	candidatesS.SetOnline([32]byte{4})
 	candidatesS.SetStakes([32]byte{4}, []types.Stake{
@@ -331,10 +290,7 @@ func TestValidators_SetValidatorPresent(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 
-	validators, err := NewValidators(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	validators := NewValidators(b, mutableTree.GetLastImmutable())
 
 	validators.Create([32]byte{4}, big.NewInt(1000000))
 
@@ -360,10 +316,7 @@ func TestValidators_SetToDrop(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 
-	validators, err := NewValidators(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	validators := NewValidators(b, mutableTree.GetLastImmutable())
 
 	validators.Create([32]byte{4}, big.NewInt(1000000))
 
@@ -384,22 +337,15 @@ func TestValidators_SetToDrop(t *testing.T) {
 func TestValidators_Export(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
-	accs, err := accounts.NewAccounts(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	accs := accounts.NewAccounts(b, mutableTree.GetLastImmutable())
+
 	b.SetAccounts(accounts.NewBus(accs))
 	b.SetChecker(checker.NewChecker(b))
 	b.SetEvents(eventsdb.NewEventsStore(db.NewMemDB()))
-	appBus, err := app.NewApp(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	appBus := app.NewApp(b, mutableTree.GetLastImmutable())
+
 	b.SetApp(appBus)
-	validators, err := NewValidators(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	validators := NewValidators(b, mutableTree.GetLastImmutable())
 	newValidator := NewValidator(
 		[32]byte{4},
 		types.NewBitArray(validatorMaxAbsentWindow),
@@ -411,10 +357,8 @@ func TestValidators_Export(t *testing.T) {
 		b)
 	validators.SetValidators([]*Validator{newValidator})
 
-	candidatesS, err := candidates.NewCandidates(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	candidatesS := candidates.NewCandidates(b, mutableTree.GetLastImmutable())
+
 	candidatesS.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10)
 	candidatesS.SetOnline([32]byte{4})
 	candidatesS.SetStakes([32]byte{4}, []types.Stake{
@@ -428,15 +372,11 @@ func TestValidators_Export(t *testing.T) {
 	candidatesS.RecalculateStakes(0)
 	validators.SetNewValidators(candidatesS.GetNewCandidates(1))
 
-	err = validators.Commit()
+	hash, version, err := mutableTree.Commit(validators)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	hash, version, err := mutableTree.SaveVersion()
-	if err != nil {
-		t.Fatal(err)
-	}
 	if version != 1 {
 		t.Fatalf("version %d", version)
 	}

@@ -72,7 +72,9 @@ func TestSendTx(t *testing.T) {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", to.String(), targetTestBalance, testBalance)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestSendMultisigTx(t *testing.T) {
@@ -142,7 +144,9 @@ func TestSendMultisigTx(t *testing.T) {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", to.String(), targetTestBalance, testBalance)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestSendFailedMultisigTx(t *testing.T) {
@@ -212,7 +216,9 @@ func TestSendFailedMultisigTx(t *testing.T) {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", to.String(), targetTestBalance, testBalance)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestSendWithNotExistedCoin(t *testing.T) {
@@ -259,7 +265,9 @@ func TestSendWithNotExistedCoin(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestSendTxWithCustomCoin(t *testing.T) {
@@ -322,7 +330,9 @@ func TestSendTxWithCustomCoin(t *testing.T) {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", to.String(), targetTestBalance, testBalance)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestSendTxToGasCoinReserveUnderflow(t *testing.T) {
@@ -374,5 +384,7 @@ func TestSendTxToGasCoinReserveUnderflow(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error: %s", code.CoinReserveUnderflow, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }

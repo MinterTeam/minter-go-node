@@ -74,7 +74,6 @@ func (m *managerServer) Dashboard(_ *empty.Empty, stream pb.ManagerService_Dashb
 			pubkey := types.BytesToPubkey(resultStatus.ValidatorInfo.PubKey.Bytes()[5:])
 			var pbValidatorStatus pb.DashboardResponse_ValidatorStatus
 			cState := m.blockchain.CurrentState()
-			cState.RLock()
 			candidate := cState.Candidates().GetCandidate(pubkey)
 			if candidate == nil {
 				pbValidatorStatus = pb.DashboardResponse_NotDeclared
@@ -95,7 +94,6 @@ func (m *managerServer) Dashboard(_ *empty.Empty, stream pb.ManagerService_Dashb
 					}
 				}
 			}
-			cState.RUnlock()
 
 			if err := stream.Send(&pb.DashboardResponse{
 				LatestHeight:           info.Height,
@@ -231,7 +229,7 @@ func (m *managerServer) NetInfo(context.Context, *empty.Empty) (*pb.NetInfoRespo
 }
 
 func (m *managerServer) AvailableVersions(context.Context, *empty.Empty) (*pb.AvailableVersionsResponse, error) {
-	versions := m.blockchain.CurrentState().Tree().AvailableVersions()
+	versions := m.blockchain.AvailableVersions()
 	intervals := map[int]int{}
 	var fromVersion int64
 	for i := 0; i < len(versions); i++ {

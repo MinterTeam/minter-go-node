@@ -6,7 +6,8 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/state/bus"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/rlp"
-	"github.com/MinterTeam/minter-go-node/tree"
+	"github.com/tendermint/iavl"
+	"sync/atomic"
 
 	"math/big"
 	"sort"
@@ -30,8 +31,8 @@ type Accounts struct {
 	list  map[types.Address]*Model
 	dirty map[types.Address]struct{}
 
-	iavl tree.MTree
-	bus  *bus.Bus
+	db  atomic.Value
+	bus *bus.Bus
 
 	lock sync.RWMutex
 }
@@ -41,14 +42,30 @@ type Balance struct {
 	Value *big.Int
 }
 
-func NewAccounts(stateBus *bus.Bus, iavl tree.MTree) (*Accounts, error) {
-	accounts := &Accounts{iavl: iavl, bus: stateBus, list: map[types.Address]*Model{}, dirty: map[types.Address]struct{}{}}
+func NewAccounts(stateBus *bus.Bus, db *iavl.ImmutableTree) *Accounts {
+	immutableTree := atomic.Value{}
+	if db != nil {
+		immutableTree.Store(db)
+	}
+	accounts := &Accounts{db: immutableTree, bus: stateBus, list: map[types.Address]*Model{}, dirty: map[types.Address]struct{}{}}
 	accounts.bus.SetAccounts(NewBus(accounts))
 
-	return accounts, nil
+	return accounts
 }
 
-func (a *Accounts) Commit() error {
+func (a *Accounts) immutableTree() *iavl.ImmutableTree {
+	db := a.db.Load()
+	if db == nil {
+		return nil
+	}
+	return db.(*iavl.ImmutableTree)
+}
+
+func (a *Accounts) SetImmutableTree(immutableTree *iavl.ImmutableTree) {
+	a.db.Store(immutableTree)
+}
+
+func (a *Accounts) Commit(db *iavl.MutableTree) error {
 	accounts := a.getOrderedDirtyAccounts()
 	for _, address := range accounts {
 		account := a.getFromMap(address)
@@ -65,7 +82,7 @@ func (a *Accounts) Commit() error {
 
 			path := []byte{mainPrefix}
 			path = append(path, address[:]...)
-			a.iavl.Set(path, data)
+			db.Set(path, data)
 			account.isDirty = false
 			account.isNew = false
 		}
@@ -80,7 +97,7 @@ func (a *Accounts) Commit() error {
 			path := []byte{mainPrefix}
 			path = append(path, address[:]...)
 			path = append(path, coinsPrefix)
-			a.iavl.Set(path, coinsList)
+			db.Set(path, coinsList)
 			account.hasDirtyCoins = false
 		}
 
@@ -99,9 +116,9 @@ func (a *Accounts) Commit() error {
 
 				balance := account.getBalance(coin)
 				if balance.Sign() == 0 {
-					a.iavl.Remove(path)
+					db.Remove(path)
 				} else {
-					a.iavl.Set(path, balance.Bytes())
+					db.Set(path, balance.Bytes())
 				}
 			}
 
@@ -144,7 +161,7 @@ func (a *Accounts) GetBalance(address types.Address, coin types.CoinID) *big.Int
 		path = append(path, balancePrefix)
 		path = append(path, coin.Bytes()...)
 
-		_, enc := a.iavl.Get(path)
+		_, enc := a.immutableTree().Get(path)
 		if len(enc) != 0 {
 			balance = big.NewInt(0).SetBytes(enc)
 		}
@@ -240,7 +257,7 @@ func (a *Accounts) get(address types.Address) *Model {
 
 	path := []byte{mainPrefix}
 	path = append(path, address[:]...)
-	_, enc := a.iavl.Get(path)
+	_, enc := a.immutableTree().Get(path)
 	if len(enc) == 0 {
 		return nil
 	}
@@ -259,7 +276,7 @@ func (a *Accounts) get(address types.Address) *Model {
 	path = []byte{mainPrefix}
 	path = append(path, address[:]...)
 	path = append(path, coinsPrefix)
-	_, enc = a.iavl.Get(path)
+	_, enc = a.immutableTree().Get(path)
 	if len(enc) != 0 {
 		var coins []types.CoinID
 		if err := rlp.DecodeBytes(enc, &coins); err != nil {
@@ -316,50 +333,54 @@ func (a *Accounts) markDirty(addr types.Address) {
 }
 
 func (a *Accounts) Export(state *types.AppState) {
-	// todo: iterate range?
-	a.iavl.Iterate(func(key []byte, value []byte) bool {
-		if key[0] == mainPrefix {
-			addressPath := key[1:]
-			if len(addressPath) > types.AddressLength {
-				return false
-			}
-
-			address := types.BytesToAddress(addressPath)
-			account := a.get(address)
-
-			var balance []types.Balance
-			for _, b := range a.GetBalances(account.address) {
-				balance = append(balance, types.Balance{
-					Coin:  uint64(b.Coin.ID),
-					Value: b.Value.String(),
-				})
-			}
-
-			// sort balances by coin symbol
-			sort.SliceStable(balance, func(i, j int) bool {
-				return bytes.Compare(types.CoinID(balance[i].Coin).Bytes(), types.CoinID(balance[j].Coin).Bytes()) == 1
-			})
-
-			acc := types.Account{
-				Address: account.address,
-				Balance: balance,
-				Nonce:   account.Nonce,
-			}
-
-			if account.IsMultisig() {
-				var weights []uint64
-				for _, weight := range account.MultisigData.Weights {
-					weights = append(weights, uint64(weight))
-				}
-				acc.MultisigData = &types.Multisig{
-					Weights:   weights,
-					Threshold: uint64(account.MultisigData.Threshold),
-					Addresses: account.MultisigData.Addresses,
-				}
-			}
-
-			state.Accounts = append(state.Accounts, acc)
+	a.immutableTree().IterateRange([]byte{mainPrefix}, []byte{mainPrefix + 1}, true, func(key []byte, value []byte) bool {
+		addressPath := key[1:]
+		if len(addressPath) > types.AddressLength {
+			return false
 		}
+
+		address := types.BytesToAddress(addressPath)
+		account := a.get(address)
+
+		var balance []types.Balance
+		for _, b := range a.GetBalances(account.address) {
+			if b.Value.Sign() != 1 {
+				continue
+			}
+			balance = append(balance, types.Balance{
+				Coin:  uint64(b.Coin.ID),
+				Value: b.Value.String(),
+			})
+		}
+
+		// sort balances by coin symbol
+		sort.SliceStable(balance, func(i, j int) bool {
+			return bytes.Compare(types.CoinID(balance[i].Coin).Bytes(), types.CoinID(balance[j].Coin).Bytes()) == 1
+		})
+
+		acc := types.Account{
+			Address: account.address,
+			Balance: balance,
+			Nonce:   account.Nonce,
+		}
+
+		if account.IsMultisig() {
+			var weights []uint64
+			for _, weight := range account.MultisigData.Weights {
+				weights = append(weights, uint64(weight))
+			}
+			acc.MultisigData = &types.Multisig{
+				Weights:   weights,
+				Threshold: uint64(account.MultisigData.Threshold),
+				Addresses: account.MultisigData.Addresses,
+			}
+		}
+
+		if len(acc.Balance) == 0 && acc.Nonce == 0 && acc.MultisigData == nil {
+			return false
+		}
+
+		state.Accounts = append(state.Accounts, acc)
 
 		return false
 	})

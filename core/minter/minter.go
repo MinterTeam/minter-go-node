@@ -398,7 +398,7 @@ func (app *Blockchain) DeliverTx(req abciTypes.RequestDeliverTx) abciTypes.Respo
 
 // CheckTx validates a tx for the mempool
 func (app *Blockchain) CheckTx(req abciTypes.RequestCheckTx) abciTypes.ResponseCheckTx {
-	response := transaction.RunTx(app.stateCheck, req.Tx, nil, app.height, app.currentMempool, app.MinGasPrice())
+	response := transaction.RunTx(app.CurrentState(), req.Tx, nil, app.height, app.currentMempool, app.MinGasPrice())
 
 	return abciTypes.ResponseCheckTx{
 		Code:      response.Code,
@@ -477,6 +477,14 @@ func (app *Blockchain) CurrentState() *state.CheckState {
 	defer app.lock.RUnlock()
 
 	return app.stateCheck
+}
+
+// AvailableVersions returns all available versions in ascending order
+func (app *Blockchain) AvailableVersions() []int {
+	app.lock.RLock()
+	defer app.lock.RUnlock()
+
+	return app.stateDeliver.Tree().AvailableVersions()
 }
 
 // GetStateForHeight returns immutable state of Minter Blockchain for given height
@@ -628,9 +636,6 @@ func (app *Blockchain) GetValidatorStatus(address types.TmAddress) int8 {
 func (app *Blockchain) DeleteStateVersions(from, to int64) error {
 	app.lock.RLock()
 	defer app.lock.RUnlock()
-
-	app.stateDeliver.Tree().GlobalLock()
-	defer app.stateDeliver.Tree().GlobalUnlock()
 
 	return app.stateDeliver.Tree().DeleteVersionsRange(from, to)
 }

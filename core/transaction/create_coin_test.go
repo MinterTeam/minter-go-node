@@ -68,12 +68,14 @@ func TestCreateCoinTx(t *testing.T) {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
 
-	err = cState.Coins.Commit()
+	_, _, err = cState.Tree().Commit(cState.Coins)
 	if err != nil {
 		t.Fatalf("Commit coins failed. Error %s", err)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 
 	targetBalance, _ := big.NewInt(0).SetString("989000000000000000000000", 10)
 	balance := cState.Accounts.GetBalance(addr, coin)
@@ -116,7 +118,9 @@ func TestCreateCoinTx(t *testing.T) {
 		t.Fatalf("Target owner address is not correct. Expected %s, got %s", addr.String(), symbolInfo.OwnerAddress().String())
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestCreateCoinWithIncorrectName(t *testing.T) {
@@ -176,7 +180,9 @@ func TestCreateCoinWithIncorrectName(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.InvalidCoinName, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestCreateCoinWithInvalidSymbol(t *testing.T) {
@@ -234,7 +240,9 @@ func TestCreateCoinWithInvalidSymbol(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.InvalidCoinSymbol, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestCreateCoinWithExistingSymbol(t *testing.T) {
@@ -293,7 +301,9 @@ func TestCreateCoinWithExistingSymbol(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinAlreadyExists, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestCreateCoinWithWrongCrr(t *testing.T) {
@@ -349,7 +359,9 @@ func TestCreateCoinWithWrongCrr(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.WrongCrr, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 
 	data.ConstantReserveRatio = uint32(101)
 
@@ -382,7 +394,9 @@ func TestCreateCoinWithWrongCrr(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.WrongCrr, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestCreateCoinWithWrongCoinSupply(t *testing.T) {
@@ -437,7 +451,9 @@ func TestCreateCoinWithWrongCoinSupply(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.WrongCoinSupply, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 
 	data.InitialAmount = helpers.BipToPip(big.NewInt(1000000))
 	encodedData, err = rlp.EncodeToBytes(data)
@@ -469,7 +485,9 @@ func TestCreateCoinWithWrongCoinSupply(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.WrongCoinSupply, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 
 	data.MaxSupply = big.NewInt(0).Exp(big.NewInt(100), big.NewInt(15+18), nil)
 	encodedData, err = rlp.EncodeToBytes(data)
@@ -514,7 +532,9 @@ func TestCreateCoinWithWrongCoinSupply(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.WrongCoinSupply, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestCreateCoinGas(t *testing.T) {
@@ -596,7 +616,9 @@ func TestCreateCoinWithInsufficientFundsForGas(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestCreateCoinTxToGasCoinReserveUnderflow(t *testing.T) {
@@ -656,7 +678,9 @@ func TestCreateCoinTxToGasCoinReserveUnderflow(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveUnderflow, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestCreateCoinToInsufficientFundsForGasCoin(t *testing.T) {
@@ -710,7 +734,9 @@ func TestCreateCoinToInsufficientFundsForGasCoin(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestCreateCoinToInsufficientFundsForInitialReserve(t *testing.T) {
@@ -764,7 +790,9 @@ func TestCreateCoinToInsufficientFundsForInitialReserve(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestCreateCoinToSameSymbolInOneBlock(t *testing.T) {
@@ -823,7 +851,9 @@ func TestCreateCoinToSameSymbolInOneBlock(t *testing.T) {
 		t.Fatalf("Response code is not success. Error %s", response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 
 	if err := tx.Sign(privateKey2); err != nil {
 		t.Fatal(err)
@@ -839,5 +869,7 @@ func TestCreateCoinToSameSymbolInOneBlock(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinAlreadyExists, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }

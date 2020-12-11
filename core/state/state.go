@@ -13,11 +13,13 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/state/coins"
 	"github.com/MinterTeam/minter-go-node/core/state/frozenfunds"
 	"github.com/MinterTeam/minter-go-node/core/state/halts"
+	"github.com/MinterTeam/minter-go-node/core/state/swap"
 	"github.com/MinterTeam/minter-go-node/core/state/validators"
 	"github.com/MinterTeam/minter-go-node/core/state/waitlist"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/tree"
+	"github.com/tendermint/iavl"
 	db "github.com/tendermint/tm-db"
 	"gopkg.in/errgo.v2/fmt/errors"
 	"log"
@@ -39,24 +41,20 @@ func NewCheckState(state *State) *CheckState {
 
 func (cs *CheckState) isValue_State() {}
 
-func (cs *CheckState) Lock() {
-	cs.state.lock.Lock()
-}
+func (cs *CheckState) Export() types.AppState {
+	appState := new(types.AppState)
+	cs.App().Export(appState, uint64(cs.state.height))
+	cs.Validators().Export(appState)
+	cs.Candidates().Export(appState)
+	cs.WaitList().Export(appState)
+	cs.FrozenFunds().Export(appState, uint64(cs.state.height))
+	cs.Accounts().Export(appState)
+	cs.Coins().Export(appState)
+	cs.Checks().Export(appState, uint64(cs.state.height))
+	cs.Halts().Export(appState)
+	cs.Swap().Export(appState)
 
-func (cs *CheckState) Export(height uint64) types.AppState {
-	return cs.state.Export(height)
-}
-
-func (cs *CheckState) Unlock() {
-	cs.state.lock.Unlock()
-}
-
-func (cs *CheckState) RLock() {
-	cs.state.lock.RLock()
-}
-
-func (cs *CheckState) RUnlock() {
-	cs.state.lock.RUnlock()
+	return *appState
 }
 
 func (cs *CheckState) Validators() validators.RValidators {
@@ -86,29 +84,31 @@ func (cs *CheckState) Checks() checks.RChecks {
 func (cs *CheckState) WaitList() waitlist.RWaitList {
 	return cs.state.Waitlist
 }
-func (cs *CheckState) Tree() tree.ReadOnlyTree {
-	return cs.state.Tree()
+
+func (cs *CheckState) Swap() swap.RSwap {
+	return cs.state.Swap
 }
 
 type State struct {
-	App         *app.App
-	Validators  *validators.Validators
-	Candidates  *candidates.Candidates
-	FrozenFunds *frozenfunds.FrozenFunds
-	Halts       *halts.HaltBlocks
-	Accounts    *accounts.Accounts
-	Coins       *coins.Coins
-	Checks      *checks.Checks
-	Checker     *checker.Checker
-	Waitlist    *waitlist.WaitList
-
+	App            *app.App
+	Validators     *validators.Validators
+	Candidates     *candidates.Candidates
+	FrozenFunds    *frozenfunds.FrozenFunds
+	Halts          *halts.HaltBlocks
+	Accounts       *accounts.Accounts
+	Coins          *coins.Coins
+	Checks         *checks.Checks
+	Checker        *checker.Checker
+	Waitlist       *waitlist.WaitList
+	Swap           *swap.Swap
 	db             db.DB
 	events         eventsdb.IEventsDB
 	tree           tree.MTree
 	keepLastStates int64
 	bus            *bus.Bus
 
-	lock sync.RWMutex
+	lock   sync.RWMutex
+	height int64
 }
 
 func (s *State) isValue_State() {}
@@ -119,10 +119,12 @@ func NewState(height uint64, db db.DB, events eventsdb.IEventsDB, cacheSize int,
 		return nil, err
 	}
 
-	state, err := newStateForTree(iavlTree, events, db, keepLastStates)
+	state, err := newStateForTree(iavlTree.GetLastImmutable(), events, db, keepLastStates)
 	if err != nil {
 		return nil, err
 	}
+
+	state.tree = iavlTree
 
 	state.Candidates.LoadCandidatesDeliver()
 	state.Candidates.LoadStakes()
@@ -175,51 +177,21 @@ func (s *State) Check() error {
 	return nil
 }
 
-const countBatchBlocksDelete = 60
-
 func (s *State) Commit() ([]byte, error) {
 	s.Checker.Reset()
 
-	s.tree.GlobalLock()
-	defer s.tree.GlobalUnlock()
-
-	if err := s.Accounts.Commit(); err != nil {
-		return nil, err
-	}
-
-	if err := s.App.Commit(); err != nil {
-		return nil, err
-	}
-
-	if err := s.Coins.Commit(); err != nil {
-		return nil, err
-	}
-
-	if err := s.Candidates.Commit(); err != nil {
-		return nil, err
-	}
-
-	if err := s.Validators.Commit(); err != nil {
-		return nil, err
-	}
-
-	if err := s.Checks.Commit(); err != nil {
-		return nil, err
-	}
-
-	if err := s.FrozenFunds.Commit(); err != nil {
-		return nil, err
-	}
-
-	if err := s.Halts.Commit(); err != nil {
-		return nil, err
-	}
-
-	if err := s.Waitlist.Commit(); err != nil {
-		return nil, err
-	}
-
-	hash, version, err := s.tree.SaveVersion()
+	hash, version, err := s.tree.Commit(
+		s.Accounts,
+		s.App,
+		s.Coins,
+		s.Candidates,
+		s.Validators,
+		s.Checks,
+		s.FrozenFunds,
+		s.Halts,
+		s.Waitlist,
+		s.Swap,
+	)
 	if err != nil {
 		return hash, err
 	}
@@ -229,9 +201,11 @@ func (s *State) Commit() ([]byte, error) {
 		return hash, nil
 	}
 
-	if err := s.tree.DeleteVersionIfExists(versionToDelete); err != nil {
+	if err := s.tree.DeleteVersion(versionToDelete); err != nil {
 		log.Printf("DeleteVersion %d error: %s\n", versionToDelete, err)
 	}
+
+	s.height = version
 
 	return hash, nil
 }
@@ -310,31 +284,22 @@ func (s *State) Import(state types.AppState) error {
 		s.FrozenFunds.AddFund(ff.Height, ff.Address, *ff.CandidateKey, uint32(ff.CandidateID), types.CoinID(ff.Coin), helpers.StringToBigInt(ff.Value))
 	}
 
+	s.Swap.Import(&state)
+
 	return nil
 }
 
-func (s *State) Export(height uint64) types.AppState {
-	state, err := NewCheckStateAtHeight(height, s.db)
+func (s *State) Export() types.AppState {
+	state, err := NewCheckStateAtHeight(uint64(s.tree.Version()), s.db)
 	if err != nil {
-		log.Panicf("Create new state at height %d failed: %s", height, err)
+		log.Panicf("Create new state at height %d failed: %s", s.tree.Version(), err)
 	}
 
-	appState := new(types.AppState)
-	state.App().Export(appState, height)
-	state.Validators().Export(appState)
-	state.Candidates().Export(appState)
-	state.WaitList().Export(appState)
-	state.FrozenFunds().Export(appState, height)
-	state.Accounts().Export(appState)
-	state.Coins().Export(appState)
-	state.Checks().Export(appState)
-	state.Halts().Export(appState)
-
-	return *appState
+	return state.Export()
 }
 
-func newCheckStateForTree(iavlTree tree.MTree, events eventsdb.IEventsDB, db db.DB, keepLastStates int64) (*CheckState, error) {
-	stateForTree, err := newStateForTree(iavlTree, events, db, keepLastStates)
+func newCheckStateForTree(immutableTree *iavl.ImmutableTree, events eventsdb.IEventsDB, db db.DB, keepLastStates int64) (*CheckState, error) {
+	stateForTree, err := newStateForTree(immutableTree, events, db, keepLastStates)
 	if err != nil {
 		return nil, err
 	}
@@ -342,56 +307,31 @@ func newCheckStateForTree(iavlTree tree.MTree, events eventsdb.IEventsDB, db db.
 	return NewCheckState(stateForTree), nil
 }
 
-func newStateForTree(iavlTree tree.MTree, events eventsdb.IEventsDB, db db.DB, keepLastStates int64) (*State, error) {
+func newStateForTree(immutableTree *iavl.ImmutableTree, events eventsdb.IEventsDB, db db.DB, keepLastStates int64) (*State, error) {
 	stateBus := bus.NewBus()
 	stateBus.SetEvents(events)
 
 	stateChecker := checker.NewChecker(stateBus)
 
-	candidatesState, err := candidates.NewCandidates(stateBus, iavlTree)
-	if err != nil {
-		return nil, err
-	}
+	candidatesState := candidates.NewCandidates(stateBus, immutableTree)
 
-	validatorsState, err := validators.NewValidators(stateBus, iavlTree)
-	if err != nil {
-		return nil, err
-	}
+	validatorsState := validators.NewValidators(stateBus, immutableTree)
 
-	appState, err := app.NewApp(stateBus, iavlTree)
-	if err != nil {
-		return nil, err
-	}
+	appState := app.NewApp(stateBus, immutableTree)
 
-	frozenFundsState, err := frozenfunds.NewFrozenFunds(stateBus, iavlTree)
-	if err != nil {
-		return nil, err
-	}
+	frozenFundsState := frozenfunds.NewFrozenFunds(stateBus, immutableTree)
 
-	accountsState, err := accounts.NewAccounts(stateBus, iavlTree)
-	if err != nil {
-		return nil, err
-	}
+	accountsState := accounts.NewAccounts(stateBus, immutableTree)
 
-	coinsState, err := coins.NewCoins(stateBus, iavlTree)
-	if err != nil {
-		return nil, err
-	}
+	coinsState := coins.NewCoins(stateBus, immutableTree)
 
-	checksState, err := checks.NewChecks(iavlTree)
-	if err != nil {
-		return nil, err
-	}
+	checksState := checks.NewChecks(immutableTree)
 
-	haltsState, err := halts.NewHalts(stateBus, iavlTree)
-	if err != nil {
-		return nil, err
-	}
+	haltsState := halts.NewHalts(stateBus, immutableTree)
 
-	waitlistState, err := waitlist.NewWaitList(stateBus, iavlTree)
-	if err != nil {
-		return nil, err
-	}
+	waitlistState := waitlist.NewWaitList(stateBus, immutableTree)
+
+	swap := swap.New(stateBus, immutableTree)
 
 	state := &State{
 		Validators:  validatorsState,
@@ -404,12 +344,12 @@ func newStateForTree(iavlTree tree.MTree, events eventsdb.IEventsDB, db db.DB, k
 		Checker:     stateChecker,
 		Halts:       haltsState,
 		Waitlist:    waitlistState,
+		Swap:        swap,
 
-		bus: stateBus,
-
+		height:         immutableTree.Version(),
+		bus:            stateBus,
 		db:             db,
 		events:         events,
-		tree:           iavlTree,
 		keepLastStates: keepLastStates,
 	}
 

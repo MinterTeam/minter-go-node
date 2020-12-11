@@ -234,7 +234,7 @@ func TestBlockchain_Height(t *testing.T) {
 
 	blockchain.lock.RLock()
 	defer blockchain.lock.RUnlock()
-	exportedState := blockchain.CurrentState().Export(blockchain.Height() - 1)
+	exportedState := blockchain.CurrentState().Export()
 	if err := exportedState.Verify(); err != nil {
 		t.Fatal(err)
 	}
@@ -270,7 +270,7 @@ func TestBlockchain_SetStatisticData(t *testing.T) {
 	blockchain.lock.RLock()
 	defer blockchain.lock.RUnlock()
 
-	exportedState := blockchain.CurrentState().Export(blockchain.Height() - 1)
+	exportedState := blockchain.CurrentState().Export()
 	if err := exportedState.Verify(); err != nil {
 		t.Fatal(err)
 	}
@@ -331,7 +331,7 @@ func TestBlockchain_IsApplicationHalted(t *testing.T) {
 		case <-time.After(2 * time.Second):
 			blockchain.lock.RLock()
 			defer blockchain.lock.RUnlock()
-			exportedState := blockchain.CurrentState().Export(blockchain.Height() - 1)
+			exportedState := blockchain.CurrentState().Export()
 			if err := exportedState.Verify(); err != nil {
 				t.Fatal(err)
 			}
@@ -413,7 +413,7 @@ func TestBlockchain_GetStateForHeightAndDeleteStateVersions(t *testing.T) {
 
 	blockchain.lock.RLock()
 	defer blockchain.lock.RUnlock()
-	exportedState := blockchain.CurrentState().Export(blockchain.Height() - 1)
+	exportedState := blockchain.CurrentState().Export()
 	if err := exportedState.Verify(); err != nil {
 		t.Fatal(err)
 	}
@@ -478,7 +478,7 @@ func TestBlockchain_SendTx(t *testing.T) {
 
 	blockchain.lock.RLock()
 	defer blockchain.lock.RUnlock()
-	exportedState := blockchain.CurrentState().Export(blockchain.Height() - 1)
+	exportedState := blockchain.CurrentState().Export()
 	if err := exportedState.Verify(); err != nil {
 		t.Fatal(err)
 	}
@@ -509,7 +509,7 @@ func TestBlockchain_FrozenFunds(t *testing.T) {
 
 	blockchain.lock.RLock()
 	defer blockchain.lock.RUnlock()
-	exportedState := blockchain.CurrentState().Export(blockchain.Height() - 1)
+	exportedState := blockchain.CurrentState().Export()
 	if err := exportedState.Verify(); err != nil {
 		t.Fatal(err)
 	}
@@ -768,7 +768,7 @@ func TestBlockchain_RecalculateStakes_andRemoveValidator(t *testing.T) {
 	blockchain.lock.RLock()
 	defer blockchain.lock.RUnlock()
 
-	exportedState := blockchain.CurrentState().Export(blockchain.Height() - 1)
+	exportedState := blockchain.CurrentState().Export()
 	if err := exportedState.Verify(); err != nil {
 		t.Fatal(err)
 	}

@@ -78,7 +78,9 @@ func TestMultisendTx(t *testing.T) {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", to.String(), targetTestBalance, testBalance)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestMultisendTxToInvalidDataLength(t *testing.T) {
@@ -150,7 +152,9 @@ func TestMultisendTxToInvalidDataLength(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.InvalidMultisendData, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestMultisendTxToInsufficientFunds(t *testing.T) {
@@ -201,7 +205,9 @@ func TestMultisendTxToInsufficientFunds(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestMultisendToInvalidCoin(t *testing.T) {
@@ -255,7 +261,9 @@ func TestMultisendToInvalidCoin(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestMultisendToInsufficientReserve(t *testing.T) {
@@ -309,7 +317,9 @@ func TestMultisendToInsufficientReserve(t *testing.T) {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestMultisendTxToGasCoinReserveUnderflow(t *testing.T) {
@@ -362,9 +372,11 @@ func TestMultisendTxToGasCoinReserveUnderflow(t *testing.T) {
 	}
 
 	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
-	if response.Code != code.CoinReserveUnderflow {
-		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveUnderflow, response.Log)
+	if response.Code != code.CoinReserveNotSufficient {
+		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveNotSufficient, response.Log)
 	}
 
-	checkState(t, cState)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 }

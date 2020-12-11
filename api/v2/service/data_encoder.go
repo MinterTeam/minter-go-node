@@ -193,6 +193,71 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 			},
 			Value: d.Value.String(),
 		}
+	case *transaction.AddSwapPoolData:
+		m = &pb.AddSwapPoolData{
+			Coin0: &pb.Coin{
+				Id:     uint64(d.Coin0),
+				Symbol: coins.GetCoin(d.Coin0).GetFullSymbol(),
+			},
+			Coin1: &pb.Coin{
+				Id:     uint64(d.Coin1),
+				Symbol: coins.GetCoin(d.Coin1).GetFullSymbol(),
+			},
+			Volume0:    d.Volume0.String(),
+			MaxVolume1: d.MaxVolume1.String(),
+		}
+	case *transaction.RemoveSwapPoolData:
+		m = &pb.RemoveSwapPoolData{
+			Coin0: &pb.Coin{
+				Id:     uint64(d.Coin0),
+				Symbol: coins.GetCoin(d.Coin0).GetFullSymbol(),
+			},
+			Coin1: &pb.Coin{
+				Id:     uint64(d.Coin1),
+				Symbol: coins.GetCoin(d.Coin1).GetFullSymbol(),
+			},
+			Liquidity:      d.Liquidity.String(),
+			MinimumVolume0: d.MinimumVolume0.String(),
+			MinimumVolume1: d.MinimumVolume1.String(),
+		}
+	case *transaction.BuySwapPoolData:
+		m = &pb.BuySwapPoolData{
+			CoinToBuy: &pb.Coin{
+				Id:     uint64(d.CoinToBuy),
+				Symbol: coins.GetCoin(d.CoinToBuy).GetFullSymbol(),
+			},
+			CoinToSell: &pb.Coin{
+				Id:     uint64(d.CoinToSell),
+				Symbol: coins.GetCoin(d.CoinToSell).GetFullSymbol(),
+			},
+			ValueToBuy:         d.ValueToBuy.String(),
+			MaximumValueToSell: d.MaximumValueToSell.String(),
+		}
+	case *transaction.SellSwapPoolData:
+		m = &pb.SellSwapPoolData{
+			CoinToBuy: &pb.Coin{
+				Id:     uint64(d.CoinToBuy),
+				Symbol: coins.GetCoin(d.CoinToBuy).GetFullSymbol(),
+			},
+			CoinToSell: &pb.Coin{
+				Id:     uint64(d.CoinToSell),
+				Symbol: coins.GetCoin(d.CoinToSell).GetFullSymbol(),
+			},
+			ValueToSell:       d.ValueToSell.String(),
+			MinimumValueToBuy: d.MinimumValueToBuy.String(),
+		}
+	case *transaction.SellAllSwapPoolData:
+		m = &pb.SellAllSwapPoolData{
+			CoinToBuy: &pb.Coin{
+				Id:     uint64(d.CoinToBuy),
+				Symbol: coins.GetCoin(d.CoinToBuy).GetFullSymbol(),
+			},
+			CoinToSell: &pb.Coin{
+				Id:     uint64(d.CoinToSell),
+				Symbol: coins.GetCoin(d.CoinToSell).GetFullSymbol(),
+			},
+			MinimumValueToBuy: d.MinimumValueToBuy.String(),
+		}
 	default:
 		return nil, errors.New("unknown tx type")
 	}

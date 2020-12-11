@@ -10,7 +10,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/tendermint/tendermint/libs/kv"
 )
 
@@ -20,7 +19,7 @@ type EditMultisigData struct {
 	Addresses []types.Address
 }
 
-func (data EditMultisigData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data EditMultisigData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	sender, _ := tx.Sender()
 
 	if !context.Accounts().GetAccount(sender).IsMultisig() {
@@ -104,23 +103,16 @@ func (data EditMultisigData) Run(tx *Transaction, context state.Interface, rewar
 		checkState = state.NewCheckState(context.(*state.State))
 	}
 
-	response := data.BasicCheck(tx, checkState)
+	response := data.basicCheck(tx, checkState)
 	if response != nil {
 		return *response
 	}
 
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
-	commission := big.NewInt(0).Set(commissionInBaseCoin)
-
 	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
-
-	if !tx.GasCoin.IsBaseCoin() {
-		errResp := CheckReserveUnderflow(gasCoin, commissionInBaseCoin)
-		if errResp != nil {
-			return *errResp
-		}
-
-		commission = formula.CalculateSaleAmount(gasCoin.Volume(), gasCoin.Reserve(), gasCoin.Crr(), commissionInBaseCoin)
+	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, gasCoin, commissionInBaseCoin)
+	if errResp != nil {
+		return *errResp
 	}
 
 	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
@@ -132,12 +124,14 @@ func (data EditMultisigData) Run(tx *Transaction, context state.Interface, rewar
 	}
 
 	if deliverState, ok := context.(*state.State); ok {
-		rewardPool.Add(rewardPool, commissionInBaseCoin)
-
-		deliverState.Coins.SubVolume(tx.GasCoin, commission)
-		deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
-
+		if isGasCommissionFromPoolSwap {
+			commission, commissionInBaseCoin = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
+		} else {
+			deliverState.Coins.SubVolume(tx.GasCoin, commission)
+			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
+		}
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
+		rewardPool.Add(rewardPool, commissionInBaseCoin)
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 
 		deliverState.Accounts.EditMultisig(data.Threshold, data.Weights, data.Addresses, sender)

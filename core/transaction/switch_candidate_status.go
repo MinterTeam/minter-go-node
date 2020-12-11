@@ -7,7 +7,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
 )
@@ -20,7 +19,7 @@ func (data SetCandidateOnData) GetPubKey() types.Pubkey {
 	return data.PubKey
 }
 
-func (data SetCandidateOnData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data SetCandidateOnData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	return checkCandidateControl(data, tx, context)
 }
 
@@ -42,23 +41,16 @@ func (data SetCandidateOnData) Run(tx *Transaction, context state.Interface, rew
 		checkState = state.NewCheckState(context.(*state.State))
 	}
 
-	response := data.BasicCheck(tx, checkState)
+	response := data.basicCheck(tx, checkState)
 	if response != nil {
 		return *response
 	}
 
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
-	commission := big.NewInt(0).Set(commissionInBaseCoin)
-
 	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
-
-	if !tx.GasCoin.IsBaseCoin() {
-		errResp := CheckReserveUnderflow(gasCoin, commissionInBaseCoin)
-		if errResp != nil {
-			return *errResp
-		}
-
-		commission = formula.CalculateSaleAmount(gasCoin.Volume(), gasCoin.Reserve(), gasCoin.Crr(), commissionInBaseCoin)
+	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, gasCoin, commissionInBaseCoin)
+	if errResp != nil {
+		return *errResp
 	}
 
 	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
@@ -70,12 +62,14 @@ func (data SetCandidateOnData) Run(tx *Transaction, context state.Interface, rew
 	}
 
 	if deliverState, ok := context.(*state.State); ok {
-		rewardPool.Add(rewardPool, commissionInBaseCoin)
-
-		deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
-		deliverState.Coins.SubVolume(tx.GasCoin, commission)
-
+		if isGasCommissionFromPoolSwap {
+			commission, commissionInBaseCoin = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
+		} else {
+			deliverState.Coins.SubVolume(tx.GasCoin, commission)
+			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
+		}
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
+		rewardPool.Add(rewardPool, commissionInBaseCoin)
 		deliverState.Candidates.SetOnline(data.PubKey)
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}
@@ -101,7 +95,7 @@ func (data SetCandidateOffData) GetPubKey() types.Pubkey {
 	return data.PubKey
 }
 
-func (data SetCandidateOffData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data SetCandidateOffData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	return checkCandidateControl(data, tx, context)
 }
 
@@ -123,22 +117,16 @@ func (data SetCandidateOffData) Run(tx *Transaction, context state.Interface, re
 		checkState = state.NewCheckState(context.(*state.State))
 	}
 
-	response := data.BasicCheck(tx, checkState)
+	response := data.basicCheck(tx, checkState)
 	if response != nil {
 		return *response
 	}
 
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
-	commission := big.NewInt(0).Set(commissionInBaseCoin)
-
 	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
-	if !tx.GasCoin.IsBaseCoin() {
-		errResp := CheckReserveUnderflow(gasCoin, commissionInBaseCoin)
-		if errResp != nil {
-			return *errResp
-		}
-
-		commission = formula.CalculateSaleAmount(gasCoin.Volume(), gasCoin.Reserve(), gasCoin.Crr(), commissionInBaseCoin)
+	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, gasCoin, commissionInBaseCoin)
+	if errResp != nil {
+		return *errResp
 	}
 
 	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
@@ -150,12 +138,14 @@ func (data SetCandidateOffData) Run(tx *Transaction, context state.Interface, re
 	}
 
 	if deliverState, ok := context.(*state.State); ok {
-		rewardPool.Add(rewardPool, commissionInBaseCoin)
-
-		deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
-		deliverState.Coins.SubVolume(tx.GasCoin, commission)
-
+		if isGasCommissionFromPoolSwap {
+			commission, commissionInBaseCoin = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
+		} else {
+			deliverState.Coins.SubVolume(tx.GasCoin, commission)
+			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
+		}
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
+		rewardPool.Add(rewardPool, commissionInBaseCoin)
 		deliverState.Candidates.SetOffline(data.PubKey)
 		deliverState.Validators.SetToDrop(data.PubKey)
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)

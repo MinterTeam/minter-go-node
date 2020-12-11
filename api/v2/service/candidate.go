@@ -33,14 +33,9 @@ func (s *Service) Candidate(ctx context.Context, req *pb.CandidateRequest) (*pb.
 	}
 
 	if req.Height != 0 {
-		cState.Lock()
 		cState.Candidates().LoadCandidates()
 		cState.Candidates().LoadStakesOfCandidate(pubkey)
-		cState.Unlock()
 	}
-
-	cState.RLock()
-	defer cState.RUnlock()
 
 	candidate := cState.Candidates().GetCandidate(pubkey)
 	if candidate == nil {
@@ -67,9 +62,10 @@ func makeResponseCandidate(state *state.CheckState, c *candidates.Candidate, inc
 	}
 
 	if includeStakes {
+		state.Candidates().LoadStakesOfCandidate(c.PubKey)
+		stakes := state.Candidates().GetStakes(c.PubKey)
 		addresses := map[types.Address]struct{}{}
 		minStake := big.NewInt(0)
-		stakes := state.Candidates().GetStakes(c.PubKey)
 		usedSlots := len(stakes)
 		if !NotShowStakes {
 			candidate.Stakes = make([]*pb.CandidateResponse_Stake, 0, usedSlots)

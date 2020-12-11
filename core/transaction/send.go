@@ -23,8 +23,8 @@ type Coin struct {
 	Symbol string `json:"symbol"`
 }
 
-func (data SendData) totalSpend(tx *Transaction, context *state.CheckState) (TotalSpends, []conversion, *big.Int, *Response) {
-	total := TotalSpends{}
+func (data SendData) totalSpend(tx *Transaction, context *state.CheckState) (totalSpends, []conversion, *big.Int, *Response) {
+	total := totalSpends{}
 	var conversions []conversion
 
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
@@ -53,7 +53,7 @@ func (data SendData) totalSpend(tx *Transaction, context *state.CheckState) (Tot
 	return total, conversions, nil, nil
 }
 
-func (data SendData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data SendData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.Value == nil {
 		return &Response{
 			Code: code.DecodeError,
@@ -91,7 +91,7 @@ func (data SendData) Run(tx *Transaction, context state.Interface, rewardPool *b
 		checkState = state.NewCheckState(context.(*state.State))
 	}
 
-	response := data.BasicCheck(tx, checkState)
+	response := data.basicCheck(tx, checkState)
 	if response != nil {
 		return *response
 	}

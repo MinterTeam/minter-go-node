@@ -18,10 +18,10 @@ type SellAllCoinData struct {
 	MinimumValueToBuy *big.Int
 }
 
-func (data SellAllCoinData) totalSpend(tx *Transaction, context *state.CheckState) (TotalSpends, []conversion, *big.Int, *Response) {
+func (data SellAllCoinData) totalSpend(tx *Transaction, context *state.CheckState) (totalSpends, []conversion, *big.Int, *Response) {
 	sender, _ := tx.Sender()
 
-	total := TotalSpends{}
+	total := totalSpends{}
 	var conversions []conversion
 
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
@@ -137,8 +137,9 @@ func (data SellAllCoinData) totalSpend(tx *Transaction, context *state.CheckStat
 	return total, conversions, value, nil
 }
 
-func (data SellAllCoinData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
-	if !context.Coins().Exists(data.CoinToSell) {
+func (data SellAllCoinData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
+	coinToSell := context.Coins().GetCoin(data.CoinToSell)
+	if coinToSell == nil {
 		return &Response{
 			Code: code.CoinNotExists,
 			Log:  "Coin to sell not exists",
@@ -146,11 +147,34 @@ func (data SellAllCoinData) BasicCheck(tx *Transaction, context *state.CheckStat
 		}
 	}
 
-	if !context.Coins().Exists(data.CoinToBuy) {
+	if !coinToSell.BaseOrHasReserve() {
+		return &Response{
+			Code: code.CoinHasNotReserve,
+			Log:  "sell coin has not reserve",
+			Info: EncodeError(code.NewCoinHasNotReserve(
+				coinToSell.GetFullSymbol(),
+				coinToSell.ID().String(),
+			)),
+		}
+	}
+
+	coinToBuy := context.Coins().GetCoin(data.CoinToBuy)
+	if coinToBuy == nil {
 		return &Response{
 			Code: code.CoinNotExists,
 			Log:  "Coin to buy not exists",
 			Info: EncodeError(code.NewCoinNotExists("", data.CoinToBuy.String())),
+		}
+	}
+
+	if !coinToBuy.BaseOrHasReserve() {
+		return &Response{
+			Code: code.CoinHasNotReserve,
+			Log:  "buy coin has not reserve",
+			Info: EncodeError(code.NewCoinHasNotReserve(
+				coinToBuy.GetFullSymbol(),
+				coinToBuy.ID().String(),
+			)),
 		}
 	}
 
@@ -160,9 +184,9 @@ func (data SellAllCoinData) BasicCheck(tx *Transaction, context *state.CheckStat
 			Log:  "\"From\" coin equals to \"to\" coin",
 			Info: EncodeError(code.NewCrossConvert(
 				data.CoinToSell.String(),
-				context.Coins().GetCoin(data.CoinToSell).GetFullSymbol(),
+				coinToSell.GetFullSymbol(),
 				data.CoinToBuy.String(),
-				context.Coins().GetCoin(data.CoinToBuy).GetFullSymbol()),
+				coinToBuy.GetFullSymbol()),
 			),
 		}
 	}
@@ -186,7 +210,7 @@ func (data SellAllCoinData) Run(tx *Transaction, context state.Interface, reward
 	if checkState, isCheck = context.(*state.CheckState); !isCheck {
 		checkState = state.NewCheckState(context.(*state.State))
 	}
-	response := data.BasicCheck(tx, checkState)
+	response := data.basicCheck(tx, checkState)
 	if response != nil {
 		return *response
 	}

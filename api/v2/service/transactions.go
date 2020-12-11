@@ -23,8 +23,6 @@ func (s *Service) Transactions(ctx context.Context, req *pb.TransactionsRequest)
 	if lenTx != 0 {
 
 		cState := s.blockchain.CurrentState()
-		cState.RLock()
-		defer cState.RUnlock()
 
 		for _, tx := range rpcResult.Txs {
 

@@ -21,13 +21,8 @@ func (s *Service) MissedBlocks(ctx context.Context, req *pb.MissedBlocksRequest)
 	}
 
 	if req.Height != 0 {
-		cState.Lock()
 		cState.Validators().LoadValidators()
-		cState.Unlock()
 	}
-
-	cState.RLock()
-	defer cState.RUnlock()
 
 	val := cState.Validators().GetByPublicKey(types.HexToPubkey(req.PublicKey))
 	if val == nil {

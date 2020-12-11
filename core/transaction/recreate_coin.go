@@ -23,7 +23,7 @@ type RecreateCoinData struct {
 	MaxSupply            *big.Int
 }
 
-func (data RecreateCoinData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data RecreateCoinData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.InitialReserve == nil || data.InitialAmount == nil || data.MaxSupply == nil {
 		return &Response{
 			Code: code.DecodeError,
@@ -37,14 +37,6 @@ func (data RecreateCoinData) BasicCheck(tx *Transaction, context *state.CheckSta
 			Code: code.InvalidCoinName,
 			Log:  fmt.Sprintf("Coin name is invalid. Allowed up to %d bytes.", maxCoinNameBytes),
 			Info: EncodeError(code.NewInvalidCoinName(strconv.Itoa(maxCoinNameBytes), strconv.Itoa(len(data.Name)))),
-		}
-	}
-
-	if data.ConstantReserveRatio < 10 || data.ConstantReserveRatio > 100 {
-		return &Response{
-			Code: code.WrongCrr,
-			Log:  "Constant Reserve Ratio should be between 10 and 100",
-			Info: EncodeError(code.NewWrongCrr("10", "100", strconv.Itoa(int(data.ConstantReserveRatio)))),
 		}
 	}
 
@@ -64,14 +56,28 @@ func (data RecreateCoinData) BasicCheck(tx *Transaction, context *state.CheckSta
 		}
 	}
 
-	if data.InitialReserve.Cmp(minCoinReserve) == -1 {
+	if data.InitialReserve.Sign() == 1 {
+		if data.ConstantReserveRatio < 10 || data.ConstantReserveRatio > 100 {
+			return &Response{
+				Code: code.WrongCrr,
+				Log:  "Constant Reserve Ratio should be between 10 and 100",
+				Info: EncodeError(code.NewWrongCrr("10", "100", strconv.Itoa(int(data.ConstantReserveRatio)))),
+			}
+		}
+		if data.InitialReserve.Cmp(minCoinReserve) == -1 {
+			return &Response{
+				Code: code.WrongCoinSupply,
+				Log:  fmt.Sprintf("Coin reserve should be greater than or equal to %s", minCoinReserve.String()),
+				Info: EncodeError(code.NewWrongCoinSupply(maxCoinSupply.String(), data.MaxSupply.String(), minCoinReserve.String(), data.InitialReserve.String(), minCoinSupply.String(), data.MaxSupply.String(), data.InitialAmount.String())),
+			}
+		}
+	} else if data.ConstantReserveRatio != 0 {
 		return &Response{
-			Code: code.WrongCoinSupply,
-			Log:  fmt.Sprintf("Coin reserve should be greater than or equal to %s", minCoinReserve.String()),
-			Info: EncodeError(code.NewWrongCoinSupply(maxCoinSupply.String(), data.MaxSupply.String(), minCoinReserve.String(), data.InitialReserve.String(), minCoinSupply.String(), data.MaxSupply.String(), data.InitialAmount.String())),
+			Code: code.WrongCrr,
+			Log:  "Constant Reserve Ratio should be equal to 0, for a coin without reserve",
+			Info: EncodeError(code.NewWrongCrr("0", "0", strconv.Itoa(int(data.ConstantReserveRatio)))),
 		}
 	}
-
 	sender, _ := tx.Sender()
 
 	coin := context.Coins().GetCoinBySymbol(data.Symbol, 0)
@@ -118,7 +124,7 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 		checkState = state.NewCheckState(context.(*state.State))
 	}
 
-	response := data.BasicCheck(tx, checkState)
+	response := data.basicCheck(tx, checkState)
 	if response != nil {
 		return *response
 	}

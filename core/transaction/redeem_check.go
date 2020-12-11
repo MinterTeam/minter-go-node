@@ -24,7 +24,7 @@ type RedeemCheckData struct {
 	Proof    [65]byte
 }
 
-func (data RedeemCheckData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data RedeemCheckData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.RawCheck == nil {
 		return &Response{
 			Code: code.DecodeError,
@@ -62,7 +62,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 		checkState = state.NewCheckState(context.(*state.State))
 	}
 
-	response := data.BasicCheck(tx, checkState)
+	response := data.basicCheck(tx, checkState)
 	if response != nil {
 		return *response
 	}

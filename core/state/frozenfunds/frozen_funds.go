@@ -9,10 +9,11 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/rlp"
-	"github.com/MinterTeam/minter-go-node/tree"
+	"github.com/tendermint/iavl"
 	"math/big"
 	"sort"
 	"sync"
+	"sync/atomic"
 )
 
 const mainPrefix = byte('f')
@@ -26,20 +27,35 @@ type FrozenFunds struct {
 	list  map[uint64]*Model
 	dirty map[uint64]interface{}
 
-	bus  *bus.Bus
-	iavl tree.MTree
+	bus *bus.Bus
+	db  atomic.Value
 
 	lock sync.RWMutex
 }
 
-func NewFrozenFunds(stateBus *bus.Bus, iavl tree.MTree) (*FrozenFunds, error) {
-	frozenfunds := &FrozenFunds{bus: stateBus, iavl: iavl, list: map[uint64]*Model{}, dirty: map[uint64]interface{}{}}
-	frozenfunds.bus.SetFrozenFunds(NewBus(frozenfunds))
+func NewFrozenFunds(stateBus *bus.Bus, db *iavl.ImmutableTree) *FrozenFunds {
+	immutableTree := atomic.Value{}
+	if db != nil {
+		immutableTree.Store(db)
+	}
+	frozenFunds := &FrozenFunds{bus: stateBus, db: immutableTree, list: map[uint64]*Model{}, dirty: map[uint64]interface{}{}}
+	frozenFunds.bus.SetFrozenFunds(NewBus(frozenFunds))
 
-	return frozenfunds, nil
+	return frozenFunds
 }
 
-func (f *FrozenFunds) Commit() error {
+func (f *FrozenFunds) immutableTree() *iavl.ImmutableTree {
+	db := f.db.Load()
+	if db == nil {
+		return nil
+	}
+	return db.(*iavl.ImmutableTree)
+}
+
+func (f *FrozenFunds) SetImmutableTree(immutableTree *iavl.ImmutableTree) {
+	f.db.Store(immutableTree)
+}
+func (f *FrozenFunds) Commit(db *iavl.MutableTree) error {
 	dirty := f.getOrderedDirty()
 	for _, height := range dirty {
 		ff := f.getFromMap(height)
@@ -56,14 +72,14 @@ func (f *FrozenFunds) Commit() error {
 			delete(f.list, height)
 			f.lock.Unlock()
 
-			f.iavl.Remove(path)
+			db.Remove(path)
 		} else {
 			data, err := rlp.EncodeToBytes(ff)
 			if err != nil {
 				return fmt.Errorf("can't encode object at %d: %v", height, err)
 			}
 
-			f.iavl.Set(path, data)
+			db.Set(path, data)
 		}
 	}
 
@@ -140,7 +156,7 @@ func (f *FrozenFunds) get(height uint64) *Model {
 		return ff
 	}
 
-	_, enc := f.iavl.Get(getPath(height))
+	_, enc := f.immutableTree().Get(getPath(height))
 	if len(enc) == 0 {
 		return nil
 	}

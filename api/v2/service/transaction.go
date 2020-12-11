@@ -36,9 +36,6 @@ func (s *Service) Transaction(ctx context.Context, req *pb.TransactionRequest) (
 
 	cState := s.blockchain.CurrentState()
 
-	cState.RLock()
-	defer cState.RUnlock()
-
 	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
 		return nil, timeoutStatus.Err()
 	}

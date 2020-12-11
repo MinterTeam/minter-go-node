@@ -50,6 +50,10 @@ func (m Model) Reserve() *big.Int {
 	return big.NewInt(0).Set(m.info.Reserve)
 }
 
+func (m Model) BaseOrHasReserve() bool {
+	return m.id.IsBaseCoin() || (m.CCrr > 0 && m.info.Reserve.Sign() == 1)
+}
+
 func (m Model) Version() uint16 {
 	return m.CVersion
 }
@@ -74,12 +78,6 @@ func (m *Model) SubReserve(amount *big.Int) {
 
 func (m *Model) AddReserve(amount *big.Int) {
 	m.info.Reserve.Add(m.info.Reserve, amount)
-	m.markDirty(m.id)
-	m.info.isDirty = true
-}
-
-func (m *Model) SetReserve(reserve *big.Int) {
-	m.info.Reserve.Set(reserve)
 	m.markDirty(m.id)
 	m.info.isDirty = true
 }

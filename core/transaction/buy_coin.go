@@ -28,9 +28,8 @@ func (data BuyCoinData) Gas() int64 {
 	return commissions.ConvertTx
 }
 
-func (data BuyCoinData) totalSpend(tx *Transaction, context *state.CheckState) (TotalSpends,
-	[]conversion, *big.Int, *Response) {
-	total := TotalSpends{}
+func (data BuyCoinData) totalSpend(tx *Transaction, context *state.CheckState) (totalSpends, []conversion, *big.Int, *Response) {
+	total := totalSpends{}
 	var conversions []conversion
 
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
@@ -300,7 +299,7 @@ func (data BuyCoinData) totalSpend(tx *Transaction, context *state.CheckState) (
 	return total, conversions, value, nil
 }
 
-func (data BuyCoinData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data BuyCoinData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.ValueToBuy == nil {
 		return &Response{
 			Code: code.DecodeError,
@@ -310,19 +309,43 @@ func (data BuyCoinData) BasicCheck(tx *Transaction, context *state.CheckState) *
 
 	}
 
-	if !context.Coins().Exists(data.CoinToSell) {
+	coinToSell := context.Coins().GetCoin(data.CoinToSell)
+	if coinToSell == nil {
 		return &Response{
 			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin %s not exists", data.CoinToSell),
+			Log:  "Coin to sell not exists",
 			Info: EncodeError(code.NewCoinNotExists("", data.CoinToSell.String())),
 		}
 	}
 
-	if !context.Coins().Exists(data.CoinToBuy) {
+	if !coinToSell.BaseOrHasReserve() {
+		return &Response{
+			Code: code.CoinHasNotReserve,
+			Log:  "sell coin has not reserve",
+			Info: EncodeError(code.NewCoinHasNotReserve(
+				coinToSell.GetFullSymbol(),
+				coinToSell.ID().String(),
+			)),
+		}
+	}
+
+	coinToBuy := context.Coins().GetCoin(data.CoinToBuy)
+	if coinToBuy == nil {
 		return &Response{
 			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin %s not exists", data.CoinToBuy),
+			Log:  "Coin to buy not exists",
 			Info: EncodeError(code.NewCoinNotExists("", data.CoinToBuy.String())),
+		}
+	}
+
+	if !coinToBuy.BaseOrHasReserve() {
+		return &Response{
+			Code: code.CoinHasNotReserve,
+			Log:  "buy coin has not reserve",
+			Info: EncodeError(code.NewCoinHasNotReserve(
+				coinToBuy.GetFullSymbol(),
+				coinToBuy.ID().String(),
+			)),
 		}
 	}
 
@@ -332,9 +355,9 @@ func (data BuyCoinData) BasicCheck(tx *Transaction, context *state.CheckState) *
 			Log:  "\"From\" coin equals to \"to\" coin",
 			Info: EncodeError(code.NewCrossConvert(
 				data.CoinToSell.String(),
-				context.Coins().GetCoin(data.CoinToSell).GetFullSymbol(),
+				coinToSell.GetFullSymbol(),
 				data.CoinToBuy.String(),
-				context.Coins().GetCoin(data.CoinToBuy).GetFullSymbol()),
+				coinToBuy.GetFullSymbol()),
 			),
 		}
 	}
@@ -351,7 +374,7 @@ func (data BuyCoinData) Run(tx *Transaction, context state.Interface, rewardPool
 		checkState = state.NewCheckState(context.(*state.State))
 	}
 
-	response := data.BasicCheck(tx, checkState)
+	response := data.basicCheck(tx, checkState)
 	if response != nil {
 		return *response
 	}

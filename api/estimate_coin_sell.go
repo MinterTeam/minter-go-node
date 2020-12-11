@@ -23,9 +23,6 @@ func EstimateCoinSell(coinToSell, coinToBuy string, valueToSell *big.Int, height
 		return nil, err
 	}
 
-	cState.RLock()
-	defer cState.RUnlock()
-
 	coinFrom := cState.Coins().GetCoinBySymbol(types.StrToCoinBaseSymbol(coinToSell), types.GetVersionFromSymbol(coinToSell))
 	if coinFrom == nil {
 		return nil, rpctypes.RPCError{Code: 404, Message: "Coin to sell not exists"}

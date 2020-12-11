@@ -5,38 +5,55 @@ import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/check"
 	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/MinterTeam/minter-go-node/tree"
+	"github.com/tendermint/iavl"
 	"sort"
 	"sync"
+	"sync/atomic"
 )
 
 const mainPrefix = byte('t')
 
 type RChecks interface {
-	Export(state *types.AppState)
+	Export(state *types.AppState, u uint64)
 	IsCheckUsed(check *check.Check) bool
 }
 
 type Checks struct {
 	usedChecks map[types.Hash]struct{}
 
-	iavl tree.MTree
+	db atomic.Value
 
 	lock sync.RWMutex
 }
 
-func NewChecks(iavl tree.MTree) (*Checks, error) {
-	return &Checks{iavl: iavl, usedChecks: map[types.Hash]struct{}{}}, nil
+func NewChecks(db *iavl.ImmutableTree) *Checks {
+	immutableTree := atomic.Value{}
+	if db != nil {
+		immutableTree.Store(db)
+	}
+	return &Checks{db: immutableTree, usedChecks: map[types.Hash]struct{}{}}
 }
 
-func (c *Checks) Commit() error {
+func (c *Checks) immutableTree() *iavl.ImmutableTree {
+	db := c.db.Load()
+	if db == nil {
+		return nil
+	}
+	return db.(*iavl.ImmutableTree)
+}
+
+func (c *Checks) SetImmutableTree(immutableTree *iavl.ImmutableTree) {
+	c.db.Store(immutableTree)
+}
+
+func (c *Checks) Commit(db *iavl.MutableTree) error {
 	for _, hash := range c.getOrderedHashes() {
 		c.lock.Lock()
 		delete(c.usedChecks, hash)
 		c.lock.Unlock()
 
 		trieHash := append([]byte{mainPrefix}, hash.Bytes()...)
-		c.iavl.Set(trieHash, []byte{0x1})
+		db.Set(trieHash, []byte{0x1})
 	}
 
 	return nil
@@ -50,7 +67,7 @@ func (c *Checks) IsCheckUsed(check *check.Check) bool {
 		return true
 	}
 
-	_, data := c.iavl.Get(append([]byte{mainPrefix}, check.Hash().Bytes()...))
+	_, data := c.immutableTree().Get(append([]byte{mainPrefix}, check.Hash().Bytes()...))
 
 	return len(data) != 0
 }
@@ -66,13 +83,9 @@ func (c *Checks) UseCheckHash(hash types.Hash) {
 	c.usedChecks[hash] = struct{}{}
 }
 
-func (c *Checks) Export(state *types.AppState) {
-	// todo: iterate range?
-	c.iavl.Iterate(func(key []byte, value []byte) bool {
-		if key[0] == mainPrefix {
-			state.UsedChecks = append(state.UsedChecks, types.UsedCheck(fmt.Sprintf("%x", key[1:])))
-		}
-
+func (c *Checks) Export(state *types.AppState, height uint64) {
+	c.immutableTree().IterateRange([]byte{mainPrefix}, []byte{mainPrefix + 1}, true, func(key []byte, value []byte) bool {
+		state.UsedChecks = append(state.UsedChecks, types.UsedCheck(fmt.Sprintf("%x", key[1:])))
 		return false
 	})
 }

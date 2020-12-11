@@ -19,9 +19,6 @@ func Waitlist(pubkey types.Pubkey, address types.Address, height int) (*Waitlist
 		return nil, err
 	}
 
-	cState.RLock()
-	defer cState.RUnlock()
-
 	response := new(WaitlistResponse)
 	items := cState.WaitList().GetByAddressAndPubKey(address, pubkey)
 	response.List = make([]*Wait, 0, len(items))

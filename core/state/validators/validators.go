@@ -9,8 +9,9 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/state/candidates"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/rlp"
-	"github.com/MinterTeam/minter-go-node/tree"
 	"github.com/MinterTeam/minter-go-node/upgrades"
+	"github.com/tendermint/iavl"
+	"sync/atomic"
 
 	"math/big"
 )
@@ -32,8 +33,8 @@ type Validators struct {
 	removed map[types.Pubkey]struct{}
 	loaded  bool
 
-	iavl tree.MTree
-	bus  *bus.Bus
+	db  atomic.Value
+	bus *bus.Bus
 }
 
 // RValidators interface represents Validator state
@@ -46,14 +47,36 @@ type RValidators interface {
 }
 
 // NewValidators returns newly created Validators state with a given bus and iavl
-func NewValidators(bus *bus.Bus, iavl tree.MTree) (*Validators, error) {
-	validators := &Validators{iavl: iavl, bus: bus}
+func NewValidators(bus *bus.Bus, db *iavl.ImmutableTree) *Validators {
+	immutableTree := atomic.Value{}
+	loaded := false
+	if db != nil {
+		immutableTree.Store(db)
+	} else {
+		loaded = true
+	}
+	validators := &Validators{db: immutableTree, bus: bus, loaded: loaded}
 
-	return validators, nil
+	return validators
+}
+
+func (v *Validators) immutableTree() *iavl.ImmutableTree {
+	db := v.db.Load()
+	if db == nil {
+		return nil
+	}
+	return db.(*iavl.ImmutableTree)
+}
+
+func (v *Validators) SetImmutableTree(immutableTree *iavl.ImmutableTree) {
+	if v.immutableTree() == nil && v.loaded {
+		v.loaded = false
+	}
+	v.db.Store(immutableTree)
 }
 
 // Commit writes changes to iavl, may return an error
-func (v *Validators) Commit() error {
+func (v *Validators) Commit(db *iavl.MutableTree) error {
 	if v.hasDirtyValidators() {
 		data, err := rlp.EncodeToBytes(v.list)
 		if err != nil {
@@ -61,7 +84,7 @@ func (v *Validators) Commit() error {
 		}
 
 		path := []byte{mainPrefix}
-		v.iavl.Set(path, data)
+		db.Set(path, data)
 	}
 
 	for _, val := range v.list {
@@ -70,7 +93,7 @@ func (v *Validators) Commit() error {
 			path := []byte{mainPrefix}
 			path = append(path, val.PubKey.Bytes()...)
 			path = append(path, totalStakePrefix)
-			v.iavl.Set(path, val.GetTotalBipStake().Bytes())
+			db.Set(path, val.GetTotalBipStake().Bytes())
 		}
 
 		if val.isDirty || val.isAccumRewardDirty {
@@ -78,14 +101,14 @@ func (v *Validators) Commit() error {
 			path := []byte{mainPrefix}
 			path = append(path, val.PubKey.Bytes()...)
 			path = append(path, accumRewardPrefix)
-			v.iavl.Set(path, val.GetAccumReward().Bytes())
+			db.Set(path, val.GetAccumReward().Bytes())
 		}
 	}
 
 	for pubkey := range v.removed {
 		path := append([]byte{mainPrefix}, pubkey.Bytes()...)
-		v.iavl.Remove(append(path, totalStakePrefix))
-		v.iavl.Remove(append(path, accumRewardPrefix))
+		db.Remove(append(path, totalStakePrefix))
+		db.Remove(append(path, accumRewardPrefix))
 	}
 	v.removed = map[types.Pubkey]struct{}{}
 
@@ -313,7 +336,7 @@ func (v *Validators) LoadValidators() {
 	v.loaded = true
 
 	path := []byte{mainPrefix}
-	_, enc := v.iavl.Get(path)
+	_, enc := v.immutableTree().Get(path)
 	if len(enc) == 0 {
 		v.list = nil
 		return
@@ -329,7 +352,7 @@ func (v *Validators) LoadValidators() {
 		// load total stake
 		path = append([]byte{mainPrefix}, validator.PubKey.Bytes()...)
 		path = append(path, totalStakePrefix)
-		_, enc = v.iavl.Get(path)
+		_, enc = v.immutableTree().Get(path)
 		if len(enc) == 0 {
 			validator.totalStake = big.NewInt(0)
 		} else {
@@ -339,7 +362,7 @@ func (v *Validators) LoadValidators() {
 		// load accum reward
 		path = append([]byte{mainPrefix}, validator.PubKey.Bytes()...)
 		path = append(path, accumRewardPrefix)
-		_, enc = v.iavl.Get(path)
+		_, enc = v.immutableTree().Get(path)
 		if len(enc) == 0 {
 			validator.accumReward = big.NewInt(0)
 		} else {

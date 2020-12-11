@@ -7,7 +7,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/hexutil"
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
@@ -19,7 +18,7 @@ type DelegateData struct {
 	Value  *big.Int
 }
 
-func (data DelegateData) BasicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data DelegateData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.Value == nil {
 		return &Response{
 			Code: code.DecodeError,
@@ -36,11 +35,25 @@ func (data DelegateData) BasicCheck(tx *Transaction, context *state.CheckState) 
 		}
 	}
 
-	if !context.Coins().Exists(data.Coin) {
+	coin := context.Coins().GetCoin(data.Coin)
+	if coin == nil {
 		return &Response{
 			Code: code.CoinNotExists,
 			Log:  fmt.Sprintf("Coin %s not exists", data.Coin),
 			Info: EncodeError(code.NewCoinNotExists("", data.Coin.String())),
+		}
+	}
+
+	if !coin.BaseOrHasReserve() {
+		return &Response{
+			Code: code.CoinReserveNotSufficient,
+			Log:  "coin has not reserve",
+			Info: EncodeError(code.NewCoinReserveNotSufficient(
+				coin.GetFullSymbol(),
+				coin.ID().String(),
+				coin.Reserve().String(),
+				"",
+			)),
 		}
 	}
 
@@ -70,7 +83,7 @@ func (data DelegateData) BasicCheck(tx *Transaction, context *state.CheckState) 
 		return &Response{
 			Code: code.TooLowStake,
 			Log:  "Stake is too low",
-			Info: EncodeError(code.NewTooLowStake(sender.String(), data.PubKey.String(), value.String(), data.Coin.String(), context.Coins().GetCoin(data.Coin).GetFullSymbol())),
+			Info: EncodeError(code.NewTooLowStake(sender.String(), data.PubKey.String(), value.String(), data.Coin.String(), coin.GetFullSymbol())),
 		}
 	}
 
@@ -95,24 +108,16 @@ func (data DelegateData) Run(tx *Transaction, context state.Interface, rewardPoo
 		checkState = state.NewCheckState(context.(*state.State))
 	}
 
-	response := data.BasicCheck(tx, checkState)
+	response := data.basicCheck(tx, checkState)
 	if response != nil {
 		return *response
 	}
 
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
-	commission := big.NewInt(0).Set(commissionInBaseCoin)
-
 	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
-	coin := checkState.Coins().GetCoin(data.Coin)
-
-	if !tx.GasCoin.IsBaseCoin() {
-		errResp := CheckReserveUnderflow(gasCoin, commissionInBaseCoin)
-		if errResp != nil {
-			return *errResp
-		}
-
-		commission = formula.CalculateSaleAmount(gasCoin.Volume(), gasCoin.Reserve(), gasCoin.Crr(), commissionInBaseCoin)
+	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, gasCoin, commissionInBaseCoin)
+	if errResp != nil {
+		return *errResp
 	}
 
 	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
@@ -124,6 +129,7 @@ func (data DelegateData) Run(tx *Transaction, context state.Interface, rewardPoo
 	}
 
 	if checkState.Accounts().GetBalance(sender, data.Coin).Cmp(data.Value) < 0 {
+		coin := checkState.Coins().GetCoin(data.Coin)
 		return Response{
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), data.Value, coin.GetFullSymbol()),
@@ -146,12 +152,14 @@ func (data DelegateData) Run(tx *Transaction, context state.Interface, rewardPoo
 	}
 
 	if deliverState, ok := context.(*state.State); ok {
-		rewardPool.Add(rewardPool, commissionInBaseCoin)
-
-		deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
-		deliverState.Coins.SubVolume(tx.GasCoin, commission)
-
+		if isGasCommissionFromPoolSwap {
+			commission, commissionInBaseCoin = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
+		} else {
+			deliverState.Coins.SubVolume(tx.GasCoin, commission)
+			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
+		}
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
+		rewardPool.Add(rewardPool, commissionInBaseCoin)
 		deliverState.Accounts.SubBalance(sender, data.Coin, data.Value)
 
 		value := big.NewInt(0).Set(data.Value)

@@ -18,8 +18,6 @@ func (s *Service) Status(context.Context, *empty.Empty) (*pb.StatusResponse, err
 	}
 
 	cState := s.blockchain.CurrentState()
-	cState.RLock()
-	defer cState.RUnlock()
 
 	return &pb.StatusResponse{
 		Version:           s.version,

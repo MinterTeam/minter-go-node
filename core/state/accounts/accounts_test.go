@@ -18,10 +18,8 @@ func TestAccounts_CreateMultisig(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
-	accounts, err := NewAccounts(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	accounts := NewAccounts(b, mutableTree.GetLastImmutable())
+
 	multisigAddr := accounts.CreateMultisig([]uint32{1, 1, 2}, []types.Address{[20]byte{1}, [20]byte{2}, [20]byte{3}}, 2, [20]byte{4})
 
 	account := accounts.GetAccount(multisigAddr)
@@ -55,10 +53,7 @@ func TestAccounts_SetNonce(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
-	accounts, err := NewAccounts(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	accounts := NewAccounts(b, mutableTree.GetLastImmutable())
 	accounts.SetNonce([20]byte{4}, 5)
 	if accounts.GetNonce([20]byte{4}) != 5 {
 		t.Fatal("nonce not equal 5")
@@ -69,10 +64,7 @@ func TestAccounts_SetBalance(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
-	accounts, err := NewAccounts(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	accounts := NewAccounts(b, mutableTree.GetLastImmutable())
 	accounts.SetBalance([20]byte{4}, 0, big.NewInt(1000))
 	account := accounts.GetAccount([20]byte{4})
 	if account == nil {
@@ -87,19 +79,18 @@ func TestAccounts_SetBalance_fromDB(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
-	accounts, err := NewAccounts(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	accounts := NewAccounts(b, mutableTree.GetLastImmutable())
 	accounts.SetBalance([20]byte{4}, 0, big.NewInt(1000))
-	err = accounts.Commit()
+
+	_, _, err := mutableTree.Commit(accounts)
 	if err != nil {
 		t.Fatal(err)
 	}
-	accounts, err = NewAccounts(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
+	if accounts.GetBalance([20]byte{4}, 0).String() != "1000" {
+		t.Fatal("balance of coin ID '0' not equal 1000")
 	}
+
+	accounts = NewAccounts(b, mutableTree.GetLastImmutable())
 
 	if accounts.GetBalance([20]byte{4}, 0).String() != "1000" {
 		t.Fatal("balance of coin ID '0' not equal 1000")
@@ -110,10 +101,7 @@ func TestAccounts_SetBalance_0(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
-	accounts, err := NewAccounts(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	accounts := NewAccounts(b, mutableTree.GetLastImmutable())
 	accounts.SetBalance([20]byte{4}, 0, big.NewInt(100))
 	accounts.SetBalance([20]byte{4}, 0, big.NewInt(0))
 	accounts.SetBalance([20]byte{4}, 1, big.NewInt(0))
@@ -133,21 +121,13 @@ func TestAccounts_GetBalances(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
-	busCoins, err := coins.NewCoins(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	busCoins := coins.NewCoins(b, mutableTree.GetLastImmutable())
+
 	b.SetCoins(coins.NewBus(busCoins))
-	accounts, err := NewAccounts(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	accounts := NewAccounts(b, mutableTree.GetLastImmutable())
 	accounts.SetBalance([20]byte{4}, 0, big.NewInt(1000))
 
-	coinsState, err := coins.NewCoins(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	coinsState := coins.NewCoins(b, mutableTree.GetLastImmutable())
 
 	coinsState.Create(1,
 		types.StrToCoinSymbol("AAA"),
@@ -158,7 +138,7 @@ func TestAccounts_GetBalances(t *testing.T) {
 		big.NewInt(0).Exp(big.NewInt(10), big.NewInt(10+18), nil),
 		nil)
 
-	err = coinsState.Commit()
+	_, _, err := mutableTree.Commit(accounts)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -187,10 +167,7 @@ func TestAccounts_ExistsMultisig(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
-	accounts, err := NewAccounts(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	accounts := NewAccounts(b, mutableTree.GetLastImmutable())
 
 	msigAddress := CreateMultisigAddress([20]byte{4}, 12)
 	if accounts.ExistsMultisig(msigAddress) {
@@ -220,10 +197,7 @@ func TestAccounts_AddBalance_bus(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
-	accounts, err := NewAccounts(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	accounts := NewAccounts(b, mutableTree.GetLastImmutable())
 	accounts.SetBalance([20]byte{4}, 0, big.NewInt(1000))
 
 	accounts.bus.Accounts().AddBalance([20]byte{4}, 0, big.NewInt(1000))
@@ -237,10 +211,7 @@ func TestAccounts_SubBalance(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
-	accounts, err := NewAccounts(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	accounts := NewAccounts(b, mutableTree.GetLastImmutable())
 	accounts.SetBalance([20]byte{4}, 0, big.NewInt(1000))
 
 	accounts.SubBalance([20]byte{4}, 0, big.NewInt(500))
@@ -258,10 +229,7 @@ func TestAccounts_EditMultisig(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
-	accounts, err := NewAccounts(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	accounts := NewAccounts(b, mutableTree.GetLastImmutable())
 
 	msigAddress := CreateMultisigAddress([20]byte{4}, 12)
 
@@ -296,18 +264,10 @@ func TestAccounts_Commit(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
-	accounts, err := NewAccounts(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	accounts := NewAccounts(b, mutableTree.GetLastImmutable())
 	accounts.SetBalance([20]byte{4}, 0, big.NewInt(1000))
 
-	err = accounts.Commit()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	hash, version, err := mutableTree.SaveVersion()
+	hash, version, err := mutableTree.Commit(accounts)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -324,22 +284,13 @@ func TestAccounts_Commit(t *testing.T) {
 func TestAccounts_Export(t *testing.T) {
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
-	busCoins, err := coins.NewCoins(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	busCoins := coins.NewCoins(b, mutableTree.GetLastImmutable())
 	b.SetCoins(coins.NewBus(busCoins))
 	b.SetChecker(checker.NewChecker(b))
-	accounts, err := NewAccounts(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	accounts := NewAccounts(b, mutableTree.GetLastImmutable())
 	accounts.SetBalance([20]byte{4}, 0, big.NewInt(1000))
 
-	coinsState, err := coins.NewCoins(b, mutableTree)
-	if err != nil {
-		t.Fatal(err)
-	}
+	coinsState := coins.NewCoins(b, mutableTree.GetLastImmutable())
 
 	coinsState.Create(1,
 		types.StrToCoinSymbol("AAA"),
@@ -350,11 +301,10 @@ func TestAccounts_Export(t *testing.T) {
 		big.NewInt(0).Exp(big.NewInt(10), big.NewInt(10+18), nil),
 		nil)
 
-	err = coinsState.Commit()
+	_, _, err := mutableTree.Commit(accounts)
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	symbol := coinsState.GetCoinBySymbol(types.StrToCoinSymbol("AAA"), 0)
 	if symbol == nil {
 		t.Fatal("coin not found")
@@ -363,11 +313,10 @@ func TestAccounts_Export(t *testing.T) {
 	accounts.SetBalance([20]byte{4}, symbol.ID(), big.NewInt(1001))
 	_ = accounts.CreateMultisig([]uint32{1, 1, 2}, []types.Address{[20]byte{1}, [20]byte{2}, [20]byte{3}}, 2, [20]byte{4})
 
-	err = accounts.Commit()
+	_, _, err = mutableTree.Commit(accounts)
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	state := new(types.AppState)
 	accounts.Export(state)
 

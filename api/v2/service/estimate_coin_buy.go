@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
@@ -25,9 +24,6 @@ func (s *Service) EstimateCoinBuy(ctx context.Context, req *pb.EstimateCoinBuyRe
 	if err != nil {
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
-
-	cState.RLock()
-	defer cState.RUnlock()
 
 	var coinToBuy types.CoinID
 	if req.GetCoinToBuy() != "" {
@@ -62,45 +58,52 @@ func (s *Service) EstimateCoinBuy(ctx context.Context, req *pb.EstimateCoinBuyRe
 			transaction.EncodeError(code.NewCrossConvert(coinToSell.String(), cState.Coins().GetCoin(coinToSell).GetFullSymbol(), coinToBuy.String(), cState.Coins().GetCoin(coinToBuy).GetFullSymbol())))
 	}
 
-	commissionInBaseCoin := big.NewInt(0).Mul(big.NewInt(commissions.ConvertTx), transaction.CommissionMultiplier)
-	commission := big.NewInt(0).Set(commissionInBaseCoin)
-
 	coinFrom := cState.Coins().GetCoin(coinToSell)
 	coinTo := cState.Coins().GetCoin(coinToBuy)
 
-	if !coinToSell.IsBaseCoin() {
-		if coinFrom.Reserve().Cmp(commissionInBaseCoin) < 0 {
-			return nil, s.createError(
-				status.New(codes.InvalidArgument, fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s",
-					coinFrom.Reserve().String(), commissionInBaseCoin.String())),
-				transaction.EncodeError(code.NewCoinReserveNotSufficient(
-					coinFrom.GetFullSymbol(),
-					coinFrom.ID().String(),
-					coinFrom.Reserve().String(),
-					commissionInBaseCoin.String(),
-				)),
-			)
-		}
-
-		commission = formula.CalculateSaleAmount(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), commissionInBaseCoin)
+	commissionInBaseCoin := big.NewInt(0).Mul(big.NewInt(commissions.ConvertTx), transaction.CommissionMultiplier)
+	commission, _, errResp := transaction.CalculateCommission(cState, coinFrom, commissionInBaseCoin)
+	if errResp != nil {
+		return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
 	}
 
 	value := valueToBuy
-
-	if !coinToBuy.IsBaseCoin() {
-		if errResp := transaction.CheckForCoinSupplyOverflow(coinTo, valueToBuy); errResp != nil {
-			return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
+	if !req.FromPool {
+		if !coinTo.BaseOrHasReserve() {
+			return nil, s.createError(status.New(codes.FailedPrecondition, "buy coin has not reserve"), transaction.EncodeError(code.NewCoinHasNotReserve(
+				coinTo.GetFullSymbol(),
+				coinTo.ID().String(),
+			)))
 		}
-		value = formula.CalculatePurchaseAmount(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), valueToBuy)
-	}
+		if !coinFrom.BaseOrHasReserve() {
+			return nil, s.createError(status.New(codes.FailedPrecondition, "sell coin has not reserve"), transaction.EncodeError(code.NewCoinHasNotReserve(
+				coinFrom.GetFullSymbol(),
+				coinFrom.ID().String(),
+			)))
+		}
 
-	if !coinToSell.IsBaseCoin() {
-		value = formula.CalculateSaleAmount(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), value)
-		if errResp := transaction.CheckReserveUnderflow(coinFrom, value); errResp != nil {
-			return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
+		if !coinToBuy.IsBaseCoin() {
+			value = formula.CalculatePurchaseAmount(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), valueToBuy)
+			if errResp := transaction.CheckForCoinSupplyOverflow(coinTo, valueToBuy); errResp != nil {
+				return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
+			}
+		}
+		if !coinToSell.IsBaseCoin() {
+			value = formula.CalculateSaleAmount(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), value)
+			if errResp := transaction.CheckReserveUnderflow(coinFrom, value); errResp != nil {
+				return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
+			}
+		}
+	} else {
+		var err error
+		value, err = cState.Swap().PairCalculateSellForBuy(coinFrom.ID(), coinTo.ID(), valueToBuy)
+		if err != nil {
+			return nil, status.Error(codes.FailedPrecondition, err.Error())
+		}
+		if err = cState.Swap().CheckSwap(coinFrom.ID(), coinTo.ID(), valueToBuy, value); err != nil {
+			return nil, status.Error(codes.FailedPrecondition, err.Error())
 		}
 	}
-
 	return &pb.EstimateCoinBuyResponse{
 		WillPay:    value.String(),
 		Commission: commission.String(),

@@ -6,10 +6,11 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
-	"github.com/MinterTeam/minter-go-node/tree"
+	"github.com/tendermint/iavl"
 	"math/big"
 	"sort"
 	"sync"
+	"sync/atomic"
 )
 
 const (
@@ -75,15 +76,20 @@ type Coins struct {
 	symbolsList     map[types.CoinSymbol][]types.CoinID
 	symbolsInfoList map[types.CoinSymbol]*SymbolInfo
 
-	bus  *bus.Bus
-	iavl tree.MTree
+	bus *bus.Bus
+	db  atomic.Value
 
 	lock sync.RWMutex
 }
 
-func NewCoins(stateBus *bus.Bus, iavl tree.MTree) (*Coins, error) {
+func NewCoins(stateBus *bus.Bus, db *iavl.ImmutableTree) *Coins {
+	immutableTree := atomic.Value{}
+	if db != nil {
+		immutableTree.Store(db)
+	}
 	coins := &Coins{
-		bus: stateBus, iavl: iavl,
+		bus:             stateBus,
+		db:              immutableTree,
 		list:            map[types.CoinID]*Model{},
 		dirty:           map[types.CoinID]struct{}{},
 		symbolsList:     map[types.CoinSymbol][]types.CoinID{},
@@ -91,10 +97,22 @@ func NewCoins(stateBus *bus.Bus, iavl tree.MTree) (*Coins, error) {
 	}
 	coins.bus.SetCoins(NewBus(coins))
 
-	return coins, nil
+	return coins
 }
 
-func (c *Coins) Commit() error {
+func (c *Coins) immutableTree() *iavl.ImmutableTree {
+	db := c.db.Load()
+	if db == nil {
+		return nil
+	}
+	return db.(*iavl.ImmutableTree)
+}
+
+func (c *Coins) SetImmutableTree(immutableTree *iavl.ImmutableTree) {
+	c.db.Store(immutableTree)
+}
+
+func (c *Coins) Commit(db *iavl.MutableTree) error {
 	coins := c.getOrderedDirtyCoins()
 	for _, id := range coins {
 		coin := c.getFromMap(id)
@@ -109,7 +127,7 @@ func (c *Coins) Commit() error {
 				return fmt.Errorf("can't encode object at %d: %v", id, err)
 			}
 
-			c.iavl.Set(getSymbolCoinsPath(coin.Symbol()), data)
+			db.Set(getSymbolCoinsPath(coin.Symbol()), data)
 			coin.isCreated = false
 		}
 
@@ -119,7 +137,7 @@ func (c *Coins) Commit() error {
 				return fmt.Errorf("can't encode object at %d: %v", id, err)
 			}
 
-			c.iavl.Set(getCoinPath(id), data)
+			db.Set(getCoinPath(id), data)
 			coin.isDirty = false
 		}
 
@@ -129,7 +147,7 @@ func (c *Coins) Commit() error {
 				return fmt.Errorf("can't encode object at %d: %v", id, err)
 			}
 
-			c.iavl.Set(getCoinInfoPath(id), data)
+			db.Set(getCoinInfoPath(id), data)
 			coin.info.isDirty = false
 		}
 
@@ -139,7 +157,7 @@ func (c *Coins) Commit() error {
 				return fmt.Errorf("can't encode object at %d: %v", id, err)
 			}
 
-			c.iavl.Set(getSymbolInfoPath(coin.Symbol()), data)
+			db.Set(getSymbolInfoPath(coin.Symbol()), data)
 			coin.symbolInfo.isDirty = false
 		}
 	}
@@ -240,9 +258,9 @@ func (c *Coins) Create(id types.CoinID, symbol types.CoinSymbol, name string,
 		isDirty:    true,
 		isCreated:  true,
 		info: &Info{
-			Volume:  big.NewInt(0),
-			Reserve: big.NewInt(0),
-			isDirty: false,
+			Volume:  volume,
+			Reserve: reserve,
+			isDirty: true,
 		},
 	}
 
@@ -261,13 +279,10 @@ func (c *Coins) Create(id types.CoinID, symbol types.CoinSymbol, name string,
 	c.setSymbolToMap(ids, coin.Symbol())
 	c.setToMap(coin.ID(), coin)
 
-	coin.SetReserve(reserve)
-	coin.SetVolume(volume)
-
-	c.markDirty(coin.id)
-
 	c.bus.Checker().AddCoin(types.GetBaseCoinID(), reserve)
 	c.bus.Checker().AddCoinVolume(coin.id, volume)
+
+	c.markDirty(coin.id)
 }
 
 func (c *Coins) Recreate(newID types.CoinID, name string, symbol types.CoinSymbol,
@@ -327,7 +342,7 @@ func (c *Coins) get(id types.CoinID) *Model {
 		return coin
 	}
 
-	_, enc := c.iavl.Get(getCoinPath(id))
+	_, enc := c.immutableTree().Get(getCoinPath(id))
 	if len(enc) == 0 {
 		return nil
 	}
@@ -341,7 +356,7 @@ func (c *Coins) get(id types.CoinID) *Model {
 	coin.markDirty = c.markDirty
 
 	// load info
-	_, enc = c.iavl.Get(getCoinInfoPath(id))
+	_, enc = c.immutableTree().Get(getCoinInfoPath(id))
 	if len(enc) != 0 {
 		var info Info
 		if err := rlp.DecodeBytes(enc, &info); err != nil {
@@ -363,7 +378,7 @@ func (c *Coins) getSymbolInfo(symbol types.CoinSymbol) *SymbolInfo {
 
 	info := &SymbolInfo{}
 
-	_, enc := c.iavl.Get(getSymbolInfoPath(symbol))
+	_, enc := c.immutableTree().Get(getSymbolInfoPath(symbol))
 	if len(enc) == 0 {
 		return nil
 	}
@@ -384,7 +399,7 @@ func (c *Coins) getBySymbol(symbol types.CoinSymbol) []types.CoinID {
 
 	var coins []types.CoinID
 
-	_, enc := c.iavl.Get(getSymbolCoinsPath(symbol))
+	_, enc := c.immutableTree().Get(getSymbolCoinsPath(symbol))
 	if len(enc) == 0 {
 		return coins
 	}
@@ -416,39 +431,37 @@ func (c *Coins) getOrderedDirtyCoins() []types.CoinID {
 }
 
 func (c *Coins) Export(state *types.AppState) {
-	c.iavl.Iterate(func(key []byte, value []byte) bool {
-		if key[0] == mainPrefix {
-			if len(key) > 5 {
-				return false
-			}
-
-			coinID := types.BytesToCoinID(key[1:])
-			coin := c.get(coinID)
-
-			owner := &types.Address{}
-			info := c.getSymbolInfo(coin.Symbol())
-			if info != nil {
-				owner = info.OwnerAddress()
-			}
-
-			state.Coins = append(state.Coins, types.Coin{
-				ID:           uint64(coin.ID()),
-				Name:         coin.Name(),
-				Symbol:       coin.Symbol(),
-				Volume:       coin.Volume().String(),
-				Crr:          uint64(coin.Crr()),
-				Reserve:      coin.Reserve().String(),
-				MaxSupply:    coin.MaxSupply().String(),
-				Version:      uint64(coin.Version()),
-				OwnerAddress: owner,
-			})
+	c.immutableTree().IterateRange([]byte{mainPrefix}, []byte{mainPrefix + 1}, true, func(key []byte, value []byte) bool {
+		if len(key) > 5 {
+			return false
 		}
+
+		coinID := types.BytesToCoinID(key[1:])
+		coin := c.get(coinID)
+
+		var owner *types.Address
+		info := c.getSymbolInfo(coin.Symbol())
+		if info != nil {
+			owner = info.OwnerAddress()
+		}
+
+		state.Coins = append(state.Coins, types.Coin{
+			ID:           uint64(coin.ID()),
+			Name:         coin.Name(),
+			Symbol:       coin.Symbol(),
+			Volume:       coin.Volume().String(),
+			Crr:          uint64(coin.Crr()),
+			Reserve:      coin.Reserve().String(),
+			MaxSupply:    coin.MaxSupply().String(),
+			Version:      uint64(coin.Version()),
+			OwnerAddress: owner,
+		})
 
 		return false
 	})
 
 	sort.Slice(state.Coins[:], func(i, j int) bool {
-		return helpers.StringToBigInt(state.Coins[i].Reserve).Cmp(helpers.StringToBigInt(state.Coins[j].Reserve)) == 1
+		return state.Coins[i].ID < state.Coins[j].ID
 	})
 }
 
