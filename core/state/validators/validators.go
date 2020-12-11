@@ -107,8 +107,8 @@ func (v *Validators) Commit(db *iavl.MutableTree) error {
 
 	for pubkey := range v.removed {
 		path := append([]byte{mainPrefix}, pubkey.Bytes()...)
-		v.iavl.Remove(append(path, totalStakePrefix))
-		v.iavl.Remove(append(path, accumRewardPrefix))
+		db.Remove(append(path, totalStakePrefix))
+		db.Remove(append(path, accumRewardPrefix))
 	}
 	v.removed = map[types.Pubkey]struct{}{}
 

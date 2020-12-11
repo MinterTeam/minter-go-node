@@ -103,9 +103,9 @@ func (wl *WaitList) Commit(db *iavl.MutableTree) error {
 			if err != nil {
 				return fmt.Errorf("can't encode object at %s: %v", address.String(), err)
 			}
-			wl.iavl.Set(path, data)
+			db.Set(path, data)
 		} else {
-			wl.iavl.Remove(path)
+			db.Remove(path)
 		}
 	}
 
