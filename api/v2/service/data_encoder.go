@@ -204,7 +204,7 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 				Symbol: coins.GetCoin(d.Coin1).GetFullSymbol(),
 			},
 			Volume0:    d.Volume0.String(),
-			MaxVolume1: d.MaxVolume1.String(),
+			MaxVolume1: d.MaximumVolume1.String(),
 		}
 	case *transaction.RemoveSwapPoolData:
 		m = &pb.RemoveSwapPoolData{

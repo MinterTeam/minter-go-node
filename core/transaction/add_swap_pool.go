@@ -13,10 +13,10 @@ import (
 )
 
 type AddSwapPoolData struct {
-	Coin0      types.CoinID
-	Coin1      types.CoinID
-	Volume0    *big.Int
-	MaxVolume1 *big.Int
+	Coin0          types.CoinID
+	Coin1          types.CoinID
+	Volume0        *big.Int
+	MaximumVolume1 *big.Int
 }
 
 func (data AddSwapPoolData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
@@ -48,7 +48,7 @@ func (data AddSwapPoolData) basicCheck(tx *Transaction, context *state.CheckStat
 		}
 	}
 
-	if err := context.Swap().CheckMint(data.Coin0, data.Coin1, data.Volume0, data.MaxVolume1); err != nil {
+	if err := context.Swap().CheckMint(data.Coin0, data.Coin1, data.Volume0, data.MaximumVolume1); err != nil {
 		if err == swap.ErrorInsufficientLiquidityMinted {
 			amount0, amount1 := context.Swap().AmountsOfLiquidity(data.Coin0, data.Coin1, big.NewInt(1))
 			if err == swap.ErrorNotExist {
@@ -63,7 +63,7 @@ func (data AddSwapPoolData) basicCheck(tx *Transaction, context *state.CheckStat
 				return &Response{
 					Code: code.InsufficientInputAmount,
 					Log:  fmt.Sprintf("You wanted to add %d %s pips, but currently you need to add %d %s to complete tx", data.Coin0, data.Volume0, data.Coin1, neededAmount1),
-					Info: EncodeError(code.NewInsufficientInputAmount(data.Coin0.String(), data.Volume0.String(), data.Coin1.String(), data.MaxVolume1.String(), neededAmount1.String())),
+					Info: EncodeError(code.NewInsufficientInputAmount(data.Coin0.String(), data.Volume0.String(), data.Coin1.String(), data.MaximumVolume1.String(), neededAmount1.String())),
 				}
 			} else if err == nil {
 				return &Response{
@@ -115,7 +115,7 @@ func (data AddSwapPoolData) Run(tx *Transaction, context state.Interface, reward
 		return Response{Code: code.InsufficientFunds} // todo
 	}
 
-	amount1 := new(big.Int).Set(data.MaxVolume1)
+	amount1 := new(big.Int).Set(data.MaximumVolume1)
 	if tx.GasCoin == data.Coin1 {
 		amount0.Add(amount1, commission)
 	}
@@ -132,7 +132,7 @@ func (data AddSwapPoolData) Run(tx *Transaction, context state.Interface, reward
 	}
 
 	if deliverState, ok := context.(*state.State); ok {
-		amount0, amount1 := deliverState.Swap.PairMint(sender, data.Coin0, data.Coin1, data.Volume0, data.MaxVolume1)
+		amount0, amount1 := deliverState.Swap.PairMint(sender, data.Coin0, data.Coin1, data.Volume0, data.MaximumVolume1)
 
 		deliverState.Accounts.SubBalance(sender, data.Coin0, amount0)
 		deliverState.Accounts.SubBalance(sender, data.Coin1, amount1)

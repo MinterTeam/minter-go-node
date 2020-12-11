@@ -30,10 +30,10 @@ func TestRemoveExchangeLiquidityTx_one(t *testing.T) {
 
 	{
 		data := AddSwapPoolData{
-			Coin0:      coin,
-			Volume0:    helpers.BipToPip(big.NewInt(10)),
-			Coin1:      coin1,
-			MaxVolume1: helpers.BipToPip(big.NewInt(10)),
+			Coin0:          coin,
+			Volume0:        helpers.BipToPip(big.NewInt(10)),
+			Coin1:          coin1,
+			MaximumVolume1: helpers.BipToPip(big.NewInt(10)),
 		}
 
 		encodedData, err := rlp.EncodeToBytes(data)
@@ -139,10 +139,10 @@ func TestRemoveExchangeLiquidityTx_2(t *testing.T) {
 
 	{
 		data := AddSwapPoolData{
-			Coin0:      coin,
-			Volume0:    big.NewInt(10000),
-			Coin1:      coin1,
-			MaxVolume1: big.NewInt(10000),
+			Coin0:          coin,
+			Volume0:        big.NewInt(10000),
+			Coin1:          coin1,
+			MaximumVolume1: big.NewInt(10000),
 		}
 
 		encodedData, err := rlp.EncodeToBytes(data)
@@ -182,10 +182,10 @@ func TestRemoveExchangeLiquidityTx_2(t *testing.T) {
 	}
 	{
 		data := AddSwapPoolData{
-			Coin0:      coin,
-			Volume0:    helpers.BipToPip(big.NewInt(10)),
-			Coin1:      coin1,
-			MaxVolume1: helpers.BipToPip(big.NewInt(10)),
+			Coin0:          coin,
+			Volume0:        helpers.BipToPip(big.NewInt(10)),
+			Coin1:          coin1,
+			MaximumVolume1: helpers.BipToPip(big.NewInt(10)),
 		}
 
 		encodedData, err := rlp.EncodeToBytes(data)
@@ -293,10 +293,10 @@ func TestRemoveExchangeLiquidityTx_3(t *testing.T) {
 
 	{
 		data := AddSwapPoolData{
-			Coin0:      coin,
-			Volume0:    big.NewInt(9000),
-			Coin1:      coin1,
-			MaxVolume1: big.NewInt(11000),
+			Coin0:          coin,
+			Volume0:        big.NewInt(9000),
+			Coin1:          coin1,
+			MaximumVolume1: big.NewInt(11000),
 		}
 
 		encodedData, err := rlp.EncodeToBytes(data)
@@ -336,10 +336,10 @@ func TestRemoveExchangeLiquidityTx_3(t *testing.T) {
 	}
 	{
 		data := AddSwapPoolData{
-			Coin0:      coin,
-			Volume0:    helpers.BipToPip(big.NewInt(9)),
-			Coin1:      coin1,
-			MaxVolume1: helpers.BipToPip(big.NewInt(11)),
+			Coin0:          coin,
+			Volume0:        helpers.BipToPip(big.NewInt(9)),
+			Coin1:          coin1,
+			MaximumVolume1: helpers.BipToPip(big.NewInt(11)),
 		}
 
 		encodedData, err := rlp.EncodeToBytes(data)
