@@ -206,7 +206,7 @@ func (c *Candidates) Commit(db *iavl.MutableTree) error {
 			path := []byte{mainPrefix}
 			path = append(path, candidate.idBytes()...)
 			path = append(path, stakesPrefix)
-			path = append(path, []byte(fmt.Sprintf("%d", index))...) // todo big.NewInt(index).Bytes()
+			path = append(path, big.NewInt(int64(index)).Bytes()...)
 
 			if stake == nil || stake.Value.Sign() == 0 {
 				db.Remove(path)

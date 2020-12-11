@@ -29,8 +29,9 @@ const (
 
 // Validators struct is a store of Validators state
 type Validators struct {
-	list   []*Validator
-	loaded bool
+	list    []*Validator
+	removed map[types.Pubkey]struct{}
+	loaded  bool
 
 	db  atomic.Value
 	bus *bus.Bus
@@ -90,7 +91,7 @@ func (v *Validators) Commit(db *iavl.MutableTree) error {
 		if val.isDirty || val.isTotalStakeDirty {
 			val.isTotalStakeDirty = false
 			path := []byte{mainPrefix}
-			path = append(path, val.PubKey.Bytes()...) // todo: remove after
+			path = append(path, val.PubKey.Bytes()...)
 			path = append(path, totalStakePrefix)
 			db.Set(path, val.GetTotalBipStake().Bytes())
 		}
@@ -98,11 +99,18 @@ func (v *Validators) Commit(db *iavl.MutableTree) error {
 		if val.isDirty || val.isAccumRewardDirty {
 			val.isAccumRewardDirty = false
 			path := []byte{mainPrefix}
-			path = append(path, val.PubKey.Bytes()...) // todo: remove after
+			path = append(path, val.PubKey.Bytes()...)
 			path = append(path, accumRewardPrefix)
 			db.Set(path, val.GetAccumReward().Bytes())
 		}
 	}
+
+	for pubkey := range v.removed {
+		path := append([]byte{mainPrefix}, pubkey.Bytes()...)
+		v.iavl.Remove(append(path, totalStakePrefix))
+		v.iavl.Remove(append(path, accumRewardPrefix))
+	}
+	v.removed = map[types.Pubkey]struct{}{}
 
 	v.uncheckDirtyValidators()
 
@@ -145,6 +153,11 @@ func (v *Validators) GetValidators() []*Validator {
 func (v *Validators) SetNewValidators(candidates []candidates.Candidate) {
 	old := v.GetValidators()
 
+	oldValidatorsForRemove := map[types.Pubkey]struct{}{}
+	for _, oldVal := range old {
+		oldValidatorsForRemove[oldVal.PubKey] = struct{}{}
+	}
+
 	var newVals []*Validator
 	for _, candidate := range candidates {
 		accumReward := big.NewInt(0)
@@ -154,6 +167,7 @@ func (v *Validators) SetNewValidators(candidates []candidates.Candidate) {
 			if oldVal.GetAddress() == candidate.GetTmAddress() {
 				accumReward = oldVal.accumReward
 				absentTimes = oldVal.AbsentTimes
+				delete(oldValidatorsForRemove, oldVal.PubKey)
 			}
 		}
 
@@ -170,6 +184,7 @@ func (v *Validators) SetNewValidators(candidates []candidates.Candidate) {
 		})
 	}
 
+	v.removed = oldValidatorsForRemove
 	v.SetValidators(newVals)
 }
 
