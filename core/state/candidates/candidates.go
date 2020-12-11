@@ -295,11 +295,11 @@ func (c *Candidates) PunishByzantineCandidate(height uint64, tmAddress types.TmA
 			c.bus.Coins().SubCoinReserve(coin.ID, ret)
 
 			c.bus.App().AddTotalSlashed(ret)
-			c.bus.Checker().AddCoin(stake.Coin, big.NewInt(0).Neg(ret))
 		} else {
 			c.bus.App().AddTotalSlashed(slashed)
-			c.bus.Checker().AddCoin(stake.Coin, big.NewInt(0).Neg(slashed))
 		}
+
+		c.bus.Checker().AddCoin(stake.Coin, big.NewInt(0).Neg(slashed))
 
 		c.bus.Events().AddEvent(uint32(height), &eventsdb.SlashEvent{
 			Address:         stake.Owner,
