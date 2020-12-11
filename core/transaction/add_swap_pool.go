@@ -50,28 +50,28 @@ func (data AddSwapPoolData) basicCheck(tx *Transaction, context *state.CheckStat
 
 	if err := context.Swap().CheckMint(data.Coin0, data.Coin1, data.Volume0, data.MaximumVolume1); err != nil {
 		if err == swap.ErrorInsufficientLiquidityMinted {
-			amount0, amount1 := context.Swap().AmountsOfLiquidity(data.Coin0, data.Coin1, big.NewInt(1))
-			if err == swap.ErrorNotExist {
+			if !context.Swap().SwapPoolExist(data.Coin0, data.Coin1) {
 				return &Response{
 					Code: code.InsufficientLiquidityMinted,
-					Log: fmt.Sprintf("You wanted to add less than minimum liquidity, you should add %s pips of coin %d and %s or more pips of coin %d",
+					Log: fmt.Sprintf("You wanted to add less than minimum liquidity, you should add %s of coin %d and %s or more of coin %d",
 						"10", data.Coin0, "10", data.Coin1),
 					Info: EncodeError(code.NewInsufficientLiquidityMinted(data.Coin0.String(), "10", data.Coin1.String(), "10")),
 				}
-			} else if err == swap.ErrorInsufficientInputAmount {
-				_, _, neededAmount1, _ := context.Swap().PairCalculateAddLiquidity(data.Coin0, data.Coin1, data.Volume0)
-				return &Response{
-					Code: code.InsufficientInputAmount,
-					Log:  fmt.Sprintf("You wanted to add %d %s pips, but currently you need to add %d %s to complete tx", data.Coin0, data.Volume0, data.Coin1, neededAmount1),
-					Info: EncodeError(code.NewInsufficientInputAmount(data.Coin0.String(), data.Volume0.String(), data.Coin1.String(), data.MaximumVolume1.String(), neededAmount1.String())),
-				}
-			} else if err == nil {
+			} else {
+				amount0, amount1 := context.Swap().AmountsOfLiquidity(data.Coin0, data.Coin1, big.NewInt(1))
 				return &Response{
 					Code: code.InsufficientLiquidityMinted,
-					Log: fmt.Sprintf("You wanted to add less than one liquidity, you should add %s pips of coin %d and %s or more pips of coin %d",
+					Log: fmt.Sprintf("You wanted to add less than one liquidity, you should add %s of coin %d and %s or more of coin %d",
 						amount0, data.Coin0, amount1, data.Coin1),
 					Info: EncodeError(code.NewInsufficientLiquidityMinted(data.Coin0.String(), amount0.String(), data.Coin1.String(), amount1.String())),
 				}
+			}
+		} else if err == swap.ErrorInsufficientInputAmount {
+			_, _, neededAmount1, _ := context.Swap().PairCalculateAddLiquidity(data.Coin0, data.Coin1, data.Volume0)
+			return &Response{
+				Code: code.InsufficientInputAmount,
+				Log:  fmt.Sprintf("You wanted to add %s of coin %d, but currently you need to add %s of coin %d to complete tx", data.Volume0, data.Coin0, neededAmount1, data.Coin1),
+				Info: EncodeError(code.NewInsufficientInputAmount(data.Coin0.String(), data.Volume0.String(), data.Coin1.String(), data.MaximumVolume1.String(), neededAmount1.String())),
 			}
 		}
 	}
