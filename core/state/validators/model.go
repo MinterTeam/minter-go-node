@@ -44,9 +44,10 @@ func (v *Validator) IsToDrop() bool {
 }
 
 func (v *Validator) SetAccumReward(value *big.Int) {
-	if v.accumReward.Cmp(value) != 0 {
-		v.isAccumRewardDirty = true
+	if v.accumReward.Cmp(value) == 0 {
+		return
 	}
+	v.isAccumRewardDirty = true
 	v.bus.Checker().AddCoin(types.GetBaseCoinID(), big.NewInt(0).Sub(value, v.accumReward), "reward")
 	v.accumReward = big.NewInt(0).Set(value)
 }

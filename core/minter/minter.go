@@ -91,17 +91,18 @@ func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 		panic(err)
 	}
 
+	height := applicationDB.GetLastHeight()
 	blockchain = &Blockchain{
 		stateDB:        ldb,
 		appDB:          applicationDB,
-		height:         applicationDB.GetLastHeight(),
+		height:         height,
 		eventsDB:       eventsdb.NewEventsStore(edb),
 		currentMempool: &sync.Map{},
 		cfg:            cfg,
 	}
 
 	// Set stateDeliver and stateCheck
-	blockchain.stateDeliver, err = state.NewState(blockchain.height, blockchain.stateDB, blockchain.eventsDB, cfg.StateCacheSize, cfg.KeepLastStates)
+	blockchain.stateDeliver, err = state.NewState(height, blockchain.stateDB, blockchain.eventsDB, cfg.StateCacheSize, cfg.KeepLastStates)
 	if err != nil {
 		panic(err)
 	}
@@ -127,10 +128,11 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 		panic(err)
 	}
 
-	vals := app.updateValidators(0)
+	vals := app.updateValidators()
 
 	app.appDB.SetStartHeight(genesisState.StartHeight)
-	app.appDB.SaveValidators(vals)
+	app.appDB.SetValidators(vals)
+
 	rewards.SetStartHeight(genesisState.StartHeight)
 
 	return abciTypes.ResponseInitChain{
@@ -223,14 +225,14 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 
 	hasDroppedValidators := false
 	for _, val := range vals {
-		if val.IsToDrop() {
-			hasDroppedValidators = true
-
-			// Move dropped validator's accum rewards back to pool
-			app.rewards.Add(app.rewards, val.GetAccumReward())
-			val.SetAccumReward(big.NewInt(0))
-			break
+		if !val.IsToDrop() {
+			continue
 		}
+		hasDroppedValidators = true
+
+		// Move dropped validator's accum rewards back to pool
+		app.rewards.Add(app.rewards, val.GetAccumReward())
+		val.SetAccumReward(big.NewInt(0))
 	}
 
 	// calculate total power of validators
@@ -244,7 +246,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 		totalPower.Add(totalPower, val.GetTotalBipStake())
 	}
 
-	if totalPower.Cmp(types.Big0) == 0 {
+	if totalPower.Sign() == 0 {
 		totalPower = big.NewInt(1)
 	}
 
@@ -274,7 +276,7 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 	app.stateDeliver.App.AddTotalSlashed(remainder)
 
 	// pay rewards
-	if req.Height%120 == 0 {
+	if height%120 == 0 {
 		app.stateDeliver.Validators.PayRewards(height)
 	}
 
@@ -286,12 +288,12 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 
 	// update validators
 	var updates []abciTypes.ValidatorUpdate
-	if req.Height%120 == 0 || hasDroppedValidators || hasChangedPublicKeys {
-		updates = app.updateValidators(height)
+	if height%120 == 0 || hasDroppedValidators || hasChangedPublicKeys {
+		updates = app.updateValidators()
 	}
 
 	defer func() {
-		app.StatisticData().PushEndBlock(&statistics.EndRequest{TimeEnd: time.Now(), Height: int64(app.height)})
+		app.StatisticData().PushEndBlock(&statistics.EndRequest{TimeEnd: time.Now(), Height: int64(app.Height())})
 	}()
 
 	return abciTypes.ResponseEndBlock{
@@ -305,7 +307,8 @@ func (app *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.Respons
 	}
 }
 
-func (app *Blockchain) updateValidators(height uint64) []abciTypes.ValidatorUpdate {
+func (app *Blockchain) updateValidators() []abciTypes.ValidatorUpdate {
+	height := app.Height()
 	app.stateDeliver.Candidates.RecalculateStakes(height)
 
 	valsCount := validators.GetValidatorsCountForBlock(height)
@@ -314,7 +317,7 @@ func (app *Blockchain) updateValidators(height uint64) []abciTypes.ValidatorUpda
 		valsCount = len(newCandidates)
 	}
 
-	newValidators := make([]abciTypes.ValidatorUpdate, valsCount)
+	newValidators := make([]abciTypes.ValidatorUpdate, 0, valsCount)
 
 	// calculate total power
 	totalPower := big.NewInt(0)
@@ -322,15 +325,15 @@ func (app *Blockchain) updateValidators(height uint64) []abciTypes.ValidatorUpda
 		totalPower.Add(totalPower, app.stateDeliver.Candidates.GetTotalStake(candidate.PubKey))
 	}
 
-	for i := range newCandidates {
-		power := big.NewInt(0).Div(big.NewInt(0).Mul(app.stateDeliver.Candidates.GetTotalStake(newCandidates[i].PubKey),
+	for _, newCandidate := range newCandidates {
+		power := big.NewInt(0).Div(big.NewInt(0).Mul(app.stateDeliver.Candidates.GetTotalStake(newCandidate.PubKey),
 			big.NewInt(100000000)), totalPower).Int64()
 
 		if power == 0 {
 			power = 1
 		}
 
-		newValidators[i] = abciTypes.Ed25519ValidatorUpdate(newCandidates[i].PubKey[:], power)
+		newValidators = append(newValidators, abciTypes.Ed25519ValidatorUpdate(newCandidate.PubKey[:], power))
 	}
 
 	sort.SliceStable(newValidators, func(i, j int) bool {
@@ -342,32 +345,27 @@ func (app *Blockchain) updateValidators(height uint64) []abciTypes.ValidatorUpda
 
 	activeValidators := app.getCurrentValidators()
 
-	app.saveCurrentValidators(newValidators)
+	app.appDB.SetValidators(newValidators)
 
 	updates := newValidators
 
 	for _, validator := range activeValidators {
-		persisted := false
 		for _, newValidator := range newValidators {
-			if bytes.Equal(validator.PubKey.Data, newValidator.PubKey.Data) {
-				persisted = true
-				break
+			if !bytes.Equal(validator.PubKey.Data, newValidator.PubKey.Data) {
+				continue
 			}
-		}
-
-		// remove validator
-		if !persisted {
 			updates = append(updates, abciTypes.ValidatorUpdate{
 				PubKey: validator.PubKey,
 				Power:  0,
-			})
+			}) // remove validator
+			break
 		}
 	}
 	return updates
 }
 
 // Info return application info. Used for synchronization between Tendermint and Minter
-func (app *Blockchain) Info(req abciTypes.RequestInfo) (resInfo abciTypes.ResponseInfo) {
+func (app *Blockchain) Info(_ abciTypes.RequestInfo) (resInfo abciTypes.ResponseInfo) {
 	return abciTypes.ResponseInfo{
 		Version:          version.Version,
 		AppVersion:       version.AppVer,
@@ -378,7 +376,7 @@ func (app *Blockchain) Info(req abciTypes.RequestInfo) (resInfo abciTypes.Respon
 
 // DeliverTx deliver a tx for full processing
 func (app *Blockchain) DeliverTx(req abciTypes.RequestDeliverTx) abciTypes.ResponseDeliverTx {
-	response := transaction.RunTx(app.stateDeliver, req.Tx, app.rewards, app.height, &sync.Map{}, 0)
+	response := transaction.RunTx(app.stateDeliver, req.Tx, app.rewards, app.Height(), &sync.Map{}, 0)
 
 	return abciTypes.ResponseDeliverTx{
 		Code:      response.Code,
@@ -418,7 +416,7 @@ func (app *Blockchain) CheckTx(req abciTypes.RequestCheckTx) abciTypes.ResponseC
 
 // Commit the state and return the application Merkle root hash
 func (app *Blockchain) Commit() abciTypes.ResponseCommit {
-	if app.height > app.appDB.GetStartHeight()+1 {
+	if app.Height() > app.appDB.GetStartHeight()+1 {
 		if err := app.stateDeliver.Check(); err != nil {
 			panic(err)
 		}
@@ -438,7 +436,8 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 
 	// Persist application hash and height
 	app.appDB.SetLastBlockHash(hash)
-	app.appDB.SetLastHeight(app.height)
+	app.appDB.SetLastHeight(app.Height())
+	app.appDB.FlushValidators()
 
 	app.stateDeliver.Unlock()
 
@@ -454,12 +453,12 @@ func (app *Blockchain) Commit() abciTypes.ResponseCommit {
 }
 
 // Query Unused method, required by Tendermint
-func (app *Blockchain) Query(reqQuery abciTypes.RequestQuery) abciTypes.ResponseQuery {
+func (app *Blockchain) Query(_ abciTypes.RequestQuery) abciTypes.ResponseQuery {
 	return abciTypes.ResponseQuery{}
 }
 
 // SetOption Unused method, required by Tendermint
-func (app *Blockchain) SetOption(req abciTypes.RequestSetOption) abciTypes.ResponseSetOption {
+func (app *Blockchain) SetOption(_ abciTypes.RequestSetOption) abciTypes.ResponseSetOption {
 	return abciTypes.ResponseSetOption{}
 }
 
@@ -543,10 +542,6 @@ func (app *Blockchain) getCurrentValidators() abciTypes.ValidatorUpdates {
 	return app.appDB.GetValidators()
 }
 
-func (app *Blockchain) saveCurrentValidators(vals abciTypes.ValidatorUpdates) {
-	app.appDB.SaveValidators(vals)
-}
-
 func (app *Blockchain) updateBlocksTimeDelta(height uint64, count int64) {
 	// should do this because tmNode is unavailable during Tendermint's replay mode
 	if app.tmNode == nil {
@@ -572,7 +567,7 @@ func (app *Blockchain) SetBlocksTimeDelta(height uint64, value int) {
 }
 
 // GetBlocksTimeDelta returns current blocks time delta
-func (app *Blockchain) GetBlocksTimeDelta(height, count uint64) (int, error) {
+func (app *Blockchain) GetBlocksTimeDelta(height, _ uint64) (int, error) {
 	return app.appDB.GetLastBlocksTimeDelta(height)
 }
 

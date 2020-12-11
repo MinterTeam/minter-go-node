@@ -7,6 +7,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/tendermint/go-amino"
 	"github.com/tendermint/tendermint/abci/types"
+	abciTypes "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tm-db"
 )
 
@@ -26,7 +27,9 @@ const (
 
 // AppDB is responsible for storing basic information about app state on disk
 type AppDB struct {
-	db db.DB
+	db          db.DB
+	startHeight uint64
+	validators  abciTypes.ValidatorUpdates
 }
 
 // Close closes db connection, panics on error
@@ -87,10 +90,14 @@ func (appDB *AppDB) SetStartHeight(height uint64) {
 	if err := appDB.db.Set([]byte(startHeightPath), h); err != nil {
 		panic(err)
 	}
+	appDB.startHeight = height
 }
 
 // GetStartHeight returns start height stored on disk
 func (appDB *AppDB) GetStartHeight() uint64 {
+	if appDB.startHeight != 0 {
+		return appDB.startHeight
+	}
 	result, err := appDB.db.Get([]byte(startHeightPath))
 	if err != nil {
 		panic(err)
@@ -101,11 +108,17 @@ func (appDB *AppDB) GetStartHeight() uint64 {
 		height = binary.BigEndian.Uint64(result)
 	}
 
+	appDB.startHeight = height
+
 	return height
 }
 
 // GetValidators returns list of latest validators stored on dist
 func (appDB *AppDB) GetValidators() types.ValidatorUpdates {
+	if appDB.validators != nil {
+		return appDB.validators
+	}
+
 	result, err := appDB.db.Get([]byte(validatorsPath))
 	if err != nil {
 		panic(err)
@@ -125,9 +138,14 @@ func (appDB *AppDB) GetValidators() types.ValidatorUpdates {
 	return vals
 }
 
-// SaveValidators stores given validators list on disk, panics on error
-func (appDB *AppDB) SaveValidators(vals types.ValidatorUpdates) {
-	data, err := cdc.MarshalBinaryBare(vals)
+// SetValidators sets given validators list on mem
+func (appDB *AppDB) SetValidators(vals types.ValidatorUpdates) {
+	appDB.validators = vals
+}
+
+// FlushValidators stores validators list from mem to disk, panics on error
+func (appDB *AppDB) FlushValidators() {
+	data, err := cdc.MarshalBinaryBare(appDB.validators)
 	if err != nil {
 		panic(err)
 	}
@@ -135,6 +153,7 @@ func (appDB *AppDB) SaveValidators(vals types.ValidatorUpdates) {
 	if err := appDB.db.Set([]byte(validatorsPath), data); err != nil {
 		panic(err)
 	}
+	appDB.validators = nil
 }
 
 type lastBlocksTimeDelta struct {

@@ -6,13 +6,11 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/rewards"
-	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/state/coins"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	_struct "github.com/golang/protobuf/ptypes/struct"
-	"github.com/tendermint/iavl"
 	core_types "github.com/tendermint/tendermint/rpc/core/types"
 	tmTypes "github.com/tendermint/tendermint/types"
 	"google.golang.org/grpc/codes"
@@ -97,19 +95,6 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 			return nil, err
 		}
 
-		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-			return nil, timeoutStatus.Err()
-		}
-
-		cStateOld, err := s.blockchain.GetStateForHeight(uint64(height))
-		if err != iavl.ErrVersionDoesNotExist && err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-
-		if err != iavl.ErrVersionDoesNotExist {
-			response.Missed = missedBlockValidators(cStateOld)
-		}
-
 		return response, nil
 	}
 
@@ -129,16 +114,6 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 			if err != nil {
 				return nil, err
 			}
-		case pb.BlockRequest_missed:
-			cStateOld, err := s.blockchain.GetStateForHeight(uint64(height))
-			if err != iavl.ErrVersionDoesNotExist && err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-
-			if err != iavl.ErrVersionDoesNotExist {
-				response.Missed = missedBlockValidators(cStateOld)
-			}
-
 		case pb.BlockRequest_proposer, pb.BlockRequest_validators:
 			if len(totalValidators) == 0 {
 				tmValidators, err := s.client.Validators(&valHeight, 1, 100)
@@ -202,15 +177,6 @@ func blockValidators(totalValidators []*tmTypes.Validator, block *core_types.Res
 	}
 
 	return validators
-}
-
-func missedBlockValidators(s *state.CheckState) []string {
-	var missedBlocks []string
-	for _, val := range s.Validators().GetValidators() {
-		missedBlocks = append(missedBlocks, val.AbsentTimes.String())
-	}
-
-	return missedBlocks
 }
 
 func blockProposer(block *core_types.ResultBlock, totalValidators []*tmTypes.Validator) (string, error) {
