@@ -28,10 +28,10 @@ func (data BuyCoinData) Gas() int64 {
 	return commissions.ConvertTx
 }
 
-func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.CheckState) (TotalSpends,
-	[]Conversion, *big.Int, *Response) {
+func (data BuyCoinData) totalSpend(tx *Transaction, context *state.CheckState) (TotalSpends,
+	[]conversion, *big.Int, *Response) {
 	total := TotalSpends{}
-	var conversions []Conversion
+	var conversions []conversion
 
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
 	commissionIncluded := false
@@ -90,7 +90,7 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.CheckState) (
 			commission := formula.CalculateSaleAmount(nVolume, nReserveBalance, coin.Crr(), commissionInBaseCoin)
 
 			total.Add(tx.GasCoin, commission)
-			conversions = append(conversions, Conversion{
+			conversions = append(conversions, conversion{
 				FromCoin:    tx.GasCoin,
 				FromAmount:  commission,
 				FromReserve: commissionInBaseCoin,
@@ -99,7 +99,7 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.CheckState) (
 		}
 
 		total.Add(data.CoinToSell, value)
-		conversions = append(conversions, Conversion{
+		conversions = append(conversions, conversion{
 			FromCoin:  data.CoinToSell,
 			ToCoin:    data.CoinToBuy,
 			ToAmount:  data.ValueToBuy,
@@ -127,7 +127,7 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.CheckState) (
 		}
 
 		total.Add(data.CoinToSell, value)
-		conversions = append(conversions, Conversion{
+		conversions = append(conversions, conversion{
 			FromCoin:    data.CoinToSell,
 			FromAmount:  value,
 			FromReserve: valueToBuy,
@@ -186,7 +186,7 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.CheckState) (
 			commission := formula.CalculateSaleAmount(nVolume, nReserveBalance, coinTo.Crr(), commissionInBaseCoin)
 
 			total.Add(tx.GasCoin, commission)
-			conversions = append(conversions, Conversion{
+			conversions = append(conversions, conversion{
 				FromCoin:    tx.GasCoin,
 				FromAmount:  commission,
 				FromReserve: commissionInBaseCoin,
@@ -234,7 +234,7 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.CheckState) (
 			commission := formula.CalculateSaleAmount(nVolume, nReserveBalance, coinFrom.Crr(), commissionInBaseCoin)
 
 			total.Add(tx.GasCoin, commission)
-			conversions = append(conversions, Conversion{
+			conversions = append(conversions, conversion{
 				FromCoin:    tx.GasCoin,
 				FromAmount:  commission,
 				FromReserve: commissionInBaseCoin,
@@ -252,7 +252,7 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.CheckState) (
 		}
 
 		total.Add(data.CoinToSell, value)
-		conversions = append(conversions, Conversion{
+		conversions = append(conversions, conversion{
 			FromCoin:    data.CoinToSell,
 			FromAmount:  value,
 			FromReserve: baseCoinNeeded,
@@ -286,7 +286,7 @@ func (data BuyCoinData) TotalSpend(tx *Transaction, context *state.CheckState) (
 			}
 
 			commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
-			conversions = append(conversions, Conversion{
+			conversions = append(conversions, conversion{
 				FromCoin:    tx.GasCoin,
 				FromAmount:  commission,
 				FromReserve: commissionInBaseCoin,
@@ -356,7 +356,7 @@ func (data BuyCoinData) Run(tx *Transaction, context state.Interface, rewardPool
 		return *response
 	}
 
-	totalSpends, conversions, value, response := data.TotalSpend(tx, checkState)
+	totalSpends, conversions, value, response := data.totalSpend(tx, checkState)
 	if response != nil {
 		return *response
 	}
@@ -415,7 +415,7 @@ func (data BuyCoinData) Run(tx *Transaction, context state.Interface, rewardPool
 	}
 }
 
-func checkConversionsReserveUnderflow(conversions []Conversion, context *state.CheckState) *Response {
+func checkConversionsReserveUnderflow(conversions []conversion, context *state.CheckState) *Response {
 	var totalReserveCoins []types.CoinID
 	totalReserveSub := make(map[types.CoinID]*big.Int)
 	for _, conversion := range conversions {

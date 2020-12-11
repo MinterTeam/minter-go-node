@@ -23,9 +23,9 @@ func (data EditCoinOwnerData) BasicCheck(tx *Transaction, context *state.CheckSt
 	info := context.Coins().GetSymbolInfo(data.Symbol)
 	if info == nil {
 		return &Response{
-			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin %s not exists", data.Symbol),
-			Info: EncodeError(code.NewCoinNotExists(data.Symbol.String(), "")),
+			Code: code.IsNotOwnerOfCoin,
+			Log:  fmt.Sprintf("Sender is not owner of coin"),
+			Info: EncodeError(code.NewIsNotOwnerOfCoin(data.Symbol.String(), nil)),
 		}
 	}
 

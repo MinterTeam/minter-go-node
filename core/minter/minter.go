@@ -632,7 +632,7 @@ func (app *Blockchain) DeleteStateVersions(from, to int64) error {
 	app.stateDeliver.Tree().GlobalLock()
 	defer app.stateDeliver.Tree().GlobalUnlock()
 
-	return app.stateDeliver.Tree().DeleteVersionsIfExists(from, to)
+	return app.stateDeliver.Tree().DeleteVersionsRange(from, to)
 }
 
 func (app *Blockchain) isApplicationHalted(height uint64) bool {

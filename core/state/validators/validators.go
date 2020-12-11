@@ -28,8 +28,9 @@ const (
 
 // Validators struct is a store of Validators state
 type Validators struct {
-	list   []*Validator
-	loaded bool
+	list    []*Validator
+	removed map[types.Pubkey]struct{}
+	loaded  bool
 
 	iavl tree.MTree
 	bus  *bus.Bus
@@ -81,6 +82,13 @@ func (v *Validators) Commit() error {
 		}
 	}
 
+	for pubkey := range v.removed {
+		path := append([]byte{mainPrefix}, pubkey.Bytes()...)
+		v.iavl.Remove(append(path, totalStakePrefix))
+		v.iavl.Remove(append(path, accumRewardPrefix))
+	}
+	v.removed = map[types.Pubkey]struct{}{}
+
 	v.uncheckDirtyValidators()
 
 	return nil
@@ -122,6 +130,11 @@ func (v *Validators) GetValidators() []*Validator {
 func (v *Validators) SetNewValidators(candidates []candidates.Candidate) {
 	old := v.GetValidators()
 
+	oldValidatorsForRemove := map[types.Pubkey]struct{}{}
+	for _, oldVal := range old {
+		oldValidatorsForRemove[oldVal.PubKey] = struct{}{}
+	}
+
 	var newVals []*Validator
 	for _, candidate := range candidates {
 		accumReward := big.NewInt(0)
@@ -131,6 +144,7 @@ func (v *Validators) SetNewValidators(candidates []candidates.Candidate) {
 			if oldVal.GetAddress() == candidate.GetTmAddress() {
 				accumReward = oldVal.accumReward
 				absentTimes = oldVal.AbsentTimes
+				delete(oldValidatorsForRemove, oldVal.PubKey)
 			}
 		}
 
@@ -147,6 +161,7 @@ func (v *Validators) SetNewValidators(candidates []candidates.Candidate) {
 		})
 	}
 
+	v.removed = oldValidatorsForRemove
 	v.SetValidators(newVals)
 }
 

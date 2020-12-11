@@ -18,11 +18,11 @@ type SellAllCoinData struct {
 	MinimumValueToBuy *big.Int
 }
 
-func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.CheckState) (TotalSpends, []Conversion, *big.Int, *Response) {
+func (data SellAllCoinData) totalSpend(tx *Transaction, context *state.CheckState) (TotalSpends, []conversion, *big.Int, *Response) {
 	sender, _ := tx.Sender()
 
 	total := TotalSpends{}
-	var conversions []Conversion
+	var conversions []conversion
 
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
 	available := context.Accounts().GetBalance(sender, data.CoinToSell)
@@ -34,8 +34,15 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.CheckStat
 	case data.CoinToSell.IsBaseCoin():
 		amountToSell := big.NewInt(0).Set(available)
 		amountToSell.Sub(amountToSell, commissionInBaseCoin)
-
 		coin := context.Coins().GetCoin(data.CoinToBuy)
+		if amountToSell.Sign() != 1 {
+			return nil, nil, nil, &Response{
+				Code: code.InsufficientFunds,
+				Log:  "Insufficient funds for sender account",
+				Info: EncodeError(code.NewInsufficientFunds(sender.String(), commissionInBaseCoin.String(), coin.GetFullSymbol(), coin.ID().String())),
+			}
+		}
+
 		value = formula.CalculatePurchaseReturn(coin.Volume(), coin.Reserve(), coin.Crr(), amountToSell)
 
 		if value.Cmp(data.MinimumValueToBuy) == -1 {
@@ -50,7 +57,7 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.CheckStat
 			return nil, nil, nil, errResp
 		}
 
-		conversions = append(conversions, Conversion{
+		conversions = append(conversions, conversion{
 			FromCoin:  data.CoinToSell,
 			ToCoin:    data.CoinToBuy,
 			ToAmount:  value,
@@ -81,7 +88,7 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.CheckStat
 		value = big.NewInt(0).Set(ret)
 		value.Sub(ret, commissionInBaseCoin)
 
-		conversions = append(conversions, Conversion{
+		conversions = append(conversions, conversion{
 			FromCoin:    data.CoinToSell,
 			FromAmount:  amountToSell,
 			FromReserve: ret,
@@ -117,7 +124,7 @@ func (data SellAllCoinData) TotalSpend(tx *Transaction, context *state.CheckStat
 			return nil, nil, nil, errResp
 		}
 
-		conversions = append(conversions, Conversion{
+		conversions = append(conversions, conversion{
 			FromCoin:    data.CoinToSell,
 			FromAmount:  amountToSell,
 			FromReserve: big.NewInt(0).Add(basecoinValue, commissionInBaseCoin),
@@ -186,7 +193,7 @@ func (data SellAllCoinData) Run(tx *Transaction, context state.Interface, reward
 
 	available := checkState.Accounts().GetBalance(sender, data.CoinToSell)
 
-	totalSpends, conversions, value, response := data.TotalSpend(tx, checkState)
+	totalSpends, conversions, value, response := data.totalSpend(tx, checkState)
 	if response != nil {
 		return *response
 	}

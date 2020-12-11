@@ -182,9 +182,9 @@ func (c *Candidates) Commit() error {
 			path := []byte{mainPrefix}
 			path = append(path, candidate.idBytes()...)
 			path = append(path, stakesPrefix)
-			path = append(path, []byte(fmt.Sprintf("%d", index))...)
+			path = append(path, big.NewInt(int64(index)).Bytes()...)
 
-			if stake == nil || stake.Value.Cmp(big.NewInt(0)) == 0 {
+			if stake == nil || stake.Value.Sign() == 0 {
 				c.iavl.Remove(path)
 				candidate.stakes[index] = nil
 				continue

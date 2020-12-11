@@ -683,6 +683,7 @@ func TestSellCoinTxToCoinSupplyOverflow(t *testing.T) {
 	)
 
 	coinToSellID := cState.App.GetNextCoinID()
+	cState.Accounts.AddBalance(types.Address{}, coinToSellID, helpers.BipToPip(big.NewInt(100000)))
 	cState.App.SetCoinsCount(coinToSellID.Uint32())
 
 	tx = createSellCoinTx(coinToSellID, coinToBuyID, coinToSellID, helpers.BipToPip(big.NewInt(90)), 1)
@@ -752,6 +753,7 @@ func TestSellCoinTxToMinimumValueToBuyReached(t *testing.T) {
 
 	// coin to buy == base coin
 
+	cState.Accounts.SubBalance(types.Address{}, coinToBuyID, helpers.BipToPip(big.NewInt(100000)))
 	cState.Accounts.AddBalance(addr, coinToBuyID, helpers.BipToPip(big.NewInt(100000)))
 
 	data.CoinToBuy = sellCoinID
@@ -794,6 +796,7 @@ func TestSellCoinTxToMinimumValueToBuyReached(t *testing.T) {
 	)
 
 	coinToSellID := cState.App.GetNextCoinID()
+	cState.Accounts.AddBalance(types.Address{}, coinToSellID, helpers.BipToPip(big.NewInt(100000)))
 	cState.App.SetCoinsCount(coinToSellID.Uint32())
 
 	data.CoinToBuy = coinToBuyID
