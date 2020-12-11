@@ -20,6 +20,14 @@ type EditCoinOwnerData struct {
 func (data EditCoinOwnerData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	sender, _ := tx.Sender()
 
+	if !context.Coins().ExistsBySymbol(data.Symbol) {
+		return &Response{
+			Code: code.CoinNotExists,
+			Log:  fmt.Sprintf("Coin %s not exists", data.Symbol),
+			Info: EncodeError(code.NewCoinNotExists(data.Symbol.String(), "")),
+		}
+	}
+
 	info := context.Coins().GetSymbolInfo(data.Symbol)
 	if info == nil {
 		return &Response{

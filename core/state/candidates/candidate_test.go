@@ -117,9 +117,6 @@ func TestCandidates_Commit_changePubKeyAndCheckBlockList(t *testing.T) {
 	}
 
 	candidates = NewCandidates(bus.NewBus(), mutableTree.GetLastImmutable())
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	candidates.LoadCandidates()
 	candidate := candidates.GetCandidate([32]byte{5})
@@ -193,7 +190,7 @@ func TestCandidates_Commit_withStakeAndUpdate(t *testing.T) {
 		t.Fatalf("version %d", version)
 	}
 
-	if fmt.Sprintf("%X", hash) != "2D206158AA79C3BDAA019C61FEAD47BB9B6170C445EE7B36E935AC954765E99F" {
+	if fmt.Sprintf("%X", hash) != "C1659B82F60F0883043A6948C567A31C5B172EB99E5F5F94C346679461A47CE1" {
 		t.Fatalf("hash %X", hash)
 	}
 }
@@ -459,7 +456,7 @@ func TestCandidates_Export(t *testing.T) {
 	}
 
 	if string(bytes) != "[{\"id\":1,\"reward_address\":\"Mx0200000000000000000000000000000000000000\",\"owner_address\":\"Mx0100000000000000000000000000000000000000\",\"control_address\":\"Mx0300000000000000000000000000000000000000\",\"total_bip_stake\":\"200\",\"public_key\":\"Mp0400000000000000000000000000000000000000000000000000000000000000\",\"commission\":10,\"stakes\":[{\"owner\":\"Mx0100000000000000000000000000000000000000\",\"coin\":0,\"value\":\"100\",\"bip_value\":\"100\"},{\"owner\":\"Mx0200000000000000000000000000000000000000\",\"coin\":0,\"value\":\"100\",\"bip_value\":\"100\"}],\"updates\":[],\"status\":1}]" {
-		t.Fatal("not equal JSON")
+		t.Fatal("not equal JSON", string(bytes))
 	}
 
 	bytes, err = json.Marshal(state.BlockListCandidates)

@@ -991,7 +991,7 @@ func (c *Candidates) LoadStakesOfCandidate(pubkey types.Pubkey) {
 		path := []byte{mainPrefix}
 		path = append(path, candidate.idBytes()...)
 		path = append(path, stakesPrefix)
-		path = append(path, []byte(fmt.Sprintf("%d", index))...)
+		path = append(path, big.NewInt(int64(index)).Bytes()...)
 		_, enc := c.immutableTree().Get(path)
 		if len(enc) == 0 {
 			candidate.stakes[index] = nil

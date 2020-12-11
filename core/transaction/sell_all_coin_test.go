@@ -206,7 +206,7 @@ func TestSellAllCoinTxWithMinimumValueToBuy(t *testing.T) {
 	coinID := createTestCoin(cState)
 	privateKey, _ := crypto.GenerateKey()
 	coin := types.GetBaseCoinID()
-
+	cState.Accounts.AddBalance(crypto.PubkeyToAddress(privateKey.PublicKey), coin, big.NewInt(9e18))
 	minValToBuy, _ := big.NewInt(0).SetString("151191152412701306252", 10)
 	data := SellAllCoinData{
 		CoinToSell:        coin,
@@ -511,7 +511,7 @@ func TestSellAllCoinTxToMinimumValueToBuyReached(t *testing.T) {
 
 	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.MinimumValueToBuyReached {
-		t.Fatalf("Response code is not %d. Error %s", code.MinimumValueToBuyReached, response.Log)
+		t.Fatalf("Response code %d is not %d. Error %s: %s", response.Code, code.MinimumValueToBuyReached, response.Log, response.Info)
 	}
 
 	if err := checkState(cState); err != nil {
