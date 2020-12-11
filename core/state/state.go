@@ -113,8 +113,8 @@ type State struct {
 
 func (s *State) isValue_State() {}
 
-func NewState(height uint64, db db.DB, events eventsdb.IEventsDB, cacheSize int, keepLastStates int64) (*State, error) {
-	iavlTree, err := tree.NewMutableTree(height, db, cacheSize)
+func NewState(height uint64, db db.DB, events eventsdb.IEventsDB, cacheSize int, keepLastStates int64, startHeight uint64) (*State, error) {
+	iavlTree, err := tree.NewMutableTree(height, db, cacheSize, startHeight)
 	if err != nil {
 		return nil, err
 	}

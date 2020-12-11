@@ -18,7 +18,7 @@ import (
 )
 
 func TestEditOwnerTx(t *testing.T) {
-	cState, err := state.NewState(0, db.NewMemDB(), nil, 1, 1)
+	cState, err := state.NewState(0, db.NewMemDB(), nil, 1, 1, 0)
 	if err != nil {
 		t.Fatalf("Cannot load state. Error %s", err)
 	}
@@ -76,7 +76,7 @@ func TestEditOwnerTx(t *testing.T) {
 }
 
 func TestEditOwnerTxWithWrongOwner(t *testing.T) {
-	cState, err := state.NewState(0, db.NewMemDB(), nil, 1, 1)
+	cState, err := state.NewState(0, db.NewMemDB(), nil, 1, 1, 0)
 	if err != nil {
 		t.Fatalf("Cannot load state. Error %s", err)
 	}
@@ -110,7 +110,7 @@ func TestEditOwnerTxWithWrongOwner(t *testing.T) {
 }
 
 func TestEditOwnerTxWithWrongSymbol(t *testing.T) {
-	cState, err := state.NewState(0, db.NewMemDB(), nil, 1, 1)
+	cState, err := state.NewState(0, db.NewMemDB(), nil, 1, 1, 0)
 	if err != nil {
 		t.Fatalf("Cannot load state. Error %s", err)
 	}
@@ -145,7 +145,7 @@ func TestEditOwnerTxWithWrongSymbol(t *testing.T) {
 }
 
 func TestEditCOwnerTxWithInsufficientFunds(t *testing.T) {
-	cState, err := state.NewState(0, db.NewMemDB(), nil, 1, 1)
+	cState, err := state.NewState(0, db.NewMemDB(), nil, 1, 1, 0)
 	if err != nil {
 		t.Fatalf("Cannot load state. Error %s", err)
 	}

@@ -14,7 +14,7 @@ import (
 func TestWaitListToGetByAddressAndPubKey(t *testing.T) {
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 
 	wl := NewWaitList(b, mutableTree.GetLastImmutable())
 
@@ -47,7 +47,7 @@ func TestWaitListToGetByAddressAndPubKey(t *testing.T) {
 func TestWaitListToPartialDelete(t *testing.T) {
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 
 	wl := NewWaitList(b, mutableTree.GetLastImmutable())
 
