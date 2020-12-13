@@ -102,15 +102,12 @@ func (appDB *AppDB) GetStartHeight() uint64 {
 	if err != nil {
 		panic(err)
 	}
-	var height uint64
 
 	if result != nil {
-		height = binary.BigEndian.Uint64(result)
+		appDB.startHeight = binary.BigEndian.Uint64(result)
 	}
 
-	appDB.startHeight = height
-
-	return height
+	return appDB.startHeight
 }
 
 // GetValidators returns list of latest validators stored on dist
