@@ -113,8 +113,8 @@ type State struct {
 
 func (s *State) isValue_State() {}
 
-func NewState(height uint64, db db.DB, events eventsdb.IEventsDB, cacheSize int, keepLastStates int64, startHeight uint64) (*State, error) {
-	iavlTree, err := tree.NewMutableTree(height, db, cacheSize, startHeight)
+func NewState(height uint64, db db.DB, events eventsdb.IEventsDB, cacheSize int, keepLastStates int64) (*State, error) {
+	iavlTree, err := tree.NewMutableTree(height, db, cacheSize)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +125,7 @@ func NewState(height uint64, db db.DB, events eventsdb.IEventsDB, cacheSize int,
 	}
 
 	state.tree = iavlTree
-
+	state.height = int64(height)
 	state.Candidates.LoadCandidatesDeliver()
 	state.Candidates.LoadStakes()
 	state.Validators.LoadValidators()

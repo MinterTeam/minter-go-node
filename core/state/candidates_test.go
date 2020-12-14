@@ -583,7 +583,7 @@ func TestRecalculateStakes(t *testing.T) {
 }
 
 func getState() *State {
-	s, err := NewState(0, db.NewMemDB(), emptyEvents{}, 1, 1, 0)
+	s, err := NewState(0, db.NewMemDB(), emptyEvents{}, 1, 1)
 
 	if err != nil {
 		panic(err)
@@ -621,3 +621,4 @@ type emptyEvents struct{}
 func (e emptyEvents) AddEvent(height uint32, event eventsdb.Event) {}
 func (e emptyEvents) LoadEvents(height uint32) eventsdb.Events     { return eventsdb.Events{} }
 func (e emptyEvents) CommitEvents() error                          { return nil }
+func (e emptyEvents) Close() error                                 { return nil }

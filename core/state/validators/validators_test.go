@@ -20,7 +20,7 @@ import (
 )
 
 func TestValidators_GetValidators(t *testing.T) {
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 
 	validators := NewValidators(b, mutableTree.GetLastImmutable())
@@ -46,7 +46,7 @@ func TestValidators_GetValidators(t *testing.T) {
 }
 
 func TestValidators_GetByPublicKey(t *testing.T) {
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 
 	validators := NewValidators(b, mutableTree.GetLastImmutable())
@@ -65,7 +65,7 @@ func TestValidators_GetByPublicKey(t *testing.T) {
 }
 
 func TestValidators_GetByTmAddress(t *testing.T) {
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 
 	validators := NewValidators(b, mutableTree.GetLastImmutable())
@@ -86,7 +86,7 @@ func TestValidators_GetByTmAddress(t *testing.T) {
 }
 
 func TestValidators_PunishByzantineValidator(t *testing.T) {
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 
 	validators := NewValidators(b, mutableTree.GetLastImmutable())
@@ -105,7 +105,7 @@ func TestValidators_PunishByzantineValidator(t *testing.T) {
 }
 
 func TestValidators_LoadValidators(t *testing.T) {
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
 	validators := NewValidators(b, mutableTree.GetLastImmutable())
@@ -152,7 +152,7 @@ func TestValidators_LoadValidators(t *testing.T) {
 }
 
 func TestValidators_SetValidators(t *testing.T) {
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 
 	validators := NewValidators(b, mutableTree.GetLastImmutable())
@@ -181,7 +181,7 @@ func TestValidators_SetValidators(t *testing.T) {
 }
 
 func TestValidators_PayRewards(t *testing.T) {
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 	accs := accounts.NewAccounts(b, mutableTree.GetLastImmutable())
 
@@ -239,7 +239,7 @@ func TestValidators_PayRewards(t *testing.T) {
 }
 
 func TestValidators_SetValidatorAbsent(t *testing.T) {
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 	accs := accounts.NewAccounts(b, mutableTree.GetLastImmutable())
 
@@ -287,7 +287,7 @@ func TestValidators_SetValidatorAbsent(t *testing.T) {
 	}
 }
 func TestValidators_SetValidatorPresent(t *testing.T) {
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 
 	validators := NewValidators(b, mutableTree.GetLastImmutable())
@@ -313,7 +313,7 @@ func TestValidators_SetValidatorPresent(t *testing.T) {
 }
 
 func TestValidators_SetToDrop(t *testing.T) {
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 
 	validators := NewValidators(b, mutableTree.GetLastImmutable())
@@ -335,7 +335,7 @@ func TestValidators_SetToDrop(t *testing.T) {
 }
 
 func TestValidators_Export(t *testing.T) {
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
 	b := bus.NewBus()
 	accs := accounts.NewAccounts(b, mutableTree.GetLastImmutable())
 

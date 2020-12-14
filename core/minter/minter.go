@@ -92,6 +92,10 @@ func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 	}
 
 	height := applicationDB.GetLastHeight()
+	startHeight := applicationDB.GetStartHeight()
+	if height < startHeight {
+		height = startHeight
+	}
 	blockchain = &Blockchain{
 		stateDB:        ldb,
 		appDB:          applicationDB,
@@ -102,7 +106,7 @@ func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 	}
 
 	// Set stateDeliver and stateCheck
-	blockchain.stateDeliver, err = state.NewState(height, blockchain.stateDB, blockchain.eventsDB, cfg.StateCacheSize, cfg.KeepLastStates, applicationDB.GetStartHeight())
+	blockchain.stateDeliver, err = state.NewState(height, blockchain.stateDB, blockchain.eventsDB, cfg.StateCacheSize, cfg.KeepLastStates)
 	if err != nil {
 		panic(err)
 	}
@@ -110,7 +114,7 @@ func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 	blockchain.stateCheck = state.NewCheckState(blockchain.stateDeliver)
 
 	// Set start height for rewards and validators
-	rewards.SetStartHeight(applicationDB.GetStartHeight())
+	rewards.SetStartHeight(height)
 
 	blockchain.haltHeight = uint64(cfg.HaltHeight)
 
@@ -124,6 +128,11 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 		panic(err)
 	}
 
+	if genesisState.StartHeight > app.height {
+		app.appDB.SetStartHeight(genesisState.StartHeight)
+		app.Stop()
+		*app = *NewMinterBlockchain(app.cfg)
+	}
 	if err := app.stateDeliver.Import(genesisState); err != nil {
 		panic(err)
 	}
@@ -466,6 +475,9 @@ func (app *Blockchain) SetOption(_ abciTypes.RequestSetOption) abciTypes.Respons
 func (app *Blockchain) Stop() {
 	app.appDB.Close()
 	if err := app.stateDB.Close(); err != nil {
+		panic(err)
+	}
+	if err := app.eventsDB.Close(); err != nil {
 		panic(err)
 	}
 }
