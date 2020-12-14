@@ -112,7 +112,11 @@ func (data AddSwapPoolData) Run(tx *Transaction, context state.Interface, reward
 		amount0.Add(amount0, commission)
 	}
 	if checkState.Accounts().GetBalance(sender, data.Coin0).Cmp(amount0) == -1 {
-		return Response{Code: code.InsufficientFunds} // todo
+		return Response{
+			Code: code.InsufficientFunds,
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s of coin with ID %s", sender.String(), amount0.String(), data.Coin0),
+			Info: EncodeError(code.NewInsufficientFunds(sender.String(), amount0.String(), "", data.Coin0.String())),
+		}
 	}
 
 	amount1 := new(big.Int).Set(data.MaximumVolume1)
@@ -120,7 +124,11 @@ func (data AddSwapPoolData) Run(tx *Transaction, context state.Interface, reward
 		amount0.Add(amount1, commission)
 	}
 	if checkState.Accounts().GetBalance(sender, data.Coin1).Cmp(amount1) == -1 {
-		return Response{Code: code.InsufficientFunds} // todo
+		return Response{
+			Code: code.InsufficientFunds,
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s of coin with ID %s", sender.String(), amount1.String(), data.Coin1),
+			Info: EncodeError(code.NewInsufficientFunds(sender.String(), amount1.String(), "", data.Coin1.String())),
+		}
 	}
 
 	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
