@@ -792,9 +792,8 @@ func (c *Candidates) calculateBipValue(coinID types.CoinID, amount *big.Int, inc
 // 1. Subs 1% from each stake
 // 2. Calculate and return new total stake
 func (c *Candidates) Punish(height uint64, address types.TmAddress) *big.Int {
-	totalStake := big.NewInt(0)
-
 	candidate := c.GetCandidateByTendermintAddress(address)
+	totalStake := new(big.Int).Set(candidate.totalBipStake)
 	stakes := c.GetStakes(candidate.PubKey)
 	for _, stake := range stakes {
 		newValue := big.NewInt(0).Set(stake.Value)
@@ -812,8 +811,10 @@ func (c *Candidates) Punish(height uint64, address types.TmAddress) *big.Int {
 			c.bus.Coins().SubCoinReserve(coin.ID, ret)
 
 			c.bus.App().AddTotalSlashed(ret)
+			totalStake.Sub(totalStake, ret)
 		} else {
 			c.bus.App().AddTotalSlashed(slashed)
+			totalStake.Sub(totalStake, slashed)
 		}
 		c.bus.Checker().AddCoin(stake.Coin, big.NewInt(0).Neg(slashed))
 
@@ -825,7 +826,6 @@ func (c *Candidates) Punish(height uint64, address types.TmAddress) *big.Int {
 		})
 
 		stake.setValue(newValue)
-		totalStake.Add(totalStake, newValue)
 	}
 
 	return totalStake
