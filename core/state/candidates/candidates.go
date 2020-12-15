@@ -827,7 +827,7 @@ func (c *Candidates) Punish(height uint64, address types.TmAddress) *big.Int {
 
 		stake.setValue(newValue)
 	}
-	candidate.totalBipStake = totalStake
+	candidate.setTotalBipStake(totalStake)
 	return totalStake
 }
 
