@@ -140,7 +140,7 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 	vals := app.updateValidators()
 
 	app.appDB.SetStartHeight(genesisState.StartHeight)
-	app.appDB.SetValidators(vals)
+	app.appDB.FlushValidators()
 
 	rewards.SetStartHeight(genesisState.StartHeight)
 
@@ -342,7 +342,7 @@ func (app *Blockchain) updateValidators() []abciTypes.ValidatorUpdate {
 			power = 1
 		}
 
-		newValidators = append(newValidators, abciTypes.Ed25519ValidatorUpdate(newCandidate.PubKey[:], power))
+		newValidators = append(newValidators, abciTypes.Ed25519ValidatorUpdate(newCandidate.PubKey.Bytes(), power))
 	}
 
 	sort.SliceStable(newValidators, func(i, j int) bool {
@@ -352,22 +352,27 @@ func (app *Blockchain) updateValidators() []abciTypes.ValidatorUpdate {
 	// update validators in state
 	app.stateDeliver.Validators.SetNewValidators(newCandidates)
 
-	activeValidators := app.getCurrentValidators()
+	activeValidators := app.appDB.GetValidators()
 
 	app.appDB.SetValidators(newValidators)
 
 	updates := newValidators
 
 	for _, validator := range activeValidators {
+		persisted := false
 		for _, newValidator := range newValidators {
-			if !bytes.Equal(validator.PubKey.Data, newValidator.PubKey.Data) {
-				continue
+			if bytes.Equal(validator.PubKey.Data, newValidator.PubKey.Data) {
+				persisted = true
+				break
 			}
+		}
+
+		// remove validator
+		if !persisted {
 			updates = append(updates, abciTypes.ValidatorUpdate{
 				PubKey: validator.PubKey,
 				Power:  0,
-			}) // remove validator
-			break
+			})
 		}
 	}
 	return updates
@@ -548,10 +553,6 @@ func (app *Blockchain) resetCheckState() {
 	defer app.lock.Unlock()
 
 	app.stateCheck = state.NewCheckState(app.stateDeliver)
-}
-
-func (app *Blockchain) getCurrentValidators() abciTypes.ValidatorUpdates {
-	return app.appDB.GetValidators()
 }
 
 func (app *Blockchain) updateBlocksTimeDelta(height uint64, count int64) {

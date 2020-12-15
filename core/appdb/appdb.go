@@ -142,6 +142,9 @@ func (appDB *AppDB) SetValidators(vals types.ValidatorUpdates) {
 
 // FlushValidators stores validators list from mem to disk, panics on error
 func (appDB *AppDB) FlushValidators() {
+	if appDB.validators == nil {
+		return
+	}
 	data, err := cdc.MarshalBinaryBare(appDB.validators)
 	if err != nil {
 		panic(err)

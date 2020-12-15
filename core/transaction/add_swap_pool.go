@@ -107,30 +107,32 @@ func (data AddSwapPoolData) Run(tx *Transaction, context state.Interface, reward
 		return *errResp
 	}
 
-	amount0 := new(big.Int).Set(data.Volume0)
-	if tx.GasCoin == data.Coin0 {
-		amount0.Add(amount0, commission)
-	}
-	if checkState.Accounts().GetBalance(sender, data.Coin0).Cmp(amount0) == -1 {
-		return Response{
-			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s of coin with ID %s", sender.String(), amount0.String(), data.Coin0),
-			Info: EncodeError(code.NewInsufficientFunds(sender.String(), amount0.String(), "", data.Coin0.String())),
+	{
+		amount0 := new(big.Int).Set(data.Volume0)
+		if tx.GasCoin == data.Coin0 {
+			amount0.Add(amount0, commission)
+		}
+		if checkState.Accounts().GetBalance(sender, data.Coin0).Cmp(amount0) == -1 {
+			return Response{
+				Code: code.InsufficientFunds,
+				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s of coin with ID %s", sender.String(), amount0.String(), data.Coin0),
+				Info: EncodeError(code.NewInsufficientFunds(sender.String(), amount0.String(), "", data.Coin0.String())),
+			}
 		}
 	}
-
-	amount1 := new(big.Int).Set(data.MaximumVolume1)
-	if tx.GasCoin == data.Coin1 {
-		amount0.Add(amount1, commission)
-	}
-	if checkState.Accounts().GetBalance(sender, data.Coin1).Cmp(amount1) == -1 {
-		return Response{
-			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s of coin with ID %s", sender.String(), amount1.String(), data.Coin1),
-			Info: EncodeError(code.NewInsufficientFunds(sender.String(), amount1.String(), "", data.Coin1.String())),
+	{
+		maximumVolume1 := new(big.Int).Set(data.MaximumVolume1)
+		if tx.GasCoin == data.Coin1 {
+			maximumVolume1.Add(maximumVolume1, commission)
+		}
+		if checkState.Accounts().GetBalance(sender, data.Coin1).Cmp(maximumVolume1) == -1 {
+			return Response{
+				Code: code.InsufficientFunds,
+				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s of coin with ID %s", sender.String(), maximumVolume1.String(), data.Coin1),
+				Info: EncodeError(code.NewInsufficientFunds(sender.String(), maximumVolume1.String(), "", data.Coin1.String())),
+			}
 		}
 	}
-
 	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
 		return Response{
 			Code: code.InsufficientFunds,
@@ -139,6 +141,7 @@ func (data AddSwapPoolData) Run(tx *Transaction, context state.Interface, reward
 		}
 	}
 
+	takenAmount1 := data.MaximumVolume1
 	if deliverState, ok := context.(*state.State); ok {
 		amount0, amount1 := deliverState.Swap.PairMint(sender, data.Coin0, data.Coin1, data.Volume0, data.MaximumVolume1)
 
@@ -155,11 +158,14 @@ func (data AddSwapPoolData) Run(tx *Transaction, context state.Interface, reward
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
+
+		takenAmount1 = amount1
 	}
 
 	tags := kv.Pairs{
 		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeAddSwapPool)}))},
 		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
+		kv.Pair{Key: []byte("tx.volume1"), Value: []byte(takenAmount1.String())},
 	}
 
 	return Response{
