@@ -70,7 +70,7 @@ func makeTestValidatorsAndCandidates(pubkeys []string, stake *big.Int) ([]types.
 			ControlAddress: addr,
 			TotalBipStake:  stake.String(),
 			PubKey:         pkey,
-			Commission:     100,
+			Commission:     10,
 			Stakes: []types.Stake{
 				{
 					Owner:    addr,
@@ -91,7 +91,7 @@ func getTestGenesis(pv *privval.FilePV) func() (*types2.GenesisDoc, error) {
 
 		appHash := [32]byte{}
 
-		validators, candidates := makeTestValidatorsAndCandidates([]string{base64.StdEncoding.EncodeToString(pv.Key.PubKey.Bytes()[5:])}, helpers.BipToPip(big.NewInt(1000)))
+		validators, candidates := makeTestValidatorsAndCandidates([]string{base64.StdEncoding.EncodeToString(pv.Key.PubKey.Bytes()[5:])}, helpers.BipToPip(big.NewInt(12444011)))
 
 		appState := types.AppState{
 			TotalSlashed: "0",
@@ -101,7 +101,7 @@ func getTestGenesis(pv *privval.FilePV) func() (*types2.GenesisDoc, error) {
 					Balance: []types.Balance{
 						{
 							Coin:  uint64(types.GetBaseCoinID()),
-							Value: helpers.BipToPip(big.NewInt(1000000)).String(),
+							Value: helpers.BipToPip(big.NewInt(9223372036854775807)).String(),
 						},
 					},
 				},
@@ -532,7 +532,7 @@ func TestBlockchain_FrozenFunds(t *testing.T) {
 }
 
 func TestBlockchain_RecalculateStakes_andRemoveValidator(t *testing.T) {
-	blockchain, tmCli, pv := initTestNode(t)
+	blockchain, tmCli, _ := initTestNode(t)
 	defer blockchain.Stop()
 
 	txs, err := tmCli.Subscribe(context.Background(), "test-client", "tm.event = 'Tx'")
@@ -623,49 +623,12 @@ func TestBlockchain_RecalculateStakes_andRemoveValidator(t *testing.T) {
 	<-txs
 	nonce++
 	{
-		delegateData := transaction.DelegateData{
-			PubKey: types.BytesToPubkey(pv.Key.PubKey.Bytes()[5:]),
-			Coin:   coinID,
-			Value:  helpers.BipToPip(big.NewInt(9000000)),
-		}
-
-		encodedData, err := rlp.EncodeToBytes(delegateData)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		tx := transaction.Transaction{
-			Nonce:         nonce,
-			GasPrice:      1,
-			ChainID:       types.CurrentChainID,
-			GasCoin:       types.GetBaseCoinID(),
-			Type:          transaction.TypeDelegate,
-			Data:          encodedData,
-			SignatureType: transaction.SigTypeSingle,
-		}
-
-		if err := tx.Sign(getPrivateKey()); err != nil {
-			t.Fatal(err)
-		}
-
-		txBytes, _ := tx.Serialize()
-		res, err := tmCli.BroadcastTxSync(txBytes)
-		if err != nil {
-			t.Fatalf("Failed: %s", err.Error())
-		}
-		if res.Code != 0 {
-			t.Fatalf("CheckTx code is not 0: %d", res.Code)
-		}
-	}
-	<-txs
-	nonce++
-	{
 		data := transaction.DeclareCandidacyData{
 			Address:    types.Address{1},
 			PubKey:     types.Pubkey{1},
 			Commission: 10,
 			Coin:       0,
-			Stake:      big.NewInt(10000),
+			Stake:      helpers.BipToPip(big.NewInt(1000000)),
 		}
 
 		encodedData, err := rlp.EncodeToBytes(data)
@@ -701,8 +664,10 @@ func TestBlockchain_RecalculateStakes_andRemoveValidator(t *testing.T) {
 	<-txs
 	nonce++
 	{
-		data := transaction.SetCandidateOnData{
+		data := transaction.DelegateData{
 			PubKey: types.Pubkey{1},
+			Coin:   coinID,
+			Value:  helpers.BipToPip(big.NewInt(9000000)),
 		}
 
 		encodedData, err := rlp.EncodeToBytes(data)
@@ -715,7 +680,7 @@ func TestBlockchain_RecalculateStakes_andRemoveValidator(t *testing.T) {
 			ChainID:       types.CurrentChainID,
 			GasPrice:      1,
 			GasCoin:       types.GetBaseCoinID(),
-			Type:          transaction.TypeSetCandidateOnline,
+			Type:          transaction.TypeDelegate,
 			Data:          encodedData,
 			SignatureType: transaction.SigTypeSingle,
 		}
@@ -736,6 +701,41 @@ func TestBlockchain_RecalculateStakes_andRemoveValidator(t *testing.T) {
 		}
 	}
 	<-txs
+	nonce++
+	{
+		data := transaction.SetCandidateOnData{
+			PubKey: types.Pubkey{1},
+		}
+
+		encodedData, err := rlp.EncodeToBytes(data)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		tx := transaction.Transaction{
+			Nonce:         nonce,
+			GasPrice:      1,
+			ChainID:       types.CurrentChainID,
+			GasCoin:       types.GetBaseCoinID(),
+			Type:          transaction.TypeSetCandidateOnline,
+			Data:          encodedData,
+			SignatureType: transaction.SigTypeSingle,
+		}
+
+		if err := tx.Sign(getPrivateKey()); err != nil {
+			t.Fatal(err)
+		}
+
+		txBytes, _ := tx.Serialize()
+		res, err := tmCli.BroadcastTxSync(txBytes)
+		if err != nil {
+			t.Fatalf("Failed: %s", err.Error())
+		}
+		if res.Code != 0 {
+			t.Fatalf("CheckTx code is not 0: %d", res.Code)
+		}
+	}
+	<-txs
 
 	err = tmCli.Unsubscribe(context.Background(), "test-client", "tm.event = 'Tx'")
 	if err != nil {
@@ -747,14 +747,26 @@ func TestBlockchain_RecalculateStakes_andRemoveValidator(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	targetHeight := int64(123 + 12) // 12 = ValidatorMaxAbsentTimes
-	for block := range blocks {
-		if block.Data.(types2.EventDataNewBlock).Block.Height <= targetHeight {
-			continue
+	targetHeight := int64(5) + 12 + 123
+	var h int64
+	func() {
+		for {
+			select {
+			case block := <-blocks:
+				h = block.Data.(types2.EventDataNewBlock).Block.Height
+				if h > targetHeight {
+					return
+				}
+			case <-time.After(time.Second * 10):
+				t.Fatal("block empty")
+			}
 		}
-		return
-	}
+	}()
 	blockchain.lock.RLock()
+	events := blockchain.eventsDB.LoadEvents(135)
+	if len(events) == 0 {
+		t.Error("no slashes")
+	}
 	candidate := blockchain.CurrentState().Candidates().GetCandidate(types.Pubkey{1})
 	if candidate == nil {
 		t.Fatal("candidate not found")
