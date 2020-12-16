@@ -21,7 +21,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/tree"
 	"github.com/tendermint/iavl"
 	db "github.com/tendermint/tm-db"
-	"gopkg.in/errgo.v2/fmt/errors"
 	"log"
 	"math/big"
 	"sync"
@@ -212,7 +211,8 @@ func (s *State) Commit() ([]byte, error) {
 
 func (s *State) Import(state types.AppState) error {
 	s.App.SetMaxGas(state.MaxGas)
-	s.App.SetTotalSlashed(helpers.StringToBigInt(state.TotalSlashed))
+	totalSlash := helpers.StringToBigInt(state.TotalSlashed)
+	s.App.SetTotalSlashed(totalSlash)
 	s.App.SetCoinsCount(uint32(len(state.Coins)))
 
 	for _, a := range state.Accounts {
@@ -227,13 +227,20 @@ func (s *State) Import(state types.AppState) error {
 		s.Accounts.SetNonce(a.Address, a.Nonce)
 
 		for _, b := range a.Balance {
-			s.Accounts.SetBalance(a.Address, types.CoinID(b.Coin), helpers.StringToBigInt(b.Value))
+			balance := helpers.StringToBigInt(b.Value)
+			coinID := types.CoinID(b.Coin)
+			s.Accounts.SetBalance(a.Address, coinID, balance)
+			s.Checker.AddCoin(coinID, new(big.Int).Neg(balance))
 		}
 	}
 
 	for _, c := range state.Coins {
-		s.Coins.Create(types.CoinID(c.ID), c.Symbol, c.Name, helpers.StringToBigInt(c.Volume),
-			uint32(c.Crr), helpers.StringToBigInt(c.Reserve), helpers.StringToBigInt(c.MaxSupply), c.OwnerAddress)
+		coinID := types.CoinID(c.ID)
+		volume := helpers.StringToBigInt(c.Volume)
+		reserve := helpers.StringToBigInt(c.Reserve)
+		s.Coins.Create(coinID, c.Symbol, c.Name, volume, uint32(c.Crr), reserve, helpers.StringToBigInt(c.MaxSupply), c.OwnerAddress)
+		s.Checker.AddCoin(types.GetBaseCoinID(), new(big.Int).Neg(reserve))
+		s.Checker.AddCoinVolume(coinID, new(big.Int).Neg(volume))
 	}
 
 	var vals []*validators.Validator
@@ -266,11 +273,10 @@ func (s *State) Import(state types.AppState) error {
 	s.Candidates.RecalculateStakes(state.StartHeight)
 
 	for _, w := range state.Waitlist {
-		value, ok := big.NewInt(0).SetString(w.Value, 10)
-		if !ok {
-			return errors.Newf("Cannot decode %s into big.Int", w.Value)
-		}
-		s.Waitlist.AddWaitList(w.Owner, s.Candidates.PubKey(uint32(w.CandidateID)), types.CoinID(w.Coin), value)
+		value := helpers.StringToBigInt(w.Value)
+		coinID := types.CoinID(w.Coin)
+		s.Waitlist.AddWaitList(w.Owner, s.Candidates.PubKey(uint32(w.CandidateID)), coinID, value)
+		s.Checker.AddCoin(coinID, new(big.Int).Neg(value))
 	}
 
 	for _, hashString := range state.UsedChecks {
@@ -281,7 +287,10 @@ func (s *State) Import(state types.AppState) error {
 	}
 
 	for _, ff := range state.FrozenFunds {
-		s.FrozenFunds.AddFund(ff.Height, ff.Address, *ff.CandidateKey, uint32(ff.CandidateID), types.CoinID(ff.Coin), helpers.StringToBigInt(ff.Value))
+		coinID := types.CoinID(ff.Coin)
+		value := helpers.StringToBigInt(ff.Value)
+		s.FrozenFunds.AddFund(ff.Height, ff.Address, *ff.CandidateKey, uint32(ff.CandidateID), coinID, value)
+		s.Checker.AddCoin(coinID, new(big.Int).Neg(value))
 	}
 
 	s.Swap.Import(&state)
