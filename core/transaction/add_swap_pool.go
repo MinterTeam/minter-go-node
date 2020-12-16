@@ -142,8 +142,9 @@ func (data AddSwapPoolData) Run(tx *Transaction, context state.Interface, reward
 	}
 
 	takenAmount1 := data.MaximumVolume1
+	takenLiquidity := new(big.Int).Sqrt(new(big.Int).Mul(data.MaximumVolume1, data.Volume0))
 	if deliverState, ok := context.(*state.State); ok {
-		amount0, amount1 := deliverState.Swap.PairMint(sender, data.Coin0, data.Coin1, data.Volume0, data.MaximumVolume1)
+		amount0, amount1, liquidity := deliverState.Swap.PairMint(sender, data.Coin0, data.Coin1, data.Volume0, data.MaximumVolume1)
 
 		deliverState.Accounts.SubBalance(sender, data.Coin0, amount0)
 		deliverState.Accounts.SubBalance(sender, data.Coin1, amount1)
@@ -160,12 +161,14 @@ func (data AddSwapPoolData) Run(tx *Transaction, context state.Interface, reward
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 
 		takenAmount1 = amount1
+		takenLiquidity = liquidity
 	}
 
 	tags := kv.Pairs{
 		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeAddSwapPool)}))},
 		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
 		kv.Pair{Key: []byte("tx.volume1"), Value: []byte(takenAmount1.String())},
+		kv.Pair{Key: []byte("tx.liquidity"), Value: []byte(takenLiquidity.String())},
 	}
 
 	return Response{

@@ -304,10 +304,10 @@ func (s *Swap) AmountsOfLiquidity(coin0, coin1 types.CoinID, liquidity *big.Int)
 	return amount0, amount1
 }
 
-func (s *Swap) PairMint(address types.Address, coin0, coin1 types.CoinID, amount0, maxAmount1 *big.Int) (*big.Int, *big.Int) {
+func (s *Swap) PairMint(address types.Address, coin0, coin1 types.CoinID, amount0, maxAmount1 *big.Int) (*big.Int, *big.Int, *big.Int) {
 	pair := s.ReturnPair(coin0, coin1)
 	oldReserve0, oldReserve1 := pair.Reserves()
-	_ = pair.Mint(address, amount0, maxAmount1)
+	liquidity := pair.Mint(address, amount0, maxAmount1)
 	newReserve0, newReserve1 := pair.Reserves()
 
 	balance0 := new(big.Int).Sub(newReserve0, oldReserve0)
@@ -316,7 +316,7 @@ func (s *Swap) PairMint(address types.Address, coin0, coin1 types.CoinID, amount
 	s.bus.Checker().AddCoin(coin0, balance0)
 	s.bus.Checker().AddCoin(coin1, balance1)
 
-	return balance0, balance1
+	return balance0, balance1, liquidity
 }
 
 func (s *Swap) PairBurn(address types.Address, coin0, coin1 types.CoinID, liquidity, minAmount0, minAmount1 *big.Int) (*big.Int, *big.Int) {
