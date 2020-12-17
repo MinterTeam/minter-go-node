@@ -135,10 +135,11 @@ func checkSwap(context *state.CheckState, coinIn types.CoinID, valueIn *big.Int,
 		calculatedAmountToSell, _ := context.Swap().PairCalculateSellForBuy(coinIn, coinOut, valueOut)
 		if calculatedAmountToSell.Cmp(valueIn) == 1 {
 			coin := context.Coins().GetCoin(coinIn)
+
 			return &Response{
-				Code: code.MinimumValueToBuyReached,
+				Code: code.MaximumValueToSellReached,
 				Log: fmt.Sprintf(
-					"You wanted to buy minimum %s, but currently you need to spend %s to complete tx",
+					"You wanted to sell maximum %s, but currently you need to spend %s to complete tx",
 					valueIn.String(), calculatedAmountToSell.String()),
 				Info: EncodeError(code.NewMaximumValueToSellReached(valueIn.String(), calculatedAmountToSell.String(), coin.GetFullSymbol(), coin.ID().String())),
 			}
@@ -149,9 +150,9 @@ func checkSwap(context *state.CheckState, coinIn types.CoinID, valueIn *big.Int,
 		if calculatedAmountToBuy.Cmp(valueOut) == -1 {
 			coin := context.Coins().GetCoin(coinIn)
 			return &Response{
-				Code: code.MaximumValueToSellReached,
+				Code: code.MinimumValueToBuyReached,
 				Log: fmt.Sprintf(
-					"You wanted to sell maximum %s, but currently you need to spend %s to complete tx",
+					"You wanted to buy minimum %s, but currently you need to spend %s to complete tx",
 					valueIn.String(), calculatedAmountToBuy.String()),
 				Info: EncodeError(code.NewMaximumValueToSellReached(valueIn.String(), calculatedAmountToBuy.String(), coin.GetFullSymbol(), coin.ID().String())),
 			}
