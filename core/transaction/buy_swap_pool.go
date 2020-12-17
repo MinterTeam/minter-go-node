@@ -56,7 +56,8 @@ func (data BuySwapPoolData) Run(tx *Transaction, context state.Interface, reward
 		return *errResp
 	}
 
-	amount0 := new(big.Int).Set(data.MaximumValueToSell)
+	calculatedAmountToSell, _ := checkState.Swap().PairCalculateSellForBuy(data.CoinToSell, data.CoinToBuy, data.ValueToBuy)
+	amount0 := new(big.Int).Set(calculatedAmountToSell)
 	if tx.GasCoin == data.CoinToSell {
 		amount0.Add(amount0, commission)
 	}
@@ -64,10 +65,11 @@ func (data BuySwapPoolData) Run(tx *Transaction, context state.Interface, reward
 		return Response{
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), amount0.String(), checkState.Coins().GetCoin(data.CoinToSell).GetFullSymbol()),
+			Info: EncodeError(code.NewInsufficientFunds(sender.String(), amount0.String(), checkState.Coins().GetCoin(data.CoinToSell).GetFullSymbol(), data.CoinToSell.String())),
 		}
 	}
 
-	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
+	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) == -1 {
 		return Response{
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission.String(), gasCoin.GetFullSymbol()),

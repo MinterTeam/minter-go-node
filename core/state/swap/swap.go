@@ -26,7 +26,7 @@ type RSwap interface {
 	CheckBurn(address types.Address, coin0, coin1 types.CoinID, liquidity, minAmount0, minAmount1 *big.Int) error
 	CheckSwap(coin0, coin1 types.CoinID, amount0In, amount1Out *big.Int) error
 	PairCalculateBuyForSell(coin0, coin1 types.CoinID, amount0In *big.Int) (amount1Out *big.Int, err error)
-	PairCalculateSellForBuy(coin0, coin1 types.CoinID, amount1In *big.Int) (amount0Out *big.Int, err error)
+	PairCalculateSellForBuy(coin0, coin1 types.CoinID, amount1Out *big.Int) (amount0In *big.Int, err error)
 	PairCalculateAddLiquidity(coin0, coin1 types.CoinID, amount0 *big.Int) (liquidity, a0, a1 *big.Int, err error)
 	AmountsOfLiquidity(coin0, coin1 types.CoinID, liquidity *big.Int) (amount0, amount1 *big.Int)
 	Export(state *types.AppState)
@@ -270,12 +270,12 @@ func (s *Swap) Pair(coin0, coin1 types.CoinID) *Pair {
 	return pair
 }
 
-func (s *Swap) PairCalculateSellForBuy(coin0, coin1 types.CoinID, amount1In *big.Int) (amount0Out *big.Int, err error) {
+func (s *Swap) PairCalculateSellForBuy(coin0, coin1 types.CoinID, amount1Out *big.Int) (amount0In *big.Int, err error) {
 	pair := s.Pair(coin0, coin1)
 	if pair == nil {
 		return nil, ErrorNotExist
 	}
-	return pair.CalculateSellForBuy(amount1In), nil
+	return pair.CalculateSellForBuy(amount1Out), nil
 }
 
 func (s *Swap) PairCalculateBuyForSell(coin0, coin1 types.CoinID, amount0In *big.Int) (amount1Out *big.Int, err error) {
