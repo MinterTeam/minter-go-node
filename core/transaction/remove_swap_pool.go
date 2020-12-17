@@ -46,18 +46,22 @@ func (data RemoveSwapPoolData) basicCheck(tx *Transaction, context *state.CheckS
 			if balance == nil {
 				balance, amount0, amount1 = big.NewInt(0), big.NewInt(0), big.NewInt(0)
 			}
+			symbol1 := context.Coins().GetCoin(data.Coin1).GetFullSymbol()
+			symbol0 := context.Coins().GetCoin(data.Coin0).GetFullSymbol()
 			return &Response{
 				Code: code.InsufficientLiquidityBalance,
-				Log:  fmt.Sprintf("Insufficient balance for provider: %s liquidity tokens is equal %s of coin %d and %s of coin %d, but you want to get %s, %s of coin %d and %s of coin %d", balance, amount0, data.Coin0, amount1, data.Coin1, data.Liquidity, wantAmount0, data.Coin0, wantAmount1, data.Coin1),
+				Log:  fmt.Sprintf("Insufficient balance for provider: %s liquidity tokens is equal %s %s and %s %s, but you want to get %s liquidity, %s %s and %s %s", balance, amount0, symbol0, amount1, symbol1, data.Liquidity, wantAmount0, symbol0, wantAmount1, symbol1),
 				Info: EncodeError(code.NewInsufficientLiquidityBalance(balance.String(), amount0.String(), data.Coin0.String(), amount1.String(), data.Coin1.String(), data.Liquidity.String(), wantAmount0.String(), wantAmount1.String())),
 			}
 		}
 		if err == swap.ErrorInsufficientLiquidityBurned {
 			wantGetAmount0 := data.MinimumVolume0.String()
 			wantGetAmount1 := data.MinimumVolume1.String()
+			symbol0 := context.Coins().GetCoin(data.Coin0).GetFullSymbol()
+			symbol1 := context.Coins().GetCoin(data.Coin1).GetFullSymbol()
 			return &Response{
 				Code: code.InsufficientLiquidityBurned,
-				Log:  fmt.Sprintf("You wanted to get more %s of coin %d and more %s of coin %d, but currently liquidity %s is equal %s of coin %d and  %s of coin %d", wantGetAmount0, data.Coin0, wantGetAmount1, data.Coin1, data.Liquidity, wantAmount0, data.Coin0, wantAmount1, data.Coin1),
+				Log:  fmt.Sprintf("You wanted to get more %s %s and more %s %s, but currently liquidity %s is equal %s of coin %d and  %s of coin %d", wantGetAmount0, symbol0, wantGetAmount1, symbol1, data.Liquidity, wantAmount0, data.Coin0, wantAmount1, data.Coin1),
 				Info: EncodeError(code.NewInsufficientLiquidityBurned(wantGetAmount0, data.Coin0.String(), wantGetAmount1, data.Coin1.String(), data.Liquidity.String(), wantAmount0.String(), wantAmount1.String())),
 			}
 		}

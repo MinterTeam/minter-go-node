@@ -82,6 +82,7 @@ const (
 	InsufficientLiquidityMinted  uint32 = 704
 	InsufficientLiquidityBurned  uint32 = 705
 	InsufficientLiquidityBalance uint32 = 706
+	InsufficientOutputAmount     uint32 = 707
 )
 
 func NewInsufficientLiquidityBalance(liquidity, amount0, coin0, amount1, coin1, requestedLiquidity, wantA0, wantA1 string) *insufficientLiquidityBalance {
@@ -142,6 +143,18 @@ type insufficientInputAmount struct {
 	Coin1         string `json:"coin1,omitempty"`
 	Amount1       string `json:"amount1,omitempty"`
 	NeededAmount1 string `json:"needed_amount1,omitempty"`
+}
+
+func NewInsufficientOutputAmount(coin0, value0, coin1, value1 string) *insufficientOutputAmount {
+	return &insufficientOutputAmount{Code: strconv.Itoa(int(InsufficientOutputAmount)), Coin0: coin0, Coin1: coin1, Amount0: value0, Amount1: value1}
+}
+
+type insufficientOutputAmount struct {
+	Code    string `json:"code,omitempty"`
+	Coin0   string `json:"coin0,omitempty"`
+	Amount0 string `json:"amount0,omitempty"`
+	Coin1   string `json:"coin1,omitempty"`
+	Amount1 string `json:"amount1,omitempty"`
 }
 
 func NewInsufficientLiquidityMinted(coin0, value0, coin1, value1 string) *insufficientLiquidityMinted {

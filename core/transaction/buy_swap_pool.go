@@ -150,10 +150,19 @@ func checkSwap(context *state.CheckState, coinIn types.CoinID, valueIn *big.Int,
 		}
 		if err == swap.ErrorInsufficientLiquidity {
 			_, reserve0, reserve1 := rSwap.SwapPool(coinIn, coinOut)
+			symbolIn := context.Coins().GetCoin(coinIn).GetFullSymbol()
+			symbolOut := context.Coins().GetCoin(coinOut).GetFullSymbol()
 			return &Response{
 				Code: code.InsufficientLiquidity,
-				Log:  fmt.Sprintf("You wanted to exchange %s pips of coin %d for %s of coin %d, but pool reserve of coin %d equal %s and reserve of coin %d equal %s", coinIn, valueIn, coinOut, valueOut, coinIn, reserve0.String(), coinOut, reserve1.String()),
+				Log:  fmt.Sprintf("You wanted to exchange %s %s for %s %s, but pool reserve %s equal %s and reserve %s equal %s", symbolIn, valueIn, symbolOut, valueOut, symbolIn, reserve0.String(), symbolOut, reserve1.String()),
 				Info: EncodeError(code.NewInsufficientLiquidity(coinIn.String(), valueIn.String(), coinOut.String(), valueOut.String(), reserve0.String(), reserve1.String())),
+			}
+		}
+		if err == swap.ErrorInsufficientOutputAmount {
+			return &Response{
+				Code: code.InsufficientOutputAmount,
+				Log:  fmt.Sprintf("Enter a positive number of coins to exchange"),
+				Info: EncodeError(code.NewInsufficientOutputAmount(coinIn.String(), valueIn.String(), coinOut.String(), valueOut.String())),
 			}
 		}
 		return &Response{
