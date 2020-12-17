@@ -11,23 +11,28 @@ import (
 	"math/big"
 )
 
-type PriceVoteData struct {
-	Price uint32
+type EditCommissionData struct {
+	PubKey     types.Pubkey
+	Commission uint32
 }
 
-func (data PriceVoteData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
-	return nil
+func (data EditCommissionData) GetPubKey() types.Pubkey {
+	return data.PubKey
 }
 
-func (data PriceVoteData) String() string {
-	return fmt.Sprintf("PRICE VOTE price: %d", data.Price)
+func (data EditCommissionData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
+	return checkCandidateOwnership(data, tx, context)
 }
 
-func (data PriceVoteData) Gas() int64 {
-	return commissions.PriceVoteData
+func (data EditCommissionData) String() string {
+	return fmt.Sprintf("EDIT COMMISSION: %s", data.PubKey)
 }
 
-func (data PriceVoteData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
+func (data EditCommissionData) Gas() int64 {
+	return commissions.EditCommissionData
+}
+
+func (data EditCommissionData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -65,11 +70,13 @@ func (data PriceVoteData) Run(tx *Transaction, context state.Interface, rewardPo
 		}
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
+
+		deliverState.Candidates.EditCommission(data.PubKey, data.Commission)
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}
 
 	tags := kv.Pairs{
-		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypePriceVote)}))},
+		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeEditCommission)}))},
 		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
 	}
 

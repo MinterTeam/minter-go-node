@@ -46,6 +46,7 @@ const (
 	TypeSellSwapPool           TxType = 0x17
 	TypeBuySwapPool            TxType = 0x18
 	TypeSellAllSwapPool        TxType = 0x19
+	TypeEditCommission         TxType = 0x20
 
 	SigTypeSingle SigType = 0x01
 	SigTypeMulti  SigType = 0x02

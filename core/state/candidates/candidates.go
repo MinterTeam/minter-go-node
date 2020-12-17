@@ -543,6 +543,12 @@ func (c *Candidates) Edit(pubkey types.Pubkey, rewardAddress types.Address, owne
 	candidate.setControl(controlAddress)
 }
 
+// EditCommission edits a candidate commission
+func (c *Candidates) EditCommission(pubkey types.Pubkey, commission uint32) {
+	candidate := c.getFromMap(pubkey)
+	candidate.setCommission(commission)
+}
+
 // SetOnline sets candidate status to CandidateStatusOnline
 func (c *Candidates) SetOnline(pubkey types.Pubkey) {
 	c.getFromMap(pubkey).setStatus(CandidateStatusOnline)

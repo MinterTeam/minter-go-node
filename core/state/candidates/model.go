@@ -51,6 +51,11 @@ func (candidate *Candidate) setOwner(address types.Address) {
 	candidate.OwnerAddress = address
 }
 
+func (candidate *Candidate) setCommission(commission uint32) {
+	candidate.isDirty = true
+	candidate.Commission = commission
+}
+
 func (candidate *Candidate) setReward(address types.Address) {
 	candidate.isDirty = true
 	candidate.RewardAddress = address
