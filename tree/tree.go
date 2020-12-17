@@ -60,16 +60,15 @@ func NewMutableTree(height uint64, db dbm.DB, cacheSize int) (MTree, error) {
 	if err != nil {
 		return nil, err
 	}
-	if tree.IsEmpty() {
-		tree.SetInitialVersion(height)
-	}
 	m := &mutableTree{
 		tree: tree,
 	}
 	if height == 0 {
 		return m, nil
 	}
-
+	if tree.IsEmpty() {
+		tree.SetInitialVersion(height)
+	}
 	if _, err := m.tree.LoadVersionForOverwriting(int64(height)); err != nil {
 		return nil, err
 	}
