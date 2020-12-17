@@ -77,6 +77,7 @@ func (data BuySwapPoolData) Run(tx *Transaction, context state.Interface, reward
 		}
 	}
 
+	returnValue := data.MaximumValueToSell
 	if deliverState, ok := context.(*state.State); ok {
 		amountIn, amountOut := deliverState.Swap.PairBuy(data.CoinToSell, data.CoinToBuy, data.MaximumValueToSell, data.ValueToBuy)
 		deliverState.Accounts.SubBalance(sender, data.CoinToSell, amountIn)
@@ -92,11 +93,16 @@ func (data BuySwapPoolData) Run(tx *Transaction, context state.Interface, reward
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
+
+		returnValue = amountIn
 	}
 
 	tags := kv.Pairs{
 		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeBuySwapPool)}))},
 		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
+		kv.Pair{Key: []byte("tx.coin_to_buy"), Value: []byte(data.CoinToBuy.String())},
+		kv.Pair{Key: []byte("tx.coin_to_sell"), Value: []byte(data.CoinToSell.String())},
+		kv.Pair{Key: []byte("tx.return"), Value: []byte(returnValue.String())},
 	}
 
 	return Response{

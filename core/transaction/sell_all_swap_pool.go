@@ -81,8 +81,9 @@ func (data SellAllSwapPoolData) Run(tx *Transaction, context state.Interface, re
 		return *errResp
 	}
 
+	amountIn, amountOut := balance, data.MinimumValueToBuy
 	if deliverState, ok := context.(*state.State); ok {
-		amountIn, amountOut := deliverState.Swap.PairSell(data.CoinToSell, data.CoinToBuy, balance, data.MinimumValueToBuy)
+		amountIn, amountOut = deliverState.Swap.PairSell(data.CoinToSell, data.CoinToBuy, balance, data.MinimumValueToBuy)
 		deliverState.Accounts.SubBalance(sender, data.CoinToSell, amountIn)
 		deliverState.Accounts.AddBalance(sender, data.CoinToBuy, amountOut)
 
@@ -101,6 +102,10 @@ func (data SellAllSwapPoolData) Run(tx *Transaction, context state.Interface, re
 	tags := kv.Pairs{
 		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeSellAllSwapPool)}))},
 		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
+		kv.Pair{Key: []byte("tx.coin_to_buy"), Value: []byte(data.CoinToBuy.String())},
+		kv.Pair{Key: []byte("tx.coin_to_sell"), Value: []byte(data.CoinToSell.String())},
+		kv.Pair{Key: []byte("tx.return"), Value: []byte(amountOut.String())},
+		kv.Pair{Key: []byte("tx.sell_amount"), Value: []byte(balance.String())},
 	}
 
 	return Response{
