@@ -110,8 +110,9 @@ func (data RemoveSwapPoolData) Run(tx *Transaction, context state.Interface, rew
 		}
 	}
 
+	amount0, amount1 := data.MinimumVolume0, data.MinimumVolume1
 	if deliverState, ok := context.(*state.State); ok {
-		amount0, amount1 := deliverState.Swap.PairBurn(sender, data.Coin0, data.Coin1, data.Liquidity, data.MinimumVolume0, data.MinimumVolume1)
+		amount0, amount1 = deliverState.Swap.PairBurn(sender, data.Coin0, data.Coin1, data.Liquidity, data.MinimumVolume0, data.MinimumVolume1)
 
 		if isGasCommissionFromPoolSwap {
 			commission, commissionInBaseCoin = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
@@ -131,6 +132,8 @@ func (data RemoveSwapPoolData) Run(tx *Transaction, context state.Interface, rew
 	tags := kv.Pairs{
 		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeRemoveSwapPool)}))},
 		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
+		kv.Pair{Key: []byte("tx.volume0"), Value: []byte(amount0.String())},
+		kv.Pair{Key: []byte("tx.volume1"), Value: []byte(amount1.String())},
 	}
 
 	return Response{
