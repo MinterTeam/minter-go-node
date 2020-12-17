@@ -27,7 +27,7 @@ func (data SellSwapPoolData) basicCheck(tx *Transaction, context *state.CheckSta
 }
 
 func (data SellSwapPoolData) String() string {
-	return fmt.Sprintf("EXCHANGE SWAP POOL: SELL")
+	return fmt.Sprintf("SWAP POOL SELL")
 }
 
 func (data SellSwapPoolData) Gas() int64 {
