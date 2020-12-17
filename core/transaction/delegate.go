@@ -27,14 +27,6 @@ func (data DelegateData) basicCheck(tx *Transaction, context *state.CheckState) 
 		}
 	}
 
-	if !context.Coins().Exists(tx.GasCoin) {
-		return &Response{
-			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin),
-			Info: EncodeError(code.NewCoinNotExists("", tx.GasCoin.String())),
-		}
-	}
-
 	coin := context.Coins().GetCoin(data.Coin)
 	if coin == nil {
 		return &Response{
@@ -63,7 +55,7 @@ func (data DelegateData) basicCheck(tx *Transaction, context *state.CheckState) 
 		value.Add(value, waitList.Value)
 	}
 
-	if value.Cmp(types.Big0) < 1 {
+	if value.Sign() < 1 {
 		return &Response{
 			Code: code.StakeShouldBePositive,
 			Log:  "Stake should be positive",

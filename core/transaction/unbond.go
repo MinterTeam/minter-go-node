@@ -48,8 +48,7 @@ func (data UnbondData) basicCheck(tx *Transaction, context *state.CheckState) *R
 	sender, _ := tx.Sender()
 
 	if waitlist := context.WaitList().Get(sender, data.PubKey, data.Coin); waitlist != nil {
-		value := big.NewInt(0).Sub(data.Value, waitlist.Value)
-		if value.Sign() < 1 {
+		if data.Value.Cmp(waitlist.Value) != 1 {
 			return nil
 		}
 		return &Response{

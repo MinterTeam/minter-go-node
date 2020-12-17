@@ -23,4 +23,5 @@ const (
 	AddSwapPoolData        int64 = 100
 	RemoveSwapPoolData     int64 = 100
 	EditCommissionData     int64 = 10000
+	MoveStakeData                = DelegateTx * 3
 )
