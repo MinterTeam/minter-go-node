@@ -91,10 +91,11 @@ func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 		panic(err)
 	}
 
-	height := applicationDB.GetLastHeight()
-	startHeight := applicationDB.GetStartHeight()
-	if height < startHeight {
-		height = startHeight
+	lastHeight := applicationDB.GetLastHeight()
+	initialHeight := applicationDB.GetStartHeight()
+	height := lastHeight
+	if lastHeight < initialHeight {
+		height = initialHeight
 	}
 	blockchain = &Blockchain{
 		stateDB:        ldb,
@@ -106,7 +107,7 @@ func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 	}
 
 	// Set stateDeliver and stateCheck
-	blockchain.stateDeliver, err = state.NewState(height, blockchain.stateDB, blockchain.eventsDB, cfg.StateCacheSize, cfg.KeepLastStates)
+	blockchain.stateDeliver, err = state.NewState(lastHeight, blockchain.stateDB, blockchain.eventsDB, cfg.StateCacheSize, cfg.KeepLastStates, initialHeight)
 	if err != nil {
 		panic(err)
 	}
@@ -114,7 +115,7 @@ func NewMinterBlockchain(cfg *config.Config) *Blockchain {
 	blockchain.stateCheck = state.NewCheckState(blockchain.stateDeliver)
 
 	// Set start height for rewards and validators
-	rewards.SetStartHeight(height)
+	rewards.SetStartHeight(initialHeight)
 
 	blockchain.haltHeight = uint64(cfg.HaltHeight)
 

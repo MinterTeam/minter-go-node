@@ -55,8 +55,8 @@ func (t *mutableTree) MutableTree() *iavl.MutableTree {
 
 // NewMutableTree creates and returns new MutableTree using given db. Panics on error.
 // If you want to get read-only state, you should use height = 0 and LazyLoadVersion (version), see NewImmutableTree
-func NewMutableTree(height uint64, db dbm.DB, cacheSize int) (MTree, error) {
-	tree, err := iavl.NewMutableTree(db, cacheSize)
+func NewMutableTree(height uint64, db dbm.DB, cacheSize int, initialVersion uint64) (MTree, error) {
+	tree, err := iavl.NewMutableTreeWithOpts(db, cacheSize, &iavl.Options{InitialVersion: initialVersion})
 	if err != nil {
 		return nil, err
 	}
@@ -66,6 +66,7 @@ func NewMutableTree(height uint64, db dbm.DB, cacheSize int) (MTree, error) {
 	if height == 0 {
 		return m, nil
 	}
+
 	if _, err := m.tree.LoadVersionForOverwriting(int64(height)); err != nil {
 		return nil, err
 	}
