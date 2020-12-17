@@ -20,23 +20,12 @@ type SellAllSwapPoolData struct {
 }
 
 func (data SellAllSwapPoolData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
-	if data.CoinToBuy == data.CoinToSell {
-		return &Response{
-			Code: code.CrossConvert,
-			Log:  "\"From\" coin equals to \"to\" coin",
-			Info: EncodeError(code.NewCrossConvert(
-				data.CoinToSell.String(),
-				data.CoinToBuy.String(), "", "")),
-		}
-	}
-
 	if !context.Swap().SwapPoolExist(data.CoinToSell, data.CoinToBuy) {
 		return &Response{
 			Code: code.PairNotExists,
 			Log:  "swap pool not found",
 		}
 	}
-
 	return nil
 }
 

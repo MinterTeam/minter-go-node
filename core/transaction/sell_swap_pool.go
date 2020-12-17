@@ -19,16 +19,6 @@ type SellSwapPoolData struct {
 }
 
 func (data SellSwapPoolData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
-	if data.CoinToBuy == data.CoinToSell {
-		return &Response{
-			Code: code.CrossConvert,
-			Log:  "\"From\" coin equals to \"to\" coin",
-			Info: EncodeError(code.NewCrossConvert(
-				data.CoinToSell.String(),
-				data.CoinToBuy.String(), "", "")),
-		}
-	}
-
 	errResp := checkSwap(context, data.CoinToSell, data.ValueToSell, data.CoinToBuy, data.MinimumValueToBuy, false)
 	if errResp != nil {
 		return errResp

@@ -20,16 +20,6 @@ type BuySwapPoolData struct {
 }
 
 func (data BuySwapPoolData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
-	if data.CoinToBuy == data.CoinToSell {
-		return &Response{
-			Code: code.CrossConvert,
-			Log:  "\"From\" coin equals to \"to\" coin",
-			Info: EncodeError(code.NewCrossConvert(
-				data.CoinToSell.String(),
-				data.CoinToBuy.String(), "", "")),
-		}
-	}
-
 	response := checkSwap(context, data.CoinToSell, data.MaximumValueToSell, data.CoinToBuy, data.ValueToBuy, true)
 	if response != nil {
 		return response
@@ -117,14 +107,50 @@ func (data BuySwapPoolData) Run(tx *Transaction, context state.Interface, reward
 
 func checkSwap(context *state.CheckState, coinIn types.CoinID, valueIn *big.Int, coinOut types.CoinID, valueOut *big.Int, isBuy bool) *Response {
 	rSwap := context.Swap()
-	if err := rSwap.CheckSwap(coinIn, coinOut, valueIn, valueOut); err != nil {
-		if err == swap.ErrorNotExist {
+	if coinIn == coinOut {
+		return &Response{
+			Code: code.CrossConvert,
+			Log:  "\"From\" coin equals to \"to\" coin",
+			Info: EncodeError(code.NewCrossConvert(
+				coinIn.String(), "",
+				coinOut.String(), "")),
+		}
+	}
+	if !context.Swap().SwapPoolExist(coinIn, coinOut) {
+		return &Response{
+			Code: code.PairNotExists,
+			Log:  fmt.Sprintf("swap pair %d %d not exists in pool", coinIn, coinOut),
+			Info: EncodeError(code.NewPairNotExists(coinIn.String(), coinOut.String())),
+		}
+	}
+	if isBuy {
+		calculatedAmountToSell, _ := context.Swap().PairCalculateSellForBuy(coinIn, coinOut, valueOut)
+		if calculatedAmountToSell.Cmp(valueIn) == 1 {
+			coin := context.Coins().GetCoin(coinIn)
 			return &Response{
-				Code: code.PairNotExists,
-				Log:  fmt.Sprintf("swap pair %d %d not exists in pool", coinIn, coinOut),
-				Info: EncodeError(code.NewPairNotExists(coinIn.String(), coinOut.String())),
+				Code: code.MinimumValueToBuyReached,
+				Log: fmt.Sprintf(
+					"You wanted to buy minimum %s, but currently you need to spend %s to complete tx",
+					valueIn.String(), calculatedAmountToSell.String()),
+				Info: EncodeError(code.NewMaximumValueToSellReached(valueIn.String(), calculatedAmountToSell.String(), coin.GetFullSymbol(), coin.ID().String())),
 			}
 		}
+		valueIn = calculatedAmountToSell
+	} else {
+		calculatedAmountToBuy, _ := rSwap.PairCalculateBuyForSell(coinIn, coinOut, valueIn)
+		if calculatedAmountToBuy.Cmp(valueOut) == -1 {
+			coin := context.Coins().GetCoin(coinIn)
+			return &Response{
+				Code: code.MaximumValueToSellReached,
+				Log: fmt.Sprintf(
+					"You wanted to sell maximum %s, but currently you need to spend %s to complete tx",
+					valueIn.String(), calculatedAmountToBuy.String()),
+				Info: EncodeError(code.NewMaximumValueToSellReached(valueIn.String(), calculatedAmountToBuy.String(), coin.GetFullSymbol(), coin.ID().String())),
+			}
+		}
+		valueOut = calculatedAmountToBuy
+	}
+	if err := rSwap.CheckSwap(coinIn, coinOut, valueIn, valueOut); err != nil {
 		if err == swap.ErrorK {
 			if isBuy {
 				value, _ := rSwap.PairCalculateBuyForSell(coinIn, coinOut, valueOut)
