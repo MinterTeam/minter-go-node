@@ -101,8 +101,8 @@ func (s *Service) EstimateCoinSell(ctx context.Context, req *pb.EstimateCoinSell
 		if err != nil {
 			return nil, status.Error(codes.FailedPrecondition, err.Error())
 		}
-		if err = cState.Swap().CheckSwap(coinFrom.ID(), coinTo.ID(), valueToSell, value); err != nil {
-			return nil, status.Error(codes.FailedPrecondition, err.Error())
+		if errResp := transaction.CheckSwap(cState, coinFrom.ID(), valueToSell, coinTo.ID(), value, false); errResp != nil {
+			return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
 		}
 	}
 

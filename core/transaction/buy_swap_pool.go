@@ -20,7 +20,7 @@ type BuySwapPoolData struct {
 }
 
 func (data BuySwapPoolData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
-	response := checkSwap(context, data.CoinToSell, data.MaximumValueToSell, data.CoinToBuy, data.ValueToBuy, true)
+	response := CheckSwap(context, data.CoinToSell, data.MaximumValueToSell, data.CoinToBuy, data.ValueToBuy, true)
 	if response != nil {
 		return response
 	}
@@ -113,7 +113,7 @@ func (data BuySwapPoolData) Run(tx *Transaction, context state.Interface, reward
 	}
 }
 
-func checkSwap(context *state.CheckState, coinIn types.CoinID, valueIn *big.Int, coinOut types.CoinID, valueOut *big.Int, isBuy bool) *Response {
+func CheckSwap(context *state.CheckState, coinIn types.CoinID, valueIn *big.Int, coinOut types.CoinID, valueOut *big.Int, isBuy bool) *Response {
 	rSwap := context.Swap()
 	if coinIn == coinOut {
 		return &Response{
@@ -135,7 +135,6 @@ func checkSwap(context *state.CheckState, coinIn types.CoinID, valueIn *big.Int,
 		calculatedAmountToSell, _ := context.Swap().PairCalculateSellForBuy(coinIn, coinOut, valueOut)
 		if calculatedAmountToSell.Cmp(valueIn) == 1 {
 			coin := context.Coins().GetCoin(coinIn)
-
 			return &Response{
 				Code: code.MaximumValueToSellReached,
 				Log: fmt.Sprintf(
