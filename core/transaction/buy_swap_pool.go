@@ -132,7 +132,23 @@ func CheckSwap(context *state.CheckState, coinIn types.CoinID, valueIn *big.Int,
 		}
 	}
 	if isBuy {
-		calculatedAmountToSell, _ := context.Swap().PairCalculateSellForBuy(coinIn, coinOut, valueOut)
+		calculatedAmountToSell, err := context.Swap().PairCalculateSellForBuy(coinIn, coinOut, valueOut)
+		if err == swap.ErrorInsufficientLiquidity {
+			_, reserve0, reserve1 := rSwap.SwapPool(coinIn, coinOut)
+			symbolIn := context.Coins().GetCoin(coinIn).GetFullSymbol()
+			symbolOut := context.Coins().GetCoin(coinOut).GetFullSymbol()
+			return &Response{
+				Code: code.InsufficientLiquidity,
+				Log:  fmt.Sprintf("You wanted to exchange %s %s for %s %s, but pool reserve %s equal %s and reserve %s equal %s", symbolIn, valueIn, symbolOut, valueOut, symbolIn, reserve0.String(), symbolOut, reserve1.String()),
+				Info: EncodeError(code.NewInsufficientLiquidity(coinIn.String(), valueIn.String(), coinOut.String(), valueOut.String(), reserve0.String(), reserve1.String())),
+			}
+		}
+		if err != nil {
+			return &Response{
+				Code: code.SwapPoolUnknown,
+				Log:  err.Error(),
+			}
+		}
 		if calculatedAmountToSell.Cmp(valueIn) == 1 {
 			coin := context.Coins().GetCoin(coinIn)
 			return &Response{
@@ -145,7 +161,23 @@ func CheckSwap(context *state.CheckState, coinIn types.CoinID, valueIn *big.Int,
 		}
 		valueIn = calculatedAmountToSell
 	} else {
-		calculatedAmountToBuy, _ := rSwap.PairCalculateBuyForSell(coinIn, coinOut, valueIn)
+		calculatedAmountToBuy, err := rSwap.PairCalculateBuyForSell(coinIn, coinOut, valueIn)
+		if err == swap.ErrorInsufficientLiquidity {
+			_, reserve0, reserve1 := rSwap.SwapPool(coinIn, coinOut)
+			symbolIn := context.Coins().GetCoin(coinIn).GetFullSymbol()
+			symbolOut := context.Coins().GetCoin(coinOut).GetFullSymbol()
+			return &Response{
+				Code: code.InsufficientLiquidity,
+				Log:  fmt.Sprintf("You wanted to exchange %s %s for %s %s, but pool reserve %s equal %s and reserve %s equal %s", symbolIn, valueIn, symbolOut, valueOut, symbolIn, reserve0.String(), symbolOut, reserve1.String()),
+				Info: EncodeError(code.NewInsufficientLiquidity(coinIn.String(), valueIn.String(), coinOut.String(), valueOut.String(), reserve0.String(), reserve1.String())),
+			}
+		}
+		if err != nil {
+			return &Response{
+				Code: code.SwapPoolUnknown,
+				Log:  err.Error(),
+			}
+		}
 		if calculatedAmountToBuy.Cmp(valueOut) == -1 {
 			coin := context.Coins().GetCoin(coinIn)
 			return &Response{

@@ -19,7 +19,7 @@ type SellSwapPoolData struct {
 }
 
 func (data SellSwapPoolData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
-	errResp := checkSwap(context, data.CoinToSell, data.ValueToSell, data.CoinToBuy, data.MinimumValueToBuy, false)
+	errResp := CheckSwap(context, data.CoinToSell, data.ValueToSell, data.CoinToBuy, data.MinimumValueToBuy, false)
 	if errResp != nil {
 		return errResp
 	}

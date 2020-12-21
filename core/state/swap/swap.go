@@ -275,7 +275,11 @@ func (s *Swap) PairCalculateSellForBuy(coin0, coin1 types.CoinID, amount1Out *bi
 	if pair == nil {
 		return nil, ErrorNotExist
 	}
-	return pair.CalculateSellForBuy(amount1Out), nil
+	value := pair.CalculateSellForBuy(amount1Out)
+	if value != nil {
+		return nil, ErrorInsufficientLiquidity
+	}
+	return value, nil
 }
 
 func (s *Swap) PairCalculateBuyForSell(coin0, coin1 types.CoinID, amount0In *big.Int) (amount1Out *big.Int, err error) {
@@ -283,7 +287,11 @@ func (s *Swap) PairCalculateBuyForSell(coin0, coin1 types.CoinID, amount0In *big
 	if pair == nil {
 		return nil, ErrorNotExist
 	}
-	return pair.CalculateBuyForSell(amount0In), nil
+	value := pair.CalculateBuyForSell(amount0In)
+	if value != nil {
+		return nil, ErrorInsufficientLiquidity
+	}
+	return value, nil
 }
 
 func (s *Swap) PairCalculateAddLiquidity(coin0, coin1 types.CoinID, amount0 *big.Int) (*big.Int, *big.Int, *big.Int, error) {
@@ -591,6 +599,9 @@ var (
 
 func (p *Pair) CalculateBuyForSell(amount0In *big.Int) (amount1Out *big.Int) {
 	reserve0, reserve1 := p.Reserves()
+	if amount0In.Cmp(reserve0) == 1 {
+		return nil
+	}
 	kAdjusted := new(big.Int).Mul(new(big.Int).Mul(reserve0, reserve1), big.NewInt(1000000))
 	balance0Adjusted := new(big.Int).Sub(new(big.Int).Mul(new(big.Int).Add(amount0In, reserve0), big.NewInt(1000)), new(big.Int).Mul(amount0In, big.NewInt(3)))
 	amount1Out = new(big.Int).Sub(reserve1, new(big.Int).Quo(kAdjusted, new(big.Int).Mul(balance0Adjusted, big.NewInt(1000))))
@@ -599,6 +610,9 @@ func (p *Pair) CalculateBuyForSell(amount0In *big.Int) (amount1Out *big.Int) {
 
 func (p *Pair) CalculateSellForBuy(amount1Out *big.Int) (amount0In *big.Int) {
 	reserve0, reserve1 := p.Reserves()
+	if amount1Out.Cmp(reserve1) == 1 {
+		return nil
+	}
 	kAdjusted := new(big.Int).Mul(new(big.Int).Mul(reserve0, reserve1), big.NewInt(1000000))
 	balance1Adjusted := new(big.Int).Mul(new(big.Int).Add(new(big.Int).Neg(amount1Out), reserve1), big.NewInt(1000))
 	amount0In = new(big.Int).Quo(new(big.Int).Sub(new(big.Int).Quo(kAdjusted, balance1Adjusted), new(big.Int).Mul(reserve0, big.NewInt(1000))), big.NewInt(997))
@@ -636,14 +650,13 @@ func (p *Pair) Swap(amount0In, amount1In, amount0Out, amount1Out *big.Int) (amou
 }
 
 func (p *Pair) checkSwap(amount0In, amount1In, amount0Out, amount1Out *big.Int) (err error) {
-	if amount0Out.Sign() != 1 && amount1Out.Sign() != 1 {
-		return ErrorInsufficientOutputAmount
-	}
-
 	reserve0, reserve1 := p.Reserves()
-
 	if amount0Out.Cmp(reserve0) == 1 || amount1Out.Cmp(reserve1) == 1 {
 		return ErrorInsufficientLiquidity
+	}
+
+	if amount0Out.Sign() != 1 && amount1Out.Sign() != 1 {
+		return ErrorInsufficientOutputAmount
 	}
 
 	amount0 := new(big.Int).Sub(amount0In, amount0Out)

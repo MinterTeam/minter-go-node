@@ -76,7 +76,7 @@ func (data SellAllSwapPoolData) Run(tx *Transaction, context state.Interface, re
 		}
 	}
 
-	errResp = checkSwap(checkState, data.CoinToSell, balance, data.CoinToBuy, data.MinimumValueToBuy, false)
+	errResp = CheckSwap(checkState, data.CoinToSell, balance, data.CoinToBuy, data.MinimumValueToBuy, false)
 	if errResp != nil {
 		return *errResp
 	}
@@ -154,7 +154,7 @@ func commissionFromPool(checkState *state.CheckState, id types.CoinID, commissio
 		}
 	}
 	commission, _ := checkState.Swap().PairCalculateSellForBuy(id, types.GetBaseCoinID(), commissionInBaseCoin)
-	if errResp := checkSwap(checkState, id, commission, types.GetBaseCoinID(), commissionInBaseCoin, true); errResp != nil {
+	if errResp := CheckSwap(checkState, id, commission, types.GetBaseCoinID(), commissionInBaseCoin, true); errResp != nil {
 		return nil, errResp
 	}
 	return commission, nil
