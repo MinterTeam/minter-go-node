@@ -1,6 +1,6 @@
 package upgrades
 
-const UpgradeBlock1 = 1184805
+const UpgradeBlock1 = 1185600
 
 func IsUpgradeBlock(height uint64) bool {
 	upgradeBlocks := []uint64{UpgradeBlock1}
