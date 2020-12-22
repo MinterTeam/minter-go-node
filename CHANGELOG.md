@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2.1
+
+- [core] Add tags old_coin_symbol and old_coin_id to RecreateCoin tx
+- [core] Fix storage leak
+- [core] Update iavl 14.2
+- [core] Increase CommissionMultiplier to 10e16
+- [cli] Add error output instead of panic
+- [api] Add the flag not_show_states for /v2/candidates
+- [api] Add a /v2/test_block for testnet mode
+
 ## 1.2.0
 
 - [core] Added ControlAddress for Candidate

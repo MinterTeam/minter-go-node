@@ -17,14 +17,8 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/state/waitlist"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/helpers"
-	legacyAccounts "github.com/MinterTeam/minter-go-node/legacy/accounts"
-	legacyApp "github.com/MinterTeam/minter-go-node/legacy/app"
-	legacyCandidates "github.com/MinterTeam/minter-go-node/legacy/candidates"
-	legacyCoins "github.com/MinterTeam/minter-go-node/legacy/coins"
-	legacyFrozenfunds "github.com/MinterTeam/minter-go-node/legacy/frozenfunds"
 	"github.com/MinterTeam/minter-go-node/tree"
 	db "github.com/tendermint/tm-db"
-	"gopkg.in/errgo.v2/fmt/errors"
 	"log"
 	"math/big"
 	"sync"
@@ -93,57 +87,6 @@ func (cs *CheckState) WaitList() waitlist.RWaitList {
 }
 func (cs *CheckState) Tree() tree.ReadOnlyTree {
 	return cs.state.Tree()
-}
-
-func (cs *CheckState) Export11To12(height uint64) types.AppState {
-	iavlTree := cs.state.tree
-
-	candidatesState, err := legacyCandidates.NewCandidates(nil, iavlTree)
-	if err != nil {
-		log.Panicf("Create new state at height %d failed: %s", height, err)
-	}
-
-	validatorsState, err := validators.NewValidators(nil, iavlTree)
-	if err != nil {
-		log.Panicf("Create new state at height %d failed: %s", height, err)
-	}
-
-	appState, err := legacyApp.NewApp(nil, iavlTree)
-	if err != nil {
-		log.Panicf("Create new state at height %d failed: %s", height, err)
-	}
-
-	frozenFundsState, err := legacyFrozenfunds.NewFrozenFunds(nil, iavlTree)
-	if err != nil {
-		log.Panicf("Create new state at height %d failed: %s", height, err)
-	}
-
-	accountsState, err := legacyAccounts.NewAccounts(nil, iavlTree)
-	if err != nil {
-		log.Panicf("Create new state at height %d failed: %s", height, err)
-	}
-
-	coinsState, err := legacyCoins.NewCoins(nil, iavlTree)
-	if err != nil {
-		log.Panicf("Create new state at height %d failed: %s", height, err)
-	}
-
-	checksState, err := checks.NewChecks(iavlTree)
-	if err != nil {
-		log.Panicf("Create new state at height %d failed: %s", height, err)
-	}
-
-	state := new(types.AppState)
-	appState.Export(state, height)
-	coinsMap := coinsState.Export(state)
-	validatorsState.Export(state)
-	candidatesMap := candidatesState.Export(state, coinsMap)
-	frozenFundsState.Export(state, height, coinsMap, candidatesMap)
-	accountsState.Export(state, coinsMap)
-	checksState.Export(state)
-	coinsState.Export(state)
-
-	return *state
 }
 
 type State struct {
@@ -280,10 +223,13 @@ func (s *State) Commit() ([]byte, error) {
 		return hash, err
 	}
 
-	if version%countBatchBlocksDelete == 30 && version-countBatchBlocksDelete > s.keepLastStates {
-		if err := s.tree.DeleteVersionsIfExists(version-countBatchBlocksDelete-s.keepLastStates, version-s.keepLastStates); err != nil {
-			return hash, err
-		}
+	versionToDelete := version - s.keepLastStates - 1
+	if versionToDelete < 1 {
+		return hash, nil
+	}
+
+	if err := s.tree.DeleteVersionIfExists(versionToDelete); err != nil {
+		log.Printf("DeleteVersion %d error: %s\n", versionToDelete, err)
 	}
 
 	return hash, nil
@@ -291,7 +237,8 @@ func (s *State) Commit() ([]byte, error) {
 
 func (s *State) Import(state types.AppState) error {
 	s.App.SetMaxGas(state.MaxGas)
-	s.App.SetTotalSlashed(helpers.StringToBigInt(state.TotalSlashed))
+	totalSlash := helpers.StringToBigInt(state.TotalSlashed)
+	s.App.SetTotalSlashed(totalSlash)
 	s.App.SetCoinsCount(uint32(len(state.Coins)))
 
 	for _, a := range state.Accounts {
@@ -306,13 +253,20 @@ func (s *State) Import(state types.AppState) error {
 		s.Accounts.SetNonce(a.Address, a.Nonce)
 
 		for _, b := range a.Balance {
-			s.Accounts.SetBalance(a.Address, types.CoinID(b.Coin), helpers.StringToBigInt(b.Value))
+			balance := helpers.StringToBigInt(b.Value)
+			coinID := types.CoinID(b.Coin)
+			s.Accounts.SetBalance(a.Address, coinID, balance)
+			s.Checker.AddCoin(coinID, new(big.Int).Neg(balance))
 		}
 	}
 
 	for _, c := range state.Coins {
-		s.Coins.Create(types.CoinID(c.ID), c.Symbol, c.Name, helpers.StringToBigInt(c.Volume),
-			uint32(c.Crr), helpers.StringToBigInt(c.Reserve), helpers.StringToBigInt(c.MaxSupply), c.OwnerAddress)
+		coinID := types.CoinID(c.ID)
+		volume := helpers.StringToBigInt(c.Volume)
+		reserve := helpers.StringToBigInt(c.Reserve)
+		s.Coins.Create(coinID, c.Symbol, c.Name, volume, uint32(c.Crr), reserve, helpers.StringToBigInt(c.MaxSupply), c.OwnerAddress)
+		s.Checker.AddCoin(types.GetBaseCoinID(), new(big.Int).Neg(reserve))
+		s.Checker.AddCoinVolume(coinID, new(big.Int).Neg(volume))
 	}
 
 	var vals []*validators.Validator
@@ -345,11 +299,10 @@ func (s *State) Import(state types.AppState) error {
 	s.Candidates.RecalculateStakes(state.StartHeight)
 
 	for _, w := range state.Waitlist {
-		value, ok := big.NewInt(0).SetString(w.Value, 10)
-		if !ok {
-			return errors.Newf("Cannot decode %s into big.Int", w.Value)
-		}
-		s.Waitlist.AddWaitList(w.Owner, s.Candidates.PubKey(uint32(w.CandidateID)), types.CoinID(w.Coin), value)
+		value := helpers.StringToBigInt(w.Value)
+		coinID := types.CoinID(w.Coin)
+		s.Waitlist.AddWaitList(w.Owner, s.Candidates.PubKey(uint32(w.CandidateID)), coinID, value)
+		s.Checker.AddCoin(coinID, new(big.Int).Neg(value))
 	}
 
 	for _, hashString := range state.UsedChecks {
@@ -360,7 +313,10 @@ func (s *State) Import(state types.AppState) error {
 	}
 
 	for _, ff := range state.FrozenFunds {
-		s.FrozenFunds.AddFund(ff.Height, ff.Address, *ff.CandidateKey, uint32(ff.CandidateID), types.CoinID(ff.Coin), helpers.StringToBigInt(ff.Value))
+		coinID := types.CoinID(ff.Coin)
+		value := helpers.StringToBigInt(ff.Value)
+		s.FrozenFunds.AddFund(ff.Height, ff.Address, *ff.CandidateKey, uint32(ff.CandidateID), coinID, value)
+		s.Checker.AddCoin(coinID, new(big.Int).Neg(value))
 	}
 
 	return nil

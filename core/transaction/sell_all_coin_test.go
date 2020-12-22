@@ -288,8 +288,9 @@ func TestSellAllCoinTxWithInsufficientFunds(t *testing.T) {
 
 	checkState(t, cState)
 
+	nextCoinID := cState.App.GetNextCoinID()
 	cState.Coins.Create(
-		cState.App.GetNextCoinID(),
+		nextCoinID,
 		types.StrToCoinSymbol("TEST9"),
 		"TEST COIN",
 		helpers.BipToPip(big.NewInt(100000)),
@@ -299,21 +300,20 @@ func TestSellAllCoinTxWithInsufficientFunds(t *testing.T) {
 		nil,
 	)
 
-	coinToSellID := cState.App.GetNextCoinID()
-	cState.App.SetCoinsCount(coinToSellID.Uint32())
-
+	coinToSellID := nextCoinID
+	cState.App.SetCoinsCount(nextCoinID.Uint32())
+	cState.Accounts.AddBalance(types.Address{}, coinToSellID, big.NewInt(0).Sub(helpers.BipToPip(big.NewInt(100000)), big.NewInt(1)))
 	cState.Accounts.AddBalance(addr, coinToSellID, big.NewInt(1))
 
 	data.CoinToBuy = coinID
 	data.CoinToSell = coinToSellID
 	data.MinimumValueToBuy = big.NewInt(9e18)
 
-	encodedData, err = rlp.EncodeToBytes(data)
+	tx.Data, err = rlp.EncodeToBytes(data)
 	if err != nil {
 		panic(err)
 	}
 
-	tx.Data = encodedData
 	if err := tx.Sign(privateKey); err != nil {
 		t.Fatal(err)
 	}
@@ -393,8 +393,7 @@ func TestSellAllCoinTxToCoinSupplyOverflow(t *testing.T) {
 
 	coinToSellID := cState.App.GetNextCoinID()
 	cState.App.SetCoinsCount(coinToSellID.Uint32())
-
-	cState.Accounts.AddBalance(addr, coinToSellID, helpers.BipToPip(big.NewInt(90)))
+	cState.Accounts.AddBalance(addr, coinToSellID, helpers.BipToPip(big.NewInt(100000)))
 
 	data.CoinToBuy = coinToBuyID
 	data.CoinToSell = coinToSellID
@@ -469,6 +468,7 @@ func TestSellAllCoinTxToMinimumValueToBuyReached(t *testing.T) {
 
 	// coin to buy == base coin
 
+	cState.Accounts.SubBalance(types.Address{}, coinToBuyID, big.NewInt(1))
 	cState.Accounts.AddBalance(addr, coinToBuyID, big.NewInt(1))
 
 	data.CoinToBuy = sellCoinID
@@ -512,6 +512,8 @@ func TestSellAllCoinTxToMinimumValueToBuyReached(t *testing.T) {
 	coinToSellID := cState.App.GetNextCoinID()
 	cState.App.SetCoinsCount(coinToSellID.Uint32())
 
+	cState.Accounts.AddBalance(types.Address{}, coinToSellID, helpers.BipToPip(big.NewInt(100000)))
+	cState.Accounts.SubBalance(types.Address{}, coinToSellID, big.NewInt(1e17))
 	cState.Accounts.AddBalance(addr, coinToSellID, big.NewInt(1e17))
 
 	data.CoinToBuy = coinToBuyID

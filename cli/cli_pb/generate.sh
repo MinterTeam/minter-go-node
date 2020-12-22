@@ -2,4 +2,4 @@
 
 cd "$(dirname "$0")" || exit
 
-protoc --go_out=plugins=grpc:. ./manager.proto
+protoc --go_out=. --go-grpc_out=. ./manager.proto

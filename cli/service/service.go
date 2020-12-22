@@ -6,10 +6,12 @@ import (
 	pb "github.com/MinterTeam/minter-go-node/cli/cli_pb"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/minter"
+	"github.com/MinterTeam/minter-go-node/core/state/candidates"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/version"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/empty"
+	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/evidence"
 	tmNode "github.com/tendermint/tendermint/node"
 	"github.com/tendermint/tendermint/p2p"
@@ -17,28 +19,31 @@ import (
 	typesTM "github.com/tendermint/tendermint/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/wrapperspb"
+	"math/big"
 	"runtime"
 	"time"
 )
 
-type Manager struct {
+type managerServer struct {
 	blockchain *minter.Blockchain
 	tmRPC      *rpc.Local
 	tmNode     *tmNode.Node
 	cfg        *config.Config
+	pb.UnimplementedManagerServiceServer
 }
 
+// NewManager return backend for cli
 func NewManager(blockchain *minter.Blockchain, tmRPC *rpc.Local, tmNode *tmNode.Node, cfg *config.Config) pb.ManagerServiceServer {
-	return &Manager{blockchain: blockchain, tmRPC: tmRPC, tmNode: tmNode, cfg: cfg}
+	return &managerServer{blockchain: blockchain, tmRPC: tmRPC, tmNode: tmNode, cfg: cfg}
 }
 
-func (m *Manager) Dashboard(_ *empty.Empty, stream pb.ManagerService_DashboardServer) error {
+func (m *managerServer) Dashboard(_ *empty.Empty, stream pb.ManagerService_DashboardServer) error {
 	for {
 		select {
 		case <-stream.Context().Done():
 			return stream.Context().Err()
 		case <-time.After(time.Second):
-
 			statisticData := m.blockchain.StatisticData()
 			if statisticData == nil {
 				return status.Error(codes.Unavailable, "Dashboard is not available, please enable prometheus in configuration")
@@ -63,44 +68,41 @@ func (m *Manager) Dashboard(_ *empty.Empty, stream pb.ManagerService_DashboardSe
 			if err != nil {
 				return status.Error(codes.Internal, err.Error())
 			}
-			pubKey := fmt.Sprintf("Mp%x", resultStatus.ValidatorInfo.PubKey.Bytes()[5:])
-
-			state, err := m.blockchain.GetStateForHeight(0)
-			if err != nil {
-				return status.Error(codes.NotFound, err.Error())
-			}
-
-			var address types.TmAddress
-			copy(address[:], resultStatus.ValidatorInfo.Address)
-			validator := state.Validators().GetByTmAddress(address)
-			validatorStatus := m.blockchain.GetValidatorStatus(address)
-
-			var pbValidatorStatus pb.DashboardResponse_ValidatorStatus
-
-			switch true {
-			case validator != nil && validatorStatus == minter.ValidatorAbsent:
-				pbValidatorStatus = pb.DashboardResponse_Validating
-			case validator == nil && validatorStatus == minter.ValidatorAbsent:
-				pbValidatorStatus = pb.DashboardResponse_Challenger
-			case validator == nil && validatorStatus == minter.ValidatorPresent:
-				pbValidatorStatus = pb.DashboardResponse_Offline
-			default:
-				pbValidatorStatus = pb.DashboardResponse_NotDeclared
-			}
 
 			var missedBlocks string
 			var stake string
-			if pbValidatorStatus == pb.DashboardResponse_Validating {
-				missedBlocks = validator.AbsentTimes.String()
-				stake = validator.GetTotalBipStake().String()
+			pubkey := types.BytesToPubkey(resultStatus.ValidatorInfo.PubKey.Bytes()[5:])
+			var pbValidatorStatus pb.DashboardResponse_ValidatorStatus
+			cState := m.blockchain.CurrentState()
+			cState.RLock()
+			candidate := cState.Candidates().GetCandidate(pubkey)
+			if candidate == nil {
+				pbValidatorStatus = pb.DashboardResponse_NotDeclared
+			} else {
+				stake = big.NewInt(0).Div(candidate.GetTotalBipStake(), big.NewInt(1e18)).String() + " BIP"
+				if candidate.Status == candidates.CandidateStatusOffline {
+					pbValidatorStatus = pb.DashboardResponse_Offline
+				} else {
+					pbValidatorStatus = pb.DashboardResponse_Challenger
+					validator := cState.Validators().GetByPublicKey(pubkey)
+					if validator != nil {
+						missedBlocks = validator.AbsentTimes.String()
+						var address types.TmAddress
+						copy(address[:], ed25519.PubKeyEd25519(pubkey).Address().Bytes())
+						if m.blockchain.GetValidatorStatus(address) == minter.ValidatorPresent {
+							pbValidatorStatus = pb.DashboardResponse_Validating
+						}
+					}
+				}
 			}
+			cState.RUnlock()
 
 			if err := stream.Send(&pb.DashboardResponse{
 				LatestHeight:           info.Height,
 				Timestamp:              protoTime,
 				Duration:               info.Duration,
 				MemoryUsage:            mem.Sys,
-				ValidatorPubKey:        pubKey,
+				ValidatorPubKey:        pubkey.String(),
 				MaxPeerHeight:          maxPeersHeight,
 				PeersCount:             int32(netInfo.NPeers),
 				AvgBlockProcessingTime: averageTimeBlock,
@@ -116,7 +118,7 @@ func (m *Manager) Dashboard(_ *empty.Empty, stream pb.ManagerService_DashboardSe
 	}
 }
 
-func (m *Manager) Status(context.Context, *empty.Empty) (*pb.StatusResponse, error) {
+func (m *managerServer) Status(context.Context, *empty.Empty) (*pb.StatusResponse, error) {
 	result, err := m.tmRPC.Status()
 	if err != nil {
 		return new(pb.StatusResponse), status.Error(codes.Internal, err.Error())
@@ -137,7 +139,7 @@ func (m *Manager) Status(context.Context, *empty.Empty) (*pb.StatusResponse, err
 	return response, nil
 }
 
-func (m *Manager) NetInfo(context.Context, *empty.Empty) (*pb.NetInfoResponse, error) {
+func (m *managerServer) NetInfo(context.Context, *empty.Empty) (*pb.NetInfoResponse, error) {
 	resultNetInfo, err := m.tmRPC.NetInfo()
 	if err != nil {
 		return new(pb.NetInfoResponse), status.Error(codes.Internal, err.Error())
@@ -155,9 +157,13 @@ func (m *Manager) NetInfo(context.Context, *empty.Empty) (*pb.NetInfoResponse, e
 				RecentlySent:      channel.RecentlySent,
 			})
 		}
+		var peerHeightValue *wrapperspb.Int64Value
 		peerHeight := peerHeight(m.tmNode.Switch(), peer.NodeInfo.ID())
+		if peerHeight != 0 {
+			peerHeightValue = wrapperspb.Int64(peerHeight)
+		}
 		peers = append(peers, &pb.NetInfoResponse_Peer{
-			LatestBlockHeight: peerHeight,
+			LatestBlockHeight: peerHeightValue,
 			NodeInfo: &pb.NodeInfo{
 				ProtocolVersion: &pb.NodeInfo_ProtocolVersion{
 					P2P:   uint64(peer.NodeInfo.ProtocolVersion.P2P),
@@ -224,55 +230,75 @@ func (m *Manager) NetInfo(context.Context, *empty.Empty) (*pb.NetInfoResponse, e
 	return response, nil
 }
 
-const countBatchBlocksDelete = 250
-
-func (m *Manager) PruneBlocks(req *pb.PruneBlocksRequest, stream pb.ManagerService_PruneBlocksServer) error {
-	current := m.blockchain.Height()
-	if req.ToHeight >= int64(current) {
-		return status.Errorf(codes.FailedPrecondition, "cannot delete latest saved version (%d)", current)
+func (m *managerServer) AvailableVersions(context.Context, *empty.Empty) (*pb.AvailableVersionsResponse, error) {
+	versions := m.blockchain.CurrentState().Tree().AvailableVersions()
+	intervals := map[int]int{}
+	var fromVersion int64
+	for i := 0; i < len(versions); i++ {
+		if versions[i]-versions[fromVersion]-1 != intervals[versions[fromVersion]] {
+			fromVersion = int64(i)
+		}
+		if _, ok := intervals[versions[fromVersion]]; !ok {
+			intervals[versions[fromVersion]] = 0
+			continue
+		}
+		intervals[versions[fromVersion]]++
 	}
+	heights := make([]string, 0, len(intervals))
+	for fromVersion, sortedBatchSize := range intervals {
+		if sortedBatchSize == 0 {
+			heights = append(heights, fmt.Sprintf("%d", fromVersion))
+		} else {
+			heights = append(heights, fmt.Sprintf("%d-%d", fromVersion, fromVersion+sortedBatchSize))
+		}
+	}
+	return &pb.AvailableVersionsResponse{Heights: heights}, nil
+}
 
-	min := req.FromHeight
-	total := req.ToHeight - min
+func (m *managerServer) PruneBlocks(req *pb.PruneBlocksRequest, stream pb.ManagerService_PruneBlocksServer) error {
+	total := req.ToHeight - req.FromHeight
 
-	from := req.FromHeight
 	last := make(chan struct{})
-
-	for i := req.FromHeight; i <= req.ToHeight; i++ {
-		if i == req.ToHeight {
+	from := req.FromHeight
+	for i := req.FromHeight + req.Batch; i < req.ToHeight+req.Batch; i += req.Batch {
+		if i >= req.ToHeight {
 			close(last)
 		}
 		select {
 		case <-stream.Context().Done():
-			return status.Error(codes.Canceled, stream.Context().Err().Error())
+			return status.FromContextError(stream.Context().Err()).Err()
 		case <-last:
-			_ = m.blockchain.DeleteStateVersions(from, i)
+			err := m.blockchain.DeleteStateVersions(from, req.ToHeight)
+			if err != nil {
+				return status.Error(codes.Aborted, err.Error())
+			}
 			if err := stream.Send(&pb.PruneBlocksResponse{
 				Total:   total,
-				Current: i - min,
+				Current: total,
 			}); err != nil {
 				return err
 			}
 			return nil
 		default:
-			if i-from != countBatchBlocksDelete {
-				continue
+			err := m.blockchain.DeleteStateVersions(from, i)
+			if err != nil {
+				return status.Error(codes.Aborted, err.Error())
 			}
-			_ = m.blockchain.DeleteStateVersions(from, i)
 			if err := stream.Send(&pb.PruneBlocksResponse{
 				Total:   total,
-				Current: i - min,
+				Current: i - req.FromHeight,
 			}); err != nil {
 				return err
 			}
 			from = i
+			runtime.Gosched()
 		}
 	}
 
 	return nil
 }
 
-func (m *Manager) DealPeer(_ context.Context, req *pb.DealPeerRequest) (*empty.Empty, error) {
+func (m *managerServer) DealPeer(_ context.Context, req *pb.DealPeerRequest) (*empty.Empty, error) {
 	res := new(empty.Empty)
 	_, err := m.tmRPC.DialPeers([]string{req.Address}, req.Persistent)
 	if err != nil {

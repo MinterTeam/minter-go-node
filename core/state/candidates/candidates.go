@@ -182,9 +182,9 @@ func (c *Candidates) Commit() error {
 			path := []byte{mainPrefix}
 			path = append(path, candidate.idBytes()...)
 			path = append(path, stakesPrefix)
-			path = append(path, []byte(fmt.Sprintf("%d", index))...)
+			path = append(path, []byte(fmt.Sprintf("%d", index))...) // todo big.NewInt(index).Bytes()
 
-			if stake == nil || stake.Value.Cmp(big.NewInt(0)) == 0 {
+			if stake == nil || stake.Value.Sign() == 0 {
 				c.iavl.Remove(path)
 				candidate.stakes[index] = nil
 				continue
@@ -295,11 +295,11 @@ func (c *Candidates) PunishByzantineCandidate(height uint64, tmAddress types.TmA
 			c.bus.Coins().SubCoinReserve(coin.ID, ret)
 
 			c.bus.App().AddTotalSlashed(ret)
-			c.bus.Checker().AddCoin(stake.Coin, big.NewInt(0).Neg(ret))
 		} else {
 			c.bus.App().AddTotalSlashed(slashed)
-			c.bus.Checker().AddCoin(stake.Coin, big.NewInt(0).Neg(slashed))
 		}
+
+		c.bus.Checker().AddCoin(stake.Coin, big.NewInt(0).Neg(slashed))
 
 		c.bus.Events().AddEvent(uint32(height), &eventsdb.SlashEvent{
 			Address:         stake.Owner,
@@ -308,6 +308,7 @@ func (c *Candidates) PunishByzantineCandidate(height uint64, tmAddress types.TmA
 			ValidatorPubKey: candidate.PubKey,
 		})
 
+		c.bus.Checker().AddCoin(stake.Coin, big.NewInt(0).Neg(newValue))
 		c.bus.FrozenFunds().AddFrozenFund(height+UnbondPeriod, stake.Owner, candidate.PubKey, candidate.ID, stake.Coin, newValue)
 		stake.setValue(big.NewInt(0))
 	}
@@ -768,9 +769,9 @@ func (c *Candidates) calculateBipValue(coinID types.CoinID, amount *big.Int, inc
 // 1. Subs 1% from each stake
 // 2. Calculate and return new total stake
 func (c *Candidates) Punish(height uint64, address types.TmAddress) *big.Int {
-	totalStake := big.NewInt(0)
 
 	candidate := c.GetCandidateByTendermintAddress(address)
+	totalStake := new(big.Int).Set(candidate.totalBipStake)
 	stakes := c.GetStakes(candidate.PubKey)
 	for _, stake := range stakes {
 		newValue := big.NewInt(0).Set(stake.Value)
@@ -788,11 +789,13 @@ func (c *Candidates) Punish(height uint64, address types.TmAddress) *big.Int {
 			c.bus.Coins().SubCoinReserve(coin.ID, ret)
 
 			c.bus.App().AddTotalSlashed(ret)
-			c.bus.Checker().AddCoin(stake.Coin, big.NewInt(0).Neg(ret))
+			totalStake.Sub(totalStake, ret)
 		} else {
 			c.bus.App().AddTotalSlashed(slashed)
-			c.bus.Checker().AddCoin(stake.Coin, big.NewInt(0).Neg(slashed))
+			totalStake.Sub(totalStake, slashed)
 		}
+
+		c.bus.Checker().AddCoin(stake.Coin, big.NewInt(0).Neg(slashed))
 
 		c.bus.Events().AddEvent(uint32(height), &eventsdb.SlashEvent{
 			Address:         stake.Owner,
@@ -802,9 +805,8 @@ func (c *Candidates) Punish(height uint64, address types.TmAddress) *big.Int {
 		})
 
 		stake.setValue(newValue)
-		totalStake.Add(totalStake, newValue)
 	}
-
+	candidate.setTotalBipStake(totalStake)
 	return totalStake
 }
 

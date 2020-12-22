@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	subscribeTimeout = 15 * time.Second
+	subscribeTimeout = 5 * time.Second
 )
 
 // Subscribe returns a subscription for events by query.
@@ -43,10 +43,12 @@ func (s *Service) Subscribe(request *pb.SubscribeRequest, stream pb.ApiService_S
 		}
 	}()
 
+	ctxSubscribeConnection, _ := context.WithTimeout(stream.Context(), s.minterCfg.WSConnectionDuration)
+
 	for {
 		select {
-		case <-ctx.Done():
-			return status.FromContextError(ctx.Err()).Err()
+		case <-ctxSubscribeConnection.Done():
+			return status.FromContextError(ctxSubscribeConnection.Err()).Err()
 		case msg, ok := <-sub:
 			if !ok {
 				return nil

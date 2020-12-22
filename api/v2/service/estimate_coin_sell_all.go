@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
@@ -75,34 +74,20 @@ func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinS
 	value := valueToSell
 
 	if !coinToSell.IsBaseCoin() {
-		if coinFrom.Reserve().Cmp(commissionInBaseCoin) < 0 {
-			return nil, s.createError(
-				status.New(codes.InvalidArgument, fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s",
-					coinFrom.Reserve().String(), commissionInBaseCoin.String())),
-				transaction.EncodeError(code.NewCoinReserveNotSufficient(
-					coinFrom.GetFullSymbol(),
-					coinFrom.ID().String(),
-					coinFrom.Reserve().String(),
-					commissionInBaseCoin.String(),
-				)),
-			)
-		}
-
 		value = formula.CalculateSaleReturn(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), valueToSell)
 		if errResp := transaction.CheckReserveUnderflow(coinFrom, value); errResp != nil {
 			return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
 		}
 	}
-
+	value.Sub(value, commissionInBaseCoin)
+	if value.Sign() != 1 {
+		return nil, status.New(codes.FailedPrecondition, "Not enough coins to pay commission").Err()
+	}
 	if !coinToBuy.IsBaseCoin() {
+		value = formula.CalculatePurchaseReturn(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), value)
 		if errResp := transaction.CheckForCoinSupplyOverflow(coinTo, value); errResp != nil {
 			return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
 		}
-		value.Sub(value, valueToSell)
-		if value.Sign() != 1 {
-			return nil, status.New(codes.FailedPrecondition, "Not enough coins to pay commission").Err()
-		}
-		value = formula.CalculatePurchaseReturn(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), value)
 	}
 
 	return &pb.EstimateCoinSellAllResponse{

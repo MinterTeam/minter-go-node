@@ -36,7 +36,7 @@ message NetInfoResponse {
     int64 count_peers = 2;
 
     message Peer {
-        int64 latest_block_height = 5;
+        google.protobuf.Int64Value latest_block_height = 5;
 
         NodeInfo node_info = 4;
 
@@ -90,11 +90,6 @@ message StatusResponse {
     string node_id = 9;
 }
 
-message PruneBlocksRequest {
-    int64 from_height = 1;
-    int64 to_height = 2;
-}
-
 message DealPeerRequest {
     string address = 1;
     bool persistent = 2;
@@ -122,6 +117,15 @@ message DashboardResponse {
     ValidatorStatus validator_status = 13;
 }
 
+message AvailableVersionsResponse {
+    repeated string heights = 1;
+}
+
+message PruneBlocksRequest {
+    int64 from_height = 1;
+    int64 to_height = 2;
+    int64 batch = 3;
+}
 message PruneBlocksResponse {
     int64 total = 1;
     int64 current = 2;
@@ -130,6 +134,7 @@ message PruneBlocksResponse {
 service ManagerService {
     rpc Status (google.protobuf.Empty) returns (StatusResponse);
     rpc NetInfo (google.protobuf.Empty) returns (NetInfoResponse);
+    rpc AvailableVersions (google.protobuf.Empty) returns (AvailableVersionsResponse);
     rpc PruneBlocks (PruneBlocksRequest) returns (stream PruneBlocksResponse);
     rpc DealPeer (DealPeerRequest) returns (google.protobuf.Empty);
     rpc Dashboard (google.protobuf.Empty) returns (stream DashboardResponse);
