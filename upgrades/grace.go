@@ -2,6 +2,7 @@ package upgrades
 
 var gracePeriods = []*gracePeriod{
 	newGracePeriod(1, 120),
+	newGracePeriod(UpgradeBlock1, UpgradeBlock1+120),
 }
 
 func IsGraceBlock(block uint64) bool {

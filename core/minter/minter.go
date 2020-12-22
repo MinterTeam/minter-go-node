@@ -14,6 +14,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/core/validators"
+	"github.com/MinterTeam/minter-go-node/upgrades"
 	"github.com/MinterTeam/minter-go-node/version"
 	"github.com/syndtr/goleveldb/leveldb/filter"
 	"github.com/syndtr/goleveldb/leveldb/opt"
@@ -141,6 +142,9 @@ func (app *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.Respo
 // BeginBlock signals the beginning of a block.
 func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.ResponseBeginBlock {
 	height := uint64(req.Header.Height)
+	if height >= upgrades.UpgradeBlock1 {
+		transaction.CommissionMultiplier = big.NewInt(10e16)
+	}
 
 	app.StatisticData().PushStartBlock(&statistics.StartRequest{Height: int64(height), Now: time.Now(), HeaderTime: req.Header.Time})
 
@@ -173,7 +177,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 	}
 	app.lock.Unlock()
 
-	if app.isApplicationHalted(height) {
+	if app.isApplicationHalted(height) && !upgrades.IsUpgradeBlock(height) {
 		panic(fmt.Sprintf("Application halted at height %d", height))
 	}
 
