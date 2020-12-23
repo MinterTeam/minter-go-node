@@ -20,7 +20,7 @@ type UnbondData struct {
 	Value  *big.Int
 }
 
-func (data UnbondData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data UnbondData) basicCheck(tx *Transaction, context *state.CheckState, block uint64) *Response {
 	if data.Value == nil {
 		return &Response{
 			Code: code.DecodeError,
@@ -48,13 +48,14 @@ func (data UnbondData) basicCheck(tx *Transaction, context *state.CheckState) *R
 	sender, _ := tx.Sender()
 
 	if waitlist := context.WaitList().Get(sender, data.PubKey, data.Coin); waitlist != nil {
-		if data.Value.Cmp(waitlist.Value) != 1 {
+		value := waitlist.GetFree(block)
+		if data.Value.Cmp(value) != 1 {
 			return nil
 		}
 		return &Response{
 			Code: code.InsufficientWaitList,
 			Log:  "Insufficient amount at waitlist for sender account",
-			Info: EncodeError(code.NewInsufficientWaitList(waitlist.Value.String(), data.Value.String())),
+			Info: EncodeError(code.NewInsufficientWaitList(value.String(), data.Value.String())),
 		}
 	}
 
@@ -97,7 +98,7 @@ func (data UnbondData) Run(tx *Transaction, context state.Interface, rewardPool 
 		checkState = state.NewCheckState(context.(*state.State))
 	}
 
-	response := data.basicCheck(tx, checkState)
+	response := data.basicCheck(tx, checkState, currentBlock)
 	if response != nil {
 		return *response
 	}
@@ -134,7 +135,7 @@ func (data UnbondData) Run(tx *Transaction, context state.Interface, rewardPool 
 			diffValue := big.NewInt(0).Sub(data.Value, waitList.Value)
 			deliverState.Waitlist.Delete(sender, data.PubKey, data.Coin)
 			if diffValue.Sign() == -1 {
-				deliverState.Waitlist.AddWaitList(sender, data.PubKey, data.Coin, big.NewInt(0).Neg(diffValue))
+				deliverState.Waitlist.AddWaitList(sender, data.PubKey, data.Coin, big.NewInt(0).Neg(diffValue), 0)
 			}
 		} else {
 			deliverState.Candidates.SubStake(sender, data.PubKey, data.Coin, data.Value)

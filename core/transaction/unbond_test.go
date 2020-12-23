@@ -98,7 +98,7 @@ func TestFullUnbondTxWithWaitlist(t *testing.T) {
 	value := helpers.BipToPip(big.NewInt(1000))
 
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
-	cState.Waitlist.AddWaitList(addr, pubkey, coin, waitlistAmount)
+	cState.Waitlist.AddWaitList(addr, pubkey, coin, waitlistAmount, 0)
 	cState.Candidates.RecalculateStakes(109000)
 
 	data := UnbondData{
@@ -172,7 +172,7 @@ func TestUnbondTxWithWaitlist(t *testing.T) {
 	unbondAmount := helpers.BipToPip(big.NewInt(50))
 
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
-	cState.Waitlist.AddWaitList(addr, pubkey, coin, waitlistAmount)
+	cState.Waitlist.AddWaitList(addr, pubkey, coin, waitlistAmount, 0)
 	cState.Candidates.RecalculateStakes(109000)
 
 	data := UnbondData{
@@ -535,7 +535,7 @@ func TestUnbondTxToInsufficientAmountAtWaitlist(t *testing.T) {
 	coin := types.GetBaseCoinID()
 	value := helpers.BipToPip(big.NewInt(100))
 
-	cState.Waitlist.AddWaitList(addr, pubkey, coin, value)
+	cState.Waitlist.AddWaitList(addr, pubkey, coin, value, 0)
 
 	data := UnbondData{
 		PubKey: pubkey,

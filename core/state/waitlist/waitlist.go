@@ -18,14 +18,15 @@ const mainPrefix = byte('w')
 
 type RWaitList interface {
 	Get(address types.Address, pubkey types.Pubkey, coin types.CoinID) *Item
+	GetFree(address types.Address, pubkey types.Pubkey, coin types.CoinID, height uint64) *big.Int
 	GetByAddress(address types.Address) *Model
-	GetByAddressAndPubKey(address types.Address, pubkey types.Pubkey) []Item
+	GetByAddressAndPubKey(address types.Address, pubkey types.Pubkey) []*Item
 	Export(state *types.AppState)
 }
 
 type WaitList struct {
 	list  map[types.Address]*Model
-	dirty map[types.Address]interface{}
+	dirty map[types.Address]struct{}
 
 	db atomic.Value
 
@@ -43,7 +44,7 @@ func NewWaitList(stateBus *bus.Bus, db *iavl.ImmutableTree) *WaitList {
 		bus:   stateBus,
 		db:    immutableTree,
 		list:  map[types.Address]*Model{},
-		dirty: map[types.Address]interface{}{},
+		dirty: map[types.Address]struct{}{},
 	}
 	waitlist.bus.SetWaitList(NewBus(waitlist))
 
@@ -63,20 +64,17 @@ func (wl *WaitList) SetImmutableTree(immutableTree *iavl.ImmutableTree) {
 }
 
 func (wl *WaitList) Export(state *types.AppState) {
-	wl.immutableTree().Iterate(func(key []byte, value []byte) bool {
-		if key[0] == mainPrefix {
-			address := types.BytesToAddress(key[1:])
-
-			model := wl.GetByAddress(address)
-			if model != nil && len(model.List) != 0 {
-				for _, w := range model.List {
-					state.Waitlist = append(state.Waitlist, types.Waitlist{
-						CandidateID: uint64(w.CandidateId),
-						Owner:       address,
-						Coin:        uint64(w.Coin),
-						Value:       w.Value.String(),
-					})
-				}
+	wl.immutableTree().IterateRange([]byte{mainPrefix}, []byte{mainPrefix + 1}, true, func(key []byte, value []byte) bool {
+		address := types.BytesToAddress(key[1:])
+		model := wl.GetByAddress(address)
+		if model != nil && len(model.List) != 0 {
+			for _, w := range model.List {
+				state.Waitlist = append(state.Waitlist, types.Waitlist{
+					CandidateID: uint64(w.CandidateId),
+					Owner:       address,
+					Coin:        uint64(w.Coin),
+					Value:       w.Value.String(),
+				})
 			}
 		}
 
@@ -116,6 +114,14 @@ func (wl *WaitList) GetByAddress(address types.Address) *Model {
 	return wl.get(address)
 }
 
+func (wl *WaitList) GetFree(address types.Address, pubkey types.Pubkey, coin types.CoinID, height uint64) *big.Int {
+	item := wl.Get(address, pubkey, coin)
+	if item == nil {
+		return nil
+	}
+	return item.GetFree(height)
+}
+
 func (wl *WaitList) Get(address types.Address, pubkey types.Pubkey, coin types.CoinID) *Item {
 	waitlist := wl.get(address)
 	if waitlist == nil {
@@ -129,14 +135,14 @@ func (wl *WaitList) Get(address types.Address, pubkey types.Pubkey, coin types.C
 
 	for _, item := range waitlist.List {
 		if item.CandidateId == candidate.ID && item.Coin == coin {
-			return &item
+			return item
 		}
 	}
 
 	return nil
 }
 
-func (wl *WaitList) GetByAddressAndPubKey(address types.Address, pubkey types.Pubkey) []Item {
+func (wl *WaitList) GetByAddressAndPubKey(address types.Address, pubkey types.Pubkey) []*Item {
 	waitlist := wl.get(address)
 	if waitlist == nil {
 		return nil
@@ -147,7 +153,7 @@ func (wl *WaitList) GetByAddressAndPubKey(address types.Address, pubkey types.Pu
 		return nil
 	}
 
-	var items []Item
+	var items []*Item
 	for _, item := range waitlist.List {
 		if item.CandidateId == candidate.ID {
 			items = append(items, item)
@@ -157,7 +163,7 @@ func (wl *WaitList) GetByAddressAndPubKey(address types.Address, pubkey types.Pu
 	return items
 }
 
-func (wl *WaitList) AddWaitList(address types.Address, pubkey types.Pubkey, coin types.CoinID, value *big.Int) {
+func (wl *WaitList) AddWaitList(address types.Address, pubkey types.Pubkey, coin types.CoinID, value *big.Int, height uint64) {
 	w := wl.getOrNew(address)
 
 	candidate := wl.bus.Candidates().GetCandidate(pubkey)
@@ -165,7 +171,7 @@ func (wl *WaitList) AddWaitList(address types.Address, pubkey types.Pubkey, coin
 		log.Panicf("Candidate not found: %s", pubkey.String())
 	}
 
-	w.AddToList(candidate.ID, coin, value)
+	w.AddToList(candidate.ID, coin, value, height)
 	wl.setToMap(address, w)
 	w.markDirty(address)
 	wl.bus.Checker().AddCoin(coin, value)
@@ -183,7 +189,7 @@ func (wl *WaitList) Delete(address types.Address, pubkey types.Pubkey, coin type
 	}
 
 	value := big.NewInt(0)
-	items := make([]Item, 0, len(w.List)-1)
+	items := make([]*Item, 0, len(w.List)-1)
 	for _, item := range w.List {
 		if item.CandidateId != candidate.ID || item.Coin != coin {
 			items = append(items, item)
@@ -201,7 +207,7 @@ func (wl *WaitList) Delete(address types.Address, pubkey types.Pubkey, coin type
 func (wl *WaitList) getOrNew(address types.Address) *Model {
 	w := wl.get(address)
 	if w == nil {
-		w = &Model{List: make([]Item, 0), address: address, markDirty: wl.markDirty}
+		w = &Model{List: make([]*Item, 0), address: address, markDirty: wl.markDirty}
 		wl.setToMap(address, w)
 	}
 

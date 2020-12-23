@@ -13,6 +13,14 @@ type pubkeyID struct {
 	ID     uint32
 }
 
+type movedStake struct {
+	ToHeight uint64
+	To       types.Pubkey
+	Owner    types.Address
+	Coin     types.CoinID
+	Value    *big.Int
+}
+
 // Candidate represents candidate object which is stored on disk
 type Candidate struct {
 	PubKey         types.Pubkey
@@ -33,6 +41,8 @@ type Candidate struct {
 	isTotalStakeDirty bool
 	isUpdatesDirty    bool
 	dirtyStakes       [MaxDelegatorsPerCandidate]bool
+
+	MovedStakes []*movedStake `rlp:"tail"` // must be on last field
 }
 
 func (candidate *Candidate) idBytes() []byte {
@@ -173,6 +183,12 @@ func (candidate *Candidate) setStakeAtIndex(index int, stake *stake, isDirty boo
 	}
 }
 
+type lockedValue struct {
+	ToHeight uint64
+	Value    *big.Int
+	From     types.Pubkey
+}
+
 type stake struct {
 	Owner    types.Address
 	Coin     types.CoinID
@@ -181,6 +197,8 @@ type stake struct {
 
 	index     int
 	markDirty func(int)
+
+	Locked []*lockedValue `rlp:"tail"` // must be on last field
 }
 
 func (stake *stake) addValue(value *big.Int) {

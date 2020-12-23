@@ -38,7 +38,7 @@ func (s *Service) WaitList(ctx context.Context, req *pb.WaitListRequest) (*pb.Wa
 	}
 
 	response := new(pb.WaitListResponse)
-	var items []waitlist.Item
+	var items []*waitlist.Item
 	publicKey := req.PublicKey
 	if publicKey != "" {
 		if !strings.HasPrefix(publicKey, "Mp") {
