@@ -22,9 +22,9 @@ func (s *Service) Transactions(ctx context.Context, req *pb.TransactionsRequest)
 	result := make([]*pb.TransactionResponse, 0, lenTx)
 	if lenTx != 0 {
 
-		cState := s.blockchain.CurrentState()
-		cState.RLock()
-		defer cState.RUnlock()
+		// cState := s.blockchain.CurrentState()
+		// cState.RLock()
+		// defer cState.RUnlock()
 
 		for _, tx := range rpcResult.Txs {
 
@@ -40,7 +40,7 @@ func (s *Service) Transactions(ctx context.Context, req *pb.TransactionsRequest)
 				tags[string(tag.Key)] = string(tag.Value)
 			}
 
-			data, err := encode(decodedTx.GetDecodedData(), cState.Coins())
+			data, err := encode(decodedTx.GetDecodedData(), nil)
 			if err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
@@ -54,11 +54,11 @@ func (s *Service) Transactions(ctx context.Context, req *pb.TransactionsRequest)
 				Nonce:    decodedTx.Nonce,
 				GasPrice: uint64(decodedTx.GasPrice),
 				GasCoin: &pb.Coin{
-					Id:     uint64(decodedTx.GasCoin),
-					Symbol: cState.Coins().GetCoin(decodedTx.GasCoin).GetFullSymbol(),
+					Id: uint64(decodedTx.GasCoin),
+					// Symbol: cState.Coins().GetCoin(decodedTx.GasCoin).GetFullSymbol(),
 				},
 				Gas:     uint64(decodedTx.Gas()),
-				Type:    uint64(uint8(decodedTx.Type)),
+				Type:    uint64(decodedTx.Type),
 				Data:    data,
 				Payload: decodedTx.Payload,
 				Tags:    tags,

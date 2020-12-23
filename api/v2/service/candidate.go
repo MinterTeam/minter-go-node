@@ -9,8 +9,6 @@ import (
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/wrapperspb"
-	"math/big"
 	"strings"
 )
 
@@ -67,36 +65,36 @@ func makeResponseCandidate(state *state.CheckState, c *candidates.Candidate, inc
 	}
 
 	if includeStakes {
-		addresses := map[types.Address]struct{}{}
-		minStake := big.NewInt(0)
+		// addresses := map[types.Address]struct{}{}
+		// minStake := big.NewInt(0)
 		stakes := state.Candidates().GetStakes(c.PubKey)
 		usedSlots := len(stakes)
 		if !NotShowStakes {
 			candidate.Stakes = make([]*pb.CandidateResponse_Stake, 0, usedSlots)
 		}
-		for i, stake := range stakes {
+		for _, stake := range stakes {
 			if !NotShowStakes {
 				candidate.Stakes = append(candidate.Stakes, &pb.CandidateResponse_Stake{
 					Owner: stake.Owner.String(),
 					Coin: &pb.Coin{
-						Id:     uint64(stake.Coin),
-						Symbol: state.Coins().GetCoin(stake.Coin).GetFullSymbol(),
+						Id: uint64(stake.Coin),
+						// Symbol: state.Coins().GetCoin(stake.Coin).GetFullSymbol(),
 					},
 					Value:    stake.Value.String(),
 					BipValue: stake.BipValue.String(),
 				})
 			}
-			addresses[stake.Owner] = struct{}{}
-			if usedSlots >= candidates.MaxDelegatorsPerCandidate {
-				if i != 0 && minStake.Cmp(stake.BipValue) != 1 {
-					continue
-				}
-				minStake = stake.BipValue
-			}
+			// addresses[stake.Owner] = struct{}{}
+			// if usedSlots >= candidates.MaxDelegatorsPerCandidate {
+			// 	if i != 0 && minStake.Cmp(stake.BipValue) != 1 {
+			// 		continue
+			// 	}
+			// 	minStake = stake.BipValue
+			// }
 		}
-		candidate.UsedSlots = wrapperspb.UInt64(uint64(usedSlots))
-		candidate.UniqUsers = wrapperspb.UInt64(uint64(len(addresses)))
-		candidate.MinStake = wrapperspb.String(minStake.String())
+		// candidate.UsedSlots = wrapperspb.UInt64(uint64(usedSlots))
+		// candidate.UniqUsers = wrapperspb.UInt64(uint64(len(addresses)))
+		// candidate.MinStake = wrapperspb.String(minStake.String())
 	}
 
 	return candidate

@@ -34,16 +34,15 @@ func (s *Service) Transaction(ctx context.Context, req *pb.TransactionRequest) (
 		tags[string(tag.Key)] = string(tag.Value)
 	}
 
-	cState := s.blockchain.CurrentState()
-
-	cState.RLock()
-	defer cState.RUnlock()
+	// cState := s.blockchain.CurrentState()
+	// cState.RLock()
+	// defer cState.RUnlock()
 
 	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
 		return nil, timeoutStatus.Err()
 	}
 
-	dataStruct, err := encode(decodedTx.GetDecodedData(), cState.Coins())
+	dataStruct, err := encode(decodedTx.GetDecodedData(), nil)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -57,8 +56,8 @@ func (s *Service) Transaction(ctx context.Context, req *pb.TransactionRequest) (
 		Nonce:    decodedTx.Nonce,
 		GasPrice: uint64(decodedTx.GasPrice),
 		GasCoin: &pb.Coin{
-			Id:     uint64(decodedTx.GasCoin),
-			Symbol: cState.Coins().GetCoin(decodedTx.GasCoin).GetFullSymbol(),
+			Id: uint64(decodedTx.GasCoin),
+			// Symbol: cState.Coins().GetCoin(decodedTx.GasCoin).GetFullSymbol(),
 		},
 		Gas:     uint64(decodedTx.Gas()),
 		Type:    uint64(decodedTx.Type),
