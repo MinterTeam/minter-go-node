@@ -33,7 +33,7 @@ type Candidate struct {
 	Commission               uint32
 	Status                   byte
 	ID                       uint32
-	LastEditCommissionHeight uint64 `rlp:"tail"` // todo
+	LastEditCommissionHeight uint64
 }
 
 func (candidate *Candidate) idBytes() []byte {
