@@ -163,7 +163,7 @@ func (wl *WaitList) GetByAddressAndPubKey(address types.Address, pubkey types.Pu
 	return items
 }
 
-func (wl *WaitList) AddWaitList(address types.Address, pubkey types.Pubkey, coin types.CoinID, value *big.Int, lock *lockedValue) {
+func (wl *WaitList) AddWaitList(address types.Address, pubkey types.Pubkey, coin types.CoinID, value *big.Int, height uint64) {
 	w := wl.getOrNew(address)
 
 	candidate := wl.bus.Candidates().GetCandidate(pubkey)
@@ -171,7 +171,7 @@ func (wl *WaitList) AddWaitList(address types.Address, pubkey types.Pubkey, coin
 		log.Panicf("Candidate not found: %s", pubkey.String())
 	}
 
-	w.AddToList(candidate.ID, coin, value, lock)
+	w.AddToList(candidate.ID, coin, value, height)
 	wl.setToMap(address, w)
 	w.markDirty(address)
 	wl.bus.Checker().AddCoin(coin, value)

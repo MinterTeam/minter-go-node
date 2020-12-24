@@ -183,42 +183,10 @@ func (candidate *Candidate) setStakeAtIndex(index int, stake *stake, isDirty boo
 	}
 }
 
-func (candidate *Candidate) punishStake(owner types.Address, coin types.CoinID, key uint32, height uint64) bool {
-	for i, stake := range candidate.stakes {
-		if stake.Owner != owner || stake.Coin != coin {
-			continue
-		}
-
-		var locked []*lockedValue
-		for _, value := range stake.Locked {
-			if value.From != key || value.ToHeight != height {
-				locked = append(locked, value)
-				continue
-			}
-
-			stake.Value.Sub(stake.Value, value.Value)
-			stake.markDirty(i)
-		}
-		stake.Locked = locked
-		return true
-	}
-	return false
-}
-
 type lockedValue struct {
 	ToHeight uint64
 	Value    *big.Int
-	From     uint32
-}
-
-func (l *lockedValue) GetToHeight() uint64 {
-	return l.ToHeight
-}
-func (l *lockedValue) GetValue() *big.Int {
-	return big.NewInt(0).Set(l.Value)
-}
-func (l *lockedValue) GetFrom() uint32 {
-	return l.From
+	From     types.Pubkey
 }
 
 type stake struct {

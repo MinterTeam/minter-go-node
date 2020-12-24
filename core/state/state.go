@@ -275,11 +275,7 @@ func (s *State) Import(state types.AppState) error {
 	for _, w := range state.Waitlist {
 		value := helpers.StringToBigInt(w.Value)
 		coinID := types.CoinID(w.Coin)
-		for _, lockedValue := range w.Locked {
-			value.Sub(value, lockedValue.GetValue())
-			s.bus.WaitList().AddToWaitList(w.Owner, s.Candidates.PubKey(uint32(w.CandidateID)), coinID, lockedValue.GetValue(), lockedValue)
-		}
-		s.bus.WaitList().AddToWaitList(w.Owner, s.Candidates.PubKey(uint32(w.CandidateID)), coinID, value, nil)
+		s.Waitlist.AddWaitList(w.Owner, s.Candidates.PubKey(uint32(w.CandidateID)), coinID, value, 0)
 		s.Checker.AddCoin(coinID, new(big.Int).Neg(value))
 	}
 
