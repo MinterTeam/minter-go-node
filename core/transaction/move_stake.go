@@ -17,7 +17,7 @@ type MoveStakeData struct {
 	Value    *big.Int
 }
 
-func (data MoveStakeData) basicCheck(tx *Transaction, context *state.CheckState, height uint64) *Response {
+func (data MoveStakeData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if !context.Coins().Exists(data.Coin) {
 		return &Response{
 			Code: code.CoinNotExists,
@@ -43,16 +43,17 @@ func (data MoveStakeData) basicCheck(tx *Transaction, context *state.CheckState,
 
 	sender, _ := tx.Sender()
 
-	if waitlistValue := context.WaitList().GetFree(sender, data.From, data.Coin, height); waitlistValue != nil {
-		if data.Value.Cmp(waitlistValue) == 1 {
+	if waitlist := context.WaitList().Get(sender, data.From, data.Coin); waitlist != nil {
+		if data.Value.Cmp(waitlist.Value) == 1 {
 			return &Response{
 				Code: code.InsufficientWaitList,
 				Log:  "Insufficient amount at waitlist for sender account",
-				Info: EncodeError(code.NewInsufficientWaitList(waitlistValue.String(), data.Value.String())),
+				Info: EncodeError(code.NewInsufficientWaitList(waitlist.Value.String(), data.Value.String())),
 			}
 		}
 	} else {
 		stake := context.Candidates().GetStakeValueOfAddress(data.From, sender, data.Coin)
+
 		if stake == nil {
 			return &Response{
 				Code: code.StakeNotFound,
@@ -60,6 +61,7 @@ func (data MoveStakeData) basicCheck(tx *Transaction, context *state.CheckState,
 				Info: EncodeError(code.NewStakeNotFound(data.From.String(), sender.String(), data.Coin.String(), context.Coins().GetCoin(data.Coin).GetFullSymbol())),
 			}
 		}
+
 		if stake.Cmp(data.Value) == -1 {
 			return &Response{
 				Code: code.InsufficientStake,
@@ -103,7 +105,7 @@ func (data MoveStakeData) Run(tx *Transaction, context state.Interface, rewardPo
 		checkState = state.NewCheckState(context.(*state.State))
 	}
 
-	response := data.basicCheck(tx, checkState, currentBlock)
+	response := data.basicCheck(tx, checkState)
 	if response != nil {
 		return *response
 	}
@@ -133,7 +135,7 @@ func (data MoveStakeData) Run(tx *Transaction, context state.Interface, rewardPo
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		deliverState.Candidates.MoveStake(data.From, data.To, sender, data.Coin, data.Value, currentBlock, unbondPeriod)
+		// todo: logic
 
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}

@@ -113,8 +113,8 @@ func TestStateExport(t *testing.T) {
 	wlAddr1 := types.StringToAddress("1")
 	wlAddr2 := types.StringToAddress("2")
 
-	state.Waitlist.AddWaitList(wlAddr1, candidatePubKey1, coinTestID, big.NewInt(1e18), 0)
-	state.Waitlist.AddWaitList(wlAddr2, candidatePubKey2, coinTest2ID, big.NewInt(2e18), 0)
+	state.Waitlist.AddWaitList(wlAddr1, candidatePubKey1, coinTestID, big.NewInt(1e18))
+	state.Waitlist.AddWaitList(wlAddr2, candidatePubKey2, coinTest2ID, big.NewInt(2e18))
 
 	_, err = state.Commit()
 	if err != nil {
