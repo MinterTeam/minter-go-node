@@ -8,7 +8,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/tendermint/iavl"
-	"log"
 	"math/big"
 	"sort"
 	"strconv"
@@ -276,7 +275,7 @@ func (s *Swap) PairCalculateSellForBuy(coin0, coin1 types.CoinID, amount1Out *bi
 		return nil, ErrorNotExist
 	}
 	value := pair.CalculateSellForBuy(amount1Out)
-	if value != nil {
+	if value == nil {
 		return nil, ErrorInsufficientLiquidity
 	}
 	return value, nil
@@ -288,7 +287,7 @@ func (s *Swap) PairCalculateBuyForSell(coin0, coin1 types.CoinID, amount0In *big
 		return nil, ErrorNotExist
 	}
 	value := pair.CalculateBuyForSell(amount0In)
-	if value != nil {
+	if value == nil {
 		return nil, ErrorInsufficientLiquidity
 	}
 	return value, nil
@@ -360,7 +359,6 @@ func (s *Swap) PairBuy(coin0, coin1 types.CoinID, maxAmount0In, amount1Out *big.
 	if calculatedAmount0In.Cmp(maxAmount0In) == 1 {
 		panic(fmt.Sprintf("calculatedAmount0In %s more maxAmount0In %s", calculatedAmount0In, maxAmount0In))
 	}
-	log.Println(amount1Out)
 	balance0, balance1 := pair.Swap(calculatedAmount0In, big.NewInt(0), big.NewInt(0), amount1Out)
 	s.bus.Checker().AddCoin(coin0, balance0)
 	s.bus.Checker().AddCoin(coin1, balance1)

@@ -24,6 +24,7 @@ const (
 	CoinReserveUnderflow         uint32 = 116
 	WrongHaltHeight              uint32 = 117
 	HaltAlreadyExists            uint32 = 118
+	CommissionCoinNotSufficient  uint32 = 119
 
 	// coin creation
 	CoinHasNotReserve uint32 = 200
@@ -179,6 +180,16 @@ type pairNotExists struct {
 
 func NewPairNotExists(coin0 string, coin1 string) *pairNotExists {
 	return &pairNotExists{Code: strconv.Itoa(int(PairNotExists)), Coin0: coin0, Coin1: coin1}
+}
+
+type commissionCoinNotSufficient struct {
+	Code    string `json:"code,omitempty"`
+	Pool    string `json:"pool,omitempty"`
+	Reserve string `json:"reserve,omitempty"`
+}
+
+func NewCommissionCoinNotSufficient(reserve string, pool string) *commissionCoinNotSufficient {
+	return &commissionCoinNotSufficient{Code: strconv.Itoa(int(CommissionCoinNotSufficient)), Pool: pool, Reserve: reserve}
 }
 
 type wrongNonce struct {

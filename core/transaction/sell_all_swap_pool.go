@@ -125,9 +125,9 @@ func CalculateCommission(checkState *state.CheckState, gasCoin *coins.Model, com
 
 	if responseFromPool != nil && responseFromReserve != nil {
 		return nil, false, &Response{
-			Code: code.CoinReserveNotSufficient,
-			Log:  fmt.Sprintf("not possible to pay commission in coin %s %d", gasCoin.GetFullSymbol(), gasCoin.ID()),
-			Info: EncodeError(map[string]string{"reserve": responseFromReserve.Log, "pool": responseFromPool.Log}),
+			Code: code.CommissionCoinNotSufficient,
+			Log:  fmt.Sprintf("Not possible to pay commission in coin %s", gasCoin.GetFullSymbol()),
+			Info: EncodeError(code.NewCommissionCoinNotSufficient(responseFromPool.Log, responseFromReserve.Log)),
 		}
 	}
 
@@ -149,7 +149,7 @@ func commissionFromPool(checkState *state.CheckState, id types.CoinID, commissio
 	if !checkState.Swap().SwapPoolExist(id, types.GetBaseCoinID()) {
 		return nil, &Response{
 			Code: code.PairNotExists,
-			Log:  fmt.Sprintf("swap pair %d %d not exists in pool", id, types.GetBaseCoinID()),
+			Log:  fmt.Sprintf("swap pair beetwen coins %s and %s not exists in pool", checkState.Coins().GetCoin(id).GetFullSymbol(), types.GetBaseCoin()),
 			Info: EncodeError(code.NewPairNotExists(id.String(), types.GetBaseCoinID().String())),
 		}
 	}

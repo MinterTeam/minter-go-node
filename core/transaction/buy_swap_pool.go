@@ -127,7 +127,7 @@ func CheckSwap(context *state.CheckState, coinIn types.CoinID, valueIn *big.Int,
 	if !context.Swap().SwapPoolExist(coinIn, coinOut) {
 		return &Response{
 			Code: code.PairNotExists,
-			Log:  fmt.Sprintf("swap pair %d %d not exists in pool", coinIn, coinOut),
+			Log:  fmt.Sprint("swap pair not exists in pool"),
 			Info: EncodeError(code.NewPairNotExists(coinIn.String(), coinOut.String())),
 		}
 	}
@@ -139,7 +139,7 @@ func CheckSwap(context *state.CheckState, coinIn types.CoinID, valueIn *big.Int,
 			symbolOut := context.Coins().GetCoin(coinOut).GetFullSymbol()
 			return &Response{
 				Code: code.InsufficientLiquidity,
-				Log:  fmt.Sprintf("You wanted to exchange %s %s for %s %s, but pool reserve %s equal %s and reserve %s equal %s", symbolIn, valueIn, symbolOut, valueOut, symbolIn, reserve0.String(), symbolOut, reserve1.String()),
+				Log:  fmt.Sprintf("You wanted to exchange %s %s for %s %s, but swap pool has reserves %s %s and %s %s", valueIn, symbolIn, valueOut, symbolOut, reserve0.String(), symbolIn, reserve1.String(), symbolOut),
 				Info: EncodeError(code.NewInsufficientLiquidity(coinIn.String(), valueIn.String(), coinOut.String(), valueOut.String(), reserve0.String(), reserve1.String())),
 			}
 		}
@@ -168,7 +168,7 @@ func CheckSwap(context *state.CheckState, coinIn types.CoinID, valueIn *big.Int,
 			symbolOut := context.Coins().GetCoin(coinOut).GetFullSymbol()
 			return &Response{
 				Code: code.InsufficientLiquidity,
-				Log:  fmt.Sprintf("You wanted to exchange %s %s for %s %s, but pool reserve %s equal %s and reserve %s equal %s", symbolIn, valueIn, symbolOut, valueOut, symbolIn, reserve0.String(), symbolOut, reserve1.String()),
+				Log:  fmt.Sprintf("You wanted to exchange %s %s for %s %s, but swap pool has reserves %s %s and %s %s", valueIn, symbolIn, valueOut, symbolOut, reserve0.String(), symbolIn, reserve1.String(), symbolOut),
 				Info: EncodeError(code.NewInsufficientLiquidity(coinIn.String(), valueIn.String(), coinOut.String(), valueOut.String(), reserve0.String(), reserve1.String())),
 			}
 		}
@@ -220,7 +220,7 @@ func CheckSwap(context *state.CheckState, coinIn types.CoinID, valueIn *big.Int,
 			symbolOut := context.Coins().GetCoin(coinOut).GetFullSymbol()
 			return &Response{
 				Code: code.InsufficientLiquidity,
-				Log:  fmt.Sprintf("You wanted to exchange %s %s for %s %s, but pool reserve %s equal %s and reserve %s equal %s", symbolIn, valueIn, symbolOut, valueOut, symbolIn, reserve0.String(), symbolOut, reserve1.String()),
+				Log:  fmt.Sprintf("You wanted to exchange %s %s for %s %s, but pool reserve %s equal %s and reserve %s equal %s", valueIn, symbolIn, valueOut, symbolOut, reserve0.String(), symbolIn, reserve1.String(), symbolOut),
 				Info: EncodeError(code.NewInsufficientLiquidity(coinIn.String(), valueIn.String(), coinOut.String(), valueOut.String(), reserve0.String(), reserve1.String())),
 			}
 		}
