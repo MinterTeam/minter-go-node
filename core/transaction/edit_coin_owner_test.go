@@ -260,5 +260,5 @@ func makeTestEditOwnerTx(data EditCoinOwnerData, privateKey *ecdsa.PrivateKey) (
 
 func createDefaultValidator(cState *state.State) {
 	cState.Validators.Create(types.Pubkey{0}, big.NewInt(0))
-	cState.Candidates.Create(types.Address{0}, types.Address{0}, types.Address{0}, types.Pubkey{0}, 0)
+	cState.Candidates.Create(types.Address{0}, types.Address{0}, types.Address{0}, types.Pubkey{0}, 0, 0)
 }

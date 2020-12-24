@@ -22,7 +22,7 @@ func TestWaitListToGetByAddressAndPubKey(t *testing.T) {
 
 	addr, pubkey, coin, val := types.Address{0}, types.Pubkey{0}, types.GetBaseCoinID(), big.NewInt(1e18)
 
-	candidatesState.Create(addr, addr, addr, pubkey, 10)
+	candidatesState.Create(addr, addr, addr, pubkey, 10, 0)
 
 	wl.AddWaitList(addr, pubkey, coin, val)
 	_, _, err := mutableTree.Commit(wl)
@@ -54,7 +54,7 @@ func TestWaitListToPartialDelete(t *testing.T) {
 	candidatesState := candidates.NewCandidates(b, mutableTree.GetLastImmutable())
 
 	addr, pubkey, coin, val := types.Address{0}, types.Pubkey{0}, types.GetBaseCoinID(), big.NewInt(1e18)
-	candidatesState.Create(addr, addr, addr, pubkey, 10)
+	candidatesState.Create(addr, addr, addr, pubkey, 10, 0)
 
 	wl.AddWaitList(addr, pubkey, coin, val)
 	wl.AddWaitList(addr, pubkey, 1, val)

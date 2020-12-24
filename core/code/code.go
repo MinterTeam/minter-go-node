@@ -54,6 +54,7 @@ const (
 	PublicKeyInBlockList  uint32 = 410
 	NewPublicKeyIsBad     uint32 = 411
 	InsufficientWaitList  uint32 = 412
+	PeriodLimitReached    uint32 = 413
 
 	// check
 	CheckInvalidLock uint32 = 501
@@ -693,6 +694,16 @@ type multisigNotExists struct {
 
 func NewMultisigNotExists(address string) *multisigNotExists {
 	return &multisigNotExists{Code: strconv.Itoa(int(MultisigNotExists)), Address: address}
+}
+
+type periodLimitReached struct {
+	Code         string `json:"code,omitempty"`
+	NextTime     string `json:"next_time,omitempty"`
+	PreviousTime string `json:"previous_time,omitempty"`
+}
+
+func NewPeriodLimitReached(next string, last string) *periodLimitReached {
+	return &periodLimitReached{Code: strconv.Itoa(int(PeriodLimitReached)), NextTime: next, PreviousTime: last}
 }
 
 type multisigExists struct {

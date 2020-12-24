@@ -9,6 +9,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
+	"strconv"
 )
 
 type EditCommissionData struct {
@@ -20,8 +21,38 @@ func (data EditCommissionData) GetPubKey() types.Pubkey {
 	return data.PubKey
 }
 
-func (data EditCommissionData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
-	return checkCandidateOwnership(data, tx, context)
+func (data EditCommissionData) basicCheck(tx *Transaction, context *state.CheckState, block uint64) *Response {
+	errResp := checkCandidateOwnership(data, tx, context)
+	if errResp != nil {
+		return errResp
+	}
+
+	candidate := context.Candidates().GetCandidate(data.PubKey)
+
+	maxNewCommission, minNewCommission := candidate.Commission+10, candidate.Commission-10
+	if maxNewCommission > maxCommission {
+		maxNewCommission = maxCommission
+	}
+	if minNewCommission < minCommission {
+		minNewCommission = minCommission
+	}
+	if data.Commission < minNewCommission || data.Commission > maxNewCommission {
+		return &Response{
+			Code: code.WrongCommission,
+			Log:  fmt.Sprintf("You want change commission from %d to %d, but you can change no more than 10 units, because commission should be between %d and %d", candidate.Commission, data.Commission, minNewCommission, maxNewCommission),
+			Info: EncodeError(code.NewWrongCommission(fmt.Sprintf("%d", data.Commission), strconv.Itoa(int(minNewCommission)), strconv.Itoa(int(maxNewCommission)))),
+		}
+	}
+
+	if candidate.LastEditCommissionHeight+3*unbondPeriod > block {
+		return &Response{
+			Code: code.PeriodLimitReached,
+			Log:  fmt.Sprintf("You cannot change the commission more than once every %d blocks, the last change was on block %d", 3*unbondPeriod, candidate.LastEditCommissionHeight),
+			Info: EncodeError(code.NewPeriodLimitReached(strconv.Itoa(int(candidate.LastEditCommissionHeight+3*unbondPeriod)), strconv.Itoa(int(candidate.LastEditCommissionHeight)))),
+		}
+	}
+
+	return nil
 }
 
 func (data EditCommissionData) String() string {
@@ -41,7 +72,7 @@ func (data EditCommissionData) Run(tx *Transaction, context state.Interface, rew
 		checkState = state.NewCheckState(context.(*state.State))
 	}
 
-	response := data.basicCheck(tx, checkState)
+	response := data.basicCheck(tx, checkState, currentBlock)
 	if response != nil {
 		return *response
 	}
@@ -71,7 +102,7 @@ func (data EditCommissionData) Run(tx *Transaction, context state.Interface, rew
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		deliverState.Candidates.EditCommission(data.PubKey, data.Commission)
+		deliverState.Candidates.EditCommission(data.PubKey, data.Commission, currentBlock)
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}
 

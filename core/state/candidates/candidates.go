@@ -270,19 +270,20 @@ func (c *Candidates) GetNewCandidates(valCount int) []Candidate {
 }
 
 // Create creates a new candidate with given params and adds it to state
-func (c *Candidates) Create(ownerAddress, rewardAddress, controlAddress types.Address, pubkey types.Pubkey, commission uint32) {
+func (c *Candidates) Create(ownerAddress, rewardAddress, controlAddress types.Address, pubkey types.Pubkey, commission uint32, block uint64) {
 	candidate := &Candidate{
-		ID:                0,
-		PubKey:            pubkey,
-		RewardAddress:     rewardAddress,
-		OwnerAddress:      ownerAddress,
-		ControlAddress:    controlAddress,
-		Commission:        commission,
-		Status:            CandidateStatusOffline,
-		totalBipStake:     big.NewInt(0),
-		stakes:            [MaxDelegatorsPerCandidate]*stake{},
-		isDirty:           true,
-		isTotalStakeDirty: true,
+		ID:                       0,
+		PubKey:                   pubkey,
+		RewardAddress:            rewardAddress,
+		OwnerAddress:             ownerAddress,
+		ControlAddress:           controlAddress,
+		Commission:               commission,
+		LastEditCommissionHeight: block,
+		Status:                   CandidateStatusOffline,
+		totalBipStake:            big.NewInt(0),
+		stakes:                   [MaxDelegatorsPerCandidate]*stake{},
+		isDirty:                  true,
+		isTotalStakeDirty:        true,
 	}
 
 	candidate.setTmAddress()
@@ -293,7 +294,7 @@ func (c *Candidates) Create(ownerAddress, rewardAddress, controlAddress types.Ad
 // CreateWithID uses given ID to be associated with public key of a candidate
 func (c *Candidates) CreateWithID(ownerAddress, rewardAddress, controlAddress types.Address, pubkey types.Pubkey, commission uint32, id uint32) {
 	c.setPubKeyID(pubkey, id)
-	c.Create(ownerAddress, rewardAddress, controlAddress, pubkey, commission)
+	c.Create(ownerAddress, rewardAddress, controlAddress, pubkey, commission, 0)
 }
 
 // PunishByzantineCandidate finds candidate with given tmAddress and punishes it:
@@ -544,9 +545,9 @@ func (c *Candidates) Edit(pubkey types.Pubkey, rewardAddress types.Address, owne
 }
 
 // EditCommission edits a candidate commission
-func (c *Candidates) EditCommission(pubkey types.Pubkey, commission uint32) {
+func (c *Candidates) EditCommission(pubkey types.Pubkey, commission uint32, height uint64) {
 	candidate := c.getFromMap(pubkey)
-	candidate.setCommission(commission)
+	candidate.setCommission(commission, height)
 }
 
 // SetOnline sets candidate status to CandidateStatusOnline

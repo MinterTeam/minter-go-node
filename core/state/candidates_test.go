@@ -611,7 +611,7 @@ func createTestCandidate(stateDB *State) types.Pubkey {
 	_, _ = rand.Read(pubkey[:])
 
 	stateDB.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1000)))
-	stateDB.Candidates.Create(address, address, address, pubkey, 10)
+	stateDB.Candidates.Create(address, address, address, pubkey, 10, 0)
 
 	return pubkey
 }

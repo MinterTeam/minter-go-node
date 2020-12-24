@@ -20,7 +20,7 @@ func createTestCandidate(stateDB *state.State) types.Pubkey {
 	pubkey := types.Pubkey{}
 	rand.Read(pubkey[:])
 
-	stateDB.Candidates.Create(address, address, address, pubkey, 10)
+	stateDB.Candidates.Create(address, address, address, pubkey, 10, 0)
 
 	return pubkey
 }

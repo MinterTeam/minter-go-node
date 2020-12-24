@@ -161,7 +161,7 @@ func (data DeclareCandidacyData) Run(tx *Transaction, context state.Interface, r
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
 		deliverState.Accounts.SubBalance(sender, data.Coin, data.Stake)
-		deliverState.Candidates.Create(data.Address, sender, sender, data.PubKey, data.Commission)
+		deliverState.Candidates.Create(data.Address, sender, sender, data.PubKey, data.Commission, currentBlock)
 		deliverState.Candidates.Delegate(sender, data.PubKey, data.Coin, data.Stake, big.NewInt(0))
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}
