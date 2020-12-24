@@ -10,8 +10,16 @@ type Bus struct {
 	waitlist *WaitList
 }
 
-func (b *Bus) AddToWaitList(address types.Address, pubkey types.Pubkey, coin types.CoinID, value *big.Int, height uint64) {
-	b.waitlist.AddWaitList(address, pubkey, coin, value, height)
+func (b *Bus) AddToWaitList(address types.Address, pubkey types.Pubkey, coin types.CoinID, value *big.Int, lock bus.WaitlistItemLock) {
+	var l *lockedValue
+	if lock != nil {
+		l = &lockedValue{
+			ToHeight: lock.GetToHeight(),
+			Value:    lock.GetValue(),
+			From:     lock.GetFrom(),
+		}
+	}
+	b.waitlist.AddWaitList(address, pubkey, coin, value, l)
 }
 
 func (b *Bus) Get(address types.Address, pubkey types.Pubkey, coin types.CoinID) bus.WaitlistItem {

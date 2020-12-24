@@ -135,7 +135,7 @@ func (data UnbondData) Run(tx *Transaction, context state.Interface, rewardPool 
 			diffValue := big.NewInt(0).Sub(data.Value, waitList.Value)
 			deliverState.Waitlist.Delete(sender, data.PubKey, data.Coin)
 			if diffValue.Sign() == -1 {
-				deliverState.Waitlist.AddWaitList(sender, data.PubKey, data.Coin, big.NewInt(0).Neg(diffValue), 0)
+				deliverState.Waitlist.AddWaitList(sender, data.PubKey, data.Coin, big.NewInt(0).Neg(diffValue), nil)
 			}
 		} else {
 			deliverState.Candidates.SubStake(sender, data.PubKey, data.Coin, data.Value)

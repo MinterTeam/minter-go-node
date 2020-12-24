@@ -118,11 +118,17 @@ func (c *Candidates) SetImmutableTree(immutableTree *iavl.ImmutableTree) {
 
 func (c *Candidates) MoveStake(from, to types.Pubkey, owner types.Address, coin types.CoinID, value *big.Int, height, lockPeriod uint64) {
 	if waitList := c.bus.WaitList().Get(owner, from, coin); waitList != nil {
-		free := waitList.GetFree(height)
-		diffValue := big.NewInt(0).Sub(value, free)
+		diffFreeValue := big.NewInt(0).Sub(waitList.GetFree(height), value)
 		c.bus.WaitList().Delete(owner, from, coin)
-		if diffValue.Sign() == -1 {
-			c.bus.WaitList().AddToWaitList(owner, from, coin, big.NewInt(0).Neg(diffValue), 0)
+		for _, lock := range waitList.GetLocked() {
+			if lock.GetToHeight() > height {
+				c.bus.WaitList().AddToWaitList(owner, from, coin, lock.GetValue(), lock)
+			} else {
+				diffFreeValue.Add(diffFreeValue, lock.GetValue())
+			}
+		}
+		if diffFreeValue.Sign() == 1 {
+			c.bus.WaitList().AddToWaitList(owner, from, coin, diffFreeValue, nil)
 		}
 	} else {
 		c.SubStake(owner, from, coin, value)
@@ -137,10 +143,21 @@ func (c *Candidates) MoveStake(from, to types.Pubkey, owner types.Address, coin 
 		}
 		movedStakes = append(movedStakes, m)
 	}
-	candidateFrom.MovedStakes = append(movedStakes, &movedStake{Value: value, Owner: owner, ToHeight: height + lockPeriod, To: to, Coin: coin})
+	lockedToHeight := height + lockPeriod
+	candidateFrom.MovedStakes = append(movedStakes, &movedStake{Value: value, Owner: owner, ToHeight: lockedToHeight, To: to, Coin: coin})
 
 	valueWithWaitlist := big.NewInt(0).Set(value)
+	lockedValues := []*lockedValue{
+		{ToHeight: lockedToHeight, Value: value, From: candidateFrom.ID},
+	}
 	if waitList := c.bus.WaitList().Get(owner, to, coin); waitList != nil {
+		for _, lock := range waitList.GetLocked() {
+			lockedValues = append(lockedValues, &lockedValue{
+				ToHeight: lock.GetToHeight(),
+				Value:    lock.GetValue(),
+				From:     lock.GetFrom(),
+			})
+		}
 		valueWithWaitlist.Add(valueWithWaitlist, waitList.GetAll())
 		c.bus.WaitList().Delete(owner, to, coin)
 	}
@@ -152,9 +169,7 @@ func (c *Candidates) MoveStake(from, to types.Pubkey, owner types.Address, coin 
 		Coin:     coin,
 		Value:    big.NewInt(0).Set(valueWithWaitlist),
 		BipValue: big.NewInt(0),
-		Locked: []*lockedValue{
-			{ToHeight: height, Value: value, From: from},
-		},
+		Locked:   lockedValues,
 	})
 	c.bus.Checker().AddCoin(coin, valueWithWaitlist)
 
@@ -381,6 +396,63 @@ func (c *Candidates) PunishByzantineCandidate(height uint64, tmAddress types.TmA
 		c.bus.FrozenFunds().AddFrozenFund(height+UnbondPeriod, stake.Owner, candidate.PubKey, candidate.ID, stake.Coin, newValue)
 		stake.setValue(big.NewInt(0))
 	}
+
+	if len(candidate.MovedStakes) > 0 {
+		for _, moved := range candidate.MovedStakes {
+			if moved.ToHeight < height {
+				continue
+			}
+
+			movedToCandidate := c.getFromMap(moved.To)
+			if !movedToCandidate.punishStake(moved.Owner, moved.Coin, candidate.ID, moved.ToHeight) {
+				waitlistItem := c.bus.WaitList().Get(moved.Owner, candidate.PubKey, moved.Coin)
+				c.bus.WaitList().Delete(moved.Owner, candidate.PubKey, moved.Coin)
+				for _, lock := range waitlistItem.GetLocked() {
+					if lock.GetToHeight() < height {
+						continue
+					}
+					if lock.GetFrom() != candidate.ID || lock.GetToHeight() != moved.ToHeight {
+						c.bus.WaitList().AddToWaitList(moved.Owner, candidate.PubKey, moved.Coin, lock.GetValue(), lock)
+						continue
+					}
+
+				}
+				c.bus.WaitList().AddToWaitList(moved.Owner, candidate.PubKey, moved.Coin, waitlistItem.GetFree(height), nil)
+			}
+
+			newValue := big.NewInt(0).Set(moved.Value)
+			newValue.Mul(newValue, big.NewInt(95))
+			newValue.Div(newValue, big.NewInt(100))
+
+			slashed := big.NewInt(0).Sub(moved.Value, newValue)
+
+			if !moved.Coin.IsBaseCoin() {
+				coin := c.bus.Coins().GetCoin(moved.Coin)
+				ret := formula.CalculateSaleReturn(coin.Volume, coin.Reserve, coin.Crr, slashed)
+
+				c.bus.Coins().SubCoinVolume(coin.ID, slashed)
+				c.bus.Coins().SubCoinReserve(coin.ID, ret)
+
+				c.bus.App().AddTotalSlashed(ret)
+			} else {
+				c.bus.App().AddTotalSlashed(slashed)
+			}
+
+			c.bus.Checker().AddCoin(moved.Coin, big.NewInt(0).Neg(slashed))
+
+			c.bus.Events().AddEvent(uint32(height), &eventsdb.SlashEvent{
+				Address:         moved.Owner,
+				Amount:          slashed.String(),
+				Coin:            uint64(moved.Coin),
+				ValidatorPubKey: movedToCandidate.PubKey,
+			})
+
+			c.bus.Checker().AddCoin(moved.Coin, big.NewInt(0).Neg(newValue))
+			c.bus.FrozenFunds().AddFrozenFund(height+UnbondPeriod, moved.Owner, movedToCandidate.PubKey, movedToCandidate.ID, moved.Coin, newValue)
+		}
+		candidate.MovedStakes = nil
+		candidate.isDirty = true
+	}
 }
 
 // GetCandidateByTendermintAddress finds and returns candidate with given tendermint-address
@@ -489,10 +561,10 @@ func (c *Candidates) stakeKick(owner types.Address, value *big.Int, coin types.C
 		if lock.ToHeight < height {
 			continue
 		}
-		c.bus.WaitList().AddToWaitList(owner, pubKey, coin, lock.Value, lock.ToHeight)
+		c.bus.WaitList().AddToWaitList(owner, pubKey, coin, lock.Value, lock)
 		freeValue.Sub(freeValue, lock.Value)
 	}
-	c.bus.WaitList().AddToWaitList(owner, pubKey, coin, freeValue, 0)
+	c.bus.WaitList().AddToWaitList(owner, pubKey, coin, freeValue, nil)
 	c.bus.Events().AddEvent(uint32(height), &eventsdb.StakeKickEvent{
 		Address:         owner,
 		Amount:          value.String(),

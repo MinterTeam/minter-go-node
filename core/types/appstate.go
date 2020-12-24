@@ -292,11 +292,28 @@ type Stake struct {
 }
 
 type Waitlist struct {
-	CandidateID uint64  `json:"candidate_id"`
-	Owner       Address `json:"owner"`
-	Coin        uint64  `json:"coin"`
-	Value       string  `json:"value"`
+	CandidateID uint64        `json:"candidate_id"`
+	Owner       Address       `json:"owner"`
+	Coin        uint64        `json:"coin"`
+	Value       string        `json:"value"`
+	Locked      []LockedValue `json:"locked,omitempty"`
 }
+type LockedValue struct {
+	ToHeight uint64 `json:"to_height"`
+	Value    string `json:"value"`
+	From     uint64 `json:"from"`
+}
+
+func (l LockedValue) GetToHeight() uint64 {
+	return l.ToHeight
+}
+func (l LockedValue) GetValue() *big.Int {
+	return helpers.StringToBigInt(l.Value)
+}
+func (l LockedValue) GetFrom() uint32 {
+	return uint32(l.From)
+}
+
 type BalanceProvider struct {
 	Address   Address `json:"address"`
 	Liquidity string  `json:"liquidity"`

@@ -43,7 +43,8 @@ func (data MoveStakeData) basicCheck(tx *Transaction, context *state.CheckState,
 
 	sender, _ := tx.Sender()
 
-	if waitlistValue := context.WaitList().GetFree(sender, data.From, data.Coin, height); waitlistValue != nil {
+	if waitlist := context.WaitList().Get(sender, data.From, data.Coin); waitlist != nil {
+		waitlistValue := waitlist.GetFree(height)
 		if data.Value.Cmp(waitlistValue) == 1 {
 			return &Response{
 				Code: code.InsufficientWaitList,
