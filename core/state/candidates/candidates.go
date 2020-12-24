@@ -116,51 +116,6 @@ func (c *Candidates) SetImmutableTree(immutableTree *iavl.ImmutableTree) {
 	c.db.Store(immutableTree)
 }
 
-func (c *Candidates) MoveStake(from, to types.Pubkey, owner types.Address, coin types.CoinID, value *big.Int, height, lockPeriod uint64) {
-	if waitList := c.bus.WaitList().Get(owner, from, coin); waitList != nil {
-		free := waitList.GetFree(height)
-		diffValue := big.NewInt(0).Sub(value, free)
-		c.bus.WaitList().Delete(owner, from, coin)
-		if diffValue.Sign() == -1 {
-			c.bus.WaitList().AddToWaitList(owner, from, coin, big.NewInt(0).Neg(diffValue), 0)
-		}
-	} else {
-		c.SubStake(owner, from, coin, value)
-	}
-
-	candidateFrom := c.getFromMap(from)
-	candidateFrom.isDirty = true
-	var movedStakes []*movedStake
-	for _, m := range candidateFrom.MovedStakes {
-		if m.ToHeight < height {
-			continue
-		}
-		movedStakes = append(movedStakes, m)
-	}
-	candidateFrom.MovedStakes = append(movedStakes, &movedStake{Value: value, Owner: owner, ToHeight: height + lockPeriod, To: to, Coin: coin})
-
-	valueWithWaitlist := big.NewInt(0).Set(value)
-	if waitList := c.bus.WaitList().Get(owner, to, coin); waitList != nil {
-		valueWithWaitlist.Add(valueWithWaitlist, waitList.GetAll())
-		c.bus.WaitList().Delete(owner, to, coin)
-	}
-
-	candidateTo := c.getFromMap(from)
-	candidateTo.isDirty = true
-	candidateTo.addUpdate(&stake{
-		Owner:    owner,
-		Coin:     coin,
-		Value:    big.NewInt(0).Set(valueWithWaitlist),
-		BipValue: big.NewInt(0),
-		Locked: []*lockedValue{
-			{ToHeight: height, Value: value, From: from},
-		},
-	})
-	c.bus.Checker().AddCoin(coin, valueWithWaitlist)
-
-	return
-}
-
 func (c *Candidates) IsChangedPublicKeys() bool {
 	return c.isChangedPublicKeys
 }
@@ -422,14 +377,6 @@ func (c *Candidates) recalculateStakes(height uint64) {
 				stake.addValue(update.Value)
 				update.setValue(big.NewInt(0))
 				stake.setBipValue(c.calculateBipValue(stake.Coin, stake.Value, false, true, coinsCache))
-				var locked []*lockedValue
-				for _, value := range stake.Locked {
-					if value.ToHeight < height {
-						continue
-					}
-					locked = append(locked, value)
-				}
-				stake.Locked = append(locked, update.Locked...)
 			}
 		}
 
@@ -457,13 +404,13 @@ func (c *Candidates) recalculateStakes(height uint64) {
 			}
 
 			if smallestStake.Cmp(update.BipValue) == 1 {
-				c.stakeKick(update.Owner, update.Value, update.Coin, candidate.PubKey, height, update.Locked)
+				c.stakeKick(update.Owner, update.Value, update.Coin, candidate.PubKey, height)
 				update.setValue(big.NewInt(0))
 				continue
 			}
 
 			if stakes[index] != nil {
-				c.stakeKick(stakes[index].Owner, stakes[index].Value, stakes[index].Coin, candidate.PubKey, height, stakes[index].Locked)
+				c.stakeKick(stakes[index].Owner, stakes[index].Value, stakes[index].Coin, candidate.PubKey, height)
 			}
 
 			candidate.setStakeAtIndex(index, update, true)
@@ -483,16 +430,8 @@ func (c *Candidates) recalculateStakes(height uint64) {
 	}
 }
 
-func (c *Candidates) stakeKick(owner types.Address, value *big.Int, coin types.CoinID, pubKey types.Pubkey, height uint64, locked []*lockedValue) {
-	freeValue := big.NewInt(0).Set(value)
-	for _, lock := range locked {
-		if lock.ToHeight < height {
-			continue
-		}
-		c.bus.WaitList().AddToWaitList(owner, pubKey, coin, lock.Value, lock.ToHeight)
-		freeValue.Sub(freeValue, lock.Value)
-	}
-	c.bus.WaitList().AddToWaitList(owner, pubKey, coin, freeValue, 0)
+func (c *Candidates) stakeKick(owner types.Address, value *big.Int, coin types.CoinID, pubKey types.Pubkey, height uint64) {
+	c.bus.WaitList().AddToWaitList(owner, pubKey, coin, value)
 	c.bus.Events().AddEvent(uint32(height), &eventsdb.StakeKickEvent{
 		Address:         owner,
 		Amount:          value.String(),
