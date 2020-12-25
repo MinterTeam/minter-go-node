@@ -337,7 +337,7 @@ func TestSellAllCoinTxWithInsufficientFunds(t *testing.T) {
 
 	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.InsufficientFunds {
-		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
+		t.Fatalf("Response code is not %d. Error %d %s", code.InsufficientFunds, response.Code, response.Log)
 	}
 
 	if err := checkState(cState); err != nil {
@@ -431,7 +431,7 @@ func TestSellAllCoinTxToCoinSupplyOverflow(t *testing.T) {
 
 	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.CoinSupplyOverflow {
-		t.Fatalf("Response code is not %d. Error %s", code.CoinSupplyOverflow, response.Log)
+		t.Fatalf("Response code is not %d. Error %d %s", code.CoinSupplyOverflow, response.Code, response.Log)
 	}
 
 	if err := checkState(cState); err != nil {

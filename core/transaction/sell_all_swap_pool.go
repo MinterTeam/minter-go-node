@@ -72,7 +72,7 @@ func (data SellAllSwapPoolData) Run(tx *Transaction, context state.Interface, re
 	if tx.GasCoin == data.CoinToSell {
 		balance.Sub(balance, commission)
 	}
-	if balance.Cmp(commission) != 1 {
+	if balance.Sign() != 1 {
 		symbol := checkState.Coins().GetCoin(data.CoinToSell).GetFullSymbol()
 		return Response{
 			Code: code.InsufficientFunds,
