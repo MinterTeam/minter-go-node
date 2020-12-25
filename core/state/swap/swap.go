@@ -17,8 +17,18 @@ import (
 
 const minimumLiquidity int64 = 1000
 
+type SwapChecker interface {
+	IsExist() bool
+	AddLastSwapStep(amount0In, amount1Out *big.Int) SwapChecker
+	Reserves() (reserve0 *big.Int, reserve1 *big.Int)
+	CalculateBuyForSell(amount0In *big.Int) (amount1Out *big.Int)
+	CalculateSellForBuy(amount1Out *big.Int) (amount0In *big.Int)
+	CheckSwap(amount0In, amount1Out *big.Int) error
+}
+
 type RSwap interface {
 	SwapPool(coin0, coin1 types.CoinID) (totalSupply, reserve0, reserve1 *big.Int)
+	GetSwapper(coin0, coin1 types.CoinID) SwapChecker
 	SwapPoolExist(coin0, coin1 types.CoinID) bool
 	SwapPoolFromProvider(provider types.Address, coin0, coin1 types.CoinID) (balance, amount0, amount1 *big.Int)
 	CheckMint(coin0, coin1 types.CoinID, amount0, amount1 *big.Int) error
@@ -153,6 +163,22 @@ func (s *Swap) CheckBurn(address types.Address, coin0, coin1 types.CoinID, liqui
 func (s *Swap) CheckSwap(coin0, coin1 types.CoinID, amount0In, amount1Out *big.Int) error {
 	return s.Pair(coin0, coin1).checkSwap(amount0In, big.NewInt(0), big.NewInt(0), amount1Out)
 }
+func (p *Pair) CheckSwap(amount0In, amount1Out *big.Int) error {
+	return p.checkSwap(amount0In, big.NewInt(0), big.NewInt(0), amount1Out)
+}
+func (p *Pair) IsExist() bool {
+	return p != nil
+}
+func (p *Pair) AddLastSwapStep(amount0In, amount1Out *big.Int) SwapChecker {
+	reserve0, reserve1 := p.Reserves()
+	return &Pair{pairData: &pairData{
+		RWMutex:     &sync.RWMutex{},
+		Reserve0:    reserve0.Add(reserve0, amount0In),
+		Reserve1:    reserve1.Sub(reserve1, amount1Out),
+		TotalSupply: p.GetTotalSupply(),
+		dirty:       &dirty{},
+	}}
+}
 
 func (s *Swap) Commit(db *iavl.MutableTree) error {
 	basePath := []byte{mainPrefix}
@@ -228,6 +254,11 @@ func (s *Swap) SwapPool(coinA, coinB types.CoinID) (totalSupply, reserve0, reser
 	reserve0, reserve1 = pair.Reserves()
 	totalSupply = pair.GetTotalSupply()
 	return totalSupply, reserve0, reserve1
+}
+
+func (s *Swap) GetSwapper(coinA, coinB types.CoinID) SwapChecker {
+	return s.Pair(coinA, coinB)
+
 }
 
 func (s *Swap) SwapPoolFromProvider(provider types.Address, coinA, coinB types.CoinID) (balance, amount0, amount1 *big.Int) {

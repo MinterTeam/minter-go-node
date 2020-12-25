@@ -524,7 +524,7 @@ func TestBuyCoinTxCustomToBase(t *testing.T) {
 	targetBalance, _ := big.NewInt(0).SetString("9999897985363348906133281", 10)
 	balance := cState.Accounts.GetBalance(addr, coinToSellID)
 	if balance.Cmp(targetBalance) != 0 {
-		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", coinToSellID.String(), targetBalance, balance)
+		t.Errorf("Target %s balance is not correct. Expected %s, got %s", coinToSellID.String(), targetBalance, balance)
 	}
 
 	baseBalance := cState.Accounts.GetBalance(addr, types.GetBaseCoinID())
@@ -950,7 +950,7 @@ func TestBuyCoinTxCustomToBaseCustomCommission(t *testing.T) {
 	shouldGive := formula.CalculateSaleAmount(initialVolume, initialReserve, crr, big.NewInt(0).Add(toBuy, tx.CommissionInBaseCoin()))
 	estimatedSellCoinBalance.Sub(estimatedSellCoinBalance, shouldGive)
 	if sellCoinBalance.Cmp(estimatedSellCoinBalance) != 0 {
-		t.Fatalf("Sell coin balance is not correct. Expected %s, got %s", estimatedSellCoinBalance.String(), sellCoinBalance.String())
+		t.Errorf("Sell coin balance is not correct. Expected %s, got %s", estimatedSellCoinBalance.String(), sellCoinBalance.String())
 	}
 
 	// check reserve and supply
@@ -1022,12 +1022,12 @@ func TestBuyCoinTxCustomToCustomCustom1Commission(t *testing.T) {
 	sellCoinBalance := cState.Accounts.GetBalance(addr, coinToSellID)
 	estimatedSellCoinBalance := big.NewInt(0).Set(initialBalance)
 	toSellBaseCoin := formula.CalculatePurchaseAmount(initialVolume2, initialReserve2, crr2, toBuy)
-	toSell := formula.CalculateSaleAmount(initialVolume1, initialReserve1, crr1, toSellBaseCoin)
+	toSell := formula.CalculateSaleAmount(initialVolume1, initialReserve1, crr1, big.NewInt(0).Add(toSellBaseCoin, tx.CommissionInBaseCoin()))
 	estimatedSellCoinBalance.Sub(estimatedSellCoinBalance, toSell)
-	commission := formula.CalculateSaleAmount(big.NewInt(0).Sub(initialVolume1, toSell), big.NewInt(0).Sub(initialReserve1, toSellBaseCoin), crr1, tx.CommissionInBaseCoin())
-	estimatedSellCoinBalance.Sub(estimatedSellCoinBalance, commission)
+	// commission := formula.CalculateSaleAmount(big.NewInt(0).Sub(initialVolume1, toSell), big.NewInt(0).Sub(initialReserve1, toSellBaseCoin), crr1, tx.CommissionInBaseCoin())
+	// estimatedSellCoinBalance.Sub(estimatedSellCoinBalance, commission)
 	if sellCoinBalance.Cmp(estimatedSellCoinBalance) != 0 {
-		t.Fatalf("Sell coin balance is not correct. Expected %s, got %s", estimatedSellCoinBalance.String(), sellCoinBalance.String())
+		t.Errorf("Sell coin balance is not correct. Expected %s, got %s", estimatedSellCoinBalance.String(), sellCoinBalance.String())
 	}
 
 	// check reserve and supply
@@ -1042,8 +1042,7 @@ func TestBuyCoinTxCustomToCustomCustom1Commission(t *testing.T) {
 		}
 
 		estimatedSupply := big.NewInt(0).Set(initialVolume1)
-		estimatedSupply.Sub(estimatedSupply, formula.CalculateSaleAmount(initialVolume1, initialReserve1, crr1, formula.CalculatePurchaseAmount(initialVolume2, initialReserve2, crr2, toBuy)))
-		estimatedSupply.Sub(estimatedSupply, commission)
+		estimatedSupply.Sub(estimatedSupply, formula.CalculateSaleAmount(initialVolume1, initialReserve1, crr1, big.NewInt(0).Add(formula.CalculatePurchaseAmount(initialVolume2, initialReserve2, crr2, toBuy), tx.CommissionInBaseCoin())))
 		if coinData.Volume().Cmp(estimatedSupply) != 0 {
 			t.Fatalf("Wrong coin supply")
 		}
