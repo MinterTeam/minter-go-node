@@ -108,6 +108,7 @@ func (data EditCommissionData) Run(tx *Transaction, context state.Interface, rew
 	}
 
 	tags := kv.Pairs{
+		kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeEditCommission)}))},
 		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
 	}

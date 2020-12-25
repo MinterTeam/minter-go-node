@@ -146,6 +146,7 @@ func (data UnbondData) Run(tx *Transaction, context state.Interface, rewardPool 
 	}
 
 	tags := kv.Pairs{
+		kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeUnbond)}))},
 		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
 	}

@@ -131,6 +131,7 @@ func (data RemoveSwapPoolData) Run(tx *Transaction, context state.Interface, rew
 	}
 
 	tags := kv.Pairs{
+		kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeRemoveSwapPool)}))},
 		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
 		kv.Pair{Key: []byte("tx.volume0"), Value: []byte(amount0.String())},
