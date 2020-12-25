@@ -492,7 +492,7 @@ func TestBlockchain_FrozenFunds(t *testing.T) {
 	pubkey := types.BytesToPubkey(pv.Key.PubKey.Bytes()[5:])
 	blockchain.stateDeliver.RLock()
 	blockchain.stateDeliver.Candidates.SubStake(developers.Address, pubkey, 0, big.NewInt(0).Set(value))
-	blockchain.stateDeliver.FrozenFunds.AddFund(targetHeight, developers.Address, pubkey, blockchain.stateDeliver.Candidates.ID(pubkey), 0, big.NewInt(0).Set(value))
+	blockchain.stateDeliver.FrozenFunds.AddFund(targetHeight, developers.Address, pubkey, blockchain.stateDeliver.Candidates.ID(pubkey), 0, big.NewInt(0).Set(value), nil)
 	blockchain.stateDeliver.RUnlock()
 
 	blocks, err := tmCli.Subscribe(context.Background(), "test-client", "tm.event = 'NewBlock'")

@@ -71,19 +71,19 @@ func (data MoveStakeData) basicCheck(tx *Transaction, context *state.CheckState)
 		}
 	}
 
-	value := big.NewInt(0).Set(data.Value)
-	if waitList := context.WaitList().Get(sender, data.To, data.Coin); waitList != nil {
-		value.Add(value, waitList.Value)
-	}
+	// value := big.NewInt(0).Set(data.Value)
+	// if waitList := context.WaitList().Get(sender, data.To, data.Coin); waitList != nil {
+	// 	value.Add(value, waitList.Value)
+	// }
 
-	if !context.Candidates().IsDelegatorStakeSufficient(sender, data.To, data.Coin, value) {
-		coin := context.Coins().GetCoin(data.Coin)
-		return &Response{
-			Code: code.TooLowStake,
-			Log:  "Stake is too low",
-			Info: EncodeError(code.NewTooLowStake(sender.String(), data.To.String(), value.String(), data.Coin.String(), coin.GetFullSymbol())),
-		}
-	}
+	// if !context.Candidates().IsDelegatorStakeSufficient(sender, data.To, data.Coin, value) {
+	// 	coin := context.Coins().GetCoin(data.Coin)
+	// 	return &Response{
+	// 		Code: code.TooLowStake,
+	// 		Log:  "Stake is too low",
+	// 		Info: EncodeError(code.NewTooLowStake(sender.String(), data.To.String(), value.String(), data.Coin.String(), coin.GetFullSymbol())),
+	// 	}
+	// }
 
 	return nil
 }
@@ -136,7 +136,8 @@ func (data MoveStakeData) Run(tx *Transaction, context state.Interface, rewardPo
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		// todo: logic
+		moveToCandidateId := deliverState.Candidates.ID(data.To)
+		deliverState.FrozenFunds.AddFund(currentBlock+unbondPeriod, sender, data.From, deliverState.Candidates.ID(data.From), data.Coin, data.Value, &moveToCandidateId)
 
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}

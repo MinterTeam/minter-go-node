@@ -191,8 +191,8 @@ func (f *FrozenFunds) getOrderedDirty() []uint64 {
 	return keys
 }
 
-func (f *FrozenFunds) AddFund(height uint64, address types.Address, pubkey types.Pubkey, candidateId uint32, coin types.CoinID, value *big.Int) {
-	f.GetOrNew(height).addFund(address, pubkey, candidateId, coin, value)
+func (f *FrozenFunds) AddFund(height uint64, address types.Address, pubkey types.Pubkey, candidateId uint32, coin types.CoinID, value *big.Int, moveToCandidate *uint32) {
+	f.GetOrNew(height).addFund(address, pubkey, candidateId, coin, value, moveToCandidate)
 	f.bus.Checker().AddCoin(coin, value)
 }
 

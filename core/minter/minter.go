@@ -209,13 +209,28 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 	frozenFunds := app.stateDeliver.FrozenFunds.GetFrozenFunds(uint64(req.Header.Height))
 	if frozenFunds != nil {
 		for _, item := range frozenFunds.List {
-			app.eventsDB.AddEvent(uint32(req.Header.Height), &eventsdb.UnbondEvent{
-				Address:         item.Address,
-				Amount:          item.Value.String(),
-				Coin:            uint64(item.Coin),
-				ValidatorPubKey: *item.CandidateKey,
-			})
-			app.stateDeliver.Accounts.AddBalance(item.Address, item.Coin, item.Value)
+			amount := item.Value
+			if item.MoveToCandidate == nil {
+				app.eventsDB.AddEvent(uint32(req.Header.Height), &eventsdb.UnbondEvent{
+					Address:         item.Address,
+					Amount:          amount.String(),
+					Coin:            uint64(item.Coin),
+					ValidatorPubKey: *item.CandidateKey,
+				})
+				app.stateDeliver.Accounts.AddBalance(item.Address, item.Coin, amount)
+			} else {
+				newCandidate := app.stateDeliver.Candidates.PubKey(*item.MoveToCandidate)
+				value := big.NewInt(0).Set(amount)
+				if wl := app.stateDeliver.Waitlist.Get(item.Address, newCandidate, item.Coin); wl != nil {
+					value.Add(value, wl.Value)
+					app.stateDeliver.Waitlist.Delete(item.Address, newCandidate, item.Coin)
+				}
+				if app.stateDeliver.Candidates.IsDelegatorStakeSufficient(item.Address, newCandidate, item.Coin, value) {
+					app.stateDeliver.Candidates.Delegate(item.Address, newCandidate, item.Coin, value, big.NewInt(0))
+				} else {
+					app.stateDeliver.Waitlist.AddWaitList(item.Address, newCandidate, item.Coin, value)
+				}
+			}
 		}
 
 		// delete from db

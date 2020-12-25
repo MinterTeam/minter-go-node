@@ -24,7 +24,7 @@ func TestFrozenFundsToAddModel(t *testing.T) {
 
 	height, addr, pubkey, coin, val := uint64(1), types.Address{0}, types.Pubkey{0}, types.GetBaseCoinID(), big.NewInt(1e18)
 
-	ff.AddFund(height, addr, pubkey, 1, coin, val)
+	ff.AddFund(height, addr, pubkey, 1, coin, val, nil)
 
 	_, _, err := mutableTree.Commit(ff)
 	if err != nil {
@@ -62,7 +62,7 @@ func TestFrozenFundsToDeleteModel(t *testing.T) {
 
 	height, addr, pubkey, coin, val := uint64(1), types.Address{0}, types.Pubkey{0}, types.GetBaseCoinID(), big.NewInt(1e18)
 
-	ff.AddFund(height, addr, pubkey, 1, coin, val)
+	ff.AddFund(height, addr, pubkey, 1, coin, val, nil)
 
 	_, _, err := mutableTree.Commit(ff)
 	if err != nil {
