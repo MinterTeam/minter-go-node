@@ -324,7 +324,7 @@ func CheckForCoinSupplyOverflow(coin *coins.Model, delta *big.Int) *Response {
 	return nil
 }
 
-func CheckReserveUnderflow(coin *coins.Model, delta *big.Int) *Response {
+func CheckReserveUnderflow(coin calculateCoin, delta *big.Int) *Response {
 	total := big.NewInt(0).Sub(coin.Reserve(), delta)
 
 	if total.Cmp(minCoinReserve) == -1 {

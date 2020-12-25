@@ -51,7 +51,7 @@ func (m Model) Reserve() *big.Int {
 }
 
 func (m Model) BaseOrHasReserve() bool {
-	return m.id.IsBaseCoin() || (m.CCrr > 0 && m.info.Reserve.Sign() == 1)
+	return m.ID().IsBaseCoin() || (m.Crr() > 0 && m.Reserve().Sign() == 1)
 }
 
 func (m Model) Version() uint16 {
@@ -84,6 +84,12 @@ func (m *Model) AddReserve(amount *big.Int) {
 
 func (m *Model) SetVolume(volume *big.Int) {
 	m.info.Volume.Set(volume)
+	m.markDirty(m.id)
+	m.info.isDirty = true
+}
+
+func (m *Model) SetReserve(reserve *big.Int) {
+	m.info.Reserve.Set(reserve)
 	m.markDirty(m.id)
 	m.info.isDirty = true
 }

@@ -1331,7 +1331,7 @@ func TestBuyCoinTxToMaximumValueToSellReached(t *testing.T) {
 
 	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.MaximumValueToSellReached {
-		t.Fatalf("Response code is not %d. Error %s", code.MaximumValueToSellReached, response.Log)
+		t.Fatalf("Response code is not %d. Error %d %s", code.MaximumValueToSellReached, response.Code, response.Log)
 	}
 
 	if err := checkState(cState); err != nil {

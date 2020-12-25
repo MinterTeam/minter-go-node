@@ -10,7 +10,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/tendermint/tendermint/libs/kv"
 )
@@ -142,17 +141,10 @@ func (data CreateCoinData) Run(tx *Transaction, context state.Interface, rewardP
 	}
 
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
-	commission := big.NewInt(0).Set(commissionInBaseCoin)
-
-	if tx.GasCoin != types.GetBaseCoinID() {
-		coin := checkState.Coins().GetCoin(tx.GasCoin)
-
-		errResp := CheckReserveUnderflow(coin, commissionInBaseCoin)
-		if errResp != nil {
-			return *errResp
-		}
-
-		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
+	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
+	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, gasCoin, commissionInBaseCoin)
+	if errResp != nil {
+		return *errResp
 	}
 
 	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
@@ -173,35 +165,34 @@ func (data CreateCoinData) Run(tx *Transaction, context state.Interface, rewardP
 		}
 	}
 
-	if tx.GasCoin.IsBaseCoin() {
-		totalTxCost := big.NewInt(0)
-		if data.InitialReserve != nil {
-			totalTxCost.Add(totalTxCost, data.InitialReserve)
-		}
-		totalTxCost.Add(totalTxCost, commission)
+	totalTxCost := big.NewInt(0).Set(commissionInBaseCoin)
+	if data.InitialReserve != nil {
+		totalTxCost.Add(totalTxCost, data.InitialReserve)
+	}
 
-		if checkState.Accounts().GetBalance(sender, types.GetBaseCoinID()).Cmp(totalTxCost) < 0 {
-			gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
+	if checkState.Accounts().GetBalance(sender, types.GetBaseCoinID()).Cmp(totalTxCost) < 0 {
+		gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
 
-			return Response{
-				Code: code.InsufficientFunds,
-				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), totalTxCost.String(), gasCoin.GetFullSymbol()),
-				Info: EncodeError(code.NewInsufficientFunds(sender.String(), totalTxCost.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
-			}
+		return Response{
+			Code: code.InsufficientFunds,
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), totalTxCost.String(), gasCoin.GetFullSymbol()),
+			Info: EncodeError(code.NewInsufficientFunds(sender.String(), totalTxCost.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
 		}
 	}
 
 	var coinId = checkState.App().GetNextCoinID()
 	if deliverState, ok := context.(*state.State); ok {
+		if isGasCommissionFromPoolSwap {
+			commission, commissionInBaseCoin = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
+		} else if !tx.GasCoin.IsBaseCoin() {
+			deliverState.Coins.SubVolume(tx.GasCoin, commission)
+			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
+		}
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
-
-		deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
-		deliverState.Coins.SubVolume(tx.GasCoin, commission)
-
+		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		if data.InitialReserve != nil {
 			deliverState.Accounts.SubBalance(sender, types.GetBaseCoinID(), data.InitialReserve)
 		}
-		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 
 		deliverState.Coins.Create(
 			coinId,

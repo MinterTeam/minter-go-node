@@ -6,7 +6,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
-	"github.com/MinterTeam/minter-go-node/core/state/coins"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/tendermint/tendermint/libs/kv"
@@ -89,7 +88,7 @@ func (data SellAllSwapPoolData) Run(tx *Transaction, context state.Interface, re
 
 		if isGasCommissionFromPoolSwap {
 			commission, commissionInBaseCoin = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
-		} else {
+		} else if !tx.GasCoin.IsBaseCoin() {
 			deliverState.Coins.SubVolume(tx.GasCoin, commission)
 			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
 		}
@@ -116,7 +115,48 @@ func (data SellAllSwapPoolData) Run(tx *Transaction, context state.Interface, re
 	}
 }
 
-func CalculateCommission(checkState *state.CheckState, gasCoin *coins.Model, commissionInBaseCoin *big.Int) (commission *big.Int, poolSwap bool, errResp *Response) {
+type dummyCoin struct {
+	id         types.CoinID
+	volume     *big.Int
+	reserve    *big.Int
+	crr        uint32
+	fullSymbol string
+}
+
+func (m dummyCoin) ID() types.CoinID {
+	return m.id
+}
+
+func (m dummyCoin) BaseOrHasReserve() bool {
+	return m.ID().IsBaseCoin() || (m.Crr() > 0 && m.Reserve().Sign() == 1)
+}
+
+func (m dummyCoin) Volume() *big.Int {
+	return m.volume
+}
+
+func (m dummyCoin) Reserve() *big.Int {
+	return m.reserve
+}
+
+func (m dummyCoin) Crr() uint32 {
+	return m.crr
+}
+
+func (m dummyCoin) GetFullSymbol() string {
+	return m.fullSymbol
+}
+
+type calculateCoin interface {
+	ID() types.CoinID
+	BaseOrHasReserve() bool
+	Volume() *big.Int
+	Reserve() *big.Int
+	Crr() uint32
+	GetFullSymbol() string
+}
+
+func CalculateCommission(checkState *state.CheckState, gasCoin calculateCoin, commissionInBaseCoin *big.Int) (commission *big.Int, poolSwap bool, errResp *Response) {
 	if gasCoin.ID().IsBaseCoin() {
 		return new(big.Int).Set(commissionInBaseCoin), false, nil
 	}
@@ -160,11 +200,11 @@ func commissionFromPool(checkState *state.CheckState, id types.CoinID, commissio
 	return commission, nil
 }
 
-func commissionFromReserve(gasCoin *coins.Model, commissionInBaseCoin *big.Int) (*big.Int, *Response) {
+func commissionFromReserve(gasCoin calculateCoin, commissionInBaseCoin *big.Int) (*big.Int, *Response) {
 	if !gasCoin.BaseOrHasReserve() {
 		return nil, &Response{
 			Code: code.CoinHasNotReserve,
-			Log:  "gas coin has not reserve",
+			Log:  "Gas coin has not reserve",
 		}
 	}
 	errResp := CheckReserveUnderflow(gasCoin, commissionInBaseCoin)

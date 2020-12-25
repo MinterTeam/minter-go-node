@@ -24,7 +24,7 @@ func (data SellAllCoinData) totalSpend(tx *Transaction, context *state.CheckStat
 	total := totalSpends{}
 	var conversions []conversion
 
-	commissionInBaseCoin := tx.CommissionInBaseCoin()
+	commissionInBaseCoin := tx.CommissionInBaseCoin() // todo CalculateCommission
 	available := context.Accounts().GetBalance(sender, data.CoinToSell)
 	var value *big.Int
 
