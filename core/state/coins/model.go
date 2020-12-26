@@ -88,7 +88,7 @@ func (m *Model) Mint(amount *big.Int) {
 }
 
 func (m *Model) Burn(amount *big.Int) {
-	m.CMaxSupply.Add(m.CMaxSupply, amount)
+	m.CMaxSupply.Sub(m.CMaxSupply, amount)
 	m.markDirty(m.id)
 }
 
