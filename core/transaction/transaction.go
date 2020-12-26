@@ -7,7 +7,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
-	"github.com/MinterTeam/minter-go-node/core/state/coins"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/rlp"
@@ -309,14 +308,14 @@ func rlpHash(x interface{}) (h types.Hash) {
 	return h
 }
 
-func CheckForCoinSupplyOverflow(coin *coins.Model, delta *big.Int) *Response {
+func CheckForCoinSupplyOverflow(coin calculateCoin, delta *big.Int) *Response {
 	total := big.NewInt(0).Set(coin.Volume())
 	total.Add(total, delta)
 
 	if total.Cmp(coin.MaxSupply()) == 1 {
 		return &Response{
 			Code: code.CoinSupplyOverflow,
-			Log:  "coin supply overflow",
+			Log:  "Coin supply overflow",
 			Info: EncodeError(code.NewCoinSupplyOverflow(delta.String(), coin.Volume().String(), total.String(), coin.MaxSupply().String(), coin.GetFullSymbol(), coin.ID().String())),
 		}
 	}

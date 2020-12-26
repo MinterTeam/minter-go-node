@@ -61,31 +61,35 @@ func (data SellAllSwapPoolData) Run(tx *Transaction, context state.Interface, re
 	}
 
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
-	commissionPoolSwapper := checkState.Swap().GetSwapper(tx.GasCoin, types.GetBaseCoinID())
-	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
-	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoin, commissionInBaseCoin)
+	commissionPoolSwapper := checkState.Swap().GetSwapper(data.CoinToSell, types.GetBaseCoinID())
+	sellCoin := checkState.Coins().GetCoin(data.CoinToSell)
+	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, sellCoin, commissionInBaseCoin)
 	if errResp != nil {
 		return *errResp
 	}
 
 	balance := checkState.Accounts().GetBalance(sender, data.CoinToSell)
-	if tx.GasCoin == data.CoinToSell {
-		balance.Sub(balance, commission)
-	}
+	available := big.NewInt(0).Set(balance)
+	balance.Sub(available, commission)
+
 	if balance.Sign() != 1 {
-		symbol := checkState.Coins().GetCoin(data.CoinToSell).GetFullSymbol()
 		return Response{
 			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), balance.String(), symbol),
-			Info: EncodeError(code.NewInsufficientFunds(sender.String(), balance.String(), symbol, data.CoinToSell.String())),
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), balance.String(), sellCoin.GetFullSymbol()),
+			Info: EncodeError(code.NewInsufficientFunds(sender.String(), balance.String(), sellCoin.GetFullSymbol(), data.CoinToSell.String())),
 		}
 	}
+
+	valueToSell := big.NewInt(0).Set(balance)
 	swapper := checkState.Swap().GetSwapper(data.CoinToSell, data.CoinToBuy)
-	if isGasCommissionFromPoolSwap && (tx.GasCoin == data.CoinToSell && data.CoinToBuy.IsBaseCoin()) {
-		swapper = commissionPoolSwapper.AddLastSwapStep(commission, commissionInBaseCoin)
+	if isGasCommissionFromPoolSwap {
+		if data.CoinToBuy.IsBaseCoin() {
+			swapper = commissionPoolSwapper.AddLastSwapStep(commission, commissionInBaseCoin)
+		}
+		valueToSell.Set(available)
 	}
 
-	errResp = CheckSwap(swapper, checkState.Coins().GetCoin(data.CoinToSell), checkState.Coins().GetCoin(data.CoinToBuy), balance, data.MinimumValueToBuy, false)
+	errResp = CheckSwap(swapper, sellCoin, checkState.Coins().GetCoin(data.CoinToBuy), balance, data.MinimumValueToBuy, false)
 	if errResp != nil {
 		return *errResp
 	}
@@ -132,6 +136,7 @@ type dummyCoin struct {
 	reserve    *big.Int
 	crr        uint32
 	fullSymbol string
+	maxSupply  *big.Int
 }
 
 func (m dummyCoin) ID() types.CoinID {
@@ -157,6 +162,9 @@ func (m dummyCoin) Crr() uint32 {
 func (m dummyCoin) GetFullSymbol() string {
 	return m.fullSymbol
 }
+func (m dummyCoin) MaxSupply() *big.Int {
+	return m.maxSupply
+}
 
 type calculateCoin interface {
 	ID() types.CoinID
@@ -165,6 +173,7 @@ type calculateCoin interface {
 	Reserve() *big.Int
 	Crr() uint32
 	GetFullSymbol() string
+	MaxSupply() *big.Int
 }
 
 func CalculateCommission(checkState *state.CheckState, swapper swap.SwapChecker, gasCoin calculateCoin, commissionInBaseCoin *big.Int) (commission *big.Int, poolSwap bool, errResp *Response) {

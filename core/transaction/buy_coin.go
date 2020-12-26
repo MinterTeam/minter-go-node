@@ -109,12 +109,13 @@ func (data BuyCoinData) Run(tx *Transaction, context state.Interface, rewardPool
 	}
 
 	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
-	gasCoinEdited := dummyCoin{
+	gasCoinUpdated := dummyCoin{
 		id:         gasCoin.ID(),
 		volume:     gasCoin.Volume(),
 		reserve:    gasCoin.Reserve(),
 		crr:        gasCoin.Crr(),
 		fullSymbol: gasCoin.GetFullSymbol(),
+		maxSupply:  gasCoin.MaxSupply(),
 	}
 	coinToSell := data.CoinToSell
 	coinToBuy := data.CoinToBuy
@@ -126,9 +127,9 @@ func (data BuyCoinData) Run(tx *Transaction, context state.Interface, rewardPool
 			return *errResp
 		}
 		value = formula.CalculatePurchaseAmount(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), value)
-		if coinToBuy == gasCoinEdited.ID() {
-			gasCoinEdited.volume.Add(gasCoinEdited.volume, data.ValueToBuy)
-			gasCoinEdited.reserve.Add(gasCoinEdited.reserve, value)
+		if coinToBuy == gasCoinUpdated.ID() {
+			gasCoinUpdated.volume.Add(gasCoinUpdated.volume, data.ValueToBuy)
+			gasCoinUpdated.reserve.Add(gasCoinUpdated.reserve, value)
 		}
 	}
 	diffBipReserve := big.NewInt(0).Set(value)
@@ -137,15 +138,15 @@ func (data BuyCoinData) Run(tx *Transaction, context state.Interface, rewardPool
 		if errResp != nil {
 			return *errResp
 		}
-		if coinToSell == gasCoinEdited.ID() {
-			gasCoinEdited.volume.Sub(gasCoinEdited.volume, value)
-			gasCoinEdited.reserve.Sub(gasCoinEdited.reserve, diffBipReserve)
+		if coinToSell == gasCoinUpdated.ID() {
+			gasCoinUpdated.volume.Sub(gasCoinUpdated.volume, value)
+			gasCoinUpdated.reserve.Sub(gasCoinUpdated.reserve, diffBipReserve)
 		}
 	}
 
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
 	commissionPoolSwapper := checkState.Swap().GetSwapper(tx.GasCoin, types.GetBaseCoinID())
-	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoinEdited, commissionInBaseCoin)
+	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoinUpdated, commissionInBaseCoin)
 	if errResp != nil {
 		return *errResp
 	}
@@ -239,7 +240,7 @@ func CalculateSaleAmountAndCheck(coinFrom calculateCoin, value *big.Int) (*big.I
 	if coinFrom.Reserve().Cmp(value) == -1 {
 		return nil, &Response{
 			Code: code.CoinReserveNotSufficient,
-			Log: fmt.Sprintf("Gas coin reserve balance is not sufficient for transaction. Has: %s %s, required %s %s",
+			Log: fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s %s, required %s %s",
 				coinFrom.Reserve().String(),
 				types.GetBaseCoin(),
 				value.String(),
@@ -269,7 +270,7 @@ func CalculateSaleReturnAndCheck(coinFrom calculateCoin, value *big.Int) (*big.I
 	if coinFrom.Reserve().Cmp(value) != 1 {
 		return nil, &Response{
 			Code: code.CoinReserveNotSufficient,
-			Log: fmt.Sprintf("Gas coin reserve balance is not sufficient for transaction. Has: %s %s, required %s %s",
+			Log: fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s %s, required %s %s",
 				coinFrom.Reserve().String(),
 				types.GetBaseCoin(),
 				value.String(),

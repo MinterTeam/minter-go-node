@@ -349,12 +349,13 @@ func (data SellCoinData) Run(tx *Transaction, context state.Interface, rewardPoo
 	}
 
 	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
-	gasCoinEdited := dummyCoin{
+	gasCoinUpdated := dummyCoin{
 		id:         gasCoin.ID(),
 		volume:     gasCoin.Volume(),
 		reserve:    gasCoin.Reserve(),
 		crr:        gasCoin.Crr(),
 		fullSymbol: gasCoin.GetFullSymbol(),
+		maxSupply:  gasCoin.MaxSupply(),
 	}
 	coinToSell := data.CoinToSell
 	coinToBuy := data.CoinToBuy
@@ -367,9 +368,9 @@ func (data SellCoinData) Run(tx *Transaction, context state.Interface, rewardPoo
 		if errResp != nil {
 			return *errResp
 		}
-		if coinToSell == gasCoinEdited.ID() {
-			gasCoinEdited.volume.Sub(gasCoinEdited.volume, data.ValueToSell)
-			gasCoinEdited.reserve.Sub(gasCoinEdited.reserve, value)
+		if coinToSell == gasCoinUpdated.ID() {
+			gasCoinUpdated.volume.Sub(gasCoinUpdated.volume, data.ValueToSell)
+			gasCoinUpdated.reserve.Sub(gasCoinUpdated.reserve, value)
 		}
 	}
 	diffBipReserve := big.NewInt(0).Set(value)
@@ -378,21 +379,21 @@ func (data SellCoinData) Run(tx *Transaction, context state.Interface, rewardPoo
 		if errResp := CheckForCoinSupplyOverflow(coinTo, value); errResp != nil {
 			return *errResp
 		}
-		if coinToBuy == gasCoinEdited.ID() {
-			gasCoinEdited.volume.Add(gasCoinEdited.volume, value)
-			gasCoinEdited.reserve.Add(gasCoinEdited.reserve, diffBipReserve)
+		if coinToBuy == gasCoinUpdated.ID() {
+			gasCoinUpdated.volume.Add(gasCoinUpdated.volume, value)
+			gasCoinUpdated.reserve.Add(gasCoinUpdated.reserve, diffBipReserve)
 		}
 	}
 
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
 	commissionPoolSwapper := checkState.Swap().GetSwapper(tx.GasCoin, types.GetBaseCoinID())
-	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoinEdited, commissionInBaseCoin)
+	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoinUpdated, commissionInBaseCoin)
 	if errResp != nil {
 		return *errResp
 	}
 
 	// if !isGasCommissionFromPoolSwap && gasCoin.ID() == coinToSell && !coinToSell.IsBaseCoin() {
-	// 	// commission = formula.CalculateSaleAmount(gasCoinEdited.Volume(), gasCoinEdited.Reserve(), coinFrom.Crr(), commissionInBaseCoin)
+	// 	// commission = formula.CalculateSaleAmount(gasCoinUpdated.Volume(), gasCoinUpdated.Reserve(), coinFrom.Crr(), commissionInBaseCoin)
 	// 	value, errResp = CalculateSaleReturnAndCheck(coinFrom, big.NewInt(0).Add(data.ValueToSell, commission))
 	// 	if errResp != nil {
 	// 		return *errResp
