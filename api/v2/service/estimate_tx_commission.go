@@ -28,7 +28,7 @@ func (s *Service) EstimateTxCommission(ctx context.Context, req *pb.EstimateTxCo
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	decodedTx, err := transaction.TxDecoder.DecodeFromBytesWithoutSig(decodeString)
+	decodedTx, err := transaction.DecodeFromBytesWithoutSig(decodeString)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "Cannot decode transaction: %s", err.Error())
 	}

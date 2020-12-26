@@ -191,7 +191,7 @@ func (s *Service) blockTransaction(block *core_types.ResultBlock, blockResults *
 	txs := make([]*pb.BlockResponse_Transaction, 0, len(block.Block.Data.Txs))
 
 	for i, rawTx := range block.Block.Data.Txs {
-		tx, _ := transaction.TxDecoder.DecodeFromBytes(rawTx)
+		tx, _ := transaction.DecodeFromBytes(rawTx)
 		sender, _ := tx.Sender()
 
 		tags := make(map[string]string)

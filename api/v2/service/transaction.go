@@ -26,7 +26,7 @@ func (s *Service) Transaction(ctx context.Context, req *pb.TransactionRequest) (
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
 
-	decodedTx, _ := transaction.TxDecoder.DecodeFromBytes(tx.Tx)
+	decodedTx, _ := transaction.DecodeFromBytes(tx.Tx)
 	sender, _ := decodedTx.Sender()
 
 	tags := make(map[string]string)

@@ -51,7 +51,7 @@ func Transactions(query string, page, perPage int) (*[]json.RawMessage, error) {
 
 	result := make([]json.RawMessage, 0, len(rpcResult.Txs))
 	for _, tx := range rpcResult.Txs {
-		decodedTx, _ := transaction.TxDecoder.DecodeFromBytes(tx.Tx)
+		decodedTx, _ := transaction.DecodeFromBytes(tx.Tx)
 		txJsonEncoder := encoder.NewTxEncoderJSON(cState)
 		response, err := txJsonEncoder.Encode(decodedTx, tx)
 		if err != nil {

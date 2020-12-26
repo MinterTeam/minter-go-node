@@ -82,7 +82,7 @@ func Block(height int64) (*BlockResponse, error) {
 
 	txs := make([]BlockTransactionResponse, len(block.Block.Data.Txs))
 	for i, rawTx := range block.Block.Data.Txs {
-		tx, _ := transaction.TxDecoder.DecodeFromBytes(rawTx)
+		tx, _ := transaction.DecodeFromBytes(rawTx)
 		sender, _ := tx.Sender()
 
 		if len(blockResults.TxsResults) == 0 {
