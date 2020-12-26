@@ -11,7 +11,7 @@ type Item struct {
 	CandidateID     uint32
 	Coin            types.CoinID
 	Value           *big.Int
-	MoveToCandidate *uint32 `rlp:"nil"`
+	MoveToCandidate *uint32 `rlp:"nilList"`
 }
 
 type Model struct {
