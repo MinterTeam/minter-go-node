@@ -48,7 +48,7 @@ func RunTx(context state.Interface,
 		}
 	}
 
-	tx, err := TxDecoder.DecodeFromBytes(rawTx)
+	tx, err := DecodeFromBytes(rawTx)
 	if err != nil {
 		return Response{
 			Code: code.DecodeError,

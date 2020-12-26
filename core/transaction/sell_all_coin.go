@@ -9,6 +9,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/tendermint/tendermint/libs/kv"
+	"log"
 	"math/big"
 )
 
@@ -101,6 +102,10 @@ func (data SellAllCoinData) totalSpend(tx *Transaction, context *state.CheckStat
 		coinTo := context.Coins().GetCoin(data.CoinToBuy)
 
 		basecoinValue := formula.CalculateSaleReturn(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), amountToSell)
+		log.Println(commissionInBaseCoin)
+		log.Println(basecoinValue)
+		log.Println(tx.GasCoin)
+		log.Println(data.CoinToSell)
 		if basecoinValue.Cmp(commissionInBaseCoin) == -1 {
 			return nil, nil, nil, &Response{
 				Code: code.InsufficientFunds,
@@ -215,9 +220,15 @@ func (data SellAllCoinData) Run(tx *Transaction, context state.Interface, reward
 		return *response
 	}
 
+	// _, _, _, response = data.totalSpend(tx, checkState)
+	// if response != nil {
+	// 	return *response
+	// }
+
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
 	commissionPoolSwapper := checkState.Swap().GetSwapper(tx.GasCoin, types.GetBaseCoinID())
-	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
+	// gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
+	gasCoin := checkState.Coins().GetCoin(data.CoinToSell)
 	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoin, commissionInBaseCoin)
 	if errResp != nil {
 		return *errResp
