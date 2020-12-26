@@ -11,7 +11,7 @@ import (
 const (
 	TypeRewardEvent    = "minter/RewardEvent"
 	TypeSlashEvent     = "minter/SlashEvent"
-	TypeUnbondEvent    = "minter/StakeMoveEvent"
+	TypeUnbondEvent    = "minter/UnbondEvent"
 	TypeStakeKickEvent = "minter/StakeKickEvent"
 	TypeStakeMoveEvent = "minter/StakeMoveEvent"
 )
