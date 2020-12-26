@@ -13,7 +13,7 @@ import (
 
 func TestFrozenFundsToAddModel(t *testing.T) {
 	b := bus.NewBus()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 
 	ff := NewFrozenFunds(b, mutableTree.GetLastImmutable())
 
@@ -24,7 +24,7 @@ func TestFrozenFundsToAddModel(t *testing.T) {
 
 	height, addr, pubkey, coin, val := uint64(1), types.Address{0}, types.Pubkey{0}, types.GetBaseCoinID(), big.NewInt(1e18)
 
-	ff.AddFund(height, addr, pubkey, 1, coin, val)
+	ff.AddFund(height, addr, pubkey, 1, coin, val, nil)
 
 	_, _, err := mutableTree.Commit(ff)
 	if err != nil {
@@ -52,7 +52,7 @@ func TestFrozenFundsToAddModel(t *testing.T) {
 
 func TestFrozenFundsToDeleteModel(t *testing.T) {
 	b := bus.NewBus()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	ff := NewFrozenFunds(b, mutableTree.GetLastImmutable())
 
 	b.SetChecker(checker.NewChecker(b))
@@ -62,7 +62,7 @@ func TestFrozenFundsToDeleteModel(t *testing.T) {
 
 	height, addr, pubkey, coin, val := uint64(1), types.Address{0}, types.Pubkey{0}, types.GetBaseCoinID(), big.NewInt(1e18)
 
-	ff.AddFund(height, addr, pubkey, 1, coin, val)
+	ff.AddFund(height, addr, pubkey, 1, coin, val, nil)
 
 	_, _, err := mutableTree.Commit(ff)
 	if err != nil {
@@ -87,7 +87,7 @@ func TestFrozenFundsToDeleteModel(t *testing.T) {
 
 func TestFrozenFundsToDeleteNotExistingFund(t *testing.T) {
 	b := bus.NewBus()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	ff := NewFrozenFunds(b, mutableTree.GetLastImmutable())
 
 	ff.Delete(0)

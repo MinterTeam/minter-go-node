@@ -18,7 +18,7 @@ import (
 )
 
 func TestEditOwnerTx(t *testing.T) {
-	cState, err := state.NewState(0, db.NewMemDB(), nil, 1, 1)
+	cState, err := state.NewState(0, db.NewMemDB(), nil, 1, 1, 0)
 	if err != nil {
 		t.Fatalf("Cannot load state. Error %s", err)
 	}
@@ -76,7 +76,7 @@ func TestEditOwnerTx(t *testing.T) {
 }
 
 func TestEditOwnerTxWithWrongOwner(t *testing.T) {
-	cState, err := state.NewState(0, db.NewMemDB(), nil, 1, 1)
+	cState, err := state.NewState(0, db.NewMemDB(), nil, 1, 1, 0)
 	if err != nil {
 		t.Fatalf("Cannot load state. Error %s", err)
 	}
@@ -110,7 +110,7 @@ func TestEditOwnerTxWithWrongOwner(t *testing.T) {
 }
 
 func TestEditOwnerTxWithWrongSymbol(t *testing.T) {
-	cState, err := state.NewState(0, db.NewMemDB(), nil, 1, 1)
+	cState, err := state.NewState(0, db.NewMemDB(), nil, 1, 1, 0)
 	if err != nil {
 		t.Fatalf("Cannot load state. Error %s", err)
 	}
@@ -145,7 +145,7 @@ func TestEditOwnerTxWithWrongSymbol(t *testing.T) {
 }
 
 func TestEditCOwnerTxWithInsufficientFunds(t *testing.T) {
-	cState, err := state.NewState(0, db.NewMemDB(), nil, 1, 1)
+	cState, err := state.NewState(0, db.NewMemDB(), nil, 1, 1, 0)
 	if err != nil {
 		t.Fatalf("Cannot load state. Error %s", err)
 	}
@@ -221,8 +221,8 @@ func TestEditCoinOwnerTxToGasCoinReserveUnderflow(t *testing.T) {
 	}
 
 	response := RunTx(cState, encodedTx, big.NewInt(0), 500000, &sync.Map{}, 0)
-	if response.Code != code.CoinReserveUnderflow {
-		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveUnderflow, response.Log)
+	if response.Code != code.CommissionCoinNotSufficient {
+		t.Fatalf("Response code is not %d. Error %s", code.CommissionCoinNotSufficient, response.Log)
 	}
 
 	if err := checkState(cState); err != nil {
@@ -260,5 +260,5 @@ func makeTestEditOwnerTx(data EditCoinOwnerData, privateKey *ecdsa.PrivateKey) (
 
 func createDefaultValidator(cState *state.State) {
 	cState.Validators.Create(types.Pubkey{0}, big.NewInt(0))
-	cState.Candidates.Create(types.Address{0}, types.Address{0}, types.Address{0}, types.Pubkey{0}, 0)
+	cState.Candidates.Create(types.Address{0}, types.Address{0}, types.Address{0}, types.Pubkey{0}, 0, 0)
 }

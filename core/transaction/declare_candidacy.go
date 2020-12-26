@@ -113,8 +113,9 @@ func (data DeclareCandidacyData) Run(tx *Transaction, context state.Interface, r
 	}
 
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
+	commissionPoolSwapper := checkState.Swap().GetSwapper(tx.GasCoin, types.GetBaseCoinID())
 	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
-	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, gasCoin, commissionInBaseCoin)
+	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoin, commissionInBaseCoin)
 	if errResp != nil {
 		return *errResp
 	}
@@ -153,7 +154,7 @@ func (data DeclareCandidacyData) Run(tx *Transaction, context state.Interface, r
 	if deliverState, ok := context.(*state.State); ok {
 		if isGasCommissionFromPoolSwap {
 			commission, commissionInBaseCoin = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
-		} else {
+		} else if !tx.GasCoin.IsBaseCoin() {
 			deliverState.Coins.SubVolume(tx.GasCoin, commission)
 			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
 		}
@@ -161,12 +162,13 @@ func (data DeclareCandidacyData) Run(tx *Transaction, context state.Interface, r
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
 		deliverState.Accounts.SubBalance(sender, data.Coin, data.Stake)
-		deliverState.Candidates.Create(data.Address, sender, sender, data.PubKey, data.Commission)
+		deliverState.Candidates.Create(data.Address, sender, sender, data.PubKey, data.Commission, currentBlock)
 		deliverState.Candidates.Delegate(sender, data.PubKey, data.Coin, data.Stake, big.NewInt(0))
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}
 
 	tags := kv.Pairs{
+		kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeDeclareCandidacy)}))},
 		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
 	}

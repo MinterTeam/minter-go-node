@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/hex"
+	"github.com/MinterTeam/minter-go-node/core/types"
 	"strings"
 
 	"github.com/MinterTeam/minter-go-node/core/transaction"
@@ -27,13 +28,14 @@ func (s *Service) EstimateTxCommission(ctx context.Context, req *pb.EstimateTxCo
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	decodedTx, err := transaction.TxDecoder.DecodeFromBytesWithoutSig(decodeString)
+	decodedTx, err := transaction.DecodeFromBytesWithoutSig(decodeString)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "Cannot decode transaction: %s", err.Error())
 	}
 
 	commissionInBaseCoin := decodedTx.CommissionInBaseCoin()
-	commission, _, errResp := transaction.CalculateCommission(cState, cState.Coins().GetCoin(decodedTx.GasCoin), commissionInBaseCoin)
+	commissionPoolSwapper := cState.Swap().GetSwapper(decodedTx.GasCoin, types.GetBaseCoinID())
+	commission, _, errResp := transaction.CalculateCommission(cState, commissionPoolSwapper, cState.Coins().GetCoin(decodedTx.GasCoin), commissionInBaseCoin)
 	if errResp != nil {
 		return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
 	}

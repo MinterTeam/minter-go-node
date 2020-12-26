@@ -206,7 +206,7 @@ func TestSellAllCoinTxWithMinimumValueToBuy(t *testing.T) {
 	coinID := createTestCoin(cState)
 	privateKey, _ := crypto.GenerateKey()
 	coin := types.GetBaseCoinID()
-
+	cState.Accounts.AddBalance(crypto.PubkeyToAddress(privateKey.PublicKey), coin, big.NewInt(9e18))
 	minValToBuy, _ := big.NewInt(0).SetString("151191152412701306252", 10)
 	data := SellAllCoinData{
 		CoinToSell:        coin,
@@ -337,7 +337,7 @@ func TestSellAllCoinTxWithInsufficientFunds(t *testing.T) {
 
 	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.InsufficientFunds {
-		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
+		t.Fatalf("Response code is not %d. Error %d %s", code.InsufficientFunds, response.Code, response.Log)
 	}
 
 	if err := checkState(cState); err != nil {
@@ -430,8 +430,8 @@ func TestSellAllCoinTxToCoinSupplyOverflow(t *testing.T) {
 	}
 
 	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
-	if response.Code != code.CoinSupplyOverflow {
-		t.Fatalf("Response code is not %d. Error %s", code.CoinSupplyOverflow, response.Log)
+	if response.Code != code.CoinReserveNotSufficient {
+		t.Fatalf("Response code is not %d. Error %d %s", code.CoinReserveNotSufficient, response.Code, response.Log)
 	}
 
 	if err := checkState(cState); err != nil {
@@ -487,12 +487,13 @@ func TestSellAllCoinTxToMinimumValueToBuyReached(t *testing.T) {
 	}
 
 	// coin to buy == base coin
-
-	cState.Accounts.SubBalance(types.Address{}, coinToBuyID, big.NewInt(1))
-	cState.Accounts.AddBalance(addr, coinToBuyID, big.NewInt(1))
-
+	//
 	data.CoinToBuy = sellCoinID
 	data.CoinToSell = coinToBuyID
+
+	cState.Accounts.SubBalance(types.Address{}, data.CoinToSell, big.NewInt(10000004500002851))
+	cState.Accounts.AddBalance(addr, data.CoinToSell, big.NewInt(10000004500002851))
+
 	data.MinimumValueToBuy = big.NewInt(9e18)
 	encodedData, err = rlp.EncodeToBytes(data)
 	if err != nil {
@@ -511,7 +512,7 @@ func TestSellAllCoinTxToMinimumValueToBuyReached(t *testing.T) {
 
 	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.MinimumValueToBuyReached {
-		t.Fatalf("Response code is not %d. Error %s", code.MinimumValueToBuyReached, response.Log)
+		t.Fatalf("Response code %d is not %d. Error %s: %s", response.Code, code.MinimumValueToBuyReached, response.Log, response.Info)
 	}
 
 	if err := checkState(cState); err != nil {

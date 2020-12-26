@@ -13,7 +13,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
-	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/tendermint/tendermint/libs/kv"
 	"golang.org/x/crypto/sha3"
@@ -178,18 +177,14 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 	}
 
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
-	commission := big.NewInt(0).Set(commissionInBaseCoin)
-
-	gasCoin := checkState.Coins().GetCoin(decodedCheck.GasCoin)
-	coin := checkState.Coins().GetCoin(decodedCheck.Coin)
-
-	if !decodedCheck.GasCoin.IsBaseCoin() {
-		errResp := CheckReserveUnderflow(gasCoin, commissionInBaseCoin)
-		if errResp != nil {
-			return *errResp
-		}
-		commission = formula.CalculateSaleAmount(gasCoin.Volume(), gasCoin.Reserve(), gasCoin.Crr(), commissionInBaseCoin)
+	commissionPoolSwapper := checkState.Swap().GetSwapper(tx.GasCoin, types.GetBaseCoinID())
+	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
+	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoin, commissionInBaseCoin)
+	if errResp != nil {
+		return *errResp
 	}
+
+	coin := checkState.Coins().GetCoin(decodedCheck.Coin)
 
 	if decodedCheck.Coin == decodedCheck.GasCoin {
 		totalTxCost := big.NewInt(0).Add(decodedCheck.Value, commission)
@@ -221,10 +216,12 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 	if deliverState, ok := context.(*state.State); ok {
 		deliverState.Checks.UseCheck(decodedCheck)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
-
-		deliverState.Coins.SubVolume(decodedCheck.GasCoin, commission)
-		deliverState.Coins.SubReserve(decodedCheck.GasCoin, commissionInBaseCoin)
-
+		if isGasCommissionFromPoolSwap {
+			commission, commissionInBaseCoin = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
+		} else if !tx.GasCoin.IsBaseCoin() {
+			deliverState.Coins.SubVolume(tx.GasCoin, commission)
+			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
+		}
 		deliverState.Accounts.SubBalance(checkSender, decodedCheck.GasCoin, commission)
 		deliverState.Accounts.SubBalance(checkSender, decodedCheck.Coin, decodedCheck.Value)
 		deliverState.Accounts.AddBalance(sender, decodedCheck.Coin, decodedCheck.Value)
@@ -232,6 +229,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 	}
 
 	tags := kv.Pairs{
+		kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeRedeemCheck)}))},
 		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(checkSender[:]))},
 		kv.Pair{Key: []byte("tx.to"), Value: []byte(hex.EncodeToString(sender[:]))},

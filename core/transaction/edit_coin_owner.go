@@ -7,7 +7,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
 )
@@ -19,6 +18,14 @@ type EditCoinOwnerData struct {
 
 func (data EditCoinOwnerData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	sender, _ := tx.Sender()
+
+	if !context.Coins().ExistsBySymbol(data.Symbol) {
+		return &Response{
+			Code: code.CoinNotExists,
+			Log:  fmt.Sprintf("Coin %s not exists", data.Symbol),
+			Info: EncodeError(code.NewCoinNotExists(data.Symbol.String(), "")),
+		}
+	}
 
 	info := context.Coins().GetSymbolInfo(data.Symbol)
 	if info == nil {
@@ -64,17 +71,11 @@ func (data EditCoinOwnerData) Run(tx *Transaction, context state.Interface, rewa
 	}
 
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
-	commission := big.NewInt(0).Set(commissionInBaseCoin)
-
-	if tx.GasCoin != types.GetBaseCoinID() {
-		gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
-
-		errResp := CheckReserveUnderflow(gasCoin, commissionInBaseCoin)
-		if errResp != nil {
-			return *errResp
-		}
-
-		commission = formula.CalculateSaleAmount(gasCoin.Volume(), gasCoin.Reserve(), gasCoin.Crr(), commissionInBaseCoin)
+	commissionPoolSwapper := checkState.Swap().GetSwapper(tx.GasCoin, types.GetBaseCoinID())
+	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
+	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoin, commissionInBaseCoin)
+	if errResp != nil {
+		return *errResp
 	}
 
 	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
@@ -89,14 +90,19 @@ func (data EditCoinOwnerData) Run(tx *Transaction, context state.Interface, rewa
 
 	if deliverState, ok := context.(*state.State); ok {
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
-		deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
-		deliverState.Coins.SubVolume(tx.GasCoin, commission)
+		if isGasCommissionFromPoolSwap {
+			commission, commissionInBaseCoin = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
+		} else if !tx.GasCoin.IsBaseCoin() {
+			deliverState.Coins.SubVolume(tx.GasCoin, commission)
+			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
+		}
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		deliverState.Coins.ChangeOwner(data.Symbol, data.NewOwner)
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}
 
 	tags := kv.Pairs{
+		kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeEditCoinOwner)}))},
 		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
 		kv.Pair{Key: []byte("tx.coin_symbol"), Value: []byte(data.Symbol.String())},

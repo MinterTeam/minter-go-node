@@ -24,7 +24,7 @@ func TestEditCandidateTx(t *testing.T) {
 	pubkey := [32]byte{}
 	rand.Read(pubkey[:])
 
-	cState.Candidates.Create(addr, addr, addr, pubkey, 10)
+	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 
 	newRewardAddress := types.Address{1}
@@ -167,7 +167,7 @@ func TestEditCandidateTxToCandidateOwnership(t *testing.T) {
 	pubkey := [32]byte{}
 	rand.Read(pubkey[:])
 
-	cState.Candidates.Create(addr2, addr2, addr2, pubkey, 10)
+	cState.Candidates.Create(addr2, addr2, addr2, pubkey, 10, 0)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 
 	newRewardAddress := types.Address{1}
@@ -225,7 +225,7 @@ func TestEditCandidateTxToInsufficientFunds(t *testing.T) {
 	pubkey := [32]byte{}
 	rand.Read(pubkey[:])
 
-	cState.Candidates.Create(addr, addr, addr, pubkey, 10)
+	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 
 	newRewardAddress := types.Address{1}
@@ -286,7 +286,7 @@ func TestEditCandidateTxToGasCoinReserveUnderflow(t *testing.T) {
 	pubkey := [32]byte{}
 	rand.Read(pubkey[:])
 
-	cState.Candidates.Create(addr, addr, addr, pubkey, 10)
+	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 
 	newRewardAddress := types.Address{1}
@@ -325,8 +325,8 @@ func TestEditCandidateTxToGasCoinReserveUnderflow(t *testing.T) {
 	}
 
 	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
-	if response.Code != code.CoinReserveNotSufficient {
-		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveNotSufficient, response.Log)
+	if response.Code != code.CommissionCoinNotSufficient {
+		t.Fatalf("Response code is not %d. Error %s", code.CommissionCoinNotSufficient, response.Log)
 	}
 
 	if err := checkState(cState); err != nil {

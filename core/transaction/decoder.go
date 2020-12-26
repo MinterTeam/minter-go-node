@@ -4,39 +4,67 @@ import (
 	"errors"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/rlp"
-	"reflect"
 )
 
-var TxDecoder = Decoder{
-	registeredTypes: map[TxType]Data{},
-}
-
-func init() {
-	TxDecoder.RegisterType(TypeSend, SendData{})
-	TxDecoder.RegisterType(TypeSellCoin, SellCoinData{})
-	TxDecoder.RegisterType(TypeSellAllCoin, SellAllCoinData{})
-	TxDecoder.RegisterType(TypeBuyCoin, BuyCoinData{})
-	TxDecoder.RegisterType(TypeCreateCoin, CreateCoinData{})
-	TxDecoder.RegisterType(TypeDeclareCandidacy, DeclareCandidacyData{})
-	TxDecoder.RegisterType(TypeDelegate, DelegateData{})
-	TxDecoder.RegisterType(TypeUnbond, UnbondData{})
-	TxDecoder.RegisterType(TypeRedeemCheck, RedeemCheckData{})
-	TxDecoder.RegisterType(TypeSetCandidateOnline, SetCandidateOnData{})
-	TxDecoder.RegisterType(TypeSetCandidateOffline, SetCandidateOffData{})
-	TxDecoder.RegisterType(TypeMultisend, MultisendData{})
-	TxDecoder.RegisterType(TypeCreateMultisig, CreateMultisigData{})
-	TxDecoder.RegisterType(TypeEditCandidate, EditCandidateData{})
-	TxDecoder.RegisterType(TypeSetHaltBlock, SetHaltBlockData{})
-	TxDecoder.RegisterType(TypeRecreateCoin, RecreateCoinData{})
-	TxDecoder.RegisterType(TypeEditCoinOwner, EditCoinOwnerData{})
-	TxDecoder.RegisterType(TypeEditMultisig, EditMultisigData{})
-	TxDecoder.RegisterType(TypePriceVote, PriceVoteData{})
-	TxDecoder.RegisterType(TypeEditCandidatePublicKey, EditCandidatePublicKeyData{})
-	TxDecoder.RegisterType(TypeAddSwapPool, AddSwapPoolData{})
-	TxDecoder.RegisterType(TypeRemoveSwapPool, RemoveSwapPoolData{})
-	TxDecoder.RegisterType(TypeSellSwapPool, SellSwapPoolData{})
-	TxDecoder.RegisterType(TypeBuySwapPool, BuySwapPoolData{})
-	TxDecoder.RegisterType(TypeSellAllSwapPool, SellAllSwapPoolData{})
+func getData(txType TxType) (Data, bool) {
+	switch txType {
+	case TypeSend:
+		return &SendData{}, true
+	case TypeSellCoin:
+		return &SellCoinData{}, true
+	case TypeSellAllCoin:
+		return &SellAllCoinData{}, true
+	case TypeBuyCoin:
+		return &BuyCoinData{}, true
+	case TypeCreateCoin:
+		return &CreateCoinData{}, true
+	case TypeDeclareCandidacy:
+		return &DeclareCandidacyData{}, true
+	case TypeDelegate:
+		return &DelegateData{}, true
+	case TypeUnbond:
+		return &UnbondData{}, true
+	case TypeRedeemCheck:
+		return &RedeemCheckData{}, true
+	case TypeSetCandidateOnline:
+		return &SetCandidateOnData{}, true
+	case TypeSetCandidateOffline:
+		return &SetCandidateOffData{}, true
+	case TypeMultisend:
+		return &MultisendData{}, true
+	case TypeCreateMultisig:
+		return &CreateMultisigData{}, true
+	case TypeEditCandidate:
+		return &EditCandidateData{}, true
+	case TypeSetHaltBlock:
+		return &SetHaltBlockData{}, true
+	case TypeRecreateCoin:
+		return &RecreateCoinData{}, true
+	case TypeEditCoinOwner:
+		return &EditCoinOwnerData{}, true
+	case TypeEditMultisig:
+		return &EditMultisigData{}, true
+	case TypePriceVote:
+		return &PriceVoteData{}, true
+	case TypeEditCandidatePublicKey:
+		return &EditCandidatePublicKeyData{}, true
+	case TypeAddSwapPool:
+		return &AddSwapPoolData{}, true
+	case TypeRemoveSwapPool:
+		return &RemoveSwapPoolData{}, true
+	case TypeSellSwapPool:
+		return &SellSwapPoolData{}, true
+	case TypeBuySwapPool:
+		return &BuySwapPoolData{}, true
+	case TypeSellAllSwapPool:
+		return &SellAllSwapPoolData{}, true
+	case TypeEditCommission:
+		return &EditCommissionData{}, true
+	case TypeMoveStake:
+		return &MoveStakeData{}, true
+	default:
+		return nil, false
+	}
 }
 
 type Decoder struct {
@@ -47,8 +75,8 @@ func (decoder *Decoder) RegisterType(t TxType, d Data) {
 	decoder.registeredTypes[t] = d
 }
 
-func (decoder *Decoder) DecodeFromBytes(buf []byte) (*Transaction, error) {
-	tx, err := decoder.DecodeFromBytesWithoutSig(buf)
+func DecodeFromBytes(buf []byte) (*Transaction, error) {
+	tx, err := DecodeFromBytesWithoutSig(buf)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +112,7 @@ func DecodeSig(tx *Transaction) (*Transaction, error) {
 	return tx, nil
 }
 
-func (decoder *Decoder) DecodeFromBytesWithoutSig(buf []byte) (*Transaction, error) {
+func DecodeFromBytesWithoutSig(buf []byte) (*Transaction, error) {
 	var tx Transaction
 	err := rlp.DecodeBytes(buf, &tx)
 
@@ -96,13 +124,13 @@ func (decoder *Decoder) DecodeFromBytesWithoutSig(buf []byte) (*Transaction, err
 		return nil, errors.New("incorrect tx data")
 	}
 
-	d, ok := decoder.registeredTypes[tx.Type]
+	d, ok := getData(tx.Type)
 
 	if !ok {
 		return nil, fmt.Errorf("tx type %x is not registered", tx.Type)
 	}
 
-	err = rlp.DecodeBytesForType(tx.Data, reflect.ValueOf(d).Type(), &d)
+	err = rlp.DecodeBytes(tx.Data, d)
 
 	if err != nil {
 		return nil, err

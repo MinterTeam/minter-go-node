@@ -80,7 +80,7 @@ func TestCreateCoinTx(t *testing.T) {
 	targetBalance, _ := big.NewInt(0).SetString("989000000000000000000000", 10)
 	balance := cState.Accounts.GetBalance(addr, coin)
 	if balance.Cmp(targetBalance) != 0 {
-		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", coin, targetBalance, balance)
+		t.Errorf("Target %s balance is not correct. Expected %s, got %s", coin, targetBalance, balance)
 	}
 
 	stateCoin := cState.Coins.GetCoinBySymbol(toCreate, 0)
@@ -674,8 +674,8 @@ func TestCreateCoinTxToGasCoinReserveUnderflow(t *testing.T) {
 	}
 
 	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
-	if response.Code != code.CoinReserveUnderflow {
-		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveUnderflow, response.Log)
+	if response.Code != code.CommissionCoinNotSufficient {
+		t.Fatalf("Response code is not %d. Error %s", code.CommissionCoinNotSufficient, response.Log)
 	}
 
 	if err := checkState(cState); err != nil {
@@ -731,7 +731,7 @@ func TestCreateCoinToInsufficientFundsForGasCoin(t *testing.T) {
 
 	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.InsufficientFunds {
-		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
+		t.Fatalf("Response code is not %d. Error %d %s", code.InsufficientFunds, response.Code, response.Log)
 	}
 
 	if err := checkState(cState); err != nil {

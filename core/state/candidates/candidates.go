@@ -247,7 +247,7 @@ func (c *Candidates) GetNewCandidates(valCount int) []Candidate {
 
 	candidates := c.GetCandidates()
 	for _, candidate := range candidates {
-		if candidate.Status == CandidateStatusOffline {
+		if candidate.Status != CandidateStatusOnline {
 			continue
 		}
 
@@ -270,19 +270,20 @@ func (c *Candidates) GetNewCandidates(valCount int) []Candidate {
 }
 
 // Create creates a new candidate with given params and adds it to state
-func (c *Candidates) Create(ownerAddress, rewardAddress, controlAddress types.Address, pubkey types.Pubkey, commission uint32) {
+func (c *Candidates) Create(ownerAddress, rewardAddress, controlAddress types.Address, pubkey types.Pubkey, commission uint32, block uint64) {
 	candidate := &Candidate{
-		ID:                0,
-		PubKey:            pubkey,
-		RewardAddress:     rewardAddress,
-		OwnerAddress:      ownerAddress,
-		ControlAddress:    controlAddress,
-		Commission:        commission,
-		Status:            CandidateStatusOffline,
-		totalBipStake:     big.NewInt(0),
-		stakes:            [MaxDelegatorsPerCandidate]*stake{},
-		isDirty:           true,
-		isTotalStakeDirty: true,
+		ID:                       0,
+		PubKey:                   pubkey,
+		RewardAddress:            rewardAddress,
+		OwnerAddress:             ownerAddress,
+		ControlAddress:           controlAddress,
+		Commission:               commission,
+		LastEditCommissionHeight: block,
+		Status:                   CandidateStatusOffline,
+		totalBipStake:            big.NewInt(0),
+		stakes:                   [MaxDelegatorsPerCandidate]*stake{},
+		isDirty:                  true,
+		isTotalStakeDirty:        true,
 	}
 
 	candidate.setTmAddress()
@@ -293,7 +294,7 @@ func (c *Candidates) Create(ownerAddress, rewardAddress, controlAddress types.Ad
 // CreateWithID uses given ID to be associated with public key of a candidate
 func (c *Candidates) CreateWithID(ownerAddress, rewardAddress, controlAddress types.Address, pubkey types.Pubkey, commission uint32, id uint32) {
 	c.setPubKeyID(pubkey, id)
-	c.Create(ownerAddress, rewardAddress, controlAddress, pubkey, commission)
+	c.Create(ownerAddress, rewardAddress, controlAddress, pubkey, commission, 0)
 }
 
 // PunishByzantineCandidate finds candidate with given tmAddress and punishes it:
@@ -332,6 +333,7 @@ func (c *Candidates) PunishByzantineCandidate(height uint64, tmAddress types.TmA
 			ValidatorPubKey: candidate.PubKey,
 		})
 
+		c.bus.Checker().AddCoin(stake.Coin, big.NewInt(0).Neg(newValue))
 		c.bus.FrozenFunds().AddFrozenFund(height+UnbondPeriod, stake.Owner, candidate.PubKey, candidate.ID, stake.Coin, newValue)
 		stake.setValue(big.NewInt(0))
 	}
@@ -540,6 +542,12 @@ func (c *Candidates) Edit(pubkey types.Pubkey, rewardAddress types.Address, owne
 	candidate.setOwner(ownerAddress)
 	candidate.setReward(rewardAddress)
 	candidate.setControl(controlAddress)
+}
+
+// EditCommission edits a candidate commission
+func (c *Candidates) EditCommission(pubkey types.Pubkey, commission uint32, height uint64) {
+	candidate := c.getFromMap(pubkey)
+	candidate.setCommission(commission, height)
 }
 
 // SetOnline sets candidate status to CandidateStatusOnline
@@ -792,9 +800,8 @@ func (c *Candidates) calculateBipValue(coinID types.CoinID, amount *big.Int, inc
 // 1. Subs 1% from each stake
 // 2. Calculate and return new total stake
 func (c *Candidates) Punish(height uint64, address types.TmAddress) *big.Int {
-	totalStake := big.NewInt(0)
-
 	candidate := c.GetCandidateByTendermintAddress(address)
+	totalStake := new(big.Int).Set(candidate.totalBipStake)
 	stakes := c.GetStakes(candidate.PubKey)
 	for _, stake := range stakes {
 		newValue := big.NewInt(0).Set(stake.Value)
@@ -812,10 +819,11 @@ func (c *Candidates) Punish(height uint64, address types.TmAddress) *big.Int {
 			c.bus.Coins().SubCoinReserve(coin.ID, ret)
 
 			c.bus.App().AddTotalSlashed(ret)
+			totalStake.Sub(totalStake, ret)
 		} else {
 			c.bus.App().AddTotalSlashed(slashed)
+			totalStake.Sub(totalStake, slashed)
 		}
-
 		c.bus.Checker().AddCoin(stake.Coin, big.NewInt(0).Neg(slashed))
 
 		c.bus.Events().AddEvent(uint32(height), &eventsdb.SlashEvent{
@@ -826,9 +834,8 @@ func (c *Candidates) Punish(height uint64, address types.TmAddress) *big.Int {
 		})
 
 		stake.setValue(newValue)
-		totalStake.Add(totalStake, newValue)
 	}
-
+	candidate.setTotalBipStake(totalStake)
 	return totalStake
 }
 
@@ -992,7 +999,7 @@ func (c *Candidates) LoadStakesOfCandidate(pubkey types.Pubkey) {
 		path := []byte{mainPrefix}
 		path = append(path, candidate.idBytes()...)
 		path = append(path, stakesPrefix)
-		path = append(path, []byte(fmt.Sprintf("%d", index))...)
+		path = append(path, big.NewInt(int64(index)).Bytes()...)
 		_, enc := c.immutableTree().Get(path)
 		if len(enc) == 0 {
 			candidate.stakes[index] = nil

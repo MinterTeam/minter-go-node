@@ -17,7 +17,7 @@ import (
 )
 
 func TestSetHaltBlockTx(t *testing.T) {
-	cState, err := state.NewState(500000, db.NewMemDB(), nil, 1, 1)
+	cState, err := state.NewState(500000, db.NewMemDB(), nil, 1, 1, 0)
 	if err != nil {
 		t.Fatalf("Cannot load state. Error %s", err)
 	}
@@ -30,7 +30,7 @@ func TestSetHaltBlockTx(t *testing.T) {
 	pubkey := [32]byte{}
 	rand.Read(pubkey[:])
 
-	cState.Candidates.Create(addr, addr, addr, pubkey, 10)
+	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1)))
 
@@ -97,7 +97,7 @@ func TestSetHaltBlockTx(t *testing.T) {
 
 func TestSetHaltBlockTxWithWrongHeight(t *testing.T) {
 	currentHeight := uint64(500000 + 5)
-	cState, err := state.NewState(currentHeight, db.NewMemDB(), nil, 1, 1)
+	cState, err := state.NewState(currentHeight, db.NewMemDB(), nil, 1, 1, 0)
 	if err != nil {
 		t.Fatalf("Cannot load state. Error %s", err)
 	}
@@ -110,7 +110,7 @@ func TestSetHaltBlockTxWithWrongHeight(t *testing.T) {
 	pubkey := [32]byte{}
 	rand.Read(pubkey[:])
 
-	cState.Candidates.Create(addr, addr, addr, pubkey, 10)
+	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1)))
 
@@ -161,7 +161,7 @@ func TestSetHaltBlockTxWithWrongHeight(t *testing.T) {
 
 func TestSetHaltBlockTxWithWrongOwnership(t *testing.T) {
 	currentHeight := uint64(500000 + 5)
-	cState, err := state.NewState(currentHeight, db.NewMemDB(), nil, 1, 1)
+	cState, err := state.NewState(currentHeight, db.NewMemDB(), nil, 1, 1, 0)
 	if err != nil {
 		t.Fatalf("Cannot load state. Error %s", err)
 	}
@@ -174,7 +174,7 @@ func TestSetHaltBlockTxWithWrongOwnership(t *testing.T) {
 	pubkey := [32]byte{}
 	rand.Read(pubkey[:])
 
-	cState.Candidates.Create(addr, addr, addr, pubkey, 10)
+	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1)))
 
@@ -225,7 +225,7 @@ func TestSetHaltBlockTxWithWrongOwnership(t *testing.T) {
 }
 
 func TestSetHaltBlockTxToNonExistCandidate(t *testing.T) {
-	cState, err := state.NewState(500000, db.NewMemDB(), nil, 1, 1)
+	cState, err := state.NewState(500000, db.NewMemDB(), nil, 1, 1, 0)
 	if err != nil {
 		t.Fatalf("Cannot load state. Error %s", err)
 	}
@@ -283,7 +283,7 @@ func TestSetHaltBlockTxToNonExistCandidate(t *testing.T) {
 }
 
 func TestSetHaltBlockTxToInsufficientFunds(t *testing.T) {
-	cState, err := state.NewState(500000, db.NewMemDB(), nil, 1, 1)
+	cState, err := state.NewState(500000, db.NewMemDB(), nil, 1, 1, 0)
 	if err != nil {
 		t.Fatalf("Cannot load state. Error %s", err)
 	}
@@ -296,7 +296,7 @@ func TestSetHaltBlockTxToInsufficientFunds(t *testing.T) {
 	pubkey := [32]byte{}
 	rand.Read(pubkey[:])
 
-	cState.Candidates.Create(addr, addr, addr, pubkey, 10)
+	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 
 	data := SetHaltBlockData{
@@ -340,7 +340,7 @@ func TestSetHaltBlockTxToInsufficientFunds(t *testing.T) {
 }
 
 func TestSetHaltBlockTxToGasCoinReserveUnderflow(t *testing.T) {
-	cState, err := state.NewState(500000, db.NewMemDB(), nil, 1, 1)
+	cState, err := state.NewState(500000, db.NewMemDB(), nil, 1, 1, 0)
 	if err != nil {
 		t.Fatalf("Cannot load state. Error %s", err)
 	}
@@ -358,7 +358,7 @@ func TestSetHaltBlockTxToGasCoinReserveUnderflow(t *testing.T) {
 	pubkey := [32]byte{}
 	rand.Read(pubkey[:])
 
-	cState.Candidates.Create(addr, addr, addr, pubkey, 10)
+	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 
 	data := SetHaltBlockData{
@@ -391,8 +391,8 @@ func TestSetHaltBlockTxToGasCoinReserveUnderflow(t *testing.T) {
 	}
 
 	response := RunTx(cState, encodedTx, big.NewInt(0), 500000, &sync.Map{}, 0)
-	if response.Code != code.CoinReserveNotSufficient {
-		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveNotSufficient, response.Log)
+	if response.Code != code.CommissionCoinNotSufficient {
+		t.Fatalf("Response code is not %d. Error %s", code.CommissionCoinNotSufficient, response.Log)
 	}
 
 	if err := checkState(cState); err != nil {
@@ -401,7 +401,7 @@ func TestSetHaltBlockTxToGasCoinReserveUnderflow(t *testing.T) {
 }
 
 func TestSetHaltBlockTxToAlreadyExistenHalt(t *testing.T) {
-	cState, err := state.NewState(500000, db.NewMemDB(), nil, 1, 1)
+	cState, err := state.NewState(500000, db.NewMemDB(), nil, 1, 1, 0)
 	if err != nil {
 		t.Fatalf("Cannot load state. Error %s", err)
 	}
@@ -414,7 +414,7 @@ func TestSetHaltBlockTxToAlreadyExistenHalt(t *testing.T) {
 	pubkey := [32]byte{}
 	rand.Read(pubkey[:])
 
-	cState.Candidates.Create(addr, addr, addr, pubkey, 10)
+	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1)))
 	cState.Halts.AddHaltBlock(haltHeight, pubkey)

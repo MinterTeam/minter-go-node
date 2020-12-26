@@ -12,6 +12,7 @@ type IEventsDB interface {
 	AddEvent(height uint32, event Event)
 	LoadEvents(height uint32) Events
 	CommitEvents() error
+	Close() error
 }
 
 type eventsStore struct {
@@ -39,7 +40,8 @@ func NewEventsStore(db db.DB) IEventsDB {
 	codec.RegisterConcrete(&reward{}, "reward", nil)
 	codec.RegisterConcrete(&slash{}, "slash", nil)
 	codec.RegisterConcrete(&unbond{}, "unbond", nil)
-	codec.RegisterConcrete(&stakeKick{}, "stakeKick", nil)
+	codec.RegisterConcrete(&kick{}, "kick", nil)
+	codec.RegisterConcrete(&move{}, "move", nil)
 
 	return &eventsStore{
 		cdc:       codec,
@@ -56,6 +58,10 @@ func NewEventsStore(db db.DB) IEventsDB {
 func (store *eventsStore) cachePubKey(id uint16, key [32]byte) {
 	store.idPubKey[id] = key
 	store.pubKeyID[key] = id
+}
+
+func (store *eventsStore) Close() error {
+	return store.db.Close()
 }
 
 func (store *eventsStore) cacheAddress(id uint32, address [20]byte) {

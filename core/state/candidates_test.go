@@ -288,7 +288,7 @@ func TestDoubleSignPenalty(t *testing.T) {
 
 	st.Candidates.RecalculateStakes(0)
 
-	st.FrozenFunds.AddFund(1, addr, pubkey, st.Candidates.ID(pubkey), coin, amount)
+	st.FrozenFunds.AddFund(1, addr, pubkey, st.Candidates.ID(pubkey), coin, amount, nil)
 
 	var pk ed25519.PubKeyEd25519
 	copy(pk[:], pubkey[:])
@@ -423,7 +423,7 @@ func TestZeroStakePenalty(t *testing.T) {
 	st.Candidates.RecalculateStakes(0)
 
 	st.Candidates.SubStake(addr, pubkey, coin, amount)
-	st.FrozenFunds.AddFund(518400, addr, pubkey, st.Candidates.ID(pubkey), coin, amount)
+	st.FrozenFunds.AddFund(518400, addr, pubkey, st.Candidates.ID(pubkey), coin, amount, nil)
 
 	var pk ed25519.PubKeyEd25519
 	copy(pk[:], pubkey[:])
@@ -583,7 +583,7 @@ func TestRecalculateStakes(t *testing.T) {
 }
 
 func getState() *State {
-	s, err := NewState(0, db.NewMemDB(), emptyEvents{}, 1, 1)
+	s, err := NewState(0, db.NewMemDB(), emptyEvents{}, 1, 1, 0)
 
 	if err != nil {
 		panic(err)
@@ -611,7 +611,7 @@ func createTestCandidate(stateDB *State) types.Pubkey {
 	_, _ = rand.Read(pubkey[:])
 
 	stateDB.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1000)))
-	stateDB.Candidates.Create(address, address, address, pubkey, 10)
+	stateDB.Candidates.Create(address, address, address, pubkey, 10, 0)
 
 	return pubkey
 }
@@ -621,3 +621,4 @@ type emptyEvents struct{}
 func (e emptyEvents) AddEvent(height uint32, event eventsdb.Event) {}
 func (e emptyEvents) LoadEvents(height uint32) eventsdb.Events     { return eventsdb.Events{} }
 func (e emptyEvents) CommitEvents() error                          { return nil }
+func (e emptyEvents) Close() error                                 { return nil }

@@ -32,17 +32,17 @@ func (data SellAllCoinData) totalSpend(tx *Transaction, context *state.CheckStat
 
 	switch {
 	case data.CoinToSell.IsBaseCoin():
-		amountToSell := big.NewInt(0).Set(available)
-		amountToSell.Sub(amountToSell, commissionInBaseCoin)
-		coin := context.Coins().GetCoin(data.CoinToBuy)
+		amountToSell := big.NewInt(0).Sub(available, commissionInBaseCoin)
+
 		if amountToSell.Sign() != 1 {
 			return nil, nil, nil, &Response{
 				Code: code.InsufficientFunds,
 				Log:  "Insufficient funds for sender account",
-				Info: EncodeError(code.NewInsufficientFunds(sender.String(), commissionInBaseCoin.String(), coin.GetFullSymbol(), coin.ID().String())),
+				Info: EncodeError(code.NewInsufficientFunds(sender.String(), commissionInBaseCoin.String(), types.GetBaseCoin().String(), types.GetBaseCoinID().String())),
 			}
 		}
 
+		coin := context.Coins().GetCoin(data.CoinToBuy)
 		value = formula.CalculatePurchaseReturn(coin.Volume(), coin.Reserve(), coin.Crr(), amountToSell)
 
 		if value.Cmp(data.MinimumValueToBuy) == -1 {
@@ -215,58 +215,99 @@ func (data SellAllCoinData) Run(tx *Transaction, context state.Interface, reward
 		return *response
 	}
 
-	available := checkState.Accounts().GetBalance(sender, data.CoinToSell)
-
-	totalSpends, conversions, value, response := data.totalSpend(tx, checkState)
-	if response != nil {
-		return *response
-	}
-
-	for _, ts := range totalSpends {
-		if checkState.Accounts().GetBalance(sender, ts.Coin).Cmp(ts.Value) < 0 {
-			coin := checkState.Coins().GetCoin(ts.Coin)
-
-			return Response{
-				Code: code.InsufficientFunds,
-				Log: fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s.",
-					sender.String(),
-					ts.Value.String(),
-					coin.GetFullSymbol()),
-				Info: EncodeError(code.NewInsufficientFunds(sender.String(), ts.Value.String(), coin.GetFullSymbol(), coin.ID().String())),
-			}
-		}
-	}
-
-	errResp := checkConversionsReserveUnderflow(conversions, checkState)
+	commissionInBaseCoin := tx.CommissionInBaseCoin()
+	commissionPoolSwapper := checkState.Swap().GetSwapper(tx.GasCoin, types.GetBaseCoinID())
+	gasCoin := checkState.Coins().GetCoin(data.CoinToSell)
+	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoin, commissionInBaseCoin)
 	if errResp != nil {
 		return *errResp
 	}
 
+	balance := checkState.Accounts().GetBalance(sender, data.CoinToSell)
+	if balance.Cmp(commission) != 1 {
+		return Response{
+			Code: code.InsufficientFunds,
+			Log:  fmt.Sprintf("1Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission.String(), gasCoin.GetFullSymbol()),
+			Info: EncodeError(code.NewInsufficientFunds(sender.String(), commission.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
+		}
+	}
+
+	coinToSell := data.CoinToSell
+	coinToBuy := data.CoinToBuy
+	var coinFrom calculateCoin
+	coinFrom = checkState.Coins().GetCoin(coinToSell)
+	coinTo := checkState.Coins().GetCoin(coinToBuy)
+
+	valueToSell := big.NewInt(0).Set(balance)
+	if isGasCommissionFromPoolSwap {
+		valueToSell.Sub(valueToSell, commission)
+	}
+	value := big.NewInt(0).Set(valueToSell)
+	if value.Sign() != 1 {
+		return Response{
+			Code: code.InsufficientFunds,
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), balance.String(), coinFrom.GetFullSymbol()),
+			Info: EncodeError(code.NewInsufficientFunds(sender.String(), balance.String(), coinFrom.GetFullSymbol(), data.CoinToSell.String())),
+		}
+	}
+
+	if !coinToSell.IsBaseCoin() {
+		value, errResp = CalculateSaleReturnAndCheck(coinFrom, value)
+		if errResp != nil {
+			return *errResp
+		}
+	}
+	subBipReserve := big.NewInt(0).Set(value)
+	if !isGasCommissionFromPoolSwap {
+		value.Sub(value, commissionInBaseCoin)
+	}
+	addBipReserve := big.NewInt(0).Set(value)
+	if !coinToBuy.IsBaseCoin() {
+		value = formula.CalculatePurchaseReturn(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), value)
+		if errResp := CheckForCoinSupplyOverflow(coinTo, value); errResp != nil {
+			return *errResp
+		}
+	}
+
+	if value.Cmp(data.MinimumValueToBuy) == -1 {
+		return Response{
+			Code: code.MinimumValueToBuyReached,
+			Log: fmt.Sprintf(
+				"You wanted to buy minimum %s, but currently you need to spend %s to complete tx",
+				data.MinimumValueToBuy.String(), value.String()),
+			Info: EncodeError(code.NewMaximumValueToSellReached(data.MinimumValueToBuy.String(), value.String(), coinFrom.GetFullSymbol(), coinFrom.ID().String())),
+		}
+	}
+
 	if deliverState, ok := context.(*state.State); ok {
-		for _, ts := range totalSpends {
-			deliverState.Accounts.SubBalance(sender, ts.Coin, ts.Value)
+		if isGasCommissionFromPoolSwap {
+			commission, commissionInBaseCoin = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
+		} else if !tx.GasCoin.IsBaseCoin() {
+			deliverState.Coins.SubVolume(tx.GasCoin, commission)
+			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
 		}
-
-		for _, conversion := range conversions {
-			deliverState.Coins.SubVolume(conversion.FromCoin, conversion.FromAmount)
-			deliverState.Coins.SubReserve(conversion.FromCoin, conversion.FromReserve)
-
-			deliverState.Coins.AddVolume(conversion.ToCoin, conversion.ToAmount)
-			deliverState.Coins.AddReserve(conversion.ToCoin, conversion.ToReserve)
+		rewardPool.Add(rewardPool, commissionInBaseCoin)
+		deliverState.Accounts.SubBalance(sender, data.CoinToSell, balance)
+		if !data.CoinToSell.IsBaseCoin() {
+			deliverState.Coins.SubVolume(data.CoinToSell, valueToSell)
+			deliverState.Coins.SubReserve(data.CoinToSell, subBipReserve)
 		}
-
-		rewardPool.Add(rewardPool, tx.CommissionInBaseCoin())
 		deliverState.Accounts.AddBalance(sender, data.CoinToBuy, value)
+		if !data.CoinToBuy.IsBaseCoin() {
+			deliverState.Coins.AddVolume(data.CoinToBuy, value)
+			deliverState.Coins.AddReserve(data.CoinToBuy, addBipReserve)
+		}
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}
 
 	tags := kv.Pairs{
+		kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeSellAllCoin)}))},
 		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
 		kv.Pair{Key: []byte("tx.coin_to_buy"), Value: []byte(data.CoinToBuy.String())},
 		kv.Pair{Key: []byte("tx.coin_to_sell"), Value: []byte(data.CoinToSell.String())},
 		kv.Pair{Key: []byte("tx.return"), Value: []byte(value.String())},
-		kv.Pair{Key: []byte("tx.sell_amount"), Value: []byte(available.String())},
+		kv.Pair{Key: []byte("tx.sell_amount"), Value: []byte(balance.String())},
 	}
 
 	return Response{

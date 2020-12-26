@@ -14,7 +14,7 @@ import (
 func TestWaitListToGetByAddressAndPubKey(t *testing.T) {
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 
 	wl := NewWaitList(b, mutableTree.GetLastImmutable())
 
@@ -22,7 +22,7 @@ func TestWaitListToGetByAddressAndPubKey(t *testing.T) {
 
 	addr, pubkey, coin, val := types.Address{0}, types.Pubkey{0}, types.GetBaseCoinID(), big.NewInt(1e18)
 
-	candidatesState.Create(addr, addr, addr, pubkey, 10)
+	candidatesState.Create(addr, addr, addr, pubkey, 10, 0)
 
 	wl.AddWaitList(addr, pubkey, coin, val)
 	_, _, err := mutableTree.Commit(wl)
@@ -47,14 +47,14 @@ func TestWaitListToGetByAddressAndPubKey(t *testing.T) {
 func TestWaitListToPartialDelete(t *testing.T) {
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 
 	wl := NewWaitList(b, mutableTree.GetLastImmutable())
 
 	candidatesState := candidates.NewCandidates(b, mutableTree.GetLastImmutable())
 
 	addr, pubkey, coin, val := types.Address{0}, types.Pubkey{0}, types.GetBaseCoinID(), big.NewInt(1e18)
-	candidatesState.Create(addr, addr, addr, pubkey, 10)
+	candidatesState.Create(addr, addr, addr, pubkey, 10, 0)
 
 	wl.AddWaitList(addr, pubkey, coin, val)
 	wl.AddWaitList(addr, pubkey, 1, val)

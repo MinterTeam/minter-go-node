@@ -15,14 +15,6 @@ type pubkeyID struct {
 
 // Candidate represents candidate object which is stored on disk
 type Candidate struct {
-	PubKey         types.Pubkey
-	RewardAddress  types.Address
-	OwnerAddress   types.Address
-	ControlAddress types.Address
-	Commission     uint32
-	Status         byte
-	ID             uint32
-
 	totalBipStake *big.Int
 	stakesCount   int
 	stakes        [MaxDelegatorsPerCandidate]*stake
@@ -33,6 +25,15 @@ type Candidate struct {
 	isTotalStakeDirty bool
 	isUpdatesDirty    bool
 	dirtyStakes       [MaxDelegatorsPerCandidate]bool
+
+	PubKey                   types.Pubkey
+	RewardAddress            types.Address
+	OwnerAddress             types.Address
+	ControlAddress           types.Address
+	Commission               uint32
+	Status                   byte
+	ID                       uint32
+	LastEditCommissionHeight uint64
 }
 
 func (candidate *Candidate) idBytes() []byte {
@@ -49,6 +50,12 @@ func (candidate *Candidate) setStatus(status byte) {
 func (candidate *Candidate) setOwner(address types.Address) {
 	candidate.isDirty = true
 	candidate.OwnerAddress = address
+}
+
+func (candidate *Candidate) setCommission(commission uint32, height uint64) {
+	candidate.isDirty = true
+	candidate.Commission = commission
+	candidate.LastEditCommissionHeight = height
 }
 
 func (candidate *Candidate) setReward(address types.Address) {

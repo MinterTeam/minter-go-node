@@ -62,7 +62,8 @@ func (s *Service) EstimateCoinBuy(ctx context.Context, req *pb.EstimateCoinBuyRe
 	coinTo := cState.Coins().GetCoin(coinToBuy)
 
 	commissionInBaseCoin := big.NewInt(0).Mul(big.NewInt(commissions.ConvertTx), transaction.CommissionMultiplier)
-	commission, _, errResp := transaction.CalculateCommission(cState, coinFrom, commissionInBaseCoin)
+	commissionPoolSwapper := cState.Swap().GetSwapper(coinFrom.ID(), types.GetBaseCoinID())
+	commission, _, errResp := transaction.CalculateCommission(cState, commissionPoolSwapper, coinFrom, commissionInBaseCoin)
 	if errResp != nil {
 		return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
 	}
@@ -83,10 +84,10 @@ func (s *Service) EstimateCoinBuy(ctx context.Context, req *pb.EstimateCoinBuyRe
 		}
 
 		if !coinToBuy.IsBaseCoin() {
-			value = formula.CalculatePurchaseAmount(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), valueToBuy)
-			if errResp := transaction.CheckForCoinSupplyOverflow(coinTo, valueToBuy); errResp != nil {
+			if errResp := transaction.CheckForCoinSupplyOverflow(coinTo, value); errResp != nil {
 				return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
 			}
+			value = formula.CalculatePurchaseAmount(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), value)
 		}
 		if !coinToSell.IsBaseCoin() {
 			value = formula.CalculateSaleAmount(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), value)
@@ -100,8 +101,9 @@ func (s *Service) EstimateCoinBuy(ctx context.Context, req *pb.EstimateCoinBuyRe
 		if err != nil {
 			return nil, status.Error(codes.FailedPrecondition, err.Error())
 		}
-		if err = cState.Swap().CheckSwap(coinFrom.ID(), coinTo.ID(), valueToBuy, value); err != nil {
-			return nil, status.Error(codes.FailedPrecondition, err.Error())
+		commissionPoolSwapper := cState.Swap().GetSwapper(coinFrom.ID(), coinTo.ID())
+		if errResp := transaction.CheckSwap(commissionPoolSwapper, coinFrom, coinTo, value, valueToBuy, true); errResp != nil {
+			return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
 		}
 	}
 	return &pb.EstimateCoinBuyResponse{

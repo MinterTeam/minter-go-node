@@ -118,7 +118,7 @@ func TestDeclareCandidacyTxOverflow(t *testing.T) {
 
 	for i := 0; i < maxCandidatesCount; i++ {
 		pubkey := types.Pubkey{byte(i)}
-		cState.Candidates.Create(types.Address{}, types.Address{}, types.Address{}, pubkey, 10)
+		cState.Candidates.Create(types.Address{}, types.Address{}, types.Address{}, pubkey, 10, 0)
 		cState.Candidates.Delegate(types.Address{}, pubkey, types.GetBaseCoinID(), helpers.BipToPip(big.NewInt(10)), helpers.BipToPip(big.NewInt(10)))
 	}
 
@@ -189,7 +189,7 @@ func TestDeclareCandidacyTxWithBlockPybKey(t *testing.T) {
 	var publicKey types.Pubkey
 	copy(publicKey[:], publicKeyBytes)
 
-	cState.Candidates.Create(types.Address{}, types.Address{}, types.Address{}, publicKey, 10)
+	cState.Candidates.Create(types.Address{}, types.Address{}, types.Address{}, publicKey, 10, 0)
 	pkeyNew, _ := crypto.GenerateKey()
 	publicKeyNewBytes := crypto.FromECDSAPub(&pkeyNew.PublicKey)[:32]
 	var publicKeyNew types.Pubkey
@@ -347,7 +347,7 @@ func TestDeclareCandidacyToExistCandidate(t *testing.T) {
 	var publicKey types.Pubkey
 	copy(publicKey[:], publicKeyBytes)
 
-	cState.Candidates.Create(addr, addr, addr, publicKey, uint32(10))
+	cState.Candidates.Create(addr, addr, addr, publicKey, uint32(10), 0)
 
 	commission := uint32(10)
 
@@ -658,8 +658,8 @@ func TestDeclareCandidacyTxToGasCoinReserveUnderflow(t *testing.T) {
 	}
 
 	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
-	if response.Code != code.CoinReserveNotSufficient {
-		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveNotSufficient, response.Log)
+	if response.Code != code.CommissionCoinNotSufficient {
+		t.Fatalf("Response code is not %d. Error %s", code.CommissionCoinNotSufficient, response.Log)
 	}
 
 	if err := checkState(cState); err != nil {

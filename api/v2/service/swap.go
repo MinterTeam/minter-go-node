@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func (s *Service) Pair(_ context.Context, req *pb.SwapPoolRequest) (*pb.SwapPoolResponse, error) {
+func (s *Service) SwapPool(_ context.Context, req *pb.SwapPoolRequest) (*pb.SwapPoolResponse, error) {
 	if req.Coin0 == req.Coin1 {
 		return nil, status.Error(codes.InvalidArgument, "equal coins id")
 	}
@@ -31,7 +31,7 @@ func (s *Service) Pair(_ context.Context, req *pb.SwapPoolRequest) (*pb.SwapPool
 	}, nil
 }
 
-func (s *Service) PairFromProvider(_ context.Context, req *pb.SwapPoolProviderRequest) (*pb.SwapPoolProviderResponse, error) {
+func (s *Service) SwapPoolProvider(_ context.Context, req *pb.SwapPoolProviderRequest) (*pb.SwapPoolProviderResponse, error) {
 	if req.Coin0 == req.Coin1 {
 		return nil, status.Error(codes.InvalidArgument, "equal coins id")
 	}

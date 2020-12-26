@@ -220,7 +220,7 @@ func (v *Validators) Create(pubkey types.Pubkey, stake *big.Int) {
 func (v *Validators) PayRewards(height uint64) {
 	vals := v.GetValidators()
 	for _, validator := range vals {
-		if validator.GetAccumReward().Cmp(types.Big0) == 1 {
+		if validator.GetAccumReward().Sign() == 1 {
 			candidate := v.bus.Candidates().GetCandidate(validator.PubKey)
 
 			totalReward := big.NewInt(0).Set(validator.GetAccumReward())
@@ -271,7 +271,7 @@ func (v *Validators) PayRewards(height uint64) {
 
 			stakes := v.bus.Candidates().GetStakes(validator.PubKey)
 			for _, stake := range stakes {
-				if stake.BipValue.Cmp(big.NewInt(0)) == 0 {
+				if stake.BipValue.Sign() == 0 {
 					continue
 				}
 
@@ -279,7 +279,7 @@ func (v *Validators) PayRewards(height uint64) {
 				reward.Mul(reward, stake.BipValue)
 
 				reward.Div(reward, validator.GetTotalBipStake())
-				if reward.Cmp(types.Big0) < 1 {
+				if reward.Sign() < 1 {
 					continue
 				}
 
@@ -296,7 +296,7 @@ func (v *Validators) PayRewards(height uint64) {
 
 			validator.SetAccumReward(big.NewInt(0))
 
-			if remainder.Cmp(big.NewInt(0)) > -1 {
+			if remainder.Sign() != -1 {
 				v.bus.App().AddTotalSlashed(remainder)
 			} else {
 				panic(fmt.Sprintf("Negative remainder: %s", remainder.String()))

@@ -9,31 +9,61 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
+	"strconv"
 )
 
-type EditCandidatePublicKeyData struct {
-	PubKey    types.Pubkey
-	NewPubKey types.Pubkey
+type EditCommissionData struct {
+	PubKey     types.Pubkey
+	Commission uint32
 }
 
-func (data EditCandidatePublicKeyData) GetPubKey() types.Pubkey {
+func (data EditCommissionData) GetPubKey() types.Pubkey {
 	return data.PubKey
 }
 
-func (data EditCandidatePublicKeyData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
-	return checkCandidateOwnership(data, tx, context)
+func (data EditCommissionData) basicCheck(tx *Transaction, context *state.CheckState, block uint64) *Response {
+	errResp := checkCandidateOwnership(data, tx, context)
+	if errResp != nil {
+		return errResp
+	}
+
+	candidate := context.Candidates().GetCandidate(data.PubKey)
+
+	maxNewCommission, minNewCommission := candidate.Commission+10, candidate.Commission-10
+	if maxNewCommission > maxCommission {
+		maxNewCommission = maxCommission
+	}
+	if minNewCommission < minCommission {
+		minNewCommission = minCommission
+	}
+	if data.Commission < minNewCommission || data.Commission > maxNewCommission {
+		return &Response{
+			Code: code.WrongCommission,
+			Log:  fmt.Sprintf("You want change commission from %d to %d, but you can change no more than 10 units, because commission should be between %d and %d", candidate.Commission, data.Commission, minNewCommission, maxNewCommission),
+			Info: EncodeError(code.NewWrongCommission(fmt.Sprintf("%d", data.Commission), strconv.Itoa(int(minNewCommission)), strconv.Itoa(int(maxNewCommission)))),
+		}
+	}
+
+	if candidate.LastEditCommissionHeight+3*unbondPeriod > block {
+		return &Response{
+			Code: code.PeriodLimitReached,
+			Log:  fmt.Sprintf("You cannot change the commission more than once every %d blocks, the last change was on block %d", 3*unbondPeriod, candidate.LastEditCommissionHeight),
+			Info: EncodeError(code.NewPeriodLimitReached(strconv.Itoa(int(candidate.LastEditCommissionHeight+3*unbondPeriod)), strconv.Itoa(int(candidate.LastEditCommissionHeight)))),
+		}
+	}
+
+	return nil
 }
 
-func (data EditCandidatePublicKeyData) String() string {
-	return fmt.Sprintf("EDIT CANDIDATE PUB KEY old: %x, new: %x",
-		data.PubKey, data.NewPubKey)
+func (data EditCommissionData) String() string {
+	return fmt.Sprintf("EDIT COMMISSION: %s", data.PubKey)
 }
 
-func (data EditCandidatePublicKeyData) Gas() int64 {
-	return commissions.EditCandidatePublicKey
+func (data EditCommissionData) Gas() int64 {
+	return commissions.EditCommissionData
 }
 
-func (data EditCandidatePublicKeyData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
+func (data EditCommissionData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -42,25 +72,9 @@ func (data EditCandidatePublicKeyData) Run(tx *Transaction, context state.Interf
 		checkState = state.NewCheckState(context.(*state.State))
 	}
 
-	response := data.basicCheck(tx, checkState)
+	response := data.basicCheck(tx, checkState, currentBlock)
 	if response != nil {
 		return *response
-	}
-
-	if data.PubKey == data.NewPubKey {
-		return Response{
-			Code: code.NewPublicKeyIsBad,
-			Log:  fmt.Sprintf("Current public key (%s) equals new public key (%s)", data.PubKey.String(), data.NewPubKey.String()),
-			Info: EncodeError(code.NewNewPublicKeyIsBad(data.PubKey.String(), data.NewPubKey.String())),
-		}
-	}
-
-	if checkState.Candidates().Exists(data.NewPubKey) {
-		return Response{
-			Code: code.CandidateExists,
-			Log:  fmt.Sprintf("Candidate with such public key (%s) already exists", data.NewPubKey.String()),
-			Info: EncodeError(code.NewCandidateExists(data.NewPubKey.String())),
-		}
 	}
 
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
@@ -79,14 +93,6 @@ func (data EditCandidatePublicKeyData) Run(tx *Transaction, context state.Interf
 		}
 	}
 
-	if checkState.Candidates().IsBlockedPubKey(data.NewPubKey) {
-		return Response{
-			Code: code.PublicKeyInBlockList,
-			Log:  fmt.Sprintf("Public key (%s) exists in block list", data.NewPubKey.String()),
-			Info: EncodeError(code.NewPublicKeyInBlockList(data.NewPubKey.String())),
-		}
-	}
-
 	if deliverState, ok := context.(*state.State); ok {
 		if isGasCommissionFromPoolSwap {
 			commission, commissionInBaseCoin = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
@@ -97,14 +103,13 @@ func (data EditCandidatePublicKeyData) Run(tx *Transaction, context state.Interf
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		deliverState.Candidates.ChangePubKey(data.PubKey, data.NewPubKey)
-
+		deliverState.Candidates.EditCommission(data.PubKey, data.Commission, currentBlock)
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}
 
 	tags := kv.Pairs{
 		kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
-		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeEditCandidatePublicKey)}))},
+		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeEditCommission)}))},
 		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
 	}
 

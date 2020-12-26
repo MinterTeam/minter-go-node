@@ -29,7 +29,7 @@ func TestDecodeFromBytesToInvalidSignature(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = TxDecoder.DecodeFromBytes(encodedTx)
+	_, err = DecodeFromBytes(encodedTx)
 	if err == nil {
 		t.Fatal("Expected the invalid signature error")
 	}
@@ -102,7 +102,7 @@ func TestDecodeFromBytesWithoutSigToInvalidData(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = TxDecoder.DecodeFromBytesWithoutSig(encodedTx)
+	_, err = DecodeFromBytesWithoutSig(encodedTx)
 	if err == nil {
 		t.Fatal("Expected tx type is not registered error")
 	}
@@ -113,7 +113,7 @@ func TestDecodeFromBytesWithoutSigToInvalidData(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = TxDecoder.DecodeFromBytesWithoutSig(encodedTx)
+	_, err = DecodeFromBytesWithoutSig(encodedTx)
 	if err == nil {
 		t.Fatal("Expected invalid data error")
 	}

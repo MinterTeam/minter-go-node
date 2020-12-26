@@ -6,11 +6,12 @@ import (
 )
 
 type Item struct {
-	Address      types.Address
-	CandidateKey *types.Pubkey
-	CandidateID  uint32
-	Coin         types.CoinID
-	Value        *big.Int
+	Address         types.Address
+	CandidateKey    *types.Pubkey
+	CandidateID     uint32
+	Coin            types.CoinID
+	Value           *big.Int
+	MoveToCandidate *uint32 `rlp:"nilList"`
 }
 
 type Model struct {
@@ -26,13 +27,14 @@ func (m *Model) delete() {
 	m.markDirty(m.height)
 }
 
-func (m *Model) addFund(address types.Address, pubkey types.Pubkey, candidateID uint32, coin types.CoinID, value *big.Int) {
+func (m *Model) addFund(address types.Address, pubkey types.Pubkey, candidateID uint32, coin types.CoinID, value *big.Int, moveToCandidateID *uint32) {
 	m.List = append(m.List, Item{
-		Address:      address,
-		CandidateKey: &pubkey,
-		CandidateID:  candidateID,
-		Coin:         coin,
-		Value:        value,
+		Address:         address,
+		CandidateKey:    &pubkey,
+		CandidateID:     candidateID,
+		Coin:            coin,
+		Value:           value,
+		MoveToCandidate: moveToCandidateID,
 	})
 	m.markDirty(m.height)
 }

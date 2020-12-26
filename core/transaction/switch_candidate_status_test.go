@@ -25,7 +25,7 @@ func TestSwitchCandidateStatusTx(t *testing.T) {
 	pubkey := types.Pubkey{}
 	rand.Read(pubkey[:])
 
-	cState.Candidates.Create(addr, addr, addr, pubkey, 10)
+	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0)
 
 	data := SetCandidateOnData{
 		PubKey: pubkey,
@@ -92,7 +92,7 @@ func TestSetCandidateOffTx(t *testing.T) {
 	pubkey := types.Pubkey{}
 	rand.Read(pubkey[:])
 
-	cState.Candidates.Create(addr, addr, addr, pubkey, 10)
+	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0)
 
 	data := SetCandidateOffData{
 		PubKey: pubkey,
@@ -209,7 +209,7 @@ func TestSwitchCandidateStatusTxToCandidateOwnership(t *testing.T) {
 	pubkey := types.Pubkey{}
 	rand.Read(pubkey[:])
 
-	cState.Candidates.Create(addr2, addr2, addr2, pubkey, 10)
+	cState.Candidates.Create(addr2, addr2, addr2, pubkey, 10, 0)
 
 	data := SetCandidateOnData{
 		PubKey: pubkey,
@@ -263,7 +263,7 @@ func TestSwitchCandidateStatusToGasCoinReserveUnderflow(t *testing.T) {
 	pubkey := types.Pubkey{}
 	rand.Read(pubkey[:])
 
-	cState.Candidates.Create(addr, addr, addr, pubkey, 10)
+	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0)
 
 	data := SetCandidateOnData{
 		PubKey: pubkey,
@@ -294,8 +294,8 @@ func TestSwitchCandidateStatusToGasCoinReserveUnderflow(t *testing.T) {
 	}
 
 	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
-	if response.Code != code.CoinReserveNotSufficient {
-		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveNotSufficient, response.Log)
+	if response.Code != code.CommissionCoinNotSufficient {
+		t.Fatalf("Response code is not %d. Error %s", code.CommissionCoinNotSufficient, response.Log)
 	}
 
 	if err := checkState(cState); err != nil {
@@ -312,7 +312,7 @@ func TestSwitchCandidateStatusToInsufficientFundsForGas(t *testing.T) {
 
 	pubkey := types.Pubkey{}
 	rand.Read(pubkey[:])
-	cState.Candidates.Create(addr, addr, addr, pubkey, 10)
+	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0)
 
 	data := SetCandidateOnData{
 		PubKey: pubkey,
@@ -382,7 +382,7 @@ func TestSwitchCandidateStatusToCoinReserveUnderflow(t *testing.T) {
 
 	pubkey := types.Pubkey{}
 	rand.Read(pubkey[:])
-	cState.Candidates.Create(addr, addr, addr, pubkey, 10)
+	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0)
 	cState.Candidates.SetOnline(pubkey)
 	cState.Coins.AddVolume(coin, helpers.BipToPip(big.NewInt(1000000)))
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
@@ -417,8 +417,8 @@ func TestSwitchCandidateStatusToCoinReserveUnderflow(t *testing.T) {
 	}
 
 	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
-	if response.Code != code.CoinReserveNotSufficient {
-		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveNotSufficient, response.Log)
+	if response.Code != code.CommissionCoinNotSufficient {
+		t.Fatalf("Response code is not %d. Error %s", code.CommissionCoinNotSufficient, response.Log)
 	}
 
 	if err := checkState(cState); err != nil {

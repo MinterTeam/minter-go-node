@@ -62,7 +62,8 @@ func (s *Service) EstimateCoinSell(ctx context.Context, req *pb.EstimateCoinSell
 	coinTo := cState.Coins().GetCoin(coinToBuy)
 
 	commissionInBaseCoin := big.NewInt(0).Mul(big.NewInt(commissions.ConvertTx), transaction.CommissionMultiplier)
-	commission, _, errResp := transaction.CalculateCommission(cState, coinFrom, commissionInBaseCoin)
+	commissionPoolSwapper := cState.Swap().GetSwapper(coinFrom.ID(), types.GetBaseCoinID())
+	commission, _, errResp := transaction.CalculateCommission(cState, commissionPoolSwapper, coinFrom, commissionInBaseCoin)
 	if errResp != nil {
 		return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
 	}
@@ -101,8 +102,9 @@ func (s *Service) EstimateCoinSell(ctx context.Context, req *pb.EstimateCoinSell
 		if err != nil {
 			return nil, status.Error(codes.FailedPrecondition, err.Error())
 		}
-		if err = cState.Swap().CheckSwap(coinFrom.ID(), coinTo.ID(), valueToSell, value); err != nil {
-			return nil, status.Error(codes.FailedPrecondition, err.Error())
+		commissionPoolSwapper := cState.Swap().GetSwapper(coinFrom.ID(), coinTo.ID())
+		if errResp := transaction.CheckSwap(commissionPoolSwapper, coinFrom, coinTo, valueToSell, value, false); errResp != nil {
+			return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
 		}
 	}
 

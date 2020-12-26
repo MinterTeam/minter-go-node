@@ -24,6 +24,7 @@ const (
 	CoinReserveUnderflow         uint32 = 116
 	WrongHaltHeight              uint32 = 117
 	HaltAlreadyExists            uint32 = 118
+	CommissionCoinNotSufficient  uint32 = 119
 
 	// coin creation
 	CoinHasNotReserve uint32 = 200
@@ -54,6 +55,7 @@ const (
 	PublicKeyInBlockList  uint32 = 410
 	NewPublicKeyIsBad     uint32 = 411
 	InsufficientWaitList  uint32 = 412
+	PeriodLimitReached    uint32 = 413
 
 	// check
 	CheckInvalidLock uint32 = 501
@@ -82,6 +84,7 @@ const (
 	InsufficientLiquidityMinted  uint32 = 704
 	InsufficientLiquidityBurned  uint32 = 705
 	InsufficientLiquidityBalance uint32 = 706
+	InsufficientOutputAmount     uint32 = 707
 )
 
 func NewInsufficientLiquidityBalance(liquidity, amount0, coin0, amount1, coin1, requestedLiquidity, wantA0, wantA1 string) *insufficientLiquidityBalance {
@@ -144,6 +147,18 @@ type insufficientInputAmount struct {
 	NeededAmount1 string `json:"needed_amount1,omitempty"`
 }
 
+func NewInsufficientOutputAmount(coin0, value0, coin1, value1 string) *insufficientOutputAmount {
+	return &insufficientOutputAmount{Code: strconv.Itoa(int(InsufficientOutputAmount)), Coin0: coin0, Coin1: coin1, Amount0: value0, Amount1: value1}
+}
+
+type insufficientOutputAmount struct {
+	Code    string `json:"code,omitempty"`
+	Coin0   string `json:"coin0,omitempty"`
+	Amount0 string `json:"amount0,omitempty"`
+	Coin1   string `json:"coin1,omitempty"`
+	Amount1 string `json:"amount1,omitempty"`
+}
+
 func NewInsufficientLiquidityMinted(coin0, value0, coin1, value1 string) *insufficientLiquidityMinted {
 	return &insufficientLiquidityMinted{Code: strconv.Itoa(int(InsufficientLiquidityMinted)), Coin0: coin0, Coin1: coin1, NeededAmount0: value0, NeededAmount1: value1}
 }
@@ -165,6 +180,16 @@ type pairNotExists struct {
 
 func NewPairNotExists(coin0 string, coin1 string) *pairNotExists {
 	return &pairNotExists{Code: strconv.Itoa(int(PairNotExists)), Coin0: coin0, Coin1: coin1}
+}
+
+type commissionCoinNotSufficient struct {
+	Code    string `json:"code,omitempty"`
+	Pool    string `json:"pool,omitempty"`
+	Reserve string `json:"reserve,omitempty"`
+}
+
+func NewCommissionCoinNotSufficient(reserve string, pool string) *commissionCoinNotSufficient {
+	return &commissionCoinNotSufficient{Code: strconv.Itoa(int(CommissionCoinNotSufficient)), Pool: pool, Reserve: reserve}
 }
 
 type wrongNonce struct {
@@ -680,6 +705,16 @@ type multisigNotExists struct {
 
 func NewMultisigNotExists(address string) *multisigNotExists {
 	return &multisigNotExists{Code: strconv.Itoa(int(MultisigNotExists)), Address: address}
+}
+
+type periodLimitReached struct {
+	Code         string `json:"code,omitempty"`
+	NextTime     string `json:"next_time,omitempty"`
+	PreviousTime string `json:"previous_time,omitempty"`
+}
+
+func NewPeriodLimitReached(next string, last string) *periodLimitReached {
+	return &periodLimitReached{Code: strconv.Itoa(int(PeriodLimitReached)), NextTime: next, PreviousTime: last}
 }
 
 type multisigExists struct {
