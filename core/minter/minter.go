@@ -225,11 +225,20 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 					value.Add(value, wl.Value)
 					app.stateDeliver.Waitlist.Delete(item.Address, newCandidate, item.Coin)
 				}
+				var toWaitlist bool
 				if app.stateDeliver.Candidates.IsDelegatorStakeSufficient(item.Address, newCandidate, item.Coin, value) {
 					app.stateDeliver.Candidates.Delegate(item.Address, newCandidate, item.Coin, value, big.NewInt(0))
 				} else {
 					app.stateDeliver.Waitlist.AddWaitList(item.Address, newCandidate, item.Coin, value)
+					toWaitlist = true
 				}
+				app.eventsDB.AddEvent(uint32(req.Header.Height), &eventsdb.StakeMoveEvent{
+					Address:         item.Address,
+					Amount:          amount.String(),
+					Coin:            uint64(item.Coin),
+					ValidatorPubKey: *item.CandidateKey,
+					WaitList:        toWaitlist,
+				})
 			}
 		}
 

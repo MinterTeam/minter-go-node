@@ -11,8 +11,9 @@ import (
 const (
 	TypeRewardEvent    = "minter/RewardEvent"
 	TypeSlashEvent     = "minter/SlashEvent"
-	TypeUnbondEvent    = "minter/UnbondEvent"
+	TypeUnbondEvent    = "minter/StakeMoveEvent"
 	TypeStakeKickEvent = "minter/StakeKickEvent"
+	TypeStakeMoveEvent = "minter/StakeMoveEvent"
 )
 
 func RegisterAminoEvents(codec *amino.Codec) {
@@ -25,6 +26,8 @@ func RegisterAminoEvents(codec *amino.Codec) {
 		TypeUnbondEvent, nil)
 	codec.RegisterConcrete(StakeKickEvent{},
 		TypeStakeKickEvent, nil)
+	codec.RegisterConcrete(StakeMoveEvent{},
+		TypeStakeMoveEvent, nil)
 }
 
 type Event interface {
@@ -266,14 +269,79 @@ func (ue *UnbondEvent) convert(pubKeyID uint16, addressID uint32) compactEvent {
 	return result
 }
 
-type stakeKick struct {
+type move struct {
+	AddressID uint32
+	Amount    []byte
+	Coin      uint32
+	PubKeyID  uint16
+	WaitList  bool
+}
+
+func (u *move) compile(pubKey [32]byte, address [20]byte) Event {
+	event := new(StakeMoveEvent)
+	event.ValidatorPubKey = pubKey
+	event.Address = address
+	event.Coin = uint64(u.Coin)
+	event.Amount = big.NewInt(0).SetBytes(u.Amount).String()
+	event.WaitList = u.WaitList
+	return event
+}
+
+func (u *move) addressID() uint32 {
+	return u.AddressID
+}
+
+func (u *move) pubKeyID() uint16 {
+	return u.PubKeyID
+}
+
+type StakeMoveEvent struct {
+	Address         types.Address `json:"address"`
+	Amount          string        `json:"amount"`
+	Coin            uint64        `json:"coin"`
+	ValidatorPubKey types.Pubkey  `json:"validator_pub_key"`
+	WaitList        bool          `json:"waitlist"`
+}
+
+func (ue *StakeMoveEvent) Type() string {
+	return TypeStakeMoveEvent
+}
+
+func (ue *StakeMoveEvent) AddressString() string {
+	return ue.Address.String()
+}
+
+func (ue *StakeMoveEvent) address() types.Address {
+	return ue.Address
+}
+
+func (ue *StakeMoveEvent) ValidatorPubKeyString() string {
+	return ue.ValidatorPubKey.String()
+}
+
+func (ue *StakeMoveEvent) validatorPubKey() types.Pubkey {
+	return ue.ValidatorPubKey
+}
+
+func (ue *StakeMoveEvent) convert(pubKeyID uint16, addressID uint32) compactEvent {
+	result := new(move)
+	result.AddressID = addressID
+	result.Coin = uint32(ue.Coin)
+	bi, _ := big.NewInt(0).SetString(ue.Amount, 10)
+	result.Amount = bi.Bytes()
+	result.PubKeyID = pubKeyID
+	result.WaitList = ue.WaitList
+	return result
+}
+
+type kick struct {
 	AddressID uint32
 	Amount    []byte
 	Coin      uint32
 	PubKeyID  uint16
 }
 
-func (u *stakeKick) compile(pubKey [32]byte, address [20]byte) Event {
+func (u *kick) compile(pubKey [32]byte, address [20]byte) Event {
 	event := new(StakeKickEvent)
 	event.ValidatorPubKey = pubKey
 	event.Address = address
@@ -282,11 +350,11 @@ func (u *stakeKick) compile(pubKey [32]byte, address [20]byte) Event {
 	return event
 }
 
-func (u *stakeKick) addressID() uint32 {
+func (u *kick) addressID() uint32 {
 	return u.AddressID
 }
 
-func (u *stakeKick) pubKeyID() uint16 {
+func (u *kick) pubKeyID() uint16 {
 	return u.PubKeyID
 }
 
@@ -318,7 +386,7 @@ func (ue *StakeKickEvent) validatorPubKey() types.Pubkey {
 }
 
 func (ue *StakeKickEvent) convert(pubKeyID uint16, addressID uint32) compactEvent {
-	result := new(stakeKick)
+	result := new(kick)
 	result.AddressID = addressID
 	result.Coin = uint32(ue.Coin)
 	bi, _ := big.NewInt(0).SetString(ue.Amount, 10)

@@ -40,7 +40,8 @@ func NewEventsStore(db db.DB) IEventsDB {
 	codec.RegisterConcrete(&reward{}, "reward", nil)
 	codec.RegisterConcrete(&slash{}, "slash", nil)
 	codec.RegisterConcrete(&unbond{}, "unbond", nil)
-	codec.RegisterConcrete(&stakeKick{}, "stakeKick", nil)
+	codec.RegisterConcrete(&kick{}, "kick", nil)
+	codec.RegisterConcrete(&move{}, "move", nil)
 
 	return &eventsStore{
 		cdc:       codec,
