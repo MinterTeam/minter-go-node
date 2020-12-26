@@ -47,6 +47,8 @@ const (
 	TypeSellAllSwapPool        TxType = 0x19
 	TypeEditCommission         TxType = 0x20
 	TypeMoveStake              TxType = 0x21
+	TypeMintCoin               TxType = 0x22
+	TypeBurnCoin               TxType = 0x23
 
 	SigTypeSingle SigType = 0x01
 	SigTypeMulti  SigType = 0x02
