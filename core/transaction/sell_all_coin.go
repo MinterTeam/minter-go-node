@@ -24,7 +24,7 @@ func (data SellAllCoinData) totalSpend(tx *Transaction, context *state.CheckStat
 	total := totalSpends{}
 	var conversions []conversion
 
-	commissionInBaseCoin := tx.CommissionInBaseCoin() // todo CalculateCommission
+	commissionInBaseCoin := tx.CommissionInBaseCoin()
 	available := context.Accounts().GetBalance(sender, data.CoinToSell)
 	var value *big.Int
 
@@ -214,20 +214,6 @@ func (data SellAllCoinData) Run(tx *Transaction, context state.Interface, reward
 	if response != nil {
 		return *response
 	}
-
-	// _, _, _, response = data.totalSpend(tx, checkState)
-	// if response != nil {
-	// 	return *response
-	// }
-	//
-	// saleReturn := formula.CalculateSaleReturn(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), balance)
-	// if saleReturn.Cmp(commissionInBaseCoin) == -1 {
-	// 	return Response{
-	// 		Code: code.InsufficientFunds,
-	// 		Log:  "Insufficient funds for sender account",
-	// 		Info: EncodeError(code.NewInsufficientFunds(sender.String(), commissionInBaseCoin.String(), coinFrom.GetFullSymbol(), coinFrom.ID().String())),
-	// 	}
-	// } // todo
 
 	commissionInBaseCoin := tx.CommissionInBaseCoin()
 	commissionPoolSwapper := checkState.Swap().GetSwapper(tx.GasCoin, types.GetBaseCoinID())

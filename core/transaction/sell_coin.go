@@ -23,7 +23,7 @@ func (data SellCoinData) totalSpend(tx *Transaction, context *state.CheckState) 
 	total := totalSpends{}
 	var conversions []conversion
 
-	commissionInBaseCoin := tx.CommissionInBaseCoin() // todo CalculateCommission
+	commissionInBaseCoin := tx.CommissionInBaseCoin()
 	commissionIncluded := false
 
 	var value *big.Int
