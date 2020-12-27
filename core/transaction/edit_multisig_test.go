@@ -16,6 +16,7 @@ import (
 )
 
 func TestEditMultisigTx(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	pubkey := [32]byte{}
@@ -103,6 +104,7 @@ func TestEditMultisigTx(t *testing.T) {
 }
 
 func TestEditMultisigTxToNonExistAddress(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	addr := types.Address{0}
@@ -148,6 +150,7 @@ func TestEditMultisigTxToNonExistAddress(t *testing.T) {
 }
 
 func TestEditMultisigTxToTooLargeOwnersList(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	addr := types.Address{0}
@@ -210,6 +213,7 @@ func TestEditMultisigTxToTooLargeOwnersList(t *testing.T) {
 }
 
 func TestEditMultisigTxIncorrectWeights(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	addr := types.Address{0}
@@ -318,6 +322,7 @@ func TestEditMultisigTxIncorrectWeights(t *testing.T) {
 }
 
 func TestEditMultisigTxToAddressDuplication(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	addr := types.Address{0}
@@ -375,6 +380,7 @@ func TestEditMultisigTxToAddressDuplication(t *testing.T) {
 }
 
 func TestEditMultisigTxToInsufficientFunds(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	addr := types.Address{0}
@@ -432,6 +438,7 @@ func TestEditMultisigTxToInsufficientFunds(t *testing.T) {
 }
 
 func TestEditMultisigTxToGasCoinReserveUnderflow(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	addr := types.Address{0}

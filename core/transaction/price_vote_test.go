@@ -11,6 +11,7 @@ import (
 )
 
 func TestPriceVoteTx(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 	privateKey, addr := getAccount()
 
@@ -52,6 +53,7 @@ func TestPriceVoteTx(t *testing.T) {
 }
 
 func TestPriceVoteTxToInsufficientFunds(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 	privateKey, _ := getAccount()
 
@@ -91,6 +93,7 @@ func TestPriceVoteTxToInsufficientFunds(t *testing.T) {
 }
 
 func TestPriceVoteTxToCoinReserveUnderflow(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 	customCoin := createTestCoin(cState)
 	privateKey, _ := getAccount()

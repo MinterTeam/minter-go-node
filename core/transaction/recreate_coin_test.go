@@ -15,6 +15,7 @@ import (
 )
 
 func TestRecreateCoinTx(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -108,6 +109,7 @@ func TestRecreateCoinTx(t *testing.T) {
 }
 
 func TestRecreateCoinTxWithWrongOwner(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -148,6 +150,7 @@ func TestRecreateCoinTxWithWrongOwner(t *testing.T) {
 }
 
 func TestRecreateCoinTxWithWrongSymbol(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -186,6 +189,7 @@ func TestRecreateCoinTxWithWrongSymbol(t *testing.T) {
 }
 
 func TestRecreateCoinWithIncorrectName(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -248,6 +252,7 @@ func TestRecreateCoinWithIncorrectName(t *testing.T) {
 }
 
 func TestRecreateCoinWithWrongCrr(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -340,6 +345,7 @@ func TestRecreateCoinWithWrongCrr(t *testing.T) {
 }
 
 func TestRecreateCoinWithWrongCoinSupply(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -478,6 +484,7 @@ func TestRecreateCoinWithWrongCoinSupply(t *testing.T) {
 }
 
 func TestRecreateCoinWithInsufficientFundsForGas(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -558,6 +565,7 @@ func TestRecreateCoinWithInsufficientFundsForGas(t *testing.T) {
 }
 
 func TestRecreateCoinToInsufficientFundsForInitialReserve(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -597,6 +605,7 @@ func TestRecreateCoinToInsufficientFundsForInitialReserve(t *testing.T) {
 }
 
 func TestRecreateCoinToGasCoinReserveUnderflow(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()

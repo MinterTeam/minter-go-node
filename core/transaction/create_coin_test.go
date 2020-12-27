@@ -14,6 +14,7 @@ import (
 )
 
 func TestCreateCoinTx(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -124,6 +125,7 @@ func TestCreateCoinTx(t *testing.T) {
 }
 
 func TestCreateCoinWithIncorrectName(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -186,6 +188,7 @@ func TestCreateCoinWithIncorrectName(t *testing.T) {
 }
 
 func TestCreateCoinWithInvalidSymbol(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -246,6 +249,7 @@ func TestCreateCoinWithInvalidSymbol(t *testing.T) {
 }
 
 func TestCreateCoinWithExistingSymbol(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	createTestCoin(cState)
@@ -307,6 +311,7 @@ func TestCreateCoinWithExistingSymbol(t *testing.T) {
 }
 
 func TestCreateCoinWithWrongCrr(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -400,6 +405,7 @@ func TestCreateCoinWithWrongCrr(t *testing.T) {
 }
 
 func TestCreateCoinWithWrongCoinSupply(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -538,6 +544,7 @@ func TestCreateCoinWithWrongCoinSupply(t *testing.T) {
 }
 
 func TestCreateCoinGas(t *testing.T) {
+	t.Parallel()
 	data := CreateCoinData{
 		Symbol: types.StrToCoinSymbol("ABC"),
 	}
@@ -568,6 +575,7 @@ func TestCreateCoinGas(t *testing.T) {
 }
 
 func TestCreateCoinWithInsufficientFundsForGas(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -622,6 +630,7 @@ func TestCreateCoinWithInsufficientFundsForGas(t *testing.T) {
 }
 
 func TestCreateCoinTxToGasCoinReserveUnderflow(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -684,6 +693,7 @@ func TestCreateCoinTxToGasCoinReserveUnderflow(t *testing.T) {
 }
 
 func TestCreateCoinToInsufficientFundsForGasCoin(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -740,6 +750,7 @@ func TestCreateCoinToInsufficientFundsForGasCoin(t *testing.T) {
 }
 
 func TestCreateCoinToInsufficientFundsForInitialReserve(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -796,6 +807,7 @@ func TestCreateCoinToInsufficientFundsForInitialReserve(t *testing.T) {
 }
 
 func TestCreateCoinToSameSymbolInOneBlock(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 	coin := types.GetBaseCoinID()
 

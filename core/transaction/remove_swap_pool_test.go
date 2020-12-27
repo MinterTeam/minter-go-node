@@ -12,6 +12,7 @@ import (
 )
 
 func TestRemoveExchangeLiquidityTx_one(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	coin := createTestCoin(cState)
@@ -116,6 +117,7 @@ func TestRemoveExchangeLiquidityTx_one(t *testing.T) {
 }
 
 func TestRemoveExchangeLiquidityTx_2(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	coin := createTestCoin(cState)
@@ -270,6 +272,7 @@ func TestRemoveExchangeLiquidityTx_2(t *testing.T) {
 }
 
 func TestRemoveExchangeLiquidityTx_3(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	coin := createTestCoin(cState)

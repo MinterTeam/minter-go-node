@@ -25,6 +25,7 @@ func createNonReserveCoin(stateDB *state.State) types.CoinID {
 }
 
 func TestAddExchangeLiquidityTx_initialLiquidity(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	coin := createTestCoin(cState)
@@ -86,6 +87,7 @@ func TestAddExchangeLiquidityTx_initialLiquidity(t *testing.T) {
 }
 
 func TestAddExchangeLiquidityTx_initialLiquidity_1(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	coin := createTestCoin(cState)
@@ -147,6 +149,7 @@ func TestAddExchangeLiquidityTx_initialLiquidity_1(t *testing.T) {
 }
 
 func TestAddExchangeLiquidityTx_addLiquidity(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	coin := createTestCoin(cState)
@@ -254,6 +257,7 @@ func TestAddExchangeLiquidityTx_addLiquidity(t *testing.T) {
 }
 
 func TestAddExchangeLiquidityTx_addLiquidity_1(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	coin := createTestCoin(cState)
@@ -364,6 +368,7 @@ func TestAddExchangeLiquidityTx_addLiquidity_1(t *testing.T) {
 }
 
 func TestAddExchangeLiquidityTx_addLiquidity_2(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	coin := createTestCoin(cState)

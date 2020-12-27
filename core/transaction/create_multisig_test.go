@@ -16,6 +16,7 @@ import (
 )
 
 func TestCreateMultisigTx(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -113,6 +114,7 @@ func TestCreateMultisigTx(t *testing.T) {
 }
 
 func TestCreateMultisigFromExistingAccountTx(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -218,6 +220,7 @@ func TestCreateMultisigFromExistingAccountTx(t *testing.T) {
 }
 
 func TestCreateExistingMultisigTx(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -278,6 +281,7 @@ func TestCreateExistingMultisigTx(t *testing.T) {
 }
 
 func TestCreateMultisigOwnersTxToNonExistAddress(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	addr := types.Address{0}
@@ -326,6 +330,7 @@ func TestCreateMultisigOwnersTxToNonExistAddress(t *testing.T) {
 }
 
 func TestCreateMultisigOwnersTxToTooLargeOwnersList(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey1, _ := crypto.GenerateKey()
@@ -383,6 +388,7 @@ func TestCreateMultisigOwnersTxToTooLargeOwnersList(t *testing.T) {
 }
 
 func TestCreateMultisigOwnersTxIncorrectWeights(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey1, _ := crypto.GenerateKey()
@@ -458,6 +464,7 @@ func TestCreateMultisigOwnersTxIncorrectWeights(t *testing.T) {
 }
 
 func TestCreateMultisigOwnersTxToAddressDuplication(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey1, _ := crypto.GenerateKey()
@@ -506,6 +513,7 @@ func TestCreateMultisigOwnersTxToAddressDuplication(t *testing.T) {
 }
 
 func TestCreateMultisigOwnersTxToInsufficientFunds(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey1, _ := crypto.GenerateKey()
@@ -556,6 +564,7 @@ func TestCreateMultisigOwnersTxToInsufficientFunds(t *testing.T) {
 }
 
 func TestCreateMultisigTxToGasCoinReserveUnderflow(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey1, _ := crypto.GenerateKey()

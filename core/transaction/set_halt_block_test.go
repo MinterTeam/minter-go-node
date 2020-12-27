@@ -17,6 +17,7 @@ import (
 )
 
 func TestSetHaltBlockTx(t *testing.T) {
+	t.Parallel()
 	cState, err := state.NewState(500000, db.NewMemDB(), nil, 1, 1, 0)
 	if err != nil {
 		t.Fatalf("Cannot load state. Error %s", err)
@@ -96,6 +97,7 @@ func TestSetHaltBlockTx(t *testing.T) {
 }
 
 func TestSetHaltBlockTxWithWrongHeight(t *testing.T) {
+	t.Parallel()
 	currentHeight := uint64(500000 + 5)
 	cState, err := state.NewState(currentHeight, db.NewMemDB(), nil, 1, 1, 0)
 	if err != nil {
@@ -160,6 +162,7 @@ func TestSetHaltBlockTxWithWrongHeight(t *testing.T) {
 }
 
 func TestSetHaltBlockTxWithWrongOwnership(t *testing.T) {
+	t.Parallel()
 	currentHeight := uint64(500000 + 5)
 	cState, err := state.NewState(currentHeight, db.NewMemDB(), nil, 1, 1, 0)
 	if err != nil {
@@ -225,6 +228,7 @@ func TestSetHaltBlockTxWithWrongOwnership(t *testing.T) {
 }
 
 func TestSetHaltBlockTxToNonExistCandidate(t *testing.T) {
+	t.Parallel()
 	cState, err := state.NewState(500000, db.NewMemDB(), nil, 1, 1, 0)
 	if err != nil {
 		t.Fatalf("Cannot load state. Error %s", err)
@@ -283,6 +287,7 @@ func TestSetHaltBlockTxToNonExistCandidate(t *testing.T) {
 }
 
 func TestSetHaltBlockTxToInsufficientFunds(t *testing.T) {
+	t.Parallel()
 	cState, err := state.NewState(500000, db.NewMemDB(), nil, 1, 1, 0)
 	if err != nil {
 		t.Fatalf("Cannot load state. Error %s", err)
@@ -340,6 +345,7 @@ func TestSetHaltBlockTxToInsufficientFunds(t *testing.T) {
 }
 
 func TestSetHaltBlockTxToGasCoinReserveUnderflow(t *testing.T) {
+	t.Parallel()
 	cState, err := state.NewState(500000, db.NewMemDB(), nil, 1, 1, 0)
 	if err != nil {
 		t.Fatalf("Cannot load state. Error %s", err)
@@ -401,6 +407,7 @@ func TestSetHaltBlockTxToGasCoinReserveUnderflow(t *testing.T) {
 }
 
 func TestSetHaltBlockTxToAlreadyExistenHalt(t *testing.T) {
+	t.Parallel()
 	cState, err := state.NewState(500000, db.NewMemDB(), nil, 1, 1, 0)
 	if err != nil {
 		t.Fatalf("Cannot load state. Error %s", err)

@@ -11,6 +11,7 @@ import (
 )
 
 func TestSellAllWithCommissionFromBancor(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	coin := createTestCoin(cState)
@@ -115,6 +116,7 @@ func TestSellAllWithCommissionFromBancor(t *testing.T) {
 }
 
 func TestSellAllWithCommissionFromPool(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	coin1 := createTestCoin(cState)

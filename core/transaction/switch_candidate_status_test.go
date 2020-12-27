@@ -15,6 +15,7 @@ import (
 )
 
 func TestSwitchCandidateStatusTx(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -82,6 +83,7 @@ func TestSwitchCandidateStatusTx(t *testing.T) {
 }
 
 func TestSetCandidateOffTx(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -149,6 +151,7 @@ func TestSetCandidateOffTx(t *testing.T) {
 }
 
 func TestSwitchCandidateStatusTxToNonExistCandidate(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -198,6 +201,7 @@ func TestSwitchCandidateStatusTxToNonExistCandidate(t *testing.T) {
 }
 
 func TestSwitchCandidateStatusTxToCandidateOwnership(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -250,6 +254,7 @@ func TestSwitchCandidateStatusTxToCandidateOwnership(t *testing.T) {
 }
 
 func TestSwitchCandidateStatusToGasCoinReserveUnderflow(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -304,6 +309,7 @@ func TestSwitchCandidateStatusToGasCoinReserveUnderflow(t *testing.T) {
 }
 
 func TestSwitchCandidateStatusToInsufficientFundsForGas(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -374,6 +380,7 @@ func TestSwitchCandidateStatusToInsufficientFundsForGas(t *testing.T) {
 }
 
 func TestSwitchCandidateStatusToCoinReserveUnderflow(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()

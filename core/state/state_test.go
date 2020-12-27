@@ -13,6 +13,7 @@ import (
 )
 
 func TestStateExport(t *testing.T) {
+	t.Parallel()
 	height := uint64(0)
 
 	state, err := NewState(height, db.NewMemDB(), emptyEvents{}, 1, 2, 0)

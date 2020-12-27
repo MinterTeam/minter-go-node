@@ -13,6 +13,7 @@ import (
 )
 
 func TestMultisendTx(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -84,6 +85,7 @@ func TestMultisendTx(t *testing.T) {
 }
 
 func TestMultisendTxToInvalidDataLength(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -158,6 +160,7 @@ func TestMultisendTxToInvalidDataLength(t *testing.T) {
 }
 
 func TestMultisendTxToInsufficientFunds(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -211,6 +214,7 @@ func TestMultisendTxToInsufficientFunds(t *testing.T) {
 }
 
 func TestMultisendToInvalidCoin(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -267,6 +271,7 @@ func TestMultisendToInvalidCoin(t *testing.T) {
 }
 
 func TestMultisendToInsufficientReserve(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -323,6 +328,7 @@ func TestMultisendToInsufficientReserve(t *testing.T) {
 }
 
 func TestMultisendTxToGasCoinReserveUnderflow(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()

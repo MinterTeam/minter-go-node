@@ -11,6 +11,7 @@ import (
 )
 
 func TestPair_feeToOff(t *testing.T) {
+	t.Parallel()
 	tableTests := []struct {
 		coin0, coin1                     types.CoinID
 		token0Amount, token1Amount       *big.Int
@@ -31,6 +32,7 @@ func TestPair_feeToOff(t *testing.T) {
 	service := New(nil, iavl.NewImmutableTree(db.NewMemDB(), 0))
 	for i, tt := range tableTests {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			t.Parallel()
 			err := service.CheckMint(tt.coin0, tt.coin1, tt.token0Amount, tt.token1Amount)
 			if err != nil {
 				t.Fatal(err)
@@ -60,6 +62,7 @@ func TestPair_feeToOff(t *testing.T) {
 }
 
 func TestPair_Mint(t *testing.T) {
+	t.Parallel()
 	tableTests := []struct {
 		coin0, coin1               types.CoinID
 		token0Amount, token1Amount *big.Int
@@ -76,6 +79,7 @@ func TestPair_Mint(t *testing.T) {
 	service := New(nil, iavl.NewImmutableTree(db.NewMemDB(), 0))
 	for i, tt := range tableTests {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			t.Parallel()
 			err := service.CheckMint(tt.coin0, tt.coin1, tt.token0Amount, tt.token1Amount)
 			if err != nil {
 				t.Fatal(err)
@@ -111,6 +115,7 @@ func TestPair_Mint(t *testing.T) {
 }
 
 func TestPair_Swap_token0(t *testing.T) {
+	t.Parallel()
 	tableTests := []struct {
 		coin0, coin1               types.CoinID
 		token0Amount, token1Amount *big.Int
@@ -129,6 +134,7 @@ func TestPair_Swap_token0(t *testing.T) {
 	service := New(nil, iavl.NewImmutableTree(db.NewMemDB(), 0))
 	for i, tt := range tableTests {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			t.Parallel()
 			err := service.CheckMint(tt.coin0, tt.coin1, tt.token0Amount, tt.token1Amount)
 			if err != nil {
 				t.Fatal(err)
@@ -170,6 +176,7 @@ func TestPair_Swap_token0(t *testing.T) {
 }
 
 func TestPair_Swap_token1(t *testing.T) {
+	t.Parallel()
 	tableTests := []struct {
 		coin0, coin1               types.CoinID
 		token0Amount, token1Amount *big.Int
@@ -188,6 +195,7 @@ func TestPair_Swap_token1(t *testing.T) {
 	service := New(nil, iavl.NewImmutableTree(db.NewMemDB(), 0))
 	for i, tt := range tableTests {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			t.Parallel()
 			err := service.CheckMint(tt.coin0, tt.coin1, tt.token0Amount, tt.token1Amount)
 			if err != nil {
 				t.Fatal(err)
@@ -229,6 +237,7 @@ func TestPair_Swap_token1(t *testing.T) {
 }
 
 func TestPair_Burn(t *testing.T) {
+	t.Parallel()
 	tableTests := []struct {
 		coin0, coin1               types.CoinID
 		token0Amount, token1Amount *big.Int
@@ -245,6 +254,7 @@ func TestPair_Burn(t *testing.T) {
 	service := New(nil, iavl.NewImmutableTree(db.NewMemDB(), 0))
 	for i, tt := range tableTests {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			t.Parallel()
 			err := service.CheckMint(tt.coin0, tt.coin1, tt.token0Amount, tt.token1Amount)
 			if err != nil {
 				t.Fatal(err)
@@ -291,6 +301,7 @@ func TestPair_Burn(t *testing.T) {
 }
 
 func TestSwap_Pair_reverseKey(t *testing.T) {
+	t.Parallel()
 	service := New(nil, iavl.NewImmutableTree(db.NewMemDB(), 0))
 	pair := service.Pair(0, 1)
 	if pair != nil {

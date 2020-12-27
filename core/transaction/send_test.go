@@ -14,6 +14,7 @@ import (
 )
 
 func TestSendTx(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -78,6 +79,7 @@ func TestSendTx(t *testing.T) {
 }
 
 func TestSendMultisigTx(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey1, _ := crypto.GenerateKey()
@@ -150,6 +152,7 @@ func TestSendMultisigTx(t *testing.T) {
 }
 
 func TestSendFailedMultisigTx(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey1, _ := crypto.GenerateKey()
@@ -222,6 +225,7 @@ func TestSendFailedMultisigTx(t *testing.T) {
 }
 
 func TestSendWithNotExistedCoin(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -271,6 +275,7 @@ func TestSendWithNotExistedCoin(t *testing.T) {
 }
 
 func TestSendTxWithCustomCoin(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -336,6 +341,7 @@ func TestSendTxWithCustomCoin(t *testing.T) {
 }
 
 func TestSendTxToGasCoinReserveUnderflow(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()

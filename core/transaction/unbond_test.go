@@ -14,6 +14,7 @@ import (
 )
 
 func TestUnbondTx(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	pubkey := createTestCandidate(cState)
@@ -87,6 +88,7 @@ func TestUnbondTx(t *testing.T) {
 }
 
 func TestFullUnbondTxWithWaitlist(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 	pubkey := createTestCandidate(cState)
 
@@ -161,6 +163,7 @@ func TestFullUnbondTxWithWaitlist(t *testing.T) {
 }
 
 func TestUnbondTxWithWaitlist(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 	pubkey := createTestCandidate(cState)
 
@@ -235,6 +238,7 @@ func TestUnbondTxWithWaitlist(t *testing.T) {
 }
 
 func TestUnbondTxToDecodeError(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	pubkey := createTestCandidate(cState)
@@ -283,6 +287,7 @@ func TestUnbondTxToDecodeError(t *testing.T) {
 }
 
 func TestUnbondTxToNotExistCoin(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 	pubkey := createTestCandidate(cState)
 	privateKey, _ := crypto.GenerateKey()
@@ -330,6 +335,7 @@ func TestUnbondTxToNotExistCoin(t *testing.T) {
 }
 
 func TestUnbondTxToNotExistCandidate(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 	pubkey := types.Pubkey{1}
 	privateKey, _ := crypto.GenerateKey()
@@ -377,6 +383,7 @@ func TestUnbondTxToNotExistCandidate(t *testing.T) {
 }
 
 func TestUnbondTxToNotExistStake(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 	pubkey := createTestCandidate(cState)
 	privateKey, _ := crypto.GenerateKey()
@@ -424,6 +431,7 @@ func TestUnbondTxToNotExistStake(t *testing.T) {
 }
 
 func TestUnbondTxToInsufficientStake(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 	pubkey := createTestCandidate(cState)
 	privateKey, _ := crypto.GenerateKey()
@@ -476,6 +484,7 @@ func TestUnbondTxToInsufficientStake(t *testing.T) {
 }
 
 func TestUnbondTxToInsufficientFunds(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 	pubkey := createTestCandidate(cState)
 	privateKey, _ := crypto.GenerateKey()
@@ -527,6 +536,7 @@ func TestUnbondTxToInsufficientFunds(t *testing.T) {
 }
 
 func TestUnbondTxToInsufficientAmountAtWaitlist(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 	pubkey := createTestCandidate(cState)
 	privateKey, _ := crypto.GenerateKey()
@@ -577,6 +587,7 @@ func TestUnbondTxToInsufficientAmountAtWaitlist(t *testing.T) {
 }
 
 func TestUnbondTxToGasCoinReserveUnderflow(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 	pubkey := createTestCandidate(cState)
 	privateKey, _ := crypto.GenerateKey()

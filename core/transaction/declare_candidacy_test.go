@@ -16,6 +16,7 @@ import (
 )
 
 func TestDeclareCandidacyTx(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -113,6 +114,7 @@ func TestDeclareCandidacyTx(t *testing.T) {
 }
 
 func TestDeclareCandidacyTxOverflow(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 	maxCandidatesCount := validators.GetCandidatesCountForBlock(0)
 
@@ -182,6 +184,7 @@ func TestDeclareCandidacyTxOverflow(t *testing.T) {
 }
 
 func TestDeclareCandidacyTxWithBlockPybKey(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	pkey, _ := crypto.GenerateKey()
@@ -274,6 +277,7 @@ func TestDeclareCandidacyTxWithBlockPybKey(t *testing.T) {
 }
 
 func TestDeclareCandidacyToNonExistCoin(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -333,6 +337,7 @@ func TestDeclareCandidacyToNonExistCoin(t *testing.T) {
 }
 
 func TestDeclareCandidacyToExistCandidate(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -394,6 +399,7 @@ func TestDeclareCandidacyToExistCandidate(t *testing.T) {
 }
 
 func TestDeclareCandidacyToDecodeError(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -448,6 +454,7 @@ func TestDeclareCandidacyToDecodeError(t *testing.T) {
 }
 
 func TestDeclareCandidacyToWrongCommission(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -505,6 +512,7 @@ func TestDeclareCandidacyToWrongCommission(t *testing.T) {
 }
 
 func TestDeclareCandidacyToInsufficientFunds(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
@@ -609,6 +617,7 @@ func TestDeclareCandidacyToInsufficientFunds(t *testing.T) {
 }
 
 func TestDeclareCandidacyTxToGasCoinReserveUnderflow(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)

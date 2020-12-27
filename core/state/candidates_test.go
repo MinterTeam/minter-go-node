@@ -13,6 +13,7 @@ import (
 )
 
 func TestSimpleDelegate(t *testing.T) {
+	t.Parallel()
 	st := getState()
 
 	address := types.Address{}
@@ -43,6 +44,7 @@ func TestSimpleDelegate(t *testing.T) {
 }
 
 func TestDelegate(t *testing.T) {
+	t.Parallel()
 	st := getState()
 
 	address := types.Address{}
@@ -78,6 +80,7 @@ func TestDelegate(t *testing.T) {
 }
 
 func TestCustomDelegate(t *testing.T) {
+	t.Parallel()
 	st := getState()
 
 	volume := helpers.BipToPip(big.NewInt(1000000))
@@ -116,6 +119,7 @@ func TestCustomDelegate(t *testing.T) {
 }
 
 func TestComplexDelegate(t *testing.T) {
+	t.Parallel()
 	st := getState()
 
 	coin := types.GetBaseCoinID()
@@ -221,6 +225,7 @@ func TestComplexDelegate(t *testing.T) {
 }
 
 func TestStakeSufficiency(t *testing.T) {
+	t.Parallel()
 	st := getState()
 
 	coin := types.GetBaseCoinID()
@@ -275,6 +280,7 @@ func TestStakeSufficiency(t *testing.T) {
 }
 
 func TestDoubleSignPenalty(t *testing.T) {
+	t.Parallel()
 	st := getState()
 
 	pubkey := createTestCandidate(st)
@@ -331,6 +337,7 @@ func TestDoubleSignPenalty(t *testing.T) {
 }
 
 func TestAbsentPenalty(t *testing.T) {
+	t.Parallel()
 	st := getState()
 
 	pubkey := createTestCandidate(st)
@@ -366,6 +373,7 @@ func TestAbsentPenalty(t *testing.T) {
 }
 
 func TestDoubleAbsentPenalty(t *testing.T) {
+	t.Parallel()
 	st := getState()
 
 	pubkey := createTestCandidate(st)
@@ -409,6 +417,7 @@ func TestDoubleAbsentPenalty(t *testing.T) {
 }
 
 func TestZeroStakePenalty(t *testing.T) {
+	t.Parallel()
 	st := getState()
 
 	pubkey := createTestCandidate(st)
@@ -446,6 +455,7 @@ func TestZeroStakePenalty(t *testing.T) {
 }
 
 func TestDelegationAfterUnbond(t *testing.T) {
+	t.Parallel()
 	st := getState()
 
 	coin := types.GetBaseCoinID()
@@ -510,6 +520,7 @@ func TestDelegationAfterUnbond(t *testing.T) {
 }
 
 func TestStakeKick(t *testing.T) {
+	t.Parallel()
 	st := getState()
 
 	coin := types.GetBaseCoinID()
@@ -552,6 +563,7 @@ func TestStakeKick(t *testing.T) {
 }
 
 func TestRecalculateStakes(t *testing.T) {
+	t.Parallel()
 	st := getState()
 
 	st.Coins.Create(1, [10]byte{1}, "TestCoin", helpers.BipToPip(big.NewInt(100000)), 70, helpers.BipToPip(big.NewInt(10000)), nil, nil)
