@@ -113,6 +113,7 @@ func (data MintCoin) Run(tx *Transaction, context state.Interface, rewardPool *b
 
 		deliverState.Coins.GetCoin(data.Coin).Mint(data.Value)
 		deliverState.Accounts.AddBalance(sender, data.Coin, data.Value)
+		deliverState.Checker.AddCoin(data.Coin, data.Value)
 
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}

@@ -127,6 +127,7 @@ func (data BurnCoin) Run(tx *Transaction, context state.Interface, rewardPool *b
 
 		deliverState.Coins.GetCoin(data.Coin).Burn(data.Value)
 		deliverState.Accounts.SubBalance(sender, data.Coin, data.Value)
+		deliverState.Checker.AddCoin(data.Coin, big.NewInt(0).Neg(data.Value))
 
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}
