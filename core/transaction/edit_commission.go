@@ -44,11 +44,11 @@ func (data EditCommissionData) basicCheck(tx *Transaction, context *state.CheckS
 		}
 	}
 
-	if candidate.LastEditCommissionHeight+3*unbondPeriod > block {
+	if candidate.LastEditCommissionHeight+3*types.GetUnbondPeriod() > block {
 		return &Response{
 			Code: code.PeriodLimitReached,
-			Log:  fmt.Sprintf("You cannot change the commission more than once every %d blocks, the last change was on block %d", 3*unbondPeriod, candidate.LastEditCommissionHeight),
-			Info: EncodeError(code.NewPeriodLimitReached(strconv.Itoa(int(candidate.LastEditCommissionHeight+3*unbondPeriod)), strconv.Itoa(int(candidate.LastEditCommissionHeight)))),
+			Log:  fmt.Sprintf("You cannot change the commission more than once every %d blocks, the last change was on block %d", 3*types.GetUnbondPeriod(), candidate.LastEditCommissionHeight),
+			Info: EncodeError(code.NewPeriodLimitReached(strconv.Itoa(int(candidate.LastEditCommissionHeight+3*types.GetUnbondPeriod())), strconv.Itoa(int(candidate.LastEditCommissionHeight)))),
 		}
 	}
 

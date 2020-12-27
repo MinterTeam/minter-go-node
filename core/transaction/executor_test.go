@@ -14,6 +14,7 @@ import (
 )
 
 func TestTooLongTx(t *testing.T) {
+	t.Parallel()
 	fakeTx := make([]byte, 10000)
 
 	cState := getState()
@@ -28,6 +29,7 @@ func TestTooLongTx(t *testing.T) {
 }
 
 func TestIncorrectTx(t *testing.T) {
+	t.Parallel()
 	fakeTx := make([]byte, 1)
 	rand.Read(fakeTx)
 
@@ -43,6 +45,7 @@ func TestIncorrectTx(t *testing.T) {
 }
 
 func TestTooLongPayloadTx(t *testing.T) {
+	t.Parallel()
 	payload := make([]byte, 1025)
 	rand.Read(payload)
 
@@ -88,6 +91,7 @@ func TestTooLongPayloadTx(t *testing.T) {
 }
 
 func TestTooLongServiceDataTx(t *testing.T) {
+	t.Parallel()
 	serviceData := make([]byte, 1025)
 	rand.Read(serviceData)
 
@@ -132,6 +136,7 @@ func TestTooLongServiceDataTx(t *testing.T) {
 }
 
 func TestUnexpectedNonceTx(t *testing.T) {
+	t.Parallel()
 	txData := SendData{
 		Coin:  types.GetBaseCoinID(),
 		To:    types.Address{},
@@ -171,6 +176,7 @@ func TestUnexpectedNonceTx(t *testing.T) {
 }
 
 func TestInvalidSigTx(t *testing.T) {
+	t.Parallel()
 	txData := SendData{
 		Coin:  types.GetBaseCoinID(),
 		To:    types.Address{},
@@ -214,6 +220,7 @@ func TestInvalidSigTx(t *testing.T) {
 }
 
 func TestNotExistMultiSigTx(t *testing.T) {
+	t.Parallel()
 	txData := SendData{
 		Coin:  types.GetBaseCoinID(),
 		To:    types.Address{},
@@ -258,6 +265,7 @@ func TestNotExistMultiSigTx(t *testing.T) {
 }
 
 func TestMultiSigTx(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -306,6 +314,7 @@ func TestMultiSigTx(t *testing.T) {
 }
 
 func TestMultiSigDoubleSignTx(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -358,6 +367,7 @@ func TestMultiSigDoubleSignTx(t *testing.T) {
 }
 
 func TestMultiSigTooManySignsTx(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -413,6 +423,7 @@ func TestMultiSigTooManySignsTx(t *testing.T) {
 }
 
 func TestMultiSigNotEnoughTx(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -461,6 +472,7 @@ func TestMultiSigNotEnoughTx(t *testing.T) {
 }
 
 func TestMultiSigIncorrectSignsTx(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()

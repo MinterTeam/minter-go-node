@@ -62,6 +62,10 @@ func getData(txType TxType) (Data, bool) {
 		return &EditCommissionData{}, true
 	case TypeMoveStake:
 		return &MoveStakeData{}, true
+	case TypeMintCoin:
+		return &MintCoin{}, true
+	case TypeBurnCoin:
+		return &BurnCoin{}, true
 	default:
 		return nil, false
 	}

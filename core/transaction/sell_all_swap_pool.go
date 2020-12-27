@@ -119,7 +119,7 @@ func (data SellAllSwapPoolData) Run(tx *Transaction, context state.Interface, re
 		kv.Pair{Key: []byte("tx.coin_to_buy"), Value: []byte(data.CoinToBuy.String())},
 		kv.Pair{Key: []byte("tx.coin_to_sell"), Value: []byte(data.CoinToSell.String())},
 		kv.Pair{Key: []byte("tx.return"), Value: []byte(amountOut.String())},
-		kv.Pair{Key: []byte("tx.sell_amount"), Value: []byte(balance.String())},
+		kv.Pair{Key: []byte("tx.sell_amount"), Value: []byte(available.String())},
 	}
 
 	return Response{

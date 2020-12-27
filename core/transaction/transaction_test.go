@@ -11,6 +11,7 @@ import (
 )
 
 func TestCommissionFromMin(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	coin1 := createTestCoin(cState)
@@ -112,6 +113,7 @@ func TestCommissionFromMin(t *testing.T) {
 }
 
 func TestCommissionFromPool(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	coin1 := createNonReserveCoin(cState)

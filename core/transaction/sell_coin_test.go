@@ -14,6 +14,7 @@ import (
 )
 
 func TestSellCoinTx(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	buyCoinID := createTestCoin(cState)
@@ -82,6 +83,7 @@ func TestSellCoinTx(t *testing.T) {
 }
 
 func TestSellCoinTxBaseToCustomBaseCommission(t *testing.T) {
+	t.Parallel()
 	// sell_coin: MNT
 	// buy_coin: TEST
 	// gas_coin: MNT
@@ -151,6 +153,7 @@ func TestSellCoinTxBaseToCustomBaseCommission(t *testing.T) {
 }
 
 func TestSellCoinTxCustomToBaseBaseCommission(t *testing.T) {
+	t.Parallel()
 	// sell_coin: TEST
 	// buy_coin: MNT
 	// gas_coin: MNT
@@ -225,6 +228,7 @@ func TestSellCoinTxCustomToBaseBaseCommission(t *testing.T) {
 }
 
 func TestSellCoinTxCustomToCustomBaseCommission(t *testing.T) {
+	t.Parallel()
 	// sell_coin: TEST1
 	// buy_coin: TEST2
 	// gas_coin: MNT
@@ -316,6 +320,7 @@ func TestSellCoinTxCustomToCustomBaseCommission(t *testing.T) {
 }
 
 func TestSellCoinTxBaseToCustomCustomCommission(t *testing.T) {
+	t.Parallel()
 	// sell_coin: MNT
 	// buy_coin: TEST
 	// gas_coin: TEST
@@ -392,6 +397,7 @@ func TestSellCoinTxBaseToCustomCustomCommission(t *testing.T) {
 }
 
 func TestSellCoinTxCustomToBaseCustomCommission(t *testing.T) {
+	t.Parallel()
 	// sell_coin: TEST
 	// buy_coin: MNT
 	// gas_coin: TEST
@@ -465,6 +471,7 @@ func TestSellCoinTxCustomToBaseCustomCommission(t *testing.T) {
 }
 
 func TestSellCoinTxCustomToCustomCustom1Commission(t *testing.T) {
+	t.Parallel()
 	// sell_coin: TEST1
 	// buy_coin: TEST2
 	// gas_coin: TEST1
@@ -558,6 +565,7 @@ func TestSellCoinTxCustomToCustomCustom1Commission(t *testing.T) {
 }
 
 func TestSellCoinTxCustomToCustomCustom2Commission(t *testing.T) {
+	t.Parallel()
 	// sell_coin: TEST1
 	// buy_coin: TEST2
 	// gas_coin: TEST2
@@ -659,6 +667,7 @@ func TestSellCoinTxCustomToCustomCustom2Commission(t *testing.T) {
 }
 
 func TestSellCoinTxToCoinSupplyOverflow(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 	privateKey, addr := getAccount()
 	coinToBuyID, sellCoinID := createTestCoin(cState), types.GetBaseCoinID()
@@ -725,6 +734,7 @@ func TestSellCoinTxToCoinSupplyOverflow(t *testing.T) {
 }
 
 func TestSellCoinTxToMinimumValueToBuyReached(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 	privateKey, addr := getAccount()
 	coinToBuyID, sellCoinID := createTestCoin(cState), types.GetBaseCoinID()
@@ -854,6 +864,7 @@ func TestSellCoinTxToMinimumValueToBuyReached(t *testing.T) {
 }
 
 func TestSellCoinTxToCoinReserveNotSufficient(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 	privateKey, addr := getAccount()
 	coinToBuyID, coinToSellID := createTestCoin(cState), types.GetBaseCoinID()
@@ -919,6 +930,7 @@ func TestSellCoinTxToCoinReserveNotSufficient(t *testing.T) {
 }
 
 func TestSellCoinTxInsufficientFunds(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	coinToBuyID, coinToSellID := createTestCoin(cState), types.GetBaseCoinID()
@@ -950,6 +962,7 @@ func TestSellCoinTxInsufficientFunds(t *testing.T) {
 }
 
 func TestSellCoinTxEqualCoins(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 	coinID := createTestCoin(cState)
 	privateKey, _ := crypto.GenerateKey()
@@ -975,6 +988,7 @@ func TestSellCoinTxEqualCoins(t *testing.T) {
 }
 
 func TestSellCoinTxToNonExistCoins(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 	coinID := createTestCoin(cState)
 	privateKey, _ := crypto.GenerateKey()

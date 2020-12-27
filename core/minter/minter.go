@@ -200,7 +200,7 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 			continue
 		}
 
-		app.stateDeliver.FrozenFunds.PunishFrozenFundsWithID(height, height+candidates.UnbondPeriod, candidate.ID)
+		app.stateDeliver.FrozenFunds.PunishFrozenFundsWithID(height, height+types.GetUnbondPeriod(), candidate.ID)
 		app.stateDeliver.Validators.PunishByzantineValidator(address)
 		app.stateDeliver.Candidates.PunishByzantineCandidate(height, address)
 	}

@@ -11,6 +11,7 @@ import (
 )
 
 func TestSellSwapPoolTx_0(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	coin := createTestCoin(cState)
@@ -116,6 +117,7 @@ func TestSellSwapPoolTx_0(t *testing.T) {
 }
 
 func TestSellSwapPoolTx_1(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	coin := createTestCoin(cState)
@@ -265,6 +267,7 @@ func TestSellSwapPoolTx_1(t *testing.T) {
 }
 
 func TestSellSwapPoolTx_2(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	coin := createTestCoin(cState)
@@ -370,6 +373,7 @@ func TestSellSwapPoolTx_2(t *testing.T) {
 }
 
 func TestSellSwapPoolTx_3(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	coin := createTestCoin(cState)
@@ -475,6 +479,7 @@ func TestSellSwapPoolTx_3(t *testing.T) {
 }
 
 func TestSellSwapPoolTx_4(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	coin := createTestCoin(cState)

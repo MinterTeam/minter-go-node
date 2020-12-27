@@ -8,6 +8,7 @@ import (
 )
 
 func TestDecodeFromBytesToInvalidSignature(t *testing.T) {
+	t.Parallel()
 	data := SendData{Coin: 0, To: types.Address{0}, Value: big.NewInt(0)}
 	encodedData, err := rlp.EncodeToBytes(data)
 	if err != nil {
@@ -36,6 +37,7 @@ func TestDecodeFromBytesToInvalidSignature(t *testing.T) {
 }
 
 func TestDecodeSigToInvalidMultiSignature(t *testing.T) {
+	t.Parallel()
 	tx := Transaction{
 		Nonce:         1,
 		GasPrice:      1,
@@ -53,6 +55,7 @@ func TestDecodeSigToInvalidMultiSignature(t *testing.T) {
 }
 
 func TestDecodeSigToInvalidSingleSignature(t *testing.T) {
+	t.Parallel()
 	tx := Transaction{
 		Nonce:         1,
 		GasPrice:      1,
@@ -70,6 +73,7 @@ func TestDecodeSigToInvalidSingleSignature(t *testing.T) {
 }
 
 func TestDecodeSigToUnknownSignatureType(t *testing.T) {
+	t.Parallel()
 	tx := Transaction{
 		Nonce:         1,
 		GasPrice:      1,
@@ -87,6 +91,7 @@ func TestDecodeSigToUnknownSignatureType(t *testing.T) {
 }
 
 func TestDecodeFromBytesWithoutSigToInvalidData(t *testing.T) {
+	t.Parallel()
 	tx := Transaction{
 		Nonce:         1,
 		GasPrice:      1,

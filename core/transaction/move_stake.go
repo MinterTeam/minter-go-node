@@ -137,7 +137,7 @@ func (data MoveStakeData) Run(tx *Transaction, context state.Interface, rewardPo
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
 		moveToCandidateId := deliverState.Candidates.ID(data.To)
-		deliverState.FrozenFunds.AddFund(currentBlock+unbondPeriod, sender, data.From, deliverState.Candidates.ID(data.From), data.Coin, data.Value, &moveToCandidateId)
+		deliverState.FrozenFunds.AddFund(currentBlock+types.GetUnbondPeriod(), sender, data.From, deliverState.Candidates.ID(data.From), data.Coin, data.Value, &moveToCandidateId)
 
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}

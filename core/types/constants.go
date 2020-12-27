@@ -10,6 +10,15 @@ const (
 	ChainTestnet ChainID = 0x02
 )
 
+const unbondPeriod = 518400
+
+func GetUnbondPeriod() uint64 {
+	if GetBaseCoin() == coinTestnet {
+		return 518400 / 2920 // 15min
+	}
+	return 518400
+}
+
 // CurrentChainID is current ChainID of the network
 var CurrentChainID = ChainMainnet
 

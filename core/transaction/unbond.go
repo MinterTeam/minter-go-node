@@ -12,8 +12,6 @@ import (
 	"math/big"
 )
 
-const unbondPeriod = 518400
-
 type UnbondData struct {
 	PubKey types.Pubkey
 	Coin   types.CoinID
@@ -120,7 +118,7 @@ func (data UnbondData) Run(tx *Transaction, context state.Interface, rewardPool 
 
 	if deliverState, ok := context.(*state.State); ok {
 		// now + 30 days
-		unbondAtBlock := currentBlock + unbondPeriod
+		unbondAtBlock := currentBlock + types.GetUnbondPeriod()
 
 		if isGasCommissionFromPoolSwap {
 			commission, commissionInBaseCoin = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)

@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	eventsdb "github.com/MinterTeam/minter-go-node/core/events"
-	"github.com/MinterTeam/minter-go-node/core/state/candidates"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/tendermint/tendermint/crypto/ed25519"
@@ -14,6 +13,7 @@ import (
 )
 
 func TestSimpleDelegate(t *testing.T) {
+	t.Parallel()
 	st := getState()
 
 	address := types.Address{}
@@ -44,6 +44,7 @@ func TestSimpleDelegate(t *testing.T) {
 }
 
 func TestDelegate(t *testing.T) {
+	t.Parallel()
 	st := getState()
 
 	address := types.Address{}
@@ -79,6 +80,7 @@ func TestDelegate(t *testing.T) {
 }
 
 func TestCustomDelegate(t *testing.T) {
+	t.Parallel()
 	st := getState()
 
 	volume := helpers.BipToPip(big.NewInt(1000000))
@@ -117,6 +119,7 @@ func TestCustomDelegate(t *testing.T) {
 }
 
 func TestComplexDelegate(t *testing.T) {
+	t.Parallel()
 	st := getState()
 
 	coin := types.GetBaseCoinID()
@@ -222,6 +225,7 @@ func TestComplexDelegate(t *testing.T) {
 }
 
 func TestStakeSufficiency(t *testing.T) {
+	t.Parallel()
 	st := getState()
 
 	coin := types.GetBaseCoinID()
@@ -276,6 +280,7 @@ func TestStakeSufficiency(t *testing.T) {
 }
 
 func TestDoubleSignPenalty(t *testing.T) {
+	t.Parallel()
 	st := getState()
 
 	pubkey := createTestCandidate(st)
@@ -297,7 +302,7 @@ func TestDoubleSignPenalty(t *testing.T) {
 	copy(tmAddr[:], pk.Address().Bytes())
 
 	st.Validators.PunishByzantineValidator(tmAddr)
-	st.FrozenFunds.PunishFrozenFundsWithID(1, 1+candidates.UnbondPeriod, st.Candidates.ID(pubkey))
+	st.FrozenFunds.PunishFrozenFundsWithID(1, 1+types.GetUnbondPeriod(), st.Candidates.ID(pubkey))
 	st.Candidates.PunishByzantineCandidate(1, tmAddr)
 
 	stake := st.Candidates.GetStakeValueOfAddress(pubkey, addr, coin)
@@ -305,7 +310,7 @@ func TestDoubleSignPenalty(t *testing.T) {
 		t.Fatalf("Stake is not correct. Expected 0, got %s", stake.String())
 	}
 
-	ffs := st.FrozenFunds.GetFrozenFunds(1 + candidates.UnbondPeriod)
+	ffs := st.FrozenFunds.GetFrozenFunds(1 + types.GetUnbondPeriod())
 	exists := false
 	for _, ff := range ffs.List {
 		if ff.Address == addr {
@@ -332,6 +337,7 @@ func TestDoubleSignPenalty(t *testing.T) {
 }
 
 func TestAbsentPenalty(t *testing.T) {
+	t.Parallel()
 	st := getState()
 
 	pubkey := createTestCandidate(st)
@@ -367,6 +373,7 @@ func TestAbsentPenalty(t *testing.T) {
 }
 
 func TestDoubleAbsentPenalty(t *testing.T) {
+	t.Parallel()
 	st := getState()
 
 	pubkey := createTestCandidate(st)
@@ -410,6 +417,7 @@ func TestDoubleAbsentPenalty(t *testing.T) {
 }
 
 func TestZeroStakePenalty(t *testing.T) {
+	t.Parallel()
 	st := getState()
 
 	pubkey := createTestCandidate(st)
@@ -447,6 +455,7 @@ func TestZeroStakePenalty(t *testing.T) {
 }
 
 func TestDelegationAfterUnbond(t *testing.T) {
+	t.Parallel()
 	st := getState()
 
 	coin := types.GetBaseCoinID()
@@ -511,6 +520,7 @@ func TestDelegationAfterUnbond(t *testing.T) {
 }
 
 func TestStakeKick(t *testing.T) {
+	t.Parallel()
 	st := getState()
 
 	coin := types.GetBaseCoinID()
@@ -553,6 +563,7 @@ func TestStakeKick(t *testing.T) {
 }
 
 func TestRecalculateStakes(t *testing.T) {
+	t.Parallel()
 	st := getState()
 
 	st.Coins.Create(1, [10]byte{1}, "TestCoin", helpers.BipToPip(big.NewInt(100000)), 70, helpers.BipToPip(big.NewInt(10000)), nil, nil)

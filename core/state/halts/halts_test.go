@@ -9,6 +9,7 @@ import (
 )
 
 func TestHaltsToDeleteModel(t *testing.T) {
+	t.Parallel()
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	h := NewHalts(bus.NewBus(), mutableTree.GetLastImmutable())
 
@@ -38,6 +39,7 @@ func TestHaltsToDeleteModel(t *testing.T) {
 }
 
 func TestBusToAddHaltBlock(t *testing.T) {
+	t.Parallel()
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	h := NewHalts(bus.NewBus(), mutableTree.GetLastImmutable())
 

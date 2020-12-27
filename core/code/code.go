@@ -85,6 +85,9 @@ const (
 	InsufficientLiquidityBurned  uint32 = 705
 	InsufficientLiquidityBalance uint32 = 706
 	InsufficientOutputAmount     uint32 = 707
+
+	// emission coin
+	CoinHasReserve uint32 = 800
 )
 
 func NewInsufficientLiquidityBalance(liquidity, amount0, coin0, amount1, coin1, requestedLiquidity, wantA0, wantA1 string) *insufficientLiquidityBalance {
@@ -237,6 +240,16 @@ func NewCoinReserveNotSufficient(coinSymbol string, coinId string, hasBipValue s
 }
 
 type coinHasNotReserve struct {
+	Code       string `json:"code,omitempty"`
+	CoinSymbol string `json:"coin_symbol,omitempty"`
+	CoinId     string `json:"coin_id,omitempty"`
+}
+
+func NewCoinHasReserve(coinSymbol string, coinId string) *coinHasReserve {
+	return &coinHasReserve{Code: strconv.Itoa(int(CoinHasReserve)), CoinSymbol: coinSymbol, CoinId: coinId}
+}
+
+type coinHasReserve struct {
 	Code       string `json:"code,omitempty"`
 	CoinSymbol string `json:"coin_symbol,omitempty"`
 	CoinId     string `json:"coin_id,omitempty"`
@@ -730,6 +743,7 @@ type wrongCoinSupply struct {
 	Code string `json:"code,omitempty"`
 
 	MaxCoinSupply     string `json:"max_coin_supply,omitempty"`
+	MinCoinSupply     string `json:"min_coin_supply,omitempty"`
 	CurrentCoinSupply string `json:"current_coin_supply,omitempty"`
 
 	MinInitialReserve     string `json:"min_initial_reserve,omitempty"`
@@ -740,6 +754,6 @@ type wrongCoinSupply struct {
 	CurrentInitialAmount string `json:"current_initial_amount,omitempty"`
 }
 
-func NewWrongCoinSupply(maxCoinSupply string, currentCoinSupply string, minInitialReserve string, currentInitialReserve string, minInitialAmount string, maxInitialAmount string, currentInitialAmount string) *wrongCoinSupply {
-	return &wrongCoinSupply{Code: strconv.Itoa(int(WrongCoinSupply)), MaxCoinSupply: maxCoinSupply, CurrentCoinSupply: currentCoinSupply, MinInitialReserve: minInitialReserve, CurrentInitialReserve: currentInitialReserve, MinInitialAmount: minInitialAmount, MaxInitialAmount: maxInitialAmount, CurrentInitialAmount: currentInitialAmount}
+func NewWrongCoinSupply(minCoinSupply string, maxCoinSupply string, currentCoinSupply string, minInitialReserve string, currentInitialReserve string, minInitialAmount string, maxInitialAmount string, currentInitialAmount string) *wrongCoinSupply {
+	return &wrongCoinSupply{Code: strconv.Itoa(int(WrongCoinSupply)), MinCoinSupply: minCoinSupply, MaxCoinSupply: maxCoinSupply, CurrentCoinSupply: currentCoinSupply, MinInitialReserve: minInitialReserve, CurrentInitialReserve: currentInitialReserve, MinInitialAmount: minInitialAmount, MaxInitialAmount: maxInitialAmount, CurrentInitialAmount: currentInitialAmount}
 }

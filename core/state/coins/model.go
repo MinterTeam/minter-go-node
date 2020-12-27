@@ -82,6 +82,16 @@ func (m *Model) AddReserve(amount *big.Int) {
 	m.info.isDirty = true
 }
 
+func (m *Model) Mint(amount *big.Int) {
+	m.CMaxSupply.Add(m.CMaxSupply, amount)
+	m.markDirty(m.id)
+}
+
+func (m *Model) Burn(amount *big.Int) {
+	m.CMaxSupply.Sub(m.CMaxSupply, amount)
+	m.markDirty(m.id)
+}
+
 func (m *Model) SetVolume(volume *big.Int) {
 	m.info.Volume.Set(volume)
 	m.markDirty(m.id)

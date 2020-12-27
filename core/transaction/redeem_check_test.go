@@ -17,6 +17,7 @@ import (
 )
 
 func TestRedeemCheckTx(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 	coin := types.GetBaseCoinID()
 
@@ -125,6 +126,7 @@ func TestRedeemCheckTx(t *testing.T) {
 }
 
 func TestRedeemCheckTxToDecodeError(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 	coin := types.GetBaseCoinID()
 
@@ -234,6 +236,7 @@ func TestRedeemCheckTxToDecodeError(t *testing.T) {
 }
 
 func TestRedeemCheckTxToHighGasPrice(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 	coin := types.GetBaseCoinID()
 
@@ -332,6 +335,7 @@ func TestRedeemCheckTxToHighGasPrice(t *testing.T) {
 }
 
 func TestRedeemCheckTxToWrongChainID(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 	coin := types.GetBaseCoinID()
 
@@ -430,6 +434,7 @@ func TestRedeemCheckTxToWrongChainID(t *testing.T) {
 }
 
 func TestRedeemCheckTxToNonceLength(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 	coin := types.GetBaseCoinID()
 
@@ -528,6 +533,7 @@ func TestRedeemCheckTxToNonceLength(t *testing.T) {
 }
 
 func TestRedeemCheckTxToCheckData(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 	coin := types.GetBaseCoinID()
 
@@ -748,6 +754,7 @@ func TestRedeemCheckTxToCheckData(t *testing.T) {
 }
 
 func TestRedeemCheckTxToUsed(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 	coin := types.GetBaseCoinID()
 
@@ -848,6 +855,7 @@ func TestRedeemCheckTxToUsed(t *testing.T) {
 }
 
 func TestRedeemCheckTxToInsufficientFunds(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 	coin := types.GetBaseCoinID()
 
@@ -944,6 +952,7 @@ func TestRedeemCheckTxToInsufficientFunds(t *testing.T) {
 }
 
 func TestRedeemCheckTxToCoinReserveUnderflow(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 	coin := createTestCoin(cState)
 	cState.Coins.SubReserve(coin, helpers.BipToPip(big.NewInt(90000)))
@@ -1041,6 +1050,7 @@ func TestRedeemCheckTxToCoinReserveUnderflow(t *testing.T) {
 }
 
 func TestRedeemCheckTxToInsufficientFundsForCheckCoin(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 	coin := createTestCoin(cState)
 
@@ -1137,6 +1147,7 @@ func TestRedeemCheckTxToInsufficientFundsForCheckCoin(t *testing.T) {
 }
 
 func TestRedeemCheckTxToInsufficientFundsForCheckGasCoin(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 	coin := createTestCoin(cState)
 

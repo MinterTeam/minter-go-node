@@ -12,6 +12,7 @@ import (
 )
 
 func TestFrozenFundsToAddModel(t *testing.T) {
+	t.Parallel()
 	b := bus.NewBus()
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 
@@ -51,6 +52,7 @@ func TestFrozenFundsToAddModel(t *testing.T) {
 }
 
 func TestFrozenFundsToDeleteModel(t *testing.T) {
+	t.Parallel()
 	b := bus.NewBus()
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	ff := NewFrozenFunds(b, mutableTree.GetLastImmutable())
@@ -86,6 +88,7 @@ func TestFrozenFundsToDeleteModel(t *testing.T) {
 }
 
 func TestFrozenFundsToDeleteNotExistingFund(t *testing.T) {
+	t.Parallel()
 	b := bus.NewBus()
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	ff := NewFrozenFunds(b, mutableTree.GetLastImmutable())

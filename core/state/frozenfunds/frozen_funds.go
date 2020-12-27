@@ -5,7 +5,6 @@ import (
 	"fmt"
 	eventsdb "github.com/MinterTeam/minter-go-node/core/events"
 	"github.com/MinterTeam/minter-go-node/core/state/bus"
-	"github.com/MinterTeam/minter-go-node/core/state/candidates"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/rlp"
@@ -210,7 +209,7 @@ func (f *FrozenFunds) Delete(height uint64) {
 }
 
 func (f *FrozenFunds) Export(state *types.AppState, height uint64) {
-	for i := height; i <= height+candidates.UnbondPeriod; i++ {
+	for i := height; i <= height+types.GetUnbondPeriod(); i++ {
 		frozenFunds := f.get(i)
 		if frozenFunds == nil {
 			continue

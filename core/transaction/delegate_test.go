@@ -26,6 +26,7 @@ func createTestCandidate(stateDB *state.State) types.Pubkey {
 }
 
 func TestDelegateTx(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	pubkey := createTestCandidate(cState)
@@ -101,6 +102,7 @@ func TestDelegateTx(t *testing.T) {
 }
 
 func TestDelegateTxWithWaitlist(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 	pubkey := createTestCandidate(cState)
 	privateKey, _ := crypto.GenerateKey()
@@ -169,6 +171,7 @@ func TestDelegateTxWithWaitlist(t *testing.T) {
 }
 
 func TestDelegateTxToNonExistCoin(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	pubkey := createTestCandidate(cState)
@@ -220,6 +223,7 @@ func TestDelegateTxToNonExistCoin(t *testing.T) {
 }
 
 func TestDelegateTxToPositiveStake(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	pubkey := createTestCandidate(cState)
@@ -271,6 +275,7 @@ func TestDelegateTxToPositiveStake(t *testing.T) {
 }
 
 func TestDelegateTxToNonExistCandidate(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	pubkey := types.Pubkey{1}
@@ -322,6 +327,7 @@ func TestDelegateTxToNonExistCandidate(t *testing.T) {
 }
 
 func TestDelegateTxToLowStake(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	pubkey := createTestCandidate(cState)
@@ -382,6 +388,7 @@ func TestDelegateTxToLowStake(t *testing.T) {
 }
 
 func TestDelegateTxToInsufficientFunds(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	pubkey := createTestCandidate(cState)
@@ -480,6 +487,7 @@ func TestDelegateTxToInsufficientFunds(t *testing.T) {
 }
 
 func TestDelegateTxToGasCoinReserveUnderflow(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	pubkey := createTestCandidate(cState)
@@ -530,6 +538,7 @@ func TestDelegateTxToGasCoinReserveUnderflow(t *testing.T) {
 }
 
 func TestDelegateData_addFromWaitlist(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	pubkey := createTestCandidate(cState)

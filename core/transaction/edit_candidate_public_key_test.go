@@ -13,6 +13,7 @@ import (
 )
 
 func TestEditCandidateNewPublicKeyTx(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -96,6 +97,7 @@ func TestEditCandidateNewPublicKeyTx(t *testing.T) {
 }
 
 func TestEditCandidatePublicKeyTxToNewPublicKey(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -149,6 +151,7 @@ func TestEditCandidatePublicKeyTxToNewPublicKey(t *testing.T) {
 }
 
 func TestEditCandidatePublicKeyTxToNewPublicKeyInBlockList(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -205,6 +208,7 @@ func TestEditCandidatePublicKeyTxToNewPublicKeyInBlockList(t *testing.T) {
 }
 
 func TestEditCandidatePublicKeyTxToInsufficientFunds(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -257,6 +261,7 @@ func TestEditCandidatePublicKeyTxToInsufficientFunds(t *testing.T) {
 }
 
 func TestEditCandidatePublicKeyTxToGasCoinReserveUnderflow(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -312,6 +317,7 @@ func TestEditCandidatePublicKeyTxToGasCoinReserveUnderflow(t *testing.T) {
 }
 
 func TestEditCandidatePublicKeyToNotExistCandidate(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -362,6 +368,7 @@ func TestEditCandidatePublicKeyToNotExistCandidate(t *testing.T) {
 }
 
 func TestEditCandidatePublicKeyTxToCandidateOwnership(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -416,6 +423,7 @@ func TestEditCandidatePublicKeyTxToCandidateOwnership(t *testing.T) {
 }
 
 func TestEditCandidatePublicKeyData_Exists(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()

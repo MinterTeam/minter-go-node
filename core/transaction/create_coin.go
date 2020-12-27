@@ -70,7 +70,7 @@ func (data CreateCoinData) basicCheck(tx *Transaction, context *state.CheckState
 		return &Response{
 			Code: code.WrongCoinSupply,
 			Log:  fmt.Sprintf("Max coin supply should be less than %s", maxCoinSupply),
-			Info: EncodeError(code.NewWrongCoinSupply(maxCoinSupply.String(), data.MaxSupply.String(), minCoinReserve.String(), data.InitialReserve.String(), minCoinSupply.String(), data.MaxSupply.String(), data.InitialAmount.String())),
+			Info: EncodeError(code.NewWrongCoinSupply(minCoinSupply.String(), maxCoinSupply.String(), data.MaxSupply.String(), minCoinReserve.String(), data.InitialReserve.String(), minCoinSupply.String(), data.MaxSupply.String(), data.InitialAmount.String())),
 		}
 	}
 
@@ -78,7 +78,7 @@ func (data CreateCoinData) basicCheck(tx *Transaction, context *state.CheckState
 		return &Response{
 			Code: code.WrongCoinSupply,
 			Log:  fmt.Sprintf("Coin supply should be between %s and %s", minCoinSupply.String(), data.MaxSupply.String()),
-			Info: EncodeError(code.NewWrongCoinSupply(maxCoinSupply.String(), data.MaxSupply.String(), minCoinReserve.String(), data.InitialReserve.String(), minCoinSupply.String(), data.MaxSupply.String(), data.InitialAmount.String())),
+			Info: EncodeError(code.NewWrongCoinSupply(minCoinSupply.String(), maxCoinSupply.String(), data.MaxSupply.String(), minCoinReserve.String(), data.InitialReserve.String(), minCoinSupply.String(), data.MaxSupply.String(), data.InitialAmount.String())),
 		}
 	}
 
@@ -94,7 +94,7 @@ func (data CreateCoinData) basicCheck(tx *Transaction, context *state.CheckState
 			return &Response{
 				Code: code.WrongCoinSupply,
 				Log:  fmt.Sprintf("Coin reserve should be greater than or equal to %s", minCoinReserve.String()),
-				Info: EncodeError(code.NewWrongCoinSupply(maxCoinSupply.String(), data.MaxSupply.String(), minCoinReserve.String(), data.InitialReserve.String(), minCoinSupply.String(), data.MaxSupply.String(), data.InitialAmount.String())),
+				Info: EncodeError(code.NewWrongCoinSupply(minCoinSupply.String(), maxCoinSupply.String(), data.MaxSupply.String(), minCoinReserve.String(), data.InitialReserve.String(), minCoinSupply.String(), data.MaxSupply.String(), data.InitialAmount.String())),
 			}
 		}
 	} else if data.ConstantReserveRatio != 0 {

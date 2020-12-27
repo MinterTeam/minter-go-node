@@ -13,6 +13,7 @@ import (
 )
 
 func TestSellAllCoinTx(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	coinID := createTestCoin(cState)
@@ -79,6 +80,7 @@ func TestSellAllCoinTx(t *testing.T) {
 }
 
 func TestSellAllCoinTxWithSameCoins(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -129,6 +131,7 @@ func TestSellAllCoinTxWithSameCoins(t *testing.T) {
 }
 
 func TestSellAllCoinTxWithInvalidCoins(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 
 	privateKey, _ := crypto.GenerateKey()
@@ -202,6 +205,7 @@ func TestSellAllCoinTxWithInvalidCoins(t *testing.T) {
 }
 
 func TestSellAllCoinTxWithMinimumValueToBuy(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 	coinID := createTestCoin(cState)
 	privateKey, _ := crypto.GenerateKey()
@@ -251,6 +255,7 @@ func TestSellAllCoinTxWithMinimumValueToBuy(t *testing.T) {
 }
 
 func TestSellAllCoinTxWithInsufficientFunds(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 	coinID := createTestCoin(cState)
 	privateKey, _ := crypto.GenerateKey()
@@ -346,6 +351,7 @@ func TestSellAllCoinTxWithInsufficientFunds(t *testing.T) {
 }
 
 func TestSellAllCoinTxToCoinSupplyOverflow(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 	privateKey, addr := getAccount()
 	coinToBuyID, sellCoinID := createTestCoin(cState), types.GetBaseCoinID()
@@ -440,6 +446,7 @@ func TestSellAllCoinTxToCoinSupplyOverflow(t *testing.T) {
 }
 
 func TestSellAllCoinTxToMinimumValueToBuyReached(t *testing.T) {
+	t.Parallel()
 	cState := getState()
 	privateKey, addr := getAccount()
 	coinToBuyID, sellCoinID := createTestCoin(cState), types.GetBaseCoinID()
