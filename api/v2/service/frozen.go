@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"github.com/MinterTeam/minter-go-node/core/code"
-	"github.com/MinterTeam/minter-go-node/core/state/candidates"
 	"github.com/MinterTeam/minter-go-node/core/state/coins"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
@@ -34,7 +33,7 @@ func (s *Service) Frozen(ctx context.Context, req *pb.FrozenRequest) (*pb.Frozen
 
 	cState.FrozenFunds().GetFrozenFunds(s.blockchain.Height())
 
-	for i := s.blockchain.Height(); i <= s.blockchain.Height()+candidates.UnbondPeriod; i++ {
+	for i := s.blockchain.Height(); i <= s.blockchain.Height()+types.GetUnbondPeriod(); i++ {
 
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
 			return nil, timeoutStatus.Err()

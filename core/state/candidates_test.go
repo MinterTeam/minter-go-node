@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	eventsdb "github.com/MinterTeam/minter-go-node/core/events"
-	"github.com/MinterTeam/minter-go-node/core/state/candidates"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/tendermint/tendermint/crypto/ed25519"
@@ -297,7 +296,7 @@ func TestDoubleSignPenalty(t *testing.T) {
 	copy(tmAddr[:], pk.Address().Bytes())
 
 	st.Validators.PunishByzantineValidator(tmAddr)
-	st.FrozenFunds.PunishFrozenFundsWithID(1, 1+candidates.UnbondPeriod, st.Candidates.ID(pubkey))
+	st.FrozenFunds.PunishFrozenFundsWithID(1, 1+types.GetUnbondPeriod(), st.Candidates.ID(pubkey))
 	st.Candidates.PunishByzantineCandidate(1, tmAddr)
 
 	stake := st.Candidates.GetStakeValueOfAddress(pubkey, addr, coin)
@@ -305,7 +304,7 @@ func TestDoubleSignPenalty(t *testing.T) {
 		t.Fatalf("Stake is not correct. Expected 0, got %s", stake.String())
 	}
 
-	ffs := st.FrozenFunds.GetFrozenFunds(1 + candidates.UnbondPeriod)
+	ffs := st.FrozenFunds.GetFrozenFunds(1 + types.GetUnbondPeriod())
 	exists := false
 	for _, ff := range ffs.List {
 		if ff.Address == addr {

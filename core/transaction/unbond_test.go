@@ -3,7 +3,6 @@ package transaction
 import (
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/state"
-	"github.com/MinterTeam/minter-go-node/core/state/candidates"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/helpers"
@@ -137,7 +136,7 @@ func TestFullUnbondTxWithWaitlist(t *testing.T) {
 	}
 
 	cState.Candidates.RecalculateStakes(109000)
-	funds := cState.FrozenFunds.GetFrozenFunds(candidates.UnbondPeriod)
+	funds := cState.FrozenFunds.GetFrozenFunds(types.GetUnbondPeriod())
 	if funds == nil || len(funds.List) != 1 {
 		t.Fatalf("Frozen funds are not correct")
 	}
@@ -211,7 +210,7 @@ func TestUnbondTxWithWaitlist(t *testing.T) {
 	}
 
 	cState.Candidates.RecalculateStakes(109000)
-	funds := cState.FrozenFunds.GetFrozenFunds(candidates.UnbondPeriod)
+	funds := cState.FrozenFunds.GetFrozenFunds(types.GetUnbondPeriod())
 	if funds == nil || len(funds.List) != 1 {
 		t.Fatalf("Frozen funds are not correct")
 	}
