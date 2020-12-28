@@ -56,8 +56,27 @@ func runNode(cmd *cobra.Command) error {
 		panic(err)
 	}
 
+	homeDir, err := cmd.Flags().GetString("home-dir")
+	if err != nil {
+		return err
+	}
+	configDir, err := cmd.Flags().GetString("config")
+	if err != nil {
+		return err
+	}
+	storages := utils.NewStorage(homeDir, configDir)
+
+	_, err = storages.InitEventLevelDB("events", minter.GetDbOpts(1024))
+	if err != nil {
+		return err
+	}
+	_, err = storages.InitStateLevelDB("state", minter.GetDbOpts(cfg.StateMemAvailable))
+	if err != nil {
+		return err
+	}
+
 	// ensure /config and /tmdata dirs
-	if err := ensureDirs(); err != nil {
+	if err := ensureDirs(storages.GetMinterHome()); err != nil {
 		return err
 	}
 
@@ -74,13 +93,13 @@ func runNode(cmd *cobra.Command) error {
 
 	tmConfig := config.GetTmConfig(cfg)
 
-	app := minter.NewMinterBlockchain(cfg)
+	app := minter.NewMinterBlockchain(storages, cfg)
 
 	// update BlocksTimeDelta in case it was corrupted
 	updateBlocksTimeDelta(app, tmConfig)
 
 	// start TM node
-	node := startTendermintNode(app, tmConfig, logger)
+	node := startTendermintNode(app, tmConfig, logger, storages.GetMinterHome())
 	client := rpc.New(node)
 	app.SetTmNode(node)
 
@@ -88,7 +107,7 @@ func runNode(cmd *cobra.Command) error {
 		runAPI(logger, app, client, node)
 	}
 
-	runCLI(cmd, app, client, node)
+	runCLI(cmd, app, client, node, storages.GetMinterHome())
 
 	if cfg.Instrumentation.Prometheus {
 		go app.SetStatisticData(statistics.New()).Statistic(cmd.Context())
@@ -104,9 +123,9 @@ func runNode(cmd *cobra.Command) error {
 	return nil
 }
 
-func runCLI(cmd *cobra.Command, app *minter.Blockchain, client *rpc.Local, tmNode *tmNode.Node) {
+func runCLI(cmd *cobra.Command, app *minter.Blockchain, client *rpc.Local, tmNode *tmNode.Node, home string) {
 	go func() {
-		err := service.StartCLIServer(utils.GetMinterHome()+"/manager.sock", service.NewManager(app, client, tmNode, cfg), cmd.Context())
+		err := service.StartCLIServer(home+"/manager.sock", service.NewManager(app, client, tmNode, cfg), cmd.Context())
 		if err != nil {
 			panic(err)
 		}
@@ -177,12 +196,12 @@ func enablePprof(cmd *cobra.Command, logger tmLog.Logger) error {
 	return nil
 }
 
-func ensureDirs() error {
-	if err := tmOS.EnsureDir(utils.GetMinterHome()+"/config", 0777); err != nil {
+func ensureDirs(homeDir string) error {
+	if err := tmOS.EnsureDir(homeDir+"/config", 0777); err != nil {
 		return err
 	}
 
-	if err := tmOS.EnsureDir(utils.GetMinterHome()+"/tmdata", 0777); err != nil {
+	if err := tmOS.EnsureDir(homeDir+"/tmdata", 0777); err != nil {
 		return err
 	}
 
@@ -229,7 +248,7 @@ func updateBlocksTimeDelta(app *minter.Blockchain, config *tmCfg.Config) {
 	blockStoreDB.Close()
 }
 
-func startTendermintNode(app types.Application, cfg *tmCfg.Config, logger tmLog.Logger) *tmNode.Node {
+func startTendermintNode(app types.Application, cfg *tmCfg.Config, logger tmLog.Logger, home string) *tmNode.Node {
 	nodeKey, err := p2p.LoadOrGenNodeKey(cfg.NodeKeyFile())
 	if err != nil {
 		panic(err)
@@ -240,7 +259,7 @@ func startTendermintNode(app types.Application, cfg *tmCfg.Config, logger tmLog.
 		privval.LoadOrGenFilePV(cfg.PrivValidatorKeyFile(), cfg.PrivValidatorStateFile()),
 		nodeKey,
 		proxy.NewLocalClientCreator(app),
-		getGenesis,
+		getGenesis(home+"/config/genesis.json"),
 		tmNode.DefaultDBProvider,
 		tmNode.DefaultMetricsProvider(cfg.Instrumentation),
 		logger.With("module", "tendermint"),
@@ -261,24 +280,25 @@ func startTendermintNode(app types.Application, cfg *tmCfg.Config, logger tmLog.
 	return node
 }
 
-func getGenesis() (doc *tmTypes.GenesisDoc, e error) {
-	genDocFile := utils.GetMinterHome() + "/config/genesis.json"
-	_, err := os.Stat(genDocFile)
-	if err != nil {
-		if !os.IsNotExist(err) {
-			return nil, err
-		}
-
-		genesis, err := RootCmd.Flags().GetString("genesis")
+func getGenesis(genDocFile string) func() (doc *tmTypes.GenesisDoc, e error) {
+	return func() (doc *tmTypes.GenesisDoc, e error) {
+		_, err := os.Stat(genDocFile)
 		if err != nil {
-			return nil, err
-		}
+			if !os.IsNotExist(err) {
+				return nil, err
+			}
 
-		if err := downloadFile(genDocFile, genesis); err != nil {
-			return nil, err
+			genesis, err := RootCmd.Flags().GetString("genesis")
+			if err != nil {
+				return nil, err
+			}
+
+			if err := downloadFile(genDocFile, genesis); err != nil {
+				return nil, err
+			}
 		}
+		return tmTypes.GenesisDocFromFile(genDocFile)
 	}
-	return tmTypes.GenesisDocFromFile(genDocFile)
 }
 
 func downloadFile(filepath string, url string) error {

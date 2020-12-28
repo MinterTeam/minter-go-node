@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	tmConfig "github.com/tendermint/tendermint/config"
 	"os"
 	"path/filepath"
@@ -15,8 +14,8 @@ const (
 	// LogFormatJSON is a format for json output
 	LogFormatJSON = "json"
 
-	defaultConfigDir = "config"
-	defaultDataDir   = "data"
+	DefaultConfigDir = "config"
+	DefaultDataDir   = "data"
 
 	defaultConfigFileName  = "config.toml"
 	defaultGenesisJSONName = "genesis.json"
@@ -27,11 +26,11 @@ const (
 )
 
 var (
-	defaultConfigFilePath   = filepath.Join(defaultConfigDir, defaultConfigFileName)
-	defaultGenesisJSONPath  = filepath.Join(defaultConfigDir, defaultGenesisJSONName)
-	defaultPrivValKeyPath   = filepath.Join(defaultConfigDir, defaultPrivValName)
-	defaultPrivValStatePath = filepath.Join(defaultConfigDir, defaultPrivValStateName)
-	defaultNodeKeyPath      = filepath.Join(defaultConfigDir, defaultNodeKeyName)
+	defaultConfigFilePath   = filepath.Join(DefaultConfigDir, defaultConfigFileName)
+	defaultGenesisJSONPath  = filepath.Join(DefaultConfigDir, defaultGenesisJSONName)
+	defaultPrivValKeyPath   = filepath.Join(DefaultConfigDir, defaultPrivValName)
+	defaultPrivValStatePath = filepath.Join(DefaultConfigDir, defaultPrivValStateName)
+	defaultNodeKeyPath      = filepath.Join(DefaultConfigDir, defaultNodeKeyName)
 )
 
 // DefaultConfig returns config with predefined values
@@ -76,7 +75,7 @@ func DefaultConfig() *Config {
 }
 
 // GetConfig returns DefaultConfig with some changes
-func GetConfig() *Config {
+func GetConfig(home string) *Config {
 	cfg := DefaultConfig()
 
 	if cfg.ValidatorMode {
@@ -91,8 +90,8 @@ func GetConfig() *Config {
 
 	cfg.P2P.AddrBook = "config/addrbook.json"
 
-	cfg.SetRoot(utils.GetMinterHome())
-	EnsureRoot(utils.GetMinterHome())
+	cfg.SetRoot(home)
+	EnsureRoot(home)
 
 	return cfg
 }

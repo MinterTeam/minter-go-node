@@ -15,7 +15,15 @@ var ManagerCommand = &cobra.Command{
 	DisableFlagParsing: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		newArgs := setParentFlags(cmd, args)
-		console, err := service.NewCLI(utils.GetMinterHome() + "/manager.sock")
+		homeDir, err := cmd.Flags().GetString("home-dir")
+		if err != nil {
+			return err
+		}
+		configDir, err := cmd.Flags().GetString("config")
+		if err != nil {
+			return err
+		}
+		console, err := service.NewCLI(utils.NewStorage(homeDir, configDir).GetMinterHome() + "/manager.sock")
 		if err != nil {
 			return nil
 		}
@@ -36,7 +44,15 @@ var ManagerConsole = &cobra.Command{
 	DisableFlagParsing: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		_ = setParentFlags(cmd, args)
-		console, err := service.NewCLI(utils.GetMinterHome() + "/manager.sock")
+		homeDir, err := cmd.Flags().GetString("home-dir")
+		if err != nil {
+			return err
+		}
+		configDir, err := cmd.Flags().GetString("config")
+		if err != nil {
+			return err
+		}
+		console, err := service.NewCLI(utils.NewStorage(homeDir, configDir).GetMinterHome() + "/manager.sock")
 		if err != nil {
 			return nil
 		}

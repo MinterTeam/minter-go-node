@@ -24,10 +24,10 @@ func EnsureRoot(rootDir string) {
 	if err := os.EnsureDir(rootDir, 0700); err != nil {
 		panic(err.Error())
 	}
-	if err := os.EnsureDir(filepath.Join(rootDir, defaultConfigDir), 0700); err != nil {
+	if err := os.EnsureDir(filepath.Join(rootDir, DefaultConfigDir), 0700); err != nil {
 		panic(err.Error())
 	}
-	if err := os.EnsureDir(filepath.Join(rootDir, defaultDataDir), 0700); err != nil {
+	if err := os.EnsureDir(filepath.Join(rootDir, DefaultDataDir), 0700); err != nil {
 		panic(err.Error())
 	}
 
