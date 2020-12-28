@@ -16,6 +16,9 @@ type Model struct {
 	CVersion   types.CoinVersion
 	CSymbol    types.CoinSymbol
 
+	Mintable bool
+	Burnable bool
+
 	id         types.CoinID
 	info       *Info
 	symbolInfo *SymbolInfo
@@ -51,11 +54,23 @@ func (m Model) Reserve() *big.Int {
 }
 
 func (m Model) BaseOrHasReserve() bool {
-	return m.ID().IsBaseCoin() || (m.Crr() > 0 && m.Reserve().Sign() == 1)
+	return m.ID().IsBaseCoin() || (m.Crr() > 0)
+}
+
+func (m Model) IsToken() bool {
+	return !m.BaseOrHasReserve()
 }
 
 func (m Model) Version() uint16 {
 	return m.CVersion
+}
+
+func (m Model) IsMintable() bool {
+	return m.Mintable
+}
+
+func (m Model) IsBurnable() bool {
+	return m.Burnable
 }
 
 func (m *Model) SubVolume(amount *big.Int) {
@@ -116,7 +131,7 @@ func (m *Model) CheckReserveUnderflow(delta *big.Int) error {
 }
 
 func (m Model) IsInfoDirty() bool {
-	return m.info.isDirty
+	return m.info != nil && m.info.isDirty
 }
 
 func (m Model) IsSymbolInfoDirty() bool {

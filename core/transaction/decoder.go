@@ -66,6 +66,10 @@ func getData(txType TxType) (Data, bool) {
 		return &MintCoin{}, true
 	case TypeBurnCoin:
 		return &BurnCoin{}, true
+	case TypeCreateToken:
+		return &CreateTokenData{}, true
+	case TypeRecreateToken:
+		return &RecreateTokenData{}, true
 	default:
 		return nil, false
 	}

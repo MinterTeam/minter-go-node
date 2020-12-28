@@ -33,6 +33,7 @@ const (
 	InvalidCoinSymbol uint32 = 203
 	InvalidCoinName   uint32 = 204
 	WrongCoinSupply   uint32 = 205
+	WrongCoinEmission uint32 = 206
 
 	// recreate coin
 	IsNotOwnerOfCoin uint32 = 206
@@ -756,4 +757,16 @@ type wrongCoinSupply struct {
 
 func NewWrongCoinSupply(minCoinSupply string, maxCoinSupply string, currentCoinSupply string, minInitialReserve string, currentInitialReserve string, minInitialAmount string, maxInitialAmount string, currentInitialAmount string) *wrongCoinSupply {
 	return &wrongCoinSupply{Code: strconv.Itoa(int(WrongCoinSupply)), MinCoinSupply: minCoinSupply, MaxCoinSupply: maxCoinSupply, CurrentCoinSupply: currentCoinSupply, MinInitialReserve: minInitialReserve, CurrentInitialReserve: currentInitialReserve, MinInitialAmount: minInitialAmount, MaxInitialAmount: maxInitialAmount, CurrentInitialAmount: currentInitialAmount}
+}
+
+type wrongCoinEmission struct {
+	Code string `json:"code,omitempty"`
+
+	MaxCoinSupply     string `json:"max_coin_supply,omitempty"`
+	MinCoinSupply     string `json:"min_coin_supply,omitempty"`
+	CurrentCoinSupply string `json:"current_coin_supply,omitempty"`
+}
+
+func NewWrongCoinEmission(minCoinSupply string, maxCoinSupply string, currentCoinSupply string) *wrongCoinEmission {
+	return &wrongCoinEmission{Code: strconv.Itoa(int(WrongCoinEmission)), MinCoinSupply: minCoinSupply, MaxCoinSupply: maxCoinSupply, CurrentCoinSupply: currentCoinSupply}
 }

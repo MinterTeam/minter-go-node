@@ -285,6 +285,40 @@ func (c *Coins) Create(id types.CoinID, symbol types.CoinSymbol, name string,
 	c.markDirty(coin.id)
 }
 
+func (c *Coins) CreateToken(id types.CoinID, symbol types.CoinSymbol, name string, mintable, burnable bool, maxSupply *big.Int, owner *types.Address) {
+	coin := &Model{
+		CName:      name,
+		CCrr:       0,
+		CMaxSupply: maxSupply,
+		CSymbol:    symbol,
+		Mintable:   mintable,
+		Burnable:   burnable,
+		id:         id,
+		markDirty:  c.markDirty,
+		isDirty:    true,
+		isCreated:  true,
+	}
+
+	if owner != nil {
+		coin.symbolInfo = &SymbolInfo{
+			COwnerAddress: owner,
+			isDirty:       true,
+		}
+
+		c.setSymbolInfoToMap(coin.symbolInfo, coin.Symbol())
+	}
+
+	ids := c.getBySymbol(coin.Symbol())
+	ids = append(ids, coin.ID())
+
+	c.setSymbolToMap(ids, coin.Symbol())
+	c.setToMap(coin.ID(), coin)
+
+	c.bus.Checker().AddCoin(coin.id, maxSupply)
+
+	c.markDirty(coin.id)
+}
+
 func (c *Coins) Recreate(newID types.CoinID, name string, symbol types.CoinSymbol,
 	volume *big.Int, crr uint32, reserve *big.Int, maxSupply *big.Int,
 ) {
@@ -311,6 +345,32 @@ func (c *Coins) Recreate(newID types.CoinID, name string, symbol types.CoinSymbo
 	c.markDirty(recreateCoin.id)
 
 	c.Create(newID, recreateCoin.Symbol(), name, volume, crr, reserve, maxSupply, nil)
+}
+
+func (c *Coins) RecreateToken(newID types.CoinID, name string, symbol types.CoinSymbol, mintable, burnable bool, maxSupply *big.Int) {
+	recreateCoin := c.GetCoinBySymbol(symbol, BaseVersion)
+	if recreateCoin == nil {
+		panic("coin to recreate does not exists")
+	}
+
+	// update version for recreating coin
+	symbolCoins := c.getBySymbol(symbol)
+
+	lastVersion := uint16(0)
+	for _, id := range symbolCoins {
+		coin := c.get(id)
+		if coin.Version() > lastVersion {
+			lastVersion = coin.Version()
+		}
+	}
+
+	recreateCoin.CVersion = lastVersion + 1
+	recreateCoin.isDirty = true
+
+	c.setToMap(recreateCoin.id, recreateCoin)
+	c.markDirty(recreateCoin.id)
+
+	c.CreateToken(newID, recreateCoin.Symbol(), name, mintable, burnable, maxSupply, nil)
 }
 
 func (c *Coins) ChangeOwner(symbol types.CoinSymbol, owner types.Address) {

@@ -26,6 +26,10 @@ func (data BurnCoin) basicCheck(tx *Transaction, context *state.CheckState) *Res
 		}
 	}
 
+	if !coin.IsBurnable() {
+		return &Response{} // todo
+	}
+
 	if coin.BaseOrHasReserve() {
 		return &Response{
 			Code: code.CoinHasReserve,
@@ -39,9 +43,9 @@ func (data BurnCoin) basicCheck(tx *Transaction, context *state.CheckState) *Res
 
 	if big.NewInt(0).Sub(coin.MaxSupply(), data.Value).Cmp(minCoinSupply) == -1 {
 		return &Response{
-			Code: code.WrongCoinSupply,
+			Code: code.WrongCoinEmission,
 			Log:  fmt.Sprintf("Min coin supply should be more than %s", minCoinSupply),
-			Info: EncodeError(code.NewWrongCoinSupply(minCoinSupply.String(), maxCoinSupply.String(), coin.MaxSupply().String(), "", "", "", "", "")),
+			Info: EncodeError(code.NewWrongCoinEmission(minCoinSupply.String(), maxCoinSupply.String(), coin.MaxSupply().String())),
 		}
 	}
 
@@ -68,7 +72,7 @@ func (data BurnCoin) String() string {
 }
 
 func (data BurnCoin) Gas() int64 {
-	return commissions.EditEmission
+	return commissions.EditEmissionData
 }
 
 func (data BurnCoin) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {

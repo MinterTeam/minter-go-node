@@ -24,5 +24,5 @@ const (
 	RemoveSwapPoolData     int64 = 100
 	EditCommissionData     int64 = 10000
 	MoveStakeData                = DelegateTx * 3
-	EditEmission                 = ConvertTx
+	EditEmissionData             = ConvertTx
 )
