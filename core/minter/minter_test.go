@@ -216,17 +216,21 @@ func initTestNode(t *testing.T) (*Blockchain, *rpc.Local, *privval.FilePV, func(
 	}
 
 	return app, tmCli, pv, func() {
-		app.Stop()
-		err := os.RemoveAll(storage.GetMinterHome() + config.DefaultConfigDir + "/")
-		if err != nil {
-			t.Error(err)
-		}
-		err = os.RemoveAll(storage.GetMinterHome() + config.DefaultDataDir + "/")
-		if err != nil {
-			t.Error(err)
-		}
-
+		pubkey := types.BytesToPubkey(pv.Key.PubKey.Bytes()[5:])
+		app.stateDeliver.Halts.AddHaltBlock(app.Height(), pubkey)
+		app.stateDeliver.Halts.AddHaltBlock(app.Height()+1, pubkey)
+		app.stateDeliver.Halts.AddHaltBlock(app.Height()+2, pubkey)
 		time.Sleep(time.Second)
+		app.Stop()
+		time.Sleep(time.Second)
+		err := os.RemoveAll(storage.GetMinterHome() + config.DefaultConfigDir)
+		if err != nil {
+			t.Error(err)
+		}
+		err = os.RemoveAll(storage.GetMinterHome() + config.DefaultDataDir)
+		if err != nil {
+			t.Error(err)
+		}
 	}
 }
 
