@@ -217,7 +217,6 @@ func initTestNode(t *testing.T) (*Blockchain, *rpc.Local, *privval.FilePV, func(
 
 	return app, tmCli, pv, func() {
 		app.Stop()
-		time.Sleep(time.Second)
 		err := os.RemoveAll(storage.GetMinterHome() + config.DefaultConfigDir + "/")
 		if err != nil {
 			t.Error(err)
@@ -226,6 +225,8 @@ func initTestNode(t *testing.T) (*Blockchain, *rpc.Local, *privval.FilePV, func(
 		if err != nil {
 			t.Error(err)
 		}
+
+		time.Sleep(time.Second)
 	}
 }
 
@@ -800,7 +801,7 @@ func TestBlockchain_RecalculateStakes_andRemoveValidator(t *testing.T) {
 
 func TestStopNetworkByHaltBlocks(t *testing.T) {
 	blockchain, _, _, cancel := initTestNode(t)
-	defer cancel()
+	cancel()
 
 	haltHeight := uint64(50)
 
