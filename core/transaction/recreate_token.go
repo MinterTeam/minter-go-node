@@ -14,11 +14,12 @@ import (
 )
 
 type RecreateTokenData struct {
-	Name      string
-	Symbol    types.CoinSymbol
-	MaxSupply *big.Int
-	Mintable  bool
-	Burnable  bool
+	Name          string
+	Symbol        types.CoinSymbol
+	InitialAmount *big.Int
+	MaxSupply     *big.Int
+	Mintable      bool
+	Burnable      bool
 }
 
 func (data RecreateTokenData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
@@ -30,11 +31,23 @@ func (data RecreateTokenData) basicCheck(tx *Transaction, context *state.CheckSt
 		}
 	}
 
+	if (data.InitialAmount.Cmp(data.MaxSupply) != 0) != data.Mintable {
+		// todo
+	}
+
+	if data.InitialAmount.Cmp(minTokenSupply) == -1 || data.InitialAmount.Cmp(data.MaxSupply) == 1 {
+		return &Response{
+			Code: code.WrongCoinSupply,
+			Log:  fmt.Sprintf("Coin amount should be between %s and %s", minTokenSupply.String(), data.MaxSupply.String()),
+			Info: EncodeError(code.NewWrongCoinSupply(minTokenSupply.String(), minTokenSupply.String(), data.MaxSupply.String(), "", "", data.InitialAmount.String())),
+		}
+	}
+
 	if data.MaxSupply.Cmp(maxCoinSupply) == 1 {
 		return &Response{
-			Code: code.WrongCoinEmission,
-			Log:  fmt.Sprintf("Max coin supply should be less than %s", maxCoinSupply),
-			Info: EncodeError(code.NewWrongCoinEmission(minCoinSupply.String(), maxCoinSupply.String(), data.MaxSupply.String())),
+			Code: code.WrongCoinSupply,
+			Log:  fmt.Sprintf("Max coin supply should be less %s", maxCoinSupply.String()),
+			Info: EncodeError(code.NewWrongCoinSupply(minTokenSupply.String(), maxCoinSupply.String(), data.MaxSupply.String(), "", "", data.InitialAmount.String())),
 		}
 	}
 
@@ -140,6 +153,7 @@ func (data RecreateTokenData) Run(tx *Transaction, context state.Interface, rewa
 			data.Symbol,
 			data.Mintable,
 			data.Burnable,
+			data.InitialAmount,
 			data.MaxSupply,
 		)
 

@@ -11,12 +11,12 @@ import (
 	"math/big"
 )
 
-type BurnCoin struct {
+type BurnToken struct {
 	Coin  types.CoinID
 	Value *big.Int
 }
 
-func (data BurnCoin) basicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data BurnToken) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	coin := context.Coins().GetCoin(data.Coin)
 	if coin == nil {
 		return &Response{
@@ -30,22 +30,11 @@ func (data BurnCoin) basicCheck(tx *Transaction, context *state.CheckState) *Res
 		return &Response{} // todo
 	}
 
-	if coin.BaseOrHasReserve() {
-		return &Response{
-			Code: code.CoinHasReserve,
-			Log:  "Coin with reserve cannot be burned",
-			Info: EncodeError(code.NewCoinHasReserve(
-				coin.GetFullSymbol(),
-				coin.ID().String(),
-			)),
-		}
-	}
-
-	if big.NewInt(0).Sub(coin.MaxSupply(), data.Value).Cmp(minCoinSupply) == -1 {
+	if big.NewInt(0).Sub(coin.Volume(), data.Value).Cmp(minTokenSupply) == -1 {
 		return &Response{
 			Code: code.WrongCoinEmission,
-			Log:  fmt.Sprintf("Min coin supply should be more than %s", minCoinSupply),
-			Info: EncodeError(code.NewWrongCoinEmission(minCoinSupply.String(), maxCoinSupply.String(), coin.MaxSupply().String())),
+			Log:  fmt.Sprintf("Coin volume should be more than %s", minTokenSupply),
+			Info: EncodeError(code.NewWrongCoinEmission(minTokenSupply.String(), coin.MaxSupply().String(), coin.Volume().String(), "", data.Value.String())),
 		}
 	}
 
@@ -67,15 +56,15 @@ func (data BurnCoin) basicCheck(tx *Transaction, context *state.CheckState) *Res
 	return nil
 }
 
-func (data BurnCoin) String() string {
+func (data BurnToken) String() string {
 	return fmt.Sprintf("BURN COIN: %d", data.Coin)
 }
 
-func (data BurnCoin) Gas() int64 {
+func (data BurnToken) Gas() int64 {
 	return commissions.EditEmissionData
 }
 
-func (data BurnCoin) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
+func (data BurnToken) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -129,16 +118,15 @@ func (data BurnCoin) Run(tx *Transaction, context state.Interface, rewardPool *b
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		deliverState.Coins.GetCoin(data.Coin).Burn(data.Value)
+		deliverState.Coins.SubVolume(data.Coin, data.Value)
 		deliverState.Accounts.SubBalance(sender, data.Coin, data.Value)
-		deliverState.Checker.AddCoin(data.Coin, big.NewInt(0).Neg(data.Value))
 
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}
 
 	tags := kv.Pairs{
 		kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
-		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeBurnCoin)}))},
+		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeBurnToken)}))},
 		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
 	}
 

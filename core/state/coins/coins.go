@@ -285,7 +285,7 @@ func (c *Coins) Create(id types.CoinID, symbol types.CoinSymbol, name string,
 	c.markDirty(coin.id)
 }
 
-func (c *Coins) CreateToken(id types.CoinID, symbol types.CoinSymbol, name string, mintable, burnable bool, maxSupply *big.Int, owner *types.Address) {
+func (c *Coins) CreateToken(id types.CoinID, symbol types.CoinSymbol, name string, mintable, burnable bool, initialAmount *big.Int, maxSupply *big.Int, owner *types.Address) {
 	coin := &Model{
 		CName:      name,
 		CCrr:       0,
@@ -297,6 +297,11 @@ func (c *Coins) CreateToken(id types.CoinID, symbol types.CoinSymbol, name strin
 		markDirty:  c.markDirty,
 		isDirty:    true,
 		isCreated:  true,
+		info: &Info{
+			Volume:  initialAmount,
+			Reserve: nil,
+			isDirty: true,
+		},
 	}
 
 	if owner != nil {
@@ -347,7 +352,7 @@ func (c *Coins) Recreate(newID types.CoinID, name string, symbol types.CoinSymbo
 	c.Create(newID, recreateCoin.Symbol(), name, volume, crr, reserve, maxSupply, nil)
 }
 
-func (c *Coins) RecreateToken(newID types.CoinID, name string, symbol types.CoinSymbol, mintable, burnable bool, maxSupply *big.Int) {
+func (c *Coins) RecreateToken(newID types.CoinID, name string, symbol types.CoinSymbol, mintable, burnable bool, initialAmount, maxSupply *big.Int) {
 	recreateCoin := c.GetCoinBySymbol(symbol, BaseVersion)
 	if recreateCoin == nil {
 		panic("coin to recreate does not exists")
@@ -370,7 +375,7 @@ func (c *Coins) RecreateToken(newID types.CoinID, name string, symbol types.Coin
 	c.setToMap(recreateCoin.id, recreateCoin)
 	c.markDirty(recreateCoin.id)
 
-	c.CreateToken(newID, recreateCoin.Symbol(), name, mintable, burnable, maxSupply, nil)
+	c.CreateToken(newID, recreateCoin.Symbol(), name, mintable, burnable, initialAmount, maxSupply, nil)
 }
 
 func (c *Coins) ChangeOwner(symbol types.CoinSymbol, owner types.Address) {

@@ -165,8 +165,8 @@ func (s *AppState) Verify() error {
 		}
 
 		if coin.Crr == 0 {
-			if volume.Cmp(helpers.StringToBigInt(coin.MaxSupply)) != 0 {
-				return fmt.Errorf("wrong token %s volume (%s)", coin.Symbol.String(), big.NewInt(0).Sub(volume, helpers.StringToBigInt(coin.MaxSupply)))
+			if volume.Cmp(helpers.StringToBigInt(coin.Volume)) != 0 {
+				return fmt.Errorf("wrong token %s volume (%s)", coin.Symbol.String(), big.NewInt(0).Sub(volume, helpers.StringToBigInt(coin.Volume)))
 			}
 			continue
 		}
@@ -322,7 +322,7 @@ type Coin struct {
 	ID           uint64     `json:"id"`
 	Name         string     `json:"name"`
 	Symbol       CoinSymbol `json:"symbol"`
-	Volume       string     `json:"volume,omitempty"`
+	Volume       string     `json:"volume"`
 	Crr          uint64     `json:"crr,omitempty"`
 	Reserve      string     `json:"reserve,omitempty"`
 	MaxSupply    string     `json:"max_supply"`

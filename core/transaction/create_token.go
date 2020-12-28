@@ -13,11 +13,12 @@ import (
 )
 
 type CreateTokenData struct {
-	Name      string
-	Symbol    types.CoinSymbol
-	MaxSupply *big.Int
-	Mintable  bool
-	Burnable  bool
+	Name          string
+	Symbol        types.CoinSymbol
+	InitialAmount *big.Int
+	MaxSupply     *big.Int
+	Mintable      bool
+	Burnable      bool
 }
 
 func (data CreateTokenData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
@@ -45,11 +46,23 @@ func (data CreateTokenData) basicCheck(tx *Transaction, context *state.CheckStat
 		}
 	}
 
+	if (data.InitialAmount.Cmp(data.MaxSupply) != 0) != data.Mintable {
+		// todo
+	}
+
+	if data.InitialAmount.Cmp(minTokenSupply) == -1 || data.InitialAmount.Cmp(data.MaxSupply) == 1 {
+		return &Response{
+			Code: code.WrongCoinSupply,
+			Log:  fmt.Sprintf("Coin amount should be between %s and %s", minTokenSupply.String(), data.MaxSupply.String()),
+			Info: EncodeError(code.NewWrongCoinSupply(minTokenSupply.String(), minTokenSupply.String(), data.MaxSupply.String(), "", "", data.InitialAmount.String())),
+		}
+	}
+
 	if data.MaxSupply.Cmp(maxCoinSupply) == 1 {
 		return &Response{
-			Code: code.WrongCoinEmission,
-			Log:  fmt.Sprintf("Max coin supply should be less than %s", maxCoinSupply),
-			Info: EncodeError(code.NewWrongCoinEmission(minCoinSupply.String(), maxCoinSupply.String(), data.MaxSupply.String())),
+			Code: code.WrongCoinSupply,
+			Log:  fmt.Sprintf("Max coin supply should be less %s", maxCoinSupply.String()),
+			Info: EncodeError(code.NewWrongCoinSupply(minTokenSupply.String(), maxCoinSupply.String(), data.MaxSupply.String(), "", "", data.InitialAmount.String())),
 		}
 	}
 
@@ -136,12 +149,13 @@ func (data CreateTokenData) Run(tx *Transaction, context state.Interface, reward
 			data.Name,
 			data.Mintable,
 			data.Burnable,
+			data.InitialAmount,
 			data.MaxSupply,
 			&sender,
 		)
 
 		deliverState.App.SetCoinsCount(coinId.Uint32())
-		deliverState.Accounts.AddBalance(sender, coinId, data.MaxSupply)
+		deliverState.Accounts.AddBalance(sender, coinId, data.InitialAmount)
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}
 

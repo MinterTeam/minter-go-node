@@ -46,15 +46,12 @@ func (m Model) Crr() uint32 {
 }
 
 func (m Model) Volume() *big.Int {
-	if m.IsToken() {
-		return nil
-	}
 	return big.NewInt(0).Set(m.info.Volume)
 }
 
 func (m Model) Reserve() *big.Int {
 	if m.IsToken() {
-		return nil
+		return big.NewInt(0)
 	}
 	return big.NewInt(0).Set(m.info.Reserve)
 }
@@ -106,11 +103,13 @@ func (m *Model) AddReserve(amount *big.Int) {
 func (m *Model) Mint(amount *big.Int) {
 	m.CMaxSupply.Add(m.CMaxSupply, amount)
 	m.markDirty(m.id)
+	m.isDirty = true
 }
 
 func (m *Model) Burn(amount *big.Int) {
 	m.CMaxSupply.Sub(m.CMaxSupply, amount)
 	m.markDirty(m.id)
+	m.isDirty = true
 }
 
 func (m *Model) SetVolume(volume *big.Int) {
