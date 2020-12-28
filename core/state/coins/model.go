@@ -46,10 +46,16 @@ func (m Model) Crr() uint32 {
 }
 
 func (m Model) Volume() *big.Int {
+	if m.IsToken() {
+		return nil
+	}
 	return big.NewInt(0).Set(m.info.Volume)
 }
 
 func (m Model) Reserve() *big.Int {
+	if m.IsToken() {
+		return nil
+	}
 	return big.NewInt(0).Set(m.info.Reserve)
 }
 
