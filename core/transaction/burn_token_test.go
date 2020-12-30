@@ -123,7 +123,7 @@ func TestBurnData_aaa(t *testing.T) {
 		}
 
 		subVolume := big.NewInt(1e18)
-		data := BurnToken{
+		data := BurnTokenData{
 			Coin:  stateCoin.ID(),
 			Value: big.NewInt(0).Set(subVolume),
 		}

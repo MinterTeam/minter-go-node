@@ -11,12 +11,12 @@ import (
 	"math/big"
 )
 
-type MintCoin struct {
+type MintTokenData struct {
 	Coin  types.CoinID
 	Value *big.Int
 }
 
-func (data MintCoin) basicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data MintTokenData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	coin := context.Coins().GetCoin(data.Coin)
 	if coin == nil {
 		return &Response{
@@ -56,15 +56,15 @@ func (data MintCoin) basicCheck(tx *Transaction, context *state.CheckState) *Res
 	return nil
 }
 
-func (data MintCoin) String() string {
+func (data MintTokenData) String() string {
 	return fmt.Sprintf("MINT COIN: %d", data.Coin)
 }
 
-func (data MintCoin) Gas() int64 {
+func (data MintTokenData) Gas() int64 {
 	return commissions.EditEmissionData
 }
 
-func (data MintCoin) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
+func (data MintTokenData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
