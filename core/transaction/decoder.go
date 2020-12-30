@@ -63,9 +63,9 @@ func getData(txType TxType) (Data, bool) {
 	case TypeMoveStake:
 		return &MoveStakeData{}, true
 	case TypeMintToken:
-		return &MintCoin{}, true
+		return &MintTokenData{}, true
 	case TypeBurnToken:
-		return &BurnToken{}, true
+		return &BurnTokenData{}, true
 	case TypeCreateToken:
 		return &CreateTokenData{}, true
 	case TypeRecreateToken:

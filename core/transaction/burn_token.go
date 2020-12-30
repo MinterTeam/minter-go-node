@@ -11,12 +11,12 @@ import (
 	"math/big"
 )
 
-type BurnToken struct {
+type BurnTokenData struct {
 	Coin  types.CoinID
 	Value *big.Int
 }
 
-func (data BurnToken) basicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data BurnTokenData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	coin := context.Coins().GetCoin(data.Coin)
 	if coin == nil {
 		return &Response{
@@ -56,15 +56,15 @@ func (data BurnToken) basicCheck(tx *Transaction, context *state.CheckState) *Re
 	return nil
 }
 
-func (data BurnToken) String() string {
+func (data BurnTokenData) String() string {
 	return fmt.Sprintf("BURN COIN: %d", data.Coin)
 }
 
-func (data BurnToken) Gas() int64 {
+func (data BurnTokenData) Gas() int64 {
 	return commissions.EditEmissionData
 }
 
-func (data BurnToken) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
+func (data BurnTokenData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState

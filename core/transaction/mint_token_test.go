@@ -122,7 +122,7 @@ func TestMintData_aaa(t *testing.T) {
 		}
 
 		subVolume := big.NewInt(1e18)
-		data := MintCoin{
+		data := MintTokenData{
 			Coin:  stateCoin.ID(),
 			Value: big.NewInt(0).Set(subVolume),
 		}

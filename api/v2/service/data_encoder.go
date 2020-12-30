@@ -258,6 +258,40 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 			},
 			MinimumValueToBuy: d.MinimumValueToBuy.String(),
 		}
+	case *transaction.CreateTokenData:
+		m = &pb.CreateTokenData{
+			Name:          d.Name,
+			Symbol:        d.Symbol.String(),
+			InitialAmount: d.InitialAmount.String(),
+			MaxSupply:     d.MaxSupply.String(),
+			Mintable:      d.Mintable,
+			Burnable:      d.Burnable,
+		}
+	case *transaction.RecreateTokenData:
+		m = &pb.RecreateTokenData{
+			Name:          d.Name,
+			Symbol:        d.Symbol.String(),
+			InitialAmount: d.InitialAmount.String(),
+			MaxSupply:     d.MaxSupply.String(),
+			Mintable:      d.Mintable,
+			Burnable:      d.Burnable,
+		}
+	case *transaction.BurnTokenData:
+		m = &pb.BurnTokenData{
+			Coin: &pb.Coin{
+				Id:     uint64(d.Coin),
+				Symbol: coins.GetCoin(d.Coin).GetFullSymbol(),
+			},
+			Value: d.Value.String(),
+		}
+	case *transaction.MintTokenData:
+		m = &pb.MintTokenData{
+			Coin: &pb.Coin{
+				Id:     uint64(d.Coin),
+				Symbol: coins.GetCoin(d.Coin).GetFullSymbol(),
+			},
+			Value: d.Value.String(),
+		}
 	default:
 		return nil, errors.New("unknown tx type")
 	}
