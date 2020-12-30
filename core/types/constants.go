@@ -13,7 +13,7 @@ const (
 const unbondPeriod = 518400
 
 func GetUnbondPeriod() uint64 {
-	if GetBaseCoin() == coinTestnet {
+	if CurrentChainID == ChainTestnet {
 		return 518400 / 2920 // 15min
 	}
 	return 518400

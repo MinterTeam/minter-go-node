@@ -15,8 +15,7 @@ type EstimateCoinSellAllResponse struct {
 }
 
 // EstimateCoinSellAll returns an estimate of sell all coin transaction
-func EstimateCoinSellAll(coinToSell, coinToBuy string, valueToSell *big.Int, height int) (*EstimateCoinSellAllResponse,
-	error) {
+func EstimateCoinSellAll(coinToSell, coinToBuy string, valueToSell *big.Int, height int) (*EstimateCoinSellAllResponse, error) {
 	cState, err := GetStateForHeight(height)
 	if err != nil {
 		return nil, err

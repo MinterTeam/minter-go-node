@@ -19,6 +19,7 @@ const allowedCoinSymbols = "^[A-Z0-9]{3,10}$"
 
 var (
 	minCoinSupply                      = helpers.BipToPip(big.NewInt(1))
+	minTokenSupply                     = big.NewInt(1)
 	minCoinReserve                     = helpers.BipToPip(big.NewInt(10000))
 	maxCoinSupply                      = big.NewInt(0).Exp(big.NewInt(10), big.NewInt(15+18), nil)
 	allowedCoinSymbolsRegexpCompile, _ = regexp.Compile(allowedCoinSymbols)
@@ -70,7 +71,7 @@ func (data CreateCoinData) basicCheck(tx *Transaction, context *state.CheckState
 		return &Response{
 			Code: code.WrongCoinSupply,
 			Log:  fmt.Sprintf("Max coin supply should be less than %s", maxCoinSupply),
-			Info: EncodeError(code.NewWrongCoinSupply(minCoinSupply.String(), maxCoinSupply.String(), data.MaxSupply.String(), minCoinReserve.String(), data.InitialReserve.String(), minCoinSupply.String(), data.MaxSupply.String(), data.InitialAmount.String())),
+			Info: EncodeError(code.NewWrongCoinSupply(minCoinSupply.String(), maxCoinSupply.String(), data.MaxSupply.String(), minCoinReserve.String(), data.InitialReserve.String(), data.InitialAmount.String())),
 		}
 	}
 
@@ -78,32 +79,35 @@ func (data CreateCoinData) basicCheck(tx *Transaction, context *state.CheckState
 		return &Response{
 			Code: code.WrongCoinSupply,
 			Log:  fmt.Sprintf("Coin supply should be between %s and %s", minCoinSupply.String(), data.MaxSupply.String()),
-			Info: EncodeError(code.NewWrongCoinSupply(minCoinSupply.String(), maxCoinSupply.String(), data.MaxSupply.String(), minCoinReserve.String(), data.InitialReserve.String(), minCoinSupply.String(), data.MaxSupply.String(), data.InitialAmount.String())),
+			Info: EncodeError(code.NewWrongCoinSupply(minCoinSupply.String(), maxCoinSupply.String(), data.MaxSupply.String(), minCoinReserve.String(), data.InitialReserve.String(), data.InitialAmount.String())),
 		}
 	}
 
-	if data.InitialReserve.Sign() == 1 {
-		if data.ConstantReserveRatio < 10 || data.ConstantReserveRatio > 100 {
-			return &Response{
-				Code: code.WrongCrr,
-				Log:  "Constant Reserve Ratio should be between 10 and 100",
-				Info: EncodeError(code.NewWrongCrr("10", "100", strconv.Itoa(int(data.ConstantReserveRatio)))),
-			}
-		}
-		if data.InitialReserve.Cmp(minCoinReserve) == -1 {
-			return &Response{
-				Code: code.WrongCoinSupply,
-				Log:  fmt.Sprintf("Coin reserve should be greater than or equal to %s", minCoinReserve.String()),
-				Info: EncodeError(code.NewWrongCoinSupply(minCoinSupply.String(), maxCoinSupply.String(), data.MaxSupply.String(), minCoinReserve.String(), data.InitialReserve.String(), minCoinSupply.String(), data.MaxSupply.String(), data.InitialAmount.String())),
-			}
-		}
-	} else if data.ConstantReserveRatio != 0 {
+	if data.InitialReserve.Cmp(minCoinReserve) == -1 {
+		return &Response{
+			Code: code.WrongCoinSupply,
+			Log:  fmt.Sprintf("Coin reserve should be greater than or equal to %s", minCoinReserve.String()),
+			Info: EncodeError(map[string]string{
+				"code":                    strconv.Itoa(int(code.WrongCoinSupply)),
+				"min_initial_reserve":     minCoinReserve.String(),
+				"current_initial_reserve": data.InitialReserve.String(),
+			})}
+	}
+	if data.ConstantReserveRatio < 10 || data.ConstantReserveRatio > 100 {
 		return &Response{
 			Code: code.WrongCrr,
-			Log:  "Constant Reserve Ratio should be equal to 0, for a coin without reserve",
-			Info: EncodeError(code.NewWrongCrr("0", "0", strconv.Itoa(int(data.ConstantReserveRatio)))),
+			Log:  "Constant Reserve Ratio should be between 10 and 100",
+			Info: EncodeError(code.NewWrongCrr("10", "100", strconv.Itoa(int(data.ConstantReserveRatio)))),
 		}
 	}
+	if data.InitialReserve.Cmp(minCoinReserve) == -1 {
+		return &Response{
+			Code: code.WrongCoinSupply,
+			Log:  fmt.Sprintf("Coin reserve should be greater than or equal to %s", minCoinReserve.String()),
+			Info: EncodeError(code.NewWrongCoinSupply(minCoinSupply.String(), maxCoinSupply.String(), data.MaxSupply.String(), minCoinReserve.String(), data.InitialReserve.String(), data.InitialAmount.String())),
+		}
+	}
+
 	return nil
 }
 
@@ -158,7 +162,7 @@ func (data CreateCoinData) Run(tx *Transaction, context state.Interface, rewardP
 		}
 	}
 
-	if data.InitialReserve != nil && checkState.Accounts().GetBalance(sender, types.GetBaseCoinID()).Cmp(data.InitialReserve) < 0 {
+	if checkState.Accounts().GetBalance(sender, types.GetBaseCoinID()).Cmp(data.InitialReserve) < 0 {
 		return Response{
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), data.InitialReserve.String(), types.GetBaseCoin()),
@@ -167,9 +171,7 @@ func (data CreateCoinData) Run(tx *Transaction, context state.Interface, rewardP
 	}
 
 	totalTxCost := big.NewInt(0).Set(commissionInBaseCoin)
-	if data.InitialReserve != nil {
-		totalTxCost.Add(totalTxCost, data.InitialReserve)
-	}
+	totalTxCost.Add(totalTxCost, data.InitialReserve)
 
 	if checkState.Accounts().GetBalance(sender, types.GetBaseCoinID()).Cmp(totalTxCost) < 0 {
 		gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
@@ -191,9 +193,7 @@ func (data CreateCoinData) Run(tx *Transaction, context state.Interface, rewardP
 		}
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
-		if data.InitialReserve != nil {
-			deliverState.Accounts.SubBalance(sender, types.GetBaseCoinID(), data.InitialReserve)
-		}
+		deliverState.Accounts.SubBalance(sender, types.GetBaseCoinID(), data.InitialReserve)
 
 		deliverState.Coins.Create(
 			coinId,

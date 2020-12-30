@@ -26,22 +26,15 @@ func (data MintCoin) basicCheck(tx *Transaction, context *state.CheckState) *Res
 		}
 	}
 
-	if coin.BaseOrHasReserve() {
-		return &Response{
-			Code: code.CoinHasReserve,
-			Log:  "Coin with reserve cannot be minted",
-			Info: EncodeError(code.NewCoinHasReserve(
-				coin.GetFullSymbol(),
-				coin.ID().String(),
-			)),
-		}
+	if !coin.IsMintable() {
+		return &Response{} // todo
 	}
 
-	if big.NewInt(0).Add(coin.MaxSupply(), data.Value).Cmp(maxCoinSupply) == 1 {
+	if big.NewInt(0).Add(coin.Volume(), data.Value).Cmp(coin.MaxSupply()) == 1 {
 		return &Response{
-			Code: code.WrongCoinSupply,
-			Log:  fmt.Sprintf("Max coin supply should be less than %s", maxCoinSupply),
-			Info: EncodeError(code.NewWrongCoinSupply(minCoinSupply.String(), maxCoinSupply.String(), coin.MaxSupply().String(), "", "", "", "", "")),
+			Code: code.WrongCoinEmission,
+			Log:  fmt.Sprintf("Coin volume should be less than %s", coin.MaxSupply()),
+			Info: EncodeError(code.NewWrongCoinEmission("", coin.MaxSupply().String(), coin.Volume().String(), data.Value.String(), "")),
 		}
 	}
 
@@ -68,7 +61,7 @@ func (data MintCoin) String() string {
 }
 
 func (data MintCoin) Gas() int64 {
-	return commissions.EditEmission
+	return commissions.EditEmissionData
 }
 
 func (data MintCoin) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
@@ -111,16 +104,15 @@ func (data MintCoin) Run(tx *Transaction, context state.Interface, rewardPool *b
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		deliverState.Coins.GetCoin(data.Coin).Mint(data.Value)
+		deliverState.Coins.AddVolume(data.Coin, data.Value)
 		deliverState.Accounts.AddBalance(sender, data.Coin, data.Value)
-		deliverState.Checker.AddCoin(data.Coin, data.Value)
 
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}
 
 	tags := kv.Pairs{
 		kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
-		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeMintCoin)}))},
+		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeMintToken)}))},
 		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
 	}
 

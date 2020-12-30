@@ -9,7 +9,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/tendermint/go-amino"
 	"github.com/tendermint/tendermint/types"
-	db "github.com/tendermint/tm-db"
 	"io"
 	"log"
 	"os"
@@ -63,7 +62,7 @@ func export(cmd *cobra.Command, args []string) error {
 
 	fmt.Println("Start exporting...")
 
-	ldb, err := db.NewGoLevelDB("state", utils.GetMinterHome()+"/data")
+	ldb, err := utils.NewStorage("", "").InitStateLevelDB("state", nil)
 	if err != nil {
 		log.Panicf("Cannot load db: %s", err)
 	}

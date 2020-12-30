@@ -16,8 +16,7 @@ func createNonReserveCoin(stateDB *state.State) types.CoinID {
 	volume := helpers.BipToPip(big.NewInt(100000))
 
 	id := stateDB.App.GetNextCoinID()
-	stateDB.Coins.Create(id, types.StrToCoinSymbol("WITHOUTRES"), "WITHOUT RESERVE COIN", volume, 0, big.NewInt(0),
-		big.NewInt(0).Mul(volume, big.NewInt(10)), nil)
+	stateDB.Coins.CreateToken(id, types.StrToCoinSymbol("TOKEN"), "TOKEN", true, true, volume, big.NewInt(0).Mul(volume, big.NewInt(10)), nil)
 	stateDB.App.SetCoinsCount(id.Uint32())
 	stateDB.Accounts.AddBalance(types.Address{}, id, volume)
 

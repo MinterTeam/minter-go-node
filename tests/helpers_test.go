@@ -11,24 +11,21 @@ import (
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/tendermint/go-amino"
 	tmTypes "github.com/tendermint/tendermint/abci/types"
-	"os"
-	"path/filepath"
 	"time"
 )
 
 // CreateApp creates and returns new Blockchain instance
 // Recreates $HOME/.minter_test dir
 func CreateApp(state types.AppState) *minter.Blockchain {
-	utils.MinterHome = os.ExpandEnv(filepath.Join("$HOME", ".minter_test"))
-	_ = os.RemoveAll(utils.MinterHome)
-
 	jsonState, err := amino.MarshalJSON(state)
 	if err != nil {
 		panic(err)
 	}
 
-	cfg := config.GetConfig()
-	app := minter.NewMinterBlockchain(cfg)
+	storage := utils.NewStorage("", "")
+	cfg := config.GetConfig(storage.GetMinterHome())
+	cfg.DBBackend = "memdb"
+	app := minter.NewMinterBlockchain(storage, cfg)
 	app.InitChain(tmTypes.RequestInitChain{
 		Time:    time.Now(),
 		ChainId: "test",

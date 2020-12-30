@@ -146,6 +146,31 @@ func (s *AppState) Verify() error {
 
 		// check coins' volume
 		volume := big.NewInt(0)
+
+		for _, account := range s.Accounts {
+			for _, bal := range account.Balance {
+				if bal.Coin == coin.ID {
+					volume.Add(volume, helpers.StringToBigInt(bal.Value))
+				}
+			}
+		}
+
+		for _, swap := range s.Swap {
+			if swap.Coin0 == coin.ID {
+				volume.Add(volume, helpers.StringToBigInt(swap.Reserve0))
+			}
+			if swap.Coin1 == coin.ID {
+				volume.Add(volume, helpers.StringToBigInt(swap.Reserve1))
+			}
+		}
+
+		if coin.Crr == 0 {
+			if volume.Cmp(helpers.StringToBigInt(coin.Volume)) != 0 {
+				return fmt.Errorf("wrong token %s volume (%s)", coin.Symbol.String(), big.NewInt(0).Sub(volume, helpers.StringToBigInt(coin.Volume)))
+			}
+			continue
+		}
+
 		for _, ff := range s.FrozenFunds {
 			if ff.Coin == coin.ID {
 				volume.Add(volume, helpers.StringToBigInt(ff.Value))
@@ -166,26 +191,9 @@ func (s *AppState) Verify() error {
 			}
 		}
 
-		for _, account := range s.Accounts {
-			for _, bal := range account.Balance {
-				if bal.Coin == coin.ID {
-					volume.Add(volume, helpers.StringToBigInt(bal.Value))
-				}
-			}
-		}
-
 		for _, wl := range s.Waitlist {
 			if wl.Coin == coin.ID {
 				volume.Add(volume, helpers.StringToBigInt(wl.Value))
-			}
-		}
-
-		for _, swap := range s.Swap {
-			if swap.Coin0 == coin.ID {
-				volume.Add(volume, helpers.StringToBigInt(swap.Reserve0))
-			}
-			if swap.Coin1 == coin.ID {
-				volume.Add(volume, helpers.StringToBigInt(swap.Reserve1))
 			}
 		}
 
@@ -315,20 +323,23 @@ type Coin struct {
 	Name         string     `json:"name"`
 	Symbol       CoinSymbol `json:"symbol"`
 	Volume       string     `json:"volume"`
-	Crr          uint64     `json:"crr"`
-	Reserve      string     `json:"reserve"`
+	Crr          uint64     `json:"crr,omitempty"`
+	Reserve      string     `json:"reserve,omitempty"`
 	MaxSupply    string     `json:"max_supply"`
-	Version      uint64     `json:"version"`
-	OwnerAddress *Address   `json:"owner_address"`
+	Version      uint64     `json:"version,omitempty"`
+	OwnerAddress *Address   `json:"owner_address,omitempty"`
+	Mintable     bool       `json:"mintable,omitempty"`
+	Burnable     bool       `json:"burnable,omitempty"`
 }
 
 type FrozenFund struct {
-	Height       uint64  `json:"height"`
-	Address      Address `json:"address"`
-	CandidateKey *Pubkey `json:"candidate_key,omitempty"`
-	CandidateID  uint64  `json:"candidate_id"`
-	Coin         uint64  `json:"coin"`
-	Value        string  `json:"value"`
+	Height            uint64  `json:"height"`
+	Address           Address `json:"address"`
+	CandidateKey      *Pubkey `json:"candidate_key,omitempty"`
+	CandidateID       uint64  `json:"candidate_id"`
+	Coin              uint64  `json:"coin"`
+	Value             string  `json:"value"`
+	MoveToCandidateID *uint64 `json:"move_to_candidate_id,omitempty"`
 }
 
 type UsedCheck string

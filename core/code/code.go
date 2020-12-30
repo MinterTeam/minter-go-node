@@ -33,6 +33,7 @@ const (
 	InvalidCoinSymbol uint32 = 203
 	InvalidCoinName   uint32 = 204
 	WrongCoinSupply   uint32 = 205
+	WrongCoinEmission uint32 = 206
 
 	// recreate coin
 	IsNotOwnerOfCoin uint32 = 206
@@ -749,11 +750,23 @@ type wrongCoinSupply struct {
 	MinInitialReserve     string `json:"min_initial_reserve,omitempty"`
 	CurrentInitialReserve string `json:"current_initial_reserve,omitempty"`
 
-	MinInitialAmount     string `json:"min_initial_amount,omitempty"`
-	MaxInitialAmount     string `json:"max_initial_amount,omitempty"`
 	CurrentInitialAmount string `json:"current_initial_amount,omitempty"`
 }
 
-func NewWrongCoinSupply(minCoinSupply string, maxCoinSupply string, currentCoinSupply string, minInitialReserve string, currentInitialReserve string, minInitialAmount string, maxInitialAmount string, currentInitialAmount string) *wrongCoinSupply {
-	return &wrongCoinSupply{Code: strconv.Itoa(int(WrongCoinSupply)), MinCoinSupply: minCoinSupply, MaxCoinSupply: maxCoinSupply, CurrentCoinSupply: currentCoinSupply, MinInitialReserve: minInitialReserve, CurrentInitialReserve: currentInitialReserve, MinInitialAmount: minInitialAmount, MaxInitialAmount: maxInitialAmount, CurrentInitialAmount: currentInitialAmount}
+func NewWrongCoinSupply(minCoinSupply string, maxCoinSupply string, currentCoinSupply string, minInitialReserve string, currentInitialReserve string, initialAmount string) *wrongCoinSupply {
+	return &wrongCoinSupply{Code: strconv.Itoa(int(WrongCoinSupply)), MinCoinSupply: minCoinSupply, MaxCoinSupply: maxCoinSupply, CurrentCoinSupply: currentCoinSupply, MinInitialReserve: minInitialReserve, CurrentInitialReserve: currentInitialReserve, CurrentInitialAmount: initialAmount}
+}
+
+type wrongCoinEmission struct {
+	Code string `json:"code,omitempty"`
+
+	MaxCoinSupply string `json:"max_coin_supply,omitempty"`
+	MinCoinSupply string `json:"min_coin_supply,omitempty"`
+	CoinSupply    string `json:"coin_supply,omitempty"`
+	SubAmount     string `json:"sub_amount,omitempty"`
+	AddAmount     string `json:"add_amount,omitempty"`
+}
+
+func NewWrongCoinEmission(minCoinSupply string, maxCoinSupply string, coinSupply string, addAmount, subAmount string) *wrongCoinEmission {
+	return &wrongCoinEmission{Code: strconv.Itoa(int(WrongCoinEmission)), MinCoinSupply: minCoinSupply, MaxCoinSupply: maxCoinSupply, CoinSupply: coinSupply, AddAmount: addAmount, SubAmount: subAmount}
 }

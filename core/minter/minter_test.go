@@ -32,6 +32,7 @@ import (
 	"math/rand"
 	"os"
 	"strconv"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -86,7 +87,7 @@ func makeTestValidatorsAndCandidates(pubkeys []string, stake *big.Int) ([]types.
 	return vals, cands
 }
 
-func getTestGenesis(pv *privval.FilePV) func() (*types2.GenesisDoc, error) {
+func getTestGenesis(pv *privval.FilePV, home string) func() (*types2.GenesisDoc, error) {
 	return func() (*types2.GenesisDoc, error) {
 
 		appHash := [32]byte{}
@@ -127,7 +128,7 @@ func getTestGenesis(pv *privval.FilePV) func() (*types2.GenesisDoc, error) {
 			return nil, err
 		}
 
-		genesisFile := utils.GetMinterHome() + "/config/genesis.json"
+		genesisFile := home + "/config/genesis.json"
 		if err := genesisDoc.SaveAs(genesisFile); err != nil {
 			panic(err)
 		}
@@ -136,21 +137,20 @@ func getTestGenesis(pv *privval.FilePV) func() (*types2.GenesisDoc, error) {
 	}
 }
 
-var port = 0
+var port int32 = 0
 
 func getPort() string {
-	port++
-	return strconv.Itoa(port)
+	return strconv.Itoa(int(atomic.AddInt32(&port, 1)))
 }
 
-func initTestNode(t *testing.T) (*Blockchain, *rpc.Local, *privval.FilePV) {
-	utils.MinterHome = t.TempDir()
+func initTestNode(t *testing.T) (*Blockchain, *rpc.Local, *privval.FilePV, func()) {
+	storage := utils.NewStorage(t.TempDir(), "")
 
-	if err := tmos.EnsureDir(utils.GetMinterHome()+"/tmdata/blockstore.db", 0777); err != nil {
+	if err := tmos.EnsureDir(storage.GetMinterHome()+"/tmdata/blockstore.db", 0777); err != nil {
 		t.Fatal(err)
 	}
 
-	minterCfg := config.GetConfig()
+	minterCfg := config.GetConfig(storage.GetMinterHome())
 	logger := log.NewLogger(minterCfg)
 	cfg := config.GetTmConfig(minterCfg)
 	cfg.Consensus.TimeoutPropose = 0
@@ -170,7 +170,7 @@ func initTestNode(t *testing.T) (*Blockchain, *rpc.Local, *privval.FilePV) {
 	pv := privval.GenFilePV(cfg.PrivValidatorKeyFile(), cfg.PrivValidatorStateFile())
 	pv.Save()
 
-	app := NewMinterBlockchain(minterCfg)
+	app := NewMinterBlockchain(storage, minterCfg)
 	nodeKey, err := p2p.LoadOrGenNodeKey(cfg.NodeKeyFile())
 	if err != nil {
 		t.Fatal(err)
@@ -181,7 +181,7 @@ func initTestNode(t *testing.T) (*Blockchain, *rpc.Local, *privval.FilePV) {
 		pv,
 		nodeKey,
 		proxy.NewLocalClientCreator(app),
-		getTestGenesis(pv),
+		getTestGenesis(pv, storage.GetMinterHome()),
 		tmNode.DefaultDBProvider,
 		tmNode.DefaultMetricsProvider(cfg.Instrumentation),
 		log2.NewTMLogger(os.Stdout),
@@ -198,7 +198,7 @@ func initTestNode(t *testing.T) (*Blockchain, *rpc.Local, *privval.FilePV) {
 	logger.Info("Started node", "nodeInfo", node.Switch().NodeInfo())
 	app.SetTmNode(node)
 
-	tmCli := rpc.New(blockchain.tmNode)
+	tmCli := rpc.New(app.tmNode)
 
 	blocks, err := tmCli.Subscribe(context.Background(), "test-client", "tm.event = 'NewBlock'")
 	if err != nil {
@@ -215,12 +215,28 @@ func initTestNode(t *testing.T) (*Blockchain, *rpc.Local, *privval.FilePV) {
 		t.Fatal("Timeout waiting for the first block")
 	}
 
-	return app, tmCli, pv
+	return app, tmCli, pv, func() {
+		pubkey := types.BytesToPubkey(pv.Key.PubKey.Bytes()[5:])
+		app.stateDeliver.Halts.AddHaltBlock(app.Height(), pubkey)
+		app.stateDeliver.Halts.AddHaltBlock(app.Height()+1, pubkey)
+		app.stateDeliver.Halts.AddHaltBlock(app.Height()+2, pubkey)
+		time.Sleep(time.Second)
+		app.Stop()
+		time.Sleep(time.Second)
+		err := os.RemoveAll(storage.GetMinterHome() + config.DefaultConfigDir)
+		if err != nil {
+			t.Error(err)
+		}
+		err = os.RemoveAll(storage.GetMinterHome() + config.DefaultDataDir)
+		if err != nil {
+			t.Error(err)
+		}
+	}
 }
 
 func TestBlockchain_Height(t *testing.T) {
-	blockchain, tmCli, _ := initTestNode(t)
-	defer blockchain.Stop()
+	blockchain, tmCli, _, cancel := initTestNode(t)
+	defer cancel()
 
 	blocks, err := tmCli.Subscribe(context.Background(), "test-client", "tm.event = 'NewBlock'")
 	if err != nil {
@@ -241,8 +257,8 @@ func TestBlockchain_Height(t *testing.T) {
 }
 
 func TestBlockchain_SetStatisticData(t *testing.T) {
-	blockchain, tmCli, _ := initTestNode(t)
-	defer blockchain.Stop()
+	blockchain, tmCli, _, cancel := initTestNode(t)
+	defer cancel()
 
 	ch := make(chan struct{})
 	blockchain.stateDeliver.Lock()
@@ -277,8 +293,8 @@ func TestBlockchain_SetStatisticData(t *testing.T) {
 }
 
 func TestBlockchain_IsApplicationHalted(t *testing.T) {
-	blockchain, tmCli, pv := initTestNode(t)
-	defer blockchain.Stop()
+	blockchain, tmCli, pv, cancel := initTestNode(t)
+	defer cancel()
 
 	data := transaction.SetHaltBlockData{
 		PubKey: types.BytesToPubkey(pv.Key.PubKey.Bytes()[5:]),
@@ -341,8 +357,8 @@ func TestBlockchain_IsApplicationHalted(t *testing.T) {
 }
 
 func TestBlockchain_GetStateForHeightAndDeleteStateVersions(t *testing.T) {
-	blockchain, tmCli, _ := initTestNode(t)
-	defer blockchain.Stop()
+	blockchain, tmCli, _, cancel := initTestNode(t)
+	defer cancel()
 
 	symbol := types.StrToCoinSymbol("AAA123")
 	data := transaction.CreateCoinData{
@@ -420,8 +436,8 @@ func TestBlockchain_GetStateForHeightAndDeleteStateVersions(t *testing.T) {
 }
 
 func TestBlockchain_SendTx(t *testing.T) {
-	blockchain, tmCli, _ := initTestNode(t)
-	defer blockchain.Stop()
+	blockchain, tmCli, _, cancel := initTestNode(t)
+	defer cancel()
 
 	value := helpers.BipToPip(big.NewInt(10))
 	to := types.Address([20]byte{1})
@@ -485,7 +501,8 @@ func TestBlockchain_SendTx(t *testing.T) {
 }
 
 func TestBlockchain_FrozenFunds(t *testing.T) {
-	blockchain, tmCli, pv := initTestNode(t)
+	blockchain, tmCli, pv, cancel := initTestNode(t)
+	defer cancel()
 
 	targetHeight := uint64(10)
 	value := helpers.BipToPip(big.NewInt(1000))
@@ -532,8 +549,8 @@ func TestBlockchain_FrozenFunds(t *testing.T) {
 }
 
 func TestBlockchain_RecalculateStakes_andRemoveValidator(t *testing.T) {
-	blockchain, tmCli, _ := initTestNode(t)
-	defer blockchain.Stop()
+	blockchain, tmCli, _, cancel := initTestNode(t)
+	defer cancel()
 
 	txs, err := tmCli.Subscribe(context.Background(), "test-client", "tm.event = 'Tx'")
 	if err != nil {
@@ -787,8 +804,8 @@ func TestBlockchain_RecalculateStakes_andRemoveValidator(t *testing.T) {
 }
 
 func TestStopNetworkByHaltBlocks(t *testing.T) {
-	blockchain, _, _ := initTestNode(t)
-	defer blockchain.Stop()
+	blockchain, _, _, cancel := initTestNode(t)
+	cancel()
 
 	haltHeight := uint64(50)
 

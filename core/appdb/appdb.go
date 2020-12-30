@@ -3,7 +3,6 @@ package appdb
 import (
 	"encoding/binary"
 	"errors"
-	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/tendermint/go-amino"
 	"github.com/tendermint/tendermint/abci/types"
@@ -201,8 +200,8 @@ func (appDB *AppDB) SetLastBlocksTimeDelta(height uint64, delta int) {
 }
 
 // NewAppDB creates AppDB instance with given config
-func NewAppDB(cfg *config.Config) *AppDB {
+func NewAppDB(homeDir string, cfg *config.Config) *AppDB {
 	return &AppDB{
-		db: db.NewDB(dbName, db.BackendType(cfg.DBBackend), utils.GetMinterHome()+"/data"),
+		db: db.NewDB(dbName, db.BackendType(cfg.DBBackend), homeDir+"/data"),
 	}
 }
