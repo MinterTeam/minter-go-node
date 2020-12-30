@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/helpers"
@@ -24,11 +25,12 @@ func TestCreateTokenData_aaa(t *testing.T) {
 	amount := helpers.BipToPip(big.NewInt(100))
 	name := "My Test Coin"
 
+	maxSupply := big.NewInt(0).Mul(amount, big.NewInt(10))
 	data := CreateTokenData{
 		Name:          name,
 		Symbol:        toCreate,
 		InitialAmount: amount,
-		MaxSupply:     big.NewInt(0).Mul(amount, big.NewInt(10)),
+		MaxSupply:     maxSupply,
 		Mintable:      false,
 		Burnable:      false,
 	}
@@ -85,6 +87,10 @@ func TestCreateTokenData_aaa(t *testing.T) {
 		t.Fatalf("Coin %s not found in state", toCreate)
 	}
 
+	if stateCoin.MaxSupply().Cmp(maxSupply) != 0 {
+		t.Fatalf("MaxSupply in state is not correct. Expected %s, got %s", maxSupply, stateCoin.MaxSupply())
+	}
+
 	if stateCoin.Volume().Cmp(amount) != 0 {
 		t.Fatalf("Volume in state is not correct. Expected %s, got %s", amount, stateCoin.Volume())
 	}
@@ -104,6 +110,70 @@ func TestCreateTokenData_aaa(t *testing.T) {
 
 	if *symbolInfo.OwnerAddress() != addr {
 		t.Fatalf("Target owner address is not correct. Expected %s, got %s", addr.String(), symbolInfo.OwnerAddress().String())
+	}
+
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestCreateTokenData_bbb(t *testing.T) {
+	t.Parallel()
+	cState := getState()
+
+	privateKey, _ := crypto.GenerateKey()
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+	coin := types.GetBaseCoinID()
+
+	toCreate := types.StrToCoinSymbol("TOKEN1")
+	amount := helpers.BipToPip(big.NewInt(100))
+	name := "My Test Coin"
+
+	maxSupply := big.NewInt(0).Mul(amount, big.NewInt(10))
+	data := CreateTokenData{
+		Name:          name,
+		Symbol:        toCreate,
+		InitialAmount: amount,
+		MaxSupply:     maxSupply,
+		Mintable:      false,
+		Burnable:      false,
+	}
+	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000-1)))
+
+	encodedData, err := rlp.EncodeToBytes(data)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := Transaction{
+		Nonce:         1,
+		GasPrice:      1,
+		ChainID:       types.CurrentChainID,
+		GasCoin:       coin,
+		Type:          TypeCreateToken,
+		Data:          encodedData,
+		SignatureType: SigTypeSingle,
+	}
+
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != code.InsufficientFunds {
+		t.Fatalf("Response code is not %d. Error %d %s", code.InsufficientFunds, response.Code, response.Log)
+	}
+
+	_, _, err = cState.Tree().Commit(cState.Coins)
+	if err != nil {
+		t.Fatalf("Commit coins failed. Error %s", err)
 	}
 
 	if err := checkState(cState); err != nil {
