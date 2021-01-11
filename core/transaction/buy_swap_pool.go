@@ -60,19 +60,24 @@ func (data BuySwapPoolData) Run(tx *Transaction, context state.Interface, reward
 		return *response
 	}
 
-	swapper := checkState.Swap().GetSwapper(data.CoinToSell, data.CoinToBuy)
-	errResp := CheckSwap(swapper, checkState.Coins().GetCoin(data.CoinToSell), checkState.Coins().GetCoin(data.CoinToBuy), data.MaximumValueToSell, data.ValueToBuy, true)
+	commissionInBaseCoin := tx.CommissionInBaseCoin()
+	commissionPoolSwapper := checkState.Swap().GetSwapper(tx.GasCoin, types.GetBaseCoinID())
+	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
+	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoin, commissionInBaseCoin)
 	if errResp != nil {
 		return *errResp
 	}
 
-	commissionInBaseCoin := tx.CommissionInBaseCoin()
-	commissionPoolSwapper := checkState.Swap().GetSwapper(tx.GasCoin, types.GetBaseCoinID())
-	if tx.GasCoin == data.CoinToSell && data.CoinToBuy.IsBaseCoin() {
-		commissionPoolSwapper = swapper.AddLastSwapStep(swapper.CalculateSellForBuy(data.ValueToBuy), data.ValueToBuy)
+	swapper := checkState.Swap().GetSwapper(data.CoinToSell, data.CoinToBuy)
+	if isGasCommissionFromPoolSwap {
+		if tx.GasCoin == data.CoinToSell && data.CoinToBuy.IsBaseCoin() {
+			swapper = swapper.AddLastSwapStep(commission, commissionInBaseCoin)
+		}
+		if tx.GasCoin == data.CoinToBuy && data.CoinToSell.IsBaseCoin() {
+			swapper = swapper.AddLastSwapStep(commissionInBaseCoin, commission)
+		}
 	}
-	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
-	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoin, commissionInBaseCoin)
+	errResp = CheckSwap(swapper, checkState.Coins().GetCoin(data.CoinToSell), checkState.Coins().GetCoin(data.CoinToBuy), data.MaximumValueToSell, data.ValueToBuy, true)
 	if errResp != nil {
 		return *errResp
 	}
@@ -100,10 +105,6 @@ func (data BuySwapPoolData) Run(tx *Transaction, context state.Interface, reward
 
 	returnValue := data.MaximumValueToSell
 	if deliverState, ok := context.(*state.State); ok {
-		amountIn, amountOut := deliverState.Swap.PairBuy(data.CoinToSell, data.CoinToBuy, data.MaximumValueToSell, data.ValueToBuy)
-		deliverState.Accounts.SubBalance(sender, data.CoinToSell, amountIn)
-		deliverState.Accounts.AddBalance(sender, data.CoinToBuy, amountOut)
-
 		if isGasCommissionFromPoolSwap {
 			commission, commissionInBaseCoin = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
 		} else if !tx.GasCoin.IsBaseCoin() {
@@ -112,6 +113,10 @@ func (data BuySwapPoolData) Run(tx *Transaction, context state.Interface, reward
 		}
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
+
+		amountIn, amountOut := deliverState.Swap.PairBuy(data.CoinToSell, data.CoinToBuy, data.MaximumValueToSell, data.ValueToBuy)
+		deliverState.Accounts.SubBalance(sender, data.CoinToSell, amountIn)
+		deliverState.Accounts.AddBalance(sender, data.CoinToBuy, amountOut)
 
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 
@@ -135,7 +140,7 @@ func (data BuySwapPoolData) Run(tx *Transaction, context state.Interface, reward
 	}
 }
 
-func CheckSwap(rSwap swap.SwapChecker, coinIn calculateCoin, coinOut calculateCoin, valueIn *big.Int, valueOut *big.Int, isBuy bool) *Response {
+func CheckSwap(rSwap swap.EditableChecker, coinIn calculateCoin, coinOut calculateCoin, valueIn *big.Int, valueOut *big.Int, isBuy bool) *Response {
 	if isBuy {
 		calculatedAmountToSell := rSwap.CalculateSellForBuy(valueOut)
 		if calculatedAmountToSell == nil {

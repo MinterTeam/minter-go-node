@@ -27,7 +27,11 @@ func (data MintTokenData) basicCheck(tx *Transaction, context *state.CheckState)
 	}
 
 	if !coin.IsMintable() {
-		return &Response{} // todo
+		return &Response{
+			Code: code.CoinNotMintable,
+			Log:  "Coin not mintable",
+			Info: EncodeError(code.NewCoinIsNotMintable(coin.GetFullSymbol(), data.Coin.String())),
+		}
 	}
 
 	if big.NewInt(0).Add(coin.Volume(), data.Value).Cmp(coin.MaxSupply()) == 1 {

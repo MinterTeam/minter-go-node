@@ -102,6 +102,7 @@ func (data SellAllSwapPoolData) Run(tx *Transaction, context state.Interface, re
 			deliverState.Coins.SubVolume(tx.GasCoin, commission)
 			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
 		}
+
 		amountIn, amountOut = deliverState.Swap.PairSell(data.CoinToSell, data.CoinToBuy, balance, data.MinimumValueToBuy)
 		deliverState.Accounts.SubBalance(sender, data.CoinToSell, amountIn)
 		deliverState.Accounts.AddBalance(sender, data.CoinToBuy, amountOut)
@@ -176,7 +177,7 @@ type calculateCoin interface {
 	MaxSupply() *big.Int
 }
 
-func CalculateCommission(checkState *state.CheckState, swapper swap.SwapChecker, gasCoin calculateCoin, commissionInBaseCoin *big.Int) (commission *big.Int, poolSwap bool, errResp *Response) {
+func CalculateCommission(checkState *state.CheckState, swapper swap.EditableChecker, gasCoin calculateCoin, commissionInBaseCoin *big.Int) (commission *big.Int, poolSwap bool, errResp *Response) {
 	if gasCoin.ID().IsBaseCoin() {
 		return new(big.Int).Set(commissionInBaseCoin), false, nil
 	}
@@ -205,7 +206,7 @@ func CalculateCommission(checkState *state.CheckState, swapper swap.SwapChecker,
 	return commissionFromReserve, false, nil
 }
 
-func commissionFromPool(swapChecker swap.SwapChecker, coin calculateCoin, baseCoin calculateCoin, commissionInBaseCoin *big.Int) (*big.Int, *Response) {
+func commissionFromPool(swapChecker swap.EditableChecker, coin calculateCoin, baseCoin calculateCoin, commissionInBaseCoin *big.Int) (*big.Int, *Response) {
 	if !swapChecker.IsExist() {
 		return nil, &Response{
 			Code: code.PairNotExists,
