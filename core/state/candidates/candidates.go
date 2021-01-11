@@ -257,7 +257,7 @@ func (c *Candidates) GetNewCandidates(valCount int) []Candidate {
 		result = append(result, *candidate)
 	}
 
-	sort.Slice(result, func(i, j int) bool {
+	sort.SliceStable(result, func(i, j int) bool {
 		return result[i].totalBipStake.Cmp(result[j].totalBipStake) == 1
 	})
 

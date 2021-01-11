@@ -525,7 +525,7 @@ func (c *Coins) Export(state *types.AppState) {
 		return false
 	})
 
-	sort.Slice(state.Coins[:], func(i, j int) bool {
+	sort.SliceStable(state.Coins[:], func(i, j int) bool {
 		return state.Coins[i].ID < state.Coins[j].ID
 	})
 }
