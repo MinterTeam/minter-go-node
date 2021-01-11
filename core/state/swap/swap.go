@@ -99,14 +99,14 @@ func (s *Swap) Export(state *types.AppState) {
 			})
 		}
 
-		sort.SliceStable(swap.Providers, func(i, j int) bool {
+		sort.Slice(swap.Providers, func(i, j int) bool {
 			return swap.Providers[i].Address.Compare(swap.Providers[j].Address) == -1
 		})
 
 		state.Swap = append(state.Swap, swap)
 	}
 
-	sort.SliceStable(state.Swap, func(i, j int) bool {
+	sort.Slice(state.Swap, func(i, j int) bool {
 		return strconv.Itoa(int(state.Swap[i].Coin0))+"-"+strconv.Itoa(int(state.Swap[i].Coin1)) < strconv.Itoa(int(state.Swap[j].Coin0))+"-"+strconv.Itoa(int(state.Swap[j].Coin1))
 	})
 }
