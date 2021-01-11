@@ -88,7 +88,9 @@ const (
 	InsufficientOutputAmount     uint32 = 707
 
 	// emission coin
-	CoinHasReserve uint32 = 800
+	CoinHasReserve  uint32 = 800
+	CoinNotMintable uint32 = 801
+	CoinNotBurnable uint32 = 802
 )
 
 func NewInsufficientLiquidityBalance(liquidity, amount0, coin0, amount1, coin1, requestedLiquidity, wantA0, wantA1 string) *insufficientLiquidityBalance {
@@ -214,6 +216,19 @@ type coinNotExists struct {
 
 func NewCoinNotExists(coinSymbol string, coinId string) *coinNotExists {
 	return &coinNotExists{Code: strconv.Itoa(int(CoinNotExists)), CoinSymbol: coinSymbol, CoinId: coinId}
+}
+
+type coinIsNotMintableOrBurnable struct {
+	Code       string `json:"code,omitempty"`
+	CoinSymbol string `json:"coin_symbol,omitempty"`
+	CoinId     string `json:"coin_id,omitempty"`
+}
+
+func NewCoinIsNotMintable(coinSymbol string, coinId string) *coinIsNotMintableOrBurnable {
+	return &coinIsNotMintableOrBurnable{Code: strconv.Itoa(int(CoinNotMintable)), CoinSymbol: coinSymbol, CoinId: coinId}
+}
+func NewCoinIsNotBurnable(coinSymbol string, coinId string) *coinIsNotMintableOrBurnable {
+	return &coinIsNotMintableOrBurnable{Code: strconv.Itoa(int(CoinNotBurnable)), CoinSymbol: coinSymbol, CoinId: coinId}
 }
 
 type wrongGasCoin struct {

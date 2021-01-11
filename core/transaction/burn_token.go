@@ -27,7 +27,11 @@ func (data BurnTokenData) basicCheck(tx *Transaction, context *state.CheckState)
 	}
 
 	if !coin.IsBurnable() {
-		return &Response{} // todo
+		return &Response{
+			Code: code.CoinNotBurnable,
+			Log:  "Coin not burnable",
+			Info: EncodeError(code.NewCoinIsNotBurnable(coin.GetFullSymbol(), data.Coin.String())),
+		}
 	}
 
 	if big.NewInt(0).Sub(coin.Volume(), data.Value).Cmp(minTokenSupply) == -1 {
