@@ -24,7 +24,7 @@ jobs:
       - name: Build
         env:
           CGO_ENABLED: 1
-        run: go build -tags 'minter gcc' -ldflags "-s -w -X github.com/MinterTeam/minter-go-node/version.GitCommit=${{ github.sha }}" -o 'build/minter' ./cmd/minter
+        run: go build -tags 'minter gcc' -ldflags "-s -w -X github.com/MinterTeam/minter-go-node/version.GitCommit=${{ github.sha }}" -v -o 'build/minter' ./cmd/minter
 
       - name: Copy file via scp
         uses: appleboy/scp-action@master
