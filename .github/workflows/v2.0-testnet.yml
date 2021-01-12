@@ -54,7 +54,7 @@ jobs:
           USERNAME: ${{ secrets.NODE_V2_USERNAME }}
           PORT: ${{ secrets.NODE_V2_PORT }}
           KEY: ${{ secrets.NODE_V2_SSH }}
-          script: mv /tmp/node/minter /opt/minter/node/minter
+          script: mv /tmp/node/build/minter /opt/minter/node/minter
 
       - name: Restart service
         uses: appleboy/ssh-action@master
