@@ -22,7 +22,7 @@ jobs:
           go mod download
 
       - name: Build
-        run: CGO_ENABLED=1 go build -tags 'minter gcc' -o 'build/minter' ./cmd/minter/
+        run: CGO_ENABLED=1 go build -tags 'minter gcc' -o 'build/minter' ./cmd/minter/main.go
 
       - name: Copy file via scp
         uses: appleboy/scp-action@master
