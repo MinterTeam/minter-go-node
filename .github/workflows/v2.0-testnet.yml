@@ -34,7 +34,7 @@ jobs:
           PORT: ${{ secrets.NODE_V2_PORT }}
           KEY: ${{ secrets.NODE_V2_SSH }}
         with:
-          source: "build/node"
+          source: "build/minter/pkg"
           target: "/tmp/node"
           rm: true
 
