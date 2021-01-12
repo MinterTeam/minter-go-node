@@ -66,11 +66,11 @@ func runNode(cmd *cobra.Command) error {
 	}
 	storages := utils.NewStorage(homeDir, configDir)
 
-	_, err = storages.InitEventLevelDB("events", minter.GetDbOpts(1024))
+	_, err = storages.InitEventLevelDB("data/events", minter.GetDbOpts(1024))
 	if err != nil {
 		return err
 	}
-	_, err = storages.InitStateLevelDB("state", minter.GetDbOpts(cfg.StateMemAvailable))
+	_, err = storages.InitStateLevelDB("data/state", minter.GetDbOpts(cfg.StateMemAvailable))
 	if err != nil {
 		return err
 	}
