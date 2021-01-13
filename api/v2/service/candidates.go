@@ -27,13 +27,22 @@ func (s *Service) Candidates(ctx context.Context, req *pb.CandidatesRequest) (*p
 			return nil, timeoutStatus.Err()
 		}
 
-		if req.Status != pb.CandidatesRequest_all && req.Status != pb.CandidatesRequest_CandidateStatus(candidate.Status) {
+		isValidator := false
+		if cState.Validators().GetByPublicKey(candidate.PubKey) != nil {
+			isValidator = true
+		}
+
+		if req.Status != pb.CandidatesRequest_all && (req.Status != pb.CandidatesRequest_CandidateStatus(candidate.Status) ||
+			req.Status == pb.CandidatesRequest_validator && !isValidator) {
 			continue
 		}
 
 		cState.Candidates().LoadStakesOfCandidate(candidate.PubKey)
 
-		response.Candidates = append(response.Candidates, makeResponseCandidate(cState, candidate, req.IncludeStakes, req.NotShowStakes))
+		responseCandidate := makeResponseCandidate(cState, candidate, req.IncludeStakes, req.NotShowStakes)
+		responseCandidate.Validator = isValidator
+
+		response.Candidates = append(response.Candidates, responseCandidate)
 	}
 
 	return response, nil
