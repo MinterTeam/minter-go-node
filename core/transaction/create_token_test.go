@@ -31,7 +31,7 @@ func TestCreateTokenData_aaa(t *testing.T) {
 		Symbol:        toCreate,
 		InitialAmount: amount,
 		MaxSupply:     maxSupply,
-		Mintable:      false,
+		Mintable:      true,
 		Burnable:      false,
 	}
 
@@ -103,6 +103,14 @@ func TestCreateTokenData_aaa(t *testing.T) {
 		t.Fatalf("Version in state is not correct. Expected %d, got %d", 0, stateCoin.Version())
 	}
 
+	if stateCoin.IsBurnable() {
+		t.Errorf("IsBurnable in state is not correct. Expected %t, got %t", false, stateCoin.IsBurnable())
+	}
+
+	if !stateCoin.IsMintable() {
+		t.Errorf("IsMintable in state is not correct. Expected %t, got %t", true, stateCoin.IsMintable())
+	}
+
 	symbolInfo := cState.Coins.GetSymbolInfo(toCreate)
 	if symbolInfo == nil {
 		t.Fatalf("Symbol %s info not found in state", toCreate)
@@ -135,8 +143,8 @@ func TestCreateTokenData_bbb(t *testing.T) {
 		Symbol:        toCreate,
 		InitialAmount: amount,
 		MaxSupply:     maxSupply,
-		Mintable:      false,
-		Burnable:      false,
+		Mintable:      true,
+		Burnable:      true,
 	}
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000-1)))
 

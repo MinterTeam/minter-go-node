@@ -305,7 +305,7 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 				Id:     uint64(d.Coin),
 				Symbol: coins.GetCoin(d.Coin).GetFullSymbol(),
 			},
-			Value: d.Value.String(),
+			Stake: d.Stake.String(),
 		}
 	default:
 		return nil, errors.New("unknown tx type")
