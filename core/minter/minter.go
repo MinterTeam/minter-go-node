@@ -115,7 +115,7 @@ func (blockchain *Blockchain) InitChain(req abciTypes.RequestInitChain) abciType
 
 	if genesisState.StartHeight > blockchain.height {
 		blockchain.appDB.SetStartHeight(genesisState.StartHeight)
-		blockchain.Stop()
+		blockchain.Close()
 		*blockchain = *NewMinterBlockchain(blockchain.storages, blockchain.cfg)
 	}
 	if err := blockchain.stateDeliver.Import(genesisState); err != nil {
@@ -136,6 +136,7 @@ func (blockchain *Blockchain) InitChain(req abciTypes.RequestInitChain) abciType
 
 // BeginBlock signals the beginning of a block.
 func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.ResponseBeginBlock {
+
 	height := uint64(req.Header.Height)
 
 	blockchain.StatisticData().PushStartBlock(&statistics.StartRequest{Height: int64(height), Now: time.Now(), HeaderTime: req.Header.Time})
@@ -485,6 +486,15 @@ func (blockchain *Blockchain) SetOption(_ abciTypes.RequestSetOption) abciTypes.
 
 // Stop gracefully stopping Minter Blockchain instance
 func (blockchain *Blockchain) Stop() {
+	err := blockchain.tmNode.Stop()
+	if err != nil {
+		panic(err)
+	}
+	blockchain.Close()
+}
+
+// Close closes db connections
+func (blockchain *Blockchain) Close() {
 	blockchain.appDB.Close()
 	if err := blockchain.storages.StateDB().Close(); err != nil {
 		panic(err)
