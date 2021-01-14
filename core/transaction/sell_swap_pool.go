@@ -124,6 +124,7 @@ func (data SellSwapPoolData) Run(tx *Transaction, context state.Interface, rewar
 	}
 
 	tags := kv.Pairs{
+		kv.Pair{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
 		kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeSellAllSwapPool)}))},
 		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},

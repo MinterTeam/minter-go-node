@@ -114,6 +114,7 @@ func (data SellAllSwapPoolData) Run(tx *Transaction, context state.Interface, re
 	}
 
 	tags := kv.Pairs{
+		kv.Pair{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
 		kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeSellAllSwapPool)}))},
 		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
@@ -176,8 +177,16 @@ type calculateCoin interface {
 	GetFullSymbol() string
 	MaxSupply() *big.Int
 }
+type gasMethod bool
 
-func CalculateCommission(checkState *state.CheckState, swapper swap.EditableChecker, gasCoin calculateCoin, commissionInBaseCoin *big.Int) (commission *big.Int, poolSwap bool, errResp *Response) {
+func (isGasCommissionFromPoolSwap gasMethod) String() string {
+	if isGasCommissionFromPoolSwap {
+		return "pool"
+	}
+	return "bancor"
+}
+
+func CalculateCommission(checkState *state.CheckState, swapper swap.EditableChecker, gasCoin calculateCoin, commissionInBaseCoin *big.Int) (commission *big.Int, poolSwap gasMethod, errResp *Response) {
 	if gasCoin.ID().IsBaseCoin() {
 		return new(big.Int).Set(commissionInBaseCoin), false, nil
 	}

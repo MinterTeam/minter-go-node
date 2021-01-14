@@ -140,6 +140,7 @@ func (data EditMultisigData) Run(tx *Transaction, context state.Interface, rewar
 
 	address := []byte(hex.EncodeToString(sender[:]))
 	tags := kv.Pairs{
+		kv.Pair{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
 		kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeEditMultisig)}))},
 		kv.Pair{Key: []byte("tx.from"), Value: address},

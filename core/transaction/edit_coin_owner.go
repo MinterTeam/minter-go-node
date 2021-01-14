@@ -102,6 +102,7 @@ func (data EditCoinOwnerData) Run(tx *Transaction, context state.Interface, rewa
 	}
 
 	tags := kv.Pairs{
+		kv.Pair{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
 		kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeEditCoinOwner)}))},
 		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},

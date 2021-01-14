@@ -151,7 +151,7 @@ func (data BuyCoinData) Run(tx *Transaction, context state.Interface, rewardPool
 		return *errResp
 	}
 
-	if !isGasCommissionFromPoolSwap && gasCoin.ID() == coinToSell && !coinToSell.IsBaseCoin() {
+	if isGasCommissionFromPoolSwap != true && gasCoin.ID() == coinToSell && !coinToSell.IsBaseCoin() {
 		commission, errResp = CalculateSaleAmountAndCheck(coinFrom, big.NewInt(0).Add(diffBipReserve, commissionInBaseCoin))
 		if errResp != nil {
 			return *errResp
@@ -220,6 +220,7 @@ func (data BuyCoinData) Run(tx *Transaction, context state.Interface, rewardPool
 	}
 
 	tags := kv.Pairs{
+		kv.Pair{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
 		kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeBuyCoin)}))},
 		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
