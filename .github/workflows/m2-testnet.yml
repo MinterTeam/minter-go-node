@@ -1,4 +1,4 @@
-name: v2.0-testnet
+name: m2-testnet
 
 on:
   push:
@@ -64,3 +64,12 @@ jobs:
           PORT: ${{ secrets.NODE_V2_PORT }}
           KEY: ${{ secrets.NODE_V2_SSH }}
           script: sudo systemctl restart minter-node.service
+
+      - name: notification
+        if: cancelled() == false
+        uses: xinthink/action-telegram@v1.1
+        with:
+          botToken: ${{ secrets.TELEGRAM_CI_TOKEN }}
+          chatId: ${{ secrets.TELEGRAM_CI_TO }}
+          jobStatus: ${{ job.status }}
+          skipSuccess: false
