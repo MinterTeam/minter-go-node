@@ -292,6 +292,21 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 			},
 			Value: d.Value.String(),
 		}
+	case *transaction.EditCandidateCommission:
+		m = &pb.EditCandidateCommission{
+			PubKey:     d.PubKey.String(),
+			Commission: uint64(d.Commission),
+		}
+	case *transaction.MoveStakeData:
+		m = &pb.MoveStakeData{
+			From: d.From.String(),
+			To:   d.To.String(),
+			Coin: &pb.Coin{
+				Id:     uint64(d.Coin),
+				Symbol: coins.GetCoin(d.Coin).GetFullSymbol(),
+			},
+			Stake: d.Stake.String(),
+		}
 	default:
 		return nil, errors.New("unknown tx type")
 	}

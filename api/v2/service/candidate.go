@@ -43,6 +43,10 @@ func (s *Service) Candidate(ctx context.Context, req *pb.CandidateRequest) (*pb.
 	}
 
 	result := makeResponseCandidate(cState, candidate, true, req.NotShowStakes)
+	if cState.Validators().GetByPublicKey(candidate.PubKey) != nil {
+		result.Validator = true
+	}
+
 	return result, nil
 }
 
@@ -55,10 +59,6 @@ func makeResponseCandidate(state *state.CheckState, c *candidates.Candidate, inc
 		PublicKey:      c.PubKey.String(),
 		Commission:     uint64(c.Commission),
 		Status:         uint64(c.Status),
-	}
-
-	if state.Validators().GetByPublicKey(c.PubKey) != nil {
-		candidate.Validator = true
 	}
 
 	if includeStakes {

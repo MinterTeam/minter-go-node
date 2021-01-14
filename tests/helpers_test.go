@@ -15,7 +15,6 @@ import (
 )
 
 // CreateApp creates and returns new Blockchain instance
-// Recreates $HOME/.minter_test dir
 func CreateApp(state types.AppState) *minter.Blockchain {
 	jsonState, err := amino.MarshalJSON(state)
 	if err != nil {

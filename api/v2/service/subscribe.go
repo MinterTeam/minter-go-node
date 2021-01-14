@@ -38,7 +38,7 @@ func (s *Service) Subscribe(request *pb.SubscribeRequest, stream pb.ApiService_S
 		return status.Error(codes.InvalidArgument, err.Error())
 	}
 	defer func() {
-		if err := s.client.UnsubscribeAll(context.Background(), remote); err != nil {
+		if err := s.client.Unsubscribe(context.Background(), remote, request.Query); err != nil {
 			s.client.Logger.Error(err.Error())
 		}
 	}()

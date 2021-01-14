@@ -188,7 +188,7 @@ func CalculateCommission(checkState *state.CheckState, swapper swap.EditableChec
 		return nil, false, &Response{
 			Code: code.CommissionCoinNotSufficient,
 			Log:  fmt.Sprintf("Not possible to pay commission in coin %s", gasCoin.GetFullSymbol()),
-			Info: EncodeError(code.NewCommissionCoinNotSufficient(responseFromPool.Log, responseFromReserve.Log)),
+			Info: EncodeError(code.NewCommissionCoinNotSufficient(responseFromReserve.Log, responseFromPool.Log)),
 		}
 	}
 

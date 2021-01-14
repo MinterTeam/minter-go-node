@@ -37,112 +37,6 @@ import (
 	"time"
 )
 
-func getPrivateKey() *ecdsa.PrivateKey {
-	b, _ := hex.DecodeString("825ca965c34ef1c8343e8e377959108370c23ba6194d858452b63432456403f9")
-	privateKey, _ := crypto.ToECDSA(b)
-	return privateKey
-}
-
-func makeTestValidatorsAndCandidates(pubkeys []string, stake *big.Int) ([]types.Validator, []types.Candidate) {
-	vals := make([]types.Validator, 0, len(pubkeys))
-	cands := make([]types.Candidate, 0, len(pubkeys))
-
-	for i, val := range pubkeys {
-		pkeyBytes, err := base64.StdEncoding.DecodeString(val)
-		if err != nil {
-			panic(err)
-		}
-
-		var pkey types.Pubkey
-		copy(pkey[:], pkeyBytes)
-		addr := developers.Address
-
-		vals = append(vals, types.Validator{
-			TotalBipStake: stake.String(),
-			PubKey:        pkey,
-			AccumReward:   big.NewInt(0).String(),
-			AbsentTimes:   types.NewBitArray(24),
-		})
-
-		cands = append(cands, types.Candidate{
-			ID:             uint64(i) + 1,
-			RewardAddress:  addr,
-			OwnerAddress:   crypto.PubkeyToAddress(getPrivateKey().PublicKey),
-			ControlAddress: addr,
-			TotalBipStake:  stake.String(),
-			PubKey:         pkey,
-			Commission:     10,
-			Stakes: []types.Stake{
-				{
-					Owner:    addr,
-					Coin:     uint64(types.GetBaseCoinID()),
-					Value:    stake.String(),
-					BipValue: stake.String(),
-				},
-			},
-			Status: candidates2.CandidateStatusOnline,
-		})
-	}
-
-	return vals, cands
-}
-
-func getTestGenesis(pv *privval.FilePV, home string) func() (*types2.GenesisDoc, error) {
-	return func() (*types2.GenesisDoc, error) {
-
-		appHash := [32]byte{}
-
-		validators, candidates := makeTestValidatorsAndCandidates([]string{base64.StdEncoding.EncodeToString(pv.Key.PubKey.Bytes()[5:])}, helpers.BipToPip(big.NewInt(12444011)))
-
-		appState := types.AppState{
-			TotalSlashed: "0",
-			Accounts: []types.Account{
-				{
-					Address: crypto.PubkeyToAddress(getPrivateKey().PublicKey),
-					Balance: []types.Balance{
-						{
-							Coin:  uint64(types.GetBaseCoinID()),
-							Value: helpers.BipToPip(big.NewInt(9223372036854775807)).String(),
-						},
-					},
-				},
-			},
-			Validators: validators,
-			Candidates: candidates,
-		}
-
-		appStateJSON, err := amino.MarshalJSON(appState)
-		if err != nil {
-			return nil, err
-		}
-
-		genesisDoc := types2.GenesisDoc{
-			ChainID:     "minter-test-network",
-			GenesisTime: time.Now(),
-			AppHash:     appHash[:],
-			AppState:    json.RawMessage(appStateJSON),
-		}
-
-		err = genesisDoc.ValidateAndComplete()
-		if err != nil {
-			return nil, err
-		}
-
-		genesisFile := home + "/config/genesis.json"
-		if err := genesisDoc.SaveAs(genesisFile); err != nil {
-			panic(err)
-		}
-
-		return &genesisDoc, nil
-	}
-}
-
-var port int32 = 0
-
-func getPort() string {
-	return strconv.Itoa(int(atomic.AddInt32(&port, 1)))
-}
-
 func initTestNode(t *testing.T) (*Blockchain, *rpc.Local, *privval.FilePV, func()) {
 	storage := utils.NewStorage(t.TempDir(), "")
 
@@ -215,23 +109,7 @@ func initTestNode(t *testing.T) (*Blockchain, *rpc.Local, *privval.FilePV, func(
 		t.Fatal("Timeout waiting for the first block")
 	}
 
-	return app, tmCli, pv, func() {
-		pubkey := types.BytesToPubkey(pv.Key.PubKey.Bytes()[5:])
-		app.stateDeliver.Halts.AddHaltBlock(app.Height(), pubkey)
-		app.stateDeliver.Halts.AddHaltBlock(app.Height()+1, pubkey)
-		app.stateDeliver.Halts.AddHaltBlock(app.Height()+2, pubkey)
-		time.Sleep(time.Second)
-		app.Stop()
-		time.Sleep(time.Second)
-		err := os.RemoveAll(storage.GetMinterHome() + config.DefaultConfigDir)
-		if err != nil {
-			t.Error(err)
-		}
-		err = os.RemoveAll(storage.GetMinterHome() + config.DefaultDataDir)
-		if err != nil {
-			t.Error(err)
-		}
-	}
+	return app, tmCli, pv, func() { app.Stop() }
 }
 
 func TestBlockchain_Height(t *testing.T) {
@@ -293,8 +171,7 @@ func TestBlockchain_SetStatisticData(t *testing.T) {
 }
 
 func TestBlockchain_IsApplicationHalted(t *testing.T) {
-	blockchain, tmCli, pv, cancel := initTestNode(t)
-	defer cancel()
+	blockchain, tmCli, pv, _ := initTestNode(t)
 
 	data := transaction.SetHaltBlockData{
 		PubKey: types.BytesToPubkey(pv.Key.PubKey.Bytes()[5:]),
@@ -842,4 +719,110 @@ func TestStopNetworkByHaltBlocks(t *testing.T) {
 	if !blockchain.isApplicationHalted(haltHeight) {
 		t.Fatalf("Application not halted at height %d", haltHeight)
 	}
+}
+
+func getPrivateKey() *ecdsa.PrivateKey {
+	b, _ := hex.DecodeString("825ca965c34ef1c8343e8e377959108370c23ba6194d858452b63432456403f9")
+	privateKey, _ := crypto.ToECDSA(b)
+	return privateKey
+}
+
+func makeTestValidatorsAndCandidates(pubkeys []string, stake *big.Int) ([]types.Validator, []types.Candidate) {
+	vals := make([]types.Validator, 0, len(pubkeys))
+	cands := make([]types.Candidate, 0, len(pubkeys))
+
+	for i, val := range pubkeys {
+		pkeyBytes, err := base64.StdEncoding.DecodeString(val)
+		if err != nil {
+			panic(err)
+		}
+
+		var pkey types.Pubkey
+		copy(pkey[:], pkeyBytes)
+		addr := developers.Address
+
+		vals = append(vals, types.Validator{
+			TotalBipStake: stake.String(),
+			PubKey:        pkey,
+			AccumReward:   big.NewInt(0).String(),
+			AbsentTimes:   types.NewBitArray(24),
+		})
+
+		cands = append(cands, types.Candidate{
+			ID:             uint64(i) + 1,
+			RewardAddress:  addr,
+			OwnerAddress:   crypto.PubkeyToAddress(getPrivateKey().PublicKey),
+			ControlAddress: addr,
+			TotalBipStake:  stake.String(),
+			PubKey:         pkey,
+			Commission:     10,
+			Stakes: []types.Stake{
+				{
+					Owner:    addr,
+					Coin:     uint64(types.GetBaseCoinID()),
+					Value:    stake.String(),
+					BipValue: stake.String(),
+				},
+			},
+			Status: candidates2.CandidateStatusOnline,
+		})
+	}
+
+	return vals, cands
+}
+
+func getTestGenesis(pv *privval.FilePV, home string) func() (*types2.GenesisDoc, error) {
+	return func() (*types2.GenesisDoc, error) {
+
+		appHash := [32]byte{}
+
+		validators, candidates := makeTestValidatorsAndCandidates([]string{base64.StdEncoding.EncodeToString(pv.Key.PubKey.Bytes()[5:])}, helpers.BipToPip(big.NewInt(12444011)))
+
+		appState := types.AppState{
+			TotalSlashed: "0",
+			Accounts: []types.Account{
+				{
+					Address: crypto.PubkeyToAddress(getPrivateKey().PublicKey),
+					Balance: []types.Balance{
+						{
+							Coin:  uint64(types.GetBaseCoinID()),
+							Value: helpers.BipToPip(big.NewInt(9223372036854775807)).String(),
+						},
+					},
+				},
+			},
+			Validators: validators,
+			Candidates: candidates,
+		}
+
+		appStateJSON, err := amino.MarshalJSON(appState)
+		if err != nil {
+			return nil, err
+		}
+
+		genesisDoc := types2.GenesisDoc{
+			ChainID:     "minter-test-network",
+			GenesisTime: time.Now(),
+			AppHash:     appHash[:],
+			AppState:    json.RawMessage(appStateJSON),
+		}
+
+		err = genesisDoc.ValidateAndComplete()
+		if err != nil {
+			return nil, err
+		}
+
+		genesisFile := home + "/config/genesis.json"
+		if err := genesisDoc.SaveAs(genesisFile); err != nil {
+			panic(err)
+		}
+
+		return &genesisDoc, nil
+	}
+}
+
+var port int32 = 0
+
+func getPort() string {
+	return strconv.Itoa(int(atomic.AddInt32(&port, 1)))
 }

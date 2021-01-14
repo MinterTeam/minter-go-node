@@ -12,16 +12,16 @@ import (
 	"strconv"
 )
 
-type EditCommissionData struct {
+type EditCandidateCommission struct {
 	PubKey     types.Pubkey
 	Commission uint32
 }
 
-func (data EditCommissionData) GetPubKey() types.Pubkey {
+func (data EditCandidateCommission) GetPubKey() types.Pubkey {
 	return data.PubKey
 }
 
-func (data EditCommissionData) basicCheck(tx *Transaction, context *state.CheckState, block uint64) *Response {
+func (data EditCandidateCommission) basicCheck(tx *Transaction, context *state.CheckState, block uint64) *Response {
 	errResp := checkCandidateOwnership(data, tx, context)
 	if errResp != nil {
 		return errResp
@@ -55,15 +55,15 @@ func (data EditCommissionData) basicCheck(tx *Transaction, context *state.CheckS
 	return nil
 }
 
-func (data EditCommissionData) String() string {
+func (data EditCandidateCommission) String() string {
 	return fmt.Sprintf("EDIT COMMISSION: %s", data.PubKey)
 }
 
-func (data EditCommissionData) Gas() int64 {
-	return commissions.EditCommissionData
+func (data EditCandidateCommission) Gas() int64 {
+	return commissions.EditCandidateCommission
 }
 
-func (data EditCommissionData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
+func (data EditCandidateCommission) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState

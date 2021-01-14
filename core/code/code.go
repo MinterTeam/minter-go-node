@@ -189,13 +189,13 @@ func NewPairNotExists(coin0 string, coin1 string) *pairNotExists {
 }
 
 type commissionCoinNotSufficient struct {
-	Code    string `json:"code,omitempty"`
-	Pool    string `json:"pool,omitempty"`
-	Reserve string `json:"reserve,omitempty"`
+	Code   string `json:"code,omitempty"`
+	Pool   string `json:"pool,omitempty"`
+	Bancor string `json:"bancor,omitempty"`
 }
 
-func NewCommissionCoinNotSufficient(reserve string, pool string) *commissionCoinNotSufficient {
-	return &commissionCoinNotSufficient{Code: strconv.Itoa(int(CommissionCoinNotSufficient)), Pool: pool, Reserve: reserve}
+func NewCommissionCoinNotSufficient(bancor string, pool string) *commissionCoinNotSufficient {
+	return &commissionCoinNotSufficient{Code: strconv.Itoa(int(CommissionCoinNotSufficient)), Pool: pool, Bancor: bancor}
 }
 
 type wrongNonce struct {

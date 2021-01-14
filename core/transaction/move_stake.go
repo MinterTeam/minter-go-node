@@ -14,7 +14,7 @@ import (
 type MoveStakeData struct {
 	From, To types.Pubkey
 	Coin     types.CoinID
-	Value    *big.Int
+	Stake    *big.Int
 }
 
 func (data MoveStakeData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
@@ -44,11 +44,11 @@ func (data MoveStakeData) basicCheck(tx *Transaction, context *state.CheckState)
 	sender, _ := tx.Sender()
 
 	if waitlist := context.WaitList().Get(sender, data.From, data.Coin); waitlist != nil {
-		if data.Value.Cmp(waitlist.Value) == 1 {
+		if data.Stake.Cmp(waitlist.Value) == 1 {
 			return &Response{
 				Code: code.InsufficientWaitList,
 				Log:  "Insufficient amount at waitlist for sender account",
-				Info: EncodeError(code.NewInsufficientWaitList(waitlist.Value.String(), data.Value.String())),
+				Info: EncodeError(code.NewInsufficientWaitList(waitlist.Value.String(), data.Stake.String())),
 			}
 		}
 	} else {
@@ -62,28 +62,14 @@ func (data MoveStakeData) basicCheck(tx *Transaction, context *state.CheckState)
 			}
 		}
 
-		if stake.Cmp(data.Value) == -1 {
+		if stake.Cmp(data.Stake) == -1 {
 			return &Response{
 				Code: code.InsufficientStake,
 				Log:  "Insufficient stake for sender account",
-				Info: EncodeError(code.NewInsufficientStake(data.From.String(), sender.String(), data.Coin.String(), context.Coins().GetCoin(data.Coin).GetFullSymbol(), stake.String(), data.Value.String())),
+				Info: EncodeError(code.NewInsufficientStake(data.From.String(), sender.String(), data.Coin.String(), context.Coins().GetCoin(data.Coin).GetFullSymbol(), stake.String(), data.Stake.String())),
 			}
 		}
 	}
-
-	// value := big.NewInt(0).Set(data.Value)
-	// if waitList := context.WaitList().Get(sender, data.To, data.Coin); waitList != nil {
-	// 	value.Add(value, waitList.Value)
-	// }
-
-	// if !context.Candidates().IsDelegatorStakeSufficient(sender, data.To, data.Coin, value) {
-	// 	coin := context.Coins().GetCoin(data.Coin)
-	// 	return &Response{
-	// 		Code: code.TooLowStake,
-	// 		Log:  "Stake is too low",
-	// 		Info: EncodeError(code.NewTooLowStake(sender.String(), data.To.String(), value.String(), data.Coin.String(), coin.GetFullSymbol())),
-	// 	}
-	// }
 
 	return nil
 }
@@ -137,7 +123,7 @@ func (data MoveStakeData) Run(tx *Transaction, context state.Interface, rewardPo
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
 		moveToCandidateId := deliverState.Candidates.ID(data.To)
-		deliverState.FrozenFunds.AddFund(currentBlock+types.GetUnbondPeriod(), sender, data.From, deliverState.Candidates.ID(data.From), data.Coin, data.Value, &moveToCandidateId)
+		deliverState.FrozenFunds.AddFund(currentBlock+types.GetUnbondPeriod(), sender, data.From, deliverState.Candidates.ID(data.From), data.Coin, data.Stake, &moveToCandidateId)
 
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}

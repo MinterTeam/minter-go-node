@@ -2,8 +2,11 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
+	"github.com/MinterTeam/minter-go-node/core/state/coins"
+	"github.com/MinterTeam/minter-go-node/core/state/swap"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
@@ -72,54 +75,113 @@ func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinS
 		return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
 	}
 
-	value := new(big.Int).Sub(valueToSell, commission)
-	if !req.FromPool {
-		if !coinTo.BaseOrHasReserve() {
-			return nil, s.createError(status.New(codes.FailedPrecondition, "buy coin has not reserve"), transaction.EncodeError(code.NewCoinReserveNotSufficient(
-				coinTo.GetFullSymbol(),
-				coinTo.ID().String(),
-				coinTo.Reserve().String(),
-				"",
-			)))
+	valueToSell.Sub(valueToSell, commission)
+
+	var valueBancor, valuePool *big.Int
+	var errBancor, errPool error
+	value := big.NewInt(0)
+	if req.SwapFrom == pb.SwapFrom_bancor || req.SwapFrom == pb.SwapFrom_optimal {
+		valueBancor, errBancor = s.calcSellAllFromBancor(valueToSell, coinTo, coinFrom, commissionInBaseCoin)
+	}
+	if req.SwapFrom == pb.SwapFrom_pool || req.SwapFrom == pb.SwapFrom_optimal {
+		valuePool, errPool = s.calcSellAllFromPool(valueToSell, cState.Swap().GetSwapper(coinFrom.ID(), coinTo.ID()), coinFrom, coinTo)
+	}
+
+	switch req.SwapFrom {
+	case pb.SwapFrom_bancor:
+		if errBancor != nil {
+			return nil, errBancor
 		}
-		if !coinFrom.BaseOrHasReserve() {
-			return nil, s.createError(status.New(codes.FailedPrecondition, "sell coin has not reserve"), transaction.EncodeError(code.NewCoinReserveNotSufficient(
-				coinFrom.GetFullSymbol(),
-				coinFrom.ID().String(),
-				coinFrom.Reserve().String(),
-				"",
-			)))
+		value = valueBancor
+	case pb.SwapFrom_pool:
+		if errPool != nil {
+			return nil, errPool
+		}
+		value = valuePool
+	default:
+		if valueBancor != nil && valuePool != nil {
+			if valueBancor.Cmp(valuePool) == -1 {
+				value = valuePool
+			} else {
+				value = valueBancor
+			}
+			break
 		}
 
-		if !coinToSell.IsBaseCoin() {
-			value = formula.CalculateSaleReturn(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), valueToSell)
-			if errResp := transaction.CheckReserveUnderflow(coinFrom, value); errResp != nil {
-				return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
-			}
+		if valueBancor != nil {
+			value = valueBancor
+			break
 		}
-		value.Sub(value, commissionInBaseCoin)
-		if value.Sign() != 1 {
-			return nil, status.New(codes.FailedPrecondition, "Not enough coins to pay commission").Err()
+		if valuePool != nil {
+			value = valuePool
+			break
 		}
-		if !coinToBuy.IsBaseCoin() {
-			value = formula.CalculatePurchaseReturn(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), value)
-			if errResp := transaction.CheckForCoinSupplyOverflow(coinTo, value); errResp != nil {
-				return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
-			}
-		}
-	} else {
-		var err error
-		value, err = cState.Swap().PairCalculateBuyForSell(coinFrom.ID(), coinTo.ID(), valueToSell)
-		if err != nil {
-			return nil, status.Error(codes.FailedPrecondition, err.Error())
-		}
-		commissionPoolSwapper := cState.Swap().GetSwapper(coinFrom.ID(), coinTo.ID())
-		if errResp := transaction.CheckSwap(commissionPoolSwapper, coinFrom, coinTo, valueToSell, value, false); errResp != nil {
-			return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
-		}
+
+		respBancor, _ := status.FromError(errBancor)
+		respPool, _ := status.FromError(errPool)
+		return nil, s.createError(status.New(codes.FailedPrecondition, "not possible to exchange"),
+			transaction.EncodeError(code.NewCommissionCoinNotSufficient(respBancor.Message(), respPool.Message())))
 	}
 
 	return &pb.EstimateCoinSellAllResponse{
 		WillGet: value.String(),
 	}, nil
+}
+
+func (s *Service) calcSellAllFromPool(value *big.Int, swapChecker swap.EditableChecker, coinFrom *coins.Model, coinTo *coins.Model) (*big.Int, error) {
+	if !swapChecker.IsExist() {
+		return nil, s.createError(status.New(codes.NotFound, fmt.Sprintf("swap pair beetwen coins %s and %s not exists in pool", coinFrom.GetFullSymbol(), coinTo.GetFullSymbol())), transaction.EncodeError(code.NewPairNotExists(coinFrom.ID().String(), coinTo.ID().String())))
+	}
+	if errResp := transaction.CheckSwap(swapChecker, coinFrom, coinTo, value, swapChecker.CalculateBuyForSell(value), false); errResp != nil {
+		return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
+	}
+	return value, nil
+}
+
+func (s *Service) calcSellAllFromBancor(value *big.Int, coinTo *coins.Model, coinFrom *coins.Model, commissionInBaseCoin *big.Int) (*big.Int, error) {
+	if !coinTo.BaseOrHasReserve() {
+		return nil, s.createError(status.New(codes.FailedPrecondition, "buy coin has not reserve"), transaction.EncodeError(code.NewCoinHasNotReserve(
+			coinTo.GetFullSymbol(),
+			coinTo.ID().String(),
+		)))
+	}
+	if !coinFrom.BaseOrHasReserve() {
+		return nil, s.createError(status.New(codes.FailedPrecondition, "sell coin has not reserve"), transaction.EncodeError(code.NewCoinHasNotReserve(
+			coinFrom.GetFullSymbol(),
+			coinFrom.ID().String(),
+		)))
+	}
+
+	if !coinFrom.ID().IsBaseCoin() {
+		value = formula.CalculateSaleReturn(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), value)
+		if errResp := transaction.CheckReserveUnderflow(coinFrom, value); errResp != nil {
+			return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
+		}
+	}
+
+	if !coinTo.ID().IsBaseCoin() {
+		value = formula.CalculatePurchaseReturn(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), value)
+		if errResp := transaction.CheckForCoinSupplyOverflow(coinTo, value); errResp != nil {
+			return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
+		}
+	}
+
+	if !coinFrom.ID().IsBaseCoin() {
+		value = formula.CalculateSaleReturn(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), value)
+		if errResp := transaction.CheckReserveUnderflow(coinFrom, value); errResp != nil {
+			return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
+		}
+	}
+	value.Sub(value, commissionInBaseCoin)
+	if value.Sign() != 1 {
+		return nil, status.New(codes.FailedPrecondition, "Not enough coins to pay commission").Err()
+	}
+	if !coinTo.ID().IsBaseCoin() {
+		value = formula.CalculatePurchaseReturn(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), value)
+		if errResp := transaction.CheckForCoinSupplyOverflow(coinTo, value); errResp != nil {
+			return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
+		}
+	}
+
+	return value, nil
 }
