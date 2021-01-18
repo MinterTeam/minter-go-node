@@ -35,6 +35,7 @@ func (data RemoveSwapPoolData) basicCheck(tx *Transaction, context *state.CheckS
 		return &Response{
 			Code: code.PairNotExists,
 			Log:  "swap pool for pair not found",
+			Info: EncodeError(code.NewPairNotExists(data.Coin0.String(), data.Coin1.String())),
 		}
 	}
 

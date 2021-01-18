@@ -416,10 +416,10 @@ func TestBlockchain_FrozenFunds(t *testing.T) {
 	if events[0].Type() != eventsdb.TypeUnbondEvent {
 		t.Fatal("event is not StakeMoveEvent")
 	}
-	if events[0].AddressString() != developers.Address.String() {
+	if events[0].(eventsdb.Stake).AddressString() != developers.Address.String() {
 		t.Error("event address invalid")
 	}
-	if events[0].ValidatorPubKeyString() != pubkey.String() {
+	if events[0].(eventsdb.Stake).ValidatorPubKeyString() != pubkey.String() {
 		t.Error("event validator pubkey invalid")
 	}
 

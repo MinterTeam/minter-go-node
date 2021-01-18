@@ -187,8 +187,8 @@ func blockProposer(block *core_types.ResultBlock, totalValidators []*tmTypes.Val
 	return "", nil
 }
 
-func (s *Service) blockTransaction(block *core_types.ResultBlock, blockResults *core_types.ResultBlockResults, coins coins.RCoins) ([]*pb.BlockResponse_Transaction, error) {
-	txs := make([]*pb.BlockResponse_Transaction, 0, len(block.Block.Data.Txs))
+func (s *Service) blockTransaction(block *core_types.ResultBlock, blockResults *core_types.ResultBlockResults, coins coins.RCoins) ([]*pb.TransactionResponse, error) {
+	txs := make([]*pb.TransactionResponse, 0, len(block.Block.Data.Txs))
 
 	for i, rawTx := range block.Block.Data.Txs {
 		tx, _ := transaction.DecodeFromBytes(rawTx)
@@ -204,9 +204,11 @@ func (s *Service) blockTransaction(block *core_types.ResultBlock, blockResults *
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 
-		txs = append(txs, &pb.BlockResponse_Transaction{
+		txs = append(txs, &pb.TransactionResponse{
 			Hash:        strings.Title(fmt.Sprintf("Mt%x", rawTx.Hash())),
 			RawTx:       fmt.Sprintf("%x", []byte(rawTx)),
+			Height:      uint64(block.Block.Height),
+			Index:       uint64(i),
 			From:        sender.String(),
 			Nonce:       tx.Nonce,
 			GasPrice:    uint64(tx.GasPrice),

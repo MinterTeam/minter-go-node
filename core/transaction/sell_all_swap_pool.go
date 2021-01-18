@@ -33,6 +33,7 @@ func (data SellAllSwapPoolData) basicCheck(tx *Transaction, context *state.Check
 		return &Response{
 			Code: code.PairNotExists,
 			Log:  "swap pool not found",
+			Info: EncodeError(code.NewPairNotExists(data.CoinToSell.String(), data.CoinToBuy.String())),
 		}
 	}
 	return nil

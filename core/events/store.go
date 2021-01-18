@@ -36,7 +36,7 @@ type pendingEvents struct {
 func NewEventsStore(db db.DB) IEventsDB {
 	codec := amino.NewCodec()
 	codec.RegisterInterface((*Event)(nil), nil)
-	codec.RegisterInterface((*compactEvent)(nil), nil)
+	codec.RegisterInterface((*compact)(nil), nil)
 	codec.RegisterConcrete(&reward{}, "reward", nil)
 	codec.RegisterConcrete(&slash{}, "slash", nil)
 	codec.RegisterConcrete(&unbond{}, "unbond", nil)
@@ -90,15 +90,20 @@ func (store *eventsStore) LoadEvents(height uint32) Events {
 		return Events{}
 	}
 
-	var items []compactEvent
+	var items []compact
 	if err := store.cdc.UnmarshalBinaryBare(bytes, &items); err != nil {
 		panic(err)
 	}
 
 	resultEvents := make(Events, 0, len(items))
 	for _, compactEvent := range items {
-		event := compactEvent.compile(store.idPubKey[compactEvent.pubKeyID()], store.idAddress[compactEvent.addressID()])
-		resultEvents = append(resultEvents, event)
+		if stake, ok := compactEvent.(stake); ok {
+			resultEvents = append(resultEvents, stake.compile(store.idPubKey[stake.pubKeyID()], store.idAddress[stake.addressID()]))
+		} else if c, ok := compactEvent.(Event); ok {
+			resultEvents = append(resultEvents, c)
+		} else {
+			panic("unemployment event interface")
+		}
 	}
 
 	return resultEvents
@@ -109,11 +114,15 @@ func (store *eventsStore) CommitEvents() error {
 
 	store.pending.Lock()
 	defer store.pending.Unlock()
-	var data []compactEvent
+	var data []compact
 	for _, item := range store.pending.items {
-		pubKey := store.savePubKey(item.validatorPubKey())
-		address := store.saveAddress(item.address())
-		data = append(data, item.convert(pubKey, address))
+		if stake, ok := item.(Stake); ok {
+			pubKey := store.savePubKey(stake.validatorPubKey())
+			address := store.saveAddress(stake.address())
+			data = append(data, stake.convert(pubKey, address))
+			continue
+		}
+		data = append(data, item)
 	}
 
 	bytes, err := store.cdc.MarshalBinaryBare(data)

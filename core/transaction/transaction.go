@@ -51,6 +51,8 @@ const (
 	TypeBurnToken              TxType = 0x23
 	TypeCreateToken            TxType = 0x24
 	TypeRecreateToken          TxType = 0x25
+	TypePriceCommission        TxType = 0x26
+	TypeUpdateNetwork          TxType = 0x27
 
 	SigTypeSingle SigType = 0x01
 	SigTypeMulti  SigType = 0x02

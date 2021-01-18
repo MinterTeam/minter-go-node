@@ -25,13 +25,13 @@ func (s *Service) SwapPool(_ context.Context, req *pb.SwapPoolRequest) (*pb.Swap
 		return nil, status.Error(codes.NotFound, "pair not found")
 	}
 	return &pb.SwapPoolResponse{
-		Reserve0:    reserve0.String(),
-		Reserve1:    reserve1.String(),
-		TotalSupply: totalSupply.String(),
+		Amount0:   reserve0.String(),
+		Amount1:   reserve1.String(),
+		Liquidity: totalSupply.String(),
 	}, nil
 }
 
-func (s *Service) SwapPoolProvider(_ context.Context, req *pb.SwapPoolProviderRequest) (*pb.SwapPoolProviderResponse, error) {
+func (s *Service) SwapPoolProvider(_ context.Context, req *pb.SwapPoolProviderRequest) (*pb.SwapPoolResponse, error) {
 	if req.Coin0 == req.Coin1 {
 		return nil, status.Error(codes.InvalidArgument, "equal coins id")
 	}
@@ -54,9 +54,9 @@ func (s *Service) SwapPoolProvider(_ context.Context, req *pb.SwapPoolProviderRe
 	if balance == nil {
 		return nil, status.Error(codes.NotFound, "pair from provider not found")
 	}
-	return &pb.SwapPoolProviderResponse{
-		Amount0: amount0.String(),
-		Amount1: amount1.String(),
-		Balance: balance.String(),
+	return &pb.SwapPoolResponse{
+		Amount0:   amount0.String(),
+		Amount1:   amount1.String(),
+		Liquidity: balance.String(),
 	}, nil
 }

@@ -299,7 +299,7 @@ func (c *Coins) CreateToken(id types.CoinID, symbol types.CoinSymbol, name strin
 		isCreated:  true,
 		info: &Info{
 			Volume:  initialAmount,
-			Reserve: nil,
+			Reserve: big.NewInt(0),
 			isDirty: true,
 		},
 	}

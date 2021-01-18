@@ -25,6 +25,7 @@ const (
 	WrongHaltHeight              uint32 = 117
 	HaltAlreadyExists            uint32 = 118
 	CommissionCoinNotSufficient  uint32 = 119
+	VoiceExpired                 uint32 = 120
 
 	// coin creation
 	CoinHasNotReserve uint32 = 200
@@ -88,7 +89,7 @@ const (
 	InsufficientOutputAmount     uint32 = 707
 
 	// emission coin
-	CoinHasReserve  uint32 = 800
+	CoinIsNotToken  uint32 = 800
 	CoinNotMintable uint32 = 801
 	CoinNotBurnable uint32 = 802
 )
@@ -188,6 +189,16 @@ func NewPairNotExists(coin0 string, coin1 string) *pairNotExists {
 	return &pairNotExists{Code: strconv.Itoa(int(PairNotExists)), Coin0: coin0, Coin1: coin1}
 }
 
+type voiceExpired struct {
+	Code         string `json:"code,omitempty"`
+	Block        string `json:"block,omitempty"`
+	CurrentBlock string `json:"current_block,omitempty"`
+}
+
+func NewVoiceExpired(block string, current string) *voiceExpired {
+	return &voiceExpired{Code: strconv.Itoa(int(VoiceExpired)), Block: block, CurrentBlock: current}
+}
+
 type commissionCoinNotSufficient struct {
 	Code   string `json:"code,omitempty"`
 	Pool   string `json:"pool,omitempty"`
@@ -261,18 +272,18 @@ type coinHasNotReserve struct {
 	CoinId     string `json:"coin_id,omitempty"`
 }
 
-func NewCoinHasReserve(coinSymbol string, coinId string) *coinHasReserve {
-	return &coinHasReserve{Code: strconv.Itoa(int(CoinHasReserve)), CoinSymbol: coinSymbol, CoinId: coinId}
+func NewCoinHasNotReserve(coinSymbol string, coinId string) *coinHasNotReserve {
+	return &coinHasNotReserve{Code: strconv.Itoa(int(CoinHasNotReserve)), CoinSymbol: coinSymbol, CoinId: coinId}
 }
 
-type coinHasReserve struct {
+type coinInNotToken struct {
 	Code       string `json:"code,omitempty"`
 	CoinSymbol string `json:"coin_symbol,omitempty"`
 	CoinId     string `json:"coin_id,omitempty"`
 }
 
-func NewCoinHasNotReserve(coinSymbol string, coinId string) *coinHasNotReserve {
-	return &coinHasNotReserve{Code: strconv.Itoa(int(CoinHasNotReserve)), CoinSymbol: coinSymbol, CoinId: coinId}
+func NewCoinInNotToken(coinSymbol string, coinId string) *coinInNotToken {
+	return &coinInNotToken{Code: strconv.Itoa(int(CoinIsNotToken)), CoinSymbol: coinSymbol, CoinId: coinId}
 }
 
 type txTooLarge struct {
