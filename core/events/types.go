@@ -9,11 +9,13 @@ import (
 
 // Event type names
 const (
-	TypeRewardEvent    = "minter/RewardEvent"
-	TypeSlashEvent     = "minter/SlashEvent"
-	TypeUnbondEvent    = "minter/UnbondEvent"
-	TypeStakeKickEvent = "minter/StakeKickEvent"
-	TypeStakeMoveEvent = "minter/StakeMoveEvent"
+	TypeRewardEvent            = "minter/RewardEvent"
+	TypeSlashEvent             = "minter/SlashEvent"
+	TypeUnbondEvent            = "minter/UnbondEvent"
+	TypeStakeKickEvent         = "minter/StakeKickEvent"
+	TypeStakeMoveEvent         = "minter/StakeMoveEvent"
+	TypeUpdateNetworkEvent     = "minter/UpdateNetworkEvent"
+	TypeUpdateCommissionsEvent = "minter/UpdateCommissionsEvent"
 )
 
 func RegisterAminoEvents(codec *amino.Codec) {
@@ -28,21 +30,35 @@ func RegisterAminoEvents(codec *amino.Codec) {
 		TypeStakeKickEvent, nil)
 	codec.RegisterConcrete(StakeMoveEvent{},
 		TypeStakeMoveEvent, nil)
+	codec.RegisterConcrete(UpdateNetworkEvent{},
+		TypeUpdateNetworkEvent, nil)
+	codec.RegisterConcrete(CommissionEvent{},
+		TypeUpdateCommissionsEvent, nil)
 }
 
-type Event interface {
-	Type() string
+type Stake interface {
 	AddressString() string
 	ValidatorPubKeyString() string
 	validatorPubKey() types.Pubkey
 	address() types.Address
-	convert(pubKeyID uint16, addressID uint32) compactEvent
+	convert(pubKeyID uint16, addressID uint32) compact
 }
 
-type compactEvent interface {
+type Event interface {
+	Type() string
+	// event()
+}
+
+// type
+
+type stake interface {
 	compile(pubKey [32]byte, address [20]byte) Event
 	addressID() uint32
 	pubKeyID() uint16
+}
+
+type compact interface {
+	// compact()
 }
 
 type Events []Event
@@ -137,7 +153,7 @@ func (re *RewardEvent) validatorPubKey() types.Pubkey {
 	return re.ValidatorPubKey
 }
 
-func (re *RewardEvent) convert(pubKeyID uint16, addressID uint32) compactEvent {
+func (re *RewardEvent) convert(pubKeyID uint16, addressID uint32) compact {
 	result := new(reward)
 	result.AddressID = addressID
 	result.Role = NewRole(re.Role)
@@ -198,7 +214,7 @@ func (se *SlashEvent) validatorPubKey() types.Pubkey {
 	return se.ValidatorPubKey
 }
 
-func (se *SlashEvent) convert(pubKeyID uint16, addressID uint32) compactEvent {
+func (se *SlashEvent) convert(pubKeyID uint16, addressID uint32) compact {
 	result := new(slash)
 	result.AddressID = addressID
 	result.Coin = uint32(se.Coin)
@@ -259,7 +275,7 @@ func (ue *UnbondEvent) validatorPubKey() types.Pubkey {
 	return ue.ValidatorPubKey
 }
 
-func (ue *UnbondEvent) convert(pubKeyID uint16, addressID uint32) compactEvent {
+func (ue *UnbondEvent) convert(pubKeyID uint16, addressID uint32) compact {
 	result := new(unbond)
 	result.AddressID = addressID
 	result.Coin = uint32(ue.Coin)
@@ -323,7 +339,7 @@ func (ue *StakeMoveEvent) validatorPubKey() types.Pubkey {
 	return ue.ValidatorPubKey
 }
 
-func (ue *StakeMoveEvent) convert(pubKeyID uint16, addressID uint32) compactEvent {
+func (ue *StakeMoveEvent) convert(pubKeyID uint16, addressID uint32) compact {
 	result := new(move)
 	result.AddressID = addressID
 	result.Coin = uint32(ue.Coin)
@@ -385,7 +401,7 @@ func (ue *StakeKickEvent) validatorPubKey() types.Pubkey {
 	return ue.ValidatorPubKey
 }
 
-func (ue *StakeKickEvent) convert(pubKeyID uint16, addressID uint32) compactEvent {
+func (ue *StakeKickEvent) convert(pubKeyID uint16, addressID uint32) compact {
 	result := new(kick)
 	result.AddressID = addressID
 	result.Coin = uint32(ue.Coin)
@@ -393,4 +409,23 @@ func (ue *StakeKickEvent) convert(pubKeyID uint16, addressID uint32) compactEven
 	result.Amount = bi.Bytes()
 	result.PubKeyID = pubKeyID
 	return result
+}
+
+type CommissionEvent struct {
+	// todo: price fields
+	Coin   uint64 `json:"coin"`
+	Height uint64 `json:"height"`
+}
+
+func (ce *CommissionEvent) Type() string {
+	return TypeUpdateCommissionsEvent
+}
+
+type UpdateNetworkEvent struct {
+	Version string `json:"version"`
+	Height  uint64 `json:"height"`
+}
+
+func (un *UpdateNetworkEvent) Type() string {
+	return TypeUpdateNetworkEvent
 }

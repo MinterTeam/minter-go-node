@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"github.com/MinterTeam/minter-go-node/core/events"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	_struct "github.com/golang/protobuf/ptypes/struct"
 	"google.golang.org/grpc/codes"
@@ -16,26 +17,31 @@ func (s *Service) Events(ctx context.Context, req *pb.EventsRequest) (*pb.Events
 	}
 
 	height := uint32(req.Height)
-	events := s.blockchain.GetEventsDB().LoadEvents(height)
-	resultEvents := make([]*_struct.Struct, 0, len(events))
-	for _, event := range events {
+	loadEvents := s.blockchain.GetEventsDB().LoadEvents(height)
+	resultEvents := make([]*_struct.Struct, 0, len(loadEvents))
+	for _, event := range loadEvents {
 
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
 			return nil, timeoutStatus.Err()
 		}
 
-		var find = true
-		for _, s := range req.Search {
-			if event.AddressString() == s || event.ValidatorPubKeyString() == s {
-				find = true
-				break
+		if len(req.Search) > 0 {
+			if e, ok := event.(events.Stake); ok {
+				var find = true
+				for _, s := range req.Search {
+					if e.AddressString() == s || e.ValidatorPubKeyString() == s {
+						find = true
+						break
+					}
+					find = false
+				}
+				if !find {
+					continue
+				}
+			} else {
+				continue
 			}
-			find = false
 		}
-		if !find {
-			continue
-		}
-
 		marshalJSON, err := s.cdc.MarshalJSON(event)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, err.Error())

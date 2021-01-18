@@ -194,7 +194,7 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 			Value: d.Value.String(),
 		}
 	case *transaction.AddSwapPoolData:
-		m = &pb.AddSwapPoolData{
+		m = &pb.AddLiquidityData{
 			Coin0: &pb.Coin{
 				Id:     uint64(d.Coin0),
 				Symbol: coins.GetCoin(d.Coin0).GetFullSymbol(),
@@ -207,7 +207,7 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 			MaximumVolume1: d.MaximumVolume1.String(),
 		}
 	case *transaction.RemoveSwapPoolData:
-		m = &pb.RemoveSwapPoolData{
+		m = &pb.RemoveLiquidityData{
 			Coin0: &pb.Coin{
 				Id:     uint64(d.Coin0),
 				Symbol: coins.GetCoin(d.Coin0).GetFullSymbol(),
@@ -306,6 +306,23 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 				Symbol: coins.GetCoin(d.Coin).GetFullSymbol(),
 			},
 			Stake: d.Stake.String(),
+		}
+	case *transaction.PriceCommissionData:
+		m = &pb.PriceCommissionData{
+			Send: d.Send.String(),
+			Coin: &pb.Coin{
+				Id:     uint64(d.Coin),
+				Symbol: coins.GetCoin(d.Coin).GetFullSymbol(),
+			},
+			PubKey: d.PubKey.String(),
+			Height: d.Height,
+		}
+
+	case *transaction.UpdateNetworkData:
+		m = &pb.UpdateNetworkData{
+			PubKey:  d.PubKey.String(),
+			Height:  d.Height,
+			Version: d.Version,
 		}
 	default:
 		return nil, errors.New("unknown tx type")

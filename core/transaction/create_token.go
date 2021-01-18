@@ -47,10 +47,6 @@ func (data CreateTokenData) basicCheck(tx *Transaction, context *state.CheckStat
 		}
 	}
 
-	if (data.InitialAmount.Cmp(data.MaxSupply) != 0) != data.Mintable {
-		// todo
-	}
-
 	if data.InitialAmount.Cmp(minTokenSupply) == -1 || data.InitialAmount.Cmp(data.MaxSupply) == 1 {
 		return &Response{
 			Code: code.WrongCoinSupply,

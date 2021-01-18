@@ -70,6 +70,10 @@ func getData(txType TxType) (Data, bool) {
 		return &CreateTokenData{}, true
 	case TypeRecreateToken:
 		return &RecreateTokenData{}, true
+	case TypePriceCommission:
+		return &PriceCommissionData{}, true
+	case TypeUpdateNetwork:
+		return &UpdateNetworkData{}, true
 	default:
 		return nil, false
 	}

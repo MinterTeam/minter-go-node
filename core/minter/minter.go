@@ -121,6 +121,10 @@ func (blockchain *Blockchain) InitChain(req abciTypes.RequestInitChain) abciType
 	if err := blockchain.stateDeliver.Import(genesisState); err != nil {
 		panic(err)
 	}
+	_, err := blockchain.stateDeliver.Commit()
+	if err != nil {
+		panic(err)
+	}
 
 	vals := blockchain.updateValidators()
 
@@ -140,8 +144,8 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 	height := uint64(req.Header.Height)
 
 	blockchain.StatisticData().PushStartBlock(&statistics.StartRequest{Height: int64(height), Now: time.Now(), HeaderTime: req.Header.Time})
-
 	blockchain.stateDeliver.Lock()
+	blockchain.setFreeCheckState()
 
 	// compute max gas
 	blockchain.updateBlocksTimeDelta(height, 3)
@@ -570,6 +574,21 @@ func (blockchain *Blockchain) resetCheckState() {
 	defer blockchain.lock.Unlock()
 
 	blockchain.stateCheck = state.NewCheckState(blockchain.stateDeliver)
+}
+
+func (blockchain *Blockchain) setFreeCheckState() {
+	blockchain.lock.Lock()
+	defer blockchain.lock.Unlock()
+
+	if blockchain.Height() == 0 {
+		return
+	}
+
+	var err error
+	blockchain.stateCheck, err = state.NewCheckStateAtHeight(blockchain.Height(), blockchain.storages.StateDB())
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (blockchain *Blockchain) updateBlocksTimeDelta(height uint64, count int64) {

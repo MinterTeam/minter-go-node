@@ -235,10 +235,12 @@ func (s *Service) TestBlock(context.Context, *empty.Empty) (*pb.BlockResponse, e
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	transactions := []*pb.BlockResponse_Transaction{
+	transactions := []*pb.TransactionResponse{
 		{
 			Hash:        "Mt88d02883c07a1dfc5ff5b2d27eacfd0d82706ba113f2e77a42a1a3d3c369c249",
 			RawTx:       "f8700102018001a0df0194a83d8ebbe688b853775a698683b77afa305a661e880de0b6b3a7640000808001b845f8431ca0acde2fa28bf063bffb14f667a2219b641205bd67a5bc6b664cbd44a62504c897a03649ae0ae4881426a95ccc80866c259032f22811777777c7327e9b99f766ad00",
+			Height:      123,
+			Index:       1,
 			From:        "Mx0c5d5f646556d663e1eaf87150d987b9f2b858b6",
 			Nonce:       1,
 			GasPrice:    1,
