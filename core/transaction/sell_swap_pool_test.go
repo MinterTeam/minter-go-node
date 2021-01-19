@@ -27,7 +27,7 @@ func TestSellSwapPoolTx_0(t *testing.T) {
 	cState.Accounts.SubBalance(types.Address{}, coin1, helpers.BipToPip(big.NewInt(100000)))
 	cState.Accounts.AddBalance(addr, coin1, helpers.BipToPip(big.NewInt(100000)))
 	{
-		data := AddSwapPoolData{
+		data := AddLiquidityData{
 			Coin0:          coin,
 			Volume0:        helpers.BipToPip(big.NewInt(100)),
 			Coin1:          coin1,
@@ -45,7 +45,7 @@ func TestSellSwapPoolTx_0(t *testing.T) {
 			GasPrice:      1,
 			ChainID:       types.CurrentChainID,
 			GasCoin:       types.GetBaseCoinID(),
-			Type:          TypeAddSwapPool,
+			Type:          TypeAddLiquidity,
 			Data:          encodedData,
 			SignatureType: SigTypeSingle,
 		}
@@ -133,7 +133,7 @@ func TestSellSwapPoolTx_1(t *testing.T) {
 	cState.Accounts.SubBalance(types.Address{}, coin1, helpers.BipToPip(big.NewInt(100000)))
 	cState.Accounts.AddBalance(addr, coin1, helpers.BipToPip(big.NewInt(100000)))
 	{
-		data := AddSwapPoolData{
+		data := AddLiquidityData{
 			Coin0:          coin,
 			Volume0:        helpers.BipToPip(big.NewInt(10)),
 			Coin1:          coin1,
@@ -151,7 +151,7 @@ func TestSellSwapPoolTx_1(t *testing.T) {
 			GasPrice:      1,
 			ChainID:       types.CurrentChainID,
 			GasCoin:       types.GetBaseCoinID(),
-			Type:          TypeAddSwapPool,
+			Type:          TypeAddLiquidity,
 			Data:          encodedData,
 			SignatureType: SigTypeSingle,
 		}
@@ -283,7 +283,7 @@ func TestSellSwapPoolTx_2(t *testing.T) {
 	cState.Accounts.SubBalance(types.Address{}, coin1, helpers.BipToPip(big.NewInt(100000)))
 	cState.Accounts.AddBalance(addr, coin1, helpers.BipToPip(big.NewInt(100000)))
 	{
-		data := AddSwapPoolData{
+		data := AddLiquidityData{
 			Coin0:          coin,
 			Volume0:        new(big.Int).Add(new(big.Int).Mul(big.NewInt(1000), big.NewInt(1e18)), big.NewInt(0)),
 			Coin1:          coin1,
@@ -301,7 +301,7 @@ func TestSellSwapPoolTx_2(t *testing.T) {
 			GasPrice:      1,
 			ChainID:       types.CurrentChainID,
 			GasCoin:       types.GetBaseCoinID(),
-			Type:          TypeAddSwapPool,
+			Type:          TypeAddLiquidity,
 			Data:          encodedData,
 			SignatureType: SigTypeSingle,
 		}
@@ -389,7 +389,7 @@ func TestSellSwapPoolTx_3(t *testing.T) {
 	cState.Accounts.SubBalance(types.Address{}, coin1, helpers.BipToPip(big.NewInt(100000)))
 	cState.Accounts.AddBalance(addr, coin1, helpers.BipToPip(big.NewInt(100000)))
 	{
-		data := AddSwapPoolData{
+		data := AddLiquidityData{
 			Coin0:          coin,
 			Volume0:        new(big.Int).Add(new(big.Int).Mul(big.NewInt(5), big.NewInt(1e18)), big.NewInt(0)),
 			Coin1:          coin1,
@@ -407,7 +407,7 @@ func TestSellSwapPoolTx_3(t *testing.T) {
 			GasPrice:      1,
 			ChainID:       types.CurrentChainID,
 			GasCoin:       types.GetBaseCoinID(),
-			Type:          TypeAddSwapPool,
+			Type:          TypeAddLiquidity,
 			Data:          encodedData,
 			SignatureType: SigTypeSingle,
 		}
@@ -495,7 +495,7 @@ func TestSellSwapPoolTx_4(t *testing.T) {
 	cState.Accounts.SubBalance(types.Address{}, coin1, helpers.BipToPip(big.NewInt(100000)))
 	cState.Accounts.AddBalance(addr, coin1, helpers.BipToPip(big.NewInt(100000)))
 	{
-		data := AddSwapPoolData{
+		data := AddLiquidityData{
 			Coin0:          coin,
 			Volume0:        new(big.Int).Add(new(big.Int).Mul(big.NewInt(10), big.NewInt(1e18)), big.NewInt(0)),
 			Coin1:          coin1,
@@ -513,7 +513,7 @@ func TestSellSwapPoolTx_4(t *testing.T) {
 			GasPrice:      1,
 			ChainID:       types.CurrentChainID,
 			GasCoin:       types.GetBaseCoinID(),
-			Type:          TypeAddSwapPool,
+			Type:          TypeAddLiquidity,
 			Data:          encodedData,
 			SignatureType: SigTypeSingle,
 		}

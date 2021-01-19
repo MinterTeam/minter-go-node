@@ -193,7 +193,7 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 			},
 			Value: d.Value.String(),
 		}
-	case *transaction.AddSwapPoolData:
+	case *transaction.AddLiquidityData:
 		m = &pb.AddLiquidityData{
 			Coin0: &pb.Coin{
 				Id:     uint64(d.Coin0),
@@ -206,7 +206,7 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 			Volume0:        d.Volume0.String(),
 			MaximumVolume1: d.MaximumVolume1.String(),
 		}
-	case *transaction.RemoveSwapPoolData:
+	case *transaction.RemoveLiquidity:
 		m = &pb.RemoveLiquidityData{
 			Coin0: &pb.Coin{
 				Id:     uint64(d.Coin0),

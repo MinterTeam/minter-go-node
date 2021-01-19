@@ -48,10 +48,10 @@ func getData(txType TxType) (Data, bool) {
 		return &PriceVoteData{}, true
 	case TypeEditCandidatePublicKey:
 		return &EditCandidatePublicKeyData{}, true
-	case TypeAddSwapPool:
-		return &AddSwapPoolData{}, true
-	case TypeRemoveSwapPool:
-		return &RemoveSwapPoolData{}, true
+	case TypeAddLiquidity:
+		return &AddLiquidityData{}, true
+	case TypeRemoveLiquidity:
+		return &RemoveLiquidity{}, true
 	case TypeSellSwapPool:
 		return &SellSwapPoolData{}, true
 	case TypeBuySwapPool:
@@ -77,14 +77,6 @@ func getData(txType TxType) (Data, bool) {
 	default:
 		return nil, false
 	}
-}
-
-type Decoder struct {
-	registeredTypes map[TxType]Data
-}
-
-func (decoder *Decoder) RegisterType(t TxType, d Data) {
-	decoder.registeredTypes[t] = d
 }
 
 func DecodeFromBytes(buf []byte) (*Transaction, error) {

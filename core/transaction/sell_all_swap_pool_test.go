@@ -27,7 +27,7 @@ func TestSellAllWithCommissionFromBancor(t *testing.T) {
 	cState.Accounts.SubBalance(types.Address{}, coin1, helpers.BipToPip(big.NewInt(100000)))
 	cState.Accounts.AddBalance(addr, coin1, helpers.BipToPip(big.NewInt(100000)))
 	{
-		data := AddSwapPoolData{
+		data := AddLiquidityData{
 			Coin0:          coin,
 			Volume0:        helpers.BipToPip(big.NewInt(50000)),
 			Coin1:          coin1,
@@ -45,7 +45,7 @@ func TestSellAllWithCommissionFromBancor(t *testing.T) {
 			GasPrice:      1,
 			ChainID:       types.CurrentChainID,
 			GasCoin:       types.GetBaseCoinID(),
-			Type:          TypeAddSwapPool,
+			Type:          TypeAddLiquidity,
 			Data:          encodedData,
 			SignatureType: SigTypeSingle,
 		}
@@ -132,7 +132,7 @@ func TestSellAllWithCommissionFromPool(t *testing.T) {
 	cState.Accounts.SubBalance(types.Address{}, coin1, helpers.BipToPip(big.NewInt(100000)))
 	cState.Accounts.AddBalance(addr, coin1, helpers.BipToPip(big.NewInt(100000)))
 	{
-		data := AddSwapPoolData{
+		data := AddLiquidityData{
 			Coin0:          coin,
 			Volume0:        helpers.BipToPip(big.NewInt(50000)),
 			Coin1:          coin1,
@@ -150,7 +150,7 @@ func TestSellAllWithCommissionFromPool(t *testing.T) {
 			GasPrice:      1,
 			ChainID:       types.CurrentChainID,
 			GasCoin:       types.GetBaseCoinID(),
-			Type:          TypeAddSwapPool,
+			Type:          TypeAddLiquidity,
 			Data:          encodedData,
 			SignatureType: SigTypeSingle,
 		}
@@ -176,7 +176,7 @@ func TestSellAllWithCommissionFromPool(t *testing.T) {
 		}
 	}
 	{
-		data := AddSwapPoolData{
+		data := AddLiquidityData{
 			Coin0:          coin,
 			Volume0:        helpers.BipToPip(big.NewInt(1000)),
 			Coin1:          types.GetBaseCoinID(),
@@ -194,7 +194,7 @@ func TestSellAllWithCommissionFromPool(t *testing.T) {
 			GasPrice:      1,
 			ChainID:       types.CurrentChainID,
 			GasCoin:       types.GetBaseCoinID(),
-			Type:          TypeAddSwapPool,
+			Type:          TypeAddLiquidity,
 			Data:          encodedData,
 			SignatureType: SigTypeSingle,
 		}
