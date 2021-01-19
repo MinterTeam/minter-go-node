@@ -60,7 +60,7 @@ func TestSellSwapPoolTx_0(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+		response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
@@ -104,7 +104,7 @@ func TestSellSwapPoolTx_0(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+		response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
@@ -166,7 +166,7 @@ func TestSellSwapPoolTx_1(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+		response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
@@ -210,7 +210,7 @@ func TestSellSwapPoolTx_1(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+		response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
@@ -254,7 +254,7 @@ func TestSellSwapPoolTx_1(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+		response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
@@ -316,7 +316,7 @@ func TestSellSwapPoolTx_2(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+		response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
@@ -360,7 +360,7 @@ func TestSellSwapPoolTx_2(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+		response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
@@ -422,7 +422,7 @@ func TestSellSwapPoolTx_3(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+		response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
@@ -466,7 +466,7 @@ func TestSellSwapPoolTx_3(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+		response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
@@ -528,7 +528,7 @@ func TestSellSwapPoolTx_4(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+		response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
@@ -572,7 +572,7 @@ func TestSellSwapPoolTx_4(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+		response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)

@@ -6,6 +6,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
+	"github.com/MinterTeam/minter-go-node/core/state/commission"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
@@ -61,6 +62,14 @@ func (data PriceCommissionData) basicCheck(tx *Transaction, context *state.Check
 			Code: code.VoiceExpired,
 			Log:  "voice is produced for the past state",
 			Info: EncodeError(code.NewVoiceExpired(strconv.Itoa(int(block)), strconv.Itoa(int(data.Height)))),
+		}
+	}
+
+	if context.Commission().IsVoteExists(data.Height, data.PubKey) {
+		return &Response{
+			Code: code.VoiceAlreadyExists,
+			Log:  "Commission price vote with such public key and height already exists",
+			Info: EncodeError(code.NewVoiceAlreadyExists(strconv.FormatUint(data.Height, 10), data.GetPubKey().String())),
 		}
 	}
 
@@ -130,6 +139,9 @@ func (data PriceCommissionData) Run(tx *Transaction, context state.Interface, re
 		}
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
+
+		deliverState.Commission.AddVoice(data.Height, data.PubKey, data.price().Encode())
+
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 	}
 
@@ -145,5 +157,44 @@ func (data PriceCommissionData) Run(tx *Transaction, context state.Interface, re
 		GasUsed:   tx.Gas(),
 		GasWanted: tx.Gas(),
 		Tags:      tags,
+	}
+}
+
+func (data PriceCommissionData) price() *commission.Price {
+	return &commission.Price{
+		Send:                   data.Send,
+		SellCoin:               data.SellCoin,
+		SellAllCoin:            data.SellAllCoin,
+		BuyCoin:                data.BuyCoin,
+		CreateCoin:             data.CreateCoin,
+		DeclareCandidacy:       data.DeclareCandidacy,
+		Delegate:               data.Delegate,
+		Unbond:                 data.Unbond,
+		RedeemCheck:            data.RedeemCheck,
+		SetCandidateOnline:     data.SetCandidateOnline,
+		SetCandidateOffline:    data.SetCandidateOffline,
+		CreateMultisig:         data.CreateMultisig,
+		Multisend:              data.Multisend,
+		EditCandidate:          data.EditCandidate,
+		SetHaltBlock:           data.SetHaltBlock,
+		RecreateCoin:           data.RecreateCoin,
+		EditCoinOwner:          data.EditCoinOwner,
+		EditMultisig:           data.EditMultisig,
+		PriceVote:              data.PriceVote,
+		EditCandidatePublicKey: data.EditCandidatePublicKey,
+		AddLiquidity:           data.AddLiquidity,
+		RemoveLiquidity:        data.RemoveLiquidity,
+		SellSwapPool:           data.SellSwapPool,
+		BuySwapPool:            data.BuySwapPool,
+		SellAllSwapPool:        data.SellAllSwapPool,
+		EditCommission:         data.EditCommission,
+		MoveStake:              data.MoveStake,
+		MintToken:              data.MintToken,
+		BurnToken:              data.BurnToken,
+		CreateToken:            data.CreateToken,
+		RecreateToken:          data.RecreateToken,
+		PriceCommission:        data.PriceCommission,
+		UpdateNetwork:          data.UpdateNetwork,
+		Coin:                   data.Coin,
 	}
 }

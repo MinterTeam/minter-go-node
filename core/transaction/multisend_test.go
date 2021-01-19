@@ -61,7 +61,7 @@ func TestMultisendTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error: %s", response.Log)
@@ -119,7 +119,7 @@ func TestMultisendTxToInvalidDataLength(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.InvalidMultisendData {
 		t.Fatalf("Response code is not %d. Error %s", code.InvalidMultisendData, response.Log)
 	}
@@ -149,7 +149,7 @@ func TestMultisendTxToInvalidDataLength(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response = RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.InvalidMultisendData {
 		t.Fatalf("Response code is not %d. Error %s", code.InvalidMultisendData, response.Log)
 	}
@@ -203,7 +203,7 @@ func TestMultisendTxToInsufficientFunds(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.InsufficientFunds {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
@@ -260,7 +260,7 @@ func TestMultisendToInvalidCoin(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.CoinNotExists {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
 	}
@@ -317,7 +317,7 @@ func TestMultisendToInsufficientReserve(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.CoinNotExists {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
 	}
@@ -377,7 +377,7 @@ func TestMultisendTxToGasCoinReserveUnderflow(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.CommissionCoinNotSufficient {
 		t.Fatalf("Response code is not %d. Error %s", code.CommissionCoinNotSufficient, response.Log)
 	}

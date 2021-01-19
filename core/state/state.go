@@ -11,6 +11,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/state/checker"
 	"github.com/MinterTeam/minter-go-node/core/state/checks"
 	"github.com/MinterTeam/minter-go-node/core/state/coins"
+	"github.com/MinterTeam/minter-go-node/core/state/commission"
 	"github.com/MinterTeam/minter-go-node/core/state/frozenfunds"
 	"github.com/MinterTeam/minter-go-node/core/state/halts"
 	"github.com/MinterTeam/minter-go-node/core/state/swap"
@@ -88,6 +89,10 @@ func (cs *CheckState) Swap() swap.RSwap {
 	return cs.state.Swap
 }
 
+func (cs *CheckState) Commission() commission.RCommission {
+	return cs.state.Commission
+}
+
 type State struct {
 	App            *app.App
 	Validators     *validators.Validators
@@ -100,12 +105,13 @@ type State struct {
 	Checker        *checker.Checker
 	Waitlist       *waitlist.WaitList
 	Swap           *swap.Swap
+	Commission     *commission.Commission
 	db             db.DB
 	events         eventsdb.IEventsDB
 	tree           tree.MTree
 	keepLastStates int64
-	bus            *bus.Bus
 
+	bus    *bus.Bus
 	lock   sync.RWMutex
 	height int64
 }
@@ -190,6 +196,7 @@ func (s *State) Commit() ([]byte, error) {
 		s.Halts,
 		s.Waitlist,
 		s.Swap,
+		s.Commission,
 	)
 	if err != nil {
 		return hash, err
@@ -342,6 +349,8 @@ func newStateForTree(immutableTree *iavl.ImmutableTree, events eventsdb.IEventsD
 
 	swap := swap.New(stateBus, immutableTree)
 
+	commission := commission.NewCommission(immutableTree)
+
 	state := &State{
 		Validators:  validatorsState,
 		App:         appState,
@@ -354,6 +363,7 @@ func newStateForTree(immutableTree *iavl.ImmutableTree, events eventsdb.IEventsD
 		Halts:       haltsState,
 		Waitlist:    waitlistState,
 		Swap:        swap,
+		Commission:  commission,
 
 		height:         immutableTree.Version(),
 		bus:            stateBus,

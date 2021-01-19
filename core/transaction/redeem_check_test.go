@@ -109,7 +109,7 @@ func TestRedeemCheckTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
@@ -225,7 +225,7 @@ func TestRedeemCheckTxToDecodeError(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	txResponse := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	txResponse := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 	if txResponse.Code != code.DecodeError {
 		t.Fatalf("Response code is not %d. Error %s", code.DecodeError, response.Log)
 	}
@@ -324,7 +324,7 @@ func TestRedeemCheckTxToHighGasPrice(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.TooHighGasPrice {
 		t.Fatalf("Response code is not %d. Error %s", code.TooHighGasPrice, response.Log)
 	}
@@ -423,7 +423,7 @@ func TestRedeemCheckTxToWrongChainID(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.WrongChainID {
 		t.Fatalf("Response code is not %d. Error %s", code.WrongChainID, response.Log)
 	}
@@ -522,7 +522,7 @@ func TestRedeemCheckTxToNonceLength(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.TooLongNonce {
 		t.Fatalf("Response code is not %d. Error %s", code.TooLongNonce, response.Log)
 	}
@@ -621,7 +621,7 @@ func TestRedeemCheckTxToCheckData(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.CoinNotExists {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
 	}
@@ -664,7 +664,7 @@ func TestRedeemCheckTxToCheckData(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response = RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.CoinNotExists {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
 	}
@@ -704,7 +704,7 @@ func TestRedeemCheckTxToCheckData(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response = RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.WrongGasCoin {
 		t.Fatalf("Response code is not %d. Error %s", code.WrongGasCoin, response.Log)
 	}
@@ -743,7 +743,7 @@ func TestRedeemCheckTxToCheckData(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response = RunTx(cState, encodedTx, big.NewInt(0), 100, &sync.Map{}, 0)
+	response = RunTx(cState, encodedTx, nil, big.NewInt(0), 100, &sync.Map{}, 0)
 	if response.Code != code.CheckExpired {
 		t.Fatalf("Response code is not %d. Error %s", code.CheckExpired, response.Log)
 	}
@@ -844,7 +844,7 @@ func TestRedeemCheckTxToUsed(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.CheckUsed {
 		t.Fatalf("Response code is not %d. Error %s", code.CheckUsed, response.Log)
 	}
@@ -941,7 +941,7 @@ func TestRedeemCheckTxToInsufficientFunds(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.InsufficientFunds {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
@@ -1039,7 +1039,7 @@ func TestRedeemCheckTxToCoinReserveUnderflow(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.CommissionCoinNotSufficient {
 		t.Fatalf("Response code is not %d. Error %s", code.CommissionCoinNotSufficient, response.Log)
 	}
@@ -1136,7 +1136,7 @@ func TestRedeemCheckTxToInsufficientFundsForCheckCoin(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.InsufficientFunds {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
@@ -1236,7 +1236,7 @@ func TestRedeemCheckTxToInsufficientFundsForCheckGasCoin(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.InsufficientFunds {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}

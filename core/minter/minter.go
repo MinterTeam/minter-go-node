@@ -10,6 +10,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/rewards"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/state/candidates"
+	"github.com/MinterTeam/minter-go-node/core/state/commission"
 	"github.com/MinterTeam/minter-go-node/core/statistics"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
@@ -64,9 +65,10 @@ type Blockchain struct {
 
 	lock sync.RWMutex
 
-	haltHeight uint64
-	cfg        *config.Config
-	storages   *utils.Storage
+	haltHeight  uint64
+	cfg         *config.Config
+	storages    *utils.Storage
+	commissions *commission.Price
 }
 
 // NewMinterBlockchain creates Minter Blockchain instance, should be only called once
@@ -175,6 +177,13 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 
 	if blockchain.isApplicationHalted(height) {
 		panic(fmt.Sprintf("Application halted at height %d", height))
+	}
+
+	if prices := blockchain.CheckUpdateCommissionsBlock(height); len(prices) != 0 {
+		blockchain.stateDeliver.Commission.SetNewCommissions(prices)
+	}
+	if blockchain.commissions == nil {
+		blockchain.commissions = blockchain.stateDeliver.Commission.GetCommissions()
 	}
 
 	// give penalty to Byzantine validators
@@ -403,7 +412,7 @@ func (blockchain *Blockchain) Info(_ abciTypes.RequestInfo) (resInfo abciTypes.R
 
 // DeliverTx deliver a tx for full processing
 func (blockchain *Blockchain) DeliverTx(req abciTypes.RequestDeliverTx) abciTypes.ResponseDeliverTx {
-	response := transaction.RunTx(blockchain.stateDeliver, req.Tx, blockchain.rewards, blockchain.Height(), &sync.Map{}, 0)
+	response := transaction.RunTx(blockchain.stateDeliver, req.Tx, blockchain.commissions, blockchain.rewards, blockchain.Height(), &sync.Map{}, 0)
 
 	return abciTypes.ResponseDeliverTx{
 		Code:      response.Code,
@@ -423,7 +432,7 @@ func (blockchain *Blockchain) DeliverTx(req abciTypes.RequestDeliverTx) abciType
 
 // CheckTx validates a tx for the mempool
 func (blockchain *Blockchain) CheckTx(req abciTypes.RequestCheckTx) abciTypes.ResponseCheckTx {
-	response := transaction.RunTx(blockchain.CurrentState(), req.Tx, nil, blockchain.height, blockchain.currentMempool, blockchain.MinGasPrice())
+	response := transaction.RunTx(blockchain.CurrentState(), req.Tx, blockchain.commissions, nil, blockchain.height, blockchain.currentMempool, blockchain.MinGasPrice())
 
 	return abciTypes.ResponseCheckTx{
 		Code:      response.Code,
@@ -693,7 +702,7 @@ func (blockchain *Blockchain) isApplicationHalted(height uint64) bool {
 			totalPower.Add(totalPower, val.GetTotalBipStake())
 		}
 
-		if totalPower.Cmp(types.Big0) == 0 {
+		if totalPower.Sign() == 0 {
 			totalPower = big.NewInt(1)
 		}
 
@@ -708,6 +717,51 @@ func (blockchain *Blockchain) isApplicationHalted(height uint64) bool {
 	}
 
 	return false
+}
+
+func (blockchain *Blockchain) CheckUpdateCommissionsBlock(height uint64) []byte {
+	if blockchain.haltHeight > 0 && height >= blockchain.haltHeight {
+		return nil
+	}
+
+	commissions := blockchain.stateDeliver.Commission.GetVotes(height)
+	if len(commissions) == 0 {
+		return nil
+	}
+	// calculate total power of validators
+	vals := blockchain.stateDeliver.Validators.GetValidators()
+	totalPower, totalVotedPower := big.NewInt(0), big.NewInt(0)
+
+	for _, prices := range commissions {
+		for _, val := range vals {
+			// skip if candidate is not present
+			if val.IsToDrop() || blockchain.validatorsStatuses[val.GetAddress()] != ValidatorPresent {
+				continue
+			}
+
+			for _, vote := range prices.Votes {
+				if vote == val.PubKey {
+					totalVotedPower.Add(totalVotedPower, val.GetTotalBipStake())
+				}
+			}
+			totalPower.Add(totalPower, val.GetTotalBipStake())
+		}
+
+		if totalPower.Sign() == 0 {
+			totalPower = big.NewInt(1)
+		}
+
+		votingResult := new(big.Float).Quo(
+			new(big.Float).SetInt(totalVotedPower),
+			new(big.Float).SetInt(totalPower),
+		)
+
+		if votingResult.Cmp(big.NewFloat(votingPowerConsensus)) == 1 {
+			return []byte(prices.Price)
+		}
+	}
+
+	return nil
 }
 
 func GetDbOpts(memLimit int) *opt.Options {

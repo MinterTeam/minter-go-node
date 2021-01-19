@@ -26,9 +26,9 @@ func (data SetHaltBlockData) GetPubKey() types.Pubkey {
 func (data SetHaltBlockData) basicCheck(tx *Transaction, context *state.CheckState, block uint64) *Response {
 	if data.Height < block {
 		return &Response{
-			Code: code.WrongHaltHeight,
+			Code: code.VoiceExpired,
 			Log:  fmt.Sprintf("Halt height should be equal or bigger than current: %d", block),
-			Info: EncodeError(code.NewWrongHaltHeight(strconv.FormatUint(data.Height, 10), data.GetPubKey().String())),
+			Info: EncodeError(code.NewVoiceExpired(strconv.FormatUint(data.Height, 10), data.GetPubKey().String())),
 		}
 	}
 
@@ -36,7 +36,7 @@ func (data SetHaltBlockData) basicCheck(tx *Transaction, context *state.CheckSta
 		return &Response{
 			Code: code.HaltAlreadyExists,
 			Log:  "Halt with such public key and height already exists",
-			Info: EncodeError(code.NewWrongHaltHeight(strconv.FormatUint(data.Height, 10), data.GetPubKey().String())),
+			Info: EncodeError(code.NewHaltAlreadyExists(strconv.FormatUint(data.Height, 10), data.GetPubKey().String())),
 		}
 	}
 

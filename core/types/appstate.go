@@ -19,6 +19,7 @@ type AppState struct {
 	Coins               []Coin       `json:"coins,omitempty"`
 	FrozenFunds         []FrozenFund `json:"frozen_funds,omitempty"`
 	HaltBlocks          []HaltBlock  `json:"halt_blocks,omitempty"`
+	PriceVotes          []PriceVotes `json:"price_votes,omitempty"`
 	UsedChecks          []UsedCheck  `json:"used_checks,omitempty"`
 	MaxGas              uint64       `json:"max_gas"`
 	TotalSlashed        string       `json:"total_slashed"`
@@ -365,4 +366,15 @@ type Multisig struct {
 type HaltBlock struct {
 	Height       uint64 `json:"height"`
 	CandidateKey Pubkey `json:"candidate_key"`
+}
+type PriceVotes struct {
+	Height          uint64          `json:"height"`
+	CandidateKey    Pubkey          `json:"candidate_key"`
+	PriceCommission PriceCommission `json:"price_commission"`
+}
+
+type PriceCommission struct {
+	Send string
+
+	Coin string
 }

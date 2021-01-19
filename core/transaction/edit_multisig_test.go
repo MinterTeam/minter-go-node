@@ -72,7 +72,7 @@ func TestEditMultisigTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
@@ -202,7 +202,7 @@ func TestEditMultisigTxToTooLargeOwnersList(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.TooLargeOwnersList {
 		t.Fatalf("Response code is not %d. Error %s", code.TooLargeOwnersList, response.Log)
 	}
@@ -260,7 +260,7 @@ func TestEditMultisigTxIncorrectWeights(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.DifferentCountAddressesAndWeights {
 		t.Fatalf("Response code is not %d. Error %s", code.DifferentCountAddressesAndWeights, response.Log)
 	}
@@ -285,7 +285,7 @@ func TestEditMultisigTxIncorrectWeights(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response = RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.IncorrectWeights {
 		t.Fatalf("Response code is not %d. Error %s", code.IncorrectWeights, response.Log)
 	}
@@ -311,7 +311,7 @@ func TestEditMultisigTxIncorrectWeights(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response = RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.IncorrectTotalWeights {
 		t.Fatalf("Response code is not %d. Error %s", code.IncorrectTotalWeights, response.Log)
 	}
@@ -369,7 +369,7 @@ func TestEditMultisigTxToAddressDuplication(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.DuplicatedAddresses {
 		t.Fatalf("Response code is not %d. Error %s", code.DuplicatedAddresses, response.Log)
 	}
@@ -427,7 +427,7 @@ func TestEditMultisigTxToInsufficientFunds(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.InsufficientFunds {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
@@ -486,7 +486,7 @@ func TestEditMultisigTxToGasCoinReserveUnderflow(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.CommissionCoinNotSufficient {
 		t.Fatalf("Response code is not %d. Error %s", code.CommissionCoinNotSufficient, response.Log)
 	}

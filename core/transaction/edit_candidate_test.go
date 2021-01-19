@@ -65,7 +65,7 @@ func TestEditCandidateTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
@@ -147,7 +147,7 @@ func TestEditCandidateTxToNonExistCandidate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.CandidateNotFound {
 		t.Fatalf("Response code is not %d. Error %s", code.CandidateNotFound, response.Log)
 	}
@@ -208,7 +208,7 @@ func TestEditCandidateTxToCandidateOwnership(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.IsNotOwnerOfCandidate {
 		t.Fatalf("Response code is not %d. Error %s", code.IsNotOwnerOfCandidate, response.Log)
 	}
@@ -267,7 +267,7 @@ func TestEditCandidateTxToInsufficientFunds(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.InsufficientFunds {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
@@ -329,7 +329,7 @@ func TestEditCandidateTxToGasCoinReserveUnderflow(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.CommissionCoinNotSufficient {
 		t.Fatalf("Response code is not %d. Error %s", code.CommissionCoinNotSufficient, response.Log)
 	}
