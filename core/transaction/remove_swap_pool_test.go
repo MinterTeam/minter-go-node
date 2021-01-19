@@ -30,7 +30,7 @@ func TestRemoveExchangeLiquidityTx_one(t *testing.T) {
 	cState.Accounts.AddBalance(addr, coin1, helpers.BipToPip(big.NewInt(100000)))
 
 	{
-		data := AddSwapPoolData{
+		data := AddLiquidityData{
 			Coin0:          coin,
 			Volume0:        helpers.BipToPip(big.NewInt(10)),
 			Coin1:          coin1,
@@ -48,7 +48,7 @@ func TestRemoveExchangeLiquidityTx_one(t *testing.T) {
 			GasPrice:      1,
 			ChainID:       types.CurrentChainID,
 			GasCoin:       types.GetBaseCoinID(),
-			Type:          TypeAddSwapPool,
+			Type:          TypeAddLiquidity,
 			Data:          encodedData,
 			SignatureType: SigTypeSingle,
 		}
@@ -72,7 +72,7 @@ func TestRemoveExchangeLiquidityTx_one(t *testing.T) {
 
 	{
 		balance, _, _ := cState.Swap.SwapPoolFromProvider(addr, coin, coin1)
-		data := RemoveSwapPoolData{
+		data := RemoveLiquidity{
 			Coin0:     coin,
 			Coin1:     coin1,
 			Liquidity: balance,
@@ -89,7 +89,7 @@ func TestRemoveExchangeLiquidityTx_one(t *testing.T) {
 			GasPrice:      1,
 			ChainID:       types.CurrentChainID,
 			GasCoin:       types.GetBaseCoinID(),
-			Type:          TypeRemoveSwapPool,
+			Type:          TypeRemoveLiquidity,
 			Data:          encodedData,
 			SignatureType: SigTypeSingle,
 		}
@@ -140,7 +140,7 @@ func TestRemoveExchangeLiquidityTx_2(t *testing.T) {
 	cState.Accounts.AddBalance(addr2, coin1, helpers.BipToPip(big.NewInt(50000)))
 
 	{
-		data := AddSwapPoolData{
+		data := AddLiquidityData{
 			Coin0:          coin,
 			Volume0:        big.NewInt(10000),
 			Coin1:          coin1,
@@ -158,7 +158,7 @@ func TestRemoveExchangeLiquidityTx_2(t *testing.T) {
 			GasPrice:      1,
 			ChainID:       types.CurrentChainID,
 			GasCoin:       types.GetBaseCoinID(),
-			Type:          TypeAddSwapPool,
+			Type:          TypeAddLiquidity,
 			Data:          encodedData,
 			SignatureType: SigTypeSingle,
 		}
@@ -183,7 +183,7 @@ func TestRemoveExchangeLiquidityTx_2(t *testing.T) {
 		t.Error(err)
 	}
 	{
-		data := AddSwapPoolData{
+		data := AddLiquidityData{
 			Coin0:          coin,
 			Volume0:        helpers.BipToPip(big.NewInt(10)),
 			Coin1:          coin1,
@@ -201,7 +201,7 @@ func TestRemoveExchangeLiquidityTx_2(t *testing.T) {
 			GasPrice:      1,
 			ChainID:       types.CurrentChainID,
 			GasCoin:       types.GetBaseCoinID(),
-			Type:          TypeAddSwapPool,
+			Type:          TypeAddLiquidity,
 			Data:          encodedData,
 			SignatureType: SigTypeSingle,
 		}
@@ -227,7 +227,7 @@ func TestRemoveExchangeLiquidityTx_2(t *testing.T) {
 	}
 	{
 		balance, _, _ := cState.Swap.SwapPoolFromProvider(addr2, coin, coin1)
-		data := RemoveSwapPoolData{
+		data := RemoveLiquidity{
 			Coin0:     coin,
 			Coin1:     coin1,
 			Liquidity: balance,
@@ -244,7 +244,7 @@ func TestRemoveExchangeLiquidityTx_2(t *testing.T) {
 			GasPrice:      1,
 			ChainID:       types.CurrentChainID,
 			GasCoin:       types.GetBaseCoinID(),
-			Type:          TypeRemoveSwapPool,
+			Type:          TypeRemoveLiquidity,
 			Data:          encodedData,
 			SignatureType: SigTypeSingle,
 		}
@@ -295,7 +295,7 @@ func TestRemoveExchangeLiquidityTx_3(t *testing.T) {
 	cState.Accounts.AddBalance(addr2, coin1, helpers.BipToPip(big.NewInt(50000)))
 
 	{
-		data := AddSwapPoolData{
+		data := AddLiquidityData{
 			Coin0:          coin,
 			Volume0:        big.NewInt(9000),
 			Coin1:          coin1,
@@ -313,7 +313,7 @@ func TestRemoveExchangeLiquidityTx_3(t *testing.T) {
 			GasPrice:      1,
 			ChainID:       types.CurrentChainID,
 			GasCoin:       types.GetBaseCoinID(),
-			Type:          TypeAddSwapPool,
+			Type:          TypeAddLiquidity,
 			Data:          encodedData,
 			SignatureType: SigTypeSingle,
 		}
@@ -338,7 +338,7 @@ func TestRemoveExchangeLiquidityTx_3(t *testing.T) {
 		t.Error(err)
 	}
 	{
-		data := AddSwapPoolData{
+		data := AddLiquidityData{
 			Coin0:          coin,
 			Volume0:        helpers.BipToPip(big.NewInt(9)),
 			Coin1:          coin1,
@@ -356,7 +356,7 @@ func TestRemoveExchangeLiquidityTx_3(t *testing.T) {
 			GasPrice:      1,
 			ChainID:       types.CurrentChainID,
 			GasCoin:       types.GetBaseCoinID(),
-			Type:          TypeAddSwapPool,
+			Type:          TypeAddLiquidity,
 			Data:          encodedData,
 			SignatureType: SigTypeSingle,
 		}
@@ -382,7 +382,7 @@ func TestRemoveExchangeLiquidityTx_3(t *testing.T) {
 	}
 	{
 		balance, _, _ := cState.Swap.SwapPoolFromProvider(addr2, coin, coin1)
-		data := RemoveSwapPoolData{
+		data := RemoveLiquidity{
 			Coin0:     coin,
 			Coin1:     coin1,
 			Liquidity: balance,
@@ -399,7 +399,7 @@ func TestRemoveExchangeLiquidityTx_3(t *testing.T) {
 			GasPrice:      1,
 			ChainID:       types.CurrentChainID,
 			GasCoin:       types.GetBaseCoinID(),
-			Type:          TypeRemoveSwapPool,
+			Type:          TypeRemoveLiquidity,
 			Data:          encodedData,
 			SignatureType: SigTypeSingle,
 		}

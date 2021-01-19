@@ -33,8 +33,8 @@ type PriceCommissionData struct {
 	EditMultisig           *big.Int
 	PriceVote              *big.Int
 	EditCandidatePublicKey *big.Int
-	AddSwapPool            *big.Int
-	RemoveSwapPool         *big.Int
+	AddLiquidity           *big.Int
+	RemoveLiquidity        *big.Int
 	SellSwapPool           *big.Int
 	BuySwapPool            *big.Int
 	SellAllSwapPool        *big.Int

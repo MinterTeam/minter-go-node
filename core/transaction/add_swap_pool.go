@@ -12,14 +12,14 @@ import (
 	"math/big"
 )
 
-type AddSwapPoolData struct {
+type AddLiquidityData struct {
 	Coin0          types.CoinID
 	Coin1          types.CoinID
 	Volume0        *big.Int
 	MaximumVolume1 *big.Int
 }
 
-func (data AddSwapPoolData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data AddLiquidityData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.Coin1 == data.Coin0 {
 		return &Response{
 			Code: code.CrossConvert,
@@ -51,15 +51,15 @@ func (data AddSwapPoolData) basicCheck(tx *Transaction, context *state.CheckStat
 	return nil
 }
 
-func (data AddSwapPoolData) String() string {
+func (data AddLiquidityData) String() string {
 	return fmt.Sprintf("ADD SWAP POOL")
 }
 
-func (data AddSwapPoolData) Gas() int64 {
+func (data AddLiquidityData) Gas() int64 {
 	return commissions.AddSwapPoolData
 }
 
-func (data AddSwapPoolData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
+func (data AddLiquidityData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -192,7 +192,7 @@ func (data AddSwapPoolData) Run(tx *Transaction, context state.Interface, reward
 	tags := kv.Pairs{
 		kv.Pair{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
 		kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
-		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeAddSwapPool)}))},
+		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeAddLiquidity)}))},
 		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
 		kv.Pair{Key: []byte("tx.volume1"), Value: []byte(takenAmount1.String())},
 		kv.Pair{Key: []byte("tx.liquidity"), Value: []byte(takenLiquidity.String())},

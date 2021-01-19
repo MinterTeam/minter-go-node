@@ -40,8 +40,8 @@ const (
 	TypeEditMultisig           TxType = 0x12
 	TypePriceVote              TxType = 0x13
 	TypeEditCandidatePublicKey TxType = 0x14
-	TypeAddSwapPool            TxType = 0x15
-	TypeRemoveSwapPool         TxType = 0x16
+	TypeAddLiquidity           TxType = 0x15
+	TypeRemoveLiquidity        TxType = 0x16
 	TypeSellSwapPool           TxType = 0x17
 	TypeBuySwapPool            TxType = 0x18
 	TypeSellAllSwapPool        TxType = 0x19
