@@ -39,7 +39,7 @@ func RegisterRPCFuncs(mux *http.ServeMux, funcMap map[string]*RPCFunc, cdc *amin
 	mux.HandleFunc("/", handleInvalidJSONRPCPaths(makeJSONRPCHandler(funcMap, cdc, logger)))
 }
 
-//-------------------------------------
+// -------------------------------------
 // function introspection
 
 // RPCFunc contains the introspected type information for a function
@@ -99,7 +99,7 @@ func funcReturnTypes(f interface{}) []reflect.Type {
 }
 
 // function introspection
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // rpc.json
 
 // jsonrpc calls grab the given method's function info and runs reflect.Call
@@ -251,7 +251,7 @@ func jsonParamsToArgsWS(rpcFunc *RPCFunc, cdc *amino.Codec, params json.RawMessa
 }
 
 // rpc.json
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // rpc.http
 
 // convert from a function name to the http handler
@@ -407,7 +407,7 @@ func _nonJSONStringToArg(cdc *amino.Codec, rt reflect.Type, arg string) (reflect
 }
 
 // rpc.http
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // rpc.websocket
 
 const (
@@ -729,7 +729,7 @@ func (wsc *wsConnection) writeMessageWithDeadline(msgType int, msg []byte) error
 	return wsc.baseConn.WriteMessage(msgType, msg)
 }
 
-//----------------------------------------
+// ----------------------------------------
 
 // WebsocketManager provides a WS handler for incoming connections and passes a
 // map of functions along with any additional params to new connections.
@@ -786,7 +786,7 @@ func (wm *WebsocketManager) WebsocketHandler(w http.ResponseWriter, r *http.Requ
 }
 
 // rpc.websocket
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 // NOTE: assume returns is result struct and error. If error is not nil, return it
 func unreflectResult(returns []reflect.Value) (interface{}, error) {

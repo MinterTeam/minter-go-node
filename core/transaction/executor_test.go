@@ -3,6 +3,7 @@ package transaction
 import (
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/state/accounts"
+	"github.com/MinterTeam/minter-go-node/core/state/commission"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/helpers"
@@ -302,7 +303,7 @@ func TestMultiSigTx(t *testing.T) {
 
 	txBytes, _ := rlp.EncodeToBytes(tx)
 
-	response := RunTx(cState, txBytes, nil, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, txBytes, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != 0 {
 		t.Fatalf("Error code is not 0. Error: %s", response.Log)

@@ -189,7 +189,7 @@ func RunTx(context state.Interface, rawTx []byte, commissions *commission.Price,
 		}
 	}
 
-	response := tx.decodedData.Run(tx, context, rewardPool, currentBlock)
+	response := tx.decodedData.Run(tx, context, rewardPool, currentBlock, commissions.Coin, big.NewInt(0))
 
 	if response.Code != code.TxFromSenderAlreadyInMempool && response.Code != code.OK {
 		currentMempool.Delete(sender)

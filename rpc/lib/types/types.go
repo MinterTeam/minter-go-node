@@ -44,7 +44,7 @@ func idFromInterface(idInterface interface{}) (jsonrpcid, error) {
 	}
 }
 
-//----------------------------------------
+// ----------------------------------------
 // REQUEST
 
 type RPCRequest struct {
@@ -127,7 +127,7 @@ func ArrayToRequest(cdc *amino.Codec, id jsonrpcid, method string, params []inte
 	return request, nil
 }
 
-//----------------------------------------
+// ----------------------------------------
 // RESPONSE
 
 type TxResult struct {
@@ -262,7 +262,7 @@ func RPCServerError(id jsonrpcid, err error) RPCResponse {
 	return NewRPCErrorResponse(id, -32000, "Server error", err.Error())
 }
 
-//----------------------------------------
+// ----------------------------------------
 
 // *wsConnection implements this interface.
 type WSRPCConnection interface {

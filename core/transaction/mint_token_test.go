@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"github.com/MinterTeam/minter-go-node/core/state/commission"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/helpers"
@@ -59,7 +60,7 @@ func TestMintData_aaa(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
+		response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
 		if response.Code != 0 {
 			t.Fatalf("Response code is not 0. Error %s", response.Log)
 		}
@@ -153,7 +154,7 @@ func TestMintData_aaa(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
+		response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
 		if response.Code != 0 {
 			t.Fatalf("Response code is not 0. Error %s", response.Log)
 		}

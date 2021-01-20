@@ -185,6 +185,9 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 	if blockchain.commissions == nil {
 		blockchain.commissions = blockchain.stateDeliver.Commission.GetCommissions()
 	}
+	if blockchain.commissions == nil {
+		blockchain.commissions = &commission.Price{} // todo: wip
+	}
 
 	// give penalty to Byzantine validators
 	for _, byzVal := range req.ByzantineValidators {

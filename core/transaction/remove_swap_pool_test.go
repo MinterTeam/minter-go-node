@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"github.com/MinterTeam/minter-go-node/core/state/commission"
 	"math/big"
 	"sync"
 	"testing"
@@ -63,7 +64,7 @@ func TestRemoveExchangeLiquidityTx_one(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
+		response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
@@ -104,7 +105,7 @@ func TestRemoveExchangeLiquidityTx_one(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
+		response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
@@ -173,7 +174,7 @@ func TestRemoveExchangeLiquidityTx_2(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
+		response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
@@ -216,7 +217,7 @@ func TestRemoveExchangeLiquidityTx_2(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
+		response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
@@ -259,7 +260,7 @@ func TestRemoveExchangeLiquidityTx_2(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
+		response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
@@ -328,7 +329,7 @@ func TestRemoveExchangeLiquidityTx_3(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
+		response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
@@ -371,7 +372,7 @@ func TestRemoveExchangeLiquidityTx_3(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
+		response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
@@ -414,7 +415,7 @@ func TestRemoveExchangeLiquidityTx_3(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
+		response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)

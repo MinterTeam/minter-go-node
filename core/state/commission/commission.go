@@ -123,7 +123,19 @@ func (c *Commission) GetVotes(height uint64) []*Model {
 }
 
 func (c *Commission) GetCommissions() *Price {
-	return c.currentPrice
+	if c.currentPrice != nil {
+		return c.currentPrice
+	}
+	_, value := c.immutableTree().Get([]byte{mainPrefix})
+	if len(value) == 0 {
+		return nil
+	}
+	c.currentPrice = &Price{}
+	err := rlp.DecodeBytes(value, c.currentPrice)
+	if err != nil {
+		panic(err)
+	}
+	return &Price{}
 }
 func (c *Commission) SetNewCommissions(prices []byte) {
 	c.dirtyCurrent = true

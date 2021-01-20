@@ -133,7 +133,7 @@ func (h UnprefixedHash) MarshalText() ([]byte, error) {
 	return []byte(hex.EncodeToString(h[:])), nil
 }
 
-/////////// Coin
+// ///////// Coin
 
 // CoinSymbol represents the 10 byte coin symbol.
 type CoinSymbol [CoinSymbolLength]byte
@@ -230,7 +230,7 @@ func BytesToCoinID(bytes []byte) CoinID {
 // CoinVersion represents coin version info
 type CoinVersion = uint16
 
-/////////// Address
+// ///////// Address
 
 // Address represents 20-byte address in Minter Blockchain
 type Address [AddressLength]byte

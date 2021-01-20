@@ -45,14 +45,14 @@ const (
 	TypeSellSwapPool           TxType = 0x17
 	TypeBuySwapPool            TxType = 0x18
 	TypeSellAllSwapPool        TxType = 0x19
-	TypeEditCommission         TxType = 0x20
-	TypeMoveStake              TxType = 0x21
-	TypeMintToken              TxType = 0x22
-	TypeBurnToken              TxType = 0x23
-	TypeCreateToken            TxType = 0x24
-	TypeRecreateToken          TxType = 0x25
-	TypePriceCommission        TxType = 0x26
-	TypeUpdateNetwork          TxType = 0x27
+	TypeEditCommission         TxType = 0x1A
+	TypeMoveStake              TxType = 0x1B
+	TypeMintToken              TxType = 0x1C
+	TypeBurnToken              TxType = 0x1D
+	TypeCreateToken            TxType = 0x1E
+	TypeRecreateToken          TxType = 0x1F
+	TypePriceCommission        TxType = 0x20
+	TypeUpdateNetwork          TxType = 0x21
 
 	SigTypeSingle SigType = 0x01
 	SigTypeMulti  SigType = 0x02
@@ -130,7 +130,7 @@ type conversion struct {
 type Data interface {
 	String() string
 	Gas() int64
-	Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response
+	Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, coin types.CoinID, newInt *big.Int) Response
 }
 
 func (tx *Transaction) Serialize() ([]byte, error) {

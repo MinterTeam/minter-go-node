@@ -1,6 +1,6 @@
 package upgrades
 
-//func IsUpgradeBlock(height uint64) bool {
+// func IsUpgradeBlock(height uint64) bool {
 //	upgradeBlocks := []uint64{} // fill this
 //
 //	for _, block := range upgradeBlocks {
@@ -10,4 +10,4 @@ package upgrades
 //	}
 //
 //	return false
-//}
+// }

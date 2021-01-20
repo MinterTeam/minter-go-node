@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"github.com/MinterTeam/minter-go-node/core/code"
+	"github.com/MinterTeam/minter-go-node/core/state/commission"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/helpers"
@@ -66,7 +67,7 @@ func TestEditCandidateNewPublicKeyTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
@@ -140,7 +141,7 @@ func TestEditCandidatePublicKeyTxToNewPublicKey(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.NewPublicKeyIsBad {
 		t.Fatalf("Response code is not %d. Error %s", code.NewPublicKeyIsBad, response.Log)
 	}
@@ -197,7 +198,7 @@ func TestEditCandidatePublicKeyTxToNewPublicKeyInBlockList(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.PublicKeyInBlockList {
 		t.Fatalf("Response code is not %d. Error %s", code.PublicKeyInBlockList, response.Log)
 	}
@@ -250,7 +251,7 @@ func TestEditCandidatePublicKeyTxToInsufficientFunds(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.InsufficientFunds {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
@@ -306,7 +307,7 @@ func TestEditCandidatePublicKeyTxToGasCoinReserveUnderflow(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.CommissionCoinNotSufficient {
 		t.Fatalf("Response code is not %d. Error %s", code.CommissionCoinNotSufficient, response.Log)
 	}
@@ -357,7 +358,7 @@ func TestEditCandidatePublicKeyToNotExistCandidate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.CandidateNotFound {
 		t.Fatalf("Response code is not %d. Error %s", code.CandidateNotFound, response.Log)
 	}
@@ -412,7 +413,7 @@ func TestEditCandidatePublicKeyTxToCandidateOwnership(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.IsNotOwnerOfCandidate {
 		t.Fatalf("Response code is not %d. Error %s", code.IsNotOwnerOfCandidate, response.Log)
 	}
@@ -480,7 +481,7 @@ func TestEditCandidatePublicKeyData_Exists(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, nil, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.CandidateExists {
 		t.Fatalf("Response code is %d. Error %s", response.Code, response.Log)
 	}
