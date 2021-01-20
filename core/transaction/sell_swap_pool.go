@@ -46,7 +46,7 @@ func (data SellSwapPoolData) Gas() int64 {
 	return commissions.ConvertTx
 }
 
-func (data SellSwapPoolData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
+func (data SellSwapPoolData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, priceCoin types.CoinID, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState

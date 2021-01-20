@@ -94,7 +94,7 @@ func (data BuyCoinData) basicCheck(tx *Transaction, context *state.CheckState) *
 	return nil
 }
 
-func (data BuyCoinData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64) Response {
+func (data BuyCoinData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, priceCoin types.CoinID, price *big.Int) Response {
 	sender, _ := tx.Sender()
 	var errResp *Response
 	var checkState *state.CheckState

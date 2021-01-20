@@ -164,7 +164,7 @@ func GetTmConfig(cfg *Config) *tmConfig.Config {
 	}
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // BaseConfig
 
 // BaseConfig defines the base configuration for a Tendermint node
@@ -326,7 +326,7 @@ func DefaultPackageLogLevels() string {
 	return fmt.Sprintf("consensus:info,main:info,state:info,*:%s", DefaultLogLevel())
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // Utils
 
 // helper function to make config creation independent of root dir

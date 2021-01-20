@@ -112,7 +112,7 @@ func WriteRPCResponseHTTP(w http.ResponseWriter, res types.RPCResponse) {
 	w.Write(jsonBytes) // nolint: errcheck, gas
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 // Wraps an HTTP handler, adding error logging.
 // If the inner function panics, the outer function recovers, logs, sends an

@@ -3,7 +3,6 @@ package rewards
 import (
 	"math/big"
 
-	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/helpers"
 )
 
@@ -29,7 +28,7 @@ func GetRewardForBlock(blockHeight uint64) *big.Int {
 	reward := big.NewInt(firstReward)
 	reward.Sub(reward, big.NewInt(int64(blockHeight/200000)))
 
-	if reward.Cmp(types.Big0) < 1 {
+	if reward.Sign() < 1 {
 		return helpers.BipToPip(big.NewInt(1))
 	}
 

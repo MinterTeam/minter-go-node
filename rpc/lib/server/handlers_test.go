@@ -19,11 +19,11 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 )
 
-//////////////////////////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////////////////////////////
 // HTTP REST API
 // TODO
 
-//////////////////////////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////////////////////////////
 // JSON-RPC over HTTP
 
 func testMux() *http.ServeMux {
@@ -71,7 +71,7 @@ func TestRPCParams(t *testing.T) {
 		mux.ServeHTTP(rec, req)
 		res := rec.Result()
 		// Always expecting back a JSONRPCResponse
-		//assert.True(t, statusOK(res.StatusCode), "#%d: should always return 2XX", i)
+		// assert.True(t, statusOK(res.StatusCode), "#%d: should always return 2XX", i)
 		blob, err := ioutil.ReadAll(res.Body)
 		if err != nil {
 			t.Errorf("#%d: err reading body: %v", i, err)
@@ -119,7 +119,7 @@ func TestJSONRPCID(t *testing.T) {
 		mux.ServeHTTP(rec, req)
 		res := rec.Result()
 		// Always expecting back a JSONRPCResponse
-		//assert.True(t, statusOK(res.StatusCode), "#%d: should always return 2XX", i)
+		// assert.True(t, statusOK(res.StatusCode), "#%d: should always return 2XX", i)
 		blob, err := ioutil.ReadAll(res.Body)
 		if err != nil {
 			t.Errorf("#%d: err reading body: %v", i, err)
@@ -165,7 +165,7 @@ func TestUnknownRPCPath(t *testing.T) {
 	require.Equal(t, http.StatusNotFound, res.StatusCode, "should always return 404")
 }
 
-//////////////////////////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////////////////////////////
 // JSON-RPC over WEBSOCKETS
 
 func TestWebsocketManagerHandler(t *testing.T) {

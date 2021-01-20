@@ -3,6 +3,7 @@ package transaction
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/core/state/commission"
 	"math/big"
 	"strconv"
 	"sync"
@@ -33,12 +34,7 @@ type Response struct {
 }
 
 // RunTx executes transaction in given context
-func RunTx(context state.Interface,
-	rawTx []byte,
-	rewardPool *big.Int,
-	currentBlock uint64,
-	currentMempool *sync.Map,
-	minGasPrice uint32) Response {
+func RunTx(context state.Interface, rawTx []byte, commissions *commission.Price, rewardPool *big.Int, currentBlock uint64, currentMempool *sync.Map, minGasPrice uint32) Response {
 	lenRawTx := len(rawTx)
 	if lenRawTx > maxTxLength {
 		return Response{
@@ -193,7 +189,7 @@ func RunTx(context state.Interface,
 		}
 	}
 
-	response := tx.decodedData.Run(tx, context, rewardPool, currentBlock)
+	response := tx.decodedData.Run(tx, context, rewardPool, currentBlock, commissions.Coin, big.NewInt(0))
 
 	if response.Code != code.TxFromSenderAlreadyInMempool && response.Code != code.OK {
 		currentMempool.Delete(sender)

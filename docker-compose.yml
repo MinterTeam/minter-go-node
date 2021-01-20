@@ -10,12 +10,12 @@ services:
       - "127.0.0.1:3000:3000"
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8841/api/status"]
+      test: [ "CMD", "curl", "-f", "http://localhost:8841/api/status" ]
       interval: 5s
       timeout: 5s
       retries: 3
       start_period: 30s
 
 volumes:
-    minter_data:
-        external: false
+  minter_data:
+    external: false

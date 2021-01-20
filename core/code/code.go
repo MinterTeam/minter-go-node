@@ -26,6 +26,7 @@ const (
 	HaltAlreadyExists            uint32 = 118
 	CommissionCoinNotSufficient  uint32 = 119
 	VoiceExpired                 uint32 = 120
+	VoiceAlreadyExists           uint32 = 121
 
 	// coin creation
 	CoinHasNotReserve uint32 = 200
@@ -710,8 +711,18 @@ type wrongHaltHeight struct {
 	Height    string `json:"height,omitempty"`
 }
 
-func NewWrongHaltHeight(height string, pubkey string) *wrongHaltHeight {
+func NewHaltAlreadyExists(height string, pubkey string) *wrongHaltHeight {
 	return &wrongHaltHeight{Code: strconv.Itoa(int(WrongHaltHeight)), Height: height, PublicKey: pubkey}
+}
+
+type voiceAlreadyExists struct {
+	Code      string `json:"code,omitempty"`
+	PublicKey string `json:"public_key,omitempty"`
+	Height    string `json:"height,omitempty"`
+}
+
+func NewVoiceAlreadyExists(height string, pubkey string) *voiceAlreadyExists {
+	return &voiceAlreadyExists{Code: strconv.Itoa(int(VoiceAlreadyExists)), Height: height, PublicKey: pubkey}
 }
 
 type tooLowStake struct {

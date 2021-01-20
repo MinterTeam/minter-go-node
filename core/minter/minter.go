@@ -10,6 +10,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/rewards"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/state/candidates"
+	"github.com/MinterTeam/minter-go-node/core/state/commission"
 	"github.com/MinterTeam/minter-go-node/core/statistics"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
@@ -64,9 +65,10 @@ type Blockchain struct {
 
 	lock sync.RWMutex
 
-	haltHeight uint64
-	cfg        *config.Config
-	storages   *utils.Storage
+	haltHeight  uint64
+	cfg         *config.Config
+	storages    *utils.Storage
+	commissions *commission.Price
 }
 
 // NewMinterBlockchain creates Minter Blockchain instance, should be only called once
@@ -145,7 +147,6 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 
 	blockchain.StatisticData().PushStartBlock(&statistics.StartRequest{Height: int64(height), Now: time.Now(), HeaderTime: req.Header.Time})
 	blockchain.stateDeliver.Lock()
-	blockchain.setFreeCheckState()
 
 	// compute max gas
 	blockchain.updateBlocksTimeDelta(height, 3)
@@ -176,6 +177,16 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 
 	if blockchain.isApplicationHalted(height) {
 		panic(fmt.Sprintf("Application halted at height %d", height))
+	}
+
+	if prices := blockchain.CheckUpdateCommissionsBlock(height); len(prices) != 0 {
+		blockchain.stateDeliver.Commission.SetNewCommissions(prices)
+	}
+	if blockchain.commissions == nil {
+		blockchain.commissions = blockchain.stateDeliver.Commission.GetCommissions()
+	}
+	if blockchain.commissions == nil {
+		blockchain.commissions = &commission.Price{} // todo: wip
 	}
 
 	// give penalty to Byzantine validators
@@ -404,7 +415,7 @@ func (blockchain *Blockchain) Info(_ abciTypes.RequestInfo) (resInfo abciTypes.R
 
 // DeliverTx deliver a tx for full processing
 func (blockchain *Blockchain) DeliverTx(req abciTypes.RequestDeliverTx) abciTypes.ResponseDeliverTx {
-	response := transaction.RunTx(blockchain.stateDeliver, req.Tx, blockchain.rewards, blockchain.Height(), &sync.Map{}, 0)
+	response := transaction.RunTx(blockchain.stateDeliver, req.Tx, blockchain.commissions, blockchain.rewards, blockchain.Height(), &sync.Map{}, 0)
 
 	return abciTypes.ResponseDeliverTx{
 		Code:      response.Code,
@@ -424,7 +435,7 @@ func (blockchain *Blockchain) DeliverTx(req abciTypes.RequestDeliverTx) abciType
 
 // CheckTx validates a tx for the mempool
 func (blockchain *Blockchain) CheckTx(req abciTypes.RequestCheckTx) abciTypes.ResponseCheckTx {
-	response := transaction.RunTx(blockchain.CurrentState(), req.Tx, nil, blockchain.height, blockchain.currentMempool, blockchain.MinGasPrice())
+	response := transaction.RunTx(blockchain.CurrentState(), req.Tx, blockchain.commissions, nil, blockchain.height, blockchain.currentMempool, blockchain.MinGasPrice())
 
 	return abciTypes.ResponseCheckTx{
 		Code:      response.Code,
@@ -576,21 +587,6 @@ func (blockchain *Blockchain) resetCheckState() {
 	blockchain.stateCheck = state.NewCheckState(blockchain.stateDeliver)
 }
 
-func (blockchain *Blockchain) setFreeCheckState() {
-	blockchain.lock.Lock()
-	defer blockchain.lock.Unlock()
-
-	if blockchain.Height() == 0 {
-		return
-	}
-
-	var err error
-	blockchain.stateCheck, err = state.NewCheckStateAtHeight(blockchain.Height(), blockchain.storages.StateDB())
-	if err != nil {
-		panic(err)
-	}
-}
-
 func (blockchain *Blockchain) updateBlocksTimeDelta(height uint64, count int64) {
 	// should do this because tmNode is unavailable during Tendermint's replay mode
 	if blockchain.tmNode == nil {
@@ -709,7 +705,7 @@ func (blockchain *Blockchain) isApplicationHalted(height uint64) bool {
 			totalPower.Add(totalPower, val.GetTotalBipStake())
 		}
 
-		if totalPower.Cmp(types.Big0) == 0 {
+		if totalPower.Sign() == 0 {
 			totalPower = big.NewInt(1)
 		}
 
@@ -724,6 +720,51 @@ func (blockchain *Blockchain) isApplicationHalted(height uint64) bool {
 	}
 
 	return false
+}
+
+func (blockchain *Blockchain) CheckUpdateCommissionsBlock(height uint64) []byte {
+	if blockchain.haltHeight > 0 && height >= blockchain.haltHeight {
+		return nil
+	}
+
+	commissions := blockchain.stateDeliver.Commission.GetVotes(height)
+	if len(commissions) == 0 {
+		return nil
+	}
+	// calculate total power of validators
+	vals := blockchain.stateDeliver.Validators.GetValidators()
+	totalPower, totalVotedPower := big.NewInt(0), big.NewInt(0)
+
+	for _, prices := range commissions {
+		for _, val := range vals {
+			// skip if candidate is not present
+			if val.IsToDrop() || blockchain.validatorsStatuses[val.GetAddress()] != ValidatorPresent {
+				continue
+			}
+
+			for _, vote := range prices.Votes {
+				if vote == val.PubKey {
+					totalVotedPower.Add(totalVotedPower, val.GetTotalBipStake())
+				}
+			}
+			totalPower.Add(totalPower, val.GetTotalBipStake())
+		}
+
+		if totalPower.Sign() == 0 {
+			totalPower = big.NewInt(1)
+		}
+
+		votingResult := new(big.Float).Quo(
+			new(big.Float).SetInt(totalVotedPower),
+			new(big.Float).SetInt(totalPower),
+		)
+
+		if votingResult.Cmp(big.NewFloat(votingPowerConsensus)) == 1 {
+			return []byte(prices.Price)
+		}
+	}
+
+	return nil
 }
 
 func GetDbOpts(memLimit int) *opt.Options {
