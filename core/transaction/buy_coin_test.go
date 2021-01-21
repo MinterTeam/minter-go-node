@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"crypto/ecdsa"
-	"github.com/MinterTeam/minter-go-node/core/state/commission"
 	"github.com/pkg/errors"
 	"log"
 	"math/big"
@@ -138,7 +137,7 @@ func TestBuyCoinTxBaseToCustom(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
@@ -208,7 +207,7 @@ func TestBuyCoinTxInsufficientFunds(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != code.InsufficientFunds {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
@@ -259,7 +258,7 @@ func TestBuyCoinTxEqualCoins(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != code.CrossConvert {
 		t.Fatalf("Response code is not %d. Error %s", code.CrossConvert, response.Log)
@@ -308,7 +307,7 @@ func TestBuyCoinTxNotExistsBuyCoin(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != code.CoinNotExists {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
@@ -357,7 +356,7 @@ func TestBuyCoinTxNotExistsSellCoin(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != code.CoinNotExists {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
@@ -408,7 +407,7 @@ func TestBuyCoinTxNotExistsGasCoin(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != code.CoinNotExists {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
@@ -465,7 +464,7 @@ func TestBuyCoinTxNotGasCoin(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
@@ -524,7 +523,7 @@ func TestBuyCoinTxCustomToBase(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
@@ -606,7 +605,7 @@ func TestBuyCoinReserveUnderflow(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != code.CoinReserveUnderflow {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveUnderflow, response.Log)
@@ -648,7 +647,7 @@ func TestBuyCoinTxBaseToCustomBaseCommission(t *testing.T) {
 	}
 
 	// check response
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.OK {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
@@ -724,7 +723,7 @@ func TestBuyCoinTxCustomToBaseBaseCommission(t *testing.T) {
 	}
 
 	// check response
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.OK {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
@@ -799,7 +798,7 @@ func TestBuyCoinTxCustomToCustomBaseCommission(t *testing.T) {
 	}
 
 	// check response
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.OK {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
@@ -872,7 +871,7 @@ func TestBuyCoinTxBaseToCustomCustomCommission(t *testing.T) {
 	}
 
 	// check response
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.OK {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
@@ -948,7 +947,7 @@ func TestBuyCoinTxCustomToBaseCustomCommission(t *testing.T) {
 	}
 
 	// check response
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.OK {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
@@ -1023,7 +1022,7 @@ func TestBuyCoinTxCustomToCustomCustom1Commission(t *testing.T) {
 	}
 
 	// check response
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.OK {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
@@ -1121,7 +1120,7 @@ func TestBuyCoinTxCustomToCustomCustom2Commission(t *testing.T) {
 	}
 
 	// check response
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.OK {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
@@ -1204,7 +1203,7 @@ func TestBuyCoinTxToCoinSupplyOverflow(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.CoinSupplyOverflow {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinSupplyOverflow, response.Log)
 	}
@@ -1256,7 +1255,7 @@ func TestBuyCoinTxToMaximumValueToSellReached(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.MaximumValueToSellReached {
 		t.Fatalf("Response code is not %d. Error %s", code.MaximumValueToSellReached, response.Log)
 	}
@@ -1282,7 +1281,7 @@ func TestBuyCoinTxToMaximumValueToSellReached(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response = RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.MaximumValueToSellReached {
 		t.Fatalf("Response code is not %d. Error %s", code.MaximumValueToSellReached, response.Log)
 	}
@@ -1321,7 +1320,7 @@ func TestBuyCoinTxToMaximumValueToSellReached(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response = RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.MaximumValueToSellReached {
 		t.Fatalf("Response code is not %d. Error %s", code.MaximumValueToSellReached, response.Log)
 	}
@@ -1347,7 +1346,7 @@ func TestBuyCoinTxToMaximumValueToSellReached(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response = RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.MaximumValueToSellReached {
 		t.Fatalf("Response code is not %d. Error %d %s", code.MaximumValueToSellReached, response.Code, response.Log)
 	}
@@ -1389,7 +1388,7 @@ func TestBuyCoinTxToCoinReserveNotSufficient(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.CoinReserveNotSufficient {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveNotSufficient, response.Log)
 	}
@@ -1412,7 +1411,7 @@ func TestBuyCoinTxToCoinReserveNotSufficient(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response = RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.CommissionCoinNotSufficient {
 		t.Fatalf("Response code is not %d. Error %d %s", code.CommissionCoinNotSufficient, response.Code, response.Log)
 	}
@@ -1433,7 +1432,7 @@ func TestBuyCoinTxToCoinReserveNotSufficient(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response = RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.CoinReserveNotSufficient {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveNotSufficient, response.Log)
 	}
@@ -1456,7 +1455,7 @@ func TestBuyCoinTxToCoinReserveNotSufficient(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response = RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.CommissionCoinNotSufficient {
 		t.Fatalf("Response code is not %d. Error %d %s", code.CommissionCoinNotSufficient, response.Code, response.Log)
 	}

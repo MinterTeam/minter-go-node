@@ -3,6 +3,7 @@ package transaction
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/core/state/commission"
 	"math/big"
 	"regexp"
 	"strconv"
@@ -32,6 +33,10 @@ type CreateCoinData struct {
 	InitialReserve       *big.Int
 	ConstantReserveRatio uint32
 	MaxSupply            *big.Int
+}
+
+func (data CreateCoinData) Type() TxType {
+	return TypeCreateCoin
 }
 
 func (data CreateCoinData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
@@ -116,22 +121,22 @@ func (data CreateCoinData) String() string {
 		data.Symbol.String(), data.InitialReserve, data.InitialAmount, data.ConstantReserveRatio)
 }
 
-func (data CreateCoinData) Gas() int64 {
+func (data CreateCoinData) Gas(price *commission.Price) *big.Int {
 	switch len(data.Symbol.String()) {
 	case 3:
-		return 1000000000 // 1mln bips
+		return price.CreateTicker3 // 1mln bips
 	case 4:
-		return 100000000 // 100k bips
+		return price.CreateTicker4 // 100k bips
 	case 5:
-		return 10000000 // 10k bips
+		return price.CreateTicker5 // 10k bips
 	case 6:
-		return 1000000 // 1k bips
+		return price.CreateTicker6 // 1k bips
 	}
 
-	return 100000 // 100 bips
+	return price.CreateTicker7to10 // 100 bips
 }
 
-func (data CreateCoinData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, priceCoin types.CoinID, price *big.Int) Response {
+func (data CreateCoinData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -144,7 +149,7 @@ func (data CreateCoinData) Run(tx *Transaction, context state.Interface, rewardP
 		return *response
 	}
 
-	commissionInBaseCoin := tx.CommissionInBaseCoin()
+	commissionInBaseCoin := tx.CommissionInBaseCoin(price)
 	commissionPoolSwapper := checkState.Swap().GetSwapper(tx.GasCoin, types.GetBaseCoinID())
 	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
 	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoin, commissionInBaseCoin)
@@ -223,7 +228,9 @@ func (data CreateCoinData) Run(tx *Transaction, context state.Interface, rewardP
 	return Response{
 		Code:      code.OK,
 		Tags:      tags,
-		GasUsed:   tx.Gas(),
-		GasWanted: tx.Gas(),
+		GasUsed:   int64(tx.GasPrice),
+		GasWanted: int64(tx.GasPrice), // todo
+		// GasUsed:   tx.Gas(),
+		// GasWanted: tx.Gas(),
 	}
 }

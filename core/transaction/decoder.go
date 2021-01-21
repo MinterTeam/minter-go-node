@@ -58,7 +58,7 @@ func getData(txType TxType) (Data, bool) {
 		return &BuySwapPoolData{}, true
 	case TypeSellAllSwapPool:
 		return &SellAllSwapPoolData{}, true
-	case TypeEditCommission:
+	case TypeEditCandidateCommission:
 		return &EditCandidateCommission{}, true
 	case TypeMoveStake:
 		return &MoveStakeData{}, true

@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/core/state/commission"
 	"math/big"
 	"strconv"
 
 	"github.com/MinterTeam/minter-go-node/core/check"
 	"github.com/MinterTeam/minter-go-node/core/code"
-	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
@@ -21,6 +21,10 @@ import (
 type RedeemCheckData struct {
 	RawCheck []byte
 	Proof    [65]byte
+}
+
+func (data RedeemCheckData) Type() TxType {
+	return TypeRedeemCheck
 }
 
 func (data RedeemCheckData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
@@ -48,11 +52,11 @@ func (data RedeemCheckData) String() string {
 	return fmt.Sprintf("REDEEM CHECK proof: %x", data.Proof)
 }
 
-func (data RedeemCheckData) Gas() int64 {
-	return commissions.RedeemCheckTx
+func (data RedeemCheckData) Gas(price *commission.Price) *big.Int {
+	return price.RedeemCheck
 }
 
-func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, priceCoin types.CoinID, price *big.Int) Response {
+func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -176,7 +180,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 		}
 	}
 
-	commissionInBaseCoin := tx.CommissionInBaseCoin()
+	commissionInBaseCoin := tx.CommissionInBaseCoin(price)
 	commissionPoolSwapper := checkState.Swap().GetSwapper(tx.GasCoin, types.GetBaseCoinID())
 	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
 	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoin, commissionInBaseCoin)
@@ -240,7 +244,9 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 	return Response{
 		Code:      code.OK,
 		Tags:      tags,
-		GasUsed:   tx.Gas(),
-		GasWanted: tx.Gas(),
+		GasUsed:   int64(tx.GasPrice),
+		GasWanted: int64(tx.GasPrice), // todo
+		// GasUsed:   tx.Gas(),
+		// GasWanted: tx.Gas(),
 	}
 }

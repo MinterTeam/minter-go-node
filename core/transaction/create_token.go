@@ -3,6 +3,7 @@ package transaction
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/core/state/commission"
 	"log"
 	"math/big"
 	"strconv"
@@ -20,6 +21,10 @@ type CreateTokenData struct {
 	MaxSupply     *big.Int
 	Mintable      bool
 	Burnable      bool
+}
+
+func (data CreateTokenData) Type() TxType {
+	return TypeCreateToken
 }
 
 func (data CreateTokenData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
@@ -71,22 +76,22 @@ func (data CreateTokenData) String() string {
 		data.Symbol.String(), data.MaxSupply)
 }
 
-func (data CreateTokenData) Gas() int64 {
+func (data CreateTokenData) Gas(price *commission.Price) *big.Int {
 	switch len(data.Symbol.String()) {
 	case 3:
-		return 1000000000 // 1mln bips
+		return price.CreateTicker3 // 1mln bips
 	case 4:
-		return 100000000 // 100k bips
+		return price.CreateTicker4 // 100k bips
 	case 5:
-		return 10000000 // 10k bips
+		return price.CreateTicker5 // 10k bips
 	case 6:
-		return 1000000 // 1k bips
+		return price.CreateTicker6 // 1k bips
 	}
 
-	return 100000 // 100 bips
+	return price.CreateTicker7to10 // 100 bips
 }
 
-func (data CreateTokenData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, priceCoin types.CoinID, price *big.Int) Response {
+func (data CreateTokenData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -99,7 +104,7 @@ func (data CreateTokenData) Run(tx *Transaction, context state.Interface, reward
 		return *response
 	}
 
-	commissionInBaseCoin := tx.CommissionInBaseCoin()
+	commissionInBaseCoin := tx.CommissionInBaseCoin(price)
 	commissionPoolSwapper := checkState.Swap().GetSwapper(tx.GasCoin, types.GetBaseCoinID())
 	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
 	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoin, commissionInBaseCoin)
@@ -166,7 +171,9 @@ func (data CreateTokenData) Run(tx *Transaction, context state.Interface, reward
 	return Response{
 		Code:      code.OK,
 		Tags:      tags,
-		GasUsed:   tx.Gas(),
-		GasWanted: tx.Gas(),
+		GasUsed:   int64(tx.GasPrice),
+		GasWanted: int64(tx.GasPrice), // todo
+		// GasUsed:   tx.Gas(),
+		// GasWanted: tx.Gas(),
 	}
 }

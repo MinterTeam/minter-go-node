@@ -3,7 +3,6 @@ package transaction
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/core/state/commission"
 	"math/big"
 	"strconv"
 	"sync"
@@ -34,7 +33,7 @@ type Response struct {
 }
 
 // RunTx executes transaction in given context
-func RunTx(context state.Interface, rawTx []byte, commissions *commission.Price, rewardPool *big.Int, currentBlock uint64, currentMempool *sync.Map, minGasPrice uint32) Response {
+func RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBlock uint64, currentMempool *sync.Map, minGasPrice uint32) Response {
 	lenRawTx := len(rawTx)
 	if lenRawTx > maxTxLength {
 		return Response{
@@ -189,7 +188,13 @@ func RunTx(context state.Interface, rawTx []byte, commissions *commission.Price,
 		}
 	}
 
-	response := tx.decodedData.Run(tx, context, rewardPool, currentBlock, commissions.Coin, big.NewInt(0))
+	commissions := checkState.Commission().GetCommissions()
+	price := tx.Gas(commissions)
+	if !commissions.Coin.IsBaseCoin() {
+		price = checkState.Swap().GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuy(price)
+	}
+
+	response := tx.decodedData.Run(tx, context, rewardPool, currentBlock, price)
 
 	if response.Code != code.TxFromSenderAlreadyInMempool && response.Code != code.OK {
 		currentMempool.Delete(sender)
@@ -198,13 +203,86 @@ func RunTx(context state.Interface, rawTx []byte, commissions *commission.Price,
 	response.GasPrice = tx.GasPrice
 
 	switch tx.Type {
-	case TypeCreateCoin, TypeEditCoinOwner, TypeRecreateCoin, TypeEditCandidatePublicKey:
+	case TypeCreateCoin, TypeEditCoinOwner, TypeRecreateCoin, TypeEditCandidatePublicKey, TypeCreateToken, TypeRecreateToken:
 		response.GasUsed = stdGas
 		response.GasWanted = stdGas
 	}
 
 	return response
 }
+
+// func Price(commissions *commission.Price, txType TxType) *big.Int {
+// 	switch txType {
+// 	case TypeSend:
+// 		return commissions.Send
+// 	case TypeSellCoin:
+// 		return commissions.SellCoin
+// 	case TypeSellAllCoin:
+// 		return commissions.SellAllCoin
+// 	case TypeBuyCoin:
+// 		return commissions.BuyCoin
+// 	case TypeCreateCoin:
+// 		return commissions.CreateCoin
+// 	case TypeDeclareCandidacy:
+// 		return commissions.DeclareCandidacy
+// 	case TypeDelegate:
+// 		return commissions.Delegate
+// 	case TypeUnbond:
+// 		return commissions.Unbond
+// 	case TypeRedeemCheck:
+// 		return commissions.RedeemCheck
+// 	case TypeSetCandidateOnline:
+// 		return commissions.SetCandidateOnline
+// 	case TypeSetCandidateOffline:
+// 		return commissions.SetCandidateOffline
+// 	case TypeMultisend:
+// 		return commissions.Multisend
+// 	case TypeCreateMultisig:
+// 		return commissions.CreateMultisig
+// 	case TypeEditCandidate:
+// 		return commissions.EditCandidate
+// 	case TypeSetHaltBlock:
+// 		return commissions.SetHaltBlock
+// 	case TypeRecreateCoin:
+// 		return commissions.RecreateCoin
+// 	case TypeEditCoinOwner:
+// 		return commissions.EditCoinOwner
+// 	case TypeEditMultisig:
+// 		return commissions.EditMultisig
+// 	case TypePriceVote:
+// 		return commissions.PriceVote
+// 	case TypeEditCandidatePublicKey:
+// 		return commissions.EditCandidatePublicKey
+// 	case TypeAddLiquidity:
+// 		return commissions.AddLiquidity
+// 	case TypeRemoveLiquidity:
+// 		return commissions.RemoveLiquidity
+// 	case TypeSellSwapPool:
+// 		return commissions.SellSwapPool
+// 	case TypeBuySwapPool:
+// 		return commissions.BuySwapPool
+// 	case TypeSellAllSwapPool:
+// 		return commissions.SellAllSwapPool
+// 	case TypeEditCandidateCommission:
+// 		return commissions.EditCandidateCommission
+// 	case TypeMoveStake:
+// 		return commissions.MoveStake
+// 	case TypeMintToken:
+// 		return commissions.MintToken
+// 	case TypeBurnToken:
+// 		return commissions.BurnToken
+// 	case TypeCreateToken:
+// 		return commissions.CreateToken
+// 	case TypeRecreateToken:
+// 		return commissions.RecreateToken
+// 	case TypePriceCommission:
+// 		return commissions.PriceCommission
+// 	case TypeUpdateNetwork:
+// 		return commissions.UpdateNetwork
+// 	default:
+// 		panic("unknown commission")
+// 	}
+// }
 
 // EncodeError encodes error to json
 func EncodeError(data interface{}) string {

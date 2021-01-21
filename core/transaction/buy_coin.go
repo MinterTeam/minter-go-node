@@ -4,8 +4,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
-	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
+	"github.com/MinterTeam/minter-go-node/core/state/commission"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/tendermint/tendermint/libs/kv"
@@ -19,13 +19,17 @@ type BuyCoinData struct {
 	MaximumValueToSell *big.Int
 }
 
+func (data BuyCoinData) Type() TxType {
+	return TypeBuyCoin
+}
+
 func (data BuyCoinData) String() string {
 	return fmt.Sprintf("BUY COIN sell:%s buy:%s %s",
 		data.CoinToSell.String(), data.ValueToBuy.String(), data.CoinToBuy.String())
 }
 
-func (data BuyCoinData) Gas() int64 {
-	return commissions.ConvertTx
+func (data BuyCoinData) Gas(price *commission.Price) *big.Int {
+	return price.Convert
 }
 
 func (data BuyCoinData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
@@ -94,7 +98,7 @@ func (data BuyCoinData) basicCheck(tx *Transaction, context *state.CheckState) *
 	return nil
 }
 
-func (data BuyCoinData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, priceCoin types.CoinID, price *big.Int) Response {
+func (data BuyCoinData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 	var errResp *Response
 	var checkState *state.CheckState
@@ -144,7 +148,7 @@ func (data BuyCoinData) Run(tx *Transaction, context state.Interface, rewardPool
 		}
 	}
 
-	commissionInBaseCoin := tx.CommissionInBaseCoin()
+	commissionInBaseCoin := tx.CommissionInBaseCoin(price)
 	commissionPoolSwapper := checkState.Swap().GetSwapper(tx.GasCoin, types.GetBaseCoinID())
 	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoinUpdated, commissionInBaseCoin)
 	if errResp != nil {
@@ -232,8 +236,10 @@ func (data BuyCoinData) Run(tx *Transaction, context state.Interface, rewardPool
 	return Response{
 		Code:      code.OK,
 		Tags:      tags,
-		GasUsed:   tx.Gas(),
-		GasWanted: tx.Gas(),
+		GasUsed:   int64(tx.GasPrice),
+		GasWanted: int64(tx.GasPrice), // todo
+		// GasUsed:   tx.Gas(),
+		// GasWanted: tx.Gas(),
 	}
 }
 

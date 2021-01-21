@@ -135,7 +135,10 @@ func (c *Commission) GetCommissions() *Price {
 	if err != nil {
 		panic(err)
 	}
-	return &Price{}
+	return &Price{
+		// todo: add default prices
+		Coin: types.GetBaseCoinID(),
+	}
 }
 func (c *Commission) SetNewCommissions(prices []byte) {
 	c.dirtyCurrent = true
@@ -147,7 +150,7 @@ func (c *Commission) SetNewCommissions(prices []byte) {
 	c.currentPrice = &newPrices
 }
 
-func (c *Commission) GetOrNew(height uint64, encode string) *Model {
+func (c *Commission) getOrNew(height uint64, encode string) *Model {
 	prices := c.get(height)
 
 	if len(prices) == 0 {
@@ -226,7 +229,7 @@ func (c *Commission) IsVoteExists(height uint64, pubkey types.Pubkey) bool {
 }
 
 func (c *Commission) AddVoice(height uint64, pubkey types.Pubkey, encode []byte) {
-	c.GetOrNew(height, string(encode)).addVoite(pubkey)
+	c.getOrNew(height, string(encode)).addVoite(pubkey)
 }
 
 func (c *Commission) Delete(height uint64) {

@@ -4,8 +4,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
-	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
+	"github.com/MinterTeam/minter-go-node/core/state/commission"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
@@ -14,6 +14,10 @@ import (
 type EditCandidatePublicKeyData struct {
 	PubKey    types.Pubkey
 	NewPubKey types.Pubkey
+}
+
+func (data EditCandidatePublicKeyData) Type() TxType {
+	return TypeEditCandidatePublicKey
 }
 
 func (data EditCandidatePublicKeyData) GetPubKey() types.Pubkey {
@@ -29,11 +33,11 @@ func (data EditCandidatePublicKeyData) String() string {
 		data.PubKey, data.NewPubKey)
 }
 
-func (data EditCandidatePublicKeyData) Gas() int64 {
-	return commissions.EditCandidatePublicKey
+func (data EditCandidatePublicKeyData) Gas(price *commission.Price) *big.Int {
+	return price.EditCandidatePublicKey
 }
 
-func (data EditCandidatePublicKeyData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, priceCoin types.CoinID, price *big.Int) Response {
+func (data EditCandidatePublicKeyData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -63,7 +67,7 @@ func (data EditCandidatePublicKeyData) Run(tx *Transaction, context state.Interf
 		}
 	}
 
-	commissionInBaseCoin := tx.CommissionInBaseCoin()
+	commissionInBaseCoin := tx.CommissionInBaseCoin(price)
 	commissionPoolSwapper := checkState.Swap().GetSwapper(tx.GasCoin, types.GetBaseCoinID())
 	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
 	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoin, commissionInBaseCoin)
@@ -111,8 +115,10 @@ func (data EditCandidatePublicKeyData) Run(tx *Transaction, context state.Interf
 
 	return Response{
 		Code:      code.OK,
-		GasUsed:   tx.Gas(),
-		GasWanted: tx.Gas(),
-		Tags:      tags,
+		GasUsed:   int64(tx.GasPrice),
+		GasWanted: int64(tx.GasPrice), // todo
+		// GasUsed:   tx.Gas(),
+		// GasWanted: tx.Gas(),
+		Tags: tags,
 	}
 }

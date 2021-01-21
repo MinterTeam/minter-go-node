@@ -3,11 +3,11 @@ package transaction
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/core/state/commission"
 	"math/big"
 	"strconv"
 
 	"github.com/MinterTeam/minter-go-node/core/code"
-	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/tendermint/tendermint/libs/kv"
@@ -20,6 +20,10 @@ type RecreateCoinData struct {
 	InitialReserve       *big.Int
 	ConstantReserveRatio uint32
 	MaxSupply            *big.Int
+}
+
+func (data RecreateCoinData) Type() TxType {
+	return TypeRecreateCoin
 }
 
 func (data RecreateCoinData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
@@ -113,11 +117,11 @@ func (data RecreateCoinData) String() string {
 		data.Symbol.String(), data.InitialReserve, data.InitialAmount, data.ConstantReserveRatio)
 }
 
-func (data RecreateCoinData) Gas() int64 {
-	return commissions.RecreateCoin
+func (data RecreateCoinData) Gas(price *commission.Price) *big.Int {
+	return price.Recreate
 }
 
-func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, priceCoin types.CoinID, price *big.Int) Response {
+func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -131,7 +135,7 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 		return *response
 	}
 
-	commissionInBaseCoin := tx.CommissionInBaseCoin()
+	commissionInBaseCoin := tx.CommissionInBaseCoin(price)
 	commissionPoolSwapper := checkState.Swap().GetSwapper(tx.GasCoin, types.GetBaseCoinID())
 	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
 	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoin, commissionInBaseCoin)
@@ -216,7 +220,9 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 	return Response{
 		Code:      code.OK,
 		Tags:      tags,
-		GasUsed:   tx.Gas(),
-		GasWanted: tx.Gas(),
+		GasUsed:   int64(tx.GasPrice),
+		GasWanted: int64(tx.GasPrice), // todo
+		// GasUsed:   tx.Gas(),
+		// GasWanted: tx.Gas(),
 	}
 }

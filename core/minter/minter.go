@@ -10,7 +10,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/rewards"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/state/candidates"
-	"github.com/MinterTeam/minter-go-node/core/state/commission"
+	validators2 "github.com/MinterTeam/minter-go-node/core/state/validators"
 	"github.com/MinterTeam/minter-go-node/core/statistics"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
@@ -56,6 +56,8 @@ type Blockchain struct {
 	height             uint64   // current Blockchain height
 	rewards            *big.Int // Rewards pool
 	validatorsStatuses map[types.TmAddress]int8
+	validatorsPowers   map[types.Pubkey]*big.Int
+	totalPower         *big.Int
 
 	// local rpc client for Tendermint
 	tmNode *tmNode.Node
@@ -65,10 +67,9 @@ type Blockchain struct {
 
 	lock sync.RWMutex
 
-	haltHeight  uint64
-	cfg         *config.Config
-	storages    *utils.Storage
-	commissions *commission.Price
+	haltHeight uint64
+	cfg        *config.Config
+	storages   *utils.Storage
 }
 
 // NewMinterBlockchain creates Minter Blockchain instance, should be only called once
@@ -175,18 +176,10 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 	}
 	blockchain.lock.Unlock()
 
+	blockchain.calculatePowers(blockchain.stateDeliver.Validators.GetValidators())
+
 	if blockchain.isApplicationHalted(height) {
 		panic(fmt.Sprintf("Application halted at height %d", height))
-	}
-
-	if prices := blockchain.CheckUpdateCommissionsBlock(height); len(prices) != 0 {
-		blockchain.stateDeliver.Commission.SetNewCommissions(prices)
-	}
-	if blockchain.commissions == nil {
-		blockchain.commissions = blockchain.stateDeliver.Commission.GetCommissions()
-	}
-	if blockchain.commissions == nil {
-		blockchain.commissions = &commission.Price{} // todo: wip
 	}
 
 	// give penalty to Byzantine validators
@@ -269,20 +262,7 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 		val.SetAccumReward(big.NewInt(0))
 	}
 
-	// calculate total power of validators
-	totalPower := big.NewInt(0)
-	for _, val := range vals {
-		// skip if candidate is not present
-		if val.IsToDrop() || blockchain.GetValidatorStatus(val.GetAddress()) != ValidatorPresent {
-			continue
-		}
-
-		totalPower.Add(totalPower, val.GetTotalBipStake())
-	}
-
-	if totalPower.Sign() == 0 {
-		totalPower = big.NewInt(1)
-	}
+	blockchain.calculatePowers(vals)
 
 	// accumulate rewards
 	reward := rewards.GetRewardForBlock(height)
@@ -300,7 +280,7 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 
 		r := big.NewInt(0).Set(reward)
 		r.Mul(r, val.GetTotalBipStake())
-		r.Div(r, totalPower)
+		r.Div(r, blockchain.totalPower)
 
 		remainder.Sub(remainder, r)
 		vals[i].AddAccumReward(r)
@@ -312,6 +292,11 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 	// pay rewards
 	if height%120 == 0 {
 		blockchain.stateDeliver.Validators.PayRewards(height)
+	}
+
+	if prices := blockchain.isUpdateCommissionsBlock(height); len(prices) != 0 {
+		blockchain.stateDeliver.Commission.SetNewCommissions(prices)
+		blockchain.stateDeliver.Commission.Delete(height)
 	}
 
 	hasChangedPublicKeys := false
@@ -338,6 +323,24 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 				MaxGas:   int64(blockchain.stateDeliver.App.GetMaxGas()),
 			},
 		},
+	}
+}
+
+// calculatePowers calculates total power of validators
+func (blockchain *Blockchain) calculatePowers(vals []*validators2.Validator) {
+	blockchain.validatorsPowers = map[types.Pubkey]*big.Int{}
+	blockchain.totalPower = big.NewInt(0)
+	for _, val := range vals {
+		// skip if candidate is not present
+		if val.IsToDrop() || blockchain.GetValidatorStatus(val.GetAddress()) != ValidatorPresent {
+			continue
+		}
+
+		blockchain.totalPower.Add(blockchain.totalPower, val.GetTotalBipStake())
+	}
+
+	if blockchain.totalPower.Sign() == 0 {
+		blockchain.totalPower = big.NewInt(1)
 	}
 }
 
@@ -415,7 +418,7 @@ func (blockchain *Blockchain) Info(_ abciTypes.RequestInfo) (resInfo abciTypes.R
 
 // DeliverTx deliver a tx for full processing
 func (blockchain *Blockchain) DeliverTx(req abciTypes.RequestDeliverTx) abciTypes.ResponseDeliverTx {
-	response := transaction.RunTx(blockchain.stateDeliver, req.Tx, blockchain.commissions, blockchain.rewards, blockchain.Height(), &sync.Map{}, 0)
+	response := transaction.RunTx(blockchain.stateDeliver, req.Tx, blockchain.rewards, blockchain.Height(), &sync.Map{}, 0)
 
 	return abciTypes.ResponseDeliverTx{
 		Code:      response.Code,
@@ -435,7 +438,7 @@ func (blockchain *Blockchain) DeliverTx(req abciTypes.RequestDeliverTx) abciType
 
 // CheckTx validates a tx for the mempool
 func (blockchain *Blockchain) CheckTx(req abciTypes.RequestCheckTx) abciTypes.ResponseCheckTx {
-	response := transaction.RunTx(blockchain.CurrentState(), req.Tx, blockchain.commissions, nil, blockchain.height, blockchain.currentMempool, blockchain.MinGasPrice())
+	response := transaction.RunTx(blockchain.CurrentState(), req.Tx, nil, blockchain.height, blockchain.currentMempool, blockchain.MinGasPrice())
 
 	return abciTypes.ResponseCheckTx{
 		Code:      response.Code,
@@ -686,43 +689,30 @@ func (blockchain *Blockchain) isApplicationHalted(height uint64) bool {
 	}
 
 	halts := blockchain.stateDeliver.Halts.GetHaltBlocks(height)
-	if halts != nil {
-		// calculate total power of validators
-		vals := blockchain.stateDeliver.Validators.GetValidators()
-		totalPower, totalVotedPower := big.NewInt(0), big.NewInt(0)
-		for _, val := range vals {
-			// skip if candidate is not present
-			if val.IsToDrop() || blockchain.validatorsStatuses[val.GetAddress()] != ValidatorPresent {
-				continue
-			}
+	if halts == nil {
+		return false
+	}
 
-			for _, halt := range halts.List {
-				if halt.Pubkey == val.PubKey {
-					totalVotedPower.Add(totalVotedPower, val.GetTotalBipStake())
-				}
-			}
-
-			totalPower.Add(totalPower, val.GetTotalBipStake())
+	totalVotedPower := big.NewInt(0)
+	for _, halt := range halts.List {
+		if power, ok := blockchain.validatorsPowers[halt.Pubkey]; ok {
+			totalVotedPower.Add(totalVotedPower, power)
 		}
+	}
 
-		if totalPower.Sign() == 0 {
-			totalPower = big.NewInt(1)
-		}
+	votingResult := new(big.Float).Quo(
+		new(big.Float).SetInt(totalVotedPower),
+		new(big.Float).SetInt(blockchain.totalPower),
+	)
 
-		votingResult := new(big.Float).Quo(
-			new(big.Float).SetInt(totalVotedPower),
-			new(big.Float).SetInt(totalPower),
-		)
-
-		if votingResult.Cmp(big.NewFloat(votingPowerConsensus)) == 1 {
-			return true
-		}
+	if votingResult.Cmp(big.NewFloat(votingPowerConsensus)) == 1 {
+		return true
 	}
 
 	return false
 }
 
-func (blockchain *Blockchain) CheckUpdateCommissionsBlock(height uint64) []byte {
+func (blockchain *Blockchain) isUpdateCommissionsBlock(height uint64) []byte {
 	if blockchain.haltHeight > 0 && height >= blockchain.haltHeight {
 		return nil
 	}
@@ -732,36 +722,27 @@ func (blockchain *Blockchain) CheckUpdateCommissionsBlock(height uint64) []byte 
 		return nil
 	}
 	// calculate total power of validators
-	vals := blockchain.stateDeliver.Validators.GetValidators()
-	totalPower, totalVotedPower := big.NewInt(0), big.NewInt(0)
+	maxVotingResult, totalVotedPower := big.NewFloat(0), big.NewInt(0)
 
-	for _, prices := range commissions {
-		for _, val := range vals {
-			// skip if candidate is not present
-			if val.IsToDrop() || blockchain.validatorsStatuses[val.GetAddress()] != ValidatorPresent {
-				continue
+	var price string
+	for _, commission := range commissions {
+		for _, vote := range commission.Votes {
+			if power, ok := blockchain.validatorsPowers[vote]; ok {
+				totalVotedPower.Add(totalVotedPower, power)
 			}
-
-			for _, vote := range prices.Votes {
-				if vote == val.PubKey {
-					totalVotedPower.Add(totalVotedPower, val.GetTotalBipStake())
-				}
-			}
-			totalPower.Add(totalPower, val.GetTotalBipStake())
 		}
-
-		if totalPower.Sign() == 0 {
-			totalPower = big.NewInt(1)
-		}
-
 		votingResult := new(big.Float).Quo(
 			new(big.Float).SetInt(totalVotedPower),
-			new(big.Float).SetInt(totalPower),
+			new(big.Float).SetInt(blockchain.totalPower),
 		)
 
-		if votingResult.Cmp(big.NewFloat(votingPowerConsensus)) == 1 {
-			return []byte(prices.Price)
+		if votingResult.Cmp(votingResult) == -1 {
+			maxVotingResult = votingResult
+			price = commission.Price
 		}
+	}
+	if maxVotingResult.Cmp(big.NewFloat(votingPowerConsensus)) == 1 {
+		return []byte(price)
 	}
 
 	return nil
