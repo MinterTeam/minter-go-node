@@ -7,6 +7,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/state/commission"
 	"math/big"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/MinterTeam/minter-go-node/core/code"
@@ -19,7 +20,7 @@ type MultisendData struct {
 	List []MultisendDataItem `json:"list"`
 }
 
-func (data MultisendData) Type() TxType {
+func (data MultisendData) TxType() TxType {
 	return TypeMultisend
 }
 
@@ -61,11 +62,11 @@ func (data MultisendData) String() string {
 	return "MULTISEND"
 }
 
-func (data MultisendData) Gas(price *commission.Price) *big.Int {
+func (data MultisendData) CommissionData(price *commission.Price) *big.Int {
 	return big.NewInt(0).Add(price.Send, big.NewInt(0).Mul(big.NewInt(int64(len(data.List))-1), price.MultisendDelta))
 }
 
-func (data MultisendData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
+func (data MultisendData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int, gas int64) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -108,6 +109,8 @@ func (data MultisendData) Run(tx *Transaction, context state.Interface, rewardPo
 	}
 
 	tags := kv.Pairs{
+		kv.Pair{Key: []byte("tx.gas"), Value: []byte(strconv.Itoa(int(gas)))},
+		kv.Pair{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
 		kv.Pair{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
 		kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeMultisend)}))},
@@ -118,10 +121,8 @@ func (data MultisendData) Run(tx *Transaction, context state.Interface, rewardPo
 	return Response{
 		Code:      code.OK,
 		Tags:      tags,
-		GasUsed:   int64(tx.GasPrice),
-		GasWanted: int64(tx.GasPrice), // todo
-		// GasUsed:   tx.Gas(),
-		// GasWanted: tx.Gas(),
+		GasUsed:   gas,
+		GasWanted: gas,
 	}
 }
 

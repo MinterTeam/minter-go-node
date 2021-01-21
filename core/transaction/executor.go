@@ -189,12 +189,12 @@ func RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBl
 	}
 
 	commissions := checkState.Commission().GetCommissions()
-	price := tx.Gas(commissions)
+	price := tx.Price(commissions)
 	if !commissions.Coin.IsBaseCoin() {
 		price = checkState.Swap().GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuy(price)
 	}
 
-	response := tx.decodedData.Run(tx, context, rewardPool, currentBlock, price)
+	response := tx.decodedData.Run(tx, context, rewardPool, currentBlock, price, tx.Gas(commissions))
 
 	if response.Code != code.TxFromSenderAlreadyInMempool && response.Code != code.OK {
 		currentMempool.Delete(sender)

@@ -9,6 +9,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
+	"strconv"
 )
 
 type EditCandidatePublicKeyData struct {
@@ -16,7 +17,7 @@ type EditCandidatePublicKeyData struct {
 	NewPubKey types.Pubkey
 }
 
-func (data EditCandidatePublicKeyData) Type() TxType {
+func (data EditCandidatePublicKeyData) TxType() TxType {
 	return TypeEditCandidatePublicKey
 }
 
@@ -33,11 +34,11 @@ func (data EditCandidatePublicKeyData) String() string {
 		data.PubKey, data.NewPubKey)
 }
 
-func (data EditCandidatePublicKeyData) Gas(price *commission.Price) *big.Int {
+func (data EditCandidatePublicKeyData) CommissionData(price *commission.Price) *big.Int {
 	return price.EditCandidatePublicKey
 }
 
-func (data EditCandidatePublicKeyData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
+func (data EditCandidatePublicKeyData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int, gas int64) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -107,6 +108,8 @@ func (data EditCandidatePublicKeyData) Run(tx *Transaction, context state.Interf
 	}
 
 	tags := kv.Pairs{
+		kv.Pair{Key: []byte("tx.gas"), Value: []byte(strconv.Itoa(int(gas)))},
+		kv.Pair{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
 		kv.Pair{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
 		kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeEditCandidatePublicKey)}))},
@@ -115,10 +118,8 @@ func (data EditCandidatePublicKeyData) Run(tx *Transaction, context state.Interf
 
 	return Response{
 		Code:      code.OK,
-		GasUsed:   int64(tx.GasPrice),
-		GasWanted: int64(tx.GasPrice), // todo
-		// GasUsed:   tx.Gas(),
-		// GasWanted: tx.Gas(),
-		Tags: tags,
+		GasUsed:   gas,
+		GasWanted: gas,
+		Tags:      tags,
 	}
 }

@@ -23,7 +23,7 @@ type CreateTokenData struct {
 	Burnable      bool
 }
 
-func (data CreateTokenData) Type() TxType {
+func (data CreateTokenData) TxType() TxType {
 	return TypeCreateToken
 }
 
@@ -76,7 +76,7 @@ func (data CreateTokenData) String() string {
 		data.Symbol.String(), data.MaxSupply)
 }
 
-func (data CreateTokenData) Gas(price *commission.Price) *big.Int {
+func (data CreateTokenData) CommissionData(price *commission.Price) *big.Int {
 	switch len(data.Symbol.String()) {
 	case 3:
 		return price.CreateTicker3 // 1mln bips
@@ -91,7 +91,7 @@ func (data CreateTokenData) Gas(price *commission.Price) *big.Int {
 	return price.CreateTicker7to10 // 100 bips
 }
 
-func (data CreateTokenData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
+func (data CreateTokenData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int, gas int64) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -160,6 +160,8 @@ func (data CreateTokenData) Run(tx *Transaction, context state.Interface, reward
 	}
 
 	tags := kv.Pairs{
+		kv.Pair{Key: []byte("tx.gas"), Value: []byte(strconv.Itoa(int(gas)))},
+		kv.Pair{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
 		kv.Pair{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
 		kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeCreateToken)}))},
@@ -171,9 +173,7 @@ func (data CreateTokenData) Run(tx *Transaction, context state.Interface, reward
 	return Response{
 		Code:      code.OK,
 		Tags:      tags,
-		GasUsed:   int64(tx.GasPrice),
-		GasWanted: int64(tx.GasPrice), // todo
-		// GasUsed:   tx.Gas(),
-		// GasWanted: tx.Gas(),
+		GasUsed:   gas,
+		GasWanted: gas,
 	}
 }

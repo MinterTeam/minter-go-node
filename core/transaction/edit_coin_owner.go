@@ -9,6 +9,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
+	"strconv"
 )
 
 type EditCoinOwnerData struct {
@@ -16,7 +17,7 @@ type EditCoinOwnerData struct {
 	NewOwner types.Address
 }
 
-func (data EditCoinOwnerData) Type() TxType {
+func (data EditCoinOwnerData) TxType() TxType {
 	return TypeEditCoinOwner
 }
 
@@ -56,11 +57,11 @@ func (data EditCoinOwnerData) String() string {
 	return fmt.Sprintf("EDIT OWNER COIN symbol:%s new owner:%s", data.Symbol.String(), data.NewOwner.String())
 }
 
-func (data EditCoinOwnerData) Gas(price *commission.Price) *big.Int {
+func (data EditCoinOwnerData) CommissionData(price *commission.Price) *big.Int {
 	return price.EditCoinOwner
 }
 
-func (data EditCoinOwnerData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
+func (data EditCoinOwnerData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int, gas int64) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -106,6 +107,8 @@ func (data EditCoinOwnerData) Run(tx *Transaction, context state.Interface, rewa
 	}
 
 	tags := kv.Pairs{
+		kv.Pair{Key: []byte("tx.gas"), Value: []byte(strconv.Itoa(int(gas)))},
+		kv.Pair{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
 		kv.Pair{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
 		kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeEditCoinOwner)}))},
@@ -116,9 +119,7 @@ func (data EditCoinOwnerData) Run(tx *Transaction, context state.Interface, rewa
 	return Response{
 		Code:      code.OK,
 		Tags:      tags,
-		GasUsed:   int64(tx.GasPrice),
-		GasWanted: int64(tx.GasPrice), // todo
-		// GasUsed:   tx.Gas(),
-		// GasWanted: tx.Gas(),
+		GasUsed:   gas,
+		GasWanted: gas,
 	}
 }

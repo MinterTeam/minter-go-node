@@ -549,28 +549,28 @@ func TestCreateCoinGas(t *testing.T) {
 		Symbol: types.StrToCoinSymbol("ABC"),
 	}
 
-	if data.Gas() != 1000000000 {
-		t.Fatal("Gas for symbol with length 3 is not correct.")
+	if data.CommissionData() != 1000000000 {
+		t.Fatal("CommissionData for symbol with length 3 is not correct.")
 	}
 
 	data.Symbol = types.StrToCoinSymbol("ABCD")
-	if data.Gas() != 100000000 {
-		t.Fatal("Gas for symbol with length 4 is not correct.")
+	if data.CommissionData() != 100000000 {
+		t.Fatal("CommissionData for symbol with length 4 is not correct.")
 	}
 
 	data.Symbol = types.StrToCoinSymbol("ABCDE")
-	if data.Gas() != 10000000 {
-		t.Fatal("Gas for symbol with length 5 is not correct.")
+	if data.CommissionData() != 10000000 {
+		t.Fatal("CommissionData for symbol with length 5 is not correct.")
 	}
 
 	data.Symbol = types.StrToCoinSymbol("ABCDEF")
-	if data.Gas() != 1000000 {
-		t.Fatal("Gas for symbol with length 6 is not correct.")
+	if data.CommissionData() != 1000000 {
+		t.Fatal("CommissionData for symbol with length 6 is not correct.")
 	}
 
 	data.Symbol = types.StrToCoinSymbol("ABCDEFG")
-	if data.Gas() != 100000 {
-		t.Fatal("Gas for symbol with length 7 is not correct.")
+	if data.CommissionData() != 100000 {
+		t.Fatal("CommissionData for symbol with length 7 is not correct.")
 	}
 }
 

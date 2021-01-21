@@ -20,7 +20,7 @@ type CreateMultisigData struct {
 	Addresses []types.Address
 }
 
-func (data CreateMultisigData) Type() TxType {
+func (data CreateMultisigData) TxType() TxType {
 	return TypeCreateMultisig
 }
 
@@ -72,11 +72,11 @@ func (data CreateMultisigData) String() string {
 	return "CREATE MULTISIG"
 }
 
-func (data CreateMultisigData) Gas(price *commission.Price) *big.Int {
+func (data CreateMultisigData) CommissionData(price *commission.Price) *big.Int {
 	return price.CreateMultisig
 }
 
-func (data CreateMultisigData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
+func (data CreateMultisigData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int, gas int64) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -131,6 +131,8 @@ func (data CreateMultisigData) Run(tx *Transaction, context state.Interface, rew
 	}
 
 	tags := kv.Pairs{
+		kv.Pair{Key: []byte("tx.gas"), Value: []byte(strconv.Itoa(int(gas)))},
+		kv.Pair{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
 		kv.Pair{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
 		kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeCreateMultisig)}))},
@@ -141,9 +143,7 @@ func (data CreateMultisigData) Run(tx *Transaction, context state.Interface, rew
 	return Response{
 		Code:      code.OK,
 		Tags:      tags,
-		GasUsed:   int64(tx.GasPrice),
-		GasWanted: int64(tx.GasPrice), // todo
-		// GasUsed:   tx.Gas(),
-		// GasWanted: tx.Gas(),
+		GasUsed:   gas,
+		GasWanted: gas,
 	}
 }

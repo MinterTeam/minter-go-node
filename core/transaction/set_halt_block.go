@@ -19,7 +19,7 @@ type SetHaltBlockData struct {
 	Height uint64
 }
 
-func (data SetHaltBlockData) Type() TxType {
+func (data SetHaltBlockData) TxType() TxType {
 	return TypeSetHaltBlock
 }
 
@@ -52,11 +52,11 @@ func (data SetHaltBlockData) String() string {
 		hexutil.Encode(data.PubKey[:]), data.Height)
 }
 
-func (data SetHaltBlockData) Gas(price *commission.Price) *big.Int {
+func (data SetHaltBlockData) CommissionData(price *commission.Price) *big.Int {
 	return price.SetHaltBlock
 }
 
-func (data SetHaltBlockData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
+func (data SetHaltBlockData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int, gas int64) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -102,6 +102,8 @@ func (data SetHaltBlockData) Run(tx *Transaction, context state.Interface, rewar
 	}
 
 	tags := kv.Pairs{
+		kv.Pair{Key: []byte("tx.gas"), Value: []byte(strconv.Itoa(int(gas)))},
+		kv.Pair{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
 		kv.Pair{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
 		kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeSetHaltBlock)}))},
@@ -110,10 +112,8 @@ func (data SetHaltBlockData) Run(tx *Transaction, context state.Interface, rewar
 
 	return Response{
 		Code:      code.OK,
-		GasUsed:   int64(tx.GasPrice),
-		GasWanted: int64(tx.GasPrice), // todo
-		// GasUsed:   tx.Gas(),
-		// GasWanted: tx.Gas(),
-		Tags: tags,
+		GasUsed:   gas,
+		GasWanted: gas,
+		Tags:      tags,
 	}
 }

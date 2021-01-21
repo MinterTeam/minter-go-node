@@ -17,7 +17,7 @@ type EditCandidateCommission struct {
 	Commission uint32
 }
 
-func (data EditCandidateCommission) Type() TxType {
+func (data EditCandidateCommission) TxType() TxType {
 	return TypeEditCandidateCommission
 }
 
@@ -63,11 +63,11 @@ func (data EditCandidateCommission) String() string {
 	return fmt.Sprintf("EDIT COMMISSION: %s", data.PubKey)
 }
 
-func (data EditCandidateCommission) Gas(price *commission.Price) *big.Int {
+func (data EditCandidateCommission) CommissionData(price *commission.Price) *big.Int {
 	return price.EditCandidateCommission
 }
 
-func (data EditCandidateCommission) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
+func (data EditCandidateCommission) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int, gas int64) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -112,6 +112,8 @@ func (data EditCandidateCommission) Run(tx *Transaction, context state.Interface
 	}
 
 	tags := kv.Pairs{
+		kv.Pair{Key: []byte("tx.gas"), Value: []byte(strconv.Itoa(int(gas)))},
+		kv.Pair{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
 		kv.Pair{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
 		kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeEditCandidateCommission)}))},
@@ -120,10 +122,8 @@ func (data EditCandidateCommission) Run(tx *Transaction, context state.Interface
 
 	return Response{
 		Code:      code.OK,
-		GasUsed:   int64(tx.GasPrice),
-		GasWanted: int64(tx.GasPrice), // todo
-		// GasUsed:   tx.Gas(),
-		// GasWanted: tx.Gas(),
-		Tags: tags,
+		GasUsed:   gas,
+		GasWanted: gas,
+		Tags:      tags,
 	}
 }

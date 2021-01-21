@@ -9,6 +9,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
+	"strconv"
 )
 
 type CandidateTx interface {
@@ -22,7 +23,7 @@ type EditCandidateData struct {
 	ControlAddress types.Address
 }
 
-func (data EditCandidateData) Type() TxType {
+func (data EditCandidateData) TxType() TxType {
 	return TypeEditCandidate
 }
 
@@ -39,11 +40,11 @@ func (data EditCandidateData) String() string {
 		data.PubKey)
 }
 
-func (data EditCandidateData) Gas(price *commission.Price) *big.Int {
+func (data EditCandidateData) CommissionData(price *commission.Price) *big.Int {
 	return price.EditCandidate
 }
 
-func (data EditCandidateData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
+func (data EditCandidateData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int, gas int64) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -88,6 +89,8 @@ func (data EditCandidateData) Run(tx *Transaction, context state.Interface, rewa
 	}
 
 	tags := kv.Pairs{
+		kv.Pair{Key: []byte("tx.gas"), Value: []byte(strconv.Itoa(int(gas)))},
+		kv.Pair{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
 		kv.Pair{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
 		kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeEditCandidate)}))},
@@ -96,11 +99,9 @@ func (data EditCandidateData) Run(tx *Transaction, context state.Interface, rewa
 
 	return Response{
 		Code:      code.OK,
-		GasUsed:   int64(tx.GasPrice),
-		GasWanted: int64(tx.GasPrice), // todo
-		// GasUsed:   tx.Gas(),
-		// GasWanted: tx.Gas(),
-		Tags: tags,
+		GasUsed:   gas,
+		GasWanted: gas,
+		Tags:      tags,
 	}
 }
 

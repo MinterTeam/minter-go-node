@@ -130,16 +130,21 @@ type conversion struct {
 
 type Data interface {
 	String() string
-	Gas(*commission.Price) *big.Int
-	Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, gas *big.Int) Response
+	CommissionData(*commission.Price) *big.Int
+	Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int, gas int64) Response
+	TxType() TxType
 }
 
 func (tx *Transaction) Serialize() ([]byte, error) {
 	return rlp.EncodeToBytes(tx)
 }
 
-func (tx *Transaction) Gas(price *commission.Price) *big.Int {
-	return big.NewInt(0).Add(tx.decodedData.Gas(price), big.NewInt(0).Mul(big.NewInt(tx.payloadLen()), price.PayloadByte))
+func (tx *Transaction) Gas(commissions *commission.Price) int64 {
+	return big.NewInt(0).Quo(tx.Price(commissions), commissions.PayloadByte).Int64()
+}
+
+func (tx *Transaction) Price(price *commission.Price) *big.Int {
+	return big.NewInt(0).Add(tx.decodedData.CommissionData(price), big.NewInt(0).Mul(big.NewInt(tx.payloadLen()), price.PayloadByte))
 }
 
 func (tx *Transaction) payloadLen() int64 {
