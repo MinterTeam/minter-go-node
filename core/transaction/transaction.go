@@ -78,11 +78,10 @@ type Transaction struct {
 	SignatureType SigType
 	SignatureData []byte
 
-	dataCommissionPrice *big.Int
-	decodedData         Data
-	sig                 *Signature
-	multisig            *SignatureMulti
-	sender              *types.Address
+	decodedData Data
+	sig         *Signature
+	multisig    *SignatureMulti
+	sender      *types.Address
 }
 
 type Signature struct {
@@ -151,7 +150,7 @@ func (tx *Transaction) payloadLen() int64 {
 	return int64(len(tx.Payload) + len(tx.ServiceData))
 }
 
-func (tx *Transaction) CommissionInBaseCoin(gas *big.Int) *big.Int {
+func (tx *Transaction) Commission(gas *big.Int) *big.Int {
 	return big.NewInt(0).Mul(big.NewInt(int64(tx.GasPrice)), gas)
 }
 

@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/tendermint/iavl"
 	"sort"
@@ -128,17 +129,45 @@ func (c *Commission) GetCommissions() *Price {
 	}
 	_, value := c.immutableTree().Get([]byte{mainPrefix})
 	if len(value) == 0 {
-		return nil
+		return &Price{
+			PayloadByte:             helpers.StringToBigInt("200000000000000000"),
+			Send:                    helpers.StringToBigInt("1000000000000000000"),
+			Convert:                 helpers.StringToBigInt("10000000000000000000"),
+			CreateTicker3:           helpers.StringToBigInt("100000000000000000000000"),
+			CreateTicker4:           helpers.StringToBigInt("10000000000000000000000"),
+			CreateTicker5:           helpers.StringToBigInt("1000000000000000000000"),
+			CreateTicker6:           helpers.StringToBigInt("100000000000000000000"),
+			CreateTicker7to10:       helpers.StringToBigInt("10000000000000000000"),
+			Recreate:                helpers.StringToBigInt("1000000000000000000000000"),
+			DeclareCandidacy:        helpers.StringToBigInt("1000000000000000000000"),
+			Delegate:                helpers.StringToBigInt("20000000000000000000"),
+			Unbond:                  helpers.StringToBigInt("20000000000000000000"),
+			RedeemCheck:             helpers.StringToBigInt("3000000000000000000"),
+			ToggleCandidateStatus:   helpers.StringToBigInt("10000000000000000000"),
+			CreateMultisig:          helpers.StringToBigInt("10000000000000000000"),
+			MultisendDelta:          helpers.StringToBigInt("500000000000000000"),
+			EditCandidate:           helpers.StringToBigInt("1000000000000000000000"),
+			SetHaltBlock:            helpers.StringToBigInt("100000000000000000000"),
+			EditCoinOwner:           helpers.StringToBigInt("1000000000000000000000000"),
+			EditMultisig:            helpers.StringToBigInt("100000000000000000000"),
+			PriceVote:               helpers.StringToBigInt("1000000000000000000"),
+			EditCandidatePublicKey:  helpers.StringToBigInt("10000000000000000000000000"),
+			AddLiquidity:            helpers.StringToBigInt("10000000000000000000"),
+			RemoveLiquidity:         helpers.StringToBigInt("10000000000000000000"),
+			EditCandidateCommission: helpers.StringToBigInt("1000000000000000000000"),
+			MoveStake:               helpers.StringToBigInt("20000000000000000000"),
+			EditTokenEmission:       helpers.StringToBigInt("10000000000000000000"),
+			PriceCommission:         helpers.StringToBigInt("100000000000000000000"),
+			UpdateNetwork:           helpers.StringToBigInt("100000000000000000000"),
+			Coin:                    types.GetBaseCoinID(),
+		}
 	}
 	c.currentPrice = &Price{}
 	err := rlp.DecodeBytes(value, c.currentPrice)
 	if err != nil {
 		panic(err)
 	}
-	return &Price{
-		// todo: add default prices
-		Coin: types.GetBaseCoinID(),
-	}
+	return c.currentPrice
 }
 func (c *Commission) SetNewCommissions(prices []byte) {
 	c.dirtyCurrent = true

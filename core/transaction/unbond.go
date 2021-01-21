@@ -105,7 +105,7 @@ func (data UnbondData) Run(tx *Transaction, context state.Interface, rewardPool 
 		return *response
 	}
 
-	commissionInBaseCoin := tx.CommissionInBaseCoin(price)
+	commissionInBaseCoin := tx.Commission(price)
 	commissionPoolSwapper := checkState.Swap().GetSwapper(tx.GasCoin, types.GetBaseCoinID())
 	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
 	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoin, commissionInBaseCoin)

@@ -39,7 +39,7 @@ func (s *Service) EstimateTxCommission(ctx context.Context, req *pb.EstimateTxCo
 		price = cState.Swap().GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuy(price)
 	}
 
-	commissionInBaseCoin := decodedTx.CommissionInBaseCoin(price)
+	commissionInBaseCoin := decodedTx.Commission(price)
 	commissionPoolSwapper := cState.Swap().GetSwapper(decodedTx.GasCoin, types.GetBaseCoinID())
 	commission, _, errResp := transaction.CalculateCommission(cState, commissionPoolSwapper, cState.Coins().GetCoin(decodedTx.GasCoin), commissionInBaseCoin)
 	if errResp != nil {

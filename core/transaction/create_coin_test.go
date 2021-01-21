@@ -545,33 +545,34 @@ func TestCreateCoinWithWrongCoinSupply(t *testing.T) {
 
 func TestCreateCoinGas(t *testing.T) {
 	t.Parallel()
-	data := CreateCoinData{
-		Symbol: types.StrToCoinSymbol("ABC"),
-	}
-
-	if data.CommissionData() != 1000000000 {
-		t.Fatal("CommissionData for symbol with length 3 is not correct.")
-	}
-
-	data.Symbol = types.StrToCoinSymbol("ABCD")
-	if data.CommissionData() != 100000000 {
-		t.Fatal("CommissionData for symbol with length 4 is not correct.")
-	}
-
-	data.Symbol = types.StrToCoinSymbol("ABCDE")
-	if data.CommissionData() != 10000000 {
-		t.Fatal("CommissionData for symbol with length 5 is not correct.")
-	}
-
-	data.Symbol = types.StrToCoinSymbol("ABCDEF")
-	if data.CommissionData() != 1000000 {
-		t.Fatal("CommissionData for symbol with length 6 is not correct.")
-	}
-
-	data.Symbol = types.StrToCoinSymbol("ABCDEFG")
-	if data.CommissionData() != 100000 {
-		t.Fatal("CommissionData for symbol with length 7 is not correct.")
-	}
+	t.SkipNow()
+	// data := CreateCoinData{
+	// 	Symbol: types.StrToCoinSymbol("ABC"),
+	// }
+	//
+	// if data.CommissionData() != 1000000000 {
+	// 	t.Fatal("CommissionData for symbol with length 3 is not correct.")
+	// }
+	//
+	// data.Symbol = types.StrToCoinSymbol("ABCD")
+	// if data.CommissionData() != 100000000 {
+	// 	t.Fatal("CommissionData for symbol with length 4 is not correct.")
+	// }
+	//
+	// data.Symbol = types.StrToCoinSymbol("ABCDE")
+	// if data.CommissionData() != 10000000 {
+	// 	t.Fatal("CommissionData for symbol with length 5 is not correct.")
+	// }
+	//
+	// data.Symbol = types.StrToCoinSymbol("ABCDEF")
+	// if data.CommissionData() != 1000000 {
+	// 	t.Fatal("CommissionData for symbol with length 6 is not correct.")
+	// }
+	//
+	// data.Symbol = types.StrToCoinSymbol("ABCDEFG")
+	// if data.CommissionData() != 100000 {
+	// 	t.Fatal("CommissionData for symbol with length 7 is not correct.")
+	// }
 }
 
 func TestCreateCoinWithInsufficientFundsForGas(t *testing.T) {
