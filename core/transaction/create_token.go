@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/state/commission"
-	"log"
 	"math/big"
 	"strconv"
 
@@ -112,8 +111,6 @@ func (data CreateTokenData) Run(tx *Transaction, context state.Interface, reward
 		return *errResp
 	}
 
-	log.Println(checkState.Accounts().GetBalance(sender, tx.GasCoin))
-	log.Println(commission)
 	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) == -1 {
 		return Response{
 			Code: code.InsufficientFunds,
