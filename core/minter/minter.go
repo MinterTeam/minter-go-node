@@ -336,6 +336,7 @@ func (blockchain *Blockchain) calculatePowers(vals []*validators2.Validator) {
 			continue
 		}
 
+		blockchain.validatorsPowers[val.PubKey] = val.GetTotalBipStake()
 		blockchain.totalPower.Add(blockchain.totalPower, val.GetTotalBipStake())
 	}
 

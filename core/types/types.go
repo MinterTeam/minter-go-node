@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/hexutil"
+	"github.com/tendermint/tendermint/crypto/ed25519"
 	"math/big"
 	"math/rand"
 	"reflect"
@@ -391,3 +392,14 @@ func (p Pubkey) Equals(p2 Pubkey) bool {
 
 // TmAddress represents Tendermint address
 type TmAddress [TendermintAddressLength]byte
+
+func GetTmAddress(publicKey Pubkey) TmAddress {
+	// set tm address
+	var pubkey ed25519.PubKeyEd25519
+	copy(pubkey[:], publicKey[:])
+
+	var address TmAddress
+	copy(address[:], pubkey.Address().Bytes())
+
+	return address
+}

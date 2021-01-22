@@ -15,8 +15,8 @@ import (
 	"sync/atomic"
 )
 
-const minimumLiquidity int64 = 1000
-const commission int64 = 3
+const minimumLiquidity = 1000
+const commission = 2
 
 type EditableChecker interface {
 	IsExist() bool
@@ -650,7 +650,7 @@ func (p *Pair) CalculateSellForBuy(amount1Out *big.Int) (amount0In *big.Int) {
 	}
 	kAdjusted := new(big.Int).Mul(new(big.Int).Mul(reserve0, reserve1), big.NewInt(1000000))
 	balance1Adjusted := new(big.Int).Mul(new(big.Int).Add(new(big.Int).Neg(amount1Out), reserve1), big.NewInt(1000))
-	amount0In = new(big.Int).Quo(new(big.Int).Sub(new(big.Int).Quo(kAdjusted, balance1Adjusted), new(big.Int).Mul(reserve0, big.NewInt(1000))), big.NewInt(997))
+	amount0In = new(big.Int).Quo(new(big.Int).Sub(new(big.Int).Quo(kAdjusted, balance1Adjusted), new(big.Int).Mul(reserve0, big.NewInt(1000))), big.NewInt(1000-commission))
 	return new(big.Int).Add(amount0In, big.NewInt(1))
 }
 

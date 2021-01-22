@@ -29,7 +29,6 @@ import (
 	rpc "github.com/tendermint/tendermint/rpc/client/local"
 	types2 "github.com/tendermint/tendermint/types"
 	"math/big"
-	"math/rand"
 	"os"
 	"strconv"
 	"sync/atomic"
@@ -223,8 +222,8 @@ func TestBlockchain_IsApplicationHalted(t *testing.T) {
 			return
 		case <-time.After(2 * time.Second):
 			blockchain.lock.RLock()
-			defer blockchain.lock.RUnlock()
 			exportedState := blockchain.CurrentState().Export()
+			blockchain.lock.RUnlock()
 			if err := exportedState.Verify(); err != nil {
 				t.Fatal(err)
 			}
@@ -686,26 +685,15 @@ func TestStopNetworkByHaltBlocks(t *testing.T) {
 
 	haltHeight := uint64(50)
 
-	v1Pubkey := [32]byte{}
-	v2Pubkey := [32]byte{}
-	v3Pubkey := [32]byte{}
-
-	rand.Read(v1Pubkey[:])
-	rand.Read(v2Pubkey[:])
-	rand.Read(v3Pubkey[:])
-
-	blockchain.stateDeliver.Validators.Create(v1Pubkey, helpers.BipToPip(big.NewInt(3)))
-	blockchain.stateDeliver.Validators.Create(v2Pubkey, helpers.BipToPip(big.NewInt(5)))
-	blockchain.stateDeliver.Validators.Create(v3Pubkey, helpers.BipToPip(big.NewInt(3)))
-
-	v1Address := blockchain.stateDeliver.Validators.GetValidators()[1].GetAddress()
-	v2Address := blockchain.stateDeliver.Validators.GetValidators()[2].GetAddress()
-	v3Address := blockchain.stateDeliver.Validators.GetValidators()[3].GetAddress()
+	v1Pubkey := types.Pubkey{1}
+	v2Pubkey := types.Pubkey{2}
+	v3Pubkey := types.Pubkey{3}
 
 	blockchain.validatorsStatuses = map[types.TmAddress]int8{}
-	blockchain.validatorsStatuses[v1Address] = ValidatorPresent
-	blockchain.validatorsStatuses[v2Address] = ValidatorPresent
-	blockchain.validatorsStatuses[v3Address] = ValidatorPresent
+	blockchain.validatorsPowers[v1Pubkey] = helpers.BipToPip(big.NewInt(3))
+	blockchain.validatorsPowers[v2Pubkey] = helpers.BipToPip(big.NewInt(5))
+	blockchain.validatorsPowers[v3Pubkey] = helpers.BipToPip(big.NewInt(3))
+	blockchain.totalPower = helpers.BipToPip(big.NewInt(11))
 
 	blockchain.stateDeliver.Halts.AddHaltBlock(haltHeight, v1Pubkey)
 	blockchain.stateDeliver.Halts.AddHaltBlock(haltHeight, v3Pubkey)
