@@ -630,9 +630,9 @@ func TestCustomCommissionPriceCoinAndGasCastomCoin_sendTx(t *testing.T) {
 		t.Fatalf("Response code is not 0. Error: %s", response.Log)
 	}
 
-	for _, tag := range response.Tags {
-		t.Log(string(tag.Key), string(tag.Value))
-	}
+	// for _, tag := range response.Tags {
+	// 	t.Log(string(tag.Key), string(tag.Value))
+	// }
 
 	targetBalance, _ := big.NewInt(0).SetString("999990000000000000000000", 10)
 	balance := cState.Accounts.GetBalance(addr, coin)
