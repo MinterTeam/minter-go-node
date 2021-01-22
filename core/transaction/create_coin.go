@@ -157,9 +157,8 @@ func (data CreateCoinData) Run(tx *Transaction, context state.Interface, rewardP
 		return *errResp
 	}
 
-	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
+	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) == -1 {
 		gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
-
 		return Response{
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission.String(), gasCoin.GetFullSymbol()),
@@ -167,24 +166,16 @@ func (data CreateCoinData) Run(tx *Transaction, context state.Interface, rewardP
 		}
 	}
 
-	if checkState.Accounts().GetBalance(sender, types.GetBaseCoinID()).Cmp(data.InitialReserve) < 0 {
-		return Response{
-			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), data.InitialReserve.String(), types.GetBaseCoin()),
-			Info: EncodeError(code.NewInsufficientFunds(sender.String(), data.InitialReserve.String(), types.GetBaseCoin().String(), types.GetBaseCoinID().String())),
-		}
+	totalTxCost := big.NewInt(0).Set(data.InitialReserve)
+	if tx.GasCoin == types.GetBaseCoinID() {
+		totalTxCost.Add(totalTxCost, commissionInBaseCoin)
 	}
-
-	totalTxCost := big.NewInt(0).Set(commissionInBaseCoin)
-	totalTxCost.Add(totalTxCost, data.InitialReserve)
-
-	if checkState.Accounts().GetBalance(sender, types.GetBaseCoinID()).Cmp(totalTxCost) < 0 {
-		gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
-
+	if checkState.Accounts().GetBalance(sender, types.GetBaseCoinID()).Cmp(totalTxCost) == -1 {
+		coin := checkState.Coins().GetCoin(types.GetBaseCoinID())
 		return Response{
 			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), totalTxCost.String(), gasCoin.GetFullSymbol()),
-			Info: EncodeError(code.NewInsufficientFunds(sender.String(), totalTxCost.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), totalTxCost.String(), coin.GetFullSymbol()),
+			Info: EncodeError(code.NewInsufficientFunds(sender.String(), totalTxCost.String(), coin.GetFullSymbol(), coin.ID().String())),
 		}
 	}
 

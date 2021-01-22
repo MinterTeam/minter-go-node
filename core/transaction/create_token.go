@@ -112,23 +112,13 @@ func (data CreateTokenData) Run(tx *Transaction, context state.Interface, reward
 		return *errResp
 	}
 
-	log.Println(commission)
 	log.Println(checkState.Accounts().GetBalance(sender, tx.GasCoin))
+	log.Println(commission)
 	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) == -1 {
 		return Response{
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission.String(), gasCoin.GetFullSymbol()),
 			Info: EncodeError(code.NewInsufficientFunds(sender.String(), commission.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
-		}
-	}
-
-	totalTxCost := big.NewInt(0).Set(commissionInBaseCoin)
-
-	if checkState.Accounts().GetBalance(sender, types.GetBaseCoinID()).Cmp(totalTxCost) == -1 {
-		return Response{
-			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), totalTxCost.String(), gasCoin.GetFullSymbol()),
-			Info: EncodeError(code.NewInsufficientFunds(sender.String(), totalTxCost.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
 		}
 	}
 

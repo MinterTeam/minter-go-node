@@ -43,7 +43,7 @@ func TestPriceVoteTx(t *testing.T) {
 	}
 
 	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
-	if response.Code != 0 {
+	if response.Code != 1 {
 		t.Fatalf("Response code is not 0. Error: %s", response.Log)
 	}
 

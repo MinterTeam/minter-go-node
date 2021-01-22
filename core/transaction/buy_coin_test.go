@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"crypto/ecdsa"
+	"github.com/MinterTeam/minter-go-node/core/state/commission"
 	"github.com/pkg/errors"
 	"log"
 	"math/big"
@@ -21,7 +22,39 @@ import (
 )
 
 var (
-	rnd = rand.New(rand.NewSource(time.Now().Unix()))
+	rnd             = rand.New(rand.NewSource(time.Now().Unix()))
+	commissionPrice = commission.Price{
+		PayloadByte:             helpers.StringToBigInt("2000000000000000"),
+		Send:                    helpers.StringToBigInt("10000000000000000"),
+		Convert:                 helpers.StringToBigInt("100000000000000000"),
+		CreateTicker3:           helpers.StringToBigInt("1000000000000000000000"),
+		CreateTicker4:           helpers.StringToBigInt("100000000000000000000"),
+		CreateTicker5:           helpers.StringToBigInt("10000000000000000000"),
+		CreateTicker6:           helpers.StringToBigInt("1000000000000000000"),
+		CreateTicker7to10:       helpers.StringToBigInt("100000000000000000"),
+		Recreate:                helpers.StringToBigInt("10000000000000000000000"),
+		DeclareCandidacy:        helpers.StringToBigInt("10000000000000000000"),
+		Delegate:                helpers.StringToBigInt("200000000000000000"),
+		Unbond:                  helpers.StringToBigInt("200000000000000000"),
+		RedeemCheck:             helpers.StringToBigInt("30000000000000000"),
+		ToggleCandidateStatus:   helpers.StringToBigInt("100000000000000000"),
+		CreateMultisig:          helpers.StringToBigInt("100000000000000000"),
+		MultisendDelta:          helpers.StringToBigInt("5000000000000000"),
+		EditCandidate:           helpers.StringToBigInt("10000000000000000000"),
+		SetHaltBlock:            helpers.StringToBigInt("1000000000000000000"),
+		EditCoinOwner:           helpers.StringToBigInt("10000000000000000000000"),
+		EditMultisig:            helpers.StringToBigInt("1000000000000000000"),
+		PriceVote:               helpers.StringToBigInt("10000000000000000"),
+		EditCandidatePublicKey:  helpers.StringToBigInt("100000000000000000000000"),
+		AddLiquidity:            helpers.StringToBigInt("100000000000000000"),
+		RemoveLiquidity:         helpers.StringToBigInt("100000000000000000"),
+		EditCandidateCommission: helpers.StringToBigInt("10000000000000000000"),
+		MoveStake:               helpers.StringToBigInt("200000000000000000"),
+		EditTokenEmission:       helpers.StringToBigInt("100000000000000000"),
+		PriceCommission:         helpers.StringToBigInt("1000000000000000000"),
+		UpdateNetwork:           helpers.StringToBigInt("1000000000000000000"),
+		Coin:                    types.GetBaseCoinID(),
+	}
 )
 
 func getState() *state.State {
@@ -32,7 +65,7 @@ func getState() *state.State {
 
 	s.Validators.Create(types.Pubkey{}, big.NewInt(1))
 	s.Candidates.Create(types.Address{}, types.Address{}, types.Address{}, types.Pubkey{}, 10, 0)
-
+	s.Commission.SetNewCommissions(commissionPrice.Encode())
 	return s
 }
 

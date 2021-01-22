@@ -28,11 +28,7 @@ func TestPriceCommissionTx(t *testing.T) {
 	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 	{
-		data := []interface{}{
-			big.NewInt(1e18),
-			big.NewInt(1e18),
-			big.NewInt(1e18),
-			big.NewInt(1e18),
+		data := PriceCommissionData{
 			big.NewInt(1e18),
 			big.NewInt(1e18),
 			big.NewInt(1e18),
@@ -101,11 +97,7 @@ func TestPriceCommissionTx(t *testing.T) {
 	}
 
 	{
-		data := []interface{}{
-			big.NewInt(1e18),
-			big.NewInt(1e18),
-			big.NewInt(1e18),
-			big.NewInt(1e18),
+		data := PriceCommissionData{
 			big.NewInt(1e18),
 			big.NewInt(1e18),
 			big.NewInt(1e18),
@@ -182,7 +174,7 @@ func TestPriceCommissionDeleteTx(t *testing.T) {
 	cState.Accounts.SubBalance(types.Address{}, coin1, big.NewInt(1e18))
 
 	cState.Swap.PairMint(types.Address{}, types.GetBaseCoinID(), coin1, big.NewInt(1e18), big.NewInt(1e18))
-	cState.Accounts.AddBalance(addr, types.GetBaseCoinID(), big.NewInt(1e18))
+	cState.Accounts.AddBalance(addr, types.GetBaseCoinID(), big.NewInt(2e18))
 
 	pubkey := [32]byte{}
 	rand.Read(pubkey[:])
@@ -190,11 +182,7 @@ func TestPriceCommissionDeleteTx(t *testing.T) {
 	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 	{
-		data := []interface{}{
-			big.NewInt(1e18),
-			big.NewInt(1e18),
-			big.NewInt(1e18),
-			big.NewInt(1e18),
+		data := PriceCommissionData{
 			big.NewInt(1e18),
 			big.NewInt(1e18),
 			big.NewInt(1e18),
@@ -266,11 +254,7 @@ func TestPriceCommissionDeleteTx(t *testing.T) {
 		t.Error(err)
 	}
 	{
-		data := []interface{}{
-			big.NewInt(1e18),
-			big.NewInt(1e18),
-			big.NewInt(1e18),
-			big.NewInt(1e18),
+		data := PriceCommissionData{
 			big.NewInt(1e18),
 			big.NewInt(1e18),
 			big.NewInt(1e18),

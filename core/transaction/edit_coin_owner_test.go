@@ -33,7 +33,7 @@ func TestEditOwnerTx(t *testing.T) {
 	createDefaultValidator(cState)
 
 	gasCoin := types.GetBaseCoinID()
-	cState.Accounts.AddBalance(addr, gasCoin, helpers.BipToPip(big.NewInt(10000)))
+	cState.Accounts.AddBalance(addr, gasCoin, helpers.BipToPip(big.NewInt(1000000)))
 
 	data := EditCoinOwnerData{
 		Symbol:   getTestCoinSymbol(),

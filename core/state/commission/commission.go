@@ -172,7 +172,7 @@ func (c *Commission) GetCommissions() *Price {
 func (c *Commission) SetNewCommissions(prices []byte) {
 	c.dirtyCurrent = true
 	var newPrices Price
-	err := rlp.DecodeBytes(prices, newPrices)
+	err := rlp.DecodeBytes(prices, &newPrices)
 	if err != nil {
 		panic(err) // todo: if update network after price vote, clean up following blocks
 	}
