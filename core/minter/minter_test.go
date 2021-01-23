@@ -11,7 +11,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/core/developers"
 	eventsdb "github.com/MinterTeam/minter-go-node/core/events"
-	candidates2 "github.com/MinterTeam/minter-go-node/core/state/candidates"
+	"github.com/MinterTeam/minter-go-node/core/state/candidates"
 	"github.com/MinterTeam/minter-go-node/core/statistics"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
@@ -20,29 +20,21 @@ import (
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/tendermint/go-amino"
-	log2 "github.com/tendermint/tendermint/libs/log"
-	tmos "github.com/tendermint/tendermint/libs/os"
+	tmnet "github.com/tendermint/tendermint/libs/net"
 	tmNode "github.com/tendermint/tendermint/node"
 	"github.com/tendermint/tendermint/p2p"
+	p2pmock "github.com/tendermint/tendermint/p2p/mock"
 	"github.com/tendermint/tendermint/privval"
 	"github.com/tendermint/tendermint/proxy"
 	rpc "github.com/tendermint/tendermint/rpc/client/local"
 	types2 "github.com/tendermint/tendermint/types"
 	"math/big"
-	"os"
-	"strconv"
-	"sync/atomic"
 	"testing"
 	"time"
 )
 
 func initTestNode(t *testing.T) (*Blockchain, *rpc.Local, *privval.FilePV, func()) {
 	storage := utils.NewStorage(t.TempDir(), "")
-
-	if err := tmos.EnsureDir(storage.GetMinterHome()+"/tmdata/blockstore.db", 0777); err != nil {
-		t.Fatal(err)
-	}
-
 	minterCfg := config.GetConfig(storage.GetMinterHome())
 	logger := log.NewLogger(minterCfg)
 	cfg := config.GetTmConfig(minterCfg)
@@ -55,7 +47,7 @@ func initTestNode(t *testing.T) (*Blockchain, *rpc.Local, *privval.FilePV, func(
 	cfg.Consensus.TimeoutProposeDelta = 0
 	cfg.Consensus.SkipTimeoutCommit = true
 	cfg.RPC.ListenAddress = ""
-	cfg.P2P.ListenAddress = "0.0.0.0:2556" + getPort() // todo
+	cfg.P2P.ListenAddress = fmt.Sprintf("tcp://127.0.0.1:%d", getPort())
 	cfg.P2P.Seeds = ""
 	cfg.P2P.PersistentPeers = ""
 	cfg.DBBackend = "memdb"
@@ -63,7 +55,9 @@ func initTestNode(t *testing.T) (*Blockchain, *rpc.Local, *privval.FilePV, func(
 	pv := privval.GenFilePV(cfg.PrivValidatorKeyFile(), cfg.PrivValidatorStateFile())
 	pv.Save()
 
-	app := NewMinterBlockchain(storage, minterCfg)
+	ctx, cancelFunc := context.WithCancel(context.Background())
+
+	app := NewMinterBlockchain(storage, minterCfg, ctx)
 	nodeKey, err := p2p.LoadOrGenNodeKey(cfg.NodeKeyFile())
 	if err != nil {
 		t.Fatal(err)
@@ -77,19 +71,22 @@ func initTestNode(t *testing.T) (*Blockchain, *rpc.Local, *privval.FilePV, func(
 		getTestGenesis(pv, storage.GetMinterHome()),
 		tmNode.DefaultDBProvider,
 		tmNode.DefaultMetricsProvider(cfg.Instrumentation),
-		log2.NewTMLogger(os.Stdout),
+		logger,
+		tmNode.CustomReactors(map[string]p2p.Reactor{
+			// "PEX":        p2pmock.NewReactor(),
+			"BLOCKCHAIN": p2pmock.NewReactor(),
+		}),
 	)
-
 	if err != nil {
 		t.Fatal(fmt.Sprintf("Failed to create a node: %v", err))
 	}
 
-	if err = node.Start(); err != nil {
+	// logger.Info("Started node", "nodeInfo", node.Switch().NodeInfo())
+	app.SetTmNode(node)
+
+	if err = app.tmNode.Start(); err != nil {
 		t.Fatal(fmt.Sprintf("Failed to start node: %v", err))
 	}
-
-	logger.Info("Started node", "nodeInfo", node.Switch().NodeInfo())
-	app.SetTmNode(node)
 
 	tmCli := rpc.New(app.tmNode)
 
@@ -108,7 +105,12 @@ func initTestNode(t *testing.T) (*Blockchain, *rpc.Local, *privval.FilePV, func(
 		t.Fatal("Timeout waiting for the first block")
 	}
 
-	return app, tmCli, pv, func() { app.Stop() }
+	return app, tmCli, pv, func() {
+		cancelFunc()
+		if err := app.WaitStop(); err != nil {
+			t.Error(err)
+		}
+	}
 }
 
 func TestBlockchain_Height(t *testing.T) {
@@ -119,6 +121,13 @@ func TestBlockchain_Height(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	defer func() {
+		err = tmCli.UnsubscribeAll(context.Background(), "test-client")
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
 
 	block := <-blocks
 	if block.Data.(types2.EventDataNewBlock).Block.Height != int64(blockchain.Height()) {
@@ -151,6 +160,13 @@ func TestBlockchain_SetStatisticData(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	defer func() {
+		err = tmCli.UnsubscribeAll(context.Background(), "test-client")
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
 
 	<-blocks
 	<-blocks
@@ -209,6 +225,13 @@ func TestBlockchain_IsApplicationHalted(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	defer func() {
+		err = tmCli.UnsubscribeAll(context.Background(), "test-client")
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
 
 	for {
 		select {
@@ -360,6 +383,13 @@ func TestBlockchain_SendTx(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	defer func() {
+		err = tmCli.UnsubscribeAll(context.Background(), "test-client")
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
 
 	select {
 	case <-txs:
@@ -666,7 +696,7 @@ func TestBlockchain_RecalculateStakes_andRemoveValidator(t *testing.T) {
 	}
 	blockchain.lock.RUnlock()
 
-	if candidate.Status == candidates2.CandidateStatusOnline {
+	if candidate.Status == candidates.CandidateStatusOnline {
 		t.Fatal("candidate not Offline")
 	}
 
@@ -752,7 +782,7 @@ func makeTestValidatorsAndCandidates(pubkeys []string, stake *big.Int) ([]types.
 					BipValue: stake.String(),
 				},
 			},
-			Status: candidates2.CandidateStatusOnline,
+			Status: candidates.CandidateStatusOnline,
 		})
 	}
 
@@ -809,8 +839,10 @@ func getTestGenesis(pv *privval.FilePV, home string) func() (*types2.GenesisDoc,
 	}
 }
 
-var port int32 = 0
-
-func getPort() string {
-	return strconv.Itoa(int(atomic.AddInt32(&port, 1)))
+func getPort() int {
+	port, err := tmnet.GetFreePort()
+	if err != nil {
+		panic(err)
+	}
+	return port
 }

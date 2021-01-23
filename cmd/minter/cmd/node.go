@@ -92,7 +92,7 @@ func runNode(cmd *cobra.Command) error {
 
 	tmConfig := config.GetTmConfig(cfg)
 
-	app := minter.NewMinterBlockchain(storages, cfg)
+	app := minter.NewMinterBlockchain(storages, cfg, cmd.Context())
 
 	// update BlocksTimeDelta in case it was corrupted
 	updateBlocksTimeDelta(app, tmConfig)
@@ -112,14 +112,7 @@ func runNode(cmd *cobra.Command) error {
 		go app.SetStatisticData(statistics.New()).Statistic(cmd.Context())
 	}
 
-	<-cmd.Context().Done()
-
-	defer app.Stop()
-	if err := node.Stop(); err != nil {
-		return err
-	}
-
-	return nil
+	return app.WaitStop()
 }
 
 func runCLI(cmd *cobra.Command, app *minter.Blockchain, client *rpc.Local, tmNode *tmNode.Node, home string) {

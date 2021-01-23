@@ -2,6 +2,7 @@ package minter
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
@@ -21,6 +22,7 @@ import (
 	"github.com/tendermint/go-amino"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
 	tmNode "github.com/tendermint/tendermint/node"
+	"log"
 	"math/big"
 	"sort"
 	"sync"
@@ -70,10 +72,12 @@ type Blockchain struct {
 	haltHeight uint64
 	cfg        *config.Config
 	storages   *utils.Storage
+	stopChan   context.Context
+	stopped    bool
 }
 
 // NewMinterBlockchain creates Minter Blockchain instance, should be only called once
-func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config) *Blockchain {
+func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx context.Context) *Blockchain {
 	// Initiate Application DB. Used for persisting data like current block, validators, etc.
 	applicationDB := appdb.NewAppDB(storages.GetMinterHome(), cfg)
 
@@ -83,6 +87,9 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config) *Blockchai
 	if lastHeight < initialHeight {
 		height = initialHeight
 	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	blockchain := &Blockchain{
 		appDB:          applicationDB,
 		storages:       storages,
@@ -90,6 +97,7 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config) *Blockchai
 		eventsDB:       eventsdb.NewEventsStore(storages.EventDB()),
 		currentMempool: &sync.Map{},
 		cfg:            cfg,
+		stopChan:       ctx,
 	}
 
 	var err error
@@ -118,8 +126,11 @@ func (blockchain *Blockchain) InitChain(req abciTypes.RequestInitChain) abciType
 
 	if genesisState.StartHeight > blockchain.height {
 		blockchain.appDB.SetStartHeight(genesisState.StartHeight)
-		blockchain.Close()
-		*blockchain = *NewMinterBlockchain(blockchain.storages, blockchain.cfg)
+		err := blockchain.Close()
+		if err != nil {
+			panic(err)
+		}
+		*blockchain = *NewMinterBlockchain(blockchain.storages, blockchain.cfg, blockchain.stopChan)
 	}
 	if err := blockchain.stateDeliver.Import(genesisState); err != nil {
 		panic(err)
@@ -143,7 +154,6 @@ func (blockchain *Blockchain) InitChain(req abciTypes.RequestInitChain) abciType
 
 // BeginBlock signals the beginning of a block.
 func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.ResponseBeginBlock {
-
 	height := uint64(req.Header.Height)
 
 	blockchain.StatisticData().PushStartBlock(&statistics.StartRequest{Height: int64(height), Now: time.Now(), HeaderTime: req.Header.Time})
@@ -179,7 +189,9 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 	blockchain.calculatePowers(blockchain.stateDeliver.Validators.GetValidators())
 
 	if blockchain.isApplicationHalted(height) {
-		panic(fmt.Sprintf("Application halted at height %d", height))
+		blockchain.stop()
+		return abciTypes.ResponseBeginBlock{}
+		// panic(fmt.Sprintf("Application halted at height %d", height))
 	}
 
 	// give penalty to Byzantine validators
@@ -241,7 +253,34 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 
 	blockchain.stateDeliver.Halts.Delete(height)
 
+	// blockchain.checkStop()
+
 	return abciTypes.ResponseBeginBlock{}
+}
+
+func (blockchain *Blockchain) checkStop() bool {
+	if !blockchain.stopped {
+		select {
+		case <-blockchain.stopChan.Done():
+			blockchain.stop()
+		default:
+		}
+	}
+	return blockchain.stopped
+}
+
+func (blockchain *Blockchain) stop() {
+	blockchain.stopped = true
+	go func() {
+		log.Println("Node Stopped with error:", blockchain.tmNode.Stop())
+	}()
+
+}
+
+// Stop gracefully stopping Minter Blockchain instance
+func (blockchain *Blockchain) WaitStop() error {
+	blockchain.tmNode.Wait()
+	return blockchain.Close()
 }
 
 // EndBlock signals the end of a block, returns changes to the validator set
@@ -459,18 +498,22 @@ func (blockchain *Blockchain) CheckTx(req abciTypes.RequestCheckTx) abciTypes.Re
 
 // Commit the state and return the application Merkle root hash
 func (blockchain *Blockchain) Commit() abciTypes.ResponseCommit {
+	if blockchain.checkStop() {
+		return abciTypes.ResponseCommit{}
+	}
+
 	if err := blockchain.stateDeliver.Check(); err != nil {
+		panic(err)
+	}
+
+	// Flush events db
+	err := blockchain.eventsDB.CommitEvents()
+	if err != nil {
 		panic(err)
 	}
 
 	// Committing Minter Blockchain state
 	hash, err := blockchain.stateDeliver.Commit()
-	if err != nil {
-		panic(err)
-	}
-
-	// Flush events db
-	err = blockchain.eventsDB.CommitEvents()
 	if err != nil {
 		panic(err)
 	}
@@ -488,6 +531,10 @@ func (blockchain *Blockchain) Commit() abciTypes.ResponseCommit {
 	// Clear mempool
 	blockchain.currentMempool = &sync.Map{}
 
+	if blockchain.checkStop() {
+		return abciTypes.ResponseCommit{Data: hash}
+	}
+
 	return abciTypes.ResponseCommit{
 		Data: hash,
 	}
@@ -503,24 +550,18 @@ func (blockchain *Blockchain) SetOption(_ abciTypes.RequestSetOption) abciTypes.
 	return abciTypes.ResponseSetOption{}
 }
 
-// Stop gracefully stopping Minter Blockchain instance
-func (blockchain *Blockchain) Stop() {
-	err := blockchain.tmNode.Stop()
-	if err != nil {
-		panic(err)
-	}
-	blockchain.Close()
-}
-
 // Close closes db connections
-func (blockchain *Blockchain) Close() {
-	blockchain.appDB.Close()
+func (blockchain *Blockchain) Close() error {
+	if err := blockchain.appDB.Close(); err != nil {
+		return err
+	}
 	if err := blockchain.storages.StateDB().Close(); err != nil {
-		panic(err)
+		return err
 	}
 	if err := blockchain.storages.EventDB().Close(); err != nil {
-		panic(err)
+		return err
 	}
+	return nil
 }
 
 // CurrentState returns immutable state of Minter Blockchain
