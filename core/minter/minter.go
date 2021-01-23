@@ -272,6 +272,7 @@ func (blockchain *Blockchain) checkStop() bool {
 func (blockchain *Blockchain) stop() {
 	blockchain.stopped = true
 	go func() {
+		log.Println("Stopping Node")
 		log.Println("Node Stopped with error:", blockchain.tmNode.Stop())
 	}()
 
