@@ -499,10 +499,6 @@ func (blockchain *Blockchain) CheckTx(req abciTypes.RequestCheckTx) abciTypes.Re
 
 // Commit the state and return the application Merkle root hash
 func (blockchain *Blockchain) Commit() abciTypes.ResponseCommit {
-	if blockchain.checkStop() {
-		return abciTypes.ResponseCommit{}
-	}
-
 	if err := blockchain.stateDeliver.Check(); err != nil {
 		panic(err)
 	}
