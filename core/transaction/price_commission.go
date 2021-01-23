@@ -13,6 +13,9 @@ import (
 )
 
 type PriceCommissionData struct {
+	PubKey                  types.Pubkey
+	Height                  uint64
+	Coin                    types.CoinID
 	PayloadByte             *big.Int
 	Send                    *big.Int
 	Convert                 *big.Int
@@ -42,9 +45,7 @@ type PriceCommissionData struct {
 	EditTokenEmission       *big.Int
 	PriceCommission         *big.Int
 	UpdateNetwork           *big.Int
-	Coin                    types.CoinID
-	PubKey                  types.Pubkey
-	Height                  uint64
+	More                    []*big.Int `rlp:"tail"`
 }
 
 func (data PriceCommissionData) TxType() TxType {
@@ -56,6 +57,14 @@ func (data PriceCommissionData) GetPubKey() types.Pubkey {
 }
 
 func (data PriceCommissionData) basicCheck(tx *Transaction, context *state.CheckState, block uint64) *Response {
+	if len(data.More) > 5 {
+		return &Response{
+			Code: code.DecodeError,
+			Log:  "More parameters than expected",
+			Info: EncodeError(code.NewDecodeError()),
+		}
+	}
+
 	if data.Height < block {
 		return &Response{
 			Code: code.VoiceExpired,
@@ -192,5 +201,6 @@ func (data PriceCommissionData) price() *commission.Price {
 		PriceCommission:         data.PriceCommission,
 		UpdateNetwork:           data.UpdateNetwork,
 		Coin:                    data.Coin,
+		More:                    data.More,
 	}
 }

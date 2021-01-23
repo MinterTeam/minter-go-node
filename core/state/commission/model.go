@@ -7,6 +7,7 @@ import (
 )
 
 type Price struct {
+	Coin                    types.CoinID
 	PayloadByte             *big.Int
 	Send                    *big.Int
 	Convert                 *big.Int
@@ -36,7 +37,7 @@ type Price struct {
 	EditTokenEmission       *big.Int
 	PriceCommission         *big.Int
 	UpdateNetwork           *big.Int
-	Coin                    types.CoinID
+	More                    []*big.Int `rlp:"tail"`
 }
 
 func (d *Price) Encode() []byte {
