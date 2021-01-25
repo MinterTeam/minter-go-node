@@ -336,8 +336,41 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 
 	if prices := blockchain.isUpdateCommissionsBlock(height); len(prices) != 0 {
 		blockchain.stateDeliver.Commission.SetNewCommissions(prices)
-		blockchain.stateDeliver.Commission.Delete(height)
+		price := blockchain.stateDeliver.Commission.GetCommissions()
+		blockchain.eventsDB.AddEvent(uint32(height), &eventsdb.UpdateCommissionsEvent{
+			Coin:                    uint64(price.Coin),
+			PayloadByte:             price.PayloadByte.String(),
+			Send:                    price.Send.String(),
+			Convert:                 price.Convert.String(),
+			CreateTicker3:           price.CreateTicker3.String(),
+			CreateTicker4:           price.CreateTicker4.String(),
+			CreateTicker5:           price.CreateTicker5.String(),
+			CreateTicker6:           price.CreateTicker6.String(),
+			CreateTicker7_10:        price.CreateTicker7to10.String(),
+			RecreateTicker:          price.RecreateTicker.String(),
+			DeclareCandidacy:        price.DeclareCandidacy.String(),
+			Delegate:                price.Delegate.String(),
+			Unbond:                  price.Unbond.String(),
+			RedeemCheck:             price.RedeemCheck.String(),
+			ToggleCandidateStatus:   price.ToggleCandidateStatus.String(),
+			CreateMultisig:          price.CreateMultisig.String(),
+			MultisendDelta:          price.MultisendDelta.String(),
+			EditCandidate:           price.EditCandidate.String(),
+			SetHaltBlock:            price.SetHaltBlock.String(),
+			EditTickerOwner:         price.EditTickerOwner.String(),
+			EditMultisig:            price.EditMultisig.String(),
+			PriceVote:               price.PriceVote.String(),
+			EditCandidatePublicKey:  price.EditCandidatePublicKey.String(),
+			AddLiquidity:            price.AddLiquidity.String(),
+			RemoveLiquidity:         price.RemoveLiquidity.String(),
+			EditCandidateCommission: price.EditCandidateCommission.String(),
+			MoveStake:               price.MoveStake.String(),
+			EditTokenEmission:       price.EditTokenEmission.String(),
+			PriceCommission:         price.PriceCommission.String(),
+			UpdateNetwork:           price.UpdateNetwork.String(),
+		})
 	}
+	blockchain.stateDeliver.Commission.Delete(height)
 
 	hasChangedPublicKeys := false
 	if blockchain.stateDeliver.Candidates.IsChangedPublicKeys() {

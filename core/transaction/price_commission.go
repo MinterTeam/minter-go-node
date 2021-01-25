@@ -57,7 +57,7 @@ func (data PriceCommissionData) GetPubKey() types.Pubkey {
 }
 
 func (data PriceCommissionData) basicCheck(tx *Transaction, context *state.CheckState, block uint64) *Response {
-	if len(data.More) > 5 {
+	if len(data.More) > 0 { // todo
 		return &Response{
 			Code: code.DecodeError,
 			Log:  "More parameters than expected",
