@@ -16,7 +16,7 @@ type Price struct {
 	CreateTicker5           *big.Int
 	CreateTicker6           *big.Int
 	CreateTicker7to10       *big.Int
-	Recreate                *big.Int
+	RecreateTicker          *big.Int
 	DeclareCandidacy        *big.Int
 	Delegate                *big.Int
 	Unbond                  *big.Int
@@ -26,7 +26,7 @@ type Price struct {
 	MultisendDelta          *big.Int
 	EditCandidate           *big.Int
 	SetHaltBlock            *big.Int
-	EditCoinOwner           *big.Int
+	EditTickerOwner         *big.Int
 	EditMultisig            *big.Int
 	PriceVote               *big.Int
 	EditCandidatePublicKey  *big.Int
@@ -46,6 +46,14 @@ func (d *Price) Encode() []byte {
 		panic(err)
 	}
 	return bytes
+}
+func Decode(s string) *Price {
+	var p Price
+	err := rlp.DecodeBytes([]byte(s), &p)
+	if err != nil {
+		panic(err)
+	}
+	return &p
 }
 
 type Model struct {

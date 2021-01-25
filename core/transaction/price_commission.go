@@ -24,7 +24,7 @@ type PriceCommissionData struct {
 	CreateTicker5           *big.Int
 	CreateTicker6           *big.Int
 	CreateTicker7to10       *big.Int
-	Recreate                *big.Int
+	RecreateTicker          *big.Int
 	DeclareCandidacy        *big.Int
 	Delegate                *big.Int
 	Unbond                  *big.Int
@@ -34,7 +34,7 @@ type PriceCommissionData struct {
 	MultisendDelta          *big.Int
 	EditCandidate           *big.Int
 	SetHaltBlock            *big.Int
-	EditCoinOwner           *big.Int
+	EditTickerOwner         *big.Int
 	EditMultisig            *big.Int
 	PriceVote               *big.Int
 	EditCandidatePublicKey  *big.Int
@@ -188,8 +188,8 @@ func (data PriceCommissionData) price() *commission.Price {
 		MultisendDelta:          data.MultisendDelta,
 		EditCandidate:           data.EditCandidate,
 		SetHaltBlock:            data.SetHaltBlock,
-		Recreate:                data.Recreate,
-		EditCoinOwner:           data.EditCoinOwner,
+		RecreateTicker:          data.RecreateTicker,
+		EditTickerOwner:         data.EditTickerOwner,
 		EditMultisig:            data.EditMultisig,
 		PriceVote:               data.PriceVote,
 		EditCandidatePublicKey:  data.EditCandidatePublicKey,

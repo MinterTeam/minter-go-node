@@ -130,6 +130,7 @@ func (c *Commission) GetCommissions() *Price {
 	_, value := c.immutableTree().Get([]byte{mainPrefix})
 	if len(value) == 0 {
 		return &Price{
+			Coin:                    types.GetBaseCoinID(),
 			PayloadByte:             helpers.StringToBigInt("200000000000000000"),
 			Send:                    helpers.StringToBigInt("1000000000000000000"),
 			Convert:                 helpers.StringToBigInt("10000000000000000000"),
@@ -138,7 +139,7 @@ func (c *Commission) GetCommissions() *Price {
 			CreateTicker5:           helpers.StringToBigInt("1000000000000000000000"),
 			CreateTicker6:           helpers.StringToBigInt("100000000000000000000"),
 			CreateTicker7to10:       helpers.StringToBigInt("10000000000000000000"),
-			Recreate:                helpers.StringToBigInt("1000000000000000000000000"),
+			RecreateTicker:          helpers.StringToBigInt("1000000000000000000000000"),
 			DeclareCandidacy:        helpers.StringToBigInt("1000000000000000000000"),
 			Delegate:                helpers.StringToBigInt("20000000000000000000"),
 			Unbond:                  helpers.StringToBigInt("20000000000000000000"),
@@ -148,7 +149,7 @@ func (c *Commission) GetCommissions() *Price {
 			MultisendDelta:          helpers.StringToBigInt("500000000000000000"),
 			EditCandidate:           helpers.StringToBigInt("1000000000000000000000"),
 			SetHaltBlock:            helpers.StringToBigInt("100000000000000000000"),
-			EditCoinOwner:           helpers.StringToBigInt("1000000000000000000000000"),
+			EditTickerOwner:         helpers.StringToBigInt("1000000000000000000000000"),
 			EditMultisig:            helpers.StringToBigInt("100000000000000000000"),
 			PriceVote:               helpers.StringToBigInt("1000000000000000000"),
 			EditCandidatePublicKey:  helpers.StringToBigInt("10000000000000000000000000"),
@@ -159,7 +160,7 @@ func (c *Commission) GetCommissions() *Price {
 			EditTokenEmission:       helpers.StringToBigInt("10000000000000000000"),
 			PriceCommission:         helpers.StringToBigInt("100000000000000000000"),
 			UpdateNetwork:           helpers.StringToBigInt("100000000000000000000"),
-			Coin:                    types.GetBaseCoinID(),
+			More:                    nil,
 		}
 	}
 	c.currentPrice = &Price{}
