@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/tendermint/iavl"
 	"sort"
@@ -128,26 +129,69 @@ func (c *Commission) GetCommissions() *Price {
 	}
 	_, value := c.immutableTree().Get([]byte{mainPrefix})
 	if len(value) == 0 {
-		return nil
+		return &Price{
+			Coin:                    types.GetBaseCoinID(),
+			PayloadByte:             helpers.StringToBigInt("200000000000000000"),
+			Send:                    helpers.StringToBigInt("1000000000000000000"),
+			SellAllPool:             helpers.StringToBigInt("10000000000000000000"),
+			SellAllBancor:           helpers.StringToBigInt("10000000000000000000"),
+			SellBancor:              helpers.StringToBigInt("10000000000000000000"),
+			SellPool:                helpers.StringToBigInt("10000000000000000000"),
+			BuyBancor:               helpers.StringToBigInt("10000000000000000000"),
+			BuyPool:                 helpers.StringToBigInt("10000000000000000000"),
+			CreateTicker3:           helpers.StringToBigInt("100000000000000000000000"),
+			CreateTicker4:           helpers.StringToBigInt("10000000000000000000000"),
+			CreateTicker5:           helpers.StringToBigInt("1000000000000000000000"),
+			CreateTicker6:           helpers.StringToBigInt("100000000000000000000"),
+			CreateTicker7to10:       helpers.StringToBigInt("10000000000000000000"),
+			CreateCoin:              helpers.StringToBigInt("0"),
+			CreateToken:             helpers.StringToBigInt("0"),
+			RecreateCoin:            helpers.StringToBigInt("1000000000000000000000000"),
+			RecreateToken:           helpers.StringToBigInt("1000000000000000000000000"),
+			DeclareCandidacy:        helpers.StringToBigInt("1000000000000000000000"),
+			Delegate:                helpers.StringToBigInt("20000000000000000000"),
+			Unbond:                  helpers.StringToBigInt("20000000000000000000"),
+			RedeemCheck:             helpers.StringToBigInt("3000000000000000000"),
+			SetCandidateOn:          helpers.StringToBigInt("10000000000000000000"),
+			SetCandidateOff:         helpers.StringToBigInt("10000000000000000000"),
+			CreateMultisig:          helpers.StringToBigInt("10000000000000000000"),
+			MultisendBase:           helpers.StringToBigInt("1000000000000000000"),
+			MultisendDelta:          helpers.StringToBigInt("500000000000000000"),
+			EditCandidate:           helpers.StringToBigInt("1000000000000000000000"),
+			SetHaltBlock:            helpers.StringToBigInt("100000000000000000000"),
+			EditTickerOwner:         helpers.StringToBigInt("1000000000000000000000000"),
+			EditMultisig:            helpers.StringToBigInt("100000000000000000000"),
+			PriceVote:               helpers.StringToBigInt("1000000000000000000"),
+			EditCandidatePublicKey:  helpers.StringToBigInt("10000000000000000000000000"),
+			AddLiquidity:            helpers.StringToBigInt("10000000000000000000"),
+			RemoveLiquidity:         helpers.StringToBigInt("10000000000000000000"),
+			EditCandidateCommission: helpers.StringToBigInt("1000000000000000000000"),
+			MoveStake:               helpers.StringToBigInt("20000000000000000000"),
+			MintToken:               helpers.StringToBigInt("10000000000000000000"),
+			BurnToken:               helpers.StringToBigInt("10000000000000000000"),
+			PriceCommission:         helpers.StringToBigInt("100000000000000000000"),
+			UpdateNetwork:           helpers.StringToBigInt("100000000000000000000"),
+			More:                    nil,
+		}
 	}
 	c.currentPrice = &Price{}
 	err := rlp.DecodeBytes(value, c.currentPrice)
 	if err != nil {
 		panic(err)
 	}
-	return &Price{}
+	return c.currentPrice
 }
 func (c *Commission) SetNewCommissions(prices []byte) {
 	c.dirtyCurrent = true
 	var newPrices Price
-	err := rlp.DecodeBytes(prices, newPrices)
+	err := rlp.DecodeBytes(prices, &newPrices)
 	if err != nil {
 		panic(err) // todo: if update network after price vote, clean up following blocks
 	}
 	c.currentPrice = &newPrices
 }
 
-func (c *Commission) GetOrNew(height uint64, encode string) *Model {
+func (c *Commission) getOrNew(height uint64, encode string) *Model {
 	prices := c.get(height)
 
 	if len(prices) == 0 {
@@ -226,7 +270,7 @@ func (c *Commission) IsVoteExists(height uint64, pubkey types.Pubkey) bool {
 }
 
 func (c *Commission) AddVoice(height uint64, pubkey types.Pubkey, encode []byte) {
-	c.GetOrNew(height, string(encode)).addVoite(pubkey)
+	c.getOrNew(height, string(encode)).addVoite(pubkey)
 }
 
 func (c *Commission) Delete(height uint64) {

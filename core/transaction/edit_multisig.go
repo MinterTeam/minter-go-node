@@ -3,11 +3,11 @@ package transaction
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/core/state/commission"
 	"math/big"
 	"strconv"
 
 	"github.com/MinterTeam/minter-go-node/core/code"
-	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/tendermint/tendermint/libs/kv"
@@ -17,6 +17,10 @@ type EditMultisigData struct {
 	Threshold uint32
 	Weights   []uint32
 	Addresses []types.Address
+}
+
+func (data EditMultisigData) TxType() TxType {
+	return TypeEditMultisig
 }
 
 func (data EditMultisigData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
@@ -90,11 +94,11 @@ func (data EditMultisigData) String() string {
 	return "EDIT MULTISIG OWNERS"
 }
 
-func (data EditMultisigData) Gas() int64 {
-	return commissions.EditMultisigData
+func (data EditMultisigData) CommissionData(price *commission.Price) *big.Int {
+	return price.EditMultisig
 }
 
-func (data EditMultisigData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, priceCoin types.CoinID, price *big.Int) Response {
+func (data EditMultisigData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int, gas int64) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -108,7 +112,7 @@ func (data EditMultisigData) Run(tx *Transaction, context state.Interface, rewar
 		return *response
 	}
 
-	commissionInBaseCoin := tx.CommissionInBaseCoin()
+	commissionInBaseCoin := tx.Commission(price)
 	commissionPoolSwapper := checkState.Swap().GetSwapper(tx.GasCoin, types.GetBaseCoinID())
 	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
 	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoin, commissionInBaseCoin)
@@ -140,6 +144,8 @@ func (data EditMultisigData) Run(tx *Transaction, context state.Interface, rewar
 
 	address := []byte(hex.EncodeToString(sender[:]))
 	tags := kv.Pairs{
+		kv.Pair{Key: []byte("tx.gas"), Value: []byte(strconv.Itoa(int(gas)))},
+		kv.Pair{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
 		kv.Pair{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
 		kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeEditMultisig)}))},
@@ -148,8 +154,8 @@ func (data EditMultisigData) Run(tx *Transaction, context state.Interface, rewar
 
 	return Response{
 		Code:      code.OK,
-		GasUsed:   tx.Gas(),
-		GasWanted: tx.Gas(),
+		GasUsed:   gas,
+		GasWanted: gas,
 		Tags:      tags,
 	}
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
-	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state/coins"
 	"github.com/MinterTeam/minter-go-node/core/state/swap"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
@@ -64,13 +63,6 @@ func (s *Service) EstimateCoinSell(ctx context.Context, req *pb.EstimateCoinSell
 	coinFrom := cState.Coins().GetCoin(coinToSell)
 	coinTo := cState.Coins().GetCoin(coinToBuy)
 
-	commissionInBaseCoin := big.NewInt(0).Mul(big.NewInt(commissions.ConvertTx), transaction.CommissionMultiplier)
-	commissionPoolSwapper := cState.Swap().GetSwapper(coinFrom.ID(), types.GetBaseCoinID())
-	commission, _, errResp := transaction.CalculateCommission(cState, commissionPoolSwapper, coinFrom, commissionInBaseCoin)
-	if errResp != nil {
-		return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
-	}
-
 	var valueBancor, valuePool *big.Int
 	var errBancor, errPool error
 	value := big.NewInt(0)
@@ -81,33 +73,41 @@ func (s *Service) EstimateCoinSell(ctx context.Context, req *pb.EstimateCoinSell
 		valuePool, errPool = s.calcSellFromPool(valueToSell, cState.Swap().GetSwapper(coinFrom.ID(), coinTo.ID()), coinFrom, coinTo)
 	}
 
+	commissions := cState.Commission().GetCommissions()
+	var commissionInBaseCoin *big.Int
 	switch req.SwapFrom {
 	case pb.SwapFrom_bancor:
 		if errBancor != nil {
 			return nil, errBancor
 		}
 		value = valueBancor
+		commissionInBaseCoin = commissions.SellBancor
 	case pb.SwapFrom_pool:
 		if errPool != nil {
 			return nil, errPool
 		}
 		value = valuePool
+		commissionInBaseCoin = commissions.SellPool
 	default:
 		if valueBancor != nil && valuePool != nil {
 			if valueBancor.Cmp(valuePool) == -1 {
 				value = valuePool
+				commissionInBaseCoin = commissions.SellPool
 			} else {
 				value = valueBancor
+				commissionInBaseCoin = commissions.SellBancor
 			}
 			break
 		}
 
 		if valueBancor != nil {
 			value = valueBancor
+			commissionInBaseCoin = commissions.SellBancor
 			break
 		}
 		if valuePool != nil {
 			value = valuePool
+			commissionInBaseCoin = commissions.SellPool
 			break
 		}
 
@@ -115,6 +115,15 @@ func (s *Service) EstimateCoinSell(ctx context.Context, req *pb.EstimateCoinSell
 		respPool, _ := status.FromError(errPool)
 		return nil, s.createError(status.New(codes.FailedPrecondition, "not possible to exchange"),
 			transaction.EncodeError(code.NewCommissionCoinNotSufficient(respBancor.Message(), respPool.Message())))
+	}
+
+	if !commissions.Coin.IsBaseCoin() {
+		commissionInBaseCoin = cState.Swap().GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuy(commissionInBaseCoin)
+	}
+	commissionPoolSwapper := cState.Swap().GetSwapper(coinFrom.ID(), types.GetBaseCoinID())
+	commission, _, errResp := transaction.CalculateCommission(cState, commissionPoolSwapper, coinFrom, commissionInBaseCoin)
+	if errResp != nil {
+		return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
 	}
 
 	res := &pb.EstimateCoinSellResponse{

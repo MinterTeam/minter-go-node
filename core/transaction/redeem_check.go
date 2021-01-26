@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/core/state/commission"
 	"math/big"
 	"strconv"
 
 	"github.com/MinterTeam/minter-go-node/core/check"
 	"github.com/MinterTeam/minter-go-node/core/code"
-	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
@@ -21,6 +21,10 @@ import (
 type RedeemCheckData struct {
 	RawCheck []byte
 	Proof    [65]byte
+}
+
+func (data RedeemCheckData) TxType() TxType {
+	return TypeRedeemCheck
 }
 
 func (data RedeemCheckData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
@@ -48,11 +52,11 @@ func (data RedeemCheckData) String() string {
 	return fmt.Sprintf("REDEEM CHECK proof: %x", data.Proof)
 }
 
-func (data RedeemCheckData) Gas() int64 {
-	return commissions.RedeemCheckTx
+func (data RedeemCheckData) CommissionData(price *commission.Price) *big.Int {
+	return price.RedeemCheck
 }
 
-func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, priceCoin types.CoinID, price *big.Int) Response {
+func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int, gas int64) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -120,7 +124,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 	if tx.GasCoin != decodedCheck.GasCoin {
 		return Response{
 			Code: code.WrongGasCoin,
-			Log:  fmt.Sprintf("Gas coin for redeem check transaction can only be %s", decodedCheck.GasCoin),
+			Log:  fmt.Sprintf("CommissionData coin for redeem check transaction can only be %s", decodedCheck.GasCoin),
 			Info: EncodeError(code.NewWrongGasCoin(checkState.Coins().GetCoin(tx.GasCoin).GetFullSymbol(), tx.GasCoin.String(), checkState.Coins().GetCoin(decodedCheck.GasCoin).GetFullSymbol(), decodedCheck.GasCoin.String())),
 		}
 	}
@@ -176,7 +180,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 		}
 	}
 
-	commissionInBaseCoin := tx.CommissionInBaseCoin()
+	commissionInBaseCoin := tx.Commission(price)
 	commissionPoolSwapper := checkState.Swap().GetSwapper(tx.GasCoin, types.GetBaseCoinID())
 	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
 	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoin, commissionInBaseCoin)
@@ -229,6 +233,8 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 	}
 
 	tags := kv.Pairs{
+		kv.Pair{Key: []byte("tx.gas"), Value: []byte(strconv.Itoa(int(gas)))},
+		kv.Pair{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
 		kv.Pair{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
 		kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeRedeemCheck)}))},
@@ -240,7 +246,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 	return Response{
 		Code:      code.OK,
 		Tags:      tags,
-		GasUsed:   tx.Gas(),
-		GasWanted: tx.Gas(),
+		GasUsed:   gas,
+		GasWanted: gas,
 	}
 }

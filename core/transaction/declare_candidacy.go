@@ -4,12 +4,13 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
-	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
+	"github.com/MinterTeam/minter-go-node/core/state/commission"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/core/validators"
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
+	"strconv"
 )
 
 const minCommission = 0
@@ -21,6 +22,10 @@ type DeclareCandidacyData struct {
 	Commission uint32
 	Coin       types.CoinID
 	Stake      *big.Int
+}
+
+func (data DeclareCandidacyData) TxType() TxType {
+	return TypeDeclareCandidacy
 }
 
 func (data DeclareCandidacyData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
@@ -84,11 +89,11 @@ func (data DeclareCandidacyData) String() string {
 		data.Address.String(), data.PubKey.String(), data.Commission)
 }
 
-func (data DeclareCandidacyData) Gas() int64 {
-	return commissions.DeclareCandidacyTx
+func (data DeclareCandidacyData) CommissionData(price *commission.Price) *big.Int {
+	return price.DeclareCandidacy
 }
 
-func (data DeclareCandidacyData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, priceCoin types.CoinID, price *big.Int) Response {
+func (data DeclareCandidacyData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int, gas int64) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -112,7 +117,7 @@ func (data DeclareCandidacyData) Run(tx *Transaction, context state.Interface, r
 		}
 	}
 
-	commissionInBaseCoin := tx.CommissionInBaseCoin()
+	commissionInBaseCoin := tx.Commission(price)
 	commissionPoolSwapper := checkState.Swap().GetSwapper(tx.GasCoin, types.GetBaseCoinID())
 	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
 	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoin, commissionInBaseCoin)
@@ -168,6 +173,8 @@ func (data DeclareCandidacyData) Run(tx *Transaction, context state.Interface, r
 	}
 
 	tags := kv.Pairs{
+		kv.Pair{Key: []byte("tx.gas"), Value: []byte(strconv.Itoa(int(gas)))},
+		kv.Pair{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
 		kv.Pair{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
 		kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeDeclareCandidacy)}))},
@@ -176,8 +183,8 @@ func (data DeclareCandidacyData) Run(tx *Transaction, context state.Interface, r
 
 	return Response{
 		Code:      code.OK,
-		GasUsed:   tx.Gas(),
-		GasWanted: tx.Gas(),
+		GasUsed:   gas,
+		GasWanted: gas,
 		Tags:      tags,
 	}
 }

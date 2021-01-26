@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
-	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/state/commission"
 	"github.com/MinterTeam/minter-go-node/core/types"
@@ -14,42 +13,54 @@ import (
 )
 
 type PriceCommissionData struct {
-	Send                   *big.Int
-	SellCoin               *big.Int
-	SellAllCoin            *big.Int
-	BuyCoin                *big.Int
-	CreateCoin             *big.Int
-	DeclareCandidacy       *big.Int
-	Delegate               *big.Int
-	Unbond                 *big.Int
-	RedeemCheck            *big.Int
-	SetCandidateOnline     *big.Int
-	SetCandidateOffline    *big.Int
-	CreateMultisig         *big.Int
-	Multisend              *big.Int
-	EditCandidate          *big.Int
-	SetHaltBlock           *big.Int
-	RecreateCoin           *big.Int
-	EditCoinOwner          *big.Int
-	EditMultisig           *big.Int
-	PriceVote              *big.Int
-	EditCandidatePublicKey *big.Int
-	AddLiquidity           *big.Int
-	RemoveLiquidity        *big.Int
-	SellSwapPool           *big.Int
-	BuySwapPool            *big.Int
-	SellAllSwapPool        *big.Int
-	EditCommission         *big.Int
-	MoveStake              *big.Int
-	MintToken              *big.Int
-	BurnToken              *big.Int
-	CreateToken            *big.Int
-	RecreateToken          *big.Int
-	PriceCommission        *big.Int
-	UpdateNetwork          *big.Int
-	Coin                   types.CoinID
-	PubKey                 types.Pubkey
-	Height                 uint64
+	PubKey                  types.Pubkey
+	Height                  uint64
+	Coin                    types.CoinID
+	PayloadByte             *big.Int
+	Send                    *big.Int
+	BuyBancor               *big.Int
+	SellBancor              *big.Int
+	SellAllBancor           *big.Int
+	BuyPool                 *big.Int
+	SellPool                *big.Int
+	SellAllPool             *big.Int
+	CreateTicker3           *big.Int
+	CreateTicker4           *big.Int
+	CreateTicker5           *big.Int
+	CreateTicker6           *big.Int
+	CreateTicker7to10       *big.Int
+	CreateCoin              *big.Int
+	CreateToken             *big.Int
+	RecreateCoin            *big.Int
+	RecreateToken           *big.Int
+	DeclareCandidacy        *big.Int
+	Delegate                *big.Int
+	Unbond                  *big.Int
+	RedeemCheck             *big.Int
+	SetCandidateOn          *big.Int
+	SetCandidateOff         *big.Int
+	CreateMultisig          *big.Int
+	MultisendBase           *big.Int
+	MultisendDelta          *big.Int
+	EditCandidate           *big.Int
+	SetHaltBlock            *big.Int
+	EditTickerOwner         *big.Int
+	EditMultisig            *big.Int
+	PriceVote               *big.Int
+	EditCandidatePublicKey  *big.Int
+	AddLiquidity            *big.Int
+	RemoveLiquidity         *big.Int
+	EditCandidateCommission *big.Int
+	MoveStake               *big.Int
+	MintToken               *big.Int
+	BurnToken               *big.Int
+	PriceCommission         *big.Int
+	UpdateNetwork           *big.Int
+	More                    []*big.Int `rlp:"tail"`
+}
+
+func (data PriceCommissionData) TxType() TxType {
+	return TypePriceCommission
 }
 
 func (data PriceCommissionData) GetPubKey() types.Pubkey {
@@ -57,6 +68,14 @@ func (data PriceCommissionData) GetPubKey() types.Pubkey {
 }
 
 func (data PriceCommissionData) basicCheck(tx *Transaction, context *state.CheckState, block uint64) *Response {
+	if len(data.More) > 0 { // todo
+		return &Response{
+			Code: code.DecodeError,
+			Log:  "More parameters than expected",
+			Info: EncodeError(code.NewDecodeError()),
+		}
+	}
+
 	if data.Height < block {
 		return &Response{
 			Code: code.VoiceExpired,
@@ -96,11 +115,11 @@ func (data PriceCommissionData) String() string {
 	return fmt.Sprintf("PRICE COMMISSION in coin: %d", data.Coin)
 }
 
-func (data PriceCommissionData) Gas() int64 {
-	return commissions.PriceVoteData // todo
+func (data PriceCommissionData) CommissionData(price *commission.Price) *big.Int {
+	return price.PriceCommission
 }
 
-func (data PriceCommissionData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, priceCoin types.CoinID, price *big.Int) Response {
+func (data PriceCommissionData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int, gas int64) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -114,7 +133,7 @@ func (data PriceCommissionData) Run(tx *Transaction, context state.Interface, re
 		return *response
 	}
 
-	commissionInBaseCoin := tx.CommissionInBaseCoin()
+	commissionInBaseCoin := tx.Commission(price)
 	commissionPoolSwapper := checkState.Swap().GetSwapper(tx.GasCoin, types.GetBaseCoinID())
 	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
 	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoin, commissionInBaseCoin)
@@ -146,6 +165,8 @@ func (data PriceCommissionData) Run(tx *Transaction, context state.Interface, re
 	}
 
 	tags := kv.Pairs{
+		kv.Pair{Key: []byte("tx.gas"), Value: []byte(strconv.Itoa(int(gas)))},
+		kv.Pair{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
 		kv.Pair{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
 		kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypePriceCommission)}))},
@@ -154,47 +175,55 @@ func (data PriceCommissionData) Run(tx *Transaction, context state.Interface, re
 
 	return Response{
 		Code:      code.OK,
-		GasUsed:   tx.Gas(),
-		GasWanted: tx.Gas(),
+		GasUsed:   gas,
+		GasWanted: gas,
 		Tags:      tags,
 	}
 }
 
 func (data PriceCommissionData) price() *commission.Price {
 	return &commission.Price{
-		Send:                   data.Send,
-		SellCoin:               data.SellCoin,
-		SellAllCoin:            data.SellAllCoin,
-		BuyCoin:                data.BuyCoin,
-		CreateCoin:             data.CreateCoin,
-		DeclareCandidacy:       data.DeclareCandidacy,
-		Delegate:               data.Delegate,
-		Unbond:                 data.Unbond,
-		RedeemCheck:            data.RedeemCheck,
-		SetCandidateOnline:     data.SetCandidateOnline,
-		SetCandidateOffline:    data.SetCandidateOffline,
-		CreateMultisig:         data.CreateMultisig,
-		Multisend:              data.Multisend,
-		EditCandidate:          data.EditCandidate,
-		SetHaltBlock:           data.SetHaltBlock,
-		RecreateCoin:           data.RecreateCoin,
-		EditCoinOwner:          data.EditCoinOwner,
-		EditMultisig:           data.EditMultisig,
-		PriceVote:              data.PriceVote,
-		EditCandidatePublicKey: data.EditCandidatePublicKey,
-		AddLiquidity:           data.AddLiquidity,
-		RemoveLiquidity:        data.RemoveLiquidity,
-		SellSwapPool:           data.SellSwapPool,
-		BuySwapPool:            data.BuySwapPool,
-		SellAllSwapPool:        data.SellAllSwapPool,
-		EditCommission:         data.EditCommission,
-		MoveStake:              data.MoveStake,
-		MintToken:              data.MintToken,
-		BurnToken:              data.BurnToken,
-		CreateToken:            data.CreateToken,
-		RecreateToken:          data.RecreateToken,
-		PriceCommission:        data.PriceCommission,
-		UpdateNetwork:          data.UpdateNetwork,
-		Coin:                   data.Coin,
+		Coin:                    data.Coin,
+		PayloadByte:             data.PayloadByte,
+		Send:                    data.Send,
+		BuyBancor:               data.BuyBancor,
+		SellBancor:              data.SellBancor,
+		SellAllBancor:           data.SellAllBancor,
+		BuyPool:                 data.BuyPool,
+		SellPool:                data.SellPool,
+		SellAllPool:             data.SellAllPool,
+		CreateTicker3:           data.CreateTicker3,
+		CreateTicker4:           data.CreateTicker4,
+		CreateTicker5:           data.CreateTicker5,
+		CreateTicker6:           data.CreateTicker6,
+		CreateTicker7to10:       data.CreateTicker7to10,
+		CreateCoin:              data.CreateCoin,
+		CreateToken:             data.CreateToken,
+		RecreateCoin:            data.RecreateCoin,
+		RecreateToken:           data.RecreateToken,
+		DeclareCandidacy:        data.DeclareCandidacy,
+		Delegate:                data.Delegate,
+		Unbond:                  data.Unbond,
+		RedeemCheck:             data.RedeemCheck,
+		SetCandidateOn:          data.SetCandidateOn,
+		SetCandidateOff:         data.SetCandidateOff,
+		CreateMultisig:          data.CreateMultisig,
+		MultisendBase:           data.MultisendBase,
+		MultisendDelta:          data.MultisendDelta,
+		EditCandidate:           data.EditCandidate,
+		SetHaltBlock:            data.SetHaltBlock,
+		EditTickerOwner:         data.EditTickerOwner,
+		EditMultisig:            data.EditMultisig,
+		PriceVote:               data.PriceVote,
+		EditCandidatePublicKey:  data.EditCandidatePublicKey,
+		AddLiquidity:            data.AddLiquidity,
+		RemoveLiquidity:         data.RemoveLiquidity,
+		EditCandidateCommission: data.EditCandidateCommission,
+		MoveStake:               data.MoveStake,
+		BurnToken:               data.BurnToken,
+		MintToken:               data.MintToken,
+		PriceCommission:         data.PriceCommission,
+		UpdateNetwork:           data.UpdateNetwork,
+		More:                    data.More,
 	}
 }

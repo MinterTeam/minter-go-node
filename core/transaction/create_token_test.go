@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"github.com/MinterTeam/minter-go-node/core/code"
-	"github.com/MinterTeam/minter-go-node/core/state/commission"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/helpers"
@@ -62,7 +61,7 @@ func TestCreateTokenData_aaa(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
@@ -76,7 +75,7 @@ func TestCreateTokenData_aaa(t *testing.T) {
 		t.Error(err)
 	}
 
-	targetBalance, _ := big.NewInt(0).SetString("999000000000000000000000", 10)
+	targetBalance, _ := big.NewInt(0).SetString("999999000000000000000000", 10)
 	balance := cState.Accounts.GetBalance(addr, coin)
 	if balance.Cmp(targetBalance) != 0 {
 		t.Errorf("Target %s balance is not correct. Expected %s, got %s", coin, targetBalance, balance)
@@ -147,7 +146,7 @@ func TestCreateTokenData_bbb(t *testing.T) {
 		Mintable:      true,
 		Burnable:      true,
 	}
-	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000-1)))
+	cState.Accounts.AddBalance(addr, coin, big.NewInt(1e18-1))
 
 	encodedData, err := rlp.EncodeToBytes(data)
 
@@ -175,7 +174,7 @@ func TestCreateTokenData_bbb(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.InsufficientFunds {
 		t.Fatalf("Response code is not %d. Error %d %s", code.InsufficientFunds, response.Code, response.Log)
 	}

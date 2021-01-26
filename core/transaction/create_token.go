@@ -3,7 +3,7 @@ package transaction
 import (
 	"encoding/hex"
 	"fmt"
-	"log"
+	"github.com/MinterTeam/minter-go-node/core/state/commission"
 	"math/big"
 	"strconv"
 
@@ -20,6 +20,10 @@ type CreateTokenData struct {
 	MaxSupply     *big.Int
 	Mintable      bool
 	Burnable      bool
+}
+
+func (data CreateTokenData) TxType() TxType {
+	return TypeCreateToken
 }
 
 func (data CreateTokenData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
@@ -71,22 +75,23 @@ func (data CreateTokenData) String() string {
 		data.Symbol.String(), data.MaxSupply)
 }
 
-func (data CreateTokenData) Gas() int64 {
+func (data CreateTokenData) CommissionData(price *commission.Price) *big.Int {
+	createTicker := new(big.Int).Set(price.CreateTicker7to10)
 	switch len(data.Symbol.String()) {
 	case 3:
-		return 1000000000 // 1mln bips
+		createTicker = price.CreateTicker3
 	case 4:
-		return 100000000 // 100k bips
+		createTicker = price.CreateTicker4
 	case 5:
-		return 10000000 // 10k bips
+		createTicker = price.CreateTicker5
 	case 6:
-		return 1000000 // 1k bips
+		createTicker = price.CreateTicker6
 	}
 
-	return 100000 // 100 bips
+	return big.NewInt(0).Add(createTicker, price.CreateToken)
 }
 
-func (data CreateTokenData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, priceCoin types.CoinID, price *big.Int) Response {
+func (data CreateTokenData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int, gas int64) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -99,7 +104,7 @@ func (data CreateTokenData) Run(tx *Transaction, context state.Interface, reward
 		return *response
 	}
 
-	commissionInBaseCoin := tx.CommissionInBaseCoin()
+	commissionInBaseCoin := tx.Commission(price)
 	commissionPoolSwapper := checkState.Swap().GetSwapper(tx.GasCoin, types.GetBaseCoinID())
 	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
 	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoin, commissionInBaseCoin)
@@ -107,23 +112,11 @@ func (data CreateTokenData) Run(tx *Transaction, context state.Interface, reward
 		return *errResp
 	}
 
-	log.Println(commission)
-	log.Println(checkState.Accounts().GetBalance(sender, tx.GasCoin))
 	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) == -1 {
 		return Response{
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission.String(), gasCoin.GetFullSymbol()),
 			Info: EncodeError(code.NewInsufficientFunds(sender.String(), commission.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
-		}
-	}
-
-	totalTxCost := big.NewInt(0).Set(commissionInBaseCoin)
-
-	if checkState.Accounts().GetBalance(sender, types.GetBaseCoinID()).Cmp(totalTxCost) == -1 {
-		return Response{
-			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), totalTxCost.String(), gasCoin.GetFullSymbol()),
-			Info: EncodeError(code.NewInsufficientFunds(sender.String(), totalTxCost.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
 		}
 	}
 
@@ -155,6 +148,8 @@ func (data CreateTokenData) Run(tx *Transaction, context state.Interface, reward
 	}
 
 	tags := kv.Pairs{
+		kv.Pair{Key: []byte("tx.gas"), Value: []byte(strconv.Itoa(int(gas)))},
+		kv.Pair{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
 		kv.Pair{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
 		kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeCreateToken)}))},
@@ -166,7 +161,7 @@ func (data CreateTokenData) Run(tx *Transaction, context state.Interface, reward
 	return Response{
 		Code:      code.OK,
 		Tags:      tags,
-		GasUsed:   tx.Gas(),
-		GasWanted: tx.Gas(),
+		GasUsed:   gas,
+		GasWanted: gas,
 	}
 }

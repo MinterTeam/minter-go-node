@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	apiV1 "github.com/MinterTeam/minter-go-node/api"
 	apiV2 "github.com/MinterTeam/minter-go-node/api/v2"
 	serviceApi "github.com/MinterTeam/minter-go-node/api/v2/service"
 	"github.com/MinterTeam/minter-go-node/cli/service"
@@ -93,7 +92,7 @@ func runNode(cmd *cobra.Command) error {
 
 	tmConfig := config.GetTmConfig(cfg)
 
-	app := minter.NewMinterBlockchain(storages, cfg)
+	app := minter.NewMinterBlockchain(storages, cfg, cmd.Context())
 
 	// update BlocksTimeDelta in case it was corrupted
 	updateBlocksTimeDelta(app, tmConfig)
@@ -113,14 +112,7 @@ func runNode(cmd *cobra.Command) error {
 		go app.SetStatisticData(statistics.New()).Statistic(cmd.Context())
 	}
 
-	<-cmd.Context().Done()
-
-	defer app.Stop()
-	if err := node.Stop(); err != nil {
-		return err
-	}
-
-	return nil
+	return app.WaitStop()
 }
 
 func runCLI(cmd *cobra.Command, app *minter.Blockchain, client *rpc.Local, tmNode *tmNode.Node, home string) {
@@ -175,8 +167,6 @@ func runAPI(logger tmLog.Logger, app *minter.Blockchain, client *rpc.Local, node
 		logger.Error("Failed to start Api V2 in both gRPC and RESTful",
 			apiV2.Run(srv, grpcURL.Host, apiV2url.Host, logger.With("module", "rpc")))
 	}(serviceApi.NewService(cdc, app, client, node, cfg, version.Version))
-
-	go apiV1.RunAPI(cdc, app, client, cfg, logger)
 }
 
 func enablePprof(cmd *cobra.Command, logger tmLog.Logger) error {

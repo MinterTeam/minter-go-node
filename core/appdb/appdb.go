@@ -32,10 +32,11 @@ type AppDB struct {
 }
 
 // Close closes db connection, panics on error
-func (appDB *AppDB) Close() {
+func (appDB *AppDB) Close() error {
 	if err := appDB.db.Close(); err != nil {
-		panic(err)
+		return err
 	}
+	return nil
 }
 
 // GetLastBlockHash returns latest block hash stored on disk

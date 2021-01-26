@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
-	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
+	"github.com/MinterTeam/minter-go-node/core/state/commission"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/rlp"
@@ -20,39 +20,39 @@ type TxType byte
 type SigType byte
 
 const (
-	TypeSend                   TxType = 0x01
-	TypeSellCoin               TxType = 0x02
-	TypeSellAllCoin            TxType = 0x03
-	TypeBuyCoin                TxType = 0x04
-	TypeCreateCoin             TxType = 0x05
-	TypeDeclareCandidacy       TxType = 0x06
-	TypeDelegate               TxType = 0x07
-	TypeUnbond                 TxType = 0x08
-	TypeRedeemCheck            TxType = 0x09
-	TypeSetCandidateOnline     TxType = 0x0A
-	TypeSetCandidateOffline    TxType = 0x0B
-	TypeCreateMultisig         TxType = 0x0C
-	TypeMultisend              TxType = 0x0D
-	TypeEditCandidate          TxType = 0x0E
-	TypeSetHaltBlock           TxType = 0x0F
-	TypeRecreateCoin           TxType = 0x10
-	TypeEditCoinOwner          TxType = 0x11
-	TypeEditMultisig           TxType = 0x12
-	TypePriceVote              TxType = 0x13
-	TypeEditCandidatePublicKey TxType = 0x14
-	TypeAddLiquidity           TxType = 0x15
-	TypeRemoveLiquidity        TxType = 0x16
-	TypeSellSwapPool           TxType = 0x17
-	TypeBuySwapPool            TxType = 0x18
-	TypeSellAllSwapPool        TxType = 0x19
-	TypeEditCommission         TxType = 0x1A
-	TypeMoveStake              TxType = 0x1B
-	TypeMintToken              TxType = 0x1C
-	TypeBurnToken              TxType = 0x1D
-	TypeCreateToken            TxType = 0x1E
-	TypeRecreateToken          TxType = 0x1F
-	TypePriceCommission        TxType = 0x20
-	TypeUpdateNetwork          TxType = 0x21
+	TypeSend                    TxType = 0x01
+	TypeSellCoin                TxType = 0x02
+	TypeSellAllCoin             TxType = 0x03
+	TypeBuyCoin                 TxType = 0x04
+	TypeCreateCoin              TxType = 0x05
+	TypeDeclareCandidacy        TxType = 0x06
+	TypeDelegate                TxType = 0x07
+	TypeUnbond                  TxType = 0x08
+	TypeRedeemCheck             TxType = 0x09
+	TypeSetCandidateOnline      TxType = 0x0A
+	TypeSetCandidateOffline     TxType = 0x0B
+	TypeCreateMultisig          TxType = 0x0C
+	TypeMultisend               TxType = 0x0D
+	TypeEditCandidate           TxType = 0x0E
+	TypeSetHaltBlock            TxType = 0x0F
+	TypeRecreateCoin            TxType = 0x10
+	TypeEditCoinOwner           TxType = 0x11
+	TypeEditMultisig            TxType = 0x12
+	TypePriceVote               TxType = 0x13
+	TypeEditCandidatePublicKey  TxType = 0x14
+	TypeAddLiquidity            TxType = 0x15
+	TypeRemoveLiquidity         TxType = 0x16
+	TypeSellSwapPool            TxType = 0x17
+	TypeBuySwapPool             TxType = 0x18
+	TypeSellAllSwapPool         TxType = 0x19
+	TypeEditCandidateCommission TxType = 0x1A
+	TypeMoveStake               TxType = 0x1B
+	TypeMintToken               TxType = 0x1C
+	TypeBurnToken               TxType = 0x1D
+	TypeCreateToken             TxType = 0x1E
+	TypeRecreateToken           TxType = 0x1F
+	TypePriceCommission         TxType = 0x20
+	TypeUpdateNetwork           TxType = 0x21
 
 	SigTypeSingle SigType = 0x01
 	SigTypeMulti  SigType = 0x02
@@ -129,27 +129,29 @@ type conversion struct {
 
 type Data interface {
 	String() string
-	Gas() int64
-	Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, coin types.CoinID, newInt *big.Int) Response
+	CommissionData(*commission.Price) *big.Int
+	Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int, gas int64) Response
+	TxType() TxType
 }
 
 func (tx *Transaction) Serialize() ([]byte, error) {
 	return rlp.EncodeToBytes(tx)
 }
 
-func (tx *Transaction) Gas() int64 {
-	return tx.decodedData.Gas() + tx.payloadGas()
+func (tx *Transaction) Gas(commissions *commission.Price) int64 {
+	return big.NewInt(0).Quo(tx.Price(commissions), commissions.PayloadByte).Int64()
 }
 
-func (tx *Transaction) payloadGas() int64 {
-	return int64(len(tx.Payload)+len(tx.ServiceData)) * commissions.PayloadByte
+func (tx *Transaction) Price(price *commission.Price) *big.Int {
+	return big.NewInt(0).Add(tx.decodedData.CommissionData(price), big.NewInt(0).Mul(big.NewInt(tx.payloadLen()), price.PayloadByte))
 }
 
-func (tx *Transaction) CommissionInBaseCoin() *big.Int {
-	commissionInBaseCoin := big.NewInt(0).Mul(big.NewInt(int64(tx.GasPrice)), big.NewInt(tx.Gas()))
-	commissionInBaseCoin.Mul(commissionInBaseCoin, CommissionMultiplier)
+func (tx *Transaction) payloadLen() int64 {
+	return int64(len(tx.Payload) + len(tx.ServiceData))
+}
 
-	return commissionInBaseCoin
+func (tx *Transaction) Commission(gas *big.Int) *big.Int {
+	return big.NewInt(0).Mul(big.NewInt(int64(tx.GasPrice)), gas)
 }
 
 func (tx *Transaction) String() string {

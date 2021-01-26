@@ -308,16 +308,7 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 			Stake: d.Stake.String(),
 		}
 	case *transaction.PriceCommissionData:
-		m = &pb.PriceCommissionData{
-			Send: d.Send.String(),
-			Coin: &pb.Coin{
-				Id:     uint64(d.Coin),
-				Symbol: coins.GetCoin(d.Coin).GetFullSymbol(),
-			},
-			PubKey: d.PubKey.String(),
-			Height: d.Height,
-		}
-
+		m = priceCommissionData(d, coins.GetCoin(d.Coin))
 	case *transaction.UpdateNetworkData:
 		m = &pb.UpdateNetworkData{
 			PubKey:  d.PubKey.String(),
@@ -334,6 +325,56 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 	}
 
 	return a, nil
+}
+
+func priceCommissionData(d *transaction.PriceCommissionData, coin *coins.Model) proto.Message {
+	return &pb.PriceCommissionData{
+		PubKey: d.PubKey.String(),
+		Height: d.Height,
+		Coin: &pb.Coin{
+			Id:     uint64(d.Coin),
+			Symbol: coin.GetFullSymbol(),
+		},
+		PayloadByte:             d.PayloadByte.String(),
+		Send:                    d.Send.String(),
+		BuyBancor:               d.BuyBancor.String(),
+		SellBancor:              d.SellBancor.String(),
+		SellAllBancor:           d.SellAllBancor.String(),
+		BuyPool:                 d.BuyPool.String(),
+		SellPool:                d.SellPool.String(),
+		SellAllPool:             d.SellAllPool.String(),
+		CreateTicker3:           d.CreateTicker3.String(),
+		CreateTicker4:           d.CreateTicker4.String(),
+		CreateTicker5:           d.CreateTicker5.String(),
+		CreateTicker6:           d.CreateTicker6.String(),
+		CreateTicker7_10:        d.CreateTicker7to10.String(),
+		CreateCoin:              d.CreateCoin.String(),
+		CreateToken:             d.CreateToken.String(),
+		RecreateCoin:            d.RecreateCoin.String(),
+		RecreateToken:           d.RecreateToken.String(),
+		DeclareCandidacy:        d.DeclareCandidacy.String(),
+		Delegate:                d.Delegate.String(),
+		Unbond:                  d.Unbond.String(),
+		RedeemCheck:             d.RedeemCheck.String(),
+		SetCandidateOn:          d.SetCandidateOn.String(),
+		SetCandidateOff:         d.SetCandidateOff.String(),
+		CreateMultisig:          d.CreateMultisig.String(),
+		MultisendDelta:          d.MultisendDelta.String(),
+		EditCandidate:           d.EditCandidate.String(),
+		SetHaltBlock:            d.SetHaltBlock.String(),
+		EditTickerOwner:         d.EditTickerOwner.String(),
+		EditMultisig:            d.EditMultisig.String(),
+		PriceVote:               d.PriceVote.String(),
+		EditCandidatePublicKey:  d.EditCandidatePublicKey.String(),
+		AddLiquidity:            d.AddLiquidity.String(),
+		RemoveLiquidity:         d.RemoveLiquidity.String(),
+		EditCandidateCommission: d.EditCandidateCommission.String(),
+		MoveStake:               d.MoveStake.String(),
+		MintToken:               d.MintToken.String(),
+		BurnToken:               d.BurnToken.String(),
+		PriceCommission:         d.PriceCommission.String(),
+		UpdateNetwork:           d.UpdateNetwork.String(),
+	}
 }
 
 func encodeToStruct(b []byte) (*_struct.Struct, error) {

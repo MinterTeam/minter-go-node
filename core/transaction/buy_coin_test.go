@@ -22,7 +22,39 @@ import (
 )
 
 var (
-	rnd = rand.New(rand.NewSource(time.Now().Unix()))
+	rnd             = rand.New(rand.NewSource(time.Now().Unix()))
+	commissionPrice = commission.Price{
+		PayloadByte:             helpers.StringToBigInt("2000000000000000"),
+		Send:                    helpers.StringToBigInt("10000000000000000"),
+		Convert:                 helpers.StringToBigInt("100000000000000000"),
+		CreateTicker3:           helpers.StringToBigInt("1000000000000000000000"),
+		CreateTicker4:           helpers.StringToBigInt("100000000000000000000"),
+		CreateTicker5:           helpers.StringToBigInt("10000000000000000000"),
+		CreateTicker6:           helpers.StringToBigInt("1000000000000000000"),
+		CreateTicker7to10:       helpers.StringToBigInt("100000000000000000"),
+		Recreate:                helpers.StringToBigInt("10000000000000000000000"),
+		DeclareCandidacy:        helpers.StringToBigInt("10000000000000000000"),
+		Delegate:                helpers.StringToBigInt("200000000000000000"),
+		Unbond:                  helpers.StringToBigInt("200000000000000000"),
+		RedeemCheck:             helpers.StringToBigInt("30000000000000000"),
+		ToggleCandidateStatus:   helpers.StringToBigInt("100000000000000000"),
+		CreateMultisig:          helpers.StringToBigInt("100000000000000000"),
+		MultisendDelta:          helpers.StringToBigInt("5000000000000000"),
+		EditCandidate:           helpers.StringToBigInt("10000000000000000000"),
+		SetHaltBlock:            helpers.StringToBigInt("1000000000000000000"),
+		EditCoinOwner:           helpers.StringToBigInt("10000000000000000000000"),
+		EditMultisig:            helpers.StringToBigInt("1000000000000000000"),
+		PriceVote:               helpers.StringToBigInt("10000000000000000"),
+		EditCandidatePublicKey:  helpers.StringToBigInt("100000000000000000000000"),
+		AddLiquidity:            helpers.StringToBigInt("100000000000000000"),
+		RemoveLiquidity:         helpers.StringToBigInt("100000000000000000"),
+		EditCandidateCommission: helpers.StringToBigInt("10000000000000000000"),
+		MoveStake:               helpers.StringToBigInt("200000000000000000"),
+		EditTokenEmission:       helpers.StringToBigInt("100000000000000000"),
+		PriceCommission:         helpers.StringToBigInt("1000000000000000000"),
+		UpdateNetwork:           helpers.StringToBigInt("1000000000000000000"),
+		Coin:                    types.GetBaseCoinID(),
+	}
 )
 
 func getState() *state.State {
@@ -33,7 +65,7 @@ func getState() *state.State {
 
 	s.Validators.Create(types.Pubkey{}, big.NewInt(1))
 	s.Candidates.Create(types.Address{}, types.Address{}, types.Address{}, types.Pubkey{}, 10, 0)
-
+	s.Commission.SetNewCommissions(commissionPrice.Encode())
 	return s
 }
 
@@ -138,7 +170,7 @@ func TestBuyCoinTxBaseToCustom(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
@@ -208,7 +240,7 @@ func TestBuyCoinTxInsufficientFunds(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != code.InsufficientFunds {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
@@ -259,7 +291,7 @@ func TestBuyCoinTxEqualCoins(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != code.CrossConvert {
 		t.Fatalf("Response code is not %d. Error %s", code.CrossConvert, response.Log)
@@ -308,7 +340,7 @@ func TestBuyCoinTxNotExistsBuyCoin(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != code.CoinNotExists {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
@@ -357,7 +389,7 @@ func TestBuyCoinTxNotExistsSellCoin(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != code.CoinNotExists {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
@@ -408,7 +440,7 @@ func TestBuyCoinTxNotExistsGasCoin(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != code.CoinNotExists {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
@@ -465,7 +497,7 @@ func TestBuyCoinTxNotGasCoin(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
@@ -524,7 +556,7 @@ func TestBuyCoinTxCustomToBase(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
@@ -606,7 +638,7 @@ func TestBuyCoinReserveUnderflow(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 
 	if response.Code != code.CoinReserveUnderflow {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveUnderflow, response.Log)
@@ -648,7 +680,7 @@ func TestBuyCoinTxBaseToCustomBaseCommission(t *testing.T) {
 	}
 
 	// check response
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.OK {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
@@ -662,7 +694,12 @@ func TestBuyCoinTxBaseToCustomBaseCommission(t *testing.T) {
 	// check sold coins + commission
 	sellCoinBalance := cState.Accounts.GetBalance(addr, coinToSell)
 	estimatedSellCoinBalance := big.NewInt(0).Set(initialBalance)
-	estimatedSellCoinBalance.Sub(estimatedSellCoinBalance, tx.CommissionInBaseCoin())
+	commissions := cState.Commission.GetCommissions()
+	commissionInBaseCoin := tx.Commission(tx.Price(commissions))
+	if !commissions.Coin.IsBaseCoin() {
+		commissionInBaseCoin = cState.Swap.GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuy(commissionInBaseCoin)
+	}
+	estimatedSellCoinBalance.Sub(estimatedSellCoinBalance, commissionInBaseCoin)
 	estimatedSellCoinBalance.Sub(estimatedSellCoinBalance, formula.CalculatePurchaseAmount(initialVolume, initialReserve, crr, toBuy))
 	if sellCoinBalance.Cmp(estimatedSellCoinBalance) != 0 {
 		t.Fatalf("Sell coin balance is not correct")
@@ -724,7 +761,7 @@ func TestBuyCoinTxCustomToBaseBaseCommission(t *testing.T) {
 	}
 
 	// check response
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.OK {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
@@ -799,7 +836,7 @@ func TestBuyCoinTxCustomToCustomBaseCommission(t *testing.T) {
 	}
 
 	// check response
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.OK {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
@@ -872,7 +909,7 @@ func TestBuyCoinTxBaseToCustomCustomCommission(t *testing.T) {
 	}
 
 	// check response
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.OK {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
@@ -882,7 +919,13 @@ func TestBuyCoinTxBaseToCustomCustomCommission(t *testing.T) {
 	estimatedBuyCoinBalance := big.NewInt(0).Set(toBuy)
 	estimatedBuyCoinBalance.Add(estimatedBuyCoinBalance, initialGasBalance)
 	toReserve := formula.CalculatePurchaseAmount(initialVolume, initialReserve, crr, toBuy)
-	commission := formula.CalculateSaleAmount(big.NewInt(0).Add(initialVolume, toBuy), big.NewInt(0).Add(initialReserve, toReserve), crr, tx.CommissionInBaseCoin())
+
+	commissions := cState.Commission.GetCommissions()
+	commissionInBaseCoin := tx.Commission(tx.Price(commissions))
+	if !commissions.Coin.IsBaseCoin() {
+		commissionInBaseCoin = cState.Swap.GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuy(commissionInBaseCoin)
+	}
+	commission := formula.CalculateSaleAmount(big.NewInt(0).Add(initialVolume, toBuy), big.NewInt(0).Add(initialReserve, toReserve), crr, commissionInBaseCoin)
 	estimatedBuyCoinBalance.Sub(estimatedBuyCoinBalance, commission)
 	if buyCoinBalance.Cmp(estimatedBuyCoinBalance) != 0 {
 		t.Fatalf("Buy coin balance is not correct. Expected %s, got %s", estimatedBuyCoinBalance.String(), buyCoinBalance.String())
@@ -901,7 +944,7 @@ func TestBuyCoinTxBaseToCustomCustomCommission(t *testing.T) {
 
 	estimatedReserve := big.NewInt(0).Set(initialReserve)
 	estimatedReserve.Add(estimatedReserve, formula.CalculatePurchaseAmount(initialVolume, initialReserve, crr, toBuy))
-	estimatedReserve.Sub(estimatedReserve, tx.CommissionInBaseCoin())
+	estimatedReserve.Sub(estimatedReserve, commissionInBaseCoin)
 	if coinData.Reserve().Cmp(estimatedReserve) != 0 {
 		t.Fatalf("Wrong coin reserve")
 	}
@@ -948,7 +991,7 @@ func TestBuyCoinTxCustomToBaseCustomCommission(t *testing.T) {
 	}
 
 	// check response
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.OK {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
@@ -962,7 +1005,12 @@ func TestBuyCoinTxCustomToBaseCustomCommission(t *testing.T) {
 	// check sold coins
 	sellCoinBalance := cState.Accounts.GetBalance(addr, coinToSellID)
 	estimatedSellCoinBalance := big.NewInt(0).Set(initialBalance)
-	shouldGive := formula.CalculateSaleAmount(initialVolume, initialReserve, crr, big.NewInt(0).Add(toBuy, tx.CommissionInBaseCoin()))
+	commissions := cState.Commission.GetCommissions()
+	commissionInBaseCoin := tx.Commission(tx.Price(commissions))
+	if !commissions.Coin.IsBaseCoin() {
+		commissionInBaseCoin = cState.Swap.GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuy(commissionInBaseCoin)
+	}
+	shouldGive := formula.CalculateSaleAmount(initialVolume, initialReserve, crr, big.NewInt(0).Add(toBuy, commissionInBaseCoin))
 	estimatedSellCoinBalance.Sub(estimatedSellCoinBalance, shouldGive)
 	if sellCoinBalance.Cmp(estimatedSellCoinBalance) != 0 {
 		t.Errorf("Sell coin balance is not correct. Expected %s, got %s", estimatedSellCoinBalance.String(), sellCoinBalance.String())
@@ -974,13 +1022,13 @@ func TestBuyCoinTxCustomToBaseCustomCommission(t *testing.T) {
 
 		estimatedReserve := big.NewInt(0).Set(initialReserve)
 		estimatedReserve.Sub(estimatedReserve, toBuy)
-		estimatedReserve.Sub(estimatedReserve, tx.CommissionInBaseCoin())
+		estimatedReserve.Sub(estimatedReserve, commissionInBaseCoin)
 		if coinData.Reserve().Cmp(estimatedReserve) != 0 {
 			t.Fatalf("Wrong coin reserve. Expected %s, got %s", estimatedReserve.String(), coinData.Reserve().String())
 		}
 
 		estimatedSupply := big.NewInt(0).Set(initialVolume)
-		estimatedSupply.Sub(estimatedSupply, formula.CalculateSaleAmount(initialVolume, initialReserve, crr, big.NewInt(0).Add(toBuy, tx.CommissionInBaseCoin())))
+		estimatedSupply.Sub(estimatedSupply, formula.CalculateSaleAmount(initialVolume, initialReserve, crr, big.NewInt(0).Add(toBuy, commissionInBaseCoin)))
 		// estimatedSupply.Sub(estimatedSupply, commission)
 		if coinData.Volume().Cmp(estimatedSupply) != 0 {
 			t.Fatalf("Wrong coin supply. Expected %s, got %s", estimatedSupply.String(), coinData.Volume().String())
@@ -1023,7 +1071,7 @@ func TestBuyCoinTxCustomToCustomCustom1Commission(t *testing.T) {
 	}
 
 	// check response
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.OK {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
@@ -1038,7 +1086,12 @@ func TestBuyCoinTxCustomToCustomCustom1Commission(t *testing.T) {
 	sellCoinBalance := cState.Accounts.GetBalance(addr, coinToSellID)
 	estimatedSellCoinBalance := big.NewInt(0).Set(initialBalance)
 	toSellBaseCoin := formula.CalculatePurchaseAmount(initialVolume2, initialReserve2, crr2, toBuy)
-	toSell := formula.CalculateSaleAmount(initialVolume1, initialReserve1, crr1, big.NewInt(0).Add(toSellBaseCoin, tx.CommissionInBaseCoin()))
+	commissions := cState.Commission.GetCommissions()
+	commissionInBaseCoin := tx.Commission(tx.Price(commissions))
+	if !commissions.Coin.IsBaseCoin() {
+		commissionInBaseCoin = cState.Swap.GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuy(commissionInBaseCoin)
+	}
+	toSell := formula.CalculateSaleAmount(initialVolume1, initialReserve1, crr1, big.NewInt(0).Add(toSellBaseCoin, commissionInBaseCoin))
 	estimatedSellCoinBalance.Sub(estimatedSellCoinBalance, toSell)
 	// commission := formula.CalculateSaleAmount(big.NewInt(0).Sub(initialVolume1, toSell), big.NewInt(0).Sub(initialReserve1, toSellBaseCoin), crr1, tx.CommissionInBaseCoin())
 	// estimatedSellCoinBalance.Sub(estimatedSellCoinBalance, commission)
@@ -1052,13 +1105,13 @@ func TestBuyCoinTxCustomToCustomCustom1Commission(t *testing.T) {
 
 		estimatedReserve := big.NewInt(0).Set(initialReserve1)
 		estimatedReserve.Sub(estimatedReserve, formula.CalculatePurchaseAmount(initialVolume2, initialReserve2, crr2, toBuy))
-		estimatedReserve.Sub(estimatedReserve, tx.CommissionInBaseCoin())
+		estimatedReserve.Sub(estimatedReserve, commissionInBaseCoin)
 		if coinData.Reserve().Cmp(estimatedReserve) != 0 {
 			t.Fatalf("Wrong coin reserve. Expected %s, got %s", estimatedReserve.String(), coinData.Reserve().String())
 		}
 
 		estimatedSupply := big.NewInt(0).Set(initialVolume1)
-		estimatedSupply.Sub(estimatedSupply, formula.CalculateSaleAmount(initialVolume1, initialReserve1, crr1, big.NewInt(0).Add(formula.CalculatePurchaseAmount(initialVolume2, initialReserve2, crr2, toBuy), tx.CommissionInBaseCoin())))
+		estimatedSupply.Sub(estimatedSupply, formula.CalculateSaleAmount(initialVolume1, initialReserve1, crr1, big.NewInt(0).Add(formula.CalculatePurchaseAmount(initialVolume2, initialReserve2, crr2, toBuy), commissionInBaseCoin)))
 		if coinData.Volume().Cmp(estimatedSupply) != 0 {
 			t.Fatalf("Wrong coin supply")
 		}
@@ -1121,7 +1174,7 @@ func TestBuyCoinTxCustomToCustomCustom2Commission(t *testing.T) {
 	}
 
 	// check response
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.OK {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
@@ -1130,7 +1183,12 @@ func TestBuyCoinTxCustomToCustomCustom2Commission(t *testing.T) {
 	buyCoinBalance := cState.Accounts.GetBalance(addr, coinToBuyID)
 	buyCoinBalance.Sub(buyCoinBalance, initialGasBalance)
 	toReserve := formula.CalculatePurchaseAmount(initialVolume2, initialReserve2, crr2, toBuy)
-	commission := formula.CalculateSaleAmount(big.NewInt(0).Add(initialVolume2, toBuy), big.NewInt(0).Add(initialReserve2, toReserve), crr2, tx.CommissionInBaseCoin())
+	commissions := cState.Commission.GetCommissions()
+	commissionInBaseCoin := tx.Commission(tx.Price(commissions))
+	if !commissions.Coin.IsBaseCoin() {
+		commissionInBaseCoin = cState.Swap.GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuy(commissionInBaseCoin)
+	}
+	commission := formula.CalculateSaleAmount(big.NewInt(0).Add(initialVolume2, toBuy), big.NewInt(0).Add(initialReserve2, toReserve), crr2, commissionInBaseCoin)
 	buyCoinBalance.Add(buyCoinBalance, commission)
 	if buyCoinBalance.Cmp(toBuy) != 0 {
 		t.Fatalf("Buy coin balance is not correct. Expected %s, got %s", toBuy.String(), buyCoinBalance.String())
@@ -1168,7 +1226,7 @@ func TestBuyCoinTxCustomToCustomCustom2Commission(t *testing.T) {
 
 		estimatedReserve := big.NewInt(0).Set(initialReserve2)
 		estimatedReserve.Add(estimatedReserve, formula.CalculatePurchaseAmount(initialVolume2, initialReserve2, crr2, toBuy))
-		estimatedReserve.Sub(estimatedReserve, tx.CommissionInBaseCoin())
+		estimatedReserve.Sub(estimatedReserve, commissionInBaseCoin)
 		if coinData.Reserve().Cmp(estimatedReserve) != 0 {
 			t.Fatalf("Wrong coin reserve. Expected %s, got %s", estimatedReserve.String(), coinData.Reserve().String())
 		}
@@ -1204,7 +1262,7 @@ func TestBuyCoinTxToCoinSupplyOverflow(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.CoinSupplyOverflow {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinSupplyOverflow, response.Log)
 	}
@@ -1256,7 +1314,7 @@ func TestBuyCoinTxToMaximumValueToSellReached(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.MaximumValueToSellReached {
 		t.Fatalf("Response code is not %d. Error %s", code.MaximumValueToSellReached, response.Log)
 	}
@@ -1282,7 +1340,7 @@ func TestBuyCoinTxToMaximumValueToSellReached(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response = RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.MaximumValueToSellReached {
 		t.Fatalf("Response code is not %d. Error %s", code.MaximumValueToSellReached, response.Log)
 	}
@@ -1321,7 +1379,7 @@ func TestBuyCoinTxToMaximumValueToSellReached(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response = RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.MaximumValueToSellReached {
 		t.Fatalf("Response code is not %d. Error %s", code.MaximumValueToSellReached, response.Log)
 	}
@@ -1347,7 +1405,7 @@ func TestBuyCoinTxToMaximumValueToSellReached(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response = RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.MaximumValueToSellReached {
 		t.Fatalf("Response code is not %d. Error %d %s", code.MaximumValueToSellReached, response.Code, response.Log)
 	}
@@ -1389,7 +1447,7 @@ func TestBuyCoinTxToCoinReserveNotSufficient(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.CoinReserveNotSufficient {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveNotSufficient, response.Log)
 	}
@@ -1412,7 +1470,7 @@ func TestBuyCoinTxToCoinReserveNotSufficient(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response = RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.CommissionCoinNotSufficient {
 		t.Fatalf("Response code is not %d. Error %d %s", code.CommissionCoinNotSufficient, response.Code, response.Log)
 	}
@@ -1433,7 +1491,7 @@ func TestBuyCoinTxToCoinReserveNotSufficient(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response = RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.CoinReserveNotSufficient {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinReserveNotSufficient, response.Log)
 	}
@@ -1456,7 +1514,7 @@ func TestBuyCoinTxToCoinReserveNotSufficient(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response = RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.CommissionCoinNotSufficient {
 		t.Fatalf("Response code is not %d. Error %d %s", code.CommissionCoinNotSufficient, response.Code, response.Log)
 	}

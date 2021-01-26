@@ -8,6 +8,7 @@ import (
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"strconv"
 	"strings"
 )
 
@@ -34,8 +35,14 @@ func (s *Service) Transactions(ctx context.Context, req *pb.TransactionsRequest)
 			sender, _ := decodedTx.Sender()
 
 			tags := make(map[string]string)
+			var gas int
 			for _, tag := range tx.TxResult.Events[0].Attributes {
-				tags[string(tag.Key)] = string(tag.Value)
+				key := string(tag.Key)
+				value := string(tag.Value)
+				tags[key] = value
+				if key == "tx.gas" {
+					gas, _ = strconv.Atoi(value)
+				}
 			}
 
 			data, err := encode(decodedTx.GetDecodedData(), cState.Coins())
@@ -55,8 +62,8 @@ func (s *Service) Transactions(ctx context.Context, req *pb.TransactionsRequest)
 					Id:     uint64(decodedTx.GasCoin),
 					Symbol: cState.Coins().GetCoin(decodedTx.GasCoin).GetFullSymbol(),
 				},
-				Gas:     uint64(decodedTx.Gas()),
-				Type:    uint64(uint8(decodedTx.Type)),
+				Gas:     uint64(gas),
+				Type:    uint64(decodedTx.Type),
 				Data:    data,
 				Payload: decodedTx.Payload,
 				Tags:    tags,

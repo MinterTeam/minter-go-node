@@ -32,7 +32,7 @@ func RegisterAminoEvents(codec *amino.Codec) {
 		TypeStakeMoveEvent, nil)
 	codec.RegisterConcrete(UpdateNetworkEvent{},
 		TypeUpdateNetworkEvent, nil)
-	codec.RegisterConcrete(CommissionEvent{},
+	codec.RegisterConcrete(UpdateCommissionsEvent{},
 		TypeUpdateCommissionsEvent, nil)
 }
 
@@ -48,8 +48,6 @@ type Event interface {
 	Type() string
 	// event()
 }
-
-// type
 
 type stake interface {
 	compile(pubKey [32]byte, address [20]byte) Event
@@ -411,19 +409,55 @@ func (ue *StakeKickEvent) convert(pubKeyID uint16, addressID uint32) compact {
 	return result
 }
 
-type CommissionEvent struct {
-	// todo: price fields
-	Coin   uint64 `json:"coin"`
-	Height uint64 `json:"height"`
+type UpdateCommissionsEvent struct {
+	Coin                    uint64 `json:"coin"`
+	PayloadByte             string `json:"payload_byte"`
+	Send                    string `json:"send"`
+	BuyBancor               string `json:"buy_bancor"`
+	SellBancor              string `json:"sell_bancor"`
+	SellAllBancor           string `json:"sell_all_bancor"`
+	BuyPool                 string `json:"buy_pool"`
+	SellPool                string `json:"sell_pool"`
+	SellAllPool             string `json:"sell_all_pool"`
+	CreateTicker3           string `json:"create_ticker3"`
+	CreateTicker4           string `json:"create_ticker4"`
+	CreateTicker5           string `json:"create_ticker5"`
+	CreateTicker6           string `json:"create_ticker6"`
+	CreateTicker7_10        string `json:"create_ticker7_10"`
+	CreateCoin              string `json:"create_coin"`
+	CreateToken             string `json:"create_token"`
+	RecreateCoin            string `json:"recreate_coin"`
+	RecreateToken           string `json:"recreate_token"`
+	DeclareCandidacy        string `json:"declare_candidacy"`
+	Delegate                string `json:"delegate"`
+	Unbond                  string `json:"unbond"`
+	RedeemCheck             string `json:"redeem_check"`
+	SetCandidateOn          string `json:"set_candidate_on"`
+	SetCandidateOff         string `json:"set_candidate_off"`
+	CreateMultisig          string `json:"create_multisig"`
+	MultisendDelta          string `json:"multisend_delta"`
+	EditCandidate           string `json:"edit_candidate"`
+	SetHaltBlock            string `json:"set_halt_block"`
+	EditTickerOwner         string `json:"edit_ticker_owner"`
+	EditMultisig            string `json:"edit_multisig"`
+	PriceVote               string `json:"price_vote"`
+	EditCandidatePublicKey  string `json:"edit_candidate_public_key"`
+	AddLiquidity            string `json:"add_liquidity"`
+	RemoveLiquidity         string `json:"remove_liquidity"`
+	EditCandidateCommission string `json:"edit_candidate_commission"`
+	MoveStake               string `json:"move_stake"`
+	MintToken               string `json:"mint_token"`
+	BurnToken               string `json:"burn_token"`
+	PriceCommission         string `json:"price_commission"`
+	UpdateNetwork           string `json:"update_network"`
 }
 
-func (ce *CommissionEvent) Type() string {
+func (ce *UpdateCommissionsEvent) Type() string {
 	return TypeUpdateCommissionsEvent
 }
 
 type UpdateNetworkEvent struct {
 	Version string `json:"version"`
-	Height  uint64 `json:"height"`
 }
 
 func (un *UpdateNetworkEvent) Type() string {

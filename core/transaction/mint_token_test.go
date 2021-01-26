@@ -1,7 +1,6 @@
 package transaction
 
 import (
-	"github.com/MinterTeam/minter-go-node/core/state/commission"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/helpers"
@@ -60,7 +59,7 @@ func TestMintData_aaa(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 		if response.Code != 0 {
 			t.Fatalf("Response code is not 0. Error %s", response.Log)
 		}
@@ -74,7 +73,7 @@ func TestMintData_aaa(t *testing.T) {
 			t.Error(err)
 		}
 
-		targetBalance, _ := big.NewInt(0).SetString("999000000000000000000000", 10)
+		targetBalance, _ := big.NewInt(0).SetString("999999000000000000000000", 10)
 		balance := cState.Accounts.GetBalance(addr, coin)
 		if balance.Cmp(targetBalance) != 0 {
 			t.Errorf("Target %s balance is not correct. Expected %s, got %s", coin, targetBalance, balance)
@@ -154,7 +153,7 @@ func TestMintData_aaa(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 		if response.Code != 0 {
 			t.Fatalf("Response code is not 0. Error %s", response.Log)
 		}

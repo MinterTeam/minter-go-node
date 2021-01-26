@@ -7,40 +7,48 @@ import (
 )
 
 type Price struct {
-	Send                   *big.Int
-	SellCoin               *big.Int
-	SellAllCoin            *big.Int
-	BuyCoin                *big.Int
-	CreateCoin             *big.Int
-	DeclareCandidacy       *big.Int
-	Delegate               *big.Int
-	Unbond                 *big.Int
-	RedeemCheck            *big.Int
-	SetCandidateOnline     *big.Int
-	SetCandidateOffline    *big.Int
-	CreateMultisig         *big.Int
-	Multisend              *big.Int
-	EditCandidate          *big.Int
-	SetHaltBlock           *big.Int
-	RecreateCoin           *big.Int
-	EditCoinOwner          *big.Int
-	EditMultisig           *big.Int
-	PriceVote              *big.Int
-	EditCandidatePublicKey *big.Int
-	AddLiquidity           *big.Int
-	RemoveLiquidity        *big.Int
-	SellSwapPool           *big.Int
-	BuySwapPool            *big.Int
-	SellAllSwapPool        *big.Int
-	EditCommission         *big.Int
-	MoveStake              *big.Int
-	MintToken              *big.Int
-	BurnToken              *big.Int
-	CreateToken            *big.Int
-	RecreateToken          *big.Int
-	PriceCommission        *big.Int
-	UpdateNetwork          *big.Int
-	Coin                   types.CoinID
+	Coin                    types.CoinID
+	PayloadByte             *big.Int
+	Send                    *big.Int
+	BuyBancor               *big.Int
+	SellBancor              *big.Int
+	SellAllBancor           *big.Int
+	BuyPool                 *big.Int
+	SellPool                *big.Int
+	SellAllPool             *big.Int
+	CreateTicker3           *big.Int
+	CreateTicker4           *big.Int
+	CreateTicker5           *big.Int
+	CreateTicker6           *big.Int
+	CreateTicker7to10       *big.Int
+	CreateCoin              *big.Int
+	CreateToken             *big.Int
+	RecreateCoin            *big.Int
+	RecreateToken           *big.Int
+	DeclareCandidacy        *big.Int
+	Delegate                *big.Int
+	Unbond                  *big.Int
+	RedeemCheck             *big.Int
+	SetCandidateOn          *big.Int
+	SetCandidateOff         *big.Int
+	CreateMultisig          *big.Int
+	MultisendBase           *big.Int
+	MultisendDelta          *big.Int
+	EditCandidate           *big.Int
+	SetHaltBlock            *big.Int
+	EditTickerOwner         *big.Int
+	EditMultisig            *big.Int
+	PriceVote               *big.Int
+	EditCandidatePublicKey  *big.Int
+	AddLiquidity            *big.Int
+	RemoveLiquidity         *big.Int
+	EditCandidateCommission *big.Int
+	MoveStake               *big.Int
+	BurnToken               *big.Int
+	MintToken               *big.Int
+	PriceCommission         *big.Int
+	UpdateNetwork           *big.Int
+	More                    []*big.Int `rlp:"tail"`
 }
 
 func (d *Price) Encode() []byte {
@@ -49,6 +57,14 @@ func (d *Price) Encode() []byte {
 		panic(err)
 	}
 	return bytes
+}
+func Decode(s string) *Price {
+	var p Price
+	err := rlp.DecodeBytes([]byte(s), &p)
+	if err != nil {
+		panic(err)
+	}
+	return &p
 }
 
 type Model struct {

@@ -3,7 +3,6 @@ package transaction
 import (
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/state"
-	"github.com/MinterTeam/minter-go-node/core/state/commission"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/helpers"
@@ -34,7 +33,7 @@ func TestSetHaltBlockTx(t *testing.T) {
 
 	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
-	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1)))
+	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(100)))
 
 	data := SetHaltBlockData{
 		PubKey: pubkey,
@@ -66,7 +65,7 @@ func TestSetHaltBlockTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 500000, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 500000, &sync.Map{}, 0)
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
@@ -147,7 +146,7 @@ func TestSetHaltBlockTxWithWrongHeight(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), currentHeight, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), currentHeight, &sync.Map{}, 0)
 	if response.Code != code.VoiceExpired {
 		t.Fatalf("Response code is not %d", code.VoiceExpired)
 	}
@@ -213,7 +212,7 @@ func TestSetHaltBlockTxWithWrongOwnership(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), currentHeight, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), currentHeight, &sync.Map{}, 0)
 	if response.Code != code.IsNotOwnerOfCandidate {
 		t.Fatalf("Response code is not %d", code.IsNotOwnerOfCandidate)
 	}
@@ -277,7 +276,7 @@ func TestSetHaltBlockTxToNonExistCandidate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 500000, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 500000, &sync.Map{}, 0)
 	if response.Code != code.CandidateNotFound {
 		t.Fatalf("Response code is not %d. Error %s", code.CandidateNotFound, response.Log)
 	}
@@ -335,7 +334,7 @@ func TestSetHaltBlockTxToInsufficientFunds(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 500000, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 500000, &sync.Map{}, 0)
 	if response.Code != code.InsufficientFunds {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
@@ -397,7 +396,7 @@ func TestSetHaltBlockTxToGasCoinReserveUnderflow(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 500000, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 500000, &sync.Map{}, 0)
 	if response.Code != code.CommissionCoinNotSufficient {
 		t.Fatalf("Response code is not %d. Error %s", code.CommissionCoinNotSufficient, response.Log)
 	}
@@ -457,7 +456,7 @@ func TestSetHaltBlockTxToAlreadyExistenHalt(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 500000, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 500000, &sync.Map{}, 0)
 	if response.Code != code.HaltAlreadyExists {
 		t.Fatalf("response code is not %d. Error %s", code.HaltAlreadyExists, response.Log)
 	}

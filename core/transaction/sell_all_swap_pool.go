@@ -4,19 +4,24 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
-	"github.com/MinterTeam/minter-go-node/core/commissions"
 	"github.com/MinterTeam/minter-go-node/core/state"
+	"github.com/MinterTeam/minter-go-node/core/state/commission"
 	"github.com/MinterTeam/minter-go-node/core/state/swap"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
+	"strconv"
 )
 
 type SellAllSwapPoolData struct {
 	CoinToSell        types.CoinID
 	CoinToBuy         types.CoinID
 	MinimumValueToBuy *big.Int
+}
+
+func (data SellAllSwapPoolData) TxType() TxType {
+	return TypeSellAllSwapPool
 }
 
 func (data SellAllSwapPoolData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
@@ -43,11 +48,11 @@ func (data SellAllSwapPoolData) String() string {
 	return fmt.Sprintf("SWAP POOL SELL ALL")
 }
 
-func (data SellAllSwapPoolData) Gas() int64 {
-	return commissions.ConvertTx
+func (data SellAllSwapPoolData) CommissionData(price *commission.Price) *big.Int {
+	return price.SellAllPool
 }
 
-func (data SellAllSwapPoolData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, priceCoin types.CoinID, price *big.Int) Response {
+func (data SellAllSwapPoolData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int, gas int64) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -61,7 +66,7 @@ func (data SellAllSwapPoolData) Run(tx *Transaction, context state.Interface, re
 		return *response
 	}
 
-	commissionInBaseCoin := tx.CommissionInBaseCoin()
+	commissionInBaseCoin := tx.Commission(price)
 	commissionPoolSwapper := checkState.Swap().GetSwapper(data.CoinToSell, types.GetBaseCoinID())
 	sellCoin := checkState.Coins().GetCoin(data.CoinToSell)
 	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, sellCoin, commissionInBaseCoin)
@@ -95,7 +100,7 @@ func (data SellAllSwapPoolData) Run(tx *Transaction, context state.Interface, re
 		return *errResp
 	}
 
-	amountIn, amountOut := balance, data.MinimumValueToBuy
+	amountIn, amountOut := balance, swapper.CalculateBuyForSell(balance)
 	if deliverState, ok := context.(*state.State); ok {
 		if isGasCommissionFromPoolSwap {
 			commission, commissionInBaseCoin = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
@@ -115,6 +120,8 @@ func (data SellAllSwapPoolData) Run(tx *Transaction, context state.Interface, re
 	}
 
 	tags := kv.Pairs{
+		kv.Pair{Key: []byte("tx.gas"), Value: []byte(strconv.Itoa(int(gas)))},
+		kv.Pair{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
 		kv.Pair{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
 		kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeSellAllSwapPool)}))},
@@ -127,8 +134,8 @@ func (data SellAllSwapPoolData) Run(tx *Transaction, context state.Interface, re
 
 	return Response{
 		Code:      code.OK,
-		GasUsed:   tx.Gas(),
-		GasWanted: tx.Gas(),
+		GasUsed:   gas,
+		GasWanted: gas,
 		Tags:      tags,
 	}
 }

@@ -3,7 +3,6 @@ package transaction
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/core/state/commission"
 	"math/big"
 	"strconv"
 	"sync"
@@ -34,7 +33,7 @@ type Response struct {
 }
 
 // RunTx executes transaction in given context
-func RunTx(context state.Interface, rawTx []byte, commissions *commission.Price, rewardPool *big.Int, currentBlock uint64, currentMempool *sync.Map, minGasPrice uint32) Response {
+func RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBlock uint64, currentMempool *sync.Map, minGasPrice uint32) Response {
 	lenRawTx := len(rawTx)
 	if lenRawTx > maxTxLength {
 		return Response{
@@ -189,7 +188,13 @@ func RunTx(context state.Interface, rawTx []byte, commissions *commission.Price,
 		}
 	}
 
-	response := tx.decodedData.Run(tx, context, rewardPool, currentBlock, commissions.Coin, big.NewInt(0))
+	commissions := checkState.Commission().GetCommissions()
+	price := tx.Price(commissions)
+	if !commissions.Coin.IsBaseCoin() {
+		price = checkState.Swap().GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuy(price)
+	}
+
+	response := tx.decodedData.Run(tx, context, rewardPool, currentBlock, price, tx.Gas(commissions))
 
 	if response.Code != code.TxFromSenderAlreadyInMempool && response.Code != code.OK {
 		currentMempool.Delete(sender)
@@ -198,7 +203,7 @@ func RunTx(context state.Interface, rawTx []byte, commissions *commission.Price,
 	response.GasPrice = tx.GasPrice
 
 	switch tx.Type {
-	case TypeCreateCoin, TypeEditCoinOwner, TypeRecreateCoin, TypeEditCandidatePublicKey:
+	case TypeCreateCoin, TypeEditCoinOwner, TypeRecreateCoin, TypeEditCandidatePublicKey, TypeCreateToken, TypeRecreateToken:
 		response.GasUsed = stdGas
 		response.GasWanted = stdGas
 	}

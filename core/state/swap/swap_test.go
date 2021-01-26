@@ -128,7 +128,7 @@ func TestPair_Swap_token0(t *testing.T) {
 			token0Amount:          new(big.Int).Add(new(big.Int).Mul(big.NewInt(5), big.NewInt(1e18)), big.NewInt(0)),
 			token1Amount:          new(big.Int).Add(new(big.Int).Mul(big.NewInt(10), big.NewInt(1e18)), big.NewInt(0)),
 			swap0Amount:           new(big.Int).Add(new(big.Int).Mul(big.NewInt(1), big.NewInt(1e18)), big.NewInt(0)),
-			expected1OutputAmount: big.NewInt(1662497915624478906),
+			expected1OutputAmount: big.NewInt(1663887962654218072),
 		},
 	}
 	service := New(nil, iavl.NewImmutableTree(db.NewMemDB(), 0))
@@ -145,7 +145,7 @@ func TestPair_Swap_token0(t *testing.T) {
 
 			err = service.CheckSwap(tt.coin0, tt.coin1, tt.swap0Amount, new(big.Int).Add(tt.expected1OutputAmount, big.NewInt(1)))
 			if err != ErrorK {
-				t.Fatalf("failed with %v, want error %v", err, ErrorK)
+				t.Fatalf("failed with %v, want error %v, %s", err, ErrorK, pair.CalculateBuyForSell(tt.swap0Amount))
 			}
 
 			err = service.CheckSwap(tt.coin0, tt.coin1, tt.swap0Amount, tt.expected1OutputAmount)
@@ -189,7 +189,7 @@ func TestPair_Swap_token1(t *testing.T) {
 			token0Amount:          new(big.Int).Add(new(big.Int).Mul(big.NewInt(5), big.NewInt(1e18)), big.NewInt(0)),
 			token1Amount:          new(big.Int).Add(new(big.Int).Mul(big.NewInt(10), big.NewInt(1e18)), big.NewInt(0)),
 			swap1Amount:           new(big.Int).Add(new(big.Int).Mul(big.NewInt(1), big.NewInt(1e18)), big.NewInt(0)),
-			expected0OutputAmount: big.NewInt(453305446940074565),
+			expected0OutputAmount: big.NewInt(453718857974177123),
 		},
 	}
 	service := New(nil, iavl.NewImmutableTree(db.NewMemDB(), 0))
@@ -206,7 +206,7 @@ func TestPair_Swap_token1(t *testing.T) {
 
 			err = service.CheckSwap(tt.coin1, tt.coin0, tt.swap1Amount, new(big.Int).Add(tt.expected0OutputAmount, big.NewInt(1)))
 			if err != ErrorK {
-				t.Fatalf("failed with %v, want error %v", err, ErrorK)
+				t.Fatalf("failed with %v, want error %v, %s", err, ErrorK, service.ReturnPair(tt.coin1, tt.coin0).CalculateBuyForSell(tt.swap1Amount))
 			}
 
 			err = service.CheckSwap(tt.coin1, tt.coin0, tt.swap1Amount, tt.expected0OutputAmount)

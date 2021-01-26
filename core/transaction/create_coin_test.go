@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"encoding/binary"
-	"github.com/MinterTeam/minter-go-node/core/state/commission"
 	"math/big"
 	"sync"
 	"testing"
@@ -65,7 +64,7 @@ func TestCreateCoinTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
@@ -79,7 +78,7 @@ func TestCreateCoinTx(t *testing.T) {
 		t.Error(err)
 	}
 
-	targetBalance, _ := big.NewInt(0).SetString("989000000000000000000000", 10)
+	targetBalance, _ := big.NewInt(0).SetString("989999000000000000000000", 10)
 	balance := cState.Accounts.GetBalance(addr, coin)
 	if balance.Cmp(targetBalance) != 0 {
 		t.Errorf("Target %s balance is not correct. Expected %s, got %s", coin, targetBalance, balance)
@@ -178,7 +177,7 @@ func TestCreateCoinWithIncorrectName(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.InvalidCoinName {
 		t.Fatalf("Response code is not %d. Error %s", code.InvalidCoinName, response.Log)
 	}
@@ -239,7 +238,7 @@ func TestCreateCoinWithInvalidSymbol(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.InvalidCoinSymbol {
 		t.Fatalf("Response code is not %d. Error %s", code.InvalidCoinSymbol, response.Log)
 	}
@@ -301,7 +300,7 @@ func TestCreateCoinWithExistingSymbol(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.CoinAlreadyExists {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinAlreadyExists, response.Log)
 	}
@@ -360,7 +359,7 @@ func TestCreateCoinWithWrongCrr(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.WrongCrr {
 		t.Fatalf("Response code is not %d. Error %s", code.WrongCrr, response.Log)
 	}
@@ -395,7 +394,7 @@ func TestCreateCoinWithWrongCrr(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response = RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.WrongCrr {
 		t.Fatalf("Response code is not %d. Error %s", code.WrongCrr, response.Log)
 	}
@@ -453,7 +452,7 @@ func TestCreateCoinWithWrongCoinSupply(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.WrongCoinSupply {
 		t.Fatalf("Response code is not %d. Error %s", code.WrongCoinSupply, response.Log)
 	}
@@ -487,7 +486,7 @@ func TestCreateCoinWithWrongCoinSupply(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response = RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.WrongCoinSupply {
 		t.Fatalf("Response code is not %d. Error %s", code.WrongCoinSupply, response.Log)
 	}
@@ -512,7 +511,7 @@ func TestCreateCoinWithWrongCoinSupply(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response = RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.WrongCoinSupply {
 		t.Fatalf("Response code is not %d. Error %s", code.WrongCoinSupply, response.Log)
 	}
@@ -534,7 +533,7 @@ func TestCreateCoinWithWrongCoinSupply(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response = RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.WrongCoinSupply {
 		t.Fatalf("Response code is not %d. Error %s", code.WrongCoinSupply, response.Log)
 	}
@@ -546,32 +545,33 @@ func TestCreateCoinWithWrongCoinSupply(t *testing.T) {
 
 func TestCreateCoinGas(t *testing.T) {
 	t.Parallel()
+	// t.SkipNow()
 	data := CreateCoinData{
 		Symbol: types.StrToCoinSymbol("ABC"),
 	}
 
-	if data.Gas() != 1000000000 {
-		t.Fatal("Gas for symbol with length 3 is not correct.")
+	if data.CommissionData(&commissionPrice).String() != "1000000000000000000000" {
+		t.Fatal("CommissionData for symbol with length 3 is not correct.")
 	}
 
 	data.Symbol = types.StrToCoinSymbol("ABCD")
-	if data.Gas() != 100000000 {
-		t.Fatal("Gas for symbol with length 4 is not correct.")
+	if data.CommissionData(&commissionPrice).String() != "100000000000000000000" {
+		t.Fatal("CommissionData for symbol with length 4 is not correct.")
 	}
 
 	data.Symbol = types.StrToCoinSymbol("ABCDE")
-	if data.Gas() != 10000000 {
-		t.Fatal("Gas for symbol with length 5 is not correct.")
+	if data.CommissionData(&commissionPrice).String() != "10000000000000000000" {
+		t.Fatal("CommissionData for symbol with length 5 is not correct.")
 	}
 
 	data.Symbol = types.StrToCoinSymbol("ABCDEF")
-	if data.Gas() != 1000000 {
-		t.Fatal("Gas for symbol with length 6 is not correct.")
+	if data.CommissionData(&commissionPrice).String() != "1000000000000000000" {
+		t.Fatal("CommissionData for symbol with length 6 is not correct.")
 	}
 
 	data.Symbol = types.StrToCoinSymbol("ABCDEFG")
-	if data.Gas() != 100000 {
-		t.Fatal("Gas for symbol with length 7 is not correct.")
+	if data.CommissionData(&commissionPrice).String() != "100000000000000000" {
+		t.Fatal("CommissionData for symbol with length 7 is not correct.")
 	}
 }
 
@@ -620,7 +620,7 @@ func TestCreateCoinWithInsufficientFundsForGas(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.InsufficientFunds {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
@@ -683,7 +683,7 @@ func TestCreateCoinTxToGasCoinReserveUnderflow(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.CommissionCoinNotSufficient {
 		t.Fatalf("Response code is not %d. Error %s", code.CommissionCoinNotSufficient, response.Log)
 	}
@@ -740,7 +740,7 @@ func TestCreateCoinToInsufficientFundsForGasCoin(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.InsufficientFunds {
 		t.Fatalf("Response code is not %d. Error %d %s", code.InsufficientFunds, response.Code, response.Log)
 	}
@@ -797,7 +797,7 @@ func TestCreateCoinToInsufficientFundsForInitialReserve(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.InsufficientFunds {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
@@ -859,7 +859,7 @@ func TestCreateCoinToSameSymbolInOneBlock(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != 0 {
 		t.Fatalf("Response code is not success. Error %s", response.Log)
 	}
@@ -877,7 +877,7 @@ func TestCreateCoinToSameSymbolInOneBlock(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response = RunTx(cState, encodedTx, &commission.Price{}, big.NewInt(0), 0, &sync.Map{}, 0)
+	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != code.CoinAlreadyExists {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinAlreadyExists, response.Log)
 	}

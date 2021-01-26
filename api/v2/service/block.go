@@ -15,6 +15,7 @@ import (
 	tmTypes "github.com/tendermint/tendermint/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -194,9 +195,15 @@ func (s *Service) blockTransaction(block *core_types.ResultBlock, blockResults *
 		tx, _ := transaction.DecodeFromBytes(rawTx)
 		sender, _ := tx.Sender()
 
+		var gas int
 		tags := make(map[string]string)
 		for _, tag := range blockResults.TxsResults[i].Events[0].Attributes {
-			tags[string(tag.Key)] = string(tag.Value)
+			key := string(tag.Key)
+			value := string(tag.Value)
+			tags[key] = value
+			if key == "tx.gas" {
+				gas, _ = strconv.Atoi(value)
+			}
 		}
 
 		data, err := encode(tx.GetDecodedData(), coins)
@@ -216,7 +223,7 @@ func (s *Service) blockTransaction(block *core_types.ResultBlock, blockResults *
 			Data:        data,
 			Payload:     tx.Payload,
 			ServiceData: tx.ServiceData,
-			Gas:         uint64(tx.Gas()),
+			Gas:         uint64(gas),
 			GasCoin: &pb.Coin{
 				Id:     uint64(tx.GasCoin),
 				Symbol: coins.GetCoin(tx.GasCoin).GetFullSymbol(),
