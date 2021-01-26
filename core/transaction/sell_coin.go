@@ -95,7 +95,7 @@ func (data SellCoinData) String() string {
 }
 
 func (data SellCoinData) CommissionData(price *commission.Price) *big.Int {
-	return price.Convert
+	return price.SellBancor
 }
 
 func (data SellCoinData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int, gas int64) Response {

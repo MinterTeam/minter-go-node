@@ -76,18 +76,19 @@ func (data CreateTokenData) String() string {
 }
 
 func (data CreateTokenData) CommissionData(price *commission.Price) *big.Int {
+	createTicker := new(big.Int).Set(price.CreateTicker7to10)
 	switch len(data.Symbol.String()) {
 	case 3:
-		return price.CreateTicker3 // 1mln bips
+		createTicker = price.CreateTicker3
 	case 4:
-		return price.CreateTicker4 // 100k bips
+		createTicker = price.CreateTicker4
 	case 5:
-		return price.CreateTicker5 // 10k bips
+		createTicker = price.CreateTicker5
 	case 6:
-		return price.CreateTicker6 // 1k bips
+		createTicker = price.CreateTicker6
 	}
 
-	return price.CreateTicker7to10 // 100 bips
+	return big.NewInt(0).Add(createTicker, price.CreateToken)
 }
 
 func (data CreateTokenData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int, gas int64) Response {

@@ -413,18 +413,27 @@ type UpdateCommissionsEvent struct {
 	Coin                    uint64 `json:"coin"`
 	PayloadByte             string `json:"payload_byte"`
 	Send                    string `json:"send"`
-	Convert                 string `json:"convert"`
+	BuyBancor               string `json:"buy_bancor"`
+	SellBancor              string `json:"sell_bancor"`
+	SellAllBancor           string `json:"sell_all_bancor"`
+	BuyPool                 string `json:"buy_pool"`
+	SellPool                string `json:"sell_pool"`
+	SellAllPool             string `json:"sell_all_pool"`
 	CreateTicker3           string `json:"create_ticker3"`
 	CreateTicker4           string `json:"create_ticker4"`
 	CreateTicker5           string `json:"create_ticker5"`
 	CreateTicker6           string `json:"create_ticker6"`
 	CreateTicker7_10        string `json:"create_ticker7_10"`
-	RecreateTicker          string `json:"recreate_ticker"`
+	CreateCoin              string `json:"create_coin"`
+	CreateToken             string `json:"create_token"`
+	RecreateCoin            string `json:"recreate_coin"`
+	RecreateToken           string `json:"recreate_token"`
 	DeclareCandidacy        string `json:"declare_candidacy"`
 	Delegate                string `json:"delegate"`
 	Unbond                  string `json:"unbond"`
 	RedeemCheck             string `json:"redeem_check"`
-	ToggleCandidateStatus   string `json:"toggle_candidate_status"`
+	SetCandidateOn          string `json:"set_candidate_on"`
+	SetCandidateOff         string `json:"set_candidate_off"`
 	CreateMultisig          string `json:"create_multisig"`
 	MultisendDelta          string `json:"multisend_delta"`
 	EditCandidate           string `json:"edit_candidate"`

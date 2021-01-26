@@ -30,7 +30,7 @@ func (data BuyCoinData) String() string {
 }
 
 func (data BuyCoinData) CommissionData(price *commission.Price) *big.Int {
-	return price.Convert
+	return price.BuyBancor
 }
 
 func (data BuyCoinData) basicCheck(tx *Transaction, context *state.CheckState) *Response {

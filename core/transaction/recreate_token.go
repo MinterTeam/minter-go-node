@@ -89,7 +89,7 @@ func (data RecreateTokenData) String() string {
 }
 
 func (data RecreateTokenData) CommissionData(price *commission.Price) *big.Int {
-	return price.Recreate
+	return price.RecreateToken
 }
 
 func (data RecreateTokenData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int, gas int64) Response {

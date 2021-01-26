@@ -10,19 +10,29 @@ type Price struct {
 	Coin                    types.CoinID
 	PayloadByte             *big.Int
 	Send                    *big.Int
-	Convert                 *big.Int
+	BuyBancor               *big.Int
+	SellBancor              *big.Int
+	SellAllBancor           *big.Int
+	BuyPool                 *big.Int
+	SellPool                *big.Int
+	SellAllPool             *big.Int
 	CreateTicker3           *big.Int
 	CreateTicker4           *big.Int
 	CreateTicker5           *big.Int
 	CreateTicker6           *big.Int
 	CreateTicker7to10       *big.Int
-	RecreateTicker          *big.Int
+	CreateCoin              *big.Int
+	CreateToken             *big.Int
+	RecreateCoin            *big.Int
+	RecreateToken           *big.Int
 	DeclareCandidacy        *big.Int
 	Delegate                *big.Int
 	Unbond                  *big.Int
 	RedeemCheck             *big.Int
-	ToggleCandidateStatus   *big.Int
+	SetCandidateOn          *big.Int
+	SetCandidateOff         *big.Int
 	CreateMultisig          *big.Int
+	MultisendBase           *big.Int
 	MultisendDelta          *big.Int
 	EditCandidate           *big.Int
 	SetHaltBlock            *big.Int

@@ -48,7 +48,7 @@ func (data SellSwapPoolData) String() string {
 }
 
 func (data SellSwapPoolData) CommissionData(price *commission.Price) *big.Int {
-	return price.Convert
+	return price.SellPool
 }
 
 func (data SellSwapPoolData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int, gas int64) Response {

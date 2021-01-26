@@ -18,19 +18,29 @@ type PriceCommissionData struct {
 	Coin                    types.CoinID
 	PayloadByte             *big.Int
 	Send                    *big.Int
-	Convert                 *big.Int
+	BuyBancor               *big.Int
+	SellBancor              *big.Int
+	SellAllBancor           *big.Int
+	BuyPool                 *big.Int
+	SellPool                *big.Int
+	SellAllPool             *big.Int
 	CreateTicker3           *big.Int
 	CreateTicker4           *big.Int
 	CreateTicker5           *big.Int
 	CreateTicker6           *big.Int
 	CreateTicker7to10       *big.Int
-	RecreateTicker          *big.Int
+	CreateCoin              *big.Int
+	CreateToken             *big.Int
+	RecreateCoin            *big.Int
+	RecreateToken           *big.Int
 	DeclareCandidacy        *big.Int
 	Delegate                *big.Int
 	Unbond                  *big.Int
 	RedeemCheck             *big.Int
-	ToggleCandidateStatus   *big.Int
+	SetCandidateOn          *big.Int
+	SetCandidateOff         *big.Int
 	CreateMultisig          *big.Int
+	MultisendBase           *big.Int
 	MultisendDelta          *big.Int
 	EditCandidate           *big.Int
 	SetHaltBlock            *big.Int
@@ -172,23 +182,35 @@ func (data PriceCommissionData) Run(tx *Transaction, context state.Interface, re
 
 func (data PriceCommissionData) price() *commission.Price {
 	return &commission.Price{
+		Coin:                    data.Coin,
+		PayloadByte:             data.PayloadByte,
 		Send:                    data.Send,
-		Convert:                 data.Convert,
+		BuyBancor:               data.BuyBancor,
+		SellBancor:              data.SellBancor,
+		SellAllBancor:           data.SellAllBancor,
+		BuyPool:                 data.BuyPool,
+		SellPool:                data.SellPool,
+		SellAllPool:             data.SellAllPool,
 		CreateTicker3:           data.CreateTicker3,
 		CreateTicker4:           data.CreateTicker4,
 		CreateTicker5:           data.CreateTicker5,
 		CreateTicker6:           data.CreateTicker6,
 		CreateTicker7to10:       data.CreateTicker7to10,
+		CreateCoin:              data.CreateCoin,
+		CreateToken:             data.CreateToken,
+		RecreateCoin:            data.RecreateCoin,
+		RecreateToken:           data.RecreateToken,
 		DeclareCandidacy:        data.DeclareCandidacy,
 		Delegate:                data.Delegate,
 		Unbond:                  data.Unbond,
 		RedeemCheck:             data.RedeemCheck,
-		ToggleCandidateStatus:   data.ToggleCandidateStatus,
+		SetCandidateOn:          data.SetCandidateOn,
+		SetCandidateOff:         data.SetCandidateOff,
 		CreateMultisig:          data.CreateMultisig,
+		MultisendBase:           data.MultisendBase,
 		MultisendDelta:          data.MultisendDelta,
 		EditCandidate:           data.EditCandidate,
 		SetHaltBlock:            data.SetHaltBlock,
-		RecreateTicker:          data.RecreateTicker,
 		EditTickerOwner:         data.EditTickerOwner,
 		EditMultisig:            data.EditMultisig,
 		PriceVote:               data.PriceVote,
@@ -200,7 +222,6 @@ func (data PriceCommissionData) price() *commission.Price {
 		EditTokenEmission:       data.EditTokenEmission,
 		PriceCommission:         data.PriceCommission,
 		UpdateNetwork:           data.UpdateNetwork,
-		Coin:                    data.Coin,
 		More:                    data.More,
 	}
 }

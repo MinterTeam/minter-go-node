@@ -63,7 +63,7 @@ func (data MultisendData) String() string {
 }
 
 func (data MultisendData) CommissionData(price *commission.Price) *big.Int {
-	return big.NewInt(0).Add(price.Send, big.NewInt(0).Mul(big.NewInt(int64(len(data.List))-1), price.MultisendDelta))
+	return big.NewInt(0).Add(price.MultisendBase, big.NewInt(0).Mul(big.NewInt(int64(len(data.List))-1), price.MultisendDelta))
 }
 
 func (data MultisendData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int, gas int64) Response {

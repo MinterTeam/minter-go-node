@@ -65,28 +65,42 @@ func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinS
 	coinTo := cState.Coins().GetCoin(coinToBuy)
 
 	commissions := cState.Commission().GetCommissions()
-	commissionInBaseCoin := commissions.Convert
-	if !commissions.Coin.IsBaseCoin() {
-		commissionInBaseCoin = cState.Swap().GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuy(commissionInBaseCoin)
-	}
-	if req.GasPrice > 1 {
-		commissionInBaseCoin.Mul(commissionInBaseCoin, big.NewInt(int64(req.GasPrice)))
-	}
-	commissionPoolSwapper := cState.Swap().GetSwapper(coinFrom.ID(), types.GetBaseCoinID())
-	commission, _, errResp := transaction.CalculateCommission(cState, commissionPoolSwapper, coinFrom, commissionInBaseCoin)
-	if errResp != nil {
-		return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
-	}
-
-	valueToSell.Sub(valueToSell, commission)
 
 	var valueBancor, valuePool *big.Int
 	var errBancor, errPool error
 	value := big.NewInt(0)
 	if req.SwapFrom == pb.SwapFrom_bancor || req.SwapFrom == pb.SwapFrom_optimal {
+		commissionInBaseCoin := new(big.Int).Set(commissions.SellAllBancor)
+		if !commissions.Coin.IsBaseCoin() {
+			commissionInBaseCoin = cState.Swap().GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuy(commissionInBaseCoin)
+		}
+		if req.GasPrice > 1 {
+			commissionInBaseCoin.Mul(commissionInBaseCoin, big.NewInt(int64(req.GasPrice)))
+		}
+		commissionPoolSwapper := cState.Swap().GetSwapper(coinFrom.ID(), types.GetBaseCoinID())
+		commission, _, errResp := transaction.CalculateCommission(cState, commissionPoolSwapper, coinFrom, commissionInBaseCoin)
+		if errResp != nil {
+			return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
+		}
+
+		valueToSell.Sub(valueToSell, commission)
 		valueBancor, errBancor = s.calcSellAllFromBancor(valueToSell, coinTo, coinFrom, commissionInBaseCoin)
 	}
 	if req.SwapFrom == pb.SwapFrom_pool || req.SwapFrom == pb.SwapFrom_optimal {
+		commissionInBaseCoin := new(big.Int).Set(commissions.SellAllPool)
+		if !commissions.Coin.IsBaseCoin() {
+			commissionInBaseCoin = cState.Swap().GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuy(commissionInBaseCoin)
+		}
+		if req.GasPrice > 1 {
+			commissionInBaseCoin.Mul(commissionInBaseCoin, big.NewInt(int64(req.GasPrice)))
+		}
+		commissionPoolSwapper := cState.Swap().GetSwapper(coinFrom.ID(), types.GetBaseCoinID())
+		commission, _, errResp := transaction.CalculateCommission(cState, commissionPoolSwapper, coinFrom, commissionInBaseCoin)
+		if errResp != nil {
+			return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
+		}
+
+		valueToSell.Sub(valueToSell, commission)
 		valuePool, errPool = s.calcSellAllFromPool(valueToSell, cState.Swap().GetSwapper(coinFrom.ID(), coinTo.ID()), coinFrom, coinTo)
 	}
 
