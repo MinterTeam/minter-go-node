@@ -44,7 +44,8 @@ type Price struct {
 	RemoveLiquidity         *big.Int
 	EditCandidateCommission *big.Int
 	MoveStake               *big.Int
-	EditTokenEmission       *big.Int
+	BurnToken               *big.Int
+	MintToken               *big.Int
 	PriceCommission         *big.Int
 	UpdateNetwork           *big.Int
 	More                    []*big.Int `rlp:"tail"`

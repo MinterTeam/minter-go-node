@@ -52,7 +52,8 @@ type PriceCommissionData struct {
 	RemoveLiquidity         *big.Int
 	EditCandidateCommission *big.Int
 	MoveStake               *big.Int
-	EditTokenEmission       *big.Int
+	MintToken               *big.Int
+	BurnToken               *big.Int
 	PriceCommission         *big.Int
 	UpdateNetwork           *big.Int
 	More                    []*big.Int `rlp:"tail"`
@@ -219,7 +220,8 @@ func (data PriceCommissionData) price() *commission.Price {
 		RemoveLiquidity:         data.RemoveLiquidity,
 		EditCandidateCommission: data.EditCandidateCommission,
 		MoveStake:               data.MoveStake,
-		EditTokenEmission:       data.EditTokenEmission,
+		BurnToken:               data.BurnToken,
+		MintToken:               data.MintToken,
 		PriceCommission:         data.PriceCommission,
 		UpdateNetwork:           data.UpdateNetwork,
 		More:                    data.More,

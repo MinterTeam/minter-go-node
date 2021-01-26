@@ -446,7 +446,8 @@ type UpdateCommissionsEvent struct {
 	RemoveLiquidity         string `json:"remove_liquidity"`
 	EditCandidateCommission string `json:"edit_candidate_commission"`
 	MoveStake               string `json:"move_stake"`
-	EditTokenEmission       string `json:"edit_token_emission"`
+	MintToken               string `json:"mint_token"`
+	BurnToken               string `json:"burn_token"`
 	PriceCommission         string `json:"price_commission"`
 	UpdateNetwork           string `json:"update_network"`
 }

@@ -70,7 +70,7 @@ func (data BurnTokenData) String() string {
 }
 
 func (data BurnTokenData) CommissionData(price *commission.Price) *big.Int {
-	return price.EditTokenEmission
+	return price.BurnToken
 }
 
 func (data BurnTokenData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int, gas int64) Response {

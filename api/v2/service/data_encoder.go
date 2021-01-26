@@ -370,7 +370,8 @@ func priceCommissionData(d *transaction.PriceCommissionData, coin *coins.Model) 
 		RemoveLiquidity:         d.RemoveLiquidity.String(),
 		EditCandidateCommission: d.EditCandidateCommission.String(),
 		MoveStake:               d.MoveStake.String(),
-		EditTokenEmission:       d.EditTokenEmission.String(),
+		MintToken:               d.MintToken.String(),
+		BurnToken:               d.BurnToken.String(),
 		PriceCommission:         d.PriceCommission.String(),
 		UpdateNetwork:           d.UpdateNetwork.String(),
 	}
