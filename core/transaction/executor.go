@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -15,7 +16,7 @@ import (
 
 const (
 	maxTxLength          = 7168
-	maxPayloadLength     = 1024
+	maxPayloadLength     = 1024 // todo
 	maxServiceDataLength = 128
 	stdGas               = 5000
 )
@@ -194,19 +195,20 @@ func RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBl
 		price = checkState.Swap().GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuy(price)
 	}
 
-	response := tx.decodedData.Run(tx, context, rewardPool, currentBlock, price, tx.Gas(commissions))
+	response := tx.decodedData.Run(tx, context, rewardPool, currentBlock, price)
 
 	if response.Code != code.TxFromSenderAlreadyInMempool && response.Code != code.OK {
 		currentMempool.Delete(sender)
 	}
 
 	response.GasPrice = tx.GasPrice
-
-	switch tx.Type {
-	case TypeCreateCoin, TypeEditCoinOwner, TypeRecreateCoin, TypeEditCandidatePublicKey, TypeCreateToken, TypeRecreateToken:
-		response.GasUsed = stdGas
-		response.GasWanted = stdGas
-	}
+	gas := tx.Gas()
+	response.Tags = append(response.Tags,
+		kv.Pair{Key: []byte("tx.gas"), Value: []byte(strconv.Itoa(int(gas)))},
+		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(tx.decodedData.TxType())}))},
+	)
+	response.GasUsed = gas
+	response.GasWanted = gas
 
 	return response
 }

@@ -10,7 +10,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
-	"strconv"
 )
 
 type BuyCoinData struct {
@@ -99,7 +98,7 @@ func (data BuyCoinData) basicCheck(tx *Transaction, context *state.CheckState) *
 	return nil
 }
 
-func (data BuyCoinData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int, gas int64) Response {
+func (data BuyCoinData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 	var errResp *Response
 	var checkState *state.CheckState
@@ -201,7 +200,7 @@ func (data BuyCoinData) Run(tx *Transaction, context state.Interface, rewardPool
 			Info: EncodeError(code.NewInsufficientFunds(sender.String(), spendInGasCoin.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
 		}
 	}
-
+	var tags kv.Pairs
 	if deliverState, ok := context.(*state.State); ok {
 		if isGasCommissionFromPoolSwap {
 			commission, commissionInBaseCoin = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
@@ -222,25 +221,21 @@ func (data BuyCoinData) Run(tx *Transaction, context state.Interface, rewardPool
 			deliverState.Coins.AddReserve(data.CoinToBuy, diffBipReserve)
 		}
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
-	}
 
-	tags := kv.Pairs{
-		kv.Pair{Key: []byte("tx.gas"), Value: []byte(strconv.Itoa(int(gas)))},
-		kv.Pair{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
-		kv.Pair{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
-		kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
-		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeBuyCoin)}))},
-		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
-		kv.Pair{Key: []byte("tx.coin_to_buy"), Value: []byte(data.CoinToBuy.String())},
-		kv.Pair{Key: []byte("tx.coin_to_sell"), Value: []byte(data.CoinToSell.String())},
-		kv.Pair{Key: []byte("tx.return"), Value: []byte(value.String())},
+		tags = kv.Pairs{
+			kv.Pair{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
+			kv.Pair{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
+			kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
+			kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
+			kv.Pair{Key: []byte("tx.coin_to_buy"), Value: []byte(data.CoinToBuy.String())},
+			kv.Pair{Key: []byte("tx.coin_to_sell"), Value: []byte(data.CoinToSell.String())},
+			kv.Pair{Key: []byte("tx.return"), Value: []byte(value.String())},
+		}
 	}
 
 	return Response{
-		Code:      code.OK,
-		Tags:      tags,
-		GasUsed:   gas,
-		GasWanted: gas,
+		Code: code.OK,
+		Tags: tags,
 	}
 }
 

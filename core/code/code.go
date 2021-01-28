@@ -88,6 +88,7 @@ const (
 	InsufficientLiquidityBurned  uint32 = 705
 	InsufficientLiquidityBalance uint32 = 706
 	InsufficientOutputAmount     uint32 = 707
+	PairAlreadyExists            uint32 = 708
 
 	// emission coin
 	CoinIsNotToken  uint32 = 800
@@ -188,6 +189,16 @@ type pairNotExists struct {
 
 func NewPairNotExists(coin0 string, coin1 string) *pairNotExists {
 	return &pairNotExists{Code: strconv.Itoa(int(PairNotExists)), Coin0: coin0, Coin1: coin1}
+}
+
+type pairAlreadyExists struct {
+	Code  string `json:"code,omitempty"`
+	Coin0 string `json:"coin0,omitempty"`
+	Coin1 string `json:"coin1,omitempty"`
+}
+
+func NewPairAlreadyExists(coin0 string, coin1 string) *pairAlreadyExists {
+	return &pairAlreadyExists{Code: strconv.Itoa(int(PairAlreadyExists)), Coin0: coin0, Coin1: coin1}
 }
 
 type voiceExpired struct {

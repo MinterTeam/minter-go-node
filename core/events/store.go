@@ -42,6 +42,8 @@ func NewEventsStore(db db.DB) IEventsDB {
 	codec.RegisterConcrete(&unbond{}, "unbond", nil)
 	codec.RegisterConcrete(&kick{}, "kick", nil)
 	codec.RegisterConcrete(&move{}, "move", nil)
+	codec.RegisterConcrete(&UpdateCommissionsEvent{}, "commission", nil)
+	codec.RegisterConcrete(&UpdateNetworkEvent{}, "version", nil)
 
 	return &eventsStore{
 		cdc:       codec,

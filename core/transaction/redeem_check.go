@@ -56,7 +56,7 @@ func (data RedeemCheckData) CommissionData(price *commission.Price) *big.Int {
 	return price.RedeemCheck
 }
 
-func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int, gas int64) Response {
+func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -216,7 +216,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 			}
 		}
 	}
-
+	var tags kv.Pairs
 	if deliverState, ok := context.(*state.State); ok {
 		deliverState.Checks.UseCheck(decodedCheck)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
@@ -230,23 +230,19 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 		deliverState.Accounts.SubBalance(checkSender, decodedCheck.Coin, decodedCheck.Value)
 		deliverState.Accounts.AddBalance(sender, decodedCheck.Coin, decodedCheck.Value)
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
-	}
 
-	tags := kv.Pairs{
-		kv.Pair{Key: []byte("tx.gas"), Value: []byte(strconv.Itoa(int(gas)))},
-		kv.Pair{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
-		kv.Pair{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
-		kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
-		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeRedeemCheck)}))},
-		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(checkSender[:]))},
-		kv.Pair{Key: []byte("tx.to"), Value: []byte(hex.EncodeToString(sender[:]))},
-		kv.Pair{Key: []byte("tx.coin_id"), Value: []byte(decodedCheck.Coin.String())},
+		tags = kv.Pairs{
+			kv.Pair{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
+			kv.Pair{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
+			kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
+			kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(checkSender[:]))},
+			kv.Pair{Key: []byte("tx.to"), Value: []byte(hex.EncodeToString(sender[:]))},
+			kv.Pair{Key: []byte("tx.coin_id"), Value: []byte(decodedCheck.Coin.String())},
+		}
 	}
 
 	return Response{
-		Code:      code.OK,
-		Tags:      tags,
-		GasUsed:   gas,
-		GasWanted: gas,
+		Code: code.OK,
+		Tags: tags,
 	}
 }

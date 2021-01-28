@@ -70,10 +70,12 @@ func getData(txType TxType) (Data, bool) {
 		return &CreateTokenData{}, true
 	case TypeRecreateToken:
 		return &RecreateTokenData{}, true
-	case TypePriceCommission:
-		return &PriceCommissionData{}, true
-	case TypeUpdateNetwork:
-		return &UpdateNetworkData{}, true
+	case TypeVoteCommission:
+		return &VoteCommissionData{}, true
+	case TypeVoteUpdate:
+		return &VoteUpdateData{}, true
+	case TypeCreateSwapPool:
+		return &CreateSwapPoolData{}, true
 	default:
 		return nil, false
 	}

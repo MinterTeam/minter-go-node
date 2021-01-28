@@ -370,6 +370,7 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 			EditMultisig:            price.EditMultisig.String(),
 			PriceVote:               price.PriceVote.String(),
 			EditCandidatePublicKey:  price.EditCandidatePublicKey.String(),
+			CreateSwapPool:          price.CreateSwapPool.String(),
 			AddLiquidity:            price.AddLiquidity.String(),
 			RemoveLiquidity:         price.RemoveLiquidity.String(),
 			EditCandidateCommission: price.EditCandidateCommission.String(),

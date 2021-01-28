@@ -276,7 +276,7 @@ func TestUnbondTxToDecodeError(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := data.Run(&tx, state.NewCheckState(cState), nil, 1, nil, 0)
+	response := data.Run(&tx, state.NewCheckState(cState), nil, 1, nil)
 	if response.Code != code.DecodeError {
 		t.Fatalf("Response code is not %d. Error %s", code.DecodeError, response.Log)
 	}

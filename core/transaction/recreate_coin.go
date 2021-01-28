@@ -121,7 +121,7 @@ func (data RecreateCoinData) CommissionData(price *commission.Price) *big.Int {
 	return price.RecreateCoin
 }
 
-func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int, gas int64) Response {
+func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -176,8 +176,8 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 			}
 		}
 	}
-	oldCoinID := checkState.Coins().GetCoinBySymbol(data.Symbol, 0).ID()
-	var coinId = checkState.App().GetNextCoinID()
+
+	var tags kv.Pairs
 	if deliverState, ok := context.(*state.State); ok {
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
@@ -189,6 +189,9 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 		}
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		deliverState.Accounts.SubBalance(sender, types.GetBaseCoinID(), data.InitialReserve)
+
+		oldCoinID := checkState.Coins().GetCoinBySymbol(data.Symbol, 0).ID()
+		coinId := checkState.App().GetNextCoinID()
 
 		deliverState.Coins.Recreate(
 			coinId,
@@ -204,25 +207,20 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 		deliverState.Accounts.AddBalance(sender, coinId, data.InitialAmount)
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 
-	}
-
-	tags := kv.Pairs{
-		kv.Pair{Key: []byte("tx.gas"), Value: []byte(strconv.Itoa(int(gas)))},
-		kv.Pair{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
-		kv.Pair{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
-		kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
-		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeRecreateCoin)}))},
-		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
-		kv.Pair{Key: []byte("tx.coin_symbol"), Value: []byte(data.Symbol.String())},
-		kv.Pair{Key: []byte("tx.coin_id"), Value: []byte(coinId.String())},
-		kv.Pair{Key: []byte("tx.old_coin_symbol"), Value: []byte(checkState.Coins().GetCoin(oldCoinID).GetFullSymbol())},
-		kv.Pair{Key: []byte("tx.old_coin_id"), Value: []byte(oldCoinID.String())},
+		tags = kv.Pairs{
+			kv.Pair{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
+			kv.Pair{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
+			kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
+			kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
+			kv.Pair{Key: []byte("tx.coin_symbol"), Value: []byte(data.Symbol.String())},
+			kv.Pair{Key: []byte("tx.coin_id"), Value: []byte(coinId.String())},
+			kv.Pair{Key: []byte("tx.old_coin_symbol"), Value: []byte(checkState.Coins().GetCoin(oldCoinID).GetFullSymbol())},
+			kv.Pair{Key: []byte("tx.old_coin_id"), Value: []byte(oldCoinID.String())},
+		}
 	}
 
 	return Response{
-		Code:      code.OK,
-		Tags:      tags,
-		GasUsed:   gas,
-		GasWanted: gas,
+		Code: code.OK,
+		Tags: tags,
 	}
 }
