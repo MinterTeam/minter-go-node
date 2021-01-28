@@ -24,11 +24,11 @@ func TestCommissionFromMin(t *testing.T) {
 	cState.Accounts.SubBalance(types.Address{}, coin1, helpers.BipToPip(big.NewInt(100000)))
 	cState.Accounts.AddBalance(addr, coin1, helpers.BipToPip(big.NewInt(100000)))
 	{
-		data := AddLiquidityData{
-			Coin0:          coin1,
-			Volume0:        helpers.BipToPip(big.NewInt(1000)),
-			Coin1:          types.GetBaseCoinID(),
-			MaximumVolume1: helpers.BipToPip(big.NewInt(1000)),
+		data := CreateSwapPoolData{
+			Coin0:   coin1,
+			Volume0: helpers.BipToPip(big.NewInt(1000)),
+			Coin1:   types.GetBaseCoinID(),
+			Volume1: helpers.BipToPip(big.NewInt(1000)),
 		}
 
 		encodedData, err := rlp.EncodeToBytes(data)
@@ -42,7 +42,7 @@ func TestCommissionFromMin(t *testing.T) {
 			GasPrice:      1,
 			ChainID:       types.CurrentChainID,
 			GasCoin:       types.GetBaseCoinID(),
-			Type:          TypeAddLiquidity,
+			Type:          TypeCreateSwapPool,
 			Data:          encodedData,
 			SignatureType: SigTypeSingle,
 		}
@@ -126,11 +126,11 @@ func TestCommissionFromPool(t *testing.T) {
 	cState.Accounts.SubBalance(types.Address{}, coin1, helpers.BipToPip(big.NewInt(100000)))
 	cState.Accounts.AddBalance(addr, coin1, helpers.BipToPip(big.NewInt(100000)))
 	{
-		data := AddLiquidityData{
-			Coin0:          coin1,
-			Volume0:        helpers.BipToPip(big.NewInt(1000)),
-			Coin1:          types.GetBaseCoinID(),
-			MaximumVolume1: helpers.BipToPip(big.NewInt(1000)),
+		data := CreateSwapPoolData{
+			Coin0:   coin1,
+			Volume0: helpers.BipToPip(big.NewInt(1000)),
+			Coin1:   types.GetBaseCoinID(),
+			Volume1: helpers.BipToPip(big.NewInt(1000)),
 		}
 
 		encodedData, err := rlp.EncodeToBytes(data)
@@ -144,7 +144,7 @@ func TestCommissionFromPool(t *testing.T) {
 			GasPrice:      1,
 			ChainID:       types.CurrentChainID,
 			GasCoin:       types.GetBaseCoinID(),
-			Type:          TypeAddLiquidity,
+			Type:          TypeCreateSwapPool,
 			Data:          encodedData,
 			SignatureType: SigTypeSingle,
 		}

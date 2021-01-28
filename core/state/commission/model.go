@@ -40,6 +40,7 @@ type Price struct {
 	EditMultisig            *big.Int
 	PriceVote               *big.Int
 	EditCandidatePublicKey  *big.Int
+	CreateSwapPool          *big.Int
 	AddLiquidity            *big.Int
 	RemoveLiquidity         *big.Int
 	EditCandidateCommission *big.Int

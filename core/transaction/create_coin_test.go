@@ -78,7 +78,7 @@ func TestCreateCoinTx(t *testing.T) {
 		t.Error(err)
 	}
 
-	targetBalance, _ := big.NewInt(0).SetString("989999000000000000000000", 10)
+	targetBalance, _ := big.NewInt(0).SetString("989000000000000000000000", 10)
 	balance := cState.Accounts.GetBalance(addr, coin)
 	if balance.Cmp(targetBalance) != 0 {
 		t.Errorf("Target %s balance is not correct. Expected %s, got %s", coin, targetBalance, balance)
@@ -550,27 +550,27 @@ func TestCreateCoinGas(t *testing.T) {
 		Symbol: types.StrToCoinSymbol("ABC"),
 	}
 
-	if data.CommissionData(&commissionPrice).String() != "1000000000000000000000" {
+	if data.CommissionData(&commissionPrice).String() != "1000000000000000000000000" {
 		t.Fatal("CommissionData for symbol with length 3 is not correct.")
 	}
 
 	data.Symbol = types.StrToCoinSymbol("ABCD")
-	if data.CommissionData(&commissionPrice).String() != "100000000000000000000" {
+	if data.CommissionData(&commissionPrice).String() != "100000000000000000000000" {
 		t.Fatal("CommissionData for symbol with length 4 is not correct.")
 	}
 
 	data.Symbol = types.StrToCoinSymbol("ABCDE")
-	if data.CommissionData(&commissionPrice).String() != "10000000000000000000" {
+	if data.CommissionData(&commissionPrice).String() != "10000000000000000000000" {
 		t.Fatal("CommissionData for symbol with length 5 is not correct.")
 	}
 
 	data.Symbol = types.StrToCoinSymbol("ABCDEF")
-	if data.CommissionData(&commissionPrice).String() != "1000000000000000000" {
+	if data.CommissionData(&commissionPrice).String() != "1000000000000000000000" {
 		t.Fatal("CommissionData for symbol with length 6 is not correct.")
 	}
 
 	data.Symbol = types.StrToCoinSymbol("ABCDEFG")
-	if data.CommissionData(&commissionPrice).String() != "100000000000000000" {
+	if data.CommissionData(&commissionPrice).String() != "100000000000000000000" {
 		t.Fatal("CommissionData for symbol with length 7 is not correct.")
 	}
 }

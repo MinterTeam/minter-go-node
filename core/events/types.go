@@ -442,6 +442,7 @@ type UpdateCommissionsEvent struct {
 	EditMultisig            string `json:"edit_multisig"`
 	PriceVote               string `json:"price_vote"`
 	EditCandidatePublicKey  string `json:"edit_candidate_public_key"`
+	CreateSwapPool          string `json:"create_swap_pool"`
 	AddLiquidity            string `json:"add_liquidity"`
 	RemoveLiquidity         string `json:"remove_liquidity"`
 	EditCandidateCommission string `json:"edit_candidate_commission"`

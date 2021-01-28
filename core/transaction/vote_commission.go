@@ -12,7 +12,7 @@ import (
 	"strconv"
 )
 
-type PriceCommissionData struct {
+type VoteCommissionData struct {
 	PubKey                  types.Pubkey
 	Height                  uint64
 	Coin                    types.CoinID
@@ -48,6 +48,7 @@ type PriceCommissionData struct {
 	EditMultisig            *big.Int
 	PriceVote               *big.Int
 	EditCandidatePublicKey  *big.Int
+	CreateSwapPool          *big.Int
 	AddLiquidity            *big.Int
 	RemoveLiquidity         *big.Int
 	EditCandidateCommission *big.Int
@@ -59,15 +60,15 @@ type PriceCommissionData struct {
 	More                    []*big.Int `rlp:"tail"`
 }
 
-func (data PriceCommissionData) TxType() TxType {
-	return TypePriceCommission
+func (data VoteCommissionData) TxType() TxType {
+	return TypeVoteCommission
 }
 
-func (data PriceCommissionData) GetPubKey() types.Pubkey {
+func (data VoteCommissionData) GetPubKey() types.Pubkey {
 	return data.PubKey
 }
 
-func (data PriceCommissionData) basicCheck(tx *Transaction, context *state.CheckState, block uint64) *Response {
+func (data VoteCommissionData) basicCheck(tx *Transaction, context *state.CheckState, block uint64) *Response {
 	if len(data.More) > 0 { // todo
 		return &Response{
 			Code: code.DecodeError,
@@ -111,15 +112,15 @@ func (data PriceCommissionData) basicCheck(tx *Transaction, context *state.Check
 	return checkCandidateOwnership(data, tx, context)
 }
 
-func (data PriceCommissionData) String() string {
+func (data VoteCommissionData) String() string {
 	return fmt.Sprintf("PRICE COMMISSION in coin: %d", data.Coin)
 }
 
-func (data PriceCommissionData) CommissionData(price *commission.Price) *big.Int {
+func (data VoteCommissionData) CommissionData(price *commission.Price) *big.Int {
 	return price.PriceCommission
 }
 
-func (data PriceCommissionData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int, gas int64) Response {
+func (data VoteCommissionData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -149,6 +150,7 @@ func (data PriceCommissionData) Run(tx *Transaction, context state.Interface, re
 		}
 	}
 
+	var tags kv.Pairs
 	if deliverState, ok := context.(*state.State); ok {
 		if isGasCommissionFromPoolSwap {
 			commission, commissionInBaseCoin = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
@@ -162,26 +164,22 @@ func (data PriceCommissionData) Run(tx *Transaction, context state.Interface, re
 		deliverState.Commission.AddVoice(data.Height, data.PubKey, data.price().Encode())
 
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
-	}
 
-	tags := kv.Pairs{
-		kv.Pair{Key: []byte("tx.gas"), Value: []byte(strconv.Itoa(int(gas)))},
-		kv.Pair{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
-		kv.Pair{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
-		kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
-		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypePriceCommission)}))},
-		kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
+		tags = kv.Pairs{
+			kv.Pair{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
+			kv.Pair{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
+			kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
+			kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
+		}
 	}
 
 	return Response{
-		Code:      code.OK,
-		GasUsed:   gas,
-		GasWanted: gas,
-		Tags:      tags,
+		Code: code.OK,
+		Tags: tags,
 	}
 }
 
-func (data PriceCommissionData) price() *commission.Price {
+func (data VoteCommissionData) price() *commission.Price {
 	return &commission.Price{
 		Coin:                    data.Coin,
 		PayloadByte:             data.PayloadByte,
@@ -216,6 +214,7 @@ func (data PriceCommissionData) price() *commission.Price {
 		EditMultisig:            data.EditMultisig,
 		PriceVote:               data.PriceVote,
 		EditCandidatePublicKey:  data.EditCandidatePublicKey,
+		CreateSwapPool:          data.CreateSwapPool,
 		AddLiquidity:            data.AddLiquidity,
 		RemoveLiquidity:         data.RemoveLiquidity,
 		EditCandidateCommission: data.EditCandidateCommission,

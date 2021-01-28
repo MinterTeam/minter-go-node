@@ -51,8 +51,9 @@ const (
 	TypeBurnToken               TxType = 0x1D
 	TypeCreateToken             TxType = 0x1E
 	TypeRecreateToken           TxType = 0x1F
-	TypePriceCommission         TxType = 0x20
-	TypeUpdateNetwork           TxType = 0x21
+	TypeVoteCommission          TxType = 0x20
+	TypeVoteUpdate              TxType = 0x21
+	TypeCreateSwapPool          TxType = 0x22
 
 	SigTypeSingle SigType = 0x01
 	SigTypeMulti  SigType = 0x02
@@ -60,10 +61,6 @@ const (
 
 var (
 	ErrInvalidSig = errors.New("invalid transaction v, r, s values")
-)
-
-var (
-	CommissionMultiplier = big.NewInt(10e14)
 )
 
 type Transaction struct {
@@ -130,7 +127,7 @@ type conversion struct {
 type Data interface {
 	String() string
 	CommissionData(*commission.Price) *big.Int
-	Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int, gas int64) Response
+	Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response
 	TxType() TxType
 }
 
@@ -138,8 +135,9 @@ func (tx *Transaction) Serialize() ([]byte, error) {
 	return rlp.EncodeToBytes(tx)
 }
 
-func (tx *Transaction) Gas(commissions *commission.Price) int64 {
-	return big.NewInt(0).Quo(tx.Price(commissions), commissions.PayloadByte).Int64()
+func (tx *Transaction) Gas() int64 {
+	return 1
+	// return tx.Gas() + tx.payloadLen() * 2 // todo
 }
 
 func (tx *Transaction) Price(price *commission.Price) *big.Int {

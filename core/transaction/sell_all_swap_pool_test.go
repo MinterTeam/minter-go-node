@@ -27,11 +27,11 @@ func TestSellAllWithCommissionFromBancor(t *testing.T) {
 	cState.Accounts.SubBalance(types.Address{}, coin1, helpers.BipToPip(big.NewInt(100000)))
 	cState.Accounts.AddBalance(addr, coin1, helpers.BipToPip(big.NewInt(100000)))
 	{
-		data := AddLiquidityData{
-			Coin0:          coin,
-			Volume0:        helpers.BipToPip(big.NewInt(50000)),
-			Coin1:          coin1,
-			MaximumVolume1: helpers.BipToPip(big.NewInt(50000)),
+		data := CreateSwapPoolData{
+			Coin0:   coin,
+			Volume0: helpers.BipToPip(big.NewInt(50000)),
+			Coin1:   coin1,
+			Volume1: helpers.BipToPip(big.NewInt(50000)),
 		}
 
 		encodedData, err := rlp.EncodeToBytes(data)
@@ -45,7 +45,7 @@ func TestSellAllWithCommissionFromBancor(t *testing.T) {
 			GasPrice:      1,
 			ChainID:       types.CurrentChainID,
 			GasCoin:       types.GetBaseCoinID(),
-			Type:          TypeAddLiquidity,
+			Type:          TypeCreateSwapPool,
 			Data:          encodedData,
 			SignatureType: SigTypeSingle,
 		}
@@ -132,11 +132,11 @@ func TestSellAllWithCommissionFromPool(t *testing.T) {
 	cState.Accounts.SubBalance(types.Address{}, coin1, helpers.BipToPip(big.NewInt(100000)))
 	cState.Accounts.AddBalance(addr, coin1, helpers.BipToPip(big.NewInt(100000)))
 	{
-		data := AddLiquidityData{
-			Coin0:          coin,
-			Volume0:        helpers.BipToPip(big.NewInt(50000)),
-			Coin1:          coin1,
-			MaximumVolume1: helpers.BipToPip(big.NewInt(50000)),
+		data := CreateSwapPoolData{
+			Coin0:   coin,
+			Volume0: helpers.BipToPip(big.NewInt(50000)),
+			Coin1:   coin1,
+			Volume1: helpers.BipToPip(big.NewInt(50000)),
 		}
 
 		encodedData, err := rlp.EncodeToBytes(data)
@@ -150,7 +150,7 @@ func TestSellAllWithCommissionFromPool(t *testing.T) {
 			GasPrice:      1,
 			ChainID:       types.CurrentChainID,
 			GasCoin:       types.GetBaseCoinID(),
-			Type:          TypeAddLiquidity,
+			Type:          TypeCreateSwapPool,
 			Data:          encodedData,
 			SignatureType: SigTypeSingle,
 		}
@@ -176,11 +176,11 @@ func TestSellAllWithCommissionFromPool(t *testing.T) {
 		}
 	}
 	{
-		data := AddLiquidityData{
-			Coin0:          coin,
-			Volume0:        helpers.BipToPip(big.NewInt(1000)),
-			Coin1:          types.GetBaseCoinID(),
-			MaximumVolume1: helpers.BipToPip(big.NewInt(1000)),
+		data := CreateSwapPoolData{
+			Coin0:   coin,
+			Volume0: helpers.BipToPip(big.NewInt(1000)),
+			Coin1:   types.GetBaseCoinID(),
+			Volume1: helpers.BipToPip(big.NewInt(1000)),
 		}
 
 		encodedData, err := rlp.EncodeToBytes(data)
@@ -194,7 +194,7 @@ func TestSellAllWithCommissionFromPool(t *testing.T) {
 			GasPrice:      1,
 			ChainID:       types.CurrentChainID,
 			GasCoin:       types.GetBaseCoinID(),
-			Type:          TypeAddLiquidity,
+			Type:          TypeCreateSwapPool,
 			Data:          encodedData,
 			SignatureType: SigTypeSingle,
 		}

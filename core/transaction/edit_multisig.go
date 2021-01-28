@@ -98,7 +98,7 @@ func (data EditMultisigData) CommissionData(price *commission.Price) *big.Int {
 	return price.EditMultisig
 }
 
-func (data EditMultisigData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int, gas int64) Response {
+func (data EditMultisigData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -128,6 +128,7 @@ func (data EditMultisigData) Run(tx *Transaction, context state.Interface, rewar
 		}
 	}
 
+	var tags kv.Pairs
 	if deliverState, ok := context.(*state.State); ok {
 		if isGasCommissionFromPoolSwap {
 			commission, commissionInBaseCoin = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
@@ -140,22 +141,17 @@ func (data EditMultisigData) Run(tx *Transaction, context state.Interface, rewar
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 
 		deliverState.Accounts.EditMultisig(data.Threshold, data.Weights, data.Addresses, sender)
-	}
 
-	address := []byte(hex.EncodeToString(sender[:]))
-	tags := kv.Pairs{
-		kv.Pair{Key: []byte("tx.gas"), Value: []byte(strconv.Itoa(int(gas)))},
-		kv.Pair{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
-		kv.Pair{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
-		kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
-		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(TypeEditMultisig)}))},
-		kv.Pair{Key: []byte("tx.from"), Value: address},
+		tags = kv.Pairs{
+			kv.Pair{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
+			kv.Pair{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
+			kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
+			kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
+		}
 	}
 
 	return Response{
-		Code:      code.OK,
-		GasUsed:   gas,
-		GasWanted: gas,
-		Tags:      tags,
+		Code: code.OK,
+		Tags: tags,
 	}
 }

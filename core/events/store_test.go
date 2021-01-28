@@ -167,3 +167,38 @@ func TestIEventsDB(t *testing.T) {
 		t.Fatal("invalid Coin")
 	}
 }
+
+func TestIEventsDBm2(t *testing.T) {
+	store := NewEventsStore(db.NewMemDB())
+
+	{
+		event := &UpdateCommissionsEvent{
+			Send: "1000000000",
+		}
+		store.AddEvent(12, event)
+	}
+	{
+		event := &UpdateNetworkEvent{
+			Version: "m2",
+		}
+		store.AddEvent(12, event)
+	}
+	err := store.CommitEvents()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	loadEvents := store.LoadEvents(12)
+
+	if len(loadEvents) != 2 {
+		t.Fatalf("count of events not equal 2, got %d", len(loadEvents))
+	}
+
+	if loadEvents[0].Type() != TypeUpdateCommissionsEvent {
+		t.Fatal("invalid event type")
+	}
+	if loadEvents[0].(*UpdateCommissionsEvent).Send != "1000000000" {
+		t.Fatal("invalid Amount")
+	}
+
+}

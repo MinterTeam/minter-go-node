@@ -307,13 +307,26 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 			},
 			Stake: d.Stake.String(),
 		}
-	case *transaction.PriceCommissionData:
+	case *transaction.VoteCommissionData:
 		m = priceCommissionData(d, coins.GetCoin(d.Coin))
-	case *transaction.UpdateNetworkData:
-		m = &pb.UpdateNetworkData{
+	case *transaction.VoteUpdateData:
+		m = &pb.VoteUpdateData{
 			PubKey:  d.PubKey.String(),
 			Height:  d.Height,
 			Version: d.Version,
+		}
+	case *transaction.CreateSwapPoolData:
+		m = &pb.CreateSwapPoolData{
+			Coin0: &pb.Coin{
+				Id:     uint64(d.Coin0),
+				Symbol: coins.GetCoin(d.Coin0).GetFullSymbol(),
+			},
+			Coin1: &pb.Coin{
+				Id:     uint64(d.Coin1),
+				Symbol: coins.GetCoin(d.Coin1).GetFullSymbol(),
+			},
+			Volume0: d.Volume0.String(),
+			Volume1: d.Volume1.String(),
 		}
 	default:
 		return nil, errors.New("unknown tx type")
@@ -327,8 +340,8 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 	return a, nil
 }
 
-func priceCommissionData(d *transaction.PriceCommissionData, coin *coins.Model) proto.Message {
-	return &pb.PriceCommissionData{
+func priceCommissionData(d *transaction.VoteCommissionData, coin *coins.Model) proto.Message {
+	return &pb.VoteCommissionData{
 		PubKey: d.PubKey.String(),
 		Height: d.Height,
 		Coin: &pb.Coin{
@@ -366,6 +379,7 @@ func priceCommissionData(d *transaction.PriceCommissionData, coin *coins.Model) 
 		EditMultisig:            d.EditMultisig.String(),
 		PriceVote:               d.PriceVote.String(),
 		EditCandidatePublicKey:  d.EditCandidatePublicKey.String(),
+		CreateSwapPool:          d.CreateSwapPool.String(),
 		AddLiquidity:            d.AddLiquidity.String(),
 		RemoveLiquidity:         d.RemoveLiquidity.String(),
 		EditCandidateCommission: d.EditCandidateCommission.String(),

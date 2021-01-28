@@ -12,18 +12,18 @@ import (
 	"math/big"
 )
 
-type AddLiquidityData struct {
-	Coin0          types.CoinID
-	Coin1          types.CoinID
-	Volume0        *big.Int
-	MaximumVolume1 *big.Int
+type CreateSwapPoolData struct {
+	Coin0   types.CoinID
+	Coin1   types.CoinID
+	Volume0 *big.Int
+	Volume1 *big.Int
 }
 
-func (data AddLiquidityData) TxType() TxType {
-	return TypeAddLiquidity
+func (data CreateSwapPoolData) TxType() TxType {
+	return TypeCreateSwapPool
 }
 
-func (data AddLiquidityData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data CreateSwapPoolData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.Coin1 == data.Coin0 {
 		return &Response{
 			Code: code.CrossConvert,
@@ -34,11 +34,11 @@ func (data AddLiquidityData) basicCheck(tx *Transaction, context *state.CheckSta
 		}
 	}
 
-	if !context.Swap().SwapPoolExist(data.Coin0, data.Coin1) {
+	if context.Swap().SwapPoolExist(data.Coin0, data.Coin1) {
 		return &Response{
-			Code: code.PairNotExists,
-			Log:  "swap pool not found",
-			Info: EncodeError(code.NewPairNotExists(
+			Code: code.PairAlreadyExists,
+			Log:  "swap pool already exist",
+			Info: EncodeError(code.NewPairAlreadyExists(
 				data.Coin0.String(),
 				data.Coin1.String())),
 		}
@@ -65,15 +65,15 @@ func (data AddLiquidityData) basicCheck(tx *Transaction, context *state.CheckSta
 	return nil
 }
 
-func (data AddLiquidityData) String() string {
-	return fmt.Sprintf("ADD SWAP POOL")
+func (data CreateSwapPoolData) String() string {
+	return fmt.Sprintf("CREATE SWAP POOL")
 }
 
-func (data AddLiquidityData) CommissionData(price *commission.Price) *big.Int {
-	return price.AddLiquidity
+func (data CreateSwapPoolData) CommissionData(price *commission.Price) *big.Int {
+	return price.CreateSwapPool
 }
 
-func (data AddLiquidityData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
+func (data CreateSwapPoolData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -95,43 +95,18 @@ func (data AddLiquidityData) Run(tx *Transaction, context state.Interface, rewar
 		return *errResp
 	}
 
-	neededAmount1 := new(big.Int).Set(data.MaximumVolume1)
-
 	swapper := checkState.Swap().GetSwapper(data.Coin0, data.Coin1)
-	if isGasCommissionFromPoolSwap {
-		if tx.GasCoin == data.Coin0 && data.Coin1.IsBaseCoin() {
-			swapper = swapper.AddLastSwapStep(commission, commissionInBaseCoin)
-		}
-		if tx.GasCoin == data.Coin1 && data.Coin0.IsBaseCoin() {
-			swapper = swapper.AddLastSwapStep(commissionInBaseCoin, commission)
-		}
-	}
-	_, neededAmount1 = swapper.CalculateAddLiquidity(data.Volume0)
-	if neededAmount1.Cmp(data.MaximumVolume1) == 1 {
-		return Response{
-			Code: code.InsufficientInputAmount,
-			Log:  fmt.Sprintf("You wanted to add %s %s, but currently you need to add %s %s to complete tx", data.Volume0, checkState.Coins().GetCoin(data.Coin0).GetFullSymbol(), neededAmount1, checkState.Coins().GetCoin(data.Coin1).GetFullSymbol()),
-			Info: EncodeError(code.NewInsufficientInputAmount(data.Coin0.String(), data.Volume0.String(), data.Coin1.String(), data.MaximumVolume1.String(), neededAmount1.String())),
-		}
-	}
-
-	if err := swapper.CheckMint(data.Volume0, neededAmount1); err != nil {
+	if err := swapper.CheckMint(data.Volume0, data.Volume1); err != nil {
 		if err == swap.ErrorInsufficientLiquidityMinted {
-			amount0, amount1 := swapper.Amounts(big.NewInt(1))
 			return Response{
 				Code: code.InsufficientLiquidityMinted,
-				Log: fmt.Sprintf("You wanted to add less than one liquidity, you should add %s %s and %s %s or more",
-					amount0, checkState.Coins().GetCoin(data.Coin0).GetFullSymbol(), amount1, checkState.Coins().GetCoin(data.Coin1).GetFullSymbol()),
-				Info: EncodeError(code.NewInsufficientLiquidityMinted(data.Coin0.String(), amount0.String(), data.Coin1.String(), amount1.String())),
-			}
-		} else if err == swap.ErrorInsufficientInputAmount {
-			return Response{
-				Code: code.InsufficientInputAmount,
-				Log:  fmt.Sprintf("You wanted to add %s %s, but currently you need to add %s %s to complete tx", data.Volume0, checkState.Coins().GetCoin(data.Coin0).GetFullSymbol(), neededAmount1, checkState.Coins().GetCoin(data.Coin1).GetFullSymbol()),
-				Info: EncodeError(code.NewInsufficientInputAmount(data.Coin0.String(), data.Volume0.String(), data.Coin1.String(), data.MaximumVolume1.String(), neededAmount1.String())),
+				Log: fmt.Sprintf("You wanted to add less than minimum liquidity, you should add %s %s and %s or more %s",
+					"10", checkState.Coins().GetCoin(data.Coin0).GetFullSymbol(), "10", checkState.Coins().GetCoin(data.Coin1).GetFullSymbol()),
+				Info: EncodeError(code.NewInsufficientLiquidityMinted(data.Coin0.String(), "10", data.Coin1.String(), "10")),
 			}
 		}
 	}
+
 	{
 		amount0 := new(big.Int).Set(data.Volume0)
 		if tx.GasCoin == data.Coin0 {
@@ -148,16 +123,16 @@ func (data AddLiquidityData) Run(tx *Transaction, context state.Interface, rewar
 	}
 
 	{
-		maximumVolume1 := new(big.Int).Set(neededAmount1)
+		totalAmount1 := new(big.Int).Set(data.Volume1)
 		if tx.GasCoin == data.Coin1 {
-			maximumVolume1.Add(maximumVolume1, commission)
+			totalAmount1.Add(totalAmount1, commission)
 		}
-		if checkState.Accounts().GetBalance(sender, data.Coin1).Cmp(maximumVolume1) == -1 {
+		if checkState.Accounts().GetBalance(sender, data.Coin1).Cmp(totalAmount1) == -1 {
 			symbol := checkState.Coins().GetCoin(data.Coin1).GetFullSymbol()
 			return Response{
 				Code: code.InsufficientFunds,
-				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), maximumVolume1.String(), symbol),
-				Info: EncodeError(code.NewInsufficientFunds(sender.String(), maximumVolume1.String(), symbol, data.Coin1.String())),
+				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), totalAmount1.String(), symbol),
+				Info: EncodeError(code.NewInsufficientFunds(sender.String(), totalAmount1.String(), symbol, data.Coin1.String())),
 			}
 		}
 	}
@@ -171,6 +146,7 @@ func (data AddLiquidityData) Run(tx *Transaction, context state.Interface, rewar
 	}
 
 	var tags kv.Pairs
+
 	if deliverState, ok := context.(*state.State); ok {
 		if isGasCommissionFromPoolSwap {
 			commission, commissionInBaseCoin = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
@@ -181,7 +157,7 @@ func (data AddLiquidityData) Run(tx *Transaction, context state.Interface, rewar
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		amount0, amount1, liquidity := deliverState.Swap.PairMint(sender, data.Coin0, data.Coin1, data.Volume0, data.MaximumVolume1)
+		amount0, amount1, liquidity := deliverState.Swap.PairMint(sender, data.Coin0, data.Coin1, data.Volume0, data.Volume1)
 		deliverState.Accounts.SubBalance(sender, data.Coin0, amount0)
 		deliverState.Accounts.SubBalance(sender, data.Coin1, amount1)
 
@@ -199,7 +175,7 @@ func (data AddLiquidityData) Run(tx *Transaction, context state.Interface, rewar
 			kv.Pair{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
 			kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 			kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
-			kv.Pair{Key: []byte("tx.volume1"), Value: []byte(amount1.String())},
+			kv.Pair{Key: []byte("tx.volume1"), Value: []byte(data.Volume1.String())},
 			kv.Pair{Key: []byte("tx.liquidity"), Value: []byte(liquidity.String())},
 		}
 	}
@@ -208,8 +184,4 @@ func (data AddLiquidityData) Run(tx *Transaction, context state.Interface, rewar
 		Code: code.OK,
 		Tags: tags,
 	}
-}
-
-func liquidityCoin(c0, c1 types.CoinID) types.CoinSymbol {
-	return types.StrToCoinSymbol(fmt.Sprintf("P-%d-%d", c0, c1))
 }

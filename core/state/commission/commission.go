@@ -163,6 +163,7 @@ func (c *Commission) GetCommissions() *Price {
 			EditMultisig:            helpers.StringToBigInt("100000000000000000000"),
 			PriceVote:               helpers.StringToBigInt("1000000000000000000"),
 			EditCandidatePublicKey:  helpers.StringToBigInt("10000000000000000000000000"),
+			CreateSwapPool:          helpers.StringToBigInt("100000000000000000000"),
 			AddLiquidity:            helpers.StringToBigInt("10000000000000000000"),
 			RemoveLiquidity:         helpers.StringToBigInt("10000000000000000000"),
 			EditCandidateCommission: helpers.StringToBigInt("1000000000000000000000"),
