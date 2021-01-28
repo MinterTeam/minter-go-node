@@ -260,16 +260,6 @@ func (s *AppState) Verify() error {
 		}
 	}
 
-	for _, swap := range s.Swap {
-		totalSupply := big.NewInt(0)
-		for _, provider := range swap.Providers {
-			totalSupply.Add(totalSupply, helpers.StringToBigInt(provider.Liquidity))
-		}
-		if totalSupply.String() != swap.TotalSupply {
-			return fmt.Errorf("TotalSupply %s, sum balance %s", totalSupply, swap.TotalSupply)
-		}
-	}
-
 	return nil
 }
 
@@ -311,12 +301,11 @@ type BalanceProvider struct {
 	Liquidity string  `json:"liquidity"`
 }
 type Swap struct {
-	Providers   []BalanceProvider `json:"providers"`
-	Coin0       uint64            `json:"coin0"`
-	Coin1       uint64            `json:"coin1"`
-	Reserve0    string            `json:"reserve0"`
-	Reserve1    string            `json:"reserve1"`
-	TotalSupply string            `json:"total_supply"`
+	Coin0    uint64 `json:"coin0"`
+	Coin1    uint64 `json:"coin1"`
+	Reserve0 string `json:"reserve0"`
+	Reserve1 string `json:"reserve1"`
+	ID       uint64 `json:"id"`
 }
 
 type Coin struct {

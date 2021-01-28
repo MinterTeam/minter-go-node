@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/hex"
+	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"google.golang.org/grpc/codes"
@@ -15,19 +16,20 @@ func (s *Service) SwapPool(_ context.Context, req *pb.SwapPoolRequest) (*pb.Swap
 		return nil, status.Error(codes.InvalidArgument, "equal coins id")
 	}
 
-	state, err := s.blockchain.GetStateForHeight(req.Height)
+	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
-	totalSupply, reserve0, reserve1 := state.Swap().SwapPool(types.CoinID(req.Coin0), types.CoinID(req.Coin1))
-	if totalSupply == nil {
+	reserve0, reserve1, liquidityID := cState.Swap().SwapPool(types.CoinID(req.Coin0), types.CoinID(req.Coin1))
+	if liquidityID == 0 {
 		return nil, status.Error(codes.NotFound, "pair not found")
 	}
+
 	return &pb.SwapPoolResponse{
 		Amount0:   reserve0.String(),
 		Amount1:   reserve1.String(),
-		Liquidity: totalSupply.String(),
+		Liquidity: cState.Coins().GetCoinBySymbol(transaction.LiquidityCoinSymbol(liquidityID), 0).Volume().String(),
 	}, nil
 }
 
@@ -44,16 +46,23 @@ func (s *Service) SwapPoolProvider(_ context.Context, req *pb.SwapPoolProviderRe
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid address")
 	}
+	address := types.BytesToAddress(decodeString)
 
-	state, err := s.blockchain.GetStateForHeight(req.Height)
+	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
-	balance, amount0, amount1 := state.Swap().SwapPoolFromProvider(types.BytesToAddress(decodeString), types.CoinID(req.Coin0), types.CoinID(req.Coin1))
-	if balance == nil {
+	swapper := cState.Swap().GetSwapper(types.CoinID(req.Coin0), types.CoinID(req.Coin1))
+	liquidityID := swapper.CoinID()
+	if liquidityID == 0 {
 		return nil, status.Error(codes.NotFound, "pair from provider not found")
 	}
+
+	liquidityCoin := cState.Coins().GetCoinBySymbol(transaction.LiquidityCoinSymbol(liquidityID), 0)
+	balance := cState.Accounts().GetBalance(address, liquidityCoin.ID())
+
+	amount0, amount1 := swapper.Amounts(balance, liquidityCoin.Volume())
 	return &pb.SwapPoolResponse{
 		Amount0:   amount0.String(),
 		Amount1:   amount1.String(),

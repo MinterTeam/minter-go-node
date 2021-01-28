@@ -35,14 +35,6 @@ func (data RemoveLiquidity) basicCheck(tx *Transaction, context *state.CheckStat
 		}
 	}
 
-	if !context.Swap().SwapPoolExist(data.Coin0, data.Coin1) {
-		return &Response{
-			Code: code.PairNotExists,
-			Log:  "swap pool for pair not found",
-			Info: EncodeError(code.NewPairNotExists(data.Coin0.String(), data.Coin1.String())),
-		}
-	}
-
 	return nil
 }
 
@@ -68,6 +60,28 @@ func (data RemoveLiquidity) Run(tx *Transaction, context state.Interface, reward
 		return *response
 	}
 
+	swapper := checkState.Swap().GetSwapper(data.Coin0, data.Coin1)
+	if !swapper.IsExist() {
+		return Response{
+			Code: code.PairNotExists,
+			Log:  "swap pool for pair not found",
+			Info: EncodeError(code.NewPairNotExists(data.Coin0.String(), data.Coin1.String())),
+		}
+	}
+
+	coinLiquidity := checkState.Coins().GetCoinBySymbol(LiquidityCoinSymbol(swapper.CoinID()), 0)
+	balance := checkState.Accounts().GetBalance(sender, coinLiquidity.ID())
+	if balance.Cmp(data.Liquidity) == -1 {
+		amount0, amount1 := swapper.Amounts(balance, coinLiquidity.Volume())
+		symbol1 := checkState.Coins().GetCoin(data.Coin1).GetFullSymbol()
+		symbol0 := checkState.Coins().GetCoin(data.Coin0).GetFullSymbol()
+		return Response{
+			Code: code.InsufficientLiquidityBalance,
+			Log:  fmt.Sprintf("Insufficient balance for provider: %s liquidity tokens is equal %s %s and %s %s, but you want to get %s liquidity", balance, amount0, symbol0, amount1, symbol1, data.Liquidity),
+			Info: EncodeError(code.NewInsufficientLiquidityBalance(balance.String(), amount0.String(), data.Coin0.String(), amount1.String(), data.Coin1.String(), data.Liquidity.String())),
+		}
+	}
+
 	commissionInBaseCoin := tx.Commission(price)
 	commissionPoolSwapper := checkState.Swap().GetSwapper(tx.GasCoin, types.GetBaseCoinID())
 	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
@@ -76,7 +90,6 @@ func (data RemoveLiquidity) Run(tx *Transaction, context state.Interface, reward
 		return *errResp
 	}
 
-	swapper := checkState.Swap().GetSwapper(data.Coin0, data.Coin1)
 	if swapper.IsExist() {
 		if isGasCommissionFromPoolSwap {
 			if tx.GasCoin == data.Coin0 && data.Coin1.IsBaseCoin() {
@@ -88,22 +101,8 @@ func (data RemoveLiquidity) Run(tx *Transaction, context state.Interface, reward
 		}
 	}
 
-	if err := swapper.CheckBurn(sender, data.Liquidity, data.MinimumVolume0, data.MinimumVolume1); err != nil {
-		wantAmount0, wantAmount1 := swapper.Amounts(data.Liquidity)
-		if err == swap.ErrorInsufficientLiquidityBalance {
-			balance := swapper.Balance(sender)
-			if balance == nil {
-				balance = big.NewInt(0)
-			}
-			amount0, amount1 := swapper.Amounts(balance)
-			symbol1 := checkState.Coins().GetCoin(data.Coin1).GetFullSymbol()
-			symbol0 := checkState.Coins().GetCoin(data.Coin0).GetFullSymbol()
-			return Response{
-				Code: code.InsufficientLiquidityBalance,
-				Log:  fmt.Sprintf("Insufficient balance for provider: %s liquidity tokens is equal %s %s and %s %s, but you want to get %s liquidity, %s %s and %s %s", balance, amount0, symbol0, amount1, symbol1, data.Liquidity, wantAmount0, symbol0, wantAmount1, symbol1),
-				Info: EncodeError(code.NewInsufficientLiquidityBalance(balance.String(), amount0.String(), data.Coin0.String(), amount1.String(), data.Coin1.String(), data.Liquidity.String(), wantAmount0.String(), wantAmount1.String())),
-			}
-		}
+	if err := swapper.CheckBurn(data.Liquidity, data.MinimumVolume0, data.MinimumVolume1, coinLiquidity.Volume()); err != nil {
+		wantAmount0, wantAmount1 := swapper.Amounts(data.Liquidity, coinLiquidity.Volume())
 		if err == swap.ErrorInsufficientLiquidityBurned {
 			wantGetAmount0 := data.MinimumVolume0.String()
 			wantGetAmount1 := data.MinimumVolume1.String()
@@ -111,7 +110,7 @@ func (data RemoveLiquidity) Run(tx *Transaction, context state.Interface, reward
 			symbol1 := checkState.Coins().GetCoin(data.Coin1).GetFullSymbol()
 			return Response{
 				Code: code.InsufficientLiquidityBurned,
-				Log:  fmt.Sprintf("You wanted to get more %s %s and more %s %s, but currently liquidity %s is equal %s of coin %d and  %s of coin %d", wantGetAmount0, symbol0, wantGetAmount1, symbol1, data.Liquidity, wantAmount0, data.Coin0, wantAmount1, data.Coin1),
+				Log:  fmt.Sprintf("You wanted to get more %s %s and more %s %s, but currently liquidity %s is equal %s %s and %s %s", wantGetAmount0, symbol0, wantGetAmount1, symbol1, data.Liquidity, wantAmount0, symbol0, wantAmount1, symbol1),
 				Info: EncodeError(code.NewInsufficientLiquidityBurned(wantGetAmount0, data.Coin0.String(), wantGetAmount1, data.Coin1.String(), data.Liquidity.String(), wantAmount0.String(), wantAmount1.String())),
 			}
 		}
@@ -135,9 +134,12 @@ func (data RemoveLiquidity) Run(tx *Transaction, context state.Interface, reward
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		amount0, amount1 := deliverState.Swap.PairBurn(sender, data.Coin0, data.Coin1, data.Liquidity, data.MinimumVolume0, data.MinimumVolume1)
+		amount0, amount1 := deliverState.Swap.PairBurn(sender, data.Coin0, data.Coin1, data.Liquidity, data.MinimumVolume0, data.MinimumVolume1, coinLiquidity.Volume())
 		deliverState.Accounts.AddBalance(sender, data.Coin0, amount0)
 		deliverState.Accounts.AddBalance(sender, data.Coin1, amount1)
+
+		deliverState.Accounts.SubBalance(sender, coinLiquidity.ID(), data.Liquidity)
+		coinLiquidity.SubVolume(data.Liquidity)
 
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 

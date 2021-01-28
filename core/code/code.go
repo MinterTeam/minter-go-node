@@ -96,8 +96,8 @@ const (
 	CoinNotBurnable uint32 = 802
 )
 
-func NewInsufficientLiquidityBalance(liquidity, amount0, coin0, amount1, coin1, requestedLiquidity, wantA0, wantA1 string) *insufficientLiquidityBalance {
-	return &insufficientLiquidityBalance{Code: strconv.Itoa(int(InsufficientLiquidityBalance)), Coin0: coin0, Coin1: coin1, Amount0: amount0, Amount1: amount1, Liquidity: liquidity, RequestedLiquidity: requestedLiquidity, WantedAmount0: wantA0, WantedAmount1: wantA1}
+func NewInsufficientLiquidityBalance(liquidity, amount0, coin0, amount1, coin1, requestedLiquidity string) *insufficientLiquidityBalance {
+	return &insufficientLiquidityBalance{Code: strconv.Itoa(int(InsufficientLiquidityBalance)), Coin0: coin0, Coin1: coin1, Amount0: amount0, Amount1: amount1, Liquidity: liquidity, RequestedLiquidity: requestedLiquidity}
 }
 
 type insufficientLiquidityBalance struct {
