@@ -198,6 +198,9 @@ func (data AddLiquidityData) Run(tx *Transaction, context state.Interface, rewar
 			kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
 			kv.Pair{Key: []byte("tx.volume1"), Value: []byte(amount1.String())},
 			kv.Pair{Key: []byte("tx.liquidity"), Value: []byte(liquidity.String())},
+			kv.Pair{Key: []byte("tx.pool_token"), Value: []byte(coinLiquidity.GetFullSymbol())},
+			kv.Pair{Key: []byte("tx.pool_token_id"), Value: []byte(coinLiquidity.ID().String())},
+			kv.Pair{Key: []byte("tx.pair_ids"), Value: []byte(liquidityCoinName(data.Coin0, data.Coin1))},
 		}
 	}
 

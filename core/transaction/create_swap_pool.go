@@ -161,7 +161,8 @@ func (data CreateSwapPoolData) Run(tx *Transaction, context state.Interface, rew
 		coins := liquidityCoinName(data.Coin0, data.Coin1)
 		coinID := checkState.App().GetNextCoinID()
 
-		deliverState.Coins.CreateToken(coinID, LiquidityCoinSymbol(id), "Swap Pool "+coins, true, true, big.NewInt(0).Set(liquidity), maxCoinSupply, nil)
+		liquidityCoinSymbol := LiquidityCoinSymbol(id)
+		deliverState.Coins.CreateToken(coinID, liquidityCoinSymbol, "Swap Pool "+coins, true, true, big.NewInt(0).Set(liquidity), maxCoinSupply, nil)
 		deliverState.Accounts.AddBalance(sender, coinID, liquidity.Sub(liquidity, swap.Bound))
 		deliverState.Accounts.AddBalance(types.Address{}, coinID, swap.Bound)
 
@@ -176,6 +177,9 @@ func (data CreateSwapPoolData) Run(tx *Transaction, context state.Interface, rew
 			kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
 			kv.Pair{Key: []byte("tx.volume1"), Value: []byte(data.Volume1.String())},
 			kv.Pair{Key: []byte("tx.liquidity"), Value: []byte(liquidity.String())},
+			kv.Pair{Key: []byte("tx.pool_token"), Value: []byte(liquidityCoinSymbol.String())},
+			kv.Pair{Key: []byte("tx.pool_token_id"), Value: []byte(coinID.String())},
+			kv.Pair{Key: []byte("tx.pair_ids"), Value: []byte(coins)},
 		}
 	}
 
