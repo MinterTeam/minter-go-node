@@ -12,8 +12,6 @@ import (
 	"math/big"
 )
 
-var bound = big.NewInt(swap.MinimumLiquidity)
-
 type CreateSwapPoolData struct {
 	Coin0   types.CoinID
 	Coin1   types.CoinID
@@ -97,6 +95,16 @@ func (data CreateSwapPoolData) Run(tx *Transaction, context state.Interface, rew
 		return *errResp
 	}
 
+	if err := checkState.Swap().GetSwapper(data.Coin0, data.Coin1).CheckCreate(data.Volume0, data.Volume1); err != nil {
+		if err == swap.ErrorInsufficientLiquidityMinted {
+			return Response{
+				Code: code.InsufficientLiquidityMinted,
+				Log: fmt.Sprintf("You wanted to add less than minimum liquidity, you should add %s %s and %s or more %s",
+					"10", checkState.Coins().GetCoin(data.Coin0).GetFullSymbol(), "10", checkState.Coins().GetCoin(data.Coin1).GetFullSymbol()),
+				Info: EncodeError(code.NewInsufficientLiquidityMinted(data.Coin0.String(), "10", data.Coin1.String(), "10")),
+			}
+		}
+	}
 	{
 		amount0 := new(big.Int).Set(data.Volume0)
 		if tx.GasCoin == data.Coin0 {
@@ -153,9 +161,9 @@ func (data CreateSwapPoolData) Run(tx *Transaction, context state.Interface, rew
 		coins := liquidityCoinName(data.Coin0, data.Coin1)
 		coinID := checkState.App().GetNextCoinID()
 
-		deliverState.Coins.CreateToken(coinID, LiquidityCoinSymbol(id), "Pool "+coins, true, true, big.NewInt(0).Set(liquidity), maxCoinSupply, nil)
-		deliverState.Accounts.AddBalance(sender, coinID, liquidity.Sub(liquidity, bound))
-		deliverState.Accounts.AddBalance(types.Address{}, coinID, bound)
+		deliverState.Coins.CreateToken(coinID, LiquidityCoinSymbol(id), "Swap Pool "+coins, true, true, big.NewInt(0).Set(liquidity), maxCoinSupply, nil)
+		deliverState.Accounts.AddBalance(sender, coinID, liquidity.Sub(liquidity, swap.Bound))
+		deliverState.Accounts.AddBalance(types.Address{}, coinID, swap.Bound)
 
 		deliverState.App.SetCoinsCount(coinID.Uint32())
 

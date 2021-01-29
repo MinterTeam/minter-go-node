@@ -15,7 +15,9 @@ import (
 	"sync/atomic"
 )
 
-const MinimumLiquidity = 1000
+var Bound = big.NewInt(minimumLiquidity)
+
+const minimumLiquidity = 1000
 const commission = 2
 
 type EditableChecker interface {
@@ -29,6 +31,7 @@ type EditableChecker interface {
 	CalculateAddLiquidity(amount0 *big.Int, supply *big.Int) (liquidity *big.Int, amount1 *big.Int)
 	CheckSwap(amount0In, amount1Out *big.Int) error
 	CheckMint(amount0, maxAmount1, totalSupply *big.Int) (err error)
+	CheckCreate(amount0, amount1 *big.Int) (err error)
 	CheckBurn(liquidity, minAmount0, minAmount1, totalSupply *big.Int) error
 }
 
@@ -487,7 +490,7 @@ func (p *Pair) Mint(amount0, amount1, totalSupply *big.Int) (liquidity *big.Int)
 func (p *Pair) Create(amount0, amount1 *big.Int) (liquidity *big.Int) {
 	liquidity = startingSupply(amount0, amount1)
 
-	if liquidity.Sign() != 1 {
+	if liquidity.Cmp(Bound) != 1 {
 		panic(ErrorInsufficientLiquidityMinted)
 	}
 	p.update(amount0, amount1)
@@ -510,7 +513,7 @@ func (p *Pair) CheckMint(amount0, maxAmount1, totalSupply *big.Int) (err error) 
 func (p *Pair) CheckCreate(amount0, maxAmount1 *big.Int) (err error) {
 	liquidity := startingSupply(amount0, maxAmount1)
 
-	if liquidity.Sign() != 1 {
+	if liquidity.Cmp(Bound) != 1 {
 		return ErrorInsufficientLiquidityMinted
 	}
 
