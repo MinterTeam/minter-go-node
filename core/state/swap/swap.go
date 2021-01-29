@@ -135,6 +135,7 @@ func (pd *pairData) Revert() *pairData {
 		RWMutex:  pd.RWMutex,
 		Reserve0: pd.Reserve1,
 		Reserve1: pd.Reserve0,
+		ID:       pd.ID,
 		dirty:    pd.dirty,
 	}
 }
@@ -154,6 +155,7 @@ func (p *Pair) AddLastSwapStep(amount0In, amount1Out *big.Int) EditableChecker {
 		RWMutex:  &sync.RWMutex{},
 		Reserve0: reserve0.Add(reserve0, amount0In),
 		Reserve1: reserve1.Sub(reserve1, amount1Out),
+		ID:       p.ID,
 		dirty:    &dirty{},
 	}}
 }
@@ -292,7 +294,7 @@ func (s *Swap) PairMint(coin0, coin1 types.CoinID, amount0, maxAmount1, totalSup
 
 func (s *Swap) PairCreate(coin0, coin1 types.CoinID, amount0, amount1 *big.Int) (*big.Int, *big.Int, *big.Int, uint32) {
 	pair := s.ReturnPair(coin0, coin1)
-	pair.ID = s.IncID()
+	pair.ID = s.incID()
 	oldReserve0, oldReserve1 := pair.Reserves()
 	liquidity := pair.Create(amount0, amount1)
 	newReserve0, newReserve1 := pair.Reserves()
@@ -431,7 +433,7 @@ func (s *Swap) addPair(key pairKey) *Pair {
 	return pair
 }
 
-func (s *Swap) IncID() uint32 {
+func (s *Swap) incID() uint32 {
 	s.muNextID.Lock()
 	defer s.muNextID.Unlock()
 	id := s.loadNextID()
