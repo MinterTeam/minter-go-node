@@ -134,7 +134,7 @@ func (data RemoveLiquidity) Run(tx *Transaction, context state.Interface, reward
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		amount0, amount1 := deliverState.Swap.PairBurn(sender, data.Coin0, data.Coin1, data.Liquidity, data.MinimumVolume0, data.MinimumVolume1, coinLiquidity.Volume())
+		amount0, amount1 := deliverState.Swap.PairBurn(data.Coin0, data.Coin1, data.Liquidity, data.MinimumVolume0, data.MinimumVolume1, coinLiquidity.Volume())
 		deliverState.Accounts.AddBalance(sender, data.Coin0, amount0)
 		deliverState.Accounts.AddBalance(sender, data.Coin1, amount1)
 

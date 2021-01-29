@@ -308,10 +308,10 @@ func (s *Swap) PairCreate(coin0, coin1 types.CoinID, amount0, amount1 *big.Int) 
 	return balance0, balance1, liquidity, pair.ID
 }
 
-func (s *Swap) PairBurn(address types.Address, coin0, coin1 types.CoinID, liquidity, minAmount0, minAmount1, totalSupply *big.Int) (*big.Int, *big.Int) {
+func (s *Swap) PairBurn(coin0, coin1 types.CoinID, liquidity, minAmount0, minAmount1, totalSupply *big.Int) (*big.Int, *big.Int) {
 	pair := s.Pair(coin0, coin1)
 	oldReserve0, oldReserve1 := pair.Reserves()
-	_, _ = pair.Burn(address, liquidity, minAmount0, minAmount1, totalSupply)
+	_, _ = pair.Burn(liquidity, minAmount0, minAmount1, totalSupply)
 	newReserve0, newReserve1 := pair.Reserves()
 
 	balance0 := new(big.Int).Sub(oldReserve0, newReserve0)
@@ -528,7 +528,7 @@ var (
 	ErrorNotExist                     = errors.New("PAIR_NOT_EXISTS")
 )
 
-func (p *Pair) Burn(address types.Address, liquidity, minAmount0, minAmount1, totalSupply *big.Int) (amount0 *big.Int, amount1 *big.Int) {
+func (p *Pair) Burn(liquidity, minAmount0, minAmount1, totalSupply *big.Int) (amount0, amount1 *big.Int) {
 	amount0, amount1 = p.Amounts(liquidity, totalSupply)
 
 	if amount0.Cmp(minAmount0) == -1 || amount1.Cmp(minAmount1) == -1 {
