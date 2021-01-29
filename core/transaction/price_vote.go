@@ -20,7 +20,9 @@ func (data PriceVoteData) TxType() TxType {
 }
 
 func (data PriceVoteData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
-	return nil
+	return &Response{
+		Code: 1,
+	}
 }
 
 func (data PriceVoteData) String() string {
@@ -59,10 +61,6 @@ func (data PriceVoteData) Run(tx *Transaction, context state.Interface, rewardPo
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission.String(), gasCoin.GetFullSymbol()),
 			Info: EncodeError(code.NewInsufficientFunds(sender.String(), commission.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
 		}
-	}
-
-	return Response{
-		Code: 1,
 	}
 
 	var tags kv.Pairs

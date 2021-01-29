@@ -150,6 +150,9 @@ func (data RemoveLiquidity) Run(tx *Transaction, context state.Interface, reward
 			kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
 			kv.Pair{Key: []byte("tx.volume0"), Value: []byte(amount0.String())},
 			kv.Pair{Key: []byte("tx.volume1"), Value: []byte(amount1.String())},
+			kv.Pair{Key: []byte("tx.pool_token"), Value: []byte(coinLiquidity.GetFullSymbol())},
+			kv.Pair{Key: []byte("tx.pool_token_id"), Value: []byte(coinLiquidity.ID().String())},
+			kv.Pair{Key: []byte("tx.pair_ids"), Value: []byte(liquidityCoinName(data.Coin0, data.Coin1))},
 		}
 	}
 

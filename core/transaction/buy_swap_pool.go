@@ -132,6 +132,7 @@ func (data BuySwapPoolData) Run(tx *Transaction, context state.Interface, reward
 			kv.Pair{Key: []byte("tx.coin_to_buy"), Value: []byte(data.CoinToBuy.String())},
 			kv.Pair{Key: []byte("tx.coin_to_sell"), Value: []byte(data.CoinToSell.String())},
 			kv.Pair{Key: []byte("tx.return"), Value: []byte(amountIn.String())},
+			kv.Pair{Key: []byte("tx.pair_ids"), Value: []byte(liquidityCoinName(data.CoinToBuy, data.CoinToSell))},
 		}
 	}
 
