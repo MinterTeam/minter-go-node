@@ -71,11 +71,11 @@ func TestRemoveExchangeLiquidityTx_one(t *testing.T) {
 	}
 
 	{
-		balance, _, _ := cState.Swap.SwapPoolFromProvider(addr, coin, coin1)
+		_, _, coinID := cState.Swap.SwapPool(coin, coin1)
 		data := RemoveLiquidity{
 			Coin0:     coin,
 			Coin1:     coin1,
-			Liquidity: balance,
+			Liquidity: cState.Accounts.GetBalance(addr, cState.Coins.GetCoinBySymbol(LiquidityCoinSymbol(coinID), 0).ID()),
 		}
 
 		encodedData, err := rlp.EncodeToBytes(data)
@@ -226,11 +226,11 @@ func TestRemoveExchangeLiquidityTx_2(t *testing.T) {
 		t.Error(err)
 	}
 	{
-		balance, _, _ := cState.Swap.SwapPoolFromProvider(addr2, coin, coin1)
+		_, _, coinID := cState.Swap.SwapPool(coin, coin1)
 		data := RemoveLiquidity{
 			Coin0:     coin,
 			Coin1:     coin1,
-			Liquidity: balance,
+			Liquidity: cState.Accounts.GetBalance(addr2, cState.Coins.GetCoinBySymbol(LiquidityCoinSymbol(coinID), 0).ID()),
 		}
 
 		encodedData, err := rlp.EncodeToBytes(data)
@@ -381,11 +381,11 @@ func TestRemoveExchangeLiquidityTx_3(t *testing.T) {
 		t.Error(err)
 	}
 	{
-		balance, _, _ := cState.Swap.SwapPoolFromProvider(addr2, coin, coin1)
+		_, _, coinID := cState.Swap.SwapPool(coin, coin1)
 		data := RemoveLiquidity{
 			Coin0:     coin,
 			Coin1:     coin1,
-			Liquidity: balance,
+			Liquidity: cState.Accounts.GetBalance(addr2, cState.Coins.GetCoinBySymbol(LiquidityCoinSymbol(coinID), 0).ID()),
 		}
 
 		encodedData, err := rlp.EncodeToBytes(data)

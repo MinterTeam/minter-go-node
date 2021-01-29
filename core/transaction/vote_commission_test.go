@@ -19,8 +19,11 @@ func TestPriceCommissionTx(t *testing.T) {
 	coin1 := createNonReserveCoin(cState)
 	cState.Accounts.SubBalance(types.Address{}, coin1, big.NewInt(1e18))
 
-	cState.Swap.PairMint(types.Address{}, types.GetBaseCoinID(), coin1, big.NewInt(1e18), big.NewInt(1e18))
-	// cState.Accounts.SubBalance(addr, coin1, big.NewInt(1e18))
+	_, _, liquidity, id := cState.Swap.PairCreate(types.GetBaseCoinID(), coin1, big.NewInt(1e18), big.NewInt(1e18))
+	coins := liquidityCoinName(coin1, types.GetBaseCoinID())
+	liquidityCoinID := cState.App.GetNextCoinID()
+	cState.Coins.CreateToken(liquidityCoinID, LiquidityCoinSymbol(id), "Pool "+coins, true, true, big.NewInt(0).Set(liquidity), maxCoinSupply, nil)
+	cState.Accounts.AddBalance(addr, liquidityCoinID, liquidity)
 	cState.Accounts.AddBalance(addr, types.GetBaseCoinID(), big.NewInt(1e18))
 
 	pubkey := [32]byte{}
@@ -197,7 +200,11 @@ func TestPriceCommissionDeleteTx(t *testing.T) {
 	coin1 := createNonReserveCoin(cState)
 	cState.Accounts.SubBalance(types.Address{}, coin1, big.NewInt(1e18))
 
-	cState.Swap.PairMint(types.Address{}, types.GetBaseCoinID(), coin1, big.NewInt(1e18), big.NewInt(1e18))
+	_, _, liquidity, id := cState.Swap.PairCreate(types.GetBaseCoinID(), coin1, big.NewInt(1e18), big.NewInt(1e18))
+	coins := liquidityCoinName(coin1, types.GetBaseCoinID())
+	liquidityCoinID := cState.App.GetNextCoinID()
+	cState.Coins.CreateToken(liquidityCoinID, LiquidityCoinSymbol(id), "Pool "+coins, true, true, big.NewInt(0).Set(liquidity), maxCoinSupply, nil)
+	cState.Accounts.AddBalance(addr, liquidityCoinID, liquidity)
 	cState.Accounts.AddBalance(addr, types.GetBaseCoinID(), big.NewInt(2e18))
 
 	pubkey := [32]byte{}
@@ -378,7 +385,12 @@ func TestPriceCommissionAnyTx(t *testing.T) {
 		privateKey, addr := getAccount()
 		cState.Accounts.SubBalance(types.Address{}, coin1, big.NewInt(1e18))
 
-		cState.Swap.PairMint(types.Address{}, types.GetBaseCoinID(), coin1, big.NewInt(1e18), big.NewInt(1e18))
+		_, _, liquidity, id := cState.Swap.PairCreate(types.GetBaseCoinID(), coin1, big.NewInt(1e18), big.NewInt(1e18))
+		coins := liquidityCoinName(coin1, types.GetBaseCoinID())
+		liquidityCoinID := cState.App.GetNextCoinID()
+		cState.Coins.CreateToken(liquidityCoinID, LiquidityCoinSymbol(id), "Pool "+coins, true, true, big.NewInt(0).Set(liquidity), maxCoinSupply, nil)
+		cState.Accounts.AddBalance(addr, liquidityCoinID, liquidity)
+		cState.App.SetCoinsCount(liquidityCoinID.Uint32())
 		cState.Accounts.AddBalance(addr, types.GetBaseCoinID(), big.NewInt(2e18))
 
 		pubkey := [32]byte{}
@@ -472,8 +484,13 @@ func TestPriceCommissionAnyTx(t *testing.T) {
 		privateKey, addr := getAccount()
 		cState.Accounts.SubBalance(types.Address{}, coin1, big.NewInt(1e18))
 
-		cState.Swap.PairMint(types.Address{}, types.GetBaseCoinID(), coin1, big.NewInt(1e18), big.NewInt(1e18))
+		_, _, liquidity, id := cState.Swap.PairCreate(types.GetBaseCoinID(), coin1, big.NewInt(1e18), big.NewInt(1e18))
+		coins := liquidityCoinName(coin1, types.GetBaseCoinID())
+		liquidityCoinID := cState.App.GetNextCoinID()
+		cState.Coins.CreateToken(liquidityCoinID, LiquidityCoinSymbol(id), "Pool "+coins, true, true, big.NewInt(0).Set(liquidity), maxCoinSupply, nil)
+		cState.Accounts.AddBalance(addr, liquidityCoinID, liquidity)
 		cState.Accounts.AddBalance(addr, types.GetBaseCoinID(), big.NewInt(2e18))
+		cState.App.SetCoinsCount(liquidityCoinID.Uint32())
 
 		pubkey := [32]byte{}
 		rand.Read(pubkey[:])
@@ -569,7 +586,12 @@ func TestCustomCommissionPriceCoin_sendTx(t *testing.T) {
 	cState.Coins.CreateToken(usdCoinID, types.StrToCoinSymbol("USD"), "USD Stable", true, true, helpers.BipToPip(big.NewInt(1e18)), maxCoinSupply, nil)
 	usdPool := helpers.BipToPip(big.NewInt(1e18))
 	bipPool := big.NewInt(0).Sub(helpers.BipToPip(big.NewInt(1e18)), big.NewInt(0).Div(big.NewInt(0).Mul(helpers.BipToPip(big.NewInt(1e18)), big.NewInt(2)), big.NewInt(1000)))
-	cState.Swap.PairMint(types.Address{1}, usdCoinID, types.GetBaseCoinID(), usdPool, bipPool)
+	_, _, liquidity, id := cState.Swap.PairCreate(usdCoinID, types.GetBaseCoinID(), usdPool, bipPool)
+	coins := liquidityCoinName(usdCoinID, types.GetBaseCoinID())
+	coinID := cState.App.GetNextCoinID()
+	cState.Coins.CreateToken(coinID, LiquidityCoinSymbol(id), "Pool "+coins, true, true, big.NewInt(0).Set(liquidity), maxCoinSupply, nil)
+	cState.Accounts.AddBalance(types.Address{}, coinID, liquidity)
+
 	price := cState.Commission.GetCommissions()
 	price.Coin = usdCoinID
 	cState.Commission.SetNewCommissions(price.Encode())
@@ -647,7 +669,13 @@ func TestCustomCommissionPriceCoinAndGasCastomCoin_sendTx(t *testing.T) {
 	usdPool := helpers.BipToPip(big.NewInt(1e18))
 	bipPool := big.NewInt(0).Sub(helpers.BipToPip(big.NewInt(1e18)), big.NewInt(0).Div(big.NewInt(0).Mul(helpers.BipToPip(big.NewInt(1e18)), big.NewInt(2)), big.NewInt(1000)))
 	cState.Coins.CreateToken(usdCoinID, types.StrToCoinSymbol("USD"), "USD Stable", true, true, big.NewInt(0).Add(big.NewInt(1e18), usdPool), maxCoinSupply, nil)
-	cState.Swap.PairMint(types.Address{1}, usdCoinID, types.GetBaseCoinID(), usdPool, bipPool)
+	_, _, liquidity, id := cState.Swap.PairCreate(usdCoinID, types.GetBaseCoinID(), usdPool, bipPool)
+	coins := liquidityCoinName(usdCoinID, types.GetBaseCoinID())
+	coinID := cState.App.GetNextCoinID()
+	cState.Coins.CreateToken(coinID, LiquidityCoinSymbol(id), "Pool "+coins, true, true, big.NewInt(0).Set(liquidity), maxCoinSupply, nil)
+	cState.Accounts.AddBalance(types.Address{}, coinID, liquidity)
+	cState.App.SetCoinsCount(coinID.Uint32())
+
 	price := cState.Commission.GetCommissions()
 	price.Coin = usdCoinID
 	cState.Commission.SetNewCommissions(price.Encode())

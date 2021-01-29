@@ -106,7 +106,8 @@ func (data AddLiquidityData) Run(tx *Transaction, context state.Interface, rewar
 			swapper = swapper.AddLastSwapStep(commissionInBaseCoin, commission)
 		}
 	}
-	_, neededAmount1 = swapper.CalculateAddLiquidity(data.Volume0)
+	coinLiquidity := checkState.Coins().GetCoinBySymbol(LiquidityCoinSymbol(swapper.CoinID()), 0)
+	_, neededAmount1 = swapper.CalculateAddLiquidity(data.Volume0, coinLiquidity.Volume())
 	if neededAmount1.Cmp(data.MaximumVolume1) == 1 {
 		return Response{
 			Code: code.InsufficientInputAmount,
@@ -115,9 +116,9 @@ func (data AddLiquidityData) Run(tx *Transaction, context state.Interface, rewar
 		}
 	}
 
-	if err := swapper.CheckMint(data.Volume0, neededAmount1); err != nil {
+	if err := swapper.CheckMint(data.Volume0, neededAmount1, coinLiquidity.Volume()); err != nil {
 		if err == swap.ErrorInsufficientLiquidityMinted {
-			amount0, amount1 := swapper.Amounts(big.NewInt(1))
+			amount0, amount1 := swapper.Amounts(big.NewInt(1), coinLiquidity.Volume())
 			return Response{
 				Code: code.InsufficientLiquidityMinted,
 				Log: fmt.Sprintf("You wanted to add less than one liquidity, you should add %s %s and %s %s or more",
@@ -181,16 +182,12 @@ func (data AddLiquidityData) Run(tx *Transaction, context state.Interface, rewar
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		amount0, amount1, liquidity := deliverState.Swap.PairMint(sender, data.Coin0, data.Coin1, data.Volume0, data.MaximumVolume1)
+		amount0, amount1, liquidity := deliverState.Swap.PairMint(data.Coin0, data.Coin1, data.Volume0, data.MaximumVolume1, coinLiquidity.Volume())
 		deliverState.Accounts.SubBalance(sender, data.Coin0, amount0)
 		deliverState.Accounts.SubBalance(sender, data.Coin1, amount1)
 
-		// symbol := liquidityCoin(data.Coin0, data.Coin1)
-		// if existPool {
-		// 	deliverState.Coins.GetCoinBySymbol(symbol, 0)
-		// } else {
-		// 	deliverState.Coins.CreateToken(checkState.App().GetNextCoinID(), symbol, "", true, true, liquidity, maxCoinSupply, nil)
-		// }
+		deliverState.Accounts.AddBalance(sender, coinLiquidity.ID(), liquidity)
+		coinLiquidity.AddVolume(liquidity)
 
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 
@@ -210,6 +207,9 @@ func (data AddLiquidityData) Run(tx *Transaction, context state.Interface, rewar
 	}
 }
 
-func liquidityCoin(c0, c1 types.CoinID) types.CoinSymbol {
-	return types.StrToCoinSymbol(fmt.Sprintf("P-%d-%d", c0, c1))
+func liquidityCoinName(c0, c1 types.CoinID) string {
+	if c0 < c1 {
+		return fmt.Sprintf("%d-%d", c0, c1)
+	}
+	return fmt.Sprintf("%d-%d", c1, c0)
 }

@@ -95,8 +95,7 @@ func (data CreateSwapPoolData) Run(tx *Transaction, context state.Interface, rew
 		return *errResp
 	}
 
-	swapper := checkState.Swap().GetSwapper(data.Coin0, data.Coin1)
-	if err := swapper.CheckMint(data.Volume0, data.Volume1); err != nil {
+	if err := checkState.Swap().GetSwapper(data.Coin0, data.Coin1).CheckCreate(data.Volume0, data.Volume1); err != nil {
 		if err == swap.ErrorInsufficientLiquidityMinted {
 			return Response{
 				Code: code.InsufficientLiquidityMinted,
@@ -106,7 +105,6 @@ func (data CreateSwapPoolData) Run(tx *Transaction, context state.Interface, rew
 			}
 		}
 	}
-
 	{
 		amount0 := new(big.Int).Set(data.Volume0)
 		if tx.GasCoin == data.Coin0 {
@@ -146,7 +144,6 @@ func (data CreateSwapPoolData) Run(tx *Transaction, context state.Interface, rew
 	}
 
 	var tags kv.Pairs
-
 	if deliverState, ok := context.(*state.State); ok {
 		if isGasCommissionFromPoolSwap {
 			commission, commissionInBaseCoin = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
@@ -157,16 +154,18 @@ func (data CreateSwapPoolData) Run(tx *Transaction, context state.Interface, rew
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		amount0, amount1, liquidity := deliverState.Swap.PairMint(sender, data.Coin0, data.Coin1, data.Volume0, data.Volume1)
+		amount0, amount1, liquidity, id := deliverState.Swap.PairCreate(data.Coin0, data.Coin1, data.Volume0, data.Volume1)
 		deliverState.Accounts.SubBalance(sender, data.Coin0, amount0)
 		deliverState.Accounts.SubBalance(sender, data.Coin1, amount1)
 
-		// symbol := liquidityCoin(data.Coin0, data.Coin1)
-		// if existPool {
-		// 	deliverState.Coins.GetCoinBySymbol(symbol, 0)
-		// } else {
-		// 	deliverState.Coins.CreateToken(checkState.App().GetNextCoinID(), symbol, "", true, true, liquidity, maxCoinSupply, nil)
-		// }
+		coins := liquidityCoinName(data.Coin0, data.Coin1)
+		coinID := checkState.App().GetNextCoinID()
+
+		deliverState.Coins.CreateToken(coinID, LiquidityCoinSymbol(id), "Swap Pool "+coins, true, true, big.NewInt(0).Set(liquidity), maxCoinSupply, nil)
+		deliverState.Accounts.AddBalance(sender, coinID, liquidity.Sub(liquidity, swap.Bound))
+		deliverState.Accounts.AddBalance(types.Address{}, coinID, swap.Bound)
+
+		deliverState.App.SetCoinsCount(coinID.Uint32())
 
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 
@@ -184,4 +183,8 @@ func (data CreateSwapPoolData) Run(tx *Transaction, context state.Interface, rew
 		Code: code.OK,
 		Tags: tags,
 	}
+}
+
+func LiquidityCoinSymbol(id uint32) types.CoinSymbol {
+	return types.StrToCoinSymbol(fmt.Sprintf("P-%d", id))
 }
