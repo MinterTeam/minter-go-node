@@ -435,6 +435,7 @@ type UpdateCommissionsEvent struct {
 	SetCandidateOn          string `json:"set_candidate_on"`
 	SetCandidateOff         string `json:"set_candidate_off"`
 	CreateMultisig          string `json:"create_multisig"`
+	MultisendBase           string `json:"multisend_base"`
 	MultisendDelta          string `json:"multisend_delta"`
 	EditCandidate           string `json:"edit_candidate"`
 	SetHaltBlock            string `json:"set_halt_block"`

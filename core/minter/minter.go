@@ -363,6 +363,7 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 			SetCandidateOn:          price.SetCandidateOn.String(),
 			SetCandidateOff:         price.SetCandidateOff.String(),
 			CreateMultisig:          price.CreateMultisig.String(),
+			MultisendBase:           price.MultisendBase.String(),
 			MultisendDelta:          price.MultisendDelta.String(),
 			EditCandidate:           price.EditCandidate.String(),
 			SetHaltBlock:            price.SetHaltBlock.String(),
