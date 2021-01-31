@@ -372,6 +372,7 @@ func priceCommissionData(d *transaction.VoteCommissionData, coin *coins.Model) p
 		SetCandidateOn:          d.SetCandidateOn.String(),
 		SetCandidateOff:         d.SetCandidateOff.String(),
 		CreateMultisig:          d.CreateMultisig.String(),
+		MultisendBase:           d.MultisendBase.String(),
 		MultisendDelta:          d.MultisendDelta.String(),
 		EditCandidate:           d.EditCandidate.String(),
 		SetHaltBlock:            d.SetHaltBlock.String(),
