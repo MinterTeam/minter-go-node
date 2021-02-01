@@ -450,8 +450,8 @@ type UpdateCommissionsEvent struct {
 	MoveStake               string `json:"move_stake"`
 	MintToken               string `json:"mint_token"`
 	BurnToken               string `json:"burn_token"`
-	PriceCommission         string `json:"price_commission"`
-	UpdateNetwork           string `json:"update_network"`
+	VotePrice               string `json:"vote_price"`
+	VoteUpdate              string `json:"vote_update"`
 }
 
 func (ce *UpdateCommissionsEvent) Type() string {

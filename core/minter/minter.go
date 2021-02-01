@@ -378,8 +378,8 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 			MoveStake:               price.MoveStake.String(),
 			MintToken:               price.MintToken.String(),
 			BurnToken:               price.BurnToken.String(),
-			PriceCommission:         price.PriceCommission.String(),
-			UpdateNetwork:           price.UpdateNetwork.String(),
+			VotePrice:               price.VotePrice.String(),
+			VoteUpdate:              price.VoteUpdate.String(),
 		})
 	}
 	blockchain.stateDeliver.Commission.Delete(height)

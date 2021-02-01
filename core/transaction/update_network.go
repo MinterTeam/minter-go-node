@@ -42,7 +42,7 @@ func (data VoteUpdateData) String() string {
 }
 
 func (data VoteUpdateData) CommissionData(price *commission.Price) *big.Int {
-	return price.UpdateNetwork
+	return price.VoteUpdate
 }
 
 func (data VoteUpdateData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {

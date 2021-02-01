@@ -170,8 +170,8 @@ func (c *Commission) GetCommissions() *Price {
 			MoveStake:               helpers.StringToBigInt("20000000000000000000"),
 			MintToken:               helpers.StringToBigInt("10000000000000000000"),
 			BurnToken:               helpers.StringToBigInt("10000000000000000000"),
-			PriceCommission:         helpers.StringToBigInt("100000000000000000000"),
-			UpdateNetwork:           helpers.StringToBigInt("100000000000000000000"),
+			VotePrice:               helpers.StringToBigInt("100000000000000000000"),
+			VoteUpdate:              helpers.StringToBigInt("100000000000000000000"),
 			More:                    nil,
 		}
 	}
