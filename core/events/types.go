@@ -435,6 +435,7 @@ type UpdateCommissionsEvent struct {
 	SetCandidateOn          string `json:"set_candidate_on"`
 	SetCandidateOff         string `json:"set_candidate_off"`
 	CreateMultisig          string `json:"create_multisig"`
+	MultisendBase           string `json:"multisend_base"`
 	MultisendDelta          string `json:"multisend_delta"`
 	EditCandidate           string `json:"edit_candidate"`
 	SetHaltBlock            string `json:"set_halt_block"`
@@ -449,8 +450,8 @@ type UpdateCommissionsEvent struct {
 	MoveStake               string `json:"move_stake"`
 	MintToken               string `json:"mint_token"`
 	BurnToken               string `json:"burn_token"`
-	PriceCommission         string `json:"price_commission"`
-	UpdateNetwork           string `json:"update_network"`
+	VotePrice               string `json:"vote_price"`
+	VoteUpdate              string `json:"vote_update"`
 }
 
 func (ce *UpdateCommissionsEvent) Type() string {
