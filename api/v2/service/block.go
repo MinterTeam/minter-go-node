@@ -56,7 +56,7 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 
 		currentState := s.blockchain.CurrentState()
 
-		response.Transactions, err = s.blockTransaction(block, blockResults, currentState.Coins(), req.Failed)
+		response.Transactions, err = s.blockTransaction(block, blockResults, currentState.Coins(), req.FailedTxs)
 		if err != nil {
 			return nil, err
 		}
@@ -110,7 +110,7 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 		case pb.BlockRequest_transactions:
 			cState := s.blockchain.CurrentState()
 
-			response.Transactions, err = s.blockTransaction(block, blockResults, cState.Coins(), req.Failed)
+			response.Transactions, err = s.blockTransaction(block, blockResults, cState.Coins(), req.FailedTxs)
 			if err != nil {
 				return nil, err
 			}
