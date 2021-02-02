@@ -319,7 +319,7 @@ func (c *Coins) CreateToken(id types.CoinID, symbol types.CoinSymbol, name strin
 	c.setSymbolToMap(ids, coin.Symbol())
 	c.setToMap(coin.ID(), coin)
 
-	c.bus.Checker().AddCoin(coin.id, maxSupply)
+	c.bus.Checker().AddCoinVolume(coin.id, initialAmount)
 
 	c.markDirty(coin.id)
 }

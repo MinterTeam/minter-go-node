@@ -166,7 +166,10 @@ func (s *Swap) Commit(db *iavl.MutableTree) error {
 	s.muNextID.Lock()
 	if s.dirtyNextID {
 		s.dirtyNextID = false
-		bytes, _ := rlp.EncodeToBytes(s.nextID)
+		bytes, err := rlp.EncodeToBytes(s.nextID)
+		if err != nil {
+			return err
+		}
 		db.Set([]byte{mainPrefix, 'i'}, bytes)
 	}
 	s.muNextID.Unlock()
@@ -179,15 +182,12 @@ func (s *Swap) Commit(db *iavl.MutableTree) error {
 			continue
 		}
 
-		pairPath := append(basePath, key.Bytes()...)
-
 		pair.isDirty = false
 		pairDataBytes, err := rlp.EncodeToBytes(pair.pairData)
 		if err != nil {
 			return err
 		}
-		db.Set(pairPath, pairDataBytes)
-
+		db.Set(append(basePath, key.Bytes()...), pairDataBytes)
 	}
 	return nil
 }
