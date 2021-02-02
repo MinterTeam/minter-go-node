@@ -471,6 +471,9 @@ type Pair struct {
 }
 
 func (p *Pair) CoinID() uint32 {
+	if p == nil {
+		return 0
+	}
 	return p.ID
 }
 
