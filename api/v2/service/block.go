@@ -15,7 +15,6 @@ import (
 	tmTypes "github.com/tendermint/tendermint/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -57,7 +56,7 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 
 		currentState := s.blockchain.CurrentState()
 
-		response.Transactions, err = s.blockTransaction(block, blockResults, currentState.Coins())
+		response.Transactions, err = s.blockTransaction(block, blockResults, currentState.Coins(), req.FailedTxs)
 		if err != nil {
 			return nil, err
 		}
@@ -111,7 +110,7 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 		case pb.BlockRequest_transactions:
 			cState := s.blockchain.CurrentState()
 
-			response.Transactions, err = s.blockTransaction(block, blockResults, cState.Coins())
+			response.Transactions, err = s.blockTransaction(block, blockResults, cState.Coins(), req.FailedTxs)
 			if err != nil {
 				return nil, err
 			}
@@ -188,22 +187,22 @@ func blockProposer(block *core_types.ResultBlock, totalValidators []*tmTypes.Val
 	return "", nil
 }
 
-func (s *Service) blockTransaction(block *core_types.ResultBlock, blockResults *core_types.ResultBlockResults, coins coins.RCoins) ([]*pb.TransactionResponse, error) {
+func (s *Service) blockTransaction(block *core_types.ResultBlock, blockResults *core_types.ResultBlockResults, coins coins.RCoins, failed bool) ([]*pb.TransactionResponse, error) {
 	txs := make([]*pb.TransactionResponse, 0, len(block.Block.Data.Txs))
 
 	for i, rawTx := range block.Block.Data.Txs {
+		if blockResults.TxsResults[i].Code != 0 && !failed {
+			continue
+		}
+
 		tx, _ := transaction.DecodeFromBytes(rawTx)
 		sender, _ := tx.Sender()
 
-		var gas int
 		tags := make(map[string]string)
 		for _, tag := range blockResults.TxsResults[i].Events[0].Attributes {
 			key := string(tag.Key)
 			value := string(tag.Value)
 			tags[key] = value
-			if key == "tx.gas" {
-				gas, _ = strconv.Atoi(value)
-			}
 		}
 
 		data, err := encode(tx.GetDecodedData(), coins)
@@ -223,7 +222,7 @@ func (s *Service) blockTransaction(block *core_types.ResultBlock, blockResults *
 			Data:        data,
 			Payload:     tx.Payload,
 			ServiceData: tx.ServiceData,
-			Gas:         uint64(gas),
+			Gas:         uint64(tx.Gas()),
 			GasCoin: &pb.Coin{
 				Id:     uint64(tx.GasCoin),
 				Symbol: coins.GetCoin(tx.GasCoin).GetFullSymbol(),
