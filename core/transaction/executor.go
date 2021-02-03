@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	abcTypes "github.com/tendermint/tendermint/abci/types"
 	"math/big"
 	"strconv"
 	"sync"
@@ -11,7 +12,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/tendermint/tendermint/libs/kv"
 )
 
 const (
@@ -23,14 +23,14 @@ const (
 
 // Response represents standard response from tx delivery/check
 type Response struct {
-	Code      uint32    `json:"code,omitempty"`
-	Data      []byte    `json:"data,omitempty"`
-	Log       string    `json:"log,omitempty"`
-	Info      string    `json:"-"`
-	GasWanted int64     `json:"gas_wanted,omitempty"`
-	GasUsed   int64     `json:"gas_used,omitempty"`
-	Tags      []kv.Pair `json:"tags,omitempty"`
-	GasPrice  uint32    `json:"gas_price"`
+	Code      uint32                    `json:"code,omitempty"`
+	Data      []byte                    `json:"data,omitempty"`
+	Log       string                    `json:"log,omitempty"`
+	Info      string                    `json:"-"`
+	GasWanted int64                     `json:"gas_wanted,omitempty"`
+	GasUsed   int64                     `json:"gas_used,omitempty"`
+	Tags      []abcTypes.EventAttribute `json:"tags,omitempty"`
+	GasPrice  uint32                    `json:"gas_price"`
 }
 
 // RunTx executes transaction in given context
@@ -204,8 +204,8 @@ func RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBl
 	response.GasPrice = tx.GasPrice
 	gas := tx.Gas()
 	response.Tags = append(response.Tags,
-		kv.Pair{Key: []byte("tx.gas"), Value: []byte(strconv.Itoa(int(gas)))},
-		kv.Pair{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(tx.decodedData.TxType())}))},
+		abcTypes.EventAttribute{Key: []byte("tx.gas"), Value: []byte(strconv.Itoa(int(gas)))},
+		abcTypes.EventAttribute{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(tx.decodedData.TxType())}))},
 	)
 	response.GasUsed = gas
 	response.GasWanted = gas

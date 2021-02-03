@@ -1,7 +1,6 @@
 package minter
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
@@ -19,8 +18,8 @@ import (
 	"github.com/MinterTeam/minter-go-node/version"
 	"github.com/syndtr/goleveldb/leveldb/filter"
 	"github.com/syndtr/goleveldb/leveldb/opt"
-	"github.com/tendermint/go-amino"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
+	tmjson "github.com/tendermint/tendermint/libs/json"
 	tmNode "github.com/tendermint/tendermint/node"
 	"log"
 	"math/big"
@@ -83,6 +82,9 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 
 	lastHeight := applicationDB.GetLastHeight()
 	initialHeight := applicationDB.GetStartHeight()
+	if initialHeight == 0 {
+		initialHeight = 1
+	}
 	height := lastHeight
 	if lastHeight < initialHeight {
 		height = initialHeight
@@ -120,7 +122,7 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 // InitChain initialize blockchain with validators and other info. Only called once.
 func (blockchain *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.ResponseInitChain {
 	var genesisState types.AppState
-	if err := amino.UnmarshalJSON(req.AppStateBytes, &genesisState); err != nil {
+	if err := tmjson.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
 		panic(err)
 	}
 
@@ -377,7 +379,7 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 			MoveStake:               price.MoveStake.String(),
 			MintToken:               price.MintToken.String(),
 			BurnToken:               price.BurnToken.String(),
-			VotePrice:               price.VotePrice.String(),
+			VoteCommission:          price.VoteCommission.String(),
 			VoteUpdate:              price.VoteUpdate.String(),
 		})
 	}

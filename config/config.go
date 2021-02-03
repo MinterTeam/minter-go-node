@@ -43,9 +43,7 @@ func DefaultConfig() *Config {
 		"bab220855eb9625ea547f1ef1d11692c60a7a406@138.201.28.219:26656"
 
 	cfg.TxIndex = &tmConfig.TxIndexConfig{
-		Indexer:      "kv",
-		IndexKeys:    "",
-		IndexAllKeys: true,
+		Indexer: "kv",
 	}
 
 	cfg.DBPath = "tmdata"
@@ -79,8 +77,6 @@ func GetConfig(home string) *Config {
 	cfg := DefaultConfig()
 
 	if cfg.ValidatorMode {
-		cfg.TxIndex.IndexAllKeys = false
-		cfg.TxIndex.IndexKeys = ""
 
 		cfg.RPC.ListenAddress = ""
 		cfg.RPC.GRPCListenAddress = ""
@@ -151,13 +147,22 @@ func GetTmConfig(cfg *Config) *tmConfig.Config {
 			PrivValidatorListenAddr: cfg.PrivValidatorListenAddr,
 			NodeKey:                 cfg.NodeKey,
 			ABCI:                    cfg.ABCI,
-			ProfListenAddress:       cfg.ProfListenAddress,
 			FilterPeers:             cfg.FilterPeers,
 		},
-		RPC:             cfg.RPC,
-		P2P:             cfg.P2P,
-		Mempool:         cfg.Mempool,
-		FastSync:        &tmConfig.FastSyncConfig{Version: "v0"},
+		RPC:     cfg.RPC,
+		P2P:     cfg.P2P,
+		Mempool: cfg.Mempool,
+		// StateSync:       &tmConfig.StateSyncConfig{ // todo
+		// 	Enable:        false,
+		// 	TempDir:       "",
+		// 	RPCServers:    nil,
+		// 	TrustPeriod:   0,
+		// 	TrustHeight:   0,
+		// 	TrustHash:     "",
+		// 	DiscoveryTime: 0,
+		// },
+		StateSync:       tmConfig.DefaultStateSyncConfig(),
+		FastSync:        tmConfig.DefaultFastSyncConfig(),
 		Consensus:       cfg.Consensus,
 		TxIndex:         cfg.TxIndex,
 		Instrumentation: cfg.Instrumentation,

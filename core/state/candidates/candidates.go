@@ -10,7 +10,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
-	"github.com/tendermint/iavl"
+	"github.com/cosmos/iavl"
 	"sync/atomic"
 
 	"math/big"

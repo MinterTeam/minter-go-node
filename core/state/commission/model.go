@@ -47,7 +47,7 @@ type Price struct {
 	MoveStake               *big.Int
 	BurnToken               *big.Int
 	MintToken               *big.Int
-	VotePrice               *big.Int
+	VoteCommission          *big.Int
 	VoteUpdate              *big.Int
 	More                    []*big.Int `rlp:"tail"`
 }

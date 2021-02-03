@@ -3,7 +3,6 @@ package minter
 import (
 	"context"
 	"crypto/ecdsa"
-	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -19,7 +18,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/rlp"
-	"github.com/tendermint/go-amino"
+	tmjson "github.com/tendermint/tendermint/libs/json"
 	tmnet "github.com/tendermint/tendermint/libs/net"
 	tmNode "github.com/tendermint/tendermint/node"
 	"github.com/tendermint/tendermint/p2p"
@@ -90,7 +89,7 @@ func initTestNode(t *testing.T) (*Blockchain, *rpc.Local, *privval.FilePV, func(
 
 	tmCli := rpc.New(app.tmNode)
 
-	blocks, err := tmCli.Subscribe(context.Background(), "test-client", "tm.event = 'NewBlock'")
+	blocks, err := tmCli.Subscribe(context.Background(), "test-client", types2.EventQueryNewBlock.String())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -111,6 +110,11 @@ func initTestNode(t *testing.T) (*Blockchain, *rpc.Local, *privval.FilePV, func(
 			t.Error(err)
 		}
 	}
+}
+
+func TestBlockchain_Run(t *testing.T) {
+	_, _, _, cancel := initTestNode(t)
+	cancel()
 }
 
 func TestBlockchain_Height(t *testing.T) {
@@ -189,7 +193,7 @@ func TestBlockchain_IsApplicationHalted(t *testing.T) {
 	blockchain, tmCli, pv, cancel := initTestNode(t)
 	defer cancel()
 	data := transaction.SetHaltBlockData{
-		PubKey: types.BytesToPubkey(pv.Key.PubKey.Bytes()[5:]),
+		PubKey: types.BytesToPubkey(pv.Key.PubKey.Bytes()[:]),
 		Height: 5,
 	}
 
@@ -213,7 +217,7 @@ func TestBlockchain_IsApplicationHalted(t *testing.T) {
 	}
 
 	txBytes, _ := tx.Serialize()
-	res, err := tmCli.BroadcastTxSync(txBytes)
+	res, err := tmCli.BroadcastTxSync(context.Background(), txBytes)
 	if err != nil {
 		t.Fatalf("Failed: %s", err.Error())
 	}
@@ -289,14 +293,14 @@ func TestBlockchain_GetStateForHeightAndDeleteStateVersions(t *testing.T) {
 	}
 
 	txBytes, _ := tx.Serialize()
-	res, err := tmCli.BroadcastTxCommit(txBytes)
+	res, err := tmCli.BroadcastTxCommit(context.Background(), txBytes)
 	if err != nil {
 		t.Fatalf("Failed: %s", err.Error())
 	}
 
 	time.Sleep(time.Second)
 
-	resultTx, err := tmCli.Tx(res.Hash.Bytes(), false)
+	resultTx, err := tmCli.Tx(context.Background(), res.Hash.Bytes(), false)
 	if err != nil {
 		t.Fatalf("Failed: %s", err.Error())
 	}
@@ -370,7 +374,7 @@ func TestBlockchain_SendTx(t *testing.T) {
 
 	txBytes, _ := tx.Serialize()
 
-	res, err := tmCli.BroadcastTxSync(txBytes)
+	res, err := tmCli.BroadcastTxSync(context.Background(), txBytes)
 	if err != nil {
 		t.Fatalf("Failed: %s", err.Error())
 	}
@@ -412,7 +416,7 @@ func TestBlockchain_FrozenFunds(t *testing.T) {
 
 	targetHeight := uint64(10)
 	value := helpers.BipToPip(big.NewInt(1000))
-	pubkey := types.BytesToPubkey(pv.Key.PubKey.Bytes()[5:])
+	pubkey := types.BytesToPubkey(pv.Key.PubKey.Bytes()[:])
 	blockchain.stateDeliver.RLock()
 	blockchain.stateDeliver.Candidates.SubStake(developers.Address, pubkey, 0, big.NewInt(0).Set(value))
 	blockchain.stateDeliver.FrozenFunds.AddFund(targetHeight, developers.Address, pubkey, blockchain.stateDeliver.Candidates.ID(pubkey), 0, big.NewInt(0).Set(value), nil)
@@ -494,7 +498,7 @@ func TestBlockchain_RecalculateStakes_andRemoveValidator(t *testing.T) {
 		}
 
 		txBytes, _ := tx.Serialize()
-		res, err := tmCli.BroadcastTxSync(txBytes)
+		res, err := tmCli.BroadcastTxSync(context.Background(), txBytes)
 		if err != nil {
 			t.Fatalf("Failed: %s", err.Error())
 		}
@@ -535,7 +539,7 @@ func TestBlockchain_RecalculateStakes_andRemoveValidator(t *testing.T) {
 		}
 
 		txBytes, _ := tx.Serialize()
-		res, err := tmCli.BroadcastTxSync(txBytes)
+		res, err := tmCli.BroadcastTxSync(context.Background(), txBytes)
 		if err != nil {
 			t.Fatalf("Failed: %s", err.Error())
 		}
@@ -575,7 +579,7 @@ func TestBlockchain_RecalculateStakes_andRemoveValidator(t *testing.T) {
 
 		txBytes, _ := tx.Serialize()
 
-		res, err := tmCli.BroadcastTxSync(txBytes)
+		res, err := tmCli.BroadcastTxSync(context.Background(), txBytes)
 		if err != nil {
 			t.Fatalf("Failed: %s", err.Error())
 		}
@@ -614,7 +618,7 @@ func TestBlockchain_RecalculateStakes_andRemoveValidator(t *testing.T) {
 
 		txBytes, _ := tx.Serialize()
 
-		res, err := tmCli.BroadcastTxSync(txBytes)
+		res, err := tmCli.BroadcastTxSync(context.Background(), txBytes)
 		if err != nil {
 			t.Fatalf("Failed: %s", err.Error())
 		}
@@ -650,7 +654,7 @@ func TestBlockchain_RecalculateStakes_andRemoveValidator(t *testing.T) {
 		}
 
 		txBytes, _ := tx.Serialize()
-		res, err := tmCli.BroadcastTxSync(txBytes)
+		res, err := tmCli.BroadcastTxSync(context.Background(), txBytes)
 		if err != nil {
 			t.Fatalf("Failed: %s", err.Error())
 		}
@@ -670,13 +674,15 @@ func TestBlockchain_RecalculateStakes_andRemoveValidator(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	targetHeight := int64(5) + 12 + 123
-	var h int64
+	var targetHeight int64
 	func() {
 		for {
 			select {
 			case block := <-blocks:
-				h = block.Data.(types2.EventDataNewBlock).Block.Height
+				h := block.Data.(types2.EventDataNewBlock).Block.Height
+				if targetHeight == 0 {
+					targetHeight = 135
+				}
 				if h > targetHeight {
 					return
 				}
@@ -750,10 +756,11 @@ func makeTestValidatorsAndCandidates(pubkeys []string, stake *big.Int) ([]types.
 	cands := make([]types.Candidate, 0, len(pubkeys))
 
 	for i, val := range pubkeys {
-		pkeyBytes, err := base64.StdEncoding.DecodeString(val)
-		if err != nil {
-			panic(err)
-		}
+		// pkeyBytes, err := base64.StdEncoding.DecodeString(val)
+		pkeyBytes := []byte(val)
+		// if err != nil {
+		// 	panic(err)
+		// }
 
 		var pkey types.Pubkey
 		copy(pkey[:], pkeyBytes)
@@ -791,12 +798,10 @@ func makeTestValidatorsAndCandidates(pubkeys []string, stake *big.Int) ([]types.
 
 func getTestGenesis(pv *privval.FilePV, home string) func() (*types2.GenesisDoc, error) {
 	return func() (*types2.GenesisDoc, error) {
-
-		appHash := [32]byte{}
-
-		validators, candidates := makeTestValidatorsAndCandidates([]string{base64.StdEncoding.EncodeToString(pv.Key.PubKey.Bytes()[5:])}, helpers.BipToPip(big.NewInt(12444011)))
+		validators, candidates := makeTestValidatorsAndCandidates([]string{string(pv.Key.PubKey.Bytes()[:])}, helpers.BipToPip(big.NewInt(12444011)))
 
 		appState := types.AppState{
+			// StartHeight: 100, // todo
 			TotalSlashed: "0",
 			Accounts: []types.Account{
 				{
@@ -813,7 +818,7 @@ func getTestGenesis(pv *privval.FilePV, home string) func() (*types2.GenesisDoc,
 			Candidates: candidates,
 		}
 
-		appStateJSON, err := amino.MarshalJSON(appState)
+		appStateJSON, err := tmjson.Marshal(appState)
 		if err != nil {
 			return nil, err
 		}
@@ -821,7 +826,7 @@ func getTestGenesis(pv *privval.FilePV, home string) func() (*types2.GenesisDoc,
 		genesisDoc := types2.GenesisDoc{
 			ChainID:     "minter-test-network",
 			GenesisTime: time.Now(),
-			AppHash:     appHash[:],
+			AppHash:     nil,
 			AppState:    json.RawMessage(appStateJSON),
 		}
 

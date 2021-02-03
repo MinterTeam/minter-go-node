@@ -8,7 +8,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/state/commission"
 	"github.com/MinterTeam/minter-go-node/core/state/swap"
 	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/tendermint/tendermint/libs/kv"
+	abcTypes "github.com/tendermint/tendermint/abci/types"
 	"math/big"
 )
 
@@ -123,7 +123,7 @@ func (data RemoveLiquidity) Run(tx *Transaction, context state.Interface, reward
 			Info: EncodeError(code.NewInsufficientFunds(sender.String(), commission.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
 		}
 	}
-	var tags kv.Pairs
+	var tags []abcTypes.EventAttribute
 	if deliverState, ok := context.(*state.State); ok {
 		if isGasCommissionFromPoolSwap {
 			commission, commissionInBaseCoin = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
@@ -143,16 +143,16 @@ func (data RemoveLiquidity) Run(tx *Transaction, context state.Interface, reward
 
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 
-		tags = kv.Pairs{
-			kv.Pair{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
-			kv.Pair{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
-			kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
-			kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
-			kv.Pair{Key: []byte("tx.volume0"), Value: []byte(amount0.String())},
-			kv.Pair{Key: []byte("tx.volume1"), Value: []byte(amount1.String())},
-			kv.Pair{Key: []byte("tx.pool_token"), Value: []byte(coinLiquidity.GetFullSymbol())},
-			kv.Pair{Key: []byte("tx.pool_token_id"), Value: []byte(coinLiquidity.ID().String())},
-			kv.Pair{Key: []byte("tx.pair_ids"), Value: []byte(liquidityCoinName(data.Coin0, data.Coin1))},
+		tags = []abcTypes.EventAttribute{
+			{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
+			{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
+			{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
+			{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
+			{Key: []byte("tx.volume0"), Value: []byte(amount0.String())},
+			{Key: []byte("tx.volume1"), Value: []byte(amount1.String())},
+			{Key: []byte("tx.pool_token"), Value: []byte(coinLiquidity.GetFullSymbol())},
+			{Key: []byte("tx.pool_token_id"), Value: []byte(coinLiquidity.ID().String())},
+			{Key: []byte("tx.pair_ids"), Value: []byte(liquidityCoinName(data.Coin0, data.Coin1))},
 		}
 	}
 

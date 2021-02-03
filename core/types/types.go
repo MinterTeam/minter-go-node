@@ -395,7 +395,7 @@ type TmAddress [TendermintAddressLength]byte
 
 func GetTmAddress(publicKey Pubkey) TmAddress {
 	// set tm address
-	var pubkey ed25519.PubKeyEd25519
+	var pubkey ed25519.PubKey
 	copy(pubkey[:], publicKey[:])
 
 	var address TmAddress

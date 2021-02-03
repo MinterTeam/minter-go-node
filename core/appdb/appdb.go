@@ -4,14 +4,10 @@ import (
 	"encoding/binary"
 	"errors"
 	"github.com/MinterTeam/minter-go-node/config"
-	"github.com/tendermint/go-amino"
 	"github.com/tendermint/tendermint/abci/types"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
+	tmjson "github.com/tendermint/tendermint/libs/json"
 	"github.com/tendermint/tm-db"
-)
-
-var (
-	cdc = amino.NewCodec()
 )
 
 const (
@@ -23,6 +19,10 @@ const (
 
 	dbName = "app"
 )
+
+func init() {
+	tmjson.RegisterType(&lastBlocksTimeDelta{}, "last_blocks_time_delta")
+}
 
 // AppDB is responsible for storing basic information about app state on disk
 type AppDB struct {
@@ -41,12 +41,12 @@ func (appDB *AppDB) Close() error {
 
 // GetLastBlockHash returns latest block hash stored on disk
 func (appDB *AppDB) GetLastBlockHash() []byte {
-	var hash [32]byte
-
 	rawHash, err := appDB.db.Get([]byte(hashPath))
 	if err != nil {
 		panic(err)
 	}
+
+	var hash [32]byte
 	copy(hash[:], rawHash)
 
 	return hash[:]
@@ -127,7 +127,7 @@ func (appDB *AppDB) GetValidators() types.ValidatorUpdates {
 
 	var vals types.ValidatorUpdates
 
-	err = cdc.UnmarshalBinaryBare(result, &vals)
+	err = tmjson.Unmarshal(result, &vals)
 	if err != nil {
 		panic(err)
 	}
@@ -145,7 +145,7 @@ func (appDB *AppDB) FlushValidators() {
 	if appDB.validators == nil {
 		return
 	}
-	data, err := cdc.MarshalBinaryBare(appDB.validators)
+	data, err := tmjson.Marshal(appDB.validators)
 	if err != nil {
 		panic(err)
 	}
@@ -172,7 +172,7 @@ func (appDB *AppDB) GetLastBlocksTimeDelta(height uint64) (int, error) {
 	}
 
 	data := lastBlocksTimeDelta{}
-	err = cdc.UnmarshalBinaryBare(result, &data)
+	err = tmjson.Unmarshal(result, &data)
 	if err != nil {
 		panic(err)
 	}
@@ -186,7 +186,7 @@ func (appDB *AppDB) GetLastBlocksTimeDelta(height uint64) (int, error) {
 
 // SetLastBlocksTimeDelta stores delta of time between latest blocks
 func (appDB *AppDB) SetLastBlocksTimeDelta(height uint64, delta int) {
-	data, err := cdc.MarshalBinaryBare(lastBlocksTimeDelta{
+	data, err := tmjson.Marshal(&lastBlocksTimeDelta{
 		Height: height,
 		Delta:  delta,
 	})
@@ -202,7 +202,11 @@ func (appDB *AppDB) SetLastBlocksTimeDelta(height uint64, delta int) {
 
 // NewAppDB creates AppDB instance with given config
 func NewAppDB(homeDir string, cfg *config.Config) *AppDB {
+	newDB, err := db.NewDB(dbName, db.BackendType(cfg.DBBackend), homeDir+"/data")
+	if err != nil {
+		panic(err)
+	}
 	return &AppDB{
-		db: db.NewDB(dbName, db.BackendType(cfg.DBBackend), homeDir+"/data"),
+		db: newDB,
 	}
 }

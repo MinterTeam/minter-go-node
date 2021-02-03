@@ -7,7 +7,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/MinterTeam/minter-go-node/core/state/commission"
 	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/tendermint/tendermint/libs/kv"
+	abcTypes "github.com/tendermint/tendermint/abci/types"
 	"math/big"
 )
 
@@ -107,7 +107,7 @@ func (data SellSwapPoolData) Run(tx *Transaction, context state.Interface, rewar
 		}
 	}
 
-	var tags kv.Pairs
+	var tags []abcTypes.EventAttribute
 	if deliverState, ok := context.(*state.State); ok {
 		if isGasCommissionFromPoolSwap {
 			commission, commissionInBaseCoin = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
@@ -124,15 +124,15 @@ func (data SellSwapPoolData) Run(tx *Transaction, context state.Interface, rewar
 
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 
-		tags = kv.Pairs{
-			kv.Pair{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
-			kv.Pair{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
-			kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
-			kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
-			kv.Pair{Key: []byte("tx.coin_to_buy"), Value: []byte(data.CoinToBuy.String())},
-			kv.Pair{Key: []byte("tx.coin_to_sell"), Value: []byte(data.CoinToSell.String())},
-			kv.Pair{Key: []byte("tx.return"), Value: []byte(amountOut.String())},
-			kv.Pair{Key: []byte("tx.pair_ids"), Value: []byte(liquidityCoinName(data.CoinToBuy, data.CoinToSell))},
+		tags = []abcTypes.EventAttribute{
+			{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
+			{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
+			{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
+			{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
+			{Key: []byte("tx.coin_to_buy"), Value: []byte(data.CoinToBuy.String())},
+			{Key: []byte("tx.coin_to_sell"), Value: []byte(data.CoinToSell.String())},
+			{Key: []byte("tx.return"), Value: []byte(amountOut.String())},
+			{Key: []byte("tx.pair_ids"), Value: []byte(liquidityCoinName(data.CoinToBuy, data.CoinToSell))},
 		}
 	}
 

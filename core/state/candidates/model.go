@@ -104,12 +104,8 @@ func (candidate *Candidate) GetTmAddress() types.TmAddress {
 }
 
 func (candidate *Candidate) setTmAddress() {
-	// set tm address
-	var pubkey ed25519.PubKeyEd25519
-	copy(pubkey[:], candidate.PubKey[:])
-
 	var address types.TmAddress
-	copy(address[:], pubkey.Address().Bytes())
+	copy(address[:], ed25519.PubKey(candidate.PubKey[:]).Address().Bytes())
 
 	candidate.tmAddress = &address
 }

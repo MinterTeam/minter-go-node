@@ -14,7 +14,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/rlp"
-	"github.com/tendermint/tendermint/libs/kv"
+	abcTypes "github.com/tendermint/tendermint/abci/types"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -216,7 +216,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 			}
 		}
 	}
-	var tags kv.Pairs
+	var tags []abcTypes.EventAttribute
 	if deliverState, ok := context.(*state.State); ok {
 		deliverState.Checks.UseCheck(decodedCheck)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
@@ -231,13 +231,13 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 		deliverState.Accounts.AddBalance(sender, decodedCheck.Coin, decodedCheck.Value)
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 
-		tags = kv.Pairs{
-			kv.Pair{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
-			kv.Pair{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
-			kv.Pair{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
-			kv.Pair{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(checkSender[:]))},
-			kv.Pair{Key: []byte("tx.to"), Value: []byte(hex.EncodeToString(sender[:]))},
-			kv.Pair{Key: []byte("tx.coin_id"), Value: []byte(decodedCheck.Coin.String())},
+		tags = []abcTypes.EventAttribute{
+			{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
+			{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
+			{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
+			{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(checkSender[:]))},
+			{Key: []byte("tx.to"), Value: []byte(hex.EncodeToString(sender[:]))},
+			{Key: []byte("tx.coin_id"), Value: []byte(decodedCheck.Coin.String())},
 		}
 	}
 

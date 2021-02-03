@@ -7,7 +7,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
-	"github.com/tendermint/iavl"
+	"github.com/cosmos/iavl"
 	"math/big"
 	"sort"
 	"strconv"

@@ -7,20 +7,13 @@ import (
 	"github.com/MinterTeam/minter-go-node/cli/service"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
-	eventsdb "github.com/MinterTeam/minter-go-node/core/events"
 	"github.com/MinterTeam/minter-go-node/core/minter"
 	"github.com/MinterTeam/minter-go-node/core/statistics"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/version"
 	"github.com/spf13/cobra"
-	"github.com/tendermint/go-amino"
 	"github.com/tendermint/tendermint/abci/types"
 	tmCfg "github.com/tendermint/tendermint/config"
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/ed25519"
-	"github.com/tendermint/tendermint/crypto/multisig"
-	"github.com/tendermint/tendermint/crypto/secp256k1"
-	"github.com/tendermint/tendermint/evidence"
 	tmLog "github.com/tendermint/tendermint/libs/log"
 	tmOS "github.com/tendermint/tendermint/libs/os"
 	tmNode "github.com/tendermint/tendermint/node"
@@ -125,36 +118,14 @@ func runCLI(cmd *cobra.Command, app *minter.Blockchain, client *rpc.Local, tmNod
 }
 
 // RegisterAmino registers all crypto related types in the given (amino) codec.
-func registerCryptoAmino(cdc *amino.Codec) {
+func registerCryptoAmino() {
 	// These are all written here instead of
-	cdc.RegisterInterface((*crypto.PubKey)(nil), nil)
-	cdc.RegisterConcrete(ed25519.PubKeyEd25519{},
-		ed25519.PubKeyAminoName, nil)
-	cdc.RegisterConcrete(secp256k1.PubKeySecp256k1{},
-		secp256k1.PubKeyAminoName, nil)
-	cdc.RegisterConcrete(multisig.PubKeyMultisigThreshold{},
-		multisig.PubKeyMultisigThresholdAminoRoute, nil)
-
-	cdc.RegisterInterface((*crypto.PrivKey)(nil), nil)
-	cdc.RegisterConcrete(ed25519.PrivKeyEd25519{},
-		ed25519.PrivKeyAminoName, nil)
-	cdc.RegisterConcrete(secp256k1.PrivKeySecp256k1{},
-		secp256k1.PrivKeyAminoName, nil)
-}
-
-func registerEvidenceMessages(cdc *amino.Codec) {
-	cdc.RegisterInterface((*evidence.Message)(nil), nil)
-	cdc.RegisterConcrete(&evidence.ListMessage{},
-		"tendermint/evidence/EvidenceListMessage", nil)
-	cdc.RegisterInterface((*tmTypes.Evidence)(nil), nil)
-	cdc.RegisterConcrete(&tmTypes.DuplicateVoteEvidence{}, "tendermint/DuplicateVoteEvidence", nil)
+	// tmjson.RegisterType((*crypto.PubKey)(nil), nil)
+	// tmjson.RegisterType((*crypto.PrivKey)(nil), nil)
 }
 
 func runAPI(logger tmLog.Logger, app *minter.Blockchain, client *rpc.Local, node *tmNode.Node) {
-	cdc := amino.NewCodec()
-	registerCryptoAmino(cdc)
-	eventsdb.RegisterAminoEvents(cdc)
-	registerEvidenceMessages(cdc)
+	registerCryptoAmino()
 	go func(srv *serviceApi.Service) {
 		grpcURL, err := url.Parse(cfg.GRPCListenAddress)
 		if err != nil {
@@ -166,7 +137,7 @@ func runAPI(logger tmLog.Logger, app *minter.Blockchain, client *rpc.Local, node
 		}
 		logger.Error("Failed to start Api V2 in both gRPC and RESTful",
 			apiV2.Run(srv, grpcURL.Host, apiV2url.Host, logger.With("module", "rpc")))
-	}(serviceApi.NewService(cdc, app, client, node, cfg, version.Version))
+	}(serviceApi.NewService(app, client, node, cfg, version.Version))
 }
 
 func enablePprof(cmd *cobra.Command, logger tmLog.Logger) error {
@@ -287,7 +258,14 @@ func getGenesis(genDocFile string) func() (doc *tmTypes.GenesisDoc, e error) {
 				return nil, err
 			}
 		}
-		return tmTypes.GenesisDocFromFile(genDocFile)
+		doc, err = tmTypes.GenesisDocFromFile(genDocFile)
+		if err != nil {
+			return nil, err
+		}
+		if len(doc.AppHash) == 0 {
+			doc.AppHash = nil
+		}
+		return doc, err
 	}
 }
 

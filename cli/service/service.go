@@ -60,18 +60,18 @@ func (m *managerServer) Dashboard(_ *empty.Empty, stream pb.ManagerService_Dashb
 			protoTime, _ := ptypes.TimestampProto(info.HeaderTimestamp)
 			var mem runtime.MemStats
 			runtime.ReadMemStats(&mem)
-			resultStatus, err := m.tmRPC.Status()
+			resultStatus, err := m.tmRPC.Status(context.Background())
 			if err != nil {
 				return status.Error(codes.Internal, err.Error())
 			}
-			netInfo, err := m.tmRPC.NetInfo()
+			netInfo, err := m.tmRPC.NetInfo(context.Background())
 			if err != nil {
 				return status.Error(codes.Internal, err.Error())
 			}
 
 			var missedBlocks string
 			var stake string
-			pubkey := types.BytesToPubkey(resultStatus.ValidatorInfo.PubKey.Bytes()[5:])
+			pubkey := types.BytesToPubkey(resultStatus.ValidatorInfo.PubKey.Bytes()[:])
 			var pbValidatorStatus pb.DashboardResponse_ValidatorStatus
 			cState := m.blockchain.CurrentState()
 			candidate := cState.Candidates().GetCandidate(pubkey)
@@ -87,7 +87,7 @@ func (m *managerServer) Dashboard(_ *empty.Empty, stream pb.ManagerService_Dashb
 					if validator != nil {
 						missedBlocks = validator.AbsentTimes.String()
 						var address types.TmAddress
-						copy(address[:], ed25519.PubKeyEd25519(pubkey).Address().Bytes())
+						copy(address[:], ed25519.PubKey(pubkey[:]).Address().Bytes())
 						if m.blockchain.GetValidatorStatus(address) == minter.ValidatorPresent {
 							pbValidatorStatus = pb.DashboardResponse_Validating
 						}
@@ -117,7 +117,7 @@ func (m *managerServer) Dashboard(_ *empty.Empty, stream pb.ManagerService_Dashb
 }
 
 func (m *managerServer) Status(context.Context, *empty.Empty) (*pb.StatusResponse, error) {
-	result, err := m.tmRPC.Status()
+	result, err := m.tmRPC.Status(context.Background())
 	if err != nil {
 		return new(pb.StatusResponse), status.Error(codes.Internal, err.Error())
 	}
@@ -130,7 +130,7 @@ func (m *managerServer) Status(context.Context, *empty.Empty) (*pb.StatusRespons
 		LatestBlockTime:   result.SyncInfo.LatestBlockTime.Format(time.RFC3339Nano),
 		KeepLastStates:    fmt.Sprintf("%d", m.cfg.BaseConfig.KeepLastStates),
 		CatchingUp:        result.SyncInfo.CatchingUp,
-		PublicKey:         fmt.Sprintf("Mp%x", result.ValidatorInfo.PubKey.Bytes()[5:]),
+		PublicKey:         fmt.Sprintf("Mp%x", result.ValidatorInfo.PubKey.Bytes()[:]),
 		NodeId:            string(result.NodeInfo.ID()),
 	}
 
@@ -138,7 +138,7 @@ func (m *managerServer) Status(context.Context, *empty.Empty) (*pb.StatusRespons
 }
 
 func (m *managerServer) NetInfo(context.Context, *empty.Empty) (*pb.NetInfoResponse, error) {
-	resultNetInfo, err := m.tmRPC.NetInfo()
+	resultNetInfo, err := m.tmRPC.NetInfo(context.Background())
 	if err != nil {
 		return new(pb.NetInfoResponse), status.Error(codes.Internal, err.Error())
 	}
@@ -298,7 +298,7 @@ func (m *managerServer) PruneBlocks(req *pb.PruneBlocksRequest, stream pb.Manage
 
 func (m *managerServer) DealPeer(_ context.Context, req *pb.DealPeerRequest) (*empty.Empty, error) {
 	res := new(empty.Empty)
-	_, err := m.tmRPC.DialPeers([]string{req.Address}, req.Persistent)
+	_, err := m.tmRPC.DialPeers(context.Background(), []string{req.Address}, req.Persistent, false, false) // todo
 	if err != nil {
 		return res, status.Error(codes.FailedPrecondition, err.Error())
 	}

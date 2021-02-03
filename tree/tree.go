@@ -1,7 +1,7 @@
 package tree
 
 import (
-	"github.com/tendermint/iavl"
+	"github.com/cosmos/iavl"
 	dbm "github.com/tendermint/tm-db"
 	"sync"
 )
@@ -38,6 +38,9 @@ func (t *mutableTree) Commit(savers ...saver) (hash []byte, version int64, err e
 	}
 
 	hash, version, err = t.tree.SaveVersion()
+	if err != nil {
+		return nil, 0, err
+	}
 
 	immutable, err := t.tree.GetImmutable(t.tree.Version())
 	if err != nil {
@@ -63,7 +66,7 @@ func NewMutableTree(height uint64, db dbm.DB, cacheSize int, initialVersion uint
 	m := &mutableTree{
 		tree: tree,
 	}
-	if height == 0 {
+	if height == initialVersion {
 		return m, nil
 	}
 

@@ -5,6 +5,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/events"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	_struct "github.com/golang/protobuf/ptypes/struct"
+	tmjson "github.com/tendermint/tendermint/libs/json"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -42,7 +43,7 @@ func (s *Service) Events(ctx context.Context, req *pb.EventsRequest) (*pb.Events
 				continue
 			}
 		}
-		marshalJSON, err := s.cdc.MarshalJSON(event)
+		marshalJSON, err := tmjson.Marshal(event)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, err.Error())
 		}

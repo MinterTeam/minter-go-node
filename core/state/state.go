@@ -20,7 +20,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/tree"
-	"github.com/tendermint/iavl"
+	"github.com/cosmos/iavl"
 	db "github.com/tendermint/tm-db"
 	"log"
 	"math/big"

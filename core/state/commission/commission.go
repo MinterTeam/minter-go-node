@@ -6,7 +6,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
-	"github.com/tendermint/iavl"
+	"github.com/cosmos/iavl"
 	"sort"
 	"sync"
 	"sync/atomic"
@@ -170,7 +170,7 @@ func (c *Commission) GetCommissions() *Price {
 			MoveStake:               helpers.StringToBigInt("20000000000000000000"),
 			MintToken:               helpers.StringToBigInt("10000000000000000000"),
 			BurnToken:               helpers.StringToBigInt("10000000000000000000"),
-			VotePrice:               helpers.StringToBigInt("100000000000000000000"),
+			VoteCommission:          helpers.StringToBigInt("100000000000000000000"),
 			VoteUpdate:              helpers.StringToBigInt("100000000000000000000"),
 			More:                    nil,
 		}

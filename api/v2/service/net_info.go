@@ -15,7 +15,7 @@ import (
 
 // NetInfo returns network info.
 func (s *Service) NetInfo(ctx context.Context, _ *empty.Empty) (*pb.NetInfoResponse, error) {
-	result, err := s.client.NetInfo()
+	result, err := s.client.NetInfo(ctx)
 	if err != nil {
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
