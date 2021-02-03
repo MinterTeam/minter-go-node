@@ -275,7 +275,6 @@ func (blockchain *Blockchain) stop() {
 		log.Println("Stopping Node")
 		log.Println("Node Stopped with error:", blockchain.tmNode.Stop())
 	}()
-
 }
 
 // Stop gracefully stopping Minter Blockchain instance
@@ -475,7 +474,7 @@ func (blockchain *Blockchain) updateValidators() []abciTypes.ValidatorUpdate {
 	for _, validator := range activeValidators {
 		persisted := false
 		for _, newValidator := range newValidators {
-			if bytes.Equal(validator.PubKey.Data, newValidator.PubKey.Data) {
+			if validator.PubKey.Sum.Compare(newValidator.PubKey.Sum) == 0 {
 				persisted = true
 				break
 			}
