@@ -51,6 +51,7 @@ func priceCommissionResponse(price *commission.Price, coin *coins.Model) *pb.Pri
 		SetCandidateOn:          price.SetCandidateOn.String(),
 		SetCandidateOff:         price.SetCandidateOff.String(),
 		CreateMultisig:          price.CreateMultisig.String(),
+		MultisendBase:           price.MultisendBase.String(),
 		MultisendDelta:          price.MultisendDelta.String(),
 		EditCandidate:           price.EditCandidate.String(),
 		SetHaltBlock:            price.SetHaltBlock.String(),

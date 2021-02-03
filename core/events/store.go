@@ -2,10 +2,25 @@ package events
 
 import (
 	"encoding/binary"
-	"github.com/tendermint/go-amino"
+	tmjson "github.com/tendermint/tendermint/libs/json"
 	db "github.com/tendermint/tm-db"
 	"sync"
 )
+
+func init() {
+	tmjson.RegisterType(&reward{}, "reward")
+	tmjson.RegisterType(&slash{}, "slash")
+	tmjson.RegisterType(&unbond{}, "unbond")
+	tmjson.RegisterType(&kick{}, "kick")
+	tmjson.RegisterType(&move{}, "move")
+	tmjson.RegisterType(&RewardEvent{}, TypeRewardEvent)
+	tmjson.RegisterType(&SlashEvent{}, TypeSlashEvent)
+	tmjson.RegisterType(&UnbondEvent{}, TypeUnbondEvent)
+	tmjson.RegisterType(&StakeKickEvent{}, TypeStakeKickEvent)
+	tmjson.RegisterType(&StakeMoveEvent{}, TypeStakeMoveEvent)
+	tmjson.RegisterType(&UpdateNetworkEvent{}, TypeUpdateNetworkEvent)
+	tmjson.RegisterType(&UpdateCommissionsEvent{}, TypeUpdateCommissionsEvent)
+}
 
 // IEventsDB is an interface of Events
 type IEventsDB interface {
@@ -16,7 +31,6 @@ type IEventsDB interface {
 }
 
 type eventsStore struct {
-	cdc *amino.Codec
 	sync.RWMutex
 	db        db.DB
 	pending   pendingEvents
@@ -34,19 +48,7 @@ type pendingEvents struct {
 
 // NewEventsStore creates new events store in given DB
 func NewEventsStore(db db.DB) IEventsDB {
-	codec := amino.NewCodec()
-	codec.RegisterInterface((*Event)(nil), nil)
-	codec.RegisterInterface((*compact)(nil), nil)
-	codec.RegisterConcrete(&reward{}, "reward", nil)
-	codec.RegisterConcrete(&slash{}, "slash", nil)
-	codec.RegisterConcrete(&unbond{}, "unbond", nil)
-	codec.RegisterConcrete(&kick{}, "kick", nil)
-	codec.RegisterConcrete(&move{}, "move", nil)
-	codec.RegisterConcrete(&UpdateCommissionsEvent{}, "commission", nil)
-	codec.RegisterConcrete(&UpdateNetworkEvent{}, "version", nil)
-
 	return &eventsStore{
-		cdc:       codec,
 		RWMutex:   sync.RWMutex{},
 		db:        db,
 		pending:   pendingEvents{},
@@ -93,7 +95,7 @@ func (store *eventsStore) LoadEvents(height uint32) Events {
 	}
 
 	var items []compact
-	if err := store.cdc.UnmarshalBinaryBare(bytes, &items); err != nil {
+	if err := tmjson.Unmarshal(bytes, &items); err != nil {
 		panic(err)
 	}
 
@@ -127,7 +129,7 @@ func (store *eventsStore) CommitEvents() error {
 		data = append(data, item)
 	}
 
-	bytes, err := store.cdc.MarshalBinaryBare(data)
+	bytes, err := tmjson.Marshal(data)
 	if err != nil {
 		return err
 	}

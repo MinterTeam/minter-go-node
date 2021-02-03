@@ -24,7 +24,7 @@ func (s *Service) SendTransaction(ctx context.Context, req *pb.SendTransactionRe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	result, statusErr := s.broadcastTxSync(decodeString, ctx /*timeout*/)
+	result, statusErr := s.broadcastTxSync(ctx, decodeString)
 	if statusErr != nil {
 		return nil, statusErr.Err()
 	}
@@ -48,7 +48,7 @@ type ResultBroadcastTx struct {
 	Hash bytes.HexBytes `json:"hash"`
 }
 
-func (s *Service) broadcastTxSync(tx types.Tx, ctx context.Context) (*ResultBroadcastTx, *status.Status) {
+func (s *Service) broadcastTxSync(ctx context.Context, tx types.Tx) (*ResultBroadcastTx, *status.Status) {
 	resCh := make(chan *abci.Response, 1)
 	err := s.tmNode.Mempool().CheckTx(tx, func(res *abci.Response) {
 		resCh <- res

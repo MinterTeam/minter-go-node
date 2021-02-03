@@ -22,7 +22,7 @@ func (s *Service) Transaction(ctx context.Context, req *pb.TransactionRequest) (
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	tx, err := s.client.Tx(decodeString, false)
+	tx, err := s.client.Tx(ctx, decodeString, false)
 	if err != nil {
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}

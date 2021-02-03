@@ -14,7 +14,9 @@ import (
 
 // Transactions return transactions by query.
 func (s *Service) Transactions(ctx context.Context, req *pb.TransactionsRequest) (*pb.TransactionsResponse, error) {
-	rpcResult, err := s.client.TxSearch(req.Query, false, int(req.Page), int(req.PerPage), "desc")
+	page := int(req.Page)
+	perPage := int(req.PerPage)
+	rpcResult, err := s.client.TxSearch(ctx, req.Query, false, &page, &perPage, "desc")
 	if err != nil {
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}

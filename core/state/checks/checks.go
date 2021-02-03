@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/check"
 	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/tendermint/iavl"
+	"github.com/cosmos/iavl"
 	"sort"
 	"sync"
 	"sync/atomic"

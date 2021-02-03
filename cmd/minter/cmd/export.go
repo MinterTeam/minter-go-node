@@ -8,6 +8,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/state"
 	"github.com/spf13/cobra"
 	"github.com/tendermint/go-amino"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	"github.com/tendermint/tendermint/types"
 	"io"
 	"log"
@@ -95,17 +96,17 @@ func export(cmd *cobra.Command, args []string) error {
 	genesis := types.GenesisDoc{
 		GenesisTime: time.Unix(0, 0).Add(genesisTime),
 		ChainID:     chainID,
-		ConsensusParams: &types.ConsensusParams{
-			Block: types.BlockParams{
+		ConsensusParams: &tmproto.ConsensusParams{
+			Block: tmproto.BlockParams{
 				MaxBytes:   blockMaxBytes,
 				MaxGas:     blockMaxGas,
 				TimeIotaMs: blockTimeIotaMs,
 			},
-			Evidence: types.EvidenceParams{
+			Evidence: tmproto.EvidenceParams{
 				MaxAgeNumBlocks: evidenceMaxAgeNumBlocks,
 				MaxAgeDuration:  evidenceMaxAgeDuration,
 			},
-			Validator: types.ValidatorParams{
+			Validator: tmproto.ValidatorParams{
 				PubKeyTypes: []string{
 					types.ABCIPubKeyTypeEd25519,
 				},

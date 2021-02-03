@@ -6,7 +6,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/state/bus"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/rlp"
-	"github.com/tendermint/iavl"
+	"github.com/cosmos/iavl"
 	"sync/atomic"
 
 	"math/big"
@@ -78,6 +78,9 @@ func (a *Accounts) Commit(db *iavl.MutableTree) error {
 			data, err := rlp.EncodeToBytes(account)
 			if err != nil {
 				return fmt.Errorf("can't encode object at %x: %v", address[:], err)
+			}
+			if len(data) == 0 {
+				continue
 			}
 
 			path := []byte{mainPrefix}

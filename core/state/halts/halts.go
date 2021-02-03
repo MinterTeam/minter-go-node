@@ -6,7 +6,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/state/bus"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/rlp"
-	"github.com/tendermint/iavl"
+	"github.com/cosmos/iavl"
 	"sort"
 	"sync"
 	"sync/atomic"

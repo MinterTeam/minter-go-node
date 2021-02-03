@@ -11,6 +11,8 @@ import (
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/tendermint/go-amino"
 	tmTypes "github.com/tendermint/tendermint/abci/types"
+	tmTypes1 "github.com/tendermint/tendermint/proto/tendermint/types"
+	"github.com/tendermint/tendermint/proto/tendermint/version"
 	"time"
 )
 
@@ -29,10 +31,7 @@ func CreateApp(state types.AppState) *minter.Blockchain {
 		Time:    time.Now(),
 		ChainId: "test",
 		Validators: []tmTypes.ValidatorUpdate{
-			{
-				PubKey: tmTypes.PubKey{},
-				Power:  1,
-			},
+			tmTypes.Ed25519ValidatorUpdate([]byte{}, 1),
 		},
 		AppStateBytes: jsonState,
 	})
@@ -49,12 +48,12 @@ func SendCommit(app *minter.Blockchain) tmTypes.ResponseCommit {
 func SendBeginBlock(app *minter.Blockchain) tmTypes.ResponseBeginBlock {
 	return app.BeginBlock(tmTypes.RequestBeginBlock{
 		Hash: nil,
-		Header: tmTypes.Header{
-			Version:            tmTypes.Version{},
+		Header: tmTypes1.Header{
+			Version:            version.Consensus{},
 			ChainID:            "",
 			Height:             1,
 			Time:               time.Time{},
-			LastBlockId:        tmTypes.BlockID{},
+			LastBlockId:        tmTypes1.BlockID{},
 			LastCommitHash:     nil,
 			DataHash:           nil,
 			ValidatorsHash:     nil,

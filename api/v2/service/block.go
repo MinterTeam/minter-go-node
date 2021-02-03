@@ -11,6 +11,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	_struct "github.com/golang/protobuf/ptypes/struct"
+	tmjson "github.com/tendermint/tendermint/libs/json"
 	core_types "github.com/tendermint/tendermint/rpc/core/types"
 	tmTypes "github.com/tendermint/tendermint/types"
 	"google.golang.org/grpc/codes"
@@ -22,12 +23,12 @@ import (
 // Block returns block data at given height.
 func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockResponse, error) {
 	height := int64(req.Height)
-	block, err := s.client.Block(&height)
+	block, err := s.client.Block(ctx, &height)
 	if err != nil {
 		return nil, status.Error(codes.NotFound, "Block not found")
 	}
 
-	blockResults, err := s.client.BlockResults(&height)
+	blockResults, err := s.client.BlockResults(ctx, &height)
 	if err != nil {
 		return nil, status.Error(codes.NotFound, "Block results not found")
 	}
@@ -47,7 +48,7 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 	var totalValidators []*tmTypes.Validator
 
 	if len(req.Fields) == 0 {
-		response.Size = uint64(len(s.cdc.MustMarshalBinaryLengthPrefixed(block)))
+		response.Size = uint64(block.Block.Size())
 		response.BlockReward = rewards.GetRewardForBlock(uint64(height)).String()
 
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
@@ -65,7 +66,9 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 			return nil, timeoutStatus.Err()
 		}
 
-		tmValidators, err := s.client.Validators(&valHeight, 1, 100)
+		var page = 1
+		var perPage = 100
+		tmValidators, err := s.client.Validators(ctx, &valHeight, &page, &perPage)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
@@ -104,7 +107,7 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 		}
 		switch field {
 		case pb.BlockRequest_size:
-			response.Size = uint64(len(s.cdc.MustMarshalBinaryLengthPrefixed(block)))
+			response.Size = uint64(block.Block.Size())
 		case pb.BlockRequest_block_reward:
 			response.BlockReward = rewards.GetRewardForBlock(uint64(height)).String()
 		case pb.BlockRequest_transactions:
@@ -116,7 +119,9 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 			}
 		case pb.BlockRequest_proposer, pb.BlockRequest_validators:
 			if len(totalValidators) == 0 {
-				tmValidators, err := s.client.Validators(&valHeight, 1, 100)
+				var page = 1
+				var perPage = 100
+				tmValidators, err := s.client.Validators(ctx, &valHeight, &page, &perPage)
 				if err != nil {
 					return nil, status.Error(codes.Internal, err.Error())
 				}
@@ -147,11 +152,11 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 func blockEvidence(block *core_types.ResultBlock) (*pb.BlockResponse_Evidence, error) {
 	evidences := make([]*_struct.Struct, 0, len(block.Block.Evidence.Evidence))
 	for _, evidence := range block.Block.Evidence.Evidence {
-		proto, err := tmTypes.EvidenceToProto(evidence)
+		data, err := tmjson.Marshal(evidence)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-		str, err := toStruct(proto.GetSum())
+		str, err := encodeToStruct(data)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
@@ -171,7 +176,7 @@ func blockValidators(totalValidators []*tmTypes.Validator, block *core_types.Res
 			}
 		}
 		validators = append(validators, &pb.BlockResponse_Validator{
-			PublicKey: fmt.Sprintf("Mp%x", tmval.PubKey.Bytes()[5:]),
+			PublicKey: fmt.Sprintf("Mp%x", tmval.PubKey.Bytes()[:]),
 			Signed:    signed,
 		})
 	}
@@ -239,7 +244,7 @@ func getBlockProposer(block *core_types.ResultBlock, vals []*tmTypes.Validator) 
 	for _, tmval := range vals {
 		if bytes.Equal(tmval.Address.Bytes(), block.Block.ProposerAddress.Bytes()) {
 			var result types.Pubkey
-			copy(result[:], tmval.PubKey.Bytes()[5:])
+			copy(result[:], tmval.PubKey.Bytes()[:])
 			return &result
 		}
 	}

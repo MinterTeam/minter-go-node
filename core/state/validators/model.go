@@ -93,11 +93,11 @@ func (v *Validator) CountAbsentTimes() int {
 
 func (v *Validator) setTmAddress() {
 	// set tm address
-	var pubkey ed25519.PubKeyEd25519
+	var pubkey ed25519.PubKey
 	copy(pubkey[:], v.PubKey[:])
 
 	var address types.TmAddress
-	copy(address[:], pubkey.Address().Bytes())
+	copy(address[:], ed25519.PubKey(v.PubKey[:]).Address().Bytes())
 
 	v.tmAddress = address
 }

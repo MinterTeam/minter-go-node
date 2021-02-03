@@ -3,7 +3,6 @@ package events
 import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/types"
-	"github.com/tendermint/go-amino"
 	"math/big"
 )
 
@@ -17,24 +16,6 @@ const (
 	TypeUpdateNetworkEvent     = "minter/UpdateNetworkEvent"
 	TypeUpdateCommissionsEvent = "minter/UpdateCommissionsEvent"
 )
-
-func RegisterAminoEvents(codec *amino.Codec) {
-	codec.RegisterInterface((*Event)(nil), nil)
-	codec.RegisterConcrete(RewardEvent{},
-		TypeRewardEvent, nil)
-	codec.RegisterConcrete(SlashEvent{},
-		TypeSlashEvent, nil)
-	codec.RegisterConcrete(UnbondEvent{},
-		TypeUnbondEvent, nil)
-	codec.RegisterConcrete(StakeKickEvent{},
-		TypeStakeKickEvent, nil)
-	codec.RegisterConcrete(StakeMoveEvent{},
-		TypeStakeMoveEvent, nil)
-	codec.RegisterConcrete(UpdateNetworkEvent{},
-		TypeUpdateNetworkEvent, nil)
-	codec.RegisterConcrete(UpdateCommissionsEvent{},
-		TypeUpdateCommissionsEvent, nil)
-}
 
 type Stake interface {
 	AddressString() string

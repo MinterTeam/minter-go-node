@@ -125,10 +125,8 @@ func TestCandidates_Commit_changePubKeyAndCheckBlockList(t *testing.T) {
 	if candidate == nil {
 		t.Fatal("candidate not found")
 	}
-	var pubkey ed25519.PubKeyEd25519
-	copy(pubkey[:], types.Pubkey{5}.Bytes())
 	var address types.TmAddress
-	copy(address[:], pubkey.Address().Bytes())
+	copy(address[:], ed25519.PubKey(candidate.PubKey[:]).Address().Bytes())
 	if *(candidate.tmAddress) != address {
 		t.Fatal("tmAddress not change")
 	}

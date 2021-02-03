@@ -295,11 +295,8 @@ func TestDoubleSignPenalty(t *testing.T) {
 
 	st.FrozenFunds.AddFund(1, addr, pubkey, st.Candidates.ID(pubkey), coin, amount, nil)
 
-	var pk ed25519.PubKeyEd25519
-	copy(pk[:], pubkey[:])
-
 	var tmAddr types.TmAddress
-	copy(tmAddr[:], pk.Address().Bytes())
+	copy(tmAddr[:], ed25519.PubKey(pubkey[:]).Address().Bytes())
 
 	st.Validators.PunishByzantineValidator(tmAddr)
 	st.FrozenFunds.PunishFrozenFundsWithID(1, 1+types.GetUnbondPeriod(), st.Candidates.ID(pubkey))
@@ -350,11 +347,8 @@ func TestAbsentPenalty(t *testing.T) {
 
 	st.Candidates.RecalculateStakes(0)
 
-	var pk ed25519.PubKeyEd25519
-	copy(pk[:], pubkey[:])
-
 	var tmAddr types.TmAddress
-	copy(tmAddr[:], pk.Address().Bytes())
+	copy(tmAddr[:], ed25519.PubKey(pubkey[:]).Address().Bytes())
 
 	st.Candidates.Punish(1, tmAddr)
 
@@ -387,11 +381,8 @@ func TestDoubleAbsentPenalty(t *testing.T) {
 
 	st.Candidates.RecalculateStakes(0)
 
-	var pk ed25519.PubKeyEd25519
-	copy(pk[:], pubkey[:])
-
 	var tmAddr types.TmAddress
-	copy(tmAddr[:], pk.Address().Bytes())
+	copy(tmAddr[:], ed25519.PubKey(pubkey[:]).Address().Bytes())
 
 	st.Validators.SetNewValidators(st.Candidates.GetNewCandidates(1))
 
@@ -433,11 +424,8 @@ func TestZeroStakePenalty(t *testing.T) {
 	st.Candidates.SubStake(addr, pubkey, coin, amount)
 	st.FrozenFunds.AddFund(518400, addr, pubkey, st.Candidates.ID(pubkey), coin, amount, nil)
 
-	var pk ed25519.PubKeyEd25519
-	copy(pk[:], pubkey[:])
-
 	var tmAddr types.TmAddress
-	copy(tmAddr[:], pk.Address().Bytes())
+	copy(tmAddr[:], ed25519.PubKey(pubkey[:]).Address().Bytes())
 
 	st.Candidates.Punish(1, tmAddr)
 

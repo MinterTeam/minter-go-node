@@ -14,8 +14,9 @@ func (s *Service) Validators(ctx context.Context, req *pb.ValidatorsRequest) (*p
 	if height == 0 {
 		height = int64(s.blockchain.Height())
 	}
-
-	tmVals, err := s.client.Validators(&height, 1, 100)
+	var page = 1
+	var perPage = 100
+	tmVals, err := s.client.Validators(ctx, &height, &page, &perPage)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -27,7 +28,7 @@ func (s *Service) Validators(ctx context.Context, req *pb.ValidatorsRequest) (*p
 	responseValidators := make([]*pb.ValidatorsResponse_Result, 0, len(tmVals.Validators))
 	for _, val := range tmVals.Validators {
 		var pk types.Pubkey
-		copy(pk[:], val.PubKey.Bytes()[5:])
+		copy(pk[:], val.PubKey.Bytes()[:])
 		responseValidators = append(responseValidators, &pb.ValidatorsResponse_Result{
 			PublicKey:   pk.String(),
 			VotingPower: uint64(val.VotingPower),
