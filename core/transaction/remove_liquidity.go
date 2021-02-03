@@ -138,8 +138,8 @@ func (data RemoveLiquidity) Run(tx *Transaction, context state.Interface, reward
 		deliverState.Accounts.AddBalance(sender, data.Coin0, amount0)
 		deliverState.Accounts.AddBalance(sender, data.Coin1, amount1)
 
+		deliverState.Coins.SubVolume(coinLiquidity.ID(), data.Liquidity)
 		deliverState.Accounts.SubBalance(sender, coinLiquidity.ID(), data.Liquidity)
-		coinLiquidity.SubVolume(data.Liquidity)
 
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 

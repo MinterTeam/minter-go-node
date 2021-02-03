@@ -193,7 +193,6 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 	if blockchain.isApplicationHalted(height) {
 		blockchain.stop()
 		return abciTypes.ResponseBeginBlock{}
-		// panic(fmt.Sprintf("Application halted at height %d", height))
 	}
 
 	// give penalty to Byzantine validators
