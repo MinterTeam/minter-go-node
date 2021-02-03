@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	apiV2 "github.com/MinterTeam/minter-go-node/api/v2"
 	serviceApi "github.com/MinterTeam/minter-go-node/api/v2/service"
@@ -99,7 +100,7 @@ func runNode(cmd *cobra.Command) error {
 		runAPI(logger, app, client, node)
 	}
 
-	runCLI(cmd, app, client, node, storages.GetMinterHome())
+	runCLI(cmd.Context(), app, client, node, storages.GetMinterHome())
 
 	if cfg.Instrumentation.Prometheus {
 		go app.SetStatisticData(statistics.New()).Statistic(cmd.Context())
@@ -108,24 +109,16 @@ func runNode(cmd *cobra.Command) error {
 	return app.WaitStop()
 }
 
-func runCLI(cmd *cobra.Command, app *minter.Blockchain, client *rpc.Local, tmNode *tmNode.Node, home string) {
+func runCLI(ctx context.Context, app *minter.Blockchain, client *rpc.Local, tmNode *tmNode.Node, home string) {
 	go func() {
-		err := service.StartCLIServer(home+"/manager.sock", service.NewManager(app, client, tmNode, cfg), cmd.Context())
+		err := service.StartCLIServer(home+"/manager.sock", service.NewManager(app, client, tmNode, cfg), ctx)
 		if err != nil {
 			panic(err)
 		}
 	}()
 }
 
-// RegisterAmino registers all crypto related types in the given (amino) codec.
-func registerCryptoAmino() {
-	// These are all written here instead of
-	// tmjson.RegisterType((*crypto.PubKey)(nil), nil)
-	// tmjson.RegisterType((*crypto.PrivKey)(nil), nil)
-}
-
 func runAPI(logger tmLog.Logger, app *minter.Blockchain, client *rpc.Local, node *tmNode.Node) {
-	registerCryptoAmino()
 	go func(srv *serviceApi.Service) {
 		grpcURL, err := url.Parse(cfg.GRPCListenAddress)
 		if err != nil {
