@@ -683,7 +683,6 @@ func TestBlockchain_RecalculateStakes_andRemoveValidator(t *testing.T) {
 				if targetHeight == 0 {
 					targetHeight = 135
 				}
-				t.Log(h)
 				if h > targetHeight {
 					return
 				}

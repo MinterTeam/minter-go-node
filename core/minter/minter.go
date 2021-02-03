@@ -379,7 +379,7 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 			MoveStake:               price.MoveStake.String(),
 			MintToken:               price.MintToken.String(),
 			BurnToken:               price.BurnToken.String(),
-			VotePrice:               price.VotePrice.String(),
+			VoteCommission:          price.VoteCommission.String(),
 			VoteUpdate:              price.VoteUpdate.String(),
 		})
 	}

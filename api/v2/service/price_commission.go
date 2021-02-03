@@ -66,7 +66,7 @@ func priceCommissionResponse(price *commission.Price, coin *coins.Model) *pb.Pri
 		MoveStake:               price.MoveStake.String(),
 		MintToken:               price.MintToken.String(),
 		BurnToken:               price.BurnToken.String(),
-		VotePrice:               price.VotePrice.String(),
+		VoteCommission:          price.VoteCommission.String(),
 		VoteUpdate:              price.VoteUpdate.String(),
 	}
 }

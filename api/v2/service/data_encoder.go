@@ -387,7 +387,7 @@ func priceCommissionData(d *transaction.VoteCommissionData, coin *coins.Model) p
 		MoveStake:               d.MoveStake.String(),
 		MintToken:               d.MintToken.String(),
 		BurnToken:               d.BurnToken.String(),
-		VotePrice:               d.VotePrice.String(),
+		VoteCommission:          d.VoteCommission.String(),
 		VoteUpdate:              d.VoteUpdate.String(),
 	}
 }

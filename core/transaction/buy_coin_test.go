@@ -64,7 +64,7 @@ var (
 		MoveStake:               helpers.StringToBigInt("200000000000000000"),
 		MintToken:               helpers.StringToBigInt("100000000000000000"),
 		BurnToken:               helpers.StringToBigInt("100000000000000000"),
-		VotePrice:               helpers.StringToBigInt("1000000000000000000"),
+		VoteCommission:          helpers.StringToBigInt("1000000000000000000"),
 		VoteUpdate:              helpers.StringToBigInt("1000000000000000000"),
 		More:                    nil,
 	}

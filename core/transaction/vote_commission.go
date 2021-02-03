@@ -55,7 +55,7 @@ type VoteCommissionData struct {
 	MoveStake               *big.Int
 	MintToken               *big.Int
 	BurnToken               *big.Int
-	VotePrice               *big.Int
+	VoteCommission          *big.Int
 	VoteUpdate              *big.Int
 	More                    []*big.Int `rlp:"tail"`
 }
@@ -117,7 +117,7 @@ func (data VoteCommissionData) String() string {
 }
 
 func (data VoteCommissionData) CommissionData(price *commission.Price) *big.Int {
-	return price.VotePrice
+	return price.VoteCommission
 }
 
 func (data VoteCommissionData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
@@ -221,7 +221,7 @@ func (data VoteCommissionData) price() *commission.Price {
 		MoveStake:               data.MoveStake,
 		BurnToken:               data.BurnToken,
 		MintToken:               data.MintToken,
-		VotePrice:               data.VotePrice,
+		VoteCommission:          data.VoteCommission,
 		VoteUpdate:              data.VoteUpdate,
 		More:                    data.More,
 	}
