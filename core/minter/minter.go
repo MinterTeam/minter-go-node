@@ -80,6 +80,8 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 	// Initiate Application DB. Used for persisting data like current block, validators, etc.
 	applicationDB := appdb.NewAppDB(storages.GetMinterHome(), cfg)
 
+	// todo: refactor
+	// FIXME: add support custom block store base height
 	lastHeight := applicationDB.GetLastHeight()
 	initialHeight := applicationDB.GetStartHeight()
 	if initialHeight == 0 {
@@ -89,6 +91,7 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 	if lastHeight < initialHeight {
 		height = initialHeight
 	}
+
 	if ctx == nil {
 		ctx = context.Background()
 	}
