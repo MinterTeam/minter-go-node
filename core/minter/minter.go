@@ -315,10 +315,6 @@ func (blockchain *Blockchain) isApplicationHalted(height uint64) bool {
 }
 
 func (blockchain *Blockchain) isUpdateCommissionsBlock(height uint64) []byte {
-	if blockchain.haltHeight > 0 && height >= blockchain.haltHeight {
-		return nil
-	}
-
 	commissions := blockchain.stateDeliver.Commission.GetVotes(height)
 	if len(commissions) == 0 {
 		return nil
@@ -338,7 +334,7 @@ func (blockchain *Blockchain) isUpdateCommissionsBlock(height uint64) []byte {
 			new(big.Float).SetInt(blockchain.totalPower),
 		)
 
-		if votingResult.Cmp(votingResult) == -1 {
+		if maxVotingResult.Cmp(votingResult) == -1 {
 			maxVotingResult = votingResult
 			price = commission.Price
 		}

@@ -112,6 +112,141 @@ func initTestNode(t *testing.T, initialHeight int64) (*Blockchain, *rpc.Local, *
 	}
 }
 
+func TestBlockchain_UpdateCommission(t *testing.T) {
+	blockchain, tmCli, pv, cancel := initTestNode(t, 100)
+	defer cancel()
+
+	txs, err := tmCli.Subscribe(context.Background(), "test-client", "tm.event = 'Tx'")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	data := transaction.VoteCommissionData{
+		Coin:                    types.GetBaseCoinID(),
+		Height:                  110,
+		PubKey:                  types.BytesToPubkey(pv.Key.PubKey.Bytes()[:]),
+		PayloadByte:             helpers.StringToBigInt("200000000000000000"),
+		Send:                    helpers.StringToBigInt("1000000000000000000"),
+		SellAllPool:             helpers.StringToBigInt("10000000000000000000"),
+		SellAllBancor:           helpers.StringToBigInt("10000000000000000000"),
+		SellBancor:              helpers.StringToBigInt("10000000000000000000"),
+		SellPool:                helpers.StringToBigInt("10000000000000000000"),
+		BuyBancor:               helpers.StringToBigInt("10000000000000000000"),
+		BuyPool:                 helpers.StringToBigInt("10000000000000000000"),
+		CreateTicker3:           helpers.StringToBigInt("100000000000000000000000000"),
+		CreateTicker4:           helpers.StringToBigInt("10000000000000000000000000"),
+		CreateTicker5:           helpers.StringToBigInt("1000000000000000000000000"),
+		CreateTicker6:           helpers.StringToBigInt("100000000000000000000000"),
+		CreateTicker7to10:       helpers.StringToBigInt("10000000000000000000000"),
+		CreateCoin:              helpers.StringToBigInt("0"),
+		CreateToken:             helpers.StringToBigInt("0"),
+		RecreateCoin:            helpers.StringToBigInt("1000000000000000000000000"),
+		RecreateToken:           helpers.StringToBigInt("1000000000000000000000000"),
+		DeclareCandidacy:        helpers.StringToBigInt("1000000000000000000000"),
+		Delegate:                helpers.StringToBigInt("20000000000000000000"),
+		Unbond:                  helpers.StringToBigInt("20000000000000000000"),
+		RedeemCheck:             helpers.StringToBigInt("3000000000000000000"),
+		SetCandidateOn:          helpers.StringToBigInt("10000000000000000000"),
+		SetCandidateOff:         helpers.StringToBigInt("10000000000000000000"),
+		CreateMultisig:          helpers.StringToBigInt("10000000000000000000"),
+		MultisendBase:           helpers.StringToBigInt("1000000000000000000"),
+		MultisendDelta:          helpers.StringToBigInt("500000000000000000"),
+		EditCandidate:           helpers.StringToBigInt("1000000000000000000000"),
+		SetHaltBlock:            helpers.StringToBigInt("100000000000000000000"),
+		EditTickerOwner:         helpers.StringToBigInt("1000000000000000000000000"),
+		EditMultisig:            helpers.StringToBigInt("100000000000000000000"),
+		PriceVote:               helpers.StringToBigInt("1000000000000000000"),
+		EditCandidatePublicKey:  helpers.StringToBigInt("10000000000000000000000000"),
+		CreateSwapPool:          helpers.StringToBigInt("100000000000000000000"),
+		AddLiquidity:            helpers.StringToBigInt("10000000000000000000"),
+		RemoveLiquidity:         helpers.StringToBigInt("10000000000000000000"),
+		EditCandidateCommission: helpers.StringToBigInt("1000000000000000000000"),
+		MoveStake:               helpers.StringToBigInt("20000000000000000000"),
+		MintToken:               helpers.StringToBigInt("10000000000000000000"),
+		BurnToken:               helpers.StringToBigInt("10000000000000000000"),
+		VoteCommission:          helpers.StringToBigInt("100000000000000000000"),
+		VoteUpdate:              helpers.StringToBigInt("100000000000000000000"),
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	nonce := uint64(1)
+	tx := transaction.Transaction{
+		Nonce:         nonce,
+		ChainID:       types.CurrentChainID,
+		GasPrice:      1,
+		GasCoin:       types.GetBaseCoinID(),
+		Type:          transaction.TypeVoteCommission,
+		Data:          encodedData,
+		SignatureType: transaction.SigTypeSingle,
+	}
+	nonce++
+
+	if err := tx.Sign(getPrivateKey()); err != nil {
+		t.Fatal(err)
+	}
+
+	txBytes, err := tx.Serialize()
+	if err != nil {
+		t.Fatalf("Failed: %s", err.Error())
+	}
+
+	res, err := tmCli.BroadcastTxSync(context.Background(), txBytes)
+	if err != nil {
+		t.Fatalf("Failed: %s", err.Error())
+	}
+	if res.Code != 0 {
+		t.Fatalf("CheckTx code is not 0: %d", res.Code)
+	}
+	<-txs
+
+	blocks, err := tmCli.Subscribe(context.Background(), "test-client", "tm.event = 'NewBlock'")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer func() {
+		err = tmCli.UnsubscribeAll(context.Background(), "test-client")
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	for {
+		select {
+		case block := <-blocks:
+			height := block.Data.(types2.EventDataNewBlock).Block.Height
+			if height < int64(data.Height) {
+				continue
+			}
+
+			events := blockchain.eventsDB.LoadEvents(uint32(height))
+			if len(events) == 0 {
+				t.Fatalf("not found events")
+			}
+			// for _, event := range events {
+			// 	t.Logf("%#v", event)
+			// }
+			if events[0].Type() != eventsdb.TypeUpdateCommissionsEvent {
+				t.Fatal("not changed")
+			}
+			return
+		case <-time.After(10 * time.Second):
+			t.Fatal("timeout")
+			// blockchain.lock.RLock()
+			// exportedState := blockchain.CurrentState().Export()
+			// blockchain.lock.RUnlock()
+			// if err := exportedState.Verify(); err != nil {
+			// 	t.Fatal(err)
+			// }
+			return
+		}
+	}
+}
+
 func TestBlockchain_Run(t *testing.T) {
 	_, _, _, cancel := initTestNode(t, 0)
 	cancel()

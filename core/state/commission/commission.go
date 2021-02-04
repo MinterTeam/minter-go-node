@@ -87,11 +87,11 @@ func (c *Commission) Export(state *types.AppState) {
 }
 
 func (c *Commission) Commit(db *iavl.MutableTree) error {
-	dirties := c.getOrderedDirty()
 	if c.dirtyCurrent {
 		c.dirtyCurrent = false
 		db.Set([]byte{mainPrefix}, c.currentPrice.Encode())
 	}
+	dirties := c.getOrderedDirty()
 	for _, height := range dirties {
 		models := c.getFromMap(height)
 
@@ -224,14 +224,14 @@ func (c *Commission) get(height uint64) []*Model {
 		return nil
 	}
 
-	var haltBlock []*Model
-	if err := rlp.DecodeBytes(enc, &haltBlock); err != nil {
+	var voteBlock []*Model
+	if err := rlp.DecodeBytes(enc, &voteBlock); err != nil {
 		panic(fmt.Sprintf("failed to decode halt blocks at height %d: %s", height, err))
 	}
 
-	c.setToMap(height, haltBlock)
+	c.setToMap(height, voteBlock)
 
-	return haltBlock
+	return voteBlock
 }
 
 func (c *Commission) markDirty(height uint64) func() {
