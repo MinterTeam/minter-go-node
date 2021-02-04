@@ -32,8 +32,9 @@ func (s *Service) Genesis(ctx context.Context, _ *empty.Empty) (*pb.GenesisRespo
 	}
 
 	return &pb.GenesisResponse{
-		GenesisTime: result.Genesis.GenesisTime.Format(time.RFC3339Nano),
-		ChainId:     result.Genesis.ChainID,
+		GenesisTime:   result.Genesis.GenesisTime.Format(time.RFC3339Nano),
+		ChainId:       result.Genesis.ChainID,
+		InitialHeight: uint64(result.Genesis.InitialHeight),
 		ConsensusParams: &pb.GenesisResponse_ConsensusParams{
 			Block: &pb.GenesisResponse_ConsensusParams_Block{
 				MaxBytes:   result.Genesis.ConsensusParams.Block.MaxBytes,
