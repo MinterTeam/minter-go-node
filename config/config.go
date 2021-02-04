@@ -152,14 +152,14 @@ func GetTmConfig(cfg *Config) *tmConfig.Config {
 		RPC:     cfg.RPC,
 		P2P:     cfg.P2P,
 		Mempool: cfg.Mempool,
-		// StateSync:       &tmConfig.StateSyncConfig{ // todo
-		// 	Enable:        false,
+		// StateSync:       &tmConfig.StateSyncConfig{
+		// 	Enable:        true,
 		// 	TempDir:       "",
-		// 	RPCServers:    nil,
-		// 	TrustPeriod:   0,
+		// 	RPCServers:    []string{}, // todo
+		// 	TrustPeriod:   168 * time.Hour,
 		// 	TrustHeight:   0,
 		// 	TrustHash:     "",
-		// 	DiscoveryTime: 0,
+		// 	DiscoveryTime: 15 * time.Second,
 		// },
 		StateSync:       tmConfig.DefaultStateSyncConfig(),
 		FastSync:        tmConfig.DefaultFastSyncConfig(),

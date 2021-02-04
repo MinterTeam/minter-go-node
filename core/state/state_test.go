@@ -127,10 +127,6 @@ func TestStateExport(t *testing.T) {
 		t.Error(err)
 	}
 
-	if newState.StartHeight != uint64(state.tree.Version()) {
-		t.Fatalf("Wrong new state start height. Expected %d, got %d", height, newState.StartHeight)
-	}
-
 	if newState.MaxGas != state.App.GetMaxGas() {
 		t.Fatalf("Wrong new state max gas. Expected %d, got %d", state.App.GetMaxGas(), newState.MaxGas)
 	}

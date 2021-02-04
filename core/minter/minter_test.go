@@ -32,7 +32,7 @@ import (
 	"time"
 )
 
-func initTestNode(t *testing.T) (*Blockchain, *rpc.Local, *privval.FilePV, func()) {
+func initTestNode(t *testing.T, initialHeight int64) (*Blockchain, *rpc.Local, *privval.FilePV, func()) {
 	storage := utils.NewStorage(t.TempDir(), "")
 	minterCfg := config.GetConfig(storage.GetMinterHome())
 	logger := log.NewLogger(minterCfg)
@@ -67,7 +67,7 @@ func initTestNode(t *testing.T) (*Blockchain, *rpc.Local, *privval.FilePV, func(
 		pv,
 		nodeKey,
 		proxy.NewLocalClientCreator(app),
-		getTestGenesis(pv, storage.GetMinterHome()),
+		getTestGenesis(pv, storage.GetMinterHome(), initialHeight),
 		tmNode.DefaultDBProvider,
 		tmNode.DefaultMetricsProvider(cfg.Instrumentation),
 		logger,
@@ -112,13 +112,205 @@ func initTestNode(t *testing.T) (*Blockchain, *rpc.Local, *privval.FilePV, func(
 	}
 }
 
+func TestBlockchain_UpdateCommission(t *testing.T) {
+	blockchain, tmCli, pv, cancel := initTestNode(t, 100)
+	defer cancel()
+
+	txs, err := tmCli.Subscribe(context.Background(), "test-client", "tm.event = 'Tx'")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	data := transaction.VoteCommissionData{
+		Coin:                    types.GetBaseCoinID(),
+		Height:                  110,
+		PubKey:                  types.BytesToPubkey(pv.Key.PubKey.Bytes()[:]),
+		PayloadByte:             helpers.StringToBigInt("200000000000000000"),
+		Send:                    helpers.StringToBigInt("1000000000000000000"),
+		SellAllPool:             helpers.StringToBigInt("10000000000000000000"),
+		SellAllBancor:           helpers.StringToBigInt("10000000000000000000"),
+		SellBancor:              helpers.StringToBigInt("10000000000000000000"),
+		SellPool:                helpers.StringToBigInt("10000000000000000000"),
+		BuyBancor:               helpers.StringToBigInt("10000000000000000000"),
+		BuyPool:                 helpers.StringToBigInt("10000000000000000000"),
+		CreateTicker3:           helpers.StringToBigInt("100000000000000000000000000"),
+		CreateTicker4:           helpers.StringToBigInt("10000000000000000000000000"),
+		CreateTicker5:           helpers.StringToBigInt("1000000000000000000000000"),
+		CreateTicker6:           helpers.StringToBigInt("100000000000000000000000"),
+		CreateTicker7to10:       helpers.StringToBigInt("10000000000000000000000"),
+		CreateCoin:              helpers.StringToBigInt("0"),
+		CreateToken:             helpers.StringToBigInt("0"),
+		RecreateCoin:            helpers.StringToBigInt("1000000000000000000000000"),
+		RecreateToken:           helpers.StringToBigInt("1000000000000000000000000"),
+		DeclareCandidacy:        helpers.StringToBigInt("1000000000000000000000"),
+		Delegate:                helpers.StringToBigInt("20000000000000000000"),
+		Unbond:                  helpers.StringToBigInt("20000000000000000000"),
+		RedeemCheck:             helpers.StringToBigInt("3000000000000000000"),
+		SetCandidateOn:          helpers.StringToBigInt("10000000000000000000"),
+		SetCandidateOff:         helpers.StringToBigInt("10000000000000000000"),
+		CreateMultisig:          helpers.StringToBigInt("10000000000000000000"),
+		MultisendBase:           helpers.StringToBigInt("1000000000000000000"),
+		MultisendDelta:          helpers.StringToBigInt("500000000000000000"),
+		EditCandidate:           helpers.StringToBigInt("1000000000000000000000"),
+		SetHaltBlock:            helpers.StringToBigInt("100000000000000000000"),
+		EditTickerOwner:         helpers.StringToBigInt("1000000000000000000000000"),
+		EditMultisig:            helpers.StringToBigInt("100000000000000000000"),
+		PriceVote:               helpers.StringToBigInt("1000000000000000000"),
+		EditCandidatePublicKey:  helpers.StringToBigInt("10000000000000000000000000"),
+		CreateSwapPool:          helpers.StringToBigInt("100000000000000000000"),
+		AddLiquidity:            helpers.StringToBigInt("10000000000000000000"),
+		RemoveLiquidity:         helpers.StringToBigInt("10000000000000000000"),
+		EditCandidateCommission: helpers.StringToBigInt("1000000000000000000000"),
+		MoveStake:               helpers.StringToBigInt("20000000000000000000"),
+		MintToken:               helpers.StringToBigInt("10000000000000000000"),
+		BurnToken:               helpers.StringToBigInt("10000000000000000000"),
+		VoteCommission:          helpers.StringToBigInt("100000000000000000000"),
+		VoteUpdate:              helpers.StringToBigInt("100000000000000000000"),
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	nonce := uint64(1)
+	tx := transaction.Transaction{
+		Nonce:         nonce,
+		ChainID:       types.CurrentChainID,
+		GasPrice:      1,
+		GasCoin:       types.GetBaseCoinID(),
+		Type:          transaction.TypeVoteCommission,
+		Data:          encodedData,
+		SignatureType: transaction.SigTypeSingle,
+	}
+	nonce++
+
+	if err := tx.Sign(getPrivateKey()); err != nil {
+		t.Fatal(err)
+	}
+
+	txBytes, err := tx.Serialize()
+	if err != nil {
+		t.Fatalf("Failed: %s", err.Error())
+	}
+
+	res, err := tmCli.BroadcastTxSync(context.Background(), txBytes)
+	if err != nil {
+		t.Fatalf("Failed: %s", err.Error())
+	}
+	if res.Code != 0 {
+		t.Fatalf("CheckTx code is not 0: %d", res.Code)
+	}
+	<-txs
+
+	blocks, err := tmCli.Subscribe(context.Background(), "test-client", "tm.event = 'NewBlock'")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer func() {
+		err = tmCli.UnsubscribeAll(context.Background(), "test-client")
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	for {
+		select {
+		case block := <-blocks:
+			height := block.Data.(types2.EventDataNewBlock).Block.Height
+			if height < int64(data.Height) {
+				continue
+			}
+
+			events := blockchain.eventsDB.LoadEvents(uint32(height))
+			if len(events) == 0 {
+				t.Fatalf("not found events")
+			}
+			// for _, event := range events {
+			// 	t.Logf("%#v", event)
+			// }
+			if events[0].Type() != eventsdb.TypeUpdateCommissionsEvent {
+				t.Fatal("not changed")
+			}
+			return
+		case <-time.After(10 * time.Second):
+			t.Fatal("timeout")
+			// blockchain.lock.RLock()
+			// exportedState := blockchain.CurrentState().Export()
+			// blockchain.lock.RUnlock()
+			// if err := exportedState.Verify(); err != nil {
+			// 	t.Fatal(err)
+			// }
+			return
+		}
+	}
+}
+
 func TestBlockchain_Run(t *testing.T) {
-	_, _, _, cancel := initTestNode(t)
+	_, _, _, cancel := initTestNode(t, 0)
 	cancel()
 }
 
+func TestBlockchain_InitialBlockHeight(t *testing.T) {
+	blockchain, tmCli, _, cancel := initTestNode(t, 100)
+	defer cancel()
+
+	value := helpers.BipToPip(big.NewInt(10))
+	to := types.Address([20]byte{1})
+
+	data := transaction.SendData{
+		Coin:  types.GetBaseCoinID(),
+		To:    to,
+		Value: value,
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	nonce := uint64(1)
+	tx := transaction.Transaction{
+		Nonce:         nonce,
+		ChainID:       types.CurrentChainID,
+		GasPrice:      1,
+		GasCoin:       types.GetBaseCoinID(),
+		Type:          transaction.TypeSend,
+		Data:          encodedData,
+		SignatureType: transaction.SigTypeSingle,
+	}
+	nonce++
+
+	if err := tx.Sign(getPrivateKey()); err != nil {
+		t.Fatal(err)
+	}
+
+	txBytes, err := tx.Serialize()
+	if err != nil {
+		t.Fatalf("Failed: %s", err.Error())
+	}
+
+	res, err := tmCli.BroadcastTxCommit(context.Background(), txBytes)
+	if err != nil {
+		t.Fatalf("Failed: %s", err.Error())
+	}
+
+	time.Sleep(time.Second)
+
+	resultTx, err := tmCli.Tx(context.Background(), res.Hash.Bytes(), false)
+	if err != nil {
+		t.Fatalf("Failed: %s", err.Error())
+	}
+
+	_, err = blockchain.GetStateForHeight(uint64(resultTx.Height - 1))
+	if err != nil {
+		t.Fatalf("Failed: %s", err.Error())
+	}
+}
+
 func TestBlockchain_Height(t *testing.T) {
-	blockchain, tmCli, _, cancel := initTestNode(t)
+	blockchain, tmCli, _, cancel := initTestNode(t, 100)
 	defer cancel()
 
 	blocks, err := tmCli.Subscribe(context.Background(), "test-client", "tm.event = 'NewBlock'")
@@ -147,7 +339,7 @@ func TestBlockchain_Height(t *testing.T) {
 }
 
 func TestBlockchain_SetStatisticData(t *testing.T) {
-	blockchain, tmCli, _, cancel := initTestNode(t)
+	blockchain, tmCli, _, cancel := initTestNode(t, 0)
 	defer cancel()
 
 	ch := make(chan struct{})
@@ -190,7 +382,7 @@ func TestBlockchain_SetStatisticData(t *testing.T) {
 }
 
 func TestBlockchain_IsApplicationHalted(t *testing.T) {
-	blockchain, tmCli, pv, cancel := initTestNode(t)
+	blockchain, tmCli, pv, cancel := initTestNode(t, 0)
 	defer cancel()
 	data := transaction.SetHaltBlockData{
 		PubKey: types.BytesToPubkey(pv.Key.PubKey.Bytes()[:]),
@@ -260,7 +452,7 @@ func TestBlockchain_IsApplicationHalted(t *testing.T) {
 }
 
 func TestBlockchain_GetStateForHeightAndDeleteStateVersions(t *testing.T) {
-	blockchain, tmCli, _, cancel := initTestNode(t)
+	blockchain, tmCli, _, cancel := initTestNode(t, 100)
 	defer cancel()
 
 	symbol := types.StrToCoinSymbol("AAA123")
@@ -339,7 +531,7 @@ func TestBlockchain_GetStateForHeightAndDeleteStateVersions(t *testing.T) {
 }
 
 func TestBlockchain_SendTx(t *testing.T) {
-	blockchain, tmCli, _, cancel := initTestNode(t)
+	blockchain, tmCli, _, cancel := initTestNode(t, 0)
 	defer cancel()
 
 	value := helpers.BipToPip(big.NewInt(10))
@@ -411,7 +603,7 @@ func TestBlockchain_SendTx(t *testing.T) {
 }
 
 func TestBlockchain_FrozenFunds(t *testing.T) {
-	blockchain, tmCli, pv, cancel := initTestNode(t)
+	blockchain, tmCli, pv, cancel := initTestNode(t, 0)
 	defer cancel()
 
 	targetHeight := uint64(10)
@@ -459,7 +651,7 @@ func TestBlockchain_FrozenFunds(t *testing.T) {
 }
 
 func TestBlockchain_RecalculateStakes_andRemoveValidator(t *testing.T) {
-	blockchain, tmCli, _, cancel := initTestNode(t)
+	blockchain, tmCli, _, cancel := initTestNode(t, 0)
 	defer cancel()
 
 	txs, err := tmCli.Subscribe(context.Background(), "test-client", "tm.event = 'Tx'")
@@ -716,7 +908,7 @@ func TestBlockchain_RecalculateStakes_andRemoveValidator(t *testing.T) {
 }
 
 func TestStopNetworkByHaltBlocks(t *testing.T) {
-	blockchain, _, _, cancel := initTestNode(t)
+	blockchain, _, _, cancel := initTestNode(t, 0)
 	cancel()
 
 	haltHeight := uint64(50)
@@ -796,12 +988,11 @@ func makeTestValidatorsAndCandidates(pubkeys []string, stake *big.Int) ([]types.
 	return vals, cands
 }
 
-func getTestGenesis(pv *privval.FilePV, home string) func() (*types2.GenesisDoc, error) {
+func getTestGenesis(pv *privval.FilePV, home string, initialState int64) func() (*types2.GenesisDoc, error) {
 	return func() (*types2.GenesisDoc, error) {
 		validators, candidates := makeTestValidatorsAndCandidates([]string{string(pv.Key.PubKey.Bytes()[:])}, helpers.BipToPip(big.NewInt(12444011)))
 
 		appState := types.AppState{
-			// StartHeight: 100, // todo
 			TotalSlashed: "0",
 			Accounts: []types.Account{
 				{
@@ -824,10 +1015,11 @@ func getTestGenesis(pv *privval.FilePV, home string) func() (*types2.GenesisDoc,
 		}
 
 		genesisDoc := types2.GenesisDoc{
-			ChainID:     "minter-test-network",
-			GenesisTime: time.Now(),
-			AppHash:     nil,
-			AppState:    json.RawMessage(appStateJSON),
+			ChainID:       "minter-test-network",
+			InitialHeight: initialState,
+			GenesisTime:   time.Now(),
+			AppHash:       nil,
+			AppState:      json.RawMessage(appStateJSON),
 		}
 
 		err = genesisDoc.ValidateAndComplete()

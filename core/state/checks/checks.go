@@ -14,7 +14,7 @@ import (
 const mainPrefix = byte('t')
 
 type RChecks interface {
-	Export(state *types.AppState, u uint64)
+	Export(state *types.AppState)
 	IsCheckUsed(check *check.Check) bool
 }
 
@@ -83,7 +83,7 @@ func (c *Checks) UseCheckHash(hash types.Hash) {
 	c.usedChecks[hash] = struct{}{}
 }
 
-func (c *Checks) Export(state *types.AppState, height uint64) {
+func (c *Checks) Export(state *types.AppState) {
 	c.immutableTree().IterateRange([]byte{mainPrefix}, []byte{mainPrefix + 1}, true, func(key []byte, value []byte) bool {
 		state.UsedChecks = append(state.UsedChecks, types.UsedCheck(fmt.Sprintf("%x", key[1:])))
 		return false

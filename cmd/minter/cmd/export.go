@@ -76,8 +76,9 @@ func export(cmd *cobra.Command, args []string) error {
 	exportTimeStart, newState := time.Now(), currentState.Export()
 	fmt.Printf("State has been exported. Took %s", time.Since(exportTimeStart))
 
+	initialHeight := height
 	if startHeight > 0 {
-		newState.StartHeight = startHeight
+		initialHeight = startHeight
 	}
 
 	var jsonBytes []byte
@@ -94,8 +95,9 @@ func export(cmd *cobra.Command, args []string) error {
 
 	// compose genesis
 	genesis := types.GenesisDoc{
-		GenesisTime: time.Unix(0, 0).Add(genesisTime),
-		ChainID:     chainID,
+		GenesisTime:   time.Unix(0, 0).Add(genesisTime),
+		InitialHeight: int64(initialHeight),
+		ChainID:       chainID,
 		ConsensusParams: &tmproto.ConsensusParams{
 			Block: tmproto.BlockParams{
 				MaxBytes:   blockMaxBytes,

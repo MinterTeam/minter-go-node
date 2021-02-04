@@ -6,6 +6,7 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 	tmos "github.com/tendermint/tendermint/libs/os"
 	"os"
+	"time"
 )
 
 func main() {
@@ -15,6 +16,7 @@ func main() {
 
 	tmos.TrapSignal(log.NewTMLogger(os.Stdout).With("module", "consensus"), func() {
 		cancel()
+		time.Sleep(time.Second * 10)
 	})
 
 	rootCmd.AddCommand(
