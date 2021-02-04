@@ -801,7 +801,7 @@ func getTestGenesis(pv *privval.FilePV, home string) func() (*types2.GenesisDoc,
 		validators, candidates := makeTestValidatorsAndCandidates([]string{string(pv.Key.PubKey.Bytes()[:])}, helpers.BipToPip(big.NewInt(12444011)))
 
 		appState := types.AppState{
-			// StartHeight: 100, // todo
+			// StartHeight: 100, // FIXME
 			TotalSlashed: "0",
 			Accounts: []types.Account{
 				{

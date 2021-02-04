@@ -254,8 +254,6 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 
 	blockchain.stateDeliver.Halts.Delete(height)
 
-	// blockchain.checkStop()
-
 	return abciTypes.ResponseBeginBlock{}
 }
 
