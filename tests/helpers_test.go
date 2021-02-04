@@ -131,7 +131,6 @@ func CreateAddress() (types.Address, *ecdsa.PrivateKey) {
 func DefaultAppState() types.AppState {
 	return types.AppState{
 		Note:                "",
-		StartHeight:         1,
 		Validators:          nil,
 		Candidates:          nil,
 		BlockListCandidates: nil,

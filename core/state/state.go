@@ -43,14 +43,14 @@ func (cs *CheckState) isValue_State() {}
 
 func (cs *CheckState) Export() types.AppState {
 	appState := new(types.AppState)
-	cs.App().Export(appState, uint64(cs.state.height))
+	cs.App().Export(appState)
 	cs.Validators().Export(appState)
 	cs.Candidates().Export(appState)
 	cs.WaitList().Export(appState)
 	cs.FrozenFunds().Export(appState, uint64(cs.state.height))
 	cs.Accounts().Export(appState)
 	cs.Coins().Export(appState)
-	cs.Checks().Export(appState, uint64(cs.state.height))
+	cs.Checks().Export(appState)
 	cs.Halts().Export(appState)
 	cs.Swap().Export(appState)
 
@@ -216,7 +216,7 @@ func (s *State) Commit() ([]byte, error) {
 	return hash, nil
 }
 
-func (s *State) Import(state types.AppState) error {
+func (s *State) Import(state types.AppState, initialHeight uint64) error {
 	s.App.SetMaxGas(state.MaxGas)
 	totalSlash := helpers.StringToBigInt(state.TotalSlashed)
 	s.App.SetTotalSlashed(totalSlash)
@@ -277,7 +277,7 @@ func (s *State) Import(state types.AppState) error {
 		s.Candidates.SetTotalStake(c.PubKey, helpers.StringToBigInt(c.TotalBipStake))
 		s.Candidates.SetStakes(c.PubKey, c.Stakes, c.Updates)
 	}
-	s.Candidates.RecalculateStakes(state.StartHeight)
+	s.Candidates.RecalculateStakes(uint64(s.height))
 
 	for _, w := range state.Waitlist {
 		value := helpers.StringToBigInt(w.Value)

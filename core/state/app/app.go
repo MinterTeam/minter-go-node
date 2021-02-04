@@ -13,7 +13,7 @@ import (
 const mainPrefix = 'd'
 
 type RApp interface {
-	Export(state *types.AppState, height uint64)
+	Export(state *types.AppState)
 	GetMaxGas() uint64
 	GetTotalSlashed() *big.Int
 	GetCoinsCount() uint32
@@ -153,8 +153,7 @@ func (a *App) SetCoinsCount(count uint32) {
 	a.getOrNew().setCoinsCount(count)
 }
 
-func (a *App) Export(state *types.AppState, height uint64) {
+func (a *App) Export(state *types.AppState) {
 	state.MaxGas = a.GetMaxGas()
 	state.TotalSlashed = a.GetTotalSlashed().String()
-	state.StartHeight = height
 }

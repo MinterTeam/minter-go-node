@@ -89,7 +89,7 @@ func runNode(cmd *cobra.Command) error {
 	app := minter.NewMinterBlockchain(storages, cfg, cmd.Context())
 
 	// update BlocksTimeDelta in case it was corrupted
-	updateBlocksTimeDelta(app, tmConfig)
+	// updateBlocksTimeDelta(app, tmConfig)
 
 	// start TM node
 	node := startTendermintNode(app, tmConfig, logger, storages.GetMinterHome())
