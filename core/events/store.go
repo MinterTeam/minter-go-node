@@ -86,6 +86,11 @@ func (store *eventsStore) AddEvent(height uint32, event Event) {
 func (store *eventsStore) LoadEvents(height uint32) Events {
 	store.loadCache()
 
+	ok, err := store.db.Has(uint32ToBytes(height))
+	if !ok {
+		return nil
+	}
+
 	bytes, err := store.db.Get(uint32ToBytes(height))
 	if err != nil {
 		panic(err)
