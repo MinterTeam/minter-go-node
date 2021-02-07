@@ -85,13 +85,9 @@ func (data SellAllSwapPoolData) Run(tx *Transaction, context state.Interface, re
 		}
 	}
 
-	valueToSell := big.NewInt(0).Set(balance)
 	swapper := checkState.Swap().GetSwapper(data.CoinToSell, data.CoinToBuy)
-	if isGasCommissionFromPoolSwap {
-		if data.CoinToBuy.IsBaseCoin() {
-			swapper = commissionPoolSwapper.AddLastSwapStep(commission, commissionInBaseCoin)
-		}
-		valueToSell.Set(available)
+	if isGasCommissionFromPoolSwap == true && data.CoinToBuy.IsBaseCoin() {
+		swapper = commissionPoolSwapper.AddLastSwapStep(commission, commissionInBaseCoin)
 	}
 
 	errResp = CheckSwap(swapper, sellCoin, checkState.Coins().GetCoin(data.CoinToBuy), balance, data.MinimumValueToBuy, false)
@@ -102,17 +98,17 @@ func (data SellAllSwapPoolData) Run(tx *Transaction, context state.Interface, re
 	var tags []abcTypes.EventAttribute
 	if deliverState, ok := context.(*state.State); ok {
 		if isGasCommissionFromPoolSwap {
-			commission, commissionInBaseCoin = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
-		} else if !tx.GasCoin.IsBaseCoin() {
-			deliverState.Coins.SubVolume(tx.GasCoin, commission)
-			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
+			commission, commissionInBaseCoin = deliverState.Swap.PairSell(data.CoinToSell, types.GetBaseCoinID(), commission, commissionInBaseCoin)
+		} else if !data.CoinToSell.IsBaseCoin() {
+			deliverState.Coins.SubVolume(data.CoinToSell, commission)
+			deliverState.Coins.SubReserve(data.CoinToSell, commissionInBaseCoin)
 		}
 
 		amountIn, amountOut := deliverState.Swap.PairSell(data.CoinToSell, data.CoinToBuy, balance, data.MinimumValueToBuy)
 		deliverState.Accounts.SubBalance(sender, data.CoinToSell, amountIn)
 		deliverState.Accounts.AddBalance(sender, data.CoinToBuy, amountOut)
 
-		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
+		deliverState.Accounts.SubBalance(sender, data.CoinToSell, commission)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
