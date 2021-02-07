@@ -103,7 +103,7 @@ func (store *eventsStore) LoadEvents(height uint32) Events {
 		panic(err)
 	}
 	if len(bytes) == 0 {
-		return Events{}
+		return make(Events, 0)
 	}
 
 	var items []compact
