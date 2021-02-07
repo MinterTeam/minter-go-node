@@ -17,6 +17,9 @@ type MoveStakeData struct {
 	Stake    *big.Int
 }
 
+func (data MoveStakeData) Gas() int {
+	return gasMoveStake
+}
 func (data MoveStakeData) TxType() TxType {
 	return TypeMoveStake
 }
@@ -125,6 +128,16 @@ func (data MoveStakeData) Run(tx *Transaction, context state.Interface, rewardPo
 		}
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
+
+		if waitList := deliverState.Waitlist.Get(sender, data.From, data.Coin); waitList != nil {
+			diffValue := big.NewInt(0).Sub(data.Stake, waitList.Value)
+			deliverState.Waitlist.Delete(sender, data.From, data.Coin)
+			if diffValue.Sign() == -1 {
+				deliverState.Waitlist.AddWaitList(sender, data.From, data.Coin, big.NewInt(0).Neg(diffValue))
+			}
+		} else {
+			deliverState.Candidates.SubStake(sender, data.From, data.Coin, data.Stake)
+		}
 
 		moveToCandidateId := deliverState.Candidates.ID(data.To)
 		deliverState.FrozenFunds.AddFund(currentBlock+types.GetUnbondPeriod(), sender, data.From, deliverState.Candidates.ID(data.From), data.Coin, data.Stake, &moveToCandidateId)
