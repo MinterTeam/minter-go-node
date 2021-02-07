@@ -63,6 +63,9 @@ type VoteCommissionData struct {
 func (data VoteCommissionData) TxType() TxType {
 	return TypeVoteCommission
 }
+func (data VoteCommissionData) Gas() int {
+	return gasVoteCommission
+}
 
 func (data VoteCommissionData) GetPubKey() types.Pubkey {
 	return data.PubKey

@@ -23,6 +23,9 @@ type DeclareCandidacyData struct {
 	Stake      *big.Int
 }
 
+func (data DeclareCandidacyData) Gas() int {
+	return gasDeclareCandidacy
+}
 func (data DeclareCandidacyData) TxType() TxType {
 	return TypeDeclareCandidacy
 }

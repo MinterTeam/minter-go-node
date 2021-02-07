@@ -17,8 +17,6 @@ import (
 // TxType of transaction is determined by a single byte.
 type TxType byte
 
-type SigType byte
-
 const (
 	TypeSend                    TxType = 0x01
 	TypeSellCoin                TxType = 0x02
@@ -54,7 +52,52 @@ const (
 	TypeVoteCommission          TxType = 0x20
 	TypeVoteUpdate              TxType = 0x21
 	TypeCreateSwapPool          TxType = 0x22
+)
+const (
+	gasCustomCommission = 100
 
+	baseUnit = 10
+
+	gasSend                    = baseUnit
+	gasSellCoin                = baseUnit * 2
+	gasSellAllCoin             = baseUnit * 2
+	gasBuyCoin                 = baseUnit * 2
+	gasCreateCoin              = baseUnit * 10
+	gasDeclareCandidacy        = baseUnit * 15
+	gasDelegate                = baseUnit * 6
+	gasUnbond                  = baseUnit * 4
+	gasRedeemCheck             = baseUnit * 10
+	gasSetCandidateOnline      = baseUnit * 5
+	gasSetCandidateOffline     = baseUnit * 5
+	gasCreateMultisig          = baseUnit * 10
+	gasMultisendBase           = 0
+	gasMultisendDelta          = baseUnit
+	gasEditCandidate           = baseUnit * 5
+	gasSetHaltBlock            = baseUnit * 8
+	gasRecreateCoin            = baseUnit * 15
+	gasEditCoinOwner           = baseUnit * 8
+	gasEditMultisig            = baseUnit * 15
+	gasPriceVote               = baseUnit
+	gasEditCandidatePublicKey  = baseUnit * 10
+	gasAddLiquidity            = baseUnit * 10
+	gasRemoveLiquidity         = baseUnit * 10
+	gasSellSwapPool            = baseUnit * 3
+	gasBuySwapPool             = baseUnit * 3
+	gasSellAllSwapPool         = baseUnit * 3
+	gasEditCandidateCommission = baseUnit * 5
+	gasMoveStake               = baseUnit * 5
+	gasMintToken               = baseUnit * 5
+	gasBurnToken               = baseUnit * 5
+	gasCreateToken             = baseUnit * 10
+	gasRecreateToken           = baseUnit * 15
+	gasVoteCommission          = baseUnit * 15
+	gasVoteUpdate              = baseUnit * 5
+	gasCreateSwapPool          = baseUnit * 15
+)
+
+type SigType byte
+
+const (
 	SigTypeSingle SigType = 0x01
 	SigTypeMulti  SigType = 0x02
 )
@@ -129,6 +172,7 @@ type Data interface {
 	CommissionData(*commission.Price) *big.Int
 	Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response
 	TxType() TxType
+	Gas() int
 }
 
 func (tx *Transaction) Serialize() ([]byte, error) {
@@ -136,8 +180,12 @@ func (tx *Transaction) Serialize() ([]byte, error) {
 }
 
 func (tx *Transaction) Gas() int64 {
+	// base := int64(tx.decodedData.Gas())
+	// if tx.GasCoin != types.GetBaseCoinID() {
+	// 	base += gasCustomCommission
+	// }
+	// return int64(tx.decodedData.Gas())
 	return 1
-	// return tx.Gas() + tx.payloadLen() * 2 // todo
 }
 
 func (tx *Transaction) Price(price *commission.Price) *big.Int {

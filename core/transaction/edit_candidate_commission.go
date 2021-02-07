@@ -17,6 +17,9 @@ type EditCandidateCommission struct {
 	Commission uint32
 }
 
+func (data EditCandidateCommission) Gas() int {
+	return gasEditCandidateCommission
+}
 func (data EditCandidateCommission) TxType() TxType {
 	return TypeEditCandidateCommission
 }

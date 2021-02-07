@@ -16,6 +16,9 @@ type MintTokenData struct {
 	Value *big.Int
 }
 
+func (data MintTokenData) Gas() int {
+	return gasMintToken
+}
 func (data MintTokenData) TxType() TxType {
 	return TypeMintToken
 }

@@ -19,6 +19,9 @@ type MultisendData struct {
 	List []MultisendDataItem `json:"list"`
 }
 
+func (data MultisendData) Gas() int {
+	return gasMultisendBase + gasMultisendDelta*len(data.List)
+}
 func (data MultisendData) TxType() TxType {
 	return TypeMultisend
 }

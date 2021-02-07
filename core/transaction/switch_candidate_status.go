@@ -15,6 +15,10 @@ type SetCandidateOnData struct {
 	PubKey types.Pubkey
 }
 
+func (data SetCandidateOnData) Gas() int {
+	return gasSetCandidateOnline
+}
+
 func (data SetCandidateOnData) TxType() TxType {
 	return TypeSetCandidateOnline
 }
@@ -96,6 +100,10 @@ func (data SetCandidateOnData) Run(tx *Transaction, context state.Interface, rew
 
 type SetCandidateOffData struct {
 	PubKey types.Pubkey `json:"pub_key"`
+}
+
+func (data SetCandidateOffData) Gas() int {
+	return gasSetCandidateOffline
 }
 
 func (data SetCandidateOffData) TxType() TxType {

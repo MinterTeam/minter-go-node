@@ -15,6 +15,9 @@ type PriceVoteData struct {
 	Price uint32
 }
 
+func (data PriceVoteData) Gas() int {
+	return gasPriceVote
+}
 func (data PriceVoteData) TxType() TxType {
 	return TypePriceVote
 }

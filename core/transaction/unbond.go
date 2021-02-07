@@ -18,6 +18,9 @@ type UnbondData struct {
 	Value  *big.Int
 }
 
+func (data UnbondData) Gas() int {
+	return gasUnbond
+}
 func (data UnbondData) TxType() TxType {
 	return TypeUnbond
 }

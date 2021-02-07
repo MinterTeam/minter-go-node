@@ -19,6 +19,9 @@ type CreateSwapPoolData struct {
 	Volume1 *big.Int
 }
 
+func (data CreateSwapPoolData) Gas() int {
+	return gasCreateSwapPool
+}
 func (data CreateSwapPoolData) TxType() TxType {
 	return TypeCreateSwapPool
 }

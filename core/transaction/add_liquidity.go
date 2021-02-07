@@ -19,6 +19,10 @@ type AddLiquidityData struct {
 	MaximumVolume1 *big.Int
 }
 
+func (data AddLiquidityData) Gas() int {
+	return gasAddLiquidity
+}
+
 func (data AddLiquidityData) TxType() TxType {
 	return TypeAddLiquidity
 }

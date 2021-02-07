@@ -22,6 +22,9 @@ type CreateTokenData struct {
 	Burnable      bool
 }
 
+func (data CreateTokenData) Gas() int {
+	return gasCreateToken
+}
 func (data CreateTokenData) TxType() TxType {
 	return TypeCreateToken
 }

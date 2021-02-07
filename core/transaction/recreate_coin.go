@@ -22,6 +22,9 @@ type RecreateCoinData struct {
 	MaxSupply            *big.Int
 }
 
+func (data RecreateCoinData) Gas() int {
+	return gasRecreateCoin
+}
 func (data RecreateCoinData) TxType() TxType {
 	return TypeRecreateCoin
 }

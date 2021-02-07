@@ -20,6 +20,9 @@ type RemoveLiquidity struct {
 	MinimumVolume1 *big.Int
 }
 
+func (data RemoveLiquidity) Gas() int {
+	return gasRemoveLiquidity
+}
 func (data RemoveLiquidity) TxType() TxType {
 	return TypeRemoveLiquidity
 }
