@@ -18,6 +18,9 @@ type VoteUpdateData struct {
 	Height  uint64
 }
 
+func (data VoteUpdateData) Gas() int {
+	return gasVoteUpdate
+}
 func (data VoteUpdateData) TxType() TxType {
 	return TypeVoteUpdate
 }

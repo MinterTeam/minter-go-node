@@ -19,6 +19,10 @@ type SetHaltBlockData struct {
 	Height uint64
 }
 
+func (data SetHaltBlockData) Gas() int {
+	return gasSetHaltBlock
+}
+
 func (data SetHaltBlockData) TxType() TxType {
 	return TypeSetHaltBlock
 }

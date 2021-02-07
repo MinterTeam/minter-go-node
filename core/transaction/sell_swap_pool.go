@@ -22,6 +22,10 @@ func (data SellSwapPoolData) TxType() TxType {
 	return TypeSellSwapPool
 }
 
+func (data SellSwapPoolData) Gas() int {
+	return gasSellSwapPool
+}
+
 func (data SellSwapPoolData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.CoinToSell == data.CoinToBuy {
 		return &Response{

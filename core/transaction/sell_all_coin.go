@@ -18,6 +18,9 @@ type SellAllCoinData struct {
 	MinimumValueToBuy *big.Int
 }
 
+func (data SellAllCoinData) Gas() int {
+	return gasSellAllCoin
+}
 func (data SellAllCoinData) TxType() TxType {
 	return TypeSellAllCoin
 }
@@ -153,7 +156,6 @@ func (data SellAllCoinData) Run(tx *Transaction, context state.Interface, reward
 			return *errResp
 		}
 	}
-
 	if value.Cmp(data.MinimumValueToBuy) == -1 {
 		return Response{
 			Code: code.MinimumValueToBuyReached,

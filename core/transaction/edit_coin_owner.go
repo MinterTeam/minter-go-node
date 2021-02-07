@@ -16,6 +16,9 @@ type EditCoinOwnerData struct {
 	NewOwner types.Address
 }
 
+func (data EditCoinOwnerData) Gas() int {
+	return gasEditCoinOwner
+}
 func (data EditCoinOwnerData) TxType() TxType {
 	return TypeEditCoinOwner
 }

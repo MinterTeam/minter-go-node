@@ -16,6 +16,9 @@ type EditCandidatePublicKeyData struct {
 	NewPubKey types.Pubkey
 }
 
+func (data EditCandidatePublicKeyData) Gas() int {
+	return gasEditCandidatePublicKey
+}
 func (data EditCandidatePublicKeyData) TxType() TxType {
 	return TypeEditCandidatePublicKey
 }

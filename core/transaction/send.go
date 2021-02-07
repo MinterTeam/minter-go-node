@@ -21,6 +21,10 @@ func (data SendData) TxType() TxType {
 	return TypeSend
 }
 
+func (data SendData) Gas() int {
+	return gasSend
+}
+
 type Coin struct {
 	ID     uint32 `json:"id"`
 	Symbol string `json:"symbol"`

@@ -19,6 +19,9 @@ type SellCoinData struct {
 	MinimumValueToBuy *big.Int
 }
 
+func (data SellCoinData) Gas() int {
+	return gasSellCoin
+}
 func (data SellCoinData) TxType() TxType {
 	return TypeSellCoin
 }
@@ -112,76 +115,76 @@ func (data SellCoinData) Run(tx *Transaction, context state.Interface, rewardPoo
 	}
 
 	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
-	gasCoinUpdated := dummyCoin{
-		id:         gasCoin.ID(),
-		volume:     gasCoin.Volume(),
-		reserve:    gasCoin.Reserve(),
-		crr:        gasCoin.Crr(),
-		fullSymbol: gasCoin.GetFullSymbol(),
-		maxSupply:  gasCoin.MaxSupply(),
+
+	commissionInBaseCoin := tx.Commission(price)
+	commissionPoolSwapper := checkState.Swap().GetSwapper(tx.GasCoin, types.GetBaseCoinID())
+	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoin, commissionInBaseCoin)
+	if errResp != nil {
+		return *errResp
 	}
+
 	coinToSell := data.CoinToSell
 	coinToBuy := data.CoinToBuy
-	coinFrom := checkState.Coins().GetCoin(coinToSell)
-	coinTo := checkState.Coins().GetCoin(coinToBuy)
+	var coinFrom, coinTo calculateCoin
+	coinFrom = checkState.Coins().GetCoin(coinToSell)
+	coinTo = checkState.Coins().GetCoin(coinToBuy)
 
 	value := big.NewInt(0).Set(data.ValueToSell)
+
+	if isGasCommissionFromPoolSwap == false && !tx.GasCoin.IsBaseCoin() {
+		if tx.GasCoin == data.CoinToSell {
+			// value.Add(value, commission)
+			coinFrom = dummyCoin{
+				id:         gasCoin.ID(),
+				volume:     big.NewInt(0).Sub(gasCoin.Volume(), commission),
+				reserve:    big.NewInt(0).Sub(gasCoin.Reserve(), commissionInBaseCoin),
+				crr:        gasCoin.Crr(),
+				fullSymbol: gasCoin.GetFullSymbol(),
+				maxSupply:  gasCoin.MaxSupply(),
+			}
+		} else if tx.GasCoin == data.CoinToBuy {
+			coinTo = dummyCoin{
+				id:         gasCoin.ID(),
+				volume:     big.NewInt(0).Sub(gasCoin.Volume(), commission),
+				reserve:    big.NewInt(0).Sub(gasCoin.Reserve(), commissionInBaseCoin),
+				crr:        gasCoin.Crr(),
+				fullSymbol: gasCoin.GetFullSymbol(),
+				maxSupply:  gasCoin.MaxSupply(),
+			}
+		}
+	}
+
 	if !coinToSell.IsBaseCoin() {
 		value, errResp = CalculateSaleReturnAndCheck(coinFrom, value)
 		if errResp != nil {
 			return *errResp
 		}
-		if coinToSell == gasCoinUpdated.ID() {
-			gasCoinUpdated.volume.Sub(gasCoinUpdated.volume, data.ValueToSell)
-			gasCoinUpdated.reserve.Sub(gasCoinUpdated.reserve, value)
-		}
 	}
+	// if isGasCommissionFromPoolSwap == false && data.CoinToSell == tx.GasCoin {
+	// 	value.Sub(value, commissionInBaseCoin)
+	// }
 	diffBipReserve := big.NewInt(0).Set(value)
 	if !coinToBuy.IsBaseCoin() {
 		value = formula.CalculatePurchaseReturn(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), value)
 		if errResp := CheckForCoinSupplyOverflow(coinTo, value); errResp != nil {
 			return *errResp
 		}
-		if coinToBuy == gasCoinUpdated.ID() {
-			gasCoinUpdated.volume.Add(gasCoinUpdated.volume, value)
-			gasCoinUpdated.reserve.Add(gasCoinUpdated.reserve, diffBipReserve)
+	}
+
+	if value.Cmp(data.MinimumValueToBuy) == -1 {
+		return Response{
+			Code: code.MinimumValueToBuyReached,
+			Log: fmt.Sprintf(
+				"You wanted to buy minimum %s, but currently you need to spend %s to complete tx",
+				data.MinimumValueToBuy.String(), value.String()),
+			Info: EncodeError(code.NewMaximumValueToSellReached(data.MinimumValueToBuy.String(), value.String(), coinFrom.GetFullSymbol(), coinFrom.ID().String())),
 		}
 	}
-
-	commissionInBaseCoin := tx.Commission(price)
-	commissionPoolSwapper := checkState.Swap().GetSwapper(tx.GasCoin, types.GetBaseCoinID())
-	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoinUpdated, commissionInBaseCoin)
-	if errResp != nil {
-		return *errResp
-	}
-
-	// if !isGasCommissionFromPoolSwap && gasCoin.ID() == coinToSell && !coinToSell.IsBaseCoin() {
-	// 	// commission = formula.CalculateSaleAmount(gasCoinUpdated.Volume(), gasCoinUpdated.Reserve(), coinFrom.Crr(), commissionInBaseCoin)
-	// 	value, errResp = CalculateSaleReturnAndCheck(coinFrom, big.NewInt(0).Add(data.ValueToSell, commission))
-	// 	if errResp != nil {
-	// 		return *errResp
-	// 	}
-	//
-	// 	if !coinToBuy.IsBaseCoin() {
-	// 		value = formula.CalculatePurchaseReturn(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), value)
-	// 		if errResp := CheckForCoinSupplyOverflow(coinTo, value); errResp != nil {
-	// 			return *errResp
-	// 		}
-	// 	}
-	// 	commission.Sub(commission, value)
-	// }
 
 	spendInGasCoin := big.NewInt(0).Set(commission)
-	if tx.GasCoin != coinToSell {
-		if value.Cmp(data.MinimumValueToBuy) == -1 {
-			return Response{
-				Code: code.MinimumValueToBuyReached,
-				Log: fmt.Sprintf(
-					"You wanted to buy minimum %s, but currently you need to spend %s to complete tx",
-					data.MinimumValueToBuy.String(), value.String()),
-				Info: EncodeError(code.NewMaximumValueToSellReached(data.MinimumValueToBuy.String(), value.String(), coinFrom.GetFullSymbol(), coinFrom.ID().String())),
-			}
-		}
+	if tx.GasCoin == coinToSell {
+		spendInGasCoin.Add(spendInGasCoin, data.ValueToSell)
+	} else {
 		if checkState.Accounts().GetBalance(sender, data.CoinToSell).Cmp(value) < 0 {
 			return Response{
 				Code: code.InsufficientFunds,
@@ -189,16 +192,12 @@ func (data SellCoinData) Run(tx *Transaction, context state.Interface, rewardPoo
 				Info: EncodeError(code.NewInsufficientFunds(sender.String(), value.String(), coinFrom.GetFullSymbol(), coinFrom.ID().String())),
 			}
 		}
-	} else {
-		spendInGasCoin.Add(spendInGasCoin, data.ValueToSell)
 	}
-	if spendInGasCoin.Cmp(data.MinimumValueToBuy) == -1 {
+	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(spendInGasCoin) < 0 {
 		return Response{
-			Code: code.MinimumValueToBuyReached,
-			Log: fmt.Sprintf(
-				"You wanted to buy minimum %s, but currently you need to spend %s to complete tx",
-				data.MinimumValueToBuy.String(), spendInGasCoin.String()),
-			Info: EncodeError(code.NewMaximumValueToSellReached(data.MinimumValueToBuy.String(), spendInGasCoin.String(), coinFrom.GetFullSymbol(), coinFrom.ID().String())),
+			Code: code.InsufficientFunds,
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), spendInGasCoin.String(), gasCoin.GetFullSymbol()),
+			Info: EncodeError(code.NewInsufficientFunds(sender.String(), spendInGasCoin.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
 		}
 	}
 	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(spendInGasCoin) < 0 {

@@ -23,6 +23,9 @@ type RedeemCheckData struct {
 	Proof    [65]byte
 }
 
+func (data RedeemCheckData) Gas() int {
+	return gasRedeemCheck
+}
 func (data RedeemCheckData) TxType() TxType {
 	return TypeRedeemCheck
 }

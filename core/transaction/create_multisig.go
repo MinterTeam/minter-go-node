@@ -20,6 +20,10 @@ type CreateMultisigData struct {
 	Addresses []types.Address
 }
 
+func (data CreateMultisigData) Gas() int {
+	return gasCreateMultisig
+}
+
 func (data CreateMultisigData) TxType() TxType {
 	return TypeCreateMultisig
 }

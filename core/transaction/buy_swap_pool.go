@@ -19,6 +19,9 @@ type BuySwapPoolData struct {
 	MaximumValueToSell *big.Int
 }
 
+func (data BuySwapPoolData) Gas() int {
+	return gasBuySwapPool
+}
 func (data BuySwapPoolData) TxType() TxType {
 	return TypeBuySwapPool
 }

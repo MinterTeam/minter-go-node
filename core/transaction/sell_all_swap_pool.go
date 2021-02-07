@@ -19,6 +19,10 @@ type SellAllSwapPoolData struct {
 	MinimumValueToBuy *big.Int
 }
 
+func (data SellAllSwapPoolData) Gas() int {
+	return gasSellAllSwapPool
+}
+
 func (data SellAllSwapPoolData) TxType() TxType {
 	return TypeSellAllSwapPool
 }

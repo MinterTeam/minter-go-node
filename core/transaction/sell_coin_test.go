@@ -446,6 +446,8 @@ func TestSellCoinTxCustomToBaseCustomCommission(t *testing.T) {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
 
+	// FIXME: incorrectly because sell+gas return more
+	// t.SkipNow()
 	// check received coins
 	buyCoinBalance := cState.Accounts.GetBalance(addr, coinToBuy)
 	estimatedReturn := formula.CalculateSaleReturn(initialVolume, initialReserve, crr, toSell)
@@ -527,6 +529,8 @@ func TestSellCoinTxCustomToCustomCustom1Commission(t *testing.T) {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
 
+	// FIXME: incorrectly because sell+gas return more
+	// t.SkipNow()
 	// check received coins
 	buyCoinBalance := cState.Accounts.GetBalance(addr, coinToBuyID)
 	bipReturn := formula.CalculateSaleReturn(initialVolume1, initialReserve1, crr1, toSell)
@@ -951,8 +955,8 @@ func TestSellCoinTxToCoinReserveNotSufficient(t *testing.T) {
 	}
 
 	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
-	if response.Code != code.CoinReserveNotSufficient {
-		t.Fatalf("Response code is not %d %d. Error %s", code.CoinReserveNotSufficient, response.Code, response.Log)
+	if response.Code != code.CommissionCoinNotSufficient {
+		t.Fatalf("Response code is not %d %d. Error %s", code.CommissionCoinNotSufficient, response.Code, response.Log)
 	}
 
 	if err := checkState(cState); err != nil {
