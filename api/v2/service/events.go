@@ -13,11 +13,10 @@ import (
 // Events returns events at given height.
 func (s *Service) Events(ctx context.Context, req *pb.EventsRequest) (*pb.EventsResponse, error) {
 	height := uint32(req.Height)
-	if !s.blockchain.GetEventsDB().HasHeight(height) {
+	loadEvents := s.blockchain.GetEventsDB().LoadEvents(height)
+	if loadEvents == nil {
 		return nil, status.Errorf(codes.NotFound, "version %d doesn't exist yet", req.Height)
 	}
-
-	loadEvents := s.blockchain.GetEventsDB().LoadEvents(height)
 	resultEvents := make([]*_struct.Struct, 0, len(loadEvents))
 	for _, event := range loadEvents {
 
