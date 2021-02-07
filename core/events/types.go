@@ -41,10 +41,6 @@ type compact interface {
 
 type Events []Event
 
-func (events Events) NotFound() bool {
-	return events == nil
-}
-
 type Role byte
 
 const (

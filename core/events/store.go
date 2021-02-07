@@ -28,6 +28,7 @@ type IEventsDB interface {
 	LoadEvents(height uint32) Events
 	CommitEvents() error
 	Close() error
+	HasHeight(height uint32) bool
 }
 
 type MockEvents struct{}
@@ -36,6 +37,7 @@ func (e MockEvents) AddEvent(height uint32, event Event) {}
 func (e MockEvents) LoadEvents(height uint32) Events     { return Events{} }
 func (e MockEvents) CommitEvents() error                 { return nil }
 func (e MockEvents) Close() error                        { return nil }
+func (e MockEvents) HasHeight(height uint32) bool        { return true }
 
 type eventsStore struct {
 	sync.RWMutex
@@ -80,6 +82,13 @@ func (store *eventsStore) cacheAddress(id uint32, address [20]byte) {
 	store.addressID[address] = id
 }
 
+func (store *eventsStore) HasHeight(height uint32) bool {
+	ok, err := store.db.Has(uint32ToBytes(height))
+	if err != nil {
+		panic(err)
+	}
+	return ok
+}
 func (store *eventsStore) AddEvent(height uint32, event Event) {
 	store.pending.Lock()
 	defer store.pending.Unlock()
@@ -93,17 +102,12 @@ func (store *eventsStore) AddEvent(height uint32, event Event) {
 func (store *eventsStore) LoadEvents(height uint32) Events {
 	store.loadCache()
 
-	ok, err := store.db.Has(uint32ToBytes(height))
-	if !ok {
-		return nil
-	}
-
 	bytes, err := store.db.Get(uint32ToBytes(height))
 	if err != nil {
 		panic(err)
 	}
 	if len(bytes) == 0 {
-		return make(Events, 0)
+		return Events{}
 	}
 
 	var items []compact
