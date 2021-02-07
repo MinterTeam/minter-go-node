@@ -118,7 +118,7 @@ func (f *FrozenFunds) PunishFrozenFundsWithID(fromHeight uint64, toHeight uint64
 
 				f.bus.Checker().AddCoin(item.Coin, new(big.Int).Neg(slashed))
 
-				f.bus.Events().AddEvent(uint32(fromHeight), &eventsdb.SlashEvent{
+				f.bus.Events().AddEvent(&eventsdb.SlashEvent{
 					Address:         item.Address,
 					Amount:          slashed.String(),
 					Coin:            uint64(item.Coin),

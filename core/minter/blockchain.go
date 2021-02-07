@@ -197,7 +197,7 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 		for _, item := range frozenFunds.List {
 			amount := item.Value
 			if item.MoveToCandidate == nil {
-				blockchain.eventsDB.AddEvent(uint32(req.Header.Height), &eventsdb.UnbondEvent{
+				blockchain.eventsDB.AddEvent(&eventsdb.UnbondEvent{
 					Address:         item.Address,
 					Amount:          amount.String(),
 					Coin:            uint64(item.Coin),
@@ -218,7 +218,7 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 					blockchain.stateDeliver.Waitlist.AddWaitList(item.Address, newCandidate, item.Coin, value)
 					toWaitlist = true
 				}
-				blockchain.eventsDB.AddEvent(uint32(req.Header.Height), &eventsdb.StakeMoveEvent{
+				blockchain.eventsDB.AddEvent(&eventsdb.StakeMoveEvent{
 					Address:         item.Address,
 					Amount:          amount.String(),
 					Coin:            uint64(item.Coin),
@@ -290,7 +290,7 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 	if prices := blockchain.isUpdateCommissionsBlock(height); len(prices) != 0 {
 		blockchain.stateDeliver.Commission.SetNewCommissions(prices)
 		price := blockchain.stateDeliver.Commission.GetCommissions()
-		blockchain.eventsDB.AddEvent(uint32(height), &eventsdb.UpdateCommissionsEvent{
+		blockchain.eventsDB.AddEvent(&eventsdb.UpdateCommissionsEvent{
 			Coin:                    uint64(price.Coin),
 			PayloadByte:             price.PayloadByte.String(),
 			Send:                    price.Send.String(),
@@ -421,7 +421,7 @@ func (blockchain *Blockchain) Commit() abciTypes.ResponseCommit {
 	}
 
 	// Flush events db
-	err := blockchain.eventsDB.CommitEvents()
+	err := blockchain.eventsDB.CommitEvents(uint32(blockchain.Height()))
 	if err != nil {
 		panic(err)
 	}

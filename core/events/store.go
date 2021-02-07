@@ -24,18 +24,18 @@ func init() {
 
 // IEventsDB is an interface of Events
 type IEventsDB interface {
-	AddEvent(height uint32, event Event)
+	AddEvent(event Event)
 	LoadEvents(height uint32) Events
-	CommitEvents() error
+	CommitEvents(uint32) error
 	Close() error
 }
 
 type MockEvents struct{}
 
-func (e MockEvents) AddEvent(height uint32, event Event) {}
-func (e MockEvents) LoadEvents(height uint32) Events     { return Events{} }
-func (e MockEvents) CommitEvents() error                 { return nil }
-func (e MockEvents) Close() error                        { return nil }
+func (e MockEvents) AddEvent(event Event)            {}
+func (e MockEvents) LoadEvents(height uint32) Events { return Events{} }
+func (e MockEvents) CommitEvents(uint32) error       { return nil }
+func (e MockEvents) Close() error                    { return nil }
 
 type eventsStore struct {
 	sync.RWMutex
@@ -49,8 +49,7 @@ type eventsStore struct {
 
 type pendingEvents struct {
 	sync.Mutex
-	height uint32
-	items  Events
+	items Events
 }
 
 // NewEventsStore creates new events store in given DB
@@ -80,14 +79,10 @@ func (store *eventsStore) cacheAddress(id uint32, address [20]byte) {
 	store.addressID[address] = id
 }
 
-func (store *eventsStore) AddEvent(height uint32, event Event) {
+func (store *eventsStore) AddEvent(event Event) {
 	store.pending.Lock()
 	defer store.pending.Unlock()
-	if store.pending.height != height {
-		store.pending.items = Events{}
-	}
 	store.pending.items = append(store.pending.items, event)
-	store.pending.height = height
 }
 
 func (store *eventsStore) LoadEvents(height uint32) Events {
@@ -123,7 +118,7 @@ func (store *eventsStore) LoadEvents(height uint32) Events {
 	return resultEvents
 }
 
-func (store *eventsStore) CommitEvents() error {
+func (store *eventsStore) CommitEvents(height uint32) error {
 	store.loadCache()
 
 	store.pending.Lock()
@@ -146,9 +141,10 @@ func (store *eventsStore) CommitEvents() error {
 
 	store.Lock()
 	defer store.Unlock()
-	if err := store.db.Set(uint32ToBytes(store.pending.height), bytes); err != nil {
+	if err := store.db.Set(uint32ToBytes(height), bytes); err != nil {
 		return err
 	}
+	store.pending.items = Events{}
 	return nil
 }
 
