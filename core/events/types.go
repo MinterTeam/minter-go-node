@@ -27,7 +27,6 @@ type Stake interface {
 
 type Event interface {
 	Type() string
-	// event()
 }
 
 type stake interface {
@@ -42,7 +41,7 @@ type compact interface {
 
 type Events []Event
 
-func (events *Events) NotFound() bool {
+func (events Events) NotFound() bool {
 	return events == nil
 }
 

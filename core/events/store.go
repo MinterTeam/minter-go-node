@@ -30,6 +30,13 @@ type IEventsDB interface {
 	Close() error
 }
 
+type MockEvents struct{}
+
+func (e MockEvents) AddEvent(height uint32, event Event) {}
+func (e MockEvents) LoadEvents(height uint32) Events     { return Events{} }
+func (e MockEvents) CommitEvents() error                 { return nil }
+func (e MockEvents) Close() error                        { return nil }
+
 type eventsStore struct {
 	sync.RWMutex
 	db        db.DB
