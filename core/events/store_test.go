@@ -16,7 +16,7 @@ func TestIEventsDB(t *testing.T) {
 			Amount:          "111497225000000000000",
 			ValidatorPubKey: types.HexToPubkey("Mp9e13f2f5468dd782b316444fbd66595e13dba7d7bd3efa1becd50b42045f58c6"),
 		}
-		store.AddEvent(12, event)
+		store.AddEvent(event)
 	}
 	{
 		event := &StakeKickEvent{
@@ -25,9 +25,9 @@ func TestIEventsDB(t *testing.T) {
 			Amount:          "891977800000000000000",
 			ValidatorPubKey: types.HexToPubkey("Mp738da41ba6a7b7d69b7294afa158b89c5a1b410cbf0c2443c85c5fe24ad1dd1c"),
 		}
-		store.AddEvent(12, event)
+		store.AddEvent(event)
 	}
-	err := store.CommitEvents()
+	err := store.CommitEvents(12)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -39,7 +39,7 @@ func TestIEventsDB(t *testing.T) {
 			Amount:          "891977800000000000001",
 			ValidatorPubKey: types.HexToPubkey("Mp738da41ba6a7b7d69b7294afa158b89c5a1b410cbf0c2443c85c5fe24ad1dd11"),
 		}
-		store.AddEvent(14, event)
+		store.AddEvent(event)
 	}
 	{
 		event := &UnbondEvent{
@@ -48,9 +48,9 @@ func TestIEventsDB(t *testing.T) {
 			Amount:          "891977800000000000002",
 			ValidatorPubKey: types.HexToPubkey("Mp738da41ba6a7b7d69b7294afa158b89c5a1b410cbf0c2443c85c5fe24ad1dd12"),
 		}
-		store.AddEvent(14, event)
+		store.AddEvent(event)
 	}
-	err = store.CommitEvents()
+	err = store.CommitEvents(14)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -62,9 +62,9 @@ func TestIEventsDB(t *testing.T) {
 			Amount:          "891977800000000000010",
 			ValidatorPubKey: types.HexToPubkey("Mp738da41ba6a7b7d69b7294afa158b89c5a1b410cbf0c2443c85c5fe24ad1dd10"),
 		}
-		store.AddEvent(11, event)
+		store.AddEvent(event)
 	}
-	err = store.CommitEvents()
+	err = store.CommitEvents(11)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -175,15 +175,15 @@ func TestIEventsDBm2(t *testing.T) {
 		event := &UpdateCommissionsEvent{
 			Send: "1000000000",
 		}
-		store.AddEvent(12, event)
+		store.AddEvent(event)
 	}
 	{
 		event := &UpdateNetworkEvent{
 			Version: "m2",
 		}
-		store.AddEvent(12, event)
+		store.AddEvent(event)
 	}
-	err := store.CommitEvents()
+	err := store.CommitEvents(12)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -201,4 +201,20 @@ func TestIEventsDBm2(t *testing.T) {
 		t.Fatal("invalid Amount")
 	}
 
+}
+
+func TestIEventsNil(t *testing.T) {
+	store := NewEventsStore(db.NewMemDB())
+	err := store.CommitEvents(12)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if store.LoadEvents(12) == nil {
+		t.Fatalf("nil")
+	}
+
+	if store.LoadEvents(13) != nil {
+		t.Fatalf("not nil")
+	}
 }

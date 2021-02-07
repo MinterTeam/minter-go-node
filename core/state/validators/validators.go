@@ -232,7 +232,7 @@ func (v *Validators) PayRewards(height uint64) {
 			DAOReward.Div(DAOReward, big.NewInt(100))
 			v.bus.Accounts().AddBalance(dao.Address, types.GetBaseCoinID(), DAOReward)
 			remainder.Sub(remainder, DAOReward)
-			v.bus.Events().AddEvent(uint32(height), &eventsdb.RewardEvent{
+			v.bus.Events().AddEvent(&eventsdb.RewardEvent{
 				Role:            eventsdb.RoleDAO.String(),
 				Address:         dao.Address,
 				Amount:          DAOReward.String(),
@@ -245,7 +245,7 @@ func (v *Validators) PayRewards(height uint64) {
 			DevelopersReward.Div(DevelopersReward, big.NewInt(100))
 			v.bus.Accounts().AddBalance(developers.Address, types.GetBaseCoinID(), DevelopersReward)
 			remainder.Sub(remainder, DevelopersReward)
-			v.bus.Events().AddEvent(uint32(height), &eventsdb.RewardEvent{
+			v.bus.Events().AddEvent(&eventsdb.RewardEvent{
 				Role:            eventsdb.RoleDevelopers.String(),
 				Address:         developers.Address,
 				Amount:          DevelopersReward.String(),
@@ -262,7 +262,7 @@ func (v *Validators) PayRewards(height uint64) {
 			totalReward.Sub(totalReward, validatorReward)
 			v.bus.Accounts().AddBalance(candidate.RewardAddress, types.GetBaseCoinID(), validatorReward)
 			remainder.Sub(remainder, validatorReward)
-			v.bus.Events().AddEvent(uint32(height), &eventsdb.RewardEvent{
+			v.bus.Events().AddEvent(&eventsdb.RewardEvent{
 				Role:            eventsdb.RoleValidator.String(),
 				Address:         candidate.RewardAddress,
 				Amount:          validatorReward.String(),
@@ -286,7 +286,7 @@ func (v *Validators) PayRewards(height uint64) {
 				v.bus.Accounts().AddBalance(stake.Owner, types.GetBaseCoinID(), reward)
 				remainder.Sub(remainder, reward)
 
-				v.bus.Events().AddEvent(uint32(height), &eventsdb.RewardEvent{
+				v.bus.Events().AddEvent(&eventsdb.RewardEvent{
 					Role:            eventsdb.RoleDelegator.String(),
 					Address:         stake.Owner,
 					Amount:          reward.String(),
