@@ -582,7 +582,7 @@ func TestRecalculateStakes(t *testing.T) {
 }
 
 func getState() *State {
-	s, err := NewState(0, db.NewMemDB(), emptyEvents{}, 1, 1, 0)
+	s, err := NewState(0, db.NewMemDB(), eventsdb.MockEvents{}, 1, 1, 0)
 
 	if err != nil {
 		panic(err)
@@ -614,10 +614,3 @@ func createTestCandidate(stateDB *State) types.Pubkey {
 
 	return pubkey
 }
-
-type emptyEvents struct{}
-
-func (e emptyEvents) AddEvent(height uint32, event eventsdb.Event) {}
-func (e emptyEvents) LoadEvents(height uint32) eventsdb.Events     { return eventsdb.Events{} }
-func (e emptyEvents) CommitEvents() error                          { return nil }
-func (e emptyEvents) Close() error                                 { return nil }
