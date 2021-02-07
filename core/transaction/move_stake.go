@@ -17,9 +17,9 @@ type MoveStakeData struct {
 	Stake    *big.Int
 }
 
-func (data MoveStakeData) Gas() int {
-	return gasMoveStake
-}
+// func (data MoveStakeData) Gas() int {
+// 	return gasMoveStake
+// }
 func (data MoveStakeData) TxType() TxType {
 	return TypeMoveStake
 }
