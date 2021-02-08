@@ -75,10 +75,16 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	var eventsDB eventsdb.IEventsDB
+	if !cfg.ValidatorMode {
+		eventsDB = eventsdb.NewEventsStore(storages.EventDB())
+	} else {
+		eventsDB = &eventsdb.MockEvents{}
+	}
 	return &Blockchain{
 		appDB:          applicationDB,
 		storages:       storages,
-		eventsDB:       eventsdb.NewEventsStore(storages.EventDB()),
+		eventsDB:       eventsDB,
 		currentMempool: &sync.Map{},
 		cfg:            cfg,
 		stopChan:       ctx,

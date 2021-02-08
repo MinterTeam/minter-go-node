@@ -33,7 +33,7 @@ type IEventsDB interface {
 type MockEvents struct{}
 
 func (e MockEvents) AddEvent(event Event)            {}
-func (e MockEvents) LoadEvents(height uint32) Events { return Events{} }
+func (e MockEvents) LoadEvents(height uint32) Events { return nil }
 func (e MockEvents) CommitEvents(uint32) error       { return nil }
 func (e MockEvents) Close() error                    { return nil }
 

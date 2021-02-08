@@ -59,15 +59,6 @@ func runNode(cmd *cobra.Command) error {
 	}
 	storages := utils.NewStorage(homeDir, configDir)
 
-	_, err = storages.InitEventLevelDB("data/events", minter.GetDbOpts(1024))
-	if err != nil {
-		return err
-	}
-	_, err = storages.InitStateLevelDB("data/state", minter.GetDbOpts(cfg.StateMemAvailable))
-	if err != nil {
-		return err
-	}
-
 	// ensure /config and /tmdata dirs
 	if err := ensureDirs(storages.GetMinterHome()); err != nil {
 		return err
@@ -86,6 +77,16 @@ func runNode(cmd *cobra.Command) error {
 
 	tmConfig := config.GetTmConfig(cfg)
 
+	if !cfg.ValidatorMode {
+		_, err = storages.InitEventLevelDB("data/events", minter.GetDbOpts(1024))
+		if err != nil {
+			return err
+		}
+	}
+	_, err = storages.InitStateLevelDB("data/state", minter.GetDbOpts(cfg.StateMemAvailable))
+	if err != nil {
+		return err
+	}
 	app := minter.NewMinterBlockchain(storages, cfg, cmd.Context())
 
 	// update BlocksTimeDelta in case it was corrupted
