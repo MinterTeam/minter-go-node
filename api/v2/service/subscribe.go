@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
-	"github.com/google/uuid"
 	core_types "github.com/tendermint/tendermint/rpc/core/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/peer"
@@ -28,17 +27,14 @@ func (s *Service) Subscribe(request *pb.SubscribeRequest, stream pb.ApiService_S
 	ctx, cancel := context.WithTimeout(stream.Context(), subscribeTimeout)
 	defer cancel()
 
-	remote := uuid.New().String()
-	subscriber, ok := peer.FromContext(ctx)
-	if ok {
-		remote = subscriber.Addr.String()
-	}
+	subscriber, _ := peer.FromContext(ctx)
+	remote := subscriber.Addr.String()
 	sub, err := s.client.Subscribe(ctx, remote, request.Query)
 	if err != nil {
 		return status.Error(codes.InvalidArgument, err.Error())
 	}
 	defer func() {
-		if err := s.client.Unsubscribe(ctx, remote, request.Query); err != nil {
+		if err := s.client.Unsubscribe(context.Background(), remote, request.Query); err != nil {
 			s.client.Logger.Error(err.Error())
 		}
 	}()

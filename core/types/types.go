@@ -181,7 +181,7 @@ func StrToCoinSymbol(s string) CoinSymbol {
 // StrToCoinBaseSymbol converts give string to a coin base symbol
 func StrToCoinBaseSymbol(s string) CoinSymbol {
 	delimiter := strings.Index(s, "-")
-	if delimiter != -1 {
+	if delimiter > 3 {
 		return StrToCoinSymbol(s[:delimiter])
 	}
 
@@ -192,6 +192,9 @@ func StrToCoinBaseSymbol(s string) CoinSymbol {
 func GetVersionFromSymbol(s string) CoinVersion {
 	parts := strings.Split(s, "-")
 	if len(parts) == 1 {
+		return 0
+	}
+	if len(parts[0]) < 3 {
 		return 0
 	}
 
