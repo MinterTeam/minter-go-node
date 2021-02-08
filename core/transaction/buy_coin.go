@@ -143,7 +143,6 @@ func (data BuyCoinData) Run(tx *Transaction, context state.Interface, rewardPool
 				maxSupply:  gasCoin.MaxSupply(),
 			}
 		} else if tx.GasCoin == data.CoinToBuy {
-			// value.Sub(value, commission)
 			coinTo = dummyCoin{
 				id:         gasCoin.ID(),
 				volume:     big.NewInt(0).Sub(gasCoin.Volume(), commission),
@@ -161,9 +160,6 @@ func (data BuyCoinData) Run(tx *Transaction, context state.Interface, rewardPool
 		}
 		value = formula.CalculatePurchaseAmount(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), value)
 	}
-	// if isGasCommissionFromPoolSwap == false && !tx.GasCoin.IsBaseCoin() && data.CoinToBuy == tx.GasCoin {
-	// 	value.Sub(value, commissionInBaseCoin)
-	// }
 	diffBipReserve := big.NewInt(0).Set(value)
 	if !coinToSell.IsBaseCoin() {
 		value, errResp = CalculateSaleAmountAndCheck(coinFrom, value)
