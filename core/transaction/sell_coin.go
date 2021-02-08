@@ -133,7 +133,6 @@ func (data SellCoinData) Run(tx *Transaction, context state.Interface, rewardPoo
 
 	if isGasCommissionFromPoolSwap == false && !tx.GasCoin.IsBaseCoin() {
 		if tx.GasCoin == data.CoinToSell {
-			// value.Add(value, commission)
 			coinFrom = dummyCoin{
 				id:         gasCoin.ID(),
 				volume:     big.NewInt(0).Sub(gasCoin.Volume(), commission),
@@ -160,9 +159,6 @@ func (data SellCoinData) Run(tx *Transaction, context state.Interface, rewardPoo
 			return *errResp
 		}
 	}
-	// if isGasCommissionFromPoolSwap == false && data.CoinToSell == tx.GasCoin {
-	// 	value.Sub(value, commissionInBaseCoin)
-	// }
 	diffBipReserve := big.NewInt(0).Set(value)
 	if !coinToBuy.IsBaseCoin() {
 		value = formula.CalculatePurchaseReturn(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), value)

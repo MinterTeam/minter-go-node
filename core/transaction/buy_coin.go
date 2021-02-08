@@ -172,13 +172,14 @@ func (data BuyCoinData) Run(tx *Transaction, context state.Interface, rewardPool
 		}
 	}
 
-	if value.Cmp(data.MaximumValueToSell) == 1 {
+	valueToSell := big.NewInt(0).Set(value)
+	if valueToSell.Cmp(data.MaximumValueToSell) == 1 {
 		return Response{
 			Code: code.MaximumValueToSellReached,
 			Log: fmt.Sprintf(
 				"You wanted to sell maximum %s, but currently you need to spend %s to complete tx",
-				data.MaximumValueToSell.String(), value.String()),
-			Info: EncodeError(code.NewMaximumValueToSellReached(data.MaximumValueToSell.String(), value.String(), coinFrom.GetFullSymbol(), coinFrom.ID().String())),
+				data.MaximumValueToSell.String(), valueToSell.String()),
+			Info: EncodeError(code.NewMaximumValueToSellReached(data.MaximumValueToSell.String(), valueToSell.String(), coinFrom.GetFullSymbol(), coinFrom.ID().String())),
 		}
 	}
 
