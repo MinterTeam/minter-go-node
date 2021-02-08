@@ -10,7 +10,7 @@ const lastBlock = 43702611
 const firstReward = 333
 const lastReward = 68
 
-var startHeight uint64 = 0
+var startHeight uint64 = 9150000
 var beforeGenesis = big.NewInt(0)
 
 // GetRewardForBlock returns reward for creation of given block. If there is no reward - returns 0.

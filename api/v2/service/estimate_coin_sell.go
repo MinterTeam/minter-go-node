@@ -137,10 +137,11 @@ func (s *Service) calcSellFromPool(value *big.Int, swapChecker swap.EditableChec
 	if !swapChecker.IsExist() {
 		return nil, s.createError(status.New(codes.NotFound, fmt.Sprintf("swap pair beetwen coins %s and %s not exists in pool", coinFrom.GetFullSymbol(), coinTo.GetFullSymbol())), transaction.EncodeError(code.NewPairNotExists(coinFrom.ID().String(), coinTo.ID().String())))
 	}
-	if errResp := transaction.CheckSwap(swapChecker, coinFrom, coinTo, value, swapChecker.CalculateBuyForSell(value), false); errResp != nil {
+	buyValue := swapChecker.CalculateBuyForSell(value)
+	if errResp := transaction.CheckSwap(swapChecker, coinFrom, coinTo, value, buyValue, false); errResp != nil {
 		return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
 	}
-	return value, nil
+	return buyValue, nil
 }
 
 func (s *Service) calcSellFromBancor(value *big.Int, coinTo *coins.Model, coinFrom *coins.Model) (*big.Int, error) {

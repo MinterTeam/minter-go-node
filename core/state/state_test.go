@@ -2,6 +2,7 @@ package state
 
 import (
 	"github.com/MinterTeam/minter-go-node/core/check"
+	eventsdb "github.com/MinterTeam/minter-go-node/core/events"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/helpers"
@@ -16,7 +17,7 @@ func TestStateExport(t *testing.T) {
 	t.Parallel()
 	height := uint64(0)
 
-	state, err := NewState(height, db.NewMemDB(), emptyEvents{}, 1, 2, 0)
+	state, err := NewState(height, db.NewMemDB(), &eventsdb.MockEvents{}, 1, 2, 0)
 	if err != nil {
 		log.Panic("Cannot create state")
 	}
