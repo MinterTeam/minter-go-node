@@ -198,11 +198,11 @@ func (blockchain *Blockchain) updateBlocksTimeDelta(height uint64, count int64) 
 		return
 	}
 
-	if int64(height)-count-1 < 1 {
+	blockStore := blockchain.tmNode.BlockStore()
+	baseMeta := blockStore.LoadBaseMeta()
+	if int64(height)-count-1 < baseMeta.Header.Height {
 		return
 	}
-
-	blockStore := blockchain.tmNode.BlockStore()
 
 	blockA := blockStore.LoadBlockMeta(int64(height) - count - 1)
 	blockB := blockStore.LoadBlockMeta(int64(height) - 1)
