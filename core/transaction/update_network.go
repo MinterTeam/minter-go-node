@@ -30,6 +30,11 @@ func (data VoteUpdateData) GetPubKey() types.Pubkey {
 }
 
 func (data VoteUpdateData) basicCheck(tx *Transaction, context *state.CheckState, block uint64) *Response {
+	// if len(data.Version) > 10 {
+	// 	return &Response{
+	// 		// todo
+	// 	}
+	// }
 	if data.Height < block {
 		return &Response{
 			Code: code.VoiceExpired,

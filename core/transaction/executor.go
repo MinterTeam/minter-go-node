@@ -16,7 +16,7 @@ import (
 
 const (
 	maxTxLength          = 7168
-	maxPayloadLength     = 1024 // todo
+	maxPayloadLength     = 1024 * 10
 	maxServiceDataLength = 128
 	stdGas               = 5000
 )
