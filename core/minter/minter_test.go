@@ -264,11 +264,11 @@ func TestBlockchain_GetBlocksTimeDelta(t *testing.T) {
 			continue
 		}
 
-		delta, err := blockchain.appDB.GetLastBlocksTimeDelta(uint64(height))
+		delta, count, err := blockchain.appDB.GetLastBlocksTimeDelta(uint64(height + 1))
 		if err != nil {
 			t.Fatal(err)
 		}
-		t.Log(delta)
+		t.Log(delta, count, delta/count)
 		if height > startHeight+10 {
 			return
 		}
