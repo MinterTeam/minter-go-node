@@ -2,6 +2,7 @@ package minter
 
 import (
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/core/appdb"
 	eventsdb "github.com/MinterTeam/minter-go-node/core/events"
 	"github.com/MinterTeam/minter-go-node/core/state"
 	validators2 "github.com/MinterTeam/minter-go-node/core/state/validators"
@@ -227,7 +228,7 @@ func (blockchain *Blockchain) calcMaxGas(height uint64) uint64 {
 		return defaultMaxGas
 	}
 
-	if delta > targetTime {
+	if delta > targetTime*appdb.BlockDelta {
 		newMaxGas = newMaxGas * 7 / 10 // decrease by 30%
 	} else {
 		newMaxGas = newMaxGas * 105 / 100 // increase by 5%
