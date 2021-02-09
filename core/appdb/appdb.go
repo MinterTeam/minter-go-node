@@ -163,6 +163,8 @@ type lastBlocksTimeDelta struct {
 	Delta  int
 }
 
+const BlockDeltaCount = 3
+
 // GetLastBlocksTimeDelta returns delta of time between latest blocks
 func (appDB *AppDB) GetLastBlocksTimeDelta(height uint64) (int, error) {
 	if len(appDB.blocksDelta) == 0 {
@@ -210,8 +212,8 @@ func (appDB *AppDB) AddBlocksTimeDelta(height uint64, delta int) {
 		Delta:  delta,
 	})
 	count := len(appDB.blocksDelta)
-	if count > 3 {
-		appDB.blocksDelta = appDB.blocksDelta[count-3 : count]
+	if count > BlockDeltaCount {
+		appDB.blocksDelta = appDB.blocksDelta[count-BlockDeltaCount:]
 	}
 
 	data, err := tmjson.Marshal(appDB.blocksDelta)
