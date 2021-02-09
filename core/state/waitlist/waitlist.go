@@ -92,12 +92,13 @@ func (wl *WaitList) Commit(db *iavl.MutableTree) error {
 	dirty := wl.getOrderedDirty()
 	for _, address := range dirty {
 		w := wl.getFromMap(address)
+		path := append([]byte{mainPrefix}, address.Bytes()...)
 
 		wl.lock.Lock()
 		delete(wl.dirty, address)
 		wl.lock.Unlock()
 
-		path := append([]byte{mainPrefix}, address.Bytes()...)
+		w.lock.RLock()
 		if len(w.List) != 0 {
 			data, err := rlp.EncodeToBytes(w)
 			if err != nil {
@@ -107,6 +108,7 @@ func (wl *WaitList) Commit(db *iavl.MutableTree) error {
 		} else {
 			db.Remove(path)
 		}
+		w.lock.RUnlock()
 	}
 
 	return nil
@@ -183,6 +185,8 @@ func (wl *WaitList) Delete(address types.Address, pubkey types.Pubkey, coin type
 	}
 
 	value := big.NewInt(0)
+
+	w.lock.RLock()
 	items := make([]Item, 0, len(w.List)-1)
 	for _, item := range w.List {
 		if item.CandidateId != candidate.ID || item.Coin != coin {
@@ -191,8 +195,9 @@ func (wl *WaitList) Delete(address types.Address, pubkey types.Pubkey, coin type
 			value.Add(value, item.Value)
 		}
 	}
-
 	w.List = items
+	w.lock.RUnlock()
+
 	wl.markDirty(address)
 	wl.setToMap(address, w)
 	wl.bus.Checker().AddCoin(coin, big.NewInt(0).Neg(value))
@@ -246,14 +251,18 @@ func (wl *WaitList) setToMap(address types.Address, model *Model) {
 }
 
 func (wl *WaitList) markDirty(address types.Address) {
+	wl.lock.Lock()
+	defer wl.lock.Unlock()
 	wl.dirty[address] = struct{}{}
 }
 
 func (wl *WaitList) getOrderedDirty() []types.Address {
+	wl.lock.Lock()
 	keys := make([]types.Address, 0, len(wl.dirty))
 	for k := range wl.dirty {
 		keys = append(keys, k)
 	}
+	wl.lock.Unlock()
 
 	sort.SliceStable(keys, func(i, j int) bool {
 		return bytes.Compare(keys[i].Bytes(), keys[j].Bytes()) == 1
