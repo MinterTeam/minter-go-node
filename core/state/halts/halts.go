@@ -63,18 +63,12 @@ func (hb *HaltBlocks) Commit(db *iavl.MutableTree) error {
 	dirty := hb.getOrderedDirty()
 	for _, height := range dirty {
 		haltBlock := hb.getFromMap(height)
+		path := getPath(height)
 
 		hb.lock.Lock()
 		delete(hb.dirty, height)
-		hb.lock.Unlock()
-
-		path := getPath(height)
-
 		if haltBlock.deleted {
-			hb.lock.Lock()
 			delete(hb.list, height)
-			hb.lock.Unlock()
-
 			db.Remove(path)
 		} else {
 			data, err := rlp.EncodeToBytes(haltBlock)
@@ -84,6 +78,7 @@ func (hb *HaltBlocks) Commit(db *iavl.MutableTree) error {
 
 			db.Set(path, data)
 		}
+		hb.lock.Unlock()
 	}
 
 	return nil
@@ -130,14 +125,19 @@ func (hb *HaltBlocks) get(height uint64) *Model {
 }
 
 func (hb *HaltBlocks) markDirty(height uint64) {
+	hb.lock.Lock()
+	defer hb.lock.Unlock()
+
 	hb.dirty[height] = struct{}{}
 }
 
 func (hb *HaltBlocks) getOrderedDirty() []uint64 {
+	hb.lock.RLock()
 	keys := make([]uint64, 0, len(hb.dirty))
 	for k := range hb.dirty {
 		keys = append(keys, k)
 	}
+	hb.lock.RUnlock()
 
 	sort.SliceStable(keys, func(i, j int) bool {
 		return keys[i] < keys[j]
@@ -151,6 +151,9 @@ func (hb *HaltBlocks) IsHaltExists(height uint64, pubkey types.Pubkey) bool {
 	if model == nil {
 		return false
 	}
+
+	model.lock.Lock()
+	defer model.lock.Unlock()
 
 	for _, halt := range model.List {
 		if halt.Pubkey == pubkey {
