@@ -126,16 +126,14 @@ func (data SellAllCoinData) Run(tx *Transaction, context state.Interface, reward
 	coinFrom = checkState.Coins().GetCoin(coinToSell)
 	coinTo := checkState.Coins().GetCoin(coinToBuy)
 
-	valueToSell := big.NewInt(0).Set(balance)
-	if isGasCommissionFromPoolSwap {
-		valueToSell.Sub(valueToSell, commission)
-	}
+	valueToSell := big.NewInt(0).Sub(balance, commission)
+
 	value := big.NewInt(0).Set(valueToSell)
 	if value.Sign() != 1 {
 		return Response{
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), balance.String(), coinFrom.GetFullSymbol()),
-			Info: EncodeError(code.NewInsufficientFunds(sender.String(), balance.String(), coinFrom.GetFullSymbol(), data.CoinToSell.String())),
+			Info: EncodeError(code.NewInsufficientFunds(sender.String(), commission.String(), coinFrom.GetFullSymbol(), data.CoinToSell.String())),
 		}
 	}
 
@@ -145,11 +143,7 @@ func (data SellAllCoinData) Run(tx *Transaction, context state.Interface, reward
 			return *errResp
 		}
 	}
-	subBipReserve := big.NewInt(0).Set(value)
-	if !isGasCommissionFromPoolSwap {
-		value.Sub(value, commissionInBaseCoin)
-	}
-	addBipReserve := big.NewInt(0).Set(value)
+	diffBipReserve := big.NewInt(0).Set(value)
 	if !coinToBuy.IsBaseCoin() {
 		value = formula.CalculatePurchaseReturn(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), value)
 		if errResp := CheckForCoinSupplyOverflow(coinTo, value); errResp != nil {
@@ -177,12 +171,12 @@ func (data SellAllCoinData) Run(tx *Transaction, context state.Interface, reward
 		deliverState.Accounts.SubBalance(sender, data.CoinToSell, balance)
 		if !data.CoinToSell.IsBaseCoin() {
 			deliverState.Coins.SubVolume(data.CoinToSell, valueToSell)
-			deliverState.Coins.SubReserve(data.CoinToSell, subBipReserve)
+			deliverState.Coins.SubReserve(data.CoinToSell, diffBipReserve)
 		}
 		deliverState.Accounts.AddBalance(sender, data.CoinToBuy, value)
 		if !data.CoinToBuy.IsBaseCoin() {
 			deliverState.Coins.AddVolume(data.CoinToBuy, value)
-			deliverState.Coins.AddReserve(data.CoinToBuy, addBipReserve)
+			deliverState.Coins.AddReserve(data.CoinToBuy, diffBipReserve)
 		}
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 

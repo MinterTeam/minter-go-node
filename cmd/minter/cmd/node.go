@@ -22,7 +22,6 @@ import (
 	"github.com/tendermint/tendermint/privval"
 	"github.com/tendermint/tendermint/proxy"
 	rpc "github.com/tendermint/tendermint/rpc/client/local"
-	"github.com/tendermint/tendermint/store"
 	tmTypes "github.com/tendermint/tendermint/types"
 	"io"
 	"net/http"
@@ -182,25 +181,6 @@ func checkRlimits() error {
 	}
 
 	return nil
-}
-
-func updateBlocksTimeDelta(app *minter.Blockchain, config *tmCfg.Config) {
-	blockStoreDB, err := tmNode.DefaultDBProvider(&tmNode.DBContext{ID: "blockstore", Config: config})
-	if err != nil {
-		panic(err)
-	}
-
-	blockStore := store.NewBlockStore(blockStoreDB)
-	height := uint64(blockStore.Height())
-	count := uint64(3)
-	if _, err := app.GetBlocksTimeDelta(height, count); height >= 20 && err != nil {
-		blockA := blockStore.LoadBlockMeta(int64(height - count - 1))
-		blockB := blockStore.LoadBlockMeta(int64(height - 1))
-
-		delta := int(blockB.Header.Time.Sub(blockA.Header.Time).Seconds())
-		app.SetBlocksTimeDelta(height, delta)
-	}
-	blockStoreDB.Close()
 }
 
 func startTendermintNode(app types.Application, cfg *tmCfg.Config, logger tmLog.Logger, home string) *tmNode.Node {
