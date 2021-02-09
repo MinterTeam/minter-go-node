@@ -3,13 +3,12 @@ module github.com/MinterTeam/minter-go-node
 go 1.15
 
 require (
-	github.com/MinterTeam/node-grpc-gateway v1.2.2-0.20210204173011-0f5d7f8e206d
+	github.com/MinterTeam/node-grpc-gateway v1.2.2-0.20210209133243-8f08af6b7437
 	github.com/btcsuite/btcd v0.21.0-beta
 	github.com/c-bata/go-prompt v0.2.3
 	github.com/cosmos/iavl v0.15.3
 	github.com/go-kit/kit v0.10.0
 	github.com/golang/protobuf v1.4.3
-	github.com/google/uuid v1.1.2
 	github.com/gorilla/handlers v1.4.2
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.2
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
