@@ -218,7 +218,7 @@ func (blockchain *Blockchain) calcMaxGas(height uint64) uint64 {
 	const targetTime = 7
 
 	// check if blocks are created in time
-	delta, err := blockchain.appDB.GetLastBlocksTimeDelta(height)
+	delta, count, err := blockchain.appDB.GetLastBlocksTimeDelta(height)
 	if err != nil {
 		log.Println(err)
 		return defaultMaxGas
@@ -227,7 +227,7 @@ func (blockchain *Blockchain) calcMaxGas(height uint64) uint64 {
 	// get current max gas
 	newMaxGas := blockchain.stateCheck.App().GetMaxGas()
 
-	if delta > targetTime {
+	if delta > targetTime*count {
 		newMaxGas = newMaxGas * 7 / 10 // decrease by 30%
 	} else {
 		newMaxGas = newMaxGas * 105 / 100 // increase by 5%

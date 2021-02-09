@@ -166,14 +166,14 @@ type lastBlocksTimeDelta struct {
 const blockDeltaCount = 3
 
 // GetLastBlocksTimeDelta returns delta of time between latest blocks
-func (appDB *AppDB) GetLastBlocksTimeDelta(height uint64) (int, error) {
+func (appDB *AppDB) GetLastBlocksTimeDelta(height uint64) (int, int, error) {
 	if len(appDB.blocksDelta) == 0 {
 		result, err := appDB.db.Get([]byte(blockTimeDeltaPath))
 		if err != nil {
 			panic(err)
 		}
 		if len(result) == 0 {
-			return 0, errors.New("no info about BlocksTimeDelta is available")
+			return 0, 0, errors.New("no info about BlocksTimeDelta is available")
 		}
 		err = tmjson.Unmarshal(result, &appDB.blocksDelta)
 		if err != nil {
@@ -184,21 +184,21 @@ func (appDB *AppDB) GetLastBlocksTimeDelta(height uint64) (int, error) {
 	return calcBlockDelta(height, appDB.blocksDelta)
 }
 
-func calcBlockDelta(height uint64, deltas []*lastBlocksTimeDelta) (int, error) {
+func calcBlockDelta(height uint64, deltas []*lastBlocksTimeDelta) (int, int, error) {
 	count := len(deltas)
 	if count == 0 {
-		return 0, errors.New("no info about BlocksTimeDelta is available")
+		return 0, 0, errors.New("no info about BlocksTimeDelta is available")
 	}
 	for i, delta := range deltas {
 		if height-delta.Height != uint64(count-i) {
-			return 0, fmt.Errorf("no info about BlocksTimeDelta is available, but has info about %d block height", delta.Height)
+			return 0, 0, fmt.Errorf("no info about BlocksTimeDelta is available, but has info about %d block height", delta.Height)
 		}
 	}
 	var result int
 	for _, delta := range deltas {
 		result += delta.Delta
 	}
-	return result / count, nil
+	return result, count, nil
 }
 
 func (appDB *AppDB) AddBlocksTimeDelta(height uint64, delta int) {
