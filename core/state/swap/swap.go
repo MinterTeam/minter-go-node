@@ -479,8 +479,7 @@ func (p *Pair) CoinID() uint32 {
 
 func (p *Pair) CalculateAddLiquidity(amount0 *big.Int, totalSupply *big.Int) (liquidity *big.Int, amount1 *big.Int) {
 	reserve0, reserve1 := p.Reserves()
-	mul := new(big.Int).Mul(totalSupply, amount0)
-	return new(big.Int).Div(mul, reserve0), new(big.Int).Div(new(big.Int).Mul(mul, reserve1), new(big.Int).Mul(totalSupply, reserve0))
+	return new(big.Int).Div(new(big.Int).Mul(totalSupply, amount0), reserve0), new(big.Int).Div(new(big.Int).Mul(amount0, reserve1), reserve0)
 }
 
 func (p *Pair) Mint(amount0, amount1, totalSupply *big.Int) (liquidity *big.Int) {
