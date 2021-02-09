@@ -3,6 +3,7 @@ package appdb
 import (
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/tendermint/tendermint/abci/types"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
@@ -28,6 +29,7 @@ func init() {
 type AppDB struct {
 	db          db.DB
 	startHeight uint64
+	blocksDelta []*lastBlocksTimeDelta
 	validators  abciTypes.ValidatorUpdates
 }
 
@@ -163,34 +165,55 @@ type lastBlocksTimeDelta struct {
 
 // GetLastBlocksTimeDelta returns delta of time between latest blocks
 func (appDB *AppDB) GetLastBlocksTimeDelta(height uint64) (int, error) {
-	result, err := appDB.db.Get([]byte(blockTimeDeltaPath))
-	if err != nil {
-		panic(err)
-	}
-	if result == nil {
-		return 0, errors.New("no info about lastBlocksTimeDelta is available")
+	count := len(appDB.blocksDelta)
+	if count == 0 {
+		result, err := appDB.db.Get([]byte(blockTimeDeltaPath))
+		if err != nil {
+			panic(err)
+		}
+		if result == nil {
+			return 0, errors.New("no info about BlocksTimeDelta is available")
+		}
+
+		err = tmjson.Unmarshal(result, &appDB.blocksDelta)
+		if err != nil {
+			panic(err)
+		}
 	}
 
-	data := lastBlocksTimeDelta{}
-	err = tmjson.Unmarshal(result, &data)
-	if err != nil {
-		panic(err)
-	}
-
-	if data.Height != height {
-		return 0, errors.New("no info about lastBlocksTimeDelta is available")
-	}
-
-	return data.Delta, nil
+	return calcBlockDelta(height, appDB.blocksDelta)
 }
 
-// SetLastBlocksTimeDelta stores delta of time between latest blocks
-func (appDB *AppDB) SetLastBlocksTimeDelta(height uint64, delta int) {
-	data, err := tmjson.Marshal(&lastBlocksTimeDelta{
+func calcBlockDelta(height uint64, deltas []*lastBlocksTimeDelta) (int, error) {
+	count := len(deltas)
+	for i, delta := range deltas {
+		if height-delta.Height != uint64(count-i) {
+			return 0, fmt.Errorf("no info about BlocksTimeDelta is available, but has info about %d block height", delta.Height)
+		}
+	}
+	var result int
+	for _, delta := range deltas {
+		result += delta.Delta
+	}
+	return result / count, nil
+}
+
+func (appDB *AppDB) AddBlocksTimeDelta(height uint64, delta int) {
+	for _, timeDelta := range appDB.blocksDelta {
+		if timeDelta.Height == height {
+			return
+		}
+	}
+	appDB.blocksDelta = append(appDB.blocksDelta, &lastBlocksTimeDelta{
 		Height: height,
 		Delta:  delta,
 	})
+	count := len(appDB.blocksDelta)
+	if count > 3 {
+		appDB.blocksDelta = appDB.blocksDelta[count-3 : count]
+	}
 
+	data, err := tmjson.Marshal(appDB.blocksDelta)
 	if err != nil {
 		panic(err)
 	}

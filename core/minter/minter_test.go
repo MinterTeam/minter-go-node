@@ -247,6 +247,35 @@ func TestBlockchain_UpdateCommission(t *testing.T) {
 	}
 }
 
+func TestBlockchain_GetBlocksTimeDelta(t *testing.T) {
+	blockchain, tmCli, _, cancel := initTestNode(t, 100)
+	defer cancel()
+
+	blocks, err := tmCli.Subscribe(context.Background(), "test-client", "tm.event = 'NewBlock'")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var startHeight int64
+	for block := range blocks {
+		height := block.Data.(types2.EventDataNewBlock).Block.Height
+		if startHeight == 0 {
+			startHeight = height
+			continue
+		}
+
+		delta, err := blockchain.appDB.GetLastBlocksTimeDelta(uint64(height))
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Log(delta)
+		if height > startHeight+10 {
+			return
+		}
+	}
+
+}
+
 func TestBlockchain_Run(t *testing.T) {
 	_, _, _, cancel := initTestNode(t, 0)
 	cancel()

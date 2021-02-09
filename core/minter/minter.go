@@ -192,7 +192,7 @@ func (blockchain *Blockchain) resetCheckState() {
 	blockchain.stateCheck = state.NewCheckState(blockchain.stateDeliver)
 }
 
-func (blockchain *Blockchain) updateBlocksTimeDelta(height uint64, count int64) {
+func (blockchain *Blockchain) updateBlocksTimeDelta(height uint64) {
 	// should do this because tmNode is unavailable during Tendermint's replay mode
 	if blockchain.tmNode == nil {
 		return
@@ -200,41 +200,32 @@ func (blockchain *Blockchain) updateBlocksTimeDelta(height uint64, count int64) 
 
 	blockStore := blockchain.tmNode.BlockStore()
 	baseMeta := blockStore.LoadBaseMeta()
-	if int64(height)-count-1 < baseMeta.Header.Height {
+	if int64(height)-2 < baseMeta.Header.Height {
 		return
 	}
 
-	blockA := blockStore.LoadBlockMeta(int64(height) - count - 1)
+	blockA := blockStore.LoadBlockMeta(int64(height) - 2)
 	blockB := blockStore.LoadBlockMeta(int64(height) - 1)
 
 	delta := int(blockB.Header.Time.Sub(blockA.Header.Time).Seconds())
-	blockchain.appDB.SetLastBlocksTimeDelta(height, delta)
-}
-
-// SetBlocksTimeDelta sets current blocks time delta
-func (blockchain *Blockchain) SetBlocksTimeDelta(height uint64, value int) {
-	blockchain.appDB.SetLastBlocksTimeDelta(height, value)
-}
-
-// GetBlocksTimeDelta returns current blocks time delta
-func (blockchain *Blockchain) GetBlocksTimeDelta(height, _ uint64) (int, error) {
-	return blockchain.appDB.GetLastBlocksTimeDelta(height)
+	blockchain.appDB.AddBlocksTimeDelta(height-1, delta)
 }
 
 func (blockchain *Blockchain) calcMaxGas(height uint64) uint64 {
 	const targetTime = 7
 	const blockDelta = 3
 
-	// skip first 20 blocks
-	if height <= 20 {
-		return defaultMaxGas
-	}
-
 	// get current max gas
 	newMaxGas := blockchain.stateCheck.App().GetMaxGas()
 
 	// check if blocks are created in time
-	if delta, _ := blockchain.GetBlocksTimeDelta(height, blockDelta); delta > targetTime*blockDelta {
+	delta, err := blockchain.appDB.GetLastBlocksTimeDelta(height)
+	if err != nil {
+		log.Println(err)
+		return defaultMaxGas
+	}
+
+	if delta > targetTime*blockDelta {
 		newMaxGas = newMaxGas * 7 / 10 // decrease by 30%
 	} else {
 		newMaxGas = newMaxGas * 105 / 100 // increase by 5%

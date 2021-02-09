@@ -146,7 +146,7 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 	blockchain.StatisticData().PushStartBlock(&statistics.StartRequest{Height: int64(height), Now: time.Now(), HeaderTime: req.Header.Time})
 	blockchain.stateDeliver.Lock()
 
-	blockchain.updateBlocksTimeDelta(height, 3)
+	blockchain.updateBlocksTimeDelta(height)
 
 	// compute max gas
 	maxGas := blockchain.calcMaxGas(height)
