@@ -200,15 +200,15 @@ func (blockchain *Blockchain) updateBlocksTimeDelta(height uint64) {
 
 	blockStore := blockchain.tmNode.BlockStore()
 	baseMeta := blockStore.LoadBaseMeta()
-	if int64(height)-2 < baseMeta.Header.Height {
+	if int64(height)-1 < baseMeta.Header.Height {
 		return
 	}
 
-	blockA := blockStore.LoadBlockMeta(int64(height) - 2)
-	blockB := blockStore.LoadBlockMeta(int64(height) - 1)
+	blockA := blockStore.LoadBlockMeta(int64(height) - 1)
+	blockB := blockStore.LoadBlockMeta(int64(height))
 
 	delta := int(blockB.Header.Time.Sub(blockA.Header.Time).Seconds())
-	blockchain.appDB.AddBlocksTimeDelta(height-1, delta)
+	blockchain.appDB.AddBlocksTimeDelta(height, delta)
 }
 
 func (blockchain *Blockchain) calcMaxGas(height uint64) uint64 {

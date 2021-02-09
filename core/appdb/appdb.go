@@ -165,16 +165,14 @@ type lastBlocksTimeDelta struct {
 
 // GetLastBlocksTimeDelta returns delta of time between latest blocks
 func (appDB *AppDB) GetLastBlocksTimeDelta(height uint64) (int, error) {
-	count := len(appDB.blocksDelta)
-	if count == 0 {
+	if len(appDB.blocksDelta) == 0 {
 		result, err := appDB.db.Get([]byte(blockTimeDeltaPath))
 		if err != nil {
 			panic(err)
 		}
-		if result == nil {
+		if len(result) == 0 {
 			return 0, errors.New("no info about BlocksTimeDelta is available")
 		}
-
 		err = tmjson.Unmarshal(result, &appDB.blocksDelta)
 		if err != nil {
 			panic(err)
@@ -186,6 +184,9 @@ func (appDB *AppDB) GetLastBlocksTimeDelta(height uint64) (int, error) {
 
 func calcBlockDelta(height uint64, deltas []*lastBlocksTimeDelta) (int, error) {
 	count := len(deltas)
+	if count == 0 {
+		return 0, errors.New("no info about BlocksTimeDelta is available")
+	}
 	for i, delta := range deltas {
 		if height-delta.Height != uint64(count-i) {
 			return 0, fmt.Errorf("no info about BlocksTimeDelta is available, but has info about %d block height", delta.Height)
