@@ -4,6 +4,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"math/big"
+	"sync"
 )
 
 type Price struct {
@@ -74,9 +75,13 @@ type Model struct {
 
 	height    uint64
 	markDirty func()
+
+	lock sync.Mutex
 }
 
-func (m *Model) addVoite(pubkey types.Pubkey) {
+func (m *Model) addVote(pubkey types.Pubkey) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
 	m.Votes = append(m.Votes, pubkey)
 	m.markDirty()
 }
