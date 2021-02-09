@@ -3,6 +3,7 @@ package frozenfunds
 import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"math/big"
+	"sync"
 )
 
 type Item struct {
@@ -20,14 +21,19 @@ type Model struct {
 	height    uint64
 	deleted   bool
 	markDirty func(height uint64)
+	lock      sync.RWMutex
 }
 
 func (m *Model) delete() {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+
 	m.deleted = true
 	m.markDirty(m.height)
 }
 
 func (m *Model) addFund(address types.Address, pubkey types.Pubkey, candidateID uint32, coin types.CoinID, value *big.Int, moveToCandidateID *uint32) {
+	m.lock.Lock()
 	m.List = append(m.List, Item{
 		Address:         address,
 		CandidateKey:    &pubkey,
@@ -36,6 +42,8 @@ func (m *Model) addFund(address types.Address, pubkey types.Pubkey, candidateID 
 		Value:           value,
 		MoveToCandidate: moveToCandidateID,
 	})
+	m.lock.Unlock()
+
 	m.markDirty(m.height)
 }
 
