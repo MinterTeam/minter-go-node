@@ -116,9 +116,15 @@ func (c *Candidates) SetImmutableTree(immutableTree *iavl.ImmutableTree) {
 }
 
 func (c *Candidates) IsChangedPublicKeys() bool {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
 	return c.isChangedPublicKeys
 }
 func (c *Candidates) ResetIsChangedPublicKeys() {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
 	c.isChangedPublicKeys = false
 }
 
@@ -128,16 +134,20 @@ func (c *Candidates) Commit(db *iavl.MutableTree) error {
 
 	hasDirty := false
 	for _, pubkey := range keys {
-		if c.getFromMap(pubkey).isDirty {
+		candidate := c.getFromMap(pubkey)
+		candidate.RLock()
+		if candidate.isDirty {
 			hasDirty = true
+			candidate.RUnlock()
 			break
 		}
+		candidate.RUnlock()
 	}
 
 	if hasDirty {
-		var candidates []*Candidate
+		var candidates []Candidate
 		for _, key := range keys {
-			candidates = append(candidates, c.getFromMap(key))
+			candidates = append(candidates, *c.getFromMap(key))
 		}
 		data, err := rlp.EncodeToBytes(candidates)
 		if err != nil {
@@ -148,6 +158,7 @@ func (c *Candidates) Commit(db *iavl.MutableTree) error {
 		db.Set(path, data)
 	}
 
+	c.lock.Lock()
 	if c.isDirty {
 		c.isDirty = false
 		var pubIDs []pubkeyID
@@ -182,34 +193,56 @@ func (c *Candidates) Commit(db *iavl.MutableTree) error {
 
 		db.Set([]byte{maxIDPrefix}, c.maxIDBytes())
 	}
+	c.lock.Unlock()
 
 	for _, pubkey := range keys {
 		candidate := c.getFromMap(pubkey)
+		candidate.Lock()
 		candidate.isDirty = false
+		dirty := candidate.isTotalStakeDirty
+		candidate.Unlock()
 
-		if candidate.isTotalStakeDirty {
+		if dirty {
+			candidate.Lock()
+			candidate.isTotalStakeDirty = false
+			totalStakeBytes := candidate.totalBipStake.Bytes()
+			candidate.Unlock()
+
 			path := []byte{mainPrefix}
 			path = append(path, candidate.idBytes()...)
 			path = append(path, totalStakePrefix)
-			db.Set(path, candidate.totalBipStake.Bytes())
-			candidate.isTotalStakeDirty = false
+			db.Set(path, totalStakeBytes)
 		}
 
 		for index, stake := range candidate.stakes {
-			if !candidate.dirtyStakes[index] {
+			candidate.RLock()
+			dirtyStakes := candidate.dirtyStakes[index]
+			candidate.RUnlock()
+			if !dirtyStakes {
 				continue
 			}
 
+			candidate.Lock()
 			candidate.dirtyStakes[index] = false
+			candidate.Unlock()
 
 			path := []byte{mainPrefix}
 			path = append(path, candidate.idBytes()...)
 			path = append(path, stakesPrefix)
 			path = append(path, big.NewInt(int64(index)).Bytes()...)
 
-			if stake == nil || stake.Value.Sign() == 0 {
+			isEmpty := stake == nil
+			if !isEmpty {
+				stake.RLock()
+				isEmpty = stake.Value.Sign() == 0
+				stake.RUnlock()
+			}
+			if isEmpty {
 				db.Remove(path)
+
+				candidate.Lock()
 				candidate.stakes[index] = nil
+				candidate.Unlock()
 				continue
 			}
 
@@ -221,8 +254,15 @@ func (c *Candidates) Commit(db *iavl.MutableTree) error {
 			db.Set(path, data)
 		}
 
-		if candidate.isUpdatesDirty {
+		candidate.RLock()
+		updatesDirty := candidate.isUpdatesDirty
+		candidate.RUnlock()
+
+		if updatesDirty {
+			candidate.Lock()
+			candidate.isUpdatesDirty = false
 			data, err := rlp.EncodeToBytes(candidate.updates)
+			candidate.Unlock()
 			if err != nil {
 				return fmt.Errorf("can't encode candidates updates: %v", err)
 			}
@@ -231,7 +271,6 @@ func (c *Candidates) Commit(db *iavl.MutableTree) error {
 			path = append(path, candidate.idBytes()...)
 			path = append(path, updatesPrefix)
 			db.Set(path, data)
-			candidate.isUpdatesDirty = false
 		}
 	}
 
@@ -246,14 +285,18 @@ func (c *Candidates) GetNewCandidates(valCount int) []Candidate {
 
 	candidates := c.GetCandidates()
 	for _, candidate := range candidates {
+		candidate.RLock()
 		if candidate.Status != CandidateStatusOnline {
+			candidate.RUnlock()
 			continue
 		}
 
 		if candidate.totalBipStake.Cmp(minValidatorBipStake) == -1 {
+			candidate.RUnlock()
 			continue
 		}
 
+		candidate.RUnlock()
 		result = append(result, *candidate)
 	}
 
@@ -578,18 +621,26 @@ func (c *Candidates) GetCandidates() []*Candidate {
 // GetTotalStake calculates and returns total stake of a candidate
 func (c *Candidates) GetTotalStake(pubkey types.Pubkey) *big.Int {
 	candidate := c.getFromMap(pubkey)
-	if candidate.totalBipStake == nil {
+	candidate.RLock()
+	isLoad := candidate.totalBipStake == nil
+	candidate.RUnlock()
+	if isLoad {
 		path := []byte{mainPrefix}
 		path = append(path, candidate.idBytes()...)
 		path = append(path, totalStakePrefix)
 		_, enc := c.immutableTree().Get(path)
+
+		candidate.Lock()
 		if len(enc) == 0 {
 			candidate.totalBipStake = big.NewInt(0)
-			return big.NewInt(0)
+		} else {
+			candidate.totalBipStake = big.NewInt(0).SetBytes(enc)
 		}
-
-		candidate.totalBipStake = big.NewInt(0).SetBytes(enc)
+		candidate.Unlock()
 	}
+
+	candidate.RLock()
+	defer candidate.RUnlock()
 
 	return candidate.totalBipStake
 }
@@ -709,20 +760,21 @@ func (c *Candidates) loadCandidatesList() (maxID uint32) {
 		if err := rlp.DecodeBytes(enc, &candidates); err != nil {
 			panic(fmt.Sprintf("failed to decode candidates: %s", err))
 		}
-
 		for _, candidate := range candidates {
 			// load total stake
 			path = append([]byte{mainPrefix}, candidate.idBytes()...)
 			path = append(path, totalStakePrefix)
 			_, enc = c.immutableTree().Get(path)
+
 			if len(enc) == 0 {
 				candidate.totalBipStake = big.NewInt(0)
 			} else {
 				candidate.totalBipStake = big.NewInt(0).SetBytes(enc)
 			}
+			pubKey := candidate.PubKey
 
 			candidate.setTmAddress()
-			c.setToMap(candidate.PubKey, candidate)
+			c.setToMap(pubKey, candidate)
 		}
 	}
 
@@ -736,6 +788,7 @@ func (c *Candidates) checkAndSetLoaded() bool {
 		return true
 	}
 	c.lock.RUnlock()
+
 	c.lock.Lock()
 	c.loaded = true
 	c.lock.Unlock()
@@ -935,12 +988,13 @@ func (c *Candidates) Export(state *types.AppState) {
 
 func (c *Candidates) getOrderedCandidates() []types.Pubkey {
 	c.lock.RLock()
-	defer c.lock.RUnlock()
-
 	var keys []types.Pubkey
 	for _, candidate := range c.list {
+		candidate.RLock()
 		keys = append(keys, candidate.PubKey)
+		candidate.RUnlock()
 	}
+	c.lock.RUnlock()
 
 	sort.SliceStable(keys, func(i, j int) bool {
 		return bytes.Compare(keys[i].Bytes(), keys[j].Bytes()) == 1
@@ -957,10 +1011,15 @@ func (c *Candidates) getFromMap(pubkey types.Pubkey) *Candidate {
 }
 
 func (c *Candidates) setToMap(pubkey types.Pubkey, model *Candidate) {
+	model.RLock()
 	id := model.ID
+	model.RUnlock()
 	if id == 0 {
 		id = c.getOrNewID(pubkey)
+
+		model.Lock()
 		model.ID = id
+		model.Unlock()
 	}
 
 	c.lock.Lock()
@@ -1001,7 +1060,9 @@ func (c *Candidates) LoadStakesOfCandidate(pubkey types.Pubkey) {
 		path = append(path, big.NewInt(int64(index)).Bytes()...)
 		_, enc := c.immutableTree().Get(path)
 		if len(enc) == 0 {
+			candidate.Lock()
 			candidate.stakes[index] = nil
+			candidate.Unlock()
 			continue
 		}
 
@@ -1015,13 +1076,17 @@ func (c *Candidates) LoadStakesOfCandidate(pubkey types.Pubkey) {
 		stakesCount++
 	}
 
+	candidate.Lock()
 	candidate.stakesCount = stakesCount
+	candidate.Unlock()
 
 	// load updates
 	path := []byte{mainPrefix}
 	path = append(path, candidate.idBytes()...)
 	path = append(path, updatesPrefix)
 	_, enc := c.immutableTree().Get(path)
+
+	candidate.Lock()
 	if len(enc) == 0 {
 		candidate.updates = nil
 	} else {
@@ -1033,6 +1098,8 @@ func (c *Candidates) LoadStakesOfCandidate(pubkey types.Pubkey) {
 		for _, update := range updates {
 			update.markDirty = (func(candidate *Candidate) func(int) {
 				return func(i int) {
+					candidate.Lock()
+					defer candidate.Unlock()
 					candidate.isUpdatesDirty = true
 				}
 			})(candidate)
@@ -1040,16 +1107,20 @@ func (c *Candidates) LoadStakesOfCandidate(pubkey types.Pubkey) {
 
 		candidate.updates = updates
 	}
+	candidate.Unlock()
 
 	// load total stake
 	path = append([]byte{mainPrefix}, candidate.idBytes()...)
 	path = append(path, totalStakePrefix)
 	_, enc = c.immutableTree().Get(path)
+
+	candidate.Lock()
 	if len(enc) == 0 {
 		candidate.totalBipStake = big.NewInt(0)
 	} else {
 		candidate.totalBipStake = big.NewInt(0).SetBytes(enc)
 	}
+	candidate.Unlock()
 
 	candidate.setTmAddress()
 	c.setToMap(candidate.PubKey, candidate)
@@ -1063,9 +1134,17 @@ func (c *Candidates) ChangePubKey(old types.Pubkey, new types.Pubkey) {
 
 	c.getFromMap(old).setPublicKey(new)
 	c.setBlockPubKey(old)
-	c.setPubKeyID(new, c.pubKeyIDs[old])
+
+	c.lock.RLock()
+	id := c.pubKeyIDs[old]
+	c.lock.RUnlock()
+
+	c.setPubKeyID(new, id)
+
+	c.lock.Lock()
 	delete(c.pubKeyIDs, old)
 	c.isChangedPublicKeys = true
+	c.lock.Unlock()
 }
 
 func (c *Candidates) getOrNewID(pubKey types.Pubkey) uint32 {
@@ -1079,9 +1158,9 @@ func (c *Candidates) getOrNewID(pubKey types.Pubkey) uint32 {
 	c.lock.Lock()
 	c.isDirty = true
 	c.maxID++
+	id = c.maxID
 	c.lock.Unlock()
 
-	id = c.maxID
 	c.setPubKeyID(pubKey, id)
 	return id
 }
@@ -1107,6 +1186,9 @@ func (c *Candidates) PubKey(id uint32) types.Pubkey {
 	if !ok {
 		panic(fmt.Sprintf("candidate by ID %d not found", id))
 	}
+
+	candidate.RLock()
+	defer candidate.RUnlock()
 
 	return candidate.PubKey
 }
