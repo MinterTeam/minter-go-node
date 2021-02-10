@@ -158,6 +158,7 @@ func (data CreateSwapPoolData) Run(tx *Transaction, context state.Interface, rew
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
 		amount0, amount1, liquidity, id := deliverState.Swap.PairCreate(data.Coin0, data.Coin1, data.Volume0, data.Volume1)
+
 		deliverState.Accounts.SubBalance(sender, data.Coin0, amount0)
 		deliverState.Accounts.SubBalance(sender, data.Coin1, amount1)
 

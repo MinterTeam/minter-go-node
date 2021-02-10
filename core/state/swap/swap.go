@@ -107,7 +107,7 @@ func (s *Swap) Import(state *types.AppState) {
 		pair := s.ReturnPair(types.CoinID(swap.Coin0), types.CoinID(swap.Coin1))
 		pair.Reserve0.Set(helpers.StringToBigInt(swap.Reserve0))
 		pair.Reserve1.Set(helpers.StringToBigInt(swap.Reserve1))
-		pair.ID = uint32(swap.ID)
+		*pair.ID = uint32(swap.ID)
 		pair.isDirty = true
 	}
 }
@@ -120,7 +120,7 @@ type pairData struct {
 	*sync.RWMutex
 	Reserve0 *big.Int
 	Reserve1 *big.Int
-	ID       uint32
+	ID       *uint32
 	*dirty
 }
 
@@ -219,7 +219,7 @@ func (s *Swap) SwapPool(coinA, coinB types.CoinID) (reserve0, reserve1 *big.Int,
 		return nil, nil, 0
 	}
 	reserve0, reserve1 = pair.Reserves()
-	return reserve0, reserve1, pair.ID
+	return reserve0, reserve1, *pair.ID
 }
 
 func (s *Swap) GetSwapper(coinA, coinB types.CoinID) EditableChecker {
@@ -294,7 +294,8 @@ func (s *Swap) PairMint(coin0, coin1 types.CoinID, amount0, maxAmount1, totalSup
 
 func (s *Swap) PairCreate(coin0, coin1 types.CoinID, amount0, amount1 *big.Int) (*big.Int, *big.Int, *big.Int, uint32) {
 	pair := s.ReturnPair(coin0, coin1)
-	pair.ID = s.incID()
+	id := s.incID()
+	*pair.ID = id
 	oldReserve0, oldReserve1 := pair.Reserves()
 	liquidity := pair.Create(amount0, amount1)
 	newReserve0, newReserve1 := pair.Reserves()
@@ -305,7 +306,7 @@ func (s *Swap) PairCreate(coin0, coin1 types.CoinID, amount0, amount1 *big.Int) 
 	s.bus.Checker().AddCoin(coin0, balance0)
 	s.bus.Checker().AddCoin(coin1, balance1)
 
-	return balance0, balance1, liquidity, pair.ID
+	return balance0, balance1, liquidity, id
 }
 
 func (s *Swap) PairBurn(coin0, coin1 types.CoinID, liquidity, minAmount0, minAmount1, totalSupply *big.Int) (*big.Int, *big.Int) {
@@ -419,7 +420,7 @@ func (s *Swap) addPair(key pairKey) *Pair {
 		RWMutex:  &sync.RWMutex{},
 		Reserve0: big.NewInt(0),
 		Reserve1: big.NewInt(0),
-		ID:       0,
+		ID:       new(uint32),
 		dirty:    &dirty{},
 	}
 	if !key.isSorted() {
@@ -474,7 +475,10 @@ func (p *Pair) CoinID() uint32 {
 	if p == nil {
 		return 0
 	}
-	return p.ID
+	// if p.ID == nil {
+	// 	return 0
+	// }
+	return *p.ID
 }
 
 func (p *Pair) CalculateAddLiquidity(amount0 *big.Int, totalSupply *big.Int) (liquidity *big.Int, amount1 *big.Int) {
