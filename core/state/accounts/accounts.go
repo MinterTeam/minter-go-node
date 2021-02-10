@@ -354,9 +354,9 @@ func (a *Accounts) GetNonce(address types.Address) uint64 {
 func (a *Accounts) GetBalances(address types.Address) []Balance {
 	account := a.getOrNew(address)
 
-	// account.lock.RLock()
+	account.lock.RLock()
 	coins := account.coins
-	// account.lock.RUnlock()
+	account.lock.RUnlock()
 
 	balances := make([]Balance, len(coins))
 	for key, id := range coins {
