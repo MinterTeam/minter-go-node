@@ -12,6 +12,10 @@ type Results struct {
 	Result *big.Int
 }
 
+func init() {
+	startHeight = 0
+}
+
 func TestGetRewardForBlock(t *testing.T) {
 	data := []Results{
 		{

@@ -15,7 +15,7 @@ import (
 
 func TestTooLongTx(t *testing.T) {
 	t.Parallel()
-	fakeTx := make([]byte, 10000)
+	fakeTx := make([]byte, maxTxLength+1)
 
 	cState := getState()
 	response := RunTx(cState, fakeTx, big.NewInt(0), 0, &sync.Map{}, 0)
@@ -46,7 +46,7 @@ func TestIncorrectTx(t *testing.T) {
 
 func TestTooLongPayloadTx(t *testing.T) {
 	t.Parallel()
-	payload := make([]byte, 1025)
+	payload := make([]byte, maxPayloadLength+1)
 	rand.Read(payload)
 
 	txData := SendData{

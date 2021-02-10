@@ -80,7 +80,7 @@ func (f *FrozenFunds) Commit(db *iavl.MutableTree) error {
 
 			db.Set(path, data)
 		}
-		ff.lock.Unlock()
+		ff.lock.RUnlock()
 	}
 
 	return nil
