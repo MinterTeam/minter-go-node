@@ -60,6 +60,17 @@ func (m *Model) Crr() uint32 {
 }
 
 func (m *Model) Volume() *big.Int {
+	m.lock.RLock()
+	defer m.lock.RUnlock()
+
+	// if m.info == nil {
+	// 	panic()
+	// 	return big.NewInt(0)
+	// }
+
+	m.info.lock.RLock()
+	defer m.info.lock.RUnlock()
+
 	return big.NewInt(0).Set(m.info.Volume)
 }
 
@@ -68,8 +79,8 @@ func (m *Model) Reserve() *big.Int {
 		return big.NewInt(0)
 	}
 
-	m.info.RLock()
-	defer m.info.RUnlock()
+	m.info.lock.RLock()
+	defer m.info.lock.RUnlock()
 
 	return big.NewInt(0).Set(m.info.Reserve)
 }
@@ -107,10 +118,10 @@ func (m *Model) SubVolume(amount *big.Int) {
 	m.lock.RLock()
 	defer m.lock.RUnlock()
 
-	m.info.Lock()
+	m.info.lock.Lock()
 	m.info.Volume.Sub(m.info.Volume, amount)
 	m.info.isDirty = true
-	m.info.Unlock()
+	m.info.lock.Unlock()
 
 	m.markDirty(m.id)
 }
@@ -119,10 +130,10 @@ func (m *Model) AddVolume(amount *big.Int) {
 	m.lock.RLock()
 	defer m.lock.RUnlock()
 
-	m.info.Lock()
+	m.info.lock.Lock()
 	m.info.Volume.Add(m.info.Volume, amount)
 	m.info.isDirty = true
-	m.info.Unlock()
+	m.info.lock.Unlock()
 
 	m.markDirty(m.id)
 }
@@ -131,10 +142,10 @@ func (m *Model) SubReserve(amount *big.Int) {
 	m.lock.RLock()
 	defer m.lock.RUnlock()
 
-	m.info.Lock()
+	m.info.lock.Lock()
 	m.info.Reserve.Sub(m.info.Reserve, amount)
 	m.info.isDirty = true
-	m.info.Unlock()
+	m.info.lock.Unlock()
 
 	m.markDirty(m.id)
 }
@@ -143,10 +154,10 @@ func (m *Model) AddReserve(amount *big.Int) {
 	m.lock.RLock()
 	defer m.lock.RUnlock()
 
-	m.info.Lock()
+	m.info.lock.Lock()
 	m.info.Reserve.Add(m.info.Reserve, amount)
 	m.info.isDirty = true
-	m.info.Unlock()
+	m.info.lock.Unlock()
 
 	m.markDirty(m.id)
 }
@@ -155,10 +166,10 @@ func (m *Model) Mint(amount *big.Int) {
 	m.lock.RLock()
 	defer m.lock.RUnlock()
 
-	m.info.Lock()
+	m.info.lock.Lock()
 	m.CMaxSupply.Add(m.CMaxSupply, amount)
 	m.isDirty = true
-	m.info.Unlock()
+	m.info.lock.Unlock()
 
 	m.markDirty(m.id)
 }
@@ -167,10 +178,10 @@ func (m *Model) Burn(amount *big.Int) {
 	m.lock.RLock()
 	defer m.lock.RUnlock()
 
-	m.info.Lock()
+	m.info.lock.Lock()
 	m.CMaxSupply.Sub(m.CMaxSupply, amount)
 	m.isDirty = true
-	m.info.Unlock()
+	m.info.lock.Unlock()
 
 	m.markDirty(m.id)
 }
@@ -179,10 +190,10 @@ func (m *Model) SetVolume(volume *big.Int) {
 	m.lock.RLock()
 	defer m.lock.RUnlock()
 
-	m.info.Lock()
+	m.info.lock.Lock()
 	m.info.Volume.Set(volume)
 	m.info.isDirty = true
-	m.info.Unlock()
+	m.info.lock.Unlock()
 
 	m.markDirty(m.id)
 }
@@ -191,10 +202,10 @@ func (m *Model) SetReserve(reserve *big.Int) {
 	m.lock.RLock()
 	defer m.lock.RUnlock()
 
-	m.info.Lock()
+	m.info.lock.Lock()
 	m.info.Reserve.Set(reserve)
 	m.info.isDirty = true
-	m.info.Unlock()
+	m.info.lock.Unlock()
 
 	m.markDirty(m.id)
 }
@@ -214,24 +225,26 @@ func (m *Model) IsInfoDirty() bool {
 	m.lock.RLock()
 	defer m.lock.RUnlock()
 
-	m.info.RLock()
-	defer m.info.RUnlock()
+	if m.info == nil {
+		return false
+	}
 
-	return m.info != nil && m.info.isDirty
+	m.info.lock.RLock()
+	defer m.info.lock.RUnlock()
+
+	return m.info.isDirty
 }
 
 func (m *Model) IsSymbolInfoDirty() bool {
 	m.lock.RLock()
 	defer m.lock.RUnlock()
 
-	has := m.symbolInfo != nil
-
-	if !has {
+	if m.symbolInfo == nil {
 		return false
 	}
 
-	m.symbolInfo.RLock()
-	defer m.symbolInfo.RUnlock()
+	m.symbolInfo.lock.RLock()
+	defer m.symbolInfo.lock.RUnlock()
 
 	return m.symbolInfo.isDirty
 }
@@ -270,7 +283,7 @@ type Info struct {
 	Reserve *big.Int
 
 	isDirty bool
-	sync.RWMutex
+	lock    sync.RWMutex
 }
 
 type SymbolInfo struct {
@@ -278,20 +291,20 @@ type SymbolInfo struct {
 
 	isDirty bool
 
-	sync.RWMutex
+	lock sync.RWMutex
 }
 
 func (i *SymbolInfo) setOwnerAddress(address types.Address) {
-	i.Lock()
-	defer i.Unlock()
+	i.lock.Lock()
+	defer i.lock.Unlock()
 
 	i.COwnerAddress = &address
 	i.isDirty = true
 }
 
 func (i *SymbolInfo) OwnerAddress() *types.Address {
-	i.RLock()
-	defer i.RUnlock()
+	i.lock.RLock()
+	defer i.lock.RUnlock()
 
 	return i.COwnerAddress
 }

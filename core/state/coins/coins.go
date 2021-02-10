@@ -148,10 +148,10 @@ func (c *Coins) Commit(db *iavl.MutableTree) error {
 
 		if coin.IsInfoDirty() {
 			coin.lock.RLock()
-			coin.info.Lock()
+			coin.info.lock.Lock()
 			coin.info.isDirty = false
 			data, err := rlp.EncodeToBytes(coin.info)
-			coin.info.Unlock()
+			coin.info.lock.Unlock()
 			coin.lock.RUnlock()
 
 			if err != nil {
@@ -163,10 +163,10 @@ func (c *Coins) Commit(db *iavl.MutableTree) error {
 
 		if coin.IsSymbolInfoDirty() {
 			coin.lock.RLock()
-			coin.symbolInfo.Lock()
+			coin.symbolInfo.lock.Lock()
 			coin.symbolInfo.isDirty = false
 			data, err := rlp.EncodeToBytes(coin.symbolInfo)
-			coin.symbolInfo.Unlock()
+			coin.symbolInfo.lock.Unlock()
 			coin.lock.RUnlock()
 
 			if err != nil {
