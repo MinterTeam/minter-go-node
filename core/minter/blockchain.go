@@ -444,7 +444,7 @@ func (blockchain *Blockchain) Commit() abciTypes.ResponseCommit {
 	blockchain.stateDeliver.Unlock()
 
 	// Resetting check state to be consistent with current height
-	blockchain.resetCheckState()
+	blockchain.resetCheckState() // todo: should remove
 
 	// Clear mempool
 	blockchain.currentMempool = &sync.Map{}
