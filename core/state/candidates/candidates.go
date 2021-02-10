@@ -622,19 +622,18 @@ func (c *Candidates) GetCandidates() []*Candidate {
 func (c *Candidates) GetTotalStake(pubkey types.Pubkey) *big.Int {
 	candidate := c.getFromMap(pubkey)
 	candidate.RLock()
-	isLoad := candidate.totalBipStake == nil
+	notLoaded := candidate.totalBipStake == nil
 	candidate.RUnlock()
-	if isLoad {
+	if notLoaded {
 		path := []byte{mainPrefix}
 		path = append(path, candidate.idBytes()...)
 		path = append(path, totalStakePrefix)
 		_, enc := c.immutableTree().Get(path)
 
 		candidate.Lock()
-		if len(enc) == 0 {
-			candidate.totalBipStake = big.NewInt(0)
-		} else {
-			candidate.totalBipStake = big.NewInt(0).SetBytes(enc)
+		candidate.totalBipStake = big.NewInt(0)
+		if len(enc) != 0 {
+			candidate.totalBipStake.SetBytes(enc)
 		}
 		candidate.Unlock()
 	}
@@ -642,7 +641,7 @@ func (c *Candidates) GetTotalStake(pubkey types.Pubkey) *big.Int {
 	candidate.RLock()
 	defer candidate.RUnlock()
 
-	return candidate.totalBipStake
+	return big.NewInt(0).Set(candidate.totalBipStake)
 }
 
 // GetStakes returns list of stakes of candidate with given public key
@@ -771,10 +770,9 @@ func (c *Candidates) loadCandidatesList() (maxID uint32) {
 			} else {
 				candidate.totalBipStake = big.NewInt(0).SetBytes(enc)
 			}
-			pubKey := candidate.PubKey
 
 			candidate.setTmAddress()
-			c.setToMap(pubKey, candidate)
+			c.setToMap(candidate.PubKey, candidate)
 		}
 	}
 
