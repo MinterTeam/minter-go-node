@@ -125,7 +125,7 @@ func (data SellCoinData) Run(tx *Transaction, context state.Interface, rewardPoo
 
 	coinToSell := data.CoinToSell
 	coinToBuy := data.CoinToBuy
-	var coinFrom, coinTo calculateCoin
+	var coinFrom, coinTo CalculateCoin
 	coinFrom = checkState.Coins().GetCoin(coinToSell)
 	coinTo = checkState.Coins().GetCoin(coinToBuy)
 
@@ -133,7 +133,7 @@ func (data SellCoinData) Run(tx *Transaction, context state.Interface, rewardPoo
 
 	if isGasCommissionFromPoolSwap == false && !tx.GasCoin.IsBaseCoin() {
 		if tx.GasCoin == data.CoinToSell {
-			coinFrom = dummyCoin{
+			coinFrom = DummyCoin{
 				id:         gasCoin.ID(),
 				volume:     big.NewInt(0).Sub(gasCoin.Volume(), commission),
 				reserve:    big.NewInt(0).Sub(gasCoin.Reserve(), commissionInBaseCoin),
@@ -142,7 +142,7 @@ func (data SellCoinData) Run(tx *Transaction, context state.Interface, rewardPoo
 				maxSupply:  gasCoin.MaxSupply(),
 			}
 		} else if tx.GasCoin == data.CoinToBuy {
-			coinTo = dummyCoin{
+			coinTo = DummyCoin{
 				id:         gasCoin.ID(),
 				volume:     big.NewInt(0).Sub(gasCoin.Volume(), commission),
 				reserve:    big.NewInt(0).Sub(gasCoin.Reserve(), commissionInBaseCoin),

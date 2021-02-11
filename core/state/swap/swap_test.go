@@ -62,3 +62,31 @@ func TestPair_load(t *testing.T) {
 		t.Fatal("r0")
 	}
 }
+
+func TestPair_commission(t *testing.T) {
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+	swap := New(newBus, immutableTree.GetLastImmutable())
+	r0 := big.NewInt(1e18)
+	r1 := big.NewInt(1e18)
+	_, _, _, _ = swap.PairCreate(0, 1, r0, r1)
+
+	valueSwap := big.NewInt(1e17)
+	{
+		swap.PairBuy(0, 1, big.NewInt(1e18), valueSwap)
+		// _ = swap.Pair(0, 1)
+		// t.Log(pair.Reserves())
+	}
+
+	{
+		swap.PairSell(1, 0, valueSwap, big.NewInt(0))
+		// _ = swap.Pair(0, 1)
+		// t.Log(pair.Reserves())
+	}
+
+}

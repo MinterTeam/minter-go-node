@@ -118,19 +118,40 @@ func (s *Service) EstimateCoinBuy(ctx context.Context, req *pb.EstimateCoinBuyRe
 			transaction.EncodeError(code.NewCommissionCoinNotSufficient(respBancor.Message(), respPool.Message())))
 	}
 
-	commission := commissionInBaseCoin
-	if false {
+	var coinCommissionID types.CoinID
+	if req.GetCoinCommission() != "" {
+		symbol := cState.Coins().GetCoinBySymbol(types.StrToCoinBaseSymbol(req.GetCoinToSell()), types.GetVersionFromSymbol(req.GetCoinToSell()))
+		if symbol == nil {
+			return nil, s.createError(status.New(codes.NotFound, "Coin to pay commission not exists"), transaction.EncodeError(code.NewCoinNotExists(req.GetCoinToSell(), "")))
+		}
+		coinCommissionID = symbol.ID()
+	} else {
+		coinCommissionID = types.CoinID(req.GetCoinIdCommission())
+		if !cState.Coins().Exists(coinToSell) {
+			return nil, s.createError(status.New(codes.NotFound, "Coin to pay commission not exists"), transaction.EncodeError(code.NewCoinNotExists("", coinToSell.String())))
+		}
+	}
+
+	coinCommission := cState.Coins().GetCoin(coinCommissionID)
+	var commission *big.Int
+	switch coinCommissionID {
+	case commissions.Coin:
+		commission = commissionInBaseCoin
+	case types.GetBaseCoinID():
+		commission = cState.Swap().GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuy(commissionInBaseCoin)
+	default:
 		if !commissions.Coin.IsBaseCoin() {
 			commissionInBaseCoin = cState.Swap().GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuy(commissionInBaseCoin)
 		}
-		commissionPoolSwapper := cState.Swap().GetSwapper(coinFrom.ID(), types.GetBaseCoinID())
+		commissionPoolSwapper := cState.Swap().GetSwapper(coinCommissionID, types.GetBaseCoinID())
 
 		var errResp *transaction.Response
-		commission, _, errResp = transaction.CalculateCommission(cState, commissionPoolSwapper, coinFrom, commissionInBaseCoin)
+		commission, _, errResp = transaction.CalculateCommission(cState, commissionPoolSwapper, coinCommission, commissionInBaseCoin)
 		if errResp != nil {
 			return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
 		}
 	}
+
 	return &pb.EstimateCoinBuyResponse{
 		WillPay:    value.String(),
 		Commission: commission.String(),

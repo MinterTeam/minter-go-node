@@ -126,7 +126,7 @@ func (data BuyCoinData) Run(tx *Transaction, context state.Interface, rewardPool
 
 	coinToSell := data.CoinToSell
 	coinToBuy := data.CoinToBuy
-	var coinFrom, coinTo calculateCoin
+	var coinFrom, coinTo CalculateCoin
 	coinFrom = checkState.Coins().GetCoin(coinToSell)
 	coinTo = checkState.Coins().GetCoin(coinToBuy)
 
@@ -134,7 +134,7 @@ func (data BuyCoinData) Run(tx *Transaction, context state.Interface, rewardPool
 
 	if isGasCommissionFromPoolSwap == false && !tx.GasCoin.IsBaseCoin() {
 		if tx.GasCoin == data.CoinToSell {
-			coinFrom = dummyCoin{
+			coinFrom = DummyCoin{
 				id:         gasCoin.ID(),
 				volume:     big.NewInt(0).Sub(gasCoin.Volume(), commission),
 				reserve:    big.NewInt(0).Sub(gasCoin.Reserve(), commissionInBaseCoin),
@@ -143,7 +143,7 @@ func (data BuyCoinData) Run(tx *Transaction, context state.Interface, rewardPool
 				maxSupply:  gasCoin.MaxSupply(),
 			}
 		} else if tx.GasCoin == data.CoinToBuy {
-			coinTo = dummyCoin{
+			coinTo = DummyCoin{
 				id:         gasCoin.ID(),
 				volume:     big.NewInt(0).Sub(gasCoin.Volume(), commission),
 				reserve:    big.NewInt(0).Sub(gasCoin.Reserve(), commissionInBaseCoin),
@@ -238,7 +238,7 @@ func (data BuyCoinData) Run(tx *Transaction, context state.Interface, rewardPool
 	}
 }
 
-func CalculateSaleAmountAndCheck(coinFrom calculateCoin, value *big.Int) (*big.Int, *Response) {
+func CalculateSaleAmountAndCheck(coinFrom CalculateCoin, value *big.Int) (*big.Int, *Response) {
 	if coinFrom.Reserve().Cmp(value) == -1 {
 		return nil, &Response{
 			Code: code.CoinReserveNotSufficient,
@@ -267,7 +267,7 @@ func CalculateSaleAmountAndCheck(coinFrom calculateCoin, value *big.Int) (*big.I
 	return value, nil
 }
 
-func CalculateSaleReturnAndCheck(coinFrom calculateCoin, value *big.Int) (*big.Int, *Response) {
+func CalculateSaleReturnAndCheck(coinFrom CalculateCoin, value *big.Int) (*big.Int, *Response) {
 	if coinFrom.Volume().Cmp(value) == -1 {
 		return nil, &Response{
 			Code: code.CoinReserveNotSufficient,
