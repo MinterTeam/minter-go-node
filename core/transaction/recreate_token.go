@@ -118,8 +118,6 @@ func (data RecreateTokenData) Run(tx *Transaction, context state.Interface, rewa
 	}
 
 	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
-		gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
-
 		return Response{
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission.String(), gasCoin.GetFullSymbol()),
@@ -127,20 +125,6 @@ func (data RecreateTokenData) Run(tx *Transaction, context state.Interface, rewa
 		}
 	}
 
-	if tx.GasCoin.IsBaseCoin() {
-		gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
-
-		totalTxCost := big.NewInt(0)
-		totalTxCost.Add(totalTxCost, commission)
-
-		if checkState.Accounts().GetBalance(sender, types.GetBaseCoinID()).Cmp(totalTxCost) < 0 {
-			return Response{
-				Code: code.InsufficientFunds,
-				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), totalTxCost.String(), gasCoin.GetFullSymbol()),
-				Info: EncodeError(code.NewInsufficientFunds(sender.String(), totalTxCost.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
-			}
-		}
-	}
 	var tags []abcTypes.EventAttribute
 	if deliverState, ok := context.(*state.State); ok {
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
@@ -166,7 +150,7 @@ func (data RecreateTokenData) Run(tx *Transaction, context state.Interface, rewa
 		)
 
 		deliverState.App.SetCoinsCount(coinId.Uint32())
-		deliverState.Accounts.AddBalance(sender, coinId, data.MaxSupply)
+		deliverState.Accounts.AddBalance(sender, coinId, data.InitialAmount)
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 
 		tags = []abcTypes.EventAttribute{
