@@ -40,7 +40,7 @@ func (data EditCandidateCommission) basicCheck(tx *Transaction, context *state.C
 	if maxNewCommission > maxCommission {
 		maxNewCommission = maxCommission
 	}
-	if minNewCommission < minCommission {
+	if minNewCommission < minCommission || minNewCommission > maxCommission {
 		minNewCommission = minCommission
 	}
 	if data.Commission < minNewCommission || data.Commission > maxNewCommission {
