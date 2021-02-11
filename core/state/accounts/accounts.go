@@ -74,8 +74,12 @@ func (a *Accounts) Commit(db *iavl.MutableTree) error {
 		a.lock.Unlock()
 
 		// save info (nonce and multisig data)
-		if account.isDirty || account.isNew {
+		if a.IsNewOrDirty(account) {
+			account.lock.Lock()
+			account.isDirty = false
+			account.isNew = false
 			data, err := rlp.EncodeToBytes(account)
+			account.lock.Unlock()
 			if err != nil {
 				return fmt.Errorf("can't encode object at %x: %v", address[:], err)
 			}
@@ -86,13 +90,14 @@ func (a *Accounts) Commit(db *iavl.MutableTree) error {
 			path := []byte{mainPrefix}
 			path = append(path, address[:]...)
 			db.Set(path, data)
-			account.isDirty = false
-			account.isNew = false
 		}
 
 		// save coins list
-		if account.hasDirtyCoins {
+		if a.HasDirtyCoins(account) {
+			account.lock.Lock()
+			account.hasDirtyCoins = false
 			coinsList, err := rlp.EncodeToBytes(account.coins)
+			account.lock.Unlock()
 			if err != nil {
 				return fmt.Errorf("can't encode object at %x: %v", address[:], err)
 			}
@@ -101,7 +106,6 @@ func (a *Accounts) Commit(db *iavl.MutableTree) error {
 			path = append(path, address[:]...)
 			path = append(path, coinsPrefix)
 			db.Set(path, coinsList)
-			account.hasDirtyCoins = false
 		}
 
 		// save balances
@@ -125,18 +129,36 @@ func (a *Accounts) Commit(db *iavl.MutableTree) error {
 				}
 			}
 
+			account.lock.Lock()
 			account.dirtyBalances = map[types.CoinID]struct{}{}
+			account.lock.Unlock()
 		}
 	}
 
 	return nil
 }
 
+func (a *Accounts) HasDirtyCoins(account *Model) bool {
+	account.lock.RLock()
+	defer account.lock.RUnlock()
+
+	return account.hasDirtyCoins
+}
+
+func (a *Accounts) IsNewOrDirty(account *Model) bool {
+	account.lock.RLock()
+	defer account.lock.RUnlock()
+
+	return account.isDirty || account.isNew
+}
+
 func (a *Accounts) getOrderedDirtyAccounts() []types.Address {
+	a.lock.RLock()
 	keys := make([]types.Address, 0, len(a.dirty))
 	for k := range a.dirty {
 		keys = append(keys, k)
 	}
+	a.lock.RUnlock()
 
 	sort.SliceStable(keys, func(i, j int) bool {
 		return bytes.Compare(keys[i].Bytes(), keys[j].Bytes()) == 1
@@ -156,8 +178,11 @@ func (a *Accounts) GetBalance(address types.Address, coin types.CoinID) *big.Int
 		return big.NewInt(0)
 	}
 
-	if _, ok := account.balances[coin]; !ok {
-		balance := big.NewInt(0)
+	account.lock.RLock()
+	balance, ok := account.balances[coin]
+	account.lock.RUnlock()
+	if !ok {
+		balance = big.NewInt(0)
 
 		path := []byte{mainPrefix}
 		path = append(path, address[:]...)
@@ -169,10 +194,12 @@ func (a *Accounts) GetBalance(address types.Address, coin types.CoinID) *big.Int
 			balance = big.NewInt(0).SetBytes(enc)
 		}
 
+		account.lock.Lock()
 		account.balances[coin] = balance
+		account.lock.Unlock()
 	}
 
-	return big.NewInt(0).Set(account.balances[coin])
+	return big.NewInt(0).Set(balance)
 }
 
 func (a *Accounts) SubBalance(address types.Address, coin types.CoinID, amount *big.Int) {
@@ -202,6 +229,9 @@ func (a *Accounts) ExistsMultisig(msigAddress types.Address) bool {
 	if acc.IsMultisig() {
 		return true
 	}
+
+	acc.lock.RLock()
+	defer acc.lock.RUnlock()
 
 	if acc.Nonce > 0 {
 		return true
@@ -239,15 +269,16 @@ func (a *Accounts) CreateMultisig(weights []uint32, addresses []types.Address, t
 func (a *Accounts) EditMultisig(threshold uint32, weights []uint32, addresses []types.Address, address types.Address) types.Address {
 	account := a.get(address)
 
-	msig := Multisig{
+	account.lock.Lock()
+	account.MultisigData = Multisig{
 		Threshold: threshold,
 		Weights:   weights,
 		Addresses: addresses,
 	}
-
-	account.MultisigData = msig
-	account.markDirty(account.address)
 	account.isDirty = true
+	account.lock.Unlock()
+
+	account.markDirty(account.address)
 	a.setToMap(address, account)
 
 	return address
@@ -314,14 +345,21 @@ func (a *Accounts) getOrNew(address types.Address) *Model {
 func (a *Accounts) GetNonce(address types.Address) uint64 {
 	account := a.getOrNew(address)
 
+	account.lock.RLock()
+	defer account.lock.RUnlock()
+
 	return account.Nonce
 }
 
 func (a *Accounts) GetBalances(address types.Address) []Balance {
 	account := a.getOrNew(address)
 
-	balances := make([]Balance, len(account.coins))
-	for key, id := range account.coins {
+	account.lock.RLock()
+	coins := account.coins
+	account.lock.RUnlock()
+
+	balances := make([]Balance, len(coins))
+	for key, id := range coins {
 		balances[key] = Balance{
 			Coin:  *a.bus.Coins().GetCoin(id),
 			Value: a.GetBalance(address, id),
@@ -332,6 +370,9 @@ func (a *Accounts) GetBalances(address types.Address) []Balance {
 }
 
 func (a *Accounts) markDirty(addr types.Address) {
+	a.lock.Lock()
+	defer a.lock.Unlock()
+
 	a.dirty[addr] = struct{}{}
 }
 

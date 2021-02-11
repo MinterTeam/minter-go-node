@@ -2,7 +2,6 @@ package state
 
 import (
 	"encoding/hex"
-	"fmt"
 	eventsdb "github.com/MinterTeam/minter-go-node/core/events"
 	"github.com/MinterTeam/minter-go-node/core/state/accounts"
 	"github.com/MinterTeam/minter-go-node/core/state/app"
@@ -94,9 +93,9 @@ func (cs *CheckState) Commission() commission.RCommission {
 }
 
 type State struct {
-	App            *app.App
-	Validators     *validators.Validators
-	Candidates     *candidates.Candidates
+	App            *app.App               // todo: refactor concurrency
+	Validators     *validators.Validators // todo: refactor concurrency
+	Candidates     *candidates.Candidates // todo: refactor concurrency
 	FrozenFunds    *frozenfunds.FrozenFunds
 	Halts          *halts.HaltBlocks
 	Accounts       *accounts.Accounts
@@ -167,19 +166,7 @@ func (s *State) RUnlock() {
 }
 
 func (s *State) Check() error {
-	volumeDeltas := s.Checker.VolumeDeltas()
-	for coin, delta := range s.Checker.Deltas() {
-		volume := volumeDeltas[coin]
-		if volume == nil {
-			volume = big.NewInt(0)
-		}
-
-		if delta.Cmp(volume) != 0 {
-			return fmt.Errorf("invariants error on coin %s: %s", coin.String(), big.NewInt(0).Sub(volume, delta).String())
-		}
-	}
-
-	return nil
+	return s.Checker.Check()
 }
 
 func (s *State) Commit() ([]byte, error) {

@@ -128,37 +128,52 @@ func (c *Coins) Commit(db *iavl.MutableTree) error {
 			}
 
 			db.Set(getSymbolCoinsPath(coin.Symbol()), data)
+			coin.lock.Lock()
 			coin.isCreated = false
+			coin.lock.Unlock()
 		}
 
 		if coin.IsDirty() {
+			coin.lock.Lock()
+			coin.isDirty = false
 			data, err := rlp.EncodeToBytes(coin)
+			coin.lock.Unlock()
+
 			if err != nil {
 				return fmt.Errorf("can't encode object at %d: %v", id, err)
 			}
 
 			db.Set(getCoinPath(id), data)
-			coin.isDirty = false
 		}
 
 		if coin.IsInfoDirty() {
+			coin.lock.RLock()
+			coin.info.lock.Lock()
+			coin.info.isDirty = false
 			data, err := rlp.EncodeToBytes(coin.info)
+			coin.info.lock.Unlock()
+			coin.lock.RUnlock()
+
 			if err != nil {
 				return fmt.Errorf("can't encode object at %d: %v", id, err)
 			}
 
 			db.Set(getCoinInfoPath(id), data)
-			coin.info.isDirty = false
 		}
 
 		if coin.IsSymbolInfoDirty() {
+			coin.lock.RLock()
+			coin.symbolInfo.lock.Lock()
+			coin.symbolInfo.isDirty = false
 			data, err := rlp.EncodeToBytes(coin.symbolInfo)
+			coin.symbolInfo.lock.Unlock()
+			coin.lock.RUnlock()
+
 			if err != nil {
 				return fmt.Errorf("can't encode object at %d: %v", id, err)
 			}
 
 			db.Set(getSymbolInfoPath(coin.Symbol()), data)
-			coin.symbolInfo.isDirty = false
 		}
 	}
 
@@ -343,8 +358,10 @@ func (c *Coins) Recreate(newID types.CoinID, name string, symbol types.CoinSymbo
 		}
 	}
 
+	recreateCoin.lock.Lock()
 	recreateCoin.CVersion = lastVersion + 1
 	recreateCoin.isDirty = true
+	recreateCoin.lock.Unlock()
 
 	c.setToMap(recreateCoin.id, recreateCoin)
 	c.markDirty(recreateCoin.id)
@@ -369,8 +386,10 @@ func (c *Coins) RecreateToken(newID types.CoinID, name string, symbol types.Coin
 		}
 	}
 
+	recreateCoin.lock.Lock()
 	recreateCoin.CVersion = lastVersion + 1
 	recreateCoin.isDirty = true
+	recreateCoin.lock.Unlock()
 
 	c.setToMap(recreateCoin.id, recreateCoin)
 	c.markDirty(recreateCoin.id)
@@ -383,7 +402,9 @@ func (c *Coins) ChangeOwner(symbol types.CoinSymbol, owner types.Address) {
 	info.setOwnerAddress(owner)
 
 	coin := c.GetCoinBySymbol(symbol, BaseVersion)
+	coin.lock.Lock()
 	coin.symbolInfo = info
+	coin.lock.Unlock()
 
 	c.setSymbolInfoToMap(coin.symbolInfo, coin.Symbol())
 	c.setToMap(coin.ID(), coin)
@@ -417,8 +438,10 @@ func (c *Coins) get(id types.CoinID) *Model {
 		panic(fmt.Sprintf("failed to decode coin at %d: %s", id, err))
 	}
 
+	coin.lock.Lock()
 	coin.id = id
 	coin.markDirty = c.markDirty
+	coin.lock.Unlock()
 
 	// load info
 	_, enc = c.immutableTree().Get(getCoinInfoPath(id))
@@ -428,7 +451,9 @@ func (c *Coins) get(id types.CoinID) *Model {
 			panic(fmt.Sprintf("failed to decode coin info %d: %s", id, err))
 		}
 
+		coin.lock.Lock()
 		coin.info = &info
+		coin.lock.Unlock()
 	}
 
 	c.setToMap(id, coin)
@@ -479,14 +504,19 @@ func (c *Coins) getBySymbol(symbol types.CoinSymbol) []types.CoinID {
 }
 
 func (c *Coins) markDirty(id types.CoinID) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
 	c.dirty[id] = struct{}{}
 }
 
 func (c *Coins) getOrderedDirtyCoins() []types.CoinID {
+	c.lock.Lock()
 	keys := make([]types.CoinID, 0, len(c.dirty))
 	for k := range c.dirty {
 		keys = append(keys, k)
 	}
+	c.lock.Unlock()
 
 	sort.SliceStable(keys, func(i, j int) bool {
 		return keys[i] > keys[j]

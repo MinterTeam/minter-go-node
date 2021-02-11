@@ -1,14 +1,18 @@
 package checker
 
 import (
+	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/state/bus"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"math/big"
+	"sync"
 )
 
 type Checker struct {
 	delta       map[types.CoinID]*big.Int
 	volumeDelta map[types.CoinID]*big.Int
+
+	lock sync.RWMutex
 }
 
 func NewChecker(bus *bus.Bus) *Checker {
@@ -22,6 +26,9 @@ func NewChecker(bus *bus.Bus) *Checker {
 }
 
 func (c *Checker) AddCoin(coin types.CoinID, value *big.Int, msg ...string) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
 	cValue, exists := c.delta[coin]
 
 	if !exists {
@@ -33,6 +40,9 @@ func (c *Checker) AddCoin(coin types.CoinID, value *big.Int, msg ...string) {
 }
 
 func (c *Checker) AddCoinVolume(coin types.CoinID, value *big.Int) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
 	cValue, exists := c.volumeDelta[coin]
 
 	if !exists {
@@ -44,14 +54,35 @@ func (c *Checker) AddCoinVolume(coin types.CoinID, value *big.Int) {
 }
 
 func (c *Checker) Reset() {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	c.delta = map[types.CoinID]*big.Int{}
 	c.volumeDelta = map[types.CoinID]*big.Int{}
 }
 
-func (c *Checker) Deltas() map[types.CoinID]*big.Int {
+func (c *Checker) deltas() map[types.CoinID]*big.Int {
 	return c.delta
 }
 
-func (c *Checker) VolumeDeltas() map[types.CoinID]*big.Int {
+func (c *Checker) volumeDeltas() map[types.CoinID]*big.Int {
 	return c.volumeDelta
+}
+
+func (c *Checker) Check() error {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
+	volumeDeltas := c.volumeDeltas()
+	for coin, delta := range c.deltas() {
+		volume := volumeDeltas[coin]
+		if volume == nil {
+			volume = big.NewInt(0)
+		}
+
+		if delta.Cmp(volume) != 0 {
+			return fmt.Errorf("invariants error on coin %s: %s", coin.String(), big.NewInt(0).Sub(volume, delta).String())
+		}
+	}
+
+	return nil
 }

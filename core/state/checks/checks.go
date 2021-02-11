@@ -47,7 +47,8 @@ func (c *Checks) SetImmutableTree(immutableTree *iavl.ImmutableTree) {
 }
 
 func (c *Checks) Commit(db *iavl.MutableTree) error {
-	for _, hash := range c.getOrderedHashes() {
+	hashes := c.getOrderedHashes()
+	for _, hash := range hashes {
 		c.lock.Lock()
 		delete(c.usedChecks, hash)
 		c.lock.Unlock()

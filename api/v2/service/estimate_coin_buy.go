@@ -118,15 +118,19 @@ func (s *Service) EstimateCoinBuy(ctx context.Context, req *pb.EstimateCoinBuyRe
 			transaction.EncodeError(code.NewCommissionCoinNotSufficient(respBancor.Message(), respPool.Message())))
 	}
 
-	if !commissions.Coin.IsBaseCoin() {
-		commissionInBaseCoin = cState.Swap().GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuy(commissionInBaseCoin)
-	}
-	commissionPoolSwapper := cState.Swap().GetSwapper(coinFrom.ID(), types.GetBaseCoinID())
-	commission, _, errResp := transaction.CalculateCommission(cState, commissionPoolSwapper, coinFrom, commissionInBaseCoin)
-	if errResp != nil {
-		return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
-	}
+	commission := commissionInBaseCoin
+	if false {
+		if !commissions.Coin.IsBaseCoin() {
+			commissionInBaseCoin = cState.Swap().GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuy(commissionInBaseCoin)
+		}
+		commissionPoolSwapper := cState.Swap().GetSwapper(coinFrom.ID(), types.GetBaseCoinID())
 
+		var errResp *transaction.Response
+		commission, _, errResp = transaction.CalculateCommission(cState, commissionPoolSwapper, coinFrom, commissionInBaseCoin)
+		if errResp != nil {
+			return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
+		}
+	}
 	return &pb.EstimateCoinBuyResponse{
 		WillPay:    value.String(),
 		Commission: commission.String(),
@@ -138,6 +142,12 @@ func (s *Service) calcBuyFromPool(value *big.Int, swapChecker swap.EditableCheck
 		return nil, s.createError(status.New(codes.NotFound, fmt.Sprintf("swap pair beetwen coins %s and %s not exists in pool", coinFrom.GetFullSymbol(), coinTo.GetFullSymbol())), transaction.EncodeError(code.NewPairNotExists(coinFrom.ID().String(), coinTo.ID().String())))
 	}
 	sellValue := swapChecker.CalculateSellForBuy(value)
+	if sellValue == nil {
+		reserve0, reserve1 := swapChecker.Reserves()
+		// symbolIn := coinFrom.GetFullSymbol()
+		symbolOut := coinTo.GetFullSymbol()
+		return nil, s.createError(status.New(codes.FailedPrecondition, fmt.Sprintf("You wanted to buy %s %s, but pool reserve has only %s %s", value, symbolOut, reserve1.String(), symbolOut)), transaction.EncodeError(code.NewInsufficientLiquidity(coinFrom.ID().String(), sellValue.String(), coinTo.ID().String(), value.String(), reserve0.String(), reserve1.String())))
+	}
 	if errResp := transaction.CheckSwap(swapChecker, coinFrom, coinTo, sellValue, value, true); errResp != nil {
 		return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
 	}

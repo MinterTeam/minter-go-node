@@ -58,15 +58,15 @@ func (f *FrozenFunds) Commit(db *iavl.MutableTree) error {
 	dirty := f.getOrderedDirty()
 	for _, height := range dirty {
 		ff := f.getFromMap(height)
+		path := getPath(height)
 
 		f.lock.Lock()
 		delete(f.dirty, height)
-		delete(f.list, height)
 		f.lock.Unlock()
 
-		path := getPath(height)
-
+		ff.lock.RLock()
 		if ff.deleted {
+
 			f.lock.Lock()
 			delete(f.list, height)
 			f.lock.Unlock()
@@ -80,6 +80,7 @@ func (f *FrozenFunds) Commit(db *iavl.MutableTree) error {
 
 			db.Set(path, data)
 		}
+		ff.lock.RUnlock()
 	}
 
 	return nil
@@ -96,6 +97,7 @@ func (f *FrozenFunds) PunishFrozenFundsWithID(fromHeight uint64, toHeight uint64
 			continue
 		}
 
+		ff.lock.Lock()
 		newList := make([]Item, len(ff.List))
 		for i, item := range ff.List {
 			if item.CandidateID == candidateID {
@@ -130,8 +132,8 @@ func (f *FrozenFunds) PunishFrozenFundsWithID(fromHeight uint64, toHeight uint64
 
 			newList[i] = item
 		}
-
 		ff.List = newList
+		ff.lock.Unlock()
 
 		f.markDirty(cBlock)
 	}
@@ -174,14 +176,19 @@ func (f *FrozenFunds) get(height uint64) *Model {
 }
 
 func (f *FrozenFunds) markDirty(height uint64) {
+	f.lock.Lock()
+	defer f.lock.Unlock()
+
 	f.dirty[height] = struct{}{}
 }
 
 func (f *FrozenFunds) getOrderedDirty() []uint64 {
+	f.lock.Lock()
 	keys := make([]uint64, 0, len(f.dirty))
 	for k := range f.dirty {
 		keys = append(keys, k)
 	}
+	f.lock.Unlock()
 
 	sort.SliceStable(keys, func(i, j int) bool {
 		return keys[i] < keys[j]
@@ -215,6 +222,7 @@ func (f *FrozenFunds) Export(state *types.AppState, height uint64) {
 			continue
 		}
 
+		frozenFunds.lock.RLock()
 		for _, frozenFund := range frozenFunds.List {
 			state.FrozenFunds = append(state.FrozenFunds, types.FrozenFund{
 				Height:       i,
@@ -225,6 +233,7 @@ func (f *FrozenFunds) Export(state *types.AppState, height uint64) {
 				Value:        frozenFund.Value.String(),
 			})
 		}
+		frozenFunds.lock.RUnlock()
 	}
 }
 

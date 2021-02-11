@@ -87,11 +87,13 @@ func (c *Commission) Export(state *types.AppState) {
 }
 
 func (c *Commission) Commit(db *iavl.MutableTree) error {
+	c.lock.Lock()
 	if c.dirtyCurrent {
 		c.dirtyCurrent = false
 		db.Set([]byte{mainPrefix}, c.currentPrice.Encode())
 	}
 	dirties := c.getOrderedDirty()
+	c.lock.Unlock()
 	for _, height := range dirties {
 		models := c.getFromMap(height)
 
@@ -124,6 +126,9 @@ func (c *Commission) GetVotes(height uint64) []*Model {
 }
 
 func (c *Commission) GetCommissions() *Price {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
 	if c.currentPrice != nil {
 		return c.currentPrice
 	}
@@ -182,7 +187,11 @@ func (c *Commission) GetCommissions() *Price {
 	}
 	return c.currentPrice
 }
+
 func (c *Commission) SetNewCommissions(prices []byte) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
 	c.dirtyCurrent = true
 	var newPrices Price
 	err := rlp.DecodeBytes(prices, &newPrices)
@@ -236,6 +245,8 @@ func (c *Commission) get(height uint64) []*Model {
 
 func (c *Commission) markDirty(height uint64) func() {
 	return func() {
+		c.lock.Lock()
+		defer c.lock.Unlock()
 		c.dirty[height] = struct{}{}
 	}
 }
@@ -271,7 +282,7 @@ func (c *Commission) IsVoteExists(height uint64, pubkey types.Pubkey) bool {
 }
 
 func (c *Commission) AddVoice(height uint64, pubkey types.Pubkey, encode []byte) {
-	c.getOrNew(height, string(encode)).addVoite(pubkey)
+	c.getOrNew(height, string(encode)).addVote(pubkey)
 }
 
 func (c *Commission) Delete(height uint64) {

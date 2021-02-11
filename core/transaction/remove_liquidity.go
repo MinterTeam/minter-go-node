@@ -28,6 +28,14 @@ func (data RemoveLiquidity) TxType() TxType {
 }
 
 func (data RemoveLiquidity) basicCheck(tx *Transaction, context *state.CheckState) *Response {
+	if data.Liquidity.Sign() != 1 {
+		return &Response{
+			Code: code.DecodeError,
+			Log:  "Can't remove zero liquidity volume",
+			Info: EncodeError(code.NewDecodeError()),
+		}
+	}
+
 	if data.Coin0 == data.Coin1 {
 		return &Response{
 			Code: code.CrossConvert,

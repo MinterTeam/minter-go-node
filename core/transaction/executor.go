@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	maxTxLength          = 7168
 	maxPayloadLength     = 1024 * 10
+	maxTxLength          = 6144 + maxPayloadLength
 	maxServiceDataLength = 128
 	stdGas               = 5000
 )
