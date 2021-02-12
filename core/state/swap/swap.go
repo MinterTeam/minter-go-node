@@ -576,7 +576,7 @@ func (p *Pair) CalculateBuyForSell(amount0In *big.Int) (amount1Out *big.Int) {
 
 func (p *Pair) CalculateSellForBuy(amount1Out *big.Int) (amount0In *big.Int) {
 	reserve0, reserve1 := p.Reserves()
-	if amount1Out.Cmp(reserve1) == 1 {
+	if amount1Out.Cmp(reserve1) != -1 {
 		return nil
 	}
 	kAdjusted := new(big.Int).Mul(new(big.Int).Mul(reserve0, reserve1), big.NewInt(1000000))
