@@ -126,6 +126,17 @@ func (data SellAllCoinData) Run(tx *Transaction, context state.Interface, reward
 	coinFrom = checkState.Coins().GetCoin(coinToSell)
 	coinTo := checkState.Coins().GetCoin(coinToBuy)
 
+	if isGasCommissionFromPoolSwap == false && !data.CoinToSell.IsBaseCoin() {
+		coinFrom = dummyCoin{
+			id:         gasCoin.ID(),
+			volume:     big.NewInt(0).Sub(gasCoin.Volume(), commission),
+			reserve:    big.NewInt(0).Sub(gasCoin.Reserve(), commissionInBaseCoin),
+			crr:        gasCoin.Crr(),
+			fullSymbol: gasCoin.GetFullSymbol(),
+			maxSupply:  gasCoin.MaxSupply(),
+		}
+	}
+	
 	valueToSell := big.NewInt(0).Sub(balance, commission)
 
 	value := big.NewInt(0).Set(valueToSell)
