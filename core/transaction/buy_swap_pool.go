@@ -145,7 +145,7 @@ func (data BuySwapPoolData) Run(tx *Transaction, context state.Interface, reward
 	}
 }
 
-func CheckSwap(rSwap swap.EditableChecker, coinIn calculateCoin, coinOut calculateCoin, valueIn *big.Int, valueOut *big.Int, isBuy bool) *Response {
+func CheckSwap(rSwap swap.EditableChecker, coinIn CalculateCoin, coinOut CalculateCoin, valueIn *big.Int, valueOut *big.Int, isBuy bool) *Response {
 	if isBuy {
 		calculatedAmountToSell := rSwap.CalculateSellForBuy(valueOut)
 		if calculatedAmountToSell == nil {

@@ -362,7 +362,7 @@ func rlpHash(x interface{}) (h types.Hash) {
 	return h
 }
 
-func CheckForCoinSupplyOverflow(coin calculateCoin, delta *big.Int) *Response {
+func CheckForCoinSupplyOverflow(coin CalculateCoin, delta *big.Int) *Response {
 	total := big.NewInt(0).Set(coin.Volume())
 	total.Add(total, delta)
 
@@ -377,7 +377,7 @@ func CheckForCoinSupplyOverflow(coin calculateCoin, delta *big.Int) *Response {
 	return nil
 }
 
-func CheckReserveUnderflow(coin calculateCoin, delta *big.Int) *Response {
+func CheckReserveUnderflow(coin CalculateCoin, delta *big.Int) *Response {
 	total := big.NewInt(0).Sub(coin.Reserve(), delta)
 
 	if total.Cmp(minCoinReserve) == -1 {

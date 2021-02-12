@@ -136,7 +136,7 @@ func (data SellAllSwapPoolData) Run(tx *Transaction, context state.Interface, re
 	}
 }
 
-type dummyCoin struct {
+type DummyCoin struct {
 	id         types.CoinID
 	volume     *big.Int
 	reserve    *big.Int
@@ -145,34 +145,38 @@ type dummyCoin struct {
 	maxSupply  *big.Int
 }
 
-func (m dummyCoin) ID() types.CoinID {
+func NewDummyCoin(id types.CoinID, volume *big.Int, reserve *big.Int, crr uint32, fullSymbol string, maxSupply *big.Int) *DummyCoin {
+	return &DummyCoin{id: id, volume: volume, reserve: reserve, crr: crr, fullSymbol: fullSymbol, maxSupply: maxSupply}
+}
+
+func (m DummyCoin) ID() types.CoinID {
 	return m.id
 }
 
-func (m dummyCoin) BaseOrHasReserve() bool {
+func (m DummyCoin) BaseOrHasReserve() bool {
 	return m.ID().IsBaseCoin() || (m.Crr() > 0 && m.Reserve().Sign() == 1)
 }
 
-func (m dummyCoin) Volume() *big.Int {
+func (m DummyCoin) Volume() *big.Int {
 	return m.volume
 }
 
-func (m dummyCoin) Reserve() *big.Int {
+func (m DummyCoin) Reserve() *big.Int {
 	return m.reserve
 }
 
-func (m dummyCoin) Crr() uint32 {
+func (m DummyCoin) Crr() uint32 {
 	return m.crr
 }
 
-func (m dummyCoin) GetFullSymbol() string {
+func (m DummyCoin) GetFullSymbol() string {
 	return m.fullSymbol
 }
-func (m dummyCoin) MaxSupply() *big.Int {
+func (m DummyCoin) MaxSupply() *big.Int {
 	return m.maxSupply
 }
 
-type calculateCoin interface {
+type CalculateCoin interface {
 	ID() types.CoinID
 	BaseOrHasReserve() bool
 	Volume() *big.Int
@@ -190,7 +194,7 @@ func (isGasCommissionFromPoolSwap gasMethod) String() string {
 	return "bancor"
 }
 
-func CalculateCommission(checkState *state.CheckState, swapper swap.EditableChecker, gasCoin calculateCoin, commissionInBaseCoin *big.Int) (commission *big.Int, poolSwap gasMethod, errResp *Response) {
+func CalculateCommission(checkState *state.CheckState, swapper swap.EditableChecker, gasCoin CalculateCoin, commissionInBaseCoin *big.Int) (commission *big.Int, poolSwap gasMethod, errResp *Response) {
 	if gasCoin.ID().IsBaseCoin() {
 		return new(big.Int).Set(commissionInBaseCoin), false, nil
 	}
@@ -219,7 +223,7 @@ func CalculateCommission(checkState *state.CheckState, swapper swap.EditableChec
 	return commissionFromReserve, false, nil
 }
 
-func commissionFromPool(swapChecker swap.EditableChecker, coin calculateCoin, baseCoin calculateCoin, commissionInBaseCoin *big.Int) (*big.Int, *Response) {
+func commissionFromPool(swapChecker swap.EditableChecker, coin CalculateCoin, baseCoin CalculateCoin, commissionInBaseCoin *big.Int) (*big.Int, *Response) {
 	if !swapChecker.IsExist() {
 		return nil, &Response{
 			Code: code.PairNotExists,
@@ -234,7 +238,7 @@ func commissionFromPool(swapChecker swap.EditableChecker, coin calculateCoin, ba
 	return commission, nil
 }
 
-func commissionFromReserve(gasCoin calculateCoin, commissionInBaseCoin *big.Int) (*big.Int, *Response) {
+func commissionFromReserve(gasCoin CalculateCoin, commissionInBaseCoin *big.Int) (*big.Int, *Response) {
 	if !gasCoin.BaseOrHasReserve() {
 		return nil, &Response{
 			Code: code.CoinHasNotReserve,
