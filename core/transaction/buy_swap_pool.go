@@ -154,7 +154,7 @@ func CheckSwap(rSwap swap.EditableChecker, coinIn CalculateCoin, coinOut Calcula
 			symbolOut := coinOut.GetFullSymbol()
 			return &Response{
 				Code: code.InsufficientLiquidity,
-				Log:  fmt.Sprintf("You wanted to exchange %s %s for %s %s, but swap pool has reserves %s %s and %s %s", valueIn, symbolIn, valueOut, symbolOut, reserve0.String(), symbolIn, reserve1.String(), symbolOut),
+				Log:  fmt.Sprintf("You wanted to buy %s %s, but swap pool has reserve %s %s", valueOut, symbolOut, reserve0.String(), symbolIn),
 				Info: EncodeError(code.NewInsufficientLiquidity(coinIn.ID().String(), valueIn.String(), coinOut.ID().String(), valueOut.String(), reserve0.String(), reserve1.String())),
 			}
 		}
@@ -176,7 +176,7 @@ func CheckSwap(rSwap swap.EditableChecker, coinIn CalculateCoin, coinOut Calcula
 			symbolOut := coinOut.GetFullSymbol()
 			return &Response{
 				Code: code.InsufficientLiquidity,
-				Log:  fmt.Sprintf("You wanted to exchange %s %s for %s %s, but swap pool has reserves %s %s and %s %s", valueIn, symbolIn, valueOut, symbolOut, reserve0.String(), symbolIn, reserve1.String(), symbolOut),
+				Log:  fmt.Sprintf("You wanted to sell %s %s, but swap pool has reserve %s %s", valueIn, symbolIn, reserve1.String(), symbolOut),
 				Info: EncodeError(code.NewInsufficientLiquidity(coinIn.ID().String(), valueIn.String(), coinOut.ID().String(), valueOut.String(), reserve0.String(), reserve1.String())),
 			}
 		}
