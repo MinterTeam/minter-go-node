@@ -14,19 +14,19 @@ import (
 	"strconv"
 )
 
-func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
+func encode(data transaction.Data, rCoins coins.RCoins) (*any.Any, error) {
 	var m proto.Message
 	switch d := data.(type) {
 	case *transaction.BuyCoinData:
 		m = &pb.BuyCoinData{
 			CoinToBuy: &pb.Coin{
 				Id:     uint64(d.CoinToBuy),
-				Symbol: coins.GetCoin(d.CoinToBuy).GetFullSymbol(),
+				Symbol: rCoins.GetCoin(d.CoinToBuy).GetFullSymbol(),
 			},
 			ValueToBuy: d.ValueToBuy.String(),
 			CoinToSell: &pb.Coin{
 				Id:     uint64(d.CoinToSell),
-				Symbol: coins.GetCoin(d.CoinToSell).GetFullSymbol(),
+				Symbol: rCoins.GetCoin(d.CoinToSell).GetFullSymbol(),
 			},
 			MaximumValueToSell: d.MaximumValueToSell.String(),
 		}
@@ -65,7 +65,7 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 			Commission: uint64(d.Commission),
 			Coin: &pb.Coin{
 				Id:     uint64(d.Coin),
-				Symbol: coins.GetCoin(d.Coin).GetFullSymbol(),
+				Symbol: rCoins.GetCoin(d.Coin).GetFullSymbol(),
 			},
 			Stake: d.Stake.String(),
 		}
@@ -74,7 +74,7 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 			PubKey: d.PubKey.String(),
 			Coin: &pb.Coin{
 				Id:     uint64(d.Coin),
-				Symbol: coins.GetCoin(d.Coin).GetFullSymbol(),
+				Symbol: rCoins.GetCoin(d.Coin).GetFullSymbol(),
 			},
 			Value: d.Value.String(),
 		}
@@ -110,7 +110,7 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 			list = append(list, &pb.SendData{
 				Coin: &pb.Coin{
 					Id:     uint64(item.Coin),
-					Symbol: coins.GetCoin(item.Coin).GetFullSymbol(),
+					Symbol: rCoins.GetCoin(item.Coin).GetFullSymbol(),
 				},
 				To:    item.To.String(),
 				Value: item.Value.String(),
@@ -141,11 +141,11 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 		m = &pb.SellAllCoinData{
 			CoinToSell: &pb.Coin{
 				Id:     uint64(d.CoinToSell),
-				Symbol: coins.GetCoin(d.CoinToSell).GetFullSymbol(),
+				Symbol: rCoins.GetCoin(d.CoinToSell).GetFullSymbol(),
 			},
 			CoinToBuy: &pb.Coin{
 				Id:     uint64(d.CoinToBuy),
-				Symbol: coins.GetCoin(d.CoinToBuy).GetFullSymbol(),
+				Symbol: rCoins.GetCoin(d.CoinToBuy).GetFullSymbol(),
 			},
 			MinimumValueToBuy: d.MinimumValueToBuy.String(),
 		}
@@ -153,12 +153,12 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 		m = &pb.SellCoinData{
 			CoinToSell: &pb.Coin{
 				Id:     uint64(d.CoinToSell),
-				Symbol: coins.GetCoin(d.CoinToSell).GetFullSymbol(),
+				Symbol: rCoins.GetCoin(d.CoinToSell).GetFullSymbol(),
 			},
 			ValueToSell: d.ValueToSell.String(),
 			CoinToBuy: &pb.Coin{
 				Id:     uint64(d.CoinToBuy),
-				Symbol: coins.GetCoin(d.CoinToBuy).GetFullSymbol(),
+				Symbol: rCoins.GetCoin(d.CoinToBuy).GetFullSymbol(),
 			},
 			MinimumValueToBuy: d.MinimumValueToBuy.String(),
 		}
@@ -166,7 +166,7 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 		m = &pb.SendData{
 			Coin: &pb.Coin{
 				Id:     uint64(d.Coin),
-				Symbol: coins.GetCoin(d.Coin).GetFullSymbol(),
+				Symbol: rCoins.GetCoin(d.Coin).GetFullSymbol(),
 			},
 			To:    d.To.String(),
 			Value: d.Value.String(),
@@ -189,7 +189,7 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 			PubKey: d.PubKey.String(),
 			Coin: &pb.Coin{
 				Id:     uint64(d.Coin),
-				Symbol: coins.GetCoin(d.Coin).GetFullSymbol(),
+				Symbol: rCoins.GetCoin(d.Coin).GetFullSymbol(),
 			},
 			Value: d.Value.String(),
 		}
@@ -197,11 +197,11 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 		m = &pb.AddLiquidityData{
 			Coin0: &pb.Coin{
 				Id:     uint64(d.Coin0),
-				Symbol: coins.GetCoin(d.Coin0).GetFullSymbol(),
+				Symbol: rCoins.GetCoin(d.Coin0).GetFullSymbol(),
 			},
 			Coin1: &pb.Coin{
 				Id:     uint64(d.Coin1),
-				Symbol: coins.GetCoin(d.Coin1).GetFullSymbol(),
+				Symbol: rCoins.GetCoin(d.Coin1).GetFullSymbol(),
 			},
 			Volume0:        d.Volume0.String(),
 			MaximumVolume1: d.MaximumVolume1.String(),
@@ -210,52 +210,52 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 		m = &pb.RemoveLiquidityData{
 			Coin0: &pb.Coin{
 				Id:     uint64(d.Coin0),
-				Symbol: coins.GetCoin(d.Coin0).GetFullSymbol(),
+				Symbol: rCoins.GetCoin(d.Coin0).GetFullSymbol(),
 			},
 			Coin1: &pb.Coin{
 				Id:     uint64(d.Coin1),
-				Symbol: coins.GetCoin(d.Coin1).GetFullSymbol(),
+				Symbol: rCoins.GetCoin(d.Coin1).GetFullSymbol(),
 			},
 			Liquidity:      d.Liquidity.String(),
 			MinimumVolume0: d.MinimumVolume0.String(),
 			MinimumVolume1: d.MinimumVolume1.String(),
 		}
 	case *transaction.BuySwapPoolData:
-		m = &pb.BuySwapPoolData{ // todo: route
-			CoinToBuy: &pb.Coin{
-				Id:     uint64(d.CoinToBuy),
-				Symbol: coins.GetCoin(d.CoinToBuy).GetFullSymbol(),
-			},
-			CoinToSell: &pb.Coin{
-				Id:     uint64(d.CoinToSell),
-				Symbol: coins.GetCoin(d.CoinToSell).GetFullSymbol(),
-			},
+		var coinsInfo []*pb.Coin
+		for _, coin := range d.Coins {
+			coinsInfo = append(coinsInfo, &pb.Coin{
+				Id:     uint64(coin),
+				Symbol: rCoins.GetCoin(coin).GetFullSymbol(),
+			})
+		}
+		m = &pb.BuySwapPoolData{
+			Coins:              coinsInfo,
 			ValueToBuy:         d.ValueToBuy.String(),
 			MaximumValueToSell: d.MaximumValueToSell.String(),
 		}
 	case *transaction.SellSwapPoolData:
-		m = &pb.SellSwapPoolData{ // todo: route
-			CoinToBuy: &pb.Coin{
-				Id:     uint64(d.CoinToBuy),
-				Symbol: coins.GetCoin(d.CoinToBuy).GetFullSymbol(),
-			},
-			CoinToSell: &pb.Coin{
-				Id:     uint64(d.CoinToSell),
-				Symbol: coins.GetCoin(d.CoinToSell).GetFullSymbol(),
-			},
+		var coinsInfo []*pb.Coin
+		for _, coin := range d.Coins {
+			coinsInfo = append(coinsInfo, &pb.Coin{
+				Id:     uint64(coin),
+				Symbol: rCoins.GetCoin(coin).GetFullSymbol(),
+			})
+		}
+		m = &pb.SellSwapPoolData{
+			Coins:             coinsInfo,
 			ValueToSell:       d.ValueToSell.String(),
 			MinimumValueToBuy: d.MinimumValueToBuy.String(),
 		}
 	case *transaction.SellAllSwapPoolData:
-		m = &pb.SellAllSwapPoolData{ // todo: route
-			CoinToBuy: &pb.Coin{
-				Id:     uint64(d.CoinToBuy),
-				Symbol: coins.GetCoin(d.CoinToBuy).GetFullSymbol(),
-			},
-			CoinToSell: &pb.Coin{
-				Id:     uint64(d.CoinToSell),
-				Symbol: coins.GetCoin(d.CoinToSell).GetFullSymbol(),
-			},
+		var coinsInfo []*pb.Coin
+		for _, coin := range d.Coins {
+			coinsInfo = append(coinsInfo, &pb.Coin{
+				Id:     uint64(coin),
+				Symbol: rCoins.GetCoin(coin).GetFullSymbol(),
+			})
+		}
+		m = &pb.SellAllSwapPoolData{
+			Coins:             coinsInfo,
 			MinimumValueToBuy: d.MinimumValueToBuy.String(),
 		}
 	case *transaction.CreateTokenData:
@@ -280,7 +280,7 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 		m = &pb.BurnTokenData{
 			Coin: &pb.Coin{
 				Id:     uint64(d.Coin),
-				Symbol: coins.GetCoin(d.Coin).GetFullSymbol(),
+				Symbol: rCoins.GetCoin(d.Coin).GetFullSymbol(),
 			},
 			Value: d.Value.String(),
 		}
@@ -288,7 +288,7 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 		m = &pb.MintTokenData{
 			Coin: &pb.Coin{
 				Id:     uint64(d.Coin),
-				Symbol: coins.GetCoin(d.Coin).GetFullSymbol(),
+				Symbol: rCoins.GetCoin(d.Coin).GetFullSymbol(),
 			},
 			Value: d.Value.String(),
 		}
@@ -303,12 +303,12 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 			To:   d.To.String(),
 			Coin: &pb.Coin{
 				Id:     uint64(d.Coin),
-				Symbol: coins.GetCoin(d.Coin).GetFullSymbol(),
+				Symbol: rCoins.GetCoin(d.Coin).GetFullSymbol(),
 			},
 			Stake: d.Stake.String(),
 		}
 	case *transaction.VoteCommissionData:
-		m = priceCommissionData(d, coins.GetCoin(d.Coin))
+		m = priceCommissionData(d, rCoins.GetCoin(d.Coin))
 	case *transaction.VoteUpdateData:
 		m = &pb.VoteUpdateData{
 			PubKey:  d.PubKey.String(),
@@ -319,11 +319,11 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 		m = &pb.CreateSwapPoolData{
 			Coin0: &pb.Coin{
 				Id:     uint64(d.Coin0),
-				Symbol: coins.GetCoin(d.Coin0).GetFullSymbol(),
+				Symbol: rCoins.GetCoin(d.Coin0).GetFullSymbol(),
 			},
 			Coin1: &pb.Coin{
 				Id:     uint64(d.Coin1),
-				Symbol: coins.GetCoin(d.Coin1).GetFullSymbol(),
+				Symbol: rCoins.GetCoin(d.Coin1).GetFullSymbol(),
 			},
 			Volume0: d.Volume0.String(),
 			Volume1: d.Volume1.String(),

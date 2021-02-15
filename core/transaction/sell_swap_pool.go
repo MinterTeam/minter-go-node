@@ -48,7 +48,7 @@ func (data SellSwapPoolData) basicCheck(tx *Transaction, context *state.CheckSta
 		if !context.Swap().SwapPoolExist(coin0, coin1) {
 			return &Response{
 				Code: code.PairNotExists,
-				Log:  fmt.Sprint("swap pair not exists in pool"),
+				Log:  fmt.Sprint("swap pool not exists"),
 				Info: EncodeError(code.NewPairNotExists(coin0.String(), coin1.String())),
 			}
 		}
@@ -88,36 +88,40 @@ func (data SellSwapPoolData) Run(tx *Transaction, context state.Interface, rewar
 		return *errResp
 	}
 
-	coinToSell := data.Coins[0]
-	coinToSellModel := checkState.Coins().GetCoin(coinToSell)
-	resultCoin := data.Coins[len(data.Coins)-1]
-	valueToSell := data.ValueToSell
-	valueToBuy := big.NewInt(0)
-	for _, coinToBuy := range data.Coins[1:] {
-		swapper := checkState.Swap().GetSwapper(coinToSell, coinToBuy)
-		if isGasCommissionFromPoolSwap {
-			if tx.GasCoin == coinToSell && coinToBuy.IsBaseCoin() {
-				swapper = swapper.AddLastSwapStep(commission, commissionInBaseCoin)
+	{
+		coinToSell := data.Coins[0]
+		coinToSellModel := checkState.Coins().GetCoin(coinToSell)
+		resultCoin := data.Coins[len(data.Coins)-1]
+		valueToSell := data.ValueToSell
+		valueToBuy := big.NewInt(0)
+		for _, coinToBuy := range data.Coins[1:] {
+			swapper := checkState.Swap().GetSwapper(coinToSell, coinToBuy)
+			if isGasCommissionFromPoolSwap {
+				if tx.GasCoin == coinToSell && coinToBuy.IsBaseCoin() {
+					swapper = swapper.AddLastSwapStep(commission, commissionInBaseCoin)
+				}
+				if tx.GasCoin == coinToBuy && coinToSell.IsBaseCoin() {
+					swapper = swapper.AddLastSwapStep(commissionInBaseCoin, commission)
+				}
 			}
-			if tx.GasCoin == coinToBuy && coinToSell.IsBaseCoin() {
-				swapper = swapper.AddLastSwapStep(commissionInBaseCoin, commission)
+
+			if coinToBuy == resultCoin {
+				valueToBuy = data.MinimumValueToBuy
 			}
-		}
 
-		if coinToBuy == resultCoin {
-			valueToBuy = data.MinimumValueToBuy
-		}
+			coinToBuyModel := checkState.Coins().GetCoin(coinToBuy)
+			errResp = CheckSwap(swapper, coinToSellModel, coinToBuyModel, valueToSell, valueToBuy, false)
+			if errResp != nil {
+				return *errResp
+			}
 
-		coinToBuyModel := checkState.Coins().GetCoin(coinToBuy)
-		errResp = CheckSwap(swapper, coinToSellModel, coinToBuyModel, valueToSell, valueToBuy, false)
-		if errResp != nil {
-			return *errResp
+			valueToSell = swapper.CalculateBuyForSell(valueToSell)
+			coinToSellModel = coinToBuyModel
+			coinToSell = coinToBuy
 		}
-		valueToSell = swapper.CalculateBuyForSell(valueToSell)
-		coinToSellModel = coinToBuyModel
-		coinToSell = coinToBuy
 	}
 
+	coinToSell := data.Coins[0]
 	amount0 := new(big.Int).Set(data.ValueToSell)
 	if tx.GasCoin != coinToSell {
 		if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) == -1 {
@@ -181,8 +185,8 @@ func (data SellSwapPoolData) Run(tx *Transaction, context state.Interface, rewar
 			{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
 			{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 			{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
-			{Key: []byte("tx.coin_to_buy"), Value: []byte(data.Coins[0].String())},
-			{Key: []byte("tx.coin_to_sell"), Value: []byte(data.Coins[len(data.Coins)-1].String())},
+			{Key: []byte("tx.coin_to_buy"), Value: []byte(resultCoin.String())},
+			{Key: []byte("tx.coin_to_sell"), Value: []byte(data.Coins[0].String())},
 			{Key: []byte("tx.return"), Value: []byte(amountOut.String())},
 			{Key: []byte("tx.pools"), Value: []byte(strings.Join(poolIDs, ","))},
 		}

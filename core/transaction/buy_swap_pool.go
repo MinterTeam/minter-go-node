@@ -13,9 +13,8 @@ import (
 )
 
 type BuySwapPoolData struct {
-	CoinToBuy          types.CoinID
+	Coins              []types.CoinID
 	ValueToBuy         *big.Int
-	CoinToSell         types.CoinID
 	MaximumValueToSell *big.Int
 }
 
@@ -27,21 +26,32 @@ func (data BuySwapPoolData) TxType() TxType {
 }
 
 func (data BuySwapPoolData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
-	if data.CoinToSell == data.CoinToBuy {
+	if len(data.Coins) < 2 {
 		return &Response{
-			Code: code.CrossConvert,
-			Log:  "\"From\" coin equals to \"to\" coin",
-			Info: EncodeError(code.NewCrossConvert(
-				data.CoinToSell.String(), "",
-				data.CoinToBuy.String(), "")),
+			Code: code.DecodeError,
+			Log:  "Incorrect tx data",
+			Info: EncodeError(code.NewDecodeError()),
 		}
 	}
-	if !context.Swap().SwapPoolExist(data.CoinToSell, data.CoinToBuy) {
-		return &Response{
-			Code: code.PairNotExists,
-			Log:  "swap pool not found",
-			Info: EncodeError(code.NewPairNotExists(data.CoinToSell.String(), data.CoinToBuy.String())),
+	coin0 := data.Coins[0]
+	for _, coin1 := range data.Coins[1:] {
+		if coin0 == coin1 {
+			return &Response{
+				Code: code.CrossConvert,
+				Log:  "\"From\" coin equals to \"to\" coin",
+				Info: EncodeError(code.NewCrossConvert(
+					coin0.String(), "",
+					coin1.String(), "")),
+			}
 		}
+		if !context.Swap().SwapPoolExist(coin0, coin1) {
+			return &Response{
+				Code: code.PairNotExists,
+				Log:  fmt.Sprint("swap pool not exists"),
+				Info: EncodeError(code.NewPairNotExists(coin0.String(), coin1.String())),
+			}
+		}
+		coin0 = coin1
 	}
 	return nil
 }
@@ -51,7 +61,7 @@ func (data BuySwapPoolData) String() string {
 }
 
 func (data BuySwapPoolData) CommissionData(price *commission.Price) *big.Int {
-	return price.BuyPoolBase // todo
+	return new(big.Int).Add(price.BuyPoolBase, new(big.Int).Mul(price.BuyPoolDelta, big.NewInt(int64(len(data.Coins))-2)))
 }
 
 func (data BuySwapPoolData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
@@ -76,30 +86,52 @@ func (data BuySwapPoolData) Run(tx *Transaction, context state.Interface, reward
 		return *errResp
 	}
 
-	swapper := checkState.Swap().GetSwapper(data.CoinToSell, data.CoinToBuy)
-	if isGasCommissionFromPoolSwap {
-		if tx.GasCoin == data.CoinToSell && data.CoinToBuy.IsBaseCoin() {
-			swapper = swapper.AddLastSwapStep(commission, commissionInBaseCoin)
+	var calculatedAmountToSell *big.Int
+	resultCoin := data.Coins[len(data.Coins)-1]
+	{
+		coinToBuy := data.Coins[0]
+		coinToBuyModel := checkState.Coins().GetCoin(coinToBuy)
+		valueToBuy := big.NewInt(0).Set(data.ValueToBuy)
+		valueToSell := maxCoinSupply
+		for _, coinToSell := range data.Coins[1:] {
+			swapper := checkState.Swap().GetSwapper(coinToSell, coinToBuy)
+			if isGasCommissionFromPoolSwap {
+				if tx.GasCoin == coinToSell && coinToBuy.IsBaseCoin() {
+					swapper = swapper.AddLastSwapStep(commission, commissionInBaseCoin)
+				}
+				if tx.GasCoin == coinToSell && coinToBuy.IsBaseCoin() {
+					swapper = swapper.AddLastSwapStep(commissionInBaseCoin, commission)
+				}
+			}
+
+			if coinToSell == resultCoin {
+				valueToSell = data.MaximumValueToSell
+			}
+
+			coinToSellModel := checkState.Coins().GetCoin(coinToSell)
+			errResp = CheckSwap(swapper, coinToSellModel, coinToBuyModel, valueToSell, valueToBuy, true)
+			if errResp != nil {
+				return *errResp
+			}
+
+			valueToBuy = swapper.CalculateSellForBuy(valueToBuy)
+			coinToBuyModel = coinToSellModel
+			coinToBuy = coinToSell
 		}
-		if tx.GasCoin == data.CoinToBuy && data.CoinToSell.IsBaseCoin() {
-			swapper = swapper.AddLastSwapStep(commissionInBaseCoin, commission)
-		}
-	}
-	errResp = CheckSwap(swapper, checkState.Coins().GetCoin(data.CoinToSell), checkState.Coins().GetCoin(data.CoinToBuy), data.MaximumValueToSell, data.ValueToBuy, true)
-	if errResp != nil {
-		return *errResp
+		calculatedAmountToSell = valueToBuy
 	}
 
-	calculatedAmountToSell := swapper.CalculateSellForBuy(data.ValueToBuy)
+	coinToSell := resultCoin
 	amount0 := new(big.Int).Set(calculatedAmountToSell)
-	if tx.GasCoin == data.CoinToSell {
+	if tx.GasCoin == coinToSell {
 		amount0.Add(amount0, commission)
 	}
-	if checkState.Accounts().GetBalance(sender, data.CoinToSell).Cmp(amount0) == -1 {
+	if checkState.Accounts().GetBalance(sender, coinToSell).Cmp(amount0) == -1 {
+		symbol := checkState.Coins().GetCoin(coinToSell).GetFullSymbol()
 		return Response{
 			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), amount0.String(), checkState.Coins().GetCoin(data.CoinToSell).GetFullSymbol()),
-			Info: EncodeError(code.NewInsufficientFunds(sender.String(), amount0.String(), checkState.Coins().GetCoin(data.CoinToSell).GetFullSymbol(), data.CoinToSell.String())),
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), amount0.String(), symbol),
+			Info: EncodeError(code.NewInsufficientFunds(sender.String(), amount0.String(), symbol, coinToSell.String())),
 		}
 	}
 
@@ -121,9 +153,30 @@ func (data BuySwapPoolData) Run(tx *Transaction, context state.Interface, reward
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		amountIn, amountOut, _ := deliverState.Swap.PairBuy(data.CoinToSell, data.CoinToBuy, data.MaximumValueToSell, data.ValueToBuy)
-		deliverState.Accounts.SubBalance(sender, data.CoinToSell, amountIn)
-		deliverState.Accounts.AddBalance(sender, data.CoinToBuy, amountOut)
+		coinToBuy := data.Coins[0]
+		resultCoin := data.Coins[len(data.Coins)-1]
+		valueToBuy := data.ValueToBuy
+
+		var poolIDs []string
+
+		for i, coinToSell := range data.Coins[1:] {
+
+			amountIn, amountOut, poolID := deliverState.Swap.PairBuy(coinToSell, coinToBuy, maxCoinSupply, valueToBuy)
+
+			poolIDs = append(poolIDs, fmt.Sprintf("%d:%d-%s:%d-%s", poolID, coinToSell, amountIn.String(), coinToBuy, amountOut.String()))
+
+			if i == 0 {
+				deliverState.Accounts.AddBalance(sender, coinToBuy, amountOut)
+			}
+
+			valueToBuy = amountIn
+			coinToBuy = coinToSell
+
+			if coinToSell == resultCoin {
+				deliverState.Accounts.SubBalance(sender, coinToSell, amountIn)
+			}
+		}
+		amountIn := valueToBuy
 
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 
@@ -132,10 +185,9 @@ func (data BuySwapPoolData) Run(tx *Transaction, context state.Interface, reward
 			{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
 			{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 			{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
-			{Key: []byte("tx.coin_to_buy"), Value: []byte(data.CoinToBuy.String())},
-			{Key: []byte("tx.coin_to_sell"), Value: []byte(data.CoinToSell.String())},
+			{Key: []byte("tx.coin_to_buy"), Value: []byte(data.Coins[0].String())},
+			{Key: []byte("tx.coin_to_sell"), Value: []byte(resultCoin.String())},
 			{Key: []byte("tx.return"), Value: []byte(amountIn.String())},
-			{Key: []byte("tx.pair_ids"), Value: []byte(liquidityCoinName(data.CoinToBuy, data.CoinToSell))},
 		}
 	}
 
@@ -162,8 +214,8 @@ func CheckSwap(rSwap swap.EditableChecker, coinIn CalculateCoin, coinOut Calcula
 			return &Response{
 				Code: code.MaximumValueToSellReached,
 				Log: fmt.Sprintf(
-					"You wanted to sell maximum %s, but currently you need to spend %s to complete tx",
-					valueIn.String(), calculatedAmountToSell.String()),
+					"You wanted to sell maximum %s %s, but currently you need to spend %s %s to complete tx",
+					valueIn.String(), coinIn.GetFullSymbol(), calculatedAmountToSell.String(), coinOut.GetFullSymbol()),
 				Info: EncodeError(code.NewMaximumValueToSellReached(valueIn.String(), calculatedAmountToSell.String(), coinIn.GetFullSymbol(), coinIn.ID().String())),
 			}
 		}
