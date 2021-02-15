@@ -52,7 +52,7 @@ func (data SellAllSwapPoolData) String() string {
 }
 
 func (data SellAllSwapPoolData) CommissionData(price *commission.Price) *big.Int {
-	return price.SellAllPool
+	return price.SellAllPoolBase // todo
 }
 
 func (data SellAllSwapPoolData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
@@ -102,13 +102,13 @@ func (data SellAllSwapPoolData) Run(tx *Transaction, context state.Interface, re
 	var tags []abcTypes.EventAttribute
 	if deliverState, ok := context.(*state.State); ok {
 		if isGasCommissionFromPoolSwap {
-			commission, commissionInBaseCoin = deliverState.Swap.PairSell(data.CoinToSell, types.GetBaseCoinID(), commission, commissionInBaseCoin)
+			commission, commissionInBaseCoin, _ = deliverState.Swap.PairSell(data.CoinToSell, types.GetBaseCoinID(), commission, commissionInBaseCoin)
 		} else if !data.CoinToSell.IsBaseCoin() {
 			deliverState.Coins.SubVolume(data.CoinToSell, commission)
 			deliverState.Coins.SubReserve(data.CoinToSell, commissionInBaseCoin)
 		}
 
-		amountIn, amountOut := deliverState.Swap.PairSell(data.CoinToSell, data.CoinToBuy, balance, data.MinimumValueToBuy)
+		amountIn, amountOut, _ := deliverState.Swap.PairSell(data.CoinToSell, data.CoinToBuy, balance, data.MinimumValueToBuy)
 		deliverState.Accounts.SubBalance(sender, data.CoinToSell, amountIn)
 		deliverState.Accounts.AddBalance(sender, data.CoinToBuy, amountOut)
 

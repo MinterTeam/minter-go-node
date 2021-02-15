@@ -75,6 +75,7 @@ func (s *Service) EstimateCoinBuy(ctx context.Context, req *pb.EstimateCoinBuyRe
 
 	commissions := cState.Commission().GetCommissions()
 	var commissionInBaseCoin *big.Int
+	swapFrom := req.SwapFrom
 
 	switch req.SwapFrom {
 	case pb.SwapFrom_bancor:
@@ -88,15 +89,17 @@ func (s *Service) EstimateCoinBuy(ctx context.Context, req *pb.EstimateCoinBuyRe
 			return nil, errPool
 		}
 		value = valuePool
-		commissionInBaseCoin = commissions.BuyPool
+		commissionInBaseCoin = commissions.BuyPoolBase
 	default:
 		if valueBancor != nil && valuePool != nil {
 			if valueBancor.Cmp(valuePool) == 1 {
 				value = valuePool
-				commissionInBaseCoin = commissions.BuyPool
+				commissionInBaseCoin = commissions.BuyPoolBase
+				swapFrom = pb.SwapFrom_pool
 			} else {
 				value = valueBancor
 				commissionInBaseCoin = commissions.BuyBancor
+				swapFrom = pb.SwapFrom_bancor
 			}
 			break
 		}
@@ -104,11 +107,13 @@ func (s *Service) EstimateCoinBuy(ctx context.Context, req *pb.EstimateCoinBuyRe
 		if valueBancor != nil {
 			value = valueBancor
 			commissionInBaseCoin = commissions.BuyBancor
+			swapFrom = pb.SwapFrom_bancor
 			break
 		}
 		if valuePool != nil {
 			value = valuePool
-			commissionInBaseCoin = commissions.BuyPool
+			commissionInBaseCoin = commissions.BuyPoolBase
+			swapFrom = pb.SwapFrom_pool
 			break
 		}
 
@@ -155,6 +160,7 @@ func (s *Service) EstimateCoinBuy(ctx context.Context, req *pb.EstimateCoinBuyRe
 	return &pb.EstimateCoinBuyResponse{
 		WillPay:    value.String(),
 		Commission: commission.String(),
+		SwapFrom:   swapFrom,
 	}, nil
 }
 

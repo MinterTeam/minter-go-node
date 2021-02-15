@@ -130,7 +130,7 @@ func (data RecreateTokenData) Run(tx *Transaction, context state.Interface, rewa
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
 		if isGasCommissionFromPoolSwap {
-			commission, commissionInBaseCoin = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
+			commission, commissionInBaseCoin, _ = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
 		} else if !tx.GasCoin.IsBaseCoin() {
 			deliverState.Coins.SubVolume(tx.GasCoin, commission)
 			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)

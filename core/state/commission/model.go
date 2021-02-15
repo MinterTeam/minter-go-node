@@ -14,9 +14,12 @@ type Price struct {
 	BuyBancor               *big.Int
 	SellBancor              *big.Int
 	SellAllBancor           *big.Int
-	BuyPool                 *big.Int
-	SellPool                *big.Int
-	SellAllPool             *big.Int
+	BuyPoolBase             *big.Int
+	BuyPoolDelta            *big.Int
+	SellPoolBase            *big.Int
+	SellPoolDelta           *big.Int
+	SellAllPoolBase         *big.Int
+	SellAllPoolDelta        *big.Int
 	CreateTicker3           *big.Int
 	CreateTicker4           *big.Int
 	CreateTicker5           *big.Int

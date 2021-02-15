@@ -51,7 +51,7 @@ func (data BuySwapPoolData) String() string {
 }
 
 func (data BuySwapPoolData) CommissionData(price *commission.Price) *big.Int {
-	return price.BuyPool
+	return price.BuyPoolBase // todo
 }
 
 func (data BuySwapPoolData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
@@ -113,7 +113,7 @@ func (data BuySwapPoolData) Run(tx *Transaction, context state.Interface, reward
 	var tags []abcTypes.EventAttribute
 	if deliverState, ok := context.(*state.State); ok {
 		if isGasCommissionFromPoolSwap {
-			commission, commissionInBaseCoin = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
+			commission, commissionInBaseCoin, _ = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
 		} else if !tx.GasCoin.IsBaseCoin() {
 			deliverState.Coins.SubVolume(tx.GasCoin, commission)
 			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
@@ -121,7 +121,7 @@ func (data BuySwapPoolData) Run(tx *Transaction, context state.Interface, reward
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		amountIn, amountOut := deliverState.Swap.PairBuy(data.CoinToSell, data.CoinToBuy, data.MaximumValueToSell, data.ValueToBuy)
+		amountIn, amountOut, _ := deliverState.Swap.PairBuy(data.CoinToSell, data.CoinToBuy, data.MaximumValueToSell, data.ValueToBuy)
 		deliverState.Accounts.SubBalance(sender, data.CoinToSell, amountIn)
 		deliverState.Accounts.AddBalance(sender, data.CoinToBuy, amountOut)
 
@@ -176,16 +176,17 @@ func CheckSwap(rSwap swap.EditableChecker, coinIn CalculateCoin, coinOut Calcula
 			symbolOut := coinOut.GetFullSymbol()
 			return &Response{
 				Code: code.InsufficientLiquidity,
-				Log:  fmt.Sprintf("You wanted to sell %s %s, but swap pool has reserve %s %s", valueIn, symbolIn, reserve1.String(), symbolOut),
+				Log:  fmt.Sprintf("You wanted to sell %s %s and get more than the swap pool has a reserve in %s", valueIn, symbolIn, symbolOut),
 				Info: EncodeError(code.NewInsufficientLiquidity(coinIn.ID().String(), valueIn.String(), coinOut.ID().String(), valueOut.String(), reserve0.String(), reserve1.String())),
 			}
 		}
 		if calculatedAmountToBuy.Cmp(valueOut) == -1 {
+			symbolOut := coinOut.GetFullSymbol()
 			return &Response{
 				Code: code.MinimumValueToBuyReached,
 				Log: fmt.Sprintf(
-					"You wanted to buy minimum %s, but currently you need to spend %s to complete tx",
-					valueIn.String(), calculatedAmountToBuy.String()),
+					"You wanted to buy minimum %s %s, but currently you buy only %s %s",
+					valueIn.String(), symbolOut, calculatedAmountToBuy.String(), symbolOut),
 				Info: EncodeError(code.NewMaximumValueToSellReached(valueIn.String(), calculatedAmountToBuy.String(), coinIn.GetFullSymbol(), coinIn.ID().String())),
 			}
 		}

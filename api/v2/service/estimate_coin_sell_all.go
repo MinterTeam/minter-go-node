@@ -104,7 +104,7 @@ func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinS
 		valueBancor, errBancor = s.calcSellAllFromBancor(valueToSell, coinTo, coinFrom, commissionInBaseCoin)
 	}
 	if req.SwapFrom == pb.SwapFrom_pool || req.SwapFrom == pb.SwapFrom_optimal {
-		commissionInBaseCoin := new(big.Int).Set(commissions.SellAllPool)
+		commissionInBaseCoin := new(big.Int).Set(commissions.SellAllPoolBase)
 		if !commissions.Coin.IsBaseCoin() {
 			commissionInBaseCoin = cState.Swap().GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuy(commissionInBaseCoin)
 		}
@@ -131,6 +131,7 @@ func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinS
 		valuePool, errPool = s.calcSellAllFromPool(valueToSell, swapper, coinFrom, coinTo)
 	}
 
+	swapFrom := req.SwapFrom
 	switch req.SwapFrom {
 	case pb.SwapFrom_bancor:
 		if errBancor != nil {
@@ -146,18 +147,22 @@ func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinS
 		if valueBancor != nil && valuePool != nil {
 			if valueBancor.Cmp(valuePool) == -1 {
 				value = valuePool
+				swapFrom = pb.SwapFrom_pool
 			} else {
 				value = valueBancor
+				swapFrom = pb.SwapFrom_bancor
 			}
 			break
 		}
 
 		if valueBancor != nil {
 			value = valueBancor
+			swapFrom = pb.SwapFrom_bancor
 			break
 		}
 		if valuePool != nil {
 			value = valuePool
+			swapFrom = pb.SwapFrom_pool
 			break
 		}
 
@@ -168,7 +173,8 @@ func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinS
 	}
 
 	return &pb.EstimateCoinSellAllResponse{
-		WillGet: value.String(),
+		WillGet:  value.String(),
+		SwapFrom: swapFrom,
 	}, nil
 }
 
