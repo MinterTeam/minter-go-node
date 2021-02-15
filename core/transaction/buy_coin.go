@@ -290,29 +290,3 @@ func CalculateSaleReturnAndCheck(coinFrom CalculateCoin, value *big.Int) (*big.I
 	}
 	return value, nil
 }
-
-func checkConversionsReserveUnderflow(conversions []conversion, context *state.CheckState) *Response {
-	var totalReserveCoins []types.CoinID
-	totalReserveSub := make(map[types.CoinID]*big.Int)
-	for _, conversion := range conversions {
-		if conversion.FromCoin.IsBaseCoin() {
-			continue
-		}
-
-		if totalReserveSub[conversion.FromCoin] == nil {
-			totalReserveCoins = append(totalReserveCoins, conversion.FromCoin)
-			totalReserveSub[conversion.FromCoin] = big.NewInt(0)
-		}
-
-		totalReserveSub[conversion.FromCoin].Add(totalReserveSub[conversion.FromCoin], conversion.FromReserve)
-	}
-
-	for _, coinSymbol := range totalReserveCoins {
-		errResp := CheckReserveUnderflow(context.Coins().GetCoin(coinSymbol), totalReserveSub[coinSymbol])
-		if errResp != nil {
-			return errResp
-		}
-	}
-
-	return nil
-}
