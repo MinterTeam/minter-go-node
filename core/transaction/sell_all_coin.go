@@ -173,7 +173,7 @@ func (data SellAllCoinData) Run(tx *Transaction, context state.Interface, reward
 	var tags []abcTypes.EventAttribute
 	if deliverState, ok := context.(*state.State); ok {
 		if isGasCommissionFromPoolSwap {
-			commission, commissionInBaseCoin = deliverState.Swap.PairSell(data.CoinToSell, types.GetBaseCoinID(), commission, commissionInBaseCoin)
+			commission, commissionInBaseCoin, _ = deliverState.Swap.PairSell(data.CoinToSell, types.GetBaseCoinID(), commission, commissionInBaseCoin)
 		} else if !data.CoinToSell.IsBaseCoin() {
 			deliverState.Coins.SubVolume(data.CoinToSell, commission)
 			deliverState.Coins.SubReserve(data.CoinToSell, commissionInBaseCoin)

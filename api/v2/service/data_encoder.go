@@ -221,7 +221,7 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 			MinimumVolume1: d.MinimumVolume1.String(),
 		}
 	case *transaction.BuySwapPoolData:
-		m = &pb.BuySwapPoolData{
+		m = &pb.BuySwapPoolData{ // todo: route
 			CoinToBuy: &pb.Coin{
 				Id:     uint64(d.CoinToBuy),
 				Symbol: coins.GetCoin(d.CoinToBuy).GetFullSymbol(),
@@ -234,7 +234,7 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 			MaximumValueToSell: d.MaximumValueToSell.String(),
 		}
 	case *transaction.SellSwapPoolData:
-		m = &pb.SellSwapPoolData{
+		m = &pb.SellSwapPoolData{ // todo: route
 			CoinToBuy: &pb.Coin{
 				Id:     uint64(d.CoinToBuy),
 				Symbol: coins.GetCoin(d.CoinToBuy).GetFullSymbol(),
@@ -247,7 +247,7 @@ func encode(data transaction.Data, coins coins.RCoins) (*any.Any, error) {
 			MinimumValueToBuy: d.MinimumValueToBuy.String(),
 		}
 	case *transaction.SellAllSwapPoolData:
-		m = &pb.SellAllSwapPoolData{
+		m = &pb.SellAllSwapPoolData{ // todo: route
 			CoinToBuy: &pb.Coin{
 				Id:     uint64(d.CoinToBuy),
 				Symbol: coins.GetCoin(d.CoinToBuy).GetFullSymbol(),
@@ -353,9 +353,12 @@ func priceCommissionData(d *transaction.VoteCommissionData, coin *coins.Model) p
 		BuyBancor:               d.BuyBancor.String(),
 		SellBancor:              d.SellBancor.String(),
 		SellAllBancor:           d.SellAllBancor.String(),
-		BuyPool:                 d.BuyPool.String(),
-		SellPool:                d.SellPool.String(),
-		SellAllPool:             d.SellAllPool.String(),
+		BuyPoolBase:             d.BuyPoolBase.String(),
+		BuyPoolDelta:            d.BuyPoolDelta.String(),
+		SellPoolBase:            d.SellPoolBase.String(),
+		SellPoolDelta:           d.SellPoolDelta.String(),
+		SellAllPoolBase:         d.SellAllPoolBase.String(),
+		SellAllPoolDelta:        d.SellAllPoolDelta.String(),
 		CreateTicker3:           d.CreateTicker3.String(),
 		CreateTicker4:           d.CreateTicker4.String(),
 		CreateTicker5:           d.CreateTicker5.String(),

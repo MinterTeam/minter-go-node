@@ -9,12 +9,12 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	abcTypes "github.com/tendermint/tendermint/abci/types"
 	"math/big"
+	"strings"
 )
 
 type SellSwapPoolData struct {
 	CoinToSell        types.CoinID
 	ValueToSell       *big.Int
-	CoinToBuy         types.CoinID
 	MinimumValueToBuy *big.Int
 }
 
@@ -51,7 +51,7 @@ func (data SellSwapPoolData) String() string {
 }
 
 func (data SellSwapPoolData) CommissionData(price *commission.Price) *big.Int {
-	return price.SellPool
+	return new(big.Int).Add(price.SellPoolBase, new(big.Int).Mul(price.SellPoolDelta, big.NewInt(int64(len(data.Coins))-2)))
 }
 
 func (data SellSwapPoolData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
@@ -76,22 +76,38 @@ func (data SellSwapPoolData) Run(tx *Transaction, context state.Interface, rewar
 		return *errResp
 	}
 
-	swapper := checkState.Swap().GetSwapper(data.CoinToSell, data.CoinToBuy)
-	if isGasCommissionFromPoolSwap {
-		if tx.GasCoin == data.CoinToSell && data.CoinToBuy.IsBaseCoin() {
-			swapper = swapper.AddLastSwapStep(commission, commissionInBaseCoin)
+	coinToSell := data.Coins[0]
+	coinToSellModel := checkState.Coins().GetCoin(coinToSell)
+	resultCoin := data.Coins[len(data.Coins)-1]
+	valueToSell := data.ValueToSell
+	valueToBuy := big.NewInt(0)
+	for _, coinToBuy := range data.Coins[1:] {
+		swapper := checkState.Swap().GetSwapper(coinToSell, coinToBuy)
+		if isGasCommissionFromPoolSwap {
+			if tx.GasCoin == coinToSell && coinToBuy.IsBaseCoin() {
+				swapper = swapper.AddLastSwapStep(commission, commissionInBaseCoin)
+			}
+			if tx.GasCoin == coinToBuy && coinToSell.IsBaseCoin() {
+				swapper = swapper.AddLastSwapStep(commissionInBaseCoin, commission)
+			}
 		}
-		if tx.GasCoin == data.CoinToBuy && data.CoinToSell.IsBaseCoin() {
-			swapper = swapper.AddLastSwapStep(commissionInBaseCoin, commission)
+
+		if coinToBuy == resultCoin {
+			valueToBuy = data.MinimumValueToBuy
 		}
-	}
-	errResp = CheckSwap(swapper, checkState.Coins().GetCoin(data.CoinToSell), checkState.Coins().GetCoin(data.CoinToBuy), data.ValueToSell, data.MinimumValueToBuy, false)
-	if errResp != nil {
-		return *errResp
+
+		coinToBuyModel := checkState.Coins().GetCoin(coinToBuy)
+		errResp = CheckSwap(swapper, coinToSellModel, coinToBuyModel, valueToSell, valueToBuy, false)
+		if errResp != nil {
+			return *errResp
+		}
+		valueToSell = swapper.CalculateBuyForSell(valueToSell)
+		coinToSellModel = coinToBuyModel
+		coinToSell = coinToBuy
 	}
 
 	amount0 := new(big.Int).Set(data.ValueToSell)
-	if tx.GasCoin != data.CoinToSell {
+	if tx.GasCoin != coinToSell {
 		if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) == -1 {
 			return Response{
 				Code: code.InsufficientFunds,
@@ -102,19 +118,19 @@ func (data SellSwapPoolData) Run(tx *Transaction, context state.Interface, rewar
 	} else {
 		amount0.Add(amount0, commission)
 	}
-	if checkState.Accounts().GetBalance(sender, data.CoinToSell).Cmp(amount0) == -1 {
-		symbol := checkState.Coins().GetCoin(data.CoinToSell).GetFullSymbol()
+	if checkState.Accounts().GetBalance(sender, coinToSell).Cmp(amount0) == -1 {
+		symbol := checkState.Coins().GetCoin(coinToSell).GetFullSymbol()
 		return Response{
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), amount0.String(), symbol),
-			Info: EncodeError(code.NewInsufficientFunds(sender.String(), amount0.String(), symbol, data.CoinToSell.String())),
+			Info: EncodeError(code.NewInsufficientFunds(sender.String(), amount0.String(), symbol, coinToSell.String())),
 		}
 	}
 
 	var tags []abcTypes.EventAttribute
 	if deliverState, ok := context.(*state.State); ok {
 		if isGasCommissionFromPoolSwap {
-			commission, commissionInBaseCoin = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
+			commission, commissionInBaseCoin, _ = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
 		} else if !tx.GasCoin.IsBaseCoin() {
 			deliverState.Coins.SubVolume(tx.GasCoin, commission)
 			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
@@ -122,21 +138,41 @@ func (data SellSwapPoolData) Run(tx *Transaction, context state.Interface, rewar
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		amountIn, amountOut := deliverState.Swap.PairSell(data.CoinToSell, data.CoinToBuy, data.ValueToSell, data.MinimumValueToBuy)
-		deliverState.Accounts.SubBalance(sender, data.CoinToSell, amountIn)
-		deliverState.Accounts.AddBalance(sender, data.CoinToBuy, amountOut)
+		coinToSell := data.Coins[0]
+		resultCoin := data.Coins[len(data.Coins)-1]
+		valueToSell := data.ValueToSell
+
+		var poolIDs []string
+
+		for i, coinToBuy := range data.Coins[1:] {
+			amountIn, amountOut, poolID := deliverState.Swap.PairSell(coinToSell, coinToBuy, valueToSell, big.NewInt(0))
+
+			poolIDs = append(poolIDs, fmt.Sprintf("%d:%d-%s:%d-%s", poolID, coinToSell, amountIn.String(), coinToBuy, amountOut.String()))
+
+			if i == 0 {
+				deliverState.Accounts.SubBalance(sender, coinToSell, amountIn)
+			}
+
+			valueToSell = amountOut
+			coinToSell = coinToBuy
+
+			if resultCoin == coinToBuy {
+				deliverState.Accounts.AddBalance(sender, coinToBuy, amountOut)
+			}
+		}
 
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 
+		amountOut := valueToSell
 		tags = []abcTypes.EventAttribute{
 			{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
 			{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
 			{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 			{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
-			{Key: []byte("tx.coin_to_buy"), Value: []byte(data.CoinToBuy.String())},
-			{Key: []byte("tx.coin_to_sell"), Value: []byte(data.CoinToSell.String())},
+			{Key: []byte("tx.coin_to_buy"), Value: []byte(data.Coins[0].String())},
+			{Key: []byte("tx.coin_to_sell"), Value: []byte(data.Coins[len(data.Coins)-1].String())},
 			{Key: []byte("tx.return"), Value: []byte(amountOut.String())},
-			{Key: []byte("tx.pair_ids"), Value: []byte(liquidityCoinName(data.CoinToBuy, data.CoinToSell))},
+			{Key: []byte("tx.pools"), Value: []byte(strings.Join(poolIDs, ","))},
 		}
 	}
 

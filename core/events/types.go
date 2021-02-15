@@ -396,9 +396,12 @@ type UpdateCommissionsEvent struct {
 	BuyBancor               string `json:"buy_bancor"`
 	SellBancor              string `json:"sell_bancor"`
 	SellAllBancor           string `json:"sell_all_bancor"`
-	BuyPool                 string `json:"buy_pool"`
-	SellPool                string `json:"sell_pool"`
-	SellAllPool             string `json:"sell_all_pool"`
+	BuyPoolBase             string `json:"buy_pool_base"`
+	BuyPoolDelta            string `json:"buy_pool_delta"`
+	SellPoolBase            string `json:"sell_pool_base"`
+	SellPoolDelta           string `json:"sell_pool_delta"`
+	SellAllPoolBase         string `json:"sell_all_pool_base"`
+	SellAllPoolDelta        string `json:"sell_all_pool_delta"`
 	CreateTicker3           string `json:"create_ticker3"`
 	CreateTicker4           string `json:"create_ticker4"`
 	CreateTicker5           string `json:"create_ticker5"`

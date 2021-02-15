@@ -324,7 +324,7 @@ func (s *Swap) PairBurn(coin0, coin1 types.CoinID, liquidity, minAmount0, minAmo
 	return balance0, balance1
 }
 
-func (s *Swap) PairSell(coin0, coin1 types.CoinID, amount0In, minAmount1Out *big.Int) (*big.Int, *big.Int) {
+func (s *Swap) PairSell(coin0, coin1 types.CoinID, amount0In, minAmount1Out *big.Int) (*big.Int, *big.Int, uint32) {
 	pair := s.Pair(coin0, coin1)
 	calculatedAmount1Out := pair.CalculateBuyForSell(amount0In)
 	if calculatedAmount1Out.Cmp(minAmount1Out) == -1 {
@@ -333,10 +333,10 @@ func (s *Swap) PairSell(coin0, coin1 types.CoinID, amount0In, minAmount1Out *big
 	balance0, balance1 := pair.Swap(amount0In, big.NewInt(0), big.NewInt(0), calculatedAmount1Out)
 	s.bus.Checker().AddCoin(coin0, balance0)
 	s.bus.Checker().AddCoin(coin1, balance1)
-	return balance0, new(big.Int).Neg(balance1)
+	return balance0, new(big.Int).Neg(balance1), *pair.ID
 }
 
-func (s *Swap) PairBuy(coin0, coin1 types.CoinID, maxAmount0In, amount1Out *big.Int) (*big.Int, *big.Int) {
+func (s *Swap) PairBuy(coin0, coin1 types.CoinID, maxAmount0In, amount1Out *big.Int) (*big.Int, *big.Int, uint32) {
 	pair := s.Pair(coin0, coin1)
 	calculatedAmount0In := pair.CalculateSellForBuy(amount1Out)
 	if calculatedAmount0In.Cmp(maxAmount0In) == 1 {
@@ -345,7 +345,7 @@ func (s *Swap) PairBuy(coin0, coin1 types.CoinID, maxAmount0In, amount1Out *big.
 	balance0, balance1 := pair.Swap(calculatedAmount0In, big.NewInt(0), big.NewInt(0), amount1Out)
 	s.bus.Checker().AddCoin(coin0, balance0)
 	s.bus.Checker().AddCoin(coin1, balance1)
-	return balance0, new(big.Int).Neg(balance1)
+	return balance0, new(big.Int).Neg(balance1), *pair.ID
 }
 
 type pairKey struct {
