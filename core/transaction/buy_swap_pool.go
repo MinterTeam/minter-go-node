@@ -10,6 +10,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	abcTypes "github.com/tendermint/tendermint/abci/types"
 	"math/big"
+	"strings"
 )
 
 type BuySwapPoolData struct {
@@ -188,6 +189,7 @@ func (data BuySwapPoolData) Run(tx *Transaction, context state.Interface, reward
 			{Key: []byte("tx.coin_to_buy"), Value: []byte(data.Coins[0].String())},
 			{Key: []byte("tx.coin_to_sell"), Value: []byte(resultCoin.String())},
 			{Key: []byte("tx.return"), Value: []byte(amountIn.String())},
+			{Key: []byte("tx.pools"), Value: []byte(strings.Join(poolIDs, ","))},
 		}
 	}
 
