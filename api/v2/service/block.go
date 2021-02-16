@@ -39,11 +39,6 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 		}
 	}
 
-	valHeight := height - 1
-	if valHeight < 1 {
-		valHeight = 1
-	}
-
 	var blockResults *core_types.ResultBlockResults
 	if _, ok := fields[pb.BlockField_transactions]; ok {
 		blockResults, err = s.client.BlockResults(ctx, &height)
@@ -57,6 +52,11 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 		_, okValidators := fields[pb.BlockField_validators]
 		_, okEvidence := fields[pb.BlockField_evidence]
 		if okValidators || okEvidence {
+			valHeight := height - 1
+			if valHeight < 1 {
+				valHeight = 1
+			}
+
 			var page = 1
 			var perPage = 100
 			tmValidators, err := s.client.Validators(ctx, &valHeight, &page, &perPage)
