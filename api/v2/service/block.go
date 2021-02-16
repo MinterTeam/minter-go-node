@@ -28,14 +28,43 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 		return nil, status.Error(codes.NotFound, "Block not found")
 	}
 
-	blockResults, err := s.client.BlockResults(ctx, &height)
-	if err != nil {
-		return nil, status.Error(codes.NotFound, "Block results not found")
+	fields := map[pb.BlockField]struct{}{}
+	if len(req.Fields) != 0 {
+		for _, field := range req.Fields {
+			fields[field] = struct{}{}
+		}
+	} else {
+		for _, field := range pb.BlockField_value {
+			fields[pb.BlockField(field)] = struct{}{}
+		}
 	}
 
 	valHeight := height - 1
 	if valHeight < 1 {
 		valHeight = 1
+	}
+
+	var blockResults *core_types.ResultBlockResults
+	if _, ok := fields[pb.BlockField_transactions]; ok {
+		blockResults, err = s.client.BlockResults(ctx, &height)
+		if err != nil {
+			return nil, status.Error(codes.NotFound, "Block results not found")
+		}
+	}
+
+	var totalValidators []*tmTypes.Validator
+	{
+		_, okValidators := fields[pb.BlockField_validators]
+		_, okEvidence := fields[pb.BlockField_evidence]
+		if okValidators || okEvidence {
+			var page = 1
+			var perPage = 100
+			tmValidators, err := s.client.Validators(ctx, &valHeight, &page, &perPage)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			totalValidators = tmValidators.Validators
+		}
 	}
 
 	response := &pb.BlockResponse{
@@ -45,105 +74,33 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 		TransactionCount: uint64(len(block.Block.Txs)),
 	}
 
-	var totalValidators []*tmTypes.Validator
-
-	if len(req.Fields) == 0 {
-		response.Size = uint64(block.Block.Size())
-		response.BlockReward = rewards.GetRewardForBlock(uint64(height)).String()
-
-		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-			return nil, timeoutStatus.Err()
-		}
-
-		currentState := s.blockchain.CurrentState()
-
-		response.Transactions, err = s.blockTransaction(block, blockResults, currentState.Coins(), req.FailedTxs)
-		if err != nil {
-			return nil, err
-		}
-
-		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-			return nil, timeoutStatus.Err()
-		}
-
-		var page = 1
-		var perPage = 100
-		tmValidators, err := s.client.Validators(ctx, &valHeight, &page, &perPage)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-		totalValidators = tmValidators.Validators
-
-		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-			return nil, timeoutStatus.Err()
-		}
-
-		response.Proposer, err = blockProposer(block, totalValidators)
-		if err != nil {
-			return nil, err
-		}
-
-		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-			return nil, timeoutStatus.Err()
-		}
-
-		response.Validators = blockValidators(totalValidators, block)
-
-		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-			return nil, timeoutStatus.Err()
-		}
-
-		response.Evidence, err = blockEvidence(block)
-		if err != nil {
-			return nil, err
-		}
-
-		return response, nil
-	}
-
 	for _, field := range req.Fields {
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
 			return nil, timeoutStatus.Err()
 		}
 		switch field {
-		case pb.BlockRequest_size:
+		case pb.BlockField_size:
 			response.Size = uint64(block.Block.Size())
-		case pb.BlockRequest_block_reward:
+		case pb.BlockField_block_reward:
 			response.BlockReward = rewards.GetRewardForBlock(uint64(height)).String()
-		case pb.BlockRequest_transactions:
-			cState := s.blockchain.CurrentState()
-
-			response.Transactions, err = s.blockTransaction(block, blockResults, cState.Coins(), req.FailedTxs)
+		case pb.BlockField_transactions:
+			response.Transactions, err = s.blockTransaction(block, blockResults, s.blockchain.CurrentState().Coins(), req.FailedTxs)
 			if err != nil {
 				return nil, err
 			}
-		case pb.BlockRequest_proposer, pb.BlockRequest_validators:
-			if len(totalValidators) == 0 {
-				var page = 1
-				var perPage = 100
-				tmValidators, err := s.client.Validators(ctx, &valHeight, &page, &perPage)
-				if err != nil {
-					return nil, status.Error(codes.Internal, err.Error())
-				}
-				totalValidators = tmValidators.Validators
-			}
-
-			if pb.BlockRequest_validators == field {
-				response.Validators = blockValidators(totalValidators, block)
-				continue
-			}
-
+		case pb.BlockField_proposer:
 			response.Proposer, err = blockProposer(block, totalValidators)
 			if err != nil {
 				return nil, err
 			}
-		case pb.BlockRequest_evidence:
+		case pb.BlockField_validators:
+			response.Validators = blockValidators(totalValidators, block)
+		case pb.BlockField_evidence:
 			response.Evidence, err = blockEvidence(block)
 			if err != nil {
 				return nil, err
 			}
 		}
-
 	}
 
 	return response, nil
