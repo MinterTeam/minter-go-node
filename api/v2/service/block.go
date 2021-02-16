@@ -29,7 +29,7 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 	}
 
 	fields := map[pb.BlockField]struct{}{}
-	if len(req.Fields) != 0 {
+	if len(req.Fields) > 0 {
 		for _, field := range req.Fields {
 			fields[field] = struct{}{}
 		}
@@ -74,7 +74,7 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 		TransactionCount: uint64(len(block.Block.Txs)),
 	}
 
-	for _, field := range req.Fields {
+	for field := range fields {
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
 			return nil, timeoutStatus.Err()
 		}
