@@ -9,8 +9,10 @@ import (
 
 // Blocks ...
 func (s *Service) Blocks(ctx context.Context, req *pb.BlocksRequest) (*pb.BlocksResponse, error) {
+	const limit = 20
+
 	var blocksResponse []*pb.BlockResponse
-	for i := req.FromHeight; i <= req.ToHeight; i++ {
+	for i := req.FromHeight; i <= req.ToHeight && i <= req.FromHeight+limit; i++ {
 		block, err := s.Block(ctx, &pb.BlockRequest{
 			Height:    i,
 			Fields:    req.Fields,
