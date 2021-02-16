@@ -72,8 +72,7 @@ func TestSellAllWithCommissionFromBancor(t *testing.T) {
 	}
 	{
 		data := SellAllSwapPoolData{
-			CoinToSell:        coin,
-			CoinToBuy:         coin1,
+			Coins:             []types.CoinID{coin, coin1},
 			MinimumValueToBuy: big.NewInt(99),
 		}
 
@@ -221,8 +220,7 @@ func TestSellAllWithCommissionFromPool(t *testing.T) {
 	}
 	{
 		data := SellAllSwapPoolData{
-			CoinToSell:        coin,
-			CoinToBuy:         coin1,
+			Coins:             []types.CoinID{coin, coin1},
 			MinimumValueToBuy: big.NewInt(99),
 		}
 

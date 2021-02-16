@@ -69,18 +69,22 @@ func (c *Commission) Export(state *types.AppState) {
 		}
 
 		for _, price := range prices {
+			p := Decode(price.Price)
 			for _, vote := range price.Votes {
 				state.PriceVotes = append(state.PriceVotes, types.PriceVotes{
 					Height:       height,
 					CandidateKey: vote,
 					PriceCommission: types.PriceCommission{
-						Send: c.currentPrice.Send.String(),
+						Send: p.Send.String(),
 						// todo: add more txs
-						Coin: c.currentPrice.Coin.String(),
+						Coin: c.GetCommissions().Coin.String(),
 					},
 				})
 			}
 		}
+
+		// todo: add current
+		// c.GetCommissions()
 
 		return false
 	})
@@ -138,12 +142,15 @@ func (c *Commission) GetCommissions() *Price {
 			Coin:                    types.GetBaseCoinID(),
 			PayloadByte:             helpers.StringToBigInt("200000000000000000"),
 			Send:                    helpers.StringToBigInt("1000000000000000000"),
-			SellAllPool:             helpers.StringToBigInt("10000000000000000000"),
-			SellAllBancor:           helpers.StringToBigInt("10000000000000000000"),
-			SellBancor:              helpers.StringToBigInt("10000000000000000000"),
-			SellPool:                helpers.StringToBigInt("10000000000000000000"),
 			BuyBancor:               helpers.StringToBigInt("10000000000000000000"),
-			BuyPool:                 helpers.StringToBigInt("10000000000000000000"),
+			SellBancor:              helpers.StringToBigInt("10000000000000000000"),
+			SellAllBancor:           helpers.StringToBigInt("10000000000000000000"),
+			BuyPoolBase:             helpers.StringToBigInt("10000000000000000000"),
+			BuyPoolDelta:            helpers.StringToBigInt("5000000000000000000"),
+			SellPoolBase:            helpers.StringToBigInt("10000000000000000000"),
+			SellPoolDelta:           helpers.StringToBigInt("5000000000000000000"),
+			SellAllPoolBase:         helpers.StringToBigInt("10000000000000000000"),
+			SellAllPoolDelta:        helpers.StringToBigInt("5000000000000000000"),
 			CreateTicker3:           helpers.StringToBigInt("100000000000000000000000000"),
 			CreateTicker4:           helpers.StringToBigInt("10000000000000000000000000"),
 			CreateTicker5:           helpers.StringToBigInt("1000000000000000000000000"),
@@ -173,8 +180,8 @@ func (c *Commission) GetCommissions() *Price {
 			RemoveLiquidity:         helpers.StringToBigInt("10000000000000000000"),
 			EditCandidateCommission: helpers.StringToBigInt("1000000000000000000000"),
 			MoveStake:               helpers.StringToBigInt("20000000000000000000"),
-			MintToken:               helpers.StringToBigInt("10000000000000000000"),
 			BurnToken:               helpers.StringToBigInt("10000000000000000000"),
+			MintToken:               helpers.StringToBigInt("10000000000000000000"),
 			VoteCommission:          helpers.StringToBigInt("100000000000000000000"),
 			VoteUpdate:              helpers.StringToBigInt("100000000000000000000"),
 			More:                    nil,

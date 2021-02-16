@@ -122,17 +122,20 @@ func TestBlockchain_UpdateCommission(t *testing.T) {
 	}
 
 	data := transaction.VoteCommissionData{
-		Coin:                    types.GetBaseCoinID(),
-		Height:                  110,
 		PubKey:                  types.BytesToPubkey(pv.Key.PubKey.Bytes()[:]),
+		Height:                  110,
+		Coin:                    types.GetBaseCoinID(),
 		PayloadByte:             helpers.StringToBigInt("200000000000000000"),
 		Send:                    helpers.StringToBigInt("1000000000000000000"),
-		SellAllPool:             helpers.StringToBigInt("10000000000000000000"),
-		SellAllBancor:           helpers.StringToBigInt("10000000000000000000"),
-		SellBancor:              helpers.StringToBigInt("10000000000000000000"),
-		SellPool:                helpers.StringToBigInt("10000000000000000000"),
 		BuyBancor:               helpers.StringToBigInt("10000000000000000000"),
-		BuyPool:                 helpers.StringToBigInt("10000000000000000000"),
+		SellBancor:              helpers.StringToBigInt("10000000000000000000"),
+		SellAllBancor:           helpers.StringToBigInt("10000000000000000000"),
+		BuyPoolBase:             helpers.StringToBigInt("10000000000000000000"),
+		BuyPoolDelta:            helpers.StringToBigInt("5000000000000000000"),
+		SellPoolBase:            helpers.StringToBigInt("10000000000000000000"),
+		SellPoolDelta:           helpers.StringToBigInt("5000000000000000000"),
+		SellAllPoolBase:         helpers.StringToBigInt("10000000000000000000"),
+		SellAllPoolDelta:        helpers.StringToBigInt("5000000000000000000"),
 		CreateTicker3:           helpers.StringToBigInt("100000000000000000000000000"),
 		CreateTicker4:           helpers.StringToBigInt("10000000000000000000000000"),
 		CreateTicker5:           helpers.StringToBigInt("1000000000000000000000000"),
@@ -166,6 +169,7 @@ func TestBlockchain_UpdateCommission(t *testing.T) {
 		BurnToken:               helpers.StringToBigInt("10000000000000000000"),
 		VoteCommission:          helpers.StringToBigInt("100000000000000000000"),
 		VoteUpdate:              helpers.StringToBigInt("100000000000000000000"),
+		More:                    nil,
 	}
 
 	encodedData, err := rlp.EncodeToBytes(data)

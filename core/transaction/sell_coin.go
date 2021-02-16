@@ -67,7 +67,7 @@ func (data SellCoinData) basicCheck(tx *Transaction, context *state.CheckState) 
 	if !coinToBuy.BaseOrHasReserve() {
 		return &Response{
 			Code: code.CoinHasNotReserve,
-			Log:  "buy coin has not reserve",
+			Log:  "coin to buy has no reserve",
 			Info: EncodeError(code.NewCoinHasNotReserve(
 				coinToBuy.GetFullSymbol(),
 				coinToBuy.ID().String(),
@@ -206,7 +206,7 @@ func (data SellCoinData) Run(tx *Transaction, context state.Interface, rewardPoo
 	var tags []abcTypes.EventAttribute
 	if deliverState, ok := context.(*state.State); ok {
 		if isGasCommissionFromPoolSwap {
-			commission, commissionInBaseCoin = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
+			commission, commissionInBaseCoin, _ = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
 		} else if !tx.GasCoin.IsBaseCoin() {
 			deliverState.Coins.SubVolume(tx.GasCoin, commission)
 			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)

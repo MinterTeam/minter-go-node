@@ -14,8 +14,7 @@ import (
 )
 
 type SellAllSwapPoolData struct {
-	CoinToSell        types.CoinID
-	CoinToBuy         types.CoinID
+	Coins             []types.CoinID
 	MinimumValueToBuy *big.Int
 }
 
@@ -28,21 +27,32 @@ func (data SellAllSwapPoolData) TxType() TxType {
 }
 
 func (data SellAllSwapPoolData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
-	if data.CoinToSell == data.CoinToBuy {
+	if len(data.Coins) < 2 {
 		return &Response{
-			Code: code.CrossConvert,
-			Log:  "\"From\" coin equals to \"to\" coin",
-			Info: EncodeError(code.NewCrossConvert(
-				data.CoinToSell.String(), "",
-				data.CoinToBuy.String(), "")),
+			Code: code.DecodeError,
+			Log:  "Incorrect tx data",
+			Info: EncodeError(code.NewDecodeError()),
 		}
 	}
-	if !context.Swap().SwapPoolExist(data.CoinToSell, data.CoinToBuy) {
-		return &Response{
-			Code: code.PairNotExists,
-			Log:  "swap pool not found",
-			Info: EncodeError(code.NewPairNotExists(data.CoinToSell.String(), data.CoinToBuy.String())),
+	coin0 := data.Coins[0]
+	for _, coin1 := range data.Coins[1:] {
+		if coin0 == coin1 {
+			return &Response{
+				Code: code.CrossConvert,
+				Log:  "\"From\" coin equals to \"to\" coin",
+				Info: EncodeError(code.NewCrossConvert(
+					coin0.String(), "",
+					coin1.String(), "")),
+			}
 		}
+		if !context.Swap().SwapPoolExist(coin0, coin1) {
+			return &Response{
+				Code: code.PairNotExists,
+				Log:  fmt.Sprint("swap pool not exists"),
+				Info: EncodeError(code.NewPairNotExists(coin0.String(), coin1.String())),
+			}
+		}
+		coin0 = coin1
 	}
 	return nil
 }
@@ -52,7 +62,7 @@ func (data SellAllSwapPoolData) String() string {
 }
 
 func (data SellAllSwapPoolData) CommissionData(price *commission.Price) *big.Int {
-	return price.SellAllPool
+	return new(big.Int).Add(price.SellAllPoolBase, new(big.Int).Mul(price.SellAllPoolDelta, big.NewInt(int64(len(data.Coins))-2)))
 }
 
 func (data SellAllSwapPoolData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
@@ -69,15 +79,17 @@ func (data SellAllSwapPoolData) Run(tx *Transaction, context state.Interface, re
 		return *response
 	}
 
+	coinToSell := data.Coins[0]
+
 	commissionInBaseCoin := tx.Commission(price)
-	commissionPoolSwapper := checkState.Swap().GetSwapper(data.CoinToSell, types.GetBaseCoinID())
-	sellCoin := checkState.Coins().GetCoin(data.CoinToSell)
+	commissionPoolSwapper := checkState.Swap().GetSwapper(coinToSell, types.GetBaseCoinID())
+	sellCoin := checkState.Coins().GetCoin(coinToSell)
 	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, sellCoin, commissionInBaseCoin)
 	if errResp != nil {
 		return *errResp
 	}
 
-	balance := checkState.Accounts().GetBalance(sender, data.CoinToSell)
+	balance := checkState.Accounts().GetBalance(sender, coinToSell)
 	available := big.NewInt(0).Set(balance)
 	balance.Sub(available, commission)
 
@@ -85,48 +97,85 @@ func (data SellAllSwapPoolData) Run(tx *Transaction, context state.Interface, re
 		return Response{
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), balance.String(), sellCoin.GetFullSymbol()),
-			Info: EncodeError(code.NewInsufficientFunds(sender.String(), balance.String(), sellCoin.GetFullSymbol(), data.CoinToSell.String())),
+			Info: EncodeError(code.NewInsufficientFunds(sender.String(), balance.String(), sellCoin.GetFullSymbol(), coinToSell.String())),
 		}
 	}
 
-	swapper := checkState.Swap().GetSwapper(data.CoinToSell, data.CoinToBuy)
-	if isGasCommissionFromPoolSwap == true && data.CoinToBuy.IsBaseCoin() {
-		swapper = commissionPoolSwapper.AddLastSwapStep(commission, commissionInBaseCoin)
-	}
+	{
+		coinToSell := data.Coins[0]
+		coinToSellModel := sellCoin
+		resultCoin := data.Coins[len(data.Coins)-1]
+		valueToSell := big.NewInt(0).Set(balance)
+		valueToBuy := big.NewInt(0)
+		for _, coinToBuy := range data.Coins[1:] {
+			swapper := checkState.Swap().GetSwapper(coinToSell, coinToBuy)
+			if isGasCommissionFromPoolSwap == true && coinToBuy.IsBaseCoin() {
+				swapper = commissionPoolSwapper.AddLastSwapStep(commission, commissionInBaseCoin)
+			}
 
-	errResp = CheckSwap(swapper, sellCoin, checkState.Coins().GetCoin(data.CoinToBuy), balance, data.MinimumValueToBuy, false)
-	if errResp != nil {
-		return *errResp
+			if coinToBuy == resultCoin {
+				valueToBuy = data.MinimumValueToBuy
+			}
+
+			coinToBuyModel := checkState.Coins().GetCoin(coinToBuy)
+			errResp = CheckSwap(swapper, coinToSellModel, coinToBuyModel, balance, valueToBuy, false)
+			if errResp != nil {
+				return *errResp
+			}
+
+			valueToSell = swapper.CalculateBuyForSell(valueToSell)
+			coinToSellModel = coinToBuyModel
+			coinToSell = coinToBuy
+		}
 	}
 
 	var tags []abcTypes.EventAttribute
 	if deliverState, ok := context.(*state.State); ok {
 		if isGasCommissionFromPoolSwap {
-			commission, commissionInBaseCoin = deliverState.Swap.PairSell(data.CoinToSell, types.GetBaseCoinID(), commission, commissionInBaseCoin)
-		} else if !data.CoinToSell.IsBaseCoin() {
-			deliverState.Coins.SubVolume(data.CoinToSell, commission)
-			deliverState.Coins.SubReserve(data.CoinToSell, commissionInBaseCoin)
+			commission, commissionInBaseCoin, _ = deliverState.Swap.PairSell(sellCoin.ID(), types.GetBaseCoinID(), commission, commissionInBaseCoin)
+		} else if !sellCoin.ID().IsBaseCoin() {
+			deliverState.Coins.SubVolume(sellCoin.ID(), commission)
+			deliverState.Coins.SubReserve(sellCoin.ID(), commissionInBaseCoin)
+		}
+		deliverState.Accounts.SubBalance(sender, sellCoin.ID(), commission)
+
+		coinToSell := data.Coins[0]
+		resultCoin := data.Coins[len(data.Coins)-1]
+		valueToSell := big.NewInt(0).Set(balance)
+
+		var poolIDs []string
+
+		for i, coinToBuy := range data.Coins[1:] {
+			amountIn, amountOut, poolID := deliverState.Swap.PairSell(coinToSell, coinToBuy, balance, data.MinimumValueToBuy)
+
+			poolIDs = append(poolIDs, fmt.Sprintf("%d:%d-%s:%d-%s", poolID, coinToSell, amountIn.String(), coinToBuy, amountOut.String()))
+
+			if i == 0 {
+				deliverState.Accounts.SubBalance(sender, coinToSell, amountIn)
+			}
+
+			valueToSell = amountOut
+			coinToSell = coinToBuy
+
+			if resultCoin == coinToBuy {
+				deliverState.Accounts.AddBalance(sender, coinToBuy, amountOut)
+			}
 		}
 
-		amountIn, amountOut := deliverState.Swap.PairSell(data.CoinToSell, data.CoinToBuy, balance, data.MinimumValueToBuy)
-		deliverState.Accounts.SubBalance(sender, data.CoinToSell, amountIn)
-		deliverState.Accounts.AddBalance(sender, data.CoinToBuy, amountOut)
-
-		deliverState.Accounts.SubBalance(sender, data.CoinToSell, commission)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
-
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
+
+		amountOut := valueToSell
 
 		tags = []abcTypes.EventAttribute{
 			{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
 			{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
 			{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 			{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
-			{Key: []byte("tx.coin_to_buy"), Value: []byte(data.CoinToBuy.String())},
-			{Key: []byte("tx.coin_to_sell"), Value: []byte(data.CoinToSell.String())},
+			{Key: []byte("tx.coin_to_buy"), Value: []byte(resultCoin.String())},
+			{Key: []byte("tx.coin_to_sell"), Value: []byte(data.Coins[0].String())},
 			{Key: []byte("tx.return"), Value: []byte(amountOut.String())},
 			{Key: []byte("tx.sell_amount"), Value: []byte(available.String())},
-			{Key: []byte("tx.pair_ids"), Value: []byte(liquidityCoinName(data.CoinToBuy, data.CoinToSell))},
 		}
 	}
 
@@ -227,7 +276,7 @@ func commissionFromPool(swapChecker swap.EditableChecker, coin CalculateCoin, ba
 	if !swapChecker.IsExist() {
 		return nil, &Response{
 			Code: code.PairNotExists,
-			Log:  fmt.Sprintf("swap pair beetwen coins %s and %s not exists in pool", coin.GetFullSymbol(), types.GetBaseCoin()),
+			Log:  fmt.Sprintf("swap pool between coins %s and %s not exists", coin.GetFullSymbol(), types.GetBaseCoin()),
 			Info: EncodeError(code.NewPairNotExists(coin.ID().String(), types.GetBaseCoinID().String())),
 		}
 	}

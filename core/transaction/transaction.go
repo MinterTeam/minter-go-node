@@ -369,7 +369,7 @@ func CheckForCoinSupplyOverflow(coin CalculateCoin, delta *big.Int) *Response {
 	if total.Cmp(coin.MaxSupply()) == 1 {
 		return &Response{
 			Code: code.CoinSupplyOverflow,
-			Log:  "Coin supply overflow",
+			Log:  "maximum supply reached",
 			Info: EncodeError(code.NewCoinSupplyOverflow(delta.String(), coin.Volume().String(), total.String(), coin.MaxSupply().String(), coin.GetFullSymbol(), coin.ID().String())),
 		}
 	}

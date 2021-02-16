@@ -21,9 +21,12 @@ type VoteCommissionData struct {
 	BuyBancor               *big.Int
 	SellBancor              *big.Int
 	SellAllBancor           *big.Int
-	BuyPool                 *big.Int
-	SellPool                *big.Int
-	SellAllPool             *big.Int
+	BuyPoolBase             *big.Int
+	BuyPoolDelta            *big.Int
+	SellPoolBase            *big.Int
+	SellPoolDelta           *big.Int
+	SellAllPoolBase         *big.Int
+	SellAllPoolDelta        *big.Int
 	CreateTicker3           *big.Int
 	CreateTicker4           *big.Int
 	CreateTicker5           *big.Int
@@ -156,7 +159,7 @@ func (data VoteCommissionData) Run(tx *Transaction, context state.Interface, rew
 	var tags []abcTypes.EventAttribute
 	if deliverState, ok := context.(*state.State); ok {
 		if isGasCommissionFromPoolSwap {
-			commission, commissionInBaseCoin = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
+			commission, commissionInBaseCoin, _ = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
 		} else if !tx.GasCoin.IsBaseCoin() {
 			deliverState.Coins.SubVolume(tx.GasCoin, commission)
 			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
@@ -190,9 +193,12 @@ func (data VoteCommissionData) price() *commission.Price {
 		BuyBancor:               data.BuyBancor,
 		SellBancor:              data.SellBancor,
 		SellAllBancor:           data.SellAllBancor,
-		BuyPool:                 data.BuyPool,
-		SellPool:                data.SellPool,
-		SellAllPool:             data.SellAllPool,
+		BuyPoolBase:             data.BuyPoolBase,
+		BuyPoolDelta:            data.BuyPoolDelta,
+		SellPoolBase:            data.SellPoolBase,
+		SellPoolDelta:           data.SellPoolDelta,
+		SellAllPoolBase:         data.SellAllPoolBase,
+		SellAllPoolDelta:        data.SellAllPoolDelta,
 		CreateTicker3:           data.CreateTicker3,
 		CreateTicker4:           data.CreateTicker4,
 		CreateTicker5:           data.CreateTicker5,
