@@ -23,6 +23,10 @@ func (s *Service) EstimateCoinBuy(ctx context.Context, req *pb.EstimateCoinBuyRe
 		return nil, status.Error(codes.InvalidArgument, "Value to buy not specified")
 	}
 
+	if len(req.Route) > 3 {
+		return nil, s.createError(status.New(codes.OutOfRange, "maximum allowed length of the exchange chain is 5"), transaction.EncodeError(code.NewCustomCode(code.TooLongSwapRoute)))
+	}
+
 	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {
 		return nil, status.Error(codes.NotFound, err.Error())
@@ -75,6 +79,10 @@ func (s *Service) EstimateCoinBuy(ctx context.Context, req *pb.EstimateCoinBuyRe
 		}
 	}
 
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+		return nil, timeoutStatus.Err()
+	}
+
 	var coinFrom, coinTo transaction.CalculateCoin
 	coinFrom = cState.Coins().GetCoin(coinToSell)
 	coinTo = cState.Coins().GetCoin(coinToBuy)
@@ -95,7 +103,7 @@ func (s *Service) EstimateCoinBuy(ctx context.Context, req *pb.EstimateCoinBuyRe
 		value = valueBancor
 		resultCommission = commissionBancor
 	case pb.SwapFrom_pool:
-		commissionPool, valuePool, err := s.calcBuyPoolWithCommission(commissions, cState, requestCoinCommissionID, valueToBuy, coinFrom, coinTo, req.Route)
+		commissionPool, valuePool, err := s.calcBuyPoolWithCommission(ctx, commissions, cState, requestCoinCommissionID, valueToBuy, coinFrom, coinTo, req.Route)
 		if err != nil {
 			return nil, err
 		}
@@ -103,7 +111,7 @@ func (s *Service) EstimateCoinBuy(ctx context.Context, req *pb.EstimateCoinBuyRe
 		resultCommission = commissionPool
 	default:
 		commissionBancor, valueBancor, errBancor := s.calcBuyBancorWithCommission(commissions, cState, requestCoinCommissionID, coinTo, coinFrom, valueToBuy)
-		commissionPool, valuePool, errPool := s.calcBuyPoolWithCommission(commissions, cState, requestCoinCommissionID, valueToBuy, coinFrom, coinTo, req.Route)
+		commissionPool, valuePool, errPool := s.calcBuyPoolWithCommission(ctx, commissions, cState, requestCoinCommissionID, valueToBuy, coinFrom, coinTo, req.Route)
 
 		if valueBancor != nil && valuePool != nil {
 			if valueBancor.Cmp(valuePool) == 1 {
@@ -144,11 +152,16 @@ func (s *Service) EstimateCoinBuy(ctx context.Context, req *pb.EstimateCoinBuyRe
 	}, nil
 }
 
-func (s *Service) calcBuyFromPool(value *big.Int, cState *state.CheckState, coinFrom transaction.CalculateCoin, coinTo transaction.CalculateCoin, route []uint64, commissionPoolSwapper swap.EditableChecker) (*big.Int, error) {
+func (s *Service) calcBuyFromPool(ctx context.Context, value *big.Int, cState *state.CheckState, coinFrom transaction.CalculateCoin, coinTo transaction.CalculateCoin, route []uint64, commissionPoolSwapper swap.EditableChecker) (*big.Int, error) {
 	buyCoinID := coinTo.ID()
 	buyValue := big.NewInt(0).Set(value)
 	coinBuy := coinTo
 	for _, sellCoinInt := range append(route, uint64(coinFrom.ID())) {
+
+		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+			return nil, timeoutStatus.Err()
+		}
+
 		sellCoinID := types.CoinID(sellCoinInt)
 		swapChecker := cState.Swap().GetSwapper(sellCoinID, buyCoinID)
 
@@ -253,7 +266,7 @@ func (s *Service) calcBuyBancorWithCommission(commissions *commission.Price, cSt
 	return commission, valueBancor, nil
 }
 
-func (s *Service) calcBuyPoolWithCommission(commissions *commission.Price, cState *state.CheckState, requestCoinCommissionID types.CoinID, valueToBuy *big.Int, coinFrom transaction.CalculateCoin, coinTo transaction.CalculateCoin, route []uint64) (*big.Int, *big.Int, error) {
+func (s *Service) calcBuyPoolWithCommission(ctx context.Context, commissions *commission.Price, cState *state.CheckState, requestCoinCommissionID types.CoinID, valueToBuy *big.Int, coinFrom transaction.CalculateCoin, coinTo transaction.CalculateCoin, route []uint64) (*big.Int, *big.Int, error) {
 	commissionInBaseCoin := big.NewInt(0).Add(commissions.BuyPoolBase, big.NewInt(0).Mul(commissions.BuyPoolDelta, big.NewInt(int64(len(route)))))
 	commission, commissionFromPool, err := s.commissionInCoin(cState, requestCoinCommissionID, commissions.Coin, commissionInBaseCoin)
 	if err != nil {
@@ -265,7 +278,11 @@ func (s *Service) calcBuyPoolWithCommission(commissions *commission.Price, cStat
 		commissionPoolSwapper = commissionPoolSwapper.AddLastSwapStep(commission, commissionInBaseCoin)
 	}
 
-	valuePool, errPool := s.calcBuyFromPool(valueToBuy, cState, coinFrom, coinTo, route, commissionPoolSwapper)
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+		return nil, nil, timeoutStatus.Err()
+	}
+
+	valuePool, errPool := s.calcBuyFromPool(ctx, valueToBuy, cState, coinFrom, coinTo, route, commissionPoolSwapper)
 	if errPool != nil {
 		return nil, nil, errPool
 	}

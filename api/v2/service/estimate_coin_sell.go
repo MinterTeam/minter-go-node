@@ -23,6 +23,10 @@ func (s *Service) EstimateCoinSell(ctx context.Context, req *pb.EstimateCoinSell
 		return nil, status.Error(codes.InvalidArgument, "Value to sell not specified")
 	}
 
+	if len(req.Route) > 3 {
+		return nil, s.createError(status.New(codes.OutOfRange, "maximum allowed length of the exchange chain is 5"), transaction.EncodeError(code.NewCustomCode(code.TooLongSwapRoute)))
+	}
+
 	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {
 		return nil, status.Error(codes.NotFound, err.Error())
@@ -75,6 +79,10 @@ func (s *Service) EstimateCoinSell(ctx context.Context, req *pb.EstimateCoinSell
 		}
 	}
 
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+		return nil, timeoutStatus.Err()
+	}
+
 	var coinFrom, coinTo transaction.CalculateCoin
 	coinFrom = cState.Coins().GetCoin(coinToSell)
 	coinTo = cState.Coins().GetCoin(coinToBuy)
@@ -93,7 +101,7 @@ func (s *Service) EstimateCoinSell(ctx context.Context, req *pb.EstimateCoinSell
 		value = valueBancor
 		resultCommission = commission
 	case pb.SwapFrom_pool:
-		commission, valuePool, err := s.calcSellPoolWithCommission(commissions, cState, requestCoinCommissionID, valueToSell, coinFrom, coinTo, req.Route)
+		commission, valuePool, err := s.calcSellPoolWithCommission(ctx, commissions, cState, requestCoinCommissionID, valueToSell, coinFrom, coinTo, req.Route)
 		if err != nil {
 			return nil, err
 		}
@@ -101,7 +109,7 @@ func (s *Service) EstimateCoinSell(ctx context.Context, req *pb.EstimateCoinSell
 		resultCommission = commission
 	default:
 		commissionBancor, valueBancor, errBancor := s.calcSellBancorWithCommission(commissions, cState, requestCoinCommissionID, coinTo, coinFrom, valueToSell)
-		commissionPool, valuePool, errPool := s.calcSellPoolWithCommission(commissions, cState, requestCoinCommissionID, valueToSell, coinFrom, coinTo, req.Route)
+		commissionPool, valuePool, errPool := s.calcSellPoolWithCommission(ctx, commissions, cState, requestCoinCommissionID, valueToSell, coinFrom, coinTo, req.Route)
 
 		if valueBancor != nil && valuePool != nil {
 			if valueBancor.Cmp(valuePool) == -1 {
@@ -179,7 +187,7 @@ func (s *Service) calcSellBancorWithCommission(commissions *commission.Price, cS
 	return commission, valueBancor, nil
 }
 
-func (s *Service) calcSellPoolWithCommission(commissions *commission.Price, cState *state.CheckState, requestCoinCommissionID types.CoinID, valueToSell *big.Int, coinFrom transaction.CalculateCoin, coinTo transaction.CalculateCoin, route []uint64) (*big.Int, *big.Int, error) {
+func (s *Service) calcSellPoolWithCommission(ctx context.Context, commissions *commission.Price, cState *state.CheckState, requestCoinCommissionID types.CoinID, valueToSell *big.Int, coinFrom transaction.CalculateCoin, coinTo transaction.CalculateCoin, route []uint64) (*big.Int, *big.Int, error) {
 	commissionInBaseCoin := big.NewInt(0).Add(commissions.SellPoolBase, big.NewInt(0).Mul(commissions.SellPoolDelta, big.NewInt(int64(len(route)))))
 	commission, commissionFromPool, err := s.commissionInCoin(cState, requestCoinCommissionID, commissions.Coin, commissionInBaseCoin)
 	if err != nil {
@@ -190,7 +198,11 @@ func (s *Service) calcSellPoolWithCommission(commissions *commission.Price, cSta
 	if commissionFromPool {
 		commissionPoolSwapper = commissionPoolSwapper.AddLastSwapStep(commission, commissionInBaseCoin)
 	}
-	valuePool, errPool := s.calcSellFromPool(valueToSell, cState, coinFrom, coinTo, route, commissionPoolSwapper)
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+		return nil, nil, timeoutStatus.Err()
+	}
+
+	valuePool, errPool := s.calcSellFromPool(ctx, valueToSell, cState, coinFrom, coinTo, route, commissionPoolSwapper)
 	if errPool != nil {
 		return nil, nil, errPool
 	}
@@ -223,11 +235,14 @@ func (s *Service) commissionInCoin(cState *state.CheckState, coinCommissionID ty
 	return commission, isSwapFromPool, nil
 }
 
-func (s *Service) calcSellFromPool(value *big.Int, cState *state.CheckState, coinFrom transaction.CalculateCoin, coinTo transaction.CalculateCoin, route []uint64, commissionPoolSwapper swap.EditableChecker) (*big.Int, error) {
+func (s *Service) calcSellFromPool(ctx context.Context, value *big.Int, cState *state.CheckState, coinFrom transaction.CalculateCoin, coinTo transaction.CalculateCoin, route []uint64, commissionPoolSwapper swap.EditableChecker) (*big.Int, error) {
 	sellCoinID := coinFrom.ID()
 	sellValue := big.NewInt(0).Set(value)
 	coinSell := coinFrom
 	for _, buyCoinInt := range append(route, uint64(coinTo.ID())) {
+		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+			return nil, timeoutStatus.Err()
+		}
 		buyCoinID := types.CoinID(buyCoinInt)
 		swapChecker := cState.Swap().GetSwapper(sellCoinID, buyCoinID)
 
