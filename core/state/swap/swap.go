@@ -24,6 +24,7 @@ type EditableChecker interface {
 	IsExist() bool
 	CoinID() uint32
 	AddLastSwapStep(amount0In, amount1Out *big.Int) EditableChecker
+	Revert() EditableChecker
 	Reserves() (reserve0 *big.Int, reserve1 *big.Int)
 	Amounts(liquidity, totalSupply *big.Int) (amount0 *big.Int, amount1 *big.Int)
 	CalculateBuyForSell(amount0In *big.Int) (amount1Out *big.Int)
@@ -157,6 +158,9 @@ func (p *Pair) AddLastSwapStep(amount0In, amount1Out *big.Int) EditableChecker {
 		ID:        p.ID,
 		markDirty: func() {},
 	}}
+}
+func (p *Pair) Revert() EditableChecker {
+	return &Pair{pairData: p.pairData.Revert()}
 }
 
 func (s *Swap) Commit(db *iavl.MutableTree) error {
@@ -389,7 +393,7 @@ func (s *Swap) ReturnPair(coin0, coin1 types.CoinID) *Pair {
 
 	if !key.isSorted() {
 		return &Pair{
-			pairData: pair.Revert(),
+			pairData: pair.pairData.Revert(),
 		}
 	}
 	return pair
@@ -480,6 +484,7 @@ func (p *Pair) CoinID() uint32 {
 		return 0
 	}
 	// if p.ID == nil {
+	//  panic()
 	// 	return 0
 	// }
 	return *p.ID
@@ -576,7 +581,7 @@ func (p *Pair) CalculateBuyForSell(amount0In *big.Int) (amount1Out *big.Int) {
 	balance0Adjusted := new(big.Int).Sub(new(big.Int).Mul(new(big.Int).Add(amount0In, reserve0), big.NewInt(1000)), new(big.Int).Mul(amount0In, big.NewInt(commission)))
 	amount1Out = new(big.Int).Sub(reserve1, new(big.Int).Quo(kAdjusted, new(big.Int).Mul(balance0Adjusted, big.NewInt(1000))))
 	amount1Out = new(big.Int).Sub(amount1Out, big.NewInt(1))
-	if amount1Out.Sign() != 1 || amount1Out.Cmp(reserve1) != -1 {
+	if amount1Out.Sign() != 1 {
 		return nil
 	}
 	return amount1Out

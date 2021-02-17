@@ -818,3 +818,11 @@ type wrongCoinEmission struct {
 func NewWrongCoinEmission(minCoinSupply string, maxCoinSupply string, coinSupply string, addAmount, subAmount string) *wrongCoinEmission {
 	return &wrongCoinEmission{Code: strconv.Itoa(int(WrongCoinEmission)), MinCoinSupply: minCoinSupply, MaxCoinSupply: maxCoinSupply, CoinSupply: coinSupply, AddAmount: addAmount, SubAmount: subAmount}
 }
+
+type customCode struct {
+	Code string `json:"code,omitempty"`
+}
+
+func NewCustomCode(code int) *customCode {
+	return &customCode{Code: strconv.Itoa(code)}
+}

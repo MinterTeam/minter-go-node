@@ -2,10 +2,8 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/state/coins"
-	"github.com/MinterTeam/minter-go-node/core/state/swap"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/formula"
@@ -112,23 +110,25 @@ func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinS
 			commissionInBaseCoin.Mul(commissionInBaseCoin, big.NewInt(int64(req.GasPrice)))
 		}
 
-		swapper := cState.Swap().GetSwapper(coinFrom.ID(), coinTo.ID())
+		commissionPoolSwapper := cState.Swap().GetSwapper(coinFrom.ID(), types.GetBaseCoinID())
 		commission := commissionInBaseCoin
 		if !coinFrom.ID().IsBaseCoin() {
-			commissionPoolSwapper := cState.Swap().GetSwapper(coinFrom.ID(), types.GetBaseCoinID())
 			commissionFrom, isFromPool, errResp := transaction.CalculateCommission(cState, commissionPoolSwapper, coinFrom, commissionInBaseCoin)
 			if errResp != nil {
 				return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
 			}
 			commission = commissionFrom
-			if isFromPool == true && coinTo.ID().IsBaseCoin() {
-				swapper = swapper.AddLastSwapStep(commission, commissionInBaseCoin)
+			if isFromPool {
+				commissionPoolSwapper = commissionPoolSwapper.AddLastSwapStep(commission, commissionInBaseCoin)
 			}
 		}
 
 		valueToSell.Sub(valueToSell, commission)
-
-		valuePool, errPool = s.calcSellAllFromPool(valueToSell, swapper, coinFrom, coinTo)
+		if valueToSell.Sign() != 1 {
+			return nil, s.createError(status.New(codes.FailedPrecondition, "not enough coins to pay commission"),
+				transaction.EncodeError(code.NewMinimumValueToBuyReached("1", valueToSell.String(), coinFrom.GetFullSymbol(), coinFrom.ID().String())))
+		}
+		valuePool, errPool = s.calcSellFromPool(valueToSell, cState, coinFrom, coinTo, req.Route, commissionPoolSwapper)
 	}
 
 	swapFrom := req.SwapFrom
@@ -176,17 +176,6 @@ func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinS
 		WillGet:  value.String(),
 		SwapFrom: swapFrom,
 	}, nil
-}
-
-func (s *Service) calcSellAllFromPool(value *big.Int, swapChecker swap.EditableChecker, coinFrom transaction.CalculateCoin, coinTo *coins.Model) (*big.Int, error) {
-	if !swapChecker.IsExist() {
-		return nil, s.createError(status.New(codes.NotFound, fmt.Sprintf("swap pool between coins %s and %s not exists", coinFrom.GetFullSymbol(), coinTo.GetFullSymbol())), transaction.EncodeError(code.NewPairNotExists(coinFrom.ID().String(), coinTo.ID().String())))
-	}
-	buyValue := swapChecker.CalculateBuyForSell(value)
-	if errResp := transaction.CheckSwap(swapChecker, coinFrom, coinTo, value, buyValue, false); errResp != nil {
-		return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
-	}
-	return buyValue, nil
 }
 
 func (s *Service) calcSellAllFromBancor(value *big.Int, coinTo *coins.Model, coinFrom transaction.CalculateCoin, commissionInBaseCoin *big.Int) (*big.Int, error) {

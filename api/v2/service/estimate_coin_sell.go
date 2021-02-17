@@ -4,7 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
-	"github.com/MinterTeam/minter-go-node/core/state/coins"
+	"github.com/MinterTeam/minter-go-node/core/state"
+	"github.com/MinterTeam/minter-go-node/core/state/commission"
 	"github.com/MinterTeam/minter-go-node/core/state/swap"
 	"github.com/MinterTeam/minter-go-node/core/transaction"
 	"github.com/MinterTeam/minter-go-node/core/types"
@@ -60,45 +61,56 @@ func (s *Service) EstimateCoinSell(ctx context.Context, req *pb.EstimateCoinSell
 			transaction.EncodeError(code.NewCrossConvert(coinToSell.String(), cState.Coins().GetCoin(coinToSell).GetFullSymbol(), coinToBuy.String(), cState.Coins().GetCoin(coinToBuy).GetFullSymbol())))
 	}
 
-	coinFrom := cState.Coins().GetCoin(coinToSell)
-	coinTo := cState.Coins().GetCoin(coinToBuy)
+	var requestCoinCommissionID types.CoinID
+	if req.GetCoinCommission() != "" {
+		symbol := cState.Coins().GetCoinBySymbol(types.StrToCoinBaseSymbol(req.GetCoinToSell()), types.GetVersionFromSymbol(req.GetCoinToSell()))
+		if symbol == nil {
+			return nil, s.createError(status.New(codes.NotFound, "Coin to pay commission not exists"), transaction.EncodeError(code.NewCoinNotExists(req.GetCoinToSell(), "")))
+		}
+		requestCoinCommissionID = symbol.ID()
+	} else {
+		requestCoinCommissionID = types.CoinID(req.GetCoinIdCommission())
+		if !cState.Coins().Exists(coinToSell) {
+			return nil, s.createError(status.New(codes.NotFound, "Coin to pay commission not exists"), transaction.EncodeError(code.NewCoinNotExists("", coinToSell.String())))
+		}
+	}
 
-	var valueBancor, valuePool *big.Int
-	var errBancor, errPool error
+	var coinFrom, coinTo transaction.CalculateCoin
+	coinFrom = cState.Coins().GetCoin(coinToSell)
+	coinTo = cState.Coins().GetCoin(coinToBuy)
+
 	value := big.NewInt(0)
-	if req.SwapFrom == pb.SwapFrom_bancor || req.SwapFrom == pb.SwapFrom_optimal {
-		valueBancor, errBancor = s.calcSellFromBancor(valueToSell, coinTo, coinFrom)
-	}
-	if req.SwapFrom == pb.SwapFrom_pool || req.SwapFrom == pb.SwapFrom_optimal {
-		valuePool, errPool = s.calcSellFromPool(valueToSell, cState.Swap().GetSwapper(coinFrom.ID(), coinTo.ID()), coinFrom, coinTo)
-	}
-
 	commissions := cState.Commission().GetCommissions()
-	var commissionInBaseCoin *big.Int
+	var resultCommission *big.Int
 	swapFrom := req.SwapFrom
 
 	switch req.SwapFrom {
 	case pb.SwapFrom_bancor:
-		if errBancor != nil {
-			return nil, errBancor
+		commission, valueBancor, err := s.calcSellBancorWithCommission(commissions, cState, requestCoinCommissionID, coinTo, coinFrom, valueToSell)
+		if err != nil {
+			return nil, err
 		}
 		value = valueBancor
-		commissionInBaseCoin = commissions.SellBancor
+		resultCommission = commission
 	case pb.SwapFrom_pool:
-		if errPool != nil {
-			return nil, errPool
+		commission, valuePool, err := s.calcSellPoolWithCommission(commissions, cState, requestCoinCommissionID, valueToSell, coinFrom, coinTo, req.Route)
+		if err != nil {
+			return nil, err
 		}
 		value = valuePool
-		commissionInBaseCoin = commissions.SellPoolBase
+		resultCommission = commission
 	default:
+		commissionBancor, valueBancor, errBancor := s.calcSellBancorWithCommission(commissions, cState, requestCoinCommissionID, coinTo, coinFrom, valueToSell)
+		commissionPool, valuePool, errPool := s.calcSellPoolWithCommission(commissions, cState, requestCoinCommissionID, valueToSell, coinFrom, coinTo, req.Route)
+
 		if valueBancor != nil && valuePool != nil {
 			if valueBancor.Cmp(valuePool) == -1 {
 				value = valuePool
-				commissionInBaseCoin = commissions.SellPoolBase
+				resultCommission = commissionPool
 				swapFrom = pb.SwapFrom_pool
 			} else {
 				value = valueBancor
-				commissionInBaseCoin = commissions.SellBancor
+				resultCommission = commissionBancor
 				swapFrom = pb.SwapFrom_bancor
 			}
 			break
@@ -106,13 +118,13 @@ func (s *Service) EstimateCoinSell(ctx context.Context, req *pb.EstimateCoinSell
 
 		if valueBancor != nil {
 			value = valueBancor
-			commissionInBaseCoin = commissions.SellBancor
+			resultCommission = commissionBancor
 			swapFrom = pb.SwapFrom_bancor
 			break
 		}
 		if valuePool != nil {
 			value = valuePool
-			commissionInBaseCoin = commissions.SellPoolBase
+			resultCommission = commissionPool
 			swapFrom = pb.SwapFrom_pool
 			break
 		}
@@ -123,61 +135,137 @@ func (s *Service) EstimateCoinSell(ctx context.Context, req *pb.EstimateCoinSell
 			transaction.EncodeError(code.NewCommissionCoinNotSufficient(respBancor.Message(), respPool.Message())))
 	}
 
-	var coinCommissionID types.CoinID
-	if req.GetCoinCommission() != "" {
-		symbol := cState.Coins().GetCoinBySymbol(types.StrToCoinBaseSymbol(req.GetCoinToSell()), types.GetVersionFromSymbol(req.GetCoinToSell()))
-		if symbol == nil {
-			return nil, s.createError(status.New(codes.NotFound, "Coin to pay commission not exists"), transaction.EncodeError(code.NewCoinNotExists(req.GetCoinToSell(), "")))
-		}
-		coinCommissionID = symbol.ID()
-	} else {
-		coinCommissionID = types.CoinID(req.GetCoinIdCommission())
-		if !cState.Coins().Exists(coinToSell) {
-			return nil, s.createError(status.New(codes.NotFound, "Coin to pay commission not exists"), transaction.EncodeError(code.NewCoinNotExists("", coinToSell.String())))
-		}
-	}
-
-	coinCommission := cState.Coins().GetCoin(coinCommissionID)
-
-	var commission *big.Int
-	switch coinCommissionID {
-	case commissions.Coin:
-		commission = commissionInBaseCoin
-	case types.GetBaseCoinID():
-		commission = cState.Swap().GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuy(commissionInBaseCoin)
-	default:
-		if !commissions.Coin.IsBaseCoin() {
-			commissionInBaseCoin = cState.Swap().GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuy(commissionInBaseCoin)
-		}
-		commissionPoolSwapper := cState.Swap().GetSwapper(coinCommissionID, types.GetBaseCoinID())
-
-		var errResp *transaction.Response
-		commission, _, errResp = transaction.CalculateCommission(cState, commissionPoolSwapper, coinCommission, commissionInBaseCoin)
-		if errResp != nil {
-			return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
-		}
-	}
-
 	res := &pb.EstimateCoinSellResponse{
 		WillGet:    value.String(),
-		Commission: commission.String(),
+		Commission: resultCommission.String(),
 		SwapFrom:   swapFrom,
 	}
 	return res, nil
 }
 
-func (s *Service) calcSellFromPool(value *big.Int, swapChecker swap.EditableChecker, coinFrom *coins.Model, coinTo *coins.Model) (*big.Int, error) {
-	if !swapChecker.IsExist() {
-		return nil, s.createError(status.New(codes.NotFound, fmt.Sprintf("swap pool between coins %s and %s not exists", coinFrom.GetFullSymbol(), coinTo.GetFullSymbol())), transaction.EncodeError(code.NewPairNotExists(coinFrom.ID().String(), coinTo.ID().String())))
+func (s *Service) calcSellBancorWithCommission(commissions *commission.Price, cState *state.CheckState, requestCoinCommissionID types.CoinID, coinTo transaction.CalculateCoin, coinFrom transaction.CalculateCoin, valueToSell *big.Int) (*big.Int, *big.Int, error) {
+	commissionInBaseCoin := commissions.SellBancor
+	commission, commissionFromPool, err := s.commissionInCoin(cState, requestCoinCommissionID, commissions.Coin, commissionInBaseCoin)
+	if err != nil {
+		return nil, nil, err
 	}
-	buyValue := swapChecker.CalculateBuyForSell(value)
-	if errResp := transaction.CheckSwap(swapChecker, coinFrom, coinTo, value, buyValue, false); errResp != nil {
-		return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
+
+	if !commissionFromPool {
+		if requestCoinCommissionID == coinTo.ID() {
+			coinTo = transaction.NewDummyCoin(
+				coinTo.ID(),
+				big.NewInt(0).Sub(coinTo.Volume(), commission),
+				big.NewInt(0).Sub(coinTo.Reserve(), commissionInBaseCoin),
+				coinTo.Crr(),
+				coinTo.GetFullSymbol(),
+				coinTo.MaxSupply(),
+			)
+		} else if requestCoinCommissionID == coinFrom.ID() {
+			coinFrom = transaction.NewDummyCoin(
+				coinFrom.ID(),
+				big.NewInt(0).Sub(coinFrom.Volume(), commission),
+				big.NewInt(0).Sub(coinFrom.Reserve(), commissionInBaseCoin),
+				coinFrom.Crr(),
+				coinFrom.GetFullSymbol(),
+				coinFrom.MaxSupply(),
+			)
+		}
 	}
-	return buyValue, nil
+
+	valueBancor, errBancor := s.calcSellFromBancor(valueToSell, coinTo, coinFrom)
+	if errBancor != nil {
+		return nil, nil, errBancor
+	}
+	return commission, valueBancor, nil
 }
 
-func (s *Service) calcSellFromBancor(value *big.Int, coinTo *coins.Model, coinFrom *coins.Model) (*big.Int, error) {
+func (s *Service) calcSellPoolWithCommission(commissions *commission.Price, cState *state.CheckState, requestCoinCommissionID types.CoinID, valueToSell *big.Int, coinFrom transaction.CalculateCoin, coinTo transaction.CalculateCoin, route []uint64) (*big.Int, *big.Int, error) {
+	commissionInBaseCoin := big.NewInt(0).Add(commissions.SellPoolBase, big.NewInt(0).Mul(commissions.SellPoolDelta, big.NewInt(int64(len(route)))))
+	commission, commissionFromPool, err := s.commissionInCoin(cState, requestCoinCommissionID, commissions.Coin, commissionInBaseCoin)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	commissionPoolSwapper := cState.Swap().GetSwapper(requestCoinCommissionID, types.GetBaseCoinID())
+	if commissionFromPool {
+		commissionPoolSwapper = commissionPoolSwapper.AddLastSwapStep(commission, commissionInBaseCoin)
+	}
+	valuePool, errPool := s.calcSellFromPool(valueToSell, cState, coinFrom, coinTo, route, commissionPoolSwapper)
+	if errPool != nil {
+		return nil, nil, errPool
+	}
+	return commission, valuePool, nil
+}
+
+func (s *Service) commissionInCoin(cState *state.CheckState, coinCommissionID types.CoinID, commissionsCoin types.CoinID, commissionInBaseCoin *big.Int) (*big.Int, bool, error) {
+	coinCommission := cState.Coins().GetCoin(coinCommissionID)
+
+	var isSwapFromPool bool
+	var commission *big.Int
+	switch coinCommissionID {
+	case commissionsCoin:
+		commission = commissionInBaseCoin
+	case types.GetBaseCoinID():
+		commission = cState.Swap().GetSwapper(types.GetBaseCoinID(), commissionsCoin).CalculateSellForBuy(commissionInBaseCoin)
+	default:
+		if !commissionsCoin.IsBaseCoin() {
+			commissionInBaseCoin = cState.Swap().GetSwapper(types.GetBaseCoinID(), commissionsCoin).CalculateSellForBuy(commissionInBaseCoin)
+		}
+		commissionPoolSwapper := cState.Swap().GetSwapper(coinCommissionID, types.GetBaseCoinID())
+
+		comm, fromPool, errResp := transaction.CalculateCommission(cState, commissionPoolSwapper, coinCommission, commissionInBaseCoin)
+		if errResp != nil {
+			return nil, false, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
+		}
+		commission = comm
+		isSwapFromPool = bool(fromPool)
+	}
+	return commission, isSwapFromPool, nil
+}
+
+func (s *Service) calcSellFromPool(value *big.Int, cState *state.CheckState, coinFrom transaction.CalculateCoin, coinTo transaction.CalculateCoin, route []uint64, commissionPoolSwapper swap.EditableChecker) (*big.Int, error) {
+	sellCoinID := coinFrom.ID()
+	sellValue := big.NewInt(0).Set(value)
+	coinSell := coinFrom
+	for _, buyCoinInt := range append(route, uint64(coinTo.ID())) {
+		buyCoinID := types.CoinID(buyCoinInt)
+		swapChecker := cState.Swap().GetSwapper(sellCoinID, buyCoinID)
+
+		coinBuy := coinTo
+		if buyCoinID != coinBuy.ID() {
+			coinBuy = cState.Coins().GetCoin(buyCoinID)
+		}
+		if !swapChecker.IsExist() {
+			return nil, s.createError(status.New(codes.NotFound, fmt.Sprintf("swap pool between coins %s and %s not exists", coinSell.GetFullSymbol(), coinBuy.GetFullSymbol())), transaction.EncodeError(code.NewPairNotExists(coinSell.ID().String(), coinBuy.ID().String())))
+		}
+
+		if swapChecker.CoinID() == commissionPoolSwapper.CoinID() {
+			if sellCoinID != types.GetBaseCoinID() {
+				swapChecker = commissionPoolSwapper.Revert()
+			} else {
+				swapChecker = commissionPoolSwapper
+			}
+		}
+
+		buyValue := swapChecker.CalculateBuyForSell(sellValue)
+		if buyValue == nil { // todo
+			reserve0, reserve1 := swapChecker.Reserves()
+			return nil, s.createError(status.New(codes.OutOfRange, fmt.Sprintf("swap pool has reserves %s %s and %d %s, you wanted sell %s %s", reserve0, coinSell.GetFullSymbol(), reserve1, coinBuy.GetFullSymbol(), sellValue, coinSell.GetFullSymbol())), "")
+		}
+
+		if errResp := transaction.CheckSwap(swapChecker, coinSell, coinBuy, sellValue, buyValue, false); errResp != nil {
+			return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
+		}
+
+		sellValue = buyValue
+		coinSell = coinBuy
+		sellCoinID = buyCoinID
+	}
+
+	return sellValue, nil
+}
+
+func (s *Service) calcSellFromBancor(value *big.Int, coinTo transaction.CalculateCoin, coinFrom transaction.CalculateCoin) (*big.Int, error) {
 	if !coinTo.BaseOrHasReserve() {
 		return nil, s.createError(status.New(codes.FailedPrecondition, "coin to buy has no reserve"), transaction.EncodeError(code.NewCoinHasNotReserve(
 			coinTo.GetFullSymbol(),
