@@ -47,6 +47,7 @@ type RSwap interface {
 type Swap struct {
 	muPairs sync.RWMutex
 	pairs   map[pairKey]*Pair
+	dirties map[pairKey]struct{}
 
 	muNextID    sync.Mutex
 	nextID      uint32
@@ -59,7 +60,7 @@ type Swap struct {
 func New(bus *bus.Bus, db *iavl.ImmutableTree) *Swap {
 	immutableTree := atomic.Value{}
 	immutableTree.Store(db)
-	return &Swap{pairs: map[pairKey]*Pair{}, bus: bus, db: immutableTree}
+	return &Swap{pairs: map[pairKey]*Pair{}, bus: bus, db: immutableTree, dirties: map[pairKey]struct{}{}}
 }
 
 func (s *Swap) immutableTree() *iavl.ImmutableTree {
@@ -101,14 +102,12 @@ func (s *Swap) Export(state *types.AppState) {
 }
 
 func (s *Swap) Import(state *types.AppState) {
-	s.muPairs.Lock()
-	defer s.muPairs.Unlock()
 	for _, swap := range state.Swap {
 		pair := s.ReturnPair(types.CoinID(swap.Coin0), types.CoinID(swap.Coin1))
 		pair.Reserve0.Set(helpers.StringToBigInt(swap.Reserve0))
 		pair.Reserve1.Set(helpers.StringToBigInt(swap.Reserve1))
 		*pair.ID = uint32(swap.ID)
-		pair.isDirty = true
+		pair.markDirty()
 	}
 }
 
@@ -118,10 +117,10 @@ type dirty struct{ isDirty bool }
 
 type pairData struct {
 	*sync.RWMutex
-	Reserve0 *big.Int
-	Reserve1 *big.Int
-	ID       *uint32
-	*dirty
+	Reserve0  *big.Int
+	Reserve1  *big.Int
+	ID        *uint32
+	markDirty func()
 }
 
 func (pd *pairData) Reserves() (reserve0 *big.Int, reserve1 *big.Int) {
@@ -132,11 +131,11 @@ func (pd *pairData) Reserves() (reserve0 *big.Int, reserve1 *big.Int) {
 
 func (pd *pairData) Revert() *pairData {
 	return &pairData{
-		RWMutex:  pd.RWMutex,
-		Reserve0: pd.Reserve1,
-		Reserve1: pd.Reserve0,
-		ID:       pd.ID,
-		dirty:    pd.dirty,
+		RWMutex:   pd.RWMutex,
+		Reserve0:  pd.Reserve1,
+		Reserve1:  pd.Reserve0,
+		ID:        pd.ID,
+		markDirty: pd.markDirty,
 	}
 }
 
@@ -152,11 +151,11 @@ func (p *Pair) IsExist() bool {
 func (p *Pair) AddLastSwapStep(amount0In, amount1Out *big.Int) EditableChecker {
 	reserve0, reserve1 := p.Reserves()
 	return &Pair{pairData: &pairData{
-		RWMutex:  &sync.RWMutex{},
-		Reserve0: reserve0.Add(reserve0, amount0In),
-		Reserve1: reserve1.Sub(reserve1, amount1Out),
-		ID:       p.ID,
-		dirty:    &dirty{},
+		RWMutex:   &sync.RWMutex{},
+		Reserve0:  reserve0.Add(reserve0, amount0In),
+		Reserve1:  reserve1.Sub(reserve1, amount1Out),
+		ID:        p.ID,
+		markDirty: func() {},
 	}}
 }
 
@@ -177,18 +176,15 @@ func (s *Swap) Commit(db *iavl.MutableTree) error {
 	s.muPairs.RLock()
 	defer s.muPairs.RUnlock()
 
-	for key, pair := range s.pairs {
-		if pair == nil || !pair.isDirty {
-			continue
-		}
-
-		pair.isDirty = false
+	for key := range s.dirties {
+		pair, _ := s.pairs[key]
 		pairDataBytes, err := rlp.EncodeToBytes(pair.pairData)
 		if err != nil {
 			return err
 		}
 		db.Set(append(basePath, key.Bytes()...), pairDataBytes)
 	}
+	s.dirties = map[pairKey]struct{}{}
 	return nil
 }
 
@@ -415,13 +411,21 @@ func (s *Swap) loadBalanceFunc(key *pairKey) func(address types.Address) *Balanc
 	}
 }
 
+func (s *Swap) markDirty(key pairKey) func() {
+	return func() {
+		s.muPairs.Lock()
+		defer s.muPairs.Unlock()
+		s.dirties[key] = struct{}{}
+	}
+}
+
 func (s *Swap) addPair(key pairKey) *Pair {
 	data := &pairData{
-		RWMutex:  &sync.RWMutex{},
-		Reserve0: big.NewInt(0),
-		Reserve1: big.NewInt(0),
-		ID:       new(uint32),
-		dirty:    &dirty{},
+		RWMutex:   &sync.RWMutex{},
+		Reserve0:  big.NewInt(0),
+		Reserve1:  big.NewInt(0),
+		ID:        new(uint32),
+		markDirty: s.markDirty(key.sort()),
 	}
 	if !key.isSorted() {
 		key = key.Revert()
@@ -649,7 +653,7 @@ func (p *Pair) update(amount0, amount1 *big.Int) {
 	p.pairData.Lock()
 	defer p.pairData.Unlock()
 
-	p.isDirty = true
+	p.markDirty()
 	p.Reserve0.Add(p.Reserve0, amount0)
 	p.Reserve1.Add(p.Reserve1, amount1)
 }
