@@ -19,6 +19,13 @@ type BuySwapPoolData struct {
 	MaximumValueToSell *big.Int
 }
 
+func reverseCoinIds(a []types.CoinID) {
+	for i := len(a)/2 - 1; i >= 0; i-- {
+		opp := len(a) - 1 - i
+		a[i], a[opp] = a[opp], a[i]
+	}
+}
+
 func (data BuySwapPoolData) Gas() int {
 	return gasBuySwapPool
 }
@@ -86,6 +93,8 @@ func (data BuySwapPoolData) Run(tx *Transaction, context state.Interface, reward
 	if errResp != nil {
 		return *errResp
 	}
+
+	reverseCoinIds(data.Coins)
 
 	var calculatedAmountToSell *big.Int
 	resultCoin := data.Coins[len(data.Coins)-1]
