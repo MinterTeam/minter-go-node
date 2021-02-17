@@ -42,7 +42,6 @@ func (data BuyCoinData) basicCheck(tx *Transaction, context *state.CheckState) *
 			Log:  "Incorrect tx data",
 			Info: EncodeError(code.NewDecodeError()),
 		}
-
 	}
 
 	coinToSell := context.Coins().GetCoin(data.CoinToSell)

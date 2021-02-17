@@ -20,6 +20,10 @@ func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinS
 		return nil, status.Error(codes.InvalidArgument, "Value to sell not specified")
 	}
 
+	if len(req.Route) > 3 {
+		return nil, s.createError(status.New(codes.OutOfRange, "maximum allowed length of the exchange chain is 5"), transaction.EncodeError(code.NewCustomCode(code.TooLongSwapRoute)))
+	}
+
 	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {
 		return nil, status.Error(codes.NotFound, err.Error())
@@ -59,6 +63,10 @@ func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinS
 			transaction.EncodeError(code.NewCrossConvert(coinToSell.String(), cState.Coins().GetCoin(coinToSell).GetFullSymbol(), coinToBuy.String(), cState.Coins().GetCoin(coinToBuy).GetFullSymbol())))
 	}
 
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+		return nil, timeoutStatus.Err()
+	}
+
 	var coinFrom transaction.CalculateCoin
 	coinFrom = cState.Coins().GetCoin(coinToSell)
 	coinTo := cState.Coins().GetCoin(coinToBuy)
@@ -75,6 +83,10 @@ func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinS
 		}
 		if req.GasPrice > 1 {
 			commissionInBaseCoin.Mul(commissionInBaseCoin, big.NewInt(int64(req.GasPrice)))
+		}
+
+		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+			return nil, timeoutStatus.Err()
 		}
 
 		commission := commissionInBaseCoin
@@ -97,7 +109,15 @@ func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinS
 			}
 		}
 
+		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+			return nil, timeoutStatus.Err()
+		}
+
 		valueToSell.Sub(valueToSell, commission)
+		if valueToSell.Sign() != 1 {
+			return nil, s.createError(status.New(codes.FailedPrecondition, "not enough coins to pay commission"),
+				transaction.EncodeError(code.NewMinimumValueToBuyReached("1", valueToSell.String(), coinFrom.GetFullSymbol(), coinFrom.ID().String())))
+		}
 
 		valueBancor, errBancor = s.calcSellAllFromBancor(valueToSell, coinTo, coinFrom, commissionInBaseCoin)
 	}
@@ -108,6 +128,10 @@ func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinS
 		}
 		if req.GasPrice > 1 {
 			commissionInBaseCoin.Mul(commissionInBaseCoin, big.NewInt(int64(req.GasPrice)))
+		}
+
+		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+			return nil, timeoutStatus.Err()
 		}
 
 		commissionPoolSwapper := cState.Swap().GetSwapper(coinFrom.ID(), types.GetBaseCoinID())
@@ -123,12 +147,20 @@ func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinS
 			}
 		}
 
+		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+			return nil, timeoutStatus.Err()
+		}
+
 		valueToSell.Sub(valueToSell, commission)
 		if valueToSell.Sign() != 1 {
 			return nil, s.createError(status.New(codes.FailedPrecondition, "not enough coins to pay commission"),
 				transaction.EncodeError(code.NewMinimumValueToBuyReached("1", valueToSell.String(), coinFrom.GetFullSymbol(), coinFrom.ID().String())))
 		}
-		valuePool, errPool = s.calcSellFromPool(valueToSell, cState, coinFrom, coinTo, req.Route, commissionPoolSwapper)
+		valuePool, errPool = s.calcSellFromPool(ctx, valueToSell, cState, coinFrom, coinTo, req.Route, commissionPoolSwapper)
+	}
+
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+		return nil, timeoutStatus.Err()
 	}
 
 	swapFrom := req.SwapFrom

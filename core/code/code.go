@@ -89,6 +89,7 @@ const (
 	InsufficientLiquidityBalance uint32 = 706
 	InsufficientOutputAmount     uint32 = 707
 	PairAlreadyExists            uint32 = 708
+	TooLongSwapRoute             uint32 = 709
 
 	// emission coin
 	CoinIsNotToken  uint32 = 800
@@ -823,6 +824,6 @@ type customCode struct {
 	Code string `json:"code,omitempty"`
 }
 
-func NewCustomCode(code int) *customCode {
-	return &customCode{Code: strconv.Itoa(code)}
+func NewCustomCode(code uint32) *customCode {
+	return &customCode{Code: strconv.Itoa(int(code))}
 }

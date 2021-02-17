@@ -41,6 +41,13 @@ func (data BuySwapPoolData) basicCheck(tx *Transaction, context *state.CheckStat
 			Info: EncodeError(code.NewDecodeError()),
 		}
 	}
+	if len(data.Coins) > 5 {
+		return &Response{
+			Code: code.TooLongSwapRoute,
+			Log:  "maximum allowed length of the exchange chain is 5",
+			Info: EncodeError(code.NewCustomCode(code.TooLongSwapRoute)),
+		}
+	}
 	coin0 := data.Coins[0]
 	for _, coin1 := range data.Coins[1:] {
 		if coin0 == coin1 {
