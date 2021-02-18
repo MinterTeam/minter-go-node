@@ -44,8 +44,8 @@ func getData(txType TxType) (Data, bool) {
 		return &EditCoinOwnerData{}, true
 	case TypeEditMultisig:
 		return &EditMultisigData{}, true
-	case TypePriceVote:
-		return &PriceVoteData{}, true
+	// case TypePriceVote:
+	// 	return &PriceVoteData{}, true
 	case TypeEditCandidatePublicKey:
 		return &EditCandidatePublicKeyData{}, true
 	case TypeAddLiquidity:
@@ -60,8 +60,8 @@ func getData(txType TxType) (Data, bool) {
 		return &SellAllSwapPoolData{}, true
 	case TypeEditCandidateCommission:
 		return &EditCandidateCommission{}, true
-	case TypeMoveStake:
-		return &MoveStakeData{}, true
+	// case TypeMoveStake:
+	// 	return &MoveStakeData{}, true
 	case TypeMintToken:
 		return &MintTokenData{}, true
 	case TypeBurnToken:
