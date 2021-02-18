@@ -27,6 +27,7 @@ const (
 	CommissionCoinNotSufficient  uint32 = 119
 	VoiceExpired                 uint32 = 120
 	VoiceAlreadyExists           uint32 = 121
+	WrongUpdateVersionName       uint32 = 122
 
 	// coin creation
 	CoinHasNotReserve uint32 = 200
