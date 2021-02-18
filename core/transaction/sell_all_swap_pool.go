@@ -11,6 +11,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/formula"
 	abcTypes "github.com/tendermint/tendermint/abci/types"
 	"math/big"
+	"strings"
 )
 
 type SellAllSwapPoolData struct {
@@ -192,6 +193,7 @@ func (data SellAllSwapPoolData) Run(tx *Transaction, context state.Interface, re
 			{Key: []byte("tx.coin_to_sell"), Value: []byte(data.Coins[0].String())},
 			{Key: []byte("tx.return"), Value: []byte(amountOut.String())},
 			{Key: []byte("tx.sell_amount"), Value: []byte(available.String())},
+			{Key: []byte("tx.pools"), Value: []byte(strings.Join(poolIDs, ","))},
 		}
 	}
 
