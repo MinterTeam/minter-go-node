@@ -125,12 +125,21 @@ func (data SellAllSwapPoolData) Run(tx *Transaction, context state.Interface, re
 			}
 
 			coinToBuyModel := checkState.Coins().GetCoin(coinToBuy)
-			errResp = CheckSwap(swapper, coinToSellModel, coinToBuyModel, balance, valueToBuy, false)
+			errResp = CheckSwap(swapper, coinToSellModel, coinToBuyModel, valueToSell, valueToBuy, false)
 			if errResp != nil {
 				return *errResp
 			}
 
-			valueToSell = swapper.CalculateBuyForSell(valueToSell)
+			valueToSellCalc := swapper.CalculateBuyForSell(valueToSell)
+			if valueToSellCalc == nil {
+				reserve0, reserve1 := swapper.Reserves()
+				return Response{
+					Code: code.SwapPoolUnknown,
+					Log:  fmt.Sprintf("swap pool has reserves %s %s and %d %s, you wanted sell %s %s", reserve0, coinToSellModel.GetFullSymbol(), reserve1, coinToBuyModel.GetFullSymbol(), valueToSell, coinToSellModel.GetFullSymbol()),
+					Info: EncodeError(code.NewInsufficientLiquidity(coinToSellModel.ID().String(), valueToSell.String(), coinToBuyModel.ID().String(), valueToSellCalc.String(), reserve0.String(), reserve1.String())),
+				}
+			}
+			valueToSell = valueToSellCalc
 			coinToSellModel = coinToBuyModel
 			coinToSell = coinToBuy
 		}
@@ -153,7 +162,7 @@ func (data SellAllSwapPoolData) Run(tx *Transaction, context state.Interface, re
 		var poolIDs []string
 
 		for i, coinToBuy := range data.Coins[1:] {
-			amountIn, amountOut, poolID := deliverState.Swap.PairSell(coinToSell, coinToBuy, balance, data.MinimumValueToBuy)
+			amountIn, amountOut, poolID := deliverState.Swap.PairSell(coinToSell, coinToBuy, valueToSell, big.NewInt(0))
 
 			poolIDs = append(poolIDs, fmt.Sprintf("%d:%d-%s:%d-%s", poolID, coinToSell, amountIn.String(), coinToBuy, amountOut.String()))
 
