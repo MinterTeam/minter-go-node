@@ -23,9 +23,7 @@ func (data PriceVoteData) TxType() TxType {
 }
 
 func (data PriceVoteData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
-	return &Response{
-		Code: 1,
-	}
+	return nil
 }
 
 func (data PriceVoteData) String() string {
