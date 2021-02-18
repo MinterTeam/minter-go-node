@@ -122,15 +122,16 @@ func (data SellSwapPoolData) Run(tx *Transaction, context state.Interface, rewar
 				return *errResp
 			}
 
-			valueToSell = swapper.CalculateBuyForSell(valueToSell)
-			if valueToSell == nil {
+			valueToSellCalc := swapper.CalculateBuyForSell(valueToSell)
+			if valueToSellCalc == nil {
 				reserve0, reserve1 := swapper.Reserves()
 				return Response{
 					Code: code.SwapPoolUnknown,
 					Log:  fmt.Sprintf("swap pool has reserves %s %s and %d %s, you wanted sell %s %s", reserve0, coinToSellModel.GetFullSymbol(), reserve1, coinToBuyModel.GetFullSymbol(), valueToSell, coinToSellModel.GetFullSymbol()),
-					Info: EncodeError(code.NewInsufficientFunds(sender.String(), commission.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
+					Info: EncodeError(code.NewInsufficientLiquidity(coinToSellModel.ID().String(), valueToSell.String(), coinToBuyModel.ID().String(), valueToSellCalc.String(), reserve0.String(), reserve1.String())),
 				}
 			}
+			valueToSell = valueToSellCalc
 			coinToSellModel = coinToBuyModel
 			coinToSell = coinToBuy
 		}
