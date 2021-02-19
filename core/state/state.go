@@ -301,6 +301,16 @@ func (s *State) Export() types.AppState {
 	return state.Export()
 }
 
+// Only for tests
+func (s *State) ReloadFromDiskAndExport() types.AppState {
+	state, err := NewCheckStateAtHeight(uint64(s.tree.Version()), s.db)
+	if err != nil {
+		log.Panicf("Create new state at height %d failed: %s", s.tree.Version(), err)
+	}
+
+	return state.Export()
+}
+
 func newCheckStateForTree(immutableTree *iavl.ImmutableTree, events eventsdb.IEventsDB, db db.DB, keepLastStates int64) (*CheckState, error) {
 	stateForTree, err := newStateForTree(immutableTree, events, db, keepLastStates)
 	if err != nil {

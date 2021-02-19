@@ -1,9 +1,12 @@
 package transaction
 
 import (
+	"bytes"
 	"crypto/ecdsa"
+	"crypto/sha256"
 	"github.com/MinterTeam/minter-go-node/core/state/commission"
 	"github.com/pkg/errors"
+	tmjson "github.com/tendermint/tendermint/libs/json"
 	"log"
 	"math/big"
 	"math/rand"
@@ -134,7 +137,30 @@ func checkState(cState *state.State) error {
 		return errors.Wrapf(err, "error export version %d", cState.Tree().Version())
 	}
 
+	reloadExport := cState.ReloadFromDiskAndExport()
+	if err := reloadExport.Verify(); err != nil {
+		return errors.Wrapf(err, "error reload export version %d", cState.Tree().Version())
+	}
+
+	if bytes.Compare(
+		getStateSha256Hash(exportedState),
+		getStateSha256Hash(reloadExport),
+	) != 0 {
+		return errors.New("current state and real from disk state not equal")
+	}
+
 	return nil
+}
+
+func getStateSha256Hash(a types.AppState) []byte {
+	bytes, err := tmjson.Marshal(a)
+	if err != nil {
+		panic(err)
+	}
+
+	h := sha256.New()
+	h.Write(bytes)
+	return h.Sum(nil)
 }
 
 func TestBuyCoinTxBaseToCustom(t *testing.T) {
