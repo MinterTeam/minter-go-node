@@ -288,7 +288,7 @@ func (s *Service) calcSellFromBancor(value *big.Int, coinTo transaction.Calculat
 		)))
 	}
 	if !coinFrom.BaseOrHasReserve() {
-		return nil, s.createError(status.New(codes.FailedPrecondition, "sell coin has not reserve"), transaction.EncodeError(code.NewCoinHasNotReserve(
+		return nil, s.createError(status.New(codes.FailedPrecondition, "sell coin has no reserve"), transaction.EncodeError(code.NewCoinHasNotReserve(
 			coinFrom.GetFullSymbol(),
 			coinFrom.ID().String(),
 		)))

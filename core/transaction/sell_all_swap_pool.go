@@ -309,7 +309,7 @@ func commissionFromReserve(gasCoin CalculateCoin, commissionInBaseCoin *big.Int)
 	if !gasCoin.BaseOrHasReserve() {
 		return nil, &Response{
 			Code: code.CoinHasNotReserve,
-			Log:  "Gas coin has not reserve",
+			Log:  "Gas coin has no reserve",
 		}
 	}
 	errResp := CheckReserveUnderflow(gasCoin, commissionInBaseCoin)
