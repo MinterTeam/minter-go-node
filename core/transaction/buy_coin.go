@@ -56,7 +56,7 @@ func (data BuyCoinData) basicCheck(tx *Transaction, context *state.CheckState) *
 	if !coinToSell.BaseOrHasReserve() {
 		return &Response{
 			Code: code.CoinHasNotReserve,
-			Log:  "sell coin has not reserve",
+			Log:  "sell coin has no reserve",
 			Info: EncodeError(code.NewCoinHasNotReserve(
 				coinToSell.GetFullSymbol(),
 				coinToSell.ID().String(),
