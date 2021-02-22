@@ -5,6 +5,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	"math/big"
+	"sync"
 )
 
 type Validator struct {
@@ -21,7 +22,8 @@ type Validator struct {
 	tmAddress types.TmAddress
 	toDrop    bool
 
-	bus *bus.Bus
+	lock sync.RWMutex
+	bus  *bus.Bus
 }
 
 func NewValidator(pubKey types.Pubkey, absentTimes *types.BitArray, totalStake *big.Int, accumReward *big.Int, isDirty bool, isTotalStakeDirty bool, isAccumRewardDirty bool, bus *bus.Bus) *Validator {
@@ -40,34 +42,55 @@ func NewValidator(pubKey types.Pubkey, absentTimes *types.BitArray, totalStake *
 }
 
 func (v *Validator) IsToDrop() bool {
+	v.lock.RLock()
+	defer v.lock.RUnlock()
+
 	return v.toDrop
 }
 
 func (v *Validator) SetAccumReward(value *big.Int) {
+	v.lock.Lock()
+
 	if v.accumReward.Cmp(value) == 0 {
+		v.lock.Unlock()
 		return
 	}
 	v.isAccumRewardDirty = true
-	v.bus.Checker().AddCoin(types.GetBaseCoinID(), big.NewInt(0).Sub(value, v.accumReward), "reward")
+	oldAcc := big.NewInt(0).Set(v.accumReward)
 	v.accumReward = big.NewInt(0).Set(value)
+	v.lock.Unlock()
+
+	v.bus.Checker().AddCoin(types.GetBaseCoinID(), big.NewInt(0).Sub(value, oldAcc), "reward")
 }
 
 func (v *Validator) GetAccumReward() *big.Int {
+	v.lock.RLock()
+	defer v.lock.RUnlock()
+
 	return big.NewInt(0).Set(v.accumReward)
 }
 
 // GetAddress returns tendermint-address of a validator
 func (v *Validator) GetAddress() types.TmAddress {
+	v.lock.RLock()
+	defer v.lock.RUnlock()
+
 	return v.tmAddress
 }
 
 // GetTotalBipStake returns total bip stake
 func (v *Validator) GetTotalBipStake() *big.Int {
+	v.lock.RLock()
+	defer v.lock.RUnlock()
+
 	return big.NewInt(0).Set(v.totalStake)
 }
 
 // SetTotalBipStake sets total bip stake
 func (v *Validator) SetTotalBipStake(value *big.Int) {
+	v.lock.Lock()
+	defer v.lock.Unlock()
+
 	if v.totalStake.Cmp(value) == 0 {
 		return
 	}
@@ -76,16 +99,22 @@ func (v *Validator) SetTotalBipStake(value *big.Int) {
 }
 
 func (v *Validator) AddAccumReward(amount *big.Int) {
-	v.SetAccumReward(big.NewInt(0).Add(v.accumReward, amount))
+	v.lock.Lock()
+	reward := big.NewInt(0).Set(v.accumReward)
+	v.lock.Unlock()
+
+	v.SetAccumReward(big.NewInt(0).Add(reward, amount))
 }
 
 func (v *Validator) CountAbsentTimes() int {
 	count := 0
 
 	for i := 0; i < validatorMaxAbsentWindow; i++ {
+		v.lock.RLock()
 		if v.AbsentTimes.GetIndex(i) {
 			count++
 		}
+		v.lock.RUnlock()
 	}
 
 	return count
@@ -93,17 +122,24 @@ func (v *Validator) CountAbsentTimes() int {
 
 func (v *Validator) setTmAddress() {
 	// set tm address
-	var pubkey ed25519.PubKey
-	copy(pubkey[:], v.PubKey[:])
+	v.lock.RLock()
+	add := ed25519.PubKey(v.PubKey[:]).Address()
+	v.lock.RUnlock()
 
 	var address types.TmAddress
-	copy(address[:], ed25519.PubKey(v.PubKey[:]).Address().Bytes())
+	copy(address[:], add.Bytes())
 
+	v.lock.Lock()
 	v.tmAddress = address
+	v.lock.Unlock()
 }
 
 func (v *Validator) SetPresent(height uint64) {
 	index := int(height) % validatorMaxAbsentWindow
+
+	v.lock.Lock()
+	defer v.lock.Unlock()
+
 	if v.AbsentTimes.GetIndex(index) {
 		v.isDirty = true
 	}
@@ -112,6 +148,10 @@ func (v *Validator) SetPresent(height uint64) {
 
 func (v *Validator) SetAbsent(height uint64) {
 	index := int(height) % validatorMaxAbsentWindow
+
+	v.lock.Lock()
+	defer v.lock.Unlock()
+
 	if !v.AbsentTimes.GetIndex(index) {
 		v.isDirty = true
 	}

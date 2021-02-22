@@ -228,7 +228,7 @@ func TestValidators_PayRewards(t *testing.T) {
 	candidatesS.RecalculateStakes(0)
 	validators.SetNewValidators(candidatesS.GetNewCandidates(1))
 
-	validators.PayRewards(0)
+	validators.PayRewards()
 
 	if accs.GetBalance([20]byte{1}, 0).String() != "72" {
 		t.Fatal("delegate did not receive the award")

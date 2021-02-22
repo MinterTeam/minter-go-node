@@ -288,7 +288,7 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 
 	// pay rewards
 	if height%120 == 0 {
-		blockchain.stateDeliver.Validators.PayRewards(height)
+		blockchain.stateDeliver.Validators.PayRewards()
 	}
 
 	if prices := blockchain.isUpdateCommissionsBlock(height); len(prices) != 0 {
