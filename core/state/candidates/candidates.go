@@ -280,8 +280,8 @@ func (c *Candidates) Commit(db *iavl.MutableTree) error {
 // GetNewCandidates returns list of candidates that can be the new validators
 // Skips offline candidates and candidates with stake less than minValidatorBipStake
 // Result is sorted by candidates stakes and limited to valCount
-func (c *Candidates) GetNewCandidates(valCount int) []Candidate {
-	var result []Candidate
+func (c *Candidates) GetNewCandidates(valCount int) []*Candidate {
+	var result []*Candidate
 
 	candidates := c.GetCandidates()
 	for _, candidate := range candidates {
@@ -297,7 +297,7 @@ func (c *Candidates) GetNewCandidates(valCount int) []Candidate {
 		}
 
 		candidate.lock.RUnlock()
-		result = append(result, *candidate)
+		result = append(result, candidate)
 	}
 
 	sort.SliceStable(result, func(i, j int) bool {

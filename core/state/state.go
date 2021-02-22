@@ -93,9 +93,9 @@ func (cs *CheckState) Commission() commission.RCommission {
 }
 
 type State struct {
-	App            *app.App               // todo: refactor concurrency
-	Validators     *validators.Validators // todo: refactor concurrency
-	Candidates     *candidates.Candidates // todo: refactor concurrency
+	App            *app.App
+	Validators     *validators.Validators
+	Candidates     *candidates.Candidates
 	FrozenFunds    *frozenfunds.FrozenFunds
 	Halts          *halts.HaltBlocks
 	Accounts       *accounts.Accounts

@@ -7,6 +7,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/cosmos/iavl"
 	"math/big"
+	"sync"
 	"sync/atomic"
 )
 
@@ -27,6 +28,7 @@ type App struct {
 	db atomic.Value
 
 	bus *bus.Bus
+	mx  sync.Mutex
 }
 
 func NewApp(stateBus *bus.Bus, db *iavl.ImmutableTree) *App {
@@ -53,6 +55,9 @@ func (a *App) SetImmutableTree(immutableTree *iavl.ImmutableTree) {
 }
 
 func (a *App) Commit(db *iavl.MutableTree) error {
+	a.mx.Lock()
+	defer a.mx.Unlock()
+
 	if !a.isDirty {
 		return nil
 	}
@@ -98,6 +103,9 @@ func (a *App) AddTotalSlashed(amount *big.Int) {
 }
 
 func (a *App) get() *Model {
+	a.mx.Lock()
+	defer a.mx.Unlock()
+
 	if a.model != nil {
 		return a.model
 	}
@@ -127,13 +135,18 @@ func (a *App) getOrNew() *Model {
 			MaxGas:       0,
 			markDirty:    a.markDirty,
 		}
+		a.mx.Lock()
 		a.model = model
+		a.mx.Unlock()
 	}
 
 	return model
 }
 
 func (a *App) markDirty() {
+	a.mx.Lock()
+	defer a.mx.Unlock()
+
 	a.isDirty = true
 }
 

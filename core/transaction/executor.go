@@ -191,6 +191,9 @@ func RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBl
 
 	commissions := checkState.Commission().GetCommissions()
 	price := tx.Price(commissions)
+	coinCommission := abcTypes.EventAttribute{Key: []byte("tx.commission_price_coin"), Value: []byte(strconv.Itoa(int(commissions.Coin)))}
+	priceCommission := abcTypes.EventAttribute{Key: []byte("tx.commission_price"), Value: []byte(price.String())}
+
 	if !commissions.Coin.IsBaseCoin() {
 		price = checkState.Swap().GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuy(price)
 	}
@@ -204,6 +207,8 @@ func RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBl
 	response.GasPrice = tx.GasPrice
 	gas := tx.Gas()
 	response.Tags = append(response.Tags,
+		coinCommission,
+		priceCommission,
 		abcTypes.EventAttribute{Key: []byte("tx.gas"), Value: []byte(strconv.Itoa(int(gas)))},
 		abcTypes.EventAttribute{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(tx.decodedData.TxType())}))},
 	)
