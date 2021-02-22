@@ -26,6 +26,13 @@ func reverseCoinIds(a []types.CoinID) {
 	}
 }
 
+func reversePools(a []string) {
+	for i := len(a)/2 - 1; i >= 0; i-- {
+		opp := len(a) - 1 - i
+		a[i], a[opp] = a[opp], a[i]
+	}
+}
+
 func (data BuySwapPoolData) Gas() int {
 	return gasBuySwapPool
 }
@@ -202,6 +209,7 @@ func (data BuySwapPoolData) Run(tx *Transaction, context state.Interface, reward
 				deliverState.Accounts.SubBalance(sender, coinToSell, amountIn)
 			}
 		}
+		reversePools(poolIDs)
 		amountIn := valueToBuy
 
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
