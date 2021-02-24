@@ -189,7 +189,7 @@ func (s *Service) calcBuyFromPool(ctx context.Context, value *big.Int, cState *s
 			coinSell = cState.Coins().GetCoin(sellCoinID)
 		}
 
-		if errResp := transaction.CheckSwap(swapChecker, coinSell, coinBuy, sellValue, value, true); errResp != nil {
+		if errResp := transaction.CheckSwap(swapChecker, coinSell, coinBuy, sellValue, buyValue, true); errResp != nil {
 			return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
 		}
 
