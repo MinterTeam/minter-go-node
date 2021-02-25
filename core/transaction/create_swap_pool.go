@@ -194,5 +194,5 @@ func (data CreateSwapPoolData) Run(tx *Transaction, context state.Interface, rew
 }
 
 func LiquidityCoinSymbol(id uint32) types.CoinSymbol {
-	return types.StrToCoinSymbol(fmt.Sprintf("P-%d", id))
+	return types.StrToCoinSymbol(fmt.Sprintf("P-%d", id)) // todo LP-
 }
