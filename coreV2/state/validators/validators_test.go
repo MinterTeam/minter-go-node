@@ -13,7 +13,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/coreV2/state/checker"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/helpers"
-	"github.com/MinterTeam/minter-go-node/tree"
+	"github.com/MinterTeam/minter-go-node/treeV2"
 	db "github.com/tendermint/tm-db"
 	"math/big"
 	"testing"
@@ -21,7 +21,7 @@ import (
 
 func TestValidators_GetValidators(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	b := bus.NewBus()
 
 	validators := NewValidators(b, mutableTree.GetLastImmutable())
@@ -48,7 +48,7 @@ func TestValidators_GetValidators(t *testing.T) {
 
 func TestValidators_GetByPublicKey(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	b := bus.NewBus()
 
 	validators := NewValidators(b, mutableTree.GetLastImmutable())
@@ -68,7 +68,7 @@ func TestValidators_GetByPublicKey(t *testing.T) {
 
 func TestValidators_GetByTmAddress(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	b := bus.NewBus()
 
 	validators := NewValidators(b, mutableTree.GetLastImmutable())
@@ -90,7 +90,7 @@ func TestValidators_GetByTmAddress(t *testing.T) {
 
 func TestValidators_PunishByzantineValidator(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	b := bus.NewBus()
 
 	validators := NewValidators(b, mutableTree.GetLastImmutable())
@@ -110,7 +110,7 @@ func TestValidators_PunishByzantineValidator(t *testing.T) {
 
 func TestValidators_LoadValidators(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
 	validators := NewValidators(b, mutableTree.GetLastImmutable())
@@ -158,7 +158,7 @@ func TestValidators_LoadValidators(t *testing.T) {
 
 func TestValidators_SetValidators(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	b := bus.NewBus()
 
 	validators := NewValidators(b, mutableTree.GetLastImmutable())
@@ -188,7 +188,7 @@ func TestValidators_SetValidators(t *testing.T) {
 
 func TestValidators_PayRewards(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	b := bus.NewBus()
 	accs := accounts.NewAccounts(b, mutableTree.GetLastImmutable())
 
@@ -247,7 +247,7 @@ func TestValidators_PayRewards(t *testing.T) {
 
 func TestValidators_SetValidatorAbsent(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	b := bus.NewBus()
 	accs := accounts.NewAccounts(b, mutableTree.GetLastImmutable())
 
@@ -296,7 +296,7 @@ func TestValidators_SetValidatorAbsent(t *testing.T) {
 }
 func TestValidators_SetValidatorPresent(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	b := bus.NewBus()
 
 	validators := NewValidators(b, mutableTree.GetLastImmutable())
@@ -323,7 +323,7 @@ func TestValidators_SetValidatorPresent(t *testing.T) {
 
 func TestValidators_SetToDrop(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	b := bus.NewBus()
 
 	validators := NewValidators(b, mutableTree.GetLastImmutable())
@@ -346,7 +346,7 @@ func TestValidators_SetToDrop(t *testing.T) {
 
 func TestValidators_Export(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	b := bus.NewBus()
 	accs := accounts.NewAccounts(b, mutableTree.GetLastImmutable())
 

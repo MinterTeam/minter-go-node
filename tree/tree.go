@@ -6,71 +6,47 @@ import (
 	"sync"
 )
 
-type saver interface {
-	Commit(db *iavl.MutableTree) error
-	SetImmutableTree(immutableTree *iavl.ImmutableTree)
-	// ModuleName() string // todo
+// ReadOnlyTree used for CheckState: API and CheckTx calls. Immutable.
+type ReadOnlyTree interface {
+	Get(key []byte) (index int64, value []byte)
+	Version() int64
+	Hash() []byte
+	Iterate(fn func(key []byte, value []byte) bool) (stopped bool)
+	AvailableVersions() []int
 }
 
 // MTree mutable tree, used for txs delivery
 type MTree interface {
-	Commit(...saver) ([]byte, int64, error)
-	GetLastImmutable() *iavl.ImmutableTree
-	GetImmutableAtHeight(version int64) (*iavl.ImmutableTree, error)
-
-	DeleteVersion(version int64) error
+	ReadOnlyTree
+	Set(key, value []byte) bool
+	Remove(key []byte) ([]byte, bool)
+	LoadVersion(targetVersion int64) (int64, error)
+	LazyLoadVersion(targetVersion int64) (int64, error)
+	SaveVersion() ([]byte, int64, error)
+	DeleteVersionIfExists(version int64) error
 	DeleteVersionsRange(fromVersion, toVersion int64) error
-
-	AvailableVersions() []int
-	Version() int64
-}
-
-func (t *mutableTree) Commit(savers ...saver) (hash []byte, version int64, err error) {
-	t.lock.Lock()
-	defer t.lock.Unlock()
-
-	for _, saver := range savers {
-		err := saver.Commit(t.tree)
-		if err != nil {
-			return nil, 0, err
-			// return nil, 0, errors.Wrap(err, saver.ModuleName())
-		}
-	}
-
-	hash, version, err = t.tree.SaveVersion()
-	if err != nil {
-		return nil, 0, err
-	}
-
-	immutable, err := t.tree.GetImmutable(t.tree.Version())
-	if err != nil {
-		return nil, 0, err
-	}
-	for _, saver := range savers {
-		saver.SetImmutableTree(immutable)
-	}
-
-	return hash, version, err
-}
-func (t *mutableTree) MutableTree() *iavl.MutableTree {
-	return t.tree
+	GetImmutable() *ImmutableTree
+	GetImmutableAtHeight(version int64) (*ImmutableTree, error)
+	GlobalLock()
+	GlobalUnlock()
 }
 
 // NewMutableTree creates and returns new MutableTree using given db. Panics on error.
 // If you want to get read-only state, you should use height = 0 and LazyLoadVersion (version), see NewImmutableTree
-func NewMutableTree(height uint64, db dbm.DB, cacheSize int, initialVersion uint64) (MTree, error) {
-	tree, err := iavl.NewMutableTreeWithOpts(db, cacheSize, &iavl.Options{InitialVersion: initialVersion})
+func NewMutableTree(height uint64, db dbm.DB, cacheSize int) (MTree, error) {
+	tree, err := iavl.NewMutableTree(db, cacheSize)
 	if err != nil {
 		return nil, err
 	}
+
 	m := &mutableTree{
 		tree: tree,
 	}
-	if height <= initialVersion {
+	if height == 0 {
 		return m, nil
 	}
 
-	if _, err := m.tree.LoadVersionForOverwriting(int64(height) + 1); err != nil {
+	if _, err := m.tree.LoadVersionForOverwriting(int64(height)); err != nil {
 		return nil, err
 	}
 
@@ -80,9 +56,10 @@ func NewMutableTree(height uint64, db dbm.DB, cacheSize int, initialVersion uint
 type mutableTree struct {
 	tree *iavl.MutableTree
 	lock sync.RWMutex
+	sync.Mutex
 }
 
-func (t *mutableTree) GetImmutableAtHeight(version int64) (*iavl.ImmutableTree, error) {
+func (t *mutableTree) GetImmutableAtHeight(version int64) (*ImmutableTree, error) {
 	t.lock.RLock()
 	defer t.lock.RUnlock()
 
@@ -91,7 +68,31 @@ func (t *mutableTree) GetImmutableAtHeight(version int64) (*iavl.ImmutableTree, 
 		return nil, err
 	}
 
-	return tree, nil
+	return &ImmutableTree{
+		tree: tree,
+	}, nil
+}
+
+func (t *mutableTree) GlobalLock() {
+	t.Lock()
+}
+
+func (t *mutableTree) GlobalUnlock() {
+	t.Unlock()
+}
+
+func (t *mutableTree) Iterate(fn func(key []byte, value []byte) bool) (stopped bool) {
+	t.lock.RLock()
+	defer t.lock.RUnlock()
+
+	return t.tree.Iterate(fn)
+}
+
+func (t *mutableTree) Hash() []byte {
+	t.lock.RLock()
+	defer t.lock.RUnlock()
+
+	return t.tree.Hash()
 }
 
 func (t *mutableTree) Version() int64 {
@@ -101,16 +102,56 @@ func (t *mutableTree) Version() int64 {
 	return t.tree.Version()
 }
 
-func (t *mutableTree) GetLastImmutable() *iavl.ImmutableTree {
+func (t *mutableTree) GetImmutable() *ImmutableTree {
 	t.lock.RLock()
 	defer t.lock.RUnlock()
 
-	immutable, err := t.tree.GetImmutable(t.tree.Version())
-	if err != nil {
-		return iavl.NewImmutableTree(dbm.NewMemDB(), 0)
+	return &ImmutableTree{
+		tree: t.tree.ImmutableTree,
 	}
+}
 
-	return immutable
+func (t *mutableTree) Get(key []byte) (index int64, value []byte) {
+	t.lock.RLock()
+	defer t.lock.RUnlock()
+
+	return t.tree.Get(key)
+}
+
+func (t *mutableTree) Set(key, value []byte) bool {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+
+	return t.tree.Set(key, value)
+}
+
+func (t *mutableTree) Remove(key []byte) ([]byte, bool) {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+
+	return t.tree.Remove(key)
+}
+
+func (t *mutableTree) LoadVersion(targetVersion int64) (int64, error) {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+
+	return t.tree.LoadVersion(targetVersion)
+}
+
+func (t *mutableTree) LazyLoadVersion(targetVersion int64) (int64, error) {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+
+	return t.tree.LazyLoadVersion(targetVersion)
+}
+
+// Should use GlobalLock() and GlobalUnlock
+func (t *mutableTree) SaveVersion() ([]byte, int64, error) {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+
+	return t.tree.SaveVersion()
 }
 
 // Should use GlobalLock() and GlobalUnlock
@@ -126,9 +167,14 @@ func (t *mutableTree) DeleteVersionsRange(fromVersion, toVersion int64) error {
 	return nil
 }
 
-func (t *mutableTree) DeleteVersion(version int64) error {
+// Should use GlobalLock() and GlobalUnlock
+func (t *mutableTree) DeleteVersionIfExists(version int64) error {
 	t.lock.Lock()
 	defer t.lock.Unlock()
+
+	if !t.tree.VersionExists(version) {
+		return nil
+	}
 
 	return t.tree.DeleteVersion(version)
 }
@@ -140,15 +186,41 @@ func (t *mutableTree) AvailableVersions() []int {
 	return t.tree.AvailableVersions()
 }
 
-// NewImmutableTree returns iavl.ImmutableTree from given db at given height
-func NewImmutableTree(height uint64, db dbm.DB) (*iavl.ImmutableTree, error) {
-	tree, err := iavl.NewMutableTree(db, 1024)
+// ImmutableTree used for CheckState: API and CheckTx calls.
+type ImmutableTree struct {
+	tree *iavl.ImmutableTree
+}
+
+// NewImmutableTree returns MTree from given db at given height
+// Warning: returns the MTree interface, but you should only use ReadOnlyTree
+func NewImmutableTree(height uint64, db dbm.DB) (MTree, error) {
+	tree, _ := NewMutableTree(0, db, 1024)
+	_, err := tree.LazyLoadVersion(int64(height))
 	if err != nil {
 		return nil, err
 	}
-	immutableTree, err := tree.GetImmutable(int64(height))
-	if err != nil {
-		return nil, err
-	}
-	return immutableTree, nil
+	return tree, nil
+}
+
+// Iterate iterates over all keys of the tree, in order. The keys and values must not be modified,
+// since they may point to data stored within IAVL.
+func (t *ImmutableTree) Iterate(fn func(key []byte, value []byte) bool) (stopped bool) {
+	return t.tree.Iterate(fn)
+}
+
+// Hash returns the root hash.
+func (t *ImmutableTree) Hash() []byte {
+	return t.tree.Hash()
+}
+
+// Version returns the version of the tree.
+func (t *ImmutableTree) Version() int64 {
+	return t.tree.Version()
+}
+
+// Get returns the index and value of the specified key if it exists, or nil and the next index
+// otherwise. The returned value must not be modified, since it may point to data stored within
+// IAVL.
+func (t *ImmutableTree) Get(key []byte) (index int64, value []byte) {
+	return t.tree.Get(key)
 }

@@ -3,7 +3,7 @@ package swap
 import (
 	"github.com/MinterTeam/minter-go-node/coreV2/state/bus"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/checker"
-	"github.com/MinterTeam/minter-go-node/tree"
+	"github.com/MinterTeam/minter-go-node/treeV2"
 	db "github.com/tendermint/tm-db"
 	"math/big"
 	"testing"
@@ -11,7 +11,7 @@ import (
 
 func TestPair_load(t *testing.T) {
 	memDB := db.NewMemDB()
-	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	immutableTree, err := treeV2.NewMutableTree(0, memDB, 1024, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -65,7 +65,7 @@ func TestPair_load(t *testing.T) {
 
 func TestPair_commission(t *testing.T) {
 	memDB := db.NewMemDB()
-	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	immutableTree, err := treeV2.NewMutableTree(0, memDB, 1024, 0)
 	if err != nil {
 		t.Fatal(err)
 	}

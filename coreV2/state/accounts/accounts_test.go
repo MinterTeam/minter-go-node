@@ -8,7 +8,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/coreV2/state/coins"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/helpers"
-	"github.com/MinterTeam/minter-go-node/tree"
+	"github.com/MinterTeam/minter-go-node/treeV2"
 	db "github.com/tendermint/tm-db"
 	"math/big"
 	"testing"
@@ -16,7 +16,7 @@ import (
 
 func TestAccounts_CreateMultisig(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
 	accounts := NewAccounts(b, mutableTree.GetLastImmutable())
@@ -52,7 +52,7 @@ func TestAccounts_CreateMultisig(t *testing.T) {
 
 func TestAccounts_SetNonce(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
 	accounts := NewAccounts(b, mutableTree.GetLastImmutable())
@@ -64,7 +64,7 @@ func TestAccounts_SetNonce(t *testing.T) {
 
 func TestAccounts_SetBalance(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
 	accounts := NewAccounts(b, mutableTree.GetLastImmutable())
@@ -80,7 +80,7 @@ func TestAccounts_SetBalance(t *testing.T) {
 
 func TestAccounts_SetBalance_fromDB(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
 	accounts := NewAccounts(b, mutableTree.GetLastImmutable())
@@ -103,7 +103,7 @@ func TestAccounts_SetBalance_fromDB(t *testing.T) {
 
 func TestAccounts_SetBalance_0(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
 	accounts := NewAccounts(b, mutableTree.GetLastImmutable())
@@ -124,7 +124,7 @@ func TestAccounts_SetBalance_0(t *testing.T) {
 
 func TestAccounts_GetBalances(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
 	busCoins := coins.NewCoins(b, mutableTree.GetLastImmutable())
@@ -171,7 +171,7 @@ func TestAccounts_GetBalances(t *testing.T) {
 
 func TestAccounts_ExistsMultisig(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
 	accounts := NewAccounts(b, mutableTree.GetLastImmutable())
@@ -202,7 +202,7 @@ func TestAccounts_ExistsMultisig(t *testing.T) {
 
 func TestAccounts_AddBalance_bus(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
 	accounts := NewAccounts(b, mutableTree.GetLastImmutable())
@@ -217,7 +217,7 @@ func TestAccounts_AddBalance_bus(t *testing.T) {
 
 func TestAccounts_SubBalance(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
 	accounts := NewAccounts(b, mutableTree.GetLastImmutable())
@@ -236,7 +236,7 @@ func TestAccounts_SubBalance(t *testing.T) {
 
 func TestAccounts_EditMultisig(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
 	accounts := NewAccounts(b, mutableTree.GetLastImmutable())
@@ -272,7 +272,7 @@ func TestAccounts_EditMultisig(t *testing.T) {
 
 func TestAccounts_Commit(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
 	accounts := NewAccounts(b, mutableTree.GetLastImmutable())
@@ -294,7 +294,7 @@ func TestAccounts_Commit(t *testing.T) {
 
 func TestAccounts_Export(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	b := bus.NewBus()
 	busCoins := coins.NewCoins(b, mutableTree.GetLastImmutable())
 	b.SetCoins(coins.NewBus(busCoins))

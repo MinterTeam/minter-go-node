@@ -18,7 +18,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/coreV2/state/waitlist"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/helpers"
-	"github.com/MinterTeam/minter-go-node/tree"
+	"github.com/MinterTeam/minter-go-node/treeV2"
 	"github.com/cosmos/iavl"
 	db "github.com/tendermint/tm-db"
 	"log"
@@ -107,7 +107,7 @@ type State struct {
 	Commission     *commission.Commission
 	db             db.DB
 	events         eventsdb.IEventsDB
-	tree           tree.MTree
+	tree           treeV2.MTree
 	keepLastStates int64
 
 	bus    *bus.Bus
@@ -118,7 +118,7 @@ type State struct {
 func (s *State) isValue_State() {}
 
 func NewState(height uint64, db db.DB, events eventsdb.IEventsDB, cacheSize int, keepLastStates int64, initialVersion uint64) (*State, error) {
-	iavlTree, err := tree.NewMutableTree(height, db, cacheSize, initialVersion)
+	iavlTree, err := treeV2.NewMutableTree(height, db, cacheSize, initialVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -138,14 +138,14 @@ func NewState(height uint64, db db.DB, events eventsdb.IEventsDB, cacheSize int,
 }
 
 func NewCheckStateAtHeight(height uint64, db db.DB) (*CheckState, error) {
-	iavlTree, err := tree.NewImmutableTree(height, db)
+	iavlTree, err := treeV2.NewImmutableTree(height, db)
 	if err != nil {
 		return nil, err
 	}
 	return newCheckStateForTree(iavlTree, nil, db, 0)
 }
 
-func (s *State) Tree() tree.MTree {
+func (s *State) Tree() treeV2.MTree {
 	return s.tree
 }
 

@@ -11,7 +11,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/coreV2/state/waitlist"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/helpers"
-	"github.com/MinterTeam/minter-go-node/tree"
+	"github.com/MinterTeam/minter-go-node/treeV2"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	db "github.com/tendermint/tm-db"
 	"math/big"
@@ -21,7 +21,7 @@ import (
 
 func TestCandidates_Create_oneCandidate(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	candidates := NewCandidates(bus.NewBus(), mutableTree.GetLastImmutable())
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10, 0)
@@ -43,7 +43,7 @@ func TestCandidates_Create_oneCandidate(t *testing.T) {
 
 func TestCandidates_Commit_createThreeCandidatesWithInitialHeight(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 2)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 2)
 	candidates := NewCandidates(bus.NewBus(), mutableTree.GetLastImmutable())
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10, 0)
@@ -79,7 +79,7 @@ func TestCandidates_Commit_createThreeCandidatesWithInitialHeight(t *testing.T) 
 
 func TestCandidates_Commit_changePubKeyAndCheckBlockList(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	candidates := NewCandidates(bus.NewBus(), mutableTree.GetLastImmutable())
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10, 0)
@@ -137,7 +137,7 @@ func TestCandidates_Commit_changePubKeyAndCheckBlockList(t *testing.T) {
 }
 func TestCandidates_AddToBlockPubKey(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	candidates := NewCandidates(bus.NewBus(), mutableTree.GetLastImmutable())
 
 	candidates.AddToBlockPubKey([32]byte{4})
@@ -149,7 +149,7 @@ func TestCandidates_AddToBlockPubKey(t *testing.T) {
 
 func TestCandidates_Commit_withStakeAndUpdate(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	candidates := NewCandidates(bus.NewBus(), mutableTree.GetLastImmutable())
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10, 0)
@@ -199,7 +199,7 @@ func TestCandidates_Commit_withStakeAndUpdate(t *testing.T) {
 
 func TestCandidates_Commit_edit(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	candidates := NewCandidates(bus.NewBus(), mutableTree.GetLastImmutable())
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10, 0)
@@ -244,7 +244,7 @@ func TestCandidates_Commit_edit(t *testing.T) {
 
 func TestCandidates_Commit_createOneCandidateWithID(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	candidates := NewCandidates(bus.NewBus(), mutableTree.GetLastImmutable())
 
 	candidates.CreateWithID([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10, 1)
@@ -270,7 +270,7 @@ func TestCandidates_Commit_createOneCandidateWithID(t *testing.T) {
 
 func TestCandidates_Commit_Delegate(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
 	candidates := NewCandidates(b, mutableTree.GetLastImmutable())
@@ -307,7 +307,7 @@ func TestCandidates_Commit_Delegate(t *testing.T) {
 
 func TestCandidates_SetOnlineAndBusSetOffline(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
 	candidates := NewCandidates(b, mutableTree.GetLastImmutable())
@@ -335,7 +335,7 @@ func TestCandidates_SetOnlineAndBusSetOffline(t *testing.T) {
 
 func TestCandidates_Count(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
 	candidates := NewCandidates(b, mutableTree.GetLastImmutable())
@@ -365,7 +365,7 @@ func TestCandidates_Count(t *testing.T) {
 
 func TestCandidates_GetTotalStake_fromModelAndFromDB(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	b := bus.NewBus()
 	wl := waitlist.NewWaitList(b, mutableTree.GetLastImmutable())
 	b.SetWaitList(waitlist.NewBus(wl))
@@ -429,7 +429,7 @@ func TestCandidates_GetTotalStake_fromModelAndFromDB(t *testing.T) {
 
 func TestCandidates_Export(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	candidates := NewCandidates(bus.NewBus(), mutableTree.GetLastImmutable())
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10, 0)
@@ -480,7 +480,7 @@ func TestCandidates_Export(t *testing.T) {
 
 func TestCandidates_busGetStakes(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	candidates := NewCandidates(bus.NewBus(), mutableTree.GetLastImmutable())
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10, 0)
@@ -516,7 +516,7 @@ func TestCandidates_busGetStakes(t *testing.T) {
 
 func TestCandidates_GetCandidateByTendermintAddress(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	candidates := NewCandidates(bus.NewBus(), mutableTree.GetLastImmutable())
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10, 0)
@@ -533,7 +533,7 @@ func TestCandidates_GetCandidateByTendermintAddress(t *testing.T) {
 }
 func TestCandidates_busGetCandidateByTendermintAddress(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	candidates := NewCandidates(bus.NewBus(), mutableTree.GetLastImmutable())
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10, 0)
@@ -551,7 +551,7 @@ func TestCandidates_busGetCandidateByTendermintAddress(t *testing.T) {
 
 func TestCandidates_Punish(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	b := bus.NewBus()
 	wl := waitlist.NewWaitList(b, mutableTree.GetLastImmutable())
 	b.SetEvents(eventsdb.NewEventsStore(db.NewMemDB()))
@@ -627,7 +627,7 @@ func (fr *fr) AddFrozenFund(_ uint64, _ types.Address, _ types.Pubkey, _ uint32,
 }
 func TestCandidates_PunishByzantineCandidate(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	b := bus.NewBus()
 	frozenfunds := &fr{}
 	b.SetFrozenFunds(frozenfunds)
@@ -710,7 +710,7 @@ func TestCandidates_PunishByzantineCandidate(t *testing.T) {
 
 func TestCandidates_SubStake(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
 	candidates := NewCandidates(b, mutableTree.GetLastImmutable())
@@ -743,7 +743,7 @@ func TestCandidates_SubStake(t *testing.T) {
 
 func TestCandidates_IsNewCandidateStakeSufficient(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
 	candidates := NewCandidates(b, mutableTree.GetLastImmutable())
@@ -769,7 +769,7 @@ func TestCandidates_IsNewCandidateStakeSufficient(t *testing.T) {
 
 func TestCandidates_IsDelegatorStakeSufficient(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	b := bus.NewBus()
 	wl := waitlist.NewWaitList(b, mutableTree.GetLastImmutable())
 
@@ -825,7 +825,7 @@ func TestCandidates_IsDelegatorStakeSufficient(t *testing.T) {
 }
 func TestCandidates_IsDelegatorStakeSufficient_false(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
 	candidates := NewCandidates(b, mutableTree.GetLastImmutable())
@@ -853,7 +853,7 @@ func TestCandidates_IsDelegatorStakeSufficient_false(t *testing.T) {
 
 func TestCandidates_GetNewCandidates(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
 	candidates := NewCandidates(b, mutableTree.GetLastImmutable())
@@ -894,7 +894,7 @@ func TestCandidates_GetNewCandidates(t *testing.T) {
 
 func TestCandidate_GetFilteredUpdates(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
 	candidates := NewCandidates(b, mutableTree.GetLastImmutable())
@@ -944,7 +944,7 @@ func TestCandidate_GetFilteredUpdates(t *testing.T) {
 
 func TestCandidates_CalculateBipValue_RecalculateStakes_GetTotalStake(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
 	busCoins := coins.NewCoins(b, mutableTree.GetLastImmutable())
