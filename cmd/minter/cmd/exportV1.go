@@ -68,12 +68,12 @@ func export(cmd *cobra.Command, args []string) error {
 		log.Panicf("Cannot load db: %s", err)
 	}
 
-	currentState, err := state.NewCheckStateAtHeight(height, ldb)
+	currentState, err := state.NewCheckStateAtHeightV1(height, ldb)
 	if err != nil {
 		log.Panicf("Cannot new state at given height: %s", err)
 	}
 
-	exportTimeStart, newState := time.Now(), currentState.Export()
+	exportTimeStart, newState := time.Now(), currentState.ExportV1toV2()
 	fmt.Printf("State has been exported. Took %s", time.Since(exportTimeStart))
 
 	initialHeight := height
