@@ -25,7 +25,7 @@ type RWaitList interface {
 
 type WaitList struct {
 	list  map[types.Address]*Model
-	dirty map[types.Address]interface{}
+	dirty map[types.Address]struct{}
 
 	db atomic.Value
 
@@ -43,7 +43,7 @@ func NewWaitList(stateBus *bus.Bus, db *iavl.ImmutableTree) *WaitList {
 		bus:   stateBus,
 		db:    immutableTree,
 		list:  map[types.Address]*Model{},
-		dirty: map[types.Address]interface{}{},
+		dirty: map[types.Address]struct{}{},
 	}
 	waitlist.bus.SetWaitList(NewBus(waitlist))
 

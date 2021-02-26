@@ -68,7 +68,7 @@ func export(cmd *cobra.Command, args []string) error {
 		log.Panicf("Cannot load db: %s", err)
 	}
 
-	currentState, err := state.NewCheckStateAtHeightV1(height, ldb)
+	currentState, err := state.NewCheckStateAtHeight(height, ldb)
 	if err != nil {
 		log.Panicf("Cannot new state at given height: %s", err)
 	}

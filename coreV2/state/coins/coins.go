@@ -22,6 +22,9 @@ const (
 )
 
 type RCoins interface {
+	// Deprecated
+	ExportV1(state *types.AppState, subValues map[types.CoinID]*big.Int)
+
 	Export(state *types.AppState)
 	Exists(id types.CoinID) bool
 	ExistsBySymbol(symbol types.CoinSymbol) bool
@@ -549,6 +552,8 @@ func (c *Coins) Export(state *types.AppState) {
 			Reserve:      coin.Reserve().String(),
 			MaxSupply:    coin.MaxSupply().String(),
 			Version:      uint64(coin.Version()),
+			Mintable:     coin.Mintable,
+			Burnable:     coin.Burnable,
 			OwnerAddress: owner,
 		})
 

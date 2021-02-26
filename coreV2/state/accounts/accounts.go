@@ -19,6 +19,9 @@ const coinsPrefix = byte('c')
 const balancePrefix = byte('b')
 
 type RAccounts interface {
+	// Deprecated
+	ExportV1(state *types.AppState) map[types.CoinID]*big.Int
+
 	Export(state *types.AppState)
 	GetAccount(address types.Address) *Model
 	GetNonce(address types.Address) uint64
@@ -398,9 +401,9 @@ func (a *Accounts) Export(state *types.AppState) {
 		}
 
 		// sort balances by coin symbol
-		sort.SliceStable(balance, func(i, j int) bool {
-			return bytes.Compare(types.CoinID(balance[i].Coin).Bytes(), types.CoinID(balance[j].Coin).Bytes()) == 1
-		})
+		// sort.SliceStable(balance, func(i, j int) bool {
+		// 	return bytes.Compare(types.CoinID(balance[i].Coin).Bytes(), types.CoinID(balance[j].Coin).Bytes()) == 1
+		// })
 
 		acc := types.Account{
 			Address: account.address,

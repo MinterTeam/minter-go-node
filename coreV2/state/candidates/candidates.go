@@ -42,6 +42,9 @@ var (
 
 // RCandidates interface represents Candidates state
 type RCandidates interface {
+	// Deprecated
+	ExportV1toV2(state *types.AppState)
+
 	Export(state *types.AppState)
 	Exists(pubkey types.Pubkey) bool
 	IsBlockedPubKey(pubkey types.Pubkey) bool
@@ -711,7 +714,7 @@ func (c *Candidates) LoadCandidatesDeliver() {
 		return
 	}
 
-	c.maxID = c.loadCandidatesList()
+	c.maxID = c.loadCandidatesListV1()
 
 	_, blockListEnc := c.immutableTree().Get([]byte{blockListPrefix})
 	if len(blockListEnc) != 0 {
