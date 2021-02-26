@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
-	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/spf13/cobra"
 	"github.com/tendermint/go-amino"
 )

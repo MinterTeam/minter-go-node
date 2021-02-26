@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
-	"github.com/MinterTeam/minter-go-node/core/state"
+	"github.com/MinterTeam/minter-go-node/coreV2/state"
 	"github.com/spf13/cobra"
 	"github.com/tendermint/go-amino"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"

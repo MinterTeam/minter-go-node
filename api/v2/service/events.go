@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"github.com/MinterTeam/minter-go-node/core/events"
+	"github.com/MinterTeam/minter-go-node/coreV2/events"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	_struct "github.com/golang/protobuf/ptypes/struct"
 	tmjson "github.com/tendermint/tendermint/libs/json"

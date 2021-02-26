@@ -26,7 +26,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/hexutil"
 )
 
