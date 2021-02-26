@@ -3,14 +3,14 @@ package halts
 import (
 	"github.com/MinterTeam/minter-go-node/coreV2/state/bus"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
-	"github.com/MinterTeam/minter-go-node/treeV2"
+	"github.com/MinterTeam/minter-go-node/tree"
 	db "github.com/tendermint/tm-db"
 	"testing"
 )
 
 func TestHaltsToDeleteModel(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	h := NewHalts(bus.NewBus(), mutableTree.GetLastImmutable())
 
 	pubkey, height := types.Pubkey{0}, uint64(10)
@@ -40,7 +40,7 @@ func TestHaltsToDeleteModel(t *testing.T) {
 
 func TestBusToAddHaltBlock(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	h := NewHalts(bus.NewBus(), mutableTree.GetLastImmutable())
 
 	pubkey, height := types.Pubkey{0}, uint64(10)

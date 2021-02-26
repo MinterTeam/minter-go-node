@@ -5,7 +5,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/coreV2/state/candidates"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/checker"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
-	"github.com/MinterTeam/minter-go-node/treeV2"
+	"github.com/MinterTeam/minter-go-node/tree"
 	db "github.com/tendermint/tm-db"
 	"math/big"
 	"testing"
@@ -15,7 +15,7 @@ func TestWaitListToGetByAddressAndPubKey(t *testing.T) {
 	t.Parallel()
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
-	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 
 	wl := NewWaitList(b, mutableTree.GetLastImmutable())
 
@@ -49,7 +49,7 @@ func TestWaitListToPartialDelete(t *testing.T) {
 	t.Parallel()
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
-	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 
 	wl := NewWaitList(b, mutableTree.GetLastImmutable())
 

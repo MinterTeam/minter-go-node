@@ -5,7 +5,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/coreV2/state/checker"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/coins"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
-	"github.com/MinterTeam/minter-go-node/treeV2"
+	"github.com/MinterTeam/minter-go-node/tree"
 	db "github.com/tendermint/tm-db"
 	"math/big"
 	"testing"
@@ -14,7 +14,7 @@ import (
 func TestFrozenFundsToAddModel(t *testing.T) {
 	t.Parallel()
 	b := bus.NewBus()
-	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 
 	ff := NewFrozenFunds(b, mutableTree.GetLastImmutable())
 
@@ -54,7 +54,7 @@ func TestFrozenFundsToAddModel(t *testing.T) {
 func TestFrozenFundsToDeleteModel(t *testing.T) {
 	t.Parallel()
 	b := bus.NewBus()
-	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	ff := NewFrozenFunds(b, mutableTree.GetLastImmutable())
 
 	b.SetChecker(checker.NewChecker(b))
@@ -90,7 +90,7 @@ func TestFrozenFundsToDeleteModel(t *testing.T) {
 func TestFrozenFundsToDeleteNotExistingFund(t *testing.T) {
 	t.Parallel()
 	b := bus.NewBus()
-	mutableTree, _ := treeV2.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	ff := NewFrozenFunds(b, mutableTree.GetLastImmutable())
 
 	ff.Delete(0)
