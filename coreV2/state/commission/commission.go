@@ -15,6 +15,9 @@ import (
 const mainPrefix = byte('p')
 
 type RCommission interface {
+	// Deprecated
+	ExportV1(state *types.AppState, id types.CoinID)
+
 	Export(state *types.AppState)
 	GetVotes(height uint64) []*Model
 	GetCommissions() *Price
@@ -75,19 +78,152 @@ func (c *Commission) Export(state *types.AppState) {
 					Height:       height,
 					CandidateKey: vote,
 					PriceCommission: types.PriceCommission{
-						Send: p.Send.String(),
-						// todo: add more txs
-						Coin: c.GetCommissions().Coin.String(),
+						Coin:                    uint64(p.Coin),
+						PayloadByte:             p.PayloadByte.String(),
+						Send:                    p.Send.String(),
+						BuyBancor:               p.BuyBancor.String(),
+						SellBancor:              p.SellBancor.String(),
+						SellAllBancor:           p.SellAllBancor.String(),
+						BuyPoolBase:             p.BuyPoolBase.String(),
+						BuyPoolDelta:            p.BuyPoolDelta.String(),
+						SellPoolBase:            p.SellPoolBase.String(),
+						SellPoolDelta:           p.SellPoolDelta.String(),
+						SellAllPoolBase:         p.SellAllPoolBase.String(),
+						SellAllPoolDelta:        p.SellAllPoolDelta.String(),
+						CreateTicker3:           p.CreateTicker3.String(),
+						CreateTicker4:           p.CreateTicker4.String(),
+						CreateTicker5:           p.CreateTicker5.String(),
+						CreateTicker6:           p.CreateTicker6.String(),
+						CreateTicker7_10:        p.CreateTicker7to10.String(),
+						CreateCoin:              p.CreateCoin.String(),
+						CreateToken:             p.CreateToken.String(),
+						RecreateCoin:            p.RecreateCoin.String(),
+						RecreateToken:           p.RecreateToken.String(),
+						DeclareCandidacy:        p.DeclareCandidacy.String(),
+						Delegate:                p.Delegate.String(),
+						Unbond:                  p.Unbond.String(),
+						RedeemCheck:             p.RedeemCheck.String(),
+						SetCandidateOn:          p.SetCandidateOn.String(),
+						SetCandidateOff:         p.SetCandidateOff.String(),
+						CreateMultisig:          p.CreateMultisig.String(),
+						MultisendBase:           p.MultisendBase.String(),
+						MultisendDelta:          p.MultisendDelta.String(),
+						EditCandidate:           p.EditCandidate.String(),
+						SetHaltBlock:            p.SetHaltBlock.String(),
+						EditTickerOwner:         p.EditTickerOwner.String(),
+						EditMultisig:            p.EditMultisig.String(),
+						EditCandidatePublicKey:  p.EditCandidatePublicKey.String(),
+						CreateSwapPool:          p.CreateSwapPool.String(),
+						AddLiquidity:            p.AddLiquidity.String(),
+						RemoveLiquidity:         p.RemoveLiquidity.String(),
+						EditCandidateCommission: p.EditCandidateCommission.String(),
+						MintToken:               p.MintToken.String(),
+						BurnToken:               p.BurnToken.String(),
+						VoteCommission:          p.VoteCommission.String(),
+						VoteUpdate:              p.VoteUpdate.String(),
 					},
 				})
 			}
 		}
 
-		// todo: add current
-		// c.GetCommissions()
-
 		return false
 	})
+
+	current := c.GetCommissions()
+	state.PriceCommission = types.PriceCommission{
+		Coin:                    uint64(current.Coin),
+		PayloadByte:             current.PayloadByte.String(),
+		Send:                    current.Send.String(),
+		BuyBancor:               current.BuyBancor.String(),
+		SellBancor:              current.SellBancor.String(),
+		SellAllBancor:           current.SellAllBancor.String(),
+		BuyPoolBase:             current.BuyPoolBase.String(),
+		BuyPoolDelta:            current.BuyPoolDelta.String(),
+		SellPoolBase:            current.SellPoolBase.String(),
+		SellPoolDelta:           current.SellPoolDelta.String(),
+		SellAllPoolBase:         current.SellAllPoolBase.String(),
+		SellAllPoolDelta:        current.SellAllPoolDelta.String(),
+		CreateTicker3:           current.CreateTicker3.String(),
+		CreateTicker4:           current.CreateTicker4.String(),
+		CreateTicker5:           current.CreateTicker5.String(),
+		CreateTicker6:           current.CreateTicker6.String(),
+		CreateTicker7_10:        current.CreateTicker7to10.String(),
+		CreateCoin:              current.CreateCoin.String(),
+		CreateToken:             current.CreateToken.String(),
+		RecreateCoin:            current.RecreateCoin.String(),
+		RecreateToken:           current.RecreateToken.String(),
+		DeclareCandidacy:        current.DeclareCandidacy.String(),
+		Delegate:                current.Delegate.String(),
+		Unbond:                  current.Unbond.String(),
+		RedeemCheck:             current.RedeemCheck.String(),
+		SetCandidateOn:          current.SetCandidateOn.String(),
+		SetCandidateOff:         current.SetCandidateOff.String(),
+		CreateMultisig:          current.CreateMultisig.String(),
+		MultisendBase:           current.MultisendBase.String(),
+		MultisendDelta:          current.MultisendDelta.String(),
+		EditCandidate:           current.EditCandidate.String(),
+		SetHaltBlock:            current.SetHaltBlock.String(),
+		EditTickerOwner:         current.EditTickerOwner.String(),
+		EditMultisig:            current.EditMultisig.String(),
+		EditCandidatePublicKey:  current.EditCandidatePublicKey.String(),
+		CreateSwapPool:          current.CreateSwapPool.String(),
+		AddLiquidity:            current.AddLiquidity.String(),
+		RemoveLiquidity:         current.RemoveLiquidity.String(),
+		EditCandidateCommission: current.EditCandidateCommission.String(),
+		MintToken:               current.MintToken.String(),
+		BurnToken:               current.BurnToken.String(),
+		VoteCommission:          current.VoteCommission.String(),
+		VoteUpdate:              current.VoteUpdate.String(),
+	}
+}
+
+// Deprecated
+func (c *Commission) ExportV1(state *types.AppState, id types.CoinID) {
+	state.PriceCommission = types.PriceCommission{
+		Coin:                    uint64(id),
+		PayloadByte:             "1",
+		Send:                    "1",
+		BuyBancor:               "1",
+		SellBancor:              "1",
+		SellAllBancor:           "1",
+		BuyPoolBase:             "1",
+		BuyPoolDelta:            "1",
+		SellPoolBase:            "1",
+		SellPoolDelta:           "1",
+		SellAllPoolBase:         "1",
+		SellAllPoolDelta:        "1",
+		CreateTicker3:           "1",
+		CreateTicker4:           "1",
+		CreateTicker5:           "1",
+		CreateTicker6:           "1",
+		CreateTicker7_10:        "1",
+		CreateCoin:              "1",
+		CreateToken:             "1",
+		RecreateCoin:            "1",
+		RecreateToken:           "1",
+		DeclareCandidacy:        "1",
+		Delegate:                "1",
+		Unbond:                  "1",
+		RedeemCheck:             "1",
+		SetCandidateOn:          "1",
+		SetCandidateOff:         "1",
+		CreateMultisig:          "1",
+		MultisendBase:           "1",
+		MultisendDelta:          "1",
+		EditCandidate:           "1",
+		SetHaltBlock:            "1",
+		EditTickerOwner:         "1",
+		EditMultisig:            "1",
+		EditCandidatePublicKey:  "1",
+		CreateSwapPool:          "1",
+		AddLiquidity:            "1",
+		RemoveLiquidity:         "1",
+		EditCandidateCommission: "1",
+		MintToken:               "1",
+		BurnToken:               "1",
+		VoteCommission:          "1",
+		VoteUpdate:              "1",
+	}
 }
 
 func (c *Commission) Commit(db *iavl.MutableTree) error {

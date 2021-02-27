@@ -37,12 +37,15 @@ type EditableChecker interface {
 }
 
 type RSwap interface {
+	// Deprecated
+	ExportV1(state *types.AppState, id types.CoinID)
+
+	Export(state *types.AppState)
 	SwapPool(coin0, coin1 types.CoinID) (reserve0, reserve1 *big.Int, id uint32)
 	GetSwapper(coin0, coin1 types.CoinID) EditableChecker
 	SwapPoolExist(coin0, coin1 types.CoinID) bool
 	PairCalculateBuyForSell(coin0, coin1 types.CoinID, amount0In *big.Int) (amount1Out *big.Int, err error)
 	PairCalculateSellForBuy(coin0, coin1 types.CoinID, amount1Out *big.Int) (amount0In *big.Int, err error)
-	Export(state *types.AppState)
 }
 
 type Swap struct {
@@ -66,6 +69,17 @@ func New(bus *bus.Bus, db *iavl.ImmutableTree) *Swap {
 
 func (s *Swap) immutableTree() *iavl.ImmutableTree {
 	return s.db.Load().(*iavl.ImmutableTree)
+}
+
+// Deprecated
+func (s *Swap) ExportV1(state *types.AppState, id types.CoinID) {
+	state.Swap = append(state.Swap, types.Swap{
+		Coin0:    0,
+		Coin1:    uint64(id),
+		Reserve0: "100000", // todo
+		Reserve1: "100000",
+		ID:       1,
+	})
 }
 
 func (s *Swap) Export(state *types.AppState) {

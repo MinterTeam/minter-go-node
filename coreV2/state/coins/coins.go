@@ -23,7 +23,7 @@ const (
 
 type RCoins interface {
 	// Deprecated
-	ExportV1(state *types.AppState, subValues map[types.CoinID]*big.Int)
+	ExportV1(state *types.AppState, subValues map[types.CoinID]*big.Int) types.CoinID
 
 	Export(state *types.AppState)
 	Exists(id types.CoinID) bool

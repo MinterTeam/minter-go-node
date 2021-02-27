@@ -52,6 +52,7 @@ func (cs *CheckState) Export() types.AppState {
 	cs.Checks().Export(appState)
 	cs.Halts().Export(appState)
 	cs.Swap().Export(appState)
+	cs.Commission().Export(appState)
 
 	return *appState
 }
@@ -65,11 +66,12 @@ func (cs *CheckState) ExportV1toV2() types.AppState {
 	cs.FrozenFunds().Export(appState, uint64(cs.state.height))
 
 	subValues := cs.Accounts().ExportV1(appState)
-	cs.Coins().ExportV1(appState, subValues) // todo: add usdc coin
+	id := cs.Coins().ExportV1(appState, subValues) // todo: correct default data
+	cs.Commission().ExportV1(appState, id)         // todo: correct default data
+	cs.Swap().ExportV1(appState, id)               // todo: correct default data
 
-	cs.Checks().Export(appState)
+	cs.Checks().Export(appState) // todo: refactor store
 	cs.Halts().Export(appState)
-	cs.Swap().Export(appState) // todo: add custom state
 
 	return *appState
 }

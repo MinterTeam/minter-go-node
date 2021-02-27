@@ -363,7 +363,49 @@ type PriceVotes struct {
 }
 
 type PriceCommission struct {
-	Send string
-
-	Coin string
+	Coin             uint64 `json:"coin"`
+	PayloadByte      string `json:"payload_byte"`
+	Send             string `json:"send"`
+	BuyBancor        string `json:"buy_bancor"`
+	SellBancor       string `json:"sell_bancor"`
+	SellAllBancor    string `json:"sell_all_bancor"`
+	BuyPoolBase      string `json:"buy_pool_base"`
+	BuyPoolDelta     string `json:"buy_pool_delta"`
+	SellPoolBase     string `json:"sell_pool_base"`
+	SellPoolDelta    string `json:"sell_pool_delta"`
+	SellAllPoolBase  string `json:"sell_all_pool_base"`
+	SellAllPoolDelta string `json:"sell_all_pool_delta"`
+	CreateTicker3    string `json:"create_ticker3"`
+	CreateTicker4    string `json:"create_ticker4"`
+	CreateTicker5    string `json:"create_ticker5"`
+	CreateTicker6    string `json:"create_ticker6"`
+	CreateTicker7_10 string `json:"create_ticker7_10"`
+	CreateCoin       string `json:"create_coin"`
+	CreateToken      string `json:"create_token"`
+	RecreateCoin     string `json:"recreate_coin"`
+	RecreateToken    string `json:"recreate_token"`
+	DeclareCandidacy string `json:"declare_candidacy"`
+	Delegate         string `json:"delegate"`
+	Unbond           string `json:"unbond"`
+	RedeemCheck      string `json:"redeem_check"`
+	SetCandidateOn   string `json:"set_candidate_on"`
+	SetCandidateOff  string `json:"set_candidate_off"`
+	CreateMultisig   string `json:"create_multisig"`
+	MultisendBase    string `json:"multisend_base"`
+	MultisendDelta   string `json:"multisend_delta"`
+	EditCandidate    string `json:"edit_candidate"`
+	SetHaltBlock     string `json:"set_halt_block"`
+	EditTickerOwner  string `json:"edit_ticker_owner"`
+	EditMultisig     string `json:"edit_multisig"`
+	// PriceVote               string `json:"price_vote"`
+	EditCandidatePublicKey  string `json:"edit_candidate_public_key"`
+	CreateSwapPool          string `json:"create_swap_pool"`
+	AddLiquidity            string `json:"add_liquidity"`
+	RemoveLiquidity         string `json:"remove_liquidity"`
+	EditCandidateCommission string `json:"edit_candidate_commission"`
+	// MoveStake               string `json:"move_stake"`
+	MintToken      string `json:"mint_token"`
+	BurnToken      string `json:"burn_token"`
+	VoteCommission string `json:"vote_commission"`
+	VoteUpdate     string `json:"vote_update"`
 }

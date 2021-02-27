@@ -29,7 +29,7 @@ type modelV1 struct {
 	isCreated bool
 }
 
-func (c *Coins) ExportV1(state *types.AppState, subValues map[types.CoinID]*big.Int) {
+func (c *Coins) ExportV1(state *types.AppState, subValues map[types.CoinID]*big.Int) types.CoinID {
 	c.immutableTree().IterateRange([]byte{mainPrefix}, []byte{mainPrefix + 1}, true, func(key []byte, value []byte) bool {
 		if len(key) > 5 {
 			return false
@@ -82,6 +82,25 @@ func (c *Coins) ExportV1(state *types.AppState, subValues map[types.CoinID]*big.
 	sort.Slice(state.Coins[:], func(i, j int) bool {
 		return state.Coins[i].ID < state.Coins[j].ID
 	})
+
+	id := state.Coins[len(state.Coins)-1].ID + 1
+
+	bridge := types.StringToAddress("Mx0000000000000000000000000000000000000000") // todo
+	state.Coins = append(state.Coins, types.Coin{
+		ID:           id,
+		Name:         "USDC", // todo
+		Symbol:       types.StrToCoinSymbol("USDC"),
+		Volume:       "100000000000000", // todo
+		Crr:          0,
+		Reserve:      "0",
+		MaxSupply:    "100000000000000000000000000000", // todo
+		Version:      0,
+		OwnerAddress: &bridge,
+		Mintable:     true,
+		Burnable:     true,
+	})
+
+	return types.CoinID(id)
 }
 
 // Deprecated
