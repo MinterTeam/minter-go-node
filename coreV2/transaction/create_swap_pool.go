@@ -1,7 +1,6 @@
 package transaction
 
 import (
-	"encoding/hex"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
@@ -178,12 +177,11 @@ func (data CreateSwapPoolData) Run(tx *Transaction, context state.Interface, rew
 			{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
 			{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
 			{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
-			{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
 			{Key: []byte("tx.volume1"), Value: []byte(data.Volume1.String())},
 			{Key: []byte("tx.liquidity"), Value: []byte(liquidity.String())},
-			{Key: []byte("tx.pool_token"), Value: []byte(liquidityCoinSymbol.String())},
-			{Key: []byte("tx.pool_token_id"), Value: []byte(coinID.String())},
-			{Key: []byte("tx.pair_ids"), Value: []byte(coins)},
+			{Key: []byte("tx.pool_token"), Value: []byte(liquidityCoinSymbol.String()), Index: true},
+			{Key: []byte("tx.pool_token_id"), Value: []byte(coinID.String()), Index: true},
+			{Key: []byte("tx.pair_ids"), Value: []byte(coins), Index: true},
 		}
 	}
 

@@ -210,7 +210,8 @@ func RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBl
 		coinCommission,
 		priceCommission,
 		abcTypes.EventAttribute{Key: []byte("tx.gas"), Value: []byte(strconv.Itoa(int(gas)))},
-		abcTypes.EventAttribute{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(tx.decodedData.TxType())}))},
+		abcTypes.EventAttribute{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:])), Index: true},
+		abcTypes.EventAttribute{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(tx.decodedData.TxType())})), Index: true},
 	)
 	response.GasUsed = gas
 	response.GasWanted = gas
