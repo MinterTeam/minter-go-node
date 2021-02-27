@@ -714,7 +714,7 @@ func (c *Candidates) LoadCandidatesDeliver() {
 		return
 	}
 
-	c.maxID = c.loadCandidatesListV1()
+	c.maxID = c.loadCandidatesList()
 
 	_, blockListEnc := c.immutableTree().Get([]byte{blockListPrefix})
 	if len(blockListEnc) != 0 {

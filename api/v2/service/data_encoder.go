@@ -11,7 +11,6 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	_struct "google.golang.org/protobuf/types/known/structpb"
-	"strconv"
 )
 
 func encode(data transaction.Data, rCoins coins.RCoins) (*any.Any, error) {
@@ -119,10 +118,10 @@ func encode(data transaction.Data, rCoins coins.RCoins) (*any.Any, error) {
 		m = &pb.MultiSendData{
 			List: list,
 		}
-	case *transaction.PriceVoteData:
-		m = &pb.PriceVoteData{
-			Price: strconv.Itoa(int(d.Price)),
-		}
+	// case *transaction.PriceVoteData:
+	// 	m = &pb.PriceVoteData{
+	// 		Price: strconv.Itoa(int(d.Price)),
+	// 	}
 	case *transaction.RecreateCoinData:
 		m = &pb.RecreateCoinData{
 			Name:                 d.Name,
@@ -297,16 +296,16 @@ func encode(data transaction.Data, rCoins coins.RCoins) (*any.Any, error) {
 			PubKey:     d.PubKey.String(),
 			Commission: uint64(d.Commission),
 		}
-	case *transaction.MoveStakeData:
-		m = &pb.MoveStakeData{
-			From: d.From.String(),
-			To:   d.To.String(),
-			Coin: &pb.Coin{
-				Id:     uint64(d.Coin),
-				Symbol: rCoins.GetCoin(d.Coin).GetFullSymbol(),
-			},
-			Stake: d.Stake.String(),
-		}
+	// case *transaction.MoveStakeData:
+	// 	m = &pb.MoveStakeData{
+	// 		From: d.From.String(),
+	// 		To:   d.To.String(),
+	// 		Coin: &pb.Coin{
+	// 			Id:     uint64(d.Coin),
+	// 			Symbol: rCoins.GetCoin(d.Coin).GetFullSymbol(),
+	// 		},
+	// 		Stake: d.Stake.String(),
+	// 	}
 	case *transaction.VoteCommissionData:
 		m = priceCommissionData(d, rCoins.GetCoin(d.Coin))
 	case *transaction.VoteUpdateData:
@@ -348,50 +347,50 @@ func priceCommissionData(d *transaction.VoteCommissionData, coin *coins.Model) p
 			Id:     uint64(d.Coin),
 			Symbol: coin.GetFullSymbol(),
 		},
-		PayloadByte:             d.PayloadByte.String(),
-		Send:                    d.Send.String(),
-		BuyBancor:               d.BuyBancor.String(),
-		SellBancor:              d.SellBancor.String(),
-		SellAllBancor:           d.SellAllBancor.String(),
-		BuyPoolBase:             d.BuyPoolBase.String(),
-		BuyPoolDelta:            d.BuyPoolDelta.String(),
-		SellPoolBase:            d.SellPoolBase.String(),
-		SellPoolDelta:           d.SellPoolDelta.String(),
-		SellAllPoolBase:         d.SellAllPoolBase.String(),
-		SellAllPoolDelta:        d.SellAllPoolDelta.String(),
-		CreateTicker3:           d.CreateTicker3.String(),
-		CreateTicker4:           d.CreateTicker4.String(),
-		CreateTicker5:           d.CreateTicker5.String(),
-		CreateTicker6:           d.CreateTicker6.String(),
-		CreateTicker7_10:        d.CreateTicker7to10.String(),
-		CreateCoin:              d.CreateCoin.String(),
-		CreateToken:             d.CreateToken.String(),
-		RecreateCoin:            d.RecreateCoin.String(),
-		RecreateToken:           d.RecreateToken.String(),
-		DeclareCandidacy:        d.DeclareCandidacy.String(),
-		Delegate:                d.Delegate.String(),
-		Unbond:                  d.Unbond.String(),
-		RedeemCheck:             d.RedeemCheck.String(),
-		SetCandidateOn:          d.SetCandidateOn.String(),
-		SetCandidateOff:         d.SetCandidateOff.String(),
-		CreateMultisig:          d.CreateMultisig.String(),
-		MultisendBase:           d.MultisendBase.String(),
-		MultisendDelta:          d.MultisendDelta.String(),
-		EditCandidate:           d.EditCandidate.String(),
-		SetHaltBlock:            d.SetHaltBlock.String(),
-		EditTickerOwner:         d.EditTickerOwner.String(),
-		EditMultisig:            d.EditMultisig.String(),
-		PriceVote:               d.PriceVote.String(),
+		PayloadByte:      d.PayloadByte.String(),
+		Send:             d.Send.String(),
+		BuyBancor:        d.BuyBancor.String(),
+		SellBancor:       d.SellBancor.String(),
+		SellAllBancor:    d.SellAllBancor.String(),
+		BuyPoolBase:      d.BuyPoolBase.String(),
+		BuyPoolDelta:     d.BuyPoolDelta.String(),
+		SellPoolBase:     d.SellPoolBase.String(),
+		SellPoolDelta:    d.SellPoolDelta.String(),
+		SellAllPoolBase:  d.SellAllPoolBase.String(),
+		SellAllPoolDelta: d.SellAllPoolDelta.String(),
+		CreateTicker3:    d.CreateTicker3.String(),
+		CreateTicker4:    d.CreateTicker4.String(),
+		CreateTicker5:    d.CreateTicker5.String(),
+		CreateTicker6:    d.CreateTicker6.String(),
+		CreateTicker7_10: d.CreateTicker7to10.String(),
+		CreateCoin:       d.CreateCoin.String(),
+		CreateToken:      d.CreateToken.String(),
+		RecreateCoin:     d.RecreateCoin.String(),
+		RecreateToken:    d.RecreateToken.String(),
+		DeclareCandidacy: d.DeclareCandidacy.String(),
+		Delegate:         d.Delegate.String(),
+		Unbond:           d.Unbond.String(),
+		RedeemCheck:      d.RedeemCheck.String(),
+		SetCandidateOn:   d.SetCandidateOn.String(),
+		SetCandidateOff:  d.SetCandidateOff.String(),
+		CreateMultisig:   d.CreateMultisig.String(),
+		MultisendBase:    d.MultisendBase.String(),
+		MultisendDelta:   d.MultisendDelta.String(),
+		EditCandidate:    d.EditCandidate.String(),
+		SetHaltBlock:     d.SetHaltBlock.String(),
+		EditTickerOwner:  d.EditTickerOwner.String(),
+		EditMultisig:     d.EditMultisig.String(),
+		// PriceVote:               d.PriceVote.String(),
 		EditCandidatePublicKey:  d.EditCandidatePublicKey.String(),
 		CreateSwapPool:          d.CreateSwapPool.String(),
 		AddLiquidity:            d.AddLiquidity.String(),
 		RemoveLiquidity:         d.RemoveLiquidity.String(),
 		EditCandidateCommission: d.EditCandidateCommission.String(),
-		MoveStake:               d.MoveStake.String(),
-		MintToken:               d.MintToken.String(),
-		BurnToken:               d.BurnToken.String(),
-		VoteCommission:          d.VoteCommission.String(),
-		VoteUpdate:              d.VoteUpdate.String(),
+		// MoveStake:               d.MoveStake.String(),
+		MintToken:      d.MintToken.String(),
+		BurnToken:      d.BurnToken.String(),
+		VoteCommission: d.VoteCommission.String(),
+		VoteUpdate:     d.VoteUpdate.String(),
 	}
 }
 
