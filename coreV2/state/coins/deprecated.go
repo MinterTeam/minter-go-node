@@ -7,6 +7,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"math/big"
 	"sort"
+	"strconv"
 	"sync"
 )
 
@@ -62,10 +63,15 @@ func (c *Coins) ExportV1(state *types.AppState, subValues map[types.CoinID]*big.
 			volume.Sub(volume, subValue)
 		}
 
+		symbol := coin.Symbol()
+		strSymbol := symbol.String()
+		if _, err := strconv.Atoi(strSymbol); err == nil {
+			symbol = types.StrToCoinSymbol("A" + strSymbol)
+		}
 		state.Coins = append(state.Coins, types.Coin{
 			ID:           uint64(coin.ID()),
 			Name:         coin.Name(),
-			Symbol:       coin.Symbol(),
+			Symbol:       symbol,
 			Volume:       volume.String(),
 			Crr:          uint64(coin.Crr()),
 			Reserve:      coin.Reserve().String(),

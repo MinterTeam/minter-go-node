@@ -38,7 +38,7 @@ func (data CreateTokenData) basicCheck(tx *Transaction, context *state.CheckStat
 		}
 	}
 
-	if match := allowedCoinSymbolsRegexpCompile.MatchString(data.Symbol.String()); !match {
+	if !checkAllowSymbol(data.Symbol.String()) {
 		return &Response{
 			Code: code.InvalidCoinSymbol,
 			Log:  fmt.Sprintf("Invalid coin symbol. Should be %s", allowedCoinSymbols),

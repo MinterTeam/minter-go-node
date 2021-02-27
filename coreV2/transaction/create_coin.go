@@ -26,6 +26,16 @@ var (
 	allowedCoinSymbolsRegexpCompile, _ = regexp.Compile(allowedCoinSymbols)
 )
 
+func checkAllowSymbol(symbol string) bool {
+	if match := allowedCoinSymbolsRegexpCompile.MatchString(symbol); !match {
+		return false
+	}
+	if _, err := strconv.Atoi(symbol); err == nil {
+		return false
+	}
+	return true
+}
+
 type CreateCoinData struct {
 	Name                 string
 	Symbol               types.CoinSymbol
@@ -59,7 +69,7 @@ func (data CreateCoinData) basicCheck(tx *Transaction, context *state.CheckState
 		}
 	}
 
-	if match := allowedCoinSymbolsRegexpCompile.MatchString(data.Symbol.String()); !match {
+	if !checkAllowSymbol(data.Symbol.String()) {
 		return &Response{
 			Code: code.InvalidCoinSymbol,
 			Log:  fmt.Sprintf("Invalid coin symbol. Should be %s", allowedCoinSymbols),
