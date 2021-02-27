@@ -1,7 +1,6 @@
 package transaction
 
 import (
-	"encoding/hex"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/state"
@@ -138,7 +137,7 @@ func (data BurnTokenData) Run(tx *Transaction, context state.Interface, rewardPo
 			{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
 			{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
 			{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
-			{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
+			{Key: []byte("tx.coin_id"), Value: []byte(data.Coin.String()), Index: true},
 		}
 	}
 

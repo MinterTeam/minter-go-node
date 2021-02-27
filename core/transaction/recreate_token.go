@@ -1,7 +1,6 @@
 package transaction
 
 import (
-	"encoding/hex"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/state/commission"
 	"math/big"
@@ -157,11 +156,10 @@ func (data RecreateTokenData) Run(tx *Transaction, context state.Interface, rewa
 			{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
 			{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
 			{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
-			{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
-			{Key: []byte("tx.coin_symbol"), Value: []byte(data.Symbol.String())},
-			{Key: []byte("tx.coin_id"), Value: []byte(coinId.String())},
+			{Key: []byte("tx.coin_symbol"), Value: []byte(data.Symbol.String()), Index: true},
+			{Key: []byte("tx.coin_id"), Value: []byte(coinId.String()), Index: true},
 			{Key: []byte("tx.old_coin_symbol"), Value: []byte(checkState.Coins().GetCoin(oldCoinID).GetFullSymbol())},
-			{Key: []byte("tx.old_coin_id"), Value: []byte(oldCoinID.String())},
+			{Key: []byte("tx.old_coin_id"), Value: []byte(oldCoinID.String()), Index: true},
 		}
 	}
 

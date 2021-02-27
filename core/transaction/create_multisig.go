@@ -137,8 +137,7 @@ func (data CreateMultisigData) Run(tx *Transaction, context state.Interface, rew
 			{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
 			{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
 			{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
-			{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
-			{Key: []byte("tx.created_multisig"), Value: []byte(hex.EncodeToString(msigAddress[:]))},
+			{Key: []byte("tx.created_multisig"), Value: []byte(hex.EncodeToString(msigAddress[:])), Index: true},
 		}
 	}
 

@@ -1,7 +1,6 @@
 package transaction
 
 import (
-	"encoding/hex"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/state"
@@ -195,9 +194,8 @@ func (data SellAllCoinData) Run(tx *Transaction, context state.Interface, reward
 			{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
 			{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
 			{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
-			{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
-			{Key: []byte("tx.coin_to_buy"), Value: []byte(data.CoinToBuy.String())},
-			{Key: []byte("tx.coin_to_sell"), Value: []byte(data.CoinToSell.String())},
+			{Key: []byte("tx.coin_to_buy"), Value: []byte(data.CoinToBuy.String()), Index: true},
+			{Key: []byte("tx.coin_to_sell"), Value: []byte(data.CoinToSell.String()), Index: true},
 			{Key: []byte("tx.return"), Value: []byte(value.String())},
 			{Key: []byte("tx.sell_amount"), Value: []byte(balance.String())},
 		}

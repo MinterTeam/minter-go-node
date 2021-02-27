@@ -1,7 +1,6 @@
 package transaction
 
 import (
-	"encoding/hex"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/core/code"
 	"github.com/MinterTeam/minter-go-node/core/state"
@@ -199,11 +198,10 @@ func (data AddLiquidityData) Run(tx *Transaction, context state.Interface, rewar
 			{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
 			{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String())},
 			{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
-			{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:]))},
 			{Key: []byte("tx.volume1"), Value: []byte(amount1.String())},
 			{Key: []byte("tx.liquidity"), Value: []byte(liquidity.String())},
-			{Key: []byte("tx.pool_token"), Value: []byte(coinLiquidity.GetFullSymbol())},
-			{Key: []byte("tx.pool_token_id"), Value: []byte(coinLiquidity.ID().String())},
+			{Key: []byte("tx.pool_token"), Value: []byte(coinLiquidity.GetFullSymbol()), Index: true},
+			{Key: []byte("tx.pool_token_id"), Value: []byte(coinLiquidity.ID().String()), Index: true},
 			{Key: []byte("tx.pair_ids"), Value: []byte(liquidityCoinName(data.Coin0, data.Coin1))},
 		}
 	}
