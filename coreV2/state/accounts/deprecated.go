@@ -7,9 +7,7 @@ import (
 
 // Deprecated
 func (a *Accounts) ExportV1(state *types.AppState) map[types.CoinID]*big.Int {
-
-	subCoinValue := map[types.CoinID]*big.Int{}
-
+	totalSubCoinValue := map[types.CoinID]*big.Int{}
 	a.immutableTree().IterateRange([]byte{mainPrefix}, []byte{mainPrefix + 1}, true, func(key []byte, value []byte) bool {
 		addressPath := key[1:]
 		if len(addressPath) > types.AddressLength {
@@ -20,7 +18,7 @@ func (a *Accounts) ExportV1(state *types.AppState) map[types.CoinID]*big.Int {
 		account := a.get(address)
 
 		smallValue := true
-
+		subCoinValue := map[types.CoinID]*big.Int{}
 		var balance []types.Balance
 		for _, b := range a.GetBalances(account.address) {
 			if b.Value.Sign() != 1 {
@@ -67,6 +65,14 @@ func (a *Accounts) ExportV1(state *types.AppState) map[types.CoinID]*big.Int {
 		}
 
 		if smallValue && acc.Nonce == 0 && acc.MultisigData == nil {
+			for id, sub := range subCoinValue {
+				totalSub, has := totalSubCoinValue[id]
+				if !has {
+					totalSub = big.NewInt(0)
+					totalSubCoinValue[id] = totalSub
+				}
+				totalSub.Add(totalSub, sub)
+			}
 			return false
 		}
 
@@ -75,5 +81,5 @@ func (a *Accounts) ExportV1(state *types.AppState) map[types.CoinID]*big.Int {
 		return false
 	})
 
-	return subCoinValue
+	return totalSubCoinValue
 }
