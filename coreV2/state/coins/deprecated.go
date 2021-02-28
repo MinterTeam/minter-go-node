@@ -3,6 +3,7 @@ package coins
 import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
+	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"math/big"
@@ -57,9 +58,12 @@ func (c *Coins) ExportV1(state *types.AppState, subValues map[types.CoinID]*big.
 		}
 
 		volume := coin.Volume()
+		reserve := coin.Reserve()
 
 		subValue, has := subValues[coinID]
 		if has {
+			subReserve := formula.CalculateSaleReturn(volume, reserve, coin.CCrr, subValue)
+			reserve.Sub(reserve, subReserve)
 			volume.Sub(volume, subValue)
 		}
 
@@ -74,7 +78,7 @@ func (c *Coins) ExportV1(state *types.AppState, subValues map[types.CoinID]*big.
 			Symbol:       symbol,
 			Volume:       volume.String(),
 			Crr:          uint64(coin.Crr()),
-			Reserve:      coin.Reserve().String(),
+			Reserve:      reserve.String(),
 			MaxSupply:    coin.MaxSupply().String(),
 			Version:      uint64(coin.Version()),
 			OwnerAddress: owner,

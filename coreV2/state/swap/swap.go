@@ -589,6 +589,7 @@ var (
 	ErrorInsufficientLiquidity    = errors.New("INSUFFICIENT_LIQUIDITY")
 )
 
+// reserve1-(reserve0*reserve1)/((amount0+reserve0)-amount0*0.002)
 func (p *Pair) CalculateBuyForSell(amount0In *big.Int) (amount1Out *big.Int) {
 	reserve0, reserve1 := p.Reserves()
 	kAdjusted := new(big.Int).Mul(new(big.Int).Mul(reserve0, reserve1), big.NewInt(1000000))
@@ -601,6 +602,7 @@ func (p *Pair) CalculateBuyForSell(amount0In *big.Int) (amount1Out *big.Int) {
 	return amount1Out
 }
 
+// (reserve0*reserve1/(reserve1-amount1)-reserve0)/0.998
 func (p *Pair) CalculateSellForBuy(amount1Out *big.Int) (amount0In *big.Int) {
 	reserve0, reserve1 := p.Reserves()
 	if amount1Out.Cmp(reserve1) != -1 {
