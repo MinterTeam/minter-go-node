@@ -535,7 +535,7 @@ func TestCustomCommissionCoinAndCustomGasCoin(t *testing.T) {
 
 		cState.Accounts.AddBalance(addr, types.BasecoinID, helpers.BipToPip(big.NewInt(1)))
 
-		poolBase := big.NewInt(10000)
+		poolBase := big.NewInt(100000)
 		poolCustom := big.NewInt(10000)
 		cState.Accounts.SubBalance(types.Address{}, coin, helpers.BipToPip(poolBase))
 		cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(poolBase))
