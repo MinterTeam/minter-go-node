@@ -520,3 +520,137 @@ func TestMultiSigIncorrectSignsTx(t *testing.T) {
 		t.Error(err)
 	}
 }
+
+func TestCustomCommissionCoinAndCustomGasCoin(t *testing.T) {
+	t.Parallel()
+	cState := getState()
+
+	coin := types.GetBaseCoinID()
+	privateKey, _ := crypto.GenerateKey()
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+
+	commissionCoin := createNonReserveCoin(cState)
+	sendPrice := helpers.BipToPip(big.NewInt(1))
+	{
+
+		cState.Accounts.AddBalance(addr, types.BasecoinID, helpers.BipToPip(big.NewInt(1)))
+
+		cState.Accounts.SubBalance(types.Address{}, coin, helpers.BipToPip(big.NewInt(10000)))
+		cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(10000)))
+		cState.Accounts.SubBalance(types.Address{}, commissionCoin, helpers.BipToPip(big.NewInt(10000)))
+		cState.Accounts.AddBalance(addr, commissionCoin, helpers.BipToPip(big.NewInt(10000)))
+
+		data := CreateSwapPoolData{
+			Coin0:   coin,
+			Volume0: helpers.BipToPip(big.NewInt(10000)),
+			Coin1:   commissionCoin,
+			Volume1: helpers.BipToPip(big.NewInt(10000)),
+		}
+
+		encodedData, err := rlp.EncodeToBytes(data)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		tx := Transaction{
+			Nonce:         1,
+			GasPrice:      1,
+			ChainID:       types.CurrentChainID,
+			GasCoin:       types.GetBaseCoinID(),
+			Type:          TypeCreateSwapPool,
+			Data:          encodedData,
+			SignatureType: SigTypeSingle,
+		}
+
+		if err := tx.Sign(privateKey); err != nil {
+			t.Fatal(err)
+		}
+
+		encodedTx, err := rlp.EncodeToBytes(tx)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+
+		if response.Code != 0 {
+			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
+		}
+
+		if err := checkState(cState); err != nil {
+			t.Error(err)
+		}
+	}
+
+	price := commissionPrice
+	price.Coin = commissionCoin
+	price.Send = big.NewInt(0).Set(sendPrice)
+	cState.Commission.SetNewCommissions(price.Encode())
+
+	value := helpers.BipToPip(big.NewInt(10))
+	cState.Accounts.AddBalance(addr, coin, value)
+
+	cState.Accounts.SubBalance(types.Address{}, commissionCoin, sendPrice)
+	cState.Accounts.AddBalance(addr, commissionCoin, sendPrice)
+
+	to := types.Address([20]byte{1})
+
+	data := SendData{
+		Coin:  coin,
+		To:    to,
+		Value: value,
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := Transaction{
+		Nonce:         2,
+		GasPrice:      1,
+		ChainID:       types.CurrentChainID,
+		GasCoin:       commissionCoin,
+		Type:          TypeSend,
+		Data:          encodedData,
+		SignatureType: SigTypeSingle,
+	}
+
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	if response.Code != 0 {
+		t.Fatalf("Response code is not 0. Error: %s", response.Log)
+	}
+
+	targetBalance, _ := big.NewInt(0).SetString("0", 10)
+	balance := cState.Accounts.GetBalance(addr, coin)
+	if balance.Cmp(targetBalance) != 0 {
+		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", addr.String(), targetBalance, balance)
+	}
+
+	commissionTargetBalance, _ := big.NewInt(0).SetString("0", 10)
+	commissionCoinBalance := cState.Accounts.GetBalance(addr, commissionCoin)
+	if commissionCoinBalance.Cmp(commissionTargetBalance) != 0 {
+		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", addr.String(), commissionTargetBalance, commissionCoinBalance)
+	}
+
+	targetTestBalance, _ := big.NewInt(0).SetString("10000000000000000000", 10)
+	testBalance := cState.Accounts.GetBalance(to, coin)
+	if testBalance.Cmp(targetTestBalance) != 0 {
+		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", to.String(), targetTestBalance, testBalance)
+	}
+
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
+}

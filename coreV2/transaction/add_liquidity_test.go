@@ -33,7 +33,6 @@ func TestAddExchangeLiquidityTx_initialLiquidity(t *testing.T) {
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
 
-	cState.Checker.AddCoin(types.BasecoinID, helpers.StringToBigInt("-1099999999000000000000000"))
 	cState.Accounts.AddBalance(addr, types.BasecoinID, helpers.BipToPip(big.NewInt(1000000)))
 
 	cState.Accounts.SubBalance(types.Address{}, coin, helpers.BipToPip(big.NewInt(100000)))
