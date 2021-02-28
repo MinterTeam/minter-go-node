@@ -535,16 +535,18 @@ func TestCustomCommissionCoinAndCustomGasCoin(t *testing.T) {
 
 		cState.Accounts.AddBalance(addr, types.BasecoinID, helpers.BipToPip(big.NewInt(1)))
 
-		cState.Accounts.SubBalance(types.Address{}, coin, helpers.BipToPip(big.NewInt(10000)))
-		cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(10000)))
-		cState.Accounts.SubBalance(types.Address{}, commissionCoin, helpers.BipToPip(big.NewInt(10000)))
-		cState.Accounts.AddBalance(addr, commissionCoin, helpers.BipToPip(big.NewInt(10000)))
+		poolBase := big.NewInt(10000)
+		poolCustom := big.NewInt(10000)
+		cState.Accounts.SubBalance(types.Address{}, coin, helpers.BipToPip(poolBase))
+		cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(poolBase))
+		cState.Accounts.SubBalance(types.Address{}, commissionCoin, helpers.BipToPip(poolCustom))
+		cState.Accounts.AddBalance(addr, commissionCoin, helpers.BipToPip(poolCustom))
 
 		data := CreateSwapPoolData{
 			Coin0:   coin,
-			Volume0: helpers.BipToPip(big.NewInt(10000)),
+			Volume0: helpers.BipToPip(poolBase),
 			Coin1:   commissionCoin,
-			Volume1: helpers.BipToPip(big.NewInt(10000)),
+			Volume1: helpers.BipToPip(poolCustom),
 		}
 
 		encodedData, err := rlp.EncodeToBytes(data)
@@ -629,7 +631,10 @@ func TestCustomCommissionCoinAndCustomGasCoin(t *testing.T) {
 
 	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
 	if response.Code != 0 {
-		t.Fatalf("Response code is not 0. Error: %s", response.Log)
+		t.Fatalf("Response code is not 0. Error: %s, %s", response.Log, response.Info)
+	}
+	for _, tag := range response.Tags {
+		t.Logf("%s: %s", tag.Key, tag.Value)
 	}
 
 	targetBalance, _ := big.NewInt(0).SetString("0", 10)

@@ -319,15 +319,15 @@ func NewDecodeError() *decodeError {
 }
 
 type insufficientFunds struct {
-	Code           string `json:"code,omitempty"`
-	Sender         string `json:"sender,omitempty"`
-	NeededBipValue string `json:"needed_bip_value,omitempty"`
-	CoinSymbol     string `json:"coin_symbol,omitempty"`
-	CoinId         string `json:"coin_id,omitempty"`
+	Code        string `json:"code,omitempty"`
+	Sender      string `json:"sender,omitempty"`
+	NeededValue string `json:"needed_value,omitempty"`
+	CoinSymbol  string `json:"coin_symbol,omitempty"`
+	CoinId      string `json:"coin_id,omitempty"`
 }
 
-func NewInsufficientFunds(sender string, neededBipValue string, coinSymbol string, coinId string) *insufficientFunds {
-	return &insufficientFunds{Code: strconv.Itoa(int(InsufficientFunds)), Sender: sender, NeededBipValue: neededBipValue, CoinSymbol: coinSymbol, CoinId: coinId}
+func NewInsufficientFunds(sender string, neededValue string, coinSymbol string, coinId string) *insufficientFunds {
+	return &insufficientFunds{Code: strconv.Itoa(int(InsufficientFunds)), Sender: sender, NeededValue: neededValue, CoinSymbol: coinSymbol, CoinId: coinId}
 }
 
 type txPayloadTooLarge struct {

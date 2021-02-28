@@ -195,9 +195,8 @@ func RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBl
 	priceCommission := abcTypes.EventAttribute{Key: []byte("tx.commission_price"), Value: []byte(price.String())}
 
 	if !commissions.Coin.IsBaseCoin() {
-		price = checkState.Swap().GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuy(price)
+		price = checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()).CalculateBuyForSell(price)
 	}
-
 	response := tx.decodedData.Run(tx, context, rewardPool, currentBlock, price)
 
 	if response.Code != code.TxFromSenderAlreadyInMempool && response.Code != code.OK {
