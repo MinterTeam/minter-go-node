@@ -2,6 +2,7 @@ package coins
 
 import (
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/coreV2/state/bus"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/helpers"
@@ -48,7 +49,13 @@ func (c *Coins) ExportV1(state *types.AppState, subValues map[types.CoinID]*big.
 			CSymbol:    coinV1.CSymbol,
 			Mintable:   false,
 			Burnable:   false,
-			id:         0,
+			id:         coinID,
+			info:       coinV1.info,
+			symbolInfo: coinV1.symbolInfo,
+			markDirty:  nil,
+			lock:       sync.RWMutex{},
+			isDirty:    false,
+			isCreated:  false,
 		}
 
 		var owner *types.Address
@@ -162,4 +169,43 @@ func (c *Coins) getV1(id types.CoinID) *modelV1 {
 	// c.setToMap(id, coin)
 
 	return coin
+}
+
+// Deprecated
+func (b *Bus) GetCoinV1(id types.CoinID) *bus.Coin {
+	coin := b.coins.GetCoinV1(id)
+	if coin == nil {
+		return nil
+	}
+
+	return &bus.Coin{
+		ID:      coin.id,
+		Name:    coin.Name(),
+		Crr:     coin.Crr(),
+		Symbol:  coin.Symbol(),
+		Volume:  coin.Volume(),
+		Reserve: coin.Reserve(),
+		Version: coin.Version(),
+	}
+}
+
+// Deprecated
+func (c *Coins) GetCoinV1(id types.CoinID) *Model {
+	v1 := c.getV1(id)
+	return &Model{
+		CName:      v1.CName,
+		CCrr:       v1.CCrr,
+		CMaxSupply: v1.CMaxSupply,
+		CVersion:   v1.CVersion,
+		CSymbol:    v1.CSymbol,
+		Mintable:   false,
+		Burnable:   false,
+		id:         v1.id,
+		info:       v1.info,
+		symbolInfo: v1.symbolInfo,
+		markDirty:  nil,
+		lock:       sync.RWMutex{},
+		isDirty:    false,
+		isCreated:  false,
+	}
 }

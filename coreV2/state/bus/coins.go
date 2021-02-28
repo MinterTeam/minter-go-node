@@ -7,6 +7,9 @@ import (
 )
 
 type Coins interface {
+	// Deprecated
+	GetCoinV1(types.CoinID) *Coin
+
 	GetCoin(types.CoinID) *Coin
 	SubCoinVolume(types.CoinID, *big.Int)
 	SubCoinReserve(types.CoinID, *big.Int)

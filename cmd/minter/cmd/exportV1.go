@@ -63,7 +63,7 @@ func export(cmd *cobra.Command, args []string) error {
 
 	fmt.Println("Start exporting...")
 
-	ldb, err := utils.NewStorage("", "").InitStateLevelDB("state", nil)
+	ldb, err := utils.NewStorage("", "").InitStateLevelDB("data/state", nil)
 	if err != nil {
 		log.Panicf("Cannot load db: %s", err)
 	}

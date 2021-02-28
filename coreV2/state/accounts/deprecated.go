@@ -22,7 +22,7 @@ func (a *Accounts) ExportV1(state *types.AppState) map[types.CoinID]*big.Int {
 		smallValue := true
 		subCoinValue := map[types.CoinID]*big.Int{}
 		var balance []types.Balance
-		for _, b := range a.GetBalances(account.address) {
+		for _, b := range a.GetBalancesV1(account.address) {
 			if b.Value.Sign() != 1 {
 				continue
 			}
@@ -84,4 +84,23 @@ func (a *Accounts) ExportV1(state *types.AppState) map[types.CoinID]*big.Int {
 	})
 
 	return totalSubCoinValue
+}
+
+// Deprecated
+func (a *Accounts) GetBalancesV1(address types.Address) []Balance {
+	account := a.getOrNew(address)
+
+	account.lock.RLock()
+	coins := account.coins
+	account.lock.RUnlock()
+
+	balances := make([]Balance, len(coins))
+	for key, id := range coins {
+		balances[key] = Balance{
+			Coin:  *a.bus.Coins().GetCoinV1(id),
+			Value: a.GetBalance(address, id),
+		}
+	}
+
+	return balances
 }
