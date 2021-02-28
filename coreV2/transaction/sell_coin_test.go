@@ -550,16 +550,12 @@ func TestSellCoinTxCustomToCustomCustom1Commission(t *testing.T) {
 		t.Fatalf("Sell coin balance is not correct. Expected %s, got %s", estimatedSellCoinBalance.String(), sellCoinBalance.String())
 	}
 
-	// sellAmount := formula.CalculateSaleAmount(big.NewInt(0).Sub(initialVolume1, commission), big.NewInt(0).Sub(initialReserve1, commissionInBaseCoin), crr1, toSell)
-	// FIXME: incorrectly because sell+gas return more
-	// t.SkipNow()
-	// check received coins
-	// buyCoinBalance := cState.Accounts.GetBalance(addr, coinToBuyID)
-	// bipReturn := formula.CalculateSaleReturn(initialVolume1, initialReserve1, crr1, toSell)
-	// estimatedBuyBalance := formula.CalculatePurchaseReturn(initialVolume2, initialReserve2, crr2, bipReturn)
-	// if buyCoinBalance.Cmp(estimatedBuyBalance) != 0 {
-	// 	t.Fatalf("Buy coin balance is not correct. Expected %s, got %s", estimatedBuyBalance.String(), buyCoinBalance.String())
-	// }
+	bipReturn := formula.CalculateSaleReturn(big.NewInt(0).Sub(initialVolume1, commission), big.NewInt(0).Sub(initialReserve1, commissionInBaseCoin), crr1, toSell)
+	buyCoinBalance := cState.Accounts.GetBalance(addr, coinToBuyID)
+	estimatedBuyBalance := formula.CalculatePurchaseReturn(initialVolume2, initialReserve2, crr2, bipReturn)
+	if buyCoinBalance.Cmp(estimatedBuyBalance) != 0 {
+		t.Fatalf("Buy coin balance is not correct. Expected %s, got %s", estimatedBuyBalance.String(), buyCoinBalance.String())
+	}
 
 	// check reserve and supply
 	{
