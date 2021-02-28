@@ -178,8 +178,8 @@ func (hb *HaltBlocks) Delete(height uint64) {
 }
 
 func (hb *HaltBlocks) Export(state *types.AppState) {
-	hb.immutableTree().Iterate(func(key []byte, value []byte) bool {
-		if key[0] != mainPrefix {
+	hb.immutableTree().IterateRange([]byte{mainPrefix}, []byte{mainPrefix + 1}, true, func(key []byte, value []byte) bool {
+		if len(key) < 8 {
 			return false
 		}
 

@@ -63,20 +63,18 @@ func (wl *WaitList) SetImmutableTree(immutableTree *iavl.ImmutableTree) {
 }
 
 func (wl *WaitList) Export(state *types.AppState) {
-	wl.immutableTree().Iterate(func(key []byte, value []byte) bool {
-		if key[0] == mainPrefix {
-			address := types.BytesToAddress(key[1:])
+	wl.immutableTree().IterateRange([]byte{mainPrefix}, []byte{mainPrefix + 1}, true, func(key []byte, value []byte) bool {
+		address := types.BytesToAddress(key[1:])
 
-			model := wl.GetByAddress(address)
-			if model != nil && len(model.List) != 0 {
-				for _, w := range model.List {
-					state.Waitlist = append(state.Waitlist, types.Waitlist{
-						CandidateID: uint64(w.CandidateId),
-						Owner:       address,
-						Coin:        uint64(w.Coin),
-						Value:       w.Value.String(),
-					})
-				}
+		model := wl.GetByAddress(address)
+		if model != nil && len(model.List) != 0 {
+			for _, w := range model.List {
+				state.Waitlist = append(state.Waitlist, types.Waitlist{
+					CandidateID: uint64(w.CandidateId),
+					Owner:       address,
+					Coin:        uint64(w.Coin),
+					Value:       w.Value.String(),
+				})
 			}
 		}
 

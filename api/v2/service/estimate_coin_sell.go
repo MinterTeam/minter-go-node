@@ -221,7 +221,7 @@ func (s *Service) commissionInCoin(cState *state.CheckState, coinCommissionID ty
 		commission = cState.Swap().GetSwapper(types.GetBaseCoinID(), commissionsCoin).CalculateSellForBuy(commissionInBaseCoin)
 	default:
 		if !commissionsCoin.IsBaseCoin() {
-			commissionInBaseCoin = cState.Swap().GetSwapper(types.GetBaseCoinID(), commissionsCoin).CalculateSellForBuy(commissionInBaseCoin)
+			commissionInBaseCoin = cState.Swap().GetSwapper(coinCommissionID, types.GetBaseCoinID()).CalculateBuyForSell(commissionInBaseCoin)
 		}
 		commissionPoolSwapper := cState.Swap().GetSwapper(coinCommissionID, types.GetBaseCoinID())
 
