@@ -90,7 +90,7 @@ func export(cmd *cobra.Command, args []string) error {
 		log.Panicf("Cannot marshal state to json: %s", err)
 	}
 
-	appHash := [32]byte{}
+	// appHash := [32]byte{}
 
 	// compose genesis
 	genesis := types.GenesisDoc{
@@ -113,7 +113,7 @@ func export(cmd *cobra.Command, args []string) error {
 				},
 			},
 		},
-		AppHash:  appHash[:],
+		AppHash:  nil,
 		AppState: json.RawMessage(jsonBytes),
 	}
 
