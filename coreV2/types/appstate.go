@@ -296,10 +296,7 @@ type Waitlist struct {
 	Coin        uint64  `json:"coin"`
 	Value       string  `json:"value"`
 }
-type BalanceProvider struct {
-	Address   Address `json:"address"`
-	Liquidity string  `json:"liquidity"`
-}
+
 type Swap struct {
 	Coin0    uint64 `json:"coin0"`
 	Coin1    uint64 `json:"coin1"`
@@ -323,13 +320,13 @@ type Coin struct {
 }
 
 type FrozenFund struct {
-	Height            uint64  `json:"height"`
-	Address           Address `json:"address"`
-	CandidateKey      *Pubkey `json:"candidate_key,omitempty"`
-	CandidateID       uint64  `json:"candidate_id"`
-	Coin              uint64  `json:"coin"`
-	Value             string  `json:"value"`
-	MoveToCandidateID *uint64 `json:"move_to_candidate_id,omitempty"`
+	Height       uint64  `json:"height"`
+	Address      Address `json:"address"`
+	CandidateKey *Pubkey `json:"candidate_key,omitempty"` // todo: mb delete
+	CandidateID  uint64  `json:"candidate_id"`
+	Coin         uint64  `json:"coin"`
+	Value        string  `json:"value"`
+	// MoveToCandidateID *uint64 `json:"move_to_candidate_id,omitempty"`
 }
 
 type UsedCheck string
