@@ -73,16 +73,18 @@ func export(cmd *cobra.Command, args []string) error {
 		log.Panicf("Cannot new state at given height: %s", err)
 	}
 
-	exportTimeStart, newState := time.Now(), currentState.ExportV1toV2(bipRate)
+	exportTimeStart, appState := time.Now(), currentState.ExportV1toV2(bipRate)
 	fmt.Printf("State has been exported. Took %s", time.Since(exportTimeStart))
 
-	initialHeight := height
+	if err := appState.Verify(); err != nil {
+		log.Panicf("Failed to validate: %s", err)
+	}
 
 	var jsonBytes []byte
 	if indent {
-		jsonBytes, err = amino.NewCodec().MarshalJSONIndent(newState, "", "	")
+		jsonBytes, err = amino.NewCodec().MarshalJSONIndent(appState, "", "	")
 	} else {
-		jsonBytes, err = amino.NewCodec().MarshalJSON(newState)
+		jsonBytes, err = amino.NewCodec().MarshalJSON(appState)
 	}
 	if err != nil {
 		log.Panicf("Cannot marshal state to json: %s", err)
@@ -93,7 +95,7 @@ func export(cmd *cobra.Command, args []string) error {
 	// compose genesis
 	genesis := types.GenesisDoc{
 		GenesisTime:   time.Unix(0, 0).Add(genesisTime),
-		InitialHeight: int64(initialHeight),
+		InitialHeight: int64(height),
 		ChainID:       chainID,
 		ConsensusParams: &tmproto.ConsensusParams{
 			Block: tmproto.BlockParams{

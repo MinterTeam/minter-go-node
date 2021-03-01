@@ -75,7 +75,7 @@ func (cs *CheckState) ExportV1toV2(bipRate float64) types.AppState {
 	subValues := cs.Accounts().ExportV1(appState, poolBipValue)
 	usdcCoinID := cs.Coins().ExportV1(appState, subValues)
 	poolTokenVolume := cs.Swap().ExportV1(appState, usdcCoinID, poolUSDCValue, poolBipValue)
-	cs.Commission().ExportV1(appState, usdcCoinID) // todo: correct default data
+	cs.Commission().ExportV1(appState, usdcCoinID)
 
 	lpUSDC := uint64(usdcCoinID) + 1
 	appState.Coins = append(appState.Coins, types.Coin{
