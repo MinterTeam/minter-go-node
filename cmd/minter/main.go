@@ -38,7 +38,7 @@ func main() {
 	rootCmd.PersistentFlags().String("genesis", "https://github.com/MinterTeam/minter-go-node/releases/download/v1.2.0/genesis.json", "path with the genesis file to download")
 
 	cmd.ExportCommand.Flags().Uint64("height", 0, "export height")
-	// cmd.ExportCommand.Flags().Uint64("start-height", 0, "height for starting a new chain")
+	cmd.ExportCommand.Flags().Float64("bip-price", 0, "bip price in usd")
 	cmd.ExportCommand.Flags().Bool("indent", false, "using indent")
 	cmd.ExportCommand.Flags().String("chain-id", "", "export chain id")
 	cmd.ExportCommand.Flags().Duration("genesis-time", 0, "export height")

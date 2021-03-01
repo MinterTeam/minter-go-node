@@ -13,6 +13,10 @@ import (
 	"sync"
 )
 
+func MaxCoinSupply() *big.Int {
+	return big.NewInt(0).Exp(big.NewInt(10), big.NewInt(15+18), nil)
+}
+
 // Deprecated
 type modelV1 struct {
 	CName      string
@@ -104,15 +108,15 @@ func (c *Coins) ExportV1(state *types.AppState, subValues map[types.CoinID]*big.
 
 	id := state.Coins[len(state.Coins)-1].ID + 1
 
-	bridge := types.StringToAddress("Mx0000000000000000000000000000000000000000") // todo
+	bridge := types.StringToAddress("Mxffffffffffffffffffffffffffffffffffffffff")
 	state.Coins = append(state.Coins, types.Coin{
 		ID:           id,
-		Name:         "USDC", // todo
-		Symbol:       types.StrToCoinSymbol("USDC"),
-		Volume:       "100000000000000", // todo
+		Name:         "USDC",
+		Symbol:       types.StrToCoinSymbol("MUSDC"),
+		Volume:       helpers.BipToPip(big.NewInt(1000000000)).String(),
 		Crr:          0,
 		Reserve:      "0",
-		MaxSupply:    "100000000000000000000000000000", // todo
+		MaxSupply:    MaxCoinSupply().String(),
 		Version:      0,
 		OwnerAddress: &bridge,
 		Mintable:     true,
