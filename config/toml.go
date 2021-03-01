@@ -66,9 +66,6 @@ const defaultConfigTemplate string = `# This is a TOML config file.
 # A custom human readable name for this node
 moniker = "{{ .BaseConfig.Moniker }}"
 
-# Address to listen for API connections
-api_listen_addr = "{{ .BaseConfig.APIListenAddress }}"
-
 # Address to listen for gRPC connections
 grpc_listen_addr = "{{ .BaseConfig.GRPCListenAddress }}"
 

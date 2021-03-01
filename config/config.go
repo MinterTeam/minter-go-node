@@ -231,9 +231,6 @@ type BaseConfig struct {
 	// Database directory
 	DBPath string `mapstructure:"db_dir"`
 
-	// Address to listen for API connections
-	APIListenAddress string `mapstructure:"api_listen_addr"`
-
 	// Address to listen for gRPC connections
 	GRPCListenAddress string `mapstructure:"grpc_listen_addr"`
 
@@ -275,11 +272,10 @@ func DefaultBaseConfig() BaseConfig {
 		FilterPeers:             false,
 		DBBackend:               "goleveldb",
 		DBPath:                  "data",
-		APIListenAddress:        "tcp://0.0.0.0:8841",
 		GRPCListenAddress:       "tcp://0.0.0.0:8842",
 		APIv2ListenAddress:      "tcp://0.0.0.0:8843",
 		APIv2TimeoutDuration:    10 * time.Second,
-		WSConnectionDuration:    15 * time.Second,
+		WSConnectionDuration:    time.Minute,
 		ValidatorMode:           false,
 		KeepLastStates:          120,
 		StateCacheSize:          1000000,
