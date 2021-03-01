@@ -106,7 +106,7 @@ func TestPriceCommissionTx(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 		if response.Code != 0 {
 			t.Fatalf("Response code is not 0. Error: %s", response.Log)
 		}
@@ -189,7 +189,7 @@ func TestPriceCommissionTx(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 		if response.Code != code.VoiceAlreadyExists {
 			t.Fatalf("Response code is not %d. Error: %s", code.VoiceAlreadyExists, response.Log)
 		}
@@ -292,7 +292,7 @@ func TestPriceCommissionDeleteTx(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 		if response.Code != 0 {
 			t.Fatalf("Response code is not 0. Error: %s", response.Log)
 		}
@@ -378,7 +378,7 @@ func TestPriceCommissionDeleteTx(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 		if response.Code != code.OK {
 			t.Fatalf("Response code is not 0. Error: %s", response.Log)
 		}
@@ -484,7 +484,7 @@ func TestPriceCommissionAnyTx(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 		if response.Code != 0 {
 			t.Fatalf("Response code is not 0. Error: %s", response.Log)
 		}
@@ -586,7 +586,7 @@ func TestPriceCommissionAnyTx(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 		if response.Code != code.OK {
 			t.Fatalf("Response code is not 0. Error: %s", response.Log)
 		}
@@ -654,7 +654,7 @@ func TestCustomCommissionPriceCoin_sendTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error: %s", response.Log)
 	}
@@ -739,7 +739,7 @@ func TestCustomCommissionPriceCoinAndGasCastomCoin_sendTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error: %s", response.Log)
 	}

@@ -34,7 +34,7 @@ type Response struct {
 }
 
 // RunTx executes transaction in given context
-func RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBlock uint64, currentMempool *sync.Map, minGasPrice uint32) Response {
+func RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBlock uint64, currentMempool *sync.Map, minGasPrice uint32, notSaveTags bool) Response {
 	lenRawTx := len(rawTx)
 	if lenRawTx > maxTxLength {
 		return Response{
@@ -205,14 +205,19 @@ func RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBl
 
 	response.GasPrice = tx.GasPrice
 	gas := tx.Gas()
-	response.Tags = append(response.Tags,
-		coinCommission,
-		priceCommission,
-		abcTypes.EventAttribute{Key: []byte("tx.gas"), Value: []byte(strconv.Itoa(int(gas)))},
-		abcTypes.EventAttribute{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:])), Index: true},
-		abcTypes.EventAttribute{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(tx.decodedData.TxType())})), Index: true},
-		abcTypes.EventAttribute{Key: []byte("tx.commission_coin"), Value: []byte(tx.GasCoin.String()), Index: true},
-	)
+
+	if !notSaveTags {
+		response.Tags = append(response.Tags,
+			coinCommission,
+			priceCommission,
+			abcTypes.EventAttribute{Key: []byte("tx.gas"), Value: []byte(strconv.Itoa(int(gas)))},
+			abcTypes.EventAttribute{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:])), Index: true},
+			abcTypes.EventAttribute{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(tx.decodedData.TxType())})), Index: true},
+			abcTypes.EventAttribute{Key: []byte("tx.commission_coin"), Value: []byte(tx.GasCoin.String()), Index: true},
+		)
+	} else {
+		response.Tags = nil
+	}
 	response.GasUsed = gas
 	response.GasWanted = gas
 

@@ -73,7 +73,7 @@ func TestAddExchangeLiquidityTx_initialLiquidity(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 
 	if response.Code != 0 {
 		t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
@@ -135,7 +135,7 @@ func TestAddExchangeLiquidityTx_initialLiquidity_1(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 
 	if response.Code != 0 {
 		t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
@@ -203,7 +203,7 @@ func TestAddExchangeLiquidityTx_addLiquidity(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
@@ -243,7 +243,7 @@ func TestAddExchangeLiquidityTx_addLiquidity(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
@@ -311,7 +311,7 @@ func TestAddExchangeLiquidityTx_addLiquidity_1(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
@@ -354,7 +354,7 @@ func TestAddExchangeLiquidityTx_addLiquidity_1(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
@@ -422,7 +422,7 @@ func TestAddExchangeLiquidityTx_addLiquidity_2(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
@@ -465,7 +465,7 @@ func TestAddExchangeLiquidityTx_addLiquidity_2(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)

@@ -57,7 +57,7 @@ func TestCommissionFromMin(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
@@ -100,7 +100,7 @@ func TestCommissionFromMin(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
@@ -159,7 +159,7 @@ func TestCommissionFromPool(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
@@ -202,7 +202,7 @@ func TestCommissionFromPool(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0)
+		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
