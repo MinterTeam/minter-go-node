@@ -82,13 +82,10 @@ func (data RemoveLiquidity) Run(tx *Transaction, context state.Interface, reward
 	coinLiquidity := checkState.Coins().GetCoinBySymbol(LiquidityCoinSymbol(swapper.CoinID()), 0)
 	balance := checkState.Accounts().GetBalance(sender, coinLiquidity.ID())
 	if balance.Cmp(data.Liquidity) == -1 {
-		amount0, amount1 := swapper.Amounts(balance, coinLiquidity.Volume())
-		symbol1 := checkState.Coins().GetCoin(data.Coin1).GetFullSymbol()
-		symbol0 := checkState.Coins().GetCoin(data.Coin0).GetFullSymbol()
 		return Response{
-			Code: code.InsufficientLiquidityBalance,
-			Log:  fmt.Sprintf("Insufficient balance for provider: %s liquidity tokens is equal %s %s and %s %s, but you want to get %s liquidity", balance, amount0, symbol0, amount1, symbol1, data.Liquidity),
-			Info: EncodeError(code.NewInsufficientLiquidityBalance(balance.String(), amount0.String(), data.Coin0.String(), amount1.String(), data.Coin1.String(), data.Liquidity.String())),
+			Code: code.InsufficientFunds,
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), coinLiquidity.GetFullSymbol(), data.Liquidity),
+			Info: EncodeError(code.NewInsufficientFunds(sender.String(), data.Liquidity.String(), coinLiquidity.GetFullSymbol(), coinLiquidity.ID().String())),
 		}
 	}
 
