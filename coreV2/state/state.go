@@ -283,7 +283,7 @@ func (s *State) Commit() ([]byte, error) {
 	return hash, nil
 }
 
-func (s *State) Import(state types.AppState, initialHeight uint64) error {
+func (s *State) Import(state types.AppState) error {
 	s.App.SetMaxGas(state.MaxGas)
 	totalSlash := helpers.StringToBigInt(state.TotalSlashed)
 	s.App.SetTotalSlashed(totalSlash)
@@ -304,17 +304,19 @@ func (s *State) Import(state types.AppState, initialHeight uint64) error {
 			balance := helpers.StringToBigInt(b.Value)
 			coinID := types.CoinID(b.Coin)
 			s.Accounts.SetBalance(a.Address, coinID, balance)
-			s.Checker.AddCoin(coinID, new(big.Int).Neg(balance))
 		}
 	}
 
 	for _, c := range state.Coins {
 		coinID := types.CoinID(c.ID)
 		volume := helpers.StringToBigInt(c.Volume)
-		reserve := helpers.StringToBigInt(c.Reserve)
-		s.Coins.Create(coinID, c.Symbol, c.Name, volume, uint32(c.Crr), reserve, helpers.StringToBigInt(c.MaxSupply), c.OwnerAddress)
-		s.Checker.AddCoin(types.GetBaseCoinID(), new(big.Int).Neg(reserve))
-		s.Checker.AddCoinVolume(coinID, new(big.Int).Neg(volume))
+		maxSupply := helpers.StringToBigInt(c.MaxSupply)
+		if c.Crr == 0 {
+			s.Coins.CreateToken(coinID, c.Symbol, c.Name, c.Mintable, c.Burnable, volume, maxSupply, c.OwnerAddress)
+		} else {
+			reserve := helpers.StringToBigInt(c.Reserve)
+			s.Coins.Create(coinID, c.Symbol, c.Name, volume, uint32(c.Crr), reserve, maxSupply, c.OwnerAddress)
+		}
 	}
 
 	var vals []*validators.Validator
@@ -350,7 +352,6 @@ func (s *State) Import(state types.AppState, initialHeight uint64) error {
 		value := helpers.StringToBigInt(w.Value)
 		coinID := types.CoinID(w.Coin)
 		s.Waitlist.AddWaitList(w.Owner, s.Candidates.PubKey(uint32(w.CandidateID)), coinID, value)
-		s.Checker.AddCoin(coinID, new(big.Int).Neg(value))
 	}
 
 	for _, hashString := range state.UsedChecks {
@@ -364,10 +365,11 @@ func (s *State) Import(state types.AppState, initialHeight uint64) error {
 		coinID := types.CoinID(ff.Coin)
 		value := helpers.StringToBigInt(ff.Value)
 		s.FrozenFunds.AddFund(ff.Height, ff.Address, *ff.CandidateKey, uint32(ff.CandidateID), coinID, value, nil)
-		s.Checker.AddCoin(coinID, new(big.Int).Neg(value))
 	}
 
 	s.Swap.Import(&state)
+
+	s.Checker.RemoveBaseCoin()
 
 	return nil
 }

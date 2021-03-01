@@ -53,11 +53,20 @@ func (c *Checker) AddCoinVolume(coin types.CoinID, value *big.Int) {
 	cValue.Add(cValue, value)
 }
 
+// Reset resets checker coin data
 func (c *Checker) Reset() {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	c.delta = map[types.CoinID]*big.Int{}
 	c.volumeDelta = map[types.CoinID]*big.Int{}
+}
+
+// RemoveBaseCoin clears data for base coin for import genesis
+func (c *Checker) RemoveBaseCoin() {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	delete(c.delta, types.GetBaseCoinID())
 }
 
 func (c *Checker) deltas() map[types.CoinID]*big.Int {

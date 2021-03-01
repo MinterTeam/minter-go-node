@@ -119,10 +119,16 @@ func (s *Swap) Export(state *types.AppState) {
 
 func (s *Swap) Import(state *types.AppState) {
 	for _, swap := range state.Swap {
-		pair := s.ReturnPair(types.CoinID(swap.Coin0), types.CoinID(swap.Coin1))
-		pair.Reserve0.Set(helpers.StringToBigInt(swap.Reserve0))
-		pair.Reserve1.Set(helpers.StringToBigInt(swap.Reserve1))
+		coin0 := types.CoinID(swap.Coin0)
+		coin1 := types.CoinID(swap.Coin1)
+		reserve0 := helpers.StringToBigInt(swap.Reserve0)
+		reserve1 := helpers.StringToBigInt(swap.Reserve1)
+		pair := s.ReturnPair(coin0, coin1)
 		*pair.ID = uint32(swap.ID)
+		pair.Reserve0.Set(reserve0)
+		pair.Reserve1.Set(reserve1)
+		s.bus.Checker().AddCoin(coin0, reserve0)
+		s.bus.Checker().AddCoin(coin1, reserve1)
 		pair.markDirty()
 	}
 }

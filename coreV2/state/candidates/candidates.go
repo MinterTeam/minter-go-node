@@ -898,12 +898,15 @@ func (c *Candidates) SetStakes(pubkey types.Pubkey, stakes []types.Stake, update
 	candidate.stakesCount = len(stakes)
 
 	for _, u := range updates {
+		coin := types.CoinID(u.Coin)
+		value := helpers.StringToBigInt(u.Value)
 		candidate.addUpdate(&stake{
 			Owner:    u.Owner,
-			Coin:     types.CoinID(u.Coin),
-			Value:    helpers.StringToBigInt(u.Value),
+			Coin:     coin,
+			Value:    value,
 			BipValue: helpers.StringToBigInt(u.BipValue),
 		})
+		c.bus.Checker().AddCoin(coin, value)
 	}
 
 	count := len(stakes)
@@ -911,27 +914,32 @@ func (c *Candidates) SetStakes(pubkey types.Pubkey, stakes []types.Stake, update
 		count = MaxDelegatorsPerCandidate
 
 		for _, u := range stakes[1000:] {
+			coin := types.CoinID(u.Coin)
+			value := helpers.StringToBigInt(u.Value)
 			candidate.addUpdate(&stake{
 				Owner:    u.Owner,
-				Coin:     types.CoinID(u.Coin),
-				Value:    helpers.StringToBigInt(u.Value),
+				Coin:     coin,
+				Value:    value,
 				BipValue: helpers.StringToBigInt(u.BipValue),
 			})
+			c.bus.Checker().AddCoin(coin, value)
 		}
 	}
 
 	for i, s := range stakes[:count] {
+		coin := types.CoinID(s.Coin)
+		value := helpers.StringToBigInt(s.Value)
 		candidate.stakes[i] = &stake{
 			Owner:    s.Owner,
-			Coin:     types.CoinID(s.Coin),
-			Value:    helpers.StringToBigInt(s.Value),
+			Coin:     coin,
+			Value:    value,
 			BipValue: helpers.StringToBigInt(s.BipValue),
 			markDirty: func(index int) {
 				candidate.dirtyStakes[index] = true
 			},
 			index: i,
 		}
-
+		c.bus.Checker().AddCoin(coin, value)
 		candidate.stakes[i].markDirty(i)
 	}
 }
