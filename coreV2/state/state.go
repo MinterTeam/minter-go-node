@@ -23,6 +23,7 @@ import (
 	db "github.com/tendermint/tm-db"
 	"log"
 	"math/big"
+	"strconv"
 	"sync"
 )
 
@@ -81,7 +82,7 @@ func (cs *CheckState) ExportV1toV2(bipRate float64) types.AppState {
 	appState.Coins = append(appState.Coins, types.Coin{
 		ID:           lpUSDC,
 		Name:         "Liquidity Pool 0:" + usdcCoinID.String(),
-		Symbol:       types.StrToCoinSymbol("PL-" + usdcCoinID.String()),
+		Symbol:       types.StrToCoinSymbol("PL-" + strconv.Itoa(int(lpUSDC))),
 		Volume:       poolTokenVolume.String(),
 		Crr:          0,
 		Reserve:      "0",
