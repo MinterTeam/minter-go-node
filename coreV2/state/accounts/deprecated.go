@@ -20,22 +20,22 @@ func (a *Accounts) ExportV1(state *types.AppState, subBipValueFromDAO *big.Int) 
 		address := types.BytesToAddress(addressPath)
 		account := a.get(address)
 
-		smallValue := true
 		subCoinValue := map[types.CoinID]*big.Int{}
 		var balance []types.Balance
 		for _, b := range a.GetBalancesV1(account.address) {
-			if b.Value.Sign() != 1 {
-				continue
-			}
-
-			if !(smallValue && b.Value.Cmp(big.NewInt(10000000)) == -1) {
-				sub, has := subCoinValue[b.Coin.ID]
-				if !has {
-					sub = big.NewInt(0)
-					subCoinValue[b.Coin.ID] = sub
+			if b.Value.Cmp(big.NewInt(10000000)) == -1 {
+				if b.Value.Sign() == 0 {
+					continue
 				}
-				sub.Add(sub, b.Value)
-				smallValue = false
+				if account.Nonce == 0 && !account.IsMultisig() {
+					sub, has := subCoinValue[b.Coin.ID]
+					if !has {
+						sub = big.NewInt(0)
+						subCoinValue[b.Coin.ID] = sub
+					}
+					sub.Add(sub, b.Value)
+					continue
+				}
 			}
 
 			value := b.Value
@@ -72,7 +72,7 @@ func (a *Accounts) ExportV1(state *types.AppState, subBipValueFromDAO *big.Int) 
 			}
 		}
 
-		if smallValue && acc.Nonce == 0 && acc.MultisigData == nil {
+		if acc.Nonce == 0 && acc.MultisigData == nil {
 			for id, sub := range subCoinValue {
 				totalSub, has := totalSubCoinValue[id]
 				if !has {
@@ -81,9 +81,11 @@ func (a *Accounts) ExportV1(state *types.AppState, subBipValueFromDAO *big.Int) 
 				}
 				totalSub.Add(totalSub, sub)
 			}
-			return false
-		}
 
+			if len(acc.Balance) == 0 {
+				return false
+			}
+		}
 		state.Accounts = append(state.Accounts, acc)
 
 		return false

@@ -71,18 +71,18 @@ func (c *Coins) ExportV1(state *types.AppState, subValues map[types.CoinID]*big.
 		volume := coin.Volume()
 		reserve := coin.Reserve()
 
-		// if coinID != types.GetBaseCoinID() {
 		subValue, has := subValues[coinID]
 		if has {
-			subReserve := formula.CalculateSaleReturn(volume, reserve, coin.CCrr, subValue)
-			reserve.Sub(reserve, subReserve)
+			if coinID != types.GetBaseCoinID() {
+				subReserve := formula.CalculateSaleReturn(volume, reserve, coin.CCrr, subValue)
+				reserve.Sub(reserve, subReserve)
+			}
 			volume.Sub(volume, subValue)
 		}
-		// }
 
 		symbol := coin.Symbol()
 		strSymbol := symbol.String()
-		if _, err := strconv.Atoi(strSymbol); err == nil {
+		if _, err := strconv.Atoi(strSymbol); err == nil || coinID != 0 && strSymbol == types.GetBaseCoin().String() {
 			symbol = types.StrToCoinSymbol("A" + strSymbol)
 		}
 		state.Coins = append(state.Coins, types.Coin{
@@ -106,11 +106,11 @@ func (c *Coins) ExportV1(state *types.AppState, subValues map[types.CoinID]*big.
 		return state.Coins[i].ID < state.Coins[j].ID
 	})
 
-	id := state.Coins[len(state.Coins)-1].ID + 1
+	usdcID := state.Coins[len(state.Coins)-1].ID + 1
 
 	bridge := types.HexToAddress("Mxffffffffffffffffffffffffffffffffffffffff")
 	state.Coins = append(state.Coins, types.Coin{
-		ID:           id,
+		ID:           usdcID,
 		Name:         "USDC",
 		Symbol:       types.StrToCoinSymbol("MUSDC"),
 		Volume:       helpers.BipToPip(big.NewInt(1000000000)).String(),
@@ -123,7 +123,7 @@ func (c *Coins) ExportV1(state *types.AppState, subValues map[types.CoinID]*big.
 		Burnable:     true,
 	})
 
-	return types.CoinID(id)
+	return types.CoinID(usdcID)
 }
 
 // Deprecated
