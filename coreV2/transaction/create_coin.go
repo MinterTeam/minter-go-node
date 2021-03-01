@@ -25,6 +25,10 @@ var (
 	allowedCoinSymbolsRegexpCompile, _ = regexp.Compile(allowedCoinSymbols)
 )
 
+func MaxCoinSupply() *big.Int {
+	return maxCoinSupply
+}
+
 func checkAllowSymbol(symbol string) bool {
 	if match := allowedCoinSymbolsRegexpCompile.MatchString(symbol); !match {
 		return false

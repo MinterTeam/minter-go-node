@@ -30,7 +30,7 @@ func (data AddLiquidityData) basicCheck(tx *Transaction, context *state.CheckSta
 	if data.Coin1 == data.Coin0 {
 		return &Response{
 			Code: code.CrossConvert,
-			Log:  "\"From\" coin equals to \"to\" coin",
+			Log:  "First coin equals to second coin",
 			Info: EncodeError(code.NewCrossConvert(
 				data.Coin0.String(),
 				data.Coin1.String(), "", "")),

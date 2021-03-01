@@ -38,7 +38,7 @@ type EditableChecker interface {
 
 type RSwap interface {
 	// Deprecated
-	ExportV1(state *types.AppState, id types.CoinID)
+	ExportV1(state *types.AppState, id types.CoinID) *big.Int
 
 	Export(state *types.AppState)
 	SwapPool(coin0, coin1 types.CoinID) (reserve0, reserve1 *big.Int, id uint32)
@@ -72,14 +72,17 @@ func (s *Swap) immutableTree() *iavl.ImmutableTree {
 }
 
 // Deprecated
-func (s *Swap) ExportV1(state *types.AppState, id types.CoinID) {
+func (s *Swap) ExportV1(state *types.AppState, id types.CoinID) *big.Int {
+	bipAmount := helpers.BipToPip(big.NewInt(100000000)) // todo
+	usdAmount := helpers.BipToPip(big.NewInt(1000000))
 	state.Swap = append(state.Swap, types.Swap{
 		Coin0:    0,
 		Coin1:    uint64(id),
-		Reserve0: "100000", // todo
-		Reserve1: "100000",
+		Reserve0: bipAmount.String(),
+		Reserve1: usdAmount.String(),
 		ID:       1,
 	})
+	return startingSupply(bipAmount, usdAmount)
 }
 
 func (s *Swap) Export(state *types.AppState) {

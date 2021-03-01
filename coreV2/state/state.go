@@ -16,6 +16,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/coreV2/state/swap"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/validators"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/waitlist"
+	"github.com/MinterTeam/minter-go-node/coreV2/transaction"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/tree"
@@ -66,9 +67,26 @@ func (cs *CheckState) ExportV1toV2() types.AppState {
 	cs.FrozenFunds().Export(appState, uint64(cs.state.height))
 
 	subValues := cs.Accounts().ExportV1(appState)
-	id := cs.Coins().ExportV1(appState, subValues) // todo: correct default data
-	cs.Commission().ExportV1(appState, id)         // todo: correct default data
-	cs.Swap().ExportV1(appState, id)               // todo: correct default data
+	commissionCoinID := cs.Coins().ExportV1(appState, subValues)      // todo: correct default data
+	poolTokenVolume := cs.Swap().ExportV1(appState, commissionCoinID) // todo: correct default data
+	cs.Commission().ExportV1(appState, commissionCoinID)              // todo: correct default data
+
+	appState.Coins = append(appState.Coins, types.Coin{
+		ID:           uint64(commissionCoinID) + 1,
+		Name:         "Liquidity Pool 0:" + commissionCoinID.String(),
+		Symbol:       types.StrToCoinSymbol("PL-" + commissionCoinID.String()),
+		Volume:       poolTokenVolume.String(),
+		Crr:          0,
+		Reserve:      "0",
+		MaxSupply:    transaction.MaxCoinSupply().String(),
+		Version:      0,
+		OwnerAddress: nil,
+		Mintable:     true,
+		Burnable:     true,
+	})
+
+	// todo: add PL-1 to balance creator and Mx0000
+	// todo: sub usd and bip from creator PL-1
 
 	cs.Checks().Export(appState) // todo: refactor store
 	cs.Halts().Export(appState)

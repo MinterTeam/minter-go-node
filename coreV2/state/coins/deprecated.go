@@ -67,12 +67,14 @@ func (c *Coins) ExportV1(state *types.AppState, subValues map[types.CoinID]*big.
 		volume := coin.Volume()
 		reserve := coin.Reserve()
 
+		// if coinID != types.GetBaseCoinID() {
 		subValue, has := subValues[coinID]
 		if has {
 			subReserve := formula.CalculateSaleReturn(volume, reserve, coin.CCrr, subValue)
 			reserve.Sub(reserve, subReserve)
 			volume.Sub(volume, subValue)
 		}
+		// }
 
 		symbol := coin.Symbol()
 		strSymbol := symbol.String()

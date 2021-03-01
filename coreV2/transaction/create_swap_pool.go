@@ -165,7 +165,7 @@ func (data CreateSwapPoolData) Run(tx *Transaction, context state.Interface, rew
 		coinID := checkState.App().GetNextCoinID()
 
 		liquidityCoinSymbol := LiquidityCoinSymbol(id)
-		deliverState.Coins.CreateToken(coinID, liquidityCoinSymbol, "Swap Pool "+coins, true, true, big.NewInt(0).Set(liquidity), maxCoinSupply, nil)
+		deliverState.Coins.CreateToken(coinID, liquidityCoinSymbol, "Liquidity Pool "+coins, true, true, big.NewInt(0).Set(liquidity), maxCoinSupply, nil)
 		deliverState.Accounts.AddBalance(sender, coinID, liquidity.Sub(liquidity, swap.Bound))
 		deliverState.Accounts.AddBalance(types.Address{}, coinID, swap.Bound)
 
