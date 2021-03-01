@@ -6,11 +6,11 @@ services:
     volumes:
       - minter_data:/minter/.minter
     ports:
-      - "8841:8841"
+      - "8843:8843"
       - "127.0.0.1:3000:3000"
     restart: always
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8841/api/status" ]
+      test: [ "CMD", "curl", "-f", "http://localhost:8843/api/v2/status" ]
       interval: 5s
       timeout: 5s
       retries: 3
