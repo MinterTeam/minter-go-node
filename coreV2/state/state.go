@@ -93,11 +93,11 @@ func (cs *CheckState) ExportV1toV2(bipRate float64) types.AppState {
 	})
 
 	appState.Accounts = append(appState.Accounts, types.Account{
-		Address: types.Address{},
+		Address: types.HexToAddress("MxFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"),
 		Balance: []types.Balance{
 			{
 				Coin:  uint64(usdcCoinID),
-				Value: big.NewInt(0).Sub(helpers.BipToPip(totalUSDCValue), poolUSDCValue).String(),
+				Value: big.NewInt(0).Sub(totalUSDCValue, poolUSDCValue).String(),
 			},
 			{
 				Coin:  lpUSDC,
@@ -114,11 +114,23 @@ func (cs *CheckState) ExportV1toV2(bipRate float64) types.AppState {
 		},
 	})
 
-	appState.Accounts[0].Balance = append(appState.Accounts[0].Balance, types.Balance{
-		Coin:  lpUSDC,
-		Value: "1000",
-	})
-
+	if appState.Accounts[0].Address == [20]byte{} {
+		appState.Accounts[0].Balance = append(appState.Accounts[0].Balance, types.Balance{
+			Coin:  lpUSDC,
+			Value: "1000",
+		})
+	} else {
+		appState.Accounts = append(appState.Accounts, types.Account{
+			Address: types.Address{},
+			Balance: []types.Balance{
+				{
+					Coin:  lpUSDC,
+					Value: "1000"},
+			},
+			Nonce:        0,
+			MultisigData: nil,
+		})
+	}
 	return *appState
 }
 

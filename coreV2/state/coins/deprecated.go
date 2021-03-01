@@ -108,7 +108,7 @@ func (c *Coins) ExportV1(state *types.AppState, subValues map[types.CoinID]*big.
 
 	id := state.Coins[len(state.Coins)-1].ID + 1
 
-	bridge := types.StringToAddress("Mxffffffffffffffffffffffffffffffffffffffff")
+	bridge := types.HexToAddress("Mxffffffffffffffffffffffffffffffffffffffff")
 	state.Coins = append(state.Coins, types.Coin{
 		ID:           id,
 		Name:         "USDC",
