@@ -16,7 +16,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/coreV2/state/swap"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/validators"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/waitlist"
-	"github.com/MinterTeam/minter-go-node/coreV2/transaction"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/tree"
@@ -58,38 +57,67 @@ func (cs *CheckState) Export() types.AppState {
 	return *appState
 }
 
-func (cs *CheckState) ExportV1toV2() types.AppState {
+func (cs *CheckState) ExportV1toV2(bipRate float64) types.AppState {
 	appState := new(types.AppState)
 	cs.App().Export(appState)
 	cs.Validators().Export(appState)
 	cs.Candidates().ExportV1toV2(appState)
 	cs.WaitList().Export(appState)
 	cs.FrozenFunds().Export(appState, uint64(cs.state.height))
+	cs.Checks().Export(appState) // todo: mb refactor store
+	cs.Halts().Export(appState)
 
-	subValues := cs.Accounts().ExportV1(appState)
-	commissionCoinID := cs.Coins().ExportV1(appState, subValues)      // todo: correct default data
-	poolTokenVolume := cs.Swap().ExportV1(appState, commissionCoinID) // todo: correct default data
-	cs.Commission().ExportV1(appState, commissionCoinID)              // todo: correct default data
+	totalUSDCValue := helpers.BipToPip(big.NewInt(1000000000))
+	poolUSDCValue := helpers.BipToPip(big.NewInt(10000))
+	rate := big.NewFloat(bipRate)
+	poolBipValue, _ := big.NewFloat(0).Quo(big.NewFloat(0).SetInt(poolUSDCValue), rate).Int(nil)
 
+	subValues := cs.Accounts().ExportV1(appState, poolBipValue)
+	usdcCoinID := cs.Coins().ExportV1(appState, subValues)
+	poolTokenVolume := cs.Swap().ExportV1(appState, usdcCoinID, poolUSDCValue, poolBipValue)
+	cs.Commission().ExportV1(appState, usdcCoinID) // todo: correct default data
+
+	lpUSDC := uint64(usdcCoinID) + 1
 	appState.Coins = append(appState.Coins, types.Coin{
-		ID:           uint64(commissionCoinID) + 1,
-		Name:         "Liquidity Pool 0:" + commissionCoinID.String(),
-		Symbol:       types.StrToCoinSymbol("PL-" + commissionCoinID.String()),
+		ID:           lpUSDC,
+		Name:         "Liquidity Pool 0:" + usdcCoinID.String(),
+		Symbol:       types.StrToCoinSymbol("PL-" + usdcCoinID.String()),
 		Volume:       poolTokenVolume.String(),
 		Crr:          0,
 		Reserve:      "0",
-		MaxSupply:    transaction.MaxCoinSupply().String(),
+		MaxSupply:    coins.MaxCoinSupply().String(),
 		Version:      0,
 		OwnerAddress: nil,
 		Mintable:     true,
 		Burnable:     true,
 	})
 
-	// todo: add PL-1 to balance creator and Mx0000
-	// todo: sub usd and bip from creator PL-1
+	appState.Accounts = append(appState.Accounts, types.Account{
+		Address: types.Address{},
+		Balance: []types.Balance{
+			{
+				Coin:  uint64(usdcCoinID),
+				Value: big.NewInt(0).Sub(helpers.BipToPip(totalUSDCValue), poolUSDCValue).String(),
+			},
+			{
+				Coin:  lpUSDC,
+				Value: big.NewInt(0).Sub(poolTokenVolume, big.NewInt(1000)).String(),
+			},
+		},
+		Nonce: 0,
+		MultisigData: &types.Multisig{
+			Weights:   []uint64{1000},
+			Threshold: 667,
+			Addresses: []types.Address{
+				types.StringToAddress("Mx90b704f155b3cd7f998802ff2ce5c39cb2a9caac"),
+			},
+		},
+	})
 
-	cs.Checks().Export(appState) // todo: refactor store
-	cs.Halts().Export(appState)
+	appState.Accounts[0].Balance = append(appState.Accounts[0].Balance, types.Balance{
+		Coin:  lpUSDC,
+		Value: "1000",
+	})
 
 	return *appState
 }

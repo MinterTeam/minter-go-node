@@ -2,13 +2,14 @@ package accounts
 
 import (
 	"bytes"
+	"github.com/MinterTeam/minter-go-node/coreV2/dao"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"math/big"
 	"sort"
 )
 
 // Deprecated
-func (a *Accounts) ExportV1(state *types.AppState) map[types.CoinID]*big.Int {
+func (a *Accounts) ExportV1(state *types.AppState, subBipValueFromDAO *big.Int) map[types.CoinID]*big.Int {
 	totalSubCoinValue := map[types.CoinID]*big.Int{}
 	a.immutableTree().IterateRange([]byte{mainPrefix}, []byte{mainPrefix + 1}, true, func(key []byte, value []byte) bool {
 		addressPath := key[1:]
@@ -37,9 +38,14 @@ func (a *Accounts) ExportV1(state *types.AppState) map[types.CoinID]*big.Int {
 				smallValue = false
 			}
 
+			value := b.Value
+			if address == dao.Address && b.Coin.ID == types.GetBaseCoinID() {
+				value.Sub(value, subBipValueFromDAO)
+			}
+
 			balance = append(balance, types.Balance{
 				Coin:  uint64(b.Coin.ID),
-				Value: b.Value.String(),
+				Value: value.String(),
 			})
 		}
 

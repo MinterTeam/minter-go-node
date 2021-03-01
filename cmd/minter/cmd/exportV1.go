@@ -40,11 +40,11 @@ func export(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Panicf("Cannot parse height: %s", err)
 	}
-	//
-	// startHeight, err := cmd.Flags().GetUint64("start-height")
-	// if err != nil {
-	// 	log.Panicf("Cannot parse start-height: %s", err)
-	// }
+
+	bipRate, err := cmd.Flags().GetFloat64("bip-price")
+	if err != nil {
+		log.Panicf("Cannot parse bip-price: %s", err)
+	}
 
 	chainID, err := cmd.Flags().GetString("chain-id")
 	if err != nil {
@@ -73,7 +73,7 @@ func export(cmd *cobra.Command, args []string) error {
 		log.Panicf("Cannot new state at given height: %s", err)
 	}
 
-	exportTimeStart, newState := time.Now(), currentState.ExportV1toV2()
+	exportTimeStart, newState := time.Now(), currentState.ExportV1toV2(bipRate)
 	fmt.Printf("State has been exported. Took %s", time.Since(exportTimeStart))
 
 	initialHeight := height

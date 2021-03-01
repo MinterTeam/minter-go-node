@@ -43,7 +43,7 @@ func (data MintTokenData) basicCheck(tx *Transaction, context *state.CheckState)
 	if big.NewInt(0).Add(coin.Volume(), data.Value).Cmp(coin.MaxSupply()) == 1 {
 		return &Response{
 			Code: code.WrongCoinEmission,
-			Log:  fmt.Sprintf("Coin volume should be less than %s", coin.MaxSupply()),
+			Log:  fmt.Sprintf("Coin supply should not exceed the limit: %s", coin.MaxSupply()),
 			Info: EncodeError(code.NewWrongCoinEmission("", coin.MaxSupply().String(), coin.Volume().String(), data.Value.String(), "")),
 		}
 	}
