@@ -184,7 +184,7 @@ func (c *Commission) Export(state *types.AppState) {
 func (c *Commission) ExportV1(state *types.AppState, id types.CoinID) {
 	state.PriceCommission = types.PriceCommission{
 		Coin:                    uint64(id),
-		PayloadByte:             helpers.FloatBipToPip(0.001).String(),
+		PayloadByte:             helpers.FloatBipToPip(0.002).String(),
 		Send:                    helpers.FloatBipToPip(0.01).String(),
 		BuyBancor:               helpers.FloatBipToPip(0.03).String(),
 		SellBancor:              helpers.FloatBipToPip(0.03).String(),
@@ -224,8 +224,8 @@ func (c *Commission) ExportV1(state *types.AppState, id types.CoinID) {
 		EditCandidateCommission: helpers.FloatBipToPip(100).String(),
 		MintToken:               helpers.FloatBipToPip(0.01).String(),
 		BurnToken:               helpers.FloatBipToPip(0.01).String(),
-		VoteCommission:          helpers.FloatBipToPip(0.01).String(),
-		VoteUpdate:              helpers.FloatBipToPip(0.01).String(),
+		VoteCommission:          helpers.FloatBipToPip(1).String(),
+		VoteUpdate:              helpers.FloatBipToPip(1).String(),
 	}
 }
 
