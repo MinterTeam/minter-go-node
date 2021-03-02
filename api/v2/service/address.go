@@ -150,6 +150,10 @@ func customCoinBipBalance(valueToSell *big.Int, coinFrom *coins.Model) *big.Int 
 		return valueToSell
 	}
 
+	if coinFrom.IsToken() {
+		return big.NewInt(0)
+	}
+
 	return formula.CalculateSaleReturn(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), valueToSell)
 }
 
