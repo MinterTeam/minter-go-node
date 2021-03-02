@@ -7,6 +7,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/cosmos/iavl"
+	"math/big"
 	"sort"
 	"sync"
 	"sync/atomic"
@@ -193,7 +194,7 @@ func (c *Commission) ExportV1(state *types.AppState, id types.CoinID) {
 		SellPoolDelta:           helpers.FloatBipToPip(0.005).String(),
 		SellAllPoolBase:         helpers.FloatBipToPip(0.03).String(),
 		SellAllPoolDelta:        helpers.FloatBipToPip(0.005).String(),
-		CreateTicker3:           helpers.FloatBipToPip(100000).String(),
+		CreateTicker3:           helpers.BipToPip(big.NewInt(100000)).String(),
 		CreateTicker4:           helpers.FloatBipToPip(10000).String(),
 		CreateTicker5:           helpers.FloatBipToPip(1000).String(),
 		CreateTicker6:           helpers.FloatBipToPip(100).String(),
