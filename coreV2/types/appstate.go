@@ -8,21 +8,21 @@ import (
 )
 
 type AppState struct {
-	Note                string          `json:"note"`
-	Validators          []Validator     `json:"validators,omitempty"`
-	Candidates          []Candidate     `json:"candidates,omitempty"`
-	BlockListCandidates []Pubkey        `json:"block_list_candidates,omitempty"`
-	Waitlist            []Waitlist      `json:"waitlist,omitempty"`
-	Swap                []Swap          `json:"swap,omitempty"`
-	Accounts            []Account       `json:"accounts,omitempty"`
-	Coins               []Coin          `json:"coins,omitempty"`
-	FrozenFunds         []FrozenFund    `json:"frozen_funds,omitempty"`
-	HaltBlocks          []HaltBlock     `json:"halt_blocks,omitempty"`
-	PriceCommission     PriceCommission `json:"price_commission,omitempty"`
-	PriceVotes          []PriceVotes    `json:"price_votes,omitempty"`
-	UsedChecks          []UsedCheck     `json:"used_checks,omitempty"`
-	MaxGas              uint64          `json:"max_gas"`
-	TotalSlashed        string          `json:"total_slashed"`
+	Note                string           `json:"note"`
+	Validators          []Validator      `json:"validators,omitempty"`
+	Candidates          []Candidate      `json:"candidates,omitempty"`
+	BlockListCandidates []Pubkey         `json:"block_list_candidates,omitempty"`
+	Waitlist            []Waitlist       `json:"waitlist,omitempty"`
+	Pools               []Pool           `json:"pools,omitempty"`
+	Accounts            []Account        `json:"accounts,omitempty"`
+	Coins               []Coin           `json:"coins,omitempty"`
+	FrozenFunds         []FrozenFund     `json:"frozen_funds,omitempty"`
+	HaltBlocks          []HaltBlock      `json:"halt_blocks,omitempty"`
+	Commission          Commission       `json:"commission,omitempty"`
+	CommissionVotes     []CommissionVote `json:"commission_votes,omitempty"`
+	UsedChecks          []UsedCheck      `json:"used_checks,omitempty"`
+	MaxGas              uint64           `json:"max_gas"`
+	TotalSlashed        string           `json:"total_slashed"`
 }
 
 func (s *AppState) Verify() error {
@@ -156,7 +156,7 @@ func (s *AppState) Verify() error {
 			}
 		}
 
-		for _, swap := range s.Swap {
+		for _, swap := range s.Pools {
 			if swap.Coin0 == coin.ID {
 				volume.Add(volume, helpers.StringToBigInt(swap.Reserve0))
 			}
@@ -297,7 +297,7 @@ type Waitlist struct {
 	Value       string  `json:"value"`
 }
 
-type Swap struct {
+type Pool struct {
 	Coin0    uint64 `json:"coin0"`
 	Coin1    uint64 `json:"coin1"`
 	Reserve0 string `json:"reserve0"`
@@ -353,13 +353,13 @@ type HaltBlock struct {
 	Height       uint64 `json:"height"`
 	CandidateKey Pubkey `json:"candidate_key"`
 }
-type PriceVotes struct {
-	Height          uint64          `json:"height"`
-	CandidateKey    Pubkey          `json:"candidate_key"`
-	PriceCommission PriceCommission `json:"price_commission"`
+type CommissionVote struct {
+	Height     uint64     `json:"height"`
+	Votes      []Pubkey   `json:"votes"`
+	Commission Commission `json:"commission"`
 }
 
-type PriceCommission struct {
+type Commission struct {
 	Coin             uint64 `json:"coin"`
 	PayloadByte      string `json:"payload_byte"`
 	Send             string `json:"send"`

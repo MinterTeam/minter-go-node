@@ -73,7 +73,7 @@ func (s *Swap) immutableTree() *iavl.ImmutableTree {
 
 // Deprecated
 func (s *Swap) ExportV1(state *types.AppState, id types.CoinID, usdAmount *big.Int, bipAmount *big.Int) *big.Int {
-	state.Swap = append(state.Swap, types.Swap{
+	state.Pools = append(state.Pools, types.Pool{
 		Coin0:    0,
 		Coin1:    uint64(id),
 		Reserve0: bipAmount.String(),
@@ -102,23 +102,23 @@ func (s *Swap) Export(state *types.AppState) {
 			continue
 		}
 		reserve0, reserve1 := pair.Reserves()
-		swap := types.Swap{
+		swap := types.Pool{
 			Coin0:    uint64(key.Coin0),
 			Coin1:    uint64(key.Coin1),
 			Reserve0: reserve0.String(),
 			Reserve1: reserve1.String(),
 		}
 
-		state.Swap = append(state.Swap, swap)
+		state.Pools = append(state.Pools, swap)
 	}
 
-	sort.Slice(state.Swap, func(i, j int) bool {
-		return strconv.Itoa(int(state.Swap[i].Coin0))+"-"+strconv.Itoa(int(state.Swap[i].Coin1)) < strconv.Itoa(int(state.Swap[j].Coin0))+"-"+strconv.Itoa(int(state.Swap[j].Coin1))
+	sort.Slice(state.Pools, func(i, j int) bool {
+		return strconv.Itoa(int(state.Pools[i].Coin0))+"-"+strconv.Itoa(int(state.Pools[i].Coin1)) < strconv.Itoa(int(state.Pools[j].Coin0))+"-"+strconv.Itoa(int(state.Pools[j].Coin1))
 	})
 }
 
 func (s *Swap) Import(state *types.AppState) {
-	for _, swap := range state.Swap {
+	for _, swap := range state.Pools {
 		coin0 := types.CoinID(swap.Coin0)
 		coin1 := types.CoinID(swap.Coin1)
 		reserve0 := helpers.StringToBigInt(swap.Reserve0)

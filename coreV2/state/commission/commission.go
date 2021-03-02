@@ -76,64 +76,62 @@ func (c *Commission) Export(state *types.AppState) {
 
 		for _, price := range prices {
 			p := Decode(price.Price)
-			for _, vote := range price.Votes {
-				state.PriceVotes = append(state.PriceVotes, types.PriceVotes{
-					Height:       height,
-					CandidateKey: vote,
-					PriceCommission: types.PriceCommission{
-						Coin:                    uint64(p.Coin),
-						PayloadByte:             p.PayloadByte.String(),
-						Send:                    p.Send.String(),
-						BuyBancor:               p.BuyBancor.String(),
-						SellBancor:              p.SellBancor.String(),
-						SellAllBancor:           p.SellAllBancor.String(),
-						BuyPoolBase:             p.BuyPoolBase.String(),
-						BuyPoolDelta:            p.BuyPoolDelta.String(),
-						SellPoolBase:            p.SellPoolBase.String(),
-						SellPoolDelta:           p.SellPoolDelta.String(),
-						SellAllPoolBase:         p.SellAllPoolBase.String(),
-						SellAllPoolDelta:        p.SellAllPoolDelta.String(),
-						CreateTicker3:           p.CreateTicker3.String(),
-						CreateTicker4:           p.CreateTicker4.String(),
-						CreateTicker5:           p.CreateTicker5.String(),
-						CreateTicker6:           p.CreateTicker6.String(),
-						CreateTicker7_10:        p.CreateTicker7to10.String(),
-						CreateCoin:              p.CreateCoin.String(),
-						CreateToken:             p.CreateToken.String(),
-						RecreateCoin:            p.RecreateCoin.String(),
-						RecreateToken:           p.RecreateToken.String(),
-						DeclareCandidacy:        p.DeclareCandidacy.String(),
-						Delegate:                p.Delegate.String(),
-						Unbond:                  p.Unbond.String(),
-						RedeemCheck:             p.RedeemCheck.String(),
-						SetCandidateOn:          p.SetCandidateOn.String(),
-						SetCandidateOff:         p.SetCandidateOff.String(),
-						CreateMultisig:          p.CreateMultisig.String(),
-						MultisendBase:           p.MultisendBase.String(),
-						MultisendDelta:          p.MultisendDelta.String(),
-						EditCandidate:           p.EditCandidate.String(),
-						SetHaltBlock:            p.SetHaltBlock.String(),
-						EditTickerOwner:         p.EditTickerOwner.String(),
-						EditMultisig:            p.EditMultisig.String(),
-						EditCandidatePublicKey:  p.EditCandidatePublicKey.String(),
-						CreateSwapPool:          p.CreateSwapPool.String(),
-						AddLiquidity:            p.AddLiquidity.String(),
-						RemoveLiquidity:         p.RemoveLiquidity.String(),
-						EditCandidateCommission: p.EditCandidateCommission.String(),
-						MintToken:               p.MintToken.String(),
-						BurnToken:               p.BurnToken.String(),
-						VoteCommission:          p.VoteCommission.String(),
-						VoteUpdate:              p.VoteUpdate.String(),
-					},
-				})
-			}
+			state.CommissionVotes = append(state.CommissionVotes, types.CommissionVote{
+				Height: height,
+				Votes:  price.Votes,
+				Commission: types.Commission{
+					Coin:                    uint64(p.Coin),
+					PayloadByte:             p.PayloadByte.String(),
+					Send:                    p.Send.String(),
+					BuyBancor:               p.BuyBancor.String(),
+					SellBancor:              p.SellBancor.String(),
+					SellAllBancor:           p.SellAllBancor.String(),
+					BuyPoolBase:             p.BuyPoolBase.String(),
+					BuyPoolDelta:            p.BuyPoolDelta.String(),
+					SellPoolBase:            p.SellPoolBase.String(),
+					SellPoolDelta:           p.SellPoolDelta.String(),
+					SellAllPoolBase:         p.SellAllPoolBase.String(),
+					SellAllPoolDelta:        p.SellAllPoolDelta.String(),
+					CreateTicker3:           p.CreateTicker3.String(),
+					CreateTicker4:           p.CreateTicker4.String(),
+					CreateTicker5:           p.CreateTicker5.String(),
+					CreateTicker6:           p.CreateTicker6.String(),
+					CreateTicker7_10:        p.CreateTicker7to10.String(),
+					CreateCoin:              p.CreateCoin.String(),
+					CreateToken:             p.CreateToken.String(),
+					RecreateCoin:            p.RecreateCoin.String(),
+					RecreateToken:           p.RecreateToken.String(),
+					DeclareCandidacy:        p.DeclareCandidacy.String(),
+					Delegate:                p.Delegate.String(),
+					Unbond:                  p.Unbond.String(),
+					RedeemCheck:             p.RedeemCheck.String(),
+					SetCandidateOn:          p.SetCandidateOn.String(),
+					SetCandidateOff:         p.SetCandidateOff.String(),
+					CreateMultisig:          p.CreateMultisig.String(),
+					MultisendBase:           p.MultisendBase.String(),
+					MultisendDelta:          p.MultisendDelta.String(),
+					EditCandidate:           p.EditCandidate.String(),
+					SetHaltBlock:            p.SetHaltBlock.String(),
+					EditTickerOwner:         p.EditTickerOwner.String(),
+					EditMultisig:            p.EditMultisig.String(),
+					EditCandidatePublicKey:  p.EditCandidatePublicKey.String(),
+					CreateSwapPool:          p.CreateSwapPool.String(),
+					AddLiquidity:            p.AddLiquidity.String(),
+					RemoveLiquidity:         p.RemoveLiquidity.String(),
+					EditCandidateCommission: p.EditCandidateCommission.String(),
+					MintToken:               p.MintToken.String(),
+					BurnToken:               p.BurnToken.String(),
+					VoteCommission:          p.VoteCommission.String(),
+					VoteUpdate:              p.VoteUpdate.String(),
+				},
+			})
 		}
 
 		return false
 	})
 
 	current := c.GetCommissions()
-	state.PriceCommission = types.PriceCommission{
+	state.Commission = types.Commission{
 		Coin:                    uint64(current.Coin),
 		PayloadByte:             current.PayloadByte.String(),
 		Send:                    current.Send.String(),
@@ -182,7 +180,7 @@ func (c *Commission) Export(state *types.AppState) {
 
 // Deprecated
 func (c *Commission) ExportV1(state *types.AppState, id types.CoinID) {
-	state.PriceCommission = types.PriceCommission{
+	state.Commission = types.Commission{
 		Coin:                    uint64(id),
 		PayloadByte:             helpers.FloatBipToPip(0.002).String(),
 		Send:                    helpers.FloatBipToPip(0.01).String(),
