@@ -658,12 +658,12 @@ func TestCustomCommissionPriceCoin_sendTx(t *testing.T) {
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error: %s", response.Log)
 	}
+	//
+	// for _, tag := range response.Tags {
+	// 	t.Log(string(tag.Key), string(tag.Value))
+	// }
 
-	for _, tag := range response.Tags {
-		t.Log(string(tag.Key), string(tag.Value))
-	}
-
-	targetBalance, _ := big.NewInt(0).SetString("999989989999999999999999", 10)
+	targetBalance, _ := big.NewInt(0).SetString("999989990039960000000001", 10)
 	balance := cState.Accounts.GetBalance(addr, coin)
 	if balance.Cmp(targetBalance) != 0 {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", addr.String(), targetBalance, balance)
@@ -680,7 +680,7 @@ func TestCustomCommissionPriceCoin_sendTx(t *testing.T) {
 	}
 }
 
-func TestCustomCommissionPriceCoinAndGasCastomCoin_sendTx(t *testing.T) {
+func TestCustomCommissionPriceCoinAndGasCustomCoin_sendTx(t *testing.T) {
 	t.Parallel()
 	cState := getState()
 
@@ -754,7 +754,7 @@ func TestCustomCommissionPriceCoinAndGasCastomCoin_sendTx(t *testing.T) {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", addr.String(), targetBalance, balance)
 	}
 
-	targetGasBalance, _ := big.NewInt(0).SetString("989959879679198074", 10)
+	targetGasBalance, _ := big.NewInt(0).SetString("990000000000000001", 10)
 	balanceGas := cState.Accounts.GetBalance(addr, usdCoinID)
 	if balanceGas.Cmp(targetGasBalance) != 0 {
 		t.Fatalf("Target %s balance is not correct. Expected %s, got %s", addr.String(), targetGasBalance, balanceGas)

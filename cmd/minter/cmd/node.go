@@ -93,8 +93,8 @@ func runNode(cmd *cobra.Command) error {
 
 	// start TM node
 	node := startTendermintNode(app, tmConfig, logger, storages.GetMinterHome())
-	client := rpc.New(node)
 	app.SetTmNode(node)
+	client := app.RpcClient()
 
 	if !cfg.ValidatorMode {
 		runAPI(logger, app, client, node)

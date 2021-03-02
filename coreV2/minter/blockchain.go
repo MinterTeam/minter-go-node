@@ -16,6 +16,7 @@ import (
 	abciTypes "github.com/tendermint/tendermint/abci/types"
 	tmjson "github.com/tendermint/tendermint/libs/json"
 	tmNode "github.com/tendermint/tendermint/node"
+	rpc "github.com/tendermint/tendermint/rpc/client/local"
 	"math/big"
 	"sync"
 	"sync/atomic"
@@ -66,6 +67,11 @@ type Blockchain struct {
 	storages   *utils.Storage
 	stopChan   context.Context
 	stopped    bool
+	rpcClient  *rpc.Local
+}
+
+func (blockchain *Blockchain) RpcClient() *rpc.Local {
+	return blockchain.rpcClient
 }
 
 // NewMinterBlockchain creates Minter Blockchain instance, should be only called once

@@ -234,11 +234,11 @@ func TestStateExport(t *testing.T) {
 		t.Fatal("Wrong new state account balances size")
 	}
 
-	if account1.Balance[0].Coin != uint64(coinTestID) || account1.Balance[0].Value != helpers.BipToPip(big.NewInt(100)).String() {
+	if account1.Balance[1].Coin != uint64(coinTestID) || account1.Balance[1].Value != helpers.BipToPip(big.NewInt(100)).String() {
 		t.Fatal("Wrong new state account balance data")
 	}
 
-	if account1.Balance[1].Coin != uint64(types.GetBaseCoinID()) || account1.Balance[1].Value != helpers.BipToPip(big.NewInt(1)).String() {
+	if account1.Balance[0].Coin != uint64(types.GetBaseCoinID()) || account1.Balance[0].Value != helpers.BipToPip(big.NewInt(1)).String() {
 		t.Fatal("Wrong new state account balance data")
 	}
 

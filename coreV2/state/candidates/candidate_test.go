@@ -22,7 +22,9 @@ import (
 func TestCandidates_Create_oneCandidate(t *testing.T) {
 	t.Parallel()
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
-	candidates := NewCandidates(bus.NewBus(), mutableTree.GetLastImmutable())
+	b := bus.NewBus()
+	b.SetChecker(checker.NewChecker(b))
+	candidates := NewCandidates(b, mutableTree.GetLastImmutable())
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10, 0)
 
@@ -44,7 +46,9 @@ func TestCandidates_Create_oneCandidate(t *testing.T) {
 func TestCandidates_Commit_createThreeCandidatesWithInitialHeight(t *testing.T) {
 	t.Parallel()
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 2)
-	candidates := NewCandidates(bus.NewBus(), mutableTree.GetLastImmutable())
+	b := bus.NewBus()
+	b.SetChecker(checker.NewChecker(b))
+	candidates := NewCandidates(b, mutableTree.GetLastImmutable())
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10, 0)
 	candidates.Create([20]byte{11}, [20]byte{21}, [20]byte{31}, [32]byte{41}, 10, 0)
@@ -80,7 +84,9 @@ func TestCandidates_Commit_createThreeCandidatesWithInitialHeight(t *testing.T) 
 func TestCandidates_Commit_changePubKeyAndCheckBlockList(t *testing.T) {
 	t.Parallel()
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
-	candidates := NewCandidates(bus.NewBus(), mutableTree.GetLastImmutable())
+	b := bus.NewBus()
+	b.SetChecker(checker.NewChecker(b))
+	candidates := NewCandidates(b, mutableTree.GetLastImmutable())
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10, 0)
 	candidates.Create([20]byte{11}, [20]byte{21}, [20]byte{31}, [32]byte{41}, 10, 0)
@@ -118,7 +124,7 @@ func TestCandidates_Commit_changePubKeyAndCheckBlockList(t *testing.T) {
 		t.Fatal("pub_key is not blocked")
 	}
 
-	candidates = NewCandidates(bus.NewBus(), mutableTree.GetLastImmutable())
+	candidates = NewCandidates(b, mutableTree.GetLastImmutable())
 
 	candidates.LoadCandidates()
 	candidate := candidates.GetCandidate([32]byte{5})
@@ -138,7 +144,9 @@ func TestCandidates_Commit_changePubKeyAndCheckBlockList(t *testing.T) {
 func TestCandidates_AddToBlockPubKey(t *testing.T) {
 	t.Parallel()
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
-	candidates := NewCandidates(bus.NewBus(), mutableTree.GetLastImmutable())
+	b := bus.NewBus()
+	b.SetChecker(checker.NewChecker(b))
+	candidates := NewCandidates(b, mutableTree.GetLastImmutable())
 
 	candidates.AddToBlockPubKey([32]byte{4})
 
@@ -150,7 +158,9 @@ func TestCandidates_AddToBlockPubKey(t *testing.T) {
 func TestCandidates_Commit_withStakeAndUpdate(t *testing.T) {
 	t.Parallel()
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
-	candidates := NewCandidates(bus.NewBus(), mutableTree.GetLastImmutable())
+	b := bus.NewBus()
+	b.SetChecker(checker.NewChecker(b))
+	candidates := NewCandidates(b, mutableTree.GetLastImmutable())
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10, 0)
 
@@ -200,7 +210,9 @@ func TestCandidates_Commit_withStakeAndUpdate(t *testing.T) {
 func TestCandidates_Commit_edit(t *testing.T) {
 	t.Parallel()
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
-	candidates := NewCandidates(bus.NewBus(), mutableTree.GetLastImmutable())
+	b := bus.NewBus()
+	b.SetChecker(checker.NewChecker(b))
+	candidates := NewCandidates(b, mutableTree.GetLastImmutable())
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10, 0)
 
@@ -245,7 +257,9 @@ func TestCandidates_Commit_edit(t *testing.T) {
 func TestCandidates_Commit_createOneCandidateWithID(t *testing.T) {
 	t.Parallel()
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
-	candidates := NewCandidates(bus.NewBus(), mutableTree.GetLastImmutable())
+	b := bus.NewBus()
+	b.SetChecker(checker.NewChecker(b))
+	candidates := NewCandidates(b, mutableTree.GetLastImmutable())
 
 	candidates.CreateWithID([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10, 1)
 
@@ -430,7 +444,9 @@ func TestCandidates_GetTotalStake_fromModelAndFromDB(t *testing.T) {
 func TestCandidates_Export(t *testing.T) {
 	t.Parallel()
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
-	candidates := NewCandidates(bus.NewBus(), mutableTree.GetLastImmutable())
+	b := bus.NewBus()
+	b.SetChecker(checker.NewChecker(b))
+	candidates := NewCandidates(b, mutableTree.GetLastImmutable())
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10, 0)
 	candidates.AddToBlockPubKey([32]byte{10})
@@ -481,7 +497,9 @@ func TestCandidates_Export(t *testing.T) {
 func TestCandidates_busGetStakes(t *testing.T) {
 	t.Parallel()
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
-	candidates := NewCandidates(bus.NewBus(), mutableTree.GetLastImmutable())
+	b := bus.NewBus()
+	b.SetChecker(checker.NewChecker(b))
+	candidates := NewCandidates(b, mutableTree.GetLastImmutable())
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10, 0)
 	candidates.SetStakes([32]byte{4}, []types.Stake{
@@ -517,7 +535,9 @@ func TestCandidates_busGetStakes(t *testing.T) {
 func TestCandidates_GetCandidateByTendermintAddress(t *testing.T) {
 	t.Parallel()
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
-	candidates := NewCandidates(bus.NewBus(), mutableTree.GetLastImmutable())
+	b := bus.NewBus()
+	b.SetChecker(checker.NewChecker(b))
+	candidates := NewCandidates(b, mutableTree.GetLastImmutable())
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10, 0)
 
@@ -534,7 +554,9 @@ func TestCandidates_GetCandidateByTendermintAddress(t *testing.T) {
 func TestCandidates_busGetCandidateByTendermintAddress(t *testing.T) {
 	t.Parallel()
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
-	candidates := NewCandidates(bus.NewBus(), mutableTree.GetLastImmutable())
+	b := bus.NewBus()
+	b.SetChecker(checker.NewChecker(b))
+	candidates := NewCandidates(b, mutableTree.GetLastImmutable())
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10, 0)
 

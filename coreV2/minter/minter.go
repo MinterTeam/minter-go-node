@@ -12,6 +12,7 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/opt"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
 	tmNode "github.com/tendermint/tendermint/node"
+	rpc "github.com/tendermint/tendermint/rpc/client/local"
 	"log"
 	"math/big"
 	"sort"
@@ -160,6 +161,7 @@ func (blockchain *Blockchain) Height() uint64 {
 // SetTmNode sets Tendermint node
 func (blockchain *Blockchain) SetTmNode(node *tmNode.Node) {
 	blockchain.tmNode = node
+	blockchain.rpcClient = rpc.New(node)
 }
 
 // MinGasPrice returns minimal acceptable gas price
