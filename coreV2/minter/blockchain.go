@@ -55,7 +55,8 @@ type Blockchain struct {
 	totalPower         *big.Int
 
 	// local rpc client for Tendermint
-	tmNode *tmNode.Node
+	rpcClient *rpc.Local
+	tmNode    *tmNode.Node
 
 	// currentMempool is responsive for prevent sending multiple transactions from one address in one block
 	currentMempool *sync.Map
@@ -67,7 +68,6 @@ type Blockchain struct {
 	storages   *utils.Storage
 	stopChan   context.Context
 	stopped    bool
-	rpcClient  *rpc.Local
 }
 
 func (blockchain *Blockchain) RpcClient() *rpc.Local {
