@@ -203,7 +203,6 @@ func RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBl
 	}
 	response := tx.decodedData.Run(tx, context, rewardPool, currentBlock, price)
 
-	//  todo: mb delete: && response.Code != code.TxFromSenderAlreadyInMempool
 	if response.Code != code.OK {
 		currentMempool.Delete(sender)
 	}
