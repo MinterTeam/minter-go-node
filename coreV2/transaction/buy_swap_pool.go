@@ -9,7 +9,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	abcTypes "github.com/tendermint/tendermint/abci/types"
 	"math/big"
-	"strings"
 )
 
 type BuySwapPoolData struct {
@@ -25,7 +24,7 @@ func reverseCoinIds(a []types.CoinID) {
 	}
 }
 
-func reversePools(a []string) {
+func reversePools(a []*tagPoolChange) {
 	for i := len(a)/2 - 1; i >= 0; i-- {
 		opp := len(a) - 1 - i
 		a[i], a[opp] = a[opp], a[i]
@@ -189,13 +188,19 @@ func (data BuySwapPoolData) Run(tx *Transaction, context state.Interface, reward
 		resultCoin := data.Coins[len(data.Coins)-1]
 		valueToBuy := data.ValueToBuy
 
-		var poolIDs []string
+		var poolIDs tagPoolsChange
 
 		for i, coinToSell := range data.Coins[1:] {
 
 			amountIn, amountOut, poolID := deliverState.Swap.PairBuy(coinToSell, coinToBuy, maxCoinSupply, valueToBuy)
 
-			poolIDs = append(poolIDs, fmt.Sprintf("%d:%d-%s:%d-%s", poolID, coinToSell, amountIn.String(), coinToBuy, amountOut.String()))
+			poolIDs = append(poolIDs, &tagPoolChange{
+				PoolID:   poolID,
+				CoinIn:   coinToSell,
+				ValueIn:  amountIn,
+				CoinOut:  coinToBuy,
+				ValueOut: amountOut,
+			})
 
 			if i == 0 {
 				deliverState.Accounts.AddBalance(sender, coinToBuy, amountOut)
@@ -220,7 +225,7 @@ func (data BuySwapPoolData) Run(tx *Transaction, context state.Interface, reward
 			{Key: []byte("tx.coin_to_buy"), Value: []byte(data.Coins[0].String()), Index: true},
 			{Key: []byte("tx.coin_to_sell"), Value: []byte(resultCoin.String()), Index: true},
 			{Key: []byte("tx.return"), Value: []byte(amountIn.String())},
-			{Key: []byte("tx.pools"), Value: []byte(strings.Join(poolIDs, ","))},
+			{Key: []byte("tx.pools"), Value: []byte(poolIDs.string())},
 		}
 	}
 

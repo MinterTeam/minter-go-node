@@ -210,10 +210,10 @@ func RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBl
 		response.Tags = append(response.Tags,
 			coinCommission,
 			priceCommission,
-			abcTypes.EventAttribute{Key: []byte("tx.gas"), Value: []byte(strconv.Itoa(int(gas)))},
+			// abcTypes.EventAttribute{Key: []byte("tx.gas"), Value: []byte(strconv.Itoa(int(gas)))}, // todo
 			abcTypes.EventAttribute{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:])), Index: true},
 			abcTypes.EventAttribute{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(tx.decodedData.TxType())})), Index: true},
-			abcTypes.EventAttribute{Key: []byte("tx.commission_coin"), Value: []byte(tx.GasCoin.String()), Index: true},
+			abcTypes.EventAttribute{Key: []byte("tx.commission_coin"), Value: []byte(tx.commissionCoin().String()), Index: true},
 		)
 	} else {
 		response.Tags = nil
@@ -231,4 +231,14 @@ func EncodeError(data interface{}) string {
 		panic(err)
 	}
 	return string(marshaled)
+}
+
+func (tx *Transaction) commissionCoin() types.CoinID {
+	if tx.Type == TypeSellAllSwapPool {
+		return tx.decodedData.(SellAllSwapPoolData).Coins[0]
+	}
+	if tx.Type == TypeSellAllCoin {
+		return tx.decodedData.(SellAllCoinData).CoinToSell
+	}
+	return tx.GasCoin
 }

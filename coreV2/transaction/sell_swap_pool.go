@@ -8,7 +8,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	abcTypes "github.com/tendermint/tendermint/abci/types"
 	"math/big"
-	"strings"
 )
 
 type SellSwapPoolData struct {
@@ -173,12 +172,18 @@ func (data SellSwapPoolData) Run(tx *Transaction, context state.Interface, rewar
 		resultCoin := data.Coins[len(data.Coins)-1]
 		valueToSell := data.ValueToSell
 
-		var poolIDs []string
+		var poolIDs tagPoolsChange
 
 		for i, coinToBuy := range data.Coins[1:] {
 			amountIn, amountOut, poolID := deliverState.Swap.PairSell(coinToSell, coinToBuy, valueToSell, big.NewInt(0))
 
-			poolIDs = append(poolIDs, fmt.Sprintf("%d:%d-%s:%d-%s", poolID, coinToSell, amountIn.String(), coinToBuy, amountOut.String()))
+			poolIDs = append(poolIDs, &tagPoolChange{
+				PoolID:   poolID,
+				CoinIn:   coinToSell,
+				ValueIn:  amountIn,
+				CoinOut:  coinToBuy,
+				ValueOut: amountOut,
+			})
 
 			if i == 0 {
 				deliverState.Accounts.SubBalance(sender, coinToSell, amountIn)
@@ -202,7 +207,7 @@ func (data SellSwapPoolData) Run(tx *Transaction, context state.Interface, rewar
 			{Key: []byte("tx.coin_to_buy"), Value: []byte(resultCoin.String()), Index: true},
 			{Key: []byte("tx.coin_to_sell"), Value: []byte(data.Coins[0].String()), Index: true},
 			{Key: []byte("tx.return"), Value: []byte(amountOut.String())},
-			{Key: []byte("tx.pools"), Value: []byte(strings.Join(poolIDs, ","))},
+			{Key: []byte("tx.pools"), Value: []byte(poolIDs.string())},
 		}
 	}
 

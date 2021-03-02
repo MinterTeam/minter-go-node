@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
@@ -10,8 +11,28 @@ import (
 	"github.com/MinterTeam/minter-go-node/formula"
 	abcTypes "github.com/tendermint/tendermint/abci/types"
 	"math/big"
-	"strings"
 )
+
+type tagPoolsChange []*tagPoolChange
+
+func (p *tagPoolsChange) string() string {
+	if p == nil {
+		return ""
+	}
+	marshal, err := json.Marshal(p)
+	if err != nil {
+		panic(err)
+	}
+	return string(marshal)
+}
+
+type tagPoolChange struct {
+	PoolID   uint32       `json:"pool_id"`
+	CoinIn   types.CoinID `json:"coin_in"`
+	ValueIn  *big.Int     `json:"value_in"`
+	CoinOut  types.CoinID `json:"coin_out"`
+	ValueOut *big.Int     `json:"value_out"`
+}
 
 type SellAllSwapPoolData struct {
 	Coins             []types.CoinID
@@ -159,12 +180,18 @@ func (data SellAllSwapPoolData) Run(tx *Transaction, context state.Interface, re
 		resultCoin := data.Coins[len(data.Coins)-1]
 		valueToSell := big.NewInt(0).Set(balance)
 
-		var poolIDs []string
+		var poolIDs tagPoolsChange
 
 		for i, coinToBuy := range data.Coins[1:] {
 			amountIn, amountOut, poolID := deliverState.Swap.PairSell(coinToSell, coinToBuy, valueToSell, big.NewInt(0))
 
-			poolIDs = append(poolIDs, fmt.Sprintf("%d:%d-%s:%d-%s", poolID, coinToSell, amountIn.String(), coinToBuy, amountOut.String()))
+			poolIDs = append(poolIDs, &tagPoolChange{
+				PoolID:   poolID,
+				CoinIn:   coinToSell,
+				ValueIn:  amountIn,
+				CoinOut:  coinToBuy,
+				ValueOut: amountOut,
+			})
 
 			if i == 0 {
 				deliverState.Accounts.SubBalance(sender, coinToSell, amountIn)
@@ -191,7 +218,7 @@ func (data SellAllSwapPoolData) Run(tx *Transaction, context state.Interface, re
 			{Key: []byte("tx.coin_to_sell"), Value: []byte(data.Coins[0].String()), Index: true},
 			{Key: []byte("tx.return"), Value: []byte(amountOut.String())},
 			{Key: []byte("tx.sell_amount"), Value: []byte(available.String())},
-			{Key: []byte("tx.pools"), Value: []byte(strings.Join(poolIDs, ","))},
+			{Key: []byte("tx.pools"), Value: []byte(poolIDs.string())},
 		}
 	}
 
