@@ -56,7 +56,7 @@ const (
 const (
 	gasCustomCommission = 100
 
-	baseUnit = 10
+	baseUnit = 15
 
 	gasSend                    = baseUnit
 	gasSellCoin                = baseUnit * 2
@@ -172,7 +172,7 @@ type Data interface {
 	CommissionData(*commission.Price) *big.Int
 	Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response
 	TxType() TxType
-	Gas() int
+	// Gas() int64
 }
 
 func (tx *Transaction) Serialize() ([]byte, error) {
@@ -265,6 +265,13 @@ func (tx *Transaction) SetSignature(sig []byte) {
 	}
 }
 
+func (tx *Transaction) MustSender() types.Address {
+	sender, err := tx.Sender()
+	if err != nil {
+		panic(err)
+	}
+	return sender
+}
 func (tx *Transaction) Sender() (types.Address, error) {
 	if tx.sender != nil {
 		return *tx.sender, nil

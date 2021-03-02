@@ -35,6 +35,8 @@ type Response struct {
 
 // RunTx executes transaction in given context
 func RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBlock uint64, currentMempool *sync.Map, minGasPrice uint32, notSaveTags bool) Response {
+	var gas int64
+
 	lenRawTx := len(rawTx)
 	if lenRawTx > maxTxLength {
 		return Response{
@@ -169,6 +171,8 @@ func RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBl
 
 			usedAccounts[signer] = true
 			totalWeight += multisigData.GetWeight(signer)
+
+			gas++
 		}
 
 		if totalWeight < multisigData.Threshold {
@@ -199,27 +203,30 @@ func RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBl
 	}
 	response := tx.decodedData.Run(tx, context, rewardPool, currentBlock, price)
 
-	if response.Code != code.TxFromSenderAlreadyInMempool && response.Code != code.OK {
+	//  todo: mb delete: && response.Code != code.TxFromSenderAlreadyInMempool
+	if response.Code != code.OK {
 		currentMempool.Delete(sender)
 	}
 
-	response.GasPrice = tx.GasPrice
-	gas := tx.Gas()
-
-	if !notSaveTags {
+	commissionCoin := tx.commissionCoin()
+	if notSaveTags || isCheck {
+		response.Tags = nil
+	} else {
 		response.Tags = append(response.Tags,
 			coinCommission,
 			priceCommission,
-			// abcTypes.EventAttribute{Key: []byte("tx.gas"), Value: []byte(strconv.Itoa(int(gas)))}, // todo
 			abcTypes.EventAttribute{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:])), Index: true},
 			abcTypes.EventAttribute{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(tx.decodedData.TxType())})), Index: true},
-			abcTypes.EventAttribute{Key: []byte("tx.commission_coin"), Value: []byte(tx.commissionCoin().String()), Index: true},
+			abcTypes.EventAttribute{Key: []byte("tx.commission_coin"), Value: []byte(commissionCoin.String()), Index: true},
 		)
-	} else {
-		response.Tags = nil
 	}
-	response.GasUsed = gas
-	response.GasWanted = gas
+
+	if commissionCoin != types.GetBaseCoinID() {
+		gas++
+	}
+	response.GasUsed += gas
+	response.GasWanted = response.GasUsed
+	response.GasPrice = tx.GasPrice
 
 	return response
 }

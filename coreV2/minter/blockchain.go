@@ -412,7 +412,7 @@ func (blockchain *Blockchain) DeliverTx(req abciTypes.RequestDeliverTx) abciType
 
 // CheckTx validates a tx for the mempool
 func (blockchain *Blockchain) CheckTx(req abciTypes.RequestCheckTx) abciTypes.ResponseCheckTx {
-	response := transaction.RunTx(blockchain.CurrentState(), req.Tx, nil, blockchain.height, blockchain.currentMempool, blockchain.MinGasPrice(), true)
+	response := transaction.RunTx(blockchain.CurrentState(), req.Tx, nil, blockchain.Height(), blockchain.currentMempool, blockchain.MinGasPrice(), true)
 
 	return abciTypes.ResponseCheckTx{
 		Code:      response.Code,

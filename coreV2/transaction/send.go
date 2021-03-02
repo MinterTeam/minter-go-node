@@ -21,7 +21,7 @@ func (data SendData) TxType() TxType {
 	return TypeSend
 }
 
-func (data SendData) Gas() int {
+func (data SendData) Gas() int64 {
 	return gasSend
 }
 
@@ -31,14 +31,6 @@ type Coin struct {
 }
 
 func (data SendData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
-	if data.Value == nil {
-		return &Response{
-			Code: code.DecodeError,
-			Log:  "Incorrect tx data",
-			Info: EncodeError(code.NewDecodeError()),
-		}
-	}
-
 	if !context.Coins().Exists(data.Coin) {
 		return &Response{
 			Code: code.CoinNotExists,
@@ -61,7 +53,6 @@ func (data SendData) CommissionData(price *commission.Price) *big.Int {
 
 func (data SendData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
-
 	var checkState *state.CheckState
 	var isCheck bool
 	if checkState, isCheck = context.(*state.CheckState); !isCheck {
@@ -101,6 +92,7 @@ func (data SendData) Run(tx *Transaction, context state.Interface, rewardPool *b
 			Info: EncodeError(code.NewInsufficientFunds(sender.String(), needValue.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
 		}
 	}
+
 	var tags []abcTypes.EventAttribute
 	if deliverState, ok := context.(*state.State); ok {
 		if isGasCommissionFromPoolSwap {
@@ -125,7 +117,8 @@ func (data SendData) Run(tx *Transaction, context state.Interface, rewardPool *b
 	}
 
 	return Response{
-		Code: code.OK,
-		Tags: tags,
+		Code:    code.OK,
+		Tags:    tags,
+		GasUsed: data.Gas(),
 	}
 }
