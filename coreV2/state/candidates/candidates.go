@@ -43,7 +43,7 @@ var (
 // RCandidates interface represents Candidates state
 type RCandidates interface {
 	// Deprecated
-	ExportV1toV2(state *types.AppState)
+	ExportV1toV2(state *types.AppState) []bus.FrozenFund
 
 	Export(state *types.AppState)
 	Exists(pubkey types.Pubkey) bool
@@ -136,8 +136,7 @@ func (c *Candidates) Commit(db *iavl.MutableTree) error {
 	keys := c.getOrderedCandidates()
 
 	hasDirty := false
-	for _, pubkey := range keys {
-		candidate := c.getFromMap(pubkey)
+	for _, candidate := range keys {
 		candidate.lock.RLock()
 		if candidate.isDirty {
 			hasDirty = true
@@ -149,8 +148,8 @@ func (c *Candidates) Commit(db *iavl.MutableTree) error {
 
 	if hasDirty {
 		var candidates []Candidate
-		for _, key := range keys {
-			candidates = append(candidates, *c.getFromMap(key))
+		for _, candidate := range keys {
+			candidates = append(candidates, *candidate)
 		}
 		data, err := rlp.EncodeToBytes(candidates)
 		if err != nil {
@@ -198,8 +197,7 @@ func (c *Candidates) Commit(db *iavl.MutableTree) error {
 	}
 	c.lock.Unlock()
 
-	for _, pubkey := range keys {
-		candidate := c.getFromMap(pubkey)
+	for _, candidate := range keys {
 		candidate.lock.Lock()
 		candidate.isDirty = false
 		dirty := candidate.isTotalStakeDirty
@@ -406,8 +404,7 @@ func (c *Candidates) RecalculateStakes(height uint64) {
 func (c *Candidates) recalculateStakes(height uint64) {
 	coinsCache := newCoinsCache()
 
-	for _, pubkey := range c.getOrderedCandidates() {
-		candidate := c.getFromMap(pubkey)
+	for _, candidate := range c.getOrderedCandidates() {
 		stakes := &candidate.stakes
 		for _, stake := range stakes {
 			if stake == nil {
@@ -613,12 +610,7 @@ func (c *Candidates) SubStake(address types.Address, pubkey types.Pubkey, coin t
 
 // GetCandidates returns a list of all candidates
 func (c *Candidates) GetCandidates() []*Candidate {
-	var candidates []*Candidate
-	for _, pubkey := range c.getOrderedCandidates() {
-		candidates = append(candidates, c.getFromMap(pubkey))
-	}
-
-	return candidates
+	return c.getOrderedCandidates()
 }
 
 // GetTotalStake calculates and returns total stake of a candidate
@@ -995,21 +987,21 @@ func (c *Candidates) Export(state *types.AppState) {
 	})
 }
 
-func (c *Candidates) getOrderedCandidates() []types.Pubkey {
+func (c *Candidates) getOrderedCandidates() []*Candidate {
 	c.lock.RLock()
-	var keys []types.Pubkey
+	var candidates []*Candidate
 	for _, candidate := range c.list {
 		candidate.lock.RLock()
-		keys = append(keys, candidate.PubKey)
+		candidates = append(candidates, candidate)
 		candidate.lock.RUnlock()
 	}
 	c.lock.RUnlock()
 
-	sort.SliceStable(keys, func(i, j int) bool {
-		return bytes.Compare(keys[i].Bytes(), keys[j].Bytes()) == 1
+	sort.SliceStable(candidates, func(i, j int) bool {
+		return candidates[i].GetTotalBipStake().Cmp(candidates[j].GetTotalBipStake()) == -1
 	})
 
-	return keys
+	return candidates
 }
 
 func (c *Candidates) getFromMap(pubkey types.Pubkey) *Candidate {

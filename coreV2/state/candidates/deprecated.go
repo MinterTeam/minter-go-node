@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/coreV2/state/bus"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"math/big"
@@ -35,13 +36,39 @@ type candidateV1 struct {
 }
 
 // Deprecated
-func (c *Candidates) ExportV1toV2(state *types.AppState) {
+func (c *Candidates) ExportV1toV2(state *types.AppState) []bus.FrozenFund {
 	c.loadCandidatesDeliverV1()
 	c.loadStakesV1()
+	var frozenFunds []bus.FrozenFund
 
 	candidates := c.GetCandidates()
 	state.Candidates = make([]types.Candidate, 0, len(candidates))
-	for _, candidate := range candidates {
+	topCount := len(candidates)
+	if topCount > 100 {
+		topCount = 100
+
+		for _, candidate := range candidates[topCount:] {
+			for _, s := range candidate.stakes {
+				frozenFunds = append(frozenFunds, bus.FrozenFund{
+					Address:      s.Owner,
+					CandidateKey: nil,
+					CandidateID:  0,
+					Coin:         s.Coin,
+					Value:        s.Value,
+				})
+			}
+			for _, u := range candidate.updates {
+				frozenFunds = append(frozenFunds, bus.FrozenFund{
+					Address:      u.Owner,
+					CandidateKey: nil,
+					CandidateID:  0,
+					Coin:         u.Coin,
+					Value:        u.Value,
+				})
+			}
+		}
+	}
+	for _, candidate := range candidates[:topCount] {
 		candidateStakes := c.GetStakes(candidate.PubKey)
 		stakes := make([]types.Stake, len(candidateStakes))
 		for i, s := range candidateStakes {
@@ -83,13 +110,15 @@ func (c *Candidates) ExportV1toV2(state *types.AppState) {
 	sort.SliceStable(state.BlockListCandidates, func(i, j int) bool {
 		return bytes.Compare(state.BlockListCandidates[i].Bytes(), state.BlockListCandidates[j].Bytes()) == 1
 	})
+
+	return frozenFunds
 }
 
 // Deprecated
 func (c *Candidates) loadCandidatesDeliverV1() {
-	// if c.checkAndSetLoaded() {
-	// 	return
-	// }
+	if c.checkAndSetLoaded() {
+		return
+	}
 
 	c.maxID = c.loadCandidatesListV1()
 

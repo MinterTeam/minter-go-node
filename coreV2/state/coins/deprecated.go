@@ -36,6 +36,7 @@ type modelV1 struct {
 	isCreated bool
 }
 
+// Deprecated
 func (c *Coins) ExportV1(state *types.AppState, subValues map[types.CoinID]*big.Int) types.CoinID {
 	c.immutableTree().IterateRange([]byte{mainPrefix}, []byte{mainPrefix + 1}, true, func(key []byte, value []byte) bool {
 		if len(key) > 5 {
@@ -83,7 +84,7 @@ func (c *Coins) ExportV1(state *types.AppState, subValues map[types.CoinID]*big.
 		symbol := coin.Symbol()
 		strSymbol := symbol.String()
 		if _, err := strconv.Atoi(strSymbol); err == nil || coinID != 0 && strSymbol == types.GetBaseCoin().String() {
-			symbol = types.StrToCoinSymbol("A" + strSymbol)
+			symbol = types.StrToCoinSymbol(strSymbol + "A")
 		}
 		state.Coins = append(state.Coins, types.Coin{
 			ID:           uint64(coin.ID()),

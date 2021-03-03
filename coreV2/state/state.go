@@ -63,9 +63,9 @@ func (cs *CheckState) ExportV1toV2(bipRate float64) types.AppState {
 	appState := new(types.AppState)
 	cs.App().Export(appState)
 	cs.Validators().Export(appState)
-	cs.Candidates().ExportV1toV2(appState)
 	cs.WaitList().Export(appState)
-	cs.FrozenFunds().Export(appState, uint64(cs.state.height))
+	frozenFunds := cs.Candidates().ExportV1toV2(appState)
+	cs.FrozenFunds().ExportV1(appState, uint64(cs.state.height), frozenFunds)
 	cs.Checks().Export(appState) // todo: mb refactor store
 	cs.Halts().Export(appState)
 
