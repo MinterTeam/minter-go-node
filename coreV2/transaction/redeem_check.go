@@ -23,7 +23,7 @@ type RedeemCheckData struct {
 	Proof    [65]byte
 }
 
-func (data RedeemCheckData) Gas() int {
+func (data RedeemCheckData) Gas() int64 {
 	return gasRedeemCheck
 }
 func (data RedeemCheckData) TxType() TxType {
@@ -31,7 +31,7 @@ func (data RedeemCheckData) TxType() TxType {
 }
 
 func (data RedeemCheckData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
-	if data.RawCheck == nil {
+	if len(data.RawCheck) == 0 {
 		return &Response{
 			Code: code.DecodeError,
 			Log:  "Incorrect tx data",
@@ -99,7 +99,6 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 	}
 
 	checkSender, err := decodedCheck.Sender()
-
 	if err != nil {
 		return Response{
 			Code: code.DecodeError,

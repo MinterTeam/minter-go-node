@@ -21,7 +21,7 @@ type RecreateCoinData struct {
 	MaxSupply            *big.Int
 }
 
-func (data RecreateCoinData) Gas() int {
+func (data RecreateCoinData) Gas() int64 {
 	return gasRecreateCoin
 }
 func (data RecreateCoinData) TxType() TxType {
@@ -29,14 +29,6 @@ func (data RecreateCoinData) TxType() TxType {
 }
 
 func (data RecreateCoinData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
-	if data.InitialReserve == nil || data.InitialAmount == nil || data.MaxSupply == nil {
-		return &Response{
-			Code: code.DecodeError,
-			Log:  "Incorrect tx data",
-			Info: EncodeError(code.NewDecodeError()),
-		}
-	}
-
 	if len(data.Name) > maxCoinNameBytes {
 		return &Response{
 			Code: code.InvalidCoinName,

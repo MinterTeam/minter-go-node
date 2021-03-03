@@ -35,8 +35,6 @@ type Response struct {
 
 // RunTx executes transaction in given context
 func RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBlock uint64, currentMempool *sync.Map, minGasPrice uint32, notSaveTags bool) Response {
-	var gas int64
-
 	lenRawTx := len(rawTx)
 	if lenRawTx > maxTxLength {
 		return Response{
@@ -125,6 +123,7 @@ func RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBl
 		currentMempool.Store(sender, true)
 	}
 
+	gas := tx.Gas()
 	// check multi-signature
 	if tx.SignatureType == SigTypeMulti {
 		multisig := checkState.Accounts().GetAccount(tx.multisig.Multisig)
@@ -172,7 +171,7 @@ func RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBl
 			usedAccounts[signer] = true
 			totalWeight += multisigData.GetWeight(signer)
 
-			gas++
+			gas += gasSign
 		}
 
 		if totalWeight < multisigData.Threshold {

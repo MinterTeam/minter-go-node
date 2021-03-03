@@ -18,7 +18,7 @@ type DelegateData struct {
 	Value  *big.Int
 }
 
-func (data DelegateData) Gas() int {
+func (data DelegateData) Gas() int64 {
 	return gasDelegate
 }
 func (data DelegateData) TxType() TxType {

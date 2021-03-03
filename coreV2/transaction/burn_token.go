@@ -15,7 +15,7 @@ type BurnTokenData struct {
 	Value *big.Int
 }
 
-func (data BurnTokenData) Gas() int {
+func (data BurnTokenData) Gas() int64 {
 	return gasBurnToken
 }
 func (data BurnTokenData) TxType() TxType {

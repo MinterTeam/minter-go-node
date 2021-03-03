@@ -21,7 +21,7 @@ type RecreateTokenData struct {
 	Burnable      bool
 }
 
-func (data RecreateTokenData) Gas() int {
+func (data RecreateTokenData) Gas() int64 {
 	return gasRecreateToken
 }
 func (data RecreateTokenData) TxType() TxType {

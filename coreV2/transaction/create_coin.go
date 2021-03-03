@@ -44,7 +44,7 @@ type CreateCoinData struct {
 	MaxSupply            *big.Int
 }
 
-func (data CreateCoinData) Gas() int {
+func (data CreateCoinData) Gas() int64 {
 	return gasCreateCoin
 }
 func (data CreateCoinData) TxType() TxType {
@@ -52,14 +52,6 @@ func (data CreateCoinData) TxType() TxType {
 }
 
 func (data CreateCoinData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
-	if data.InitialAmount == nil || data.MaxSupply == nil {
-		return &Response{
-			Code: code.DecodeError,
-			Log:  "Incorrect tx data",
-			Info: EncodeError(code.NewDecodeError()),
-		}
-	}
-
 	if len(data.Name) > maxCoinNameBytes {
 		return &Response{
 			Code: code.InvalidCoinName,

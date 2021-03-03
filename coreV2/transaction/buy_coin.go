@@ -18,7 +18,7 @@ type BuyCoinData struct {
 	MaximumValueToSell *big.Int
 }
 
-func (data BuyCoinData) Gas() int {
+func (data BuyCoinData) Gas() int64 {
 	return gasBuyCoin
 }
 func (data BuyCoinData) TxType() TxType {

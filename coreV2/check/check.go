@@ -1,7 +1,6 @@
 package check
 
 import (
-	"bytes"
 	"crypto/ecdsa"
 	"errors"
 	"fmt"
@@ -129,7 +128,7 @@ func (check *Check) String() string {
 // DecodeFromBytes decodes check from bytes
 func DecodeFromBytes(buf []byte) (*Check, error) {
 	var check Check
-	err := rlp.Decode(bytes.NewReader(buf), &check)
+	err := rlp.DecodeBytes(buf, &check)
 	if err != nil {
 		return nil, err
 	}

@@ -22,7 +22,7 @@ type EditCandidateData struct {
 	ControlAddress types.Address
 }
 
-func (data EditCandidateData) Gas() int {
+func (data EditCandidateData) Gas() int64 {
 	return gasEditCandidate
 }
 func (data EditCandidateData) TxType() TxType {

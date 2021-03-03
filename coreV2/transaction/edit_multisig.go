@@ -18,7 +18,7 @@ type EditMultisigData struct {
 	Addresses []types.Address
 }
 
-func (data EditMultisigData) Gas() int {
+func (data EditMultisigData) Gas() int64 {
 	return gasEditMultisig
 }
 func (data EditMultisigData) TxType() TxType {

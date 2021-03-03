@@ -20,7 +20,7 @@ type CreateMultisigData struct {
 	Addresses []types.Address
 }
 
-func (data CreateMultisigData) Gas() int {
+func (data CreateMultisigData) Gas() int64 {
 	return gasCreateMultisig
 }
 

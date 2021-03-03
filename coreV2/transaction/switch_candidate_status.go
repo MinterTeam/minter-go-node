@@ -15,7 +15,7 @@ type SetCandidateOnData struct {
 	PubKey types.Pubkey
 }
 
-func (data SetCandidateOnData) Gas() int {
+func (data SetCandidateOnData) Gas() int64 {
 	return gasSetCandidateOnline
 }
 
@@ -102,7 +102,7 @@ type SetCandidateOffData struct {
 	PubKey types.Pubkey `json:"pub_key"`
 }
 
-func (data SetCandidateOffData) Gas() int {
+func (data SetCandidateOffData) Gas() int64 {
 	return gasSetCandidateOffline
 }
 

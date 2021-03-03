@@ -66,7 +66,7 @@ type VoteCommissionData struct {
 func (data VoteCommissionData) TxType() TxType {
 	return TypeVoteCommission
 }
-func (data VoteCommissionData) Gas() int {
+func (data VoteCommissionData) Gas() int64 {
 	return gasVoteCommission
 }
 

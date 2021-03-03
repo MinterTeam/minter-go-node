@@ -18,7 +18,7 @@ type AddLiquidityData struct {
 	MaximumVolume1 *big.Int
 }
 
-func (data AddLiquidityData) Gas() int {
+func (data AddLiquidityData) Gas() int64 {
 	return gasAddLiquidity
 }
 

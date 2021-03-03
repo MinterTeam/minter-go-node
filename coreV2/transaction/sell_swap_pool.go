@@ -20,7 +20,7 @@ func (data SellSwapPoolData) TxType() TxType {
 	return TypeSellSwapPool
 }
 
-func (data SellSwapPoolData) Gas() int {
+func (data SellSwapPoolData) Gas() int64 {
 	return gasSellSwapPool
 }
 

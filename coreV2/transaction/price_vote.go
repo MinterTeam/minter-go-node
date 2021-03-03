@@ -16,7 +16,7 @@ package transaction
 // 	Price uint32
 // }
 //
-// func (data PriceVoteData) Gas() int {
+// func (data PriceVoteData) Gas() int64 {
 // 	return gasPriceVote
 // }
 // func (data PriceVoteData) TxType() TxType {

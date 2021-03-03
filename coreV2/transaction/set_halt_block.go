@@ -19,7 +19,7 @@ type SetHaltBlockData struct {
 	Height uint64
 }
 
-func (data SetHaltBlockData) Gas() int {
+func (data SetHaltBlockData) Gas() int64 {
 	return gasSetHaltBlock
 }
 

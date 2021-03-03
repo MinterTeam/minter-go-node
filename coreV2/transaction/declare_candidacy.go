@@ -23,7 +23,7 @@ type DeclareCandidacyData struct {
 	Stake      *big.Int
 }
 
-func (data DeclareCandidacyData) Gas() int {
+func (data DeclareCandidacyData) Gas() int64 {
 	return gasDeclareCandidacy
 }
 func (data DeclareCandidacyData) TxType() TxType {
@@ -31,14 +31,6 @@ func (data DeclareCandidacyData) TxType() TxType {
 }
 
 func (data DeclareCandidacyData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
-	if data.Stake == nil {
-		return &Response{
-			Code: code.DecodeError,
-			Log:  "Incorrect tx data",
-			Info: EncodeError(code.NewDecodeError()),
-		}
-	}
-
 	coin := context.Coins().GetCoin(data.Coin)
 	if coin == nil {
 		return &Response{

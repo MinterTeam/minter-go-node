@@ -31,7 +31,7 @@ func reversePools(a []*tagPoolChange) {
 	}
 }
 
-func (data BuySwapPoolData) Gas() int {
+func (data BuySwapPoolData) Gas() int64 {
 	return gasBuySwapPool
 }
 func (data BuySwapPoolData) TxType() TxType {

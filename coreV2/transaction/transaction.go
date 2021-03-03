@@ -54,45 +54,50 @@ const (
 	TypeCreateSwapPool          TxType = 0x22
 )
 const (
-	gasCustomCommission = 100
-
-	baseUnit = 15
-
-	gasSend           = 15
-	gasMultisendBase  = 10
+	gasBase           = /*int64*/ 15
+	gasSign           = 20
+	gasSend           = 1
+	gasMultisendBase  = 1
 	gasMultisendDelta = 1
 
-	gasSellCoin                = baseUnit * 2
-	gasSellAllCoin             = baseUnit * 2
-	gasBuyCoin                 = baseUnit * 2
-	gasCreateCoin              = baseUnit * 10
-	gasDeclareCandidacy        = baseUnit * 15
-	gasDelegate                = baseUnit * 6
-	gasUnbond                  = baseUnit * 4
-	gasRedeemCheck             = baseUnit * 10
-	gasSetCandidateOnline      = baseUnit * 5
-	gasSetCandidateOffline     = baseUnit * 5
-	gasCreateMultisig          = baseUnit * 10
-	gasEditCandidate           = baseUnit * 5
-	gasSetHaltBlock            = baseUnit * 8
-	gasRecreateCoin            = baseUnit * 15
-	gasEditCoinOwner           = baseUnit * 8
-	gasEditMultisig            = baseUnit * 15
-	gasEditCandidatePublicKey  = baseUnit * 10
-	gasAddLiquidity            = baseUnit * 10
-	gasRemoveLiquidity         = baseUnit * 10
-	gasSellSwapPool            = baseUnit * 3
-	gasBuySwapPool             = baseUnit * 3
-	gasSellAllSwapPool         = baseUnit * 3
-	gasEditCandidateCommission = baseUnit * 5
-	gasMoveStake               = baseUnit * 5
-	gasMintToken               = baseUnit * 5
-	gasBurnToken               = baseUnit * 5
-	gasCreateToken             = baseUnit * 10
-	gasRecreateToken           = baseUnit * 15
-	gasVoteCommission          = baseUnit * 15
-	gasVoteUpdate              = baseUnit * 5
-	gasCreateSwapPool          = baseUnit * 15
+	gasCreateSwapPool  = 10
+	gasAddLiquidity    = 5
+	gasRemoveLiquidity = 5
+
+	gasSellSwapPool    = 2
+	gasBuySwapPool     = 2
+	gasSellAllSwapPool = 2
+	gasSellCoin        = 2
+	gasSellAllCoin     = 2
+	gasBuyCoin         = 2
+
+	gasCreateCoin    = 3
+	gasRecreateCoin  = 5
+	gasCreateToken   = 3
+	gasRecreateToken = 5
+	gasEditCoinOwner = 5
+
+	gasMintToken = 1
+	gasBurnToken = 1
+
+	gasRedeemCheck = 20
+
+	gasDeclareCandidacy = 10
+	gasDelegate         = 6
+	gasUnbond           = 6
+
+	gasSetCandidateOnline      = 1
+	gasSetCandidateOffline     = 1
+	gasEditCandidate           = 5
+	gasEditCandidatePublicKey  = 10
+	gasEditCandidateCommission = 1
+
+	gasCreateMultisig = 20
+	gasEditMultisig   = 5
+
+	gasSetHaltBlock   = 5
+	gasVoteCommission = 5
+	gasVoteUpdate     = 5
 )
 
 type SigType byte
@@ -172,7 +177,7 @@ type Data interface {
 	CommissionData(*commission.Price) *big.Int
 	Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response
 	TxType() TxType
-	// Gas() int64
+	Gas() int64
 }
 
 func (tx *Transaction) Serialize() ([]byte, error) {
@@ -180,12 +185,14 @@ func (tx *Transaction) Serialize() ([]byte, error) {
 }
 
 func (tx *Transaction) Gas() int64 {
-	// base := int64(tx.decodedData.Gas())
-	// if tx.GasCoin != types.GetBaseCoinID() {
-	// 	base += gasCustomCommission
-	// }
-	// return int64(tx.decodedData.Gas())
-	return 1
+	base := int64(gasBase)
+	if tx.commissionCoin() != types.GetBaseCoinID() {
+		base += 1
+	}
+	if tx.payloadLen() != 0 {
+		base += tx.payloadLen() / 1000
+	}
+	return base + tx.decodedData.Gas()
 }
 
 func (tx *Transaction) Price(price *commission.Price) *big.Int {

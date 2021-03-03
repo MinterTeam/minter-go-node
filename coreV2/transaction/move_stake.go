@@ -18,7 +18,7 @@ package transaction
 // 	Stake    *big.Int
 // }
 //
-// func (data MoveStakeData) Gas() int {
+// func (data MoveStakeData) Gas() int64 {
 // 	return gasMoveStake
 // }
 // func (data MoveStakeData) TxType() TxType {
