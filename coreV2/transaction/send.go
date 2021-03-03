@@ -117,8 +117,7 @@ func (data SendData) Run(tx *Transaction, context state.Interface, rewardPool *b
 	}
 
 	return Response{
-		Code:    code.OK,
-		Tags:    tags,
-		GasUsed: data.Gas(),
+		Code: code.OK,
+		Tags: tags,
 	}
 }

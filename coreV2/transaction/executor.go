@@ -123,7 +123,6 @@ func RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBl
 		currentMempool.Store(sender, true)
 	}
 
-	gas := tx.Gas()
 	// check multi-signature
 	if tx.SignatureType == SigTypeMulti {
 		multisig := checkState.Accounts().GetAccount(tx.multisig.Multisig)
@@ -170,8 +169,6 @@ func RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBl
 
 			usedAccounts[signer] = true
 			totalWeight += multisigData.GetWeight(signer)
-
-			gas += gasSign
 		}
 
 		if totalWeight < multisigData.Threshold {
@@ -219,10 +216,7 @@ func RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBl
 		)
 	}
 
-	if commissionCoin != types.GetBaseCoinID() {
-		gas++
-	}
-	response.GasUsed += gas
+	response.GasUsed = tx.Gas()
 	response.GasWanted = response.GasUsed
 	response.GasPrice = tx.GasPrice
 

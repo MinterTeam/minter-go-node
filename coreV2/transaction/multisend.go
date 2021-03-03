@@ -124,9 +124,8 @@ func (data MultisendData) Run(tx *Transaction, context state.Interface, rewardPo
 	}
 
 	return Response{
-		Code:    code.OK,
-		Tags:    tags,
-		GasUsed: data.Gas(),
+		Code: code.OK,
+		Tags: tags,
 	}
 }
 

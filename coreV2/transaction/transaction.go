@@ -192,6 +192,9 @@ func (tx *Transaction) Gas() int64 {
 	if tx.payloadLen() != 0 {
 		base += tx.payloadLen() / 1000
 	}
+	if tx.SignatureType == SigTypeMulti {
+		base += int64(len(tx.multisig.Signatures)) * gasSign
+	}
 	return base + tx.decodedData.Gas()
 }
 
