@@ -19,8 +19,8 @@ type MultisendData struct {
 	List []MultisendDataItem `json:"list"`
 }
 
-func (data MultisendData) Gas() int {
-	return gasMultisendBase + gasMultisendDelta*len(data.List)
+func (data MultisendData) Gas() int64 {
+	return gasMultisendBase + gasMultisendDelta*int64(len(data.List))
 }
 func (data MultisendData) TxType() TxType {
 	return TypeMultisend
@@ -124,8 +124,9 @@ func (data MultisendData) Run(tx *Transaction, context state.Interface, rewardPo
 	}
 
 	return Response{
-		Code: code.OK,
-		Tags: tags,
+		Code:    code.OK,
+		Tags:    tags,
+		GasUsed: data.Gas(),
 	}
 }
 

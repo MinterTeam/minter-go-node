@@ -58,7 +58,10 @@ const (
 
 	baseUnit = 15
 
-	gasSend                    = baseUnit
+	gasSend           = 15
+	gasMultisendBase  = 10
+	gasMultisendDelta = 1
+
 	gasSellCoin                = baseUnit * 2
 	gasSellAllCoin             = baseUnit * 2
 	gasBuyCoin                 = baseUnit * 2
@@ -70,14 +73,11 @@ const (
 	gasSetCandidateOnline      = baseUnit * 5
 	gasSetCandidateOffline     = baseUnit * 5
 	gasCreateMultisig          = baseUnit * 10
-	gasMultisendBase           = 0
-	gasMultisendDelta          = baseUnit
 	gasEditCandidate           = baseUnit * 5
 	gasSetHaltBlock            = baseUnit * 8
 	gasRecreateCoin            = baseUnit * 15
 	gasEditCoinOwner           = baseUnit * 8
 	gasEditMultisig            = baseUnit * 15
-	gasPriceVote               = baseUnit
 	gasEditCandidatePublicKey  = baseUnit * 10
 	gasAddLiquidity            = baseUnit * 10
 	gasRemoveLiquidity         = baseUnit * 10
