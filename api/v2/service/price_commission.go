@@ -18,7 +18,13 @@ func (s *Service) PriceCommission(ctx context.Context, req *pb.PriceCommissionRe
 
 	price := cState.Commission().GetCommissions()
 
-	return priceCommissionResponse(price, cState.Coins().GetCoin(price.Coin)), nil
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+		return nil, timeoutStatus.Err()
+	}
+
+	coin := cState.Coins().GetCoin(price.Coin)
+
+	return priceCommissionResponse(price, coin), nil
 }
 
 func priceCommissionResponse(price *commission.Price, coin *coins.Model) *pb.PriceCommissionResponse {
