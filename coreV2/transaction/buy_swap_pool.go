@@ -32,7 +32,7 @@ func reversePools(a []*tagPoolChange) {
 }
 
 func (data BuySwapPoolData) Gas() int64 {
-	return gasBuySwapPool
+	return gasBuySwapPool + int64(len(data.Coins)-2)*convertDelta
 }
 func (data BuySwapPoolData) TxType() TxType {
 	return TypeBuySwapPool

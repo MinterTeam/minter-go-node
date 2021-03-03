@@ -13,54 +13,51 @@ import (
 )
 
 type VoteCommissionData struct {
-	PubKey            types.Pubkey
-	Height            uint64
-	Coin              types.CoinID
-	PayloadByte       *big.Int
-	Send              *big.Int
-	BuyBancor         *big.Int
-	SellBancor        *big.Int
-	SellAllBancor     *big.Int
-	BuyPoolBase       *big.Int
-	BuyPoolDelta      *big.Int
-	SellPoolBase      *big.Int
-	SellPoolDelta     *big.Int
-	SellAllPoolBase   *big.Int
-	SellAllPoolDelta  *big.Int
-	CreateTicker3     *big.Int
-	CreateTicker4     *big.Int
-	CreateTicker5     *big.Int
-	CreateTicker6     *big.Int
-	CreateTicker7to10 *big.Int
-	CreateCoin        *big.Int
-	CreateToken       *big.Int
-	RecreateCoin      *big.Int
-	RecreateToken     *big.Int
-	DeclareCandidacy  *big.Int
-	Delegate          *big.Int
-	Unbond            *big.Int
-	RedeemCheck       *big.Int
-	SetCandidateOn    *big.Int
-	SetCandidateOff   *big.Int
-	CreateMultisig    *big.Int
-	MultisendBase     *big.Int
-	MultisendDelta    *big.Int
-	EditCandidate     *big.Int
-	SetHaltBlock      *big.Int
-	EditTickerOwner   *big.Int
-	EditMultisig      *big.Int
-	// PriceVote               *big.Int
+	PubKey                  types.Pubkey
+	Height                  uint64
+	Coin                    types.CoinID
+	PayloadByte             *big.Int
+	Send                    *big.Int
+	BuyBancor               *big.Int
+	SellBancor              *big.Int
+	SellAllBancor           *big.Int
+	BuyPoolBase             *big.Int
+	BuyPoolDelta            *big.Int
+	SellPoolBase            *big.Int
+	SellPoolDelta           *big.Int
+	SellAllPoolBase         *big.Int
+	SellAllPoolDelta        *big.Int
+	CreateTicker3           *big.Int
+	CreateTicker4           *big.Int
+	CreateTicker5           *big.Int
+	CreateTicker6           *big.Int
+	CreateCoin              *big.Int
+	CreateToken             *big.Int
+	RecreateCoin            *big.Int
+	RecreateToken           *big.Int
+	DeclareCandidacy        *big.Int
+	Delegate                *big.Int
+	Unbond                  *big.Int
+	RedeemCheck             *big.Int
+	SetCandidateOn          *big.Int
+	SetCandidateOff         *big.Int
+	CreateMultisig          *big.Int
+	MultisendBase           *big.Int
+	MultisendDelta          *big.Int
+	EditCandidate           *big.Int
+	SetHaltBlock            *big.Int
+	EditTickerOwner         *big.Int
+	EditMultisig            *big.Int
 	EditCandidatePublicKey  *big.Int
 	CreateSwapPool          *big.Int
 	AddLiquidity            *big.Int
 	RemoveLiquidity         *big.Int
 	EditCandidateCommission *big.Int
-	// MoveStake               *big.Int
-	MintToken      *big.Int
-	BurnToken      *big.Int
-	VoteCommission *big.Int
-	VoteUpdate     *big.Int
-	More           []*big.Int `rlp:"tail"`
+	MintToken               *big.Int
+	BurnToken               *big.Int
+	VoteCommission          *big.Int
+	VoteUpdate              *big.Int
+	More                    []*big.Int `rlp:"tail"`
 }
 
 func (data VoteCommissionData) TxType() TxType {
@@ -187,40 +184,39 @@ func (data VoteCommissionData) Run(tx *Transaction, context state.Interface, rew
 
 func (data VoteCommissionData) price() *commission.Price {
 	return &commission.Price{
-		Coin:              data.Coin,
-		PayloadByte:       data.PayloadByte,
-		Send:              data.Send,
-		BuyBancor:         data.BuyBancor,
-		SellBancor:        data.SellBancor,
-		SellAllBancor:     data.SellAllBancor,
-		BuyPoolBase:       data.BuyPoolBase,
-		BuyPoolDelta:      data.BuyPoolDelta,
-		SellPoolBase:      data.SellPoolBase,
-		SellPoolDelta:     data.SellPoolDelta,
-		SellAllPoolBase:   data.SellAllPoolBase,
-		SellAllPoolDelta:  data.SellAllPoolDelta,
-		CreateTicker3:     data.CreateTicker3,
-		CreateTicker4:     data.CreateTicker4,
-		CreateTicker5:     data.CreateTicker5,
-		CreateTicker6:     data.CreateTicker6,
-		CreateTicker7to10: data.CreateTicker7to10,
-		CreateCoin:        data.CreateCoin,
-		CreateToken:       data.CreateToken,
-		RecreateCoin:      data.RecreateCoin,
-		RecreateToken:     data.RecreateToken,
-		DeclareCandidacy:  data.DeclareCandidacy,
-		Delegate:          data.Delegate,
-		Unbond:            data.Unbond,
-		RedeemCheck:       data.RedeemCheck,
-		SetCandidateOn:    data.SetCandidateOn,
-		SetCandidateOff:   data.SetCandidateOff,
-		CreateMultisig:    data.CreateMultisig,
-		MultisendBase:     data.MultisendBase,
-		MultisendDelta:    data.MultisendDelta,
-		EditCandidate:     data.EditCandidate,
-		SetHaltBlock:      data.SetHaltBlock,
-		EditTickerOwner:   data.EditTickerOwner,
-		EditMultisig:      data.EditMultisig,
+		Coin:             data.Coin,
+		PayloadByte:      data.PayloadByte,
+		Send:             data.Send,
+		BuyBancor:        data.BuyBancor,
+		SellBancor:       data.SellBancor,
+		SellAllBancor:    data.SellAllBancor,
+		BuyPoolBase:      data.BuyPoolBase,
+		BuyPoolDelta:     data.BuyPoolDelta,
+		SellPoolBase:     data.SellPoolBase,
+		SellPoolDelta:    data.SellPoolDelta,
+		SellAllPoolBase:  data.SellAllPoolBase,
+		SellAllPoolDelta: data.SellAllPoolDelta,
+		CreateTicker3:    data.CreateTicker3,
+		CreateTicker4:    data.CreateTicker4,
+		CreateTicker5:    data.CreateTicker5,
+		CreateTicker6:    data.CreateTicker6,
+		CreateCoin:       data.CreateCoin,
+		CreateToken:      data.CreateToken,
+		RecreateCoin:     data.RecreateCoin,
+		RecreateToken:    data.RecreateToken,
+		DeclareCandidacy: data.DeclareCandidacy,
+		Delegate:         data.Delegate,
+		Unbond:           data.Unbond,
+		RedeemCheck:      data.RedeemCheck,
+		SetCandidateOn:   data.SetCandidateOn,
+		SetCandidateOff:  data.SetCandidateOff,
+		CreateMultisig:   data.CreateMultisig,
+		MultisendBase:    data.MultisendBase,
+		MultisendDelta:   data.MultisendDelta,
+		EditCandidate:    data.EditCandidate,
+		SetHaltBlock:     data.SetHaltBlock,
+		EditTickerOwner:  data.EditTickerOwner,
+		EditMultisig:     data.EditMultisig,
 		// PriceVote:               data.PriceVote,
 		EditCandidatePublicKey:  data.EditCandidatePublicKey,
 		CreateSwapPool:          data.CreateSwapPool,

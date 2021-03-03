@@ -40,7 +40,7 @@ type SellAllSwapPoolData struct {
 }
 
 func (data SellAllSwapPoolData) Gas() int64 {
-	return gasSellAllSwapPool
+	return gasSellAllSwapPool + int64(len(data.Coins)-2)*convertDelta
 }
 
 func (data SellAllSwapPoolData) TxType() TxType {

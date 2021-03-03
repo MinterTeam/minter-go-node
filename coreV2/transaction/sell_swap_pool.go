@@ -21,7 +21,7 @@ func (data SellSwapPoolData) TxType() TxType {
 }
 
 func (data SellSwapPoolData) Gas() int64 {
-	return gasSellSwapPool
+	return gasSellSwapPool + int64(len(data.Coins)-2)*convertDelta
 }
 
 func (data SellSwapPoolData) basicCheck(tx *Transaction, context *state.CheckState) *Response {

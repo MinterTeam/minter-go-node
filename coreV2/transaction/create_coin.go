@@ -126,7 +126,7 @@ func (data CreateCoinData) String() string {
 }
 
 func (data CreateCoinData) CommissionData(price *commission.Price) *big.Int {
-	createTicker := new(big.Int).Set(price.CreateTicker7to10)
+	var createTicker *big.Int
 	switch len(data.Symbol.String()) {
 	case 3:
 		createTicker = price.CreateTicker3
@@ -136,6 +136,8 @@ func (data CreateCoinData) CommissionData(price *commission.Price) *big.Int {
 		createTicker = price.CreateTicker5
 	case 6:
 		createTicker = price.CreateTicker6
+	default:
+		createTicker = big.NewInt(0)
 	}
 
 	return big.NewInt(0).Add(createTicker, price.CreateCoin)

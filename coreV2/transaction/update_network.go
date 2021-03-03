@@ -93,6 +93,9 @@ func (data VoteUpdateData) Run(tx *Transaction, context state.Interface, rewardP
 			deliverState.Coins.SubVolume(tx.GasCoin, commission)
 			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
 		}
+
+		// todo: add store
+
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)

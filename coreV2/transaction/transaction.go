@@ -64,6 +64,7 @@ const (
 	gasAddLiquidity    = 5
 	gasRemoveLiquidity = 5
 
+	convertDelta       = 1
 	gasSellSwapPool    = 2
 	gasBuySwapPool     = 2
 	gasSellAllSwapPool = 2
