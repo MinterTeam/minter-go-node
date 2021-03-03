@@ -14,6 +14,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/coreV2/state/frozenfunds"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/halts"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/swap"
+	"github.com/MinterTeam/minter-go-node/coreV2/state/update"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/validators"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/waitlist"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
@@ -134,6 +135,9 @@ func (cs *CheckState) ExportV1toV2(bipRate float64) types.AppState {
 	return *appState
 }
 
+func (cs *CheckState) Updates() update.RUpdate {
+	return cs.state.Updates
+}
 func (cs *CheckState) Validators() validators.RValidators {
 	return cs.state.Validators
 }
@@ -192,6 +196,7 @@ type State struct {
 	lock           sync.RWMutex
 	height         int64
 	initialVersion int64
+	Updates        *update.Update
 }
 
 func (s *State) isValue_State() {}

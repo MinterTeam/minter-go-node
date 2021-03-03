@@ -30,7 +30,7 @@ func (data VoteUpdateData) GetPubKey() types.Pubkey {
 }
 
 func (data VoteUpdateData) basicCheck(tx *Transaction, context *state.CheckState, block uint64) *Response {
-	if len(data.Version) > 20 {
+	if data.Version != "2.0.x" {
 		return &Response{
 			Code: code.WrongUpdateVersionName,
 			Log:  "wrong version name",
@@ -42,6 +42,14 @@ func (data VoteUpdateData) basicCheck(tx *Transaction, context *state.CheckState
 			Code: code.VoiceExpired,
 			Log:  "voice is produced for the past state",
 			Info: EncodeError(code.NewVoiceExpired(strconv.Itoa(int(block)), strconv.Itoa(int(data.Height)))),
+		}
+	}
+
+	if context.Updates().IsVoteExists(data.Height, data.PubKey) {
+		return &Response{
+			Code: code.VoiceAlreadyExists,
+			Log:  "Update vote with such public key and height already exists",
+			Info: EncodeError(code.NewVoiceAlreadyExists(strconv.FormatUint(data.Height, 10), data.GetPubKey().String())),
 		}
 	}
 	return checkCandidateOwnership(data, tx, context)
@@ -94,7 +102,7 @@ func (data VoteUpdateData) Run(tx *Transaction, context state.Interface, rewardP
 			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
 		}
 
-		// todo: add store
+		deliverState.Updates.AddVoice(data.Height, data.PubKey, data.Version)
 
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)

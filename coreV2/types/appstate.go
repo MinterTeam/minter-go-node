@@ -20,6 +20,7 @@ type AppState struct {
 	HaltBlocks          []HaltBlock      `json:"halt_blocks,omitempty"`
 	Commission          Commission       `json:"commission,omitempty"`
 	CommissionVotes     []CommissionVote `json:"commission_votes,omitempty"`
+	UpdateVotes         []UpdateVote     `json:"update_votes,omitempty"`
 	UsedChecks          []UsedCheck      `json:"used_checks,omitempty"`
 	MaxGas              uint64           `json:"max_gas"`
 	TotalSlashed        string           `json:"total_slashed"`
@@ -357,6 +358,12 @@ type CommissionVote struct {
 	Height     uint64     `json:"height"`
 	Votes      []Pubkey   `json:"votes"`
 	Commission Commission `json:"commission"`
+}
+
+type UpdateVote struct {
+	Height  uint64   `json:"height"`
+	Votes   []Pubkey `json:"votes"`
+	Version string   `json:"version"`
 }
 
 type Commission struct {
