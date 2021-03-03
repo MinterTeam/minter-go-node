@@ -362,6 +362,7 @@ func priceCommissionData(d *transaction.VoteCommissionData, coin *coins.Model) p
 		CreateTicker4:           d.CreateTicker4.String(),
 		CreateTicker5:           d.CreateTicker5.String(),
 		CreateTicker6:           d.CreateTicker6.String(),
+		CreateTicker7_10:        d.CreateTicker7to10.String(),
 		CreateCoin:              d.CreateCoin.String(),
 		CreateToken:             d.CreateToken.String(),
 		RecreateCoin:            d.RecreateCoin.String(),

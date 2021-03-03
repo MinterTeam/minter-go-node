@@ -24,6 +24,7 @@ type Price struct {
 	CreateTicker4           *big.Int
 	CreateTicker5           *big.Int
 	CreateTicker6           *big.Int
+	CreateTicker7to10       *big.Int
 	CreateCoin              *big.Int
 	CreateToken             *big.Int
 	RecreateCoin            *big.Int

@@ -42,6 +42,7 @@ func priceCommissionResponse(price *commission.Price, coin *coins.Model) *pb.Pri
 		CreateTicker4:           price.CreateTicker4.String(),
 		CreateTicker5:           price.CreateTicker5.String(),
 		CreateTicker6:           price.CreateTicker6.String(),
+		CreateTicker7_10:        price.CreateTicker7to10.String(),
 		CreateCoin:              price.CreateCoin.String(),
 		CreateToken:             price.CreateToken.String(),
 		RecreateCoin:            price.RecreateCoin.String(),

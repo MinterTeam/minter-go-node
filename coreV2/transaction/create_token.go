@@ -89,7 +89,7 @@ func (data CreateTokenData) CommissionData(price *commission.Price) *big.Int {
 	case 6:
 		createTicker = price.CreateTicker6
 	default:
-		createTicker = big.NewInt(0)
+		createTicker = price.CreateTicker7to10
 	}
 
 	return big.NewInt(0).Add(createTicker, price.CreateToken)

@@ -406,6 +406,7 @@ type UpdateCommissionsEvent struct {
 	CreateTicker4    string `json:"create_ticker4"`
 	CreateTicker5    string `json:"create_ticker5"`
 	CreateTicker6    string `json:"create_ticker6"`
+	CreateTicker7_10 string `json:"create_ticker7_10"`
 	CreateCoin       string `json:"create_coin"`
 	CreateToken      string `json:"create_token"`
 	RecreateCoin     string `json:"recreate_coin"`
