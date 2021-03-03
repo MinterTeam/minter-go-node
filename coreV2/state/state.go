@@ -54,6 +54,7 @@ func (cs *CheckState) Export() types.AppState {
 	cs.Halts().Export(appState)
 	cs.Swap().Export(appState)
 	cs.Commission().Export(appState)
+	cs.Updates().Export(appState)
 
 	return *appState
 }
@@ -175,28 +176,29 @@ func (cs *CheckState) Commission() commission.RCommission {
 }
 
 type State struct {
-	App            *app.App
-	Validators     *validators.Validators
-	Candidates     *candidates.Candidates
-	FrozenFunds    *frozenfunds.FrozenFunds
-	Halts          *halts.HaltBlocks
-	Accounts       *accounts.Accounts
-	Coins          *coins.Coins
-	Checks         *checks.Checks
-	Checker        *checker.Checker
-	Waitlist       *waitlist.WaitList
-	Swap           *swap.Swap
-	Commission     *commission.Commission
-	db             db.DB
-	events         eventsdb.IEventsDB
-	tree           tree.MTree
-	keepLastStates int64
+	App         *app.App
+	Validators  *validators.Validators
+	Candidates  *candidates.Candidates
+	FrozenFunds *frozenfunds.FrozenFunds
+	Halts       *halts.HaltBlocks
+	Accounts    *accounts.Accounts
+	Coins       *coins.Coins
+	Checks      *checks.Checks
+	Checker     *checker.Checker
+	Waitlist    *waitlist.WaitList
+	Swap        *swap.Swap
+	Commission  *commission.Commission
+	Updates     *update.Update
 
+	db     db.DB
+	events eventsdb.IEventsDB
+	tree   tree.MTree
+
+	keepLastStates int64
 	bus            *bus.Bus
 	lock           sync.RWMutex
 	height         int64
 	initialVersion int64
-	Updates        *update.Update
 }
 
 func (s *State) isValue_State() {}
@@ -269,6 +271,7 @@ func (s *State) Commit() ([]byte, error) {
 		s.Waitlist,
 		s.Swap,
 		s.Commission,
+		s.Updates,
 	)
 	if err != nil {
 		return hash, err
@@ -431,9 +434,11 @@ func newStateForTree(immutableTree *iavl.ImmutableTree, events eventsdb.IEventsD
 
 	waitlistState := waitlist.NewWaitList(stateBus, immutableTree)
 
-	swap := swap.New(stateBus, immutableTree)
+	pool := swap.New(stateBus, immutableTree)
 
 	commission := commission.NewCommission(immutableTree)
+
+	update := update.New(immutableTree)
 
 	state := &State{
 		Validators:  validatorsState,
@@ -446,8 +451,9 @@ func newStateForTree(immutableTree *iavl.ImmutableTree, events eventsdb.IEventsD
 		Checker:     stateChecker,
 		Halts:       haltsState,
 		Waitlist:    waitlistState,
-		Swap:        swap,
+		Swap:        pool,
 		Commission:  commission,
+		Updates:     update,
 
 		height:         immutableTree.Version(),
 		bus:            stateBus,
