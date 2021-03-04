@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/coreV2/state/bus"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"math/big"
@@ -36,10 +35,11 @@ type candidateV1 struct {
 }
 
 // Deprecated
-func (c *Candidates) ExportV1toV2(state *types.AppState) []bus.FrozenFund {
+func (c *Candidates) ExportV1toV2(state *types.AppState, height uint64) []uint32 {
 	c.loadCandidatesDeliverV1()
 	c.loadStakesV1()
-	var frozenFunds []bus.FrozenFund
+
+	var droppedCandidateIDs []uint32
 
 	candidates := c.GetCandidates()
 	state.Candidates = make([]types.Candidate, 0, len(candidates))
@@ -48,22 +48,33 @@ func (c *Candidates) ExportV1toV2(state *types.AppState) []bus.FrozenFund {
 		topCount = 100
 
 		for _, candidate := range candidates[topCount:] {
+			droppedCandidateIDs = append(droppedCandidateIDs, candidate.ID)
+
 			for _, s := range candidate.stakes {
-				frozenFunds = append(frozenFunds, bus.FrozenFund{
+				if s == nil {
+					continue
+				}
+				state.FrozenFunds = append(state.FrozenFunds, types.FrozenFund{
+					Height:       height,
 					Address:      s.Owner,
 					CandidateKey: nil,
 					CandidateID:  0,
-					Coin:         s.Coin,
-					Value:        s.Value,
+					Coin:         uint64(s.Coin),
+					Value:        s.Value.String(),
 				})
+
 			}
 			for _, u := range candidate.updates {
-				frozenFunds = append(frozenFunds, bus.FrozenFund{
+				if u == nil {
+					continue
+				}
+				state.FrozenFunds = append(state.FrozenFunds, types.FrozenFund{
+					Height:       height,
 					Address:      u.Owner,
 					CandidateKey: nil,
 					CandidateID:  0,
-					Coin:         u.Coin,
-					Value:        u.Value,
+					Coin:         uint64(u.Coin),
+					Value:        u.Value.String(),
 				})
 			}
 		}
@@ -111,7 +122,7 @@ func (c *Candidates) ExportV1toV2(state *types.AppState) []bus.FrozenFund {
 		return bytes.Compare(state.BlockListCandidates[i].Bytes(), state.BlockListCandidates[j].Bytes()) == 1
 	})
 
-	return frozenFunds
+	return droppedCandidateIDs
 }
 
 // Deprecated

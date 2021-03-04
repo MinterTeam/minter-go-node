@@ -43,7 +43,7 @@ var (
 // RCandidates interface represents Candidates state
 type RCandidates interface {
 	// Deprecated
-	ExportV1toV2(state *types.AppState) []bus.FrozenFund
+	ExportV1toV2(state *types.AppState, u uint64) []uint32
 
 	Export(state *types.AppState)
 	Exists(pubkey types.Pubkey) bool

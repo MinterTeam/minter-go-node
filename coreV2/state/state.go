@@ -63,10 +63,10 @@ func (cs *CheckState) ExportV1toV2(bipRate float64) types.AppState {
 	appState := new(types.AppState)
 	cs.App().Export(appState)
 	cs.Validators().Export(appState)
-	cs.WaitList().Export(appState)
-	frozenFunds := cs.Candidates().ExportV1toV2(appState)
-	cs.FrozenFunds().ExportV1(appState, uint64(cs.state.height), frozenFunds)
-	cs.Checks().Export(appState) // todo: mb refactor store
+	droppedIDs := cs.Candidates().ExportV1toV2(appState, uint64(cs.state.height))
+	cs.FrozenFunds().Export(appState, uint64(cs.state.height))
+	cs.WaitList().ExportV1(appState, droppedIDs)
+	cs.Checks().Export(appState)
 	cs.Halts().Export(appState)
 
 	totalUSDCValue := helpers.BipToPip(big.NewInt(1000000000))
