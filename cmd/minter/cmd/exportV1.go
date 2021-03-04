@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
+	"github.com/MinterTeam/minter-go-node/coreV2/appdb"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
 	"github.com/spf13/cobra"
 	"github.com/tendermint/go-amino"
@@ -63,13 +64,20 @@ func export(cmd *cobra.Command, args []string) error {
 
 	fmt.Println("Start exporting...")
 
-	ldb, err := utils.NewStorage("", "").InitStateLevelDB("data/state", nil)
+	homeDir, err := cmd.Flags().GetString("home-dir")
+	if err != nil {
+		return err
+	}
+	storages := utils.NewStorage(homeDir, "")
+
+	ldb, err := storages.InitStateLevelDB("data/state", nil)
 	if err != nil {
 		log.Panicf("Cannot load db: %s", err)
 	}
 
 	currentState, err := state.NewCheckStateAtHeight(height, ldb)
 	if err != nil {
+		log.Println(appdb.NewAppDB(storages.GetMinterHome(), cfg).GetLastHeight())
 		log.Panicf("Cannot new state at given height: %s", err)
 	}
 
@@ -89,8 +97,6 @@ func export(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Panicf("Cannot marshal state to json: %s", err)
 	}
-
-	// appHash := [32]byte{}
 
 	// compose genesis
 	genesis := types.GenesisDoc{
