@@ -45,7 +45,7 @@ func (c *Candidates) ExportV1(state *types.AppState, height uint64, validator *t
 	state.Candidates = make([]types.Candidate, 0, 100)
 
 	if validator != nil {
-		validator.ID = uint64(c.maxID)
+		validator.ID = uint64(c.maxID + 1)
 		state.Candidates = append(state.Candidates, *validator)
 	}
 

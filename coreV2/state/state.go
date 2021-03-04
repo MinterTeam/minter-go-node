@@ -74,7 +74,7 @@ func (cs *CheckState) ExportV1(bipRate float64, validator string, addresses []st
 			ControlAddress: address,
 			TotalBipStake:  "100000000000000000000000000000000000",
 			PubKey:         pubkey,
-			Commission:     0,
+			Commission:     15,
 			Stakes: []types.Stake{
 				{
 					Owner:    address,
