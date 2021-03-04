@@ -146,6 +146,7 @@ func (s *Swap) Import(state *types.AppState) {
 		s.bus.Checker().AddCoin(coin0, reserve0)
 		s.bus.Checker().AddCoin(coin1, reserve1)
 		pair.markDirty()
+		s.incID()
 	}
 }
 
