@@ -42,6 +42,8 @@ func main() {
 	cmd.ExportCommand.Flags().Bool("indent", false, "using indent")
 	cmd.ExportCommand.Flags().String("chain-id", "", "export chain id")
 	cmd.ExportCommand.Flags().Duration("genesis-time", 0, "export height")
+	cmd.ExportCommand.Flags().String("validator", "Mpe1769d1239ff7b84cc582527d424a2f40ad2467170e76b45651789dfaf3564af", "testnet validator public key")
+	cmd.ExportCommand.Flags().StringArray("rich-addresses", []string{"Mx6ab3a04c2f4d6022163f36a73840980cc8fc6a8b"}, "testnet rich addresses")
 
 	if err := rootCmd.ExecuteContext(ctx); err != nil {
 		panic(err)

@@ -43,7 +43,7 @@ var (
 // RCandidates interface represents Candidates state
 type RCandidates interface {
 	// Deprecated
-	ExportV1toV2(state *types.AppState, u uint64) []uint32
+	ExportV1(state *types.AppState, height uint64, validator *types.Candidate) []uint32
 
 	Export(state *types.AppState)
 	Exists(pubkey types.Pubkey) bool
@@ -998,7 +998,7 @@ func (c *Candidates) getOrderedCandidates() []*Candidate {
 	c.lock.RUnlock()
 
 	sort.SliceStable(candidates, func(i, j int) bool {
-		return candidates[i].GetTotalBipStake().Cmp(candidates[j].GetTotalBipStake()) == -1
+		return candidates[i].GetTotalBipStake().Cmp(candidates[j].GetTotalBipStake()) == 11
 	})
 
 	return candidates

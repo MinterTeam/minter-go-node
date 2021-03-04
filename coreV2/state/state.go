@@ -59,11 +59,44 @@ func (cs *CheckState) Export() types.AppState {
 	return *appState
 }
 
-func (cs *CheckState) ExportV1toV2(bipRate float64) types.AppState {
+func (cs *CheckState) ExportV1(bipRate float64, validator string, addresses []string) types.AppState {
 	appState := new(types.AppState)
 	cs.App().Export(appState)
-	cs.Validators().Export(appState)
-	droppedIDs := cs.Candidates().ExportV1toV2(appState, uint64(cs.state.height))
+
+	var singleActiveCandidate *types.Candidate
+	if types.CurrentChainID == types.ChainTestnet && validator != "" && len(addresses) != 0 {
+		address := types.HexToAddress(addresses[0])
+		pubkey := types.HexToPubkey(validator)
+		singleActiveCandidate = &types.Candidate{
+			ID:             0,
+			RewardAddress:  address,
+			OwnerAddress:   address,
+			ControlAddress: address,
+			TotalBipStake:  "100000000000000000000000000000000000",
+			PubKey:         pubkey,
+			Commission:     0,
+			Stakes: []types.Stake{
+				{
+					Owner:    address,
+					Coin:     0,
+					Value:    "100000000000000000000000000000000000",
+					BipValue: "100000000000000000000000000000000000",
+				},
+			},
+			Updates: nil,
+			Status:  2,
+		}
+		appState.Validators = append(appState.Validators, types.Validator{
+			TotalBipStake: "100000000000000000000000000000000000",
+			PubKey:        pubkey,
+			AccumReward:   "0",
+			AbsentTimes:   types.NewBitArray(validators.ValidatorMaxAbsentWindow),
+		})
+	} else {
+		cs.Validators().Export(appState)
+	}
+	droppedIDs := cs.Candidates().ExportV1(appState, uint64(cs.state.height), singleActiveCandidate)
+
 	cs.FrozenFunds().Export(appState, uint64(cs.state.height))
 	cs.WaitList().ExportV1(appState, droppedIDs)
 	cs.Checks().Export(appState)
@@ -133,6 +166,21 @@ func (cs *CheckState) ExportV1toV2(bipRate float64) types.AppState {
 			MultisigData: nil,
 		})
 	}
+
+	for _, address := range addresses {
+		appState.Accounts = append(appState.Accounts, types.Account{
+			Address: types.HexToAddress(address),
+			Balance: []types.Balance{
+				{
+					Coin:  0,
+					Value: "100000000000000000000000000000000000",
+				},
+			},
+			Nonce:        0,
+			MultisigData: nil,
+		})
+	}
+
 	return *appState
 }
 

@@ -24,7 +24,7 @@ const (
 )
 
 const (
-	validatorMaxAbsentWindow = 24
+	ValidatorMaxAbsentWindow = 24
 	validatorMaxAbsentTimes  = 12
 )
 
@@ -196,7 +196,7 @@ func (v *Validators) SetNewValidators(candidates []*candidates.Candidate) {
 	var newVals []*Validator
 	for _, candidate := range candidates {
 		accumReward := big.NewInt(0)
-		absentTimes := types.NewBitArray(validatorMaxAbsentWindow)
+		absentTimes := types.NewBitArray(ValidatorMaxAbsentWindow)
 
 		for _, oldVal := range old {
 			if oldVal.GetAddress() == candidate.GetTmAddress() {
@@ -247,7 +247,7 @@ func (v *Validators) PunishByzantineValidator(tmAddress [20]byte) {
 func (v *Validators) Create(pubkey types.Pubkey, stake *big.Int) {
 	val := &Validator{
 		PubKey:             pubkey,
-		AbsentTimes:        types.NewBitArray(validatorMaxAbsentWindow),
+		AbsentTimes:        types.NewBitArray(ValidatorMaxAbsentWindow),
 		totalStake:         big.NewInt(0).Set(stake),
 		accumReward:        big.NewInt(0),
 		isDirty:            true,
@@ -503,7 +503,7 @@ func (v *Validators) turnValidatorOff(tmAddress types.TmAddress) {
 	validator.lock.Lock()
 	defer validator.lock.Unlock()
 
-	validator.AbsentTimes = types.NewBitArray(validatorMaxAbsentWindow)
+	validator.AbsentTimes = types.NewBitArray(ValidatorMaxAbsentWindow)
 	validator.toDrop = true
 	validator.isDirty = true
 	v.bus.Candidates().SetOffline(validator.PubKey)

@@ -35,14 +35,20 @@ type candidateV1 struct {
 }
 
 // Deprecated
-func (c *Candidates) ExportV1toV2(state *types.AppState, height uint64) []uint32 {
+func (c *Candidates) ExportV1(state *types.AppState, height uint64, validator *types.Candidate) []uint32 {
 	c.loadCandidatesDeliverV1()
 	c.loadStakesV1()
 
 	var droppedCandidateIDs []uint32
 
 	candidates := c.GetCandidates()
-	state.Candidates = make([]types.Candidate, 0, len(candidates))
+	state.Candidates = make([]types.Candidate, 0, 100)
+
+	if validator != nil {
+		validator.ID = uint64(c.maxID)
+		state.Candidates = append(state.Candidates, *validator)
+	}
+
 	topCount := len(candidates)
 	if topCount > 100 {
 		topCount = 100
@@ -101,6 +107,10 @@ func (c *Candidates) ExportV1toV2(state *types.AppState, height uint64) []uint32
 			}
 		}
 
+		status := uint64(candidate.Status)
+		if validator != nil {
+			status = 1
+		}
 		state.Candidates = append(state.Candidates, types.Candidate{
 			ID:             uint64(candidate.ID),
 			RewardAddress:  candidate.RewardAddress,
@@ -109,7 +119,7 @@ func (c *Candidates) ExportV1toV2(state *types.AppState, height uint64) []uint32
 			TotalBipStake:  candidate.GetTotalBipStake().String(),
 			PubKey:         candidate.PubKey,
 			Commission:     uint64(candidate.Commission),
-			Status:         uint64(candidate.Status),
+			Status:         status,
 			Updates:        updates,
 			Stakes:         stakes,
 		})

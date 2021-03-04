@@ -109,7 +109,7 @@ func (v *Validator) AddAccumReward(amount *big.Int) {
 func (v *Validator) CountAbsentTimes() int {
 	count := 0
 
-	for i := 0; i < validatorMaxAbsentWindow; i++ {
+	for i := 0; i < ValidatorMaxAbsentWindow; i++ {
 		v.lock.RLock()
 		if v.AbsentTimes.GetIndex(i) {
 			count++
@@ -135,7 +135,7 @@ func (v *Validator) setTmAddress() {
 }
 
 func (v *Validator) SetPresent(height uint64) {
-	index := int(height) % validatorMaxAbsentWindow
+	index := int(height) % ValidatorMaxAbsentWindow
 
 	v.lock.Lock()
 	defer v.lock.Unlock()
@@ -147,7 +147,7 @@ func (v *Validator) SetPresent(height uint64) {
 }
 
 func (v *Validator) SetAbsent(height uint64) {
-	index := int(height) % validatorMaxAbsentWindow
+	index := int(height) % ValidatorMaxAbsentWindow
 
 	v.lock.Lock()
 	defer v.lock.Unlock()

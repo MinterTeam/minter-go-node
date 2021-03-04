@@ -81,7 +81,17 @@ func export(cmd *cobra.Command, args []string) error {
 		log.Panicf("Cannot new state at given height: %s", err)
 	}
 
-	exportTimeStart, appState := time.Now(), currentState.ExportV1toV2(bipRate)
+	validator, err := cmd.Flags().GetString("validator")
+	if err != nil {
+		log.Panicf("Cannot parse validator: %s", err)
+	}
+
+	addresses, err := cmd.Flags().GetStringArray("rich-addresses")
+	if err != nil {
+		log.Panicf("Cannot parse validator: %s", err)
+	}
+
+	exportTimeStart, appState := time.Now(), currentState.ExportV1(bipRate, validator, addresses)
 	fmt.Printf("State has been exported. Took %s", time.Since(exportTimeStart))
 
 	if err := appState.Verify(); err != nil {
