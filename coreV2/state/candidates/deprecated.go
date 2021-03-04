@@ -68,7 +68,6 @@ func (c *Candidates) ExportV1(state *types.AppState, height uint64, validator *t
 					Coin:         uint64(s.Coin),
 					Value:        s.Value.String(),
 				})
-
 			}
 			for _, u := range candidate.updates {
 				if u == nil {
@@ -87,24 +86,24 @@ func (c *Candidates) ExportV1(state *types.AppState, height uint64, validator *t
 	}
 	for _, candidate := range candidates[:topCount] {
 		candidateStakes := c.GetStakes(candidate.PubKey)
-		stakes := make([]types.Stake, len(candidateStakes))
-		for i, s := range candidateStakes {
-			stakes[i] = types.Stake{
+		stakes := make([]types.Stake, 0, len(candidateStakes))
+		for _, s := range candidateStakes {
+			stakes = append(stakes, types.Stake{
 				Owner:    s.Owner,
 				Coin:     uint64(s.Coin),
 				Value:    s.Value.String(),
 				BipValue: s.BipValue.String(),
-			}
+			})
 		}
 
-		updates := make([]types.Stake, len(candidate.updates))
-		for i, u := range candidate.updates {
-			updates[i] = types.Stake{
+		updates := make([]types.Stake, 0, len(candidate.updates))
+		for _, u := range candidate.updates {
+			updates = append(updates, types.Stake{
 				Owner:    u.Owner,
 				Coin:     uint64(u.Coin),
 				Value:    u.Value.String(),
 				BipValue: u.BipValue.String(),
-			}
+			})
 		}
 
 		status := uint64(candidate.Status)

@@ -1,7 +1,6 @@
 package accounts
 
 import (
-	"bytes"
 	"github.com/MinterTeam/minter-go-node/coreV2/dao"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"math/big"
@@ -51,7 +50,7 @@ func (a *Accounts) ExportV1(state *types.AppState, subBipValueFromDAO *big.Int) 
 
 		// sort balances by coin symbol
 		sort.SliceStable(balance, func(i, j int) bool {
-			return bytes.Compare(types.CoinID(balance[i].Coin).Bytes(), types.CoinID(balance[j].Coin).Bytes()) == 1
+			return balance[i].Coin > balance[j].Coin
 		})
 
 		acc := types.Account{

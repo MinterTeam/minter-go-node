@@ -92,10 +92,11 @@ func export(cmd *cobra.Command, args []string) error {
 	}
 
 	exportTimeStart, appState := time.Now(), currentState.ExportV1(bipRate, validator, addresses)
-	fmt.Printf("State has been exported. Took %s", time.Since(exportTimeStart))
+	fmt.Printf("State has been exported. Took %s\n", time.Since(exportTimeStart))
 
 	if err := appState.Verify(); err != nil {
-		log.Panicf("Failed to validate: %s", err)
+		log.Printf("Failed to validate: %s\n", err)
+		os.Exit(1)
 	}
 
 	var jsonBytes []byte

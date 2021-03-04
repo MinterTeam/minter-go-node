@@ -216,7 +216,7 @@ func (f *FrozenFunds) Delete(height uint64) {
 }
 
 func (f *FrozenFunds) Export(state *types.AppState, height uint64) {
-	for i := height; i <= height+types.GetUnbondPeriod(); i++ {
+	for i := height; i <= height+types.GetUnbondPeriodWithChain(types.ChainMainnet); i++ {
 		frozenFunds := f.get(i)
 		if frozenFunds == nil {
 			continue
