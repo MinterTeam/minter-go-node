@@ -117,7 +117,7 @@ func TestValidators_LoadValidators(t *testing.T) {
 
 	newValidator := NewValidator(
 		[32]byte{1},
-		types.NewBitArray(validatorMaxAbsentWindow),
+		types.NewBitArray(ValidatorMaxAbsentWindow),
 		big.NewInt(1000000),
 		big.NewInt(0),
 		true,
@@ -165,7 +165,7 @@ func TestValidators_SetValidators(t *testing.T) {
 
 	newValidator := NewValidator(
 		[32]byte{1},
-		types.NewBitArray(validatorMaxAbsentWindow),
+		types.NewBitArray(ValidatorMaxAbsentWindow),
 		big.NewInt(1000000),
 		big.NewInt(0),
 		true,
@@ -200,7 +200,7 @@ func TestValidators_PayRewards(t *testing.T) {
 	validators := NewValidators(b, mutableTree.GetLastImmutable())
 	newValidator := NewValidator(
 		[32]byte{4},
-		types.NewBitArray(validatorMaxAbsentWindow),
+		types.NewBitArray(ValidatorMaxAbsentWindow),
 		big.NewInt(1000000),
 		big.NewInt(10),
 		true,
@@ -259,7 +259,7 @@ func TestValidators_SetValidatorAbsent(t *testing.T) {
 	validators := NewValidators(b, mutableTree.GetLastImmutable())
 	newValidator := NewValidator(
 		[32]byte{4},
-		types.NewBitArray(validatorMaxAbsentWindow),
+		types.NewBitArray(ValidatorMaxAbsentWindow),
 		big.NewInt(1000000),
 		big.NewInt(100),
 		true,
@@ -359,7 +359,7 @@ func TestValidators_Export(t *testing.T) {
 	validators := NewValidators(b, mutableTree.GetLastImmutable())
 	newValidator := NewValidator(
 		[32]byte{4},
-		types.NewBitArray(validatorMaxAbsentWindow),
+		types.NewBitArray(ValidatorMaxAbsentWindow),
 		helpers.BipToPip(big.NewInt(1000000)),
 		big.NewInt(100),
 		true,

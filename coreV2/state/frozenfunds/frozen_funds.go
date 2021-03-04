@@ -18,9 +18,6 @@ import (
 const mainPrefix = byte('f')
 
 type RFrozenFunds interface {
-	// Deprecated
-	ExportV1(state *types.AppState, height uint64, funds []bus.FrozenFund)
-
 	Export(state *types.AppState, height uint64)
 	GetFrozenFunds(height uint64) *Model
 }
@@ -219,7 +216,7 @@ func (f *FrozenFunds) Delete(height uint64) {
 }
 
 func (f *FrozenFunds) Export(state *types.AppState, height uint64) {
-	for i := height; i <= height+types.GetUnbondPeriod(); i++ {
+	for i := height; i <= height+types.GetUnbondPeriodWithChain(types.ChainMainnet); i++ {
 		frozenFunds := f.get(i)
 		if frozenFunds == nil {
 			continue
@@ -237,40 +234,6 @@ func (f *FrozenFunds) Export(state *types.AppState, height uint64) {
 			})
 		}
 		frozenFunds.lock.RUnlock()
-	}
-}
-
-// Deprecated
-func (f *FrozenFunds) ExportV1(state *types.AppState, height uint64, funds []bus.FrozenFund) {
-	for i := height; i <= height+types.GetUnbondPeriod(); i++ {
-		frozenFunds := f.get(i)
-		if frozenFunds == nil {
-			continue
-		}
-
-		frozenFunds.lock.RLock()
-		for _, frozenFund := range frozenFunds.List {
-			state.FrozenFunds = append(state.FrozenFunds, types.FrozenFund{
-				Height:       i,
-				Address:      frozenFund.Address,
-				CandidateKey: frozenFund.CandidateKey,
-				CandidateID:  uint64(frozenFund.CandidateID),
-				Coin:         uint64(frozenFund.Coin),
-				Value:        frozenFund.Value.String(),
-			})
-		}
-		frozenFunds.lock.RUnlock()
-	}
-
-	for _, fund := range funds {
-		state.FrozenFunds = append(state.FrozenFunds, types.FrozenFund{
-			Height:       height,
-			Address:      fund.Address,
-			CandidateKey: fund.CandidateKey,
-			CandidateID:  0,
-			Coin:         uint64(fund.Coin),
-			Value:        fund.Value.String(),
-		})
 	}
 }
 

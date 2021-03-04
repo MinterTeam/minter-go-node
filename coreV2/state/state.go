@@ -59,14 +59,47 @@ func (cs *CheckState) Export() types.AppState {
 	return *appState
 }
 
-func (cs *CheckState) ExportV1toV2(bipRate float64) types.AppState {
+func (cs *CheckState) ExportV1(bipRate float64, validator string, addresses []string) types.AppState {
 	appState := new(types.AppState)
 	cs.App().Export(appState)
-	cs.Validators().Export(appState)
-	cs.WaitList().Export(appState)
-	frozenFunds := cs.Candidates().ExportV1toV2(appState)
-	cs.FrozenFunds().ExportV1(appState, uint64(cs.state.height), frozenFunds)
-	cs.Checks().Export(appState) // todo: mb refactor store
+
+	var singleActiveCandidate *types.Candidate
+	if types.CurrentChainID == types.ChainTestnet && validator != "" && len(addresses) != 0 {
+		address := types.HexToAddress(addresses[0])
+		pubkey := types.HexToPubkey(validator)
+		singleActiveCandidate = &types.Candidate{
+			ID:             0,
+			RewardAddress:  address,
+			OwnerAddress:   address,
+			ControlAddress: address,
+			TotalBipStake:  "100000000000000000000000000000000000",
+			PubKey:         pubkey,
+			Commission:     0,
+			Stakes: []types.Stake{
+				{
+					Owner:    address,
+					Coin:     0,
+					Value:    "100000000000000000000000000000000000",
+					BipValue: "100000000000000000000000000000000000",
+				},
+			},
+			Updates: nil,
+			Status:  2,
+		}
+		appState.Validators = append(appState.Validators, types.Validator{
+			TotalBipStake: "100000000000000000000000000000000000",
+			PubKey:        pubkey,
+			AccumReward:   "0",
+			AbsentTimes:   types.NewBitArray(validators.ValidatorMaxAbsentWindow),
+		})
+	} else {
+		cs.Validators().Export(appState)
+	}
+	droppedIDs := cs.Candidates().ExportV1(appState, uint64(cs.state.height), singleActiveCandidate)
+
+	cs.FrozenFunds().Export(appState, uint64(cs.state.height))
+	cs.WaitList().ExportV1(appState, droppedIDs)
+	cs.Checks().Export(appState)
 	cs.Halts().Export(appState)
 
 	totalUSDCValue := helpers.BipToPip(big.NewInt(1000000000))
@@ -111,28 +144,43 @@ func (cs *CheckState) ExportV1toV2(bipRate float64) types.AppState {
 			Weights:   []uint64{1000},
 			Threshold: 667,
 			Addresses: []types.Address{
-				types.StringToAddress("Mx90b704f155b3cd7f998802ff2ce5c39cb2a9caac"),
+				types.HexToAddress("Mx90b704f155b3cd7f998802ff2ce5c39cb2a9caac"),
 			},
 		},
 	})
 
+	balance := types.Balance{
+		Coin:  lpUSDC,
+		Value: "1000",
+	}
+
 	if appState.Accounts[0].Address == [20]byte{} {
-		appState.Accounts[0].Balance = append(appState.Accounts[0].Balance, types.Balance{
-			Coin:  lpUSDC,
-			Value: "1000",
-		})
+		appState.Accounts[0].Balance = append(appState.Accounts[0].Balance, balance)
 	} else {
 		appState.Accounts = append(appState.Accounts, types.Account{
 			Address: types.Address{},
 			Balance: []types.Balance{
-				{
-					Coin:  lpUSDC,
-					Value: "1000"},
+				balance,
 			},
 			Nonce:        0,
 			MultisigData: nil,
 		})
 	}
+
+	for _, address := range addresses {
+		appState.Accounts = append(appState.Accounts, types.Account{
+			Address: types.HexToAddress(address),
+			Balance: []types.Balance{
+				{
+					Coin:  0,
+					Value: "100000000000000000000000000000000000",
+				},
+			},
+			Nonce:        0,
+			MultisigData: nil,
+		})
+	}
+
 	return *appState
 }
 

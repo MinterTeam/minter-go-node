@@ -279,8 +279,8 @@ type Candidate struct {
 	TotalBipStake  string  `json:"total_bip_stake"`
 	PubKey         Pubkey  `json:"public_key"`
 	Commission     uint64  `json:"commission"`
-	Stakes         []Stake `json:"stakes"`
-	Updates        []Stake `json:"updates"`
+	Stakes         []Stake `json:"stakes,omitempty"`
+	Updates        []Stake `json:"updates,omitempty"`
 	Status         uint64  `json:"status"`
 }
 
@@ -324,7 +324,7 @@ type FrozenFund struct {
 	Height       uint64  `json:"height"`
 	Address      Address `json:"address"`
 	CandidateKey *Pubkey `json:"candidate_key,omitempty"` // todo: mb delete
-	CandidateID  uint64  `json:"candidate_id"`
+	CandidateID  uint64  `json:"candidate_id,omitempty"`
 	Coin         uint64  `json:"coin"`
 	Value        string  `json:"value"`
 	// MoveToCandidateID *uint64 `json:"move_to_candidate_id,omitempty"`
@@ -334,7 +334,7 @@ type UsedCheck string
 
 type Account struct {
 	Address      Address   `json:"address"`
-	Balance      []Balance `json:"balance"`
+	Balance      []Balance `json:"balance,omitempty"`
 	Nonce        uint64    `json:"nonce"`
 	MultisigData *Multisig `json:"multisig_data,omitempty"`
 }
@@ -367,49 +367,47 @@ type UpdateVote struct {
 }
 
 type Commission struct {
-	Coin             uint64 `json:"coin"`
-	PayloadByte      string `json:"payload_byte"`
-	Send             string `json:"send"`
-	BuyBancor        string `json:"buy_bancor"`
-	SellBancor       string `json:"sell_bancor"`
-	SellAllBancor    string `json:"sell_all_bancor"`
-	BuyPoolBase      string `json:"buy_pool_base"`
-	BuyPoolDelta     string `json:"buy_pool_delta"`
-	SellPoolBase     string `json:"sell_pool_base"`
-	SellPoolDelta    string `json:"sell_pool_delta"`
-	SellAllPoolBase  string `json:"sell_all_pool_base"`
-	SellAllPoolDelta string `json:"sell_all_pool_delta"`
-	CreateTicker3    string `json:"create_ticker3"`
-	CreateTicker4    string `json:"create_ticker4"`
-	CreateTicker5    string `json:"create_ticker5"`
-	CreateTicker6    string `json:"create_ticker6"`
-	CreateTicker7_10 string `json:"create_ticker7_10"`
-	CreateCoin       string `json:"create_coin"`
-	CreateToken      string `json:"create_token"`
-	RecreateCoin     string `json:"recreate_coin"`
-	RecreateToken    string `json:"recreate_token"`
-	DeclareCandidacy string `json:"declare_candidacy"`
-	Delegate         string `json:"delegate"`
-	Unbond           string `json:"unbond"`
-	RedeemCheck      string `json:"redeem_check"`
-	SetCandidateOn   string `json:"set_candidate_on"`
-	SetCandidateOff  string `json:"set_candidate_off"`
-	CreateMultisig   string `json:"create_multisig"`
-	MultisendBase    string `json:"multisend_base"`
-	MultisendDelta   string `json:"multisend_delta"`
-	EditCandidate    string `json:"edit_candidate"`
-	SetHaltBlock     string `json:"set_halt_block"`
-	EditTickerOwner  string `json:"edit_ticker_owner"`
-	EditMultisig     string `json:"edit_multisig"`
-	// PriceVote               string `json:"price_vote"`
+	Coin                    uint64 `json:"coin"`
+	PayloadByte             string `json:"payload_byte"`
+	Send                    string `json:"send"`
+	BuyBancor               string `json:"buy_bancor"`
+	SellBancor              string `json:"sell_bancor"`
+	SellAllBancor           string `json:"sell_all_bancor"`
+	BuyPoolBase             string `json:"buy_pool_base"`
+	BuyPoolDelta            string `json:"buy_pool_delta"`
+	SellPoolBase            string `json:"sell_pool_base"`
+	SellPoolDelta           string `json:"sell_pool_delta"`
+	SellAllPoolBase         string `json:"sell_all_pool_base"`
+	SellAllPoolDelta        string `json:"sell_all_pool_delta"`
+	CreateTicker3           string `json:"create_ticker3"`
+	CreateTicker4           string `json:"create_ticker4"`
+	CreateTicker5           string `json:"create_ticker5"`
+	CreateTicker6           string `json:"create_ticker6"`
+	CreateTicker7_10        string `json:"create_ticker7_10"`
+	CreateCoin              string `json:"create_coin"`
+	CreateToken             string `json:"create_token"`
+	RecreateCoin            string `json:"recreate_coin"`
+	RecreateToken           string `json:"recreate_token"`
+	DeclareCandidacy        string `json:"declare_candidacy"`
+	Delegate                string `json:"delegate"`
+	Unbond                  string `json:"unbond"`
+	RedeemCheck             string `json:"redeem_check"`
+	SetCandidateOn          string `json:"set_candidate_on"`
+	SetCandidateOff         string `json:"set_candidate_off"`
+	CreateMultisig          string `json:"create_multisig"`
+	MultisendBase           string `json:"multisend_base"`
+	MultisendDelta          string `json:"multisend_delta"`
+	EditCandidate           string `json:"edit_candidate"`
+	SetHaltBlock            string `json:"set_halt_block"`
+	EditTickerOwner         string `json:"edit_ticker_owner"`
+	EditMultisig            string `json:"edit_multisig"`
 	EditCandidatePublicKey  string `json:"edit_candidate_public_key"`
 	CreateSwapPool          string `json:"create_swap_pool"`
 	AddLiquidity            string `json:"add_liquidity"`
 	RemoveLiquidity         string `json:"remove_liquidity"`
 	EditCandidateCommission string `json:"edit_candidate_commission"`
-	// MoveStake               string `json:"move_stake"`
-	MintToken      string `json:"mint_token"`
-	BurnToken      string `json:"burn_token"`
-	VoteCommission string `json:"vote_commission"`
-	VoteUpdate     string `json:"vote_update"`
+	MintToken               string `json:"mint_token"`
+	BurnToken               string `json:"burn_token"`
+	VoteCommission          string `json:"vote_commission"`
+	VoteUpdate              string `json:"vote_update"`
 }

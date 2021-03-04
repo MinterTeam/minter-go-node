@@ -17,6 +17,9 @@ import (
 const mainPrefix = byte('w')
 
 type RWaitList interface {
+	// Deprecated
+	ExportV1(state *types.AppState, ds []uint32)
+
 	Get(address types.Address, pubkey types.Pubkey, coin types.CoinID) *Item
 	GetByAddress(address types.Address) *Model
 	GetByAddressAndPubKey(address types.Address, pubkey types.Pubkey) []Item
@@ -69,6 +72,45 @@ func (wl *WaitList) Export(state *types.AppState) {
 		model := wl.GetByAddress(address)
 		if model != nil && len(model.List) != 0 {
 			for _, w := range model.List {
+				state.Waitlist = append(state.Waitlist, types.Waitlist{
+					CandidateID: uint64(w.CandidateId),
+					Owner:       address,
+					Coin:        uint64(w.Coin),
+					Value:       w.Value.String(),
+				})
+			}
+		}
+
+		return false
+	})
+
+	sort.SliceStable(state.Waitlist, func(i, j int) bool {
+		return bytes.Compare(state.Waitlist[i].Owner.Bytes(), state.Waitlist[j].Owner.Bytes()) == 1
+	})
+}
+
+// Deprecated
+func (wl *WaitList) ExportV1(state *types.AppState, droppedIDs []uint32) {
+	dropped := map[uint32]struct{}{}
+	for _, d := range droppedIDs {
+		dropped[d] = struct{}{}
+	}
+	wl.immutableTree().IterateRange([]byte{mainPrefix}, []byte{mainPrefix + 1}, true, func(key []byte, value []byte) bool {
+		address := types.BytesToAddress(key[1:])
+
+		model := wl.GetByAddress(address)
+		if model != nil && len(model.List) != 0 {
+			for _, w := range model.List {
+				if _, ok := dropped[w.CandidateId]; ok {
+					state.FrozenFunds = append(state.FrozenFunds, types.FrozenFund{
+						CandidateID:  0,
+						CandidateKey: nil,
+						Address:      address,
+						Coin:         uint64(w.Coin),
+						Value:        w.Value.String(),
+					})
+					continue
+				}
 				state.Waitlist = append(state.Waitlist, types.Waitlist{
 					CandidateID: uint64(w.CandidateId),
 					Owner:       address,

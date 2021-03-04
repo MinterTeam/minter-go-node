@@ -1,7 +1,6 @@
 package accounts
 
 import (
-	"bytes"
 	"github.com/MinterTeam/minter-go-node/coreV2/dao"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"math/big"
@@ -51,7 +50,7 @@ func (a *Accounts) ExportV1(state *types.AppState, subBipValueFromDAO *big.Int) 
 
 		// sort balances by coin symbol
 		sort.SliceStable(balance, func(i, j int) bool {
-			return bytes.Compare(types.CoinID(balance[i].Coin).Bytes(), types.CoinID(balance[j].Coin).Bytes()) == 1
+			return balance[i].Coin > balance[j].Coin
 		})
 
 		acc := types.Account{
@@ -86,6 +85,7 @@ func (a *Accounts) ExportV1(state *types.AppState, subBipValueFromDAO *big.Int) 
 				return false
 			}
 		}
+
 		state.Accounts = append(state.Accounts, acc)
 
 		return false
@@ -102,12 +102,12 @@ func (a *Accounts) GetBalancesV1(address types.Address) []Balance {
 	coins := account.coins
 	account.lock.RUnlock()
 
-	balances := make([]Balance, len(coins))
-	for key, id := range coins {
-		balances[key] = Balance{
+	balances := make([]Balance, 0, len(coins))
+	for _, id := range coins {
+		balances = append(balances, Balance{
 			Coin:  *a.bus.Coins().GetCoinV1(id),
 			Value: a.GetBalance(address, id),
-		}
+		})
 	}
 
 	return balances

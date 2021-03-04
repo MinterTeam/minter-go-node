@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/coreV2/state/bus"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"math/big"
@@ -36,60 +35,81 @@ type candidateV1 struct {
 }
 
 // Deprecated
-func (c *Candidates) ExportV1toV2(state *types.AppState) []bus.FrozenFund {
+func (c *Candidates) ExportV1(state *types.AppState, height uint64, validator *types.Candidate) []uint32 {
 	c.loadCandidatesDeliverV1()
 	c.loadStakesV1()
-	var frozenFunds []bus.FrozenFund
+
+	var droppedCandidateIDs []uint32
 
 	candidates := c.GetCandidates()
-	state.Candidates = make([]types.Candidate, 0, len(candidates))
+	state.Candidates = make([]types.Candidate, 0, 100)
+
+	if validator != nil {
+		validator.ID = uint64(c.maxID)
+		state.Candidates = append(state.Candidates, *validator)
+	}
+
 	topCount := len(candidates)
 	if topCount > 100 {
 		topCount = 100
 
 		for _, candidate := range candidates[topCount:] {
+			droppedCandidateIDs = append(droppedCandidateIDs, candidate.ID)
+
 			for _, s := range candidate.stakes {
-				frozenFunds = append(frozenFunds, bus.FrozenFund{
+				if s == nil {
+					continue
+				}
+				state.FrozenFunds = append(state.FrozenFunds, types.FrozenFund{
+					Height:       height,
 					Address:      s.Owner,
 					CandidateKey: nil,
 					CandidateID:  0,
-					Coin:         s.Coin,
-					Value:        s.Value,
+					Coin:         uint64(s.Coin),
+					Value:        s.Value.String(),
 				})
 			}
 			for _, u := range candidate.updates {
-				frozenFunds = append(frozenFunds, bus.FrozenFund{
+				if u == nil {
+					continue
+				}
+				state.FrozenFunds = append(state.FrozenFunds, types.FrozenFund{
+					Height:       height,
 					Address:      u.Owner,
 					CandidateKey: nil,
 					CandidateID:  0,
-					Coin:         u.Coin,
-					Value:        u.Value,
+					Coin:         uint64(u.Coin),
+					Value:        u.Value.String(),
 				})
 			}
 		}
 	}
 	for _, candidate := range candidates[:topCount] {
 		candidateStakes := c.GetStakes(candidate.PubKey)
-		stakes := make([]types.Stake, len(candidateStakes))
-		for i, s := range candidateStakes {
-			stakes[i] = types.Stake{
+		stakes := make([]types.Stake, 0, len(candidateStakes))
+		for _, s := range candidateStakes {
+			stakes = append(stakes, types.Stake{
 				Owner:    s.Owner,
 				Coin:     uint64(s.Coin),
 				Value:    s.Value.String(),
 				BipValue: s.BipValue.String(),
-			}
+			})
 		}
 
-		updates := make([]types.Stake, len(candidate.updates))
-		for i, u := range candidate.updates {
-			updates[i] = types.Stake{
+		updates := make([]types.Stake, 0, len(candidate.updates))
+		for _, u := range candidate.updates {
+			updates = append(updates, types.Stake{
 				Owner:    u.Owner,
 				Coin:     uint64(u.Coin),
 				Value:    u.Value.String(),
 				BipValue: u.BipValue.String(),
-			}
+			})
 		}
 
+		status := uint64(candidate.Status)
+		if validator != nil {
+			status = 1
+		}
 		state.Candidates = append(state.Candidates, types.Candidate{
 			ID:             uint64(candidate.ID),
 			RewardAddress:  candidate.RewardAddress,
@@ -98,7 +118,7 @@ func (c *Candidates) ExportV1toV2(state *types.AppState) []bus.FrozenFund {
 			TotalBipStake:  candidate.GetTotalBipStake().String(),
 			PubKey:         candidate.PubKey,
 			Commission:     uint64(candidate.Commission),
-			Status:         uint64(candidate.Status),
+			Status:         status,
 			Updates:        updates,
 			Stakes:         stakes,
 		})
@@ -111,7 +131,7 @@ func (c *Candidates) ExportV1toV2(state *types.AppState) []bus.FrozenFund {
 		return bytes.Compare(state.BlockListCandidates[i].Bytes(), state.BlockListCandidates[j].Bytes()) == 1
 	})
 
-	return frozenFunds
+	return droppedCandidateIDs
 }
 
 // Deprecated

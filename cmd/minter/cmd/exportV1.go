@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
+	"github.com/MinterTeam/minter-go-node/coreV2/appdb"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
 	"github.com/spf13/cobra"
 	"github.com/tendermint/go-amino"
@@ -63,21 +64,39 @@ func export(cmd *cobra.Command, args []string) error {
 
 	fmt.Println("Start exporting...")
 
-	ldb, err := utils.NewStorage("", "").InitStateLevelDB("data/state", nil)
+	homeDir, err := cmd.Flags().GetString("home-dir")
+	if err != nil {
+		return err
+	}
+	storages := utils.NewStorage(homeDir, "")
+
+	ldb, err := storages.InitStateLevelDB("data/state", nil)
 	if err != nil {
 		log.Panicf("Cannot load db: %s", err)
 	}
 
 	currentState, err := state.NewCheckStateAtHeight(height, ldb)
 	if err != nil {
+		log.Println(appdb.NewAppDB(storages.GetMinterHome(), cfg).GetLastHeight())
 		log.Panicf("Cannot new state at given height: %s", err)
 	}
 
-	exportTimeStart, appState := time.Now(), currentState.ExportV1toV2(bipRate)
-	fmt.Printf("State has been exported. Took %s", time.Since(exportTimeStart))
+	validator, err := cmd.Flags().GetString("validator")
+	if err != nil {
+		log.Panicf("Cannot parse validator: %s", err)
+	}
+
+	addresses, err := cmd.Flags().GetStringArray("rich-addresses")
+	if err != nil {
+		log.Panicf("Cannot parse validator: %s", err)
+	}
+
+	exportTimeStart, appState := time.Now(), currentState.ExportV1(bipRate, validator, addresses)
+	fmt.Printf("State has been exported. Took %s\n", time.Since(exportTimeStart))
 
 	if err := appState.Verify(); err != nil {
-		log.Panicf("Failed to validate: %s", err)
+		log.Printf("Failed to validate: %s\n", err)
+		os.Exit(1)
 	}
 
 	var jsonBytes []byte
@@ -89,8 +108,6 @@ func export(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Panicf("Cannot marshal state to json: %s", err)
 	}
-
-	// appHash := [32]byte{}
 
 	// compose genesis
 	genesis := types.GenesisDoc{
