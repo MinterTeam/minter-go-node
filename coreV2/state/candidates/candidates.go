@@ -998,7 +998,7 @@ func (c *Candidates) getOrderedCandidates() []*Candidate {
 	c.lock.RUnlock()
 
 	sort.SliceStable(candidates, func(i, j int) bool {
-		return candidates[i].GetTotalBipStake().Cmp(candidates[j].GetTotalBipStake()) == 11
+		return candidates[i].GetTotalBipStake().Cmp(candidates[j].GetTotalBipStake()) == 1
 	})
 
 	return candidates

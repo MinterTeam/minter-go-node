@@ -1,6 +1,7 @@
 package swap
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/bus"
@@ -59,6 +60,21 @@ type Swap struct {
 
 	bus *bus.Bus
 	db  atomic.Value
+}
+
+func (s *Swap) getOrderedDirtyPairs() []pairKey {
+	s.muPairs.RLock()
+	keys := make([]pairKey, 0, len(s.dirties))
+	for k := range s.dirties {
+		keys = append(keys, k)
+	}
+	s.muPairs.RUnlock()
+
+	sort.SliceStable(keys, func(i, j int) bool {
+		return bytes.Compare(keys[i].Bytes(), keys[j].Bytes()) == 1
+	})
+
+	return keys
 }
 
 func New(bus *bus.Bus, db *iavl.ImmutableTree) *Swap {
@@ -201,7 +217,7 @@ func (s *Swap) Commit(db *iavl.MutableTree) error {
 	s.muPairs.RLock()
 	defer s.muPairs.RUnlock()
 
-	for key := range s.dirties {
+	for _, key := range s.getOrderedDirtyPairs() {
 		pair, _ := s.pairs[key]
 		pairDataBytes, err := rlp.EncodeToBytes(pair.pairData)
 		if err != nil {
