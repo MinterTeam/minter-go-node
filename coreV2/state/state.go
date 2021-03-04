@@ -277,6 +277,8 @@ func (s *State) Commit() ([]byte, error) {
 		return hash, err
 	}
 
+	s.height = version
+
 	versionToDelete := version - s.keepLastStates - 1
 	if versionToDelete < s.initialVersion {
 		return hash, nil
@@ -285,8 +287,6 @@ func (s *State) Commit() ([]byte, error) {
 	if err := s.tree.DeleteVersion(versionToDelete); err != nil {
 		log.Printf("DeleteVersion %d error: %s\n", versionToDelete, err)
 	}
-
-	s.height = version
 
 	return hash, nil
 }
@@ -376,6 +376,55 @@ func (s *State) Import(state types.AppState) error {
 	}
 
 	s.Swap.Import(&state)
+
+	com := &commission.Price{
+		Coin:                    types.CoinID(state.Commission.Coin),
+		PayloadByte:             helpers.StringToBigInt(state.Commission.PayloadByte),
+		Send:                    helpers.StringToBigInt(state.Commission.Send),
+		BuyBancor:               helpers.StringToBigInt(state.Commission.BuyBancor),
+		SellBancor:              helpers.StringToBigInt(state.Commission.SellBancor),
+		SellAllBancor:           helpers.StringToBigInt(state.Commission.SellAllBancor),
+		BuyPoolBase:             helpers.StringToBigInt(state.Commission.BuyPoolBase),
+		BuyPoolDelta:            helpers.StringToBigInt(state.Commission.BuyPoolDelta),
+		SellPoolBase:            helpers.StringToBigInt(state.Commission.SellPoolBase),
+		SellPoolDelta:           helpers.StringToBigInt(state.Commission.SellPoolDelta),
+		SellAllPoolBase:         helpers.StringToBigInt(state.Commission.SellAllPoolBase),
+		SellAllPoolDelta:        helpers.StringToBigInt(state.Commission.SellAllPoolDelta),
+		CreateTicker3:           helpers.StringToBigInt(state.Commission.CreateTicker3),
+		CreateTicker4:           helpers.StringToBigInt(state.Commission.CreateTicker4),
+		CreateTicker5:           helpers.StringToBigInt(state.Commission.CreateTicker5),
+		CreateTicker6:           helpers.StringToBigInt(state.Commission.CreateTicker6),
+		CreateTicker7to10:       helpers.StringToBigInt(state.Commission.CreateTicker7_10),
+		CreateCoin:              helpers.StringToBigInt(state.Commission.CreateCoin),
+		CreateToken:             helpers.StringToBigInt(state.Commission.CreateToken),
+		RecreateCoin:            helpers.StringToBigInt(state.Commission.RecreateCoin),
+		RecreateToken:           helpers.StringToBigInt(state.Commission.RecreateToken),
+		DeclareCandidacy:        helpers.StringToBigInt(state.Commission.DeclareCandidacy),
+		Delegate:                helpers.StringToBigInt(state.Commission.Delegate),
+		Unbond:                  helpers.StringToBigInt(state.Commission.Unbond),
+		RedeemCheck:             helpers.StringToBigInt(state.Commission.RedeemCheck),
+		SetCandidateOn:          helpers.StringToBigInt(state.Commission.SetCandidateOn),
+		SetCandidateOff:         helpers.StringToBigInt(state.Commission.SetCandidateOff),
+		CreateMultisig:          helpers.StringToBigInt(state.Commission.CreateMultisig),
+		MultisendBase:           helpers.StringToBigInt(state.Commission.MultisendBase),
+		MultisendDelta:          helpers.StringToBigInt(state.Commission.MultisendDelta),
+		EditCandidate:           helpers.StringToBigInt(state.Commission.EditCandidate),
+		SetHaltBlock:            helpers.StringToBigInt(state.Commission.SetHaltBlock),
+		EditTickerOwner:         helpers.StringToBigInt(state.Commission.EditTickerOwner),
+		EditMultisig:            helpers.StringToBigInt(state.Commission.EditMultisig),
+		EditCandidatePublicKey:  helpers.StringToBigInt(state.Commission.EditCandidatePublicKey),
+		CreateSwapPool:          helpers.StringToBigInt(state.Commission.CreateSwapPool),
+		AddLiquidity:            helpers.StringToBigInt(state.Commission.AddLiquidity),
+		RemoveLiquidity:         helpers.StringToBigInt(state.Commission.RemoveLiquidity),
+		EditCandidateCommission: helpers.StringToBigInt(state.Commission.EditCandidateCommission),
+		BurnToken:               helpers.StringToBigInt(state.Commission.BurnToken),
+		MintToken:               helpers.StringToBigInt(state.Commission.MintToken),
+		VoteCommission:          helpers.StringToBigInt(state.Commission.VoteCommission),
+		VoteUpdate:              helpers.StringToBigInt(state.Commission.VoteUpdate),
+		More:                    nil,
+	}
+
+	s.Commission.SetNewCommissions(com.Encode())
 
 	s.Checker.RemoveBaseCoin()
 
