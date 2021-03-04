@@ -144,23 +144,23 @@ func (cs *CheckState) ExportV1(bipRate float64, validator string, addresses []st
 			Weights:   []uint64{1000},
 			Threshold: 667,
 			Addresses: []types.Address{
-				types.StringToAddress("Mx90b704f155b3cd7f998802ff2ce5c39cb2a9caac"),
+				types.HexToAddress("Mx90b704f155b3cd7f998802ff2ce5c39cb2a9caac"),
 			},
 		},
 	})
 
+	balance := types.Balance{
+		Coin:  lpUSDC,
+		Value: "1000",
+	}
+
 	if appState.Accounts[0].Address == [20]byte{} {
-		appState.Accounts[0].Balance = append(appState.Accounts[0].Balance, types.Balance{
-			Coin:  lpUSDC,
-			Value: "1000",
-		})
+		appState.Accounts[0].Balance = append(appState.Accounts[0].Balance, balance)
 	} else {
 		appState.Accounts = append(appState.Accounts, types.Account{
 			Address: types.Address{},
 			Balance: []types.Balance{
-				{
-					Coin:  lpUSDC,
-					Value: "1000"},
+				balance,
 			},
 			Nonce:        0,
 			MultisigData: nil,

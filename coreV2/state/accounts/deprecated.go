@@ -86,6 +86,7 @@ func (a *Accounts) ExportV1(state *types.AppState, subBipValueFromDAO *big.Int) 
 				return false
 			}
 		}
+
 		state.Accounts = append(state.Accounts, acc)
 
 		return false
@@ -102,12 +103,12 @@ func (a *Accounts) GetBalancesV1(address types.Address) []Balance {
 	coins := account.coins
 	account.lock.RUnlock()
 
-	balances := make([]Balance, len(coins))
-	for key, id := range coins {
-		balances[key] = Balance{
+	balances := make([]Balance, 0, len(coins))
+	for _, id := range coins {
+		balances = append(balances, Balance{
 			Coin:  *a.bus.Coins().GetCoinV1(id),
 			Value: a.GetBalance(address, id),
-		}
+		})
 	}
 
 	return balances
