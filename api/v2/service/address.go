@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/core/state"
-	"github.com/MinterTeam/minter-go-node/core/state/coins"
-	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/coreV2/state"
+	"github.com/MinterTeam/minter-go-node/coreV2/state/coins"
+	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"google.golang.org/grpc/codes"
@@ -148,6 +148,10 @@ func (s *Service) Address(ctx context.Context, req *pb.AddressRequest) (*pb.Addr
 func customCoinBipBalance(valueToSell *big.Int, coinFrom *coins.Model) *big.Int {
 	if coinFrom.ID().IsBaseCoin() {
 		return valueToSell
+	}
+
+	if coinFrom.IsToken() {
+		return big.NewInt(0)
 	}
 
 	return formula.CalculateSaleReturn(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), valueToSell)

@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 	"github.com/MinterTeam/minter-go-node/config"
-	"github.com/MinterTeam/minter-go-node/core/minter"
+	"github.com/MinterTeam/minter-go-node/coreV2/minter"
 	"github.com/MinterTeam/node-grpc-gateway/api_pb"
 	tmNode "github.com/tendermint/tendermint/node"
 	rpc "github.com/tendermint/tendermint/rpc/client/local"

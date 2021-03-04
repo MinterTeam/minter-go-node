@@ -2,10 +2,10 @@ package service
 
 import (
 	"context"
-	"github.com/MinterTeam/minter-go-node/core/code"
-	"github.com/MinterTeam/minter-go-node/core/state/coins"
-	"github.com/MinterTeam/minter-go-node/core/transaction"
-	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/coreV2/code"
+	"github.com/MinterTeam/minter-go-node/coreV2/state/coins"
+	"github.com/MinterTeam/minter-go-node/coreV2/transaction"
+	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

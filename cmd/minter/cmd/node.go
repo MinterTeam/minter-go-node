@@ -8,8 +8,8 @@ import (
 	"github.com/MinterTeam/minter-go-node/cli/service"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
-	"github.com/MinterTeam/minter-go-node/core/minter"
-	"github.com/MinterTeam/minter-go-node/core/statistics"
+	"github.com/MinterTeam/minter-go-node/coreV2/minter"
+	"github.com/MinterTeam/minter-go-node/coreV2/statistics"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/version"
 	"github.com/spf13/cobra"
@@ -93,8 +93,8 @@ func runNode(cmd *cobra.Command) error {
 
 	// start TM node
 	node := startTendermintNode(app, tmConfig, logger, storages.GetMinterHome())
-	client := rpc.New(node)
 	app.SetTmNode(node)
+	client := app.RpcClient()
 
 	if !cfg.ValidatorMode {
 		runAPI(logger, app, client, node)

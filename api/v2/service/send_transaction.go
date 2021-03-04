@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 	"encoding/hex"
-	"github.com/MinterTeam/minter-go-node/core/code"
+	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/bytes"

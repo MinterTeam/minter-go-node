@@ -66,9 +66,6 @@ const defaultConfigTemplate string = `# This is a TOML config file.
 # A custom human readable name for this node
 moniker = "{{ .BaseConfig.Moniker }}"
 
-# Address to listen for API connections
-api_listen_addr = "{{ .BaseConfig.APIListenAddress }}"
-
 # Address to listen for gRPC connections
 grpc_listen_addr = "{{ .BaseConfig.GRPCListenAddress }}"
 
@@ -214,6 +211,7 @@ private_peer_ids = "{{ .P2P.PrivatePeerIDs }}"
 ##### mempool configuration options #####
 [mempool]
 
+recheck = false
 broadcast = {{ .Mempool.Broadcast }}
 wal_dir = "{{ js .Mempool.WalPath }}"
 

@@ -220,12 +220,12 @@ func (s *Service) TestBlock(context.Context, *empty.Empty) (*pb.BlockResponse, e
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	anyPriceVoteData, err := anypb.New(&pb.PriceVoteData{
-		Price: "1000",
-	})
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
+	// anyPriceVoteData, err := anypb.New(&pb.PriceVoteData{
+	// 	Price: "1000",
+	// })
+	// if err != nil {
+	// 	return nil, status.Error(codes.Internal, err.Error())
+	// }
 
 	anyEditCandidatePublicKeyData, err := anypb.New(&pb.EditCandidatePublicKeyData{
 		PubKey:    "Mp5e3e1da62c7eabd9d8d168a36a92727fc1970a54ec61eadd285d4199c41191d7",
@@ -657,28 +657,28 @@ func (s *Service) TestBlock(context.Context, *empty.Empty) (*pb.BlockResponse, e
 			Code: 0,
 			Log:  "",
 		},
-		{
-			Hash:        "Mt9c48d70f4fb35b2b3f638ea434e7263c5136c60559015d141ec2a94b8ba346a1",
-			RawTx:       "f854080101801384c38203e8808001b845f8431ba01ae016202f873c19e03fc5861b552a729b769332dfa93ff61bd8df5f1557c67ea0241bd95318796acc6fbcda88fa019047e162f0d0b9e6d55071cd88156bd04fe8",
-			From:        "Mx7f7f0109005d866eeeee7bfc16adfb05703dd3d8",
-			Nonce:       50,
-			GasPrice:    1,
-			Type:        19,
-			Data:        anyPriceVoteData,
-			Payload:     []byte("Message"),
-			ServiceData: nil,
-			Gas:         10000000,
-			GasCoin: &pb.Coin{
-				Id:     1,
-				Symbol: "CUSTOM",
-			},
-			Tags: map[string]string{
-				"tx.from": "7f7f0109005d866eeeee7bfc16adfb05703dd3d8",
-				"tx.type": "13",
-			},
-			Code: 0,
-			Log:  "",
-		},
+		// {
+		// 	Hash:        "Mt9c48d70f4fb35b2b3f638ea434e7263c5136c60559015d141ec2a94b8ba346a1",
+		// 	RawTx:       "f854080101801384c38203e8808001b845f8431ba01ae016202f873c19e03fc5861b552a729b769332dfa93ff61bd8df5f1557c67ea0241bd95318796acc6fbcda88fa019047e162f0d0b9e6d55071cd88156bd04fe8",
+		// 	From:        "Mx7f7f0109005d866eeeee7bfc16adfb05703dd3d8",
+		// 	Nonce:       50,
+		// 	GasPrice:    1,
+		// 	Type:        19,
+		// 	Data:        anyPriceVoteData,
+		// 	Payload:     []byte("Message"),
+		// 	ServiceData: nil,
+		// 	Gas:         10000000,
+		// 	GasCoin: &pb.Coin{
+		// 		Id:     1,
+		// 		Symbol: "CUSTOM",
+		// 	},
+		// 	Tags: map[string]string{
+		// 		"tx.from": "7f7f0109005d866eeeee7bfc16adfb05703dd3d8",
+		// 		"tx.type": "13",
+		// 	},
+		// 	Code: 0,
+		// 	Log:  "",
+		// },
 		{
 			Hash:        "Mt9c48d70f4fb35b2b3f638ea434e7263c5136c60559015d141ec2a94b8ba346a1",
 			RawTx:       "f854080101801384c38203e8808001b845f8431ba01ae016202f873c19e03fc5861b552a729b769332dfa93ff61bd8df5f1557c67ea0241bd95318796acc6fbcda88fa019047e162f0d0b9e6d55071cd88156bd04fe8",

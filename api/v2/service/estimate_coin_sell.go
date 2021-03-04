@@ -3,12 +3,12 @@ package service
 import (
 	"context"
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/core/code"
-	"github.com/MinterTeam/minter-go-node/core/state"
-	"github.com/MinterTeam/minter-go-node/core/state/commission"
-	"github.com/MinterTeam/minter-go-node/core/state/swap"
-	"github.com/MinterTeam/minter-go-node/core/transaction"
-	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/coreV2/code"
+	"github.com/MinterTeam/minter-go-node/coreV2/state"
+	"github.com/MinterTeam/minter-go-node/coreV2/state/commission"
+	"github.com/MinterTeam/minter-go-node/coreV2/state/swap"
+	"github.com/MinterTeam/minter-go-node/coreV2/transaction"
+	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"google.golang.org/grpc/codes"
@@ -221,7 +221,7 @@ func (s *Service) commissionInCoin(cState *state.CheckState, coinCommissionID ty
 		commission = cState.Swap().GetSwapper(types.GetBaseCoinID(), commissionsCoin).CalculateSellForBuy(commissionInBaseCoin)
 	default:
 		if !commissionsCoin.IsBaseCoin() {
-			commissionInBaseCoin = cState.Swap().GetSwapper(types.GetBaseCoinID(), commissionsCoin).CalculateSellForBuy(commissionInBaseCoin)
+			commissionInBaseCoin = cState.Swap().GetSwapper(coinCommissionID, types.GetBaseCoinID()).CalculateBuyForSell(commissionInBaseCoin)
 		}
 		commissionPoolSwapper := cState.Swap().GetSwapper(coinCommissionID, types.GetBaseCoinID())
 

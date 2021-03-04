@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"github.com/MinterTeam/minter-go-node/core/state/commission"
+	"github.com/MinterTeam/minter-go-node/coreV2/state/commission"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 )
 

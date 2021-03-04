@@ -2,8 +2,8 @@ package service
 
 import (
 	"context"
-	"github.com/MinterTeam/minter-go-node/core/state/coins"
-	"github.com/MinterTeam/minter-go-node/core/state/commission"
+	"github.com/MinterTeam/minter-go-node/coreV2/state/coins"
+	"github.com/MinterTeam/minter-go-node/coreV2/state/commission"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -18,7 +18,13 @@ func (s *Service) PriceCommission(ctx context.Context, req *pb.PriceCommissionRe
 
 	price := cState.Commission().GetCommissions()
 
-	return priceCommissionResponse(price, cState.Coins().GetCoin(price.Coin)), nil
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+		return nil, timeoutStatus.Err()
+	}
+
+	coin := cState.Coins().GetCoin(price.Coin)
+
+	return priceCommissionResponse(price, coin), nil
 }
 
 func priceCommissionResponse(price *commission.Price, coin *coins.Model) *pb.PriceCommissionResponse {
@@ -60,13 +66,11 @@ func priceCommissionResponse(price *commission.Price, coin *coins.Model) *pb.Pri
 		SetHaltBlock:            price.SetHaltBlock.String(),
 		EditTickerOwner:         price.EditTickerOwner.String(),
 		EditMultisig:            price.EditMultisig.String(),
-		PriceVote:               price.PriceVote.String(),
 		EditCandidatePublicKey:  price.EditCandidatePublicKey.String(),
 		CreateSwapPool:          price.CreateSwapPool.String(),
 		AddLiquidity:            price.AddLiquidity.String(),
 		RemoveLiquidity:         price.RemoveLiquidity.String(),
 		EditCandidateCommission: price.EditCandidateCommission.String(),
-		MoveStake:               price.MoveStake.String(),
 		MintToken:               price.MintToken.String(),
 		BurnToken:               price.BurnToken.String(),
 		VoteCommission:          price.VoteCommission.String(),

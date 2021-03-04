@@ -4,14 +4,13 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"github.com/MinterTeam/minter-go-node/core/state/coins"
-	"github.com/MinterTeam/minter-go-node/core/transaction"
+	"github.com/MinterTeam/minter-go-node/coreV2/state/coins"
+	"github.com/MinterTeam/minter-go-node/coreV2/transaction"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"github.com/golang/protobuf/ptypes/any"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	_struct "google.golang.org/protobuf/types/known/structpb"
-	"strconv"
 )
 
 func encode(data transaction.Data, rCoins coins.RCoins) (*any.Any, error) {
@@ -119,10 +118,10 @@ func encode(data transaction.Data, rCoins coins.RCoins) (*any.Any, error) {
 		m = &pb.MultiSendData{
 			List: list,
 		}
-	case *transaction.PriceVoteData:
-		m = &pb.PriceVoteData{
-			Price: strconv.Itoa(int(d.Price)),
-		}
+	// case *transaction.PriceVoteData:
+	// 	m = &pb.PriceVoteData{
+	// 		Price: strconv.Itoa(int(d.Price)),
+	// 	}
 	case *transaction.RecreateCoinData:
 		m = &pb.RecreateCoinData{
 			Name:                 d.Name,
@@ -297,16 +296,16 @@ func encode(data transaction.Data, rCoins coins.RCoins) (*any.Any, error) {
 			PubKey:     d.PubKey.String(),
 			Commission: uint64(d.Commission),
 		}
-	case *transaction.MoveStakeData:
-		m = &pb.MoveStakeData{
-			From: d.From.String(),
-			To:   d.To.String(),
-			Coin: &pb.Coin{
-				Id:     uint64(d.Coin),
-				Symbol: rCoins.GetCoin(d.Coin).GetFullSymbol(),
-			},
-			Stake: d.Stake.String(),
-		}
+	// case *transaction.MoveStakeData:
+	// 	m = &pb.MoveStakeData{
+	// 		From: d.From.String(),
+	// 		To:   d.To.String(),
+	// 		Coin: &pb.Coin{
+	// 			Id:     uint64(d.Coin),
+	// 			Symbol: rCoins.GetCoin(d.Coin).GetFullSymbol(),
+	// 		},
+	// 		Stake: d.Stake.String(),
+	// 	}
 	case *transaction.VoteCommissionData:
 		m = priceCommissionData(d, rCoins.GetCoin(d.Coin))
 	case *transaction.VoteUpdateData:
@@ -381,13 +380,11 @@ func priceCommissionData(d *transaction.VoteCommissionData, coin *coins.Model) p
 		SetHaltBlock:            d.SetHaltBlock.String(),
 		EditTickerOwner:         d.EditTickerOwner.String(),
 		EditMultisig:            d.EditMultisig.String(),
-		PriceVote:               d.PriceVote.String(),
 		EditCandidatePublicKey:  d.EditCandidatePublicKey.String(),
 		CreateSwapPool:          d.CreateSwapPool.String(),
 		AddLiquidity:            d.AddLiquidity.String(),
 		RemoveLiquidity:         d.RemoveLiquidity.String(),
 		EditCandidateCommission: d.EditCandidateCommission.String(),
-		MoveStake:               d.MoveStake.String(),
 		MintToken:               d.MintToken.String(),
 		BurnToken:               d.BurnToken.String(),
 		VoteCommission:          d.VoteCommission.String(),
