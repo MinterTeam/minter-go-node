@@ -214,7 +214,7 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 				Address:         item.Address,
 				Amount:          amount.String(),
 				Coin:            uint64(item.Coin),
-				ValidatorPubKey: *item.CandidateKey,
+				ValidatorPubKey: item.CandidateKey,
 			})
 			blockchain.stateDeliver.Accounts.AddBalance(item.Address, item.Coin, amount)
 			// } else {
