@@ -246,7 +246,7 @@ type State struct {
 	bus            *bus.Bus
 	lock           sync.RWMutex
 	height         int64
-	initialVersion int64
+	InitialVersion int64
 }
 
 func (s *State) isValue_State() {}
@@ -264,7 +264,7 @@ func NewState(height uint64, db db.DB, events eventsdb.IEventsDB, cacheSize int,
 
 	state.tree = iavlTree
 	state.height = int64(height)
-	state.initialVersion = int64(initialVersion)
+	state.InitialVersion = int64(initialVersion)
 	state.Candidates.LoadCandidatesDeliver()
 	state.Candidates.LoadStakes()
 	state.Validators.LoadValidators()
@@ -328,7 +328,7 @@ func (s *State) Commit() ([]byte, error) {
 	s.height = version
 
 	versionToDelete := version - s.keepLastStates - 1
-	if versionToDelete < s.initialVersion {
+	if versionToDelete < s.InitialVersion {
 		return hash, nil
 	}
 

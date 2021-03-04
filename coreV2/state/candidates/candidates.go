@@ -286,24 +286,16 @@ func (c *Candidates) GetNewCandidates(valCount int) []*Candidate {
 
 	candidates := c.GetCandidates()
 	for _, candidate := range candidates {
-		candidate.lock.RLock()
-		if candidate.Status != CandidateStatusOnline {
-			candidate.lock.RUnlock()
+		if candidate.GetStatus() != CandidateStatusOnline {
 			continue
 		}
 
-		if candidate.totalBipStake.Cmp(minValidatorBipStake) == -1 {
-			candidate.lock.RUnlock()
+		if candidate.GetTotalBipStake().Cmp(minValidatorBipStake) == -1 {
 			continue
 		}
 
-		candidate.lock.RUnlock()
 		result = append(result, candidate)
 	}
-
-	sort.SliceStable(result, func(i, j int) bool {
-		return result[i].totalBipStake.Cmp(result[j].totalBipStake) == 1
-	})
 
 	if len(result) > valCount {
 		result = result[:valCount]
