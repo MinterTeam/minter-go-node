@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/coreV2/rewards"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/coins"
 	"github.com/MinterTeam/minter-go-node/coreV2/transaction"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
@@ -82,7 +81,7 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 		case pb.BlockField_size:
 			response.Size = uint64(block.Block.Size())
 		case pb.BlockField_block_reward:
-			response.BlockReward = rewards.GetRewardForBlock(uint64(height)).String()
+			response.BlockReward = s.rewards.GetRewardForBlock(uint64(height)).String()
 		case pb.BlockField_transactions:
 			response.Transactions, err = s.blockTransaction(block, blockResults, s.blockchain.CurrentState().Coins(), req.FailedTxs)
 			if err != nil {

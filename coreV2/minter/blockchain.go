@@ -75,6 +75,10 @@ func (blockchain *Blockchain) RpcClient() *rpc.Local {
 	return blockchain.rpcClient
 }
 
+func (blockchain *Blockchain) RewardCounter() *rewards.Reward {
+	return blockchain.rewardsCounter
+}
+
 // NewMinterBlockchain creates Minter Blockchain instance, should be only called once
 func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx context.Context) *Blockchain {
 	// Initiate Application DB. Used for persisting data like current block, validators, etc.
@@ -89,6 +93,7 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 		eventsDB = &eventsdb.MockEvents{}
 	}
 	return &Blockchain{
+		rewardsCounter: rewards.NewReward(),
 		appDB:          applicationDB,
 		storages:       storages,
 		eventsDB:       eventsDB,
@@ -115,7 +120,7 @@ func (blockchain *Blockchain) initState() {
 	blockchain.stateCheck = state.NewCheckState(stateDeliver)
 
 	// Set start height for rewards and validators
-	blockchain.rewardsCounter = rewards.NewReward(initialHeight)
+	blockchain.rewardsCounter.SetStartHeight(initialHeight)
 }
 
 // InitChain initialize blockchain with validators and other info. Only called once.
