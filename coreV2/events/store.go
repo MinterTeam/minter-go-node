@@ -212,7 +212,7 @@ func (store *eventsStore) savePubKey(validatorPubKey *types.Pubkey) uint16 {
 
 func (store *eventsStore) loadPubKeys() {
 	if count, _ := store.db.Get([]byte(pubKeysCountKey)); len(count) > 0 {
-		for id := uint16(0); id < binary.BigEndian.Uint16(count); id++ {
+		for id := uint16(1); id < binary.BigEndian.Uint16(count)+1; id++ {
 			key, err := store.db.Get(append([]byte(pubKeyPrefix), uint16ToBytes(id)...))
 			if err != nil {
 				panic(err)
