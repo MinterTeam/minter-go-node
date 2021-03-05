@@ -9,6 +9,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/coreV2/minter"
+	"github.com/MinterTeam/minter-go-node/coreV2/rewards"
 	"github.com/MinterTeam/minter-go-node/coreV2/statistics"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/version"
@@ -97,7 +98,7 @@ func runNode(cmd *cobra.Command) error {
 	client := app.RpcClient()
 
 	if !cfg.ValidatorMode {
-		runAPI(logger, app, client, node)
+		runAPI(logger, app, client, node, app.RewardCounter())
 	}
 
 	runCLI(cmd.Context(), app, client, node, storages.GetMinterHome())
@@ -118,7 +119,7 @@ func runCLI(ctx context.Context, app *minter.Blockchain, client *rpc.Local, tmNo
 	}()
 }
 
-func runAPI(logger tmLog.Logger, app *minter.Blockchain, client *rpc.Local, node *tmNode.Node) {
+func runAPI(logger tmLog.Logger, app *minter.Blockchain, client *rpc.Local, node *tmNode.Node, reward *rewards.Reward) {
 	go func(srv *serviceApi.Service) {
 		grpcURL, err := url.Parse(cfg.GRPCListenAddress)
 		if err != nil {
@@ -130,7 +131,7 @@ func runAPI(logger tmLog.Logger, app *minter.Blockchain, client *rpc.Local, node
 		}
 		logger.Error("Failed to start Api V2 in both gRPC and RESTful",
 			apiV2.Run(srv, grpcURL.Host, apiV2url.Host, logger.With("module", "rpc")))
-	}(serviceApi.NewService(app, client, node, cfg, version.Version))
+	}(serviceApi.NewService(app, client, node, cfg, version.Version, reward))
 }
 
 func enablePprof(cmd *cobra.Command, logger tmLog.Logger) error {
