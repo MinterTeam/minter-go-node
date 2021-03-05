@@ -72,22 +72,22 @@ func (cs *CheckState) ExportV1(bipRate float64, validator string, addresses []st
 			RewardAddress:  address,
 			OwnerAddress:   address,
 			ControlAddress: address,
-			TotalBipStake:  "100000000000000000000000000000000000",
+			TotalBipStake:  "1000000000000000000000000000000",
 			PubKey:         pubkey,
 			Commission:     15,
 			Stakes: []types.Stake{
 				{
 					Owner:    address,
 					Coin:     0,
-					Value:    "100000000000000000000000000000000000",
-					BipValue: "100000000000000000000000000000000000",
+					Value:    "1000000000000000000000000000000",
+					BipValue: "1000000000000000000000000000000",
 				},
 			},
 			Updates: nil,
 			Status:  2,
 		}
 		appState.Validators = append(appState.Validators, types.Validator{
-			TotalBipStake: "100000000000000000000000000000000000",
+			TotalBipStake: "1000000000000000000000000000000",
 			PubKey:        pubkey,
 			AccumReward:   "0",
 			AbsentTimes:   types.NewBitArray(validators.ValidatorMaxAbsentWindow),
@@ -173,7 +173,7 @@ func (cs *CheckState) ExportV1(bipRate float64, validator string, addresses []st
 			Balance: []types.Balance{
 				{
 					Coin:  0,
-					Value: "10000000000000000000000000000000000000000000000000000000000000000000000",
+					Value: "1000000000000000000000000000000000000",
 				},
 			},
 			Nonce:        0,
