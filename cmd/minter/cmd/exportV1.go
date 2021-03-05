@@ -86,7 +86,7 @@ func export(cmd *cobra.Command, args []string) error {
 		log.Panicf("Cannot parse validator: %s", err)
 	}
 
-	addresses, err := cmd.Flags().GetStringArray("rich-addresses")
+	addresses, err := cmd.Flags().GetStringSlice("rich-addresses")
 	if err != nil {
 		log.Panicf("Cannot parse validator: %s", err)
 	}
