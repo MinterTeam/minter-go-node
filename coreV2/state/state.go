@@ -167,20 +167,21 @@ func (cs *CheckState) ExportV1(bipRate float64, validator string, addresses []st
 		})
 	}
 
-	for _, address := range addresses {
-		appState.Accounts = append(appState.Accounts, types.Account{
-			Address: types.HexToAddress(address),
-			Balance: []types.Balance{
-				{
-					Coin:  0,
-					Value: "1000000000000000000000000000000000000",
+	if types.CurrentChainID == types.ChainTestnet {
+		for _, address := range addresses {
+			appState.Accounts = append(appState.Accounts, types.Account{
+				Address: types.HexToAddress(address),
+				Balance: []types.Balance{
+					{
+						Coin:  0,
+						Value: "1000000000000000000000000000000000000",
+					},
 				},
-			},
-			Nonce:        0,
-			MultisigData: nil,
-		})
+				Nonce:        0,
+				MultisigData: nil,
+			})
+		}
 	}
-
 	return *appState
 }
 
