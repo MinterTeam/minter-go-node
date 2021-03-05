@@ -37,7 +37,6 @@ func (s *Service) Candidates(ctx context.Context, req *pb.CandidatesRequest) (*p
 				if req.Status == pb.CandidatesRequest_validator && !isValidator {
 					continue
 				}
-				continue
 			}
 		}
 		cState.Candidates().LoadStakesOfCandidate(candidate.PubKey)
