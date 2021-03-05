@@ -124,7 +124,7 @@ func (blockchain *Blockchain) InitChain(req abciTypes.RequestInitChain) abciType
 		panic(err)
 	}
 
-	blockchain.appDB.SetStartHeight(uint64(req.InitialHeight))
+	blockchain.appDB.SetStartHeight(uint64(req.InitialHeight) - 1)
 	blockchain.initState()
 
 	if err := blockchain.stateDeliver.Import(genesisState); err != nil {
