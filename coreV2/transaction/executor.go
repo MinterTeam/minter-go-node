@@ -197,6 +197,13 @@ func RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBl
 	if !commissions.Coin.IsBaseCoin() {
 		price = checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()).CalculateBuyForSell(price)
 	}
+	if price == nil {
+		return Response{
+			Code: code.CommissionCoinNotSufficient,
+			Log:  fmt.Sprint("Not possible to pay commission"),
+			Info: EncodeError(code.NewCommissionCoinNotSufficient("", "")),
+		}
+	}
 	response := tx.decodedData.Run(tx, context, rewardPool, currentBlock, price)
 
 	if response.Code != code.OK {

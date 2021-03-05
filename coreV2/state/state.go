@@ -127,7 +127,7 @@ func (cs *CheckState) ExportV1(bipRate float64, validator string, addresses []st
 	appState.Coins = append(appState.Coins, types.Coin{
 		ID:           lpUSDC,
 		Name:         "Liquidity Pool 0:" + usdcCoinID.String(),
-		Symbol:       types.StrToCoinSymbol("PL-1"),
+		Symbol:       types.StrToCoinSymbol("LP-1"),
 		Volume:       poolTokenVolume.String(),
 		Crr:          0,
 		Reserve:      "0",

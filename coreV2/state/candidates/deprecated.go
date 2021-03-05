@@ -54,6 +54,7 @@ func (c *Candidates) ExportV1(state *types.AppState, height uint64, validator *t
 		topCount = 100
 
 		for _, candidate := range candidates[topCount:] {
+			state.BlockListCandidates = append(state.BlockListCandidates, candidate.PubKey)
 			droppedCandidateIDs = append(droppedCandidateIDs, candidate.ID)
 
 			for _, s := range candidate.stakes {
