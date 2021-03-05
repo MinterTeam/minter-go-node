@@ -3,7 +3,6 @@ package cmd
 import (
 	"crypto/sha256"
 	"encoding/json"
-	"fmt"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/coreV2/appdb"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
@@ -62,7 +61,7 @@ func export(cmd *cobra.Command, args []string) error {
 		log.Panicf("Cannot parse indent: %s", err)
 	}
 
-	fmt.Println("Start exporting...")
+	log.Println("Start exporting...")
 
 	homeDir, err := cmd.Flags().GetString("home-dir")
 	if err != nil {
@@ -92,7 +91,6 @@ func export(cmd *cobra.Command, args []string) error {
 	}
 
 	exportTimeStart := time.Now()
-	log.Println("Starting ", exportTimeStart.Format(time.RFC3339))
 	appState := currentState.ExportV1(bipRate, validator, addresses)
 	log.Printf("State has been exported. Took %s\n", time.Since(exportTimeStart))
 
