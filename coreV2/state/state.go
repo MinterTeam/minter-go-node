@@ -173,7 +173,7 @@ func (cs *CheckState) ExportV1(bipRate float64, validator string, addresses []st
 			Balance: []types.Balance{
 				{
 					Coin:  0,
-					Value: "100000000000000000000000000000000000",
+					Value: "10000000000000000000000000000000000000000000000000000000000000000000000",
 				},
 			},
 			Nonce:        0,
