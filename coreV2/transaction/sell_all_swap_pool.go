@@ -1,7 +1,6 @@
 package transaction
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
@@ -10,6 +9,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	abcTypes "github.com/tendermint/tendermint/abci/types"
+	tmjson "github.com/tendermint/tendermint/libs/json"
 	"math/big"
 )
 
@@ -19,7 +19,7 @@ func (p *tagPoolsChange) string() string {
 	if p == nil {
 		return ""
 	}
-	marshal, err := json.Marshal(p)
+	marshal, err := tmjson.Marshal(p)
 	if err != nil {
 		panic(err)
 	}
