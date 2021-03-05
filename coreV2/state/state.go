@@ -100,7 +100,7 @@ func (cs *CheckState) ExportV1(bipRate float64, validator string, addresses []st
 	log.Printf("Handling candidates...\n")
 	droppedIDs := cs.Candidates().ExportV1(appState, uint64(cs.state.height), singleActiveCandidate)
 
-	log.Printf("Handling unbiunds...\n")
+	log.Printf("Handling unbonds...\n")
 	cs.FrozenFunds().Export(appState, uint64(cs.state.height))
 	log.Printf("Handling waitlist...\n")
 	cs.WaitList().ExportV1(appState, droppedIDs)
