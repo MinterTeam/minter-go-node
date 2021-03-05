@@ -29,9 +29,9 @@ func (p *tagPoolsChange) string() string {
 type tagPoolChange struct {
 	PoolID   uint32       `json:"pool_id"`
 	CoinIn   types.CoinID `json:"coin_in"`
-	ValueIn  *big.Int     `json:"value_in"`
+	ValueIn  string       `json:"value_in"`
 	CoinOut  types.CoinID `json:"coin_out"`
-	ValueOut *big.Int     `json:"value_out"`
+	ValueOut string       `json:"value_out"`
 }
 
 type SellAllSwapPoolData struct {
@@ -188,9 +188,9 @@ func (data SellAllSwapPoolData) Run(tx *Transaction, context state.Interface, re
 			poolIDs = append(poolIDs, &tagPoolChange{
 				PoolID:   poolID,
 				CoinIn:   coinToSell,
-				ValueIn:  amountIn,
+				ValueIn:  amountIn.String(),
 				CoinOut:  coinToBuy,
-				ValueOut: amountOut,
+				ValueOut: amountOut.String(),
 			})
 
 			if i == 0 {
