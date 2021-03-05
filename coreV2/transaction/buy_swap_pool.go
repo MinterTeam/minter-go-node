@@ -197,9 +197,9 @@ func (data BuySwapPoolData) Run(tx *Transaction, context state.Interface, reward
 			poolIDs = append(poolIDs, &tagPoolChange{
 				PoolID:   poolID,
 				CoinIn:   coinToSell,
-				ValueIn:  amountIn,
+				ValueIn:  amountIn.String(),
 				CoinOut:  coinToBuy,
-				ValueOut: amountOut,
+				ValueOut: amountOut.String(),
 			})
 
 			if i == 0 {
