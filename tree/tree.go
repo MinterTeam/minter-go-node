@@ -70,7 +70,7 @@ func NewMutableTree(height uint64, db dbm.DB, cacheSize int, initialVersion uint
 		return m, nil
 	}
 
-	if _, err := m.tree.LoadVersionForOverwriting(int64(height) + 1); err != nil {
+	if _, err := m.tree.LoadVersionForOverwriting(int64(height)); err != nil {
 		return nil, err
 	}
 
