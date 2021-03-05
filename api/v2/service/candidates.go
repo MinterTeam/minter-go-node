@@ -33,8 +33,8 @@ func (s *Service) Candidates(ctx context.Context, req *pb.CandidatesRequest) (*p
 		}
 
 		if req.Status != pb.CandidatesRequest_all {
-			if req.Status == pb.CandidatesRequest_validator && !isValidator {
-				if req.Status != pb.CandidatesRequest_CandidateStatus(candidate.Status) {
+			if req.Status != pb.CandidatesRequest_CandidateStatus(candidate.Status) {
+				if req.Status == pb.CandidatesRequest_validator && !isValidator {
 					continue
 				}
 				continue
