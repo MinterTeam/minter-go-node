@@ -36,7 +36,7 @@ func (s *Service) EstimateTxCommission(ctx context.Context, req *pb.EstimateTxCo
 	commissions := cState.Commission().GetCommissions()
 	price := decodedTx.Price(commissions)
 	if !commissions.Coin.IsBaseCoin() {
-		price = cState.Swap().GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuy(price)
+		price = cState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()).CalculateBuyForSell(price)
 	}
 
 	commissionInBaseCoin := decodedTx.Commission(price)
