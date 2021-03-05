@@ -513,18 +513,46 @@ type Balance struct {
 	isDirty   bool
 }
 
+type Limit struct {
+	Coin0 *big.Int
+	Coin1 *big.Int
+
+	rate *big.Float
+}
+
+func (l *Limit) Rate() *big.Float {
+	if l.rate == nil {
+		l.rate = big.NewFloat(0).Quo(
+			big.NewFloat(0).SetInt(l.Coin0),
+			big.NewFloat(0).SetInt(l.Coin1))
+	}
+	return l.rate
+}
+
 type Pair struct {
 	*pairData
+	limitsSell []*Limit
+	limitsBuy  []*Limit
+}
+
+func (p *Pair) BuyLimit(step int) *Limit {
+	if len(p.limitsBuy) > step {
+		return p.limitsBuy[0]
+	}
+	return nil
+}
+
+func (p *Pair) SellLimit(step int) *Limit {
+	if len(p.limitsSell) > step {
+		return p.limitsSell[step]
+	}
+	return nil
 }
 
 func (p *Pair) CoinID() uint32 {
 	if p == nil {
 		return 0
 	}
-	// if p.ID == nil {
-	//  panic()
-	// 	return 0
-	// }
 	return *p.ID
 }
 
@@ -628,14 +656,22 @@ func (p *Pair) CalculateBuyForSell(amount0In *big.Int) (amount1Out *big.Int) {
 
 // (reserve0*reserve1/(reserve1-amount1)-reserve0)/0.998
 func (p *Pair) CalculateSellForBuy(amount1Out *big.Int) (amount0In *big.Int) {
+	// for i := 0; true; i++ {
 	reserve0, reserve1 := p.Reserves()
+	k := new(big.Int).Mul(reserve0, reserve1)
+	// limit := p.BuyLimit(i)
+	// if limit != nil {
+	// 	rate := limit.Rate()
+	// 	amount1OutBeforeLimit := (p.Reserve1 - (k / (p.Reserve0+big.NewInt(0).Sqrt(rate*k) - p.Reserve0)))
+	// }
 	if amount1Out.Cmp(reserve1) != -1 {
 		return nil
 	}
-	kAdjusted := new(big.Int).Mul(new(big.Int).Mul(reserve0, reserve1), big.NewInt(1000000))
+	kAdjusted := new(big.Int).Mul(k, big.NewInt(1000000))
 	balance1Adjusted := new(big.Int).Mul(new(big.Int).Add(new(big.Int).Neg(amount1Out), reserve1), big.NewInt(1000))
 	amount0In = new(big.Int).Quo(new(big.Int).Sub(new(big.Int).Quo(kAdjusted, balance1Adjusted), new(big.Int).Mul(reserve0, big.NewInt(1000))), big.NewInt(1000-commission))
 	return new(big.Int).Add(amount0In, big.NewInt(1))
+	// }
 }
 
 func (p *Pair) Swap(amount0In, amount1In, amount0Out, amount1Out *big.Int) (amount0, amount1 *big.Int) {

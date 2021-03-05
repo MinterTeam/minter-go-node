@@ -38,7 +38,7 @@ func (data RemoveLiquidity) basicCheck(tx *Transaction, context *state.CheckStat
 	if data.Coin0 == data.Coin1 {
 		return &Response{
 			Code: code.CrossConvert,
-			Log:  "\"From\" coin equals to \"to\" coin",
+			Log:  "First coin equals to second coin",
 			Info: EncodeError(code.NewCrossConvert(
 				data.Coin0.String(),
 				data.Coin1.String(), "", "")),
