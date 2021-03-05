@@ -118,9 +118,6 @@ func (blockchain *Blockchain) initState() {
 
 	blockchain.stateDeliver = stateDeliver
 	blockchain.stateCheck = state.NewCheckState(stateDeliver)
-
-	// Set start height for rewards and validators
-	blockchain.rewardsCounter.SetStartHeight(initialHeight)
 }
 
 // InitChain initialize blockchain with validators and other info. Only called once.

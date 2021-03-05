@@ -16,11 +16,7 @@ type Reward struct {
 }
 
 func NewReward() *Reward {
-	return &Reward{startHeight: 0, beforeGenesis: big.NewInt(0)}
-}
-func (r *Reward) SetStartHeight(startHeight uint64) *Reward {
-	r.startHeight = startHeight + 9150000
-
+	r := &Reward{startHeight: 9150000, beforeGenesis: big.NewInt(0)}
 	for i := uint64(1); i <= r.startHeight; i++ {
 		r.beforeGenesis.Add(r.beforeGenesis, r.GetRewardForBlock(i))
 	}
