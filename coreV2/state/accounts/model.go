@@ -1,7 +1,6 @@
 package accounts
 
 import (
-	"bytes"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/rlp"
@@ -104,7 +103,7 @@ func (model *Model) getOrderedCoins() []types.CoinID {
 	model.lock.RUnlock()
 
 	sort.SliceStable(keys, func(i, j int) bool {
-		return bytes.Compare(keys[i].Bytes(), keys[j].Bytes()) == 1
+		return keys[i] > keys[j]
 	})
 
 	return keys

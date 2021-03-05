@@ -2,6 +2,7 @@ package minter
 
 import (
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/coreV2/appdb"
 	eventsdb "github.com/MinterTeam/minter-go-node/coreV2/events"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
 	validators2 "github.com/MinterTeam/minter-go-node/coreV2/state/validators"
@@ -15,7 +16,6 @@ import (
 	rpc "github.com/tendermint/tendermint/rpc/client/local"
 	"log"
 	"math/big"
-	"sort"
 	"sync/atomic"
 )
 
@@ -91,10 +91,6 @@ func (blockchain *Blockchain) updateValidators() []abciTypes.ValidatorUpdate {
 
 		newValidators = append(newValidators, abciTypes.Ed25519ValidatorUpdate(newCandidate.PubKey.Bytes(), power))
 	}
-
-	sort.SliceStable(newValidators, func(i, j int) bool {
-		return newValidators[i].Power > newValidators[j].Power
-	})
 
 	// update validators in state
 	blockchain.stateDeliver.Validators.SetNewValidators(newCandidates)
@@ -219,11 +215,14 @@ func (blockchain *Blockchain) updateBlocksTimeDelta(height uint64) {
 func (blockchain *Blockchain) calcMaxGas(height uint64) uint64 {
 	const targetTime = 7
 
+	if int64(height)-blockchain.stateDeliver.InitialVersion <= appdb.BlockDeltaCount {
+		return defaultMaxGas
+	}
+
 	// check if blocks are created in time
 	delta, count, err := blockchain.appDB.GetLastBlocksTimeDelta(height)
 	if err != nil {
-		log.Println(err)
-		return defaultMaxGas
+		panic(err)
 	}
 
 	// get current max gas

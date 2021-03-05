@@ -14,5 +14,5 @@ type FrozenFund struct {
 }
 
 type FrozenFunds interface {
-	AddFrozenFund(uint64, types.Address, types.Pubkey, uint32, types.CoinID, *big.Int)
+	AddFrozenFund(uint64, types.Address, *types.Pubkey, uint32, types.CoinID, *big.Int)
 }

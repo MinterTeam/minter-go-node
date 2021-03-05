@@ -1,6 +1,7 @@
 package validators
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/coreV2/dao"
 	"github.com/MinterTeam/minter-go-node/coreV2/developers"
@@ -11,6 +12,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/upgrades"
 	"github.com/cosmos/iavl"
+	"sort"
 	"sync"
 	"sync/atomic"
 
@@ -120,7 +122,7 @@ func (v *Validators) Commit(db *iavl.MutableTree) error {
 		}
 	}
 
-	for pubkey := range v.removed {
+	for _, pubkey := range v.getOrderedRemoved() {
 		path := append([]byte{mainPrefix}, pubkey.Bytes()...)
 		db.Remove(append(path, totalStakePrefix))
 		db.Remove(append(path, accumRewardPrefix))
@@ -130,6 +132,19 @@ func (v *Validators) Commit(db *iavl.MutableTree) error {
 	v.uncheckDirtyValidators()
 
 	return nil
+}
+
+func (v *Validators) getOrderedRemoved() []types.Pubkey {
+	keys := make([]types.Pubkey, 0, len(v.removed))
+	for k := range v.removed {
+		keys = append(keys, k)
+	}
+
+	sort.SliceStable(keys, func(i, j int) bool {
+		return bytes.Compare(keys[i].Bytes(), keys[j].Bytes()) == 1
+	})
+
+	return keys
 }
 
 func (v *Validators) IsDirtyOrDirtyAccumReward(val *Validator) bool {

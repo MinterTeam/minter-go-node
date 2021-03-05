@@ -124,7 +124,7 @@ func (blockchain *Blockchain) InitChain(req abciTypes.RequestInitChain) abciType
 		panic(err)
 	}
 
-	blockchain.appDB.SetStartHeight(uint64(req.InitialHeight))
+	blockchain.appDB.SetStartHeight(uint64(req.InitialHeight) - 1)
 	blockchain.initState()
 
 	if err := blockchain.stateDeliver.Import(genesisState); err != nil {
@@ -155,11 +155,12 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 	blockchain.StatisticData().PushStartBlock(&statistics.StartRequest{Height: int64(height), Now: time.Now(), HeaderTime: req.Header.Time})
 	blockchain.stateDeliver.Lock()
 
+	atomic.StoreUint64(&blockchain.height, height)
+
 	// compute max gas
 	maxGas := blockchain.calcMaxGas(height)
 	blockchain.stateDeliver.App.SetMaxGas(maxGas)
 
-	atomic.StoreUint64(&blockchain.height, height)
 	blockchain.rewards = big.NewInt(0)
 
 	// clear absent candidates
@@ -214,7 +215,7 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 				Address:         item.Address,
 				Amount:          amount.String(),
 				Coin:            uint64(item.Coin),
-				ValidatorPubKey: *item.CandidateKey,
+				ValidatorPubKey: item.CandidateKey,
 			})
 			blockchain.stateDeliver.Accounts.AddBalance(item.Address, item.Coin, amount)
 			// } else {

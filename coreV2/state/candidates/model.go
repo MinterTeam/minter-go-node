@@ -220,6 +220,14 @@ func (candidate *Candidate) GetTotalBipStake() *big.Int {
 	return big.NewInt(0).Set(candidate.totalBipStake)
 }
 
+// Status returns status of a candidate
+func (candidate *Candidate) GetStatus() byte {
+	candidate.lock.RLock()
+	defer candidate.lock.RUnlock()
+
+	return candidate.Status
+}
+
 func (candidate *Candidate) setStakeAtIndex(index int, stake *stake, isDirty bool) {
 
 	stake.markDirty = func(i int) {

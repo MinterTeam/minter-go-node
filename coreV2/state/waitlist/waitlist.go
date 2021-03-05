@@ -305,7 +305,8 @@ func (wl *WaitList) getOrderedDirty() []types.Address {
 	wl.lock.Unlock()
 
 	sort.SliceStable(keys, func(i, j int) bool {
-		return bytes.Compare(keys[i].Bytes(), keys[j].Bytes()) == 1
+		compare := bytes.Compare(keys[i].Bytes(), keys[j].Bytes())
+		return compare == 1
 	})
 
 	return keys

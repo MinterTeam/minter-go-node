@@ -286,24 +286,16 @@ func (c *Candidates) GetNewCandidates(valCount int) []*Candidate {
 
 	candidates := c.GetCandidates()
 	for _, candidate := range candidates {
-		candidate.lock.RLock()
-		if candidate.Status != CandidateStatusOnline {
-			candidate.lock.RUnlock()
+		if candidate.GetStatus() != CandidateStatusOnline {
 			continue
 		}
 
-		if candidate.totalBipStake.Cmp(minValidatorBipStake) == -1 {
-			candidate.lock.RUnlock()
+		if candidate.GetTotalBipStake().Cmp(minValidatorBipStake) == -1 {
 			continue
 		}
 
-		candidate.lock.RUnlock()
 		result = append(result, candidate)
 	}
-
-	sort.SliceStable(result, func(i, j int) bool {
-		return result[i].totalBipStake.Cmp(result[j].totalBipStake) == 1
-	})
 
 	if len(result) > valCount {
 		result = result[:valCount]
@@ -377,7 +369,7 @@ func (c *Candidates) PunishByzantineCandidate(height uint64, tmAddress types.TmA
 		})
 
 		c.bus.Checker().AddCoin(stake.Coin, big.NewInt(0).Neg(newValue))
-		c.bus.FrozenFunds().AddFrozenFund(height+types.GetUnbondPeriod(), stake.Owner, candidate.PubKey, candidate.ID, stake.Coin, newValue)
+		c.bus.FrozenFunds().AddFrozenFund(height+types.GetUnbondPeriod(), stake.Owner, &candidate.PubKey, candidate.ID, stake.Coin, newValue)
 		stake.setValue(big.NewInt(0))
 	}
 }
@@ -998,7 +990,11 @@ func (c *Candidates) getOrderedCandidates() []*Candidate {
 	c.lock.RUnlock()
 
 	sort.SliceStable(candidates, func(i, j int) bool {
-		return candidates[i].GetTotalBipStake().Cmp(candidates[j].GetTotalBipStake()) == 1
+		cmp := candidates[i].GetTotalBipStake().Cmp(candidates[j].GetTotalBipStake())
+		if cmp == 0 {
+			return candidates[i].ID > candidates[j].ID
+		}
+		return cmp == 1
 	})
 
 	return candidates

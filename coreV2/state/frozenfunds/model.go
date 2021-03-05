@@ -32,11 +32,11 @@ func (m *Model) delete() {
 	m.markDirty(m.height)
 }
 
-func (m *Model) addFund(address types.Address, pubkey types.Pubkey, candidateID uint32, coin types.CoinID, value *big.Int, moveToCandidateID *uint32) {
+func (m *Model) addFund(address types.Address, pubkey *types.Pubkey, candidateID uint32, coin types.CoinID, value *big.Int, moveToCandidateID *uint32) {
 	m.lock.Lock()
 	m.List = append(m.List, Item{
 		Address:      address,
-		CandidateKey: &pubkey,
+		CandidateKey: pubkey,
 		CandidateID:  candidateID,
 		Coin:         coin,
 		Value:        value,

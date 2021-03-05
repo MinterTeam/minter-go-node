@@ -2,6 +2,7 @@ package events
 
 import (
 	"encoding/binary"
+	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	tmjson "github.com/tendermint/tendermint/libs/json"
 	db "github.com/tendermint/tm-db"
 	"sync"
@@ -107,7 +108,13 @@ func (store *eventsStore) LoadEvents(height uint32) Events {
 	resultEvents := make(Events, 0, len(items))
 	for _, compactEvent := range items {
 		if stake, ok := compactEvent.(stake); ok {
-			resultEvents = append(resultEvents, stake.compile(store.idPubKey[stake.pubKeyID()], store.idAddress[stake.addressID()]))
+			var p *types.Pubkey
+			key, ok := store.idPubKey[stake.pubKeyID()]
+			if ok {
+				pubkey := types.Pubkey(key)
+				p = &pubkey
+			}
+			resultEvents = append(resultEvents, stake.compile(p, store.idAddress[stake.addressID()]))
 		} else if c, ok := compactEvent.(Event); ok {
 			resultEvents = append(resultEvents, c)
 		} else {
@@ -126,9 +133,9 @@ func (store *eventsStore) CommitEvents(height uint32) error {
 	var data []compact
 	for _, item := range store.pending.items {
 		if stake, ok := item.(Stake); ok {
-			pubKey := store.savePubKey(stake.validatorPubKey())
+			key := stake.validatorPubKey()
 			address := store.saveAddress(stake.address())
-			data = append(data, stake.convert(pubKey, address))
+			data = append(data, stake.convert(store.savePubKey(key), address))
 			continue
 		}
 		data = append(data, item)
@@ -180,14 +187,18 @@ func (store *eventsStore) saveAddress(address [20]byte) uint32 {
 	return id
 }
 
-func (store *eventsStore) savePubKey(validatorPubKey [32]byte) uint16 {
+func (store *eventsStore) savePubKey(validatorPubKey *types.Pubkey) uint16 {
+	if validatorPubKey == nil {
+		return 0
+	}
 
-	key := validatorPubKey
+	var key [32]byte
+	copy(key[:], validatorPubKey.Bytes())
 	if id, ok := store.pubKeyID[key]; ok {
 		return id
 	}
 
-	id := uint16(len(store.idPubKey))
+	id := uint16(len(store.idPubKey)) + 1
 	store.cachePubKey(id, key)
 
 	if err := store.db.Set(append([]byte(pubKeyPrefix), uint16ToBytes(id)...), validatorPubKey[:]); err != nil {
