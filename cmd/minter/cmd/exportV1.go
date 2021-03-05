@@ -92,7 +92,7 @@ func export(cmd *cobra.Command, args []string) error {
 	}
 
 	exportTimeStart := time.Now()
-	log.Println("Starting ", exportTimeStart)
+	log.Println("Starting ", exportTimeStart.Format(time.RFC3339))
 	appState := currentState.ExportV1(bipRate, validator, addresses)
 	log.Printf("State has been exported. Took %s\n", time.Since(exportTimeStart))
 
