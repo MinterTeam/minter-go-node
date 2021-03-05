@@ -155,11 +155,12 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 	blockchain.StatisticData().PushStartBlock(&statistics.StartRequest{Height: int64(height), Now: time.Now(), HeaderTime: req.Header.Time})
 	blockchain.stateDeliver.Lock()
 
+	atomic.StoreUint64(&blockchain.height, height)
+
 	// compute max gas
 	maxGas := blockchain.calcMaxGas(height)
 	blockchain.stateDeliver.App.SetMaxGas(maxGas)
 
-	atomic.StoreUint64(&blockchain.height, height)
 	blockchain.rewards = big.NewInt(0)
 
 	// clear absent candidates

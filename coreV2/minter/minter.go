@@ -215,7 +215,7 @@ func (blockchain *Blockchain) updateBlocksTimeDelta(height uint64) {
 func (blockchain *Blockchain) calcMaxGas(height uint64) uint64 {
 	const targetTime = 7
 
-	if int64(height)-blockchain.stateDeliver.InitialVersion < appdb.BlockDeltaCount {
+	if int64(height)-blockchain.stateDeliver.InitialVersion <= appdb.BlockDeltaCount {
 		return defaultMaxGas
 	}
 
