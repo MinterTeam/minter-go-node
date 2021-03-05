@@ -291,7 +291,7 @@ func (c *Coins) Create(id types.CoinID, symbol types.CoinSymbol, name string,
 		c.setSymbolInfoToMap(coin.symbolInfo, coin.Symbol())
 	}
 
-	ids := c.getBySymbol(coin.Symbol()) // todo: remove
+	ids := c.getBySymbol(coin.Symbol())
 	ids = append(ids, coin.ID())
 
 	c.setSymbolToMap(ids, coin.Symbol())
@@ -331,7 +331,7 @@ func (c *Coins) CreateToken(id types.CoinID, symbol types.CoinSymbol, name strin
 		c.setSymbolInfoToMap(coin.symbolInfo, coin.Symbol())
 	}
 
-	ids := c.getBySymbol(coin.Symbol()) // todo: remove
+	ids := c.getBySymbol(coin.Symbol())
 	ids = append(ids, coin.ID())
 
 	c.setSymbolToMap(ids, coin.Symbol())

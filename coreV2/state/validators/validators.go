@@ -135,12 +135,10 @@ func (v *Validators) Commit(db *iavl.MutableTree) error {
 }
 
 func (v *Validators) getOrderedRemoved() []types.Pubkey {
-	v.lock.RLock()
 	keys := make([]types.Pubkey, 0, len(v.removed))
 	for k := range v.removed {
 		keys = append(keys, k)
 	}
-	v.lock.RUnlock()
 
 	sort.SliceStable(keys, func(i, j int) bool {
 		return bytes.Compare(keys[i].Bytes(), keys[j].Bytes()) == 1

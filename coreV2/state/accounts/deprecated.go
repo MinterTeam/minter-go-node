@@ -4,7 +4,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/coreV2/dao"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"math/big"
-	"sort"
 )
 
 // Deprecated
@@ -47,11 +46,6 @@ func (a *Accounts) ExportV1(state *types.AppState, subBipValueFromDAO *big.Int) 
 				Value: value.String(),
 			})
 		}
-
-		// sort balances by coin symbol
-		sort.SliceStable(balance, func(i, j int) bool {
-			return balance[i].Coin > balance[j].Coin
-		})
 
 		acc := types.Account{
 			Address: account.address,
