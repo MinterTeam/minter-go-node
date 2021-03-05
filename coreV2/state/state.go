@@ -63,6 +63,7 @@ func (cs *CheckState) ExportV1(bipRate float64, validator string, addresses []st
 	appState := new(types.AppState)
 	cs.App().Export(appState)
 
+	log.Printf("Handling validators...\n")
 	var singleActiveCandidate *types.Candidate
 	if types.CurrentChainID == types.ChainTestnet && validator != "" && len(addresses) != 0 {
 		address := types.HexToAddress(addresses[0])
@@ -95,11 +96,17 @@ func (cs *CheckState) ExportV1(bipRate float64, validator string, addresses []st
 	} else {
 		cs.Validators().Export(appState)
 	}
+
+	log.Printf("Handling candidates...\n")
 	droppedIDs := cs.Candidates().ExportV1(appState, uint64(cs.state.height), singleActiveCandidate)
 
+	log.Printf("Handling unbiunds...\n")
 	cs.FrozenFunds().Export(appState, uint64(cs.state.height))
+	log.Printf("Handling waitlist...\n")
 	cs.WaitList().ExportV1(appState, droppedIDs)
+	log.Printf("Handling checks...\n")
 	cs.Checks().Export(appState)
+	log.Printf("Handling halt voites...\n")
 	cs.Halts().Export(appState)
 
 	totalUSDCValue := helpers.BipToPip(big.NewInt(1000000000))
@@ -107,8 +114,12 @@ func (cs *CheckState) ExportV1(bipRate float64, validator string, addresses []st
 	rate := big.NewFloat(bipRate)
 	poolBipValue, _ := big.NewFloat(0).Quo(big.NewFloat(0).SetInt(poolUSDCValue), rate).Int(nil)
 
+	log.Printf("Handling accounts...\n")
 	subValues := cs.Accounts().ExportV1(appState, poolBipValue)
+	log.Printf("Handling coins...\n")
 	usdcCoinID := cs.Coins().ExportV1(appState, subValues)
+
+	log.Printf("Handling commissions...\n")
 	poolTokenVolume := cs.Swap().ExportV1(appState, usdcCoinID, poolUSDCValue, poolBipValue)
 	cs.Commission().ExportV1(appState, usdcCoinID)
 

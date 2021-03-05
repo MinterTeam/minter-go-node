@@ -91,13 +91,15 @@ func export(cmd *cobra.Command, args []string) error {
 		log.Panicf("Cannot parse validator: %s", err)
 	}
 
-	exportTimeStart, appState := time.Now(), currentState.ExportV1(bipRate, validator, addresses)
-	fmt.Printf("State has been exported. Took %s\n", time.Since(exportTimeStart))
+	exportTimeStart := time.Now()
+	log.Println("Starting ", exportTimeStart)
+	appState := currentState.ExportV1(bipRate, validator, addresses)
+	log.Printf("State has been exported. Took %s\n", time.Since(exportTimeStart))
 
 	if err := appState.Verify(); err != nil {
-		log.Printf("Failed to validate: %s\n", err)
-		os.Exit(1)
+		log.Fatalf("Failed to validate: %s\n", err)
 	}
+	log.Printf("Verify state OK\n")
 
 	var jsonBytes []byte
 	if indent {
@@ -108,6 +110,7 @@ func export(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Panicf("Cannot marshal state to json: %s", err)
 	}
+	log.Printf("Marshal OK\n")
 
 	// compose genesis
 	genesis := types.GenesisDoc{
@@ -138,13 +141,14 @@ func export(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.Panicf("Failed to validate: %s", err)
 	}
+	log.Printf("Validate genesis OK\n")
 
 	if err := genesis.SaveAs(genesisPath); err != nil {
 		log.Panicf("Failed to save genesis file: %s", err)
 	}
 
 	hash := getFileSha256Hash(genesisPath)
-	fmt.Printf("\nOK\n%x\n", hash)
+	log.Printf("Finish with sha256 hash: \n%x\n", hash)
 
 	return nil
 }
