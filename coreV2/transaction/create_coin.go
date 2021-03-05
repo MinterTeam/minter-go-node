@@ -63,7 +63,7 @@ func (data CreateCoinData) basicCheck(tx *Transaction, context *state.CheckState
 	if !checkAllowSymbol(data.Symbol.String()) {
 		return &Response{
 			Code: code.InvalidCoinSymbol,
-			Log:  fmt.Sprintf("Invalid coin symbol. Should be %s", allowedCoinSymbols),
+			Log:  fmt.Sprintf("Invalid coin symbol. Should be %s and must contain characters", allowedCoinSymbols),
 			Info: EncodeError(code.NewInvalidCoinSymbol(allowedCoinSymbols, data.Symbol.String())),
 		}
 	}
