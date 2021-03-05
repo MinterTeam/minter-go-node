@@ -53,16 +53,17 @@ type Blockchain struct {
 	validatorsStatuses map[types.TmAddress]int8
 	validatorsPowers   map[types.Pubkey]*big.Int
 	totalPower         *big.Int
+	rewardsCounter     *rewards.Reward
 
 	// local rpc client for Tendermint
 	rpcClient *rpc.Local
-	tmNode    *tmNode.Node
+
+	tmNode *tmNode.Node
 
 	// currentMempool is responsive for prevent sending multiple transactions from one address in one block
 	currentMempool *sync.Map
 
-	lock sync.RWMutex
-
+	lock       sync.RWMutex
 	haltHeight uint64
 	cfg        *config.Config
 	storages   *utils.Storage
@@ -112,9 +113,9 @@ func (blockchain *Blockchain) initState() {
 
 	blockchain.stateDeliver = stateDeliver
 	blockchain.stateCheck = state.NewCheckState(stateDeliver)
+	blockchain.rewardsCounter = rewards.NewReward(initialHeight)
 
 	// Set start height for rewards and validators
-	rewards.SetStartHeight(initialHeight)
 }
 
 // InitChain initialize blockchain with validators and other info. Only called once.
@@ -272,7 +273,7 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 	blockchain.calculatePowers(vals)
 
 	// accumulate rewards
-	reward := rewards.GetRewardForBlock(height)
+	reward := blockchain.rewardsCounter.GetRewardForBlock(height)
 	blockchain.stateDeliver.Checker.AddCoinVolume(types.GetBaseCoinID(), reward)
 	reward.Add(reward, blockchain.rewards)
 

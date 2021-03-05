@@ -10,12 +10,23 @@ const lastBlock = 43702611
 const firstReward = 333
 const lastReward = 68
 
-var startHeight uint64 = 9150000
-var beforeGenesis = big.NewInt(0)
+type Reward struct {
+	startHeight   uint64
+	beforeGenesis *big.Int
+}
+
+func NewReward(startHeight uint64) *Reward {
+	sHeight := startHeight + 9150000
+	r := &Reward{startHeight: sHeight, beforeGenesis: big.NewInt(0)}
+	for i := uint64(1); i <= sHeight; i++ {
+		r.beforeGenesis.Add(r.beforeGenesis, r.GetRewardForBlock(i))
+	}
+	return r
+}
 
 // GetRewardForBlock returns reward for creation of given block. If there is no reward - returns 0.
-func GetRewardForBlock(blockHeight uint64) *big.Int {
-	blockHeight += startHeight
+func (r *Reward) GetRewardForBlock(blockHeight uint64) *big.Int {
+	blockHeight += r.startHeight
 
 	if blockHeight > lastBlock {
 		return big.NewInt(0)
@@ -33,13 +44,4 @@ func GetRewardForBlock(blockHeight uint64) *big.Int {
 	}
 
 	return helpers.BipToPip(reward)
-}
-
-// SetStartHeight sets base height for rewards calculations
-func SetStartHeight(sHeight uint64) {
-	for i := uint64(1); i <= sHeight; i++ {
-		beforeGenesis.Add(beforeGenesis, GetRewardForBlock(i))
-	}
-
-	startHeight = sHeight
 }
