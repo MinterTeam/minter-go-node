@@ -16,11 +16,7 @@ type Reward struct {
 }
 
 func NewReward() *Reward {
-	r := &Reward{startHeight: 9150000, beforeGenesis: big.NewInt(0)}
-	for i := uint64(1); i <= r.startHeight; i++ {
-		r.beforeGenesis.Add(r.beforeGenesis, r.GetRewardForBlock(i))
-	}
-	return r
+	return &Reward{startHeight: 9150000, beforeGenesis: helpers.StringToBigInt("2423599954000000000000000000")}
 }
 
 // GetRewardForBlock returns reward for creation of given block. If there is no reward - returns 0.

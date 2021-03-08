@@ -169,7 +169,6 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 	// clear absent candidates
 	blockchain.lock.Lock()
 	blockchain.validatorsStatuses = map[types.TmAddress]int8{}
-
 	// give penalty to absent validators
 	for _, v := range req.LastCommitInfo.Votes {
 		var address types.TmAddress
@@ -213,7 +212,6 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 	if frozenFunds != nil {
 		for _, item := range frozenFunds.List {
 			amount := item.Value
-			// if item.MoveToCandidate == nil {
 			blockchain.eventsDB.AddEvent(&eventsdb.UnbondEvent{
 				Address:         item.Address,
 				Amount:          amount.String(),
@@ -221,28 +219,6 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 				ValidatorPubKey: item.CandidateKey,
 			})
 			blockchain.stateDeliver.Accounts.AddBalance(item.Address, item.Coin, amount)
-			// } else {
-			// 	newCandidate := blockchain.stateDeliver.Candidates.PubKey(*item.MoveToCandidate)
-			// 	value := big.NewInt(0).Set(amount)
-			// 	if wl := blockchain.stateDeliver.Waitlist.Get(item.Address, newCandidate, item.Coin); wl != nil {
-			// 		value.Add(value, wl.Value)
-			// 		blockchain.stateDeliver.Waitlist.Delete(item.Address, newCandidate, item.Coin)
-			// 	}
-			// 	var toWaitlist bool
-			// 	if blockchain.stateDeliver.Candidates.IsDelegatorStakeSufficient(item.Address, newCandidate, item.Coin, value) {
-			// 		blockchain.stateDeliver.Candidates.Delegate(item.Address, newCandidate, item.Coin, value, big.NewInt(0))
-			// 	} else {
-			// 		blockchain.stateDeliver.Waitlist.AddWaitList(item.Address, newCandidate, item.Coin, value)
-			// 		toWaitlist = true
-			// 	}
-			// 	blockchain.eventsDB.AddEvent(&eventsdb.StakeMoveEvent{
-			// 		Address:         item.Address,
-			// 		Amount:          amount.String(),
-			// 		Coin:            uint64(item.Coin),
-			// 		ValidatorPubKey: *item.CandidateKey,
-			// 		WaitList:        toWaitlist,
-			// 	})
-			// }
 		}
 
 		// delete from db
