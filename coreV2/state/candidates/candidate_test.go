@@ -647,7 +647,7 @@ type fr struct {
 	unbounds []*big.Int
 }
 
-func (fr *fr) AddFrozenFund(_ uint64, _ types.Address, _ types.Pubkey, _ uint32, _ types.CoinID, value *big.Int) {
+func (fr *fr) AddFrozenFund(_ uint64, _ types.Address, _ *types.Pubkey, _ uint32, _ types.CoinID, value *big.Int) {
 	fr.unbounds = append(fr.unbounds, value)
 }
 func TestCandidates_PunishByzantineCandidate(t *testing.T) {

@@ -12,8 +12,12 @@ type Results struct {
 	Result *big.Int
 }
 
-func init() {
-	startHeight = 0
+func NewFrom0Block() *Reward {
+	r := &Reward{startHeight: 0, beforeGenesis: big.NewInt(0)}
+	for i := uint64(1); i <= r.startHeight; i++ {
+		r.beforeGenesis.Add(r.beforeGenesis, r.GetRewardForBlock(i))
+	}
+	return r
 }
 
 func TestGetRewardForBlock(t *testing.T) {
@@ -33,7 +37,7 @@ func TestGetRewardForBlock(t *testing.T) {
 	}
 
 	for _, item := range data {
-		result := GetRewardForBlock(item.Block)
+		result := NewFrom0Block().GetRewardForBlock(item.Block)
 
 		if result.Cmp(item.Result) != 0 {
 			t.Errorf("GetRewardForBlock result is not correct. Expected %s, got %s", item.Result.String(), result.String())
@@ -56,7 +60,7 @@ func TestTotalRewardsCount(t *testing.T) {
 		go func(i uint64) {
 			results[i] = big.NewInt(0)
 			for block := fromHeight + (i * chunk); block < fromHeight+((i+1)*chunk) && block < toHeight; block++ {
-				results[i].Add(results[i], GetRewardForBlock(block))
+				results[i].Add(results[i], NewFrom0Block().GetRewardForBlock(block))
 			}
 			wg.Done()
 		}(i)

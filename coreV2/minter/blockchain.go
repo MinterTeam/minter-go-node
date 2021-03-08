@@ -156,7 +156,7 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 		blockchain.initState()
 	}
 	blockchain.StatisticData().PushStartBlock(&statistics.StartRequest{Height: int64(height), Now: time.Now(), HeaderTime: req.Header.Time})
-	blockchain.stateDeliver.Lock()
+	// blockchain.stateDeliver.Lock()
 
 	atomic.StoreUint64(&blockchain.height, height)
 
@@ -451,13 +451,13 @@ func (blockchain *Blockchain) Commit() abciTypes.ResponseCommit {
 	if err != nil {
 		panic(err)
 	}
+	// blockchain.stateDeliver.Unlock()
 
 	// Persist application hash and height
 	blockchain.appDB.SetLastBlockHash(hash)
 	blockchain.appDB.SetLastHeight(blockchain.Height())
 	blockchain.appDB.FlushValidators()
 	blockchain.updateBlocksTimeDelta(blockchain.Height())
-	blockchain.stateDeliver.Unlock()
 
 	// Clear mempool
 	blockchain.currentMempool = &sync.Map{}
