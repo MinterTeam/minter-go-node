@@ -22,6 +22,7 @@ func TestEditOwnerTx(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Cannot load state. Error %s", err)
 	}
+	cState.Commission.SetNewCommissions(commissionPrice.Encode())
 
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
@@ -81,6 +82,7 @@ func TestEditOwnerTxWithWrongOwner(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Cannot load state. Error %s", err)
 	}
+	cState.Commission.SetNewCommissions(commissionPrice.Encode())
 
 	privateKey, _ := crypto.GenerateKey()
 
@@ -116,6 +118,7 @@ func TestEditOwnerTxWithWrongSymbol(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Cannot load state. Error %s", err)
 	}
+	cState.Commission.SetNewCommissions(commissionPrice.Encode())
 
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
@@ -152,6 +155,7 @@ func TestEditCOwnerTxWithInsufficientFunds(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Cannot load state. Error %s", err)
 	}
+	cState.Commission.SetNewCommissions(commissionPrice.Encode())
 
 	privateKey, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(privateKey.PublicKey)

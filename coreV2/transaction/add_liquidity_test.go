@@ -209,6 +209,9 @@ func TestAddExchangeLiquidityTx_addLiquidity(t *testing.T) {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
 		}
 	}
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
 	{
 		data := AddLiquidityData{
 			Coin0:          coin,

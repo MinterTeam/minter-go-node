@@ -22,6 +22,7 @@ func TestSetHaltBlockTx(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Cannot load state. Error %s", err)
 	}
+	cState.Commission.SetNewCommissions(commissionPrice.Encode())
 
 	haltHeight := 500000 + uint64(100)
 	privateKey, _ := crypto.GenerateKey()
@@ -103,6 +104,7 @@ func TestSetHaltBlockTxWithWrongHeight(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Cannot load state. Error %s", err)
 	}
+	cState.Commission.SetNewCommissions(commissionPrice.Encode())
 
 	haltHeight := currentHeight - 1
 	privateKey, _ := crypto.GenerateKey()
@@ -168,6 +170,7 @@ func TestSetHaltBlockTxWithWrongOwnership(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Cannot load state. Error %s", err)
 	}
+	cState.Commission.SetNewCommissions(commissionPrice.Encode())
 
 	haltHeight := currentHeight + 1
 	privateKey, _ := crypto.GenerateKey()
@@ -233,6 +236,7 @@ func TestSetHaltBlockTxToNonExistCandidate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Cannot load state. Error %s", err)
 	}
+	cState.Commission.SetNewCommissions(commissionPrice.Encode())
 
 	createDefaultValidator(cState)
 
@@ -292,6 +296,7 @@ func TestSetHaltBlockTxToInsufficientFunds(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Cannot load state. Error %s", err)
 	}
+	cState.Commission.SetNewCommissions(commissionPrice.Encode())
 
 	haltHeight := 500000 + uint64(100)
 	privateKey, _ := crypto.GenerateKey()
@@ -350,6 +355,7 @@ func TestSetHaltBlockTxToGasCoinReserveUnderflow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Cannot load state. Error %s", err)
 	}
+	cState.Commission.SetNewCommissions(commissionPrice.Encode())
 
 	createDefaultValidator(cState)
 
@@ -412,6 +418,7 @@ func TestSetHaltBlockTxToAlreadyExistenHalt(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Cannot load state. Error %s", err)
 	}
+	cState.Commission.SetNewCommissions(commissionPrice.Encode())
 
 	haltHeight := 500000 + uint64(100)
 	privateKey, _ := crypto.GenerateKey()
