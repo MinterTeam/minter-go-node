@@ -110,7 +110,7 @@ func (model *Model) getOrderedCoins() []types.CoinID {
 }
 
 func (model *Model) setBalance(coin types.CoinID, amount *big.Int) {
-	if amount.Cmp(big.NewInt(0)) == 0 {
+	if amount.Sign() == 0 {
 		if !model.hasCoin(coin) {
 			return
 		}
