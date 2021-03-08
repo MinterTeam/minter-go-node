@@ -60,7 +60,7 @@ func TestSend(t *testing.T) {
 	// check sender's balance
 	{
 		balance := app.CurrentState().Accounts().GetBalance(address, types.GetBaseCoinID())
-		if balance.String() != "98999999999999999999" {
+		if balance.String() != "99989999999999999999" {
 			t.Fatalf("Recipient balance is not correct. Expected %s, got %s", "98999999999999999999", balance)
 		}
 	}

@@ -34,7 +34,7 @@ func TestEditOwnerTx(t *testing.T) {
 	createDefaultValidator(cState)
 
 	gasCoin := types.GetBaseCoinID()
-	cState.Accounts.AddBalance(addr, gasCoin, helpers.BipToPip(big.NewInt(1000000)))
+	cState.Accounts.AddBalance(addr, gasCoin, helpers.BipToPip(big.NewInt(10000)))
 
 	data := EditCoinOwnerData{
 		Symbol:   getTestCoinSymbol(),
@@ -51,9 +51,8 @@ func TestEditOwnerTx(t *testing.T) {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
 
-	_, _, err = cState.Tree().Commit(cState.Coins)
-	if err != nil {
-		t.Fatalf("Failed to commit coins: %s", err)
+	if err := checkState(cState); err != nil {
+		t.Error(err)
 	}
 
 	targetBalance, _ := big.NewInt(0).SetString("0", 10)

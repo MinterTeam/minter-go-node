@@ -33,20 +33,22 @@ func TestIEventsDB(t *testing.T) {
 	}
 
 	{
+		pubkey := types.HexToPubkey("Mp738da41ba6a7b7d69b7294afa158b89c5a1b410cbf0c2443c85c5fe24ad1dd11")
 		event := &UnbondEvent{
 			Coin:            1,
 			Address:         types.HexToAddress("Mx18467bbb64a8edf890201d526c35957d82be3d91"),
 			Amount:          "891977800000000000001",
-			ValidatorPubKey: types.HexToPubkey("Mp738da41ba6a7b7d69b7294afa158b89c5a1b410cbf0c2443c85c5fe24ad1dd11"),
+			ValidatorPubKey: &pubkey,
 		}
 		store.AddEvent(event)
 	}
 	{
+		pubkey := types.HexToPubkey("Mp738da41ba6a7b7d69b7294afa158b89c5a1b410cbf0c2443c85c5fe24ad1dd12")
 		event := &UnbondEvent{
 			Coin:            2,
 			Address:         types.HexToAddress("Mx18467bbb64a8edf890201d526c35957d82be3d92"),
 			Amount:          "891977800000000000002",
-			ValidatorPubKey: types.HexToPubkey("Mp738da41ba6a7b7d69b7294afa158b89c5a1b410cbf0c2443c85c5fe24ad1dd12"),
+			ValidatorPubKey: &pubkey,
 		}
 		store.AddEvent(event)
 	}

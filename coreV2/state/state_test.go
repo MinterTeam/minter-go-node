@@ -3,6 +3,7 @@ package state
 import (
 	"github.com/MinterTeam/minter-go-node/coreV2/check"
 	eventsdb "github.com/MinterTeam/minter-go-node/coreV2/events"
+	"github.com/MinterTeam/minter-go-node/coreV2/state/commission"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/helpers"
@@ -21,6 +22,53 @@ func TestStateExport(t *testing.T) {
 	if err != nil {
 		log.Panic("Cannot create state")
 	}
+	commissionPrice := commission.Price{
+		Coin:                    types.GetBaseCoinID(),
+		PayloadByte:             helpers.StringToBigInt("2000000000000000"),
+		Send:                    helpers.StringToBigInt("10000000000000000"),
+		BuyBancor:               helpers.StringToBigInt("100000000000000000"),
+		SellBancor:              helpers.StringToBigInt("100000000000000000"),
+		SellAllBancor:           helpers.StringToBigInt("100000000000000000"),
+		BuyPoolBase:             helpers.StringToBigInt("100000000000000000"),
+		BuyPoolDelta:            helpers.StringToBigInt("50000000000000000"),
+		SellPoolBase:            helpers.StringToBigInt("100000000000000000"),
+		SellPoolDelta:           helpers.StringToBigInt("50000000000000000"),
+		SellAllPoolBase:         helpers.StringToBigInt("100000000000000000"),
+		SellAllPoolDelta:        helpers.StringToBigInt("50000000000000000"),
+		CreateTicker3:           helpers.StringToBigInt("1000000000000000000000000"),
+		CreateTicker4:           helpers.StringToBigInt("100000000000000000000000"),
+		CreateTicker5:           helpers.StringToBigInt("10000000000000000000000"),
+		CreateTicker6:           helpers.StringToBigInt("1000000000000000000000"),
+		CreateTicker7to10:       helpers.StringToBigInt("100000000000000000000"),
+		CreateCoin:              helpers.StringToBigInt("0"),
+		CreateToken:             helpers.StringToBigInt("0"),
+		RecreateCoin:            helpers.StringToBigInt("10000000000000000000000"),
+		RecreateToken:           helpers.StringToBigInt("10000000000000000000000"),
+		DeclareCandidacy:        helpers.StringToBigInt("10000000000000000000"),
+		Delegate:                helpers.StringToBigInt("200000000000000000"),
+		Unbond:                  helpers.StringToBigInt("200000000000000000"),
+		RedeemCheck:             helpers.StringToBigInt("30000000000000000"),
+		SetCandidateOn:          helpers.StringToBigInt("100000000000000000"),
+		SetCandidateOff:         helpers.StringToBigInt("100000000000000000"),
+		CreateMultisig:          helpers.StringToBigInt("100000000000000000"),
+		MultisendBase:           helpers.StringToBigInt("10000000000000000"),
+		MultisendDelta:          helpers.StringToBigInt("5000000000000000"),
+		EditCandidate:           helpers.StringToBigInt("10000000000000000000"),
+		SetHaltBlock:            helpers.StringToBigInt("1000000000000000000"),
+		EditTickerOwner:         helpers.StringToBigInt("10000000000000000000000"),
+		EditMultisig:            helpers.StringToBigInt("1000000000000000000"),
+		EditCandidatePublicKey:  helpers.StringToBigInt("100000000000000000000000"),
+		CreateSwapPool:          helpers.StringToBigInt("1000000000000000000"),
+		AddLiquidity:            helpers.StringToBigInt("100000000000000000"),
+		RemoveLiquidity:         helpers.StringToBigInt("100000000000000000"),
+		EditCandidateCommission: helpers.StringToBigInt("10000000000000000000"),
+		BurnToken:               helpers.StringToBigInt("100000000000000000"),
+		MintToken:               helpers.StringToBigInt("100000000000000000"),
+		VoteCommission:          helpers.StringToBigInt("1000000000000000000"),
+		VoteUpdate:              helpers.StringToBigInt("1000000000000000000"),
+		More:                    nil,
+	}
+	state.Commission.SetNewCommissions(commissionPrice.Encode())
 
 	coinTest := types.StrToCoinSymbol("TEST")
 	coinTest2 := types.StrToCoinSymbol("TEST2")

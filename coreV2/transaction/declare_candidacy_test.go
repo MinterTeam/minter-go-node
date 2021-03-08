@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
-	"github.com/MinterTeam/minter-go-node/coreV2/state"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/candidates"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/coreV2/validators"
@@ -391,61 +390,6 @@ func TestDeclareCandidacyToExistCandidate(t *testing.T) {
 	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 	if response.Code != code.CandidateExists {
 		t.Fatalf("Response code is not %d. Error %s", code.CandidateExists, response.Log)
-	}
-
-	if err := checkState(cState); err != nil {
-		t.Error(err)
-	}
-}
-
-func TestDeclareCandidacyToDecodeError(t *testing.T) {
-	t.Parallel()
-	cState := getState()
-
-	privateKey, _ := crypto.GenerateKey()
-	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
-
-	coin := types.GetBaseCoinID()
-
-	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
-
-	pkey, _ := crypto.GenerateKey()
-	publicKeyBytes := crypto.FromECDSAPub(&pkey.PublicKey)[:32]
-	var publicKey types.Pubkey
-	copy(publicKey[:], publicKeyBytes)
-
-	commission := uint32(10)
-
-	data := DeclareCandidacyData{
-		Address:    addr,
-		PubKey:     publicKey,
-		Commission: commission,
-		Coin:       5,
-		Stake:      nil,
-	}
-
-	encodedData, err := rlp.EncodeToBytes(data)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	tx := Transaction{
-		Nonce:         1,
-		GasPrice:      1,
-		ChainID:       types.CurrentChainID,
-		GasCoin:       coin,
-		Type:          TypeDeclareCandidacy,
-		Data:          encodedData,
-		SignatureType: SigTypeSingle,
-	}
-
-	if err := tx.Sign(privateKey); err != nil {
-		t.Fatal(err)
-	}
-
-	response := data.Run(&tx, state.NewCheckState(cState), nil, 0, nil)
-	if response.Code != code.DecodeError {
-		t.Fatalf("Response code is not %d. Error %s", code.DecodeError, response.Log)
 	}
 
 	if err := checkState(cState); err != nil {
