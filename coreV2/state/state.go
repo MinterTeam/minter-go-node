@@ -211,6 +211,9 @@ func (cs *CheckState) Candidates() candidates.RCandidates {
 func (cs *CheckState) FrozenFunds() frozenfunds.RFrozenFunds {
 	return cs.state.FrozenFunds
 }
+func (cs *CheckState) InitialHeight() int64 {
+	return cs.state.InitialVersion
+}
 func (cs *CheckState) Halts() halts.RHalts {
 	return cs.state.Halts
 }

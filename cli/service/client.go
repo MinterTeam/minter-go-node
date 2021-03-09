@@ -295,7 +295,7 @@ func updateDashboard(box *tui.Box, recv *pb.DashboardResponse) func(recv *pb.Das
 	box.Append(tui.NewSpacer())
 
 	return func(recv *pb.DashboardResponse) {
-		perSync := int((float64(recv.LatestHeight) / float64(recv.MaxPeerHeight)) * 100)
+		perSync := int((float64(recv.LatestHeight-recv.InitialHeight) / float64(recv.MaxPeerHeight-recv.InitialHeight)) * 100)
 		labelNetworkSynchronizationPercent.SetText(fmt.Sprintf("%d%% ", perSync))
 		timeLeft := ""
 		ofBlocks := ""
@@ -308,7 +308,7 @@ func updateDashboard(box *tui.Box, recv *pb.DashboardResponse) func(recv *pb.Das
 			}
 			ofBlocks = fmt.Sprintf(" of %d", recv.MaxPeerHeight)
 			progress := tui.NewProgress(maxProgress)
-			progress.SetCurrent(int(recv.LatestHeight) * maxProgress / (int(recv.MaxPeerHeight)))
+			progress.SetCurrent(int(recv.LatestHeight-recv.InitialHeight) * maxProgress / (int(recv.MaxPeerHeight - recv.InitialHeight)))
 			progressBox.Remove(0)
 			progressBox.Prepend(progress)
 		}
