@@ -400,6 +400,10 @@ func (a *Accounts) Export(state *types.AppState) {
 			})
 		}
 
+		sort.SliceStable(balance, func(i, j int) bool {
+			return bytes.Compare(types.CoinID(balance[i].Coin).Bytes(), types.CoinID(balance[j].Coin).Bytes()) == 1
+		})
+
 		acc := types.Account{
 			Address: account.address,
 			Balance: balance,

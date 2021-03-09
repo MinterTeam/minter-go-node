@@ -81,7 +81,7 @@ func (v *Validators) SetImmutableTree(immutableTree *iavl.ImmutableTree) {
 
 // Commit writes changes to iavl, may return an error
 func (v *Validators) Commit(db *iavl.MutableTree) error {
-	if v.hasDirtyValidators() {
+	if v.hasDirtyValidators() { // todo move check lost to range
 		v.lock.RLock()
 		data, err := rlp.EncodeToBytes(v.list)
 		v.lock.RUnlock()
@@ -101,7 +101,6 @@ func (v *Validators) Commit(db *iavl.MutableTree) error {
 			path := []byte{mainPrefix}
 
 			val.lock.Lock()
-			val.isTotalStakeDirty = false
 			path = append(path, val.PubKey.Bytes()...)
 			val.lock.Unlock()
 
@@ -113,7 +112,6 @@ func (v *Validators) Commit(db *iavl.MutableTree) error {
 			path := []byte{mainPrefix}
 
 			val.lock.Lock()
-			val.isAccumRewardDirty = false
 			path = append(path, val.PubKey.Bytes()...)
 			val.lock.Unlock()
 
@@ -468,6 +466,8 @@ func (v *Validators) uncheckDirtyValidators() {
 	for _, val := range v.list {
 		val.lock.Lock()
 		val.isDirty = false
+		val.isAccumRewardDirty = false
+		val.isTotalStakeDirty = false
 		val.lock.Unlock()
 	}
 }

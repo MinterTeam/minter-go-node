@@ -152,8 +152,6 @@ func (s *Swap) Import(state *types.AppState) {
 
 const mainPrefix = byte('s')
 
-type dirty struct{ isDirty bool }
-
 type pairData struct {
 	*sync.RWMutex
 	Reserve0  *big.Int
@@ -262,7 +260,6 @@ func (s *Swap) SwapPool(coinA, coinB types.CoinID) (reserve0, reserve1 *big.Int,
 
 func (s *Swap) GetSwapper(coinA, coinB types.CoinID) EditableChecker {
 	return s.Pair(coinA, coinB)
-
 }
 
 func (s *Swap) Pair(coin0, coin1 types.CoinID) *Pair {
@@ -286,6 +283,12 @@ func (s *Swap) Pair(coin0, coin1 types.CoinID) *Pair {
 	err := rlp.DecodeBytes(data, pair.pairData)
 	if err != nil {
 		panic(err)
+	}
+
+	if !key.isSorted() {
+		return &Pair{
+			pairData: pair.pairData.Revert(),
+		}
 	}
 
 	return pair
@@ -437,22 +440,6 @@ func (s *Swap) ReturnPair(coin0, coin1 types.CoinID) *Pair {
 	return pair
 }
 
-func (s *Swap) loadBalanceFunc(key *pairKey) func(address types.Address) *Balance {
-	return func(address types.Address) *Balance {
-		_, balancesBytes := s.immutableTree().Get(append(append([]byte{mainPrefix}, key.Bytes()...), address.Bytes()...))
-		if len(balancesBytes) == 0 {
-			return nil
-		}
-
-		balance := new(Balance)
-		if err := rlp.DecodeBytes(balancesBytes, balance); err != nil {
-			panic(err)
-		}
-
-		return balance
-	}
-}
-
 func (s *Swap) markDirty(key pairKey) func() {
 	return func() {
 		s.muPairs.Lock()
@@ -462,21 +449,21 @@ func (s *Swap) markDirty(key pairKey) func() {
 }
 
 func (s *Swap) addPair(key pairKey) *Pair {
-	data := &pairData{
-		RWMutex:   &sync.RWMutex{},
-		Reserve0:  big.NewInt(0),
-		Reserve1:  big.NewInt(0),
-		ID:        new(uint32),
-		markDirty: s.markDirty(key.sort()),
-	}
 	if !key.isSorted() {
 		key = key.Revert()
-		data = data.Revert()
 	}
 	pair := &Pair{
-		pairData: data,
+		pairData: &pairData{
+			RWMutex:   &sync.RWMutex{},
+			Reserve0:  big.NewInt(0),
+			Reserve1:  big.NewInt(0),
+			ID:        new(uint32),
+			markDirty: s.markDirty(key),
+		},
 	}
+
 	s.pairs[key] = pair
+
 	return pair
 }
 

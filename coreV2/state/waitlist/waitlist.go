@@ -147,6 +147,9 @@ func (wl *WaitList) Commit(db *iavl.MutableTree) error {
 			db.Set(path, data)
 		} else {
 			db.Remove(path)
+			wl.lock.Lock()
+			delete(wl.list, address)
+			wl.lock.Unlock()
 		}
 		w.lock.RUnlock()
 	}

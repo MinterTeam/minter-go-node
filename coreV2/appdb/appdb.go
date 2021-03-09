@@ -29,6 +29,7 @@ func init() {
 type AppDB struct {
 	db          db.DB
 	startHeight uint64
+	lastHeight  uint64
 	blocksDelta []*lastBlocksTimeDelta
 	validators  abciTypes.ValidatorUpdates
 }
@@ -63,17 +64,20 @@ func (appDB *AppDB) SetLastBlockHash(hash []byte) {
 
 // GetLastHeight returns latest block height stored on disk
 func (appDB *AppDB) GetLastHeight() uint64 {
+	if appDB.lastHeight != 0 {
+		return appDB.lastHeight
+	}
+
 	result, err := appDB.db.Get([]byte(heightPath))
 	if err != nil {
 		panic(err)
 	}
-	var height uint64
 
 	if result != nil {
-		height = binary.BigEndian.Uint64(result)
+		appDB.lastHeight = binary.BigEndian.Uint64(result)
 	}
 
-	return height
+	return appDB.lastHeight
 }
 
 // SetLastHeight stores given block height on disk, panics on error
@@ -83,6 +87,8 @@ func (appDB *AppDB) SetLastHeight(height uint64) {
 	if err := appDB.db.Set([]byte(heightPath), h); err != nil {
 		panic(err)
 	}
+
+	appDB.lastHeight = height
 }
 
 // SetStartHeight stores given block height on disk as start height, panics on error
