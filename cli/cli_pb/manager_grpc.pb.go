@@ -4,10 +4,10 @@ package cli_pb
 
 import (
 	context "context"
-	empty "github.com/golang/protobuf/ptypes/empty"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -18,12 +18,12 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ManagerServiceClient interface {
-	Status(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*StatusResponse, error)
-	NetInfo(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*NetInfoResponse, error)
-	AvailableVersions(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*AvailableVersionsResponse, error)
+	Status(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*StatusResponse, error)
+	NetInfo(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*NetInfoResponse, error)
+	AvailableVersions(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*AvailableVersionsResponse, error)
 	PruneBlocks(ctx context.Context, in *PruneBlocksRequest, opts ...grpc.CallOption) (ManagerService_PruneBlocksClient, error)
-	DealPeer(ctx context.Context, in *DealPeerRequest, opts ...grpc.CallOption) (*empty.Empty, error)
-	Dashboard(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (ManagerService_DashboardClient, error)
+	DealPeer(ctx context.Context, in *DealPeerRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	Dashboard(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (ManagerService_DashboardClient, error)
 }
 
 type managerServiceClient struct {
@@ -34,7 +34,7 @@ func NewManagerServiceClient(cc grpc.ClientConnInterface) ManagerServiceClient {
 	return &managerServiceClient{cc}
 }
 
-func (c *managerServiceClient) Status(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*StatusResponse, error) {
+func (c *managerServiceClient) Status(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*StatusResponse, error) {
 	out := new(StatusResponse)
 	err := c.cc.Invoke(ctx, "/cli_pb.ManagerService/Status", in, out, opts...)
 	if err != nil {
@@ -43,7 +43,7 @@ func (c *managerServiceClient) Status(ctx context.Context, in *empty.Empty, opts
 	return out, nil
 }
 
-func (c *managerServiceClient) NetInfo(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*NetInfoResponse, error) {
+func (c *managerServiceClient) NetInfo(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*NetInfoResponse, error) {
 	out := new(NetInfoResponse)
 	err := c.cc.Invoke(ctx, "/cli_pb.ManagerService/NetInfo", in, out, opts...)
 	if err != nil {
@@ -52,7 +52,7 @@ func (c *managerServiceClient) NetInfo(ctx context.Context, in *empty.Empty, opt
 	return out, nil
 }
 
-func (c *managerServiceClient) AvailableVersions(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*AvailableVersionsResponse, error) {
+func (c *managerServiceClient) AvailableVersions(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*AvailableVersionsResponse, error) {
 	out := new(AvailableVersionsResponse)
 	err := c.cc.Invoke(ctx, "/cli_pb.ManagerService/AvailableVersions", in, out, opts...)
 	if err != nil {
@@ -93,8 +93,8 @@ func (x *managerServicePruneBlocksClient) Recv() (*PruneBlocksResponse, error) {
 	return m, nil
 }
 
-func (c *managerServiceClient) DealPeer(ctx context.Context, in *DealPeerRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
-	out := new(empty.Empty)
+func (c *managerServiceClient) DealPeer(ctx context.Context, in *DealPeerRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, "/cli_pb.ManagerService/DealPeer", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -102,7 +102,7 @@ func (c *managerServiceClient) DealPeer(ctx context.Context, in *DealPeerRequest
 	return out, nil
 }
 
-func (c *managerServiceClient) Dashboard(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (ManagerService_DashboardClient, error) {
+func (c *managerServiceClient) Dashboard(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (ManagerService_DashboardClient, error) {
 	stream, err := c.cc.NewStream(ctx, &_ManagerService_serviceDesc.Streams[1], "/cli_pb.ManagerService/Dashboard", opts...)
 	if err != nil {
 		return nil, err
@@ -138,12 +138,12 @@ func (x *managerServiceDashboardClient) Recv() (*DashboardResponse, error) {
 // All implementations must embed UnimplementedManagerServiceServer
 // for forward compatibility
 type ManagerServiceServer interface {
-	Status(context.Context, *empty.Empty) (*StatusResponse, error)
-	NetInfo(context.Context, *empty.Empty) (*NetInfoResponse, error)
-	AvailableVersions(context.Context, *empty.Empty) (*AvailableVersionsResponse, error)
+	Status(context.Context, *emptypb.Empty) (*StatusResponse, error)
+	NetInfo(context.Context, *emptypb.Empty) (*NetInfoResponse, error)
+	AvailableVersions(context.Context, *emptypb.Empty) (*AvailableVersionsResponse, error)
 	PruneBlocks(*PruneBlocksRequest, ManagerService_PruneBlocksServer) error
-	DealPeer(context.Context, *DealPeerRequest) (*empty.Empty, error)
-	Dashboard(*empty.Empty, ManagerService_DashboardServer) error
+	DealPeer(context.Context, *DealPeerRequest) (*emptypb.Empty, error)
+	Dashboard(*emptypb.Empty, ManagerService_DashboardServer) error
 	mustEmbedUnimplementedManagerServiceServer()
 }
 
@@ -151,22 +151,22 @@ type ManagerServiceServer interface {
 type UnimplementedManagerServiceServer struct {
 }
 
-func (UnimplementedManagerServiceServer) Status(context.Context, *empty.Empty) (*StatusResponse, error) {
+func (UnimplementedManagerServiceServer) Status(context.Context, *emptypb.Empty) (*StatusResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Status not implemented")
 }
-func (UnimplementedManagerServiceServer) NetInfo(context.Context, *empty.Empty) (*NetInfoResponse, error) {
+func (UnimplementedManagerServiceServer) NetInfo(context.Context, *emptypb.Empty) (*NetInfoResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method NetInfo not implemented")
 }
-func (UnimplementedManagerServiceServer) AvailableVersions(context.Context, *empty.Empty) (*AvailableVersionsResponse, error) {
+func (UnimplementedManagerServiceServer) AvailableVersions(context.Context, *emptypb.Empty) (*AvailableVersionsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AvailableVersions not implemented")
 }
 func (UnimplementedManagerServiceServer) PruneBlocks(*PruneBlocksRequest, ManagerService_PruneBlocksServer) error {
 	return status.Errorf(codes.Unimplemented, "method PruneBlocks not implemented")
 }
-func (UnimplementedManagerServiceServer) DealPeer(context.Context, *DealPeerRequest) (*empty.Empty, error) {
+func (UnimplementedManagerServiceServer) DealPeer(context.Context, *DealPeerRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DealPeer not implemented")
 }
-func (UnimplementedManagerServiceServer) Dashboard(*empty.Empty, ManagerService_DashboardServer) error {
+func (UnimplementedManagerServiceServer) Dashboard(*emptypb.Empty, ManagerService_DashboardServer) error {
 	return status.Errorf(codes.Unimplemented, "method Dashboard not implemented")
 }
 func (UnimplementedManagerServiceServer) mustEmbedUnimplementedManagerServiceServer() {}
@@ -183,7 +183,7 @@ func RegisterManagerServiceServer(s *grpc.Server, srv ManagerServiceServer) {
 }
 
 func _ManagerService_Status_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(empty.Empty)
+	in := new(emptypb.Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -195,13 +195,13 @@ func _ManagerService_Status_Handler(srv interface{}, ctx context.Context, dec fu
 		FullMethod: "/cli_pb.ManagerService/Status",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ManagerServiceServer).Status(ctx, req.(*empty.Empty))
+		return srv.(ManagerServiceServer).Status(ctx, req.(*emptypb.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _ManagerService_NetInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(empty.Empty)
+	in := new(emptypb.Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -213,13 +213,13 @@ func _ManagerService_NetInfo_Handler(srv interface{}, ctx context.Context, dec f
 		FullMethod: "/cli_pb.ManagerService/NetInfo",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ManagerServiceServer).NetInfo(ctx, req.(*empty.Empty))
+		return srv.(ManagerServiceServer).NetInfo(ctx, req.(*emptypb.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _ManagerService_AvailableVersions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(empty.Empty)
+	in := new(emptypb.Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -231,7 +231,7 @@ func _ManagerService_AvailableVersions_Handler(srv interface{}, ctx context.Cont
 		FullMethod: "/cli_pb.ManagerService/AvailableVersions",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ManagerServiceServer).AvailableVersions(ctx, req.(*empty.Empty))
+		return srv.(ManagerServiceServer).AvailableVersions(ctx, req.(*emptypb.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -276,7 +276,7 @@ func _ManagerService_DealPeer_Handler(srv interface{}, ctx context.Context, dec 
 }
 
 func _ManagerService_Dashboard_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(empty.Empty)
+	m := new(emptypb.Empty)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}

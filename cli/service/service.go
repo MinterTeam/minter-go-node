@@ -96,6 +96,7 @@ func (m *managerServer) Dashboard(_ *empty.Empty, stream pb.ManagerService_Dashb
 			}
 
 			if err := stream.Send(&pb.DashboardResponse{
+				InitialHeight:          cState.InitialHeight(),
 				LatestHeight:           info.Height,
 				Timestamp:              protoTime,
 				Duration:               info.Duration,
