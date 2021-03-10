@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/hex"
+	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"strings"
 
@@ -37,6 +38,9 @@ func (s *Service) EstimateTxCommission(ctx context.Context, req *pb.EstimateTxCo
 	price := decodedTx.Price(commissions)
 	if !commissions.Coin.IsBaseCoin() {
 		price = cState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()).CalculateBuyForSell(price)
+	}
+	if price == nil {
+		return nil, s.createError(status.New(codes.FailedPrecondition, "Not possible to pay commission"), transaction.EncodeError(code.NewCommissionCoinNotSufficient("", "")))
 	}
 
 	commissionInBaseCoin := decodedTx.Commission(price)
