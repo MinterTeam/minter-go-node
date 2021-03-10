@@ -54,7 +54,7 @@ const (
 	TypeCreateSwapPool          TxType = 0x22
 )
 const (
-	gasBase           = /*int64*/ 15
+	gasBase           = 15
 	gasSign           = 20
 	gasSend           = 1
 	gasMultisendBase  = 1

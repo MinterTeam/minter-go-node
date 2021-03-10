@@ -2,7 +2,6 @@ package minter
 
 import (
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/coreV2/appdb"
 	eventsdb "github.com/MinterTeam/minter-go-node/coreV2/events"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
 	validators2 "github.com/MinterTeam/minter-go-node/coreV2/state/validators"
@@ -190,39 +189,13 @@ func (blockchain *Blockchain) resetCheckState() {
 	blockchain.stateCheck = state.NewCheckState(blockchain.stateDeliver)
 }
 
-func (blockchain *Blockchain) updateBlocksTimeDelta(height uint64) {
-	// should do this because tmNode is unavailable during Tendermint's replay mode
-	if blockchain.tmNode == nil {
-		return
-	}
-
-	blockStore := blockchain.tmNode.BlockStore()
-	baseMeta := blockStore.LoadBaseMeta()
-	if baseMeta == nil {
-		return
-	}
-	if int64(height)-1 < baseMeta.Header.Height {
-		return
-	}
-
-	blockA := blockStore.LoadBlockMeta(int64(height) - 1)
-	blockB := blockStore.LoadBlockMeta(int64(height))
-
-	delta := int(blockB.Header.Time.Sub(blockA.Header.Time).Seconds())
-	blockchain.appDB.AddBlocksTimeDelta(height, delta)
-}
-
-func (blockchain *Blockchain) calcMaxGas(height uint64) uint64 {
+func (blockchain *Blockchain) calcMaxGas() uint64 {
 	const targetTime = 7
 
-	if int64(height)-blockchain.stateDeliver.InitialVersion <= appdb.BlockDeltaCount {
-		return defaultMaxGas
-	}
-
 	// check if blocks are created in time
-	delta, count, err := blockchain.appDB.GetLastBlocksTimeDelta(height)
-	if err != nil {
-		panic(err)
+	delta, count := blockchain.appDB.GetLastBlockTimeDelta()
+	if delta == 0 {
+		return defaultMaxGas
 	}
 
 	// get current max gas
@@ -236,12 +209,12 @@ func (blockchain *Blockchain) calcMaxGas(height uint64) uint64 {
 
 	// check if max gas is too high
 	if newMaxGas > defaultMaxGas {
-		newMaxGas = defaultMaxGas
+		return defaultMaxGas
 	}
 
 	// check if max gas is too low
 	if newMaxGas < minMaxGas {
-		newMaxGas = minMaxGas
+		return minMaxGas
 	}
 
 	return newMaxGas

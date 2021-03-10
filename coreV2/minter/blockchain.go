@@ -161,8 +161,11 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 	atomic.StoreUint64(&blockchain.height, height)
 
 	// compute max gas
-	maxGas := blockchain.calcMaxGas(height)
+	maxGas := blockchain.calcMaxGas()
 	blockchain.stateDeliver.App.SetMaxGas(maxGas)
+	if height > blockchain.appDB.GetStartHeight()+1 {
+		blockchain.appDB.AddBlocksTime(req.Header.Time)
+	}
 
 	blockchain.rewards = big.NewInt(0)
 
@@ -433,7 +436,7 @@ func (blockchain *Blockchain) Commit() abciTypes.ResponseCommit {
 	blockchain.appDB.SetLastBlockHash(hash)
 	blockchain.appDB.SetLastHeight(blockchain.Height())
 	blockchain.appDB.FlushValidators()
-	blockchain.updateBlocksTimeDelta(blockchain.Height())
+	blockchain.appDB.SaveBlocksTime()
 
 	// Clear mempool
 	blockchain.currentMempool = &sync.Map{}
