@@ -163,7 +163,7 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 	// compute max gas
 	maxGas := blockchain.calcMaxGas()
 	blockchain.stateDeliver.App.SetMaxGas(maxGas)
-	if height > blockchain.appDB.GetStartHeight()+1 {
+	if types.CurrentChainID == types.ChainMainnet || height > blockchain.appDB.GetStartHeight()+1 {
 		blockchain.appDB.AddBlocksTime(req.Header.Time)
 	}
 
