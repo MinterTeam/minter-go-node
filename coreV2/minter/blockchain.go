@@ -103,6 +103,7 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 		haltHeight:     uint64(cfg.HaltHeight),
 	}
 }
+
 func (blockchain *Blockchain) initState() {
 	initialHeight := blockchain.appDB.GetStartHeight()
 	currentHeight := blockchain.appDB.GetLastHeight()
@@ -163,9 +164,7 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 	// compute max gas
 	maxGas := blockchain.calcMaxGas()
 	blockchain.stateDeliver.App.SetMaxGas(maxGas)
-	if types.CurrentChainID == types.ChainMainnet || height > blockchain.appDB.GetStartHeight()+1 {
-		blockchain.appDB.AddBlocksTime(req.Header.Time)
-	}
+	blockchain.appDB.AddBlocksTime(req.Header.Time)
 
 	blockchain.rewards = big.NewInt(0)
 
