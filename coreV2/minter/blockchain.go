@@ -117,6 +117,7 @@ func (blockchain *Blockchain) initState() {
 		panic(err)
 	}
 
+	atomic.StoreUint64(&blockchain.height, currentHeight)
 	blockchain.stateDeliver = stateDeliver
 	blockchain.stateCheck = state.NewCheckState(stateDeliver)
 }
@@ -157,9 +158,8 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 		blockchain.initState()
 	}
 	blockchain.StatisticData().PushStartBlock(&statistics.StartRequest{Height: int64(height), Now: time.Now(), HeaderTime: req.Header.Time})
-	// blockchain.stateDeliver.Lock()
 
-	atomic.StoreUint64(&blockchain.height, height)
+	// atomic.StoreUint64(&blockchain.height, height)
 
 	// compute max gas
 	maxGas := blockchain.calcMaxGas()
@@ -210,7 +210,7 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 	}
 
 	// apply frozen funds (used for unbond stakes)
-	frozenFunds := blockchain.stateDeliver.FrozenFunds.GetFrozenFunds(uint64(req.Header.Height))
+	frozenFunds := blockchain.stateDeliver.FrozenFunds.GetFrozenFunds(uint64(height))
 	if frozenFunds != nil {
 		for _, item := range frozenFunds.List {
 			amount := item.Value
@@ -235,7 +235,7 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 // EndBlock signals the end of a block, returns changes to the validator set
 func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.ResponseEndBlock {
 	height := uint64(req.Height)
-
+	atomic.StoreUint64(&blockchain.height, height)
 	vals := blockchain.stateDeliver.Validators.GetValidators()
 
 	hasDroppedValidators := false
@@ -348,7 +348,7 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 	}
 
 	defer func() {
-		blockchain.StatisticData().PushEndBlock(&statistics.EndRequest{TimeEnd: time.Now(), Height: int64(blockchain.Height())})
+		blockchain.StatisticData().PushEndBlock(&statistics.EndRequest{TimeEnd: time.Now(), Height: int64(height)})
 	}()
 
 	return abciTypes.ResponseEndBlock{

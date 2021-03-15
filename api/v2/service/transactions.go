@@ -65,7 +65,7 @@ func (s *Service) Transactions(ctx context.Context, req *pb.TransactionsRequest)
 					Symbol: cState.Coins().GetCoin(decodedTx.GasCoin).GetFullSymbol(),
 				},
 				Gas:     uint64(gas),
-				Type:    uint64(decodedTx.Type),
+				Type:    decodedTx.Type.String(),
 				Data:    data,
 				Payload: decodedTx.Payload,
 				Tags:    tags,

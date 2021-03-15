@@ -179,7 +179,7 @@ func (s *Service) blockTransaction(block *core_types.ResultBlock, blockResults *
 			From:        sender.String(),
 			Nonce:       tx.Nonce,
 			GasPrice:    uint64(tx.GasPrice),
-			Type:        uint64(tx.Type),
+			Type:        tx.Type.String(),
 			Data:        data,
 			Payload:     tx.Payload,
 			ServiceData: tx.ServiceData,
