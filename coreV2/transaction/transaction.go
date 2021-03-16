@@ -19,7 +19,7 @@ import (
 type TxType byte
 
 func (t TxType) String() string {
-	return hex.EncodeToString([]byte{byte(t)})
+	return "0x" + hex.EncodeToString([]byte{byte(t)})
 }
 
 const (
