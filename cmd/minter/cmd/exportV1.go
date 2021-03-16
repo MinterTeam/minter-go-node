@@ -76,8 +76,7 @@ func export(cmd *cobra.Command, args []string) error {
 
 	currentState, err := state.NewCheckStateAtHeight(height, ldb)
 	if err != nil {
-		log.Println(appdb.NewAppDB(storages.GetMinterHome(), cfg).GetLastHeight())
-		log.Panicf("Cannot new state at given height: %s", err)
+		log.Panicf("Cannot new state at given height: %s, last available height %d", err, appdb.NewAppDB(storages.GetMinterHome(), cfg).GetLastHeight())
 	}
 
 	validator, err := cmd.Flags().GetString("validator")

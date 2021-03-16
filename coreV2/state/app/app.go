@@ -14,6 +14,7 @@ import (
 const mainPrefix = 'd'
 
 type RApp interface {
+	ExportV1(state *types.AppState, volume *big.Int)
 	Export(state *types.AppState)
 	GetMaxGas() uint64
 	GetTotalSlashed() *big.Int
@@ -164,6 +165,12 @@ func (a *App) GetNextCoinID() types.CoinID {
 
 func (a *App) SetCoinsCount(count uint32) {
 	a.getOrNew().setCoinsCount(count)
+}
+
+func (a *App) ExportV1(state *types.AppState, volume *big.Int) {
+	state.MaxGas = a.GetMaxGas()
+	volume.Add(volume, a.GetTotalSlashed())
+	state.TotalSlashed = volume.String()
 }
 
 func (a *App) Export(state *types.AppState) {

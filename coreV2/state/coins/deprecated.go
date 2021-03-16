@@ -2,11 +2,13 @@ package coins
 
 import (
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/coreV2/state/accounts"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/bus"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
+	"log"
 	"math/big"
 	"sort"
 	"strconv"
@@ -37,7 +39,8 @@ type modelV1 struct {
 }
 
 // Deprecated
-func (c *Coins) ExportV1(state *types.AppState, subValues map[types.CoinID]*big.Int) types.CoinID {
+func (c *Coins) ExportV1(state *types.AppState, subValues map[types.CoinID]*big.Int, owners map[types.CoinID]*accounts.MaxCoinVolume) (types.CoinID, *big.Int) {
+	totalSubReserve := big.NewInt(0)
 	c.immutableTree().IterateRange([]byte{mainPrefix}, []byte{mainPrefix + 1}, true, func(key []byte, value []byte) bool {
 		if len(key) > 5 {
 			return false
@@ -63,21 +66,18 @@ func (c *Coins) ExportV1(state *types.AppState, subValues map[types.CoinID]*big.
 			isCreated:  false,
 		}
 
-		var owner *types.Address
-		info := c.getSymbolInfo(coin.Symbol())
-		if info != nil {
-			owner = info.OwnerAddress()
-		}
-
 		volume := coin.Volume()
 		reserve := coin.Reserve()
 
 		subValue, has := subValues[coinID]
 		if has {
-			if coinID != types.GetBaseCoinID() {
-				subReserve := formula.CalculateSaleReturn(volume, reserve, coin.CCrr, subValue)
-				reserve.Sub(reserve, subReserve)
-			}
+			// if coinID != types.GetBaseCoinID() {
+			subReserve := formula.CalculateSaleReturn(volume, reserve, coin.CCrr, subValue)
+			reserve.Sub(reserve, subReserve)
+			totalSubReserve.Add(totalSubReserve, subReserve)
+			// } else {
+			// 	totalSubReserve.Add(totalSubReserve, subValue)
+			// }
 			volume.Sub(volume, subValue)
 		}
 
@@ -86,6 +86,20 @@ func (c *Coins) ExportV1(state *types.AppState, subValues map[types.CoinID]*big.
 		if _, err := strconv.Atoi(strSymbol); err == nil || coinID != 0 && strSymbol == types.GetBaseCoin().String() {
 			symbol = types.StrToCoinSymbol(strSymbol + "A")
 		}
+
+		var owner *types.Address
+		info := c.getSymbolInfo(coin.Symbol())
+		if info != nil {
+			if coinID != 969 && coinID != 905 {
+				owner = info.OwnerAddress()
+			}
+		} else if v, ok := owners[coinID]; ok {
+			if v.Volume.Cmp(volume) == 0 {
+				log.Println("fix owner of coin", symbol, v.Owner.String()) // todo
+				owner = &v.Owner
+			}
+		}
+
 		state.Coins = append(state.Coins, types.Coin{
 			ID:           uint64(coin.ID()),
 			Name:         coin.Name(),
@@ -124,7 +138,7 @@ func (c *Coins) ExportV1(state *types.AppState, subValues map[types.CoinID]*big.
 		Burnable:     true,
 	})
 
-	return types.CoinID(usdcID)
+	return types.CoinID(usdcID), totalSubReserve
 }
 
 // Deprecated

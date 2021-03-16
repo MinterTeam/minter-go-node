@@ -6,9 +6,15 @@ import (
 	"math/big"
 )
 
+type MaxCoinVolume struct {
+	Owner  types.Address
+	Volume *big.Int
+}
+
 // Deprecated
-func (a *Accounts) ExportV1(state *types.AppState, subBipValueFromDAO *big.Int) map[types.CoinID]*big.Int {
+func (a *Accounts) ExportV1(state *types.AppState, subBipValueFromDAO *big.Int) (map[types.CoinID]*big.Int, map[types.CoinID]*MaxCoinVolume) {
 	totalSubCoinValue := map[types.CoinID]*big.Int{}
+	maxVolume := map[types.CoinID]*MaxCoinVolume{}
 	a.immutableTree().IterateRange([]byte{mainPrefix}, []byte{mainPrefix + 1}, true, func(key []byte, value []byte) bool {
 		addressPath := key[1:]
 		if len(addressPath) > types.AddressLength {
@@ -45,6 +51,18 @@ func (a *Accounts) ExportV1(state *types.AppState, subBipValueFromDAO *big.Int) 
 				Coin:  uint64(b.Coin.ID),
 				Value: value.String(),
 			})
+
+			tmp := big.NewInt(0).Set(value)
+			if volume, ok := maxVolume[b.Coin.ID]; ok {
+				if volume.Volume.Cmp(tmp) != 1 {
+					continue
+				}
+			}
+
+			maxVolume[b.Coin.ID] = &MaxCoinVolume{
+				Owner:  account.address,
+				Volume: tmp,
+			}
 		}
 
 		acc := types.Account{
@@ -85,7 +103,7 @@ func (a *Accounts) ExportV1(state *types.AppState, subBipValueFromDAO *big.Int) 
 		return false
 	})
 
-	return totalSubCoinValue
+	return totalSubCoinValue, maxVolume
 }
 
 // Deprecated
