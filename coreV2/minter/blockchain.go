@@ -282,7 +282,6 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 		blockchain.stateDeliver.Validators.PayRewards()
 	}
 
-	blockchain.stateDeliver.Updates.Delete(height)
 	if prices := blockchain.isUpdateCommissionsBlock(height); len(prices) != 0 {
 		blockchain.stateDeliver.Commission.SetNewCommissions(prices)
 		price := blockchain.stateDeliver.Commission.GetCommissions()
@@ -331,9 +330,17 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 			VoteCommission:          price.VoteCommission.String(),
 			VoteUpdate:              price.VoteUpdate.String(),
 		})
-
 	}
 	blockchain.stateDeliver.Commission.Delete(height)
+
+	if v, ok := blockchain.isUpdateNetworkBlock(height); ok {
+		blockchain.stateDeliver.App.SetVersion(v)
+		blockchain.eventsDB.AddEvent(&eventsdb.UpdateNetworkEvent{
+			Version: v,
+		})
+	}
+
+	blockchain.stateDeliver.Updates.Delete(height)
 
 	hasChangedPublicKeys := false
 	if blockchain.stateDeliver.Candidates.IsChangedPublicKeys() {

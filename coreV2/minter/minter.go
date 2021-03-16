@@ -313,6 +313,38 @@ func (blockchain *Blockchain) isUpdateCommissionsBlock(height uint64) []byte {
 	return nil
 }
 
+func (blockchain *Blockchain) isUpdateNetworkBlock(height uint64) (string, bool) {
+	versions := blockchain.stateDeliver.Updates.GetVotes(height)
+	if len(versions) == 0 {
+		return "", false
+	}
+	// calculate total power of validators
+	maxVotingResult, totalVotedPower := big.NewFloat(0), big.NewInt(0)
+
+	var version string
+	for _, v := range versions {
+		for _, vote := range v.Votes {
+			if power, ok := blockchain.validatorsPowers[vote]; ok {
+				totalVotedPower.Add(totalVotedPower, power)
+			}
+		}
+		votingResult := new(big.Float).Quo(
+			new(big.Float).SetInt(totalVotedPower),
+			new(big.Float).SetInt(blockchain.totalPower),
+		)
+
+		if maxVotingResult.Cmp(votingResult) == -1 {
+			maxVotingResult = votingResult
+			version = v.Version
+		}
+	}
+	if maxVotingResult.Cmp(big.NewFloat(votingPowerConsensus)) == 1 {
+		return version, true
+	}
+
+	return "", false
+}
+
 func GetDbOpts(memLimit int) *opt.Options {
 	if memLimit < 1024 {
 		panic(fmt.Sprintf("Not enough memory given to StateDB. Expected >1024M, given %d", memLimit))
