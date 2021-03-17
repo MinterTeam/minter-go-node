@@ -2,6 +2,7 @@ package minter
 
 import (
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/coreV2/appdb"
 	eventsdb "github.com/MinterTeam/minter-go-node/coreV2/events"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
 	validators2 "github.com/MinterTeam/minter-go-node/coreV2/state/validators"
@@ -134,6 +135,12 @@ func (blockchain *Blockchain) AvailableVersions() []int {
 	defer blockchain.lock.RUnlock()
 
 	return blockchain.stateDeliver.Tree().AvailableVersions()
+}
+func (blockchain *Blockchain) UpdateVersions() []*appdb.Version {
+	blockchain.lock.RLock()
+	defer blockchain.lock.RUnlock()
+
+	return blockchain.appDB.GetVersions()
 }
 
 // GetStateForHeight returns immutable state of Minter Blockchain for given height

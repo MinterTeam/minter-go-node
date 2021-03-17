@@ -16,7 +16,6 @@ const mainPrefix = 'd'
 type RApp interface {
 	ExportV1(state *types.AppState, volume *big.Int)
 	Export(state *types.AppState)
-	GetVersion() string
 	GetMaxGas() uint64
 	GetTotalSlashed() *big.Int
 	GetCoinsCount() uint32

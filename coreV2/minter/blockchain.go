@@ -442,6 +442,7 @@ func (blockchain *Blockchain) Commit() abciTypes.ResponseCommit {
 	blockchain.appDB.SetLastHeight(blockchain.Height())
 	blockchain.appDB.FlushValidators()
 	blockchain.appDB.SaveBlocksTime()
+	blockchain.appDB.SaveVersions()
 
 	// Clear mempool
 	blockchain.currentMempool = &sync.Map{}
