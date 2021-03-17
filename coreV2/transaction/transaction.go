@@ -22,6 +22,10 @@ func (t TxType) String() string {
 	return "0x" + hex.EncodeToString([]byte{byte(t)})
 }
 
+func (t TxType) UInt64() uint64 {
+	return uint64(t)
+}
+
 const (
 	TypeSend                    TxType = 0x01
 	TypeSellCoin                TxType = 0x02
