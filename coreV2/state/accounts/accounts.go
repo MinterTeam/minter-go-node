@@ -20,7 +20,7 @@ const balancePrefix = byte('b')
 
 type RAccounts interface {
 	// Deprecated
-	ExportV1(state *types.AppState, value *big.Int) map[types.CoinID]*big.Int
+	ExportV1(state *types.AppState, value *big.Int) (map[types.CoinID]*big.Int, map[types.CoinID]*MaxCoinVolume)
 
 	Export(state *types.AppState)
 	GetAccount(address types.Address) *Model

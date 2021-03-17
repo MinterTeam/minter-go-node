@@ -2,6 +2,7 @@ package coins
 
 import (
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/coreV2/state/accounts"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/bus"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/helpers"
@@ -23,7 +24,7 @@ const (
 
 type RCoins interface {
 	// Deprecated
-	ExportV1(state *types.AppState, subValues map[types.CoinID]*big.Int) types.CoinID
+	ExportV1(state *types.AppState, subValues map[types.CoinID]*big.Int, owners map[types.CoinID]*accounts.MaxCoinVolume) (types.CoinID, *big.Int)
 
 	Export(state *types.AppState)
 	Exists(id types.CoinID) bool

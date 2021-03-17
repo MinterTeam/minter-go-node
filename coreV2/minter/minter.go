@@ -136,6 +136,12 @@ func (blockchain *Blockchain) AvailableVersions() []int {
 
 	return blockchain.stateDeliver.Tree().AvailableVersions()
 }
+func (blockchain *Blockchain) UpdateVersions() []*appdb.Version {
+	blockchain.lock.RLock()
+	defer blockchain.lock.RUnlock()
+
+	return blockchain.appDB.GetVersions()
+}
 
 // GetStateForHeight returns immutable state of Minter Blockchain for given height
 func (blockchain *Blockchain) GetStateForHeight(height uint64) (*state.CheckState, error) {
@@ -190,39 +196,13 @@ func (blockchain *Blockchain) resetCheckState() {
 	blockchain.stateCheck = state.NewCheckState(blockchain.stateDeliver)
 }
 
-func (blockchain *Blockchain) updateBlocksTimeDelta(height uint64) {
-	// should do this because tmNode is unavailable during Tendermint's replay mode
-	if blockchain.tmNode == nil {
-		return
-	}
-
-	blockStore := blockchain.tmNode.BlockStore()
-	baseMeta := blockStore.LoadBaseMeta()
-	if baseMeta == nil {
-		return
-	}
-	if int64(height)-1 < baseMeta.Header.Height {
-		return
-	}
-
-	blockA := blockStore.LoadBlockMeta(int64(height) - 1)
-	blockB := blockStore.LoadBlockMeta(int64(height))
-
-	delta := int(blockB.Header.Time.Sub(blockA.Header.Time).Seconds())
-	blockchain.appDB.AddBlocksTimeDelta(height, delta)
-}
-
-func (blockchain *Blockchain) calcMaxGas(height uint64) uint64 {
+func (blockchain *Blockchain) calcMaxGas() uint64 {
 	const targetTime = 7
 
-	if int64(height)-blockchain.stateDeliver.InitialVersion <= appdb.BlockDeltaCount {
-		return defaultMaxGas
-	}
-
 	// check if blocks are created in time
-	delta, count, err := blockchain.appDB.GetLastBlocksTimeDelta(height)
-	if err != nil {
-		panic(err)
+	delta, count := blockchain.appDB.GetLastBlockTimeDelta()
+	if delta == 0 {
+		return defaultMaxGas
 	}
 
 	// get current max gas
@@ -236,12 +216,12 @@ func (blockchain *Blockchain) calcMaxGas(height uint64) uint64 {
 
 	// check if max gas is too high
 	if newMaxGas > defaultMaxGas {
-		newMaxGas = defaultMaxGas
+		return defaultMaxGas
 	}
 
 	// check if max gas is too low
 	if newMaxGas < minMaxGas {
-		newMaxGas = minMaxGas
+		return minMaxGas
 	}
 
 	return newMaxGas
@@ -338,6 +318,38 @@ func (blockchain *Blockchain) isUpdateCommissionsBlock(height uint64) []byte {
 	}
 
 	return nil
+}
+
+func (blockchain *Blockchain) isUpdateNetworkBlock(height uint64) (string, bool) {
+	versions := blockchain.stateDeliver.Updates.GetVotes(height)
+	if len(versions) == 0 {
+		return "", false
+	}
+	// calculate total power of validators
+	maxVotingResult, totalVotedPower := big.NewFloat(0), big.NewInt(0)
+
+	var version string
+	for _, v := range versions {
+		for _, vote := range v.Votes {
+			if power, ok := blockchain.validatorsPowers[vote]; ok {
+				totalVotedPower.Add(totalVotedPower, power)
+			}
+		}
+		votingResult := new(big.Float).Quo(
+			new(big.Float).SetInt(totalVotedPower),
+			new(big.Float).SetInt(blockchain.totalPower),
+		)
+
+		if maxVotingResult.Cmp(votingResult) == -1 {
+			maxVotingResult = votingResult
+			version = v.Version
+		}
+	}
+	if maxVotingResult.Cmp(big.NewFloat(votingPowerConsensus)) == 1 {
+		return version, true
+	}
+
+	return "", false
 }
 
 func GetDbOpts(memLimit int) *opt.Options {

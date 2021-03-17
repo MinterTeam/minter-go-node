@@ -2,36 +2,36 @@ package appdb
 
 import (
 	"encoding/binary"
-	"errors"
-	"fmt"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/tendermint/tendermint/abci/types"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
 	tmjson "github.com/tendermint/tendermint/libs/json"
 	"github.com/tendermint/tm-db"
+	"time"
 )
 
 const (
-	hashPath           = "hash"
-	heightPath         = "height"
-	startHeightPath    = "startHeight"
-	blockTimeDeltaPath = "blockDelta"
-	validatorsPath     = "validators"
+	hashPath        = "hash"
+	heightPath      = "height"
+	startHeightPath = "startHeight"
+	blocksTimePath  = "blockDelta"
+	validatorsPath  = "validators"
+	versionsPath    = "versions"
 
 	dbName = "app"
 )
 
-func init() {
-	tmjson.RegisterType(&lastBlocksTimeDelta{}, "last_blocks_time_delta")
-}
-
 // AppDB is responsible for storing basic information about app state on disk
 type AppDB struct {
-	db          db.DB
-	startHeight uint64
-	lastHeight  uint64
-	blocksDelta []*lastBlocksTimeDelta
-	validators  abciTypes.ValidatorUpdates
+	db             db.DB
+	startHeight    uint64
+	lastHeight     uint64
+	lastTimeBlocks []uint64
+	validators     abciTypes.ValidatorUpdates
+
+	isDirtyVersions bool
+	versions        []*Version
+	// version         *Version
 }
 
 // Close closes db connection, panics on error
@@ -164,72 +164,137 @@ func (appDB *AppDB) FlushValidators() {
 	appDB.validators = nil
 }
 
-type lastBlocksTimeDelta struct {
-	Height uint64
-	Delta  int
-}
+const BlocksTimeCount = 4
 
-const BlockDeltaCount = 3
-
-// GetLastBlocksTimeDelta returns delta of time between latest blocks
-func (appDB *AppDB) GetLastBlocksTimeDelta(height uint64) (int, int, error) {
-	if len(appDB.blocksDelta) == 0 {
-		result, err := appDB.db.Get([]byte(blockTimeDeltaPath))
+// GetLastBlockTimeDelta returns delta of time between latest blocks
+func (appDB *AppDB) GetLastBlockTimeDelta() (int, int) {
+	if len(appDB.lastTimeBlocks) == 0 {
+		result, err := appDB.db.Get([]byte(blocksTimePath))
 		if err != nil {
 			panic(err)
 		}
+
 		if len(result) == 0 {
-			return 0, 0, errors.New("no info about BlocksTimeDelta is available")
+			return 0, 0
 		}
-		err = tmjson.Unmarshal(result, &appDB.blocksDelta)
+
+		err = tmjson.Unmarshal(result, &appDB.lastTimeBlocks)
 		if err != nil {
 			panic(err)
 		}
 	}
 
-	return calcBlockDelta(height, appDB.blocksDelta)
+	return calcBlockDelta(appDB.lastTimeBlocks)
 }
 
-func calcBlockDelta(height uint64, deltas []*lastBlocksTimeDelta) (int, int, error) {
-	count := len(deltas)
-	if count == 0 {
-		return 0, 0, errors.New("no info about BlocksTimeDelta is available")
+func calcBlockDelta(times []uint64) (int, int) {
+	count := len(times)
+	if count < 2 {
+		return 0, count - 1
 	}
-	for i, delta := range deltas {
-		if height-delta.Height != uint64(count-i) {
-			return 0, 0, fmt.Errorf("no info about BlocksTimeDelta is available, but has info about %d block height", delta.Height)
-		}
+
+	var res int
+	for i, timestamp := range times[1:] {
+		res += int(timestamp - times[i])
 	}
-	var result int
-	for _, delta := range deltas {
-		result += delta.Delta
-	}
-	return result, count, nil
+	return res, count - 1
 }
 
-func (appDB *AppDB) AddBlocksTimeDelta(height uint64, delta int) {
-	for _, timeDelta := range appDB.blocksDelta {
-		if timeDelta.Height == height {
-			return
+func (appDB *AppDB) AddBlocksTime(time time.Time) {
+	if len(appDB.lastTimeBlocks) == 0 {
+		result, err := appDB.db.Get([]byte(blocksTimePath))
+		if err != nil {
+			panic(err)
+		}
+		if len(result) != 0 {
+			err = tmjson.Unmarshal(result, &appDB.lastTimeBlocks)
+			if err != nil {
+				panic(err)
+			}
 		}
 	}
-	appDB.blocksDelta = append(appDB.blocksDelta, &lastBlocksTimeDelta{
-		Height: height,
-		Delta:  delta,
-	})
-	count := len(appDB.blocksDelta)
-	if count > BlockDeltaCount {
-		appDB.blocksDelta = appDB.blocksDelta[count-BlockDeltaCount:]
-	}
 
-	data, err := tmjson.Marshal(appDB.blocksDelta)
+	appDB.lastTimeBlocks = append(appDB.lastTimeBlocks, uint64(time.Unix()))
+	count := len(appDB.lastTimeBlocks)
+	if count > BlocksTimeCount {
+		appDB.lastTimeBlocks = appDB.lastTimeBlocks[count-BlocksTimeCount:]
+	}
+}
+
+func (appDB *AppDB) SaveBlocksTime() {
+	data, err := tmjson.Marshal(appDB.lastTimeBlocks)
 	if err != nil {
 		panic(err)
 	}
 
-	if err := appDB.db.Set([]byte(blockTimeDeltaPath), data); err != nil {
+	if err := appDB.db.Set([]byte(blocksTimePath), data); err != nil {
 		panic(err)
 	}
+}
+
+type Version struct {
+	Name   string
+	Height uint64
+}
+
+func (appDB *AppDB) GetVersion(height uint64) string {
+	appDB.GetVersions()
+
+	lastVersionName := ""
+	for _, version := range appDB.versions {
+		if version.Height > height {
+			return lastVersionName
+		}
+		lastVersionName = version.Name
+	}
+
+	return lastVersionName
+}
+
+func (appDB *AppDB) GetVersions() []*Version {
+	if len(appDB.versions) == 0 {
+		result, err := appDB.db.Get([]byte(versionsPath))
+		if err != nil {
+			panic(err)
+		}
+		if len(result) != 0 {
+			err = tmjson.Unmarshal(result, &appDB.versions)
+			if err != nil {
+				panic(err)
+			}
+		}
+		// appDB.version = appDB.versions[len(appDB.versions)-1]
+	}
+
+	return appDB.versions
+}
+
+func (appDB *AppDB) AddVersion(v string, height uint64) {
+	appDB.GetVersions()
+
+	elem := &Version{
+		Name:   v,
+		Height: height,
+	}
+	// appDB.version = elem
+	appDB.versions = append(appDB.versions, elem)
+	appDB.isDirtyVersions = true
+}
+
+func (appDB *AppDB) SaveVersions() {
+	if !appDB.isDirtyVersions {
+		return
+	}
+	data, err := tmjson.Marshal(appDB.versions)
+	if err != nil {
+		panic(err)
+	}
+
+	if err := appDB.db.Set([]byte(versionsPath), data); err != nil {
+		panic(err)
+	}
+
+	appDB.isDirtyVersions = false
 }
 
 // NewAppDB creates AppDB instance with given config

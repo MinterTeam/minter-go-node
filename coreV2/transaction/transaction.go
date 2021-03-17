@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"crypto/ecdsa"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
@@ -16,6 +17,14 @@ import (
 
 // TxType of transaction is determined by a single byte.
 type TxType byte
+
+func (t TxType) String() string {
+	return "0x" + hex.EncodeToString([]byte{byte(t)})
+}
+
+func (t TxType) UInt64() uint64 {
+	return uint64(t)
+}
 
 const (
 	TypeSend                    TxType = 0x01
@@ -53,8 +62,9 @@ const (
 	TypeVoteUpdate              TxType = 0x21
 	TypeCreateSwapPool          TxType = 0x22
 )
+
 const (
-	gasBase           = /*int64*/ 15
+	gasBase           = 15
 	gasSign           = 20
 	gasSend           = 1
 	gasMultisendBase  = 1

@@ -103,6 +103,7 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 		haltHeight:     uint64(cfg.HaltHeight),
 	}
 }
+
 func (blockchain *Blockchain) initState() {
 	initialHeight := blockchain.appDB.GetStartHeight()
 	currentHeight := blockchain.appDB.GetLastHeight()
@@ -116,6 +117,7 @@ func (blockchain *Blockchain) initState() {
 		panic(err)
 	}
 
+	atomic.StoreUint64(&blockchain.height, currentHeight)
 	blockchain.stateDeliver = stateDeliver
 	blockchain.stateCheck = state.NewCheckState(stateDeliver)
 }
@@ -156,13 +158,13 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 		blockchain.initState()
 	}
 	blockchain.StatisticData().PushStartBlock(&statistics.StartRequest{Height: int64(height), Now: time.Now(), HeaderTime: req.Header.Time})
-	// blockchain.stateDeliver.Lock()
 
-	atomic.StoreUint64(&blockchain.height, height)
+	// atomic.StoreUint64(&blockchain.height, height)
 
 	// compute max gas
-	maxGas := blockchain.calcMaxGas(height)
+	maxGas := blockchain.calcMaxGas()
 	blockchain.stateDeliver.App.SetMaxGas(maxGas)
+	blockchain.appDB.AddBlocksTime(req.Header.Time)
 
 	blockchain.rewards = big.NewInt(0)
 
@@ -208,7 +210,7 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 	}
 
 	// apply frozen funds (used for unbond stakes)
-	frozenFunds := blockchain.stateDeliver.FrozenFunds.GetFrozenFunds(uint64(req.Header.Height))
+	frozenFunds := blockchain.stateDeliver.FrozenFunds.GetFrozenFunds(uint64(height))
 	if frozenFunds != nil {
 		for _, item := range frozenFunds.List {
 			amount := item.Value
@@ -233,7 +235,7 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 // EndBlock signals the end of a block, returns changes to the validator set
 func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.ResponseEndBlock {
 	height := uint64(req.Height)
-
+	atomic.StoreUint64(&blockchain.height, height)
 	vals := blockchain.stateDeliver.Validators.GetValidators()
 
 	hasDroppedValidators := false
@@ -280,7 +282,6 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 		blockchain.stateDeliver.Validators.PayRewards()
 	}
 
-	blockchain.stateDeliver.Updates.Delete(height)
 	if prices := blockchain.isUpdateCommissionsBlock(height); len(prices) != 0 {
 		blockchain.stateDeliver.Commission.SetNewCommissions(prices)
 		price := blockchain.stateDeliver.Commission.GetCommissions()
@@ -329,9 +330,16 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 			VoteCommission:          price.VoteCommission.String(),
 			VoteUpdate:              price.VoteUpdate.String(),
 		})
-
 	}
 	blockchain.stateDeliver.Commission.Delete(height)
+
+	if v, ok := blockchain.isUpdateNetworkBlock(height); ok {
+		blockchain.appDB.AddVersion(v, height)
+		blockchain.eventsDB.AddEvent(&eventsdb.UpdateNetworkEvent{
+			Version: v,
+		})
+	}
+	blockchain.stateDeliver.Updates.Delete(height)
 
 	hasChangedPublicKeys := false
 	if blockchain.stateDeliver.Candidates.IsChangedPublicKeys() {
@@ -346,7 +354,7 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 	}
 
 	defer func() {
-		blockchain.StatisticData().PushEndBlock(&statistics.EndRequest{TimeEnd: time.Now(), Height: int64(blockchain.Height())})
+		blockchain.StatisticData().PushEndBlock(&statistics.EndRequest{TimeEnd: time.Now(), Height: int64(height)})
 	}()
 
 	return abciTypes.ResponseEndBlock{
@@ -433,7 +441,8 @@ func (blockchain *Blockchain) Commit() abciTypes.ResponseCommit {
 	blockchain.appDB.SetLastBlockHash(hash)
 	blockchain.appDB.SetLastHeight(blockchain.Height())
 	blockchain.appDB.FlushValidators()
-	blockchain.updateBlocksTimeDelta(blockchain.Height())
+	blockchain.appDB.SaveBlocksTime()
+	blockchain.appDB.SaveVersions()
 
 	// Clear mempool
 	blockchain.currentMempool = &sync.Map{}

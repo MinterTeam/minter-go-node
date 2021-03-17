@@ -61,7 +61,6 @@ func (cs *CheckState) Export() types.AppState {
 
 func (cs *CheckState) ExportV1(bipRate float64, validator string, addresses []string) types.AppState {
 	appState := new(types.AppState)
-	cs.App().Export(appState)
 
 	log.Printf("Handling validators...\n")
 	var singleActiveCandidate *types.Candidate
@@ -115,10 +114,10 @@ func (cs *CheckState) ExportV1(bipRate float64, validator string, addresses []st
 	poolBipValue, _ := big.NewFloat(0).Quo(big.NewFloat(0).SetInt(poolUSDCValue), rate).Int(nil)
 
 	log.Printf("Handling accounts...\n")
-	subValues := cs.Accounts().ExportV1(appState, poolBipValue)
+	subValues, coinOwners := cs.Accounts().ExportV1(appState, poolBipValue)
 	log.Printf("Handling coins...\n")
-	usdcCoinID := cs.Coins().ExportV1(appState, subValues)
-
+	usdcCoinID, totalSubBipVolume := cs.Coins().ExportV1(appState, subValues, coinOwners)
+	cs.App().ExportV1(appState, totalSubBipVolume)
 	log.Printf("Handling commissions...\n")
 	poolTokenVolume := cs.Swap().ExportV1(appState, usdcCoinID, poolUSDCValue, poolBipValue)
 	cs.Commission().ExportV1(appState, usdcCoinID)
@@ -138,7 +137,7 @@ func (cs *CheckState) ExportV1(bipRate float64, validator string, addresses []st
 		Burnable:     true,
 	})
 
-	appState.Accounts = append(appState.Accounts, types.Account{
+	account := types.Account{
 		Address: types.HexToAddress("Mxffffffffffffffffffffffffffffffffffffffff"),
 		Balance: []types.Balance{
 			{
@@ -158,8 +157,14 @@ func (cs *CheckState) ExportV1(bipRate float64, validator string, addresses []st
 				types.HexToAddress("Mx90b704f155b3cd7f998802ff2ce5c39cb2a9caac"),
 			},
 		},
-	})
+	}
 
+	if appState.Accounts[len(appState.Accounts)-1].Address == account.Address {
+		account.Balance = append(account.Balance, appState.Accounts[len(appState.Accounts)-1].Balance...)
+		appState.Accounts[len(appState.Accounts)-1] = account
+	} else {
+		appState.Accounts = append(appState.Accounts, account)
+	}
 	balance := types.Balance{
 		Coin:  lpUSDC,
 		Value: "1000",

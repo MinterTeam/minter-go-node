@@ -71,7 +71,7 @@ func (s *Swap) getOrderedDirtyPairs() []pairKey {
 	s.muPairs.RUnlock()
 
 	sort.SliceStable(keys, func(i, j int) bool {
-		return bytes.Compare(keys[i].Bytes(), keys[j].Bytes()) == 1
+		return bytes.Compare(keys[i].bytes(), keys[j].bytes()) == 1
 	})
 
 	return keys
@@ -199,6 +199,20 @@ func (p *Pair) Revert() EditableChecker {
 	return &Pair{pairData: p.pairData.Revert()}
 }
 
+const pairDataPrefix = 'd'
+const pairOrdersPrefix = 'o'
+
+func (pk pairKey) bytes() []byte {
+	return append(pk.Coin0.Bytes(), pk.Coin1.Bytes()...)
+}
+
+func (pk pairKey) pathData() []byte {
+	return append([]byte{pairDataPrefix}, pk.bytes()...)
+}
+func (pk pairKey) pathOrders() []byte {
+	return append([]byte{pairOrdersPrefix}, pk.bytes()...)
+}
+
 func (s *Swap) Commit(db *iavl.MutableTree) error {
 	basePath := []byte{mainPrefix}
 
@@ -222,7 +236,7 @@ func (s *Swap) Commit(db *iavl.MutableTree) error {
 		if err != nil {
 			return err
 		}
-		db.Set(append(basePath, key.Bytes()...), pairDataBytes)
+		db.Set(append(basePath, key.pathData()...), pairDataBytes)
 	}
 	s.dirties = map[pairKey]struct{}{}
 	return nil
@@ -272,7 +286,7 @@ func (s *Swap) Pair(coin0, coin1 types.CoinID) *Pair {
 		return pair
 	}
 
-	pathPair := append([]byte{mainPrefix}, key.sort().Bytes()...)
+	pathPair := append([]byte{mainPrefix}, key.sort().pathData()...)
 	_, data := s.immutableTree().Get(pathPair)
 	if len(data) == 0 {
 		s.pairs[key.sort()] = nil
@@ -406,10 +420,6 @@ func (pk *pairKey) isSorted() bool {
 
 func (pk *pairKey) Revert() pairKey {
 	return pairKey{Coin0: pk.Coin1, Coin1: pk.Coin0}
-}
-
-func (pk pairKey) Bytes() []byte {
-	return append(pk.Coin0.Bytes(), pk.Coin1.Bytes()...)
 }
 
 var (
