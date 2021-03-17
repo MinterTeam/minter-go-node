@@ -334,12 +334,11 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 	blockchain.stateDeliver.Commission.Delete(height)
 
 	if v, ok := blockchain.isUpdateNetworkBlock(height); ok {
-		blockchain.stateDeliver.App.SetVersion(v)
+		blockchain.appDB.AddVersion(v, height)
 		blockchain.eventsDB.AddEvent(&eventsdb.UpdateNetworkEvent{
 			Version: v,
 		})
 	}
-
 	blockchain.stateDeliver.Updates.Delete(height)
 
 	hasChangedPublicKeys := false

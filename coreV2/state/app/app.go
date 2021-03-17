@@ -160,20 +160,12 @@ func (a *App) GetCoinsCount() uint32 {
 	return a.getOrNew().getCoinsCount()
 }
 
-func (a *App) GetVersion() string {
-	return a.getOrNew().getVersion()
-}
-
 func (a *App) GetNextCoinID() types.CoinID {
 	return types.CoinID(a.GetCoinsCount() + 1)
 }
 
 func (a *App) SetCoinsCount(count uint32) {
 	a.getOrNew().setCoinsCount(count)
-}
-
-func (a *App) SetVersion(version string) {
-	a.getOrNew().setVersion(version)
 }
 
 func (a *App) ExportV1(state *types.AppState, volume *big.Int) {

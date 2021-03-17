@@ -16,6 +16,7 @@ const (
 	startHeightPath = "startHeight"
 	blocksTimePath  = "blockDelta"
 	validatorsPath  = "validators"
+	versionsPath    = "versions"
 
 	dbName = "app"
 )
@@ -27,6 +28,10 @@ type AppDB struct {
 	lastHeight     uint64
 	lastTimeBlocks []uint64
 	validators     abciTypes.ValidatorUpdates
+
+	isDirtyVersions bool
+	versions        []*Version
+	// version         *Version
 }
 
 // Close closes db connection, panics on error
@@ -225,6 +230,71 @@ func (appDB *AppDB) SaveBlocksTime() {
 	if err := appDB.db.Set([]byte(blocksTimePath), data); err != nil {
 		panic(err)
 	}
+}
+
+type Version struct {
+	Name   string
+	Height uint64
+}
+
+func (appDB *AppDB) GetVersion(height uint64) string {
+	appDB.GetVersions()
+
+	lastVersionName := ""
+	for _, version := range appDB.versions {
+		if version.Height > height {
+			return lastVersionName
+		}
+		lastVersionName = version.Name
+	}
+
+	return lastVersionName
+}
+
+func (appDB *AppDB) GetVersions() []*Version {
+	if len(appDB.versions) == 0 {
+		result, err := appDB.db.Get([]byte(versionsPath))
+		if err != nil {
+			panic(err)
+		}
+		if len(result) != 0 {
+			err = tmjson.Unmarshal(result, &appDB.versions)
+			if err != nil {
+				panic(err)
+			}
+		}
+		// appDB.version = appDB.versions[len(appDB.versions)-1]
+	}
+
+	return appDB.versions
+}
+
+func (appDB *AppDB) AddVersion(v string, height uint64) {
+	appDB.GetVersions()
+
+	elem := &Version{
+		Name:   v,
+		Height: height,
+	}
+	// appDB.version = elem
+	appDB.versions = append(appDB.versions, elem)
+	appDB.isDirtyVersions = true
+}
+
+func (appDB *AppDB) SaveVersions() {
+	if !appDB.isDirtyVersions {
+		return
+	}
+	data, err := tmjson.Marshal(appDB.versions)
+	if err != nil {
+		panic(err)
+	}
+
+	if err := appDB.db.Set([]byte(versionsPath), data); err != nil {
+		panic(err)
+	}
+
+	appDB.isDirtyVersions = false
 }
 
 // NewAppDB creates AppDB instance with given config

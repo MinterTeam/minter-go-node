@@ -9,7 +9,6 @@ type Model struct {
 	TotalSlashed *big.Int
 	CoinsCount   uint32
 	MaxGas       uint64
-	Version      string
 
 	markDirty func()
 	mx        sync.RWMutex
@@ -69,22 +68,4 @@ func (model *Model) setCoinsCount(count uint32) {
 	}
 
 	model.CoinsCount = count
-}
-
-func (model *Model) setVersion(version string) {
-	model.mx.Lock()
-	defer model.mx.Unlock()
-
-	if model.Version != version {
-		model.markDirty()
-	}
-
-	model.Version = version
-}
-
-func (model *Model) getVersion() string {
-	model.mx.RLock()
-	defer model.mx.RUnlock()
-
-	return model.Version
 }
