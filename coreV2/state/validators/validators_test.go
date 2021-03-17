@@ -288,7 +288,7 @@ func TestValidators_SetValidatorAbsent(t *testing.T) {
 		t.Fatal("validator not found")
 	}
 	for i := uint64(0); i < validatorMaxAbsentTimes+1; i++ {
-		validators.SetValidatorAbsent(i, validator.tmAddress)
+		validators.SetValidatorAbsent(i, validator.tmAddress, nil)
 	}
 	if !validator.IsToDrop() {
 		t.Fatal("validator not drop")
@@ -308,7 +308,7 @@ func TestValidators_SetValidatorPresent(t *testing.T) {
 		t.Fatal("validator not found")
 	}
 
-	validators.SetValidatorAbsent(0, validator.tmAddress)
+	validators.SetValidatorAbsent(0, validator.tmAddress, nil)
 
 	if validator.AbsentTimes.String() != "BA{24:x_______________________}" {
 		t.Fatal("validator has not absent")

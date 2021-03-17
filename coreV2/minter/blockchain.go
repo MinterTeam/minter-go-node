@@ -12,6 +12,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/coreV2/statistics"
 	"github.com/MinterTeam/minter-go-node/coreV2/transaction"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
+	"github.com/MinterTeam/minter-go-node/upgrades"
 	"github.com/MinterTeam/minter-go-node/version"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
 	tmjson "github.com/tendermint/tendermint/libs/json"
@@ -69,6 +70,7 @@ type Blockchain struct {
 	storages   *utils.Storage
 	stopChan   context.Context
 	stopped    bool
+	grace      *upgrades.Grace
 }
 
 func (blockchain *Blockchain) RpcClient() *rpc.Local {
@@ -120,6 +122,10 @@ func (blockchain *Blockchain) initState() {
 	atomic.StoreUint64(&blockchain.height, currentHeight)
 	blockchain.stateDeliver = stateDeliver
 	blockchain.stateCheck = state.NewCheckState(stateDeliver)
+
+	grace := upgrades.NewGrace()
+	grace.AddGracePeriods(upgrades.NewGracePeriod(initialHeight, initialHeight+120))
+	blockchain.grace = grace
 }
 
 // InitChain initialize blockchain with validators and other info. Only called once.
@@ -180,7 +186,7 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 			blockchain.stateDeliver.Validators.SetValidatorPresent(height, address)
 			blockchain.validatorsStatuses[address] = ValidatorPresent
 		} else {
-			blockchain.stateDeliver.Validators.SetValidatorAbsent(height, address)
+			blockchain.stateDeliver.Validators.SetValidatorAbsent(height, address, blockchain.grace)
 			blockchain.validatorsStatuses[address] = ValidatorAbsent
 		}
 	}
