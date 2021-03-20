@@ -169,7 +169,7 @@ func (s *Service) calcBuyFromPool(ctx context.Context, value *big.Int, cState *s
 			return nil, s.createError(status.New(codes.NotFound, fmt.Sprintf("swap pair beetwen coins %s and %s not exists", coinFrom.GetFullSymbol(), coinBuy.GetFullSymbol())), transaction.EncodeError(code.NewPairNotExists(coinFrom.ID().String(), coinBuy.ID().String())))
 		}
 
-		if swapChecker.CoinID() == commissionPoolSwapper.CoinID() {
+		if swapChecker.GetID() == commissionPoolSwapper.GetID() {
 			if sellCoinID != types.GetBaseCoinID() {
 				swapChecker = commissionPoolSwapper.Revert()
 			} else {

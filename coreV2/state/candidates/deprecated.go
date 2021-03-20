@@ -62,7 +62,7 @@ func (c *Candidates) ExportV1(state *types.AppState, height uint64, validator *t
 					continue
 				}
 				state.FrozenFunds = append(state.FrozenFunds, types.FrozenFund{
-					Height:       height,
+					Height:       height + types.GetUnbondPeriod(),
 					Address:      s.Owner,
 					CandidateKey: nil,
 					CandidateID:  0,
@@ -75,7 +75,7 @@ func (c *Candidates) ExportV1(state *types.AppState, height uint64, validator *t
 					continue
 				}
 				state.FrozenFunds = append(state.FrozenFunds, types.FrozenFund{
-					Height:       height,
+					Height:       height + types.GetUnbondPeriod(),
 					Address:      u.Owner,
 					CandidateKey: nil,
 					CandidateID:  0,

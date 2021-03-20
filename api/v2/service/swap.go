@@ -54,7 +54,7 @@ func (s *Service) SwapPoolProvider(_ context.Context, req *pb.SwapPoolProviderRe
 	}
 
 	swapper := cState.Swap().GetSwapper(types.CoinID(req.Coin0), types.CoinID(req.Coin1))
-	liquidityID := swapper.CoinID()
+	liquidityID := swapper.GetID()
 	if liquidityID == 0 {
 		return nil, status.Error(codes.NotFound, "pair from provider not found")
 	}

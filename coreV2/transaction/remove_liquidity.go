@@ -79,7 +79,7 @@ func (data RemoveLiquidity) Run(tx *Transaction, context state.Interface, reward
 		}
 	}
 
-	coinLiquidity := checkState.Coins().GetCoinBySymbol(LiquidityCoinSymbol(swapper.CoinID()), 0)
+	coinLiquidity := checkState.Coins().GetCoinBySymbol(LiquidityCoinSymbol(swapper.GetID()), 0)
 	balance := checkState.Accounts().GetBalance(sender, coinLiquidity.ID())
 	if balance.Cmp(data.Liquidity) == -1 {
 		return Response{
@@ -159,6 +159,7 @@ func (data RemoveLiquidity) Run(tx *Transaction, context state.Interface, reward
 			{Key: []byte("tx.pool_token"), Value: []byte(coinLiquidity.GetFullSymbol()), Index: true},
 			{Key: []byte("tx.pool_token_id"), Value: []byte(coinLiquidity.ID().String()), Index: true},
 			{Key: []byte("tx.pair_ids"), Value: []byte(liquidityCoinName(data.Coin0, data.Coin1))},
+			{Key: []byte("tx.pool_id"), Value: []byte(types.CoinID(swapper.GetID()).String()), Index: true},
 		}
 	}
 

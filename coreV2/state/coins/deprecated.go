@@ -8,7 +8,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
-	"log"
 	"math/big"
 	"sort"
 	"strconv"
@@ -94,8 +93,10 @@ func (c *Coins) ExportV1(state *types.AppState, subValues map[types.CoinID]*big.
 				owner = info.OwnerAddress()
 			}
 		} else if v, ok := owners[coinID]; ok {
-			if v.Volume.Cmp(volume) == 0 {
-				log.Println("fix owner of coin", symbol, v.Owner.String()) // todo
+			mul := big.NewInt(0).Mul(v.Volume, big.NewInt(100))
+			div := mul.Div(mul, volume)
+			if div.Cmp(big.NewInt(90)) != -1 {
+				// log.Println("fix owner of coin", symbol, v.Owner.String())
 				owner = &v.Owner
 			}
 		}
