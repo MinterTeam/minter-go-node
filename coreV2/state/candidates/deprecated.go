@@ -35,7 +35,7 @@ type candidateV1 struct {
 }
 
 // Deprecated
-func (c *Candidates) ExportV1(state *types.AppState, height uint64, validator *types.Candidate) []uint32 {
+func (c *Candidates) ExportV1(state *types.AppState, height uint64, validators []*types.Candidate) []uint32 {
 	c.loadCandidatesDeliverV1()
 	c.loadStakesV1()
 
@@ -44,7 +44,8 @@ func (c *Candidates) ExportV1(state *types.AppState, height uint64, validator *t
 	candidates := c.GetCandidates()
 	state.Candidates = make([]types.Candidate, 0, 100)
 
-	if validator != nil {
+	hasCustomValidators := len(validators) != 0
+	for _, validator := range validators {
 		validator.ID = uint64(c.maxID + 1)
 		state.Candidates = append(state.Candidates, *validator)
 	}
@@ -108,7 +109,7 @@ func (c *Candidates) ExportV1(state *types.AppState, height uint64, validator *t
 		}
 
 		status := uint64(candidate.Status)
-		if validator != nil {
+		if hasCustomValidators {
 			status = 1
 		}
 		state.Candidates = append(state.Candidates, types.Candidate{

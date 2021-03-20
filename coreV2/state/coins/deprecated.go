@@ -122,24 +122,7 @@ func (c *Coins) ExportV1(state *types.AppState, subValues map[types.CoinID]*big.
 		return state.Coins[i].ID < state.Coins[j].ID
 	})
 
-	usdcID := state.Coins[len(state.Coins)-1].ID + 1
-
-	bridge := types.HexToAddress("Mxffffffffffffffffffffffffffffffffffffffff")
-	state.Coins = append(state.Coins, types.Coin{
-		ID:           usdcID,
-		Name:         "USDC",
-		Symbol:       types.StrToCoinSymbol("MUSDC"),
-		Volume:       helpers.BipToPip(big.NewInt(1000000000)).String(),
-		Crr:          0,
-		Reserve:      "0",
-		MaxSupply:    MaxCoinSupply().String(),
-		Version:      0,
-		OwnerAddress: &bridge,
-		Mintable:     true,
-		Burnable:     true,
-	})
-
-	return types.CoinID(usdcID), totalSubReserve
+	return types.CoinID(state.Coins[len(state.Coins)-1].ID + 1), totalSubReserve
 }
 
 // Deprecated

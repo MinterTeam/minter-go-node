@@ -18,7 +18,7 @@ const mainPrefix = byte('w')
 
 type RWaitList interface {
 	// Deprecated
-	ExportV1(state *types.AppState, ds []uint32)
+	ExportV1(state *types.AppState, ds []uint32, u uint64)
 
 	Get(address types.Address, pubkey types.Pubkey, coin types.CoinID) *Item
 	GetByAddress(address types.Address) *Model
@@ -90,7 +90,7 @@ func (wl *WaitList) Export(state *types.AppState) {
 }
 
 // Deprecated
-func (wl *WaitList) ExportV1(state *types.AppState, droppedIDs []uint32) {
+func (wl *WaitList) ExportV1(state *types.AppState, droppedIDs []uint32, height uint64) {
 	dropped := map[uint32]struct{}{}
 	for _, d := range droppedIDs {
 		dropped[d] = struct{}{}
@@ -103,6 +103,7 @@ func (wl *WaitList) ExportV1(state *types.AppState, droppedIDs []uint32) {
 			for _, w := range model.List {
 				if _, ok := dropped[w.CandidateId]; ok {
 					state.FrozenFunds = append(state.FrozenFunds, types.FrozenFund{
+						Height:       height + types.GetUnbondPeriod(),
 						CandidateID:  0,
 						CandidateKey: nil,
 						Address:      address,

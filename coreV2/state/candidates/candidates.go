@@ -43,7 +43,7 @@ var (
 // RCandidates interface represents Candidates state
 type RCandidates interface {
 	// Deprecated
-	ExportV1(state *types.AppState, height uint64, validator *types.Candidate) []uint32
+	ExportV1(state *types.AppState, height uint64, validators []*types.Candidate) []uint32
 
 	Export(state *types.AppState)
 	Exists(pubkey types.Pubkey) bool
