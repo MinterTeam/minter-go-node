@@ -170,7 +170,7 @@ func (v *Validators) SetValidatorPresent(height uint64, address types.TmAddress)
 
 // SetValidatorAbsent marks validator as absent at current height
 // if validator misses signs of more than validatorMaxAbsentTimes, it will receive penalty and will be swithed off
-func (v *Validators) SetValidatorAbsent(height uint64, address types.TmAddress) {
+func (v *Validators) SetValidatorAbsent(height uint64, address types.TmAddress, grace *upgrades.Grace) {
 	validator := v.GetByTmAddress(address)
 	if validator == nil {
 		return
@@ -179,7 +179,7 @@ func (v *Validators) SetValidatorAbsent(height uint64, address types.TmAddress) 
 	validator.SetAbsent(height)
 
 	if validator.CountAbsentTimes() > validatorMaxAbsentTimes {
-		if !upgrades.IsGraceBlock(height) {
+		if !grace.IsGraceBlock(height) {
 			v.punishValidator(height, address)
 		}
 

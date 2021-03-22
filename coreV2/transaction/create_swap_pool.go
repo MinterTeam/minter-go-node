@@ -29,7 +29,7 @@ func (data CreateSwapPoolData) basicCheck(tx *Transaction, context *state.CheckS
 	if data.Coin1 == data.Coin0 {
 		return &Response{
 			Code: code.CrossConvert,
-			Log:  "\"From\" coin equals to \"to\" coin",
+			Log:  "First coin equals to second coin",
 			Info: EncodeError(code.NewCrossConvert(
 				data.Coin0.String(),
 				data.Coin1.String(), "", "")),
@@ -182,6 +182,7 @@ func (data CreateSwapPoolData) Run(tx *Transaction, context state.Interface, rew
 			{Key: []byte("tx.pool_token"), Value: []byte(liquidityCoinSymbol.String()), Index: true},
 			{Key: []byte("tx.pool_token_id"), Value: []byte(coinID.String()), Index: true},
 			{Key: []byte("tx.pair_ids"), Value: []byte(coins), Index: true},
+			{Key: []byte("tx.pool_id"), Value: []byte(types.CoinID(id).String()), Index: true},
 		}
 	}
 

@@ -246,6 +246,9 @@ func (ue *UnbondEvent) address() types.Address {
 }
 
 func (ue *UnbondEvent) ValidatorPubKeyString() string {
+	if ue.ValidatorPubKey == nil {
+		return ""
+	}
 	return ue.ValidatorPubKey.String()
 }
 

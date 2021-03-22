@@ -23,7 +23,7 @@ const commission = 2
 
 type EditableChecker interface {
 	IsExist() bool
-	CoinID() uint32
+	GetID() uint32
 	AddLastSwapStep(amount0In, amount1Out *big.Int) EditableChecker
 	Revert() EditableChecker
 	Reserves() (reserve0 *big.Int, reserve1 *big.Int)
@@ -546,7 +546,7 @@ func (p *Pair) SellLimit(step int) *Limit {
 	return nil
 }
 
-func (p *Pair) CoinID() uint32 {
+func (p *Pair) GetID() uint32 {
 	if p == nil {
 		return 0
 	}

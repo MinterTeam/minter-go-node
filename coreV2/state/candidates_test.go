@@ -388,7 +388,7 @@ func TestDoubleAbsentPenalty(t *testing.T) {
 	st.Validators.SetNewValidators(st.Candidates.GetNewCandidates(1))
 
 	for i := 1000; i < 1050; i++ {
-		st.Validators.SetValidatorAbsent(uint64(i), tmAddr)
+		st.Validators.SetValidatorAbsent(uint64(i), tmAddr, nil)
 		st.Validators.SetNewValidators(st.Candidates.GetNewCandidates(1))
 	}
 

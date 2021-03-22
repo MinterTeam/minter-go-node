@@ -1,11 +1,22 @@
 package upgrades
 
-var gracePeriods = []*gracePeriod{
-	newGracePeriod(1, 120),
+type Grace struct {
+	gracePeriods []*GracePeriod
 }
 
-func IsGraceBlock(block uint64) bool {
-	for _, gp := range gracePeriods {
+func (g *Grace) AddGracePeriods(gracePeriods ...*GracePeriod) {
+	g.gracePeriods = append(g.gracePeriods, gracePeriods...)
+}
+
+func NewGrace() *Grace {
+	return &Grace{}
+}
+
+func (g *Grace) IsGraceBlock(block uint64) bool {
+	if g == nil {
+		return false
+	}
+	for _, gp := range g.gracePeriods {
 		if gp.isApplicable(block) {
 			return true
 		}
@@ -14,15 +25,15 @@ func IsGraceBlock(block uint64) bool {
 	return false
 }
 
-type gracePeriod struct {
+type GracePeriod struct {
 	from uint64
 	to   uint64
 }
 
-func (gp *gracePeriod) isApplicable(block uint64) bool {
+func (gp *GracePeriod) isApplicable(block uint64) bool {
 	return block >= gp.from && block <= gp.to
 }
 
-func newGracePeriod(from uint64, to uint64) *gracePeriod {
-	return &gracePeriod{from: from, to: to}
+func NewGracePeriod(from uint64, to uint64) *GracePeriod {
+	return &GracePeriod{from: from, to: to}
 }

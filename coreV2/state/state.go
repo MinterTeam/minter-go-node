@@ -59,128 +59,164 @@ func (cs *CheckState) Export() types.AppState {
 	return *appState
 }
 
-func (cs *CheckState) ExportV1(bipRate float64, validator string, addresses []string) types.AppState {
+func (cs *CheckState) ExportV1(bipRate float64, validatorList []string, addresses []string) types.AppState {
 	appState := new(types.AppState)
 
 	log.Printf("Handling validators...\n")
-	var singleActiveCandidate *types.Candidate
-	if types.CurrentChainID == types.ChainTestnet && validator != "" && len(addresses) != 0 {
+	var activeCandidates []*types.Candidate
+	if types.CurrentChainID == types.ChainTestnet && len(validatorList) != 0 {
 		address := types.HexToAddress(addresses[0])
-		pubkey := types.HexToPubkey(validator)
-		singleActiveCandidate = &types.Candidate{
-			ID:             0,
-			RewardAddress:  address,
-			OwnerAddress:   address,
-			ControlAddress: address,
-			TotalBipStake:  "1000000000000000000000000000000",
-			PubKey:         pubkey,
-			Commission:     15,
-			Stakes: []types.Stake{
-				{
-					Owner:    address,
-					Coin:     0,
-					Value:    "1000000000000000000000000000000",
-					BipValue: "1000000000000000000000000000000",
+		for i, validator := range validatorList {
+			a := address
+			if len(addresses) >= len(validatorList) {
+				a = types.HexToAddress(addresses[i])
+			}
+
+			pubkey := types.HexToPubkey(validator)
+			activeCandidates = append(activeCandidates, &types.Candidate{
+				ID:             0,
+				RewardAddress:  a,
+				OwnerAddress:   a,
+				ControlAddress: a,
+				TotalBipStake:  "1000000000000000000000000000000",
+				PubKey:         pubkey,
+				Commission:     15,
+				Stakes: []types.Stake{
+					{
+						Owner:    a,
+						Coin:     0,
+						Value:    "1000000000000000000000000000000",
+						BipValue: "1000000000000000000000000000000",
+					},
 				},
-			},
-			Updates: nil,
-			Status:  2,
+				Updates: nil,
+				Status:  2,
+			})
+			appState.Validators = append(appState.Validators, types.Validator{
+				TotalBipStake: "1000000000000000000000000000000",
+				PubKey:        pubkey,
+				AccumReward:   "0",
+				AbsentTimes:   types.NewBitArray(validators.ValidatorMaxAbsentWindow),
+			})
 		}
-		appState.Validators = append(appState.Validators, types.Validator{
-			TotalBipStake: "1000000000000000000000000000000",
-			PubKey:        pubkey,
-			AccumReward:   "0",
-			AbsentTimes:   types.NewBitArray(validators.ValidatorMaxAbsentWindow),
-		})
+
 	} else {
 		cs.Validators().Export(appState)
 	}
 
 	log.Printf("Handling candidates...\n")
-	droppedIDs := cs.Candidates().ExportV1(appState, uint64(cs.state.height), singleActiveCandidate)
+	droppedIDs := cs.Candidates().ExportV1(appState, uint64(cs.state.height), activeCandidates)
 
 	log.Printf("Handling unbonds...\n")
 	cs.FrozenFunds().Export(appState, uint64(cs.state.height))
 	log.Printf("Handling waitlist...\n")
-	cs.WaitList().ExportV1(appState, droppedIDs)
-	log.Printf("Handling checks...\n")
-	cs.Checks().Export(appState)
+	cs.WaitList().ExportV1(appState, droppedIDs, uint64(cs.state.height))
+	if types.CurrentChainID == types.ChainMainnet {
+		log.Printf("Handling checks...\n")
+		cs.Checks().Export(appState)
+	}
 	log.Printf("Handling halt voites...\n")
 	cs.Halts().Export(appState)
 
-	totalUSDCValue := helpers.BipToPip(big.NewInt(1000000000))
-	poolUSDCValue := helpers.BipToPip(big.NewInt(10000))
-	rate := big.NewFloat(bipRate)
-	poolBipValue, _ := big.NewFloat(0).Quo(big.NewFloat(0).SetInt(poolUSDCValue), rate).Int(nil)
+	if types.CurrentChainID == types.ChainTestnet && bipRate != 0 {
+		totalUSDCValue := helpers.BipToPip(big.NewInt(1000000000))
+		poolUSDCValue := helpers.BipToPip(big.NewInt(10000))
+		rate := big.NewFloat(bipRate)
+		poolBipValue, _ := big.NewFloat(0).Quo(big.NewFloat(0).SetInt(poolUSDCValue), rate).Int(nil)
 
-	log.Printf("Handling accounts...\n")
-	subValues, coinOwners := cs.Accounts().ExportV1(appState, poolBipValue)
-	log.Printf("Handling coins...\n")
-	usdcCoinID, totalSubBipVolume := cs.Coins().ExportV1(appState, subValues, coinOwners)
-	cs.App().ExportV1(appState, totalSubBipVolume)
-	log.Printf("Handling commissions...\n")
-	poolTokenVolume := cs.Swap().ExportV1(appState, usdcCoinID, poolUSDCValue, poolBipValue)
-	cs.Commission().ExportV1(appState, usdcCoinID)
+		log.Printf("Handling accounts...\n")
+		subValues, coinOwners := cs.Accounts().ExportV1(appState, poolBipValue)
+		log.Printf("Handling coins...\n")
+		usdcCoinID, totalSubBipVolume := cs.Coins().ExportV1(appState, subValues, coinOwners)
 
-	lpUSDC := uint64(usdcCoinID) + 1
-	appState.Coins = append(appState.Coins, types.Coin{
-		ID:           lpUSDC,
-		Name:         "Liquidity Pool 0:" + usdcCoinID.String(),
-		Symbol:       types.StrToCoinSymbol("LP-1"),
-		Volume:       poolTokenVolume.String(),
-		Crr:          0,
-		Reserve:      "0",
-		MaxSupply:    coins.MaxCoinSupply().String(),
-		Version:      0,
-		OwnerAddress: nil,
-		Mintable:     true,
-		Burnable:     true,
-	})
-
-	account := types.Account{
-		Address: types.HexToAddress("Mxffffffffffffffffffffffffffffffffffffffff"),
-		Balance: []types.Balance{
-			{
-				Coin:  uint64(usdcCoinID),
-				Value: big.NewInt(0).Sub(totalUSDCValue, poolUSDCValue).String(),
-			},
-			{
-				Coin:  lpUSDC,
-				Value: big.NewInt(0).Sub(poolTokenVolume, big.NewInt(1000)).String(),
-			},
-		},
-		Nonce: 0,
-		MultisigData: &types.Multisig{
-			Weights:   []uint64{1000},
-			Threshold: 667,
-			Addresses: []types.Address{
-				types.HexToAddress("Mx90b704f155b3cd7f998802ff2ce5c39cb2a9caac"),
-			},
-		},
-	}
-
-	if appState.Accounts[len(appState.Accounts)-1].Address == account.Address {
-		account.Balance = append(account.Balance, appState.Accounts[len(appState.Accounts)-1].Balance...)
-		appState.Accounts[len(appState.Accounts)-1] = account
-	} else {
-		appState.Accounts = append(appState.Accounts, account)
-	}
-	balance := types.Balance{
-		Coin:  lpUSDC,
-		Value: "1000",
-	}
-
-	if appState.Accounts[0].Address == [20]byte{} {
-		appState.Accounts[0].Balance = append(appState.Accounts[0].Balance, balance)
-	} else {
-		appState.Accounts = append(appState.Accounts, types.Account{
-			Address: types.Address{},
-			Balance: []types.Balance{
-				balance,
-			},
-			Nonce:        0,
-			MultisigData: nil,
+		bridgeAddress := types.HexToAddress("Mxffffffffffffffffffffffffffffffffffffffff")
+		appState.Coins = append(appState.Coins, types.Coin{
+			ID:           uint64(usdcCoinID),
+			Name:         "USDC",
+			Symbol:       types.StrToCoinSymbol("MUSDC"),
+			Volume:       helpers.BipToPip(big.NewInt(1000000000)).String(),
+			Crr:          0,
+			Reserve:      "0",
+			MaxSupply:    coins.MaxCoinSupply().String(),
+			Version:      0,
+			OwnerAddress: &bridgeAddress,
+			Mintable:     true,
+			Burnable:     true,
 		})
+
+		cs.App().ExportV1(appState, totalSubBipVolume)
+		log.Printf("Handling commissions...\n")
+		poolTokenVolume := cs.Swap().ExportV1(appState, usdcCoinID, poolUSDCValue, poolBipValue)
+		cs.Commission().ExportV1(appState, usdcCoinID)
+
+		lpUSDC := uint64(usdcCoinID) + 1
+		appState.Coins = append(appState.Coins, types.Coin{
+			ID:           lpUSDC,
+			Name:         "Liquidity Pool 0:" + usdcCoinID.String(),
+			Symbol:       types.StrToCoinSymbol("LP-1"),
+			Volume:       poolTokenVolume.String(),
+			Crr:          0,
+			Reserve:      "0",
+			MaxSupply:    coins.MaxCoinSupply().String(),
+			Version:      0,
+			OwnerAddress: nil,
+			Mintable:     true,
+			Burnable:     true,
+		})
+
+		account := types.Account{
+			Address: bridgeAddress,
+			Balance: []types.Balance{
+				{
+					Coin:  uint64(usdcCoinID),
+					Value: big.NewInt(0).Sub(totalUSDCValue, poolUSDCValue).String(),
+				},
+				{
+					Coin:  lpUSDC,
+					Value: big.NewInt(0).Sub(poolTokenVolume, big.NewInt(1000)).String(),
+				},
+			},
+			Nonce: 0,
+			MultisigData: &types.Multisig{
+				Weights:   []uint64{1000},
+				Threshold: 667,
+				Addresses: []types.Address{
+					types.HexToAddress("Mx90b704f155b3cd7f998802ff2ce5c39cb2a9caac"),
+				},
+			},
+		}
+
+		if appState.Accounts[len(appState.Accounts)-1].Address == account.Address {
+			account.Balance = append(account.Balance, appState.Accounts[len(appState.Accounts)-1].Balance...)
+			appState.Accounts[len(appState.Accounts)-1] = account
+		} else {
+			appState.Accounts = append(appState.Accounts, account)
+		}
+		balance := types.Balance{
+			Coin:  lpUSDC,
+			Value: "1000",
+		}
+
+		if appState.Accounts[0].Address == [20]byte{} {
+			appState.Accounts[0].Balance = append(appState.Accounts[0].Balance, balance)
+		} else {
+			appState.Accounts = append(appState.Accounts, types.Account{
+				Address: types.Address{},
+				Balance: []types.Balance{
+					balance,
+				},
+				Nonce:        0,
+				MultisigData: nil,
+			})
+		}
+	} else {
+		log.Printf("Handling accounts...\n")
+		subValues, coinOwners := cs.Accounts().ExportV1(appState, big.NewInt(0))
+		log.Printf("Handling coins...\n")
+		_, totalSubBipVolume := cs.Coins().ExportV1(appState, subValues, coinOwners)
+		cs.App().ExportV1(appState, totalSubBipVolume)
+		log.Printf("Handling commissions...\n")
+		cs.Commission().ExportV1(appState, types.GetBaseCoinID())
 	}
 
 	if types.CurrentChainID == types.ChainTestnet {
@@ -198,6 +234,7 @@ func (cs *CheckState) ExportV1(bipRate float64, validator string, addresses []st
 			})
 		}
 	}
+
 	return *appState
 }
 
