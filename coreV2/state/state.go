@@ -111,8 +111,10 @@ func (cs *CheckState) ExportV1(bipRate float64, validatorList []string, addresse
 	cs.FrozenFunds().Export(appState, uint64(cs.state.height))
 	log.Printf("Handling waitlist...\n")
 	cs.WaitList().ExportV1(appState, droppedIDs, uint64(cs.state.height))
-	log.Printf("Handling checks...\n")
-	cs.Checks().Export(appState)
+	if types.CurrentChainID == types.ChainMainnet {
+		log.Printf("Handling checks...\n")
+		cs.Checks().Export(appState)
+	}
 	log.Printf("Handling halt voites...\n")
 	cs.Halts().Export(appState)
 

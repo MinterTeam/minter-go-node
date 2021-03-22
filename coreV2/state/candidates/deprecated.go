@@ -46,7 +46,7 @@ func (c *Candidates) ExportV1(state *types.AppState, height uint64, validators [
 
 	hasCustomValidators := len(validators) != 0
 	for _, validator := range validators {
-		validator.ID = uint64(c.maxID + 1)
+		validator.ID = uint64(c.getOrNewID(validator.PubKey))
 		state.Candidates = append(state.Candidates, *validator)
 	}
 
