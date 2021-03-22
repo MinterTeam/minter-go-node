@@ -226,6 +226,7 @@ func (data BuyCoinData) Run(tx *Transaction, context state.Interface, rewardPool
 			{Key: []byte("tx.coin_to_buy"), Value: []byte(data.CoinToBuy.String()), Index: true},
 			{Key: []byte("tx.coin_to_sell"), Value: []byte(data.CoinToSell.String()), Index: true},
 			{Key: []byte("tx.return"), Value: []byte(value.String())},
+			{Key: []byte("tx.reserve"), Value: []byte(diffBipReserve.String())},
 		}
 	}
 
