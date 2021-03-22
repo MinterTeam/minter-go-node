@@ -397,6 +397,8 @@ func (s *State) Commit() ([]byte, error) {
 }
 
 func (s *State) Import(state types.AppState) error {
+	defer s.Checker.RemoveBaseCoin()
+
 	s.App.SetMaxGas(state.MaxGas)
 	totalSlash := helpers.StringToBigInt(state.TotalSlashed)
 	s.App.SetTotalSlashed(totalSlash)
@@ -530,8 +532,6 @@ func (s *State) Import(state types.AppState) error {
 	}
 
 	s.Commission.SetNewCommissions(com.Encode())
-
-	s.Checker.RemoveBaseCoin()
 
 	return nil
 }
