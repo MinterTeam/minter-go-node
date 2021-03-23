@@ -44,6 +44,8 @@ func (s *Service) CoinInfo(ctx context.Context, req *pb.CoinInfoRequest) (*pb.Co
 		ReserveBalance: coin.Reserve().String(),
 		MaxSupply:      coin.MaxSupply().String(),
 		OwnerAddress:   ownerAddress,
+		Mintable:       coin.Mintable,
+		Burnable:       coin.Burnable,
 	}, nil
 }
 
@@ -78,5 +80,7 @@ func (s *Service) CoinInfoById(ctx context.Context, req *pb.CoinIdRequest) (*pb.
 		ReserveBalance: coin.Reserve().String(),
 		MaxSupply:      coin.MaxSupply().String(),
 		OwnerAddress:   ownerAddress,
+		Mintable:       coin.Mintable,
+		Burnable:       coin.Burnable,
 	}, nil
 }
