@@ -93,12 +93,16 @@ func (appDB *AppDB) SetLastHeight(height uint64) {
 
 // SetStartHeight stores given block height on disk as start height, panics on error
 func (appDB *AppDB) SetStartHeight(height uint64) {
+	appDB.startHeight = height
+}
+
+// SetStartHeight stores given block height on disk as start height, panics on error
+func (appDB *AppDB) SaveStartHeight() {
 	h := make([]byte, 8)
-	binary.BigEndian.PutUint64(h, height)
+	binary.BigEndian.PutUint64(h, appDB.startHeight)
 	if err := appDB.db.Set([]byte(startHeightPath), h); err != nil {
 		panic(err)
 	}
-	appDB.startHeight = height
 }
 
 // GetStartHeight returns start height stored on disk

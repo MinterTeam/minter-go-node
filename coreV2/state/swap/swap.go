@@ -107,8 +107,8 @@ func (s *Swap) Export(state *types.AppState) {
 			}
 			return false
 		}
-		coin0 := types.BytesToCoinID(key[1:5])
-		coin1 := types.BytesToCoinID(key[5:9])
+		coin0 := types.BytesToCoinID(key[2:6])
+		coin1 := types.BytesToCoinID(key[6:10])
 		s.Pair(coin0, coin1)
 		return false
 	})

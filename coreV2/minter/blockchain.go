@@ -130,6 +130,12 @@ func (blockchain *Blockchain) initState() {
 
 // InitChain initialize blockchain with validators and other info. Only called once.
 func (blockchain *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.ResponseInitChain {
+	if blockchain.appDB.GetStartHeight() != 0 {
+		return abciTypes.ResponseInitChain{
+			Validators: blockchain.appDB.GetValidators(),
+		}
+	}
+
 	var genesisState types.AppState
 	if err := tmjson.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
 		panic(err)
@@ -151,6 +157,7 @@ func (blockchain *Blockchain) InitChain(req abciTypes.RequestInitChain) abciType
 
 	vals := blockchain.updateValidators()
 	blockchain.appDB.FlushValidators()
+	blockchain.appDB.SaveStartHeight()
 
 	return abciTypes.ResponseInitChain{
 		Validators: vals,
@@ -164,8 +171,6 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 		blockchain.initState()
 	}
 	blockchain.StatisticData().PushStartBlock(&statistics.StartRequest{Height: int64(height), Now: time.Now(), HeaderTime: req.Header.Time})
-
-	// atomic.StoreUint64(&blockchain.height, height)
 
 	// compute max gas
 	maxGas := blockchain.calcMaxGas()

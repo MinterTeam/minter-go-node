@@ -2,7 +2,6 @@ package coins
 
 import (
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/coreV2/state/accounts"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/bus"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/formula"
@@ -38,7 +37,7 @@ type modelV1 struct {
 }
 
 // Deprecated
-func (c *Coins) ExportV1(state *types.AppState, subValues map[types.CoinID]*big.Int, owners map[types.CoinID]*accounts.MaxCoinVolume) (types.CoinID, *big.Int) {
+func (c *Coins) ExportV1(state *types.AppState, subValues map[types.CoinID]*big.Int, owners map[types.CoinID]*MaxCoinVolume) (types.CoinID, *big.Int) {
 	totalSubReserve := big.NewInt(0)
 	c.immutableTree().IterateRange([]byte{mainPrefix}, []byte{mainPrefix + 1}, true, func(key []byte, value []byte) bool {
 		if len(key) > 5 {

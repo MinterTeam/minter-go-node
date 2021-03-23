@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/bus"
+	"github.com/MinterTeam/minter-go-node/coreV2/state/coins"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/cosmos/iavl"
@@ -20,7 +21,7 @@ const balancePrefix = byte('b')
 
 type RAccounts interface {
 	// Deprecated
-	ExportV1(state *types.AppState, value *big.Int) (map[types.CoinID]*big.Int, map[types.CoinID]*MaxCoinVolume)
+	ExportV1(state *types.AppState, value *big.Int) (map[types.CoinID]*big.Int, map[types.CoinID]*coins.MaxCoinVolume)
 
 	Export(state *types.AppState)
 	GetAccount(address types.Address) *Model
@@ -401,7 +402,7 @@ func (a *Accounts) Export(state *types.AppState) {
 		}
 
 		sort.SliceStable(balance, func(i, j int) bool {
-			return bytes.Compare(types.CoinID(balance[i].Coin).Bytes(), types.CoinID(balance[j].Coin).Bytes()) == 1
+			return balance[i].Coin < balance[j].Coin
 		})
 
 		acc := types.Account{
