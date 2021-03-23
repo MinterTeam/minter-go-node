@@ -87,7 +87,7 @@ func runNode(cmd *cobra.Command) error {
 	if err != nil {
 		return err
 	}
-	app := minter.NewMinterBlockchain(storages, cfg, cmd.Context())
+	app := minter.NewMinterBlockchain(storages, cfg, cmd.Context(), 0)
 
 	// update BlocksTimeDelta in case it was corrupted
 	// updateBlocksTimeDelta(app, tmConfig)

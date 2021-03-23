@@ -56,7 +56,7 @@ func initTestNode(t *testing.T, initialHeight int64) (*Blockchain, *rpc.Local, *
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 
-	app := NewMinterBlockchain(storage, minterCfg, ctx)
+	app := NewMinterBlockchain(storage, minterCfg, ctx, 120)
 	nodeKey, err := p2p.LoadOrGenNodeKey(cfg.NodeKeyFile())
 	if err != nil {
 		t.Fatal(err)
@@ -900,7 +900,7 @@ func TestBlockchain_RecalculateStakes_andRemoveValidator(t *testing.T) {
 			case block := <-blocks:
 				h := block.Data.(types2.EventDataNewBlock).Block.Height
 				if targetHeight == 0 {
-					targetHeight = 135
+					targetHeight = int64(15 + blockchain.updateStakesAndPayRewardsPeriod)
 				}
 				if h > targetHeight {
 					return

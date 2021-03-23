@@ -26,7 +26,7 @@ func CreateApp(state types.AppState) *minter.Blockchain {
 	storage := utils.NewStorage("", "")
 	cfg := config.GetConfig(storage.GetMinterHome())
 	cfg.DBBackend = "memdb"
-	app := minter.NewMinterBlockchain(storage, cfg, nil)
+	app := minter.NewMinterBlockchain(storage, cfg, nil, 120)
 	app.InitChain(tmTypes.RequestInitChain{
 		Time:    time.Now(),
 		ChainId: "test",
