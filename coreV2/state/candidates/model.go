@@ -36,6 +36,7 @@ type Candidate struct {
 	Status                   byte
 	ID                       uint32
 	LastEditCommissionHeight uint64
+	JailedUntil              uint64
 }
 
 func (candidate *Candidate) idBytes() []byte {
@@ -71,6 +72,14 @@ func (candidate *Candidate) setCommission(commission uint32, height uint64) {
 	candidate.isDirty = true
 	candidate.Commission = commission
 	candidate.LastEditCommissionHeight = height
+}
+
+func (candidate *Candidate) jainUntil(height uint64) {
+	candidate.lock.Lock()
+	defer candidate.lock.Unlock()
+
+	candidate.isDirty = true
+	candidate.JailedUntil = height
 }
 
 func (candidate *Candidate) setReward(address types.Address) {

@@ -119,7 +119,7 @@ func TestDeclareCandidacyTxOverflow(t *testing.T) {
 
 	for i := 0; i < maxCandidatesCount; i++ {
 		pubkey := types.Pubkey{byte(i)}
-		cState.Candidates.Create(types.Address{}, types.Address{}, types.Address{}, pubkey, 10, 0)
+		cState.Candidates.Create(types.Address{}, types.Address{}, types.Address{}, pubkey, 10, 0, 0)
 		cState.Candidates.Delegate(types.Address{}, pubkey, types.GetBaseCoinID(), helpers.BipToPip(big.NewInt(10)), helpers.BipToPip(big.NewInt(10)))
 	}
 
@@ -191,7 +191,7 @@ func TestDeclareCandidacyTxWithBlockPybKey(t *testing.T) {
 	var publicKey types.Pubkey
 	copy(publicKey[:], publicKeyBytes)
 
-	cState.Candidates.Create(types.Address{}, types.Address{}, types.Address{}, publicKey, 10, 0)
+	cState.Candidates.Create(types.Address{}, types.Address{}, types.Address{}, publicKey, 10, 0, 0)
 	pkeyNew, _ := crypto.GenerateKey()
 	publicKeyNewBytes := crypto.FromECDSAPub(&pkeyNew.PublicKey)[:32]
 	var publicKeyNew types.Pubkey
@@ -351,7 +351,7 @@ func TestDeclareCandidacyToExistCandidate(t *testing.T) {
 	var publicKey types.Pubkey
 	copy(publicKey[:], publicKeyBytes)
 
-	cState.Candidates.Create(addr, addr, addr, publicKey, uint32(10), 0)
+	cState.Candidates.Create(addr, addr, addr, publicKey, uint32(10), 0, 0)
 
 	persent := uint32(10)
 

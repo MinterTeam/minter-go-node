@@ -25,7 +25,7 @@ func TestEditCandidateTx(t *testing.T) {
 	pubkey := [32]byte{}
 	rand.Read(pubkey[:])
 
-	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0)
+	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0, 0)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 
 	newRewardAddress := types.Address{1}
@@ -170,7 +170,7 @@ func TestEditCandidateTxToCandidateOwnership(t *testing.T) {
 	pubkey := [32]byte{}
 	rand.Read(pubkey[:])
 
-	cState.Candidates.Create(addr2, addr2, addr2, pubkey, 10, 0)
+	cState.Candidates.Create(addr2, addr2, addr2, pubkey, 10, 0, 0)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 
 	newRewardAddress := types.Address{1}
@@ -229,7 +229,7 @@ func TestEditCandidateTxToInsufficientFunds(t *testing.T) {
 	pubkey := [32]byte{}
 	rand.Read(pubkey[:])
 
-	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0)
+	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0, 0)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 
 	newRewardAddress := types.Address{1}
@@ -291,7 +291,7 @@ func TestEditCandidateTxToGasCoinReserveUnderflow(t *testing.T) {
 	pubkey := [32]byte{}
 	rand.Read(pubkey[:])
 
-	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0)
+	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0, 0)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 
 	newRewardAddress := types.Address{1}

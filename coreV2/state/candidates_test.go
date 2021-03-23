@@ -355,53 +355,10 @@ func TestAbsentPenalty(t *testing.T) {
 
 	stake := st.Candidates.GetStakeValueOfAddress(pubkey, addr, coin)
 	newValue := big.NewInt(0).Set(amount)
-	newValue.Mul(newValue, big.NewInt(99))
-	newValue.Div(newValue, big.NewInt(100))
 	if stake.Cmp(newValue) != 0 {
 		t.Fatalf("Stake is not correct. Expected %s, got %s", newValue, stake.String())
 	}
 
-	err := checkState(st)
-	if err != nil {
-		t.Error(err)
-	}
-}
-
-func TestDoubleAbsentPenalty(t *testing.T) {
-	t.Parallel()
-	st := getState()
-
-	pubkey := createTestCandidate(st)
-
-	coin := types.GetBaseCoinID()
-	amount := helpers.BipToPip(big.NewInt(10000))
-	var addr types.Address
-	binary.BigEndian.PutUint64(addr[:], 1)
-	st.Candidates.Delegate(addr, pubkey, coin, amount, amount)
-	st.Candidates.SetOnline(pubkey)
-
-	st.Candidates.RecalculateStakes(0)
-
-	var tmAddr types.TmAddress
-	copy(tmAddr[:], ed25519.PubKey(pubkey[:]).Address().Bytes())
-
-	st.Validators.SetNewValidators(st.Candidates.GetNewCandidates(1))
-
-	for i := 1000; i < 1050; i++ {
-		st.Validators.SetValidatorAbsent(uint64(i), tmAddr, nil)
-		st.Validators.SetNewValidators(st.Candidates.GetNewCandidates(1))
-	}
-
-	stake := st.Candidates.GetStakeValueOfAddress(pubkey, addr, coin)
-	newValue := big.NewInt(0).Set(amount)
-	newValue.Mul(newValue, big.NewInt(99))
-	newValue.Div(newValue, big.NewInt(100))
-	if stake.Cmp(newValue) != 0 {
-		t.Fatalf("Stake is not correct. Expected %s, got %s", newValue, stake.String())
-	}
-
-	st.Candidates.SetOnline(pubkey)
-	st.Validators.SetNewValidators(st.Candidates.GetNewCandidates(1))
 	err := checkState(st)
 	if err != nil {
 		t.Error(err)
@@ -658,7 +615,7 @@ func createTestCandidate(stateDB *State) types.Pubkey {
 	_, _ = rand.Read(pubkey[:])
 
 	stateDB.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1000)))
-	stateDB.Candidates.Create(address, address, address, pubkey, 10, 0)
+	stateDB.Candidates.Create(address, address, address, pubkey, 10, 0, 0)
 
 	return pubkey
 }

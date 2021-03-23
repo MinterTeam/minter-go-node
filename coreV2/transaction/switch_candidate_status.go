@@ -70,6 +70,14 @@ func (data SetCandidateOnData) Run(tx *Transaction, context state.Interface, rew
 		}
 	}
 
+	if checkState.Candidates().IsCandidateJailed(data.GetPubKey(), currentBlock) {
+		return Response{
+			Code: code.CandidateJailed,
+			Log:  fmt.Sprintf("Candidate is jailed"),
+			Info: EncodeError(code.NewCustomCode(code.CandidateJailed)),
+		}
+	}
+
 	var tags []abcTypes.EventAttribute
 
 	if deliverState, ok := context.(*state.State); ok {
@@ -193,16 +201,16 @@ func checkCandidateControl(data CandidateTx, tx *Transaction, context *state.Che
 		}
 	}
 
-	owner := context.Candidates().GetCandidateOwner(data.GetPubKey())
-	control := context.Candidates().GetCandidateControl(data.GetPubKey())
+	candidate := context.Candidates().GetCandidate(data.GetPubKey())
+
 	sender, _ := tx.Sender()
 	switch sender {
-	case owner, control:
+	case candidate.OwnerAddress, candidate.ControlAddress:
 	default:
 		return &Response{
 			Code: code.IsNotOwnerOfCandidate,
 			Log:  "Sender is not an owner of a candidate",
-			Info: EncodeError(code.NewIsNotOwnerOfCandidate(sender.String(), data.GetPubKey().String(), owner.String(), control.String())),
+			Info: EncodeError(code.NewIsNotOwnerOfCandidate(sender.String(), data.GetPubKey().String(), candidate.OwnerAddress.String(), candidate.ControlAddress.String())),
 		}
 	}
 
