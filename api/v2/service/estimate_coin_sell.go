@@ -210,25 +210,26 @@ func (s *Service) calcSellPoolWithCommission(ctx context.Context, commissions *c
 }
 
 func (s *Service) commissionInCoin(cState *state.CheckState, coinCommissionID types.CoinID, commissionsCoin types.CoinID, commissionInBaseCoin *big.Int) (*big.Int, bool, error) {
-	coinCommission := cState.Coins().GetCoin(coinCommissionID)
-
 	var isSwapFromPool bool
 	var commission *big.Int
 	switch coinCommissionID {
 	case commissionsCoin:
 		commission = commissionInBaseCoin
 	case types.GetBaseCoinID():
-		commission = cState.Swap().GetSwapper(types.GetBaseCoinID(), commissionsCoin).CalculateSellForBuy(commissionInBaseCoin)
+		commission = cState.Swap().GetSwapper(commissionsCoin, types.GetBaseCoinID()).CalculateBuyForSell(commissionInBaseCoin)
+		if commission == nil {
+			return nil, false, s.createError(status.New(codes.FailedPrecondition, "Not possible to pay commission"), transaction.EncodeError(code.NewCommissionCoinNotSufficient("", "")))
+		}
 	default:
-		commissionPoolSwapper := cState.Swap().GetSwapper(commissionsCoin, types.GetBaseCoinID())
 		if !commissionsCoin.IsBaseCoin() {
-			commissionInBaseCoin = commissionPoolSwapper.CalculateBuyForSell(commissionInBaseCoin)
+			commissionInBaseCoin = cState.Swap().GetSwapper(commissionsCoin, types.GetBaseCoinID()).CalculateBuyForSell(commissionInBaseCoin)
 		}
 		if commissionInBaseCoin == nil {
 			return nil, false, s.createError(status.New(codes.FailedPrecondition, "Not possible to pay commission"), transaction.EncodeError(code.NewCommissionCoinNotSufficient("", "")))
 		}
+		commissionPoolSwapper := cState.Swap().GetSwapper(coinCommissionID, types.GetBaseCoinID())
 
-		comm, fromPool, errResp := transaction.CalculateCommission(cState, commissionPoolSwapper, coinCommission, commissionInBaseCoin)
+		comm, fromPool, errResp := transaction.CalculateCommission(cState, commissionPoolSwapper, cState.Coins().GetCoin(coinCommissionID), commissionInBaseCoin)
 		if errResp != nil {
 			return nil, false, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
 		}
