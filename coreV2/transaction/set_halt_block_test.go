@@ -34,7 +34,7 @@ func TestSetHaltBlockTx(t *testing.T) {
 
 	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
-	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(100)))
+	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1)))
 
 	data := SetHaltBlockData{
 		PubKey: pubkey,
