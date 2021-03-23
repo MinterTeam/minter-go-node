@@ -634,8 +634,7 @@ func TestCandidates_Punish(t *testing.T) {
 	}
 	candidates.bus.Candidates().Punish(0, candidate.GetTmAddress())
 
-
-	if candidate.JailedUntil != JailPeriod {
+	if candidate.JailedUntil != types.GetJailPeriod() {
 		t.Fatalf("candidate.JailedUntil == %d", candidate.JailedUntil)
 	}
 }

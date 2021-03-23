@@ -2,6 +2,7 @@ package events
 
 import (
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
+	tmjson "github.com/tendermint/tendermint/libs/json"
 	db "github.com/tendermint/tm-db"
 	"testing"
 )
@@ -203,6 +204,44 @@ func TestIEventsDBm2(t *testing.T) {
 		t.Fatal("invalid Amount")
 	}
 
+}
+
+func TestIEventsJail(t *testing.T) {
+	store := NewEventsStore(db.NewMemDB())
+	{
+		event := &JailEvent{
+			ValidatorPubKey: types.HexToPubkey("Mp738da41ba6a7b7d69b7294afa158b89c5a1b410cbf0c2443c85c5fe24ad1dd10"),
+			UntilHeight:     1234,
+		}
+		store.AddEvent(event)
+	}
+	err := store.CommitEvents(12)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	loadEvents := store.LoadEvents(12)
+
+	if len(loadEvents) != 1 {
+		t.Fatalf("count of events not equal 1, got %d", len(loadEvents))
+	}
+
+	if loadEvents[0].Type() != TypeJailEvent {
+		t.Fatal("invalid event type")
+	}
+	if loadEvents[0].(*JailEvent).ValidatorPubKeyString() != "Mp738da41ba6a7b7d69b7294afa158b89c5a1b410cbf0c2443c85c5fe24ad1dd10" {
+		t.Fatal("invalid public key")
+	}
+	if loadEvents[0].(*JailEvent).UntilHeight != 1234 {
+		t.Fatal("invalid height")
+	}
+
+	marshalJSON, err := tmjson.Marshal(loadEvents[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Logf("%s", marshalJSON)
 }
 
 func TestIEventsNil(t *testing.T) {

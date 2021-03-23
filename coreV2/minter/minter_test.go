@@ -913,7 +913,7 @@ func TestBlockchain_RecalculateStakes_andRemoveValidator(t *testing.T) {
 	blockchain.lock.RLock()
 	events := blockchain.eventsDB.LoadEvents(135)
 	if len(events) == 0 {
-		t.Error("no slashes")
+		t.Error("no jail")
 	}
 	candidate := blockchain.CurrentState().Candidates().GetCandidate(types.Pubkey{1})
 	if candidate == nil {

@@ -24,8 +24,6 @@ const (
 	CandidateStatusOnline  = 0x02
 
 	MaxDelegatorsPerCandidate = 1000
-
-	JailPeriod = 8640
 )
 
 const (
@@ -847,7 +845,9 @@ func (c *Candidates) calculateBipValue(coinID types.CoinID, amount *big.Int, inc
 // Punish punished a candidate with given tendermint-address
 func (c *Candidates) Punish(height uint64, address types.TmAddress) {
 	candidate := c.GetCandidateByTendermintAddress(address)
-	candidate.jainUntil(height + JailPeriod)
+	jailUntil := height + types.GetJailPeriod()
+	candidate.jainUntil(jailUntil)
+	c.bus.Events().AddEvent(&eventsdb.JailEvent{ValidatorPubKey: candidate.PubKey, UntilHeight: jailUntil})
 }
 
 // SetStakes Sets stakes and updates of a candidate. Used in Import.

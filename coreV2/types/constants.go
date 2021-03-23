@@ -23,6 +23,19 @@ func GetUnbondPeriodWithChain(chain ChainID) uint64 {
 	return 518400
 }
 
+const jailPeriod = 8640
+
+func GetJailPeriod() uint64 {
+	return GetJailPeriodWithChain(CurrentChainID)
+}
+
+func GetJailPeriodWithChain(chain ChainID) uint64 {
+	if chain == ChainTestnet {
+		return GetUnbondPeriodWithChain(ChainTestnet) * 2
+	}
+	return jailPeriod
+}
+
 // CurrentChainID is current ChainID of the network
 var CurrentChainID = ChainMainnet
 
