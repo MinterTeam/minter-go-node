@@ -29,7 +29,7 @@ func TestBurnData_aaa(t *testing.T) {
 			Name:          name,
 			Symbol:        toCreate,
 			InitialAmount: amount,
-			MaxSupply:     big.NewInt(0).Mul(amount, big.NewInt(10)),
+			MaxSupply:     amount,
 			Mintable:      false,
 			Burnable:      true,
 		}

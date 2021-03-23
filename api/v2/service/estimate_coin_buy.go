@@ -74,7 +74,7 @@ func (s *Service) EstimateCoinBuy(ctx context.Context, req *pb.EstimateCoinBuyRe
 		requestCoinCommissionID = symbol.ID()
 	} else {
 		requestCoinCommissionID = types.CoinID(req.GetCoinIdCommission())
-		if !cState.Coins().Exists(coinToSell) {
+		if !cState.Coins().Exists(requestCoinCommissionID) {
 			return nil, s.createError(status.New(codes.NotFound, "Coin to pay commission not exists"), transaction.EncodeError(code.NewCoinNotExists("", coinToSell.String())))
 		}
 	}

@@ -2,19 +2,15 @@ package accounts
 
 import (
 	"github.com/MinterTeam/minter-go-node/coreV2/dao"
+	"github.com/MinterTeam/minter-go-node/coreV2/state/coins"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"math/big"
 )
 
-type MaxCoinVolume struct {
-	Owner  types.Address
-	Volume *big.Int
-}
-
 // Deprecated
-func (a *Accounts) ExportV1(state *types.AppState, subBipValueFromDAO *big.Int) (map[types.CoinID]*big.Int, map[types.CoinID]*MaxCoinVolume) {
+func (a *Accounts) ExportV1(state *types.AppState, subBipValueFromDAO *big.Int) (map[types.CoinID]*big.Int, map[types.CoinID]*coins.MaxCoinVolume) {
 	totalSubCoinValue := map[types.CoinID]*big.Int{}
-	maxVolume := map[types.CoinID]*MaxCoinVolume{}
+	maxVolume := map[types.CoinID]*coins.MaxCoinVolume{}
 	a.immutableTree().IterateRange([]byte{mainPrefix}, []byte{mainPrefix + 1}, true, func(key []byte, value []byte) bool {
 		addressPath := key[1:]
 		if len(addressPath) > types.AddressLength {
@@ -59,7 +55,7 @@ func (a *Accounts) ExportV1(state *types.AppState, subBipValueFromDAO *big.Int) 
 				}
 			}
 
-			maxVolume[b.Coin.ID] = &MaxCoinVolume{
+			maxVolume[b.Coin.ID] = &coins.MaxCoinVolume{
 				Owner:  account.address,
 				Volume: tmp,
 			}

@@ -633,9 +633,9 @@ func TestCustomCommissionCoinAndCustomGasCoin(t *testing.T) {
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error: %s, %s", response.Log, response.Info)
 	}
-	for _, tag := range response.Tags {
-		t.Logf("%s: %s", tag.Key, tag.Value)
-	}
+	// for _, tag := range response.Tags {
+	// t.Logf("%s: %s", tag.Key, tag.Value)
+	// }
 
 	targetBalance, _ := big.NewInt(0).SetString("0", 10)
 	balance := cState.Accounts.GetBalance(addr, coin)
