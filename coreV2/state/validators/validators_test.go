@@ -215,7 +215,7 @@ func TestValidators_PayRewards(t *testing.T) {
 	validator.AddAccumReward(big.NewInt(90))
 	candidatesS := candidates.NewCandidates(b, mutableTree.GetLastImmutable())
 
-	candidatesS.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10, 0)
+	candidatesS.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10, 0, 0)
 	candidatesS.SetOnline([32]byte{4})
 	candidatesS.SetStakes([32]byte{4}, []types.Stake{
 		{
@@ -270,7 +270,7 @@ func TestValidators_SetValidatorAbsent(t *testing.T) {
 
 	candidatesS := candidates.NewCandidates(b, mutableTree.GetLastImmutable())
 
-	candidatesS.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10, 0)
+	candidatesS.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10, 0, 0)
 	candidatesS.SetOnline([32]byte{4})
 	candidatesS.SetStakes([32]byte{4}, []types.Stake{
 		{
@@ -370,7 +370,7 @@ func TestValidators_Export(t *testing.T) {
 
 	candidatesS := candidates.NewCandidates(b, mutableTree.GetLastImmutable())
 
-	candidatesS.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10, 0)
+	candidatesS.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10, 0, 0)
 	candidatesS.SetOnline([32]byte{4})
 	candidatesS.SetStakes([32]byte{4}, []types.Stake{
 		{

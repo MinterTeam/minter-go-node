@@ -473,10 +473,7 @@ func (v *Validators) uncheckDirtyValidators() {
 }
 
 func (v *Validators) punishValidator(height uint64, tmAddress types.TmAddress) {
-	validator := v.GetByTmAddress(tmAddress)
-
-	totalStake := v.bus.Candidates().Punish(height, tmAddress)
-	validator.SetTotalBipStake(totalStake)
+	v.bus.Candidates().Punish(height, tmAddress)
 }
 
 // SetValidators updates validators list

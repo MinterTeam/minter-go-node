@@ -116,8 +116,8 @@ func TestStateExport(t *testing.T) {
 	candidatePubKey2 := types.Pubkey{}
 	rand.Read(candidatePubKey2[:])
 
-	state.Candidates.Create(address1, address1, address1, candidatePubKey1, 10, 0)
-	state.Candidates.Create(address2, address2, address2, candidatePubKey2, 30, 0)
+	state.Candidates.Create(address1, address1, address1, candidatePubKey1, 10, 0, 0)
+	state.Candidates.Create(address2, address2, address2, candidatePubKey2, 30, 0, 0)
 	state.Validators.Create(candidatePubKey1, helpers.BipToPip(big.NewInt(1)))
 	state.FrozenFunds.AddFund(height+110, address1, &candidatePubKey1, state.Candidates.ID(candidatePubKey1), coinTestID, helpers.BipToPip(big.NewInt(100)), nil)
 	state.FrozenFunds.AddFund(height+120, address1, &candidatePubKey1, state.Candidates.ID(candidatePubKey1), types.GetBaseCoinID(), helpers.BipToPip(big.NewInt(3)), nil)

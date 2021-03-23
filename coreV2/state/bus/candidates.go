@@ -7,7 +7,7 @@ import (
 
 type Candidates interface {
 	GetStakes(types.Pubkey) []Stake
-	Punish(uint64, types.TmAddress) *big.Int
+	Punish(uint64, types.TmAddress)
 	GetCandidate(types.Pubkey) *Candidate
 	SetOffline(types.Pubkey)
 	GetCandidateByTendermintAddress(types.TmAddress) *Candidate

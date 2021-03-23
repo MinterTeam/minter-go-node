@@ -202,6 +202,7 @@ func (c *Candidates) loadCandidatesListV1() (maxID uint32) {
 				Status:                   candidateV1.Status,
 				ID:                       candidateV1.ID,
 				LastEditCommissionHeight: 0, // THIS
+				JailedUntil:              0,
 			}
 			// load total stake
 			path = append([]byte{mainPrefix}, candidate.idBytes()...)

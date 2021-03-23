@@ -29,7 +29,7 @@ func TestPriceCommissionTx(t *testing.T) {
 	pubkey := [32]byte{}
 	rand.Read(pubkey[:])
 
-	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0)
+	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0, 0)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 	{
 		data := VoteCommissionData{
@@ -216,7 +216,7 @@ func TestPriceCommissionDeleteTx(t *testing.T) {
 	pubkey := [32]byte{}
 	rand.Read(pubkey[:])
 
-	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0)
+	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0, 0)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 	{
 		data := VoteCommissionData{
@@ -408,7 +408,7 @@ func TestPriceCommissionAnyTx(t *testing.T) {
 		pubkey := [32]byte{}
 		rand.Read(pubkey[:])
 
-		cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0)
+		cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0, 0)
 		cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 
 		data := VoteCommissionData{
@@ -510,7 +510,7 @@ func TestPriceCommissionAnyTx(t *testing.T) {
 		pubkey := [32]byte{}
 		rand.Read(pubkey[:])
 
-		cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0)
+		cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0, 0)
 		cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 
 		data := VoteCommissionData{

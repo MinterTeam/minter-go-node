@@ -32,7 +32,7 @@ func TestSetHaltBlockTx(t *testing.T) {
 	pubkey := [32]byte{}
 	rand.Read(pubkey[:])
 
-	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0)
+	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0, 0)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(100)))
 
@@ -114,7 +114,7 @@ func TestSetHaltBlockTxWithWrongHeight(t *testing.T) {
 	pubkey := [32]byte{}
 	rand.Read(pubkey[:])
 
-	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0)
+	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0, 0)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1)))
 
@@ -180,7 +180,7 @@ func TestSetHaltBlockTxWithWrongOwnership(t *testing.T) {
 	pubkey := [32]byte{}
 	rand.Read(pubkey[:])
 
-	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0)
+	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0, 0)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1)))
 
@@ -306,7 +306,7 @@ func TestSetHaltBlockTxToInsufficientFunds(t *testing.T) {
 	pubkey := [32]byte{}
 	rand.Read(pubkey[:])
 
-	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0)
+	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0, 0)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 
 	data := SetHaltBlockData{
@@ -370,7 +370,7 @@ func TestSetHaltBlockTxToGasCoinReserveUnderflow(t *testing.T) {
 	pubkey := [32]byte{}
 	rand.Read(pubkey[:])
 
-	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0)
+	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0, 0)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 
 	data := SetHaltBlockData{
@@ -428,7 +428,7 @@ func TestSetHaltBlockTxToAlreadyExistenHalt(t *testing.T) {
 	pubkey := [32]byte{}
 	rand.Read(pubkey[:])
 
-	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0)
+	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0, 0)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1)))
 	cState.Halts.AddHaltBlock(haltHeight, pubkey)

@@ -60,6 +60,7 @@ const (
 	NewPublicKeyIsBad     uint32 = 411
 	InsufficientWaitList  uint32 = 412
 	PeriodLimitReached    uint32 = 413
+	CandidateJailed       uint32 = 414
 
 	// check
 	CheckInvalidLock uint32 = 501

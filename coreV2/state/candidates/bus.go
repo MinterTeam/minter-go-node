@@ -32,8 +32,8 @@ func (b *Bus) GetStakes(pubkey types.Pubkey) []bus.Stake {
 }
 
 // Punish punished a candidate with given tendermint-address
-func (b *Bus) Punish(height uint64, address types.TmAddress) *big.Int {
-	return b.candidates.Punish(height, address)
+func (b *Bus) Punish(height uint64, address types.TmAddress) {
+	b.candidates.Punish(height, address)
 }
 
 // GetCandidate returns candidate by a public key
