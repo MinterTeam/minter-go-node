@@ -205,13 +205,13 @@ func (se *SlashEvent) convert(pubKeyID uint16, addressID uint32) compact {
 
 type jail struct {
 	PubKeyID    uint16
-	UntilHeight uint64
+	JailedUntil uint64
 }
 
 func (s *jail) compile(pubKey types.Pubkey) Event {
 	event := new(JailEvent)
 	event.ValidatorPubKey = pubKey
-	event.UntilHeight = s.UntilHeight
+	event.JailedUntil = s.JailedUntil
 	return event
 }
 
@@ -221,7 +221,7 @@ func (s *jail) pubKeyID() uint16 {
 
 type JailEvent struct {
 	ValidatorPubKey types.Pubkey `json:"validator_pub_key"`
-	UntilHeight     uint64       `json:"until_height"`
+	JailedUntil     uint64       `json:"jailed_until"`
 }
 
 func (je *JailEvent) Type() string {
@@ -239,7 +239,7 @@ func (je *JailEvent) validatorPubKey() *types.Pubkey {
 func (je *JailEvent) convert(pubKeyID uint16) compact {
 	result := new(jail)
 	result.PubKeyID = pubKeyID
-	result.UntilHeight = je.UntilHeight
+	result.JailedUntil = je.JailedUntil
 	return result
 }
 
