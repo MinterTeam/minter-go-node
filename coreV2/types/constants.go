@@ -23,7 +23,7 @@ func GetUnbondPeriodWithChain(chain ChainID) uint64 {
 	return 518400
 }
 
-const jailPeriod = 8640
+const jailPeriod = 8640 * 2 // 24h
 
 func GetJailPeriod() uint64 {
 	return GetJailPeriodWithChain(CurrentChainID)
