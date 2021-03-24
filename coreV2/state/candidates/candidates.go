@@ -847,7 +847,7 @@ func (c *Candidates) Punish(height uint64, address types.TmAddress) {
 	candidate := c.GetCandidateByTendermintAddress(address)
 	jailUntil := height + types.GetJailPeriod()
 	candidate.jainUntil(jailUntil)
-	c.bus.Events().AddEvent(&eventsdb.JailEvent{ValidatorPubKey: candidate.PubKey, UntilHeight: jailUntil})
+	c.bus.Events().AddEvent(&eventsdb.JailEvent{ValidatorPubKey: candidate.PubKey, JailedUntil: jailUntil})
 }
 
 // SetStakes Sets stakes and updates of a candidate. Used in Import.
