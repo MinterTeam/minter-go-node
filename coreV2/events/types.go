@@ -10,6 +10,7 @@ import (
 const (
 	TypeRewardEvent            = "minter/RewardEvent"
 	TypeSlashEvent             = "minter/SlashEvent"
+	TypeJailEvent              = "minter/JailEvent"
 	TypeUnbondEvent            = "minter/UnbondEvent"
 	TypeStakeKickEvent         = "minter/StakeKickEvent"
 	TypeStakeMoveEvent         = "minter/StakeMoveEvent"
@@ -199,6 +200,46 @@ func (se *SlashEvent) convert(pubKeyID uint16, addressID uint32) compact {
 	bi, _ := big.NewInt(0).SetString(se.Amount, 10)
 	result.Amount = bi.Bytes()
 	result.PubKeyID = pubKeyID
+	return result
+}
+
+type jail struct {
+	PubKeyID    uint16
+	JailedUntil uint64
+}
+
+func (s *jail) compile(pubKey types.Pubkey) Event {
+	event := new(JailEvent)
+	event.ValidatorPubKey = pubKey
+	event.JailedUntil = s.JailedUntil
+	return event
+}
+
+func (s *jail) pubKeyID() uint16 {
+	return s.PubKeyID
+}
+
+type JailEvent struct {
+	ValidatorPubKey types.Pubkey `json:"validator_pub_key"`
+	JailedUntil     uint64       `json:"jailed_until"`
+}
+
+func (je *JailEvent) Type() string {
+	return TypeJailEvent
+}
+
+func (je *JailEvent) ValidatorPubKeyString() string {
+	return je.ValidatorPubKey.String()
+}
+
+func (je *JailEvent) validatorPubKey() *types.Pubkey {
+	return &je.ValidatorPubKey
+}
+
+func (je *JailEvent) convert(pubKeyID uint16) compact {
+	result := new(jail)
+	result.PubKeyID = pubKeyID
+	result.JailedUntil = je.JailedUntil
 	return result
 }
 
@@ -393,51 +434,49 @@ func (ue *StakeKickEvent) convert(pubKeyID uint16, addressID uint32) compact {
 }
 
 type UpdateCommissionsEvent struct {
-	Coin             uint64 `json:"coin"`
-	PayloadByte      string `json:"payload_byte"`
-	Send             string `json:"send"`
-	BuyBancor        string `json:"buy_bancor"`
-	SellBancor       string `json:"sell_bancor"`
-	SellAllBancor    string `json:"sell_all_bancor"`
-	BuyPoolBase      string `json:"buy_pool_base"`
-	BuyPoolDelta     string `json:"buy_pool_delta"`
-	SellPoolBase     string `json:"sell_pool_base"`
-	SellPoolDelta    string `json:"sell_pool_delta"`
-	SellAllPoolBase  string `json:"sell_all_pool_base"`
-	SellAllPoolDelta string `json:"sell_all_pool_delta"`
-	CreateTicker3    string `json:"create_ticker3"`
-	CreateTicker4    string `json:"create_ticker4"`
-	CreateTicker5    string `json:"create_ticker5"`
-	CreateTicker6    string `json:"create_ticker6"`
-	CreateTicker7_10 string `json:"create_ticker7_10"`
-	CreateCoin       string `json:"create_coin"`
-	CreateToken      string `json:"create_token"`
-	RecreateCoin     string `json:"recreate_coin"`
-	RecreateToken    string `json:"recreate_token"`
-	DeclareCandidacy string `json:"declare_candidacy"`
-	Delegate         string `json:"delegate"`
-	Unbond           string `json:"unbond"`
-	RedeemCheck      string `json:"redeem_check"`
-	SetCandidateOn   string `json:"set_candidate_on"`
-	SetCandidateOff  string `json:"set_candidate_off"`
-	CreateMultisig   string `json:"create_multisig"`
-	MultisendBase    string `json:"multisend_base"`
-	MultisendDelta   string `json:"multisend_delta"`
-	EditCandidate    string `json:"edit_candidate"`
-	SetHaltBlock     string `json:"set_halt_block"`
-	EditTickerOwner  string `json:"edit_ticker_owner"`
-	EditMultisig     string `json:"edit_multisig"`
-	// PriceVote               string `json:"price_vote"`
+	Coin                    uint64 `json:"coin"`
+	PayloadByte             string `json:"payload_byte"`
+	Send                    string `json:"send"`
+	BuyBancor               string `json:"buy_bancor"`
+	SellBancor              string `json:"sell_bancor"`
+	SellAllBancor           string `json:"sell_all_bancor"`
+	BuyPoolBase             string `json:"buy_pool_base"`
+	BuyPoolDelta            string `json:"buy_pool_delta"`
+	SellPoolBase            string `json:"sell_pool_base"`
+	SellPoolDelta           string `json:"sell_pool_delta"`
+	SellAllPoolBase         string `json:"sell_all_pool_base"`
+	SellAllPoolDelta        string `json:"sell_all_pool_delta"`
+	CreateTicker3           string `json:"create_ticker3"`
+	CreateTicker4           string `json:"create_ticker4"`
+	CreateTicker5           string `json:"create_ticker5"`
+	CreateTicker6           string `json:"create_ticker6"`
+	CreateTicker7_10        string `json:"create_ticker7_10"`
+	CreateCoin              string `json:"create_coin"`
+	CreateToken             string `json:"create_token"`
+	RecreateCoin            string `json:"recreate_coin"`
+	RecreateToken           string `json:"recreate_token"`
+	DeclareCandidacy        string `json:"declare_candidacy"`
+	Delegate                string `json:"delegate"`
+	Unbond                  string `json:"unbond"`
+	RedeemCheck             string `json:"redeem_check"`
+	SetCandidateOn          string `json:"set_candidate_on"`
+	SetCandidateOff         string `json:"set_candidate_off"`
+	CreateMultisig          string `json:"create_multisig"`
+	MultisendBase           string `json:"multisend_base"`
+	MultisendDelta          string `json:"multisend_delta"`
+	EditCandidate           string `json:"edit_candidate"`
+	SetHaltBlock            string `json:"set_halt_block"`
+	EditTickerOwner         string `json:"edit_ticker_owner"`
+	EditMultisig            string `json:"edit_multisig"`
 	EditCandidatePublicKey  string `json:"edit_candidate_public_key"`
 	CreateSwapPool          string `json:"create_swap_pool"`
 	AddLiquidity            string `json:"add_liquidity"`
 	RemoveLiquidity         string `json:"remove_liquidity"`
 	EditCandidateCommission string `json:"edit_candidate_commission"`
-	// MoveStake               string `json:"move_stake"`
-	MintToken      string `json:"mint_token"`
-	BurnToken      string `json:"burn_token"`
-	VoteCommission string `json:"vote_commission"`
-	VoteUpdate     string `json:"vote_update"`
+	MintToken               string `json:"mint_token"`
+	BurnToken               string `json:"burn_token"`
+	VoteCommission          string `json:"vote_commission"`
+	VoteUpdate              string `json:"vote_update"`
 }
 
 func (ce *UpdateCommissionsEvent) Type() string {

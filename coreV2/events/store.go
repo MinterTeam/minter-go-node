@@ -11,11 +11,13 @@ import (
 func init() {
 	tmjson.RegisterType(&reward{}, "reward")
 	tmjson.RegisterType(&slash{}, "slash")
+	tmjson.RegisterType(&jail{}, "jail")
 	tmjson.RegisterType(&unbond{}, "unbond")
 	tmjson.RegisterType(&kick{}, "kick")
 	tmjson.RegisterType(&move{}, "move")
 	tmjson.RegisterType(&RewardEvent{}, TypeRewardEvent)
 	tmjson.RegisterType(&SlashEvent{}, TypeSlashEvent)
+	tmjson.RegisterType(&JailEvent{}, TypeJailEvent)
 	tmjson.RegisterType(&UnbondEvent{}, TypeUnbondEvent)
 	tmjson.RegisterType(&StakeKickEvent{}, TypeStakeKickEvent)
 	tmjson.RegisterType(&StakeMoveEvent{}, TypeStakeMoveEvent)
@@ -115,6 +117,8 @@ func (store *eventsStore) LoadEvents(height uint32) Events {
 				p = &pubkey
 			}
 			resultEvents = append(resultEvents, stake.compile(p, store.idAddress[stake.addressID()]))
+		} else if c, ok := compactEvent.(*jail); ok {
+			resultEvents = append(resultEvents, c.compile(types.Pubkey(store.idPubKey[c.pubKeyID()])))
 		} else if c, ok := compactEvent.(Event); ok {
 			resultEvents = append(resultEvents, c)
 		} else {
@@ -136,6 +140,11 @@ func (store *eventsStore) CommitEvents(height uint32) error {
 			key := stake.validatorPubKey()
 			address := store.saveAddress(stake.address())
 			data = append(data, stake.convert(store.savePubKey(key), address))
+			continue
+		}
+		if stake, ok := item.(*JailEvent); ok {
+			key := stake.validatorPubKey()
+			data = append(data, stake.convert(store.savePubKey(key)))
 			continue
 		}
 		data = append(data, item)

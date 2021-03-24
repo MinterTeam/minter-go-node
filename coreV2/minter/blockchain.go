@@ -45,17 +45,17 @@ type Blockchain struct {
 
 	statisticData *statistics.Data
 
-	appDB              *appdb.AppDB
-	eventsDB           eventsdb.IEventsDB
-	stateDeliver       *state.State
-	stateCheck         *state.CheckState
-	height             uint64   // current Blockchain height
-	rewards            *big.Int // Rewards pool
-	validatorsStatuses map[types.TmAddress]int8
-	validatorsPowers   map[types.Pubkey]*big.Int
-	totalPower         *big.Int
-	rewardsCounter     *rewards.Reward
-
+	appDB                           *appdb.AppDB
+	eventsDB                        eventsdb.IEventsDB
+	stateDeliver                    *state.State
+	stateCheck                      *state.CheckState
+	height                          uint64   // current Blockchain height
+	rewards                         *big.Int // Rewards pool
+	validatorsStatuses              map[types.TmAddress]int8
+	validatorsPowers                map[types.Pubkey]*big.Int
+	totalPower                      *big.Int
+	rewardsCounter                  *rewards.Reward
+	updateStakesAndPayRewardsPeriod uint64
 	// local rpc client for Tendermint
 	rpcClient *rpc.Local
 
@@ -82,7 +82,7 @@ func (blockchain *Blockchain) RewardCounter() *rewards.Reward {
 }
 
 // NewMinterBlockchain creates Minter Blockchain instance, should be only called once
-func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx context.Context) *Blockchain {
+func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx context.Context, period uint64) *Blockchain {
 	// Initiate Application DB. Used for persisting data like current block, validators, etc.
 	applicationDB := appdb.NewAppDB(storages.GetMinterHome(), cfg)
 	if ctx == nil {
@@ -94,15 +94,20 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 	} else {
 		eventsDB = &eventsdb.MockEvents{}
 	}
+	const updateStakesAndPayRewards = 720
+	if period == 0 {
+		period = updateStakesAndPayRewards
+	}
 	return &Blockchain{
-		rewardsCounter: rewards.NewReward(),
-		appDB:          applicationDB,
-		storages:       storages,
-		eventsDB:       eventsDB,
-		currentMempool: &sync.Map{},
-		cfg:            cfg,
-		stopChan:       ctx,
-		haltHeight:     uint64(cfg.HaltHeight),
+		rewardsCounter:                  rewards.NewReward(),
+		appDB:                           applicationDB,
+		storages:                        storages,
+		eventsDB:                        eventsDB,
+		currentMempool:                  &sync.Map{},
+		cfg:                             cfg,
+		stopChan:                        ctx,
+		haltHeight:                      uint64(cfg.HaltHeight),
+		updateStakesAndPayRewardsPeriod: period,
 	}
 }
 
@@ -289,7 +294,7 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 	blockchain.stateDeliver.App.AddTotalSlashed(remainder)
 
 	// pay rewards
-	if height%120 == 0 {
+	if height%blockchain.updateStakesAndPayRewardsPeriod == 0 {
 		blockchain.stateDeliver.Validators.PayRewards()
 	}
 
@@ -360,7 +365,7 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 
 	// update validators
 	var updates []abciTypes.ValidatorUpdate
-	if height%120 == 0 || hasDroppedValidators || hasChangedPublicKeys {
+	if height%blockchain.updateStakesAndPayRewardsPeriod == 0 || hasDroppedValidators || hasChangedPublicKeys {
 		updates = blockchain.updateValidators()
 	}
 

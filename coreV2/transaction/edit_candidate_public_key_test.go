@@ -24,7 +24,7 @@ func TestEditCandidateNewPublicKeyTx(t *testing.T) {
 	pubkey := types.HexToPubkey("Mp11fdfc072182654f163f5f0f9a621d729566c74d10037c4d7bbb0407d1e2c611")
 	newpubkey := types.HexToPubkey("Mp12fdfc072182654f163f5f0f9a621d729566c74d10037c4d7bbb0407d1e2c612")
 
-	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0)
+	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0, 0)
 	cState.Candidates.SetStakes(pubkey, []types.Stake{
 		{
 			Owner:    addr,
@@ -108,7 +108,7 @@ func TestEditCandidatePublicKeyTxToNewPublicKey(t *testing.T) {
 	pubkey := [32]byte{}
 	rand.Read(pubkey[:])
 
-	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0)
+	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0, 0)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 
 	data := EditCandidatePublicKeyData{
@@ -164,7 +164,7 @@ func TestEditCandidatePublicKeyTxToNewPublicKeyInBlockList(t *testing.T) {
 
 	pubkey2 := types.Pubkey{1}
 
-	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0)
+	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0, 0)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 	cState.Candidates.AddToBlockPubKey(pubkey2)
 
@@ -218,7 +218,7 @@ func TestEditCandidatePublicKeyTxToInsufficientFunds(t *testing.T) {
 	pubkey := [32]byte{}
 	rand.Read(pubkey[:])
 
-	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0)
+	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0, 0)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 
 	data := EditCandidatePublicKeyData{
@@ -274,7 +274,7 @@ func TestEditCandidatePublicKeyTxToGasCoinReserveUnderflow(t *testing.T) {
 	pubkey := [32]byte{}
 	rand.Read(pubkey[:])
 
-	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0)
+	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0, 0)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 
 	data := EditCandidatePublicKeyData{
@@ -380,7 +380,7 @@ func TestEditCandidatePublicKeyTxToCandidateOwnership(t *testing.T) {
 	pubkey := [32]byte{}
 	rand.Read(pubkey[:])
 
-	cState.Candidates.Create(addr2, addr2, addr2, pubkey, 10, 0)
+	cState.Candidates.Create(addr2, addr2, addr2, pubkey, 10, 0, 0)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 
 	data := EditCandidatePublicKeyData{
@@ -436,10 +436,10 @@ func TestEditCandidatePublicKeyData_Exists(t *testing.T) {
 	newpubkey := [32]byte{}
 	rand.Read(newpubkey[:])
 
-	cState.Candidates.Create(addr, addr, addr, newpubkey, 10, 0)
+	cState.Candidates.Create(addr, addr, addr, newpubkey, 10, 0, 0)
 	cState.Validators.Create(newpubkey, helpers.BipToPip(big.NewInt(1)))
 
-	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0)
+	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0, 0)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 
 	candidate1 := cState.Candidates.GetCandidate(newpubkey)

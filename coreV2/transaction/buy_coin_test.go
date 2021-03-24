@@ -81,7 +81,7 @@ func getState() *state.State {
 	}
 
 	s.Validators.Create(types.Pubkey{}, big.NewInt(1))
-	s.Candidates.Create(types.Address{}, types.Address{}, types.Address{}, types.Pubkey{}, 10, 0)
+	s.Candidates.Create(types.Address{}, types.Address{}, types.Address{}, types.Pubkey{}, 10, 0, 0)
 	s.Commission.SetNewCommissions(commissionPrice.Encode())
 	return s
 }

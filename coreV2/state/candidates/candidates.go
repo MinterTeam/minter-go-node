@@ -62,6 +62,7 @@ type RCandidates interface {
 	LoadStakes()
 	GetCandidates() []*Candidate
 	GetStakes(pubkey types.Pubkey) []*stake
+	IsCandidateJailed(pubkey types.Pubkey, block uint64) bool
 }
 
 // Candidates struct is a store of Candidates state
@@ -124,11 +125,18 @@ func (c *Candidates) IsChangedPublicKeys() bool {
 
 	return c.isChangedPublicKeys
 }
+
 func (c *Candidates) ResetIsChangedPublicKeys() {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
 	c.isChangedPublicKeys = false
+}
+
+func (c *Candidates) IsCandidateJailed(pubkey types.Pubkey, block uint64) bool {
+	candidate := c.GetCandidate(pubkey)
+
+	return candidate.JailedUntil >= block
 }
 
 // Commit writes changes to iavl, may return an error
@@ -305,7 +313,7 @@ func (c *Candidates) GetNewCandidates(valCount int) []*Candidate {
 }
 
 // Create creates a new candidate with given params and adds it to state
-func (c *Candidates) Create(ownerAddress, rewardAddress, controlAddress types.Address, pubkey types.Pubkey, commission uint32, block uint64) {
+func (c *Candidates) Create(ownerAddress, rewardAddress, controlAddress types.Address, pubkey types.Pubkey, commission uint32, block uint64, jailedUntil uint64) {
 	candidate := &Candidate{
 		ID:                       0,
 		PubKey:                   pubkey,
@@ -314,6 +322,7 @@ func (c *Candidates) Create(ownerAddress, rewardAddress, controlAddress types.Ad
 		ControlAddress:           controlAddress,
 		Commission:               commission,
 		LastEditCommissionHeight: block,
+		JailedUntil:              jailedUntil,
 		Status:                   CandidateStatusOffline,
 		totalBipStake:            big.NewInt(0),
 		stakes:                   [MaxDelegatorsPerCandidate]*stake{},
@@ -329,7 +338,7 @@ func (c *Candidates) Create(ownerAddress, rewardAddress, controlAddress types.Ad
 // CreateWithID uses given ID to be associated with public key of a candidate
 func (c *Candidates) CreateWithID(ownerAddress, rewardAddress, controlAddress types.Address, pubkey types.Pubkey, commission uint32, id uint32) {
 	c.setPubKeyID(pubkey, id)
-	c.Create(ownerAddress, rewardAddress, controlAddress, pubkey, commission, 0)
+	c.Create(ownerAddress, rewardAddress, controlAddress, pubkey, commission, 0, 0) // todo: import jail?
 }
 
 // PunishByzantineCandidate finds candidate with given tmAddress and punishes it:
@@ -834,46 +843,11 @@ func (c *Candidates) calculateBipValue(coinID types.CoinID, amount *big.Int, inc
 }
 
 // Punish punished a candidate with given tendermint-address
-// 1. Subs 1% from each stake
-// 2. Calculate and return new total stake
-func (c *Candidates) Punish(height uint64, address types.TmAddress) *big.Int {
+func (c *Candidates) Punish(height uint64, address types.TmAddress) {
 	candidate := c.GetCandidateByTendermintAddress(address)
-	totalStake := new(big.Int).Set(candidate.totalBipStake)
-	stakes := c.GetStakes(candidate.PubKey)
-	for _, stake := range stakes {
-		newValue := big.NewInt(0).Set(stake.Value)
-		newValue.Mul(newValue, big.NewInt(99))
-		newValue.Div(newValue, big.NewInt(100))
-
-		slashed := big.NewInt(0).Set(stake.Value)
-		slashed.Sub(slashed, newValue)
-
-		if !stake.Coin.IsBaseCoin() {
-			coin := c.bus.Coins().GetCoin(stake.Coin)
-			ret := formula.CalculateSaleReturn(coin.Volume, coin.Reserve, coin.Crr, slashed)
-
-			c.bus.Coins().SubCoinVolume(coin.ID, slashed)
-			c.bus.Coins().SubCoinReserve(coin.ID, ret)
-
-			c.bus.App().AddTotalSlashed(ret)
-			totalStake.Sub(totalStake, ret)
-		} else {
-			c.bus.App().AddTotalSlashed(slashed)
-			totalStake.Sub(totalStake, slashed)
-		}
-		c.bus.Checker().AddCoin(stake.Coin, big.NewInt(0).Neg(slashed))
-
-		c.bus.Events().AddEvent(&eventsdb.SlashEvent{
-			Address:         stake.Owner,
-			Amount:          slashed.String(),
-			Coin:            uint64(stake.Coin),
-			ValidatorPubKey: candidate.PubKey,
-		})
-
-		stake.setValue(newValue)
-	}
-	candidate.setTotalBipStake(totalStake)
-	return totalStake
+	jailUntil := height + types.GetJailPeriod()
+	candidate.jainUntil(jailUntil)
+	c.bus.Events().AddEvent(&eventsdb.JailEvent{ValidatorPubKey: candidate.PubKey, UntilHeight: jailUntil})
 }
 
 // SetStakes Sets stakes and updates of a candidate. Used in Import.
