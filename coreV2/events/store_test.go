@@ -211,7 +211,7 @@ func TestIEventsJail(t *testing.T) {
 	{
 		event := &JailEvent{
 			ValidatorPubKey: types.HexToPubkey("Mp738da41ba6a7b7d69b7294afa158b89c5a1b410cbf0c2443c85c5fe24ad1dd10"),
-			UntilHeight:     1234,
+			JailedUntil:     1234,
 		}
 		store.AddEvent(event)
 	}
@@ -232,7 +232,7 @@ func TestIEventsJail(t *testing.T) {
 	if loadEvents[0].(*JailEvent).ValidatorPubKeyString() != "Mp738da41ba6a7b7d69b7294afa158b89c5a1b410cbf0c2443c85c5fe24ad1dd10" {
 		t.Fatal("invalid public key")
 	}
-	if loadEvents[0].(*JailEvent).UntilHeight != 1234 {
+	if loadEvents[0].(*JailEvent).JailedUntil != 1234 {
 		t.Fatal("invalid height")
 	}
 
