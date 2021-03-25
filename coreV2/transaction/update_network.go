@@ -9,6 +9,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	abcTypes "github.com/tendermint/tendermint/abci/types"
 	"math/big"
+	"regexp"
 	"strconv"
 )
 
@@ -29,14 +30,16 @@ func (data VoteUpdateData) GetPubKey() types.Pubkey {
 	return data.PubKey
 }
 
+var allowedVersionNameRegexpCompile, _ = regexp.Compile("^[a-zA-Z0-9]{1,20}$")
+
 func (data VoteUpdateData) basicCheck(tx *Transaction, context *state.CheckState, block uint64) *Response {
-	// if data.Version != "2.0.x" {
-	// 	return &Response{
-	// 		Code: code.WrongUpdateVersionName,
-	// 		Log:  "wrong version name",
-	// 		Info: EncodeError(code.NewCustomCode(code.WrongUpdateVersionName)),
-	// 	}
-	// }
+	if !allowedVersionNameRegexpCompile.Match([]byte(data.Version)) {
+		return &Response{
+			Code: code.WrongUpdateVersionName,
+			Log:  "wrong version name",
+			Info: EncodeError(code.NewCustomCode(code.WrongUpdateVersionName)),
+		}
+	}
 
 	if data.Height < block {
 		return &Response{
