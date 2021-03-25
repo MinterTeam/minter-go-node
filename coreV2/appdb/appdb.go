@@ -30,9 +30,10 @@ type AppDB struct {
 	lastTimeBlocks []uint64
 	validators     abciTypes.ValidatorUpdates
 
-	isDirtyVersions bool
-	versions        []*Version
-	muStartHeight   *sync.RWMutex
+	isDirtyVersions   bool
+	versions          []*Version
+	muStartHeight     *sync.RWMutex
+	muLastBlockHeight *sync.RWMutex
 }
 
 // Close closes db connection, panics on error
@@ -65,6 +66,9 @@ func (appDB *AppDB) SetLastBlockHash(hash []byte) {
 
 // GetLastHeight returns latest block height stored on disk
 func (appDB *AppDB) GetLastHeight() uint64 {
+	appDB.muLastBlockHeight.Lock()
+	defer appDB.muLastBlockHeight.Unlock()
+
 	if appDB.lastHeight != 0 {
 		return appDB.lastHeight
 	}
@@ -88,6 +92,9 @@ func (appDB *AppDB) SetLastHeight(height uint64) {
 	if err := appDB.db.Set([]byte(heightPath), h); err != nil {
 		panic(err)
 	}
+
+	appDB.muLastBlockHeight.RLock()
+	defer appDB.muLastBlockHeight.RUnlock()
 
 	appDB.lastHeight = height
 }
