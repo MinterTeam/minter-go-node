@@ -111,6 +111,10 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 	}
 }
 
+func (blockchain *Blockchain) InitialHeight() uint64 {
+	return blockchain.appDB.GetStartHeight()
+}
+
 func (blockchain *Blockchain) initState() {
 	initialHeight := blockchain.appDB.GetStartHeight()
 	currentHeight := blockchain.appDB.GetLastHeight()

@@ -7,6 +7,7 @@ import (
 	abciTypes "github.com/tendermint/tendermint/abci/types"
 	tmjson "github.com/tendermint/tendermint/libs/json"
 	"github.com/tendermint/tm-db"
+	"sync"
 	"time"
 )
 
@@ -31,7 +32,7 @@ type AppDB struct {
 
 	isDirtyVersions bool
 	versions        []*Version
-	// version         *Version
+	muStartHeight   *sync.RWMutex
 }
 
 // Close closes db connection, panics on error
@@ -93,11 +94,17 @@ func (appDB *AppDB) SetLastHeight(height uint64) {
 
 // SetStartHeight stores given block height on disk as start height, panics on error
 func (appDB *AppDB) SetStartHeight(height uint64) {
+	appDB.muStartHeight.Lock()
+	defer appDB.muStartHeight.Unlock()
+
 	appDB.startHeight = height
 }
 
 // SetStartHeight stores given block height on disk as start height, panics on error
 func (appDB *AppDB) SaveStartHeight() {
+	appDB.muStartHeight.RLock()
+	defer appDB.muStartHeight.RUnlock()
+
 	h := make([]byte, 8)
 	binary.BigEndian.PutUint64(h, appDB.startHeight)
 	if err := appDB.db.Set([]byte(startHeightPath), h); err != nil {
@@ -107,6 +114,9 @@ func (appDB *AppDB) SaveStartHeight() {
 
 // GetStartHeight returns start height stored on disk
 func (appDB *AppDB) GetStartHeight() uint64 {
+	appDB.muStartHeight.Lock()
+	defer appDB.muStartHeight.Unlock()
+
 	if appDB.startHeight != 0 {
 		return appDB.startHeight
 	}
