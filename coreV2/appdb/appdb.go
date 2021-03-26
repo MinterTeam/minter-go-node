@@ -74,8 +74,8 @@ func (appDB *AppDB) GetLastHeight() uint64 {
 		panic(err)
 	}
 
-	val = binary.BigEndian.Uint64(result)
 	if len(result) != 0 {
+		val = binary.BigEndian.Uint64(result)
 		atomic.StoreUint64(&appDB.lastHeight, val)
 	}
 
@@ -118,8 +118,8 @@ func (appDB *AppDB) GetStartHeight() uint64 {
 		panic(err)
 	}
 
-	val = binary.BigEndian.Uint64(result)
 	if len(result) != 0 {
+		val = binary.BigEndian.Uint64(result)
 		atomic.StoreUint64(&appDB.startHeight, val)
 	}
 
