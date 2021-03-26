@@ -7,7 +7,7 @@ import (
 	abciTypes "github.com/tendermint/tendermint/abci/types"
 	tmjson "github.com/tendermint/tendermint/libs/json"
 	"github.com/tendermint/tm-db"
-	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -30,10 +30,8 @@ type AppDB struct {
 	lastTimeBlocks []uint64
 	validators     abciTypes.ValidatorUpdates
 
-	isDirtyVersions   bool
-	versions          []*Version
-	muStartHeight     *sync.RWMutex
-	muLastBlockHeight *sync.RWMutex
+	isDirtyVersions bool
+	versions        []*Version
 }
 
 // Close closes db connection, panics on error
@@ -66,11 +64,9 @@ func (appDB *AppDB) SetLastBlockHash(hash []byte) {
 
 // GetLastHeight returns latest block height stored on disk
 func (appDB *AppDB) GetLastHeight() uint64 {
-	appDB.muLastBlockHeight.Lock()
-	defer appDB.muLastBlockHeight.Unlock()
-
-	if appDB.lastHeight != 0 {
-		return appDB.lastHeight
+	val := atomic.LoadUint64(&appDB.lastHeight)
+	if val != 0 {
+		return val
 	}
 
 	result, err := appDB.db.Get([]byte(heightPath))
@@ -78,11 +74,12 @@ func (appDB *AppDB) GetLastHeight() uint64 {
 		panic(err)
 	}
 
-	if result != nil {
-		appDB.lastHeight = binary.BigEndian.Uint64(result)
+	val = binary.BigEndian.Uint64(result)
+	if len(result) != 0 {
+		atomic.StoreUint64(&appDB.lastHeight, val)
 	}
 
-	return appDB.lastHeight
+	return val
 }
 
 // SetLastHeight stores given block height on disk, panics on error
@@ -93,27 +90,18 @@ func (appDB *AppDB) SetLastHeight(height uint64) {
 		panic(err)
 	}
 
-	appDB.muLastBlockHeight.RLock()
-	defer appDB.muLastBlockHeight.RUnlock()
-
-	appDB.lastHeight = height
+	atomic.StoreUint64(&appDB.lastHeight, height)
 }
 
 // SetStartHeight stores given block height on disk as start height, panics on error
 func (appDB *AppDB) SetStartHeight(height uint64) {
-	appDB.muStartHeight.Lock()
-	defer appDB.muStartHeight.Unlock()
-
-	appDB.startHeight = height
+	atomic.StoreUint64(&appDB.startHeight, height)
 }
 
 // SetStartHeight stores given block height on disk as start height, panics on error
 func (appDB *AppDB) SaveStartHeight() {
-	appDB.muStartHeight.RLock()
-	defer appDB.muStartHeight.RUnlock()
-
 	h := make([]byte, 8)
-	binary.BigEndian.PutUint64(h, appDB.startHeight)
+	binary.BigEndian.PutUint64(h, atomic.LoadUint64(&appDB.startHeight))
 	if err := appDB.db.Set([]byte(startHeightPath), h); err != nil {
 		panic(err)
 	}
@@ -121,22 +109,21 @@ func (appDB *AppDB) SaveStartHeight() {
 
 // GetStartHeight returns start height stored on disk
 func (appDB *AppDB) GetStartHeight() uint64 {
-	appDB.muStartHeight.Lock()
-	defer appDB.muStartHeight.Unlock()
-
-	if appDB.startHeight != 0 {
-		return appDB.startHeight
+	val := atomic.LoadUint64(&appDB.startHeight)
+	if val != 0 {
+		return val
 	}
 	result, err := appDB.db.Get([]byte(startHeightPath))
 	if err != nil {
 		panic(err)
 	}
 
-	if result != nil {
-		appDB.startHeight = binary.BigEndian.Uint64(result)
+	val = binary.BigEndian.Uint64(result)
+	if len(result) != 0 {
+		atomic.StoreUint64(&appDB.startHeight, val)
 	}
 
-	return appDB.startHeight
+	return val
 }
 
 // GetValidators returns list of latest validators stored on dist
