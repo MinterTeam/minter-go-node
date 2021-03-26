@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/coreV2/appdb"
 	eventsdb "github.com/MinterTeam/minter-go-node/coreV2/events"
+	"github.com/MinterTeam/minter-go-node/coreV2/rewards"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
 	validators2 "github.com/MinterTeam/minter-go-node/coreV2/state/validators"
 	"github.com/MinterTeam/minter-go-node/coreV2/statistics"
@@ -18,6 +19,18 @@ import (
 	"math/big"
 	"sync/atomic"
 )
+
+func (blockchain *Blockchain) RpcClient() *rpc.Local {
+	return blockchain.rpcClient
+}
+
+func (blockchain *Blockchain) RewardCounter() *rewards.Reward {
+	return blockchain.rewardsCounter
+}
+
+func (blockchain *Blockchain) InitialHeight() uint64 {
+	return blockchain.appDB.GetStartHeight()
+}
 
 func (blockchain *Blockchain) checkStop() bool {
 	if !blockchain.stopped {

@@ -73,14 +73,6 @@ type Blockchain struct {
 	grace      *upgrades.Grace
 }
 
-func (blockchain *Blockchain) RpcClient() *rpc.Local {
-	return blockchain.rpcClient
-}
-
-func (blockchain *Blockchain) RewardCounter() *rewards.Reward {
-	return blockchain.rewardsCounter
-}
-
 // NewMinterBlockchain creates Minter Blockchain instance, should be only called once
 func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx context.Context, period uint64) *Blockchain {
 	// Initiate Application DB. Used for persisting data like current block, validators, etc.
@@ -98,7 +90,7 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 	if period == 0 {
 		period = updateStakesAndPayRewards
 	}
-	return &Blockchain{
+	app := &Blockchain{
 		rewardsCounter:                  rewards.NewReward(),
 		appDB:                           applicationDB,
 		storages:                        storages,
@@ -109,10 +101,10 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 		haltHeight:                      uint64(cfg.HaltHeight),
 		updateStakesAndPayRewardsPeriod: period,
 	}
-}
-
-func (blockchain *Blockchain) InitialHeight() uint64 {
-	return blockchain.appDB.GetStartHeight()
+	if applicationDB.GetStartHeight() != 0 {
+		app.initState()
+	}
+	return app
 }
 
 func (blockchain *Blockchain) initState() {
@@ -139,19 +131,14 @@ func (blockchain *Blockchain) initState() {
 
 // InitChain initialize blockchain with validators and other info. Only called once.
 func (blockchain *Blockchain) InitChain(req abciTypes.RequestInitChain) abciTypes.ResponseInitChain {
-	if blockchain.appDB.GetStartHeight() != 0 {
-		return abciTypes.ResponseInitChain{
-			Validators: blockchain.appDB.GetValidators(),
-		}
-	}
-
 	var genesisState types.AppState
 	if err := tmjson.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
 		panic(err)
 	}
 
-	initialHeight := uint64(req.InitialHeight)
-	blockchain.appDB.SetStartHeight(initialHeight - 1)
+	initialHeight := uint64(req.InitialHeight) - 1
+
+	blockchain.appDB.SetStartHeight(initialHeight)
 	blockchain.initState()
 
 	if err := blockchain.stateDeliver.Import(genesisState); err != nil {
@@ -160,17 +147,17 @@ func (blockchain *Blockchain) InitChain(req abciTypes.RequestInitChain) abciType
 	if err := blockchain.stateDeliver.Check(); err != nil {
 		panic(err)
 	}
-	hash, err := blockchain.stateDeliver.Commit()
+	_, err := blockchain.stateDeliver.Commit()
 	if err != nil {
 		panic(err)
 	}
 
-	blockchain.appDB.SetLastBlockHash(hash)
-	blockchain.appDB.SetLastHeight(initialHeight)
-	blockchain.appDB.FlushValidators()
-	blockchain.appDB.SaveVersions()
+	lastHeight := initialHeight
+	blockchain.appDB.SetLastHeight(lastHeight)
+
 	blockchain.appDB.SaveStartHeight()
 
+	defer blockchain.appDB.FlushValidators()
 	return abciTypes.ResponseInitChain{
 		Validators: blockchain.updateValidators(),
 	}
@@ -179,9 +166,6 @@ func (blockchain *Blockchain) InitChain(req abciTypes.RequestInitChain) abciType
 // BeginBlock signals the beginning of a block.
 func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.ResponseBeginBlock {
 	height := uint64(req.Header.Height)
-	if blockchain.stateDeliver == nil {
-		blockchain.initState()
-	}
 	blockchain.StatisticData().PushStartBlock(&statistics.StartRequest{Height: int64(height), Now: time.Now(), HeaderTime: req.Header.Time})
 
 	// compute max gas
@@ -233,7 +217,7 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 	}
 
 	// apply frozen funds (used for unbond stakes)
-	frozenFunds := blockchain.stateDeliver.FrozenFunds.GetFrozenFunds(uint64(height))
+	frozenFunds := blockchain.stateDeliver.FrozenFunds.GetFrozenFunds(height)
 	if frozenFunds != nil {
 		for _, item := range frozenFunds.List {
 			amount := item.Value
@@ -393,17 +377,19 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 
 // Info return application info. Used for synchronization between Tendermint and Minter
 func (blockchain *Blockchain) Info(_ abciTypes.RequestInfo) (resInfo abciTypes.ResponseInfo) {
+	hash := blockchain.appDB.GetLastBlockHash()
+	height := int64(blockchain.appDB.GetLastHeight())
 	return abciTypes.ResponseInfo{
 		Version:          version.Version,
 		AppVersion:       version.AppVer,
-		LastBlockHeight:  int64(blockchain.appDB.GetLastHeight()),
-		LastBlockAppHash: blockchain.appDB.GetLastBlockHash(),
+		LastBlockHeight:  height,
+		LastBlockAppHash: hash,
 	}
 }
 
 // DeliverTx deliver a tx for full processing
 func (blockchain *Blockchain) DeliverTx(req abciTypes.RequestDeliverTx) abciTypes.ResponseDeliverTx {
-	response := transaction.RunTx(blockchain.stateDeliver, req.Tx, blockchain.rewards, blockchain.Height(), &sync.Map{}, 0, blockchain.cfg.ValidatorMode)
+	response := transaction.RunTx(blockchain.stateDeliver, req.Tx, blockchain.rewards, blockchain.Height()+1, &sync.Map{}, 0, blockchain.cfg.ValidatorMode)
 
 	return abciTypes.ResponseDeliverTx{
 		Code:      response.Code,
@@ -423,7 +409,7 @@ func (blockchain *Blockchain) DeliverTx(req abciTypes.RequestDeliverTx) abciType
 
 // CheckTx validates a tx for the mempool
 func (blockchain *Blockchain) CheckTx(req abciTypes.RequestCheckTx) abciTypes.ResponseCheckTx {
-	response := transaction.RunTx(blockchain.CurrentState(), req.Tx, nil, blockchain.Height(), blockchain.currentMempool, blockchain.MinGasPrice(), true)
+	response := transaction.RunTx(blockchain.CurrentState(), req.Tx, nil, blockchain.Height()+1, blockchain.currentMempool, blockchain.MinGasPrice(), true)
 
 	return abciTypes.ResponseCheckTx{
 		Code:      response.Code,
@@ -458,11 +444,11 @@ func (blockchain *Blockchain) Commit() abciTypes.ResponseCommit {
 	if err != nil {
 		panic(err)
 	}
-	// blockchain.stateDeliver.Unlock()
 
 	// Persist application hash and height
 	blockchain.appDB.SetLastBlockHash(hash)
 	blockchain.appDB.SetLastHeight(blockchain.Height())
+
 	blockchain.appDB.FlushValidators()
 	blockchain.appDB.SaveBlocksTime()
 	blockchain.appDB.SaveVersions()
@@ -475,7 +461,8 @@ func (blockchain *Blockchain) Commit() abciTypes.ResponseCommit {
 	}
 
 	return abciTypes.ResponseCommit{
-		Data: hash,
+		Data:         hash,
+		RetainHeight: 0,
 	}
 }
 
