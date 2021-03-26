@@ -246,7 +246,7 @@ func (c *Commission) ExportV1(state *types.AppState, id types.CoinID) {
 		CreateTicker4:           helpers.FloatBipToPip(10000).String(),
 		CreateTicker5:           helpers.FloatBipToPip(1000).String(),
 		CreateTicker6:           helpers.FloatBipToPip(100).String(),
-		CreateTicker7_10:        helpers.FloatBipToPip(100).String(),
+		CreateTicker7_10:        helpers.FloatBipToPip(10).String(),
 		CreateCoin:              helpers.FloatBipToPip(0).String(),
 		CreateToken:             helpers.FloatBipToPip(0).String(),
 		RecreateCoin:            helpers.FloatBipToPip(100).String(),

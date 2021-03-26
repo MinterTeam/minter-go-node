@@ -276,8 +276,8 @@ func CheckSwap(rSwap swap.EditableChecker, coinIn CalculateCoin, coinOut Calcula
 				Code: code.MinimumValueToBuyReached,
 				Log: fmt.Sprintf(
 					"You wanted to buy minimum %s %s, but currently you buy only %s %s",
-					valueIn.String(), symbolOut, calculatedAmountToBuy.String(), symbolOut),
-				Info: EncodeError(code.NewMaximumValueToSellReached(valueIn.String(), calculatedAmountToBuy.String(), coinIn.GetFullSymbol(), coinIn.ID().String())),
+					valueOut.String(), symbolOut, calculatedAmountToBuy.String(), symbolOut),
+				Info: EncodeError(code.NewMaximumValueToSellReached(valueOut.String(), calculatedAmountToBuy.String(), coinIn.GetFullSymbol(), coinIn.ID().String())),
 			}
 		}
 		valueOut = calculatedAmountToBuy

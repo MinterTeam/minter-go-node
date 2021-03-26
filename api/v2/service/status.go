@@ -31,5 +31,6 @@ func (s *Service) Status(ctx context.Context, _ *empty.Empty) (*pb.StatusRespons
 		CatchingUp:        result.SyncInfo.CatchingUp,
 		PublicKey:         fmt.Sprintf("Mp%x", result.ValidatorInfo.PubKey.Bytes()[:]),
 		NodeId:            string(result.NodeInfo.ID()),
+		InitialHeight:     s.blockchain.InitialHeight(),
 	}, nil
 }
