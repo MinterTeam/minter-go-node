@@ -150,7 +150,8 @@ func (blockchain *Blockchain) InitChain(req abciTypes.RequestInitChain) abciType
 		panic(err)
 	}
 
-	blockchain.appDB.SetStartHeight(uint64(req.InitialHeight) - 1)
+	initialHeight := uint64(req.InitialHeight)
+	blockchain.appDB.SetStartHeight(initialHeight - 1)
 	blockchain.initState()
 
 	if err := blockchain.stateDeliver.Import(genesisState); err != nil {
@@ -159,17 +160,19 @@ func (blockchain *Blockchain) InitChain(req abciTypes.RequestInitChain) abciType
 	if err := blockchain.stateDeliver.Check(); err != nil {
 		panic(err)
 	}
-	_, err := blockchain.stateDeliver.Commit()
+	hash, err := blockchain.stateDeliver.Commit()
 	if err != nil {
 		panic(err)
 	}
 
-	vals := blockchain.updateValidators()
+	blockchain.appDB.SetLastBlockHash(hash)
+	blockchain.appDB.SetLastHeight(initialHeight)
 	blockchain.appDB.FlushValidators()
+	blockchain.appDB.SaveVersions()
 	blockchain.appDB.SaveStartHeight()
 
 	return abciTypes.ResponseInitChain{
-		Validators: vals,
+		Validators: blockchain.updateValidators(),
 	}
 }
 
