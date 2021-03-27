@@ -1,5 +1,36 @@
 # Changelog
 
+## Unreleased [v2.0.0](https://github.com/MinterTeam/minter-go-node/tree/v2.0)
+
+[Full Changelog](https://github.com/MinterTeam/minter-go-node/compare/v1.2.1...v2.0)
+
+### Added
+
+- exchange transactions via liquidity pools
+- voting for network commissions with linking the rate to any coin
+- smooth network update without stopping
+- creation of unreserved coins
+- allowed to change the validator's commission
+- the period for recalculating stakes and accruing rewards increased from 120 blocks to 720
+- validator penalty for skipped network blocks replaced with 24-hour ban
+
+### Changed
+
+- API v2 [changelog](https://klim0v.github.io/minter-node-api-v2-diff/)
+- continuation of block numbering from the previous version of the network
+
+### Removed
+
+- Delete API v1
+- Delete transactions `PriceVote`
+
+### Fixed
+
+### Security
+
+- Update Tendermint to 0.34.8
+- Update IAVL to v0.15.3
+
 ## 1.2.1
 
 - [core] Add tags old_coin_symbol and old_coin_id to RecreateCoin tx
