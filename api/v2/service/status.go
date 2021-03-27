@@ -22,6 +22,7 @@ func (s *Service) Status(ctx context.Context, _ *empty.Empty) (*pb.StatusRespons
 	return &pb.StatusResponse{
 		Version:           s.version,
 		Network:           result.NodeInfo.Network,
+		Moniker:           result.NodeInfo.Moniker,
 		LatestBlockHash:   fmt.Sprintf("%X", result.SyncInfo.LatestBlockHash),
 		LatestAppHash:     fmt.Sprintf("%X", result.SyncInfo.LatestAppHash),
 		LatestBlockHeight: uint64(result.SyncInfo.LatestBlockHeight),
@@ -31,6 +32,6 @@ func (s *Service) Status(ctx context.Context, _ *empty.Empty) (*pb.StatusRespons
 		CatchingUp:        result.SyncInfo.CatchingUp,
 		PublicKey:         fmt.Sprintf("Mp%x", result.ValidatorInfo.PubKey.Bytes()[:]),
 		NodeId:            string(result.NodeInfo.ID()),
-		InitialHeight:     s.blockchain.InitialHeight(),
+		InitialHeight:     s.blockchain.InitialHeight() + 1,
 	}, nil
 }

@@ -8,7 +8,7 @@ import (
 
 type Item struct {
 	Address      types.Address
-	CandidateKey *types.Pubkey
+	CandidateKey *types.Pubkey `rlp:"nil"`
 	CandidateID  uint32
 	Coin         types.CoinID
 	Value        *big.Int

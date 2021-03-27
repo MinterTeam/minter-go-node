@@ -49,9 +49,12 @@ func (appDB *AppDB) GetLastBlockHash() []byte {
 		panic(err)
 	}
 
+	if len(rawHash) == 0 {
+		return nil
+	}
+
 	var hash [32]byte
 	copy(hash[:], rawHash)
-
 	return hash[:]
 }
 

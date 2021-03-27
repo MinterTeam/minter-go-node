@@ -67,15 +67,15 @@ func (s *Service) EstimateCoinSell(ctx context.Context, req *pb.EstimateCoinSell
 
 	var requestCoinCommissionID types.CoinID
 	if req.GetCoinCommission() != "" {
-		symbol := cState.Coins().GetCoinBySymbol(types.StrToCoinBaseSymbol(req.GetCoinToSell()), types.GetVersionFromSymbol(req.GetCoinToSell()))
+		symbol := cState.Coins().GetCoinBySymbol(types.StrToCoinBaseSymbol(req.GetCoinCommission()), types.GetVersionFromSymbol(req.GetCoinCommission()))
 		if symbol == nil {
-			return nil, s.createError(status.New(codes.NotFound, "Coin to pay commission not exists"), transaction.EncodeError(code.NewCoinNotExists(req.GetCoinToSell(), "")))
+			return nil, s.createError(status.New(codes.NotFound, "Coin to pay commission not exists"), transaction.EncodeError(code.NewCoinNotExists(req.GetCoinCommission(), "")))
 		}
 		requestCoinCommissionID = symbol.ID()
 	} else {
 		requestCoinCommissionID = types.CoinID(req.GetCoinIdCommission())
 		if !cState.Coins().Exists(requestCoinCommissionID) {
-			return nil, s.createError(status.New(codes.NotFound, "Coin to pay commission not exists"), transaction.EncodeError(code.NewCoinNotExists("", coinToSell.String())))
+			return nil, s.createError(status.New(codes.NotFound, "Coin to pay commission not exists"), transaction.EncodeError(code.NewCoinNotExists("", requestCoinCommissionID.String())))
 		}
 	}
 
