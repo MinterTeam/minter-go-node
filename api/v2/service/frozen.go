@@ -18,7 +18,10 @@ func (s *Service) Frozen(ctx context.Context, req *pb.FrozenRequest) (*pb.Frozen
 		return nil, status.Error(codes.InvalidArgument, "invalid address")
 	}
 
-	cState := s.blockchain.CurrentState()
+	cState, err := s.blockchain.GetStateForHeight(req.Height)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, err.Error())
+	}
 
 	var reqCoin *coins.Model
 
