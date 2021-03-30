@@ -26,14 +26,6 @@ func (data DelegateData) TxType() TxType {
 }
 
 func (data DelegateData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
-	if data.Value == nil {
-		return &Response{
-			Code: code.DecodeError,
-			Log:  "Incorrect tx data",
-			Info: EncodeError(code.NewDecodeError()),
-		}
-	}
-
 	coin := context.Coins().GetCoin(data.Coin)
 	if coin == nil {
 		return &Response{
@@ -176,6 +168,7 @@ func (data DelegateData) Run(tx *Transaction, context state.Interface, rewardPoo
 			{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String()), Index: true},
 			{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 			{Key: []byte("tx.public_key"), Value: []byte(hex.EncodeToString(data.PubKey[:])), Index: true},
+			{Key: []byte("tx.coin_id"), Value: []byte(data.Coin.String()), Index: true},
 		}
 	}
 
