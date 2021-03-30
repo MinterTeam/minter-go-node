@@ -195,10 +195,8 @@ func (s *Service) calcSellPoolWithCommission(ctx context.Context, commissions *c
 	}
 
 	commissionPoolSwapper := cState.Swap().GetSwapper(requestCoinCommissionID, types.GetBaseCoinID())
-	if commissionFromPool {
-		if types.GetBaseCoinID() != requestCoinCommissionID {
-			commissionPoolSwapper = commissionPoolSwapper.AddLastSwapStep(commission, commissionInBaseCoin)
-		}
+	if commissionFromPool && requestCoinCommissionID != types.GetBaseCoinID() {
+		commissionPoolSwapper = commissionPoolSwapper.AddLastSwapStep(commission, commissionInBaseCoin)
 	}
 	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
 		return nil, nil, timeoutStatus.Err()
@@ -218,12 +216,12 @@ func (s *Service) commissionInCoin(cState *state.CheckState, coinCommissionID ty
 	switch coinCommissionID {
 	case commissionsCoin:
 		commission = commissionInBaseCoin
+		isSwapFromPool = true
 	case types.GetBaseCoinID():
 		commission = cState.Swap().GetSwapper(commissionsCoin, types.GetBaseCoinID()).CalculateBuyForSell(commissionInBaseCoin)
 		if commission == nil {
 			return nil, false, s.createError(status.New(codes.FailedPrecondition, "Not possible to pay commission"), transaction.EncodeError(code.NewCommissionCoinNotSufficient("", "")))
 		}
-		isSwapFromPool = true
 	default:
 		if !commissionsCoin.IsBaseCoin() {
 			commissionInBaseCoin = cState.Swap().GetSwapper(commissionsCoin, types.GetBaseCoinID()).CalculateBuyForSell(commissionInBaseCoin)
