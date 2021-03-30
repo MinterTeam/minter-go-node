@@ -221,6 +221,7 @@ func (s *Service) commissionInCoin(cState *state.CheckState, coinCommissionID ty
 		if commission == nil {
 			return nil, false, s.createError(status.New(codes.FailedPrecondition, "Not possible to pay commission"), transaction.EncodeError(code.NewCommissionCoinNotSufficient("", "")))
 		}
+		isSwapFromPool = true
 	default:
 		if !commissionsCoin.IsBaseCoin() {
 			commissionInBaseCoin = cState.Swap().GetSwapper(commissionsCoin, types.GetBaseCoinID()).CalculateBuyForSell(commissionInBaseCoin)
