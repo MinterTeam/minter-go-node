@@ -274,7 +274,7 @@ func (s *Service) calcBuyPoolWithCommission(ctx context.Context, commissions *co
 	}
 
 	commissionPoolSwapper := cState.Swap().GetSwapper(requestCoinCommissionID, types.GetBaseCoinID())
-	if commissionFromPool {
+	if commissionFromPool && requestCoinCommissionID != types.GetBaseCoinID() {
 		commissionPoolSwapper = commissionPoolSwapper.AddLastSwapStep(commission, commissionInBaseCoin)
 	}
 
