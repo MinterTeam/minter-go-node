@@ -30,7 +30,7 @@ func (data VoteUpdateData) GetPubKey() types.Pubkey {
 	return data.PubKey
 }
 
-var allowedVersionNameRegexpCompile, _ = regexp.Compile("^[a-zA-Z0-9]{1,20}$")
+var allowedVersionNameRegexpCompile, _ = regexp.Compile("^[a-zA-Z0-9]{1,20}$") // todo
 
 func (data VoteUpdateData) basicCheck(tx *Transaction, context *state.CheckState, block uint64) *Response {
 	if !allowedVersionNameRegexpCompile.Match([]byte(data.Version)) {
