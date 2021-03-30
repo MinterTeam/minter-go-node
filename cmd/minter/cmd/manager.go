@@ -66,14 +66,35 @@ var ManagerConsole = &cobra.Command{
 }
 
 func setParentFlags(cmd *cobra.Command, args []string) (newArgs []string) {
-	for _, arg := range args {
-		split := strings.Split(arg, "=")
-		if len(split) == 2 {
-			err := cmd.Parent().PersistentFlags().Set(strings.TrimLeft(split[0], "-"), split[1])
-			if err == nil {
-				continue
+	for i, arg := range args {
+		if strings.HasPrefix("-", arg) {
+			split := strings.Split(arg, "=")
+			if len(split) == 2 {
+				err := cmd.Parent().PersistentFlags().Set(strings.TrimLeft(split[0], "-"), split[1])
+				if err == nil {
+					continue
+				}
+			} else {
+				name := strings.TrimLeft(arg, "-")
+				flag := cmd.Flag(name)
+				if flag != nil {
+					if flag.Value.Type() == "bool" {
+						err := cmd.Parent().PersistentFlags().Set(name, "true")
+						if err == nil {
+							continue
+						}
+					} else {
+						if len(args)-1 > i+1 {
+							err := cmd.Parent().PersistentFlags().Set(name, args[i+1])
+							if err == nil {
+								continue
+							}
+						}
+					}
+				}
 			}
 		}
+
 		newArgs = append(newArgs, arg)
 	}
 	return newArgs
