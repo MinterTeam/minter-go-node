@@ -171,9 +171,9 @@ func (s *Service) calcBuyFromPool(ctx context.Context, value *big.Int, cState *s
 
 		if swapChecker.GetID() == commissionPoolSwapper.GetID() {
 			if sellCoinID != types.GetBaseCoinID() {
-				swapChecker = commissionPoolSwapper.Revert()
-			} else {
 				swapChecker = commissionPoolSwapper
+			} else {
+				swapChecker = commissionPoolSwapper.Revert()
 			}
 		}
 
