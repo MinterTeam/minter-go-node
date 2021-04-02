@@ -202,13 +202,6 @@ func (blockchain *Blockchain) MinGasPrice() uint32 {
 	return 1
 }
 
-func (blockchain *Blockchain) resetCheckState() {
-	blockchain.lock.Lock()
-	defer blockchain.lock.Unlock()
-
-	blockchain.stateCheck = state.NewCheckState(blockchain.stateDeliver)
-}
-
 func (blockchain *Blockchain) calcMaxGas() uint64 {
 	const targetTime = 7
 
