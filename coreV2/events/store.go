@@ -120,7 +120,7 @@ func (store *eventsStore) LoadEvents(height uint32) Events {
 		} else if c, ok := compactEvent.(Event); ok {
 			resultEvents = append(resultEvents, c)
 		} else {
-			panic("unemployment event interface")
+			panic("undefined event interface")
 		}
 	}
 
