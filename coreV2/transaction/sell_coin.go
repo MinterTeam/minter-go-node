@@ -130,6 +130,26 @@ func (data SellCoinData) Run(tx *Transaction, context state.Interface, rewardPoo
 
 	value := big.NewInt(0).Set(data.ValueToSell)
 
+	spendInGasCoin := big.NewInt(0).Set(commission)
+	if tx.GasCoin == coinToSell {
+		spendInGasCoin.Add(spendInGasCoin, data.ValueToSell)
+	} else {
+		if checkState.Accounts().GetBalance(sender, data.CoinToSell).Cmp(value) < 0 {
+			return Response{
+				Code: code.InsufficientFunds,
+				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), value.String(), coinFrom.GetFullSymbol()),
+				Info: EncodeError(code.NewInsufficientFunds(sender.String(), value.String(), coinFrom.GetFullSymbol(), coinFrom.ID().String())),
+			}
+		}
+	}
+	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(spendInGasCoin) < 0 {
+		return Response{
+			Code: code.InsufficientFunds,
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), spendInGasCoin.String(), gasCoin.GetFullSymbol()),
+			Info: EncodeError(code.NewInsufficientFunds(sender.String(), spendInGasCoin.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
+		}
+	}
+
 	if isGasCommissionFromPoolSwap == false && !tx.GasCoin.IsBaseCoin() {
 		if tx.GasCoin == data.CoinToSell {
 			coinFrom = DummyCoin{
@@ -176,32 +196,6 @@ func (data SellCoinData) Run(tx *Transaction, context state.Interface, rewardPoo
 		}
 	}
 
-	spendInGasCoin := big.NewInt(0).Set(commission)
-	if tx.GasCoin == coinToSell {
-		spendInGasCoin.Add(spendInGasCoin, data.ValueToSell)
-	} else {
-		if checkState.Accounts().GetBalance(sender, data.CoinToSell).Cmp(value) < 0 {
-			return Response{
-				Code: code.InsufficientFunds,
-				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), value.String(), coinFrom.GetFullSymbol()),
-				Info: EncodeError(code.NewInsufficientFunds(sender.String(), value.String(), coinFrom.GetFullSymbol(), coinFrom.ID().String())),
-			}
-		}
-	}
-	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(spendInGasCoin) < 0 {
-		return Response{
-			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), spendInGasCoin.String(), gasCoin.GetFullSymbol()),
-			Info: EncodeError(code.NewInsufficientFunds(sender.String(), spendInGasCoin.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
-		}
-	}
-	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(spendInGasCoin) < 0 {
-		return Response{
-			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), spendInGasCoin.String(), gasCoin.GetFullSymbol()),
-			Info: EncodeError(code.NewInsufficientFunds(sender.String(), spendInGasCoin.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
-		}
-	}
 	var tags []abcTypes.EventAttribute
 	if deliverState, ok := context.(*state.State); ok {
 		if isGasCommissionFromPoolSwap {
