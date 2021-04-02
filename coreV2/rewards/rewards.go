@@ -11,12 +11,11 @@ const firstReward = 333
 const lastReward = 68
 
 type Reward struct {
-	startHeight   uint64
-	beforeGenesis *big.Int
+	startHeight uint64
 }
 
 func NewReward() *Reward {
-	return &Reward{startHeight: 9150000, beforeGenesis: helpers.StringToBigInt("2423599954000000000000000000")}
+	return &Reward{startHeight: 9150000}
 }
 
 // GetRewardForBlock returns reward for creation of given block. If there is no reward - returns 0.

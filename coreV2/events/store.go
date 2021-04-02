@@ -14,13 +14,11 @@ func init() {
 	tmjson.RegisterType(&jail{}, "jail")
 	tmjson.RegisterType(&unbond{}, "unbond")
 	tmjson.RegisterType(&kick{}, "kick")
-	tmjson.RegisterType(&move{}, "move")
 	tmjson.RegisterType(&RewardEvent{}, TypeRewardEvent)
 	tmjson.RegisterType(&SlashEvent{}, TypeSlashEvent)
 	tmjson.RegisterType(&JailEvent{}, TypeJailEvent)
 	tmjson.RegisterType(&UnbondEvent{}, TypeUnbondEvent)
 	tmjson.RegisterType(&StakeKickEvent{}, TypeStakeKickEvent)
-	tmjson.RegisterType(&StakeMoveEvent{}, TypeStakeMoveEvent)
 	tmjson.RegisterType(&UpdateNetworkEvent{}, TypeUpdateNetworkEvent)
 	tmjson.RegisterType(&UpdateCommissionsEvent{}, TypeUpdateCommissionsEvent)
 }
@@ -122,7 +120,7 @@ func (store *eventsStore) LoadEvents(height uint32) Events {
 		} else if c, ok := compactEvent.(Event); ok {
 			resultEvents = append(resultEvents, c)
 		} else {
-			panic("unemployment event interface")
+			panic("undefined event interface")
 		}
 	}
 

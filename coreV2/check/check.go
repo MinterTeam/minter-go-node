@@ -16,13 +16,6 @@ var (
 	ErrInvalidSig = errors.New("invalid transaction v, r, s values")
 )
 
-type gasPaymentMethod byte
-
-const (
-	Bancor gasPaymentMethod = iota
-	Pool
-)
-
 // Check is like an ordinary bank check.
 // Each user of network can issue check with any amount of coins and pass it to another person.
 // Receiver will be able to cash a check from arbitrary account.
@@ -41,11 +34,10 @@ type Check struct {
 	Coin     types.CoinID
 	Value    *big.Int
 	GasCoin  types.CoinID
-	// GasPay   gasPaymentMethod // todo: add
-	Lock *big.Int
-	V    *big.Int
-	R    *big.Int
-	S    *big.Int
+	Lock     *big.Int
+	V        *big.Int
+	R        *big.Int
+	S        *big.Int
 }
 
 // Sender returns sender's address of a Check, recovered from signature

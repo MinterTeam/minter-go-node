@@ -178,7 +178,7 @@ func (appDB *AppDB) FlushValidators() {
 const BlocksTimeCount = 4
 
 // GetLastBlockTimeDelta returns delta of time between latest blocks
-func (appDB *AppDB) GetLastBlockTimeDelta() (int, int) {
+func (appDB *AppDB) GetLastBlockTimeDelta() (sumTimes int, count int) {
 	if len(appDB.lastTimeBlocks) == 0 {
 		result, err := appDB.db.Get([]byte(blocksTimePath))
 		if err != nil {
@@ -198,7 +198,7 @@ func (appDB *AppDB) GetLastBlockTimeDelta() (int, int) {
 	return calcBlockDelta(appDB.lastTimeBlocks)
 }
 
-func calcBlockDelta(times []uint64) (int, int) {
+func calcBlockDelta(times []uint64) (sumTimes int, num int) {
 	count := len(times)
 	if count < 2 {
 		return 0, count - 1

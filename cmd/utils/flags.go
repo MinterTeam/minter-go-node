@@ -7,35 +7,6 @@ import (
 	"path/filepath"
 )
 
-var (
-	MinterHome   string
-	MinterConfig string
-)
-
-// Deprecated
-func GetMinterHome() string {
-	if MinterHome != "" {
-		return MinterHome
-	}
-
-	home := os.Getenv("MINTERHOME")
-
-	if home != "" {
-		return home
-	}
-
-	return os.ExpandEnv(filepath.Join("$HOME", ".minter"))
-}
-
-// Deprecated
-func GetMinterConfigPath() string {
-	if MinterConfig != "" {
-		return MinterConfig
-	}
-
-	return GetMinterHome() + "/config/config.toml"
-}
-
 type Storage struct {
 	minterHome   string
 	minterConfig string
