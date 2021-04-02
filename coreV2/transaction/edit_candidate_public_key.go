@@ -113,6 +113,7 @@ func (data EditCandidatePublicKeyData) Run(tx *Transaction, context state.Interf
 			{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String()), Index: true},
 			{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 			{Key: []byte("tx.public_key"), Value: []byte(hex.EncodeToString(data.PubKey[:])), Index: true},
+			{Key: []byte("tx.new_public_key"), Value: []byte(hex.EncodeToString(data.NewPubKey[:])), Index: true},
 		}
 	}
 
