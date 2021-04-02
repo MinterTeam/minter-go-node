@@ -13,11 +13,7 @@ type Results struct {
 }
 
 func NewFrom0Block() *Reward {
-	r := &Reward{startHeight: 0, beforeGenesis: big.NewInt(0)}
-	for i := uint64(1); i <= r.startHeight; i++ {
-		r.beforeGenesis.Add(r.beforeGenesis, r.GetRewardForBlock(i))
-	}
-	return r
+	return &Reward{startHeight: 0}
 }
 
 func TestGetRewardForBlock(t *testing.T) {
