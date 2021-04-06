@@ -45,7 +45,7 @@ func (data RecreateTokenData) basicCheck(tx *Transaction, context *state.CheckSt
 		}
 	}
 
-	if data.InitialAmount.Cmp(minTokenSupply) == -1 || data.InitialAmount.Cmp(data.MaxSupply) == 1 {
+	if !data.Mintable && data.InitialAmount.Cmp(data.MaxSupply) == 1 {
 		return &Response{
 			Code: code.WrongCoinSupply,
 			Log:  fmt.Sprintf("Coin amount should be between %s and %s", minTokenSupply.String(), data.MaxSupply.String()),
