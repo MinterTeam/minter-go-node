@@ -51,10 +51,23 @@ func (c *Candidates) ExportV1(state *types.AppState, height uint64, validators [
 	}
 
 	topCount := len(candidates)
+	topCandidates := candidates
+
 	if topCount > 100 {
 		topCount = 100
-
+		topCandidates = candidates[:topCount]
 		for _, candidate := range candidates[topCount:] {
+			var isValidator bool
+			for _, validator := range state.Validators {
+				if candidate.PubKey == validator.PubKey {
+					isValidator = true
+					break
+				}
+			}
+			if isValidator {
+				topCandidates = append(topCandidates, candidate)
+				continue
+			}
 			state.BlockListCandidates = append(state.BlockListCandidates, candidate.PubKey)
 			droppedCandidateIDs = append(droppedCandidateIDs, candidate.ID)
 
@@ -86,7 +99,7 @@ func (c *Candidates) ExportV1(state *types.AppState, height uint64, validators [
 			}
 		}
 	}
-	for _, candidate := range candidates[:topCount] {
+	for _, candidate := range topCandidates {
 		candidateStakes := c.GetStakes(candidate.PubKey)
 		stakes := make([]types.Stake, 0, len(candidateStakes))
 		for _, s := range candidateStakes {
