@@ -53,15 +53,7 @@ func (data CreateTokenData) basicCheck(tx *Transaction, context *state.CheckStat
 		}
 	}
 
-	if !data.Mintable && data.InitialAmount.Cmp(data.MaxSupply) == 1 {
-		return &Response{
-			Code: code.WrongCoinSupply,
-			Log:  fmt.Sprintf("Maximum supply cannot be more than the initial amount, if the token is not mintable"),
-			Info: EncodeError(code.NewWrongCoinSupply(minTokenSupply.String(), maxCoinSupply.String(), data.MaxSupply.String(), "", "", data.InitialAmount.String())),
-		}
-	}
-
-	if !data.Mintable && data.InitialAmount.Cmp(data.MaxSupply) == 1 {
+	if !data.Mintable && data.InitialAmount.Cmp(data.MaxSupply) != 0 {
 		return &Response{
 			Code: code.WrongCoinSupply,
 			Log:  fmt.Sprintf("Maximum supply cannot be more than the initial amount, if the token is not mintable"),
