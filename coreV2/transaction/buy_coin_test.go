@@ -602,7 +602,7 @@ func TestBuyCoinTxCustomToBase(t *testing.T) {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
 
-	targetBalance, _ := big.NewInt(0).SetString("9999897985363348906133281", 10)
+	targetBalance, _ := big.NewInt(0).SetString("9999897985363348906133282", 10)
 	balance := cState.Accounts.GetBalance(addr, coinToSellID)
 	if balance.Cmp(targetBalance) != 0 {
 		t.Errorf("Target %s balance is not correct. Expected %s, got %s", coinToSellID.String(), targetBalance, balance)
@@ -620,7 +620,7 @@ func TestBuyCoinTxCustomToBase(t *testing.T) {
 		t.Fatalf("Target %s reserve is not correct. Expected %s, got %s", coinToSellID.String(), targetBalance, coinData.Reserve())
 	}
 
-	targetVolume, _ := big.NewInt(0).SetString("10099897985363348906133281", 10)
+	targetVolume, _ := big.NewInt(0).SetString("10099897985363348906133282", 10)
 	if coinData.Volume().Cmp(targetVolume) != 0 {
 		t.Fatalf("Target %s volume is not correct. Expected %s, got %s", coinToSellID.String(), targetVolume, coinData.Volume())
 	}
