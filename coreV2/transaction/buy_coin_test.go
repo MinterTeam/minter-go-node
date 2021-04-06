@@ -954,36 +954,44 @@ func TestBuyCoinTxBaseToCustomCustomCommission(t *testing.T) {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
 
-	// check received coins + commission
-	buyCoinBalance := cState.Accounts.GetBalance(addr, coinToBuyID)
-	estimatedBuyCoinBalance := big.NewInt(0).Set(toBuy)
-	estimatedBuyCoinBalance.Add(estimatedBuyCoinBalance, initialGasBalance)
-	toReserve := formula.CalculatePurchaseAmount(initialVolume, initialReserve, crr, toBuy)
-
 	commissions := cState.Commission.GetCommissions()
 	commissionInBaseCoin := tx.Commission(tx.Price(commissions))
 	if !commissions.Coin.IsBaseCoin() {
 		commissionInBaseCoin = cState.Swap.GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuy(commissionInBaseCoin)
 	}
-	commission := formula.CalculateSaleAmount(big.NewInt(0).Add(initialVolume, toBuy), big.NewInt(0).Add(initialReserve, toReserve), crr, commissionInBaseCoin)
-	estimatedBuyCoinBalance.Sub(estimatedBuyCoinBalance, commission)
-	if buyCoinBalance.Cmp(estimatedBuyCoinBalance) != 0 {
-		t.Fatalf("Buy coin balance is not correct. Expected %s, got %s", estimatedBuyCoinBalance.String(), buyCoinBalance.String())
+	commission := formula.CalculateSaleAmount(initialVolume, initialReserve, crr, commissionInBaseCoin)
+
+	{
+		// check received coins + commission
+		buyCoinBalance := cState.Accounts.GetBalance(addr, coinToBuyID)
+		estimatedBuyCoinBalance := big.NewInt(0).Set(toBuy)
+		estimatedBuyCoinBalance.Add(estimatedBuyCoinBalance, initialGasBalance)
+		// toReserve := formula.CalculatePurchaseAmount(big.NewInt(0).Sub(initialVolume, commission), big.NewInt(0).Sub(initialReserve, commissionInBaseCoin), crr, toBuy)
+
+		estimatedBuyCoinBalance.Sub(estimatedBuyCoinBalance, commission)
+		if buyCoinBalance.Cmp(estimatedBuyCoinBalance) != 0 {
+			t.Fatalf("Buy coin balance is not correct. Expected %s, got %s", estimatedBuyCoinBalance.String(), buyCoinBalance.String())
+		}
 	}
 
-	// check sold coins
-	sellCoinBalance := cState.Accounts.GetBalance(addr, coinToSell)
-	estimatedSellCoinBalance := big.NewInt(0).Set(initialBalance)
-	estimatedSellCoinBalance.Sub(estimatedSellCoinBalance, formula.CalculatePurchaseAmount(initialVolume, initialReserve, crr, toBuy))
-	if sellCoinBalance.Cmp(estimatedSellCoinBalance) != 0 {
-		t.Fatalf("Sell coin balance is not correct")
-	}
+	{
+		// check sold coins
+		sellCoinBalance := cState.Accounts.GetBalance(addr, coinToSell)
+		estimatedSellCoinBalance := big.NewInt(0).Set(initialBalance)
+		// amountCom := formula.CalculatePurchaseAmount(initialVolume, initialReserve, crr, commission)
+		amount := formula.CalculatePurchaseAmount(big.NewInt(0).Sub(initialVolume, commission), big.NewInt(0).Sub(initialReserve, commissionInBaseCoin), crr, toBuy)
+		// amount.Add(amount, amountCom)
+		estimatedSellCoinBalance.Sub(estimatedSellCoinBalance, amount)
+		if sellCoinBalance.Cmp(estimatedSellCoinBalance) != 0 {
+			t.Fatalf("Sell coin balance want %s, got %s", estimatedSellCoinBalance, sellCoinBalance)
+		}
 
+	}
 	// check reserve and supply
 	coinData := cState.Coins.GetCoin(coinToBuyID)
 
 	estimatedReserve := big.NewInt(0).Set(initialReserve)
-	estimatedReserve.Add(estimatedReserve, formula.CalculatePurchaseAmount(initialVolume, initialReserve, crr, toBuy))
+	estimatedReserve.Add(estimatedReserve, formula.CalculatePurchaseAmount(big.NewInt(0).Sub(initialVolume, commission), big.NewInt(0).Sub(initialReserve, commissionInBaseCoin), crr, toBuy))
 	estimatedReserve.Sub(estimatedReserve, commissionInBaseCoin)
 	if coinData.Reserve().Cmp(estimatedReserve) != 0 {
 		t.Fatalf("Wrong coin reserve")
