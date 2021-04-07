@@ -919,7 +919,33 @@ func TestSellCoinTxToCoinReserveNotSufficient(t *testing.T) {
 	t.Parallel()
 	cState := getState()
 	privateKey, addr := getAccount()
-	coinToBuyID, coinToSellID := createTestCoin(cState), types.GetBaseCoinID()
+	sellID, buyID := createTestCoin(cState), types.GetBaseCoinID()
+
+	cState.Accounts.SubBalance(types.Address{0}, sellID, helpers.BipToPip(big.NewInt(100000)))
+	cState.Accounts.AddBalance(addr, sellID, helpers.BipToPip(big.NewInt(100000)))
+	cState.Accounts.AddBalance(types.Address{0}, buyID, helpers.BipToPip(big.NewInt(10000-10)))
+	cState.Accounts.AddBalance(addr, buyID, helpers.BipToPip(big.NewInt(10)))
+
+	tx := createSellCoinTx(sellID, buyID, buyID, helpers.BipToPip(big.NewInt(100000)), 1)
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+	if response.Code != code.CoinReserveUnderflow {
+		t.Fatalf("Response code is not %d. Error %d %s", code.CoinReserveUnderflow, response.Code, response.Log)
+	}
+
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
+
+	// gas coin == coin to sell
 
 	cState.Coins.Create(
 		cState.App.GetNextCoinID(),
@@ -934,34 +960,11 @@ func TestSellCoinTxToCoinReserveNotSufficient(t *testing.T) {
 
 	customCoinToSellID := cState.App.GetNextCoinID()
 	cState.App.SetCoinsCount(customCoinToSellID.Uint32())
-
 	cState.Accounts.AddBalance(types.Address{0}, customCoinToSellID, helpers.BipToPip(big.NewInt(100000)))
-	cState.Accounts.AddBalance(addr, coinToSellID, helpers.BipToPip(big.NewInt(5000000)))
 
-	tx := createSellCoinTx(coinToBuyID, coinToSellID, coinToBuyID, helpers.BipToPip(big.NewInt(100000)), 1)
-	if err := tx.Sign(privateKey); err != nil {
-		t.Fatal(err)
-	}
+	cState.Coins.SubReserve(sellID, helpers.BipToPip(big.NewInt(100000)))
 
-	encodedTx, err := rlp.EncodeToBytes(tx)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
-	if response.Code != code.CoinReserveNotSufficient {
-		t.Fatalf("Response code is not %d. Error %d %s", code.CoinReserveNotSufficient, response.Code, response.Log)
-	}
-
-	if err := checkState(cState); err != nil {
-		t.Error(err)
-	}
-
-	// gas coin == coin to sell
-
-	cState.Coins.SubReserve(coinToBuyID, helpers.BipToPip(big.NewInt(100000)))
-
-	tx = createSellCoinTx(coinToBuyID, customCoinToSellID, coinToBuyID, helpers.BipToPip(big.NewInt(1)), 1)
+	tx = createSellCoinTx(sellID, customCoinToSellID, sellID, helpers.BipToPip(big.NewInt(1)), 1)
 	if err := tx.Sign(privateKey); err != nil {
 		t.Fatal(err)
 	}
