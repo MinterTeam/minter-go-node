@@ -6,13 +6,17 @@
 
 ### Added
 
-- exchange transactions via liquidity pools
-- voting for network commissions with linking the rate to any coin
-- smooth network update without stopping
-- creation of unreserved coins
-- allowed to change the validator's commission
-- the period for recalculating stakes and accruing rewards increased from 120 blocks to 720
-- validator penalty for skipped network blocks replaced with 24-hour ban
+- Liquidity pools
+- Voting for commissions (linked to the price of an arbitrary coin)
+- Smooth network update algo without stopping
+- Tokens (coins without reserve)
+- Change of the validator's commission
+- The period for recalculating stakes and paying out rewards has been extended from 120 blocks to 720
+- The penalty for the validator for missing the blocks was replaced by a 24-hour ban
+- Dust pruning logic: on network update prune accounts with < 10000000 pip (0.00000000001 BIP) in balance and with no outgoing txs.
+- Candidates pruning logic: automatically unbond and remove candidates which are not in the top 100
+- Require coins to have at least one letter in symbol
+- Fix coin ownership: set owners to a coins where >90% of supply stored in one account
 
 ### Changed
 
@@ -21,8 +25,8 @@
 
 ### Removed
 
-- Delete API v1
-- Delete transactions `PriceVote`
+- API v1  
+- `PriceVote` transaction
 
 ### Fixed
 
