@@ -760,7 +760,8 @@ func TestSellCoinTxToCoinSupplyOverflow(t *testing.T) {
 	)
 
 	coinToSellID := cState.App.GetNextCoinID()
-	cState.Accounts.AddBalance(types.Address{}, coinToSellID, helpers.BipToPip(big.NewInt(100000)))
+	cState.Accounts.AddBalance(types.Address{}, coinToSellID, helpers.BipToPip(big.NewInt(100000-91)))
+	cState.Accounts.AddBalance(addr, coinToSellID, helpers.BipToPip(big.NewInt(91)))
 	cState.App.SetCoinsCount(coinToSellID.Uint32())
 
 	tx = createSellCoinTx(coinToSellID, coinToBuyID, coinToSellID, helpers.BipToPip(big.NewInt(90)), 1)
