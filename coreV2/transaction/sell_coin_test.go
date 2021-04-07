@@ -791,7 +791,7 @@ func TestSellCoinTxToMinimumValueToBuyReached(t *testing.T) {
 	coinToBuyID, sellCoinID := createTestCoin(cState), types.GetBaseCoinID()
 
 	valueToSell := big.NewInt(2e18)
-	cState.Accounts.AddBalance(addr, sellCoinID, helpers.BipToPip(big.NewInt(2)))
+	cState.Accounts.AddBalance(addr, sellCoinID, helpers.BipToPip(big.NewInt(21)))
 
 	data := SellCoinData{
 		CoinToBuy:         coinToBuyID,
@@ -881,7 +881,8 @@ func TestSellCoinTxToMinimumValueToBuyReached(t *testing.T) {
 	)
 
 	coinToSellID := cState.App.GetNextCoinID()
-	cState.Accounts.AddBalance(types.Address{}, coinToSellID, helpers.BipToPip(big.NewInt(100000)))
+	cState.Accounts.AddBalance(types.Address{}, coinToSellID, helpers.BipToPip(big.NewInt(100000-1)))
+	cState.Accounts.AddBalance(addr, coinToSellID, helpers.BipToPip(big.NewInt(1)))
 	cState.App.SetCoinsCount(coinToSellID.Uint32())
 
 	data.CoinToBuy = coinToBuyID
