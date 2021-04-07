@@ -1058,8 +1058,9 @@ func TestBuyCoinTxCustomToBaseCustomCommission(t *testing.T) {
 	if !commissions.Coin.IsBaseCoin() {
 		commissionInBaseCoin = cState.Swap.GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuy(commissionInBaseCoin)
 	}
-	shouldGive := formula.CalculateSaleAmount(initialVolume, initialReserve, crr, big.NewInt(0).Add(toBuy, commissionInBaseCoin))
-	estimatedSellCoinBalance.Sub(estimatedSellCoinBalance, shouldGive)
+	coms := formula.CalculateSaleAmount(initialVolume, initialReserve, crr, commissionInBaseCoin)
+	shouldGive := formula.CalculateSaleAmount(big.NewInt(0).Sub(initialVolume, coms), big.NewInt(0).Sub(initialReserve, commissionInBaseCoin), crr, toBuy)
+	estimatedSellCoinBalance.Sub(estimatedSellCoinBalance, big.NewInt(0).Add(shouldGive, coms))
 	if sellCoinBalance.Cmp(estimatedSellCoinBalance) != 0 {
 		t.Errorf("Sell coin balance is not correct. Expected %s, got %s", estimatedSellCoinBalance.String(), sellCoinBalance.String())
 	}
