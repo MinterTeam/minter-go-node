@@ -368,15 +368,16 @@ func TestSellCoinTxBaseToCustomCustomCommission(t *testing.T) {
 
 	// check received coins + commission
 	buyCoinBalance := cState.Accounts.GetBalance(addr, coinToBuyID)
-	estimatedReturn := formula.CalculatePurchaseReturn(initialVolume, initialReserve, crr, toSell)
-	estimatedBuyBalance := big.NewInt(0).Set(estimatedReturn)
-	estimatedBuyBalance.Add(estimatedBuyBalance, initialGasBalance)
 	commissions := cState.Commission.GetCommissions()
 	commissionInBaseCoin := tx.Commission(tx.Price(commissions))
 	if !commissions.Coin.IsBaseCoin() {
 		commissionInBaseCoin = cState.Swap.GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuy(commissionInBaseCoin)
 	}
-	estimatedBuyBalance.Sub(estimatedBuyBalance, formula.CalculateSaleAmount(big.NewInt(0).Add(initialVolume, estimatedReturn), big.NewInt(0).Add(initialReserve, toSell), crr, commissionInBaseCoin))
+	com := formula.CalculateSaleAmount(initialVolume, initialReserve, crr, commissionInBaseCoin)
+	estimatedReturn := formula.CalculatePurchaseReturn(big.NewInt(0).Sub(initialVolume, com), big.NewInt(0).Sub(initialReserve, commissionInBaseCoin), crr, toSell)
+	estimatedBuyBalance := big.NewInt(0).Set(estimatedReturn)
+	estimatedBuyBalance.Add(estimatedBuyBalance, initialGasBalance)
+	estimatedBuyBalance.Sub(estimatedBuyBalance, com)
 	if buyCoinBalance.Cmp(estimatedBuyBalance) != 0 {
 		t.Fatalf("Buy coin balance is not correct. Expected %s, got %s", estimatedBuyBalance.String(), buyCoinBalance.String())
 	}
@@ -400,8 +401,8 @@ func TestSellCoinTxBaseToCustomCustomCommission(t *testing.T) {
 	}
 
 	estimatedSupply := big.NewInt(0).Set(initialVolume)
-	estimatedSupply.Add(estimatedSupply, formula.CalculatePurchaseReturn(initialVolume, initialReserve, crr, toSell))
-	estimatedSupply.Sub(estimatedSupply, formula.CalculateSaleAmount(big.NewInt(0).Add(initialVolume, estimatedReturn), big.NewInt(0).Add(initialReserve, toSell), crr, commissionInBaseCoin))
+	estimatedSupply.Sub(estimatedSupply, com)
+	estimatedSupply.Add(estimatedSupply, formula.CalculatePurchaseReturn(big.NewInt(0).Sub(initialVolume, com), big.NewInt(0).Sub(initialReserve, commissionInBaseCoin), crr, toSell))
 	if coinData.Volume().Cmp(estimatedSupply) != 0 {
 		t.Fatalf("Wrong coin supply")
 	}
