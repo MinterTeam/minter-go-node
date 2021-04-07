@@ -1229,25 +1229,34 @@ func TestBuyCoinTxCustomToCustomCustom2Commission(t *testing.T) {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
 
-	// check received coins
 	buyCoinBalance := cState.Accounts.GetBalance(addr, coinToBuyID)
-	buyCoinBalance.Sub(buyCoinBalance, initialGasBalance)
-	toReserve := formula.CalculatePurchaseAmount(initialVolume2, initialReserve2, crr2, toBuy)
+
 	commissions := cState.Commission.GetCommissions()
 	commissionInBaseCoin := tx.Commission(tx.Price(commissions))
 	if !commissions.Coin.IsBaseCoin() {
 		commissionInBaseCoin = cState.Swap.GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuy(commissionInBaseCoin)
 	}
-	commission := formula.CalculateSaleAmount(big.NewInt(0).Add(initialVolume2, toBuy), big.NewInt(0).Add(initialReserve2, toReserve), crr2, commissionInBaseCoin)
+
+	commission := formula.CalculateSaleAmount(initialVolume2, initialReserve2, crr2, commissionInBaseCoin)
+	// shouldGive := formula.CalculateSaleAmount(big.NewInt(0).Sub(initialVolume2, coms), big.NewInt(0).Sub(initialReserve2, commissionInBaseCoin), crr, toBuy)
 	buyCoinBalance.Add(buyCoinBalance, commission)
+
+	buyCoinBalance.Sub(buyCoinBalance, initialGasBalance)
+	// commission := formula.CalculateSaleAmount(big.NewInt(0).Add(initialVolume2, toBuy), big.NewInt(0).Add(initialReserve2, toReserve), crr2, commissionInBaseCoin)
 	if buyCoinBalance.Cmp(toBuy) != 0 {
 		t.Fatalf("Buy coin balance is not correct. Expected %s, got %s", toBuy.String(), buyCoinBalance.String())
+	}
+
+	{
+		// check received coins
+		// toReserve := formula.CalculatePurchaseAmount(initialVolume2, initialReserve2, crr2, toBuy)
+
 	}
 
 	// check sold coins
 	sellCoinBalance := cState.Accounts.GetBalance(addr, coinToSellID)
 	estimatedSellCoinBalance := big.NewInt(0).Set(initialBalance)
-	toSellBaseCoin := formula.CalculatePurchaseAmount(initialVolume2, initialReserve2, crr2, toBuy)
+	toSellBaseCoin := formula.CalculatePurchaseAmount(big.NewInt(0).Sub(initialVolume2, commission), big.NewInt(0).Sub(initialReserve2, commissionInBaseCoin), crr2, toBuy)
 	toSell := formula.CalculateSaleAmount(initialVolume1, initialReserve1, crr1, toSellBaseCoin)
 	estimatedSellCoinBalance.Sub(estimatedSellCoinBalance, toSell)
 	if sellCoinBalance.Cmp(estimatedSellCoinBalance) != 0 {
@@ -1255,17 +1264,18 @@ func TestBuyCoinTxCustomToCustomCustom2Commission(t *testing.T) {
 	}
 
 	// check reserve and supply
+	calculatePurchaseAmount := formula.CalculatePurchaseAmount(big.NewInt(0).Sub(initialVolume2, commission), big.NewInt(0).Sub(initialReserve2, commissionInBaseCoin), crr2, toBuy)
 	{
 		coinData := cState.Coins.GetCoin(coinToSellID)
 
 		estimatedReserve := big.NewInt(0).Set(initialReserve1)
-		estimatedReserve.Sub(estimatedReserve, formula.CalculatePurchaseAmount(initialVolume2, initialReserve2, crr2, toBuy))
+		estimatedReserve.Sub(estimatedReserve, calculatePurchaseAmount)
 		if coinData.Reserve().Cmp(estimatedReserve) != 0 {
 			t.Fatalf("Wrong coin reserve. Expected %s, got %s", estimatedReserve.String(), coinData.Reserve().String())
 		}
 
 		estimatedSupply := big.NewInt(0).Set(initialVolume1)
-		estimatedSupply.Sub(estimatedSupply, formula.CalculateSaleAmount(initialVolume1, initialReserve1, crr1, formula.CalculatePurchaseAmount(initialVolume2, initialReserve2, crr2, toBuy)))
+		estimatedSupply.Sub(estimatedSupply, formula.CalculateSaleAmount(initialVolume1, initialReserve1, crr1, calculatePurchaseAmount))
 		if coinData.Volume().Cmp(estimatedSupply) != 0 {
 			t.Fatalf("Wrong coin supply")
 		}
@@ -1275,7 +1285,7 @@ func TestBuyCoinTxCustomToCustomCustom2Commission(t *testing.T) {
 		coinData := cState.Coins.GetCoin(coinToBuyID)
 
 		estimatedReserve := big.NewInt(0).Set(initialReserve2)
-		estimatedReserve.Add(estimatedReserve, formula.CalculatePurchaseAmount(initialVolume2, initialReserve2, crr2, toBuy))
+		estimatedReserve.Add(estimatedReserve, calculatePurchaseAmount)
 		estimatedReserve.Sub(estimatedReserve, commissionInBaseCoin)
 		if coinData.Reserve().Cmp(estimatedReserve) != 0 {
 			t.Fatalf("Wrong coin reserve. Expected %s, got %s", estimatedReserve.String(), coinData.Reserve().String())
