@@ -37,7 +37,7 @@ func (data RecreateTokenData) basicCheck(tx *Transaction, context *state.CheckSt
 		}
 	}
 
-	if data.Mintable && data.InitialAmount.Cmp(data.MaxSupply) == 0 {
+	if !data.Mintable && data.InitialAmount.Cmp(data.MaxSupply) != 0 {
 		return &Response{
 			Code: code.WrongCoinSupply,
 			Log:  fmt.Sprintf("Maximum supply cannot be more than the initial amount, if the token is not mintable"),

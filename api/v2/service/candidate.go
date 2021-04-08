@@ -60,6 +60,7 @@ func makeResponseCandidate(state *state.CheckState, c *candidates.Candidate, inc
 		Commission:     uint64(c.Commission),
 		Status:         uint64(c.Status),
 		JailedUntil:    c.JailedUntil,
+		Id:             uint64(c.ID),
 	}
 
 	if includeStakes {
