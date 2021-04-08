@@ -427,10 +427,10 @@ func (s *State) Import(state types.AppState) error {
 		volume := helpers.StringToBigInt(c.Volume)
 		maxSupply := helpers.StringToBigInt(c.MaxSupply)
 		if c.Crr == 0 {
-			s.Coins.CreateToken(coinID, c.Symbol, c.Name, c.Mintable, c.Burnable, volume, maxSupply, c.OwnerAddress)
+			s.Coins.ImportToken(coinID, c.Symbol, c.Name, c.Mintable, c.Burnable, volume, maxSupply, c.OwnerAddress, c.Version)
 		} else {
 			reserve := helpers.StringToBigInt(c.Reserve)
-			s.Coins.Create(coinID, c.Symbol, c.Name, volume, uint32(c.Crr), reserve, maxSupply, c.OwnerAddress)
+			s.Coins.ImportCoin(coinID, c.Symbol, c.Name, volume, uint32(c.Crr), reserve, maxSupply, c.OwnerAddress, c.Version)
 		}
 	}
 

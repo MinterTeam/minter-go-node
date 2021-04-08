@@ -69,19 +69,15 @@ func (c *Coins) ExportV1(state *types.AppState, subValues map[types.CoinID]*big.
 
 		subValue, has := subValues[coinID]
 		if has {
-			// if coinID != types.GetBaseCoinID() {
 			subReserve := formula.CalculateSaleReturn(volume, reserve, coin.CCrr, subValue)
 			reserve.Sub(reserve, subReserve)
 			totalSubReserve.Add(totalSubReserve, subReserve)
-			// } else {
-			// 	totalSubReserve.Add(totalSubReserve, subValue)
-			// }
 			volume.Sub(volume, subValue)
 		}
 
 		symbol := coin.Symbol()
 		strSymbol := symbol.String()
-		if _, err := strconv.Atoi(strSymbol); err == nil || coinID != 0 && strSymbol == types.GetBaseCoin().String() {
+		if _, err := strconv.Atoi(strSymbol); err == nil || strSymbol == types.GetBaseCoin().String() {
 			symbol = types.StrToCoinSymbol(strSymbol + "A")
 		}
 
@@ -95,7 +91,6 @@ func (c *Coins) ExportV1(state *types.AppState, subValues map[types.CoinID]*big.
 			mul := big.NewInt(0).Mul(v.Volume, big.NewInt(100))
 			div := mul.Div(mul, volume)
 			if div.Cmp(big.NewInt(90)) != -1 {
-				// log.Println("fix owner of coin", symbol, v.Owner.String())
 				owner = &v.Owner
 			}
 		}

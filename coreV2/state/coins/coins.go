@@ -307,6 +307,44 @@ func (c *Coins) Create(id types.CoinID, symbol types.CoinSymbol, name string,
 
 	c.markDirty(coin.id)
 }
+func (c *Coins) ImportCoin(id types.CoinID, symbol types.CoinSymbol, name string, volume *big.Int, crr uint32, reserve *big.Int, maxSupply *big.Int, owner *types.Address, version uint64) {
+	coin := &Model{
+		CName:      name,
+		CCrr:       crr,
+		CMaxSupply: maxSupply,
+		CSymbol:    symbol,
+		CVersion:   types.CoinVersion(version),
+		id:         id,
+		markDirty:  c.markDirty,
+		isDirty:    true,
+		isCreated:  true,
+		info: &Info{
+			Volume:  volume,
+			Reserve: reserve,
+			isDirty: true,
+		},
+	}
+
+	if owner != nil {
+		coin.symbolInfo = &SymbolInfo{
+			COwnerAddress: owner,
+			isDirty:       true,
+		}
+
+		c.setSymbolInfoToMap(coin.symbolInfo, coin.Symbol())
+	}
+
+	ids := c.getBySymbol(coin.Symbol())
+	ids = append(ids, coin.ID())
+
+	c.setSymbolToMap(ids, coin.Symbol())
+	c.setToMap(coin.ID(), coin)
+
+	c.bus.Checker().AddCoin(types.GetBaseCoinID(), reserve)
+	c.bus.Checker().AddCoinVolume(coin.id, volume)
+
+	c.markDirty(coin.id)
+}
 
 func (c *Coins) CreateToken(id types.CoinID, symbol types.CoinSymbol, name string, mintable, burnable bool, initialAmount *big.Int, maxSupply *big.Int, owner *types.Address) {
 	coin := &Model{
@@ -314,6 +352,45 @@ func (c *Coins) CreateToken(id types.CoinID, symbol types.CoinSymbol, name strin
 		CCrr:       0,
 		CMaxSupply: maxSupply,
 		CSymbol:    symbol,
+		Mintable:   mintable,
+		Burnable:   burnable,
+		id:         id,
+		markDirty:  c.markDirty,
+		isDirty:    true,
+		isCreated:  true,
+		info: &Info{
+			Volume:  initialAmount,
+			Reserve: big.NewInt(0),
+			isDirty: true,
+		},
+	}
+
+	if owner != nil {
+		coin.symbolInfo = &SymbolInfo{
+			COwnerAddress: owner,
+			isDirty:       true,
+		}
+
+		c.setSymbolInfoToMap(coin.symbolInfo, coin.Symbol())
+	}
+
+	ids := c.getBySymbol(coin.Symbol())
+	ids = append(ids, coin.ID())
+
+	c.setSymbolToMap(ids, coin.Symbol())
+	c.setToMap(coin.ID(), coin)
+
+	c.bus.Checker().AddCoinVolume(coin.id, initialAmount)
+
+	c.markDirty(coin.id)
+}
+func (c *Coins) ImportToken(id types.CoinID, symbol types.CoinSymbol, name string, mintable, burnable bool, initialAmount, maxSupply *big.Int, owner *types.Address, version uint64) {
+	coin := &Model{
+		CName:      name,
+		CCrr:       0,
+		CMaxSupply: maxSupply,
+		CSymbol:    symbol,
+		CVersion:   types.CoinVersion(version),
 		Mintable:   mintable,
 		Burnable:   burnable,
 		id:         id,
