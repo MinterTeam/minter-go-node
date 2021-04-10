@@ -256,20 +256,20 @@ func (s *Service) calcSellFromPool(ctx context.Context, value *big.Int, cState *
 		if buyCoinID != coinBuy.ID() {
 			coinBuy = cState.Coins().GetCoin(buyCoinID)
 		}
-		if !swapChecker.IsExist() {
+		if !swapChecker.Exists() {
 			return nil, s.createError(status.New(codes.NotFound, fmt.Sprintf("swap pool between coins %s and %s not exists", coinSell.GetFullSymbol(), coinBuy.GetFullSymbol())), transaction.EncodeError(code.NewPairNotExists(coinSell.ID().String(), coinBuy.ID().String())))
 		}
 
 		if swapChecker.GetID() == commissionPoolSwapper.GetID() {
 			if sellCoinID == types.GetBaseCoinID() {
-				swapChecker = commissionPoolSwapper.Revert()
+				swapChecker = commissionPoolSwapper.Reverse()
 			} else {
 				swapChecker = commissionPoolSwapper
 			}
 		}
 
 		buyValue := swapChecker.CalculateBuyForSell(sellValue)
-		if buyValue == nil { // todo
+		if buyValue == nil {
 			reserve0, reserve1 := swapChecker.Reserves()
 			return nil, s.createError(status.New(codes.OutOfRange, fmt.Sprintf("swap pool has reserves %s %s and %d %s, you wanted sell %s %s", reserve0, coinSell.GetFullSymbol(), reserve1, coinBuy.GetFullSymbol(), sellValue, coinSell.GetFullSymbol())), "")
 		}

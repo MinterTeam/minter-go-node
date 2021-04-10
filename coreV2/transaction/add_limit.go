@@ -62,7 +62,7 @@ package transaction
 // 	}
 //
 // 	swapper := checkState.Swap().GetSwapper(data.CoinToBuy, data.CoinToSell)
-// 	if !swapper.IsExist() {
+// 	if !swapper.Exists() {
 // 		return Response{
 // 			Code: code.PairNotExists,
 // 			Log:  "swap pool for pair not found",

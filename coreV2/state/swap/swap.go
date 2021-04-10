@@ -22,10 +22,10 @@ const minimumLiquidity = 1000
 const commission = 2
 
 type EditableChecker interface {
-	IsExist() bool
+	Exists() bool
 	GetID() uint32
 	AddLastSwapStep(amount0In, amount1Out *big.Int) EditableChecker
-	Revert() EditableChecker
+	Reverse() EditableChecker
 	Reserves() (reserve0 *big.Int, reserve1 *big.Int)
 	Amounts(liquidity, totalSupply *big.Int) (amount0 *big.Int, amount1 *big.Int)
 	CalculateBuyForSell(amount0In *big.Int) (amount1Out *big.Int)
@@ -166,7 +166,7 @@ func (pd *pairData) Reserves() (reserve0 *big.Int, reserve1 *big.Int) {
 	return new(big.Int).Set(pd.Reserve0), new(big.Int).Set(pd.Reserve1)
 }
 
-func (pd *pairData) Revert() *pairData {
+func (pd *pairData) reverse() *pairData {
 	return &pairData{
 		RWMutex:   pd.RWMutex,
 		Reserve0:  pd.Reserve1,
@@ -182,7 +182,7 @@ func (s *Swap) CheckSwap(coin0, coin1 types.CoinID, amount0In, amount1Out *big.I
 func (p *Pair) CheckSwap(amount0In, amount1Out *big.Int) error {
 	return p.checkSwap(amount0In, big.NewInt(0), big.NewInt(0), amount1Out)
 }
-func (p *Pair) IsExist() bool {
+func (p *Pair) Exists() bool {
 	return p != nil
 }
 func (p *Pair) AddLastSwapStep(amount0In, amount1Out *big.Int) EditableChecker {
@@ -195,8 +195,8 @@ func (p *Pair) AddLastSwapStep(amount0In, amount1Out *big.Int) EditableChecker {
 		markDirty: func() {},
 	}}
 }
-func (p *Pair) Revert() EditableChecker {
-	return &Pair{pairData: p.pairData.Revert()}
+func (p *Pair) Reverse() EditableChecker {
+	return &Pair{pairData: p.pairData.reverse()}
 }
 
 const pairDataPrefix = 'd'
@@ -259,7 +259,7 @@ func (s *Swap) pair(key pairKey) (*Pair, bool) {
 		return pair, true
 	}
 	return &Pair{
-		pairData: pair.pairData.Revert(),
+		pairData: pair.pairData.reverse(),
 	}, true
 }
 
@@ -301,7 +301,7 @@ func (s *Swap) Pair(coin0, coin1 types.CoinID) *Pair {
 
 	if !key.isSorted() {
 		return &Pair{
-			pairData: pair.pairData.Revert(),
+			pairData: pair.pairData.reverse(),
 		}
 	}
 
@@ -411,14 +411,14 @@ func (pk pairKey) sort() pairKey {
 	if pk.isSorted() {
 		return pk
 	}
-	return pk.Revert()
+	return pk.reverse()
 }
 
 func (pk *pairKey) isSorted() bool {
 	return pk.Coin0 < pk.Coin1
 }
 
-func (pk *pairKey) Revert() pairKey {
+func (pk *pairKey) reverse() pairKey {
 	return pairKey{Coin0: pk.Coin1, Coin1: pk.Coin0}
 }
 
@@ -444,7 +444,7 @@ func (s *Swap) ReturnPair(coin0, coin1 types.CoinID) *Pair {
 
 	if !key.isSorted() {
 		return &Pair{
-			pairData: pair.pairData.Revert(),
+			pairData: pair.pairData.reverse(),
 		}
 	}
 	return pair
@@ -460,7 +460,7 @@ func (s *Swap) markDirty(key pairKey) func() {
 
 func (s *Swap) addPair(key pairKey) *Pair {
 	if !key.isSorted() {
-		key = key.Revert()
+		key = key.reverse()
 	}
 	pair := &Pair{
 		pairData: &pairData{

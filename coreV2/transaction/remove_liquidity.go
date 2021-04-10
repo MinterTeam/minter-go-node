@@ -71,7 +71,7 @@ func (data RemoveLiquidity) Run(tx *Transaction, context state.Interface, reward
 	}
 
 	swapper := checkState.Swap().GetSwapper(data.Coin0, data.Coin1)
-	if !swapper.IsExist() {
+	if !swapper.Exists() {
 		return Response{
 			Code: code.PairNotExists,
 			Log:  "swap pool for pair not found",
@@ -97,7 +97,7 @@ func (data RemoveLiquidity) Run(tx *Transaction, context state.Interface, reward
 		return *errResp
 	}
 
-	if swapper.IsExist() {
+	if swapper.Exists() {
 		if isGasCommissionFromPoolSwap {
 			if tx.GasCoin == data.Coin0 && data.Coin1.IsBaseCoin() {
 				swapper = swapper.AddLastSwapStep(commission, commissionInBaseCoin)
