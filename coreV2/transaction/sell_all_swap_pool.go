@@ -316,7 +316,7 @@ func CalculateCommission(checkState *state.CheckState, swapper swap.EditableChec
 }
 
 func commissionFromPool(swapChecker swap.EditableChecker, coin CalculateCoin, baseCoin CalculateCoin, commissionInBaseCoin *big.Int) (*big.Int, *Response) {
-	if !swapChecker.IsExist() {
+	if !swapChecker.Exists() {
 		return nil, &Response{
 			Code: code.PairNotExists,
 			Log:  fmt.Sprintf("swap pool between coins %s and %s not exists", coin.GetFullSymbol(), types.GetBaseCoin()),

@@ -22,7 +22,7 @@ const minimumLiquidity = 1000
 const commission = 2
 
 type EditableChecker interface {
-	IsExist() bool
+	Exists() bool
 	GetID() uint32
 	AddLastSwapStep(amount0In, amount1Out *big.Int) EditableChecker
 	Reverse() EditableChecker
@@ -182,7 +182,7 @@ func (s *Swap) CheckSwap(coin0, coin1 types.CoinID, amount0In, amount1Out *big.I
 func (p *Pair) CheckSwap(amount0In, amount1Out *big.Int) error {
 	return p.checkSwap(amount0In, big.NewInt(0), big.NewInt(0), amount1Out)
 }
-func (p *Pair) IsExist() bool {
+func (p *Pair) Exists() bool {
 	return p != nil
 }
 func (p *Pair) AddLastSwapStep(amount0In, amount1Out *big.Int) EditableChecker {
