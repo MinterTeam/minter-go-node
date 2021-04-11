@@ -115,7 +115,7 @@ func (cs *CheckState) ExportV1(bipRate float64, validatorList []string, addresse
 		log.Printf("Handling checks...\n")
 		cs.Checks().Export(appState)
 	}
-	log.Printf("Handling halt voites...\n")
+	log.Printf("Handling halt votes...\n")
 	cs.Halts().Export(appState)
 
 	if types.CurrentChainID == types.ChainTestnet && bipRate != 0 {

@@ -165,7 +165,7 @@ func (data VoteCommissionData) Run(tx *Transaction, context state.Interface, rew
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		deliverState.Commission.AddVoice(data.Height, data.PubKey, data.price().Encode())
+		deliverState.Commission.AddVote(data.Height, data.PubKey, data.price().Encode())
 
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 
