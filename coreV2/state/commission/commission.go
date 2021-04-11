@@ -427,7 +427,7 @@ func (c *Commission) IsVoteExists(height uint64, pubkey types.Pubkey) bool {
 	return false
 }
 
-func (c *Commission) AddVoice(height uint64, pubkey types.Pubkey, encode []byte) {
+func (c *Commission) AddVote(height uint64, pubkey types.Pubkey, encode []byte) {
 	c.getOrNew(height, string(encode)).addVote(pubkey)
 }
 
