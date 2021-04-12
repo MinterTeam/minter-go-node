@@ -39,8 +39,7 @@ func DefaultConfig() *Config {
 
 	cfg.P2P.Seeds = "25104d4b173d1047e9d1a70cdefde9e30707beb1@84.201.143.192:26656," +
 		"1e1c6149451d2a7c1072523e49cab658080d9bd2@minter-nodes-1.mainnet.btcsecure.io:26656," +
-		"8ee270d29cc7221a61ab4c93121efba9ba83a943@minter-node-1.rundax.com:26656," +
-	        "c578fba1bdb5265be75dd412f8cf1bbeb7399620@seed.minter.stakeholder.space:26656," +
+		"c578fba1bdb5265be75dd412f8cf1bbeb7399620@seed.minter.stakeholder.space:26656," +
 		"bab220855eb9625ea547f1ef1d11692c60a7a406@138.201.28.219:26656"
 
 	cfg.TxIndex = &tmConfig.TxIndexConfig{
