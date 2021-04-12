@@ -25,7 +25,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/syndtr/goleveldb v1.0.1-0.20200815110645-5c35d600f0ca
 	github.com/tendermint/go-amino v0.15.1
-	github.com/tendermint/tendermint v0.34.8
+	github.com/tendermint/tendermint v0.34.9
 	github.com/tendermint/tm-db v0.6.4
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20201229170055-e5319fda7802
 	github.com/urfave/cli/v2 v2.0.0
