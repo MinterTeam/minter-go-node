@@ -15,16 +15,8 @@ func (s *Service) Candidates(ctx context.Context, req *pb.CandidatesRequest) (*p
 	}
 
 	if req.Height != 0 {
-		cState.Lock()
 		cState.Candidates().LoadCandidates()
-		if req.IncludeStakes {
-			cState.Candidates().LoadStakes()
-		}
-		cState.Unlock()
 	}
-
-	cState.RLock()
-	defer cState.RUnlock()
 
 	candidates := cState.Candidates().GetCandidates()
 
@@ -35,11 +27,26 @@ func (s *Service) Candidates(ctx context.Context, req *pb.CandidatesRequest) (*p
 			return nil, timeoutStatus.Err()
 		}
 
-		if req.Status != pb.CandidatesRequest_all && req.Status != pb.CandidatesRequest_CandidateStatus(candidate.Status) {
-			continue
+		isValidator := false
+		if cState.Validators().GetByPublicKey(candidate.PubKey) != nil {
+			isValidator = true
 		}
 
-		response.Candidates = append(response.Candidates, makeResponseCandidate(cState, candidate, req.IncludeStakes, req.NotShowStakes))
+		if req.Status != pb.CandidatesRequest_all {
+			if req.Status == pb.CandidatesRequest_validator {
+				if !isValidator {
+					continue
+				}
+			} else if req.Status != pb.CandidatesRequest_CandidateStatus(candidate.Status) {
+				continue
+			}
+		}
+		cState.Candidates().LoadStakesOfCandidate(candidate.PubKey)
+
+		responseCandidate := makeResponseCandidate(cState, candidate, req.IncludeStakes, req.NotShowStakes)
+		responseCandidate.Validator = isValidator
+
+		response.Candidates = append(response.Candidates, responseCandidate)
 	}
 
 	return response, nil

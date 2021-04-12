@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"github.com/MinterTeam/minter-go-node/cmd/minter/cmd"
-	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/tendermint/tendermint/libs/log"
 	tmos "github.com/tendermint/tendermint/libs/os"
 	"os"
+	"time"
 )
 
 func main() {
@@ -16,6 +16,7 @@ func main() {
 
 	tmos.TrapSignal(log.NewTMLogger(os.Stdout).With("module", "consensus"), func() {
 		cancel()
+		time.Sleep(time.Second * 10)
 	})
 
 	rootCmd.AddCommand(
@@ -29,18 +30,20 @@ func main() {
 		cmd.ExportCommand,
 	)
 
-	rootCmd.PersistentFlags().StringVar(&utils.MinterHome, "home-dir", "", "base dir (default is $HOME/.minter)")
-	rootCmd.PersistentFlags().StringVar(&utils.MinterConfig, "config", "", "path to config (default is $(home-dir)/config/config.toml)")
+	rootCmd.PersistentFlags().String("home-dir", "", "base dir (default is $HOME/.minter)")
+	rootCmd.PersistentFlags().String("config", "", "path to config (default is $(home-dir)/config/config.toml)")
 	rootCmd.PersistentFlags().Bool("testnet", false, "use \"true\" for testnet, mainnet is default")
 	rootCmd.PersistentFlags().Bool("pprof", false, "enable pprof")
 	rootCmd.PersistentFlags().String("pprof-addr", "0.0.0.0:6060", "pprof listen addr")
 	rootCmd.PersistentFlags().String("genesis", "https://github.com/MinterTeam/minter-go-node/releases/download/v1.2.0/genesis.json", "path with the genesis file to download")
 
 	cmd.ExportCommand.Flags().Uint64("height", 0, "export height")
-	cmd.ExportCommand.Flags().Uint64("start-height", 0, "height for starting a new chain")
+	cmd.ExportCommand.Flags().Float64("bip-price", 0, "bip price in usd")
 	cmd.ExportCommand.Flags().Bool("indent", false, "using indent")
 	cmd.ExportCommand.Flags().String("chain-id", "", "export chain id")
 	cmd.ExportCommand.Flags().Duration("genesis-time", 0, "export height")
+	cmd.ExportCommand.Flags().StringSlice("validators", []string{"Mpe1769d1239ff7b84cc582527d424a2f40ad2467170e76b45651789dfaf3564af"}, "testnet validator public key")
+	cmd.ExportCommand.Flags().StringSlice("rich-addresses", []string{"Mx6ab3a04c2f4d6022163f36a73840980cc8fc6a8b"}, "testnet rich addresses")
 
 	if err := rootCmd.ExecuteContext(ctx); err != nil {
 		panic(err)

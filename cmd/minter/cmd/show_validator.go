@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/spf13/cobra"
-	"github.com/tendermint/go-amino"
-	cryptoAmino "github.com/tendermint/tendermint/crypto/encoding/amino"
 	tmos "github.com/tendermint/tendermint/libs/os"
 	"github.com/tendermint/tendermint/privval"
 	"os"
@@ -18,9 +16,6 @@ var ShowValidator = &cobra.Command{
 }
 
 func showValidator(cmd *cobra.Command, args []string) error {
-	cdc := amino.NewCodec()
-	cryptoAmino.RegisterAmino(cdc)
-
 	keyFilePath := cfg.PrivValidatorKeyFile()
 	logger := log.NewLogger(cfg)
 	if !tmos.FileExists(keyFilePath) {
@@ -33,6 +28,6 @@ func showValidator(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("Mp%x\n", key.Bytes()[5:])
+	fmt.Printf("Mp%x\n", key.Bytes()[:])
 	return nil
 }

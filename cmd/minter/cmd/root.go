@@ -3,7 +3,7 @@ package cmd
 import (
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
-	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/version"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -16,8 +16,17 @@ var RootCmd = &cobra.Command{
 	Short: "Minter Go Node",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		v := viper.New()
-		v.SetConfigFile(utils.GetMinterConfigPath())
-		cfg = config.GetConfig()
+		homeDir, err := cmd.Flags().GetString("home-dir")
+		if err != nil {
+			panic(err)
+		}
+		configDir, err := cmd.Flags().GetString("config")
+		if err != nil {
+			panic(err)
+		}
+		storage := utils.NewStorage(homeDir, configDir)
+		v.SetConfigFile(storage.GetMinterConfigPath())
+		cfg = config.GetConfig(storage.GetMinterHome())
 
 		if err := v.ReadInConfig(); err != nil {
 			panic(err)

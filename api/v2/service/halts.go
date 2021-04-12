@@ -3,16 +3,11 @@ package service
 import (
 	"context"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 // Halts returns votes
 func (s *Service) Halts(_ context.Context, req *pb.HaltsRequest) (*pb.HaltsResponse, error) {
-	cState, err := s.blockchain.GetStateForHeight(req.Height)
-	if err != nil {
-		return nil, status.Error(codes.NotFound, err.Error())
-	}
+	cState := s.blockchain.CurrentState()
 
 	blocks := cState.Halts().GetHaltBlocks(req.Height)
 

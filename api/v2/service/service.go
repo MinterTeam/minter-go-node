@@ -3,9 +3,9 @@ package service
 import (
 	"context"
 	"github.com/MinterTeam/minter-go-node/config"
-	"github.com/MinterTeam/minter-go-node/core/minter"
+	"github.com/MinterTeam/minter-go-node/coreV2/minter"
+	"github.com/MinterTeam/minter-go-node/coreV2/rewards"
 	"github.com/MinterTeam/node-grpc-gateway/api_pb"
-	"github.com/tendermint/go-amino"
 	tmNode "github.com/tendermint/tendermint/node"
 	rpc "github.com/tendermint/tendermint/rpc/client/local"
 	"google.golang.org/grpc/grpclog"
@@ -16,19 +16,19 @@ import (
 
 // Service is gRPC implementation ApiServiceServer
 type Service struct {
-	cdc        *amino.Codec
 	blockchain *minter.Blockchain
 	client     *rpc.Local
 	tmNode     *tmNode.Node
 	minterCfg  *config.Config
 	version    string
+	rewards    *rewards.Reward
 	api_pb.UnimplementedApiServiceServer
 }
 
 // NewService create gRPC server implementation
-func NewService(cdc *amino.Codec, blockchain *minter.Blockchain, client *rpc.Local, node *tmNode.Node, minterCfg *config.Config, version string) *Service {
+func NewService(blockchain *minter.Blockchain, client *rpc.Local, node *tmNode.Node, minterCfg *config.Config, version string, reward *rewards.Reward) *Service {
 	return &Service{
-		cdc:        cdc,
+		rewards:    reward,
 		blockchain: blockchain,
 		client:     client,
 		minterCfg:  minterCfg,

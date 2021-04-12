@@ -15,6 +15,15 @@ func BipToPip(bip *big.Int) *big.Int {
 	return p
 }
 
+// BipToPip converts BIP to PIP (multiplies input by 1e18)
+func FloatBipToPip(bip float64) *big.Int {
+	p := big.NewInt(10)
+	p.Exp(p, big.NewInt(18), nil)
+	result, _ := big.NewFloat(0).Mul(big.NewFloat(bip), big.NewFloat(0).SetInt(p)).Int(nil)
+
+	return result
+}
+
 // StringToBigInt converts string to BigInt, panics on empty strings and errors
 func StringToBigInt(s string) *big.Int {
 	result, err := stringToBigInt(s)

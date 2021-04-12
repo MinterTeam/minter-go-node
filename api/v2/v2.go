@@ -88,7 +88,7 @@ func Run(srv *service.Service, addrGRPC, addrAPI string, logger log.Logger) erro
 	)
 	opts := []grpc.DialOption{
 		grpc.WithInsecure(),
-		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(200000000)),
+		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(1000000000)),
 	}
 	err = gw.RegisterApiServiceHandlerFromEndpoint(ctx, gwmux, addrGRPC, opts)
 	if err != nil {

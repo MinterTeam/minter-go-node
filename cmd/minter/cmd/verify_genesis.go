@@ -2,7 +2,8 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/cmd/utils"
+	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/spf13/cobra"
 	"github.com/tendermint/go-amino"
 )
@@ -14,7 +15,15 @@ var VerifyGenesis = &cobra.Command{
 }
 
 func verifyGenesis(cmd *cobra.Command, args []string) error {
-	genesis, err := getGenesis()
+	homeDir, err := cmd.Flags().GetString("home-dir")
+	if err != nil {
+		return err
+	}
+	configDir, err := cmd.Flags().GetString("config")
+	if err != nil {
+		return err
+	}
+	genesis, err := getGenesis(utils.NewStorage(homeDir, configDir).GetMinterHome() + "/config/genesis.json")()
 	if err != nil {
 		return err
 	}

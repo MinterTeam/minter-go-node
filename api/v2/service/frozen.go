@@ -2,11 +2,10 @@ package service
 
 import (
 	"context"
-	"github.com/MinterTeam/minter-go-node/core/code"
-	"github.com/MinterTeam/minter-go-node/core/state/candidates"
-	"github.com/MinterTeam/minter-go-node/core/state/coins"
-	"github.com/MinterTeam/minter-go-node/core/transaction"
-	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/coreV2/code"
+	"github.com/MinterTeam/minter-go-node/coreV2/state/coins"
+	"github.com/MinterTeam/minter-go-node/coreV2/transaction"
+	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -19,9 +18,10 @@ func (s *Service) Frozen(ctx context.Context, req *pb.FrozenRequest) (*pb.Frozen
 		return nil, status.Error(codes.InvalidArgument, "invalid address")
 	}
 
-	cState := s.blockchain.CurrentState()
-	cState.RLock()
-	defer cState.RUnlock()
+	cState, err := s.blockchain.GetStateForHeight(req.Height)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, err.Error())
+	}
 
 	var reqCoin *coins.Model
 
@@ -36,7 +36,7 @@ func (s *Service) Frozen(ctx context.Context, req *pb.FrozenRequest) (*pb.Frozen
 
 	cState.FrozenFunds().GetFrozenFunds(s.blockchain.Height())
 
-	for i := s.blockchain.Height(); i <= s.blockchain.Height()+candidates.UnbondPeriod; i++ {
+	for i := s.blockchain.Height(); i <= s.blockchain.Height()+types.GetUnbondPeriod(); i++ {
 
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
 			return nil, timeoutStatus.Err()

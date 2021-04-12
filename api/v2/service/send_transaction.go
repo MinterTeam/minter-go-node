@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 	"encoding/hex"
-	"github.com/MinterTeam/minter-go-node/core/code"
+	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/bytes"
@@ -24,21 +24,20 @@ func (s *Service) SendTransaction(ctx context.Context, req *pb.SendTransactionRe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	result, statusErr := s.broadcastTxSync(decodeString, ctx /*timeout*/)
+	result, statusErr := s.broadcastTxSync(ctx, decodeString)
 	if statusErr != nil {
 		return nil, statusErr.Err()
 	}
 
-	switch result.Code {
-	case code.OK:
-		return &pb.SendTransactionResponse{
-			Code: uint64(result.Code),
-			Log:  result.Log,
-			Hash: "Mt" + strings.ToLower(result.Hash.String()),
-		}, nil
-	default:
+	if result.Code != code.OK {
 		return nil, s.createError(status.New(codes.InvalidArgument, result.Log), result.Info)
 	}
+
+	return &pb.SendTransactionResponse{
+		Code: uint64(result.Code),
+		Log:  result.Log,
+		Hash: "Mt" + strings.ToLower(result.Hash.String()),
+	}, nil
 }
 
 type ResultBroadcastTx struct {
@@ -49,7 +48,7 @@ type ResultBroadcastTx struct {
 	Hash bytes.HexBytes `json:"hash"`
 }
 
-func (s *Service) broadcastTxSync(tx types.Tx, ctx context.Context) (*ResultBroadcastTx, *status.Status) {
+func (s *Service) broadcastTxSync(ctx context.Context, tx types.Tx) (*ResultBroadcastTx, *status.Status) {
 	resCh := make(chan *abci.Response, 1)
 	err := s.tmNode.Mempool().CheckTx(tx, func(res *abci.Response) {
 		resCh <- res
@@ -72,10 +71,6 @@ func (s *Service) broadcastTxSync(tx types.Tx, ctx context.Context) (*ResultBroa
 			Hash: tx.Hash(),
 		}, nil
 	case <-ctx.Done():
-		if ctx.Err() != context.DeadlineExceeded {
-			return nil, status.New(codes.Canceled, ctx.Err().Error())
-		}
-		return nil, status.New(codes.DeadlineExceeded, ctx.Err().Error())
+		return nil, status.FromContextError(ctx.Err())
 	}
-
 }

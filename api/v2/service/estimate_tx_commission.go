@@ -3,13 +3,11 @@ package service
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
-	"math/big"
+	"github.com/MinterTeam/minter-go-node/coreV2/code"
+	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"strings"
 
-	"github.com/MinterTeam/minter-go-node/core/code"
-	"github.com/MinterTeam/minter-go-node/core/transaction"
-	"github.com/MinterTeam/minter-go-node/formula"
+	"github.com/MinterTeam/minter-go-node/coreV2/transaction"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -22,9 +20,6 @@ func (s *Service) EstimateTxCommission(ctx context.Context, req *pb.EstimateTxCo
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
-	cState.RLock()
-	defer cState.RUnlock()
-
 	if !strings.HasPrefix(strings.Title(req.GetTx()), "0x") {
 		return nil, status.Error(codes.InvalidArgument, "invalid transaction")
 	}
@@ -34,31 +29,25 @@ func (s *Service) EstimateTxCommission(ctx context.Context, req *pb.EstimateTxCo
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	decodedTx, err := transaction.TxDecoder.DecodeFromBytesWithoutSig(decodeString)
+	decodedTx, err := transaction.DecodeFromBytesWithoutSig(decodeString)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "Cannot decode transaction: %s", err.Error())
 	}
 
-	commissionInBaseCoin := decodedTx.CommissionInBaseCoin()
-	commission := big.NewInt(0).Set(commissionInBaseCoin)
+	commissions := cState.Commission().GetCommissions()
+	price := decodedTx.Price(commissions)
+	if !commissions.Coin.IsBaseCoin() {
+		price = cState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()).CalculateBuyForSell(price)
+	}
+	if price == nil {
+		return nil, s.createError(status.New(codes.FailedPrecondition, "Not possible to pay commission"), transaction.EncodeError(code.NewCommissionCoinNotSufficient("", "")))
+	}
 
-	if !decodedTx.GasCoin.IsBaseCoin() {
-		coin := cState.Coins().GetCoin(decodedTx.GasCoin)
-
-		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
-			return nil, s.createError(
-				status.New(codes.InvalidArgument, fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s",
-					coin.Reserve().String(), commissionInBaseCoin.String())),
-				transaction.EncodeError(code.NewCoinReserveNotSufficient(
-					coin.GetFullSymbol(),
-					coin.ID().String(),
-					coin.Reserve().String(),
-					commissionInBaseCoin.String(),
-				)),
-			)
-		}
-
-		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
+	commissionInBaseCoin := decodedTx.Commission(price)
+	commissionPoolSwapper := cState.Swap().GetSwapper(decodedTx.GasCoin, types.GetBaseCoinID())
+	commission, _, errResp := transaction.CalculateCommission(cState, commissionPoolSwapper, cState.Coins().GetCoin(decodedTx.GasCoin), commissionInBaseCoin)
+	if errResp != nil {
+		return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
 	}
 
 	return &pb.EstimateTxCommissionResponse{

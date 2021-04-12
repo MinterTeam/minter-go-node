@@ -1,10 +1,12 @@
 package tests
 
 import (
-	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	tmTypes "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto/ed25519"
+	tmTypes1 "github.com/tendermint/tendermint/proto/tendermint/types"
+	"github.com/tendermint/tendermint/proto/tendermint/version"
 	"math/big"
 	"testing"
 	"time"
@@ -40,20 +42,19 @@ func TestBlockchain_ByzantineValidators(t *testing.T) {
 		Status:  2,
 	})
 
-	var pubkey ed25519.PubKeyEd25519
-	copy(pubkey[:], types.Pubkey{1}.Bytes())
 	var address types.TmAddress
-	copy(address[:], pubkey.Address().Bytes())
+	bytes := [32]byte{1}
+	copy(address[:], ed25519.PubKey(bytes[:]).Address().Bytes())
 
 	app := CreateApp(state) // create application
 	req := tmTypes.RequestBeginBlock{
 		Hash: nil,
-		Header: tmTypes.Header{
-			Version:            tmTypes.Version{},
+		Header: tmTypes1.Header{
+			Version:            version.Consensus{},
 			ChainID:            "",
 			Height:             1,
 			Time:               time.Time{},
-			LastBlockId:        tmTypes.BlockID{},
+			LastBlockId:        tmTypes1.BlockID{},
 			LastCommitHash:     nil,
 			DataHash:           nil,
 			ValidatorsHash:     nil,
@@ -70,7 +71,7 @@ func TestBlockchain_ByzantineValidators(t *testing.T) {
 		},
 		ByzantineValidators: []tmTypes.Evidence{
 			{
-				Type: "",
+				Type: tmTypes.EvidenceType_DUPLICATE_VOTE,
 				Validator: tmTypes.Validator{
 					Address: address[:],
 					Power:   10,
