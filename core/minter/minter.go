@@ -22,6 +22,7 @@ import (
 	abciTypes "github.com/tendermint/tendermint/abci/types"
 	tmNode "github.com/tendermint/tendermint/node"
 	"github.com/tendermint/tm-db"
+	"log"
 	"math/big"
 	"sort"
 	"sync"
@@ -178,7 +179,8 @@ func (app *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.Res
 	app.lock.Unlock()
 
 	if app.isApplicationHalted(height) && !upgrades.IsUpgradeBlock(height) {
-		panic(fmt.Sprintf("Application halted at height %d", height))
+		log.Printf("Application halted at height %d", height)
+		select {}
 	}
 
 	// give penalty to Byzantine validators
