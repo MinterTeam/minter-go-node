@@ -202,7 +202,7 @@ func (c *Update) IsVoteExists(height uint64, pubkey types.Pubkey) bool {
 	return false
 }
 
-func (c *Update) AddVoice(height uint64, pubkey types.Pubkey, version string) {
+func (c *Update) AddVote(height uint64, pubkey types.Pubkey, version string) {
 	c.getOrNew(height, version).addVote(pubkey)
 }
 

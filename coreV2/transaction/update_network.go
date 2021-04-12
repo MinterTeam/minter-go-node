@@ -43,17 +43,17 @@ func (data VoteUpdateData) basicCheck(tx *Transaction, context *state.CheckState
 
 	if data.Height < block {
 		return &Response{
-			Code: code.VoiceExpired,
-			Log:  "voice is produced for the past state",
-			Info: EncodeError(code.NewVoiceExpired(strconv.Itoa(int(block)), strconv.Itoa(int(data.Height)))),
+			Code: code.VoteExpired,
+			Log:  "vote is produced for the past state",
+			Info: EncodeError(code.NewVoteExpired(strconv.Itoa(int(block)), strconv.Itoa(int(data.Height)))),
 		}
 	}
 
 	if context.Updates().IsVoteExists(data.Height, data.PubKey) {
 		return &Response{
-			Code: code.VoiceAlreadyExists,
+			Code: code.VoteAlreadyExists,
 			Log:  "Update vote with such public key and height already exists",
-			Info: EncodeError(code.NewVoiceAlreadyExists(strconv.FormatUint(data.Height, 10), data.GetPubKey().String())),
+			Info: EncodeError(code.NewVoteAlreadyExists(strconv.FormatUint(data.Height, 10), data.GetPubKey().String())),
 		}
 	}
 	return checkCandidateOwnership(data, tx, context)
@@ -106,7 +106,7 @@ func (data VoteUpdateData) Run(tx *Transaction, context state.Interface, rewardP
 			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
 		}
 
-		deliverState.Updates.AddVoice(data.Height, data.PubKey, data.Version)
+		deliverState.Updates.AddVote(data.Height, data.PubKey, data.Version)
 
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)

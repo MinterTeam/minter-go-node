@@ -34,9 +34,9 @@ func (data SetHaltBlockData) GetPubKey() types.Pubkey {
 func (data SetHaltBlockData) basicCheck(tx *Transaction, context *state.CheckState, block uint64) *Response {
 	if data.Height < block {
 		return &Response{
-			Code: code.VoiceExpired,
+			Code: code.VoteExpired,
 			Log:  fmt.Sprintf("Halt height should be equal or bigger than current: %d", block),
-			Info: EncodeError(code.NewVoiceExpired(strconv.FormatUint(data.Height, 10), data.GetPubKey().String())),
+			Info: EncodeError(code.NewVoteExpired(strconv.FormatUint(data.Height, 10), data.GetPubKey().String())),
 		}
 	}
 

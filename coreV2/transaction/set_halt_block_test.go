@@ -149,8 +149,8 @@ func TestSetHaltBlockTxWithWrongHeight(t *testing.T) {
 	}
 
 	response := RunTx(cState, encodedTx, big.NewInt(0), currentHeight, &sync.Map{}, 0, false)
-	if response.Code != code.VoiceExpired {
-		t.Fatalf("Response code is not %d", code.VoiceExpired)
+	if response.Code != code.VoteExpired {
+		t.Fatalf("Response code is not %d", code.VoteExpired)
 	}
 
 	halts := cState.Halts.GetHaltBlocks(haltHeight)

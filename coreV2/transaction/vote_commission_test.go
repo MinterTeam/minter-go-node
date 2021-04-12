@@ -189,8 +189,8 @@ func TestPriceCommissionTx(t *testing.T) {
 		}
 
 		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
-		if response.Code != code.VoiceAlreadyExists {
-			t.Fatalf("Response code is not %d. Error: %s", code.VoiceAlreadyExists, response.Log)
+		if response.Code != code.VoteAlreadyExists {
+			t.Fatalf("Response code is not %d. Error: %s", code.VoteAlreadyExists, response.Log)
 		}
 
 		if err := checkState(cState); err != nil {

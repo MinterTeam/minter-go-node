@@ -83,17 +83,17 @@ func (data VoteCommissionData) basicCheck(tx *Transaction, context *state.CheckS
 
 	if data.Height < block {
 		return &Response{
-			Code: code.VoiceExpired,
-			Log:  "voice is produced for the past state",
-			Info: EncodeError(code.NewVoiceExpired(strconv.Itoa(int(block)), strconv.Itoa(int(data.Height)))),
+			Code: code.VoteExpired,
+			Log:  "vote is produced for the past state",
+			Info: EncodeError(code.NewVoteExpired(strconv.Itoa(int(block)), strconv.Itoa(int(data.Height)))),
 		}
 	}
 
 	if context.Commission().IsVoteExists(data.Height, data.PubKey) {
 		return &Response{
-			Code: code.VoiceAlreadyExists,
+			Code: code.VoteAlreadyExists,
 			Log:  "Commission price vote with such public key and height already exists",
-			Info: EncodeError(code.NewVoiceAlreadyExists(strconv.FormatUint(data.Height, 10), data.GetPubKey().String())),
+			Info: EncodeError(code.NewVoteAlreadyExists(strconv.FormatUint(data.Height, 10), data.GetPubKey().String())),
 		}
 	}
 
