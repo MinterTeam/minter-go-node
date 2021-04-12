@@ -1,5 +1,40 @@
 # Changelog
 
+## Unreleased [v2.0.0](https://github.com/MinterTeam/minter-go-node/tree/v2.0)
+
+[Full Changelog](https://github.com/MinterTeam/minter-go-node/compare/v1.2.1...v2.0)
+
+### Added
+
+- Liquidity pools
+- Voting for commissions (linked to the price of an arbitrary coin)
+- Smooth network update algo without stopping
+- Tokens (coins without reserve)
+- Change of the validator's commission
+- The period for recalculating stakes and paying out rewards has been extended from 120 blocks to 720
+- The penalty for the validator for missing the blocks was replaced by a 24-hour ban
+- Dust pruning logic: on network update prune accounts with < 10000000 pip (0.00000000001 BIP) in balance and with no outgoing txs.
+- Candidates pruning logic: automatically unbond and remove candidates which are not in the top 100
+- Require coins to have at least one letter in symbol
+- Fix coin ownership: set owners to a coins where >90% of supply stored in one account
+
+### Changed
+
+- API v2 [changelog](https://klim0v.github.io/minter-node-api-v2-diff/)
+- continuation of block numbering from the previous version of the network
+
+### Removed
+
+- API v1  
+- `PriceVote` transaction
+
+### Fixed
+
+### Security
+
+- Update Tendermint to 0.34.8
+- Update IAVL to v0.15.3
+
 ## 1.2.1
 
 - [core] Add tags old_coin_symbol and old_coin_id to RecreateCoin tx
@@ -35,7 +70,7 @@ BUG FIXES
 
 IMPROVEMENT
 
-- [tendermint] Upgrade to [v0.33.3](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0333) 
+- [tendermint] Upgrade to [v0.33.3](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0333)
 
 BUG FIXES
 
@@ -83,7 +118,7 @@ BREAKING CHANGES
 
 IMPROVEMENT
 
-- [tendermint] Upgrade to [v0.33.2](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0332) 
+- [tendermint] Upgrade to [v0.33.2](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0332)
 
 ## 1.1.0
 
@@ -105,7 +140,7 @@ BREAKING CHANGES
 - [gui] Remove GUI
 - [config] KeepStateHistory -> KeepLastStates
 - [config] Add state_cache_size option
-- [tendermint] Upgrade to [v0.33.1](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0331) 
+- [tendermint] Upgrade to [v0.33.1](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0331)
 
 ## 1.0.5
 
@@ -123,7 +158,7 @@ IMPROVEMENT
 
 IMPROVEMENT
 
-- [tendermint] Update to [v0.32.1](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0321) 
+- [tendermint] Update to [v0.32.1](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0321)
 - [api] Add page and perPage params to /api/transactions (@Danmer)
 - [cmd] Add `minter version` command
 
@@ -187,7 +222,7 @@ BUG FIXES
 
 IMPROVEMENT
 
-- [core] Add remainder to total slashed 
+- [core] Add remainder to total slashed
 - [cmd] Add `--network-id` flag
 
 ## 0.19.2
@@ -212,7 +247,7 @@ IMPROVEMENT
 BUG FIXES
 
 - [core] Fix incorrect coin conversion
-- [tendermint] Update to [v0.31.5](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0315) 
+- [tendermint] Update to [v0.31.5](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0315)
 
 ## 0.18.1
 
@@ -245,7 +280,7 @@ BUG FIXES
 - [core] Set start height for validators count
 - [core] Add value to existing basecoin stake if exists when deleting coin instead of creating new one
 - [core] Fix issue with coin deletion
-- [tendermint] Update to [v0.31.3](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0313) 
+- [tendermint] Update to [v0.31.3](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0313)
 
 ## 0.16.0
 
@@ -268,14 +303,14 @@ BUG FIXES
 
 - [core] Fix issue with multiple punishments to byzantine validator
 - [core] Make accum reward of dropped validator distributes again between active ones
-- [tendermint] Update to [v0.31.2](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0312) 
+- [tendermint] Update to [v0.31.2](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0312)
 
 ## 0.15.2
 
 IMPROVEMENT
 
 - [cmd] `--show_validator` flag now returns hex public key of a validator
-- [tendermint] Update to [v0.31.1](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0311) 
+- [tendermint] Update to [v0.31.1](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0311)
 
 ## 0.15.1
 
@@ -287,7 +322,7 @@ IMPROVEMENT
 
 BREAKING CHANGES
 
-- [tendermint] Update to [v0.31.0](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0310) 
+- [tendermint] Update to [v0.31.0](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0310)
 
 IMPROVEMENT
 
@@ -326,7 +361,7 @@ IMPROVEMENT
 
 - [api] Add /addresses endpoint
 - [api] Add evidence data to /block
-- [tendermint] Update to [v0.30.1](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0301) 
+- [tendermint] Update to [v0.30.1](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0301)
 
 BUG FIXES
 
@@ -342,7 +377,7 @@ BUG FIXES
 
 BREAKING CHANGES
 
-- [tendermint] Update to [v0.30.0](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0300) 
+- [tendermint] Update to [v0.30.0](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0300)
 
 BUG FIXES
 
@@ -368,23 +403,25 @@ BREAKING CHANGES
 BREAKING CHANGES
 
 - [core] Fix coin convert issue
-- [tendermint] Update to [v0.29.1](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0291) 
+- [tendermint] Update to [v0.29.1](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0291)
 
 ## 0.10.1
+
 *Jan 22th, 2019*
 
 BREAKING CHANGES
 
-- [tendermint] Update to [v0.29.0](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0290) 
+- [tendermint] Update to [v0.29.0](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0290)
 
 ## 0.10.0
+
 *Jan 20th, 2019*
 
 BREAKING CHANGES
 
 - [core] Add EditCandidate transaction
 - [core] Make validators count logic conforms to mainnet
-- [tendermint] Update to [v0.28.1](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0281) 
+- [tendermint] Update to [v0.28.1](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0281)
 
 BUG FIXES
 
@@ -398,6 +435,7 @@ IMPROVEMENT
 - [rpc] Prettify RPC errors
 
 ## 0.9.6
+
 *Dec 27th, 2018*
 
 BUG FIXES
@@ -405,6 +443,7 @@ BUG FIXES
 - [core] Fix issue with corrupted db
 
 ## 0.9.5
+
 *Dec 26th, 2018*
 
 BUG FIXES
@@ -412,6 +451,7 @@ BUG FIXES
 - [core] Fix issue with corrupted db
 
 ## 0.9.4
+
 *Dec 26th, 2018*
 
 IMPROVEMENT
@@ -423,6 +463,7 @@ BUG FIXES
 - [core] Fix issue with bag tx occupying mempool
 
 ## 0.9.3
+
 *Dec 25th, 2018*
 
 BUG FIXES
@@ -430,6 +471,7 @@ BUG FIXES
 - [core] Fix sell all coin tx
 
 ## 0.9.2
+
 *Dec 25th, 2018*
 
 BUG FIXES
@@ -437,6 +479,7 @@ BUG FIXES
 - [core] Increase max block bytes
 
 ## 0.9.1
+
 *Dec 24th, 2018*
 
 BUG FIXES
@@ -444,6 +487,7 @@ BUG FIXES
 - [api] Fix create coin tx error
 
 ## 0.9.0
+
 *Dec 24th, 2018*
 
 IMPROVEMENT
@@ -466,6 +510,7 @@ BUG FIXES
 - [api] Fix tx tags
 
 ## 0.8.5
+
 *Dec 11th, 2018*
 
 BUG FIXES
@@ -474,6 +519,7 @@ BUG FIXES
 - [api] Set quotes as not necessary attribute
 
 ## 0.8.4
+
 *Dec 10th, 2018*
 
 BUG FIXES
@@ -481,6 +527,7 @@ BUG FIXES
 - [core] Fix tx processing bug
 
 ## 0.8.3
+
 *Dec 10th, 2018*
 
 BUG FIXES
@@ -488,6 +535,7 @@ BUG FIXES
 - [events] Fix pub key formatting in API
 
 ## 0.8.2
+
 *Dec 10th, 2018*
 
 BUG FIXES
@@ -495,6 +543,7 @@ BUG FIXES
 - [log] Add json log format
 
 ## 0.8.1
+
 *Dec 10th, 2018*
 
 IMPROVEMENT
@@ -506,6 +555,7 @@ BUG FIXES
 - [config] Change default seed node
 
 ## 0.8.0
+
 *Dec 3rd, 2018*
 
 BREAKING CHANGES
@@ -516,7 +566,7 @@ BREAKING CHANGES
 - [core] Limit coins supply to 1,000,000,000,000,000
 - [core] Set minimal reserve and min/max coin supply in CreateCoin tx
 - [core] Add MinimumValueToBuy and MaximumValueToSell to convert transactions
-- [tendermint] Update to [v0.27.0](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0270) 
+- [tendermint] Update to [v0.27.0](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0270)
 
 IMPROVEMENT
 
@@ -524,17 +574,19 @@ IMPROVEMENT
 - [events] Add UnbondEvent
 
 ## 0.7.6
+
 *Nov 27th, 2018*
 
 IMPROVEMENT
 
-- [tendermint] Update to [v0.26.4](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0264) 
+- [tendermint] Update to [v0.26.4](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0264)
 
 BUG FIXES
 
 - [node] Fix issue [#168](https://github.com/MinterTeam/minter-go-node/issues/168) with unexpected database corruption
 
 ## 0.7.5
+
 *Nov 22th, 2018*
 
 BUG FIXES
@@ -542,6 +594,7 @@ BUG FIXES
 - [api] Fix issue in which transaction appeared in `/api/transaction` before actual execution
 
 ## 0.7.4
+
 *Nov 20th, 2018*
 
 BUG FIXES
@@ -549,10 +602,11 @@ BUG FIXES
 - [tendermint] "Send failed" is logged at debug level instead of error
 - [tendermint] Set connection config properly instead of always using default
 - [tendermint] Seed mode fixes:
-   - Only disconnect from inbound peers
-   - Use FlushStop instead of Sleep to ensure all messages are sent before disconnecting
+  - Only disconnect from inbound peers
+  - Use FlushStop instead of Sleep to ensure all messages are sent before disconnecting
 
 ## 0.7.3
+
 *Nov 18th, 2018*
 
 BUG FIXES
@@ -560,6 +614,7 @@ BUG FIXES
 - [core] More fixes on issue with negative coin reserve
 
 ## 0.7.2
+
 *Nov 18th, 2018*
 
 BUG FIXES
@@ -567,37 +622,43 @@ BUG FIXES
 - [core] Fix issue with negative coin reserve
 
 ## 0.7.1
+
 *Nov 16th, 2018*
 
 IMPROVEMENT
-- [tendermint] Update to [v0.26.2](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0262) 
+
+- [tendermint] Update to [v0.26.2](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0262)
 
 ## 0.7.0
+
 *Nov 15th, 2018*
 
 BREAKING CHANGES
 
-- [api] `/api/sendTransaction` is now returns only `checkTx` result. Applications are now forced to manually check if transaction is included in blockchain.
-- [tendermint] Update to [v0.26.1](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0261) 
+- [api] `/api/sendTransaction` is now returns only `checkTx` result. Applications are now forced to manually check if
+  transaction is included in blockchain.
+- [tendermint] Update to [v0.26.1](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0261)
 - [core] Block hash is now 32 bytes length
 
 IMPROVEMENT
 
 - [core] Add `MultisendTx`
 - [core] Add special cases to Formulas [#140](https://github.com/MinterTeam/minter-go-node/issues/140)
-- [core] Stake unbond now instant after dropping of from 1,000st place [#146](https://github.com/MinterTeam/minter-go-node/issues/146)
+- [core] Stake unbond now instant after dropping of from 1,000st
+  place [#146](https://github.com/MinterTeam/minter-go-node/issues/146)
 - [p2p] Default send and receive rates are now 15mB/s
 - [mempool] Set max mempool size to 10,000txs
 - [gui] Small GUI improvements
 
 ## 0.6.0
+
 *Oct 30th, 2018*
 
 BREAKING CHANGES
 
 - [core] Set validators limit to 100 for testnet
 - [core] SetCandidateOff transaction now applies immediately
-- [tendermint] Update to [v0.26.0](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0260) 
+- [tendermint] Update to [v0.26.0](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0260)
 
 IMPROVEMENT
 
@@ -605,6 +666,7 @@ IMPROVEMENT
 - [api] Limit API requests
 
 ## 0.5.1
+
 *Oct 22th, 2018*
 
 BUG FIXES
@@ -612,6 +674,7 @@ BUG FIXES
 - [core] Fixed bug with unexpected node backoff
 
 ## 0.5.0
+
 *Oct 15th, 2018*
 
 BREAKING CHANGES
@@ -624,9 +687,10 @@ BREAKING CHANGES
 
 IMPROVEMENT
 
-- [tendermint] Update to [v0.25.0](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0250) 
+- [tendermint] Update to [v0.25.0](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0250)
 
 ## 0.4.2
+
 *Sept 21th, 2018*
 
 BUG FIXES
@@ -634,17 +698,19 @@ BUG FIXES
 - [api] Fix concurrent API calls
 
 ## 0.4.1
+
 *Sept 20th, 2018*
 
 IMPROVEMENT
 
-- [core] Speed up synchronization 
+- [core] Speed up synchronization
 
 BUG FIXES
 
 - [gui] Fix validator status
 
 ## 0.4.0
+
 *Sept 18th, 2018*
 
 BREAKING CHANGES
@@ -660,6 +726,7 @@ IMPROVEMENT
 - [gui] Add validator status
 
 ## 0.3.8
+
 *Sept 17th, 2018*
 
 BUG FIXES
@@ -667,6 +734,7 @@ BUG FIXES
 - [core] Proper handle of db errors
 
 ## 0.3.7
+
 *Sept 17th, 2018*
 
 IMPROVEMENT
@@ -674,6 +742,7 @@ IMPROVEMENT
 - [core] Performance update
 
 ## 0.3.6
+
 *Sept 15th, 2018*
 
 BUG FIXES
@@ -681,6 +750,7 @@ BUG FIXES
 - [core] Critical fix
 
 ## 0.3.5
+
 *Sept 13th, 2018*
 
 IMPROVEMENT
@@ -688,6 +758,7 @@ IMPROVEMENT
 - [api] Add Code and Log fields in transaction api
 
 ## 0.3.4
+
 *Sept 13th, 2018*
 
 IMPROVEMENT
@@ -696,15 +767,17 @@ IMPROVEMENT
 - [api] Refactor api
 
 ## 0.3.3
+
 *Sept 8th, 2018*
 
 IMPROVEMENT
 
 - [api] Add block size in bytes
-- [api] [#100](https://github.com/MinterTeam/minter-go-node/issues/100) Add "events" to block response. To get events add ?withEvents=true to request URL. 
-WARNING! You should sync blockchain from scratch to get this feature working
+- [api] [#100](https://github.com/MinterTeam/minter-go-node/issues/100) Add "events" to block response. To get events
+  add ?withEvents=true to request URL. WARNING! You should sync blockchain from scratch to get this feature working
 
 ## 0.3.2
+
 *Sept 8th, 2018*
 
 BUG FIXES
@@ -712,6 +785,7 @@ BUG FIXES
 - [core] Fix null pointer exception
 
 ## 0.3.1
+
 *Sept 8th, 2018*
 
 BUG FIXES
@@ -719,12 +793,13 @@ BUG FIXES
 - [core] Fix shutdown issue
 
 ## 0.3.0
+
 *Sept 8th, 2018*
 
 BREAKING CHANGES
 
 - [core] Validators are now updated each 120 blocks
-- [core] Validators are now updated then at least one of current validators exceed 12 missed blocks 
+- [core] Validators are now updated then at least one of current validators exceed 12 missed blocks
 - [tendermint] Update Tendermint to v0.24.0
 
 IMPROVEMENT
@@ -750,6 +825,7 @@ BUG FIXES
 - [api] Fix issue [#82](https://github.com/MinterTeam/minter-go-node/issues/82)
 
 ## 0.2.4
+
 *Aug 24th, 2018*
 
 BUG FIXES
@@ -761,10 +837,10 @@ IMPROVEMENT
 - [gui] Minor GUI updates
 
 ## 0.2.2
+
 *Aug 23th, 2018*
 
-In this update we well test blockchain's hardfork.
-There is no need to wipe old data, just be sure to update binary
+In this update we well test blockchain's hardfork. There is no need to wipe old data, just be sure to update binary
 until 15000 block.
 
 BUG FIXES
@@ -772,10 +848,10 @@ BUG FIXES
 - [validators] Fix api
 
 ## 0.2.1
+
 *Aug 23th, 2018*
 
-In this update we well test blockchain's hardfork.
-There is no need to wipe old data, just be sure to update binary
+In this update we well test blockchain's hardfork. There is no need to wipe old data, just be sure to update binary
 until 15000 block.
 
 BUG FIXES
@@ -783,6 +859,7 @@ BUG FIXES
 - [validators] Fix validators issue
 
 ## 0.2.0
+
 *Aug 22th, 2018*
 
 BREAKING CHANGES
@@ -790,7 +867,7 @@ BREAKING CHANGES
 - [testnet] New testnet id
 - [core] New rewards
 - [core] Validators list are now updated each 12 blocks
-- [core] Set DAO commission to 10% 
+- [core] Set DAO commission to 10%
 - [core] Add Developers commission of 10%
 - [core] Now stake of custom coin is calculated by selling all such staked coins
 - [api] Reformatted candidates and validators endpoints
@@ -806,18 +883,23 @@ IMPROVEMENT
 - [gui] Minor GUI update
 
 ## 0.1.9
+
 *Aug 19th, 2018*
 
 BUG FIXES
+
 - [core] Critical fix
 
 ## 0.1.8
+
 *Aug 4th, 2018*
 
 BUG FIXES
+
 - [core] Critical fix
 
 ## 0.1.7
+
 *Jule 30th, 2018*
 
 BREAKING CHANGES
@@ -830,6 +912,7 @@ IMPROVEMENT
 - [testnet] Main validator stake is set to 1 mln MNT by default
 
 ## 0.1.6
+
 *Jule 30th, 2018*
 
 BREAKING CHANGES
@@ -841,6 +924,7 @@ BUG FIXES
 - [core] Fixed critical bug
 
 ## 0.1.5
+
 *Jule 28th, 2018*
 
 BUG FIXES
@@ -849,6 +933,7 @@ BUG FIXES
 - [core] Temporary critical fix
 
 ## 0.1.4
+
 *Jule 25th, 2018*
 
 IMPROVEMENT
@@ -856,6 +941,7 @@ IMPROVEMENT
 - [tendermint] Update tendermint to 0.22.6
 
 ## 0.1.3
+
 *Jule 25th, 2018*
 
 IMPROVEMENT
@@ -863,6 +949,7 @@ IMPROVEMENT
 - [tendermint] Update tendermint to 0.22.5
 
 ## 0.1.0
+
 *Jule 23th, 2018*
 
 BREAKING CHANGES
@@ -888,6 +975,7 @@ BUG FIXES
 - [api] Fixed raw transaction output
 
 ## 0.0.6
+
 *Jule 16th, 2018*
 
 BREAKING CHANGES
@@ -909,13 +997,14 @@ IMPROVEMENT
 - [client] Add --disable-api flag to client
 
 ## 0.0.5
+
 *Jule 4rd, 2018*
 
 BREAKING CHANGES
 
 - [core] Remove Reserve Coin from coin object. All coins should be reserved with base coin
 - [core] Limit tx payload and service data to 128 bytes
-- [core] Fix critical issue with instant convert of 2 custom coins 
+- [core] Fix critical issue with instant convert of 2 custom coins
 - [testnet] New testnet chain id (minter-test-network-9)
 - [tendermint] Switched to v0.22.0
 

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"github.com/MinterTeam/minter-go-node/coreV2/transaction"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc/codes"
@@ -220,12 +221,12 @@ func (s *Service) TestBlock(context.Context, *empty.Empty) (*pb.BlockResponse, e
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	anyPriceVoteData, err := anypb.New(&pb.PriceVoteData{
-		Price: "1000",
-	})
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
+	// anyPriceVoteData, err := anypb.New(&pb.PriceVoteData{
+	// 	Price: "1000",
+	// })
+	// if err != nil {
+	// 	return nil, status.Error(codes.Internal, err.Error())
+	// }
 
 	anyEditCandidatePublicKeyData, err := anypb.New(&pb.EditCandidatePublicKeyData{
 		PubKey:    "Mp5e3e1da62c7eabd9d8d168a36a92727fc1970a54ec61eadd285d4199c41191d7",
@@ -235,13 +236,16 @@ func (s *Service) TestBlock(context.Context, *empty.Empty) (*pb.BlockResponse, e
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	transactions := []*pb.BlockResponse_Transaction{
+	transactions := []*pb.TransactionResponse{
 		{
 			Hash:        "Mt88d02883c07a1dfc5ff5b2d27eacfd0d82706ba113f2e77a42a1a3d3c369c249",
 			RawTx:       "f8700102018001a0df0194a83d8ebbe688b853775a698683b77afa305a661e880de0b6b3a7640000808001b845f8431ca0acde2fa28bf063bffb14f667a2219b641205bd67a5bc6b664cbd44a62504c897a03649ae0ae4881426a95ccc80866c259032f22811777777c7327e9b99f766ad00",
+			Height:      123,
+			Index:       1,
 			From:        "Mx0c5d5f646556d663e1eaf87150d987b9f2b858b6",
 			Nonce:       1,
 			GasPrice:    1,
+			TypeHex:     transaction.TxType(1).String(),
 			Type:        1,
 			Data:        anySendData,
 			Payload:     []byte("Message"),
@@ -266,6 +270,7 @@ func (s *Service) TestBlock(context.Context, *empty.Empty) (*pb.BlockResponse, e
 			From:        "Mxa167c767cb47531018c475874e68dee0a7cd6ecf",
 			Nonce:       1216,
 			GasPrice:    1,
+			TypeHex:     transaction.TxType(2).String(),
 			Type:        2,
 			Data:        anySellData,
 			Payload:     []byte("Message"),
@@ -291,6 +296,7 @@ func (s *Service) TestBlock(context.Context, *empty.Empty) (*pb.BlockResponse, e
 			From:        "Mx9dc6fd7c76cf6d86c708632142bed27efed9f421",
 			Nonce:       115,
 			GasPrice:    1,
+			TypeHex:     transaction.TxType(3).String(),
 			Type:        3,
 			Data:        anySellAllData,
 			Payload:     []byte("Message"),
@@ -317,6 +323,7 @@ func (s *Service) TestBlock(context.Context, *empty.Empty) (*pb.BlockResponse, e
 			From:        "Mxde774d73bcd38b7c0108ea7406658c40df5ba369",
 			Nonce:       643,
 			GasPrice:    1,
+			TypeHex:     transaction.TxType(4).String(),
 			Type:        4,
 			Data:        anyBuyData,
 			Payload:     []byte("Message"),
@@ -342,6 +349,7 @@ func (s *Service) TestBlock(context.Context, *empty.Empty) (*pb.BlockResponse, e
 			From:        "Mxa83d8ebbe688b853775a698683b77afa305a661e",
 			Nonce:       1,
 			GasPrice:    1,
+			TypeHex:     transaction.TxType(5).String(),
 			Type:        5,
 			Data:        anyCreateCoinData,
 			Payload:     []byte("Message"),
@@ -366,6 +374,7 @@ func (s *Service) TestBlock(context.Context, *empty.Empty) (*pb.BlockResponse, e
 			From:        "Mxa83d8ebbe688b853775a698683b77afa305a661e",
 			Nonce:       1,
 			GasPrice:    1,
+			TypeHex:     transaction.TxType(6).String(),
 			Type:        6,
 			Data:        anyDeclareCandidacyData,
 			Payload:     []byte("Message"),
@@ -388,6 +397,7 @@ func (s *Service) TestBlock(context.Context, *empty.Empty) (*pb.BlockResponse, e
 			From:        "Mx965a21571aa6fac1de7b347e8e6d94e4d83c31a7",
 			Nonce:       5968,
 			GasPrice:    1,
+			TypeHex:     transaction.TxType(7).String(),
 			Type:        7,
 			Data:        anyDelegateData,
 			Payload:     []byte("Message"),
@@ -410,6 +420,7 @@ func (s *Service) TestBlock(context.Context, *empty.Empty) (*pb.BlockResponse, e
 			From:        "Mxceee14ba87144c3b327563ba8c6154b2f8c622c1",
 			Nonce:       111,
 			GasPrice:    1,
+			TypeHex:     transaction.TxType(8).String(),
 			Type:        8,
 			Data:        anyUnbondData,
 			Payload:     []byte("Message"),
@@ -432,6 +443,7 @@ func (s *Service) TestBlock(context.Context, *empty.Empty) (*pb.BlockResponse, e
 			From:        "Mx777061cc8595f5aa3785956b318cfec4c8fc4777",
 			Nonce:       6524,
 			GasPrice:    1,
+			TypeHex:     transaction.TxType(9).String(),
 			Type:        9,
 			Data:        anyRedeemCheckData,
 			Payload:     []byte("Message"),
@@ -456,6 +468,7 @@ func (s *Service) TestBlock(context.Context, *empty.Empty) (*pb.BlockResponse, e
 			From:        "Mx4ec1587f74bee9b4251cd5158a1b09849cd33725",
 			Nonce:       311,
 			GasPrice:    1,
+			TypeHex:     transaction.TxType(10).String(),
 			Type:        10,
 			Data:        anySetCandidateOnData,
 			Payload:     []byte("Message"),
@@ -478,6 +491,7 @@ func (s *Service) TestBlock(context.Context, *empty.Empty) (*pb.BlockResponse, e
 			From:        "Mx4ec1587f74bee9b4251cd5158a1b09849cd33725",
 			Nonce:       310,
 			GasPrice:    1,
+			TypeHex:     transaction.TxType(11).String(),
 			Type:        11,
 			Data:        anySetCandidateOffData,
 			Payload:     []byte("Message"),
@@ -500,6 +514,7 @@ func (s *Service) TestBlock(context.Context, *empty.Empty) (*pb.BlockResponse, e
 			From:        "Mxe8eff43f860f82ba60c7ba58c47d898462173eee",
 			Nonce:       923,
 			GasPrice:    1,
+			TypeHex:     transaction.TxType(12).String(),
 			Type:        12,
 			Data:        anyCreateMultisigData,
 			Payload:     []byte("Message"),
@@ -523,6 +538,7 @@ func (s *Service) TestBlock(context.Context, *empty.Empty) (*pb.BlockResponse, e
 			From:        "Mx0fa4821eba5dcc20e71c02208cbc7b255878ab6b",
 			Nonce:       1,
 			GasPrice:    1,
+			TypeHex:     transaction.TxType(13).String(),
 			Type:        13,
 			Data:        anyMultiSendData,
 			Payload:     []byte("Message"),
@@ -546,6 +562,7 @@ func (s *Service) TestBlock(context.Context, *empty.Empty) (*pb.BlockResponse, e
 			From:        "Mx4c40df842347c3edbc4b6e6183116825e4000cab",
 			Nonce:       50,
 			GasPrice:    1,
+			TypeHex:     transaction.TxType(14).String(),
 			Type:        14,
 			Data:        anyEditCandidateData,
 			Payload:     []byte("Message"),
@@ -568,6 +585,7 @@ func (s *Service) TestBlock(context.Context, *empty.Empty) (*pb.BlockResponse, e
 			From:        "Mx4c40df842347c3edbc4b6e6183116825e4000cab",
 			Nonce:       50,
 			GasPrice:    1,
+			TypeHex:     transaction.TxType(15).String(),
 			Type:        15,
 			Data:        anySetHeltData,
 			Payload:     []byte("Message"),
@@ -590,6 +608,7 @@ func (s *Service) TestBlock(context.Context, *empty.Empty) (*pb.BlockResponse, e
 			From:        "Mx1434ec1028936cd49ce82c88278e43b8e888100a",
 			Nonce:       50,
 			GasPrice:    1,
+			TypeHex:     transaction.TxType(16).String(),
 			Type:        16,
 			Data:        anyRecreateCoinData,
 			Payload:     []byte("Message"),
@@ -616,6 +635,7 @@ func (s *Service) TestBlock(context.Context, *empty.Empty) (*pb.BlockResponse, e
 			From:        "Mx1434ec1028936cd49ce82c88278e43b8e888100a",
 			Nonce:       50,
 			GasPrice:    1,
+			TypeHex:     transaction.TxType(17).String(),
 			Type:        17,
 			Data:        anyEditCoinOwnerData,
 			Payload:     []byte("Message"),
@@ -639,6 +659,7 @@ func (s *Service) TestBlock(context.Context, *empty.Empty) (*pb.BlockResponse, e
 			From:        "Mx1434ec1028936cd49ce82c88278e43b8e888100a",
 			Nonce:       50,
 			GasPrice:    1,
+			TypeHex:     transaction.TxType(18).String(),
 			Type:        18,
 			Data:        anyEditMultisigData,
 			Payload:     []byte("Message"),
@@ -655,34 +676,35 @@ func (s *Service) TestBlock(context.Context, *empty.Empty) (*pb.BlockResponse, e
 			Code: 0,
 			Log:  "",
 		},
+		// {
+		// 	Hash:        "Mt9c48d70f4fb35b2b3f638ea434e7263c5136c60559015d141ec2a94b8ba346a1",
+		// 	RawTx:       "f854080101801384c38203e8808001b845f8431ba01ae016202f873c19e03fc5861b552a729b769332dfa93ff61bd8df5f1557c67ea0241bd95318796acc6fbcda88fa019047e162f0d0b9e6d55071cd88156bd04fe8",
+		// 	From:        "Mx7f7f0109005d866eeeee7bfc16adfb05703dd3d8",
+		// 	Nonce:       50,
+		// 	GasPrice:    1,
+		// 	Type:        19,
+		// 	Data:        anyPriceVoteData,
+		// 	Payload:     []byte("Message"),
+		// 	ServiceData: nil,
+		// 	Gas:         10000000,
+		// 	GasCoin: &pb.Coin{
+		// 		Id:     1,
+		// 		Symbol: "CUSTOM",
+		// 	},
+		// 	Tags: map[string]string{
+		// 		"tx.from": "7f7f0109005d866eeeee7bfc16adfb05703dd3d8",
+		// 		"tx.type": "13",
+		// 	},
+		// 	Code: 0,
+		// 	Log:  "",
+		// },
 		{
 			Hash:        "Mt9c48d70f4fb35b2b3f638ea434e7263c5136c60559015d141ec2a94b8ba346a1",
 			RawTx:       "f854080101801384c38203e8808001b845f8431ba01ae016202f873c19e03fc5861b552a729b769332dfa93ff61bd8df5f1557c67ea0241bd95318796acc6fbcda88fa019047e162f0d0b9e6d55071cd88156bd04fe8",
 			From:        "Mx7f7f0109005d866eeeee7bfc16adfb05703dd3d8",
 			Nonce:       50,
 			GasPrice:    1,
-			Type:        19,
-			Data:        anyPriceVoteData,
-			Payload:     []byte("Message"),
-			ServiceData: nil,
-			Gas:         10000000,
-			GasCoin: &pb.Coin{
-				Id:     1,
-				Symbol: "CUSTOM",
-			},
-			Tags: map[string]string{
-				"tx.from": "7f7f0109005d866eeeee7bfc16adfb05703dd3d8",
-				"tx.type": "13",
-			},
-			Code: 0,
-			Log:  "",
-		},
-		{
-			Hash:        "Mt9c48d70f4fb35b2b3f638ea434e7263c5136c60559015d141ec2a94b8ba346a1",
-			RawTx:       "f854080101801384c38203e8808001b845f8431ba01ae016202f873c19e03fc5861b552a729b769332dfa93ff61bd8df5f1557c67ea0241bd95318796acc6fbcda88fa019047e162f0d0b9e6d55071cd88156bd04fe8",
-			From:        "Mx7f7f0109005d866eeeee7bfc16adfb05703dd3d8",
-			Nonce:       50,
-			GasPrice:    1,
+			TypeHex:     transaction.TxType(20).String(),
 			Type:        20,
 			Data:        anyEditCandidatePublicKeyData,
 			Payload:     []byte("Message"),

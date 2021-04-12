@@ -3,9 +3,9 @@ package service
 import (
 	"context"
 	"encoding/hex"
-	"github.com/MinterTeam/minter-go-node/core/state"
-	"github.com/MinterTeam/minter-go-node/core/state/candidates"
-	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/coreV2/state"
+	"github.com/MinterTeam/minter-go-node/coreV2/state/candidates"
+	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -33,14 +33,9 @@ func (s *Service) Candidate(ctx context.Context, req *pb.CandidateRequest) (*pb.
 	}
 
 	if req.Height != 0 {
-		cState.Lock()
 		cState.Candidates().LoadCandidates()
 		cState.Candidates().LoadStakesOfCandidate(pubkey)
-		cState.Unlock()
 	}
-
-	cState.RLock()
-	defer cState.RUnlock()
 
 	candidate := cState.Candidates().GetCandidate(pubkey)
 	if candidate == nil {
@@ -48,6 +43,10 @@ func (s *Service) Candidate(ctx context.Context, req *pb.CandidateRequest) (*pb.
 	}
 
 	result := makeResponseCandidate(cState, candidate, true, req.NotShowStakes)
+	if cState.Validators().GetByPublicKey(candidate.PubKey) != nil {
+		result.Validator = true
+	}
+
 	return result, nil
 }
 
@@ -60,16 +59,15 @@ func makeResponseCandidate(state *state.CheckState, c *candidates.Candidate, inc
 		PublicKey:      c.PubKey.String(),
 		Commission:     uint64(c.Commission),
 		Status:         uint64(c.Status),
-	}
-
-	if state.Validators().GetByPublicKey(c.PubKey) != nil {
-		candidate.Validator = true
+		JailedUntil:    c.JailedUntil,
+		Id:             uint64(c.ID),
 	}
 
 	if includeStakes {
+		state.Candidates().LoadStakesOfCandidate(c.PubKey)
+		stakes := state.Candidates().GetStakes(c.PubKey)
 		addresses := map[types.Address]struct{}{}
 		minStake := big.NewInt(0)
-		stakes := state.Candidates().GetStakes(c.PubKey)
 		usedSlots := len(stakes)
 		if !NotShowStakes {
 			candidate.Stakes = make([]*pb.CandidateResponse_Stake, 0, usedSlots)

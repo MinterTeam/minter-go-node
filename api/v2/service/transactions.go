@@ -4,16 +4,19 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/core/transaction"
+	"github.com/MinterTeam/minter-go-node/coreV2/transaction"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"strconv"
 	"strings"
 )
 
 // Transactions return transactions by query.
 func (s *Service) Transactions(ctx context.Context, req *pb.TransactionsRequest) (*pb.TransactionsResponse, error) {
-	rpcResult, err := s.client.TxSearch(req.Query, false, int(req.Page), int(req.PerPage), "desc")
+	page := int(req.Page)
+	perPage := int(req.PerPage)
+	rpcResult, err := s.client.TxSearch(ctx, req.Query, false, &page, &perPage, "desc")
 	if err != nil {
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
@@ -23,8 +26,6 @@ func (s *Service) Transactions(ctx context.Context, req *pb.TransactionsRequest)
 	if lenTx != 0 {
 
 		cState := s.blockchain.CurrentState()
-		cState.RLock()
-		defer cState.RUnlock()
 
 		for _, tx := range rpcResult.Txs {
 
@@ -32,12 +33,18 @@ func (s *Service) Transactions(ctx context.Context, req *pb.TransactionsRequest)
 				return nil, timeoutStatus.Err()
 			}
 
-			decodedTx, _ := transaction.TxDecoder.DecodeFromBytes(tx.Tx)
+			decodedTx, _ := transaction.DecodeFromBytes(tx.Tx)
 			sender, _ := decodedTx.Sender()
 
 			tags := make(map[string]string)
+			var gas int
 			for _, tag := range tx.TxResult.Events[0].Attributes {
-				tags[string(tag.Key)] = string(tag.Value)
+				key := string(tag.Key)
+				value := string(tag.Value)
+				tags[key] = value
+				if key == "tx.gas" {
+					gas, _ = strconv.Atoi(value)
+				}
 			}
 
 			data, err := encode(decodedTx.GetDecodedData(), cState.Coins())
@@ -57,8 +64,9 @@ func (s *Service) Transactions(ctx context.Context, req *pb.TransactionsRequest)
 					Id:     uint64(decodedTx.GasCoin),
 					Symbol: cState.Coins().GetCoin(decodedTx.GasCoin).GetFullSymbol(),
 				},
-				Gas:     uint64(decodedTx.Gas()),
-				Type:    uint64(uint8(decodedTx.Type)),
+				Gas:     uint64(gas),
+				TypeHex: decodedTx.Type.String(),
+				Type:    decodedTx.Type.UInt64(),
 				Data:    data,
 				Payload: decodedTx.Payload,
 				Tags:    tags,

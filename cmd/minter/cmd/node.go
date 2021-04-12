@@ -1,27 +1,21 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
-	apiV1 "github.com/MinterTeam/minter-go-node/api"
 	apiV2 "github.com/MinterTeam/minter-go-node/api/v2"
 	serviceApi "github.com/MinterTeam/minter-go-node/api/v2/service"
 	"github.com/MinterTeam/minter-go-node/cli/service"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
-	eventsdb "github.com/MinterTeam/minter-go-node/core/events"
-	"github.com/MinterTeam/minter-go-node/core/minter"
-	"github.com/MinterTeam/minter-go-node/core/statistics"
+	"github.com/MinterTeam/minter-go-node/coreV2/minter"
+	"github.com/MinterTeam/minter-go-node/coreV2/rewards"
+	"github.com/MinterTeam/minter-go-node/coreV2/statistics"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/version"
 	"github.com/spf13/cobra"
-	"github.com/tendermint/go-amino"
 	"github.com/tendermint/tendermint/abci/types"
 	tmCfg "github.com/tendermint/tendermint/config"
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/ed25519"
-	"github.com/tendermint/tendermint/crypto/multisig"
-	"github.com/tendermint/tendermint/crypto/secp256k1"
-	"github.com/tendermint/tendermint/evidence"
 	tmLog "github.com/tendermint/tendermint/libs/log"
 	tmOS "github.com/tendermint/tendermint/libs/os"
 	tmNode "github.com/tendermint/tendermint/node"
@@ -29,7 +23,6 @@ import (
 	"github.com/tendermint/tendermint/privval"
 	"github.com/tendermint/tendermint/proxy"
 	rpc "github.com/tendermint/tendermint/rpc/client/local"
-	"github.com/tendermint/tendermint/store"
 	tmTypes "github.com/tendermint/tendermint/types"
 	"io"
 	"net/http"
@@ -56,8 +49,18 @@ func runNode(cmd *cobra.Command) error {
 		panic(err)
 	}
 
+	homeDir, err := cmd.Flags().GetString("home-dir")
+	if err != nil {
+		return err
+	}
+	configDir, err := cmd.Flags().GetString("config")
+	if err != nil {
+		return err
+	}
+	storages := utils.NewStorage(homeDir, configDir)
+
 	// ensure /config and /tmdata dirs
-	if err := ensureDirs(); err != nil {
+	if err := ensureDirs(storages.GetMinterHome()); err != nil {
 		return err
 	}
 
@@ -74,76 +77,49 @@ func runNode(cmd *cobra.Command) error {
 
 	tmConfig := config.GetTmConfig(cfg)
 
-	app := minter.NewMinterBlockchain(cfg)
+	if !cfg.ValidatorMode {
+		_, err = storages.InitEventLevelDB("data/events", minter.GetDbOpts(1024))
+		if err != nil {
+			return err
+		}
+	}
+	_, err = storages.InitStateLevelDB("data/state", minter.GetDbOpts(cfg.StateMemAvailable))
+	if err != nil {
+		return err
+	}
+	app := minter.NewMinterBlockchain(storages, cfg, cmd.Context(), 0)
 
 	// update BlocksTimeDelta in case it was corrupted
-	updateBlocksTimeDelta(app, tmConfig)
+	// updateBlocksTimeDelta(app, tmConfig)
 
 	// start TM node
-	node := startTendermintNode(app, tmConfig, logger)
-	client := rpc.New(node)
+	node := startTendermintNode(app, tmConfig, logger, storages.GetMinterHome())
 	app.SetTmNode(node)
+	client := app.RpcClient()
 
 	if !cfg.ValidatorMode {
-		runAPI(logger, app, client, node)
+		runAPI(logger, app, client, node, app.RewardCounter())
 	}
 
-	runCLI(cmd, app, client, node)
+	runCLI(cmd.Context(), app, client, node, storages.GetMinterHome())
 
 	if cfg.Instrumentation.Prometheus {
 		go app.SetStatisticData(statistics.New()).Statistic(cmd.Context())
 	}
 
-	<-cmd.Context().Done()
-
-	defer app.Stop()
-	if err := node.Stop(); err != nil {
-		return err
-	}
-
-	return nil
+	return app.WaitStop()
 }
 
-func runCLI(cmd *cobra.Command, app *minter.Blockchain, client *rpc.Local, tmNode *tmNode.Node) {
+func runCLI(ctx context.Context, app *minter.Blockchain, client *rpc.Local, tmNode *tmNode.Node, home string) {
 	go func() {
-		err := service.StartCLIServer(utils.GetMinterHome()+"/manager.sock", service.NewManager(app, client, tmNode, cfg), cmd.Context())
+		err := service.StartCLIServer(home+"/manager.sock", service.NewManager(app, client, tmNode, cfg), ctx)
 		if err != nil {
 			panic(err)
 		}
 	}()
 }
 
-// RegisterAmino registers all crypto related types in the given (amino) codec.
-func registerCryptoAmino(cdc *amino.Codec) {
-	// These are all written here instead of
-	cdc.RegisterInterface((*crypto.PubKey)(nil), nil)
-	cdc.RegisterConcrete(ed25519.PubKeyEd25519{},
-		ed25519.PubKeyAminoName, nil)
-	cdc.RegisterConcrete(secp256k1.PubKeySecp256k1{},
-		secp256k1.PubKeyAminoName, nil)
-	cdc.RegisterConcrete(multisig.PubKeyMultisigThreshold{},
-		multisig.PubKeyMultisigThresholdAminoRoute, nil)
-
-	cdc.RegisterInterface((*crypto.PrivKey)(nil), nil)
-	cdc.RegisterConcrete(ed25519.PrivKeyEd25519{},
-		ed25519.PrivKeyAminoName, nil)
-	cdc.RegisterConcrete(secp256k1.PrivKeySecp256k1{},
-		secp256k1.PrivKeyAminoName, nil)
-}
-
-func registerEvidenceMessages(cdc *amino.Codec) {
-	cdc.RegisterInterface((*evidence.Message)(nil), nil)
-	cdc.RegisterConcrete(&evidence.ListMessage{},
-		"tendermint/evidence/EvidenceListMessage", nil)
-	cdc.RegisterInterface((*tmTypes.Evidence)(nil), nil)
-	cdc.RegisterConcrete(&tmTypes.DuplicateVoteEvidence{}, "tendermint/DuplicateVoteEvidence", nil)
-}
-
-func runAPI(logger tmLog.Logger, app *minter.Blockchain, client *rpc.Local, node *tmNode.Node) {
-	cdc := amino.NewCodec()
-	registerCryptoAmino(cdc)
-	eventsdb.RegisterAminoEvents(cdc)
-	registerEvidenceMessages(cdc)
+func runAPI(logger tmLog.Logger, app *minter.Blockchain, client *rpc.Local, node *tmNode.Node, reward *rewards.Reward) {
 	go func(srv *serviceApi.Service) {
 		grpcURL, err := url.Parse(cfg.GRPCListenAddress)
 		if err != nil {
@@ -155,9 +131,7 @@ func runAPI(logger tmLog.Logger, app *minter.Blockchain, client *rpc.Local, node
 		}
 		logger.Error("Failed to start Api V2 in both gRPC and RESTful",
 			apiV2.Run(srv, grpcURL.Host, apiV2url.Host, logger.With("module", "rpc")))
-	}(serviceApi.NewService(cdc, app, client, node, cfg, version.Version))
-
-	go apiV1.RunAPI(cdc, app, client, cfg, logger)
+	}(serviceApi.NewService(app, client, node, cfg, version.Version, reward))
 }
 
 func enablePprof(cmd *cobra.Command, logger tmLog.Logger) error {
@@ -177,12 +151,12 @@ func enablePprof(cmd *cobra.Command, logger tmLog.Logger) error {
 	return nil
 }
 
-func ensureDirs() error {
-	if err := tmOS.EnsureDir(utils.GetMinterHome()+"/config", 0777); err != nil {
+func ensureDirs(homeDir string) error {
+	if err := tmOS.EnsureDir(homeDir+"/config", 0777); err != nil {
 		return err
 	}
 
-	if err := tmOS.EnsureDir(utils.GetMinterHome()+"/tmdata", 0777); err != nil {
+	if err := tmOS.EnsureDir(homeDir+"/tmdata", 0777); err != nil {
 		return err
 	}
 
@@ -210,26 +184,7 @@ func checkRlimits() error {
 	return nil
 }
 
-func updateBlocksTimeDelta(app *minter.Blockchain, config *tmCfg.Config) {
-	blockStoreDB, err := tmNode.DefaultDBProvider(&tmNode.DBContext{ID: "blockstore", Config: config})
-	if err != nil {
-		panic(err)
-	}
-
-	blockStore := store.NewBlockStore(blockStoreDB)
-	height := uint64(blockStore.Height())
-	count := uint64(3)
-	if _, err := app.GetBlocksTimeDelta(height, count); height >= 20 && err != nil {
-		blockA := blockStore.LoadBlockMeta(int64(height - count - 1))
-		blockB := blockStore.LoadBlockMeta(int64(height - 1))
-
-		delta := int(blockB.Header.Time.Sub(blockA.Header.Time).Seconds())
-		app.SetBlocksTimeDelta(height, delta)
-	}
-	blockStoreDB.Close()
-}
-
-func startTendermintNode(app types.Application, cfg *tmCfg.Config, logger tmLog.Logger) *tmNode.Node {
+func startTendermintNode(app types.Application, cfg *tmCfg.Config, logger tmLog.Logger, home string) *tmNode.Node {
 	nodeKey, err := p2p.LoadOrGenNodeKey(cfg.NodeKeyFile())
 	if err != nil {
 		panic(err)
@@ -240,7 +195,7 @@ func startTendermintNode(app types.Application, cfg *tmCfg.Config, logger tmLog.
 		privval.LoadOrGenFilePV(cfg.PrivValidatorKeyFile(), cfg.PrivValidatorStateFile()),
 		nodeKey,
 		proxy.NewLocalClientCreator(app),
-		getGenesis,
+		getGenesis(home+"/config/genesis.json"),
 		tmNode.DefaultDBProvider,
 		tmNode.DefaultMetricsProvider(cfg.Instrumentation),
 		logger.With("module", "tendermint"),
@@ -261,24 +216,32 @@ func startTendermintNode(app types.Application, cfg *tmCfg.Config, logger tmLog.
 	return node
 }
 
-func getGenesis() (doc *tmTypes.GenesisDoc, e error) {
-	genDocFile := utils.GetMinterHome() + "/config/genesis.json"
-	_, err := os.Stat(genDocFile)
-	if err != nil {
-		if !os.IsNotExist(err) {
-			return nil, err
-		}
+func getGenesis(genDocFile string) func() (doc *tmTypes.GenesisDoc, e error) {
+	return func() (doc *tmTypes.GenesisDoc, e error) {
+		_, err := os.Stat(genDocFile)
+		if err != nil {
+			if !os.IsNotExist(err) {
+				return nil, err
+			}
 
-		genesis, err := RootCmd.Flags().GetString("genesis")
+			genesis, err := RootCmd.Flags().GetString("genesis")
+			if err != nil {
+				return nil, err
+			}
+
+			if err := downloadFile(genDocFile, genesis); err != nil {
+				return nil, err
+			}
+		}
+		doc, err = tmTypes.GenesisDocFromFile(genDocFile)
 		if err != nil {
 			return nil, err
 		}
-
-		if err := downloadFile(genDocFile, genesis); err != nil {
-			return nil, err
+		if len(doc.AppHash) == 0 {
+			doc.AppHash = nil
 		}
+		return doc, err
 	}
-	return tmTypes.GenesisDocFromFile(genDocFile)
 }
 
 func downloadFile(filepath string, url string) error {

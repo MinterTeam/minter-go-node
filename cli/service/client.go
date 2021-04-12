@@ -225,9 +225,9 @@ func dashboardCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 		ui.SetKeybinding("Esc", func() { ui.Quit() })
 		ui.SetKeybinding("Ctrl+C", func() { ui.Quit() })
 		ui.SetKeybinding("q", func() { ui.Quit() })
-		errCh := make(chan error, 2)
+		errCh := make(chan error, 1)
 		uiStart := make(chan struct{})
-		go func() { uiStart <- struct{}{}; errCh <- ui.Run() }()
+		go func() { close(uiStart); errCh <- ui.Run() }()
 		<-uiStart
 		defer ui.Quit()
 		var dashboardFunc func(recv *pb.DashboardResponse)
@@ -295,7 +295,7 @@ func updateDashboard(box *tui.Box, recv *pb.DashboardResponse) func(recv *pb.Das
 	box.Append(tui.NewSpacer())
 
 	return func(recv *pb.DashboardResponse) {
-		perSync := int((float64(recv.LatestHeight) / float64(recv.MaxPeerHeight)) * 100)
+		perSync := int((float64(recv.LatestHeight-recv.InitialHeight) / float64(recv.MaxPeerHeight-recv.InitialHeight)) * 100)
 		labelNetworkSynchronizationPercent.SetText(fmt.Sprintf("%d%% ", perSync))
 		timeLeft := ""
 		ofBlocks := ""
@@ -308,7 +308,7 @@ func updateDashboard(box *tui.Box, recv *pb.DashboardResponse) func(recv *pb.Das
 			}
 			ofBlocks = fmt.Sprintf(" of %d", recv.MaxPeerHeight)
 			progress := tui.NewProgress(maxProgress)
-			progress.SetCurrent(int(recv.LatestHeight) * maxProgress / (int(recv.MaxPeerHeight)))
+			progress.SetCurrent(int(recv.LatestHeight-recv.InitialHeight) * maxProgress / (int(recv.MaxPeerHeight - recv.InitialHeight)))
 			progressBox.Remove(0)
 			progressBox.Prepend(progress)
 		}
@@ -419,8 +419,8 @@ func pruneBlocksCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 		}
 
 		now := time.Now()
-		errCh := make(chan error)
-		recvCh := make(chan *pb.PruneBlocksResponse)
+		errCh := make(chan error, 1)
+		recvCh := make(chan *pb.PruneBlocksResponse, 1)
 
 		go func() {
 			for {

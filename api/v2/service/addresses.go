@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -20,18 +20,15 @@ func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.
 	}
 
 	if req.Height != 0 && req.Delegated {
-		cState.Lock()
 		cState.Candidates().LoadCandidates()
+		if timeoutStatus := s.checkTimeout(ctx, "LoadCandidates"); timeoutStatus != nil {
+			return nil, timeoutStatus.Err()
+		}
 		cState.Candidates().LoadStakes()
-		cState.Unlock()
+		if timeoutStatus := s.checkTimeout(ctx, "LoadStakes"); timeoutStatus != nil {
+			return nil, timeoutStatus.Err()
+		}
 	}
-
-	if timeoutStatus := s.checkTimeout(ctx, "LoadCandidates", "LoadStakes"); timeoutStatus != nil {
-		return nil, timeoutStatus.Err()
-	}
-
-	cState.RLock()
-	defer cState.RUnlock()
 
 	response := &pb.AddressesResponse{
 		Addresses: make(map[string]*pb.AddressesResponse_Result, len(req.Addresses)),
@@ -57,13 +54,14 @@ func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.
 		res.Balance = make([]*pb.AddressBalance, 0, len(balances))
 		for _, coin := range balances {
 			totalStakesGroupByCoin[coin.Coin.ID] = coin.Value
+			coinModel := cState.Coins().GetCoin(coin.Coin.ID)
 			res.Balance = append(res.Balance, &pb.AddressBalance{
 				Coin: &pb.Coin{
 					Id:     uint64(coin.Coin.ID),
-					Symbol: cState.Coins().GetCoin(coin.Coin.ID).GetFullSymbol(),
+					Symbol: coinModel.GetFullSymbol(),
 				},
 				Value:    coin.Value.String(),
-				BipValue: customCoinBipBalance(coin.Coin.ID, coin.Value, cState.Coins()).String(),
+				BipValue: customCoinBipBalance(coin.Value, coinModel).String(),
 			})
 		}
 
@@ -98,14 +96,15 @@ func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.
 
 			res.Delegated = make([]*pb.AddressDelegatedBalance, 0, len(userDelegatedStakesGroupByCoin))
 			for coinID, delegatedStake := range userDelegatedStakesGroupByCoin {
+				coinModel := cState.Coins().GetCoin(coinID)
 				res.Delegated = append(res.Delegated, &pb.AddressDelegatedBalance{
 					Coin: &pb.Coin{
 						Id:     uint64(coinID),
-						Symbol: cState.Coins().GetCoin(coinID).GetFullSymbol(),
+						Symbol: coinModel.GetFullSymbol(),
 					},
 					Value:            delegatedStake.Value.String(),
 					DelegateBipValue: delegatedStake.BipValue.String(),
-					BipValue:         customCoinBipBalance(coinID, delegatedStake.Value, cState.Coins()).String(),
+					BipValue:         customCoinBipBalance(delegatedStake.Value, coinModel).String(),
 				})
 
 				totalStake, ok := totalStakesGroupByCoin[coinID]
@@ -124,12 +123,13 @@ func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.
 		coinsBipValue := big.NewInt(0)
 		res.Total = make([]*pb.AddressBalance, 0, len(totalStakesGroupByCoin))
 		for coinID, stake := range totalStakesGroupByCoin {
-			balance := customCoinBipBalance(coinID, stake, cState.Coins())
+			coinModel := cState.Coins().GetCoin(coinID)
+			balance := customCoinBipBalance(stake, coinModel)
 			if req.Delegated {
 				res.Total = append(res.Total, &pb.AddressBalance{
 					Coin: &pb.Coin{
 						Id:     uint64(coinID),
-						Symbol: cState.Coins().GetCoin(coinID).GetFullSymbol(),
+						Symbol: coinModel.GetFullSymbol(),
 					},
 					Value:    stake.String(),
 					BipValue: balance.String(),

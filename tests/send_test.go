@@ -1,9 +1,9 @@
 package tests
 
 import (
-	"github.com/MinterTeam/minter-go-node/core/code"
-	"github.com/MinterTeam/minter-go-node/core/transaction"
-	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/coreV2/code"
+	"github.com/MinterTeam/minter-go-node/coreV2/transaction"
+	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"math/big"
 	"testing"
@@ -20,7 +20,7 @@ func TestSend(t *testing.T) {
 		Balance: []types.Balance{
 			{
 				Coin:  uint64(types.GetBaseCoinID()),
-				Value: helpers.BipToPip(big.NewInt(1)).String(),
+				Value: helpers.StringToBigInt("100000000000000000000").String(),
 			},
 		},
 		Nonce:        0,
@@ -60,8 +60,8 @@ func TestSend(t *testing.T) {
 	// check sender's balance
 	{
 		balance := app.CurrentState().Accounts().GetBalance(address, types.GetBaseCoinID())
-		if balance.String() != "989999999999999999" {
-			t.Fatalf("Recipient balance is not correct. Expected %s, got %s", "989999999999999999", balance)
+		if balance.String() != "99989999999999999999" {
+			t.Fatalf("Recipient balance is not correct. Expected %s, got %s", "98999999999999999999", balance)
 		}
 	}
 }

@@ -9,7 +9,8 @@ import (
 
 // UnconfirmedTxs returns unconfirmed transactions.
 func (s *Service) UnconfirmedTxs(ctx context.Context, req *pb.UnconfirmedTxsRequest) (*pb.UnconfirmedTxsResponse, error) {
-	txs, err := s.client.UnconfirmedTxs(int(req.Limit))
+	limit := int(req.Limit)
+	txs, err := s.client.UnconfirmedTxs(ctx, &limit)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
