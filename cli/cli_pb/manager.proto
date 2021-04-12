@@ -93,6 +93,8 @@ message StatusResponse {
 message DealPeerRequest {
     string address = 1;
     bool persistent = 2;
+    bool unconditional = 3;
+    bool private = 4;
 }
 
 message DashboardResponse {
