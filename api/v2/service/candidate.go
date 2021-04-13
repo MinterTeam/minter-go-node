@@ -64,7 +64,6 @@ func makeResponseCandidate(state *state.CheckState, c *candidates.Candidate, inc
 	}
 
 	if includeStakes {
-		state.Candidates().LoadStakesOfCandidate(c.PubKey)
 		stakes := state.Candidates().GetStakes(c.PubKey)
 		addresses := map[types.Address]struct{}{}
 		minStake := big.NewInt(0)

@@ -1,6 +1,18 @@
 # Changelog
 
-## Unreleased [v2.0.0](https://github.com/MinterTeam/minter-go-node/tree/v2.0)
+## [v2.0.1](https://github.com/MinterTeam/minter-go-node/tree/v2.0.1)
+
+[Full Changelog](https://github.com/MinterTeam/minter-go-node/compare/v2.0...v2.0.1)
+
+### Fixed
+
+- Fix issue with db corruption while using list of candidates API
+- Connecting to peers with cli
+
+### Added
+- Default link to current genesis
+
+## [v2.0.0](https://github.com/MinterTeam/minter-go-node/tree/v2.0)
 
 [Full Changelog](https://github.com/MinterTeam/minter-go-node/compare/v1.2.1...v2.0)
 
@@ -27,8 +39,6 @@
 
 - API v1  
 - `PriceVote` transaction
-
-### Fixed
 
 ### Security
 

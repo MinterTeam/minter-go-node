@@ -299,7 +299,7 @@ func (m *managerServer) PruneBlocks(req *pb.PruneBlocksRequest, stream pb.Manage
 
 func (m *managerServer) DealPeer(_ context.Context, req *pb.DealPeerRequest) (*empty.Empty, error) {
 	res := new(empty.Empty)
-	_, err := m.tmRPC.DialPeers(context.Background(), []string{req.Address}, req.Persistent, false, false) // todo
+	_, err := m.tmRPC.DialPeers(context.Background(), []string{req.Address}, req.Persistent, req.Unconditional, req.Private)
 	if err != nil {
 		return res, status.Error(codes.FailedPrecondition, err.Error())
 	}
