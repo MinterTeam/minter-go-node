@@ -6,8 +6,10 @@
 
 ### Fixed
 
-- List of api candidates
-- Connecting to peers in cli
+- Fix issue with db corruption while using list of candidates API
+- Connecting to peers with cli
+
+### Added
 - Default link to current genesis
 
 ## [v2.0.0](https://github.com/MinterTeam/minter-go-node/tree/v2.0)
