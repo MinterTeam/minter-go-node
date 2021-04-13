@@ -8,6 +8,7 @@
 
 - List of api candidates
 - Connecting to peers in cli
+- Default link to current genesis
 
 ## [v2.0.0](https://github.com/MinterTeam/minter-go-node/tree/v2.0)
 
