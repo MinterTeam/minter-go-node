@@ -1,5 +1,6 @@
 # Changelog
 
+
 ## [v2.0.1](https://github.com/MinterTeam/minter-go-node/tree/v2.0.1)
 
 [Full Changelog](https://github.com/MinterTeam/minter-go-node/compare/v2.0...v2.0.1)
