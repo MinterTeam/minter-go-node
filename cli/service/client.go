@@ -141,6 +141,8 @@ func NewCLI(socketPath string) (interface {
 			Flags: []cli.Flag{
 				&cli.StringFlag{Name: "address", Aliases: []string{"a"}, Required: true, Usage: "id@ip:port"},
 				&cli.BoolFlag{Name: "persistent", Aliases: []string{"p"}, Required: false},
+				&cli.BoolFlag{Name: "unconditional", Aliases: []string{"unc"}, Required: false},
+				&cli.BoolFlag{Name: "private", Aliases: []string{"pr"}, Required: false},
 			},
 			Action: dealPeerCMD(client),
 		},
@@ -468,8 +470,10 @@ func pruneBlocksCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 func dealPeerCMD(client pb.ManagerServiceClient) func(c *cli.Context) error {
 	return func(c *cli.Context) error {
 		_, err := client.DealPeer(c.Context, &pb.DealPeerRequest{
-			Address:    c.String("address"),
-			Persistent: c.Bool("persistent"),
+			Address:       c.String("address"),
+			Persistent:    c.Bool("persistent"),
+			Unconditional: c.Bool("unconditional"),
+			Private:       c.Bool("private"),
 		})
 		if err != nil {
 			return err

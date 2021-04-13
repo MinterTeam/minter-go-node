@@ -41,7 +41,10 @@ func (s *Service) Candidates(ctx context.Context, req *pb.CandidatesRequest) (*p
 				continue
 			}
 		}
-		cState.Candidates().LoadStakesOfCandidate(candidate.PubKey)
+
+		if req.Height != 0 {
+			cState.Candidates().LoadStakesOfCandidate(candidate.PubKey)
+		}
 
 		responseCandidate := makeResponseCandidate(cState, candidate, req.IncludeStakes, req.NotShowStakes)
 		responseCandidate.Validator = isValidator
