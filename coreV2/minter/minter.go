@@ -51,7 +51,7 @@ func (blockchain *Blockchain) stop() {
 	}()
 }
 
-// Stop gracefully stopping Minter Blockchain instance
+// WaitStop stops gracefully Minter Blockchain instance
 func (blockchain *Blockchain) WaitStop() error {
 	blockchain.tmNode.Wait()
 	return blockchain.Close()
