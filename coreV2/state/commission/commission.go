@@ -285,7 +285,7 @@ func (c *Commission) Commit(db *iavl.MutableTree) error {
 	dirties := c.getOrderedDirty()
 	c.lock.Unlock()
 	for _, height := range dirties {
-		models := c.getFromMap(height)
+		models := c.get(height)
 
 		c.lock.Lock()
 		delete(c.dirty, height)
