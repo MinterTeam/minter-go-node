@@ -350,23 +350,21 @@ func (c *Commission) SetNewCommissions(prices []byte) {
 func (c *Commission) getOrNew(height uint64, encode string) *Model {
 	prices := c.get(height)
 
-	if len(prices) == 0 {
-		price := &Model{
-			height:    height,
-			Price:     encode,
-			markDirty: c.markDirty(height),
-		}
-		c.setToMap(height, []*Model{price})
-		return price
-	}
-
 	for _, model := range prices {
 		if encode == model.Price {
 			return model
 		}
 	}
 
-	return nil
+	price := &Model{
+		Votes:     []types.Pubkey{},
+		Price:     encode,
+		height:    height,
+		markDirty: c.markDirty(height),
+	}
+	c.setToMap(height, append(prices, price))
+
+	return price
 }
 
 func (c *Commission) get(height uint64) []*Model {
@@ -382,6 +380,11 @@ func (c *Commission) get(height uint64) []*Model {
 	var voteBlock []*Model
 	if err := rlp.DecodeBytes(enc, &voteBlock); err != nil {
 		panic(fmt.Sprintf("failed to decode halt blocks at height %d: %s", height, err))
+	}
+
+	for _, vote := range voteBlock {
+		vote.markDirty = c.markDirty(height)
+		vote.height = height
 	}
 
 	c.setToMap(height, voteBlock)
