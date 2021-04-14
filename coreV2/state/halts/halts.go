@@ -62,7 +62,7 @@ func (hb *HaltBlocks) SetImmutableTree(immutableTree *iavl.ImmutableTree) {
 func (hb *HaltBlocks) Commit(db *iavl.MutableTree) error {
 	dirty := hb.getOrderedDirty()
 	for _, height := range dirty {
-		haltBlock := hb.getFromMap(height)
+		haltBlock := hb.get(height)
 		path := getPath(height)
 
 		hb.lock.Lock()

@@ -92,7 +92,7 @@ func (c *Update) Commit(db *iavl.MutableTree) error {
 	dirties := c.getOrderedDirty()
 	c.lock.RUnlock()
 	for _, height := range dirties {
-		models := c.getFromMap(height)
+		models := c.get(height)
 
 		c.lock.Lock()
 		delete(c.dirty, height)
@@ -123,25 +123,21 @@ func (c *Update) GetVotes(height uint64) []*Model {
 }
 
 func (c *Update) getOrNew(height uint64, version string) *Model {
-	prices := c.get(height)
+	models := c.get(height)
 
-	if len(prices) == 0 {
-		price := &Model{
-			height:    height,
-			Version:   version,
-			markDirty: c.markDirty(height),
-		}
-		c.setToMap(height, []*Model{price})
-		return price
-	}
-
-	for _, model := range prices {
+	for _, model := range models {
 		if version == model.Version {
 			return model
 		}
 	}
 
-	return nil
+	price := &Model{
+		height:    height,
+		Version:   version,
+		markDirty: c.markDirty(height),
+	}
+	c.setToMap(height, append(models, price))
+	return price
 }
 
 func (c *Update) get(height uint64) []*Model {
