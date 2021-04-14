@@ -174,7 +174,7 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 	blockchain.stateDeliver.App.SetMaxGas(maxGas)
 	blockchain.appDB.AddBlocksTime(req.Header.Time)
 
-	blockchain.rewards.Set(big.NewInt(0))
+	blockchain.rewards.SetInt64(0)
 
 	// clear absent candidates
 	blockchain.lock.Lock()
