@@ -72,7 +72,7 @@ func (c *Update) Export(state *types.AppState) {
 		for _, u := range updates {
 			state.UpdateVotes = append(state.UpdateVotes, types.UpdateVote{
 				Height:  height,
-				Votes:   nil,
+				Votes:   u.Votes,
 				Version: u.Version,
 			})
 		}
@@ -92,7 +92,7 @@ func (c *Update) Commit(db *iavl.MutableTree) error {
 	dirties := c.getOrderedDirty()
 	c.lock.RUnlock()
 	for _, height := range dirties {
-		models := c.get(height)
+		models := c.getFromMap(height)
 
 		c.lock.Lock()
 		delete(c.dirty, height)
