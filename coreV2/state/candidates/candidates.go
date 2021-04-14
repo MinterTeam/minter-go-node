@@ -1025,25 +1025,29 @@ func (c *Candidates) LoadStakesOfCandidate(pubkey types.Pubkey) {
 	// load stakes
 	stakesCount := 0
 	for index := 0; index < MaxDelegatorsPerCandidate; index++ {
-		path := []byte{mainPrefix}
-		path = append(path, candidate.idBytes()...)
-		path = append(path, stakesPrefix)
-		path = append(path, big.NewInt(int64(index)).Bytes()...)
-		_, enc := c.immutableTree().Get(path)
-		if len(enc) == 0 {
-			candidate.lock.Lock()
-			candidate.stakes[index] = nil
-			candidate.lock.Unlock()
-			continue
+		candidate.lock.RLock()
+		loaded := candidate.stakes[index] == nil
+		candidate.lock.RUnlock()
+		if !loaded {
+			path := []byte{mainPrefix}
+			path = append(path, candidate.idBytes()...)
+			path = append(path, stakesPrefix)
+			path = append(path, big.NewInt(int64(index)).Bytes()...)
+			_, enc := c.immutableTree().Get(path)
+			if len(enc) == 0 {
+				candidate.lock.Lock()
+				candidate.stakes[index] = nil
+				candidate.lock.Unlock()
+				continue
+			}
+
+			stake := &stake{}
+			if err := rlp.DecodeBytes(enc, stake); err != nil {
+				panic(fmt.Sprintf("failed to decode stake: %s", err))
+			}
+
+			candidate.setStakeAtIndex(index, stake, false)
 		}
-
-		stake := &stake{}
-		if err := rlp.DecodeBytes(enc, stake); err != nil {
-			panic(fmt.Sprintf("failed to decode stake: %s", err))
-		}
-
-		candidate.setStakeAtIndex(index, stake, false)
-
 		stakesCount++
 	}
 
