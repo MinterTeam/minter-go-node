@@ -384,6 +384,7 @@ func (c *Commission) get(height uint64) []*Model {
 
 	for _, vote := range voteBlock {
 		vote.markDirty = c.markDirty(height)
+		vote.height = height
 	}
 
 	c.setToMap(height, voteBlock)

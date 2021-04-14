@@ -141,8 +141,8 @@ func (c *Update) getOrNew(height uint64, version string) *Model {
 }
 
 func (c *Update) get(height uint64) []*Model {
-	if haltBlock := c.getFromMap(height); haltBlock != nil {
-		return haltBlock
+	if models := c.getFromMap(height); models != nil {
+		return models
 	}
 
 	_, enc := c.immutableTree().Get(getPath(height))
@@ -153,6 +153,11 @@ func (c *Update) get(height uint64) []*Model {
 	var voteBlock []*Model
 	if err := rlp.DecodeBytes(enc, &voteBlock); err != nil {
 		panic(fmt.Sprintf("failed to decode halt blocks at height %d: %s", height, err))
+	}
+
+	for _, vote := range voteBlock {
+		vote.markDirty = c.markDirty(height)
+		vote.height = height
 	}
 
 	c.setToMap(height, voteBlock)
