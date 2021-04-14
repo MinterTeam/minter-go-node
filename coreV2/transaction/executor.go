@@ -201,14 +201,9 @@ func RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBl
 		}
 	}
 
-	if isCheck {
-		currentMempool.Store(sender, true)
-	}
-
 	response := tx.decodedData.Run(tx, context, rewardPool, currentBlock, price)
-
-	if response.Code != code.OK {
-		currentMempool.Delete(sender)
+	if response.Code == code.OK && isCheck {
+		currentMempool.Store(sender, true)
 	}
 
 	commissionCoin := tx.commissionCoin()
