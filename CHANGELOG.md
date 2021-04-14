@@ -1,5 +1,12 @@
 # Changelog
 
+## [v2.0.2](https://github.com/MinterTeam/minter-go-node/tree/v2.0.2)
+
+[Full Changelog](https://github.com/MinterTeam/minter-go-node/compare/v2.0.1...v2.0.2)
+
+### Fixed
+
+- Fix restart bug
 
 ## [v2.0.1](https://github.com/MinterTeam/minter-go-node/tree/v2.0.1)
 
@@ -11,6 +18,7 @@
 - Connecting to peers with cli
 
 ### Added
+
 - Default link to current genesis
 
 ## [v2.0.0](https://github.com/MinterTeam/minter-go-node/tree/v2.0)

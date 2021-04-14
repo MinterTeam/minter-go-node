@@ -72,7 +72,7 @@ func (c *Update) Export(state *types.AppState) {
 		for _, u := range updates {
 			state.UpdateVotes = append(state.UpdateVotes, types.UpdateVote{
 				Height:  height,
-				Votes:   nil,
+				Votes:   u.Votes,
 				Version: u.Version,
 			})
 		}
@@ -123,30 +123,26 @@ func (c *Update) GetVotes(height uint64) []*Model {
 }
 
 func (c *Update) getOrNew(height uint64, version string) *Model {
-	prices := c.get(height)
+	models := c.get(height)
 
-	if len(prices) == 0 {
-		price := &Model{
-			height:    height,
-			Version:   version,
-			markDirty: c.markDirty(height),
-		}
-		c.setToMap(height, []*Model{price})
-		return price
-	}
-
-	for _, model := range prices {
+	for _, model := range models {
 		if version == model.Version {
 			return model
 		}
 	}
 
-	return nil
+	price := &Model{
+		height:    height,
+		Version:   version,
+		markDirty: c.markDirty(height),
+	}
+	c.setToMap(height, append(models, price))
+	return price
 }
 
 func (c *Update) get(height uint64) []*Model {
-	if haltBlock := c.getFromMap(height); haltBlock != nil {
-		return haltBlock
+	if models := c.getFromMap(height); models != nil {
+		return models
 	}
 
 	_, enc := c.immutableTree().Get(getPath(height))
@@ -157,6 +153,11 @@ func (c *Update) get(height uint64) []*Model {
 	var voteBlock []*Model
 	if err := rlp.DecodeBytes(enc, &voteBlock); err != nil {
 		panic(fmt.Sprintf("failed to decode halt blocks at height %d: %s", height, err))
+	}
+
+	for _, vote := range voteBlock {
+		vote.markDirty = c.markDirty(height)
+		vote.height = height
 	}
 
 	c.setToMap(height, voteBlock)
