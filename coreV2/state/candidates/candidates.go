@@ -1026,7 +1026,7 @@ func (c *Candidates) LoadStakesOfCandidate(pubkey types.Pubkey) {
 	stakesCount := 0
 	for index := 0; index < MaxDelegatorsPerCandidate; index++ {
 		candidate.lock.RLock()
-		loaded := candidate.stakes[index] == nil
+		loaded := candidate.stakes[index] != nil
 		candidate.lock.RUnlock()
 		if !loaded {
 			path := []byte{mainPrefix}
