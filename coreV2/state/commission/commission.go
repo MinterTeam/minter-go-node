@@ -382,6 +382,10 @@ func (c *Commission) get(height uint64) []*Model {
 		panic(fmt.Sprintf("failed to decode halt blocks at height %d: %s", height, err))
 	}
 
+	for _, vote := range voteBlock {
+		vote.markDirty = c.markDirty(height)
+	}
+
 	c.setToMap(height, voteBlock)
 
 	return voteBlock
