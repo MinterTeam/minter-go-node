@@ -350,23 +350,20 @@ func (c *Commission) SetNewCommissions(prices []byte) {
 func (c *Commission) getOrNew(height uint64, encode string) *Model {
 	prices := c.get(height)
 
-	if len(prices) == 0 {
-		price := &Model{
-			height:    height,
-			Price:     encode,
-			markDirty: c.markDirty(height),
-		}
-		c.setToMap(height, []*Model{price})
-		return price
-	}
-
 	for _, model := range prices {
 		if encode == model.Price {
 			return model
 		}
 	}
 
-	return nil
+	price := &Model{
+		height:    height,
+		Price:     encode,
+		markDirty: c.markDirty(height),
+	}
+	c.setToMap(height, append(prices, price))
+
+	return price
 }
 
 func (c *Commission) get(height uint64) []*Model {
