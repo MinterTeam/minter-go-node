@@ -736,12 +736,7 @@ func TestTwoTxFormOneSenderOneBlock(t *testing.T) {
 		}
 
 		if response := RunTx(state.NewCheckState(cState), txBytes, nil, 0, mempool, 0, false); response.Code != code.TxFromSenderAlreadyInMempool {
-			t.Fatalf("Error code is not %d, got %d", code.OK, response.Code)
-		}
-
-		response := RunTx(cState, txBytes, big.NewInt(0), 0, mempool, 0, false)
-		if response.Code != code.TxFromSenderAlreadyInMempool {
-			t.Fatalf("Error code is not %d, got %d", code.OK, response.Code)
+			t.Fatalf("Error code is not %d, got %d", code.TxFromSenderAlreadyInMempool, response.Code)
 		}
 	}
 }
