@@ -110,19 +110,6 @@ func RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBl
 		}
 	}
 
-	// check if mempool already has transactions from this address
-	if _, has := currentMempool.Load(sender); isCheck && has {
-		return Response{
-			Code: code.TxFromSenderAlreadyInMempool,
-			Log:  fmt.Sprintf("Tx from %s already exists in mempool", sender.String()),
-			Info: EncodeError(code.NewTxFromSenderAlreadyInMempool(sender.String(), strconv.Itoa(int(currentBlock)))),
-		}
-	}
-
-	if isCheck {
-		currentMempool.Store(sender, true)
-	}
-
 	// check multi-signature
 	if tx.SignatureType == SigTypeMulti {
 		multisig := checkState.Accounts().GetAccount(tx.multisig.Multisig)
@@ -204,10 +191,17 @@ func RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBl
 			Info: EncodeError(code.NewCommissionCoinNotSufficient("", "")),
 		}
 	}
-	response := tx.decodedData.Run(tx, context, rewardPool, currentBlock, price)
 
-	if response.Code != code.OK {
-		currentMempool.Delete(sender)
+	response := tx.decodedData.Run(tx, context, rewardPool, currentBlock, price)
+	if response.Code == code.OK && isCheck {
+		// check if mempool already has transactions from this address
+		if _, has := currentMempool.LoadOrStore(sender, true); has {
+			return Response{
+				Code: code.TxFromSenderAlreadyInMempool,
+				Log:  fmt.Sprintf("Tx from %s already exists in mempool", sender.String()),
+				Info: EncodeError(code.NewTxFromSenderAlreadyInMempool(sender.String(), strconv.Itoa(int(currentBlock)))),
+			}
+		}
 	}
 
 	commissionCoin := tx.commissionCoin()

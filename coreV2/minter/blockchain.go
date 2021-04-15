@@ -121,6 +121,7 @@ func (blockchain *Blockchain) initState() {
 	}
 
 	atomic.StoreUint64(&blockchain.height, currentHeight)
+	blockchain.rewards = big.NewInt(0)
 	blockchain.stateDeliver = stateDeliver
 	blockchain.stateCheck = state.NewCheckState(stateDeliver)
 
@@ -173,7 +174,7 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 	blockchain.stateDeliver.App.SetMaxGas(maxGas)
 	blockchain.appDB.AddBlocksTime(req.Header.Time)
 
-	blockchain.rewards = big.NewInt(0)
+	blockchain.rewards.SetInt64(0)
 
 	// clear absent candidates
 	blockchain.lock.Lock()

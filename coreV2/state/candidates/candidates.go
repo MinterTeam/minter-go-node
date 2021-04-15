@@ -1036,12 +1036,10 @@ func (c *Candidates) LoadStakesOfCandidate(pubkey types.Pubkey) {
 			candidate.lock.Unlock()
 			continue
 		}
-
 		stake := &stake{}
 		if err := rlp.DecodeBytes(enc, stake); err != nil {
 			panic(fmt.Sprintf("failed to decode stake: %s", err))
 		}
-
 		candidate.setStakeAtIndex(index, stake, false)
 
 		stakesCount++

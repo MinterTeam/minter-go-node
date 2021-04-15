@@ -1,5 +1,14 @@
 # Changelog
 
+## [v2.0.3](https://github.com/MinterTeam/minter-go-node/tree/v2.0.3)
+
+[Full Changelog](https://github.com/MinterTeam/minter-go-node/compare/v2.0.2...v2.0.3)
+
+### Fixed
+
+- Fix issue with db corruption while using delegated balance of addresses API
+- Improved processing of incoming transactions
+
 ## [v2.0.2](https://github.com/MinterTeam/minter-go-node/tree/v2.0.2)
 
 [Full Changelog](https://github.com/MinterTeam/minter-go-node/compare/v2.0.1...v2.0.2)
