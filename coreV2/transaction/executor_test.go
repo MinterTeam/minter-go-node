@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
+	"github.com/MinterTeam/minter-go-node/coreV2/state"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/accounts"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
@@ -657,5 +658,254 @@ func TestCustomCommissionCoinAndCustomGasCoin(t *testing.T) {
 
 	if err := checkState(cState); err != nil {
 		t.Error(err)
+	}
+}
+
+func TestTwoTxFormOneSenderOneBlock(t *testing.T) {
+	t.Parallel()
+	cState := getState()
+	privateKey, _ := crypto.GenerateKey()
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+	cState.Accounts.AddBalance(addr, 0, helpers.BipToPip(big.NewInt(1000000)))
+	mempool := &sync.Map{}
+	{
+
+		txData := SendData{
+			Coin:  types.GetBaseCoinID(),
+			To:    types.Address{1},
+			Value: big.NewInt(1),
+		}
+		encodedData, _ := rlp.EncodeToBytes(txData)
+
+		tx := Transaction{
+			Nonce:         1,
+			GasPrice:      1,
+			ChainID:       types.CurrentChainID,
+			GasCoin:       types.GetBaseCoinID(),
+			Type:          TypeSend,
+			Data:          encodedData,
+			SignatureType: SigTypeSingle,
+		}
+
+		err := tx.Sign(privateKey)
+		if err != nil {
+			t.Fatalf("Error %s", err.Error())
+		}
+
+		txBytes, err := rlp.EncodeToBytes(tx)
+		if err != nil {
+			t.Fatalf("Error %s", err.Error())
+		}
+
+		if response := RunTx(state.NewCheckState(cState), txBytes, nil, 0, mempool, 0, false); response.Code != code.OK {
+			t.Fatalf("Error code is not %d, got %d", code.OK, response.Code)
+		}
+
+		response := RunTx(cState, txBytes, big.NewInt(0), 0, mempool, 0, false)
+		if response.Code != code.OK {
+			t.Fatalf("Error code is not %d, got %d", code.OK, response.Code)
+		}
+	}
+	{
+
+		txData := SendData{
+			Coin:  types.GetBaseCoinID(),
+			To:    types.Address{1},
+			Value: big.NewInt(1),
+		}
+		encodedData, _ := rlp.EncodeToBytes(txData)
+
+		tx := Transaction{
+			Nonce:         2,
+			GasPrice:      1,
+			ChainID:       types.CurrentChainID,
+			GasCoin:       types.GetBaseCoinID(),
+			Type:          TypeSend,
+			Data:          encodedData,
+			SignatureType: SigTypeSingle,
+		}
+
+		err := tx.Sign(privateKey)
+		if err != nil {
+			t.Fatalf("Error %s", err.Error())
+		}
+
+		txBytes, err := rlp.EncodeToBytes(tx)
+		if err != nil {
+			t.Fatalf("Error %s", err.Error())
+		}
+
+		if response := RunTx(state.NewCheckState(cState), txBytes, nil, 0, mempool, 0, false); response.Code != code.TxFromSenderAlreadyInMempool {
+			t.Fatalf("Error code is not %d, got %d", code.TxFromSenderAlreadyInMempool, response.Code)
+		}
+	}
+}
+func TestTwoTxFormOneSenderAnyBlock(t *testing.T) {
+	t.Parallel()
+	cState := getState()
+	privateKey, _ := crypto.GenerateKey()
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+	cState.Accounts.AddBalance(addr, 0, helpers.BipToPip(big.NewInt(1000000)))
+	mempool := &sync.Map{}
+	{
+
+		txData := SendData{
+			Coin:  types.GetBaseCoinID(),
+			To:    types.Address{1},
+			Value: big.NewInt(1),
+		}
+		encodedData, _ := rlp.EncodeToBytes(txData)
+
+		tx := Transaction{
+			Nonce:         1,
+			GasPrice:      1,
+			ChainID:       types.CurrentChainID,
+			GasCoin:       types.GetBaseCoinID(),
+			Type:          TypeSend,
+			Data:          encodedData,
+			SignatureType: SigTypeSingle,
+		}
+
+		err := tx.Sign(privateKey)
+		if err != nil {
+			t.Fatalf("Error %s", err.Error())
+		}
+
+		txBytes, err := rlp.EncodeToBytes(tx)
+		if err != nil {
+			t.Fatalf("Error %s", err.Error())
+		}
+
+		if response := RunTx(state.NewCheckState(cState), txBytes, nil, 0, mempool, 0, false); response.Code != code.OK {
+			t.Fatalf("Error code is not %d, got %d", code.OK, response.Code)
+		}
+
+		response := RunTx(cState, txBytes, big.NewInt(0), 0, mempool, 0, false)
+		if response.Code != code.OK {
+			t.Fatalf("Error code is not %d, got %d", code.OK, response.Code)
+		}
+	}
+	mempool = &sync.Map{}
+	{
+
+		txData := SendData{
+			Coin:  types.GetBaseCoinID(),
+			To:    types.Address{1},
+			Value: big.NewInt(1),
+		}
+		encodedData, _ := rlp.EncodeToBytes(txData)
+
+		tx := Transaction{
+			Nonce:         2,
+			GasPrice:      1,
+			ChainID:       types.CurrentChainID,
+			GasCoin:       types.GetBaseCoinID(),
+			Type:          TypeSend,
+			Data:          encodedData,
+			SignatureType: SigTypeSingle,
+		}
+
+		err := tx.Sign(privateKey)
+		if err != nil {
+			t.Fatalf("Error %s", err.Error())
+		}
+
+		txBytes, err := rlp.EncodeToBytes(tx)
+		if err != nil {
+			t.Fatalf("Error %s", err.Error())
+		}
+
+		if response := RunTx(state.NewCheckState(cState), txBytes, nil, 0, mempool, 0, false); response.Code != code.OK {
+			t.Fatalf("Error code is not %d, got %d", code.OK, response.Code)
+		}
+
+		response := RunTx(cState, txBytes, big.NewInt(0), 0, mempool, 0, false)
+		if response.Code != code.OK {
+			t.Fatalf("Error code is not %d, got %d", code.OK, response.Code)
+		}
+	}
+}
+func TestTxOkAfterFailFormOneSenderInOneBlock(t *testing.T) {
+	t.Parallel()
+	cState := getState()
+	privateKey, _ := crypto.GenerateKey()
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+	cState.Accounts.AddBalance(addr, 0, helpers.BipToPip(big.NewInt(1000000)))
+	mempool := &sync.Map{}
+	{
+
+		txData := SendData{
+			Coin:  types.GetBaseCoinID(),
+			To:    types.Address{1},
+			Value: big.NewInt(1),
+		}
+		encodedData, _ := rlp.EncodeToBytes(txData)
+
+		tx := Transaction{
+			Nonce:         2,
+			GasPrice:      1,
+			ChainID:       types.CurrentChainID,
+			GasCoin:       types.GetBaseCoinID(),
+			Type:          TypeSend,
+			Data:          encodedData,
+			SignatureType: SigTypeSingle,
+		}
+
+		err := tx.Sign(privateKey)
+		if err != nil {
+			t.Fatalf("Error %s", err.Error())
+		}
+
+		txBytes, err := rlp.EncodeToBytes(tx)
+		if err != nil {
+			t.Fatalf("Error %s", err.Error())
+		}
+
+		if response := RunTx(state.NewCheckState(cState), txBytes, nil, 0, mempool, 0, false); response.Code != code.WrongNonce {
+			t.Fatalf("Error code is not %d, got %d", code.WrongNonce, response.Code)
+		}
+
+		response := RunTx(cState, txBytes, big.NewInt(0), 0, mempool, 0, false)
+		if response.Code != code.WrongNonce {
+			t.Fatalf("Error code is not %d, got %d", code.WrongNonce, response.Code)
+		}
+	}
+	{
+
+		txData := SendData{
+			Coin:  types.GetBaseCoinID(),
+			To:    types.Address{1},
+			Value: big.NewInt(1),
+		}
+		encodedData, _ := rlp.EncodeToBytes(txData)
+
+		tx := Transaction{
+			Nonce:         1,
+			GasPrice:      1,
+			ChainID:       types.CurrentChainID,
+			GasCoin:       types.GetBaseCoinID(),
+			Type:          TypeSend,
+			Data:          encodedData,
+			SignatureType: SigTypeSingle,
+		}
+
+		err := tx.Sign(privateKey)
+		if err != nil {
+			t.Fatalf("Error %s", err.Error())
+		}
+
+		txBytes, err := rlp.EncodeToBytes(tx)
+		if err != nil {
+			t.Fatalf("Error %s", err.Error())
+		}
+
+		if response := RunTx(state.NewCheckState(cState), txBytes, nil, 0, mempool, 0, false); response.Code != code.OK {
+			t.Fatalf("Error code is not %d, got %d", code.OK, response.Code)
+		}
+
+		response := RunTx(cState, txBytes, big.NewInt(0), 0, mempool, 0, false)
+		if response.Code != code.OK {
+			t.Fatalf("Error code is not %d, got %d", code.OK, response.Code)
+		}
 	}
 }

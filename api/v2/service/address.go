@@ -62,13 +62,15 @@ func (s *Service) Address(ctx context.Context, req *pb.AddressRequest) (*pb.Addr
 	}
 
 	if req.Delegated {
-		cState.Candidates().LoadCandidates()
-		if timeoutStatus := s.checkTimeout(ctx, "LoadCandidates"); timeoutStatus != nil {
-			return nil, timeoutStatus.Err()
-		}
-		cState.Candidates().LoadStakes()
-		if timeoutStatus := s.checkTimeout(ctx, "LoadStakes"); timeoutStatus != nil {
-			return nil, timeoutStatus.Err()
+		if req.Height != 0 {
+			cState.Candidates().LoadCandidates()
+			if timeoutStatus := s.checkTimeout(ctx, "LoadCandidates"); timeoutStatus != nil {
+				return nil, timeoutStatus.Err()
+			}
+			cState.Candidates().LoadStakes()
+			if timeoutStatus := s.checkTimeout(ctx, "LoadStakes"); timeoutStatus != nil {
+				return nil, timeoutStatus.Err()
+			}
 		}
 		var userDelegatedStakesGroupByCoin = map[types.CoinID]*stakeUser{}
 		allCandidates := cState.Candidates().GetCandidates()
