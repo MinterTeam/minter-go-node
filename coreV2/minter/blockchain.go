@@ -212,7 +212,7 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 		blockchain.stop()
 		return abciTypes.ResponseBeginBlock{}
 	}
-	if _, ok := blockchain.knownUpdates[blockchain.appDB.GetVersion(height)]; !ok {
+	if _, ok := blockchain.knownUpdates[blockchain.appDB.GetVersionName(height)]; !ok {
 		blockchain.stop()
 		return abciTypes.ResponseBeginBlock{}
 	}
