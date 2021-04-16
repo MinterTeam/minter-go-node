@@ -18,6 +18,7 @@ import (
 	tmjson "github.com/tendermint/tendermint/libs/json"
 	tmNode "github.com/tendermint/tendermint/node"
 	rpc "github.com/tendermint/tendermint/rpc/client/local"
+	"log"
 	"math/big"
 	"sync"
 	"sync/atomic"
@@ -64,13 +65,14 @@ type Blockchain struct {
 	// currentMempool is responsive for prevent sending multiple transactions from one address in one block
 	currentMempool *sync.Map
 
-	lock       sync.RWMutex
-	haltHeight uint64
-	cfg        *config.Config
-	storages   *utils.Storage
-	stopChan   context.Context
-	stopped    bool
-	grace      *upgrades.Grace
+	lock         sync.RWMutex
+	haltHeight   uint64
+	cfg          *config.Config
+	storages     *utils.Storage
+	stopChan     context.Context
+	stopped      bool
+	grace        *upgrades.Grace
+	knownUpdates map[string]struct{}
 }
 
 // NewMinterBlockchain creates Minter Blockchain instance, should be only called once
@@ -107,6 +109,12 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 	return app
 }
 
+func graceForUpdate(height uint64) *upgrades.GracePeriod {
+	return upgrades.NewGracePeriod(height, height+120)
+}
+
+const haltBlockV210 = 3431238
+
 func (blockchain *Blockchain) initState() {
 	initialHeight := blockchain.appDB.GetStartHeight()
 	currentHeight := blockchain.appDB.GetLastHeight()
@@ -126,7 +134,15 @@ func (blockchain *Blockchain) initState() {
 	blockchain.stateCheck = state.NewCheckState(stateDeliver)
 
 	grace := upgrades.NewGrace()
-	grace.AddGracePeriods(upgrades.NewGracePeriod(initialHeight, initialHeight+120))
+	grace.AddGracePeriods(upgrades.NewGracePeriod(initialHeight, initialHeight+120),
+		upgrades.NewGracePeriod(haltBlockV210, haltBlockV210+120))
+	blockchain.knownUpdates = map[string]struct{}{
+		"": {}, // default version
+		// add more for update
+	}
+	for _, v := range blockchain.UpdateVersions() {
+		grace.AddGracePeriods(graceForUpdate(v.Height))
+	}
 	blockchain.grace = grace
 }
 
@@ -196,7 +212,15 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 
 	blockchain.calculatePowers(blockchain.stateDeliver.Validators.GetValidators())
 
-	if blockchain.isApplicationHalted(height) {
+	if blockchain.isApplicationHalted(height) && !blockchain.grace.IsUpgradeBlock(height) {
+		log.Printf("Application halted at height %d\n", height)
+		blockchain.stop()
+		return abciTypes.ResponseBeginBlock{}
+	}
+
+	versionName := blockchain.appDB.GetVersionName(height)
+	if _, ok := blockchain.knownUpdates[versionName]; !ok {
+		log.Printf("Update your node binary to the latest version: %s", versionName)
 		blockchain.stop()
 		return abciTypes.ResponseBeginBlock{}
 	}
@@ -290,64 +314,75 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 		blockchain.stateDeliver.Validators.PayRewards()
 	}
 
-	if prices := blockchain.isUpdateCommissionsBlock(height); len(prices) != 0 {
-		blockchain.stateDeliver.Commission.SetNewCommissions(prices)
-		price := blockchain.stateDeliver.Commission.GetCommissions()
-		blockchain.eventsDB.AddEvent(&eventsdb.UpdateCommissionsEvent{
-			Coin:                    uint64(price.Coin),
-			PayloadByte:             price.PayloadByte.String(),
-			Send:                    price.Send.String(),
-			BuyBancor:               price.BuyBancor.String(),
-			SellBancor:              price.SellBancor.String(),
-			SellAllBancor:           price.SellAllBancor.String(),
-			BuyPoolBase:             price.BuyPoolBase.String(),
-			BuyPoolDelta:            price.BuyPoolDelta.String(),
-			SellPoolBase:            price.SellPoolBase.String(),
-			SellPoolDelta:           price.SellPoolDelta.String(),
-			SellAllPoolBase:         price.SellAllPoolBase.String(),
-			SellAllPoolDelta:        price.SellAllPoolDelta.String(),
-			CreateTicker3:           price.CreateTicker3.String(),
-			CreateTicker4:           price.CreateTicker4.String(),
-			CreateTicker5:           price.CreateTicker5.String(),
-			CreateTicker6:           price.CreateTicker6.String(),
-			CreateTicker7_10:        price.CreateTicker7to10.String(),
-			CreateCoin:              price.CreateCoin.String(),
-			CreateToken:             price.CreateToken.String(),
-			RecreateCoin:            price.RecreateCoin.String(),
-			RecreateToken:           price.RecreateToken.String(),
-			DeclareCandidacy:        price.DeclareCandidacy.String(),
-			Delegate:                price.Delegate.String(),
-			Unbond:                  price.Unbond.String(),
-			RedeemCheck:             price.RedeemCheck.String(),
-			SetCandidateOn:          price.SetCandidateOn.String(),
-			SetCandidateOff:         price.SetCandidateOff.String(),
-			CreateMultisig:          price.CreateMultisig.String(),
-			MultisendBase:           price.MultisendBase.String(),
-			MultisendDelta:          price.MultisendDelta.String(),
-			EditCandidate:           price.EditCandidate.String(),
-			SetHaltBlock:            price.SetHaltBlock.String(),
-			EditTickerOwner:         price.EditTickerOwner.String(),
-			EditMultisig:            price.EditMultisig.String(),
-			EditCandidatePublicKey:  price.EditCandidatePublicKey.String(),
-			CreateSwapPool:          price.CreateSwapPool.String(),
-			AddLiquidity:            price.AddLiquidity.String(),
-			RemoveLiquidity:         price.RemoveLiquidity.String(),
-			EditCandidateCommission: price.EditCandidateCommission.String(),
-			MintToken:               price.MintToken.String(),
-			BurnToken:               price.BurnToken.String(),
-			VoteCommission:          price.VoteCommission.String(),
-			VoteUpdate:              price.VoteUpdate.String(),
-		})
+	{
+		var updateCommissionsBlockPrices []byte
+		if height < haltBlockV210 {
+			updateCommissionsBlockPrices = blockchain.isUpdateCommissionsBlock(height)
+		} else {
+			updateCommissionsBlockPrices = blockchain.isUpdateCommissionsBlockV2(height)
+		}
+		if prices := updateCommissionsBlockPrices; len(prices) != 0 {
+			blockchain.stateDeliver.Commission.SetNewCommissions(prices)
+			price := blockchain.stateDeliver.Commission.GetCommissions()
+			blockchain.eventsDB.AddEvent(&eventsdb.UpdateCommissionsEvent{
+				Coin:                    uint64(price.Coin),
+				PayloadByte:             price.PayloadByte.String(),
+				Send:                    price.Send.String(),
+				BuyBancor:               price.BuyBancor.String(),
+				SellBancor:              price.SellBancor.String(),
+				SellAllBancor:           price.SellAllBancor.String(),
+				BuyPoolBase:             price.BuyPoolBase.String(),
+				BuyPoolDelta:            price.BuyPoolDelta.String(),
+				SellPoolBase:            price.SellPoolBase.String(),
+				SellPoolDelta:           price.SellPoolDelta.String(),
+				SellAllPoolBase:         price.SellAllPoolBase.String(),
+				SellAllPoolDelta:        price.SellAllPoolDelta.String(),
+				CreateTicker3:           price.CreateTicker3.String(),
+				CreateTicker4:           price.CreateTicker4.String(),
+				CreateTicker5:           price.CreateTicker5.String(),
+				CreateTicker6:           price.CreateTicker6.String(),
+				CreateTicker7_10:        price.CreateTicker7to10.String(),
+				CreateCoin:              price.CreateCoin.String(),
+				CreateToken:             price.CreateToken.String(),
+				RecreateCoin:            price.RecreateCoin.String(),
+				RecreateToken:           price.RecreateToken.String(),
+				DeclareCandidacy:        price.DeclareCandidacy.String(),
+				Delegate:                price.Delegate.String(),
+				Unbond:                  price.Unbond.String(),
+				RedeemCheck:             price.RedeemCheck.String(),
+				SetCandidateOn:          price.SetCandidateOn.String(),
+				SetCandidateOff:         price.SetCandidateOff.String(),
+				CreateMultisig:          price.CreateMultisig.String(),
+				MultisendBase:           price.MultisendBase.String(),
+				MultisendDelta:          price.MultisendDelta.String(),
+				EditCandidate:           price.EditCandidate.String(),
+				SetHaltBlock:            price.SetHaltBlock.String(),
+				EditTickerOwner:         price.EditTickerOwner.String(),
+				EditMultisig:            price.EditMultisig.String(),
+				EditCandidatePublicKey:  price.EditCandidatePublicKey.String(),
+				CreateSwapPool:          price.CreateSwapPool.String(),
+				AddLiquidity:            price.AddLiquidity.String(),
+				RemoveLiquidity:         price.RemoveLiquidity.String(),
+				EditCandidateCommission: price.EditCandidateCommission.String(),
+				MintToken:               price.MintToken.String(),
+				BurnToken:               price.BurnToken.String(),
+				VoteCommission:          price.VoteCommission.String(),
+				VoteUpdate:              price.VoteUpdate.String(),
+			})
+		}
+		blockchain.stateDeliver.Commission.Delete(height)
 	}
-	blockchain.stateDeliver.Commission.Delete(height)
 
-	if v, ok := blockchain.isUpdateNetworkBlock(height); ok {
-		blockchain.appDB.AddVersion(v, height)
-		blockchain.eventsDB.AddEvent(&eventsdb.UpdateNetworkEvent{
-			Version: v,
-		})
+	{
+		if v, ok := blockchain.isUpdateNetworkBlockV2(height); ok {
+			blockchain.appDB.AddVersion(v, height)
+			blockchain.eventsDB.AddEvent(&eventsdb.UpdateNetworkEvent{
+				Version: v,
+			})
+			blockchain.grace.AddGracePeriods(graceForUpdate(height))
+		}
+		blockchain.stateDeliver.Updates.Delete(height)
 	}
-	blockchain.stateDeliver.Updates.Delete(height)
 
 	hasChangedPublicKeys := false
 	if blockchain.stateDeliver.Candidates.IsChangedPublicKeys() {
