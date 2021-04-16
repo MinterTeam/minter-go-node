@@ -4,6 +4,16 @@ type Grace struct {
 	gracePeriods []*GracePeriod
 }
 
+func (g *Grace) IsUpgradeBlock(height uint64) bool {
+	for _, period := range g.gracePeriods {
+		if height == period.from {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (g *Grace) AddGracePeriods(gracePeriods ...*GracePeriod) {
 	g.gracePeriods = append(g.gracePeriods, gracePeriods...)
 }

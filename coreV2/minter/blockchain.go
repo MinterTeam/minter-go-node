@@ -64,13 +64,14 @@ type Blockchain struct {
 	// currentMempool is responsive for prevent sending multiple transactions from one address in one block
 	currentMempool *sync.Map
 
-	lock       sync.RWMutex
-	haltHeight uint64
-	cfg        *config.Config
-	storages   *utils.Storage
-	stopChan   context.Context
-	stopped    bool
-	grace      *upgrades.Grace
+	lock         sync.RWMutex
+	haltHeight   uint64
+	cfg          *config.Config
+	storages     *utils.Storage
+	stopChan     context.Context
+	stopped      bool
+	grace        *upgrades.Grace
+	knownUpdates map[string]struct{}
 }
 
 // NewMinterBlockchain creates Minter Blockchain instance, should be only called once
@@ -107,6 +108,12 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 	return app
 }
 
+func graceForUpdate(height uint64) *upgrades.GracePeriod {
+	return upgrades.NewGracePeriod(height+1, height+120)
+}
+
+const haltBlockV210 = 3431238
+
 func (blockchain *Blockchain) initState() {
 	initialHeight := blockchain.appDB.GetStartHeight()
 	currentHeight := blockchain.appDB.GetLastHeight()
@@ -126,7 +133,12 @@ func (blockchain *Blockchain) initState() {
 	blockchain.stateCheck = state.NewCheckState(stateDeliver)
 
 	grace := upgrades.NewGrace()
-	grace.AddGracePeriods(upgrades.NewGracePeriod(initialHeight, initialHeight+120))
+	grace.AddGracePeriods(upgrades.NewGracePeriod(initialHeight, initialHeight+120),
+		upgrades.NewGracePeriod(haltBlockV210, haltBlockV210+120))
+	blockchain.knownUpdates = map[string]struct{}{"": {}} // fill for update
+	for _, v := range blockchain.UpdateVersions() {
+		grace.AddGracePeriods(graceForUpdate(v.Height))
+	}
 	blockchain.grace = grace
 }
 
@@ -196,7 +208,11 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 
 	blockchain.calculatePowers(blockchain.stateDeliver.Validators.GetValidators())
 
-	if blockchain.isApplicationHalted(height) {
+	if blockchain.isApplicationHalted(height) && !blockchain.grace.IsUpgradeBlock(height) {
+		blockchain.stop()
+		return abciTypes.ResponseBeginBlock{}
+	}
+	if _, ok := blockchain.knownUpdates[blockchain.appDB.GetVersion(height)]; !ok {
 		blockchain.stop()
 		return abciTypes.ResponseBeginBlock{}
 	}
@@ -289,11 +305,10 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 	if height%blockchain.updateStakesAndPayRewardsPeriod == 0 {
 		blockchain.stateDeliver.Validators.PayRewards()
 	}
-	currentV := blockchain.appDB.GetVersion(height)
 
 	{
 		var updateCommissionsBlockPrices []byte
-		if currentV == "" {
+		if height < haltBlockV210 {
 			updateCommissionsBlockPrices = blockchain.isUpdateCommissionsBlock(height)
 		} else {
 			updateCommissionsBlockPrices = blockchain.isUpdateCommissionsBlockV2(height)
@@ -351,19 +366,12 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 	}
 
 	{
-		var v string
-		var ok bool
-		if currentV == "" {
-			v, ok = blockchain.isUpdateNetworkBlock(height)
-		} else {
-			v, ok = blockchain.isUpdateNetworkBlockV2(height)
-		}
-
-		if ok {
+		if v, ok := blockchain.isUpdateNetworkBlockV2(height); ok {
 			blockchain.appDB.AddVersion(v, height)
 			blockchain.eventsDB.AddEvent(&eventsdb.UpdateNetworkEvent{
 				Version: v,
 			})
+			blockchain.grace.AddGracePeriods(graceForUpdate(height))
 		}
 		blockchain.stateDeliver.Updates.Delete(height)
 	}
