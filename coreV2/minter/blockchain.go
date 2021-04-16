@@ -2,6 +2,7 @@ package minter
 
 import (
 	"context"
+	"fmt"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/coreV2/appdb"
@@ -18,6 +19,7 @@ import (
 	tmjson "github.com/tendermint/tendermint/libs/json"
 	tmNode "github.com/tendermint/tendermint/node"
 	rpc "github.com/tendermint/tendermint/rpc/client/local"
+	"log"
 	"math/big"
 	"sync"
 	"sync/atomic"
@@ -212,10 +214,14 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 	blockchain.calculatePowers(blockchain.stateDeliver.Validators.GetValidators())
 
 	if blockchain.isApplicationHalted(height) && !blockchain.grace.IsUpgradeBlock(height) {
+		fmt.Printf("Application halted at height %d", height)
 		blockchain.stop()
 		return abciTypes.ResponseBeginBlock{}
 	}
-	if _, ok := blockchain.knownUpdates[blockchain.appDB.GetVersionName(height)]; !ok {
+
+	versionName := blockchain.appDB.GetVersionName(height)
+	if _, ok := blockchain.knownUpdates[versionName]; !ok {
+		log.Printf("Update your node binary to the latest version: %s", versionName)
 		blockchain.stop()
 		return abciTypes.ResponseBeginBlock{}
 	}

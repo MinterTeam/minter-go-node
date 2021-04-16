@@ -249,10 +249,8 @@ type Version struct {
 }
 
 func (appDB *AppDB) GetVersionName(height uint64) string {
-	appDB.GetVersions()
-
 	lastVersionName := ""
-	for _, version := range appDB.versions {
+	for _, version := range appDB.GetVersions() {
 		if version.Height > height {
 			return lastVersionName
 		}
@@ -263,10 +261,8 @@ func (appDB *AppDB) GetVersionName(height uint64) string {
 }
 
 func (appDB *AppDB) GetVersionHeight(name string) uint64 {
-	appDB.GetVersions()
-
 	var lastVersionHeight uint64
-	for _, version := range appDB.versions {
+	for _, version := range appDB.GetVersions() {
 		if version.Name == name {
 			return lastVersionHeight
 		}

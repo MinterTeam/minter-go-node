@@ -14,7 +14,7 @@ jobs:
     env:
       CONTAINER_NAME: minter_node
       CONTAINER_TIMEOUT_SEC: 30
-      API_RUN_PORT: 8841
+      API_RUN_PORT: 8843
       SECRET_DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
       SECRET_DOCKER_HUB_USER: ${{ secrets.DOCKER_HUB_USER }}
       SECRET_DOCKER_HUB_REPO: ${{ secrets.DOCKER_HUB_REPO }}
@@ -29,6 +29,8 @@ jobs:
       # if secret DOCKER_HUB_REPO is not set DOCKER_HUB_USER will be used instead of REPO  
       # otherwise secrets are empty and repo "testbuild" will be used
       - name: Set envs
+        env:
+          ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
         run: |
           echo ::set-env name=VERSION::$(awk -F\" '/Version =/ { print $2; exit }' < version/version.go)
           echo ::set-env name=DOCKER_REPO::$(if [[ "$SECRET_DOCKER_HUB_REPO" == "" ]]; then if [[ "$SECRET_DOCKER_HUB_USER" == "" ]]; then echo "testbuild"; else echo "$SECRET_DOCKER_HUB_USER"; fi; else echo "$SECRET_DOCKER_HUB_REPO"; fi)
@@ -37,13 +39,17 @@ jobs:
         run: docker build -t $DOCKER_REPO/$DOCKER_IMAGE:$VERSION . -f ./Dockerfile-ci
 
       - name: Start docker container
-        run: docker run -d --name $CONTAINER_NAME -p $API_RUN_PORT:8841 $DOCKER_REPO/$DOCKER_IMAGE:$VERSION
+        run: docker run -d --name $CONTAINER_NAME -p $API_RUN_PORT:8843 $DOCKER_REPO/$DOCKER_IMAGE:$VERSION
 
       - name: Check container is still running
+        env:
+          ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
         run: |
           echo ::set-env name=RUN_TEST_RESULT::$(sleep $CONTAINER_TIMEOUT_SEC && if [[ $(docker inspect -f "{{.State.Running}}" $CONTAINER_NAME 2> /dev/null) == true ]]; then echo OK; else echo FAIL; fi)
 
       - name: Check api is available by HTTP (response code is 200)
+        env:
+          ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
         run: |
           echo ::set-env name=API_TEST_RESULT::$(if [[ $(curl -LIs localhost:$API_RUN_PORT -o /dev/null -w '%{http_code}') == 200 ]]; then echo OK; else echo FAIL; fi)
 
