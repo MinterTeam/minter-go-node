@@ -109,7 +109,7 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 }
 
 func graceForUpdate(height uint64) *upgrades.GracePeriod {
-	return upgrades.NewGracePeriod(height+1, height+120)
+	return upgrades.NewGracePeriod(height, height+120)
 }
 
 const haltBlockV210 = 3431238
