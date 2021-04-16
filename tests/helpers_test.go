@@ -27,12 +27,14 @@ func CreateApp(state types.AppState) *minter.Blockchain {
 	cfg := config.GetConfig(storage.GetMinterHome())
 	cfg.DBBackend = "memdb"
 	app := minter.NewMinterBlockchain(storage, cfg, nil, 120)
+	var updates []tmTypes.ValidatorUpdate
+	for _, validator := range state.Validators {
+		updates = append(updates, tmTypes.Ed25519ValidatorUpdate(validator.PubKey.Bytes(), 1))
+	}
 	app.InitChain(tmTypes.RequestInitChain{
-		Time:    time.Now(),
-		ChainId: "test",
-		Validators: []tmTypes.ValidatorUpdate{
-			tmTypes.Ed25519ValidatorUpdate([]byte{}, 1),
-		},
+		Time:          time.Now(),
+		ChainId:       "test",
+		Validators:    updates,
 		InitialHeight: 1,
 		AppStateBytes: jsonState,
 	})
@@ -46,13 +48,24 @@ func SendCommit(app *minter.Blockchain) tmTypes.ResponseCommit {
 }
 
 // SendBeginBlock sends BeginBlock message to given Blockchain instance
-func SendBeginBlock(app *minter.Blockchain) tmTypes.ResponseBeginBlock {
+func SendBeginBlock(app *minter.Blockchain, height int64) tmTypes.ResponseBeginBlock {
+	var voteInfos []tmTypes.VoteInfo
+	for _, validator := range app.CurrentState().Validators().GetValidators() {
+		address := validator.GetAddress()
+		voteInfos = append(voteInfos, tmTypes.VoteInfo{
+			Validator: tmTypes.Validator{
+				Address: address[:],
+				Power:   0,
+			},
+			SignedLastBlock: true,
+		})
+	}
 	return app.BeginBlock(tmTypes.RequestBeginBlock{
 		Hash: nil,
 		Header: tmTypes1.Header{
 			Version:            version.Consensus{},
 			ChainID:            "",
-			Height:             1,
+			Height:             height,
 			Time:               time.Time{},
 			LastBlockId:        tmTypes1.BlockID{},
 			LastCommitHash:     nil,
@@ -67,16 +80,16 @@ func SendBeginBlock(app *minter.Blockchain) tmTypes.ResponseBeginBlock {
 		},
 		LastCommitInfo: tmTypes.LastCommitInfo{
 			Round: 0,
-			Votes: nil,
+			Votes: voteInfos,
 		},
 		ByzantineValidators: nil,
 	})
 }
 
 // SendEndBlock sends EndBlock message to given Blockchain instance
-func SendEndBlock(app *minter.Blockchain) tmTypes.ResponseEndBlock {
+func SendEndBlock(app *minter.Blockchain, height int64) tmTypes.ResponseEndBlock {
 	return app.EndBlock(tmTypes.RequestEndBlock{
-		Height: 0,
+		Height: height,
 	})
 }
 

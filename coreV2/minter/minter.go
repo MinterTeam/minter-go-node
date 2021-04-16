@@ -294,6 +294,7 @@ func (blockchain *Blockchain) isApplicationHalted(height uint64) bool {
 	return false
 }
 
+// Deprecated
 func (blockchain *Blockchain) isUpdateCommissionsBlock(height uint64) []byte {
 	commissions := blockchain.stateDeliver.Commission.GetVotes(height)
 	if len(commissions) == 0 {
@@ -359,6 +360,7 @@ func (blockchain *Blockchain) isUpdateCommissionsBlockV2(height uint64) []byte {
 	return nil
 }
 
+// Deprecated
 func (blockchain *Blockchain) isUpdateNetworkBlock(height uint64) (string, bool) {
 	versions := blockchain.stateDeliver.Updates.GetVotes(height)
 	if len(versions) == 0 {

@@ -28,7 +28,7 @@ func TestSend(t *testing.T) {
 	})
 
 	app := CreateApp(state) // create application
-	SendBeginBlock(app)     // send BeginBlock
+	SendBeginBlock(app, 1)  // send BeginBlock
 
 	recipient, _ := CreateAddress() // generate recipient
 	value := big.NewInt(1)
@@ -46,8 +46,8 @@ func TestSend(t *testing.T) {
 		t.Fatalf("Response code is not OK: %s, %d", response.Log, response.Code)
 	}
 
-	SendEndBlock(app) // send EndBlock
-	SendCommit(app)   // send Commit
+	SendEndBlock(app, 1) // send EndBlock
+	SendCommit(app)      // send Commit
 
 	// check recipient's balance
 	{

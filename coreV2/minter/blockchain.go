@@ -356,7 +356,7 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 		if currentV == "" {
 			v, ok = blockchain.isUpdateNetworkBlock(height)
 		} else {
-			v, ok = blockchain.isUpdateNetworkBlock(height)
+			v, ok = blockchain.isUpdateNetworkBlockV2(height)
 		}
 
 		if ok {
