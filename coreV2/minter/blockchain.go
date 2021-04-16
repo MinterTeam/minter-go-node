@@ -2,7 +2,6 @@ package minter
 
 import (
 	"context"
-	"fmt"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/coreV2/appdb"
@@ -214,7 +213,7 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 	blockchain.calculatePowers(blockchain.stateDeliver.Validators.GetValidators())
 
 	if blockchain.isApplicationHalted(height) && !blockchain.grace.IsUpgradeBlock(height) {
-		fmt.Printf("Application halted at height %d", height)
+		log.Printf("Application halted at height %d\n", height)
 		blockchain.stop()
 		return abciTypes.ResponseBeginBlock{}
 	}
