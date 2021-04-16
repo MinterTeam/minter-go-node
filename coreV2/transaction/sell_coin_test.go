@@ -653,7 +653,6 @@ func TestSellCoinTxCustomToCustomCustom2Commission(t *testing.T) {
 	// check received coins
 	buyCoinBalance := cState.Accounts.GetBalance(addr, coinToBuyID)
 	bipReturn := formula.CalculateSaleReturn(initialVolume1, initialReserve1, crr1, toSell)
-	// estimatedReturn := formula.CalculatePurchaseReturn(initialVolume2, initialReserve2, crr2, bipReturn)
 	commissions := cState.Commission.GetCommissions()
 	commissionInBaseCoin := tx.Commission(tx.Price(commissions))
 	if !commissions.Coin.IsBaseCoin() {
