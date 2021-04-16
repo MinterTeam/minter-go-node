@@ -293,7 +293,7 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 
 	{
 		var updateCommissionsBlockPrices []byte
-		if currentV == "v210" { // todo: change to != ""
+		if currentV == "" {
 			updateCommissionsBlockPrices = blockchain.isUpdateCommissionsBlock(height)
 		} else {
 			updateCommissionsBlockPrices = blockchain.isUpdateCommissionsBlockV2(height)
@@ -353,7 +353,7 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 	{
 		var v string
 		var ok bool
-		if currentV == "v210" { // todo: change to != ""
+		if currentV == "" {
 			v, ok = blockchain.isUpdateNetworkBlock(height)
 		} else {
 			v, ok = blockchain.isUpdateNetworkBlock(height)
