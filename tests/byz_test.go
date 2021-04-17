@@ -85,8 +85,8 @@ func TestBlockchain_ByzantineValidators(t *testing.T) {
 	app.BeginBlock(req)
 	// SendBeginBlock(app) // send BeginBlock
 
-	SendEndBlock(app) // send EndBlock
-	SendCommit(app)   // send Commit
+	SendEndBlock(app, 1) // send EndBlock
+	SendCommit(app)      // send Commit
 
 	if validator := app.CurrentState().Validators().GetByPublicKey([32]byte{1}); validator != nil {
 		t.Error("validator exists")

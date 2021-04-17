@@ -294,6 +294,7 @@ func (blockchain *Blockchain) isApplicationHalted(height uint64) bool {
 	return false
 }
 
+// Deprecated
 func (blockchain *Blockchain) isUpdateCommissionsBlock(height uint64) []byte {
 	commissions := blockchain.stateDeliver.Commission.GetVotes(height)
 	if len(commissions) == 0 {
@@ -326,16 +327,49 @@ func (blockchain *Blockchain) isUpdateCommissionsBlock(height uint64) []byte {
 	return nil
 }
 
-func (blockchain *Blockchain) isUpdateNetworkBlock(height uint64) (string, bool) {
+func (blockchain *Blockchain) isUpdateCommissionsBlockV2(height uint64) []byte {
+	commissions := blockchain.stateDeliver.Commission.GetVotes(height)
+	if len(commissions) == 0 {
+		return nil
+	}
+	// calculate total power of validators
+	maxVotingResult := big.NewFloat(0)
+
+	var price string
+	for _, commission := range commissions {
+		totalVotedPower := big.NewInt(0)
+		for _, vote := range commission.Votes {
+			if power, ok := blockchain.validatorsPowers[vote]; ok {
+				totalVotedPower.Add(totalVotedPower, power)
+			}
+		}
+		votingResult := new(big.Float).Quo(
+			new(big.Float).SetInt(totalVotedPower),
+			new(big.Float).SetInt(blockchain.totalPower),
+		)
+
+		if maxVotingResult.Cmp(votingResult) == -1 {
+			maxVotingResult = votingResult
+			price = commission.Price
+		}
+	}
+	if maxVotingResult.Cmp(big.NewFloat(votingPowerConsensus)) == 1 {
+		return []byte(price)
+	}
+
+	return nil
+}
+
+func (blockchain *Blockchain) isUpdateNetworkBlockV2(height uint64) (string, bool) {
 	versions := blockchain.stateDeliver.Updates.GetVotes(height)
 	if len(versions) == 0 {
 		return "", false
 	}
 	// calculate total power of validators
-	maxVotingResult, totalVotedPower := big.NewFloat(0), big.NewInt(0)
-
+	maxVotingResult := big.NewFloat(0)
 	var version string
 	for _, v := range versions {
+		totalVotedPower := big.NewInt(0)
 		for _, vote := range v.Votes {
 			if power, ok := blockchain.validatorsPowers[vote]; ok {
 				totalVotedPower.Add(totalVotedPower, power)

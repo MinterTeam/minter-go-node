@@ -653,13 +653,14 @@ func TestSellCoinTxCustomToCustomCustom2Commission(t *testing.T) {
 	// check received coins
 	buyCoinBalance := cState.Accounts.GetBalance(addr, coinToBuyID)
 	bipReturn := formula.CalculateSaleReturn(initialVolume1, initialReserve1, crr1, toSell)
-	estimatedReturn := formula.CalculatePurchaseReturn(initialVolume2, initialReserve2, crr2, bipReturn)
 	commissions := cState.Commission.GetCommissions()
 	commissionInBaseCoin := tx.Commission(tx.Price(commissions))
 	if !commissions.Coin.IsBaseCoin() {
 		commissionInBaseCoin = cState.Swap.GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuy(commissionInBaseCoin)
 	}
-	commission := formula.CalculateSaleAmount(big.NewInt(0).Add(initialVolume2, estimatedReturn), big.NewInt(0).Add(initialReserve2, bipReturn), crr2, commissionInBaseCoin)
+	commission := formula.CalculateSaleAmount(initialVolume2, initialReserve2, crr2, commissionInBaseCoin)
+
+	estimatedReturn := formula.CalculatePurchaseReturn(big.NewInt(0).Sub(initialVolume2, commission), big.NewInt(0).Sub(initialReserve2, commissionInBaseCoin), crr2, bipReturn)
 
 	estimatedBuyBalance := big.NewInt(0).Set(estimatedReturn)
 	estimatedBuyBalance.Sub(estimatedBuyBalance, commission)
@@ -704,7 +705,7 @@ func TestSellCoinTxCustomToCustomCustom2Commission(t *testing.T) {
 		}
 
 		estimatedSupply := big.NewInt(0).Set(initialVolume2)
-		estimatedSupply.Add(estimatedSupply, formula.CalculatePurchaseReturn(initialVolume2, initialReserve2, crr2, formula.CalculateSaleReturn(initialVolume1, initialReserve1, crr1, toSell)))
+		estimatedSupply.Add(estimatedSupply, formula.CalculatePurchaseReturn(big.NewInt(0).Sub(initialVolume2, commission), big.NewInt(0).Sub(initialReserve2, commissionInBaseCoin), crr2, formula.CalculateSaleReturn(initialVolume1, initialReserve1, crr1, toSell)))
 		estimatedSupply.Sub(estimatedSupply, commission)
 		if coinData.Volume().Cmp(estimatedSupply) != 0 {
 			t.Fatalf("Wrong coin supply")
