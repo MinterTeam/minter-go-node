@@ -272,16 +272,18 @@ type Validator struct {
 }
 
 type Candidate struct {
-	ID             uint64  `json:"id"`
-	RewardAddress  Address `json:"reward_address"`
-	OwnerAddress   Address `json:"owner_address"`
-	ControlAddress Address `json:"control_address"`
-	TotalBipStake  string  `json:"total_bip_stake"`
-	PubKey         Pubkey  `json:"public_key"`
-	Commission     uint64  `json:"commission"`
-	Stakes         []Stake `json:"stakes,omitempty"`
-	Updates        []Stake `json:"updates,omitempty"`
-	Status         uint64  `json:"status"`
+	ID                       uint64  `json:"id"`
+	RewardAddress            Address `json:"reward_address"`
+	OwnerAddress             Address `json:"owner_address"`
+	ControlAddress           Address `json:"control_address"`
+	TotalBipStake            string  `json:"total_bip_stake"`
+	PubKey                   Pubkey  `json:"public_key"`
+	Commission               uint64  `json:"commission"`
+	Stakes                   []Stake `json:"stakes,omitempty"`
+	Updates                  []Stake `json:"updates,omitempty"`
+	Status                   uint64  `json:"status"`
+	JailedUntil              uint64  `json:"jailed_until,omitempty"`
+	LastEditCommissionHeight uint64  `json:"last_edit_commission_height,omitempty"`
 }
 
 type Stake struct {
