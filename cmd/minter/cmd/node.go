@@ -14,7 +14,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/version"
 	"github.com/spf13/cobra"
-	"github.com/tendermint/tendermint/abci/types"
 	tmCfg "github.com/tendermint/tendermint/config"
 	tmLog "github.com/tendermint/tendermint/libs/log"
 	tmOS "github.com/tendermint/tendermint/libs/os"
@@ -94,7 +93,6 @@ func runNode(cmd *cobra.Command) error {
 
 	// start TM node
 	node := startTendermintNode(app, tmConfig, logger, storages.GetMinterHome())
-	app.SetTmNode(node)
 	client := app.RpcClient()
 
 	if !cfg.ValidatorMode {
@@ -184,7 +182,7 @@ func checkRlimits() error {
 	return nil
 }
 
-func startTendermintNode(app types.Application, cfg *tmCfg.Config, logger tmLog.Logger, home string) *tmNode.Node {
+func startTendermintNode(app *minter.Blockchain, cfg *tmCfg.Config, logger tmLog.Logger, home string) *tmNode.Node {
 	nodeKey, err := p2p.LoadOrGenNodeKey(cfg.NodeKeyFile())
 	if err != nil {
 		panic(err)
@@ -205,6 +203,8 @@ func startTendermintNode(app types.Application, cfg *tmCfg.Config, logger tmLog.
 		logger.Error("failed to create a node", "err", err)
 		os.Exit(1)
 	}
+
+	app.SetTmNode(node)
 
 	if err = node.Start(); err != nil {
 		logger.Error("failed to start node", "err", err)
