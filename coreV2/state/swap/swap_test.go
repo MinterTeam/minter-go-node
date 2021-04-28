@@ -6,6 +6,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/tree"
 	db "github.com/tendermint/tm-db"
 	"math/big"
+	"math/rand"
 	"testing"
 )
 
@@ -89,4 +90,68 @@ func TestPair_commission(t *testing.T) {
 		// t.Log(pair.Reserves())
 	}
 
+}
+
+func TestPair_SetOrderSell(t *testing.T) {
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+	swap := New(newBus, immutableTree.GetLastImmutable())
+	r0 := big.NewInt(1e18)
+	r1 := big.NewInt(1e18)
+	_, _, _, _ = swap.PairCreate(0, 1, r0, r1)
+	pair := swap.Pair(0, 1)
+
+	pair.SetOrderSell(big.NewInt(1e17), big.NewInt(3e17+1))
+	pair.SetOrderSell(big.NewInt(1e17), big.NewInt(3e17)) // todo
+	pair.SetOrderSell(big.NewInt(1e17), big.NewInt(3e17+2))
+	pair.SetOrderSell(big.NewInt(1e17), big.NewInt(2e17))
+	pair.SetOrderSell(big.NewInt(1e17), big.NewInt(5e17))
+	pair.SetOrderSell(big.NewInt(1e17), big.NewInt(4e17))
+
+	r := rand.New(rand.NewSource(5))
+	for i := int64(1); i <= 3; i++ {
+		valueSell := big.NewInt(1e17)
+		valueBuy := big.NewInt(0).Add(big.NewInt(1e17), big.NewInt(0).Rand(r, big.NewInt(1e17)))
+		pair.SetOrderSell(valueSell, valueBuy)
+	}
+
+	for i, limit := range pair.limitsSell {
+		t.Log(limit.id, limit.Rate(), limit.Coin0, limit.Coin1)
+		if i == 0 {
+			continue
+		}
+		prev := pair.limitsSell[i-1]
+		if limit.Rate().Cmp(prev.Rate()) != 1 && limit.id < prev.id {
+			t.Errorf("not sorted: [%d]%v < [%d]%v", i, limit.Rate(), i-1, prev.Rate())
+		}
+	}
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	swap = New(newBus, immutableTree.GetLastImmutable())
+
+	pair = swap.Pair(0, 1)
+	last, index := pair.OrderSellLast()
+
+	t.Log(index)
+	t.Log(last.id)
+
+	for i, limit := range pair.limitsSell {
+		t.Log(limit.id, limit.Rate(), limit.Coin0, limit.Coin1)
+		if i == 0 {
+			continue
+		}
+		prev := pair.limitsSell[i-1]
+		if limit.Rate().Cmp(prev.Rate()) != 1 && limit.id < prev.id {
+			t.Errorf("not sorted: [%d]%v < [%d]%v", i, limit.Rate(), i-1, prev.Rate())
+		}
+	}
 }
