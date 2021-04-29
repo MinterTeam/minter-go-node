@@ -10,9 +10,11 @@ import (
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/cosmos/iavl"
+	"math"
 	"math/big"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 )
@@ -102,18 +104,6 @@ func New(bus *bus.Bus, db *iavl.ImmutableTree) *Swap {
 
 func (s *Swap) immutableTree() *iavl.ImmutableTree {
 	return s.db.Load().(*iavl.ImmutableTree)
-}
-
-// Deprecated
-func (s *Swap) ExportV1(state *types.AppState, id types.CoinID, usdAmount *big.Int, bipAmount *big.Int) *big.Int {
-	state.Pools = append(state.Pools, types.Pool{
-		Coin0:    0,
-		Coin1:    uint64(id),
-		Reserve0: bipAmount.String(),
-		Reserve1: usdAmount.String(),
-		ID:       1,
-	})
-	return startingSupply(bipAmount, usdAmount)
 }
 
 func (s *Swap) Export(state *types.AppState) {
@@ -252,9 +242,25 @@ func (pk pairKey) pathOrders() []byte {
 }
 
 func ratePath(key pairKey, rate *big.Float, id uint32) []byte {
+	var ratePath []byte
+
+	text := rate.Text('b', 18)
+	split := strings.Split(text, "p")
+	if len(split) != 2 {
+		panic("p")
+	}
+
+	bString, err := strconv.Atoi(split[1])
+	if err != nil {
+		panic(err)
+	}
+	ratePath = append(ratePath, byte(bString+math.MaxInt8)) // порядок
+
+	m, _ := big.NewInt(0).SetString(split[0], 10) // матисса
+	ratePath = append(ratePath, m.Bytes()...)
 	byteID := make([]byte, 4)
 	binary.BigEndian.PutUint32(byteID, id)
-	return append(append(append([]byte{mainPrefix}, key.pathOrders()...), []byte(rate.String())...), byteID...)
+	return append(append(append([]byte{mainPrefix}, key.pathOrders()...), ratePath...), byteID...)
 }
 
 func (s *Swap) Commit(db *iavl.MutableTree) error {
@@ -878,9 +884,9 @@ func (s *Swap) loadSellOrders(pair *Pair, limit int) {
 		l := pair.limitsSell[len(pair.limitsSell)-1]
 		startKey = ratePath(pair.pairKey.sort(), l.Rate(), l.id+1)
 	} else {
-		startKey = append(append([]byte{mainPrefix}, pair.pairKey.sort().pathOrders()...), make([]byte, 4)...)
+		startKey = append(append([]byte{mainPrefix}, pair.pairKey.sort().pathOrders()...), byte(1))
 	}
-	endKey = append(append([]byte{mainPrefix}, pair.pairKey.sort().pathOrders()...), []byte{byte(255), byte(255), byte(255), byte(255)}...)
+	endKey = append(append([]byte{mainPrefix}, pair.pairKey.sort().pathOrders()...), byte(255))
 
 	ascending := true
 	if !pair.pairKey.isSorted() {
