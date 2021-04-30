@@ -250,14 +250,26 @@ func ratePath(key pairKey, rate *big.Float, id uint32) []byte {
 		panic("p")
 	}
 
-	bString, err := strconv.Atoi(split[1])
-	if err != nil {
-		panic(err)
+	{
+		// порядок
+		bString, err := strconv.Atoi(split[1])
+		if err != nil {
+			panic(err)
+		}
+		ratePath = append(ratePath, byte(bString+math.MaxInt8))
 	}
-	ratePath = append(ratePath, byte(bString+math.MaxInt8)) // порядок
 
-	m, _ := big.NewInt(0).SetString(split[0], 10) // матисса
-	ratePath = append(ratePath, m.Bytes()...)
+	{
+		// матисса
+		mString, err := strconv.Atoi(split[0])
+		if err != nil {
+			panic(err)
+		}
+		m := make([]byte, 8)
+		binary.BigEndian.PutUint64(m, uint64(mString+math.MaxInt64))
+		ratePath = append(ratePath, m...)
+	}
+
 	byteID := make([]byte, 4)
 	binary.BigEndian.PutUint32(byteID, id)
 	return append(append(append([]byte{mainPrefix}, key.pathOrders()...), ratePath...), byteID...)
