@@ -93,13 +93,14 @@ func (data SellSwapPoolData) Run(tx *Transaction, context state.Interface, rewar
 		return *errResp
 	}
 
+	lastIteration := len(data.Coins[1:]) - 1
 	{
 		coinToSell := data.Coins[0]
 		coinToSellModel := checkState.Coins().GetCoin(coinToSell)
-		resultCoin := data.Coins[len(data.Coins)-1]
+		// resultCoin := data.Coins[lastIteration]
 		valueToSell := data.ValueToSell
 		valueToBuy := big.NewInt(0)
-		for _, coinToBuy := range data.Coins[1:] {
+		for i, coinToBuy := range data.Coins[1:] {
 			swapper := checkState.Swap().GetSwapper(coinToSell, coinToBuy)
 			if isGasCommissionFromPoolSwap {
 				if tx.GasCoin == coinToSell && coinToBuy.IsBaseCoin() {
@@ -110,7 +111,7 @@ func (data SellSwapPoolData) Run(tx *Transaction, context state.Interface, rewar
 				}
 			}
 
-			if coinToBuy == resultCoin {
+			if i == lastIteration {
 				valueToBuy = data.MinimumValueToBuy
 			}
 
@@ -123,7 +124,7 @@ func (data SellSwapPoolData) Run(tx *Transaction, context state.Interface, rewar
 			valueToSellCalc := swapper.CalculateBuyForSell(valueToSell)
 			if valueToSellCalc == nil {
 				reserve0, reserve1 := swapper.Reserves()
-				return Response{ // todo
+				return Response{
 					Code: code.SwapPoolUnknown,
 					Log:  fmt.Sprintf("swap pool has reserves %s %s and %d %s, you wanted sell %s %s", reserve0, coinToSellModel.GetFullSymbol(), reserve1, coinToBuyModel.GetFullSymbol(), valueToSell, coinToSellModel.GetFullSymbol()),
 					Info: EncodeError(code.NewInsufficientLiquidity(coinToSellModel.ID().String(), valueToSell.String(), coinToBuyModel.ID().String(), valueToSellCalc.String(), reserve0.String(), reserve1.String())),
@@ -169,7 +170,6 @@ func (data SellSwapPoolData) Run(tx *Transaction, context state.Interface, rewar
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
 		coinToSell := data.Coins[0]
-		resultCoin := data.Coins[len(data.Coins)-1]
 		valueToSell := data.ValueToSell
 
 		var poolIDs tagPoolsChange
@@ -192,7 +192,7 @@ func (data SellSwapPoolData) Run(tx *Transaction, context state.Interface, rewar
 			valueToSell = amountOut
 			coinToSell = coinToBuy
 
-			if resultCoin == coinToBuy {
+			if i == lastIteration {
 				deliverState.Accounts.AddBalance(sender, coinToBuy, amountOut)
 			}
 		}
@@ -204,7 +204,7 @@ func (data SellSwapPoolData) Run(tx *Transaction, context state.Interface, rewar
 			{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
 			{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String()), Index: true},
 			{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
-			{Key: []byte("tx.coin_to_buy"), Value: []byte(resultCoin.String()), Index: true},
+			{Key: []byte("tx.coin_to_buy"), Value: []byte(data.Coins[lastIteration].String()), Index: true},
 			{Key: []byte("tx.coin_to_sell"), Value: []byte(data.Coins[0].String()), Index: true},
 			{Key: []byte("tx.return"), Value: []byte(amountOut.String())},
 			{Key: []byte("tx.pools"), Value: []byte(poolIDs.string())},

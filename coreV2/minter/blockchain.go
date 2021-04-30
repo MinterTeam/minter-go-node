@@ -138,7 +138,8 @@ func (blockchain *Blockchain) initState() {
 
 	grace := upgrades.NewGrace()
 	grace.AddGracePeriods(upgrades.NewGracePeriod(initialHeight, initialHeight+120, true),
-		upgrades.NewGracePeriod(haltBlockV210, haltBlockV210+120, true))
+		upgrades.NewGracePeriod(haltBlockV210, haltBlockV210+120, true),
+		upgrades.NewGracePeriod(3612653, 3612653+120, true))
 	blockchain.knownUpdates = map[string]struct{}{
 		"": {}, // default version
 		// add more for update
