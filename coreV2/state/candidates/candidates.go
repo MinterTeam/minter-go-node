@@ -336,9 +336,9 @@ func (c *Candidates) Create(ownerAddress, rewardAddress, controlAddress types.Ad
 
 // CreateWithID creates a new candidate with given params and adds it to state
 // CreateWithID uses given ID to be associated with public key of a candidate
-func (c *Candidates) CreateWithID(ownerAddress, rewardAddress, controlAddress types.Address, pubkey types.Pubkey, commission uint32, id uint32) {
+func (c *Candidates) CreateWithID(ownerAddress, rewardAddress, controlAddress types.Address, pubkey types.Pubkey, commission, id uint32, commissionEditHeight, jail uint64) {
 	c.setPubKeyID(pubkey, id)
-	c.Create(ownerAddress, rewardAddress, controlAddress, pubkey, commission, 0, 0) // todo: import jail?
+	c.Create(ownerAddress, rewardAddress, controlAddress, pubkey, commission, commissionEditHeight, jail)
 }
 
 // PunishByzantineCandidate finds candidate with given tmAddress and punishes it:
@@ -932,16 +932,18 @@ func (c *Candidates) Export(state *types.AppState) {
 		}
 
 		state.Candidates = append(state.Candidates, types.Candidate{
-			ID:             uint64(candidate.ID),
-			RewardAddress:  candidate.RewardAddress,
-			OwnerAddress:   candidate.OwnerAddress,
-			ControlAddress: candidate.ControlAddress,
-			TotalBipStake:  candidate.GetTotalBipStake().String(),
-			PubKey:         candidate.PubKey,
-			Commission:     uint64(candidate.Commission),
-			Status:         uint64(candidate.Status),
-			Updates:        updates,
-			Stakes:         stakes,
+			ID:                       uint64(candidate.ID),
+			RewardAddress:            candidate.RewardAddress,
+			OwnerAddress:             candidate.OwnerAddress,
+			ControlAddress:           candidate.ControlAddress,
+			TotalBipStake:            candidate.GetTotalBipStake().String(),
+			PubKey:                   candidate.PubKey,
+			Commission:               uint64(candidate.Commission),
+			Status:                   uint64(candidate.Status),
+			Updates:                  updates,
+			Stakes:                   stakes,
+			JailedUntil:              candidate.JailedUntil,
+			LastEditCommissionHeight: candidate.LastEditCommissionHeight,
 		})
 	}
 

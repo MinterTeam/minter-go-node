@@ -15,7 +15,7 @@ const mainPrefix = byte('u')
 
 type RUpdate interface {
 	// Deprecated
-	ExportV1(state *types.AppState, id types.CoinID)
+	ExportV1(state *types.AppState)
 
 	Export(state *types.AppState)
 	GetVotes(height uint64) []*Model
@@ -83,7 +83,7 @@ func (c *Update) Export(state *types.AppState) {
 }
 
 // Deprecated
-func (c *Update) ExportV1(state *types.AppState, id types.CoinID) {
+func (c *Update) ExportV1(state *types.AppState) {
 	return
 }
 

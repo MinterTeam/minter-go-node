@@ -17,6 +17,7 @@ import (
 	rpc "github.com/tendermint/tendermint/rpc/client/local"
 	"log"
 	"math/big"
+	"os"
 	"sync/atomic"
 )
 
@@ -45,14 +46,20 @@ func (blockchain *Blockchain) checkStop() bool {
 
 func (blockchain *Blockchain) stop() {
 	blockchain.stopped = true
-	go func() {
-		log.Println("Stopping Node")
-		log.Println("Node Stopped with error:", blockchain.tmNode.Stop())
-	}()
+	if blockchain.tmNode == nil {
+		blockchain.Close()
+		os.Exit(0)
+	} else {
+		go func() {
+			log.Println("Stopping Node")
+			log.Println("Node Stopped with error:", blockchain.tmNode.Stop())
+		}()
+	}
 }
 
 // WaitStop stops gracefully Minter Blockchain instance
 func (blockchain *Blockchain) WaitStop() error {
+	defer close(blockchain.stopOk)
 	blockchain.tmNode.Wait()
 	return blockchain.Close()
 }

@@ -8,7 +8,6 @@ import (
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"strconv"
 	"strings"
 )
 
@@ -31,14 +30,10 @@ func (s *Service) Transaction(ctx context.Context, req *pb.TransactionRequest) (
 	sender, _ := decodedTx.Sender()
 
 	tags := make(map[string]string)
-	var gas int
 	for _, tag := range tx.TxResult.Events[0].Attributes {
 		key := string(tag.Key)
 		value := string(tag.Value)
 		tags[key] = value
-		if key == "tx.gas" {
-			gas, _ = strconv.Atoi(value)
-		}
 	}
 
 	cState := s.blockchain.CurrentState()
@@ -64,7 +59,7 @@ func (s *Service) Transaction(ctx context.Context, req *pb.TransactionRequest) (
 			Id:     uint64(decodedTx.GasCoin),
 			Symbol: cState.Coins().GetCoin(decodedTx.GasCoin).GetFullSymbol(),
 		},
-		Gas:         uint64(gas),
+		Gas:         uint64(decodedTx.Gas()),
 		TypeHex:     decodedTx.Type.String(),
 		Type:        decodedTx.Type.UInt64(),
 		Data:        dataStruct,

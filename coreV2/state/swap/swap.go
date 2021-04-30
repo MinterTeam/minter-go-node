@@ -123,6 +123,7 @@ func (s *Swap) Export(state *types.AppState) {
 			Coin1:    uint64(key.Coin1),
 			Reserve0: reserve0.String(),
 			Reserve1: reserve1.String(),
+			ID:       uint64(pair.GetID()),
 		}
 
 		state.Pools = append(state.Pools, swap)

@@ -20,6 +20,7 @@ import (
 	rpc "github.com/tendermint/tendermint/rpc/client/local"
 	"log"
 	"math/big"
+	"os"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -73,6 +74,7 @@ type Blockchain struct {
 	stopped      bool
 	grace        *upgrades.Grace
 	knownUpdates map[string]struct{}
+	stopOk       chan struct{}
 }
 
 // NewMinterBlockchain creates Minter Blockchain instance, should be only called once
@@ -102,6 +104,7 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 		stopChan:                        ctx,
 		haltHeight:                      uint64(cfg.HaltHeight),
 		updateStakesAndPayRewardsPeriod: period,
+		stopOk:                          make(chan struct{}),
 	}
 	if applicationDB.GetStartHeight() != 0 {
 		app.initState()
@@ -110,7 +113,7 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 }
 
 func graceForUpdate(height uint64) *upgrades.GracePeriod {
-	return upgrades.NewGracePeriod(height, height+120)
+	return upgrades.NewGracePeriod(height, height+120, false)
 }
 
 const haltBlockV210 = 3431238
@@ -134,8 +137,9 @@ func (blockchain *Blockchain) initState() {
 	blockchain.stateCheck = state.NewCheckState(stateDeliver)
 
 	grace := upgrades.NewGrace()
-	grace.AddGracePeriods(upgrades.NewGracePeriod(initialHeight, initialHeight+120),
-		upgrades.NewGracePeriod(haltBlockV210, haltBlockV210+120))
+	grace.AddGracePeriods(upgrades.NewGracePeriod(initialHeight, initialHeight+120, true),
+		upgrades.NewGracePeriod(haltBlockV210, haltBlockV210+120, true),
+		upgrades.NewGracePeriod(3612653, 3612653+120, true))
 	blockchain.knownUpdates = map[string]struct{}{
 		"": {}, // default version
 		// add more for update
@@ -465,6 +469,15 @@ func (blockchain *Blockchain) CheckTx(req abciTypes.RequestCheckTx) abciTypes.Re
 
 // Commit the state and return the application Merkle root hash
 func (blockchain *Blockchain) Commit() abciTypes.ResponseCommit {
+	if blockchain.stopped {
+		select {
+		case <-time.After(10 * time.Second):
+			blockchain.Close()
+			os.Exit(0)
+		case <-blockchain.stopOk:
+			os.Exit(0)
+		}
+	}
 	if err := blockchain.stateDeliver.Check(); err != nil {
 		panic(err)
 	}
