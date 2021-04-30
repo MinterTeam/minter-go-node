@@ -38,12 +38,9 @@ func main() {
 	rootCmd.PersistentFlags().String("genesis", "https://github.com/MinterTeam/minter-go-node/releases/download/v2.0/genesis.json", "path with the genesis file to download")
 
 	cmd.ExportCommand.Flags().Uint64("height", 0, "export height")
-	cmd.ExportCommand.Flags().Float64("bip-price", 0, "bip price in usd")
 	cmd.ExportCommand.Flags().Bool("indent", false, "using indent")
 	cmd.ExportCommand.Flags().String("chain-id", "", "export chain id")
 	cmd.ExportCommand.Flags().Duration("genesis-time", 0, "export height")
-	cmd.ExportCommand.Flags().StringSlice("validators", []string{"Mpe1769d1239ff7b84cc582527d424a2f40ad2467170e76b45651789dfaf3564af"}, "testnet validator public key")
-	cmd.ExportCommand.Flags().StringSlice("rich-addresses", []string{"Mx6ab3a04c2f4d6022163f36a73840980cc8fc6a8b"}, "testnet rich addresses")
 
 	if err := rootCmd.ExecuteContext(ctx); err != nil {
 		panic(err)

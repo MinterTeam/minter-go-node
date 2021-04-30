@@ -1,5 +1,15 @@
 # Changelog
 
+## [v2.2.0](https://github.com/MinterTeam/minter-go-node/tree/v2.2.0)
+
+[Full Changelog](https://github.com/MinterTeam/minter-go-node/compare/v2.1.0...v2.2.0)
+
+### Fixed
+
+- Fix a critical bug in the exchange transaction through the pool
+- Import and export for new entities
+- Graceful stop of the node
+
 ## [v2.1.0](https://github.com/MinterTeam/minter-go-node/tree/v2.1.0)
 
 [Full Changelog](https://github.com/MinterTeam/minter-go-node/compare/v2.0.3...v2.1.0)

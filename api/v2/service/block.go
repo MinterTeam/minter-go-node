@@ -49,8 +49,8 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 	var totalValidators []*tmTypes.Validator
 	{
 		_, okValidators := fields[pb.BlockField_validators]
-		_, okEvidence := fields[pb.BlockField_evidence]
-		if okValidators || okEvidence {
+		_, okProposer := fields[pb.BlockField_proposer]
+		if okValidators || okProposer {
 			valHeight := height - 1
 			if valHeight < 1 {
 				valHeight = 1

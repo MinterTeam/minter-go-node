@@ -6,7 +6,7 @@ type Grace struct {
 
 func (g *Grace) IsUpgradeBlock(height uint64) bool {
 	for _, period := range g.gracePeriods {
-		if height == period.from {
+		if height == period.from && period.upgrade {
 			return true
 		}
 	}
@@ -36,14 +36,15 @@ func (g *Grace) IsGraceBlock(block uint64) bool {
 }
 
 type GracePeriod struct {
-	from uint64
-	to   uint64
+	from    uint64
+	to      uint64
+	upgrade bool
 }
 
 func (gp *GracePeriod) isApplicable(block uint64) bool {
 	return block >= gp.from && block <= gp.to
 }
 
-func NewGracePeriod(from uint64, to uint64) *GracePeriod {
-	return &GracePeriod{from: from, to: to}
+func NewGracePeriod(from uint64, to uint64, upgrade bool) *GracePeriod {
+	return &GracePeriod{from: from, to: to, upgrade: upgrade}
 }

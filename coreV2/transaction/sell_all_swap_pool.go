@@ -128,20 +128,19 @@ func (data SellAllSwapPoolData) Run(tx *Transaction, context state.Interface, re
 			Info: EncodeError(code.NewInsufficientFunds(sender.String(), balance.String(), sellCoin.GetFullSymbol(), coinToSell.String())),
 		}
 	}
-
+	lastIteration := len(data.Coins[1:]) - 1
 	{
 		coinToSell := data.Coins[0]
 		coinToSellModel := sellCoin
-		resultCoin := data.Coins[len(data.Coins)-1]
 		valueToSell := big.NewInt(0).Set(balance)
 		valueToBuy := big.NewInt(0)
-		for _, coinToBuy := range data.Coins[1:] {
+		for i, coinToBuy := range data.Coins[1:] {
 			swapper := checkState.Swap().GetSwapper(coinToSell, coinToBuy)
 			if isGasCommissionFromPoolSwap == true && coinToBuy.IsBaseCoin() {
 				swapper = commissionPoolSwapper.AddLastSwapStep(commission, commissionInBaseCoin)
 			}
 
-			if coinToBuy == resultCoin {
+			if i == lastIteration {
 				valueToBuy = data.MinimumValueToBuy
 			}
 
@@ -177,7 +176,6 @@ func (data SellAllSwapPoolData) Run(tx *Transaction, context state.Interface, re
 		deliverState.Accounts.SubBalance(sender, sellCoin.ID(), commission)
 
 		coinToSell := data.Coins[0]
-		resultCoin := data.Coins[len(data.Coins)-1]
 		valueToSell := big.NewInt(0).Set(balance)
 
 		var poolIDs tagPoolsChange
@@ -200,7 +198,7 @@ func (data SellAllSwapPoolData) Run(tx *Transaction, context state.Interface, re
 			valueToSell = amountOut
 			coinToSell = coinToBuy
 
-			if resultCoin == coinToBuy {
+			if i == lastIteration {
 				deliverState.Accounts.AddBalance(sender, coinToBuy, amountOut)
 			}
 		}
@@ -214,7 +212,7 @@ func (data SellAllSwapPoolData) Run(tx *Transaction, context state.Interface, re
 			{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
 			{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String()), Index: true},
 			{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
-			{Key: []byte("tx.coin_to_buy"), Value: []byte(resultCoin.String()), Index: true},
+			{Key: []byte("tx.coin_to_buy"), Value: []byte(data.Coins[len(data.Coins)-1].String()), Index: true},
 			{Key: []byte("tx.coin_to_sell"), Value: []byte(data.Coins[0].String()), Index: true},
 			{Key: []byte("tx.return"), Value: []byte(amountOut.String())},
 			{Key: []byte("tx.sell_amount"), Value: []byte(available.String())},

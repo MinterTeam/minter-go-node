@@ -261,7 +261,7 @@ func TestCandidates_Commit_createOneCandidateWithID(t *testing.T) {
 	b.SetChecker(checker.NewChecker(b))
 	candidates := NewCandidates(b, mutableTree.GetLastImmutable())
 
-	candidates.CreateWithID([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10, 1)
+	candidates.CreateWithID([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10, 1, 0, 0)
 
 	_, version, err := mutableTree.Commit(candidates)
 	if err != nil {

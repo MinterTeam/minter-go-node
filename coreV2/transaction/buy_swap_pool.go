@@ -109,13 +109,13 @@ func (data BuySwapPoolData) Run(tx *Transaction, context state.Interface, reward
 	reverseCoinIds(data.Coins)
 
 	var calculatedAmountToSell *big.Int
-	resultCoin := data.Coins[len(data.Coins)-1]
+	lastIteration := len(data.Coins[1:]) - 1
 	{
 		coinToBuy := data.Coins[0]
 		coinToBuyModel := checkState.Coins().GetCoin(coinToBuy)
 		valueToBuy := big.NewInt(0).Set(data.ValueToBuy)
 		valueToSell := maxCoinSupply
-		for _, coinToSell := range data.Coins[1:] {
+		for i, coinToSell := range data.Coins[1:] {
 			swapper := checkState.Swap().GetSwapper(coinToSell, coinToBuy)
 			if isGasCommissionFromPoolSwap {
 				if tx.GasCoin == coinToSell && coinToBuy.IsBaseCoin() {
@@ -126,7 +126,7 @@ func (data BuySwapPoolData) Run(tx *Transaction, context state.Interface, reward
 				}
 			}
 
-			if coinToSell == resultCoin {
+			if i == lastIteration {
 				valueToSell = data.MaximumValueToSell
 			}
 
@@ -152,7 +152,7 @@ func (data BuySwapPoolData) Run(tx *Transaction, context state.Interface, reward
 		calculatedAmountToSell = valueToBuy
 	}
 
-	coinToSell := resultCoin
+	coinToSell := data.Coins[len(data.Coins)-1]
 	amount0 := new(big.Int).Set(calculatedAmountToSell)
 	if tx.GasCoin == coinToSell {
 		amount0.Add(amount0, commission)
@@ -209,7 +209,7 @@ func (data BuySwapPoolData) Run(tx *Transaction, context state.Interface, reward
 			valueToBuy = amountIn
 			coinToBuy = coinToSell
 
-			if coinToSell == resultCoin {
+			if i == lastIteration {
 				deliverState.Accounts.SubBalance(sender, coinToSell, amountIn)
 			}
 		}
