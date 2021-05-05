@@ -125,6 +125,10 @@ func TestPair_SetOrderSell(t *testing.T) {
 	pair.SetOrderSell(big.NewInt(1e17), big.NewInt(4e17))
 	pair.SetOrderSell(big.NewInt(2e17), big.NewInt(1e17))
 
+	pair.SetOrderSell(big.NewInt(1e18), big.NewInt(11))
+	pair.SetOrderSell(big.NewInt(1e18), big.NewInt(10))
+	pair.SetOrderSell(big.NewInt(1e18), big.NewInt(9))
+
 	r := rand.New(rand.NewSource(5))
 	for i := int64(1); i <= 1000; i++ {
 		valueSell := big.NewInt(1e17)
