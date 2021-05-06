@@ -6,7 +6,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/tree"
 	db "github.com/tendermint/tm-db"
 	"math/big"
-	"math/rand"
 	"testing"
 )
 
@@ -100,9 +99,10 @@ func TestPair_SetOrderSell(t *testing.T) {
 	}
 	newBus := bus.NewBus()
 	checker.NewChecker(newBus)
+
 	swap := New(newBus, immutableTree.GetLastImmutable())
-	r0 := big.NewInt(1e18)
-	r1 := big.NewInt(1e18)
+	r0 := big.NewInt(1)
+	r1 := big.NewInt(9e18)
 	_, _, _, _ = swap.PairCreate(0, 1, r0, r1)
 	pair := swap.Pair(0, 1)
 
@@ -129,17 +129,17 @@ func TestPair_SetOrderSell(t *testing.T) {
 	pair.SetOrderSell(big.NewInt(1e18), big.NewInt(10))
 	pair.SetOrderSell(big.NewInt(1e18), big.NewInt(9))
 
-	r := rand.New(rand.NewSource(5))
-	for i := int64(1); i <= 1000; i++ {
-		valueSell := big.NewInt(1e17)
-		valueBuy := big.NewInt(0).Add(big.NewInt(1e17), big.NewInt(0).Rand(r, big.NewInt(1e17)))
-		pair.SetOrderSell(valueSell, valueBuy)
-	}
-	for i := int64(1); i <= 1000; i++ {
-		valueSell := big.NewInt(0).Add(big.NewInt(1e18), big.NewInt(0).Rand(r, big.NewInt(1e18)))
-		valueBuy := big.NewInt(1e17)
-		pair.SetOrderSell(valueSell, valueBuy)
-	}
+	// r := rand.New(rand.NewSource(5))
+	// for i := int64(1); i <= 1000; i++ {
+	// 	valueSell := big.NewInt(1e17)
+	// 	valueBuy := big.NewInt(0).Add(big.NewInt(1e17), big.NewInt(0).Rand(r, big.NewInt(1e17)))
+	// 	pair.SetOrderSell(valueSell, valueBuy)
+	// }
+	// for i := int64(1); i <= 1000; i++ {
+	// 	valueSell := big.NewInt(0).Add(big.NewInt(1e18), big.NewInt(0).Rand(r, big.NewInt(1e18)))
+	// 	valueBuy := big.NewInt(1e17)
+	// 	pair.SetOrderSell(valueSell, valueBuy)
+	// }
 
 	for i, limit := range pair.limitsSell {
 		// t.Log(limit.id, limit.Rate().Text('g', 18), limit.Coin0, limit.Coin1)
@@ -148,7 +148,7 @@ func TestPair_SetOrderSell(t *testing.T) {
 		}
 		prev := pair.limitsSell[i-1]
 		if limit.Rate().Cmp(prev.Rate()) != 1 && limit.id < prev.id {
-			t.Errorf("not sorted: [%d]%v < [%d]%v", i, limit.Rate(), i-1, prev.Rate())
+			t.Errorf("not isNotSored: [%d]%v < [%d]%v", i, limit.Rate(), i-1, prev.Rate())
 		}
 	}
 	count := len(pair.limitsSell)
@@ -162,23 +162,69 @@ func TestPair_SetOrderSell(t *testing.T) {
 	swap = New(newBus, immutableTree.GetLastImmutable())
 
 	pair = swap.Pair(0, 1)
-	last, index := pair.OrderSellLast()
+	last, index := pair.OrderBuyLast()
+	if index != -1 {
+		t.Error("has orders below course", index)
+	}
+	if last != nil {
+		t.Error("has orders below course", last.id)
+	}
+
+	swap = New(newBus, immutableTree.GetLastImmutable())
+
+	pair = swap.Pair(0, 1)
+	last, index = pair.OrderSellLast()
 
 	if index != (count - 1) {
-		t.Error(index)
+		t.Fatal(index)
 	}
 	if last.id != lastID {
-		t.Error(last.id)
+		t.Fatal(last.id)
 	}
 
 	for i, limit := range pair.limitsSell {
-		// t.Log(limit.id, limit.Rate().Text('g', 18), limit.Coin0, limit.Coin1)
+		t.Log(limit.id, limit.Rate().Text('f', 18), limit.Coin0, limit.Coin1)
 		if i == 0 {
 			continue
 		}
 		prev := pair.limitsSell[i-1]
 		if limit.Rate().Cmp(prev.Rate()) == -1 || (limit.Rate().Cmp(prev.Rate()) == 0 && limit.id < prev.id) {
-			t.Errorf("not sorted: [%d]%v < [%d]%v", i, limit.Rate(), i-1, prev.Rate())
+			t.Errorf("not isNotSored: [%d]%v < [%d]%v", i, limit.Rate(), i-1, prev.Rate())
 		}
 	}
+
+	// reverse x2 pair and sell to buy
+	swap = New(newBus, immutableTree.GetLastImmutable())
+	pair = swap.Pair(1, 0)
+	last, index = pair.OrderBuyLast()
+
+	if index != (count - 1) {
+		t.Fatal("error:", index, count-1)
+	}
+	if last.id != lastID {
+		t.Fatal("error:", last.id, lastID)
+	}
+
+	for i, limit := range pair.limitsBuy {
+		t.Log(limit.id, limit.Rate().Text('f', 18), limit.Coin0, limit.Coin1)
+		if i == 0 {
+			continue
+		}
+		prev := pair.limitsBuy[i-1]
+		if limit.Rate().Cmp(prev.Rate()) == -1 || (limit.Rate().Cmp(prev.Rate()) == 0 && limit.id < prev.id) {
+			t.Errorf("not isNotSored: [%d]%v < [%d]%v", i, limit.Rate(), i-1, prev.Rate())
+		}
+	}
+
+	// reverse pair
+	swap = New(newBus, immutableTree.GetLastImmutable())
+	pair = swap.Pair(1, 0)
+	last, index = pair.OrderSellLast()
+	if index != -1 {
+		t.Error("has orders below course", index)
+	}
+	if last != nil {
+		t.Error("has orders below course", last.id)
+	}
+
 }

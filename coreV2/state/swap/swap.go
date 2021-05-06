@@ -42,7 +42,7 @@ type EditableChecker interface {
 
 type RSwap interface {
 	// Deprecated
-	ExportV1(state *types.AppState, id types.CoinID, value *big.Int, bipValue *big.Int) *big.Int
+	// ExportV1(state *types.AppState, id types.CoinID, value *big.Int, bipValue *big.Int) *big.Int
 
 	Export(state *types.AppState)
 	SwapPool(coin0, coin1 types.CoinID) (reserve0, reserve1 *big.Int, id uint32)
@@ -174,6 +174,16 @@ func (pd *pairData) Reserves() (reserve0 *big.Int, reserve1 *big.Int) {
 	return new(big.Int).Set(pd.Reserve0), new(big.Int).Set(pd.Reserve1)
 }
 
+func (pd *pairData) Rate() *big.Float {
+	pd.RLock()
+	defer pd.RUnlock()
+
+	return new(big.Float).Quo(
+		big.NewFloat(0).SetInt(pd.Reserve0),
+		big.NewFloat(0).SetInt(pd.Reserve1),
+	)
+}
+
 func (pd *pairData) reverse() *pairData {
 	return &pairData{
 		RWMutex:   pd.RWMutex,
@@ -224,6 +234,19 @@ func (p *Pair) reverse() *Pair {
 		loadBuyOrders:       p.loadSellOrders,
 		getLastTotalOrderID: p.getLastTotalOrderID,
 	}
+}
+
+func (p *Pair) Rate() *big.Float {
+	if p.isSorted() {
+		return p.pairData.Rate()
+	}
+	return p.reverse().pairData.Rate()
+}
+func (p *Pair) SortRate() *big.Float {
+	if p.isSorted() {
+		return p.pairData.Rate()
+	}
+	return p.reverse().pairData.Rate()
 }
 
 const pairDataPrefix = 'd'
@@ -310,6 +333,7 @@ func (s *Swap) Commit(db *iavl.MutableTree) error {
 			}
 			db.Set(path, pairOrderBytes)
 		}
+		// todo: add mutex
 		pair.dirtyOrders = nil
 	}
 	s.dirtiesOrders = map[pairKey]struct{}{}
@@ -550,7 +574,7 @@ func (s *Swap) addPair(key pairKey) *Pair {
 		},
 		markDirtyOrders: s.markDirtyOrders(key),
 		loadSellOrders:  s.loadSellOrders,
-		// loadBuyOrders:   s.loadSellOrders, // todo
+		loadBuyOrders:   s.loadBuyOrders,
 		getLastTotalOrderID: func() uint32 {
 			todoOrderID++
 			return todoOrderID // todo
@@ -597,8 +621,9 @@ type Balance struct {
 }
 
 type Limit struct {
-	Coin0 *big.Int
-	Coin1 *big.Int
+	isNotSored bool
+	Coin0      *big.Int
+	Coin1      *big.Int
 
 	rate *big.Float
 	id   uint32
@@ -615,6 +640,30 @@ func (l *Limit) Rate() *big.Float {
 			big.NewFloat(0).SetInt(l.Coin1))
 	}
 	return l.rate
+}
+
+func (l *Limit) SortRate() *big.Float {
+	rate := big.NewFloat(0).SetPrec(precision)
+	if !l.isNotSored {
+		rate.Quo(
+			big.NewFloat(0).SetInt(l.Coin0),
+			big.NewFloat(0).SetInt(l.Coin1))
+	} else {
+		rate.Quo(
+			big.NewFloat(0).SetInt(l.Coin1),
+			big.NewFloat(0).SetInt(l.Coin0))
+	}
+	return rate
+}
+
+func (l *Limit) reverse() *Limit {
+	return &Limit{
+		isNotSored: !l.isNotSored,
+		Coin0:      l.Coin1,
+		Coin1:      l.Coin0,
+		rate:       nil,
+		id:         l.id,
+	}
 }
 
 type Pair struct {
@@ -675,10 +724,11 @@ func (p *Pair) SetOrderSell(amountSell, amountBuy *big.Int) (limit *Limit) {
 	}
 
 	limit = &Limit{
-		Coin0: amountSell,
-		Coin1: amountBuy,
-		rate:  rate,
-		id:    p.getLastTotalOrderID(),
+		isNotSored: !p.isSorted(),
+		Coin0:      amountSell,
+		Coin1:      amountBuy,
+		rate:       rate,
+		id:         p.getLastTotalOrderID(),
 	}
 	defer p.MarkDirtyOrders(&Order{
 		Limit:  limit,
@@ -878,51 +928,119 @@ func (p *Pair) Amounts(liquidity, totalSupply *big.Int) (amount0 *big.Int, amoun
 
 // loadSellOrders loads only needed orders for pair, not all
 func (s *Swap) loadSellOrders(pair *Pair, limit int) {
+	startKey := append(append([]byte{mainPrefix}, pair.pairKey.sort().pathOrders()...), byte(0))
+	endKey := append(append([]byte{mainPrefix}, pair.pairKey.sort().pathOrders()...), byte(255))
 
 	var slice []*Limit
-	var startKey, endKey []byte
-	if len(pair.limitsSell) > 0 {
-		if !pair.pairKey.isSorted() {
-			slice = pair.limitsBuy
-		} else {
-			slice = pair.limitsSell
-		}
-		l := pair.limitsSell[len(pair.limitsSell)-1]
-		startKey = ratePath(pair.pairKey.sort(), l.Rate(), l.id+1)
+	if pair.pairKey.isSorted() {
+		slice = pair.limitsSell
+		startKey = ratePath(pair.pairKey.sort(), pair.SortRate(), 0)
 	} else {
-		startKey = append(append([]byte{mainPrefix}, pair.pairKey.sort().pathOrders()...), byte(1))
+		slice = pair.limitsBuy
+		endKey = ratePath(pair.pairKey.sort(), pair.SortRate(), math.MaxInt32)
 	}
-	endKey = append(append([]byte{mainPrefix}, pair.pairKey.sort().pathOrders()...), byte(255))
 
-	ascending := true
-	if !pair.pairKey.isSorted() {
-		startKey, endKey = endKey, startKey
-		ascending = !ascending
+	if len(slice) > 0 {
+		var l *Limit
+		if pair.pairKey.isSorted() {
+			l = slice[len(slice)-1]
+			startKey = ratePath(pair.pairKey.sort(), l.SortRate(), l.id+1)
+		} else {
+			l = slice[0]
+			endKey = ratePath(pair.pairKey.sort(), l.SortRate(), l.id-1)
+		}
 	}
 
 	i := limit - len(slice)
-	s.immutableTree().IterateRange(startKey, endKey, ascending, func(key []byte, value []byte) bool {
+	s.immutableTree().IterateRange(startKey, endKey, pair.pairKey.isSorted(), func(key []byte, value []byte) bool {
 		if i > limit {
 			return true
 		}
 
-		limit := &Limit{
-			Coin0: nil,
-			Coin1: nil,
-			rate:  nil,
-			id:    binary.BigEndian.Uint32(key[len(key)-4:]),
+		order := &Limit{
+			isNotSored: false,
+			Coin0:      nil,
+			Coin1:      nil,
+			rate:       nil,
+			id:         binary.BigEndian.Uint32(key[len(key)-4:]),
 		}
-		err := rlp.DecodeBytes(value, limit)
+		err := rlp.DecodeBytes(value, order)
 		if err != nil {
 			panic(err)
 		}
-		slice = append(slice, limit)
-
+		if pair.pairKey.isSorted() {
+			slice = append(slice, order)
+		} else {
+			order = order.reverse()
+			slice = append([]*Limit{order}, slice...)
+		}
 		i++
 		return false
 	})
 
-	pair.limitsSell = slice // todo
+	if pair.pairKey.isSorted() {
+		pair.limitsSell = slice
+	} else {
+		pair.limitsBuy = slice
+	}
+}
+
+func (s *Swap) loadBuyOrders(pair *Pair, limit int) {
+	startKey := append(append([]byte{mainPrefix}, pair.pairKey.sort().pathOrders()...), byte(0))
+	endKey := append(append([]byte{mainPrefix}, pair.pairKey.sort().pathOrders()...), byte(255))
+
+	var slice []*Limit
+	if pair.pairKey.isSorted() {
+		slice = pair.limitsBuy
+		startKey = ratePath(pair.pairKey.sort(), pair.SortRate(), 0)
+	} else {
+		slice = pair.limitsSell
+		endKey = ratePath(pair.pairKey.sort(), pair.SortRate(), math.MaxInt32)
+	}
+
+	if len(slice) > 0 {
+		var l *Limit
+		if pair.pairKey.isSorted() {
+			l = slice[len(slice)-1]
+			startKey = ratePath(pair.pairKey.sort(), l.SortRate(), l.id+1)
+		} else {
+			l = slice[0]
+			endKey = ratePath(pair.pairKey.sort(), l.SortRate(), l.id-1)
+		}
+	}
+
+	i := limit - len(slice)
+	s.immutableTree().IterateRange(startKey, endKey, !pair.pairKey.isSorted(), func(key []byte, value []byte) bool {
+		if i > limit {
+			return true
+		}
+
+		order := &Limit{
+			isNotSored: false,
+			Coin0:      nil,
+			Coin1:      nil,
+			rate:       nil,
+			id:         binary.BigEndian.Uint32(key[len(key)-4:]),
+		}
+		err := rlp.DecodeBytes(value, order)
+		if err != nil {
+			panic(err)
+		}
+		if pair.pairKey.isSorted() {
+			slice = append(slice, order)
+		} else {
+			order = order.reverse()
+			slice = append([]*Limit{order}, slice...)
+		}
+		i++
+		return false
+	})
+
+	if pair.pairKey.isSorted() {
+		pair.limitsBuy = slice
+	} else {
+		pair.limitsSell = slice
+	}
 }
 
 func (p *Pair) OrderSellByIndex(index int) *Limit {
@@ -937,6 +1055,24 @@ func (p *Pair) OrderSellByIndex(index int) *Limit {
 
 func (p *Pair) OrderSellLast() (limit *Limit, index int) {
 	for order := p.OrderSellByIndex(index); order != nil; order = p.OrderSellByIndex(index) {
+		limit = order
+		index++
+	}
+	return limit, index - 1
+}
+
+func (p *Pair) OrderBuyByIndex(index int) *Limit {
+	if len(p.limitsBuy) <= index { // todo
+		p.loadBuyOrders(p, index)
+	}
+	if len(p.limitsBuy)-1 < index {
+		return nil
+	}
+	return p.limitsBuy[index]
+}
+
+func (p *Pair) OrderBuyLast() (limit *Limit, index int) {
+	for order := p.OrderBuyByIndex(index); order != nil; order = p.OrderBuyByIndex(index) {
 		limit = order
 		index++
 	}
