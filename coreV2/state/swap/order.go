@@ -73,7 +73,7 @@ func (l *Limit) sort() *Limit {
 
 func (p *Pair) MarkDirtyOrders(order *Order) {
 	p.markDirtyOrders()
-	p.dirtyOrders = append(p.dirtyOrders, order)
+	p.dirtyOrders.orders = append(p.dirtyOrders.orders, order)
 	return
 }
 
@@ -126,7 +126,7 @@ func (p *Pair) SetLowerOrder(amountSell, amountBuy *big.Int) (limit *Limit) {
 	}
 
 	limit = &Limit{
-		reversed: p.isSorted(),
+		reversed: !p.isSorted(),
 		Coin0:    amountSell,
 		Coin1:    amountBuy,
 		rate:     rate,
@@ -187,6 +187,7 @@ func (p *Pair) SetOrder(amount0, amount1 *big.Int, sell bool) (id uint32) {
 			}
 		}
 	}
+
 	return order.id
 }
 
