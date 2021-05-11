@@ -141,18 +141,18 @@ func TestPair_SetOrdersHigher(t *testing.T) {
 	// 	pair.SetHigherOrder(valueSell, valueBuy)
 	// }
 
-	for i, limit := range pair.ordersHigher {
+	for i, limit := range pair.ordersHigher.limits {
 		// t.Log(limit.id, limit.Rate().Text('g', 18), limit.Coin0, limit.Coin1)
 		if i == 0 {
 			continue
 		}
-		prev := pair.ordersHigher[i-1]
+		prev := pair.ordersHigher.limits[i-1]
 		if limit.Rate().Cmp(prev.Rate()) != 1 && limit.id < prev.id {
 			t.Errorf("not reversed: [%d]%v < [%d]%v", i, limit.Rate(), i-1, prev.Rate())
 		}
 	}
-	count := len(pair.ordersHigher)
-	lastID := pair.ordersHigher[(count - 1)].id
+	count := len(pair.ordersHigher.limits)
+	lastID := pair.ordersHigher.limits[(count - 1)].id
 
 	_, _, err = immutableTree.Commit(swap)
 	if err != nil {
@@ -182,12 +182,12 @@ func TestPair_SetOrdersHigher(t *testing.T) {
 		t.Fatal(last.id)
 	}
 
-	for i, limit := range pair.ordersHigher {
+	for i, limit := range pair.ordersHigher.limits {
 		// t.Log(limit.id, limit.Rate().Text('f', 18), limit.Coin0, limit.Coin1)
 		if i == 0 {
 			continue
 		}
-		prev := pair.ordersHigher[i-1]
+		prev := pair.ordersHigher.limits[i-1]
 		if limit.Rate().Cmp(prev.Rate()) == -1 || (limit.Rate().Cmp(prev.Rate()) == 0 && limit.id < prev.id) {
 			t.Errorf("not reversed: [%d]%v < [%d]%v", i, limit.Rate(), i-1, prev.Rate())
 		}
@@ -205,12 +205,12 @@ func TestPair_SetOrdersHigher(t *testing.T) {
 		t.Fatal("error:", last.id, lastID)
 	}
 
-	for i, limit := range pair.ordersLower {
+	for i, limit := range pair.ordersLower.limits {
 		// t.Log(limit.id, limit.Rate().Text('f', 18), limit.Coin0, limit.Coin1)
 		if i == 0 {
 			continue
 		}
-		prev := pair.ordersLower[i-1]
+		prev := pair.ordersLower.limits[i-1]
 		if limit.Rate().Cmp(prev.Rate()) == 1 || (limit.Rate().Cmp(prev.Rate()) == 0 && limit.id < prev.id) {
 			t.Errorf("not reversed: [%d]%v < [%d]%v", i, limit.Rate(), i-1, prev.Rate())
 		}
@@ -279,18 +279,18 @@ func TestPair_SetOrderLower(t *testing.T) {
 	// 	pair.SetLowerOrder(valueSell, valueBuy)
 	// }
 
-	for i, limit := range pair.ordersLower {
+	for i, limit := range pair.ordersLower.limits {
 		// t.Log(limit.id, limit.Rate().Text('g', 18), limit.Coin0, limit.Coin1)
 		if i == 0 {
 			continue
 		}
-		prev := pair.ordersLower[i-1]
+		prev := pair.ordersLower.limits[i-1]
 		if limit.Rate().Cmp(prev.Rate()) != 1 && limit.id < prev.id {
 			t.Errorf("not reversed: [%d]%v < [%d]%v", i, limit.Rate(), i-1, prev.Rate())
 		}
 	}
-	count := len(pair.ordersLower)
-	lastID := pair.ordersLower[(count - 1)].id
+	count := len(pair.ordersLower.limits)
+	lastID := pair.ordersLower.limits[(count - 1)].id
 
 	_, _, err = immutableTree.Commit(swap)
 	if err != nil {
@@ -320,12 +320,12 @@ func TestPair_SetOrderLower(t *testing.T) {
 		t.Fatal(last.id, lastID)
 	}
 
-	for i, limit := range pair.ordersHigher {
+	for i, limit := range pair.ordersHigher.limits {
 		// t.Log(limit.id, limit.Rate().Text('f', 18), limit.Coin0, limit.Coin1)
 		if i == 0 {
 			continue
 		}
-		prev := pair.ordersHigher[i-1]
+		prev := pair.ordersHigher.limits[i-1]
 		if limit.Rate().Cmp(prev.Rate()) == -1 || (limit.Rate().Cmp(prev.Rate()) == 0 && limit.id < prev.id) {
 			t.Errorf("not reversed: [%d]%v < [%d]%v", i, limit.Rate(), i-1, prev.Rate())
 		}
@@ -343,12 +343,12 @@ func TestPair_SetOrderLower(t *testing.T) {
 		t.Fatal("error:", last.id, lastID)
 	}
 
-	for i, limit := range pair.ordersLower {
+	for i, limit := range pair.ordersLower.limits {
 		// t.Log(limit.id, limit.Rate().Text('f', 18), limit.Coin0, limit.Coin1)
 		if i == 0 {
 			continue
 		}
-		prev := pair.ordersLower[i-1]
+		prev := pair.ordersLower.limits[i-1]
 		if limit.Rate().Cmp(prev.Rate()) == 1 || (limit.Rate().Cmp(prev.Rate()) == 0 && limit.id < prev.id) {
 			t.Errorf("not reversed: [%d]%v < [%d]%v", i, limit.Rate(), i-1, prev.Rate())
 		}
@@ -382,34 +382,34 @@ func TestPair_SetOrder_sortedPair_lowerAndHigher(t *testing.T) {
 	pair := swap.Pair(0, 1)
 
 	idLower := pair.SetOrder(big.NewInt(1e17), big.NewInt(9e17))
-	if idLower != pair.ordersLower[0].id {
+	if idLower != pair.ordersLower.limits[0].id {
 		t.Error("error set lower order price")
 	}
 
 	lastLower, indexLower := pair.OrderLowerLast()
-	if len(pair.ordersLower)-1 != indexLower {
+	if len(pair.ordersLower.limits)-1 != indexLower {
 		t.Error("count lower orders price is not 1")
 	}
 	if idLower != lastLower.id {
 		t.Error("error load lower order price")
 	}
-	if idLower != pair.ordersLower[0].id {
+	if idLower != pair.ordersLower.limits[0].id {
 		t.Error("error load lower order price")
 	}
 
 	idHigher := pair.SetOrder(big.NewInt(9e17), big.NewInt(1e17))
-	if idHigher != pair.ordersHigher[0].id {
+	if idHigher != pair.ordersHigher.limits[0].id {
 		t.Error("error set higher order price")
 	}
 
 	lastHigher, indexHigher := pair.OrderHigherLast()
-	if len(pair.ordersHigher)-1 != indexHigher {
+	if len(pair.ordersHigher.limits)-1 != indexHigher {
 		t.Error("count higher orders price is not 1")
 	}
 	if idHigher != lastHigher.id {
 		t.Error("error load higher order price")
 	}
-	if idHigher != pair.ordersHigher[0].id {
+	if idHigher != pair.ordersHigher.limits[0].id {
 		t.Error("error load higher order price")
 	}
 
@@ -431,13 +431,13 @@ func TestPair_SetOrder_sortedPair_lowerAndHigher(t *testing.T) {
 	if indexHigher != 0 {
 		t.Fatal("count higher orders price is not 1", indexHigher)
 	}
-	if len(pair.ordersHigher)-1 != indexHigher {
+	if len(pair.ordersHigher.limits)-1 != indexHigher {
 		t.Error("count higher orders price is not 1")
 	}
 	if idHigher != lastHigher.id {
 		t.Error("error load higher order price")
 	}
-	if idHigher != pair.ordersHigher[0].id {
+	if idHigher != pair.ordersHigher.limits[0].id {
 		t.Error("error load higher order price")
 	}
 
@@ -445,13 +445,13 @@ func TestPair_SetOrder_sortedPair_lowerAndHigher(t *testing.T) {
 	if indexLower != 0 {
 		t.Fatal("count lower orders price is not 1", indexLower)
 	}
-	if len(pair.ordersLower)-1 != indexLower {
+	if len(pair.ordersLower.limits)-1 != indexLower {
 		t.Error("count lower orders price is not 1")
 	}
 	if idLower != lastLower.id {
 		t.Error("error load lower order price")
 	}
-	if idLower != pair.ordersLower[0].id {
+	if idLower != pair.ordersLower.limits[0].id {
 		t.Error("error load lower order price")
 	}
 }
@@ -516,34 +516,34 @@ func TestPair_SetOrder_unsortedPair(t *testing.T) {
 	pair := swap.Pair(1, 0)
 
 	idLower := pair.SetOrder(big.NewInt(1e17), big.NewInt(9e17))
-	if idLower != pair.ordersLower[0].id {
+	if idLower != pair.ordersLower.limits[0].id {
 		t.Error("error set lower order price")
 	}
 
 	lastLower, indexLower := pair.OrderLowerLast()
-	if len(pair.ordersLower)-1 != indexLower {
+	if len(pair.ordersLower.limits)-1 != indexLower {
 		t.Error("count lower orders price is not 1")
 	}
 	if idLower != lastLower.id {
 		t.Error("error load lower order price")
 	}
-	if idLower != pair.ordersLower[0].id {
+	if idLower != pair.ordersLower.limits[0].id {
 		t.Error("error load lower order price")
 	}
 
 	idHigher := pair.SetOrder(big.NewInt(9e17), big.NewInt(1e17))
-	if idHigher != pair.ordersHigher[0].id {
+	if idHigher != pair.ordersHigher.limits[0].id {
 		t.Error("error set higher order price")
 	}
 
 	lastHigher, indexHigher := pair.OrderHigherLast()
-	if len(pair.ordersHigher)-1 != indexHigher {
+	if len(pair.ordersHigher.limits)-1 != indexHigher {
 		t.Error("count higher orders price is not 1")
 	}
 	if idHigher != lastHigher.id {
 		t.Error("error load higher order price")
 	}
-	if idHigher != pair.ordersHigher[0].id {
+	if idHigher != pair.ordersHigher.limits[0].id {
 		t.Error("error load higher order price")
 	}
 
@@ -565,13 +565,13 @@ func TestPair_SetOrder_unsortedPair(t *testing.T) {
 	if indexHigher != 0 {
 		t.Fatal("count higher orders price is not 1", indexHigher)
 	}
-	if len(pair.ordersHigher)-1 != indexHigher {
+	if len(pair.ordersHigher.limits)-1 != indexHigher {
 		t.Error("count higher orders price is not 1")
 	}
 	if idHigher != lastHigher.id {
 		t.Error("error load higher order price")
 	}
-	if idHigher != pair.ordersHigher[0].id {
+	if idHigher != pair.ordersHigher.limits[0].id {
 		t.Error("error load higher order price")
 	}
 
@@ -579,18 +579,194 @@ func TestPair_SetOrder_unsortedPair(t *testing.T) {
 	if indexLower != 0 {
 		t.Fatal("count lower orders price is not 1", indexLower)
 	}
-	if len(pair.ordersLower)-1 != indexLower {
+	if len(pair.ordersLower.limits)-1 != indexLower {
 		t.Error("count lower orders price is not 1")
 	}
 	if idLower != lastLower.id {
 		t.Error("error load lower order price")
 	}
-	if idLower != pair.ordersLower[0].id {
+	if idLower != pair.ordersLower.limits[0].id {
 		t.Error("error load lower order price")
 	}
 }
 
+// func TestPair_SetOrder_reversePairLoad(t *testing.T) {
+// 	memDB := db.NewMemDB()
+// 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
+// 	newBus := bus.NewBus()
+// 	checker.NewChecker(newBus)
+//
+// 	swap := New(newBus, immutableTree.GetLastImmutable())
+//
+// 	_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(9e18), big.NewInt(9e18))
+// 	pair := swap.Pair(0, 1)
+//
+// 	idHigher := pair.SetOrder(big.NewInt(1e17), big.NewInt(9e17))
+// 	idLower := pair.SetOrder(big.NewInt(9e17), big.NewInt(1e17))
+//
+// 	idHigher, idLower = idLower, idHigher
+//
+// 	{
+// 		pair = swap.Pair(1, 0)
+// 		lastHigher, indexHigher := pair.OrderHigherLast()
+// 		if indexHigher != 0 {
+// 			t.Fatal("count higher orders price is not 1", indexHigher)
+// 		}
+// 		if len(pair.ordersHigher.limits)-1 != indexHigher {
+// 			t.Error("count higher orders price is not 1")
+// 		}
+// 		if idHigher != lastHigher.id {
+// 			t.Error("error load higher order price")
+// 		}
+// 		if idHigher != pair.ordersHigher.limits[0].id {
+// 			t.Error("error load higher order price")
+// 		}
+//
+// 		lastLower, indexLower := pair.OrderLowerLast()
+// 		if indexLower != 0 {
+// 			t.Fatal("count lower orders price is not 1", indexLower)
+// 		}
+// 		if len(pair.ordersLower.limits)-1 != indexLower {
+// 			t.Error("count lower orders price is not 1")
+// 		}
+// 		if idLower != lastLower.id {
+// 			t.Error("error load lower order price")
+// 		}
+// 		if idLower != pair.ordersLower.limits[0].id {
+// 			t.Error("error load lower order price")
+// 		}
+// 	}
+//
+// 	_, _, err = immutableTree.Commit(swap)
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
+//
+// 	{
+// 		swap = New(newBus, immutableTree.GetLastImmutable())
+//
+// 		pair = swap.Pair(1, 0)
+// 		lastHigher, indexHigher := pair.OrderHigherLast()
+// 		if indexHigher != 0 {
+// 			t.Fatal("count higher orders price is not 1", indexHigher)
+// 		}
+// 		if len(pair.ordersHigher.limits)-1 != indexHigher {
+// 			t.Error("count higher orders price is not 1")
+// 		}
+// 		if idHigher != lastHigher.id {
+// 			t.Error("error load higher order price")
+// 		}
+// 		if idHigher != pair.ordersHigher.limits[0].id {
+// 			t.Error("error load higher order price")
+// 		}
+//
+// 		lastLower, indexLower := pair.OrderLowerLast()
+// 		if indexLower != 0 {
+// 			t.Fatal("count lower orders price is not 1", indexLower)
+// 		}
+// 		if len(pair.ordersLower.limits)-1 != indexLower {
+// 			t.Error("count lower orders price is not 1")
+// 		}
+// 		if idLower != lastLower.id {
+// 			t.Error("error load lower order price")
+// 		}
+// 		if idLower != pair.ordersLower.limits[0].id {
+// 			t.Error("error load lower order price")
+// 		}
+// 	}
+// }
+
 func TestPair_SetOrder_reversePairLoad(t *testing.T) {
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+
+	swap := New(newBus, immutableTree.GetLastImmutable())
+
+	_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(9e18), big.NewInt(9e18))
+	pair := swap.Pair(0, 1)
+
+	idLower := pair.SetOrder(big.NewInt(1e17), big.NewInt(9e17))
+	idHigher := pair.SetOrder(big.NewInt(9e17), big.NewInt(1e17))
+
+	idHigher, idLower = idLower, idHigher
+
+	{
+		pair = swap.Pair(1, 0)
+		lastHigher, indexHigher := pair.OrderHigherLast()
+		if indexHigher != 0 {
+			t.Fatal("count higher orders price is not 1", indexHigher)
+		}
+		if len(pair.ordersHigher.limits)-1 != indexHigher {
+			t.Error("count higher orders price is not 1")
+		}
+		if idHigher != lastHigher.id {
+			t.Error("error load higher order price")
+		}
+		if idHigher != pair.ordersHigher.limits[0].id {
+			t.Error("error load higher order price")
+		}
+
+		lastLower, indexLower := pair.OrderLowerLast()
+		if indexLower != 0 {
+			t.Fatal("count lower orders price is not 1", indexLower)
+		}
+		if len(pair.ordersLower.limits)-1 != indexLower {
+			t.Error("count lower orders price is not 1")
+		}
+		if idLower != lastLower.id {
+			t.Error("error load lower order price")
+		}
+		if idLower != pair.ordersLower.limits[0].id {
+			t.Error("error load lower order price")
+		}
+	}
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+	{
+		swap = New(newBus, immutableTree.GetLastImmutable())
+
+		pair = swap.Pair(1, 0)
+		lastHigher, indexHigher := pair.OrderHigherLast()
+		if indexHigher != 0 {
+			t.Fatal("count higher orders price is not 1", indexHigher)
+		}
+		if len(pair.ordersHigher.limits)-1 != indexHigher {
+			t.Error("count higher orders price is not 1")
+		}
+		if idHigher != lastHigher.id {
+			t.Error("error load higher order price")
+		}
+		if idHigher != pair.ordersHigher.limits[0].id {
+			t.Error("error load higher order price")
+		}
+
+		lastLower, indexLower := pair.OrderLowerLast()
+		if indexLower != 0 {
+			t.Fatal("count lower orders price is not 1", indexLower)
+		}
+		if len(pair.ordersLower.limits)-1 != indexLower {
+			t.Error("count lower orders price is not 1")
+		}
+		if idLower != lastLower.id {
+			t.Error("error load lower order price")
+		}
+		if idLower != pair.ordersLower.limits[0].id {
+			t.Error("error load lower order price")
+		}
+	}
+}
+func TestPair_SetOrder_reversePairSet(t *testing.T) {
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
 	if err != nil {
@@ -604,98 +780,76 @@ func TestPair_SetOrder_reversePairLoad(t *testing.T) {
 	_, _, _, _ = swap.PairCreate(1, 0, big.NewInt(9e18), big.NewInt(9e18))
 	pair := swap.Pair(1, 0)
 
-	idHigher := pair.SetOrder(big.NewInt(1e17), big.NewInt(9e17))
-	idLower := pair.SetOrder(big.NewInt(9e17), big.NewInt(1e17))
-
-	_, _, err = immutableTree.Commit(swap)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	idHigher, idLower = idLower, idHigher
-
-	swap = New(newBus, immutableTree.GetLastImmutable())
-	pair = swap.Pair(1, 0)
-	lastHigher, indexHigher := pair.OrderHigherLast()
-	if indexHigher != 0 {
-		t.Fatal("count higher orders price is not 1", indexHigher)
-	}
-	if len(pair.ordersHigher)-1 != indexHigher {
-		t.Error("count higher orders price is not 1")
-	}
-	if idHigher != lastHigher.id {
-		t.Error("error load higher order price")
-	}
-	if idHigher != pair.ordersHigher[0].id {
-		t.Error("error load higher order price")
-	}
-
-	lastLower, indexLower := pair.OrderLowerLast()
-	if indexLower != 0 {
-		t.Fatal("count lower orders price is not 1", indexLower)
-	}
-	if len(pair.ordersLower)-1 != indexLower {
-		t.Error("count lower orders price is not 1")
-	}
-	if idLower != lastLower.id {
-		t.Error("error load lower order price")
-	}
-	if idLower != pair.ordersLower[0].id {
-		t.Error("error load lower order price")
-	}
-}
-
-func TestPair_SetOrder_reversePairSet(t *testing.T) {
-	memDB := db.NewMemDB()
-	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
-	if err != nil {
-		t.Fatal(err)
-	}
-	newBus := bus.NewBus()
-	checker.NewChecker(newBus)
-
-	swap := New(newBus, immutableTree.GetLastImmutable())
-
-	_, _, _, _ = swap.PairCreate(1, 0, big.NewInt(9e18), big.NewInt(9e18))
-	pair := swap.Pair(0, 1)
-
 	idLower := pair.SetOrder(big.NewInt(1e17), big.NewInt(9e17))
 	idHigher := pair.SetOrder(big.NewInt(9e17), big.NewInt(1e17))
 
+	idHigher, idLower = idLower, idHigher
+
+	{
+		pair = swap.Pair(0, 1)
+		lastHigher, indexHigher := pair.OrderHigherLast()
+		if indexHigher != 0 {
+			t.Fatal("count higher orders price is not 1", indexHigher)
+		}
+		if len(pair.ordersHigher.limits)-1 != indexHigher {
+			t.Error("count higher orders price is not 1")
+		}
+		if idHigher != lastHigher.id {
+			t.Error("error load higher order price")
+		}
+		if idHigher != pair.ordersHigher.limits[0].id {
+			t.Error("error load higher order price")
+		}
+
+		lastLower, indexLower := pair.OrderLowerLast()
+		if indexLower != 0 {
+			t.Fatal("count lower orders price is not 1", indexLower)
+		}
+		if len(pair.ordersLower.limits)-1 != indexLower {
+			t.Error("count lower orders price is not 1")
+		}
+		if idLower != lastLower.id {
+			t.Error("error load lower order price")
+		}
+		if idLower != pair.ordersLower.limits[0].id {
+			t.Error("error load lower order price")
+		}
+	}
+
 	_, _, err = immutableTree.Commit(swap)
 	if err != nil {
 		t.Fatal(err)
 	}
+	{
+		swap = New(newBus, immutableTree.GetLastImmutable())
 
-	idHigher, idLower = idLower, idHigher
+		pair = swap.Pair(0, 1)
+		lastHigher, indexHigher := pair.OrderHigherLast()
+		if indexHigher != 0 {
+			t.Fatal("count higher orders price is not 1", indexHigher)
+		}
+		if len(pair.ordersHigher.limits)-1 != indexHigher {
+			t.Error("count higher orders price is not 1")
+		}
+		if idHigher != lastHigher.id {
+			t.Error("error load higher order price")
+		}
+		if idHigher != pair.ordersHigher.limits[0].id {
+			t.Error("error load higher order price")
+		}
 
-	swap = New(newBus, immutableTree.GetLastImmutable())
-	pair = swap.Pair(1, 0)
-	lastHigher, indexHigher := pair.OrderHigherLast()
-	if indexHigher != 0 {
-		t.Fatal("count higher orders price is not 1", indexHigher)
-	}
-	if len(pair.ordersHigher)-1 != indexHigher {
-		t.Error("count higher orders price is not 1")
-	}
-	if idHigher != lastHigher.id {
-		t.Error("error load higher order price")
-	}
-	if idHigher != pair.ordersHigher[0].id {
-		t.Error("error load higher order price")
-	}
-
-	lastLower, indexLower := pair.OrderLowerLast()
-	if indexLower != 0 {
-		t.Fatal("count lower orders price is not 1", indexLower)
-	}
-	if len(pair.ordersLower)-1 != indexLower {
-		t.Error("count lower orders price is not 1")
-	}
-	if idLower != lastLower.id {
-		t.Error("error load lower order price")
-	}
-	if idLower != pair.ordersLower[0].id {
-		t.Error("error load lower order price")
+		lastLower, indexLower := pair.OrderLowerLast()
+		if indexLower != 0 {
+			t.Fatal("count lower orders price is not 1", indexLower)
+		}
+		if len(pair.ordersLower.limits)-1 != indexLower {
+			t.Error("count lower orders price is not 1")
+		}
+		if idLower != lastLower.id {
+			t.Error("error load lower order price")
+		}
+		if idLower != pair.ordersLower.limits[0].id {
+			t.Error("error load lower order price")
+		}
 	}
 }

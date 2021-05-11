@@ -570,6 +570,8 @@ func (s *Swap) addPair(key pairKey) *Pair {
 			ID:        new(uint32),
 			markDirty: s.markDirty(key),
 		},
+		ordersHigher:     &limits{limits: make([]*Limit, 0)},
+		ordersLower:      &limits{limits: make([]*Limit, 0)},
 		dirtyOrders:      &dirtyOrders{orders: make([]*Order, 0)},
 		markDirtyOrders:  s.markDirtyOrders(key),
 		loadHigherOrders: s.loadHigherOrders,
@@ -618,15 +620,12 @@ type Balance struct {
 	Liquidity *big.Int
 	isDirty   bool
 }
-type dirtyOrders struct {
-	orders []*Order
-}
 
 type Pair struct {
 	pairKey
 	*pairData
-	ordersHigher        []*Limit
-	ordersLower         []*Limit
+	ordersHigher        *limits
+	ordersLower         *limits
 	dirtyOrders         *dirtyOrders
 	markDirtyOrders     func()
 	loadHigherOrders    func(pair *Pair, limit int)
@@ -635,8 +634,8 @@ type Pair struct {
 }
 
 func (p *Pair) SellLimit(step int) *Limit {
-	if len(p.ordersHigher) > step {
-		return p.ordersHigher[step]
+	if len(p.ordersHigher.limits) > step {
+		return p.ordersHigher.limits[step]
 	}
 	return nil
 }

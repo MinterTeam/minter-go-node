@@ -21,6 +21,14 @@ type Limit struct {
 	id   uint32
 }
 
+type limits struct {
+	limits []*Limit
+}
+
+type dirtyOrders struct {
+	orders []*Order
+}
+
 const (
 	precision = 54 // supported precision
 )
@@ -80,7 +88,7 @@ func (p *Pair) MarkDirtyOrders(order *Order) {
 func (p *Pair) SetHigherOrder(amountSell, amountBuy *big.Int) (limit *Limit) {
 	rate := big.NewFloat(0).SetPrec(precision).Quo(big.NewFloat(0).SetInt(amountSell), big.NewFloat(0).SetInt(amountBuy))
 	var index int
-	for i, limit := range p.ordersHigher {
+	for i, limit := range p.ordersHigher.limits {
 		if rate.Cmp(limit.Rate()) != -1 {
 			index = i + 1
 			continue
@@ -101,23 +109,23 @@ func (p *Pair) SetHigherOrder(amountSell, amountBuy *big.Int) (limit *Limit) {
 	})
 
 	if index == 0 {
-		p.ordersHigher = append([]*Limit{limit}, p.ordersHigher...)
+		p.ordersHigher.limits = append([]*Limit{limit}, p.ordersHigher.limits...)
 		return
 	}
 
-	if index == len(p.ordersHigher) {
-		p.ordersHigher = append(p.ordersHigher, limit)
+	if index == len(p.ordersHigher.limits) {
+		p.ordersHigher.limits = append(p.ordersHigher.limits, limit)
 		return
 	}
 
-	p.ordersHigher = append(p.ordersHigher[:index], append([]*Limit{limit}, p.ordersHigher[index:]...)...)
+	p.ordersHigher.limits = append(p.ordersHigher.limits[:index], append([]*Limit{limit}, p.ordersHigher.limits[index:]...)...)
 	return
 }
 
 func (p *Pair) SetLowerOrder(amountSell, amountBuy *big.Int) (limit *Limit) {
 	rate := big.NewFloat(0).SetPrec(precision).Quo(big.NewFloat(0).SetInt(amountSell), big.NewFloat(0).SetInt(amountBuy))
 	var index int
-	for i, limit := range p.ordersLower {
+	for i, limit := range p.ordersLower.limits {
 		if rate.Cmp(limit.Rate()) != -1 {
 			index = i + 1
 			continue
@@ -138,16 +146,16 @@ func (p *Pair) SetLowerOrder(amountSell, amountBuy *big.Int) (limit *Limit) {
 	})
 
 	if index == 0 {
-		p.ordersLower = append([]*Limit{limit}, p.ordersLower...)
+		p.ordersLower.limits = append([]*Limit{limit}, p.ordersLower.limits...)
 		return
 	}
 
-	if index == len(p.ordersLower) {
-		p.ordersLower = append(p.ordersLower, limit)
+	if index == len(p.ordersLower.limits) {
+		p.ordersLower.limits = append(p.ordersLower.limits, limit)
 		return
 	}
 
-	p.ordersLower = append(p.ordersLower[:index], append([]*Limit{limit}, p.ordersLower[index:]...)...)
+	p.ordersLower.limits = append(p.ordersLower.limits[:index], append([]*Limit{limit}, p.ordersLower.limits[index:]...)...)
 	return
 }
 
@@ -169,9 +177,9 @@ func (s *Swap) loadHigherOrders(pair *Pair, limit int) { // todo: add mutex
 
 	var slice []*Limit
 	if pair.pairKey.isSorted() {
-		slice = pair.ordersHigher
+		slice = pair.ordersHigher.limits
 	} else {
-		slice = pair.ordersLower
+		slice = pair.ordersLower.limits
 	}
 
 	if len(slice) > 0 {
@@ -201,9 +209,9 @@ func (s *Swap) loadHigherOrders(pair *Pair, limit int) { // todo: add mutex
 	})
 
 	if pair.pairKey.isSorted() {
-		pair.ordersHigher = slice
+		pair.ordersHigher.limits = slice
 	} else {
-		pair.ordersLower = slice
+		pair.ordersLower.limits = slice
 	}
 }
 
@@ -213,9 +221,9 @@ func (s *Swap) loadLowerOrders(pair *Pair, limit int) {
 
 	var slice []*Limit
 	if pair.pairKey.isSorted() {
-		slice = pair.ordersLower
+		slice = pair.ordersLower.limits
 	} else {
-		slice = pair.ordersHigher
+		slice = pair.ordersHigher.limits
 	}
 
 	if len(slice) > 0 {
@@ -245,20 +253,20 @@ func (s *Swap) loadLowerOrders(pair *Pair, limit int) {
 	})
 
 	if pair.pairKey.isSorted() {
-		pair.ordersLower = slice
+		pair.ordersLower.limits = slice
 	} else {
-		pair.ordersHigher = slice
+		pair.ordersHigher.limits = slice
 	}
 }
 
 func (p *Pair) OrderHigherByIndex(index int) *Limit {
-	if len(p.ordersHigher) <= index { // todo
+	if len(p.ordersHigher.limits) <= index {
 		p.loadHigherOrders(p, index)
 	}
-	if len(p.ordersHigher)-1 < index {
+	if len(p.ordersHigher.limits)-1 < index {
 		return nil
 	}
-	return p.ordersHigher[index]
+	return p.ordersHigher.limits[index]
 }
 
 func (p *Pair) OrderHigherLast() (limit *Limit, index int) {
@@ -270,13 +278,13 @@ func (p *Pair) OrderHigherLast() (limit *Limit, index int) {
 }
 
 func (p *Pair) OrderLowerByIndex(index int) *Limit {
-	if len(p.ordersLower) <= index { // todo
+	if len(p.ordersLower.limits) <= index {
 		p.loadLowerOrders(p, index)
 	}
-	if len(p.ordersLower)-1 < index {
+	if len(p.ordersLower.limits)-1 < index {
 		return nil
 	}
-	return p.ordersLower[index]
+	return p.ordersLower.limits[index]
 }
 
 func (p *Pair) OrderLowerLast() (limit *Limit, index int) {
