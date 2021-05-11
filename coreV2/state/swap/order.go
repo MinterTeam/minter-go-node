@@ -151,41 +151,12 @@ func (p *Pair) SetLowerOrder(amountSell, amountBuy *big.Int) (limit *Limit) {
 	return
 }
 
-func (p *Pair) SetOrder(amount0, amount1 *big.Int, sell bool) (id uint32) {
-	var r *big.Float
+func (p *Pair) SetOrder(amount0, amount1 *big.Int) (id uint32) {
 	var order *Limit
-	if p.isSorted() {
-		if sell {
-			r = calcRate(amount0, amount1)
-			if p.Rate().Cmp(r) != -1 {
-				order = p.SetLowerOrder(amount0, amount1)
-			} else {
-				order = p.SetHigherOrder(amount0, amount1)
-			}
-		} else {
-			r = calcRate(amount1, amount0)
-			if p.Rate().Cmp(r) != -1 {
-				order = p.SetLowerOrder(amount1, amount0)
-			} else {
-				order = p.SetHigherOrder(amount1, amount0)
-			}
-		}
+	if p.Rate().Cmp(calcRate(amount0, amount1)) == -1 {
+		order = p.SetHigherOrder(amount0, amount1)
 	} else {
-		if !sell {
-			r = calcRate(amount0, amount1)
-			if p.Rate().Cmp(r) != -1 {
-				order = p.SetLowerOrder(amount0, amount1)
-			} else {
-				order = p.SetHigherOrder(amount0, amount1)
-			}
-		} else {
-			r = calcRate(amount1, amount0)
-			if p.Rate().Cmp(r) != -1 {
-				order = p.SetLowerOrder(amount1, amount0)
-			} else {
-				order = p.SetHigherOrder(amount1, amount0)
-			}
-		}
+		order = p.SetLowerOrder(amount0, amount1)
 	}
 
 	return order.id

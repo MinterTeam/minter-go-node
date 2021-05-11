@@ -91,7 +91,7 @@ func TestPair_commission(t *testing.T) {
 
 }
 
-func TestPair_SetOrderSell(t *testing.T) {
+func TestPair_SetOrdersHigher(t *testing.T) {
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
 	if err != nil {
@@ -183,7 +183,7 @@ func TestPair_SetOrderSell(t *testing.T) {
 	}
 
 	for i, limit := range pair.ordersHigher {
-		t.Log(limit.id, limit.Rate().Text('f', 18), limit.Coin0, limit.Coin1)
+		// t.Log(limit.id, limit.Rate().Text('f', 18), limit.Coin0, limit.Coin1)
 		if i == 0 {
 			continue
 		}
@@ -206,7 +206,7 @@ func TestPair_SetOrderSell(t *testing.T) {
 	}
 
 	for i, limit := range pair.ordersLower {
-		t.Log(limit.id, limit.Rate().Text('f', 18), limit.Coin0, limit.Coin1)
+		// t.Log(limit.id, limit.Rate().Text('f', 18), limit.Coin0, limit.Coin1)
 		if i == 0 {
 			continue
 		}
@@ -229,7 +229,7 @@ func TestPair_SetOrderSell(t *testing.T) {
 
 }
 
-func TestPair_SetOrderBuy(t *testing.T) {
+func TestPair_SetOrderLower(t *testing.T) {
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
 	if err != nil {
@@ -239,58 +239,58 @@ func TestPair_SetOrderBuy(t *testing.T) {
 	checker.NewChecker(newBus)
 
 	swap := New(newBus, immutableTree.GetLastImmutable())
-	r0 := big.NewInt(9e18)
-	r1 := big.NewInt(1)
+	r0 := big.NewInt(1)
+	r1 := big.NewInt(9e18)
 	_, _, _, _ = swap.PairCreate(0, 1, r0, r1)
 	pair := swap.Pair(0, 1)
 
-	pair.SetHigherOrder(big.NewInt(9e18), big.NewInt(1e17+50))
-	pair.SetHigherOrder(big.NewInt(7e2), big.NewInt(9e18+50))
-	pair.SetHigherOrder(big.NewInt(2e18), big.NewInt(1e17+50))
-	pair.SetHigherOrder(big.NewInt(2e18), big.NewInt(1e16+50))
-	pair.SetHigherOrder(big.NewInt(1000), big.NewInt(3))
-	pair.SetHigherOrder(big.NewInt(100), big.NewInt(3))
-	pair.SetHigherOrder(big.NewInt(1), big.NewInt(99))
-	pair.SetHigherOrder(big.NewInt(3), big.NewInt(99))
-	pair.SetHigherOrder(big.NewInt(5), big.NewInt(99))
-	pair.SetHigherOrder(big.NewInt(1e18), big.NewInt(33))
-	pair.SetHigherOrder(big.NewInt(100), big.NewInt(33))
-	pair.SetHigherOrder(big.NewInt(1e17), big.NewInt(3e17+1))
-	pair.SetHigherOrder(big.NewInt(1e17), big.NewInt(3e17))
-	pair.SetHigherOrder(big.NewInt(1e17), big.NewInt(3e17+2))
-	pair.SetHigherOrder(big.NewInt(1e17), big.NewInt(2e17))
-	pair.SetHigherOrder(big.NewInt(1e17), big.NewInt(5e17))
-	pair.SetHigherOrder(big.NewInt(1e17), big.NewInt(4e17))
-	pair.SetHigherOrder(big.NewInt(2e17), big.NewInt(1e17))
+	pair.SetLowerOrder(big.NewInt(9e18), big.NewInt(1e17+50))
+	pair.SetLowerOrder(big.NewInt(7e2), big.NewInt(9e18+50))
+	pair.SetLowerOrder(big.NewInt(2e18), big.NewInt(1e17+50))
+	pair.SetLowerOrder(big.NewInt(2e18), big.NewInt(1e16+50))
+	pair.SetLowerOrder(big.NewInt(1000), big.NewInt(3))
+	pair.SetLowerOrder(big.NewInt(100), big.NewInt(3))
+	pair.SetLowerOrder(big.NewInt(1), big.NewInt(99))
+	pair.SetLowerOrder(big.NewInt(3), big.NewInt(99))
+	pair.SetLowerOrder(big.NewInt(5), big.NewInt(99))
+	pair.SetLowerOrder(big.NewInt(1e18), big.NewInt(33))
+	pair.SetLowerOrder(big.NewInt(100), big.NewInt(33))
+	pair.SetLowerOrder(big.NewInt(1e17), big.NewInt(3e17+1))
+	pair.SetLowerOrder(big.NewInt(1e17), big.NewInt(3e17))
+	pair.SetLowerOrder(big.NewInt(1e17), big.NewInt(3e17+2))
+	pair.SetLowerOrder(big.NewInt(1e17), big.NewInt(2e17))
+	pair.SetLowerOrder(big.NewInt(1e17), big.NewInt(5e17))
+	pair.SetLowerOrder(big.NewInt(1e17), big.NewInt(4e17))
+	pair.SetLowerOrder(big.NewInt(2e17), big.NewInt(1e17))
 
-	pair.SetHigherOrder(big.NewInt(1e18), big.NewInt(11))
-	pair.SetHigherOrder(big.NewInt(1e18), big.NewInt(10))
-	pair.SetHigherOrder(big.NewInt(1e18), big.NewInt(9))
+	pair.SetLowerOrder(big.NewInt(1e18), big.NewInt(11))
+	pair.SetLowerOrder(big.NewInt(1e18), big.NewInt(10))
+	pair.SetLowerOrder(big.NewInt(1e18), big.NewInt(9))
 
 	// r := rand.New(rand.NewSource(5))
 	// for i := int64(1); i <= 1000; i++ {
 	// 	valueSell := big.NewInt(1e17)
 	// 	valueBuy := big.NewInt(0).Add(big.NewInt(1e17), big.NewInt(0).Rand(r, big.NewInt(1e17)))
-	// 	pair.SetHigherOrder(valueSell, valueBuy)
+	// 	pair.SetLowerOrder(valueSell, valueBuy)
 	// }
 	// for i := int64(1); i <= 1000; i++ {
 	// 	valueSell := big.NewInt(0).Add(big.NewInt(1e18), big.NewInt(0).Rand(r, big.NewInt(1e18)))
 	// 	valueBuy := big.NewInt(1e17)
-	// 	pair.SetHigherOrder(valueSell, valueBuy)
+	// 	pair.SetLowerOrder(valueSell, valueBuy)
 	// }
 
-	for i, limit := range pair.ordersHigher {
+	for i, limit := range pair.ordersLower {
 		// t.Log(limit.id, limit.Rate().Text('g', 18), limit.Coin0, limit.Coin1)
 		if i == 0 {
 			continue
 		}
-		prev := pair.ordersHigher[i-1]
+		prev := pair.ordersLower[i-1]
 		if limit.Rate().Cmp(prev.Rate()) != 1 && limit.id < prev.id {
 			t.Errorf("not reversed: [%d]%v < [%d]%v", i, limit.Rate(), i-1, prev.Rate())
 		}
 	}
-	count := len(pair.ordersHigher)
-	lastID := pair.ordersHigher[(count - 1)].id
+	count := len(pair.ordersLower)
+	lastID := pair.ordersLower[(count - 1)].id
 
 	_, _, err = immutableTree.Commit(swap)
 	if err != nil {
@@ -302,10 +302,10 @@ func TestPair_SetOrderBuy(t *testing.T) {
 	pair = swap.Pair(0, 1)
 	last, index := pair.OrderLowerLast()
 	if index != -1 {
-		t.Error("has orders below course", index)
+		t.Error("has orders higher course", index)
 	}
 	if last != nil {
-		t.Error("has orders below course", last.id)
+		t.Error("has orders higher course", last.id)
 	}
 
 	swap = New(newBus, immutableTree.GetLastImmutable())
@@ -317,11 +317,11 @@ func TestPair_SetOrderBuy(t *testing.T) {
 		t.Fatal(index)
 	}
 	if last.id != lastID {
-		t.Fatal(last.id)
+		t.Fatal(last.id, lastID)
 	}
 
 	for i, limit := range pair.ordersHigher {
-		t.Log(limit.id, limit.Rate().Text('f', 18), limit.Coin0, limit.Coin1)
+		// t.Log(limit.id, limit.Rate().Text('f', 18), limit.Coin0, limit.Coin1)
 		if i == 0 {
 			continue
 		}
@@ -344,7 +344,7 @@ func TestPair_SetOrderBuy(t *testing.T) {
 	}
 
 	for i, limit := range pair.ordersLower {
-		t.Log(limit.id, limit.Rate().Text('f', 18), limit.Coin0, limit.Coin1)
+		// t.Log(limit.id, limit.Rate().Text('f', 18), limit.Coin0, limit.Coin1)
 		if i == 0 {
 			continue
 		}
@@ -381,7 +381,7 @@ func TestPair_SetOrder_sortedPair_lowerAndHigher(t *testing.T) {
 	_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(9e18), big.NewInt(9e18))
 	pair := swap.Pair(0, 1)
 
-	idLower := pair.SetOrder(big.NewInt(9e17), big.NewInt(1e17), false)
+	idLower := pair.SetOrder(big.NewInt(1e17), big.NewInt(9e17))
 	if idLower != pair.ordersLower[0].id {
 		t.Error("error set lower order price")
 	}
@@ -397,7 +397,7 @@ func TestPair_SetOrder_sortedPair_lowerAndHigher(t *testing.T) {
 		t.Error("error load lower order price")
 	}
 
-	idHigher := pair.SetOrder(big.NewInt(9e17), big.NewInt(1e17), true)
+	idHigher := pair.SetOrder(big.NewInt(9e17), big.NewInt(1e17))
 	if idHigher != pair.ordersHigher[0].id {
 		t.Error("error set higher order price")
 	}
@@ -469,8 +469,8 @@ func TestPair_SetOrder_cmpUnsortedCommit(t *testing.T) {
 
 	_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(9e18), big.NewInt(9e18))
 	pair := swap.Pair(0, 1)
-	_ = pair.SetOrder(big.NewInt(9e17), big.NewInt(1e17), false)
-	_ = pair.SetOrder(big.NewInt(9e17), big.NewInt(1e17), true)
+	_ = pair.SetOrder(big.NewInt(9e17), big.NewInt(1e17))
+	_ = pair.SetOrder(big.NewInt(9e17), big.NewInt(1e17))
 
 	_, _, err = immutableTree.Commit(swap)
 	if err != nil {
@@ -488,8 +488,8 @@ func TestPair_SetOrder_cmpUnsortedCommit(t *testing.T) {
 	swap1 := New(newBus, immutableTree1.GetLastImmutable())
 	_, _, _, _ = swap1.PairCreate(0, 1, big.NewInt(9e18), big.NewInt(9e18))
 	pair1 := swap1.Pair(0, 1)
-	_ = pair1.SetOrder(big.NewInt(9e17), big.NewInt(1e17), false)
-	_ = pair1.SetOrder(big.NewInt(9e17), big.NewInt(1e17), true)
+	_ = pair1.SetOrder(big.NewInt(9e17), big.NewInt(1e17))
+	_ = pair1.SetOrder(big.NewInt(9e17), big.NewInt(1e17))
 
 	_, _, err = immutableTree1.Commit(swap1)
 	if err != nil {
@@ -515,7 +515,7 @@ func TestPair_SetOrder_unsortedPair(t *testing.T) {
 	_, _, _, _ = swap.PairCreate(1, 0, big.NewInt(9e18), big.NewInt(9e18))
 	pair := swap.Pair(1, 0)
 
-	idLower := pair.SetOrder(big.NewInt(1e17), big.NewInt(9e17), false)
+	idLower := pair.SetOrder(big.NewInt(1e17), big.NewInt(9e17))
 	if idLower != pair.ordersLower[0].id {
 		t.Error("error set lower order price")
 	}
@@ -531,7 +531,7 @@ func TestPair_SetOrder_unsortedPair(t *testing.T) {
 		t.Error("error load lower order price")
 	}
 
-	idHigher := pair.SetOrder(big.NewInt(1e17), big.NewInt(9e17), true)
+	idHigher := pair.SetOrder(big.NewInt(9e17), big.NewInt(1e17))
 	if idHigher != pair.ordersHigher[0].id {
 		t.Error("error set higher order price")
 	}
@@ -576,6 +576,116 @@ func TestPair_SetOrder_unsortedPair(t *testing.T) {
 	}
 
 	lastLower, indexLower = pair.OrderLowerLast()
+	if indexLower != 0 {
+		t.Fatal("count lower orders price is not 1", indexLower)
+	}
+	if len(pair.ordersLower)-1 != indexLower {
+		t.Error("count lower orders price is not 1")
+	}
+	if idLower != lastLower.id {
+		t.Error("error load lower order price")
+	}
+	if idLower != pair.ordersLower[0].id {
+		t.Error("error load lower order price")
+	}
+}
+
+func TestPair_SetOrder_reversePairLoad(t *testing.T) {
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+
+	swap := New(newBus, immutableTree.GetLastImmutable())
+
+	_, _, _, _ = swap.PairCreate(1, 0, big.NewInt(9e18), big.NewInt(9e18))
+	pair := swap.Pair(1, 0)
+
+	idHigher := pair.SetOrder(big.NewInt(1e17), big.NewInt(9e17))
+	idLower := pair.SetOrder(big.NewInt(9e17), big.NewInt(1e17))
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	idHigher, idLower = idLower, idHigher
+
+	swap = New(newBus, immutableTree.GetLastImmutable())
+	pair = swap.Pair(1, 0)
+	lastHigher, indexHigher := pair.OrderHigherLast()
+	if indexHigher != 0 {
+		t.Fatal("count higher orders price is not 1", indexHigher)
+	}
+	if len(pair.ordersHigher)-1 != indexHigher {
+		t.Error("count higher orders price is not 1")
+	}
+	if idHigher != lastHigher.id {
+		t.Error("error load higher order price")
+	}
+	if idHigher != pair.ordersHigher[0].id {
+		t.Error("error load higher order price")
+	}
+
+	lastLower, indexLower := pair.OrderLowerLast()
+	if indexLower != 0 {
+		t.Fatal("count lower orders price is not 1", indexLower)
+	}
+	if len(pair.ordersLower)-1 != indexLower {
+		t.Error("count lower orders price is not 1")
+	}
+	if idLower != lastLower.id {
+		t.Error("error load lower order price")
+	}
+	if idLower != pair.ordersLower[0].id {
+		t.Error("error load lower order price")
+	}
+}
+
+func TestPair_SetOrder_reversePairSet(t *testing.T) {
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+
+	swap := New(newBus, immutableTree.GetLastImmutable())
+
+	_, _, _, _ = swap.PairCreate(1, 0, big.NewInt(9e18), big.NewInt(9e18))
+	pair := swap.Pair(0, 1)
+
+	idLower := pair.SetOrder(big.NewInt(1e17), big.NewInt(9e17))
+	idHigher := pair.SetOrder(big.NewInt(9e17), big.NewInt(1e17))
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	idHigher, idLower = idLower, idHigher
+
+	swap = New(newBus, immutableTree.GetLastImmutable())
+	pair = swap.Pair(1, 0)
+	lastHigher, indexHigher := pair.OrderHigherLast()
+	if indexHigher != 0 {
+		t.Fatal("count higher orders price is not 1", indexHigher)
+	}
+	if len(pair.ordersHigher)-1 != indexHigher {
+		t.Error("count higher orders price is not 1")
+	}
+	if idHigher != lastHigher.id {
+		t.Error("error load higher order price")
+	}
+	if idHigher != pair.ordersHigher[0].id {
+		t.Error("error load higher order price")
+	}
+
+	lastLower, indexLower := pair.OrderLowerLast()
 	if indexLower != 0 {
 		t.Fatal("count lower orders price is not 1", indexLower)
 	}

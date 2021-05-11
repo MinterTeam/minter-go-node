@@ -10,7 +10,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/cosmos/iavl"
-	"log"
 	"math"
 	"math/big"
 	"sort"
@@ -321,9 +320,7 @@ func (s *Swap) Commit(db *iavl.MutableTree) error {
 
 	for _, key := range s.getOrderedDirtyOrderPairs() {
 		pair, _ := s.pair(key)
-		log.Println(pair.SortRate())
 		for _, limit := range pair.dirtyOrders.orders {
-			log.Println(limit.SortRate())
 			path := ratePath(key, limit.SortRate(), limit.id)
 			if limit.isDrop {
 				db.Remove(path)
