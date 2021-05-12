@@ -160,10 +160,21 @@ func (s *AppState) Verify() error {
 		for _, swap := range s.Pools {
 			if swap.Coin0 == coin.ID {
 				volume.Add(volume, helpers.StringToBigInt(swap.Reserve0))
+
 			}
 			if swap.Coin1 == coin.ID {
 				volume.Add(volume, helpers.StringToBigInt(swap.Reserve1))
+
 			}
+			for _, order := range swap.Orders {
+				if swap.Coin0 == coin.ID && order.IsSale {
+					volume.Add(volume, helpers.StringToBigInt(order.SellVolume))
+				}
+				if swap.Coin1 == coin.ID && !order.IsSale {
+					volume.Add(volume, helpers.StringToBigInt(order.SellVolume))
+				}
+			}
+
 		}
 
 		if coin.Crr == 0 {
@@ -299,13 +310,19 @@ type Waitlist struct {
 	Coin        uint64  `json:"coin"`
 	Value       string  `json:"value"`
 }
-
+type Order struct {
+	IsSale     bool
+	SellVolume string `json:"sell_volume"`
+	BuyVolume  string `json:"buy_volume"`
+	ID         uint64 `json:"id"`
+}
 type Pool struct {
-	Coin0    uint64 `json:"coin0"`
-	Coin1    uint64 `json:"coin1"`
-	Reserve0 string `json:"reserve0"`
-	Reserve1 string `json:"reserve1"`
-	ID       uint64 `json:"id"`
+	Coin0    uint64  `json:"coin0"`
+	Coin1    uint64  `json:"coin1"`
+	Reserve0 string  `json:"reserve0"`
+	Reserve1 string  `json:"reserve1"`
+	ID       uint64  `json:"id"`
+	Orders   []Order `json:"orders"`
 }
 
 type Coin struct {

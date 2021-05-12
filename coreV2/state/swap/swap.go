@@ -108,16 +108,24 @@ func (s *Swap) immutableTree() *iavl.ImmutableTree {
 
 func (s *Swap) Export(state *types.AppState) {
 	s.immutableTree().IterateRange([]byte{mainPrefix}, []byte{mainPrefix + 1}, true, func(key []byte, value []byte) bool {
-		if key[1] == 'i' {
+		switch key[1] {
+		case 'i':
 			if err := rlp.DecodeBytes(value, &s.nextID); err != nil {
 				panic(err)
 			}
 			return false
+		case pairOrdersPrefix:
+			return false
+		case pairDataPrefix:
+			coin0 := types.BytesToCoinID(key[2:6])
+			coin1 := types.BytesToCoinID(key[6:10])
+			pair := s.Pair(coin0, coin1)
+			pair.OrderLowerLast()
+			pair.OrderHigherLast()
+			return false
+		default:
+			panic("unknown key prefix")
 		}
-		coin0 := types.BytesToCoinID(key[2:6])
-		coin1 := types.BytesToCoinID(key[6:10])
-		s.Pair(coin0, coin1)
-		return false
 	})
 
 	for key, pair := range s.pairs {
@@ -125,12 +133,25 @@ func (s *Swap) Export(state *types.AppState) {
 			continue
 		}
 		reserve0, reserve1 := pair.Reserves()
+
+		var orders []types.Order
+
+		for _, limit := range append(pair.sellOrders.higher, pair.buyOrders.higher...) {
+			orders = append(orders, types.Order{
+				IsSale:     !limit.isBuy,
+				SellVolume: limit.Coin0.String(),
+				BuyVolume:  limit.Coin1.String(),
+				ID:         uint64(limit.id),
+			})
+		}
+
 		swap := types.Pool{
 			Coin0:    uint64(key.Coin0),
 			Coin1:    uint64(key.Coin1),
 			Reserve0: reserve0.String(),
 			Reserve1: reserve1.String(),
 			ID:       uint64(pair.GetID()),
+			Orders:   orders,
 		}
 
 		state.Pools = append(state.Pools, swap)
@@ -139,6 +160,7 @@ func (s *Swap) Export(state *types.AppState) {
 	sort.Slice(state.Pools, func(i, j int) bool {
 		return strconv.Itoa(int(state.Pools[i].Coin0))+"-"+strconv.Itoa(int(state.Pools[i].Coin1)) < strconv.Itoa(int(state.Pools[j].Coin0))+"-"+strconv.Itoa(int(state.Pools[j].Coin1))
 	})
+
 }
 
 func (s *Swap) Import(state *types.AppState) {
@@ -222,11 +244,33 @@ func (p *Pair) Reverse() EditableChecker {
 	return p.reverse()
 }
 func (p *Pair) reverse() *Pair {
+	var sellLowerOrders []*Limit
+	for _, limit := range p.buyOrders.lower {
+		sellLowerOrders = append(sellLowerOrders, limit.reverse())
+	}
+	var buyLowerOrders []*Limit
+	for _, limit := range p.buyOrders.higher {
+		buyLowerOrders = append(buyLowerOrders, limit.reverse())
+	}
+	var sellHigherOrders []*Limit
+	for _, limit := range p.sellOrders.lower {
+		sellHigherOrders = append(sellHigherOrders, limit.reverse())
+	}
+	var buyHigherOrders []*Limit
+	for _, limit := range p.sellOrders.higher {
+		buyLowerOrders = append(buyLowerOrders, limit.reverse())
+	}
 	return &Pair{
-		pairKey:             p.pairKey.reverse(),
-		pairData:            p.pairData.reverse(),
-		ordersLower:         p.ordersHigher,
-		ordersHigher:        p.ordersLower,
+		pairKey:  p.pairKey.reverse(),
+		pairData: p.pairData.reverse(),
+		buyOrders: &limits{
+			higher: buyHigherOrders,
+			lower:  buyLowerOrders,
+		},
+		sellOrders: &limits{
+			higher: sellHigherOrders,
+			lower:  sellLowerOrders,
+		},
 		markDirtyOrders:     p.markDirtyOrders,
 		dirtyOrders:         p.dirtyOrders,
 		loadHigherOrders:    p.loadLowerOrders,
@@ -263,7 +307,7 @@ func (pk pairKey) pathOrders() []byte {
 	return append([]byte{pairOrdersPrefix}, pk.sort().bytes()...)
 }
 
-func ratePath(key pairKey, rate *big.Float, id uint32) []byte {
+func ratePath(key pairKey, rate *big.Float, id uint32, isSale bool) []byte {
 	var ratePath []byte
 
 	text := rate.Text('e', 18)
@@ -288,7 +332,12 @@ func ratePath(key pairKey, rate *big.Float, id uint32) []byte {
 
 	byteID := make([]byte, 4)
 	binary.BigEndian.PutUint32(byteID, id)
-	return append(append(append([]byte{mainPrefix}, key.pathOrders()...), ratePath...), byteID...)
+
+	var saleByte byte = 0
+	if isSale {
+		saleByte = 1
+	}
+	return append(append(append(append([]byte{mainPrefix}, key.pathOrders()...), saleByte), ratePath...), byteID...)
 }
 
 func (s *Swap) Commit(db *iavl.MutableTree) error {
@@ -309,7 +358,7 @@ func (s *Swap) Commit(db *iavl.MutableTree) error {
 	defer s.muPairs.RUnlock()
 
 	for _, key := range s.getOrderedDirtyPairs() {
-		pair, _ := s.pairs[key]
+		pair, _ := s.pair(key)
 		pairDataBytes, err := rlp.EncodeToBytes(pair.pairData)
 		if err != nil {
 			return err
@@ -321,12 +370,17 @@ func (s *Swap) Commit(db *iavl.MutableTree) error {
 	for _, key := range s.getOrderedDirtyOrderPairs() {
 		pair, _ := s.pair(key)
 		for _, limit := range pair.dirtyOrders.orders {
-			path := ratePath(key, limit.SortRate(), limit.id)
+			l := limit.Limit
+			if l.isBuy {
+
+			}
+			path := ratePath(key, l.SortRate(), l.id, !l.isBuy)
 			if limit.isDrop {
 				db.Remove(path)
 				continue
 			}
-			pairOrderBytes, err := rlp.EncodeToBytes(limit.Limit.sort())
+
+			pairOrderBytes, err := rlp.EncodeToBytes(l.sort())
 			if err != nil {
 				return err
 			}
@@ -570,8 +624,8 @@ func (s *Swap) addPair(key pairKey) *Pair {
 			ID:        new(uint32),
 			markDirty: s.markDirty(key),
 		},
-		ordersHigher:     &limits{limits: make([]*Limit, 0)},
-		ordersLower:      &limits{limits: make([]*Limit, 0)},
+		sellOrders:       &limits{higher: make([]*Limit, 0)},
+		buyOrders:        &limits{higher: make([]*Limit, 0)},
 		dirtyOrders:      &dirtyOrders{orders: make([]*Order, 0)},
 		markDirtyOrders:  s.markDirtyOrders(key),
 		loadHigherOrders: s.loadHigherOrders,
@@ -624,18 +678,18 @@ type Balance struct {
 type Pair struct {
 	pairKey
 	*pairData
-	ordersHigher        *limits
-	ordersLower         *limits
+	sellOrders          *limits
+	buyOrders           *limits
 	dirtyOrders         *dirtyOrders
 	markDirtyOrders     func()
-	loadHigherOrders    func(pair *Pair, limit int)
-	loadLowerOrders     func(pair *Pair, limit int)
+	loadHigherOrders    func(pair *Pair, slice []*Limit, limit int) []*Limit
+	loadLowerOrders     func(pair *Pair, slice []*Limit, limit int) []*Limit
 	getLastTotalOrderID func() uint32
 }
 
 func (p *Pair) SellLimit(step int) *Limit {
-	if len(p.ordersHigher.limits) > step {
-		return p.ordersHigher.limits[step]
+	if len(p.sellOrders.higher) > step {
+		return p.sellOrders.higher[step]
 	}
 	return nil
 }

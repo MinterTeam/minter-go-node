@@ -47,24 +47,6 @@ func (data AddLiquidityData) basicCheck(tx *Transaction, context *state.CheckSta
 		}
 	}
 
-	coin0 := context.Coins().GetCoin(data.Coin0)
-	if coin0 == nil {
-		return &Response{
-			Code: code.CoinNotExists,
-			Log:  "Coin not exists",
-			Info: EncodeError(code.NewCoinNotExists("", data.Coin0.String())),
-		}
-	}
-
-	coin1 := context.Coins().GetCoin(data.Coin1)
-	if coin1 == nil {
-		return &Response{
-			Code: code.CoinNotExists,
-			Log:  "Coin not exists",
-			Info: EncodeError(code.NewCoinNotExists("", data.Coin1.String())),
-		}
-	}
-
 	return nil
 }
 

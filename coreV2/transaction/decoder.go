@@ -76,6 +76,8 @@ func getData(txType TxType) (Data, bool) {
 		return &VoteUpdateData{}, true
 	case TypeCreateSwapPool:
 		return &CreateSwapPoolData{}, true
+	case TypeAddLimit:
+		return &AddLimit{}, true
 	default:
 		return nil, false
 	}
