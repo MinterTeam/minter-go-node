@@ -200,14 +200,7 @@ func (pd *pairData) Rate() *big.Float {
 	pd.RLock()
 	defer pd.RUnlock()
 
-	return calcRate(pd.Reserve0, pd.Reserve1)
-}
-
-func calcRate(reserve0, reserve1 *big.Int) *big.Float {
-	return new(big.Float).Quo(
-		big.NewFloat(0).SetInt(reserve0),
-		big.NewFloat(0).SetInt(reserve1),
-	)
+	return calcPriceSell(pd.Reserve0, pd.Reserve1)
 }
 
 func (pd *pairData) reverse() *pairData {
@@ -244,33 +237,35 @@ func (p *Pair) Reverse() EditableChecker {
 	return p.reverse()
 }
 func (p *Pair) reverse() *Pair { // todo: add mutex
-	var sellHigherOrders []*Limit
-	for _, limit := range p.buyOrders.lower {
-		sellHigherOrders = append(sellHigherOrders, limit.reverse())
-	}
-	var sellLowerOrders []*Limit
-	for _, limit := range p.buyOrders.higher {
-		sellLowerOrders = append(sellLowerOrders, limit.reverse())
-	}
-	var buyHigherOrders []*Limit
-	for _, limit := range p.sellOrders.lower {
-		buyHigherOrders = append(buyHigherOrders, limit.reverse())
-	}
-	var buyLowerOrders []*Limit
-	for _, limit := range p.sellOrders.higher {
-		buyLowerOrders = append(buyLowerOrders, limit.reverse())
-	}
+	// var sellHigherOrders []*Limit
+	// for _, limit := range p.buyOrders.lower {
+	// 	sellHigherOrders = append(sellHigherOrders, limit.reverse())
+	// }
+	// var sellLowerOrders []*Limit
+	// for _, limit := range p.buyOrders.higher {
+	// 	sellLowerOrders = append(sellLowerOrders, limit.reverse())
+	// }
+	// var buyHigherOrders []*Limit
+	// for _, limit := range p.sellOrders.lower {
+	// 	buyHigherOrders = append(buyHigherOrders, limit.reverse())
+	// }
+	// var buyLowerOrders []*Limit
+	// for _, limit := range p.sellOrders.higher {
+	// 	buyLowerOrders = append(buyLowerOrders, limit.reverse())
+	// }
 	return &Pair{
-		pairKey:  p.pairKey.reverse(),
-		pairData: p.pairData.reverse(),
-		buyOrders: &limits{ // FIXME: the relationship with the original pair is lost
-			higher: buyHigherOrders,
-			lower:  buyLowerOrders,
-		},
-		sellOrders: &limits{
-			higher: sellHigherOrders,
-			lower:  sellLowerOrders,
-		},
+		pairKey:    p.pairKey.reverse(),
+		pairData:   p.pairData.reverse(),
+		buyOrders:  p.buyOrders,
+		sellOrders: p.sellOrders,
+		// buyOrders: &limits{ // FIXME: the relationship with the original pair is lost
+		// 	higher: buyHigherOrders,
+		// 	lower:  buyLowerOrders,
+		// },
+		// sellOrders: &limits{
+		// 	higher: sellHigherOrders,
+		// 	lower:  sellLowerOrders,
+		// },
 		markDirtyOrders:     p.markDirtyOrders,
 		dirtyOrders:         p.dirtyOrders,
 		loadHigherOrders:    p.loadLowerOrders,
@@ -279,13 +274,13 @@ func (p *Pair) reverse() *Pair { // todo: add mutex
 	}
 }
 
-func (p *Pair) Rate() *big.Float {
-	if p.isSorted() {
-		return p.pairData.Rate()
-	}
-	return p.reverse().pairData.Rate()
+func (p *Pair) Price() *big.Float {
+	// if p.isSorted() {
+	return p.pairData.Rate()
+	// }
+	// return p.reverse().pairData.Price()
 }
-func (p *Pair) SortRate() *big.Float {
+func (p *Pair) SortPrice() *big.Float {
 	if p.isSorted() {
 		return p.pairData.Rate()
 	}
@@ -307,10 +302,10 @@ func (pk pairKey) pathOrders() []byte {
 	return append([]byte{pairOrdersPrefix}, pk.sort().bytes()...)
 }
 
-func ratePath(key pairKey, rate *big.Float, id uint32, isSale bool) []byte {
-	var ratePath []byte
+func pricePath(key pairKey, price *big.Float, id uint32, isSale bool) []byte {
+	var pricePath []byte
 
-	text := rate.Text('e', 18)
+	text := price.Text('e', 18)
 	split := strings.Split(text, "e")
 	if len(split) != 2 {
 		panic("p")
@@ -324,11 +319,11 @@ func ratePath(key pairKey, rate *big.Float, id uint32, isSale bool) []byte {
 		}
 
 		b := byte(bString + math.MaxInt8)
-		ratePath = append(ratePath, b)
+		pricePath = append(pricePath, b)
 	}
 
-	sprintf := fmt.Sprintf("%v", rate.Text('f', 18))
-	ratePath = append(ratePath, []byte(sprintf)...)
+	sprintf := fmt.Sprintf("%v", price.Text('f', 18))
+	pricePath = append(pricePath, []byte(sprintf)...)
 
 	byteID := make([]byte, 4)
 	binary.BigEndian.PutUint32(byteID, id)
@@ -337,7 +332,7 @@ func ratePath(key pairKey, rate *big.Float, id uint32, isSale bool) []byte {
 	if isSale {
 		saleByte = 1
 	}
-	return append(append(append(append([]byte{mainPrefix}, key.pathOrders()...), saleByte), ratePath...), byteID...)
+	return append(append(append(append([]byte{mainPrefix}, key.pathOrders()...), saleByte), pricePath...), byteID...)
 }
 
 func (s *Swap) Commit(db *iavl.MutableTree) error {
@@ -371,16 +366,14 @@ func (s *Swap) Commit(db *iavl.MutableTree) error {
 		pair, _ := s.pair(key)
 		for _, limit := range pair.dirtyOrders.orders {
 			l := limit.Limit
-			if l.isBuy {
-
-			}
-			path := ratePath(key, l.SortRate(), l.id, !l.isBuy)
+			l = l.sort()
+			path := pricePath(key, l.Price(), l.id, !l.isBuy)
 			if limit.isDrop {
 				db.Remove(path)
 				continue
 			}
-
-			pairOrderBytes, err := rlp.EncodeToBytes(l.sort())
+			// l = l.sort()
+			pairOrderBytes, err := rlp.EncodeToBytes(l)
 			if err != nil {
 				return err
 			}
@@ -806,8 +799,8 @@ func (p *Pair) CalculateSellForBuy(amount1Out *big.Int) (amount0In *big.Int) {
 	k := new(big.Int).Mul(reserve0, reserve1)
 	// limit := p.BuyLimit(i)
 	// if limit != nil {
-	// 	rate := limit.Rate()
-	// 	amount1OutBeforeLimit := (p.Reserve1 - (k / (p.Reserve0+big.NewInt(0).Sqrt(rate*k) - p.Reserve0)))
+	// 	price := limit.Price()
+	// 	amount1OutBeforeLimit := (p.Reserve1 - (k / (p.Reserve0+big.NewInt(0).Sqrt(price*k) - p.Reserve0)))
 	// }
 	if amount1Out.Cmp(reserve1) != -1 {
 		return nil
