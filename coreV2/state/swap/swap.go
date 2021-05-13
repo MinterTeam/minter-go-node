@@ -120,8 +120,8 @@ func (s *Swap) Export(state *types.AppState) {
 			coin0 := types.BytesToCoinID(key[2:6])
 			coin1 := types.BytesToCoinID(key[6:10])
 			pair := s.Pair(coin0, coin1)
-			pair.OrderLowerLast()
-			pair.OrderHigherLast()
+			pair.OrderSellLowerLast()
+			pair.OrderBuyHigherLast()
 			return false
 		default:
 			panic("unknown key prefix")
@@ -243,27 +243,27 @@ func (p *Pair) AddLastSwapStep(amount0In, amount1Out *big.Int) EditableChecker {
 func (p *Pair) Reverse() EditableChecker {
 	return p.reverse()
 }
-func (p *Pair) reverse() *Pair {
-	var sellLowerOrders []*Limit
-	for _, limit := range p.buyOrders.lower {
-		sellLowerOrders = append(sellLowerOrders, limit.reverse())
-	}
-	var buyLowerOrders []*Limit
-	for _, limit := range p.buyOrders.higher {
-		buyLowerOrders = append(buyLowerOrders, limit.reverse())
-	}
+func (p *Pair) reverse() *Pair { // todo: add mutex
 	var sellHigherOrders []*Limit
-	for _, limit := range p.sellOrders.lower {
+	for _, limit := range p.buyOrders.lower {
 		sellHigherOrders = append(sellHigherOrders, limit.reverse())
 	}
+	var sellLowerOrders []*Limit
+	for _, limit := range p.buyOrders.higher {
+		sellLowerOrders = append(sellLowerOrders, limit.reverse())
+	}
 	var buyHigherOrders []*Limit
+	for _, limit := range p.sellOrders.lower {
+		buyHigherOrders = append(buyHigherOrders, limit.reverse())
+	}
+	var buyLowerOrders []*Limit
 	for _, limit := range p.sellOrders.higher {
 		buyLowerOrders = append(buyLowerOrders, limit.reverse())
 	}
 	return &Pair{
 		pairKey:  p.pairKey.reverse(),
 		pairData: p.pairData.reverse(),
-		buyOrders: &limits{
+		buyOrders: &limits{ // FIXME: the relationship with the original pair is lost
 			higher: buyHigherOrders,
 			lower:  buyLowerOrders,
 		},
@@ -624,12 +624,12 @@ func (s *Swap) addPair(key pairKey) *Pair {
 			ID:        new(uint32),
 			markDirty: s.markDirty(key),
 		},
-		sellOrders:       &limits{higher: make([]*Limit, 0)},
-		buyOrders:        &limits{higher: make([]*Limit, 0)},
-		dirtyOrders:      &dirtyOrders{orders: make([]*Order, 0)},
+		sellOrders:       &limits{},
+		buyOrders:        &limits{},
+		dirtyOrders:      &dirtyOrders{},
 		markDirtyOrders:  s.markDirtyOrders(key),
-		loadHigherOrders: s.loadHigherOrders,
-		loadLowerOrders:  s.loadLowerOrders,
+		loadHigherOrders: s.loadBuyHigherOrders,
+		loadLowerOrders:  s.loadSellLowerOrders,
 		getLastTotalOrderID: func() uint32 {
 			todoOrderID++
 			return todoOrderID // todo
