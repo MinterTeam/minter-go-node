@@ -119,9 +119,12 @@ func (s *Swap) Export(state *types.AppState) {
 		case pairDataPrefix:
 			coin0 := types.BytesToCoinID(key[2:6])
 			coin1 := types.BytesToCoinID(key[6:10])
-			pair := s.Pair(coin0, coin1)
-			pair.OrderSellLowerLast()
-			pair.OrderBuyHigherLast()
+			pair01 := s.Pair(coin0, coin1)
+			pair01.OrderSellLowerLast()
+			pair01.OrderBuyHigherLast()
+			pair10 := s.Pair(coin0, coin1)
+			pair10.OrderSellLowerLast()
+			pair10.OrderBuyHigherLast()
 			return false
 		default:
 			panic("unknown key prefix")
@@ -136,7 +139,7 @@ func (s *Swap) Export(state *types.AppState) {
 
 		var orders []types.Order
 
-		for _, limit := range append(pair.sellOrders.higher, pair.buyOrders.higher...) {
+		for _, limit := range append(append(append(pair.sellOrders.higher, pair.buyOrders.higher...), pair.sellOrders.lower...), pair.buyOrders.lower...) {
 			orders = append(orders, types.Order{
 				IsSale:     !limit.isBuy,
 				SellVolume: limit.Coin0.String(),
