@@ -228,9 +228,8 @@ func TestPair_SetOrder_01(t *testing.T) {
 					})
 				})
 				t.Run("cmp", func(t *testing.T) {
-					t.Skip("== 1 or == -1")
-					if pair.BuyHigherOrders()[0].Price().Cmp(pair.BuyHigherOrders()[len(pair.BuyHigherOrders())-1].Price()) != 1 {
-						t.Errorf("1")
+					if pair.BuyHigherOrders()[0].SortPrice().Cmp(pair.BuyHigherOrders()[len(pair.BuyHigherOrders())-1].SortPrice()) != 1 {
+						t.Errorf("not sorted orders")
 					}
 				})
 				t.Run("update", func(t *testing.T) {
@@ -290,6 +289,11 @@ func TestPair_SetOrder_01(t *testing.T) {
 						order := pair.BuyHigherOrders()[0]
 						if idLower != order.id {
 							t.Errorf("id last sell order from array want %v, got %v", idLower, order.id)
+						}
+					})
+					t.Run("cmp", func(t *testing.T) {
+						if pair.BuyHigherOrders()[0].SortPrice().Cmp(pair.BuyHigherOrders()[len(pair.BuyHigherOrders())-1].SortPrice()) != 1 {
+							t.Errorf("not sorted orders")
 						}
 					})
 				})
