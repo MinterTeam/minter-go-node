@@ -196,7 +196,7 @@ func (pd *pairData) Reserves() (reserve0 *big.Int, reserve1 *big.Int) {
 	return new(big.Int).Set(pd.Reserve0), new(big.Int).Set(pd.Reserve1)
 }
 
-func (pd *pairData) Rate() *big.Float {
+func (pd *pairData) Price() *big.Float {
 	pd.RLock()
 	defer pd.RUnlock()
 
@@ -276,15 +276,15 @@ func (p *Pair) reverse() *Pair { // todo: add mutex
 
 func (p *Pair) Price() *big.Float {
 	// if p.isSorted() {
-	return p.pairData.Rate()
+	return p.pairData.Price()
 	// }
 	// return p.reverse().pairData.Price()
 }
 func (p *Pair) SortPrice() *big.Float {
 	if p.isSorted() {
-		return p.pairData.Rate()
+		return p.pairData.Price()
 	}
-	return p.pairData.reverse().Rate()
+	return p.pairData.reverse().Price()
 }
 
 const pairDataPrefix = 'd'
@@ -366,13 +366,15 @@ func (s *Swap) Commit(db *iavl.MutableTree) error {
 		pair, _ := s.pair(key)
 		for _, limit := range pair.dirtyOrders.orders {
 			l := limit.Limit
-			l = l.sort()
-			path := pricePath(key, l.Price(), l.id, !l.isBuy)
+
+			path := pricePath(key, l.SortPrice(), l.id, !l.isBuy)
 			if limit.isDrop {
 				db.Remove(path)
 				continue
 			}
-			// l = l.sort()
+
+			l = l.sort()
+
 			pairOrderBytes, err := rlp.EncodeToBytes(l)
 			if err != nil {
 				return err

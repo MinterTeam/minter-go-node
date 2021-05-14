@@ -417,9 +417,8 @@ func TestPair_SetOrder_10(t *testing.T) {
 
 	})
 	t.Run("buy (unsorted pair)", func(t *testing.T) {
-		t.Skip("todo")
 		t.Run("mem", func(t *testing.T) {
-			pair = swap.Pair(1, 0)
+			pair = swap.Pair(0, 1)
 			t.Run("get", func(t *testing.T) {
 				t.Run("set", func(t *testing.T) {
 					t.Run("low", func(t *testing.T) {
@@ -466,7 +465,7 @@ func TestPair_SetOrder_10(t *testing.T) {
 		})
 		t.Run("disk", func(t *testing.T) {
 			swap = New(newBus, immutableTree.GetLastImmutable())
-			pair = swap.Pair(1, 0)
+			pair = swap.Pair(0, 1)
 			t.Run("get", func(t *testing.T) {
 				t.Run("load", func(t *testing.T) {
 					lastBuyLower, indexBuyLower := pair.OrderBuyHigherLast()
