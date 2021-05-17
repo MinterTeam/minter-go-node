@@ -17,8 +17,7 @@ func calcPriceSell(sell, buy *big.Int) *big.Float {
 
 type Order struct {
 	*Limit
-	pairKey // todo: remove if not use
-	isDrop  bool
+	isDrop bool
 }
 
 type Limit struct {
@@ -81,98 +80,11 @@ func (l *Limit) sort() *Limit {
 	}
 }
 
-//
-// func (o *Order) sortLimit() *Limit {
-// 	if o.pairKey.isSorted() {
-// 		return o.Limit
-// 	}
-// 	return o.Limit.sort()
-// }
-
 func (p *Pair) MarkDirtyOrders(order *Order) {
 	p.markDirtyOrders()
 	p.dirtyOrders.orders = append(p.dirtyOrders.orders, order)
 	return
 }
-
-//
-// func (p *Pair) setBuyHigherOrder(amountSell, amountBuy *big.Int) (limit *Limit) {
-// 	price := calcPriceSell(amountSell, amountBuy)
-// 	var index int
-// 	orders := p.BuyHigherOrders()
-// 	for i, limit := range orders {
-// 		if price.Cmp(limit.Price()) != -1 {
-// 			index = i + 1
-// 			continue
-// 		}
-// 		break
-// 	}
-//
-// 	limit = &Limit{
-// 		isBuy: !p.isSorted(),
-// 		Coin0: amountSell,
-// 		Coin1: amountBuy,
-// 		// price: price,
-// 		id:    p.getLastTotalOrderID(),
-// 	}
-// 	defer p.MarkDirtyOrders(&Order{
-// 		pairKey:p.pairKey,
-// 		Limit:  limit,
-// 		isDrop: false,
-// 	})
-//
-// 	if index == 0 {
-// 		p.setBuyHigherOrders(append([]*Limit{limit}, orders...))
-// 		return
-// 	}
-//
-// 	if index == len(orders) {
-// 		p.setBuyHigherOrders(append(orders, limit))
-// 		return
-// 	}
-//
-// 	p.setBuyHigherOrders(append(orders[:index], append([]*Limit{limit}, orders[index:]...)...))
-// 	return
-// }
-//
-// func (p *Pair) setBuyLowerOrder(amountSell, amountBuy *big.Int) (limit *Limit) {
-// 	price := calcPriceSell(amountSell, amountBuy)
-// 	var index int
-// 	orders := p.buyLowerOrders()
-// 	for i, limit := range orders {
-// 		if price.Cmp(limit.Price()) != -1 { // todo
-// 			index = i + 1
-// 			continue
-// 		}
-// 		break
-// 	}
-//
-// 	limit = &Limit{
-// 		isBuy: !p.isSorted(),
-// 		Coin0: amountSell,
-// 		Coin1: amountBuy,
-// 		// price: price,
-// 		id:    p.getLastTotalOrderID(),
-// 	}
-// 	defer p.MarkDirtyOrders(&Order{
-// 		pairKey: p.pairKey,
-// 		Limit:  limit,
-// 		isDrop: false,
-// 	})
-//
-// 	if index == 0 {
-// 		p.setBuyLowerOrders(append([]*Limit{limit}, orders...))
-// 		return
-// 	}
-//
-// 	if index == len(orders) {
-// 		p.setBuyLowerOrders(append(orders, limit))
-// 		return
-// 	}
-//
-// 	p.setBuyLowerOrders(append(orders[:index], append([]*Limit{limit}, orders[index:]...)...))
-// 	return
-// }
 
 func (p *Pair) setSellHigherOrder(amountSell, amountBuy *big.Int) (limit *Limit) {
 	price := calcPriceSell(amountSell, amountBuy)
@@ -190,13 +102,11 @@ func (p *Pair) setSellHigherOrder(amountSell, amountBuy *big.Int) (limit *Limit)
 		isBuy: !p.isSorted(),
 		Coin0: amountSell,
 		Coin1: amountBuy,
-		// price: price,
-		id: p.getLastTotalOrderID(),
+		id:    p.getLastTotalOrderID(),
 	}
 	defer p.MarkDirtyOrders(&Order{
-		pairKey: p.pairKey,
-		Limit:   limit,
-		isDrop:  false,
+		Limit:  limit,
+		isDrop: false,
 	})
 
 	if index == 0 {
@@ -229,13 +139,11 @@ func (p *Pair) setSellLowerOrder(amountSell, amountBuy *big.Int) (limit *Limit) 
 		isBuy: !p.isSorted(),
 		Coin0: amountSell,
 		Coin1: amountBuy,
-		// price: price,
-		id: p.getLastTotalOrderID(),
+		id:    p.getLastTotalOrderID(),
 	}
 	defer p.MarkDirtyOrders(&Order{
-		pairKey: p.pairKey,
-		Limit:   limit,
-		isDrop:  false,
+		Limit:  limit,
+		isDrop: false,
 	})
 
 	if index == 0 {
@@ -357,7 +265,7 @@ func (s *Swap) loadBuyHigherOrders(pair *Pair, slice []*Limit, limit int) []*Lim
 			panic(err)
 		}
 		if !pair.pairKey.isSorted() {
-			order = order.reverse()
+			// order = order.reverse()
 		}
 		slice = append(slice, order)
 		i++
@@ -390,7 +298,7 @@ func (s *Swap) loadSellLowerOrders(pair *Pair, slice []*Limit, limit int) []*Lim
 			panic(err)
 		}
 		if !pair.isSorted() {
-			order = order.reverse()
+			// order = order.reverse()
 		}
 		slice = append(slice, order)
 		i++
@@ -407,7 +315,12 @@ func (p *Pair) OrderBuyHigherByIndex(index int) *Limit {
 	if len(p.BuyHigherOrders())-1 < index {
 		return nil
 	}
-	return p.BuyHigherOrders()[index]
+	order := p.BuyHigherOrders()[index]
+	if !p.isSorted() {
+		return order.reverse()
+	}
+
+	return order
 }
 
 func (p *Pair) OrderBuyHigherLast() (limit *Limit, index int) {
@@ -425,7 +338,13 @@ func (p *Pair) OrderSellLowerByIndex(index int) *Limit {
 	if len(p.SellLowerOrders())-1 < index {
 		return nil
 	}
-	return p.SellLowerOrders()[index]
+
+	order := p.SellLowerOrders()[index]
+	if !p.isSorted() {
+		return order.reverse()
+	}
+
+	return order
 }
 
 func (p *Pair) OrderSellLowerLast() (limit *Limit, index int) {

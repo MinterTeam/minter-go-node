@@ -29,6 +29,7 @@ type EditableChecker interface {
 	GetID() uint32
 	AddLastSwapStep(amount0In, amount1Out *big.Int) EditableChecker
 	Reverse() EditableChecker
+	Price() *big.Float
 	Reserves() (reserve0 *big.Int, reserve1 *big.Int)
 	Amounts(liquidity, totalSupply *big.Int) (amount0 *big.Int, amount1 *big.Int)
 	CalculateBuyForSell(amount0In *big.Int) (amount1Out *big.Int)
@@ -239,36 +240,12 @@ func (p *Pair) AddLastSwapStep(amount0In, amount1Out *big.Int) EditableChecker {
 func (p *Pair) Reverse() EditableChecker {
 	return p.reverse()
 }
-func (p *Pair) reverse() *Pair { // todo: add mutex
-	// var sellHigherOrders []*Limit
-	// for _, limit := range p.buyOrders.lower {
-	// 	sellHigherOrders = append(sellHigherOrders, limit.reverse())
-	// }
-	// var sellLowerOrders []*Limit
-	// for _, limit := range p.buyOrders.higher {
-	// 	sellLowerOrders = append(sellLowerOrders, limit.reverse())
-	// }
-	// var buyHigherOrders []*Limit
-	// for _, limit := range p.sellOrders.lower {
-	// 	buyHigherOrders = append(buyHigherOrders, limit.reverse())
-	// }
-	// var buyLowerOrders []*Limit
-	// for _, limit := range p.sellOrders.higher {
-	// 	buyLowerOrders = append(buyLowerOrders, limit.reverse())
-	// }
+func (p *Pair) reverse() *Pair {
 	return &Pair{
-		pairKey:    p.pairKey.reverse(),
-		pairData:   p.pairData.reverse(),
-		buyOrders:  p.buyOrders,
-		sellOrders: p.sellOrders,
-		// buyOrders: &limits{ // FIXME: the relationship with the original pair is lost
-		// 	higher: buyHigherOrders,
-		// 	lower:  buyLowerOrders,
-		// },
-		// sellOrders: &limits{
-		// 	higher: sellHigherOrders,
-		// 	lower:  sellLowerOrders,
-		// },
+		pairKey:             p.pairKey.reverse(),
+		pairData:            p.pairData.reverse(),
+		buyOrders:           p.buyOrders,
+		sellOrders:          p.sellOrders,
 		markDirtyOrders:     p.markDirtyOrders,
 		dirtyOrders:         p.dirtyOrders,
 		loadHigherOrders:    p.loadLowerOrders,
@@ -278,10 +255,7 @@ func (p *Pair) reverse() *Pair { // todo: add mutex
 }
 
 func (p *Pair) Price() *big.Float {
-	// if p.isSorted() {
 	return p.pairData.Price()
-	// }
-	// return p.reverse().pairData.Price()
 }
 func (p *Pair) SortPrice() *big.Float {
 	if p.isSorted() {
@@ -685,13 +659,6 @@ type Pair struct {
 	getLastTotalOrderID func() uint32
 }
 
-func (p *Pair) SellLimit(step int) *Limit {
-	if len(p.sellOrders.higher) > step {
-		return p.sellOrders.higher[step]
-	}
-	return nil
-}
-
 func (p *Pair) GetID() uint32 {
 	if p == nil {
 		return 0
@@ -784,6 +751,47 @@ var (
 	ErrorInsufficientLiquidity    = errors.New("INSUFFICIENT_LIQUIDITY")
 )
 
+func (p *Pair) CalculateBuyForSellWithOrders(amount0In *big.Int) (amount1Out *big.Int) {
+	amount1Out = big.NewInt(0)
+	amount0 := big.NewInt(0).Set(amount0In)
+	var pair EditableChecker = p
+	for i := 0; true; i++ {
+		limit := p.OrderSellLowerByIndex(i)
+		if limit == nil {
+			break
+		}
+		price := limit.Price()
+		reserve0, reserve1 := pair.Reserves()
+		q := big.NewFloat(0).SetInt(new(big.Int).Mul(reserve0, reserve1))
+		reserve0new, _ := big.NewFloat(0).Quo(q, big.NewFloat(0).Sqrt(big.NewFloat(0).Mul(q, price))).Int(nil)
+		reserve0diff := big.NewInt(0).Sub(reserve0new, reserve0)
+
+		if amount0.Cmp(reserve0diff) == -1 {
+			break
+		}
+
+		rest := big.NewInt(0).Sub(amount0, limit.Coin0)
+		if rest.Sign() != 1 {
+			amount1, _ := big.NewFloat(0).Mul(big.NewFloat(0).SetInt(amount0), price).Int(nil)
+			amount1Out.Add(amount1Out, amount1)
+			return amount1Out
+		}
+
+		amount1diff := pair.CalculateBuyForSell(reserve0diff)
+		amount1Out.Add(amount1Out, amount1diff)
+		pair = pair.AddLastSwapStep(reserve0diff, amount1diff)
+
+		amount0.Sub(amount0, reserve0diff)
+
+		amount0 = rest
+		amount1Out.Add(amount1Out, limit.Coin1)
+	}
+
+	amount1diff := pair.CalculateBuyForSell(amount0)
+	amount1Out.Add(amount1Out, amount1diff)
+	return amount1Out
+}
+
 // reserve1-(reserve0*reserve1)/((amount0+reserve0)-amount0*0.002)
 func (p *Pair) CalculateBuyForSell(amount0In *big.Int) (amount1Out *big.Int) {
 	reserve0, reserve1 := p.Reserves()
@@ -799,14 +807,8 @@ func (p *Pair) CalculateBuyForSell(amount0In *big.Int) (amount1Out *big.Int) {
 
 // (reserve0*reserve1/(reserve1-amount1)-reserve0)/0.998
 func (p *Pair) CalculateSellForBuy(amount1Out *big.Int) (amount0In *big.Int) {
-	// for i := 0; true; i++ {
 	reserve0, reserve1 := p.Reserves()
 	k := new(big.Int).Mul(reserve0, reserve1)
-	// limit := p.BuyLimit(i)
-	// if limit != nil {
-	// 	price := limit.Price()
-	// 	amount1OutBeforeLimit := (p.Reserve1 - (k / (p.Reserve0+big.NewInt(0).Sqrt(price*k) - p.Reserve0)))
-	// }
 	if amount1Out.Cmp(reserve1) != -1 {
 		return nil
 	}
@@ -814,7 +816,6 @@ func (p *Pair) CalculateSellForBuy(amount1Out *big.Int) (amount0In *big.Int) {
 	balance1Adjusted := new(big.Int).Mul(new(big.Int).Add(new(big.Int).Neg(amount1Out), reserve1), big.NewInt(1000))
 	amount0In = new(big.Int).Quo(new(big.Int).Sub(new(big.Int).Quo(kAdjusted, balance1Adjusted), new(big.Int).Mul(reserve0, big.NewInt(1000))), big.NewInt(1000-commission))
 	return new(big.Int).Add(amount0In, big.NewInt(1))
-	// }
 }
 
 func (p *Pair) Swap(amount0In, amount1In, amount0Out, amount1Out *big.Int) (amount0, amount1 *big.Int) {
