@@ -340,7 +340,7 @@ func (p *Pair) OrderSellLowerByIndex(index int) *Limit {
 	}
 
 	order := p.SellLowerOrders()[index]
-	if !p.isSorted() {
+	if !p.isSorted() && !order.isBuy {
 		return order.reverse()
 	}
 
