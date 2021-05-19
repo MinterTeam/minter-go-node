@@ -10,7 +10,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/cosmos/iavl"
-	"log"
 	"math"
 	"math/big"
 	"sort"
@@ -753,7 +752,7 @@ var (
 	ErrorInsufficientLiquidity    = errors.New("INSUFFICIENT_LIQUIDITY")
 )
 
-const commissionOrder = 0
+const commissionOrder = 2
 
 func (p *Pair) CalculateBuyForSellWithOrders(amount0In *big.Int) (amount1Out *big.Int) {
 	amount1Out = big.NewInt(0)
@@ -773,7 +772,6 @@ func (p *Pair) CalculateBuyForSellWithOrders(amount0In *big.Int) (amount1Out *bi
 			if amount0.Cmp(reserve0diff) != 1 {
 				break
 			}
-			fmt.Println("r", reserve0diff)
 			amount0.Sub(amount0, reserve0diff)
 			amount1diff := pair.CalculateBuyForSell(reserve0diff)
 			if amount1diff == nil {
@@ -781,22 +779,21 @@ func (p *Pair) CalculateBuyForSellWithOrders(amount0In *big.Int) (amount1Out *bi
 			}
 			amount1Out.Add(amount1Out, amount1diff)
 			pair = pair.AddLastSwapStep(reserve0diff, amount1diff)
-			fmt.Println("p", price, pair.Price())
 		}
 
-		com := big.NewInt(0).Quo(big.NewInt(0).Mul(limit.Coin0, big.NewInt(commissionOrder)), big.NewInt(1000))
-		orderReserveWithCommission := big.NewInt(0).Sub(limit.Coin0, com)
-		rest := big.NewInt(0).Sub(amount0, orderReserveWithCommission)
+		rest := big.NewInt(0).Sub(amount0, limit.Coin0)
 		if rest.Sign() != 1 {
-			amount1, _ := big.NewFloat(0).Mul(price, big.NewFloat(0).SetInt(big.NewInt(0).Sub(amount0, big.NewInt(0).Quo(big.NewInt(0).Mul(amount0, big.NewInt(commissionOrder)), big.NewInt(1000))))).Int(nil)
+			amount1, _ := big.NewFloat(0).Mul(price, big.NewFloat(0).SetInt(big.NewInt(0).Sub(amount0, big.NewInt(0).Quo(big.NewInt(0).Mul(amount0, big.NewInt(commissionOrder/2)), big.NewInt(1000))))).Int(nil)
 			amount1Out.Add(amount1Out, amount1)
-			log.Println(amount0, big.NewFloat(0).Quo(big.NewFloat(0).SetInt(amount1), price))
 			return amount1Out
 		}
 
-		pair = pair.AddLastSwapStep(com, big.NewInt(0))
+		comS := big.NewInt(0).Quo(big.NewInt(0).Mul(limit.Coin0, big.NewInt(commissionOrder/2)), big.NewInt(1000))
+		comB := big.NewInt(0).Quo(big.NewInt(0).Mul(limit.Coin1, big.NewInt(commissionOrder/2)), big.NewInt(1000))
+
+		pair = pair.AddLastSwapStep(comS, big.NewInt(0).Neg(comB))
 		amount0 = rest
-		amount1Out.Add(amount1Out, limit.Coin1)
+		amount1Out.Add(amount1Out, big.NewInt(0).Sub(limit.Coin1, comB))
 	}
 
 	amount1diff := pair.CalculateBuyForSell(amount0)
