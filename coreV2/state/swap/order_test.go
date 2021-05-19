@@ -12,6 +12,106 @@ import (
 	"testing"
 )
 
+func TestSwap_Export_WithOrders(t *testing.T) {
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+	swap := New(newBus, immutableTree.GetLastImmutable())
+	_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(10e10), big.NewInt(10e10))
+
+	pair01 := swap.Pair(0, 1)
+	pair01.SetOrder(big.NewInt(10010), big.NewInt(10000))
+	pair01.SetOrder(big.NewInt(10020), big.NewInt(10000))
+
+	pair10 := swap.Pair(1, 0)
+	pair10.SetOrder(big.NewInt(1003), big.NewInt(1000))
+	pair10.SetOrder(big.NewInt(1004), big.NewInt(1000))
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("export", func(t *testing.T) {
+		var appState types.AppState
+		swap.Export(&appState)
+
+		jsonBytes, err := amino.NewCodec().MarshalJSONIndent(appState.Pools, "", "	")
+		if err != nil {
+			t.Error(err)
+		}
+		if len(appState.Pools) != 1 {
+			t.Fatalf("pools are not all: %s", jsonBytes)
+		}
+		if len(appState.Pools[0].Orders) != 4 {
+			t.Errorf("orders are not all, %s", jsonBytes)
+		}
+	})
+
+	t.Run("cmp", func(t *testing.T) {
+		amount1Out01Mem := pair01.CalculateBuyForSell(big.NewInt(1e10))
+		amount1Out10Mem := pair10.CalculateBuyForSell(big.NewInt(1e10))
+		amount1Out01OBMem := pair01.CalculateBuyForSellWithOrders(big.NewInt(1e10))
+		amount1Out10OBMem := pair10.CalculateBuyForSellWithOrders(big.NewInt(1e10))
+		t.Run("mem", func(t *testing.T) {
+			if amount1Out01Mem.Cmp(amount1Out10Mem) != 0 {
+				t.Error(amount1Out01Mem, amount1Out10Mem)
+			}
+			if amount1Out01OBMem.Cmp(amount1Out10OBMem) == 0 {
+				t.Error(amount1Out01OBMem, amount1Out10OBMem)
+			}
+			if amount1Out01Mem.Cmp(amount1Out01OBMem) == 0 {
+				t.Error(amount1Out01Mem, amount1Out01OBMem)
+			}
+
+			if amount1Out10Mem.Cmp(amount1Out10OBMem) == 0 {
+				t.Error(amount1Out10Mem, amount1Out10OBMem)
+			}
+		})
+
+		swap := New(newBus, immutableTree.GetLastImmutable())
+		pair01Disk := swap.Pair(0, 1)
+		pair10Disk := swap.Pair(1, 0)
+		amount1Out01Disk := pair01Disk.CalculateBuyForSell(big.NewInt(1e10))
+		amount1Out10Disk := pair10Disk.CalculateBuyForSell(big.NewInt(1e10))
+		amount1Out01OBDisk := pair01Disk.CalculateBuyForSellWithOrders(big.NewInt(1e10))
+		amount1Out10OBDisk := pair10Disk.CalculateBuyForSellWithOrders(big.NewInt(1e10))
+		t.Run("disk", func(t *testing.T) {
+			if amount1Out01Disk.Cmp(amount1Out10Disk) != 0 {
+				t.Error(amount1Out01Disk, amount1Out10Disk)
+			}
+			if amount1Out01OBDisk.Cmp(amount1Out10OBDisk) == 0 {
+				t.Error(amount1Out01OBDisk, amount1Out10OBDisk)
+			}
+			if amount1Out01Disk.Cmp(amount1Out01OBDisk) == 0 {
+				t.Error(amount1Out01Disk, amount1Out01OBDisk)
+			}
+
+			if amount1Out10Disk.Cmp(amount1Out10OBDisk) == 0 {
+				t.Error(amount1Out10Disk, amount1Out10OBDisk)
+			}
+		})
+
+		t.Run("mem/disk", func(t *testing.T) {
+			if amount1Out01Mem.Cmp(amount1Out01Disk) != 0 {
+				t.Error(amount1Out01Mem, amount1Out01Disk)
+			}
+			if amount1Out10Mem.Cmp(amount1Out10Disk) != 0 {
+				t.Error(amount1Out10Mem, amount1Out10Disk)
+			}
+			if amount1Out01OBMem.Cmp(amount1Out01OBDisk) != 0 {
+				t.Error(amount1Out01OBMem, amount1Out01OBDisk)
+			}
+			if amount1Out10OBMem.Cmp(amount1Out10OBDisk) != 0 {
+				t.Error(amount1Out10OBMem, amount1Out10OBDisk)
+			}
+		})
+	})
+}
 func TestPair_SetOrder_01(t *testing.T) {
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
@@ -28,26 +128,17 @@ func TestPair_SetOrder_01(t *testing.T) {
 	mul := func(price int64, volumeBuy *big.Int) *big.Int {
 		return big.NewInt(0).Mul(big.NewInt(price), volumeBuy)
 	}
+	idHigher := pair.SetOrder(mul(3, volumeBuy), volumeBuy)
 	idMostHigher := pair.SetOrder(mul(1, volumeBuy), volumeBuy)
-	idHigher := pair.SetOrder(mul(2, volumeBuy), volumeBuy)
-	idLower := pair.SetOrder(mul(9, volumeBuy), volumeBuy)
+	_ = pair.SetOrder(mul(2, volumeBuy), volumeBuy)
 	idMostLower := pair.SetOrder(mul(10, volumeBuy), volumeBuy)
+	idLower := pair.SetOrder(mul(8, volumeBuy), volumeBuy)
+	_ = pair.SetOrder(mul(9, volumeBuy), volumeBuy)
 
 	_, _, err = immutableTree.Commit(swap)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	t.Run("export", func(t *testing.T) {
-		var appState types.AppState
-		swap.Export(&appState)
-		jsonBytes, err := amino.NewCodec().MarshalJSONIndent(appState.Pools, "", "	")
-		if err != nil {
-			t.Error(err)
-		}
-		t.SkipNow()
-		t.Logf("%s", jsonBytes)
-	})
 
 	t.Run("sell (sorted pair)", func(t *testing.T) {
 		t.Run("mem", func(t *testing.T) {
@@ -279,17 +370,6 @@ func TestPair_SetOrder_10(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	t.Run("export", func(t *testing.T) {
-		var appState types.AppState
-		swap.Export(&appState)
-		jsonBytes, err := amino.NewCodec().MarshalJSONIndent(appState.Pools, "", "	")
-		if err != nil {
-			t.Error(err)
-		}
-		t.SkipNow()
-		t.Logf("%s", jsonBytes)
-	})
 
 	t.Run("sell (sorted pair)", func(t *testing.T) {
 		t.Run("mem", func(t *testing.T) {
