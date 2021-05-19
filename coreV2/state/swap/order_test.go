@@ -561,42 +561,39 @@ func TestPair_CalculateBuyForSellWithOrders(t *testing.T) {
 				})
 			})
 			t.Run("buy", func(t *testing.T) {
-				t.Run("one order", func(t *testing.T) {
-					t.Run("before first order", func(t *testing.T) {
-						amount0In := pair.CalculateSellForBuy(big.NewInt(2927))
-						amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2927))
-						if amount0In.Cmp(amount0InWithOB) != 0 {
-							t.Error("not equal", amount0In, amount0InWithOB)
+				t.Run("before first order", func(t *testing.T) {
+					amount0In := pair.CalculateSellForBuy(big.NewInt(2927))
+					amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2927))
+					if amount0In.Cmp(amount0InWithOB) != 0 {
+						t.Error("not equal", amount0In, amount0InWithOB)
+					}
+				})
+				t.Run("first order", func(t *testing.T) {
+					amount0In := pair.CalculateSellForBuy(big.NewInt(2927))
+					amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2927 + 999))
+					if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "2000" {
+						t.Error("want to get 1,000-0.1% more and spend 2,000 more by order", amount0In, amount0InWithOB)
+					}
+				})
+				t.Run("small after order", func(t *testing.T) {
+					defer func() {
+						if r := recover(); r != nil {
+							t.Error("Recovered", r)
 						}
-					})
-					t.Run("first order", func(t *testing.T) {
-						amount0In := pair.CalculateSellForBuy(big.NewInt(2927))
-						amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2927 + 999))
-						if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "2000" {
-							t.Error("want to get 1,000-0.1% more and spend 2,000 more by order", amount0In, amount0InWithOB)
-						}
-					})
-					t.Run("small after order", func(t *testing.T) {
-						defer func() {
-							if r := recover(); r != nil {
-								t.Error("Recovered", r)
-							}
-						}()
-						_ = pair.CalculateSellForBuyWithOrders(big.NewInt(2927 + 999 + 1))
-					})
-
-					t.Run("more order", func(t *testing.T) {
-						amount0 := pair.CalculateSellForBuy(big.NewInt(2927))
-						p := pair.AddLastSwapStep(amount0, big.NewInt(2927))
-						amount0In := big.NewInt(0).Add(amount0, p.CalculateSellForBuy(big.NewInt(466)))
-						amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2927 + 999 + 466))
-						if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "2000" {
-							t.Error("want to get 1,000-0.1% more and spend 2,000 more by order", amount0In, amount0InWithOB)
-						}
-					})
+					}()
+					_ = pair.CalculateSellForBuyWithOrders(big.NewInt(2927 + 999 + 1))
+				})
+				t.Run("more order", func(t *testing.T) {
+					amount0 := pair.CalculateSellForBuy(big.NewInt(2927))
+					p := pair.AddLastSwapStep(amount0, big.NewInt(2927))
+					amount0In := big.NewInt(0).Add(amount0, p.CalculateSellForBuy(big.NewInt(466)))
+					amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2927 + 999 + 466))
+					if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "2000" {
+						t.Error("want to get 1,000-0.1% more and spend 2,000 more by order", amount0In, amount0InWithOB)
+					}
 				})
 			})
-			t.Run("two orders", func(t *testing.T) {
+			t.Run("two equal orders", func(t *testing.T) {
 				pair.SetOrder(big.NewInt(2000), big.NewInt(1000))
 				if pair.OrderSellLowerByIndex(0).Price().Cmp(calcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 &&
 					pair.OrderSellLowerByIndex(1).Price().Cmp(calcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 {
@@ -654,6 +651,18 @@ func TestPair_CalculateBuyForSellWithOrders(t *testing.T) {
 						if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "4000" {
 							t.Error("want to get 2,000-0.1% more and spend 4,000 more by order", amount0In, amount0InWithOB)
 						}
+					})
+				})
+				t.Run("three orders", func(t *testing.T) {
+					pair.SetOrder(big.NewInt(3000), big.NewInt(1000))
+					if pair.OrderSellLowerByIndex(2).Price().Cmp(calcPriceSell(big.NewInt(3000), big.NewInt(1000))) != 0 {
+						t.Error("error set orders")
+					}
+					t.Run("sell", func(t *testing.T) {
+						t.Skip("todo") // todo: add tests
+					})
+					t.Run("buy", func(t *testing.T) {
+						t.Skip("todo") // todo: add tests
 					})
 				})
 			})
