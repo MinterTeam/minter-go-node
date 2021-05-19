@@ -824,24 +824,6 @@ func (p *Pair) CalculateAddAmount0ForPrice(price *big.Float) (amount0 *big.Int) 
 	// return amount0.Add(amount0, big.NewInt(1))
 }
 
-func (p *Pair) CalculateAddAmount0ForPrice1(price *big.Float) (amount0 *big.Int) {
-	reserve0, reserve1 := p.Reserves()
-	k := big.NewFloat(0).SetInt(new(big.Int).Mul(reserve0, reserve1))
-	q := big.NewFloat(0).Mul(price, k)
-
-	reserve1new := big.NewFloat(0).Sqrt(q)
-	// a := big.NewFloat(0).Sqrt(big.NewFloat(0).Mul(big.NewFloat(0).Sub(k, q), big.NewFloat(0).Quo(big.NewFloat(commission), big.NewFloat(1000))))
-	// k = big.NewFloat(0).Add(k, big.NewFloat(0).Sqrt(big.NewFloat(0).Mul(big.NewFloat(0).Sub(k, q), big.NewFloat(0).Quo(big.NewFloat(commission), big.NewFloat(1000)))))
-	quo := big.NewFloat(0).Quo(k, reserve1new)
-
-	reserve0new, _ := quo.Int(nil)
-	reserve0diff := big.NewInt(0).Sub(reserve0new, reserve0)
-	amount0 = reserve0diff
-	com := big.NewInt(0).Quo(big.NewInt(0).Mul(reserve0diff, big.NewInt(commission)), big.NewInt(1000))
-	amount0 = big.NewInt(0).Add(reserve0diff, com)
-	return amount0
-}
-
 // reserve1-(reserve0*reserve1)/((amount0+reserve0)-amount0*0.002)
 func (p *Pair) CalculateBuyForSell(amount0In *big.Int) (amount1Out *big.Int) {
 	reserve0, reserve1 := p.Reserves()

@@ -6,7 +6,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/tree"
 	db "github.com/tendermint/tm-db"
 	"math/big"
-	"strconv"
 	"testing"
 )
 
@@ -505,16 +504,16 @@ func TestPair_CalculateBuyForSellWithOrders(t *testing.T) {
 				t.Error("error set order")
 			}
 			t.Run("before first order", func(t *testing.T) {
-				amount1Out := pair.CalculateBuyForSell(big.NewInt(4142))
-				amount1OutWithOB := pair.CalculateBuyForSellWithOrders(big.NewInt(4142))
+				amount1Out := pair.CalculateBuyForSell(big.NewInt(4147))
+				amount1OutWithOB := pair.CalculateBuyForSellWithOrders(big.NewInt(4147))
 				if amount1Out.Cmp(amount1OutWithOB) != 0 {
 					t.Error("not equal sell before first order", amount1Out, amount1OutWithOB)
 				}
 			})
 
 			t.Run("sell first order", func(t *testing.T) {
-				amount1Out := pair.CalculateBuyForSell(big.NewInt(4142))
-				amount1OutWithOB := pair.CalculateBuyForSellWithOrders(big.NewInt(4142 + 2000))
+				amount1Out := pair.CalculateBuyForSell(big.NewInt(4147))
+				amount1OutWithOB := pair.CalculateBuyForSellWithOrders(big.NewInt(4147 + 2000))
 				if commissionOrder == 0 {
 					if big.NewInt(0).Sub(amount1OutWithOB, amount1Out).String() != "1000" {
 						t.Error("want to spend 2,000 more and get 1,000 more by order", amount1Out, amount1OutWithOB)
@@ -537,8 +536,8 @@ func TestPair_CalculateBuyForSellWithOrders(t *testing.T) {
 					t.Error("error set orders")
 				}
 				t.Run("before second order", func(t *testing.T) {
-					amount1Out := pair.CalculateBuyForSell(big.NewInt(4142))
-					amount1OutWithOB := pair.CalculateBuyForSellWithOrders(big.NewInt(4142 + 2000))
+					amount1Out := pair.CalculateBuyForSell(big.NewInt(4147))
+					amount1OutWithOB := pair.CalculateBuyForSellWithOrders(big.NewInt(4147 + 2000))
 					if commissionOrder == 0 {
 						if big.NewInt(0).Sub(amount1OutWithOB, amount1Out).String() != "1000" {
 							t.Error("want to spend 2,000 more and get 1,000 more by order", amount1Out, amount1OutWithOB)
@@ -547,36 +546,22 @@ func TestPair_CalculateBuyForSellWithOrders(t *testing.T) {
 				})
 
 				t.Run("sell all orders", func(t *testing.T) {
-					amount1Out := pair.CalculateBuyForSell(big.NewInt(4142))
-					amount1OutWithOB := pair.CalculateBuyForSellWithOrders(big.NewInt(4142 + 4000))
+					amount1Out := pair.CalculateBuyForSell(big.NewInt(4147))
+					amount1OutWithOB := pair.CalculateBuyForSellWithOrders(big.NewInt(4147 + 4000))
 					if commissionOrder == 0 {
 						if big.NewInt(0).Sub(amount1OutWithOB, amount1Out).String() != "2000" {
 							t.Error("want to spend 4,000 more and get 2,000 more by order", amount1Out, amount1OutWithOB)
 						}
 					}
 				})
-				if commissionOrder == 0 {
-					t.Run("sell all orders and more", func(t *testing.T) {
-						for _, i := range []int64{12, 20, 24, 30, 43, 55, 78, 89, 103, 200, 500, 700, 750, 999, 1111, 2222, 2500, 3001, 3005, 4321, 54321} {
-							t.Run(strconv.Itoa(int(i)), func(t *testing.T) {
-								amount1Out := pair.CalculateBuyForSell(big.NewInt(4142 + i))
-								amount1OutWithOB := pair.CalculateBuyForSellWithOrders(big.NewInt(4142 + 4000 + i))
-								if amount1OutWithOB.Cmp(big.NewInt(0).Add(amount1Out, big.NewInt(2000))) != 0 &&
-									amount1OutWithOB.Cmp(big.NewInt(0).Add(amount1Out, big.NewInt(1999))) != 0 { // todo: mb refactor
-									t.Error("want to spend 4,000 more and get 2,000 more by order", amount1Out, amount1OutWithOB)
-								}
-							})
-						}
-					})
-				}
 			})
 		})
 	})
 
 	//
 	// {
-	// 	amount1Out := pair.CalculateBuyForSell(big.NewInt(4142 + 2000))
-	// 	amount1OutWithOB := pair.CalculateBuyForSellWithOrders(big.NewInt(4142 + 2000))
+	// 	amount1Out := pair.CalculateBuyForSell(big.NewInt(4147 + 2000))
+	// 	amount1OutWithOB := pair.CalculateBuyForSellWithOrders(big.NewInt(4147 + 2000))
 	// 	t.Log(amount1Out, amount1OutWithOB)
 	// }
 	// {
