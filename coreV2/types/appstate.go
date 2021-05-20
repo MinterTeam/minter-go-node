@@ -312,9 +312,10 @@ type Waitlist struct {
 }
 type Order struct {
 	IsSale     bool
-	SellVolume string `json:"sell_volume"`
-	BuyVolume  string `json:"buy_volume"`
-	ID         uint64 `json:"id"`
+	SellVolume string  `json:"sell_volume"`
+	BuyVolume  string  `json:"buy_volume"`
+	ID         uint64  `json:"id"`
+	Owner      Address `json:"owner"`
 }
 type Pool struct {
 	Coin0    uint64  `json:"coin0"`

@@ -105,7 +105,7 @@ func (data AddLimit) Run(tx *Transaction, context state.Interface, rewardPool *b
 		}
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		deliverState.Accounts.SubBalance(sender, data.CoinToSell, data.SellVolume)
-		orderID := deliverState.Swap.PairAddSellOrder(data.CoinToSell, data.CoinToBuy, data.SellVolume, data.BuyVolume)
+		orderID := deliverState.Swap.PairAddSellOrder(data.CoinToSell, data.CoinToBuy, data.SellVolume, data.BuyVolume, sender)
 
 		tags = []abcTypes.EventAttribute{
 			{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},

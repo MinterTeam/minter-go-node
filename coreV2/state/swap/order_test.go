@@ -12,6 +12,74 @@ import (
 	"testing"
 )
 
+func TestPair_SellWithOrders(t *testing.T) {
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+	swap := New(newBus, immutableTree.GetLastImmutable())
+	_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(10000), big.NewInt(10000))
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pair := swap.Pair(0, 1)
+	owner := types.HexToAddress("Mx7f0fc21d932f38ca9444f61703174569066cfa50")
+	swap.PairAddSellOrder(0, 1, big.NewInt(2000), big.NewInt(1000), owner)
+	if pair.OrderSellLowerByIndex(0).Price().Cmp(calcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 {
+		t.Error("error set order")
+	}
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Run("order", func(t *testing.T) {
+		swap := New(newBus, immutableTree.GetLastImmutable())
+		pair := swap.Pair(0, 1)
+		amount1Out := pair.CalculateBuyForSellWithOrders(big.NewInt(4147 + 2000))
+		_, orders := pair.calculateBuyForSellWithOrders(big.NewInt(4147 + 2000))
+		if len(orders) == 0 {
+			t.Error("empty orders")
+		}
+		amount1OutSell, owners := pair.SellWithOrders(big.NewInt(4147 + 2000))
+		if amount1OutSell.Cmp(amount1Out) != 0 {
+			t.Error("not equal", amount1Out, amount1OutSell)
+		}
+		if len(owners) == 0 {
+			t.Error("empty owners")
+		}
+		if owners[owner] == nil || owners[owner].Cmp(big.NewInt(1998)) != 0 {
+			t.Errorf("%#v", owners[owner])
+		}
+		t.Logf("price %v", pair.Price()) // todo: check error of skipping orders
+
+		_, _, err = immutableTree.Commit(swap)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		t.Run("export", func(t *testing.T) {
+			var appState types.AppState
+			swap := New(newBus, immutableTree.GetLastImmutable())
+			swap.Export(&appState)
+
+			jsonBytes, err := amino.NewCodec().MarshalJSONIndent(appState.Pools, "", "	")
+			if err != nil {
+				t.Error(err)
+			}
+			if len(appState.Pools) != 1 {
+				t.Fatalf("pools are not all: %s", jsonBytes)
+			}
+			if len(appState.Pools[0].Orders) != 0 {
+				t.Errorf("orders are not empty, %s", jsonBytes)
+			}
+		})
+	})
+}
+
 func TestSwap_Export_WithOrders(t *testing.T) {
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
@@ -44,6 +112,7 @@ func TestSwap_Export_WithOrders(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
+		t.Logf("%s", jsonBytes)
 		if len(appState.Pools) != 1 {
 			t.Fatalf("pools are not all: %s", jsonBytes)
 		}
@@ -112,6 +181,7 @@ func TestSwap_Export_WithOrders(t *testing.T) {
 		})
 	})
 }
+
 func TestPair_SetOrder_01(t *testing.T) {
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
@@ -128,12 +198,12 @@ func TestPair_SetOrder_01(t *testing.T) {
 	mul := func(price int64, volumeBuy *big.Int) *big.Int {
 		return big.NewInt(0).Mul(big.NewInt(price), volumeBuy)
 	}
-	idHigher := pair.SetOrder(mul(3, volumeBuy), volumeBuy)
-	idMostHigher := pair.SetOrder(mul(1, volumeBuy), volumeBuy)
-	_ = pair.SetOrder(mul(2, volumeBuy), volumeBuy)
-	idMostLower := pair.SetOrder(mul(10, volumeBuy), volumeBuy)
-	idLower := pair.SetOrder(mul(8, volumeBuy), volumeBuy)
-	_ = pair.SetOrder(mul(9, volumeBuy), volumeBuy)
+	idHigher := pair.SetOrder(mul(3, volumeBuy), volumeBuy).id
+	idMostHigher := pair.SetOrder(mul(1, volumeBuy), volumeBuy).id
+	_ = pair.SetOrder(mul(2, volumeBuy), volumeBuy).id
+	idMostLower := pair.SetOrder(mul(10, volumeBuy), volumeBuy).id
+	idLower := pair.SetOrder(mul(8, volumeBuy), volumeBuy).id
+	_ = pair.SetOrder(mul(9, volumeBuy), volumeBuy).id
 
 	_, _, err = immutableTree.Commit(swap)
 	if err != nil {
@@ -361,10 +431,10 @@ func TestPair_SetOrder_10(t *testing.T) {
 	mul := func(price int64, volumeBuy *big.Int) *big.Int {
 		return big.NewInt(0).Mul(big.NewInt(price), volumeBuy)
 	}
-	idMostHigher := pair.SetOrder(mul(1, volumeBuy), volumeBuy)
-	idHigher := pair.SetOrder(mul(2, volumeBuy), volumeBuy)
-	idLower := pair.SetOrder(mul(9, volumeBuy), volumeBuy)
-	idMostLower := pair.SetOrder(mul(10, volumeBuy), volumeBuy)
+	idMostHigher := pair.SetOrder(mul(1, volumeBuy), volumeBuy).id
+	idHigher := pair.SetOrder(mul(2, volumeBuy), volumeBuy).id
+	idLower := pair.SetOrder(mul(9, volumeBuy), volumeBuy).id
+	idMostLower := pair.SetOrder(mul(10, volumeBuy), volumeBuy).id
 
 	_, _, err = immutableTree.Commit(swap)
 	if err != nil {

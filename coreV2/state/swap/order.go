@@ -17,13 +17,15 @@ func calcPriceSell(sell, buy *big.Int) *big.Float {
 
 type Order struct {
 	*Limit
-	isDrop bool
+	isDrop bool // todo: use check volumes equal 0
 }
 
 type Limit struct {
 	isBuy bool
-	Coin0 *big.Int
-	Coin1 *big.Int
+	Sell  *big.Int
+	Buy   *big.Int
+
+	Owner types.Address
 
 	price *big.Float
 	id    uint32
@@ -36,7 +38,7 @@ type limits struct {
 }
 
 type dirtyOrders struct {
-	orders []*Order
+	orders []*Limit
 }
 
 const (
@@ -45,23 +47,25 @@ const (
 
 func (l *Limit) Price() *big.Float {
 	if l.price == nil {
-		l.price = calcPriceSell(l.Coin0, l.Coin1)
+		l.price = calcPriceSell(l.Sell, l.Buy)
 	}
 	return l.price
 }
 
 func (l *Limit) SortPrice() *big.Float {
+	price := l.Price()
 	if !l.isBuy {
-		return calcPriceSell(l.Coin0, l.Coin1) // not l.Price()
+		return price
 	}
-	return calcPriceSell(l.Coin1, l.Coin0)
+	return big.NewFloat(0).Quo(big.NewFloat(1), price)
 }
 
 func (l *Limit) reverse() *Limit {
 	return &Limit{
 		isBuy: !l.isBuy,
-		Coin0: l.Coin1,
-		Coin1: l.Coin0,
+		Sell:  l.Buy,
+		Buy:   l.Sell,
+		Owner: l.Owner,
 		price: nil,
 		id:    l.id,
 	}
@@ -73,14 +77,14 @@ func (l *Limit) sort() *Limit {
 	}
 	return &Limit{
 		isBuy: false,
-		Coin0: l.Coin1,
-		Coin1: l.Coin0,
+		Sell:  l.Buy,
+		Buy:   l.Sell,
 		price: nil,
 		id:    l.id,
 	}
 }
 
-func (p *Pair) MarkDirtyOrders(order *Order) {
+func (p *Pair) MarkDirtyOrders(order *Limit) {
 	p.markDirtyOrders()
 	p.dirtyOrders.orders = append(p.dirtyOrders.orders, order)
 	return
@@ -100,14 +104,11 @@ func (p *Pair) setSellHigherOrder(amountSell, amountBuy *big.Int) (limit *Limit)
 
 	limit = &Limit{
 		isBuy: !p.isSorted(),
-		Coin0: amountSell,
-		Coin1: amountBuy,
+		Sell:  amountSell,
+		Buy:   amountBuy,
 		id:    p.getLastTotalOrderID(),
 	}
-	defer p.MarkDirtyOrders(&Order{
-		Limit:  limit,
-		isDrop: false,
-	})
+	defer p.MarkDirtyOrders(limit)
 
 	if index == 0 {
 		p.setSellHigherOrders(append([]*Limit{limit}, orders...))
@@ -137,14 +138,11 @@ func (p *Pair) setSellLowerOrder(amountSell, amountBuy *big.Int) (limit *Limit) 
 
 	limit = &Limit{
 		isBuy: !p.isSorted(),
-		Coin0: amountSell,
-		Coin1: amountBuy,
+		Sell:  amountSell,
+		Buy:   amountBuy,
 		id:    p.getLastTotalOrderID(),
 	}
-	defer p.MarkDirtyOrders(&Order{
-		Limit:  limit,
-		isDrop: false,
-	})
+	defer p.MarkDirtyOrders(limit)
 
 	if index == 0 {
 		p.setSellLowerOrders(append([]*Limit{limit}, orders...))
@@ -219,17 +217,16 @@ func (p *Pair) setBuyLowerOrders(orders []*Limit) {
 	return
 }
 
-func (s *Swap) PairAddSellOrder(coin0, coin1 types.CoinID, sellAmount, buyAmount *big.Int) uint32 {
+func (s *Swap) PairAddSellOrder(coin0, coin1 types.CoinID, sellAmount, buyAmount *big.Int, sender types.Address) uint32 {
 	pair := s.Pair(coin0, coin1)
-	orderID := pair.SetOrder(sellAmount, buyAmount)
-
+	order := pair.SetOrder(sellAmount, buyAmount)
+	order.Owner = sender
 	s.bus.Checker().AddCoin(coin0, sellAmount)
 
-	return orderID
+	return order.id
 }
 
-func (p *Pair) SetOrder(sellAmount, buyAmount *big.Int) (id uint32) {
-	var order *Limit
+func (p *Pair) SetOrder(sellAmount, buyAmount *big.Int) (order *Limit) {
 	price := calcPriceSell(sellAmount, buyAmount)
 	currantPrice := p.Price()
 	if currantPrice.Cmp(price) == -1 {
@@ -238,7 +235,7 @@ func (p *Pair) SetOrder(sellAmount, buyAmount *big.Int) (id uint32) {
 		order = p.setSellLowerOrder(sellAmount, buyAmount)
 	}
 
-	return order.id
+	return order
 }
 
 // loadBuyHigherOrders loads only needed orders for pair, not all
