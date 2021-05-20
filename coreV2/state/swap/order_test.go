@@ -12,7 +12,7 @@ import (
 	"testing"
 )
 
-func TestPair_SellWithOrders(t *testing.T) {
+func TestPair_SellWithOrders_01_FullOrder(t *testing.T) {
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
 	if err != nil {
@@ -75,6 +75,72 @@ func TestPair_SellWithOrders(t *testing.T) {
 			}
 			if len(appState.Pools[0].Orders) != 0 {
 				t.Errorf("orders are not empty, %s", jsonBytes)
+			}
+		})
+	})
+}
+
+func TestPair_SellWithOrders_01_PartOrder(t *testing.T) {
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+	swap := New(newBus, immutableTree.GetLastImmutable())
+	_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(10000), big.NewInt(10000))
+
+	pair := swap.Pair(0, 1)
+	owner := types.HexToAddress("Mx7f0fc21d932f38ca9444f61703174569066cfa50")
+	swap.PairAddSellOrder(0, 1, big.NewInt(2000), big.NewInt(1000), owner)
+	if pair.OrderSellLowerByIndex(0).Price().Cmp(calcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 {
+		t.Error("error set order")
+	}
+
+	t.Run("order", func(t *testing.T) {
+		amount1Out := pair.CalculateBuyForSellWithOrders(big.NewInt(4147 + 1000))
+		_, orders := pair.calculateBuyForSellWithOrders(big.NewInt(4147 + 1000))
+		if len(orders) == 0 {
+			t.Error("empty orders")
+		}
+		amount1OutSell, owners := pair.SellWithOrders(big.NewInt(4147 + 1000))
+		if amount1OutSell.Cmp(amount1Out) != 0 {
+			t.Error("not equal", amount1Out, amount1OutSell)
+		}
+		if len(owners) == 0 {
+			t.Error("empty owners")
+		}
+		if owners[owner] == nil || owners[owner].Cmp(big.NewInt(999)) != 0 {
+			t.Errorf("%#v", owners[owner])
+		}
+		t.Logf("price %v", pair.Price()) // todo: check error of skipping orders
+
+		_, _, err = immutableTree.Commit(swap)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		t.Run("export", func(t *testing.T) {
+			var appState types.AppState
+			swap.Export(&appState)
+
+			jsonBytes, err := amino.NewCodec().MarshalJSONIndent(appState.Pools, "", "	")
+			if err != nil {
+				t.Error(err)
+			}
+			if len(appState.Pools) != 1 {
+				t.Fatalf("pools are not all: %s", jsonBytes)
+			}
+			if len(appState.Pools[0].Orders) != 1 {
+				t.Errorf("orders are empty, %s", jsonBytes)
+			}
+			t.Logf("%s", jsonBytes)
+			if appState.Pools[0].Orders[0].SellVolume != "1000" {
+				t.Errorf("order sell part, %s", appState.Pools[0].Orders[0].SellVolume)
+			}
+			if appState.Pools[0].Orders[0].BuyVolume != "500" {
+				t.Errorf("order buy part, %s", appState.Pools[0].Orders[0].BuyVolume)
 			}
 		})
 	})

@@ -60,6 +60,11 @@ func (l *Limit) SortPrice() *big.Float {
 	return big.NewFloat(0).Quo(big.NewFloat(1), price)
 }
 
+func (l *Limit) RecalcPrice() *big.Float {
+	l.price = calcPriceSell(l.Sell, l.Buy)
+	return l.price
+}
+
 func (l *Limit) reverse() *Limit {
 	return &Limit{
 		isBuy: !l.isBuy,

@@ -348,8 +348,8 @@ func (s *Swap) Commit(db *iavl.MutableTree) error {
 		pair, _ := s.pair(key)
 		for _, limit := range pair.dirtyOrders.orders {
 
-			path := pricePath(key, limit.SortPrice(), limit.id, !limit.isBuy) // todo: 1/Price is ok?
-			db.Remove(path)                                                   // always delete, the price can change minimally due to rounding off the ratio of the remaining volumes
+			path := pricePath(key, limit.SortPrice(), limit.id, !limit.isBuy)
+			db.Remove(path) // always delete, the price can change minimally due to rounding off the ratio of the remaining volumes
 			if limit.Sell.Sign() == 0 || limit.Buy.Sign() == 0 {
 				continue
 			}
@@ -358,7 +358,7 @@ func (s *Swap) Commit(db *iavl.MutableTree) error {
 			if err != nil {
 				return err
 			}
-			db.Set(path, pairOrderBytes)
+			db.Set(pricePath(key, limit.RecalcPrice(), limit.id, !limit.isBuy), pairOrderBytes)
 		}
 		pair.dirtyOrders.orders = make([]*Limit, 0)
 	}
