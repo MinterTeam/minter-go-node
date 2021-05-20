@@ -61,8 +61,8 @@ func (l *Limit) SortPrice() *big.Float {
 }
 
 func (l *Limit) RecalcPrice() *big.Float {
-	l.price = calcPriceSell(l.Sell, l.Buy)
-	return l.price
+	l.price = nil
+	return l.SortPrice()
 }
 
 func (l *Limit) reverse() *Limit {
