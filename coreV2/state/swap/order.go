@@ -2,11 +2,249 @@ package swap
 
 import (
 	"encoding/binary"
-	"github.com/MinterTeam/minter-go-node/coreV2/types"
-	"github.com/MinterTeam/minter-go-node/rlp"
+	"fmt"
 	"math"
 	"math/big"
+
+	"github.com/MinterTeam/minter-go-node/coreV2/types"
+	"github.com/MinterTeam/minter-go-node/rlp"
 )
+
+const commissionOrder = 2
+
+func (s *Swap) PairSellWithOrders(coin0, coin1 types.CoinID, amount0In, minAmount1Out *big.Int) *big.Int {
+	pair := s.Pair(coin0, coin1)
+	amount1Out, owners := pair.SellWithOrders(amount0In)
+	if amount1Out.Cmp(minAmount1Out) == -1 {
+		panic(fmt.Sprintf("calculatedAmount1Out %s less minAmount1Out %s", amount1Out, minAmount1Out))
+	}
+	for address, b := range owners {
+		s.bus.Checker().AddCoin(coin0, big.NewInt(0).Neg(b))
+		s.bus.Accounts().AddBalance(address, coin0, b)
+	}
+	s.bus.Checker().AddCoin(coin0, amount0In)
+	s.bus.Checker().AddCoin(coin1, amount1Out)
+	return amount1Out
+}
+
+func (p *Pair) SellWithOrders(amount0In *big.Int) (amount1Out *big.Int, owners map[types.Address]*big.Int) { // todo: add mutex
+	owners = map[types.Address]*big.Int{}
+	amount1Out, orders := p.calculateBuyForSellWithOrders(amount0In)
+
+	amount0orders, amount1orders := big.NewInt(0), big.NewInt(0)
+	commission0orders, commission1orders := big.NewInt(0), big.NewInt(0)
+	for i, order := range orders {
+		cS := big.NewInt(0).Quo(big.NewInt(0).Mul(order.Sell, big.NewInt(commissionOrder/2)), big.NewInt(1000))
+		cB := big.NewInt(0).Quo(big.NewInt(0).Mul(order.Buy, big.NewInt(commissionOrder/2)), big.NewInt(1000))
+
+		amountBuy := big.NewInt(0).Sub(order.Buy, cB)
+
+		amount0orders.Add(amount0orders, order.Sell)
+		amount1orders.Add(amount1orders, amountBuy)
+
+		if !order.isBuy {
+			owners[order.Owner] = big.NewInt(0).Sub(order.Sell, cS)
+		} else {
+			owners[order.Owner] = amountBuy
+		}
+
+		commission0orders.Add(commission0orders, cS)
+		commission1orders.Add(commission1orders, cB)
+
+		p.updateOrder(i, order.Sell, order.Buy)
+	}
+	p.markDirtyOrders()
+
+	p.update(commission0orders, commission1orders)
+
+	amount0 := big.NewInt(0).Sub(amount0In, amount0orders)
+	amount1 := big.NewInt(0).Sub(amount1Out, amount1orders)
+
+	p.Swap(amount0, big.NewInt(0), big.NewInt(0), amount1)
+
+	return amount1Out, owners
+}
+
+func (p *Pair) updateOrder(i int, amount0, amount1 *big.Int) {
+	limit := p.OrderSellLowerByIndex(i)
+
+	l := limit.sort()
+	l.price = limit.Price() // save before change, need for update on disk
+
+	limit.Sell.Sub(limit.Sell, amount0)
+	limit.Buy.Sub(limit.Buy, amount1)
+
+	p.MarkDirtyOrders(l)
+}
+
+func (p *Pair) CalculateBuyForSellWithOrders(amount0In *big.Int) (amount1Out *big.Int) {
+	amount1Out, _ = p.calculateBuyForSellWithOrders(amount0In)
+	return amount1Out
+}
+
+func (p *Pair) calculateBuyForSellWithOrders(amount0In *big.Int) (amount1Out *big.Int, orders []*Limit) {
+	amount1Out = big.NewInt(0)
+	amount0 := big.NewInt(0).Set(amount0In)
+	var pair EditableChecker = p
+	for i := 0; true; i++ {
+		if amount0.Sign() == 0 {
+			return amount1Out, orders
+		}
+
+		limit := p.OrderSellLowerByIndex(i)
+		if limit == nil {
+			break
+		}
+
+		price := limit.Price()
+		if price.Cmp(pair.Price()) == -1 {
+			reserve0diff := pair.CalculateAddAmount0ForPrice(price)
+			if amount0.Cmp(reserve0diff) != 1 {
+				break
+			}
+
+			amount0.Sub(amount0, reserve0diff)
+			amount1diff := pair.CalculateBuyForSell(reserve0diff)
+			if amount1diff == nil {
+				amount1diff = big.NewInt(0)
+			}
+			amount1Out.Add(amount1Out, amount1diff)
+			pair = pair.AddLastSwapStep(reserve0diff, amount1diff)
+		}
+
+		rest := big.NewInt(0).Sub(amount0, limit.Sell)
+		if rest.Sign() != 1 {
+			amount1, _ := big.NewFloat(0).Mul(price, big.NewFloat(0).SetInt(amount0)).Int(nil)
+			com := big.NewInt(0).Quo(big.NewInt(0).Mul(amount1, big.NewInt(commissionOrder/2)), big.NewInt(1000))
+			amount1Out.Add(amount1Out, big.NewInt(0).Sub(amount1, com))
+
+			orders = append(orders, &Limit{
+				isBuy: limit.isBuy,
+				Sell:  amount0,
+				Buy:   amount1,
+				Owner: limit.Owner,
+				price: limit.Price(),
+				id:    limit.id,
+			})
+
+			return amount1Out, orders
+		}
+
+		orders = append(orders, limit)
+
+		comS := big.NewInt(0).Quo(big.NewInt(0).Mul(limit.Sell, big.NewInt(commissionOrder/2)), big.NewInt(1000))
+		comB := big.NewInt(0).Quo(big.NewInt(0).Mul(limit.Buy, big.NewInt(commissionOrder/2)), big.NewInt(1000))
+
+		pair = pair.AddLastSwapStep(comS, big.NewInt(0).Neg(comB))
+		amount1Out.Add(amount1Out, big.NewInt(0).Sub(limit.Buy, comB))
+
+		amount0 = rest
+	}
+
+	amount1diff := pair.CalculateBuyForSell(amount0)
+	if amount1diff != nil {
+		amount1Out.Add(amount1Out, amount1diff)
+	}
+	return amount1Out, orders
+}
+
+func (p *Pair) CalculateAddAmount0ForPrice(price *big.Float) (amount0 *big.Int) {
+	if price.Cmp(p.Price()) == 1 {
+		amount0 := p.reverse().CalculateAddAmount1ForPrice(big.NewFloat(0).Quo(big.NewFloat(1), price))
+		return amount0.Neg(amount0)
+	}
+	return p.calculateAddAmount0ForPrice(price)
+}
+
+func (p *Pair) CalculateAddAmount1ForPrice(price *big.Float) (amount1 *big.Int) {
+	if price.Cmp(p.Price()) == 1 {
+		amount1 := p.reverse().CalculateAddAmount0ForPrice(big.NewFloat(0).Quo(big.NewFloat(1), price))
+		return amount1.Neg(amount1)
+	}
+	return p.calculateAddAmount1ForPrice(price)
+}
+
+func (p *Pair) calculateAddAmount1ForPrice(price *big.Float) (amount1 *big.Int) {
+	amount0 := p.calculateAddAmount0ForPrice(price)
+	return p.CalculateBuyForSellAllowNeg(amount0)
+}
+
+func (p *Pair) calculateAddAmount0ForPrice(price *big.Float) (amount0 *big.Int) {
+	reserve0, reserve1 := p.Reserves()
+	r0 := big.NewFloat(0).SetInt(reserve0)
+	r1 := big.NewFloat(0).SetInt(reserve1)
+	k := big.NewFloat(0).Mul(r0, r1)
+
+	a := big.NewFloat((1000 + commission) / 1000)
+	b := big.NewFloat(0).Quo(big.NewFloat(0).Mul(big.NewFloat(2000+commission), r0), big.NewFloat(1000))
+	c := big.NewFloat(0).Sub(big.NewFloat(0).Mul(r0, r0), big.NewFloat(0).Quo(k, price))
+	d := big.NewFloat(0).Sub(big.NewFloat(0).Mul(b, b), big.NewFloat(0).Mul(big.NewFloat(4), big.NewFloat(0).Mul(a, c)))
+
+	x := big.NewFloat(0).Quo(big.NewFloat(0).Add(big.NewFloat(0).Neg(b), big.NewFloat(0).Sqrt(d)), big.NewFloat(0).Mul(big.NewFloat(2), a))
+
+	amount0, _ = big.NewFloat(0).Add(x, big.NewFloat(0).Quo(big.NewFloat(0).Mul(big.NewFloat(2), x), big.NewFloat(1000))).Int(nil)
+
+	return amount0
+	// return amount0.Add(amount0, big.NewInt(1))
+}
+
+func (p *Pair) CalculateSellForBuyWithOrders(amount1Out *big.Int) (amount0In *big.Int) {
+	amount0In = p.calculateSellForBuyWithOrders(amount1Out)
+	return amount0In
+}
+
+func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amount0In *big.Int) {
+	amount0In = big.NewInt(0)
+	amount1 := big.NewInt(0).Set(amount1Out)
+	var pair EditableChecker = p
+	for i := 0; true; i++ {
+		if amount1.Sign() == 0 {
+			return amount0In
+		}
+
+		limit := p.OrderSellLowerByIndex(i)
+		if limit == nil {
+			break
+		}
+
+		price := limit.Price()
+		if price.Cmp(pair.Price()) == -1 {
+			reserve1diff := pair.CalculateAddAmount1ForPrice(price)
+			if amount1.Cmp(reserve1diff) != 1 {
+				break
+			}
+
+			amount1.Sub(amount1, reserve1diff)
+			amount0diff := pair.CalculateSellForBuy(reserve1diff)
+			if amount0diff == nil {
+				amount0diff = big.NewInt(0)
+			}
+			amount0In.Add(amount0In, amount0diff)
+			pair = pair.AddLastSwapStep(amount0diff, reserve1diff)
+		}
+
+		comB := big.NewInt(0).Quo(big.NewInt(0).Mul(limit.Buy, big.NewInt(commissionOrder/2)), big.NewInt(1000))
+		rest := big.NewInt(0).Sub(amount1, big.NewInt(0).Sub(limit.Buy, comB))
+		if rest.Sign() != 1 {
+			amount0, _ := big.NewFloat(0).Quo(big.NewFloat(0).SetInt(amount1), price).Int(nil)
+			amount0In.Add(amount0In, big.NewInt(0).Div(big.NewInt(0).Mul(amount0, big.NewInt(1000)), big.NewInt(1000-(commissionOrder/2))))
+			return amount0In
+		}
+
+		comS := big.NewInt(0).Quo(big.NewInt(0).Mul(limit.Sell, big.NewInt(commissionOrder/2)), big.NewInt(1000))
+
+		pair = pair.AddLastSwapStep(comS, big.NewInt(0).Neg(comB))
+		amount1 = rest
+
+		amount0In.Add(amount0In, limit.Sell)
+	}
+
+	amount0diff := pair.CalculateSellForBuy(amount1)
+	if amount0diff != nil {
+		amount0In.Add(amount0In, amount0diff)
+	}
+	return amount0In
+}
 
 func calcPriceSell(sell, buy *big.Int) *big.Float {
 	return new(big.Float).SetPrec(precision).Quo(
