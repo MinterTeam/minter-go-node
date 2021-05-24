@@ -150,8 +150,8 @@ func (s *Swap) Export(state *types.AppState) {
 		for _, limit := range append(append(append(pair.sellOrders.higher, pair.buyOrders.higher...), pair.sellOrders.lower...), pair.buyOrders.lower...) {
 			orders = append(orders, types.Order{
 				IsSale:     !limit.isBuy,
-				SellVolume: limit.Sell.String(),
-				BuyVolume:  limit.Buy.String(),
+				SellVolume: limit.WantBuy.String(),
+				BuyVolume:  limit.WantSell.String(),
 				ID:         uint64(limit.id),
 				Owner:      limit.Owner,
 			})
@@ -317,6 +317,7 @@ func pricePath(key pairKey, price *big.Float, id uint32, isSale bool) []byte {
 	var saleByte byte = 0
 	if isSale {
 		saleByte = 1
+		log.Println(saleByte)
 	}
 	return append(append(append(append([]byte{mainPrefix}, key.pathOrders()...), saleByte), pricePath...), byteID...)
 }
@@ -351,29 +352,30 @@ func (s *Swap) Commit(db *iavl.MutableTree) error {
 	for _, key := range s.getOrderedDirtyOrderPairs() {
 		pair, _ := s.pair(key)
 		for _, limit := range pair.dirtyOrders.orders {
+
 			oldPath := pricePath(key, limit.SortPrice(), limit.id, !limit.isBuy)
 
-			if limit.Sell.Sign() == 0 || limit.Buy.Sign() == 0 {
-				if limit.Sell.Sign() != 0 || limit.Buy.Sign() != 0 {
-					panic(fmt.Sprintf("order %d has one zero volume: %s, %s", limit.id, limit.Sell, limit.Buy))
+			if limit.WantBuy.Sign() == 0 || limit.WantSell.Sign() == 0 {
+				if limit.WantBuy.Sign() != 0 || limit.WantSell.Sign() != 0 {
+					panic(fmt.Sprintf("order %d has one zero volume: %s, %s. Sell %v", limit.id, limit.WantBuy, limit.WantSell, !limit.isBuy))
 				}
 				db.Remove(oldPath)
-				log.Printf("remove old path %q, %s, %s. Sell %v", oldPath, limit.Sell, limit.Buy, !limit.isBuy)
+				log.Printf("remove old path %q, %s, %s. Sell %v", oldPath, limit.WantBuy, limit.WantSell, !limit.isBuy)
 				continue
 			}
 
-			newPath := pricePath(key, limit.RecalcPrice(), limit.id, !limit.isBuy)
+			newPath := pricePath(key, limit.ReCalcSortPrice(), limit.id, !limit.isBuy)
 
-			pairOrderBytes, err := rlp.EncodeToBytes(limit.sort()) // todo: remove sort, list has sorted limits
+			pairOrderBytes, err := rlp.EncodeToBytes(limit) // todo: remove sort, list has sorted limits
 			if err != nil {
 				return err
 			}
 
 			db.Set(newPath, pairOrderBytes)
-			log.Printf("new path %q, %s, %s. Sell %v", newPath, limit.Sell, limit.Buy, !limit.isBuy)
-			if db.Has(oldPath) && bytes.Compare(oldPath, newPath) != 0 {
+			log.Printf("new path %q, %s, %s. Sell %v", newPath, limit.WantBuy, limit.WantSell, !limit.isBuy)
+			if !bytes.Equal(oldPath, newPath) && db.Has(oldPath) {
 				db.Remove(oldPath) // the price can change minimally due to rounding off the ratio of the remaining volumes
-				log.Printf("remove old path %q, %s, %s. Sell %v", oldPath, limit.Sell, limit.Buy, !limit.isBuy)
+				log.Printf("remove old path %q, %s, %s. Sell %v", oldPath, limit.WantBuy, limit.WantSell, !limit.isBuy)
 			}
 		}
 		pair.dirtyOrders.orders = make([]*Limit, 0)

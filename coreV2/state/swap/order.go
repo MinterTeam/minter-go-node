@@ -3,6 +3,7 @@ package swap
 import (
 	"encoding/binary"
 	"fmt"
+	"log"
 	"math"
 	"math/big"
 
@@ -34,21 +35,21 @@ func (p *Pair) SellWithOrders(amount0In *big.Int) (amount1Out *big.Int, owners m
 	amount0orders, amount1orders := big.NewInt(0), big.NewInt(0)
 	commission0orders, commission1orders := big.NewInt(0), big.NewInt(0)
 	for i, order := range orders {
-		cS := calcCommission(order.Sell)
-		cB := calcCommission(order.Buy)
+		cS := calcCommission(order.WantBuy)
+		cB := calcCommission(order.WantSell)
 
 		if order.isBuy {
-			owners[order.Owner] = big.NewInt(0).Sub(order.Sell, cS)
+			owners[order.Owner] = big.NewInt(0).Sub(order.WantBuy, cS)
 		} else {
-			owners[order.Owner] = big.NewInt(0).Sub(order.Buy, cB)
+			owners[order.Owner] = big.NewInt(0).Sub(order.WantSell, cB)
 		}
-		amount0orders.Add(amount0orders, order.Sell)
-		amount1orders.Add(amount1orders, order.Buy)
+		amount0orders.Add(amount0orders, order.WantBuy)
+		amount1orders.Add(amount1orders, order.WantSell)
 
 		commission0orders.Add(commission0orders, cS)
 		// commission1orders.Add(commission1orders, cB)
 
-		p.updateOrder(i, order.Sell, order.Buy)
+		p.updateOrder(i, order.WantBuy, order.WantSell)
 	}
 	p.markDirtyOrders()
 
@@ -72,13 +73,13 @@ func (p *Pair) updateOrder(i int, amount0, amount1 *big.Int) {
 	l := limit.sort()
 	l.price = limit.Price() // save before change, need for update on disk
 
-	limit.Sell.Sub(limit.Sell, amount0)
-	limit.Buy.Sub(limit.Buy, amount1)
+	limit.WantBuy.Sub(limit.WantBuy, amount0)
+	limit.WantSell.Sub(limit.WantSell, amount1)
 
 	if limit.SortPrice().Cmp(l.price) != 0 {
 		// todo: resort order list
 	}
-	fmt.Println("y", l.Sell, l.Buy)
+	fmt.Println("y", l.WantBuy, l.WantSell)
 	p.MarkDirtyOrders(l)
 }
 
@@ -117,17 +118,18 @@ func (p *Pair) calculateBuyForSellWithOrders(amount0In *big.Int) (amount1Out *bi
 			pair = pair.AddLastSwapStep(reserve0diff, amount1diff)
 		}
 
-		rest := big.NewInt(0).Sub(amount0, limit.Sell)
+		rest := big.NewInt(0).Sub(amount0, limit.WantBuy)
 		if rest.Sign() != 1 {
 			amount1, _ := big.NewFloat(0).Mul(price, big.NewFloat(0).SetInt(amount0)).Int(nil)
 
 			orders = append(orders, &Limit{
-				isBuy: limit.isBuy,
-				Sell:  amount0,
-				Buy:   amount1,
-				Owner: limit.Owner,
-				price: limit.Price(),
-				id:    limit.id,
+				isBuy:    limit.isBuy,
+				pairKey:  p.pairKey,
+				WantBuy:  amount0,
+				WantSell: amount1,
+				Owner:    limit.Owner,
+				price:    limit.Price(),
+				id:       limit.id,
 			})
 
 			com := calcCommission(amount1)
@@ -138,11 +140,11 @@ func (p *Pair) calculateBuyForSellWithOrders(amount0In *big.Int) (amount1Out *bi
 
 		orders = append(orders, limit)
 
-		comS := calcCommission(limit.Sell)
-		comB := calcCommission(limit.Buy)
+		comS := calcCommission(limit.WantBuy)
+		comB := calcCommission(limit.WantSell)
 
 		pair = pair.AddLastSwapStep(comS, big.NewInt(0).Neg(comB))
-		amount1Out.Add(amount1Out, big.NewInt(0).Sub(limit.Buy, comB))
+		amount1Out.Add(amount1Out, big.NewInt(0).Sub(limit.WantSell, comB))
 
 		amount0 = rest
 	}
@@ -240,10 +242,10 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amount0In *bi
 			pair = pair.AddLastSwapStep(amount0diff, reserve1diff)
 		}
 
-		comB := calcCommission(limit.Buy)
+		comB := calcCommission(limit.WantSell)
 
-		fmt.Println(comB, limit.Buy, amount1)
-		rest := big.NewInt(0).Sub(amount1, big.NewInt(0).Sub(limit.Buy, comB))
+		fmt.Println(comB, limit.WantSell, amount1)
+		rest := big.NewInt(0).Sub(amount1, big.NewInt(0).Sub(limit.WantSell, comB))
 		if rest.Sign() != 1 {
 			amount0, _ := big.NewFloat(0).Quo(big.NewFloat(0).SetInt(amount1), price).Int(nil)
 			comS := calcCommission(amount0)
@@ -253,12 +255,12 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amount0In *bi
 			return amount0In
 		}
 
-		comS := calcCommission(limit.Sell)
+		comS := calcCommission(limit.WantBuy)
 
 		pair = pair.AddLastSwapStep(comS, big.NewInt(0).Neg(comB))
 		amount1 = rest
 
-		amount0In.Add(amount0In, limit.Sell)
+		amount0In.Add(amount0In, limit.WantBuy)
 	}
 
 	amount0diff := pair.CalculateSellForBuy(amount1)
@@ -281,12 +283,13 @@ type Order struct {
 }
 
 type Limit struct {
-	isBuy bool
-	Sell  *big.Int
-	Buy   *big.Int
+	isBuy    bool
+	WantBuy  *big.Int
+	WantSell *big.Int
 
 	Owner types.Address
 
+	pairKey
 	price *big.Float
 	id    uint32
 }
@@ -306,47 +309,67 @@ const (
 )
 
 func (l *Limit) Price() *big.Float {
-	if l.price == nil {
-		l.price = calcPriceSell(l.Sell, l.Buy)
+	if l.price != nil {
+		return l.price
 	}
+	// if l.isSell() {
+	l.price = calcPriceSell(l.WantBuy, l.WantSell)
+	// } else {
+	// 	l.price = calcPriceSell(l.WantSell, l.WantBuy)
+	// }
 	return l.price
 }
 
 func (l *Limit) SortPrice() *big.Float {
 	price := l.Price()
-	if !l.isBuy {
+	if l.isSorted() {
 		return price
 	}
 	return big.NewFloat(0).Quo(big.NewFloat(1), price)
 }
 
+func (l *Limit) isSell() bool {
+	return !l.isBuy
+}
+
 func (l *Limit) RecalcPrice() *big.Float {
+	l.price = nil
+	return l.Price()
+}
+
+func (l *Limit) ReCalcSortPrice() *big.Float {
 	l.price = nil
 	return l.SortPrice()
 }
 
 func (l *Limit) reverse() *Limit {
 	return &Limit{
-		isBuy: !l.isBuy,
-		Sell:  l.Buy,
-		Buy:   l.Sell,
-		Owner: l.Owner,
-		price: nil,
-		id:    l.id,
+		pairKey:  l.pairKey.reverse(),
+		isBuy:    !l.isBuy,
+		WantBuy:  l.WantSell,
+		WantSell: l.WantBuy,
+		Owner:    l.Owner,
+		price:    nil,
+		id:       l.id,
 	}
 }
 
 func (l *Limit) sort() *Limit {
-	if !l.isBuy {
+	if l.isSorted() {
 		return l
 	}
 	return &Limit{
-		isBuy: false,
-		Sell:  l.Buy,
-		Buy:   l.Sell,
-		price: nil,
-		id:    l.id,
+		pairKey:  l.pairKey.reverse(),
+		isBuy:    !l.isBuy,
+		WantBuy:  l.WantSell,
+		WantSell: l.WantBuy,
+		price:    nil,
+		id:       l.id,
 	}
+}
+
+func (l *Limit) isSorted() bool {
+	return l.pairKey.isSorted()
 }
 
 func (p *Pair) MarkDirtyOrders(order *Limit) {
@@ -355,8 +378,8 @@ func (p *Pair) MarkDirtyOrders(order *Limit) {
 	return
 }
 
-func (p *Pair) setSellHigherOrder(amountSell, amountBuy *big.Int) (limit *Limit) {
-	price := calcPriceSell(amountSell, amountBuy)
+func (p *Pair) setSellHigherOrder(wantBuyAmount, wantSellAmount *big.Int) (limit *Limit) {
+	price := calcPriceSell(wantBuyAmount, wantSellAmount)
 	var index int
 	orders := p.sellHigherOrders()
 	for i, limit := range orders {
@@ -368,11 +391,13 @@ func (p *Pair) setSellHigherOrder(amountSell, amountBuy *big.Int) (limit *Limit)
 	}
 
 	limit = &Limit{
-		isBuy: !p.isSorted(),
-		Sell:  amountSell,
-		Buy:   amountBuy,
-		id:    p.getLastTotalOrderID(),
+		pairKey:  p.pairKey,
+		isBuy:    false,
+		WantBuy:  wantBuyAmount,
+		WantSell: wantSellAmount,
+		id:       p.getLastTotalOrderID(),
 	}
+	limit = limit.sort()
 	defer p.MarkDirtyOrders(limit)
 
 	if index == 0 {
@@ -389,8 +414,8 @@ func (p *Pair) setSellHigherOrder(amountSell, amountBuy *big.Int) (limit *Limit)
 	return
 }
 
-func (p *Pair) setSellLowerOrder(amountSell, amountBuy *big.Int) (limit *Limit) {
-	price := calcPriceSell(amountSell, amountBuy)
+func (p *Pair) setSellLowerOrder(wantBuyAmount, wantSellAmount *big.Int) (limit *Limit) {
+	price := calcPriceSell(wantBuyAmount, wantSellAmount)
 	var index int
 	orders := p.SellLowerOrders()
 	for i, limit := range orders {
@@ -402,11 +427,13 @@ func (p *Pair) setSellLowerOrder(amountSell, amountBuy *big.Int) (limit *Limit) 
 	}
 
 	limit = &Limit{
-		isBuy: !p.isSorted(),
-		Sell:  amountSell,
-		Buy:   amountBuy,
-		id:    p.getLastTotalOrderID(),
+		pairKey:  p.pairKey,
+		isBuy:    false,
+		WantBuy:  wantBuyAmount,
+		WantSell: wantSellAmount,
+		id:       p.getLastTotalOrderID(),
 	}
+	limit = limit.sort()
 	defer p.MarkDirtyOrders(limit)
 
 	if index == 0 {
@@ -482,22 +509,22 @@ func (p *Pair) setBuyLowerOrders(orders []*Limit) {
 	return
 }
 
-func (s *Swap) PairAddSellOrder(coin0, coin1 types.CoinID, sellAmount, buyAmount *big.Int, sender types.Address) uint32 {
+func (s *Swap) PairAddSellOrder(coin0, coin1 types.CoinID, wantBuyAmount, wantSellAmount *big.Int, sender types.Address) uint32 {
 	pair := s.Pair(coin0, coin1)
-	order := pair.SetOrder(sellAmount, buyAmount)
+	order := pair.SetOrder(wantBuyAmount, wantSellAmount)
 	order.Owner = sender
-	s.bus.Checker().AddCoin(coin0, sellAmount)
+	s.bus.Checker().AddCoin(coin0, wantBuyAmount)
 
 	return order.id
 }
 
-func (p *Pair) SetOrder(sellAmount, buyAmount *big.Int) (order *Limit) {
-	price := calcPriceSell(sellAmount, buyAmount)
+func (p *Pair) SetOrder(wantBuyAmount, wantSellAmount *big.Int) (order *Limit) {
+	price := calcPriceSell(wantBuyAmount, wantSellAmount)
 	currantPrice := p.Price()
 	if currantPrice.Cmp(price) == -1 {
-		order = p.setSellHigherOrder(sellAmount, buyAmount)
+		order = p.setSellHigherOrder(wantBuyAmount, wantSellAmount)
 	} else {
-		order = p.setSellLowerOrder(sellAmount, buyAmount)
+		order = p.setSellLowerOrder(wantBuyAmount, wantSellAmount)
 	}
 
 	return order
@@ -521,7 +548,11 @@ func (s *Swap) loadBuyHigherOrders(pair *Pair, slice []*Limit, limit int) []*Lim
 			return true
 		}
 
-		order := &Limit{id: binary.BigEndian.Uint32(key[len(key)-4:])}
+		order := &Limit{
+			id:      binary.BigEndian.Uint32(key[len(key)-4:]),
+			pairKey: pair.pairKey.sort(),
+			isBuy:   true,
+		}
 		err := rlp.DecodeBytes(value, order)
 		if err != nil {
 			panic(err)
@@ -543,6 +574,7 @@ func (s *Swap) loadSellLowerOrders(pair *Pair, slice []*Limit, limit int) []*Lim
 
 	if len(slice) > 0 {
 		var l = slice[len(slice)-1]
+		log.Println(l.SortPrice())
 		endKey = pricePath(pair.pairKey, l.SortPrice(), l.id-1, true)
 	} else {
 		endKey = pricePath(pair.pairKey, pair.SortPrice(), math.MaxInt32, true)
@@ -554,7 +586,11 @@ func (s *Swap) loadSellLowerOrders(pair *Pair, slice []*Limit, limit int) []*Lim
 			return true
 		}
 
-		order := &Limit{id: binary.BigEndian.Uint32(key[len(key)-4:])}
+		order := &Limit{
+			id:      binary.BigEndian.Uint32(key[len(key)-4:]),
+			pairKey: pair.pairKey.sort(),
+			isBuy:   false,
+		}
 		err := rlp.DecodeBytes(value, order)
 		if err != nil {
 			panic(err)
@@ -602,7 +638,7 @@ func (p *Pair) OrderSellLowerByIndex(index int) *Limit {
 	}
 
 	order := p.SellLowerOrders()[index]
-	if !p.isSorted() && !order.isBuy {
+	if !p.isSorted() {
 		return order.reverse()
 	}
 
