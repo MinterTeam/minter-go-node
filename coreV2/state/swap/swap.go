@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"log"
 	"math"
 	"math/big"
 	"sort"
@@ -145,10 +146,7 @@ func (s *Swap) Export(state *types.AppState) {
 		if pair == nil {
 			continue
 		}
-		reserve0, reserve1 := pair.Reserves()
-
 		var orders []types.Order
-
 		for _, limit := range append(append(append(pair.sellOrders.higher, pair.buyOrders.higher...), pair.sellOrders.lower...), pair.buyOrders.lower...) {
 			orders = append(orders, types.Order{
 				IsSale:     !limit.isBuy,
@@ -159,6 +157,7 @@ func (s *Swap) Export(state *types.AppState) {
 			})
 		}
 
+		reserve0, reserve1 := pair.Reserves()
 		swap := types.Pool{
 			Coin0:    uint64(key.Coin0),
 			Coin1:    uint64(key.Coin1),
@@ -352,18 +351,30 @@ func (s *Swap) Commit(db *iavl.MutableTree) error {
 	for _, key := range s.getOrderedDirtyOrderPairs() {
 		pair, _ := s.pair(key)
 		for _, limit := range pair.dirtyOrders.orders {
+			oldPath := pricePath(key, limit.SortPrice(), limit.id, !limit.isBuy)
 
-			path := pricePath(key, limit.SortPrice(), limit.id, !limit.isBuy)
-			db.Remove(path) // always delete, the price can change minimally due to rounding off the ratio of the remaining volumes
 			if limit.Sell.Sign() == 0 || limit.Buy.Sign() == 0 {
+				if limit.Sell.Sign() != 0 || limit.Buy.Sign() != 0 {
+					panic(fmt.Sprintf("order %d has one zero volume: %s, %s", limit.id, limit.Sell, limit.Buy))
+				}
+				db.Remove(oldPath)
+				log.Printf("remove old path %q, %s, %s. Sell %v", oldPath, limit.Sell, limit.Buy, !limit.isBuy)
 				continue
 			}
 
-			pairOrderBytes, err := rlp.EncodeToBytes(limit.sort())
+			newPath := pricePath(key, limit.RecalcPrice(), limit.id, !limit.isBuy)
+
+			pairOrderBytes, err := rlp.EncodeToBytes(limit.sort()) // todo: remove sort, list has sorted limits
 			if err != nil {
 				return err
 			}
-			db.Set(pricePath(key, limit.RecalcPrice(), limit.id, !limit.isBuy), pairOrderBytes)
+
+			db.Set(newPath, pairOrderBytes)
+			log.Printf("new path %q, %s, %s. Sell %v", newPath, limit.Sell, limit.Buy, !limit.isBuy)
+			if db.Has(oldPath) && bytes.Compare(oldPath, newPath) != 0 {
+				db.Remove(oldPath) // the price can change minimally due to rounding off the ratio of the remaining volumes
+				log.Printf("remove old path %q, %s, %s. Sell %v", oldPath, limit.Sell, limit.Buy, !limit.isBuy)
+			}
 		}
 		pair.dirtyOrders.orders = make([]*Limit, 0)
 	}

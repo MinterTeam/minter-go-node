@@ -13,6 +13,78 @@ import (
 	db "github.com/tendermint/tm-db"
 )
 
+func TestPair_SellWithOrders_01_ChangeRemainderOrderPrice(t *testing.T) {
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+	swap := New(newBus, immutableTree.GetLastImmutable())
+	_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(10000), big.NewInt(10000))
+
+	pair := swap.Pair(0, 1)
+	sell0 := big.NewInt(15)
+	buy1 := big.NewInt(5)
+	pair.SetOrder(sell0, buy1)
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	price := pair.OrderSellLowerByIndex(0).Price()
+	addAmount0ForPrice := pair.CalculateAddAmount0ForPrice(price)
+	if addAmount0ForPrice.Cmp(big.NewInt(7330)) != 0 {
+		t.Error("a", addAmount0ForPrice)
+	}
+
+	addAmount1 := pair.CalculateBuyForSell(addAmount0ForPrice)
+	if addAmount1.Cmp(big.NewInt(4224)) != 0 {
+		t.Error("z", addAmount0ForPrice)
+	}
+
+	amount1Out, owners := pair.SellWithOrders(big.NewInt(0).Add(addAmount0ForPrice, big.NewInt(11)))
+	if len(owners) != 1 {
+		t.Error("b", owners)
+	}
+
+	if owners[types.Address{}].Cmp(big.NewInt(2)) != 0 {
+		t.Error("c", owners[types.Address{}])
+	}
+
+	if amount1Out.Cmp(big.NewInt(4226)) != 0 {
+		t.Error("d", amount1Out)
+	}
+
+	t.Log(pair.Price())
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("export", func(t *testing.T) {
+		var appState types.AppState
+		swap := New(newBus, immutableTree.GetLastImmutable())
+		swap.Export(&appState)
+
+		jsonBytes, err := amino.NewCodec().MarshalJSONIndent(appState.Pools, "", "	")
+		if err != nil {
+			t.Error(err)
+		}
+		if len(appState.Pools) != 1 {
+			t.Fatalf("pools are not all: %s", jsonBytes)
+		}
+		if len(appState.Pools[0].Orders) != 1 {
+			t.Fatalf("orders are empty, %s", jsonBytes)
+		} else {
+			t.Logf("%#v", appState.Pools[0].Orders[0])
+		}
+
+	})
+}
 func TestPair_SellWithOrders_01_FullOrder(t *testing.T) {
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
@@ -52,7 +124,7 @@ func TestPair_SellWithOrders_01_FullOrder(t *testing.T) {
 		if len(owners) == 0 {
 			t.Error("empty owners")
 		}
-		if owners[owner] == nil || owners[owner].Cmp(big.NewInt(1998)) != 0 {
+		if owners[owner] == nil || owners[owner].Cmp(big.NewInt(999)) != 0 {
 			t.Errorf("%#v", owners[owner])
 		}
 		t.Logf("price %v", pair.Price()) // todo: check error of skipping orders
@@ -112,7 +184,7 @@ func TestPair_SellWithOrders_01_PartOrder(t *testing.T) {
 		if len(owners) == 0 {
 			t.Error("empty owners")
 		}
-		if owners[owner] == nil || owners[owner].Cmp(big.NewInt(999)) != 0 {
+		if owners[owner] == nil || owners[owner].Cmp(big.NewInt(499)) != 0 {
 			t.Errorf("%#v", owners[owner])
 		}
 		t.Logf("price %v", pair.Price()) // todo: check error of skipping orders
