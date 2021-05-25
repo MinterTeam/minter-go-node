@@ -587,9 +587,7 @@ func (s *Swap) loadBuyHigherOrders(pair *Pair, slice []*Limit, limit int) []*Lim
 		if err != nil {
 			panic(err)
 		}
-		if !pair.pairKey.isSorted() {
-			// order = order.reverse()
-		}
+
 		slice = append(slice, order)
 		i++
 		return false
@@ -624,9 +622,7 @@ func (s *Swap) loadSellLowerOrders(pair *Pair, slice []*Limit, limit int) []*Lim
 		if err != nil {
 			panic(err)
 		}
-		if !pair.isSorted() {
-			// order = order.reverse()
-		}
+
 		slice = append(slice, order)
 		i++
 		return false

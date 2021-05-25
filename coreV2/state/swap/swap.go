@@ -118,28 +118,20 @@ func (s *Swap) immutableTree() *iavl.ImmutableTree {
 }
 
 func (s *Swap) Export(state *types.AppState) {
-	s.immutableTree().IterateRange([]byte{mainPrefix}, []byte{mainPrefix + 1}, true, func(key []byte, value []byte) bool {
-		switch key[1] {
-		case 'i':
-			if err := rlp.DecodeBytes(value, &s.nextID); err != nil {
-				panic(err)
-			}
+	_, value := s.immutableTree().Get([]byte{mainPrefix, 'i'})
+	if err := rlp.DecodeBytes(value, &s.nextID); err != nil {
+		panic(err)
+	}
+
+	s.immutableTree().IterateRange([]byte{mainPrefix, pairDataPrefix}, []byte{mainPrefix, pairDataPrefix + 1}, true, func(key []byte, value []byte) bool {
+		if len(key) < 10 {
 			return false
-		case pairOrdersPrefix: // todo:
-			return false
-		case pairDataPrefix:
-			coin0 := types.BytesToCoinID(key[2:6])
-			coin1 := types.BytesToCoinID(key[6:10])
-			_ = s.Pair(coin0, coin1)
-			// pair01.OrderSellLowerLast()
-			// pair01.OrderBuyHigherLast()
-			// pair10 := s.Pair(coin0, coin1)
-			// pair10.OrderSellLowerLast()
-			// pair10.OrderBuyHigherLast()
-			return false
-		default:
-			panic("unknown key prefix")
 		}
+		coin0 := types.BytesToCoinID(key[2:6])
+		coin1 := types.BytesToCoinID(key[6:10])
+		_ = s.Pair(coin0, coin1)
+
+		return false
 	})
 
 	for key, pair := range s.pairs {
