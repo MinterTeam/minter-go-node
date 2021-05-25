@@ -100,11 +100,14 @@ func (p *Pair) sortOrderList(i int, limit *Limit) {
 	case cmp:
 		p.unsetOrderSellLowerByIndex(i)
 	default:
-		// todo: resort
-		// orders := p.SellLowerOrders()
-		// for _, order := range orders {
-		// 	limit.SortPrice().Cmp(limit.OldSortPrice())
-		// }
+		p.unsetOrderSellLowerByIndex(i)
+
+		loadedLen := len(p.SellLowerOrders())
+		newIndex := p.setSellLowerOrder(limit)
+		if newIndex == loadedLen {
+			// FIXME: delete because we don't load orders from disk, but we can loss this order in current block
+			p.unsetOrderSellLowerByIndex(newIndex)
+		}
 	}
 }
 
@@ -384,15 +387,14 @@ func (p *Pair) MarkDirtyOrders(order *Limit) {
 	return
 }
 
-func (p *Pair) setSellHigherOrder(new *Limit) {
+func (p *Pair) setSellHigherOrder(new *Limit) (index int) {
 	cmp := -1
 	if !p.isSorted() {
 		cmp = 1
 	}
-	var index int
 	orders := p.sellHigherOrders()
 	for i, limit := range orders {
-		if new.Price().Cmp(limit.Price()) != cmp {
+		if new.SortPrice().Cmp(limit.SortPrice()) != cmp {
 			index = i + 1
 			continue
 		}
@@ -413,16 +415,15 @@ func (p *Pair) setSellHigherOrder(new *Limit) {
 	return
 }
 
-func (p *Pair) setSellLowerOrder(new *Limit) {
+func (p *Pair) setSellLowerOrder(new *Limit) (index int) {
 	cmp := -1
 	if p.isSorted() {
 		cmp = 1
 	}
 
-	var index int
 	orders := p.SellLowerOrders()
 	for i, limit := range orders {
-		if new.Price().Cmp(limit.Price()) != cmp {
+		if new.SortPrice().Cmp(limit.SortPrice()) != cmp {
 			index = i + 1
 			continue
 		}
