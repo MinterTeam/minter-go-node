@@ -75,6 +75,9 @@ func TestPair_OrderID(t *testing.T) {
 		if len(appState.Pools) != 1 {
 			t.Fatalf("pools are not all: %s", jsonBytes)
 		}
+		if appState.Pools[0].NextOrderID != 5 {
+			t.Errorf("next order ID want %d, got %d", 5, appState.Pools[0].NextOrderID)
+		}
 		ids := map[uint32]struct{}{
 			1: {},
 			2: {},

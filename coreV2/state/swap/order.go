@@ -24,7 +24,7 @@ func (s *Swap) PairSellWithOrders(coin0, coin1 types.CoinID, amount0In, minAmoun
 		s.bus.Accounts().AddBalance(address, coin0, b)
 	}
 	s.bus.Checker().AddCoin(coin0, amount0In)
-	s.bus.Checker().AddCoin(coin1, amount1Out)
+	s.bus.Checker().AddCoin(coin1, big.NewInt(0).Neg(amount1Out))
 	return amount1Out
 }
 
@@ -72,15 +72,16 @@ func (p *Pair) updateSellLowerOrder(i int, amount0, amount1 *big.Int) {
 	limit := p.OrderSellLowerByIndex(i)
 
 	l := limit.sort()
-	defer p.checkZero(i, limit, l.ReCalcOldSortPrice()) // save before change, need for update on disk
+	l.ReCalcOldSortPrice()
 
 	limit.WantBuy.Sub(limit.WantBuy, amount0)
 	limit.WantSell.Sub(limit.WantSell, amount1)
 
+	p.sortOrderList(i, l) // save before change, need for update on disk
 	p.MarkDirtyOrders(l)
 }
 
-func (p *Pair) checkZero(i int, limit *Limit, price *big.Float) {
+func (p *Pair) sortOrderList(i int, limit *Limit) {
 	if limit.WantBuy.Sign() == 0 || limit.WantSell.Sign() == 0 {
 		if !(limit.WantBuy.Sign() == 0 && limit.WantSell.Sign() == 0) {
 			panic(fmt.Sprintf("zero value of %#v", limit))
@@ -89,8 +90,8 @@ func (p *Pair) checkZero(i int, limit *Limit, price *big.Float) {
 		return
 	}
 
-	if limit.SortPrice().Cmp(price) != 0 {
-		if p.OrderSellLowerByIndex(len(p.SellLowerOrders())-1).SortPrice().Cmp(price) == 1 {
+	if limit.SortPrice().Cmp(limit.OldSortPrice()) != 0 {
+		if p.OrderSellLowerByIndex(len(p.SellLowerOrders())-1).SortPrice().Cmp(limit.SortPrice()) == 1 {
 			p.unsetOrderSellLowerByIndex(i)
 		} else {
 			// todo: resort order list

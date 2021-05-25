@@ -122,11 +122,6 @@ func (s *Swap) immutableTree() *iavl.ImmutableTree {
 }
 
 func (s *Swap) Export(state *types.AppState) {
-	_, value := s.immutableTree().Get([]byte{mainPrefix, totalPairIDPrefix})
-	if err := rlp.DecodeBytes(value, &s.nextID); err != nil {
-		panic(err)
-	}
-
 	s.immutableTree().IterateRange([]byte{mainPrefix, pairDataPrefix}, []byte{mainPrefix, pairDataPrefix + 1}, true, func(key []byte, value []byte) bool {
 		if len(key) < 10 {
 			return false
@@ -157,12 +152,13 @@ func (s *Swap) Export(state *types.AppState) {
 
 		reserve0, reserve1 := pair.Reserves()
 		swap := types.Pool{
-			Coin0:    uint64(key.Coin0),
-			Coin1:    uint64(key.Coin1),
-			Reserve0: reserve0.String(),
-			Reserve1: reserve1.String(),
-			ID:       uint64(pair.GetID()),
-			Orders:   orders,
+			Coin0:       uint64(key.Coin0),
+			Coin1:       uint64(key.Coin1),
+			Reserve0:    reserve0.String(),
+			Reserve1:    reserve1.String(),
+			ID:          uint64(pair.GetID()),
+			Orders:      orders,
+			NextOrderID: uint64(s.loadNextOrdersID()),
 		}
 
 		state.Pools = append(state.Pools, swap)
