@@ -73,6 +73,10 @@ type Swap struct {
 	nextID      uint32
 	dirtyNextID bool
 
+	muNextOrdersID    sync.Mutex // todo
+	nextOrderID       uint32
+	dirtyNextOrdersID bool
+
 	bus *bus.Bus
 	db  atomic.Value
 }
@@ -118,7 +122,7 @@ func (s *Swap) immutableTree() *iavl.ImmutableTree {
 }
 
 func (s *Swap) Export(state *types.AppState) {
-	_, value := s.immutableTree().Get([]byte{mainPrefix, 'i'})
+	_, value := s.immutableTree().Get([]byte{mainPrefix, totalPairIDPrefix})
 	if err := rlp.DecodeBytes(value, &s.nextID); err != nil {
 		panic(err)
 	}
@@ -184,10 +188,16 @@ func (s *Swap) Import(state *types.AppState) {
 		s.bus.Checker().AddCoin(coin1, reserve1)
 		pair.markDirty()
 		s.incID()
+		// todo: set orders and total count
 	}
 }
 
 const mainPrefix = byte('s')
+
+const pairDataPrefix = 'd'
+const pairOrdersPrefix = 'o'
+const totalPairIDPrefix = 'i'
+const totalOrdersIDPrefix = 'n'
 
 type pairData struct {
 	*sync.RWMutex
@@ -267,9 +277,6 @@ func (p *Pair) SortPrice() *big.Float {
 	return p.pairData.reverse().Price()
 }
 
-const pairDataPrefix = 'd'
-const pairOrdersPrefix = 'o'
-
 func (pk pairKey) bytes() []byte {
 	key := pk.sort()
 	return append(key.Coin0.Bytes(), key.Coin1.Bytes()...)
@@ -327,9 +334,20 @@ func (s *Swap) Commit(db *iavl.MutableTree) error {
 		if err != nil {
 			return err
 		}
-		db.Set([]byte{mainPrefix, 'i'}, b)
+		db.Set([]byte{mainPrefix, totalPairIDPrefix}, b)
 	}
 	s.muNextID.Unlock()
+
+	s.muNextOrdersID.Lock()
+	if s.dirtyNextOrdersID {
+		s.dirtyNextOrdersID = false
+		b, err := rlp.EncodeToBytes(s.nextOrderID)
+		if err != nil {
+			return err
+		}
+		db.Set([]byte{mainPrefix, totalOrdersIDPrefix}, b)
+	}
+	s.muNextOrdersID.Unlock()
 
 	s.muPairs.RLock()
 	defer s.muPairs.RUnlock()
@@ -597,7 +615,6 @@ func (s *Swap) markDirtyOrders(key pairKey) func() {
 	}
 }
 
-var todoOrderID uint32 = 0 // todo
 func (s *Swap) addPair(key pairKey) *Pair {
 	if !key.isSorted() {
 		key = key.reverse()
@@ -611,16 +628,13 @@ func (s *Swap) addPair(key pairKey) *Pair {
 			ID:        new(uint32),
 			markDirty: s.markDirty(key),
 		},
-		sellOrders:       &limits{},
-		buyOrders:        &limits{},
-		dirtyOrders:      &dirtyOrders{},
-		markDirtyOrders:  s.markDirtyOrders(key),
-		loadHigherOrders: s.loadBuyHigherOrders,
-		loadLowerOrders:  s.loadSellLowerOrders,
-		getLastTotalOrderID: func() uint32 {
-			todoOrderID++
-			return todoOrderID // todo
-		},
+		sellOrders:          &limits{},
+		buyOrders:           &limits{},
+		dirtyOrders:         &dirtyOrders{},
+		markDirtyOrders:     s.markDirtyOrders(key),
+		loadHigherOrders:    s.loadBuyHigherOrders,
+		loadLowerOrders:     s.loadSellLowerOrders,
+		getLastTotalOrderID: s.incOrdersID,
 	}
 
 	s.pairs[key] = pair
@@ -642,7 +656,32 @@ func (s *Swap) loadNextID() uint32 {
 	if s.nextID != 0 {
 		return s.nextID
 	}
-	_, value := s.immutableTree().Get([]byte{mainPrefix, 'i'})
+	_, value := s.immutableTree().Get([]byte{mainPrefix, totalPairIDPrefix})
+	if len(value) == 0 {
+		return 1
+	}
+	var id uint32
+	if err := rlp.DecodeBytes(value, &id); err != nil {
+		panic(err)
+	}
+	return id
+}
+
+func (s *Swap) incOrdersID() uint32 {
+	s.muNextOrdersID.Lock()
+	defer s.muNextOrdersID.Unlock()
+
+	id := s.loadNextOrdersID()
+	s.nextOrderID = id + 1
+	s.dirtyNextOrdersID = true
+	return id
+}
+
+func (s *Swap) loadNextOrdersID() uint32 {
+	if s.nextOrderID != 0 {
+		return s.nextOrderID
+	}
+	_, value := s.immutableTree().Get([]byte{mainPrefix, totalOrdersIDPrefix})
 	if len(value) == 0 {
 		return 1
 	}

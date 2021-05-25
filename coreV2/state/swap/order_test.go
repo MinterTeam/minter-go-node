@@ -13,6 +13,82 @@ import (
 	db "github.com/tendermint/tm-db"
 )
 
+func TestPair_OrderID(t *testing.T) {
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+	{
+		swap := New(newBus, immutableTree.GetLastImmutable())
+		_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(10000), big.NewInt(10000))
+
+		pair := swap.Pair(0, 1)
+		id := pair.SetOrder(big.NewInt(1), big.NewInt(1)).id
+		if id != 1 {
+			t.Errorf("next orders ID want %d, got %d", 1, id)
+		}
+		_, _, err = immutableTree.Commit(swap)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	{
+		swap := New(newBus, immutableTree.GetLastImmutable())
+		_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(10000), big.NewInt(10000))
+
+		pair := swap.Pair(0, 1)
+		if id := pair.SetOrder(big.NewInt(2), big.NewInt(1)).id; id != 2 {
+			t.Errorf("next orders ID want %d, got %d", 2, id)
+		}
+		if id := pair.SetOrder(big.NewInt(3), big.NewInt(1)).id; id != 3 {
+			t.Errorf("next orders ID want %d, got %d", 3, id)
+		}
+		_, _, err = immutableTree.Commit(swap)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	{
+		swap := New(newBus, immutableTree.GetLastImmutable())
+		pair := swap.Pair(0, 1)
+		if id := pair.SetOrder(big.NewInt(4), big.NewInt(1)).id; id != 4 {
+			t.Errorf("next orders ID want %d, got %d", 4, id)
+		}
+		_, _, err = immutableTree.Commit(swap)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	t.Run("export", func(t *testing.T) {
+		var appState types.AppState
+		swap := New(newBus, immutableTree.GetLastImmutable())
+		swap.Export(&appState)
+
+		jsonBytes, err := amino.NewCodec().MarshalJSONIndent(appState.Pools, "", "	")
+		if err != nil {
+			t.Error(err)
+		}
+		if len(appState.Pools) != 1 {
+			t.Fatalf("pools are not all: %s", jsonBytes)
+		}
+		ids := map[uint32]struct{}{
+			1: {},
+			2: {},
+			3: {},
+			4: {},
+		}
+		for _, order := range appState.Pools[0].Orders {
+			if _, ok := ids[uint32(order.ID)]; !ok {
+				t.Errorf("not found id %d", order.ID)
+			}
+			delete(ids, uint32(order.ID))
+		}
+	})
+}
 func TestPair_SellWithOrders_01_ChangeRemainderOrderPrice(t *testing.T) {
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
