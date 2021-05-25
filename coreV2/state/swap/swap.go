@@ -147,13 +147,14 @@ func (s *Swap) Export(state *types.AppState) {
 			continue
 		}
 		var orders []types.Order
+		// todo: refactor
 		for _, limit := range append(append(append(pair.sellOrders.higher, pair.buyOrders.higher...), pair.sellOrders.lower...), pair.buyOrders.lower...) {
 			orders = append(orders, types.Order{
-				IsSale:     !limit.isBuy,
-				SellVolume: limit.WantBuy.String(),
-				BuyVolume:  limit.WantSell.String(),
-				ID:         uint64(limit.id),
-				Owner:      limit.Owner,
+				IsSale:         !limit.isBuy,
+				WantBuyVolume:  limit.WantBuy.String(),
+				WantSellVolume: limit.WantSell.String(),
+				ID:             uint64(limit.id),
+				Owner:          limit.Owner,
 			})
 		}
 
@@ -317,7 +318,6 @@ func pricePath(key pairKey, price *big.Float, id uint32, isSale bool) []byte {
 	var saleByte byte = 0
 	if isSale {
 		saleByte = 1
-		log.Println(saleByte)
 	}
 	return append(append(append(append([]byte{mainPrefix}, key.pathOrders()...), saleByte), pricePath...), byteID...)
 }
@@ -366,7 +366,7 @@ func (s *Swap) Commit(db *iavl.MutableTree) error {
 
 			newPath := pricePath(key, limit.ReCalcSortPrice(), limit.id, !limit.isBuy)
 
-			pairOrderBytes, err := rlp.EncodeToBytes(limit) // todo: remove sort, list has sorted limits
+			pairOrderBytes, err := rlp.EncodeToBytes(limit)
 			if err != nil {
 				return err
 			}

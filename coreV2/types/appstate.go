@@ -3,8 +3,9 @@ package types
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/helpers"
 	"math/big"
+
+	"github.com/MinterTeam/minter-go-node/helpers"
 )
 
 type AppState struct {
@@ -168,10 +169,10 @@ func (s *AppState) Verify() error {
 			}
 			for _, order := range swap.Orders {
 				if swap.Coin0 == coin.ID && order.IsSale {
-					volume.Add(volume, helpers.StringToBigInt(order.SellVolume))
+					volume.Add(volume, helpers.StringToBigInt(order.WantSellVolume))
 				}
 				if swap.Coin1 == coin.ID && !order.IsSale {
-					volume.Add(volume, helpers.StringToBigInt(order.SellVolume))
+					volume.Add(volume, helpers.StringToBigInt(order.WantSellVolume))
 				}
 			}
 
@@ -311,11 +312,11 @@ type Waitlist struct {
 	Value       string  `json:"value"`
 }
 type Order struct {
-	IsSale     bool
-	SellVolume string  `json:"sell_volume"`
-	BuyVolume  string  `json:"buy_volume"`
-	ID         uint64  `json:"id"`
-	Owner      Address `json:"owner"`
+	IsSale         bool
+	WantBuyVolume  string  `json:"sell_volume"`
+	WantSellVolume string  `json:"buy_volume"`
+	ID             uint64  `json:"id"`
+	Owner          Address `json:"owner"`
 }
 type Pool struct {
 	Coin0    uint64  `json:"coin0"`

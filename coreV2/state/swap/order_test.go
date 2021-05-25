@@ -34,6 +34,7 @@ func TestPair_SellWithOrders_01_ChangeRemainderOrderPrice(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	pair = swap.Pair(0, 1)
 	price := pair.OrderSellLowerByIndex(0).Price()
 	addAmount0ForPrice := pair.CalculateAddAmount0ForPrice(price)
 	if addAmount0ForPrice.Cmp(big.NewInt(7330)) != 0 {
@@ -209,11 +210,11 @@ func TestPair_SellWithOrders_01_PartOrder(t *testing.T) {
 				t.Errorf("orders are empty, %s", jsonBytes)
 			}
 			t.Logf("%s", jsonBytes)
-			if appState.Pools[0].Orders[0].SellVolume != "1000" {
-				t.Errorf("order sell part, %s", appState.Pools[0].Orders[0].SellVolume)
+			if appState.Pools[0].Orders[0].WantBuyVolume != "1000" {
+				t.Errorf("order sell part, %s", appState.Pools[0].Orders[0].WantBuyVolume)
 			}
-			if appState.Pools[0].Orders[0].BuyVolume != "500" {
-				t.Errorf("order buy part, %s", appState.Pools[0].Orders[0].BuyVolume)
+			if appState.Pools[0].Orders[0].WantSellVolume != "500" {
+				t.Errorf("order buy part, %s", appState.Pools[0].Orders[0].WantSellVolume)
 			}
 		})
 	})

@@ -3,7 +3,6 @@ package swap
 import (
 	"encoding/binary"
 	"fmt"
-	"log"
 	"math"
 	"math/big"
 
@@ -57,11 +56,10 @@ func (p *Pair) SellWithOrders(amount0In *big.Int) (amount1Out *big.Int, owners m
 
 	amount0orders.Sub(amount0orders, commission0orders)
 	amount1orders.Sub(amount1orders, commission1orders)
-	fmt.Println(amount0orders, amount1orders)
+
 	amount0 := big.NewInt(0).Sub(amount0In, amount0orders)
 	amount1 := big.NewInt(0).Sub(amount1Out, amount1orders)
 
-	fmt.Println(amount0, amount1)
 	p.Swap(amount0, big.NewInt(0), big.NewInt(0), amount1)
 
 	return amount1Out, owners
@@ -79,7 +77,6 @@ func (p *Pair) updateOrder(i int, amount0, amount1 *big.Int) {
 	if limit.SortPrice().Cmp(l.price) != 0 {
 		// todo: resort order list
 	}
-	fmt.Println("y", l.WantBuy, l.WantSell)
 	p.MarkDirtyOrders(l)
 }
 
@@ -244,7 +241,6 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amount0In *bi
 
 		comB := calcCommission(limit.WantSell)
 
-		fmt.Println(comB, limit.WantSell, amount1)
 		rest := big.NewInt(0).Sub(amount1, big.NewInt(0).Sub(limit.WantSell, comB))
 		if rest.Sign() != 1 {
 			amount0, _ := big.NewFloat(0).Quo(big.NewFloat(0).SetInt(amount1), price).Int(nil)
@@ -330,11 +326,6 @@ func (l *Limit) SortPrice() *big.Float {
 
 func (l *Limit) isSell() bool {
 	return !l.isBuy
-}
-
-func (l *Limit) RecalcPrice() *big.Float {
-	l.price = nil
-	return l.Price()
 }
 
 func (l *Limit) ReCalcSortPrice() *big.Float {
@@ -574,7 +565,6 @@ func (s *Swap) loadSellLowerOrders(pair *Pair, slice []*Limit, limit int) []*Lim
 
 	if len(slice) > 0 {
 		var l = slice[len(slice)-1]
-		log.Println(l.SortPrice())
 		endKey = pricePath(pair.pairKey, l.SortPrice(), l.id-1, true)
 	} else {
 		endKey = pricePath(pair.pairKey, pair.SortPrice(), math.MaxInt32, true)

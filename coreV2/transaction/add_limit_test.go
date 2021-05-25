@@ -73,10 +73,10 @@ func TestAddLimit_Run(t *testing.T) {
 	}
 	{
 		data := AddLimit{
-			CoinToSell: coin0,
-			SellVolume: helpers.BipToPip(big.NewInt(15)),
-			CoinToBuy:  coin1,
-			BuyVolume:  helpers.BipToPip(big.NewInt(5)),
+			CoinToSell:     coin0,
+			WantSellVolume: helpers.BipToPip(big.NewInt(5)),
+			CoinToBuy:      coin1,
+			WantBuyVolume:  helpers.BipToPip(big.NewInt(15)),
 		}
 
 		encodedData, err := rlp.EncodeToBytes(data)

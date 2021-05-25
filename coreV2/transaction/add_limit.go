@@ -2,20 +2,21 @@ package transaction
 
 import (
 	"fmt"
+	"math/big"
+	"strconv"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/commission"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	abcTypes "github.com/tendermint/tendermint/abci/types"
-	"math/big"
-	"strconv"
 )
 
 type AddLimit struct {
-	CoinToSell types.CoinID
-	SellVolume *big.Int
-	CoinToBuy  types.CoinID
-	BuyVolume  *big.Int
+	CoinToSell     types.CoinID
+	WantSellVolume *big.Int
+	CoinToBuy      types.CoinID
+	WantBuyVolume  *big.Int
 }
 
 func (data AddLimit) Gas() int64 {
@@ -104,8 +105,8 @@ func (data AddLimit) Run(tx *Transaction, context state.Interface, rewardPool *b
 			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
 		}
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
-		deliverState.Accounts.SubBalance(sender, data.CoinToSell, data.SellVolume)
-		orderID := deliverState.Swap.PairAddSellOrder(data.CoinToSell, data.CoinToBuy, data.SellVolume, data.BuyVolume, sender)
+		deliverState.Accounts.SubBalance(sender, data.CoinToSell, data.WantSellVolume)
+		orderID := deliverState.Swap.PairAddSellOrder(data.CoinToSell, data.CoinToBuy, data.WantBuyVolume, data.WantSellVolume, sender)
 
 		tags = []abcTypes.EventAttribute{
 			{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
