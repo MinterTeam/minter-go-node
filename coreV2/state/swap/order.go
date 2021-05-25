@@ -8,6 +8,7 @@ import (
 
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/rlp"
+	"github.com/cosmos/iavl"
 )
 
 const commissionOrder = 2
@@ -74,8 +75,17 @@ func (p *Pair) updateOrder(i int, amount0, amount1 *big.Int) {
 	limit.WantBuy.Sub(limit.WantBuy, amount0)
 	limit.WantSell.Sub(limit.WantSell, amount1)
 
-	if limit.SortPrice().Cmp(l.price) != 0 {
-		// todo: resort order list
+	{ // todo: move method
+		if limit.WantBuy.Sign() == 0 && limit.WantSell.Sign() == 0 {
+			if !(limit.WantBuy.Sign() == 0 || limit.WantSell.Sign() == 0) {
+				panic(fmt.Sprintf("zero value of %#v", limit))
+			}
+			// todo: remove from list order
+
+		}
+		if limit.SortPrice().Cmp(l.price) != 0 {
+			// todo: resort order list
+		}
 	}
 	p.MarkDirtyOrders(l)
 }
@@ -519,6 +529,35 @@ func (p *Pair) SetOrder(wantBuyAmount, wantSellAmount *big.Int) (order *Limit) {
 	}
 
 	return order
+}
+
+func (p *Pair) loadAllOrders(immutableTree *iavl.ImmutableTree) (orders []*Limit) {
+	const countFirstBytes = 10
+
+	startKey := append(append([]byte{mainPrefix}, p.pathOrders()...), byte(0), byte(0))
+	endKey := append(append([]byte{mainPrefix}, p.pathOrders()...), byte(1), byte(255)) // todo: mb more high bytes
+
+	immutableTree.IterateRange(startKey, endKey, true, func(key []byte, value []byte) bool {
+		var isSell = true
+		if key[countFirstBytes : countFirstBytes+1][0] == 0 {
+			isSell = false
+		}
+		order := &Limit{
+			id:      binary.BigEndian.Uint32(key[len(key)-4:]),
+			pairKey: p.pairKey.sort(),
+			isBuy:   !isSell,
+		}
+		err := rlp.DecodeBytes(value, order)
+		if err != nil {
+			panic(err)
+		}
+
+		orders = append(orders, order)
+
+		return false
+	})
+
+	return orders
 }
 
 // loadBuyHigherOrders loads only needed orders for pair, not all

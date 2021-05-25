@@ -125,17 +125,17 @@ func (s *Swap) Export(state *types.AppState) {
 				panic(err)
 			}
 			return false
-		case pairOrdersPrefix:
+		case pairOrdersPrefix: // todo:
 			return false
 		case pairDataPrefix:
 			coin0 := types.BytesToCoinID(key[2:6])
 			coin1 := types.BytesToCoinID(key[6:10])
-			pair01 := s.Pair(coin0, coin1)
-			pair01.OrderSellLowerLast()
-			pair01.OrderBuyHigherLast()
-			pair10 := s.Pair(coin0, coin1)
-			pair10.OrderSellLowerLast()
-			pair10.OrderBuyHigherLast()
+			_ = s.Pair(coin0, coin1)
+			// pair01.OrderSellLowerLast()
+			// pair01.OrderBuyHigherLast()
+			// pair10 := s.Pair(coin0, coin1)
+			// pair10.OrderSellLowerLast()
+			// pair10.OrderBuyHigherLast()
 			return false
 		default:
 			panic("unknown key prefix")
@@ -147,8 +147,9 @@ func (s *Swap) Export(state *types.AppState) {
 			continue
 		}
 		var orders []types.Order
-		// todo: refactor
-		for _, limit := range append(append(append(pair.sellOrders.higher, pair.buyOrders.higher...), pair.sellOrders.lower...), pair.buyOrders.lower...) {
+
+		allOrders := pair.loadAllOrders(s.immutableTree())
+		for _, limit := range allOrders {
 			orders = append(orders, types.Order{
 				IsSale:         !limit.isBuy,
 				WantBuyVolume:  limit.WantBuy.String(),
@@ -304,12 +305,13 @@ func pricePath(key pairKey, price *big.Float, id uint32, isSale bool) []byte {
 		if err != nil {
 			panic(err)
 		}
-
+		log.Println("c p", split[1])
 		b := byte(bString + math.MaxInt8)
 		pricePath = append(pricePath, b)
 	}
 
 	sprintf := fmt.Sprintf("%v", price.Text('f', 18))
+	log.Println("c m", sprintf)
 	pricePath = append(pricePath, []byte(sprintf)...)
 
 	byteID := make([]byte, 4)
@@ -318,6 +320,7 @@ func pricePath(key pairKey, price *big.Float, id uint32, isSale bool) []byte {
 	var saleByte byte = 0
 	if isSale {
 		saleByte = 1
+		log.Println("c s", saleByte)
 	}
 	return append(append(append(append([]byte{mainPrefix}, key.pathOrders()...), saleByte), pricePath...), byteID...)
 }
