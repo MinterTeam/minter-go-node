@@ -90,12 +90,21 @@ func (p *Pair) sortOrderList(i int, limit *Limit) {
 		return
 	}
 
-	if limit.SortPrice().Cmp(limit.OldSortPrice()) != 0 {
-		if p.OrderSellLowerByIndex(len(p.SellLowerOrders())-1).SortPrice().Cmp(limit.SortPrice()) == 1 {
-			p.unsetOrderSellLowerByIndex(i)
-		} else {
-			// todo: resort order list
-		}
+	cmp := 1
+	if !p.isSorted() {
+		cmp = -1
+	}
+	switch limit.SortPrice().Cmp(limit.OldSortPrice()) {
+	case 0:
+		return
+	case cmp:
+		p.unsetOrderSellLowerByIndex(i)
+	default:
+		// todo: resort
+		// orders := p.SellLowerOrders()
+		// for _, order := range orders {
+		// 	limit.SortPrice().Cmp(limit.OldSortPrice())
+		// }
 	}
 }
 
@@ -515,6 +524,7 @@ func (p *Pair) SetOrder(wantBuyAmount, wantSellAmount *big.Int) (order *Limit) {
 	defer p.MarkDirtyOrders(limit)
 
 	if p.Price().Cmp(price) == -1 {
+		// todo: do not allow
 		p.setSellHigherOrder(limit)
 	} else {
 		p.setSellLowerOrder(limit)

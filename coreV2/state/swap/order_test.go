@@ -105,9 +105,8 @@ func TestPair_SellWithOrders_01_ChangeRemainderOrderPrice(t *testing.T) {
 	_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(10000), big.NewInt(10000))
 
 	pair := swap.Pair(0, 1)
-	sell0 := big.NewInt(15)
-	buy1 := big.NewInt(5)
-	pair.SetOrder(sell0, buy1)
+	pair.SetOrder(big.NewInt(15), big.NewInt(5))
+	pair.SetOrder(big.NewInt(20), big.NewInt(5))
 
 	_, _, err = immutableTree.Commit(swap)
 	if err != nil {
@@ -139,6 +138,12 @@ func TestPair_SellWithOrders_01_ChangeRemainderOrderPrice(t *testing.T) {
 		t.Error("d", amount1Out)
 	}
 
+	t.Run("resort dirty", func(t *testing.T) {
+		if pair.OrderSellLowerByIndex(0).id != 2 {
+			t.Errorf("want %d, got %d", 2, pair.OrderSellLowerByIndex(0).id)
+		}
+	})
+
 	t.Log(pair.Price())
 
 	_, _, err = immutableTree.Commit(swap)
@@ -158,7 +163,84 @@ func TestPair_SellWithOrders_01_ChangeRemainderOrderPrice(t *testing.T) {
 		if len(appState.Pools) != 1 {
 			t.Fatalf("pools are not all: %s", jsonBytes)
 		}
-		if len(appState.Pools[0].Orders) != 1 {
+		if len(appState.Pools[0].Orders) != 2 {
+			t.Fatalf("orders are empty, %s", jsonBytes)
+		} else {
+			t.Logf("%#v", appState.Pools[0].Orders[0])
+		}
+	})
+}
+
+func TestPair_SellWithOrders_10_ChangeRemainderOrderPrice(t *testing.T) {
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+	swap := New(newBus, immutableTree.GetLastImmutable())
+	_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(10000), big.NewInt(10000))
+
+	pair := swap.Pair(1, 0)
+	pair.SetOrder(big.NewInt(15), big.NewInt(5))
+	pair.SetOrder(big.NewInt(20), big.NewInt(5))
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pair = swap.Pair(1, 0)
+	price := pair.OrderSellLowerByIndex(0).Price()
+	addAmount0ForPrice := pair.CalculateAddAmount0ForPrice(price)
+	if addAmount0ForPrice.Cmp(big.NewInt(7330)) != 0 {
+		t.Error("a", addAmount0ForPrice)
+	}
+
+	addAmount1 := pair.CalculateBuyForSell(addAmount0ForPrice)
+	if addAmount1.Cmp(big.NewInt(4224)) != 0 {
+		t.Error("z", addAmount0ForPrice)
+	}
+
+	amount1Out, owners := pair.SellWithOrders(big.NewInt(0).Add(addAmount0ForPrice, big.NewInt(11)))
+	if len(owners) != 1 {
+		t.Error("b", owners)
+	}
+
+	if owners[types.Address{}].Cmp(big.NewInt(2)) != 0 {
+		t.Error("c", owners[types.Address{}])
+	}
+
+	if amount1Out.Cmp(big.NewInt(4226)) != 0 {
+		t.Error("d", amount1Out)
+	}
+
+	t.Run("resort dirty", func(t *testing.T) {
+		if pair.OrderSellLowerByIndex(0).id != 2 {
+			t.Errorf("want %d, got %d", 2, pair.OrderSellLowerByIndex(0).id)
+		}
+	})
+	t.Log(pair.Price())
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("export", func(t *testing.T) {
+		var appState types.AppState
+		swap := New(newBus, immutableTree.GetLastImmutable())
+		swap.Export(&appState)
+
+		jsonBytes, err := amino.NewCodec().MarshalJSONIndent(appState.Pools, "", "	")
+		if err != nil {
+			t.Error(err)
+		}
+		if len(appState.Pools) != 1 {
+			t.Fatalf("pools are not all: %s", jsonBytes)
+		}
+		if len(appState.Pools[0].Orders) != 2 {
 			t.Fatalf("orders are empty, %s", jsonBytes)
 		} else {
 			t.Logf("%#v", appState.Pools[0].Orders[0])
@@ -166,6 +248,7 @@ func TestPair_SellWithOrders_01_ChangeRemainderOrderPrice(t *testing.T) {
 
 	})
 }
+
 func TestPair_SellWithOrders_01_FullOrder(t *testing.T) {
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
