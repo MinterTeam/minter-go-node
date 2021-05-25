@@ -301,13 +301,13 @@ func pricePath(key pairKey, price *big.Float, id uint32, isSale bool) []byte {
 		if err != nil {
 			panic(err)
 		}
-		log.Println("c p", split[1])
+		// log.Println("c p", split[1])
 		b := byte(bString + math.MaxInt8)
 		pricePath = append(pricePath, b)
 	}
 
 	sprintf := fmt.Sprintf("%v", price.Text('f', 18))
-	log.Println("c m", sprintf)
+	// log.Println("c m", sprintf)
 	pricePath = append(pricePath, []byte(sprintf)...)
 
 	byteID := make([]byte, 4)
@@ -316,7 +316,7 @@ func pricePath(key pairKey, price *big.Float, id uint32, isSale bool) []byte {
 	var saleByte byte = 0
 	if isSale {
 		saleByte = 1
-		log.Println("c s", saleByte)
+		// log.Println("c s", saleByte)
 	}
 	return append(append(append(append([]byte{mainPrefix}, key.pathOrders()...), saleByte), pricePath...), byteID...)
 }
@@ -370,7 +370,7 @@ func (s *Swap) Commit(db *iavl.MutableTree) error {
 					panic(fmt.Sprintf("order %d has one zero volume: %s, %s. Sell %v", limit.id, limit.WantBuy, limit.WantSell, !limit.isBuy))
 				}
 				db.Remove(oldPath)
-				log.Printf("remove old path %q, %s, %s. Sell %v", oldPath, limit.WantBuy, limit.WantSell, !limit.isBuy)
+				// log.Printf("remove old path %q, %s, %s. Sell %v", oldPath, limit.WantBuy, limit.WantSell, !limit.isBuy)
 				continue
 			}
 
@@ -385,7 +385,7 @@ func (s *Swap) Commit(db *iavl.MutableTree) error {
 			log.Printf("new path %q, %s, %s. Sell %v", newPath, limit.WantBuy, limit.WantSell, !limit.isBuy)
 			if !bytes.Equal(oldPath, newPath) && db.Has(oldPath) {
 				db.Remove(oldPath) // the price can change minimally due to rounding off the ratio of the remaining volumes
-				log.Printf("remove old path %q, %s, %s. Sell %v", oldPath, limit.WantBuy, limit.WantSell, !limit.isBuy)
+				// log.Printf("remove old path %q, %s, %s. Sell %v", oldPath, limit.WantBuy, limit.WantSell, !limit.isBuy)
 			}
 		}
 		pair.dirtyOrders.orders = make([]*Limit, 0)
