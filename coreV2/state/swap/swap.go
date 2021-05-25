@@ -270,6 +270,7 @@ func (p *Pair) reverse() *Pair {
 func (p *Pair) Price() *big.Float {
 	return p.pairData.Price()
 }
+
 func (p *Pair) SortPrice() *big.Float {
 	if p.isSorted() {
 		return p.pairData.Price()
@@ -366,7 +367,7 @@ func (s *Swap) Commit(db *iavl.MutableTree) error {
 		pair, _ := s.pair(key)
 		for _, limit := range pair.dirtyOrders.orders {
 
-			oldPath := pricePath(key, limit.SortPrice(), limit.id, !limit.isBuy)
+			oldPath := pricePath(key, limit.OldSortPrice(), limit.id, !limit.isBuy)
 
 			if limit.WantBuy.Sign() == 0 || limit.WantSell.Sign() == 0 {
 				if limit.WantBuy.Sign() != 0 || limit.WantSell.Sign() != 0 {
@@ -377,7 +378,7 @@ func (s *Swap) Commit(db *iavl.MutableTree) error {
 				continue
 			}
 
-			newPath := pricePath(key, limit.ReCalcSortPrice(), limit.id, !limit.isBuy)
+			newPath := pricePath(key, limit.ReCalcOldSortPrice(), limit.id, !limit.isBuy)
 
 			pairOrderBytes, err := rlp.EncodeToBytes(limit)
 			if err != nil {

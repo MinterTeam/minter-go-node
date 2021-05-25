@@ -89,6 +89,7 @@ func TestPair_OrderID(t *testing.T) {
 		}
 	})
 }
+
 func TestPair_SellWithOrders_01_ChangeRemainderOrderPrice(t *testing.T) {
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
@@ -204,6 +205,12 @@ func TestPair_SellWithOrders_01_FullOrder(t *testing.T) {
 		if owners[owner] == nil || owners[owner].Cmp(big.NewInt(999)) != 0 {
 			t.Errorf("%#v", owners[owner])
 		}
+		t.Run("unset", func(t *testing.T) {
+			if len(pair.SellLowerOrders()) != 0 {
+				t.Errorf("slice len %d, want empty", len(pair.SellLowerOrders()))
+			}
+		})
+
 		t.Logf("price %v", pair.Price()) // todo: check error of skipping orders
 
 		_, _, err = immutableTree.Commit(swap)
