@@ -104,7 +104,7 @@ func TestPair_updateDirtyOrders_01(t *testing.T) {
 			}
 		})
 
-		t.Run("second", func(t *testing.T) {
+		t.Run("second to fourth", func(t *testing.T) {
 			swap := New(newBus, immutableTree.GetLastImmutable())
 			pair := swap.Pair(0, 1)
 			limit := pair.OrderSellLowerByIndex(1)
@@ -257,7 +257,7 @@ func TestPair_updateDirtyOrders_10(t *testing.T) {
 			}
 		})
 
-		t.Run("second", func(t *testing.T) {
+		t.Run("second to fourth", func(t *testing.T) {
 			swap := New(newBus, immutableTree.GetLastImmutable())
 			pair := swap.Pair(1, 0)
 			limit := pair.OrderSellLowerByIndex(1)
@@ -433,7 +433,6 @@ func TestPair_BuyWithOrders_01_ChangeRemainderOrderPrice(t *testing.T) {
 	}
 
 	t.Run("add amount1", func(t *testing.T) {
-
 		addAmount1ForPrice := pair.CalculateAddAmount1ForPrice(price)
 		if addAmount1ForPrice.Cmp(addAmount1) != 0 {
 			t.Error("a", addAmount1ForPrice)
