@@ -13,7 +13,7 @@ import (
 	db "github.com/tendermint/tm-db"
 )
 
-func TestPair_updateDirtyOrders_01(t *testing.T) {
+func TestPair_SellWithOrders_updateDirtyOrders_01(t *testing.T) {
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
 	if err != nil {
@@ -38,7 +38,7 @@ func TestPair_updateDirtyOrders_01(t *testing.T) {
 		pair.SetOrder(big.NewInt(9000), big.NewInt(500))
 		pair.SetOrder(big.NewInt(10000), big.NewInt(500))
 
-		// _, _, err = immutableTree.Commit(swap) // todo: check without commit
+		// _, _, err = immutableTree.Commit(swap) // FIXME: not work without commit
 		// if err != nil {
 		// 	t.Fatal(err)
 		// }
@@ -54,7 +54,7 @@ func TestPair_updateDirtyOrders_01(t *testing.T) {
 
 		addAmount1 := pair.CalculateBuyForSell(addAmount0ForPrice)
 		if addAmount1.Cmp(big.NewInt(4224)) != 0 {
-			t.Error("z", addAmount0ForPrice)
+			t.Error("z", addAmount1)
 		}
 
 		amount1Out, owners := pair.SellWithOrders(big.NewInt(0).Add(addAmount0ForPrice, big.NewInt(1489)))
@@ -166,7 +166,7 @@ func TestPair_updateDirtyOrders_01(t *testing.T) {
 	})
 }
 
-func TestPair_updateDirtyOrders_10(t *testing.T) {
+func TestPair_SellWithOrders_updateDirtyOrders_10(t *testing.T) {
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
 	if err != nil {
@@ -207,7 +207,7 @@ func TestPair_updateDirtyOrders_10(t *testing.T) {
 
 		addAmount1 := pair.CalculateBuyForSell(addAmount0ForPrice)
 		if addAmount1.Cmp(big.NewInt(4224)) != 0 {
-			t.Error("z", addAmount0ForPrice)
+			t.Error("z", addAmount1)
 		}
 
 		amount1Out, owners := pair.SellWithOrders(big.NewInt(0).Add(addAmount0ForPrice, big.NewInt(1489)))
@@ -276,6 +276,330 @@ func TestPair_updateDirtyOrders_10(t *testing.T) {
 			}
 
 			if amount1Out.Cmp(big.NewInt(3384)) != 0 {
+				t.Error("d", amount1Out)
+			}
+
+			t.Run("resort dirty", func(t *testing.T) {
+				t.Log(pair.dirtyOrders.orders[2].Price())
+				t.Log(pair.dirtyOrders.orders[3].Price())
+				t.Log(pair.dirtyOrders.orders[4].Price())
+				next := pair.OrderSellLowerByIndex(0)
+				if next.id != 5 {
+					t.Fatalf("want %d, got %d", 5, pair.OrderSellLowerByIndex(0).id)
+				}
+				if pair.dirtyOrders.orders[4].Price().Cmp(next.Price()) != 1 {
+					t.Logf("rem more price %v, next order price %v", pair.dirtyOrders.orders[4].Price(), next.Price())
+				}
+			})
+
+			_, _, err = immutableTree.Commit(swap)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			t.Run("export", func(t *testing.T) {
+				var appState types.AppState
+				swap := New(newBus, immutableTree.GetLastImmutable())
+				swap.Export(&appState)
+
+				jsonBytes, err := amino.NewCodec().MarshalJSONIndent(appState.Pools, "", "	")
+				if err != nil {
+					t.Error(err)
+				}
+				if len(appState.Pools) != 1 {
+					t.Fatalf("pools are not all: %s", jsonBytes)
+				}
+				if len(appState.Pools[0].Orders) != 8 {
+					t.Fatalf("orders count not equal 8, %s", jsonBytes)
+				} else {
+					t.Logf("%#v", appState.Pools[0].Orders)
+				}
+			})
+		})
+	})
+}
+
+func TestPair_BuyWithOrders_updateDirtyOrders_01(t *testing.T) {
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+
+	{
+		swap := New(newBus, immutableTree.GetLastImmutable())
+		_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(10000), big.NewInt(10000))
+
+		pair := swap.Pair(0, 1)
+		pair.SetOrder(big.NewInt(1500), big.NewInt(500))
+		pair.SetOrder(big.NewInt(2000), big.NewInt(500))
+		pair.SetOrder(big.NewInt(3000), big.NewInt(500))
+		pair.SetOrder(big.NewInt(4000), big.NewInt(500))
+		pair.SetOrder(big.NewInt(5000), big.NewInt(500))
+		pair.SetOrder(big.NewInt(6000), big.NewInt(500))
+		pair.SetOrder(big.NewInt(7000), big.NewInt(500))
+		pair.SetOrder(big.NewInt(8000), big.NewInt(500))
+		pair.SetOrder(big.NewInt(9000), big.NewInt(500))
+		pair.SetOrder(big.NewInt(10000), big.NewInt(500))
+
+		_, _, err = immutableTree.Commit(swap)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	t.Run("first", func(t *testing.T) {
+		swap := New(newBus, immutableTree.GetLastImmutable())
+		pair := swap.Pair(0, 1)
+		price := pair.OrderSellLowerByIndex(0).Price()
+		addAmount1ForPrice := pair.CalculateAddAmount1ForPrice(price)
+		if addAmount1ForPrice.Cmp(big.NewInt(4224)) != 0 {
+			t.Error("a", addAmount1ForPrice)
+		}
+
+		addAmount0 := pair.CalculateSellForBuy(addAmount1ForPrice)
+		if addAmount0.Cmp(big.NewInt(7328)) != 0 {
+			t.Error("z", addAmount0)
+		}
+
+		amount0In, owners := pair.BuyWithOrders(big.NewInt(0).Add(addAmount1ForPrice, big.NewInt(495)))
+		if amount0In.Cmp(big.NewInt(4719)) != 0 {
+			t.Error("d", amount0In)
+		}
+		t.Run("owners", func(t *testing.T) {
+			if len(owners) != 1 {
+				t.Fatal("b", owners)
+			}
+			if owners[types.Address{}].Cmp(big.NewInt(494)) != 0 {
+				t.Error("c", owners[types.Address{}])
+			}
+		})
+
+		t.Run("resort dirty", func(t *testing.T) {
+			next := pair.OrderSellLowerByIndex(0)
+			if next.id != 2 {
+				t.Fatalf("want %d, got %d", 2, pair.OrderSellLowerByIndex(0).id)
+			}
+			if pair.dirtyOrders.orders[1].Price().Cmp(next.Price()) != 1 {
+				t.Logf("rem more price %v, next order price %v", pair.dirtyOrders.orders[1].Price(), next.Price())
+			}
+		})
+
+		_, _, err = immutableTree.Commit(swap)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		t.Run("export", func(t *testing.T) {
+			var appState types.AppState
+			swap := New(newBus, immutableTree.GetLastImmutable())
+			swap.Export(&appState)
+
+			jsonBytes, err := amino.NewCodec().MarshalJSONIndent(appState.Pools, "", "	")
+			if err != nil {
+				t.Error(err)
+			}
+			if len(appState.Pools) != 1 {
+				t.Fatalf("pools are not all: %s", jsonBytes)
+			}
+			if len(appState.Pools[0].Orders) != 10 {
+				t.Fatalf("orders count not equal 10, %s", jsonBytes)
+			} else {
+				t.Logf("%#v", appState.Pools[0].Orders)
+			}
+		})
+
+		t.Run("second to fourth", func(t *testing.T) {
+			swap := New(newBus, immutableTree.GetLastImmutable())
+			pair := swap.Pair(0, 1)
+			limit := pair.OrderSellLowerByIndex(1)
+			if limit == nil {
+				t.Fatal("not loaded second order after commit prev sale")
+			}
+			price := limit.Price()
+			addAmount1ForPrice := pair.CalculateAddAmount1ForPrice(price)
+			if addAmount1ForPrice.Cmp(big.NewInt(1690)) != 0 {
+				t.Error("a", addAmount1ForPrice)
+			}
+
+			addAmount0 := pair.CalculateSellForBuy(addAmount1ForPrice)
+			if addAmount0.Cmp(big.NewInt(7184)) != 0 {
+				t.Error("z", addAmount0)
+			}
+
+			amount1Out, owners := pair.BuyWithOrders(big.NewInt(0).Add(addAmount1ForPrice, big.NewInt(1709)))
+			if len(owners) != 1 {
+				t.Error("b", owners)
+			}
+
+			if owners[types.Address{}].Cmp(big.NewInt(1161)) != 0 {
+				t.Error("c", owners[types.Address{}])
+			}
+
+			if amount1Out.Cmp(big.NewInt(3399)) != 0 {
+				t.Error("d", amount1Out)
+			}
+
+			t.Run("resort dirty", func(t *testing.T) {
+				t.Log(pair.dirtyOrders.orders[2].Price())
+				t.Log(pair.dirtyOrders.orders[3].Price())
+				t.Log(pair.dirtyOrders.orders[4].Price())
+				next := pair.OrderSellLowerByIndex(0)
+				if next.id != 5 {
+					t.Fatalf("want %d, got %d", 5, pair.OrderSellLowerByIndex(0).id)
+				}
+				if pair.dirtyOrders.orders[4].Price().Cmp(next.Price()) != 1 {
+					t.Logf("rem more price %v, next order price %v", pair.dirtyOrders.orders[4].Price(), next.Price())
+				}
+			})
+
+			_, _, err = immutableTree.Commit(swap)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			t.Run("export", func(t *testing.T) {
+				var appState types.AppState
+				swap := New(newBus, immutableTree.GetLastImmutable())
+				swap.Export(&appState)
+
+				jsonBytes, err := amino.NewCodec().MarshalJSONIndent(appState.Pools, "", "	")
+				if err != nil {
+					t.Error(err)
+				}
+				if len(appState.Pools) != 1 {
+					t.Fatalf("pools are not all: %s", jsonBytes)
+				}
+				if len(appState.Pools[0].Orders) != 8 {
+					t.Fatalf("orders count not equal 8, %s", jsonBytes)
+				} else {
+					t.Logf("%#v", appState.Pools[0].Orders)
+				}
+			})
+		})
+	})
+}
+
+func TestPair_BuyWithOrders_updateDirtyOrders_10(t *testing.T) {
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+
+	{
+		swap := New(newBus, immutableTree.GetLastImmutable())
+		_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(10000), big.NewInt(10000))
+
+		pair := swap.Pair(1, 0)
+		pair.SetOrder(big.NewInt(1500), big.NewInt(500))
+		pair.SetOrder(big.NewInt(2000), big.NewInt(500))
+		pair.SetOrder(big.NewInt(3000), big.NewInt(500))
+		pair.SetOrder(big.NewInt(4000), big.NewInt(500))
+		pair.SetOrder(big.NewInt(5000), big.NewInt(500))
+		pair.SetOrder(big.NewInt(6000), big.NewInt(500))
+		pair.SetOrder(big.NewInt(7000), big.NewInt(500))
+		pair.SetOrder(big.NewInt(8000), big.NewInt(500))
+		pair.SetOrder(big.NewInt(9000), big.NewInt(500))
+		pair.SetOrder(big.NewInt(10000), big.NewInt(500))
+
+		_, _, err = immutableTree.Commit(swap)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	t.Run("first", func(t *testing.T) {
+		swap := New(newBus, immutableTree.GetLastImmutable())
+		pair := swap.Pair(1, 0)
+		price := pair.OrderSellLowerByIndex(0).Price()
+		addAmount1ForPrice := pair.CalculateAddAmount1ForPrice(price)
+		if addAmount1ForPrice.Cmp(big.NewInt(4224)) != 0 {
+			t.Error("a", addAmount1ForPrice)
+		}
+
+		addAmount0 := pair.CalculateSellForBuy(addAmount1ForPrice)
+		if addAmount0.Cmp(big.NewInt(7328)) != 0 {
+			t.Error("z", addAmount0)
+		}
+
+		amount0In, owners := pair.BuyWithOrders(big.NewInt(0).Add(addAmount1ForPrice, big.NewInt(495)))
+		if amount0In.Cmp(big.NewInt(4719)) != 0 {
+			t.Error("d", amount0In)
+		}
+		t.Run("owners", func(t *testing.T) {
+			if len(owners) != 1 {
+				t.Fatal("b", owners)
+			}
+			if owners[types.Address{}].Cmp(big.NewInt(494)) != 0 {
+				t.Error("c", owners[types.Address{}])
+			}
+		})
+
+		t.Run("resort dirty", func(t *testing.T) {
+			next := pair.OrderSellLowerByIndex(0)
+			if next.id != 2 {
+				t.Fatalf("want %d, got %d", 2, pair.OrderSellLowerByIndex(0).id)
+			}
+			if pair.dirtyOrders.orders[1].Price().Cmp(next.Price()) != 1 {
+				t.Logf("rem more price %v, next order price %v", pair.dirtyOrders.orders[1].Price(), next.Price())
+			}
+		})
+
+		_, _, err = immutableTree.Commit(swap)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		t.Run("export", func(t *testing.T) {
+			var appState types.AppState
+			swap := New(newBus, immutableTree.GetLastImmutable())
+			swap.Export(&appState)
+
+			jsonBytes, err := amino.NewCodec().MarshalJSONIndent(appState.Pools, "", "	")
+			if err != nil {
+				t.Error(err)
+			}
+			if len(appState.Pools) != 1 {
+				t.Fatalf("pools are not all: %s", jsonBytes)
+			}
+			if len(appState.Pools[0].Orders) != 10 {
+				t.Fatalf("orders count not equal 10, %s", jsonBytes)
+			} else {
+				t.Logf("%#v", appState.Pools[0].Orders)
+			}
+		})
+
+		t.Run("second to fourth", func(t *testing.T) {
+			swap := New(newBus, immutableTree.GetLastImmutable())
+			pair := swap.Pair(1, 0)
+			limit := pair.OrderSellLowerByIndex(1)
+			if limit == nil {
+				t.Fatal("not loaded second order after commit prev sale")
+			}
+			price := limit.Price()
+			addAmount1ForPrice := pair.CalculateAddAmount1ForPrice(price)
+			if addAmount1ForPrice.Cmp(big.NewInt(1690)) != 0 {
+				t.Error("a", addAmount1ForPrice)
+			}
+
+			addAmount0 := pair.CalculateSellForBuy(addAmount1ForPrice)
+			if addAmount0.Cmp(big.NewInt(7184)) != 0 {
+				t.Error("z", addAmount0)
+			}
+
+			amount1Out, owners := pair.BuyWithOrders(big.NewInt(0).Add(addAmount1ForPrice, big.NewInt(1709)))
+			if len(owners) != 1 {
+				t.Error("b", owners)
+			}
+
+			if owners[types.Address{}].Cmp(big.NewInt(1161)) != 0 {
+				t.Error("c", owners[types.Address{}])
+			}
+
+			if amount1Out.Cmp(big.NewInt(3399)) != 0 {
 				t.Error("d", amount1Out)
 			}
 
@@ -399,99 +723,6 @@ func TestPair_OrderID(t *testing.T) {
 	})
 }
 
-func TestPair_BuyWithOrders_01_ChangeRemainderOrderPrice(t *testing.T) {
-	memDB := db.NewMemDB()
-	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
-	if err != nil {
-		t.Fatal(err)
-	}
-	newBus := bus.NewBus()
-	checker.NewChecker(newBus)
-	swap := New(newBus, immutableTree.GetLastImmutable())
-	_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(10000), big.NewInt(10000))
-
-	pair := swap.Pair(0, 1)
-	pair.SetOrder(big.NewInt(15), big.NewInt(5))
-	pair.SetOrder(big.NewInt(20), big.NewInt(5))
-
-	_, _, err = immutableTree.Commit(swap)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	pair = swap.Pair(0, 1)
-	price := pair.OrderSellLowerByIndex(0).Price()
-
-	addAmount0ForPrice := pair.CalculateAddAmount0ForPrice(price)
-	if addAmount0ForPrice.Cmp(big.NewInt(7330)) != 0 {
-		t.Error("a", addAmount0ForPrice)
-	}
-
-	addAmount1 := pair.CalculateBuyForSell(addAmount0ForPrice)
-	if addAmount1.Cmp(big.NewInt(4224)) != 0 {
-		t.Error("z", addAmount1)
-	}
-
-	t.Run("add amount1", func(t *testing.T) {
-		addAmount1ForPrice := pair.CalculateAddAmount1ForPrice(price)
-		if addAmount1ForPrice.Cmp(addAmount1) != 0 {
-			t.Error("a", addAmount1ForPrice)
-		}
-		t.Skip("7328 != 7330")
-		addAmount0 := pair.CalculateSellForBuy(addAmount1ForPrice)
-		if addAmount0.Cmp(addAmount0ForPrice) != 0 {
-			t.Error("z", addAmount0)
-		}
-	})
-
-	amount0In, owners := pair.BuyWithOrders(big.NewInt(0).Add(addAmount1, big.NewInt(3)))
-	t.Run("owner", func(t *testing.T) {
-		if len(owners) != 1 {
-			t.Fatal("b", owners)
-		}
-
-		if owners[types.Address{}].Cmp(big.NewInt(2)) != 0 {
-			t.Error("c", owners[types.Address{}])
-		}
-	})
-
-	if amount0In.Cmp(big.NewInt(4227)) != 0 {
-		t.Error("d", amount0In)
-	}
-
-	t.Run("resort dirty", func(t *testing.T) {
-		if pair.OrderSellLowerByIndex(0).id != 2 {
-			t.Errorf("want %d, got %d", 2, pair.OrderSellLowerByIndex(0).id)
-		}
-	})
-
-	// t.Log(pair.Price()) // 0.33329486439699943
-
-	_, _, err = immutableTree.Commit(swap)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	t.Run("export", func(t *testing.T) {
-		var appState types.AppState
-		swap := New(newBus, immutableTree.GetLastImmutable())
-		swap.Export(&appState)
-
-		jsonBytes, err := amino.NewCodec().MarshalJSONIndent(appState.Pools, "", "	")
-		if err != nil {
-			t.Error(err)
-		}
-		if len(appState.Pools) != 1 {
-			t.Fatalf("pools are not all: %s", jsonBytes)
-		}
-		if len(appState.Pools[0].Orders) != 2 {
-			t.Fatalf("orders count not equal 2, %s", jsonBytes)
-		} else {
-			t.Logf("%#v", appState.Pools[0].Orders)
-		}
-	})
-}
-
 func TestPair_SellWithOrders_01_ChangeRemainderOrderPrice(t *testing.T) {
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
@@ -521,7 +752,7 @@ func TestPair_SellWithOrders_01_ChangeRemainderOrderPrice(t *testing.T) {
 
 	addAmount1 := pair.CalculateBuyForSell(addAmount0ForPrice)
 	if addAmount1.Cmp(big.NewInt(4224)) != 0 {
-		t.Error("z", addAmount0ForPrice)
+		t.Error("z", addAmount1)
 	}
 
 	amount1Out, owners := pair.SellWithOrders(big.NewInt(0).Add(addAmount0ForPrice, big.NewInt(11)))
@@ -1494,7 +1725,7 @@ func TestPair_CalculateBuyForSellWithOrders_01(t *testing.T) {
 				t.Run("more order", func(t *testing.T) {
 					amount0 := pair.CalculateSellForBuyAllowNeg(big.NewInt(2927))
 					p := pair.AddLastSwapStep(amount0, big.NewInt(2927))
-					amount0In := big.NewInt(0).Add(amount0, p.CalculateSellForBuyAllowNeg(big.NewInt(466)))
+					amount0In := big.NewInt(0).Add(amount0, p.CalculateSellForBuy(big.NewInt(466)))
 					amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2927 + 999 + 466))
 					if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "2000" {
 						t.Error("want to get 1,000-0.1% more and spend 2,000 more by order", amount0In, amount0InWithOB)
@@ -1527,7 +1758,7 @@ func TestPair_CalculateBuyForSellWithOrders_01(t *testing.T) {
 							t.Run(strconv.Itoa(int(i)), func(t *testing.T) {
 								amount1 := pair.CalculateBuyForSellAllowNeg(big.NewInt(4147))
 								p := pair.AddLastSwapStep(big.NewInt(4147), amount1)
-								amount1Out := big.NewInt(0).Add(amount1, p.CalculateBuyForSellAllowNeg(big.NewInt(i)))
+								amount1Out := big.NewInt(0).Add(amount1, p.CalculateBuyForSell(big.NewInt(i)))
 								amount1OutWithOB := pair.CalculateBuyForSellWithOrders(big.NewInt(4147 + 4000 + i))
 								if amount1OutWithOB.Cmp(big.NewInt(0).Add(amount1Out, big.NewInt(1998))) != 0 {
 									t.Error("want to spend 4,000 more and get 2,000-0.1% more by order", amount1Out, amount1OutWithOB)
@@ -1554,7 +1785,7 @@ func TestPair_CalculateBuyForSellWithOrders_01(t *testing.T) {
 					t.Run("all orders and more", func(t *testing.T) {
 						amount0 := pair.CalculateSellForBuyAllowNeg(big.NewInt(2927))
 						p := pair.AddLastSwapStep(amount0, big.NewInt(2927))
-						amount0In := big.NewInt(0).Add(amount0, p.CalculateSellForBuyAllowNeg(big.NewInt(466)))
+						amount0In := big.NewInt(0).Add(amount0, p.CalculateSellForBuy(big.NewInt(466)))
 						amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2927 + 1998 + 466))
 						if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "4000" {
 							t.Error("want to get 2,000-0.1% more and spend 4,000 more by order", amount0In, amount0InWithOB)
@@ -1672,7 +1903,7 @@ func TestPair_CalculateBuyForSellWithOrders_10(t *testing.T) {
 				t.Run("more order", func(t *testing.T) {
 					amount0 := pair.CalculateSellForBuyAllowNeg(big.NewInt(2927))
 					p := pair.AddLastSwapStep(amount0, big.NewInt(2927))
-					amount0In := big.NewInt(0).Add(amount0, p.CalculateSellForBuyAllowNeg(big.NewInt(466)))
+					amount0In := big.NewInt(0).Add(amount0, p.CalculateSellForBuy(big.NewInt(466)))
 					amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2927 + 999 + 466))
 					if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "2000" {
 						t.Error("want to get 1,000-0.1% more and spend 2,000 more by order", amount0In, amount0InWithOB)
@@ -1705,7 +1936,7 @@ func TestPair_CalculateBuyForSellWithOrders_10(t *testing.T) {
 							t.Run(strconv.Itoa(int(i)), func(t *testing.T) {
 								amount1 := pair.CalculateBuyForSellAllowNeg(big.NewInt(4147))
 								p := pair.AddLastSwapStep(big.NewInt(4147), amount1)
-								amount1Out := big.NewInt(0).Add(amount1, p.CalculateBuyForSellAllowNeg(big.NewInt(i)))
+								amount1Out := big.NewInt(0).Add(amount1, p.CalculateBuyForSell(big.NewInt(i)))
 								amount1OutWithOB := pair.CalculateBuyForSellWithOrders(big.NewInt(4147 + 4000 + i))
 								if amount1OutWithOB.Cmp(big.NewInt(0).Add(amount1Out, big.NewInt(1998))) != 0 {
 									t.Error("want to spend 4,000 more and get 2,000-0.1% more by order", amount1Out, amount1OutWithOB)
@@ -1732,7 +1963,7 @@ func TestPair_CalculateBuyForSellWithOrders_10(t *testing.T) {
 					t.Run("all orders and more", func(t *testing.T) {
 						amount0 := pair.CalculateSellForBuyAllowNeg(big.NewInt(2927))
 						p := pair.AddLastSwapStep(amount0, big.NewInt(2927))
-						amount0In := big.NewInt(0).Add(amount0, p.CalculateSellForBuyAllowNeg(big.NewInt(466)))
+						amount0In := big.NewInt(0).Add(amount0, p.CalculateSellForBuy(big.NewInt(466)))
 						amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2927 + 1998 + 466))
 						if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "4000" {
 							t.Error("want to get 2,000-0.1% more and spend 4,000 more by order", amount0In, amount0InWithOB)

@@ -97,10 +97,13 @@ func (p *Pair) BuyWithOrders(amount1Out *big.Int) (amount0In *big.Int, owners ma
 		cS := calcCommission(order.WantBuy)
 		cB := calcCommission(order.WantSell)
 
+		if owners[order.Owner] == nil {
+			owners[order.Owner] = big.NewInt(0)
+		}
 		if order.isBuy {
-			owners[order.Owner] = big.NewInt(0).Sub(order.WantBuy, cS)
+			owners[order.Owner].Add(owners[order.Owner], big.NewInt(0).Sub(order.WantBuy, cS))
 		} else {
-			owners[order.Owner] = big.NewInt(0).Sub(order.WantSell, cB)
+			owners[order.Owner].Add(owners[order.Owner], big.NewInt(0).Sub(order.WantSell, cB))
 		}
 		amount0orders.Add(amount0orders, order.WantBuy)
 		amount1orders.Add(amount1orders, order.WantSell)
@@ -671,14 +674,15 @@ func (s *Swap) loadBuyHigherOrders(pair *Pair, slice []*Limit, limit int) []*Lim
 	endKey := append(append([]byte{mainPrefix}, pair.pathOrders()...), byte(0), byte(255)) // todo: mb more high bytes
 	var startKey []byte
 
-	if len(slice) > 0 {
-		var l = slice[len(slice)-1]
+	sliceLen := len(slice)
+	if sliceLen > 0 {
+		var l = slice[sliceLen-1]
 		startKey = pricePath(pair.pairKey, l.SortPrice(), l.id+1, false)
 	} else {
 		startKey = pricePath(pair.pairKey, pair.SortPrice(), 0, false)
 	}
 
-	i := limit - len(slice) - 1
+	i := sliceLen
 	s.immutableTree().IterateRange(startKey, endKey, true, func(key []byte, value []byte) bool {
 		if i > limit {
 			return true
@@ -717,14 +721,15 @@ func (s *Swap) loadSellLowerOrders(pair *Pair, slice []*Limit, limit int) []*Lim
 	startKey := append(append([]byte{mainPrefix}, pair.pathOrders()...), byte(1), byte(0))
 	var endKey []byte
 
-	if len(slice) > 0 {
-		var l = slice[len(slice)-1]
+	sliceLen := len(slice)
+	if sliceLen > 0 {
+		var l = slice[sliceLen-1]
 		endKey = pricePath(pair.pairKey, l.SortPrice(), l.id-1, true)
 	} else {
 		endKey = pricePath(pair.pairKey, pair.SortPrice(), math.MaxInt32, true)
 	}
 
-	i := limit - len(slice) - 1
+	i := sliceLen
 	s.immutableTree().IterateRange(startKey, endKey, false, func(key []byte, value []byte) bool {
 		if i > limit {
 			return true

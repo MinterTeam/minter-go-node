@@ -35,13 +35,11 @@ type EditableChecker interface {
 	Amounts(liquidity, totalSupply *big.Int) (amount0 *big.Int, amount1 *big.Int)
 	CalculateAddAmount0ForPrice(float *big.Float) (amount0 *big.Int)
 	CalculateAddAmount1ForPrice(float *big.Float) (amount1 *big.Int)
-	// Deprecated: Use CalculateBuyForSellAllowNeg
 	CalculateBuyForSell(amount0In *big.Int) (amount1Out *big.Int)
-	CalculateBuyForSellAllowNeg(amount0In *big.Int) (amount1Out *big.Int)
+	// CalculateBuyForSellAllowNeg(amount0In *big.Int) (amount1Out *big.Int)
 	CalculateBuyForSellWithOrders(amount0In *big.Int) (amount1Out *big.Int)
-	// Deprecated: use CalculateSellForBuyAllowNeg
 	CalculateSellForBuy(amount1Out *big.Int) (amount0In *big.Int)
-	CalculateSellForBuyAllowNeg(amount1Out *big.Int) (amount0In *big.Int)
+	// CalculateSellForBuyAllowNeg(amount1Out *big.Int) (amount0In *big.Int)
 	CalculateSellForBuyWithOrders(amount1Out *big.Int) (amount0In *big.Int)
 	CalculateAddLiquidity(amount0 *big.Int, supply *big.Int) (liquidity *big.Int, amount1 *big.Int)
 	CheckSwap(amount0In, amount1Out *big.Int) error
