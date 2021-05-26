@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"log"
 	"math"
 	"math/big"
 	"sort"
@@ -361,11 +360,11 @@ func (s *Swap) Commit(db *iavl.MutableTree) error {
 
 	for _, key := range s.getOrderedDirtyOrderPairs() {
 		pair, _ := s.pair(key)
-		for _, limit := range pair.dirtyOrders.orders {
+		for _, limit := range pair.getDirtyOrdersList() {
 
 			oldPath := pricePath(key, limit.OldSortPrice(), limit.id, !limit.isBuy)
 
-			if limit.WantBuy.Sign() == 0 || limit.WantSell.Sign() == 0 {
+			if limit.isEmpty() {
 				if limit.WantBuy.Sign() != 0 || limit.WantSell.Sign() != 0 {
 					panic(fmt.Sprintf("order %d has one zero volume: %s, %s. Sell %v", limit.id, limit.WantBuy, limit.WantSell, !limit.isBuy))
 				}
@@ -382,16 +381,27 @@ func (s *Swap) Commit(db *iavl.MutableTree) error {
 			}
 
 			db.Set(newPath, pairOrderBytes)
-			log.Printf("new path %q, %s, %s. Sell %v", newPath, limit.WantBuy, limit.WantSell, !limit.isBuy)
+			// log.Printf("new path %q, %s, %s. Sell %v", newPath, limit.WantBuy, limit.WantSell, !limit.isBuy)
 			if !bytes.Equal(oldPath, newPath) && db.Has(oldPath) {
 				db.Remove(oldPath) // the price can change minimally due to rounding off the ratio of the remaining volumes
 				// log.Printf("remove old path %q, %s, %s. Sell %v", oldPath, limit.WantBuy, limit.WantSell, !limit.isBuy)
 			}
 		}
-		pair.dirtyOrders.orders = make([]*Limit, 0)
+		pair.dirtyOrders.orders = make(map[uint32]*Limit)
 	}
 	s.dirtiesOrders = map[pairKey]struct{}{}
 	return nil
+}
+
+func (p *Pair) getDirtyOrdersList() []*Limit {
+	dirtiesOrders := make([]*Limit, 0, len(p.dirtyOrders.orders))
+	for _, limit := range p.dirtyOrders.orders {
+		dirtiesOrders = append(dirtiesOrders, limit)
+	}
+	sort.SliceStable(dirtiesOrders, func(i, j int) bool {
+		return dirtiesOrders[i].id > dirtiesOrders[j].id
+	})
+	return dirtiesOrders
 }
 
 func (s *Swap) SetImmutableTree(immutableTree *iavl.ImmutableTree) {
@@ -627,7 +637,7 @@ func (s *Swap) addPair(key pairKey) *Pair {
 		},
 		sellOrders:          &limits{},
 		buyOrders:           &limits{},
-		dirtyOrders:         &dirtyOrders{},
+		dirtyOrders:         &dirtyOrders{orders: map[uint32]*Limit{}},
 		markDirtyOrders:     s.markDirtyOrders(key),
 		loadHigherOrders:    s.loadBuyHigherOrders,
 		loadLowerOrders:     s.loadSellLowerOrders,
