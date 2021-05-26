@@ -177,8 +177,6 @@ func (p *Pair) resortSellOrderList(i int, limit *Limit) {
 		loadedLen := len(p.SellLowerOrders())
 		newIndex := p.setSellLowerOrder(limit)
 		if newIndex == loadedLen {
-			// FIXME: delete because we don't load orders from disk, but we can loss this order in current block
-
 			p.unsetOrderSellLowerByIndex(newIndex)
 			p.setOrder(limit)
 		}
@@ -704,7 +702,6 @@ func (s *Swap) loadBuyHigherOrders(pair *Pair, slice []*Limit, limit int) []*Lim
 			} else if dirtyOrder.isEmpty() {
 				return false
 			} else {
-				// todo: find new position
 				return false
 			}
 		}
@@ -751,7 +748,6 @@ func (s *Swap) loadSellLowerOrders(pair *Pair, slice []*Limit, limit int) []*Lim
 			} else if dirtyOrder.isEmpty() {
 				return false
 			} else {
-				// todo: find new position
 				return false
 			}
 		}
