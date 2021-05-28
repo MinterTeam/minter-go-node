@@ -35,7 +35,6 @@ func (s *Swap) PairBuyWithOrders(coin0, coin1 types.CoinID, maxAmount0In, amount
 		panic(fmt.Sprintf("calculatedAmount1Out %s less minAmount1Out %s", amount1Out, maxAmount0In))
 	}
 
-	// todo: refactor and tests
 	for address, b := range owners {
 		s.bus.Checker().AddCoin(coin0, big.NewInt(0).Neg(b))
 		s.bus.Accounts().AddBalance(address, coin0, b)
@@ -247,8 +246,6 @@ func (p *Pair) calculateBuyForSellWithOrders(amount0In *big.Int) (amount1Out *bi
 		if rest.Sign() != 1 {
 			amount1, _ := big.NewFloat(0).Mul(price, big.NewFloat(0).SetInt(amount0)).Int(nil)
 
-			fmt.Println(amount0, amount1)
-			fmt.Printf("%#v", limit)
 			orders = append(orders, &Limit{
 				isBuy:        limit.isBuy,
 				pairKey:      p.pairKey,

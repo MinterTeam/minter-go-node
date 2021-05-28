@@ -318,6 +318,17 @@ func pricePath(key pairKey, price *big.Float, id uint32, isSale bool) []byte {
 	return append(append(append(append([]byte{mainPrefix}, key.pathOrders()...), saleByte), pricePath...), byteID...)
 }
 
+func (p *Pair) getDirtyOrdersList() []*Limit {
+	dirtiesOrders := make([]*Limit, 0, len(p.dirtyOrders.orders))
+	for _, limit := range p.dirtyOrders.orders {
+		dirtiesOrders = append(dirtiesOrders, limit)
+	}
+	sort.SliceStable(dirtiesOrders, func(i, j int) bool {
+		return dirtiesOrders[i].id > dirtiesOrders[j].id
+	})
+	return dirtiesOrders
+}
+
 func (s *Swap) Commit(db *iavl.MutableTree) error {
 	basePath := []byte{mainPrefix}
 
@@ -358,11 +369,11 @@ func (s *Swap) Commit(db *iavl.MutableTree) error {
 
 	for _, key := range s.getOrderedDirtyOrderPairs() {
 		pair, _ := s.pair(key)
-		for _, limit := range pair.dirtyOrders.orders {
+		for _, limit := range pair.getDirtyOrdersList() {
 
 			oldPath := pricePath(key, limit.OldSortPrice(), limit.id, !limit.isBuy)
 
-			if limit.WantBuy.Sign() == 0 || limit.WantSell.Sign() == 0 {
+			if limit.isEmpty() {
 				if limit.WantBuy.Sign() != 0 || limit.WantSell.Sign() != 0 {
 					panic(fmt.Sprintf("order %d has one zero volume: %s, %s. Sell %v", limit.id, limit.WantBuy, limit.WantSell, !limit.isBuy))
 				}
@@ -385,7 +396,7 @@ func (s *Swap) Commit(db *iavl.MutableTree) error {
 				// log.Printf("remove old path %q, %s, %s. Sell %v", oldPath, limit.WantBuy, limit.WantSell, !limit.isBuy)
 			}
 		}
-		pair.dirtyOrders.orders = make([]*Limit, 0)
+		pair.dirtyOrders.orders = make(map[uint32]*Limit)
 	}
 	s.dirtiesOrders = map[pairKey]struct{}{}
 	return nil
@@ -624,7 +635,7 @@ func (s *Swap) addPair(key pairKey) *Pair {
 		},
 		sellOrders:          &limits{},
 		buyOrders:           &limits{},
-		dirtyOrders:         &dirtyOrders{},
+		dirtyOrders:         &dirtyOrders{orders: make(map[uint32]*Limit)},
 		markDirtyOrders:     s.markDirtyOrders(key),
 		loadHigherOrders:    s.loadBuyHigherOrders,
 		loadLowerOrders:     s.loadSellLowerOrders,
