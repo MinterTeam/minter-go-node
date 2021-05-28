@@ -11,7 +11,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/rlp"
 )
 
-func TestAddOrderSwapPoolData_01_partOrder(t *testing.T) {
+func TestAddOrderSwapPoolData_Sell_01_partOrder(t *testing.T) {
 	t.Parallel()
 	cState := getState()
 
@@ -171,7 +171,7 @@ func TestAddOrderSwapPoolData_01_partOrder(t *testing.T) {
 		}
 	}
 }
-func TestAddOrderSwapPoolData_10_partOrder(t *testing.T) {
+func TestAddOrderSwapPoolData_Sell_10_partOrder(t *testing.T) {
 	t.Parallel()
 	cState := getState()
 
@@ -331,7 +331,7 @@ func TestAddOrderSwapPoolData_10_partOrder(t *testing.T) {
 		}
 	}
 }
-func TestAddOrderSwapPoolData_01_fullOrder(t *testing.T) {
+func TestAddOrderSwapPoolData_Sell_01_fullOrder(t *testing.T) {
 	t.Parallel()
 	cState := getState()
 
@@ -492,7 +492,7 @@ func TestAddOrderSwapPoolData_01_fullOrder(t *testing.T) {
 	}
 }
 
-func TestAddOrderSwapPoolData_10_fullOrder(t *testing.T) {
+func TestAddOrderSwapPoolData_Sell_10_fullOrder(t *testing.T) {
 	t.Parallel()
 	cState := getState()
 
