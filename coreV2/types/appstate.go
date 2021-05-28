@@ -173,11 +173,11 @@ func (s *AppState) Verify() error {
 			for _, order := range swap.Orders {
 				if !order.IsSale {
 					if swap.Coin0 == coin.ID {
-						volume.Add(volume, helpers.StringToBigInt(order.WantBuyVolume))
+						volume.Add(volume, helpers.StringToBigInt(order.Volume0))
 					}
 				} else {
 					if swap.Coin1 == coin.ID {
-						volume.Add(volume, helpers.StringToBigInt(order.WantSellVolume))
+						volume.Add(volume, helpers.StringToBigInt(order.Volume1))
 					}
 				}
 			}
@@ -186,7 +186,7 @@ func (s *AppState) Verify() error {
 
 		if coin.Crr == 0 {
 			if volume.Cmp(helpers.StringToBigInt(coin.Volume)) != 0 {
-				return fmt.Errorf("wrong token %s volume (%s)", coin.Symbol.String(), big.NewInt(0).Sub(volume, helpers.StringToBigInt(coin.Volume)))
+				return fmt.Errorf("wrong token %s (%d) volume (%s)", coin.Symbol.String(), coin.ID, big.NewInt(0).Sub(volume, helpers.StringToBigInt(coin.Volume)))
 			}
 			continue
 		}
@@ -318,11 +318,11 @@ type Waitlist struct {
 	Value       string  `json:"value"`
 }
 type Order struct {
-	IsSale         bool
-	WantBuyVolume  string  `json:"sell_volume"`
-	WantSellVolume string  `json:"buy_volume"`
-	ID             uint64  `json:"id"`
-	Owner          Address `json:"owner"`
+	IsSale  bool
+	Volume0 string  `json:"volume0"`
+	Volume1 string  `json:"volume1"`
+	ID      uint64  `json:"id"`
+	Owner   Address `json:"owner"`
 }
 type Pool struct {
 	Coin0       uint64  `json:"coin0"`

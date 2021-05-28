@@ -139,11 +139,11 @@ func (s *Swap) Export(state *types.AppState) {
 		allOrders := pair.loadAllOrders(s.immutableTree())
 		for _, limit := range allOrders {
 			orders = append(orders, types.Order{
-				IsSale:         !limit.isBuy,
-				WantBuyVolume:  limit.WantBuy.String(),
-				WantSellVolume: limit.WantSell.String(),
-				ID:             uint64(limit.id),
-				Owner:          limit.Owner,
+				IsSale:  !limit.isBuy,
+				Volume0: limit.WantBuy.String(),
+				Volume1: limit.WantSell.String(),
+				ID:      uint64(limit.id),
+				Owner:   limit.Owner,
 			})
 		}
 

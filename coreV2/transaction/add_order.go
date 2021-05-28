@@ -23,7 +23,7 @@ func (data AddOrderSwapPoolData) Gas() int64 {
 	return 1
 }
 func (data AddOrderSwapPoolData) TxType() TxType {
-	return 0
+	return TypeAddOrderSwapPool
 }
 
 func (data AddOrderSwapPoolData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
@@ -51,11 +51,11 @@ func (data AddOrderSwapPoolData) basicCheck(tx *Transaction, context *state.Chec
 }
 
 func (data AddOrderSwapPoolData) String() string {
-	return fmt.Sprintf("ADD LIMIT")
+	return fmt.Sprintf("ADD ORDER")
 }
 
 func (data AddOrderSwapPoolData) CommissionData(price *commission.Price) *big.Int {
-	return big.NewInt(999)
+	return price.CreateSwapPool // todo: add new commission's field
 }
 
 func (data AddOrderSwapPoolData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
