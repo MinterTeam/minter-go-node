@@ -69,11 +69,7 @@ func (p *Pair) SellWithOrders(amount0In *big.Int) (amount1Out *big.Int, owners m
 		if owners[order.Owner] == nil {
 			owners[order.Owner] = big.NewInt(0)
 		}
-		// if !order.isBuy {
 		owners[order.Owner].Add(owners[order.Owner], big.NewInt(0).Sub(order.WantBuy, cB))
-		// } else {
-		// 	owners[order.Owner].Add(owners[order.Owner], big.NewInt(0).Sub(order.WantSell, cS))
-		// }
 
 		commission0orders.Add(commission0orders, cB)
 		commission1orders.Add(commission1orders, cS)

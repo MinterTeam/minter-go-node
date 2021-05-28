@@ -126,8 +126,6 @@ func TestAddOrderSwapPoolData_01_partOrder(t *testing.T) {
 			Coins:             []types.CoinID{coin0, coin1},
 			ValueToSell:       helpers.BipToPip(big.NewInt(i)),
 			MinimumValueToBuy: cState.Swap.Pair(coin0, coin1).CalculateBuyForSell(helpers.BipToPip(big.NewInt(i))),
-			// ValueToSell:       helpers.BipToPip(big.NewInt(25)),
-			// MinimumValueToBuy: helpers.StringToBigInt("9989519305307344631"),
 		}
 		encodedData, err := rlp.EncodeToBytes(data)
 
@@ -288,8 +286,6 @@ func TestAddOrderSwapPoolData_10_partOrder(t *testing.T) {
 			Coins:             []types.CoinID{coin0, coin1},
 			ValueToSell:       helpers.BipToPip(big.NewInt(i)),
 			MinimumValueToBuy: cState.Swap.Pair(coin0, coin1).CalculateBuyForSell(helpers.BipToPip(big.NewInt(i))),
-			// ValueToSell:       helpers.BipToPip(big.NewInt(25)),
-			// MinimumValueToBuy: helpers.StringToBigInt("9989519305307344631"),
 		}
 		encodedData, err := rlp.EncodeToBytes(data)
 
@@ -450,8 +446,6 @@ func TestAddOrderSwapPoolData_01_fullOrder(t *testing.T) {
 			Coins:             []types.CoinID{coin0, coin1},
 			ValueToSell:       helpers.BipToPip(big.NewInt(i)),
 			MinimumValueToBuy: cState.Swap.Pair(coin0, coin1).CalculateBuyForSell(helpers.BipToPip(big.NewInt(i))),
-			// ValueToSell:       helpers.BipToPip(big.NewInt(25)),
-			// MinimumValueToBuy: helpers.StringToBigInt("9989519305307344631"),
 		}
 		encodedData, err := rlp.EncodeToBytes(data)
 
@@ -613,8 +607,6 @@ func TestAddOrderSwapPoolData_10_fullOrder(t *testing.T) {
 			Coins:             []types.CoinID{coin0, coin1},
 			ValueToSell:       helpers.BipToPip(big.NewInt(i)),
 			MinimumValueToBuy: cState.Swap.Pair(coin0, coin1).CalculateBuyForSell(helpers.BipToPip(big.NewInt(i))),
-			// ValueToSell:       helpers.BipToPip(big.NewInt(25)),
-			// MinimumValueToBuy: helpers.StringToBigInt("9989519305307344631"),
 		}
 		encodedData, err := rlp.EncodeToBytes(data)
 
