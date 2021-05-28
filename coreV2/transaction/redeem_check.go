@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/coreV2/state/commission"
 	"math/big"
 	"strconv"
+
+	"github.com/MinterTeam/minter-go-node/coreV2/state/commission"
 
 	"github.com/MinterTeam/minter-go-node/coreV2/check"
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
@@ -223,7 +224,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 		deliverState.Checks.UseCheck(decodedCheck)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 		if isGasCommissionFromPoolSwap {
-			commission, commissionInBaseCoin, _ = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
+			commission, commissionInBaseCoin, _, _, _ = deliverState.Swap.PairSellWithOrders(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
 		} else if !tx.GasCoin.IsBaseCoin() {
 			deliverState.Coins.SubVolume(tx.GasCoin, commission)
 			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)

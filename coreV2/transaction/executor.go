@@ -4,10 +4,11 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	abcTypes "github.com/tendermint/tendermint/abci/types"
 	"math/big"
 	"strconv"
 	"sync"
+
+	abcTypes "github.com/tendermint/tendermint/abci/types"
 
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
@@ -182,7 +183,7 @@ func RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBl
 	priceCommission := abcTypes.EventAttribute{Key: []byte("tx.commission_price"), Value: []byte(price.String())}
 
 	if !commissions.Coin.IsBaseCoin() {
-		price = checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()).CalculateBuyForSell(price)
+		price = checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()).CalculateBuyForSellWithOrders(price)
 	}
 	if price == nil {
 		return Response{

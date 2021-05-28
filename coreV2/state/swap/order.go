@@ -421,7 +421,7 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amount0In *bi
 	return amount0In, orders
 }
 
-func calcPriceSell(sell, buy *big.Int) *big.Float {
+func CalcPriceSell(sell, buy *big.Int) *big.Float {
 	return new(big.Float).SetPrec(precision).Quo(
 		big.NewFloat(0).SetInt(buy),
 		big.NewFloat(0).SetInt(sell),
@@ -458,7 +458,7 @@ func (l *Limit) Price() *big.Float {
 	if l.isEmpty() {
 		return big.NewFloat(0)
 	}
-	return calcPriceSell(l.WantBuy, l.WantSell)
+	return CalcPriceSell(l.WantBuy, l.WantSell)
 }
 
 func (l *Limit) SortPrice() *big.Float {

@@ -162,7 +162,7 @@ func (data SellSwapPoolData) Run(tx *Transaction, context state.Interface, rewar
 	var tags []abcTypes.EventAttribute
 	if deliverState, ok := context.(*state.State); ok {
 		if isGasCommissionFromPoolSwap {
-			commission, commissionInBaseCoin, _ = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
+			commission, commissionInBaseCoin, _, _, _ = deliverState.Swap.PairSellWithOrders(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
 		} else if !tx.GasCoin.IsBaseCoin() {
 			deliverState.Coins.SubVolume(tx.GasCoin, commission)
 			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
@@ -176,7 +176,7 @@ func (data SellSwapPoolData) Run(tx *Transaction, context state.Interface, rewar
 		var poolIDs tagPoolsChange
 
 		for i, coinToBuy := range data.Coins[1:] {
-			// amountIn, amountOut, poolID := deliverState.Swap.PairSell(coinToSell, coinToBuy, valueToSell, big.NewInt(0))
+			// amountIn, amountOut, poolID := deliverState.Swap.PairSellWithOrders(coinToSell, coinToBuy, valueToSell, big.NewInt(0))
 			amountIn, amountOut, poolID, details, owners := deliverState.Swap.PairSellWithOrders(coinToSell, coinToBuy, valueToSell, big.NewInt(0))
 
 			tags := &tagPoolChange{
@@ -190,10 +190,7 @@ func (data SellSwapPoolData) Run(tx *Transaction, context state.Interface, rewar
 
 			for address, value := range owners {
 				deliverState.Accounts.AddBalance(address, coinToSell, value)
-				tags.Sellers = append(tags.Sellers, struct {
-					Owner types.Address
-					Value string
-				}{Owner: address, Value: value.String()})
+				tags.Sellers = append(tags.Sellers, &OrderDetail{Owner: address, Value: value.String()})
 			}
 			poolIDs = append(poolIDs, tags)
 

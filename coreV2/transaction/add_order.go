@@ -8,6 +8,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/commission"
+	"github.com/MinterTeam/minter-go-node/coreV2/state/swap"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	abcTypes "github.com/tendermint/tendermint/abci/types"
 )
@@ -37,13 +38,22 @@ func (data AddOrderSwapPoolData) basicCheck(tx *Transaction, context *state.Chec
 		}
 	}
 
-	if !context.Swap().SwapPoolExist(data.CoinToSell, data.CoinToBuy) {
+	swapper := context.Swap().GetSwapper(data.CoinToSell, data.CoinToBuy)
+	if !swapper.Exists() {
 		return &Response{
 			Code: code.PairNotExists,
 			Log:  "swap pool not found",
 			Info: EncodeError(code.NewPairNotExists(
 				data.CoinToSell.String(),
 				data.CoinToBuy.String())),
+		}
+	}
+
+	if swapper.Price().Cmp(swap.CalcPriceSell(data.ValueToBuy, data.ValueToSell)) == -1 {
+		return &Response{
+			Code: 123456,
+			Log:  "price high",
+			Info: EncodeError(code.NewCustomCode(123456)),
 		}
 	}
 
@@ -72,15 +82,6 @@ func (data AddOrderSwapPoolData) Run(tx *Transaction, context state.Interface, r
 		return *response
 	}
 
-	swapper := checkState.Swap().GetSwapper(data.CoinToBuy, data.CoinToSell)
-	if !swapper.Exists() {
-		return Response{
-			Code: code.PairNotExists,
-			Log:  "swap pool for pair not found",
-			Info: EncodeError(code.NewPairNotExists(data.CoinToBuy.String(), data.CoinToSell.String())),
-		}
-	}
-
 	commissionInBaseCoin := tx.Commission(price)
 	commissionPoolSwapper := checkState.Swap().GetSwapper(tx.GasCoin, types.GetBaseCoinID())
 	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
@@ -89,17 +90,31 @@ func (data AddOrderSwapPoolData) Run(tx *Transaction, context state.Interface, r
 		return *errResp
 	}
 
-	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
+	amountSell := new(big.Int).Set(data.ValueToSell)
+	if tx.GasCoin != data.CoinToSell {
+		if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
+			return Response{
+				Code: code.InsufficientFunds,
+				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission.String(), gasCoin.GetFullSymbol()),
+				Info: EncodeError(code.NewInsufficientFunds(sender.String(), commission.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
+			}
+		}
+	} else {
+		amountSell.Add(amountSell, commission)
+	}
+	if checkState.Accounts().GetBalance(sender, data.CoinToSell).Cmp(amountSell) < 0 {
+		coin := checkState.Coins().GetCoin(data.CoinToSell)
 		return Response{
 			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission.String(), gasCoin.GetFullSymbol()),
-			Info: EncodeError(code.NewInsufficientFunds(sender.String(), commission.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), amountSell.String(), coin.GetFullSymbol()),
+			Info: EncodeError(code.NewInsufficientFunds(sender.String(), amountSell.String(), coin.GetFullSymbol(), coin.ID().String())),
 		}
 	}
+
 	var tags []abcTypes.EventAttribute
 	if deliverState, ok := context.(*state.State); ok {
 		if isGasCommissionFromPoolSwap {
-			commission, commissionInBaseCoin, _ = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
+			commission, commissionInBaseCoin, _, _, _ = deliverState.Swap.PairSellWithOrders(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
 		} else if !tx.GasCoin.IsBaseCoin() {
 			deliverState.Coins.SubVolume(tx.GasCoin, commission)
 			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)

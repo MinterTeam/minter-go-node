@@ -360,7 +360,7 @@ func TestPair_SellWithOrders_01_FullOrder(t *testing.T) {
 	pair := swap.Pair(0, 1)
 	owner := types.HexToAddress("Mx7f0fc21d932f38ca9444f61703174569066cfa50")
 	swap.PairAddOrder(0, 1, big.NewInt(2000), big.NewInt(1000), owner)
-	if pair.OrderSellLowerByIndex(0).Price().Cmp(calcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 {
+	if pair.OrderSellLowerByIndex(0).Price().Cmp(CalcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 {
 		t.Error("error set order")
 	}
 	_, _, err = immutableTree.Commit(swap)
@@ -431,7 +431,7 @@ func TestPair_SellWithOrders_01_PartOrder(t *testing.T) {
 	pair := swap.Pair(0, 1)
 	owner := types.HexToAddress("Mx7f0fc21d932f38ca9444f61703174569066cfa50")
 	swap.PairAddOrder(0, 1, big.NewInt(2000), big.NewInt(1000), owner)
-	if pair.OrderSellLowerByIndex(0).Price().Cmp(calcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 {
+	if pair.OrderSellLowerByIndex(0).Price().Cmp(CalcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 {
 		t.Error("error set order")
 	}
 
@@ -1128,7 +1128,7 @@ func TestPair_CalculateBuyForSellWithOrders_01(t *testing.T) {
 	t.Run("with orders", func(t *testing.T) {
 		t.Run("one order", func(t *testing.T) {
 			pair.SetOrder(big.NewInt(2000), big.NewInt(1000))
-			if pair.OrderSellLowerByIndex(0).Price().Cmp(calcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 {
+			if pair.OrderSellLowerByIndex(0).Price().Cmp(CalcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 {
 				t.Error("error set order")
 			}
 			t.Run("sell", func(t *testing.T) {
@@ -1200,8 +1200,8 @@ func TestPair_CalculateBuyForSellWithOrders_01(t *testing.T) {
 			})
 			t.Run("two equal orders", func(t *testing.T) {
 				pair.SetOrder(big.NewInt(2000), big.NewInt(1000))
-				if pair.OrderSellLowerByIndex(0).Price().Cmp(calcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 &&
-					pair.OrderSellLowerByIndex(1).Price().Cmp(calcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 {
+				if pair.OrderSellLowerByIndex(0).Price().Cmp(CalcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 &&
+					pair.OrderSellLowerByIndex(1).Price().Cmp(CalcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 {
 					t.Error("error set orders")
 				}
 				t.Run("sell", func(t *testing.T) {
@@ -1260,7 +1260,7 @@ func TestPair_CalculateBuyForSellWithOrders_01(t *testing.T) {
 				})
 				t.Run("three orders", func(t *testing.T) {
 					pair.SetOrder(big.NewInt(3000), big.NewInt(1000))
-					if pair.OrderSellLowerByIndex(2).Price().Cmp(calcPriceSell(big.NewInt(3000), big.NewInt(1000))) != 0 {
+					if pair.OrderSellLowerByIndex(2).Price().Cmp(CalcPriceSell(big.NewInt(3000), big.NewInt(1000))) != 0 {
 						t.Error("error set orders")
 					}
 					t.Run("sell", func(t *testing.T) {
@@ -1307,8 +1307,8 @@ func TestPair_CalculateBuyForSellWithOrders_10(t *testing.T) {
 	t.Run("with orders", func(t *testing.T) {
 		t.Run("one order", func(t *testing.T) {
 			pair.SetOrder(big.NewInt(2000), big.NewInt(1000))
-			t.Log(pair.OrderSellLowerByIndex(0).Price(), calcPriceSell(big.NewInt(2000), big.NewInt(1000)))
-			if pair.OrderSellLowerByIndex(0).Price().Cmp(calcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 {
+			t.Log(pair.OrderSellLowerByIndex(0).Price(), CalcPriceSell(big.NewInt(2000), big.NewInt(1000)))
+			if pair.OrderSellLowerByIndex(0).Price().Cmp(CalcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 {
 				t.Error("error set order")
 			}
 			t.Run("sell", func(t *testing.T) {
@@ -1378,8 +1378,8 @@ func TestPair_CalculateBuyForSellWithOrders_10(t *testing.T) {
 			})
 			t.Run("two equal orders", func(t *testing.T) {
 				pair.SetOrder(big.NewInt(2000), big.NewInt(1000))
-				if pair.OrderSellLowerByIndex(0).Price().Cmp(calcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 &&
-					pair.OrderSellLowerByIndex(1).Price().Cmp(calcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 {
+				if pair.OrderSellLowerByIndex(0).Price().Cmp(CalcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 &&
+					pair.OrderSellLowerByIndex(1).Price().Cmp(CalcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 {
 					t.Error("error set orders")
 				}
 				t.Run("sell", func(t *testing.T) {
@@ -1438,7 +1438,7 @@ func TestPair_CalculateBuyForSellWithOrders_10(t *testing.T) {
 				})
 				t.Run("three orders", func(t *testing.T) {
 					pair.SetOrder(big.NewInt(3000), big.NewInt(1000))
-					if pair.OrderSellLowerByIndex(2).Price().Cmp(calcPriceSell(big.NewInt(3000), big.NewInt(1000))) != 0 {
+					if pair.OrderSellLowerByIndex(2).Price().Cmp(CalcPriceSell(big.NewInt(3000), big.NewInt(1000))) != 0 {
 						t.Error("error set orders")
 					}
 					t.Run("sell", func(t *testing.T) {

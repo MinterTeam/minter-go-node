@@ -210,7 +210,7 @@ func (pd *pairData) Price() *big.Float {
 	pd.RLock()
 	defer pd.RUnlock()
 
-	return calcPriceSell(pd.Reserve0, pd.Reserve1)
+	return CalcPriceSell(pd.Reserve0, pd.Reserve1)
 }
 
 func (pd *pairData) reverse() *pairData {

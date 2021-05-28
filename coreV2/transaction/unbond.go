@@ -3,13 +3,14 @@ package transaction
 import (
 	"encoding/hex"
 	"fmt"
+	"math/big"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/commission"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/hexutil"
 	abcTypes "github.com/tendermint/tendermint/abci/types"
-	"math/big"
 )
 
 type UnbondData struct {
@@ -129,7 +130,7 @@ func (data UnbondData) Run(tx *Transaction, context state.Interface, rewardPool 
 		unbondAtBlock := currentBlock + types.GetUnbondPeriod()
 
 		if isGasCommissionFromPoolSwap {
-			commission, commissionInBaseCoin, _ = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
+			commission, commissionInBaseCoin, _, _, _ = deliverState.Swap.PairSellWithOrders(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
 		} else if !tx.GasCoin.IsBaseCoin() {
 			deliverState.Coins.SubVolume(tx.GasCoin, commission)
 			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)

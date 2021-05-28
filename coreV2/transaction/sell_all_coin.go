@@ -2,13 +2,14 @@ package transaction
 
 import (
 	"fmt"
+	"math/big"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/commission"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	abcTypes "github.com/tendermint/tendermint/abci/types"
-	"math/big"
 )
 
 type SellAllCoinData struct {
@@ -172,7 +173,7 @@ func (data SellAllCoinData) Run(tx *Transaction, context state.Interface, reward
 	var tags []abcTypes.EventAttribute
 	if deliverState, ok := context.(*state.State); ok {
 		if isGasCommissionFromPoolSwap {
-			commission, commissionInBaseCoin, _ = deliverState.Swap.PairSell(data.CoinToSell, types.GetBaseCoinID(), commission, commissionInBaseCoin)
+			commission, commissionInBaseCoin, _, _, _ = deliverState.Swap.PairSellWithOrders(data.CoinToSell, types.GetBaseCoinID(), commission, commissionInBaseCoin)
 		} else if !data.CoinToSell.IsBaseCoin() {
 			deliverState.Coins.SubVolume(data.CoinToSell, commission)
 			deliverState.Coins.SubReserve(data.CoinToSell, commissionInBaseCoin)
