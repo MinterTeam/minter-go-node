@@ -12,21 +12,21 @@ import (
 	abcTypes "github.com/tendermint/tendermint/abci/types"
 )
 
-type AddLimit struct {
-	CoinToSell     types.CoinID
-	WantSellVolume *big.Int
-	CoinToBuy      types.CoinID
-	WantBuyVolume  *big.Int
+type AddOrderSwapPoolData struct {
+	CoinToSell  types.CoinID
+	ValueToSell *big.Int
+	CoinToBuy   types.CoinID
+	ValueToBuy  *big.Int
 }
 
-func (data AddLimit) Gas() int64 {
-	return 10
+func (data AddOrderSwapPoolData) Gas() int64 {
+	return 1
 }
-func (data AddLimit) TxType() TxType {
+func (data AddOrderSwapPoolData) TxType() TxType {
 	return 0
 }
 
-func (data AddLimit) basicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data AddOrderSwapPoolData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.CoinToSell == data.CoinToBuy {
 		return &Response{
 			Code: code.CrossConvert,
@@ -50,15 +50,15 @@ func (data AddLimit) basicCheck(tx *Transaction, context *state.CheckState) *Res
 	return nil
 }
 
-func (data AddLimit) String() string {
+func (data AddOrderSwapPoolData) String() string {
 	return fmt.Sprintf("ADD LIMIT")
 }
 
-func (data AddLimit) CommissionData(price *commission.Price) *big.Int {
+func (data AddOrderSwapPoolData) CommissionData(price *commission.Price) *big.Int {
 	return big.NewInt(999)
 }
 
-func (data AddLimit) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
+func (data AddOrderSwapPoolData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -105,8 +105,10 @@ func (data AddLimit) Run(tx *Transaction, context state.Interface, rewardPool *b
 			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
 		}
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
-		deliverState.Accounts.SubBalance(sender, data.CoinToSell, data.WantSellVolume)
-		orderID := deliverState.Swap.PairAddSellOrder(data.CoinToSell, data.CoinToBuy, data.WantBuyVolume, data.WantSellVolume, sender)
+		deliverState.Accounts.SubBalance(sender, data.CoinToSell, data.ValueToSell)
+		orderID := deliverState.Swap.PairAddOrder(data.CoinToBuy, data.CoinToSell, data.ValueToBuy, data.ValueToSell, sender)
+
+		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 
 		tags = []abcTypes.EventAttribute{
 			{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},

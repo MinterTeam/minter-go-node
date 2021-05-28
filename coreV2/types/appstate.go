@@ -159,6 +159,9 @@ func (s *AppState) Verify() error {
 		}
 
 		for _, swap := range s.Pools {
+			if coin.ID != swap.Coin0 && coin.ID != swap.Coin1 {
+				continue
+			}
 			if swap.Coin0 == coin.ID {
 				volume.Add(volume, helpers.StringToBigInt(swap.Reserve0))
 
@@ -168,11 +171,14 @@ func (s *AppState) Verify() error {
 
 			}
 			for _, order := range swap.Orders {
-				if swap.Coin0 == coin.ID && order.IsSale {
-					volume.Add(volume, helpers.StringToBigInt(order.WantSellVolume))
-				}
-				if swap.Coin1 == coin.ID && !order.IsSale {
-					volume.Add(volume, helpers.StringToBigInt(order.WantSellVolume))
+				if !order.IsSale {
+					if swap.Coin0 == coin.ID {
+						volume.Add(volume, helpers.StringToBigInt(order.WantBuyVolume))
+					}
+				} else {
+					if swap.Coin1 == coin.ID {
+						volume.Add(volume, helpers.StringToBigInt(order.WantSellVolume))
+					}
 				}
 			}
 

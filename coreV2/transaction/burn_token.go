@@ -2,12 +2,13 @@ package transaction
 
 import (
 	"fmt"
+	"math/big"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/commission"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	abcTypes "github.com/tendermint/tendermint/abci/types"
-	"math/big"
 )
 
 type BurnTokenData struct {
@@ -48,6 +49,7 @@ func (data BurnTokenData) basicCheck(tx *Transaction, context *state.CheckState)
 		}
 	}
 
+	// todo: remove owner check
 	sender, _ := tx.Sender()
 	symbolInfo := context.Coins().GetSymbolInfo(coin.Symbol())
 	if coin.Version() != 0 || symbolInfo == nil || symbolInfo.OwnerAddress().Compare(sender) != 0 {

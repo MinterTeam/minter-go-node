@@ -2,12 +2,13 @@ package transaction
 
 import (
 	"fmt"
+	"math/big"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/commission"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	abcTypes "github.com/tendermint/tendermint/abci/types"
-	"math/big"
 )
 
 type SellSwapPoolData struct {
@@ -121,7 +122,7 @@ func (data SellSwapPoolData) Run(tx *Transaction, context state.Interface, rewar
 				return *errResp
 			}
 
-			valueToSellCalc := swapper.CalculateBuyForSell(valueToSell)
+			valueToSellCalc := swapper.CalculateBuyForSellWithOrders(valueToSell)
 			if valueToSellCalc == nil {
 				reserve0, reserve1 := swapper.Reserves()
 				return Response{
@@ -175,15 +176,26 @@ func (data SellSwapPoolData) Run(tx *Transaction, context state.Interface, rewar
 		var poolIDs tagPoolsChange
 
 		for i, coinToBuy := range data.Coins[1:] {
-			amountIn, amountOut, poolID := deliverState.Swap.PairSell(coinToSell, coinToBuy, valueToSell, big.NewInt(0))
+			// amountIn, amountOut, poolID := deliverState.Swap.PairSell(coinToSell, coinToBuy, valueToSell, big.NewInt(0))
+			amountIn, amountOut, poolID, details, owners := deliverState.Swap.PairSellWithOrders(coinToSell, coinToBuy, valueToSell, big.NewInt(0))
 
-			poolIDs = append(poolIDs, &tagPoolChange{
+			tags := &tagPoolChange{
 				PoolID:   poolID,
 				CoinIn:   coinToSell,
 				ValueIn:  amountIn.String(),
 				CoinOut:  coinToBuy,
 				ValueOut: amountOut.String(),
-			})
+				Orders:   details,
+			}
+
+			for address, value := range owners {
+				deliverState.Accounts.AddBalance(address, coinToSell, value)
+				tags.Sellers = append(tags.Sellers, struct {
+					Owner types.Address
+					Value string
+				}{Owner: address, Value: value.String()})
+			}
+			poolIDs = append(poolIDs, tags)
 
 			if i == 0 {
 				deliverState.Accounts.SubBalance(sender, coinToSell, amountIn)

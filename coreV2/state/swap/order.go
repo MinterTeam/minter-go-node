@@ -13,21 +13,19 @@ import (
 
 const commissionOrder = 2
 
-func (s *Swap) PairSellWithOrders(coin0, coin1 types.CoinID, amount0In, minAmount1Out *big.Int) *big.Int {
+func (s *Swap) PairSellWithOrders(coin0, coin1 types.CoinID, amount0In, minAmount1Out *big.Int) (*big.Int, *big.Int, uint32, *ChangeDetailsWithOrders, map[types.Address]*big.Int) {
 	pair := s.Pair(coin0, coin1)
-	amount1Out, owners := pair.SellWithOrders(amount0In)
+	amount1Out, owners, details := pair.SellWithOrders(amount0In)
 	if amount1Out.Cmp(minAmount1Out) == -1 {
 		panic(fmt.Sprintf("calculatedAmount1Out %s less minAmount1Out %s", amount1Out, minAmount1Out))
 	}
 
-	// todo: refactor and tests
-	for address, b := range owners {
+	for _, b := range owners {
 		s.bus.Checker().AddCoin(coin0, big.NewInt(0).Neg(b))
-		s.bus.Accounts().AddBalance(address, coin0, b)
 	}
 	s.bus.Checker().AddCoin(coin0, amount0In)
 	s.bus.Checker().AddCoin(coin1, big.NewInt(0).Neg(amount1Out))
-	return amount1Out
+	return amount1Out, amount1Out, pair.GetID(), details, owners
 }
 
 func (s *Swap) PairBuyWithOrders(coin0, coin1 types.CoinID, maxAmount0In, amount1Out *big.Int) *big.Int {
@@ -47,7 +45,16 @@ func (s *Swap) PairBuyWithOrders(coin0, coin1 types.CoinID, maxAmount0In, amount
 	return amount1Out
 }
 
-func (p *Pair) SellWithOrders(amount0In *big.Int) (amount1Out *big.Int, owners map[types.Address]*big.Int) { // todo: add mutex
+type ChangeDetailsWithOrders struct {
+	SwapAmount0In           *big.Int `json:"swap_amount_0_in"`
+	SwapAmount1Out          *big.Int `json:"swap_amount_1_out"`
+	OrdersCommissionAmount0 *big.Int `json:"orders_commission_amount_0"`
+	OrdersCommissionAmount1 *big.Int `json:"orders_commission_amount_1"`
+	Orders                  []*Limit `json:"orders"`
+}
+
+func (p *Pair) SellWithOrders(amount0In *big.Int) (amount1Out *big.Int, owners map[types.Address]*big.Int, c *ChangeDetailsWithOrders) { // todo: add mutex
+
 	owners = map[types.Address]*big.Int{}
 	amount1Out, orders := p.calculateBuyForSellWithOrders(amount0In)
 
@@ -66,13 +73,13 @@ func (p *Pair) SellWithOrders(amount0In *big.Int) (amount1Out *big.Int, owners m
 		amount1orders.Add(amount1orders, order.WantSell)
 
 		commission0orders.Add(commission0orders, cS)
-		// commission1orders.Add(commission1orders, cB)
+		commission1orders.Add(commission1orders, cB)
 	}
 
 	p.update(commission0orders, commission1orders)
 
 	amount0orders.Sub(amount0orders, commission0orders)
-	amount1orders.Sub(amount1orders, commission1orders)
+	// amount1orders.Sub(amount1orders, commission1orders)
 
 	amount0 := big.NewInt(0).Sub(amount0In, amount0orders)
 	amount1 := big.NewInt(0).Sub(amount1Out, amount1orders)
@@ -81,7 +88,13 @@ func (p *Pair) SellWithOrders(amount0In *big.Int) (amount1Out *big.Int, owners m
 
 	p.updateOrders(orders)
 
-	return amount1Out, owners
+	return amount1Out, owners, &ChangeDetailsWithOrders{
+		SwapAmount0In:           amount0,
+		SwapAmount1Out:          amount1,
+		OrdersCommissionAmount0: commission0orders,
+		OrdersCommissionAmount1: commission1orders,
+		Orders:                  orders,
+	}
 }
 
 func (p *Pair) BuyWithOrders(amount1Out *big.Int) (amount0In *big.Int, owners map[types.Address]*big.Int) { // todo: add mutex
@@ -379,10 +392,10 @@ func calcPriceSell(sell, buy *big.Int) *big.Float {
 
 type Limit struct {
 	isBuy    bool
-	WantBuy  *big.Int
-	WantSell *big.Int
+	WantBuy  *big.Int `json:"buy"`
+	WantSell *big.Int `json:"sell"`
 
-	Owner types.Address
+	Owner types.Address `json:"owner"`
 
 	pairKey
 	oldSortPrice *big.Float
@@ -577,21 +590,21 @@ func (p *Pair) setBuyLowerOrders(orders []*Limit) {
 	return
 }
 
-func (s *Swap) PairAddSellOrder(coin0, coin1 types.CoinID, wantBuyAmount, wantSellAmount *big.Int, sender types.Address) uint32 {
-	pair := s.Pair(coin0, coin1)
+func (s *Swap) PairAddOrder(coinWantBuy, coinWantSell types.CoinID, wantBuyAmount, wantSellAmount *big.Int, sender types.Address) uint32 {
+	pair := s.Pair(coinWantBuy, coinWantSell)
 	order := pair.SetOrder(wantBuyAmount, wantSellAmount)
 	order.Owner = sender
-	s.bus.Checker().AddCoin(coin0, wantBuyAmount)
+	s.bus.Checker().AddCoin(coinWantSell, wantSellAmount)
 
 	return order.id
 }
 
-func (p *Pair) SetOrder(wantBuyAmount, wantSellAmount *big.Int) (order *Limit) {
+func (p *Pair) SetOrder(wantBuyAmount0, wantSellAmount1 *big.Int) (order *Limit) {
 	order = &Limit{
 		pairKey:  p.pairKey,
 		isBuy:    false,
-		WantBuy:  wantBuyAmount,
-		WantSell: wantSellAmount,
+		WantBuy:  wantBuyAmount0,
+		WantSell: wantSellAmount1,
 		id:       p.getLastTotalOrderID(),
 	}
 	price := order.Price()

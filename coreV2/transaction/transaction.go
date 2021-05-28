@@ -5,6 +5,8 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"math/big"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/commission"
@@ -12,7 +14,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"golang.org/x/crypto/sha3"
-	"math/big"
 )
 
 // TxType of transaction is determined by a single byte.
@@ -61,7 +62,7 @@ const (
 	TypeVoteCommission          TxType = 0x20
 	TypeVoteUpdate              TxType = 0x21
 	TypeCreateSwapPool          TxType = 0x22
-	TypeAddLimit                TxType = 0x23
+	TypeAddOrderSwapPool        TxType = 0x23
 )
 
 const (

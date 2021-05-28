@@ -2,13 +2,14 @@ package transaction
 
 import (
 	"fmt"
+	"math/big"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/commission"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/swap"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	abcTypes "github.com/tendermint/tendermint/abci/types"
-	"math/big"
 )
 
 type BuySwapPoolData struct {
@@ -237,7 +238,7 @@ func (data BuySwapPoolData) Run(tx *Transaction, context state.Interface, reward
 
 func CheckSwap(rSwap swap.EditableChecker, coinIn CalculateCoin, coinOut CalculateCoin, valueIn *big.Int, valueOut *big.Int, isBuy bool) *Response {
 	if isBuy {
-		calculatedAmountToSell := rSwap.CalculateSellForBuy(valueOut)
+		calculatedAmountToSell := rSwap.CalculateSellForBuyWithOrders(valueOut)
 		if calculatedAmountToSell == nil {
 			reserve0, reserve1 := rSwap.Reserves()
 			symbolIn := coinIn.GetFullSymbol()
@@ -259,7 +260,7 @@ func CheckSwap(rSwap swap.EditableChecker, coinIn CalculateCoin, coinOut Calcula
 		}
 		valueIn = calculatedAmountToSell
 	} else {
-		calculatedAmountToBuy := rSwap.CalculateBuyForSell(valueIn)
+		calculatedAmountToBuy := rSwap.CalculateBuyForSellWithOrders(valueIn)
 		if calculatedAmountToBuy == nil {
 			reserve0, reserve1 := rSwap.Reserves()
 			symbolIn := coinIn.GetFullSymbol()
@@ -282,31 +283,31 @@ func CheckSwap(rSwap swap.EditableChecker, coinIn CalculateCoin, coinOut Calcula
 		}
 		valueOut = calculatedAmountToBuy
 	}
-	if err := rSwap.CheckSwap(valueIn, valueOut); err != nil {
-		if err == swap.ErrorK {
-			panic(swap.ErrorK)
-		}
-		if err == swap.ErrorInsufficientLiquidity {
-			reserve0, reserve1 := rSwap.Reserves()
-			symbolIn := coinIn.GetFullSymbol()
-			symbolOut := coinOut.GetFullSymbol()
-			return &Response{
-				Code: code.InsufficientLiquidity,
-				Log:  fmt.Sprintf("You wanted to exchange %s %s for %s %s, but pool reserve %s equal %s and reserve %s equal %s", valueIn, symbolIn, valueOut, symbolOut, reserve0.String(), symbolIn, reserve1.String(), symbolOut),
-				Info: EncodeError(code.NewInsufficientLiquidity(coinIn.ID().String(), valueIn.String(), coinOut.ID().String(), valueOut.String(), reserve0.String(), reserve1.String())),
-			}
-		}
-		if err == swap.ErrorInsufficientOutputAmount {
-			return &Response{
-				Code: code.InsufficientOutputAmount,
-				Log:  fmt.Sprintf("Enter a positive number of coins to exchange"),
-				Info: EncodeError(code.NewInsufficientOutputAmount(coinIn.ID().String(), valueIn.String(), coinOut.ID().String(), valueOut.String())),
-			}
-		}
-		return &Response{
-			Code: code.SwapPoolUnknown,
-			Log:  err.Error(),
-		}
-	}
+	// if err := rSwap.CheckSwap(valueIn, valueOut); err != nil {
+	// 	if err == swap.ErrorK {
+	// 		panic(swap.ErrorK)
+	// 	}
+	// 	if err == swap.ErrorInsufficientLiquidity {
+	// 		reserve0, reserve1 := rSwap.Reserves()
+	// 		symbolIn := coinIn.GetFullSymbol()
+	// 		symbolOut := coinOut.GetFullSymbol()
+	// 		return &Response{
+	// 			Code: code.InsufficientLiquidity,
+	// 			Log:  fmt.Sprintf("You wanted to exchange %s %s for %s %s, but pool reserve %s equal %s and reserve %s equal %s", valueIn, symbolIn, valueOut, symbolOut, reserve0.String(), symbolIn, reserve1.String(), symbolOut),
+	// 			Info: EncodeError(code.NewInsufficientLiquidity(coinIn.ID().String(), valueIn.String(), coinOut.ID().String(), valueOut.String(), reserve0.String(), reserve1.String())),
+	// 		}
+	// 	}
+	// 	if err == swap.ErrorInsufficientOutputAmount {
+	// 		return &Response{
+	// 			Code: code.InsufficientOutputAmount,
+	// 			Log:  fmt.Sprintf("Enter a positive number of coins to exchange"),
+	// 			Info: EncodeError(code.NewInsufficientOutputAmount(coinIn.ID().String(), valueIn.String(), coinOut.ID().String(), valueOut.String())),
+	// 		}
+	// 	}
+	// 	return &Response{
+	// 		Code: code.SwapPoolUnknown,
+	// 		Log:  err.Error(),
+	// 	}
+	// }
 	return nil
 }

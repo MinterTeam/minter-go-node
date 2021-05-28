@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"log"
 	"math"
 	"math/big"
 	"sort"
@@ -36,13 +35,11 @@ type EditableChecker interface {
 	Amounts(liquidity, totalSupply *big.Int) (amount0 *big.Int, amount1 *big.Int)
 	CalculateAddAmount0ForPrice(float *big.Float) (amount0 *big.Int)
 	CalculateAddAmount1ForPrice(float *big.Float) (amount1 *big.Int)
-	// Deprecated: Use CalculateBuyForSellAllowNeg
+	// Deprecated
 	CalculateBuyForSell(amount0In *big.Int) (amount1Out *big.Int)
-	CalculateBuyForSellAllowNeg(amount0In *big.Int) (amount1Out *big.Int)
 	CalculateBuyForSellWithOrders(amount0In *big.Int) (amount1Out *big.Int)
-	// Deprecated: use CalculateSellForBuyAllowNeg
+	// Deprecated
 	CalculateSellForBuy(amount1Out *big.Int) (amount0In *big.Int)
-	CalculateSellForBuyAllowNeg(amount1Out *big.Int) (amount0In *big.Int)
 	CalculateSellForBuyWithOrders(amount1Out *big.Int) (amount0In *big.Int)
 	CalculateAddLiquidity(amount0 *big.Int, supply *big.Int) (liquidity *big.Int, amount1 *big.Int)
 	CheckSwap(amount0In, amount1Out *big.Int) error
@@ -382,7 +379,7 @@ func (s *Swap) Commit(db *iavl.MutableTree) error {
 			}
 
 			db.Set(newPath, pairOrderBytes)
-			log.Printf("new path %q, %s, %s. Sell %v", newPath, limit.WantBuy, limit.WantSell, !limit.isBuy)
+			// log.Printf("new path %q, %s, %s. Sell %v", newPath, limit.WantBuy, limit.WantSell, !limit.isBuy)
 			if !bytes.Equal(oldPath, newPath) && db.Has(oldPath) {
 				db.Remove(oldPath) // the price can change minimally due to rounding off the ratio of the remaining volumes
 				// log.Printf("remove old path %q, %s, %s. Sell %v", oldPath, limit.WantBuy, limit.WantSell, !limit.isBuy)

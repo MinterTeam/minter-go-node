@@ -2,6 +2,8 @@ package transaction
 
 import (
 	"fmt"
+	"math/big"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/commission"
@@ -10,7 +12,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/formula"
 	abcTypes "github.com/tendermint/tendermint/abci/types"
 	tmjson "github.com/tendermint/tendermint/libs/json"
-	"math/big"
 )
 
 type tagPoolsChange []*tagPoolChange
@@ -27,11 +28,16 @@ func (p *tagPoolsChange) string() string {
 }
 
 type tagPoolChange struct {
-	PoolID   uint32       `json:"pool_id"`
-	CoinIn   types.CoinID `json:"coin_in"`
-	ValueIn  string       `json:"value_in"`
-	CoinOut  types.CoinID `json:"coin_out"`
-	ValueOut string       `json:"value_out"`
+	PoolID   uint32                        `json:"pool_id"`
+	CoinIn   types.CoinID                  `json:"coin_in"`
+	ValueIn  string                        `json:"value_in"`
+	CoinOut  types.CoinID                  `json:"coin_out"`
+	ValueOut string                        `json:"value_out"`
+	Orders   *swap.ChangeDetailsWithOrders `json:"details"`
+	Sellers  []struct {
+		Owner types.Address
+		Value string
+	} `json:"sellers"`
 }
 
 type SellAllSwapPoolData struct {

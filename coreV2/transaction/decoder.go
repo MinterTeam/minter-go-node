@@ -3,6 +3,7 @@ package transaction
 import (
 	"errors"
 	"fmt"
+
 	"github.com/MinterTeam/minter-go-node/rlp"
 )
 
@@ -76,8 +77,8 @@ func getData(txType TxType) (Data, bool) {
 		return &VoteUpdateData{}, true
 	case TypeCreateSwapPool:
 		return &CreateSwapPoolData{}, true
-	case TypeAddLimit:
-		return &AddLimit{}, true
+	case TypeAddOrderSwapPool:
+		return &AddOrderSwapPoolData{}, true
 	default:
 		return nil, false
 	}
