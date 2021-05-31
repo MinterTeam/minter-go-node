@@ -392,9 +392,6 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 			})
 			blockchain.grace.AddGracePeriods(graceForUpdate(height))
 			if v == v230 {
-				if types.ChainMainnet == types.CurrentChainID {
-					blockchain.stateDeliver.Coins.AddVolume(1905, big.NewInt(16271092821154637))
-				}
 				blockchain.executor = transaction.NewExecutor(transaction.GetData)
 			}
 		}
