@@ -242,10 +242,7 @@ func EncodeError(data interface{}) string {
 }
 
 func (tx *Transaction) commissionCoin() types.CoinID {
-	if tx.Type == TypeSellAllSwapPool {
-		return tx.decodedData.(dataCommission).commissionCoin()
-	}
-	if tx.Type == TypeSellAllCoin {
+	if tx.Type == TypeSellAllSwapPool || tx.Type == TypeSellAllCoin {
 		return tx.decodedData.(dataCommission).commissionCoin()
 	}
 	return tx.GasCoin
