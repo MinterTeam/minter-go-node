@@ -2,16 +2,18 @@ package service
 
 import (
 	"context"
+	"strconv"
+	"time"
+
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/coreV2/minter"
 	"github.com/MinterTeam/minter-go-node/coreV2/rewards"
+	"github.com/MinterTeam/minter-go-node/coreV2/transaction"
 	"github.com/MinterTeam/node-grpc-gateway/api_pb"
 	tmNode "github.com/tendermint/tendermint/node"
 	rpc "github.com/tendermint/tendermint/rpc/client/local"
 	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/status"
-	"strconv"
-	"time"
 )
 
 // Service is gRPC implementation ApiServiceServer
@@ -23,6 +25,7 @@ type Service struct {
 	version    string
 	rewards    *rewards.Reward
 	api_pb.UnimplementedApiServiceServer
+	executor *transaction.Executor
 }
 
 // NewService create gRPC server implementation
@@ -34,6 +37,7 @@ func NewService(blockchain *minter.Blockchain, client *rpc.Local, node *tmNode.N
 		minterCfg:  minterCfg,
 		version:    version,
 		tmNode:     node,
+		executor:   transaction.NewExecutor(transaction.GetData),
 	}
 }
 
