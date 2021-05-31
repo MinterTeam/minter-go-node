@@ -59,7 +59,7 @@ func TestSellCoinTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+	response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error: %s", response.Log)
@@ -111,7 +111,7 @@ func TestSellCoinTxBaseToCustomBaseCommission(t *testing.T) {
 	}
 
 	// check response
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+	response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 	if response.Code != code.OK {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
@@ -190,7 +190,7 @@ func TestSellCoinTxCustomToBaseBaseCommission(t *testing.T) {
 	}
 
 	// check response
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+	response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 	if response.Code != code.OK {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
@@ -271,7 +271,7 @@ func TestSellCoinTxCustomToCustomBaseCommission(t *testing.T) {
 	}
 
 	// check response
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+	response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 	if response.Code != code.OK {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
@@ -361,7 +361,7 @@ func TestSellCoinTxBaseToCustomCustomCommission(t *testing.T) {
 	}
 
 	// check response
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+	response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 	if response.Code != code.OK {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
@@ -442,7 +442,7 @@ func TestSellCoinTxCustomToBaseCustomCommission(t *testing.T) {
 	}
 
 	// check response
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+	response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 	if response.Code != code.OK {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
@@ -527,7 +527,7 @@ func TestSellCoinTxCustomToCustomCustom1Commission(t *testing.T) {
 	}
 
 	// check response
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+	response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 	if response.Code != code.OK {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
@@ -645,7 +645,7 @@ func TestSellCoinTxCustomToCustomCustom2Commission(t *testing.T) {
 	}
 
 	// check response
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+	response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 	if response.Code != code.OK {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
 	}
@@ -738,7 +738,7 @@ func TestSellCoinTxToCoinSupplyOverflow(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+	response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 	if response.Code != code.CoinSupplyOverflow {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinSupplyOverflow, response.Log)
 	}
@@ -775,7 +775,7 @@ func TestSellCoinTxToCoinSupplyOverflow(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+	response = NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 	if response.Code != code.CoinSupplyOverflow {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinSupplyOverflow, response.Log)
 	}
@@ -826,7 +826,7 @@ func TestSellCoinTxToMinimumValueToBuyReached(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+	response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 	if response.Code != code.MinimumValueToBuyReached {
 		t.Fatalf("Response code is not %d. Error %s", code.MinimumValueToBuyReached, response.Log)
 	}
@@ -859,7 +859,7 @@ func TestSellCoinTxToMinimumValueToBuyReached(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+	response = NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 	if response.Code != code.MinimumValueToBuyReached {
 		t.Fatalf("Response code is not %d. Error %s", code.MinimumValueToBuyReached, response.Log)
 	}
@@ -906,7 +906,7 @@ func TestSellCoinTxToMinimumValueToBuyReached(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+	response = NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 	if response.Code != code.MinimumValueToBuyReached {
 		t.Fatalf("Response code is not %d. Error %s", code.MinimumValueToBuyReached, response.Log)
 	}
@@ -937,7 +937,7 @@ func TestSellCoinTxToCoinReserveNotSufficient(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+	response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 	if response.Code != code.CoinReserveUnderflow {
 		t.Fatalf("Response code is not %d. Error %d %s", code.CoinReserveUnderflow, response.Code, response.Log)
 	}
@@ -975,7 +975,7 @@ func TestSellCoinTxToCoinReserveNotSufficient(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+	response = NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 	if response.Code != code.CommissionCoinNotSufficient {
 		t.Fatalf("Response code is not %d %d. Error %s", code.CommissionCoinNotSufficient, response.Code, response.Log)
 	}
@@ -1007,7 +1007,7 @@ func TestSellCoinTxInsufficientFunds(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+	response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 	if response.Code != code.InsufficientFunds {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientFunds, response.Log)
 	}
@@ -1033,7 +1033,7 @@ func TestSellCoinTxEqualCoins(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+	response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 	if response.Code != code.CrossConvert {
 		t.Fatalf("Response code is not %d. Error %s", code.CrossConvert, response.Log)
 	}
@@ -1059,7 +1059,7 @@ func TestSellCoinTxToNonExistCoins(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+	response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 	if response.Code != code.CoinNotExists {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
 	}
@@ -1074,7 +1074,7 @@ func TestSellCoinTxToNonExistCoins(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+	response = NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 	if response.Code != code.CoinNotExists {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
 	}
@@ -1093,7 +1093,7 @@ func TestSellCoinTxToNonExistCoins(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response = RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+	response = NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 	if response.Code != code.CoinNotExists {
 		t.Fatalf("Response code is not %d. Error %s", code.CoinNotExists, response.Log)
 	}

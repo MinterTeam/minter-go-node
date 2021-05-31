@@ -1,6 +1,11 @@
 package transaction
 
 import (
+	"math/big"
+	"math/rand"
+	"sync"
+	"testing"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/accounts"
@@ -8,10 +13,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
-	"math/big"
-	"math/rand"
-	"sync"
-	"testing"
 )
 
 func TestTooLongTx(t *testing.T) {
@@ -19,7 +20,7 @@ func TestTooLongTx(t *testing.T) {
 	fakeTx := make([]byte, maxTxLength+1)
 
 	cState := getState()
-	response := RunTx(cState, fakeTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+	response := NewExecutor(GetData).RunTx(cState, fakeTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 	if response.Code != code.TxTooLarge {
 		t.Fatalf("Response code is not correct")
 	}
@@ -35,7 +36,7 @@ func TestIncorrectTx(t *testing.T) {
 	rand.Read(fakeTx)
 
 	cState := getState()
-	response := RunTx(cState, fakeTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+	response := NewExecutor(GetData).RunTx(cState, fakeTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 	if response.Code != code.DecodeError {
 		t.Fatalf("Response code is not correct")
 	}
@@ -80,7 +81,7 @@ func TestTooLongPayloadTx(t *testing.T) {
 	fakeTx, _ := rlp.EncodeToBytes(tx)
 
 	cState := getState()
-	response := RunTx(cState, fakeTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+	response := NewExecutor(GetData).RunTx(cState, fakeTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 
 	if response.Code != code.TxPayloadTooLarge {
 		t.Fatalf("Response code is not correct. Expected %d, got %d", code.TxPayloadTooLarge, response.Code)
@@ -125,7 +126,7 @@ func TestTooLongServiceDataTx(t *testing.T) {
 	fakeTx, _ := rlp.EncodeToBytes(tx)
 
 	cState := getState()
-	response := RunTx(cState, fakeTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+	response := NewExecutor(GetData).RunTx(cState, fakeTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 
 	if response.Code != code.TxServiceDataTooLarge {
 		t.Fatalf("Response code is not correct. Expected %d, got %d", code.TxServiceDataTooLarge, response.Code)
@@ -166,7 +167,7 @@ func TestUnexpectedNonceTx(t *testing.T) {
 	fakeTx, _ := rlp.EncodeToBytes(tx)
 
 	cState := getState()
-	response := RunTx(cState, fakeTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+	response := NewExecutor(GetData).RunTx(cState, fakeTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 	if response.Code != code.WrongNonce {
 		t.Fatalf("Response code is not correct. Expected %d, got %d", code.WrongNonce, response.Code)
 	}
@@ -209,7 +210,7 @@ func TestInvalidSigTx(t *testing.T) {
 	fakeTx, _ := rlp.EncodeToBytes(tx)
 
 	cState := getState()
-	response := RunTx(cState, fakeTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+	response := NewExecutor(GetData).RunTx(cState, fakeTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 
 	if response.Code != code.DecodeError {
 		t.Fatalf("Response code is not correct. Expected %d, got %d", code.DecodeError, response.Code)
@@ -254,7 +255,7 @@ func TestNotExistMultiSigTx(t *testing.T) {
 	fakeTx, _ := rlp.EncodeToBytes(tx)
 
 	cState := getState()
-	response := RunTx(cState, fakeTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+	response := NewExecutor(GetData).RunTx(cState, fakeTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 
 	if response.Code != code.MultisigNotExists {
 		t.Fatalf("Response code is not correct. Expected %d, got %d", code.MultisigNotExists, response.Code)
@@ -303,7 +304,7 @@ func TestMultiSigTx(t *testing.T) {
 
 	txBytes, _ := rlp.EncodeToBytes(tx)
 
-	response := RunTx(cState, txBytes, big.NewInt(0), 0, &sync.Map{}, 0, false)
+	response := NewExecutor(GetData).RunTx(cState, txBytes, big.NewInt(0), 0, &sync.Map{}, 0, false)
 
 	if response.Code != 0 {
 		t.Fatalf("Error code is not 0. Error: %s", response.Log)
@@ -356,7 +357,7 @@ func TestMultiSigDoubleSignTx(t *testing.T) {
 
 	txBytes, _ := rlp.EncodeToBytes(tx)
 
-	response := RunTx(cState, txBytes, big.NewInt(0), 0, &sync.Map{}, 0, false)
+	response := NewExecutor(GetData).RunTx(cState, txBytes, big.NewInt(0), 0, &sync.Map{}, 0, false)
 
 	if response.Code != code.DuplicatedAddresses {
 		t.Fatalf("Error code is not %d, got %d", code.DuplicatedAddresses, response.Code)
@@ -412,7 +413,7 @@ func TestMultiSigTooManySignsTx(t *testing.T) {
 
 	txBytes, _ := rlp.EncodeToBytes(tx)
 
-	response := RunTx(cState, txBytes, big.NewInt(0), 0, &sync.Map{}, 0, false)
+	response := NewExecutor(GetData).RunTx(cState, txBytes, big.NewInt(0), 0, &sync.Map{}, 0, false)
 
 	if response.Code != code.IncorrectMultiSignature {
 		t.Fatalf("Error code is not %d, got %d", code.IncorrectMultiSignature, response.Code)
@@ -461,7 +462,7 @@ func TestMultiSigNotEnoughTx(t *testing.T) {
 
 	txBytes, _ := rlp.EncodeToBytes(tx)
 
-	response := RunTx(cState, txBytes, big.NewInt(0), 0, &sync.Map{}, 0, false)
+	response := NewExecutor(GetData).RunTx(cState, txBytes, big.NewInt(0), 0, &sync.Map{}, 0, false)
 
 	if response.Code != code.NotEnoughMultisigVotes {
 		t.Fatalf("Error code is not %d. Error: %d", code.NotEnoughMultisigVotes, response.Code)
@@ -511,7 +512,7 @@ func TestMultiSigIncorrectSignsTx(t *testing.T) {
 
 	txBytes, _ := rlp.EncodeToBytes(tx)
 
-	response := RunTx(cState, txBytes, big.NewInt(0), 0, &sync.Map{}, 0, false)
+	response := NewExecutor(GetData).RunTx(cState, txBytes, big.NewInt(0), 0, &sync.Map{}, 0, false)
 
 	if response.Code != code.IncorrectMultiSignature {
 		t.Fatalf("Error code is not %d, got %d", code.IncorrectMultiSignature, response.Code)
@@ -576,7 +577,7 @@ func TestCustomCommissionCoinAndCustomGasCoin(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+		response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
@@ -630,7 +631,7 @@ func TestCustomCommissionCoinAndCustomGasCoin(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+	response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error: %s, %s", response.Log, response.Info)
 	}
@@ -697,11 +698,11 @@ func TestTwoTxFormOneSenderOneBlock(t *testing.T) {
 			t.Fatalf("Error %s", err.Error())
 		}
 
-		if response := RunTx(state.NewCheckState(cState), txBytes, nil, 0, mempool, 0, false); response.Code != code.OK {
+		if response := NewExecutor(GetData).RunTx(state.NewCheckState(cState), txBytes, nil, 0, mempool, 0, false); response.Code != code.OK {
 			t.Fatalf("Error code is not %d, got %d", code.OK, response.Code)
 		}
 
-		response := RunTx(cState, txBytes, big.NewInt(0), 0, mempool, 0, false)
+		response := NewExecutor(GetData).RunTx(cState, txBytes, big.NewInt(0), 0, mempool, 0, false)
 		if response.Code != code.OK {
 			t.Fatalf("Error code is not %d, got %d", code.OK, response.Code)
 		}
@@ -735,7 +736,7 @@ func TestTwoTxFormOneSenderOneBlock(t *testing.T) {
 			t.Fatalf("Error %s", err.Error())
 		}
 
-		if response := RunTx(state.NewCheckState(cState), txBytes, nil, 0, mempool, 0, false); response.Code != code.TxFromSenderAlreadyInMempool {
+		if response := NewExecutor(GetData).RunTx(state.NewCheckState(cState), txBytes, nil, 0, mempool, 0, false); response.Code != code.TxFromSenderAlreadyInMempool {
 			t.Fatalf("Error code is not %d, got %d", code.TxFromSenderAlreadyInMempool, response.Code)
 		}
 	}
@@ -776,11 +777,11 @@ func TestTwoTxFormOneSenderAnyBlock(t *testing.T) {
 			t.Fatalf("Error %s", err.Error())
 		}
 
-		if response := RunTx(state.NewCheckState(cState), txBytes, nil, 0, mempool, 0, false); response.Code != code.OK {
+		if response := NewExecutor(GetData).RunTx(state.NewCheckState(cState), txBytes, nil, 0, mempool, 0, false); response.Code != code.OK {
 			t.Fatalf("Error code is not %d, got %d", code.OK, response.Code)
 		}
 
-		response := RunTx(cState, txBytes, big.NewInt(0), 0, mempool, 0, false)
+		response := NewExecutor(GetData).RunTx(cState, txBytes, big.NewInt(0), 0, mempool, 0, false)
 		if response.Code != code.OK {
 			t.Fatalf("Error code is not %d, got %d", code.OK, response.Code)
 		}
@@ -815,11 +816,11 @@ func TestTwoTxFormOneSenderAnyBlock(t *testing.T) {
 			t.Fatalf("Error %s", err.Error())
 		}
 
-		if response := RunTx(state.NewCheckState(cState), txBytes, nil, 0, mempool, 0, false); response.Code != code.OK {
+		if response := NewExecutor(GetData).RunTx(state.NewCheckState(cState), txBytes, nil, 0, mempool, 0, false); response.Code != code.OK {
 			t.Fatalf("Error code is not %d, got %d", code.OK, response.Code)
 		}
 
-		response := RunTx(cState, txBytes, big.NewInt(0), 0, mempool, 0, false)
+		response := NewExecutor(GetData).RunTx(cState, txBytes, big.NewInt(0), 0, mempool, 0, false)
 		if response.Code != code.OK {
 			t.Fatalf("Error code is not %d, got %d", code.OK, response.Code)
 		}
@@ -861,11 +862,11 @@ func TestTxOkAfterFailFormOneSenderInOneBlock(t *testing.T) {
 			t.Fatalf("Error %s", err.Error())
 		}
 
-		if response := RunTx(state.NewCheckState(cState), txBytes, nil, 0, mempool, 0, false); response.Code != code.WrongNonce {
+		if response := NewExecutor(GetData).RunTx(state.NewCheckState(cState), txBytes, nil, 0, mempool, 0, false); response.Code != code.WrongNonce {
 			t.Fatalf("Error code is not %d, got %d", code.WrongNonce, response.Code)
 		}
 
-		response := RunTx(cState, txBytes, big.NewInt(0), 0, mempool, 0, false)
+		response := NewExecutor(GetData).RunTx(cState, txBytes, big.NewInt(0), 0, mempool, 0, false)
 		if response.Code != code.WrongNonce {
 			t.Fatalf("Error code is not %d, got %d", code.WrongNonce, response.Code)
 		}
@@ -899,11 +900,11 @@ func TestTxOkAfterFailFormOneSenderInOneBlock(t *testing.T) {
 			t.Fatalf("Error %s", err.Error())
 		}
 
-		if response := RunTx(state.NewCheckState(cState), txBytes, nil, 0, mempool, 0, false); response.Code != code.OK {
+		if response := NewExecutor(GetData).RunTx(state.NewCheckState(cState), txBytes, nil, 0, mempool, 0, false); response.Code != code.OK {
 			t.Fatalf("Error code is not %d, got %d", code.OK, response.Code)
 		}
 
-		response := RunTx(cState, txBytes, big.NewInt(0), 0, mempool, 0, false)
+		response := NewExecutor(GetData).RunTx(cState, txBytes, big.NewInt(0), 0, mempool, 0, false)
 		if response.Code != code.OK {
 			t.Fatalf("Error code is not %d, got %d", code.OK, response.Code)
 		}
