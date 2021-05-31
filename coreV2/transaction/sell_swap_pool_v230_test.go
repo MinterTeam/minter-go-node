@@ -1,13 +1,14 @@
 package transaction
 
 import (
+	"math/big"
+	"sync"
+	"testing"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
-	"math/big"
-	"sync"
-	"testing"
 )
 
 func TestSellSwapPoolTx_0(t *testing.T) {
