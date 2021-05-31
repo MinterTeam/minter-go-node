@@ -195,7 +195,6 @@ func (data BuySwapPoolData) Run(tx *Transaction, context state.Interface, reward
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
 		coinToBuy := data.Coins[0]
-		resultCoin := data.Coins[len(data.Coins)-1]
 		valueToBuy := data.ValueToBuy
 
 		var poolIDs tagPoolsChange
@@ -233,7 +232,7 @@ func (data BuySwapPoolData) Run(tx *Transaction, context state.Interface, reward
 			{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String()), Index: true},
 			{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 			{Key: []byte("tx.coin_to_buy"), Value: []byte(data.Coins[0].String()), Index: true},
-			{Key: []byte("tx.coin_to_sell"), Value: []byte(resultCoin.String()), Index: true},
+			{Key: []byte("tx.coin_to_sell"), Value: []byte(data.Coins[len(data.Coins)-1].String()), Index: true},
 			{Key: []byte("tx.return"), Value: []byte(amountIn.String())},
 			{Key: []byte("tx.pools"), Value: []byte(poolIDs.string())},
 		}

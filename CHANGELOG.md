@@ -1,5 +1,14 @@
 # Changelog
 
+## [v2.2.1](https://github.com/MinterTeam/minter-go-node/tree/v2.2.1)
+
+[Full Changelog](https://github.com/MinterTeam/minter-go-node/compare/v2.2.0...v2.2.1)
+
+### Fixed
+
+- Swap pool tx tags *coin_to_sell* and *coin_to_buy*
+- Hash of the transaction in send API response
+
 ## [v2.2.0](https://github.com/MinterTeam/minter-go-node/tree/v2.2.0)
 
 [Full Changelog](https://github.com/MinterTeam/minter-go-node/compare/v2.1.0...v2.2.0)
