@@ -16,11 +16,11 @@ type SellAllSwapPoolDataDeprecated struct {
 	MinimumValueToBuy *big.Int
 }
 
-func (data SellAllSwapPoolDataDeprecated) Gas() int64 {
+func (data *SellAllSwapPoolDataDeprecated) Gas() int64 {
 	return gasSellAllSwapPool + int64(len(data.Coins)-2)*convertDelta
 }
 
-func (data SellAllSwapPoolDataDeprecated) TxType() TxType {
+func (data *SellAllSwapPoolDataDeprecated) TxType() TxType {
 	return TypeSellAllSwapPool
 }
 
