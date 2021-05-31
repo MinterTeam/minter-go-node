@@ -213,7 +213,6 @@ func (e *Executor) RunTx(context state.Interface, rawTx []byte, rewardPool *big.
 		}
 	}
 
-	commissionCoin := tx.commissionCoin()
 	if notSaveTags || isCheck {
 		response.Tags = nil
 	} else {
@@ -222,7 +221,7 @@ func (e *Executor) RunTx(context state.Interface, rawTx []byte, rewardPool *big.
 			priceCommission,
 			abcTypes.EventAttribute{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:])), Index: true},
 			abcTypes.EventAttribute{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(tx.decodedData.TxType())})), Index: true},
-			abcTypes.EventAttribute{Key: []byte("tx.commission_coin"), Value: []byte(commissionCoin.String()), Index: true},
+			abcTypes.EventAttribute{Key: []byte("tx.commission_coin"), Value: []byte(tx.commissionCoin().String()), Index: true},
 		)
 	}
 
@@ -244,10 +243,10 @@ func EncodeError(data interface{}) string {
 
 func (tx *Transaction) commissionCoin() types.CoinID {
 	if tx.Type == TypeSellAllSwapPool {
-		return tx.decodedData.(*SellAllSwapPoolData).Coins[0]
+		return tx.decodedData.(dataCommission).commissionCoin()
 	}
 	if tx.Type == TypeSellAllCoin {
-		return tx.decodedData.(*SellAllCoinData).CoinToSell
+		return tx.decodedData.(dataCommission).commissionCoin()
 	}
 	return tx.GasCoin
 }
