@@ -16,11 +16,11 @@ import (
 
 type tagPoolsChange []*tagPoolChange
 
-func (p *tagPoolsChange) string() string {
-	if p == nil {
+func (tPools *tagPoolsChange) string() string {
+	if tPools == nil {
 		return ""
 	}
-	marshal, err := tmjson.Marshal(p)
+	marshal, err := tmjson.Marshal(tPools)
 	if err != nil {
 		panic(err)
 	}
@@ -40,6 +40,17 @@ type tagPoolChange struct {
 	ValueOut string                        `json:"value_out"`
 	Orders   *swap.ChangeDetailsWithOrders `json:"details"`
 	Sellers  []*OrderDetail                `json:"sellers"`
+}
+
+func (tPool *tagPoolChange) string() string {
+	if tPool == nil {
+		return ""
+	}
+	marshal, err := tmjson.Marshal(tPool)
+	if err != nil {
+		panic(err)
+	}
+	return string(marshal)
 }
 
 type SellAllSwapPoolData struct {

@@ -146,7 +146,7 @@ func (data BuySwapPoolData) Run(tx *Transaction, context state.Interface, reward
 				return *errResp
 			}
 
-			valueToBuyCalc := swapper.CalculateSellForBuy(valueToBuy)
+			valueToBuyCalc := swapper.CalculateSellForBuyWithOrders(valueToBuy)
 			if valueToBuyCalc == nil {
 				reserve0, reserve1 := swapper.Reserves()
 				return Response{ // todo
@@ -200,16 +200,22 @@ func (data BuySwapPoolData) Run(tx *Transaction, context state.Interface, reward
 		var poolIDs tagPoolsChange
 
 		for i, coinToSell := range data.Coins[1:] {
+			amountIn, amountOut, poolID, details, owners := deliverState.Swap.PairBuyWithOrders(coinToSell, coinToBuy, maxCoinSupply, valueToBuy)
 
-			amountIn, amountOut, poolID := deliverState.Swap.PairBuy(coinToSell, coinToBuy, maxCoinSupply, valueToBuy)
-
-			poolIDs = append(poolIDs, &tagPoolChange{
+			tags := &tagPoolChange{
 				PoolID:   poolID,
 				CoinIn:   coinToSell,
 				ValueIn:  amountIn.String(),
 				CoinOut:  coinToBuy,
 				ValueOut: amountOut.String(),
-			})
+				Orders:   details,
+			}
+
+			for address, value := range owners {
+				deliverState.Accounts.AddBalance(address, coinToSell, value)
+				tags.Sellers = append(tags.Sellers, &OrderDetail{Owner: address, Value: value.String()})
+			}
+			poolIDs = append(poolIDs, tags)
 
 			if i == 0 {
 				deliverState.Accounts.AddBalance(sender, coinToBuy, amountOut)

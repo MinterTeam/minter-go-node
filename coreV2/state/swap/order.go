@@ -28,20 +28,20 @@ func (s *Swap) PairSellWithOrders(coin0, coin1 types.CoinID, amount0In, minAmoun
 	return amount0In, amount1Out, pair.GetID(), details, owners
 }
 
-func (s *Swap) PairBuyWithOrders(coin0, coin1 types.CoinID, maxAmount0In, amount1Out *big.Int) *big.Int {
+func (s *Swap) PairBuyWithOrders(coin0, coin1 types.CoinID, maxAmount0In, amount1Out *big.Int) (*big.Int, *big.Int, uint32, *ChangeDetailsWithOrders, map[types.Address]*big.Int) {
 	pair := s.Pair(coin0, coin1)
-	amount0OIn, owners := pair.BuyWithOrders(amount1Out)
+	amount0OIn, owners, details := pair.BuyWithOrders(amount1Out)
 	if amount1Out.Cmp(maxAmount0In) == 1 {
 		panic(fmt.Sprintf("calculatedAmount1Out %s less minAmount1Out %s", amount1Out, maxAmount0In))
 	}
 
-	for address, b := range owners {
-		s.bus.Checker().AddCoin(coin0, big.NewInt(0).Neg(b))
-		s.bus.Accounts().AddBalance(address, coin0, b)
-	}
+	// for address, b := range owners {
+	// 	s.bus.Checker().AddCoin(coin0, big.NewInt(0).Neg(b))
+	// 	s.bus.Accounts().AddBalance(address, coin0, b)
+	// }
 	s.bus.Checker().AddCoin(coin0, amount0OIn)
 	s.bus.Checker().AddCoin(coin1, big.NewInt(0).Neg(amount1Out))
-	return amount1Out
+	return amount0OIn, amount1Out, pair.GetID(), details, owners
 }
 
 type ChangeDetailsWithOrders struct {
@@ -57,6 +57,24 @@ func (p *Pair) SellWithOrders(amount0In *big.Int) (amount1Out *big.Int, owners m
 	owners = map[types.Address]*big.Int{}
 	amount1Out, orders := p.calculateBuyForSellWithOrders(amount0In)
 
+	commission0orders, commission1orders, amount0, amount1 := CalcDiffPool(amount0In, amount1Out, orders, owners)
+
+	p.Swap(amount0, big.NewInt(0), big.NewInt(0), amount1)
+
+	p.update(commission0orders, commission1orders)
+
+	p.updateOrders(orders)
+
+	return amount1Out, owners, &ChangeDetailsWithOrders{
+		SwapAmount0In:           amount0,
+		SwapAmount1Out:          amount1,
+		OrdersCommissionAmount0: commission0orders,
+		OrdersCommissionAmount1: commission1orders,
+		Orders:                  orders,
+	}
+}
+
+func CalcDiffPool(amount0In, amount1Out *big.Int, orders []*Limit, owners map[types.Address]*big.Int) (*big.Int, *big.Int, *big.Int, *big.Int) {
 	amount0orders, amount1orders := big.NewInt(0), big.NewInt(0)
 	commission0orders, commission1orders := big.NewInt(0), big.NewInt(0)
 	for _, order := range orders {
@@ -78,6 +96,14 @@ func (p *Pair) SellWithOrders(amount0In *big.Int) (amount1Out *big.Int, owners m
 	// amount0orders.Sub(amount0orders, commission0orders)
 	amount0 := big.NewInt(0).Sub(amount0In, amount0orders)
 	amount1 := big.NewInt(0).Sub(amount1Out, amount1orders.Sub(amount1orders, commission1orders))
+	return commission0orders, commission1orders, amount0, amount1
+}
+
+func (p *Pair) BuyWithOrders(amount1Out *big.Int) (amount0In *big.Int, owners map[types.Address]*big.Int, c *ChangeDetailsWithOrders) { // todo: add mutex
+	owners = map[types.Address]*big.Int{}
+	amount0In, orders := p.calculateSellForBuyWithOrders(amount1Out)
+
+	commission0orders, commission1orders, amount0, amount1 := CalcDiffPool(amount0In, amount1Out, orders, owners)
 
 	p.Swap(amount0, big.NewInt(0), big.NewInt(0), amount1)
 
@@ -92,46 +118,6 @@ func (p *Pair) SellWithOrders(amount0In *big.Int) (amount1Out *big.Int, owners m
 		OrdersCommissionAmount1: commission1orders,
 		Orders:                  orders,
 	}
-}
-
-func (p *Pair) BuyWithOrders(amount1Out *big.Int) (amount0In *big.Int, owners map[types.Address]*big.Int) { // todo: add mutex
-	owners = map[types.Address]*big.Int{}
-	amount0In, orders := p.calculateSellForBuyWithOrders(amount1Out)
-
-	amount0orders, amount1orders := big.NewInt(0), big.NewInt(0)
-	commission0orders, commission1orders := big.NewInt(0), big.NewInt(0)
-	for _, order := range orders {
-		cS := calcCommission(order.WantBuy)
-		cB := calcCommission(order.WantSell)
-
-		if owners[order.Owner] == nil {
-			owners[order.Owner] = big.NewInt(0)
-		}
-		if order.isBuy {
-			owners[order.Owner].Add(owners[order.Owner], big.NewInt(0).Sub(order.WantBuy, cS))
-		} else {
-			owners[order.Owner].Add(owners[order.Owner], big.NewInt(0).Sub(order.WantSell, cB))
-		}
-		amount0orders.Add(amount0orders, order.WantBuy)
-		amount1orders.Add(amount1orders, order.WantSell)
-
-		commission0orders.Add(commission0orders, cS)
-		// commission1orders.Add(commission1orders, cB)
-	}
-
-	p.update(commission0orders, commission1orders)
-
-	amount0orders.Sub(amount0orders, commission0orders)
-	amount1orders.Sub(amount1orders, commission1orders)
-
-	amount0 := big.NewInt(0).Sub(amount0In, amount0orders)
-	amount1 := big.NewInt(0).Sub(amount1Out, amount1orders)
-
-	p.Swap(amount0, big.NewInt(0), big.NewInt(0), amount1)
-
-	p.updateOrders(orders)
-
-	return amount1Out, owners
 }
 
 func (p *Pair) updateOrders(orders []*Limit) {
