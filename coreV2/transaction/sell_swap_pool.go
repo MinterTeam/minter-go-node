@@ -95,6 +95,7 @@ func (data SellSwapPoolData) Run(tx *Transaction, context state.Interface, rewar
 
 	lastIteration := len(data.Coins[1:]) - 1
 	{
+		checkDuplicatePools := map[uint32]struct{}{}
 		coinToSell := data.Coins[0]
 		coinToSellModel := checkState.Coins().GetCoin(coinToSell)
 		// resultCoin := data.Coins[lastIteration]
@@ -102,6 +103,14 @@ func (data SellSwapPoolData) Run(tx *Transaction, context state.Interface, rewar
 		valueToBuy := big.NewInt(0)
 		for i, coinToBuy := range data.Coins[1:] {
 			swapper := checkState.Swap().GetSwapper(coinToSell, coinToBuy)
+			if _, ok := checkDuplicatePools[swapper.GetID()]; ok {
+				return Response{
+					Code: code.DuplicatePoolInRoute,
+					Log:  fmt.Sprintf("Forbidden to repeat the pool in the route, pool duplicate %d", swapper.GetID()),
+					Info: EncodeError(code.NewDuplicatePoolInRouteCode(swapper.GetID())),
+				}
+			}
+			checkDuplicatePools[swapper.GetID()] = struct{}{}
 			if isGasCommissionFromPoolSwap {
 				if tx.GasCoin == coinToSell && coinToBuy.IsBaseCoin() {
 					swapper = swapper.AddLastSwapStep(commission, commissionInBaseCoin)

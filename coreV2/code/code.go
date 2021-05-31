@@ -92,6 +92,7 @@ const (
 	InsufficientOutputAmount     uint32 = 707
 	PairAlreadyExists            uint32 = 708
 	TooLongSwapRoute             uint32 = 709
+	DuplicatePoolInRoute         uint32 = 710
 
 	// emission coin
 	CoinIsNotToken  uint32 = 800
@@ -828,4 +829,13 @@ type customCode struct {
 
 func NewCustomCode(code uint32) *customCode {
 	return &customCode{Code: strconv.Itoa(int(code))}
+}
+
+type duplicatePoolInRouteCode struct {
+	Code   string `json:"code,omitempty"`
+	PoolID uint32 `json:"pool_id"`
+}
+
+func NewDuplicatePoolInRouteCode(pool uint32) *duplicatePoolInRouteCode {
+	return &duplicatePoolInRouteCode{Code: strconv.Itoa(int(DuplicatePoolInRoute)), PoolID: pool}
 }
