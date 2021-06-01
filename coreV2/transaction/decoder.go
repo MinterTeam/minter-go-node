@@ -7,7 +7,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/rlp"
 )
 
-func GetDataDeprecated(txType TxType) (Data, bool) {
+func GetDataV1(txType TxType) (Data, bool) {
 	switch txType {
 	case TypeSend:
 		return &SendData{}, true
@@ -78,7 +78,82 @@ func GetDataDeprecated(txType TxType) (Data, bool) {
 	}
 }
 
+func GetDataV230(txType TxType) (Data, bool) {
+	switch txType {
+	case TypeSend:
+		return &SendData{}, true
+	case TypeSellCoin:
+		return &SellCoinData{}, true
+	case TypeSellAllCoin:
+		return &SellAllCoinData{}, true
+	case TypeBuyCoin:
+		return &BuyCoinData{}, true
+	case TypeCreateCoin:
+		return &CreateCoinData{}, true
+	case TypeDeclareCandidacy:
+		return &DeclareCandidacyData{}, true
+	case TypeDelegate:
+		return &DelegateData{}, true
+	case TypeUnbond:
+		return &UnbondData{}, true
+	case TypeRedeemCheck:
+		return &RedeemCheckData{}, true
+	case TypeSetCandidateOnline:
+		return &SetCandidateOnData{}, true
+	case TypeSetCandidateOffline:
+		return &SetCandidateOffData{}, true
+	case TypeMultisend:
+		return &MultisendData{}, true
+	case TypeCreateMultisig:
+		return &CreateMultisigData{}, true
+	case TypeEditCandidate:
+		return &EditCandidateData{}, true
+	case TypeSetHaltBlock:
+		return &SetHaltBlockData{}, true
+	case TypeRecreateCoin:
+		return &RecreateCoinData{}, true
+	case TypeEditCoinOwner:
+		return &EditCoinOwnerData{}, true
+	case TypeEditMultisig:
+		return &EditMultisigData{}, true
+	case TypeEditCandidatePublicKey:
+		return &EditCandidatePublicKeyData{}, true
+	case TypeAddLiquidity:
+		return &AddLiquidityData{}, true
+	case TypeRemoveLiquidity:
+		return &RemoveLiquidity{}, true
+	case TypeSellSwapPool:
+		return &SellSwapPoolData{}, true
+	case TypeBuySwapPool:
+		return &BuySwapPoolData{}, true
+	case TypeSellAllSwapPool:
+		return &SellAllSwapPoolData{}, true
+	case TypeEditCandidateCommission:
+		return &EditCandidateCommission{}, true
+	case TypeMintToken:
+		return &MintTokenData{}, true
+	case TypeBurnToken:
+		return &BurnTokenData{}, true
+	case TypeCreateToken:
+		return &CreateTokenData{}, true
+	case TypeRecreateToken:
+		return &RecreateTokenData{}, true
+	case TypeVoteCommission:
+		return &VoteCommissionData{}, true
+	case TypeVoteUpdate:
+		return &VoteUpdateData{}, true
+	case TypeCreateSwapPool:
+		return &CreateSwapPoolData{}, true
+	default:
+		return nil, false
+	}
+}
+
 func GetData(txType TxType) (Data, bool) {
+	return GetDataV240(txType)
+}
+
+func GetDataV240(txType TxType) (Data, bool) {
 	switch txType {
 	case TypeSend:
 		return &SendData{}, true

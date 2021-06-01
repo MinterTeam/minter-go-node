@@ -107,6 +107,12 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 		haltHeight:                      uint64(cfg.HaltHeight),
 		updateStakesAndPayRewardsPeriod: period,
 		stopOk:                          make(chan struct{}),
+		knownUpdates: map[string]struct{}{
+			v2:   {}, // require default version
+			v230: {},
+			v240: {},
+			// add more for update
+		},
 	}
 	if applicationDB.GetStartHeight() != 0 {
 		app.initState()
@@ -119,7 +125,12 @@ func graceForUpdate(height uint64) *upgrades.GracePeriod {
 }
 
 const haltBlockV210 = 3431238
-const v230 = "v230"
+
+const ( // known update versions
+	v2   = ""     // default
+	v230 = "v230" // remove liquidity bug
+	v240 = "v240" // orderbook
+)
 
 func (blockchain *Blockchain) initState() {
 	initialHeight := blockchain.appDB.GetStartHeight()
@@ -143,21 +154,24 @@ func (blockchain *Blockchain) initState() {
 	grace.AddGracePeriods(upgrades.NewGracePeriod(initialHeight, initialHeight+120, true),
 		upgrades.NewGracePeriod(haltBlockV210, haltBlockV210+120, true),
 		upgrades.NewGracePeriod(3612653, 3612653+120, true))
-	blockchain.knownUpdates = map[string]struct{}{
-		"":     {}, // default version
-		"v230": {}, // add more for update
-	}
+
 	for _, v := range blockchain.UpdateVersions() {
 		grace.AddGracePeriods(graceForUpdate(v.Height))
-		if v.Name == v230 {
-			blockchain.executor = transaction.NewExecutor(transaction.GetData)
-		}
+		blockchain.executor = GetExecutor(v.Name)
 	}
 
-	if blockchain.executor == nil {
-		blockchain.executor = transaction.NewExecutor(transaction.GetDataDeprecated)
-	}
 	blockchain.grace = grace
+}
+
+func GetExecutor(v string) *transaction.Executor {
+	switch v {
+	case v240:
+		return transaction.NewExecutor(transaction.GetDataV240)
+	case v230:
+		return transaction.NewExecutor(transaction.GetDataV230)
+	default:
+		return transaction.NewExecutor(transaction.GetDataV1)
+	}
 }
 
 // InitChain initialize blockchain with validators and other info. Only called once.
@@ -394,9 +408,8 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 				Version: v,
 			})
 			blockchain.grace.AddGracePeriods(graceForUpdate(height))
-			if v == v230 {
-				blockchain.executor = transaction.NewExecutor(transaction.GetData)
-			}
+			blockchain.executor = GetExecutor(v)
+
 		}
 		blockchain.stateDeliver.Updates.Delete(height)
 	}

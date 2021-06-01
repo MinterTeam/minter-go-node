@@ -66,7 +66,7 @@ func TestAddOrderSwapPoolData_Sell_01_partOrder(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+		response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
@@ -110,7 +110,7 @@ func TestAddOrderSwapPoolData_Sell_01_partOrder(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+		response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
@@ -153,7 +153,7 @@ func TestAddOrderSwapPoolData_Sell_01_partOrder(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+		response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
@@ -226,7 +226,7 @@ func TestAddOrderSwapPoolData_Sell_10_partOrder(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+		response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
@@ -270,7 +270,7 @@ func TestAddOrderSwapPoolData_Sell_10_partOrder(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+		response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
@@ -313,7 +313,7 @@ func TestAddOrderSwapPoolData_Sell_10_partOrder(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+		response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
@@ -386,7 +386,7 @@ func TestAddOrderSwapPoolData_Sell_01_fullOrder(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+		response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
@@ -430,7 +430,7 @@ func TestAddOrderSwapPoolData_Sell_01_fullOrder(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+		response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
@@ -473,7 +473,7 @@ func TestAddOrderSwapPoolData_Sell_01_fullOrder(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+		response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
@@ -547,7 +547,7 @@ func TestAddOrderSwapPoolData_Sell_10_fullOrder(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+		response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
@@ -591,7 +591,7 @@ func TestAddOrderSwapPoolData_Sell_10_fullOrder(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+		response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
@@ -634,7 +634,7 @@ func TestAddOrderSwapPoolData_Sell_10_fullOrder(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+		response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)

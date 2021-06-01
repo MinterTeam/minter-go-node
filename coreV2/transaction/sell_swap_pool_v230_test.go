@@ -1020,7 +1020,7 @@ func TestSellSwapPoolTx_Bug3612653(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := NewExecutor(GetDataDeprecated).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+		response := NewExecutor(GetDataV1).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
