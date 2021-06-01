@@ -2,52 +2,29 @@ package transaction
 
 import (
 	"fmt"
+	"math/big"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/commission"
-	"github.com/MinterTeam/minter-go-node/coreV2/state/swap"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
-	"github.com/MinterTeam/minter-go-node/formula"
 	abcTypes "github.com/tendermint/tendermint/abci/types"
-	tmjson "github.com/tendermint/tendermint/libs/json"
-	"math/big"
 )
 
-type tagPoolsChange []*tagPoolChange
-
-func (p *tagPoolsChange) string() string {
-	if p == nil {
-		return ""
-	}
-	marshal, err := tmjson.Marshal(p)
-	if err != nil {
-		panic(err)
-	}
-	return string(marshal)
-}
-
-type tagPoolChange struct {
-	PoolID   uint32       `json:"pool_id"`
-	CoinIn   types.CoinID `json:"coin_in"`
-	ValueIn  string       `json:"value_in"`
-	CoinOut  types.CoinID `json:"coin_out"`
-	ValueOut string       `json:"value_out"`
-}
-
-type SellAllSwapPoolData struct {
+type SellAllSwapPoolDataDeprecated struct {
 	Coins             []types.CoinID
 	MinimumValueToBuy *big.Int
 }
 
-func (data SellAllSwapPoolData) Gas() int64 {
+func (data *SellAllSwapPoolDataDeprecated) Gas() int64 {
 	return gasSellAllSwapPool + int64(len(data.Coins)-2)*convertDelta
 }
 
-func (data SellAllSwapPoolData) TxType() TxType {
+func (data *SellAllSwapPoolDataDeprecated) TxType() TxType {
 	return TypeSellAllSwapPool
 }
 
-func (data SellAllSwapPoolData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data SellAllSwapPoolDataDeprecated) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if len(data.Coins) < 2 {
 		return &Response{
 			Code: code.DecodeError,
@@ -85,15 +62,15 @@ func (data SellAllSwapPoolData) basicCheck(tx *Transaction, context *state.Check
 	return nil
 }
 
-func (data SellAllSwapPoolData) String() string {
+func (data SellAllSwapPoolDataDeprecated) String() string {
 	return fmt.Sprintf("SWAP POOL SELL ALL")
 }
 
-func (data SellAllSwapPoolData) CommissionData(price *commission.Price) *big.Int {
+func (data SellAllSwapPoolDataDeprecated) CommissionData(price *commission.Price) *big.Int {
 	return new(big.Int).Add(price.SellAllPoolBase, new(big.Int).Mul(price.SellAllPoolDelta, big.NewInt(int64(len(data.Coins))-2)))
 }
 
-func (data SellAllSwapPoolData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
+func (data SellAllSwapPoolDataDeprecated) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -224,121 +201,4 @@ func (data SellAllSwapPoolData) Run(tx *Transaction, context state.Interface, re
 		Code: code.OK,
 		Tags: tags,
 	}
-}
-
-type DummyCoin struct {
-	id         types.CoinID
-	volume     *big.Int
-	reserve    *big.Int
-	crr        uint32
-	fullSymbol string
-	maxSupply  *big.Int
-}
-
-func NewDummyCoin(id types.CoinID, volume *big.Int, reserve *big.Int, crr uint32, fullSymbol string, maxSupply *big.Int) *DummyCoin {
-	return &DummyCoin{id: id, volume: volume, reserve: reserve, crr: crr, fullSymbol: fullSymbol, maxSupply: maxSupply}
-}
-
-func (m DummyCoin) ID() types.CoinID {
-	return m.id
-}
-
-func (m DummyCoin) BaseOrHasReserve() bool {
-	return m.ID().IsBaseCoin() || (m.Crr() > 0 && m.Reserve().Sign() == 1)
-}
-
-func (m DummyCoin) Volume() *big.Int {
-	return m.volume
-}
-
-func (m DummyCoin) Reserve() *big.Int {
-	return m.reserve
-}
-
-func (m DummyCoin) Crr() uint32 {
-	return m.crr
-}
-
-func (m DummyCoin) GetFullSymbol() string {
-	return m.fullSymbol
-}
-func (m DummyCoin) MaxSupply() *big.Int {
-	return m.maxSupply
-}
-
-type CalculateCoin interface {
-	ID() types.CoinID
-	BaseOrHasReserve() bool
-	Volume() *big.Int
-	Reserve() *big.Int
-	Crr() uint32
-	GetFullSymbol() string
-	MaxSupply() *big.Int
-}
-type gasMethod bool
-
-func (isGasCommissionFromPoolSwap gasMethod) String() string {
-	if isGasCommissionFromPoolSwap {
-		return "pool"
-	}
-	return "bancor"
-}
-
-func CalculateCommission(checkState *state.CheckState, swapper swap.EditableChecker, gasCoin CalculateCoin, commissionInBaseCoin *big.Int) (commission *big.Int, poolSwap gasMethod, errResp *Response) {
-	if gasCoin.ID().IsBaseCoin() {
-		return new(big.Int).Set(commissionInBaseCoin), false, nil
-	}
-	commissionFromPool, responseFromPool := commissionFromPool(swapper, gasCoin, checkState.Coins().GetCoin(types.BasecoinID), commissionInBaseCoin)
-	commissionFromReserve, responseFromReserve := commissionFromReserve(gasCoin, commissionInBaseCoin)
-
-	if responseFromPool != nil && responseFromReserve != nil {
-		return nil, false, &Response{
-			Code: code.CommissionCoinNotSufficient,
-			Log:  fmt.Sprintf("Not possible to pay commission in coin %s", gasCoin.GetFullSymbol()),
-			Info: EncodeError(code.NewCommissionCoinNotSufficient(responseFromReserve.Log, responseFromPool.Log)),
-		}
-	}
-
-	if responseFromPool == responseFromReserve {
-		if commissionFromReserve.Cmp(commissionFromPool) == -1 {
-			return commissionFromReserve, false, nil
-		}
-		return commissionFromPool, true, nil
-	}
-
-	if responseFromPool == nil {
-		return commissionFromPool, true, nil
-	}
-
-	return commissionFromReserve, false, nil
-}
-
-func commissionFromPool(swapChecker swap.EditableChecker, coin CalculateCoin, baseCoin CalculateCoin, commissionInBaseCoin *big.Int) (*big.Int, *Response) {
-	if !swapChecker.Exists() {
-		return nil, &Response{
-			Code: code.PairNotExists,
-			Log:  fmt.Sprintf("swap pool between coins %s and %s not exists", coin.GetFullSymbol(), types.GetBaseCoin()),
-			Info: EncodeError(code.NewPairNotExists(coin.ID().String(), types.GetBaseCoinID().String())),
-		}
-	}
-	commission := swapChecker.CalculateSellForBuy(commissionInBaseCoin)
-	if errResp := CheckSwap(swapChecker, coin, baseCoin, commission, commissionInBaseCoin, true); errResp != nil {
-		return nil, errResp
-	}
-	return commission, nil
-}
-
-func commissionFromReserve(gasCoin CalculateCoin, commissionInBaseCoin *big.Int) (*big.Int, *Response) {
-	if !gasCoin.BaseOrHasReserve() {
-		return nil, &Response{
-			Code: code.CoinHasNotReserve,
-			Log:  "Gas coin has no reserve",
-		}
-	}
-	errResp := CheckReserveUnderflow(gasCoin, commissionInBaseCoin)
-	if errResp != nil {
-		return nil, errResp
-	}
-
-	return formula.CalculateSaleAmount(gasCoin.Volume(), gasCoin.Reserve(), gasCoin.Crr(), commissionInBaseCoin), nil
 }

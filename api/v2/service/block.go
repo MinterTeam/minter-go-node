@@ -5,8 +5,10 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/state/coins"
-	"github.com/MinterTeam/minter-go-node/coreV2/transaction"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	_struct "github.com/golang/protobuf/ptypes/struct"
@@ -15,8 +17,6 @@ import (
 	tmTypes "github.com/tendermint/tendermint/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"strings"
-	"time"
 )
 
 // Block returns block data at given height.
@@ -156,7 +156,7 @@ func (s *Service) blockTransaction(block *core_types.ResultBlock, blockResults *
 			continue
 		}
 
-		tx, _ := transaction.DecodeFromBytes(rawTx)
+		tx, _ := s.executor.DecodeFromBytes(rawTx)
 		sender, _ := tx.Sender()
 
 		tags := make(map[string]string)

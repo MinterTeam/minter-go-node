@@ -2,13 +2,14 @@ package transaction
 
 import (
 	"fmt"
+	"math/big"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/commission"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	abcTypes "github.com/tendermint/tendermint/abci/types"
-	"math/big"
 )
 
 type SellAllCoinData struct {
@@ -22,6 +23,10 @@ func (data SellAllCoinData) Gas() int64 {
 }
 func (data SellAllCoinData) TxType() TxType {
 	return TypeSellAllCoin
+}
+
+func (data *SellAllCoinData) commissionCoin() types.CoinID {
+	return data.CoinToSell
 }
 
 func (data SellAllCoinData) basicCheck(tx *Transaction, context *state.CheckState) *Response {

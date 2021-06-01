@@ -4,10 +4,11 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	abcTypes "github.com/tendermint/tendermint/abci/types"
 	"math/big"
 	"strconv"
 	"sync"
+
+	abcTypes "github.com/tendermint/tendermint/abci/types"
 
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
@@ -33,8 +34,16 @@ type Response struct {
 	GasPrice  uint32                    `json:"gas_price"`
 }
 
+type Executor struct {
+	decodeTxFunc func(txType TxType) (Data, bool)
+}
+
+func NewExecutor(decodeTxFunc func(txType TxType) (Data, bool)) *Executor {
+	return &Executor{decodeTxFunc: decodeTxFunc}
+}
+
 // RunTx executes transaction in given context
-func RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBlock uint64, currentMempool *sync.Map, minGasPrice uint32, notSaveTags bool) Response {
+func (e *Executor) RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBlock uint64, currentMempool *sync.Map, minGasPrice uint32, notSaveTags bool) Response {
 	lenRawTx := len(rawTx)
 	if lenRawTx > maxTxLength {
 		return Response{
@@ -44,7 +53,7 @@ func RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBl
 		}
 	}
 
-	tx, err := DecodeFromBytes(rawTx)
+	tx, err := e.DecodeFromBytes(rawTx)
 	if err != nil {
 		return Response{
 			Code: code.DecodeError,
@@ -204,7 +213,6 @@ func RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBl
 		}
 	}
 
-	commissionCoin := tx.commissionCoin()
 	if notSaveTags || isCheck {
 		response.Tags = nil
 	} else {
@@ -213,7 +221,7 @@ func RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBl
 			priceCommission,
 			abcTypes.EventAttribute{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:])), Index: true},
 			abcTypes.EventAttribute{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(tx.decodedData.TxType())})), Index: true},
-			abcTypes.EventAttribute{Key: []byte("tx.commission_coin"), Value: []byte(commissionCoin.String()), Index: true},
+			abcTypes.EventAttribute{Key: []byte("tx.commission_coin"), Value: []byte(tx.commissionCoin().String()), Index: true},
 		)
 	}
 
@@ -234,11 +242,8 @@ func EncodeError(data interface{}) string {
 }
 
 func (tx *Transaction) commissionCoin() types.CoinID {
-	if tx.Type == TypeSellAllSwapPool {
-		return tx.decodedData.(*SellAllSwapPoolData).Coins[0]
-	}
-	if tx.Type == TypeSellAllCoin {
-		return tx.decodedData.(*SellAllCoinData).CoinToSell
+	if tx.Type == TypeSellAllSwapPool || tx.Type == TypeSellAllCoin {
+		return tx.decodedData.(dataCommission).commissionCoin()
 	}
 	return tx.GasCoin
 }

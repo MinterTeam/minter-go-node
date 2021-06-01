@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/coreV2/transaction"
+	"strings"
+
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"strings"
 )
 
 // Transactions return transactions by query.
@@ -32,7 +32,7 @@ func (s *Service) Transactions(ctx context.Context, req *pb.TransactionsRequest)
 				return nil, timeoutStatus.Err()
 			}
 
-			decodedTx, _ := transaction.DecodeFromBytes(tx.Tx)
+			decodedTx, _ := s.executor.DecodeFromBytes(tx.Tx)
 			sender, _ := decodedTx.Sender()
 
 			tags := make(map[string]string)

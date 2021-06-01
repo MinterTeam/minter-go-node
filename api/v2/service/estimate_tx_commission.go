@@ -3,9 +3,10 @@ package service
 import (
 	"context"
 	"encoding/hex"
+	"strings"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
-	"strings"
 
 	"github.com/MinterTeam/minter-go-node/coreV2/transaction"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
@@ -29,7 +30,7 @@ func (s *Service) EstimateTxCommission(ctx context.Context, req *pb.EstimateTxCo
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	decodedTx, err := transaction.DecodeFromBytesWithoutSig(decodeString)
+	decodedTx, err := s.executor.DecodeFromBytesWithoutSig(decodeString)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "Cannot decode transaction: %s", err.Error())
 	}

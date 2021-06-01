@@ -1,10 +1,11 @@
 package transaction
 
 import (
-	"github.com/MinterTeam/minter-go-node/coreV2/types"
-	"github.com/MinterTeam/minter-go-node/rlp"
 	"math/big"
 	"testing"
+
+	"github.com/MinterTeam/minter-go-node/coreV2/types"
+	"github.com/MinterTeam/minter-go-node/rlp"
 )
 
 func TestDecodeFromBytesToInvalidSignature(t *testing.T) {
@@ -30,7 +31,7 @@ func TestDecodeFromBytesToInvalidSignature(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = DecodeFromBytes(encodedTx)
+	_, err = NewExecutor(GetData).DecodeFromBytes(encodedTx)
 	if err == nil {
 		t.Fatal("Expected the invalid signature error")
 	}
@@ -107,7 +108,7 @@ func TestDecodeFromBytesWithoutSigToInvalidData(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = DecodeFromBytesWithoutSig(encodedTx)
+	_, err = NewExecutor(GetData).DecodeFromBytesWithoutSig(encodedTx)
 	if err == nil {
 		t.Fatal("Expected tx type is not registered error")
 	}
@@ -118,7 +119,7 @@ func TestDecodeFromBytesWithoutSigToInvalidData(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = DecodeFromBytesWithoutSig(encodedTx)
+	_, err = NewExecutor(GetData).DecodeFromBytesWithoutSig(encodedTx)
 	if err == nil {
 		t.Fatal("Expected invalid data error")
 	}

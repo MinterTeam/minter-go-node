@@ -2,6 +2,13 @@ package minter
 
 import (
 	"context"
+	"log"
+	"math/big"
+	"os"
+	"sync"
+	"sync/atomic"
+	"time"
+
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/coreV2/appdb"
@@ -18,12 +25,6 @@ import (
 	tmjson "github.com/tendermint/tendermint/libs/json"
 	tmNode "github.com/tendermint/tendermint/node"
 	rpc "github.com/tendermint/tendermint/rpc/client/local"
-	"log"
-	"math/big"
-	"os"
-	"sync"
-	"sync/atomic"
-	"time"
 )
 
 // Statuses of validators
@@ -45,6 +46,7 @@ const votingPowerConsensus = 2. / 3.
 type Blockchain struct {
 	abciTypes.BaseApplication
 
+	executor      *transaction.Executor
 	statisticData *statistics.Data
 
 	appDB                           *appdb.AppDB
@@ -105,6 +107,7 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 		haltHeight:                      uint64(cfg.HaltHeight),
 		updateStakesAndPayRewardsPeriod: period,
 		stopOk:                          make(chan struct{}),
+		executor:                        transaction.NewExecutor(transaction.GetData),
 	}
 	if applicationDB.GetStartHeight() != 0 {
 		app.initState()
@@ -117,6 +120,7 @@ func graceForUpdate(height uint64) *upgrades.GracePeriod {
 }
 
 const haltBlockV210 = 3431238
+const v230 = "v230"
 
 func (blockchain *Blockchain) initState() {
 	initialHeight := blockchain.appDB.GetStartHeight()
@@ -135,17 +139,21 @@ func (blockchain *Blockchain) initState() {
 	blockchain.rewards = big.NewInt(0)
 	blockchain.stateDeliver = stateDeliver
 	blockchain.stateCheck = state.NewCheckState(stateDeliver)
+	blockchain.executor = transaction.NewExecutor(transaction.GetDataDeprecated)
 
 	grace := upgrades.NewGrace()
 	grace.AddGracePeriods(upgrades.NewGracePeriod(initialHeight, initialHeight+120, true),
 		upgrades.NewGracePeriod(haltBlockV210, haltBlockV210+120, true),
 		upgrades.NewGracePeriod(3612653, 3612653+120, true))
 	blockchain.knownUpdates = map[string]struct{}{
-		"": {}, // default version
-		// add more for update
+		"":     {}, // default version
+		"v230": {}, // add more for update
 	}
 	for _, v := range blockchain.UpdateVersions() {
 		grace.AddGracePeriods(graceForUpdate(v.Height))
+		if v.Name == v230 {
+			blockchain.executor = transaction.NewExecutor(transaction.GetData)
+		}
 	}
 	blockchain.grace = grace
 }
@@ -384,6 +392,9 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 				Version: v,
 			})
 			blockchain.grace.AddGracePeriods(graceForUpdate(height))
+			if v == v230 {
+				blockchain.executor = transaction.NewExecutor(transaction.GetData)
+			}
 		}
 		blockchain.stateDeliver.Updates.Delete(height)
 	}
@@ -429,7 +440,7 @@ func (blockchain *Blockchain) Info(_ abciTypes.RequestInfo) (resInfo abciTypes.R
 
 // DeliverTx deliver a tx for full processing
 func (blockchain *Blockchain) DeliverTx(req abciTypes.RequestDeliverTx) abciTypes.ResponseDeliverTx {
-	response := transaction.RunTx(blockchain.stateDeliver, req.Tx, blockchain.rewards, blockchain.Height()+1, &sync.Map{}, 0, blockchain.cfg.ValidatorMode)
+	response := blockchain.executor.RunTx(blockchain.stateDeliver, req.Tx, blockchain.rewards, blockchain.Height()+1, &sync.Map{}, 0, blockchain.cfg.ValidatorMode)
 
 	return abciTypes.ResponseDeliverTx{
 		Code:      response.Code,
@@ -449,7 +460,7 @@ func (blockchain *Blockchain) DeliverTx(req abciTypes.RequestDeliverTx) abciType
 
 // CheckTx validates a tx for the mempool
 func (blockchain *Blockchain) CheckTx(req abciTypes.RequestCheckTx) abciTypes.ResponseCheckTx {
-	response := transaction.RunTx(blockchain.CurrentState(), req.Tx, nil, blockchain.Height()+1, blockchain.currentMempool, blockchain.MinGasPrice(), true)
+	response := blockchain.executor.RunTx(blockchain.CurrentState(), req.Tx, nil, blockchain.Height()+1, blockchain.currentMempool, blockchain.MinGasPrice(), true)
 
 	return abciTypes.ResponseCheckTx{
 		Code:      response.Code,

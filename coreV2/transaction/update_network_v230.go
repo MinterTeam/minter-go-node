@@ -3,14 +3,15 @@ package transaction
 import (
 	"encoding/hex"
 	"fmt"
+	"math/big"
+	"regexp"
+	"strconv"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/commission"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	abcTypes "github.com/tendermint/tendermint/abci/types"
-	"math/big"
-	"regexp"
-	"strconv"
 )
 
 type VoteUpdateData struct {
@@ -30,7 +31,7 @@ func (data VoteUpdateData) GetPubKey() types.Pubkey {
 	return data.PubKey
 }
 
-var allowedVersionNameRegexpCompile, _ = regexp.Compile("^[a-zA-Z0-9]{1,20}$") // todo
+var allowedVersionNameRegexpCompile, _ = regexp.Compile("^[a-zA-Z0-9_]{1,20}$")
 
 func (data VoteUpdateData) basicCheck(tx *Transaction, context *state.CheckState, block uint64) *Response {
 	if !allowedVersionNameRegexpCompile.Match([]byte(data.Version)) {
