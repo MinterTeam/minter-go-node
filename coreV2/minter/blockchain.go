@@ -107,6 +107,7 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 		haltHeight:                      uint64(cfg.HaltHeight),
 		updateStakesAndPayRewardsPeriod: period,
 		stopOk:                          make(chan struct{}),
+		executor:                        transaction.NewExecutor(transaction.GetData),
 	}
 	if applicationDB.GetStartHeight() != 0 {
 		app.initState()
