@@ -1,15 +1,16 @@
 package transaction
 
 import (
+	"math/big"
+	"math/rand"
+	"sync"
+	"testing"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
-	"math/big"
-	"math/rand"
-	"sync"
-	"testing"
 )
 
 func TestPriceCommissionTx(t *testing.T) {
@@ -106,7 +107,7 @@ func TestPriceCommissionTx(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+		response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 		if response.Code != 0 {
 			t.Fatalf("Response code is not 0. Error: %s", response.Log)
 		}
@@ -188,7 +189,7 @@ func TestPriceCommissionTx(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+		response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 		if response.Code != code.VoteAlreadyExists {
 			t.Fatalf("Response code is not %d. Error: %s", code.VoteAlreadyExists, response.Log)
 		}
@@ -291,7 +292,7 @@ func TestPriceCommissionDeleteTx(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+		response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 		if response.Code != 0 {
 			t.Fatalf("Response code is not 0. Error: %s", response.Log)
 		}
@@ -377,7 +378,7 @@ func TestPriceCommissionDeleteTx(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+		response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 		if response.Code != code.OK {
 			t.Fatalf("Response code is not 0. Error: %s", response.Log)
 		}
@@ -483,7 +484,7 @@ func TestPriceCommissionAnyTx(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+		response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 		if response.Code != 0 {
 			t.Fatalf("Response code is not 0. Error: %s", response.Log)
 		}
@@ -585,7 +586,7 @@ func TestPriceCommissionAnyTx(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+		response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 		if response.Code != code.OK {
 			t.Fatalf("Response code is not 0. Error: %s", response.Log)
 		}
@@ -653,7 +654,7 @@ func TestCustomCommissionPriceCoin_sendTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+	response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error: %s", response.Log)
 	}
@@ -738,7 +739,7 @@ func TestCustomCommissionPriceCoinAndGasCustomCoin_sendTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+	response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error: %s", response.Log)
 	}

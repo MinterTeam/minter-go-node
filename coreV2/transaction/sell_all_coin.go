@@ -25,6 +25,10 @@ func (data SellAllCoinData) TxType() TxType {
 	return TypeSellAllCoin
 }
 
+func (data *SellAllCoinData) commissionCoin() types.CoinID {
+	return data.CoinToSell
+}
+
 func (data SellAllCoinData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	coinToSell := context.Coins().GetCoin(data.CoinToSell)
 	if coinToSell == nil {

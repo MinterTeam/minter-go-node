@@ -100,7 +100,6 @@ func (data SellSwapPoolData) Run(tx *Transaction, context state.Interface, rewar
 		checkDuplicatePools := map[uint32]struct{}{}
 		coinToSell := data.Coins[0]
 		coinToSellModel := checkState.Coins().GetCoin(coinToSell)
-		// resultCoin := data.Coins[lastIteration]
 		valueToSell := data.ValueToSell
 		valueToBuy := big.NewInt(0)
 		for i, coinToBuy := range data.Coins[1:] {

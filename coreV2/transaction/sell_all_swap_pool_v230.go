@@ -58,6 +58,24 @@ type SellAllSwapPoolData struct {
 	MinimumValueToBuy *big.Int
 }
 
+type dataCommission interface {
+	commissionCoin() types.CoinID
+}
+
+func (data *SellAllSwapPoolDataDeprecated) commissionCoin() types.CoinID {
+	if len(data.Coins) == 0 {
+		return 0
+	}
+	return data.Coins[0]
+}
+
+func (data *SellAllSwapPoolData) commissionCoin() types.CoinID {
+	if len(data.Coins) == 0 {
+		return 0
+	}
+	return data.Coins[0]
+}
+
 func (data SellAllSwapPoolData) Gas() int64 {
 	return gasSellAllSwapPool + int64(len(data.Coins)-2)*convertDelta
 }
