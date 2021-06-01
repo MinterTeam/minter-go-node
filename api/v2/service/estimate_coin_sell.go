@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"fmt"
+	"math/big"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/commission"
@@ -13,7 +15,6 @@ import (
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"math/big"
 )
 
 // EstimateCoinSell return estimate of sell coin transaction.
@@ -245,6 +246,7 @@ func (s *Service) calcSellFromPool(ctx context.Context, value *big.Int, cState *
 	sellCoinID := coinFrom.ID()
 	sellValue := big.NewInt(0).Set(value)
 	coinSell := coinFrom
+	dup := make(map[uint32]struct{})
 	for _, buyCoinInt := range append(route, uint64(coinTo.ID())) {
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
 			return nil, timeoutStatus.Err()
@@ -259,6 +261,11 @@ func (s *Service) calcSellFromPool(ctx context.Context, value *big.Int, cState *
 		if !swapChecker.Exists() {
 			return nil, s.createError(status.New(codes.NotFound, fmt.Sprintf("swap pool between coins %s and %s not exists", coinSell.GetFullSymbol(), coinBuy.GetFullSymbol())), transaction.EncodeError(code.NewPairNotExists(coinSell.ID().String(), coinBuy.ID().String())))
 		}
+
+		if _, ok := dup[swapChecker.GetID()]; ok {
+			return nil, s.createError(status.New(codes.InvalidArgument, fmt.Sprintf("Forbidden to repeat the pool in the route, pool duplicate %d", swapChecker.GetID())), transaction.EncodeError(code.NewDuplicatePoolInRouteCode(swapChecker.GetID())))
+		}
+		dup[swapChecker.GetID()] = struct{}{}
 
 		if swapChecker.GetID() == commissionPoolSwapper.GetID() {
 			if sellCoinID == types.GetBaseCoinID() {

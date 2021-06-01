@@ -2,29 +2,30 @@ package transaction
 
 import (
 	"fmt"
+	"math/big"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/commission"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	abcTypes "github.com/tendermint/tendermint/abci/types"
-	"math/big"
 )
 
-type SellSwapPoolData struct {
+type SellSwapPoolDataDeprecated struct {
 	Coins             []types.CoinID
 	ValueToSell       *big.Int
 	MinimumValueToBuy *big.Int
 }
 
-func (data SellSwapPoolData) TxType() TxType {
+func (data SellSwapPoolDataDeprecated) TxType() TxType {
 	return TypeSellSwapPool
 }
 
-func (data SellSwapPoolData) Gas() int64 {
+func (data SellSwapPoolDataDeprecated) Gas() int64 {
 	return gasSellSwapPool + int64(len(data.Coins)-2)*convertDelta
 }
 
-func (data SellSwapPoolData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data SellSwapPoolDataDeprecated) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if len(data.Coins) < 2 {
 		return &Response{
 			Code: code.DecodeError,
@@ -63,15 +64,15 @@ func (data SellSwapPoolData) basicCheck(tx *Transaction, context *state.CheckSta
 	return nil
 }
 
-func (data SellSwapPoolData) String() string {
+func (data SellSwapPoolDataDeprecated) String() string {
 	return fmt.Sprintf("SWAP POOL SELL")
 }
 
-func (data SellSwapPoolData) CommissionData(price *commission.Price) *big.Int {
+func (data SellSwapPoolDataDeprecated) CommissionData(price *commission.Price) *big.Int {
 	return new(big.Int).Add(price.SellPoolBase, new(big.Int).Mul(price.SellPoolDelta, big.NewInt(int64(len(data.Coins))-2)))
 }
 
-func (data SellSwapPoolData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
+func (data SellSwapPoolDataDeprecated) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -97,7 +98,6 @@ func (data SellSwapPoolData) Run(tx *Transaction, context state.Interface, rewar
 	{
 		coinToSell := data.Coins[0]
 		coinToSellModel := checkState.Coins().GetCoin(coinToSell)
-		// resultCoin := data.Coins[lastIteration]
 		valueToSell := data.ValueToSell
 		valueToBuy := big.NewInt(0)
 		for i, coinToBuy := range data.Coins[1:] {

@@ -6,6 +6,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"math/big"
+	"testing"
+	"time"
+
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/coreV2/developers"
@@ -27,9 +31,6 @@ import (
 	"github.com/tendermint/tendermint/proxy"
 	rpc "github.com/tendermint/tendermint/rpc/client/local"
 	types2 "github.com/tendermint/tendermint/types"
-	"math/big"
-	"testing"
-	"time"
 )
 
 func initTestNode(t *testing.T, initialHeight int64) (*Blockchain, *rpc.Local, *privval.FilePV, func()) {
@@ -61,6 +62,8 @@ func initTestNode(t *testing.T, initialHeight int64) (*Blockchain, *rpc.Local, *
 	if err != nil {
 		t.Fatal(err)
 	}
+	app.appDB.AddVersion("v230", 0)
+	app.appDB.SaveVersions()
 
 	node, err := tmNode.NewNode(
 		cfg,

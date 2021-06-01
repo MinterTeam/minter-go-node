@@ -2,13 +2,14 @@ package transaction
 
 import (
 	"fmt"
+	"math/big"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/commission"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/swap"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	abcTypes "github.com/tendermint/tendermint/abci/types"
-	"math/big"
 )
 
 type RemoveLiquidity struct {
@@ -70,6 +71,14 @@ func (data RemoveLiquidity) Run(tx *Transaction, context state.Interface, reward
 		return *response
 	}
 
+	commissionInBaseCoin := tx.Commission(price)
+	commissionPoolSwapper := checkState.Swap().GetSwapper(tx.GasCoin, types.GetBaseCoinID())
+	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
+	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoin, commissionInBaseCoin)
+	if errResp != nil {
+		return *errResp
+	}
+
 	swapper := checkState.Swap().GetSwapper(data.Coin0, data.Coin1)
 	if !swapper.Exists() {
 		return Response{
@@ -79,32 +88,35 @@ func (data RemoveLiquidity) Run(tx *Transaction, context state.Interface, reward
 		}
 	}
 
-	coinLiquidity := checkState.Coins().GetCoinBySymbol(LiquidityCoinSymbol(swapper.GetID()), 0)
-	balance := checkState.Accounts().GetBalance(sender, coinLiquidity.ID())
-	if balance.Cmp(data.Liquidity) == -1 {
-		return Response{
-			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), coinLiquidity.GetFullSymbol(), data.Liquidity),
-			Info: EncodeError(code.NewInsufficientFunds(sender.String(), data.Liquidity.String(), coinLiquidity.GetFullSymbol(), coinLiquidity.ID().String())),
+	if isGasCommissionFromPoolSwap {
+		if tx.GasCoin == data.Coin0 && data.Coin1.IsBaseCoin() {
+			swapper = swapper.AddLastSwapStep(commission, commissionInBaseCoin)
+		}
+		if tx.GasCoin == data.Coin1 && data.Coin0.IsBaseCoin() {
+			swapper = swapper.AddLastSwapStep(commissionInBaseCoin, commission)
 		}
 	}
 
-	commissionInBaseCoin := tx.Commission(price)
-	commissionPoolSwapper := checkState.Swap().GetSwapper(tx.GasCoin, types.GetBaseCoinID())
-	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
-	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoin, commissionInBaseCoin)
-	if errResp != nil {
-		return *errResp
-	}
+	coinLiquidity := checkState.Coins().GetCoinBySymbol(LiquidityCoinSymbol(swapper.GetID()), 0)
+	balance := checkState.Accounts().GetBalance(sender, coinLiquidity.ID())
 
-	if swapper.Exists() {
-		if isGasCommissionFromPoolSwap {
-			if tx.GasCoin == data.Coin0 && data.Coin1.IsBaseCoin() {
-				swapper = swapper.AddLastSwapStep(commission, commissionInBaseCoin)
+	needValue := big.NewInt(0).Set(commission)
+	if tx.GasCoin == coinLiquidity.ID() {
+		needValue.Add(data.Liquidity, needValue)
+	} else {
+		if balance.Cmp(data.Liquidity) == -1 {
+			return Response{
+				Code: code.InsufficientFunds,
+				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), data.Liquidity.String(), coinLiquidity.GetFullSymbol()),
+				Info: EncodeError(code.NewInsufficientFunds(sender.String(), data.Liquidity.String(), coinLiquidity.GetFullSymbol(), coinLiquidity.ID().String())),
 			}
-			if tx.GasCoin == data.Coin1 && data.Coin0.IsBaseCoin() {
-				swapper = swapper.AddLastSwapStep(commissionInBaseCoin, commission)
-			}
+		}
+	}
+	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(needValue) < 0 {
+		return Response{
+			Code: code.InsufficientFunds,
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), needValue.String(), gasCoin.GetFullSymbol()),
+			Info: EncodeError(code.NewInsufficientFunds(sender.String(), needValue.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
 		}
 	}
 
@@ -123,13 +135,6 @@ func (data RemoveLiquidity) Run(tx *Transaction, context state.Interface, reward
 		}
 	}
 
-	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
-		return Response{
-			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission.String(), gasCoin.GetFullSymbol()),
-			Info: EncodeError(code.NewInsufficientFunds(sender.String(), commission.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
-		}
-	}
 	var tags []abcTypes.EventAttribute
 	if deliverState, ok := context.(*state.State); ok {
 		if isGasCommissionFromPoolSwap {

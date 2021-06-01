@@ -2,43 +2,29 @@ package transaction
 
 import (
 	"fmt"
+	"math/big"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/commission"
-	"github.com/MinterTeam/minter-go-node/coreV2/state/swap"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	abcTypes "github.com/tendermint/tendermint/abci/types"
-	"math/big"
 )
 
-type BuySwapPoolData struct {
+type BuySwapPoolDataDeprecated struct {
 	Coins              []types.CoinID
 	ValueToBuy         *big.Int
 	MaximumValueToSell *big.Int
 }
 
-func reverseCoinIds(a []types.CoinID) {
-	for i := len(a)/2 - 1; i >= 0; i-- {
-		opp := len(a) - 1 - i
-		a[i], a[opp] = a[opp], a[i]
-	}
-}
-
-func reversePools(a []*tagPoolChange) {
-	for i := len(a)/2 - 1; i >= 0; i-- {
-		opp := len(a) - 1 - i
-		a[i], a[opp] = a[opp], a[i]
-	}
-}
-
-func (data BuySwapPoolData) Gas() int64 {
+func (data BuySwapPoolDataDeprecated) Gas() int64 {
 	return gasBuySwapPool + int64(len(data.Coins)-2)*convertDelta
 }
-func (data BuySwapPoolData) TxType() TxType {
+func (data BuySwapPoolDataDeprecated) TxType() TxType {
 	return TypeBuySwapPool
 }
 
-func (data BuySwapPoolData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data BuySwapPoolDataDeprecated) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if len(data.Coins) < 2 {
 		return &Response{
 			Code: code.DecodeError,
@@ -76,15 +62,15 @@ func (data BuySwapPoolData) basicCheck(tx *Transaction, context *state.CheckStat
 	return nil
 }
 
-func (data BuySwapPoolData) String() string {
+func (data BuySwapPoolDataDeprecated) String() string {
 	return fmt.Sprintf("SWAP POOL BUY")
 }
 
-func (data BuySwapPoolData) CommissionData(price *commission.Price) *big.Int {
+func (data BuySwapPoolDataDeprecated) CommissionData(price *commission.Price) *big.Int {
 	return new(big.Int).Add(price.BuyPoolBase, new(big.Int).Mul(price.BuyPoolDelta, big.NewInt(int64(len(data.Coins))-2)))
 }
 
-func (data BuySwapPoolData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
+func (data BuySwapPoolDataDeprecated) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -117,6 +103,7 @@ func (data BuySwapPoolData) Run(tx *Transaction, context state.Interface, reward
 		valueToSell := maxCoinSupply
 		for i, coinToSell := range data.Coins[1:] {
 			swapper := checkState.Swap().GetSwapper(coinToSell, coinToBuy)
+
 			if isGasCommissionFromPoolSwap {
 				if tx.GasCoin == coinToSell && coinToBuy.IsBaseCoin() {
 					swapper = swapper.AddLastSwapStep(commission, commissionInBaseCoin)
@@ -232,80 +219,4 @@ func (data BuySwapPoolData) Run(tx *Transaction, context state.Interface, reward
 		Code: code.OK,
 		Tags: tags,
 	}
-}
-
-func CheckSwap(rSwap swap.EditableChecker, coinIn CalculateCoin, coinOut CalculateCoin, valueIn *big.Int, valueOut *big.Int, isBuy bool) *Response {
-	if isBuy {
-		calculatedAmountToSell := rSwap.CalculateSellForBuy(valueOut)
-		if calculatedAmountToSell == nil {
-			reserve0, reserve1 := rSwap.Reserves()
-			symbolIn := coinIn.GetFullSymbol()
-			symbolOut := coinOut.GetFullSymbol()
-			return &Response{
-				Code: code.InsufficientLiquidity,
-				Log:  fmt.Sprintf("You wanted to buy %s %s, but swap pool has reserve %s %s", valueOut, symbolOut, reserve0.String(), symbolIn),
-				Info: EncodeError(code.NewInsufficientLiquidity(coinIn.ID().String(), valueIn.String(), coinOut.ID().String(), valueOut.String(), reserve0.String(), reserve1.String())),
-			}
-		}
-		if calculatedAmountToSell.Cmp(valueIn) == 1 {
-			return &Response{
-				Code: code.MaximumValueToSellReached,
-				Log: fmt.Sprintf(
-					"You wanted to sell maximum %s %s, but currently you need to spend %s %s to complete tx",
-					valueIn.String(), coinIn.GetFullSymbol(), calculatedAmountToSell.String(), coinOut.GetFullSymbol()),
-				Info: EncodeError(code.NewMaximumValueToSellReached(valueIn.String(), calculatedAmountToSell.String(), coinIn.GetFullSymbol(), coinIn.ID().String())),
-			}
-		}
-		valueIn = calculatedAmountToSell
-	} else {
-		calculatedAmountToBuy := rSwap.CalculateBuyForSell(valueIn)
-		if calculatedAmountToBuy == nil {
-			reserve0, reserve1 := rSwap.Reserves()
-			symbolIn := coinIn.GetFullSymbol()
-			symbolOut := coinOut.GetFullSymbol()
-			return &Response{
-				Code: code.InsufficientLiquidity,
-				Log:  fmt.Sprintf("You wanted to sell %s %s and get more than the swap pool has a reserve in %s", valueIn, symbolIn, symbolOut),
-				Info: EncodeError(code.NewInsufficientLiquidity(coinIn.ID().String(), valueIn.String(), coinOut.ID().String(), valueOut.String(), reserve0.String(), reserve1.String())),
-			}
-		}
-		if calculatedAmountToBuy.Cmp(valueOut) == -1 {
-			symbolOut := coinOut.GetFullSymbol()
-			return &Response{
-				Code: code.MinimumValueToBuyReached,
-				Log: fmt.Sprintf(
-					"You wanted to buy minimum %s %s, but currently you buy only %s %s",
-					valueOut.String(), symbolOut, calculatedAmountToBuy.String(), symbolOut),
-				Info: EncodeError(code.NewMaximumValueToSellReached(valueOut.String(), calculatedAmountToBuy.String(), coinIn.GetFullSymbol(), coinIn.ID().String())),
-			}
-		}
-		valueOut = calculatedAmountToBuy
-	}
-	if err := rSwap.CheckSwap(valueIn, valueOut); err != nil {
-		if err == swap.ErrorK {
-			panic(swap.ErrorK)
-		}
-		if err == swap.ErrorInsufficientLiquidity {
-			reserve0, reserve1 := rSwap.Reserves()
-			symbolIn := coinIn.GetFullSymbol()
-			symbolOut := coinOut.GetFullSymbol()
-			return &Response{
-				Code: code.InsufficientLiquidity,
-				Log:  fmt.Sprintf("You wanted to exchange %s %s for %s %s, but pool reserve %s equal %s and reserve %s equal %s", valueIn, symbolIn, valueOut, symbolOut, reserve0.String(), symbolIn, reserve1.String(), symbolOut),
-				Info: EncodeError(code.NewInsufficientLiquidity(coinIn.ID().String(), valueIn.String(), coinOut.ID().String(), valueOut.String(), reserve0.String(), reserve1.String())),
-			}
-		}
-		if err == swap.ErrorInsufficientOutputAmount {
-			return &Response{
-				Code: code.InsufficientOutputAmount,
-				Log:  fmt.Sprintf("Enter a positive number of coins to exchange"),
-				Info: EncodeError(code.NewInsufficientOutputAmount(coinIn.ID().String(), valueIn.String(), coinOut.ID().String(), valueOut.String())),
-			}
-		}
-		return &Response{
-			Code: code.SwapPoolUnknown,
-			Log:  err.Error(),
-		}
-	}
-	return nil
 }
