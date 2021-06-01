@@ -107,7 +107,6 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 		haltHeight:                      uint64(cfg.HaltHeight),
 		updateStakesAndPayRewardsPeriod: period,
 		stopOk:                          make(chan struct{}),
-		executor:                        transaction.NewExecutor(transaction.GetData),
 	}
 	if applicationDB.GetStartHeight() != 0 {
 		app.initState()
@@ -139,7 +138,6 @@ func (blockchain *Blockchain) initState() {
 	blockchain.rewards = big.NewInt(0)
 	blockchain.stateDeliver = stateDeliver
 	blockchain.stateCheck = state.NewCheckState(stateDeliver)
-	blockchain.executor = transaction.NewExecutor(transaction.GetDataDeprecated)
 
 	grace := upgrades.NewGrace()
 	grace.AddGracePeriods(upgrades.NewGracePeriod(initialHeight, initialHeight+120, true),
@@ -154,6 +152,10 @@ func (blockchain *Blockchain) initState() {
 		if v.Name == v230 {
 			blockchain.executor = transaction.NewExecutor(transaction.GetData)
 		}
+	}
+
+	if blockchain.executor == nil {
+		blockchain.executor = transaction.NewExecutor(transaction.GetDataDeprecated)
 	}
 	blockchain.grace = grace
 }
