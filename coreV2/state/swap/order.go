@@ -30,7 +30,7 @@ func (s *Swap) PairSellWithOrders(coin0, coin1 types.CoinID, amount0In, minAmoun
 
 func (s *Swap) PairBuyWithOrders(coin0, coin1 types.CoinID, maxAmount0In, amount1Out *big.Int) (*big.Int, *big.Int, uint32, *ChangeDetailsWithOrders, map[types.Address]*big.Int) {
 	pair := s.Pair(coin0, coin1)
-	amount0OIn, owners, details := pair.BuyWithOrders(amount1Out)
+	amount0In, owners, details := pair.BuyWithOrders(amount1Out)
 	if amount1Out.Cmp(maxAmount0In) == 1 {
 		panic(fmt.Sprintf("calculatedAmount1Out %s less minAmount1Out %s", amount1Out, maxAmount0In))
 	}
@@ -39,9 +39,9 @@ func (s *Swap) PairBuyWithOrders(coin0, coin1 types.CoinID, maxAmount0In, amount
 	// 	s.bus.Checker().AddCoin(coin0, big.NewInt(0).Neg(b))
 	// 	s.bus.Accounts().AddBalance(address, coin0, b)
 	// }
-	s.bus.Checker().AddCoin(coin0, amount0OIn)
+	s.bus.Checker().AddCoin(coin0, amount0In)
 	s.bus.Checker().AddCoin(coin1, big.NewInt(0).Neg(amount1Out))
-	return amount0OIn, amount1Out, pair.GetID(), details, owners
+	return amount0In, amount1Out, pair.GetID(), details, owners
 }
 
 type ChangeDetailsWithOrders struct {
@@ -101,6 +101,7 @@ func CalcDiffPool(amount0In, amount1Out *big.Int, orders []*Limit, owners map[ty
 
 func (p *Pair) BuyWithOrders(amount1Out *big.Int) (amount0In *big.Int, owners map[types.Address]*big.Int, c *ChangeDetailsWithOrders) { // todo: add mutex
 	owners = map[types.Address]*big.Int{}
+
 	amount0In, orders := p.calculateSellForBuyWithOrders(amount1Out)
 
 	commission0orders, commission1orders, amount0, amount1 := CalcDiffPool(amount0In, amount1Out, orders, owners)
@@ -111,7 +112,7 @@ func (p *Pair) BuyWithOrders(amount1Out *big.Int) (amount0In *big.Int, owners ma
 
 	p.updateOrders(orders)
 
-	return amount1Out, owners, &ChangeDetailsWithOrders{
+	return amount0In, owners, &ChangeDetailsWithOrders{
 		SwapAmount0In:           amount0,
 		SwapAmount1Out:          amount1,
 		OrdersCommissionAmount0: commission0orders,

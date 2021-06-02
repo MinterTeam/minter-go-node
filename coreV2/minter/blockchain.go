@@ -113,6 +113,7 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 			v240: {},
 			// add more for update
 		},
+		executor: GetExecutor(""),
 	}
 	if applicationDB.GetStartHeight() != 0 {
 		app.initState()

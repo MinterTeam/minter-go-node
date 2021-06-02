@@ -110,7 +110,7 @@ func initTestNode(t *testing.T, initialHeight int64) (*Blockchain, *rpc.Local, *
 	return app, tmCli, pv, func() {
 		cancelFunc()
 		if err := app.WaitStop(); err != nil {
-			t.Error(err)
+			t.Log(err)
 		}
 	}
 }
@@ -412,8 +412,9 @@ func TestBlockchain_SetStatisticData(t *testing.T) {
 }
 
 func TestBlockchain_IsApplicationHalted(t *testing.T) {
-	blockchain, tmCli, pv, _ := initTestNode(t, 0)
-	// defer cancel()
+	blockchain, tmCli, pv, cancel := initTestNode(t, 0)
+	defer cancel()
+
 	data := transaction.SetHaltBlockData{
 		PubKey: types.BytesToPubkey(pv.Key.PubKey.Bytes()[:]),
 		Height: 5,

@@ -139,7 +139,7 @@ func TestPair_BuyWithOrders_01_ChangeRemainderOrderPrice(t *testing.T) {
 		}
 	})
 
-	amount0In, owners := pair.BuyWithOrders(big.NewInt(0).Add(addAmount1, big.NewInt(3)))
+	amount0In, owners, _ := pair.BuyWithOrders(big.NewInt(0).Add(addAmount1, big.NewInt(3)))
 	t.Run("owner", func(t *testing.T) {
 		if len(owners) != 1 {
 			t.Fatal("b", owners)

@@ -297,6 +297,7 @@ func CheckSwap(rSwap swap.EditableChecker, coinIn CalculateCoin, coinOut Calcula
 		}
 		valueOut = calculatedAmountToBuy
 	}
+	// todo: use for last update
 	// if err := rSwap.CheckSwap(valueIn, valueOut); err != nil {
 	// 	if err == swap.ErrorK {
 	// 		panic(swap.ErrorK)
