@@ -168,7 +168,7 @@ func (s *Service) calcBuyFromPool(ctx context.Context, value *big.Int, cState *s
 		swapChecker := cState.Swap().GetSwapper(sellCoinID, buyCoinID)
 
 		if !swapChecker.Exists() {
-			return nil, s.createError(status.New(codes.NotFound, fmt.Sprintf("swap pair beetwen coins %s and %s not exists", coinFrom.GetFullSymbol(), coinBuy.GetFullSymbol())), transaction.EncodeError(code.NewPairNotExists(coinFrom.ID().String(), coinBuy.ID().String())))
+			return nil, s.createError(status.New(codes.NotFound, fmt.Sprintf("swap pool beetwen coins %s and %s not exists", coinFrom.GetFullSymbol(), coinBuy.GetFullSymbol())), transaction.EncodeError(code.NewPairNotExists(coinFrom.ID().String(), coinBuy.ID().String())))
 		}
 
 		if _, ok := dup[swapChecker.GetID()]; ok {
