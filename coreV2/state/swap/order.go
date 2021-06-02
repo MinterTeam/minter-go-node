@@ -3,6 +3,7 @@ package swap
 import (
 	"encoding/binary"
 	"fmt"
+	"log"
 	"math"
 	"math/big"
 
@@ -53,13 +54,15 @@ type ChangeDetailsWithOrders struct {
 }
 
 func (p *Pair) SellWithOrders(amount0In *big.Int) (amount1Out *big.Int, owners map[types.Address]*big.Int, c *ChangeDetailsWithOrders) { // todo: add mutex
-
-	owners = map[types.Address]*big.Int{}
 	amount1Out, orders := p.calculateBuyForSellWithOrders(amount0In)
+	log.Println(amount0In, amount1Out)
 
-	commission0orders, commission1orders, amount0, amount1 := CalcDiffPool(amount0In, amount1Out, orders, owners)
+	commission0orders, commission1orders, amount0, amount1, owners := CalcDiffPool(amount0In, amount1Out, orders)
 
-	p.Swap(amount0, big.NewInt(0), big.NewInt(0), amount1)
+	if amount0.Sign() != 0 || amount1.Sign() != 0 {
+		log.Println("a", amount0, amount1)
+		p.Swap(amount0, big.NewInt(0), big.NewInt(0), amount1)
+	}
 
 	p.update(commission0orders, commission1orders)
 
@@ -74,39 +77,43 @@ func (p *Pair) SellWithOrders(amount0In *big.Int) (amount1Out *big.Int, owners m
 	}
 }
 
-func CalcDiffPool(amount0In, amount1Out *big.Int, orders []*Limit, owners map[types.Address]*big.Int) (*big.Int, *big.Int, *big.Int, *big.Int) {
+func CalcDiffPool(amount0In, amount1Out *big.Int, orders []*Limit) (*big.Int, *big.Int, *big.Int, *big.Int, map[types.Address]*big.Int) {
+	owners := map[types.Address]*big.Int{}
+
 	amount0orders, amount1orders := big.NewInt(0), big.NewInt(0)
 	commission0orders, commission1orders := big.NewInt(0), big.NewInt(0)
 	for _, order := range orders {
 		amount0orders.Add(amount0orders, order.WantBuy)
 		amount1orders.Add(amount1orders, order.WantSell)
 
-		cB := calcCommission(order.WantBuy)
-		cS := calcCommission(order.WantSell)
+		cB := calcCommission999(order.WantBuy)
+		cS := calcCommission999(order.WantSell)
+
+		commission0orders.Add(commission0orders, cB)
+		commission1orders.Add(commission1orders, cS)
 
 		if owners[order.Owner] == nil {
 			owners[order.Owner] = big.NewInt(0)
 		}
 		owners[order.Owner].Add(owners[order.Owner], big.NewInt(0).Sub(order.WantBuy, cB))
-
-		commission0orders.Add(commission0orders, cB)
-		commission1orders.Add(commission1orders, cS)
 	}
 
-	// amount0orders.Sub(amount0orders, commission0orders)
+	amount1orders.Sub(amount1orders, commission1orders)
+
 	amount0 := big.NewInt(0).Sub(amount0In, amount0orders)
-	amount1 := big.NewInt(0).Sub(amount1Out, amount1orders.Sub(amount1orders, commission1orders))
-	return commission0orders, commission1orders, amount0, amount1
+	amount1 := big.NewInt(0).Sub(amount1Out, amount1orders)
+
+	return commission0orders, commission1orders, amount0, amount1, owners
 }
 
 func (p *Pair) BuyWithOrders(amount1Out *big.Int) (amount0In *big.Int, owners map[types.Address]*big.Int, c *ChangeDetailsWithOrders) { // todo: add mutex
-	owners = map[types.Address]*big.Int{}
-
 	amount0In, orders := p.calculateSellForBuyWithOrders(amount1Out)
+	commission0orders, commission1orders, amount0, amount1, owners := CalcDiffPool(amount0In, amount1Out, orders)
 
-	commission0orders, commission1orders, amount0, amount1 := CalcDiffPool(amount0In, amount1Out, orders, owners)
-
-	p.Swap(amount0, big.NewInt(0), big.NewInt(0), amount1)
+	if amount0.Sign() != 0 || amount1.Sign() != 0 {
+		log.Println("a", amount0, amount1)
+		p.Swap(amount0, big.NewInt(0), big.NewInt(0), amount1)
+	}
 
 	p.update(commission0orders, commission1orders)
 
@@ -194,13 +201,13 @@ func (p *Pair) CalculateBuyForSellWithOrders(amount0In *big.Int) (amount1Out *bi
 	return amount1Out
 }
 
-func (p *Pair) calculateBuyForSellWithOrders(amount0In *big.Int) (amount1Out *big.Int, orders []*Limit) {
-	amount1Out = big.NewInt(0)
-	amount0 := big.NewInt(0).Set(amount0In)
+func (p *Pair) calculateBuyForSellWithOrders(amount0In *big.Int) (amountOut *big.Int, orders []*Limit) {
+	amountOut = big.NewInt(0)
+	amountIn := big.NewInt(0).Set(amount0In)
 	var pair EditableChecker = p
 	for i := 0; true; i++ {
-		if amount0.Sign() == 0 {
-			return amount1Out, orders
+		if amountIn.Sign() == 0 {
+			return amountOut, orders
 		}
 
 		limit := p.OrderSellLowerByIndex(i)
@@ -211,41 +218,56 @@ func (p *Pair) calculateBuyForSellWithOrders(amount0In *big.Int) (amount1Out *bi
 		price := limit.Price()
 		if price.Cmp(pair.Price()) == -1 {
 			reserve0diff := pair.CalculateAddAmount0ForPrice(price)
-			if amount0.Cmp(reserve0diff) != 1 {
-				break
-			}
+			if reserve0diff != nil {
+				if amountIn.Cmp(reserve0diff) != 1 {
+					break
+				}
 
-			amount0.Sub(amount0, reserve0diff)
-			amount1diff := pair.CalculateBuyForSell(reserve0diff)
-			if amount1diff == nil {
-				amount1diff = big.NewInt(0)
+				reserve1diff := pair.CalculateBuyForSell(reserve0diff)
+				if reserve1diff == nil {
+					reserve1diff = big.NewInt(0)
+				}
+
+				amountIn.Sub(amountIn, reserve0diff)
+				amountOut.Add(amountOut, reserve1diff)
+
+				pair = pair.AddLastSwapStep(reserve0diff, reserve1diff)
+
+				log.Println("r", reserve0diff, reserve1diff)
 			}
-			amount1Out.Add(amount1Out, amount1diff)
-			pair = pair.AddLastSwapStep(reserve0diff, amount1diff)
 		}
 
-		comS := calcCommission(limit.WantBuy)
-		rest := big.NewInt(0).Sub(amount0, big.NewInt(0).Add(limit.WantBuy, comS))
+		// хотим продать 9009
+		// проверяем есть ли столько на продажу
+		log.Println("i", amountIn)
+		rest := big.NewInt(0).Sub(amountIn, limit.WantBuy)
 		if rest.Sign() != 1 {
-			amount1, acc := big.NewFloat(0).Mul(price, big.NewFloat(0).SetInt(big.NewInt(0).Sub(amount0, calcCommission(amount0)))).Int(nil)
-			if acc != big.Above {
-				amount1.Add(amount1, big.NewInt(1))
+			// 9009
+			amount0 := big.NewInt(0).Set(amountIn)
+			// считаем сколько сможем купить -- 3003
+			amount1, acc := big.NewFloat(0).Mul(price, big.NewFloat(0).SetInt(amount0)).Int(nil)
+			if acc != big.Exact {
+				log.Println("acc", acc)
+				// if acc == big.Below { // todo
+				// 	amount1.Add(amount1,big.NewInt(1))
+				// }
 			}
+			log.Println("m", amount1)
 
 			orders = append(orders, &Limit{
 				isBuy:        limit.isBuy,
 				pairKey:      p.pairKey,
-				WantBuy:      amount0,
-				WantSell:     amount1,
+				WantBuy:      amount0, // 9009, 9 заберем в пул
+				WantSell:     amount1, // 3003, 3 пул
 				Owner:        limit.Owner,
 				oldSortPrice: limit.SortPrice(),
 				id:           limit.id,
 			})
 
-			comB := calcCommission(amount1)
-
-			amount1Out.Add(amount1Out, big.NewInt(0).Sub(amount1, comB))
-			return amount1Out, orders
+			comB := calcCommission999(amount1)
+			log.Println("n", comB)
+			amountOut.Add(amountOut, big.NewInt(0).Sub(amount1, comB))
+			return amountOut, orders
 		}
 
 		orders = append(orders, &Limit{
@@ -258,30 +280,34 @@ func (p *Pair) calculateBuyForSellWithOrders(amount0In *big.Int) (amount1Out *bi
 			id:           limit.id,
 		})
 
-		comB := calcCommission(limit.WantSell)
+		comS := calcCommission999(limit.WantBuy)
+		comB := calcCommission999(limit.WantSell)
 
 		pair = pair.AddLastSwapStep(comS, big.NewInt(0).Neg(comB))
-		amount1Out.Add(amount1Out, big.NewInt(0).Sub(limit.WantSell, comB))
+		amountOut.Add(amountOut, big.NewInt(0).Sub(limit.WantSell, comB))
 
-		amount0 = rest
+		amountIn = rest
 	}
 
-	amount1diff := pair.CalculateBuyForSell(amount0)
+	amount1diff := pair.CalculateBuyForSell(amountIn)
 	if amount1diff != nil {
-		amount1Out.Add(amount1Out, amount1diff)
+		amountOut.Add(amountOut, amount1diff)
 	}
-	return amount1Out, orders
+	return amountOut, orders
 }
 
-func calcCommission(amount1 *big.Int) *big.Int {
-	mul := big.NewInt(0).Mul(amount1, big.NewInt(commissionOrder/2))
-	com := big.NewInt(0).Quo(mul, big.NewInt(1000))
+func calcCommission001(amount0 *big.Int) *big.Int {
+	return big.NewInt(0).Quo(big.NewInt(0).Mul(amount0, big.NewInt(commissionOrder/2)), big.NewInt(1000))
+}
+
+func calcCommission999(amount1 *big.Int) *big.Int {
+	q := big.NewInt(0).Quo(amount1, big.NewInt(1000+commissionOrder/2))
 	remainder := big.NewInt(0)
-	if big.NewInt(0).Rem(mul, big.NewInt(1000)).Sign() == 1 {
-		remainder = big.NewInt(1)
+	if big.NewInt(0).Rem(amount1, big.NewInt(1000+commissionOrder/2)).Sign() == 1 {
+		remainder = big.NewInt(1) // todo: need check
 	}
-	com.Add(com, remainder)
-	return com
+	q.Add(q, remainder)
+	return q
 }
 
 func (p *Pair) CalculateAddAmount0ForPrice(price *big.Float) (amount0 *big.Int) {
@@ -292,6 +318,7 @@ func (p *Pair) CalculateAddAmount0ForPrice(price *big.Float) (amount0 *big.Int) 
 	return p.calculateAddAmount0ForPrice(price)
 }
 
+// Deprecated
 func (p *Pair) CalculateAddAmount1ForPrice(price *big.Float) (amount1 *big.Int) {
 	if price.Cmp(p.Price()) == 1 {
 		amount1 := p.reverse().CalculateAddAmount0ForPrice(big.NewFloat(0).Quo(big.NewFloat(1), price))
@@ -329,13 +356,13 @@ func (p *Pair) CalculateSellForBuyWithOrders(amount1Out *big.Int) (amount0In *bi
 	return amount0In
 }
 
-func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amount0In *big.Int, orders []*Limit) {
-	amount0In = big.NewInt(0)
-	amount1 := big.NewInt(0).Set(amount1Out)
+func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big.Int, orders []*Limit) {
+	amountIn = big.NewInt(0)
+	amountOut := big.NewInt(0).Set(amount1Out)
 	var pair EditableChecker = p
 	for i := 0; true; i++ {
-		if amount1.Sign() == 0 {
-			return amount0In, orders
+		if amountOut.Sign() == 0 {
+			return amountIn, orders
 		}
 
 		limit := p.OrderSellLowerByIndex(i)
@@ -345,42 +372,52 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amount0In *bi
 
 		price := limit.Price()
 		if price.Cmp(pair.Price()) == -1 {
-			reserve1diff := pair.CalculateAddAmount1ForPrice(price)
-			if amount1.Cmp(reserve1diff) != 1 {
-				break
-			}
+			reserve0diff := pair.CalculateAddAmount0ForPrice(price)
+			if reserve0diff != nil {
+				reserve1diff := pair.CalculateBuyForSell(reserve0diff)
+				if reserve1diff == nil {
+					reserve1diff = big.NewInt(0)
+				}
+				if amountOut.Cmp(reserve1diff) != 1 {
+					break
+				}
 
-			amount1.Sub(amount1, reserve1diff)
-			amount0diff := pair.CalculateSellForBuy(reserve1diff)
-			if amount0diff == nil {
-				amount0diff = big.NewInt(0)
+				amountOut.Sub(amountOut, reserve1diff)
+				amountIn.Add(amountIn, reserve0diff)
+
+				pair = pair.AddLastSwapStep(reserve0diff, reserve1diff)
+
+				log.Println("b", reserve0diff, reserve1diff)
 			}
-			amount0In.Add(amount0In, amount0diff)
-			pair = pair.AddLastSwapStep(amount0diff, reserve1diff)
 		}
 
-		comB := calcCommission(limit.WantSell)
-		rest := big.NewInt(0).Sub(amount1, big.NewInt(0).Sub(limit.WantSell, comB))
+		// хочу купить amountOut = 3000
+		// тк мы 0.1% положим в пул, то надо купить 3003
+		// проверим что в пуле есть X * 0.999 == 3000
+		// на продажу есть 5000
+		// что бы в пул пошел 0.1%, мне надо купить 3003 из которых 3 положить в пул
+		comB := calcCommission999(limit.WantSell)
+		rest := big.NewInt(0).Sub(amountOut, big.NewInt(0).Sub(limit.WantSell, comB))
 		if rest.Sign() != 1 {
+			amount1 := big.NewInt(0).Add(amountOut, calcCommission001(amountOut))
+			// считаем сколько монет надо продать что бы купить 3003
 			amount0, acc := big.NewFloat(0).Quo(big.NewFloat(0).SetInt(amount1), price).Int(nil)
-			if acc != big.Below {
-				// todo: amount0.Sub(amount0, big.NewInt(1))
+			if acc != big.Exact {
+				log.Println("acc", acc) // todo
 			}
+
 			orders = append(orders, &Limit{
 				isBuy:        limit.isBuy,
 				pairKey:      p.pairKey,
-				WantBuy:      amount0,
-				WantSell:     amount1,
+				WantBuy:      amount0, // и того продам по ордеру 9009, из них 9000 продавцу и 9 в пул
+				WantSell:     amount1, // 3003, позже вычтем 3 и положим в пул
 				Owner:        limit.Owner,
 				oldSortPrice: limit.SortPrice(),
 				id:           limit.id,
 			})
 
-			comS := calcCommission(amount0)
-			amount0.Add(amount0, comS)
-			amount0In.Add(amount0In, amount0)
-
-			return amount0In, orders
+			amountIn.Add(amountIn, amount0)
+			return amountIn, orders
 		}
 
 		orders = append(orders, &Limit{
@@ -393,19 +430,20 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amount0In *bi
 			id:           limit.id,
 		})
 
-		comS := calcCommission(limit.WantBuy)
+		comS := calcCommission999(limit.WantBuy)
 
 		pair = pair.AddLastSwapStep(comS, big.NewInt(0).Neg(comB))
-		amount1 = rest
+		amountOut = rest
 
-		amount0In.Add(amount0In, limit.WantBuy)
+		amountIn.Add(amountIn, limit.WantBuy)
+		// amountIn.Add(amountIn, comS)
 	}
 
-	amount0diff := pair.CalculateSellForBuy(amount1)
+	amount0diff := pair.CalculateSellForBuy(amountOut)
 	if amount0diff != nil {
-		amount0In.Add(amount0In, amount0diff)
+		amountIn.Add(amountIn, amount0diff)
 	}
-	return amount0In, orders
+	return amountIn, orders
 }
 
 func CalcPriceSell(sell, buy *big.Int) *big.Float {
