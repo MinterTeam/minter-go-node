@@ -8,10 +8,77 @@ import (
 	"github.com/MinterTeam/minter-go-node/coreV2/state/bus"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/checker"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
+	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/tree"
 	"github.com/tendermint/go-amino"
 	db "github.com/tendermint/tm-db"
 )
+
+func TestSimple_my(t *testing.T) {
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+
+	swap := New(newBus, immutableTree.GetLastImmutable())
+	_, _, _, _ = swap.PairCreate(0, 1, helpers.StringToBigInt("10000000000000000000000"), helpers.StringToBigInt("10000000000000000000000"))
+
+	pair := swap.Pair(0, 1)
+
+	wantBuy := helpers.StringToBigInt("15000000000000000000000")
+	wantSell := helpers.StringToBigInt("5000000000000000000000")
+	order := pair.SetOrder(wantBuy, wantSell)
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	amount0In := helpers.StringToBigInt("10000000000000000000000000")
+	amount1Out, orders := pair.calculateBuyForSellWithOrders(amount0In)
+	commission0orders, commission1orders, amount0, amount1, _ := CalcDiffPool(amount0In, amount1Out, orders)
+
+	amount0ForPrice := pair.CalculateAddAmount0ForPrice(order.Price())
+	amount1ForPrice := pair.CalculateBuyForSell(amount0ForPrice)
+
+	if amount0ForPrice.String() != "7330916069244653273088" {
+		t.Error("err")
+	}
+	if amount1ForPrice.String() != "4225079013582808516163" {
+		t.Error("err")
+	}
+
+	if commission0orders.String() != "14985014985014985015" {
+		t.Error("err")
+	}
+	if commission1orders.String() != "4995004995004995005" {
+		t.Error("err")
+	}
+
+	amount0AfterPrice := big.NewInt(0).Sub(amount0, amount0ForPrice)
+	amount1AfterPrice := big.NewInt(0).Sub(amount1, amount1ForPrice)
+
+	if amount0AfterPrice.String() != "9977669083930755346726912" {
+		t.Error("err")
+	}
+	if amount1AfterPrice.String() != "5769865139125425209983" {
+		t.Error("err")
+	}
+
+	pair.Swap(amount0ForPrice, big.NewInt(0), big.NewInt(0), amount1ForPrice)
+	pair.update(amount0ForPrice, amount1ForPrice)
+	pair.Swap(amount0AfterPrice, big.NewInt(0), big.NewInt(0), amount1AfterPrice)
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Error("Recovered", r)
+		}
+	}()
+	New(newBus, immutableTree.GetLastImmutable()).Pair(0, 1).SellWithOrders(amount0In)
+}
 
 func TestPair_OrderID(t *testing.T) {
 	memDB := db.NewMemDB()

@@ -388,6 +388,7 @@ func TestOrder_one_more_a_lot(t *testing.T) {
 	if response.Code != code.OK {
 		t.Fatalf("Response code is not OK: %s, %d", response.Log, response.Code)
 	}
+	t.Log(response.Events)
 
 	SendEndBlock(app, 1) // send EndBlock
 	SendCommit(app)      // send Commit
