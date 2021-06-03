@@ -21,9 +21,9 @@ func (s *Swap) PairSellWithOrders(coin0, coin1 types.CoinID, amount0In, minAmoun
 		panic(fmt.Sprintf("calculatedAmount1Out %s less minAmount1Out %s", amount1Out, minAmount1Out))
 	}
 
-	// for _, b := range owners {
-	// 	s.bus.Checker().AddCoin(coin0, big.NewInt(0).Neg(b))
-	// }
+	for _, b := range owners {
+		s.bus.Checker().AddCoin(coin0, big.NewInt(0).Neg(b))
+	}
 	s.bus.Checker().AddCoin(coin0, amount0In)
 	s.bus.Checker().AddCoin(coin1, big.NewInt(0).Neg(amount1Out))
 	return amount0In, amount1Out, pair.GetID(), details, owners
@@ -36,10 +36,9 @@ func (s *Swap) PairBuyWithOrders(coin0, coin1 types.CoinID, maxAmount0In, amount
 		panic(fmt.Sprintf("calculatedAmount1Out %s less minAmount1Out %s", amount1Out, maxAmount0In))
 	}
 
-	// for address, b := range owners {
-	// 	s.bus.Checker().AddCoin(coin0, big.NewInt(0).Neg(b))
-	// 	s.bus.Accounts().AddBalance(address, coin0, b)
-	// }
+	for _, b := range owners {
+		s.bus.Checker().AddCoin(coin0, big.NewInt(0).Neg(b))
+	}
 	s.bus.Checker().AddCoin(coin0, amount0In)
 	s.bus.Checker().AddCoin(coin1, big.NewInt(0).Neg(amount1Out))
 	return amount0In, amount1Out, pair.GetID(), details, owners
@@ -704,6 +703,7 @@ func (p *Pair) SetOrder(wantBuyAmount0, wantSellAmount1 *big.Int) (order *Limit)
 func (p *Pair) setOrder(limit *Limit) {
 	if p.Price().Cmp(limit.Price()) == -1 {
 		// todo: do not allow
+		log.Println("do not allow")
 		p.setSellHigherOrder(limit.sort())
 	} else {
 		p.setSellLowerOrder(limit.sort())

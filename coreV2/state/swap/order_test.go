@@ -72,6 +72,7 @@ func TestPair_OrderID(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
+		t.Logf("%s", jsonBytes)
 		if len(appState.Pools) != 1 {
 			t.Fatalf("pools are not all: %s", jsonBytes)
 		}

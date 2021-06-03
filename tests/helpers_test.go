@@ -2,6 +2,8 @@ package tests
 
 import (
 	"crypto/ecdsa"
+	"time"
+
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/coreV2/minter"
@@ -13,7 +15,6 @@ import (
 	tmTypes "github.com/tendermint/tendermint/abci/types"
 	tmTypes1 "github.com/tendermint/tendermint/proto/tendermint/types"
 	"github.com/tendermint/tendermint/proto/tendermint/version"
-	"time"
 )
 
 // CreateApp creates and returns new Blockchain instance
@@ -26,7 +27,7 @@ func CreateApp(state types.AppState) *minter.Blockchain {
 	storage := utils.NewStorage("", "")
 	cfg := config.GetConfig(storage.GetMinterHome())
 	cfg.DBBackend = "memdb"
-	app := minter.NewMinterBlockchain(storage, cfg, nil, 120)
+	app := minter.NewMinterBlockchain(storage, cfg, nil, 120, "v240")
 	var updates []tmTypes.ValidatorUpdate
 	for _, validator := range state.Validators {
 		updates = append(updates, tmTypes.Ed25519ValidatorUpdate(validator.PubKey.Bytes(), 1))

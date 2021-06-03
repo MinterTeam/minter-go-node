@@ -80,7 +80,7 @@ type Blockchain struct {
 }
 
 // NewMinterBlockchain creates Minter Blockchain instance, should be only called once
-func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx context.Context, period uint64) *Blockchain {
+func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx context.Context, period uint64, version string) *Blockchain {
 	// Initiate Application DB. Used for persisting data like current block, validators, etc.
 	applicationDB := appdb.NewAppDB(storages.GetMinterHome(), cfg)
 	if ctx == nil {
@@ -113,7 +113,7 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 			v240: {},
 			// add more for update
 		},
-		executor: GetExecutor(""),
+		executor: GetExecutor(version),
 	}
 	if applicationDB.GetStartHeight() != 0 {
 		app.initState()

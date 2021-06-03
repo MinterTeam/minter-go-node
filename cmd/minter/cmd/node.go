@@ -3,6 +3,13 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"io"
+	"net/http"
+	_ "net/http/pprof" // nolint: gosec // securely exposed on separate, optional port
+	"net/url"
+	"os"
+	"syscall"
+
 	apiV2 "github.com/MinterTeam/minter-go-node/api/v2"
 	serviceApi "github.com/MinterTeam/minter-go-node/api/v2/service"
 	"github.com/MinterTeam/minter-go-node/cli/service"
@@ -23,12 +30,6 @@ import (
 	"github.com/tendermint/tendermint/proxy"
 	rpc "github.com/tendermint/tendermint/rpc/client/local"
 	tmTypes "github.com/tendermint/tendermint/types"
-	"io"
-	"net/http"
-	_ "net/http/pprof" // nolint: gosec // securely exposed on separate, optional port
-	"net/url"
-	"os"
-	"syscall"
 )
 
 // RunNode is the command that allows the CLI to start a node.
@@ -86,7 +87,7 @@ func runNode(cmd *cobra.Command) error {
 	if err != nil {
 		return err
 	}
-	app := minter.NewMinterBlockchain(storages, cfg, cmd.Context(), 0)
+	app := minter.NewMinterBlockchain(storages, cfg, cmd.Context(), 0, "")
 
 	// update BlocksTimeDelta in case it was corrupted
 	// updateBlocksTimeDelta(app, tmConfig)

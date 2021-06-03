@@ -168,20 +168,26 @@ func (s *Swap) Export(state *types.AppState) {
 }
 
 func (s *Swap) Import(state *types.AppState) {
-	for _, swap := range state.Pools {
-		coin0 := types.CoinID(swap.Coin0)
-		coin1 := types.CoinID(swap.Coin1)
-		reserve0 := helpers.StringToBigInt(swap.Reserve0)
-		reserve1 := helpers.StringToBigInt(swap.Reserve1)
+	for _, pool := range state.Pools {
+		coin0 := types.CoinID(pool.Coin0)
+		coin1 := types.CoinID(pool.Coin1)
+		reserve0 := helpers.StringToBigInt(pool.Reserve0)
+		reserve1 := helpers.StringToBigInt(pool.Reserve1)
 		pair := s.ReturnPair(coin0, coin1)
-		*pair.ID = uint32(swap.ID)
+		*pair.ID = uint32(pool.ID)
 		pair.Reserve0.Set(reserve0)
 		pair.Reserve1.Set(reserve1)
 		s.bus.Checker().AddCoin(coin0, reserve0)
 		s.bus.Checker().AddCoin(coin1, reserve1)
 		pair.markDirty()
 		s.incID()
-		// todo: set orders and total count
+		for _, order := range pool.Orders {
+			key := pair.pairKey
+			if !order.IsSale {
+				key = key.reverse()
+			}
+			s.PairAddOrder(key.Coin0, key.Coin1, helpers.StringToBigInt(order.Volume0), helpers.StringToBigInt(order.Volume1), order.Owner)
+		}
 	}
 }
 
@@ -810,7 +816,7 @@ var (
 	ErrorInsufficientLiquidity    = errors.New("INSUFFICIENT_LIQUIDITY")
 )
 
-// reserve1-(reserve0*reserve1)/((amount0+reserve0)-amount0*0.002)
+// Deprecated
 func (p *Pair) CalculateBuyForSellAllowNeg(amount0In *big.Int) (amount1Out *big.Int) {
 	if amount0In.Sign() == -1 {
 		amount1Out := p.reverse().CalculateSellForBuy(big.NewInt(0).Neg(amount0In))
@@ -843,7 +849,7 @@ func (p *Pair) CalculateBuyForSell(amount0In *big.Int) (amount1Out *big.Int) {
 	return amount1Out
 }
 
-// (reserve0*reserve1/(reserve1-amount1)-reserve0)/0.998
+// Deprecated
 func (p *Pair) CalculateSellForBuyAllowNeg(amount1Out *big.Int) (amount0In *big.Int) {
 	if amount1Out.Sign() == -1 {
 		amount0In := p.reverse().CalculateBuyForSell(big.NewInt(0).Neg(amount1Out))
