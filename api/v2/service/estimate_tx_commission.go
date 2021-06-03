@@ -3,54 +3,52 @@ package service
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
-	"github.com/MinterTeam/minter-go-node/core/transaction"
-	"github.com/MinterTeam/minter-go-node/formula"
+	"strings"
+
+	"github.com/MinterTeam/minter-go-node/coreV2/code"
+	"github.com/MinterTeam/minter-go-node/coreV2/types"
+
+	"github.com/MinterTeam/minter-go-node/coreV2/transaction"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"math/big"
 )
 
-func (s *Service) EstimateTxCommission(_ context.Context, req *pb.EstimateTxCommissionRequest) (*pb.EstimateTxCommissionResponse, error) {
-	cState, err := s.getStateForHeight(req.Height)
+// EstimateTxCommission return estimate of transaction.
+func (s *Service) EstimateTxCommission(ctx context.Context, req *pb.EstimateTxCommissionRequest) (*pb.EstimateTxCommissionResponse, error) {
+	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {
-		return new(pb.EstimateTxCommissionResponse), status.Error(codes.NotFound, err.Error())
+		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
-	cState.RLock()
-	defer cState.RUnlock()
-
-	if len(req.Tx) < 3 {
-		return new(pb.EstimateTxCommissionResponse), status.Error(codes.InvalidArgument, "invalid tx")
+	if !strings.HasPrefix(strings.Title(req.GetTx()), "0x") {
+		return nil, status.Error(codes.InvalidArgument, "invalid transaction")
 	}
 
-	decodeString, err := hex.DecodeString(req.Tx[2:])
+	decodeString, err := hex.DecodeString(req.GetTx()[2:])
 	if err != nil {
-		return new(pb.EstimateTxCommissionResponse), status.Error(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	decodedTx, err := transaction.TxDecoder.DecodeFromBytesWithoutSig(decodeString)
+	decodedTx, err := s.executor.DecodeFromBytesWithoutSig(decodeString)
 	if err != nil {
-		return new(pb.EstimateTxCommissionResponse), status.Error(codes.InvalidArgument, "Cannot decode transaction")
+		return nil, status.Errorf(codes.InvalidArgument, "Cannot decode transaction: %s", err.Error())
 	}
 
-	commissionInBaseCoin := decodedTx.CommissionInBaseCoin()
-	commission := big.NewInt(0).Set(commissionInBaseCoin)
+	commissions := cState.Commission().GetCommissions()
+	price := decodedTx.Price(commissions)
+	if !commissions.Coin.IsBaseCoin() {
+		price = cState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()).CalculateBuyForSell(price)
+	}
+	if price == nil {
+		return nil, s.createError(status.New(codes.FailedPrecondition, "Not possible to pay commission"), transaction.EncodeError(code.NewCommissionCoinNotSufficient("", "")))
+	}
 
-	if !decodedTx.GasCoin.IsBaseCoin() {
-		coin := cState.Coins.GetCoin(decodedTx.GasCoin)
-
-		if coin.Reserve().Cmp(commissionInBaseCoin) < 0 {
-			return new(pb.EstimateTxCommissionResponse), s.createError(status.New(codes.InvalidArgument, fmt.Sprintf("Coin reserve balance is not sufficient for transaction. Has: %s, required %s",
-				coin.Reserve().String(), commissionInBaseCoin.String())), transaction.EncodeError(map[string]string{
-				"commission_in_base_coin": coin.Reserve().String(),
-				"value_has":               coin.Reserve().String(),
-				"value_required":          commissionInBaseCoin.String(),
-			}))
-		}
-
-		commission = formula.CalculateSaleAmount(coin.Volume(), coin.Reserve(), coin.Crr(), commissionInBaseCoin)
+	commissionInBaseCoin := decodedTx.Commission(price)
+	commissionPoolSwapper := cState.Swap().GetSwapper(decodedTx.GasCoin, types.GetBaseCoinID())
+	commission, _, errResp := transaction.CalculateCommission(cState, commissionPoolSwapper, cState.Coins().GetCoin(decodedTx.GasCoin), commissionInBaseCoin)
+	if errResp != nil {
+		return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
 	}
 
 	return &pb.EstimateTxCommissionResponse{

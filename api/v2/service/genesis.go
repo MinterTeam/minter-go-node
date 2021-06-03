@@ -1,51 +1,55 @@
 package service
 
 import (
-	"bytes"
 	"context"
-	"fmt"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
-	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/ptypes/empty"
-	_struct "github.com/golang/protobuf/ptypes/struct"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
 	"time"
 )
 
-func (s *Service) Genesis(context.Context, *empty.Empty) (*pb.GenesisResponse, error) {
-	result, err := s.client.Genesis()
+// Genesis returns genesis file.
+func (s *Service) Genesis(ctx context.Context, _ *empty.Empty) (*pb.GenesisResponse, error) {
+	result, err := s.client.Genesis(ctx)
 	if err != nil {
-		return new(pb.GenesisResponse), status.Error(codes.FailedPrecondition, err.Error())
+		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
 
-	var bb bytes.Buffer
-	if _, err := bb.Write(result.Genesis.AppState); err != nil {
-		return new(pb.GenesisResponse), status.Error(codes.Internal, err.Error())
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+		return nil, timeoutStatus.Err()
 	}
-	appState := &_struct.Struct{Fields: make(map[string]*_struct.Value)}
-	if err := (&jsonpb.Unmarshaler{}).Unmarshal(&bb, appState); err != nil {
-		return new(pb.GenesisResponse), status.Error(codes.Internal, err.Error())
+
+	var appState pb.GenesisResponse_AppState
+	err = protojson.Unmarshal(result.Genesis.AppState, &appState)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+		return nil, timeoutStatus.Err()
 	}
 
 	return &pb.GenesisResponse{
-		GenesisTime: result.Genesis.GenesisTime.Format(time.RFC3339Nano),
-		ChainId:     result.Genesis.ChainID,
+		GenesisTime:   result.Genesis.GenesisTime.Format(time.RFC3339Nano),
+		ChainId:       result.Genesis.ChainID,
+		InitialHeight: uint64(result.Genesis.InitialHeight),
 		ConsensusParams: &pb.GenesisResponse_ConsensusParams{
 			Block: &pb.GenesisResponse_ConsensusParams_Block{
-				MaxBytes:   fmt.Sprintf("%d", result.Genesis.ConsensusParams.Block.MaxBytes),
-				MaxGas:     fmt.Sprintf("%d", result.Genesis.ConsensusParams.Block.MaxGas),
-				TimeIotaMs: fmt.Sprintf("%d", result.Genesis.ConsensusParams.Block.TimeIotaMs),
+				MaxBytes:   result.Genesis.ConsensusParams.Block.MaxBytes,
+				MaxGas:     result.Genesis.ConsensusParams.Block.MaxGas,
+				TimeIotaMs: result.Genesis.ConsensusParams.Block.TimeIotaMs,
 			},
 			Evidence: &pb.GenesisResponse_ConsensusParams_Evidence{
-				MaxAgeNumBlocks: fmt.Sprintf("%d", result.Genesis.ConsensusParams.Evidence.MaxAgeNumBlocks),
-				MaxAgeDuration:  fmt.Sprintf("%d", result.Genesis.ConsensusParams.Evidence.MaxAgeDuration),
+				MaxAgeNumBlocks: result.Genesis.ConsensusParams.Evidence.MaxAgeNumBlocks,
+				MaxAgeDuration:  int64(result.Genesis.ConsensusParams.Evidence.MaxAgeDuration),
 			},
 			Validator: &pb.GenesisResponse_ConsensusParams_Validator{
-				PublicKeyTypes: result.Genesis.ConsensusParams.Validator.PubKeyTypes,
+				PubKeyTypes: result.Genesis.ConsensusParams.Validator.PubKeyTypes,
 			},
 		},
 		AppHash:  result.Genesis.AppHash.String(),
-		AppState: appState,
+		AppState: &appState,
 	}, nil
 }

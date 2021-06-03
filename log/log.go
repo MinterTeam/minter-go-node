@@ -8,6 +8,7 @@ import (
 	"os"
 )
 
+// NewLogger returns a logger based on given config
 func NewLogger(cfg *config.Config) log.Logger {
 	var dest io.Writer = os.Stdout
 

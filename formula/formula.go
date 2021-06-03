@@ -1,7 +1,6 @@
 package formula
 
 import (
-	"github.com/MinterTeam/minter-go-node/core/types"
 	"github.com/MinterTeam/minter-go-node/math"
 	"math/big"
 )
@@ -10,13 +9,10 @@ const (
 	precision = 100
 )
 
-func newFloat(x float64) *big.Float {
-	return big.NewFloat(x).SetPrec(precision)
-}
-
+// CalculatePurchaseReturn calculates amount of coin that user will receive by depositing given amount of BIP
 // Return = supply * ((1 + deposit / reserve) ^ (crr / 100) - 1)
-func CalculatePurchaseReturn(supply *big.Int, reserve *big.Int, crr uint, deposit *big.Int) *big.Int {
-	if deposit.Cmp(types.Big0) == 0 {
+func CalculatePurchaseReturn(supply *big.Int, reserve *big.Int, crr uint32, deposit *big.Int) *big.Int {
+	if deposit.Sign() == 0 {
 		return big.NewInt(0)
 	}
 
@@ -41,10 +37,10 @@ func CalculatePurchaseReturn(supply *big.Int, reserve *big.Int, crr uint, deposi
 	return result
 }
 
-// reversed function CalculatePurchaseReturn
-// deposit = reserve * (((wantReceive + supply) / supply)^(100/c) - 1)
-func CalculatePurchaseAmount(supply *big.Int, reserve *big.Int, crr uint, wantReceive *big.Int) *big.Int {
-	if wantReceive.Cmp(types.Big0) == 0 {
+// CalculatePurchaseAmount is the reversed version of function CalculatePurchaseReturn
+// Deposit = reserve * (((wantReceive + supply) / supply)^(100/c) - 1)
+func CalculatePurchaseAmount(supply *big.Int, reserve *big.Int, crr uint32, wantReceive *big.Int) *big.Int {
+	if wantReceive.Sign() == 0 {
 		return big.NewInt(0)
 	}
 
@@ -69,10 +65,11 @@ func CalculatePurchaseAmount(supply *big.Int, reserve *big.Int, crr uint, wantRe
 	return result
 }
 
+// CalculateSaleReturn returns amount of BIP user will receive by depositing given amount of coins
 // Return = reserve * (1 - (1 - sellAmount / supply) ^ (100 / crr))
-func CalculateSaleReturn(supply *big.Int, reserve *big.Int, crr uint, sellAmount *big.Int) *big.Int {
+func CalculateSaleReturn(supply *big.Int, reserve *big.Int, crr uint32, sellAmount *big.Int) *big.Int {
 	// special case for 0 sell amount
-	if sellAmount.Cmp(types.Big0) == 0 {
+	if sellAmount.Sign() == 0 {
 		return big.NewInt(0)
 	}
 
@@ -103,10 +100,10 @@ func CalculateSaleReturn(supply *big.Int, reserve *big.Int, crr uint, sellAmount
 	return result
 }
 
-// reversed function CalculateSaleReturn
-// -(-1 + (-(wantReceive - reserve)/reserve)^(1/crr)) * supply
-func CalculateSaleAmount(supply *big.Int, reserve *big.Int, crr uint, wantReceive *big.Int) *big.Int {
-	if wantReceive.Cmp(types.Big0) == 0 {
+// CalculateSaleAmount is the reversed version of function CalculateSaleReturn
+// Deposit = -(-1 + (-(wantReceive - reserve)/reserve)^(1/crr)) * supply
+func CalculateSaleAmount(supply *big.Int, reserve *big.Int, crr uint32, wantReceive *big.Int) *big.Int {
+	if wantReceive.Sign() == 0 {
 		return big.NewInt(0)
 	}
 
@@ -132,4 +129,8 @@ func CalculateSaleAmount(supply *big.Int, reserve *big.Int, crr uint, wantReceiv
 	result, _ := res.Int(nil)
 
 	return result
+}
+
+func newFloat(x float64) *big.Float {
+	return big.NewFloat(x).SetPrec(precision)
 }

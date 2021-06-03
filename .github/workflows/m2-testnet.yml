@@ -1,0 +1,75 @@
+name: m2-testnet
+
+on:
+  push:
+    branches: [ v2.0 ]
+
+jobs:
+  build:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go 1.15
+        uses: actions/setup-go@v2
+        with:
+          go-version: ^1.15
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+
+      - name: Get dependencies
+        run: |
+          go mod download
+
+      - name: Build
+        env:
+          CGO_ENABLED: 1
+        run: go build -tags 'minter gcc' -ldflags "-s -w -X github.com/MinterTeam/minter-go-node/version.GitCommit=${{ github.sha }}" -v -o 'build/minter' ./cmd/minter
+
+      - name: Copy file via scp
+        uses: appleboy/scp-action@master
+        env:
+          HOST: ${{ secrets.NODE_V2_HOST }}
+          USERNAME: ${{ secrets.NODE_V2_USERNAME }}
+          PORT: ${{ secrets.NODE_V2_PORT }}
+          KEY: ${{ secrets.NODE_V2_SSH }}
+        with:
+          source: "build"
+          target: "/tmp/node"
+          rm: true
+
+      - name: Rename old build
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.NODE_V2_HOST }}
+          USERNAME: ${{ secrets.NODE_V2_USERNAME }}
+          PORT: ${{ secrets.NODE_V2_PORT }}
+          KEY: ${{ secrets.NODE_V2_SSH }}
+          script: mv /opt/minter/node/minter /opt/minter/node/minter_${{ github.sha }}
+
+      - name: Copy new build
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.NODE_V2_HOST }}
+          USERNAME: ${{ secrets.NODE_V2_USERNAME }}
+          PORT: ${{ secrets.NODE_V2_PORT }}
+          KEY: ${{ secrets.NODE_V2_SSH }}
+          script: mv /tmp/node/build/minter /opt/minter/node/minter
+
+      - name: Restart service
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.NODE_V2_HOST }}
+          USERNAME: ${{ secrets.NODE_V2_USERNAME }}
+          PORT: ${{ secrets.NODE_V2_PORT }}
+          KEY: ${{ secrets.NODE_V2_SSH }}
+          script: sudo systemctl restart minter-node.service
+
+      - name: notification
+        if: cancelled() == false
+        uses: xinthink/action-telegram@v1.1
+        with:
+          botToken: ${{ secrets.TELEGRAM_CI_TOKEN }}
+          chatId: ${{ secrets.TELEGRAM_CI_TO }}
+          jobStatus: ${{ job.status }}
+          skipSuccess: false

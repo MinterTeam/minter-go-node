@@ -19,7 +19,7 @@ package crypto
 import (
 	"bytes"
 	"crypto/ecdsa"
-	"github.com/MinterTeam/minter-go-node/core/types"
+	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/hexutil"
 	"github.com/MinterTeam/minter-go-node/math"
 	"reflect"

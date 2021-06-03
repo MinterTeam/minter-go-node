@@ -1,9 +1,25 @@
 name: docker
 
-on: push
+on:
+  push:
+    branches:
+      - master
+      - dev
+
+  pull_request:
+    branches:
+      - master
 
 jobs:
   docker:
+    env:
+      CONTAINER_NAME: minter_node
+      CONTAINER_TIMEOUT_SEC: 30
+      API_RUN_PORT: 8843
+      SECRET_DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
+      SECRET_DOCKER_HUB_USER: ${{ secrets.DOCKER_HUB_USER }}
+      SECRET_DOCKER_HUB_REPO: ${{ secrets.DOCKER_HUB_REPO }}
+      DOCKER_IMAGE: minter
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -11,11 +27,52 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Build & Push to Docker Hub
-        uses: opspresso/action-docker@master
+      # if secret DOCKER_HUB_REPO is not set DOCKER_HUB_USER will be used instead of REPO  
+      # otherwise secrets are empty and repo "testbuild" will be used
+      - name: Set envs
         env:
-          USERNAME: ${{ secrets.DOCKER_HUB_USER }}
-          PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
-          IMAGE_NAME: "minterteam/minter"
-          LATEST: "true" 
-          TAG_NAME: "v1.0.5"
+          ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
+        run: |
+          echo ::set-env name=VERSION::$(awk -F\" '/Version =/ { print $2; exit }' < version/version.go)
+          echo ::set-env name=DOCKER_REPO::$(if [[ "$SECRET_DOCKER_HUB_REPO" == "" ]]; then if [[ "$SECRET_DOCKER_HUB_USER" == "" ]]; then echo "testbuild"; else echo "$SECRET_DOCKER_HUB_USER"; fi; else echo "$SECRET_DOCKER_HUB_REPO"; fi)
+
+      - name: Docker build
+        run: docker build -t $DOCKER_REPO/$DOCKER_IMAGE:$VERSION . -f ./Dockerfile-ci
+
+      - name: Start docker container
+        run: docker run -d --name $CONTAINER_NAME -p $API_RUN_PORT:8843 $DOCKER_REPO/$DOCKER_IMAGE:$VERSION
+
+      - name: Check container is still running
+        env:
+          ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
+        run: |
+          echo ::set-env name=RUN_TEST_RESULT::$(sleep $CONTAINER_TIMEOUT_SEC && if [[ $(docker inspect -f "{{.State.Running}}" $CONTAINER_NAME 2> /dev/null) == true ]]; then echo OK; else echo FAIL; fi)
+
+      - name: Check api is available by HTTP (response code is 200)
+        env:
+          ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
+        run: |
+          echo ::set-env name=API_TEST_RESULT::$(if [[ $(curl -LIs localhost:$API_RUN_PORT -o /dev/null -w '%{http_code}') == 200 ]]; then echo OK; else echo FAIL; fi)
+
+      - name: Print test results
+        run: |
+          echo $RUN_TEST_RESULT
+          echo $API_TEST_RESULT
+
+      - name: Tests fail
+        run: docker logs $CONTAINER_NAME && exit 1
+        if: env.RUN_TEST_RESULT == 'FAIL' || env.API_TEST_RESULT == 'FAIL'
+
+      - name: Docker login
+        run: echo "$SECRET_DOCKER_HUB_PASSWORD" | docker login -u $SECRET_DOCKER_HUB_USER --password-stdin
+        if: github.ref == 'refs/heads/master'
+
+      - name: Docker push versioned image
+        run: docker push $DOCKER_REPO/$DOCKER_IMAGE:$VERSION
+        if: github.ref == 'refs/heads/master'
+
+      - name: Docker push latest image
+        run: |
+          docker tag $DOCKER_REPO/$DOCKER_IMAGE:$VERSION $DOCKER_REPO/$DOCKER_IMAGE:latest
+          docker push $DOCKER_REPO/$DOCKER_IMAGE:latest
+        if: github.ref == 'refs/heads/master'

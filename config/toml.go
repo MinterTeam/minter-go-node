@@ -24,10 +24,10 @@ func EnsureRoot(rootDir string) {
 	if err := os.EnsureDir(rootDir, 0700); err != nil {
 		panic(err.Error())
 	}
-	if err := os.EnsureDir(filepath.Join(rootDir, defaultConfigDir), 0700); err != nil {
+	if err := os.EnsureDir(filepath.Join(rootDir, DefaultConfigDir), 0700); err != nil {
 		panic(err.Error())
 	}
-	if err := os.EnsureDir(filepath.Join(rootDir, defaultDataDir), 0700); err != nil {
+	if err := os.EnsureDir(filepath.Join(rootDir, DefaultDataDir), 0700); err != nil {
 		panic(err.Error())
 	}
 
@@ -58,7 +58,7 @@ func WriteConfigFile(configFilePath string, config *Config) {
 
 // Note: any changes to the comments/variables/mapstructure
 // must be reflected in the appropriate struct in config/config.go
-const defaultConfigTemplate = `# This is a TOML config file.
+const defaultConfigTemplate string = `# This is a TOML config file.
 # For more information, see https://github.com/toml-lang/toml
 
 ##### main base config options #####
@@ -66,19 +66,22 @@ const defaultConfigTemplate = `# This is a TOML config file.
 # A custom human readable name for this node
 moniker = "{{ .BaseConfig.Moniker }}"
 
-# Address to listen for API connections
-api_listen_addr = "{{ .BaseConfig.APIListenAddress }}"
-
 # Address to listen for gRPC connections
 grpc_listen_addr = "{{ .BaseConfig.GRPCListenAddress }}"
 
 # Address to listen for API V2 connections
 api_v2_listen_addr = "{{ .BaseConfig.APIv2ListenAddress }}"
 
+# API v2 Timeout
+api_v2_timeout_duration = "{{ .BaseConfig.APIv2TimeoutDuration }}"
+
+# WebSocket connection duration
+ws_connection_duration = "{{ .BaseConfig.WSConnectionDuration }}"
+
 # Sets node to be in validator mode. Disables API, events, history of blocks, indexes, etc. 
 validator_mode = {{ .BaseConfig.ValidatorMode }}
 
-# Sets number of last stated to be saved
+# Sets number of last stated to be saved on disk.
 keep_last_states = {{ .BaseConfig.KeepLastStates }}
 
 # State cache size 
@@ -208,6 +211,7 @@ private_peer_ids = "{{ .P2P.PrivatePeerIDs }}"
 ##### mempool configuration options #####
 [mempool]
 
+recheck = false
 broadcast = {{ .Mempool.Broadcast }}
 wal_dir = "{{ js .Mempool.WalPath }}"
 

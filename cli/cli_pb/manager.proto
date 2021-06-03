@@ -1,0 +1,144 @@
+syntax = "proto3";
+
+package cli_pb;
+option go_package = ".;cli_pb";
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
+
+message NodeInfo {
+
+    message ProtocolVersion {
+        uint64 p2p = 3;
+        uint64 block = 1;
+        uint64 app = 2;
+    }
+
+    ProtocolVersion protocol_version = 8;
+    string id = 1;
+    string listen_addr = 2;
+    string network = 3;
+    string version = 4;
+    string channels = 5;
+    string moniker = 6;
+
+    message Other {
+        string tx_index = 2;
+        string rpc_address = 1;
+    }
+
+    Other other = 7;
+}
+
+message NetInfoResponse {
+    bool listening = 4;
+    repeated string listeners = 1;
+    int64 count_peers = 2;
+
+    message Peer {
+        google.protobuf.Int64Value latest_block_height = 5;
+
+        NodeInfo node_info = 4;
+
+        bool is_outbound = 1;
+
+        message ConnectionStatus {
+            int64 duration = 4;
+            message Monitor {
+                bool active = 13;
+                string start = 1;
+                int64 duration = 2;
+                int64 idle = 3;
+                int64 bytes = 4;
+                int64 samples = 5;
+                int64 inst_rate = 6;
+                int64 cur_rate = 7;
+                int64 avg_rate = 8;
+                int64 peak_rate = 9;
+                int64 bytes_rem = 10;
+                int64 time_rem = 11;
+                uint32 progress = 12;
+            }
+            Monitor SendMonitor = 1;
+            Monitor RecvMonitor = 2;
+            message Channel {
+                int32 id = 5;
+                int64 send_queue_capacity = 1;
+                int64 send_queue_size = 2;
+                int64 priority = 3;
+                int64 recently_sent = 4;
+            }
+            repeated Channel channels = 3;
+        }
+
+        ConnectionStatus connection_status = 2;
+        string remote_ip = 3;
+    }
+
+    repeated Peer peers = 3;
+}
+
+message StatusResponse {
+    string version = 8;
+    string latest_block_hash = 1;
+    string latest_app_hash = 2;
+    string latest_block_height = 3;
+    string latest_block_time = 4;
+    string keep_last_states = 5;
+    bool catching_up = 6;
+    string public_key = 7;
+    string node_id = 9;
+}
+
+message DealPeerRequest {
+    string address = 1;
+    bool persistent = 2;
+    bool unconditional = 3;
+    bool private = 4;
+}
+
+message DashboardResponse {
+    int64 initial_height = 14;
+    int64 latest_height = 1;
+    google.protobuf.Timestamp timestamp = 2;
+    int64 duration = 3;
+    uint64 memory_usage = 4;
+    string validator_pub_key = 5;
+    int64 max_peer_height = 6;
+    int32 peers_count = 7;
+    int64 avg_block_processing_time = 8;
+    int64 time_per_block = 9;
+    string missed_blocks = 10;
+    int64 voting_power = 11;
+    string stake = 12;
+    enum ValidatorStatus {
+        Validating = 0;
+        Challenger = 1;
+        Offline = 2;
+        NotDeclared = 3;
+    }
+    ValidatorStatus validator_status = 13;
+}
+
+message AvailableVersionsResponse {
+    repeated string heights = 1;
+}
+
+message PruneBlocksRequest {
+    int64 from_height = 1;
+    int64 to_height = 2;
+    int64 batch = 3;
+}
+message PruneBlocksResponse {
+    int64 total = 1;
+    int64 current = 2;
+}
+
+service ManagerService {
+    rpc Status (google.protobuf.Empty) returns (StatusResponse);
+    rpc NetInfo (google.protobuf.Empty) returns (NetInfoResponse);
+    rpc AvailableVersions (google.protobuf.Empty) returns (AvailableVersionsResponse);
+    rpc PruneBlocks (PruneBlocksRequest) returns (stream PruneBlocksResponse);
+    rpc DealPeer (DealPeerRequest) returns (google.protobuf.Empty);
+    rpc Dashboard (google.protobuf.Empty) returns (stream DashboardResponse);
+}

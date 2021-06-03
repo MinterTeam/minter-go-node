@@ -5,138 +5,206 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/core/rewards"
-	"github.com/MinterTeam/minter-go-node/core/transaction"
-	"github.com/MinterTeam/minter-go-node/core/types"
+	"strings"
+	"time"
+
+	"github.com/MinterTeam/minter-go-node/coreV2/state/coins"
+	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
+	_struct "github.com/golang/protobuf/ptypes/struct"
+	tmjson "github.com/tendermint/tendermint/libs/json"
 	core_types "github.com/tendermint/tendermint/rpc/core/types"
 	tmTypes "github.com/tendermint/tendermint/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"time"
 )
 
-func (s *Service) Block(_ context.Context, req *pb.BlockRequest) (*pb.BlockResponse, error) {
-	block, err := s.client.Block(&req.Height)
+// Block returns block data at given height.
+func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockResponse, error) {
+	height := int64(req.Height)
+	block, err := s.client.Block(ctx, &height)
 	if err != nil {
-		return new(pb.BlockResponse), status.Error(codes.NotFound, "Block not found")
+		return nil, status.Error(codes.NotFound, "Block not found")
 	}
 
-	blockResults, err := s.client.BlockResults(&req.Height)
-	if err != nil {
-		return new(pb.BlockResponse), status.Error(codes.NotFound, "Block results not found")
+	fields := map[pb.BlockField]struct{}{}
+	if len(req.Fields) > 0 {
+		for _, field := range req.Fields {
+			fields[field] = struct{}{}
+		}
+	} else {
+		for _, field := range pb.BlockField_value {
+			fields[pb.BlockField(field)] = struct{}{}
+		}
 	}
 
-	valHeight := req.Height - 1
-	if valHeight < 1 {
-		valHeight = 1
+	var blockResults *core_types.ResultBlockResults
+	if _, ok := fields[pb.BlockField_transactions]; ok {
+		blockResults, err = s.client.BlockResults(ctx, &height)
+		if err != nil {
+			return nil, status.Error(codes.NotFound, "Block results not found")
+		}
 	}
 
 	var totalValidators []*tmTypes.Validator
-	for i := 0; i < (((len(block.Block.LastCommit.Signatures) - 1) / 100) + 1); i++ {
-		tmValidators, err := s.client.Validators(&valHeight, i+1, 100)
-		if err != nil {
-			return new(pb.BlockResponse), status.Error(codes.Internal, err.Error())
+	{
+		_, okValidators := fields[pb.BlockField_validators]
+		_, okProposer := fields[pb.BlockField_proposer]
+		if okValidators || okProposer {
+			valHeight := height - 1
+			if valHeight < 1 {
+				valHeight = 1
+			}
+
+			var page = 1
+			var perPage = 100
+			tmValidators, err := s.client.Validators(ctx, &valHeight, &page, &perPage)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			totalValidators = tmValidators.Validators
 		}
-		totalValidators = append(totalValidators, tmValidators.Validators...)
 	}
 
-	txs := make([]*pb.BlockResponse_Transaction, 0, len(block.Block.Data.Txs))
+	response := &pb.BlockResponse{
+		Hash:             hex.EncodeToString(block.Block.Hash()),
+		Height:           uint64(block.Block.Height),
+		Time:             block.Block.Time.Format(time.RFC3339Nano),
+		TransactionCount: uint64(len(block.Block.Txs)),
+	}
+
+	for field := range fields {
+		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+			return nil, timeoutStatus.Err()
+		}
+		switch field {
+		case pb.BlockField_size:
+			response.Size = uint64(block.Block.Size())
+		case pb.BlockField_block_reward:
+			response.BlockReward = s.rewards.GetRewardForBlock(uint64(height)).String()
+		case pb.BlockField_transactions:
+			response.Transactions, err = s.blockTransaction(block, blockResults, s.blockchain.CurrentState().Coins(), req.FailedTxs)
+			if err != nil {
+				return nil, err
+			}
+		case pb.BlockField_proposer:
+			response.Proposer, err = blockProposer(block, totalValidators)
+			if err != nil {
+				return nil, err
+			}
+		case pb.BlockField_validators:
+			response.Validators = blockValidators(totalValidators, block)
+		case pb.BlockField_evidence:
+			response.Evidence, err = blockEvidence(block)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return response, nil
+}
+
+func blockEvidence(block *core_types.ResultBlock) (*pb.BlockResponse_Evidence, error) {
+	evidences := make([]*_struct.Struct, 0, len(block.Block.Evidence.Evidence))
+	for _, evidence := range block.Block.Evidence.Evidence {
+		data, err := tmjson.Marshal(evidence)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		str, err := encodeToStruct(data)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		evidences = append(evidences, str)
+	}
+	return &pb.BlockResponse_Evidence{Evidence: evidences}, nil
+}
+
+func blockValidators(totalValidators []*tmTypes.Validator, block *core_types.ResultBlock) []*pb.BlockResponse_Validator {
+	validators := make([]*pb.BlockResponse_Validator, 0, len(totalValidators))
+	for _, tmval := range totalValidators {
+		signed := false
+		for _, vote := range block.Block.LastCommit.Signatures {
+			if bytes.Equal(vote.ValidatorAddress.Bytes(), tmval.Address.Bytes()) {
+				signed = true
+				break
+			}
+		}
+		validators = append(validators, &pb.BlockResponse_Validator{
+			PublicKey: fmt.Sprintf("Mp%x", tmval.PubKey.Bytes()[:]),
+			Signed:    signed,
+		})
+	}
+
+	return validators
+}
+
+func blockProposer(block *core_types.ResultBlock, totalValidators []*tmTypes.Validator) (string, error) {
+	p := getBlockProposer(block, totalValidators)
+	if p != nil {
+		return p.String(), nil
+	}
+	return "", nil
+}
+
+func (s *Service) blockTransaction(block *core_types.ResultBlock, blockResults *core_types.ResultBlockResults, coins coins.RCoins, failed bool) ([]*pb.TransactionResponse, error) {
+	txs := make([]*pb.TransactionResponse, 0, len(block.Block.Data.Txs))
+
 	for i, rawTx := range block.Block.Data.Txs {
-		tx, _ := transaction.TxDecoder.DecodeFromBytes(rawTx)
+		if blockResults.TxsResults[i].Code != 0 && !failed {
+			continue
+		}
+
+		tx, _ := s.executor.DecodeFromBytes(rawTx)
 		sender, _ := tx.Sender()
 
 		tags := make(map[string]string)
 		for _, tag := range blockResults.TxsResults[i].Events[0].Attributes {
-			tags[string(tag.Key)] = string(tag.Value)
+			key := string(tag.Key)
+			value := string(tag.Value)
+			tags[key] = value
 		}
 
-		dataStruct, err := s.encodeTxData(tx)
+		data, err := encode(tx.GetDecodedData(), coins)
 		if err != nil {
-			return new(pb.BlockResponse), status.Error(codes.InvalidArgument, err.Error())
+			return nil, status.Error(codes.Internal, err.Error())
 		}
 
-		txs = append(txs, &pb.BlockResponse_Transaction{
-			Hash:        fmt.Sprintf("Mt%x", rawTx.Hash()),
+		txs = append(txs, &pb.TransactionResponse{
+			Hash:        strings.Title(fmt.Sprintf("Mt%x", rawTx.Hash())),
 			RawTx:       fmt.Sprintf("%x", []byte(rawTx)),
+			Height:      uint64(block.Block.Height),
+			Index:       uint64(i),
 			From:        sender.String(),
-			Nonce:       fmt.Sprintf("%d", tx.Nonce),
-			GasPrice:    fmt.Sprintf("%d", tx.GasPrice),
-			Type:        fmt.Sprintf("%d", tx.Type),
-			Data:        dataStruct,
+			Nonce:       tx.Nonce,
+			GasPrice:    uint64(tx.GasPrice),
+			TypeHex:     tx.Type.String(),
+			Type:        tx.Type.UInt64(),
+			Data:        data,
 			Payload:     tx.Payload,
 			ServiceData: tx.ServiceData,
-			Gas:         fmt.Sprintf("%d", tx.Gas()),
-			GasCoin:     tx.GasCoin.String(),
-			Tags:        tags,
-			Code:        fmt.Sprintf("%d", blockResults.TxsResults[i].Code),
-			Log:         blockResults.TxsResults[i].Log,
+			Gas:         uint64(tx.Gas()),
+			GasCoin: &pb.Coin{
+				Id:     uint64(tx.GasCoin),
+				Symbol: coins.GetCoin(tx.GasCoin).GetFullSymbol(),
+			},
+			Tags: tags,
+			Code: uint64(blockResults.TxsResults[i].Code),
+			Log:  blockResults.TxsResults[i].Log,
 		})
 	}
-
-	var validators []*pb.BlockResponse_Validator
-	var proposer string
-	if req.Height > 1 {
-		p, err := getBlockProposer(block, totalValidators)
-		if err != nil {
-			return new(pb.BlockResponse), status.Error(codes.FailedPrecondition, err.Error())
-		}
-
-		if p != nil {
-			str := p.String()
-			proposer = str
-		}
-
-		validators = make([]*pb.BlockResponse_Validator, 0, len(totalValidators))
-		for _, tmval := range totalValidators {
-			signed := false
-			for _, vote := range block.Block.LastCommit.Signatures {
-				if bytes.Equal(vote.ValidatorAddress.Bytes(), tmval.Address.Bytes()) {
-					signed = true
-					break
-				}
-			}
-
-			validators = append(validators, &pb.BlockResponse_Validator{
-				PublicKey: fmt.Sprintf("Mp%x", tmval.PubKey.Bytes()[5:]),
-				Signed:    signed,
-			})
-		}
-	}
-
-	evidences := make([]*pb.BlockResponse_Evidence_Evidence, len(block.Block.Evidence.Evidence))
-	for _, evidence := range block.Block.Evidence.Evidence {
-		evidences = append(evidences, &pb.BlockResponse_Evidence_Evidence{
-			Height:  fmt.Sprintf("%d", evidence.Height()),
-			Time:    evidence.Time().Format(time.RFC3339Nano),
-			Address: fmt.Sprintf("%s", evidence.Address()),
-			Hash:    fmt.Sprintf("%s", evidence.Hash()),
-		})
-	}
-	return &pb.BlockResponse{
-		Hash:              hex.EncodeToString(block.Block.Hash()),
-		Height:            fmt.Sprintf("%d", block.Block.Height),
-		Time:              block.Block.Time.Format(time.RFC3339Nano),
-		TransactionsCount: fmt.Sprintf("%d", len(block.Block.Txs)),
-		Transactions:      txs,
-		BlockReward:       rewards.GetRewardForBlock(uint64(req.Height)).String(),
-		Size:              fmt.Sprintf("%d", len(s.cdc.MustMarshalBinaryLengthPrefixed(block))),
-		Proposer:          proposer,
-		Validators:        validators,
-		Evidence: &pb.BlockResponse_Evidence{
-			Evidence: evidences,
-		},
-	}, nil
+	return txs, nil
 }
 
-func getBlockProposer(block *core_types.ResultBlock, vals []*tmTypes.Validator) (*types.Pubkey, error) {
+func getBlockProposer(block *core_types.ResultBlock, vals []*tmTypes.Validator) *types.Pubkey {
 	for _, tmval := range vals {
 		if bytes.Equal(tmval.Address.Bytes(), block.Block.ProposerAddress.Bytes()) {
 			var result types.Pubkey
-			copy(result[:], tmval.PubKey.Bytes()[5:])
-			return &result, nil
+			copy(result[:], tmval.PubKey.Bytes()[:])
+			return &result
 		}
 	}
 
-	return nil, status.Error(codes.NotFound, "Block proposer not found")
+	return nil
 }

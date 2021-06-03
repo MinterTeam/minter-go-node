@@ -1,41 +1,54 @@
 package service
 
 import (
-	"bytes"
+	"context"
+	"strconv"
+	"time"
+
 	"github.com/MinterTeam/minter-go-node/config"
-	"github.com/MinterTeam/minter-go-node/core/minter"
-	"github.com/MinterTeam/minter-go-node/core/state"
-	"github.com/golang/protobuf/jsonpb"
-	_struct "github.com/golang/protobuf/ptypes/struct"
-	"github.com/tendermint/go-amino"
+	"github.com/MinterTeam/minter-go-node/coreV2/minter"
+	"github.com/MinterTeam/minter-go-node/coreV2/rewards"
+	"github.com/MinterTeam/minter-go-node/coreV2/transaction"
+	"github.com/MinterTeam/node-grpc-gateway/api_pb"
 	tmNode "github.com/tendermint/tendermint/node"
-	rpc "github.com/tendermint/tendermint/rpc/client"
+	rpc "github.com/tendermint/tendermint/rpc/client/local"
+	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/status"
 )
 
+// Service is gRPC implementation ApiServiceServer
 type Service struct {
-	cdc        *amino.Codec
 	blockchain *minter.Blockchain
 	client     *rpc.Local
 	tmNode     *tmNode.Node
 	minterCfg  *config.Config
 	version    string
+	rewards    *rewards.Reward
+	api_pb.UnimplementedApiServiceServer
+	executor *transaction.Executor
 }
 
-func NewService(cdc *amino.Codec, blockchain *minter.Blockchain, client *rpc.Local, node *tmNode.Node, minterCfg *config.Config, version string) *Service {
-	return &Service{cdc: cdc, blockchain: blockchain, client: client, minterCfg: minterCfg, version: version, tmNode: node}
-}
-
-func (s *Service) getStateForHeight(height int32) (*state.State, error) {
-	if height > 0 {
-		cState, err := s.blockchain.GetStateForHeight(uint64(height))
-		if err != nil {
-			return nil, err
-		}
-		return cState, nil
+// NewService create gRPC server implementation
+func NewService(blockchain *minter.Blockchain, client *rpc.Local, node *tmNode.Node, minterCfg *config.Config, version string, reward *rewards.Reward) *Service {
+	return &Service{
+		rewards:    reward,
+		blockchain: blockchain,
+		client:     client,
+		minterCfg:  minterCfg,
+		version:    version,
+		tmNode:     node,
+		executor:   transaction.NewExecutor(transaction.GetData),
 	}
+}
 
-	return s.blockchain.CurrentState(), nil
+// TimeoutDuration returns timeout gRPC request
+func (s *Service) TimeoutDuration() time.Duration {
+	return s.minterCfg.APIv2TimeoutDuration
+}
+
+// Version returns version app
+func (s *Service) Version() string {
+	return s.version
 }
 
 func (s *Service) createError(statusErr *status.Status, data string) error {
@@ -43,14 +56,8 @@ func (s *Service) createError(statusErr *status.Status, data string) error {
 		return statusErr.Err()
 	}
 
-	var bb bytes.Buffer
-	if _, err := bb.Write([]byte(data)); err != nil {
-		s.client.Logger.Error(err.Error())
-		return statusErr.Err()
-	}
-
-	detailsMap := &_struct.Struct{Fields: make(map[string]*_struct.Value)}
-	if err := (&jsonpb.Unmarshaler{}).Unmarshal(&bb, detailsMap); err != nil {
+	detailsMap, err := encodeToStruct([]byte(data))
+	if err != nil {
 		s.client.Logger.Error(err.Error())
 		return statusErr.Err()
 	}
@@ -62,4 +69,38 @@ func (s *Service) createError(statusErr *status.Status, data string) error {
 	}
 
 	return withDetails.Err()
+}
+
+func (s *Service) checkTimeout(ctx context.Context, operations ...string) *status.Status {
+	select {
+	case <-ctx.Done():
+		timeoutResponse := status.FromContextError(ctx.Err())
+		if len(operations) == 0 {
+			return timeoutResponse
+		}
+
+		detailsMap := map[string]string{}
+		for i, msg := range operations {
+			postfix := ""
+			if i > 0 {
+				postfix = strconv.Itoa(i)
+			}
+			detailsMap["operation"+postfix] = msg
+		}
+		details, err := toStruct(detailsMap)
+		if err != nil {
+			grpclog.Infof("Failed to write response timeout details: %v", err)
+			return timeoutResponse
+		}
+
+		timeoutResponseWithDetails, err := timeoutResponse.WithDetails(details)
+		if err != nil {
+			grpclog.Infof("Failed to write response timeout details: %v", err)
+			return timeoutResponse
+		}
+
+		return timeoutResponseWithDetails
+	default:
+		return nil
+	}
 }

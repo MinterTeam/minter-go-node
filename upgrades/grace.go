@@ -1,31 +1,50 @@
 package upgrades
 
-var gracePeriods = []*gracePeriod{
-	NewGracePeriod(1, 120),
-	NewGracePeriod(UpgradeBlock1, UpgradeBlock1+120),
-	NewGracePeriod(UpgradeBlock2, UpgradeBlock2+120),
-	NewGracePeriod(UpgradeBlock3, UpgradeBlock3+120),
+type Grace struct {
+	gracePeriods []*GracePeriod
 }
 
-type gracePeriod struct {
-	from uint64
-	to   uint64
-}
-
-func (gp *gracePeriod) IsApplicable(block uint64) bool {
-	return block >= gp.from && block <= gp.to
-}
-
-func NewGracePeriod(from uint64, to uint64) *gracePeriod {
-	return &gracePeriod{from: from, to: to}
-}
-
-func IsGraceBlock(block uint64) bool {
-	for _, gp := range gracePeriods {
-		if gp.IsApplicable(block) {
+func (g *Grace) IsUpgradeBlock(height uint64) bool {
+	for _, period := range g.gracePeriods {
+		if height == period.from && period.upgrade {
 			return true
 		}
 	}
 
 	return false
+}
+
+func (g *Grace) AddGracePeriods(gracePeriods ...*GracePeriod) {
+	g.gracePeriods = append(g.gracePeriods, gracePeriods...)
+}
+
+func NewGrace() *Grace {
+	return &Grace{}
+}
+
+func (g *Grace) IsGraceBlock(block uint64) bool {
+	if g == nil {
+		return false
+	}
+	for _, gp := range g.gracePeriods {
+		if gp.isApplicable(block) {
+			return true
+		}
+	}
+
+	return false
+}
+
+type GracePeriod struct {
+	from    uint64
+	to      uint64
+	upgrade bool
+}
+
+func (gp *GracePeriod) isApplicable(block uint64) bool {
+	return block >= gp.from && block <= gp.to
+}
+
+func NewGracePeriod(from uint64, to uint64, upgrade bool) *GracePeriod {
+	return &GracePeriod{from: from, to: to, upgrade: upgrade}
 }

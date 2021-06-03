@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	tmConfig "github.com/tendermint/tendermint/config"
 	"os"
 	"path/filepath"
@@ -15,8 +14,8 @@ const (
 	// LogFormatJSON is a format for json output
 	LogFormatJSON = "json"
 
-	defaultConfigDir = "config"
-	defaultDataDir   = "data"
+	DefaultConfigDir = "config"
+	DefaultDataDir   = "data"
 
 	defaultConfigFileName  = "config.toml"
 	defaultGenesisJSONName = "genesis.json"
@@ -27,25 +26,24 @@ const (
 )
 
 var (
-	defaultConfigFilePath   = filepath.Join(defaultConfigDir, defaultConfigFileName)
-	defaultGenesisJSONPath  = filepath.Join(defaultConfigDir, defaultGenesisJSONName)
-	defaultPrivValKeyPath   = filepath.Join(defaultConfigDir, defaultPrivValName)
-	defaultPrivValStatePath = filepath.Join(defaultConfigDir, defaultPrivValStateName)
-	defaultNodeKeyPath      = filepath.Join(defaultConfigDir, defaultNodeKeyName)
+	defaultConfigFilePath   = filepath.Join(DefaultConfigDir, defaultConfigFileName)
+	defaultGenesisJSONPath  = filepath.Join(DefaultConfigDir, defaultGenesisJSONName)
+	defaultPrivValKeyPath   = filepath.Join(DefaultConfigDir, defaultPrivValName)
+	defaultPrivValStatePath = filepath.Join(DefaultConfigDir, defaultPrivValStateName)
+	defaultNodeKeyPath      = filepath.Join(DefaultConfigDir, defaultNodeKeyName)
 )
 
+// DefaultConfig returns config with predefined values
 func DefaultConfig() *Config {
 	cfg := defaultConfig()
 
 	cfg.P2P.Seeds = "25104d4b173d1047e9d1a70cdefde9e30707beb1@84.201.143.192:26656," +
 		"1e1c6149451d2a7c1072523e49cab658080d9bd2@minter-nodes-1.mainnet.btcsecure.io:26656," +
-		"8ee270d29cc7221a61ab4c93121efba9ba83a943@minter-node-1.rundax.com:26656," +
+		"c578fba1bdb5265be75dd412f8cf1bbeb7399620@seed.minter.stakeholder.space:26656," +
 		"bab220855eb9625ea547f1ef1d11692c60a7a406@138.201.28.219:26656"
 
 	cfg.TxIndex = &tmConfig.TxIndexConfig{
-		Indexer:      "kv",
-		IndexKeys:    "",
-		IndexAllKeys: true,
+		Indexer: "kv",
 	}
 
 	cfg.DBPath = "tmdata"
@@ -74,12 +72,11 @@ func DefaultConfig() *Config {
 	return cfg
 }
 
-func GetConfig() *Config {
+// GetConfig returns DefaultConfig with some changes
+func GetConfig(home string) *Config {
 	cfg := DefaultConfig()
 
 	if cfg.ValidatorMode {
-		cfg.TxIndex.IndexAllKeys = false
-		cfg.TxIndex.IndexKeys = ""
 
 		cfg.RPC.ListenAddress = ""
 		cfg.RPC.GRPCListenAddress = ""
@@ -89,8 +86,8 @@ func GetConfig() *Config {
 
 	cfg.P2P.AddrBook = "config/addrbook.json"
 
-	cfg.SetRoot(utils.GetMinterHome())
-	EnsureRoot(utils.GetMinterHome())
+	cfg.SetRoot(home)
+	EnsureRoot(home)
 
 	return cfg
 }
@@ -132,6 +129,7 @@ func (cfg *Config) SetRoot(root string) *Config {
 	return cfg
 }
 
+// GetTmConfig composes and returns config for Tendermint engine based on given Minter config
 func GetTmConfig(cfg *Config) *tmConfig.Config {
 	return &tmConfig.Config{
 		BaseConfig: tmConfig.BaseConfig{
@@ -149,20 +147,29 @@ func GetTmConfig(cfg *Config) *tmConfig.Config {
 			PrivValidatorListenAddr: cfg.PrivValidatorListenAddr,
 			NodeKey:                 cfg.NodeKey,
 			ABCI:                    cfg.ABCI,
-			ProfListenAddress:       cfg.ProfListenAddress,
 			FilterPeers:             cfg.FilterPeers,
 		},
-		RPC:             cfg.RPC,
-		P2P:             cfg.P2P,
-		Mempool:         cfg.Mempool,
-		FastSync:        &tmConfig.FastSyncConfig{Version: "v0"},
+		RPC:     cfg.RPC,
+		P2P:     cfg.P2P,
+		Mempool: cfg.Mempool,
+		// StateSync:       &tmConfig.StateSyncConfig{
+		// 	Enable:        true,
+		// 	TempDir:       "",
+		// 	RPCServers:    []string{}, // todo
+		// 	TrustPeriod:   168 * time.Hour,
+		// 	TrustHeight:   0,
+		// 	TrustHash:     "",
+		// 	DiscoveryTime: 15 * time.Second,
+		// },
+		StateSync:       tmConfig.DefaultStateSyncConfig(),
+		FastSync:        tmConfig.DefaultFastSyncConfig(),
 		Consensus:       cfg.Consensus,
 		TxIndex:         cfg.TxIndex,
 		Instrumentation: cfg.Instrumentation,
 	}
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // BaseConfig
 
 // BaseConfig defines the base configuration for a Tendermint node
@@ -224,14 +231,17 @@ type BaseConfig struct {
 	// Database directory
 	DBPath string `mapstructure:"db_dir"`
 
-	// Address to listen for API connections
-	APIListenAddress string `mapstructure:"api_listen_addr"`
-
 	// Address to listen for gRPC connections
 	GRPCListenAddress string `mapstructure:"grpc_listen_addr"`
 
 	// Address to listen for API v2 connections
 	APIv2ListenAddress string `mapstructure:"api_v2_listen_addr"`
+
+	// API v2 Timeout
+	APIv2TimeoutDuration time.Duration `mapstructure:"api_v2_timeout_duration"`
+
+	// WebSocket connection duration
+	WSConnectionDuration time.Duration `mapstructure:"ws_connection_duration"`
 
 	ValidatorMode bool `mapstructure:"validator_mode"`
 
@@ -262,9 +272,10 @@ func DefaultBaseConfig() BaseConfig {
 		FilterPeers:             false,
 		DBBackend:               "goleveldb",
 		DBPath:                  "data",
-		APIListenAddress:        "tcp://0.0.0.0:8841",
 		GRPCListenAddress:       "tcp://0.0.0.0:8842",
 		APIv2ListenAddress:      "tcp://0.0.0.0:8843",
+		APIv2TimeoutDuration:    10 * time.Second,
+		WSConnectionDuration:    time.Minute,
 		ValidatorMode:           false,
 		KeepLastStates:          120,
 		StateCacheSize:          1000000,
@@ -275,6 +286,7 @@ func DefaultBaseConfig() BaseConfig {
 	}
 }
 
+// ChainID returns the id of a chain
 func (cfg BaseConfig) ChainID() string {
 	return cfg.chainID
 }
@@ -284,7 +296,7 @@ func (cfg BaseConfig) GenesisFile() string {
 	return rootify(cfg.Genesis, cfg.RootDir)
 }
 
-// PrivValidatorFile returns the full path to the priv_validator.json file
+// PrivValidatorStateFile returns the full path to the priv_validator_state.json file
 func (cfg BaseConfig) PrivValidatorStateFile() string {
 	return rootify(cfg.PrivValidatorState, cfg.RootDir)
 }
@@ -294,6 +306,7 @@ func (cfg BaseConfig) NodeKeyFile() string {
 	return rootify(cfg.NodeKey, cfg.RootDir)
 }
 
+// PrivValidatorKeyFile returns the full path to the priv_validator.json file
 func (cfg BaseConfig) PrivValidatorKeyFile() string {
 	return rootify(cfg.PrivValidatorKey, cfg.RootDir)
 }
@@ -314,7 +327,7 @@ func DefaultPackageLogLevels() string {
 	return fmt.Sprintf("consensus:info,main:info,state:info,*:%s", DefaultLogLevel())
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // Utils
 
 // helper function to make config creation independent of root dir

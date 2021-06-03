@@ -44,12 +44,6 @@ update_tools:
 	@echo "--> Updating tools"
 	@go get -u $(GOTOOLS)
 
-#Run this from CI
-get_vendor_deps:
-	@rm -rf vendor/
-	@echo "--> Running dep"
-	@go mod vendor
-
 #Run this locally.
 ensure_deps:
 	@rm -rf vendor/

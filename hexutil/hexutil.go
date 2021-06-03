@@ -39,6 +39,7 @@ import (
 
 const uintBits = 32 << (uint64(^uint(0)) >> 63)
 
+// Error set
 var (
 	ErrEmptyString   = &decError{"empty hex string"}
 	ErrSyntax        = &decError{"invalid hex string"}
@@ -181,7 +182,7 @@ func EncodeBig(bigint *big.Int) string {
 	if nbits == 0 {
 		return "Mx0"
 	}
-	return fmt.Sprintf("%#x", bigint)
+	return fmt.Sprintf("Mx%x", bigint)
 }
 
 func hasMxPrefix(input string) bool {
