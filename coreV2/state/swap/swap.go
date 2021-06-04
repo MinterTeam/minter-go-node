@@ -386,6 +386,7 @@ func (s *Swap) Commit(db *iavl.MutableTree) error {
 
 	for _, key := range s.getOrderedDirtyOrderPairs() {
 		pair, _ := s.pair(key)
+		pair.lockOrders.Lock()
 		for _, limit := range pair.getDirtyOrdersList() {
 
 			oldPath := pricePath(key, limit.OldSortPrice(), limit.id, !limit.isBuy)
@@ -413,6 +414,7 @@ func (s *Swap) Commit(db *iavl.MutableTree) error {
 				// log.Printf("remove old path %q, %s, %s. Sell %v", oldPath, limit.WantBuy, limit.WantSell, !limit.isBuy)
 			}
 		}
+		pair.lockOrders.Unlock()
 		pair.dirtyOrders.orders = make(map[uint32]*Limit)
 	}
 	s.dirtiesOrders = map[pairKey]struct{}{}
