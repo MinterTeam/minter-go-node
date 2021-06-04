@@ -94,9 +94,16 @@ func SendEndBlock(app *minter.Blockchain, height int64) tmTypes.ResponseEndBlock
 	})
 }
 
+func getCommissionCoinID(commissionCoins []types.CoinID) types.CoinID {
+	if len(commissionCoins) == 0 {
+		return types.GetBaseCoinID()
+	}
+	return commissionCoins[0]
+}
+
 // CreateTx composes and returns Tx with given params.
 // Nonce, chain id, gas price, gas coin and signature type fields are auto-filled.
-func CreateTx(app *minter.Blockchain, address types.Address, txType transaction.TxType, data interface{}) transaction.Transaction {
+func CreateTx(app *minter.Blockchain, address types.Address, txType transaction.TxType, data transaction.Data, commissionCoin ...types.CoinID) transaction.Transaction {
 	nonce := app.CurrentState().Accounts().GetNonce(address) + 1
 	bData, err := rlp.EncodeToBytes(data)
 	if err != nil {
@@ -107,7 +114,7 @@ func CreateTx(app *minter.Blockchain, address types.Address, txType transaction.
 		Nonce:         nonce,
 		ChainID:       types.CurrentChainID,
 		GasPrice:      1,
-		GasCoin:       types.GetBaseCoinID(),
+		GasCoin:       getCommissionCoinID(commissionCoin),
 		Type:          txType,
 		Data:          bData,
 		SignatureType: transaction.SigTypeSingle,
