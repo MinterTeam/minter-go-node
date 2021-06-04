@@ -49,7 +49,6 @@ func (data BurnTokenDataDeprecated) basicCheck(tx *Transaction, context *state.C
 		}
 	}
 
-	// todo: remove owner check
 	sender, _ := tx.Sender()
 	symbolInfo := context.Coins().GetSymbolInfo(coin.Symbol())
 	if coin.Version() != 0 || symbolInfo == nil || symbolInfo.OwnerAddress().Compare(sender) != 0 {

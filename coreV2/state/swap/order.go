@@ -6,6 +6,7 @@ import (
 	"log"
 	"math"
 	"math/big"
+	"sync"
 
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/rlp"
@@ -57,7 +58,6 @@ func (p *Pair) SellWithOrders(amount0In *big.Int) (amount1Out *big.Int, owners m
 		panic(ErrorInsufficientInputAmount)
 	}
 	amount1Out, orders := p.calculateBuyForSellWithOrders(amount0In)
-	log.Println(amount0In, amount1Out)
 	if amount1Out == nil || amount1Out.Sign() != 1 {
 		panic(ErrorInsufficientOutputAmount)
 	}
@@ -66,9 +66,11 @@ func (p *Pair) SellWithOrders(amount0In *big.Int) (amount1Out *big.Int, owners m
 
 	log.Println("uS", commission0orders, commission1orders)
 
+	p.lockOrders.Lock()
+	defer p.lockOrders.Unlock()
+
 	if amount0.Sign() != 0 || amount1.Sign() != 0 {
 		log.Println("a", amount0, amount1)
-		// p.Swap(amount0, big.NewInt(0), big.NewInt(0), amount1)
 		p.update(amount0, big.NewInt(0).Neg(amount1))
 	}
 
@@ -122,13 +124,16 @@ func (p *Pair) BuyWithOrders(amount1Out *big.Int) (amount0In *big.Int, owners ma
 	if amount0In == nil || amount0In.Sign() != 1 {
 		panic(ErrorInsufficientOutputAmount)
 	}
+
 	commission0orders, commission1orders, amount0, amount1, owners := CalcDiffPool(amount0In, amount1Out, orders)
 
-	log.Println("uS", commission0orders, commission1orders)
+	log.Println("uB", commission0orders, commission1orders)
+
+	p.lockOrders.Lock()
+	defer p.lockOrders.Unlock()
 
 	if amount0.Sign() != 0 || amount1.Sign() != 0 {
 		log.Println("a", amount0, amount1)
-		// p.Swap(amount0, big.NewInt(0), big.NewInt(0), amount1)
 		p.update(amount0, big.NewInt(0).Neg(amount1))
 	}
 
@@ -158,7 +163,7 @@ func (p *Pair) updateOrders(orders []*Limit) {
 }
 
 func (p *Pair) updateSellLowerOrder(i int, amount0, amount1 *big.Int) *Limit {
-	limit := p.OrderSellLowerByIndex(i)
+	limit := p.orderSellLowerByIndex(i)
 
 	newLimit := limit.sort()
 	newLimit.OldSortPrice()
@@ -227,7 +232,7 @@ func (p *Pair) calculateBuyForSellWithOrders(amount0In *big.Int) (amountOut *big
 			return amountOut, orders
 		}
 
-		limit := p.OrderSellLowerByIndex(i)
+		limit := p.orderSellLowerByIndex(i)
 		if limit == nil {
 			break
 		}
@@ -242,12 +247,15 @@ func (p *Pair) calculateBuyForSellWithOrders(amount0In *big.Int) (amountOut *big
 
 				reserve1diff := pair.CalculateBuyForSell(reserve0diff)
 				if reserve1diff == nil {
-					reserve1diff = big.NewInt(0)
+					reserve1diff = big.NewInt(0) // todo: mb break `if`
 				}
 
 				amountIn.Sub(amountIn, reserve0diff)
 				amountOut.Add(amountOut, reserve1diff)
 
+				if err := pair.CheckSwap(reserve0diff, reserve1diff); err != nil {
+					panic(err) // todo: for test
+				}
 				pair = pair.AddLastSwapStep(reserve0diff, reserve1diff)
 
 				log.Println("rS", reserve0diff, reserve1diff)
@@ -279,6 +287,7 @@ func (p *Pair) calculateBuyForSellWithOrders(amount0In *big.Int) (amountOut *big
 				Owner:        limit.Owner,
 				oldSortPrice: limit.SortPrice(),
 				id:           limit.id,
+				RWMutex:      new(sync.RWMutex),
 			})
 
 			comB := calcCommission999(amount1)
@@ -295,6 +304,7 @@ func (p *Pair) calculateBuyForSellWithOrders(amount0In *big.Int) (amountOut *big
 			pairKey:      limit.pairKey,
 			oldSortPrice: limit.SortPrice(),
 			id:           limit.id,
+			RWMutex:      limit.RWMutex,
 		})
 
 		comS := calcCommission999(limit.WantBuy)
@@ -308,6 +318,9 @@ func (p *Pair) calculateBuyForSellWithOrders(amount0In *big.Int) (amountOut *big
 
 	amount1diff := pair.CalculateBuyForSell(amountIn)
 	if amount1diff != nil {
+		if err := pair.CheckSwap(amountIn, amount1diff); err != nil {
+			panic(err) // todo: for test
+		}
 		amountOut.Add(amountOut, amount1diff)
 	}
 	return amountOut, orders
@@ -357,7 +370,7 @@ func (p *Pair) calculateAddAmount1ForPrice(price *big.Float) (amount1 *big.Int) 
 	return p.CalculateBuyForSellAllowNeg(amount0)
 }
 
-func (p *Pair) calculateAddAmount0ForPrice(price *big.Float) (amount0 *big.Int) {
+func (p *Pair) calculateAddAmount0ForPrice(price *big.Float) (amount0 *big.Int) { // todo: mb Div by ZERO???
 	reserve0, reserve1 := p.Reserves()
 	r0 := big.NewFloat(0).SetInt(reserve0)
 	r1 := big.NewFloat(0).SetInt(reserve1)
@@ -390,7 +403,7 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big
 			return amountIn, orders
 		}
 
-		limit := p.OrderSellLowerByIndex(i)
+		limit := p.orderSellLowerByIndex(i)
 		if limit == nil {
 			break
 		}
@@ -402,7 +415,7 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big
 			if reserve0diff != nil {
 				reserve1diff := pair.CalculateBuyForSell(reserve0diff)
 				if reserve1diff == nil {
-					reserve1diff = big.NewInt(0)
+					reserve1diff = big.NewInt(0) // todo: mb break `if`
 				}
 				if amountOut.Cmp(reserve1diff) != 1 {
 					break
@@ -411,6 +424,9 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big
 				amountOut.Sub(amountOut, reserve1diff)
 				amountIn.Add(amountIn, reserve0diff)
 
+				if err := pair.CheckSwap(reserve0diff, reserve1diff); err != nil {
+					panic(err) // todo: for test
+				}
 				pair = pair.AddLastSwapStep(reserve0diff, reserve1diff)
 
 				log.Println("rB", reserve0diff, reserve1diff)
@@ -448,6 +464,7 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big
 				Owner:        limit.Owner,
 				oldSortPrice: limit.SortPrice(),
 				id:           limit.id,
+				RWMutex:      new(sync.RWMutex),
 			})
 
 			amountIn.Add(amountIn, amount0)
@@ -463,6 +480,7 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big
 			pairKey:      limit.pairKey,
 			oldSortPrice: limit.SortPrice(),
 			id:           limit.id,
+			RWMutex:      limit.RWMutex,
 		})
 
 		comS := calcCommission999(limit.WantBuy)
@@ -476,6 +494,9 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big
 
 	amount0diff := pair.CalculateSellForBuy(amountOut)
 	if amount0diff != nil {
+		if err := pair.CheckSwap(amount0diff, amountOut); err != nil {
+			panic(err) // todo: for test
+		}
 		amountIn.Add(amountIn, amount0diff)
 	}
 	return amountIn, orders
@@ -498,6 +519,8 @@ type Limit struct {
 	pairKey
 	oldSortPrice *big.Float
 	id           uint32
+
+	*sync.RWMutex
 }
 
 type limits struct {
@@ -518,6 +541,8 @@ func (l *Limit) Price() *big.Float {
 	if l.isEmpty() {
 		return big.NewFloat(0)
 	}
+	l.RLock()
+	defer l.RUnlock()
 	return CalcPriceSell(l.WantBuy, l.WantSell)
 }
 
@@ -546,6 +571,8 @@ func (l *Limit) ReCalcOldSortPrice() *big.Float {
 }
 
 func (l *Limit) reverse() *Limit {
+	l.RLock()
+	defer l.RUnlock()
 	return &Limit{
 		pairKey:      l.pairKey.reverse(),
 		isBuy:        !l.isBuy,
@@ -554,6 +581,7 @@ func (l *Limit) reverse() *Limit {
 		Owner:        l.Owner,
 		oldSortPrice: l.oldSortPrice,
 		id:           l.id,
+		RWMutex:      l.RWMutex,
 	}
 }
 
@@ -708,8 +736,12 @@ func (p *Pair) SetOrder(wantBuyAmount0, wantSellAmount1 *big.Int, sender types.A
 		WantSell: wantSellAmount1,
 		id:       p.getLastTotalOrderID(),
 		Owner:    sender,
+		RWMutex:  new(sync.RWMutex),
 	}
 	defer p.MarkDirtyOrders(order.sort())
+
+	p.lockOrders.Lock()
+	defer p.lockOrders.Unlock()
 
 	p.setOrder(order)
 
@@ -741,6 +773,7 @@ func (p *Pair) loadAllOrders(immutableTree *iavl.ImmutableTree) (orders []*Limit
 			id:      binary.BigEndian.Uint32(key[len(key)-4:]),
 			pairKey: p.pairKey.sort(),
 			isBuy:   !isSell,
+			RWMutex: new(sync.RWMutex),
 		}
 		err := rlp.DecodeBytes(value, order)
 		if err != nil {
@@ -778,6 +811,7 @@ func (s *Swap) loadBuyHigherOrders(pair *Pair, slice []*Limit, limit int) []*Lim
 			id:      binary.BigEndian.Uint32(key[len(key)-4:]),
 			pairKey: pair.pairKey.sort(),
 			isBuy:   true,
+			RWMutex: new(sync.RWMutex),
 		}
 		err := rlp.DecodeBytes(value, order)
 		if err != nil {
@@ -824,6 +858,7 @@ func (s *Swap) loadSellLowerOrders(pair *Pair, slice []*Limit, limit int) []*Lim
 			id:      binary.BigEndian.Uint32(key[len(key)-4:]),
 			pairKey: pair.pairKey.sort(),
 			isBuy:   false,
+			RWMutex: new(sync.RWMutex),
 		}
 		err := rlp.DecodeBytes(value, order)
 		if err != nil {
@@ -907,6 +942,12 @@ func addToList(orders []*Limit, dirtyOrder *Limit, cmp int) (list []*Limit, incl
 }
 
 func (p *Pair) OrderBuyHigherByIndex(index int) *Limit {
+	p.lockOrders.Lock()
+	defer p.lockOrders.Unlock()
+	return p.orderBuyHigherByIndex(index)
+}
+
+func (p *Pair) orderBuyHigherByIndex(index int) *Limit {
 	orders := p.BuyHigherOrders()
 	var count int
 	var deleteCount int
@@ -914,6 +955,7 @@ func (p *Pair) OrderBuyHigherByIndex(index int) *Limit {
 		orders, deleteCount = p.updateDirtyOrders(p.loadHigherOrders(p, orders, index+count), false)
 		count += deleteCount
 	}
+
 	p.setBuyHigherOrders(orders)
 
 	if len(orders)-1 < index {
@@ -928,7 +970,13 @@ func (p *Pair) OrderBuyHigherByIndex(index int) *Limit {
 }
 
 func (p *Pair) OrderBuyHigherLast() (limit *Limit, index int) {
-	for order := p.OrderBuyHigherByIndex(index); order != nil; order = p.OrderBuyHigherByIndex(index) {
+	p.lockOrders.Lock()
+	defer p.lockOrders.Unlock()
+	return p.orderBuyHigherLast()
+}
+
+func (p *Pair) orderBuyHigherLast() (limit *Limit, index int) {
+	for order := p.orderBuyHigherByIndex(index); order != nil; order = p.orderBuyHigherByIndex(index) {
 		limit = order
 		index++
 	}
@@ -988,6 +1036,11 @@ func (p *Pair) unsetOrderSellLowerByIndex(index int) {
 }
 
 func (p *Pair) OrderSellLowerByIndex(index int) *Limit {
+	p.lockOrders.Lock()
+	defer p.lockOrders.Unlock()
+	return p.orderSellLowerByIndex(index)
+}
+func (p *Pair) orderSellLowerByIndex(index int) *Limit {
 	orders := p.SellLowerOrders()
 	var count int
 	var deleteCount int
@@ -995,6 +1048,7 @@ func (p *Pair) OrderSellLowerByIndex(index int) *Limit {
 		orders, deleteCount = p.updateDirtyOrders(p.loadLowerOrders(p, orders, index+count), true)
 		count += deleteCount
 	}
+
 	p.setSellLowerOrders(orders)
 
 	if len(orders)-1 < index {
@@ -1011,7 +1065,12 @@ func (p *Pair) OrderSellLowerByIndex(index int) *Limit {
 }
 
 func (p *Pair) OrderSellLowerLast() (limit *Limit, index int) {
-	for order := p.OrderSellLowerByIndex(index); order != nil; order = p.OrderSellLowerByIndex(index) {
+	p.lockOrders.Lock()
+	defer p.lockOrders.Unlock()
+	return p.orderSellLowerLast()
+}
+func (p *Pair) orderSellLowerLast() (limit *Limit, index int) {
+	for order := p.orderSellLowerByIndex(index); order != nil; order = p.orderSellLowerByIndex(index) {
 		limit = order
 		index++
 	}

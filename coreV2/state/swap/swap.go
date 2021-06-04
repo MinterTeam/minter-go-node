@@ -26,6 +26,7 @@ const minimumLiquidity = 1000
 const commission = 2
 
 type EditableChecker interface {
+	// todo: add delete orders
 	Exists() bool
 	GetID() uint32
 	AddLastSwapStep(amount0In, amount1Out *big.Int) EditableChecker
@@ -70,7 +71,7 @@ type Swap struct {
 	nextID      uint32
 	dirtyNextID bool
 
-	muNextOrdersID    sync.Mutex // todo
+	muNextOrdersID    sync.Mutex
 	nextOrderID       uint32
 	dirtyNextOrdersID bool
 
@@ -252,7 +253,7 @@ func (p *Pair) AddLastSwapStep(amount0In, amount1Out *big.Int) EditableChecker {
 		sellOrders:          p.sellOrders,
 		buyOrders:           p.buyOrders,
 		dirtyOrders:         p.dirtyOrders,
-		markDirtyOrders:     nil,
+		markDirtyOrders:     func() {},
 		loadHigherOrders:    p.loadHigherOrders,
 		loadLowerOrders:     p.loadLowerOrders,
 		getLastTotalOrderID: nil,
@@ -725,6 +726,7 @@ type Balance struct {
 }
 
 type Pair struct {
+	lockOrders sync.RWMutex
 	pairKey
 	*pairData
 	sellOrders          *limits
