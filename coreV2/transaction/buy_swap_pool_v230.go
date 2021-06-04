@@ -238,7 +238,7 @@ func (data BuySwapPoolDataV230) Run(tx *Transaction, context state.Interface, re
 
 func CheckSwapV230(rSwap swap.EditableChecker, coinIn CalculateCoin, coinOut CalculateCoin, valueIn *big.Int, valueOut *big.Int, isBuy bool) *Response {
 	if isBuy {
-		calculatedAmountToSell := rSwap.CalculateSellForBuyWithOrders(valueOut)
+		calculatedAmountToSell := rSwap.CalculateSellForBuy(valueOut)
 		if calculatedAmountToSell == nil {
 			reserve0, reserve1 := rSwap.Reserves()
 			symbolIn := coinIn.GetFullSymbol()
@@ -260,7 +260,7 @@ func CheckSwapV230(rSwap swap.EditableChecker, coinIn CalculateCoin, coinOut Cal
 		}
 		valueIn = calculatedAmountToSell
 	} else {
-		calculatedAmountToBuy := rSwap.CalculateBuyForSellWithOrders(valueIn)
+		calculatedAmountToBuy := rSwap.CalculateBuyForSell(valueIn)
 		if calculatedAmountToBuy == nil {
 			reserve0, reserve1 := rSwap.Reserves()
 			symbolIn := coinIn.GetFullSymbol()
