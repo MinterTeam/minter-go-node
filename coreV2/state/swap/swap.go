@@ -266,19 +266,28 @@ func (p *Pair) AddLastSwapStep(amount0In, amount1Out *big.Int) EditableChecker {
 }
 
 func (p *Pair) AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int) EditableChecker {
-	amount1OutCalc, orders := p.calculateSellForBuyWithOrders(amount0In)
+	amount1OutCalc, orders := p.calculateBuyForSellWithOrders(amount0In)
 	if amount1OutCalc.Cmp(amount1Out) != 0 {
 		log.Println("AddLastSwapStepWithOrders error", amount1OutCalc, amount1Out)
 	}
 	reserve0, reserve1 := p.Reserves()
+
+	dirties := make(map[uint32]*Limit, len(p.dirtyOrders.orders))
+	p.lockOrders.Lock()
+	for k, v := range p.dirtyOrders.orders {
+		dirties[k] = v
+	}
+	p.lockOrders.Unlock()
+
 	pair := &Pair{
 		pairKey: p.pairKey,
 		pairData: &pairData{
-			RWMutex:   &sync.RWMutex{},
-			Reserve0:  reserve0,
-			Reserve1:  reserve1,
-			ID:        p.ID,
-			markDirty: func() {},
+			RWMutex:  &sync.RWMutex{},
+			Reserve0: reserve0,
+			Reserve1: reserve1,
+			ID:       p.ID,
+			markDirty: func() {
+			},
 		},
 		sellOrders: &limits{
 			higher: p.sellOrders.higher,
@@ -289,9 +298,9 @@ func (p *Pair) AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int) Editabl
 			lower:  p.buyOrders.lower,
 		},
 		dirtyOrders: &dirtyOrders{
-			orders: p.dirtyOrders.orders,
+			orders: dirties,
 		},
-		markDirtyOrders:     func() {},
+		markDirtyOrders:     p.markDirtyOrders,
 		loadHigherOrders:    p.loadHigherOrders,
 		loadLowerOrders:     p.loadLowerOrders,
 		getLastTotalOrderID: nil,
@@ -299,7 +308,7 @@ func (p *Pair) AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int) Editabl
 	commission0orders, commission1orders, amount0, amount1, _ := CalcDiffPool(amount0In, amount1Out, orders)
 
 	if amount0.Sign() != 0 || amount1.Sign() != 0 {
-		p.update(amount0, big.NewInt(0).Neg(amount1))
+		pair.update(amount0, big.NewInt(0).Neg(amount1))
 	}
 
 	pair.update(commission0orders, commission1orders)

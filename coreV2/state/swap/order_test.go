@@ -168,6 +168,55 @@ func TestPair_OrderID(t *testing.T) {
 	})
 }
 
+func TestPair_AddLastSwapStepWithOrders(t *testing.T) {
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+	swap := New(newBus, immutableTree.GetLastImmutable())
+	_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(1e18), big.NewInt(1e18))
+
+	pair := swap.Pair(0, 1)
+	pair.SetOrder(big.NewInt(20e15), big.NewInt(5e15), types.Address{})
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pair = swap.Pair(0, 1)
+	price := pair.OrderSellLowerByIndex(0).Price()
+
+	addAmount0ForPrice := pair.CalculateAddAmount0ForPrice(price)
+
+	_, _, _ = pair.SellWithOrders(addAmount0ForPrice)
+
+	sell := big.NewInt(15e15)
+	calcBuy1 := pair.CalculateBuyForSellWithOrders(sell)
+	pair1 := pair.AddLastSwapStepWithOrders(sell, calcBuy1)
+	calcBuy2 := pair1.CalculateBuyForSellWithOrders(sell)
+	pair1.AddLastSwapStepWithOrders(sell, calcBuy2)
+
+	if len(pair.dirtyOrders.orders) != 0 {
+		t.Error("err", pair.dirtyOrders.orders)
+	}
+
+	buy1, _, _ := pair.SellWithOrders(sell)
+	if calcBuy1.Cmp(buy1) != 0 {
+		t.Error("err", calcBuy1, buy1)
+	}
+	t.Log(calcBuy1, buy1)
+
+	buy2, _, _ := pair.SellWithOrders(sell)
+	if calcBuy2.Cmp(buy2) != 0 {
+		t.Error("err", calcBuy2, buy2)
+	}
+	t.Log(calcBuy2, buy2)
+}
+
 func TestPair_BuyWithOrders_01_ChangeRemainderOrderPrice(t *testing.T) {
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
