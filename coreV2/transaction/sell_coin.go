@@ -7,6 +7,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/commission"
+	"github.com/MinterTeam/minter-go-node/coreV2/state/swap"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	abcTypes "github.com/tendermint/tendermint/abci/types"
@@ -199,8 +200,27 @@ func (data SellCoinData) Run(tx *Transaction, context state.Interface, rewardPoo
 
 	var tags []abcTypes.EventAttribute
 	if deliverState, ok := context.(*state.State); ok {
+		var tagsCom *tagPoolChange
 		if isGasCommissionFromPoolSwap {
-			commission, commissionInBaseCoin, _, _, _ = deliverState.Swap.PairSellWithOrders(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
+			var (
+				poolIDCom  uint32
+				detailsCom *swap.ChangeDetailsWithOrders
+				ownersCom  map[types.Address]*big.Int
+			)
+			commission, commissionInBaseCoin, poolIDCom, detailsCom, ownersCom = deliverState.Swap.PairSellWithOrders(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
+			tagsCom = &tagPoolChange{
+				PoolID:   poolIDCom,
+				CoinIn:   tx.GasCoin,
+				ValueIn:  commission.String(),
+				CoinOut:  types.GetBaseCoinID(),
+				ValueOut: commissionInBaseCoin.String(),
+				Orders:   detailsCom,
+				Sellers:  make([]*OrderDetail, 0, len(ownersCom)),
+			}
+			for address, value := range ownersCom {
+				deliverState.Accounts.AddBalance(address, tx.GasCoin, value)
+				tagsCom.Sellers = append(tagsCom.Sellers, &OrderDetail{Owner: address, Value: value.String()})
+			}
 		} else if !tx.GasCoin.IsBaseCoin() {
 			deliverState.Coins.SubVolume(tx.GasCoin, commission)
 			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
@@ -223,6 +243,7 @@ func (data SellCoinData) Run(tx *Transaction, context state.Interface, rewardPoo
 			{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
 			{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String()), Index: true},
 			{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
+			{Key: []byte("tx.commission_details"), Value: []byte(tagsCom.string())},
 			{Key: []byte("tx.coin_to_buy"), Value: []byte(data.CoinToBuy.String()), Index: true},
 			{Key: []byte("tx.coin_to_sell"), Value: []byte(data.CoinToSell.String()), Index: true},
 			{Key: []byte("tx.return"), Value: []byte(value.String())},

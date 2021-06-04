@@ -185,7 +185,7 @@ func (data SellSwapPoolDataV230) Run(tx *Transaction, context state.Interface, r
 				CoinOut:  types.GetBaseCoinID(),
 				ValueOut: commissionInBaseCoin.String(),
 				Orders:   detailsCom,
-				Sellers:  nil,
+				Sellers:  make([]*OrderDetail, 0, len(ownersCom)),
 			}
 			for address, value := range ownersCom {
 				deliverState.Accounts.AddBalance(address, coinToSell, value)

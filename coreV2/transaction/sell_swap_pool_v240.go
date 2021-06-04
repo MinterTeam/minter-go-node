@@ -185,10 +185,10 @@ func (data SellSwapPoolData) Run(tx *Transaction, context state.Interface, rewar
 				CoinOut:  types.GetBaseCoinID(),
 				ValueOut: commissionInBaseCoin.String(),
 				Orders:   detailsCom,
-				Sellers:  nil,
+				Sellers:  make([]*OrderDetail, 0, len(ownersCom)),
 			}
 			for address, value := range ownersCom {
-				deliverState.Accounts.AddBalance(address, coinToSell, value)
+				deliverState.Accounts.AddBalance(address, tx.GasCoin, value)
 				tagsCom.Sellers = append(tagsCom.Sellers, &OrderDetail{Owner: address, Value: value.String()})
 			}
 		} else if !tx.GasCoin.IsBaseCoin() {
