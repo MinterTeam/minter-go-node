@@ -7,24 +7,83 @@ import (
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/commission"
+	"github.com/MinterTeam/minter-go-node/coreV2/state/swap"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	abcTypes "github.com/tendermint/tendermint/abci/types"
+	tmjson "github.com/tendermint/tendermint/libs/json"
 )
 
-type SellAllSwapPoolDataDeprecated struct {
+type tagPoolsChange []*tagPoolChange
+
+func (tPools *tagPoolsChange) string() string {
+	if tPools == nil {
+		return ""
+	}
+	marshal, err := tmjson.Marshal(tPools)
+	if err != nil {
+		panic(err)
+	}
+	return string(marshal)
+}
+
+type OrderDetail struct {
+	Owner types.Address
+	Value string
+}
+
+type tagPoolChange struct {
+	PoolID   uint32                        `json:"pool_id"`
+	CoinIn   types.CoinID                  `json:"coin_in"`
+	ValueIn  string                        `json:"value_in"`
+	CoinOut  types.CoinID                  `json:"coin_out"`
+	ValueOut string                        `json:"value_out"`
+	Orders   *swap.ChangeDetailsWithOrders `json:"details"`
+	Sellers  []*OrderDetail                `json:"sellers"`
+}
+
+func (tPool *tagPoolChange) string() string {
+	if tPool == nil {
+		return ""
+	}
+	marshal, err := tmjson.Marshal(tPool)
+	if err != nil {
+		panic(err)
+	}
+	return string(marshal)
+}
+
+type SellAllSwapPoolData struct {
 	Coins             []types.CoinID
 	MinimumValueToBuy *big.Int
 }
 
-func (data *SellAllSwapPoolDataDeprecated) Gas() int64 {
+type dataCommission interface {
+	commissionCoin() types.CoinID
+}
+
+func (data *SellAllSwapPoolDataDeprecated) commissionCoin() types.CoinID {
+	if len(data.Coins) == 0 {
+		return 0
+	}
+	return data.Coins[0]
+}
+
+func (data *SellAllSwapPoolData) commissionCoin() types.CoinID {
+	if len(data.Coins) == 0 {
+		return 0
+	}
+	return data.Coins[0]
+}
+
+func (data SellAllSwapPoolData) Gas() int64 {
 	return gasSellAllSwapPool + int64(len(data.Coins)-2)*convertDelta
 }
 
-func (data *SellAllSwapPoolDataDeprecated) TxType() TxType {
+func (data SellAllSwapPoolData) TxType() TxType {
 	return TypeSellAllSwapPool
 }
 
-func (data SellAllSwapPoolDataDeprecated) basicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data SellAllSwapPoolData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if len(data.Coins) < 2 {
 		return &Response{
 			Code: code.DecodeError,
@@ -62,15 +121,15 @@ func (data SellAllSwapPoolDataDeprecated) basicCheck(tx *Transaction, context *s
 	return nil
 }
 
-func (data SellAllSwapPoolDataDeprecated) String() string {
+func (data SellAllSwapPoolData) String() string {
 	return fmt.Sprintf("SWAP POOL SELL ALL")
 }
 
-func (data SellAllSwapPoolDataDeprecated) CommissionData(price *commission.Price) *big.Int {
+func (data SellAllSwapPoolData) CommissionData(price *commission.Price) *big.Int {
 	return new(big.Int).Add(price.SellAllPoolBase, new(big.Int).Mul(price.SellAllPoolDelta, big.NewInt(int64(len(data.Coins))-2)))
 }
 
-func (data SellAllSwapPoolDataDeprecated) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
+func (data SellAllSwapPoolData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -107,12 +166,21 @@ func (data SellAllSwapPoolDataDeprecated) Run(tx *Transaction, context state.Int
 	}
 	lastIteration := len(data.Coins[1:]) - 1
 	{
+		checkDuplicatePools := map[uint32]struct{}{}
 		coinToSell := data.Coins[0]
 		coinToSellModel := sellCoin
 		valueToSell := big.NewInt(0).Set(balance)
 		valueToBuy := big.NewInt(0)
 		for i, coinToBuy := range data.Coins[1:] {
 			swapper := checkState.Swap().GetSwapper(coinToSell, coinToBuy)
+			if _, ok := checkDuplicatePools[swapper.GetID()]; ok {
+				return Response{
+					Code: code.DuplicatePoolInRoute,
+					Log:  fmt.Sprintf("Forbidden to repeat the pool in the route, pool duplicate %d", swapper.GetID()),
+					Info: EncodeError(code.NewDuplicatePoolInRouteCode(swapper.GetID())),
+				}
+			}
+			checkDuplicatePools[swapper.GetID()] = struct{}{}
 			if isGasCommissionFromPoolSwap == true && coinToBuy.IsBaseCoin() {
 				swapper = commissionPoolSwapper.AddLastSwapStep(commission, commissionInBaseCoin)
 			}
@@ -122,16 +190,16 @@ func (data SellAllSwapPoolDataDeprecated) Run(tx *Transaction, context state.Int
 			}
 
 			coinToBuyModel := checkState.Coins().GetCoin(coinToBuy)
-			errResp = CheckSwapV230(swapper, coinToSellModel, coinToBuyModel, valueToSell, valueToBuy, false)
+			errResp = CheckSwap(swapper, coinToSellModel, coinToBuyModel, valueToSell, valueToBuy, false)
 			if errResp != nil {
 				return *errResp
 			}
 
-			valueToSellCalc := swapper.CalculateBuyForSell(valueToSell)
-			if valueToSellCalc == nil {
+			valueToSellCalc := swapper.CalculateBuyForSellWithOrders(valueToSell)
+			if valueToSellCalc == nil || valueToSellCalc.Sign() != 1 {
 				reserve0, reserve1 := swapper.Reserves()
 				return Response{
-					Code: code.SwapPoolUnknown,
+					Code: code.InsufficientLiquidity,
 					Log:  fmt.Sprintf("swap pool has reserves %s %s and %d %s, you wanted sell %s %s", reserve0, coinToSellModel.GetFullSymbol(), reserve1, coinToBuyModel.GetFullSymbol(), valueToSell, coinToSellModel.GetFullSymbol()),
 					Info: EncodeError(code.NewInsufficientLiquidity(coinToSellModel.ID().String(), valueToSell.String(), coinToBuyModel.ID().String(), valueToSellCalc.String(), reserve0.String(), reserve1.String())),
 				}
@@ -145,7 +213,7 @@ func (data SellAllSwapPoolDataDeprecated) Run(tx *Transaction, context state.Int
 	var tags []abcTypes.EventAttribute
 	if deliverState, ok := context.(*state.State); ok {
 		if isGasCommissionFromPoolSwap {
-			commission, commissionInBaseCoin, _ = deliverState.Swap.PairSell(sellCoin.ID(), types.GetBaseCoinID(), commission, commissionInBaseCoin)
+			commission, commissionInBaseCoin, _, _, _ = deliverState.Swap.PairSellWithOrders(sellCoin.ID(), types.GetBaseCoinID(), commission, commissionInBaseCoin)
 		} else if !sellCoin.ID().IsBaseCoin() {
 			deliverState.Coins.SubVolume(sellCoin.ID(), commission)
 			deliverState.Coins.SubReserve(sellCoin.ID(), commissionInBaseCoin)
@@ -158,15 +226,22 @@ func (data SellAllSwapPoolDataDeprecated) Run(tx *Transaction, context state.Int
 		var poolIDs tagPoolsChange
 
 		for i, coinToBuy := range data.Coins[1:] {
-			amountIn, amountOut, poolID := deliverState.Swap.PairSell(coinToSell, coinToBuy, valueToSell, big.NewInt(0))
+			amountIn, amountOut, poolID, details, owners := deliverState.Swap.PairSellWithOrders(coinToSell, coinToBuy, valueToSell, big.NewInt(0))
 
-			poolIDs = append(poolIDs, &tagPoolChange{
+			tags := &tagPoolChange{
 				PoolID:   poolID,
 				CoinIn:   coinToSell,
 				ValueIn:  amountIn.String(),
 				CoinOut:  coinToBuy,
 				ValueOut: amountOut.String(),
-			})
+				Orders:   details,
+			}
+
+			for address, value := range owners {
+				deliverState.Accounts.AddBalance(address, coinToSell, value)
+				tags.Sellers = append(tags.Sellers, &OrderDetail{Owner: address, Value: value.String()})
+			}
+			poolIDs = append(poolIDs, tags)
 
 			if i == 0 {
 				deliverState.Accounts.SubBalance(sender, coinToSell, amountIn)

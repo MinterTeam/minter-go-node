@@ -31,7 +31,7 @@ func (data VoteUpdateDataDeprecated) GetPubKey() types.Pubkey {
 	return data.PubKey
 }
 
-var allowedVersionNameRegexpCompileDeprecated, _ = regexp.Compile("^[a-zA-Z0-9]{1,20}$") // todo
+var allowedVersionNameRegexpCompileDeprecated, _ = regexp.Compile("^[a-zA-Z0-9]{1,20}$")
 
 func (data VoteUpdateDataDeprecated) basicCheck(tx *Transaction, context *state.CheckState, block uint64) *Response {
 	if !allowedVersionNameRegexpCompileDeprecated.Match([]byte(data.Version)) {

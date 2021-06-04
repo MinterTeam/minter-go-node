@@ -62,7 +62,7 @@ func GetDataV1(txType TxType) (Data, bool) {
 	case TypeMintToken:
 		return &MintTokenData{}, true
 	case TypeBurnToken:
-		return &BurnTokenData{}, true
+		return &BurnTokenDataDeprecated{}, true
 	case TypeCreateToken:
 		return &CreateTokenData{}, true
 	case TypeRecreateToken:
@@ -123,17 +123,17 @@ func GetDataV230(txType TxType) (Data, bool) {
 	case TypeRemoveLiquidity:
 		return &RemoveLiquidity{}, true
 	case TypeSellSwapPool:
-		return &SellSwapPoolData{}, true
+		return &SellSwapPoolDataV230{}, true
 	case TypeBuySwapPool:
-		return &BuySwapPoolData{}, true
+		return &BuySwapPoolDataV230{}, true
 	case TypeSellAllSwapPool:
-		return &SellAllSwapPoolData{}, true
+		return &SellAllSwapPoolDataV230{}, true
 	case TypeEditCandidateCommission:
 		return &EditCandidateCommission{}, true
 	case TypeMintToken:
 		return &MintTokenData{}, true
 	case TypeBurnToken:
-		return &BurnTokenData{}, true
+		return &BurnTokenDataDeprecated{}, true
 	case TypeCreateToken:
 		return &CreateTokenData{}, true
 	case TypeRecreateToken:

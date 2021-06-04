@@ -53,8 +53,14 @@ type ChangeDetailsWithOrders struct {
 }
 
 func (p *Pair) SellWithOrders(amount0In *big.Int) (amount1Out *big.Int, owners map[types.Address]*big.Int, c *ChangeDetailsWithOrders) { // todo: add mutex
+	if amount0In == nil || amount0In.Sign() != 1 {
+		panic(ErrorInsufficientInputAmount)
+	}
 	amount1Out, orders := p.calculateBuyForSellWithOrders(amount0In)
 	log.Println(amount0In, amount1Out)
+	if amount1Out == nil || amount1Out.Sign() != 1 {
+		panic(ErrorInsufficientOutputAmount)
+	}
 
 	commission0orders, commission1orders, amount0, amount1, owners := CalcDiffPool(amount0In, amount1Out, orders)
 
@@ -62,7 +68,8 @@ func (p *Pair) SellWithOrders(amount0In *big.Int) (amount1Out *big.Int, owners m
 
 	if amount0.Sign() != 0 || amount1.Sign() != 0 {
 		log.Println("a", amount0, amount1)
-		p.Swap(amount0, big.NewInt(0), big.NewInt(0), amount1)
+		// p.Swap(amount0, big.NewInt(0), big.NewInt(0), amount1)
+		p.update(amount0, big.NewInt(0).Neg(amount1))
 	}
 
 	p.update(commission0orders, commission1orders)
@@ -108,14 +115,21 @@ func CalcDiffPool(amount0In, amount1Out *big.Int, orders []*Limit) (*big.Int, *b
 }
 
 func (p *Pair) BuyWithOrders(amount1Out *big.Int) (amount0In *big.Int, owners map[types.Address]*big.Int, c *ChangeDetailsWithOrders) { // todo: add mutex
+	if amount1Out == nil || amount1Out.Sign() != 1 {
+		panic(ErrorInsufficientInputAmount)
+	}
 	amount0In, orders := p.calculateSellForBuyWithOrders(amount1Out)
+	if amount0In == nil || amount0In.Sign() != 1 {
+		panic(ErrorInsufficientOutputAmount)
+	}
 	commission0orders, commission1orders, amount0, amount1, owners := CalcDiffPool(amount0In, amount1Out, orders)
 
 	log.Println("uS", commission0orders, commission1orders)
 
 	if amount0.Sign() != 0 || amount1.Sign() != 0 {
 		log.Println("a", amount0, amount1)
-		p.Swap(amount0, big.NewInt(0), big.NewInt(0), amount1)
+		// p.Swap(amount0, big.NewInt(0), big.NewInt(0), amount1)
+		p.update(amount0, big.NewInt(0).Neg(amount1))
 	}
 
 	p.update(commission0orders, commission1orders)
@@ -380,6 +394,7 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big
 		if limit == nil {
 			break
 		}
+		log.Println("ow", limit.Owner.String())
 
 		price := limit.Price()
 		if price.Cmp(pair.Price()) == -1 {
@@ -678,20 +693,21 @@ func (p *Pair) setBuyLowerOrders(orders []*Limit) {
 
 func (s *Swap) PairAddOrder(coinWantBuy, coinWantSell types.CoinID, wantBuyAmount, wantSellAmount *big.Int, sender types.Address) uint32 {
 	pair := s.Pair(coinWantBuy, coinWantSell)
-	order := pair.SetOrder(wantBuyAmount, wantSellAmount)
-	order.Owner = sender
+	order := pair.SetOrder(wantBuyAmount, wantSellAmount, sender)
+
 	s.bus.Checker().AddCoin(coinWantSell, wantSellAmount)
 
 	return order.id
 }
 
-func (p *Pair) SetOrder(wantBuyAmount0, wantSellAmount1 *big.Int) (order *Limit) {
+func (p *Pair) SetOrder(wantBuyAmount0, wantSellAmount1 *big.Int, sender types.Address) (order *Limit) {
 	order = &Limit{
 		pairKey:  p.pairKey,
 		isBuy:    false,
 		WantBuy:  wantBuyAmount0,
 		WantSell: wantSellAmount1,
 		id:       p.getLastTotalOrderID(),
+		Owner:    sender,
 	}
 	defer p.MarkDirtyOrders(order.sort())
 
@@ -986,6 +1002,7 @@ func (p *Pair) OrderSellLowerByIndex(index int) *Limit {
 	}
 
 	order := orders[index]
+	log.Println(order.Owner.String())
 	if !p.isSorted() {
 		return order.reverse()
 	}

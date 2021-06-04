@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"math/big"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/coins"
 	"github.com/MinterTeam/minter-go-node/coreV2/transaction"
@@ -10,7 +12,6 @@ import (
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"math/big"
 )
 
 // EstimateCoinSellAll return estimate of sell all coin transaction.
@@ -79,7 +80,7 @@ func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinS
 	if req.SwapFrom == pb.SwapFrom_bancor || req.SwapFrom == pb.SwapFrom_optimal {
 		commissionInBaseCoin := new(big.Int).Set(commissions.SellAllBancor)
 		if !commissions.Coin.IsBaseCoin() {
-			commissionInBaseCoin = cState.Swap().GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuy(commissionInBaseCoin)
+			commissionInBaseCoin = cState.Swap().GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuyWithOrders(commissionInBaseCoin)
 		}
 		if req.GasPrice > 1 {
 			commissionInBaseCoin.Mul(commissionInBaseCoin, big.NewInt(int64(req.GasPrice)))
@@ -124,7 +125,7 @@ func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinS
 	if req.SwapFrom == pb.SwapFrom_pool || req.SwapFrom == pb.SwapFrom_optimal {
 		commissionInBaseCoin := new(big.Int).Set(commissions.SellAllPoolBase)
 		if !commissions.Coin.IsBaseCoin() {
-			commissionInBaseCoin = cState.Swap().GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuy(commissionInBaseCoin)
+			commissionInBaseCoin = cState.Swap().GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuyWithOrders(commissionInBaseCoin)
 		}
 		if req.GasPrice > 1 {
 			commissionInBaseCoin.Mul(commissionInBaseCoin, big.NewInt(int64(req.GasPrice)))

@@ -184,8 +184,8 @@ func (s *Service) calcBuyFromPool(ctx context.Context, value *big.Int, cState *s
 			}
 		}
 
-		sellValue := swapChecker.CalculateSellForBuy(buyValue)
-		if sellValue == nil {
+		sellValue := swapChecker.CalculateSellForBuyWithOrders(buyValue)
+		if sellValue == nil || sellValue.Sign() != 1 {
 			reserve0, reserve1 := swapChecker.Reserves()
 			symbolOut := coinBuy.GetFullSymbol()
 			return nil, s.createError(status.New(codes.FailedPrecondition, fmt.Sprintf("You wanted to buy %s %s, but pool reserve has only %s %s", value, symbolOut, reserve1.String(), symbolOut)), transaction.EncodeError(code.NewInsufficientLiquidity(coinFrom.ID().String(), sellValue.String(), coinBuy.ID().String(), value.String(), reserve0.String(), reserve1.String())))

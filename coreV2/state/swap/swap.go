@@ -240,13 +240,23 @@ func (p *Pair) Exists() bool {
 }
 func (p *Pair) AddLastSwapStep(amount0In, amount1Out *big.Int) EditableChecker {
 	reserve0, reserve1 := p.Reserves()
-	return &Pair{pairData: &pairData{
-		RWMutex:   &sync.RWMutex{},
-		Reserve0:  reserve0.Add(reserve0, amount0In),
-		Reserve1:  reserve1.Sub(reserve1, amount1Out),
-		ID:        p.ID,
-		markDirty: func() {},
-	}}
+	return &Pair{
+		pairKey: p.pairKey,
+		pairData: &pairData{
+			RWMutex:   &sync.RWMutex{},
+			Reserve0:  reserve0.Add(reserve0, amount0In),
+			Reserve1:  reserve1.Sub(reserve1, amount1Out),
+			ID:        p.ID,
+			markDirty: func() {},
+		},
+		sellOrders:          p.sellOrders,
+		buyOrders:           p.buyOrders,
+		dirtyOrders:         p.dirtyOrders,
+		markDirtyOrders:     nil,
+		loadHigherOrders:    p.loadHigherOrders,
+		loadLowerOrders:     p.loadLowerOrders,
+		getLastTotalOrderID: nil,
+	}
 }
 
 func (p *Pair) Reverse() EditableChecker {
@@ -541,6 +551,7 @@ func (s *Swap) PairBurn(coin0, coin1 types.CoinID, liquidity, minAmount0, minAmo
 	return balance0, balance1
 }
 
+// Deprecated
 func (s *Swap) PairSell(coin0, coin1 types.CoinID, amount0In, minAmount1Out *big.Int) (*big.Int, *big.Int, uint32) {
 	pair := s.Pair(coin0, coin1)
 	calculatedAmount1Out := pair.CalculateBuyForSell(amount0In)
@@ -553,6 +564,7 @@ func (s *Swap) PairSell(coin0, coin1 types.CoinID, amount0In, minAmount1Out *big
 	return balance0, new(big.Int).Neg(balance1), *pair.ID
 }
 
+// Deprecated
 func (s *Swap) PairBuy(coin0, coin1 types.CoinID, maxAmount0In, amount1Out *big.Int) (*big.Int, *big.Int, uint32) {
 	pair := s.Pair(coin0, coin1)
 	calculatedAmount0In := pair.CalculateSellForBuy(amount1Out)
@@ -870,6 +882,9 @@ func (p *Pair) CalculateSellForBuyAllowNeg(amount1Out *big.Int) (amount0In *big.
 // (reserve0*reserve1/(reserve1-amount1)-reserve0)/0.998
 func (p *Pair) CalculateSellForBuy(amount1Out *big.Int) (amount0In *big.Int) {
 	reserve0, reserve1 := p.Reserves()
+	if amount1Out.Cmp(reserve1) == 1 {
+		return nil
+	}
 	k := new(big.Int).Mul(reserve0, reserve1)
 	if amount1Out.Cmp(reserve1) != -1 {
 		return nil
@@ -880,6 +895,7 @@ func (p *Pair) CalculateSellForBuy(amount1Out *big.Int) (amount0In *big.Int) {
 	return new(big.Int).Add(amount0In, big.NewInt(1))
 }
 
+// Deprecated
 func (p *Pair) Swap(amount0In, amount1In, amount0Out, amount1Out *big.Int) (amount0, amount1 *big.Int) {
 	if amount0Out.Sign() != 1 && amount1Out.Sign() != 1 {
 		panic(ErrorInsufficientOutputAmount)

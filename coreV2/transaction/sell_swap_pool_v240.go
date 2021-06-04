@@ -7,25 +7,26 @@ import (
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/commission"
+	"github.com/MinterTeam/minter-go-node/coreV2/state/swap"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	abcTypes "github.com/tendermint/tendermint/abci/types"
 )
 
-type SellSwapPoolDataDeprecated struct {
+type SellSwapPoolData struct {
 	Coins             []types.CoinID
 	ValueToSell       *big.Int
 	MinimumValueToBuy *big.Int
 }
 
-func (data SellSwapPoolDataDeprecated) TxType() TxType {
+func (data SellSwapPoolData) TxType() TxType {
 	return TypeSellSwapPool
 }
 
-func (data SellSwapPoolDataDeprecated) Gas() int64 {
+func (data SellSwapPoolData) Gas() int64 {
 	return gasSellSwapPool + int64(len(data.Coins)-2)*convertDelta
 }
 
-func (data SellSwapPoolDataDeprecated) basicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data SellSwapPoolData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if len(data.Coins) < 2 {
 		return &Response{
 			Code: code.DecodeError,
@@ -64,15 +65,15 @@ func (data SellSwapPoolDataDeprecated) basicCheck(tx *Transaction, context *stat
 	return nil
 }
 
-func (data SellSwapPoolDataDeprecated) String() string {
+func (data SellSwapPoolData) String() string {
 	return fmt.Sprintf("SWAP POOL SELL")
 }
 
-func (data SellSwapPoolDataDeprecated) CommissionData(price *commission.Price) *big.Int {
+func (data SellSwapPoolData) CommissionData(price *commission.Price) *big.Int {
 	return new(big.Int).Add(price.SellPoolBase, new(big.Int).Mul(price.SellPoolDelta, big.NewInt(int64(len(data.Coins))-2)))
 }
 
-func (data SellSwapPoolDataDeprecated) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
+func (data SellSwapPoolData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -96,12 +97,21 @@ func (data SellSwapPoolDataDeprecated) Run(tx *Transaction, context state.Interf
 
 	lastIteration := len(data.Coins[1:]) - 1
 	{
+		checkDuplicatePools := map[uint32]struct{}{}
 		coinToSell := data.Coins[0]
 		coinToSellModel := checkState.Coins().GetCoin(coinToSell)
 		valueToSell := data.ValueToSell
 		valueToBuy := big.NewInt(0)
 		for i, coinToBuy := range data.Coins[1:] {
 			swapper := checkState.Swap().GetSwapper(coinToSell, coinToBuy)
+			if _, ok := checkDuplicatePools[swapper.GetID()]; ok {
+				return Response{
+					Code: code.DuplicatePoolInRoute,
+					Log:  fmt.Sprintf("Forbidden to repeat the pool in the route, pool duplicate %d", swapper.GetID()),
+					Info: EncodeError(code.NewDuplicatePoolInRouteCode(swapper.GetID())),
+				}
+			}
+			checkDuplicatePools[swapper.GetID()] = struct{}{}
 			if isGasCommissionFromPoolSwap {
 				if tx.GasCoin == coinToSell && coinToBuy.IsBaseCoin() {
 					swapper = swapper.AddLastSwapStep(commission, commissionInBaseCoin)
@@ -116,13 +126,13 @@ func (data SellSwapPoolDataDeprecated) Run(tx *Transaction, context state.Interf
 			}
 
 			coinToBuyModel := checkState.Coins().GetCoin(coinToBuy)
-			errResp = CheckSwapV230(swapper, coinToSellModel, coinToBuyModel, valueToSell, valueToBuy, false)
+			errResp = CheckSwap(swapper, coinToSellModel, coinToBuyModel, valueToSell, valueToBuy, false)
 			if errResp != nil {
 				return *errResp
 			}
 
-			valueToSellCalc := swapper.CalculateBuyForSell(valueToSell)
-			if valueToSellCalc == nil {
+			valueToSellCalc := swapper.CalculateBuyForSellWithOrders(valueToSell)
+			if valueToSellCalc == nil || valueToSellCalc.Sign() != 1 {
 				reserve0, reserve1 := swapper.Reserves()
 				return Response{
 					Code: code.SwapPoolUnknown,
@@ -160,8 +170,27 @@ func (data SellSwapPoolDataDeprecated) Run(tx *Transaction, context state.Interf
 
 	var tags []abcTypes.EventAttribute
 	if deliverState, ok := context.(*state.State); ok {
+		var tagsCom *tagPoolChange
 		if isGasCommissionFromPoolSwap {
-			commission, commissionInBaseCoin, _ = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
+			var (
+				poolIDCom  uint32
+				detailsCom *swap.ChangeDetailsWithOrders
+				ownersCom  map[types.Address]*big.Int
+			)
+			commission, commissionInBaseCoin, poolIDCom, detailsCom, ownersCom = deliverState.Swap.PairSellWithOrders(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
+			tagsCom = &tagPoolChange{
+				PoolID:   poolIDCom,
+				CoinIn:   tx.GasCoin,
+				ValueIn:  commission.String(),
+				CoinOut:  types.GetBaseCoinID(),
+				ValueOut: commissionInBaseCoin.String(),
+				Orders:   detailsCom,
+				Sellers:  nil,
+			}
+			for address, value := range ownersCom {
+				deliverState.Accounts.AddBalance(address, coinToSell, value)
+				tagsCom.Sellers = append(tagsCom.Sellers, &OrderDetail{Owner: address, Value: value.String()})
+			}
 		} else if !tx.GasCoin.IsBaseCoin() {
 			deliverState.Coins.SubVolume(tx.GasCoin, commission)
 			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
@@ -175,15 +204,22 @@ func (data SellSwapPoolDataDeprecated) Run(tx *Transaction, context state.Interf
 		var poolIDs tagPoolsChange
 
 		for i, coinToBuy := range data.Coins[1:] {
-			amountIn, amountOut, poolID := deliverState.Swap.PairSell(coinToSell, coinToBuy, valueToSell, big.NewInt(0))
+			amountIn, amountOut, poolID, details, owners := deliverState.Swap.PairSellWithOrders(coinToSell, coinToBuy, valueToSell, big.NewInt(0))
 
-			poolIDs = append(poolIDs, &tagPoolChange{
+			tags := &tagPoolChange{
 				PoolID:   poolID,
 				CoinIn:   coinToSell,
 				ValueIn:  amountIn.String(),
 				CoinOut:  coinToBuy,
 				ValueOut: amountOut.String(),
-			})
+				Orders:   details,
+			}
+
+			for address, value := range owners {
+				deliverState.Accounts.AddBalance(address, coinToSell, value)
+				tags.Sellers = append(tags.Sellers, &OrderDetail{Owner: address, Value: value.String()})
+			}
+			poolIDs = append(poolIDs, tags)
 
 			if i == 0 {
 				deliverState.Accounts.SubBalance(sender, coinToSell, amountIn)
@@ -204,6 +240,7 @@ func (data SellSwapPoolDataDeprecated) Run(tx *Transaction, context state.Interf
 			{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
 			{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String()), Index: true},
 			{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
+			{Key: []byte("tx.commission_details"), Value: []byte(tagsCom.string())},
 			{Key: []byte("tx.coin_to_buy"), Value: []byte(data.Coins[len(data.Coins)-1].String()), Index: true},
 			{Key: []byte("tx.coin_to_sell"), Value: []byte(data.Coins[0].String()), Index: true},
 			{Key: []byte("tx.return"), Value: []byte(amountOut.String())},

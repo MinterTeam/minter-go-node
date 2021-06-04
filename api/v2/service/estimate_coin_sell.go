@@ -219,13 +219,13 @@ func (s *Service) commissionInCoin(cState *state.CheckState, coinCommissionID ty
 		commission = commissionInBaseCoin
 		isSwapFromPool = true
 	case types.GetBaseCoinID():
-		commission = cState.Swap().GetSwapper(commissionsCoin, types.GetBaseCoinID()).CalculateBuyForSell(commissionInBaseCoin)
+		commission = cState.Swap().GetSwapper(commissionsCoin, types.GetBaseCoinID()).CalculateBuyForSellWithOrders(commissionInBaseCoin)
 		if commission == nil {
 			return nil, false, s.createError(status.New(codes.FailedPrecondition, "Not possible to pay commission"), transaction.EncodeError(code.NewCommissionCoinNotSufficient("", "")))
 		}
 	default:
 		if !commissionsCoin.IsBaseCoin() {
-			commissionInBaseCoin = cState.Swap().GetSwapper(commissionsCoin, types.GetBaseCoinID()).CalculateBuyForSell(commissionInBaseCoin)
+			commissionInBaseCoin = cState.Swap().GetSwapper(commissionsCoin, types.GetBaseCoinID()).CalculateBuyForSellWithOrders(commissionInBaseCoin)
 			if commissionInBaseCoin == nil {
 				return nil, false, s.createError(status.New(codes.FailedPrecondition, "Not possible to pay commission"), transaction.EncodeError(code.NewCommissionCoinNotSufficient("", "")))
 			}
@@ -275,8 +275,8 @@ func (s *Service) calcSellFromPool(ctx context.Context, value *big.Int, cState *
 			}
 		}
 
-		buyValue := swapChecker.CalculateBuyForSell(sellValue)
-		if buyValue == nil {
+		buyValue := swapChecker.CalculateBuyForSellWithOrders(sellValue)
+		if buyValue == nil || buyValue.Sign() != 1 {
 			reserve0, reserve1 := swapChecker.Reserves()
 			return nil, s.createError(status.New(codes.OutOfRange, fmt.Sprintf("swap pool has reserves %s %s and %d %s, you wanted sell %s %s", reserve0, coinSell.GetFullSymbol(), reserve1, coinBuy.GetFullSymbol(), sellValue, coinSell.GetFullSymbol())), "")
 		}

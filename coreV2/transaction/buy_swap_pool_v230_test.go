@@ -72,7 +72,7 @@ func TestBuySwapPoolTx_0(t *testing.T) {
 		}
 	}
 	{
-		data := BuySwapPoolData{
+		data := BuySwapPoolDataV230{
 			Coins:              []types.CoinID{coin, coin1},
 			MaximumValueToSell: big.NewInt(10),
 			ValueToBuy:         big.NewInt(99),
@@ -184,7 +184,7 @@ func TestBuySwapPoolTx_1(t *testing.T) {
 		}
 	}
 	{
-		data := BuySwapPoolData{
+		data := BuySwapPoolDataV230{
 			Coins:              []types.CoinID{coin1, coin},
 			MaximumValueToSell: big.NewInt(10),
 			ValueToBuy:         big.NewInt(9),
@@ -227,7 +227,7 @@ func TestBuySwapPoolTx_1(t *testing.T) {
 		}
 	}
 	{
-		data := BuySwapPoolData{
+		data := BuySwapPoolDataV230{
 			Coins:              []types.CoinID{coin, coin1},
 			MaximumValueToSell: big.NewInt(10),
 			ValueToBuy:         big.NewInt(9),
@@ -332,7 +332,7 @@ func TestBuySwapPoolTx_2(t *testing.T) {
 		}
 	}
 	{
-		data := BuySwapPoolData{
+		data := BuySwapPoolDataV230{
 			Coins:              []types.CoinID{coin, coin1},
 			MaximumValueToSell: new(big.Int).Add(new(big.Int).Mul(big.NewInt(1), big.NewInt(1e18)), big.NewInt(0)),
 			ValueToBuy:         big.NewInt(996006981039903216),
@@ -437,7 +437,7 @@ func TestBuySwapPoolTx_3(t *testing.T) {
 		}
 	}
 	{
-		data := BuySwapPoolData{
+		data := BuySwapPoolDataV230{
 			Coins:              []types.CoinID{coin, coin1},
 			MaximumValueToSell: new(big.Int).Add(new(big.Int).Mul(big.NewInt(1), big.NewInt(1e18)), big.NewInt(0)),
 			ValueToBuy:         big.NewInt(1662497915624478906),
@@ -542,7 +542,7 @@ func TestBuySwapPoolTx_4(t *testing.T) {
 		}
 	}
 	{
-		data := BuySwapPoolData{
+		data := BuySwapPoolDataV230{
 			Coins:              []types.CoinID{coin, coin1},
 			MaximumValueToSell: new(big.Int).Add(new(big.Int).Mul(big.NewInt(1), big.NewInt(1e18)), big.NewInt(0)),
 			ValueToBuy:         big.NewInt(453305446940074565),
@@ -695,7 +695,7 @@ func TestBuySwapPoolTx_RouteYes(t *testing.T) {
 		}
 	}
 	{
-		data := BuySwapPoolData{
+		data := BuySwapPoolDataV230{
 			Coins:              []types.CoinID{coin, coin1, coin2},
 			MaximumValueToSell: big.NewInt(10),
 			ValueToBuy:         big.NewInt(98),
@@ -801,7 +801,7 @@ func TestBuySwapPoolTx_Route(t *testing.T) {
 		}
 	}
 	{
-		data := BuySwapPoolData{
+		data := BuySwapPoolDataV230{
 			Coins:              []types.CoinID{coin, coin1},
 			MaximumValueToSell: big.NewInt(10),
 			ValueToBuy:         big.NewInt(99),
@@ -892,7 +892,7 @@ func TestBuySwapPoolTx_Route(t *testing.T) {
 		}
 	}
 	{
-		data := BuySwapPoolData{
+		data := BuySwapPoolDataV230{
 			Coins:              []types.CoinID{coin1, coin2},
 			MaximumValueToSell: big.NewInt(99),
 			ValueToBuy:         big.NewInt(98),

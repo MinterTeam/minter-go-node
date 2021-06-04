@@ -11,19 +11,19 @@ import (
 	abcTypes "github.com/tendermint/tendermint/abci/types"
 )
 
-type BurnTokenData struct {
+type BurnTokenDataDeprecated struct {
 	Coin  types.CoinID
 	Value *big.Int
 }
 
-func (data BurnTokenData) Gas() int64 {
+func (data BurnTokenDataDeprecated) Gas() int64 {
 	return gasBurnToken
 }
-func (data BurnTokenData) TxType() TxType {
+func (data BurnTokenDataDeprecated) TxType() TxType {
 	return TypeBurnToken
 }
 
-func (data BurnTokenData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data BurnTokenDataDeprecated) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	coin := context.Coins().GetCoin(data.Coin)
 	if coin == nil {
 		return &Response{
@@ -49,18 +49,34 @@ func (data BurnTokenData) basicCheck(tx *Transaction, context *state.CheckState)
 		}
 	}
 
+	// todo: remove owner check
+	sender, _ := tx.Sender()
+	symbolInfo := context.Coins().GetSymbolInfo(coin.Symbol())
+	if coin.Version() != 0 || symbolInfo == nil || symbolInfo.OwnerAddress().Compare(sender) != 0 {
+		var owner *string
+		if symbolInfo != nil && symbolInfo.OwnerAddress() != nil {
+			own := symbolInfo.OwnerAddress().String()
+			owner = &own
+		}
+		return &Response{
+			Code: code.IsNotOwnerOfCoin,
+			Log:  "Sender is not owner of coin",
+			Info: EncodeError(code.NewIsNotOwnerOfCoin(coin.Symbol().String(), owner)),
+		}
+	}
+
 	return nil
 }
 
-func (data BurnTokenData) String() string {
+func (data BurnTokenDataDeprecated) String() string {
 	return fmt.Sprintf("BURN COIN: %d", data.Coin)
 }
 
-func (data BurnTokenData) CommissionData(price *commission.Price) *big.Int {
+func (data BurnTokenDataDeprecated) CommissionData(price *commission.Price) *big.Int {
 	return price.BurnToken
 }
 
-func (data BurnTokenData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
+func (data BurnTokenDataDeprecated) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState

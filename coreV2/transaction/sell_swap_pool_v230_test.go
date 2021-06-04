@@ -72,7 +72,7 @@ func TestSellSwapPoolTx_0(t *testing.T) {
 		}
 	}
 	{
-		data := SellSwapPoolData{
+		data := SellSwapPoolDataV230{
 			Coins:             []types.CoinID{coin, coin1},
 			ValueToSell:       big.NewInt(10),
 			MinimumValueToBuy: big.NewInt(99),
@@ -177,7 +177,7 @@ func TestSellSwapPoolTx_1(t *testing.T) {
 		}
 	}
 	{
-		data := SellSwapPoolData{
+		data := SellSwapPoolDataV230{
 			Coins:             []types.CoinID{coin, coin1},
 			ValueToSell:       big.NewInt(10),
 			MinimumValueToBuy: big.NewInt(9),
@@ -220,7 +220,7 @@ func TestSellSwapPoolTx_1(t *testing.T) {
 		}
 	}
 	{
-		data := SellSwapPoolData{
+		data := SellSwapPoolDataV230{
 			Coins:             []types.CoinID{coin1, coin},
 			ValueToSell:       big.NewInt(10),
 			MinimumValueToBuy: big.NewInt(9),
@@ -325,7 +325,7 @@ func TestSellSwapPoolTx_2(t *testing.T) {
 		}
 	}
 	{
-		data := SellSwapPoolData{
+		data := SellSwapPoolDataV230{
 			Coins:             []types.CoinID{coin, coin1},
 			ValueToSell:       new(big.Int).Add(new(big.Int).Mul(big.NewInt(1), big.NewInt(1e18)), big.NewInt(0)),
 			MinimumValueToBuy: big.NewInt(996006981039903216),
@@ -430,7 +430,7 @@ func TestSellSwapPoolTx_3(t *testing.T) {
 		}
 	}
 	{
-		data := SellSwapPoolData{
+		data := SellSwapPoolDataV230{
 			Coins:             []types.CoinID{coin, coin1},
 			ValueToSell:       new(big.Int).Add(new(big.Int).Mul(big.NewInt(1), big.NewInt(1e18)), big.NewInt(0)),
 			MinimumValueToBuy: big.NewInt(1662497915624478906),
@@ -535,7 +535,7 @@ func TestSellSwapPoolTx_4(t *testing.T) {
 		}
 	}
 	{
-		data := SellSwapPoolData{
+		data := SellSwapPoolDataV230{
 			Coins:             []types.CoinID{coin, coin1},
 			ValueToSell:       new(big.Int).Add(new(big.Int).Mul(big.NewInt(1), big.NewInt(1e18)), big.NewInt(0)),
 			MinimumValueToBuy: big.NewInt(453305446940074565),
@@ -687,7 +687,7 @@ func TestSellSwapPoolTx_RouteYes(t *testing.T) {
 		}
 	}
 	{
-		data := SellSwapPoolData{
+		data := SellSwapPoolDataV230{
 			Coins:             []types.CoinID{coin, coin1, coin2},
 			ValueToSell:       big.NewInt(10),
 			MinimumValueToBuy: big.NewInt(98),
@@ -796,7 +796,7 @@ func TestSellSwapPoolTx_Route(t *testing.T) {
 	cState.Accounts.SubBalance(types.Address{}, coin2, helpers.BipToPip(big.NewInt(100000)))
 	cState.Accounts.AddBalance(addr, coin2, helpers.BipToPip(big.NewInt(100000)))
 	{
-		data := SellSwapPoolData{
+		data := SellSwapPoolDataV230{
 			Coins:             []types.CoinID{coin, coin1},
 			ValueToSell:       big.NewInt(10),
 			MinimumValueToBuy: big.NewInt(99),
@@ -883,7 +883,7 @@ func TestSellSwapPoolTx_Route(t *testing.T) {
 		}
 	}
 	{
-		data := SellSwapPoolData{
+		data := SellSwapPoolDataV230{
 			Coins:             []types.CoinID{coin1, coin2},
 			ValueToSell:       big.NewInt(99),
 			MinimumValueToBuy: big.NewInt(98),
@@ -988,7 +988,7 @@ func TestSellSwapPoolTx_Bug3612653(t *testing.T) {
 		}
 	}
 	{
-		data := SellSwapPoolData{
+		data := SellSwapPoolDataV230{
 			Coins:             []types.CoinID{coin, coin1, coin, coin1, coin},
 			ValueToSell:       big.NewInt(10),
 			MinimumValueToBuy: big.NewInt(8),

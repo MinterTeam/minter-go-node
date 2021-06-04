@@ -12,21 +12,21 @@ import (
 	abcTypes "github.com/tendermint/tendermint/abci/types"
 )
 
-type SellSwapPoolData struct {
+type SellSwapPoolDataV230 struct {
 	Coins             []types.CoinID
 	ValueToSell       *big.Int
 	MinimumValueToBuy *big.Int
 }
 
-func (data SellSwapPoolData) TxType() TxType {
+func (data SellSwapPoolDataV230) TxType() TxType {
 	return TypeSellSwapPool
 }
 
-func (data SellSwapPoolData) Gas() int64 {
+func (data SellSwapPoolDataV230) Gas() int64 {
 	return gasSellSwapPool + int64(len(data.Coins)-2)*convertDelta
 }
 
-func (data SellSwapPoolData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data SellSwapPoolDataV230) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if len(data.Coins) < 2 {
 		return &Response{
 			Code: code.DecodeError,
@@ -65,15 +65,15 @@ func (data SellSwapPoolData) basicCheck(tx *Transaction, context *state.CheckSta
 	return nil
 }
 
-func (data SellSwapPoolData) String() string {
+func (data SellSwapPoolDataV230) String() string {
 	return fmt.Sprintf("SWAP POOL SELL")
 }
 
-func (data SellSwapPoolData) CommissionData(price *commission.Price) *big.Int {
+func (data SellSwapPoolDataV230) CommissionData(price *commission.Price) *big.Int {
 	return new(big.Int).Add(price.SellPoolBase, new(big.Int).Mul(price.SellPoolDelta, big.NewInt(int64(len(data.Coins))-2)))
 }
 
-func (data SellSwapPoolData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
+func (data SellSwapPoolDataV230) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -126,12 +126,12 @@ func (data SellSwapPoolData) Run(tx *Transaction, context state.Interface, rewar
 			}
 
 			coinToBuyModel := checkState.Coins().GetCoin(coinToBuy)
-			errResp = CheckSwap(swapper, coinToSellModel, coinToBuyModel, valueToSell, valueToBuy, false)
+			errResp = CheckSwapV230(swapper, coinToSellModel, coinToBuyModel, valueToSell, valueToBuy, false)
 			if errResp != nil {
 				return *errResp
 			}
 
-			valueToSellCalc := swapper.CalculateBuyForSellWithOrders(valueToSell)
+			valueToSellCalc := swapper.CalculateBuyForSell(valueToSell)
 			if valueToSellCalc == nil {
 				reserve0, reserve1 := swapper.Reserves()
 				return Response{
