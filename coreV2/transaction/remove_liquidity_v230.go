@@ -90,10 +90,10 @@ func (data RemoveLiquidity) Run(tx *Transaction, context state.Interface, reward
 
 	if isGasCommissionFromPoolSwap {
 		if tx.GasCoin == data.Coin0 && data.Coin1.IsBaseCoin() {
-			swapper = swapper.AddLastSwapStep(commission, commissionInBaseCoin)
+			swapper = swapper.AddLastSwapStepWithOrders(commission, commissionInBaseCoin)
 		}
 		if tx.GasCoin == data.Coin1 && data.Coin0.IsBaseCoin() {
-			swapper = swapper.AddLastSwapStep(commissionInBaseCoin, commission)
+			swapper = swapper.AddLastSwapStepWithOrders(commissionInBaseCoin, commission)
 		}
 	}
 

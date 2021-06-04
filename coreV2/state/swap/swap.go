@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"log"
 	"math"
 	"math/big"
 	"sort"
@@ -29,7 +30,9 @@ type EditableChecker interface {
 	// todo: add delete orders
 	Exists() bool
 	GetID() uint32
+	// Deprecated
 	AddLastSwapStep(amount0In, amount1Out *big.Int) EditableChecker
+	AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int) EditableChecker
 	Reverse() EditableChecker
 	Price() *big.Float
 	Reserves() (reserve0 *big.Int, reserve1 *big.Int)
@@ -150,16 +153,16 @@ func (s *Swap) Export(state *types.AppState) {
 
 		reserve0, reserve1 := pair.Reserves()
 		swap := types.Pool{
-			Coin0:       uint64(key.Coin0),
-			Coin1:       uint64(key.Coin1),
-			Reserve0:    reserve0.String(),
-			Reserve1:    reserve1.String(),
-			ID:          uint64(pair.GetID()),
-			Orders:      orders,
-			NextOrderID: uint64(s.loadNextOrdersID()),
+			Coin0:    uint64(key.Coin0),
+			Coin1:    uint64(key.Coin1),
+			Reserve0: reserve0.String(),
+			Reserve1: reserve1.String(),
+			ID:       uint64(pair.GetID()),
+			Orders:   orders,
 		}
 
 		state.Pools = append(state.Pools, swap)
+		state.NextOrderID = uint64(s.loadNextOrdersID())
 	}
 
 	sort.Slice(state.Pools, func(i, j int) bool {
@@ -189,6 +192,8 @@ func (s *Swap) Import(state *types.AppState) {
 			}
 			s.PairAddOrder(key.Coin0, key.Coin1, helpers.StringToBigInt(order.Volume0), helpers.StringToBigInt(order.Volume1), order.Owner)
 		}
+		s.nextOrderID = uint32(state.NextOrderID)
+		s.dirtyNextID = true
 	}
 }
 
@@ -258,6 +263,64 @@ func (p *Pair) AddLastSwapStep(amount0In, amount1Out *big.Int) EditableChecker {
 		loadLowerOrders:     p.loadLowerOrders,
 		getLastTotalOrderID: nil,
 	}
+}
+
+func (p *Pair) AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int) EditableChecker {
+	amount1OutCalc, orders := p.calculateSellForBuyWithOrders(amount0In)
+	if amount1OutCalc.Cmp(amount1Out) != 0 {
+		log.Println("AddLastSwapStepWithOrders error", amount1OutCalc, amount1Out)
+	}
+	reserve0, reserve1 := p.Reserves()
+	pair := &Pair{
+		pairKey: p.pairKey,
+		pairData: &pairData{
+			RWMutex:   &sync.RWMutex{},
+			Reserve0:  reserve0,
+			Reserve1:  reserve1,
+			ID:        p.ID,
+			markDirty: func() {},
+		},
+		sellOrders: &limits{
+			higher: p.sellOrders.higher,
+			lower:  p.sellOrders.lower,
+		},
+		buyOrders: &limits{
+			higher: p.buyOrders.higher,
+			lower:  p.buyOrders.lower,
+		},
+		dirtyOrders: &dirtyOrders{
+			orders: p.dirtyOrders.orders,
+		},
+		markDirtyOrders:     func() {},
+		loadHigherOrders:    p.loadHigherOrders,
+		loadLowerOrders:     p.loadLowerOrders,
+		getLastTotalOrderID: nil,
+	}
+	commission0orders, commission1orders, amount0, amount1, _ := CalcDiffPool(amount0In, amount1Out, orders)
+
+	if amount0.Sign() != 0 || amount1.Sign() != 0 {
+		p.update(amount0, big.NewInt(0).Neg(amount1))
+	}
+
+	pair.update(commission0orders, commission1orders)
+
+	oo := make([]*Limit, 0, len(orders))
+	for _, order := range orders {
+		oo = append(oo, &Limit{
+			isBuy:        order.isBuy,
+			WantBuy:      big.NewInt(0).Set(order.WantBuy),
+			WantSell:     big.NewInt(0).Set(order.WantSell),
+			Owner:        order.Owner,
+			pairKey:      order.pairKey,
+			oldSortPrice: big.NewFloat(0).Set(order.oldSortPrice),
+			id:           order.id,
+			RWMutex:      &sync.RWMutex{},
+		})
+	}
+
+	pair.updateOrders(oo)
+
+	return pair
 }
 
 func (p *Pair) Reverse() EditableChecker {

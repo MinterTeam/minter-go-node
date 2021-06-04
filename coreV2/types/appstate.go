@@ -15,6 +15,7 @@ type AppState struct {
 	BlockListCandidates []Pubkey         `json:"block_list_candidates,omitempty"`
 	Waitlist            []Waitlist       `json:"waitlist,omitempty"`
 	Pools               []Pool           `json:"pools,omitempty"`
+	NextOrderID         uint64           `json:"next_order_id"`
 	Accounts            []Account        `json:"accounts,omitempty"`
 	Coins               []Coin           `json:"coins,omitempty"`
 	FrozenFunds         []FrozenFund     `json:"frozen_funds,omitempty"`
@@ -325,13 +326,12 @@ type Order struct {
 	Owner   Address `json:"owner"`
 }
 type Pool struct {
-	Coin0       uint64  `json:"coin0"`
-	Coin1       uint64  `json:"coin1"`
-	Reserve0    string  `json:"reserve0"`
-	Reserve1    string  `json:"reserve1"`
-	ID          uint64  `json:"id"`
-	Orders      []Order `json:"orders"`
-	NextOrderID uint64  `json:"next_order_id"`
+	Coin0    uint64  `json:"coin0"`
+	Coin1    uint64  `json:"coin1"`
+	Reserve0 string  `json:"reserve0"`
+	Reserve1 string  `json:"reserve1"`
+	ID       uint64  `json:"id"`
+	Orders   []Order `json:"orders"`
 }
 
 type Coin struct {
