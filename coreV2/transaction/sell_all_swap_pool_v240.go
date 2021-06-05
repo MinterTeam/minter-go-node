@@ -68,6 +68,13 @@ func (data *SellAllSwapPoolDataDeprecated) commissionCoin() types.CoinID {
 	return data.Coins[0]
 }
 
+func (data *SellAllSwapPoolDataV230) commissionCoin() types.CoinID {
+	if len(data.Coins) == 0 {
+		return 0
+	}
+	return data.Coins[0]
+}
+
 func (data *SellAllSwapPoolData) commissionCoin() types.CoinID {
 	if len(data.Coins) == 0 {
 		return 0
