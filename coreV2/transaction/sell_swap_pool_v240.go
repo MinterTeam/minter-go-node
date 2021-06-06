@@ -112,7 +112,8 @@ func (data SellSwapPoolData) Run(tx *Transaction, context state.Interface, rewar
 				}
 			}
 			checkDuplicatePools[swapper.GetID()] = struct{}{}
-			if isGasCommissionFromPoolSwap {
+
+			if isGasCommissionFromPoolSwap && swapper.GetID() == commissionPoolSwapper.GetID() {
 				if tx.GasCoin == coinToSell && coinToBuy.IsBaseCoin() {
 					swapper = swapper.AddLastSwapStepWithOrders(commission, commissionInBaseCoin)
 				}
@@ -135,7 +136,7 @@ func (data SellSwapPoolData) Run(tx *Transaction, context state.Interface, rewar
 			if valueToSellCalc == nil || valueToSellCalc.Sign() != 1 {
 				reserve0, reserve1 := swapper.Reserves()
 				return Response{
-					Code: code.SwapPoolUnknown,
+					Code: code.InsufficientLiquidity,
 					Log:  fmt.Sprintf("swap pool has reserves %s %s and %d %s, you wanted sell %s %s", reserve0, coinToSellModel.GetFullSymbol(), reserve1, coinToBuyModel.GetFullSymbol(), valueToSell, coinToSellModel.GetFullSymbol()),
 					Info: EncodeError(code.NewInsufficientLiquidity(coinToSellModel.ID().String(), valueToSell.String(), coinToBuyModel.ID().String(), valueToSellCalc.String(), reserve0.String(), reserve1.String())),
 				}
