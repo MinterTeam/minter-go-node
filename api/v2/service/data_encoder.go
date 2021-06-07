@@ -220,7 +220,7 @@ func encode(data transaction.Data, rCoins coins.RCoins) (*any.Any, error) {
 			MinimumVolume0: d.MinimumVolume0.String(),
 			MinimumVolume1: d.MinimumVolume1.String(),
 		}
-	case *transaction.BuySwapPoolData:
+	case *transaction.BuySwapPoolDataV250:
 		var coinsInfo []*pb.Coin
 		for _, coin := range d.Coins {
 			coinsInfo = append(coinsInfo, &pb.Coin{
@@ -233,7 +233,7 @@ func encode(data transaction.Data, rCoins coins.RCoins) (*any.Any, error) {
 			ValueToBuy:         d.ValueToBuy.String(),
 			MaximumValueToSell: d.MaximumValueToSell.String(),
 		}
-	case *transaction.SellSwapPoolData:
+	case *transaction.SellSwapPoolDataV250:
 		var coinsInfo []*pb.Coin
 		for _, coin := range d.Coins {
 			coinsInfo = append(coinsInfo, &pb.Coin{
@@ -246,7 +246,7 @@ func encode(data transaction.Data, rCoins coins.RCoins) (*any.Any, error) {
 			ValueToSell:       d.ValueToSell.String(),
 			MinimumValueToBuy: d.MinimumValueToBuy.String(),
 		}
-	case *transaction.SellAllSwapPoolData:
+	case *transaction.SellAllSwapPoolDataV250:
 		var coinsInfo []*pb.Coin
 		for _, coin := range d.Coins {
 			coinsInfo = append(coinsInfo, &pb.Coin{

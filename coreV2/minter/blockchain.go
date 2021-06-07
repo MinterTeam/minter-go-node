@@ -111,6 +111,7 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 			v2:   {}, // require default version
 			v230: {},
 			v240: {},
+			v250: {},
 			// add more for update
 		},
 		executor: GetExecutor(version),
@@ -130,7 +131,8 @@ const haltBlockV210 = 3431238
 const ( // known update versions
 	v2   = ""     // default
 	v230 = "v230" // remove liquidity bug
-	v240 = "v240" // orderbook
+	v240 = "v240" // commissions
+	v250 = "v250" // orderbook
 )
 
 func (blockchain *Blockchain) initState() {
@@ -166,6 +168,8 @@ func (blockchain *Blockchain) initState() {
 
 func GetExecutor(v string) *transaction.Executor {
 	switch v {
+	case v250:
+		return transaction.NewExecutor(transaction.GetDataV250)
 	case v240:
 		return transaction.NewExecutor(transaction.GetDataV240)
 	case v230:
