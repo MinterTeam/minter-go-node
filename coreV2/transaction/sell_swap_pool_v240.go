@@ -11,20 +11,21 @@ import (
 	abcTypes "github.com/tendermint/tendermint/abci/types"
 )
 
-type BuySwapPoolDataDeprecated struct {
-	Coins              []types.CoinID
-	ValueToBuy         *big.Int
-	MaximumValueToSell *big.Int
+type SellSwapPoolDataV240 struct {
+	Coins             []types.CoinID
+	ValueToSell       *big.Int
+	MinimumValueToBuy *big.Int
 }
 
-func (data BuySwapPoolDataDeprecated) Gas() int64 {
-	return gasBuySwapPool + int64(len(data.Coins)-2)*convertDelta
-}
-func (data BuySwapPoolDataDeprecated) TxType() TxType {
-	return TypeBuySwapPool
+func (data SellSwapPoolDataV240) TxType() TxType {
+	return TypeSellSwapPool
 }
 
-func (data BuySwapPoolDataDeprecated) basicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data SellSwapPoolDataV240) Gas() int64 {
+	return gasSellSwapPool + int64(len(data.Coins)-2)*convertDelta
+}
+
+func (data SellSwapPoolDataV240) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if len(data.Coins) < 2 {
 		return &Response{
 			Code: code.DecodeError,
@@ -59,18 +60,19 @@ func (data BuySwapPoolDataDeprecated) basicCheck(tx *Transaction, context *state
 		}
 		coin0 = coin1
 	}
+
 	return nil
 }
 
-func (data BuySwapPoolDataDeprecated) String() string {
-	return fmt.Sprintf("SWAP POOL BUY")
+func (data SellSwapPoolDataV240) String() string {
+	return fmt.Sprintf("SWAP POOL SELL")
 }
 
-func (data BuySwapPoolDataDeprecated) CommissionData(price *commission.Price) *big.Int {
-	return new(big.Int).Add(price.BuyPoolBase, new(big.Int).Mul(price.BuyPoolDelta, big.NewInt(int64(len(data.Coins))-2)))
+func (data SellSwapPoolDataV240) CommissionData(price *commission.Price) *big.Int {
+	return new(big.Int).Add(price.SellPoolBase, new(big.Int).Mul(price.SellPoolDelta, big.NewInt(int64(len(data.Coins))-2)))
 }
 
-func (data BuySwapPoolDataDeprecated) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
+func (data SellSwapPoolDataV240) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -92,56 +94,68 @@ func (data BuySwapPoolDataDeprecated) Run(tx *Transaction, context state.Interfa
 		return *errResp
 	}
 
-	reverseCoinIds(data.Coins)
-
-	var calculatedAmountToSell *big.Int
 	lastIteration := len(data.Coins[1:]) - 1
 	{
-		coinToBuy := data.Coins[0]
-		coinToBuyModel := checkState.Coins().GetCoin(coinToBuy)
-		valueToBuy := big.NewInt(0).Set(data.ValueToBuy)
-		valueToSell := maxCoinSupply
-		for i, coinToSell := range data.Coins[1:] {
+		checkDuplicatePools := map[uint32]struct{}{}
+		coinToSell := data.Coins[0]
+		coinToSellModel := checkState.Coins().GetCoin(coinToSell)
+		valueToSell := data.ValueToSell
+		valueToBuy := big.NewInt(0)
+		for i, coinToBuy := range data.Coins[1:] {
 			swapper := checkState.Swap().GetSwapper(coinToSell, coinToBuy)
-
-			if isGasCommissionFromPoolSwap {
+			if _, ok := checkDuplicatePools[swapper.GetID()]; ok {
+				return Response{
+					Code: code.DuplicatePoolInRoute,
+					Log:  fmt.Sprintf("Forbidden to repeat the pool in the route, pool duplicate %d", swapper.GetID()),
+					Info: EncodeError(code.NewDuplicatePoolInRouteCode(swapper.GetID())),
+				}
+			}
+			checkDuplicatePools[swapper.GetID()] = struct{}{}
+			if isGasCommissionFromPoolSwap && swapper.GetID() == commissionPoolSwapper.GetID() {
 				if tx.GasCoin == coinToSell && coinToBuy.IsBaseCoin() {
 					swapper = swapper.AddLastSwapStep(commission, commissionInBaseCoin)
 				}
-				if tx.GasCoin == coinToSell && coinToBuy.IsBaseCoin() {
+				if tx.GasCoin == coinToBuy && coinToSell.IsBaseCoin() {
 					swapper = swapper.AddLastSwapStep(commissionInBaseCoin, commission)
 				}
 			}
 
 			if i == lastIteration {
-				valueToSell = data.MaximumValueToSell
+				valueToBuy = data.MinimumValueToBuy
 			}
 
-			coinToSellModel := checkState.Coins().GetCoin(coinToSell)
-			errResp = CheckSwap(swapper, coinToSellModel, coinToBuyModel, valueToSell, valueToBuy, true)
+			coinToBuyModel := checkState.Coins().GetCoin(coinToBuy)
+			errResp = CheckSwap(swapper, coinToSellModel, coinToBuyModel, valueToSell, valueToBuy, false)
 			if errResp != nil {
 				return *errResp
 			}
 
-			valueToBuyCalc := swapper.CalculateSellForBuy(valueToBuy)
-			if valueToBuyCalc == nil {
+			valueToSellCalc := swapper.CalculateBuyForSell(valueToSell)
+			if valueToSellCalc == nil {
 				reserve0, reserve1 := swapper.Reserves()
-				return Response{ // todo
+				return Response{
 					Code: code.SwapPoolUnknown,
-					Log:  fmt.Sprintf("swap pool has reserves %s %s and %d %s, you wanted buy %s %s", reserve0, coinToSellModel.GetFullSymbol(), reserve1, coinToBuyModel.GetFullSymbol(), valueToBuy, coinToSellModel.GetFullSymbol()),
-					Info: EncodeError(code.NewInsufficientLiquidity(coinToSellModel.ID().String(), valueToBuyCalc.String(), coinToBuyModel.ID().String(), valueToBuy.String(), reserve0.String(), reserve1.String())),
+					Log:  fmt.Sprintf("swap pool has reserves %s %s and %d %s, you wanted sell %s %s", reserve0, coinToSellModel.GetFullSymbol(), reserve1, coinToBuyModel.GetFullSymbol(), valueToSell, coinToSellModel.GetFullSymbol()),
+					Info: EncodeError(code.NewInsufficientLiquidity(coinToSellModel.ID().String(), valueToSell.String(), coinToBuyModel.ID().String(), valueToSellCalc.String(), reserve0.String(), reserve1.String())),
 				}
 			}
-			valueToBuy = valueToBuyCalc
-			coinToBuyModel = coinToSellModel
-			coinToBuy = coinToSell
+			valueToSell = valueToSellCalc
+			coinToSellModel = coinToBuyModel
+			coinToSell = coinToBuy
 		}
-		calculatedAmountToSell = valueToBuy
 	}
 
-	coinToSell := data.Coins[len(data.Coins)-1]
-	amount0 := new(big.Int).Set(calculatedAmountToSell)
-	if tx.GasCoin == coinToSell {
+	coinToSell := data.Coins[0]
+	amount0 := new(big.Int).Set(data.ValueToSell)
+	if tx.GasCoin != coinToSell {
+		if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) == -1 {
+			return Response{
+				Code: code.InsufficientFunds,
+				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission.String(), gasCoin.GetFullSymbol()),
+				Info: EncodeError(code.NewInsufficientFunds(sender.String(), commission.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
+			}
+		}
+	} else {
 		amount0.Add(amount0, commission)
 	}
 	if checkState.Accounts().GetBalance(sender, coinToSell).Cmp(amount0) == -1 {
@@ -153,13 +167,6 @@ func (data BuySwapPoolDataDeprecated) Run(tx *Transaction, context state.Interfa
 		}
 	}
 
-	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) == -1 {
-		return Response{
-			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission.String(), gasCoin.GetFullSymbol()),
-			Info: EncodeError(code.NewInsufficientFunds(sender.String(), commission.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
-		}
-	}
 	var tags []abcTypes.EventAttribute
 	if deliverState, ok := context.(*state.State); ok {
 		if isGasCommissionFromPoolSwap {
@@ -171,14 +178,13 @@ func (data BuySwapPoolDataDeprecated) Run(tx *Transaction, context state.Interfa
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		coinToBuy := data.Coins[0]
-		valueToBuy := data.ValueToBuy
+		coinToSell := data.Coins[0]
+		valueToSell := data.ValueToSell
 
 		var poolIDs tagPoolsChange
 
-		for i, coinToSell := range data.Coins[1:] {
-
-			amountIn, amountOut, poolID := deliverState.Swap.PairBuy(coinToSell, coinToBuy, maxCoinSupply, valueToBuy)
+		for i, coinToBuy := range data.Coins[1:] {
+			amountIn, amountOut, poolID := deliverState.Swap.PairSell(coinToSell, coinToBuy, valueToSell, big.NewInt(0))
 
 			poolIDs = append(poolIDs, &tagPoolChange{
 				PoolID:   poolID,
@@ -189,28 +195,27 @@ func (data BuySwapPoolDataDeprecated) Run(tx *Transaction, context state.Interfa
 			})
 
 			if i == 0 {
-				deliverState.Accounts.AddBalance(sender, coinToBuy, amountOut)
-			}
-
-			valueToBuy = amountIn
-			coinToBuy = coinToSell
-
-			if i == lastIteration {
 				deliverState.Accounts.SubBalance(sender, coinToSell, amountIn)
 			}
+
+			valueToSell = amountOut
+			coinToSell = coinToBuy
+
+			if i == lastIteration {
+				deliverState.Accounts.AddBalance(sender, coinToBuy, amountOut)
+			}
 		}
-		reversePools(poolIDs)
-		amountIn := valueToBuy
 
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 
+		amountOut := valueToSell
 		tags = []abcTypes.EventAttribute{
 			{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
 			{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String()), Index: true},
 			{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
-			{Key: []byte("tx.coin_to_buy"), Value: []byte(data.Coins[0].String()), Index: true},
-			{Key: []byte("tx.coin_to_sell"), Value: []byte(data.Coins[len(data.Coins)-1].String()), Index: true},
-			{Key: []byte("tx.return"), Value: []byte(amountIn.String())},
+			{Key: []byte("tx.coin_to_buy"), Value: []byte(data.Coins[len(data.Coins)-1].String()), Index: true},
+			{Key: []byte("tx.coin_to_sell"), Value: []byte(data.Coins[0].String()), Index: true},
+			{Key: []byte("tx.return"), Value: []byte(amountOut.String())},
 			{Key: []byte("tx.pools"), Value: []byte(poolIDs.string())},
 		}
 	}

@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/state/coins"
 	"github.com/MinterTeam/minter-go-node/coreV2/transaction"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
@@ -205,7 +206,7 @@ func encode(data transaction.Data, rCoins coins.RCoins) (*any.Any, error) {
 			Volume0:        d.Volume0.String(),
 			MaximumVolume1: d.MaximumVolume1.String(),
 		}
-	case *transaction.RemoveLiquidity:
+	case *transaction.RemoveLiquidityV230:
 		m = &pb.RemoveLiquidityData{
 			Coin0: &pb.Coin{
 				Id:     uint64(d.Coin0),
@@ -219,7 +220,7 @@ func encode(data transaction.Data, rCoins coins.RCoins) (*any.Any, error) {
 			MinimumVolume0: d.MinimumVolume0.String(),
 			MinimumVolume1: d.MinimumVolume1.String(),
 		}
-	case *transaction.BuySwapPoolData:
+	case *transaction.BuySwapPoolDataV230:
 		var coinsInfo []*pb.Coin
 		for _, coin := range d.Coins {
 			coinsInfo = append(coinsInfo, &pb.Coin{
@@ -232,7 +233,7 @@ func encode(data transaction.Data, rCoins coins.RCoins) (*any.Any, error) {
 			ValueToBuy:         d.ValueToBuy.String(),
 			MaximumValueToSell: d.MaximumValueToSell.String(),
 		}
-	case *transaction.SellSwapPoolData:
+	case *transaction.SellSwapPoolDataV230:
 		var coinsInfo []*pb.Coin
 		for _, coin := range d.Coins {
 			coinsInfo = append(coinsInfo, &pb.Coin{
@@ -245,7 +246,7 @@ func encode(data transaction.Data, rCoins coins.RCoins) (*any.Any, error) {
 			ValueToSell:       d.ValueToSell.String(),
 			MinimumValueToBuy: d.MinimumValueToBuy.String(),
 		}
-	case *transaction.SellAllSwapPoolData:
+	case *transaction.SellAllSwapPoolDataV230:
 		var coinsInfo []*pb.Coin
 		for _, coin := range d.Coins {
 			coinsInfo = append(coinsInfo, &pb.Coin{
@@ -308,7 +309,7 @@ func encode(data transaction.Data, rCoins coins.RCoins) (*any.Any, error) {
 	// 	}
 	case *transaction.VoteCommissionData:
 		m = priceCommissionData(d, rCoins.GetCoin(d.Coin))
-	case *transaction.VoteUpdateData:
+	case *transaction.VoteUpdateDataV230:
 		m = &pb.VoteUpdateData{
 			PubKey:  d.PubKey.String(),
 			Height:  d.Height,

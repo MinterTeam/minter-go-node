@@ -1,13 +1,14 @@
 package tests
 
 import (
+	"math/big"
+	"testing"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/transaction"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/helpers"
-	"math/big"
-	"testing"
 )
 
 func TestVoteupdate(t *testing.T) {
@@ -254,7 +255,7 @@ func TestVoteupdate(t *testing.T) {
 
 	SendBeginBlock(app, 1)
 	{
-		tx := CreateTx(app, address1, transaction.TypeVoteUpdate, transaction.VoteUpdateData{
+		tx := CreateTx(app, address1, transaction.TypeVoteUpdate, transaction.VoteUpdateDataV230{
 			PubKey:  types.Pubkey{1},
 			Height:  2,
 			Version: "a",
@@ -268,7 +269,7 @@ func TestVoteupdate(t *testing.T) {
 		}
 	}
 	{
-		tx := CreateTx(app, address2, transaction.TypeVoteUpdate, transaction.VoteUpdateData{
+		tx := CreateTx(app, address2, transaction.TypeVoteUpdate, transaction.VoteUpdateDataV230{
 			PubKey:  types.Pubkey{2},
 			Height:  2,
 			Version: "a",
@@ -282,7 +283,7 @@ func TestVoteupdate(t *testing.T) {
 		}
 	}
 	{
-		tx := CreateTx(app, address3, transaction.TypeVoteUpdate, transaction.VoteUpdateData{
+		tx := CreateTx(app, address3, transaction.TypeVoteUpdate, transaction.VoteUpdateDataV230{
 			PubKey:  types.Pubkey{3},
 			Height:  2,
 			Version: "a",
@@ -296,7 +297,7 @@ func TestVoteupdate(t *testing.T) {
 		}
 	}
 	{
-		tx := CreateTx(app, address4, transaction.TypeVoteUpdate, transaction.VoteUpdateData{
+		tx := CreateTx(app, address4, transaction.TypeVoteUpdate, transaction.VoteUpdateDataV230{
 			PubKey:  types.Pubkey{4},
 			Height:  2,
 			Version: "a",
@@ -310,7 +311,7 @@ func TestVoteupdate(t *testing.T) {
 		}
 	}
 	{
-		tx := CreateTx(app, address5, transaction.TypeVoteUpdate, transaction.VoteUpdateData{
+		tx := CreateTx(app, address5, transaction.TypeVoteUpdate, transaction.VoteUpdateDataV230{
 			PubKey:  types.Pubkey{5},
 			Height:  2,
 			Version: "aA",

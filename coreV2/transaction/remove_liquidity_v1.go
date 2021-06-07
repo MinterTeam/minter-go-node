@@ -12,7 +12,7 @@ import (
 	abcTypes "github.com/tendermint/tendermint/abci/types"
 )
 
-type RemoveLiquidityDeprecated struct {
+type RemoveLiquidityV1 struct {
 	Coin0          types.CoinID
 	Coin1          types.CoinID
 	Liquidity      *big.Int
@@ -20,14 +20,14 @@ type RemoveLiquidityDeprecated struct {
 	MinimumVolume1 *big.Int
 }
 
-func (data RemoveLiquidityDeprecated) Gas() int64 {
+func (data RemoveLiquidityV1) Gas() int64 {
 	return gasRemoveLiquidity
 }
-func (data RemoveLiquidityDeprecated) TxType() TxType {
+func (data RemoveLiquidityV1) TxType() TxType {
 	return TypeRemoveLiquidity
 }
 
-func (data RemoveLiquidityDeprecated) basicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data RemoveLiquidityV1) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.Liquidity.Sign() != 1 {
 		return &Response{
 			Code: code.DecodeError,
@@ -49,15 +49,15 @@ func (data RemoveLiquidityDeprecated) basicCheck(tx *Transaction, context *state
 	return nil
 }
 
-func (data RemoveLiquidityDeprecated) String() string {
+func (data RemoveLiquidityV1) String() string {
 	return fmt.Sprintf("REMOVE SWAP POOL")
 }
 
-func (data RemoveLiquidityDeprecated) CommissionData(price *commission.Price) *big.Int {
+func (data RemoveLiquidityV1) CommissionData(price *commission.Price) *big.Int {
 	return price.RemoveLiquidity
 }
 
-func (data RemoveLiquidityDeprecated) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
+func (data RemoveLiquidityV1) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState

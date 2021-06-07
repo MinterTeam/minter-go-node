@@ -2,13 +2,14 @@ package transaction
 
 import (
 	"fmt"
+	"math/big"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/commission"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/swap"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	abcTypes "github.com/tendermint/tendermint/abci/types"
-	"math/big"
 )
 
 type AddLiquidityData struct {
@@ -101,7 +102,7 @@ func (data AddLiquidityData) Run(tx *Transaction, context state.Interface, rewar
 	neededAmount1 := new(big.Int).Set(data.MaximumVolume1)
 
 	swapper := checkState.Swap().GetSwapper(data.Coin0, data.Coin1)
-	if isGasCommissionFromPoolSwap {
+	if isGasCommissionFromPoolSwap && swapper.GetID() == commissionPoolSwapper.GetID() {
 		if tx.GasCoin == data.Coin0 && data.Coin1.IsBaseCoin() {
 			swapper = swapper.AddLastSwapStep(commission, commissionInBaseCoin)
 		}

@@ -35,7 +35,7 @@ type tagPoolChange struct {
 	ValueOut string       `json:"value_out"`
 }
 
-type SellAllSwapPoolData struct {
+type SellAllSwapPoolDataV230 struct {
 	Coins             []types.CoinID
 	MinimumValueToBuy *big.Int
 }
@@ -44,29 +44,29 @@ type dataCommission interface {
 	commissionCoin() types.CoinID
 }
 
-func (data *SellAllSwapPoolDataDeprecated) commissionCoin() types.CoinID {
+func (data *SellAllSwapPoolDataV1) commissionCoin() types.CoinID {
 	if len(data.Coins) == 0 {
 		return 0
 	}
 	return data.Coins[0]
 }
 
-func (data *SellAllSwapPoolData) commissionCoin() types.CoinID {
+func (data *SellAllSwapPoolDataV230) commissionCoin() types.CoinID {
 	if len(data.Coins) == 0 {
 		return 0
 	}
 	return data.Coins[0]
 }
 
-func (data SellAllSwapPoolData) Gas() int64 {
+func (data SellAllSwapPoolDataV230) Gas() int64 {
 	return gasSellAllSwapPool + int64(len(data.Coins)-2)*convertDelta
 }
 
-func (data SellAllSwapPoolData) TxType() TxType {
+func (data SellAllSwapPoolDataV230) TxType() TxType {
 	return TypeSellAllSwapPool
 }
 
-func (data SellAllSwapPoolData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data SellAllSwapPoolDataV230) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if len(data.Coins) < 2 {
 		return &Response{
 			Code: code.DecodeError,
@@ -104,15 +104,15 @@ func (data SellAllSwapPoolData) basicCheck(tx *Transaction, context *state.Check
 	return nil
 }
 
-func (data SellAllSwapPoolData) String() string {
+func (data SellAllSwapPoolDataV230) String() string {
 	return fmt.Sprintf("SWAP POOL SELL ALL")
 }
 
-func (data SellAllSwapPoolData) CommissionData(price *commission.Price) *big.Int {
+func (data SellAllSwapPoolDataV230) CommissionData(price *commission.Price) *big.Int {
 	return new(big.Int).Add(price.SellAllPoolBase, new(big.Int).Mul(price.SellAllPoolDelta, big.NewInt(int64(len(data.Coins))-2)))
 }
 
-func (data SellAllSwapPoolData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
+func (data SellAllSwapPoolDataV230) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState

@@ -3,6 +3,11 @@ package cmd
 import (
 	"crypto/sha256"
 	"encoding/json"
+	"io"
+	"log"
+	"os"
+	"time"
+
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/coreV2/appdb"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
@@ -10,10 +15,6 @@ import (
 	"github.com/tendermint/go-amino"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	"github.com/tendermint/tendermint/types"
-	"io"
-	"log"
-	"os"
-	"time"
 )
 
 var (
@@ -69,9 +70,11 @@ func export(cmd *cobra.Command, args []string) error {
 		log.Panicf("Cannot load db: %s", err)
 	}
 
+	db := appdb.NewAppDB(storages.GetMinterHome(), cfg)
+
 	currentState, err := state.NewCheckStateAtHeight(height, ldb)
 	if err != nil {
-		log.Panicf("Cannot new state at given height: %s, last available height %d", err, appdb.NewAppDB(storages.GetMinterHome(), cfg).GetLastHeight())
+		log.Panicf("Cannot new state at given height: %s, last available height %d", err, db.GetLastHeight())
 	}
 
 	exportTimeStart := time.Now()
@@ -82,6 +85,8 @@ func export(cmd *cobra.Command, args []string) error {
 		log.Fatalf("Failed to validate: %s\n", err)
 	}
 	log.Printf("Verify state OK\n")
+
+	appState.Version = db.GetVersionName(height)
 
 	var jsonBytes []byte
 	if indent {

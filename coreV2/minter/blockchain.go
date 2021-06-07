@@ -107,6 +107,7 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 		haltHeight:                      uint64(cfg.HaltHeight),
 		updateStakesAndPayRewardsPeriod: period,
 		stopOk:                          make(chan struct{}),
+		executor:                        transaction.NewExecutor(transaction.GetDataV1),
 	}
 	if applicationDB.GetStartHeight() != 0 {
 		app.initState()
@@ -120,6 +121,7 @@ func graceForUpdate(height uint64) *upgrades.GracePeriod {
 
 const haltBlockV210 = 3431238
 const v230 = "v230"
+const v240 = "v240"
 
 func (blockchain *Blockchain) initState() {
 	initialHeight := blockchain.appDB.GetStartHeight()
@@ -144,18 +146,22 @@ func (blockchain *Blockchain) initState() {
 		upgrades.NewGracePeriod(haltBlockV210, haltBlockV210+120, true),
 		upgrades.NewGracePeriod(3612653, 3612653+120, true))
 	blockchain.knownUpdates = map[string]struct{}{
-		"":     {}, // default version
-		"v230": {}, // add more for update
+		"":   {}, // default version
+		v230: {}, // add more for update
+		v240: {}, // commissions
 	}
 	for _, v := range blockchain.UpdateVersions() {
 		grace.AddGracePeriods(graceForUpdate(v.Height))
 		if v.Name == v230 {
-			blockchain.executor = transaction.NewExecutor(transaction.GetData)
+			blockchain.executor = transaction.NewExecutor(transaction.GetDataV230)
+		}
+		if v.Name == v240 {
+			blockchain.executor = transaction.NewExecutor(transaction.GetDataV240)
 		}
 	}
 
 	if blockchain.executor == nil {
-		blockchain.executor = transaction.NewExecutor(transaction.GetDataDeprecated)
+		blockchain.executor = transaction.NewExecutor(transaction.GetDataV1)
 	}
 	blockchain.grace = grace
 }
@@ -171,6 +177,8 @@ func (blockchain *Blockchain) InitChain(req abciTypes.RequestInitChain) abciType
 
 	blockchain.appDB.SetStartHeight(initialHeight)
 	blockchain.initState()
+
+	// todo: use genesisState.Version
 
 	if err := blockchain.stateDeliver.Import(genesisState); err != nil {
 		panic(err)
@@ -395,7 +403,10 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 			})
 			blockchain.grace.AddGracePeriods(graceForUpdate(height))
 			if v == v230 {
-				blockchain.executor = transaction.NewExecutor(transaction.GetData)
+				blockchain.executor = transaction.NewExecutor(transaction.GetDataV230)
+			}
+			if v == v240 {
+				blockchain.executor = transaction.NewExecutor(transaction.GetDataV240)
 			}
 		}
 		blockchain.stateDeliver.Updates.Delete(height)
