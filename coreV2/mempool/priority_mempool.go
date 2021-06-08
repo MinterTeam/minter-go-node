@@ -190,7 +190,7 @@ func (mem *PriorityMempool) TxsBytes() int64 {
 	return atomic.LoadInt64(&mem.txsBytes)
 }
 
-func (mem *PriorityMempool) TxsByGasPrices() ([]uint32, uint64) {
+func (mem *PriorityMempool) txsByGasPrices() ([]uint32, uint64) {
 	gasPrices, txCount := make([]uint32, 0), uint64(0)
 	for gasPrice, count := range mem.txsGasPriceCounter {
 		if count > 0 {
@@ -201,6 +201,16 @@ func (mem *PriorityMempool) TxsByGasPrices() ([]uint32, uint64) {
 
 	sort.Slice(gasPrices, func(i, j int) bool { return gasPrices[i] > gasPrices[j] })
 	return gasPrices, txCount
+}
+
+func (mem *PriorityMempool) updateTxsCounter(gasPrice uint32) {
+	mem.txsCounter += 1
+	if _, ok := mem.txsGasPriceCounter[gasPrice]; ok {
+		mem.txsGasPriceCounter[gasPrice] += 1
+		return
+	}
+
+	mem.txsGasPriceCounter[gasPrice] = 1
 }
 
 // Lock() must be help by the caller during execution.
@@ -216,7 +226,7 @@ func (mem *PriorityMempool) Flush() {
 	_ = atomic.SwapInt64(&mem.txsBytes, 0)
 	mem.cache.Reset()
 
-	gasPrices, _ := mem.TxsByGasPrices()
+	gasPrices, _ := mem.txsByGasPrices()
 	for _, gp := range gasPrices {
 		for e := mem.txs[gp].Front(); e != nil; e = e.Next() {
 			mem.txs[gp].Remove(e)
@@ -360,13 +370,7 @@ func (mem *PriorityMempool) addTx(memTx *mempoolTx) {
 	}
 
 	e := mem.txs[tx.GasPrice].PushBack(memTx)
-
-	mem.txsCounter += 1
-	if _, ok := mem.txsGasPriceCounter[tx.GasPrice]; ok {
-		mem.txsGasPriceCounter[tx.GasPrice] += 1
-	} else {
-		mem.txsGasPriceCounter[tx.GasPrice] = 1
-	}
+	mem.updateTxsCounter(tx.GasPrice)
 
 	mem.txsMap.Store(TxKey(memTx.tx), e)
 	atomic.AddInt64(&mem.txsBytes, int64(len(memTx.tx)))
@@ -548,7 +552,7 @@ func (mem *PriorityMempool) ReapMaxBytesMaxGas(maxBytes, maxGas int64) types.Txs
 	// TODO: we will get a performance boost if we have a good estimate of avg
 	// size per tx, and set the initial capacity based off of that.
 	// txs := make([]types.Tx, 0, tmmath.MinInt(mem.txs.Len(), max/mem.avgTxSize))
-	gasPrices, txCount := mem.TxsByGasPrices()
+	gasPrices, txCount := mem.txsByGasPrices()
 	txs := make([]types.Tx, 0, txCount)
 	for _, gp := range gasPrices {
 		for e := mem.txs[gp].Front(); e != nil; e = e.Next() {
@@ -582,7 +586,7 @@ func (mem *PriorityMempool) ReapMaxTxs(max int) types.Txs {
 	mem.updateMtx.RLock()
 	defer mem.updateMtx.RUnlock()
 
-	gasPrices, txCount := mem.TxsByGasPrices()
+	gasPrices, txCount := mem.txsByGasPrices()
 	if max < 0 {
 		max = int(txCount)
 	}
@@ -672,7 +676,7 @@ func (mem *PriorityMempool) recheckTxs() {
 
 	// Push txs to proxyAppConn
 	// NOTE: globalCb may be called concurrently.
-	gasPrices, _ := mem.TxsByGasPrices()
+	gasPrices, _ := mem.txsByGasPrices()
 	for _, gp := range gasPrices {
 		for e := mem.txs[gp].Front(); e != nil; e = e.Next() {
 			memTx := e.Value.(*mempoolTx)
