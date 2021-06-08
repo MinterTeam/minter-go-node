@@ -42,7 +42,7 @@ func (s *Service) Transactions(ctx context.Context, req *pb.TransactionsRequest)
 				tags[key] = value
 			}
 
-			data, err := encode(decodedTx.GetDecodedData(), cState.Coins())
+			data, err := encode(decodedTx.GetDecodedData(), decodedTx.Type, cState.Coins())
 			if err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}

@@ -166,7 +166,7 @@ func (s *Service) blockTransaction(block *core_types.ResultBlock, blockResults *
 			tags[key] = value
 		}
 
-		data, err := encode(tx.GetDecodedData(), coins)
+		data, err := encode(tx.GetDecodedData(), tx.Type, coins)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
