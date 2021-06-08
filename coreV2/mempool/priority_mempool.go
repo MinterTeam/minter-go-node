@@ -203,7 +203,7 @@ func (mem *PriorityMempool) txsByGasPrices() ([]uint32, uint64) {
 	return gasPrices, txCount
 }
 
-func (mem *PriorityMempool) updateTxsCounter(gasPrice uint32) {
+func (mem *PriorityMempool) incrementTxsCounter(gasPrice uint32) {
 	mem.txsCounter += 1
 	if _, ok := mem.txsGasPriceCounter[gasPrice]; ok {
 		mem.txsGasPriceCounter[gasPrice] += 1
@@ -211,6 +211,11 @@ func (mem *PriorityMempool) updateTxsCounter(gasPrice uint32) {
 	}
 
 	mem.txsGasPriceCounter[gasPrice] = 1
+}
+
+func (mem *PriorityMempool) decrementTxsCounter(gasPrice uint32) {
+	mem.txsCounter -= 1
+	mem.txsGasPriceCounter[gasPrice] -= 1
 }
 
 // Lock() must be help by the caller during execution.
@@ -370,7 +375,7 @@ func (mem *PriorityMempool) addTx(memTx *mempoolTx) {
 	}
 
 	e := mem.txs[tx.GasPrice].PushBack(memTx)
-	mem.updateTxsCounter(tx.GasPrice)
+	mem.incrementTxsCounter(tx.GasPrice)
 
 	mem.txsMap.Store(TxKey(memTx.tx), e)
 	atomic.AddInt64(&mem.txsBytes, int64(len(memTx.tx)))
@@ -384,8 +389,7 @@ func (mem *PriorityMempool) removeTx(tx types.Tx, elem *clist.CElement, removeFr
 	decodedTx, _ := mem.executor.DecodeFromBytes(tx)
 
 	mem.txs[decodedTx.GasPrice].Remove(elem)
-	mem.txsGasPriceCounter[decodedTx.GasPrice] -= 1
-	mem.txsCounter -= 1
+	mem.decrementTxsCounter(decodedTx.GasPrice)
 
 	elem.DetachPrev()
 	mem.txsMap.Delete(TxKey(tx))
