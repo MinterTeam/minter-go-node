@@ -61,7 +61,7 @@ type dataCommission interface {
 	commissionCoin() types.CoinID
 }
 
-func (data *SellAllSwapPoolDataDeprecated) commissionCoin() types.CoinID {
+func (data *SellAllSwapPoolDataV1) commissionCoin() types.CoinID {
 	if len(data.Coins) == 0 {
 		return 0
 	}

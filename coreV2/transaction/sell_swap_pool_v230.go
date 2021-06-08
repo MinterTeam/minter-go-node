@@ -184,7 +184,7 @@ func (data SellSwapPoolDataV230) Run(tx *Transaction, context state.Interface, r
 		var poolIDs tagPoolsChange
 
 		for i, coinToBuy := range data.Coins[1:] {
-			amountIn, amountOut, poolID, details, owners := deliverState.Swap.PairSellWithOrders(coinToSell, coinToBuy, valueToSell, big.NewInt(0))
+			amountIn, amountOut, poolID := deliverState.Swap.PairSell(coinToSell, coinToBuy, valueToSell, big.NewInt(0))
 
 			tags := &tagPoolChange{
 				PoolID:   poolID,
@@ -192,13 +192,8 @@ func (data SellSwapPoolDataV230) Run(tx *Transaction, context state.Interface, r
 				ValueIn:  amountIn.String(),
 				CoinOut:  coinToBuy,
 				ValueOut: amountOut.String(),
-				Orders:   details,
 			}
 
-			for address, value := range owners {
-				deliverState.Accounts.AddBalance(address, coinToSell, value)
-				tags.Sellers = append(tags.Sellers, &OrderDetail{Owner: address, Value: value.String()})
-			}
 			poolIDs = append(poolIDs, tags)
 
 			if i == 0 {

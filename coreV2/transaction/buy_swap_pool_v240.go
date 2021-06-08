@@ -127,7 +127,7 @@ func (data BuySwapPoolDataV240) Run(tx *Transaction, context state.Interface, re
 			}
 
 			coinToSellModel := checkState.Coins().GetCoin(coinToSell)
-			errResp = CheckSwap(swapper, coinToSellModel, coinToBuyModel, valueToSell, valueToBuy, true)
+			errResp = CheckSwapV230(swapper, coinToSellModel, coinToBuyModel, valueToSell, valueToBuy, true)
 			if errResp != nil {
 				return *errResp
 			}
