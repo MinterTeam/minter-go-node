@@ -141,7 +141,7 @@ func GetDataV240(txType TxType) (Data, bool) {
 	case TypeRecreateToken:
 		return &RecreateTokenData{}, true
 	case TypeVoteCommission:
-		return &VoteCommissionData{}, true
+		return &VoteCommissionDataV240{}, true
 	case TypeVoteUpdate:
 		return &VoteUpdateDataV230{}, true
 	case TypeCreateSwapPool:

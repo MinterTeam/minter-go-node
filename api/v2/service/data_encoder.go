@@ -119,10 +119,6 @@ func encode(data transaction.Data, rCoins coins.RCoins) (*any.Any, error) {
 		m = &pb.MultiSendData{
 			List: list,
 		}
-	// case *transaction.PriceVoteData:
-	// 	m = &pb.PriceVoteData{
-	// 		Price: strconv.Itoa(int(d.Price)),
-	// 	}
 	case *transaction.RecreateCoinData:
 		m = &pb.RecreateCoinData{
 			Name:                 d.Name,
@@ -297,16 +293,6 @@ func encode(data transaction.Data, rCoins coins.RCoins) (*any.Any, error) {
 			PubKey:     d.PubKey.String(),
 			Commission: uint64(d.Commission),
 		}
-	// case *transaction.MoveStakeData:
-	// 	m = &pb.MoveStakeData{
-	// 		From: d.From.String(),
-	// 		To:   d.To.String(),
-	// 		Coin: &pb.Coin{
-	// 			Id:     uint64(d.Coin),
-	// 			Symbol: rCoins.GetCoin(d.Coin).GetFullSymbol(),
-	// 		},
-	// 		Stake: d.Stake.String(),
-	// 	}
 	case *transaction.VoteCommissionData:
 		m = priceCommissionData(d, rCoins.GetCoin(d.Coin))
 	case *transaction.VoteUpdateDataV230:
