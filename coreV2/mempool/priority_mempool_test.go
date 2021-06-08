@@ -226,9 +226,10 @@ func TestMempoolUpdate(t *testing.T) {
 
 	// 1. Adds valid txs to the cache
 	{
-		err := mempool.Update(1, []tmtypes.Tx{[]byte{0x01}}, abciResponses(1, abci.CodeTypeOK), nil, nil)
+		tx := createTx(t, 116)
+		err := mempool.Update(1, []tmtypes.Tx{tx}, abciResponses(1, abci.CodeTypeOK), nil, nil)
 		require.NoError(t, err)
-		err = mempool.CheckTx([]byte{0x01}, nil, tmpool.TxInfo{})
+		err = mempool.CheckTx(tx, nil, tmpool.TxInfo{})
 		if assert.Error(t, err) {
 			assert.Equal(t, tmpool.ErrTxInCache, err)
 		}
@@ -236,7 +237,7 @@ func TestMempoolUpdate(t *testing.T) {
 
 	// 2. Removes valid txs from the mempool
 	{
-		tx := createTx(t, 114)
+		tx := createTx(t, 117)
 		err := mempool.CheckTx(tx, nil, tmpool.TxInfo{})
 		require.NoError(t, err)
 		err = mempool.Update(1, []tmtypes.Tx{tx}, abciResponses(1, abci.CodeTypeOK), nil, nil)
@@ -246,7 +247,7 @@ func TestMempoolUpdate(t *testing.T) {
 
 	// 3. Removes invalid transactions from the cache and the mempool (if present)
 	{
-		tx := createTx(t, 114)
+		tx := createTx(t, 118)
 		err := mempool.CheckTx(tx, nil, tmpool.TxInfo{})
 		require.NoError(t, err)
 		err = mempool.Update(1, []tmtypes.Tx{tx}, abciResponses(1, 1), nil, nil)
