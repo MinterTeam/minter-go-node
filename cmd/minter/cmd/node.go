@@ -206,15 +206,23 @@ func startTendermintNode(app *minter.Blockchain, cfg *tmCfg.Config, logger tmLog
 	defaultDBProvider := func(ctx *tmNode.DBContext) (dbm.DB, error) {
 		switch ctx.ID {
 		case "state":
+			if stateDB == nil {
+				break
+			}
 			return stateDB, nil
 		case "blockstore":
+			if blockDB == nil {
+				break
+			}
 			return blockDB, nil
 		case "evidence":
+			if evidenceDB == nil {
+				break
+			}
 			return evidenceDB, nil
-		default:
-			dbType := dbm.BackendType(ctx.Config.DBBackend)
-			return dbm.NewDB(ctx.ID, dbType, ctx.Config.DBDir())
 		}
+		dbType := dbm.BackendType(ctx.Config.DBBackend)
+		return dbm.NewDB(ctx.ID, dbType, ctx.Config.DBDir())
 	}
 	nodeKey, err := p2p.LoadOrGenNodeKey(cfg.NodeKeyFile())
 	if err != nil {
@@ -282,10 +290,10 @@ func startTendermintNode(app *minter.Blockchain, cfg *tmCfg.Config, logger tmLog
 		tmNode.DefaultMetricsProvider(cfg.Instrumentation),
 		logger.With("module", "tendermint"),
 		tmNode.CustomReactors(map[string]p2p.Reactor{
-			"MEMPOOL":    mempoolReactor,
-			"CONSENSUS":  consensus.NewReactor(cs, true),
-			"EVIDENCE":   evidence.NewReactor(evpool),
-			"BLOCKCHAIN": bcReactor,
+			"MEMPOOL":   mempoolReactor,
+			"CONSENSUS": consensus.NewReactor(cs, true),
+			"EVIDENCE":  evidence.NewReactor(evpool),
+			// "BLOCKCHAIN": bcReactor,
 		}),
 	)
 
