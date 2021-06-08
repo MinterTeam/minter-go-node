@@ -22,6 +22,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/version"
 	"github.com/spf13/cobra"
+	bcv0 "github.com/tendermint/tendermint/blockchain/v0"
 	tmCfg "github.com/tendermint/tendermint/config"
 	"github.com/tendermint/tendermint/consensus"
 	"github.com/tendermint/tendermint/evidence"
@@ -35,7 +36,6 @@ import (
 	sm "github.com/tendermint/tendermint/state"
 	"github.com/tendermint/tendermint/store"
 	tmTypes "github.com/tendermint/tendermint/types"
-	dbm "github.com/tendermint/tm-db"
 )
 
 // RunNode is the command that allows the CLI to start a node.
@@ -195,6 +195,15 @@ func startTendermintNode(app *minter.Blockchain, cfg *tmCfg.Config, logger tmLog
 		panic(err)
 	}
 
+	genesis := getGenesis(home + "/config/genesis.json")
+	doc, err := genesis()
+	if err != nil {
+		panic(err)
+	}
+
+	/*csMetrics, p2pMetrics, memplMetrics, smMetrics*/
+	csMetrics, _, _, _ := tmNode.DefaultMetricsProvider(cfg.Instrumentation)(doc.ChainID)
+
 	creator := proxy.NewLocalClientCreator(app)
 
 	appConnMem, _ := creator.NewABCIClient()
@@ -215,35 +224,38 @@ func startTendermintNode(app *minter.Blockchain, cfg *tmCfg.Config, logger tmLog
 		priorityMempool.EnableTxsAvailable()
 	}
 
-	stateDB := dbm.NewMemDB() // each state needs its own db
+	stateDB, err := tmNode.DefaultDBProvider(&tmNode.DBContext{ID: "state", Config: cfg}) // each state needs its own db
+	if err != nil {
+		panic(err)
+	}
 	stateStore := sm.NewStore(stateDB)
 
-	blockDB := dbm.NewMemDB() // todo: mb tmNode.DefaultDBProvider ?
+	blockDB, err := tmNode.DefaultDBProvider(&tmNode.DBContext{ID: "blockstore", Config: cfg})
+	if err != nil {
+		panic(err)
+	}
 	blockStore := store.NewBlockStore(blockDB)
 
 	// Make a full instance of the evidence pool
-	evidenceDB := dbm.NewMemDB()
+	evidenceDB, err := tmNode.DefaultDBProvider(&tmNode.DBContext{ID: "evidence", Config: cfg})
+	if err != nil {
+		panic(err)
+	}
 	evpool, err := evidence.NewPool(evidenceDB, stateStore, blockStore)
 	if err != nil {
 		panic(err)
 	}
 	evpool.SetLogger(logger.With("module", "evidence"))
 
-	genesis := getGenesis(home + "/config/genesis.json")
-	doc, err := genesis()
-	if err != nil {
-		panic(err)
-	}
-
 	state, _ := stateStore.LoadFromDBOrGenesisDoc(doc)
 	// Make State
-	blockExec := sm.NewBlockExecutor(stateStore, logger, appConnMem, priorityMempool, evpool)
-	cs := consensus.NewState(cfg.Consensus, state, blockExec, blockStore, priorityMempool, evpool)
+	blockExec := sm.NewBlockExecutor(stateStore, logger.With("module", "state"), appConnMem, priorityMempool, evpool /*sm.BlockExecutorWithMetrics(smMetrics)*/)
+	cs := consensus.NewState(cfg.Consensus, state, blockExec, blockStore, priorityMempool, evpool, consensus.StateMetrics(csMetrics))
 	cs.SetLogger(cs.Logger)
 
-	// // set private validator
-	// pv :=
-	// cs.SetPrivValidator(pv)
+	var bcReactor p2p.Reactor
+	bcReactor = bcv0.NewBlockchainReactor(state.Copy(), blockExec, blockStore, cfg.FastSyncMode)
+	bcReactor.SetLogger(logger.With("module", "blockchain"))
 
 	node, err := tmNode.NewNode(
 		cfg,
@@ -255,8 +267,10 @@ func startTendermintNode(app *minter.Blockchain, cfg *tmCfg.Config, logger tmLog
 		tmNode.DefaultMetricsProvider(cfg.Instrumentation),
 		logger.With("module", "tendermint"),
 		tmNode.CustomReactors(map[string]p2p.Reactor{
-			"MEMPOOL":   mempoolReactor,
-			"CONSENSUS": consensus.NewReactor(cs, true),
+			"MEMPOOL":    mempoolReactor,
+			"CONSENSUS":  consensus.NewReactor(cs, true),
+			"EVIDENCE":   evidence.NewReactor(evpool),
+			"BLOCKCHAIN": bcReactor,
 		}),
 	)
 
