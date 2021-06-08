@@ -16,6 +16,12 @@ import (
 
 type ExecutorTx interface {
 	RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBlock uint64, currentMempool *sync.Map, minGasPrice uint32, notSaveTags bool) Response
+	DecoderTx
+}
+
+type DecoderTx interface {
+	DecodeFromBytesWithoutSig(buf []byte) (*Transaction, error)
+	DecodeFromBytes(buf []byte) (*Transaction, error)
 }
 
 type ExecutorV240 struct {

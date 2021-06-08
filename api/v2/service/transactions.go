@@ -32,7 +32,7 @@ func (s *Service) Transactions(ctx context.Context, req *pb.TransactionsRequest)
 				return nil, timeoutStatus.Err()
 			}
 
-			decodedTx, _ := s.executor.DecodeFromBytes(tx.Tx)
+			decodedTx, _ := s.decoderTx.DecodeFromBytes(tx.Tx)
 			sender, _ := decodedTx.Sender()
 
 			tags := make(map[string]string)

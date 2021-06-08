@@ -156,7 +156,7 @@ func (s *Service) blockTransaction(block *core_types.ResultBlock, blockResults *
 			continue
 		}
 
-		tx, _ := s.executor.DecodeFromBytes(rawTx)
+		tx, _ := s.decoderTx.DecodeFromBytes(rawTx)
 		sender, _ := tx.Sender()
 
 		tags := make(map[string]string)

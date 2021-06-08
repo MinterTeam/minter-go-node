@@ -42,6 +42,10 @@ func NewExecutor(decodeTxFunc func(txType TxType) (Data, bool)) ExecutorTx {
 	return &Executor{decodeTxFunc: decodeTxFunc}
 }
 
+func (e *Executor) Executor() *Executor {
+	return e
+}
+
 // RunTx executes transaction in given context
 func (e *Executor) RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBlock uint64, currentMempool *sync.Map, minGasPrice uint32, notSaveTags bool) Response {
 	lenRawTx := len(rawTx)
