@@ -235,6 +235,7 @@ func (mem *PriorityMempool) Flush() {
 		for e := mem.txs[gp].Front(); e != nil; e = e.Next() {
 			mem.txs[gp].Remove(e)
 			e.DetachPrev()
+			mem.decrementTxsCounter(gp)
 		}
 	}
 
