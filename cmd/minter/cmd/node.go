@@ -202,7 +202,7 @@ func startTendermintNode(app *minter.Blockchain, cfg *tmCfg.Config, logger tmLog
 	}
 
 	/*csMetrics, p2pMetrics, memplMetrics, smMetrics*/
-	csMetrics, _, _, _ := tmNode.DefaultMetricsProvider(cfg.Instrumentation)(doc.ChainID)
+	csMetrics, _, _, smMetrics := tmNode.DefaultMetricsProvider(cfg.Instrumentation)(doc.ChainID)
 
 	creator := proxy.NewLocalClientCreator(app)
 
@@ -249,7 +249,7 @@ func startTendermintNode(app *minter.Blockchain, cfg *tmCfg.Config, logger tmLog
 
 	state, _ := stateStore.LoadFromDBOrGenesisDoc(doc)
 	// Make State
-	blockExec := sm.NewBlockExecutor(stateStore, logger.With("module", "state"), appConnMem, priorityMempool, evpool /*sm.BlockExecutorWithMetrics(smMetrics)*/)
+	blockExec := sm.NewBlockExecutor(stateStore, logger.With("module", "state"), appConnMem, priorityMempool, evpool, sm.BlockExecutorWithMetrics(smMetrics))
 	cs := consensus.NewState(cfg.Consensus, state, blockExec, blockStore, priorityMempool, evpool, consensus.StateMetrics(csMetrics))
 	cs.SetLogger(cs.Logger)
 
