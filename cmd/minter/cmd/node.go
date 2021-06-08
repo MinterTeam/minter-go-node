@@ -3,11 +3,19 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"io"
+	"net/http"
+	_ "net/http/pprof" // nolint: gosec // securely exposed on separate, optional port
+	"net/url"
+	"os"
+	"syscall"
+
 	apiV2 "github.com/MinterTeam/minter-go-node/api/v2"
 	serviceApi "github.com/MinterTeam/minter-go-node/api/v2/service"
 	"github.com/MinterTeam/minter-go-node/cli/service"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
+	"github.com/MinterTeam/minter-go-node/coreV2/mempool"
 	"github.com/MinterTeam/minter-go-node/coreV2/minter"
 	"github.com/MinterTeam/minter-go-node/coreV2/rewards"
 	"github.com/MinterTeam/minter-go-node/coreV2/statistics"
@@ -15,6 +23,8 @@ import (
 	"github.com/MinterTeam/minter-go-node/version"
 	"github.com/spf13/cobra"
 	tmCfg "github.com/tendermint/tendermint/config"
+	"github.com/tendermint/tendermint/consensus"
+	"github.com/tendermint/tendermint/evidence"
 	tmLog "github.com/tendermint/tendermint/libs/log"
 	tmOS "github.com/tendermint/tendermint/libs/os"
 	tmNode "github.com/tendermint/tendermint/node"
@@ -22,13 +32,10 @@ import (
 	"github.com/tendermint/tendermint/privval"
 	"github.com/tendermint/tendermint/proxy"
 	rpc "github.com/tendermint/tendermint/rpc/client/local"
+	sm "github.com/tendermint/tendermint/state"
+	"github.com/tendermint/tendermint/store"
 	tmTypes "github.com/tendermint/tendermint/types"
-	"io"
-	"net/http"
-	_ "net/http/pprof" // nolint: gosec // securely exposed on separate, optional port
-	"net/url"
-	"os"
-	"syscall"
+	dbm "github.com/tendermint/tm-db"
 )
 
 // RunNode is the command that allows the CLI to start a node.
@@ -188,15 +195,69 @@ func startTendermintNode(app *minter.Blockchain, cfg *tmCfg.Config, logger tmLog
 		panic(err)
 	}
 
+	creator := proxy.NewLocalClientCreator(app)
+
+	appConnMem, _ := creator.NewABCIClient()
+	appConnMem.SetLogger(logger.With("module", "abci-client", "connection", "mempool"))
+
+	if err := appConnMem.Start(); err != nil {
+		panic(err)
+	}
+
+	priorityMempool := mempool.NewPriorityMempool(cfg.Mempool, appConnMem, 0)
+	priorityMempool.SetLogger(logger)
+
+	mempoolLogger := logger.With("module", "mempool")
+	mempoolReactor := mempool.NewReactor(cfg.Mempool, priorityMempool)
+	mempoolReactor.SetLogger(mempoolLogger)
+
+	if cfg.Consensus.WaitForTxs() {
+		priorityMempool.EnableTxsAvailable()
+	}
+
+	stateDB := dbm.NewMemDB() // each state needs its own db
+	stateStore := sm.NewStore(stateDB)
+
+	blockDB := dbm.NewMemDB() // todo: mb tmNode.DefaultDBProvider ?
+	blockStore := store.NewBlockStore(blockDB)
+
+	// Make a full instance of the evidence pool
+	evidenceDB := dbm.NewMemDB()
+	evpool, err := evidence.NewPool(evidenceDB, stateStore, blockStore)
+	if err != nil {
+		panic(err)
+	}
+	evpool.SetLogger(logger.With("module", "evidence"))
+
+	genesis := getGenesis(home + "/config/genesis.json")
+	doc, err := genesis()
+	if err != nil {
+		panic(err)
+	}
+
+	state, _ := stateStore.LoadFromDBOrGenesisDoc(doc)
+	// Make State
+	blockExec := sm.NewBlockExecutor(stateStore, logger, appConnMem, priorityMempool, evpool)
+	cs := consensus.NewState(cfg.Consensus, state, blockExec, blockStore, priorityMempool, evpool)
+	cs.SetLogger(cs.Logger)
+
+	// // set private validator
+	// pv :=
+	// cs.SetPrivValidator(pv)
+
 	node, err := tmNode.NewNode(
 		cfg,
 		privval.LoadOrGenFilePV(cfg.PrivValidatorKeyFile(), cfg.PrivValidatorStateFile()),
 		nodeKey,
-		proxy.NewLocalClientCreator(app),
-		getGenesis(home+"/config/genesis.json"),
+		creator,
+		genesis,
 		tmNode.DefaultDBProvider,
 		tmNode.DefaultMetricsProvider(cfg.Instrumentation),
 		logger.With("module", "tendermint"),
+		tmNode.CustomReactors(map[string]p2p.Reactor{
+			"MEMPOOL":   mempoolReactor,
+			"CONSENSUS": consensus.NewReactor(cs, true),
+		}),
 	)
 
 	if err != nil {
@@ -217,7 +278,11 @@ func startTendermintNode(app *minter.Blockchain, cfg *tmCfg.Config, logger tmLog
 }
 
 func getGenesis(genDocFile string) func() (doc *tmTypes.GenesisDoc, e error) {
+	var docCache *tmTypes.GenesisDoc
 	return func() (doc *tmTypes.GenesisDoc, e error) {
+		if docCache != nil {
+			return docCache, nil
+		}
 		_, err := os.Stat(genDocFile)
 		if err != nil {
 			if !os.IsNotExist(err) {
@@ -240,6 +305,7 @@ func getGenesis(genDocFile string) func() (doc *tmTypes.GenesisDoc, e error) {
 		if len(doc.AppHash) == 0 {
 			doc.AppHash = nil
 		}
+		docCache = doc
 		return doc, err
 	}
 }

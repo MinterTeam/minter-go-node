@@ -5,11 +5,12 @@ import (
 	"container/list"
 	"crypto/sha256"
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/coreV2/transaction"
-	tmpool "github.com/tendermint/tendermint/mempool"
 	"sort"
 	"sync"
 	"sync/atomic"
+
+	"github.com/MinterTeam/minter-go-node/coreV2/transaction"
+	tmpool "github.com/tendermint/tendermint/mempool"
 
 	abci "github.com/tendermint/tendermint/abci/types"
 	cfg "github.com/tendermint/tendermint/config"
@@ -29,7 +30,26 @@ const TxKeySize = sha256.Size
 
 var newline = []byte("\n")
 
-//--------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
+
+// Reactor handles mempool tx broadcasting amongst peers.
+// It maintains a map from peer ID to counter, to prevent gossiping txs to the
+// peers you received it from.
+type Reactor struct {
+	p2p.BaseReactor
+	config  *cfg.MempoolConfig
+	mempool *PriorityMempool
+}
+
+// NewReactor returns a new Reactor with the given config and mempool.
+func NewReactor(config *cfg.MempoolConfig, mempool *PriorityMempool) *Reactor {
+	memR := &Reactor{
+		config:  config,
+		mempool: mempool,
+	}
+	memR.BaseReactor = *p2p.NewBaseReactor("Mempool", memR)
+	return memR
+}
 
 // PriorityMempool is an ordered in-memory pool for transactions before they are
 // proposed in a consensus round. Transaction validity is checked using the
@@ -76,7 +96,7 @@ type PriorityMempool struct {
 	logger log.Logger
 
 	metrics  *tmpool.Metrics
-	executor *transaction.Executor
+	executor transaction.DecoderTx
 }
 
 // PriorityMempoolOption sets an optional parameter on the tmpool.
