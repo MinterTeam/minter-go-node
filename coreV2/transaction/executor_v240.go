@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"math/big"
 	"strconv"
@@ -15,39 +14,26 @@ import (
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 )
 
-const (
-	maxPayloadLength     = 10000
-	maxTxLength          = 6144 + maxPayloadLength
-	maxServiceDataLength = 128
-	stdGas               = 5000
-)
-
-// Response represents standard response from tx delivery/check
-type Response struct {
-	Code      uint32                    `json:"code,omitempty"`
-	Data      []byte                    `json:"data,omitempty"`
-	Log       string                    `json:"log,omitempty"`
-	Info      string                    `json:"-"`
-	GasWanted int64                     `json:"gas_wanted,omitempty"`
-	GasUsed   int64                     `json:"gas_used,omitempty"`
-	Tags      []abcTypes.EventAttribute `json:"tags,omitempty"`
-	GasPrice  uint32                    `json:"gas_price"`
+type ExecutorTx interface {
+	RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBlock uint64, currentMempool *sync.Map, minGasPrice uint32, notSaveTags bool) Response
+	DecoderTx
 }
 
-type Executor struct {
+type DecoderTx interface {
+	DecodeFromBytesWithoutSig(buf []byte) (*Transaction, error)
+	DecodeFromBytes(buf []byte) (*Transaction, error)
+}
+
+type ExecutorV240 struct {
+	*Executor
 	decodeTxFunc func(txType TxType) (Data, bool)
 }
 
-func NewExecutor(decodeTxFunc func(txType TxType) (Data, bool)) ExecutorTx {
-	return &Executor{decodeTxFunc: decodeTxFunc}
+func NewExecutorV240(decodeTxFunc func(txType TxType) (Data, bool)) ExecutorTx {
+	return &ExecutorV240{decodeTxFunc: decodeTxFunc, Executor: &Executor{decodeTxFunc: decodeTxFunc}}
 }
 
-func (e *Executor) Executor() *Executor {
-	return e
-}
-
-// RunTx executes transaction in given context
-func (e *Executor) RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBlock uint64, currentMempool *sync.Map, minGasPrice uint32, notSaveTags bool) Response {
+func (e *ExecutorV240) RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBlock uint64, currentMempool *sync.Map, minGasPrice uint32, notSaveTags bool) Response {
 	lenRawTx := len(rawTx)
 	if lenRawTx > maxTxLength {
 		return Response{
@@ -217,6 +203,49 @@ func (e *Executor) RunTx(context state.Interface, rawTx []byte, rewardPool *big.
 		}
 	}
 
+	if !isCheck && response.Code != 0 {
+		commissionInBaseCoin := big.NewInt(0).Add(commissions.FailedTxPrice(), big.NewInt(0).Mul(big.NewInt(tx.payloadLen()), commissions.PayloadByte))
+		commissionPoolSwapper := checkState.Swap().GetSwapper(tx.commissionCoin(), types.GetBaseCoinID())
+		gasCoin := checkState.Coins().GetCoin(tx.commissionCoin())
+		commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoin, commissionInBaseCoin)
+		if errResp != nil {
+			return *errResp
+		}
+
+		balance := checkState.Accounts().GetBalance(sender, tx.commissionCoin())
+		if balance.Sign() == 1 {
+			if balance.Cmp(commission) == -1 {
+				commission = balance
+				if isGasCommissionFromPoolSwap {
+					commissionInBaseCoin = commissionPoolSwapper.CalculateBuyForSell(commission)
+					if commissionInBaseCoin == nil || commissionInBaseCoin.Sign() == 0 {
+						return Response{
+							Code: code.CommissionCoinNotSufficient,
+							Log:  fmt.Sprint("Not possible to pay commission"),
+							Info: EncodeError(code.NewCommissionCoinNotSufficient("", "")),
+						}
+					}
+				} else if !gasCoin.ID().IsBaseCoin() && gasCoin.BaseOrHasReserve() {
+					commissionInBaseCoin, errResp = CalculateSaleReturnAndCheck(gasCoin, commission)
+					if errResp != nil {
+						return *errResp
+					}
+				}
+			}
+
+			if deliverState, ok := context.(*state.State); ok {
+				if isGasCommissionFromPoolSwap {
+					commission, commissionInBaseCoin, _ = deliverState.Swap.PairSell(tx.commissionCoin(), types.GetBaseCoinID(), commission, commissionInBaseCoin)
+				} else if !tx.commissionCoin().IsBaseCoin() {
+					deliverState.Coins.SubVolume(tx.commissionCoin(), commission)
+					deliverState.Coins.SubReserve(tx.commissionCoin(), commissionInBaseCoin)
+				}
+				deliverState.Accounts.SubBalance(sender, tx.commissionCoin(), commission)
+				rewardPool.Add(rewardPool, commissionInBaseCoin)
+			}
+		}
+	}
+
 	if notSaveTags || isCheck {
 		response.Tags = nil
 	} else {
@@ -234,20 +263,4 @@ func (e *Executor) RunTx(context state.Interface, rawTx []byte, rewardPool *big.
 	response.GasPrice = tx.GasPrice
 
 	return response
-}
-
-// EncodeError encodes error to json
-func EncodeError(data interface{}) string {
-	marshaled, err := json.Marshal(data)
-	if err != nil {
-		panic(err)
-	}
-	return string(marshaled)
-}
-
-func (tx *Transaction) commissionCoin() types.CoinID {
-	if tx.Type == TypeSellAllSwapPool || tx.Type == TypeSellAllCoin {
-		return tx.decodedData.(dataCommission).commissionCoin()
-	}
-	return tx.GasCoin
 }

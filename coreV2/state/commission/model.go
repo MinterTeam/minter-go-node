@@ -1,10 +1,11 @@
 package commission
 
 import (
-	"github.com/MinterTeam/minter-go-node/coreV2/types"
-	"github.com/MinterTeam/minter-go-node/rlp"
 	"math/big"
 	"sync"
+
+	"github.com/MinterTeam/minter-go-node/coreV2/types"
+	"github.com/MinterTeam/minter-go-node/rlp"
 )
 
 type Price struct {
@@ -51,7 +52,8 @@ type Price struct {
 	MintToken               *big.Int
 	VoteCommission          *big.Int
 	VoteUpdate              *big.Int
-	More                    []*big.Int `rlp:"tail"`
+	// todo: in v250 add FailedTx and AddOrder *big.Int
+	More []*big.Int `rlp:"tail"`
 }
 
 func (d *Price) Encode() []byte {
@@ -60,6 +62,13 @@ func (d *Price) Encode() []byte {
 		panic(err)
 	}
 	return bytes
+}
+
+func (d *Price) FailedTxPrice() *big.Int { // todo: in v250 use FailedTx
+	if len(d.More) > 0 {
+		return d.More[0]
+	}
+	return d.Send
 }
 func Decode(s string) *Price {
 	var p Price
