@@ -36,6 +36,7 @@ import (
 	sm "github.com/tendermint/tendermint/state"
 	"github.com/tendermint/tendermint/store"
 	tmTypes "github.com/tendermint/tendermint/types"
+	dbm "github.com/tendermint/tm-db"
 )
 
 // RunNode is the command that allows the CLI to start a node.
@@ -190,6 +191,31 @@ func checkRlimits() error {
 }
 
 func startTendermintNode(app *minter.Blockchain, cfg *tmCfg.Config, logger tmLog.Logger, home string) *tmNode.Node {
+	stateDB, err := tmNode.DefaultDBProvider(&tmNode.DBContext{ID: "state", Config: cfg}) // each state needs its own db
+	if err != nil {
+		panic(err)
+	}
+	blockDB, err := tmNode.DefaultDBProvider(&tmNode.DBContext{ID: "blockstore", Config: cfg})
+	if err != nil {
+		panic(err)
+	}
+	evidenceDB, err := tmNode.DefaultDBProvider(&tmNode.DBContext{ID: "evidence", Config: cfg})
+	if err != nil {
+		panic(err)
+	}
+	defaultDBProvider := func(ctx *tmNode.DBContext) (dbm.DB, error) {
+		switch ctx.ID {
+		case "state":
+			return stateDB, nil
+		case "blockstore":
+			return blockDB, nil
+		case "evidence":
+			return evidenceDB, nil
+		default:
+			dbType := dbm.BackendType(ctx.Config.DBBackend)
+			return dbm.NewDB(ctx.ID, dbType, ctx.Config.DBDir())
+		}
+	}
 	nodeKey, err := p2p.LoadOrGenNodeKey(cfg.NodeKeyFile())
 	if err != nil {
 		panic(err)
@@ -202,7 +228,7 @@ func startTendermintNode(app *minter.Blockchain, cfg *tmCfg.Config, logger tmLog
 	}
 
 	/*csMetrics, p2pMetrics, memplMetrics, smMetrics*/
-	csMetrics, _, _, smMetrics := tmNode.DefaultMetricsProvider(cfg.Instrumentation)(doc.ChainID)
+	// csMetrics, _, _, smMetrics := tmNode.DefaultMetricsProvider(cfg.Instrumentation)(doc.ChainID)
 
 	creator := proxy.NewLocalClientCreator(app)
 
@@ -224,23 +250,12 @@ func startTendermintNode(app *minter.Blockchain, cfg *tmCfg.Config, logger tmLog
 		priorityMempool.EnableTxsAvailable()
 	}
 
-	stateDB, err := tmNode.DefaultDBProvider(&tmNode.DBContext{ID: "state", Config: cfg}) // each state needs its own db
-	if err != nil {
-		panic(err)
-	}
 	stateStore := sm.NewStore(stateDB)
 
-	blockDB, err := tmNode.DefaultDBProvider(&tmNode.DBContext{ID: "blockstore", Config: cfg})
-	if err != nil {
-		panic(err)
-	}
 	blockStore := store.NewBlockStore(blockDB)
 
 	// Make a full instance of the evidence pool
-	evidenceDB, err := tmNode.DefaultDBProvider(&tmNode.DBContext{ID: "evidence", Config: cfg})
-	if err != nil {
-		panic(err)
-	}
+
 	evpool, err := evidence.NewPool(evidenceDB, stateStore, blockStore)
 	if err != nil {
 		panic(err)
@@ -249,8 +264,8 @@ func startTendermintNode(app *minter.Blockchain, cfg *tmCfg.Config, logger tmLog
 
 	state, _ := stateStore.LoadFromDBOrGenesisDoc(doc)
 	// Make State
-	blockExec := sm.NewBlockExecutor(stateStore, logger.With("module", "state"), appConnMem, priorityMempool, evpool, sm.BlockExecutorWithMetrics(smMetrics))
-	cs := consensus.NewState(cfg.Consensus, state, blockExec, blockStore, priorityMempool, evpool, consensus.StateMetrics(csMetrics))
+	blockExec := sm.NewBlockExecutor(stateStore, logger.With("module", "state"), appConnMem, priorityMempool, evpool /*sm.BlockExecutorWithMetrics(smMetrics)*/)
+	cs := consensus.NewState(cfg.Consensus, state, blockExec, blockStore, priorityMempool, evpool /*consensus.StateMetrics(csMetrics)*/)
 	cs.SetLogger(cs.Logger)
 
 	var bcReactor p2p.Reactor
@@ -263,7 +278,7 @@ func startTendermintNode(app *minter.Blockchain, cfg *tmCfg.Config, logger tmLog
 		nodeKey,
 		creator,
 		genesis,
-		tmNode.DefaultDBProvider,
+		defaultDBProvider,
 		tmNode.DefaultMetricsProvider(cfg.Instrumentation),
 		logger.With("module", "tendermint"),
 		tmNode.CustomReactors(map[string]p2p.Reactor{
