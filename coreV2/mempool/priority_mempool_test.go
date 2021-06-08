@@ -205,9 +205,9 @@ func TestMempoolFilters(t *testing.T) {
 		{10, nopPreFilter, tmpool.PostCheckMaxGas(1), 10},
 		{10, nopPreFilter, tmpool.PostCheckMaxGas(3000), 10},
 		{10, tmpool.PreCheckMaxBytes(10), tmpool.PostCheckMaxGas(20), 0},
-		{10, tmpool.PreCheckMaxBytes(30), tmpool.PostCheckMaxGas(20), 10},
-		{10, tmpool.PreCheckMaxBytes(22), tmpool.PostCheckMaxGas(1), 10},
-		{10, tmpool.PreCheckMaxBytes(22), tmpool.PostCheckMaxGas(0), 0},
+		{10, tmpool.PreCheckMaxBytes(126), tmpool.PostCheckMaxGas(116), 10},
+		{10, tmpool.PreCheckMaxBytes(118), tmpool.PostCheckMaxGas(1), 10},
+		{10, tmpool.PreCheckMaxBytes(118), tmpool.PostCheckMaxGas(0), 0},
 	}
 	for tcIndex, tt := range tests {
 		err := mempool.Update(1, emptyTxArr, abciResponses(len(emptyTxArr), abci.CodeTypeOK), tt.preFilter, tt.postFilter)
