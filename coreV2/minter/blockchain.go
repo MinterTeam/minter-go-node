@@ -191,6 +191,8 @@ func (blockchain *Blockchain) InitChain(req abciTypes.RequestInitChain) abciType
 	blockchain.appDB.SetStartHeight(initialHeight)
 	blockchain.initState()
 
+	// todo: use genesisState.Version
+
 	if err := blockchain.stateDeliver.Import(genesisState); err != nil {
 		panic(err)
 	}

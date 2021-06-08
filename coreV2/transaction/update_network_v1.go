@@ -14,26 +14,26 @@ import (
 	abcTypes "github.com/tendermint/tendermint/abci/types"
 )
 
-type VoteUpdateDataDeprecated struct {
+type VoteUpdateDataV1 struct {
 	Version string
 	PubKey  types.Pubkey
 	Height  uint64
 }
 
-func (data VoteUpdateDataDeprecated) Gas() int64 {
+func (data VoteUpdateDataV1) Gas() int64 {
 	return gasVoteUpdate
 }
-func (data VoteUpdateDataDeprecated) TxType() TxType {
+func (data VoteUpdateDataV1) TxType() TxType {
 	return TypeVoteUpdate
 }
 
-func (data VoteUpdateDataDeprecated) GetPubKey() types.Pubkey {
+func (data VoteUpdateDataV1) GetPubKey() types.Pubkey {
 	return data.PubKey
 }
 
 var allowedVersionNameRegexpCompileDeprecated, _ = regexp.Compile("^[a-zA-Z0-9]{1,20}$")
 
-func (data VoteUpdateDataDeprecated) basicCheck(tx *Transaction, context *state.CheckState, block uint64) *Response {
+func (data VoteUpdateDataV1) basicCheck(tx *Transaction, context *state.CheckState, block uint64) *Response {
 	if !allowedVersionNameRegexpCompileDeprecated.Match([]byte(data.Version)) {
 		return &Response{
 			Code: code.WrongUpdateVersionName,
@@ -60,15 +60,15 @@ func (data VoteUpdateDataDeprecated) basicCheck(tx *Transaction, context *state.
 	return checkCandidateOwnership(data, tx, context)
 }
 
-func (data VoteUpdateDataDeprecated) String() string {
+func (data VoteUpdateDataV1) String() string {
 	return fmt.Sprintf("UPDATE NETWORK on height: %d", data.Height)
 }
 
-func (data VoteUpdateDataDeprecated) CommissionData(price *commission.Price) *big.Int {
+func (data VoteUpdateDataV1) CommissionData(price *commission.Price) *big.Int {
 	return price.VoteUpdate
 }
 
-func (data VoteUpdateDataDeprecated) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
+func (data VoteUpdateDataV1) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState

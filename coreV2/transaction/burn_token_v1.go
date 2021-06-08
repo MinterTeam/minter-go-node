@@ -11,19 +11,19 @@ import (
 	abcTypes "github.com/tendermint/tendermint/abci/types"
 )
 
-type BurnTokenDataDeprecated struct {
+type BurnTokenDataV1 struct {
 	Coin  types.CoinID
 	Value *big.Int
 }
 
-func (data BurnTokenDataDeprecated) Gas() int64 {
+func (data BurnTokenDataV1) Gas() int64 {
 	return gasBurnToken
 }
-func (data BurnTokenDataDeprecated) TxType() TxType {
+func (data BurnTokenDataV1) TxType() TxType {
 	return TypeBurnToken
 }
 
-func (data BurnTokenDataDeprecated) basicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data BurnTokenDataV1) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	coin := context.Coins().GetCoin(data.Coin)
 	if coin == nil {
 		return &Response{
@@ -67,15 +67,15 @@ func (data BurnTokenDataDeprecated) basicCheck(tx *Transaction, context *state.C
 	return nil
 }
 
-func (data BurnTokenDataDeprecated) String() string {
+func (data BurnTokenDataV1) String() string {
 	return fmt.Sprintf("BURN COIN: %d", data.Coin)
 }
 
-func (data BurnTokenDataDeprecated) CommissionData(price *commission.Price) *big.Int {
+func (data BurnTokenDataV1) CommissionData(price *commission.Price) *big.Int {
 	return price.BurnToken
 }
 
-func (data BurnTokenDataDeprecated) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
+func (data BurnTokenDataV1) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState

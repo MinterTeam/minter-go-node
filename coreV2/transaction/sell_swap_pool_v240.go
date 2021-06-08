@@ -11,21 +11,21 @@ import (
 	abcTypes "github.com/tendermint/tendermint/abci/types"
 )
 
-type SellSwapPoolDataDeprecated struct {
+type SellSwapPoolDataV240 struct {
 	Coins             []types.CoinID
 	ValueToSell       *big.Int
 	MinimumValueToBuy *big.Int
 }
 
-func (data SellSwapPoolDataDeprecated) TxType() TxType {
+func (data SellSwapPoolDataV240) TxType() TxType {
 	return TypeSellSwapPool
 }
 
-func (data SellSwapPoolDataDeprecated) Gas() int64 {
+func (data SellSwapPoolDataV240) Gas() int64 {
 	return gasSellSwapPool + int64(len(data.Coins)-2)*convertDelta
 }
 
-func (data SellSwapPoolDataDeprecated) basicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data SellSwapPoolDataV240) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if len(data.Coins) < 2 {
 		return &Response{
 			Code: code.DecodeError,
@@ -64,15 +64,15 @@ func (data SellSwapPoolDataDeprecated) basicCheck(tx *Transaction, context *stat
 	return nil
 }
 
-func (data SellSwapPoolDataDeprecated) String() string {
+func (data SellSwapPoolDataV240) String() string {
 	return fmt.Sprintf("SWAP POOL SELL")
 }
 
-func (data SellSwapPoolDataDeprecated) CommissionData(price *commission.Price) *big.Int {
+func (data SellSwapPoolDataV240) CommissionData(price *commission.Price) *big.Int {
 	return new(big.Int).Add(price.SellPoolBase, new(big.Int).Mul(price.SellPoolDelta, big.NewInt(int64(len(data.Coins))-2)))
 }
 
-func (data SellSwapPoolDataDeprecated) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
+func (data SellSwapPoolDataV240) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -96,13 +96,22 @@ func (data SellSwapPoolDataDeprecated) Run(tx *Transaction, context state.Interf
 
 	lastIteration := len(data.Coins[1:]) - 1
 	{
+		checkDuplicatePools := map[uint32]struct{}{}
 		coinToSell := data.Coins[0]
 		coinToSellModel := checkState.Coins().GetCoin(coinToSell)
 		valueToSell := data.ValueToSell
 		valueToBuy := big.NewInt(0)
 		for i, coinToBuy := range data.Coins[1:] {
 			swapper := checkState.Swap().GetSwapper(coinToSell, coinToBuy)
-			if isGasCommissionFromPoolSwap {
+			if _, ok := checkDuplicatePools[swapper.GetID()]; ok {
+				return Response{
+					Code: code.DuplicatePoolInRoute,
+					Log:  fmt.Sprintf("Forbidden to repeat the pool in the route, pool duplicate %d", swapper.GetID()),
+					Info: EncodeError(code.NewDuplicatePoolInRouteCode(swapper.GetID())),
+				}
+			}
+			checkDuplicatePools[swapper.GetID()] = struct{}{}
+			if isGasCommissionFromPoolSwap && swapper.GetID() == commissionPoolSwapper.GetID() {
 				if tx.GasCoin == coinToSell && coinToBuy.IsBaseCoin() {
 					swapper = swapper.AddLastSwapStep(commission, commissionInBaseCoin)
 				}
@@ -116,7 +125,7 @@ func (data SellSwapPoolDataDeprecated) Run(tx *Transaction, context state.Interf
 			}
 
 			coinToBuyModel := checkState.Coins().GetCoin(coinToBuy)
-			errResp = CheckSwapV230(swapper, coinToSellModel, coinToBuyModel, valueToSell, valueToBuy, false)
+			errResp = CheckSwap(swapper, coinToSellModel, coinToBuyModel, valueToSell, valueToBuy, false)
 			if errResp != nil {
 				return *errResp
 			}

@@ -84,7 +84,7 @@ func (data AddLiquidityData) Run(tx *Transaction, context state.Interface, rewar
 	neededAmount1 := new(big.Int).Set(data.MaximumVolume1)
 
 	swapper := checkState.Swap().GetSwapper(data.Coin0, data.Coin1)
-	if isGasCommissionFromPoolSwap {
+	if isGasCommissionFromPoolSwap && swapper.GetID() == commissionPoolSwapper.GetID() {
 		if tx.GasCoin == data.Coin0 && data.Coin1.IsBaseCoin() {
 			swapper = swapper.AddLastSwapStepWithOrders(commission, commissionInBaseCoin)
 		}

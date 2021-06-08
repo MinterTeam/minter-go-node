@@ -116,7 +116,7 @@ func TestRemoveExchangeLiquidityTx_v230Ok(t *testing.T) {
 	{
 		balance := cState.Accounts.GetBalance(addr, liquidityCoinID)
 		t.Log(balance)
-		data := RemoveLiquidity{
+		data := RemoveLiquidityV230{
 			Coin0:     coin,
 			Coin1:     coin1,
 			Liquidity: balance,
@@ -264,7 +264,7 @@ func TestRemoveExchangeLiquidityTx_v230Bug(t *testing.T) {
 	{
 		balance := cState.Accounts.GetBalance(addr, liquidityCoinID)
 		t.Log(balance)
-		data := RemoveLiquidity{
+		data := RemoveLiquidityV230{
 			Coin0:     coin,
 			Coin1:     coin1,
 			Liquidity: balance,
@@ -369,7 +369,7 @@ func TestRemoveExchangeLiquidityTx_one(t *testing.T) {
 
 	{
 		_, _, coinID := cState.Swap.SwapPool(coin, coin1)
-		data := RemoveLiquidity{
+		data := RemoveLiquidityV230{
 			Coin0:     coin,
 			Coin1:     coin1,
 			Liquidity: cState.Accounts.GetBalance(addr, cState.Coins.GetCoinBySymbol(LiquidityCoinSymbol(coinID), 0).ID()),
@@ -524,7 +524,7 @@ func TestRemoveExchangeLiquidityTx_2(t *testing.T) {
 	}
 	{
 		_, _, coinID := cState.Swap.SwapPool(coin, coin1)
-		data := RemoveLiquidity{
+		data := RemoveLiquidityV230{
 			Coin0:     coin,
 			Coin1:     coin1,
 			Liquidity: cState.Accounts.GetBalance(addr2, cState.Coins.GetCoinBySymbol(LiquidityCoinSymbol(coinID), 0).ID()),
@@ -679,7 +679,7 @@ func TestRemoveExchangeLiquidityTx_3(t *testing.T) {
 	}
 	{
 		_, _, coinID := cState.Swap.SwapPool(coin, coin1)
-		data := RemoveLiquidity{
+		data := RemoveLiquidityV230{
 			Coin0:     coin,
 			Coin1:     coin1,
 			Liquidity: cState.Accounts.GetBalance(addr2, cState.Coins.GetCoinBySymbol(LiquidityCoinSymbol(coinID), 0).ID()),

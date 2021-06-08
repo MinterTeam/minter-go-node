@@ -11,20 +11,20 @@ import (
 	abcTypes "github.com/tendermint/tendermint/abci/types"
 )
 
-type SellAllSwapPoolDataDeprecated struct {
+type SellAllSwapPoolDataV1 struct {
 	Coins             []types.CoinID
 	MinimumValueToBuy *big.Int
 }
 
-func (data *SellAllSwapPoolDataDeprecated) Gas() int64 {
+func (data *SellAllSwapPoolDataV1) Gas() int64 {
 	return gasSellAllSwapPool + int64(len(data.Coins)-2)*convertDelta
 }
 
-func (data *SellAllSwapPoolDataDeprecated) TxType() TxType {
+func (data *SellAllSwapPoolDataV1) TxType() TxType {
 	return TypeSellAllSwapPool
 }
 
-func (data SellAllSwapPoolDataDeprecated) basicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data SellAllSwapPoolDataV1) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if len(data.Coins) < 2 {
 		return &Response{
 			Code: code.DecodeError,
@@ -62,15 +62,15 @@ func (data SellAllSwapPoolDataDeprecated) basicCheck(tx *Transaction, context *s
 	return nil
 }
 
-func (data SellAllSwapPoolDataDeprecated) String() string {
+func (data SellAllSwapPoolDataV1) String() string {
 	return fmt.Sprintf("SWAP POOL SELL ALL")
 }
 
-func (data SellAllSwapPoolDataDeprecated) CommissionData(price *commission.Price) *big.Int {
+func (data SellAllSwapPoolDataV1) CommissionData(price *commission.Price) *big.Int {
 	return new(big.Int).Add(price.SellAllPoolBase, new(big.Int).Mul(price.SellAllPoolDelta, big.NewInt(int64(len(data.Coins))-2)))
 }
 
-func (data SellAllSwapPoolDataDeprecated) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
+func (data SellAllSwapPoolDataV1) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState

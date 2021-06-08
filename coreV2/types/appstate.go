@@ -26,6 +26,7 @@ type AppState struct {
 	UsedChecks          []UsedCheck      `json:"used_checks,omitempty"`
 	MaxGas              uint64           `json:"max_gas"`
 	TotalSlashed        string           `json:"total_slashed"`
+	Version             string           `json:"version,omitempty"`
 }
 
 func (s *AppState) Verify() error {
