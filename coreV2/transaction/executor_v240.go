@@ -204,7 +204,11 @@ func (e *ExecutorV240) RunTx(context state.Interface, rawTx []byte, rewardPool *
 	}
 
 	if !isCheck && response.Code != 0 {
-		commissionInBaseCoin := tx.Commission(big.NewInt(0).Add(commissions.FailedTxPrice(), big.NewInt(0).Mul(big.NewInt(tx.payloadLen()), commissions.PayloadByte)))
+		commissionInBaseCoin := big.NewInt(0).Add(commissions.FailedTxPrice(), big.NewInt(0).Mul(big.NewInt(tx.payloadLen()), commissions.PayloadByte))
+		if types.CurrentChainID == types.ChainTestnet && currentBlock > 4451966 { // todo: remove check
+			commissionInBaseCoin = tx.Commission(commissionInBaseCoin)
+		}
+
 		commissionPoolSwapper := checkState.Swap().GetSwapper(tx.commissionCoin(), types.GetBaseCoinID())
 		gasCoin := checkState.Coins().GetCoin(tx.commissionCoin())
 		commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoin, commissionInBaseCoin)

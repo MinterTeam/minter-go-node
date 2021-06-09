@@ -5,6 +5,8 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"math/big"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/commission"
@@ -12,7 +14,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"golang.org/x/crypto/sha3"
-	"math/big"
 )
 
 // TxType of transaction is determined by a single byte.
@@ -217,8 +218,9 @@ func (tx *Transaction) payloadLen() int64 {
 	return int64(len(tx.Payload) + len(tx.ServiceData))
 }
 
-func (tx *Transaction) Commission(gas *big.Int) *big.Int {
-	return big.NewInt(0).Mul(big.NewInt(int64(tx.GasPrice)), gas)
+// Commission returns price multiplier gasPrice
+func (tx *Transaction) Commission(price *big.Int) *big.Int {
+	return big.NewInt(0).Mul(big.NewInt(int64(tx.GasPrice)), price)
 }
 
 func (tx *Transaction) String() string {
