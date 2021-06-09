@@ -59,6 +59,10 @@ type PriorityMempool struct {
 	txsCounter         int
 	proxyAppConn       proxy.AppConnMempool
 
+	// locks
+	txsmx  sync.RWMutex
+	txscmx sync.RWMutex
+
 	// Track whether we're rechecking txs.
 	// These are not protected by a mutex and are expected to be mutated in
 	// serial (ie. by abci responses which are called in serial).
@@ -204,6 +208,9 @@ func (mem *PriorityMempool) txsByGasPrices() ([]uint32, uint64) {
 }
 
 func (mem *PriorityMempool) incrementTxsCounter(gasPrice uint32) {
+	mem.txscmx.Lock()
+	defer mem.txscmx.Unlock()
+
 	mem.txsCounter += 1
 	if _, ok := mem.txsGasPriceCounter[gasPrice]; ok {
 		mem.txsGasPriceCounter[gasPrice] += 1
@@ -214,6 +221,9 @@ func (mem *PriorityMempool) incrementTxsCounter(gasPrice uint32) {
 }
 
 func (mem *PriorityMempool) decrementTxsCounter(gasPrice uint32) {
+	mem.txscmx.Lock()
+	defer mem.txscmx.Unlock()
+
 	mem.txsCounter -= 1
 	mem.txsGasPriceCounter[gasPrice] -= 1
 }
@@ -392,11 +402,13 @@ func (mem *PriorityMempool) addTx(memTx *mempoolTx) {
 		panic(fmt.Sprintf("failed to decode tx: %X", memTx.tx))
 	}
 
+	mem.txsmx.Lock()
 	if _, ok := mem.txs[tx.GasPrice]; !ok {
 		mem.txs[tx.GasPrice] = clist.New()
 	}
-
 	e := mem.txs[tx.GasPrice].PushBack(memTx)
+	mem.txsmx.Unlock()
+
 	mem.incrementTxsCounter(tx.GasPrice)
 	mem.addGasPrice(tx.GasPrice)
 
@@ -411,7 +423,10 @@ func (mem *PriorityMempool) addTx(memTx *mempoolTx) {
 func (mem *PriorityMempool) removeTx(tx types.Tx, elem *clist.CElement, removeFromCache bool) {
 	decodedTx, _ := mem.executor.DecodeFromBytes(tx)
 
+	mem.txsmx.Lock()
 	mem.txs[decodedTx.GasPrice].Remove(elem)
+	mem.txsmx.Unlock()
+
 	mem.decrementTxsCounter(decodedTx.GasPrice)
 
 	elem.DetachPrev()
@@ -543,7 +558,9 @@ func (mem *PriorityMempool) resCbRecheck(req *abci.Request, res *abci.Response) 
 							break
 						}
 
+						mem.txsmx.RLock()
 						mem.recheckCursor = mem.txs[mem.gasPrices[k-1]].Front()
+						mem.txsmx.RUnlock()
 						break
 					}
 				}
@@ -711,8 +728,10 @@ func (mem *PriorityMempool) recheckTxs() {
 	}
 
 	// TODO: handle recheck
+	mem.txsmx.RLock()
 	mem.recheckCursor = mem.txs[mem.gasPrices[len(mem.gasPrices)-1]].Front()
 	mem.recheckEnd = mem.txs[mem.gasPrices[0]].Back()
+	mem.txsmx.RUnlock()
 
 	// Push txs to proxyAppConn
 	// NOTE: globalCb may be called concurrently.

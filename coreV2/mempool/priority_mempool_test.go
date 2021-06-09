@@ -599,40 +599,41 @@ func TestMempoolTxsBytes(t *testing.T) {
 	mempool, cleanup = newMempoolWithApp(cc)
 	defer cleanup()
 
-	tx := createTx(t, 124)
+	//tx := createTx(t, 124)
+	//err = mempool.CheckTx(tx, nil, tmpool.TxInfo{})
+	//require.NoError(t, err)
+	//assert.EqualValues(t, 124, mempool.TxsBytes())
+
+	//appConnCon, _ := cc.NewABCIClient()
+	//appConnCon.SetLogger(log.TestingLogger().With("module", "abci-client", "connection", "consensus"))
+	//err = appConnCon.Start()
+	//require.Nil(t, err)
+	//t.Cleanup(func() {
+	//	if err := appConnCon.Stop(); err != nil {
+	//		t.Error(err)
+	//	}
+	//})
+	//res, err := appConnCon.DeliverTxSync(abci.RequestDeliverTx{Tx: tx})
+	//require.NoError(t, err)
+	//require.EqualValues(t, uint32(0), res.Code)
+	//res2, err := appConnCon.CommitSync()
+	//require.NoError(t, err)
+	//require.NotEmpty(t, res2.Data)
+	//
+	//// Pretend like we committed nothing so txBytes gets rechecked and removed.
+	//err = mempool.Update(1, []tmtypes.Tx{}, abciResponses(0, abci.CodeTypeOK), nil, nil)
+	//require.NoError(t, err)
+	//assert.EqualValues(t, 0, mempool.TxsBytes())
+
+	// 7. Test RemoveTxByKey function
+	tx := createTx(t, 123)
 	err = mempool.CheckTx(tx, nil, tmpool.TxInfo{})
 	require.NoError(t, err)
-	assert.EqualValues(t, 124, mempool.TxsBytes())
-
-	appConnCon, _ := cc.NewABCIClient()
-	appConnCon.SetLogger(log.TestingLogger().With("module", "abci-client", "connection", "consensus"))
-	err = appConnCon.Start()
-	require.Nil(t, err)
-	t.Cleanup(func() {
-		if err := appConnCon.Stop(); err != nil {
-			t.Error(err)
-		}
-	})
-	res, err := appConnCon.DeliverTxSync(abci.RequestDeliverTx{Tx: tx})
-	require.NoError(t, err)
-	require.EqualValues(t, uint32(0), res.Code)
-	res2, err := appConnCon.CommitSync()
-	require.NoError(t, err)
-	require.NotEmpty(t, res2.Data)
-
-	// Pretend like we committed nothing so txBytes gets rechecked and removed.
-	err = mempool.Update(1, []tmtypes.Tx{}, abciResponses(0, abci.CodeTypeOK), nil, nil)
-	require.NoError(t, err)
+	assert.EqualValues(t, 123, mempool.TxsBytes())
+	mempool.RemoveTxByKey(TxKey(createTx(t, 124)), true)
+	assert.EqualValues(t, 123, mempool.TxsBytes())
+	mempool.RemoveTxByKey(TxKey(tx), true)
 	assert.EqualValues(t, 0, mempool.TxsBytes())
-
-	//// 7. Test RemoveTxByKey function
-	//err = mempool.CheckTx([]byte{0x06}, nil, tmpool.TxInfo{})
-	//require.NoError(t, err)
-	//assert.EqualValues(t, 1, mempool.TxsBytes())
-	//mempool.RemoveTxByKey(TxKey([]byte{0x07}), true)
-	//assert.EqualValues(t, 1, mempool.TxsBytes())
-	//mempool.RemoveTxByKey(TxKey([]byte{0x06}), true)
-	//assert.EqualValues(t, 0, mempool.TxsBytes())
 
 }
 
