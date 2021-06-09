@@ -292,10 +292,10 @@ func startTendermintNode(app *minter.Blockchain, cfg *tmCfg.Config, logger tmLog
 		tmNode.DefaultMetricsProvider(cfg.Instrumentation),
 		logger.With("module", "tendermint"),
 		tmNode.CustomReactors(map[string]p2p.Reactor{
-			"MEMPOOL":   mempoolReactor,
-			"CONSENSUS": consensus.NewReactor(cs, true),
-			"EVIDENCE":  evidence.NewReactor(evpool),
-			// "BLOCKCHAIN": bcReactor,
+			"MEMPOOL":    mempoolReactor,
+			"CONSENSUS":  consensus.NewReactor(cs, true),
+			"EVIDENCE":   evidence.NewReactor(evpool),
+			"BLOCKCHAIN": bcReactor,
 		}),
 	)
 
