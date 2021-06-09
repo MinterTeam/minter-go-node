@@ -243,7 +243,7 @@ func (mem *PriorityMempool) Flush() {
 
 	gasPrices, _ := mem.txsByGasPrices()
 	for _, gp := range gasPrices {
-		for e := mem.txs[gp].Front(); e != nil; e = e.Next() {
+		for e := mem.getTxByGasPrice(gp).Front(); e != nil; e = e.Next() {
 			mem.txsmx.Lock()
 			mem.txs[gp].Remove(e)
 			mem.txsmx.Unlock()
@@ -377,6 +377,12 @@ func (mem *PriorityMempool) reqResCb(
 			externalCb(res)
 		}
 	}
+}
+
+func (mem *PriorityMempool) getTxByGasPrice(gp uint32) *clist.CList {
+	mem.txsmx.RLock()
+	defer mem.txsmx.RUnlock()
+	return mem.txs[gp]
 }
 
 func (mem *PriorityMempool) addGasPrice(gp uint32) {
@@ -561,9 +567,7 @@ func (mem *PriorityMempool) resCbRecheck(req *abci.Request, res *abci.Response) 
 							break
 						}
 
-						mem.txsmx.RLock()
-						mem.recheckCursor = mem.txs[mem.gasPrices[k-1]].Front()
-						mem.txsmx.RUnlock()
+						mem.recheckCursor = mem.getTxByGasPrice(mem.gasPrices[k-1]).Front()
 						break
 					}
 				}
@@ -615,7 +619,7 @@ func (mem *PriorityMempool) ReapMaxBytesMaxGas(maxBytes, maxGas int64) types.Txs
 	gasPrices, txCount := mem.txsByGasPrices()
 	txs := make([]types.Tx, 0, txCount)
 	for _, gp := range gasPrices {
-		for e := mem.txs[gp].Front(); e != nil; e = e.Next() {
+		for e := mem.getTxByGasPrice(gp).Front(); e != nil; e = e.Next() {
 			memTx := e.Value.(*mempoolTx)
 
 			dataSize := types.ComputeProtoSizeForTxs(append(txs, memTx.tx))
@@ -653,7 +657,7 @@ func (mem *PriorityMempool) ReapMaxTxs(max int) types.Txs {
 
 	txs := make([]types.Tx, 0, tmmath.MinInt(int(txCount), max))
 	for _, gp := range gasPrices {
-		for e := mem.txs[gp].Front(); e != nil && len(txs) <= max; e = e.Next() {
+		for e := mem.getTxByGasPrice(gp).Front(); e != nil && len(txs) <= max; e = e.Next() {
 			memTx := e.Value.(*mempoolTx)
 			txs = append(txs, memTx.tx)
 		}
@@ -731,16 +735,14 @@ func (mem *PriorityMempool) recheckTxs() {
 	}
 
 	// TODO: handle recheck
-	mem.txsmx.RLock()
-	mem.recheckCursor = mem.txs[mem.gasPrices[len(mem.gasPrices)-1]].Front()
-	mem.recheckEnd = mem.txs[mem.gasPrices[0]].Back()
-	mem.txsmx.RUnlock()
+	mem.recheckCursor = mem.getTxByGasPrice(mem.gasPrices[len(mem.gasPrices)-1]).Front()
+	mem.recheckEnd = mem.getTxByGasPrice(mem.gasPrices[0]).Back()
 
 	// Push txs to proxyAppConn
 	// NOTE: globalCb may be called concurrently.
 	gasPrices, _ := mem.txsByGasPrices()
 	for _, gp := range gasPrices {
-		for e := mem.txs[gp].Front(); e != nil; e = e.Next() {
+		for e := mem.getTxByGasPrice(gp).Front(); e != nil; e = e.Next() {
 			memTx := e.Value.(*mempoolTx)
 			mem.proxyAppConn.CheckTxAsync(abci.RequestCheckTx{
 				Tx:   memTx.tx,
