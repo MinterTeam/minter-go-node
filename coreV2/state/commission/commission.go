@@ -3,14 +3,15 @@ package commission
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/coreV2/types"
-	"github.com/MinterTeam/minter-go-node/helpers"
-	"github.com/MinterTeam/minter-go-node/rlp"
-	"github.com/cosmos/iavl"
 	"math/big"
 	"sort"
 	"sync"
 	"sync/atomic"
+
+	"github.com/MinterTeam/minter-go-node/coreV2/types"
+	"github.com/MinterTeam/minter-go-node/helpers"
+	"github.com/MinterTeam/minter-go-node/rlp"
+	"github.com/cosmos/iavl"
 )
 
 const mainPrefix = byte('p')
@@ -124,6 +125,7 @@ func (c *Commission) Export(state *types.AppState) {
 					BurnToken:               p.BurnToken.String(),
 					VoteCommission:          p.VoteCommission.String(),
 					VoteUpdate:              p.VoteUpdate.String(),
+					FailedTx:                p.FailedTxPrice().String(),
 				},
 			})
 		}
@@ -176,6 +178,7 @@ func (c *Commission) Export(state *types.AppState) {
 		BurnToken:               current.BurnToken.String(),
 		VoteCommission:          current.VoteCommission.String(),
 		VoteUpdate:              current.VoteUpdate.String(),
+		FailedTx:                current.FailedTxPrice().String(),
 	}
 }
 

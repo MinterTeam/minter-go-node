@@ -2,8 +2,9 @@ package events
 
 import (
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"math/big"
+
+	"github.com/MinterTeam/minter-go-node/coreV2/types"
 )
 
 // Event type names
@@ -411,6 +412,7 @@ type UpdateCommissionsEvent struct {
 	BurnToken               string `json:"burn_token"`
 	VoteCommission          string `json:"vote_commission"`
 	VoteUpdate              string `json:"vote_update"`
+	FailedTx                string `json:"failed_tx"`
 }
 
 func (ce *UpdateCommissionsEvent) Type() string {

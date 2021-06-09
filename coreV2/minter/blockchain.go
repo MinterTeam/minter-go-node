@@ -46,7 +46,7 @@ const votingPowerConsensus = 2. / 3.
 type Blockchain struct {
 	abciTypes.BaseApplication
 
-	executor      *transaction.Executor
+	executor      transaction.ExecutorTx
 	statisticData *statistics.Data
 
 	appDB                           *appdb.AppDB
@@ -107,7 +107,12 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 		haltHeight:                      uint64(cfg.HaltHeight),
 		updateStakesAndPayRewardsPeriod: period,
 		stopOk:                          make(chan struct{}),
-		executor:                        transaction.NewExecutor(transaction.GetData),
+		knownUpdates: map[string]struct{}{
+			"":   {}, // default version
+			v230: {}, // add more for update
+			v240: {}, // commissions
+		},
+		executor: GetExecutor(""),
 	}
 	if applicationDB.GetStartHeight() != 0 {
 		app.initState()
@@ -119,8 +124,22 @@ func graceForUpdate(height uint64) *upgrades.GracePeriod {
 	return upgrades.NewGracePeriod(height, height+120, false)
 }
 
+func GetExecutor(v string) transaction.ExecutorTx {
+	switch v {
+	// case v250:
+	// 	return transaction.NewExecutor(transaction.GetDataV250)
+	case v240:
+		return transaction.NewExecutorV240(transaction.GetDataV240)
+	case v230:
+		return transaction.NewExecutor(transaction.GetDataV230)
+	default:
+		return transaction.NewExecutor(transaction.GetDataV1)
+	}
+}
+
 const haltBlockV210 = 3431238
 const v230 = "v230"
+const v240 = "v240"
 
 func (blockchain *Blockchain) initState() {
 	initialHeight := blockchain.appDB.GetStartHeight()
@@ -139,22 +158,17 @@ func (blockchain *Blockchain) initState() {
 	blockchain.rewards = big.NewInt(0)
 	blockchain.stateDeliver = stateDeliver
 	blockchain.stateCheck = state.NewCheckState(stateDeliver)
-	blockchain.executor = transaction.NewExecutor(transaction.GetDataDeprecated)
 
 	grace := upgrades.NewGrace()
 	grace.AddGracePeriods(upgrades.NewGracePeriod(initialHeight, initialHeight+120, true),
 		upgrades.NewGracePeriod(haltBlockV210, haltBlockV210+120, true),
 		upgrades.NewGracePeriod(3612653, 3612653+120, true))
-	blockchain.knownUpdates = map[string]struct{}{
-		"":     {}, // default version
-		"v230": {}, // add more for update
-	}
+
 	for _, v := range blockchain.UpdateVersions() {
 		grace.AddGracePeriods(graceForUpdate(v.Height))
-		if v.Name == v230 {
-			blockchain.executor = transaction.NewExecutor(transaction.GetData)
-		}
+		blockchain.executor = GetExecutor(v.Name)
 	}
+
 	blockchain.grace = grace
 }
 
@@ -169,6 +183,8 @@ func (blockchain *Blockchain) InitChain(req abciTypes.RequestInitChain) abciType
 
 	blockchain.appDB.SetStartHeight(initialHeight)
 	blockchain.initState()
+
+	// todo: use genesisState.Version
 
 	if err := blockchain.stateDeliver.Import(genesisState); err != nil {
 		panic(err)
@@ -380,6 +396,7 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 				BurnToken:               price.BurnToken.String(),
 				VoteCommission:          price.VoteCommission.String(),
 				VoteUpdate:              price.VoteUpdate.String(),
+				FailedTx:                price.FailedTxPrice().String(),
 			})
 		}
 		blockchain.stateDeliver.Commission.Delete(height)
@@ -392,9 +409,7 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 				Version: v,
 			})
 			blockchain.grace.AddGracePeriods(graceForUpdate(height))
-			if v == v230 {
-				blockchain.executor = transaction.NewExecutor(transaction.GetData)
-			}
+			blockchain.executor = GetExecutor(v)
 		}
 		blockchain.stateDeliver.Updates.Delete(height)
 	}

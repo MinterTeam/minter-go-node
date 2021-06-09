@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/state/coins"
 	"github.com/MinterTeam/minter-go-node/coreV2/transaction"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
@@ -13,10 +14,11 @@ import (
 	_struct "google.golang.org/protobuf/types/known/structpb"
 )
 
-func encode(data transaction.Data, rCoins coins.RCoins) (*any.Any, error) {
+func encode(data transaction.Data, txType transaction.TxType, rCoins coins.RCoins) (*any.Any, error) {
 	var m proto.Message
-	switch d := data.(type) {
-	case *transaction.BuyCoinData:
+	switch txType {
+	case transaction.TypeBuyCoin:
+		d := data.(*transaction.BuyCoinData)
 		m = &pb.BuyCoinData{
 			CoinToBuy: &pb.Coin{
 				Id:     uint64(d.CoinToBuy),
@@ -29,12 +31,14 @@ func encode(data transaction.Data, rCoins coins.RCoins) (*any.Any, error) {
 			},
 			MaximumValueToSell: d.MaximumValueToSell.String(),
 		}
-	case *transaction.EditCoinOwnerData:
+	case transaction.TypeEditCoinOwner:
+		d := data.(*transaction.EditCoinOwnerData)
 		m = &pb.EditCoinOwnerData{
 			Symbol:   d.Symbol.String(),
 			NewOwner: d.NewOwner.String(),
 		}
-	case *transaction.CreateCoinData:
+	case transaction.TypeCreateCoin:
+		d := data.(*transaction.CreateCoinData)
 		m = &pb.CreateCoinData{
 			Name:                 d.Name,
 			Symbol:               d.Symbol.String(),
@@ -43,7 +47,8 @@ func encode(data transaction.Data, rCoins coins.RCoins) (*any.Any, error) {
 			ConstantReserveRatio: uint64(d.ConstantReserveRatio),
 			MaxSupply:            d.MaxSupply.String(),
 		}
-	case *transaction.CreateMultisigData:
+	case transaction.TypeCreateMultisig:
+		d := data.(*transaction.CreateMultisigData)
 		weights := make([]uint64, 0, len(d.Weights))
 		for _, weight := range d.Weights {
 			weights = append(weights, uint64(weight))
@@ -57,7 +62,8 @@ func encode(data transaction.Data, rCoins coins.RCoins) (*any.Any, error) {
 			Weights:   weights,
 			Addresses: addresses,
 		}
-	case *transaction.DeclareCandidacyData:
+	case transaction.TypeDeclareCandidacy:
+		d := data.(*transaction.DeclareCandidacyData)
 		m = &pb.DeclareCandidacyData{
 			Address:    d.Address.String(),
 			PubKey:     d.PubKey.String(),
@@ -68,7 +74,8 @@ func encode(data transaction.Data, rCoins coins.RCoins) (*any.Any, error) {
 			},
 			Stake: d.Stake.String(),
 		}
-	case *transaction.DelegateData:
+	case transaction.TypeDelegate:
+		d := data.(*transaction.DelegateData)
 		m = &pb.DelegateData{
 			PubKey: d.PubKey.String(),
 			Coin: &pb.Coin{
@@ -77,19 +84,22 @@ func encode(data transaction.Data, rCoins coins.RCoins) (*any.Any, error) {
 			},
 			Value: d.Value.String(),
 		}
-	case *transaction.EditCandidateData:
+	case transaction.TypeEditCandidate:
+		d := data.(*transaction.EditCandidateData)
 		m = &pb.EditCandidateData{
 			PubKey:         d.PubKey.String(),
 			RewardAddress:  d.RewardAddress.String(),
 			OwnerAddress:   d.OwnerAddress.String(),
 			ControlAddress: d.ControlAddress.String(),
 		}
-	case *transaction.EditCandidatePublicKeyData:
+	case transaction.TypeEditCandidatePublicKey:
+		d := data.(*transaction.EditCandidatePublicKeyData)
 		m = &pb.EditCandidatePublicKeyData{
 			PubKey:    d.PubKey.String(),
 			NewPubKey: d.NewPubKey.String(),
 		}
-	case *transaction.EditMultisigData:
+	case transaction.TypeEditMultisig:
+		d := data.(*transaction.EditMultisigData)
 		weights := make([]uint64, 0, len(d.Weights))
 		for _, weight := range d.Weights {
 			weights = append(weights, uint64(weight))
@@ -103,7 +113,8 @@ func encode(data transaction.Data, rCoins coins.RCoins) (*any.Any, error) {
 			Weights:   weights,
 			Addresses: addresses,
 		}
-	case *transaction.MultisendData:
+	case transaction.TypeMultisend:
+		d := data.(*transaction.MultisendData)
 		list := make([]*pb.SendData, 0, len(d.List))
 		for _, item := range d.List {
 			list = append(list, &pb.SendData{
@@ -118,11 +129,8 @@ func encode(data transaction.Data, rCoins coins.RCoins) (*any.Any, error) {
 		m = &pb.MultiSendData{
 			List: list,
 		}
-	// case *transaction.PriceVoteData:
-	// 	m = &pb.PriceVoteData{
-	// 		Price: strconv.Itoa(int(d.Price)),
-	// 	}
-	case *transaction.RecreateCoinData:
+	case transaction.TypeRecreateCoin:
+		d := data.(*transaction.RecreateCoinData)
 		m = &pb.RecreateCoinData{
 			Name:                 d.Name,
 			Symbol:               d.Symbol.String(),
@@ -131,12 +139,14 @@ func encode(data transaction.Data, rCoins coins.RCoins) (*any.Any, error) {
 			ConstantReserveRatio: uint64(d.ConstantReserveRatio),
 			MaxSupply:            d.MaxSupply.String(),
 		}
-	case *transaction.RedeemCheckData:
+	case transaction.TypeRedeemCheck:
+		d := data.(*transaction.RedeemCheckData)
 		m = &pb.RedeemCheckData{
 			RawCheck: base64.StdEncoding.EncodeToString(d.RawCheck),
 			Proof:    base64.StdEncoding.EncodeToString(d.Proof[:]),
 		}
-	case *transaction.SellAllCoinData:
+	case transaction.TypeSellAllCoin:
+		d := data.(*transaction.SellAllCoinData)
 		m = &pb.SellAllCoinData{
 			CoinToSell: &pb.Coin{
 				Id:     uint64(d.CoinToSell),
@@ -148,7 +158,8 @@ func encode(data transaction.Data, rCoins coins.RCoins) (*any.Any, error) {
 			},
 			MinimumValueToBuy: d.MinimumValueToBuy.String(),
 		}
-	case *transaction.SellCoinData:
+	case transaction.TypeSellCoin:
+		d := data.(*transaction.SellCoinData)
 		m = &pb.SellCoinData{
 			CoinToSell: &pb.Coin{
 				Id:     uint64(d.CoinToSell),
@@ -161,7 +172,8 @@ func encode(data transaction.Data, rCoins coins.RCoins) (*any.Any, error) {
 			},
 			MinimumValueToBuy: d.MinimumValueToBuy.String(),
 		}
-	case *transaction.SendData:
+	case transaction.TypeSend:
+		d := data.(*transaction.SendData)
 		m = &pb.SendData{
 			Coin: &pb.Coin{
 				Id:     uint64(d.Coin),
@@ -170,20 +182,24 @@ func encode(data transaction.Data, rCoins coins.RCoins) (*any.Any, error) {
 			To:    d.To.String(),
 			Value: d.Value.String(),
 		}
-	case *transaction.SetHaltBlockData:
+	case transaction.TypeSetHaltBlock:
+		d := data.(*transaction.SetHaltBlockData)
 		m = &pb.SetHaltBlockData{
 			PubKey: d.PubKey.String(),
 			Height: d.Height,
 		}
-	case *transaction.SetCandidateOnData:
+	case transaction.TypeSetCandidateOnline:
+		d := data.(*transaction.SetCandidateOnData)
 		m = &pb.SetCandidateOnData{
 			PubKey: d.PubKey.String(),
 		}
-	case *transaction.SetCandidateOffData:
+	case transaction.TypeSetCandidateOffline:
+		d := data.(*transaction.SetCandidateOffData)
 		m = &pb.SetCandidateOffData{
 			PubKey: d.PubKey.String(),
 		}
-	case *transaction.UnbondData:
+	case transaction.TypeUnbond:
+		d := data.(*transaction.UnbondData)
 		m = &pb.UnbondData{
 			PubKey: d.PubKey.String(),
 			Coin: &pb.Coin{
@@ -192,7 +208,8 @@ func encode(data transaction.Data, rCoins coins.RCoins) (*any.Any, error) {
 			},
 			Value: d.Value.String(),
 		}
-	case *transaction.AddLiquidityData:
+	case transaction.TypeAddLiquidity:
+		d := data.(*transaction.AddLiquidityData)
 		m = &pb.AddLiquidityData{
 			Coin0: &pb.Coin{
 				Id:     uint64(d.Coin0),
@@ -205,7 +222,8 @@ func encode(data transaction.Data, rCoins coins.RCoins) (*any.Any, error) {
 			Volume0:        d.Volume0.String(),
 			MaximumVolume1: d.MaximumVolume1.String(),
 		}
-	case *transaction.RemoveLiquidity:
+	case transaction.TypeRemoveLiquidity:
+		d := data.(*transaction.RemoveLiquidityV230)
 		m = &pb.RemoveLiquidityData{
 			Coin0: &pb.Coin{
 				Id:     uint64(d.Coin0),
@@ -219,7 +237,8 @@ func encode(data transaction.Data, rCoins coins.RCoins) (*any.Any, error) {
 			MinimumVolume0: d.MinimumVolume0.String(),
 			MinimumVolume1: d.MinimumVolume1.String(),
 		}
-	case *transaction.BuySwapPoolData:
+	case transaction.TypeBuySwapPool:
+		d := data.(*transaction.BuySwapPoolDataV240)
 		var coinsInfo []*pb.Coin
 		for _, coin := range d.Coins {
 			coinsInfo = append(coinsInfo, &pb.Coin{
@@ -232,7 +251,8 @@ func encode(data transaction.Data, rCoins coins.RCoins) (*any.Any, error) {
 			ValueToBuy:         d.ValueToBuy.String(),
 			MaximumValueToSell: d.MaximumValueToSell.String(),
 		}
-	case *transaction.SellSwapPoolData:
+	case transaction.TypeSellSwapPool:
+		d := data.(*transaction.SellSwapPoolDataV240)
 		var coinsInfo []*pb.Coin
 		for _, coin := range d.Coins {
 			coinsInfo = append(coinsInfo, &pb.Coin{
@@ -245,7 +265,8 @@ func encode(data transaction.Data, rCoins coins.RCoins) (*any.Any, error) {
 			ValueToSell:       d.ValueToSell.String(),
 			MinimumValueToBuy: d.MinimumValueToBuy.String(),
 		}
-	case *transaction.SellAllSwapPoolData:
+	case transaction.TypeSellAllSwapPool:
+		d := data.(*transaction.SellAllSwapPoolDataV240)
 		var coinsInfo []*pb.Coin
 		for _, coin := range d.Coins {
 			coinsInfo = append(coinsInfo, &pb.Coin{
@@ -257,7 +278,8 @@ func encode(data transaction.Data, rCoins coins.RCoins) (*any.Any, error) {
 			Coins:             coinsInfo,
 			MinimumValueToBuy: d.MinimumValueToBuy.String(),
 		}
-	case *transaction.CreateTokenData:
+	case transaction.TypeCreateToken:
+		d := data.(*transaction.CreateTokenData)
 		m = &pb.CreateTokenData{
 			Name:          d.Name,
 			Symbol:        d.Symbol.String(),
@@ -266,7 +288,8 @@ func encode(data transaction.Data, rCoins coins.RCoins) (*any.Any, error) {
 			Mintable:      d.Mintable,
 			Burnable:      d.Burnable,
 		}
-	case *transaction.RecreateTokenData:
+	case transaction.TypeRecreateToken:
+		d := data.(*transaction.RecreateTokenData)
 		m = &pb.RecreateTokenData{
 			Name:          d.Name,
 			Symbol:        d.Symbol.String(),
@@ -275,7 +298,8 @@ func encode(data transaction.Data, rCoins coins.RCoins) (*any.Any, error) {
 			Mintable:      d.Mintable,
 			Burnable:      d.Burnable,
 		}
-	case *transaction.BurnTokenData:
+	case transaction.TypeBurnToken:
+		d := data.(*transaction.BurnTokenData)
 		m = &pb.BurnTokenData{
 			Coin: &pb.Coin{
 				Id:     uint64(d.Coin),
@@ -283,7 +307,8 @@ func encode(data transaction.Data, rCoins coins.RCoins) (*any.Any, error) {
 			},
 			Value: d.Value.String(),
 		}
-	case *transaction.MintTokenData:
+	case transaction.TypeMintToken:
+		d := data.(*transaction.MintTokenData)
 		m = &pb.MintTokenData{
 			Coin: &pb.Coin{
 				Id:     uint64(d.Coin),
@@ -291,30 +316,24 @@ func encode(data transaction.Data, rCoins coins.RCoins) (*any.Any, error) {
 			},
 			Value: d.Value.String(),
 		}
-	case *transaction.EditCandidateCommission:
+	case transaction.TypeEditCandidateCommission:
+		d := data.(*transaction.EditCandidateCommission)
 		m = &pb.EditCandidateCommission{
 			PubKey:     d.PubKey.String(),
 			Commission: uint64(d.Commission),
 		}
-	// case *transaction.MoveStakeData:
-	// 	m = &pb.MoveStakeData{
-	// 		From: d.From.String(),
-	// 		To:   d.To.String(),
-	// 		Coin: &pb.Coin{
-	// 			Id:     uint64(d.Coin),
-	// 			Symbol: rCoins.GetCoin(d.Coin).GetFullSymbol(),
-	// 		},
-	// 		Stake: d.Stake.String(),
-	// 	}
-	case *transaction.VoteCommissionData:
+	case transaction.TypeVoteCommission:
+		d := data.(*transaction.VoteCommissionDataV240)
 		m = priceCommissionData(d, rCoins.GetCoin(d.Coin))
-	case *transaction.VoteUpdateData:
+	case transaction.TypeVoteUpdate:
+		d := data.(*transaction.VoteUpdateDataV230)
 		m = &pb.VoteUpdateData{
 			PubKey:  d.PubKey.String(),
 			Height:  d.Height,
 			Version: d.Version,
 		}
-	case *transaction.CreateSwapPoolData:
+	case transaction.TypeCreateSwapPool:
+		d := data.(*transaction.CreateSwapPoolData)
 		m = &pb.CreateSwapPoolData{
 			Coin0: &pb.Coin{
 				Id:     uint64(d.Coin0),
@@ -339,7 +358,7 @@ func encode(data transaction.Data, rCoins coins.RCoins) (*any.Any, error) {
 	return a, nil
 }
 
-func priceCommissionData(d *transaction.VoteCommissionData, coin *coins.Model) proto.Message {
+func priceCommissionData(d *transaction.VoteCommissionDataV240, coin *coins.Model) proto.Message {
 	return &pb.VoteCommissionData{
 		PubKey: d.PubKey.String(),
 		Height: d.Height,
