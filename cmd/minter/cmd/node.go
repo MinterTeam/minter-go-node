@@ -15,7 +15,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/cli/service"
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
-	"github.com/MinterTeam/minter-go-node/coreV2/mempool"
 	"github.com/MinterTeam/minter-go-node/coreV2/minter"
 	"github.com/MinterTeam/minter-go-node/coreV2/rewards"
 	"github.com/MinterTeam/minter-go-node/coreV2/statistics"
@@ -28,6 +27,7 @@ import (
 	"github.com/tendermint/tendermint/evidence"
 	tmLog "github.com/tendermint/tendermint/libs/log"
 	tmOS "github.com/tendermint/tendermint/libs/os"
+	mempl "github.com/tendermint/tendermint/mempool"
 	tmNode "github.com/tendermint/tendermint/node"
 	"github.com/tendermint/tendermint/p2p"
 	"github.com/tendermint/tendermint/privval"
@@ -247,11 +247,13 @@ func startTendermintNode(app *minter.Blockchain, cfg *tmCfg.Config, logger tmLog
 		panic(err)
 	}
 
-	priorityMempool := mempool.NewPriorityMempool(cfg.Mempool, appConnMem, 0)
+	// priorityMempool := mempool.NewPriorityMempool(cfg.Mempool, appConnMem, 0)
+	priorityMempool := mempl.NewCListMempool(cfg.Mempool, appConnMem, 0)
 	priorityMempool.SetLogger(logger)
 
 	mempoolLogger := logger.With("module", "mempool")
-	mempoolReactor := mempool.NewReactor(cfg.Mempool, priorityMempool)
+	// mempoolReactor := mempool.NewReactor(cfg.Mempool, priorityMempool)
+	mempoolReactor := mempl.NewReactor(cfg.Mempool, priorityMempool)
 	mempoolReactor.SetLogger(mempoolLogger)
 
 	if cfg.Consensus.WaitForTxs() {
