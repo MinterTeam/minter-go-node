@@ -55,6 +55,7 @@ type PriorityMempool struct {
 	wal                *auto.AutoFile          // a log of mempool txs
 	txs                map[uint32]*clist.CList // concurrent linked-list of good txs
 	txsGasPriceCounter map[uint32]uint64
+	gasPrices          []uint32
 	txsCounter         int
 	proxyAppConn       proxy.AppConnMempool
 
@@ -365,6 +366,24 @@ func (mem *PriorityMempool) reqResCb(
 	}
 }
 
+func (mem *PriorityMempool) addGasPrice(gp uint32) {
+	exists := false
+	i := sort.Search(len(mem.gasPrices), func(i int) bool {
+		if mem.gasPrices[i] == gp {
+			exists = true
+		}
+		return mem.gasPrices[i] > gp
+	})
+
+	if exists {
+		return
+	}
+
+	mem.gasPrices = append(mem.gasPrices, 0)
+	copy(mem.gasPrices[i+1:], mem.gasPrices[i:])
+	mem.gasPrices[i] = gp
+}
+
 // Called from:
 //  - resCbFirstTime (lock not held) if tx is valid
 func (mem *PriorityMempool) addTx(memTx *mempoolTx) {
@@ -379,6 +398,7 @@ func (mem *PriorityMempool) addTx(memTx *mempoolTx) {
 
 	e := mem.txs[tx.GasPrice].PushBack(memTx)
 	mem.incrementTxsCounter(tx.GasPrice)
+	mem.addGasPrice(tx.GasPrice)
 
 	mem.txsMap.Store(TxKey(memTx.tx), e)
 	atomic.AddInt64(&mem.txsBytes, int64(len(memTx.tx)))
@@ -515,6 +535,19 @@ func (mem *PriorityMempool) resCbRecheck(req *abci.Request, res *abci.Response) 
 			mem.recheckCursor = nil
 		} else {
 			mem.recheckCursor = mem.recheckCursor.Next()
+			if mem.recheckCursor == nil {
+				tx, _ := mem.executor.DecodeFromBytes(memTx.tx)
+				for k, v := range mem.gasPrices {
+					if v == tx.GasPrice {
+						if k == 0 {
+							break
+						}
+
+						mem.recheckCursor = mem.txs[mem.gasPrices[k-1]].Front()
+						break
+					}
+				}
+			}
 		}
 		if mem.recheckCursor == nil {
 			// Done!
@@ -678,8 +711,8 @@ func (mem *PriorityMempool) recheckTxs() {
 	}
 
 	// TODO: handle recheck
-	mem.recheckCursor = mem.txs[1].Front()
-	mem.recheckEnd = mem.txs[1].Back()
+	mem.recheckCursor = mem.txs[mem.gasPrices[len(mem.gasPrices)-1]].Front()
+	mem.recheckEnd = mem.txs[mem.gasPrices[0]].Back()
 
 	// Push txs to proxyAppConn
 	// NOTE: globalCb may be called concurrently.
