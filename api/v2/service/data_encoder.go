@@ -238,7 +238,7 @@ func encode(data transaction.Data, txType transaction.TxType, rCoins coins.RCoin
 			MinimumVolume1: d.MinimumVolume1.String(),
 		}
 	case transaction.TypeBuySwapPool:
-		d := data.(*transaction.BuySwapPoolDataV230)
+		d := data.(*transaction.BuySwapPoolDataV240)
 		var coinsInfo []*pb.Coin
 		for _, coin := range d.Coins {
 			coinsInfo = append(coinsInfo, &pb.Coin{
@@ -252,7 +252,7 @@ func encode(data transaction.Data, txType transaction.TxType, rCoins coins.RCoin
 			MaximumValueToSell: d.MaximumValueToSell.String(),
 		}
 	case transaction.TypeSellSwapPool:
-		d := data.(*transaction.SellSwapPoolDataV230)
+		d := data.(*transaction.SellSwapPoolDataV240)
 		var coinsInfo []*pb.Coin
 		for _, coin := range d.Coins {
 			coinsInfo = append(coinsInfo, &pb.Coin{
@@ -266,7 +266,7 @@ func encode(data transaction.Data, txType transaction.TxType, rCoins coins.RCoin
 			MinimumValueToBuy: d.MinimumValueToBuy.String(),
 		}
 	case transaction.TypeSellAllSwapPool:
-		d := data.(*transaction.SellAllSwapPoolDataV230)
+		d := data.(*transaction.SellAllSwapPoolDataV240)
 		var coinsInfo []*pb.Coin
 		for _, coin := range d.Coins {
 			coinsInfo = append(coinsInfo, &pb.Coin{
@@ -323,7 +323,7 @@ func encode(data transaction.Data, txType transaction.TxType, rCoins coins.RCoin
 			Commission: uint64(d.Commission),
 		}
 	case transaction.TypeVoteCommission:
-		d := data.(*transaction.VoteCommissionData)
+		d := data.(*transaction.VoteCommissionDataV240)
 		m = priceCommissionData(d, rCoins.GetCoin(d.Coin))
 	case transaction.TypeVoteUpdate:
 		d := data.(*transaction.VoteUpdateDataV230)
@@ -358,7 +358,7 @@ func encode(data transaction.Data, txType transaction.TxType, rCoins coins.RCoin
 	return a, nil
 }
 
-func priceCommissionData(d *transaction.VoteCommissionData, coin *coins.Model) proto.Message {
+func priceCommissionData(d *transaction.VoteCommissionDataV240, coin *coins.Model) proto.Message {
 	return &pb.VoteCommissionData{
 		PubKey: d.PubKey.String(),
 		Height: d.Height,
