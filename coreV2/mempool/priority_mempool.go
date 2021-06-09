@@ -244,7 +244,10 @@ func (mem *PriorityMempool) Flush() {
 	gasPrices, _ := mem.txsByGasPrices()
 	for _, gp := range gasPrices {
 		for e := mem.txs[gp].Front(); e != nil; e = e.Next() {
+			mem.txsmx.Lock()
 			mem.txs[gp].Remove(e)
+			mem.txsmx.Unlock()
+
 			e.DetachPrev()
 			mem.decrementTxsCounter(gp)
 		}
