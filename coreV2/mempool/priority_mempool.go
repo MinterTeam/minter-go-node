@@ -195,6 +195,9 @@ func (mem *PriorityMempool) TxsBytes() int64 {
 }
 
 func (mem *PriorityMempool) txsByGasPrices() ([]uint32, uint64) {
+	mem.txscmx.RLock()
+	defer mem.txscmx.RUnlock()
+
 	gasPrices, txCount := make([]uint32, 0), uint64(0)
 	for gasPrice, count := range mem.txsGasPriceCounter {
 		if count > 0 {
@@ -415,6 +418,7 @@ func (mem *PriorityMempool) addTx(memTx *mempoolTx) {
 	if _, ok := mem.txs[tx.GasPrice]; !ok {
 		mem.txs[tx.GasPrice] = clist.New()
 	}
+
 	e := mem.txs[tx.GasPrice].PushBack(memTx)
 	mem.txsmx.Unlock()
 
