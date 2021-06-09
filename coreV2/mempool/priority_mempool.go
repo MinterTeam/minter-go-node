@@ -368,7 +368,10 @@ func (mem *PriorityMempool) reqResCb(
 // Called from:
 //  - resCbFirstTime (lock not held) if tx is valid
 func (mem *PriorityMempool) addTx(memTx *mempoolTx) {
-	tx, _ := mem.executor.DecodeFromBytes(memTx.tx) // TODO: handle error
+	tx, err := mem.executor.DecodeFromBytes(memTx.tx) // TODO: handle error
+	if err != nil {
+		panic(fmt.Sprintf("failed to decode tx: %X", memTx.tx))
+	}
 
 	if _, ok := mem.txs[tx.GasPrice]; !ok {
 		mem.txs[tx.GasPrice] = clist.New()
@@ -675,8 +678,8 @@ func (mem *PriorityMempool) recheckTxs() {
 	}
 
 	// TODO: handle recheck
-	//mem.recheckCursor = mem.txs[0].Front()
-	//mem.recheckEnd = mem.txs[0].Back()
+	mem.recheckCursor = mem.txs[1].Front()
+	mem.recheckEnd = mem.txs[1].Back()
 
 	// Push txs to proxyAppConn
 	// NOTE: globalCb may be called concurrently.

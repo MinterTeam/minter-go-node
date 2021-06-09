@@ -269,8 +269,8 @@ func TestMempool_KeepInvalidTxsInCache(t *testing.T) {
 
 	// 1. An invalid transaction must remain in the cache after Update
 	{
-		a := createTx(t, 114)
-		b := createTx(t, 114)
+		a := createTx(t, 116)
+		b := createTx(t, 116)
 
 		err := mempool.CheckTx(b, nil, tmpool.TxInfo{})
 		require.NoError(t, err)
@@ -296,7 +296,7 @@ func TestMempool_KeepInvalidTxsInCache(t *testing.T) {
 
 	// 2. An invalid transaction must remain in the cache
 	{
-		a := createTx(t, 114)
+		a := createTx(t, 116)
 
 		// remove a from the cache to test (2)
 		mempool.cache.Remove(a)
@@ -372,10 +372,8 @@ func TestSerialReap(t *testing.T) {
 	deliverTxsRange := func(start, end int) {
 		// Deliver some txs.
 		for i := start; i < end; i++ {
-
 			// This will succeed
-			txBytes := make([]byte, 8)
-			binary.BigEndian.PutUint64(txBytes, uint64(i))
+			txBytes := createTx(t, 116)
 			err := mempool.CheckTx(txBytes, nil, tmpool.TxInfo{})
 			_, cached := cacheMap[string(txBytes)]
 			if cached {
@@ -541,7 +539,7 @@ func TestMempool_CheckTxChecksTxSize(t *testing.T) {
 	for i, testCase := range testCases {
 		caseString := fmt.Sprintf("case %d, len %d", i, testCase.len)
 
-		tx := tmrand.Bytes(testCase.len)
+		tx := createTx(t, uint64(testCase.len))
 
 		err := mempl.CheckTx(tx, nil, tmpool.TxInfo{})
 		bv := gogotypes.BytesValue{Value: tx}
@@ -569,17 +567,17 @@ func TestMempoolTxsBytes(t *testing.T) {
 	assert.EqualValues(t, 0, mempool.TxsBytes())
 
 	// 2. len(tx) after CheckTx
-	err := mempool.CheckTx([]byte{0x01}, nil, tmpool.TxInfo{})
+	err := mempool.CheckTx(createTx(t, 116), nil, tmpool.TxInfo{})
 	require.NoError(t, err)
 	assert.EqualValues(t, 1, mempool.TxsBytes())
 
 	// 3. zero again after tx is removed by Update
-	err = mempool.Update(1, []tmtypes.Tx{[]byte{0x01}}, abciResponses(1, abci.CodeTypeOK), nil, nil)
+	err = mempool.Update(1, []tmtypes.Tx{createTx(t, 116)}, abciResponses(1, abci.CodeTypeOK), nil, nil)
 	require.NoError(t, err)
 	assert.EqualValues(t, 0, mempool.TxsBytes())
 
 	// 4. zero after Flush
-	err = mempool.CheckTx([]byte{0x02, 0x03}, nil, tmpool.TxInfo{})
+	err = mempool.CheckTx(createTx(t, 117), nil, tmpool.TxInfo{})
 	require.NoError(t, err)
 	assert.EqualValues(t, 2, mempool.TxsBytes())
 
@@ -658,10 +656,9 @@ func TestMempoolRemoteAppConcurrency(t *testing.T) {
 
 	// generate small number of txs
 	nTxs := 10
-	txLen := 200
 	txs := make([]tmtypes.Tx, nTxs)
 	for i := 0; i < nTxs; i++ {
-		txs[i] = tmrand.Bytes(txLen)
+		txs[i] = createTx(t, 116)
 	}
 
 	// simulate a group of peers sending them over and over
