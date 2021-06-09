@@ -204,8 +204,7 @@ func (e *ExecutorV240) RunTx(context state.Interface, rawTx []byte, rewardPool *
 	}
 
 	if !isCheck && response.Code != 0 {
-		commissionInBaseCoin := big.NewInt(0).Add(commissions.FailedTxPrice(), big.NewInt(0).Mul(big.NewInt(tx.payloadLen()), commissions.PayloadByte))
-		commissionInBaseCoin = tx.Commission(commissionInBaseCoin)
+		commissionInBaseCoin := tx.Commission(big.NewInt(0).Add(commissions.FailedTxPrice(), big.NewInt(0).Mul(big.NewInt(tx.payloadLen()), commissions.PayloadByte)))
 		commissionPoolSwapper := checkState.Swap().GetSwapper(tx.commissionCoin(), types.GetBaseCoinID())
 		gasCoin := checkState.Coins().GetCoin(tx.commissionCoin())
 		commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoin, commissionInBaseCoin)
