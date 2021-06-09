@@ -2,7 +2,6 @@ package mempool
 
 import (
 	"bytes"
-	"container/list"
 	"crypto/sha256"
 	"fmt"
 	"sort"
@@ -76,8 +75,13 @@ type PriorityMempool struct {
 	wal                *auto.AutoFile          // a log of mempool txs
 	txs                map[uint32]*clist.CList // concurrent linked-list of good txs
 	txsGasPriceCounter map[uint32]uint64
+	gasPrices          []uint32
 	txsCounter         int
 	proxyAppConn       proxy.AppConnMempool
+
+	// locks
+	txsmx  sync.RWMutex
+	txscmx sync.RWMutex
 
 	// Track whether we're rechecking txs.
 	// These are not protected by a mutex and are expected to be mutated in
@@ -210,7 +214,7 @@ func (mem *PriorityMempool) TxsBytes() int64 {
 	return atomic.LoadInt64(&mem.txsBytes)
 }
 
-func (mem *PriorityMempool) TxsByGasPrices() ([]uint32, uint64) {
+func (mem *PriorityMempool) txsByGasPrices() ([]uint32, uint64) {
 	gasPrices, txCount := make([]uint32, 0), uint64(0)
 	for gasPrice, count := range mem.txsGasPriceCounter {
 		if count > 0 {
@@ -221,6 +225,27 @@ func (mem *PriorityMempool) TxsByGasPrices() ([]uint32, uint64) {
 
 	sort.Slice(gasPrices, func(i, j int) bool { return gasPrices[i] > gasPrices[j] })
 	return gasPrices, txCount
+}
+
+func (mem *PriorityMempool) incrementTxsCounter(gasPrice uint32) {
+	mem.txscmx.Lock()
+	defer mem.txscmx.Unlock()
+
+	mem.txsCounter += 1
+	if _, ok := mem.txsGasPriceCounter[gasPrice]; ok {
+		mem.txsGasPriceCounter[gasPrice] += 1
+		return
+	}
+
+	mem.txsGasPriceCounter[gasPrice] = 1
+}
+
+func (mem *PriorityMempool) decrementTxsCounter(gasPrice uint32) {
+	mem.txscmx.Lock()
+	defer mem.txscmx.Unlock()
+
+	mem.txsCounter -= 1
+	mem.txsGasPriceCounter[gasPrice] -= 1
 }
 
 // Lock() must be help by the caller during execution.
@@ -236,11 +261,15 @@ func (mem *PriorityMempool) Flush() {
 	_ = atomic.SwapInt64(&mem.txsBytes, 0)
 	mem.cache.Reset()
 
-	gasPrices, _ := mem.TxsByGasPrices()
+	gasPrices, _ := mem.txsByGasPrices()
 	for _, gp := range gasPrices {
 		for e := mem.txs[gp].Front(); e != nil; e = e.Next() {
+			mem.txsmx.Lock()
 			mem.txs[gp].Remove(e)
+			mem.txsmx.Unlock()
+
 			e.DetachPrev()
+			mem.decrementTxsCounter(gp)
 		}
 	}
 
@@ -370,23 +399,41 @@ func (mem *PriorityMempool) reqResCb(
 	}
 }
 
+func (mem *PriorityMempool) addGasPrice(gp uint32) {
+	exists := false
+	i := sort.Search(len(mem.gasPrices), func(i int) bool {
+		if mem.gasPrices[i] == gp {
+			exists = true
+		}
+		return mem.gasPrices[i] > gp
+	})
+
+	if exists {
+		return
+	}
+
+	mem.gasPrices = append(mem.gasPrices, 0)
+	copy(mem.gasPrices[i+1:], mem.gasPrices[i:])
+	mem.gasPrices[i] = gp
+}
+
 // Called from:
 //  - resCbFirstTime (lock not held) if tx is valid
 func (mem *PriorityMempool) addTx(memTx *mempoolTx) {
-	tx, _ := mem.executor.DecodeFromBytes(memTx.tx) // TODO: handle error
+	tx, err := mem.executor.DecodeFromBytes(memTx.tx) // TODO: handle error
+	if err != nil {
+		panic(fmt.Sprintf("failed to decode tx: %X", memTx.tx))
+	}
 
+	mem.txsmx.Lock()
 	if _, ok := mem.txs[tx.GasPrice]; !ok {
 		mem.txs[tx.GasPrice] = clist.New()
 	}
-
 	e := mem.txs[tx.GasPrice].PushBack(memTx)
+	mem.txsmx.Unlock()
 
-	mem.txsCounter += 1
-	if _, ok := mem.txsGasPriceCounter[tx.GasPrice]; ok {
-		mem.txsGasPriceCounter[tx.GasPrice] += 1
-	} else {
-		mem.txsGasPriceCounter[tx.GasPrice] = 1
-	}
+	mem.incrementTxsCounter(tx.GasPrice)
+	mem.addGasPrice(tx.GasPrice)
 
 	mem.txsMap.Store(TxKey(memTx.tx), e)
 	atomic.AddInt64(&mem.txsBytes, int64(len(memTx.tx)))
@@ -399,9 +446,11 @@ func (mem *PriorityMempool) addTx(memTx *mempoolTx) {
 func (mem *PriorityMempool) removeTx(tx types.Tx, elem *clist.CElement, removeFromCache bool) {
 	decodedTx, _ := mem.executor.DecodeFromBytes(tx)
 
+	mem.txsmx.Lock()
 	mem.txs[decodedTx.GasPrice].Remove(elem)
-	mem.txsGasPriceCounter[decodedTx.GasPrice] -= 1
-	mem.txsCounter -= 1
+	mem.txsmx.Unlock()
+
+	mem.decrementTxsCounter(decodedTx.GasPrice)
 
 	elem.DetachPrev()
 	mem.txsMap.Delete(TxKey(tx))
@@ -524,6 +573,21 @@ func (mem *PriorityMempool) resCbRecheck(req *abci.Request, res *abci.Response) 
 			mem.recheckCursor = nil
 		} else {
 			mem.recheckCursor = mem.recheckCursor.Next()
+			if mem.recheckCursor == nil {
+				tx, _ := mem.executor.DecodeFromBytes(memTx.tx)
+				for k, v := range mem.gasPrices {
+					if v == tx.GasPrice {
+						if k == 0 {
+							break
+						}
+
+						mem.txsmx.RLock()
+						mem.recheckCursor = mem.txs[mem.gasPrices[k-1]].Front()
+						mem.txsmx.RUnlock()
+						break
+					}
+				}
+			}
 		}
 		if mem.recheckCursor == nil {
 			// Done!
@@ -568,7 +632,7 @@ func (mem *PriorityMempool) ReapMaxBytesMaxGas(maxBytes, maxGas int64) types.Txs
 	// TODO: we will get a performance boost if we have a good estimate of avg
 	// size per tx, and set the initial capacity based off of that.
 	// txs := make([]types.Tx, 0, tmmath.MinInt(mem.txs.Len(), max/mem.avgTxSize))
-	gasPrices, txCount := mem.TxsByGasPrices()
+	gasPrices, txCount := mem.txsByGasPrices()
 	txs := make([]types.Tx, 0, txCount)
 	for _, gp := range gasPrices {
 		for e := mem.txs[gp].Front(); e != nil; e = e.Next() {
@@ -602,7 +666,7 @@ func (mem *PriorityMempool) ReapMaxTxs(max int) types.Txs {
 	mem.updateMtx.RLock()
 	defer mem.updateMtx.RUnlock()
 
-	gasPrices, txCount := mem.TxsByGasPrices()
+	gasPrices, txCount := mem.txsByGasPrices()
 	if max < 0 {
 		max = int(txCount)
 	}
@@ -687,12 +751,14 @@ func (mem *PriorityMempool) recheckTxs() {
 	}
 
 	// TODO: handle recheck
-	//mem.recheckCursor = mem.txs[0].Front()
-	//mem.recheckEnd = mem.txs[0].Back()
+	mem.txsmx.RLock()
+	mem.recheckCursor = mem.txs[mem.gasPrices[len(mem.gasPrices)-1]].Front()
+	mem.recheckEnd = mem.txs[mem.gasPrices[0]].Back()
+	mem.txsmx.RUnlock()
 
 	// Push txs to proxyAppConn
 	// NOTE: globalCb may be called concurrently.
-	gasPrices, _ := mem.TxsByGasPrices()
+	gasPrices, _ := mem.txsByGasPrices()
 	for _, gp := range gasPrices {
 		for e := mem.txs[gp].Front(); e != nil; e = e.Next() {
 			memTx := e.Value.(*mempoolTx)
@@ -722,99 +788,4 @@ type mempoolTx struct {
 // Height returns the height for this transaction
 func (memTx *mempoolTx) Height() int64 {
 	return atomic.LoadInt64(&memTx.height)
-}
-
-//--------------------------------------------------------------------------------
-
-type txCache interface {
-	Reset()
-	Push(tx types.Tx) bool
-	Remove(tx types.Tx)
-}
-
-// mapTxCache maintains a LRU cache of transactions. This only stores the hash
-// of the tx, due to memory concerns.
-type mapTxCache struct {
-	mtx      tmsync.Mutex
-	size     int
-	cacheMap map[[TxKeySize]byte]*list.Element
-	list     *list.List
-}
-
-var _ txCache = (*mapTxCache)(nil)
-
-// newMapTxCache returns a new mapTxCache.
-func newMapTxCache(cacheSize int) *mapTxCache {
-	return &mapTxCache{
-		size:     cacheSize,
-		cacheMap: make(map[[TxKeySize]byte]*list.Element, cacheSize),
-		list:     list.New(),
-	}
-}
-
-// Reset resets the cache to an empty state.
-func (cache *mapTxCache) Reset() {
-	cache.mtx.Lock()
-	cache.cacheMap = make(map[[TxKeySize]byte]*list.Element, cache.size)
-	cache.list.Init()
-	cache.mtx.Unlock()
-}
-
-// Push adds the given tx to the cache and returns true. It returns
-// false if tx is already in the cache.
-func (cache *mapTxCache) Push(tx types.Tx) bool {
-	cache.mtx.Lock()
-	defer cache.mtx.Unlock()
-
-	// Use the tx hash in the cache
-	txHash := TxKey(tx)
-	if moved, exists := cache.cacheMap[txHash]; exists {
-		cache.list.MoveToBack(moved)
-		return false
-	}
-
-	if cache.list.Len() >= cache.size {
-		popped := cache.list.Front()
-		if popped != nil {
-			poppedTxHash := popped.Value.([TxKeySize]byte)
-			delete(cache.cacheMap, poppedTxHash)
-			cache.list.Remove(popped)
-		}
-	}
-	e := cache.list.PushBack(txHash)
-	cache.cacheMap[txHash] = e
-	return true
-}
-
-// Remove removes the given tx from the cache.
-func (cache *mapTxCache) Remove(tx types.Tx) {
-	cache.mtx.Lock()
-	txHash := TxKey(tx)
-	popped := cache.cacheMap[txHash]
-	delete(cache.cacheMap, txHash)
-	if popped != nil {
-		cache.list.Remove(popped)
-	}
-
-	cache.mtx.Unlock()
-}
-
-type nopTxCache struct{}
-
-var _ txCache = (*nopTxCache)(nil)
-
-func (nopTxCache) Reset()             {}
-func (nopTxCache) Push(types.Tx) bool { return true }
-func (nopTxCache) Remove(types.Tx)    {}
-
-//--------------------------------------------------------------------------------
-
-// TxKey is the fixed length array hash used as the key in maps.
-func TxKey(tx types.Tx) [TxKeySize]byte {
-	return sha256.Sum256(tx)
-}
-
-// txID is a hash of the Tx.
-func txID(tx []byte) []byte {
-	return types.Tx(tx).Hash()
 }
