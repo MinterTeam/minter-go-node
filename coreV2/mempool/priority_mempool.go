@@ -249,6 +249,10 @@ func (mem *PriorityMempool) decrementTxsCounter(gasPrice uint32) {
 
 	mem.txsCounter -= 1
 	mem.txsGasPriceCounter[gasPrice] -= 1
+
+	if mem.txsGasPriceCounter[gasPrice] == 0 {
+		mem.removeGasPrice(gasPrice)
+	}
 }
 
 // Lock() must be help by the caller during execution.
@@ -280,6 +284,24 @@ func (mem *PriorityMempool) Flush() {
 		mem.txsMap.Delete(key)
 		return true
 	})
+}
+
+// TxsFront returns the first transaction in the ordered list for peer
+// goroutines to call .NextWait() on.
+// FIXME: leaking implementation details!
+//
+// Safe for concurrent use by multiple goroutines.
+func (mem *PriorityMempool) TxsFront() *clist.CElement {
+	return mem.getTxByGasPrice(mem.gasPrices[len(mem.gasPrices)-1]).Front()
+}
+
+// TxsWaitChan returns a channel to wait on transactions. It will be closed
+// once the mempool is not empty (ie. the internal `mem.txs` has at least one
+// element)
+//
+// Safe for concurrent use by multiple goroutines.
+func (mem *PriorityMempool) TxsWaitChan() <-chan struct{} {
+	return nil
 }
 
 // It blocks if we're waiting on Update() or Reap().
@@ -424,6 +446,18 @@ func (mem *PriorityMempool) addGasPrice(gp uint32) {
 	mem.gasPrices = append(mem.gasPrices, 0)
 	copy(mem.gasPrices[i+1:], mem.gasPrices[i:])
 	mem.gasPrices[i] = gp
+}
+
+func (mem *PriorityMempool) removeGasPrice(gp uint32) {
+	key := 0
+	for i, v := range mem.gasPrices {
+		if v == gp {
+			key = i
+			break
+		}
+	}
+
+	mem.gasPrices = append(mem.gasPrices[:key], mem.gasPrices[key+1:]...)
 }
 
 // Called from:

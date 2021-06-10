@@ -36,3 +36,5 @@ require (
 	google.golang.org/grpc v1.37.0
 	google.golang.org/protobuf v1.25.0
 )
+
+replace github.com/tendermint/tendermint => github.com/GrKamil/tendermint v0.34.11-0.20210610100913-0adcb9b29f96
