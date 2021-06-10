@@ -205,7 +205,7 @@ func (e *ExecutorV240) RunTx(context state.Interface, rawTx []byte, rewardPool *
 
 	if !isCheck && response.Code != 0 {
 		commissionInBaseCoin := big.NewInt(0).Add(commissions.FailedTxPrice(), big.NewInt(0).Mul(big.NewInt(tx.payloadLen()), commissions.PayloadByte))
-		if types.CurrentChainID == types.ChainTestnet && currentBlock > 4451966 { // todo: remove check
+		if types.CurrentChainID != types.ChainTestnet || currentBlock > 4451966 { // todo: remove check
 			commissionInBaseCoin = tx.Commission(commissionInBaseCoin)
 		}
 
