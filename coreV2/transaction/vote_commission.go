@@ -3,13 +3,14 @@ package transaction
 import (
 	"encoding/hex"
 	"fmt"
+	"math/big"
+	"strconv"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/commission"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	abcTypes "github.com/tendermint/tendermint/abci/types"
-	"math/big"
-	"strconv"
 )
 
 type VoteCommissionData struct {
@@ -58,6 +59,7 @@ type VoteCommissionData struct {
 	BurnToken               *big.Int
 	VoteCommission          *big.Int
 	VoteUpdate              *big.Int
+	FailedTx                *big.Int
 	More                    []*big.Int `rlp:"tail"`
 }
 
@@ -228,6 +230,6 @@ func (data VoteCommissionData) price() *commission.Price {
 		MintToken:               data.MintToken,
 		VoteCommission:          data.VoteCommission,
 		VoteUpdate:              data.VoteUpdate,
-		More:                    data.More,
+		More:                    append([]*big.Int{data.FailedTx}, data.More...),
 	}
 }
