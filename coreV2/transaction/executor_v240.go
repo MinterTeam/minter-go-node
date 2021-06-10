@@ -237,6 +237,9 @@ func (e *ExecutorV240) RunTx(context state.Interface, rawTx []byte, rewardPool *
 			}
 
 			intruder = checkSender
+			response.Tags = append(response.Tags,
+				abcTypes.EventAttribute{Key: []byte("tx.check_owner"), Value: []byte(intruder.String())},
+			)
 		}
 		balance := checkState.Accounts().GetBalance(intruder, tx.commissionCoin())
 		if balance.Sign() == 1 {
