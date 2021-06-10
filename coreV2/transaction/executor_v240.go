@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/MinterTeam/minter-go-node/coreV2/check"
 	abcTypes "github.com/tendermint/tendermint/abci/types"
 
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
@@ -216,7 +217,28 @@ func (e *ExecutorV240) RunTx(context state.Interface, rawTx []byte, rewardPool *
 			return *errResp
 		}
 
-		balance := checkState.Accounts().GetBalance(sender, tx.commissionCoin())
+		var intruder = sender
+		if tx.Type == TypeRedeemCheck {
+			decodedCheck, err := check.DecodeFromBytes(tx.decodedData.(*RedeemCheckData).RawCheck)
+			if err != nil {
+				return Response{
+					Code: code.DecodeError,
+					Log:  err.Error(),
+					Info: EncodeError(code.NewDecodeError()),
+				}
+			}
+			checkSender, err := decodedCheck.Sender()
+			if err != nil {
+				return Response{
+					Code: code.DecodeError,
+					Log:  err.Error(),
+					Info: EncodeError(code.NewDecodeError()),
+				}
+			}
+
+			intruder = checkSender
+		}
+		balance := checkState.Accounts().GetBalance(intruder, tx.commissionCoin())
 		if balance.Sign() == 1 {
 			if balance.Cmp(commission) == -1 {
 				commission = balance
@@ -244,7 +266,9 @@ func (e *ExecutorV240) RunTx(context state.Interface, rawTx []byte, rewardPool *
 					deliverState.Coins.SubVolume(tx.commissionCoin(), commission)
 					deliverState.Coins.SubReserve(tx.commissionCoin(), commissionInBaseCoin)
 				}
-				deliverState.Accounts.SubBalance(sender, tx.commissionCoin(), commission)
+
+				deliverState.Accounts.SubBalance(intruder, tx.commissionCoin(), commission)
+
 				rewardPool.Add(rewardPool, commissionInBaseCoin)
 				response.Tags = append(response.Tags,
 					abcTypes.EventAttribute{Key: []byte("tx.fail_fee"), Value: []byte(commission.String())},

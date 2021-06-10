@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/coreV2/state/commission"
 	"math/big"
 	"strconv"
+
+	"github.com/MinterTeam/minter-go-node/coreV2/state/commission"
 
 	"github.com/MinterTeam/minter-go-node/coreV2/check"
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
@@ -239,6 +240,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 			{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 			{Key: []byte("tx.to"), Value: []byte(hex.EncodeToString(sender[:])), Index: true},
 			{Key: []byte("tx.coin_id"), Value: []byte(decodedCheck.Coin.String()), Index: true},
+			{Key: []byte("tx.check_owner"), Value: []byte(checkSender.String()), Index: true},
 		}
 	}
 
