@@ -59,7 +59,6 @@ type VoteCommissionData struct {
 	BurnToken               *big.Int
 	VoteCommission          *big.Int
 	VoteUpdate              *big.Int
-	FailedTx                *big.Int
 	More                    []*big.Int `rlp:"tail"`
 }
 
@@ -230,6 +229,6 @@ func (data VoteCommissionData) price() *commission.Price {
 		MintToken:               data.MintToken,
 		VoteCommission:          data.VoteCommission,
 		VoteUpdate:              data.VoteUpdate,
-		More:                    append([]*big.Int{data.FailedTx}, data.More...),
+		More:                    data.More,
 	}
 }
