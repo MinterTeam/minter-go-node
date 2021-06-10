@@ -408,6 +408,7 @@ func priceCommissionData(d *transaction.VoteCommissionDataV240, coin *coins.Mode
 		BurnToken:               d.BurnToken.String(),
 		VoteCommission:          d.VoteCommission.String(),
 		VoteUpdate:              d.VoteUpdate.String(),
+		FailedTx:                d.FailedTX.String(),
 	}
 }
 
