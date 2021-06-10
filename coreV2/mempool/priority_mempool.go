@@ -255,6 +255,42 @@ func (mem *PriorityMempool) decrementTxsCounter(gasPrice uint32) {
 	}
 }
 
+func (mem *PriorityMempool) getTxByGasPrice(gp uint32) *clist.CList {
+	mem.txsmx.RLock()
+	defer mem.txsmx.RUnlock()
+	return mem.txs[gp]
+}
+
+func (mem *PriorityMempool) addGasPrice(gp uint32) {
+	exists := false
+	i := sort.Search(len(mem.gasPrices), func(i int) bool {
+		if mem.gasPrices[i] == gp {
+			exists = true
+		}
+		return mem.gasPrices[i] > gp
+	})
+
+	if exists {
+		return
+	}
+
+	mem.gasPrices = append(mem.gasPrices, 0)
+	copy(mem.gasPrices[i+1:], mem.gasPrices[i:])
+	mem.gasPrices[i] = gp
+}
+
+func (mem *PriorityMempool) removeGasPrice(gp uint32) {
+	key := 0
+	for i, v := range mem.gasPrices {
+		if v == gp {
+			key = i
+			break
+		}
+	}
+
+	mem.gasPrices = append(mem.gasPrices[:key], mem.gasPrices[key+1:]...)
+}
+
 // Lock() must be help by the caller during execution.
 func (mem *PriorityMempool) FlushAppConn() error {
 	return mem.proxyAppConn.FlushSync()
@@ -422,42 +458,6 @@ func (mem *PriorityMempool) reqResCb(
 			externalCb(res)
 		}
 	}
-}
-
-func (mem *PriorityMempool) getTxByGasPrice(gp uint32) *clist.CList {
-	mem.txsmx.RLock()
-	defer mem.txsmx.RUnlock()
-	return mem.txs[gp]
-}
-
-func (mem *PriorityMempool) addGasPrice(gp uint32) {
-	exists := false
-	i := sort.Search(len(mem.gasPrices), func(i int) bool {
-		if mem.gasPrices[i] == gp {
-			exists = true
-		}
-		return mem.gasPrices[i] > gp
-	})
-
-	if exists {
-		return
-	}
-
-	mem.gasPrices = append(mem.gasPrices, 0)
-	copy(mem.gasPrices[i+1:], mem.gasPrices[i:])
-	mem.gasPrices[i] = gp
-}
-
-func (mem *PriorityMempool) removeGasPrice(gp uint32) {
-	key := 0
-	for i, v := range mem.gasPrices {
-		if v == gp {
-			key = i
-			break
-		}
-	}
-
-	mem.gasPrices = append(mem.gasPrices[:key], mem.gasPrices[key+1:]...)
 }
 
 // Called from:
