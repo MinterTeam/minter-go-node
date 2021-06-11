@@ -61,6 +61,7 @@ type VoteCommissionDataV240 struct {
 	VoteUpdate              *big.Int
 	FailedTX                *big.Int
 	AddLimitOrder           *big.Int
+	RemoveLimitOrder        *big.Int
 	More                    []*big.Int `rlp:"tail"`
 }
 
@@ -231,6 +232,6 @@ func (data VoteCommissionDataV240) price() *commission.Price {
 		MintToken:               data.MintToken,
 		VoteCommission:          data.VoteCommission,
 		VoteUpdate:              data.VoteUpdate,
-		More:                    append([]*big.Int{data.FailedTX, data.AddLimitOrder}, data.More...),
+		More:                    append([]*big.Int{data.FailedTX, data.AddLimitOrder, data.RemoveLimitOrder}, data.More...),
 	}
 }
