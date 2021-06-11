@@ -60,6 +60,7 @@ type VoteCommissionDataV240 struct {
 	VoteCommission          *big.Int
 	VoteUpdate              *big.Int
 	FailedTX                *big.Int
+	AddLimitOrder           *big.Int
 	More                    []*big.Int `rlp:"tail"`
 }
 
@@ -140,7 +141,7 @@ func (data VoteCommissionDataV240) Run(tx *Transaction, context state.Interface,
 		return *response
 	}
 
-	commissionInBaseCoin := tx.Commission(price)
+	commissionInBaseCoin := price
 	commissionPoolSwapper := checkState.Swap().GetSwapper(tx.GasCoin, types.GetBaseCoinID())
 	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
 	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoin, commissionInBaseCoin)
@@ -230,6 +231,6 @@ func (data VoteCommissionDataV240) price() *commission.Price {
 		MintToken:               data.MintToken,
 		VoteCommission:          data.VoteCommission,
 		VoteUpdate:              data.VoteUpdate,
-		More:                    append([]*big.Int{data.FailedTX}, data.More...),
+		More:                    append([]*big.Int{data.FailedTX, data.AddLimitOrder}, data.More...),
 	}
 }

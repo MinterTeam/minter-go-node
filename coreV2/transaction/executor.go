@@ -190,7 +190,7 @@ func (e *Executor) RunTx(context state.Interface, rawTx []byte, rewardPool *big.
 	}
 
 	commissions := checkState.Commission().GetCommissions()
-	price := tx.Price(commissions)
+	price := tx.MulGasPrice(tx.Price(commissions))
 	coinCommission := abcTypes.EventAttribute{Key: []byte("tx.commission_price_coin"), Value: []byte(strconv.Itoa(int(commissions.Coin)))}
 	priceCommission := abcTypes.EventAttribute{Key: []byte("tx.commission_price"), Value: []byte(price.String())}
 

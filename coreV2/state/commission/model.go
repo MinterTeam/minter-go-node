@@ -52,6 +52,7 @@ type Price struct {
 	MintToken               *big.Int
 	VoteCommission          *big.Int
 	VoteUpdate              *big.Int
+
 	// todo: in v250 add FailedTx and AddOrder *big.Int
 	More []*big.Int `rlp:"tail"`
 }

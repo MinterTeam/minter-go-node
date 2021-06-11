@@ -177,7 +177,7 @@ func (e *ExecutorV240) RunTx(context state.Interface, rawTx []byte, rewardPool *
 	}
 
 	commissions := checkState.Commission().GetCommissions()
-	price := tx.Price(commissions)
+	price := tx.MulGasPrice(tx.Price(commissions))
 	coinCommission := abcTypes.EventAttribute{Key: []byte("tx.commission_price_coin"), Value: []byte(strconv.Itoa(int(commissions.Coin)))}
 	priceCommission := abcTypes.EventAttribute{Key: []byte("tx.commission_price"), Value: []byte(price.String())}
 
@@ -205,11 +205,16 @@ func (e *ExecutorV240) RunTx(context state.Interface, rawTx []byte, rewardPool *
 	}
 
 	if !isCheck && response.Code != 0 {
-		commissionInBaseCoin := big.NewInt(0).Add(commissions.FailedTxPrice(), big.NewInt(0).Mul(big.NewInt(tx.payloadLen()), commissions.PayloadByte))
+		commissionInBaseCoin := big.NewInt(0).Add(commissions.FailedTxPrice(), big.NewInt(0).Mul(big.NewInt(tx.payloadAndServiceDataLen()), commissions.PayloadByte))
 		if types.CurrentChainID != types.ChainTestnet || currentBlock > 4451966 { // todo: remove check
-			commissionInBaseCoin = tx.Commission(commissionInBaseCoin)
+			commissionInBaseCoin = tx.MulGasPrice(commissionInBaseCoin)
 		}
 
+		if !commissions.Coin.IsBaseCoin() {
+			commissionInBaseCoin = checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()).CalculateBuyForSell(commissionInBaseCoin)
+		}
+
+		// todo: custom coin price
 		commissionPoolSwapper := checkState.Swap().GetSwapper(tx.commissionCoin(), types.GetBaseCoinID())
 		gasCoin := checkState.Coins().GetCoin(tx.commissionCoin())
 		commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoin, commissionInBaseCoin)
@@ -244,7 +249,7 @@ func (e *ExecutorV240) RunTx(context state.Interface, rawTx []byte, rewardPool *
 		balance := checkState.Accounts().GetBalance(intruder, tx.commissionCoin())
 		if balance.Sign() == 1 {
 			if balance.Cmp(commission) == -1 {
-				commission = balance
+				commission = big.NewInt(0).Set(balance)
 				if isGasCommissionFromPoolSwap {
 					commissionInBaseCoin = commissionPoolSwapper.CalculateBuyForSell(commission)
 					if commissionInBaseCoin == nil || commissionInBaseCoin.Sign() == 0 {
