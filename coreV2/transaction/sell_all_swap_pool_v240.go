@@ -108,8 +108,8 @@ func (data SellAllSwapPoolDataV240) Run(tx *Transaction, context state.Interface
 	if balance.Sign() != 1 {
 		return Response{
 			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), balance.String(), sellCoin.GetFullSymbol()),
-			Info: EncodeError(code.NewInsufficientFunds(sender.String(), balance.String(), sellCoin.GetFullSymbol(), coinToSell.String())),
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted more %s %s", sender.String(), big.NewInt(0).Neg(balance).String(), sellCoin.GetFullSymbol()),
+			Info: EncodeError(code.NewInsufficientFunds(sender.String(), big.NewInt(0).Neg(balance).String(), sellCoin.GetFullSymbol(), coinToSell.String())),
 		}
 	}
 	lastIteration := len(data.Coins[1:]) - 1
