@@ -140,7 +140,7 @@ func (data AddOrderSwapPoolData) Run(tx *Transaction, context state.Interface, r
 		}
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		deliverState.Accounts.SubBalance(sender, data.CoinToSell, data.ValueToSell)
-		orderID := deliverState.Swap.PairAddOrder(data.CoinToBuy, data.CoinToSell, data.ValueToBuy, data.ValueToSell, sender)
+		orderID, poolID := deliverState.Swap.PairAddOrder(data.CoinToBuy, data.CoinToSell, data.ValueToBuy, data.ValueToSell, sender)
 
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 
@@ -149,6 +149,7 @@ func (data AddOrderSwapPoolData) Run(tx *Transaction, context state.Interface, r
 			{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String()), Index: true},
 			{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 			{Key: []byte("tx.commission_details"), Value: []byte(tagsCom.string())},
+			{Key: []byte("tx.pool_id"), Value: []byte(strconv.Itoa(int(poolID)))},
 			{Key: []byte("tx.order_id"), Value: []byte(strconv.Itoa(int(orderID)))},
 		}
 	}

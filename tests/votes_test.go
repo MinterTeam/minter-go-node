@@ -331,13 +331,16 @@ func TestVoteupdate(t *testing.T) {
 	SendEndBlock(app, 2) // send EndBlock
 	SendCommit(app)      // send Commit
 
-	if len(app.UpdateVersions()) != 1 {
+	if len(app.UpdateVersions()) == 0 {
 		t.Fatalf("not updates")
 	}
 
-	if app.UpdateVersions()[0].Name != "a" {
-		t.Fatalf("error update")
+	for _, version := range app.UpdateVersions() {
+		if version.Name == "a" {
+			return
+		}
 	}
+	t.Fatalf("error update")
 }
 
 func TestVoteCommissionFail(t *testing.T) {

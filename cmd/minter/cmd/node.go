@@ -87,7 +87,7 @@ func runNode(cmd *cobra.Command) error {
 	if err != nil {
 		return err
 	}
-	app := minter.NewMinterBlockchain(storages, cfg, cmd.Context(), 0, "")
+	app := minter.NewMinterBlockchain(storages, cfg, cmd.Context(), 0)
 
 	// start TM node
 	node := startTendermintNode(app, tmConfig, logger, storages.GetMinterHome())

@@ -190,7 +190,7 @@ func (s *Swap) Import(state *types.AppState) {
 			if !order.IsSale {
 				key = key.reverse()
 			}
-			s.PairAddOrder(key.Coin0, key.Coin1, helpers.StringToBigInt(order.Volume0), helpers.StringToBigInt(order.Volume1), order.Owner)
+			s.PairAddOrderWithID(key.Coin0, key.Coin1, helpers.StringToBigInt(order.Volume0), helpers.StringToBigInt(order.Volume1), order.Owner, uint32(order.ID))
 		}
 		s.nextOrderID = uint32(state.NextOrderID)
 		s.dirtyNextID = true

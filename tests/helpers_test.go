@@ -27,7 +27,7 @@ func CreateApp(state types.AppState) *minter.Blockchain {
 	storage := utils.NewStorage("", "")
 	cfg := config.GetConfig(storage.GetMinterHome())
 	cfg.DBBackend = "memdb"
-	app := minter.NewMinterBlockchain(storage, cfg, nil, 120, "v240")
+	app := minter.NewMinterBlockchain(storage, cfg, nil, 120)
 	var updates []tmTypes.ValidatorUpdate
 	for _, validator := range state.Validators {
 		updates = append(updates, tmTypes.Ed25519ValidatorUpdate(validator.PubKey.Bytes(), 1))
@@ -152,6 +152,7 @@ func CreateAddress() (types.Address, *ecdsa.PrivateKey) {
 // DefaultAppState returns new AppState with some predefined values
 func DefaultAppState() types.AppState {
 	return types.AppState{
+		Version:             "v250",
 		Note:                "",
 		Validators:          nil,
 		Candidates:          nil,

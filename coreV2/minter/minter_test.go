@@ -57,7 +57,7 @@ func initTestNode(t *testing.T, initialHeight int64) (*Blockchain, *rpc.Local, *
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 
-	app := NewMinterBlockchain(storage, minterCfg, ctx, 120, "")
+	app := NewMinterBlockchain(storage, minterCfg, ctx, 120)
 	nodeKey, err := p2p.LoadOrGenNodeKey(cfg.NodeKeyFile())
 	if err != nil {
 		t.Fatal(err)

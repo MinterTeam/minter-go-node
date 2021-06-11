@@ -80,7 +80,7 @@ type Blockchain struct {
 }
 
 // NewMinterBlockchain creates Minter Blockchain instance, should be only called once
-func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx context.Context, period uint64, version string) *Blockchain {
+func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx context.Context, period uint64) *Blockchain {
 	// Initiate Application DB. Used for persisting data like current block, validators, etc.
 	applicationDB := appdb.NewAppDB(storages.GetMinterHome(), cfg)
 	if ctx == nil {
@@ -114,7 +114,7 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 			v250: {},
 			// add more for update
 		},
-		executor: GetExecutor(version),
+		executor: GetExecutor(""),
 	}
 	if applicationDB.GetStartHeight() != 0 {
 		app.initState()
@@ -189,9 +189,9 @@ func (blockchain *Blockchain) InitChain(req abciTypes.RequestInitChain) abciType
 	initialHeight := uint64(req.InitialHeight) - 1
 
 	blockchain.appDB.SetStartHeight(initialHeight)
-	blockchain.initState()
+	blockchain.appDB.AddVersion(genesisState.Version, initialHeight)
 
-	// todo: use genesisState.Version
+	blockchain.initState()
 
 	if err := blockchain.stateDeliver.Import(genesisState); err != nil {
 		panic(err)
@@ -208,6 +208,7 @@ func (blockchain *Blockchain) InitChain(req abciTypes.RequestInitChain) abciType
 	blockchain.appDB.SetLastHeight(lastHeight)
 
 	blockchain.appDB.SaveStartHeight()
+	blockchain.appDB.SaveVersions()
 
 	defer blockchain.appDB.FlushValidators()
 	return abciTypes.ResponseInitChain{

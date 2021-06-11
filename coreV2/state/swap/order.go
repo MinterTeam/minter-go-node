@@ -719,13 +719,22 @@ func (p *Pair) setBuyLowerOrders(orders []*Limit) {
 	return
 }
 
-func (s *Swap) PairAddOrder(coinWantBuy, coinWantSell types.CoinID, wantBuyAmount, wantSellAmount *big.Int, sender types.Address) uint32 {
+func (s *Swap) PairAddOrder(coinWantBuy, coinWantSell types.CoinID, wantBuyAmount, wantSellAmount *big.Int, sender types.Address) (uint32, uint32) {
 	pair := s.Pair(coinWantBuy, coinWantSell)
 	order := pair.SetOrder(wantBuyAmount, wantSellAmount, sender)
 
 	s.bus.Checker().AddCoin(coinWantSell, wantSellAmount)
 
-	return order.id
+	return order.id, pair.GetID()
+}
+
+func (s *Swap) PairAddOrderWithID(coinWantBuy, coinWantSell types.CoinID, wantBuyAmount, wantSellAmount *big.Int, sender types.Address, id uint32) (uint32, uint32) {
+	pair := s.Pair(coinWantBuy, coinWantSell)
+	order := pair.SetOrderWithID(wantBuyAmount, wantSellAmount, sender, id)
+
+	s.bus.Checker().AddCoin(coinWantSell, wantSellAmount)
+
+	return order.id, pair.GetID()
 }
 
 func (p *Pair) SetOrder(wantBuyAmount0, wantSellAmount1 *big.Int, sender types.Address) (order *Limit) {
@@ -735,6 +744,26 @@ func (p *Pair) SetOrder(wantBuyAmount0, wantSellAmount1 *big.Int, sender types.A
 		WantBuy:  wantBuyAmount0,
 		WantSell: wantSellAmount1,
 		id:       p.getLastTotalOrderID(),
+		Owner:    sender,
+		RWMutex:  new(sync.RWMutex),
+	}
+	defer p.MarkDirtyOrders(order.sort())
+
+	p.lockOrders.Lock()
+	defer p.lockOrders.Unlock()
+
+	p.setOrder(order)
+
+	return order
+}
+
+func (p *Pair) SetOrderWithID(wantBuyAmount0, wantSellAmount1 *big.Int, sender types.Address, id uint32) (order *Limit) {
+	order = &Limit{
+		pairKey:  p.pairKey,
+		isBuy:    false,
+		WantBuy:  wantBuyAmount0,
+		WantSell: wantSellAmount1,
+		id:       id,
 		Owner:    sender,
 		RWMutex:  new(sync.RWMutex),
 	}
