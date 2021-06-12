@@ -520,6 +520,19 @@ func (blockchain *Blockchain) Commit() abciTypes.ResponseCommit {
 		return abciTypes.ResponseCommit{Data: hash}
 	}
 
+	stateDeliver, err := state.NewState(blockchain.Height(),
+		blockchain.storages.StateDB(),
+		blockchain.eventsDB,
+		blockchain.cfg.StateCacheSize,
+		blockchain.cfg.KeepLastStates,
+		blockchain.appDB.GetStartHeight())
+	if err != nil {
+		panic(err)
+	}
+
+	blockchain.stateDeliver = stateDeliver
+	blockchain.stateCheck = state.NewCheckState(stateDeliver)
+
 	return abciTypes.ResponseCommit{
 		Data:         hash,
 		RetainHeight: 0,
