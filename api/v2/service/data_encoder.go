@@ -209,7 +209,7 @@ func encode(data transaction.Data, txType transaction.TxType, rCoins coins.RCoin
 			Value: d.Value.String(),
 		}
 	case transaction.TypeAddLiquidity:
-		d := data.(*transaction.AddLiquidityData)
+		d := data.(*transaction.AddLiquidityDataV240)
 		m = &pb.AddLiquidityData{
 			Coin0: &pb.Coin{
 				Id:     uint64(d.Coin0),
@@ -223,7 +223,7 @@ func encode(data transaction.Data, txType transaction.TxType, rCoins coins.RCoin
 			MaximumVolume1: d.MaximumVolume1.String(),
 		}
 	case transaction.TypeRemoveLiquidity:
-		d := data.(*transaction.RemoveLiquidityV230)
+		d := data.(*transaction.RemoveLiquidityV240)
 		m = &pb.RemoveLiquidityData{
 			Coin0: &pb.Coin{
 				Id:     uint64(d.Coin0),

@@ -121,9 +121,9 @@ func GetDataV240(txType TxType) (Data, bool) {
 	case TypeEditCandidatePublicKey:
 		return &EditCandidatePublicKeyData{}, true
 	case TypeAddLiquidity:
-		return &AddLiquidityData{}, true
+		return &AddLiquidityDataV240{}, true
 	case TypeRemoveLiquidity:
-		return &RemoveLiquidityV230{}, true
+		return &RemoveLiquidityV240{}, true
 	case TypeSellSwapPool:
 		return &SellSwapPoolDataV240{}, true
 	case TypeBuySwapPool:
