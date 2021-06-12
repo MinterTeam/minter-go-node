@@ -49,14 +49,6 @@ func (data AddOrderSwapPoolData) basicCheck(tx *Transaction, context *state.Chec
 		}
 	}
 
-	if swapper.Price().Cmp(swap.CalcPriceSell(data.ValueToBuy, data.ValueToSell)) == -1 {
-		return &Response{
-			Code: 123456,
-			Log:  "price high",
-			Info: EncodeError(code.NewCustomCode(123456)),
-		}
-	}
-
 	return nil
 }
 
@@ -108,6 +100,24 @@ func (data AddOrderSwapPoolData) Run(tx *Transaction, context state.Interface, r
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), amountSell.String(), coin.GetFullSymbol()),
 			Info: EncodeError(code.NewInsufficientFunds(sender.String(), amountSell.String(), coin.GetFullSymbol(), coin.ID().String())),
+		}
+	}
+
+	swapper := checkState.Swap().GetSwapper(data.CoinToSell, data.CoinToBuy)
+	if isGasCommissionFromPoolSwap && swapper.GetID() == commissionPoolSwapper.GetID() {
+		// todo: need test
+		if tx.GasCoin == data.CoinToSell && data.CoinToBuy.IsBaseCoin() {
+			swapper = swapper.AddLastSwapStepWithOrders(commission, commissionInBaseCoin)
+		}
+		if tx.GasCoin == data.CoinToBuy && data.CoinToSell.IsBaseCoin() {
+			swapper = swapper.AddLastSwapStepWithOrders(commissionInBaseCoin, commission)
+		}
+	}
+	if swapper.Price().Cmp(swap.CalcPriceSell(data.ValueToBuy, data.ValueToSell)) == -1 {
+		return Response{
+			Code: 123456,
+			Log:  "price high",
+			Info: EncodeError(code.NewCustomCode(123456)),
 		}
 	}
 

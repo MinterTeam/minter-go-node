@@ -189,12 +189,13 @@ func (p *Pair) resortSellOrderList(i int, limit *Limit) {
 	if !p.isSorted() {
 		cmp = -1
 	}
+	// todo: need tests
 	switch limit.CmpOldRate() {
 	case 0:
 		return
 	case cmp:
 		p.unsetOrderSellLowerByIndex(i)
-	default:
+	default: // FIXME: do something, if next step will change current price to up, than we will not load this order!!! mb need to clear all cache orders?
 		p.unsetOrderSellLowerByIndex(i)
 
 		loadedLen := len(p.SellLowerOrders())
