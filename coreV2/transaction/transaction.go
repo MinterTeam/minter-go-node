@@ -5,6 +5,8 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"math/big"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/commission"
@@ -12,7 +14,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"golang.org/x/crypto/sha3"
-	"math/big"
 )
 
 // TxType of transaction is determined by a single byte.
@@ -200,8 +201,8 @@ func (tx *Transaction) Gas() int64 {
 	if tx.commissionCoin() != types.GetBaseCoinID() {
 		base += 1
 	}
-	if tx.payloadLen() != 0 {
-		base += tx.payloadLen() / 1000
+	if tx.payloadAndServiceDataLen() != 0 {
+		base += tx.payloadAndServiceDataLen() / 1000
 	}
 	if tx.SignatureType == SigTypeMulti {
 		base += int64(len(tx.multisig.Signatures)) * gasSign
@@ -210,15 +211,17 @@ func (tx *Transaction) Gas() int64 {
 }
 
 func (tx *Transaction) Price(price *commission.Price) *big.Int {
-	return big.NewInt(0).Add(tx.decodedData.CommissionData(price), big.NewInt(0).Mul(big.NewInt(tx.payloadLen()), price.PayloadByte))
+	payloadAndServiceData := big.NewInt(0).Mul(big.NewInt(tx.payloadAndServiceDataLen()), price.PayloadByte)
+	return big.NewInt(0).Add(tx.decodedData.CommissionData(price), payloadAndServiceData)
 }
 
-func (tx *Transaction) payloadLen() int64 {
+func (tx *Transaction) payloadAndServiceDataLen() int64 {
 	return int64(len(tx.Payload) + len(tx.ServiceData))
 }
 
-func (tx *Transaction) Commission(gas *big.Int) *big.Int {
-	return big.NewInt(0).Mul(big.NewInt(int64(tx.GasPrice)), gas)
+// MulGasPrice returns price multiplier gasPrice
+func (tx *Transaction) MulGasPrice(price *big.Int) *big.Int {
+	return big.NewInt(0).Mul(big.NewInt(int64(tx.GasPrice)), price)
 }
 
 func (tx *Transaction) String() string {

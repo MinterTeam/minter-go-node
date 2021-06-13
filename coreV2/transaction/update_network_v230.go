@@ -14,26 +14,26 @@ import (
 	abcTypes "github.com/tendermint/tendermint/abci/types"
 )
 
-type VoteUpdateData struct {
+type VoteUpdateDataV230 struct {
 	Version string
 	PubKey  types.Pubkey
 	Height  uint64
 }
 
-func (data VoteUpdateData) Gas() int64 {
+func (data VoteUpdateDataV230) Gas() int64 {
 	return gasVoteUpdate
 }
-func (data VoteUpdateData) TxType() TxType {
+func (data VoteUpdateDataV230) TxType() TxType {
 	return TypeVoteUpdate
 }
 
-func (data VoteUpdateData) GetPubKey() types.Pubkey {
+func (data VoteUpdateDataV230) GetPubKey() types.Pubkey {
 	return data.PubKey
 }
 
 var allowedVersionNameRegexpCompile, _ = regexp.Compile("^[a-zA-Z0-9_]{1,20}$")
 
-func (data VoteUpdateData) basicCheck(tx *Transaction, context *state.CheckState, block uint64) *Response {
+func (data VoteUpdateDataV230) basicCheck(tx *Transaction, context *state.CheckState, block uint64) *Response {
 	if !allowedVersionNameRegexpCompile.Match([]byte(data.Version)) {
 		return &Response{
 			Code: code.WrongUpdateVersionName,
@@ -60,15 +60,15 @@ func (data VoteUpdateData) basicCheck(tx *Transaction, context *state.CheckState
 	return checkCandidateOwnership(data, tx, context)
 }
 
-func (data VoteUpdateData) String() string {
+func (data VoteUpdateDataV230) String() string {
 	return fmt.Sprintf("UPDATE NETWORK on height: %d", data.Height)
 }
 
-func (data VoteUpdateData) CommissionData(price *commission.Price) *big.Int {
+func (data VoteUpdateDataV230) CommissionData(price *commission.Price) *big.Int {
 	return price.VoteUpdate
 }
 
-func (data VoteUpdateData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
+func (data VoteUpdateDataV230) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -82,7 +82,7 @@ func (data VoteUpdateData) Run(tx *Transaction, context state.Interface, rewardP
 		return *response
 	}
 
-	commissionInBaseCoin := tx.Commission(price)
+	commissionInBaseCoin := price
 	commissionPoolSwapper := checkState.Swap().GetSwapper(tx.GasCoin, types.GetBaseCoinID())
 	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
 	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoin, commissionInBaseCoin)

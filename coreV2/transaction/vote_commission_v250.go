@@ -13,7 +13,7 @@ import (
 	abcTypes "github.com/tendermint/tendermint/abci/types"
 )
 
-type VoteCommissionDataV1 struct {
+type VoteCommissionDataV250 struct {
 	PubKey                  types.Pubkey
 	Height                  uint64
 	Coin                    types.CoinID
@@ -59,22 +59,25 @@ type VoteCommissionDataV1 struct {
 	BurnToken               *big.Int
 	VoteCommission          *big.Int
 	VoteUpdate              *big.Int
+	FailedTX                *big.Int
+	AddLimitOrder           *big.Int
+	RemoveLimitOrder        *big.Int
 	More                    []*big.Int `rlp:"tail"`
 }
 
-func (data VoteCommissionDataV1) TxType() TxType {
+func (data VoteCommissionDataV250) TxType() TxType {
 	return TypeVoteCommission
 }
-func (data VoteCommissionDataV1) Gas() int64 {
+func (data VoteCommissionDataV250) Gas() int64 {
 	return gasVoteCommission
 }
 
-func (data VoteCommissionDataV1) GetPubKey() types.Pubkey {
+func (data VoteCommissionDataV250) GetPubKey() types.Pubkey {
 	return data.PubKey
 }
 
-func (data VoteCommissionDataV1) basicCheck(tx *Transaction, context *state.CheckState, block uint64) *Response {
-	if len(data.More) > 0 { // todo
+func (data VoteCommissionDataV250) basicCheck(tx *Transaction, context *state.CheckState, block uint64) *Response {
+	if len(data.More) > 0 { // todo: mb use
 		return &Response{
 			Code: code.DecodeError,
 			Log:  "More parameters than expected",
@@ -117,15 +120,15 @@ func (data VoteCommissionDataV1) basicCheck(tx *Transaction, context *state.Chec
 	return checkCandidateOwnership(data, tx, context)
 }
 
-func (data VoteCommissionDataV1) String() string {
+func (data VoteCommissionDataV250) String() string {
 	return fmt.Sprintf("PRICE COMMISSION in coin: %d", data.Coin)
 }
 
-func (data VoteCommissionDataV1) CommissionData(price *commission.Price) *big.Int {
+func (data VoteCommissionDataV250) CommissionData(price *commission.Price) *big.Int {
 	return price.VoteCommission
 }
 
-func (data VoteCommissionDataV1) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
+func (data VoteCommissionDataV250) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -184,7 +187,7 @@ func (data VoteCommissionDataV1) Run(tx *Transaction, context state.Interface, r
 	}
 }
 
-func (data VoteCommissionDataV1) price() *commission.Price {
+func (data VoteCommissionDataV250) price() *commission.Price {
 	return &commission.Price{
 		Coin:                    data.Coin,
 		PayloadByte:             data.PayloadByte,
@@ -229,6 +232,6 @@ func (data VoteCommissionDataV1) price() *commission.Price {
 		MintToken:               data.MintToken,
 		VoteCommission:          data.VoteCommission,
 		VoteUpdate:              data.VoteUpdate,
-		More:                    data.More,
+		More:                    append([]*big.Int{data.FailedTX, data.AddLimitOrder, data.RemoveLimitOrder}, data.More...),
 	}
 }

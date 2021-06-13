@@ -26,7 +26,7 @@ func (s *Service) Transaction(ctx context.Context, req *pb.TransactionRequest) (
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
 
-	decodedTx, _ := s.executor.DecodeFromBytes(tx.Tx)
+	decodedTx, _ := s.decoderTx.DecodeFromBytes(tx.Tx)
 	sender, _ := decodedTx.Sender()
 
 	tags := make(map[string]string)
@@ -42,7 +42,7 @@ func (s *Service) Transaction(ctx context.Context, req *pb.TransactionRequest) (
 		return nil, timeoutStatus.Err()
 	}
 
-	dataStruct, err := encode(decodedTx.GetDecodedData(), cState.Coins())
+	dataStruct, err := encode(decodedTx.GetDecodedData(), decodedTx.Type, cState.Coins())
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

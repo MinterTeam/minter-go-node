@@ -33,7 +33,7 @@ func TestPriceCommissionTx(t *testing.T) {
 	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0, 0)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 	{
-		data := VoteCommissionData{
+		data := VoteCommissionDataV1{
 			PubKey:            pubkey,
 			Height:            uint64(100500),
 			Coin:              coin1,
@@ -107,7 +107,7 @@ func TestPriceCommissionTx(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+		response := NewExecutor(GetDataV230).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 		if response.Code != 0 {
 			t.Fatalf("Response code is not 0. Error: %s", response.Log)
 		}
@@ -118,7 +118,7 @@ func TestPriceCommissionTx(t *testing.T) {
 	}
 
 	{
-		data := VoteCommissionData{
+		data := VoteCommissionDataV1{
 			PayloadByte:      big.NewInt(1e18),
 			Send:             big.NewInt(1e18),
 			BuyBancor:        big.NewInt(1e18),
@@ -189,7 +189,7 @@ func TestPriceCommissionTx(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+		response := NewExecutor(GetDataV230).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 		if response.Code != code.VoteAlreadyExists {
 			t.Fatalf("Response code is not %d. Error: %s", code.VoteAlreadyExists, response.Log)
 		}
@@ -220,7 +220,7 @@ func TestPriceCommissionDeleteTx(t *testing.T) {
 	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0, 0)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 	{
-		data := VoteCommissionData{
+		data := VoteCommissionDataV1{
 			PayloadByte:       big.NewInt(1e18),
 			Send:              big.NewInt(1e18),
 			BuyBancor:         big.NewInt(1e18),
@@ -292,7 +292,7 @@ func TestPriceCommissionDeleteTx(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+		response := NewExecutor(GetDataV230).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 		if response.Code != 0 {
 			t.Fatalf("Response code is not 0. Error: %s", response.Log)
 		}
@@ -306,7 +306,7 @@ func TestPriceCommissionDeleteTx(t *testing.T) {
 		t.Error(err)
 	}
 	{
-		data := VoteCommissionData{
+		data := VoteCommissionDataV1{
 			PayloadByte:       big.NewInt(1e18),
 			Send:              big.NewInt(1e18),
 			BuyBancor:         big.NewInt(1e18),
@@ -378,7 +378,7 @@ func TestPriceCommissionDeleteTx(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+		response := NewExecutor(GetDataV230).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 		if response.Code != code.OK {
 			t.Fatalf("Response code is not 0. Error: %s", response.Log)
 		}
@@ -412,7 +412,7 @@ func TestPriceCommissionAnyTx(t *testing.T) {
 		cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0, 0)
 		cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 
-		data := VoteCommissionData{
+		data := VoteCommissionDataV1{
 			PayloadByte:       big.NewInt(1e18),
 			Send:              big.NewInt(1e18),
 			BuyBancor:         big.NewInt(1e18),
@@ -484,7 +484,7 @@ func TestPriceCommissionAnyTx(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+		response := NewExecutor(GetDataV230).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 		if response.Code != 0 {
 			t.Fatalf("Response code is not 0. Error: %s", response.Log)
 		}
@@ -514,7 +514,7 @@ func TestPriceCommissionAnyTx(t *testing.T) {
 		cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0, 0)
 		cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 
-		data := VoteCommissionData{
+		data := VoteCommissionDataV1{
 			PayloadByte:       big.NewInt(1e18),
 			Send:              big.NewInt(1e18),
 			BuyBancor:         big.NewInt(1e18),
@@ -586,7 +586,7 @@ func TestPriceCommissionAnyTx(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+		response := NewExecutor(GetDataV230).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 		if response.Code != code.OK {
 			t.Fatalf("Response code is not 0. Error: %s", response.Log)
 		}
