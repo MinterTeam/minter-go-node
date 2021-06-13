@@ -13,7 +13,7 @@ import (
 	abcTypes "github.com/tendermint/tendermint/abci/types"
 )
 
-type VoteCommissionData struct {
+type VoteCommissionDataV1 struct {
 	PubKey                  types.Pubkey
 	Height                  uint64
 	Coin                    types.CoinID
@@ -62,18 +62,18 @@ type VoteCommissionData struct {
 	More                    []*big.Int `rlp:"tail"`
 }
 
-func (data VoteCommissionData) TxType() TxType {
+func (data VoteCommissionDataV1) TxType() TxType {
 	return TypeVoteCommission
 }
-func (data VoteCommissionData) Gas() int64 {
+func (data VoteCommissionDataV1) Gas() int64 {
 	return gasVoteCommission
 }
 
-func (data VoteCommissionData) GetPubKey() types.Pubkey {
+func (data VoteCommissionDataV1) GetPubKey() types.Pubkey {
 	return data.PubKey
 }
 
-func (data VoteCommissionData) basicCheck(tx *Transaction, context *state.CheckState, block uint64) *Response {
+func (data VoteCommissionDataV1) basicCheck(tx *Transaction, context *state.CheckState, block uint64) *Response {
 	if len(data.More) > 0 { // todo
 		return &Response{
 			Code: code.DecodeError,
@@ -117,15 +117,15 @@ func (data VoteCommissionData) basicCheck(tx *Transaction, context *state.CheckS
 	return checkCandidateOwnership(data, tx, context)
 }
 
-func (data VoteCommissionData) String() string {
+func (data VoteCommissionDataV1) String() string {
 	return fmt.Sprintf("PRICE COMMISSION in coin: %d", data.Coin)
 }
 
-func (data VoteCommissionData) CommissionData(price *commission.Price) *big.Int {
+func (data VoteCommissionDataV1) CommissionData(price *commission.Price) *big.Int {
 	return price.VoteCommission
 }
 
-func (data VoteCommissionData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
+func (data VoteCommissionDataV1) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -184,7 +184,7 @@ func (data VoteCommissionData) Run(tx *Transaction, context state.Interface, rew
 	}
 }
 
-func (data VoteCommissionData) price() *commission.Price {
+func (data VoteCommissionDataV1) price() *commission.Price {
 	return &commission.Price{
 		Coin:                    data.Coin,
 		PayloadByte:             data.PayloadByte,
