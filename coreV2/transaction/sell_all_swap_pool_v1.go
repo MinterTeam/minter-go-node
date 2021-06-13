@@ -7,66 +7,24 @@ import (
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/commission"
-	"github.com/MinterTeam/minter-go-node/coreV2/state/swap"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
-	"github.com/MinterTeam/minter-go-node/formula"
 	abcTypes "github.com/tendermint/tendermint/abci/types"
-	tmjson "github.com/tendermint/tendermint/libs/json"
 )
 
-type tagPoolsChange []*tagPoolChange
-
-func (p *tagPoolsChange) string() string {
-	if p == nil {
-		return ""
-	}
-	marshal, err := tmjson.Marshal(p)
-	if err != nil {
-		panic(err)
-	}
-	return string(marshal)
-}
-
-type tagPoolChange struct {
-	PoolID   uint32       `json:"pool_id"`
-	CoinIn   types.CoinID `json:"coin_in"`
-	ValueIn  string       `json:"value_in"`
-	CoinOut  types.CoinID `json:"coin_out"`
-	ValueOut string       `json:"value_out"`
-}
-
-type SellAllSwapPoolDataV230 struct {
+type SellAllSwapPoolDataV1 struct {
 	Coins             []types.CoinID
 	MinimumValueToBuy *big.Int
 }
 
-type dataCommission interface {
-	commissionCoin() types.CoinID
-}
-
-func (data *SellAllSwapPoolDataV1) commissionCoin() types.CoinID {
-	if len(data.Coins) == 0 {
-		return 0
-	}
-	return data.Coins[0]
-}
-
-func (data *SellAllSwapPoolDataV230) commissionCoin() types.CoinID {
-	if len(data.Coins) == 0 {
-		return 0
-	}
-	return data.Coins[0]
-}
-
-func (data SellAllSwapPoolDataV230) Gas() int64 {
+func (data *SellAllSwapPoolDataV1) Gas() int64 {
 	return gasSellAllSwapPool + int64(len(data.Coins)-2)*convertDelta
 }
 
-func (data SellAllSwapPoolDataV230) TxType() TxType {
+func (data *SellAllSwapPoolDataV1) TxType() TxType {
 	return TypeSellAllSwapPool
 }
 
-func (data SellAllSwapPoolDataV230) basicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data SellAllSwapPoolDataV1) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if len(data.Coins) < 2 {
 		return &Response{
 			Code: code.DecodeError,
@@ -104,15 +62,15 @@ func (data SellAllSwapPoolDataV230) basicCheck(tx *Transaction, context *state.C
 	return nil
 }
 
-func (data SellAllSwapPoolDataV230) String() string {
+func (data SellAllSwapPoolDataV1) String() string {
 	return fmt.Sprintf("SWAP POOL SELL ALL")
 }
 
-func (data SellAllSwapPoolDataV230) CommissionData(price *commission.Price) *big.Int {
+func (data SellAllSwapPoolDataV1) CommissionData(price *commission.Price) *big.Int {
 	return new(big.Int).Add(price.SellAllPoolBase, new(big.Int).Mul(price.SellAllPoolDelta, big.NewInt(int64(len(data.Coins))-2)))
 }
 
-func (data SellAllSwapPoolDataV230) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
+func (data SellAllSwapPoolDataV1) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -149,21 +107,12 @@ func (data SellAllSwapPoolDataV230) Run(tx *Transaction, context state.Interface
 	}
 	lastIteration := len(data.Coins[1:]) - 1
 	{
-		checkDuplicatePools := map[uint32]struct{}{}
 		coinToSell := data.Coins[0]
 		coinToSellModel := sellCoin
 		valueToSell := big.NewInt(0).Set(balance)
 		valueToBuy := big.NewInt(0)
 		for i, coinToBuy := range data.Coins[1:] {
 			swapper := checkState.Swap().GetSwapper(coinToSell, coinToBuy)
-			if _, ok := checkDuplicatePools[swapper.GetID()]; ok {
-				return Response{
-					Code: code.DuplicatePoolInRoute,
-					Log:  fmt.Sprintf("Forbidden to repeat the pool in the route, pool duplicate %d", swapper.GetID()),
-					Info: EncodeError(code.NewDuplicatePoolInRouteCode(swapper.GetID())),
-				}
-			}
-			checkDuplicatePools[swapper.GetID()] = struct{}{}
 			if isGasCommissionFromPoolSwap == true && coinToBuy.IsBaseCoin() {
 				swapper = commissionPoolSwapper.AddLastSwapStep(commission, commissionInBaseCoin)
 			}
@@ -252,121 +201,4 @@ func (data SellAllSwapPoolDataV230) Run(tx *Transaction, context state.Interface
 		Code: code.OK,
 		Tags: tags,
 	}
-}
-
-type DummyCoin struct {
-	id         types.CoinID
-	volume     *big.Int
-	reserve    *big.Int
-	crr        uint32
-	fullSymbol string
-	maxSupply  *big.Int
-}
-
-func NewDummyCoin(id types.CoinID, volume *big.Int, reserve *big.Int, crr uint32, fullSymbol string, maxSupply *big.Int) *DummyCoin {
-	return &DummyCoin{id: id, volume: volume, reserve: reserve, crr: crr, fullSymbol: fullSymbol, maxSupply: maxSupply}
-}
-
-func (m DummyCoin) ID() types.CoinID {
-	return m.id
-}
-
-func (m DummyCoin) BaseOrHasReserve() bool {
-	return m.ID().IsBaseCoin() || (m.Crr() > 0 && m.Reserve().Sign() == 1)
-}
-
-func (m DummyCoin) Volume() *big.Int {
-	return m.volume
-}
-
-func (m DummyCoin) Reserve() *big.Int {
-	return m.reserve
-}
-
-func (m DummyCoin) Crr() uint32 {
-	return m.crr
-}
-
-func (m DummyCoin) GetFullSymbol() string {
-	return m.fullSymbol
-}
-func (m DummyCoin) MaxSupply() *big.Int {
-	return m.maxSupply
-}
-
-type CalculateCoin interface {
-	ID() types.CoinID
-	BaseOrHasReserve() bool
-	Volume() *big.Int
-	Reserve() *big.Int
-	Crr() uint32
-	GetFullSymbol() string
-	MaxSupply() *big.Int
-}
-type gasMethod bool
-
-func (isGasCommissionFromPoolSwap gasMethod) String() string {
-	if isGasCommissionFromPoolSwap {
-		return "pool"
-	}
-	return "bancor"
-}
-
-func CalculateCommission(checkState *state.CheckState, swapper swap.EditableChecker, gasCoin CalculateCoin, commissionInBaseCoin *big.Int) (commission *big.Int, poolSwap gasMethod, errResp *Response) {
-	if gasCoin.ID().IsBaseCoin() {
-		return new(big.Int).Set(commissionInBaseCoin), false, nil
-	}
-	commissionFromPool, responseFromPool := commissionFromPool(swapper, gasCoin, checkState.Coins().GetCoin(types.BasecoinID), commissionInBaseCoin)
-	commissionFromReserve, responseFromReserve := commissionFromReserve(gasCoin, commissionInBaseCoin)
-
-	if responseFromPool != nil && responseFromReserve != nil {
-		return nil, false, &Response{
-			Code: code.CommissionCoinNotSufficient,
-			Log:  fmt.Sprintf("Not possible to pay commission in coin %s", gasCoin.GetFullSymbol()),
-			Info: EncodeError(code.NewCommissionCoinNotSufficient(responseFromReserve.Log, responseFromPool.Log)),
-		}
-	}
-
-	if responseFromPool == responseFromReserve {
-		if commissionFromReserve.Cmp(commissionFromPool) == -1 {
-			return commissionFromReserve, false, nil
-		}
-		return commissionFromPool, true, nil
-	}
-
-	if responseFromPool == nil {
-		return commissionFromPool, true, nil
-	}
-
-	return commissionFromReserve, false, nil
-}
-
-func commissionFromPool(swapChecker swap.EditableChecker, coin CalculateCoin, baseCoin CalculateCoin, commissionInBaseCoin *big.Int) (*big.Int, *Response) {
-	if !swapChecker.Exists() {
-		return nil, &Response{
-			Code: code.PairNotExists,
-			Log:  fmt.Sprintf("swap pool between coins %s and %s not exists", coin.GetFullSymbol(), types.GetBaseCoin()),
-			Info: EncodeError(code.NewPairNotExists(coin.ID().String(), types.GetBaseCoinID().String())),
-		}
-	}
-	commission := swapChecker.CalculateSellForBuy(commissionInBaseCoin)
-	if errResp := CheckSwap(swapChecker, coin, baseCoin, commission, commissionInBaseCoin, true); errResp != nil {
-		return nil, errResp
-	}
-	return commission, nil
-}
-
-func commissionFromReserve(gasCoin CalculateCoin, commissionInBaseCoin *big.Int) (*big.Int, *Response) {
-	if !gasCoin.BaseOrHasReserve() {
-		return nil, &Response{
-			Code: code.CoinHasNotReserve,
-			Log:  "Gas coin has no reserve",
-		}
-	}
-	errResp := CheckReserveUnderflow(gasCoin, commissionInBaseCoin)
-	if errResp != nil {
-		return nil, errResp
-	}
-
-	return formula.CalculateSaleAmount(gasCoin.Volume(), gasCoin.Reserve(), gasCoin.Crr(), commissionInBaseCoin), nil
 }

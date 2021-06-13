@@ -25,7 +25,7 @@ type Service struct {
 	version    string
 	rewards    *rewards.Reward
 	api_pb.UnimplementedApiServiceServer
-	executor *transaction.Executor
+	decoderTx transaction.DecoderTx
 }
 
 // NewService create gRPC server implementation
@@ -37,7 +37,7 @@ func NewService(blockchain *minter.Blockchain, client *rpc.Local, node *tmNode.N
 		minterCfg:  minterCfg,
 		version:    version,
 		tmNode:     node,
-		executor:   transaction.NewExecutor(transaction.GetData),
+		decoderTx:  transaction.NewExecutor(transaction.GetData),
 	}
 }
 

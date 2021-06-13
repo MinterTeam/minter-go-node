@@ -833,9 +833,9 @@ func NewCustomCode(code uint32) *customCode {
 
 type duplicatePoolInRouteCode struct {
 	Code   string `json:"code,omitempty"`
-	PoolID uint32 `json:"pool_id"`
+	PoolID string `json:"pool_id"`
 }
 
 func NewDuplicatePoolInRouteCode(pool uint32) *duplicatePoolInRouteCode {
-	return &duplicatePoolInRouteCode{Code: strconv.Itoa(int(DuplicatePoolInRoute)), PoolID: pool}
+	return &duplicatePoolInRouteCode{Code: strconv.Itoa(int(DuplicatePoolInRoute)), PoolID: strconv.Itoa(int(pool))}
 }

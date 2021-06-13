@@ -3,8 +3,9 @@ package types
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/helpers"
 	"math/big"
+
+	"github.com/MinterTeam/minter-go-node/helpers"
 )
 
 type AppState struct {
@@ -24,6 +25,7 @@ type AppState struct {
 	UsedChecks          []UsedCheck      `json:"used_checks,omitempty"`
 	MaxGas              uint64           `json:"max_gas"`
 	TotalSlashed        string           `json:"total_slashed"`
+	Version             string           `json:"version,omitempty"`
 }
 
 func (s *AppState) Verify() error {
@@ -412,4 +414,5 @@ type Commission struct {
 	BurnToken               string `json:"burn_token"`
 	VoteCommission          string `json:"vote_commission"`
 	VoteUpdate              string `json:"vote_update"`
+	FailedTx                string `json:"failed_tx"`
 }

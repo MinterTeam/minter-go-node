@@ -412,8 +412,8 @@ func TestBlockchain_SetStatisticData(t *testing.T) {
 }
 
 func TestBlockchain_IsApplicationHalted(t *testing.T) {
-	blockchain, tmCli, pv, cancel := initTestNode(t, 0)
-	defer cancel()
+	blockchain, tmCli, pv, _ := initTestNode(t, 0)
+	// defer cancel()
 	data := transaction.SetHaltBlockData{
 		PubKey: types.BytesToPubkey(pv.Key.PubKey.Bytes()[:]),
 		Height: 5,

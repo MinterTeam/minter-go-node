@@ -3,12 +3,13 @@ package accounts
 import (
 	"bytes"
 	"fmt"
+	"sync/atomic"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/state/bus"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/coins"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/cosmos/iavl"
-	"sync/atomic"
 
 	"math/big"
 	"sort"
@@ -126,10 +127,13 @@ func (a *Accounts) Commit(db *iavl.MutableTree) error {
 				path = append(path, coin.Bytes()...)
 
 				balance := account.getBalance(coin)
-				if balance.Sign() == 0 {
+				switch balance.Sign() {
+				case 0:
 					db.Remove(path)
-				} else {
+				case 1:
 					db.Set(path, balance.Bytes())
+				case -1:
+					panic(fmt.Sprintf("Address %s has negative balance of CoinID %d: %s", account.address.String(), coin.Uint32(), balance))
 				}
 			}
 
