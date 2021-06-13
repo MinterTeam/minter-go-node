@@ -13,7 +13,7 @@ import (
 	abcTypes "github.com/tendermint/tendermint/abci/types"
 )
 
-type VoteCommissionDataV240 struct {
+type VoteCommissionDataV250 struct {
 	PubKey                  types.Pubkey
 	Height                  uint64
 	Coin                    types.CoinID
@@ -65,18 +65,18 @@ type VoteCommissionDataV240 struct {
 	More                    []*big.Int `rlp:"tail"`
 }
 
-func (data VoteCommissionDataV240) TxType() TxType {
+func (data VoteCommissionDataV250) TxType() TxType {
 	return TypeVoteCommission
 }
-func (data VoteCommissionDataV240) Gas() int64 {
+func (data VoteCommissionDataV250) Gas() int64 {
 	return gasVoteCommission
 }
 
-func (data VoteCommissionDataV240) GetPubKey() types.Pubkey {
+func (data VoteCommissionDataV250) GetPubKey() types.Pubkey {
 	return data.PubKey
 }
 
-func (data VoteCommissionDataV240) basicCheck(tx *Transaction, context *state.CheckState, block uint64) *Response {
+func (data VoteCommissionDataV250) basicCheck(tx *Transaction, context *state.CheckState, block uint64) *Response {
 	if len(data.More) > 0 { // todo: mb use
 		return &Response{
 			Code: code.DecodeError,
@@ -120,15 +120,15 @@ func (data VoteCommissionDataV240) basicCheck(tx *Transaction, context *state.Ch
 	return checkCandidateOwnership(data, tx, context)
 }
 
-func (data VoteCommissionDataV240) String() string {
+func (data VoteCommissionDataV250) String() string {
 	return fmt.Sprintf("PRICE COMMISSION in coin: %d", data.Coin)
 }
 
-func (data VoteCommissionDataV240) CommissionData(price *commission.Price) *big.Int {
+func (data VoteCommissionDataV250) CommissionData(price *commission.Price) *big.Int {
 	return price.VoteCommission
 }
 
-func (data VoteCommissionDataV240) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
+func (data VoteCommissionDataV250) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -187,7 +187,7 @@ func (data VoteCommissionDataV240) Run(tx *Transaction, context state.Interface,
 	}
 }
 
-func (data VoteCommissionDataV240) price() *commission.Price {
+func (data VoteCommissionDataV250) price() *commission.Price {
 	return &commission.Price{
 		Coin:                    data.Coin,
 		PayloadByte:             data.PayloadByte,

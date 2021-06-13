@@ -124,7 +124,7 @@ func TestBlockchain_UpdateCommission(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	data := transaction.VoteCommissionData{
+	data := transaction.VoteCommissionDataV1{
 		PubKey:                  types.BytesToPubkey(pv.Key.PubKey.Bytes()[:]),
 		Height:                  110,
 		PayloadByte:             helpers.StringToBigInt("200000000000000000"),
