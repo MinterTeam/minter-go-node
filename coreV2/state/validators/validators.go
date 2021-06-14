@@ -3,6 +3,10 @@ package validators
 import (
 	"bytes"
 	"fmt"
+	"sort"
+	"sync"
+	"sync/atomic"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/dao"
 	"github.com/MinterTeam/minter-go-node/coreV2/developers"
 	eventsdb "github.com/MinterTeam/minter-go-node/coreV2/events"
@@ -12,9 +16,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/upgrades"
 	"github.com/cosmos/iavl"
-	"sort"
-	"sync"
-	"sync/atomic"
 
 	"math/big"
 )
@@ -80,7 +81,7 @@ func (v *Validators) SetImmutableTree(immutableTree *iavl.ImmutableTree) {
 }
 
 // Commit writes changes to iavl, may return an error
-func (v *Validators) Commit(db *iavl.MutableTree) error {
+func (v *Validators) Commit(db *iavl.MutableTree, version int64) error {
 	if v.hasDirtyValidators() { // todo move check lost to range
 		v.lock.RLock()
 		data, err := rlp.EncodeToBytes(v.list)
