@@ -7,7 +7,7 @@ import (
 )
 
 type saver interface {
-	Commit(db *iavl.MutableTree) error
+	Commit(db *iavl.MutableTree, version int64) error
 	SetImmutableTree(immutableTree *iavl.ImmutableTree)
 	// ModuleName() string // todo
 }
@@ -30,7 +30,7 @@ func (t *mutableTree) Commit(savers ...saver) (hash []byte, version int64, err e
 	defer t.lock.Unlock()
 
 	for _, saver := range savers {
-		err := saver.Commit(t.tree)
+		err := saver.Commit(t.tree, t.Version())
 		if err != nil {
 			return nil, 0, err
 			// return nil, 0, errors.Wrap(err, saver.ModuleName())

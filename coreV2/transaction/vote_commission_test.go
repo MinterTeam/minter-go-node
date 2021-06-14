@@ -33,7 +33,7 @@ func TestPriceCommissionTx(t *testing.T) {
 	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0, 0)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 	{
-		data := VoteCommissionData{
+		data := VoteCommissionDataV1{
 			PubKey:            pubkey,
 			Height:            uint64(100500),
 			Coin:              coin1,
@@ -118,7 +118,7 @@ func TestPriceCommissionTx(t *testing.T) {
 	}
 
 	{
-		data := VoteCommissionData{
+		data := VoteCommissionDataV1{
 			PayloadByte:      big.NewInt(1e18),
 			Send:             big.NewInt(1e18),
 			BuyBancor:        big.NewInt(1e18),
@@ -220,7 +220,7 @@ func TestPriceCommissionDeleteTx(t *testing.T) {
 	cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0, 0)
 	cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 	{
-		data := VoteCommissionData{
+		data := VoteCommissionDataV1{
 			PayloadByte:       big.NewInt(1e18),
 			Send:              big.NewInt(1e18),
 			BuyBancor:         big.NewInt(1e18),
@@ -306,7 +306,7 @@ func TestPriceCommissionDeleteTx(t *testing.T) {
 		t.Error(err)
 	}
 	{
-		data := VoteCommissionData{
+		data := VoteCommissionDataV1{
 			PayloadByte:       big.NewInt(1e18),
 			Send:              big.NewInt(1e18),
 			BuyBancor:         big.NewInt(1e18),
@@ -412,7 +412,7 @@ func TestPriceCommissionAnyTx(t *testing.T) {
 		cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0, 0)
 		cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 
-		data := VoteCommissionData{
+		data := VoteCommissionDataV1{
 			PayloadByte:       big.NewInt(1e18),
 			Send:              big.NewInt(1e18),
 			BuyBancor:         big.NewInt(1e18),
@@ -514,7 +514,7 @@ func TestPriceCommissionAnyTx(t *testing.T) {
 		cState.Candidates.Create(addr, addr, addr, pubkey, 10, 0, 0)
 		cState.Validators.Create(pubkey, helpers.BipToPip(big.NewInt(1)))
 
-		data := VoteCommissionData{
+		data := VoteCommissionDataV1{
 			PayloadByte:       big.NewInt(1e18),
 			Send:              big.NewInt(1e18),
 			BuyBancor:         big.NewInt(1e18),

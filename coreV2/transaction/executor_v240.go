@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/MinterTeam/minter-go-node/coreV2/check"
 	abcTypes "github.com/tendermint/tendermint/abci/types"
 
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
@@ -176,7 +177,7 @@ func (e *ExecutorV240) RunTx(context state.Interface, rawTx []byte, rewardPool *
 	}
 
 	commissions := checkState.Commission().GetCommissions()
-	price := tx.Price(commissions)
+	price := tx.MulGasPrice(tx.Price(commissions))
 	coinCommission := abcTypes.EventAttribute{Key: []byte("tx.commission_price_coin"), Value: []byte(strconv.Itoa(int(commissions.Coin)))}
 	priceCommission := abcTypes.EventAttribute{Key: []byte("tx.commission_price"), Value: []byte(price.String())}
 
@@ -204,7 +205,15 @@ func (e *ExecutorV240) RunTx(context state.Interface, rawTx []byte, rewardPool *
 	}
 
 	if !isCheck && response.Code != 0 {
-		commissionInBaseCoin := tx.Commission(big.NewInt(0).Add(commissions.FailedTxPrice(), big.NewInt(0).Mul(big.NewInt(tx.payloadLen()), commissions.PayloadByte)))
+		commissionInBaseCoin := big.NewInt(0).Add(commissions.FailedTxPrice(), big.NewInt(0).Mul(big.NewInt(tx.payloadAndServiceDataLen()), commissions.PayloadByte))
+		if types.CurrentChainID != types.ChainTestnet || currentBlock > 4451966 { // todo: remove check (need for testnet)
+			commissionInBaseCoin = tx.MulGasPrice(commissionInBaseCoin)
+		}
+
+		if !commissions.Coin.IsBaseCoin() {
+			commissionInBaseCoin = checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()).CalculateBuyForSell(commissionInBaseCoin)
+		}
+
 		commissionPoolSwapper := checkState.Swap().GetSwapper(tx.commissionCoin(), types.GetBaseCoinID())
 		gasCoin := checkState.Coins().GetCoin(tx.commissionCoin())
 		commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoin, commissionInBaseCoin)
@@ -212,10 +221,34 @@ func (e *ExecutorV240) RunTx(context state.Interface, rawTx []byte, rewardPool *
 			return *errResp
 		}
 
-		balance := checkState.Accounts().GetBalance(sender, tx.commissionCoin())
+		var intruder = sender
+		if tx.Type == TypeRedeemCheck {
+			decodedCheck, err := check.DecodeFromBytes(tx.decodedData.(*RedeemCheckData).RawCheck)
+			if err != nil {
+				return Response{
+					Code: code.DecodeError,
+					Log:  err.Error(),
+					Info: EncodeError(code.NewDecodeError()),
+				}
+			}
+			checkSender, err := decodedCheck.Sender()
+			if err != nil {
+				return Response{
+					Code: code.DecodeError,
+					Log:  err.Error(),
+					Info: EncodeError(code.NewDecodeError()),
+				}
+			}
+
+			intruder = checkSender
+			response.Tags = append(response.Tags,
+				abcTypes.EventAttribute{Key: []byte("tx.check_owner"), Value: []byte(hex.EncodeToString(intruder[:]))},
+			)
+		}
+		balance := checkState.Accounts().GetBalance(intruder, tx.commissionCoin())
 		if balance.Sign() == 1 {
 			if balance.Cmp(commission) == -1 {
-				commission = balance
+				commission = big.NewInt(0).Set(balance)
 				if isGasCommissionFromPoolSwap {
 					commissionInBaseCoin = commissionPoolSwapper.CalculateBuyForSell(commission)
 					if commissionInBaseCoin == nil || commissionInBaseCoin.Sign() == 0 {
@@ -230,6 +263,8 @@ func (e *ExecutorV240) RunTx(context state.Interface, rawTx []byte, rewardPool *
 					if errResp != nil {
 						return *errResp
 					}
+				} else {
+					commissionInBaseCoin = commission
 				}
 			}
 
@@ -240,7 +275,9 @@ func (e *ExecutorV240) RunTx(context state.Interface, rawTx []byte, rewardPool *
 					deliverState.Coins.SubVolume(tx.commissionCoin(), commission)
 					deliverState.Coins.SubReserve(tx.commissionCoin(), commissionInBaseCoin)
 				}
-				deliverState.Accounts.SubBalance(sender, tx.commissionCoin(), commission)
+
+				deliverState.Accounts.SubBalance(intruder, tx.commissionCoin(), commission)
+
 				rewardPool.Add(rewardPool, commissionInBaseCoin)
 				response.Tags = append(response.Tags,
 					abcTypes.EventAttribute{Key: []byte("tx.fail_fee"), Value: []byte(commission.String())},

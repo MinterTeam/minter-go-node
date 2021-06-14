@@ -3,12 +3,13 @@ package accounts
 import (
 	"bytes"
 	"fmt"
+	"sync/atomic"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/state/bus"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/coins"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/cosmos/iavl"
-	"sync/atomic"
 
 	"math/big"
 	"sort"
@@ -69,7 +70,7 @@ func (a *Accounts) SetImmutableTree(immutableTree *iavl.ImmutableTree) {
 	a.db.Store(immutableTree)
 }
 
-func (a *Accounts) Commit(db *iavl.MutableTree) error {
+func (a *Accounts) Commit(db *iavl.MutableTree, version int64) error {
 	accounts := a.getOrderedDirtyAccounts()
 	for _, address := range accounts {
 		account := a.getFromMap(address)
@@ -126,10 +127,17 @@ func (a *Accounts) Commit(db *iavl.MutableTree) error {
 				path = append(path, coin.Bytes()...)
 
 				balance := account.getBalance(coin)
-				if balance.Sign() == 0 {
+				switch balance.Sign() {
+				case 0:
 					db.Remove(path)
-				} else {
+				case 1:
 					db.Set(path, balance.Bytes())
+				case -1:
+					if version < 4415830 && types.CurrentChainID == types.ChainMainnet {
+						db.Set(path, balance.Bytes())
+					} else {
+						panic(fmt.Sprintf("Address %s has negative balance of CoinID %d: %s", account.address.String(), coin.Uint32(), balance))
+					}
 				}
 			}
 

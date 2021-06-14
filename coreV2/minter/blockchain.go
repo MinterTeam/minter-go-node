@@ -110,7 +110,7 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 		knownUpdates: map[string]struct{}{
 			"":   {}, // default version
 			v230: {}, // add more for update
-			v240: {}, // commissions
+			// v240: {}, // commissions
 		},
 		executor: GetExecutor(""),
 	}
@@ -126,10 +126,8 @@ func graceForUpdate(height uint64) *upgrades.GracePeriod {
 
 func GetExecutor(v string) transaction.ExecutorTx {
 	switch v {
-	// case v250:
-	// 	return transaction.NewExecutor(transaction.GetDataV250)
-	case v240:
-		return transaction.NewExecutorV240(transaction.GetDataV240)
+	// case v240:
+	// 	return transaction.NewExecutor(transaction.GetDataV240)
 	case v230:
 		return transaction.NewExecutor(transaction.GetDataV230)
 	default:
@@ -138,6 +136,7 @@ func GetExecutor(v string) transaction.ExecutorTx {
 }
 
 const haltBlockV210 = 3431238
+const updateBlockV240 = 4448826
 const v230 = "v230"
 const v240 = "v240"
 
@@ -162,7 +161,8 @@ func (blockchain *Blockchain) initState() {
 	grace := upgrades.NewGrace()
 	grace.AddGracePeriods(upgrades.NewGracePeriod(initialHeight, initialHeight+120, true),
 		upgrades.NewGracePeriod(haltBlockV210, haltBlockV210+120, true),
-		upgrades.NewGracePeriod(3612653, 3612653+120, true))
+		upgrades.NewGracePeriod(3612653, 3612653+120, true),
+		upgrades.NewGracePeriod(updateBlockV240, updateBlockV240+120, true))
 
 	for _, v := range blockchain.UpdateVersions() {
 		grace.AddGracePeriods(graceForUpdate(v.Height))
@@ -251,6 +251,10 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 		log.Printf("Update your node binary to the latest version: %s", versionName)
 		blockchain.stop()
 		return abciTypes.ResponseBeginBlock{}
+	}
+
+	if versionName == v230 && height > updateBlockV240 {
+		blockchain.executor = transaction.NewExecutor(transaction.GetDataV240)
 	}
 
 	// give penalty to Byzantine validators

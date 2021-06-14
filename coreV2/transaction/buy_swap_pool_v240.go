@@ -84,7 +84,7 @@ func (data BuySwapPoolDataV240) Run(tx *Transaction, context state.Interface, re
 		return *response
 	}
 
-	commissionInBaseCoin := tx.Commission(price)
+	commissionInBaseCoin := price
 	commissionPoolSwapper := checkState.Swap().GetSwapper(tx.GasCoin, types.GetBaseCoinID())
 	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
 	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoin, commissionInBaseCoin)
@@ -118,7 +118,7 @@ func (data BuySwapPoolDataV240) Run(tx *Transaction, context state.Interface, re
 					swapper = swapper.AddLastSwapStep(commission, commissionInBaseCoin)
 				}
 				if tx.GasCoin == coinToBuy && coinToSell.IsBaseCoin() {
-					swapper = swapper.AddLastSwapStep(commissionInBaseCoin, commission)
+					swapper = swapper.AddLastSwapStep(big.NewInt(0).Neg(commissionInBaseCoin), big.NewInt(0).Neg(commission))
 				}
 			}
 

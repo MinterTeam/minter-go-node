@@ -12,22 +12,22 @@ import (
 	abcTypes "github.com/tendermint/tendermint/abci/types"
 )
 
-type AddLiquidityData struct {
+type AddLiquidityDataV240 struct {
 	Coin0          types.CoinID
 	Coin1          types.CoinID
 	Volume0        *big.Int
 	MaximumVolume1 *big.Int
 }
 
-func (data AddLiquidityData) Gas() int64 {
+func (data AddLiquidityDataV240) Gas() int64 {
 	return gasAddLiquidity
 }
 
-func (data AddLiquidityData) TxType() TxType {
+func (data AddLiquidityDataV240) TxType() TxType {
 	return TypeAddLiquidity
 }
 
-func (data AddLiquidityData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data AddLiquidityDataV240) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.Coin1 == data.Coin0 {
 		return &Response{
 			Code: code.CrossConvert,
@@ -69,15 +69,15 @@ func (data AddLiquidityData) basicCheck(tx *Transaction, context *state.CheckSta
 	return nil
 }
 
-func (data AddLiquidityData) String() string {
+func (data AddLiquidityDataV240) String() string {
 	return fmt.Sprintf("ADD SWAP POOL")
 }
 
-func (data AddLiquidityData) CommissionData(price *commission.Price) *big.Int {
+func (data AddLiquidityDataV240) CommissionData(price *commission.Price) *big.Int {
 	return price.AddLiquidity
 }
 
-func (data AddLiquidityData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
+func (data AddLiquidityDataV240) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -107,7 +107,7 @@ func (data AddLiquidityData) Run(tx *Transaction, context state.Interface, rewar
 			swapper = swapper.AddLastSwapStep(commission, commissionInBaseCoin)
 		}
 		if tx.GasCoin == data.Coin1 && data.Coin0.IsBaseCoin() {
-			swapper = swapper.AddLastSwapStep(commissionInBaseCoin, commission)
+			swapper = swapper.AddLastSwapStep(big.NewInt(0).Neg(commissionInBaseCoin), big.NewInt(0).Neg(commission))
 		}
 	}
 	coinLiquidity := checkState.Coins().GetCoinBySymbol(LiquidityCoinSymbol(swapper.GetID()), 0)
@@ -212,11 +212,4 @@ func (data AddLiquidityData) Run(tx *Transaction, context state.Interface, rewar
 		Code: code.OK,
 		Tags: tags,
 	}
-}
-
-func liquidityCoinName(c0, c1 types.CoinID) string {
-	if c0 < c1 {
-		return fmt.Sprintf("%d-%d", c0, c1)
-	}
-	return fmt.Sprintf("%d-%d", c1, c0)
 }

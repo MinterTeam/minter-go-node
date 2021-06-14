@@ -3,13 +3,14 @@ package halts
 import (
 	"encoding/binary"
 	"fmt"
+	"sort"
+	"sync"
+	"sync/atomic"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/state/bus"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/cosmos/iavl"
-	"sort"
-	"sync"
-	"sync/atomic"
 )
 
 const mainPrefix = byte('h')
@@ -59,7 +60,7 @@ func (hb *HaltBlocks) SetImmutableTree(immutableTree *iavl.ImmutableTree) {
 	hb.db.Store(immutableTree)
 }
 
-func (hb *HaltBlocks) Commit(db *iavl.MutableTree) error {
+func (hb *HaltBlocks) Commit(db *iavl.MutableTree, version int64) error {
 	dirty := hb.getOrderedDirty()
 	for _, height := range dirty {
 		haltBlock := hb.getFromMap(height)

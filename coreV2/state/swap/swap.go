@@ -4,16 +4,17 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/coreV2/state/bus"
-	"github.com/MinterTeam/minter-go-node/coreV2/types"
-	"github.com/MinterTeam/minter-go-node/helpers"
-	"github.com/MinterTeam/minter-go-node/rlp"
-	"github.com/cosmos/iavl"
 	"math/big"
 	"sort"
 	"strconv"
 	"sync"
 	"sync/atomic"
+
+	"github.com/MinterTeam/minter-go-node/coreV2/state/bus"
+	"github.com/MinterTeam/minter-go-node/coreV2/types"
+	"github.com/MinterTeam/minter-go-node/helpers"
+	"github.com/MinterTeam/minter-go-node/rlp"
+	"github.com/cosmos/iavl"
 )
 
 var Bound = big.NewInt(minimumLiquidity)
@@ -214,7 +215,7 @@ func (pk pairKey) pathOrders() []byte {
 	return append([]byte{pairOrdersPrefix}, pk.bytes()...)
 }
 
-func (s *Swap) Commit(db *iavl.MutableTree) error {
+func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 	basePath := []byte{mainPrefix}
 
 	s.muNextID.Lock()

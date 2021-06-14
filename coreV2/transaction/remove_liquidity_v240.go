@@ -12,7 +12,7 @@ import (
 	abcTypes "github.com/tendermint/tendermint/abci/types"
 )
 
-type RemoveLiquidityV1 struct {
+type RemoveLiquidityV240 struct {
 	Coin0          types.CoinID
 	Coin1          types.CoinID
 	Liquidity      *big.Int
@@ -20,14 +20,14 @@ type RemoveLiquidityV1 struct {
 	MinimumVolume1 *big.Int
 }
 
-func (data RemoveLiquidityV1) Gas() int64 {
+func (data RemoveLiquidityV240) Gas() int64 {
 	return gasRemoveLiquidity
 }
-func (data RemoveLiquidityV1) TxType() TxType {
+func (data RemoveLiquidityV240) TxType() TxType {
 	return TypeRemoveLiquidity
 }
 
-func (data RemoveLiquidityV1) basicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data RemoveLiquidityV240) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.Liquidity.Sign() != 1 {
 		return &Response{
 			Code: code.DecodeError,
@@ -49,15 +49,15 @@ func (data RemoveLiquidityV1) basicCheck(tx *Transaction, context *state.CheckSt
 	return nil
 }
 
-func (data RemoveLiquidityV1) String() string {
+func (data RemoveLiquidityV240) String() string {
 	return fmt.Sprintf("REMOVE SWAP POOL")
 }
 
-func (data RemoveLiquidityV1) CommissionData(price *commission.Price) *big.Int {
+func (data RemoveLiquidityV240) CommissionData(price *commission.Price) *big.Int {
 	return price.RemoveLiquidity
 }
 
-func (data RemoveLiquidityV1) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
+func (data RemoveLiquidityV240) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -71,6 +71,14 @@ func (data RemoveLiquidityV1) Run(tx *Transaction, context state.Interface, rewa
 		return *response
 	}
 
+	commissionInBaseCoin := price
+	commissionPoolSwapper := checkState.Swap().GetSwapper(tx.GasCoin, types.GetBaseCoinID())
+	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
+	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoin, commissionInBaseCoin)
+	if errResp != nil {
+		return *errResp
+	}
+
 	swapper := checkState.Swap().GetSwapper(data.Coin0, data.Coin1)
 	if !swapper.Exists() {
 		return Response{
@@ -80,30 +88,35 @@ func (data RemoveLiquidityV1) Run(tx *Transaction, context state.Interface, rewa
 		}
 	}
 
-	coinLiquidity := checkState.Coins().GetCoinBySymbol(LiquidityCoinSymbol(swapper.GetID()), 0)
-	balance := checkState.Accounts().GetBalance(sender, coinLiquidity.ID())
-	if balance.Cmp(data.Liquidity) == -1 {
-		return Response{
-			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), coinLiquidity.GetFullSymbol(), data.Liquidity),
-			Info: EncodeError(code.NewInsufficientFunds(sender.String(), data.Liquidity.String(), coinLiquidity.GetFullSymbol(), coinLiquidity.ID().String())),
-		}
-	}
-
-	commissionInBaseCoin := price
-	commissionPoolSwapper := checkState.Swap().GetSwapper(tx.GasCoin, types.GetBaseCoinID())
-	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
-	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoin, commissionInBaseCoin)
-	if errResp != nil {
-		return *errResp
-	}
-
-	if isGasCommissionFromPoolSwap {
+	if isGasCommissionFromPoolSwap && swapper.GetID() == commissionPoolSwapper.GetID() {
 		if tx.GasCoin == data.Coin0 && data.Coin1.IsBaseCoin() {
 			swapper = swapper.AddLastSwapStep(commission, commissionInBaseCoin)
 		}
 		if tx.GasCoin == data.Coin1 && data.Coin0.IsBaseCoin() {
-			swapper = swapper.AddLastSwapStep(commissionInBaseCoin, commission)
+			swapper = swapper.AddLastSwapStep(big.NewInt(0).Neg(commissionInBaseCoin), big.NewInt(0).Neg(commission))
+		}
+	}
+
+	coinLiquidity := checkState.Coins().GetCoinBySymbol(LiquidityCoinSymbol(swapper.GetID()), 0)
+	balance := checkState.Accounts().GetBalance(sender, coinLiquidity.ID())
+
+	needValue := big.NewInt(0).Set(commission)
+	if tx.GasCoin == coinLiquidity.ID() {
+		needValue.Add(data.Liquidity, needValue)
+	} else {
+		if balance.Cmp(data.Liquidity) == -1 {
+			return Response{
+				Code: code.InsufficientFunds,
+				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), data.Liquidity.String(), coinLiquidity.GetFullSymbol()),
+				Info: EncodeError(code.NewInsufficientFunds(sender.String(), data.Liquidity.String(), coinLiquidity.GetFullSymbol(), coinLiquidity.ID().String())),
+			}
+		}
+	}
+	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(needValue) < 0 {
+		return Response{
+			Code: code.InsufficientFunds,
+			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), needValue.String(), gasCoin.GetFullSymbol()),
+			Info: EncodeError(code.NewInsufficientFunds(sender.String(), needValue.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
 		}
 	}
 
@@ -122,13 +135,6 @@ func (data RemoveLiquidityV1) Run(tx *Transaction, context state.Interface, rewa
 		}
 	}
 
-	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
-		return Response{
-			Code: code.InsufficientFunds,
-			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission.String(), gasCoin.GetFullSymbol()),
-			Info: EncodeError(code.NewInsufficientFunds(sender.String(), commission.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
-		}
-	}
 	var tags []abcTypes.EventAttribute
 	if deliverState, ok := context.(*state.State); ok {
 		if isGasCommissionFromPoolSwap {

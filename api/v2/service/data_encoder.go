@@ -209,7 +209,7 @@ func encode(data transaction.Data, txType transaction.TxType, rCoins coins.RCoin
 			Value: d.Value.String(),
 		}
 	case transaction.TypeAddLiquidity:
-		d := data.(*transaction.AddLiquidityData)
+		d := data.(*transaction.AddLiquidityDataV240)
 		m = &pb.AddLiquidityData{
 			Coin0: &pb.Coin{
 				Id:     uint64(d.Coin0),
@@ -223,7 +223,7 @@ func encode(data transaction.Data, txType transaction.TxType, rCoins coins.RCoin
 			MaximumVolume1: d.MaximumVolume1.String(),
 		}
 	case transaction.TypeRemoveLiquidity:
-		d := data.(*transaction.RemoveLiquidityV230)
+		d := data.(*transaction.RemoveLiquidityV240)
 		m = &pb.RemoveLiquidityData{
 			Coin0: &pb.Coin{
 				Id:     uint64(d.Coin0),
@@ -323,7 +323,7 @@ func encode(data transaction.Data, txType transaction.TxType, rCoins coins.RCoin
 			Commission: uint64(d.Commission),
 		}
 	case transaction.TypeVoteCommission:
-		d := data.(*transaction.VoteCommissionDataV240)
+		d := data.(*transaction.VoteCommissionDataV1)
 		m = priceCommissionData(d, rCoins.GetCoin(d.Coin))
 	case transaction.TypeVoteUpdate:
 		d := data.(*transaction.VoteUpdateDataV230)
@@ -358,7 +358,7 @@ func encode(data transaction.Data, txType transaction.TxType, rCoins coins.RCoin
 	return a, nil
 }
 
-func priceCommissionData(d *transaction.VoteCommissionDataV240, coin *coins.Model) proto.Message {
+func priceCommissionData(d *transaction.VoteCommissionDataV1, coin *coins.Model) proto.Message {
 	return &pb.VoteCommissionData{
 		PubKey: d.PubKey.String(),
 		Height: d.Height,
@@ -408,6 +408,7 @@ func priceCommissionData(d *transaction.VoteCommissionDataV240, coin *coins.Mode
 		BurnToken:               d.BurnToken.String(),
 		VoteCommission:          d.VoteCommission.String(),
 		VoteUpdate:              d.VoteUpdate.String(),
+		// FailedTx:                d.FailedTX.String(),
 	}
 }
 

@@ -3,12 +3,13 @@ package checks
 import (
 	"bytes"
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/coreV2/check"
-	"github.com/MinterTeam/minter-go-node/coreV2/types"
-	"github.com/cosmos/iavl"
 	"sort"
 	"sync"
 	"sync/atomic"
+
+	"github.com/MinterTeam/minter-go-node/coreV2/check"
+	"github.com/MinterTeam/minter-go-node/coreV2/types"
+	"github.com/cosmos/iavl"
 )
 
 const mainPrefix = byte('t')
@@ -46,7 +47,7 @@ func (c *Checks) SetImmutableTree(immutableTree *iavl.ImmutableTree) {
 	c.db.Store(immutableTree)
 }
 
-func (c *Checks) Commit(db *iavl.MutableTree) error {
+func (c *Checks) Commit(db *iavl.MutableTree, version int64) error {
 	hashes := c.getOrderedHashes()
 	for _, hash := range hashes {
 		c.lock.Lock()

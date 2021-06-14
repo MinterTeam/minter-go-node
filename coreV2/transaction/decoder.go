@@ -68,7 +68,7 @@ func GetDataV1(txType TxType) (Data, bool) {
 	case TypeRecreateToken:
 		return &RecreateTokenData{}, true
 	case TypeVoteCommission:
-		return &VoteCommissionData{}, true
+		return &VoteCommissionDataV1{}, true
 	case TypeVoteUpdate:
 		return &VoteUpdateDataV1{}, true
 	case TypeCreateSwapPool:
@@ -121,9 +121,9 @@ func GetDataV240(txType TxType) (Data, bool) {
 	case TypeEditCandidatePublicKey:
 		return &EditCandidatePublicKeyData{}, true
 	case TypeAddLiquidity:
-		return &AddLiquidityData{}, true
+		return &AddLiquidityDataV240{}, true
 	case TypeRemoveLiquidity:
-		return &RemoveLiquidityV230{}, true
+		return &RemoveLiquidityV240{}, true
 	case TypeSellSwapPool:
 		return &SellSwapPoolDataV240{}, true
 	case TypeBuySwapPool:
@@ -141,7 +141,7 @@ func GetDataV240(txType TxType) (Data, bool) {
 	case TypeRecreateToken:
 		return &RecreateTokenData{}, true
 	case TypeVoteCommission:
-		return &VoteCommissionDataV240{}, true
+		return &VoteCommissionDataV1{}, true // Ok!
 	case TypeVoteUpdate:
 		return &VoteUpdateDataV230{}, true
 	case TypeCreateSwapPool:
@@ -212,7 +212,7 @@ func GetDataV230(txType TxType) (Data, bool) {
 	case TypeRecreateToken:
 		return &RecreateTokenData{}, true
 	case TypeVoteCommission:
-		return &VoteCommissionData{}, true
+		return &VoteCommissionDataV1{}, true
 	case TypeVoteUpdate:
 		return &VoteUpdateDataV230{}, true
 	case TypeCreateSwapPool:

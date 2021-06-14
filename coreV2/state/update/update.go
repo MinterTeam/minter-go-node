@@ -3,12 +3,13 @@ package update
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/coreV2/types"
-	"github.com/MinterTeam/minter-go-node/rlp"
-	"github.com/cosmos/iavl"
 	"sort"
 	"sync"
 	"sync/atomic"
+
+	"github.com/MinterTeam/minter-go-node/coreV2/types"
+	"github.com/MinterTeam/minter-go-node/rlp"
+	"github.com/cosmos/iavl"
 )
 
 const mainPrefix = byte('u')
@@ -87,7 +88,7 @@ func (c *Update) ExportV1(state *types.AppState) {
 	return
 }
 
-func (c *Update) Commit(db *iavl.MutableTree) error {
+func (c *Update) Commit(db *iavl.MutableTree, version int64) error {
 	c.lock.RLock()
 	dirties := c.getOrderedDirty()
 	c.lock.RUnlock()

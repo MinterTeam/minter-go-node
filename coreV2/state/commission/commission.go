@@ -279,7 +279,7 @@ func (c *Commission) ExportV1(state *types.AppState, id types.CoinID) {
 	}
 }
 
-func (c *Commission) Commit(db *iavl.MutableTree) error {
+func (c *Commission) Commit(db *iavl.MutableTree, version int64) error {
 	c.lock.Lock()
 	if c.dirtyCurrent {
 		c.dirtyCurrent = false
