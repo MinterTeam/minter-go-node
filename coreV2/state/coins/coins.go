@@ -2,15 +2,16 @@ package coins
 
 import (
 	"fmt"
+	"math/big"
+	"sort"
+	"sync"
+	"sync/atomic"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/state/bus"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/cosmos/iavl"
-	"math/big"
-	"sort"
-	"sync"
-	"sync/atomic"
 )
 
 const (
@@ -120,7 +121,7 @@ func (c *Coins) SetImmutableTree(immutableTree *iavl.ImmutableTree) {
 	c.db.Store(immutableTree)
 }
 
-func (c *Coins) Commit(db *iavl.MutableTree) error {
+func (c *Coins) Commit(db *iavl.MutableTree, version int64) error {
 	coins := c.getOrderedDirtyCoins()
 	for _, id := range coins {
 		coin := c.getFromMap(id)
