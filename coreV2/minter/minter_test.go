@@ -73,6 +73,7 @@ func initTestNode(t *testing.T, initialHeight int64) (*Blockchain, *rpc.Local, *
 		getTestGenesis(pv, storage.GetMinterHome(), initialHeight),
 		tmNode.DefaultDBProvider,
 		tmNode.DefaultMetricsProvider(cfg.Instrumentation),
+		nil,
 		logger,
 		tmNode.CustomReactors(map[string]p2p.Reactor{
 			// "PEX":        p2pmock.NewReactor(),
