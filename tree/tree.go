@@ -1,9 +1,10 @@
 package tree
 
 import (
+	"sync"
+
 	"github.com/cosmos/iavl"
 	dbm "github.com/tendermint/tm-db"
-	"sync"
 )
 
 type saver interface {

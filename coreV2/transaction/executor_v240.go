@@ -30,7 +30,7 @@ type ExecutorV240 struct {
 	decodeTxFunc func(txType TxType) (Data, bool)
 }
 
-func NewExecutorV240(decodeTxFunc func(txType TxType) (Data, bool)) ExecutorTx {
+func NewExecutorV250(decodeTxFunc func(txType TxType) (Data, bool)) ExecutorTx {
 	return &ExecutorV240{decodeTxFunc: decodeTxFunc, Executor: &Executor{decodeTxFunc: decodeTxFunc}}
 }
 
