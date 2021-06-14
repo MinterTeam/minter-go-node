@@ -70,7 +70,7 @@ func (a *Accounts) SetImmutableTree(immutableTree *iavl.ImmutableTree) {
 	a.db.Store(immutableTree)
 }
 
-func (a *Accounts) Commit(db *iavl.MutableTree) error {
+func (a *Accounts) Commit(db *iavl.MutableTree, version int64) error {
 	accounts := a.getOrderedDirtyAccounts()
 	for _, address := range accounts {
 		account := a.getFromMap(address)
@@ -133,7 +133,11 @@ func (a *Accounts) Commit(db *iavl.MutableTree) error {
 				case 1:
 					db.Set(path, balance.Bytes())
 				case -1:
-					panic(fmt.Sprintf("Address %s has negative balance of CoinID %d: %s", account.address.String(), coin.Uint32(), balance))
+					if version < 4415830 && types.CurrentChainID == types.ChainMainnet {
+						db.Set(path, balance.Bytes())
+					} else {
+						panic(fmt.Sprintf("Address %s has negative balance of CoinID %d: %s", account.address.String(), coin.Uint32(), balance))
+					}
 				}
 			}
 

@@ -3,16 +3,17 @@ package frozenfunds
 import (
 	"encoding/binary"
 	"fmt"
+	"math/big"
+	"sort"
+	"sync"
+	"sync/atomic"
+
 	eventsdb "github.com/MinterTeam/minter-go-node/coreV2/events"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/bus"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/cosmos/iavl"
-	"math/big"
-	"sort"
-	"sync"
-	"sync/atomic"
 )
 
 const mainPrefix = byte('f')
@@ -54,7 +55,7 @@ func (f *FrozenFunds) immutableTree() *iavl.ImmutableTree {
 func (f *FrozenFunds) SetImmutableTree(immutableTree *iavl.ImmutableTree) {
 	f.db.Store(immutableTree)
 }
-func (f *FrozenFunds) Commit(db *iavl.MutableTree) error {
+func (f *FrozenFunds) Commit(db *iavl.MutableTree, version int64) error {
 	dirty := f.getOrderedDirty()
 	for _, height := range dirty {
 		ff := f.getFromMap(height)

@@ -3,15 +3,16 @@ package waitlist
 import (
 	"bytes"
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/coreV2/state/bus"
-	"github.com/MinterTeam/minter-go-node/coreV2/types"
-	"github.com/MinterTeam/minter-go-node/rlp"
-	"github.com/cosmos/iavl"
 	"log"
 	"math/big"
 	"sort"
 	"sync"
 	"sync/atomic"
+
+	"github.com/MinterTeam/minter-go-node/coreV2/state/bus"
+	"github.com/MinterTeam/minter-go-node/coreV2/types"
+	"github.com/MinterTeam/minter-go-node/rlp"
+	"github.com/cosmos/iavl"
 )
 
 const mainPrefix = byte('w')
@@ -129,7 +130,7 @@ func (wl *WaitList) ExportV1(state *types.AppState, droppedIDs []uint32, height 
 	})
 }
 
-func (wl *WaitList) Commit(db *iavl.MutableTree) error {
+func (wl *WaitList) Commit(db *iavl.MutableTree, version int64) error {
 	dirty := wl.getOrderedDirty()
 	for _, address := range dirty {
 		w := wl.getFromMap(address)

@@ -1,13 +1,14 @@
 package tree
 
 import (
+	"sync"
+
 	"github.com/cosmos/iavl"
 	dbm "github.com/tendermint/tm-db"
-	"sync"
 )
 
 type saver interface {
-	Commit(db *iavl.MutableTree) error
+	Commit(db *iavl.MutableTree, version int64) error
 	SetImmutableTree(immutableTree *iavl.ImmutableTree)
 	// ModuleName() string // todo
 }
@@ -26,11 +27,12 @@ type MTree interface {
 }
 
 func (t *mutableTree) Commit(savers ...saver) (hash []byte, version int64, err error) {
+	v := t.Version()
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
 	for _, saver := range savers {
-		err := saver.Commit(t.tree)
+		err := saver.Commit(t.tree, v)
 		if err != nil {
 			return nil, 0, err
 			// return nil, 0, errors.Wrap(err, saver.ModuleName())
