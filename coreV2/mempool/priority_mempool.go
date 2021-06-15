@@ -296,6 +296,10 @@ func (mem *PriorityMempool) Flush() {
 
 			e.DetachPrev()
 			mem.decrementTxsCounter(gp)
+
+			if mem.txsCounter == 0 {
+				mem.waitCh = make(chan struct{})
+			}
 		}
 	}
 
@@ -462,7 +466,10 @@ func (mem *PriorityMempool) addTx(memTx *tmpool.MempoolTx) {
 	mem.incrementTxsCounter(tx.GasPrice)
 	mem.addGasPrice(tx.GasPrice)
 
-	close(mem.waitCh)
+	if mem.txsCounter == 1 {
+		fmt.Println("CLOSED")
+		close(mem.waitCh)
+	}
 
 	mem.txsMap.Store(TxKey(memTx.Tx), e)
 	atomic.AddInt64(&mem.txsBytes, int64(len(memTx.Tx)))
