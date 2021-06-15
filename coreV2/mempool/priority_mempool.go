@@ -360,7 +360,7 @@ func (mem *PriorityMempool) CheckTx(tx types.Tx, cb func(*abci.Response), txInfo
 	// all even once.
 	if mem.wal != nil {
 		// TODO: Notify administrators when WAL fails
-		_, err := mem.wal.Write(append([]byte(tx), newline...))
+		_, err := mem.wal.Write(append(tx, newline...))
 		if err != nil {
 			return fmt.Errorf("wal.Write: %w", err)
 		}

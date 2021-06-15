@@ -502,7 +502,7 @@ func TestMempoolCloseWAL(t *testing.T) {
 	sum1 := checksumFile(walFilepath, t)
 
 	//// 6. Sanity check to ensure that the written TX matches the expectation.
-	//require.Equal(t, sum1, checksumIt(tx), "foo with a newline should be written")
+	require.Equal(t, sum1, checksumIt(append(tx, []byte("\n")...)), "foo with a newline should be written")
 
 	// 7. Invoke CloseWAL() and ensure it discards the
 	// WAL thus any other write won't go through.
@@ -631,16 +631,17 @@ func TestMempoolTxsBytes(t *testing.T) {
 	err = mempool.Update(1, []tmtypes.Tx{}, abciResponses(0, abci.CodeTypeOK), nil, nil)
 	require.NoError(t, err)
 	assert.EqualValues(t, 0, mempool.TxsBytes())
+	mempool.Flush()
 
 	// 7. Test RemoveTxByK	ey function
-	//tx = createTx(t, 123)
-	//err = mempool.CheckTx(tx, nil, tmpool.TxInfo{})
-	//require.NoError(t, err)
-	//assert.EqualValues(t, 123, mempool.TxsBytes())
-	//mempool.RemoveTxByKey(TxKey(createTx(t, 124)), true)
-	//assert.EqualValues(t, 123, mempool.TxsBytes())
-	//mempool.RemoveTxByKey(TxKey(tx), true)
-	//assert.EqualValues(t, 0, mempool.TxsBytes())
+	tx = createTx(t, 123, nil)
+	err = mempool.CheckTx(tx, nil, tmpool.TxInfo{})
+	require.NoError(t, err)
+	assert.EqualValues(t, 123, mempool.TxsBytes())
+	mempool.RemoveTxByKey(TxKey(createTx(t, 124, nil)), true)
+	assert.EqualValues(t, 123, mempool.TxsBytes())
+	mempool.RemoveTxByKey(TxKey(tx), true)
+	assert.EqualValues(t, 0, mempool.TxsBytes())
 
 }
 
