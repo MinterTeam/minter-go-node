@@ -136,12 +136,12 @@ func TestReapMaxBytesMaxGas(t *testing.T) {
 
 	// Ensure gas calculation behaves as expected
 	checkTxs(t, mempool, 1, tmpool.UnknownPeerID)
-	tx0 := mempool.txs[1].Front().Value.(*mempoolTx)
+	tx0 := mempool.txs[1].Front().Value.(*tmpool.MempoolTx)
 	//// assert that kv store has gas wanted = 1.
-	require.Equal(t, app.CheckTx(abci.RequestCheckTx{Tx: tx0.tx}).GasWanted, int64(1), "KVStore had a gas value neq to 1")
-	require.Equal(t, tx0.gasWanted, int64(1), "transactions gas was set incorrectly")
+	require.Equal(t, app.CheckTx(abci.RequestCheckTx{Tx: tx0.Tx}).GasWanted, int64(1), "KVStore had a gas value neq to 1")
+	require.Equal(t, tx0.GasWanted, int64(1), "transactions gas was set incorrectly")
 	//// ensure each tx is 116 bytes long
-	require.Equal(t, len(tx0.tx), 116, "Tx is longer than 116 bytes")
+	require.Equal(t, len(tx0.Tx), 116, "Tx is longer than 116 bytes")
 	mempool.Flush()
 
 	// each table driven test creates numTxsToCreate txs with checkTx, and at the end clears all remaining txs.

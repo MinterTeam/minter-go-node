@@ -31,25 +31,6 @@ var newline = []byte("\n")
 
 // --------------------------------------------------------------------------------
 
-// Reactor handles mempool tx broadcasting amongst peers.
-// It maintains a map from peer ID to counter, to prevent gossiping txs to the
-// peers you received it from.
-type Reactor struct {
-	p2p.BaseReactor
-	config  *cfg.MempoolConfig
-	mempool *PriorityMempool
-}
-
-// NewReactor returns a new Reactor with the given config and mempool.
-func NewReactor(config *cfg.MempoolConfig, mempool *PriorityMempool) *Reactor {
-	memR := &Reactor{
-		config:  config,
-		mempool: mempool,
-	}
-	memR.BaseReactor = *p2p.NewBaseReactor("Mempool", memR)
-	return memR
-}
-
 // PriorityMempool is an ordered in-memory pool for transactions before they are
 // proposed in a consensus round. Transaction validity is checked using the
 // CheckTx abci message before the transaction is added to the pool. The
@@ -77,6 +58,7 @@ type PriorityMempool struct {
 	txsGasPriceCounter map[uint32]uint64
 	gasPrices          []uint32
 	txsCounter         int
+	waitCh             chan struct{}
 	proxyAppConn       proxy.AppConnMempool
 
 	// locks
@@ -118,6 +100,7 @@ func NewPriorityMempool(
 		proxyAppConn:       proxyAppConn,
 		txs:                make(map[uint32]*clist.CList),
 		txsGasPriceCounter: make(map[uint32]uint64),
+		waitCh:             make(chan struct{}),
 		txsCounter:         0,
 		height:             height,
 		recheckCursor:      nil,
@@ -337,7 +320,7 @@ func (mem *PriorityMempool) TxsFront() *clist.CElement {
 //
 // Safe for concurrent use by multiple goroutines.
 func (mem *PriorityMempool) TxsWaitChan() <-chan struct{} {
-	return nil
+	return mem.waitCh
 }
 
 // It blocks if we're waiting on Update() or Reap().
@@ -390,8 +373,8 @@ func (mem *PriorityMempool) CheckTx(tx types.Tx, cb func(*abci.Response), txInfo
 		// (eg. after committing a block, txs are removed from mempool but not cache),
 		// so we only record the sender for txs still in the tmpool.
 		if e, ok := mem.txsMap.Load(TxKey(tx)); ok {
-			memTx := e.(*clist.CElement).Value.(*mempoolTx)
-			memTx.senders.LoadOrStore(txInfo.SenderID, true)
+			memTx := e.(*clist.CElement).Value.(*tmpool.MempoolTx)
+			memTx.Senders.LoadOrStore(txInfo.SenderID, true)
 			// TODO: consider punishing peer for dups,
 			// its non-trivial since invalid txs can become valid,
 			// but they can spam the same tx with little cost to them atm.
@@ -462,10 +445,10 @@ func (mem *PriorityMempool) reqResCb(
 
 // Called from:
 //  - resCbFirstTime (lock not held) if tx is valid
-func (mem *PriorityMempool) addTx(memTx *mempoolTx) {
-	tx, err := mem.executor.DecodeFromBytes(memTx.tx) // TODO: handle error
+func (mem *PriorityMempool) addTx(memTx *tmpool.MempoolTx) {
+	tx, err := mem.executor.DecodeFromBytes(memTx.Tx) // TODO: handle error
 	if err != nil {
-		panic(fmt.Sprintf("failed to decode tx: %X", memTx.tx))
+		panic(fmt.Sprintf("failed to decode tx: %X", memTx.Tx))
 	}
 
 	mem.txsmx.Lock()
@@ -479,9 +462,11 @@ func (mem *PriorityMempool) addTx(memTx *mempoolTx) {
 	mem.incrementTxsCounter(tx.GasPrice)
 	mem.addGasPrice(tx.GasPrice)
 
-	mem.txsMap.Store(TxKey(memTx.tx), e)
-	atomic.AddInt64(&mem.txsBytes, int64(len(memTx.tx)))
-	mem.metrics.TxSizeBytes.Observe(float64(len(memTx.tx)))
+	close(mem.waitCh)
+
+	mem.txsMap.Store(TxKey(memTx.Tx), e)
+	atomic.AddInt64(&mem.txsBytes, int64(len(memTx.Tx)))
+	mem.metrics.TxSizeBytes.Observe(float64(len(memTx.Tx)))
 }
 
 // Called from:
@@ -503,14 +488,18 @@ func (mem *PriorityMempool) removeTx(tx types.Tx, elem *clist.CElement, removeFr
 	if removeFromCache {
 		mem.cache.Remove(tx)
 	}
+
+	if mem.txsCounter == 0 {
+		mem.waitCh = make(chan struct{})
+	}
 }
 
 // RemoveTxByKey removes a transaction from the mempool by its TxKey index.
 func (mem *PriorityMempool) RemoveTxByKey(txKey [TxKeySize]byte, removeFromCache bool) {
 	if e, ok := mem.txsMap.Load(txKey); ok {
-		memTx := e.(*clist.CElement).Value.(*mempoolTx)
+		memTx := e.(*clist.CElement).Value.(*tmpool.MempoolTx)
 		if memTx != nil {
-			mem.removeTx(memTx.tx, e.(*clist.CElement), removeFromCache)
+			mem.removeTx(memTx.Tx, e.(*clist.CElement), removeFromCache)
 		}
 	}
 }
@@ -557,17 +546,17 @@ func (mem *PriorityMempool) resCbFirstTime(
 				return
 			}
 
-			memTx := &mempoolTx{
-				height:    mem.height,
-				gasWanted: r.CheckTx.GasWanted,
-				tx:        tx,
+			memTx := &tmpool.MempoolTx{
+				Height:    mem.height,
+				GasWanted: r.CheckTx.GasWanted,
+				Tx:        tx,
 			}
-			memTx.senders.Store(peerID, true)
+			memTx.Senders.Store(peerID, true)
 			mem.addTx(memTx)
 			mem.logger.Debug("added good transaction",
 				"tx", txID(tx),
 				"res", r,
-				"height", memTx.height,
+				"height", memTx.Height,
 				"total", mem.Size(),
 			)
 			mem.notifyTxsAvailable()
@@ -594,11 +583,11 @@ func (mem *PriorityMempool) resCbRecheck(req *abci.Request, res *abci.Response) 
 	switch r := res.Value.(type) {
 	case *abci.Response_CheckTx:
 		tx := req.GetCheckTx().Tx
-		memTx := mem.recheckCursor.Value.(*mempoolTx)
-		if !bytes.Equal(tx, memTx.tx) {
+		memTx := mem.recheckCursor.Value.(*tmpool.MempoolTx)
+		if !bytes.Equal(tx, memTx.Tx) {
 			panic(fmt.Sprintf(
 				"Unexpected tx response from proxy during recheck\nExpected %X, got %X",
-				memTx.tx,
+				memTx.Tx,
 				tx))
 		}
 		var postCheckErr error
@@ -618,7 +607,7 @@ func (mem *PriorityMempool) resCbRecheck(req *abci.Request, res *abci.Response) 
 		} else {
 			mem.recheckCursor = mem.recheckCursor.Next()
 			if mem.recheckCursor == nil {
-				tx, _ := mem.executor.DecodeFromBytes(memTx.tx)
+				tx, _ := mem.executor.DecodeFromBytes(memTx.Tx)
 				for k, v := range mem.gasPrices {
 					if v == tx.GasPrice {
 						if k == 0 {
@@ -678,9 +667,9 @@ func (mem *PriorityMempool) ReapMaxBytesMaxGas(maxBytes, maxGas int64) types.Txs
 	txs := make([]types.Tx, 0, txCount)
 	for _, gp := range gasPrices {
 		for e := mem.getTxByGasPrice(gp).Front(); e != nil; e = e.Next() {
-			memTx := e.Value.(*mempoolTx)
+			memTx := e.Value.(*tmpool.MempoolTx)
 
-			dataSize := types.ComputeProtoSizeForTxs(append(txs, memTx.tx))
+			dataSize := types.ComputeProtoSizeForTxs(append(txs, memTx.Tx))
 
 			// Check total size requirement
 			if maxBytes > -1 && dataSize > maxBytes {
@@ -690,13 +679,13 @@ func (mem *PriorityMempool) ReapMaxBytesMaxGas(maxBytes, maxGas int64) types.Txs
 			// If maxGas is negative, skip this check.
 			// Since newTotalGas < masGas, which
 			// must be non-negative, it follows that this won't overflow.
-			newTotalGas := totalGas + memTx.gasWanted
+			newTotalGas := totalGas + memTx.GasWanted
 			if maxGas > -1 && newTotalGas > maxGas {
 				return txs
 			}
 
 			totalGas = newTotalGas
-			txs = append(txs, memTx.tx)
+			txs = append(txs, memTx.Tx)
 		}
 	}
 
@@ -716,8 +705,8 @@ func (mem *PriorityMempool) ReapMaxTxs(max int) types.Txs {
 	txs := make([]types.Tx, 0, tmmath.MinInt(int(txCount), max))
 	for _, gp := range gasPrices {
 		for e := mem.getTxByGasPrice(gp).Front(); e != nil && len(txs) <= max; e = e.Next() {
-			memTx := e.Value.(*mempoolTx)
-			txs = append(txs, memTx.tx)
+			memTx := e.Value.(*tmpool.MempoolTx)
+			txs = append(txs, memTx.Tx)
 		}
 	}
 
@@ -801,31 +790,13 @@ func (mem *PriorityMempool) recheckTxs() {
 	gasPrices, _ := mem.txsByGasPrices()
 	for _, gp := range gasPrices {
 		for e := mem.getTxByGasPrice(gp).Front(); e != nil; e = e.Next() {
-			memTx := e.Value.(*mempoolTx)
+			memTx := e.Value.(*tmpool.MempoolTx)
 			mem.proxyAppConn.CheckTxAsync(abci.RequestCheckTx{
-				Tx:   memTx.tx,
+				Tx:   memTx.Tx,
 				Type: abci.CheckTxType_Recheck,
 			})
 		}
 	}
 
 	mem.proxyAppConn.FlushAsync()
-}
-
-//--------------------------------------------------------------------------------
-
-// mempoolTx is a transaction that successfully ran
-type mempoolTx struct {
-	height    int64    // height that this tx had been validated in
-	gasWanted int64    // amount of gas this tx states it will require
-	tx        types.Tx //
-
-	// ids of peers who've sent us this tx (as a map for quick lookups).
-	// senders: PeerID -> bool
-	senders sync.Map
-}
-
-// Height returns the height for this transaction
-func (memTx *mempoolTx) Height() int64 {
-	return atomic.LoadInt64(&memTx.height)
 }
