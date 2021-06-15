@@ -467,7 +467,6 @@ func (mem *PriorityMempool) addTx(memTx *tmpool.MempoolTx) {
 	mem.addGasPrice(tx.GasPrice)
 
 	if mem.txsCounter == 1 {
-		fmt.Println("CLOSED")
 		close(mem.waitCh)
 	}
 

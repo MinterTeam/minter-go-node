@@ -524,24 +524,25 @@ func TestMempool_CheckTxChecksTxSize(t *testing.T) {
 	maxTxSize := mempl.config.MaxTxBytes
 
 	testCases := []struct {
-		len int
-		err bool
+		len    int
+		err    bool
+		experr int
 	}{
 		// check small txs. no error
-		0: {10, false},
-		1: {1000, false},
-		2: {1000000, false},
+		0: {10, false, 0},
+		1: {1000, false, 0},
+		2: {1000000, false, 0},
 
 		// check around maxTxSize
-		3: {maxTxSize - 1, false},
-		4: {maxTxSize, false},
-		5: {maxTxSize + 1, true},
+		3: {maxTxSize - 122, false, 0},
+		4: {maxTxSize - 121, false, 0},
+		5: {maxTxSize - 120, true, maxTxSize + 1},
 	}
 
 	for i, testCase := range testCases {
 		caseString := fmt.Sprintf("case %d, len %d", i, testCase.len)
 
-		tx := createTx(t, uint64(testCase.len))
+		tx := createTx(t, uint64(116+testCase.len))
 
 		err := mempl.CheckTx(tx, nil, tmpool.TxInfo{})
 		bv := gogotypes.BytesValue{Value: tx}
@@ -552,7 +553,7 @@ func TestMempool_CheckTxChecksTxSize(t *testing.T) {
 		if !testCase.err {
 			require.NoError(t, err, caseString)
 		} else {
-			require.Equal(t, err, ErrTxTooLarge{maxTxSize, testCase.len}, caseString)
+			require.Equal(t, err, ErrTxTooLarge{maxTxSize, testCase.experr}, caseString)
 		}
 	}
 }
