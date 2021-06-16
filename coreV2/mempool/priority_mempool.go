@@ -609,11 +609,11 @@ func (mem *PriorityMempool) resCbRecheck(req *abci.Request, res *abci.Response) 
 				tx, _ := mem.executor.DecodeFromBytes(memTx.Tx)
 				for k, v := range mem.gasPrices {
 					if v == tx.GasPrice {
-						if k == 0 {
+						if k == len(mem.gasPrices)-1 {
 							break
 						}
 
-						mem.recheckCursor = mem.getTxByGasPrice(mem.gasPrices[k-1]).Front()
+						mem.recheckCursor = mem.getTxByGasPrice(mem.gasPrices[k+1]).Front()
 						break
 					}
 				}
