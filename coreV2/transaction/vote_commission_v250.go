@@ -59,10 +59,10 @@ type VoteCommissionDataV250 struct {
 	BurnToken               *big.Int
 	VoteCommission          *big.Int
 	VoteUpdate              *big.Int
-	FailedTX                *big.Int
-	AddLimitOrder           *big.Int
-	RemoveLimitOrder        *big.Int
-	More                    []*big.Int `rlp:"tail"`
+	// FailedTX                *big.Int
+	// AddLimitOrder           *big.Int
+	// RemoveLimitOrder        *big.Int
+	More []*big.Int `rlp:"tail"`
 }
 
 func (data VoteCommissionDataV250) TxType() TxType {
@@ -77,7 +77,7 @@ func (data VoteCommissionDataV250) GetPubKey() types.Pubkey {
 }
 
 func (data VoteCommissionDataV250) basicCheck(tx *Transaction, context *state.CheckState, block uint64) *Response {
-	if len(data.More) > 0 { // todo: mb use
+	if len(data.More) > 3 {
 		return &Response{
 			Code: code.DecodeError,
 			Log:  "More parameters than expected",
@@ -232,6 +232,7 @@ func (data VoteCommissionDataV250) price() *commission.Price {
 		MintToken:               data.MintToken,
 		VoteCommission:          data.VoteCommission,
 		VoteUpdate:              data.VoteUpdate,
-		More:                    append([]*big.Int{data.FailedTX, data.AddLimitOrder, data.RemoveLimitOrder}, data.More...),
+		// More:                    append([]*big.Int{data.FailedTX, data.AddLimitOrder, data.RemoveLimitOrder}, data.More...),
+		More: data.More,
 	}
 }
