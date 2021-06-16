@@ -243,7 +243,7 @@ func (mem *PriorityMempool) addGasPrice(gp uint32) {
 		if mem.gasPrices[i] == gp {
 			exists = true
 		}
-		return mem.gasPrices[i] > gp
+		return mem.gasPrices[i] < gp
 	})
 
 	if exists {
@@ -308,7 +308,7 @@ func (mem *PriorityMempool) Flush() {
 //
 // Safe for concurrent use by multiple goroutines.
 func (mem *PriorityMempool) TxsFront() *clist.CElement {
-	return mem.getTxByGasPrice(mem.gasPrices[len(mem.gasPrices)-1]).Front()
+	return mem.getTxByGasPrice(mem.gasPrices[0]).Front()
 }
 
 // TxsWaitChan returns a channel to wait on transactions. It will be closed
@@ -779,8 +779,8 @@ func (mem *PriorityMempool) recheckTxs() {
 	}
 
 	// TODO: handle recheck
-	mem.recheckCursor = mem.getTxByGasPrice(mem.gasPrices[len(mem.gasPrices)-1]).Front()
-	mem.recheckEnd = mem.getTxByGasPrice(mem.gasPrices[0]).Back()
+	mem.recheckCursor = mem.getTxByGasPrice(mem.gasPrices[0]).Front()
+	mem.recheckEnd = mem.getTxByGasPrice(mem.gasPrices[len(mem.gasPrices)-1]).Back()
 
 	// Push txs to proxyAppConn
 	// NOTE: globalCb may be called concurrently.
