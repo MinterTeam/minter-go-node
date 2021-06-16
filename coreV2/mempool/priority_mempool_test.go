@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/MinterTeam/minter-go-node/coreV2/mempool/example/counter"
+	"github.com/MinterTeam/minter-go-node/tests/example/counter"
 	"github.com/tendermint/tendermint/abci/example/kvstore"
 	abciserver "github.com/tendermint/tendermint/abci/server"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -263,7 +263,7 @@ func TestMempoolUpdate(t *testing.T) {
 }
 
 func TestMempool_KeepInvalidTxsInCache(t *testing.T) {
-	app := counter.NewApplication(true)
+	app := counter.NewApplication(true, nil)
 	cc := proxy.NewLocalClientCreator(app)
 	wcfg := cfg.DefaultConfig()
 	wcfg.Mempool.KeepInvalidTxsInCache = true
@@ -359,7 +359,7 @@ func TestTxsAvailable(t *testing.T) {
 }
 
 func TestSerialReap(t *testing.T) {
-	app := counter.NewApplication(true)
+	app := counter.NewApplication(true, nil)
 	app.SetOption(abci.RequestSetOption{Key: "serial", Value: "on"})
 	cc := proxy.NewLocalClientCreator(app)
 
@@ -600,11 +600,12 @@ func TestMempoolTxsBytes(t *testing.T) {
 	}
 
 	// 6. zero after tx is rechecked and removed due to not being valid anymore
-	app2 := counter.NewApplication(true)
+	app2 := counter.NewApplication(true, transaction.NewExecutor(transaction.GetData))
 	cc = proxy.NewLocalClientCreator(app2)
 	mempool, cleanup = newMempoolWithApp(cc)
 	defer cleanup()
 
+	app2.TxCount = 1
 	tx := createTx(t, 124, nil)
 	err = mempool.CheckTx(tx, nil, tmpool.TxInfo{})
 	require.NoError(t, err)
@@ -620,7 +621,6 @@ func TestMempoolTxsBytes(t *testing.T) {
 		}
 	})
 	res, err := appConnCon.DeliverTxSync(abci.RequestDeliverTx{Tx: tx})
-	fmt.Println(res)
 	require.NoError(t, err)
 	require.EqualValues(t, uint32(0), res.Code)
 	res2, err := appConnCon.CommitSync()
@@ -631,9 +631,11 @@ func TestMempoolTxsBytes(t *testing.T) {
 	err = mempool.Update(1, []tmtypes.Tx{}, abciResponses(0, abci.CodeTypeOK), nil, nil)
 	require.NoError(t, err)
 	assert.EqualValues(t, 0, mempool.TxsBytes())
-	mempool.Flush()
 
 	// 7. Test RemoveTxByK	ey function
+	mempool, cleanup = newMempoolWithAppAndConfig(proxy.NewLocalClientCreator(app), config)
+	defer cleanup()
+
 	tx = createTx(t, 123, nil)
 	err = mempool.CheckTx(tx, nil, tmpool.TxInfo{})
 	require.NoError(t, err)

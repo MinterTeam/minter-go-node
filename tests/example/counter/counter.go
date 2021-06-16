@@ -3,6 +3,7 @@ package counter
 import (
 	"encoding/binary"
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/coreV2/transaction"
 
 	"github.com/tendermint/tendermint/abci/example/code"
 	"github.com/tendermint/tendermint/abci/types"
@@ -12,16 +13,18 @@ type Application struct {
 	types.BaseApplication
 
 	hashCount int
-	txCount   int
+	TxCount   int
 	serial    bool
+
+	txDecoder transaction.DecoderTx
 }
 
-func NewApplication(serial bool) *Application {
-	return &Application{serial: serial}
+func NewApplication(serial bool, decoder transaction.DecoderTx) *Application {
+	return &Application{serial: serial, txDecoder: decoder}
 }
 
 func (app *Application) Info(req types.RequestInfo) types.ResponseInfo {
-	return types.ResponseInfo{Data: fmt.Sprintf("{\"hashes\":%v,\"txs\":%v}", app.hashCount, app.txCount)}
+	return types.ResponseInfo{Data: fmt.Sprintf("{\"hashes\":%v,\"txs\":%v}", app.hashCount, app.TxCount)}
 }
 
 func (app *Application) SetOption(req types.RequestSetOption) types.ResponseSetOption {
@@ -49,16 +52,17 @@ func (app *Application) DeliverTx(req types.RequestDeliverTx) types.ResponseDeli
 				Code: code.CodeTypeEncodingError,
 				Log:  fmt.Sprintf("Max tx size is 2500 bytes, got %d", len(req.Tx))}
 		}
-		//tx8 := make([]byte, 124)
-		//copy(tx8[len(tx8)-len(req.Tx):], req.Tx)
-		//txValue := binary.BigEndian.Uint64(tx8)
-		//if txValue != uint64(app.txCount) {
-		//	return types.ResponseDeliverTx{
-		//		Code: code.CodeTypeBadNonce,
-		//		Log:  fmt.Sprintf("Invalid nonce. Expected %v, got %v", app.txCount, txValue)}
-		//}
+
+		if app.txDecoder != nil {
+			tx, _ := app.txDecoder.DecodeFromBytes(req.Tx)
+			if tx.Nonce != uint64(app.TxCount) {
+				return types.ResponseDeliverTx{
+					Code: code.CodeTypeBadNonce,
+					Log:  fmt.Sprintf("Invalid nonce. Expected %v, got %v", app.TxCount, tx.Nonce)}
+			}
+		}
 	}
-	app.txCount++
+	app.TxCount++
 	return types.ResponseDeliverTx{Code: code.CodeTypeOK}
 }
 
@@ -69,25 +73,26 @@ func (app *Application) CheckTx(req types.RequestCheckTx) types.ResponseCheckTx 
 				Code: code.CodeTypeEncodingError,
 				Log:  fmt.Sprintf("Max tx size is 2500 bytes, got %d", len(req.Tx))}
 		}
-		//tx8 := make([]byte, 124)
-		//copy(tx8[len(tx8)-len(req.Tx):], req.Tx)
-		//txValue := binary.BigEndian.Uint64(tx8)
-		//if txValue < uint64(app.txCount) {
-		//	return types.ResponseCheckTx{
-		//		Code: code.CodeTypeBadNonce,
-		//		Log:  fmt.Sprintf("Invalid nonce. Expected >= %v, got %v", app.txCount, txValue)}
-		//}
+
+		if app.txDecoder != nil {
+			tx, _ := app.txDecoder.DecodeFromBytes(req.Tx)
+			if tx.Nonce != uint64(app.TxCount) {
+				return types.ResponseCheckTx{
+					Code: code.CodeTypeBadNonce,
+					Log:  fmt.Sprintf("Invalid nonce. Expected >= %v, got %v", app.TxCount, tx.Nonce)}
+			}
+		}
 	}
 	return types.ResponseCheckTx{Code: code.CodeTypeOK}
 }
 
 func (app *Application) Commit() (resp types.ResponseCommit) {
 	app.hashCount++
-	if app.txCount == 0 {
+	if app.TxCount == 0 {
 		return types.ResponseCommit{}
 	}
 	hash := make([]byte, 8)
-	binary.BigEndian.PutUint64(hash, uint64(app.txCount))
+	binary.BigEndian.PutUint64(hash, uint64(app.TxCount))
 	return types.ResponseCommit{Data: hash}
 }
 
@@ -96,7 +101,7 @@ func (app *Application) Query(reqQuery types.RequestQuery) types.ResponseQuery {
 	case "hash":
 		return types.ResponseQuery{Value: []byte(fmt.Sprintf("%v", app.hashCount))}
 	case "tx":
-		return types.ResponseQuery{Value: []byte(fmt.Sprintf("%v", app.txCount))}
+		return types.ResponseQuery{Value: []byte(fmt.Sprintf("%v", app.TxCount))}
 	default:
 		return types.ResponseQuery{Log: fmt.Sprintf("Invalid query path. Expected hash or tx, got %v", reqQuery.Path)}
 	}
