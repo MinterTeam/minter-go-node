@@ -198,8 +198,8 @@ func (mem *PriorityMempool) TxsBytes() int64 {
 }
 
 // Get sorted gas prices and tx count by available txs
-func (mem *PriorityMempool) availableGasPrices() ([]uint32, uint64) {
-	return mem.gasPrices, uint64(mem.txsCounter)
+func (mem *PriorityMempool) availableGasPrices() []uint32 {
+	return mem.gasPrices
 }
 
 // Increment mempool txs counter
@@ -281,8 +281,7 @@ func (mem *PriorityMempool) Flush() {
 	_ = atomic.SwapInt64(&mem.txsBytes, 0)
 	mem.cache.Reset()
 
-	gps, _ := mem.availableGasPrices()
-	for _, gp := range gps {
+	for _, gp := range mem.availableGasPrices() {
 		for e := mem.getTxByGasPrice(gp).Front(); e != nil; e = e.Next() {
 			mem.txsmx.Lock()
 			mem.txs[gp].Remove(e)
@@ -663,9 +662,8 @@ func (mem *PriorityMempool) ReapMaxBytesMaxGas(maxBytes, maxGas int64) types.Txs
 	// TODO: we will get a performance boost if we have a good estimate of avg
 	// size per tx, and set the initial capacity based off of that.
 	// txs := make([]types.Tx, 0, tmmath.MinInt(mem.txs.Len(), max/mem.avgTxSize))
-	gps, txCount := mem.availableGasPrices()
-	txs := make([]types.Tx, 0, txCount)
-	for _, gp := range gps {
+	txs := make([]types.Tx, 0, mem.txsCounter)
+	for _, gp := range mem.availableGasPrices() {
 		for e := mem.getTxByGasPrice(gp).Front(); e != nil; e = e.Next() {
 			memTx := e.Value.(*tmpool.MempoolTx)
 
@@ -697,13 +695,12 @@ func (mem *PriorityMempool) ReapMaxTxs(max int) types.Txs {
 	mem.updateMtx.RLock()
 	defer mem.updateMtx.RUnlock()
 
-	gps, txCount := mem.availableGasPrices()
 	if max < 0 {
-		max = int(txCount)
+		max = mem.txsCounter
 	}
 
-	txs := make([]types.Tx, 0, tmmath.MinInt(int(txCount), max))
-	for _, gp := range gps {
+	txs := make([]types.Tx, 0, tmmath.MinInt(mem.txsCounter, max))
+	for _, gp := range mem.availableGasPrices() {
 		for e := mem.getTxByGasPrice(gp).Front(); e != nil && len(txs) <= max; e = e.Next() {
 			memTx := e.Value.(*tmpool.MempoolTx)
 			txs = append(txs, memTx.Tx)
@@ -787,8 +784,7 @@ func (mem *PriorityMempool) recheckTxs() {
 
 	// Push txs to proxyAppConn
 	// NOTE: globalCb may be called concurrently.
-	gps, _ := mem.availableGasPrices()
-	for _, gp := range gps {
+	for _, gp := range mem.availableGasPrices() {
 		for e := mem.getTxByGasPrice(gp).Front(); e != nil; e = e.Next() {
 			memTx := e.Value.(*tmpool.MempoolTx)
 			mem.proxyAppConn.CheckTxAsync(abci.RequestCheckTx{
