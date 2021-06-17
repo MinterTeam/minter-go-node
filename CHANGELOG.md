@@ -1,5 +1,14 @@
 # Changelog
 
+## [v2.5.0](https://github.com/MinterTeam/minter-go-node/tree/v2.5.0)
+
+[Full Changelog](https://github.com/MinterTeam/minter-go-node/compare/v2.4.1...v2.5.0)
+
+### Added
+
+- Commission fee for unsuccessful transactions
+- Prioritizing transactions in a block based on the gas price
+
 ## [v2.4.1](https://github.com/MinterTeam/minter-go-node/tree/v2.4.1)
 
 [Full Changelog](https://github.com/MinterTeam/minter-go-node/compare/v2.4.0...v2.4.1)
