@@ -4,12 +4,11 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/coreV2/transaction"
+	tmpool "github.com/tendermint/tendermint/mempool"
 	"sort"
 	"sync"
 	"sync/atomic"
-
-	"github.com/MinterTeam/minter-go-node/coreV2/transaction"
-	tmpool "github.com/tendermint/tendermint/mempool"
 
 	abci "github.com/tendermint/tendermint/abci/types"
 	cfg "github.com/tendermint/tendermint/config"
@@ -29,7 +28,7 @@ const TxKeySize = sha256.Size
 
 var newline = []byte("\n")
 
-// --------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------
 
 // PriorityMempool is an ordered in-memory pool for transactions before they are
 // proposed in a consensus round. Transaction validity is checked using the
@@ -53,17 +52,9 @@ type PriorityMempool struct {
 	preCheck  tmpool.PreCheckFunc
 	postCheck tmpool.PostCheckFunc
 
-	wal                *auto.AutoFile          // a log of mempool txs
-	txs                map[uint32]*clist.CList // concurrent linked-list of good txs
-	txsGasPriceCounter map[uint32]uint64
-	gasPrices          []uint32
-	txsCounter         int
-	waitCh             chan struct{}
-	proxyAppConn       proxy.AppConnMempool
-
-	// locks
-	txsmx  sync.RWMutex
-	txscmx sync.RWMutex
+	wal          *auto.AutoFile // a log of mempool txs
+	txs          *clist.CList   // concurrent linked-list of good txs
+	proxyAppConn proxy.AppConnMempool
 
 	// Track whether we're rechecking txs.
 	// These are not protected by a mutex and are expected to be mutated in
@@ -81,11 +72,17 @@ type PriorityMempool struct {
 
 	logger log.Logger
 
-	metrics  *tmpool.Metrics
+	metrics *tmpool.Metrics
+
 	executor transaction.DecoderTx
+
+	txsgpmu     sync.RWMutex
+	txsByGas    map[uint32]map[[32]byte]*tmpool.MempoolTx
+	minterTxMap sync.Map
+	gasPrices   []uint32
 }
 
-// PriorityMempoolOption sets an optional parameter on the tmpool.
+// PriorityMempoolOption sets an optional parameter on the mempool.
 type PriorityMempoolOption func(*PriorityMempool)
 
 // NewPriorityMempool returns a new mempool with the given configuration and connection to an application.
@@ -96,18 +93,16 @@ func NewPriorityMempool(
 	options ...PriorityMempoolOption,
 ) *PriorityMempool {
 	mempool := &PriorityMempool{
-		config:             config,
-		proxyAppConn:       proxyAppConn,
-		txs:                make(map[uint32]*clist.CList),
-		txsGasPriceCounter: make(map[uint32]uint64),
-		waitCh:             make(chan struct{}),
-		txsCounter:         0,
-		height:             height,
-		recheckCursor:      nil,
-		recheckEnd:         nil,
-		logger:             log.NewNopLogger(),
-		metrics:            tmpool.NopMetrics(),
-		executor:           transaction.NewExecutor(transaction.GetData),
+		config:        config,
+		proxyAppConn:  proxyAppConn,
+		txs:           clist.New(),
+		height:        height,
+		recheckCursor: nil,
+		recheckEnd:    nil,
+		logger:        log.NewNopLogger(),
+		metrics:       tmpool.NopMetrics(),
+		executor:      transaction.NewExecutor(transaction.GetData),
+		txsByGas:      make(map[uint32]map[[32]byte]*tmpool.MempoolTx),
 	}
 	if config.CacheSize > 0 {
 		mempool.cache = newMapTxCache(config.CacheSize)
@@ -121,7 +116,7 @@ func NewPriorityMempool(
 	return mempool
 }
 
-// EnableTxsAvailable NOTE: not thread safe - should only be called once, on startup
+// NOTE: not thread safe - should only be called once, on startup
 func (mem *PriorityMempool) EnableTxsAvailable() {
 	mem.txsAvailable = make(chan struct{}, 1)
 }
@@ -177,103 +172,32 @@ func (mem *PriorityMempool) CloseWAL() {
 	mem.wal = nil
 }
 
-// Lock Safe for concurrent use by multiple goroutines.
+// Safe for concurrent use by multiple goroutines.
 func (mem *PriorityMempool) Lock() {
 	mem.updateMtx.Lock()
 }
 
-// Unlock Safe for concurrent use by multiple goroutines.
+// Safe for concurrent use by multiple goroutines.
 func (mem *PriorityMempool) Unlock() {
 	mem.updateMtx.Unlock()
 }
 
-// Size Safe for concurrent use by multiple goroutines.
+// Safe for concurrent use by multiple goroutines.
 func (mem *PriorityMempool) Size() int {
-	return mem.txsCounter
+	return mem.txs.Len()
 }
 
-// TxsBytes Safe for concurrent use by multiple goroutines.
+// Safe for concurrent use by multiple goroutines.
 func (mem *PriorityMempool) TxsBytes() int64 {
 	return atomic.LoadInt64(&mem.txsBytes)
 }
 
-// Get sorted gas prices and tx count by available txs
-func (mem *PriorityMempool) availableGasPrices() []uint32 {
-	return mem.gasPrices
-}
-
-// Increment mempool txs counter
-func (mem *PriorityMempool) incrementTxsCounter(gasPrice uint32) {
-	mem.txscmx.Lock()
-	defer mem.txscmx.Unlock()
-
-	mem.txsCounter += 1
-	if _, ok := mem.txsGasPriceCounter[gasPrice]; ok {
-		mem.txsGasPriceCounter[gasPrice] += 1
-		return
-	}
-
-	mem.txsGasPriceCounter[gasPrice] = 1
-}
-
-// Decrement mempool txs counter
-func (mem *PriorityMempool) decrementTxsCounter(gasPrice uint32) {
-	mem.txscmx.Lock()
-	defer mem.txscmx.Unlock()
-
-	mem.txsCounter -= 1
-	mem.txsGasPriceCounter[gasPrice] -= 1
-
-	if mem.txsGasPriceCounter[gasPrice] == 0 {
-		mem.removeGasPrice(gasPrice)
-	}
-}
-
-// Get tx linked list by gas price
-func (mem *PriorityMempool) getTxByGasPrice(gp uint32) *clist.CList {
-	mem.txsmx.RLock()
-	defer mem.txsmx.RUnlock()
-	return mem.txs[gp]
-}
-
-// Add new gas price to list of available gas prices
-func (mem *PriorityMempool) addGasPrice(gp uint32) {
-	exists := false
-	i := sort.Search(len(mem.gasPrices), func(i int) bool {
-		if mem.gasPrices[i] == gp {
-			exists = true
-		}
-		return mem.gasPrices[i] < gp
-	})
-
-	if exists {
-		return
-	}
-
-	mem.gasPrices = append(mem.gasPrices, 0)
-	copy(mem.gasPrices[i+1:], mem.gasPrices[i:])
-	mem.gasPrices[i] = gp
-}
-
-// Remove gas price from list of available gas prices
-func (mem *PriorityMempool) removeGasPrice(gp uint32) {
-	key := 0
-	for i, v := range mem.gasPrices {
-		if v == gp {
-			key = i
-			break
-		}
-	}
-
-	mem.gasPrices = append(mem.gasPrices[:key], mem.gasPrices[key+1:]...)
-}
-
-// FlushAppConn Lock() must be help by the caller during execution.
+// Lock() must be help by the caller during execution.
 func (mem *PriorityMempool) FlushAppConn() error {
 	return mem.proxyAppConn.FlushSync()
 }
 
-// Flush XXX: Unsafe! Calling Flush may leave mempool in inconsistent state.
+// XXX: Unsafe! Calling Flush may leave mempool in inconsistent state.
 func (mem *PriorityMempool) Flush() {
 	mem.updateMtx.RLock()
 	defer mem.updateMtx.RUnlock()
@@ -281,19 +205,10 @@ func (mem *PriorityMempool) Flush() {
 	_ = atomic.SwapInt64(&mem.txsBytes, 0)
 	mem.cache.Reset()
 
-	for _, gp := range mem.availableGasPrices() {
-		for e := mem.getTxByGasPrice(gp).Front(); e != nil; e = e.Next() {
-			mem.txsmx.Lock()
-			mem.txs[gp].Remove(e)
-			mem.txsmx.Unlock()
-
-			e.DetachPrev()
-			mem.decrementTxsCounter(gp)
-
-			if mem.txsCounter == 0 {
-				mem.waitCh = make(chan struct{})
-			}
-		}
+	for e := mem.txs.Front(); e != nil; e = e.Next() {
+		mem.txs.Remove(e)
+		mem.removeTxFromTxsGasPriceMap(e.Value.(*tmpool.MempoolTx).Tx)
+		e.DetachPrev()
 	}
 
 	mem.txsMap.Range(func(key, _ interface{}) bool {
@@ -308,7 +223,7 @@ func (mem *PriorityMempool) Flush() {
 //
 // Safe for concurrent use by multiple goroutines.
 func (mem *PriorityMempool) TxsFront() *clist.CElement {
-	return mem.getTxByGasPrice(mem.gasPrices[0]).Front()
+	return mem.txs.Front()
 }
 
 // TxsWaitChan returns a channel to wait on transactions. It will be closed
@@ -317,10 +232,10 @@ func (mem *PriorityMempool) TxsFront() *clist.CElement {
 //
 // Safe for concurrent use by multiple goroutines.
 func (mem *PriorityMempool) TxsWaitChan() <-chan struct{} {
-	return mem.waitCh
+	return mem.txs.WaitChan()
 }
 
-// CheckTx It blocks if we're waiting on Update() or Reap().
+// It blocks if we're waiting on Update() or Reap().
 // cb: A callback from the CheckTx command.
 //     It gets called from another goroutine.
 // CONTRACT: Either cb will get called, or err returned.
@@ -353,7 +268,7 @@ func (mem *PriorityMempool) CheckTx(tx types.Tx, cb func(*abci.Response), txInfo
 	// all even once.
 	if mem.wal != nil {
 		// TODO: Notify administrators when WAL fails
-		_, err := mem.wal.Write(append(tx, newline...))
+		_, err := mem.wal.Write(append([]byte(tx), newline...))
 		if err != nil {
 			return fmt.Errorf("wal.Write: %w", err)
 		}
@@ -368,7 +283,7 @@ func (mem *PriorityMempool) CheckTx(tx types.Tx, cb func(*abci.Response), txInfo
 		// Record a new sender for a tx we've already seen.
 		// Note it's possible a tx is still in the cache but no longer in the mempool
 		// (eg. after committing a block, txs are removed from mempool but not cache),
-		// so we only record the sender for txs still in the tmpool.
+		// so we only record the sender for txs still in the mempool.
 		if e, ok := mem.txsMap.Load(TxKey(tx)); ok {
 			memTx := e.(*clist.CElement).Value.(*tmpool.MempoolTx)
 			memTx.Senders.LoadOrStore(txInfo.SenderID, true)
@@ -448,21 +363,16 @@ func (mem *PriorityMempool) addTx(memTx *tmpool.MempoolTx) {
 		panic(fmt.Sprintf("failed to decode tx: %X", memTx.Tx))
 	}
 
-	mem.txsmx.Lock()
-	if _, ok := mem.txs[tx.GasPrice]; !ok {
-		mem.txs[tx.GasPrice] = clist.New()
+	mem.txsgpmu.Lock()
+	if _, ok := mem.txsByGas[tx.GasPrice]; !ok {
+		mem.txsByGas[tx.GasPrice] = make(map[[32]byte]*tmpool.MempoolTx)
 	}
-
-	e := mem.txs[tx.GasPrice].PushBack(memTx)
-	mem.txsmx.Unlock()
-
-	mem.incrementTxsCounter(tx.GasPrice)
+	mem.txsByGas[tx.GasPrice][TxKey(memTx.Tx)] = memTx
+	mem.txsgpmu.Unlock()
+	mem.minterTxMap.Store(TxKey(memTx.Tx), tx)
 	mem.addGasPrice(tx.GasPrice)
 
-	if mem.txsCounter == 1 {
-		close(mem.waitCh)
-	}
-
+	e := mem.txs.PushBack(memTx)
 	mem.txsMap.Store(TxKey(memTx.Tx), e)
 	atomic.AddInt64(&mem.txsBytes, int64(len(memTx.Tx)))
 	mem.metrics.TxSizeBytes.Observe(float64(len(memTx.Tx)))
@@ -472,24 +382,14 @@ func (mem *PriorityMempool) addTx(memTx *tmpool.MempoolTx) {
 //  - Update (lock held) if tx was committed
 // 	- resCbRecheck (lock not held) if tx was invalidated
 func (mem *PriorityMempool) removeTx(tx types.Tx, elem *clist.CElement, removeFromCache bool) {
-	decodedTx, _ := mem.executor.DecodeFromBytes(tx)
-
-	mem.txsmx.Lock()
-	mem.txs[decodedTx.GasPrice].Remove(elem)
-	mem.txsmx.Unlock()
-
-	mem.decrementTxsCounter(decodedTx.GasPrice)
-
+	mem.removeTxFromTxsGasPriceMap(tx)
+	mem.txs.Remove(elem)
 	elem.DetachPrev()
 	mem.txsMap.Delete(TxKey(tx))
 	atomic.AddInt64(&mem.txsBytes, int64(-len(tx)))
 
 	if removeFromCache {
 		mem.cache.Remove(tx)
-	}
-
-	if mem.txsCounter == 0 {
-		mem.waitCh = make(chan struct{})
 	}
 }
 
@@ -605,19 +505,6 @@ func (mem *PriorityMempool) resCbRecheck(req *abci.Request, res *abci.Response) 
 			mem.recheckCursor = nil
 		} else {
 			mem.recheckCursor = mem.recheckCursor.Next()
-			if mem.recheckCursor == nil {
-				tx, _ := mem.executor.DecodeFromBytes(memTx.Tx)
-				for k, v := range mem.gasPrices {
-					if v == tx.GasPrice {
-						if k == len(mem.gasPrices)-1 {
-							break
-						}
-
-						mem.recheckCursor = mem.getTxByGasPrice(mem.gasPrices[k+1]).Front()
-						break
-					}
-				}
-			}
 		}
 		if mem.recheckCursor == nil {
 			// Done!
@@ -633,7 +520,7 @@ func (mem *PriorityMempool) resCbRecheck(req *abci.Request, res *abci.Response) 
 	}
 }
 
-// TxsAvailable Safe for concurrent use by multiple goroutines.
+// Safe for concurrent use by multiple goroutines.
 func (mem *PriorityMempool) TxsAvailable() <-chan struct{} {
 	return mem.txsAvailable
 }
@@ -652,7 +539,7 @@ func (mem *PriorityMempool) notifyTxsAvailable() {
 	}
 }
 
-// ReapMaxBytesMaxGas Safe for concurrent use by multiple goroutines.
+// Safe for concurrent use by multiple goroutines.
 func (mem *PriorityMempool) ReapMaxBytesMaxGas(maxBytes, maxGas int64) types.Txs {
 	mem.updateMtx.RLock()
 	defer mem.updateMtx.RUnlock()
@@ -662,11 +549,10 @@ func (mem *PriorityMempool) ReapMaxBytesMaxGas(maxBytes, maxGas int64) types.Txs
 	// TODO: we will get a performance boost if we have a good estimate of avg
 	// size per tx, and set the initial capacity based off of that.
 	// txs := make([]types.Tx, 0, tmmath.MinInt(mem.txs.Len(), max/mem.avgTxSize))
-	txs := make([]types.Tx, 0, mem.txsCounter)
-	for _, gp := range mem.availableGasPrices() {
-		for e := mem.getTxByGasPrice(gp).Front(); e != nil; e = e.Next() {
-			memTx := e.Value.(*tmpool.MempoolTx)
+	txs := make([]types.Tx, 0, mem.txs.Len())
 
+	for _, gp := range mem.gasPrices {
+		for _, memTx := range mem.getTxsByGas(gp) {
 			dataSize := types.ComputeProtoSizeForTxs(append(txs, memTx.Tx))
 
 			// Check total size requirement
@@ -681,7 +567,6 @@ func (mem *PriorityMempool) ReapMaxBytesMaxGas(maxBytes, maxGas int64) types.Txs
 			if maxGas > -1 && newTotalGas > maxGas {
 				return txs
 			}
-
 			totalGas = newTotalGas
 			txs = append(txs, memTx.Tx)
 		}
@@ -690,27 +575,24 @@ func (mem *PriorityMempool) ReapMaxBytesMaxGas(maxBytes, maxGas int64) types.Txs
 	return txs
 }
 
-// ReapMaxTxs Safe for concurrent use by multiple goroutines.
+// Safe for concurrent use by multiple goroutines.
 func (mem *PriorityMempool) ReapMaxTxs(max int) types.Txs {
 	mem.updateMtx.RLock()
 	defer mem.updateMtx.RUnlock()
 
 	if max < 0 {
-		max = mem.txsCounter
+		max = mem.txs.Len()
 	}
 
-	txs := make([]types.Tx, 0, tmmath.MinInt(mem.txsCounter, max))
-	for _, gp := range mem.availableGasPrices() {
-		for e := mem.getTxByGasPrice(gp).Front(); e != nil && len(txs) <= max; e = e.Next() {
-			memTx := e.Value.(*tmpool.MempoolTx)
-			txs = append(txs, memTx.Tx)
-		}
+	txs := make([]types.Tx, 0, tmmath.MinInt(mem.txs.Len(), max))
+	for e := mem.txs.Front(); e != nil && len(txs) <= max; e = e.Next() {
+		memTx := e.Value.(*tmpool.MempoolTx)
+		txs = append(txs, memTx.Tx)
 	}
-
 	return txs
 }
 
-// Update Lock() must be help by the caller during execution.
+// Lock() must be help by the caller during execution.
 func (mem *PriorityMempool) Update(
 	height int64,
 	txs types.Txs,
@@ -738,7 +620,7 @@ func (mem *PriorityMempool) Update(
 			mem.cache.Remove(tx)
 		}
 
-		// Remove committed tx from the tmpool.
+		// Remove committed tx from the mempool.
 		//
 		// Note an evil proposer can drop valid txs!
 		// Mempool before:
@@ -778,21 +660,73 @@ func (mem *PriorityMempool) recheckTxs() {
 		panic("recheckTxs is called, but the mempool is empty")
 	}
 
-	// TODO: handle recheck
-	mem.recheckCursor = mem.getTxByGasPrice(mem.gasPrices[0]).Front()
-	mem.recheckEnd = mem.getTxByGasPrice(mem.gasPrices[len(mem.gasPrices)-1]).Back()
+	mem.recheckCursor = mem.txs.Front()
+	mem.recheckEnd = mem.txs.Back()
 
 	// Push txs to proxyAppConn
 	// NOTE: globalCb may be called concurrently.
-	for _, gp := range mem.availableGasPrices() {
-		for e := mem.getTxByGasPrice(gp).Front(); e != nil; e = e.Next() {
-			memTx := e.Value.(*tmpool.MempoolTx)
-			mem.proxyAppConn.CheckTxAsync(abci.RequestCheckTx{
-				Tx:   memTx.Tx,
-				Type: abci.CheckTxType_Recheck,
-			})
-		}
+	for e := mem.txs.Front(); e != nil; e = e.Next() {
+		memTx := e.Value.(*tmpool.MempoolTx)
+		mem.proxyAppConn.CheckTxAsync(abci.RequestCheckTx{
+			Tx:   memTx.Tx,
+			Type: abci.CheckTxType_Recheck,
+		})
 	}
 
 	mem.proxyAppConn.FlushAsync()
+}
+
+// Add new gas price to list of available gas prices
+func (mem *PriorityMempool) addGasPrice(gp uint32) {
+	exists := false
+	i := sort.Search(len(mem.gasPrices), func(i int) bool {
+		if mem.gasPrices[i] == gp {
+			exists = true
+		}
+		return mem.gasPrices[i] < gp
+	})
+
+	if exists {
+		return
+	}
+
+	mem.gasPrices = append(mem.gasPrices, 0)
+	copy(mem.gasPrices[i+1:], mem.gasPrices[i:])
+	mem.gasPrices[i] = gp
+}
+
+// Remove gas price from list of available gas prices
+func (mem *PriorityMempool) removeGasPrice(gp uint32) {
+	key := 0
+	for i, v := range mem.gasPrices {
+		if v == gp {
+			key = i
+			break
+		}
+	}
+
+	mem.gasPrices = append(mem.gasPrices[:key], mem.gasPrices[key+1:]...)
+}
+
+func (mem *PriorityMempool) getTxGasPriceFromMap(tx types.Tx) uint32 {
+	data, _ := mem.minterTxMap.Load(TxKey(tx))
+	return data.(*transaction.Transaction).GasPrice
+}
+
+func (mem *PriorityMempool) removeTxFromTxsGasPriceMap(tx types.Tx) {
+	mem.txsgpmu.Lock()
+	defer mem.txsgpmu.Unlock()
+
+	gp := mem.getTxGasPriceFromMap(tx)
+	delete(mem.txsByGas[gp], TxKey(tx))
+
+	if len(mem.txsByGas[gp]) == 0 {
+		mem.removeGasPrice(gp)
+	}
+}
+
+func (mem *PriorityMempool) getTxsByGas(gp uint32) map[[32]byte]*tmpool.MempoolTx {
+	mem.txsgpmu.RLock()
+	defer mem.txsgpmu.RUnlock()
+	return mem.txsByGas[gp]
 }
