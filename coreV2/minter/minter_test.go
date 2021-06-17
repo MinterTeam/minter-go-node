@@ -62,7 +62,7 @@ func initTestNode(t *testing.T, initialHeight int64) (*Blockchain, *rpc.Local, *
 	if err != nil {
 		t.Fatal(err)
 	}
-	app.appDB.AddVersion("v230", 0)
+	app.appDB.AddVersion("v260", 0)
 	app.appDB.SaveVersions()
 
 	node, err := tmNode.NewNode(

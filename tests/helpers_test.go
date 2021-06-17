@@ -152,7 +152,7 @@ func CreateAddress() (types.Address, *ecdsa.PrivateKey) {
 // DefaultAppState returns new AppState with some predefined values
 func DefaultAppState() types.AppState {
 	return types.AppState{
-		Version:             "v250",
+		Version:             "v260",
 		Note:                "",
 		Validators:          nil,
 		Candidates:          nil,
