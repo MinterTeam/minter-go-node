@@ -194,7 +194,7 @@ func TestReapMaxBytesMaxGas(t *testing.T) {
 		{20, 1180, -1, 10},
 		{20, 1180, 10, 10},
 		{20, 1180, 15, 10},
-
+		//
 		{20, 20000, -1, 20},
 		{20, 20000, 5, 5},
 		{20, 20000, 30, 20},
@@ -205,6 +205,33 @@ func TestReapMaxBytesMaxGas(t *testing.T) {
 		assert.Equal(t, tt.expectedNumTxs, len(got), "Got %d txs, expected %d, tc #%d",
 			len(got), tt.expectedNumTxs, tcIndex)
 		mempool.Flush()
+	}
+}
+
+func TestReapMaxBytesMaxGasPriority(t *testing.T) {
+	app := kvstore.NewApplication()
+	cc := proxy.NewLocalClientCreator(app)
+	mempool, cleanup := newMempoolWithApp(cc)
+	defer cleanup()
+
+	txInfo := tmpool.TxInfo{SenderID: tmpool.UnknownPeerID}
+	for i := 0; i < 1000; i++ {
+		if err := mempool.CheckTx(createTxWithRandomGas(116, nil), nil, txInfo); err != nil {
+			if tmpool.IsPreCheckError(err) {
+				continue
+			}
+		}
+	}
+
+	txs := mempool.ReapMaxBytesMaxGas(10000000000, 10000000000)
+	assert.Equal(t, 1000, len(txs))
+
+	executor := transaction.NewExecutor(transaction.GetData)
+
+	for i := 0; i <= len(txs)-2; i++ {
+		data, _ := executor.DecodeFromBytes(txs[i])
+		data1, _ := executor.DecodeFromBytes(txs[i+1])
+		assert.Equal(t, true, data1.GasPrice <= data.GasPrice)
 	}
 }
 
