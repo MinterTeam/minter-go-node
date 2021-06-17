@@ -86,7 +86,7 @@ func (data SellAllSwapPoolDataV1) Run(tx *Transaction, context state.Interface, 
 
 	coinToSell := data.Coins[0]
 
-	commissionInBaseCoin := tx.Commission(price)
+	commissionInBaseCoin := price
 	commissionPoolSwapper := checkState.Swap().GetSwapper(coinToSell, types.GetBaseCoinID())
 	sellCoin := checkState.Coins().GetCoin(coinToSell)
 	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, sellCoin, commissionInBaseCoin)

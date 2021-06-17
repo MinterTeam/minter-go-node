@@ -12,22 +12,22 @@ import (
 	abcTypes "github.com/tendermint/tendermint/abci/types"
 )
 
-type AddLiquidityData struct {
+type AddLiquidityDataV240 struct {
 	Coin0          types.CoinID
 	Coin1          types.CoinID
 	Volume0        *big.Int
 	MaximumVolume1 *big.Int
 }
 
-func (data AddLiquidityData) Gas() int64 {
+func (data AddLiquidityDataV240) Gas() int64 {
 	return gasAddLiquidity
 }
 
-func (data AddLiquidityData) TxType() TxType {
+func (data AddLiquidityDataV240) TxType() TxType {
 	return TypeAddLiquidity
 }
 
-func (data AddLiquidityData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data AddLiquidityDataV240) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.Coin1 == data.Coin0 {
 		return &Response{
 			Code: code.CrossConvert,
@@ -48,18 +48,36 @@ func (data AddLiquidityData) basicCheck(tx *Transaction, context *state.CheckSta
 		}
 	}
 
+	coin0 := context.Coins().GetCoin(data.Coin0)
+	if coin0 == nil {
+		return &Response{
+			Code: code.CoinNotExists,
+			Log:  "Coin not exists",
+			Info: EncodeError(code.NewCoinNotExists("", data.Coin0.String())),
+		}
+	}
+
+	coin1 := context.Coins().GetCoin(data.Coin1)
+	if coin1 == nil {
+		return &Response{
+			Code: code.CoinNotExists,
+			Log:  "Coin not exists",
+			Info: EncodeError(code.NewCoinNotExists("", data.Coin1.String())),
+		}
+	}
+
 	return nil
 }
 
-func (data AddLiquidityData) String() string {
+func (data AddLiquidityDataV240) String() string {
 	return fmt.Sprintf("ADD SWAP POOL")
 }
 
-func (data AddLiquidityData) CommissionData(price *commission.Price) *big.Int {
+func (data AddLiquidityDataV240) CommissionData(price *commission.Price) *big.Int {
 	return price.AddLiquidity
 }
 
-func (data AddLiquidityData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
+func (data AddLiquidityDataV240) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -86,10 +104,10 @@ func (data AddLiquidityData) Run(tx *Transaction, context state.Interface, rewar
 	swapper := checkState.Swap().GetSwapper(data.Coin0, data.Coin1)
 	if isGasCommissionFromPoolSwap && swapper.GetID() == commissionPoolSwapper.GetID() {
 		if tx.GasCoin == data.Coin0 && data.Coin1.IsBaseCoin() {
-			swapper = swapper.AddLastSwapStepWithOrders(commission, commissionInBaseCoin)
+			swapper = swapper.AddLastSwapStep(commission, commissionInBaseCoin)
 		}
 		if tx.GasCoin == data.Coin1 && data.Coin0.IsBaseCoin() {
-			swapper = swapper.AddLastSwapStepWithOrders(commissionInBaseCoin, commission)
+			swapper = swapper.AddLastSwapStep(big.NewInt(0).Neg(commissionInBaseCoin), big.NewInt(0).Neg(commission))
 		}
 	}
 	coinLiquidity := checkState.Coins().GetCoinBySymbol(LiquidityCoinSymbol(swapper.GetID()), 0)
@@ -159,27 +177,8 @@ func (data AddLiquidityData) Run(tx *Transaction, context state.Interface, rewar
 
 	var tags []abcTypes.EventAttribute
 	if deliverState, ok := context.(*state.State); ok {
-		var tagsCom *tagPoolChange
 		if isGasCommissionFromPoolSwap {
-			var (
-				poolIDCom  uint32
-				detailsCom *swap.ChangeDetailsWithOrders
-				ownersCom  map[types.Address]*big.Int
-			)
-			commission, commissionInBaseCoin, poolIDCom, detailsCom, ownersCom = deliverState.Swap.PairSellWithOrders(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
-			tagsCom = &tagPoolChange{
-				PoolID:   poolIDCom,
-				CoinIn:   tx.GasCoin,
-				ValueIn:  commission.String(),
-				CoinOut:  types.GetBaseCoinID(),
-				ValueOut: commissionInBaseCoin.String(),
-				Orders:   detailsCom,
-				Sellers:  make([]*OrderDetail, 0, len(ownersCom)),
-			}
-			for address, value := range ownersCom {
-				deliverState.Accounts.AddBalance(address, tx.GasCoin, value)
-				tagsCom.Sellers = append(tagsCom.Sellers, &OrderDetail{Owner: address, Value: value.String()})
-			}
+			commission, commissionInBaseCoin, _ = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
 		} else if !tx.GasCoin.IsBaseCoin() {
 			deliverState.Coins.SubVolume(tx.GasCoin, commission)
 			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
@@ -200,7 +199,6 @@ func (data AddLiquidityData) Run(tx *Transaction, context state.Interface, rewar
 			{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
 			{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String()), Index: true},
 			{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
-			{Key: []byte("tx.commission_details"), Value: []byte(tagsCom.string())},
 			{Key: []byte("tx.volume1"), Value: []byte(amount1.String())},
 			{Key: []byte("tx.liquidity"), Value: []byte(liquidity.String())},
 			{Key: []byte("tx.pool_token"), Value: []byte(coinLiquidity.GetFullSymbol()), Index: true},
@@ -214,11 +212,4 @@ func (data AddLiquidityData) Run(tx *Transaction, context state.Interface, rewar
 		Code: code.OK,
 		Tags: tags,
 	}
-}
-
-func liquidityCoinName(c0, c1 types.CoinID) string {
-	if c0 < c1 {
-		return fmt.Sprintf("%d-%d", c0, c1)
-	}
-	return fmt.Sprintf("%d-%d", c1, c0)
 }

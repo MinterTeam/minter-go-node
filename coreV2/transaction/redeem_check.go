@@ -8,7 +8,6 @@ import (
 	"strconv"
 
 	"github.com/MinterTeam/minter-go-node/coreV2/state/commission"
-	"github.com/MinterTeam/minter-go-node/coreV2/state/swap"
 
 	"github.com/MinterTeam/minter-go-node/coreV2/check"
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
@@ -184,7 +183,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 		}
 	}
 
-	commissionInBaseCoin := tx.Commission(price)
+	commissionInBaseCoin := price
 	commissionPoolSwapper := checkState.Swap().GetSwapper(tx.GasCoin, types.GetBaseCoinID())
 	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
 	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoin, commissionInBaseCoin)
@@ -223,7 +222,6 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 	var tags []abcTypes.EventAttribute
 	if deliverState, ok := context.(*state.State); ok {
 		deliverState.Checks.UseCheck(decodedCheck)
-		rewardPool.Add(rewardPool, commissionInBaseCoin)
 		var tagsCom *tagPoolChange
 		if isGasCommissionFromPoolSwap {
 			var (
@@ -249,6 +247,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 			deliverState.Coins.SubVolume(tx.GasCoin, commission)
 			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
 		}
+		rewardPool.Add(rewardPool, commissionInBaseCoin)
 		deliverState.Accounts.SubBalance(checkSender, decodedCheck.GasCoin, commission)
 		deliverState.Accounts.SubBalance(checkSender, decodedCheck.Coin, decodedCheck.Value)
 		deliverState.Accounts.AddBalance(sender, decodedCheck.Coin, decodedCheck.Value)
@@ -261,6 +260,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 			{Key: []byte("tx.commission_details"), Value: []byte(tagsCom.string())},
 			{Key: []byte("tx.to"), Value: []byte(hex.EncodeToString(sender[:])), Index: true},
 			{Key: []byte("tx.coin_id"), Value: []byte(decodedCheck.Coin.String()), Index: true},
+			{Key: []byte("tx.check_owner"), Value: []byte(hex.EncodeToString(checkSender[:])), Index: true},
 		}
 	}
 

@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/MinterTeam/minter-go-node/coreV2/state/commission"
-	"github.com/MinterTeam/minter-go-node/coreV2/state/swap"
 
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
@@ -131,7 +130,7 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 		return *response
 	}
 
-	commissionInBaseCoin := tx.Commission(price)
+	commissionInBaseCoin := price
 	commissionPoolSwapper := checkState.Swap().GetSwapper(tx.GasCoin, types.GetBaseCoinID())
 	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
 	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoin, commissionInBaseCoin)
@@ -175,8 +174,6 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 
 	var tags []abcTypes.EventAttribute
 	if deliverState, ok := context.(*state.State); ok {
-		rewardPool.Add(rewardPool, commissionInBaseCoin)
-
 		var tagsCom *tagPoolChange
 		if isGasCommissionFromPoolSwap {
 			var (
@@ -202,6 +199,7 @@ func (data RecreateCoinData) Run(tx *Transaction, context state.Interface, rewar
 			deliverState.Coins.SubVolume(tx.GasCoin, commission)
 			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
 		}
+		rewardPool.Add(rewardPool, commissionInBaseCoin)
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		deliverState.Accounts.SubBalance(sender, types.GetBaseCoinID(), data.InitialReserve)
 

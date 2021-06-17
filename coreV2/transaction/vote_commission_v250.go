@@ -9,12 +9,11 @@ import (
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/commission"
-	"github.com/MinterTeam/minter-go-node/coreV2/state/swap"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	abcTypes "github.com/tendermint/tendermint/abci/types"
 )
 
-type VoteCommissionDataV1 struct {
+type VoteCommissionDataV250 struct {
 	PubKey                  types.Pubkey
 	Height                  uint64
 	Coin                    types.CoinID
@@ -60,25 +59,49 @@ type VoteCommissionDataV1 struct {
 	BurnToken               *big.Int
 	VoteCommission          *big.Int
 	VoteUpdate              *big.Int
-	More                    []*big.Int `rlp:"tail"`
+	// FailedTX                *big.Int
+	// AddLimitOrder           *big.Int
+	// RemoveLimitOrder        *big.Int
+	More []*big.Int `rlp:"tail"`
 }
 
-func (data VoteCommissionDataV1) TxType() TxType {
+func (data *VoteCommissionDataV250) FailedTxPrice() *big.Int {
+	if len(data.More) > 0 {
+		return data.More[0]
+	}
+	return big.NewInt(0)
+}
+
+func (data *VoteCommissionDataV250) AddLimitOrderPrice() *big.Int {
+	if len(data.More) > 1 {
+		return data.More[1]
+	}
+	return big.NewInt(0)
+}
+
+func (data *VoteCommissionDataV250) RemoveLimitOrderPrice() *big.Int {
+	if len(data.More) > 2 {
+		return data.More[2]
+	}
+	return big.NewInt(0)
+}
+
+func (data VoteCommissionDataV250) TxType() TxType {
 	return TypeVoteCommission
 }
-func (data VoteCommissionDataV1) Gas() int64 {
+func (data VoteCommissionDataV250) Gas() int64 {
 	return gasVoteCommission
 }
 
-func (data VoteCommissionDataV1) GetPubKey() types.Pubkey {
+func (data VoteCommissionDataV250) GetPubKey() types.Pubkey {
 	return data.PubKey
 }
 
-func (data VoteCommissionDataV1) basicCheck(tx *Transaction, context *state.CheckState, block uint64) *Response {
-	if len(data.More) > 0 { // todo
+func (data VoteCommissionDataV250) basicCheck(tx *Transaction, context *state.CheckState, block uint64) *Response {
+	if len(data.More) != 3 {
 		return &Response{
 			Code: code.DecodeError,
-			Log:  "More parameters than expected",
+			Log:  "More or less parameters than expected",
 			Info: EncodeError(code.NewDecodeError()),
 		}
 	}
@@ -86,7 +109,7 @@ func (data VoteCommissionDataV1) basicCheck(tx *Transaction, context *state.Chec
 	if data.Height < block {
 		return &Response{
 			Code: code.VoteExpired,
-			Log:  "vote is produced for the past state",
+			Log:  "Vote is produced for the past state",
 			Info: EncodeError(code.NewVoteExpired(strconv.Itoa(int(block)), strconv.Itoa(int(data.Height)))),
 		}
 	}
@@ -118,15 +141,15 @@ func (data VoteCommissionDataV1) basicCheck(tx *Transaction, context *state.Chec
 	return checkCandidateOwnership(data, tx, context)
 }
 
-func (data VoteCommissionDataV1) String() string {
+func (data VoteCommissionDataV250) String() string {
 	return fmt.Sprintf("PRICE COMMISSION in coin: %d", data.Coin)
 }
 
-func (data VoteCommissionDataV1) CommissionData(price *commission.Price) *big.Int {
+func (data VoteCommissionDataV250) CommissionData(price *commission.Price) *big.Int {
 	return price.VoteCommission
 }
 
-func (data VoteCommissionDataV1) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
+func (data VoteCommissionDataV250) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -158,27 +181,8 @@ func (data VoteCommissionDataV1) Run(tx *Transaction, context state.Interface, r
 
 	var tags []abcTypes.EventAttribute
 	if deliverState, ok := context.(*state.State); ok {
-		var tagsCom *tagPoolChange
 		if isGasCommissionFromPoolSwap {
-			var (
-				poolIDCom  uint32
-				detailsCom *swap.ChangeDetailsWithOrders
-				ownersCom  map[types.Address]*big.Int
-			)
-			commission, commissionInBaseCoin, poolIDCom, detailsCom, ownersCom = deliverState.Swap.PairSellWithOrders(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
-			tagsCom = &tagPoolChange{
-				PoolID:   poolIDCom,
-				CoinIn:   tx.GasCoin,
-				ValueIn:  commission.String(),
-				CoinOut:  types.GetBaseCoinID(),
-				ValueOut: commissionInBaseCoin.String(),
-				Orders:   detailsCom,
-				Sellers:  make([]*OrderDetail, 0, len(ownersCom)),
-			}
-			for address, value := range ownersCom {
-				deliverState.Accounts.AddBalance(address, tx.GasCoin, value)
-				tagsCom.Sellers = append(tagsCom.Sellers, &OrderDetail{Owner: address, Value: value.String()})
-			}
+			commission, commissionInBaseCoin, _ = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
 		} else if !tx.GasCoin.IsBaseCoin() {
 			deliverState.Coins.SubVolume(tx.GasCoin, commission)
 			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
@@ -194,7 +198,6 @@ func (data VoteCommissionDataV1) Run(tx *Transaction, context state.Interface, r
 			{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
 			{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String()), Index: true},
 			{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
-			{Key: []byte("tx.commission_details"), Value: []byte(tagsCom.string())},
 			{Key: []byte("tx.public_key"), Value: []byte(hex.EncodeToString(data.PubKey[:])), Index: true},
 		}
 	}
@@ -205,7 +208,7 @@ func (data VoteCommissionDataV1) Run(tx *Transaction, context state.Interface, r
 	}
 }
 
-func (data VoteCommissionDataV1) price() *commission.Price {
+func (data VoteCommissionDataV250) price() *commission.Price {
 	return &commission.Price{
 		Coin:                    data.Coin,
 		PayloadByte:             data.PayloadByte,
@@ -251,5 +254,6 @@ func (data VoteCommissionDataV1) price() *commission.Price {
 		VoteCommission:          data.VoteCommission,
 		VoteUpdate:              data.VoteUpdate,
 		More:                    data.More,
+		// More:                    append([]*big.Int{data.FailedTX, data.AddLimitOrder, data.RemoveLimitOrder}, data.More...),
 	}
 }

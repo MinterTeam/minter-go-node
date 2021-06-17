@@ -3,11 +3,12 @@ module github.com/MinterTeam/minter-go-node
 go 1.15
 
 require (
-	github.com/MinterTeam/node-grpc-gateway v1.2.2-0.20210608112129-9189cd68b20e
+	github.com/MinterTeam/node-grpc-gateway v1.2.2-0.20210617121307-33b67143a706
 	github.com/btcsuite/btcd v0.21.0-beta
 	github.com/c-bata/go-prompt v0.2.3
 	github.com/cosmos/iavl v0.15.3
 	github.com/go-kit/kit v0.10.0
+	github.com/gogo/protobuf v1.3.2
 	github.com/golang/protobuf v1.4.3
 	github.com/gorilla/handlers v1.4.2
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.2
@@ -35,3 +36,5 @@ require (
 	google.golang.org/grpc v1.37.0
 	google.golang.org/protobuf v1.25.0
 )
+
+replace github.com/tendermint/tendermint => github.com/MinterTeam/tendermint v0.34.11-0.20210615080504-44952755291a

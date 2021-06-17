@@ -2,13 +2,14 @@ package app
 
 import (
 	"fmt"
+	"math/big"
+	"sync"
+	"sync/atomic"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/state/bus"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/cosmos/iavl"
-	"math/big"
-	"sync"
-	"sync/atomic"
 )
 
 const mainPrefix = 'd'
@@ -55,7 +56,7 @@ func (a *App) SetImmutableTree(immutableTree *iavl.ImmutableTree) {
 	a.db.Store(immutableTree)
 }
 
-func (a *App) Commit(db *iavl.MutableTree) error {
+func (a *App) Commit(db *iavl.MutableTree, version int64) error {
 	a.mx.Lock()
 	defer a.mx.Unlock()
 

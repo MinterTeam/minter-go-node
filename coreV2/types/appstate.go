@@ -439,4 +439,7 @@ type Commission struct {
 	BurnToken               string `json:"burn_token"`
 	VoteCommission          string `json:"vote_commission"`
 	VoteUpdate              string `json:"vote_update"`
+	FailedTx                string `json:"failed_tx"`
+	AddLimitOrder           string `json:"add_limit_order"`
+	RemoveLimitOrder        string `json:"remove_limit_order"`
 }

@@ -3,14 +3,15 @@ package commission
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/coreV2/types"
-	"github.com/MinterTeam/minter-go-node/helpers"
-	"github.com/MinterTeam/minter-go-node/rlp"
-	"github.com/cosmos/iavl"
 	"math/big"
 	"sort"
 	"sync"
 	"sync/atomic"
+
+	"github.com/MinterTeam/minter-go-node/coreV2/types"
+	"github.com/MinterTeam/minter-go-node/helpers"
+	"github.com/MinterTeam/minter-go-node/rlp"
+	"github.com/cosmos/iavl"
 )
 
 const mainPrefix = byte('p')
@@ -124,6 +125,9 @@ func (c *Commission) Export(state *types.AppState) {
 					BurnToken:               p.BurnToken.String(),
 					VoteCommission:          p.VoteCommission.String(),
 					VoteUpdate:              p.VoteUpdate.String(),
+					FailedTx:                p.FailedTxPrice().String(),
+					AddLimitOrder:           p.AddLimitOrderPrice().String(),
+					RemoveLimitOrder:        p.RemoveLimitOrderPrice().String(),
 				},
 			})
 		}
@@ -176,6 +180,7 @@ func (c *Commission) Export(state *types.AppState) {
 		BurnToken:               current.BurnToken.String(),
 		VoteCommission:          current.VoteCommission.String(),
 		VoteUpdate:              current.VoteUpdate.String(),
+		FailedTx:                current.FailedTxPrice().String(),
 	}
 }
 
@@ -276,7 +281,7 @@ func (c *Commission) ExportV1(state *types.AppState, id types.CoinID) {
 	}
 }
 
-func (c *Commission) Commit(db *iavl.MutableTree) error {
+func (c *Commission) Commit(db *iavl.MutableTree, version int64) error {
 	c.lock.Lock()
 	if c.dirtyCurrent {
 		c.dirtyCurrent = false

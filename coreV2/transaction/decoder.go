@@ -62,13 +62,13 @@ func GetDataV1(txType TxType) (Data, bool) {
 	case TypeMintToken:
 		return &MintTokenData{}, true
 	case TypeBurnToken:
-		return &BurnTokenDataV250{}, true
+		return &BurnTokenDataV1{}, true
 	case TypeCreateToken:
 		return &CreateTokenData{}, true
 	case TypeRecreateToken:
 		return &RecreateTokenData{}, true
 	case TypeVoteCommission:
-		return &VoteCommissionData{}, true
+		return &VoteCommissionDataV1{}, true
 	case TypeVoteUpdate:
 		return &VoteUpdateDataV1{}, true
 	case TypeCreateSwapPool:
@@ -79,7 +79,7 @@ func GetDataV1(txType TxType) (Data, bool) {
 }
 
 func GetData(txType TxType) (Data, bool) {
-	return GetDataV250(txType)
+	return GetDataV260(txType)
 }
 
 func GetDataV250(txType TxType) (Data, bool) {
@@ -154,6 +154,7 @@ func GetDataV250(txType TxType) (Data, bool) {
 		return nil, false
 	}
 }
+func GetData(txType TxType) (Data, bool) { return GetDataV250(txType) }
 
 func GetDataV240(txType TxType) (Data, bool) {
 	switch txType {
@@ -196,9 +197,80 @@ func GetDataV240(txType TxType) (Data, bool) {
 	case TypeEditCandidatePublicKey:
 		return &EditCandidatePublicKeyData{}, true
 	case TypeAddLiquidity:
-		return &AddLiquidityData{}, true
+		return &AddLiquidityDataV240{}, true
 	case TypeRemoveLiquidity:
-		return &RemoveLiquidityV230{}, true
+		return &RemoveLiquidityV240{}, true
+	case TypeSellSwapPool:
+		return &SellSwapPoolDataV240{}, true
+	case TypeBuySwapPool:
+		return &BuySwapPoolDataV240{}, true
+	case TypeSellAllSwapPool:
+		return &SellAllSwapPoolDataV240{}, true
+	case TypeEditCandidateCommission:
+		return &EditCandidateCommission{}, true
+	case TypeMintToken:
+		return &MintTokenData{}, true
+	case TypeBurnToken:
+		return &BurnTokenData{}, true
+	case TypeCreateToken:
+		return &CreateTokenData{}, true
+	case TypeRecreateToken:
+		return &RecreateTokenData{}, true
+	case TypeVoteCommission:
+		return &VoteCommissionDataV1{}, true
+	case TypeVoteUpdate:
+		return &VoteUpdateDataV230{}, true
+	case TypeCreateSwapPool:
+		return &CreateSwapPoolData{}, true
+	default:
+		return nil, false
+	}
+}
+
+func GetDataV250(txType TxType) (Data, bool) {
+	switch txType {
+	case TypeSend:
+		return &SendData{}, true
+	case TypeSellCoin:
+		return &SellCoinData{}, true
+	case TypeSellAllCoin:
+		return &SellAllCoinData{}, true
+	case TypeBuyCoin:
+		return &BuyCoinData{}, true
+	case TypeCreateCoin:
+		return &CreateCoinData{}, true
+	case TypeDeclareCandidacy:
+		return &DeclareCandidacyData{}, true
+	case TypeDelegate:
+		return &DelegateData{}, true
+	case TypeUnbond:
+		return &UnbondData{}, true
+	case TypeRedeemCheck:
+		return &RedeemCheckData{}, true
+	case TypeSetCandidateOnline:
+		return &SetCandidateOnData{}, true
+	case TypeSetCandidateOffline:
+		return &SetCandidateOffData{}, true
+	case TypeMultisend:
+		return &MultisendData{}, true
+	case TypeCreateMultisig:
+		return &CreateMultisigData{}, true
+	case TypeEditCandidate:
+		return &EditCandidateData{}, true
+	case TypeSetHaltBlock:
+		return &SetHaltBlockData{}, true
+	case TypeRecreateCoin:
+		return &RecreateCoinData{}, true
+	case TypeEditCoinOwner:
+		return &EditCoinOwnerData{}, true
+	case TypeEditMultisig:
+		return &EditMultisigData{}, true
+	case TypeEditCandidatePublicKey:
+		return &EditCandidatePublicKeyData{}, true
+	case TypeAddLiquidity:
+		return &AddLiquidityDataV240{}, true
+	case TypeRemoveLiquidity:
+		return &RemoveLiquidityV240{}, true
 	case TypeSellSwapPool:
 		return &SellSwapPoolDataV240{}, true
 	case TypeBuySwapPool:
@@ -216,7 +288,7 @@ func GetDataV240(txType TxType) (Data, bool) {
 	case TypeRecreateToken:
 		return &RecreateTokenData{}, true
 	case TypeVoteCommission:
-		return &VoteCommissionData{}, true
+		return &VoteCommissionDataV250{}, true
 	case TypeVoteUpdate:
 		return &VoteUpdateDataV230{}, true
 	case TypeCreateSwapPool:
@@ -281,13 +353,13 @@ func GetDataV230(txType TxType) (Data, bool) {
 	case TypeMintToken:
 		return &MintTokenData{}, true
 	case TypeBurnToken:
-		return &BurnTokenDataV250{}, true
+		return &BurnTokenDataV1{}, true
 	case TypeCreateToken:
 		return &CreateTokenData{}, true
 	case TypeRecreateToken:
 		return &RecreateTokenData{}, true
 	case TypeVoteCommission:
-		return &VoteCommissionData{}, true
+		return &VoteCommissionDataV1{}, true
 	case TypeVoteUpdate:
 		return &VoteUpdateDataV230{}, true
 	case TypeCreateSwapPool:

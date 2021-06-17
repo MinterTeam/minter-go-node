@@ -83,12 +83,10 @@ type Swap struct {
 }
 
 func (s *Swap) getOrderedDirtyPairs() []pairKey {
-	s.muPairs.RLock()
 	keys := make([]pairKey, 0, len(s.dirties))
 	for k := range s.dirties {
 		keys = append(keys, k)
 	}
-	s.muPairs.RUnlock()
 
 	sort.SliceStable(keys, func(i, j int) bool {
 		return bytes.Compare(keys[i].bytes(), keys[j].bytes()) == 1
@@ -98,12 +96,12 @@ func (s *Swap) getOrderedDirtyPairs() []pairKey {
 }
 
 func (s *Swap) getOrderedDirtyOrderPairs() []pairKey {
-	s.muPairs.RLock()
+	// s.muPairs.RLock() // todo: check
 	keys := make([]pairKey, 0, len(s.dirtiesOrders))
 	for k := range s.dirtiesOrders {
 		keys = append(keys, k)
 	}
-	s.muPairs.RUnlock()
+	// s.muPairs.RUnlock()
 
 	sort.SliceStable(keys, func(i, j int) bool {
 		return bytes.Compare(keys[i].bytes(), keys[j].bytes()) == 1
@@ -418,7 +416,7 @@ func (p *Pair) getDirtyOrdersList() []*Limit {
 	return dirtiesOrders
 }
 
-func (s *Swap) Commit(db *iavl.MutableTree) error {
+func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 	basePath := []byte{mainPrefix}
 
 	s.muNextID.Lock()

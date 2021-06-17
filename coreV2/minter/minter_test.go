@@ -73,6 +73,7 @@ func initTestNode(t *testing.T, initialHeight int64) (*Blockchain, *rpc.Local, *
 		getTestGenesis(pv, storage.GetMinterHome(), initialHeight),
 		tmNode.DefaultDBProvider,
 		tmNode.DefaultMetricsProvider(cfg.Instrumentation),
+		nil,
 		logger,
 		tmNode.CustomReactors(map[string]p2p.Reactor{
 			// "PEX":        p2pmock.NewReactor(),
@@ -124,7 +125,7 @@ func TestBlockchain_UpdateCommission(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	data := transaction.VoteCommissionData{
+	data := transaction.VoteCommissionDataV1{
 		PubKey:                  types.BytesToPubkey(pv.Key.PubKey.Bytes()[:]),
 		Height:                  110,
 		PayloadByte:             helpers.StringToBigInt("200000000000000000"),

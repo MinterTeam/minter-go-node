@@ -46,7 +46,7 @@ const votingPowerConsensus = 2. / 3.
 type Blockchain struct {
 	abciTypes.BaseApplication
 
-	executor      *transaction.Executor
+	executor      transaction.ExecutorTx
 	statisticData *statistics.Data
 
 	appDB                           *appdb.AppDB
@@ -108,11 +108,10 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 		updateStakesAndPayRewardsPeriod: period,
 		stopOk:                          make(chan struct{}),
 		knownUpdates: map[string]struct{}{
-			v2:   {}, // require default version
-			v230: {},
-			v240: {},
-			v250: {},
-			// add more for update
+			"":   {}, // default version
+			v230: {}, // add more for update
+			v250: {}, // commissions and mempool
+			v260: {}, // commissions and mempool
 		},
 		executor: GetExecutor(""),
 	}
@@ -126,13 +125,25 @@ func graceForUpdate(height uint64) *upgrades.GracePeriod {
 	return upgrades.NewGracePeriod(height, height+120, false)
 }
 
+func GetExecutor(v string) transaction.ExecutorTx {
+	switch v {
+	case v250:
+		return transaction.NewExecutorV250(transaction.GetDataV250)
+	case v230:
+		return transaction.NewExecutor(transaction.GetDataV230)
+	default:
+		return transaction.NewExecutor(transaction.GetDataV1)
+	}
+}
+
 const haltBlockV210 = 3431238
+const updateBlockV240 = 4448826
 
 const ( // known update versions
 	v2   = ""     // default
 	v230 = "v230" // remove liquidity bug
-	v240 = "v240" // commissions
-	v250 = "v250" // orderbook
+	v250 = "v250" // commissions and failed txs
+	v260 = "v260" // orderbook
 )
 
 func (blockchain *Blockchain) initState() {
@@ -156,7 +167,8 @@ func (blockchain *Blockchain) initState() {
 	grace := upgrades.NewGrace()
 	grace.AddGracePeriods(upgrades.NewGracePeriod(initialHeight, initialHeight+120, true),
 		upgrades.NewGracePeriod(haltBlockV210, haltBlockV210+120, true),
-		upgrades.NewGracePeriod(3612653, 3612653+120, true))
+		upgrades.NewGracePeriod(3612653, 3612653+120, true),
+		upgrades.NewGracePeriod(updateBlockV240, updateBlockV240+120, true))
 
 	for _, v := range blockchain.UpdateVersions() {
 		grace.AddGracePeriods(graceForUpdate(v.Height))
@@ -164,19 +176,6 @@ func (blockchain *Blockchain) initState() {
 	}
 
 	blockchain.grace = grace
-}
-
-func GetExecutor(v string) *transaction.Executor {
-	switch v {
-	case v250:
-		return transaction.NewExecutor(transaction.GetDataV250)
-	case v240:
-		return transaction.NewExecutor(transaction.GetDataV240)
-	case v230:
-		return transaction.NewExecutor(transaction.GetDataV230)
-	default:
-		return transaction.NewExecutor(transaction.GetDataV1)
-	}
 }
 
 // InitChain initialize blockchain with validators and other info. Only called once.
@@ -190,7 +189,6 @@ func (blockchain *Blockchain) InitChain(req abciTypes.RequestInitChain) abciType
 
 	blockchain.appDB.SetStartHeight(initialHeight)
 	blockchain.appDB.AddVersion(genesisState.Version, initialHeight)
-
 	blockchain.initState()
 
 	if err := blockchain.stateDeliver.Import(genesisState); err != nil {
@@ -259,6 +257,10 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 		log.Printf("Update your node binary to the latest version: %s", versionName)
 		blockchain.stop()
 		return abciTypes.ResponseBeginBlock{}
+	}
+
+	if versionName == v230 && height > updateBlockV240 {
+		blockchain.executor = transaction.NewExecutor(transaction.GetDataV240)
 	}
 
 	// give penalty to Byzantine validators
@@ -404,6 +406,9 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 				BurnToken:               price.BurnToken.String(),
 				VoteCommission:          price.VoteCommission.String(),
 				VoteUpdate:              price.VoteUpdate.String(),
+				FailedTx:                price.FailedTxPrice().String(),
+				AddLimitOrder:           price.AddLimitOrderPrice().String(),
+				RemoveLimitOrder:        price.RemoveLimitOrderPrice().String(),
 			})
 		}
 		blockchain.stateDeliver.Commission.Delete(height)
@@ -417,7 +422,6 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 			})
 			blockchain.grace.AddGracePeriods(graceForUpdate(height))
 			blockchain.executor = GetExecutor(v)
-
 		}
 		blockchain.stateDeliver.Updates.Delete(height)
 	}

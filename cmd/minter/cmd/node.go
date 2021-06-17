@@ -3,6 +3,9 @@ package cmd
 import (
 	"context"
 	"fmt"
+	mempl "github.com/MinterTeam/minter-go-node/coreV2/mempool"
+	tmpool "github.com/tendermint/tendermint/mempool"
+	sm "github.com/tendermint/tendermint/state"
 	"io"
 	"net/http"
 	_ "net/http/pprof" // nolint: gosec // securely exposed on separate, optional port
@@ -186,14 +189,37 @@ func startTendermintNode(app *minter.Blockchain, cfg *tmCfg.Config, logger tmLog
 		panic(err)
 	}
 
+	genesis := getGenesis(home + "/config/genesis.json")
+	creator := proxy.NewLocalClientCreator(app)
+
 	node, err := tmNode.NewNode(
 		cfg,
 		privval.LoadOrGenFilePV(cfg.PrivValidatorKeyFile(), cfg.PrivValidatorStateFile()),
 		nodeKey,
-		proxy.NewLocalClientCreator(app),
-		getGenesis(home+"/config/genesis.json"),
+		creator,
+		genesis,
 		tmNode.DefaultDBProvider,
 		tmNode.DefaultMetricsProvider(cfg.Instrumentation),
+		//nil,
+		func(config *tmCfg.Config, proxyApp proxy.AppConns, state sm.State, memplMetrics *tmpool.Metrics, logger tmLog.Logger) (*tmpool.Reactor, tmpool.Mempool) {
+			mempool := mempl.NewPriorityMempool(
+				config.Mempool,
+				proxyApp.Mempool(),
+				state.LastBlockHeight,
+				mempl.WithMetrics(memplMetrics),
+				mempl.WithPreCheck(sm.TxPreCheck(state)),
+				mempl.WithPostCheck(sm.TxPostCheck(state)),
+			)
+			mempoolLogger := logger.With("module", "mempool")
+			mempoolReactor := tmpool.NewReactor(config.Mempool, mempool)
+			mempoolReactor.SetLogger(mempoolLogger)
+
+			if config.Consensus.WaitForTxs() {
+				mempool.EnableTxsAvailable()
+			}
+
+			return mempoolReactor, mempool
+		},
 		logger.With("module", "tendermint"),
 	)
 
@@ -215,7 +241,11 @@ func startTendermintNode(app *minter.Blockchain, cfg *tmCfg.Config, logger tmLog
 }
 
 func getGenesis(genDocFile string) func() (doc *tmTypes.GenesisDoc, e error) {
+	var docCache *tmTypes.GenesisDoc
 	return func() (doc *tmTypes.GenesisDoc, e error) {
+		if docCache != nil {
+			return docCache, nil
+		}
 		_, err := os.Stat(genDocFile)
 		if err != nil {
 			if !os.IsNotExist(err) {
@@ -238,6 +268,7 @@ func getGenesis(genDocFile string) func() (doc *tmTypes.GenesisDoc, e error) {
 		if len(doc.AppHash) == 0 {
 			doc.AppHash = nil
 		}
+		docCache = doc
 		return doc, err
 	}
 }
