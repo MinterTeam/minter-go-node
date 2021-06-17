@@ -6,6 +6,7 @@
 
 ### Fixed
 
+- Fixed deadlock in block's commit
 - Backward compatibility of older blocks
 
 ## [v2.4.0](https://github.com/MinterTeam/minter-go-node/tree/v2.4.0)
