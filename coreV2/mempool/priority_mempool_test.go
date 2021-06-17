@@ -712,26 +712,6 @@ func TestMempoolRemoteAppConcurrency(t *testing.T) {
 	require.NoError(t, err)
 }
 
-//func BenchmarkPriorityMempool_addTx(b *testing.B) {
-//	app := kvstore.NewApplication()
-//	cc := proxy.NewLocalClientCreator(app)
-//	mempl, cleanup := newMempoolWithApp(cc)
-//	defer cleanup()
-//
-//	txs := make([]*tmpool.MempoolTx, 10000)
-//	for i := 0; i < 10000; i++ {
-//		tx := createTxWithRandomGas(116, nil)
-//		txs[i] = &tmpool.MempoolTx{Height: 1, GasWanted: 1, Tx: tx}
-//	}
-//
-//	b.ResetTimer()
-//	for n := 0; n < b.N; n++ {
-//		for _, tx := range txs {
-//			mempl.addTx(tx)
-//		}
-//	}
-//}
-
 // caller must close server
 func newRemoteApp(
 	t *testing.T,
