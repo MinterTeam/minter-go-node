@@ -77,10 +77,10 @@ func (data VoteCommissionDataV250) GetPubKey() types.Pubkey {
 }
 
 func (data VoteCommissionDataV250) basicCheck(tx *Transaction, context *state.CheckState, block uint64) *Response {
-	if len(data.More) > 3 {
+	if len(data.More) != 3 {
 		return &Response{
 			Code: code.DecodeError,
-			Log:  "More parameters than expected",
+			Log:  "More or less parameters than expected",
 			Info: EncodeError(code.NewDecodeError()),
 		}
 	}
@@ -88,7 +88,7 @@ func (data VoteCommissionDataV250) basicCheck(tx *Transaction, context *state.Ch
 	if data.Height < block {
 		return &Response{
 			Code: code.VoteExpired,
-			Log:  "vote is produced for the past state",
+			Log:  "Vote is produced for the past state",
 			Info: EncodeError(code.NewVoteExpired(strconv.Itoa(int(block)), strconv.Itoa(int(data.Height)))),
 		}
 	}
@@ -232,7 +232,7 @@ func (data VoteCommissionDataV250) price() *commission.Price {
 		MintToken:               data.MintToken,
 		VoteCommission:          data.VoteCommission,
 		VoteUpdate:              data.VoteUpdate,
+		More:                    data.More,
 		// More:                    append([]*big.Int{data.FailedTX, data.AddLimitOrder, data.RemoveLimitOrder}, data.More...),
-		More: data.More,
 	}
 }

@@ -401,6 +401,8 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 				VoteCommission:          price.VoteCommission.String(),
 				VoteUpdate:              price.VoteUpdate.String(),
 				FailedTx:                price.FailedTxPrice().String(),
+				AddLimitOrder:           price.AddLimitOrderPrice().String(),
+				RemoveLimitOrder:        price.RemoveLimitOrderPrice().String(),
 			})
 		}
 		blockchain.stateDeliver.Commission.Delete(height)

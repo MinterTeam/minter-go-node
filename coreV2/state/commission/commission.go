@@ -126,6 +126,8 @@ func (c *Commission) Export(state *types.AppState) {
 					VoteCommission:          p.VoteCommission.String(),
 					VoteUpdate:              p.VoteUpdate.String(),
 					FailedTx:                p.FailedTxPrice().String(),
+					AddLimitOrder:           p.AddLimitOrderPrice().String(),
+					RemoveLimitOrder:        p.RemoveLimitOrderPrice().String(),
 				},
 			})
 		}
