@@ -65,6 +65,27 @@ type VoteCommissionDataV250 struct {
 	More []*big.Int `rlp:"tail"`
 }
 
+func (data *VoteCommissionDataV250) FailedTxPrice() *big.Int {
+	if len(data.More) > 0 {
+		return data.More[0]
+	}
+	return big.NewInt(0)
+}
+
+func (data *VoteCommissionDataV250) AddLimitOrderPrice() *big.Int {
+	if len(data.More) > 1 {
+		return data.More[1]
+	}
+	return big.NewInt(0)
+}
+
+func (data *VoteCommissionDataV250) RemoveLimitOrderPrice() *big.Int {
+	if len(data.More) > 2 {
+		return data.More[2]
+	}
+	return big.NewInt(0)
+}
+
 func (data VoteCommissionDataV250) TxType() TxType {
 	return TypeVoteCommission
 }

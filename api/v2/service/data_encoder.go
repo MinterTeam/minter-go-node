@@ -408,7 +408,9 @@ func priceCommissionData(d *transaction.VoteCommissionDataV250, coin *coins.Mode
 		BurnToken:               d.BurnToken.String(),
 		VoteCommission:          d.VoteCommission.String(),
 		VoteUpdate:              d.VoteUpdate.String(),
-		// FailedTx:                d.FailedTX.String(),
+		FailedTx:                d.FailedTxPrice().String(),
+		AddLimitOrder:           d.AddLimitOrderPrice().String(),
+		RemoveLimitOrder:        d.RemoveLimitOrderPrice().String(),
 	}
 }
 
