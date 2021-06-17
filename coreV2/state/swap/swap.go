@@ -64,12 +64,10 @@ type Swap struct {
 }
 
 func (s *Swap) getOrderedDirtyPairs() []pairKey {
-	s.muPairs.RLock()
 	keys := make([]pairKey, 0, len(s.dirties))
 	for k := range s.dirties {
 		keys = append(keys, k)
 	}
-	s.muPairs.RUnlock()
 
 	sort.SliceStable(keys, func(i, j int) bool {
 		return bytes.Compare(keys[i].bytes(), keys[j].bytes()) == 1
