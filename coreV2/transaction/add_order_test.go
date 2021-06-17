@@ -123,7 +123,7 @@ func TestAddOrderSwapPoolData_Buy_01_moreOrder(t *testing.T) {
 	}
 	{
 		i := int64(23)
-		data := BuySwapPoolDataV250{
+		data := BuySwapPoolDataV260{
 			Coins:              []types.CoinID{coin0, coin1},
 			MaximumValueToSell: helpers.BipToPip(big.NewInt(i)),
 			ValueToBuy:         cState.Swap.Pair(coin0, coin1).CalculateBuyForSellWithOrders(helpers.BipToPip(big.NewInt(i))),
@@ -283,7 +283,7 @@ func TestAddOrderSwapPoolData_Buy_01_partOrder(t *testing.T) {
 	}
 	{
 		i := int64(22)
-		data := BuySwapPoolDataV250{
+		data := BuySwapPoolDataV260{
 			Coins:              []types.CoinID{coin0, coin1},
 			MaximumValueToSell: helpers.BipToPip(big.NewInt(i)),
 			ValueToBuy:         cState.Swap.Pair(coin0, coin1).CalculateBuyForSellWithOrders(helpers.BipToPip(big.NewInt(i))),
@@ -443,7 +443,7 @@ func TestAddOrderSwapPoolData_Sell_01_partOrder(t *testing.T) {
 	}
 	{
 		i := int64(22)
-		data := SellSwapPoolDataV250{
+		data := SellSwapPoolDataV260{
 			Coins:             []types.CoinID{coin0, coin1},
 			ValueToSell:       helpers.BipToPip(big.NewInt(i)),
 			MinimumValueToBuy: cState.Swap.Pair(coin0, coin1).CalculateBuyForSell(helpers.BipToPip(big.NewInt(i))),
@@ -604,7 +604,7 @@ func TestAddOrderSwapPoolData_Sell_10_partOrder(t *testing.T) {
 	}
 	{
 		i := int64(22)
-		data := SellSwapPoolDataV250{
+		data := SellSwapPoolDataV260{
 			Coins:             []types.CoinID{coin0, coin1},
 			ValueToSell:       helpers.BipToPip(big.NewInt(i)),
 			MinimumValueToBuy: cState.Swap.Pair(coin0, coin1).CalculateBuyForSell(helpers.BipToPip(big.NewInt(i))),
@@ -765,7 +765,7 @@ func TestAddOrderSwapPoolData_Sell_01_fullOrder(t *testing.T) {
 	}
 	{
 		i := int64(23)
-		data := SellSwapPoolDataV250{
+		data := SellSwapPoolDataV260{
 			Coins:             []types.CoinID{coin0, coin1},
 			ValueToSell:       helpers.BipToPip(big.NewInt(i)),
 			MinimumValueToBuy: cState.Swap.Pair(coin0, coin1).CalculateBuyForSell(helpers.BipToPip(big.NewInt(i))),
@@ -926,7 +926,7 @@ func TestAddOrderSwapPoolData_Sell_10_fullOrder(t *testing.T) {
 	}
 	{
 		i := int64(23)
-		data := SellSwapPoolDataV250{
+		data := SellSwapPoolDataV260{
 			Coins:             []types.CoinID{coin0, coin1},
 			ValueToSell:       helpers.BipToPip(big.NewInt(i)),
 			MinimumValueToBuy: cState.Swap.Pair(coin0, coin1).CalculateBuyForSell(helpers.BipToPip(big.NewInt(i))),

@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/MinterTeam/minter-go-node/coreV2/state/commission"
+	"github.com/MinterTeam/minter-go-node/coreV2/state/swap"
 
 	"github.com/MinterTeam/minter-go-node/coreV2/check"
 	"github.com/MinterTeam/minter-go-node/coreV2/code"

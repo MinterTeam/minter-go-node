@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/MinterTeam/minter-go-node/coreV2/check"
+	"github.com/MinterTeam/minter-go-node/coreV2/state/swap"
 	abcTypes "github.com/tendermint/tendermint/abci/types"
 
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
@@ -25,16 +26,16 @@ type DecoderTx interface {
 	DecodeFromBytes(buf []byte) (*Transaction, error)
 }
 
-type ExecutorV240 struct {
+type ExecutorV250 struct {
 	*Executor
 	decodeTxFunc func(txType TxType) (Data, bool)
 }
 
 func NewExecutorV250(decodeTxFunc func(txType TxType) (Data, bool)) ExecutorTx {
-	return &ExecutorV240{decodeTxFunc: decodeTxFunc, Executor: &Executor{decodeTxFunc: decodeTxFunc}}
+	return &ExecutorV250{decodeTxFunc: decodeTxFunc, Executor: &Executor{decodeTxFunc: decodeTxFunc}}
 }
 
-func (e *ExecutorV240) RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBlock uint64, currentMempool *sync.Map, minGasPrice uint32, notSaveTags bool) Response {
+func (e *ExecutorV250) RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBlock uint64, currentMempool *sync.Map, minGasPrice uint32, notSaveTags bool) Response {
 	lenRawTx := len(rawTx)
 	if lenRawTx > maxTxLength {
 		return Response{
@@ -269,8 +270,27 @@ func (e *ExecutorV240) RunTx(context state.Interface, rawTx []byte, rewardPool *
 			}
 
 			if deliverState, ok := context.(*state.State); ok {
+				var tagsCom *tagPoolChange
 				if isGasCommissionFromPoolSwap {
-					commission, commissionInBaseCoin, _ = deliverState.Swap.PairSell(tx.commissionCoin(), types.GetBaseCoinID(), commission, commissionInBaseCoin)
+					var (
+						poolIDCom  uint32
+						detailsCom *swap.ChangeDetailsWithOrders
+						ownersCom  map[types.Address]*big.Int
+					)
+					commission, commissionInBaseCoin, poolIDCom, detailsCom, ownersCom = deliverState.Swap.PairSellWithOrders(tx.commissionCoin(), types.GetBaseCoinID(), commission, commissionInBaseCoin)
+					tagsCom = &tagPoolChange{
+						PoolID:   poolIDCom,
+						CoinIn:   tx.GasCoin,
+						ValueIn:  commission.String(),
+						CoinOut:  types.GetBaseCoinID(),
+						ValueOut: commissionInBaseCoin.String(),
+						Orders:   detailsCom,
+						Sellers:  make([]*OrderDetail, 0, len(ownersCom)),
+					}
+					for address, value := range ownersCom {
+						deliverState.Accounts.AddBalance(address, tx.GasCoin, value)
+						tagsCom.Sellers = append(tagsCom.Sellers, &OrderDetail{Owner: address, Value: value.String()})
+					}
 				} else if !tx.commissionCoin().IsBaseCoin() {
 					deliverState.Coins.SubVolume(tx.commissionCoin(), commission)
 					deliverState.Coins.SubReserve(tx.commissionCoin(), commissionInBaseCoin)
@@ -280,6 +300,7 @@ func (e *ExecutorV240) RunTx(context state.Interface, rawTx []byte, rewardPool *
 
 				rewardPool.Add(rewardPool, commissionInBaseCoin)
 				response.Tags = append(response.Tags,
+					abcTypes.EventAttribute{Key: []byte("tx.commission_details"), Value: []byte(tagsCom.string())},
 					abcTypes.EventAttribute{Key: []byte("tx.fail_fee"), Value: []byte(commission.String())},
 				)
 			}

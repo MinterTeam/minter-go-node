@@ -12,7 +12,7 @@ import (
 	abcTypes "github.com/tendermint/tendermint/abci/types"
 )
 
-type BuySwapPoolDataV250 struct {
+type BuySwapPoolDataV260 struct {
 	Coins              []types.CoinID
 	ValueToBuy         *big.Int
 	MaximumValueToSell *big.Int
@@ -32,14 +32,14 @@ func reversePools(a []*tagPoolChange) {
 	}
 }
 
-func (data BuySwapPoolDataV250) Gas() int64 {
+func (data BuySwapPoolDataV260) Gas() int64 {
 	return gasBuySwapPool + int64(len(data.Coins)-2)*convertDelta
 }
-func (data BuySwapPoolDataV250) TxType() TxType {
+func (data BuySwapPoolDataV260) TxType() TxType {
 	return TypeBuySwapPool
 }
 
-func (data BuySwapPoolDataV250) basicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data BuySwapPoolDataV260) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if len(data.Coins) < 2 {
 		return &Response{
 			Code: code.DecodeError,
@@ -77,15 +77,15 @@ func (data BuySwapPoolDataV250) basicCheck(tx *Transaction, context *state.Check
 	return nil
 }
 
-func (data BuySwapPoolDataV250) String() string {
+func (data BuySwapPoolDataV260) String() string {
 	return fmt.Sprintf("SWAP POOL BUY")
 }
 
-func (data BuySwapPoolDataV250) CommissionData(price *commission.Price) *big.Int {
+func (data BuySwapPoolDataV260) CommissionData(price *commission.Price) *big.Int {
 	return new(big.Int).Add(price.BuyPoolBase, new(big.Int).Mul(price.BuyPoolDelta, big.NewInt(int64(len(data.Coins))-2)))
 }
 
-func (data BuySwapPoolDataV250) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
+func (data BuySwapPoolDataV260) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -99,7 +99,7 @@ func (data BuySwapPoolDataV250) Run(tx *Transaction, context state.Interface, re
 		return *response
 	}
 
-	commissionInBaseCoin := tx.Commission(price)
+	commissionInBaseCoin := price
 	commissionPoolSwapper := checkState.Swap().GetSwapper(tx.GasCoin, types.GetBaseCoinID())
 	gasCoin := checkState.Coins().GetCoin(tx.GasCoin)
 	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoin, commissionInBaseCoin)
