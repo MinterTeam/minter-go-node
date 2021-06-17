@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"sync/atomic"
+
 	eventsdb "github.com/MinterTeam/minter-go-node/coreV2/events"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/bus"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
@@ -11,7 +13,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/cosmos/iavl"
-	"sync/atomic"
 
 	"math/big"
 	"sort"
@@ -140,7 +141,7 @@ func (c *Candidates) IsCandidateJailed(pubkey types.Pubkey, block uint64) bool {
 }
 
 // Commit writes changes to iavl, may return an error
-func (c *Candidates) Commit(db *iavl.MutableTree) error {
+func (c *Candidates) Commit(db *iavl.MutableTree, version int64) error {
 	keys := c.getOrderedCandidates()
 
 	hasDirty := false

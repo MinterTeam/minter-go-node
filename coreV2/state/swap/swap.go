@@ -4,16 +4,17 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/coreV2/state/bus"
-	"github.com/MinterTeam/minter-go-node/coreV2/types"
-	"github.com/MinterTeam/minter-go-node/helpers"
-	"github.com/MinterTeam/minter-go-node/rlp"
-	"github.com/cosmos/iavl"
 	"math/big"
 	"sort"
 	"strconv"
 	"sync"
 	"sync/atomic"
+
+	"github.com/MinterTeam/minter-go-node/coreV2/state/bus"
+	"github.com/MinterTeam/minter-go-node/coreV2/types"
+	"github.com/MinterTeam/minter-go-node/helpers"
+	"github.com/MinterTeam/minter-go-node/rlp"
+	"github.com/cosmos/iavl"
 )
 
 var Bound = big.NewInt(minimumLiquidity)
@@ -63,12 +64,10 @@ type Swap struct {
 }
 
 func (s *Swap) getOrderedDirtyPairs() []pairKey {
-	s.muPairs.RLock()
 	keys := make([]pairKey, 0, len(s.dirties))
 	for k := range s.dirties {
 		keys = append(keys, k)
 	}
-	s.muPairs.RUnlock()
 
 	sort.SliceStable(keys, func(i, j int) bool {
 		return bytes.Compare(keys[i].bytes(), keys[j].bytes()) == 1
@@ -214,7 +213,7 @@ func (pk pairKey) pathOrders() []byte {
 	return append([]byte{pairOrdersPrefix}, pk.bytes()...)
 }
 
-func (s *Swap) Commit(db *iavl.MutableTree) error {
+func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 	basePath := []byte{mainPrefix}
 
 	s.muNextID.Lock()
