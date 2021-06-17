@@ -73,16 +73,12 @@ func ensureFire(t *testing.T, ch <-chan struct{}, timeoutMS int) {
 	}
 }
 
-func createTx(t *testing.T, bytesLen uint64, privKey *ecdsa.PrivateKey) []byte {
-	encodedData, err := rlp.EncodeToBytes(transaction.SendData{
+func createTx(bytesLen uint64, privKey *ecdsa.PrivateKey) []byte {
+	encodedData, _ := rlp.EncodeToBytes(transaction.SendData{
 		Coin:  types.GetBaseCoinID(),
 		To:    [20]byte{1},
 		Value: helpers.BipToPip(big.NewInt(10)),
 	})
-
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	payload := []byte{0x01, 0x01}
 	for i := bytesLen - 116; i > 0; i-- {
@@ -104,10 +100,40 @@ func createTx(t *testing.T, bytesLen uint64, privKey *ecdsa.PrivateKey) []byte {
 		privKey, _ = crypto.GenerateKey()
 	}
 
-	if err := tx.Sign(privKey); err != nil {
-		t.Fatal(err)
+	tx.Sign(privKey)
+	txBytes, _ := tx.Serialize()
+	return txBytes
+}
+
+func createTxWithRandomGas(bytesLen uint64, privKey *ecdsa.PrivateKey) []byte {
+	encodedData, _ := rlp.EncodeToBytes(transaction.SendData{
+		Coin:  types.GetBaseCoinID(),
+		To:    [20]byte{1},
+		Value: helpers.BipToPip(big.NewInt(10)),
+	})
+
+	payload := []byte{0x01, 0x01}
+	for i := bytesLen - 116; i > 0; i-- {
+		payload = append(payload, 0x01)
 	}
 
+	gp := tmrand.Intn(200)
+	tx := transaction.Transaction{
+		Nonce:         uint64(1),
+		ChainID:       types.CurrentChainID,
+		GasPrice:      uint32(gp),
+		GasCoin:       types.GetBaseCoinID(),
+		Type:          transaction.TypeSend,
+		Data:          encodedData,
+		SignatureType: transaction.SigTypeSingle,
+		Payload:       payload,
+	}
+
+	if privKey == nil {
+		privKey, _ = crypto.GenerateKey()
+	}
+
+	tx.Sign(privKey)
 	txBytes, _ := tx.Serialize()
 	return txBytes
 }
@@ -116,7 +142,7 @@ func checkTxs(t *testing.T, mempool tmpool.Mempool, count int, peerID uint16) tm
 	txs := make(tmtypes.Txs, count)
 	txInfo := tmpool.TxInfo{SenderID: peerID}
 	for i := 0; i < count; i++ {
-		txBytes := createTx(t, 116, nil)
+		txBytes := createTx(116, nil)
 		txs[i] = txBytes
 		if err := mempool.CheckTx(txBytes, nil, txInfo); err != nil {
 			// Skip invalid txs.
@@ -229,7 +255,7 @@ func TestMempoolUpdate(t *testing.T) {
 
 	// 1. Adds valid txs to the cache
 	{
-		tx := createTx(t, 116, nil)
+		tx := createTx(116, nil)
 		err := mempool.Update(1, []tmtypes.Tx{tx}, abciResponses(1, abci.CodeTypeOK), nil, nil)
 		require.NoError(t, err)
 		err = mempool.CheckTx(tx, nil, tmpool.TxInfo{})
@@ -240,7 +266,7 @@ func TestMempoolUpdate(t *testing.T) {
 
 	// 2. Removes valid txs from the mempool
 	{
-		tx := createTx(t, 117, nil)
+		tx := createTx(117, nil)
 		err := mempool.CheckTx(tx, nil, tmpool.TxInfo{})
 		require.NoError(t, err)
 		err = mempool.Update(1, []tmtypes.Tx{tx}, abciResponses(1, abci.CodeTypeOK), nil, nil)
@@ -250,7 +276,7 @@ func TestMempoolUpdate(t *testing.T) {
 
 	// 3. Removes invalid transactions from the cache and the mempool (if present)
 	{
-		tx := createTx(t, 118, nil)
+		tx := createTx(118, nil)
 		err := mempool.CheckTx(tx, nil, tmpool.TxInfo{})
 		require.NoError(t, err)
 		err = mempool.Update(1, []tmtypes.Tx{tx}, abciResponses(1, 1), nil, nil)
@@ -272,8 +298,8 @@ func TestMempool_KeepInvalidTxsInCache(t *testing.T) {
 
 	// 1. An invalid transaction must remain in the cache after Update
 	{
-		a := createTx(t, 116, nil)
-		b := createTx(t, 116, nil)
+		a := createTx(116, nil)
+		b := createTx(116, nil)
 
 		err := mempool.CheckTx(b, nil, tmpool.TxInfo{})
 		require.NoError(t, err)
@@ -299,7 +325,7 @@ func TestMempool_KeepInvalidTxsInCache(t *testing.T) {
 
 	// 2. An invalid transaction must remain in the cache
 	{
-		a := createTx(t, 116, nil)
+		a := createTx(116, nil)
 
 		// remove a from the cache to test (2)
 		mempool.cache.Remove(a)
@@ -379,7 +405,7 @@ func TestSerialReap(t *testing.T) {
 		// Deliver some txs.
 		for i := start; i < end; i++ {
 			// This will succeeds
-			txBytes := createTx(t, 116+uint64(i), priv)
+			txBytes := createTx(116+uint64(i), priv)
 			err := mempool.CheckTx(txBytes, nil, tmpool.TxInfo{})
 			_, cached := cacheMap[string(txBytes)]
 			if cached {
@@ -403,7 +429,7 @@ func TestSerialReap(t *testing.T) {
 	updateRange := func(start, end int) {
 		txs := make([]tmtypes.Tx, 0)
 		for i := start; i < end; i++ {
-			txBytes := createTx(t, 116+uint64(i), priv)
+			txBytes := createTx(116+uint64(i), priv)
 			txs = append(txs, txBytes)
 		}
 		if err := mempool.Update(0, txs, abciResponses(len(txs), abci.CodeTypeOK), nil, nil); err != nil {
@@ -414,7 +440,7 @@ func TestSerialReap(t *testing.T) {
 	commitRange := func(start, end int) {
 		// Deliver some txs.
 		for i := start; i < end; i++ {
-			txBytes := createTx(t, 116+uint64(i), priv)
+			txBytes := createTx(116+uint64(i), priv)
 			res, err := appConnCon.DeliverTxSync(abci.RequestDeliverTx{Tx: txBytes})
 			if err != nil {
 				t.Errorf("client error committing tx: %v", err)
@@ -495,7 +521,7 @@ func TestMempoolCloseWAL(t *testing.T) {
 	require.Equal(t, 1, len(m2), "expecting the wal match in")
 
 	// 5. Write some contents to the WAL
-	tx := createTx(t, 116, nil)
+	tx := createTx(116, nil)
 	err = mempool.CheckTx(tx, nil, tmpool.TxInfo{})
 	require.NoError(t, err)
 	walFilepath := mempool.wal.Path
@@ -507,7 +533,7 @@ func TestMempoolCloseWAL(t *testing.T) {
 	// 7. Invoke CloseWAL() and ensure it discards the
 	// WAL thus any other write won't go through.
 	mempool.CloseWAL()
-	err = mempool.CheckTx(createTx(t, 117, nil), nil, tmpool.TxInfo{})
+	err = mempool.CheckTx(createTx(117, nil), nil, tmpool.TxInfo{})
 	require.NoError(t, err)
 	sum2 := checksumFile(walFilepath, t)
 	require.Equal(t, sum1, sum2, "expected no change to the WAL after invoking CloseWAL() since it was discarded")
@@ -545,7 +571,7 @@ func TestMempool_CheckTxChecksTxSize(t *testing.T) {
 	for i, testCase := range testCases {
 		caseString := fmt.Sprintf("case %d, len %d", i, testCase.len)
 
-		tx := createTx(t, uint64(116+testCase.len), nil)
+		tx := createTx(uint64(116+testCase.len), nil)
 
 		err := mempl.CheckTx(tx, nil, tmpool.TxInfo{})
 		bv := gogotypes.BytesValue{Value: tx}
@@ -573,7 +599,7 @@ func TestMempoolTxsBytes(t *testing.T) {
 	assert.EqualValues(t, 0, mempool.TxsBytes())
 
 	// 2. len(tx) after CheckTx
-	tx1 := createTx(t, 116, nil)
+	tx1 := createTx(116, nil)
 	err := mempool.CheckTx(tx1, nil, tmpool.TxInfo{})
 	require.NoError(t, err)
 	assert.EqualValues(t, 116, mempool.TxsBytes())
@@ -584,7 +610,7 @@ func TestMempoolTxsBytes(t *testing.T) {
 	assert.EqualValues(t, 0, mempool.TxsBytes())
 
 	// 4. zero after Flush
-	err = mempool.CheckTx(createTx(t, 117, nil), nil, tmpool.TxInfo{})
+	err = mempool.CheckTx(createTx(117, nil), nil, tmpool.TxInfo{})
 	require.NoError(t, err)
 	assert.EqualValues(t, 117, mempool.TxsBytes())
 
@@ -592,9 +618,9 @@ func TestMempoolTxsBytes(t *testing.T) {
 	assert.EqualValues(t, 0, mempool.TxsBytes())
 
 	// 5. ErrMempoolIsFull is returned when/if MaxTxsBytes limit is reached.
-	err = mempool.CheckTx(createTx(t, 126, nil), nil, tmpool.TxInfo{})
+	err = mempool.CheckTx(createTx(126, nil), nil, tmpool.TxInfo{})
 	require.NoError(t, err)
-	err = mempool.CheckTx(createTx(t, 117, nil), nil, tmpool.TxInfo{})
+	err = mempool.CheckTx(createTx(117, nil), nil, tmpool.TxInfo{})
 	if assert.Error(t, err) {
 		assert.IsType(t, ErrMempoolIsFull{}, err)
 	}
@@ -606,7 +632,7 @@ func TestMempoolTxsBytes(t *testing.T) {
 	defer cleanup()
 
 	app2.TxCount = 1
-	tx := createTx(t, 124, nil)
+	tx := createTx(124, nil)
 	err = mempool.CheckTx(tx, nil, tmpool.TxInfo{})
 	require.NoError(t, err)
 	assert.EqualValues(t, 124, mempool.TxsBytes())
@@ -636,11 +662,11 @@ func TestMempoolTxsBytes(t *testing.T) {
 	mempool, cleanup = newMempoolWithAppAndConfig(proxy.NewLocalClientCreator(app), config)
 	defer cleanup()
 
-	tx = createTx(t, 123, nil)
+	tx = createTx(123, nil)
 	err = mempool.CheckTx(tx, nil, tmpool.TxInfo{})
 	require.NoError(t, err)
 	assert.EqualValues(t, 123, mempool.TxsBytes())
-	mempool.RemoveTxByKey(TxKey(createTx(t, 124, nil)), true)
+	mempool.RemoveTxByKey(TxKey(createTx(124, nil)), true)
 	assert.EqualValues(t, 123, mempool.TxsBytes())
 	mempool.RemoveTxByKey(TxKey(tx), true)
 	assert.EqualValues(t, 0, mempool.TxsBytes())
@@ -668,7 +694,7 @@ func TestMempoolRemoteAppConcurrency(t *testing.T) {
 	nTxs := 10
 	txs := make([]tmtypes.Tx, nTxs)
 	for i := 0; i < nTxs; i++ {
-		txs[i] = createTx(t, 116, nil)
+		txs[i] = createTx(116, nil)
 	}
 
 	// simulate a group of peers sending them over and over
@@ -685,6 +711,26 @@ func TestMempoolRemoteAppConcurrency(t *testing.T) {
 	err := mempool.FlushAppConn()
 	require.NoError(t, err)
 }
+
+//func BenchmarkPriorityMempool_addTx(b *testing.B) {
+//	app := kvstore.NewApplication()
+//	cc := proxy.NewLocalClientCreator(app)
+//	mempl, cleanup := newMempoolWithApp(cc)
+//	defer cleanup()
+//
+//	txs := make([]*tmpool.MempoolTx, 10000)
+//	for i := 0; i < 10000; i++ {
+//		tx := createTxWithRandomGas(116, nil)
+//		txs[i] = &tmpool.MempoolTx{Height: 1, GasWanted: 1, Tx: tx}
+//	}
+//
+//	b.ResetTimer()
+//	for n := 0; n < b.N; n++ {
+//		for _, tx := range txs {
+//			mempl.addTx(tx)
+//		}
+//	}
+//}
 
 // caller must close server
 func newRemoteApp(

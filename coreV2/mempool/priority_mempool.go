@@ -708,11 +708,13 @@ func (mem *PriorityMempool) removeGasPrice(gp uint32) {
 	mem.gasPrices = append(mem.gasPrices[:key], mem.gasPrices[key+1:]...)
 }
 
+// Get transaction gas price from map by key
 func (mem *PriorityMempool) getTxGasPriceFromMap(tx types.Tx) uint32 {
 	data, _ := mem.minterTxMap.Load(TxKey(tx))
 	return data.(*transaction.Transaction).GasPrice
 }
 
+// Remove transaction from map
 func (mem *PriorityMempool) removeTxFromTxsGasPriceMap(tx types.Tx) {
 	mem.txsgpmu.Lock()
 	defer mem.txsgpmu.Unlock()
@@ -725,6 +727,7 @@ func (mem *PriorityMempool) removeTxFromTxsGasPriceMap(tx types.Tx) {
 	}
 }
 
+// Get transactions map from list by gas
 func (mem *PriorityMempool) getTxsByGas(gp uint32) map[[32]byte]*tmpool.MempoolTx {
 	mem.txsgpmu.RLock()
 	defer mem.txsgpmu.RUnlock()
