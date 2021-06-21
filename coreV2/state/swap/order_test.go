@@ -14,6 +14,27 @@ import (
 	db "github.com/tendermint/tm-db"
 )
 
+func TestSimple_CalculateAddAmount0ForPrice(t *testing.T) {
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+
+	swap := New(newBus, immutableTree.GetLastImmutable())
+	_, _, _, _ = swap.PairCreate(0, 1, helpers.StringToBigInt("58230513808506823674863"), helpers.StringToBigInt("58277712683264545746619"))
+
+	pair := swap.Pair(0, 1)
+	t.Log(pair.Price())
+	amount0ForPrice := pair.CalculateAddAmount0ForPrice(big.NewFloat(1))
+	t.Log(amount0ForPrice)
+	pair.SellWithOrders(amount0ForPrice)
+	t.Log(pair.Price())
+	pair.SellWithOrders(big.NewInt(3e13 + 7e12 + 6e11 + 4e10 + 2e9 + 4e8))
+	t.Log(pair.Price())
+}
 func TestSimple_my(t *testing.T) {
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
