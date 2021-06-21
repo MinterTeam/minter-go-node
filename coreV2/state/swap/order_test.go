@@ -14,7 +14,47 @@ import (
 	db "github.com/tendermint/tm-db"
 )
 
-func TestSimple_CalculateAddAmount0ForPrice(t *testing.T) {
+func TestSimple_CalculateAddAmount0ForPrice_0(t *testing.T) {
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+
+	swap := New(newBus, immutableTree.GetLastImmutable())
+	_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(110e7), big.NewInt(440e7))
+
+	pair := swap.Pair(0, 1)
+	t.Log(pair.Price())
+	amount0ForPrice := pair.CalculateAddAmount0ForPrice(big.NewFloat(2))
+
+	wantedAmount0In := helpers.StringToBigInt("456090165")
+	if amount0ForPrice.Cmp(wantedAmount0In) != 0 {
+		t.Error("wrong need to sell", amount0ForPrice)
+	}
+	wantedAmount1Out := helpers.StringToBigInt("128781967")
+	// wantedCalcAmount0In := pair.CalculateSellForBuy(wantedAmount1Out)
+	// if wantedCalcAmount0In.Cmp(wantedAmount0In) != 0 {
+	// 	t.Error("wrong need to sell", wantedCalcAmount0In)
+	// }
+	calcAmount1Out := pair.CalculateBuyForSell(amount0ForPrice)
+	if calcAmount1Out.Cmp(wantedAmount1Out) != 0 {
+		t.Error("wrong need to buy", calcAmount1Out)
+	}
+
+	amount1Out, _, _ := pair.SellWithOrders(amount0ForPrice)
+	if amount1Out.Cmp(wantedAmount0In) != 0 {
+		t.Error("wrong need to buy", amount1Out)
+	}
+	if pair.Price().Cmp(big.NewFloat(2)) != 0 {
+		t.Error("wrong new price", pair.Price())
+	}
+	t.Log(pair.Reserves())
+}
+
+func TestSimple_CalculateAddAmount0ForPrice_1(t *testing.T) {
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
 	if err != nil {
@@ -29,11 +69,20 @@ func TestSimple_CalculateAddAmount0ForPrice(t *testing.T) {
 	pair := swap.Pair(0, 1)
 	t.Log(pair.Price())
 	amount0ForPrice := pair.CalculateAddAmount0ForPrice(big.NewFloat(1))
-	t.Log(amount0ForPrice)
+
+	if amount0ForPrice.String() != "23618275451877124096" {
+		t.Error("wrong need to sell", amount0ForPrice)
+	}
 	pair.SellWithOrders(amount0ForPrice)
-	t.Log(pair.Price())
-	pair.SellWithOrders(big.NewInt(3e13 + 7e12 + 6e11 + 4e10 + 2e9 + 4e8))
-	t.Log(pair.Price())
+	if pair.Price().Cmp(big.NewFloat(1)) != 0 {
+		t.Error("wrong new price", pair.Price())
+	}
+
+	// t.Log(big.NewInt(3e13 + 7e12 + 6e11 + 4e10 + 2e9 + 4e8))
+	// t.Log(big.NewInt(0).Add(amount0ForPrice, big.NewInt(3e13+7e12+6e11+4e10+2e9+4e8)))
+	//
+	// pair.SellWithOrders(big.NewInt(3e13 + 7e12 + 6e11 + 4e10 + 2e9 + 4e8))
+	// t.Log(pair.Price())
 }
 func TestSimple_my(t *testing.T) {
 	memDB := db.NewMemDB()

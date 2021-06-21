@@ -376,15 +376,21 @@ func (p *Pair) calculateAddAmount0ForPrice(price *big.Float) (amount0 *big.Int) 
 	r0 := big.NewFloat(0).SetInt(reserve0)
 	r1 := big.NewFloat(0).SetInt(reserve1)
 	k := big.NewFloat(0).Mul(r0, r1)
+	log.Println("k", k)
+	b := big.NewFloat(0).Mul(big.NewFloat(2000+commission), r0)
+	log.Println("b", b)
+	r0Qrt := big.NewFloat(0).Mul(r0, r0)
+	kMulPrice := big.NewFloat(0).Mul(k, big.NewFloat(0).Quo(big.NewFloat(1), price))
+	c := big.NewFloat(0).Mul(big.NewFloat(0).Sub(kMulPrice, r0Qrt), big.NewFloat(-1000))
+	log.Println("c", c)
+	d := big.NewFloat(0).Add(big.NewFloat(0).Mul(big.NewFloat(4008004), r0Qrt), big.NewFloat(0).Mul(big.NewFloat(4008000), big.NewFloat(0).Sub(kMulPrice, r0Qrt)))
+	log.Println("d", d)
 
-	a := big.NewFloat((1000 + commission) / 1000)
-	b := big.NewFloat(0).Quo(big.NewFloat(0).Mul(big.NewFloat(2000+commission), r0), big.NewFloat(1000))
-	c := big.NewFloat(0).Sub(big.NewFloat(0).Mul(r0, r0), big.NewFloat(0).Quo(k, price))
-	d := big.NewFloat(0).Sub(big.NewFloat(0).Mul(b, b), big.NewFloat(0).Mul(big.NewFloat(4), big.NewFloat(0).Mul(a, c)))
+	x := big.NewFloat(0).Quo(big.NewFloat(0).Add(big.NewFloat(0).Neg(b), big.NewFloat(0).Sqrt(d)), big.NewFloat(2004))
+	log.Println("x", x)
 
-	x := big.NewFloat(0).Quo(big.NewFloat(0).Add(big.NewFloat(0).Neg(b), big.NewFloat(0).Sqrt(d)), big.NewFloat(0).Mul(big.NewFloat(2), a))
-
-	amount0, _ = big.NewFloat(0).Add(x, big.NewFloat(0).Quo(big.NewFloat(0).Mul(big.NewFloat(2), x), big.NewFloat(1000))).Int(nil)
+	amount0, _ = big.NewFloat(0).Add(x, big.NewFloat(0).Quo(big.NewFloat(0).Mul(big.NewFloat(commission), x), big.NewFloat(1000))).Int(nil)
+	log.Println(amount0)
 
 	return amount0
 	// return amount0.Add(amount0, big.NewInt(1))
