@@ -24,17 +24,17 @@ func TestSimple_CalculateAddAmount0ForPrice_0(t *testing.T) {
 	checker.NewChecker(newBus)
 
 	swap := New(newBus, immutableTree.GetLastImmutable())
-	_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(110e7), big.NewInt(440e7))
+	_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(110e8), big.NewInt(440e8))
 
 	pair := swap.Pair(0, 1)
 	t.Log(pair.Price())
 	amount0ForPrice := pair.CalculateAddAmount0ForPrice(big.NewFloat(2))
 
-	wantedAmount0In := helpers.StringToBigInt("456090165")
+	wantedAmount0In := helpers.StringToBigInt("4560910765")
 	if amount0ForPrice.Cmp(wantedAmount0In) != 0 {
 		t.Error("wrong need to sell", amount0ForPrice)
 	}
-	wantedAmount1Out := helpers.StringToBigInt("128781967")
+	wantedAmount1Out := helpers.StringToBigInt("12878178468")
 	// wantedCalcAmount0In := pair.CalculateSellForBuy(wantedAmount1Out)
 	// if wantedCalcAmount0In.Cmp(wantedAmount0In) != 0 {
 	// 	t.Error("wrong need to sell", wantedCalcAmount0In)
@@ -45,11 +45,11 @@ func TestSimple_CalculateAddAmount0ForPrice_0(t *testing.T) {
 	}
 
 	amount1Out, _, _ := pair.SellWithOrders(amount0ForPrice)
-	if amount1Out.Cmp(wantedAmount0In) != 0 {
-		t.Error("wrong need to buy", amount1Out)
+	if amount1Out.Cmp(wantedAmount1Out) != 0 {
+		t.Error("wrong need to buy", amount1Out.String())
 	}
-	if pair.Price().Cmp(big.NewFloat(2)) != 0 {
-		t.Error("wrong new price", pair.Price())
+	if pair.Price().String() != "2" {
+		t.Error("wrong new price", pair.Price().String())
 	}
 	t.Log(pair.Reserves())
 }
@@ -70,19 +70,13 @@ func TestSimple_CalculateAddAmount0ForPrice_1(t *testing.T) {
 	t.Log(pair.Price())
 	amount0ForPrice := pair.CalculateAddAmount0ForPrice(big.NewFloat(1))
 
-	if amount0ForPrice.String() != "23618275451877124096" {
+	if amount0ForPrice.String() != "23618275451859783680" {
 		t.Error("wrong need to sell", amount0ForPrice)
 	}
 	pair.SellWithOrders(amount0ForPrice)
-	if pair.Price().Cmp(big.NewFloat(1)) != 0 {
-		t.Error("wrong new price", pair.Price())
+	if pair.Price().String() != "1" {
+		t.Error("wrong new price", pair.Price().String())
 	}
-
-	// t.Log(big.NewInt(3e13 + 7e12 + 6e11 + 4e10 + 2e9 + 4e8))
-	// t.Log(big.NewInt(0).Add(amount0ForPrice, big.NewInt(3e13+7e12+6e11+4e10+2e9+4e8)))
-	//
-	// pair.SellWithOrders(big.NewInt(3e13 + 7e12 + 6e11 + 4e10 + 2e9 + 4e8))
-	// t.Log(pair.Price())
 }
 func TestSimple_my(t *testing.T) {
 	memDB := db.NewMemDB()
