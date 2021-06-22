@@ -1027,10 +1027,11 @@ func (p *Pair) checkSwap(amount0In, amount1In, amount0Out, amount1Out *big.Int) 
 }
 
 func (p *Pair) update(amount0, amount1 *big.Int) {
+	p.markDirty()
+
 	p.pairData.Lock()
 	defer p.pairData.Unlock()
 
-	p.markDirty()
 	p.Reserve0.Add(p.Reserve0, amount0)
 	p.Reserve1.Add(p.Reserve1, amount1)
 }
