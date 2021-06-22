@@ -366,7 +366,6 @@ func (p *Pair) CalculateSubAmount1ForPrice(price *big.Float) (amount1 *big.Int) 
 // Deprecated
 func (p *Pair) calculateSubAmount1ForPrice(price *big.Float) (amount1 *big.Int) {
 	amount0 := p.calculateAddAmount0ForPrice(price)
-	log.Println(amount0, "ddd")
 	if amount0 == nil {
 		return big.NewInt(0)
 	}

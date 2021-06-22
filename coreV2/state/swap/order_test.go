@@ -314,6 +314,8 @@ func TestPair_BuyWithOrders_01_ChangeRemainderOrderPrice(t *testing.T) {
 		t.Error("z", addAmount1)
 	}
 
+	p0 := pair.AddLastSwapStep(addAmount0ForPrice, addAmount1).Price().Text('f', 18)
+
 	t.Run("add amount1", func(t *testing.T) {
 		addAmount1ForPrice := pair.CalculateSubAmount1ForPrice(price)
 		if addAmount1ForPrice.Cmp(addAmount1) != 0 {
@@ -321,6 +323,12 @@ func TestPair_BuyWithOrders_01_ChangeRemainderOrderPrice(t *testing.T) {
 		}
 
 		addAmount0 := pair.CalculateSellForBuy(addAmount1ForPrice)
+
+		p1 := pair.AddLastSwapStep(addAmount0ForPrice, addAmount1ForPrice).Price().Text('f', 18)
+		if p1 != p0 {
+			t.Error(p1, p0)
+		}
+
 		if addAmount0.Cmp(addAmount0ForPrice) != 0 {
 			t.Skipf("todo, addAmount0 %s, addAmount0ForPrice %s", addAmount0, addAmount0ForPrice)
 		}
