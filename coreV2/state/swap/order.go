@@ -240,24 +240,22 @@ func (p *Pair) calculateBuyForSellWithOrders(amount0In *big.Int) (amountOut *big
 
 		price := limit.Price()
 		if price.Cmp(pair.Price()) == -1 {
-			reserve0diff := pair.CalculateAddAmount0ForPrice(price)
-			if reserve0diff != nil {
+			reserve0diff, reserve1diff := pair.CalculateAddAmountsForPrice(price)
+			if reserve0diff != nil && reserve1diff != nil {
 				if amountIn.Cmp(reserve0diff) != 1 {
 					break
 				}
 
-				reserve1diff := pair.CalculateBuyForSell(reserve0diff)
-				if reserve1diff != nil {
-					amountIn.Sub(amountIn, reserve0diff)
-					amountOut.Add(amountOut, reserve1diff)
+				amountIn.Sub(amountIn, reserve0diff)
+				amountOut.Add(amountOut, reserve1diff)
 
-					if err := pair.CheckSwap(reserve0diff, reserve1diff); err != nil {
-						panic(err) // todo: for test
-					}
-					pair = pair.AddLastSwapStep(reserve0diff, reserve1diff)
-
-					log.Println("rS", reserve0diff, reserve1diff)
+				if err := pair.CheckSwap(reserve0diff, reserve1diff); err != nil {
+					panic(err) // todo: for test
 				}
+				pair = pair.AddLastSwapStep(reserve0diff, reserve1diff)
+
+				log.Println("rS", reserve0diff, reserve1diff)
+
 			}
 		}
 
@@ -346,33 +344,15 @@ func calcCommission999(amount1 *big.Int) *big.Int {
 	return quo
 }
 
-func (p *Pair) CalculateAddAmount0ForPrice(price *big.Float) (amount0 *big.Int) {
+func (p *Pair) CalculateAddAmountsForPrice(price *big.Float) (amount0In, amount1Out *big.Int) {
 	if price.Cmp(p.Price()) == 1 {
-		amount0 := p.reverse().CalculateSubAmount1ForPrice(big.NewFloat(0).Quo(big.NewFloat(1), price))
-		return amount0.Neg(amount0)
+		amount1, amount0 := p.reverse().calculateAddAmountsForPrice(big.NewFloat(0).Quo(big.NewFloat(1), price))
+		return amount0.Neg(amount0), amount1.Neg(amount1)
 	}
-	return p.calculateAddAmount0ForPrice(price)
+	return p.calculateAddAmountsForPrice(price)
 }
 
-// Deprecated
-func (p *Pair) CalculateSubAmount1ForPrice(price *big.Float) (amount1 *big.Int) {
-	if price.Cmp(p.Price()) == 1 {
-		amount1 := p.reverse().CalculateAddAmount0ForPrice(big.NewFloat(0).Quo(big.NewFloat(1), price))
-		return amount1.Neg(amount1)
-	}
-	return p.calculateSubAmount1ForPrice(price)
-}
-
-// Deprecated
-func (p *Pair) calculateSubAmount1ForPrice(price *big.Float) (amount1 *big.Int) {
-	amount0 := p.calculateAddAmount0ForPrice(price)
-	if amount0 == nil {
-		return big.NewInt(0)
-	}
-	return p.CalculateBuyForSellAllowNeg(amount0)
-}
-
-func (p *Pair) calculateAddAmount0ForPrice(price *big.Float) (amount0 *big.Int) { // todo: mb Div by ZERO???
+func (p *Pair) calculateAddAmountsForPrice(price *big.Float) (amount0 *big.Int, amount1 *big.Int) { // todo: mb Div by ZERO???
 	reserve0, reserve1 := p.Reserves()
 	r0 := big.NewFloat(0).SetInt(reserve0)
 	r1 := big.NewFloat(0).SetInt(reserve1)
@@ -383,8 +363,14 @@ func (p *Pair) calculateAddAmount0ForPrice(price *big.Float) (amount0 *big.Int) 
 	r0QrtSubKMulPrice := big.NewFloat(0).Sub(r0Qrt, kMulPrice)
 	d := big.NewFloat(0).Sub(big.NewFloat(0).Mul(big.NewFloat((2000-commission)*(2000-commission)/4), r0Qrt), big.NewFloat(0).Mul(big.NewFloat(2000*(1000-commission)/2), r0QrtSubKMulPrice))
 	x1 := big.NewFloat(0).Quo(big.NewFloat(0).Add(big.NewFloat(0).Neg(b), big.NewFloat(0).Sqrt(d)), big.NewFloat(1000-commission))
-	amount0, _ = x1.Int(nil)
-	return amount0
+	amount0, acc := x1.Int(nil)
+	log.Println("acc0", acc)
+
+	if amount0 == nil || amount0.Sign() == 0 {
+		return nil, nil
+	}
+
+	return amount0, p.CalculateBuyForSell(amount0)
 }
 
 func (p *Pair) CalculateSellForBuyWithOrders(amount1Out *big.Int) (amount0In *big.Int) {
@@ -409,25 +395,21 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big
 
 		price := limit.Price()
 		if price.Cmp(pair.Price()) == -1 {
-			// reserve0diff := pair.CalculateAddAmount0ForPrice(price)
-			reserve1diff := pair.CalculateSubAmount1ForPrice(price)
+			reserve0diff, reserve1diff := pair.CalculateAddAmountsForPrice(price)
 			log.Println(reserve1diff, "ooo")
-			if reserve1diff != nil {
+			if reserve1diff != nil && reserve0diff != nil {
 				if amountOut.Cmp(reserve1diff) != 1 {
 					break
 				}
-				reserve0diff := pair.CalculateSellForBuy(reserve1diff)
-				if reserve0diff != nil {
-					amountOut.Sub(amountOut, reserve1diff)
-					amountIn.Add(amountIn, reserve0diff)
+				amountOut.Sub(amountOut, reserve1diff)
+				amountIn.Add(amountIn, reserve0diff)
 
-					if err := pair.CheckSwap(reserve0diff, reserve1diff); err != nil {
-						panic(err) // todo: for test
-					}
-					pair = pair.AddLastSwapStep(reserve0diff, reserve1diff)
-
-					log.Println("rB", reserve0diff, reserve1diff)
+				if err := pair.CheckSwap(reserve0diff, reserve1diff); err != nil {
+					panic(err) // todo: for test
 				}
+				pair = pair.AddLastSwapStep(reserve0diff, reserve1diff)
+
+				log.Println("rB", reserve0diff, reserve1diff)
 			}
 		}
 

@@ -28,7 +28,7 @@ func TestSimple_CalculateAddAmount0ForPrice_0(t *testing.T) {
 
 	pair := swap.Pair(0, 1)
 	t.Log(pair.Price())
-	amount0ForPrice := pair.CalculateAddAmount0ForPrice(big.NewFloat(2))
+	amount0ForPrice, _ := pair.CalculateAddAmountsForPrice(big.NewFloat(2))
 
 	wantedAmount0In := helpers.StringToBigInt("4560910765")
 	if amount0ForPrice.Cmp(wantedAmount0In) != 0 {
@@ -68,7 +68,7 @@ func TestSimple_CalculateAddAmount0ForPrice_1(t *testing.T) {
 
 	pair := swap.Pair(0, 1)
 	t.Log(pair.Price())
-	amount0ForPrice := pair.CalculateAddAmount0ForPrice(big.NewFloat(1))
+	amount0ForPrice, _ := pair.CalculateAddAmountsForPrice(big.NewFloat(1))
 
 	if amount0ForPrice.String() != "23618275451859783680" {
 		t.Error("wrong need to sell", amount0ForPrice)
@@ -109,7 +109,7 @@ func TestSimple_my(t *testing.T) {
 		t.Error("err", amount1Out.String())
 	}
 
-	amount0ForPrice := pair.CalculateAddAmount0ForPrice(order.Price())
+	amount0ForPrice, _ := pair.CalculateAddAmountsForPrice(order.Price())
 	amount1ForPrice := pair.CalculateBuyForSell(amount0ForPrice)
 
 	if amount0ForPrice.String() != "7327837463256660705280" {
@@ -136,8 +136,14 @@ func TestSimple_my(t *testing.T) {
 		t.Error("err", amount1AfterPrice.String())
 	}
 
+	if err := pair.CheckSwap(amount0ForPrice, amount1ForPrice); err != nil {
+		t.Error(err)
+	}
 	pair.Swap(amount0ForPrice, big.NewInt(0), big.NewInt(0), amount1ForPrice)
 	pair.update(amount0ForPrice, amount1ForPrice)
+	if err := pair.CheckSwap(amount0AfterPrice, amount1AfterPrice); err != nil {
+		t.Error(err)
+	}
 	pair.Swap(amount0AfterPrice, big.NewInt(0), big.NewInt(0), amount1AfterPrice)
 
 	defer func() {
@@ -254,7 +260,7 @@ func TestPair_AddLastSwapStepWithOrders(t *testing.T) {
 	pair = swap.Pair(0, 1)
 	price := pair.OrderSellLowerByIndex(0).Price()
 
-	addAmount0ForPrice := pair.CalculateAddAmount0ForPrice(price)
+	addAmount0ForPrice, _ := pair.CalculateAddAmountsForPrice(price)
 
 	_, _, _ = pair.SellWithOrders(addAmount0ForPrice)
 
@@ -304,12 +310,11 @@ func TestPair_BuyWithOrders_01_ChangeRemainderOrderPrice(t *testing.T) {
 	pair = swap.Pair(0, 1)
 	price := pair.OrderSellLowerByIndex(0).Price()
 
-	addAmount0ForPrice := pair.CalculateAddAmount0ForPrice(price)
+	addAmount0ForPrice, addAmount1 := pair.CalculateAddAmountsForPrice(price)
 	if addAmount0ForPrice.Cmp(big.NewInt(7327)) != 0 {
 		t.Error("a", addAmount0ForPrice)
 	}
 
-	addAmount1 := pair.CalculateBuyForSell(addAmount0ForPrice)
 	if addAmount1.Cmp(big.NewInt(4223)) != 0 {
 		t.Error("z", addAmount1)
 	}
@@ -317,12 +322,10 @@ func TestPair_BuyWithOrders_01_ChangeRemainderOrderPrice(t *testing.T) {
 	p0 := pair.AddLastSwapStep(addAmount0ForPrice, addAmount1).Price().Text('f', 18)
 
 	t.Run("add amount1", func(t *testing.T) {
-		addAmount1ForPrice := pair.CalculateSubAmount1ForPrice(price)
+		addAmount0, addAmount1ForPrice := pair.CalculateAddAmountsForPrice(price)
 		if addAmount1ForPrice.Cmp(addAmount1) != 0 {
 			t.Error("a", addAmount1ForPrice)
 		}
-
-		addAmount0 := pair.CalculateSellForBuy(addAmount1ForPrice)
 
 		p1 := pair.AddLastSwapStep(addAmount0ForPrice, addAmount1ForPrice).Price().Text('f', 18)
 		if p1 != p0 {
@@ -346,7 +349,7 @@ func TestPair_BuyWithOrders_01_ChangeRemainderOrderPrice(t *testing.T) {
 	})
 
 	if amount0In.Cmp(big.NewInt(7327+9009)) != 0 {
-		t.Error("d", amount0In)
+		t.Error("d", amount0In, big.NewInt(7327+9009)) // todo
 	}
 
 	t.Run("resort dirty", func(t *testing.T) {
@@ -429,7 +432,7 @@ func TestPair_SellWithOrders_01_ChangeRemainderOrderPrice(t *testing.T) {
 
 	pair = swap.Pair(0, 1)
 	price := pair.OrderSellLowerByIndex(0).Price()
-	addAmount0ForPrice := pair.CalculateAddAmount0ForPrice(price)
+	addAmount0ForPrice, _ := pair.CalculateAddAmountsForPrice(price)
 	if addAmount0ForPrice.Cmp(big.NewInt(7327)) != 0 {
 		t.Error("a", addAmount0ForPrice)
 	}
@@ -532,7 +535,7 @@ func TestPair_SellWithOrders_10_ChangeRemainderOrderPrice(t *testing.T) {
 
 	pair = swap.Pair(1, 0)
 	price := pair.OrderSellLowerByIndex(0).Price()
-	addAmount0ForPrice := pair.CalculateAddAmount0ForPrice(price)
+	addAmount0ForPrice, _ := pair.CalculateAddAmountsForPrice(price)
 	if addAmount0ForPrice.Cmp(big.NewInt(7327)) != 0 {
 		t.Error("a", addAmount0ForPrice)
 	}
@@ -1339,7 +1342,7 @@ func TestPair_CalculateBuyForSellWithOrders_01(t *testing.T) {
 		t.Run("low price", func(t *testing.T) {
 			price := big.NewFloat(0.5)
 			t.Run("sell", func(t *testing.T) {
-				amount0 := pair.CalculateAddAmount0ForPrice(price)
+				amount0, _ := pair.CalculateAddAmountsForPrice(price)
 				if amount0.Cmp(big.NewInt(4146)) != 0 {
 					t.Errorf("amount0 want %v, got %v", big.NewInt(4146), amount0)
 				}
@@ -1350,7 +1353,7 @@ func TestPair_CalculateBuyForSellWithOrders_01(t *testing.T) {
 				}
 			})
 			t.Run("buy", func(t *testing.T) {
-				amount1 := pair.CalculateSubAmount1ForPrice(price)
+				_, amount1 := pair.CalculateAddAmountsForPrice(price)
 				if amount1.Cmp(big.NewInt(2926)) != 0 {
 					t.Errorf("amount1 want %v, got %v", big.NewInt(2926), amount1)
 				}
@@ -1364,7 +1367,7 @@ func TestPair_CalculateBuyForSellWithOrders_01(t *testing.T) {
 		t.Run("high price", func(t *testing.T) {
 			price := big.NewFloat(2)
 			t.Run("sell", func(t *testing.T) {
-				amount0 := pair.CalculateAddAmount0ForPrice(price)
+				amount0, _ := pair.CalculateAddAmountsForPrice(price)
 				if amount0.Cmp(big.NewInt(-2926)) != 0 {
 					t.Errorf("amount0 want %v, got %v", big.NewInt(-2926), amount0)
 				}
@@ -1375,7 +1378,7 @@ func TestPair_CalculateBuyForSellWithOrders_01(t *testing.T) {
 				}
 			})
 			t.Run("buy", func(t *testing.T) {
-				amount1 := pair.CalculateSubAmount1ForPrice(price)
+				_, amount1 := pair.CalculateAddAmountsForPrice(price)
 				if amount1.Cmp(big.NewInt(-4146)) != 0 {
 					t.Errorf("amount1 want %v, got %v", big.NewInt(-4146), amount1)
 				}
@@ -1650,7 +1653,7 @@ func TestPair_CalculateBuyForSellWithOrders_10(t *testing.T) {
 				})
 				t.Run("more order", func(t *testing.T) {
 					amount0 := pair.CalculateSellForBuyAllowNeg(big.NewInt(2926))
-					p := pair.AddLastSwapStep(amount0, big.NewInt(2926))
+					p := pair.AddLastSwapStep(amount0, big.NewInt(2926)).AddLastSwapStep(big.NewInt(2), big.NewInt(-1))
 					amount0In := big.NewInt(0).Add(amount0, p.CalculateSellForBuy(big.NewInt(466)))
 					amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 999 + 466))
 					if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "2000" {
@@ -1753,7 +1756,7 @@ func TestPair_CalculateAddAmount0ForPrice_10(t *testing.T) {
 			t.Run("low price", func(t *testing.T) {
 				price := big.NewFloat(0.5)
 				t.Run("sell", func(t *testing.T) {
-					amount0 := pair.CalculateAddAmount0ForPrice(price)
+					amount0, _ := pair.CalculateAddAmountsForPrice(price)
 					if amount0.Cmp(big.NewInt(3074)) != 0 {
 						t.Errorf("amount0 want %v, got %v", big.NewInt(3074), amount0)
 					}
@@ -1764,7 +1767,7 @@ func TestPair_CalculateAddAmount0ForPrice_10(t *testing.T) {
 					}
 				})
 				t.Run("buy", func(t *testing.T) {
-					amount1 := pair.CalculateSubAmount1ForPrice(price)
+					_, amount1 := pair.CalculateAddAmountsForPrice(price)
 					if amount1.Cmp(big.NewInt(1962)) != 0 {
 						t.Errorf("amount1 want %v, got %v", big.NewInt(1962), amount1)
 					}
@@ -1778,7 +1781,7 @@ func TestPair_CalculateAddAmount0ForPrice_10(t *testing.T) {
 			t.Run("high price", func(t *testing.T) {
 				price := big.NewFloat(2)
 				t.Run("sell", func(t *testing.T) {
-					amount0 := pair.CalculateAddAmount0ForPrice(price)
+					amount0, _ := pair.CalculateAddAmountsForPrice(price)
 					if amount0.Cmp(big.NewInt(-3961)) != 0 {
 						t.Errorf("amount0 want %v, got %v", big.NewInt(-3961), amount0)
 					}
@@ -1789,7 +1792,7 @@ func TestPair_CalculateAddAmount0ForPrice_10(t *testing.T) {
 					}
 				})
 				t.Run("buy", func(t *testing.T) {
-					amount1 := pair.CalculateSubAmount1ForPrice(price)
+					_, amount1 := pair.CalculateAddAmountsForPrice(price)
 					if amount1.Cmp(big.NewInt(-5076)) != 0 {
 						t.Errorf("amount1 want %v, got %v", big.NewInt(-5076), amount1)
 					}
@@ -1808,7 +1811,7 @@ func TestPair_CalculateAddAmount0ForPrice_10(t *testing.T) {
 			t.Run("low price", func(t *testing.T) {
 				price := big.NewFloat(0.5)
 				t.Run("sell", func(t *testing.T) {
-					amount0 := pair.CalculateAddAmount0ForPrice(price)
+					amount0, _ := pair.CalculateAddAmountsForPrice(price)
 					if amount0.Cmp(big.NewInt(5076)) != 0 {
 						t.Errorf("amount0 want %v, got %v", big.NewInt(5076), amount0)
 					}
@@ -1819,7 +1822,7 @@ func TestPair_CalculateAddAmount0ForPrice_10(t *testing.T) {
 					}
 				})
 				t.Run("buy", func(t *testing.T) {
-					amount1 := pair.CalculateSubAmount1ForPrice(price)
+					_, amount1 := pair.calculateAddAmountsForPrice(price)
 					if amount1.Cmp(big.NewInt(3961)) != 0 {
 						t.Errorf("amount1 want %v, got %v", big.NewInt(3961), amount1)
 					}
@@ -1833,7 +1836,7 @@ func TestPair_CalculateAddAmount0ForPrice_10(t *testing.T) {
 			t.Run("high price", func(t *testing.T) {
 				price := big.NewFloat(2)
 				t.Run("sell", func(t *testing.T) {
-					amount0 := pair.CalculateAddAmount0ForPrice(price)
+					amount0, _ := pair.CalculateAddAmountsForPrice(price)
 					if amount0.Cmp(big.NewInt(-1962)) != 0 {
 						t.Errorf("amount0 want %v, got %v", big.NewInt(-1962), amount0)
 					}
@@ -1844,7 +1847,7 @@ func TestPair_CalculateAddAmount0ForPrice_10(t *testing.T) {
 					}
 				})
 				t.Run("buy", func(t *testing.T) {
-					amount1 := pair.CalculateSubAmount1ForPrice(price)
+					_, amount1 := pair.CalculateAddAmountsForPrice(price)
 					if amount1.Cmp(big.NewInt(-3074)) != 0 {
 						t.Errorf("amount1 want %v, got %v", big.NewInt(-5078), amount1)
 					}

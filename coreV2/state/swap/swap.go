@@ -37,8 +37,9 @@ type EditableChecker interface {
 	Price() *big.Float
 	Reserves() (reserve0 *big.Int, reserve1 *big.Int)
 	Amounts(liquidity, totalSupply *big.Int) (amount0 *big.Int, amount1 *big.Int)
-	CalculateAddAmount0ForPrice(float *big.Float) (amount0 *big.Int)
-	CalculateSubAmount1ForPrice(float *big.Float) (amount1 *big.Int)
+	CalculateAddAmountsForPrice(float *big.Float) (amount0, amount1 *big.Int)
+	// CalculateAddAmountsForPrice(float *big.Float) (amount0 *big.Int)
+	// CalculateSubAmount1ForPrice(float *big.Float) (amount1 *big.Int)
 	// Deprecated
 	CalculateBuyForSell(amount0In *big.Int) (amount1Out *big.Int)
 	CalculateBuyForSellWithOrders(amount0In *big.Int) (amount1Out *big.Int)
