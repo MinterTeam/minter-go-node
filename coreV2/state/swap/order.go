@@ -247,19 +247,17 @@ func (p *Pair) calculateBuyForSellWithOrders(amount0In *big.Int) (amountOut *big
 				}
 
 				reserve1diff := pair.CalculateBuyForSell(reserve0diff)
-				if reserve1diff == nil {
-					reserve1diff = big.NewInt(0) // todo: mb break `if`
+				if reserve1diff != nil {
+					amountIn.Sub(amountIn, reserve0diff)
+					amountOut.Add(amountOut, reserve1diff)
+
+					if err := pair.CheckSwap(reserve0diff, reserve1diff); err != nil {
+						panic(err) // todo: for test
+					}
+					pair = pair.AddLastSwapStep(reserve0diff, reserve1diff)
+
+					log.Println("rS", reserve0diff, reserve1diff)
 				}
-
-				amountIn.Sub(amountIn, reserve0diff)
-				amountOut.Add(amountOut, reserve1diff)
-
-				if err := pair.CheckSwap(reserve0diff, reserve1diff); err != nil {
-					panic(err) // todo: for test
-				}
-				pair = pair.AddLastSwapStep(reserve0diff, reserve1diff)
-
-				log.Println("rS", reserve0diff, reserve1diff)
 			}
 		}
 
@@ -310,7 +308,7 @@ func (p *Pair) calculateBuyForSellWithOrders(amount0In *big.Int) (amountOut *big
 
 		comS := calcCommission999(limit.WantBuy)
 		comB := calcCommission999(limit.WantSell)
-
+		log.Println("ccc", comS, big.NewInt(0).Neg(comB))
 		pair = pair.AddLastSwapStep(comS, big.NewInt(0).Neg(comB))
 		amountOut.Add(amountOut, big.NewInt(0).Sub(limit.WantSell, comB))
 
@@ -350,24 +348,28 @@ func calcCommission999(amount1 *big.Int) *big.Int {
 
 func (p *Pair) CalculateAddAmount0ForPrice(price *big.Float) (amount0 *big.Int) {
 	if price.Cmp(p.Price()) == 1 {
-		amount0 := p.reverse().CalculateAddAmount1ForPrice(big.NewFloat(0).Quo(big.NewFloat(1), price))
+		amount0 := p.reverse().CalculateSubAmount1ForPrice(big.NewFloat(0).Quo(big.NewFloat(1), price))
 		return amount0.Neg(amount0)
 	}
 	return p.calculateAddAmount0ForPrice(price)
 }
 
 // Deprecated
-func (p *Pair) CalculateAddAmount1ForPrice(price *big.Float) (amount1 *big.Int) {
+func (p *Pair) CalculateSubAmount1ForPrice(price *big.Float) (amount1 *big.Int) {
 	if price.Cmp(p.Price()) == 1 {
 		amount1 := p.reverse().CalculateAddAmount0ForPrice(big.NewFloat(0).Quo(big.NewFloat(1), price))
 		return amount1.Neg(amount1)
 	}
-	return p.calculateAddAmount1ForPrice(price)
+	return p.calculateSubAmount1ForPrice(price)
 }
 
 // Deprecated
-func (p *Pair) calculateAddAmount1ForPrice(price *big.Float) (amount1 *big.Int) {
+func (p *Pair) calculateSubAmount1ForPrice(price *big.Float) (amount1 *big.Int) {
 	amount0 := p.calculateAddAmount0ForPrice(price)
+	log.Println(amount0, "ddd")
+	if amount0 == nil {
+		return big.NewInt(0)
+	}
 	return p.CalculateBuyForSellAllowNeg(amount0)
 }
 
@@ -377,26 +379,13 @@ func (p *Pair) calculateAddAmount0ForPrice(price *big.Float) (amount0 *big.Int) 
 	r1 := big.NewFloat(0).SetInt(reserve1)
 	k := big.NewFloat(0).Mul(r0, r1)
 	r0Qrt := big.NewFloat(0).Mul(r0, r0)
-	log.Println("k", k)
 	b := big.NewFloat(0).Mul(big.NewFloat((2000.0-commission)/2), r0)
-	log.Println("b", b)
 	kMulPrice := big.NewFloat(0).Mul(k, big.NewFloat(0).Quo(big.NewFloat(1), price))
 	r0QrtSubKMulPrice := big.NewFloat(0).Sub(r0Qrt, kMulPrice)
-	c := big.NewFloat(0).Mul(r0QrtSubKMulPrice, big.NewFloat(500))
-	log.Println("c", c)
-	d := big.NewFloat(0).Sub(big.NewFloat(0).Mul(big.NewFloat(998001), r0Qrt), big.NewFloat(0).Mul(big.NewFloat(499*4*500), r0QrtSubKMulPrice))
-	log.Println("d", d)
-
+	d := big.NewFloat(0).Sub(big.NewFloat(0).Mul(big.NewFloat((2000-commission)*(2000-commission)/4), r0Qrt), big.NewFloat(0).Mul(big.NewFloat(2000*(1000-commission)/2), r0QrtSubKMulPrice))
 	x1 := big.NewFloat(0).Quo(big.NewFloat(0).Add(big.NewFloat(0).Neg(b), big.NewFloat(0).Sqrt(d)), big.NewFloat(1000-commission))
-	x2 := big.NewFloat(0).Quo(big.NewFloat(0).Sub(big.NewFloat(0).Neg(b), big.NewFloat(0).Sqrt(d)), big.NewFloat(1000-commission))
-	log.Println("x", x1, x2)
-
-	// amount0, _ = big.NewFloat(0).Add(x1, big.NewFloat(0).Quo(big.NewFloat(0).Mul(big.NewFloat(commission), x1), big.NewFloat(1000))).Int(nil)
 	amount0, _ = x1.Int(nil)
-	log.Println(amount0)
-
 	return amount0
-	// return amount0.Add(amount0, big.NewInt(1))
 }
 
 func (p *Pair) CalculateSellForBuyWithOrders(amount1Out *big.Int) (amount0In *big.Int) {
@@ -421,25 +410,25 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big
 
 		price := limit.Price()
 		if price.Cmp(pair.Price()) == -1 {
-			reserve0diff := pair.CalculateAddAmount0ForPrice(price)
-			if reserve0diff != nil {
-				reserve1diff := pair.CalculateBuyForSell(reserve0diff)
-				if reserve1diff == nil {
-					reserve1diff = big.NewInt(0) // todo: mb break `if`
-				}
+			// reserve0diff := pair.CalculateAddAmount0ForPrice(price)
+			reserve1diff := pair.CalculateSubAmount1ForPrice(price)
+			log.Println(reserve1diff, "ooo")
+			if reserve1diff != nil {
 				if amountOut.Cmp(reserve1diff) != 1 {
 					break
 				}
+				reserve0diff := pair.CalculateSellForBuy(reserve1diff)
+				if reserve0diff != nil {
+					amountOut.Sub(amountOut, reserve1diff)
+					amountIn.Add(amountIn, reserve0diff)
 
-				amountOut.Sub(amountOut, reserve1diff)
-				amountIn.Add(amountIn, reserve0diff)
+					if err := pair.CheckSwap(reserve0diff, reserve1diff); err != nil {
+						panic(err) // todo: for test
+					}
+					pair = pair.AddLastSwapStep(reserve0diff, reserve1diff)
 
-				if err := pair.CheckSwap(reserve0diff, reserve1diff); err != nil {
-					panic(err) // todo: for test
+					log.Println("rB", reserve0diff, reserve1diff)
 				}
-				pair = pair.AddLastSwapStep(reserve0diff, reserve1diff)
-
-				log.Println("rB", reserve0diff, reserve1diff)
 			}
 		}
 
@@ -453,7 +442,7 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big
 		log.Println("comB", comB)
 		rest := big.NewInt(0).Sub(amountOut, big.NewInt(0).Sub(limit.WantSell, comB))
 		if rest.Sign() != 1 {
-			log.Println("part")
+			log.Println("order")
 			amount1 := big.NewInt(0).Add(amountOut, calcCommission001(amountOut))
 			log.Println("amount1", amount1)
 			// считаем сколько монет надо продать что бы купить 3003
@@ -462,9 +451,6 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big
 				log.Println("acc", acc) // todo
 			}
 			log.Println("amount0", amount0)
-
-			// 7330916069244652544 4225079013582808273
-			// 7330916069244652544 4225079013582808273
 
 			orders = append(orders, &Limit{
 				isBuy:        limit.isBuy,
@@ -481,7 +467,7 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big
 			return amountIn, orders
 		}
 
-		log.Println("full")
+		log.Println("order more")
 		orders = append(orders, &Limit{
 			isBuy:        limit.isBuy,
 			WantBuy:      big.NewInt(0).Set(limit.WantBuy),
@@ -1095,7 +1081,7 @@ func (p *Pair) orderSellLowerByIndex(index int) *Limit {
 	}
 
 	order := orders[index]
-	log.Println(order.Owner.String())
+
 	if !p.isSorted() {
 		return order.reverse()
 	}
