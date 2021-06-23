@@ -352,7 +352,12 @@ func (p *Pair) CalculateAddAmountsForPrice(price *big.Float) (amount0In, amount1
 	return p.calculateAddAmountsForPrice(price)
 }
 
-func (p *Pair) calculateAddAmountsForPrice(price *big.Float) (amount0 *big.Int, amount1 *big.Int) { // todo: mb Div by ZERO???
+// calculateAddAmountsForPrice returns a0 and a1 to reach the price
+//		{ (r0 + 0.998a0) * (r1 - a1) = r0 * r1
+//	   {
+//		{ (r0 + a0) / (r1 - a1) = price
+//
+func (p *Pair) calculateAddAmountsForPrice(price *big.Float) (amount0 *big.Int, amount1 *big.Int) {
 	reserve0, reserve1 := p.Reserves()
 	r0 := big.NewFloat(0).SetInt(reserve0)
 	r1 := big.NewFloat(0).SetInt(reserve1)
