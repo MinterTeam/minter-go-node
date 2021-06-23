@@ -348,17 +348,6 @@ func (p *Pair) reverse() *Pair {
 	}
 }
 
-func (p *Pair) Price() *big.Float {
-	return p.pairData.Price()
-}
-
-func (p *Pair) SortPrice() *big.Float {
-	if p.isSorted() {
-		return p.pairData.Price()
-	}
-	return p.pairData.reverse().Price()
-}
-
 func (pk pairKey) bytes() []byte {
 	key := pk.sort()
 	return append(key.Coin0.Bytes(), key.Coin1.Bytes()...)

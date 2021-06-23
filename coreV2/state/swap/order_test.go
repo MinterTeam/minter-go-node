@@ -395,8 +395,8 @@ func TestPair_BuyWithOrders_01_ChangeRemainderOrderPrice(t *testing.T) {
 	_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(10000), big.NewInt(10000))
 
 	pair := swap.Pair(0, 1)
-	pair.SetOrder(big.NewInt(15000), big.NewInt(5000), types.Address{})
-	pair.SetOrder(big.NewInt(20), big.NewInt(5), types.Address{})
+	pair.SetOrder(big.NewInt(15000), big.NewInt(5000), types.Address{1})
+	pair.SetOrder(big.NewInt(20), big.NewInt(5), types.Address{2})
 
 	_, _, err = immutableTree.Commit(swap)
 	if err != nil {
@@ -439,7 +439,7 @@ func TestPair_BuyWithOrders_01_ChangeRemainderOrderPrice(t *testing.T) {
 			t.Fatal("b", owners)
 		}
 
-		if owners[types.Address{}].Cmp(big.NewInt(9000)) != 0 {
+		if owners[types.Address{1}].Cmp(big.NewInt(9000)) != 0 {
 			t.Error("c", owners[types.Address{}])
 		}
 	})
@@ -465,7 +465,7 @@ func TestPair_BuyWithOrders_01_ChangeRemainderOrderPrice(t *testing.T) {
 				t.Fatal("b", owners)
 			}
 
-			if owners[types.Address{}].Cmp(big.NewInt(3000)) != 0 {
+			if owners[types.Address{1}].Cmp(big.NewInt(3000)) != 0 {
 				t.Error("c", owners[types.Address{}])
 			}
 		})

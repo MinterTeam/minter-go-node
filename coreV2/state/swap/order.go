@@ -195,12 +195,9 @@ func (p *Pair) resortSellOrderList(i int, limit *Limit) {
 		p.Price().Text('f', 18),            // 0.333333333333333259
 	)
 
-	cmp := 1
-	if !p.isSorted() {
-		cmp = -1
-	}
+	cmp := p.DirectionSortPrice()
 
-	if limit.SortPrice().Cmp(p.SortPrice()) == cmp {
+	if !(limit.SortPrice().Cmp(p.SortPrice()) == cmp) {
 		p.unsetOrderSellLowerByIndex(i)
 		return
 	}
@@ -540,6 +537,24 @@ func (l *Limit) Price() *big.Float {
 	return CalcPriceSell(l.WantBuy, l.WantSell)
 }
 
+func (p *Pair) Price() *big.Float {
+	return p.pairData.Price()
+}
+
+func (p *Pair) SortPrice() *big.Float {
+	if p.isSorted() {
+		return p.pairData.Price()
+	}
+	return p.pairData.reverse().Price()
+}
+
+func (p *Pair) DirectionSortPrice() int {
+	if !p.isSorted() {
+		return 1
+	}
+	return -1
+}
+
 func (l *Limit) SortPrice() *big.Float {
 	if l.isSorted() {
 		return l.Price()
@@ -598,10 +613,7 @@ func (p *Pair) MarkDirtyOrders(order *Limit) {
 }
 
 func (p *Pair) setSellHigherOrder(new *Limit) (index int) {
-	cmp := -1
-	if !p.isSorted() {
-		cmp = 1
-	}
+	cmp := p.DirectionSortPrice()
 	orders := p.sellHigherOrders()
 	for i, limit := range orders {
 		if new.SortPrice().Cmp(limit.SortPrice()) != cmp {
@@ -626,14 +638,11 @@ func (p *Pair) setSellHigherOrder(new *Limit) (index int) {
 }
 
 func (p *Pair) setSellLowerOrder(new *Limit) (index int) {
-	cmp := -1
-	if p.isSorted() {
-		cmp = 1
-	}
+	cmp := p.DirectionSortPrice()
 
 	orders := p.SellLowerOrders()
 	for i, limit := range orders {
-		if new.SortPrice().Cmp(limit.SortPrice()) != cmp {
+		if !(new.SortPrice().Cmp(limit.SortPrice()) != cmp) {
 			index = i + 1
 			continue
 		}
@@ -934,7 +943,7 @@ func (p *Pair) updateDirtyOrders(list []*Limit, lower bool) (orders []*Limit, co
 		} else if dirtyOrder.isEmpty() {
 			continue
 		} else {
-			if dirtyOrder.SortPrice().Cmp(p.SortPrice()) == 1 { // todo: mb use all orders
+			if dirtyOrder.SortPrice().Cmp(p.SortPrice()) != p.DirectionSortPrice() { // todo: mb use all orders
 				continue
 			} else {
 				var isSet bool
