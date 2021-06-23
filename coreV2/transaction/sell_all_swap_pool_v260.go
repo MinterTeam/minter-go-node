@@ -194,7 +194,7 @@ func (data SellAllSwapPoolDataV260) Run(tx *Transaction, context state.Interface
 					swapper = swapper.AddLastSwapStepWithOrders(commission, commissionInBaseCoin)
 				}
 				if tx.commissionCoin() == coinToBuy && coinToSell.IsBaseCoin() {
-					swapper = swapper.AddLastSwapStepWithOrders(commissionInBaseCoin, commission)
+					swapper = swapper.AddLastSwapStepWithOrders(big.NewInt(0).Neg(commissionInBaseCoin), big.NewInt(0).Neg(commission))
 				}
 			}
 

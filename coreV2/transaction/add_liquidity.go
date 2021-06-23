@@ -89,7 +89,7 @@ func (data AddLiquidityData) Run(tx *Transaction, context state.Interface, rewar
 			swapper = swapper.AddLastSwapStepWithOrders(commission, commissionInBaseCoin)
 		}
 		if tx.GasCoin == data.Coin1 && data.Coin0.IsBaseCoin() {
-			swapper = swapper.AddLastSwapStepWithOrders(commissionInBaseCoin, commission)
+			swapper = swapper.AddLastSwapStepWithOrders(big.NewInt(0).Neg(commissionInBaseCoin), big.NewInt(0).Neg(commission))
 		}
 	}
 	coinLiquidity := checkState.Coins().GetCoinBySymbol(LiquidityCoinSymbol(swapper.GetID()), 0)
