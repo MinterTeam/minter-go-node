@@ -185,17 +185,29 @@ func (p *Pair) resortSellOrderList(i int, limit *Limit) {
 		return
 	}
 
+	if limit.CmpOldRate() == 0 {
+		return
+	}
+
+	log.Println("set new order position", p.isSorted(), // true
+		limit.CmpOldRate(), limit.SortPrice().Text('f', 18), // 0.333333333333333315
+		limit.OldSortPrice().Text('f', 18), // 0.333333333333333343
+		p.Price().Text('f', 18),            // 0.333333333333333259
+	)
+
 	cmp := 1
 	if !p.isSorted() {
 		cmp = -1
 	}
-	// todo: need tests
-	switch limit.CmpOldRate() {
-	case 0:
-		return
-	case cmp:
+
+	if limit.SortPrice().Cmp(p.SortPrice()) == cmp {
 		p.unsetOrderSellLowerByIndex(i)
-	default: // FIXME: do something, if next step will change current price to up, than we will not load this order!!! mb need to clear all cache orders?
+		return
+	}
+
+	if limit.CmpOldRate() == cmp {
+		p.unsetOrderSellLowerByIndex(i)
+	} else {
 		p.unsetOrderSellLowerByIndex(i)
 
 		loadedLen := len(p.SellLowerOrders())
@@ -832,10 +844,12 @@ func (s *Swap) loadBuyHigherOrders(pair *Pair, slice []*Limit, limit int) []*Lim
 		if dirtyOrder, ok := pair.dirtyOrders.orders[order.id]; ok {
 			if dirtyOrder.isKeepRate() {
 				order = dirtyOrder
-			} else if dirtyOrder.isEmpty() {
-				return false
 			} else {
-				return false
+				if dirtyOrder.isEmpty() {
+					return false
+				} else {
+					return false
+				}
 			}
 		}
 
@@ -879,10 +893,12 @@ func (s *Swap) loadSellLowerOrders(pair *Pair, slice []*Limit, limit int) []*Lim
 		if dirtyOrder, ok := pair.dirtyOrders.orders[order.id]; ok {
 			if dirtyOrder.isKeepRate() {
 				order = dirtyOrder
-			} else if dirtyOrder.isEmpty() {
-				return false
 			} else {
-				return false
+				if dirtyOrder.isEmpty() {
+					return false
+				} else {
+					return false
+				}
 			}
 		}
 
@@ -915,17 +931,21 @@ func (p *Pair) updateDirtyOrders(list []*Limit, lower bool) (orders []*Limit, co
 	for _, dirtyOrder := range p.getDirtyOrdersList() {
 		if dirtyOrder.isKeepRate() {
 			continue
-		}
-		if dirtyOrder.isEmpty() {
+		} else if dirtyOrder.isEmpty() {
 			continue
 		} else {
-			var isSet bool
-			orders, isSet = addToList(orders, dirtyOrder, cmp)
-			if isSet {
-				countDirties--
+			if dirtyOrder.SortPrice().Cmp(p.SortPrice()) == 1 { // todo: mb use all orders
+				continue
+			} else {
+				var isSet bool
+				orders, isSet = addToList(orders, dirtyOrder, cmp)
+				if isSet {
+					countDirties--
+				}
 			}
 		}
 	}
+
 	return orders, countDirties
 }
 
@@ -945,8 +965,7 @@ func addToList(orders []*Limit, dirtyOrder *Limit, cmp int) (list []*Limit, incl
 
 	if index == len(orders) {
 		// not add to end
-		return orders, false
-		// return append(orders, dirtyOrder), true
+		return orders, false // todo: tests
 	}
 
 	return append(orders[:index], append([]*Limit{dirtyOrder}, orders[index:]...)...), true

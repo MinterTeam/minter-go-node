@@ -14,7 +14,103 @@ import (
 	db "github.com/tendermint/tm-db"
 )
 
-func TestSimple_CalculateAddAmount0ForPrice_0(t *testing.T) {
+func TestPair_SellWithOrders_changePriceWithOrderAndUpdateList0(t *testing.T) {
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+
+	swap := New(newBus, immutableTree.GetLastImmutable())
+	_, _, _, _ = swap.PairCreate(0, 1, helpers.StringToBigInt("10000000000000000000000"), helpers.StringToBigInt("10000000000000000000000"))
+
+	pair := swap.Pair(0, 1)
+
+	pair.SetOrder(helpers.StringToBigInt("15000000000000000000000"), helpers.StringToBigInt("5000000000000000000000"), types.Address{})
+
+	// order := pair.OrderSellLowerByIndex(0)
+
+	_, _, _ = pair.SellWithOrders(big.NewInt(1e18))
+
+	t.Run("resort dirty", func(t *testing.T) {
+		t.Run("mem", func(t *testing.T) {
+			t.Run("mem", func(t *testing.T) {
+				orderNextMem := pair.OrderSellLowerByIndex(0)
+				t.Run("disk", func(t *testing.T) {
+					_, _, err = immutableTree.Commit(swap)
+					if err != nil {
+						t.Fatal(err)
+					}
+					pair := New(newBus, immutableTree.GetLastImmutable()).Pair(0, 1)
+					orderNextDisk := pair.OrderSellLowerByIndex(0)
+					if orderNextDisk != nil && orderNextMem != nil {
+						// t.Log("has order")
+						if orderNextDisk.id != orderNextMem.id {
+							t.Errorf("dosk %d, mem %d", orderNextDisk.id, orderNextMem.id)
+						}
+					} else {
+						t.Error("no order")
+						if orderNextDisk != nil || orderNextMem != nil {
+							t.Errorf("disk %#v, mem %#v", orderNextDisk, orderNextMem)
+						}
+					}
+				})
+			})
+		})
+	})
+}
+
+func TestPair_SellWithOrders_changePriceWithOrderAndUpdateList1(t *testing.T) {
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+
+	swap := New(newBus, immutableTree.GetLastImmutable())
+	_, _, _, _ = swap.PairCreate(0, 1, helpers.StringToBigInt("10000000000000000000000"), helpers.StringToBigInt("10000000000000000000000"))
+
+	pair := swap.Pair(0, 1)
+
+	pair.SetOrder(helpers.StringToBigInt("15000000000000000000000"), helpers.StringToBigInt("5000000000000000000000"), types.Address{})
+
+	// order := pair.OrderSellLowerByIndex(0)
+
+	_, _, _ = pair.SellWithOrders(helpers.StringToBigInt("10000000000000000000000"))
+
+	t.Run("resort dirty", func(t *testing.T) {
+		t.Run("mem", func(t *testing.T) {
+			t.Run("mem", func(t *testing.T) {
+				orderNextMem := pair.OrderSellLowerByIndex(0)
+				t.Run("disk", func(t *testing.T) {
+					_, _, err = immutableTree.Commit(swap)
+					if err != nil {
+						t.Fatal(err)
+					}
+					pair := New(newBus, immutableTree.GetLastImmutable()).Pair(0, 1)
+					orderNextDisk := pair.OrderSellLowerByIndex(0)
+					if orderNextDisk != nil && orderNextMem != nil {
+						t.Log("has order")
+						if orderNextDisk.id != orderNextMem.id {
+							t.Errorf("disk %d, mem %d", orderNextDisk.id, orderNextMem.id)
+						}
+					} else {
+						t.Log("no order")
+						if orderNextDisk != nil || orderNextMem != nil {
+							t.Errorf("disk %#v, mem %#v", orderNextDisk, orderNextMem)
+						}
+					}
+				})
+			})
+		})
+	})
+}
+
+func TestPair_CalculateAddAmount0ForPrice_0(t *testing.T) {
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
 	if err != nil {
@@ -54,7 +150,7 @@ func TestSimple_CalculateAddAmount0ForPrice_0(t *testing.T) {
 	t.Log(pair.Reserves())
 }
 
-func TestSimple_CalculateAddAmount0ForPrice_1(t *testing.T) {
+func TestPair_CalculateAddAmount0ForPrice_1(t *testing.T) {
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
 	if err != nil {
@@ -559,45 +655,66 @@ func TestPair_SellWithOrders_10_ChangeRemainderOrderPrice(t *testing.T) {
 	}
 
 	t.Run("resort dirty", func(t *testing.T) {
-		order := pair.OrderSellLowerByIndex(0)
-		if order.id != 1 {
-			t.Errorf("want %d, got %d", 1, order.id)
-		}
-		if order.WantSell.Cmp(big.NewInt(1997)) != 0 {
-			t.Error(order.WantSell)
-		}
-		if order.WantBuy.Cmp(big.NewInt(5991)) != 0 {
-			t.Error(order.WantBuy)
-		}
-		amount0In, owners, _ := pair.SellWithOrders(big.NewInt(1001))
-		t.Run("owner", func(t *testing.T) {
-			if len(owners) != 1 {
-				t.Fatal("b", owners)
+		t.Run("mem", func(t *testing.T) {
+			order := pair.OrderSellLowerByIndex(0)
+			if order.id != 1 {
+				t.Errorf("want %d, got %d", 1, order.id)
+			}
+			if order.WantSell.Cmp(big.NewInt(1997)) != 0 {
+				t.Error(order.WantSell)
+			}
+			if order.WantBuy.Cmp(big.NewInt(5991)) != 0 {
+				t.Error(order.WantBuy)
+			}
+			amount0In, owners, _ := pair.SellWithOrders(big.NewInt(1001))
+			t.Run("owner", func(t *testing.T) {
+				if len(owners) != 1 {
+					t.Fatal("b", owners)
+				}
+
+				if owners[types.Address{}].Cmp(big.NewInt(1000)) != 0 {
+					t.Error("c", owners[types.Address{}])
+				}
+			})
+
+			if amount0In.Cmp(big.NewInt(332)) != 0 {
+				t.Error("d", amount0In)
 			}
 
-			if owners[types.Address{}].Cmp(big.NewInt(1000)) != 0 {
-				t.Error("c", owners[types.Address{}])
+			if order.WantSell.Cmp(big.NewInt(1664)) != 0 {
+				t.Error(order.WantSell)
 			}
+			if order.WantBuy.Cmp(big.NewInt(4990)) != 0 {
+				t.Error(order.WantBuy)
+			}
+
+			t.Run("mem", func(t *testing.T) {
+				orderNext := pair.OrderSellLowerByIndex(0)
+				if order.Price().Cmp(orderNext.Price()) != 1 {
+					t.Errorf("order %d price %v, and %d price %v", orderNext.id, orderNext.Price(), order.id, order.Price())
+				}
+				if orderNext.id != 2 {
+					t.Errorf("want %d, got %d", 2, order.id)
+				}
+			})
+			t.Run("disk", func(t *testing.T) {
+				_, _, err = immutableTree.Commit(swap)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				pair := New(newBus, immutableTree.GetLastImmutable()).Pair(1, 0)
+
+				orderNext := pair.OrderSellLowerByIndex(0)
+				if order.Price().Cmp(orderNext.Price()) != 1 {
+					t.Errorf("order %d price %v, and %d price %v", orderNext.id, orderNext.Price(), order.id, order.Price())
+				}
+				if orderNext.id != 2 {
+					t.Errorf("want %d, got %d", 2, order.id)
+				}
+			})
 		})
 
-		if amount0In.Cmp(big.NewInt(332)) != 0 {
-			t.Error("d", amount0In)
-		}
-
-		if order.WantSell.Cmp(big.NewInt(1664)) != 0 {
-			t.Error(order.WantSell)
-		}
-		if order.WantBuy.Cmp(big.NewInt(4990)) != 0 {
-			t.Error(order.WantBuy)
-		}
-
-		orderNext := pair.OrderSellLowerByIndex(0)
-		if order.Price().Cmp(orderNext.Price()) != 1 {
-			t.Errorf("order %d price %v, and %d price %v", orderNext.id, orderNext.Price(), order.id, order.Price())
-		}
-		if orderNext.id != 2 {
-			t.Errorf("want %d, got %d", 2, order.id)
-		}
 	})
 
 	_, _, err = immutableTree.Commit(swap)
