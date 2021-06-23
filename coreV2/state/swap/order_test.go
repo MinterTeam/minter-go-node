@@ -1473,7 +1473,7 @@ func TestPair_CalculateBuyForSellWithOrders_01(t *testing.T) {
 				})
 				t.Run("more order", func(t *testing.T) {
 					amount0 := pair.CalculateSellForBuyAllowNeg(big.NewInt(2926))
-					p := pair.AddLastSwapStep(amount0, big.NewInt(2926))
+					p := pair.AddLastSwapStep(amount0, big.NewInt(2926)).AddLastSwapStep(big.NewInt(2), big.NewInt(-1))
 					amount0In := big.NewInt(0).Add(amount0, p.CalculateSellForBuy(big.NewInt(466)))
 					amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 999 + 466))
 					if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "2000" {
