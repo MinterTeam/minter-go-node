@@ -1,8 +1,8 @@
-name: m2-testnet
+name: taconet
 
 on:
   push:
-    branches: [ v2.0 ]
+    branches: [ taconet ]
 
 jobs:
   build:
@@ -38,14 +38,14 @@ jobs:
           target: "/tmp/node"
           rm: true
 
-      - name: Rename old build
+      - name: Remove old build
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.NODE_V2_HOST }}
           USERNAME: ${{ secrets.NODE_V2_USERNAME }}
           PORT: ${{ secrets.NODE_V2_PORT }}
           KEY: ${{ secrets.NODE_V2_SSH }}
-          script: mv /opt/minter/node/minter /opt/minter/node/minter_${{ github.sha }}
+          script: rm /opt/minter/node/minter /opt/minter/node/minter_${{ github.sha }}
 
       - name: Copy new build
         uses: appleboy/ssh-action@master
@@ -55,6 +55,15 @@ jobs:
           PORT: ${{ secrets.NODE_V2_PORT }}
           KEY: ${{ secrets.NODE_V2_SSH }}
           script: mv /tmp/node/build/minter /opt/minter/node/minter
+
+      - name: Copy backup build
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.NODE_V2_HOST }}
+          USERNAME: ${{ secrets.NODE_V2_USERNAME }}
+          PORT: ${{ secrets.NODE_V2_PORT }}
+          KEY: ${{ secrets.NODE_V2_SSH }}
+          script: cp /opt/minter/node/minter /opt/minter/node/minter_${{ github.sha }}
 
       - name: Restart service
         uses: appleboy/ssh-action@master
