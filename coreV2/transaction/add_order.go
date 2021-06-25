@@ -105,7 +105,6 @@ func (data AddOrderSwapPoolData) Run(tx *Transaction, context state.Interface, r
 
 	swapper := checkState.Swap().GetSwapper(data.CoinToSell, data.CoinToBuy)
 	if isGasCommissionFromPoolSwap && swapper.GetID() == commissionPoolSwapper.GetID() {
-		// todo: need test
 		if tx.GasCoin == data.CoinToSell && data.CoinToBuy.IsBaseCoin() {
 			swapper = swapper.AddLastSwapStepWithOrders(commission, commissionInBaseCoin)
 		}

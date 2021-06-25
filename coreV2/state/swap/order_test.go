@@ -840,8 +840,6 @@ func TestPair_SellWithOrders_01_FullOrder(t *testing.T) {
 			}
 		})
 
-		// t.Logf("price %v", pair.Price()) // todo: check error of skipping orders
-
 		_, _, err = immutableTree.Commit(swap)
 		if err != nil {
 			t.Fatal(err)
@@ -900,7 +898,6 @@ func TestPair_SellWithOrders_01_PartOrder(t *testing.T) {
 		if owners[owner] == nil || owners[owner].Cmp(big.NewInt(999)) != 0 {
 			t.Errorf("%#v", owners[owner])
 		}
-		t.Logf("price %v", pair.Price()) // todo: check error of skipping orders
 
 		_, _, err = immutableTree.Commit(swap)
 		if err != nil {

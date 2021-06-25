@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"log"
-	"math"
 	"math/big"
 	"sync"
 
@@ -53,7 +52,7 @@ type ChangeDetailsWithOrders struct {
 	Orders                  []*Limit `json:"orders"`
 }
 
-func (p *Pair) SellWithOrders(amount0In *big.Int) (amount1Out *big.Int, owners map[types.Address]*big.Int, c *ChangeDetailsWithOrders) { // todo: add mutex
+func (p *Pair) SellWithOrders(amount0In *big.Int) (amount1Out *big.Int, owners map[types.Address]*big.Int, c *ChangeDetailsWithOrders) {
 	if amount0In == nil || amount0In.Sign() != 1 {
 		panic(ErrorInsufficientInputAmount)
 	}
@@ -512,9 +511,8 @@ type Limit struct {
 }
 
 type limits struct {
-	higher []*Limit
+	higher []*Limit // todo: Deprecated
 	lower  []*Limit
-	// todo: add mutex
 }
 
 type dirtyOrders struct {
@@ -789,7 +787,7 @@ func (p *Pair) loadAllOrders(immutableTree *iavl.ImmutableTree) (orders []*Limit
 	const countFirstBytes = 10
 
 	startKey := append(append([]byte{mainPrefix}, p.pathOrders()...), byte(0), byte(0))
-	endKey := append(append([]byte{mainPrefix}, p.pathOrders()...), byte(1), byte(255)) // todo: mb more high bytes
+	endKey := append(append([]byte{mainPrefix}, p.pathOrders()...), byte(1), byte(255))
 
 	immutableTree.IterateRange(startKey, endKey, true, func(key []byte, value []byte) bool {
 		var isSell = true
@@ -816,17 +814,14 @@ func (p *Pair) loadAllOrders(immutableTree *iavl.ImmutableTree) (orders []*Limit
 }
 
 // loadBuyHigherOrders loads only needed orders for pair, not all
-func (s *Swap) loadBuyHigherOrders(pair *Pair, slice []*Limit, limit int) []*Limit { // todo: add mutex
-	endKey := append(append([]byte{mainPrefix}, pair.pathOrders()...), byte(0), byte(255)) // todo: mb more high bytes
-	var startKey []byte
+func (s *Swap) loadBuyHigherOrders(pair *Pair, slice []*Limit, limit int) []*Limit {
+	endKey := append(append([]byte{mainPrefix}, pair.pathOrders()...), byte(0), byte(255))
+	var startKey = append(append([]byte{mainPrefix}, pair.pathOrders()...), byte(0), byte(0))
 
 	sliceLen := len(slice)
 	if sliceLen > 0 {
 		var l = slice[sliceLen-1]
 		startKey = pricePath(pair.pairKey, l.SortPrice(), l.id+1, false)
-	} else {
-		startKey = pricePath(pair.pairKey, pair.SortPrice(), 0, false)
-		startKey = append(append([]byte{mainPrefix}, pair.pathOrders()...), byte(0), byte(0))
 	}
 
 	i := sliceLen
@@ -862,17 +857,14 @@ func (s *Swap) loadBuyHigherOrders(pair *Pair, slice []*Limit, limit int) []*Lim
 	return slice
 }
 
-func (s *Swap) loadSellLowerOrders(pair *Pair, slice []*Limit, limit int) []*Limit { // todo: add mutex
+func (s *Swap) loadSellLowerOrders(pair *Pair, slice []*Limit, limit int) []*Limit {
 	startKey := append(append([]byte{mainPrefix}, pair.pathOrders()...), byte(1), byte(0))
-	var endKey []byte
+	var endKey = append(append([]byte{mainPrefix}, pair.pathOrders()...), byte(1), byte(255))
 
 	sliceLen := len(slice)
 	if sliceLen > 0 {
 		var l = slice[sliceLen-1]
 		endKey = pricePath(pair.pairKey, l.SortPrice(), l.id-1, true)
-	} else {
-		endKey = pricePath(pair.pairKey, pair.SortPrice(), math.MaxInt32, true)
-		endKey = append(append([]byte{mainPrefix}, pair.pathOrders()...), byte(1), byte(255))
 	}
 
 	i := sliceLen
@@ -932,7 +924,7 @@ func (p *Pair) updateDirtyOrders(list []*Limit, lower bool) (orders []*Limit, co
 		} else if dirtyOrder.isEmpty() {
 			continue
 		} else {
-			// if dirtyOrder.SortPrice().Cmp(p.SortPrice()) != p.DirectionSortPrice() { // todo: mb use all orders
+			// if dirtyOrder.SortPrice().Cmp(p.SortPrice()) != p.DirectionSortPrice() { // Deprecated: logic with highest price orders
 			// 	continue
 			// } else {
 			var isSet bool
