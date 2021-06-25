@@ -111,7 +111,7 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 			"":   {}, // default version
 			v230: {}, // add more for update
 			v250: {}, // commissions and mempool
-			v260: {}, // commissions and mempool
+			v260: {}, // amm with orderbook
 		},
 		executor: GetExecutor(""),
 	}
