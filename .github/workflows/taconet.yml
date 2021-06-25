@@ -45,7 +45,7 @@ jobs:
           USERNAME: ${{ secrets.NODE_V2_USERNAME }}
           PORT: ${{ secrets.NODE_V2_PORT }}
           KEY: ${{ secrets.NODE_V2_SSH }}
-          script: rm /opt/minter/node/minter /opt/minter/node/minter_${{ github.sha }}
+          script: rm /opt/minter/node/minter
 
       - name: Copy new build
         uses: appleboy/ssh-action@master
