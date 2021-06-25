@@ -95,7 +95,7 @@ func GetDataV260(txType TxType) (Data, bool) {
 	case TypeAddOrderSwapPool:
 		return &AddOrderSwapPoolData{}, true
 	case TypeRemoveOrderSwapPool:
-		panic("implement me")
+		return nil, false // implement me
 	default:
 		return GetDataV250(txType)
 	}
