@@ -57,7 +57,7 @@ func (data AddOrderSwapPoolData) String() string {
 }
 
 func (data AddOrderSwapPoolData) CommissionData(price *commission.Price) *big.Int {
-	return price.CreateSwapPool // todo: add new commission's field
+	return price.AddLimitOrderPrice()
 }
 
 func (data AddOrderSwapPoolData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
