@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
+	"github.com/MinterTeam/minter-go-node/coreV2/state/accounts"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/coins"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/formula"
@@ -146,9 +147,14 @@ func (s *Service) Address(ctx context.Context, req *pb.AddressRequest) (*pb.Addr
 	res.BipValue = coinsBipValue.String()
 	res.TransactionCount = cState.Accounts().GetNonce(address)
 
-	account := cState.Accounts().GetAccount(address)
+	res.Multisig = s.getMultisig(cState.Accounts().GetAccount(address))
+
+	return &res, nil
+}
+
+func (s *Service) getMultisig(account *accounts.Model) *pb.Multisig {
 	if !account.IsMultisig() {
-		return &res, nil
+		return nil
 	}
 
 	multisig := account.Multisig()
@@ -160,12 +166,11 @@ func (s *Service) Address(ctx context.Context, req *pb.AddressRequest) (*pb.Addr
 	for _, add := range multisig.Addresses {
 		addresses = append(addresses, add.String())
 	}
-	res.Multisig = &pb.Multisig{
+	return &pb.Multisig{
 		Threshold: uint64(multisig.Threshold),
 		Weights:   weights,
 		Addresses: addresses,
 	}
-	return &res, nil
 }
 
 func customCoinBipBalance(valueToSell *big.Int, coinFrom *coins.Model) *big.Int {
