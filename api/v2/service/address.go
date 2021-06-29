@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"math/big"
+	"strings"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/coins"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
@@ -11,8 +14,6 @@ import (
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"math/big"
-	"strings"
 )
 
 type stakeUser struct {
@@ -144,6 +145,26 @@ func (s *Service) Address(ctx context.Context, req *pb.AddressRequest) (*pb.Addr
 	}
 	res.BipValue = coinsBipValue.String()
 	res.TransactionCount = cState.Accounts().GetNonce(address)
+
+	account := cState.Accounts().GetAccount(address)
+	if !account.IsMultisig() {
+		return &res, nil
+	}
+
+	multisig := account.Multisig()
+	var weights []uint64
+	for _, weight := range multisig.Weights {
+		weights = append(weights, uint64(weight))
+	}
+	var addresses []string
+	for _, add := range multisig.Addresses {
+		addresses = append(addresses, add.String())
+	}
+	res.Multisig = &pb.Multisig{
+		Threshold: uint64(multisig.Threshold),
+		Weights:   weights,
+		Addresses: addresses,
+	}
 	return &res, nil
 }
 
