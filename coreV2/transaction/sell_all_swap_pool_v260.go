@@ -27,8 +27,8 @@ func (tPools *tagPoolsChange) string() string {
 }
 
 type OrderDetail struct {
-	Owner types.Address
-	Value string
+	Owner types.Address `json:"seller"`
+	Value string        `json:"value"`
 }
 
 type tagPoolChange struct {

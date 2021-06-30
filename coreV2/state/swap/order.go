@@ -2,6 +2,7 @@ package swap
 
 import (
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"log"
 	"math/big"
@@ -45,11 +46,27 @@ func (s *Swap) PairBuyWithOrders(coin0, coin1 types.CoinID, maxAmount0In, amount
 }
 
 type ChangeDetailsWithOrders struct {
-	SwapAmount0In           *big.Int `json:"swap_amount_0_in"`
-	SwapAmount1Out          *big.Int `json:"swap_amount_1_out"`
-	OrdersCommissionAmount0 *big.Int `json:"orders_commission_amount_0"`
-	OrdersCommissionAmount1 *big.Int `json:"orders_commission_amount_1"`
-	Orders                  []*Limit `json:"orders"`
+	AmountIn            *big.Int
+	AmountOut           *big.Int
+	CommissionAmountIn  *big.Int
+	CommissionAmountOut *big.Int
+	Orders              []*Limit
+}
+
+func (c *ChangeDetailsWithOrders) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		AmountIn            string   `json:"amount_in"`
+		AmountOut           string   `json:"amount_out"`
+		CommissionAmountIn  string   `json:"commission_amount_in"`
+		CommissionAmountOut string   `json:"commission_amount_out"`
+		Orders              []*Limit `json:"orders"`
+	}{
+		AmountIn:            c.AmountIn.String(),
+		AmountOut:           c.AmountOut.String(),
+		CommissionAmountIn:  c.CommissionAmountIn.String(),
+		CommissionAmountOut: c.CommissionAmountOut.String(),
+		Orders:              c.Orders,
+	})
 }
 
 func (p *Pair) SellWithOrders(amount0In *big.Int) (amount1Out *big.Int, owners map[types.Address]*big.Int, c *ChangeDetailsWithOrders) {
@@ -78,11 +95,11 @@ func (p *Pair) SellWithOrders(amount0In *big.Int) (amount1Out *big.Int, owners m
 	p.updateOrders(orders)
 
 	return amount1Out, owners, &ChangeDetailsWithOrders{
-		SwapAmount0In:           amount0,
-		SwapAmount1Out:          amount1,
-		OrdersCommissionAmount0: commission0orders,
-		OrdersCommissionAmount1: commission1orders,
-		Orders:                  orders,
+		AmountIn:            amount0,
+		AmountOut:           amount1,
+		CommissionAmountIn:  commission0orders,
+		CommissionAmountOut: commission1orders,
+		Orders:              orders,
 	}
 }
 
@@ -141,11 +158,11 @@ func (p *Pair) BuyWithOrders(amount1Out *big.Int) (amount0In *big.Int, owners ma
 	p.updateOrders(orders)
 
 	return amount0In, owners, &ChangeDetailsWithOrders{
-		SwapAmount0In:           amount0,
-		SwapAmount1Out:          amount1,
-		OrdersCommissionAmount0: commission0orders,
-		OrdersCommissionAmount1: commission1orders,
-		Orders:                  orders,
+		AmountIn:            amount0,
+		AmountOut:           amount1,
+		CommissionAmountIn:  commission0orders,
+		CommissionAmountOut: commission1orders,
+		Orders:              orders,
 	}
 }
 
@@ -498,16 +515,30 @@ func CalcPriceSell(sell, buy *big.Int) *big.Float {
 
 type Limit struct {
 	isBuy    bool
-	WantBuy  *big.Int `json:"buy"`
-	WantSell *big.Int `json:"sell"`
+	WantBuy  *big.Int
+	WantSell *big.Int
 
-	Owner types.Address `json:"owner"`
+	Owner types.Address
 
 	pairKey
 	oldSortPrice *big.Float
 	id           uint32
 
 	*sync.RWMutex
+}
+
+func (l *Limit) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		WantBuy  string `json:"buy"`
+		WantSell string `json:"sell"`
+		Owner    string `json:"seller"`
+		ID       uint32 `json:"id"`
+	}{
+		WantBuy:  l.WantBuy.String(),
+		WantSell: l.WantSell.String(),
+		Owner:    l.Owner.String(),
+		ID:       l.id,
+	})
 }
 
 type limits struct {
