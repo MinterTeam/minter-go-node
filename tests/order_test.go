@@ -9,6 +9,94 @@ import (
 	"github.com/MinterTeam/minter-go-node/helpers"
 )
 
+func TestOrder_set(t *testing.T) {
+	address, pk := CreateAddress() // create account for test
+
+	state := DefaultAppState() // generate default state
+
+	state.Coins = append(state.Coins, types.Coin{
+		ID:           1,
+		Name:         "Test 1",
+		Symbol:       types.StrToCoinBaseSymbol("TEST1"),
+		Volume:       "10010000000000000000000000",
+		Crr:          0,
+		Reserve:      "0",
+		MaxSupply:    "90000000000000000000000000000",
+		Version:      0,
+		OwnerAddress: &address,
+		Mintable:     false,
+		Burnable:     false,
+	}, types.Coin{
+		ID:           2,
+		Name:         "Test 2",
+		Symbol:       types.StrToCoinBaseSymbol("TEST2"),
+		Volume:       "10010000000000000000000000",
+		Crr:          0,
+		Reserve:      "0",
+		MaxSupply:    "90000000000000000000000000000",
+		Version:      0,
+		OwnerAddress: &address,
+		Mintable:     false,
+		Burnable:     false,
+	})
+
+	state.NextOrderID = 2
+	state.Pools = append(state.Pools, types.Pool{
+		Coin0:    1,
+		Coin1:    2,
+		Reserve0: "10000000000000000000000",
+		Reserve1: "10000000000000000000000",
+		ID:       1,
+	})
+
+	state.Accounts = append(state.Accounts, types.Account{
+		Address: address,
+		Balance: []types.Balance{
+			{
+				Coin:  uint64(types.GetBaseCoinID()),
+				Value: helpers.StringToBigInt("10000000000000000000000000").String(),
+			},
+			{
+				Coin:  1,
+				Value: helpers.StringToBigInt("10000000000000000000000000").String(),
+			},
+			{
+				Coin:  2,
+				Value: helpers.StringToBigInt("10000000000000000000000000").String(),
+			},
+		},
+		Nonce:        0,
+		MultisigData: nil,
+	})
+
+	app := CreateApp(state) // create application
+	SendBeginBlock(app, 1)  // send BeginBlock
+
+	// {
+	//				IsSale:  true,
+	//				Volume0: "15000000000000000000000", // want to buy
+	//				Volume1: "5000000000000000000000",  // want to sell
+	//				ID:      1,
+	//				Owner:   seller,
+	//			},
+	tx := CreateTx(app, address, transaction.TypeAddOrderSwapPool, transaction.AddOrderSwapPoolData{
+		CoinToBuy:   1,
+		ValueToBuy:  helpers.StringToBigInt("15000000000000000000000"),
+		CoinToSell:  2,
+		ValueToSell: helpers.StringToBigInt("5000000000000000000000"),
+	})
+
+	response := SendTx(app, SignTx(pk, tx)) // compose and send tx
+
+	// check that result is OK
+	if response.Code != code.OK {
+		t.Fatalf("Response code is not OK: %s, %d", response.Log, response.Code)
+	}
+
+	SendEndBlock(app, 1) // send EndBlock
+	SendCommit(app)      // send Commit
+}
+
 func TestOrder_sell_part(t *testing.T) {
 	address, pk := CreateAddress() // create account for test
 
