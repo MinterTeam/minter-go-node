@@ -147,6 +147,7 @@ func (data AddOrderSwapPoolData) Run(tx *Transaction, context state.Interface, r
 			deliverState.Coins.SubVolume(tx.GasCoin, commission)
 			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
 		}
+		rewardPool.Add(rewardPool, commissionInBaseCoin)
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		deliverState.Accounts.SubBalance(sender, data.CoinToSell, data.ValueToSell)
 		orderID, poolID := deliverState.Swap.PairAddOrder(data.CoinToBuy, data.CoinToSell, data.ValueToBuy, data.ValueToSell, sender)
