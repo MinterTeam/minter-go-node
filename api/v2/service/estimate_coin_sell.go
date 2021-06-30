@@ -308,8 +308,9 @@ func (s *Service) calcSellFromBancor(value *big.Int, coinTo transaction.Calculat
 	}
 
 	if !coinFrom.ID().IsBaseCoin() {
-		value = formula.CalculateSaleReturn(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), value)
-		if errResp := transaction.CheckReserveUnderflow(coinFrom, value); errResp != nil {
+		var errResp *transaction.Response
+		value, errResp = transaction.CalculateSaleReturnAndCheck(coinFrom, value)
+		if errResp != nil {
 			return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
 		}
 	}
