@@ -2,6 +2,9 @@ package state
 
 import (
 	"encoding/hex"
+	"log"
+	"sync"
+
 	eventsdb "github.com/MinterTeam/minter-go-node/coreV2/events"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/accounts"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/app"
@@ -22,8 +25,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/tree"
 	"github.com/cosmos/iavl"
 	db "github.com/tendermint/tm-db"
-	"log"
-	"sync"
 )
 
 type Interface interface {
@@ -349,6 +350,15 @@ func (s *State) Import(state types.AppState) error {
 		VoteCommission:          helpers.StringToBigInt(state.Commission.VoteCommission),
 		VoteUpdate:              helpers.StringToBigInt(state.Commission.VoteUpdate),
 		More:                    nil,
+	}
+
+	if helpers.StringToBigIntOrNil(state.Commission.FailedTx) != nil ||
+		helpers.StringToBigIntOrNil(state.Commission.AddLimitOrder) != nil ||
+		helpers.StringToBigIntOrNil(state.Commission.RemoveLimitOrder) != nil {
+		com.More = append(com.More,
+			helpers.StringToBigIntOrNil(state.Commission.FailedTx),
+			helpers.StringToBigIntOrNil(state.Commission.AddLimitOrder),
+			helpers.StringToBigIntOrNil(state.Commission.RemoveLimitOrder))
 	}
 
 	s.Commission.SetNewCommissions(com.Encode())
