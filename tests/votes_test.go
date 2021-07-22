@@ -26,7 +26,7 @@ func TestVoteupdate(t *testing.T) {
 	address6 := crypto.PubkeyToAddress(privateKey6.PublicKey)
 
 	state := DefaultAppState() // generate default state
-
+	state.Version = "v230"
 	// add address to genesis state
 	state.Accounts = append(state.Accounts,
 		types.Account{
@@ -331,11 +331,12 @@ func TestVoteupdate(t *testing.T) {
 	SendEndBlock(app, 2) // send EndBlock
 	SendCommit(app)      // send Commit
 
-	if len(app.UpdateVersions()) != 1 {
-		t.Fatalf("not updates")
+	currentVersion := ""
+	for _, version := range app.UpdateVersions() {
+		currentVersion = version.Name
 	}
 
-	if app.UpdateVersions()[0].Name != "a" {
+	if currentVersion != "a" {
 		t.Fatalf("error update")
 	}
 }
@@ -355,7 +356,7 @@ func TestVoteCommissionFail(t *testing.T) {
 	address6 := crypto.PubkeyToAddress(privateKey6.PublicKey)
 
 	state := DefaultAppState() // generate default state
-
+	state.Version = "v230"
 	// add address to genesis state
 	state.Accounts = append(state.Accounts,
 		types.Account{
@@ -715,7 +716,7 @@ func TestVoteCommissionOKUpdateVersion(t *testing.T) {
 	address6 := crypto.PubkeyToAddress(privateKey6.PublicKey)
 
 	state := DefaultAppState() // generate default state
-
+	state.Version = "v230"
 	// add address to genesis state
 	state.Accounts = append(state.Accounts,
 		types.Account{
