@@ -190,9 +190,8 @@ func (a *Accounts) GetBalance(address types.Address, coin types.CoinID) *big.Int
 		return big.NewInt(0)
 	}
 
-	account.lock.RLock()
+	account.lock.Lock()
 	balance, ok := account.balances[coin]
-	account.lock.RUnlock()
 	if !ok {
 		balance = big.NewInt(0)
 
@@ -206,10 +205,9 @@ func (a *Accounts) GetBalance(address types.Address, coin types.CoinID) *big.Int
 			balance = big.NewInt(0).SetBytes(enc)
 		}
 
-		account.lock.Lock()
 		account.balances[coin] = balance
-		account.lock.Unlock()
 	}
+	account.lock.Unlock()
 
 	return big.NewInt(0).Set(balance)
 }
