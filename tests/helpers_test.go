@@ -2,6 +2,8 @@ package tests
 
 import (
 	"crypto/ecdsa"
+	"time"
+
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/coreV2/minter"
@@ -13,7 +15,6 @@ import (
 	tmTypes "github.com/tendermint/tendermint/abci/types"
 	tmTypes1 "github.com/tendermint/tendermint/proto/tendermint/types"
 	"github.com/tendermint/tendermint/proto/tendermint/version"
-	"time"
 )
 
 // CreateApp creates and returns new Blockchain instance
@@ -144,6 +145,7 @@ func CreateAddress() (types.Address, *ecdsa.PrivateKey) {
 // DefaultAppState returns new AppState with some predefined values
 func DefaultAppState() types.AppState {
 	return types.AppState{
+		Version:             "v250",
 		Note:                "",
 		Validators:          nil,
 		Candidates:          nil,
