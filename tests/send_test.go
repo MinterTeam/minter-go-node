@@ -1,12 +1,13 @@
 package tests
 
 import (
+	"math/big"
+	"testing"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/transaction"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/helpers"
-	"math/big"
-	"testing"
 )
 
 func TestSend(t *testing.T) {
@@ -37,7 +38,7 @@ func TestSend(t *testing.T) {
 		Coin:  types.GetBaseCoinID(),
 		To:    recipient,
 		Value: value,
-	})
+	}, 0)
 
 	response := SendTx(app, SignTx(pk, tx)) // compose and send tx
 

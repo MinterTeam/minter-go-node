@@ -7,7 +7,12 @@
 ### Added
 
 - Commission fee for unsuccessful transactions
-- Prioritizing transactions in a block based on the gas price
+- Prioritizing transactions in a block based on gas multiplier
+
+### Fixed
+
+- Custom commissions with gas multiplier
+- Parallel getting and updating of balances
 
 ## [v2.4.1](https://github.com/MinterTeam/minter-go-node/tree/v2.4.1)
 
@@ -15,7 +20,7 @@
 
 ### Fixed
 
-- Fixed deadlock in block's commit
+- Deadlock in block's commit
 - Backward compatibility of older blocks
 
 ## [v2.4.0](https://github.com/MinterTeam/minter-go-node/tree/v2.4.0)
@@ -49,7 +54,7 @@
 
 ### Fixed
 
-- Fix a critical bug in the exchange transaction through the pool
+- Critical bug in the exchange transaction through the pool
 - Import and export for new entities
 - Graceful stop of the node
 
@@ -67,7 +72,7 @@
 
 ### Fixed
 
-- Fix issue with db corruption while using delegated balance of addresses API
+- Issue with db corruption while using delegated balance of addresses API
 - Improved processing of incoming transactions
 
 ## [v2.0.2](https://github.com/MinterTeam/minter-go-node/tree/v2.0.2)
@@ -84,7 +89,7 @@
 
 ### Fixed
 
-- Fix issue with db corruption while using list of candidates API
+- Issue with db corruption while using list of candidates API
 - Connecting to peers with cli
 
 ### Added
