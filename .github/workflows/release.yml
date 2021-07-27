@@ -15,22 +15,36 @@ jobs:
           - os: macos-latest
             asset_name: darwin_amd64
     steps:
-      - uses: actions/checkout@v2
-      - name: Build
+
+      - name: Set up Go 1.16
+        uses: actions/setup-go@v2
+        with:
+          go-version: ^1.16
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+
+      - name: Set version to environment variables
+        id: get-version
         run: |
           rm -rf build
-          GIT_COMMIT="$(git rev-parse --short=8 HEAD)"
-          VERSION=$(awk -F\" '/Version =/ { print $2; exit }' < version/version.go)
-          echo "==> Building version ${VERSION} ${{ matrix.asset_name }}"
-          make build_c
-          echo "==> Packaging..."
           mkdir -p assets
-          zip "./assets/minter_${VERSION}_${GIT_COMMIT}_${{ matrix.asset_name }}.zip" ./build/minter
-          echo "==> Complete OK ./assets/minter_${VERSION}_${GIT_COMMIT}_${{ matrix.asset_name }}.zip"
+          echo ::set-output name=GIT_COMMIT::$(git rev-parse --short=8 HEAD)"
+          echo ::set-output name=VERSION::$(awk -F\" '/Version =/ { print $2; exit }' < version/version.go)
+
+      - name: Building version ${{steps.get-version.outputs.VERSION}} for ${{ matrix.asset_name }}
+        run: |
+          make build_c
+
+      - name: Packaging
+        run: |
+          zip "./assets/minter_${{steps.get-version.outputs.VERSION}}_${{steps.get-version.outputs.GIT_COMMIT}}_${{ matrix.asset_name }}.zip" ./build/minter
+          shasum -a256 ./assets/minter_${{steps.get-version.outputs.VERSION}}_${{steps.get-version.outputs.GIT_COMMIT}}_${{ matrix.asset_name }}.zip > "./assets/minter_${VERSION}_${GIT_COMMIT}_${{ matrix.asset_name }}_SHA256SUMS
+
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ./assets/*_${{ matrix.asset_name }}.zip
+          file: ./assets/minter_${{steps.get-version.outputs.VERSION}}_${{steps.get-version.outputs.GIT_COMMIT}}_${{ matrix.asset_name }}*
           tag: ${{ github.ref }}
           file_glob: true
