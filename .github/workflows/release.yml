@@ -32,19 +32,29 @@ jobs:
           echo ::set-output name=GIT_COMMIT::$(git rev-parse --short=8 HEAD)
           echo ::set-output name=VERSION::$(awk -F\" '/Version =/ { print $2; exit }' < version/version.go)
 
-      - name: Building version ${{steps.get-version.outputs.VERSION}} for ${{ matrix.asset_name }}
+      - name: Building version ${{ steps.get-version.outputs.VERSION }} for ${{ matrix.asset_name }}
         run: |
           make build_c
 
       - name: Packaging
         run: |
           zip "./assets/minter_${{steps.get-version.outputs.VERSION}}_${{steps.get-version.outputs.GIT_COMMIT}}_${{ matrix.asset_name }}.zip" ./build/minter
-          shasum -a256 ./assets/minter_${{steps.get-version.outputs.VERSION}}_${{steps.get-version.outputs.GIT_COMMIT}}_${{ matrix.asset_name }}.zip > "./assets/minter_${VERSION}_${GIT_COMMIT}_${{ matrix.asset_name }}_SHA256SUMS"
+          shasum -a256 "./assets/minter_${{ steps.get-version.outputs.VERSION }}_${{ steps.get-version.outputs.GIT_COMMIT }}_${{ matrix.asset_name }}.zip" > "./assets/minter_${VERSION}_${GIT_COMMIT}_${{ matrix.asset_name }}_SHA256SUMS"
 
-      - name: Upload binaries to release
+      - name: Upload binary to release ${{ steps.get-version.outputs.VERSION }} for ${{ matrix.asset_name }}
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ./assets/minter_${{steps.get-version.outputs.VERSION}}_${{steps.get-version.outputs.GIT_COMMIT}}_${{ matrix.asset_name }}*
+          file: ./assets/minter_${{ steps.get-version.outputs.VERSION }}_${{ steps.get-version.outputs.GIT_COMMIT }}_${{ matrix.asset_name }}.zip
           tag: ${{ github.ref }}
           file_glob: true
+          overwrite: true
+
+      - name: Upload SHA256SUMS to release ${{ steps.get-version.outputs.VERSION }} for ${{ matrix.asset_name }}
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ./assets/minter_${{ steps.get-version.outputs.VERSION }}_${{ steps.get-version.outputs.GIT_COMMIT }}_${{ matrix.asset_name }}_SHA256SUMS
+          tag: ${{ github.ref }}
+          file_glob: true
+          overwrite: true
