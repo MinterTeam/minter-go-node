@@ -1,0 +1,22 @@
+name: Publish
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  build:
+    name: Publish binaries
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build
+        run: sh ./scripts/dist.sh
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ./build/dist/*
+          tag: ${{ github.ref }}
+          overwrite: true
+          file_glob: true
