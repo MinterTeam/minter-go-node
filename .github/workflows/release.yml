@@ -22,11 +22,11 @@ jobs:
           GIT_COMMIT="$(git rev-parse --short=8 HEAD)"
           VERSION=$(awk -F\" '/Version =/ { print $2; exit }' < version/version.go)
           echo "==> Building version ${VERSION} ${{ matrix.asset_name }}"
-          make build
+          make build_c
           echo "==> Packaging..."
           mkdir -p assets
           zip "./assets/minter_${VERSION}_${GIT_COMMIT}_${{ matrix.asset_name }}.zip" ./build/minter
-          echo "==> Compleat OK ./assets/minter_${VERSION}_${GIT_COMMIT}_${{ matrix.asset_name }}.zip"
+          echo "==> Complete OK ./assets/minter_${VERSION}_${GIT_COMMIT}_${{ matrix.asset_name }}.zip"
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
         with:
