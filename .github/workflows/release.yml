@@ -29,7 +29,7 @@ jobs:
         run: |
           rm -rf build
           mkdir -p assets
-          echo ::set-output name=GIT_COMMIT::$(git rev-parse --short=8 HEAD)"
+          echo ::set-output name=GIT_COMMIT::$(git rev-parse --short=8 HEAD)
           echo ::set-output name=VERSION::$(awk -F\" '/Version =/ { print $2; exit }' < version/version.go)
 
       - name: Building version ${{steps.get-version.outputs.VERSION}} for ${{ matrix.asset_name }}
