@@ -5,32 +5,42 @@ on:
       - '*'
 jobs:
   publish:
-    name: Publish for ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            asset_name: linux_amd64
-          - os: macos-latest
-            asset_name: darwin_amd64
+    name: Build
+    #runs-on: ubuntu-latest # todo: macos-latest
+    runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Build
+      - name: Build for linux in docker
+        id: docker-build
         run: |
-          rm -rf build
           GIT_COMMIT="$(git rev-parse --short=8 HEAD)"
           VERSION=$(awk -F\" '/Version =/ { print $2; exit }' < version/version.go)
-          echo "==> Building version ${VERSION} ${{ matrix.asset_name }}"
-          make build_c
-          echo "==> Packaging..."
+          GIT_IMPORT="github.com/MinterTeam/minter-go-node/version"
+          echo ::set-output name=VERSION::${VERSION}
+          echo ::set-output name=GIT_COMMIT::${GIT_COMMIT}
+          rm -rf build
+          docker run --platform linux/amd64 -t -v `pwd`:/go/src/github.com/MinterTeam/minter-go-node/:rw -i minter-builder-1:latest sh -c "CGO_ENABLED=1 go build -tags 'minter gcc' -ldflags '-s -w -X ${GIT_IMPORT}.GitCommit=${GIT_COMMIT}' -o 'build/minter' ./cmd/minter/"
+      - name: Package
+        run: |
           mkdir -p assets
-          zip "./assets/minter_${VERSION}_${GIT_COMMIT}_${{ matrix.asset_name }}.zip" ./build/minter
-          echo "==> Complete OK ./assets/minter_${VERSION}_${GIT_COMMIT}_${{ matrix.asset_name }}.zip"
+          zip "./assets/minter_${{steps.docker-build.outputs.VERSION}}_${{steps.docker-build.outputs.GIT_COMMIT}}_linux_amd64.zip" ./build/minter
+
+      - uses: actions/checkout@v2
+      - name: Build for mac os
+        run: |
+          rm -rf build
+          make build_c
+      - name: Packaging
+        run: |
+          zip "./assets/minter_${{steps.docker-build.outputs.VERSION}}_${{steps.docker-build.outputs.GIT_COMMIT}}_darwin_amd64.zip" ./build/minter
+
+      - name: Make the checksums
+        run: |
+          shasum -a256 ./* > "./assets/minter_${{steps.docker-build.outputs.VERSION}}_${{steps.docker-build.outputs.GIT_COMMIT}}_SHA256SUMS"
+
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ./assets/*_${{ matrix.asset_name }}.zip
+          file: ./assets/*
           tag: ${{ github.ref }}
           file_glob: true
