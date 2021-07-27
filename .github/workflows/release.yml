@@ -3,20 +3,34 @@ on:
   push:
     tags:
       - '*'
-
 jobs:
-  build:
-    name: Publish binaries
-    runs-on: ubuntu-latest
+  publish:
+    name: Publish for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            asset_name: linux_amd64
+          - os: macos-latest
+            asset_name: darwin_amd64
     steps:
       - uses: actions/checkout@v2
       - name: Build
-        run: sh ./scripts/dist.sh
+        run: |
+          rm -rf build
+          GIT_COMMIT="$(git rev-parse --short=8 HEAD)"
+          VERSION=$(awk -F\" '/Version =/ { print $2; exit }' < version/version.go)
+          OSARCH=$(basename "${PLATFORM}")
+          echo "--> ${VERSION} ${OSARCH}"
+          make build
+
+          zip "./assets/minter_${VERSION}_${GIT_COMMIT}_${OSARCH}.zip" ./build/minter
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ./build/dist/*
+          file: ./assets/*${{ matrix.asset_name }}*
           tag: ${{ github.ref }}
           overwrite: true
           file_glob: true
