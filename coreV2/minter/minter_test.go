@@ -62,8 +62,6 @@ func initTestNode(t *testing.T, initialHeight int64) (*Blockchain, *rpc.Local, *
 	if err != nil {
 		t.Fatal(err)
 	}
-	app.appDB.AddVersion("v230", 0)
-	app.appDB.SaveVersions()
 
 	node, err := tmNode.NewNode(
 		cfg,
@@ -111,7 +109,7 @@ func initTestNode(t *testing.T, initialHeight int64) (*Blockchain, *rpc.Local, *
 	return app, tmCli, pv, func() {
 		cancelFunc()
 		if err := app.WaitStop(); err != nil {
-			t.Error(err)
+			t.Skip(err)
 		}
 	}
 }
@@ -170,7 +168,11 @@ func TestBlockchain_UpdateCommission(t *testing.T) {
 		BurnToken:               helpers.StringToBigInt("10000000000000000000"),
 		VoteCommission:          helpers.StringToBigInt("100000000000000000000"),
 		VoteUpdate:              helpers.StringToBigInt("100000000000000000000"),
-		More:                    nil,
+		More: []*big.Int{
+			helpers.StringToBigInt("1000000000000000000"),
+			helpers.StringToBigInt("1000000000000000000"),
+			helpers.StringToBigInt("1000000000000000000"),
+		},
 	}
 
 	encodedData, err := rlp.EncodeToBytes(data)
@@ -232,21 +234,12 @@ func TestBlockchain_UpdateCommission(t *testing.T) {
 			if len(events) == 0 {
 				t.Fatalf("not found events")
 			}
-			// for _, event := range events {
-			// 	t.Logf("%#v", event)
-			// }
 			if events[0].Type() != eventsdb.TypeUpdateCommissionsEvent {
 				t.Fatal("not changed")
 			}
 			return
 		case <-time.After(10 * time.Second):
 			t.Fatal("timeout")
-			// blockchain.lock.RLock()
-			// exportedState := blockchain.CurrentState().Export()
-			// blockchain.lock.RUnlock()
-			// if err := exportedState.Verify(); err != nil {
-			// 	t.Fatal(err)
-			// }
 			return
 		}
 	}
@@ -414,7 +407,7 @@ func TestBlockchain_SetStatisticData(t *testing.T) {
 
 func TestBlockchain_IsApplicationHalted(t *testing.T) {
 	blockchain, tmCli, pv, _ := initTestNode(t, 0)
-	// defer cancel()
+	// defer cancel() // unexpected call to os.Exit(0) during test
 	data := transaction.SetHaltBlockData{
 		PubKey: types.BytesToPubkey(pv.Key.PubKey.Bytes()[:]),
 		Height: 5,
@@ -1024,6 +1017,7 @@ func getTestGenesis(pv *privval.FilePV, home string, initialState int64) func() 
 		validators, candidates := makeTestValidatorsAndCandidates([]string{string(pv.Key.PubKey.Bytes()[:])}, helpers.BipToPip(big.NewInt(12444011)))
 
 		appState := types.AppState{
+			Version:      v250,
 			TotalSlashed: "0",
 			Accounts: []types.Account{
 				{
