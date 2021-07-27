@@ -39,7 +39,7 @@ jobs:
       - name: Packaging
         run: |
           zip "./assets/minter_${{steps.get-version.outputs.VERSION}}_${{steps.get-version.outputs.GIT_COMMIT}}_${{ matrix.asset_name }}.zip" ./build/minter
-          shasum -a256 ./assets/minter_${{steps.get-version.outputs.VERSION}}_${{steps.get-version.outputs.GIT_COMMIT}}_${{ matrix.asset_name }}.zip > "./assets/minter_${VERSION}_${GIT_COMMIT}_${{ matrix.asset_name }}_SHA256SUMS
+          shasum -a256 ./assets/minter_${{steps.get-version.outputs.VERSION}}_${{steps.get-version.outputs.GIT_COMMIT}}_${{ matrix.asset_name }}.zip > "./assets/minter_${VERSION}_${GIT_COMMIT}_${{ matrix.asset_name }}_SHA256SUMS"
 
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
