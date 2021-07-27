@@ -9,6 +9,7 @@ jobs:
     #runs-on: ubuntu-latest # todo: macos-latest
     runs-on: macos-latest
     steps:
+      - uses: actions/checkout@v2
       - name: Build for linux in docker
         id: docker-build
         run: |
@@ -24,7 +25,6 @@ jobs:
           mkdir -p assets
           zip "./assets/minter_${{steps.docker-build.outputs.VERSION}}_${{steps.docker-build.outputs.GIT_COMMIT}}_linux_amd64.zip" ./build/minter
 
-      - uses: actions/checkout@v2
       - name: Build for mac os
         run: |
           rm -rf build
