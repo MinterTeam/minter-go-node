@@ -36,12 +36,12 @@ jobs:
         run: |
           make build_c
 
-      - name: Packaging
+      - name: Packaging in zip archive
         run: |
-          zip "./assets/minter_${{steps.get-version.outputs.VERSION}}_${{steps.get-version.outputs.GIT_COMMIT}}_${{ matrix.asset_name }}.zip" ./build/minter
-          shasum -a256 "./assets/minter_${{ steps.get-version.outputs.VERSION }}_${{ steps.get-version.outputs.GIT_COMMIT }}_${{ matrix.asset_name }}.zip" > "./assets/minter_${VERSION}_${GIT_COMMIT}_${{ matrix.asset_name }}_SHA256SUMS"
+          zip "./assets/minter_${{ steps.get-version.outputs.VERSION }}_${{ steps.get-version.outputs.GIT_COMMIT }}_${{ matrix.asset_name }}.zip" ./build/minter
+          shasum -a256 ./assets/minter_${{ steps.get-version.outputs.VERSION }}_${{ steps.get-version.outputs.GIT_COMMIT }}_${{ matrix.asset_name }}.zip > "./assets/minter_${{ steps.get-version.outputs.VERSION }}_${{ steps.get-version.outputs.GIT_COMMIT }}_${{ matrix.asset_name }}_SHA256SUMS"
 
-      - name: Upload binary to release ${{ steps.get-version.outputs.VERSION }} for ${{ matrix.asset_name }}
+      - name: Upload binary to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
@@ -50,7 +50,7 @@ jobs:
           file_glob: true
           overwrite: true
 
-      - name: Upload SHA256SUMS to release ${{ steps.get-version.outputs.VERSION }} for ${{ matrix.asset_name }}
+      - name: Upload SHA256SUMS to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
