@@ -52,8 +52,7 @@ func initTestNode(t *testing.T, initialHeight int64) (*Blockchain, *rpc.Local, *
 	cfg.P2P.PersistentPeers = ""
 	cfg.DBBackend = "memdb"
 
-	pv := privval.GenFilePV(cfg.PrivValidatorKeyFile(), cfg.PrivValidatorStateFile())
-	pv.Save()
+	pv := privval.LoadOrGenFilePV(cfg.PrivValidatorKeyFile(), cfg.PrivValidatorStateFile())
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 
@@ -546,8 +545,6 @@ func TestBlockchain_GetStateForHeightAndDeleteStateVersions(t *testing.T) {
 		t.Fatalf("Failed: %s", "state not deleted")
 	}
 
-	blockchain.lock.RLock()
-	defer blockchain.lock.RUnlock()
 	exportedState := blockchain.CurrentState().Export()
 	if err := exportedState.Verify(); err != nil {
 		t.Fatal(err)
