@@ -21,16 +21,14 @@ jobs:
           rm -rf build
           GIT_COMMIT="$(git rev-parse --short=8 HEAD)"
           VERSION=$(awk -F\" '/Version =/ { print $2; exit }' < version/version.go)
-          OSARCH=$(basename "${PLATFORM}")
-          echo "--> ${VERSION} ${OSARCH}"
+          echo "--> ${VERSION} ${{ matrix.asset_name }}"
           make build
-
-          zip "./assets/minter_${VERSION}_${GIT_COMMIT}_${OSARCH}.zip" ./build/minter
+          mkdir -p assets
+          zip "./assets/minter_${VERSION}_${GIT_COMMIT}_${{ matrix.asset_name }}.zip" ./build/minter
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ./assets/*${{ matrix.asset_name }}*
+          file: ./assets/*_${{ matrix.asset_name }}.zip
           tag: ${{ github.ref }}
-          overwrite: true
           file_glob: true
