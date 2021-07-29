@@ -103,18 +103,23 @@ func getCommissionCoinID(commissionCoins []types.CoinID) types.CoinID {
 
 // CreateTx composes and returns Tx with given params.
 // Nonce, chain id, gas price, gas coin and signature type fields are auto-filled.
-func CreateTx(app *minter.Blockchain, address types.Address, txType transaction.TxType, data transaction.Data, commissionCoin ...types.CoinID) transaction.Transaction {
+func CreateTx(app *minter.Blockchain, address types.Address, txType transaction.TxType, data interface{}, gas types.CoinID, gasPrice ...uint32) transaction.Transaction {
 	nonce := app.CurrentState().Accounts().GetNonce(address) + 1
 	bData, err := rlp.EncodeToBytes(data)
 	if err != nil {
 		panic(err)
 	}
 
+	var mulGas uint32 = 1
+	if len(gasPrice) != 0 {
+		mulGas = gasPrice[0]
+	}
+
 	tx := transaction.Transaction{
 		Nonce:         nonce,
 		ChainID:       types.CurrentChainID,
-		GasPrice:      1,
-		GasCoin:       getCommissionCoinID(commissionCoin),
+		GasPrice:      mulGas,
+		GasCoin:       gas,
 		Type:          txType,
 		Data:          bData,
 		SignatureType: transaction.SigTypeSingle,
@@ -203,10 +208,13 @@ func DefaultAppState() types.AppState {
 			AddLiquidity:            "100000000000000000",
 			RemoveLiquidity:         "100000000000000000",
 			EditCandidateCommission: "10000000000000000000",
-			BurnToken:               "100000000000000000",
 			MintToken:               "100000000000000000",
+			BurnToken:               "100000000000000000",
 			VoteCommission:          "1000000000000000000",
 			VoteUpdate:              "1000000000000000000",
+			FailedTx:                "",
+			AddLimitOrder:           "",
+			RemoveLimitOrder:        "",
 		},
 		CommissionVotes: nil,
 		UpdateVotes:     nil,

@@ -259,7 +259,7 @@ func TestVoteupdate(t *testing.T) {
 			PubKey:  types.Pubkey{1},
 			Height:  2,
 			Version: "a",
-		})
+		}, 0)
 
 		response := SendTx(app, SignTx(privateKey1, tx)) // compose and send tx
 
@@ -273,7 +273,7 @@ func TestVoteupdate(t *testing.T) {
 			PubKey:  types.Pubkey{2},
 			Height:  2,
 			Version: "a",
-		})
+		}, 0)
 
 		response := SendTx(app, SignTx(privateKey2, tx)) // compose and send tx
 
@@ -287,7 +287,7 @@ func TestVoteupdate(t *testing.T) {
 			PubKey:  types.Pubkey{3},
 			Height:  2,
 			Version: "a",
-		})
+		}, 0)
 
 		response := SendTx(app, SignTx(privateKey3, tx)) // compose and send tx
 
@@ -301,7 +301,7 @@ func TestVoteupdate(t *testing.T) {
 			PubKey:  types.Pubkey{4},
 			Height:  2,
 			Version: "a",
-		})
+		}, 0)
 
 		response := SendTx(app, SignTx(privateKey4, tx)) // compose and send tx
 
@@ -315,7 +315,7 @@ func TestVoteupdate(t *testing.T) {
 			PubKey:  types.Pubkey{5},
 			Height:  2,
 			Version: "aA",
-		})
+		}, 0)
 
 		response := SendTx(app, SignTx(privateKey5, tx)) // compose and send tx
 
@@ -331,16 +331,14 @@ func TestVoteupdate(t *testing.T) {
 	SendEndBlock(app, 2) // send EndBlock
 	SendCommit(app)      // send Commit
 
-	if len(app.UpdateVersions()) == 0 {
-		t.Fatalf("not updates")
+	currentVersion := ""
+	for _, version := range app.UpdateVersions() {
+		currentVersion = version.Name
 	}
 
-	for _, version := range app.UpdateVersions() {
-		if version.Name == "a" {
-			return
-		}
+	if currentVersion != "a" {
+		t.Fatalf("error update")
 	}
-	t.Fatalf("error update")
 }
 
 func TestVoteCommissionFail(t *testing.T) {
@@ -600,7 +598,7 @@ func TestVoteCommissionFail(t *testing.T) {
 			Coin:   types.GetBaseCoinID(),
 			Height: 5,
 			Send:   big.NewInt(9999),
-		})
+		}, 0)
 
 		response := SendTx(app, SignTx(privateKey1, tx)) // compose and send tx
 
@@ -615,7 +613,7 @@ func TestVoteCommissionFail(t *testing.T) {
 			Coin:   types.GetBaseCoinID(),
 			Height: 5,
 			Send:   big.NewInt(9999),
-		})
+		}, 0)
 
 		response := SendTx(app, SignTx(privateKey2, tx)) // compose and send tx
 
@@ -630,7 +628,7 @@ func TestVoteCommissionFail(t *testing.T) {
 			Coin:   types.GetBaseCoinID(),
 			Height: 5,
 			Send:   big.NewInt(9999),
-		})
+		}, 0)
 
 		response := SendTx(app, SignTx(privateKey3, tx)) // compose and send tx
 
@@ -650,7 +648,7 @@ func TestVoteCommissionFail(t *testing.T) {
 			Coin:   types.GetBaseCoinID(),
 			Height: 5,
 			Send:   big.NewInt(9999),
-		})
+		}, 0)
 
 		response := SendTx(app, SignTx(privateKey5, tx)) // compose and send tx
 
@@ -665,7 +663,7 @@ func TestVoteCommissionFail(t *testing.T) {
 			Coin:   types.GetBaseCoinID(),
 			Height: 5,
 			Send:   big.NewInt(9999),
-		})
+		}, 0)
 
 		response := SendTx(app, SignTx(privateKey6, tx)) // compose and send tx
 
@@ -681,7 +679,7 @@ func TestVoteCommissionFail(t *testing.T) {
 			Coin:   types.GetBaseCoinID(),
 			Height: 5,
 			Send:   big.NewInt(2e18), // Diff
-		})
+		}, 0)
 
 		response := SendTx(app, SignTx(privateKey4, tx)) // compose and send tx
 
@@ -963,7 +961,7 @@ func TestVoteCommissionOKUpdateVersion(t *testing.T) {
 			Coin:   types.GetBaseCoinID(),
 			Height: haltBlockV210 + 4,
 			Send:   big.NewInt(9999),
-		})
+		}, 0)
 
 		response := SendTx(app, SignTx(privateKey1, tx)) // compose and send tx
 
@@ -978,7 +976,7 @@ func TestVoteCommissionOKUpdateVersion(t *testing.T) {
 			Coin:   types.GetBaseCoinID(),
 			Height: haltBlockV210 + 4,
 			Send:   big.NewInt(9999),
-		})
+		}, 0)
 
 		response := SendTx(app, SignTx(privateKey2, tx)) // compose and send tx
 
@@ -993,7 +991,7 @@ func TestVoteCommissionOKUpdateVersion(t *testing.T) {
 			Coin:   types.GetBaseCoinID(),
 			Height: haltBlockV210 + 4,
 			Send:   big.NewInt(9999),
-		})
+		}, 0)
 
 		response := SendTx(app, SignTx(privateKey3, tx)) // compose and send tx
 
@@ -1013,7 +1011,7 @@ func TestVoteCommissionOKUpdateVersion(t *testing.T) {
 			Coin:   types.GetBaseCoinID(),
 			Height: haltBlockV210 + 4,
 			Send:   big.NewInt(9999),
-		})
+		}, 0)
 
 		response := SendTx(app, SignTx(privateKey5, tx)) // compose and send tx
 
@@ -1028,7 +1026,7 @@ func TestVoteCommissionOKUpdateVersion(t *testing.T) {
 			Coin:   types.GetBaseCoinID(),
 			Height: haltBlockV210 + 4,
 			Send:   big.NewInt(9999),
-		})
+		}, 0)
 
 		response := SendTx(app, SignTx(privateKey6, tx)) // compose and send tx
 
@@ -1044,7 +1042,7 @@ func TestVoteCommissionOKUpdateVersion(t *testing.T) {
 			Coin:   types.GetBaseCoinID(),
 			Height: haltBlockV210 + 4,
 			Send:   big.NewInt(2e18), // Diff
-		})
+		}, 0)
 
 		response := SendTx(app, SignTx(privateKey4, tx)) // compose and send tx
 

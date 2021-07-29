@@ -84,7 +84,7 @@ func TestOrder_set(t *testing.T) {
 		ValueToBuy:  helpers.StringToBigInt("15000000000000000000000"),
 		CoinToSell:  2,
 		ValueToSell: helpers.StringToBigInt("5000000000000000000000"),
-	})
+	}, 0)
 
 	response := SendTx(app, SignTx(pk, tx)) // compose and send tx
 
@@ -174,7 +174,7 @@ func TestOrder_sell_part(t *testing.T) {
 		Coins:             []types.CoinID{1, 2},
 		ValueToSell:       helpers.StringToBigInt("10000000000000000000000"),
 		MinimumValueToBuy: helpers.StringToBigInt("1"),
-	})
+	}, 0)
 
 	response := SendTx(app, SignTx(pk, tx)) // compose and send tx
 
@@ -465,7 +465,7 @@ func TestOrder_sell_full(t *testing.T) {
 		Coins:             []types.CoinID{1, 2},
 		ValueToSell:       helpers.StringToBigInt("22330916069244653273088"),
 		MinimumValueToBuy: helpers.StringToBigInt("1"),
-	})
+	}, 0)
 
 	response := SendTx(app, SignTx(pk, tx)) // compose and send tx
 
@@ -563,7 +563,7 @@ func TestOrder_sell_more(t *testing.T) {
 		Coins:             []types.CoinID{1, 2},
 		ValueToSell:       helpers.StringToBigInt("22330916069244653273092"), // +4
 		MinimumValueToBuy: helpers.StringToBigInt("1"),
-	})
+	}, 0)
 
 	response := SendTx(app, SignTx(pk, tx)) // compose and send tx
 
@@ -661,7 +661,7 @@ func TestOrder_sell_more_a_lot(t *testing.T) {
 		Coins:             []types.CoinID{1, 2},
 		ValueToSell:       helpers.StringToBigInt("10000000000000000000000000"),
 		MinimumValueToBuy: helpers.StringToBigInt("1"),
-	})
+	}, 0)
 
 	response := SendTx(app, SignTx(pk, tx)) // compose and send tx
 
@@ -764,7 +764,7 @@ func TestOrder_buy_more_a_more(t *testing.T) {
 		Coins:              []types.CoinID{1, 2},
 		MaximumValueToSell: helpers.StringToBigInt("22330916069244653273092"),
 		ValueToBuy:         app.CurrentState().Swap().GetSwapper(1, 2).CalculateBuyForSellWithOrders(helpers.StringToBigInt("22330916069244653273092")), // +4
-	})
+	}, 0)
 
 	response := SendTx(app, SignTx(pk, tx)) // compose and send tx
 
@@ -867,7 +867,7 @@ func TestOrder_buy_10_more_a_lot(t *testing.T) {
 		Coins:              []types.CoinID{2, 1},
 		MaximumValueToSell: helpers.StringToBigInt("10000000000000000000000000000"),
 		ValueToBuy:         helpers.StringToBigInt("14989949147713228731141"),
-	})
+	}, 0)
 
 	response := SendTx(app, SignTx(pk, tx)) // compose and send tx
 
