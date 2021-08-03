@@ -248,7 +248,7 @@ func CheckSwapV230(rSwap swap.EditableChecker, coinIn CalculateCoin, coinOut Cal
 				Code: code.MaximumValueToSellReached,
 				Log: fmt.Sprintf(
 					"You wanted to sell maximum %s %s, but currently you need to spend %s %s to complete tx",
-					valueIn.String(), coinIn.GetFullSymbol(), calculatedAmountToSell.String(), coinOut.GetFullSymbol()),
+					valueIn.String(), coinIn.GetFullSymbol(), calculatedAmountToSell.String(), coinIn.GetFullSymbol()),
 				Info: EncodeError(code.NewMaximumValueToSellReached(valueIn.String(), calculatedAmountToSell.String(), coinIn.GetFullSymbol(), coinIn.ID().String())),
 			}
 		}
