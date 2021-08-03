@@ -139,7 +139,7 @@ func (s *Swap) Export(state *types.AppState) {
 		allOrders := pair.loadAllOrders(s.immutableTree())
 		for _, limit := range allOrders {
 			orders = append(orders, types.Order{
-				IsSale:  !limit.isBuy,
+				IsSale:  !limit.IsBuy,
 				Volume0: limit.WantBuy.String(),
 				Volume1: limit.WantSell.String(),
 				ID:      uint64(limit.id),
@@ -196,6 +196,7 @@ func (s *Swap) Import(state *types.AppState) {
 const mainPrefix = byte('s')
 
 const pairDataPrefix = 'd'
+const pairLimitOrderPrefix = 'l'
 const pairOrdersPrefix = 'o'
 const totalPairIDPrefix = 'i'
 const totalOrdersIDPrefix = 'n'
@@ -253,6 +254,7 @@ func (p *Pair) AddLastSwapStep(amount0In, amount1Out *big.Int) EditableChecker {
 		},
 		sellOrders:          p.sellOrders,
 		buyOrders:           p.buyOrders,
+		orders:              p.orders,
 		dirtyOrders:         p.dirtyOrders,
 		markDirtyOrders:     func() {},
 		loadHigherOrders:    p.loadHigherOrders,
@@ -268,9 +270,9 @@ func (p *Pair) AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int) Editabl
 	}
 	reserve0, reserve1 := p.Reserves()
 
-	dirties := make(map[uint32]*Limit, len(p.dirtyOrders.orders))
+	dirties := make(map[uint32]*Limit, len(p.dirtyOrders.list))
 	p.lockOrders.Lock()
-	for k, v := range p.dirtyOrders.orders {
+	for k, v := range p.dirtyOrders.list {
 		dirties[k] = v
 	}
 	p.lockOrders.Unlock()
@@ -293,12 +295,16 @@ func (p *Pair) AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int) Editabl
 			higher: p.buyOrders.higher,
 			lower:  p.buyOrders.lower,
 		},
-		dirtyOrders: &dirtyOrders{
-			orders: dirties,
+		orders: &orderList{
+			list: p.orders.list,
+		},
+		dirtyOrders: &orderList{
+			list: dirties,
 		},
 		markDirtyOrders:     p.markDirtyOrders,
 		loadHigherOrders:    p.loadHigherOrders,
 		loadLowerOrders:     p.loadLowerOrders,
+		loadOrder:           p.loadOrder,
 		getLastTotalOrderID: nil,
 	}
 	commission0orders, commission1orders, amount0, amount1, _ := CalcDiffPool(amount0In, amount1Out, orders)
@@ -312,7 +318,7 @@ func (p *Pair) AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int) Editabl
 	oo := make([]*Limit, 0, len(orders))
 	for _, order := range orders {
 		oo = append(oo, &Limit{
-			isBuy:        order.isBuy,
+			IsBuy:        order.IsBuy,
 			WantBuy:      big.NewInt(0).Set(order.WantBuy),
 			WantSell:     big.NewInt(0).Set(order.WantSell),
 			Owner:        order.Owner,
@@ -353,8 +359,15 @@ func (pk pairKey) bytes() []byte {
 func (pk pairKey) pathData() []byte {
 	return append([]byte{pairDataPrefix}, pk.bytes()...)
 }
+
+// Deprecated: Use pathOrder
 func (pk pairKey) pathOrders() []byte {
 	return append([]byte{pairOrdersPrefix}, pk.sort().bytes()...)
+}
+func pathOrder(id uint32) []byte {
+	byteID := make([]byte, 4)
+	binary.BigEndian.PutUint32(byteID, id)
+	return append([]byte{pairLimitOrderPrefix}, byteID...)
 }
 
 func pricePath(key pairKey, price *big.Float, id uint32, isSale bool) []byte {
@@ -392,10 +405,10 @@ func pricePath(key pairKey, price *big.Float, id uint32, isSale bool) []byte {
 	return append(append(append(append([]byte{mainPrefix}, key.pathOrders()...), saleByte), pricePath...), byteID...)
 }
 
-func (p *Pair) getDirtyOrdersList() []*Limit {
-	dirtiesOrders := make([]*Limit, 0, len(p.dirtyOrders.orders))
-	for _, limit := range p.dirtyOrders.orders {
-		dirtiesOrders = append(dirtiesOrders, limit)
+func (p *Pair) getDirtyOrdersList() []uint32 {
+	dirtiesOrders := make([]uint32, 0, len(p.dirtyOrders.list))
+	for id := range p.dirtyOrders.list {
+		dirtiesOrders = append(dirtiesOrders, id)
 	}
 	sort.SliceStable(dirtiesOrders, func(i, j int) bool {
 		return dirtiesOrders[i].id > dirtiesOrders[j].id
@@ -444,20 +457,20 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 	for _, key := range s.getOrderedDirtyOrderPairs() {
 		pair, _ := s.pair(key)
 		pair.lockOrders.Lock()
-		for _, limit := range pair.getDirtyOrdersList() {
-
-			oldPath := pricePath(key, limit.OldSortPrice(), limit.id, !limit.isBuy)
+		for _, id := range pair.getDirtyOrdersList() {
+			limit := pair.getOrder(id)
+			oldPath := pricePath(key, limit.OldSortPrice(), limit.id, !limit.IsBuy)
 
 			if limit.isEmpty() {
 				if limit.WantBuy.Sign() != 0 || limit.WantSell.Sign() != 0 {
-					panic(fmt.Sprintf("order %d has one zero volume: %s, %s. Sell %v", limit.id, limit.WantBuy, limit.WantSell, !limit.isBuy))
+					panic(fmt.Sprintf("order %d has one zero volume: %s, %s. Sell %v", limit.id, limit.WantBuy, limit.WantSell, !limit.IsBuy))
 				}
 				db.Remove(oldPath)
-				// log.Printf("remove old path %q, %s, %s. Sell %v", oldPath, limit.WantBuy, limit.WantSell, !limit.isBuy)
+				// log.Printf("remove old path %q, %s, %s. Sell %v", oldPath, limit.WantBuy, limit.WantSell, !limit.IsBuy)
 				continue
 			}
 
-			newPath := pricePath(key, limit.ReCalcOldSortPrice(), limit.id, !limit.isBuy)
+			newPath := pricePath(key, limit.ReCalcOldSortPrice(), limit.id, !limit.IsBuy)
 
 			pairOrderBytes, err := rlp.EncodeToBytes(limit)
 			if err != nil {
@@ -465,14 +478,14 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 			}
 
 			db.Set(newPath, pairOrderBytes)
-			// log.Printf("new path %q, %s, %s. Sell %v", newPath, limit.WantBuy, limit.WantSell, !limit.isBuy)
+			// log.Printf("new path %q, %s, %s. Sell %v", newPath, limit.WantBuy, limit.WantSell, !limit.IsBuy)
 			if !bytes.Equal(oldPath, newPath) && db.Has(oldPath) {
 				db.Remove(oldPath) // the price can change minimally due to rounding off the ratio of the remaining volumes
-				// log.Printf("remove old path %q, %s, %s. Sell %v", oldPath, limit.WantBuy, limit.WantSell, !limit.isBuy)
+				// log.Printf("remove old path %q, %s, %s. Sell %v", oldPath, limit.WantBuy, limit.WantSell, !limit.IsBuy)
 			}
 		}
 		pair.lockOrders.Unlock()
-		pair.dirtyOrders.orders = make(map[uint32]*Limit)
+		pair.dirtyOrders.list = make(map[uint32]*Limit)
 	}
 	s.dirtiesOrders = map[pairKey]struct{}{}
 	return nil
@@ -713,10 +726,12 @@ func (s *Swap) addPair(key pairKey) *Pair {
 		},
 		sellOrders:          &limits{},
 		buyOrders:           &limits{},
-		dirtyOrders:         &dirtyOrders{orders: make(map[uint32]*Limit)},
+		orders:              &orderList{list: make(map[uint32]*Limit)},
+		dirtyOrders:         &orderList{list: make(map[uint32]*Limit)},
 		markDirtyOrders:     s.markDirtyOrders(key),
 		loadHigherOrders:    s.loadBuyHigherOrders,
 		loadLowerOrders:     s.loadSellLowerOrders,
+		loadOrder:           s.loadOrder(key),
 		getLastTotalOrderID: s.incOrdersID,
 	}
 
@@ -790,11 +805,13 @@ type Pair struct {
 	*pairData
 	sellOrders          *limits
 	buyOrders           *limits
-	dirtyOrders         *dirtyOrders
+	orders              *orderList
+	dirtyOrders         *orderList
 	markDirtyOrders     func()
 	loadHigherOrders    func(pair *Pair, slice []*Limit, limit int) []*Limit
 	loadLowerOrders     func(pair *Pair, slice []*Limit, limit int) []*Limit
 	getLastTotalOrderID func() uint32
+	loadOrder           func(id uint32) *Limit
 }
 
 func (p *Pair) GetID() uint32 {
