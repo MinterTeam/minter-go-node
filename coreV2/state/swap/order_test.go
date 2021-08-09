@@ -28,7 +28,7 @@ func TestPair_ResortOrders(t *testing.T) {
 
 	pair := swap.Pair(0, 1)
 
-	pair.AddOrder(helpers.StringToBigInt("15000000000000000000000"), helpers.StringToBigInt("5000000000000000000000"), types.Address{})
+	pair.AddOrder(helpers.StringToBigInt("15000000000000000000000"), helpers.StringToBigInt("5000000000000000000000"), types.Address{}, 0)
 
 	// order := pair.OrderSellLowerByIndex(0)
 
@@ -76,7 +76,7 @@ func TestPair_SellWithOrders_changePriceWithOrderAndUpdateList0(t *testing.T) {
 
 	pair := swap.Pair(0, 1)
 
-	pair.AddOrder(helpers.StringToBigInt("15000000000000000000000"), helpers.StringToBigInt("5000000000000000000000"), types.Address{})
+	pair.AddOrder(helpers.StringToBigInt("15000000000000000000000"), helpers.StringToBigInt("5000000000000000000000"), types.Address{}, 0)
 
 	// order := pair.OrderSellLowerByIndex(0)
 
@@ -124,7 +124,7 @@ func TestPair_SellWithOrders_changePriceWithOrderAndUpdateList1(t *testing.T) {
 
 	pair := swap.Pair(0, 1)
 
-	pair.AddOrder(helpers.StringToBigInt("15000000000000000000000"), helpers.StringToBigInt("5000000000000000000000"), types.Address{})
+	pair.AddOrder(helpers.StringToBigInt("15000000000000000000000"), helpers.StringToBigInt("5000000000000000000000"), types.Address{}, 0)
 
 	// order := pair.OrderSellLowerByIndex(0)
 
@@ -238,7 +238,7 @@ func TestSimple_my(t *testing.T) {
 
 	wantBuy := helpers.StringToBigInt("15000000000000000000000")
 	wantSell := helpers.StringToBigInt("5000000000000000000000")
-	order := pair.AddOrder(wantBuy, wantSell, types.Address{})
+	order := pair.AddOrder(wantBuy, wantSell, types.Address{}, 0)
 
 	_, _, err = immutableTree.Commit(swap)
 	if err != nil {
@@ -314,7 +314,7 @@ func TestPair_OrderID(t *testing.T) {
 		_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(10000), big.NewInt(10000))
 
 		pair := swap.Pair(0, 1)
-		id := pair.AddOrder(big.NewInt(1), big.NewInt(1), types.Address{}).id
+		id := pair.AddOrder(big.NewInt(1), big.NewInt(1), types.Address{}, 0).id
 		if id != 1 {
 			t.Errorf("next orders ID want %d, got %d", 1, id)
 		}
@@ -328,10 +328,10 @@ func TestPair_OrderID(t *testing.T) {
 		_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(10000), big.NewInt(10000))
 
 		pair := swap.Pair(0, 1)
-		if id := pair.AddOrder(big.NewInt(2), big.NewInt(1), types.Address{}).id; id != 2 {
+		if id := pair.AddOrder(big.NewInt(2), big.NewInt(1), types.Address{}, 0).id; id != 2 {
 			t.Errorf("next orders ID want %d, got %d", 2, id)
 		}
-		if id := pair.AddOrder(big.NewInt(3), big.NewInt(1), types.Address{}).id; id != 3 {
+		if id := pair.AddOrder(big.NewInt(3), big.NewInt(1), types.Address{}, 0).id; id != 3 {
 			t.Errorf("next orders ID want %d, got %d", 3, id)
 		}
 		_, _, err = immutableTree.Commit(swap)
@@ -342,7 +342,7 @@ func TestPair_OrderID(t *testing.T) {
 	{
 		swap := New(newBus, immutableTree.GetLastImmutable())
 		pair := swap.Pair(0, 1)
-		if id := pair.AddOrder(big.NewInt(4), big.NewInt(1), types.Address{}).id; id != 4 {
+		if id := pair.AddOrder(big.NewInt(4), big.NewInt(1), types.Address{}, 0).id; id != 4 {
 			t.Errorf("next orders ID want %d, got %d", 4, id)
 		}
 		_, _, err = immutableTree.Commit(swap)
@@ -394,7 +394,7 @@ func TestPair_AddLastSwapStepWithOrders(t *testing.T) {
 	_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(1e18), big.NewInt(1e18))
 
 	pair := swap.Pair(0, 1)
-	pair.AddOrder(big.NewInt(20e15), big.NewInt(5e15), types.Address{})
+	pair.AddOrder(big.NewInt(20e15), big.NewInt(5e15), types.Address{}, 0)
 
 	_, _, err = immutableTree.Commit(swap)
 	if err != nil {
@@ -443,8 +443,8 @@ func TestPair_BuyWithOrders_01_ChangeRemainderOrderPrice(t *testing.T) {
 	_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(10000), big.NewInt(10000))
 
 	pair := swap.Pair(0, 1)
-	pair.AddOrder(big.NewInt(15000), big.NewInt(5000), types.Address{1})
-	pair.AddOrder(big.NewInt(20), big.NewInt(5), types.Address{2})
+	pair.AddOrder(big.NewInt(15000), big.NewInt(5000), types.Address{1}, 0)
+	pair.AddOrder(big.NewInt(20), big.NewInt(5), types.Address{2}, 0)
 
 	_, _, err = immutableTree.Commit(swap)
 	if err != nil {
@@ -566,8 +566,8 @@ func TestPair_SellWithOrders_01_ChangeRemainderOrderPrice(t *testing.T) {
 	_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(10000), big.NewInt(10000))
 
 	pair := swap.Pair(0, 1)
-	pair.AddOrder(big.NewInt(15000), big.NewInt(5000), types.Address{})
-	pair.AddOrder(big.NewInt(20), big.NewInt(5), types.Address{})
+	pair.AddOrder(big.NewInt(15000), big.NewInt(5000), types.Address{}, 0)
+	pair.AddOrder(big.NewInt(20), big.NewInt(5), types.Address{}, 0)
 
 	_, _, err = immutableTree.Commit(swap)
 	if err != nil {
@@ -669,8 +669,8 @@ func TestPair_SellWithOrders_10_ChangeRemainderOrderPrice(t *testing.T) {
 	_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(10000), big.NewInt(10000))
 
 	pair := swap.Pair(1, 0)
-	pair.AddOrder(big.NewInt(15000), big.NewInt(5000), types.Address{})
-	pair.AddOrder(big.NewInt(20), big.NewInt(5), types.Address{})
+	pair.AddOrder(big.NewInt(15000), big.NewInt(5000), types.Address{}, 0)
+	pair.AddOrder(big.NewInt(20), big.NewInt(5), types.Address{}, 0)
 
 	_, _, err = immutableTree.Commit(swap)
 	if err != nil {
@@ -808,7 +808,7 @@ func TestPair_SellWithOrders_01_FullOrder(t *testing.T) {
 	}
 	pair := swap.Pair(0, 1)
 	owner := types.HexToAddress("Mx7f0fc21d932f38ca9444f61703174569066cfa50")
-	swap.PairAddOrder(0, 1, big.NewInt(2000), big.NewInt(1000), owner)
+	swap.PairAddOrder(0, 1, big.NewInt(2000), big.NewInt(1000), owner, 0)
 	if pair.OrderSellLowerByIndex(0).Price().Cmp(CalcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 {
 		t.Error("error set order")
 	}
@@ -877,7 +877,7 @@ func TestPair_SellWithOrders_01_PartOrder(t *testing.T) {
 
 	pair := swap.Pair(0, 1)
 	owner := types.HexToAddress("Mx7f0fc21d932f38ca9444f61703174569066cfa50")
-	swap.PairAddOrder(0, 1, big.NewInt(2000), big.NewInt(1000), owner)
+	swap.PairAddOrder(0, 1, big.NewInt(2000), big.NewInt(1000), owner, 0)
 	if pair.OrderSellLowerByIndex(0).Price().Cmp(CalcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 {
 		t.Error("error set order")
 	}
@@ -941,12 +941,12 @@ func TestSwap_Export_WithOrders(t *testing.T) {
 	_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(10e10), big.NewInt(10e10))
 
 	pair01 := swap.Pair(0, 1)
-	pair01.AddOrder(big.NewInt(10010), big.NewInt(10000), types.Address{})
-	pair01.AddOrder(big.NewInt(10020), big.NewInt(10000), types.Address{})
+	pair01.AddOrder(big.NewInt(10010), big.NewInt(10000), types.Address{}, 0)
+	pair01.AddOrder(big.NewInt(10020), big.NewInt(10000), types.Address{}, 0)
 
 	pair10 := swap.Pair(1, 0)
-	pair10.AddOrder(big.NewInt(1003), big.NewInt(1000), types.Address{})
-	pair10.AddOrder(big.NewInt(1004), big.NewInt(1000), types.Address{})
+	pair10.AddOrder(big.NewInt(1003), big.NewInt(1000), types.Address{}, 0)
+	pair10.AddOrder(big.NewInt(1004), big.NewInt(1000), types.Address{}, 0)
 
 	_, _, err = immutableTree.Commit(swap)
 	if err != nil {
@@ -1047,12 +1047,12 @@ func TestPair_SetOrder_01(t *testing.T) {
 	mul := func(price int64, volumeBuy *big.Int) *big.Int {
 		return big.NewInt(0).Mul(big.NewInt(price), volumeBuy)
 	}
-	idHigher := pair.AddOrder(mul(3, volumeBuy), volumeBuy, types.Address{}).id
-	idMostHigher := pair.AddOrder(mul(1, volumeBuy), volumeBuy, types.Address{}).id
-	_ = pair.AddOrder(mul(2, volumeBuy), volumeBuy, types.Address{}).id
-	idMostLower := pair.AddOrder(mul(10, volumeBuy), volumeBuy, types.Address{}).id
-	idLower := pair.AddOrder(mul(8, volumeBuy), volumeBuy, types.Address{}).id
-	_ = pair.AddOrder(mul(9, volumeBuy), volumeBuy, types.Address{}).id
+	idHigher := pair.AddOrder(mul(3, volumeBuy), volumeBuy, types.Address{}, 0).id
+	idMostHigher := pair.AddOrder(mul(1, volumeBuy), volumeBuy, types.Address{}, 0).id
+	_ = pair.AddOrder(mul(2, volumeBuy), volumeBuy, types.Address{}, 0).id
+	idMostLower := pair.AddOrder(mul(10, volumeBuy), volumeBuy, types.Address{}, 0).id
+	idLower := pair.AddOrder(mul(8, volumeBuy), volumeBuy, types.Address{}, 0).id
+	_ = pair.AddOrder(mul(9, volumeBuy), volumeBuy, types.Address{}, 0).id
 
 	_, _, err = immutableTree.Commit(swap)
 	if err != nil {
@@ -1288,10 +1288,10 @@ func TestPair_SetOrder_10(t *testing.T) {
 	mul := func(price int64, volumeBuy *big.Int) *big.Int {
 		return big.NewInt(0).Mul(big.NewInt(price), volumeBuy)
 	}
-	idMostHigher := pair.AddOrder(mul(1, volumeBuy), volumeBuy, types.Address{}).id
-	idHigher := pair.AddOrder(mul(2, volumeBuy), volumeBuy, types.Address{}).id
-	idLower := pair.AddOrder(mul(9, volumeBuy), volumeBuy, types.Address{}).id
-	idMostLower := pair.AddOrder(mul(10, volumeBuy), volumeBuy, types.Address{}).id
+	idMostHigher := pair.AddOrder(mul(1, volumeBuy), volumeBuy, types.Address{}, 0).id
+	idHigher := pair.AddOrder(mul(2, volumeBuy), volumeBuy, types.Address{}, 0).id
+	idLower := pair.AddOrder(mul(9, volumeBuy), volumeBuy, types.Address{}, 0).id
+	idMostLower := pair.AddOrder(mul(10, volumeBuy), volumeBuy, types.Address{}, 0).id
 
 	_, _, err = immutableTree.Commit(swap)
 	if err != nil {
@@ -1588,7 +1588,7 @@ func TestPair_CalculateBuyForSellWithOrders_01(t *testing.T) {
 
 	t.Run("with orders", func(t *testing.T) {
 		t.Run("one order", func(t *testing.T) {
-			pair.AddOrder(big.NewInt(2000), big.NewInt(1000), types.Address{})
+			pair.AddOrder(big.NewInt(2000), big.NewInt(1000), types.Address{}, 0)
 			if pair.OrderSellLowerByIndex(0).Price().Cmp(CalcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 {
 				t.Error("error set order")
 			}
@@ -1660,7 +1660,7 @@ func TestPair_CalculateBuyForSellWithOrders_01(t *testing.T) {
 				})
 			})
 			t.Run("two equal orders", func(t *testing.T) {
-				pair.AddOrder(big.NewInt(2000), big.NewInt(1000), types.Address{})
+				pair.AddOrder(big.NewInt(2000), big.NewInt(1000), types.Address{}, 0)
 				if pair.OrderSellLowerByIndex(0).Price().Cmp(CalcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 &&
 					pair.OrderSellLowerByIndex(1).Price().Cmp(CalcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 {
 					t.Error("error set orders")
@@ -1720,7 +1720,7 @@ func TestPair_CalculateBuyForSellWithOrders_01(t *testing.T) {
 					})
 				})
 				t.Run("three orders", func(t *testing.T) {
-					pair.AddOrder(big.NewInt(3000), big.NewInt(1000), types.Address{})
+					pair.AddOrder(big.NewInt(3000), big.NewInt(1000), types.Address{}, 0)
 					if pair.OrderSellLowerByIndex(2).Price().Cmp(CalcPriceSell(big.NewInt(3000), big.NewInt(1000))) != 0 {
 						t.Error("error set orders")
 					}
@@ -1767,7 +1767,7 @@ func TestPair_CalculateBuyForSellWithOrders_10(t *testing.T) {
 
 	t.Run("with orders", func(t *testing.T) {
 		t.Run("one order", func(t *testing.T) {
-			pair.AddOrder(big.NewInt(2000), big.NewInt(1000), types.Address{})
+			pair.AddOrder(big.NewInt(2000), big.NewInt(1000), types.Address{}, 0)
 			t.Log(pair.OrderSellLowerByIndex(0).Price(), CalcPriceSell(big.NewInt(2000), big.NewInt(1000)))
 			if pair.OrderSellLowerByIndex(0).Price().Cmp(CalcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 {
 				t.Error("error set order")
@@ -1840,7 +1840,7 @@ func TestPair_CalculateBuyForSellWithOrders_10(t *testing.T) {
 				})
 			})
 			t.Run("two equal orders", func(t *testing.T) {
-				pair.AddOrder(big.NewInt(2000), big.NewInt(1000), types.Address{})
+				pair.AddOrder(big.NewInt(2000), big.NewInt(1000), types.Address{}, 0)
 				if pair.OrderSellLowerByIndex(0).Price().Cmp(CalcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 &&
 					pair.OrderSellLowerByIndex(1).Price().Cmp(CalcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 {
 					t.Error("error set orders")
@@ -1901,7 +1901,7 @@ func TestPair_CalculateBuyForSellWithOrders_10(t *testing.T) {
 					})
 				})
 				t.Run("three orders", func(t *testing.T) {
-					pair.AddOrder(big.NewInt(3000), big.NewInt(1000), types.Address{})
+					pair.AddOrder(big.NewInt(3000), big.NewInt(1000), types.Address{}, 0)
 					if pair.OrderSellLowerByIndex(2).Price().Cmp(CalcPriceSell(big.NewInt(3000), big.NewInt(1000))) != 0 {
 						t.Error("error set orders")
 					}

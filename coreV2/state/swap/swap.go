@@ -365,9 +365,14 @@ func (pk pairKey) pathOrders() []byte {
 	return append([]byte{pairOrdersPrefix}, pk.sort().bytes()...)
 }
 func pathOrder(id uint32) []byte {
+	byteID := id2Bytes(id)
+	return append([]byte{pairLimitOrderPrefix}, byteID...)
+}
+
+func id2Bytes(id uint32) []byte {
 	byteID := make([]byte, 4)
 	binary.BigEndian.PutUint32(byteID, id)
-	return append([]byte{pairLimitOrderPrefix}, byteID...)
+	return byteID
 }
 
 func pricePath(key pairKey, price *big.Float, id uint32, isSale bool) []byte {
@@ -394,8 +399,7 @@ func pricePath(key pairKey, price *big.Float, id uint32, isSale bool) []byte {
 	// log.Println("c m", sprintf)
 	pricePath = append(pricePath, []byte(sprintf)...)
 
-	byteID := make([]byte, 4)
-	binary.BigEndian.PutUint32(byteID, id)
+	byteID := id2Bytes(id)
 
 	var saleByte byte = 0
 	if isSale {
@@ -411,7 +415,7 @@ func (p *Pair) getDirtyOrdersList() []uint32 {
 		dirtiesOrders = append(dirtiesOrders, id)
 	}
 	sort.SliceStable(dirtiesOrders, func(i, j int) bool {
-		return dirtiesOrders[i].id > dirtiesOrders[j].id
+		return dirtiesOrders[i] > dirtiesOrders[j]
 	})
 	return dirtiesOrders
 }
@@ -459,29 +463,34 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 		pair.lockOrders.Lock()
 		for _, id := range pair.getDirtyOrdersList() {
 			limit := pair.getOrder(id)
-			oldPath := pricePath(key, limit.OldSortPrice(), limit.id, !limit.IsBuy)
+			oldPathOrderList := pricePath(key, limit.OldSortPrice(), limit.id, !limit.IsBuy)
+			pathOrderID := pathOrder(limit.id)
 
 			if limit.isEmpty() {
 				if limit.WantBuy.Sign() != 0 || limit.WantSell.Sign() != 0 {
 					panic(fmt.Sprintf("order %d has one zero volume: %s, %s. Sell %v", limit.id, limit.WantBuy, limit.WantSell, !limit.IsBuy))
 				}
-				db.Remove(oldPath)
-				// log.Printf("remove old path %q, %s, %s. Sell %v", oldPath, limit.WantBuy, limit.WantSell, !limit.IsBuy)
+				db.Remove(pathOrderID)
+				db.Remove(oldPathOrderList)
+				// log.Printf("remove old path %q, %s, %s. Sell %v", oldPathOrderList, limit.WantBuy, limit.WantSell, !limit.IsBuy)
 				continue
 			}
-
-			newPath := pricePath(key, limit.ReCalcOldSortPrice(), limit.id, !limit.IsBuy)
 
 			pairOrderBytes, err := rlp.EncodeToBytes(limit)
 			if err != nil {
 				return err
 			}
+			db.Set(pathOrderID, pairOrderBytes)
 
-			db.Set(newPath, pairOrderBytes)
+			newPath := pricePath(key, limit.ReCalcOldSortPrice(), limit.id, !limit.IsBuy)
+			if !db.Has(newPath) {
+				db.Set(newPath, []byte{}) // todo: Nil values are invalid
+			}
+
 			// log.Printf("new path %q, %s, %s. Sell %v", newPath, limit.WantBuy, limit.WantSell, !limit.IsBuy)
-			if !bytes.Equal(oldPath, newPath) && db.Has(oldPath) {
-				db.Remove(oldPath) // the price can change minimally due to rounding off the ratio of the remaining volumes
-				// log.Printf("remove old path %q, %s, %s. Sell %v", oldPath, limit.WantBuy, limit.WantSell, !limit.IsBuy)
+			if !bytes.Equal(oldPathOrderList, newPath) && db.Has(oldPathOrderList) {
+				db.Remove(oldPathOrderList) // the price can change minimally due to rounding off the ratio of the remaining volumes
+				// log.Printf("remove old path %q, %s, %s. Sell %v", oldPathOrderList, limit.WantBuy, limit.WantSell, !limit.IsBuy)
 			}
 		}
 		pair.lockOrders.Unlock()
@@ -729,8 +738,8 @@ func (s *Swap) addPair(key pairKey) *Pair {
 		orders:              &orderList{list: make(map[uint32]*Limit)},
 		dirtyOrders:         &orderList{list: make(map[uint32]*Limit)},
 		markDirtyOrders:     s.markDirtyOrders(key),
-		loadHigherOrders:    s.loadBuyHigherOrders,
-		loadLowerOrders:     s.loadSellLowerOrders,
+		loadHigherOrders:    s.loadBuyOrders,
+		loadLowerOrders:     s.loadSellOrders,
 		loadOrder:           s.loadOrder(key),
 		getLastTotalOrderID: s.incOrdersID,
 	}
@@ -808,8 +817,8 @@ type Pair struct {
 	orders              *orderList
 	dirtyOrders         *orderList
 	markDirtyOrders     func()
-	loadHigherOrders    func(pair *Pair, slice []*Limit, limit int) []*Limit
-	loadLowerOrders     func(pair *Pair, slice []*Limit, limit int) []*Limit
+	loadHigherOrders    func(pair *Pair, slice []uint32, limit int) []uint32
+	loadLowerOrders     func(pair *Pair, slice []uint32, limit int) []uint32
 	getLastTotalOrderID func() uint32
 	loadOrder           func(id uint32) *Limit
 }
