@@ -244,7 +244,8 @@ func (p *Pair) Exists() bool {
 func (p *Pair) AddLastSwapStep(amount0In, amount1Out *big.Int) EditableChecker {
 	reserve0, reserve1 := p.Reserves()
 	return &Pair{
-		pairKey: p.pairKey,
+		lockOrders: &sync.RWMutex{},
+		pairKey:    p.pairKey,
 		pairData: &pairData{
 			RWMutex:   &sync.RWMutex{},
 			Reserve0:  reserve0.Add(reserve0, amount0In),
@@ -260,6 +261,7 @@ func (p *Pair) AddLastSwapStep(amount0In, amount1Out *big.Int) EditableChecker {
 		loadHigherOrders:    p.loadHigherOrders,
 		loadLowerOrders:     p.loadLowerOrders,
 		getLastTotalOrderID: nil,
+		loadOrder:           p.loadOrder,
 	}
 }
 
@@ -270,42 +272,46 @@ func (p *Pair) AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int) Editabl
 	}
 	reserve0, reserve1 := p.Reserves()
 
-	dirties := make(map[uint32]*Limit, len(p.dirtyOrders.list))
+	ordrs := make(map[uint32]*Limit, len(p.orders.list))
+	dirtyOrdrs := make(map[uint32]struct{}, len(p.dirtyOrders.list))
 	p.lockOrders.Lock()
+	for k, v := range p.orders.list {
+		ordrs[k] = v.clone()
+	}
 	for k, v := range p.dirtyOrders.list {
-		dirties[k] = v
+		dirtyOrdrs[k] = v
 	}
 	p.lockOrders.Unlock()
 
 	pair := &Pair{
-		pairKey: p.pairKey,
+		lockOrders: &sync.RWMutex{},
+		pairKey:    p.pairKey,
 		pairData: &pairData{
-			RWMutex:  &sync.RWMutex{},
-			Reserve0: reserve0,
-			Reserve1: reserve1,
-			ID:       p.ID,
-			markDirty: func() {
-			},
+			RWMutex:   &sync.RWMutex{},
+			Reserve0:  reserve0,
+			Reserve1:  reserve1,
+			ID:        p.ID,
+			markDirty: func() {},
 		},
 		sellOrders: &limits{
-			higher: p.sellOrders.higher,
-			lower:  p.sellOrders.lower,
+			ids: p.sellOrders.ids,
 		},
 		buyOrders: &limits{
-			higher: p.buyOrders.higher,
-			lower:  p.buyOrders.lower,
+			ids: p.buyOrders.ids,
 		},
 		orders: &orderList{
-			list: p.orders.list,
+			mu:   sync.RWMutex{},
+			list: ordrs,
 		},
-		dirtyOrders: &orderList{
-			list: dirties,
+		dirtyOrders: &orderDirties{
+			mu:   sync.RWMutex{},
+			list: dirtyOrdrs,
 		},
 		markDirtyOrders:     p.markDirtyOrders,
 		loadHigherOrders:    p.loadHigherOrders,
 		loadLowerOrders:     p.loadLowerOrders,
-		loadOrder:           p.loadOrder,
 		getLastTotalOrderID: nil,
+		loadOrder:           p.loadOrder,
 	}
 	commission0orders, commission1orders, amount0, amount1, _ := CalcDiffPool(amount0In, amount1Out, orders)
 
@@ -339,15 +345,18 @@ func (p *Pair) Reverse() EditableChecker {
 }
 func (p *Pair) reverse() *Pair {
 	return &Pair{
+		lockOrders:          p.lockOrders,
 		pairKey:             p.pairKey.reverse(),
 		pairData:            p.pairData.reverse(),
-		buyOrders:           p.buyOrders,
 		sellOrders:          p.sellOrders,
-		markDirtyOrders:     p.markDirtyOrders,
+		buyOrders:           p.buyOrders,
+		orders:              p.orders,
 		dirtyOrders:         p.dirtyOrders,
+		markDirtyOrders:     p.markDirtyOrders,
 		loadHigherOrders:    p.loadLowerOrders,
 		loadLowerOrders:     p.loadHigherOrders,
 		getLastTotalOrderID: p.getLastTotalOrderID,
+		loadOrder:           p.loadOrder,
 	}
 }
 
@@ -360,7 +369,6 @@ func (pk pairKey) pathData() []byte {
 	return append([]byte{pairDataPrefix}, pk.bytes()...)
 }
 
-// Deprecated: Use pathOrder
 func (pk pairKey) pathOrders() []byte {
 	return append([]byte{pairOrdersPrefix}, pk.sort().bytes()...)
 }
@@ -494,7 +502,7 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 			}
 		}
 		pair.lockOrders.Unlock()
-		pair.dirtyOrders.list = make(map[uint32]*Limit)
+		pair.dirtyOrders.list = make(map[uint32]struct{})
 	}
 	s.dirtiesOrders = map[pairKey]struct{}{}
 	return nil
@@ -725,7 +733,8 @@ func (s *Swap) addPair(key pairKey) *Pair {
 		key = key.reverse()
 	}
 	pair := &Pair{
-		pairKey: key,
+		lockOrders: &sync.RWMutex{},
+		pairKey:    key,
 		pairData: &pairData{
 			RWMutex:   &sync.RWMutex{},
 			Reserve0:  big.NewInt(0),
@@ -735,13 +744,13 @@ func (s *Swap) addPair(key pairKey) *Pair {
 		},
 		sellOrders:          &limits{},
 		buyOrders:           &limits{},
-		orders:              &orderList{list: make(map[uint32]*Limit)},
-		dirtyOrders:         &orderList{list: make(map[uint32]*Limit)},
+		orders:              &orderList{list: make(map[uint32]*Limit), mu: sync.RWMutex{}},
+		dirtyOrders:         &orderDirties{list: make(map[uint32]struct{}), mu: sync.RWMutex{}},
 		markDirtyOrders:     s.markDirtyOrders(key),
 		loadHigherOrders:    s.loadBuyOrders,
 		loadLowerOrders:     s.loadSellOrders,
-		loadOrder:           s.loadOrder(key),
 		getLastTotalOrderID: s.incOrdersID,
+		loadOrder:           s.loadOrder(key),
 	}
 
 	s.pairs[key] = pair
@@ -809,13 +818,13 @@ type Balance struct {
 }
 
 type Pair struct {
-	lockOrders sync.RWMutex
+	lockOrders *sync.RWMutex
 	pairKey
 	*pairData
 	sellOrders          *limits
 	buyOrders           *limits
 	orders              *orderList
-	dirtyOrders         *orderList
+	dirtyOrders         *orderDirties
 	markDirtyOrders     func()
 	loadHigherOrders    func(pair *Pair, slice []uint32, limit int) []uint32
 	loadLowerOrders     func(pair *Pair, slice []uint32, limit int) []uint32
