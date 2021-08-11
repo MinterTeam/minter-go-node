@@ -755,6 +755,22 @@ func (s *Swap) PairAddOrder(coinWantBuy, coinWantSell types.CoinID, wantBuyAmoun
 	return order.id, pair.GetID()
 }
 
+func (s *Swap) PairRemoveLimitOrder(coin0, coin1 types.CoinID, id uint32) (types.CoinID, *big.Int) {
+	pair := s.Pair(coin0, coin1)
+	order := pair.getOrder(id)
+	if order == nil {
+		panic("order not exist")
+	}
+
+	returnVolume := big.NewInt(0).Set(order.WantSell)
+
+	s.bus.Checker().AddCoin(order.Coin1, big.NewInt(0).Neg(returnVolume))
+
+	pair.updateOrders([]*Limit{order})
+
+	return order.Coin1, returnVolume
+}
+
 func (s *Swap) PairAddOrderWithID(coinWantBuy, coinWantSell types.CoinID, wantBuyAmount, wantSellAmount *big.Int, sender types.Address, id uint32) (uint32, uint32) {
 	pair := s.Pair(coinWantBuy, coinWantSell)
 	order := pair.AddOrderWithID(wantBuyAmount, wantSellAmount, sender, id)
@@ -764,6 +780,9 @@ func (s *Swap) PairAddOrderWithID(coinWantBuy, coinWantSell types.CoinID, wantBu
 	return order.id, pair.GetID()
 }
 
+func (p *Pair) GetOrder(id uint32) *Limit {
+	return p.getOrder(id)
+}
 func (p *Pair) AddOrder(wantBuyAmount0, wantSellAmount1 *big.Int, sender types.Address, block uint64) (order *Limit) {
 	order = &Limit{
 		pairKey:  p.pairKey,

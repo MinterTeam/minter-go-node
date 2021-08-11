@@ -361,7 +361,19 @@ func encode(data transaction.Data, txType transaction.TxType, rCoins coins.RCoin
 			ValueToSell: d.ValueToSell.String(),
 		}
 	case transaction.TypeRemoveOrderSwapPool:
-		panic("implement me")
+		// todo: FIXME
+		// d := data.(*transaction.RemoveLimitOrderData)
+		// m = &pb.RemoveOrderSwapPoolData{
+		// 	Coin0: &pb.Coin{
+		// 		Id:     uint64(d.Coin0),
+		// 		Symbol: rCoins.GetCoin(d.Coin0).GetFullSymbol(),
+		// 	},
+		// 	Coin1: &pb.Coin{
+		// 		Id:     uint64(d.Coin1),
+		// 		Symbol: rCoins.GetCoin(d.Coin1).GetFullSymbol(),
+		// 	},
+		// 	ID: strconv.Itoa(int(d.ID)),
+		// }
 	default:
 		return nil, errors.New("unknown tx type")
 	}

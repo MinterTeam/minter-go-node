@@ -93,6 +93,8 @@ const (
 	PairAlreadyExists            uint32 = 708
 	TooLongSwapRoute             uint32 = 709
 	DuplicatePoolInRoute         uint32 = 710
+	OrderNotExists               uint32 = 711
+	IsNotOwnerOfOrder            uint32 = 712
 
 	// emission coin
 	CoinIsNotToken  uint32 = 800
@@ -193,6 +195,29 @@ type pairNotExists struct {
 
 func NewPairNotExists(coin0 string, coin1 string) *pairNotExists {
 	return &pairNotExists{Code: strconv.Itoa(int(PairNotExists)), Coin0: coin0, Coin1: coin1}
+}
+
+type orderNotExists struct {
+	Code  string `json:"code,omitempty"`
+	Coin0 string `json:"coin0,omitempty"`
+	Coin1 string `json:"coin1,omitempty"`
+	ID    string `json:"id,omitempty"`
+}
+
+func NewOrderNotExists(coin0 string, coin1 string, id uint32) *orderNotExists {
+	return &orderNotExists{Code: strconv.Itoa(int(OrderNotExists)), Coin0: coin0, Coin1: coin1, ID: strconv.Itoa(int(id))}
+}
+
+type isNotOwnerOfOrder struct {
+	Code  string `json:"code,omitempty"`
+	Coin0 string `json:"coin0,omitempty"`
+	Coin1 string `json:"coin1,omitempty"`
+	ID    string `json:"id,omitempty"`
+	Owner string `json:"owner"`
+}
+
+func NewIsNotOwnerOfOrder(coin0 string, coin1 string, id uint32, owner string) *isNotOwnerOfOrder {
+	return &isNotOwnerOfOrder{Code: strconv.Itoa(int(IsNotOwnerOfOrder)), Coin0: coin0, Coin1: coin1, ID: strconv.Itoa(int(id)), Owner: owner}
 }
 
 type pairAlreadyExists struct {

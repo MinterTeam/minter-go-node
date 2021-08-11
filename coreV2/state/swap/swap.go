@@ -27,6 +27,7 @@ const minimumLiquidity = 1000
 const commission = 2
 
 type EditableChecker interface {
+	GetOrder(id uint32) *Limit
 	Exists() bool
 	GetID() uint32
 	// Deprecated

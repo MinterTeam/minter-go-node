@@ -195,6 +195,346 @@ func TestOrder_sell_part(t *testing.T) {
 	}
 }
 
+func TestOrder_sell_part_remove(t *testing.T) {
+	address, pk := CreateAddress() // create account for test
+
+	state := DefaultAppState() // generate default state
+
+	state.Coins = append(state.Coins, types.Coin{
+		ID:           1,
+		Name:         "Test 1",
+		Symbol:       types.StrToCoinBaseSymbol("TEST1"),
+		Volume:       "10010000000000000000000000",
+		Crr:          0,
+		Reserve:      "0",
+		MaxSupply:    "90000000000000000000000000000",
+		Version:      0,
+		OwnerAddress: &address,
+		Mintable:     false,
+		Burnable:     false,
+	}, types.Coin{
+		ID:           2,
+		Name:         "Test 2",
+		Symbol:       types.StrToCoinBaseSymbol("TEST2"),
+		Volume:       "10015000000000000000000000",
+		Crr:          0,
+		Reserve:      "0",
+		MaxSupply:    "90000000000000000000000000000",
+		Version:      0,
+		OwnerAddress: &address,
+		Mintable:     false,
+		Burnable:     false,
+	})
+
+	state.NextOrderID = 2
+	state.Pools = append(state.Pools, types.Pool{
+		Coin0:    1,
+		Coin1:    2,
+		Reserve0: "10000000000000000000000",
+		Reserve1: "10000000000000000000000",
+		ID:       1,
+		Orders: []types.Order{
+			{
+				IsSale:  true,
+				Volume0: "15000000000000000000000", // want to buy
+				Volume1: "5000000000000000000000",  // want to sell
+				ID:      1,
+				Owner:   address,
+			},
+		},
+	})
+
+	state.Accounts = append(state.Accounts, types.Account{
+		Address: address,
+		Balance: []types.Balance{
+			{
+				Coin:  uint64(types.GetBaseCoinID()),
+				Value: helpers.StringToBigInt("10000000000000000000000000").String(),
+			},
+			{
+				Coin:  1,
+				Value: helpers.StringToBigInt("10000000000000000000000000").String(),
+			},
+			{
+				Coin:  2,
+				Value: helpers.StringToBigInt("10000000000000000000000000").String(),
+			},
+		},
+		Nonce:        0,
+		MultisigData: nil,
+	})
+
+	app := CreateApp(state) // create application
+	SendBeginBlock(app, 1)  // send BeginBlock
+
+	tx := CreateTx(app, address, transaction.TypeSellSwapPool, transaction.SellSwapPoolDataV230{
+		Coins:             []types.CoinID{1, 2},
+		ValueToSell:       helpers.StringToBigInt("10000000000000000000000"),
+		MinimumValueToBuy: helpers.StringToBigInt("1"),
+	}, 0)
+
+	response := SendTx(app, SignTx(pk, tx)) // compose and send tx
+
+	// check that result is OK
+	if response.Code != code.OK {
+		t.Fatalf("Response code is not OK: %s, %d", response.Log, response.Code)
+	}
+
+	SendEndBlock(app, 1) // send EndBlock
+	SendCommit(app)      // send Commit
+
+	SendBeginBlock(app, 2) // send BeginBlock
+
+	tx = CreateTx(app, address, transaction.TypeRemoveOrderSwapPool, transaction.RemoveLimitOrderData{
+		Coin0: 1,
+		Coin1: 2,
+		ID:    1,
+	}, 0)
+
+	response = SendTx(app, SignTx(pk, tx)) // compose and send tx
+
+	// check that result is OK
+	if response.Code != code.OK {
+		t.Fatalf("Response code is not OK: %s, %d", response.Log, response.Code)
+	}
+
+	SendEndBlock(app, 2) // send EndBlock
+	SendCommit(app)      // send Commit
+
+	appState := app.CurrentState().Export()
+	appState.Validators = append(appState.Validators, types.Validator{TotalBipStake: "1000", AccumReward: "1000", AbsentTimes: &types.BitArray{}}) // there should be at least one validator
+	appState.Candidates = append(appState.Candidates, types.Candidate{})                                                                           // candidate for validator
+	if err := appState.Verify(); err != nil {
+		t.Fatalf("export err: %v", err)
+	}
+
+	if appState.Pools[0].Orders != nil {
+		t.Errorf("orders %#v", appState.Pools[0].Orders)
+	}
+}
+
+func TestOrder_sell_part_remove_and_try_use(t *testing.T) {
+	address, pk := CreateAddress() // create account for test
+
+	state := DefaultAppState() // generate default state
+
+	state.Coins = append(state.Coins, types.Coin{
+		ID:           1,
+		Name:         "Test 1",
+		Symbol:       types.StrToCoinBaseSymbol("TEST1"),
+		Volume:       "10010000000000000000000000",
+		Crr:          0,
+		Reserve:      "0",
+		MaxSupply:    "90000000000000000000000000000",
+		Version:      0,
+		OwnerAddress: &address,
+		Mintable:     false,
+		Burnable:     false,
+	}, types.Coin{
+		ID:           2,
+		Name:         "Test 2",
+		Symbol:       types.StrToCoinBaseSymbol("TEST2"),
+		Volume:       "10015000000000000000000000",
+		Crr:          0,
+		Reserve:      "0",
+		MaxSupply:    "90000000000000000000000000000",
+		Version:      0,
+		OwnerAddress: &address,
+		Mintable:     false,
+		Burnable:     false,
+	})
+
+	state.NextOrderID = 2
+	state.Pools = append(state.Pools, types.Pool{
+		Coin0:    1,
+		Coin1:    2,
+		Reserve0: "10000000000000000000000",
+		Reserve1: "10000000000000000000000",
+		ID:       1,
+		Orders: []types.Order{
+			{
+				IsSale:  true,
+				Volume0: "15000000000000000000000", // want to buy
+				Volume1: "5000000000000000000000",  // want to sell
+				ID:      1,
+				Owner:   address,
+			},
+		},
+	})
+
+	state.Accounts = append(state.Accounts, types.Account{
+		Address: address,
+		Balance: []types.Balance{
+			{
+				Coin:  uint64(types.GetBaseCoinID()),
+				Value: helpers.StringToBigInt("10000000000000000000000000").String(),
+			},
+			{
+				Coin:  1,
+				Value: helpers.StringToBigInt("10000000000000000000000000").String(),
+			},
+			{
+				Coin:  2,
+				Value: helpers.StringToBigInt("10000000000000000000000000").String(),
+			},
+		},
+		Nonce:        0,
+		MultisigData: nil,
+	})
+
+	app := CreateApp(state) // create application
+
+	SendBeginBlock(app, 2) // send BeginBlock
+
+	tx := CreateTx(app, address, transaction.TypeRemoveOrderSwapPool, transaction.RemoveLimitOrderData{
+		Coin0: 1,
+		Coin1: 2,
+		ID:    1,
+	}, 0)
+
+	response := SendTx(app, SignTx(pk, tx)) // compose and send tx
+
+	// check that result is OK
+	if response.Code != code.OK {
+		t.Fatalf("Response code is not OK: %s, %d", response.Log, response.Code)
+	}
+
+	SendEndBlock(app, 2) // send EndBlock
+	SendCommit(app)      // send Commit
+
+	{
+		SendBeginBlock(app, 3) // send BeginBlock
+
+		tx := CreateTx(app, address, transaction.TypeSellSwapPool, transaction.SellSwapPoolDataV230{
+			Coins:             []types.CoinID{1, 2},
+			ValueToSell:       helpers.StringToBigInt("10000000000000000000000"),
+			MinimumValueToBuy: helpers.StringToBigInt("1"),
+		}, 0)
+
+		response := SendTx(app, SignTx(pk, tx)) // compose and send tx
+
+		// check that result is OK
+		if response.Code != code.OK {
+			t.Fatalf("Response code is not OK: %s, %d", response.Log, response.Code)
+		}
+
+		SendEndBlock(app, 3) // send EndBlock
+		SendCommit(app)      // send Commit
+	}
+
+	appState := app.CurrentState().Export()
+	appState.Validators = append(appState.Validators, types.Validator{TotalBipStake: "1000", AccumReward: "1000", AbsentTimes: &types.BitArray{}}) // there should be at least one validator
+	appState.Candidates = append(appState.Candidates, types.Candidate{})                                                                           // candidate for validator
+	if err := appState.Verify(); err != nil {
+		t.Fatalf("export err: %v", err)
+	}
+
+	if appState.Pools[0].Orders != nil {
+		t.Errorf("orders %#v", appState.Pools[0].Orders)
+	}
+}
+
+func TestOrder_sell_part_fail_remove_not_owner(t *testing.T) {
+	address, pk := CreateAddress() // create account for test
+
+	state := DefaultAppState() // generate default state
+
+	state.Coins = append(state.Coins, types.Coin{
+		ID:           1,
+		Name:         "Test 1",
+		Symbol:       types.StrToCoinBaseSymbol("TEST1"),
+		Volume:       "10010000000000000000000000",
+		Crr:          0,
+		Reserve:      "0",
+		MaxSupply:    "90000000000000000000000000000",
+		Version:      0,
+		OwnerAddress: &address,
+		Mintable:     false,
+		Burnable:     false,
+	}, types.Coin{
+		ID:           2,
+		Name:         "Test 2",
+		Symbol:       types.StrToCoinBaseSymbol("TEST2"),
+		Volume:       "10015000000000000000000000",
+		Crr:          0,
+		Reserve:      "0",
+		MaxSupply:    "90000000000000000000000000000",
+		Version:      0,
+		OwnerAddress: &address,
+		Mintable:     false,
+		Burnable:     false,
+	})
+
+	seller, _ := CreateAddress() // generate seller
+	state.NextOrderID = 2
+	state.Pools = append(state.Pools, types.Pool{
+		Coin0:    1,
+		Coin1:    2,
+		Reserve0: "10000000000000000000000",
+		Reserve1: "10000000000000000000000",
+		ID:       1,
+		Orders: []types.Order{
+			{
+				IsSale:  true,
+				Volume0: "15000000000000000000000", // want to buy
+				Volume1: "5000000000000000000000",  // want to sell
+				ID:      1,
+				Owner:   seller,
+			},
+		},
+	})
+
+	state.Accounts = append(state.Accounts, types.Account{
+		Address: address,
+		Balance: []types.Balance{
+			{
+				Coin:  uint64(types.GetBaseCoinID()),
+				Value: helpers.StringToBigInt("10000000000000000000000000").String(),
+			},
+			{
+				Coin:  1,
+				Value: helpers.StringToBigInt("10000000000000000000000000").String(),
+			},
+			{
+				Coin:  2,
+				Value: helpers.StringToBigInt("10000000000000000000000000").String(),
+			},
+		},
+		Nonce:        0,
+		MultisigData: nil,
+	})
+
+	app := CreateApp(state) // create application
+
+	SendBeginBlock(app, 2) // send BeginBlock
+
+	tx := CreateTx(app, address, transaction.TypeRemoveOrderSwapPool, transaction.RemoveLimitOrderData{
+		Coin0: 1,
+		Coin1: 2,
+		ID:    1,
+	}, 0)
+
+	response := SendTx(app, SignTx(pk, tx)) // compose and send tx
+
+	// check that result is OK
+	if response.Code != code.IsNotOwnerOfOrder {
+		t.Fatalf("Response code is not OK: %s, %d", response.Log, response.Code)
+	}
+
+	SendEndBlock(app, 2) // send EndBlock
+	SendCommit(app)      // send Commit
+
+	appState := app.CurrentState().Export()
+	appState.Validators = append(appState.Validators, types.Validator{TotalBipStake: "1000", AccumReward: "1000", AbsentTimes: &types.BitArray{}}) // there should be at least one validator
+	appState.Candidates = append(appState.Candidates, types.Candidate{})                                                                           // candidate for validator
+	if err := appState.Verify(); err != nil {
+		t.Fatalf("export err: %v", err)
+	}
+
+	t.Logf("%#v",
+		appState.Pools[0].Orders)
+}
+
 func TestOrder_sell_part_plus_com(t *testing.T) {
 	address, pk := CreateAddress() // create account for test
 
@@ -299,6 +639,7 @@ func TestOrder_sell_part_plus_com(t *testing.T) {
 		}
 	}
 }
+
 func TestOrder_sell_part_plus_com_pool(t *testing.T) {
 	address, pk := CreateAddress() // create account for test
 
