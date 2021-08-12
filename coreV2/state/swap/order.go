@@ -775,9 +775,9 @@ func (s *Swap) PairRemoveLimitOrder(id uint32) (types.CoinID, *big.Int) {
 	return order.Coin1, returnVolume
 }
 
-func (s *Swap) PairAddOrderWithID(coinWantBuy, coinWantSell types.CoinID, wantBuyAmount, wantSellAmount *big.Int, sender types.Address, id uint32) (uint32, uint32) {
+func (s *Swap) PairAddOrderWithID(coinWantBuy, coinWantSell types.CoinID, wantBuyAmount, wantSellAmount *big.Int, sender types.Address, id uint32, height uint64) (uint32, uint32) {
 	pair := s.Pair(coinWantBuy, coinWantSell)
-	order := pair.AddOrderWithID(wantBuyAmount, wantSellAmount, sender, id)
+	order := pair.AddOrderWithID(wantBuyAmount, wantSellAmount, sender, id, height)
 
 	s.bus.Checker().AddCoin(coinWantSell, wantSellAmount)
 
@@ -808,7 +808,7 @@ func (p *Pair) AddOrder(wantBuyAmount0, wantSellAmount1 *big.Int, sender types.A
 	return order
 }
 
-func (p *Pair) AddOrderWithID(wantBuyAmount0, wantSellAmount1 *big.Int, sender types.Address, id uint32) (order *Limit) {
+func (p *Pair) AddOrderWithID(wantBuyAmount0, wantSellAmount1 *big.Int, sender types.Address, id uint32, height uint64) (order *Limit) {
 	order = &Limit{
 		PairKey:  p.PairKey,
 		IsBuy:    false,
@@ -816,6 +816,7 @@ func (p *Pair) AddOrderWithID(wantBuyAmount0, wantSellAmount1 *big.Int, sender t
 		WantSell: wantSellAmount1,
 		id:       id,
 		Owner:    sender,
+		Height:   height,
 		RWMutex:  new(sync.RWMutex),
 	}
 	defer p.MarkDirtyOrders(order.sort())

@@ -320,11 +320,12 @@ type Waitlist struct {
 	Value       string  `json:"value"`
 }
 type Order struct {
-	IsSale  bool
-	Volume0 string  `json:"volume0"`
-	Volume1 string  `json:"volume1"`
+	IsSale  bool    // isReverse
+	Volume0 string  `json:"volume0"` // buy
+	Volume1 string  `json:"volume1"` // sell
 	ID      uint64  `json:"id"`
 	Owner   Address `json:"owner"`
+	Height  uint64  `json:"height"`
 }
 type Pool struct {
 	Coin0    uint64  `json:"coin0"`
