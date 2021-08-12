@@ -104,10 +104,10 @@ func (data AddLiquidityDataV240) Run(tx *Transaction, context state.Interface, r
 	swapper := checkState.Swap().GetSwapper(data.Coin0, data.Coin1)
 	if isGasCommissionFromPoolSwap && swapper.GetID() == commissionPoolSwapper.GetID() {
 		if tx.GasCoin == data.Coin0 && data.Coin1.IsBaseCoin() {
-			swapper = swapper.AddLastSwapStep(commission, commissionInBaseCoin)
+			swapper = swapper.AddLastSwapStepWithOrders(commission, commissionInBaseCoin)
 		}
 		if tx.GasCoin == data.Coin1 && data.Coin0.IsBaseCoin() {
-			swapper = swapper.AddLastSwapStep(big.NewInt(0).Neg(commissionInBaseCoin), big.NewInt(0).Neg(commission))
+			swapper = swapper.AddLastSwapStepWithOrders(big.NewInt(0).Neg(commissionInBaseCoin), big.NewInt(0).Neg(commission))
 		}
 	}
 	coinLiquidity := checkState.Coins().GetCoinBySymbol(LiquidityCoinSymbol(swapper.GetID()), 0)

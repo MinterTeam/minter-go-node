@@ -14,9 +14,9 @@ import (
 )
 
 type RemoveLimitOrderData struct {
-	Coin0 types.CoinID
-	Coin1 types.CoinID
-	ID    uint32
+	// Coin0 types.CoinID
+	// Coin1 types.CoinID
+	ID uint32
 }
 
 func (data RemoveLimitOrderData) Gas() int64 {
@@ -27,36 +27,33 @@ func (data RemoveLimitOrderData) TxType() TxType {
 }
 
 func (data RemoveLimitOrderData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
-	if data.Coin0 == data.Coin1 {
-		return &Response{
-			Code: code.CrossConvert,
-			Log:  "\"From\" coin equals to \"to\" coin",
-			Info: EncodeError(code.NewCrossConvert(
-				data.Coin0.String(),
-				data.Coin1.String(), "", "")),
-		}
-	}
+	// if data.Coin0 == data.Coin1 {
+	// 	return &Response{
+	// 		Code: code.CrossConvert,
+	// 		Log:  "\"From\" coin equals to \"to\" coin",
+	// 		Info: EncodeError(code.NewCrossConvert(
+	// 			data.Coin0.String(),
+	// 			data.Coin1.String(), "", "")),
+	// 	}
+	// }
+	//
+	// swapper := context.Swap().GetSwapper(data.Coin0, data.Coin1)
+	// if !swapper.Exists() {
+	// 	return &Response{
+	// 		Code: code.PairNotExists,
+	// 		Log:  "swap pool not found",
+	// 		Info: EncodeError(code.NewPairNotExists(
+	// 			data.Coin0.String(),
+	// 			data.Coin1.String())),
+	// 	}
+	// }
 
-	swapper := context.Swap().GetSwapper(data.Coin0, data.Coin1)
-	if !swapper.Exists() {
-		return &Response{
-			Code: code.PairNotExists,
-			Log:  "swap pool not found",
-			Info: EncodeError(code.NewPairNotExists(
-				data.Coin0.String(),
-				data.Coin1.String())),
-		}
-	}
-
-	order := swapper.GetOrder(data.ID)
+	order := context.Swap().GetOrder(data.ID)
 	if order == nil {
 		return &Response{
 			Code: code.OrderNotExists,
 			Log:  "limit order not found",
-			Info: EncodeError(code.NewOrderNotExists(
-				data.Coin0.String(),
-				data.Coin1.String(),
-				data.ID)),
+			Info: EncodeError(code.NewOrderNotExists(data.ID)),
 		}
 	}
 
@@ -66,8 +63,8 @@ func (data RemoveLimitOrderData) basicCheck(tx *Transaction, context *state.Chec
 			Code: code.IsNotOwnerOfOrder,
 			Log:  "Sender is not owner of this order",
 			Info: EncodeError(code.NewIsNotOwnerOfOrder(
-				data.Coin0.String(),
-				data.Coin1.String(),
+				order.Coin0.String(),
+				order.Coin1.String(),
 				data.ID,
 				order.Owner.String())),
 		}
@@ -144,7 +141,7 @@ func (data RemoveLimitOrderData) Run(tx *Transaction, context state.Interface, r
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 
-		coin, volume := deliverState.Swap.PairRemoveLimitOrder(data.Coin0, data.Coin1, data.ID)
+		coin, volume := deliverState.Swap.PairRemoveLimitOrder(data.ID)
 		deliverState.Accounts.AddBalance(sender, coin, volume)
 
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
@@ -155,7 +152,7 @@ func (data RemoveLimitOrderData) Run(tx *Transaction, context state.Interface, r
 			{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 			{Key: []byte("tx.commission_details"), Value: []byte(tagsCom.string())},
 			{Key: []byte("tx.order_id"), Value: []byte(strconv.Itoa(int(data.ID)))},
-			{Key: []byte("tx.pair_ids"), Value: []byte(liquidityCoinName(data.Coin0, data.Coin1))},
+			// {Key: []byte("tx.pair_ids"), Value: []byte(liquidityCoinName(data.Coin0, data.Coin1))},
 		}
 	}
 

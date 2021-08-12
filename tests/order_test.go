@@ -286,9 +286,9 @@ func TestOrder_sell_part_remove(t *testing.T) {
 	SendBeginBlock(app, 2) // send BeginBlock
 
 	tx = CreateTx(app, address, transaction.TypeRemoveOrderSwapPool, transaction.RemoveLimitOrderData{
-		Coin0: 1,
-		Coin1: 2,
-		ID:    1,
+		// Coin0: 1,
+		// Coin1: 2,
+		ID: 1,
 	}, 0)
 
 	response = SendTx(app, SignTx(pk, tx)) // compose and send tx
@@ -387,9 +387,9 @@ func TestOrder_sell_part_remove_and_try_use(t *testing.T) {
 	SendBeginBlock(app, 2) // send BeginBlock
 
 	tx := CreateTx(app, address, transaction.TypeRemoveOrderSwapPool, transaction.RemoveLimitOrderData{
-		Coin0: 1,
-		Coin1: 2,
-		ID:    1,
+		// Coin0: 1,
+		// Coin1: 2,
+		ID: 1,
 	}, 0)
 
 	response := SendTx(app, SignTx(pk, tx)) // compose and send tx
@@ -509,16 +509,16 @@ func TestOrder_sell_part_fail_remove_not_owner(t *testing.T) {
 	SendBeginBlock(app, 2) // send BeginBlock
 
 	tx := CreateTx(app, address, transaction.TypeRemoveOrderSwapPool, transaction.RemoveLimitOrderData{
-		Coin0: 1,
-		Coin1: 2,
-		ID:    1,
+		// Coin0: 1,
+		// Coin1: 2,
+		ID: 1,
 	}, 0)
 
 	response := SendTx(app, SignTx(pk, tx)) // compose and send tx
 
 	// check that result is OK
 	if response.Code != code.IsNotOwnerOfOrder {
-		t.Fatalf("Response code is not OK: %s, %d", response.Log, response.Code)
+		t.Fatalf("Response code is not `IsNotOwnerOfOrder`: %s, %d", response.Log, response.Code)
 	}
 
 	SendEndBlock(app, 2) // send EndBlock

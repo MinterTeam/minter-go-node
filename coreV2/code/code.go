@@ -198,14 +198,16 @@ func NewPairNotExists(coin0 string, coin1 string) *pairNotExists {
 }
 
 type orderNotExists struct {
-	Code  string `json:"code,omitempty"`
-	Coin0 string `json:"coin0,omitempty"`
-	Coin1 string `json:"coin1,omitempty"`
-	ID    string `json:"id,omitempty"`
+	Code string `json:"code,omitempty"`
+	// Coin0 string `json:"coin0,omitempty"`
+	// Coin1 string `json:"coin1,omitempty"`
+	ID string `json:"id,omitempty"`
 }
 
-func NewOrderNotExists(coin0 string, coin1 string, id uint32) *orderNotExists {
-	return &orderNotExists{Code: strconv.Itoa(int(OrderNotExists)), Coin0: coin0, Coin1: coin1, ID: strconv.Itoa(int(id))}
+func NewOrderNotExists( /*coin0 string, coin1 string,*/ id uint32) *orderNotExists {
+	return &orderNotExists{Code: strconv.Itoa(int(OrderNotExists)),
+		// Coin0: coin0, Coin1: coin1,
+		ID: strconv.Itoa(int(id))}
 }
 
 type isNotOwnerOfOrder struct {
@@ -217,7 +219,9 @@ type isNotOwnerOfOrder struct {
 }
 
 func NewIsNotOwnerOfOrder(coin0 string, coin1 string, id uint32, owner string) *isNotOwnerOfOrder {
-	return &isNotOwnerOfOrder{Code: strconv.Itoa(int(IsNotOwnerOfOrder)), Coin0: coin0, Coin1: coin1, ID: strconv.Itoa(int(id)), Owner: owner}
+	return &isNotOwnerOfOrder{Code: strconv.Itoa(int(IsNotOwnerOfOrder)),
+		Coin0: coin0, Coin1: coin1,
+		ID: strconv.Itoa(int(id)), Owner: owner}
 }
 
 type pairAlreadyExists struct {

@@ -9,6 +9,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/coreV2/state/checker"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/helpers"
+	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/tree"
 	"github.com/tendermint/go-amino"
 	db "github.com/tendermint/tm-db"
@@ -60,6 +61,16 @@ func TestPair_ResortOrders(t *testing.T) {
 			})
 		})
 	})
+
+	_, value := immutableTree.GetLastImmutable().Get(pathOrder(1))
+	order := &Limit{
+		id: 1,
+	}
+
+	if err := rlp.DecodeBytes(value, order); err != nil {
+		panic(err)
+	}
+	t.Logf("%#v", order)
 }
 
 func TestPair_SellWithOrders_changePriceWithOrderAndUpdateList0(t *testing.T) {
@@ -1592,7 +1603,7 @@ func TestPair_CalculateBuyForSellWithOrders_01(t *testing.T) {
 				t.Run("first order", func(t *testing.T) {
 					amount0In := pair.CalculateSellForBuy(big.NewInt(2926))
 					amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 999))
-					if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "2000" {
+					if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "2001" {
 						t.Error("want to get 1,000-0.1% more and spend 2,000 more by order", amount0In, amount0InWithOB)
 					}
 				})
@@ -1609,7 +1620,7 @@ func TestPair_CalculateBuyForSellWithOrders_01(t *testing.T) {
 					p := pair.AddLastSwapStep(amount0, big.NewInt(2926)).AddLastSwapStep(big.NewInt(2), big.NewInt(-1))
 					amount0In := big.NewInt(0).Add(amount0, p.CalculateSellForBuy(big.NewInt(466)))
 					amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 999 + 466))
-					if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "2000" {
+					if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "2001" {
 						t.Error("want to get 1,000-0.1% more and spend 2,000 more by order", amount0In, amount0InWithOB)
 					}
 				})
@@ -1653,14 +1664,14 @@ func TestPair_CalculateBuyForSellWithOrders_01(t *testing.T) {
 					t.Run("before second order", func(t *testing.T) {
 						amount0In := pair.CalculateSellForBuy(big.NewInt(2926))
 						amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 999))
-						if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "2000" {
+						if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "2001" {
 							t.Error("want to get 1,000-0.1% more and spend 2,000 more by order", amount0In, amount0InWithOB)
 						}
 					})
 					t.Run("all orders", func(t *testing.T) {
 						amount0In := pair.CalculateSellForBuy(big.NewInt(2926))
 						amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 1998))
-						if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "4000" {
+						if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "4001" {
 							t.Error("want to get 2,000-0.1% more and spend 4,000 more by order", amount0In, amount0InWithOB)
 						}
 					})
@@ -1669,7 +1680,7 @@ func TestPair_CalculateBuyForSellWithOrders_01(t *testing.T) {
 						p := pair.AddLastSwapStep(amount0, big.NewInt(2926))
 						amount0In := big.NewInt(0).Add(amount0, p.CalculateSellForBuy(big.NewInt(466)))
 						amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 1998 + 466))
-						if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "4000" {
+						if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "4001" {
 							t.Error("want to get 2,000-0.1% more and spend 4,000 more by order", amount0In, amount0InWithOB)
 						}
 					})
@@ -1772,7 +1783,7 @@ func TestPair_CalculateBuyForSellWithOrders_10(t *testing.T) {
 				t.Run("first order", func(t *testing.T) {
 					amount0In := pair.CalculateSellForBuy(big.NewInt(2926))
 					amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 999))
-					if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "2000" {
+					if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "2001" {
 						t.Error("want to get 1,000-0.1% more and spend 2,000 more by order", amount0In, amount0InWithOB)
 					}
 				})
@@ -1789,7 +1800,7 @@ func TestPair_CalculateBuyForSellWithOrders_10(t *testing.T) {
 					p := pair.AddLastSwapStep(amount0, big.NewInt(2926)).AddLastSwapStep(big.NewInt(2), big.NewInt(-1))
 					amount0In := big.NewInt(0).Add(amount0, p.CalculateSellForBuy(big.NewInt(466)))
 					amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 999 + 466))
-					if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "2000" {
+					if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "2001" {
 						t.Error("want to get 1,000-0.1% more and spend 2,000 more by order", amount0In, amount0InWithOB)
 					}
 				})
@@ -1834,14 +1845,14 @@ func TestPair_CalculateBuyForSellWithOrders_10(t *testing.T) {
 					t.Run("before second order", func(t *testing.T) {
 						amount0In := pair.CalculateSellForBuyAllowNeg(big.NewInt(2926))
 						amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 999))
-						if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "2000" {
+						if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "2001" {
 							t.Error("want to get 1,000-0.1% more and spend 2,000 more by order", amount0In, amount0InWithOB)
 						}
 					})
 					t.Run("all orders", func(t *testing.T) {
 						amount0In := pair.CalculateSellForBuyAllowNeg(big.NewInt(2926))
 						amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 1998))
-						if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "4000" {
+						if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "4001" {
 							t.Error("want to get 2,000-0.1% more and spend 4,000 more by order", amount0In, amount0InWithOB)
 						}
 					})
@@ -1850,7 +1861,7 @@ func TestPair_CalculateBuyForSellWithOrders_10(t *testing.T) {
 						p := pair.AddLastSwapStep(amount0, big.NewInt(2926))
 						amount0In := big.NewInt(0).Add(amount0, p.CalculateSellForBuy(big.NewInt(466)))
 						amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 1998 + 466))
-						if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "4000" {
+						if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "4001" {
 							t.Error("want to get 2,000-0.1% more and spend 4,000 more by order", amount0In, amount0InWithOB)
 						}
 					})

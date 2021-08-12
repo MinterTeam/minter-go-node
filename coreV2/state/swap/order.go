@@ -301,7 +301,7 @@ func (p *Pair) calculateBuyForSellWithOrders(amount0In *big.Int) (amountOut *big
 
 			orders = append(orders, &Limit{
 				IsBuy:        limit.IsBuy,
-				pairKey:      p.pairKey,
+				PairKey:      p.PairKey,
 				WantBuy:      amount0, // 9009, 9 заберем в пул
 				WantSell:     amount1, // 3003, 3 пул
 				Owner:        limit.Owner,
@@ -323,7 +323,7 @@ func (p *Pair) calculateBuyForSellWithOrders(amount0In *big.Int) (amountOut *big
 			WantSell:     big.NewInt(0).Set(limit.WantSell),
 			Owner:        limit.Owner,
 			Height:       limit.Height,
-			pairKey:      limit.pairKey,
+			PairKey:      limit.PairKey,
 			oldSortPrice: limit.SortPrice(),
 			id:           limit.id,
 			RWMutex:      limit.RWMutex,
@@ -464,7 +464,7 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big
 
 			orders = append(orders, &Limit{
 				IsBuy:        limit.IsBuy,
-				pairKey:      p.pairKey,
+				PairKey:      p.PairKey,
 				WantBuy:      big.NewInt(0).Set(amount0), // и того продам по ордеру 9009, из них 9000 продавцу и 9 в пул
 				WantSell:     amount1,                    // 3003, позже вычтем 3 и положим в пул
 				Owner:        limit.Owner,
@@ -485,7 +485,7 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big
 			WantSell:     big.NewInt(0).Set(limit.WantSell),
 			Owner:        limit.Owner,
 			Height:       limit.Height,
-			pairKey:      limit.pairKey,
+			PairKey:      limit.PairKey,
 			oldSortPrice: limit.SortPrice(),
 			id:           limit.id,
 			RWMutex:      limit.RWMutex,
@@ -524,7 +524,7 @@ type Limit struct {
 	IsBuy    bool
 	Height   uint64
 
-	pairKey
+	PairKey
 	oldSortPrice *big.Float
 	id           uint32
 
@@ -643,7 +643,7 @@ func (l *Limit) reverse() *Limit {
 	l.RLock()
 	defer l.RUnlock()
 	return &Limit{
-		pairKey:      l.pairKey.reverse(),
+		PairKey:      l.PairKey.reverse(),
 		IsBuy:        !l.IsBuy,
 		WantBuy:      l.WantSell,
 		WantSell:     l.WantBuy,
@@ -664,12 +664,12 @@ func (l *Limit) sort() *Limit {
 }
 
 func (l *Limit) isSorted() bool {
-	return l.pairKey.isSorted()
+	return l.PairKey.isSorted()
 }
 
 func (l *Limit) clone() *Limit {
 	return &Limit{
-		pairKey:      l.pairKey,
+		PairKey:      l.PairKey,
 		IsBuy:        l.IsBuy,
 		WantBuy:      big.NewInt(0).Set(l.WantBuy),
 		WantSell:     big.NewInt(0).Set(l.WantSell),
@@ -755,17 +755,21 @@ func (s *Swap) PairAddOrder(coinWantBuy, coinWantSell types.CoinID, wantBuyAmoun
 	return order.id, pair.GetID()
 }
 
-func (s *Swap) PairRemoveLimitOrder(coin0, coin1 types.CoinID, id uint32) (types.CoinID, *big.Int) {
-	pair := s.Pair(coin0, coin1)
-	order := pair.getOrder(id)
+func (s *Swap) PairRemoveLimitOrder(id uint32) (types.CoinID, *big.Int) {
+	order := s.GetOrder(id)
 	if order == nil {
 		panic("order not exist")
+	}
+
+	if !order.isSell() {
+		order = order.reverse()
 	}
 
 	returnVolume := big.NewInt(0).Set(order.WantSell)
 
 	s.bus.Checker().AddCoin(order.Coin1, big.NewInt(0).Neg(returnVolume))
 
+	pair := s.Pair(order.Coin0, order.Coin1)
 	pair.updateOrders([]*Limit{order})
 
 	return order.Coin1, returnVolume
@@ -785,7 +789,7 @@ func (p *Pair) GetOrder(id uint32) *Limit {
 }
 func (p *Pair) AddOrder(wantBuyAmount0, wantSellAmount1 *big.Int, sender types.Address, block uint64) (order *Limit) {
 	order = &Limit{
-		pairKey:  p.pairKey,
+		PairKey:  p.PairKey,
 		IsBuy:    false,
 		WantBuy:  wantBuyAmount0,
 		WantSell: wantSellAmount1,
@@ -806,7 +810,7 @@ func (p *Pair) AddOrder(wantBuyAmount0, wantSellAmount1 *big.Int, sender types.A
 
 func (p *Pair) AddOrderWithID(wantBuyAmount0, wantSellAmount1 *big.Int, sender types.Address, id uint32) (order *Limit) {
 	order = &Limit{
-		pairKey:  p.pairKey,
+		PairKey:  p.PairKey,
 		IsBuy:    false,
 		WantBuy:  wantBuyAmount0,
 		WantSell: wantSellAmount1,
@@ -846,7 +850,7 @@ func (p *Pair) loadAllOrders(immutableTree *iavl.ImmutableTree) (orders []*Limit
 
 		order := p.getOrder(binary.BigEndian.Uint32(key[len(key)-4:]))
 		if !isSell {
-			order = order.reverse() // todo: need test
+			// order = order.reverse() // todo: need test
 		}
 		orders = append(orders, order)
 
@@ -864,7 +868,7 @@ func (s *Swap) loadBuyOrders(pair *Pair, slice []uint32, limit int) []uint32 {
 	if sliceLen > 0 {
 		var l = slice[sliceLen-1]
 		o := pair.getOrder(l)
-		startKey = pricePath(pair.pairKey, o.SortPrice(), o.id+1, false)
+		startKey = pricePath(pair.PairKey, o.SortPrice(), o.id+1, false)
 	}
 
 	i := sliceLen
@@ -885,22 +889,36 @@ func (s *Swap) loadBuyOrders(pair *Pair, slice []uint32, limit int) []uint32 {
 	return slice
 }
 
-func (s *Swap) loadOrder(pk pairKey) func(id uint32) *Limit {
-	return func(id uint32) *Limit {
-		_, value := s.immutableTree().Get(pathOrder(id))
-		order := &Limit{
-			id:      id,
-			pairKey: pk.sort(),
-			RWMutex: new(sync.RWMutex),
-		}
-		err := rlp.DecodeBytes(value, order)
-		if err != nil {
-			panic(err)
-		}
+func (s *Swap) GetOrder(id uint32) *Limit {
+	order := s.loadOrder(id)
 
-		return order
+	list := s.Pair(order.Coin0, order.Coin1).orders
+	list.mu.RLock()
+	defer list.mu.RUnlock()
+
+	if o, ok := list.list[id]; ok { // todo: mb && o != nil
+		return o
 	}
 
+	return order
+}
+
+func (s *Swap) loadOrder(id uint32) *Limit {
+	_, value := s.immutableTree().Get(pathOrder(id))
+	if value == nil {
+		return nil
+	}
+
+	order := &Limit{
+		id:      id,
+		RWMutex: new(sync.RWMutex),
+	}
+	err := rlp.DecodeBytes(value, order)
+	if err != nil {
+		panic(err)
+	}
+
+	return order
 }
 
 func (s *Swap) loadSellOrders(pair *Pair, slice []uint32, limit int) []uint32 {
@@ -911,7 +929,7 @@ func (s *Swap) loadSellOrders(pair *Pair, slice []uint32, limit int) []uint32 {
 	if sliceLen > 0 {
 		var l = slice[sliceLen-1]
 		o := pair.getOrder(l)
-		endKey = pricePath(pair.pairKey, o.SortPrice(), o.id-1, true)
+		endKey = pricePath(pair.PairKey, o.SortPrice(), o.id-1, true)
 	}
 
 	i := sliceLen
