@@ -27,7 +27,12 @@ const minimumLiquidity = 1000
 const commission = 2
 
 type EditableChecker interface {
+	IsSorted() bool
 	GetOrder(id uint32) *Limit
+	OrderSellByIndex(index int) *Limit
+	OrderIDSellByIndex(index int) uint32
+	OrderBuyByIndex(index int) *Limit
+	OrderIDBuyByIndex(index int) uint32
 	Exists() bool
 	GetID() uint32
 	// Deprecated
@@ -261,8 +266,8 @@ func (p *Pair) AddLastSwapStep(amount0In, amount1Out *big.Int) EditableChecker {
 		orders:              p.orders,
 		dirtyOrders:         p.dirtyOrders,
 		markDirtyOrders:     func() {},
-		loadHigherOrders:    p.loadHigherOrders,
-		loadLowerOrders:     p.loadLowerOrders,
+		loadBuyOrders:       p.loadBuyOrders,
+		loadSellOrders:      p.loadSellOrders,
 		getLastTotalOrderID: nil,
 		loadOrder:           p.loadOrder,
 	}
@@ -316,8 +321,8 @@ func (p *Pair) AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int) Editabl
 			list: dirtyOrdrs,
 		},
 		markDirtyOrders:     p.markDirtyOrders,
-		loadHigherOrders:    p.loadHigherOrders,
-		loadLowerOrders:     p.loadLowerOrders,
+		loadBuyOrders:       p.loadBuyOrders,
+		loadSellOrders:      p.loadSellOrders,
 		getLastTotalOrderID: nil,
 		loadOrder:           p.loadOrder,
 	}
@@ -351,6 +356,9 @@ func (p *Pair) AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int) Editabl
 func (p *Pair) Reverse() EditableChecker {
 	return p.reverse()
 }
+func (p *Pair) IsSorted() bool {
+	return p.isSorted()
+}
 func (p *Pair) reverse() *Pair {
 	return &Pair{
 		lockOrders:          p.lockOrders,
@@ -361,8 +369,8 @@ func (p *Pair) reverse() *Pair {
 		orders:              p.orders,
 		dirtyOrders:         p.dirtyOrders,
 		markDirtyOrders:     p.markDirtyOrders,
-		loadHigherOrders:    p.loadLowerOrders,
-		loadLowerOrders:     p.loadHigherOrders,
+		loadBuyOrders:       p.loadSellOrders,
+		loadSellOrders:      p.loadBuyOrders,
 		getLastTotalOrderID: p.getLastTotalOrderID,
 		loadOrder:           p.loadOrder,
 	}
@@ -755,8 +763,8 @@ func (s *Swap) addPair(key PairKey) *Pair {
 		orders:              &orderList{list: make(map[uint32]*Limit), mu: sync.RWMutex{}},
 		dirtyOrders:         &orderDirties{list: make(map[uint32]struct{}), mu: sync.RWMutex{}},
 		markDirtyOrders:     s.markDirtyOrders(key),
-		loadHigherOrders:    s.loadBuyOrders,
-		loadLowerOrders:     s.loadSellOrders,
+		loadBuyOrders:       s.loadBuyOrders,
+		loadSellOrders:      s.loadSellOrders,
 		getLastTotalOrderID: s.incOrdersID,
 		loadOrder:           s.loadOrder,
 	}
@@ -834,8 +842,8 @@ type Pair struct {
 	orders              *orderList
 	dirtyOrders         *orderDirties
 	markDirtyOrders     func()
-	loadHigherOrders    func(pair *Pair, slice []uint32, limit int) []uint32
-	loadLowerOrders     func(pair *Pair, slice []uint32, limit int) []uint32
+	loadBuyOrders       func(pair *Pair, slice []uint32, limit int) []uint32
+	loadSellOrders      func(pair *Pair, slice []uint32, limit int) []uint32
 	getLastTotalOrderID func() uint32
 	loadOrder           func(id uint32) *Limit
 }
