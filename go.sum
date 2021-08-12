@@ -40,8 +40,8 @@ github.com/ChainSafe/go-schnorrkel v0.0.0-20200405005733-88cbf1b4c40d/go.mod h1:
 github.com/DataDog/zstd v1.4.1 h1:3oxKN3wbHibqx897utPC2LTQU4J+IHWWJO+glkAkpFM=
 github.com/DataDog/zstd v1.4.1/go.mod h1:1jcaCB/ufaK+sKp1NBhlGmpz41jOoPQ35bpF36t7BBo=
 github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible/go.mod h1:r7JcOSlj0wfOMncg0iLm8Leh48TZaKVeNIfJntJ2wa0=
-github.com/MinterTeam/node-grpc-gateway v1.4.2 h1:IXuSoOCv2wx7Ye9H4iJajIbbdGT+MZ4wwyUuBH2+/jo=
-github.com/MinterTeam/node-grpc-gateway v1.4.2/go.mod h1:d4Rw0MtsZTrFNLJJWr/jcurTYcqRVITzWuGDGo7aHxM=
+github.com/MinterTeam/node-grpc-gateway v1.4.1-0.20210812144651-753402ea0422 h1:4ZNHViBigNyJbvFi23mjVP0B4mqiznvATTirMHWnpAQ=
+github.com/MinterTeam/node-grpc-gateway v1.4.1-0.20210812144651-753402ea0422/go.mod h1:d4Rw0MtsZTrFNLJJWr/jcurTYcqRVITzWuGDGo7aHxM=
 github.com/MinterTeam/tendermint v0.34.11-0.20210615080504-44952755291a h1:+H8ACyFEtZrwPOqEU1XkUsQaDpE7DAvi9pKX2p/9pGk=
 github.com/MinterTeam/tendermint v0.34.11-0.20210615080504-44952755291a/go.mod h1:aeHL7alPh4uTBIJQ8mgFEE8VwJLXI1VD3rVOmH2Mcy0=
 github.com/OneOfOne/xxhash v1.2.2 h1:KMrpdQIwFcEqXDklaen+P1axHaj9BSKzvpUUfnHldSE=

@@ -3,13 +3,45 @@ package service
 import (
 	"context"
 	"encoding/hex"
+	"strings"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/transaction"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"strings"
 )
+
+func (s *Service) LimitOrder(_ context.Context, req *pb.LimitOrderRequest) (*pb.LimitOrderResponse, error) {
+	cState, err := s.blockchain.GetStateForHeight(req.Height)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, err.Error())
+	}
+
+	order := cState.Swap().GetOrder(uint32(req.OrderId))
+	if order == nil {
+		return nil, status.Error(codes.NotFound, "limit order not found")
+	}
+
+	if order.IsBuy {
+		order = order.Reverse()
+	}
+
+	return &pb.LimitOrderResponse{
+		CoinSell: &pb.Coin{
+			Id:     uint64(order.Coin1),
+			Symbol: cState.Coins().GetCoin(order.Coin1).GetFullSymbol(),
+		},
+		CoinBuy: &pb.Coin{
+			Id:     uint64(order.Coin0),
+			Symbol: cState.Coins().GetCoin(order.Coin0).GetFullSymbol(),
+		},
+		WantSell: order.WantSell.String(),
+		WantBuy:  order.WantBuy.String(),
+		Owner:    order.Owner.String(),
+		Height:   order.Height,
+	}, nil
+}
 
 func (s *Service) SwapPool(_ context.Context, req *pb.SwapPoolRequest) (*pb.SwapPoolResponse, error) {
 	if req.Coin0 == req.Coin1 {

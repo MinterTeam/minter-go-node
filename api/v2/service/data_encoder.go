@@ -348,7 +348,7 @@ func encode(data transaction.Data, txType transaction.TxType, rCoins coins.RCoin
 		}
 	case transaction.TypeAddOrderSwapPool:
 		d := data.(*transaction.AddOrderSwapPoolData)
-		m = &pb.AddOrderSwapPoolData{
+		m = &pb.AddLimitOrderData{
 			CoinToBuy: &pb.Coin{
 				Id:     uint64(d.CoinToBuy),
 				Symbol: rCoins.GetCoin(d.CoinToBuy).GetFullSymbol(),
@@ -361,19 +361,10 @@ func encode(data transaction.Data, txType transaction.TxType, rCoins coins.RCoin
 			ValueToSell: d.ValueToSell.String(),
 		}
 	case transaction.TypeRemoveOrderSwapPool:
-		// todo: FIXME
-		// d := data.(*transaction.RemoveLimitOrderData)
-		// m = &pb.RemoveOrderSwapPoolData{
-		// 	Coin0: &pb.Coin{
-		// 		Id:     uint64(d.Coin0),
-		// 		Symbol: rCoins.GetCoin(d.Coin0).GetFullSymbol(),
-		// 	},
-		// 	Coin1: &pb.Coin{
-		// 		Id:     uint64(d.Coin1),
-		// 		Symbol: rCoins.GetCoin(d.Coin1).GetFullSymbol(),
-		// 	},
-		// 	ID: strconv.Itoa(int(d.ID)),
-		// }
+		d := data.(*transaction.RemoveLimitOrderData)
+		m = &pb.RemoveLimitOrderData{
+			Id: uint64(d.ID),
+		}
 	default:
 		return nil, errors.New("unknown tx type")
 	}

@@ -619,7 +619,7 @@ func (l *Limit) SortPrice() *big.Float {
 	if l.isSorted() {
 		return l.Price()
 	}
-	return l.reverse().Price()
+	return l.Reverse().Price()
 }
 
 func (l *Limit) OldSortPrice() *big.Float {
@@ -639,7 +639,7 @@ func (l *Limit) ReCalcOldSortPrice() *big.Float {
 	return l.oldSortPrice
 }
 
-func (l *Limit) reverse() *Limit {
+func (l *Limit) Reverse() *Limit {
 	l.RLock()
 	defer l.RUnlock()
 	return &Limit{
@@ -660,7 +660,7 @@ func (l *Limit) sort() *Limit {
 		return l
 	}
 
-	return l.reverse()
+	return l.Reverse()
 }
 
 func (l *Limit) isSorted() bool {
@@ -762,7 +762,7 @@ func (s *Swap) PairRemoveLimitOrder(id uint32) (types.CoinID, *big.Int) {
 	}
 
 	if !order.isSell() {
-		order = order.reverse()
+		order = order.Reverse()
 	}
 
 	returnVolume := big.NewInt(0).Set(order.WantSell)
@@ -896,10 +896,11 @@ func (s *Swap) GetOrder(id uint32) *Limit {
 	list.mu.RLock()
 	defer list.mu.RUnlock()
 
-	if o, ok := list.list[id]; ok { // todo: mb && o != nil
+	if o, ok := list.list[id]; ok {
 		return o
 	}
 
+	list.list[id] = order
 	return order
 }
 
@@ -1035,7 +1036,7 @@ func (p *Pair) orderBuyByIndex(index int) *Limit {
 
 	order := p.getOrder(orders[index])
 	if !p.isSorted() {
-		return order.reverse()
+		return order.Reverse()
 	}
 
 	return order
@@ -1129,7 +1130,7 @@ func (p *Pair) orderSellLowerByIndex(index int) *Limit {
 
 	order := p.getOrder(orders[index])
 	if !p.isSorted() {
-		return order.reverse()
+		return order.Reverse()
 	}
 
 	return order
