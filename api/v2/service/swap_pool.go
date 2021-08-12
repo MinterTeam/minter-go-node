@@ -48,6 +48,7 @@ func (s *Service) LimitOrderList(ctx context.Context, req *pb.LimitOrderListRequ
 			break
 		}
 		resp.Orders = append(resp.Orders, &pb.LimitOrderResponse{
+			Id: uint64(order.ID()),
 			CoinSell: &pb.Coin{
 				Id:     uint64(order.Coin1),
 				Symbol: cState.Coins().GetCoin(order.Coin1).GetFullSymbol(),
@@ -133,6 +134,7 @@ func (s *Service) LimitOrder(ctx context.Context, req *pb.LimitOrderRequest) (*p
 	}
 
 	return &pb.LimitOrderResponse{
+		Id: uint64(order.ID()),
 		CoinSell: &pb.Coin{
 			Id:     uint64(order.Coin1),
 			Symbol: cState.Coins().GetCoin(order.Coin1).GetFullSymbol(),
@@ -162,7 +164,7 @@ func (s *Service) LimitOrders(ctx context.Context, req *pb.LimitOrdersRequest) (
 
 		order := cState.Swap().GetOrder(uint32(id))
 		if order == nil {
-			return nil, status.Error(codes.NotFound, "limit order not found")
+			continue
 		}
 
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
@@ -174,6 +176,7 @@ func (s *Service) LimitOrders(ctx context.Context, req *pb.LimitOrdersRequest) (
 		}
 
 		resp.Orders = append(resp.Orders, &pb.LimitOrderResponse{
+			Id: uint64(order.ID()),
 			CoinSell: &pb.Coin{
 				Id:     uint64(order.Coin1),
 				Symbol: cState.Coins().GetCoin(order.Coin1).GetFullSymbol(),

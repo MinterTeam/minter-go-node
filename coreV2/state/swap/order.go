@@ -531,6 +531,10 @@ type Limit struct {
 	*sync.RWMutex
 }
 
+func (l *Limit) ID() uint32 {
+	return l.id
+}
+
 func (l *Limit) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		WantBuy  string `json:"buy"`
