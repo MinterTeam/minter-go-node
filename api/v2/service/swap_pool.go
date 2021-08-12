@@ -12,15 +12,23 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (s *Service) LimitOrder(_ context.Context, req *pb.LimitOrderRequest) (*pb.LimitOrderResponse, error) {
+func (s *Service) LimitOrder(ctx context.Context, req *pb.LimitOrderRequest) (*pb.LimitOrderResponse, error) {
 	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+		return nil, timeoutStatus.Err()
+	}
+
 	order := cState.Swap().GetOrder(uint32(req.OrderId))
 	if order == nil {
 		return nil, status.Error(codes.NotFound, "limit order not found")
+	}
+
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+		return nil, timeoutStatus.Err()
 	}
 
 	if order.IsBuy {
@@ -43,9 +51,13 @@ func (s *Service) LimitOrder(_ context.Context, req *pb.LimitOrderRequest) (*pb.
 	}, nil
 }
 
-func (s *Service) SwapPool(_ context.Context, req *pb.SwapPoolRequest) (*pb.SwapPoolResponse, error) {
+func (s *Service) SwapPool(ctx context.Context, req *pb.SwapPoolRequest) (*pb.SwapPoolResponse, error) {
 	if req.Coin0 == req.Coin1 {
 		return nil, status.Error(codes.InvalidArgument, "equal coins id")
+	}
+
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+		return nil, timeoutStatus.Err()
 	}
 
 	cState, err := s.blockchain.GetStateForHeight(req.Height)
@@ -53,9 +65,17 @@ func (s *Service) SwapPool(_ context.Context, req *pb.SwapPoolRequest) (*pb.Swap
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+		return nil, timeoutStatus.Err()
+	}
+
 	reserve0, reserve1, liquidityID := cState.Swap().SwapPool(types.CoinID(req.Coin0), types.CoinID(req.Coin1))
 	if liquidityID == 0 {
 		return nil, status.Error(codes.NotFound, "pair not found")
+	}
+
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+		return nil, timeoutStatus.Err()
 	}
 
 	return &pb.SwapPoolResponse{
@@ -65,7 +85,7 @@ func (s *Service) SwapPool(_ context.Context, req *pb.SwapPoolRequest) (*pb.Swap
 	}, nil
 }
 
-func (s *Service) SwapPoolProvider(_ context.Context, req *pb.SwapPoolProviderRequest) (*pb.SwapPoolResponse, error) {
+func (s *Service) SwapPoolProvider(ctx context.Context, req *pb.SwapPoolProviderRequest) (*pb.SwapPoolResponse, error) {
 	if req.Coin0 == req.Coin1 {
 		return nil, status.Error(codes.InvalidArgument, "equal coins id")
 	}
@@ -85,14 +105,26 @@ func (s *Service) SwapPoolProvider(_ context.Context, req *pb.SwapPoolProviderRe
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+		return nil, timeoutStatus.Err()
+	}
+
 	swapper := cState.Swap().GetSwapper(types.CoinID(req.Coin0), types.CoinID(req.Coin1))
 	liquidityID := swapper.GetID()
 	if liquidityID == 0 {
 		return nil, status.Error(codes.NotFound, "pair from provider not found")
 	}
 
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+		return nil, timeoutStatus.Err()
+	}
+
 	liquidityCoin := cState.Coins().GetCoinBySymbol(transaction.LiquidityCoinSymbol(liquidityID), 0)
 	balance := cState.Accounts().GetBalance(address, liquidityCoin.ID())
+
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+		return nil, timeoutStatus.Err()
+	}
 
 	amount0, amount1 := swapper.Amounts(balance, liquidityCoin.Volume())
 	return &pb.SwapPoolResponse{
