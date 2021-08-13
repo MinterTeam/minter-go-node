@@ -5,12 +5,168 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/crypto"
 	"github.com/MinterTeam/minter-go-node/helpers"
 	"github.com/MinterTeam/minter-go-node/rlp"
 )
 
+func TestAddOrderSwapPoolData_WrongPrice(t *testing.T) {
+	// t.SkipNow()
+	t.Parallel()
+	cState := getState()
+
+	coin0 := createNonReserveCoin(cState)
+	coin1 := createNonReserveCoin(cState)
+
+	privateKey, _ := crypto.GenerateKey()
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+
+	cState.Accounts.AddBalance(addr, types.BasecoinID, helpers.BipToPip(big.NewInt(1000000)))
+
+	cState.Accounts.SubBalance(types.Address{}, coin0, helpers.BipToPip(big.NewInt(100000)))
+	cState.Accounts.AddBalance(addr, coin0, helpers.BipToPip(big.NewInt(100000)))
+	cState.Accounts.SubBalance(types.Address{}, coin1, helpers.BipToPip(big.NewInt(100000)))
+	cState.Accounts.AddBalance(addr, coin1, helpers.BipToPip(big.NewInt(100000)))
+
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
+
+	{
+		data := CreateSwapPoolData{
+			Coin0:   coin0,
+			Volume0: helpers.BipToPip(big.NewInt(10)),
+			Coin1:   coin1,
+			Volume1: helpers.BipToPip(big.NewInt(10)),
+		}
+
+		encodedData, err := rlp.EncodeToBytes(data)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		tx := Transaction{
+			Nonce:         1,
+			GasPrice:      1,
+			ChainID:       types.CurrentChainID,
+			GasCoin:       types.GetBaseCoinID(),
+			Type:          TypeCreateSwapPool,
+			Data:          encodedData,
+			SignatureType: SigTypeSingle,
+		}
+
+		if err := tx.Sign(privateKey); err != nil {
+			t.Fatal(err)
+		}
+
+		encodedTx, err := rlp.EncodeToBytes(tx)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+
+		if response.Code != 0 {
+			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
+		}
+
+		if err := checkState(cState); err != nil {
+			t.Error(err)
+		}
+	}
+	{
+		data := AddOrderSwapPoolData{
+			CoinToSell:  coin1,
+			ValueToSell: helpers.BipToPip(big.NewInt(25)),
+			CoinToBuy:   coin0,
+			ValueToBuy:  helpers.BipToPip(big.NewInt(15)),
+		}
+
+		encodedData, err := rlp.EncodeToBytes(data)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		tx := Transaction{
+			Nonce:         2,
+			GasPrice:      1,
+			ChainID:       types.CurrentChainID,
+			GasCoin:       types.GetBaseCoinID(),
+			Type:          TypeAddOrderSwapPool,
+			Data:          encodedData,
+			SignatureType: SigTypeSingle,
+		}
+
+		if err := tx.Sign(privateKey); err != nil {
+			t.Fatal(err)
+		}
+
+		encodedTx, err := rlp.EncodeToBytes(tx)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+
+		if response.Code != code.WrongOrderPrice {
+			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
+		}
+
+		if err := checkState(cState); err != nil {
+			t.Error(err)
+		}
+	}
+	{
+		data := AddOrderSwapPoolData{
+			CoinToSell:  coin1,
+			ValueToSell: helpers.BipToPip(big.NewInt(5)),
+			CoinToBuy:   coin0,
+			ValueToBuy:  helpers.BipToPip(big.NewInt(35)),
+		}
+
+		encodedData, err := rlp.EncodeToBytes(data)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		tx := Transaction{
+			Nonce:         2,
+			GasPrice:      1,
+			ChainID:       types.CurrentChainID,
+			GasCoin:       types.GetBaseCoinID(),
+			Type:          TypeAddOrderSwapPool,
+			Data:          encodedData,
+			SignatureType: SigTypeSingle,
+		}
+
+		if err := tx.Sign(privateKey); err != nil {
+			t.Fatal(err)
+		}
+
+		encodedTx, err := rlp.EncodeToBytes(tx)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+
+		if response.Code != code.WrongOrderPrice {
+			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
+		}
+
+		if err := checkState(cState); err != nil {
+			t.Error(err)
+		}
+	}
+}
 func TestAddOrderSwapPoolData_Buy_01_moreOrder(t *testing.T) {
 	// t.SkipNow()
 	t.Parallel()

@@ -112,11 +112,14 @@ func (data AddOrderSwapPoolData) Run(tx *Transaction, context state.Interface, r
 			swapper = swapper.AddLastSwapStepWithOrders(big.NewInt(0).Neg(commissionInBaseCoin), big.NewInt(0).Neg(commission))
 		}
 	}
-	if swapper.Price().Cmp(swap.CalcPriceSell(data.ValueToBuy, data.ValueToSell)) == -1 {
+	maxPrice := big.NewFloat(0).Quo(swapper.Price(), big.NewFloat(5))
+	orderPrice := swap.CalcPriceSell(data.ValueToBuy, data.ValueToSell)
+	if swapper.Price().Cmp(orderPrice) == -1 ||
+		maxPrice.Cmp(orderPrice) == 1 {
 		return Response{
-			Code: 123456,
-			Log:  "price high",
-			Info: EncodeError(code.NewCustomCode(123456)),
+			Code: code.WrongOrderPrice,
+			Log:  fmt.Sprintf("order price is %s, but must less %s and more %s", orderPrice.String(), swapper.Price().String(), maxPrice.String()),
+			Info: EncodeError(code.NewWrongOrderPrice(maxPrice.String(), swapper.Price().String(), orderPrice.String())),
 		}
 	}
 

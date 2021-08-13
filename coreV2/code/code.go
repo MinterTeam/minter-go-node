@@ -95,6 +95,7 @@ const (
 	DuplicatePoolInRoute         uint32 = 710
 	OrderNotExists               uint32 = 711
 	IsNotOwnerOfOrder            uint32 = 712
+	WrongOrderPrice              uint32 = 713
 
 	// emission coin
 	CoinIsNotToken  uint32 = 800
@@ -867,4 +868,20 @@ type duplicatePoolInRouteCode struct {
 
 func NewDuplicatePoolInRouteCode(pool uint32) *duplicatePoolInRouteCode {
 	return &duplicatePoolInRouteCode{Code: strconv.Itoa(int(DuplicatePoolInRoute)), PoolID: strconv.Itoa(int(pool))}
+}
+
+type wrongOrderPrice struct {
+	Code       string `json:"code,omitempty"`
+	MinPrice   string `json:"min_price"`
+	MaxPrice   string `json:"max_price"`
+	OrderPrice string `json:"order_price"`
+}
+
+func NewWrongOrderPrice(minPrice, maxPrice, orderPrice string) *wrongOrderPrice {
+	return &wrongOrderPrice{
+		Code:       strconv.Itoa(int(WrongOrderPrice)),
+		MinPrice:   minPrice,
+		MaxPrice:   maxPrice,
+		OrderPrice: orderPrice,
+	}
 }
