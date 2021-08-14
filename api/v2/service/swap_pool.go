@@ -12,7 +12,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (s *Service) LimitOrderList(ctx context.Context, req *pb.LimitOrderListRequest) (*pb.LimitOrderListResponse, error) {
+func (s *Service) LimitOrdersOfPool(ctx context.Context, req *pb.LimitOrdersOfPoolRequest) (*pb.LimitOrdersOfPoolResponse, error) {
 	if req.SellCoin == req.BuyCoin {
 		return nil, status.Error(codes.InvalidArgument, "equal coins id")
 	}
@@ -35,7 +35,7 @@ func (s *Service) LimitOrderList(ctx context.Context, req *pb.LimitOrderListRequ
 		return nil, timeoutStatus.Err()
 	}
 
-	resp := &pb.LimitOrderListResponse{Orders: make([]*pb.LimitOrderResponse, 0, req.Limit)}
+	resp := &pb.LimitOrdersOfPoolResponse{Orders: make([]*pb.LimitOrderResponse, 0, req.Limit)}
 
 	orderByIndex := swapper.OrderSellByIndex
 	if !swapper.IsSorted() {
@@ -65,49 +65,6 @@ func (s *Service) LimitOrderList(ctx context.Context, req *pb.LimitOrderListRequ
 	}
 
 	return resp, nil
-}
-
-func (s *Service) LimitOrderIDList(ctx context.Context, req *pb.LimitOrderListRequest) (*pb.LimitOrderIDListResponse, error) {
-	if req.SellCoin == req.BuyCoin {
-		return nil, status.Error(codes.InvalidArgument, "equal coins id")
-	}
-
-	cState, err := s.blockchain.GetStateForHeight(req.Height)
-	if err != nil {
-		return nil, status.Error(codes.NotFound, err.Error())
-	}
-
-	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-		return nil, timeoutStatus.Err()
-	}
-
-	swapper := cState.Swap().GetSwapper(types.CoinID(req.SellCoin), types.CoinID(req.BuyCoin))
-	if swapper.GetID() == 0 {
-		return nil, status.Error(codes.NotFound, "pair not found")
-	}
-
-	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
-		return nil, timeoutStatus.Err()
-	}
-
-	var ids []uint64
-
-	orderByIndex := swapper.OrderIDSellByIndex
-	if !swapper.IsSorted() {
-		orderByIndex = swapper.OrderIDBuyByIndex
-	}
-
-	for i := 0; i < int(req.Limit); i++ {
-		id := uint64(orderByIndex(i))
-		if id == 0 {
-			break
-		}
-		ids = append(ids, id)
-	}
-
-	return &pb.LimitOrderIDListResponse{
-		Ids: ids,
-	}, nil
 }
 
 func (s *Service) LimitOrder(ctx context.Context, req *pb.LimitOrderRequest) (*pb.LimitOrderResponse, error) {
