@@ -2,10 +2,11 @@ package events
 
 import (
 	"encoding/binary"
+	"sync"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	tmjson "github.com/tendermint/tendermint/libs/json"
 	db "github.com/tendermint/tm-db"
-	"sync"
 )
 
 func init() {
@@ -140,9 +141,14 @@ func (store *eventsStore) CommitEvents(height uint32) error {
 			data = append(data, stake.convert(store.savePubKey(key), address))
 			continue
 		}
-		if stake, ok := item.(*JailEvent); ok {
-			key := stake.validatorPubKey()
-			data = append(data, stake.convert(store.savePubKey(key)))
+		if jail, ok := item.(*JailEvent); ok {
+			key := jail.validatorPubKey()
+			data = append(data, jail.convert(store.savePubKey(key)))
+			continue
+		}
+		if order, ok := item.(*OrderExpiredEvent); ok {
+			address := store.saveAddress(order.address())
+			data = append(data, order.convert(address))
 			continue
 		}
 		data = append(data, item)
