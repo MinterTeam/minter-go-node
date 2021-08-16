@@ -41,25 +41,29 @@ func Run(srv *service.Service, addrGRPC, addrAPI string, logger log.Logger) erro
 		return err
 	}
 
-	kitLogger := &kitLogger{logger}
-
-	loggerOpts := []kit.Option{
-		kit.WithLevels(func(code codes.Code, logger kit_log.Logger) kit_log.Logger { return logger }),
+	unaryServerInterceptors := []grpc.UnaryServerInterceptor{
+		grpc_recovery.UnaryServerInterceptor(),
+		unaryTimeoutInterceptor(srv.TimeoutDuration()),
 	}
+	streamServerInterceptors := []grpc.StreamServerInterceptor{
+		grpc_recovery.StreamServerInterceptor(),
+	}
+
+	if srv.EnabledPrometheus() {
+		streamServerInterceptors = append(streamServerInterceptors, grpc_prometheus.StreamServerInterceptor)
+		unaryServerInterceptors = append(unaryServerInterceptors, grpc_prometheus.UnaryServerInterceptor)
+
+	}
+	if srv.EnabledLogger() {
+		kitLogger := &kitLogger{logger}
+		option := kit.WithLevels(func(code codes.Code, logger kit_log.Logger) kit_log.Logger { return logger })
+		streamServerInterceptors = append(streamServerInterceptors, grpc_ctxtags.StreamServerInterceptor(requestExtractorFields()), kit.StreamServerInterceptor(kitLogger, option))
+		unaryServerInterceptors = append(unaryServerInterceptors, grpc_ctxtags.UnaryServerInterceptor(requestExtractorFields()), kit.UnaryServerInterceptor(kitLogger, option))
+	}
+
 	grpcServer := grpc.NewServer(
-		grpc_middleware.WithStreamServerChain(
-			grpc_prometheus.StreamServerInterceptor,
-			grpc_recovery.StreamServerInterceptor(),
-			grpc_ctxtags.StreamServerInterceptor(requestExtractorFields()),
-			kit.StreamServerInterceptor(kitLogger, loggerOpts...),
-		),
-		grpc_middleware.WithUnaryServerChain(
-			grpc_prometheus.UnaryServerInterceptor,
-			grpc_recovery.UnaryServerInterceptor(),
-			grpc_ctxtags.UnaryServerInterceptor(requestExtractorFields()),
-			kit.UnaryServerInterceptor(kitLogger, loggerOpts...),
-			unaryTimeoutInterceptor(srv.TimeoutDuration()),
-		),
+		grpc_middleware.WithStreamServerChain(streamServerInterceptors...),
+		grpc_middleware.WithUnaryServerChain(unaryServerInterceptors...),
 	)
 
 	gw.RegisterApiServiceServer(grpcServer, srv)

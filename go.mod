@@ -11,7 +11,7 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/protobuf v1.5.2
 	github.com/gorilla/handlers v1.4.2
-	github.com/grpc-ecosystem/go-grpc-middleware v1.2.2
+	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.5.0
 	github.com/marcusolsson/tui-go v0.4.0

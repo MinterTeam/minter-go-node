@@ -240,6 +240,12 @@ type BaseConfig struct {
 	// API v2 Timeout
 	APIv2TimeoutDuration time.Duration `mapstructure:"api_v2_timeout_duration"`
 
+	// Need add rpc:info to log_level
+	APIv2Logger bool `mapstructure:"api_v2_logger"`
+
+	// APIv2Prometheus
+	APIv2Prometheus bool `mapstructure:"api_v2_prometheus"`
+
 	// WebSocket connection duration
 	WSConnectionDuration time.Duration `mapstructure:"ws_connection_duration"`
 
@@ -275,6 +281,8 @@ func DefaultBaseConfig() BaseConfig {
 		GRPCListenAddress:       "tcp://0.0.0.0:8842",
 		APIv2ListenAddress:      "tcp://0.0.0.0:8843",
 		APIv2TimeoutDuration:    10 * time.Second,
+		APIv2Logger:             false,
+		APIv2Prometheus:         false,
 		WSConnectionDuration:    time.Minute,
 		ValidatorMode:           false,
 		KeepLastStates:          120,
