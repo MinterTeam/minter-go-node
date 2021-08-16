@@ -38,7 +38,7 @@ jobs:
 
       - name: Packaging in zip archive
         run: |
-          zip "./assets/minter_${{ steps.get-version.outputs.VERSION }}_${{ steps.get-version.outputs.GIT_COMMIT }}_${{ matrix.asset_name }}.zip" ./build/minter
+          zip -j "./assets/minter_${{ steps.get-version.outputs.VERSION }}_${{ steps.get-version.outputs.GIT_COMMIT }}_${{ matrix.asset_name }}.zip" ./build/minter
           shasum -a256 ./assets/minter_${{ steps.get-version.outputs.VERSION }}_${{ steps.get-version.outputs.GIT_COMMIT }}_${{ matrix.asset_name }}.zip > "./assets/minter_${{ steps.get-version.outputs.VERSION }}_${{ steps.get-version.outputs.GIT_COMMIT }}_${{ matrix.asset_name }}_SHA256SUMS"
 
       - name: Upload binary to release
