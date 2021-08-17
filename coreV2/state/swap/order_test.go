@@ -15,6 +15,89 @@ import (
 	db "github.com/tendermint/tm-db"
 )
 
+func TestPair_LoadOrders(t *testing.T) {
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+
+	swap := New(newBus, immutableTree.GetLastImmutable())
+	_, _, _, _ = swap.PairCreate(0, 1, helpers.StringToBigInt("2000000000000000000"), helpers.StringToBigInt("2000000000000000000"))
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+	immutableTree, err = tree.NewMutableTree(1, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	swap = New(newBus, immutableTree.GetLastImmutable())
+	pair := swap.Pair(0, 1)
+
+	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("1000000000000000000"), types.Address{1}, 1)
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+	immutableTree, err = tree.NewMutableTree(2, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	swap = New(newBus, immutableTree.GetLastImmutable())
+	{
+		order := swap.GetSwapper(0, 1).OrderSellByIndex(0)
+		t.Log(order)
+	}
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+	immutableTree, err = tree.NewMutableTree(3, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	{
+		swap := New(newBus, immutableTree.GetLastImmutable())
+		pair := swap.GetSwapper(0, 1)
+		order1 := pair.OrderSellByIndex(0)
+		t.Log(order1)
+	}
+	_, value := immutableTree.GetLastImmutable().Get(pathOrder(1))
+	order := &Limit{
+		id: 1,
+	}
+
+	if err := rlp.DecodeBytes(value, order); err != nil {
+		panic(err)
+	}
+	t.Logf("%#v", order)
+
+	{
+		immutableTree.GetLastImmutable().IterateRange(
+			pricePath(PairKey{
+				Coin0: 0,
+				Coin1: 1,
+			}, CalcPriceSell(order.WantBuy, order.WantSell), 0, true),
+			pricePath(PairKey{
+				Coin0: 0,
+				Coin1: 1,
+			}, CalcPriceSell(order.WantBuy, order.WantSell), 2, true),
+			true, func(key []byte, value []byte) bool {
+				t.Logf("%#v", key[len(key)-4:])
+				t.Logf("%#v", value)
+				return false
+			})
+
+	}
+}
+
 func TestPair_ResortOrders(t *testing.T) {
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
