@@ -26,7 +26,7 @@ func (s *Service) LimitOrdersOfPool(ctx context.Context, req *pb.LimitOrdersOfPo
 		return nil, timeoutStatus.Err()
 	}
 
-	swapper := cState.Swap().GetSwapper(types.CoinID(req.SellCoin), types.CoinID(req.BuyCoin))
+	swapper := cState.Swap().GetSwapper(types.CoinID(req.BuyCoin), types.CoinID(req.SellCoin))
 	if swapper.GetID() == 0 {
 		return nil, status.Error(codes.NotFound, "pair not found")
 	}
@@ -37,13 +37,8 @@ func (s *Service) LimitOrdersOfPool(ctx context.Context, req *pb.LimitOrdersOfPo
 
 	resp := &pb.LimitOrdersOfPoolResponse{Orders: make([]*pb.LimitOrderResponse, 0, req.Limit)}
 
-	orderByIndex := swapper.OrderSellByIndex
-	if !swapper.IsSorted() {
-		orderByIndex = swapper.OrderBuyByIndex
-	}
-
 	for i := 0; i < int(req.Limit); i++ {
-		order := orderByIndex(i)
+		order := swapper.OrderSellByIndex(i)
 		if order == nil {
 			break
 		}
