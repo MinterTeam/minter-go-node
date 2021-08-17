@@ -60,6 +60,7 @@ type Blockchain struct {
 	totalPower                      *big.Int
 	rewardsCounter                  *rewards.Reward
 	updateStakesAndPayRewardsPeriod uint64
+	expiredOrdersPeriod             uint64
 	// local rpc client for Tendermint
 	rpcClient *rpc.Local
 
@@ -84,7 +85,7 @@ func (blockchain *Blockchain) GetCurrentRewards() *big.Int {
 }
 
 // NewMinterBlockchain creates Minter Blockchain instance, should be only called once
-func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx context.Context, period uint64) *Blockchain {
+func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx context.Context, updateStakePeriod uint64, expiredOrdersPeriod uint64) *Blockchain {
 	// Initiate Application DB. Used for persisting data like current block, validators, etc.
 	applicationDB := appdb.NewAppDB(storages.GetMinterHome(), cfg)
 	if ctx == nil {
@@ -97,8 +98,11 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 		eventsDB = &eventsdb.MockEvents{}
 	}
 	const updateStakesAndPayRewards = 720
-	if period == 0 {
-		period = updateStakesAndPayRewards
+	if updateStakePeriod == 0 {
+		updateStakePeriod = updateStakesAndPayRewards
+	}
+	if expiredOrdersPeriod == 0 {
+		expiredOrdersPeriod = types.GetExpireOrdersPeriod()
 	}
 	app := &Blockchain{
 		rewardsCounter:                  rewards.NewReward(),
@@ -109,7 +113,8 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 		cfg:                             cfg,
 		stopChan:                        ctx,
 		haltHeight:                      uint64(cfg.HaltHeight),
-		updateStakesAndPayRewardsPeriod: period,
+		updateStakesAndPayRewardsPeriod: updateStakePeriod,
+		expiredOrdersPeriod:             expiredOrdersPeriod,
 		stopOk:                          make(chan struct{}),
 		knownUpdates: map[string]struct{}{
 			"":   {}, // default version
@@ -352,6 +357,11 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 
 	// add remainder to total slashed
 	blockchain.stateDeliver.App.AddTotalSlashed(remainder)
+
+	// expire orders
+	if height%blockchain.expiredOrdersPeriod == 0 {
+		blockchain.stateDeliver.Swap.ExpireOrders(height - blockchain.expiredOrdersPeriod)
+	}
 
 	// pay rewards
 	if height%blockchain.updateStakesAndPayRewardsPeriod == 0 {

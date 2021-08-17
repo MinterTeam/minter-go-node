@@ -97,6 +97,126 @@ func TestOrder_set(t *testing.T) {
 	SendCommit(app)      // send Commit
 }
 
+func TestOrder_Expire_with_expiredOrdersPeriod_5_block(t *testing.T) {
+	address, _ := CreateAddress() // create account for test
+
+	state := DefaultAppState() // generate default state
+
+	state.Coins = append(state.Coins, types.Coin{
+		ID:           1,
+		Name:         "Test 1",
+		Symbol:       types.StrToCoinBaseSymbol("TEST1"),
+		Volume:       "10000000000000000000000",
+		Crr:          0,
+		Reserve:      "0",
+		MaxSupply:    "90000000000000000000000000000",
+		Version:      0,
+		OwnerAddress: &address,
+		Mintable:     false,
+		Burnable:     false,
+	}, types.Coin{
+		ID:           2,
+		Name:         "Test 2",
+		Symbol:       types.StrToCoinBaseSymbol("TEST2"),
+		Volume:       "15000000000000000000000",
+		Crr:          0,
+		Reserve:      "0",
+		MaxSupply:    "90000000000000000000000000000",
+		Version:      0,
+		OwnerAddress: &address,
+		Mintable:     false,
+		Burnable:     false,
+	})
+
+	seller, _ := CreateAddress() // generate seller
+	state.NextOrderID = 2
+	state.Pools = append(state.Pools, types.Pool{
+		Coin0:    1,
+		Coin1:    2,
+		Reserve0: "10000000000000000000000",
+		Reserve1: "10000000000000000000000",
+		ID:       1,
+		Orders: []types.Order{
+			{
+				IsSale:  true,
+				Volume0: "15000000000000000000000", // want to buy
+				Volume1: "5000000000000000000000",  // want to sell
+				ID:      1,
+				Owner:   seller,
+				Height:  2,
+			},
+		},
+	})
+
+	app := CreateApp(state) // create application
+
+	//SendBeginBlock(app, 1)  // send BeginBlock
+	//SendEndBlock(app, 1) // send EndBlock
+	//SendCommit(app)      // send Commit
+	//
+	//SendBeginBlock(app, 2)  // send BeginBlock
+	//SendEndBlock(app, 2) // send EndBlock
+	//SendCommit(app)      // send Commit
+
+	SendBeginBlock(app, 3) // send BeginBlock
+	SendEndBlock(app, 3)   // send EndBlock
+	SendCommit(app)        // send Commit
+
+	SendBeginBlock(app, 4) // send BeginBlock
+	SendEndBlock(app, 4)   // send EndBlock
+	SendCommit(app)        // send Commit
+
+	SendBeginBlock(app, 5) // send BeginBlock
+	SendEndBlock(app, 5)   // send EndBlock
+	SendCommit(app)        // send Commit
+
+	SendBeginBlock(app, 6) // send BeginBlock
+	SendEndBlock(app, 6)   // send EndBlock
+	SendCommit(app)        // send Commit
+
+	SendBeginBlock(app, 7) // send BeginBlock
+	SendEndBlock(app, 7)   // send EndBlock
+	SendCommit(app)        // send Commit
+
+	SendBeginBlock(app, 8) // send BeginBlock
+	SendEndBlock(app, 8)   // send EndBlock
+	SendCommit(app)        // send Commit
+
+	SendBeginBlock(app, 9) // send BeginBlock
+	SendEndBlock(app, 9)   // send EndBlock
+	SendCommit(app)        // send Commit
+
+	{
+		balance := app.CurrentState().Accounts().GetBalance(seller, 2)
+		if balance.String() != "0" {
+			t.Fatalf("Saller balance is not correct. Expected %s, got %s", "> 0", balance)
+		}
+	}
+	{
+		balance := app.CurrentState().Accounts().GetBalance(seller, 1)
+		if balance.String() != "0" {
+			t.Fatalf("Saller balance is not correct. Expected %s, got %s", "> 0", balance)
+		}
+	}
+
+	SendBeginBlock(app, 10) // send BeginBlock
+	SendEndBlock(app, 10)   // send EndBlock
+	SendCommit(app)         // send Commit
+
+	{
+		balance := app.CurrentState().Accounts().GetBalance(seller, 2)
+		if balance.String() != "5000000000000000000000" {
+			t.Fatalf("Saller balance is not correct. Expected %s, got %s", "> 0", balance)
+		}
+	}
+	{
+		balance := app.CurrentState().Accounts().GetBalance(seller, 1)
+		if balance.String() != "0" {
+			t.Fatalf("Saller balance is not correct. Expected %s, got %s", "> 0", balance)
+		}
+	}
+}
+
 func TestOrder_sell_part(t *testing.T) {
 	address, pk := CreateAddress() // create account for test
 

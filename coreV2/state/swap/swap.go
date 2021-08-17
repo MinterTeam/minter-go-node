@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/coreV2/events"
 	"log"
 	"math"
 	"math/big"
@@ -85,6 +86,45 @@ type Swap struct {
 
 	bus *bus.Bus
 	db  atomic.Value
+}
+
+func (s *Swap) ExpireOrders(beforeHeight uint64) {
+	var orders []*Limit
+	s.immutableTree().IterateRange(pathOrder(0), pathOrder(math.MaxUint32), true, func(key []byte, value []byte) bool {
+		if value == nil {
+			return false
+		}
+
+		id := binary.BigEndian.Uint32(key[1:])
+
+		order := &Limit{
+			id:      id,
+			RWMutex: new(sync.RWMutex),
+		}
+		err := rlp.DecodeBytes(value, order)
+		if err != nil {
+			panic(err)
+		}
+
+		if order.Height > beforeHeight {
+			return true
+		}
+
+		orders = append(orders, order)
+
+		return false
+	})
+
+	for _, order := range orders {
+		coin, volume := s.PairRemoveLimitOrder(order.ID())
+		s.bus.Accounts().AddBalance(order.Owner, coin, volume)
+		s.bus.Events().AddEvent(&events.OrderExpiredEvent{
+			ID:      uint64(order.ID()),
+			Address: order.Owner,
+			Coin:    uint64(coin),
+			Amount:  volume.String(),
+		})
+	}
 }
 
 func (s *Swap) getOrderedDirtyPairs() []PairKey {
