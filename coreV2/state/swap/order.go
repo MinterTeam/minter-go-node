@@ -896,6 +896,9 @@ func (s *Swap) loadBuyOrders(pair *Pair, slice []uint32, limit int) []uint32 {
 
 func (s *Swap) GetOrder(id uint32) *Limit {
 	order := s.loadOrder(id)
+	if order == nil {
+		return nil
+	}
 
 	list := s.Pair(order.Coin0, order.Coin1).orders
 	list.mu.RLock()
