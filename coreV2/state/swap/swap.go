@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/coreV2/events"
 	"log"
 	"math"
 	"math/big"
@@ -27,6 +28,12 @@ const minimumLiquidity = 1000
 const commission = 2
 
 type EditableChecker interface {
+	IsSorted() bool
+	GetOrder(id uint32) *Limit
+	OrderSellByIndex(index int) *Limit
+	OrderIDSellByIndex(index int) uint32
+	OrderBuyByIndex(index int) *Limit
+	OrderIDBuyByIndex(index int) uint32
 	Exists() bool
 	GetID() uint32
 	// Deprecated
@@ -54,6 +61,7 @@ type RSwap interface {
 	// Deprecated
 	// ExportV1(state *types.AppState, id types.CoinID, value *big.Int, bipValue *big.Int) *big.Int
 
+	GetOrder(id uint32) *Limit
 	Export(state *types.AppState)
 	SwapPool(coin0, coin1 types.CoinID) (reserve0, reserve1 *big.Int, id uint32)
 	GetSwapper(coin0, coin1 types.CoinID) EditableChecker
@@ -64,9 +72,9 @@ type RSwap interface {
 
 type Swap struct {
 	muPairs       sync.RWMutex
-	pairs         map[pairKey]*Pair
-	dirties       map[pairKey]struct{}
-	dirtiesOrders map[pairKey]struct{}
+	pairs         map[PairKey]*Pair
+	dirties       map[PairKey]struct{}
+	dirtiesOrders map[PairKey]struct{}
 
 	muNextID    sync.Mutex
 	nextID      uint32
@@ -80,8 +88,47 @@ type Swap struct {
 	db  atomic.Value
 }
 
-func (s *Swap) getOrderedDirtyPairs() []pairKey {
-	keys := make([]pairKey, 0, len(s.dirties))
+func (s *Swap) ExpireOrders(beforeHeight uint64) {
+	var orders []*Limit
+	s.immutableTree().IterateRange(pathOrder(0), pathOrder(math.MaxUint32), true, func(key []byte, value []byte) bool {
+		if value == nil {
+			return false
+		}
+
+		id := binary.BigEndian.Uint32(key[1:])
+
+		order := &Limit{
+			id:      id,
+			RWMutex: new(sync.RWMutex),
+		}
+		err := rlp.DecodeBytes(value, order)
+		if err != nil {
+			panic(err)
+		}
+
+		if order.Height > beforeHeight {
+			return true
+		}
+
+		orders = append(orders, order)
+
+		return false
+	})
+
+	for _, order := range orders {
+		coin, volume := s.PairRemoveLimitOrder(order.ID())
+		s.bus.Accounts().AddBalance(order.Owner, coin, volume)
+		s.bus.Events().AddEvent(&events.OrderExpiredEvent{
+			ID:      uint64(order.ID()),
+			Address: order.Owner,
+			Coin:    uint64(coin),
+			Amount:  volume.String(),
+		})
+	}
+}
+
+func (s *Swap) getOrderedDirtyPairs() []PairKey {
+	keys := make([]PairKey, 0, len(s.dirties))
 	for k := range s.dirties {
 		keys = append(keys, k)
 	}
@@ -93,9 +140,9 @@ func (s *Swap) getOrderedDirtyPairs() []pairKey {
 	return keys
 }
 
-func (s *Swap) getOrderedDirtyOrderPairs() []pairKey {
+func (s *Swap) getOrderedDirtyOrderPairs() []PairKey {
 	// s.muPairs.RLock() // todo: check
-	keys := make([]pairKey, 0, len(s.dirtiesOrders))
+	keys := make([]PairKey, 0, len(s.dirtiesOrders))
 	for k := range s.dirtiesOrders {
 		keys = append(keys, k)
 	}
@@ -111,7 +158,7 @@ func (s *Swap) getOrderedDirtyOrderPairs() []pairKey {
 func New(bus *bus.Bus, db *iavl.ImmutableTree) *Swap {
 	immutableTree := atomic.Value{}
 	immutableTree.Store(db)
-	return &Swap{pairs: map[pairKey]*Pair{}, bus: bus, db: immutableTree, dirties: map[pairKey]struct{}{}, dirtiesOrders: map[pairKey]struct{}{}}
+	return &Swap{pairs: map[PairKey]*Pair{}, bus: bus, db: immutableTree, dirties: map[PairKey]struct{}{}, dirtiesOrders: map[PairKey]struct{}{}}
 }
 
 func (s *Swap) immutableTree() *iavl.ImmutableTree {
@@ -139,11 +186,12 @@ func (s *Swap) Export(state *types.AppState) {
 		allOrders := pair.loadAllOrders(s.immutableTree())
 		for _, limit := range allOrders {
 			orders = append(orders, types.Order{
-				IsSale:  !limit.isBuy,
+				IsSale:  !limit.IsBuy,
 				Volume0: limit.WantBuy.String(),
 				Volume1: limit.WantSell.String(),
 				ID:      uint64(limit.id),
 				Owner:   limit.Owner,
+				Height:  limit.Height,
 			})
 		}
 
@@ -182,11 +230,11 @@ func (s *Swap) Import(state *types.AppState) {
 		pair.markDirty()
 		s.incID()
 		for _, order := range pool.Orders {
-			key := pair.pairKey
+			key := pair.PairKey
 			if !order.IsSale {
 				key = key.reverse()
 			}
-			s.PairAddOrderWithID(key.Coin0, key.Coin1, helpers.StringToBigInt(order.Volume0), helpers.StringToBigInt(order.Volume1), order.Owner, uint32(order.ID))
+			s.PairAddOrderWithID(key.Coin0, key.Coin1, helpers.StringToBigInt(order.Volume0), helpers.StringToBigInt(order.Volume1), order.Owner, uint32(order.ID), order.Height)
 		}
 		s.nextOrderID = uint32(state.NextOrderID)
 		s.dirtyNextID = true
@@ -196,6 +244,7 @@ func (s *Swap) Import(state *types.AppState) {
 const mainPrefix = byte('s')
 
 const pairDataPrefix = 'd'
+const pairLimitOrderPrefix = 'l'
 const pairOrdersPrefix = 'o'
 const totalPairIDPrefix = 'i'
 const totalOrdersIDPrefix = 'n'
@@ -243,7 +292,8 @@ func (p *Pair) Exists() bool {
 func (p *Pair) AddLastSwapStep(amount0In, amount1Out *big.Int) EditableChecker {
 	reserve0, reserve1 := p.Reserves()
 	return &Pair{
-		pairKey: p.pairKey,
+		lockOrders: &sync.RWMutex{},
+		PairKey:    p.PairKey,
 		pairData: &pairData{
 			RWMutex:   &sync.RWMutex{},
 			Reserve0:  reserve0.Add(reserve0, amount0In),
@@ -253,53 +303,68 @@ func (p *Pair) AddLastSwapStep(amount0In, amount1Out *big.Int) EditableChecker {
 		},
 		sellOrders:          p.sellOrders,
 		buyOrders:           p.buyOrders,
+		orders:              p.orders,
 		dirtyOrders:         p.dirtyOrders,
 		markDirtyOrders:     func() {},
-		loadHigherOrders:    p.loadHigherOrders,
-		loadLowerOrders:     p.loadLowerOrders,
+		loadBuyOrders:       p.loadBuyOrders,
+		loadSellOrders:      p.loadSellOrders,
 		getLastTotalOrderID: nil,
+		loadOrder:           p.loadOrder,
 	}
 }
 
 func (p *Pair) AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int) EditableChecker {
+	if amount0In.Sign() == -1 || amount1Out.Sign() == -1 {
+		return p.reverse().AddLastSwapStepWithOrders(big.NewInt(0).Neg(amount1Out), big.NewInt(0).Neg(amount0In)).Reverse()
+	}
+
 	amount1OutCalc, orders := p.calculateBuyForSellWithOrders(amount0In)
 	if amount1OutCalc.Cmp(amount1Out) != 0 {
 		log.Println("AddLastSwapStepWithOrders error", amount1OutCalc, amount1Out)
 	}
+
 	reserve0, reserve1 := p.Reserves()
 
-	dirties := make(map[uint32]*Limit, len(p.dirtyOrders.orders))
+	ordrs := make(map[uint32]*Limit, len(p.orders.list))
+	dirtyOrdrs := make(map[uint32]struct{}, len(p.dirtyOrders.list))
 	p.lockOrders.Lock()
-	for k, v := range p.dirtyOrders.orders {
-		dirties[k] = v
+	for k, v := range p.orders.list {
+		ordrs[k] = v.clone()
+	}
+	for k, v := range p.dirtyOrders.list {
+		dirtyOrdrs[k] = v
 	}
 	p.lockOrders.Unlock()
 
 	pair := &Pair{
-		pairKey: p.pairKey,
+		lockOrders: &sync.RWMutex{},
+		PairKey:    p.PairKey,
 		pairData: &pairData{
-			RWMutex:  &sync.RWMutex{},
-			Reserve0: reserve0,
-			Reserve1: reserve1,
-			ID:       p.ID,
-			markDirty: func() {
-			},
+			RWMutex:   &sync.RWMutex{},
+			Reserve0:  reserve0,
+			Reserve1:  reserve1,
+			ID:        p.ID,
+			markDirty: func() {},
 		},
 		sellOrders: &limits{
-			higher: p.sellOrders.higher,
-			lower:  p.sellOrders.lower,
+			ids: p.sellOrders.ids,
 		},
 		buyOrders: &limits{
-			higher: p.buyOrders.higher,
-			lower:  p.buyOrders.lower,
+			ids: p.buyOrders.ids,
 		},
-		dirtyOrders: &dirtyOrders{
-			orders: dirties,
+		orders: &orderList{
+			mu:   sync.RWMutex{},
+			list: ordrs,
+		},
+		dirtyOrders: &orderDirties{
+			mu:   sync.RWMutex{},
+			list: dirtyOrdrs,
 		},
 		markDirtyOrders:     p.markDirtyOrders,
-		loadHigherOrders:    p.loadHigherOrders,
-		loadLowerOrders:     p.loadLowerOrders,
+		loadBuyOrders:       p.loadBuyOrders,
+		loadSellOrders:      p.loadSellOrders,
 		getLastTotalOrderID: nil,
+		loadOrder:           p.loadOrder,
 	}
 	commission0orders, commission1orders, amount0, amount1, _ := CalcDiffPool(amount0In, amount1Out, orders)
 
@@ -312,11 +377,11 @@ func (p *Pair) AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int) Editabl
 	oo := make([]*Limit, 0, len(orders))
 	for _, order := range orders {
 		oo = append(oo, &Limit{
-			isBuy:        order.isBuy,
+			IsBuy:        order.IsBuy,
 			WantBuy:      big.NewInt(0).Set(order.WantBuy),
 			WantSell:     big.NewInt(0).Set(order.WantSell),
 			Owner:        order.Owner,
-			pairKey:      order.pairKey,
+			PairKey:      order.PairKey,
 			oldSortPrice: big.NewFloat(0).Set(order.oldSortPrice),
 			id:           order.id,
 			RWMutex:      &sync.RWMutex{},
@@ -331,33 +396,50 @@ func (p *Pair) AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int) Editabl
 func (p *Pair) Reverse() EditableChecker {
 	return p.reverse()
 }
+func (p *Pair) IsSorted() bool {
+	return p.isSorted()
+}
 func (p *Pair) reverse() *Pair {
 	return &Pair{
-		pairKey:             p.pairKey.reverse(),
+		lockOrders:          p.lockOrders,
+		PairKey:             p.PairKey.reverse(),
 		pairData:            p.pairData.reverse(),
-		buyOrders:           p.buyOrders,
 		sellOrders:          p.sellOrders,
-		markDirtyOrders:     p.markDirtyOrders,
+		buyOrders:           p.buyOrders,
+		orders:              p.orders,
 		dirtyOrders:         p.dirtyOrders,
-		loadHigherOrders:    p.loadLowerOrders,
-		loadLowerOrders:     p.loadHigherOrders,
+		markDirtyOrders:     p.markDirtyOrders,
+		loadBuyOrders:       p.loadSellOrders,
+		loadSellOrders:      p.loadBuyOrders,
 		getLastTotalOrderID: p.getLastTotalOrderID,
+		loadOrder:           p.loadOrder,
 	}
 }
 
-func (pk pairKey) bytes() []byte {
+func (pk PairKey) bytes() []byte {
 	key := pk.sort()
 	return append(key.Coin0.Bytes(), key.Coin1.Bytes()...)
 }
 
-func (pk pairKey) pathData() []byte {
+func (pk PairKey) pathData() []byte {
 	return append([]byte{pairDataPrefix}, pk.bytes()...)
 }
-func (pk pairKey) pathOrders() []byte {
+
+func (pk PairKey) pathOrders() []byte {
 	return append([]byte{pairOrdersPrefix}, pk.sort().bytes()...)
 }
+func pathOrder(id uint32) []byte {
+	byteID := id2Bytes(id)
+	return append([]byte{pairLimitOrderPrefix}, byteID...)
+}
 
-func pricePath(key pairKey, price *big.Float, id uint32, isSale bool) []byte {
+func id2Bytes(id uint32) []byte {
+	byteID := make([]byte, 4)
+	binary.BigEndian.PutUint32(byteID, id)
+	return byteID
+}
+
+func pricePath(key PairKey, price *big.Float, id uint32, isSale bool) []byte {
 	var pricePath []byte
 
 	text := price.Text('e', 18)
@@ -381,8 +463,7 @@ func pricePath(key pairKey, price *big.Float, id uint32, isSale bool) []byte {
 	// log.Println("c m", sprintf)
 	pricePath = append(pricePath, []byte(sprintf)...)
 
-	byteID := make([]byte, 4)
-	binary.BigEndian.PutUint32(byteID, id)
+	byteID := id2Bytes(id)
 
 	var saleByte byte = 0
 	if isSale {
@@ -392,13 +473,13 @@ func pricePath(key pairKey, price *big.Float, id uint32, isSale bool) []byte {
 	return append(append(append(append([]byte{mainPrefix}, key.pathOrders()...), saleByte), pricePath...), byteID...)
 }
 
-func (p *Pair) getDirtyOrdersList() []*Limit {
-	dirtiesOrders := make([]*Limit, 0, len(p.dirtyOrders.orders))
-	for _, limit := range p.dirtyOrders.orders {
-		dirtiesOrders = append(dirtiesOrders, limit)
+func (p *Pair) getDirtyOrdersList() []uint32 {
+	dirtiesOrders := make([]uint32, 0, len(p.dirtyOrders.list))
+	for id := range p.dirtyOrders.list {
+		dirtiesOrders = append(dirtiesOrders, id)
 	}
 	sort.SliceStable(dirtiesOrders, func(i, j int) bool {
-		return dirtiesOrders[i].id > dirtiesOrders[j].id
+		return dirtiesOrders[i] > dirtiesOrders[j]
 	})
 	return dirtiesOrders
 }
@@ -439,42 +520,47 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 		}
 		db.Set(append(basePath, key.pathData()...), pairDataBytes)
 	}
-	s.dirties = map[pairKey]struct{}{}
+	s.dirties = map[PairKey]struct{}{}
 
 	for _, key := range s.getOrderedDirtyOrderPairs() {
 		pair, _ := s.pair(key)
 		pair.lockOrders.Lock()
-		for _, limit := range pair.getDirtyOrdersList() {
-
-			oldPath := pricePath(key, limit.OldSortPrice(), limit.id, !limit.isBuy)
+		for _, id := range pair.getDirtyOrdersList() {
+			limit := pair.getOrder(id)
+			oldPathOrderList := pricePath(key, limit.OldSortPrice(), limit.id, !limit.IsBuy)
+			pathOrderID := pathOrder(limit.id)
 
 			if limit.isEmpty() {
 				if limit.WantBuy.Sign() != 0 || limit.WantSell.Sign() != 0 {
-					panic(fmt.Sprintf("order %d has one zero volume: %s, %s. Sell %v", limit.id, limit.WantBuy, limit.WantSell, !limit.isBuy))
+					panic(fmt.Sprintf("order %d has one zero volume: %s, %s. Sell %v", limit.id, limit.WantBuy, limit.WantSell, !limit.IsBuy))
 				}
-				db.Remove(oldPath)
-				// log.Printf("remove old path %q, %s, %s. Sell %v", oldPath, limit.WantBuy, limit.WantSell, !limit.isBuy)
+				db.Remove(pathOrderID)
+				db.Remove(oldPathOrderList)
+				// log.Printf("remove old path %q, %s, %s. Sell %v", oldPathOrderList, limit.WantBuy, limit.WantSell, !limit.IsBuy)
 				continue
 			}
-
-			newPath := pricePath(key, limit.ReCalcOldSortPrice(), limit.id, !limit.isBuy)
 
 			pairOrderBytes, err := rlp.EncodeToBytes(limit)
 			if err != nil {
 				return err
 			}
+			db.Set(pathOrderID, pairOrderBytes)
 
-			db.Set(newPath, pairOrderBytes)
-			// log.Printf("new path %q, %s, %s. Sell %v", newPath, limit.WantBuy, limit.WantSell, !limit.isBuy)
-			if !bytes.Equal(oldPath, newPath) && db.Has(oldPath) {
-				db.Remove(oldPath) // the price can change minimally due to rounding off the ratio of the remaining volumes
-				// log.Printf("remove old path %q, %s, %s. Sell %v", oldPath, limit.WantBuy, limit.WantSell, !limit.isBuy)
+			newPath := pricePath(key, limit.ReCalcOldSortPrice(), limit.id, !limit.IsBuy)
+			if !db.Has(newPath) {
+				db.Set(newPath, []byte{}) // todo: Nil values are invalid
+			}
+
+			// log.Printf("new path %q, %s, %s. Sell %v", newPath, limit.WantBuy, limit.WantSell, !limit.IsBuy)
+			if !bytes.Equal(oldPathOrderList, newPath) && db.Has(oldPathOrderList) {
+				db.Remove(oldPathOrderList) // the price can change minimally due to rounding off the ratio of the remaining volumes
+				// log.Printf("remove old path %q, %s, %s. Sell %v", oldPathOrderList, limit.WantBuy, limit.WantSell, !limit.IsBuy)
 			}
 		}
 		pair.lockOrders.Unlock()
-		pair.dirtyOrders.orders = make(map[uint32]*Limit)
+		pair.dirtyOrders.list = make(map[uint32]struct{})
 	}
-	s.dirtiesOrders = map[pairKey]struct{}{}
+	s.dirtiesOrders = map[PairKey]struct{}{}
 	return nil
 }
 
@@ -486,7 +572,7 @@ func (s *Swap) SwapPoolExist(coin0, coin1 types.CoinID) bool {
 	return s.Pair(coin0, coin1) != nil
 }
 
-func (s *Swap) pair(key pairKey) (*Pair, bool) {
+func (s *Swap) pair(key PairKey) (*Pair, bool) {
 	pair, ok := s.pairs[key.sort()]
 	if pair == nil {
 		return nil, ok
@@ -514,7 +600,7 @@ func (s *Swap) Pair(coin0, coin1 types.CoinID) *Pair {
 	s.muPairs.Lock()
 	defer s.muPairs.Unlock()
 
-	key := pairKey{Coin0: coin0, Coin1: coin1}
+	key := PairKey{Coin0: coin0, Coin1: coin1}
 	pair, ok := s.pair(key)
 	if ok {
 		return pair
@@ -637,23 +723,23 @@ func (s *Swap) PairBuy(coin0, coin1 types.CoinID, maxAmount0In, amount1Out *big.
 	return balance0, new(big.Int).Neg(balance1), *pair.ID
 }
 
-type pairKey struct {
+type PairKey struct {
 	Coin0, Coin1 types.CoinID
 }
 
-func (pk pairKey) sort() pairKey {
+func (pk PairKey) sort() PairKey {
 	if pk.isSorted() {
 		return pk
 	}
 	return pk.reverse()
 }
 
-func (pk *pairKey) isSorted() bool {
+func (pk *PairKey) isSorted() bool {
 	return pk.Coin0 < pk.Coin1
 }
 
-func (pk *pairKey) reverse() pairKey {
-	return pairKey{Coin0: pk.Coin1, Coin1: pk.Coin0}
+func (pk *PairKey) reverse() PairKey {
+	return PairKey{Coin0: pk.Coin1, Coin1: pk.Coin0}
 }
 
 var (
@@ -673,7 +759,7 @@ func (s *Swap) ReturnPair(coin0, coin1 types.CoinID) *Pair {
 	s.muPairs.Lock()
 	defer s.muPairs.Unlock()
 
-	key := pairKey{coin0, coin1}
+	key := PairKey{coin0, coin1}
 	pair = s.addPair(key)
 
 	if !key.isSorted() {
@@ -683,14 +769,14 @@ func (s *Swap) ReturnPair(coin0, coin1 types.CoinID) *Pair {
 	return pair
 }
 
-func (s *Swap) markDirty(key pairKey) func() {
+func (s *Swap) markDirty(key PairKey) func() {
 	return func() {
 		s.muPairs.Lock()
 		defer s.muPairs.Unlock()
 		s.dirties[key] = struct{}{}
 	}
 }
-func (s *Swap) markDirtyOrders(key pairKey) func() {
+func (s *Swap) markDirtyOrders(key PairKey) func() {
 	return func() {
 		s.muPairs.Lock()
 		defer s.muPairs.Unlock()
@@ -698,12 +784,13 @@ func (s *Swap) markDirtyOrders(key pairKey) func() {
 	}
 }
 
-func (s *Swap) addPair(key pairKey) *Pair {
+func (s *Swap) addPair(key PairKey) *Pair {
 	if !key.isSorted() {
 		key = key.reverse()
 	}
 	pair := &Pair{
-		pairKey: key,
+		lockOrders: &sync.RWMutex{},
+		PairKey:    key,
 		pairData: &pairData{
 			RWMutex:   &sync.RWMutex{},
 			Reserve0:  big.NewInt(0),
@@ -713,11 +800,13 @@ func (s *Swap) addPair(key pairKey) *Pair {
 		},
 		sellOrders:          &limits{},
 		buyOrders:           &limits{},
-		dirtyOrders:         &dirtyOrders{orders: make(map[uint32]*Limit)},
+		orders:              &orderList{list: make(map[uint32]*Limit), mu: sync.RWMutex{}},
+		dirtyOrders:         &orderDirties{list: make(map[uint32]struct{}), mu: sync.RWMutex{}},
 		markDirtyOrders:     s.markDirtyOrders(key),
-		loadHigherOrders:    s.loadBuyHigherOrders,
-		loadLowerOrders:     s.loadSellLowerOrders,
+		loadBuyOrders:       s.loadBuyOrders,
+		loadSellOrders:      s.loadSellOrders,
 		getLastTotalOrderID: s.incOrdersID,
+		loadOrder:           s.loadOrder,
 	}
 
 	s.pairs[key] = pair
@@ -785,16 +874,18 @@ type Balance struct {
 }
 
 type Pair struct {
-	lockOrders sync.RWMutex
-	pairKey
+	lockOrders *sync.RWMutex
+	PairKey
 	*pairData
 	sellOrders          *limits
 	buyOrders           *limits
-	dirtyOrders         *dirtyOrders
+	orders              *orderList
+	dirtyOrders         *orderDirties
 	markDirtyOrders     func()
-	loadHigherOrders    func(pair *Pair, slice []*Limit, limit int) []*Limit
-	loadLowerOrders     func(pair *Pair, slice []*Limit, limit int) []*Limit
+	loadBuyOrders       func(pair *Pair, slice []uint32, limit int) []uint32
+	loadSellOrders      func(pair *Pair, slice []uint32, limit int) []uint32
 	getLastTotalOrderID func() uint32
+	loadOrder           func(id uint32) *Limit
 }
 
 func (p *Pair) GetID() uint32 {

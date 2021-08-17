@@ -9,6 +9,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/coreV2/state/checker"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/helpers"
+	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/tree"
 	"github.com/tendermint/go-amino"
 	db "github.com/tendermint/tm-db"
@@ -28,23 +29,23 @@ func TestPair_ResortOrders(t *testing.T) {
 
 	pair := swap.Pair(0, 1)
 
-	pair.SetOrder(helpers.StringToBigInt("15000000000000000000000"), helpers.StringToBigInt("5000000000000000000000"), types.Address{})
+	pair.AddOrder(helpers.StringToBigInt("15000000000000000000000"), helpers.StringToBigInt("5000000000000000000000"), types.Address{}, 0)
 
-	// order := pair.OrderSellLowerByIndex(0)
+	// order := pair.OrderSellByIndex(0)
 
 	_, _, _ = pair.SellWithOrders(helpers.StringToBigInt("10000000000000000000000"))
 
 	t.Run("resort dirty", func(t *testing.T) {
 		t.Run("mem", func(t *testing.T) {
 			t.Run("mem", func(t *testing.T) {
-				orderNextMem := pair.OrderSellLowerByIndex(0)
+				orderNextMem := pair.OrderSellByIndex(0)
 				t.Run("disk", func(t *testing.T) {
 					_, _, err = immutableTree.Commit(swap)
 					if err != nil {
 						t.Fatal(err)
 					}
 					pair := New(newBus, immutableTree.GetLastImmutable()).Pair(0, 1)
-					orderNextDisk := pair.OrderSellLowerByIndex(0)
+					orderNextDisk := pair.OrderSellByIndex(0)
 					if orderNextDisk != nil && orderNextMem != nil {
 						t.Log("has order")
 						if orderNextDisk.id != orderNextMem.id {
@@ -60,6 +61,16 @@ func TestPair_ResortOrders(t *testing.T) {
 			})
 		})
 	})
+
+	_, value := immutableTree.GetLastImmutable().Get(pathOrder(1))
+	order := &Limit{
+		id: 1,
+	}
+
+	if err := rlp.DecodeBytes(value, order); err != nil {
+		panic(err)
+	}
+	t.Logf("%#v", order)
 }
 
 func TestPair_SellWithOrders_changePriceWithOrderAndUpdateList0(t *testing.T) {
@@ -76,23 +87,23 @@ func TestPair_SellWithOrders_changePriceWithOrderAndUpdateList0(t *testing.T) {
 
 	pair := swap.Pair(0, 1)
 
-	pair.SetOrder(helpers.StringToBigInt("15000000000000000000000"), helpers.StringToBigInt("5000000000000000000000"), types.Address{})
+	pair.AddOrder(helpers.StringToBigInt("15000000000000000000000"), helpers.StringToBigInt("5000000000000000000000"), types.Address{}, 0)
 
-	// order := pair.OrderSellLowerByIndex(0)
+	// order := pair.OrderSellByIndex(0)
 
 	_, _, _ = pair.SellWithOrders(big.NewInt(1e18))
 
 	t.Run("resort dirty", func(t *testing.T) {
 		t.Run("mem", func(t *testing.T) {
 			t.Run("mem", func(t *testing.T) {
-				orderNextMem := pair.OrderSellLowerByIndex(0)
+				orderNextMem := pair.OrderSellByIndex(0)
 				t.Run("disk", func(t *testing.T) {
 					_, _, err = immutableTree.Commit(swap)
 					if err != nil {
 						t.Fatal(err)
 					}
 					pair := New(newBus, immutableTree.GetLastImmutable()).Pair(0, 1)
-					orderNextDisk := pair.OrderSellLowerByIndex(0)
+					orderNextDisk := pair.OrderSellByIndex(0)
 					if orderNextDisk != nil && orderNextMem != nil {
 						// t.Log("has order")
 						if orderNextDisk.id != orderNextMem.id {
@@ -124,23 +135,23 @@ func TestPair_SellWithOrders_changePriceWithOrderAndUpdateList1(t *testing.T) {
 
 	pair := swap.Pair(0, 1)
 
-	pair.SetOrder(helpers.StringToBigInt("15000000000000000000000"), helpers.StringToBigInt("5000000000000000000000"), types.Address{})
+	pair.AddOrder(helpers.StringToBigInt("15000000000000000000000"), helpers.StringToBigInt("5000000000000000000000"), types.Address{}, 0)
 
-	// order := pair.OrderSellLowerByIndex(0)
+	// order := pair.OrderSellByIndex(0)
 
 	_, _, _ = pair.SellWithOrders(helpers.StringToBigInt("10000000000000000000000"))
 
 	t.Run("resort dirty", func(t *testing.T) {
 		t.Run("mem", func(t *testing.T) {
 			t.Run("mem", func(t *testing.T) {
-				orderNextMem := pair.OrderSellLowerByIndex(0)
+				orderNextMem := pair.OrderSellByIndex(0)
 				t.Run("disk", func(t *testing.T) {
 					_, _, err = immutableTree.Commit(swap)
 					if err != nil {
 						t.Fatal(err)
 					}
 					pair := New(newBus, immutableTree.GetLastImmutable()).Pair(0, 1)
-					orderNextDisk := pair.OrderSellLowerByIndex(0)
+					orderNextDisk := pair.OrderSellByIndex(0)
 					if orderNextDisk != nil && orderNextMem != nil {
 						t.Log("has order")
 						if orderNextDisk.id != orderNextMem.id {
@@ -222,6 +233,7 @@ func TestPair_CalculateAddAmount0ForPrice_1(t *testing.T) {
 		t.Error("wrong new price", pair.Price().String())
 	}
 }
+
 func TestSimple_my(t *testing.T) {
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
@@ -238,7 +250,7 @@ func TestSimple_my(t *testing.T) {
 
 	wantBuy := helpers.StringToBigInt("15000000000000000000000")
 	wantSell := helpers.StringToBigInt("5000000000000000000000")
-	order := pair.SetOrder(wantBuy, wantSell, types.Address{})
+	order := pair.AddOrder(wantBuy, wantSell, types.Address{}, 0)
 
 	_, _, err = immutableTree.Commit(swap)
 	if err != nil {
@@ -314,7 +326,7 @@ func TestPair_OrderID(t *testing.T) {
 		_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(10000), big.NewInt(10000))
 
 		pair := swap.Pair(0, 1)
-		id := pair.SetOrder(big.NewInt(1), big.NewInt(1), types.Address{}).id
+		id := pair.AddOrder(big.NewInt(1), big.NewInt(1), types.Address{}, 0).id
 		if id != 1 {
 			t.Errorf("next orders ID want %d, got %d", 1, id)
 		}
@@ -328,10 +340,10 @@ func TestPair_OrderID(t *testing.T) {
 		_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(10000), big.NewInt(10000))
 
 		pair := swap.Pair(0, 1)
-		if id := pair.SetOrder(big.NewInt(2), big.NewInt(1), types.Address{}).id; id != 2 {
+		if id := pair.AddOrder(big.NewInt(2), big.NewInt(1), types.Address{}, 0).id; id != 2 {
 			t.Errorf("next orders ID want %d, got %d", 2, id)
 		}
-		if id := pair.SetOrder(big.NewInt(3), big.NewInt(1), types.Address{}).id; id != 3 {
+		if id := pair.AddOrder(big.NewInt(3), big.NewInt(1), types.Address{}, 0).id; id != 3 {
 			t.Errorf("next orders ID want %d, got %d", 3, id)
 		}
 		_, _, err = immutableTree.Commit(swap)
@@ -342,7 +354,7 @@ func TestPair_OrderID(t *testing.T) {
 	{
 		swap := New(newBus, immutableTree.GetLastImmutable())
 		pair := swap.Pair(0, 1)
-		if id := pair.SetOrder(big.NewInt(4), big.NewInt(1), types.Address{}).id; id != 4 {
+		if id := pair.AddOrder(big.NewInt(4), big.NewInt(1), types.Address{}, 0).id; id != 4 {
 			t.Errorf("next orders ID want %d, got %d", 4, id)
 		}
 		_, _, err = immutableTree.Commit(swap)
@@ -394,7 +406,7 @@ func TestPair_AddLastSwapStepWithOrders(t *testing.T) {
 	_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(1e18), big.NewInt(1e18))
 
 	pair := swap.Pair(0, 1)
-	pair.SetOrder(big.NewInt(20e15), big.NewInt(5e15), types.Address{})
+	pair.AddOrder(big.NewInt(20e15), big.NewInt(5e15), types.Address{}, 0)
 
 	_, _, err = immutableTree.Commit(swap)
 	if err != nil {
@@ -402,7 +414,7 @@ func TestPair_AddLastSwapStepWithOrders(t *testing.T) {
 	}
 
 	pair = swap.Pair(0, 1)
-	price := pair.OrderSellLowerByIndex(0).Price()
+	price := pair.OrderSellByIndex(0).Price()
 
 	addAmount0ForPrice, _ := pair.CalculateAddAmountsForPrice(price)
 
@@ -414,10 +426,13 @@ func TestPair_AddLastSwapStepWithOrders(t *testing.T) {
 	calcBuy2 := pair1.CalculateBuyForSellWithOrders(sell)
 	pair1.AddLastSwapStepWithOrders(sell, calcBuy2)
 
-	if len(pair.dirtyOrders.orders) != 0 {
-		t.Error("err", pair.dirtyOrders.orders)
+	if len(pair.dirtyOrders.list) != 0 {
+		t.Error("err", pair.dirtyOrders.list)
 	}
-
+	if len(pair1.(*Pair).dirtyOrders.list) == 0 {
+		t.Error("err", pair1.(*Pair).dirtyOrders.list)
+	}
+	// t.SkipNow()
 	buy1, _, _ := pair.SellWithOrders(sell)
 	if calcBuy1.Cmp(buy1) != 0 {
 		t.Error("err", calcBuy1, buy1)
@@ -443,8 +458,8 @@ func TestPair_BuyWithOrders_01_ChangeRemainderOrderPrice(t *testing.T) {
 	_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(10000), big.NewInt(10000))
 
 	pair := swap.Pair(0, 1)
-	pair.SetOrder(big.NewInt(15000), big.NewInt(5000), types.Address{1})
-	pair.SetOrder(big.NewInt(20), big.NewInt(5), types.Address{2})
+	pair.AddOrder(big.NewInt(15000), big.NewInt(5000), types.Address{1}, 0)
+	pair.AddOrder(big.NewInt(20), big.NewInt(5), types.Address{2}, 0)
 
 	_, _, err = immutableTree.Commit(swap)
 	if err != nil {
@@ -452,7 +467,7 @@ func TestPair_BuyWithOrders_01_ChangeRemainderOrderPrice(t *testing.T) {
 	}
 
 	pair = swap.Pair(0, 1)
-	price := pair.OrderSellLowerByIndex(0).Price()
+	price := pair.OrderSellByIndex(0).Price()
 
 	addAmount0ForPrice, addAmount1 := pair.CalculateAddAmountsForPrice(price)
 	if addAmount0ForPrice.Cmp(big.NewInt(7327)) != 0 {
@@ -497,7 +512,7 @@ func TestPair_BuyWithOrders_01_ChangeRemainderOrderPrice(t *testing.T) {
 	}
 
 	t.Run("resort dirty", func(t *testing.T) {
-		order := pair.OrderSellLowerByIndex(0)
+		order := pair.OrderSellByIndex(0)
 		if order.id != 1 {
 			t.Errorf("want %d, got %d", 1, order.id)
 		}
@@ -522,8 +537,8 @@ func TestPair_BuyWithOrders_01_ChangeRemainderOrderPrice(t *testing.T) {
 			t.Error("d", amount0In)
 		}
 
-		if pair.OrderSellLowerByIndex(0).id != 1 {
-			t.Errorf("want %d, got %d", 1, pair.OrderSellLowerByIndex(0).id)
+		if pair.OrderSellByIndex(0).id != 1 {
+			t.Errorf("want %d, got %d", 1, pair.OrderSellByIndex(0).id)
 		}
 	})
 
@@ -566,8 +581,8 @@ func TestPair_SellWithOrders_01_ChangeRemainderOrderPrice(t *testing.T) {
 	_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(10000), big.NewInt(10000))
 
 	pair := swap.Pair(0, 1)
-	pair.SetOrder(big.NewInt(15000), big.NewInt(5000), types.Address{})
-	pair.SetOrder(big.NewInt(20), big.NewInt(5), types.Address{})
+	pair.AddOrder(big.NewInt(15000), big.NewInt(5000), types.Address{}, 0)
+	pair.AddOrder(big.NewInt(20), big.NewInt(5), types.Address{}, 0)
 
 	_, _, err = immutableTree.Commit(swap)
 	if err != nil {
@@ -575,7 +590,7 @@ func TestPair_SellWithOrders_01_ChangeRemainderOrderPrice(t *testing.T) {
 	}
 
 	pair = swap.Pair(0, 1)
-	price := pair.OrderSellLowerByIndex(0).Price()
+	price := pair.OrderSellByIndex(0).Price()
 	addAmount0ForPrice, _ := pair.CalculateAddAmountsForPrice(price)
 	if addAmount0ForPrice.Cmp(big.NewInt(7327)) != 0 {
 		t.Error("a", addAmount0ForPrice)
@@ -600,7 +615,7 @@ func TestPair_SellWithOrders_01_ChangeRemainderOrderPrice(t *testing.T) {
 	}
 
 	t.Run("resort dirty", func(t *testing.T) {
-		order := pair.OrderSellLowerByIndex(0)
+		order := pair.OrderSellByIndex(0)
 		if order.id != 1 {
 			t.Errorf("want %d, got %d", 1, order.id)
 		}
@@ -625,8 +640,8 @@ func TestPair_SellWithOrders_01_ChangeRemainderOrderPrice(t *testing.T) {
 			t.Error("d", amount0Out)
 		}
 
-		if pair.OrderSellLowerByIndex(0).id != 1 {
-			t.Errorf("want %d, got %d", 1, pair.OrderSellLowerByIndex(0).id)
+		if pair.OrderSellByIndex(0).id != 1 {
+			t.Errorf("want %d, got %d", 1, pair.OrderSellByIndex(0).id)
 		}
 	})
 
@@ -669,8 +684,8 @@ func TestPair_SellWithOrders_10_ChangeRemainderOrderPrice(t *testing.T) {
 	_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(10000), big.NewInt(10000))
 
 	pair := swap.Pair(1, 0)
-	pair.SetOrder(big.NewInt(15000), big.NewInt(5000), types.Address{})
-	pair.SetOrder(big.NewInt(20), big.NewInt(5), types.Address{})
+	pair.AddOrder(big.NewInt(15000), big.NewInt(5000), types.Address{}, 0)
+	pair.AddOrder(big.NewInt(20), big.NewInt(5), types.Address{}, 0)
 
 	_, _, err = immutableTree.Commit(swap)
 	if err != nil {
@@ -678,7 +693,7 @@ func TestPair_SellWithOrders_10_ChangeRemainderOrderPrice(t *testing.T) {
 	}
 
 	pair = swap.Pair(1, 0)
-	price := pair.OrderSellLowerByIndex(0).Price()
+	price := pair.OrderSellByIndex(0).Price()
 	addAmount0ForPrice, _ := pair.CalculateAddAmountsForPrice(price)
 	if addAmount0ForPrice.Cmp(big.NewInt(7327)) != 0 {
 		t.Error("a", addAmount0ForPrice)
@@ -705,7 +720,7 @@ func TestPair_SellWithOrders_10_ChangeRemainderOrderPrice(t *testing.T) {
 	t.Run("resort dirty", func(t *testing.T) {
 		t.Skip("allow sell order with highest price without diff pool reserves")
 		t.Run("mem", func(t *testing.T) {
-			order := pair.OrderSellLowerByIndex(0)
+			order := pair.OrderSellByIndex(0)
 			if order.id != 1 {
 				t.Errorf("want %d, got %d", 1, order.id)
 			}
@@ -738,7 +753,7 @@ func TestPair_SellWithOrders_10_ChangeRemainderOrderPrice(t *testing.T) {
 			}
 
 			t.Run("mem", func(t *testing.T) {
-				orderNext := pair.OrderSellLowerByIndex(0)
+				orderNext := pair.OrderSellByIndex(0)
 				if order.Price().Cmp(orderNext.Price()) != 1 {
 					t.Errorf("order %d price %v, and %d price %v", orderNext.id, orderNext.Price(), order.id, order.Price())
 				}
@@ -754,7 +769,7 @@ func TestPair_SellWithOrders_10_ChangeRemainderOrderPrice(t *testing.T) {
 
 				pair := New(newBus, immutableTree.GetLastImmutable()).Pair(1, 0)
 
-				orderNext := pair.OrderSellLowerByIndex(0)
+				orderNext := pair.OrderSellByIndex(0)
 				if order.Price().Cmp(orderNext.Price()) != 1 {
 					t.Errorf("order %d price %v, and %d price %v", orderNext.id, orderNext.Price(), order.id, order.Price())
 				}
@@ -808,8 +823,8 @@ func TestPair_SellWithOrders_01_FullOrder(t *testing.T) {
 	}
 	pair := swap.Pair(0, 1)
 	owner := types.HexToAddress("Mx7f0fc21d932f38ca9444f61703174569066cfa50")
-	swap.PairAddOrder(0, 1, big.NewInt(2000), big.NewInt(1000), owner)
-	if pair.OrderSellLowerByIndex(0).Price().Cmp(CalcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 {
+	swap.PairAddOrder(0, 1, big.NewInt(2000), big.NewInt(1000), owner, 0)
+	if pair.OrderSellByIndex(0).Price().Cmp(CalcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 {
 		t.Error("error set order")
 	}
 	_, _, err = immutableTree.Commit(swap)
@@ -835,8 +850,8 @@ func TestPair_SellWithOrders_01_FullOrder(t *testing.T) {
 			t.Errorf("%#v", owners[owner])
 		}
 		t.Run("unset", func(t *testing.T) {
-			if len(pair.SellLowerOrders()) != 0 {
-				t.Errorf("slice len %d, want empty", len(pair.SellLowerOrders()))
+			if len(pair.SellOrderIDs()) != 0 {
+				t.Errorf("slice len %d, want empty", len(pair.SellOrderIDs()))
 			}
 		})
 
@@ -877,8 +892,8 @@ func TestPair_SellWithOrders_01_PartOrder(t *testing.T) {
 
 	pair := swap.Pair(0, 1)
 	owner := types.HexToAddress("Mx7f0fc21d932f38ca9444f61703174569066cfa50")
-	swap.PairAddOrder(0, 1, big.NewInt(2000), big.NewInt(1000), owner)
-	if pair.OrderSellLowerByIndex(0).Price().Cmp(CalcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 {
+	swap.PairAddOrder(0, 1, big.NewInt(2000), big.NewInt(1000), owner, 0)
+	if pair.OrderSellByIndex(0).Price().Cmp(CalcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 {
 		t.Error("error set order")
 	}
 
@@ -941,12 +956,12 @@ func TestSwap_Export_WithOrders(t *testing.T) {
 	_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(10e10), big.NewInt(10e10))
 
 	pair01 := swap.Pair(0, 1)
-	pair01.SetOrder(big.NewInt(10010), big.NewInt(10000), types.Address{})
-	pair01.SetOrder(big.NewInt(10020), big.NewInt(10000), types.Address{})
+	pair01.AddOrder(big.NewInt(10010), big.NewInt(10000), types.Address{}, 0)
+	pair01.AddOrder(big.NewInt(10020), big.NewInt(10000), types.Address{}, 0)
 
 	pair10 := swap.Pair(1, 0)
-	pair10.SetOrder(big.NewInt(1003), big.NewInt(1000), types.Address{})
-	pair10.SetOrder(big.NewInt(1004), big.NewInt(1000), types.Address{})
+	pair10.AddOrder(big.NewInt(1003), big.NewInt(1000), types.Address{}, 0)
+	pair10.AddOrder(big.NewInt(1004), big.NewInt(1000), types.Address{}, 0)
 
 	_, _, err = immutableTree.Commit(swap)
 	if err != nil {
@@ -1047,12 +1062,12 @@ func TestPair_SetOrder_01(t *testing.T) {
 	mul := func(price int64, volumeBuy *big.Int) *big.Int {
 		return big.NewInt(0).Mul(big.NewInt(price), volumeBuy)
 	}
-	idHigher := pair.SetOrder(mul(3, volumeBuy), volumeBuy, types.Address{}).id
-	idMostHigher := pair.SetOrder(mul(1, volumeBuy), volumeBuy, types.Address{}).id
-	_ = pair.SetOrder(mul(2, volumeBuy), volumeBuy, types.Address{}).id
-	idMostLower := pair.SetOrder(mul(10, volumeBuy), volumeBuy, types.Address{}).id
-	idLower := pair.SetOrder(mul(8, volumeBuy), volumeBuy, types.Address{}).id
-	_ = pair.SetOrder(mul(9, volumeBuy), volumeBuy, types.Address{}).id
+	/*idHigher :*/ _ = pair.AddOrder(mul(3, volumeBuy), volumeBuy, types.Address{}, 0).id
+	/*idMostHigher :*/ _ = pair.AddOrder(mul(1, volumeBuy), volumeBuy, types.Address{}, 0).id
+	_ = pair.AddOrder(mul(2, volumeBuy), volumeBuy, types.Address{}, 0).id
+	idMostLower := pair.AddOrder(mul(10, volumeBuy), volumeBuy, types.Address{}, 0).id
+	idLower := pair.AddOrder(mul(8, volumeBuy), volumeBuy, types.Address{}, 0).id
+	_ = pair.AddOrder(mul(9, volumeBuy), volumeBuy, types.Address{}, 0).id
 
 	_, _, err = immutableTree.Commit(swap)
 	if err != nil {
@@ -1065,53 +1080,28 @@ func TestPair_SetOrder_01(t *testing.T) {
 			t.Run("get", func(t *testing.T) {
 				t.Run("set", func(t *testing.T) {
 					t.Run("lowest", func(t *testing.T) {
-						order := pair.OrderSellLowerByIndex(len(pair.SellLowerOrders()) - 1)
+						order := pair.OrderSellByIndex(len(pair.SellOrderIDs()) - 1)
 						if idMostLower != order.id {
 							t.Errorf("id last sell order from array want %v, got %v", idMostLower, order.id)
 						}
 					})
-					t.Skip("allow sell order with highest price")
-					t.Run("low", func(t *testing.T) {
-						order := pair.OrderSellLowerByIndex(0)
-						if idLower != order.id {
-							t.Errorf("id last sell order from array want %v, got %v", idLower, order.id)
-						}
-					})
-
-					t.Run("high", func(t *testing.T) {
-						order := pair.sellHigherOrders()[0]
-						if idHigher != order.id {
-							t.Errorf("id last sell order from array want %v, got %v", idHigher, order.id)
-						}
-					})
-					t.Run("highest", func(t *testing.T) {
-						order := pair.sellHigherOrders()[len(pair.sellHigherOrders())-1]
-						if idMostHigher != order.id {
-							t.Errorf("id last sell order from array want %v, got %v", idMostHigher, order.id)
-						}
-					})
-					t.Run("cmp", func(t *testing.T) {
-						if pair.OrderSellLowerByIndex(0).Price().Cmp(pair.OrderSellLowerByIndex(len(pair.SellLowerOrders())-1).Price()) != 1 {
-							t.Errorf("not sorted orders")
-						}
-					})
 				})
 				t.Run("update", func(t *testing.T) {
-					lastSellLower, indexSellLower := pair.OrderSellLowerLast()
+					lastSellLower, indexSellLower := pair.OrderSellLast()
 					if indexSellLower == -1 {
 						t.Error("orders not loaded, last index", indexSellLower)
 					}
 					if nil == lastSellLower {
 						t.Fatal("order is nil")
 					}
-					if len(pair.SellLowerOrders())-1 != indexSellLower {
+					if len(pair.SellOrderIDs())-1 != indexSellLower {
 						t.Error("error index")
 					}
 					t.Run("lowest", func(t *testing.T) {
 						if idMostLower != lastSellLower.id {
 							t.Errorf("id not equal, want %v, got %v", idMostLower, lastSellLower.id)
 						}
-						order := pair.OrderSellLowerByIndex(indexSellLower)
+						order := pair.OrderSellByIndex(indexSellLower)
 						if idMostLower != order.id {
 							t.Errorf("id last sell order from array want %v, got %v", idMostLower, order.id)
 						}
@@ -1119,13 +1109,13 @@ func TestPair_SetOrder_01(t *testing.T) {
 
 					t.Run("low", func(t *testing.T) {
 						t.Skip("allow sell order with highest price ")
-						order := pair.OrderSellLowerByIndex(0)
+						order := pair.OrderSellByIndex(0)
 						if idLower != order.id {
 							t.Errorf("id last sell order from array want %v, got %v", idLower, order.id)
 						}
 					})
 					t.Run("cmp", func(t *testing.T) {
-						if pair.OrderSellLowerByIndex(0).Price().Cmp(pair.OrderSellLowerByIndex(indexSellLower).Price()) != 1 {
+						if pair.OrderSellByIndex(0).Price().Cmp(pair.OrderSellByIndex(indexSellLower).Price()) != 1 {
 							t.Errorf("not sorted orders")
 						}
 					})
@@ -1136,34 +1126,34 @@ func TestPair_SetOrder_01(t *testing.T) {
 			swap = New(newBus, immutableTree.GetLastImmutable())
 			pair = swap.Pair(0, 1)
 			t.Run("load", func(t *testing.T) {
-				lastSellLower, indexSellLower := pair.OrderSellLowerLast()
+				lastSellLower, indexSellLower := pair.OrderSellLast()
 				if indexSellLower == -1 {
 					t.Error("orders not loaded, last index", indexSellLower)
 				}
 				if nil == lastSellLower {
 					t.Fatal("order is nil")
 				}
-				if len(pair.SellLowerOrders())-1 != indexSellLower {
+				if len(pair.SellOrderIDs())-1 != indexSellLower {
 					t.Error("error index")
 				}
 				t.Run("lowest", func(t *testing.T) {
 					if idMostLower != lastSellLower.id {
 						t.Errorf("id not equal, want %v, got %v", idMostLower, lastSellLower.id)
 					}
-					order := pair.OrderSellLowerByIndex(indexSellLower)
+					order := pair.OrderSellByIndex(indexSellLower)
 					if idMostLower != order.id {
 						t.Errorf("id last sell order from array want %v, got %v", idMostLower, order.id)
 					}
 				})
 				t.Run("low", func(t *testing.T) {
 					t.Skip("allow sell order with highest price ")
-					order := pair.OrderSellLowerByIndex(0)
+					order := pair.OrderSellByIndex(0)
 					if idLower != order.id {
 						t.Errorf("id last sell order from array want %v, got %v", idLower, order.id)
 					}
 				})
 				t.Run("cmp", func(t *testing.T) {
-					if pair.OrderSellLowerByIndex(0).Price().Cmp(pair.OrderSellLowerByIndex(indexSellLower).Price()) != 1 {
+					if pair.OrderSellByIndex(0).Price().Cmp(pair.OrderSellByIndex(indexSellLower).Price()) != 1 {
 						t.Errorf("not sorted orders")
 					}
 				})
@@ -1177,52 +1167,52 @@ func TestPair_SetOrder_01(t *testing.T) {
 			t.Run("get", func(t *testing.T) {
 				t.Run("set", func(t *testing.T) {
 					t.Run("lowest", func(t *testing.T) {
-						order := pair.OrderBuyHigherByIndex(len(pair.BuyHigherOrders()) - 1)
+						order := pair.OrderBuyByIndex(len(pair.BuyOrderIDs()) - 1)
 						if idMostLower != order.id {
 							t.Errorf("id last sell order from array want %v, got %v", idMostLower, order.id)
 						}
 					})
 					t.Run("cmp", func(t *testing.T) {
-						if pair.OrderBuyHigherByIndex(0).Price().Cmp(pair.OrderBuyHigherByIndex(len(pair.BuyHigherOrders())-1).Price()) != -1 {
+						if pair.OrderBuyByIndex(0).Price().Cmp(pair.OrderBuyByIndex(len(pair.BuyOrderIDs())-1).Price()) != -1 {
 							t.Errorf("not sorted orders")
 						}
 					})
 					t.Run("low", func(t *testing.T) {
 						t.Skip("allow sell order with highest price ")
-						order := pair.OrderBuyHigherByIndex(0)
+						order := pair.OrderBuyByIndex(0)
 						if idLower != order.id {
 							t.Errorf("id last sell order from array want %v, got %v", idLower, order.id)
 						}
 					})
 				})
 				t.Run("update", func(t *testing.T) {
-					lastBuyLower, indexBuyLower := pair.OrderBuyHigherLast()
+					lastBuyLower, indexBuyLower := pair.OrderBuyLast()
 					if indexBuyLower == -1 {
 						t.Error("orders not loaded, last index", indexBuyLower)
 					}
 					if nil == lastBuyLower {
 						t.Fatal("order is nil")
 					}
-					if len(pair.BuyHigherOrders())-1 != indexBuyLower {
+					if len(pair.BuyOrderIDs())-1 != indexBuyLower {
 						t.Error("error index")
 					}
 					t.Run("lowest", func(t *testing.T) {
 						if idMostLower != lastBuyLower.id {
 							t.Errorf("id not equal, want %v, got %v", idMostLower, lastBuyLower.id)
 						}
-						order := pair.OrderBuyHigherByIndex(indexBuyLower)
+						order := pair.OrderBuyByIndex(indexBuyLower)
 						if idMostLower != order.id {
 							t.Errorf("id last sell order from array want %v, got %v", idMostLower, order.id)
 						}
 					})
 					t.Run("cmp", func(t *testing.T) {
-						if pair.OrderBuyHigherByIndex(0).Price().Cmp(pair.OrderBuyHigherByIndex(indexBuyLower).Price()) != -1 {
+						if pair.OrderBuyByIndex(0).Price().Cmp(pair.OrderBuyByIndex(indexBuyLower).Price()) != -1 {
 							t.Errorf("not sorted orders")
 						}
 					})
 					t.Run("low", func(t *testing.T) {
 						t.Skip("allow sell order with highest price ")
-						order := pair.OrderBuyHigherByIndex(0)
+						order := pair.OrderBuyByIndex(0)
 						if idLower != order.id {
 							t.Errorf("id last sell order from array want %v, got %v", idLower, order.id)
 						}
@@ -1235,33 +1225,33 @@ func TestPair_SetOrder_01(t *testing.T) {
 			pair = swap.Pair(1, 0)
 			t.Run("get", func(t *testing.T) {
 				t.Run("load", func(t *testing.T) {
-					lastBuyLower, indexBuyLower := pair.OrderBuyHigherLast()
+					lastBuyLower, indexBuyLower := pair.OrderBuyLast()
 					if indexBuyLower == -1 {
 						t.Error("orders not loaded, last index", indexBuyLower)
 					}
 					if nil == lastBuyLower {
 						t.Fatal("order is nil")
 					}
-					if len(pair.BuyHigherOrders())-1 != indexBuyLower {
+					if len(pair.BuyOrderIDs())-1 != indexBuyLower {
 						t.Error("error index")
 					}
 					t.Run("lowest", func(t *testing.T) {
 						if idMostLower != lastBuyLower.id {
 							t.Errorf("id not equal, want %v, got %v", idMostLower, lastBuyLower.id)
 						}
-						order := pair.OrderBuyHigherByIndex(indexBuyLower)
+						order := pair.OrderBuyByIndex(indexBuyLower)
 						if idMostLower != order.id {
 							t.Errorf("id last sell order from array want %v, got %v", idMostLower, order.id)
 						}
 					})
 					t.Run("cmp", func(t *testing.T) {
-						if pair.OrderBuyHigherByIndex(0).Price().Cmp(pair.OrderBuyHigherByIndex(indexBuyLower).Price()) != -1 {
+						if pair.OrderBuyByIndex(0).Price().Cmp(pair.OrderBuyByIndex(indexBuyLower).Price()) != -1 {
 							t.Errorf("not sorted orders")
 						}
 					})
 					t.Run("low", func(t *testing.T) {
 						t.Skip("allow sell order with highest price ")
-						order := pair.OrderBuyHigherByIndex(0)
+						order := pair.OrderBuyByIndex(0)
 						if idLower != order.id {
 							t.Errorf("id last sell order from array want %v, got %v", idLower, order.id)
 						}
@@ -1288,10 +1278,10 @@ func TestPair_SetOrder_10(t *testing.T) {
 	mul := func(price int64, volumeBuy *big.Int) *big.Int {
 		return big.NewInt(0).Mul(big.NewInt(price), volumeBuy)
 	}
-	idMostHigher := pair.SetOrder(mul(1, volumeBuy), volumeBuy, types.Address{}).id
-	idHigher := pair.SetOrder(mul(2, volumeBuy), volumeBuy, types.Address{}).id
-	idLower := pair.SetOrder(mul(9, volumeBuy), volumeBuy, types.Address{}).id
-	idMostLower := pair.SetOrder(mul(10, volumeBuy), volumeBuy, types.Address{}).id
+	/*idMostHigher :*/ _ = pair.AddOrder(mul(1, volumeBuy), volumeBuy, types.Address{}, 0).id
+	/*idHigher :*/ _ = pair.AddOrder(mul(2, volumeBuy), volumeBuy, types.Address{}, 0).id
+	idLower := pair.AddOrder(mul(9, volumeBuy), volumeBuy, types.Address{}, 0).id
+	idMostLower := pair.AddOrder(mul(10, volumeBuy), volumeBuy, types.Address{}, 0).id
 
 	_, _, err = immutableTree.Commit(swap)
 	if err != nil {
@@ -1304,64 +1294,40 @@ func TestPair_SetOrder_10(t *testing.T) {
 			t.Run("get", func(t *testing.T) {
 				t.Run("set", func(t *testing.T) {
 					t.Run("lowest", func(t *testing.T) {
-						order := pair.OrderSellLowerByIndex(len(pair.SellLowerOrders()) - 1)
+						order := pair.OrderSellByIndex(len(pair.SellOrderIDs()) - 1)
 						if idMostLower != order.id {
 							t.Errorf("id last sell order from array want %v, got %v", idMostLower, order.id)
 						}
 					})
-					t.Skip("allow sell order with highest price ")
-					t.Run("low", func(t *testing.T) {
-						order := pair.OrderSellLowerByIndex(0)
-						if idLower != order.id {
-							t.Errorf("id last sell order from array want %v, got %v", idLower, order.id)
-						}
-					})
-					t.Run("high", func(t *testing.T) {
-						order := pair.sellHigherOrders()[0]
-						if idHigher != order.id {
-							t.Errorf("id last sell order from array want %v, got %v", idHigher, order.id)
-						}
-					})
-					t.Run("highest", func(t *testing.T) {
-						order := pair.sellHigherOrders()[len(pair.sellHigherOrders())-1]
-						if idMostHigher != order.id {
-							t.Errorf("id last sell order from array want %v, got %v", idMostHigher, order.id)
-						}
-					})
-					t.Run("cmp", func(t *testing.T) {
-						if pair.OrderSellLowerByIndex(0).Price().Cmp(pair.OrderSellLowerByIndex(len(pair.SellLowerOrders())-1).Price()) != 1 {
-							t.Errorf("not sorted orders")
-						}
-					})
 				})
 				t.Run("update", func(t *testing.T) {
-					lastSellLower, indexSellLower := pair.OrderSellLowerLast()
+					lastSellLower, indexSellLower := pair.OrderSellLast()
 					if indexSellLower == -1 {
 						t.Error("orders not loaded, last index", indexSellLower)
 					}
 					if nil == lastSellLower {
 						t.Fatal("order is nil")
 					}
-					if len(pair.SellLowerOrders())-1 != indexSellLower {
+					if len(pair.SellOrderIDs())-1 != indexSellLower {
 						t.Error("error index")
 					}
 					t.Run("lowest", func(t *testing.T) {
 						if idMostLower != lastSellLower.id {
 							t.Errorf("id not equal, want %v, got %v", idMostLower, lastSellLower.id)
 						}
-						order := pair.OrderSellLowerByIndex(indexSellLower)
+						order := pair.OrderSellByIndex(indexSellLower)
 						if idMostLower != order.id {
 							t.Errorf("id last sell order from array want %v, got %v", idMostLower, order.id)
 						}
 					})
 					t.Run("cmp", func(t *testing.T) {
-						if pair.OrderSellLowerByIndex(0).Price().Cmp(pair.OrderSellLowerByIndex(indexSellLower).Price()) != 1 {
+						if pair.OrderSellByIndex(0).Price().Cmp(pair.OrderSellByIndex(indexSellLower).Price()) != 1 {
 							t.Errorf("not sorted orders")
 						}
 					})
 					t.Run("low", func(t *testing.T) {
 						t.Skip("allow sell order with highest price ")
-						order := pair.OrderSellLowerByIndex(0)
+						order := pair.OrderSellByIndex(0)
 						if idLower != order.id {
 							t.Errorf("id last sell order from array want %v, got %v", idLower, order.id)
 						}
@@ -1373,33 +1339,33 @@ func TestPair_SetOrder_10(t *testing.T) {
 			swap = New(newBus, immutableTree.GetLastImmutable())
 			pair = swap.Pair(1, 0)
 			t.Run("load", func(t *testing.T) {
-				lastSellLower, indexSellLower := pair.OrderSellLowerLast()
+				lastSellLower, indexSellLower := pair.OrderSellLast()
 				if indexSellLower == -1 {
 					t.Error("orders not loaded, last index", indexSellLower)
 				}
 				if nil == lastSellLower {
 					t.Fatal("order is nil")
 				}
-				if len(pair.SellLowerOrders())-1 != indexSellLower {
+				if len(pair.SellOrderIDs())-1 != indexSellLower {
 					t.Error("error index")
 				}
 				t.Run("lowest", func(t *testing.T) {
 					if idMostLower != lastSellLower.id {
 						t.Errorf("id not equal, want %v, got %v", idMostLower, lastSellLower.id)
 					}
-					order := pair.SellLowerOrders()[indexSellLower]
-					if idMostLower != order.id {
-						t.Errorf("id last sell order from array want %v, got %v", idMostLower, order.id)
+					order := pair.SellOrderIDs()[indexSellLower]
+					if idMostLower != pair.getOrder(order).id {
+						t.Errorf("id last sell order from array want %v, got %v", idMostLower, order)
 					}
 				})
 				t.Run("cmp", func(t *testing.T) {
-					if pair.OrderSellLowerByIndex(0).Price().Cmp(pair.OrderSellLowerByIndex(indexSellLower).Price()) != 1 {
+					if pair.OrderSellByIndex(0).Price().Cmp(pair.OrderSellByIndex(indexSellLower).Price()) != 1 {
 						t.Errorf("not sorted orders")
 					}
 				})
 				t.Run("low", func(t *testing.T) {
 					t.Skip("allow sell order with highest price ")
-					order := pair.OrderSellLowerByIndex(0)
+					order := pair.OrderSellByIndex(0)
 					if idLower != order.id {
 						t.Errorf("id last sell order from array want %v, got %v", idLower, order.id)
 					}
@@ -1414,52 +1380,52 @@ func TestPair_SetOrder_10(t *testing.T) {
 			t.Run("get", func(t *testing.T) {
 				t.Run("set", func(t *testing.T) {
 					t.Run("lowest", func(t *testing.T) {
-						order := pair.OrderBuyHigherByIndex(len(pair.BuyHigherOrders()) - 1)
+						order := pair.OrderBuyByIndex(len(pair.BuyOrderIDs()) - 1)
 						if idMostLower != order.id {
 							t.Errorf("id last sell order from array want %v, got %v", idMostLower, order.id)
 						}
 					})
 					t.Run("cmp", func(t *testing.T) {
-						if pair.OrderBuyHigherByIndex(0).Price().Cmp(pair.OrderBuyHigherByIndex(len(pair.BuyHigherOrders())-1).Price()) != -1 {
+						if pair.OrderBuyByIndex(0).Price().Cmp(pair.OrderBuyByIndex(len(pair.BuyOrderIDs())-1).Price()) != -1 {
 							t.Errorf("not sorted orders")
 						}
 					})
 					t.Run("low", func(t *testing.T) {
 						t.Skip("allow sell order with highest price ")
-						order := pair.OrderBuyHigherByIndex(0)
+						order := pair.OrderBuyByIndex(0)
 						if idLower != order.id {
 							t.Errorf("id last sell order from array want %v, got %v", idLower, order.id)
 						}
 					})
 				})
 				t.Run("update", func(t *testing.T) {
-					lastBuyLower, indexBuyLower := pair.OrderBuyHigherLast()
+					lastBuyLower, indexBuyLower := pair.OrderBuyLast()
 					if indexBuyLower == -1 {
 						t.Error("orders not loaded, last index", indexBuyLower)
 					}
 					if nil == lastBuyLower {
 						t.Fatal("order is nil")
 					}
-					if len(pair.BuyHigherOrders())-1 != indexBuyLower {
+					if len(pair.BuyOrderIDs())-1 != indexBuyLower {
 						t.Error("error index")
 					}
 					t.Run("lowest", func(t *testing.T) {
 						if idMostLower != lastBuyLower.id {
 							t.Errorf("id not equal, want %v, got %v", idMostLower, lastBuyLower.id)
 						}
-						order := pair.OrderBuyHigherByIndex(indexBuyLower)
+						order := pair.OrderBuyByIndex(indexBuyLower)
 						if idMostLower != order.id {
 							t.Errorf("id last sell order from array want %v, got %v", idMostLower, order.id)
 						}
 					})
 					t.Run("cmp", func(t *testing.T) {
-						if pair.OrderBuyHigherByIndex(0).Price().Cmp(pair.OrderBuyHigherByIndex(indexBuyLower).Price()) != -1 {
+						if pair.OrderBuyByIndex(0).Price().Cmp(pair.OrderBuyByIndex(indexBuyLower).Price()) != -1 {
 							t.Errorf("not sorted orders")
 						}
 					})
 					t.Run("low", func(t *testing.T) {
 						t.Skip("allow sell order with highest price ")
-						order := pair.OrderBuyHigherByIndex(0)
+						order := pair.OrderBuyByIndex(0)
 						if idLower != order.id {
 							t.Errorf("id last sell order from array want %v, got %v", idLower, order.id)
 						}
@@ -1472,28 +1438,28 @@ func TestPair_SetOrder_10(t *testing.T) {
 			pair = swap.Pair(0, 1)
 			t.Run("get", func(t *testing.T) {
 				t.Run("load", func(t *testing.T) {
-					lastBuyLower, indexBuyLower := pair.OrderBuyHigherLast()
+					lastBuyLower, indexBuyLower := pair.OrderBuyLast()
 					if indexBuyLower == -1 {
 						t.Error("orders not loaded, last index", indexBuyLower)
 					}
 					if nil == lastBuyLower {
 						t.Fatal("order is nil")
 					}
-					if len(pair.BuyHigherOrders())-1 != indexBuyLower {
+					if len(pair.BuyOrderIDs())-1 != indexBuyLower {
 						t.Error("error index")
 					}
 					t.Run("lowest", func(t *testing.T) {
 						if idMostLower != lastBuyLower.id {
 							t.Errorf("id not equal, want %v, got %v", idMostLower, lastBuyLower.id)
 						}
-						order := pair.OrderBuyHigherByIndex(indexBuyLower)
+						order := pair.OrderBuyByIndex(indexBuyLower)
 						if idMostLower != order.id {
 							t.Errorf("id last sell order from array want %v, got %v", idMostLower, order.id)
 						}
 					})
 					t.Run("low", func(t *testing.T) {
 						t.Skip("allow sell order with highest price ")
-						order := pair.OrderBuyHigherByIndex(0)
+						order := pair.OrderBuyByIndex(0)
 						if idLower != order.id {
 							t.Errorf("id last sell order from array want %v, got %v", idLower, order.id)
 						}
@@ -1588,8 +1554,8 @@ func TestPair_CalculateBuyForSellWithOrders_01(t *testing.T) {
 
 	t.Run("with orders", func(t *testing.T) {
 		t.Run("one order", func(t *testing.T) {
-			pair.SetOrder(big.NewInt(2000), big.NewInt(1000), types.Address{})
-			if pair.OrderSellLowerByIndex(0).Price().Cmp(CalcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 {
+			pair.AddOrder(big.NewInt(2000), big.NewInt(1000), types.Address{}, 0)
+			if pair.OrderSellByIndex(0).Price().Cmp(CalcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 {
 				t.Error("error set order")
 			}
 			t.Run("sell", func(t *testing.T) {
@@ -1637,7 +1603,7 @@ func TestPair_CalculateBuyForSellWithOrders_01(t *testing.T) {
 				t.Run("first order", func(t *testing.T) {
 					amount0In := pair.CalculateSellForBuy(big.NewInt(2926))
 					amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 999))
-					if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "2000" {
+					if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "2001" {
 						t.Error("want to get 1,000-0.1% more and spend 2,000 more by order", amount0In, amount0InWithOB)
 					}
 				})
@@ -1654,15 +1620,15 @@ func TestPair_CalculateBuyForSellWithOrders_01(t *testing.T) {
 					p := pair.AddLastSwapStep(amount0, big.NewInt(2926)).AddLastSwapStep(big.NewInt(2), big.NewInt(-1))
 					amount0In := big.NewInt(0).Add(amount0, p.CalculateSellForBuy(big.NewInt(466)))
 					amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 999 + 466))
-					if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "2000" {
+					if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "2001" {
 						t.Error("want to get 1,000-0.1% more and spend 2,000 more by order", amount0In, amount0InWithOB)
 					}
 				})
 			})
 			t.Run("two equal orders", func(t *testing.T) {
-				pair.SetOrder(big.NewInt(2000), big.NewInt(1000), types.Address{})
-				if pair.OrderSellLowerByIndex(0).Price().Cmp(CalcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 &&
-					pair.OrderSellLowerByIndex(1).Price().Cmp(CalcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 {
+				pair.AddOrder(big.NewInt(2000), big.NewInt(1000), types.Address{}, 0)
+				if pair.OrderSellByIndex(0).Price().Cmp(CalcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 &&
+					pair.OrderSellByIndex(1).Price().Cmp(CalcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 {
 					t.Error("error set orders")
 				}
 				t.Run("sell", func(t *testing.T) {
@@ -1698,14 +1664,14 @@ func TestPair_CalculateBuyForSellWithOrders_01(t *testing.T) {
 					t.Run("before second order", func(t *testing.T) {
 						amount0In := pair.CalculateSellForBuy(big.NewInt(2926))
 						amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 999))
-						if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "2000" {
+						if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "2001" {
 							t.Error("want to get 1,000-0.1% more and spend 2,000 more by order", amount0In, amount0InWithOB)
 						}
 					})
 					t.Run("all orders", func(t *testing.T) {
 						amount0In := pair.CalculateSellForBuy(big.NewInt(2926))
 						amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 1998))
-						if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "4000" {
+						if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "4001" {
 							t.Error("want to get 2,000-0.1% more and spend 4,000 more by order", amount0In, amount0InWithOB)
 						}
 					})
@@ -1714,14 +1680,14 @@ func TestPair_CalculateBuyForSellWithOrders_01(t *testing.T) {
 						p := pair.AddLastSwapStep(amount0, big.NewInt(2926))
 						amount0In := big.NewInt(0).Add(amount0, p.CalculateSellForBuy(big.NewInt(466)))
 						amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 1998 + 466))
-						if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "4000" {
+						if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "4001" {
 							t.Error("want to get 2,000-0.1% more and spend 4,000 more by order", amount0In, amount0InWithOB)
 						}
 					})
 				})
 				t.Run("three orders", func(t *testing.T) {
-					pair.SetOrder(big.NewInt(3000), big.NewInt(1000), types.Address{})
-					if pair.OrderSellLowerByIndex(2).Price().Cmp(CalcPriceSell(big.NewInt(3000), big.NewInt(1000))) != 0 {
+					pair.AddOrder(big.NewInt(3000), big.NewInt(1000), types.Address{}, 0)
+					if pair.OrderSellByIndex(2).Price().Cmp(CalcPriceSell(big.NewInt(3000), big.NewInt(1000))) != 0 {
 						t.Error("error set orders")
 					}
 					t.Run("sell", func(t *testing.T) {
@@ -1767,9 +1733,9 @@ func TestPair_CalculateBuyForSellWithOrders_10(t *testing.T) {
 
 	t.Run("with orders", func(t *testing.T) {
 		t.Run("one order", func(t *testing.T) {
-			pair.SetOrder(big.NewInt(2000), big.NewInt(1000), types.Address{})
-			t.Log(pair.OrderSellLowerByIndex(0).Price(), CalcPriceSell(big.NewInt(2000), big.NewInt(1000)))
-			if pair.OrderSellLowerByIndex(0).Price().Cmp(CalcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 {
+			pair.AddOrder(big.NewInt(2000), big.NewInt(1000), types.Address{}, 0)
+			t.Log(pair.OrderSellByIndex(0).Price(), CalcPriceSell(big.NewInt(2000), big.NewInt(1000)))
+			if pair.OrderSellByIndex(0).Price().Cmp(CalcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 {
 				t.Error("error set order")
 			}
 			t.Run("sell", func(t *testing.T) {
@@ -1817,7 +1783,7 @@ func TestPair_CalculateBuyForSellWithOrders_10(t *testing.T) {
 				t.Run("first order", func(t *testing.T) {
 					amount0In := pair.CalculateSellForBuy(big.NewInt(2926))
 					amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 999))
-					if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "2000" {
+					if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "2001" {
 						t.Error("want to get 1,000-0.1% more and spend 2,000 more by order", amount0In, amount0InWithOB)
 					}
 				})
@@ -1834,15 +1800,15 @@ func TestPair_CalculateBuyForSellWithOrders_10(t *testing.T) {
 					p := pair.AddLastSwapStep(amount0, big.NewInt(2926)).AddLastSwapStep(big.NewInt(2), big.NewInt(-1))
 					amount0In := big.NewInt(0).Add(amount0, p.CalculateSellForBuy(big.NewInt(466)))
 					amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 999 + 466))
-					if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "2000" {
+					if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "2001" {
 						t.Error("want to get 1,000-0.1% more and spend 2,000 more by order", amount0In, amount0InWithOB)
 					}
 				})
 			})
 			t.Run("two equal orders", func(t *testing.T) {
-				pair.SetOrder(big.NewInt(2000), big.NewInt(1000), types.Address{})
-				if pair.OrderSellLowerByIndex(0).Price().Cmp(CalcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 &&
-					pair.OrderSellLowerByIndex(1).Price().Cmp(CalcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 {
+				pair.AddOrder(big.NewInt(2000), big.NewInt(1000), types.Address{}, 0)
+				if pair.OrderSellByIndex(0).Price().Cmp(CalcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 &&
+					pair.OrderSellByIndex(1).Price().Cmp(CalcPriceSell(big.NewInt(2000), big.NewInt(1000))) != 0 {
 					t.Error("error set orders")
 				}
 				t.Run("sell", func(t *testing.T) {
@@ -1879,14 +1845,14 @@ func TestPair_CalculateBuyForSellWithOrders_10(t *testing.T) {
 					t.Run("before second order", func(t *testing.T) {
 						amount0In := pair.CalculateSellForBuyAllowNeg(big.NewInt(2926))
 						amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 999))
-						if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "2000" {
+						if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "2001" {
 							t.Error("want to get 1,000-0.1% more and spend 2,000 more by order", amount0In, amount0InWithOB)
 						}
 					})
 					t.Run("all orders", func(t *testing.T) {
 						amount0In := pair.CalculateSellForBuyAllowNeg(big.NewInt(2926))
 						amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 1998))
-						if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "4000" {
+						if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "4001" {
 							t.Error("want to get 2,000-0.1% more and spend 4,000 more by order", amount0In, amount0InWithOB)
 						}
 					})
@@ -1895,14 +1861,14 @@ func TestPair_CalculateBuyForSellWithOrders_10(t *testing.T) {
 						p := pair.AddLastSwapStep(amount0, big.NewInt(2926))
 						amount0In := big.NewInt(0).Add(amount0, p.CalculateSellForBuy(big.NewInt(466)))
 						amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 1998 + 466))
-						if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "4000" {
+						if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "4001" {
 							t.Error("want to get 2,000-0.1% more and spend 4,000 more by order", amount0In, amount0InWithOB)
 						}
 					})
 				})
 				t.Run("three orders", func(t *testing.T) {
-					pair.SetOrder(big.NewInt(3000), big.NewInt(1000), types.Address{})
-					if pair.OrderSellLowerByIndex(2).Price().Cmp(CalcPriceSell(big.NewInt(3000), big.NewInt(1000))) != 0 {
+					pair.AddOrder(big.NewInt(3000), big.NewInt(1000), types.Address{}, 0)
+					if pair.OrderSellByIndex(2).Price().Cmp(CalcPriceSell(big.NewInt(3000), big.NewInt(1000))) != 0 {
 						t.Error("error set orders")
 					}
 					t.Run("sell", func(t *testing.T) {

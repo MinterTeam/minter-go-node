@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -17,6 +18,7 @@ func (s *Service) Blocks(ctx context.Context, req *pb.BlocksRequest) (*pb.Blocks
 			Height:    i,
 			Fields:    req.Fields,
 			FailedTxs: req.FailedTxs,
+			Events:    req.Events,
 		})
 		if err != nil {
 			if status.Code(err) == codes.NotFound {

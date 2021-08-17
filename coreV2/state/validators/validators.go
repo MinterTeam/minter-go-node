@@ -298,6 +298,7 @@ func (v *Validators) PayRewards() {
 				Address:         dao.Address,
 				Amount:          DAOReward.String(),
 				ValidatorPubKey: validator.PubKey,
+				ForCoin:         0,
 			})
 
 			// pay commission to Developers
@@ -311,6 +312,7 @@ func (v *Validators) PayRewards() {
 				Address:         developers.Address,
 				Amount:          DevelopersReward.String(),
 				ValidatorPubKey: validator.PubKey,
+				ForCoin:         0,
 			})
 
 			totalReward.Sub(totalReward, DevelopersReward)
@@ -328,6 +330,7 @@ func (v *Validators) PayRewards() {
 				Address:         candidate.RewardAddress,
 				Amount:          validatorReward.String(),
 				ValidatorPubKey: validator.PubKey,
+				ForCoin:         0,
 			})
 
 			stakes := v.bus.Candidates().GetStakes(validator.PubKey)
@@ -352,6 +355,7 @@ func (v *Validators) PayRewards() {
 					Address:         stake.Owner,
 					Amount:          reward.String(),
 					ValidatorPubKey: validator.PubKey,
+					ForCoin:         uint64(stake.Coin),
 				})
 			}
 

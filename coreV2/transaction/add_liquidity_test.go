@@ -125,7 +125,6 @@ func TestAddExchangeLiquidityTx_Bug4415829(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-
 		{
 			response := NewExecutor(GetDataV240).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 
@@ -133,7 +132,6 @@ func TestAddExchangeLiquidityTx_Bug4415829(t *testing.T) {
 				t.Fatalf("Response code %d is not 107. Error: %s", response.Code, response.Log)
 			}
 		}
-
 		{
 			response := NewExecutor(GetDataV230).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 

@@ -229,8 +229,9 @@ func (s *Service) calcBuyFromBancor(value *big.Int, coinTo transaction.Calculate
 		value = formula.CalculatePurchaseAmount(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), value)
 	}
 	if !coinFrom.ID().IsBaseCoin() {
-		value = formula.CalculateSaleAmount(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), value)
-		if errResp := transaction.CheckReserveUnderflow(coinFrom, value); errResp != nil {
+		var errResp *transaction.Response
+		value, errResp = transaction.CalculateSaleAmountAndCheck(coinFrom, value)
+		if errResp != nil {
 			return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
 		}
 	}
