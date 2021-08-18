@@ -29,7 +29,7 @@ func GetExpireOrdersPeriodWithChain(chain ChainID) uint64 {
 	if chain == ChainTestnet {
 		return day * 3
 	}
-	return mounth * 3
+	return mounth
 }
 
 func GetUnbondPeriodWithChain(chain ChainID) uint64 {

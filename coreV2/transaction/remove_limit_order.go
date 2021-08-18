@@ -23,7 +23,7 @@ func (data RemoveLimitOrderData) Gas() int64 {
 	return 1
 }
 func (data RemoveLimitOrderData) TxType() TxType {
-	return TypeRemoveOrderSwapPool
+	return TypeRemoveLimitOrder
 }
 
 func (data RemoveLimitOrderData) basicCheck(tx *Transaction, context *state.CheckState) *Response {

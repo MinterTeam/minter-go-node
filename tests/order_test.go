@@ -79,7 +79,7 @@ func TestOrder_set(t *testing.T) {
 	//				ID:      1,
 	//				Owner:   seller,
 	//			},
-	tx := CreateTx(app, address, transaction.TypeAddOrderSwapPool, transaction.AddOrderSwapPoolData{
+	tx := CreateTx(app, address, transaction.TypeAddLimitOrder, transaction.AddLimitOrderData{
 		CoinToBuy:   1,
 		ValueToBuy:  helpers.StringToBigInt("15000000000000000000000"),
 		CoinToSell:  2,
@@ -405,7 +405,7 @@ func TestOrder_sell_part_remove(t *testing.T) {
 
 	SendBeginBlock(app, 2) // send BeginBlock
 
-	tx = CreateTx(app, address, transaction.TypeRemoveOrderSwapPool, transaction.RemoveLimitOrderData{
+	tx = CreateTx(app, address, transaction.TypeRemoveLimitOrder, transaction.RemoveLimitOrderData{
 		// Coin0: 1,
 		// Coin1: 2,
 		ID: 1,
@@ -506,7 +506,7 @@ func TestOrder_sell_part_remove_and_try_use(t *testing.T) {
 
 	SendBeginBlock(app, 2) // send BeginBlock
 
-	tx := CreateTx(app, address, transaction.TypeRemoveOrderSwapPool, transaction.RemoveLimitOrderData{
+	tx := CreateTx(app, address, transaction.TypeRemoveLimitOrder, transaction.RemoveLimitOrderData{
 		// Coin0: 1,
 		// Coin1: 2,
 		ID: 1,
@@ -628,7 +628,7 @@ func TestOrder_sell_part_fail_remove_not_owner(t *testing.T) {
 
 	SendBeginBlock(app, 2) // send BeginBlock
 
-	tx := CreateTx(app, address, transaction.TypeRemoveOrderSwapPool, transaction.RemoveLimitOrderData{
+	tx := CreateTx(app, address, transaction.TypeRemoveLimitOrder, transaction.RemoveLimitOrderData{
 		// Coin0: 1,
 		// Coin1: 2,
 		ID: 1,
