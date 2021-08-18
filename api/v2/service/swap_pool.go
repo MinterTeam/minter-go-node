@@ -35,13 +35,17 @@ func (s *Service) LimitOrdersOfPool(ctx context.Context, req *pb.LimitOrdersOfPo
 		return nil, timeoutStatus.Err()
 	}
 
-	capacity := req.Limit
+	limit := req.Limit
+	if limit == 0 {
+		limit = 999999
+	}
+	capacity := limit
 	if capacity > 50 {
 		capacity = 50
 	}
 	resp := &pb.LimitOrdersOfPoolResponse{Orders: make([]*pb.LimitOrderResponse, 0, capacity)}
 
-	for i := 0; i < int(req.Limit); i++ {
+	for i := 0; i < int(limit); i++ {
 		order := swapper.OrderSellByIndex(i)
 		if order == nil {
 			break
