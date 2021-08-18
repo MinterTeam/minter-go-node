@@ -14,40 +14,17 @@ import (
 )
 
 type RemoveLimitOrderData struct {
-	// Coin0 types.CoinID
-	// Coin1 types.CoinID
 	ID uint32
 }
 
 func (data RemoveLimitOrderData) Gas() int64 {
-	return 1
+	return gasRemoveLimitOrder
 }
 func (data RemoveLimitOrderData) TxType() TxType {
 	return TypeRemoveLimitOrder
 }
 
 func (data RemoveLimitOrderData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
-	// if data.Coin0 == data.Coin1 {
-	// 	return &Response{
-	// 		Code: code.CrossConvert,
-	// 		Log:  "\"From\" coin equals to \"to\" coin",
-	// 		Info: EncodeError(code.NewCrossConvert(
-	// 			data.Coin0.String(),
-	// 			data.Coin1.String(), "", "")),
-	// 	}
-	// }
-	//
-	// swapper := context.Swap().GetSwapper(data.Coin0, data.Coin1)
-	// if !swapper.Exists() {
-	// 	return &Response{
-	// 		Code: code.PairNotExists,
-	// 		Log:  "swap pool not found",
-	// 		Info: EncodeError(code.NewPairNotExists(
-	// 			data.Coin0.String(),
-	// 			data.Coin1.String())),
-	// 	}
-	// }
-
 	order := context.Swap().GetOrder(data.ID)
 	if order == nil {
 		return &Response{
