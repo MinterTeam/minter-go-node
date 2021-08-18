@@ -346,8 +346,8 @@ func encode(data transaction.Data, txType transaction.TxType, rCoins coins.RCoin
 			Volume0: d.Volume0.String(),
 			Volume1: d.Volume1.String(),
 		}
-	case transaction.TypeAddOrderSwapPool:
-		d := data.(*transaction.AddOrderSwapPoolData)
+	case transaction.TypeAddLimitOrder:
+		d := data.(*transaction.AddLimitOrderData)
 		m = &pb.AddLimitOrderData{
 			CoinToBuy: &pb.Coin{
 				Id:     uint64(d.CoinToBuy),
@@ -360,7 +360,7 @@ func encode(data transaction.Data, txType transaction.TxType, rCoins coins.RCoin
 			ValueToBuy:  d.ValueToBuy.String(),
 			ValueToSell: d.ValueToSell.String(),
 		}
-	case transaction.TypeRemoveOrderSwapPool:
+	case transaction.TypeRemoveLimitOrder:
 		d := data.(*transaction.RemoveLimitOrderData)
 		m = &pb.RemoveLimitOrderData{
 			Id: uint64(d.ID),

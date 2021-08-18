@@ -62,8 +62,8 @@ const (
 	TypeVoteCommission          TxType = 0x20
 	TypeVoteUpdate              TxType = 0x21
 	TypeCreateSwapPool          TxType = 0x22
-	TypeAddOrderSwapPool        TxType = 0x23
-	TypeRemoveOrderSwapPool     TxType = 0x24
+	TypeAddLimitOrder           TxType = 0x23
+	TypeRemoveLimitOrder        TxType = 0x24
 )
 
 const (

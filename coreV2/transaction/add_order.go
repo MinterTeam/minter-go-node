@@ -13,21 +13,21 @@ import (
 	abcTypes "github.com/tendermint/tendermint/abci/types"
 )
 
-type AddOrderSwapPoolData struct {
+type AddLimitOrderData struct {
 	CoinToSell  types.CoinID
 	ValueToSell *big.Int
 	CoinToBuy   types.CoinID
 	ValueToBuy  *big.Int
 }
 
-func (data AddOrderSwapPoolData) Gas() int64 {
+func (data AddLimitOrderData) Gas() int64 {
 	return 1
 }
-func (data AddOrderSwapPoolData) TxType() TxType {
-	return TypeAddOrderSwapPool
+func (data AddLimitOrderData) TxType() TxType {
+	return TypeAddLimitOrder
 }
 
-func (data AddOrderSwapPoolData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data AddLimitOrderData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.CoinToSell == data.CoinToBuy {
 		return &Response{
 			Code: code.CrossConvert,
@@ -52,15 +52,15 @@ func (data AddOrderSwapPoolData) basicCheck(tx *Transaction, context *state.Chec
 	return nil
 }
 
-func (data AddOrderSwapPoolData) String() string {
+func (data AddLimitOrderData) String() string {
 	return fmt.Sprintf("ADD ORDER")
 }
 
-func (data AddOrderSwapPoolData) CommissionData(price *commission.Price) *big.Int {
+func (data AddLimitOrderData) CommissionData(price *commission.Price) *big.Int {
 	return price.AddLimitOrderPrice()
 }
 
-func (data AddOrderSwapPoolData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
+func (data AddLimitOrderData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState

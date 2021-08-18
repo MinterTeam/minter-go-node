@@ -92,9 +92,9 @@ func GetDataV260(txType TxType) (Data, bool) {
 		return &SellAllSwapPoolDataV260{}, true
 	case TypeBurnToken:
 		return &BurnTokenDataV260{}, true
-	case TypeAddOrderSwapPool:
-		return &AddOrderSwapPoolData{}, true
-	case TypeRemoveOrderSwapPool:
+	case TypeAddLimitOrder:
+		return &AddLimitOrderData{}, true
+	case TypeRemoveLimitOrder:
 		return &RemoveLimitOrderData{}, true
 	default:
 		return GetDataV250(txType)

@@ -79,7 +79,7 @@ func TestAddOrderSwapPoolData_WrongPrice(t *testing.T) {
 		}
 	}
 	{
-		data := AddOrderSwapPoolData{
+		data := AddLimitOrderData{
 			CoinToSell:  coin1,
 			ValueToSell: helpers.BipToPip(big.NewInt(25)),
 			CoinToBuy:   coin0,
@@ -97,7 +97,7 @@ func TestAddOrderSwapPoolData_WrongPrice(t *testing.T) {
 			GasPrice:      1,
 			ChainID:       types.CurrentChainID,
 			GasCoin:       types.GetBaseCoinID(),
-			Type:          TypeAddOrderSwapPool,
+			Type:          TypeAddLimitOrder,
 			Data:          encodedData,
 			SignatureType: SigTypeSingle,
 		}
@@ -123,7 +123,7 @@ func TestAddOrderSwapPoolData_WrongPrice(t *testing.T) {
 		}
 	}
 	{
-		data := AddOrderSwapPoolData{
+		data := AddLimitOrderData{
 			CoinToSell:  coin1,
 			ValueToSell: helpers.BipToPip(big.NewInt(5)),
 			CoinToBuy:   coin0,
@@ -141,7 +141,7 @@ func TestAddOrderSwapPoolData_WrongPrice(t *testing.T) {
 			GasPrice:      1,
 			ChainID:       types.CurrentChainID,
 			GasCoin:       types.GetBaseCoinID(),
-			Type:          TypeAddOrderSwapPool,
+			Type:          TypeAddLimitOrder,
 			Data:          encodedData,
 			SignatureType: SigTypeSingle,
 		}
@@ -234,7 +234,7 @@ func TestAddOrderSwapPoolData_Buy_01_moreOrder(t *testing.T) {
 		}
 	}
 	{
-		data := AddOrderSwapPoolData{
+		data := AddLimitOrderData{
 			CoinToSell:  coin1,
 			ValueToSell: helpers.BipToPip(big.NewInt(5)),
 			CoinToBuy:   coin0,
@@ -252,7 +252,7 @@ func TestAddOrderSwapPoolData_Buy_01_moreOrder(t *testing.T) {
 			GasPrice:      1,
 			ChainID:       types.CurrentChainID,
 			GasCoin:       types.GetBaseCoinID(),
-			Type:          TypeAddOrderSwapPool,
+			Type:          TypeAddLimitOrder,
 			Data:          encodedData,
 			SignatureType: SigTypeSingle,
 		}
@@ -394,7 +394,7 @@ func TestAddOrderSwapPoolData_Buy_01_partOrder(t *testing.T) {
 		}
 	}
 	{
-		data := AddOrderSwapPoolData{
+		data := AddLimitOrderData{
 			CoinToSell:  coin1,
 			ValueToSell: helpers.BipToPip(big.NewInt(5)),
 			CoinToBuy:   coin0,
@@ -412,7 +412,7 @@ func TestAddOrderSwapPoolData_Buy_01_partOrder(t *testing.T) {
 			GasPrice:      1,
 			ChainID:       types.CurrentChainID,
 			GasCoin:       types.GetBaseCoinID(),
-			Type:          TypeAddOrderSwapPool,
+			Type:          TypeAddLimitOrder,
 			Data:          encodedData,
 			SignatureType: SigTypeSingle,
 		}
@@ -554,7 +554,7 @@ func TestAddOrderSwapPoolData_Sell_01_partOrder(t *testing.T) {
 		}
 	}
 	{
-		data := AddOrderSwapPoolData{
+		data := AddLimitOrderData{
 			CoinToSell:  coin1,
 			ValueToSell: helpers.BipToPip(big.NewInt(5)),
 			CoinToBuy:   coin0,
@@ -572,7 +572,7 @@ func TestAddOrderSwapPoolData_Sell_01_partOrder(t *testing.T) {
 			GasPrice:      1,
 			ChainID:       types.CurrentChainID,
 			GasCoin:       types.GetBaseCoinID(),
-			Type:          TypeAddOrderSwapPool,
+			Type:          TypeAddLimitOrder,
 			Data:          encodedData,
 			SignatureType: SigTypeSingle,
 		}
@@ -715,7 +715,7 @@ func TestAddOrderSwapPoolData_Sell_10_partOrder(t *testing.T) {
 		}
 	}
 	{
-		data := AddOrderSwapPoolData{
+		data := AddLimitOrderData{
 			CoinToSell:  coin1,
 			ValueToSell: helpers.BipToPip(big.NewInt(5)),
 			CoinToBuy:   coin0,
@@ -733,7 +733,7 @@ func TestAddOrderSwapPoolData_Sell_10_partOrder(t *testing.T) {
 			GasPrice:      1,
 			ChainID:       types.CurrentChainID,
 			GasCoin:       types.GetBaseCoinID(),
-			Type:          TypeAddOrderSwapPool,
+			Type:          TypeAddLimitOrder,
 			Data:          encodedData,
 			SignatureType: SigTypeSingle,
 		}
@@ -876,7 +876,7 @@ func TestAddOrderSwapPoolData_Sell_01_fullOrder(t *testing.T) {
 		}
 	}
 	{
-		data := AddOrderSwapPoolData{
+		data := AddLimitOrderData{
 			CoinToSell:  coin1,
 			ValueToSell: helpers.BipToPip(big.NewInt(5)),
 			CoinToBuy:   coin0,
@@ -894,7 +894,7 @@ func TestAddOrderSwapPoolData_Sell_01_fullOrder(t *testing.T) {
 			GasPrice:      1,
 			ChainID:       types.CurrentChainID,
 			GasCoin:       types.GetBaseCoinID(),
-			Type:          TypeAddOrderSwapPool,
+			Type:          TypeAddLimitOrder,
 			Data:          encodedData,
 			SignatureType: SigTypeSingle,
 		}
@@ -1037,7 +1037,7 @@ func TestAddOrderSwapPoolData_Sell_10_fullOrder(t *testing.T) {
 		}
 	}
 	{
-		data := AddOrderSwapPoolData{
+		data := AddLimitOrderData{
 			CoinToSell:  coin1,
 			ValueToSell: helpers.BipToPip(big.NewInt(5)),
 			CoinToBuy:   coin0,
@@ -1055,7 +1055,7 @@ func TestAddOrderSwapPoolData_Sell_10_fullOrder(t *testing.T) {
 			GasPrice:      1,
 			ChainID:       types.CurrentChainID,
 			GasCoin:       types.GetBaseCoinID(),
-			Type:          TypeAddOrderSwapPool,
+			Type:          TypeAddLimitOrder,
 			Data:          encodedData,
 			SignatureType: SigTypeSingle,
 		}
