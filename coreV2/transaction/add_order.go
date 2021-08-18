@@ -21,7 +21,7 @@ type AddLimitOrderData struct {
 }
 
 func (data AddLimitOrderData) Gas() int64 {
-	return 1
+	return gasAddLimitOrder
 }
 func (data AddLimitOrderData) TxType() TxType {
 	return TypeAddLimitOrder
