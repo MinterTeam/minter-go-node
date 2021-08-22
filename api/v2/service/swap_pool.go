@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/hex"
+	"github.com/MinterTeam/minter-go-node/coreV2/state/swap"
 	"strings"
 
 	"github.com/MinterTeam/minter-go-node/coreV2/transaction"
@@ -62,6 +63,7 @@ func (s *Service) LimitOrdersOfPool(ctx context.Context, req *pb.LimitOrdersOfPo
 			},
 			WantSell: order.WantSell.String(),
 			WantBuy:  order.WantBuy.String(),
+			Price:    swap.CalcPriceSell(order.WantBuy, order.WantSell).Text('f', 18),
 			Owner:    order.Owner.String(),
 			Height:   order.Height,
 		})
@@ -105,6 +107,7 @@ func (s *Service) LimitOrder(ctx context.Context, req *pb.LimitOrderRequest) (*p
 		},
 		WantSell: order.WantSell.String(),
 		WantBuy:  order.WantBuy.String(),
+		Price:    swap.CalcPriceSell(order.WantBuy, order.WantSell).Text('f', 18),
 		Owner:    order.Owner.String(),
 		Height:   order.Height,
 	}, nil
@@ -147,6 +150,7 @@ func (s *Service) LimitOrders(ctx context.Context, req *pb.LimitOrdersRequest) (
 			},
 			WantSell: order.WantSell.String(),
 			WantBuy:  order.WantBuy.String(),
+			Price:    swap.CalcPriceSell(order.WantBuy, order.WantSell).Text('f', 18),
 			Owner:    order.Owner.String(),
 			Height:   order.Height,
 		})

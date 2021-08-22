@@ -53,6 +53,7 @@ func TestSwap_loadSellOrders_0(t *testing.T) {
 	orders := swap.loadSellOrders(pair, nil, 10)
 	t.Log(orders)
 
+	t.Log(order)
 	orders = swap.loadSellOrders(pair, order, 10)
 	t.Log(orders)
 
@@ -205,28 +206,29 @@ func TestSwap_loadSellOrders_dirty(t *testing.T) {
 	orders = swap.loadSellOrders(pair, nil, 1)
 	t.Log(orders)
 
-	o1 := pair.OrderSellByIndex(0)
-	o1.WantSell = big.NewInt(0)
-	o1.WantBuy = big.NewInt(0)
-	o1.SortPrice()
-	pair.dirtyOrders.list[o1.id] = struct{}{}
-	pair.unsetOrderSellByIndex(0)
-	t.Log(o1.id)
-
-	o2 := pair.OrderSellByIndex(0)
-	o2.ReCalcOldSortPrice()
-	o2.WantSell = helpers.StringToBigInt("999992979828068460")
-	//o2.WantSell = helpers.StringToBigInt("999990513182822900")
-	o2.WantBuy = helpers.StringToBigInt("1000000000000000000")
-	o2.SortPrice()
-	pair.dirtyOrders.list[o2.id] = struct{}{}
+	//t.Skip("OK")
+	//o1 := pair.OrderSellByIndex(0)
+	//o1.WantSell = big.NewInt(0)
+	//o1.WantBuy = big.NewInt(0)
+	//o1.SortPrice()
+	//pair.dirtyOrders.list[o1.id] = struct{}{}
 	//pair.unsetOrderSellByIndex(0)
-	t.Log(o2.id)
-
-	order := pair.OrderSellByIndex(0)
-	t.Log(order.id)
-	order = pair.OrderSellByIndex(0)
-	t.Log(order.id)
+	//t.Log(o1.id)
+	//
+	//o2 := pair.OrderSellByIndex(0)
+	//o2.ReCalcOldSortPrice()
+	//o2.WantSell = helpers.StringToBigInt("999992979828068460")
+	////o2.WantSell = helpers.StringToBigInt("999990513182822900")
+	//o2.WantBuy = helpers.StringToBigInt("1000000000000000000")
+	//o2.SortPrice()
+	//pair.dirtyOrders.list[o2.id] = struct{}{}
+	////pair.unsetOrderSellByIndex(0)
+	//t.Log(o2.id)
+	//
+	//order := pair.OrderSellByIndex(0)
+	//t.Log(order.id)
+	//order = pair.OrderSellByIndex(0)
+	//t.Log(order.id)
 
 }
 
@@ -243,10 +245,10 @@ func TestPair_LoadOrders_bagTacoCommit1(t *testing.T) {
 	_, _, _, _ = swap.PairCreate(0, 1, helpers.StringToBigInt("10000000000000000000000"), helpers.StringToBigInt("10000000000000000000000"))
 
 	pair := swap.Pair(0, 1)
-	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999993771961322400"), types.Address{1}, 1)
+	//pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999993771961322400"), types.Address{1}, 1)
 	//pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999993771961322406"), types.Address{1}, 1)
 	//pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999985282425228748"), types.Address{1}, 1)
-	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999985282425228800"), types.Address{1}, 1)
+	//pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999985282425228800"), types.Address{1}, 1)
 	t.Log(pair.sellOrders.ids)
 	_, _, err = immutableTree.Commit(swap)
 	if err != nil {
@@ -287,7 +289,7 @@ func TestPair_LoadOrders_bagTacoCommit1(t *testing.T) {
 	t.Log(pair.orderSellByIndex(6))
 	t.Log(pair.orderSellByIndex(7))
 
-	t.SkipNow()
+	//t.SkipNow()
 	last, index := pair.OrderSellLast()
 	if last.id != 5 || index != 4 {
 		t.Fatal(last, index)
@@ -370,6 +372,45 @@ func TestPair_LoadOrders_bagTacoCommit1(t *testing.T) {
 		t.Error(last, index)
 	}
 }
+
+func TestPair_LoadOrders_loadSell1(t *testing.T) {
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+
+	swap := New(newBus, immutableTree.GetLastImmutable())
+	_, _, _, _ = swap.PairCreate(0, 1, helpers.StringToBigInt("10000000000000000000000"), helpers.StringToBigInt("10000000000000000000000"))
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+	immutableTree, err = tree.NewMutableTree(1, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	swap = New(newBus, immutableTree.GetLastImmutable())
+	pair := swap.Pair(0, 1)
+
+	order := pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999993771961322400"), types.Address{1}, 1)
+	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999985282425228800"), types.Address{1}, 1)
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	orders := swap.loadSellOrders(pair, order, 3)
+	if len(orders) > 1 {
+		t.Error(orders)
+	}
+
+}
 func TestPair_LoadOrders_bagTacoCommit(t *testing.T) {
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
@@ -424,7 +465,7 @@ func TestPair_LoadOrders_bagTacoCommit(t *testing.T) {
 	pair.SellWithOrders(helpers.StringToBigInt("400000000000000000"))
 
 	last, index = swap.Pair(0, 1).OrderSellLast()
-	if last.id != 5 || index != 3 {
+	if last.id != 5 || index != 4 {
 		t.Error(last, index)
 	}
 
@@ -439,7 +480,7 @@ func TestPair_LoadOrders_bagTacoCommit(t *testing.T) {
 
 	swap = New(newBus, immutableTree.GetLastImmutable())
 	last, index = swap.Pair(0, 1).OrderSellLast()
-	if last.id != 5 || index != 3 {
+	if last.id != 5 || index != 4 {
 		t.Error(last, index)
 	}
 
@@ -455,12 +496,12 @@ func TestPair_LoadOrders_bagTacoCommit(t *testing.T) {
 	swap = New(newBus, immutableTree.GetLastImmutable())
 
 	last, index = swap.Pair(0, 1).OrderSellLast()
-	if last.id != 5 || index != 3 {
+	if last.id != 5 || index != 4 {
 		t.Error(last, index)
 	}
 
 	pair = swap.Pair(0, 1)
-	pair.SellWithOrders(helpers.StringToBigInt("4000000000000000000"))
+	pair.SellWithOrders(helpers.StringToBigInt("400000000000000000000"))
 
 	last, index = swap.Pair(0, 1).OrderSellLast()
 	if last != nil || index != -1 {
@@ -537,7 +578,7 @@ func TestPair_LoadOrders_bagTacoCirle(t *testing.T) {
 	pair.SellWithOrders(helpers.StringToBigInt("400000000000000000"))
 
 	last, index = swap.Pair(0, 1).OrderSellLast()
-	if last.id != 5 || index != 1 {
+	if last.id != 5 || index != 4 {
 		t.Error(last, index)
 	}
 
@@ -552,7 +593,7 @@ func TestPair_LoadOrders_bagTacoCirle(t *testing.T) {
 
 	swap = New(newBus, immutableTree.GetLastImmutable())
 	last, index = swap.Pair(0, 1).OrderSellLast()
-	if last.id != 5 || index != 1 {
+	if last.id != 5 || index != 4 {
 		t.Error(last, index)
 	}
 
@@ -568,7 +609,7 @@ func TestPair_LoadOrders_bagTacoCirle(t *testing.T) {
 	swap = New(newBus, immutableTree.GetLastImmutable())
 
 	last, index = swap.Pair(0, 1).OrderSellLast()
-	if last.id != 5 || index != 1 {
+	if last.id != 5 || index != 4 {
 		t.Error(last, index)
 	}
 
@@ -626,42 +667,42 @@ func TestPair_LoadOrders_bagTacoMen(t *testing.T) {
 	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999987022814828419"), types.Address{1}, 1)
 	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999985282425228748"), types.Address{1}, 1)
 
-	last, index := pair.OrderSellLast()
+	last, index := swap.Pair(0, 1).OrderSellLast()
 	if last.id != 5 || index != 4 {
 		t.Error(last, index)
 	}
 
-	last, index = pair.OrderSellLast()
+	last, index = swap.Pair(0, 1).OrderSellLast()
 	if last.id != 5 || index != 4 {
 		t.Error(last, index)
 	}
 
 	pair.SellWithOrders(helpers.StringToBigInt("400000000000000000"))
 
-	last, index = pair.OrderSellLast()
-	if last.id != 5 || index != 1 {
+	last, index = swap.Pair(0, 1).OrderSellLast()
+	if last.id != 1 || index != 4 {
 		t.Error(last, index)
 	}
 
-	last, index = pair.OrderSellLast()
-	if last.id != 5 || index != 1 {
+	last, index = swap.Pair(0, 1).OrderSellLast()
+	if last.id != 1 || index != 4 {
 		t.Error(last, index)
 	}
 
-	last, index = pair.OrderSellLast()
-	if last.id != 5 || index != 1 {
+	last, index = swap.Pair(0, 1).OrderSellLast()
+	if last.id != 1 || index != 4 {
 		t.Error(last, index)
 	}
 
-	pair.SellWithOrders(helpers.StringToBigInt("4000000000000000000"))
+	pair.SellWithOrders(helpers.StringToBigInt("40000000000000000000"))
 
-	last, index = pair.OrderSellLast()
-	if last != nil || index != 0 {
+	last, index = swap.Pair(0, 1).OrderSellLast()
+	if last != nil || index != -1 {
 		t.Error(last, index)
 	}
 
-	last, index = pair.OrderSellLast()
-	if last != nil || index != 0 {
+	last, index = swap.Pair(0, 1).OrderSellLast()
+	if last != nil || index != -1 {
 		t.Error(last, index)
 	}
 }
@@ -1428,6 +1469,7 @@ func TestPair_SellWithOrders_10_ChangeRemainderOrderPrice(t *testing.T) {
 
 	pair = swap.Pair(1, 0)
 	price := pair.OrderSellByIndex(0).Price()
+	t.Log(price)
 	addAmount0ForPrice, _ := pair.CalculateAddAmountsForPrice(price)
 	if addAmount0ForPrice.Cmp(big.NewInt(7327)) != 0 {
 		t.Error("a", addAmount0ForPrice)
@@ -1583,9 +1625,12 @@ func TestPair_SellWithOrders_01_FullOrder(t *testing.T) {
 		if owners[owner] == nil || owners[owner].Cmp(big.NewInt(1998)) != 0 {
 			t.Errorf("%#v", owners[owner])
 		}
+		//pair.OrderSellByIndex(0)
 		t.Run("unset", func(t *testing.T) {
 			if len(pair.SellOrderIDs()) != 0 {
-				t.Errorf("slice len %d, want empty", len(pair.SellOrderIDs()))
+				t.Errorf("slice len %d, want empty: %v", len(pair.SellOrderIDs()), pair.SellOrderIDs())
+				t.Logf("%#v", pair.getOrder(pair.SellOrderIDs()[0]))
+
 			}
 		})
 
@@ -1896,6 +1941,7 @@ func TestPair_SetOrder_01(t *testing.T) {
 
 	})
 	t.Run("buy (unsorted pair)", func(t *testing.T) {
+		t.Skip("deprecated OrderBuyByIndex")
 		t.Run("mem", func(t *testing.T) {
 			pair = swap.Pair(1, 0)
 			t.Run("get", func(t *testing.T) {

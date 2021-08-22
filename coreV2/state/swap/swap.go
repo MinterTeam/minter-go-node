@@ -341,6 +341,25 @@ func (p *Pair) AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int) Editabl
 	}
 	p.lockOrders.Unlock()
 
+	unsortedDirtySellOrders := map[uint32]struct{}{}
+	p.unsortedDirtySellOrders.mu.Lock()
+	for k, v := range p.unsortedDirtySellOrders.list {
+		unsortedDirtySellOrders[k] = v
+	}
+	p.unsortedDirtySellOrders.mu.Unlock()
+	unsortedDirtyBuyOrders := map[uint32]struct{}{}
+	p.unsortedDirtyBuyOrders.mu.Lock()
+	for k, v := range p.unsortedDirtyBuyOrders.list {
+		unsortedDirtyBuyOrders[k] = v
+	}
+	p.unsortedDirtyBuyOrders.mu.Unlock()
+	deletedOrders := map[uint32]struct{}{}
+	p.deletedOrders.mu.Lock()
+	for k, v := range p.deletedOrders.list {
+		deletedOrders[k] = v
+	}
+	p.deletedOrders.mu.Unlock()
+
 	pair := &Pair{
 		lockOrders: &sync.RWMutex{},
 		PairKey:    p.PairKey,
@@ -352,10 +371,10 @@ func (p *Pair) AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int) Editabl
 			markDirty: func() {},
 		},
 		sellOrders: &limits{
-			ids: p.sellOrders.ids,
+			ids: p.sellOrders.ids[:],
 		},
 		buyOrders: &limits{
-			ids: p.buyOrders.ids,
+			ids: p.buyOrders.ids[:],
 		},
 		orders: &orderList{
 			mu:   sync.RWMutex{},
@@ -365,16 +384,29 @@ func (p *Pair) AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int) Editabl
 			mu:   sync.RWMutex{},
 			list: dirtyOrdrs,
 		},
-		deletedOrders:           nil,
-		markDirtyOrders:         p.markDirtyOrders,
-		loadBuyOrders:           p.loadBuyOrders,
-		loadSellOrders:          p.loadSellOrders,
-		loadedSellOrders:        nil, // todo
-		loadedBuyOrders:         nil, // todo
-		unsortedDirtyBuyOrders:  nil, // todo
-		unsortedDirtySellOrders: nil, // todo
-		getLastTotalOrderID:     nil,
-		loadOrder:               p.loadOrder,
+		deletedOrders: &orderDirties{
+			mu:   sync.RWMutex{},
+			list: deletedOrders,
+		},
+		markDirtyOrders: p.markDirtyOrders,
+		loadBuyOrders:   p.loadBuyOrders,
+		loadSellOrders:  p.loadSellOrders,
+		loadedSellOrders: &limits{
+			ids: p.loadedSellOrders.ids[:],
+		},
+		loadedBuyOrders: &limits{
+			ids: p.loadedBuyOrders.ids[:],
+		},
+		unsortedDirtyBuyOrders: &orderDirties{
+			mu:   sync.RWMutex{},
+			list: unsortedDirtyBuyOrders,
+		},
+		unsortedDirtySellOrders: &orderDirties{
+			mu:   sync.RWMutex{},
+			list: unsortedDirtySellOrders,
+		},
+		getLastTotalOrderID: nil,
+		loadOrder:           p.loadOrder,
 	}
 	commission0orders, commission1orders, amount0, amount1, _ := CalcDiffPool(amount0In, amount1Out, orders)
 
@@ -574,12 +606,21 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 				log.Printf("remove old path %q, %s, %s. Sell %v", oldPathOrderList, limit.WantBuy, limit.WantSell, !limit.IsBuy)
 			}
 		}
-		pair.loadedBuyOrders.ids = nil
-		pair.loadedSellOrders.ids = nil
+		pair.loadedBuyOrders = pair.buyOrders
+		pair.loadedSellOrders = pair.buyOrders
+		pair.dirtyOrders.mu.Lock()
 		pair.dirtyOrders.list = make(map[uint32]struct{})
+		pair.dirtyOrders.mu.Unlock()
+		pair.deletedOrders.mu.Lock()
 		pair.deletedOrders.list = make(map[uint32]struct{})
+		pair.deletedOrders.mu.Unlock()
+		pair.unsortedDirtyBuyOrders.mu.Lock()
 		pair.unsortedDirtyBuyOrders.list = make(map[uint32]struct{})
+		pair.unsortedDirtyBuyOrders.mu.Unlock()
+
+		pair.unsortedDirtySellOrders.mu.Lock()
 		pair.unsortedDirtySellOrders.list = make(map[uint32]struct{})
+		pair.unsortedDirtySellOrders.mu.Unlock()
 		pair.lockOrders.Unlock()
 	}
 	s.dirtiesOrders = map[PairKey]struct{}{}
@@ -826,7 +867,7 @@ func (s *Swap) addPair(key PairKey) *Pair {
 		dirtyOrders:             &orderDirties{list: make(map[uint32]struct{}), mu: sync.RWMutex{}},
 		deletedOrders:           &orderDirties{list: make(map[uint32]struct{}), mu: sync.RWMutex{}},
 		markDirtyOrders:         s.markDirtyOrders(key),
-		loadBuyOrders:           s.loadSellOrders, // todo: FIXME
+		loadBuyOrders:           s.loadBuyOrders,
 		loadSellOrders:          s.loadSellOrders,
 		loadedSellOrders:        &limits{},
 		loadedBuyOrders:         &limits{},
