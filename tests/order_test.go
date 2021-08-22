@@ -1324,7 +1324,7 @@ func TestOrder_buy_10_more_a_lot(t *testing.T) {
 	app := CreateApp(state) // create application
 	SendBeginBlock(app, 1)  // send BeginBlock
 
-	tx := CreateTx(app, address, transaction.TypeBuySwapPool, transaction.BuySwapPoolDataV230{
+	tx := CreateTx(app, address, transaction.TypeBuySwapPool, transaction.BuySwapPoolDataV260{
 		Coins:              []types.CoinID{2, 1},
 		MaximumValueToSell: helpers.StringToBigInt("10000000000000000000000000000"),
 		ValueToBuy:         helpers.StringToBigInt("14989949147713228731141"),

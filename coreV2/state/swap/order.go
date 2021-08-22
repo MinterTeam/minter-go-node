@@ -159,6 +159,8 @@ func (p *Pair) BuyWithOrders(amount1Out *big.Int) (amount0In *big.Int, owners ma
 
 	p.updateOrders(orders)
 
+	p.orderSellByIndex(0) // update list
+
 	return amount0In, owners, &ChangeDetailsWithOrders{
 		AmountIn:            amount0,
 		AmountOut:           amount1,
@@ -870,7 +872,7 @@ func (s *Swap) PairRemoveLimitOrder(id uint32) (types.CoinID, *big.Int) {
 
 	pair := s.Pair(order.Coin0, order.Coin1)
 	pair.updateOrders([]*Limit{order})
-
+	pair.orderSellByIndex(0) // update list
 	return order.Coin1, returnVolume
 }
 
@@ -928,7 +930,7 @@ func (p *Pair) AddOrderWithID(wantBuyAmount0, wantSellAmount1 *big.Int, sender t
 	p.lockOrders.Lock() // todo: tests
 	defer p.lockOrders.Unlock()
 
-	p.setOrder(order)
+	p.setOrder(sort)
 	p.orderSellByIndex(0)
 	return order
 }
@@ -1395,9 +1397,6 @@ func (p *Pair) orderSellByIndex(index int) *Limit {
 	}
 
 	order := p.getOrder(orders[index])
-	//if !p.isSorted() { // todo: tests
-	//	return order.Reverse()
-	//}
 
 	return order
 }
