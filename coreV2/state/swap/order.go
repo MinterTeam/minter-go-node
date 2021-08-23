@@ -244,7 +244,7 @@ func (l *Limit) isKeepRate() bool {
 	if l == nil {
 		return false
 	}
-	fmt.Println("is keep", l.oldSortPrice, l.SortPrice())
+	//fmt.Println("is keep", l.oldSortPrice, l.SortPrice())
 	return l.CmpOldRate() == 0
 }
 

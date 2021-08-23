@@ -584,7 +584,7 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 				pair.orders.list[limit.id] = nil
 				db.Remove(pathOrderID)
 				db.Remove(oldPathOrderList)
-				log.Printf("remove old path %q, %s, %s. Sell %v", oldPathOrderList, limit.WantBuy, limit.WantSell, !limit.IsBuy)
+				//log.Printf("remove old path %q, %s, %s. Sell %v", oldPathOrderList, limit.WantBuy, limit.WantSell, !limit.IsBuy)
 				continue
 			}
 
@@ -600,10 +600,10 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 				db.Set(newPath, []byte{}) // todo: Nil values are invalid
 			}
 
-			log.Printf("new path %q, %s, %s. Sell %v", newPath, limit.WantBuy, limit.WantSell, !limit.IsBuy)
+			//log.Printf("new path %q, %s, %s. Sell %v", newPath, limit.WantBuy, limit.WantSell, !limit.IsBuy)
 			if !bytes.Equal(oldPathOrderList, newPath) && db.Has(oldPathOrderList) {
 				db.Remove(oldPathOrderList) // the price can change minimally due to rounding off the ratio of the remaining volumes
-				log.Printf("remove old path %q, %s, %s. Sell %v", oldPathOrderList, limit.WantBuy, limit.WantSell, !limit.IsBuy)
+				//log.Printf("remove old path %q, %s, %s. Sell %v", oldPathOrderList, limit.WantBuy, limit.WantSell, !limit.IsBuy)
 			}
 		}
 		pair.loadedBuyOrders = pair.buyOrders
