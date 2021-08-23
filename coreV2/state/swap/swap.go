@@ -301,15 +301,20 @@ func (p *Pair) AddLastSwapStep(amount0In, amount1Out *big.Int) EditableChecker {
 			ID:        p.ID,
 			markDirty: func() {},
 		},
-		sellOrders:          p.sellOrders,
-		buyOrders:           p.buyOrders,
-		orders:              p.orders,
-		dirtyOrders:         p.dirtyOrders,
-		markDirtyOrders:     func() {},
-		loadBuyOrders:       p.loadBuyOrders,
-		loadSellOrders:      p.loadSellOrders,
-		getLastTotalOrderID: nil,
-		loadOrder:           p.loadOrder,
+		sellOrders:              p.sellOrders,
+		buyOrders:               p.buyOrders,
+		orders:                  p.orders,
+		dirtyOrders:             p.dirtyOrders,
+		deletedOrders:           p.deletedOrders,
+		markDirtyOrders:         func() {},
+		loadBuyOrders:           p.loadBuyOrders,
+		loadSellOrders:          p.loadSellOrders,
+		loadedSellOrders:        p.loadedSellOrders,
+		loadedBuyOrders:         p.loadedBuyOrders,
+		unsortedDirtyBuyOrders:  p.unsortedDirtyBuyOrders,
+		unsortedDirtySellOrders: p.unsortedDirtySellOrders,
+		getLastTotalOrderID:     nil,
+		loadOrder:               p.loadOrder,
 	}
 }
 
@@ -336,6 +341,25 @@ func (p *Pair) AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int) Editabl
 	}
 	p.lockOrders.Unlock()
 
+	unsortedDirtySellOrders := map[uint32]struct{}{}
+	p.unsortedDirtySellOrders.mu.Lock()
+	for k, v := range p.unsortedDirtySellOrders.list {
+		unsortedDirtySellOrders[k] = v
+	}
+	p.unsortedDirtySellOrders.mu.Unlock()
+	unsortedDirtyBuyOrders := map[uint32]struct{}{}
+	p.unsortedDirtyBuyOrders.mu.Lock()
+	for k, v := range p.unsortedDirtyBuyOrders.list {
+		unsortedDirtyBuyOrders[k] = v
+	}
+	p.unsortedDirtyBuyOrders.mu.Unlock()
+	deletedOrders := map[uint32]struct{}{}
+	p.deletedOrders.mu.Lock()
+	for k, v := range p.deletedOrders.list {
+		deletedOrders[k] = v
+	}
+	p.deletedOrders.mu.Unlock()
+
 	pair := &Pair{
 		lockOrders: &sync.RWMutex{},
 		PairKey:    p.PairKey,
@@ -347,10 +371,10 @@ func (p *Pair) AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int) Editabl
 			markDirty: func() {},
 		},
 		sellOrders: &limits{
-			ids: p.sellOrders.ids,
+			ids: p.sellOrders.ids[:],
 		},
 		buyOrders: &limits{
-			ids: p.buyOrders.ids,
+			ids: p.buyOrders.ids[:],
 		},
 		orders: &orderList{
 			mu:   sync.RWMutex{},
@@ -360,9 +384,27 @@ func (p *Pair) AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int) Editabl
 			mu:   sync.RWMutex{},
 			list: dirtyOrdrs,
 		},
-		markDirtyOrders:     p.markDirtyOrders,
-		loadBuyOrders:       p.loadBuyOrders,
-		loadSellOrders:      p.loadSellOrders,
+		deletedOrders: &orderDirties{
+			mu:   sync.RWMutex{},
+			list: deletedOrders,
+		},
+		markDirtyOrders: p.markDirtyOrders,
+		loadBuyOrders:   p.loadBuyOrders,
+		loadSellOrders:  p.loadSellOrders,
+		loadedSellOrders: &limits{
+			ids: p.loadedSellOrders.ids[:],
+		},
+		loadedBuyOrders: &limits{
+			ids: p.loadedBuyOrders.ids[:],
+		},
+		unsortedDirtyBuyOrders: &orderDirties{
+			mu:   sync.RWMutex{},
+			list: unsortedDirtyBuyOrders,
+		},
+		unsortedDirtySellOrders: &orderDirties{
+			mu:   sync.RWMutex{},
+			list: unsortedDirtySellOrders,
+		},
 		getLastTotalOrderID: nil,
 		loadOrder:           p.loadOrder,
 	}
@@ -401,18 +443,23 @@ func (p *Pair) IsSorted() bool {
 }
 func (p *Pair) reverse() *Pair {
 	return &Pair{
-		lockOrders:          p.lockOrders,
-		PairKey:             p.PairKey.reverse(),
-		pairData:            p.pairData.reverse(),
-		sellOrders:          p.sellOrders,
-		buyOrders:           p.buyOrders,
-		orders:              p.orders,
-		dirtyOrders:         p.dirtyOrders,
-		markDirtyOrders:     p.markDirtyOrders,
-		loadBuyOrders:       p.loadSellOrders,
-		loadSellOrders:      p.loadBuyOrders,
-		getLastTotalOrderID: p.getLastTotalOrderID,
-		loadOrder:           p.loadOrder,
+		lockOrders:              p.lockOrders,
+		PairKey:                 p.PairKey.reverse(),
+		pairData:                p.pairData.reverse(),
+		sellOrders:              p.sellOrders,
+		buyOrders:               p.buyOrders,
+		orders:                  p.orders,
+		dirtyOrders:             p.dirtyOrders,
+		deletedOrders:           p.deletedOrders,
+		markDirtyOrders:         p.markDirtyOrders,
+		loadBuyOrders:           p.loadSellOrders,
+		loadSellOrders:          p.loadBuyOrders,
+		loadedSellOrders:        p.loadedSellOrders,
+		loadedBuyOrders:         p.loadedBuyOrders,
+		unsortedDirtyBuyOrders:  p.unsortedDirtyBuyOrders,
+		unsortedDirtySellOrders: p.unsortedDirtyBuyOrders,
+		getLastTotalOrderID:     p.getLastTotalOrderID,
+		loadOrder:               p.loadOrder,
 	}
 }
 
@@ -534,9 +581,10 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 				if limit.WantBuy.Sign() != 0 || limit.WantSell.Sign() != 0 {
 					panic(fmt.Sprintf("order %d has one zero volume: %s, %s. Sell %v", limit.id, limit.WantBuy, limit.WantSell, !limit.IsBuy))
 				}
+				pair.orders.list[limit.id] = nil
 				db.Remove(pathOrderID)
 				db.Remove(oldPathOrderList)
-				// log.Printf("remove old path %q, %s, %s. Sell %v", oldPathOrderList, limit.WantBuy, limit.WantSell, !limit.IsBuy)
+				log.Printf("remove old path %q, %s, %s. Sell %v", oldPathOrderList, limit.WantBuy, limit.WantSell, !limit.IsBuy)
 				continue
 			}
 
@@ -544,21 +592,36 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 			if err != nil {
 				return err
 			}
+
 			db.Set(pathOrderID, pairOrderBytes)
 
 			newPath := pricePath(key, limit.ReCalcOldSortPrice(), limit.id, !limit.IsBuy)
-			if !db.Has(newPath) {
+			if !db.Has(newPath) { // todo: mb del this check
 				db.Set(newPath, []byte{}) // todo: Nil values are invalid
 			}
 
-			// log.Printf("new path %q, %s, %s. Sell %v", newPath, limit.WantBuy, limit.WantSell, !limit.IsBuy)
+			log.Printf("new path %q, %s, %s. Sell %v", newPath, limit.WantBuy, limit.WantSell, !limit.IsBuy)
 			if !bytes.Equal(oldPathOrderList, newPath) && db.Has(oldPathOrderList) {
 				db.Remove(oldPathOrderList) // the price can change minimally due to rounding off the ratio of the remaining volumes
-				// log.Printf("remove old path %q, %s, %s. Sell %v", oldPathOrderList, limit.WantBuy, limit.WantSell, !limit.IsBuy)
+				log.Printf("remove old path %q, %s, %s. Sell %v", oldPathOrderList, limit.WantBuy, limit.WantSell, !limit.IsBuy)
 			}
 		}
-		pair.lockOrders.Unlock()
+		pair.loadedBuyOrders = pair.buyOrders
+		pair.loadedSellOrders = pair.buyOrders
+		pair.dirtyOrders.mu.Lock()
 		pair.dirtyOrders.list = make(map[uint32]struct{})
+		pair.dirtyOrders.mu.Unlock()
+		pair.deletedOrders.mu.Lock()
+		pair.deletedOrders.list = make(map[uint32]struct{})
+		pair.deletedOrders.mu.Unlock()
+		pair.unsortedDirtyBuyOrders.mu.Lock()
+		pair.unsortedDirtyBuyOrders.list = make(map[uint32]struct{})
+		pair.unsortedDirtyBuyOrders.mu.Unlock()
+
+		pair.unsortedDirtySellOrders.mu.Lock()
+		pair.unsortedDirtySellOrders.list = make(map[uint32]struct{})
+		pair.unsortedDirtySellOrders.mu.Unlock()
+		pair.lockOrders.Unlock()
 	}
 	s.dirtiesOrders = map[PairKey]struct{}{}
 	return nil
@@ -798,15 +861,20 @@ func (s *Swap) addPair(key PairKey) *Pair {
 			ID:        new(uint32),
 			markDirty: s.markDirty(key),
 		},
-		sellOrders:          &limits{},
-		buyOrders:           &limits{},
-		orders:              &orderList{list: make(map[uint32]*Limit), mu: sync.RWMutex{}},
-		dirtyOrders:         &orderDirties{list: make(map[uint32]struct{}), mu: sync.RWMutex{}},
-		markDirtyOrders:     s.markDirtyOrders(key),
-		loadBuyOrders:       s.loadBuyOrders,
-		loadSellOrders:      s.loadSellOrders,
-		getLastTotalOrderID: s.incOrdersID,
-		loadOrder:           s.loadOrder,
+		sellOrders:              &limits{},
+		buyOrders:               &limits{},
+		orders:                  &orderList{list: make(map[uint32]*Limit), mu: sync.RWMutex{}},
+		dirtyOrders:             &orderDirties{list: make(map[uint32]struct{}), mu: sync.RWMutex{}},
+		deletedOrders:           &orderDirties{list: make(map[uint32]struct{}), mu: sync.RWMutex{}},
+		markDirtyOrders:         s.markDirtyOrders(key),
+		loadBuyOrders:           s.loadBuyOrders,
+		loadSellOrders:          s.loadSellOrders,
+		loadedSellOrders:        &limits{},
+		loadedBuyOrders:         &limits{},
+		unsortedDirtyBuyOrders:  &orderDirties{list: make(map[uint32]struct{}), mu: sync.RWMutex{}},
+		unsortedDirtySellOrders: &orderDirties{list: make(map[uint32]struct{}), mu: sync.RWMutex{}},
+		getLastTotalOrderID:     s.incOrdersID,
+		loadOrder:               s.loadOrder,
 	}
 
 	s.pairs[key] = pair
@@ -877,15 +945,20 @@ type Pair struct {
 	lockOrders *sync.RWMutex
 	PairKey
 	*pairData
-	sellOrders          *limits
-	buyOrders           *limits
-	orders              *orderList
-	dirtyOrders         *orderDirties
-	markDirtyOrders     func()
-	loadBuyOrders       func(pair *Pair, slice []uint32, limit int) []uint32
-	loadSellOrders      func(pair *Pair, slice []uint32, limit int) []uint32
-	getLastTotalOrderID func() uint32
-	loadOrder           func(id uint32) *Limit
+	sellOrders              *limits
+	buyOrders               *limits
+	orders                  *orderList
+	dirtyOrders             *orderDirties
+	deletedOrders           *orderDirties
+	markDirtyOrders         func()
+	loadBuyOrders           func(pair *Pair, fromOrder *Limit, limit int) []uint32
+	loadSellOrders          func(pair *Pair, fromOrder *Limit, limit int) []uint32
+	loadedSellOrders        *limits       // todo
+	loadedBuyOrders         *limits       // todo
+	unsortedDirtyBuyOrders  *orderDirties // todo
+	unsortedDirtySellOrders *orderDirties // todo
+	getLastTotalOrderID     func() uint32
+	loadOrder               func(id uint32) *Limit
 }
 
 func (p *Pair) GetID() uint32 {

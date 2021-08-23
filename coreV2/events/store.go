@@ -15,6 +15,7 @@ func init() {
 	tmjson.RegisterType(&jail{}, "jail")
 	tmjson.RegisterType(&unbond{}, "unbond")
 	tmjson.RegisterType(&kick{}, "kick")
+	tmjson.RegisterType(&orderExpired{}, "orderExpired")
 	tmjson.RegisterType(&RewardEvent{}, TypeRewardEvent)
 	tmjson.RegisterType(&SlashEvent{}, TypeSlashEvent)
 	tmjson.RegisterType(&JailEvent{}, TypeJailEvent)
@@ -22,6 +23,7 @@ func init() {
 	tmjson.RegisterType(&StakeKickEvent{}, TypeStakeKickEvent)
 	tmjson.RegisterType(&UpdateNetworkEvent{}, TypeUpdateNetworkEvent)
 	tmjson.RegisterType(&UpdateCommissionsEvent{}, TypeUpdateCommissionsEvent)
+	tmjson.RegisterType(&OrderExpiredEvent{}, TypeOrderExpiredEvent)
 }
 
 // IEventsDB is an interface of Events
