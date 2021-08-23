@@ -173,7 +173,7 @@ func (p *Pair) BuyWithOrders(amount1Out *big.Int) (amount0In *big.Int, owners ma
 func (p *Pair) updateOrders(orders []*Limit) {
 	var editedOrders []*Limit
 	for _, order := range orders {
-		editedOrders = append(editedOrders, p.updateSellOrder(order.id, order.WantBuy, order.WantSell))
+		editedOrders = append(editedOrders, p.updateSellOrder(order, order.WantBuy, order.WantSell))
 	} // todo: FIXME need tests
 	//for _, editedOrder := range editedOrders {
 	//	p.resortSellOrderList(0, editedOrder)
@@ -181,9 +181,7 @@ func (p *Pair) updateOrders(orders []*Limit) {
 
 }
 
-func (p *Pair) updateSellOrder(id uint32, amount0, amount1 *big.Int) *Limit {
-	limit := p.getOrder(id)
-
+func (p *Pair) updateSellOrder(limit *Limit, amount0, amount1 *big.Int) *Limit {
 	newLimit := limit.sort()
 	newLimit.OldSortPrice()
 
@@ -1093,7 +1091,7 @@ func (s *Swap) loadSellOrders(pair *Pair, fromOrder *Limit, limit int) []uint32 
 			return true
 		}
 
-		id := binary.BigEndian.Uint32(key[len(key)-4:])
+		id := binary.LittleEndian.Uint32(key[len(key)-4:])
 
 		slice = append(slice, id)
 		k++
@@ -1202,9 +1200,14 @@ func (p *Pair) addToList(orders []uint32, dirtyOrder *Limit, cmp int, end bool) 
 			continue
 		}
 
-		if dirtyOrder.SortPrice().Cmp(limit.SortPrice()) == 0 && dirtyOrder.id < limit.id { // todo: need tests
-			index = i + 1
-			break
+		if dirtyOrder.SortPrice().Cmp(limit.SortPrice()) == 0 {
+			if dirtyOrder.id > limit.id {
+				index = i + 1
+				break
+			} else {
+				index = i
+				break
+			}
 		}
 
 		break

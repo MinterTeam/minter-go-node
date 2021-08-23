@@ -485,6 +485,15 @@ func id2Bytes(id uint32) []byte {
 	binary.BigEndian.PutUint32(byteID, id)
 	return byteID
 }
+func id2BytesWithType(id uint32, sale bool) []byte {
+	byteID := make([]byte, 4)
+	if sale {
+		binary.LittleEndian.PutUint32(byteID, id)
+	} else {
+		binary.BigEndian.PutUint32(byteID, id)
+	}
+	return byteID
+}
 
 func pricePath(key PairKey, price *big.Float, id uint32, isSale bool) []byte {
 	var pricePath []byte
@@ -510,7 +519,7 @@ func pricePath(key PairKey, price *big.Float, id uint32, isSale bool) []byte {
 	// log.Println("c m", sprintf)
 	pricePath = append(pricePath, []byte(sprintf)...)
 
-	byteID := id2Bytes(id)
+	byteID := id2BytesWithType(id, isSale)
 
 	var saleByte byte = 0
 	if isSale {
@@ -572,6 +581,7 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 	for _, key := range s.getOrderedDirtyOrderPairs() {
 		pair, _ := s.pair(key)
 		pair.lockOrders.Lock()
+
 		for _, id := range pair.getDirtyOrdersList() {
 			limit := pair.getOrder(id)
 			oldPathOrderList := pricePath(key, limit.OldSortPrice(), limit.id, !limit.IsBuy)
@@ -581,7 +591,9 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 				if limit.WantBuy.Sign() != 0 || limit.WantSell.Sign() != 0 {
 					panic(fmt.Sprintf("order %d has one zero volume: %s, %s. Sell %v", limit.id, limit.WantBuy, limit.WantSell, !limit.IsBuy))
 				}
+				pair.orders.mu.Lock()
 				pair.orders.list[limit.id] = nil
+				pair.orders.mu.Unlock()
 				db.Remove(pathOrderID)
 				db.Remove(oldPathOrderList)
 				//log.Printf("remove old path %q, %s, %s. Sell %v", oldPathOrderList, limit.WantBuy, limit.WantSell, !limit.IsBuy)
@@ -606,6 +618,7 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 				//log.Printf("remove old path %q, %s, %s. Sell %v", oldPathOrderList, limit.WantBuy, limit.WantSell, !limit.IsBuy)
 			}
 		}
+
 		pair.loadedBuyOrders = pair.buyOrders
 		pair.loadedSellOrders = pair.buyOrders
 		pair.dirtyOrders.mu.Lock()
