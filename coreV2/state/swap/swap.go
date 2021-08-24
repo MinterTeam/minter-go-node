@@ -548,6 +548,7 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 		s.dirtyNextID = false
 		b, err := rlp.EncodeToBytes(s.nextID)
 		if err != nil {
+			s.muNextID.Unlock()
 			return err
 		}
 		db.Set([]byte{mainPrefix, totalPairIDPrefix}, b)
@@ -559,6 +560,7 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 		s.dirtyNextOrdersID = false
 		b, err := rlp.EncodeToBytes(s.nextOrderID)
 		if err != nil {
+			s.muNextOrdersID.Unlock()
 			return err
 		}
 		db.Set([]byte{mainPrefix, totalOrdersIDPrefix}, b)
@@ -619,6 +621,7 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 			}
 		}
 
+		// todo: add mu
 		pair.loadedBuyOrders.ids = pair.buyOrders.ids[:]
 		pair.loadedSellOrders.ids = pair.sellOrders.ids[:]
 
