@@ -77,8 +77,8 @@ const (
 	gasAddLiquidity    = 5
 	gasRemoveLiquidity = 5
 
-	gasAddLimitOrder    = 1 // todo: FIXME 10
-	gasRemoveLimitOrder = 1 // todo: FIXME 20
+	gasAddLimitOrder    = 20
+	gasRemoveLimitOrder = 20
 
 	convertDelta       = 1
 	gasSellSwapPool    = 2

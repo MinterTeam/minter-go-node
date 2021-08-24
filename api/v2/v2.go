@@ -67,7 +67,9 @@ func Run(srv *service.Service, addrGRPC, addrAPI string, logger log.Logger) erro
 	)
 
 	gw.RegisterApiServiceServer(grpcServer, srv)
-	grpc_prometheus.Register(grpcServer)
+	if srv.EnabledPrometheus() {
+		grpc_prometheus.Register(grpcServer)
+	}
 
 	var group errgroup.Group
 
