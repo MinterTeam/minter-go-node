@@ -857,6 +857,10 @@ func (s *Swap) PairRemoveLimitOrder(id uint32) (types.CoinID, *big.Int) {
 	s.bus.Checker().AddCoin(order.Coin1, big.NewInt(0).Neg(returnVolume))
 
 	pair := s.Pair(order.Coin0, order.Coin1)
+
+	pair.lockOrders.Lock()
+	defer pair.lockOrders.Unlock()
+
 	pair.updateOrders([]*Limit{order})
 	pair.orderSellByIndex(0) // update list
 	return order.Coin1, returnVolume
