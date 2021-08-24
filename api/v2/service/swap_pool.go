@@ -46,8 +46,8 @@ func (s *Service) LimitOrdersOfPool(ctx context.Context, req *pb.LimitOrdersOfPo
 	}
 	resp := &pb.LimitOrdersOfPoolResponse{Orders: make([]*pb.LimitOrderResponse, 0, capacity)}
 
-	for i := 0; i < int(limit); i++ {
-		order := swapper.OrderSellByIndex(i)
+	orders := swapper.OrdersSell(uint32(limit))
+	for _, order := range orders {
 		if order == nil {
 			break
 		}
@@ -119,7 +119,12 @@ func (s *Service) LimitOrders(ctx context.Context, req *pb.LimitOrdersRequest) (
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
-	resp := &pb.LimitOrdersResponse{Orders: make([]*pb.LimitOrderResponse, 0, len(req.Ids))}
+	capacity := len(req.Ids)
+	if capacity > 50 {
+		capacity = 50
+	}
+	resp := &pb.LimitOrdersResponse{Orders: make([]*pb.LimitOrderResponse, 0, capacity)}
+
 	for _, id := range req.Ids {
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
 			return nil, timeoutStatus.Err()

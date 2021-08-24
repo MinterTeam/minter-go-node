@@ -599,6 +599,10 @@ func (p *Pair) getOrder(id uint32) *Limit {
 	p.orders.mu.Lock() // todo: test edition
 	defer p.orders.mu.Unlock()
 
+	return p.order(id)
+}
+
+func (p *Pair) order(id uint32) *Limit {
 	l, ok := p.orders.list[id]
 	if ok {
 		if p.isSorted() {
@@ -620,6 +624,23 @@ func (p *Pair) getOrder(id uint32) *Limit {
 	}
 
 	return l.Reverse()
+}
+
+func (p *Pair) GetOrders(ids []uint32) []*Limit {
+	p.lockOrders.Lock()
+	defer p.lockOrders.Unlock()
+
+	return p.getOrders(ids)
+}
+func (p *Pair) getOrders(ids []uint32) []*Limit {
+	p.orders.mu.Lock() // todo: test edition
+	defer p.orders.mu.Unlock()
+
+	var result []*Limit
+	for _, id := range ids {
+		result = append(result, p.order(id))
+	}
+	return result
 }
 
 func (p *Pair) setOrder(l *Limit) {
@@ -1430,28 +1451,16 @@ func (p *Pair) orderSellByIndex(index int) *Limit {
 	return order
 }
 
-func (p *Pair) OrderIDSellByIndex(index int) uint32 {
+func (p *Pair) OrdersSell(limit uint32) []*Limit {
 	p.lockOrders.Lock()
 	defer p.lockOrders.Unlock()
-	return p.orderIDSellByIndex(index)
+	return p.ordersSell(limit)
 }
 
-func (p *Pair) orderIDSellByIndex(index int) uint32 {
-	orders := p.SellOrderIDs()
-	var count int
-	var deleteCount int
-	for firstIterate := true; (firstIterate && len(orders) <= index) || deleteCount != 0; firstIterate = false {
-		//orders, deleteCount = p.updateDirtyOrders(nil, p.loadSellOrders(p, orders, index+count), true)
-		count += deleteCount
-	}
-
-	p.setSellOrders(orders)
-
-	if len(orders)-1 < index {
-		return 0
-	}
-
-	return orders[index]
+func (p *Pair) ordersSell(limit uint32) []*Limit {
+	p.orderSellByIndex(int(limit - 1))
+	orderIDs := p.SellOrderIDs()
+	return p.getOrders(orderIDs)
 }
 
 func (p *Pair) OrderSellLast() (limit *Limit, index int) {
