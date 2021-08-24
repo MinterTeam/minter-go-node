@@ -3,7 +3,6 @@ package transaction
 import (
 	"encoding/hex"
 	"fmt"
-	"log"
 	"math/big"
 	"strconv"
 	"sync"
@@ -315,12 +314,6 @@ func (e *ExecutorV250) RunTx(context state.Interface, rawTx []byte, rewardPool *
 			abcTypes.EventAttribute{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(tx.decodedData.TxType())})), Index: true},
 			abcTypes.EventAttribute{Key: []byte("tx.commission_coin"), Value: []byte(tx.CommissionCoin().String()), Index: true},
 		)
-		if currentBlock == 3210793 {
-			for _, tag := range response.Tags {
-				log.Println(tag.String())
-			}
-			//log.Panic(1)
-		}
 	}
 
 	response.GasUsed = tx.Gas()
