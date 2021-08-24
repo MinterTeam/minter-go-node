@@ -3,7 +3,6 @@ package transaction
 import (
 	"encoding/hex"
 	"fmt"
-	"log"
 	"math/big"
 	"strconv"
 	"sync"
