@@ -135,7 +135,7 @@ func (data AddLimitOrderData) Run(tx *Transaction, context state.Interface, rewa
 			commission, commissionInBaseCoin, poolIDCom, detailsCom, ownersCom = deliverState.Swap.PairSellWithOrders(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
 			tagsCom = &tagPoolChange{
 				PoolID:   poolIDCom,
-				CoinIn:   tx.GasCoin,
+				CoinIn:   tx.CommissionCoin(),
 				ValueIn:  commission.String(),
 				CoinOut:  types.GetBaseCoinID(),
 				ValueOut: commissionInBaseCoin.String(),

@@ -187,7 +187,7 @@ func (data SellAllCoinData) Run(tx *Transaction, context state.Interface, reward
 			commission, commissionInBaseCoin, poolIDCom, detailsCom, ownersCom = deliverState.Swap.PairSellWithOrders(data.CoinToSell, types.GetBaseCoinID(), commission, commissionInBaseCoin)
 			tagsCom = &tagPoolChange{
 				PoolID:   poolIDCom,
-				CoinIn:   tx.GasCoin,
+				CoinIn:   tx.CommissionCoin(),
 				ValueIn:  commission.String(),
 				CoinOut:  types.GetBaseCoinID(),
 				ValueOut: commissionInBaseCoin.String(),
