@@ -128,7 +128,7 @@ func (data CreateMultisigData) Run(tx *Transaction, context state.Interface, rew
 			var (
 				poolIDCom  uint32
 				detailsCom *swap.ChangeDetailsWithOrders
-				ownersCom  map[types.Address]*big.Int
+				ownersCom  []*swap.OrderDetail
 			)
 			commission, commissionInBaseCoin, poolIDCom, detailsCom, ownersCom = deliverState.Swap.PairSellWithOrders(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
 			tagsCom = &tagPoolChange{
@@ -138,15 +138,14 @@ func (data CreateMultisigData) Run(tx *Transaction, context state.Interface, rew
 				CoinOut:  types.GetBaseCoinID(),
 				ValueOut: commissionInBaseCoin.String(),
 				Orders:   detailsCom,
-				Sellers:  make([]*OrderDetail, 0, len(ownersCom)),
+				Sellers:  ownersCom,
 			}
-			for address, value := range ownersCom {
-				deliverState.Accounts.AddBalance(address, tx.GasCoin, value)
-				tagsCom.Sellers = append(tagsCom.Sellers, &OrderDetail{Owner: address, Value: value.String()})
+			for _, value := range ownersCom {
+				deliverState.Accounts.AddBalance(value.Owner, tx.CommissionCoin(), value.ValueBigInt)
 			}
 		} else if !tx.GasCoin.IsBaseCoin() {
-			deliverState.Coins.SubVolume(tx.GasCoin, commission)
-			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
+			deliverState.Coins.SubVolume(tx.CommissionCoin(), commission)
+			deliverState.Coins.SubReserve(tx.CommissionCoin(), commissionInBaseCoin)
 		}
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)

@@ -3,6 +3,7 @@ package transaction
 import (
 	"encoding/hex"
 	"fmt"
+	"log"
 	"math/big"
 	"strconv"
 	"sync"
@@ -213,8 +214,8 @@ func (e *ExecutorV250) RunTx(context state.Interface, rawTx []byte, rewardPool *
 			commissionInBaseCoin = checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()).CalculateBuyForSell(commissionInBaseCoin)
 		}
 
-		commissionPoolSwapper := checkState.Swap().GetSwapper(tx.commissionCoin(), types.GetBaseCoinID())
-		gasCoin := checkState.Coins().GetCoin(tx.commissionCoin())
+		commissionPoolSwapper := checkState.Swap().GetSwapper(tx.CommissionCoin(), types.GetBaseCoinID())
+		gasCoin := checkState.Coins().GetCoin(tx.CommissionCoin())
 		commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoin, commissionInBaseCoin)
 		if errResp != nil {
 			return *errResp
@@ -244,7 +245,7 @@ func (e *ExecutorV250) RunTx(context state.Interface, rawTx []byte, rewardPool *
 				abcTypes.EventAttribute{Key: []byte("tx.check_owner"), Value: []byte(hex.EncodeToString(intruder[:]))},
 			)
 		}
-		balance := checkState.Accounts().GetBalance(intruder, tx.commissionCoin())
+		balance := checkState.Accounts().GetBalance(intruder, tx.CommissionCoin())
 		if balance.Sign() == 1 {
 			if balance.Cmp(commission) == -1 {
 				commission = big.NewInt(0).Set(balance)
@@ -273,9 +274,9 @@ func (e *ExecutorV250) RunTx(context state.Interface, rawTx []byte, rewardPool *
 					var (
 						poolIDCom  uint32
 						detailsCom *swap.ChangeDetailsWithOrders
-						ownersCom  map[types.Address]*big.Int
+						ownersCom  []*swap.OrderDetail
 					)
-					commission, commissionInBaseCoin, poolIDCom, detailsCom, ownersCom = deliverState.Swap.PairSellWithOrders(tx.commissionCoin(), types.GetBaseCoinID(), commission, commissionInBaseCoin)
+					commission, commissionInBaseCoin, poolIDCom, detailsCom, ownersCom = deliverState.Swap.PairSellWithOrders(tx.CommissionCoin(), types.GetBaseCoinID(), commission, commissionInBaseCoin)
 					tagsCom = &tagPoolChange{
 						PoolID:   poolIDCom,
 						CoinIn:   tx.GasCoin,
@@ -283,18 +284,17 @@ func (e *ExecutorV250) RunTx(context state.Interface, rawTx []byte, rewardPool *
 						CoinOut:  types.GetBaseCoinID(),
 						ValueOut: commissionInBaseCoin.String(),
 						Orders:   detailsCom,
-						Sellers:  make([]*OrderDetail, 0, len(ownersCom)),
+						Sellers:  ownersCom,
 					}
-					for address, value := range ownersCom {
-						deliverState.Accounts.AddBalance(address, tx.GasCoin, value)
-						tagsCom.Sellers = append(tagsCom.Sellers, &OrderDetail{Owner: address, Value: value.String()})
+					for _, value := range ownersCom {
+						deliverState.Accounts.AddBalance(value.Owner, tx.CommissionCoin(), value.ValueBigInt)
 					}
-				} else if !tx.commissionCoin().IsBaseCoin() {
-					deliverState.Coins.SubVolume(tx.commissionCoin(), commission)
-					deliverState.Coins.SubReserve(tx.commissionCoin(), commissionInBaseCoin)
+				} else if !tx.CommissionCoin().IsBaseCoin() {
+					deliverState.Coins.SubVolume(tx.CommissionCoin(), commission)
+					deliverState.Coins.SubReserve(tx.CommissionCoin(), commissionInBaseCoin)
 				}
 
-				deliverState.Accounts.SubBalance(intruder, tx.commissionCoin(), commission)
+				deliverState.Accounts.SubBalance(intruder, tx.CommissionCoin(), commission)
 
 				rewardPool.Add(rewardPool, commissionInBaseCoin)
 				response.Tags = append(response.Tags,
@@ -313,7 +313,7 @@ func (e *ExecutorV250) RunTx(context state.Interface, rawTx []byte, rewardPool *
 			priceCommission,
 			abcTypes.EventAttribute{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:])), Index: true},
 			abcTypes.EventAttribute{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(tx.decodedData.TxType())})), Index: true},
-			abcTypes.EventAttribute{Key: []byte("tx.commission_coin"), Value: []byte(tx.commissionCoin().String()), Index: true},
+			abcTypes.EventAttribute{Key: []byte("tx.commission_coin"), Value: []byte(tx.CommissionCoin().String()), Index: true},
 		)
 	}
 

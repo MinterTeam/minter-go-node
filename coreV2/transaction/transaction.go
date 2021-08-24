@@ -203,7 +203,7 @@ func (tx *Transaction) Serialize() ([]byte, error) {
 
 func (tx *Transaction) Gas() int64 {
 	base := int64(gasBase)
-	if tx.commissionCoin() != types.GetBaseCoinID() {
+	if tx.CommissionCoin() != types.GetBaseCoinID() {
 		base += 1
 	}
 	if tx.payloadAndServiceDataLen() != 0 {

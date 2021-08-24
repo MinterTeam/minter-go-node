@@ -7,6 +7,7 @@ import (
 	"log"
 	"math"
 	"math/big"
+	"sort"
 	"sync"
 
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
@@ -16,30 +17,32 @@ import (
 
 const commissionOrder = 2
 
-func (s *Swap) PairSellWithOrders(coin0, coin1 types.CoinID, amount0In, minAmount1Out *big.Int) (*big.Int, *big.Int, uint32, *ChangeDetailsWithOrders, map[types.Address]*big.Int) {
+func (s *Swap) PairSellWithOrders(coin0, coin1 types.CoinID, amount0In, minAmount1Out *big.Int) (*big.Int, *big.Int, uint32, *ChangeDetailsWithOrders, []*OrderDetail) {
 	pair := s.Pair(coin0, coin1)
-	amount1Out, owners, details := pair.SellWithOrders(amount0In)
+	amount1Out, ownersMap, details := pair.SellWithOrders(amount0In)
 	if amount1Out.Cmp(minAmount1Out) == -1 {
 		panic(fmt.Sprintf("calculatedAmount1Out %s less minAmount1Out %s", amount1Out, minAmount1Out))
 	}
 
+	owners := sortOwners(ownersMap)
 	for _, b := range owners {
-		s.bus.Checker().AddCoin(coin0, big.NewInt(0).Neg(b))
+		s.bus.Checker().AddCoin(coin0, big.NewInt(0).Neg(b.ValueBigInt))
 	}
 	s.bus.Checker().AddCoin(coin0, amount0In)
 	s.bus.Checker().AddCoin(coin1, big.NewInt(0).Neg(amount1Out))
 	return amount0In, amount1Out, pair.GetID(), details, owners
 }
 
-func (s *Swap) PairBuyWithOrders(coin0, coin1 types.CoinID, maxAmount0In, amount1Out *big.Int) (*big.Int, *big.Int, uint32, *ChangeDetailsWithOrders, map[types.Address]*big.Int) {
+func (s *Swap) PairBuyWithOrders(coin0, coin1 types.CoinID, maxAmount0In, amount1Out *big.Int) (*big.Int, *big.Int, uint32, *ChangeDetailsWithOrders, []*OrderDetail) {
 	pair := s.Pair(coin0, coin1)
-	amount0In, owners, details := pair.BuyWithOrders(amount1Out)
+	amount0In, ownersMap, details := pair.BuyWithOrders(amount1Out)
 	if amount1Out.Cmp(maxAmount0In) == 1 {
 		panic(fmt.Sprintf("calculatedAmount1Out %s less minAmount1Out %s", amount1Out, maxAmount0In))
 	}
 
+	owners := sortOwners(ownersMap)
 	for _, b := range owners {
-		s.bus.Checker().AddCoin(coin0, big.NewInt(0).Neg(b))
+		s.bus.Checker().AddCoin(coin0, big.NewInt(0).Neg(b.ValueBigInt))
 	}
 	s.bus.Checker().AddCoin(coin0, amount0In)
 	s.bus.Checker().AddCoin(coin1, big.NewInt(0).Neg(amount1Out))
@@ -70,6 +73,12 @@ func (c *ChangeDetailsWithOrders) MarshalJSON() ([]byte, error) {
 	})
 }
 
+type OrderDetail struct {
+	Owner       types.Address `json:"seller"`
+	ValueBigInt *big.Int      `json:"-"`
+	Value       string        `json:"value"`
+}
+
 func (p *Pair) SellWithOrders(amount0In *big.Int) (amount1Out *big.Int, owners map[types.Address]*big.Int, c *ChangeDetailsWithOrders) {
 	if amount0In == nil || amount0In.Sign() != 1 {
 		panic(ErrorInsufficientInputAmount)
@@ -79,7 +88,7 @@ func (p *Pair) SellWithOrders(amount0In *big.Int) (amount1Out *big.Int, owners m
 		panic(ErrorInsufficientOutputAmount)
 	}
 
-	commission0orders, commission1orders, amount0, amount1, owners := CalcDiffPool(amount0In, amount1Out, orders)
+	commission0orders, commission1orders, amount0, amount1, ownersMap := CalcDiffPool(amount0In, amount1Out, orders)
 
 	log.Println("uS", commission0orders, commission1orders)
 
@@ -97,13 +106,29 @@ func (p *Pair) SellWithOrders(amount0In *big.Int) (amount1Out *big.Int, owners m
 
 	p.orderSellByIndex(0) // update list
 
-	return amount1Out, owners, &ChangeDetailsWithOrders{
+	return amount1Out, ownersMap, &ChangeDetailsWithOrders{
 		AmountIn:            amount0,
 		AmountOut:           amount1,
 		CommissionAmountIn:  commission0orders,
 		CommissionAmountOut: commission1orders,
 		Orders:              orders,
 	}
+}
+
+func sortOwners(owners map[types.Address]*big.Int) (result []*OrderDetail) {
+	for address, b := range owners {
+		result = append(result, &OrderDetail{
+			Owner:       address,
+			ValueBigInt: b,
+			Value:       b.String(),
+		})
+	}
+
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].Owner.Compare(result[j].Owner) == -1
+	})
+
+	return result
 }
 
 func CalcDiffPool(amount0In, amount1Out *big.Int, orders []*Limit) (*big.Int, *big.Int, *big.Int, *big.Int, map[types.Address]*big.Int) {
@@ -144,7 +169,7 @@ func (p *Pair) BuyWithOrders(amount1Out *big.Int) (amount0In *big.Int, owners ma
 		panic(ErrorInsufficientOutputAmount)
 	}
 
-	commission0orders, commission1orders, amount0, amount1, owners := CalcDiffPool(amount0In, amount1Out, orders)
+	commission0orders, commission1orders, amount0, amount1, ownersMap := CalcDiffPool(amount0In, amount1Out, orders)
 
 	log.Println("uB", commission0orders, commission1orders)
 
@@ -162,7 +187,7 @@ func (p *Pair) BuyWithOrders(amount1Out *big.Int) (amount0In *big.Int, owners ma
 
 	p.orderSellByIndex(0) // update list
 
-	return amount0In, owners, &ChangeDetailsWithOrders{
+	return amount0In, ownersMap, &ChangeDetailsWithOrders{
 		AmountIn:            amount0,
 		AmountOut:           amount1,
 		CommissionAmountIn:  commission0orders,
@@ -175,11 +200,7 @@ func (p *Pair) updateOrders(orders []*Limit) {
 	var editedOrders []*Limit
 	for _, order := range orders {
 		editedOrders = append(editedOrders, p.updateSellOrder(order.id, order.WantBuy, order.WantSell))
-	} // todo: FIXME need tests
-	//for _, editedOrder := range editedOrders {
-	//	p.resortSellOrderList(0, editedOrder)
-	//}
-
+	}
 }
 
 func (p *Pair) updateSellOrder(id uint32, amount0, amount1 *big.Int) *Limit {
@@ -193,7 +214,7 @@ func (p *Pair) updateSellOrder(id uint32, amount0, amount1 *big.Int) *Limit {
 
 	fmt.Println(limit.WantBuy, limit.WantSell)
 
-	p.MarkDirtyOrders(newLimit) // need before resort
+	p.MarkDirtyOrders(newLimit)
 
 	return newLimit
 }
@@ -912,14 +933,14 @@ func (p *Pair) AddOrder(wantBuyAmount0, wantSellAmount1 *big.Int, sender types.A
 		RWMutex:      new(sync.RWMutex),
 		Height:       block,
 	}
-	sort := order.sort()
-
+	sortedOrder := order.sort()
+	//log.Println("add order", sortedOrder.id)
 	p.lockOrders.Lock()
 	defer p.lockOrders.Unlock()
 
-	p.MarkDirtyOrders(sort)
+	p.MarkDirtyOrders(sortedOrder)
 
-	p.setOrder(sort)
+	p.setOrder(sortedOrder)
 	p.orderSellByIndex(0)
 	return order
 }
@@ -1235,6 +1256,7 @@ func (p *Pair) resortOrders(list []uint32, lower bool) (orders []uint32, countDi
 func (p *Pair) addToList(orders []uint32, dirtyOrder *Limit, cmp int) (list []uint32, includedInInterval bool) {
 	var index int
 	var hasZero bool
+	// todo: optimize sort method
 	for i, limitID := range orders {
 		if limitID == 0 {
 			hasZero = true
@@ -1246,19 +1268,24 @@ func (p *Pair) addToList(orders []uint32, dirtyOrder *Limit, cmp int) (list []ui
 		}
 		limit := p.getOrder(limitID)
 
-		if dirtyOrder.SortPrice().Cmp(limit.SortPrice()) == cmp {
+		var ok bool
+		switch dirtyOrder.SortPrice().Cmp(limit.SortPrice()) {
+		case cmp:
 			index = i + 1
 			continue
-		}
-
-		if dirtyOrder.SortPrice().Cmp(limit.SortPrice()) == 0 {
-			index = i + 1
+		case 0:
+			index = i
 			if dirtyOrder.id > limit.id {
-				break
+				index = i + 1
 			}
+			//log.Println("sort of equal orders", dirtyOrder.id, limit.id, orders, index)
+		default:
+			//log.Println("sort order result", dirtyOrder.id, orders, index)
+			ok = true
 		}
-
-		break
+		if ok {
+			break
+		}
 	}
 
 	if index == 0 {
