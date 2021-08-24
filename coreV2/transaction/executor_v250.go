@@ -68,11 +68,11 @@ func (e *ExecutorV250) RunTx(context state.Interface, rawTx []byte, rewardPool *
 		checkState = state.NewCheckState(context.(*state.State))
 	}
 
-	if !checkState.Coins().Exists(tx.commissionCoin()) {
+	if !checkState.Coins().Exists(tx.CommissionCoin()) {
 		return Response{
 			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin %s not exists", tx.commissionCoin()),
-			Info: EncodeError(code.NewCoinNotExists("", tx.commissionCoin().String())),
+			Log:  fmt.Sprintf("Coin %s not exists", tx.CommissionCoin()),
+			Info: EncodeError(code.NewCoinNotExists("", tx.CommissionCoin().String())),
 		}
 	}
 
