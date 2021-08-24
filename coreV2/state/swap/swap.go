@@ -585,21 +585,40 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 
 		for _, id := range pair.getDirtyOrdersList() {
 			limit := pair.getOrder(id)
-			oldPathOrderList := pricePath(key, limit.OldSortPrice(), limit.id, !limit.IsBuy)
-			pathOrderID := pathOrder(limit.id)
 
 			if limit.isEmpty() {
-				if limit.WantBuy.Sign() != 0 || limit.WantSell.Sign() != 0 {
-					panic(fmt.Sprintf("order %d has one zero volume: %s, %s. Sell %v", limit.id, limit.WantBuy, limit.WantSell, !limit.IsBuy))
-				}
 				pair.orders.mu.Lock()
 				pair.orders.list[limit.id] = nil
 				pair.orders.mu.Unlock()
-				db.Remove(pathOrderID)
-				db.Remove(oldPathOrderList)
-				//log.Printf("remove old path %q, %s, %s. Sell %v", oldPathOrderList, limit.WantBuy, limit.WantSell, !limit.IsBuy)
-				continue
 			}
+
+			pathOrderID := pathOrder(limit.id)
+
+			oldSortPrice := limit.OldSortPrice()
+			newPath := pricePath(key, limit.ReCalcOldSortPrice(), limit.id, !limit.IsBuy)
+			if oldSortPrice.Sign() != 0 {
+				oldPathOrderList := pricePath(key, oldSortPrice, limit.id, !limit.IsBuy)
+
+				if limit.isEmpty() {
+					db.Remove(pathOrderID)
+					/*_, ok :=*/ db.Remove(oldPathOrderList)
+					//if !ok {
+					//	log.Printf("do not remove old path %q, %s, %s. Sell %v", oldPathOrderList, limit.WantBuy, limit.WantSell, !limit.IsBuy)
+					//} else {
+					//	log.Printf("remove old path %q, %s, %s. Sell %v", oldPathOrderList, limit.WantBuy, limit.WantSell, !limit.IsBuy)
+					//}
+
+					continue
+				}
+
+				if !bytes.Equal(oldPathOrderList, newPath) {
+					db.Remove(oldPathOrderList)
+					//log.Printf("remove old path %q, %s, %s. Sell %v", oldPathOrderList, limit.WantBuy, limit.WantSell, !limit.IsBuy)
+				}
+			}
+
+			//log.Printf("new path %q, %s, %s. Sell %v", newPath, limit.WantBuy, limit.WantSell, !limit.IsBuy)
+			db.Set(newPath, []byte{})
 
 			pairOrderBytes, err := rlp.EncodeToBytes(limit)
 			if err != nil {
@@ -607,17 +626,6 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 			}
 
 			db.Set(pathOrderID, pairOrderBytes)
-
-			newPath := pricePath(key, limit.ReCalcOldSortPrice(), limit.id, !limit.IsBuy)
-			if !db.Has(newPath) { // todo: mb del this check
-				db.Set(newPath, []byte{}) // todo: Nil values are invalid
-			}
-
-			//log.Printf("new path %q, %s, %s. Sell %v", newPath, limit.WantBuy, limit.WantSell, !limit.IsBuy)
-			if !bytes.Equal(oldPathOrderList, newPath) && db.Has(oldPathOrderList) {
-				db.Remove(oldPathOrderList) // the price can change minimally due to rounding off the ratio of the remaining volumes
-				//log.Printf("remove old path %q, %s, %s. Sell %v", oldPathOrderList, limit.WantBuy, limit.WantSell, !limit.IsBuy)
-			}
 		}
 
 		// todo: add mu

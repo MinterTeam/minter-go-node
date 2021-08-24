@@ -103,8 +103,8 @@ func (data VoteUpdateDataV1) Run(tx *Transaction, context state.Interface, rewar
 		if isGasCommissionFromPoolSwap {
 			commission, commissionInBaseCoin, _ = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
 		} else if !tx.GasCoin.IsBaseCoin() {
-			deliverState.Coins.SubVolume(tx.GasCoin, commission)
-			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
+			deliverState.Coins.SubVolume(tx.CommissionCoin(), commission)
+			deliverState.Coins.SubReserve(tx.CommissionCoin(), commissionInBaseCoin)
 		}
 
 		deliverState.Updates.AddVote(data.Height, data.PubKey, data.Version)

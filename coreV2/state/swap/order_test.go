@@ -197,6 +197,51 @@ func TestPair_LoadOrders_MemVSDisk(t *testing.T) {
 	}
 }
 
+func TestSwap_AddEqualOrders(t *testing.T) {
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+
+	swap := New(newBus, immutableTree.GetLastImmutable())
+	_, _, _, _ = swap.PairCreate(0, 1, helpers.StringToBigInt("10000000000000000000000"), helpers.StringToBigInt("10000000000000000000000"))
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+	immutableTree, err = tree.NewMutableTree(1, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	swap = New(newBus, immutableTree.GetLastImmutable())
+	pair := swap.Pair(0, 1)
+
+	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999993771961322406"), types.Address{1}, 1)
+	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999993771961322406"), types.Address{1}, 1)
+	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999993771961322406"), types.Address{1}, 1)
+	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999993771961322406"), types.Address{1}, 1)
+
+	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999992979828068462"), types.Address{1}, 1)
+	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999990513182822656"), types.Address{1}, 1)
+	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999987022814828419"), types.Address{1}, 1)
+	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999985282425228748"), types.Address{1}, 1)
+
+	t.Log(pair.sellOrders.ids)
+	t.Log(pair.unsortedDirtySellOrders.list)
+	t.Log(pair.OrderSellLast())
+	t.Log(pair.sellOrders.ids)
+	t.Log(pair.unsortedDirtySellOrders.list)
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+}
 func TestSwap_loadSellOrders_0(t *testing.T) {
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)

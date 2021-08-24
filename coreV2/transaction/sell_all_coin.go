@@ -182,31 +182,30 @@ func (data SellAllCoinData) Run(tx *Transaction, context state.Interface, reward
 			var (
 				poolIDCom  uint32
 				detailsCom *swap.ChangeDetailsWithOrders
-				ownersCom  map[types.Address]*big.Int
+				ownersCom  []*swap.OrderDetail
 			)
 			commission, commissionInBaseCoin, poolIDCom, detailsCom, ownersCom = deliverState.Swap.PairSellWithOrders(data.CoinToSell, types.GetBaseCoinID(), commission, commissionInBaseCoin)
 			tagsCom = &tagPoolChange{
 				PoolID:   poolIDCom,
-				CoinIn:   tx.GasCoin,
+				CoinIn:   tx.CommissionCoin(),
 				ValueIn:  commission.String(),
 				CoinOut:  types.GetBaseCoinID(),
 				ValueOut: commissionInBaseCoin.String(),
 				Orders:   detailsCom,
-				Sellers:  make([]*OrderDetail, 0, len(ownersCom)),
+				Sellers:  ownersCom,
 			}
-			for address, value := range ownersCom {
-				deliverState.Accounts.AddBalance(address, data.CoinToSell, value)
-				tagsCom.Sellers = append(tagsCom.Sellers, &OrderDetail{Owner: address, Value: value.String()})
+			for _, value := range ownersCom {
+				deliverState.Accounts.AddBalance(value.Owner, tx.CommissionCoin(), value.ValueBigInt)
 			}
 		} else if !data.CoinToSell.IsBaseCoin() {
-			deliverState.Coins.SubVolume(data.CoinToSell, commission)
-			deliverState.Coins.SubReserve(data.CoinToSell, commissionInBaseCoin)
+			deliverState.Coins.SubVolume(tx.CommissionCoin(), commission)
+			deliverState.Coins.SubReserve(tx.CommissionCoin(), commissionInBaseCoin)
 		}
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
-		deliverState.Accounts.SubBalance(sender, data.CoinToSell, balance)
+		deliverState.Accounts.SubBalance(sender, tx.CommissionCoin(), balance)
 		if !data.CoinToSell.IsBaseCoin() {
-			deliverState.Coins.SubVolume(data.CoinToSell, valueToSell)
-			deliverState.Coins.SubReserve(data.CoinToSell, diffBipReserve)
+			deliverState.Coins.SubVolume(tx.CommissionCoin(), valueToSell)
+			deliverState.Coins.SubReserve(tx.CommissionCoin(), diffBipReserve)
 		}
 		deliverState.Accounts.AddBalance(sender, data.CoinToBuy, value)
 		if !data.CoinToBuy.IsBaseCoin() {

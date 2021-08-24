@@ -38,7 +38,7 @@ type tagPoolChange struct {
 	CoinOut  types.CoinID                  `json:"coin_out"`
 	ValueOut string                        `json:"value_out"`
 	Orders   *swap.ChangeDetailsWithOrders `json:"details"`
-	Sellers  []*OrderDetail                `json:"sellers"`
+	Sellers  []*swap.OrderDetail           `json:"sellers"`
 }
 
 func (tPool *tagPoolChange) string() string {
@@ -190,10 +190,10 @@ func (data SellAllSwapPoolDataV260) Run(tx *Transaction, context state.Interface
 			checkDuplicatePools[swapper.GetID()] = struct{}{}
 
 			if isGasCommissionFromPoolSwap == true && swapper.GetID() == commissionPoolSwapper.GetID() {
-				if tx.commissionCoin() == coinToSell && coinToBuy.IsBaseCoin() {
+				if tx.CommissionCoin() == coinToSell && coinToBuy.IsBaseCoin() {
 					swapper = swapper.AddLastSwapStepWithOrders(commission, commissionInBaseCoin)
 				}
-				if tx.commissionCoin() == coinToBuy && coinToSell.IsBaseCoin() {
+				if tx.CommissionCoin() == coinToBuy && coinToSell.IsBaseCoin() {
 					swapper = swapper.AddLastSwapStepWithOrders(big.NewInt(0).Neg(commissionInBaseCoin), big.NewInt(0).Neg(commission))
 				}
 			}
@@ -230,25 +230,24 @@ func (data SellAllSwapPoolDataV260) Run(tx *Transaction, context state.Interface
 			var (
 				poolIDCom  uint32
 				detailsCom *swap.ChangeDetailsWithOrders
-				ownersCom  map[types.Address]*big.Int
+				ownersCom  []*swap.OrderDetail
 			)
 			commission, commissionInBaseCoin, poolIDCom, detailsCom, ownersCom = deliverState.Swap.PairSellWithOrders(sellCoin.ID(), types.GetBaseCoinID(), commission, commissionInBaseCoin)
 			tagsCom = &tagPoolChange{
 				PoolID:   poolIDCom,
-				CoinIn:   tx.GasCoin,
+				CoinIn:   tx.CommissionCoin(),
 				ValueIn:  commission.String(),
 				CoinOut:  types.GetBaseCoinID(),
 				ValueOut: commissionInBaseCoin.String(),
 				Orders:   detailsCom,
-				Sellers:  make([]*OrderDetail, 0, len(ownersCom)),
+				Sellers:  ownersCom,
 			}
-			for address, value := range ownersCom {
-				deliverState.Accounts.AddBalance(address, sellCoin.ID(), value)
-				tagsCom.Sellers = append(tagsCom.Sellers, &OrderDetail{Owner: address, Value: value.String()})
+			for _, value := range ownersCom {
+				deliverState.Accounts.AddBalance(value.Owner, tx.CommissionCoin(), value.ValueBigInt)
 			}
 		} else if !sellCoin.ID().IsBaseCoin() {
-			deliverState.Coins.SubVolume(sellCoin.ID(), commission)
-			deliverState.Coins.SubReserve(sellCoin.ID(), commissionInBaseCoin)
+			deliverState.Coins.SubVolume(tx.CommissionCoin(), commission)
+			deliverState.Coins.SubReserve(tx.CommissionCoin(), commissionInBaseCoin)
 		}
 		deliverState.Accounts.SubBalance(sender, sellCoin.ID(), commission)
 
@@ -267,11 +266,11 @@ func (data SellAllSwapPoolDataV260) Run(tx *Transaction, context state.Interface
 				CoinOut:  coinToBuy,
 				ValueOut: amountOut.String(),
 				Orders:   details,
+				Sellers:  owners,
 			}
 
-			for address, value := range owners {
-				deliverState.Accounts.AddBalance(address, coinToSell, value)
-				tags.Sellers = append(tags.Sellers, &OrderDetail{Owner: address, Value: value.String()})
+			for _, value := range owners {
+				deliverState.Accounts.AddBalance(value.Owner, coinToSell, value.ValueBigInt)
 			}
 			poolIDs = append(poolIDs, tags)
 
