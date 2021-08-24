@@ -257,8 +257,20 @@ func (p *Pair) resortSellOrderList(i int, limit *Limit) {
 	// }
 }
 
-func (l *Limit) isEmpty() bool {
-	return l == nil || l.WantBuy.Sign() == 0 || l.WantSell.Sign() == 0
+func (l *Limit) isEmpty() (empty bool) {
+	if l == nil {
+		return true
+	}
+	if l.WantBuy.Sign() == 0 || l.WantSell.Sign() == 0 {
+		empty = true
+	}
+	if !empty {
+		return false
+	}
+	if l.WantBuy.Sign() != 0 || l.WantSell.Sign() != 0 {
+		panic(fmt.Sprintf("order %d has one zero volume: %s, %s. Sell %v", l.id, l.WantBuy, l.WantSell, !l.IsBuy))
+	}
+	return true
 }
 
 func (l *Limit) isKeepRate() bool {
@@ -695,7 +707,8 @@ func (l *Limit) OldSortPrice() *big.Float {
 	if l.oldSortPrice == nil {
 		l.oldSortPrice = new(big.Float).SetPrec(precision).Set(l.SortPrice())
 	}
-	return l.oldSortPrice
+
+	return new(big.Float).SetPrec(precision).Set(l.oldSortPrice)
 }
 
 func (l *Limit) isSell() bool {
@@ -705,7 +718,7 @@ func (l *Limit) isSell() bool {
 // ReCalcOldSortPrice saves before change, need for update on disk
 func (l *Limit) ReCalcOldSortPrice() *big.Float {
 	l.oldSortPrice.Set(l.SortPrice())
-	return l.oldSortPrice
+	return l.OldSortPrice()
 }
 
 func (l *Limit) Reverse() *Limit {
@@ -934,7 +947,7 @@ func (p *Pair) AddOrder(wantBuyAmount0, wantSellAmount1 *big.Int, sender types.A
 		Height:       block,
 	}
 	sortedOrder := order.sort()
-	//log.Println("add order", sortedOrder.id)
+
 	p.lockOrders.Lock()
 	defer p.lockOrders.Unlock()
 
@@ -952,18 +965,19 @@ func (p *Pair) AddOrderWithID(wantBuyAmount0, wantSellAmount1 *big.Int, sender t
 		WantBuy:      wantBuyAmount0,
 		WantSell:     wantSellAmount1,
 		id:           id,
-		oldSortPrice: big.NewFloat(0),
+		oldSortPrice: new(big.Float).SetPrec(precision),
 		Owner:        sender,
 		Height:       height,
 		RWMutex:      new(sync.RWMutex),
 	}
-	sort := order.sort()
-	p.MarkDirtyOrders(sort)
+	sortedOrder := order.sort()
 
 	p.lockOrders.Lock() // todo: tests
 	defer p.lockOrders.Unlock()
 
-	p.setOrder(sort)
+	p.MarkDirtyOrders(sortedOrder)
+
+	p.setOrder(sortedOrder)
 	p.orderSellByIndex(0)
 	return order
 }
@@ -1095,14 +1109,16 @@ func (s *Swap) loadOrder(id uint32) *Limit {
 	}
 
 	order := &Limit{
-		id: id,
-		//oldSortPrice: new(big.Float).SetPrec(precision),
-		RWMutex: new(sync.RWMutex),
+		id:           id,
+		oldSortPrice: new(big.Float).SetPrec(precision),
+		RWMutex:      new(sync.RWMutex),
 	}
 	err := rlp.DecodeBytes(value, order)
 	if err != nil {
 		panic(err)
 	}
+
+	order.ReCalcOldSortPrice()
 
 	return order
 }
@@ -1256,7 +1272,9 @@ func (p *Pair) resortOrders(list []uint32, lower bool) (orders []uint32, countDi
 func (p *Pair) addToList(orders []uint32, dirtyOrder *Limit, cmp int) (list []uint32, includedInInterval bool) {
 	var index int
 	var hasZero bool
-	// todo: optimize sort method
+
+	// FIXME: optimize sort method
+
 	for i, limitID := range orders {
 		if limitID == 0 {
 			hasZero = true
