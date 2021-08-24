@@ -31,9 +31,8 @@ type EditableChecker interface {
 	IsSorted() bool
 	GetOrder(id uint32) *Limit
 	OrderSellByIndex(index int) *Limit
-	OrderIDSellByIndex(index int) uint32
-	OrderBuyByIndex(index int) *Limit
-	OrderIDBuyByIndex(index int) uint32
+	OrdersSell(limit uint32) []*Limit
+	GetOrders(ids []uint32) []*Limit
 	Exists() bool
 	GetID() uint32
 	// Deprecated
