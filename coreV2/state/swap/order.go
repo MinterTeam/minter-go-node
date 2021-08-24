@@ -888,10 +888,11 @@ func (p *Pair) AddOrder(wantBuyAmount0, wantSellAmount1 *big.Int, sender types.A
 		Height:       block,
 	}
 	sort := order.sort()
-	p.MarkDirtyOrders(sort)
 
-	p.lockOrders.Lock() // todo: tests
+	p.lockOrders.Lock()
 	defer p.lockOrders.Unlock()
+
+	p.MarkDirtyOrders(sort)
 
 	p.setOrder(sort)
 	p.orderSellByIndex(0)
