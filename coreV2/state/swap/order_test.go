@@ -15,6 +15,37 @@ import (
 	db "github.com/tendermint/tm-db"
 )
 
+func TestPair_BuyOrderList(t *testing.T) {
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+	swap := New(newBus, immutableTree.GetLastImmutable())
+	_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(10e10), big.NewInt(10e10))
+
+	pair01 := swap.Pair(0, 1)
+	pair01.AddOrder(big.NewInt(10010), big.NewInt(10000), types.Address{}, 0)
+	pair01.AddOrder(big.NewInt(10020), big.NewInt(10000), types.Address{}, 0)
+
+	pair10 := swap.Pair(1, 0)
+	pair10.AddOrder(big.NewInt(1003), big.NewInt(1000), types.Address{}, 0)
+	pair10.AddOrder(big.NewInt(1004), big.NewInt(1000), types.Address{}, 0)
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Log(pair01.OrderSellLast())
+	t.Log(pair01.SellOrderIDs())
+
+	t.Log(pair10.OrderSellLast())
+	t.Log(pair10.SellOrderIDs())
+}
+
 func TestPair_LoadOrders_MemVSDisk(t *testing.T) {
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
@@ -64,6 +95,10 @@ func TestPair_LoadOrders_MemVSDisk(t *testing.T) {
 		pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999993771961322406"), types.Address{1}, 1)
 		pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999992979828068462"), types.Address{1}, 1)
 		pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999990513182822656"), types.Address{1}, 1)
+
+		t.Log(pair.OrderSellLast())
+		t.Log(pair.SellOrderIDs())
+
 		pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999987022814828419"), types.Address{1}, 1)
 		pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999985282425228748"), types.Address{1}, 1)
 
@@ -82,7 +117,7 @@ func TestPair_LoadOrders_MemVSDisk(t *testing.T) {
 
 		t.Log(pair.OrderSellLast())
 		t.Log(pair.SellOrderIDs())
-
+		//t.SkipNow()
 		pair.SellWithOrders(helpers.StringToBigInt("400000000000000000"))
 
 		t.Log(pair.OrderSellLast())
@@ -136,7 +171,7 @@ func TestPair_LoadOrders_MemVSDisk(t *testing.T) {
 
 		t.Log(pair.OrderSellLast())
 		t.Log(pair.SellOrderIDs())
-		t.SkipNow()
+
 		pair.SellWithOrders(helpers.StringToBigInt("400000000000000000"))
 
 		t.Log(pair.OrderSellLast())
@@ -814,7 +849,7 @@ func TestPair_LoadOrders_bagTacoMen(t *testing.T) {
 	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999987022814828419"), types.Address{1}, 1)
 	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999985282425228748"), types.Address{1}, 1)
 
-	last, index := swap.Pair(0, 1).OrderSellLast()
+	last, index := pair.OrderSellLast()
 	if last.id != 5 || index != 4 {
 		t.Error(last, index)
 	}
@@ -823,21 +858,21 @@ func TestPair_LoadOrders_bagTacoMen(t *testing.T) {
 	if last.id != 5 || index != 4 {
 		t.Error(last, index)
 	}
-
+	t.Log(pair.SellOrderIDs())
 	pair.SellWithOrders(helpers.StringToBigInt("400000000000000000"))
 
+	last, index = pair.OrderSellLast()
+	if last.id != 5 || index != 4 {
+		t.Error(last, index, pair.SellOrderIDs())
+	}
+
 	last, index = swap.Pair(0, 1).OrderSellLast()
-	if last.id != 1 || index != 4 {
+	if last.id != 5 || index != 4 {
 		t.Error(last, index)
 	}
 
 	last, index = swap.Pair(0, 1).OrderSellLast()
-	if last.id != 1 || index != 4 {
-		t.Error(last, index)
-	}
-
-	last, index = swap.Pair(0, 1).OrderSellLast()
-	if last.id != 1 || index != 4 {
+	if last.id != 5 || index != 4 {
 		t.Error(last, index)
 	}
 
@@ -1893,7 +1928,6 @@ func TestSwap_Export_WithOrders(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	t.Run("export", func(t *testing.T) {
 		var appState types.AppState
 		swap.Export(&appState)
@@ -1966,6 +2000,8 @@ func TestSwap_Export_WithOrders(t *testing.T) {
 				t.Error(amount1Out01OBMem, amount1Out01OBDisk)
 			}
 			if amount1Out10OBMem.Cmp(amount1Out10OBDisk) != 0 {
+				t.Log(pair10.SellOrderIDs())
+				t.Log(pair10Disk.SellOrderIDs())
 				t.Error(amount1Out10OBMem, amount1Out10OBDisk)
 			}
 		})
@@ -2006,8 +2042,10 @@ func TestPair_SetOrder_01(t *testing.T) {
 			t.Run("get", func(t *testing.T) {
 				t.Run("set", func(t *testing.T) {
 					t.Run("lowest", func(t *testing.T) {
+						pair.OrderSellLast()
 						order := pair.OrderSellByIndex(len(pair.SellOrderIDs()) - 1)
 						if idMostLower != order.id {
+							t.Log(pair.SellOrderIDs())
 							t.Errorf("id last sell order from array want %v, got %v", idMostLower, order.id)
 						}
 					})
@@ -2221,6 +2259,7 @@ func TestPair_SetOrder_10(t *testing.T) {
 			t.Run("get", func(t *testing.T) {
 				t.Run("set", func(t *testing.T) {
 					t.Run("lowest", func(t *testing.T) {
+						pair.OrderSellLast()
 						order := pair.OrderSellByIndex(len(pair.SellOrderIDs()) - 1)
 						if idMostLower != order.id {
 							t.Errorf("id last sell order from array want %v, got %v", idMostLower, order.id)

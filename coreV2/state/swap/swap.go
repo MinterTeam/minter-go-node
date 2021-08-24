@@ -457,7 +457,7 @@ func (p *Pair) reverse() *Pair {
 		loadedSellOrders:        p.loadedSellOrders,
 		loadedBuyOrders:         p.loadedBuyOrders,
 		unsortedDirtyBuyOrders:  p.unsortedDirtyBuyOrders,
-		unsortedDirtySellOrders: p.unsortedDirtyBuyOrders,
+		unsortedDirtySellOrders: p.unsortedDirtySellOrders,
 		getLastTotalOrderID:     p.getLastTotalOrderID,
 		loadOrder:               p.loadOrder,
 	}
@@ -488,10 +488,10 @@ func id2Bytes(id uint32) []byte {
 func id2BytesWithType(id uint32, sale bool) []byte {
 	byteID := make([]byte, 4)
 	if sale {
-		binary.LittleEndian.PutUint32(byteID, id)
-	} else {
-		binary.BigEndian.PutUint32(byteID, id)
+		id = math.MaxUint32 - id
 	}
+
+	binary.BigEndian.PutUint32(byteID, id)
 	return byteID
 }
 
@@ -619,14 +619,17 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 			}
 		}
 
-		pair.loadedBuyOrders = pair.buyOrders
-		pair.loadedSellOrders = pair.buyOrders
+		pair.loadedBuyOrders.ids = pair.buyOrders.ids[:]
+		pair.loadedSellOrders.ids = pair.sellOrders.ids[:]
+
 		pair.dirtyOrders.mu.Lock()
 		pair.dirtyOrders.list = make(map[uint32]struct{})
 		pair.dirtyOrders.mu.Unlock()
+
 		pair.deletedOrders.mu.Lock()
 		pair.deletedOrders.list = make(map[uint32]struct{})
 		pair.deletedOrders.mu.Unlock()
+
 		pair.unsortedDirtyBuyOrders.mu.Lock()
 		pair.unsortedDirtyBuyOrders.list = make(map[uint32]struct{})
 		pair.unsortedDirtyBuyOrders.mu.Unlock()
@@ -634,6 +637,7 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 		pair.unsortedDirtySellOrders.mu.Lock()
 		pair.unsortedDirtySellOrders.list = make(map[uint32]struct{})
 		pair.unsortedDirtySellOrders.mu.Unlock()
+
 		pair.lockOrders.Unlock()
 	}
 	s.dirtiesOrders = map[PairKey]struct{}{}
