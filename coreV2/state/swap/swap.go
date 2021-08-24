@@ -457,7 +457,7 @@ func (p *Pair) reverse() *Pair {
 		loadedSellOrders:        p.loadedSellOrders,
 		loadedBuyOrders:         p.loadedBuyOrders,
 		unsortedDirtyBuyOrders:  p.unsortedDirtyBuyOrders,
-		unsortedDirtySellOrders: p.unsortedDirtyBuyOrders,
+		unsortedDirtySellOrders: p.unsortedDirtySellOrders,
 		getLastTotalOrderID:     p.getLastTotalOrderID,
 		loadOrder:               p.loadOrder,
 	}
@@ -482,6 +482,15 @@ func pathOrder(id uint32) []byte {
 
 func id2Bytes(id uint32) []byte {
 	byteID := make([]byte, 4)
+	binary.BigEndian.PutUint32(byteID, id)
+	return byteID
+}
+func id2BytesWithType(id uint32, sale bool) []byte {
+	byteID := make([]byte, 4)
+	if sale {
+		id = math.MaxUint32 - id
+	}
+
 	binary.BigEndian.PutUint32(byteID, id)
 	return byteID
 }
@@ -510,7 +519,7 @@ func pricePath(key PairKey, price *big.Float, id uint32, isSale bool) []byte {
 	// log.Println("c m", sprintf)
 	pricePath = append(pricePath, []byte(sprintf)...)
 
-	byteID := id2Bytes(id)
+	byteID := id2BytesWithType(id, isSale)
 
 	var saleByte byte = 0
 	if isSale {
@@ -572,6 +581,7 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 	for _, key := range s.getOrderedDirtyOrderPairs() {
 		pair, _ := s.pair(key)
 		pair.lockOrders.Lock()
+
 		for _, id := range pair.getDirtyOrdersList() {
 			limit := pair.getOrder(id)
 			oldPathOrderList := pricePath(key, limit.OldSortPrice(), limit.id, !limit.IsBuy)
@@ -581,10 +591,12 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 				if limit.WantBuy.Sign() != 0 || limit.WantSell.Sign() != 0 {
 					panic(fmt.Sprintf("order %d has one zero volume: %s, %s. Sell %v", limit.id, limit.WantBuy, limit.WantSell, !limit.IsBuy))
 				}
+				pair.orders.mu.Lock()
 				pair.orders.list[limit.id] = nil
+				pair.orders.mu.Unlock()
 				db.Remove(pathOrderID)
 				db.Remove(oldPathOrderList)
-				log.Printf("remove old path %q, %s, %s. Sell %v", oldPathOrderList, limit.WantBuy, limit.WantSell, !limit.IsBuy)
+				//log.Printf("remove old path %q, %s, %s. Sell %v", oldPathOrderList, limit.WantBuy, limit.WantSell, !limit.IsBuy)
 				continue
 			}
 
@@ -600,20 +612,24 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 				db.Set(newPath, []byte{}) // todo: Nil values are invalid
 			}
 
-			log.Printf("new path %q, %s, %s. Sell %v", newPath, limit.WantBuy, limit.WantSell, !limit.IsBuy)
+			//log.Printf("new path %q, %s, %s. Sell %v", newPath, limit.WantBuy, limit.WantSell, !limit.IsBuy)
 			if !bytes.Equal(oldPathOrderList, newPath) && db.Has(oldPathOrderList) {
 				db.Remove(oldPathOrderList) // the price can change minimally due to rounding off the ratio of the remaining volumes
-				log.Printf("remove old path %q, %s, %s. Sell %v", oldPathOrderList, limit.WantBuy, limit.WantSell, !limit.IsBuy)
+				//log.Printf("remove old path %q, %s, %s. Sell %v", oldPathOrderList, limit.WantBuy, limit.WantSell, !limit.IsBuy)
 			}
 		}
-		pair.loadedBuyOrders = pair.buyOrders
-		pair.loadedSellOrders = pair.buyOrders
+
+		pair.loadedBuyOrders.ids = pair.buyOrders.ids[:]
+		pair.loadedSellOrders.ids = pair.sellOrders.ids[:]
+
 		pair.dirtyOrders.mu.Lock()
 		pair.dirtyOrders.list = make(map[uint32]struct{})
 		pair.dirtyOrders.mu.Unlock()
+
 		pair.deletedOrders.mu.Lock()
 		pair.deletedOrders.list = make(map[uint32]struct{})
 		pair.deletedOrders.mu.Unlock()
+
 		pair.unsortedDirtyBuyOrders.mu.Lock()
 		pair.unsortedDirtyBuyOrders.list = make(map[uint32]struct{})
 		pair.unsortedDirtyBuyOrders.mu.Unlock()
@@ -621,6 +637,7 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 		pair.unsortedDirtySellOrders.mu.Lock()
 		pair.unsortedDirtySellOrders.list = make(map[uint32]struct{})
 		pair.unsortedDirtySellOrders.mu.Unlock()
+
 		pair.lockOrders.Unlock()
 	}
 	s.dirtiesOrders = map[PairKey]struct{}{}
