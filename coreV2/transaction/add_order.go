@@ -106,10 +106,10 @@ func (data AddLimitOrderData) Run(tx *Transaction, context state.Interface, rewa
 	swapper := checkState.Swap().GetSwapper(data.CoinToSell, data.CoinToBuy)
 	if isGasCommissionFromPoolSwap && swapper.GetID() == commissionPoolSwapper.GetID() {
 		if tx.GasCoin == data.CoinToSell && data.CoinToBuy.IsBaseCoin() {
-			swapper = swapper.AddLastSwapStepWithOrders(commission, commissionInBaseCoin)
+			swapper = swapper.AddLastSwapStepWithOrders(commission, commissionInBaseCoin, true)
 		}
 		if tx.GasCoin == data.CoinToBuy && data.CoinToSell.IsBaseCoin() {
-			swapper = swapper.AddLastSwapStepWithOrders(big.NewInt(0).Neg(commissionInBaseCoin), big.NewInt(0).Neg(commission))
+			swapper = swapper.AddLastSwapStepWithOrders(big.NewInt(0).Neg(commissionInBaseCoin), big.NewInt(0).Neg(commission), true)
 		}
 	}
 	maxPrice := big.NewFloat(0).Quo(swapper.Price(), big.NewFloat(5))

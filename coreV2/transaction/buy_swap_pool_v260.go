@@ -130,10 +130,10 @@ func (data BuySwapPoolDataV260) Run(tx *Transaction, context state.Interface, re
 
 			if isGasCommissionFromPoolSwap && swapper.GetID() == commissionPoolSwapper.GetID() {
 				if tx.GasCoin == coinToSell && coinToBuy.IsBaseCoin() {
-					swapper = swapper.AddLastSwapStepWithOrders(commission, commissionInBaseCoin)
+					swapper = swapper.AddLastSwapStepWithOrders(commission, commissionInBaseCoin, true)
 				}
 				if tx.GasCoin == coinToSell && coinToBuy.IsBaseCoin() {
-					swapper = swapper.AddLastSwapStepWithOrders(big.NewInt(0).Neg(commissionInBaseCoin), big.NewInt(0).Neg(commission))
+					swapper = swapper.AddLastSwapStepWithOrders(big.NewInt(0).Neg(commissionInBaseCoin), big.NewInt(0).Neg(commission), true)
 				}
 			}
 
@@ -316,6 +316,20 @@ func CheckSwap(rSwap swap.EditableChecker, coinIn CalculateCoin, coinOut Calcula
 			}
 		}
 		valueOut = calculatedAmountToBuy
+	}
+
+	rSwap1 := rSwap.AddLastSwapStepWithOrders(valueIn, valueOut, isBuy)
+	reserve0, reserve1 := rSwap1.Reserves()
+	if reserve0.Sign() == -1 || reserve1.Sign() == -1 {
+		reserve0, reserve1 := rSwap.Reserves()
+		symbolIn := coinIn.GetFullSymbol()
+		symbolOut := coinOut.GetFullSymbol()
+		r := &Response{
+			Code: code.InsufficientLiquidity,
+			Log:  fmt.Sprintf("You wanted to exchange %s %s for %s %s, but the pool reserves are %s %s and %s %s", valueIn, symbolIn, valueOut, symbolOut, reserve0.String(), symbolIn, reserve1.String(), symbolOut),
+			Info: EncodeError(code.NewInsufficientLiquidity(coinIn.ID().String(), valueIn.String(), coinOut.ID().String(), valueOut.String(), reserve0.String(), reserve1.String())),
+		}
+		return r
 	}
 	return nil
 }

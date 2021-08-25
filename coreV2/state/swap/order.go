@@ -171,13 +171,13 @@ func (p *Pair) BuyWithOrders(amount1Out *big.Int) (amount0In *big.Int, owners ma
 
 	commission0orders, commission1orders, amount0, amount1, ownersMap := CalcDiffPool(amount0In, amount1Out, orders)
 
-	log.Println("uB", commission0orders, commission1orders)
+	log.Println(commission0orders, commission1orders, "uB")
 
 	p.lockOrders.Lock()
 	defer p.lockOrders.Unlock()
 
 	if amount0.Sign() != 0 || amount1.Sign() != 0 {
-		log.Println("a", amount0, amount1)
+		log.Println(amount0, amount1, "a")
 		p.update(amount0, big.NewInt(0).Neg(amount1))
 	}
 
@@ -208,11 +208,8 @@ func (p *Pair) updateSellOrder(id uint32, amount0, amount1 *big.Int) *Limit {
 	newLimit := limit.sort()
 	newLimit.OldSortPrice()
 
-	fmt.Println(limit.WantBuy, amount0, limit.WantSell, amount1)
 	limit.WantBuy.Sub(limit.WantBuy, amount0)
 	limit.WantSell.Sub(limit.WantSell, amount1)
-
-	fmt.Println(limit.WantBuy, limit.WantSell)
 
 	p.MarkDirtyOrders(newLimit)
 
@@ -464,7 +461,7 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big
 		if limit == nil {
 			break
 		}
-		log.Println("ow", limit.Owner.String())
+		log.Println("ow", limit.id, limit.Owner.String())
 
 		price := limit.Price()
 		if price.Cmp(pair.Price()) == -1 {
