@@ -1503,8 +1503,12 @@ func (p *Pair) OrdersSell(limit uint32) []*Limit {
 }
 
 func (p *Pair) ordersSell(limit uint32) []*Limit {
-	p.orderSellByIndex(int(limit - 1))
+	index := int(limit - 1)
+	p.orderSellByIndex(index)
 	orderIDs := p.SellOrderIDs()
+	if len(orderIDs) > index {
+		return p.getOrders(orderIDs)[:index+1]
+	}
 	return p.getOrders(orderIDs)
 }
 
