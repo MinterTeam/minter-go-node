@@ -192,7 +192,7 @@ func (s *Service) SwapPool(ctx context.Context, req *pb.SwapPoolRequest) (*pb.Sw
 	}
 
 	return &pb.SwapPoolResponse{
-		Price:     swap.CalcPriceSell(reserve0, reserve1).String(),
+		Price:     swap.CalcPriceSell(reserve1, reserve0).String(),
 		Amount0:   reserve0.String(),
 		Amount1:   reserve1.String(),
 		Liquidity: cState.Coins().GetCoinBySymbol(transaction.LiquidityCoinSymbol(liquidityID), 0).Volume().String(),
@@ -242,7 +242,7 @@ func (s *Service) SwapPoolProvider(ctx context.Context, req *pb.SwapPoolProvider
 
 	amount0, amount1 := swapper.Amounts(balance, liquidityCoin.Volume())
 	return &pb.SwapPoolResponse{
-		Price:     swapper.Price().String(),
+		Price:     swapper.Reverse().Price().String(),
 		Amount0:   amount0.String(),
 		Amount1:   amount1.String(),
 		Liquidity: balance.String(),
