@@ -1424,9 +1424,9 @@ func TestPair_AddLastSwapStepWithOrders(t *testing.T) {
 
 	sell := big.NewInt(15e15)
 	calcBuy1 := pair.CalculateBuyForSellWithOrders(sell)
-	pair1 := pair.AddLastSwapStepWithOrders(sell, calcBuy1)
+	pair1 := pair.AddLastSwapStepWithOrders(sell, calcBuy1, false)
 	calcBuy2 := pair1.CalculateBuyForSellWithOrders(sell)
-	pair1.AddLastSwapStepWithOrders(sell, calcBuy2)
+	pair1.AddLastSwapStepWithOrders(sell, calcBuy2, false)
 
 	if len(pair.dirtyOrders.list) != 0 {
 		t.Error("err", pair.dirtyOrders.list)

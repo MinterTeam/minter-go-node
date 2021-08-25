@@ -37,7 +37,7 @@ type EditableChecker interface {
 	GetID() uint32
 	// Deprecated
 	AddLastSwapStep(amount0In, amount1Out *big.Int) EditableChecker
-	AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int) EditableChecker
+	AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int, isBuy bool) EditableChecker
 	Reverse() EditableChecker
 	Price() *big.Float
 	Reserves() (reserve0 *big.Int, reserve1 *big.Int)
@@ -317,14 +317,24 @@ func (p *Pair) AddLastSwapStep(amount0In, amount1Out *big.Int) EditableChecker {
 	}
 }
 
-func (p *Pair) AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int) EditableChecker {
+func (p *Pair) AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int, buy bool) EditableChecker {
 	if amount0In.Sign() == -1 || amount1Out.Sign() == -1 {
-		return p.reverse().AddLastSwapStepWithOrders(big.NewInt(0).Neg(amount1Out), big.NewInt(0).Neg(amount0In)).Reverse()
+		return p.reverse().AddLastSwapStepWithOrders(big.NewInt(0).Neg(amount1Out), big.NewInt(0).Neg(amount0In), buy).Reverse()
 	}
 
-	amount1OutCalc, orders := p.calculateBuyForSellWithOrders(amount0In)
-	if amount1OutCalc.Cmp(amount1Out) != 0 {
-		log.Println("AddLastSwapStepWithOrders error", amount1OutCalc, amount1Out)
+	var orders []*Limit
+	if buy {
+		amount0InCalc, ordrs := p.calculateSellForBuyWithOrders(amount1Out)
+		if amount0InCalc.Cmp(amount0In) != 0 {
+			log.Println("AddLastSwapStepWithOrders calculateSellForBuyWithOrders error", amount0InCalc, amount0In)
+		}
+		orders = ordrs
+	} else {
+		amount1OutCalc, ordrs := p.calculateBuyForSellWithOrders(amount0In)
+		if amount1OutCalc.Cmp(amount1Out) != 0 {
+			log.Println("AddLastSwapStepWithOrders calculateBuyForSellWithOrders error", amount1OutCalc, amount1Out)
+		}
+		orders = ordrs
 	}
 
 	reserve0, reserve1 := p.Reserves()
@@ -409,6 +419,9 @@ func (p *Pair) AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int) Editabl
 	}
 	commission0orders, commission1orders, amount0, amount1, _ := CalcDiffPool(amount0In, amount1Out, orders)
 
+	pair.lockOrders.Lock()
+	defer pair.lockOrders.Unlock()
+
 	if amount0.Sign() != 0 || amount1.Sign() != 0 {
 		pair.update(amount0, big.NewInt(0).Neg(amount1))
 	}
@@ -430,6 +443,8 @@ func (p *Pair) AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int) Editabl
 	}
 
 	pair.updateOrders(oo)
+
+	pair.orderSellByIndex(0)
 
 	return pair
 }

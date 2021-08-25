@@ -197,7 +197,7 @@ func (s *Service) calcSellPoolWithCommission(ctx context.Context, commissions *c
 
 	commissionPoolSwapper := cState.Swap().GetSwapper(requestCoinCommissionID, types.GetBaseCoinID())
 	if commissionFromPool && requestCoinCommissionID != types.GetBaseCoinID() {
-		commissionPoolSwapper = commissionPoolSwapper.AddLastSwapStepWithOrders(commission, commissionInBaseCoin)
+		commissionPoolSwapper = commissionPoolSwapper.AddLastSwapStepWithOrders(commission, commissionInBaseCoin, false)
 	}
 	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
 		return nil, nil, timeoutStatus.Err()

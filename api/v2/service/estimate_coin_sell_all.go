@@ -144,7 +144,7 @@ func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinS
 			}
 			commission = commissionFrom
 			if isFromPool {
-				commissionPoolSwapper = commissionPoolSwapper.AddLastSwapStepWithOrders(commission, commissionInBaseCoin)
+				commissionPoolSwapper = commissionPoolSwapper.AddLastSwapStepWithOrders(commission, commissionInBaseCoin, true)
 			}
 		}
 
