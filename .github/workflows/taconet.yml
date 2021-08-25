@@ -19,7 +19,7 @@ jobs:
 
       - name: Get dependencies
         run: |
-          go mod download
+          go mod tidy
 
       - name: Build
         env:
