@@ -202,22 +202,22 @@ func (data SellAllSwapPoolDataV260) Run(tx *Transaction, context state.Interface
 				valueToBuy = data.MinimumValueToBuy
 			}
 
+			var valueToBuyCalc *big.Int
 			coinToBuyModel := checkState.Coins().GetCoin(coinToBuy)
-			errResp = CheckSwap(swapper, coinToSellModel, coinToBuyModel, valueToSell, valueToBuy, false)
+			errResp, valueToBuyCalc = CheckSwap(swapper, coinToSellModel, coinToBuyModel, valueToSell, valueToBuy, false)
 			if errResp != nil {
 				return *errResp
 			}
 
-			valueToSellCalc := swapper.CalculateBuyForSellWithOrders(valueToSell)
-			if valueToSellCalc == nil || valueToSellCalc.Sign() != 1 {
+			if valueToBuyCalc == nil || valueToBuyCalc.Sign() != 1 {
 				reserve0, reserve1 := swapper.Reserves()
 				return Response{
 					Code: code.InsufficientLiquidity,
 					Log:  fmt.Sprintf("swap pool has reserves %s %s and %d %s, you wanted sell %s %s", reserve0, coinToSellModel.GetFullSymbol(), reserve1, coinToBuyModel.GetFullSymbol(), valueToSell, coinToSellModel.GetFullSymbol()),
-					Info: EncodeError(code.NewInsufficientLiquidity(coinToSellModel.ID().String(), valueToSell.String(), coinToBuyModel.ID().String(), valueToSellCalc.String(), reserve0.String(), reserve1.String())),
+					Info: EncodeError(code.NewInsufficientLiquidity(coinToSellModel.ID().String(), valueToSell.String(), coinToBuyModel.ID().String(), valueToBuyCalc.String(), reserve0.String(), reserve1.String())),
 				}
 			}
-			valueToSell = valueToSellCalc
+			valueToSell = valueToBuyCalc
 			coinToSellModel = coinToBuyModel
 			coinToSell = coinToBuy
 		}

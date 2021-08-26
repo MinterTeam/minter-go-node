@@ -105,7 +105,7 @@ func (data AddLimitOrderData) Run(tx *Transaction, context state.Interface, rewa
 
 	swapper := checkState.Swap().GetSwapper(data.CoinToSell, data.CoinToBuy)
 	if isGasCommissionFromPoolSwap && swapper.GetID() == commissionPoolSwapper.GetID() {
-		if tx.GasCoin == data.CoinToSell && data.CoinToBuy.IsBaseCoin() {
+		if tx.GasCoin == data.CoinToSell && data.CoinToBuy.IsBaseCoin() { // todo: test
 			swapper = swapper.AddLastSwapStepWithOrders(commission, commissionInBaseCoin, true)
 		}
 		if tx.GasCoin == data.CoinToBuy && data.CoinToSell.IsBaseCoin() {
@@ -120,7 +120,7 @@ func (data AddLimitOrderData) Run(tx *Transaction, context state.Interface, rewa
 		return Response{
 			Code: code.WrongOrderPrice,
 			Log:  fmt.Sprintf("order price is %s, but must less %s and more %s", orderPrice.Text('f', 18), currentPrice.Text('f', 18), maxPrice.Text('f', 18)),
-			Info: EncodeError(code.NewWrongOrderPrice(maxPrice.Text('f', 18), currentPrice.Text('f', 18), orderPrice.Text('f', 18))),
+			Info: EncodeError(code.NewWrongOrderPrice(currentPrice.Text('f', 18), maxPrice.Text('f', 18), orderPrice.Text('f', 18))),
 		}
 	}
 

@@ -275,14 +275,13 @@ func (s *Service) calcSellFromPool(ctx context.Context, value *big.Int, cState *
 			}
 		}
 
-		buyValue := swapChecker.CalculateBuyForSellWithOrders(sellValue)
+		errResp, buyValue := transaction.CheckSwap(swapChecker, coinSell, coinBuy, sellValue, big.NewInt(0), false)
+		if errResp != nil {
+			return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
+		}
 		if buyValue == nil || buyValue.Sign() != 1 {
 			reserve0, reserve1 := swapChecker.Reserves()
 			return nil, s.createError(status.New(codes.OutOfRange, fmt.Sprintf("swap pool has reserves %s %s and %d %s, you wanted sell %s %s", reserve0, coinSell.GetFullSymbol(), reserve1, coinBuy.GetFullSymbol(), sellValue, coinSell.GetFullSymbol())), "")
-		}
-
-		if errResp := transaction.CheckSwap(swapChecker, coinSell, coinBuy, sellValue, buyValue, false); errResp != nil {
-			return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
 		}
 
 		sellValue = buyValue
