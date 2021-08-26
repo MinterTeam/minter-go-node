@@ -177,8 +177,26 @@ func (data AddLiquidityDataV240) Run(tx *Transaction, context state.Interface, r
 
 	var tags []abcTypes.EventAttribute
 	if deliverState, ok := context.(*state.State); ok {
+		var tagsCom *tagPoolChange
 		if isGasCommissionFromPoolSwap {
-			commission, commissionInBaseCoin, _ = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
+			var (
+				poolIDCom  uint32
+				detailsCom *swap.ChangeDetailsWithOrders
+				ownersCom  []*swap.OrderDetail
+			)
+			commission, commissionInBaseCoin, poolIDCom, detailsCom, ownersCom = deliverState.Swap.PairSellWithOrders(tx.CommissionCoin(), types.GetBaseCoinID(), commission, big.NewInt(0)) // todo: commissionInBaseCoin
+			tagsCom = &tagPoolChange{
+				PoolID:   poolIDCom,
+				CoinIn:   tx.CommissionCoin(),
+				ValueIn:  commission.String(),
+				CoinOut:  types.GetBaseCoinID(),
+				ValueOut: commissionInBaseCoin.String(),
+				Orders:   detailsCom,
+				Sellers:  ownersCom,
+			}
+			for _, value := range ownersCom {
+				deliverState.Accounts.AddBalance(value.Owner, tx.CommissionCoin(), value.ValueBigInt)
+			}
 		} else if !tx.GasCoin.IsBaseCoin() {
 			deliverState.Coins.SubVolume(tx.CommissionCoin(), commission)
 			deliverState.Coins.SubReserve(tx.CommissionCoin(), commissionInBaseCoin)
@@ -199,6 +217,7 @@ func (data AddLiquidityDataV240) Run(tx *Transaction, context state.Interface, r
 			{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
 			{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String()), Index: true},
 			{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
+			{Key: []byte("tx.commission_details"), Value: []byte(tagsCom.string())},
 			{Key: []byte("tx.volume1"), Value: []byte(amount1.String())},
 			{Key: []byte("tx.liquidity"), Value: []byte(liquidity.String())},
 			{Key: []byte("tx.pool_token"), Value: []byte(coinLiquidity.GetFullSymbol()), Index: true},

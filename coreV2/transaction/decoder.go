@@ -48,7 +48,7 @@ func GetDataV1(txType TxType) (Data, bool) {
 	case TypeEditCandidatePublicKey:
 		return &EditCandidatePublicKeyData{}, true
 	case TypeAddLiquidity:
-		return &AddLiquidityData{}, true
+		return &AddLiquidityDataV1{}, true
 	case TypeRemoveLiquidity:
 		return &RemoveLiquidityV1{}, true
 	case TypeSellSwapPool:
