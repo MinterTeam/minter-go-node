@@ -1267,7 +1267,7 @@ func addToList(orders []*Limit, dirtyOrder *Limit, cmp int, index int) (list []*
 
 	var hasZero bool
 	var last int
-	{
+	if false { // FIXME
 		if len(orders) != 0 && orders[len(orders)-1] == nil {
 			hasZero = true
 			last = 1
@@ -1317,36 +1317,36 @@ func addToList(orders []*Limit, dirtyOrder *Limit, cmp int, index int) (list []*
 				mid = index + (len(orders[index:mid]) / 2)
 			}
 		}
-	}
-
-	for i, limit := range orders {
-		if limit == nil {
-			hasZero = true
-			index = i
-			break
-		}
-		if limit.id == dirtyOrder.id {
-			log.Println("equal ID in addToList")
-			return orders, true, i
-		}
-
-		var ok bool
-		switch dirtyOrder.SortPrice().Cmp(limit.SortPrice()) {
-		case cmp:
-			index = i + 1
-			continue
-		case 0:
-			index = i
-			if dirtyOrder.id > limit.id {
-				index = i + 1
+	} else {
+		for i, limit := range orders {
+			if limit == nil {
+				hasZero = true
+				index = i
+				break
 			}
-			//log.Println("sort of equal orders", dirtyOrder.id, limit.id, orders, index)
-		default:
-			//log.Println("sort order result", dirtyOrder.id, orders, index)
-			ok = true
-		}
-		if ok {
-			break
+			if limit.id == dirtyOrder.id {
+				log.Println("equal ID in addToList")
+				return orders, true, i
+			}
+
+			var ok bool
+			switch dirtyOrder.SortPrice().Cmp(limit.SortPrice()) {
+			case cmp:
+				index = i + 1
+				continue
+			case 0:
+				index = i
+				if dirtyOrder.id > limit.id {
+					index = i + 1
+				}
+				//log.Println("sort of equal orders", dirtyOrder.id, limit.id, orders, index)
+			default:
+				//log.Println("sort order result", dirtyOrder.id, orders, index)
+				ok = true
+			}
+			if ok {
+				break
+			}
 		}
 	}
 
