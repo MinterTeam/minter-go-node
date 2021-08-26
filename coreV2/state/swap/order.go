@@ -1543,7 +1543,7 @@ func (p *Pair) orderSellLast() (limit *Limit, index int) {
 
 func (p *Pair) AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int, buy bool) EditableChecker {
 	if amount0In.Sign() == -1 || amount1Out.Sign() == -1 {
-		return p.reverse().AddLastSwapStepWithOrders(big.NewInt(0).Neg(amount1Out), big.NewInt(0).Neg(amount0In), !buy).Reverse()
+		return p.reverse().AddLastSwapStepWithOrders(big.NewInt(0).Neg(amount1Out), big.NewInt(0).Neg(amount0In), buy).Reverse()
 	}
 
 	var orders []*Limit
