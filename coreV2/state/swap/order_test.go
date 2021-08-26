@@ -1,6 +1,7 @@
 package swap
 
 import (
+	"log"
 	"math/big"
 	"strconv"
 	"sync"
@@ -15,6 +16,154 @@ import (
 	"github.com/tendermint/go-amino"
 	db "github.com/tendermint/tm-db"
 )
+
+func TestPair_cals0(t *testing.T) {
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+
+	swap := New(newBus, immutableTree.GetLastImmutable())
+	_, _, _, _ = swap.PairCreate(0, 1, helpers.StringToBigInt("100000000000000000000000"), helpers.StringToBigInt("10000000000000000000000000"))
+	pair := swap.Pair(0, 1)
+	pair.AddOrder(helpers.StringToBigInt("10000000000000000000"), helpers.StringToBigInt("99998528242522874800000"), types.Address{1}, 1)
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var a, b, c = big.NewInt(0), big.NewInt(0), helpers.StringToBigInt("4000000000000000000")
+	var oA, oB []*Limit
+	{
+
+		a, oA = pair.calculateBuyForSellWithOrders(c)
+		b, oB = pair.calculateSellForBuyWithOrders(a)
+
+		for i := range oA {
+			t.Log(pair.getOrder(uint32(i + 1)))
+			t.Log(oA[i])
+			t.Log(oB[i])
+		}
+
+		if c.Cmp(b) != 0 {
+			t.Skip(c, b)
+		}
+	}
+
+	out, _, _ := pair.SellWithOrders(c)
+	if out.Cmp(a) != 0 {
+		t.Error(out, a)
+	}
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+}
+
+func TestPair_cals1(t *testing.T) {
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+
+	swap := New(newBus, immutableTree.GetLastImmutable())
+	_, _, _, _ = swap.PairCreate(0, 1, helpers.StringToBigInt("100000000000000000000000"), helpers.StringToBigInt("10000000000000000000000000"))
+	pair := swap.Pair(0, 1)
+	pair.AddOrder(helpers.StringToBigInt("10000000000000000000"), helpers.StringToBigInt("99998528242522874800000"), types.Address{1}, 1)
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var a, b, c = big.NewInt(0), big.NewInt(0), helpers.StringToBigInt("4000000000000000000")
+	var oA, oB []*Limit
+	{
+
+		b, oB = pair.calculateSellForBuyWithOrders(c)
+		a, oA = pair.calculateBuyForSellWithOrders(b)
+
+		for i := range oA {
+			t.Log(pair.getOrder(uint32(i + 1)))
+			t.Log(oA[i])
+			t.Log(oB[i])
+		}
+
+		if c.Cmp(a) != 0 {
+			t.Skip(c, a)
+		}
+	}
+
+	out, _, _ := pair.BuyWithOrders(c)
+	if out.Cmp(b) != 0 {
+		t.Error(out, b)
+	}
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+}
+
+func TestPair_MoreBuyOfSellInOrder(t *testing.T) {
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+
+	swap := New(newBus, immutableTree.GetLastImmutable())
+	_, _, _, _ = swap.PairCreate(0, 1, helpers.StringToBigInt("100000000000000000000000"), helpers.StringToBigInt("10000000000000000000000000"))
+	pair := swap.Pair(0, 1)
+	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999993771961322406001"), types.Address{1}, 1)
+	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999992979828068462002"), types.Address{1}, 1)
+	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999990513182822656003"), types.Address{1}, 1)
+	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999987022814828419004"), types.Address{1}, 1)
+	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999985282425228748005"), types.Address{1}, 1)
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var a, b, c = big.NewInt(0), big.NewInt(0), helpers.StringToBigInt("4000000000000000000")
+	var oA, oB []*Limit
+	{
+
+		a, oA = pair.calculateBuyForSellWithOrders(c)
+		b, oB = pair.calculateSellForBuyWithOrders(a)
+
+		for i := range oA {
+			log.Println(oA[i])
+			log.Println(pair.getOrder(uint32(i + 1)))
+			log.Println(oB[i])
+		}
+
+		if c.Cmp(b) != 0 {
+			t.Error(c, b)
+		}
+	}
+
+	pair.SellWithOrders(c)
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+}
 
 func TestAddToList(t *testing.T) {
 	list, inc, pos := addToList([]*Limit{

@@ -319,26 +319,30 @@ func (p *Pair) calculateBuyForSellWithOrders(amount0In *big.Int) (amountOut *big
 				pair = pair.AddLastSwapStep(reserve0diff, reserve1diff)
 
 				log.Println("rS", reserve0diff, reserve1diff)
-
 			}
 		}
 
 		// хотим продать 9009
 		// проверяем есть ли столько на продажу
-		log.Println("i", amountIn)
+		log.Println("amountIn", amountIn)
 		rest := big.NewInt(0).Sub(amountIn, limit.WantBuy)
 		if rest.Sign() != 1 {
+			log.Println("rest", rest)
+
 			// 9009
-			amount0 := big.NewInt(0).Set(amountIn)
-			// считаем сколько сможем купить -- 3003
-			amount1, acc := big.NewFloat(0).Mul(price, big.NewFloat(0).SetInt(amount0)).Int(nil)
-			if acc != big.Exact {
-				log.Println("acc", acc)
-				// if acc == big.Below { // todo
-				// 	amount1.Add(amount1,big.NewInt(1))
-				// }
+			var amount0, amount1 = big.NewInt(0).Set(amountIn), big.NewInt(0)
+			if rest.Sign() == 0 {
+				amount1.Set(limit.WantSell)
+			} else {
+				// считаем сколько сможем купить -- 3003
+				var acc big.Accuracy
+				amount1, acc = big.NewFloat(0).Mul(price, big.NewFloat(0).SetInt(amount0)).Int(nil)
+				if acc != big.Exact {
+					log.Println("acc", acc)
+				}
 			}
-			log.Println("m", amount1)
+
+			log.Println("amount1", amount1)
 
 			orders = append(orders, &Limit{
 				IsBuy:        limit.IsBuy,
@@ -353,7 +357,7 @@ func (p *Pair) calculateBuyForSellWithOrders(amount0In *big.Int) (amountOut *big
 			})
 
 			comB := calcCommission999(amount1)
-			log.Println("n", comB)
+			log.Println("comB", comB)
 			amountOut.Add(amountOut, big.NewInt(0).Sub(amount1, comB))
 			return amountOut, orders
 		}
@@ -441,7 +445,8 @@ func (p *Pair) calculateAddAmountsForPrice(price *big.Float) (amount0 *big.Int, 
 		return nil, nil
 	}
 
-	return amount0, p.CalculateBuyForSell(amount0)
+	amount1 = p.CalculateBuyForSell(amount0)
+	return amount0, amount1
 }
 
 func (p *Pair) CalculateSellForBuyWithOrders(amount1Out *big.Int) (amount0In *big.Int) {
@@ -1262,7 +1267,7 @@ func addToList(orders []*Limit, dirtyOrder *Limit, cmp int, index int) (list []*
 
 	var hasZero bool
 	var last int
-	{
+	if false { // FIXME
 		if len(orders) != 0 && orders[len(orders)-1] == nil {
 			hasZero = true
 			last = 1
@@ -1312,36 +1317,36 @@ func addToList(orders []*Limit, dirtyOrder *Limit, cmp int, index int) (list []*
 				mid = index + (len(orders[index:mid]) / 2)
 			}
 		}
-	}
-
-	for i, limit := range orders {
-		if limit == nil {
-			hasZero = true
-			index = i
-			break
-		}
-		if limit.id == dirtyOrder.id {
-			log.Println("equal ID in addToList")
-			return orders, true, i
-		}
-
-		var ok bool
-		switch dirtyOrder.SortPrice().Cmp(limit.SortPrice()) {
-		case cmp:
-			index = i + 1
-			continue
-		case 0:
-			index = i
-			if dirtyOrder.id > limit.id {
-				index = i + 1
+	} else {
+		for i, limit := range orders {
+			if limit == nil {
+				hasZero = true
+				index = i
+				break
 			}
-			//log.Println("sort of equal orders", dirtyOrder.id, limit.id, orders, index)
-		default:
-			//log.Println("sort order result", dirtyOrder.id, orders, index)
-			ok = true
-		}
-		if ok {
-			break
+			if limit.id == dirtyOrder.id {
+				log.Println("equal ID in addToList")
+				return orders, true, i
+			}
+
+			var ok bool
+			switch dirtyOrder.SortPrice().Cmp(limit.SortPrice()) {
+			case cmp:
+				index = i + 1
+				continue
+			case 0:
+				index = i
+				if dirtyOrder.id > limit.id {
+					index = i + 1
+				}
+				//log.Println("sort of equal orders", dirtyOrder.id, limit.id, orders, index)
+			default:
+				//log.Println("sort order result", dirtyOrder.id, orders, index)
+				ok = true
+			}
+			if ok {
+				break
+			}
 		}
 	}
 
