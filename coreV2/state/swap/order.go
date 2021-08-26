@@ -300,6 +300,7 @@ func (p *Pair) calculateBuyForSellWithOrders(amount0In *big.Int) (amountOut *big
 		if limit == nil {
 			break
 		}
+		log.Println("ow", limit.id, limit.Owner.String())
 
 		price := limit.Price()
 		if price.Cmp(pair.Price()) == -1 {
@@ -1261,53 +1262,86 @@ func addToList(orders []*Limit, dirtyOrder *Limit, cmp int, index int) (list []*
 
 	var hasZero bool
 	var last int
-	if len(orders) != 0 && orders[len(orders)-1] == nil {
-		hasZero = true
-		last = 1
-	}
-
-	var mid = len(orders) - last
-
-	var less = true
-	for mid-index > 0 {
-		if mid > len(orders)-last {
-			mid = len(orders) - last
+	{
+		if len(orders) != 0 && orders[len(orders)-1] == nil {
+			hasZero = true
+			last = 1
 		}
-		v := orders[index:mid]
-		mid = index + len(v)/2
-		if mid < 0 {
-			if !less {
-				break
+
+		var mid = len(orders) - last
+
+		var less = true
+		for mid-index > 0 {
+			if mid > len(orders)-last {
+				mid = len(orders) - last
 			}
-			mid = 0
-		}
-		limit := orders[mid]
+			v := orders[index:mid]
+			mid = index + len(v)/2
+			if mid < 0 {
+				if !less {
+					break
+				}
+				mid = 0
+			}
+			limit := orders[mid]
 
-		if limit.id == dirtyOrder.id {
-			log.Println("dirty ID == in list ID")
-			// todo: panic
-			return orders, false, mid
-		}
+			if limit.id == dirtyOrder.id {
+				log.Println("dirty ID == in list ID")
+				// todo: panic
+				return orders, false, mid
+			}
 
-		less = false
-		switch dirtyOrder.SortPrice().Cmp(limit.SortPrice()) {
-		case cmp:
-			less = true
-		case 0:
-			if dirtyOrder.id > limit.id {
+			less = false
+			switch dirtyOrder.SortPrice().Cmp(limit.SortPrice()) {
+			case cmp:
 				less = true
-			} else {
+			case 0:
+				if dirtyOrder.id > limit.id {
+					less = true
+				} else {
+					less = false
+				}
+			default:
 				less = false
 			}
-		default:
-			less = false
+
+			if less {
+				index = mid + 1
+				mid = index + (len(orders[index:]) / 2)
+			} else {
+				mid = index + (len(orders[index:mid]) / 2)
+			}
+		}
+	}
+
+	for i, limit := range orders {
+		if limit == nil {
+			hasZero = true
+			index = i
+			break
+		}
+		if limit.id == dirtyOrder.id {
+			log.Println("equal ID in addToList")
+			return orders, true, i
 		}
 
-		if less {
-			index = mid + 1
-			mid = index + (len(orders[index:]) / 2)
-		} else {
-			mid = index + (len(orders[index:mid]) / 2)
+		var ok bool
+		switch dirtyOrder.SortPrice().Cmp(limit.SortPrice()) {
+		case cmp:
+			index = i + 1
+			continue
+		case 0:
+			index = i
+			if dirtyOrder.id > limit.id {
+				index = i + 1
+			}
+			//log.Println("sort of equal orders", dirtyOrder.id, limit.id, orders, index)
+		default:
+			//log.Println("sort order result", dirtyOrder.id, orders, index)
+			ok = true
+		}
+		if ok {
+			break
 		}
 	}
 

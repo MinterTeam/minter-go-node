@@ -1299,15 +1299,15 @@ func TestPair_CalculateAddAmount0ForPrice_0(t *testing.T) {
 	t.Log(pair.Price())
 	amount0ForPrice, _ := pair.CalculateAddAmountsForPrice(big.NewFloat(2))
 
-	wantedAmount0In := helpers.StringToBigInt("4560910765")
+	wantedAmount0In := helpers.StringToBigInt("4560910765") // 456090165
 	if amount0ForPrice.Cmp(wantedAmount0In) != 0 {
 		t.Error("wrong need to sell", amount0ForPrice)
 	}
-	wantedAmount1Out := helpers.StringToBigInt("12878178468")
-	// wantedCalcAmount0In := pair.CalculateSellForBuy(wantedAmount1Out)
-	// if wantedCalcAmount0In.Cmp(wantedAmount0In) != 0 {
-	// 	t.Error("wrong need to sell", wantedCalcAmount0In)
-	// }
+	wantedAmount1Out := helpers.StringToBigInt("12878178468") // 128781967
+	wantedCalcAmount0In := pair.CalculateSellForBuy(wantedAmount1Out)
+	if wantedCalcAmount0In.Cmp(wantedAmount0In) != 0 {
+		t.Error("wrong need to sell", wantedCalcAmount0In)
+	}
 	calcAmount1Out := pair.CalculateBuyForSell(amount0ForPrice)
 	if calcAmount1Out.Cmp(wantedAmount1Out) != 0 {
 		t.Error("wrong need to buy", calcAmount1Out)
@@ -1606,7 +1606,7 @@ func TestPair_BuyWithOrders_01_ChangeRemainderOrderPrice(t *testing.T) {
 		}
 
 		if addAmount0.Cmp(addAmount0ForPrice) != 0 {
-			t.Skipf("todo, addAmount0 %s, addAmount0ForPrice %s", addAmount0, addAmount0ForPrice)
+			t.Errorf("todo, addAmount0 %s, addAmount0ForPrice %s", addAmount0, addAmount0ForPrice)
 		}
 	})
 
