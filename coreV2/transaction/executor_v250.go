@@ -275,7 +275,7 @@ func (e *ExecutorV250) RunTx(context state.Interface, rawTx []byte, rewardPool *
 						detailsCom *swap.ChangeDetailsWithOrders
 						ownersCom  []*swap.OrderDetail
 					)
-					commission, commissionInBaseCoin, poolIDCom, detailsCom, ownersCom = deliverState.Swap.PairSellWithOrders(tx.CommissionCoin(), types.GetBaseCoinID(), commission, commissionInBaseCoin)
+					commission, commissionInBaseCoin, poolIDCom, detailsCom, ownersCom = deliverState.Swap.PairBuyWithOrders(tx.CommissionCoin(), types.GetBaseCoinID(), commission, commissionInBaseCoin)
 					tagsCom = &tagPoolChange{
 						PoolID:   poolIDCom,
 						CoinIn:   tx.CommissionCoin(),

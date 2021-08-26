@@ -29,6 +29,7 @@ const commission = 2
 type EditableChecker interface {
 	IsSorted() bool
 	GetOrder(id uint32) *Limit
+	OrderSellLast() (*Limit, int)
 	OrderSellByIndex(index int) *Limit
 	OrdersSell(limit uint32) []*Limit
 	GetOrders(ids []uint32) []*Limit
