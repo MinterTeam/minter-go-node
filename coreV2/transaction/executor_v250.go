@@ -183,7 +183,7 @@ func (e *ExecutorV250) RunTx(context state.Interface, rawTx []byte, rewardPool *
 	priceCommission := abcTypes.EventAttribute{Key: []byte("tx.commission_price"), Value: []byte(price.String())}
 
 	if !commissions.Coin.IsBaseCoin() {
-		price = checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()).CalculateBuyForSellWithOrders(price)
+		price = checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()).CalculateBuyForSell(price)
 	}
 	if price == nil {
 		return Response{
@@ -210,7 +210,7 @@ func (e *ExecutorV250) RunTx(context state.Interface, rawTx []byte, rewardPool *
 		commissionInBaseCoin = tx.MulGasPrice(commissionInBaseCoin)
 
 		if !commissions.Coin.IsBaseCoin() {
-			commissionInBaseCoin = checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()).CalculateBuyForSellWithOrders(commissionInBaseCoin)
+			commissionInBaseCoin = checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()).CalculateBuyForSell(commissionInBaseCoin)
 		}
 
 		commissionPoolSwapper := checkState.Swap().GetSwapper(tx.CommissionCoin(), types.GetBaseCoinID())
@@ -249,6 +249,7 @@ func (e *ExecutorV250) RunTx(context state.Interface, rawTx []byte, rewardPool *
 			if balance.Cmp(commission) == -1 {
 				commission = big.NewInt(0).Set(balance)
 				if isGasCommissionFromPoolSwap {
+					//CheckSwap()
 					commissionInBaseCoin = commissionPoolSwapper.CalculateBuyForSellWithOrders(commission)
 					if commissionInBaseCoin == nil || commissionInBaseCoin.Sign() == 0 {
 						return Response{
