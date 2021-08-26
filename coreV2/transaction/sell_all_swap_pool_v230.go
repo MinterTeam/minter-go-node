@@ -309,16 +309,20 @@ func commissionFromPool(swapChecker swap.EditableChecker, coin CalculateCoin, ba
 			Info: EncodeError(code.NewPairNotExists(coin.ID().String(), types.GetBaseCoinID().String())),
 		}
 	}
-	commission := swapChecker.CalculateSellForBuyWithOrders(commissionInBaseCoin)
-	if commission == nil || commission.Sign() != 1 {
+
+	errResp, coms := CheckSwap(swapChecker, coin, baseCoin, maxCoinSupply, commissionInBaseCoin, true)
+	if errResp != nil {
+		return nil, errResp
+	}
+	if coms == nil || coms.Sign() != 1 {
 		reserve0, reserve1 := swapChecker.Reserves()
 		return nil, &Response{
 			Code: code.InsufficientLiquidity,
 			Log:  fmt.Sprintf("swap pool has reserves %s %s and %d %s, you wanted buy %s %s", reserve0, coin.GetFullSymbol(), reserve1, baseCoin.GetFullSymbol(), commissionInBaseCoin, coin.GetFullSymbol()),
-			Info: EncodeError(code.NewInsufficientLiquidity(coin.ID().String(), commission.String(), baseCoin.ID().String(), commissionInBaseCoin.String(), reserve0.String(), reserve1.String())),
+			Info: EncodeError(code.NewInsufficientLiquidity(coin.ID().String(), coms.String(), baseCoin.ID().String(), commissionInBaseCoin.String(), reserve0.String(), reserve1.String())),
 		}
 	}
-	return commission, nil
+	return coms, nil
 }
 
 func commissionFromReserve(gasCoin CalculateCoin, commissionInBaseCoin *big.Int) (*big.Int, *Response) {
