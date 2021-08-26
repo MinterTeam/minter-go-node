@@ -1193,6 +1193,7 @@ func (p *Pair) updateDirtyOrders(list []uint32, lower bool) (orders []uint32, de
 	deletedDirtySellOrders.mu.Lock()
 	defer deletedDirtySellOrders.mu.Unlock()
 
+	var limits []*Limit
 	for _, orderID := range list {
 		if _, ok := deletedDirtySellOrders.list[orderID]; ok {
 			delCount++
@@ -1203,7 +1204,11 @@ func (p *Pair) updateDirtyOrders(list []uint32, lower bool) (orders []uint32, de
 			continue
 		}
 
-		orders = append(orders, orderID)
+		order := p.getOrder(orderID)
+		limits = append(limits, order)
+		if order == nil {
+			break
+		}
 	}
 
 	cmp := p.DirectionSortPrice() // todo: tests
@@ -1211,113 +1216,113 @@ func (p *Pair) updateDirtyOrders(list []uint32, lower bool) (orders []uint32, de
 		cmp *= -1
 	}
 
+	var dirties []*Limit
 	for orderID := range unsortedDirtySellOrders.list {
 		dirty := p.getOrder(orderID)
+		dirties = append(dirties, dirty)
+	}
+
+	sort.Slice(dirties, func(i, j int) bool {
+		li := dirties[i]
+		lj := dirties[j]
+		switch li.SortPrice().Cmp(lj.SortPrice()) {
+		case cmp:
+			return true
+		case 0:
+			return li.id < lj.id
+		default:
+			return false
+		}
+	})
+
+	var pos int
+	for _, dirty := range dirties {
 		var isSet bool
-		orders, isSet = p.addToList(orders, dirty, cmp)
+		limits, isSet, pos = addToList(limits, dirty, cmp, pos)
 		if isSet {
 			delCount--
-			delete(unsortedDirtySellOrders.list, orderID)
+			delete(unsortedDirtySellOrders.list, dirty.id)
+		} else {
+			break
 		}
 	}
 
-	if len(orders) != 0 && orders[len(orders)-1] == 0 {
-		return orders[:len(orders)-1], delCount
+	for _, order := range limits {
+		if order == nil {
+			return append(orders, 0), delCount
+		}
+		orders = append(orders, order.id)
 	}
 
 	return orders, delCount
 }
 
-// Deprecated
-func (p *Pair) resortOrders(list []uint32, lower bool) (orders []uint32, countDirties int) {
-	for _, orderID := range list {
-		if _, ok := p.dirtyOrders.list[orderID]; ok {
-			dirtyOrder := p.getOrder(orderID)
-			if dirtyOrder.isKeepRate() {
-				orders = append(orders, orderID)
-			} else {
-				countDirties++
-			}
-			continue
-		}
-		orders = append(orders, orderID)
-	}
+func addToList(orders []*Limit, dirtyOrder *Limit, cmp int, index int) (list []*Limit, included bool, pos int) {
 
-	cmp := 1
-	if !p.isSorted() && lower || p.isSorted() && !lower {
-		cmp *= -1
-	}
-	for _, dirtyOrderID := range p.getDirtyOrdersList() {
-		dirtyOrder := p.getOrder(dirtyOrderID)
-		if dirtyOrder.isKeepRate() {
-			continue
-		} else if dirtyOrder.isEmpty() {
-			continue
-		} else {
-			// if dirtyOrder.SortPrice().Cmp(p.SortPrice()) != p.DirectionSortPrice() { // Deprecated: logic with highest price orders
-			// 	continue
-			// } else {
-			var isSet bool
-			orders, isSet = p.addToList(orders, dirtyOrder, cmp)
-			if isSet {
-				countDirties--
-			}
-			// }
-		}
-	}
-
-	return orders, countDirties
-}
-
-func (p *Pair) addToList(orders []uint32, dirtyOrder *Limit, cmp int) (list []uint32, includedInInterval bool) {
-	var index int
 	var hasZero bool
+	var last int
+	if len(orders) != 0 && orders[len(orders)-1] == nil {
+		hasZero = true
+		last = 1
+	}
 
-	// FIXME: optimize sort method
+	var mid = len(orders) - last
 
-	for i, limitID := range orders {
-		if limitID == 0 {
-			hasZero = true
-			index = i
-			break
+	var less = true
+	for mid-index > 0 {
+		if mid > len(orders)-last {
+			mid = len(orders) - last
 		}
-		if limitID == dirtyOrder.id {
-			return orders, true
+		v := orders[index:mid]
+		mid = index + len(v)/2
+		if mid < 0 {
+			if !less {
+				break
+			}
+			mid = 0
 		}
-		limit := p.getOrder(limitID)
+		limit := orders[mid]
 
-		var ok bool
+		if limit.id == dirtyOrder.id {
+			log.Println("dirty ID == in list ID")
+			// todo: panic
+			return orders, false, mid
+		}
+
+		less = false
 		switch dirtyOrder.SortPrice().Cmp(limit.SortPrice()) {
 		case cmp:
-			index = i + 1
-			continue
+			less = true
 		case 0:
-			index = i
 			if dirtyOrder.id > limit.id {
-				index = i + 1
+				less = true
+			} else {
+				less = false
 			}
-			//log.Println("sort of equal orders", dirtyOrder.id, limit.id, orders, index)
 		default:
-			//log.Println("sort order result", dirtyOrder.id, orders, index)
-			ok = true
+			less = false
 		}
-		if ok {
-			break
+
+		if less {
+			index = mid + 1
+			mid = index + (len(orders[index:]) / 2)
+		} else {
+			mid = index + (len(orders[index:mid]) / 2)
 		}
 	}
 
 	if index == 0 {
-		return append([]uint32{dirtyOrder.id}, orders...), true
+		return append([]*Limit{dirtyOrder}, orders...), true, 0
 	}
 
-	if index == len(orders) {
+	if index == len(orders) { // todo: mb len(orders) - last
 		if hasZero {
-			return append(orders[:len(orders)-1], dirtyOrder.id), true
+			return append(orders[:len(orders)-1], dirtyOrder, nil), true, index
 		}
-		return orders, false
+		return orders, false, -1
 	}
 
-	return append(orders[:index], append([]uint32{dirtyOrder.id}, orders[index:]...)...), true
+	return append(orders[:index], append([]*Limit{dirtyOrder}, orders[index:]...)...), true, index
 }
 
 func (p *Pair) OrderIDBuyByIndex(index int) uint32 {
@@ -1453,32 +1458,37 @@ func (p *Pair) orderSellByIndex(index int) *Limit {
 	orders := p.SellOrderIDs()
 
 	var fromOrder *Limit
-	if len(orders) != 0 && orders[0] != 0 {
-		fromOrder = p.getOrder(orders[0])
-		if p.isUnsortedSellOrder(fromOrder.id) {
-			loadedOrders := p.loadSellOrders(p, fromOrder, index+1)
-			var resortedOrders []uint32
-			var unsets int
-			if (len(loadedOrders) == 0 || loadedOrders[len(loadedOrders)-1] == 0) && len(orders) != 0 {
-				resortedOrders, unsets = p.updateDirtyOrders(orders, false)
+	if len(orders) != 0 {
+		if orders[len(orders)-1] != 0 {
+			fromOrder = p.getOrder(orders[0])
+			if p.isUnsortedSellOrder(fromOrder.id) {
+				//if  {
+				loadedOrders := p.loadSellOrders(p, fromOrder, index+1)
+				var resortedOrders []uint32
+				var unsets int
+				if (len(loadedOrders) == 0 || loadedOrders[len(loadedOrders)-1] == 0) && len(orders) != 0 {
+					resortedOrders, unsets = p.updateDirtyOrders(orders, false)
+				} else {
+					resortedOrders, unsets = p.updateDirtyOrders(loadedOrders, false)
+				}
+				for unsets > 0 && len(resortedOrders) != 0 && resortedOrders[len(resortedOrders)-1] != 0 {
+					id := resortedOrders[len(resortedOrders)-1]
+					fromOrder = p.getOrder(id)
+					loadedNextOrders := p.loadSellOrders(p, fromOrder, index+1)
+					resortedOrders, unsets = p.updateDirtyOrders(append(orders, loadedNextOrders...), true)
+				}
+				orders = resortedOrders
 			} else {
-				resortedOrders, unsets = p.updateDirtyOrders(loadedOrders, false)
+				if index > len(orders)-1 && len(orders) != 0 && orders[len(orders)-1] != 0 {
+					fromOrder = p.getOrder(orders[len(orders)-1])
+					loadedNextOrders := p.loadSellOrders(p, fromOrder, index+1)
+					orders, _ = p.updateDirtyOrders(append(orders, loadedNextOrders...), true)
+				} else {
+					orders, _ = p.updateDirtyOrders(orders, true)
+				}
 			}
-			for unsets > 0 && len(resortedOrders) != 0 && resortedOrders[len(resortedOrders)-1] != 0 {
-				id := resortedOrders[len(resortedOrders)-1]
-				fromOrder = p.getOrder(id)
-				loadedNextOrders := p.loadSellOrders(p, fromOrder, index+1)
-				resortedOrders, unsets = p.updateDirtyOrders(append(orders, loadedNextOrders...), true)
-			}
-			orders = resortedOrders
 		} else {
-			if index > len(orders)-1 && len(orders) != 0 && orders[len(orders)-1] != 0 {
-				fromOrder = p.getOrder(orders[len(orders)-1])
-				loadedNextOrders := p.loadSellOrders(p, fromOrder, index+1)
-				orders, _ = p.updateDirtyOrders(append(orders, loadedNextOrders...), true)
-			} else {
-				orders, _ = p.updateDirtyOrders(orders, true)
-			}
+			orders, _ = p.updateDirtyOrders(orders, true)
 		}
 	} else {
 		orders = p.loadSellOrders(p, nil, index+1)
@@ -1487,7 +1497,11 @@ func (p *Pair) orderSellByIndex(index int) *Limit {
 
 	p.setSellOrders(orders)
 
-	if len(orders)-1 < index {
+	i := len(orders) - 1
+	if i >= 0 && orders[i] == 0 {
+		i--
+	}
+	if i < index {
 		return nil
 	}
 
