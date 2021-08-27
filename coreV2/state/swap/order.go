@@ -1312,24 +1312,18 @@ func addToList(orders []*Limit, dirtyOrder *Limit, cmp int, index int) (list []*
 		var start, end = index, len(orders) - last
 
 		skeeped := index
-		var less = true
 		var slice = orders[start:end]
 		for len(slice) > 0 {
-			//if end > len(slice) {
-			//	end = len(slice) - last
-			//}
 			cur := len(slice) / 2
 			limit := slice[cur]
 
-			log.Println("from", skeeped, "to", skeeped+len(slice), "cur", cur)
-
 			if limit.id == dirtyOrder.id {
-				log.Println("dirty ID == in list ID")
+				log.Panicln("dirty ID == in list ID", limit.id)
 				// todo: panic
 				return orders, false, cur
 			}
 
-			less = false
+			less := false
 			switch dirtyOrder.SortPrice().Cmp(limit.SortPrice()) {
 			case cmp:
 				less = true
