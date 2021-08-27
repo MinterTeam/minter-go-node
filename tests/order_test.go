@@ -106,7 +106,7 @@ func TestOrder_Expire_with_expiredOrdersPeriod_5_block(t *testing.T) {
 		ID:           1,
 		Name:         "Test 1",
 		Symbol:       types.StrToCoinBaseSymbol("TEST1"),
-		Volume:       "10000000000000000000000",
+		Volume:       "25000000000000000000000",
 		Crr:          0,
 		Reserve:      "0",
 		MaxSupply:    "90000000000000000000000000000",
@@ -128,8 +128,9 @@ func TestOrder_Expire_with_expiredOrdersPeriod_5_block(t *testing.T) {
 		Burnable:     false,
 	})
 
-	seller, _ := CreateAddress() // generate seller
-	state.NextOrderID = 2
+	seller, _ := CreateAddress()  // generate seller
+	seller2, _ := CreateAddress() // generate seller
+	state.NextOrderID = 3
 	state.Pools = append(state.Pools, types.Pool{
 		Coin0:    1,
 		Coin1:    2,
@@ -143,6 +144,14 @@ func TestOrder_Expire_with_expiredOrdersPeriod_5_block(t *testing.T) {
 				Volume1: "5000000000000000000000",  // want to sell
 				ID:      1,
 				Owner:   seller,
+				Height:  2,
+			},
+			{
+				IsSale:  false,
+				Volume0: "15000000000000000000000", // want to sell
+				Volume1: "5000000000000000000000",  // want to buy
+				ID:      2,
+				Owner:   seller2,
 				Height:  2,
 			},
 		},
@@ -211,6 +220,18 @@ func TestOrder_Expire_with_expiredOrdersPeriod_5_block(t *testing.T) {
 	}
 	{
 		balance := app.CurrentState().Accounts().GetBalance(seller, 1)
+		if balance.String() != "0" {
+			t.Fatalf("Saller balance is not correct. Expected %s, got %s", "> 0", balance)
+		}
+	}
+	{
+		balance := app.CurrentState().Accounts().GetBalance(seller2, 1)
+		if balance.String() != "15000000000000000000000" {
+			t.Fatalf("Saller balance is not correct. Expected %s, got %s", "> 0", balance)
+		}
+	}
+	{
+		balance := app.CurrentState().Accounts().GetBalance(seller2, 2)
 		if balance.String() != "0" {
 			t.Fatalf("Saller balance is not correct. Expected %s, got %s", "> 0", balance)
 		}
@@ -1293,8 +1314,8 @@ func TestOrder_buy_10_more_a_lot(t *testing.T) {
 		Orders: []types.Order{
 			{
 				IsSale:  false,
-				Volume0: "15000000000000000000000", // want to buy
-				Volume1: "5000000000000000000000",  // want to sell
+				Volume0: "5000000000000000000000",  // want to buy
+				Volume1: "15000000000000000000000", // want to sell
 				ID:      1,
 				Owner:   seller,
 			},

@@ -906,6 +906,20 @@ func (p *Pair) setDeletedSellOrderIDs(id uint32) {
 	defer ds.mu.Unlock()
 	ds.list[id] = struct{}{}
 }
+func (p *Pair) isDeletedSellOrder(id uint32) bool {
+	ds := p.deletedSellOrderIDs()
+	ds.mu.RLock()
+	defer ds.mu.RUnlock()
+	_, ok := ds.list[id]
+	return ok
+}
+func (p *Pair) isDeletedBuyOrder(id uint32) bool {
+	ds := p.deletedBuyOrderIDs()
+	ds.mu.RLock()
+	defer ds.mu.RUnlock()
+	_, ok := ds.list[id]
+	return ok
+}
 func (p *Pair) deletedSellOrderIDs() *orderDirties {
 	if p.isSorted() {
 		return p.deletedSellOrders
@@ -972,11 +986,14 @@ func (s *Swap) PairRemoveLimitOrder(id uint32) (types.CoinID, *big.Int) {
 		order = order.Reverse()
 	}
 
+	pair := s.Pair(order.Coin0, order.Coin1)
+	if pair.IsOrderAlreadyUsed(id) {
+		panic("order already used")
+	}
+
 	returnVolume := big.NewInt(0).Set(order.WantSell)
 
 	s.bus.Checker().AddCoin(order.Coin1, big.NewInt(0).Neg(returnVolume))
-
-	pair := s.Pair(order.Coin0, order.Coin1)
 
 	pair.lockOrders.Lock()
 	defer pair.lockOrders.Unlock()
@@ -997,6 +1014,13 @@ func (s *Swap) PairAddOrderWithID(coinWantBuy, coinWantSell types.CoinID, wantBu
 
 func (p *Pair) GetOrder(id uint32) *Limit {
 	return p.getOrder(id)
+}
+func (p *Pair) IsOrderAlreadyUsed(id uint32) bool {
+	if p.isDeletedBuyOrder(id) || p.isDeletedSellOrder(id) {
+		return true
+	}
+
+	return p.getOrder(id) == nil
 }
 
 func (p *Pair) AddOrder(wantBuyAmount0, wantSellAmount1 *big.Int, sender types.Address, block uint64) (order *Limit) {
@@ -1155,7 +1179,13 @@ func (s *Swap) GetOrder(id uint32) *Limit {
 		return nil
 	}
 
-	list := s.Pair(order.Coin0, order.Coin1).orders
+	pair := s.Pair(order.Coin0, order.Coin1)
+
+	if pair.isDeletedBuyOrder(id) || pair.isDeletedSellOrder(id) {
+		return nil
+	}
+
+	list := pair.orders
 	list.mu.RLock()
 	defer list.mu.RUnlock()
 

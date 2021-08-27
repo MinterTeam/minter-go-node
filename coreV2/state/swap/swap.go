@@ -28,6 +28,7 @@ const commission = 2
 
 type EditableChecker interface {
 	IsSorted() bool
+	IsOrderAlreadyUsed(id uint32) bool
 	GetOrder(id uint32) *Limit
 	OrderSellLast() (*Limit, int)
 	OrderSellByIndex(index int) *Limit
@@ -230,10 +231,16 @@ func (s *Swap) Import(state *types.AppState) {
 		s.incID()
 		for _, order := range pool.Orders {
 			key := pair.PairKey
+			id := order.ID
+			v0 := helpers.StringToBigInt(order.Volume0)
+			v1 := helpers.StringToBigInt(order.Volume1)
 			if !order.IsSale {
 				key = key.reverse()
+				v0, v1 = v1, v0
+			} else {
 			}
-			s.PairAddOrderWithID(key.Coin0, key.Coin1, helpers.StringToBigInt(order.Volume0), helpers.StringToBigInt(order.Volume1), order.Owner, uint32(order.ID), order.Height)
+
+			s.PairAddOrderWithID(key.Coin0, key.Coin1, v0, v1, order.Owner, uint32(id), order.Height)
 		}
 		s.nextOrderID = uint32(state.NextOrderID)
 		s.dirtyNextID = true
