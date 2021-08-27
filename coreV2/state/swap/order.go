@@ -1301,7 +1301,7 @@ func (p *Pair) updateDirtyOrders(list []uint32, lower bool) (orders []uint32, de
 func addToList(orders []*Limit, dirtyOrder *Limit, cmp int, index int) (list []*Limit, included bool, pos int) {
 
 	var hasZero bool
-	if false { // FIXME
+	if true { // FIXME
 
 		var last int
 		if len(orders) != 0 && orders[len(orders)-1] == nil {
@@ -1309,27 +1309,24 @@ func addToList(orders []*Limit, dirtyOrder *Limit, cmp int, index int) (list []*
 			last = 1
 		}
 
-		var mid = len(orders) - last
+		var start, end = index, len(orders) - last
 
+		skeeped := index
 		var less = true
-		for mid-index > 0 {
-			if mid > len(orders)-last {
-				mid = len(orders) - last
-			}
-			v := orders[index:mid]
-			mid = index + len(v)/2
-			if mid < 0 {
-				if !less {
-					break
-				}
-				mid = 0
-			}
-			limit := orders[mid]
+		var slice = orders[start:end]
+		for len(slice) > 0 {
+			//if end > len(slice) {
+			//	end = len(slice) - last
+			//}
+			cur := len(slice) / 2
+			limit := slice[cur]
+
+			log.Println("from", skeeped, "to", skeeped+len(slice), "cur", cur)
 
 			if limit.id == dirtyOrder.id {
 				log.Println("dirty ID == in list ID")
 				// todo: panic
-				return orders, false, mid
+				return orders, false, cur
 			}
 
 			less = false
@@ -1347,12 +1344,15 @@ func addToList(orders []*Limit, dirtyOrder *Limit, cmp int, index int) (list []*
 			}
 
 			if less {
-				index = mid + 1
-				mid = index + (len(orders[index:]) / 2)
+				skeeped += cur + 1
+				index = 0
+				slice = slice[cur+1:]
 			} else {
-				mid = index + (len(orders[index:mid]) / 2)
+				index = cur
+				slice = slice[:cur]
 			}
 		}
+		index += skeeped
 	} else {
 		for i, limit := range orders {
 			if limit == nil {
@@ -1385,12 +1385,13 @@ func addToList(orders []*Limit, dirtyOrder *Limit, cmp int, index int) (list []*
 			}
 		}
 	}
+	log.Println("index", index)
 
 	if index == 0 {
 		return append([]*Limit{dirtyOrder}, orders...), true, 0
 	}
 
-	if index == len(orders) { // todo: mb len(orders) - last
+	if index == len(orders) {
 		if hasZero {
 			return append(orders[:len(orders)-1], dirtyOrder, nil), true, index
 		}
