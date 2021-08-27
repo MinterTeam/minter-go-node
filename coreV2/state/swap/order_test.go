@@ -3,6 +3,7 @@ package swap
 import (
 	"log"
 	"math/big"
+	"reflect"
 	"strconv"
 	"sync"
 	"testing"
@@ -155,6 +156,12 @@ func TestPair_MoreBuyOfSellInOrder(t *testing.T) {
 			t.Error(c, b)
 		}
 	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Error("Recovered", r)
+		}
+	}()
 
 	pair.SellWithOrders(c)
 
@@ -477,6 +484,11 @@ func TestSwap_AddEqualOrders(t *testing.T) {
 	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999985282425228748"), types.Address{1}, 1)
 
 	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999999999999999999"), types.Address{1}, 1)
+
+	t.Log(pair.OrderSellLast())
+	t.Log(pair.sellOrders.ids)
+	t.Log(pair.unsortedDirtySellOrders.list)
+
 	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999992222222222222"), types.Address{1}, 1)
 
 	t.Log(pair.sellOrders.ids)
@@ -490,7 +502,9 @@ func TestSwap_AddEqualOrders(t *testing.T) {
 	}
 
 	t.Log(pair.OrderSellLast())
-	t.Log(pair.sellOrders.ids)
+	if !reflect.DeepEqual(pair.sellOrders.ids, []uint32{9, 1, 2, 3, 4, 5, 10, 6, 7, 8, 0}) {
+		t.Error("unsorted", pair.sellOrders.ids)
+	}
 }
 func TestSwap_loadSellOrders_0(t *testing.T) {
 	memDB := db.NewMemDB()
@@ -1678,7 +1692,7 @@ func TestPair_AddLastSwapStepWithOrders(t *testing.T) {
 
 	pair = swap.Pair(0, 1)
 	price := pair.OrderSellByIndex(0).Price()
-
+	t.Log(price)
 	addAmount0ForPrice, _ := pair.CalculateAddAmountsForPrice(price)
 
 	_, _, _ = pair.SellWithOrders(addAmount0ForPrice)
@@ -2115,7 +2129,7 @@ func TestPair_SellWithOrders_01_FullOrder(t *testing.T) {
 		}
 		//pair.OrderSellByIndex(0)
 		t.Run("unset", func(t *testing.T) {
-			if len(pair.SellOrderIDs()) != 0 {
+			if len(pair.SellOrderIDs())-1 != 0 {
 				t.Errorf("slice len %d, want empty: %v", len(pair.SellOrderIDs()), pair.SellOrderIDs())
 				t.Logf("%#v", pair.getOrder(pair.SellOrderIDs()[0]))
 
