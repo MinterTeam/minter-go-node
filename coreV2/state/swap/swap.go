@@ -304,7 +304,8 @@ func (p *Pair) AddLastSwapStep(amount0In, amount1Out *big.Int) EditableChecker {
 		buyOrders:               p.buyOrders,
 		orders:                  p.orders,
 		dirtyOrders:             p.dirtyOrders,
-		deletedOrders:           p.deletedOrders,
+		deletedSellOrders:       p.deletedSellOrders,
+		deletedBuyOrders:        p.deletedBuyOrders,
 		markDirtyOrders:         func() {},
 		loadBuyOrders:           p.loadBuyOrders,
 		loadSellOrders:          p.loadSellOrders,
@@ -332,7 +333,8 @@ func (p *Pair) reverse() *Pair {
 		buyOrders:               p.buyOrders,
 		orders:                  p.orders,
 		dirtyOrders:             p.dirtyOrders,
-		deletedOrders:           p.deletedOrders,
+		deletedSellOrders:       p.deletedSellOrders,
+		deletedBuyOrders:        p.deletedBuyOrders,
 		markDirtyOrders:         p.markDirtyOrders,
 		loadBuyOrders:           p.loadSellOrders,
 		loadSellOrders:          p.loadBuyOrders,
@@ -519,9 +521,13 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 		pair.dirtyOrders.list = make(map[uint32]struct{})
 		pair.dirtyOrders.mu.Unlock()
 
-		pair.deletedOrders.mu.Lock()
-		pair.deletedOrders.list = make(map[uint32]struct{})
-		pair.deletedOrders.mu.Unlock()
+		pair.deletedBuyOrders.mu.Lock()
+		pair.deletedBuyOrders.list = make(map[uint32]struct{})
+		pair.deletedBuyOrders.mu.Unlock()
+
+		pair.deletedSellOrders.mu.Lock()
+		pair.deletedSellOrders.list = make(map[uint32]struct{})
+		pair.deletedSellOrders.mu.Unlock()
 
 		pair.unsortedDirtyBuyOrders.mu.Lock()
 		pair.unsortedDirtyBuyOrders.list = make(map[uint32]struct{})
@@ -775,7 +781,8 @@ func (s *Swap) addPair(key PairKey) *Pair {
 		buyOrders:               &limits{},
 		orders:                  &orderList{list: make(map[uint32]*Limit), mu: sync.RWMutex{}},
 		dirtyOrders:             &orderDirties{list: make(map[uint32]struct{}), mu: sync.RWMutex{}},
-		deletedOrders:           &orderDirties{list: make(map[uint32]struct{}), mu: sync.RWMutex{}},
+		deletedSellOrders:       &orderDirties{list: make(map[uint32]struct{}), mu: sync.RWMutex{}},
+		deletedBuyOrders:        &orderDirties{list: make(map[uint32]struct{}), mu: sync.RWMutex{}},
 		markDirtyOrders:         s.markDirtyOrders(key),
 		loadBuyOrders:           s.loadBuyOrders,
 		loadSellOrders:          s.loadSellOrders,
@@ -859,7 +866,8 @@ type Pair struct {
 	buyOrders               *limits
 	orders                  *orderList
 	dirtyOrders             *orderDirties
-	deletedOrders           *orderDirties
+	deletedSellOrders       *orderDirties
+	deletedBuyOrders        *orderDirties
 	markDirtyOrders         func()
 	loadBuyOrders           func(pair *Pair, fromOrder *Limit, limit int) []uint32
 	loadSellOrders          func(pair *Pair, fromOrder *Limit, limit int) []uint32
