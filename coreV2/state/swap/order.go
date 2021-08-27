@@ -1301,7 +1301,7 @@ func (p *Pair) updateDirtyOrders(list []uint32, lower bool) (orders []uint32, de
 func addToList(orders []*Limit, dirtyOrder *Limit, cmp int, index int) (list []*Limit, included bool, pos int) {
 
 	var hasZero bool
-	if true { // FIXME
+	if false { // FIXME
 
 		var last int
 		if len(orders) != 0 && orders[len(orders)-1] == nil {
@@ -1309,18 +1309,14 @@ func addToList(orders []*Limit, dirtyOrder *Limit, cmp int, index int) (list []*
 			last = 1
 		}
 
-		var start, end = index, len(orders) - last
-
 		skeeped := index
+		var start, end = index, len(orders) - last
 		var slice = orders[start:end]
 		for len(slice) > 0 {
 			cur := len(slice) / 2
 			limit := slice[cur]
-
 			if limit.id == dirtyOrder.id {
 				log.Panicln("dirty ID == in list ID", limit.id)
-				// todo: panic
-				return orders, false, cur
 			}
 
 			less := false
@@ -1535,38 +1531,51 @@ func (p *Pair) orderSellByIndex(index int) *Limit {
 			// пересортируем, что бы лист почистился и пересортировался
 			orders, _ = p.updateDirtyOrders(orders, true)
 
-			// если загружены не все
 			lastI := len(orders) - 1
 
-			if orders[lastI] != 0 {
+			// если загружены не все
+			if lastI >= 0 && orders[lastI] != 0 {
 				// проверяем есть ли среди этого массива, элемент с нужным индексом
 				if index > lastI {
 					// загрузим с последнего нужное количество и отсортируем
 					fromOrder = p.getOrder(orders[lastI])
 					loadedNextOrders := p.loadSellOrders(p, fromOrder, index+1-lastI)
-					resortedOrders, unsets := p.updateDirtyOrders(append(orders, loadedNextOrders...), true)
-					_ = unsets
+					resortedOrders, unsets := p.updateDirtyOrders(loadedNextOrders, true)
+					//resortedOrders, unsets := p.updateDirtyOrders(append(orders, loadedNextOrders...), true)
+					resortedOrders = append(orders, resortedOrders...)
 					// проверим загружены ли все
-					if resortedOrders[len(resortedOrders)-1] == 0 {
-						// тут нужно выйти и отдать что есть
-						// todo
-					} else {
-						// среди них не может быть использованных и удаленных, иначе бы они были загружены ранее, поэтому везде выходим
-						// если не все, то проверяем нужный элемент
-						if index >= len(orders) {
-							// тут нужно выйти и отдать элемент
-							// todo
-						} else {
-							// тут нужно выйти и отдать элемент
-							// todo
+					lastJ := len(resortedOrders) - 1
+					if resortedOrders[lastJ] != 0 {
+						// среди них не может быть использованных иначе бы они были загружены ранее,
+						// но могут быть удаленные удаленных, проверим
+						for ; index > lastJ && lastJ >= 0 && resortedOrders[lastJ] != 0 && p.hasDeletedSellOrders() && unsets > 0; lastJ = len(resortedOrders) - 1 {
+							fromOrder = p.getOrder(resortedOrders[lastI])
+							loadedNextOrders := p.loadSellOrders(p, fromOrder, index+1-lastI)
+							var resortLoadedNextOrders []uint32
+							resortLoadedNextOrders, unsets = p.updateDirtyOrders(loadedNextOrders, true)
+							//resortedOrders, unsets := p.updateDirtyOrders(append(orders, loadedNextOrders...), true)
+							resortedOrders = append(resortedOrders, resortLoadedNextOrders...)
 						}
+						orders = resortedOrders
+						// иначе выходим
+						// если не все, то проверяем нужный элемент
+						//if index >= len(orders) {
+						//	// тут нужно выйти и отдать элемент
+						//} else {
+						//	// тут нужно выйти и отдать элемент
+						//}
 					}
+					//else {
+					// загружено все что есть
+					// тут нужно выйти и отдать что есть
+					// todo
+					//}
 					// тут уже был выход
 				} else {
 					// тут нужно выйти и отдать элемент
 					// todo
 				}
-				// старый код
+
 				/*// тогда загружаем с последнего, последним не может быть грязные, если загружены не все
 				fromOrder = p.getOrder(orders[0])
 
@@ -1593,8 +1602,8 @@ func (p *Pair) orderSellByIndex(index int) *Limit {
 		} else {
 			// проверим количество
 			lastI := len(orders) - 1
-			// если загружены не все, то подгрузить
-			if orders[lastI] != 0 {
+			// если загружены не все и их не достаточно, то подгрузить
+			if orders[lastI] != 0 && index > lastI {
 				fromOrder = p.getOrder(orders[lastI])
 				loadedNextOrders := p.loadSellOrders(p, fromOrder, index+1-lastI)
 				// тк нет грязных, то просто складываем

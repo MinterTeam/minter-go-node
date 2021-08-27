@@ -2130,7 +2130,7 @@ func TestPair_SellWithOrders_01_FullOrder(t *testing.T) {
 		}
 		//pair.OrderSellByIndex(0)
 		t.Run("unset", func(t *testing.T) {
-			if len(pair.SellOrderIDs())-1 != 0 {
+			if len(pair.SellOrderIDs()) != 0 {
 				t.Errorf("slice len %d, want empty: %v", len(pair.SellOrderIDs()), pair.SellOrderIDs())
 				t.Logf("%#v", pair.getOrder(pair.SellOrderIDs()[0]))
 
