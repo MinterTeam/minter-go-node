@@ -1309,30 +1309,17 @@ func addToList(orders []*Limit, dirtyOrder *Limit, cmp int, index int) (list []*
 			last = 1
 		}
 
-		var mid = len(orders) - last
-
-		var less = true
-		for mid-index > 0 {
-			if mid > len(orders)-last {
-				mid = len(orders) - last
-			}
-			v := orders[index:mid]
-			mid = index + len(v)/2
-			if mid < 0 {
-				if !less {
-					break
-				}
-				mid = 0
-			}
-			limit := orders[mid]
-
+		skeeped := index
+		var start, end = index, len(orders) - last
+		var slice = orders[start:end]
+		for len(slice) > 0 {
+			cur := len(slice) / 2
+			limit := slice[cur]
 			if limit.id == dirtyOrder.id {
-				log.Println("dirty ID == in list ID")
-				// todo: panic
-				return orders, false, mid
+				log.Panicln("dirty ID == in list ID", limit.id)
 			}
 
-			less = false
+			less := false
 			switch dirtyOrder.SortPrice().Cmp(limit.SortPrice()) {
 			case cmp:
 				less = true
@@ -1347,12 +1334,15 @@ func addToList(orders []*Limit, dirtyOrder *Limit, cmp int, index int) (list []*
 			}
 
 			if less {
-				index = mid + 1
-				mid = index + (len(orders[index:]) / 2)
+				skeeped += cur + 1
+				index = 0
+				slice = slice[cur+1:]
 			} else {
-				mid = index + (len(orders[index:mid]) / 2)
+				index = cur
+				slice = slice[:cur]
 			}
 		}
+		index += skeeped
 	} else {
 		for i, limit := range orders {
 			if limit == nil {
@@ -1385,12 +1375,13 @@ func addToList(orders []*Limit, dirtyOrder *Limit, cmp int, index int) (list []*
 			}
 		}
 	}
+	log.Println("index", index)
 
 	if index == 0 {
 		return append([]*Limit{dirtyOrder}, orders...), true, 0
 	}
 
-	if index == len(orders) { // todo: mb len(orders) - last
+	if index == len(orders) {
 		if hasZero {
 			return append(orders[:len(orders)-1], dirtyOrder, nil), true, index
 		}
@@ -1540,38 +1531,51 @@ func (p *Pair) orderSellByIndex(index int) *Limit {
 			// пересортируем, что бы лист почистился и пересортировался
 			orders, _ = p.updateDirtyOrders(orders, true)
 
-			// если загружены не все
 			lastI := len(orders) - 1
 
-			if orders[lastI] != 0 {
+			// если загружены не все
+			if lastI >= 0 && orders[lastI] != 0 {
 				// проверяем есть ли среди этого массива, элемент с нужным индексом
 				if index > lastI {
 					// загрузим с последнего нужное количество и отсортируем
 					fromOrder = p.getOrder(orders[lastI])
 					loadedNextOrders := p.loadSellOrders(p, fromOrder, index+1-lastI)
-					resortedOrders, unsets := p.updateDirtyOrders(append(orders, loadedNextOrders...), true)
-					_ = unsets
+					resortedOrders, unsets := p.updateDirtyOrders(loadedNextOrders, true)
+					//resortedOrders, unsets := p.updateDirtyOrders(append(orders, loadedNextOrders...), true)
+					resortedOrders = append(orders, resortedOrders...)
 					// проверим загружены ли все
-					if resortedOrders[len(resortedOrders)-1] == 0 {
-						// тут нужно выйти и отдать что есть
-						// todo
-					} else {
-						// среди них не может быть использованных и удаленных, иначе бы они были загружены ранее, поэтому везде выходим
-						// если не все, то проверяем нужный элемент
-						if index >= len(orders) {
-							// тут нужно выйти и отдать элемент
-							// todo
-						} else {
-							// тут нужно выйти и отдать элемент
-							// todo
+					lastJ := len(resortedOrders) - 1
+					if resortedOrders[lastJ] != 0 {
+						// среди них не может быть использованных иначе бы они были загружены ранее,
+						// но могут быть удаленные удаленных, проверим
+						for ; index > lastJ && lastJ >= 0 && resortedOrders[lastJ] != 0 && p.hasDeletedSellOrders() && unsets > 0; lastJ = len(resortedOrders) - 1 {
+							fromOrder = p.getOrder(resortedOrders[lastI])
+							loadedNextOrders := p.loadSellOrders(p, fromOrder, index+1-lastI)
+							var resortLoadedNextOrders []uint32
+							resortLoadedNextOrders, unsets = p.updateDirtyOrders(loadedNextOrders, true)
+							//resortedOrders, unsets := p.updateDirtyOrders(append(orders, loadedNextOrders...), true)
+							resortedOrders = append(resortedOrders, resortLoadedNextOrders...)
 						}
+						orders = resortedOrders
+						// иначе выходим
+						// если не все, то проверяем нужный элемент
+						//if index >= len(orders) {
+						//	// тут нужно выйти и отдать элемент
+						//} else {
+						//	// тут нужно выйти и отдать элемент
+						//}
 					}
+					//else {
+					// загружено все что есть
+					// тут нужно выйти и отдать что есть
+					// todo
+					//}
 					// тут уже был выход
 				} else {
 					// тут нужно выйти и отдать элемент
 					// todo
 				}
-				// старый код
+
 				/*// тогда загружаем с последнего, последним не может быть грязные, если загружены не все
 				fromOrder = p.getOrder(orders[0])
 
@@ -1598,8 +1602,8 @@ func (p *Pair) orderSellByIndex(index int) *Limit {
 		} else {
 			// проверим количество
 			lastI := len(orders) - 1
-			// если загружены не все, то подгрузить
-			if orders[lastI] != 0 {
+			// если загружены не все и их не достаточно, то подгрузить
+			if orders[lastI] != 0 && index > lastI {
 				fromOrder = p.getOrder(orders[lastI])
 				loadedNextOrders := p.loadSellOrders(p, fromOrder, index+1-lastI)
 				// тк нет грязных, то просто складываем

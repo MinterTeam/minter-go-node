@@ -485,11 +485,12 @@ func TestSwap_AddEqualOrders(t *testing.T) {
 
 	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999999999999999999"), types.Address{1}, 1)
 
-	t.Log(pair.OrderSellLast())
-	t.Log(pair.sellOrders.ids)
-	t.Log(pair.unsortedDirtySellOrders.list)
-
 	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999992222222222222"), types.Address{1}, 1)
+
+	t.Log(pair.OrderSellLast())
+	if !reflect.DeepEqual(pair.sellOrders.ids, []uint32{9, 1, 2, 3, 4, 5, 10, 6, 7, 8, 0}) {
+		t.Error("unsorted", pair.sellOrders.ids, []uint32{9, 1, 2, 3, 4, 5, 10, 6, 7, 8, 0})
+	}
 
 	t.Log(pair.sellOrders.ids)
 	t.Log(pair.unsortedDirtySellOrders.list)
@@ -2129,7 +2130,7 @@ func TestPair_SellWithOrders_01_FullOrder(t *testing.T) {
 		}
 		//pair.OrderSellByIndex(0)
 		t.Run("unset", func(t *testing.T) {
-			if len(pair.SellOrderIDs())-1 != 0 {
+			if len(pair.SellOrderIDs()) != 0 {
 				t.Errorf("slice len %d, want empty: %v", len(pair.SellOrderIDs()), pair.SellOrderIDs())
 				t.Logf("%#v", pair.getOrder(pair.SellOrderIDs()[0]))
 
