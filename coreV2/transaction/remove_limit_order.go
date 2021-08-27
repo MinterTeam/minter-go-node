@@ -25,27 +25,6 @@ func (data RemoveLimitOrderData) TxType() TxType {
 }
 
 func (data RemoveLimitOrderData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
-	order := context.Swap().GetOrder(data.ID)
-	if order == nil {
-		return &Response{
-			Code: code.OrderNotExists,
-			Log:  "limit order not found",
-			Info: EncodeError(code.NewOrderNotExists(data.ID)),
-		}
-	}
-
-	sender, _ := tx.Sender()
-	if order.Owner.Compare(sender) != 0 {
-		return &Response{
-			Code: code.IsNotOwnerOfOrder,
-			Log:  "Sender is not owner of this order",
-			Info: EncodeError(code.NewIsNotOwnerOfOrder(
-				order.Coin0.String(),
-				order.Coin1.String(),
-				data.ID,
-				order.Owner.String())),
-		}
-	}
 
 	return nil
 }
@@ -85,6 +64,45 @@ func (data RemoveLimitOrderData) Run(tx *Transaction, context state.Interface, r
 			Code: code.InsufficientFunds,
 			Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), commission.String(), gasCoin.GetFullSymbol()),
 			Info: EncodeError(code.NewInsufficientFunds(sender.String(), commission.String(), gasCoin.GetFullSymbol(), gasCoin.ID().String())),
+		}
+	}
+
+	order := checkState.Swap().GetOrder(data.ID)
+	if order == nil {
+		return Response{
+			Code: code.OrderNotExists,
+			Log:  "limit order not found",
+			Info: EncodeError(code.NewOrderNotExists(data.ID)),
+		}
+	}
+
+	if order.Owner.Compare(sender) != 0 {
+		return Response{
+			Code: code.IsNotOwnerOfOrder,
+			Log:  "Sender is not owner of this order",
+			Info: EncodeError(code.NewIsNotOwnerOfOrder(
+				order.Coin0.String(),
+				order.Coin1.String(),
+				data.ID,
+				order.Owner.String())),
+		}
+	}
+
+	swapper := checkState.Swap().GetSwapper(order.Coin0, order.Coin1)
+	if isGasCommissionFromPoolSwap && swapper.GetID() == commissionPoolSwapper.GetID() {
+		if tx.GasCoin == order.Coin0 && order.Coin1.IsBaseCoin() {
+			swapper = swapper.AddLastSwapStepWithOrders(commission, commissionInBaseCoin, true)
+		}
+		if tx.GasCoin == order.Coin1 && order.Coin0.IsBaseCoin() {
+			swapper = swapper.AddLastSwapStepWithOrders(big.NewInt(0).Neg(commissionInBaseCoin), big.NewInt(0).Neg(commission), true)
+		}
+	}
+
+	if swapper.IsOrderAlreadyUsed(data.ID) {
+		return Response{
+			Code: code.OrderNotExists,
+			Log:  "this limit order will be canceled upon payment of the commission on this transaction",
+			Info: EncodeError(code.NewOrderNotExists(data.ID)),
 		}
 	}
 
