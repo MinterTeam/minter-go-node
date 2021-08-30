@@ -231,6 +231,10 @@ type orderExpired struct {
 	ID        uint32
 }
 
+func (e *orderExpired) addressID() uint32 {
+	return e.AddressID
+}
+
 func (e *orderExpired) compile(address [20]byte) Event {
 	event := new(OrderExpiredEvent)
 	event.ID = uint64(e.ID)
@@ -258,6 +262,7 @@ func (oe *OrderExpiredEvent) address() types.Address {
 func (oe *OrderExpiredEvent) Type() string {
 	return TypeOrderExpiredEvent
 }
+
 func (oe *OrderExpiredEvent) convert(addressID uint32) compact {
 	result := new(orderExpired)
 	result.ID = uint32(oe.ID)
