@@ -120,6 +120,8 @@ func (store *eventsStore) LoadEvents(height uint32) Events {
 			resultEvents = append(resultEvents, stake.compile(p, store.idAddress[stake.addressID()]))
 		} else if c, ok := compactEvent.(*jail); ok {
 			resultEvents = append(resultEvents, c.compile(types.Pubkey(store.idPubKey[c.pubKeyID()])))
+		} else if c, ok := compactEvent.(*orderExpired); ok {
+			resultEvents = append(resultEvents, c.compile(store.idAddress[c.addressID()]))
 		} else if c, ok := compactEvent.(Event); ok {
 			resultEvents = append(resultEvents, c)
 		} else {
