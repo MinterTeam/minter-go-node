@@ -185,7 +185,7 @@ func (e *ExecutorV250) RunTx(context state.Interface, rawTx []byte, rewardPool *
 	if !commissions.Coin.IsBaseCoin() {
 		price = checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()).CalculateBuyForSellWithOrders(price)
 	}
-	if price == nil {
+	if price == nil || price.Sign() != 1 {
 		return Response{
 			Code: code.CommissionCoinNotSufficient,
 			Log:  fmt.Sprint("Not possible to pay commission"),
