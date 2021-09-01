@@ -359,7 +359,7 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 	blockchain.stateDeliver.App.AddTotalSlashed(remainder)
 
 	// expire orders
-	if height%blockchain.expiredOrdersPeriod == 0 {
+	if height%blockchain.expiredOrdersPeriod == 0 { // todo: != blockchain.updateStakesAndPayRewardsPeriod {
 		blockchain.stateDeliver.Swap.ExpireOrders(height - blockchain.expiredOrdersPeriod)
 	}
 
