@@ -449,8 +449,7 @@ func (p *Pair) calculateAddAmountsForPrice(price *big.Float) (amount0 *big.Int, 
 	r0QrtSubKMulPrice := big.NewFloat(0).Sub(r0Qrt, kMulPrice)
 	d := big.NewFloat(0).Sub(big.NewFloat(0).Mul(big.NewFloat((2000-commission)*(2000-commission)/4), r0Qrt), big.NewFloat(0).Mul(big.NewFloat(2000*(1000-commission)/2), r0QrtSubKMulPrice))
 	x1 := big.NewFloat(0).Quo(big.NewFloat(0).Add(big.NewFloat(0).Neg(b), big.NewFloat(0).Sqrt(d)), big.NewFloat(1000-commission))
-	amount0, acc := x1.Int(nil)
-	log.Println("acc0", acc)
+	amount0, _ = x1.Int(nil)
 
 	if amount0 == nil || amount0.Sign() != 1 {
 		return nil, nil
