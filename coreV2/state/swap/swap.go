@@ -141,12 +141,10 @@ func (s *Swap) getOrderedDirtyPairs() []PairKey {
 }
 
 func (s *Swap) getOrderedDirtyOrderPairs() []PairKey {
-	// s.muPairs.RLock() // todo: check
 	keys := make([]PairKey, 0, len(s.dirtiesOrders))
 	for k := range s.dirtiesOrders {
 		keys = append(keys, k)
 	}
-	// s.muPairs.RUnlock()
 
 	sort.SliceStable(keys, func(i, j int) bool {
 		return bytes.Compare(keys[i].bytes(), keys[j].bytes()) == 1
@@ -878,10 +876,10 @@ type Pair struct {
 	markDirtyOrders         func()
 	loadBuyOrders           func(pair *Pair, fromOrder *Limit, limit int) []uint32
 	loadSellOrders          func(pair *Pair, fromOrder *Limit, limit int) []uint32
-	loadedSellOrders        *limits       // todo
-	loadedBuyOrders         *limits       // todo
-	unsortedDirtyBuyOrders  *orderDirties // todo
-	unsortedDirtySellOrders *orderDirties // todo
+	loadedSellOrders        *limits
+	loadedBuyOrders         *limits
+	unsortedDirtyBuyOrders  *orderDirties
+	unsortedDirtySellOrders *orderDirties
 	getLastTotalOrderID     func() uint32
 	loadOrder               func(id uint32) *Limit
 }
