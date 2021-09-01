@@ -200,7 +200,6 @@ func startTendermintNode(app *minter.Blockchain, cfg *tmCfg.Config, logger tmLog
 		genesis,
 		tmNode.DefaultDBProvider,
 		tmNode.DefaultMetricsProvider(cfg.Instrumentation),
-		nil,
 		//func(config *tmCfg.Config, proxyApp proxy.AppConns, state sm.State, memplMetrics *tmpool.Metrics, logger tmLog.Logger) (*tmpool.Reactor, tmpool.Mempool) {
 		//	mempool := mempl.NewPriorityMempool(
 		//		config.Mempool,
