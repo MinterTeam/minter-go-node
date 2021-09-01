@@ -183,7 +183,11 @@ func (e *ExecutorV250) RunTx(context state.Interface, rawTx []byte, rewardPool *
 	priceCommission := abcTypes.EventAttribute{Key: []byte("tx.commission_price"), Value: []byte(price.String())}
 
 	if !commissions.Coin.IsBaseCoin() {
-		price = checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()).CalculateBuyForSellWithOrders(price)
+		var resp *Response
+		resp, price = CheckSwap(checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()), checkState.Coins().GetCoin(commissions.Coin), checkState.Coins().GetCoin(0), price, big.NewInt(0), false)
+		if resp != nil {
+			return *resp
+		}
 	}
 	if price == nil || price.Sign() != 1 {
 		return Response{
@@ -210,7 +214,18 @@ func (e *ExecutorV250) RunTx(context state.Interface, rawTx []byte, rewardPool *
 		commissionInBaseCoin = tx.MulGasPrice(commissionInBaseCoin)
 
 		if !commissions.Coin.IsBaseCoin() {
-			commissionInBaseCoin = checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()).CalculateBuyForSellWithOrders(commissionInBaseCoin)
+			var resp *Response
+			resp, commissionInBaseCoin = CheckSwap(checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()), checkState.Coins().GetCoin(commissions.Coin), checkState.Coins().GetCoin(0), commissionInBaseCoin, big.NewInt(0), false)
+			if resp != nil {
+				return *resp
+			}
+			if commissionInBaseCoin == nil || commissionInBaseCoin.Sign() != 1 {
+				return Response{
+					Code: code.CommissionCoinNotSufficient,
+					Log:  fmt.Sprint("Not possible to pay commission"),
+					Info: EncodeError(code.NewCommissionCoinNotSufficient("", "")),
+				}
+			}
 		}
 
 		commissionPoolSwapper := checkState.Swap().GetSwapper(tx.CommissionCoin(), types.GetBaseCoinID())
@@ -249,9 +264,14 @@ func (e *ExecutorV250) RunTx(context state.Interface, rawTx []byte, rewardPool *
 			if balance.Cmp(commission) == -1 {
 				commission = big.NewInt(0).Set(balance)
 				if isGasCommissionFromPoolSwap {
-					//CheckSwap()
-					commissionInBaseCoin = commissionPoolSwapper.CalculateBuyForSellWithOrders(commission)
-					if commissionInBaseCoin == nil || commissionInBaseCoin.Sign() == 0 {
+					if !commissions.Coin.IsBaseCoin() {
+						var resp *Response
+						resp, commissionInBaseCoin = CheckSwap(commissionPoolSwapper, checkState.Coins().GetCoin(tx.CommissionCoin()), checkState.Coins().GetCoin(0), commissionInBaseCoin, big.NewInt(0), false)
+						if resp != nil {
+							return *resp
+						}
+					}
+					if commissionInBaseCoin == nil || commissionInBaseCoin.Sign() != 1 {
 						return Response{
 							Code: code.CommissionCoinNotSufficient,
 							Log:  fmt.Sprint("Not possible to pay commission"),
