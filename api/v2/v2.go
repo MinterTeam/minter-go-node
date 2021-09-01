@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/handlers"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/kit"
+	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -41,11 +42,11 @@ func Run(srv *service.Service, addrGRPC, addrAPI string, logger log.Logger) erro
 	}
 
 	unaryServerInterceptors := []grpc.UnaryServerInterceptor{
-		//grpc_recovery.UnaryServerInterceptor(),
+		grpc_recovery.UnaryServerInterceptor(),
 		unaryTimeoutInterceptor(srv.TimeoutDuration()),
 	}
 	streamServerInterceptors := []grpc.StreamServerInterceptor{
-		//grpc_recovery.StreamServerInterceptor(),
+		grpc_recovery.StreamServerInterceptor(),
 	}
 
 	if srv.EnabledPrometheus() {
