@@ -127,8 +127,8 @@ github.com/cosmos/go-bip39 v0.0.0-20180819234021-555e2067c45d/go.mod h1:tSxLoYXy
 github.com/cosmos/iavl v0.15.0-rc3.0.20201009144442-230e9bdf52cd/go.mod h1:3xOIaNNX19p0QrX0VqWa6voPRoJRGGYtny+DH8NEPvE=
 github.com/cosmos/iavl v0.15.0-rc5/go.mod h1:WqoPL9yPTQ85QBMT45OOUzPxG/U/JcJoN7uMjgxke/I=
 github.com/cosmos/iavl v0.15.3/go.mod h1:OLjQiAQ4fGD2KDZooyJG9yz+p2ao2IAYSbke8mVvSA4=
-github.com/cosmos/iavl v0.17.0 h1:hLZ2tfYK7Z5CaBdnq3w7maGcZg5Ut7f/lnCEjtopI+E=
-github.com/cosmos/iavl v0.17.0/go.mod h1:bopHqfvADWWa2ngnLBVS79NeHV8qiNjTA2EK61bdbGs=
+github.com/cosmos/iavl v0.17.1-0.20210901093355-89f6b77e9284 h1:K5I1Z3qKksdun+GbjxBmhJN/cZ1hDDsIQs3oejVeQ7c=
+github.com/cosmos/iavl v0.17.1-0.20210901093355-89f6b77e9284/go.mod h1:bopHqfvADWWa2ngnLBVS79NeHV8qiNjTA2EK61bdbGs=
 github.com/cpuguy83/go-md2man v1.0.10 h1:BSKMNlYxDvnunlTymqtgONjNnaRV1sTpcovwwjF22jk=
 github.com/cpuguy83/go-md2man v1.0.10/go.mod h1:SmD6nW6nTyfqj6ABTjUi3V3JVMnlJmwcJI5acqYI6dE=
 github.com/cpuguy83/go-md2man/v2 v2.0.0-20190314233015-f79a8a8ca69d/go.mod h1:maD7wRr/U5Z6m/iR4s+kqSMx2CaBsrgA7czyZG/E6dU=

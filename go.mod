@@ -6,7 +6,7 @@ require (
 	github.com/MinterTeam/node-grpc-gateway v1.4.2
 	github.com/btcsuite/btcd v0.21.0-beta
 	github.com/c-bata/go-prompt v0.2.3
-	github.com/cosmos/iavl v0.17.0
+	github.com/cosmos/iavl v0.17.1-0.20210901093355-89f6b77e9284
 	github.com/go-kit/kit v0.10.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/protobuf v1.5.2
