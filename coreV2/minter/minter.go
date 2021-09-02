@@ -2,6 +2,11 @@ package minter
 
 import (
 	"fmt"
+	"log"
+	"math/big"
+	"os"
+	"sync/atomic"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/appdb"
 	eventsdb "github.com/MinterTeam/minter-go-node/coreV2/events"
 	"github.com/MinterTeam/minter-go-node/coreV2/rewards"
@@ -15,10 +20,6 @@ import (
 	abciTypes "github.com/tendermint/tendermint/abci/types"
 	tmNode "github.com/tendermint/tendermint/node"
 	rpc "github.com/tendermint/tendermint/rpc/client/local"
-	"log"
-	"math/big"
-	"os"
-	"sync/atomic"
 )
 
 func (blockchain *Blockchain) RpcClient() *rpc.Local {
@@ -48,7 +49,7 @@ func (blockchain *Blockchain) stop() {
 	blockchain.stopped = true
 	if blockchain.tmNode == nil {
 		blockchain.Close()
-		os.Exit(0)
+		os.Exit(1)
 	} else {
 		go func() {
 			log.Println("Stopping Node")

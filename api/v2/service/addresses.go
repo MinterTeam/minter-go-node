@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"math/big"
+	"strings"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"math/big"
-	"strings"
 )
 
 // Addresses returns list of addresses.
@@ -139,7 +140,7 @@ func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.
 		}
 		res.BipValue = coinsBipValue.String()
 		res.TransactionCount = cState.Accounts().GetNonce(address)
-
+		res.Multisig = s.getMultisig(cState.Accounts().GetAccount(address))
 		response.Addresses[addr] = &res
 	}
 

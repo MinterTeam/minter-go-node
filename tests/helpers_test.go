@@ -2,6 +2,8 @@ package tests
 
 import (
 	"crypto/ecdsa"
+	"time"
+
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/coreV2/minter"
@@ -13,7 +15,6 @@ import (
 	tmTypes "github.com/tendermint/tendermint/abci/types"
 	tmTypes1 "github.com/tendermint/tendermint/proto/tendermint/types"
 	"github.com/tendermint/tendermint/proto/tendermint/version"
-	"time"
 )
 
 // CreateApp creates and returns new Blockchain instance
@@ -95,18 +96,23 @@ func SendEndBlock(app *minter.Blockchain, height int64) tmTypes.ResponseEndBlock
 
 // CreateTx composes and returns Tx with given params.
 // Nonce, chain id, gas price, gas coin and signature type fields are auto-filled.
-func CreateTx(app *minter.Blockchain, address types.Address, txType transaction.TxType, data interface{}) transaction.Transaction {
+func CreateTx(app *minter.Blockchain, address types.Address, txType transaction.TxType, data interface{}, gas types.CoinID, gasPrice ...uint32) transaction.Transaction {
 	nonce := app.CurrentState().Accounts().GetNonce(address) + 1
 	bData, err := rlp.EncodeToBytes(data)
 	if err != nil {
 		panic(err)
 	}
 
+	var mulGas uint32 = 1
+	if len(gasPrice) != 0 {
+		mulGas = gasPrice[0]
+	}
+
 	tx := transaction.Transaction{
 		Nonce:         nonce,
 		ChainID:       types.CurrentChainID,
-		GasPrice:      1,
-		GasCoin:       types.GetBaseCoinID(),
+		GasPrice:      mulGas,
+		GasCoin:       gas,
 		Type:          txType,
 		Data:          bData,
 		SignatureType: transaction.SigTypeSingle,
@@ -144,6 +150,7 @@ func CreateAddress() (types.Address, *ecdsa.PrivateKey) {
 // DefaultAppState returns new AppState with some predefined values
 func DefaultAppState() types.AppState {
 	return types.AppState{
+		Version:             "v250",
 		Note:                "",
 		Validators:          nil,
 		Candidates:          nil,
@@ -194,10 +201,13 @@ func DefaultAppState() types.AppState {
 			AddLiquidity:            "100000000000000000",
 			RemoveLiquidity:         "100000000000000000",
 			EditCandidateCommission: "10000000000000000000",
-			BurnToken:               "100000000000000000",
 			MintToken:               "100000000000000000",
+			BurnToken:               "100000000000000000",
 			VoteCommission:          "1000000000000000000",
 			VoteUpdate:              "1000000000000000000",
+			FailedTx:                "",
+			AddLimitOrder:           "",
+			RemoveLimitOrder:        "",
 		},
 		CommissionVotes: nil,
 		UpdateVotes:     nil,

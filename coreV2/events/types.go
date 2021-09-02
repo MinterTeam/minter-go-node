@@ -413,6 +413,8 @@ type UpdateCommissionsEvent struct {
 	VoteCommission          string `json:"vote_commission"`
 	VoteUpdate              string `json:"vote_update"`
 	FailedTx                string `json:"failed_tx"`
+	AddLimitOrder           string `json:"add_limit_order"`
+	RemoveLimitOrder        string `json:"remove_limit_order"`
 }
 
 func (ce *UpdateCommissionsEvent) Type() string {

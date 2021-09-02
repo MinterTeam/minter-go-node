@@ -30,7 +30,7 @@ type ExecutorV240 struct {
 	decodeTxFunc func(txType TxType) (Data, bool)
 }
 
-func NewExecutorV240(decodeTxFunc func(txType TxType) (Data, bool)) ExecutorTx {
+func NewExecutorV250(decodeTxFunc func(txType TxType) (Data, bool)) ExecutorTx {
 	return &ExecutorV240{decodeTxFunc: decodeTxFunc, Executor: &Executor{decodeTxFunc: decodeTxFunc}}
 }
 
@@ -67,11 +67,11 @@ func (e *ExecutorV240) RunTx(context state.Interface, rawTx []byte, rewardPool *
 		checkState = state.NewCheckState(context.(*state.State))
 	}
 
-	if !checkState.Coins().Exists(tx.GasCoin) {
+	if !checkState.Coins().Exists(tx.commissionCoin()) {
 		return Response{
 			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin %s not exists", tx.GasCoin),
-			Info: EncodeError(code.NewCoinNotExists("", tx.GasCoin.String())),
+			Log:  fmt.Sprintf("Coin %s not exists", tx.commissionCoin()),
+			Info: EncodeError(code.NewCoinNotExists("", tx.commissionCoin().String())),
 		}
 	}
 
@@ -184,7 +184,7 @@ func (e *ExecutorV240) RunTx(context state.Interface, rawTx []byte, rewardPool *
 	if !commissions.Coin.IsBaseCoin() {
 		price = checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()).CalculateBuyForSell(price)
 	}
-	if price == nil {
+	if price == nil || price.Sign() != 1 {
 		return Response{
 			Code: code.CommissionCoinNotSufficient,
 			Log:  fmt.Sprint("Not possible to pay commission"),
@@ -206,12 +206,17 @@ func (e *ExecutorV240) RunTx(context state.Interface, rawTx []byte, rewardPool *
 
 	if !isCheck && response.Code != 0 {
 		commissionInBaseCoin := big.NewInt(0).Add(commissions.FailedTxPrice(), big.NewInt(0).Mul(big.NewInt(tx.payloadAndServiceDataLen()), commissions.PayloadByte))
-		if types.CurrentChainID != types.ChainTestnet || currentBlock > 4451966 { // todo: remove check (need for testnet)
-			commissionInBaseCoin = tx.MulGasPrice(commissionInBaseCoin)
-		}
+		commissionInBaseCoin = tx.MulGasPrice(commissionInBaseCoin)
 
 		if !commissions.Coin.IsBaseCoin() {
 			commissionInBaseCoin = checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()).CalculateBuyForSell(commissionInBaseCoin)
+			if commissionInBaseCoin == nil || commissionInBaseCoin.Sign() != 1 {
+				return Response{
+					Code: code.CommissionCoinNotSufficient,
+					Log:  fmt.Sprint("Not possible to pay commission"),
+					Info: EncodeError(code.NewCommissionCoinNotSufficient("", "")),
+				}
+			}
 		}
 
 		commissionPoolSwapper := checkState.Swap().GetSwapper(tx.commissionCoin(), types.GetBaseCoinID())
@@ -251,7 +256,7 @@ func (e *ExecutorV240) RunTx(context state.Interface, rawTx []byte, rewardPool *
 				commission = big.NewInt(0).Set(balance)
 				if isGasCommissionFromPoolSwap {
 					commissionInBaseCoin = commissionPoolSwapper.CalculateBuyForSell(commission)
-					if commissionInBaseCoin == nil || commissionInBaseCoin.Sign() == 0 {
+					if commissionInBaseCoin == nil || commissionInBaseCoin.Sign() != 1 {
 						return Response{
 							Code: code.CommissionCoinNotSufficient,
 							Log:  fmt.Sprint("Not possible to pay commission"),
