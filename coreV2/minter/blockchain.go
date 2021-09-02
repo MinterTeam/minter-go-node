@@ -79,6 +79,10 @@ type Blockchain struct {
 	stopOk       chan struct{}
 }
 
+func (blockchain *Blockchain) GetCurrentRewards() *big.Int {
+	return blockchain.rewards
+}
+
 // NewMinterBlockchain creates Minter Blockchain instance, should be only called once
 func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx context.Context, period uint64) *Blockchain {
 	// Initiate Application DB. Used for persisting data like current block, validators, etc.
@@ -110,7 +114,7 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 		knownUpdates: map[string]struct{}{
 			"":   {}, // default version
 			v230: {}, // add more for update
-			// v240: {}, // commissions
+			v250: {}, // commissions and mempool
 		},
 		executor: GetExecutor(""),
 	}
@@ -126,8 +130,8 @@ func graceForUpdate(height uint64) *upgrades.GracePeriod {
 
 func GetExecutor(v string) transaction.ExecutorTx {
 	switch v {
-	// case v240:
-	// 	return transaction.NewExecutor(transaction.GetDataV240)
+	case v250:
+		return transaction.NewExecutorV250(transaction.GetDataV250)
 	case v230:
 		return transaction.NewExecutor(transaction.GetDataV230)
 	default:
@@ -138,7 +142,7 @@ func GetExecutor(v string) transaction.ExecutorTx {
 const haltBlockV210 = 3431238
 const updateBlockV240 = 4448826
 const v230 = "v230"
-const v240 = "v240"
+const v250 = "v250"
 
 func (blockchain *Blockchain) initState() {
 	initialHeight := blockchain.appDB.GetStartHeight()
@@ -182,9 +186,8 @@ func (blockchain *Blockchain) InitChain(req abciTypes.RequestInitChain) abciType
 	initialHeight := uint64(req.InitialHeight) - 1
 
 	blockchain.appDB.SetStartHeight(initialHeight)
+	blockchain.appDB.AddVersion(genesisState.Version, initialHeight)
 	blockchain.initState()
-
-	// todo: use genesisState.Version
 
 	if err := blockchain.stateDeliver.Import(genesisState); err != nil {
 		panic(err)
@@ -201,6 +204,7 @@ func (blockchain *Blockchain) InitChain(req abciTypes.RequestInitChain) abciType
 	blockchain.appDB.SetLastHeight(lastHeight)
 
 	blockchain.appDB.SaveStartHeight()
+	blockchain.appDB.SaveVersions()
 
 	defer blockchain.appDB.FlushValidators()
 	return abciTypes.ResponseInitChain{
@@ -401,6 +405,8 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 				VoteCommission:          price.VoteCommission.String(),
 				VoteUpdate:              price.VoteUpdate.String(),
 				FailedTx:                price.FailedTxPrice().String(),
+				AddLimitOrder:           price.AddLimitOrderPrice().String(),
+				RemoveLimitOrder:        price.RemoveLimitOrderPrice().String(),
 			})
 		}
 		blockchain.stateDeliver.Commission.Delete(height)

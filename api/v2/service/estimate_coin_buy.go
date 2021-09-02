@@ -168,7 +168,7 @@ func (s *Service) calcBuyFromPool(ctx context.Context, value *big.Int, cState *s
 		swapChecker := cState.Swap().GetSwapper(sellCoinID, buyCoinID)
 
 		if !swapChecker.Exists() {
-			return nil, s.createError(status.New(codes.NotFound, fmt.Sprintf("swap pool beetwen coins %s and %s not exists", coinFrom.GetFullSymbol(), coinBuy.GetFullSymbol())), transaction.EncodeError(code.NewPairNotExists(coinFrom.ID().String(), coinBuy.ID().String())))
+			return nil, s.createError(status.New(codes.NotFound, fmt.Sprintf("swap pool between coins %s and %s not exists", coinFrom.GetFullSymbol(), coinBuy.GetFullSymbol())), transaction.EncodeError(code.NewPairNotExists(coinFrom.ID().String(), coinBuy.ID().String())))
 		}
 
 		if _, ok := dup[swapChecker.GetID()]; ok {
@@ -188,7 +188,7 @@ func (s *Service) calcBuyFromPool(ctx context.Context, value *big.Int, cState *s
 		if sellValue == nil {
 			reserve0, reserve1 := swapChecker.Reserves()
 			symbolOut := coinBuy.GetFullSymbol()
-			return nil, s.createError(status.New(codes.FailedPrecondition, fmt.Sprintf("You wanted to buy %s %s, but pool reserve has only %s %s", value, symbolOut, reserve1.String(), symbolOut)), transaction.EncodeError(code.NewInsufficientLiquidity(coinFrom.ID().String(), sellValue.String(), coinBuy.ID().String(), value.String(), reserve0.String(), reserve1.String())))
+			return nil, s.createError(status.New(codes.FailedPrecondition, fmt.Sprintf("You wanted to buy %s %s, but pool reserve has only %s %s", value, symbolOut, reserve1.String(), symbolOut)), transaction.EncodeError(code.NewInsufficientLiquidity(coinFrom.ID().String(), "", coinBuy.ID().String(), value.String(), reserve0.String(), reserve1.String())))
 		}
 
 		coinSell := coinFrom
@@ -229,8 +229,9 @@ func (s *Service) calcBuyFromBancor(value *big.Int, coinTo transaction.Calculate
 		value = formula.CalculatePurchaseAmount(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), value)
 	}
 	if !coinFrom.ID().IsBaseCoin() {
-		value = formula.CalculateSaleAmount(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), value)
-		if errResp := transaction.CheckReserveUnderflow(coinFrom, value); errResp != nil {
+		var errResp *transaction.Response
+		value, errResp = transaction.CalculateSaleAmountAndCheck(coinFrom, value)
+		if errResp != nil {
 			return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
 		}
 	}
