@@ -1185,8 +1185,8 @@ func (s *Swap) GetOrder(id uint32) *Limit {
 	}
 
 	list := pair.orders
-	list.mu.RLock()
-	defer list.mu.RUnlock()
+	list.mu.Lock()
+	defer list.mu.Unlock()
 
 	if o, ok := list.list[id]; ok {
 		return o
