@@ -38,6 +38,14 @@ func (data AddLimitOrderData) basicCheck(tx *Transaction, context *state.CheckSt
 		}
 	}
 
+	if data.ValueToBuy.Sign() != 1 || data.ValueToSell.Sign() != 1 {
+		return &Response{
+			Code: code.DecodeError,
+			Log:  "positive values of coin volumes are expected",
+			Info: EncodeError(code.NewDecodeError()),
+		}
+	}
+
 	swapper := context.Swap().GetSwapper(data.CoinToSell, data.CoinToBuy)
 	if !swapper.Exists() {
 		return &Response{
