@@ -28,36 +28,33 @@ func (s *Service) BestTrade(ctx context.Context, req *pb.BestTradeRequest) (*pb.
 
 	var trades []*swap.Trade
 	if req.Type == pb.BestTradeRequest_input {
-		trades, err = cState.Swap().GetBestTradeExactIn(req.SellCoin, req.BuyCoin, amount, 10, 4)
+		trades, err = cState.Swap().GetBestTradeExactIn(req.SellCoin, req.BuyCoin, amount, 1, 4)
 	} else {
-		trades, err = cState.Swap().GetBestTradeExactOut(req.SellCoin, req.BuyCoin, amount, 10, 4)
+		trades, err = cState.Swap().GetBestTradeExactOut(req.SellCoin, req.BuyCoin, amount, 1, 4)
 	}
 	if err != nil {
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
 
-	res := &pb.BestTradeResponse{
-		Routes: make([]*pb.BestTradeResponseRoute, 0, len(trades)),
+	if len(trades) == 0 {
+		return nil, status.Error(codes.NotFound, "route path not found")
 	}
 
-	for _, trade := range trades {
-		route := &pb.BestTradeResponseRoute{
-			Path:      make([]uint64, 0, len(trade.Route.Path)),
-			NextPrice: big.NewFloat(0).Quo(big.NewFloat(0).SetInt(trade.NextMidPrice.Value), big.NewFloat(1e18)).Text('f', 18),
-			Price:     big.NewFloat(0).Quo(big.NewFloat(0).SetInt(trade.Route.MidPrice.Value), big.NewFloat(1e18)).Text('f', 18),
-		}
-		if req.Type == pb.BestTradeRequest_input {
-			route.Result = trade.OutputAmount.Amount.String()
-		} else {
-			route.Result = trade.InputAmount.Amount.String()
-		}
-		for _, token := range trade.Route.Path {
-			route.Path = append(route.Path, token.CoinID)
-		}
-		res.Routes = append(res.Routes, route)
+	trade := trades[0]
+	route := &pb.BestTradeResponse{
+		Path:  make([]uint64, 0, len(trade.Route.Path)),
+		Price: big.NewFloat(0).Quo(big.NewFloat(0).SetInt(trade.Route.MidPrice.Value), big.NewFloat(1e18)).Text('f', 18),
+	}
+	if req.Type == pb.BestTradeRequest_input {
+		route.Result = trade.OutputAmount.Amount.String()
+	} else {
+		route.Result = trade.InputAmount.Amount.String()
+	}
+	for _, token := range trade.Route.Path {
+		route.Path = append(route.Path, token.CoinID)
 	}
 
-	return res, nil
+	return route, nil
 }
 
 func (s *Service) SwapPool(_ context.Context, req *pb.SwapPoolRequest) (*pb.SwapPoolResponse, error) {

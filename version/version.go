@@ -7,7 +7,7 @@ const (
 
 var (
 	// Version must be a string because scripts like dist.sh read this file.
-	Version = "2.5.0"
+	Version = "2.5.1"
 
 	// GitCommit is the current HEAD set using ldflags.
 	GitCommit string
