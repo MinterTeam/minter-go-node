@@ -40,10 +40,10 @@ func priceCommissionResponse(price *commission.Price, coin *coins.Model) *pb.Pri
 		SellBancor:              price.SellBancor.String(),
 		SellAllBancor:           price.SellAllBancor.String(),
 		BuyPoolBase:             price.BuyPoolBase.String(),
-		SellPoolBase:            price.SellPoolBase.String(),
-		SellAllPoolBase:         price.SellAllPoolBase.String(),
 		BuyPoolDelta:            price.BuyPoolDelta.String(),
+		SellPoolBase:            price.SellPoolBase.String(),
 		SellPoolDelta:           price.SellPoolDelta.String(),
+		SellAllPoolBase:         price.SellAllPoolBase.String(),
 		SellAllPoolDelta:        price.SellAllPoolDelta.String(),
 		CreateTicker3:           price.CreateTicker3.String(),
 		CreateTicker4:           price.CreateTicker4.String(),
@@ -77,5 +77,7 @@ func priceCommissionResponse(price *commission.Price, coin *coins.Model) *pb.Pri
 		VoteCommission:          price.VoteCommission.String(),
 		VoteUpdate:              price.VoteUpdate.String(),
 		FailedTx:                price.FailedTxPrice().String(),
+		AddLimitOrder:           price.AddLimitOrderPrice().String(),
+		RemoveLimitOrder:        price.RemoveLimitOrderPrice().String(),
 	}
 }
