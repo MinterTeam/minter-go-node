@@ -99,7 +99,7 @@ func (s *Service) SwapPools(ctx context.Context, req *pb.SwapPoolsRequest) (*pb.
 		return nil, timeoutStatus.Err()
 	}
 
-	res := &pb.SwapPoolsResponse{}
+	res := &pb.SwapPoolsResponse{Pools: make([]*pb.SwapPoolResponse, 0, len(pools))}
 	for _, pool := range pools {
 		res.Pools = append(res.Pools, &pb.SwapPoolResponse{
 			Amount0:   pool.Reserve0,
