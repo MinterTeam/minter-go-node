@@ -1730,6 +1730,7 @@ func (p *Pair) AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int, buy boo
 	p.lockOrders.Lock()
 	for k, v := range p.orders.list {
 		if v == nil {
+			ordrs[k] = nil
 			continue
 		}
 		ordrs[k] = v.clone()
