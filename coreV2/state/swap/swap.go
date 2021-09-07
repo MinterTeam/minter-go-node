@@ -45,7 +45,6 @@ type RSwap interface {
 	GetBestTradeExactIn(fromId, toId uint64, amount *big.Int, maxNumResults, maxHops int) ([]*Trade, error)
 	GetBestTradeExactOut(fromId, toId uint64, amount *big.Int, maxNumResults, maxHops int) ([]*Trade, error)
 
-	GetOrder(id uint32) *Limit
 	Export(state *types.AppState)
 	SwapPool(coin0, coin1 types.CoinID) (reserve0, reserve1 *big.Int, id uint32)
 	GetSwapper(coin0, coin1 types.CoinID) EditableChecker
