@@ -26,6 +26,10 @@ func (s *Service) BestTrade(ctx context.Context, req *pb.BestTradeRequest) (*pb.
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+		return nil, timeoutStatus.Err()
+	}
+
 	var trades []*swap.Trade
 	if req.Type == pb.BestTradeRequest_input {
 		trades, err = cState.Swap().GetBestTradeExactIn(req.BuyCoin, req.SellCoin, amount, 1, 4)
@@ -57,7 +61,7 @@ func (s *Service) BestTrade(ctx context.Context, req *pb.BestTradeRequest) (*pb.
 	return route, nil
 }
 
-func (s *Service) SwapPool(_ context.Context, req *pb.SwapPoolRequest) (*pb.SwapPoolResponse, error) {
+func (s *Service) SwapPool(ctx context.Context, req *pb.SwapPoolRequest) (*pb.SwapPoolResponse, error) {
 	if req.Coin0 == req.Coin1 {
 		return nil, status.Error(codes.InvalidArgument, "equal coins id")
 	}
@@ -65,6 +69,10 @@ func (s *Service) SwapPool(_ context.Context, req *pb.SwapPoolRequest) (*pb.Swap
 	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {
 		return nil, status.Error(codes.NotFound, err.Error())
+	}
+
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+		return nil, timeoutStatus.Err()
 	}
 
 	reserve0, reserve1, liquidityID := cState.Swap().SwapPool(types.CoinID(req.Coin0), types.CoinID(req.Coin1))
@@ -79,7 +87,31 @@ func (s *Service) SwapPool(_ context.Context, req *pb.SwapPoolRequest) (*pb.Swap
 	}, nil
 }
 
-func (s *Service) SwapPoolProvider(_ context.Context, req *pb.SwapPoolProviderRequest) (*pb.SwapPoolResponse, error) {
+func (s *Service) SwapPools(ctx context.Context, req *pb.SwapPoolsRequest) (*pb.SwapPoolsResponse, error) {
+	cState, err := s.blockchain.GetStateForHeight(req.Height)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, err.Error())
+	}
+
+	pools := cState.Swap().SwapPools()
+
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+		return nil, timeoutStatus.Err()
+	}
+
+	res := &pb.SwapPoolsResponse{}
+	for _, pool := range pools {
+		res.Pools = append(res.Pools, &pb.SwapPoolResponse{
+			Amount0:   pool.Reserve0,
+			Amount1:   pool.Reserve0,
+			Liquidity: cState.Coins().GetCoinBySymbol(transaction.LiquidityCoinSymbol(uint32(pool.ID)), 0).Volume().String(),
+		})
+	}
+
+	return res, nil
+}
+
+func (s *Service) SwapPoolProvider(ctx context.Context, req *pb.SwapPoolProviderRequest) (*pb.SwapPoolResponse, error) {
 	if req.Coin0 == req.Coin1 {
 		return nil, status.Error(codes.InvalidArgument, "equal coins id")
 	}
@@ -99,6 +131,10 @@ func (s *Service) SwapPoolProvider(_ context.Context, req *pb.SwapPoolProviderRe
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+		return nil, timeoutStatus.Err()
+	}
+
 	swapper := cState.Swap().GetSwapper(types.CoinID(req.Coin0), types.CoinID(req.Coin1))
 	liquidityID := swapper.GetID()
 	if liquidityID == 0 {
@@ -107,6 +143,10 @@ func (s *Service) SwapPoolProvider(_ context.Context, req *pb.SwapPoolProviderRe
 
 	liquidityCoin := cState.Coins().GetCoinBySymbol(transaction.LiquidityCoinSymbol(liquidityID), 0)
 	balance := cState.Accounts().GetBalance(address, liquidityCoin.ID())
+
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+		return nil, timeoutStatus.Err()
+	}
 
 	amount0, amount1 := swapper.Amounts(balance, liquidityCoin.Volume())
 	return &pb.SwapPoolResponse{

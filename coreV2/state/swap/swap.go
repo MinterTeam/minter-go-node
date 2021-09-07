@@ -42,6 +42,7 @@ type RSwap interface {
 	// Deprecated
 	ExportV1(state *types.AppState, id types.CoinID, value *big.Int, bipValue *big.Int) *big.Int
 
+	SwapPools() []*types.Pool
 	GetBestTradeExactIn(fromId, toId uint64, amount *big.Int, maxNumResults, maxHops int) ([]*Trade, error)
 	GetBestTradeExactOut(fromId, toId uint64, amount *big.Int, maxNumResults, maxHops int) ([]*Trade, error)
 
@@ -756,17 +757,17 @@ func startingSupply(amount0 *big.Int, amount1 *big.Int) *big.Int {
 	return new(big.Int).Sqrt(mul)
 }
 
-func (s *Swap) SwapPools() []types.Pool {
+func (s *Swap) SwapPools() []*types.Pool {
 	s.loadPools()
 
-	var pools []types.Pool
+	var pools []*types.Pool
 
 	s.muPairs.RLock()
 	defer s.muPairs.RUnlock()
 
 	lenPools := len(s.pairs)
 
-	pools = make([]types.Pool, 0, lenPools)
+	pools = make([]*types.Pool, 0, lenPools)
 
 	for key, pair := range s.pairs {
 		if pair == nil {
@@ -774,7 +775,7 @@ func (s *Swap) SwapPools() []types.Pool {
 		}
 		reserve0, reserve1 := pair.Reserves()
 
-		pools = append(pools, types.Pool{
+		pools = append(pools, &types.Pool{
 			Coin0:    uint64(key.Coin0),
 			Coin1:    uint64(key.Coin1),
 			Reserve0: reserve0.String(),
