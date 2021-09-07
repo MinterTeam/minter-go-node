@@ -28,7 +28,7 @@ func (s *Service) BestTrade(ctx context.Context, req *pb.BestTradeRequest) (*pb.
 
 	var trades []*swap.Trade
 	if req.Type == pb.BestTradeRequest_input {
-		trades, err = cState.Swap().GetBestTradeExactIn(req.SellCoin, req.BuyCoin, amount, 1, 4)
+		trades, err = cState.Swap().GetBestTradeExactIn(req.BuyCoin, req.SellCoin, amount, 1, 4)
 	} else {
 		trades, err = cState.Swap().GetBestTradeExactOut(req.SellCoin, req.BuyCoin, amount, 1, 4)
 	}
