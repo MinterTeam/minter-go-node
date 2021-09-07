@@ -42,6 +42,10 @@ type RSwap interface {
 	// Deprecated
 	ExportV1(state *types.AppState, id types.CoinID, value *big.Int, bipValue *big.Int) *big.Int
 
+	GetBestTradeExactIn(fromId, toId uint64, amount *big.Int, maxNumResults, maxHops int) ([]*Trade, error)
+	GetBestTradeExactOut(fromId, toId uint64, amount *big.Int, maxNumResults, maxHops int) ([]*Trade, error)
+
+	GetOrder(id uint32) *Limit
 	Export(state *types.AppState)
 	SwapPool(coin0, coin1 types.CoinID) (reserve0, reserve1 *big.Int, id uint32)
 	GetSwapper(coin0, coin1 types.CoinID) EditableChecker
@@ -61,6 +65,9 @@ type Swap struct {
 
 	bus *bus.Bus
 	db  atomic.Value
+
+	muLoadPools sync.Mutex
+	loadedPools bool
 }
 
 func (s *Swap) getOrderedDirtyPairs() []pairKey {
@@ -748,4 +755,123 @@ func (p *Pair) Amounts(liquidity, totalSupply *big.Int) (amount0 *big.Int, amoun
 func startingSupply(amount0 *big.Int, amount1 *big.Int) *big.Int {
 	mul := new(big.Int).Mul(amount0, amount1)
 	return new(big.Int).Sqrt(mul)
+}
+
+func (s *Swap) SwapPools() []types.Pool {
+	s.loadPools()
+
+	var pools []types.Pool
+
+	s.muPairs.RLock()
+	defer s.muPairs.RUnlock()
+
+	lenPools := len(s.pairs)
+
+	pools = make([]types.Pool, 0, lenPools)
+
+	for key, pair := range s.pairs {
+		if pair == nil {
+			continue
+		}
+		reserve0, reserve1 := pair.Reserves()
+
+		pools = append(pools, types.Pool{
+			Coin0:    uint64(key.Coin0),
+			Coin1:    uint64(key.Coin1),
+			Reserve0: reserve0.String(),
+			Reserve1: reserve1.String(),
+			ID:       uint64(pair.GetID()),
+		})
+	}
+
+	sort.SliceStable(pools, func(i, j int) bool {
+		return strconv.Itoa(int(pools[i].Coin0))+"-"+strconv.Itoa(int(pools[i].Coin1)) < strconv.Itoa(int(pools[j].Coin0))+"-"+strconv.Itoa(int(pools[j].Coin1))
+	})
+
+	return pools
+}
+
+func (s *Swap) loadPools() {
+	s.muLoadPools.Lock()
+	defer s.muLoadPools.Unlock()
+
+	if s.loadedPools {
+		return
+	}
+
+	s.immutableTree().IterateRange([]byte{mainPrefix, pairDataPrefix}, []byte{mainPrefix, pairDataPrefix + 1}, true, func(key []byte, value []byte) bool {
+		if len(key) < 10 {
+			return false
+		}
+		coin0 := types.BytesToCoinID(key[2:6])
+		coin1 := types.BytesToCoinID(key[6:10])
+		_ = s.Pair(coin0, coin1)
+
+		return false
+	})
+
+	s.loadedPools = true
+}
+
+func (s *Swap) GetBestTradeExactOut(fromId, toId uint64, amount *big.Int, maxNumResults, maxHops int) ([]*Trade, error) {
+	s.loadPools()
+
+	var pairs []*PairTrade
+
+	s.muPairs.RLock()
+	for key, pair := range s.pairs {
+		if pair == nil {
+			continue
+		}
+		reserve0, reserve1 := pair.Reserves()
+
+		pairs = append(pairs, NewPair(
+			NewTokenAmount(NewToken(uint64(key.Coin0)), reserve0),
+			NewTokenAmount(NewToken(uint64(key.Coin1)), reserve1),
+		))
+	}
+	s.muPairs.RUnlock()
+
+	trades, err := GetBestTradeExactOut(
+		pairs,
+		NewToken(toId),
+		NewTokenAmount(NewToken(fromId), amount),
+		TradeOptions{MaxNumResults: maxNumResults, MaxHops: maxHops},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return trades, nil
+}
+func (s *Swap) GetBestTradeExactIn(fromId, toId uint64, amount *big.Int, maxNumResults, maxHops int) ([]*Trade, error) {
+	s.loadPools()
+
+	var pairs []*PairTrade
+
+	s.muPairs.RLock()
+	for key, pair := range s.pairs {
+		if pair == nil {
+			continue
+		}
+		reserve0, reserve1 := pair.Reserves()
+
+		pairs = append(pairs, NewPair(
+			NewTokenAmount(NewToken(uint64(key.Coin0)), reserve0),
+			NewTokenAmount(NewToken(uint64(key.Coin1)), reserve1),
+		))
+	}
+	s.muPairs.RUnlock()
+
+	trades, err := GetBestTradeExactIn(
+		pairs,
+		NewToken(fromId),
+		NewTokenAmount(NewToken(toId), amount),
+		TradeOptions{MaxNumResults: maxNumResults, MaxHops: maxHops},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return trades, nil
 }
