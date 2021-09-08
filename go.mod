@@ -37,4 +37,4 @@ require (
 	google.golang.org/protobuf v1.27.1
 )
 
-replace github.com/tendermint/tendermint => github.com/MinterTeam/tendermint v0.34.11-0.20210615080504-44952755291a
+//replace github.com/tendermint/tendermint => github.com/MinterTeam/tendermint v0.34.11-0.20210615080504-44952755291a
