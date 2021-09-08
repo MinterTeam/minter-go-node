@@ -551,8 +551,11 @@ func (mem *PriorityMempool) ReapMaxBytesMaxGas(maxBytes, maxGas int64) types.Txs
 	// txs := make([]types.Tx, 0, tmmath.MinInt(mem.txs.Len(), max/mem.avgTxSize))
 	txs := make([]types.Tx, 0, mem.txs.Len())
 
+	mem.txsgpmu.RLock()
+	defer mem.txsgpmu.RUnlock()
+
 	for _, gp := range mem.gasPrices {
-		for _, memTx := range mem.getTxsByGas(gp) {
+		for _, memTx := range mem.txsByGas[gp] {
 			dataSize := types.ComputeProtoSizeForTxs(append(txs, memTx.Tx))
 
 			// Check total size requirement
@@ -725,11 +728,4 @@ func (mem *PriorityMempool) removeTxFromTxsGasPriceMap(tx types.Tx) {
 	if len(mem.txsByGas[gp]) == 0 {
 		mem.removeGasPrice(gp)
 	}
-}
-
-// Get transactions map from list by gas
-func (mem *PriorityMempool) getTxsByGas(gp uint32) map[[32]byte]*tmpool.MempoolTx {
-	mem.txsgpmu.RLock()
-	defer mem.txsgpmu.RUnlock()
-	return mem.txsByGas[gp]
 }
