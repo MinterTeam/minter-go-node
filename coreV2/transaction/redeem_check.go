@@ -240,7 +240,7 @@ func (data RedeemCheckData) Run(tx *Transaction, context state.Interface, reward
 			{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 			{Key: []byte("tx.to"), Value: []byte(hex.EncodeToString(sender[:])), Index: true},
 			{Key: []byte("tx.coin_id"), Value: []byte(decodedCheck.Coin.String()), Index: true},
-			{Key: []byte("tx.check_owner"), Value: []byte(hex.EncodeToString(checkSender[:])), Index: true},
+			{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(checkSender[:])), Index: true},
 		}
 	}
 
