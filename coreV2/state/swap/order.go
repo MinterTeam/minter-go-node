@@ -197,23 +197,19 @@ func (p *Pair) BuyWithOrders(amount1Out *big.Int) (amount0In *big.Int, owners ma
 }
 
 func (p *Pair) updateOrders(orders []*Limit) {
-	var editedOrders []*Limit
 	for _, order := range orders {
-		editedOrders = append(editedOrders, p.updateSellOrder(order.id, order.WantBuy, order.WantSell))
+		p.updateSellOrder(order.id, order.WantBuy, order.WantSell)
 	}
 }
 
-func (p *Pair) updateSellOrder(id uint32, amount0, amount1 *big.Int) *Limit {
+func (p *Pair) updateSellOrder(id uint32, amount0, amount1 *big.Int) {
 	limit := p.getOrder(id)
-	newLimit := limit.sort()
-	newLimit.OldSortPrice()
+	limit.OldSortPrice()
 
 	limit.WantBuy.Sub(limit.WantBuy, amount0)
 	limit.WantSell.Sub(limit.WantSell, amount1)
 
-	p.MarkDirtyOrders(newLimit)
-
-	return newLimit
+	p.MarkDirtyOrders(limit)
 }
 
 func (p *Pair) resortSellOrderList(i int, limit *Limit) {
@@ -646,8 +642,10 @@ func (l *Limit) Price() *big.Float {
 	if l.isEmpty() {
 		return big.NewFloat(0)
 	}
+
 	l.RLock()
 	defer l.RUnlock()
+
 	return CalcPriceSell(l.WantBuy, l.WantSell)
 }
 
@@ -665,6 +663,10 @@ func (p *Pair) getOrder(id uint32) *Limit {
 func (p *Pair) order(id uint32) *Limit {
 	l, ok := p.orders.list[id]
 	if ok {
+		if l == nil {
+			return nil
+		}
+
 		if p.isSorted() {
 			return l
 		}
@@ -749,8 +751,13 @@ func (l *Limit) ReCalcOldSortPrice() *big.Float {
 }
 
 func (l *Limit) Reverse() *Limit {
+	if l == nil {
+		return nil
+	}
+
 	l.RLock()
 	defer l.RUnlock()
+
 	return &Limit{
 		PairKey:      l.PairKey.reverse(),
 		IsBuy:        !l.IsBuy,
@@ -780,6 +787,10 @@ func (l *Limit) clone() *Limit {
 	if l == nil {
 		return nil
 	}
+
+	l.RLock()
+	defer l.RUnlock()
+
 	return &Limit{
 		PairKey:      l.PairKey,
 		IsBuy:        l.IsBuy,
@@ -995,7 +1006,7 @@ func (s *Swap) PairRemoveLimitOrder(id uint32) (types.CoinID, *big.Int) {
 	defer pair.lockOrders.Unlock()
 
 	pair.updateOrders([]*Limit{order})
-	pair.orderSellByIndex(0) // update list
+	pair.orderSellByIndex(0)
 	return order.Coin1, returnVolume
 }
 
