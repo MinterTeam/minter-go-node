@@ -299,7 +299,7 @@ func (p *Pair) Exists() bool {
 func (p *Pair) AddLastSwapStep(amount0In, amount1Out *big.Int) EditableChecker {
 	reserve0, reserve1 := p.Reserves()
 	return &Pair{
-		lockOrders: &sync.RWMutex{},
+		lockOrders: &sync.Mutex{},
 		PairKey:    p.PairKey,
 		pairData: &pairData{
 			RWMutex:   &sync.RWMutex{},
@@ -419,17 +419,6 @@ func pricePath(key PairKey, price *big.Float, id uint32, isSale bool) []byte {
 		// log.Println("c s", saleByte)
 	}
 	return append(append(append(append([]byte{mainPrefix}, key.pathOrders()...), saleByte), pricePath...), byteID...)
-}
-
-func (p *Pair) getDirtyOrdersList() []uint32 {
-	dirtiesOrders := make([]uint32, 0, len(p.dirtyOrders.list))
-	for id := range p.dirtyOrders.list {
-		dirtiesOrders = append(dirtiesOrders, id)
-	}
-	sort.SliceStable(dirtiesOrders, func(i, j int) bool {
-		return dirtiesOrders[i] > dirtiesOrders[j]
-	})
-	return dirtiesOrders
 }
 
 func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
@@ -776,7 +765,7 @@ func (s *Swap) addPair(key PairKey) *Pair {
 		key = key.reverse()
 	}
 	pair := &Pair{
-		lockOrders: &sync.RWMutex{},
+		lockOrders: &sync.Mutex{},
 		PairKey:    key,
 		pairData: &pairData{
 			RWMutex:   &sync.RWMutex{},
@@ -867,7 +856,7 @@ type Balance struct {
 }
 
 type Pair struct {
-	lockOrders *sync.RWMutex
+	lockOrders *sync.Mutex
 	PairKey
 	*pairData
 	sellOrders              *limits
