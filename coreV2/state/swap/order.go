@@ -666,12 +666,13 @@ func (p *Pair) GetOrders(ids []uint32) []*Limit {
 	p.lockOrders.Lock()
 	defer p.lockOrders.Unlock()
 
-	return p.getOrders(ids)
-}
-func (p *Pair) getOrders(ids []uint32) []*Limit {
-	p.orders.mu.Lock() // todo: test edition
+	p.orders.mu.Lock()
 	defer p.orders.mu.Unlock()
 
+	return p.getOrders(ids)
+}
+
+func (p *Pair) getOrders(ids []uint32) []*Limit {
 	var result []*Limit
 	for _, id := range ids {
 		result = append(result, p.order(id))
@@ -794,18 +795,11 @@ func (p *Pair) MarkDirtyOrders(order *Limit) {
 	return
 }
 
-func (p *Pair) SellOrderIDs() []uint32 {
+func (p *Pair) sellOrderIDs() []uint32 {
 	if p.isSorted() {
 		return p.sellOrders.ids
 	}
 	return p.buyOrders.ids
-}
-
-func (p *Pair) BuyOrderIDs() []uint32 {
-	if p.isSorted() {
-		return p.buyOrders.ids
-	}
-	return p.sellOrders.ids
 }
 
 func (p *Pair) isUnsortedSellOrder(id uint32) bool {
@@ -818,11 +812,7 @@ func (p *Pair) isUnsortedSellOrder(id uint32) bool {
 }
 
 func (p *Pair) hasUnsortedSellOrders() bool {
-	ds := p.unsortedSellOrderIDs()
-	ds.mu.RLock()
-	defer ds.mu.RUnlock()
-
-	return len(ds.list) > 0
+	return len(p.unsortedSellOrderIDs().list) > 0
 }
 
 func (p *Pair) unsortedSellOrderIDs() *orderDirties {
@@ -840,11 +830,9 @@ func (p *Pair) setUnsortedSellOrder(id uint32) {
 }
 
 func (p *Pair) hasDeletedSellOrders() bool {
-	ds := p.deletedSellOrderIDs()
-	ds.mu.RLock()
-	defer ds.mu.RUnlock()
-	return len(ds.list) > 0
+	return len(p.deletedSellOrderIDs().list) > 0
 }
+
 func (p *Pair) setDeletedSellOrderIDs(id uint32) {
 	ds := p.deletedSellOrderIDs()
 	ds.mu.Lock()
@@ -951,12 +939,12 @@ func (s *Swap) PairRemoveLimitOrder(id uint32) (types.CoinID, *big.Int) {
 	defer pair.lockOrders.Unlock()
 
 	if pair.isDirtyOrder(id) {
-		if pair.IsOrderAlreadyUsed(id) {
+		if pair.isOrderAlreadyUsed(id) {
 			return 0, big.NewInt(0)
 		}
 
 		order = pair.getOrder(id)
-		if order == nil {
+		if order == nil || order.isEmpty() {
 			return 0, big.NewInt(0)
 		}
 	}
@@ -1094,7 +1082,7 @@ func (s *Swap) loadBuyOrders(pair *Pair, fromOrder *Limit, limit int) []uint32 {
 			if len(ids[i+1:]) < limit {
 				slice = append(slice, ids[i+1:]...)
 				k += len(ids[i+1:])
-				fromOrder = pair.getOrder(ids[len(ids)-1])
+				fromOrder = pair.order(ids[len(ids)-1])
 				break
 			}
 
@@ -1196,7 +1184,7 @@ func (s *Swap) loadSellOrders(pair *Pair, fromOrder *Limit, limit int) []uint32 
 			if len(ids[i+1:]) < limit {
 				slice = append(slice, ids[i+1:]...)
 				k += len(ids[i+1:])
-				fromOrder = pair.getOrder(ids[len(ids)-1])
+				fromOrder = pair.order(ids[len(ids)-1])
 				break
 			}
 
@@ -1235,26 +1223,18 @@ func (s *Swap) loadSellOrders(pair *Pair, fromOrder *Limit, limit int) []uint32 
 }
 
 func (p *Pair) updateDirtyOrders(list []uint32, lower bool) (orders []uint32, delCount int) {
-	unsortedDirtySellOrders := p.unsortedSellOrderIDs()
-	unsortedDirtySellOrders.mu.Lock()
-	defer unsortedDirtySellOrders.mu.Unlock()
-
-	deletedDirtySellOrders := p.deletedSellOrderIDs()
-	deletedDirtySellOrders.mu.Lock()
-	defer deletedDirtySellOrders.mu.Unlock()
-
 	var limits []*Limit
 	for _, orderID := range list {
-		if _, ok := deletedDirtySellOrders.list[orderID]; ok {
+		if _, ok := p.deletedSellOrderIDs().list[orderID]; ok {
 			delCount++
 			continue
 		}
-		if _, ok := unsortedDirtySellOrders.list[orderID]; ok {
+		if _, ok := p.unsortedSellOrderIDs().list[orderID]; ok {
 			delCount++
 			continue
 		}
 
-		order := p.getOrder(orderID)
+		order := p.order(orderID)
 		limits = append(limits, order)
 		if order == nil {
 			break
@@ -1267,8 +1247,8 @@ func (p *Pair) updateDirtyOrders(list []uint32, lower bool) (orders []uint32, de
 	}
 
 	var dirties []*Limit
-	for orderID := range unsortedDirtySellOrders.list {
-		dirty := p.getOrder(orderID)
+	for orderID := range p.unsortedSellOrderIDs().list {
+		dirty := p.order(orderID)
 		dirties = append(dirties, dirty)
 	}
 
@@ -1291,7 +1271,7 @@ func (p *Pair) updateDirtyOrders(list []uint32, lower bool) (orders []uint32, de
 		limits, isSet, pos = addToList(limits, dirty, cmp, pos)
 		if isSet {
 			delCount--
-			delete(unsortedDirtySellOrders.list, dirty.id)
+			delete(p.unsortedSellOrderIDs().list, dirty.id)
 		} else {
 			break
 		}
@@ -1411,8 +1391,14 @@ func (p *Pair) OrderSellByIndex(index int) *Limit {
 	return p.orderSellByIndex(index)
 }
 
-func (p *Pair) orderSellByIndex(index int) *Limit {
-	orders := p.SellOrderIDs()
+func (p *Pair) orderSellLoadToIndex(index int) *Limit {
+	p.unsortedSellOrderIDs().mu.Lock()
+	defer p.unsortedSellOrderIDs().mu.Unlock()
+
+	p.deletedSellOrderIDs().mu.Lock()
+	defer p.deletedSellOrderIDs().mu.Unlock()
+
+	orders := p.sellOrderIDs()
 	//log.Println("orders start", orders)
 	var fromOrder *Limit
 	// если массив не пустой, то пересортировать, если есть грязные!
@@ -1429,7 +1415,7 @@ func (p *Pair) orderSellByIndex(index int) *Limit {
 				// проверяем есть ли среди этого массива, элемент с нужным индексом
 				if index > lastI {
 					// загрузим с последнего нужное количество и отсортируем
-					fromOrder = p.getOrder(orders[lastI])
+					fromOrder = p.order(orders[lastI])
 					loadedNextOrders := p.loadSellOrders(p, fromOrder, index-lastI) // todo var
 					resortedOrders, unsets := p.updateDirtyOrders(append(orders, loadedNextOrders...), true)
 					//resortedOrders, unsets := p.updateDirtyOrders(append(orders, loadedNextOrders...), true)
@@ -1439,7 +1425,7 @@ func (p *Pair) orderSellByIndex(index int) *Limit {
 						// среди них не может быть использованных иначе бы они были загружены ранее,
 						// но могут быть удаленные удаленных, проверим
 						for ; index > lastJ && lastJ >= 0 && resortedOrders[lastJ] != 0 && p.hasDeletedSellOrders() && unsets > 0; lastJ = len(resortedOrders) - 1 {
-							fromOrder = p.getOrder(resortedOrders[lastI])
+							fromOrder = p.order(resortedOrders[lastI])
 							loadedNextOrders := p.loadSellOrders(p, fromOrder, index-lastI+unsets)
 							var resortLoadedNextOrders []uint32
 							resortLoadedNextOrders, unsets = p.updateDirtyOrders(loadedNextOrders, true)
@@ -1469,7 +1455,7 @@ func (p *Pair) orderSellByIndex(index int) *Limit {
 			lastI := len(orders) - 1
 			// если загружены не все и их не достаточно, то подгрузить
 			if orders[lastI] != 0 && index > lastI {
-				fromOrder = p.getOrder(orders[lastI])
+				fromOrder = p.order(orders[lastI])
 				loadedNextOrders := p.loadSellOrders(p, fromOrder, index-lastI)
 				// тк нет грязных, то просто складываем
 				orders = append(orders, loadedNextOrders...)
@@ -1501,9 +1487,30 @@ func (p *Pair) orderSellByIndex(index int) *Limit {
 		return nil
 	}
 
-	order := p.getOrder(orders[index])
+	order := p.order(orders[index])
 
 	return order
+}
+
+func (p *Pair) orderSellByIndex(index int) *Limit {
+	p.orders.mu.Lock()
+	defer p.orders.mu.Unlock()
+
+	return p.orderSellLoadToIndex(index)
+}
+
+func (p *Pair) ordersSellToIndex(index int) []*Limit {
+	p.orders.mu.Lock()
+	defer p.orders.mu.Unlock()
+
+	p.orderSellLoadToIndex(index)
+
+	orderIDs := p.sellOrderIDs()
+	if len(orderIDs) > index {
+		return p.getOrders(orderIDs[:index+1])
+	}
+
+	return p.getOrders(orderIDs)
 }
 
 func (p *Pair) OrdersSell(limit uint32) []*Limit {
@@ -1515,14 +1522,12 @@ func (p *Pair) OrdersSell(limit uint32) []*Limit {
 
 func (p *Pair) ordersSell(limit uint32) []*Limit {
 	index := int(limit - 1)
-	p.orderSellByIndex(index)
-	orderIDs := p.SellOrderIDs()
-	if len(orderIDs) > index {
-		return p.getOrders(orderIDs)[:index+1]
-	}
-	return p.getOrders(orderIDs)
+
+	return p.ordersSellToIndex(index)
+
 }
 
+// Deprecated
 func (p *Pair) OrderSellLast() (limit *Limit, index int) {
 	p.lockOrders.Lock()
 	defer p.lockOrders.Unlock()
@@ -1530,6 +1535,7 @@ func (p *Pair) OrderSellLast() (limit *Limit, index int) {
 	return p.orderSellLast()
 }
 
+// Deprecated
 func (p *Pair) orderSellLast() (limit *Limit, index int) {
 	for order := p.orderSellByIndex(index); order != nil; order = p.orderSellByIndex(index) {
 		limit = order
