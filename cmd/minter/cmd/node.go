@@ -3,6 +3,11 @@ package cmd
 import (
 	"context"
 	"fmt"
+
+	mempl "github.com/MinterTeam/minter-go-node/coreV2/mempool"
+	tmpool "github.com/tendermint/tendermint/mempool"
+	sm "github.com/tendermint/tendermint/state"
+
 	"io"
 	"net/http"
 	_ "net/http/pprof" // nolint: gosec // securely exposed on separate, optional port
@@ -197,25 +202,25 @@ func startTendermintNode(app *minter.Blockchain, cfg *tmCfg.Config, logger tmLog
 		genesis,
 		tmNode.DefaultDBProvider,
 		tmNode.DefaultMetricsProvider(cfg.Instrumentation),
-		//func(config *tmCfg.Config, proxyApp proxy.AppConns, state sm.State, memplMetrics *tmpool.Metrics, logger tmLog.Logger) (*tmpool.Reactor, tmpool.Mempool) {
-		//	mempool := mempl.NewPriorityMempool(
-		//		config.Mempool,
-		//		proxyApp.Mempool(),
-		//		state.LastBlockHeight,
-		//		mempl.WithMetrics(memplMetrics),
-		//		mempl.WithPreCheck(sm.TxPreCheck(state)),
-		//		mempl.WithPostCheck(sm.TxPostCheck(state)),
-		//	)
-		//	mempoolLogger := logger.With("module", "mempool")
-		//	mempoolReactor := tmpool.NewReactor(config.Mempool, mempool)
-		//	mempoolReactor.SetLogger(mempoolLogger)
-		//
-		//	if config.Consensus.WaitForTxs() {
-		//		mempool.EnableTxsAvailable()
-		//	}
-		//
-		//	return mempoolReactor, mempool
-		//},
+		func(config *tmCfg.Config, proxyApp proxy.AppConns, state sm.State, memplMetrics *tmpool.Metrics, logger tmLog.Logger) (*tmpool.Reactor, tmpool.Mempool) {
+			mempool := mempl.NewPriorityMempool(
+				config.Mempool,
+				proxyApp.Mempool(),
+				state.LastBlockHeight,
+				mempl.WithMetrics(memplMetrics),
+				mempl.WithPreCheck(sm.TxPreCheck(state)),
+				mempl.WithPostCheck(sm.TxPostCheck(state)),
+			)
+			mempoolLogger := logger.With("module", "mempool")
+			mempoolReactor := tmpool.NewReactor(config.Mempool, mempool)
+			mempoolReactor.SetLogger(mempoolLogger)
+
+			if config.Consensus.WaitForTxs() {
+				mempool.EnableTxsAvailable()
+			}
+
+			return mempoolReactor, mempool
+		},
 		logger.With("module", "tendermint"),
 	)
 
