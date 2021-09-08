@@ -1185,8 +1185,8 @@ func (s *Swap) GetOrder(id uint32) *Limit {
 	}
 
 	list := pair.orders
-	list.mu.RLock()
-	defer list.mu.RUnlock()
+	list.mu.Lock()
+	defer list.mu.Unlock()
 
 	if o, ok := list.list[id]; ok {
 		return o
@@ -1730,6 +1730,7 @@ func (p *Pair) AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int, buy boo
 	p.lockOrders.Lock()
 	for k, v := range p.orders.list {
 		if v == nil {
+			ordrs[k] = nil
 			continue
 		}
 		ordrs[k] = v.clone()

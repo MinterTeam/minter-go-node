@@ -3,9 +3,11 @@ package cmd
 import (
 	"context"
 	"fmt"
+
 	mempl "github.com/MinterTeam/minter-go-node/coreV2/mempool"
 	tmpool "github.com/tendermint/tendermint/mempool"
 	sm "github.com/tendermint/tendermint/state"
+
 	"io"
 	"net/http"
 	_ "net/http/pprof" // nolint: gosec // securely exposed on separate, optional port
@@ -200,7 +202,6 @@ func startTendermintNode(app *minter.Blockchain, cfg *tmCfg.Config, logger tmLog
 		genesis,
 		tmNode.DefaultDBProvider,
 		tmNode.DefaultMetricsProvider(cfg.Instrumentation),
-		//nil,
 		func(config *tmCfg.Config, proxyApp proxy.AppConns, state sm.State, memplMetrics *tmpool.Metrics, logger tmLog.Logger) (*tmpool.Reactor, tmpool.Mempool) {
 			mempool := mempl.NewPriorityMempool(
 				config.Mempool,
