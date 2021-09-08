@@ -7,7 +7,7 @@
 ### Added
 
 - Commission fee for unsuccessful transactions
-- Prioritizing transactions in a block based on gas multiplier (not enabled)
+- Prioritizing transactions in a block based on gas multiplier
 
 ### Fixed
 
