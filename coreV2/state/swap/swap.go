@@ -117,6 +117,9 @@ func (s *Swap) ExpireOrders(beforeHeight uint64) {
 
 	for _, order := range orders {
 		coin, volume := s.PairRemoveLimitOrder(order.ID())
+		if volume.Sign() == 0 {
+			continue
+		}
 		s.bus.Accounts().AddBalance(order.Owner, coin, volume)
 		s.bus.Events().AddEvent(&events.OrderExpiredEvent{
 			ID:      uint64(order.ID()),

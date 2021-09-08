@@ -978,7 +978,7 @@ func (s *Swap) PairAddOrder(coinWantBuy, coinWantSell types.CoinID, wantBuyAmoun
 func (s *Swap) PairRemoveLimitOrder(id uint32) (types.CoinID, *big.Int) {
 	order := s.GetOrder(id)
 	if order == nil {
-		panic("order not exist")
+		return 0, big.NewInt(0)
 	}
 
 	if !order.isSell() {
@@ -986,9 +986,6 @@ func (s *Swap) PairRemoveLimitOrder(id uint32) (types.CoinID, *big.Int) {
 	}
 
 	pair := s.Pair(order.Coin0, order.Coin1)
-	if pair.IsOrderAlreadyUsed(id) {
-		panic("order already used")
-	}
 
 	returnVolume := big.NewInt(0).Set(order.WantSell)
 
@@ -1019,7 +1016,8 @@ func (p *Pair) IsOrderAlreadyUsed(id uint32) bool {
 		return true
 	}
 
-	return p.getOrder(id) == nil
+	order := p.getOrder(id)
+	return order == nil || order.isEmpty()
 }
 
 func (p *Pair) AddOrder(wantBuyAmount0, wantSellAmount1 *big.Int, sender types.Address, block uint64) (order *Limit) {
@@ -1180,7 +1178,7 @@ func (s *Swap) GetOrder(id uint32) *Limit {
 
 	pair := s.Pair(order.Coin0, order.Coin1)
 
-	if pair.isDeletedBuyOrder(id) || pair.isDeletedSellOrder(id) {
+	if pair.IsOrderAlreadyUsed(id) {
 		return nil
 	}
 

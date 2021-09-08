@@ -136,6 +136,9 @@ func (data RemoveLimitOrderData) Run(tx *Transaction, context state.Interface, r
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 
 		coin, volume := deliverState.Swap.PairRemoveLimitOrder(data.ID)
+		if volume.Sign() == 0 {
+			panic("order already used")
+		}
 		deliverState.Accounts.AddBalance(sender, coin, volume)
 
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
