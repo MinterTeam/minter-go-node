@@ -749,6 +749,9 @@ func (l *Limit) ReCalcOldSortPrice() *big.Float {
 }
 
 func (l *Limit) Reverse() *Limit {
+	if l == nil {
+		return nil
+	}
 	l.RLock()
 	defer l.RUnlock()
 	return &Limit{
