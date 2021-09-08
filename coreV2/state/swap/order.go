@@ -642,8 +642,10 @@ func (l *Limit) Price() *big.Float {
 	if l.isEmpty() {
 		return big.NewFloat(0)
 	}
+
 	l.RLock()
 	defer l.RUnlock()
+
 	return CalcPriceSell(l.WantBuy, l.WantSell)
 }
 
@@ -752,8 +754,10 @@ func (l *Limit) Reverse() *Limit {
 	if l == nil {
 		return nil
 	}
+
 	l.RLock()
 	defer l.RUnlock()
+
 	return &Limit{
 		PairKey:      l.PairKey.reverse(),
 		IsBuy:        !l.IsBuy,
@@ -783,6 +787,10 @@ func (l *Limit) clone() *Limit {
 	if l == nil {
 		return nil
 	}
+
+	l.RLock()
+	defer l.RUnlock()
+
 	return &Limit{
 		PairKey:      l.PairKey,
 		IsBuy:        l.IsBuy,
