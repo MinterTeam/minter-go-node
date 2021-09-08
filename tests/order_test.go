@@ -214,7 +214,7 @@ func TestOrder_Expire_with_expiredOrdersPeriod_5_block(t *testing.T) {
 
 	{
 		balance := app.CurrentState().Accounts().GetBalance(seller, 2)
-		if balance.String() != "5000000000000000000000" {
+		if balance.String() != "0" {
 			t.Fatalf("Saller balance is not correct. Expected %s, got %s", "> 0", balance)
 		}
 	}
@@ -224,16 +224,33 @@ func TestOrder_Expire_with_expiredOrdersPeriod_5_block(t *testing.T) {
 			t.Fatalf("Saller balance is not correct. Expected %s, got %s", "> 0", balance)
 		}
 	}
+
+	SendBeginBlock(app, expiredOrdersPeriod*2+updateStakePeriod/2) // send BeginBlock
+	SendEndBlock(app, expiredOrdersPeriod*2+updateStakePeriod/2)   // send EndBlock
+	SendCommit(app)                                                // send Commit
+
+	{
+		balance := app.CurrentState().Accounts().GetBalance(seller, 2)
+		if balance.String() != "5000000000000000000000" {
+			t.Errorf("Saller balance is not correct. Expected %s, got %s", "> 0", balance)
+		}
+	}
+	{
+		balance := app.CurrentState().Accounts().GetBalance(seller, 1)
+		if balance.String() != "0" {
+			t.Errorf("Saller balance is not correct. Expected %s, got %s", "> 0", balance)
+		}
+	}
 	{
 		balance := app.CurrentState().Accounts().GetBalance(seller2, 1)
 		if balance.String() != "15000000000000000000000" {
-			t.Fatalf("Saller balance is not correct. Expected %s, got %s", "> 0", balance)
+			t.Errorf("Saller balance is not correct. Expected %s, got %s", "> 0", balance)
 		}
 	}
 	{
 		balance := app.CurrentState().Accounts().GetBalance(seller2, 2)
 		if balance.String() != "0" {
-			t.Fatalf("Saller balance is not correct. Expected %s, got %s", "> 0", balance)
+			t.Errorf("Saller balance is not correct. Expected %s, got %s", "> 0", balance)
 		}
 	}
 }
@@ -381,6 +398,7 @@ func TestOrder_sell_part_remove(t *testing.T) {
 				Volume1: "5000000000000000000000",  // want to sell
 				ID:      1,
 				Owner:   address,
+				Height:  1,
 			},
 		},
 	})

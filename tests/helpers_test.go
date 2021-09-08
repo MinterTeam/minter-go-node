@@ -17,6 +17,11 @@ import (
 	"github.com/tendermint/tendermint/proto/tendermint/version"
 )
 
+const (
+	updateStakePeriod   = 2
+	expiredOrdersPeriod = 5
+)
+
 // CreateApp creates and returns new Blockchain instance
 func CreateApp(state types.AppState) *minter.Blockchain {
 	jsonState, err := amino.MarshalJSON(state)
@@ -27,7 +32,8 @@ func CreateApp(state types.AppState) *minter.Blockchain {
 	storage := utils.NewStorage("", "")
 	cfg := config.GetConfig(storage.GetMinterHome())
 	cfg.DBBackend = "memdb"
-	app := minter.NewMinterBlockchain(storage, cfg, nil, 120, 5)
+
+	app := minter.NewMinterBlockchain(storage, cfg, nil, updateStakePeriod, expiredOrdersPeriod)
 	var updates []tmTypes.ValidatorUpdate
 	for _, validator := range state.Validators {
 		updates = append(updates, tmTypes.Ed25519ValidatorUpdate(validator.PubKey.Bytes(), 1))

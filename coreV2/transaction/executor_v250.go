@@ -266,7 +266,7 @@ func (e *ExecutorV250) RunTx(context state.Interface, rawTx []byte, rewardPool *
 				if isGasCommissionFromPoolSwap {
 					if !commissions.Coin.IsBaseCoin() {
 						var resp *Response
-						resp, commissionInBaseCoin = CheckSwap(commissionPoolSwapper, checkState.Coins().GetCoin(tx.CommissionCoin()), checkState.Coins().GetCoin(0), commissionInBaseCoin, big.NewInt(0), false)
+						resp, commissionInBaseCoin = CheckSwap(commissionPoolSwapper, checkState.Coins().GetCoin(tx.CommissionCoin()), checkState.Coins().GetCoin(0), commission, big.NewInt(0), false)
 						if resp != nil {
 							return *resp
 						}
@@ -296,7 +296,7 @@ func (e *ExecutorV250) RunTx(context state.Interface, rawTx []byte, rewardPool *
 						detailsCom *swap.ChangeDetailsWithOrders
 						ownersCom  []*swap.OrderDetail
 					)
-					commission, commissionInBaseCoin, poolIDCom, detailsCom, ownersCom = deliverState.Swap.PairSellWithOrders(tx.CommissionCoin(), types.GetBaseCoinID(), commission, commissionInBaseCoin)
+					commission, commissionInBaseCoin, poolIDCom, detailsCom, ownersCom = deliverState.Swap.PairSellWithOrders(tx.CommissionCoin(), types.GetBaseCoinID(), commission, big.NewInt(0))
 					tagsCom = &tagPoolChange{
 						PoolID:   poolIDCom,
 						CoinIn:   tx.CommissionCoin(),
