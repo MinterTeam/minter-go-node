@@ -995,7 +995,7 @@ func (s *Swap) PairRemoveLimitOrder(id uint32) (types.CoinID, *big.Int) {
 	defer pair.lockOrders.Unlock()
 
 	pair.updateOrders([]*Limit{order})
-	pair.orderSellByIndex(0) // update list, mb after all expired
+	pair.orderSellByIndex(0)
 	return order.Coin1, returnVolume
 }
 
