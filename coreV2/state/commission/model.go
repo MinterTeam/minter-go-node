@@ -53,7 +53,7 @@ type Price struct {
 	VoteCommission          *big.Int
 	VoteUpdate              *big.Int
 
-	// todo: in v250 add FailedTx and AddOrder *big.Int
+	// todo: in v260 add FailedTx, AddLimitOrder and RemoveLimitOrder *big.Int
 	More []*big.Int `rlp:"tail"`
 }
 
@@ -65,12 +65,27 @@ func (d *Price) Encode() []byte {
 	return bytes
 }
 
-func (d *Price) FailedTxPrice() *big.Int { // todo: in v250 use FailedTx
+func (d *Price) FailedTxPrice() *big.Int { // todo: in v260 use FailedTx
 	if len(d.More) > 0 {
 		return d.More[0]
 	}
 	return d.Send
 }
+
+func (d *Price) AddLimitOrderPrice() *big.Int { // todo: in v260
+	if len(d.More) > 1 {
+		return d.More[1]
+	}
+	return d.CreateSwapPool
+}
+
+func (d *Price) RemoveLimitOrderPrice() *big.Int { // todo: in v260
+	if len(d.More) > 2 {
+		return d.More[2]
+	}
+	return d.RemoveLiquidity
+}
+
 func Decode(s string) *Price {
 	var p Price
 	err := rlp.DecodeBytes([]byte(s), &p)

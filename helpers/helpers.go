@@ -34,6 +34,15 @@ func StringToBigInt(s string) *big.Int {
 	return result
 }
 
+func StringToBigIntOrNil(s string) *big.Int {
+	result, err := stringToBigInt(s)
+	if err != nil {
+		return nil
+	}
+
+	return result
+}
+
 func stringToBigInt(s string) (*big.Int, error) {
 	if s == "" {
 		return nil, errors.New("string is empty")

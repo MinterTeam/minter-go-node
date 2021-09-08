@@ -79,6 +79,10 @@ type Blockchain struct {
 	stopOk       chan struct{}
 }
 
+func (blockchain *Blockchain) GetCurrentRewards() *big.Int {
+	return blockchain.rewards
+}
+
 // NewMinterBlockchain creates Minter Blockchain instance, should be only called once
 func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx context.Context, period uint64) *Blockchain {
 	// Initiate Application DB. Used for persisting data like current block, validators, etc.
@@ -401,6 +405,8 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 				VoteCommission:          price.VoteCommission.String(),
 				VoteUpdate:              price.VoteUpdate.String(),
 				FailedTx:                price.FailedTxPrice().String(),
+				AddLimitOrder:           price.AddLimitOrderPrice().String(),
+				RemoveLimitOrder:        price.RemoveLimitOrderPrice().String(),
 			})
 		}
 		blockchain.stateDeliver.Commission.Delete(height)

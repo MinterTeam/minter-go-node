@@ -3,9 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	mempl "github.com/MinterTeam/minter-go-node/coreV2/mempool"
-	tmpool "github.com/tendermint/tendermint/mempool"
-	sm "github.com/tendermint/tendermint/state"
 	"io"
 	"net/http"
 	_ "net/http/pprof" // nolint: gosec // securely exposed on separate, optional port
@@ -187,106 +184,13 @@ func checkRlimits() error {
 }
 
 func startTendermintNode(app *minter.Blockchain, cfg *tmCfg.Config, logger tmLog.Logger, home string) *tmNode.Node {
-	// stateDB, err := tmNode.DefaultDBProvider(&tmNode.DBContext{ID: "state", Config: cfg}) // each state needs its own db
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// blockDB, err := tmNode.DefaultDBProvider(&tmNode.DBContext{ID: "blockstore", Config: cfg})
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// evidenceDB, err := tmNode.DefaultDBProvider(&tmNode.DBContext{ID: "evidence", Config: cfg})
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// defaultDBProvider := func(ctx *tmNode.DBContext) (dbm.DB, error) {
-	// 	switch ctx.ID {
-	// 	case "state":
-	// 		if stateDB == nil {
-	// 			break
-	// 		}
-	// 		return stateDB, nil
-	// 	case "blockstore":
-	// 		if blockDB == nil {
-	// 			break
-	// 		}
-	// 		return blockDB, nil
-	// 	case "evidence":
-	// 		if evidenceDB == nil {
-	// 			break
-	// 		}
-	// 		return evidenceDB, nil
-	// 	}
-	// 	dbType := dbm.BackendType(ctx.Config.DBBackend)
-	// 	return dbm.NewDB(ctx.ID, dbType, ctx.Config.DBDir())
-	// }
 	nodeKey, err := p2p.LoadOrGenNodeKey(cfg.NodeKeyFile())
 	if err != nil {
 		panic(err)
 	}
 
 	genesis := getGenesis(home + "/config/genesis.json")
-	// doc, err := genesis()
-	// if err != nil {
-	// 	panic(err)
-	// }
-
-	/*csMetrics, p2pMetrics, memplMetrics, smMetrics*/
-	// csMetrics, _, _, smMetrics := tmNode.DefaultMetricsProvider(cfg.Instrumentation)(doc.ChainID)
-
 	creator := proxy.NewLocalClientCreator(app)
-	//
-	// appConnMem, _ := creator.NewABCIClient()
-	// appConnMem.SetLogger(logger.With("module", "abci-client", "connection", "mempool"))
-	//
-	// if err := appConnMem.Start(); err != nil {
-	// 	panic(err)
-	// }
-	//
-	//priorityMempool := mempool.NewPriorityMempool(cfg.Mempool, appConnMem, 0)
-	// priorityMempool := mempl.NewCListMempool(cfg.Mempool, appConnMem, 0)
-	// priorityMempool.SetLogger(logger)
-	//
-	// mempoolLogger := logger.With("module", "mempool")
-	// // mempoolReactor := mempool.NewReactor(cfg.Mempool, priorityMempool)
-	// mempoolReactor := mempl.NewReactor(cfg.Mempool, priorityMempool)
-	// mempoolReactor.SetLogger(mempoolLogger)
-	//
-	// if cfg.Consensus.WaitForTxs() {
-	// 	priorityMempool.EnableTxsAvailable()
-	// }
-	//
-	// stateStore := sm.NewStore(stateDB)
-	//
-	// blockStore := store.NewBlockStore(blockDB)
-	//
-	// // Make a full instance of the evidence pool
-	//
-	// evpool, err := evidence.NewPool(evidenceDB, stateStore, blockStore)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// evpool.SetLogger(logger.With("module", "evidence"))
-	//
-	// state, _ := stateStore.LoadFromDBOrGenesisDoc(doc)
-	// // Make State
-	// blockExec := sm.NewBlockExecutor(stateStore, logger.With("module", "state"), appConnMem, priorityMempool, evpool /*sm.BlockExecutorWithMetrics(smMetrics)*/)
-	// cs := consensus.NewState(cfg.Consensus, state, blockExec, blockStore, priorityMempool, evpool /*consensus.StateMetrics(csMetrics)*/)
-	// cs.SetLogger(cs.Logger)
-	//
-	// var bcReactor p2p.Reactor
-	// switch cfg.FastSync.Version {
-	// case "v0":
-	// 	bcReactor = bcv0.NewBlockchainReactor(state.Copy(), blockExec, blockStore, cfg.FastSyncMode)
-	// case "v1":
-	// 	bcReactor = bcv1.NewBlockchainReactor(state.Copy(), blockExec, blockStore, cfg.FastSyncMode)
-	// case "v2":
-	// 	bcReactor = bcv2.NewBlockchainReactor(state.Copy(), blockExec, blockStore, cfg.FastSyncMode)
-	// default:
-	// 	panic(fmt.Sprintf("unknown fastsync version %s", cfg.FastSync.Version))
-	// }
-	// bcReactor = bcv0.NewBlockchainReactor(state.Copy(), blockExec, blockStore, cfg.FastSyncMode)
-	// bcReactor.SetLogger(logger.With("module", "blockchain"))
 
 	node, err := tmNode.NewNode(
 		cfg,
@@ -296,33 +200,26 @@ func startTendermintNode(app *minter.Blockchain, cfg *tmCfg.Config, logger tmLog
 		genesis,
 		tmNode.DefaultDBProvider,
 		tmNode.DefaultMetricsProvider(cfg.Instrumentation),
-		//nil,
-		func(config *tmCfg.Config, proxyApp proxy.AppConns, state sm.State, memplMetrics *tmpool.Metrics, logger tmLog.Logger) (*tmpool.Reactor, tmpool.Mempool) {
-			mempool := mempl.NewPriorityMempool(
-				config.Mempool,
-				proxyApp.Mempool(),
-				state.LastBlockHeight,
-				mempl.WithMetrics(memplMetrics),
-				mempl.WithPreCheck(sm.TxPreCheck(state)),
-				mempl.WithPostCheck(sm.TxPostCheck(state)),
-			)
-			mempoolLogger := logger.With("module", "mempool")
-			mempoolReactor := tmpool.NewReactor(config.Mempool, mempool)
-			mempoolReactor.SetLogger(mempoolLogger)
-
-			if config.Consensus.WaitForTxs() {
-				mempool.EnableTxsAvailable()
-			}
-
-			return mempoolReactor, mempool
-		},
+		//func(config *tmCfg.Config, proxyApp proxy.AppConns, state sm.State, memplMetrics *tmpool.Metrics, logger tmLog.Logger) (*tmpool.Reactor, tmpool.Mempool) {
+		//	mempool := mempl.NewPriorityMempool(
+		//		config.Mempool,
+		//		proxyApp.Mempool(),
+		//		state.LastBlockHeight,
+		//		mempl.WithMetrics(memplMetrics),
+		//		mempl.WithPreCheck(sm.TxPreCheck(state)),
+		//		mempl.WithPostCheck(sm.TxPostCheck(state)),
+		//	)
+		//	mempoolLogger := logger.With("module", "mempool")
+		//	mempoolReactor := tmpool.NewReactor(config.Mempool, mempool)
+		//	mempoolReactor.SetLogger(mempoolLogger)
+		//
+		//	if config.Consensus.WaitForTxs() {
+		//		mempool.EnableTxsAvailable()
+		//	}
+		//
+		//	return mempoolReactor, mempool
+		//},
 		logger.With("module", "tendermint"),
-		// tmNode.CustomReactors(map[string]p2p.Reactor{
-		//	// "MEMPOOL":    mempoolReactor,
-		// "CONSENSUS":  consensus.NewReactor(cs, true),
-		//	// "EVIDENCE":   evidence.NewReactor(evpool),
-		//	// "BLOCKCHAIN": bcReactor,
-		// }),
 	)
 
 	if err != nil {

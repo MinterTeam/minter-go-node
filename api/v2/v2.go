@@ -153,7 +153,8 @@ func serveOpenAPI(prefix string, mux *http.ServeMux) error {
 
 func unaryTimeoutInterceptor(timeout time.Duration) func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-		withTimeout, _ := context.WithTimeout(ctx, timeout)
+		withTimeout, cancel := context.WithTimeout(ctx, timeout)
+		defer cancel()
 		return handler(withTimeout, req)
 	}
 }
