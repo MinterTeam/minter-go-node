@@ -253,10 +253,9 @@ func (e *ExecutorV250) RunTx(context state.Interface, rawTx []byte, rewardPool *
 					Info: EncodeError(code.NewDecodeError()),
 				}
 			}
-
 			intruder = checkSender
 			response.Tags = append(response.Tags,
-				abcTypes.EventAttribute{Key: []byte("tx.check_owner"), Value: []byte(hex.EncodeToString(intruder[:]))},
+				abcTypes.EventAttribute{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(intruder[:]))},
 			)
 		}
 		balance := checkState.Accounts().GetBalance(intruder, tx.CommissionCoin())
@@ -320,6 +319,7 @@ func (e *ExecutorV250) RunTx(context state.Interface, rawTx []byte, rewardPool *
 				response.Tags = append(response.Tags,
 					abcTypes.EventAttribute{Key: []byte("tx.commission_details"), Value: []byte(tagsCom.string())},
 					abcTypes.EventAttribute{Key: []byte("tx.fail_fee"), Value: []byte(commission.String())},
+					abcTypes.EventAttribute{Key: []byte("tx.fail"), Value: []byte{49}, Index: true}, // "1"
 				)
 			}
 		}
@@ -331,10 +331,12 @@ func (e *ExecutorV250) RunTx(context state.Interface, rawTx []byte, rewardPool *
 		response.Tags = append(response.Tags,
 			coinCommission,
 			priceCommission,
-			abcTypes.EventAttribute{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:])), Index: true},
 			abcTypes.EventAttribute{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(tx.decodedData.TxType())})), Index: true},
 			abcTypes.EventAttribute{Key: []byte("tx.commission_coin"), Value: []byte(tx.CommissionCoin().String()), Index: true},
 		)
+		if tx.Type != TypeRedeemCheck {
+			response.Tags = append(response.Tags, abcTypes.EventAttribute{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:])), Index: true})
+		}
 	}
 
 	response.GasUsed = tx.Gas()
