@@ -73,7 +73,7 @@ func ensureFire(t *testing.T, ch <-chan struct{}, timeoutMS int) {
 	}
 }
 
-func createTx(bytesLen uint64, privKey *ecdsa.PrivateKey) []byte {
+func createTx(bytesLen uint64, addressPrivKey *ecdsa.PrivateKey) []byte {
 	encodedData, _ := rlp.EncodeToBytes(transaction.SendData{
 		Coin:  types.GetBaseCoinID(),
 		To:    [20]byte{1},
@@ -96,16 +96,27 @@ func createTx(bytesLen uint64, privKey *ecdsa.PrivateKey) []byte {
 		Payload:       payload,
 	}
 
-	if privKey == nil {
+	privKey := new(ecdsa.PrivateKey)
+	if addressPrivKey == nil {
 		privKey, _ = crypto.GenerateKey()
+	} else {
+		*privKey = *addressPrivKey
 	}
 
-	tx.Sign(privKey)
-	txBytes, _ := tx.Serialize()
-	return txBytes
+	for {
+		tx.Sign(privKey)
+		txBytes, _ := tx.Serialize()
+
+		if (uint64(len(txBytes)) == bytesLen-1 || uint64(len(txBytes)) == bytesLen+1) && addressPrivKey == nil {
+			privKey, _ = crypto.GenerateKey()
+			continue
+		}
+
+		return txBytes
+	}
 }
 
-func createTxWithRandomGas(bytesLen uint64, privKey *ecdsa.PrivateKey) []byte {
+func createTxWithRandomGas(bytesLen uint64, addressPrivKey *ecdsa.PrivateKey) []byte {
 	encodedData, _ := rlp.EncodeToBytes(transaction.SendData{
 		Coin:  types.GetBaseCoinID(),
 		To:    [20]byte{1},
@@ -129,13 +140,24 @@ func createTxWithRandomGas(bytesLen uint64, privKey *ecdsa.PrivateKey) []byte {
 		Payload:       payload,
 	}
 
-	if privKey == nil {
+	privKey := new(ecdsa.PrivateKey)
+	if addressPrivKey == nil {
 		privKey, _ = crypto.GenerateKey()
+	} else {
+		*privKey = *addressPrivKey
 	}
 
-	tx.Sign(privKey)
-	txBytes, _ := tx.Serialize()
-	return txBytes
+	for {
+		tx.Sign(privKey)
+		txBytes, _ := tx.Serialize()
+
+		if (uint64(len(txBytes)) == bytesLen-1 || uint64(len(txBytes)) == bytesLen+1) && addressPrivKey == nil {
+			privKey, _ = crypto.GenerateKey()
+			continue
+		}
+
+		return txBytes
+	}
 }
 
 func checkTxs(t *testing.T, mempool tmpool.Mempool, count int, peerID uint16) tmtypes.Txs {
