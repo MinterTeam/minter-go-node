@@ -442,6 +442,13 @@ func TestOrder_sell_part_remove(t *testing.T) {
 	SendEndBlock(app, 1) // send EndBlock
 	SendCommit(app)      // send Commit
 
+	appState := app.CurrentState().Export()
+	appState.Validators = append(appState.Validators, types.Validator{TotalBipStake: "1000", AccumReward: "1000", AbsentTimes: &types.BitArray{}}) // there should be at least one validator
+	appState.Candidates = append(appState.Candidates, types.Candidate{})                                                                           // candidate for validator
+	if err := appState.Verify(); err != nil {
+		t.Fatalf("export err: %v", err)
+	}
+
 	SendBeginBlock(app, 2) // send BeginBlock
 
 	tx = CreateTx(app, address, transaction.TypeRemoveLimitOrder, transaction.RemoveLimitOrderData{
@@ -460,7 +467,7 @@ func TestOrder_sell_part_remove(t *testing.T) {
 	SendEndBlock(app, 2) // send EndBlock
 	SendCommit(app)      // send Commit
 
-	appState := app.CurrentState().Export()
+	appState = app.CurrentState().Export()
 	appState.Validators = append(appState.Validators, types.Validator{TotalBipStake: "1000", AccumReward: "1000", AbsentTimes: &types.BitArray{}}) // there should be at least one validator
 	appState.Candidates = append(appState.Candidates, types.Candidate{})                                                                           // candidate for validator
 	if err := appState.Verify(); err != nil {
@@ -882,8 +889,8 @@ func TestOrder_sell_part_plus_com_pool(t *testing.T) {
 	// check seller's balance
 	{
 		balance := app.CurrentState().Accounts().GetBalance(seller, 0)
-		if balance.Cmp(helpers.StringToBigInt("14985000000000000000000")) == -1 {
-			t.Fatalf("Saller balance is not correct. Expected %s, got %s", "more 14985000000000000000000", balance)
+		if balance.Cmp(helpers.StringToBigInt("15000000000000000000000")) != 0 {
+			t.Fatalf("Saller balance is not correct. Expected %s, got %s", "15000000000000000000000", balance)
 		}
 	}
 }
@@ -980,8 +987,8 @@ func TestOrder_sell_full(t *testing.T) {
 	// check seller's balance
 	{
 		balance := app.CurrentState().Accounts().GetBalance(seller, 1)
-		if balance.Cmp(helpers.StringToBigInt("14985000000000000000000")) == -1 {
-			t.Fatalf("Saller balance is not correct. Expected %s, got %s", "more 14985000000000000000000", balance)
+		if balance.Cmp(helpers.StringToBigInt("15000000000000000000000")) == 0 {
+			t.Fatalf("Saller balance is not correct. Expected %s, got %s", "more 15000000000000000000000", balance)
 		}
 	}
 }
@@ -1078,8 +1085,8 @@ func TestOrder_sell_more(t *testing.T) {
 	// check seller's balance
 	{
 		balance := app.CurrentState().Accounts().GetBalance(seller, 1)
-		if balance.Cmp(helpers.StringToBigInt("14985000000000000000000")) == -1 {
-			t.Fatalf("Saller balance is not correct. Expected %s, got %s", "more 14985000000000000000000", balance)
+		if balance.Cmp(helpers.StringToBigInt("15000000000000000000000")) == 0 {
+			t.Fatalf("Saller balance is not correct. Expected %s, got %s", "more 15000000000000000000000", balance)
 		}
 	}
 }
@@ -1181,8 +1188,8 @@ func TestOrder_sell_more_a_lot(t *testing.T) {
 	// check seller's balance
 	{
 		balance := app.CurrentState().Accounts().GetBalance(seller, 1)
-		if balance.Cmp(helpers.StringToBigInt("14985000000000000000000")) == -1 {
-			t.Fatalf("Saller balance is not correct. Expected %s, got %s", "more 14985000000000000000000", balance)
+		if balance.Cmp(helpers.StringToBigInt("15000000000000000000000")) != 0 {
+			t.Fatalf("Saller balance is not correct. Expected %s, got %s", "15000000000000000000000", balance)
 		}
 	}
 }
@@ -1284,9 +1291,16 @@ func TestOrder_buy_more_a_more(t *testing.T) {
 	// check seller's balance
 	{
 		balance := app.CurrentState().Accounts().GetBalance(seller, 1)
-		if balance.Cmp(helpers.StringToBigInt("14985000000000000000000")) == -1 {
-			t.Fatalf("Saller balance is not correct. Expected %s, got %s", "more 14985000000000000000000", balance)
+		if balance.Cmp(helpers.StringToBigInt("15000000000000000000000")) == 0 {
+			t.Fatalf("Saller balance is not correct. Expected %s, got %s", "15000000000000000000000", balance)
 		}
+	}
+
+	appState := app.CurrentState().Export()
+	appState.Validators = append(appState.Validators, types.Validator{TotalBipStake: "1000", AccumReward: "1000", AbsentTimes: &types.BitArray{}}) // there should be at least one validator
+	appState.Candidates = append(appState.Candidates, types.Candidate{})                                                                           // candidate for validator
+	if err := appState.Verify(); err != nil {
+		t.Fatalf("export err: %v", err)
 	}
 }
 
@@ -1387,8 +1401,15 @@ func TestOrder_buy_10_more_a_lot(t *testing.T) {
 	// check seller's balance
 	{
 		balance := app.CurrentState().Accounts().GetBalance(seller, 2)
-		if balance.Cmp(helpers.StringToBigInt("14985000000000000000000")) == -1 {
-			t.Fatalf("Saller balance is not correct. Expected %s, got %s", "more 14985000000000000000000", balance)
+		if balance.Cmp(helpers.StringToBigInt("15000000000000000000000")) != 0 {
+			t.Fatalf("Saller balance is not correct. Expected %s, got %s", "15000000000000000000000", balance)
 		}
+	}
+
+	appState := app.CurrentState().Export()
+	appState.Validators = append(appState.Validators, types.Validator{TotalBipStake: "1000", AccumReward: "1000", AbsentTimes: &types.BitArray{}}) // there should be at least one validator
+	appState.Candidates = append(appState.Candidates, types.Candidate{})                                                                           // candidate for validator
+	if err := appState.Verify(); err != nil {
+		t.Fatalf("export err: %v", err)
 	}
 }
