@@ -97,7 +97,7 @@ func TestOrder_set(t *testing.T) {
 	SendCommit(app)      // send Commit
 }
 
-func TestOrder_Expire_with_expiredOrdersPeriod_5_block(t *testing.T) {
+func TestOrder_Expire_with_expiredOrdersPeriod_5_block_initial0(t *testing.T) {
 	address, _ := CreateAddress() // create account for test
 
 	state := DefaultAppState() // generate default state
@@ -159,13 +159,13 @@ func TestOrder_Expire_with_expiredOrdersPeriod_5_block(t *testing.T) {
 
 	app := CreateApp(state) // create application
 
-	//SendBeginBlock(app, 1)  // send BeginBlock
-	//SendEndBlock(app, 1) // send EndBlock
-	//SendCommit(app)      // send Commit
-	//
-	//SendBeginBlock(app, 2)  // send BeginBlock
-	//SendEndBlock(app, 2) // send EndBlock
-	//SendCommit(app)      // send Commit
+	SendBeginBlock(app, 1) // send BeginBlock
+	SendEndBlock(app, 1)   // send EndBlock
+	SendCommit(app)        // send Commit
+
+	SendBeginBlock(app, 2) // send BeginBlock
+	SendEndBlock(app, 2)   // send EndBlock
+	SendCommit(app)        // send Commit
 
 	SendBeginBlock(app, 3) // send BeginBlock
 	SendEndBlock(app, 3)   // send EndBlock
@@ -183,51 +183,24 @@ func TestOrder_Expire_with_expiredOrdersPeriod_5_block(t *testing.T) {
 	SendEndBlock(app, 6)   // send EndBlock
 	SendCommit(app)        // send Commit
 
+	{
+		balance := app.CurrentState().Accounts().GetBalance(seller, 2)
+		if balance.String() != "0" {
+			t.Fatalf("Saller balance is not correct. Expected %s, got %s", "> 0", balance)
+		}
+	}
+	{
+		balance := app.CurrentState().Accounts().GetBalance(seller, 1)
+		if balance.String() != "0" {
+			t.Fatalf("Saller balance is not correct. Expected %s, got %s", "> 0", balance)
+		}
+	}
+
 	SendBeginBlock(app, 7) // send BeginBlock
 	SendEndBlock(app, 7)   // send EndBlock
 	SendCommit(app)        // send Commit
 
-	SendBeginBlock(app, 8) // send BeginBlock
-	SendEndBlock(app, 8)   // send EndBlock
-	SendCommit(app)        // send Commit
-
-	SendBeginBlock(app, 9) // send BeginBlock
-	SendEndBlock(app, 9)   // send EndBlock
-	SendCommit(app)        // send Commit
-
-	{
-		balance := app.CurrentState().Accounts().GetBalance(seller, 2)
-		if balance.String() != "0" {
-			t.Fatalf("Saller balance is not correct. Expected %s, got %s", "> 0", balance)
-		}
-	}
-	{
-		balance := app.CurrentState().Accounts().GetBalance(seller, 1)
-		if balance.String() != "0" {
-			t.Fatalf("Saller balance is not correct. Expected %s, got %s", "> 0", balance)
-		}
-	}
-
-	SendBeginBlock(app, 10) // send BeginBlock
-	SendEndBlock(app, 10)   // send EndBlock
-	SendCommit(app)         // send Commit
-
-	{
-		balance := app.CurrentState().Accounts().GetBalance(seller, 2)
-		if balance.String() != "0" {
-			t.Fatalf("Saller balance is not correct. Expected %s, got %s", "> 0", balance)
-		}
-	}
-	{
-		balance := app.CurrentState().Accounts().GetBalance(seller, 1)
-		if balance.String() != "0" {
-			t.Fatalf("Saller balance is not correct. Expected %s, got %s", "> 0", balance)
-		}
-	}
-
-	SendBeginBlock(app, expiredOrdersPeriod*2+updateStakePeriod/2) // send BeginBlock
-	SendEndBlock(app, expiredOrdersPeriod*2+updateStakePeriod/2)   // send EndBlock
-	SendCommit(app)                                                // send Commit
+	// 7 > 5 & 7 % 5 == 2
 
 	{
 		balance := app.CurrentState().Accounts().GetBalance(seller, 2)
@@ -252,6 +225,131 @@ func TestOrder_Expire_with_expiredOrdersPeriod_5_block(t *testing.T) {
 		if balance.String() != "0" {
 			t.Errorf("Saller balance is not correct. Expected %s, got %s", "> 0", balance)
 		}
+	}
+
+	appState := app.CurrentState().Export()
+	appState.Validators = append(appState.Validators, types.Validator{TotalBipStake: "1000", AccumReward: "1000", AbsentTimes: &types.BitArray{}}) // there should be at least one validator
+	appState.Candidates = append(appState.Candidates, types.Candidate{})                                                                           // candidate for validator
+	if err := appState.Verify(); err != nil {
+		t.Fatalf("export err: %v", err)
+	}
+}
+
+func TestOrder_Expire_with_expiredOrdersPeriod_5_block(t *testing.T) {
+	address, _ := CreateAddress() // create account for test
+
+	state := DefaultAppState() // generate default state
+
+	state.Coins = append(state.Coins, types.Coin{
+		ID:           1,
+		Name:         "Test 1",
+		Symbol:       types.StrToCoinBaseSymbol("TEST1"),
+		Volume:       "25000000000000000000000",
+		Crr:          0,
+		Reserve:      "0",
+		MaxSupply:    "90000000000000000000000000000",
+		Version:      0,
+		OwnerAddress: &address,
+		Mintable:     false,
+		Burnable:     false,
+	}, types.Coin{
+		ID:           2,
+		Name:         "Test 2",
+		Symbol:       types.StrToCoinBaseSymbol("TEST2"),
+		Volume:       "15000000000000000000000",
+		Crr:          0,
+		Reserve:      "0",
+		MaxSupply:    "90000000000000000000000000000",
+		Version:      0,
+		OwnerAddress: &address,
+		Mintable:     false,
+		Burnable:     false,
+	})
+
+	seller, _ := CreateAddress()  // generate seller
+	seller2, _ := CreateAddress() // generate seller
+	state.NextOrderID = 3
+	state.Pools = append(state.Pools, types.Pool{
+		Coin0:    1,
+		Coin1:    2,
+		Reserve0: "10000000000000000000000",
+		Reserve1: "10000000000000000000000",
+		ID:       1,
+		Orders: []types.Order{
+			{
+				IsSale:  true,
+				Volume0: "15000000000000000000000", // want to buy
+				Volume1: "5000000000000000000000",  // want to sell
+				ID:      1,
+				Owner:   seller,
+				Height:  12,
+			},
+			{
+				IsSale:  false,
+				Volume0: "15000000000000000000000", // want to sell
+				Volume1: "5000000000000000000000",  // want to buy
+				ID:      2,
+				Owner:   seller2,
+				Height:  12,
+			},
+		},
+	})
+
+	app := CreateApp(state) // create application
+
+	SendBeginBlock(app, 16) // send BeginBlock
+	SendEndBlock(app, 16)   // send EndBlock
+	SendCommit(app)         // send Commit
+
+	{
+		balance := app.CurrentState().Accounts().GetBalance(seller, 2)
+		if balance.String() != "0" {
+			t.Fatalf("Saller balance is not correct. Expected %s, got %s", "> 0", balance)
+		}
+	}
+	{
+		balance := app.CurrentState().Accounts().GetBalance(seller, 1)
+		if balance.String() != "0" {
+			t.Fatalf("Saller balance is not correct. Expected %s, got %s", "> 0", balance)
+		}
+	}
+
+	SendBeginBlock(app, 17) // send BeginBlock
+	SendEndBlock(app, 17)   // send EndBlock
+	SendCommit(app)         // send Commit
+
+	// 17 > 5 & 17 % 5 == 2 & 17 - 5 == 12
+
+	{
+		balance := app.CurrentState().Accounts().GetBalance(seller, 2)
+		if balance.String() != "5000000000000000000000" {
+			t.Errorf("Saller balance is not correct. Expected %s, got %s", "> 0", balance)
+		}
+	}
+	{
+		balance := app.CurrentState().Accounts().GetBalance(seller, 1)
+		if balance.String() != "0" {
+			t.Errorf("Saller balance is not correct. Expected %s, got %s", "> 0", balance)
+		}
+	}
+	{
+		balance := app.CurrentState().Accounts().GetBalance(seller2, 1)
+		if balance.String() != "15000000000000000000000" {
+			t.Errorf("Saller balance is not correct. Expected %s, got %s", "> 0", balance)
+		}
+	}
+	{
+		balance := app.CurrentState().Accounts().GetBalance(seller2, 2)
+		if balance.String() != "0" {
+			t.Errorf("Saller balance is not correct. Expected %s, got %s", "> 0", balance)
+		}
+	}
+
+	appState := app.CurrentState().Export()
+	appState.Validators = append(appState.Validators, types.Validator{TotalBipStake: "1000", AccumReward: "1000", AbsentTimes: &types.BitArray{}}) // there should be at least one validator
+	appState.Candidates = append(appState.Candidates, types.Candidate{})                                                                           // candidate for validator
+	if err := appState.Verify(); err != nil {
+		t.Fatalf("export err: %v", err)
 	}
 }
 
@@ -1325,7 +1423,7 @@ func TestOrder_buy_10_more_a_lot(t *testing.T) {
 		ID:           2,
 		Name:         "Test 2",
 		Symbol:       types.StrToCoinBaseSymbol("TEST2"),
-		Volume:       "10010000000000000000000000",
+		Volume:       "10010012941661106944771622",
 		Crr:          0,
 		Reserve:      "0",
 		MaxSupply:    "90000000000000000000000000000",
@@ -1367,7 +1465,7 @@ func TestOrder_buy_10_more_a_lot(t *testing.T) {
 			},
 			{
 				Coin:  2,
-				Value: helpers.StringToBigInt("10000000000000000000000000").String(),
+				Value: helpers.StringToBigInt("10000012941661106944771622").String(),
 			},
 		},
 		Nonce:        0,
