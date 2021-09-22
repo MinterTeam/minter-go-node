@@ -23,7 +23,7 @@ type RWaitList interface {
 
 	Get(address types.Address, pubkey types.Pubkey, coin types.CoinID) *Item
 	GetByAddress(address types.Address) *Model
-	GetByAddressAndPubKey(address types.Address, pubkey types.Pubkey) []Item
+	GetByAddressAndPubKey(address types.Address, pubkey types.Pubkey) []*Item
 	Export(state *types.AppState)
 }
 
@@ -176,14 +176,14 @@ func (wl *WaitList) Get(address types.Address, pubkey types.Pubkey, coin types.C
 
 	for _, item := range waitlist.List {
 		if item.CandidateId == candidate.ID && item.Coin == coin {
-			return &item
+			return item
 		}
 	}
 
 	return nil
 }
 
-func (wl *WaitList) GetByAddressAndPubKey(address types.Address, pubkey types.Pubkey) []Item {
+func (wl *WaitList) GetByAddressAndPubKey(address types.Address, pubkey types.Pubkey) []*Item {
 	waitlist := wl.get(address)
 	if waitlist == nil {
 		return nil
@@ -194,7 +194,7 @@ func (wl *WaitList) GetByAddressAndPubKey(address types.Address, pubkey types.Pu
 		return nil
 	}
 
-	var items []Item
+	var items []*Item
 	for _, item := range waitlist.List {
 		if item.CandidateId == candidate.ID {
 			items = append(items, item)
@@ -232,7 +232,7 @@ func (wl *WaitList) Delete(address types.Address, pubkey types.Pubkey, coin type
 	value := big.NewInt(0)
 
 	w.lock.RLock()
-	items := make([]Item, 0, len(w.List)-1)
+	items := make([]*Item, 0, len(w.List)-1)
 	for _, item := range w.List {
 		if item.CandidateId != candidate.ID || item.Coin != coin {
 			items = append(items, item)
@@ -251,7 +251,7 @@ func (wl *WaitList) Delete(address types.Address, pubkey types.Pubkey, coin type
 func (wl *WaitList) getOrNew(address types.Address) *Model {
 	w := wl.get(address)
 	if w == nil {
-		w = &Model{List: make([]Item, 0), address: address, markDirty: wl.markDirty}
+		w = &Model{List: make([]*Item, 0), address: address, markDirty: wl.markDirty}
 		wl.setToMap(address, w)
 	}
 

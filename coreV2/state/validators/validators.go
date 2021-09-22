@@ -61,7 +61,7 @@ func NewValidators(bus *bus.Bus, db *iavl.ImmutableTree) *Validators {
 		loaded = true
 	}
 	validators := &Validators{db: immutableTree, bus: bus, loaded: loaded}
-
+	validators.bus.SetValidators(NewBus(validators))
 	return validators
 }
 
@@ -486,6 +486,17 @@ func (v *Validators) SetValidators(vals []*Validator) {
 	v.lock.Lock()
 	v.list = vals
 	v.lock.Unlock()
+}
+
+func (v *Validators) IsValidator(pubkey types.Pubkey) bool {
+	v.lock.RLock()
+	defer v.lock.RUnlock()
+	for _, val := range v.GetValidators() {
+		if val.PubKey == pubkey {
+			return true
+		}
+	}
+	return false
 }
 
 // Export exports all data to the given state
