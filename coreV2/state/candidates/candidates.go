@@ -589,19 +589,20 @@ func (c *Candidates) IsDelegatorStakeSufficient(address types.Address, pubkey ty
 
 // IsDelegatorStakeAllow determines if given stake is sufficient to add it to a candidate
 func (c *Candidates) IsDelegatorStakeAllow(address types.Address, pubkey types.Pubkey, coin types.CoinID, amount *big.Int) bool {
-	stakes := c.GetStakes(pubkey)
-	if len(stakes) < MaxDelegatorsPerCandidate {
-		return true
-	}
-
-	stakeValue := c.calculateBipValue(coin, amount, true, true, nil)
 	var ok bool
 	old := big.NewInt(0)
-	for _, stake := range stakes {
-		if stakeValue.Cmp(stake.BipValue) == 1 || (stake.Owner == address && stake.Coin == coin) {
-			old = stake.BipValue
-			ok = true
-			break
+	stakeValue := c.calculateBipValue(coin, amount, true, true, nil)
+
+	stakes := c.GetStakes(pubkey)
+	if len(stakes) < MaxDelegatorsPerCandidate {
+		ok = true
+	} else {
+		for _, stake := range stakes {
+			if stakeValue.Cmp(stake.BipValue) == 1 || (stake.Owner == address && stake.Coin == coin) {
+				old = stake.BipValue
+				ok = true
+				break
+			}
 		}
 	}
 
