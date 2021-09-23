@@ -860,13 +860,12 @@ func (c *Candidates) LoadStakes() {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	for pubkey := range c.pubKeyIDs {
-		c.totalStakes.Add(c.totalStakes, c.LoadStakesOfCandidate(pubkey))
-	}
+	c.loadStakes()
 }
 
 // loadStakes loads all stakes of candidates
 func (c *Candidates) loadStakes() {
+	c.totalStakes.SetInt64(0)
 	for pubkey := range c.pubKeyIDs {
 		c.totalStakes.Add(c.totalStakes, c.LoadStakesOfCandidate(pubkey))
 	}
