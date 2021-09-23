@@ -210,6 +210,8 @@ func (c *Candidates) Commit(db *iavl.MutableTree, version int64) error {
 	}
 	c.lock.Unlock()
 
+	// todo: get deleted candadates pubkey and delete by range
+
 	for _, candidate := range keys {
 		candidate.lock.Lock()
 		candidate.isDirty = false
@@ -1310,6 +1312,7 @@ func (c *Candidates) DeleteCandidate(height uint64, candidate *Candidate) {
 	//c.bus.WaitList().GetByAddressAndPubKey()
 
 	c.lock.Lock()
+	// todo: mark and delete in commit
 	//delete(c.list, candidate.ID)
 	c.totalStakes.Sub(c.totalStakes, candidate.totalBipStake)
 	c.lock.Unlock()
