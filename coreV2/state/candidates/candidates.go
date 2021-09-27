@@ -1401,7 +1401,7 @@ func (c *Candidates) loadDeletedCandidates() {
 	}
 
 	var list []*deletedID
-	err := rlp.DecodeBytes(data, list)
+	err := rlp.DecodeBytes(data, &list)
 	if err != nil {
 		panic(fmt.Errorf("can't decode deleted candidates: %v", err))
 	}

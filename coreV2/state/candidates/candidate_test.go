@@ -53,9 +53,12 @@ func TestCandidates_DeleteCandidate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Log(candidates.ID([32]byte{4}))
-	if candidates.GetCandidate([32]byte{4}) != nil {
-		t.Fatal("candidate exist")
+	{
+		candidates := NewCandidates(b, mutableTree.GetLastImmutable())
+		t.Log(candidates.ID([32]byte{4}))
+		if candidates.GetCandidate([32]byte{4}) != nil {
+			t.Fatal("candidate exist")
+		}
 	}
 }
 func TestCandidates_Create_oneCandidate(t *testing.T) {
