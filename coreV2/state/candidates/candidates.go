@@ -1392,6 +1392,9 @@ func (c *Candidates) loadDeletedCandidates() {
 	}
 	c.deletedCandidates = make(map[types.Pubkey]*deletedID)
 	_, data := c.immutableTree().Get([]byte{deleteCandidatesPrefix})
+	if len(data) == 0 {
+		return
+	}
 
 	var list []*deletedID
 	err := rlp.DecodeBytes(data, list)
