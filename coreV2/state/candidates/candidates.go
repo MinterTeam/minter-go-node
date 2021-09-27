@@ -237,7 +237,7 @@ func (c *Candidates) Commit(db *iavl.MutableTree, version int64) error {
 			if id.isDirty {
 				id.isDirty = false
 				db.IterateRange(append([]byte{mainPrefix}, idBytes(id.ID)...), append([]byte{mainPrefix}, idBytes(id.ID+1)...), true, func(key []byte, value []byte) bool {
-					if len(key) <= 5 || !(key[5] == stakesPrefix || key[5] == updatesPrefix) {
+					if len(key) <= 5 || !(key[5] == stakesPrefix || key[5] == updatesPrefix || key[5] == totalStakePrefix) {
 						return false
 					}
 
