@@ -1346,10 +1346,6 @@ func (c *Candidates) maxIDBytes() []byte {
 }
 
 func (c *Candidates) DeleteCandidate(height uint64, candidate *Candidate) {
-	if true {
-		return
-	}
-
 	if c.bus.Validators().IsValidator(candidate.PubKey) {
 		return
 	}

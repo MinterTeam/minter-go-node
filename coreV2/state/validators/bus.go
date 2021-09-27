@@ -8,8 +8,8 @@ type Bus struct {
 	validators *Validators
 }
 
-func NewBus(accounts *Validators) *Bus {
-	return &Bus{validators: accounts}
+func NewBus(validators *Validators) *Bus {
+	return &Bus{validators: validators}
 }
 
 func (b *Bus) IsValidator(pubkey types.Pubkey) bool {
