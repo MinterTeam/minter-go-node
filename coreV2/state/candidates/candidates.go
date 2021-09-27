@@ -455,6 +455,14 @@ func (c *Candidates) GetCandidateByTendermintAddress(address types.TmAddress) *C
 // 2. Applies updates
 func (c *Candidates) RecalculateStakes(height uint64) {
 	c.recalculateStakes(height)
+}
+
+// RecalculateStakesV2 recalculate stakes of all candidates:
+// 1. Updates bip-values of each stake
+// 2. Applies updates
+// 3. Removal of candidates over 100
+func (c *Candidates) RecalculateStakesV2(height uint64) {
+	c.recalculateStakes(height)
 	candidates := c.GetCandidates()
 	if len(candidates) <= 100 {
 		return
