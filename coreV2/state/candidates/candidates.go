@@ -28,13 +28,14 @@ const (
 )
 
 const (
-	mainPrefix       = 'c'
-	pubKeyIDPrefix   = mainPrefix + 'p'
-	blockListPrefix  = mainPrefix + 'b'
-	maxIDPrefix      = mainPrefix + 'i'
-	stakesPrefix     = 's'
-	totalStakePrefix = 't'
-	updatesPrefix    = 'u'
+	mainPrefix             = 'c'
+	pubKeyIDPrefix         = mainPrefix + 'p'
+	blockListPrefix        = mainPrefix + 'b'
+	maxIDPrefix            = mainPrefix + 'i'
+	deleteCandidatesPrefix = mainPrefix + 'd'
+	stakesPrefix           = 's'
+	totalStakePrefix       = 't'
+	updatesPrefix          = 'u'
 )
 
 var (
@@ -83,7 +84,16 @@ type Candidates struct {
 	loaded              bool
 	isChangedPublicKeys bool
 
-	totalStakes *big.Int
+	totalStakes            *big.Int
+	deletedCandidates      map[types.Pubkey]*deletedID
+	dirtyDeletedCandidates bool
+	muDeletedCandidates    sync.RWMutex
+}
+
+type deletedID struct {
+	ID      uint32
+	PybKey  types.Pubkey
+	isDirty bool
 }
 
 // NewCandidates returns newly created Candidates state with a given bus and iavl
@@ -210,7 +220,45 @@ func (c *Candidates) Commit(db *iavl.MutableTree, version int64) error {
 	}
 	c.lock.Unlock()
 
-	// todo: get deleted candadates pubkey and delete by range
+	c.muDeletedCandidates.Lock()
+	if c.dirtyDeletedCandidates {
+		c.dirtyDeletedCandidates = false
+		var deletedCandidates = make([]*deletedID, 0, len(c.deletedCandidates))
+		for _, key := range c.deletedCandidates {
+			deletedCandidates = append(deletedCandidates, key)
+		}
+
+		sort.Slice(deletedCandidates, func(i, j int) bool {
+			return deletedCandidates[i].ID < deletedCandidates[j].ID
+		})
+
+		var deletedKeys [][]byte
+		for _, id := range deletedCandidates {
+			if id.isDirty {
+				id.isDirty = false
+				db.IterateRange(append([]byte{mainPrefix}, idBytes(id.ID)...), append([]byte{mainPrefix}, idBytes(id.ID+1)...), true, func(key []byte, value []byte) bool {
+					if len(key) <= 5 || !(key[5] == stakesPrefix || key[5] == updatesPrefix) {
+						return false
+					}
+
+					deletedKeys = append(deletedKeys, key)
+					return false
+				})
+			}
+		}
+
+		for _, key := range deletedKeys {
+			db.Remove(key)
+		}
+
+		data, err := rlp.EncodeToBytes(deletedCandidates)
+		if err != nil {
+			return fmt.Errorf("can't encode stake: %v", err)
+		}
+
+		db.Set([]byte{deleteCandidatesPrefix}, data)
+	}
+	c.muDeletedCandidates.Unlock()
 
 	for _, candidate := range keys {
 		candidate.lock.Lock()
@@ -1215,10 +1263,19 @@ func (c *Candidates) getOrNewID(pubKey types.Pubkey) uint32 {
 
 func (c *Candidates) id(pubKey types.Pubkey) uint32 {
 	id, ok := c.pubKeyIDs[pubKey]
-	if !ok {
+	if ok {
+		return id
+	}
+
+	c.muDeletedCandidates.Lock()
+	defer c.muDeletedCandidates.Unlock()
+
+	c.loadDeletedCandidates()
+	deleted := c.deletedCandidates[pubKey]
+	if deleted == nil {
 		return 0
 	}
-	return id
+	return deleted.ID
 }
 
 // ID returns an id of candidate by it's public key
@@ -1308,12 +1365,41 @@ func (c *Candidates) DeleteCandidate(height uint64, candidate *Candidate) {
 		u.setValue(big.NewInt(0))
 	}
 
-	// todo: unboud wait list
-	//c.bus.WaitList().GetByAddressAndPubKey()
-
 	c.lock.Lock()
-	// todo: mark and delete in commit
-	//delete(c.list, candidate.ID)
+	c.deleteCandaditeFromList(candidate)
 	c.totalStakes.Sub(c.totalStakes, candidate.totalBipStake)
 	c.lock.Unlock()
+}
+
+func (c *Candidates) deleteCandaditeFromList(candidate *Candidate) {
+	c.muDeletedCandidates.Lock()
+	defer c.muDeletedCandidates.Unlock()
+
+	c.loadDeletedCandidates()
+	c.deletedCandidates[candidate.PubKey] = &deletedID{
+		ID:      candidate.ID,
+		PybKey:  candidate.PubKey,
+		isDirty: true,
+	}
+	c.dirtyDeletedCandidates = true
+
+	delete(c.list, candidate.ID)
+}
+
+func (c *Candidates) loadDeletedCandidates() {
+	if c.deletedCandidates != nil {
+		return
+	}
+	c.deletedCandidates = make(map[types.Pubkey]*deletedID)
+	_, data := c.immutableTree().Get([]byte{deleteCandidatesPrefix})
+
+	var list []*deletedID
+	err := rlp.DecodeBytes(data, list)
+	if err != nil {
+		panic(fmt.Errorf("can't decode deleted candidates: %v", err))
+	}
+
+	for _, id := range list {
+		c.deletedCandidates[id.PybKey] = id
+	}
 }

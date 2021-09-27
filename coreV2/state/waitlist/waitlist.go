@@ -169,13 +169,13 @@ func (wl *WaitList) Get(address types.Address, pubkey types.Pubkey, coin types.C
 		return nil
 	}
 
-	candidate := wl.bus.Candidates().GetCandidate(pubkey)
-	if candidate == nil {
+	candidateID := wl.bus.Candidates().ID(pubkey)
+	if candidateID == 0 {
 		return nil
 	}
 
 	for _, item := range waitlist.List {
-		if item.CandidateId == candidate.ID && item.Coin == coin {
+		if item.CandidateId == candidateID && item.Coin == coin {
 			return item
 		}
 	}
@@ -189,14 +189,14 @@ func (wl *WaitList) GetByAddressAndPubKey(address types.Address, pubkey types.Pu
 		return nil
 	}
 
-	candidate := wl.bus.Candidates().GetCandidate(pubkey)
-	if candidate == nil {
+	candidateID := wl.bus.Candidates().ID(pubkey)
+	if candidateID == 0 {
 		return nil
 	}
 
 	var items []*Item
 	for _, item := range waitlist.List {
-		if item.CandidateId == candidate.ID {
+		if item.CandidateId == candidateID {
 			items = append(items, item)
 		}
 	}
@@ -207,12 +207,12 @@ func (wl *WaitList) GetByAddressAndPubKey(address types.Address, pubkey types.Pu
 func (wl *WaitList) AddWaitList(address types.Address, pubkey types.Pubkey, coin types.CoinID, value *big.Int) {
 	w := wl.getOrNew(address)
 
-	candidate := wl.bus.Candidates().GetCandidate(pubkey)
-	if candidate == nil {
+	candidateID := wl.bus.Candidates().ID(pubkey)
+	if candidateID == 0 {
 		log.Panicf("Candidate not found: %s", pubkey.String())
 	}
 
-	w.AddToList(candidate.ID, coin, value)
+	w.AddToList(candidateID, coin, value)
 	wl.setToMap(address, w)
 	w.markDirty(address)
 	wl.bus.Checker().AddCoin(coin, value)
@@ -224,8 +224,8 @@ func (wl *WaitList) Delete(address types.Address, pubkey types.Pubkey, coin type
 		log.Panicf("Waitlist not found for %s", address.String())
 	}
 
-	candidate := wl.bus.Candidates().GetCandidate(pubkey)
-	if candidate == nil {
+	candidateID := wl.bus.Candidates().ID(pubkey)
+	if candidateID == 0 {
 		log.Panicf("Candidate not found: %s", pubkey.String())
 	}
 
@@ -234,7 +234,7 @@ func (wl *WaitList) Delete(address types.Address, pubkey types.Pubkey, coin type
 	w.lock.RLock()
 	items := make([]*Item, 0, len(w.List)-1)
 	for _, item := range w.List {
-		if item.CandidateId != candidate.ID || item.Coin != coin {
+		if item.CandidateId != candidateID || item.Coin != coin {
 			items = append(items, item)
 		} else {
 			value.Add(value, item.Value)
