@@ -8,7 +8,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/commission"
-	"github.com/MinterTeam/minter-go-node/coreV2/state/swap"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/hexutil"
 	abcTypes "github.com/tendermint/tendermint/abci/types"
@@ -146,29 +145,11 @@ func (data DelegateData) Run(tx *Transaction, context state.Interface, rewardPoo
 	}
 	var tags []abcTypes.EventAttribute
 	if deliverState, ok := context.(*state.State); ok {
-		var tagsCom *tagPoolChange
 		if isGasCommissionFromPoolSwap {
-			var (
-				poolIDCom  uint32
-				detailsCom *swap.ChangeDetailsWithOrders
-				ownersCom  []*swap.OrderDetail
-			)
-			commission, commissionInBaseCoin, poolIDCom, detailsCom, ownersCom = deliverState.Swap.PairSellWithOrders(tx.CommissionCoin(), types.GetBaseCoinID(), commission, big.NewInt(0))
-			tagsCom = &tagPoolChange{
-				PoolID:   poolIDCom,
-				CoinIn:   tx.CommissionCoin(),
-				ValueIn:  commission.String(),
-				CoinOut:  types.GetBaseCoinID(),
-				ValueOut: commissionInBaseCoin.String(),
-				Orders:   detailsCom,
-				Sellers:  ownersCom,
-			}
-			for _, value := range ownersCom {
-				deliverState.Accounts.AddBalance(value.Owner, tx.CommissionCoin(), value.ValueBigInt)
-			}
+			commission, commissionInBaseCoin, _ = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
 		} else if !tx.GasCoin.IsBaseCoin() {
-			deliverState.Coins.SubVolume(tx.CommissionCoin(), commission)
-			deliverState.Coins.SubReserve(tx.CommissionCoin(), commissionInBaseCoin)
+			deliverState.Coins.SubVolume(tx.GasCoin, commission)
+			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
 		}
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
@@ -187,7 +168,6 @@ func (data DelegateData) Run(tx *Transaction, context state.Interface, rewardPoo
 			{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
 			{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String()), Index: true},
 			{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
-			{Key: []byte("tx.commission_details"), Value: []byte(tagsCom.string())},
 			{Key: []byte("tx.public_key"), Value: []byte(hex.EncodeToString(data.PubKey[:])), Index: true},
 			{Key: []byte("tx.coin_id"), Value: []byte(data.Coin.String()), Index: true},
 		}

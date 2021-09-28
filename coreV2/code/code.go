@@ -61,6 +61,7 @@ const (
 	InsufficientWaitList  uint32 = 412
 	PeriodLimitReached    uint32 = 413
 	CandidateJailed       uint32 = 414
+	TooBigStake           uint32 = 415
 
 	// check
 	CheckInvalidLock uint32 = 501
@@ -781,6 +782,19 @@ type tooLowStake struct {
 
 func NewTooLowStake(sender string, pubKey string, value string, coinId string, coinSymbol string) *tooLowStake {
 	return &tooLowStake{Code: strconv.Itoa(int(TooLowStake)), Sender: sender, PublicKey: pubKey, Value: value, CoinId: coinId, CoinSymbol: coinSymbol}
+}
+
+type tooBigStake struct {
+	Code       string `json:"code,omitempty"`
+	Sender     string `json:"sender,omitempty"`
+	PublicKey  string `json:"public_key,omitempty"`
+	Value      string `json:"value,omitempty"`
+	CoinSymbol string `json:"coin_symbol,omitempty"`
+	CoinId     string `json:"coin_id,omitempty"`
+}
+
+func NewTooBigStake(sender string, pubKey string, value string, coinId string, coinSymbol string) *tooBigStake {
+	return &tooBigStake{Code: strconv.Itoa(int(TooBigStake)), Sender: sender, PublicKey: pubKey, Value: value, CoinId: coinId, CoinSymbol: coinSymbol}
 }
 
 type wrongCommission struct {

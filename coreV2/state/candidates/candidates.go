@@ -54,7 +54,7 @@ type RCandidates interface {
 	Count() int
 	IsNewCandidateStakeSufficient(coin types.CoinID, stake *big.Int, limit int) bool
 	IsDelegatorStakeSufficient(address types.Address, pubkey types.Pubkey, coin types.CoinID, amount *big.Int) bool
-	IsDelegatorStakeAllow(address types.Address, pubkey types.Pubkey, coin types.CoinID, amount *big.Int) bool
+	IsDelegatorStakeAllowed(address types.Address, pubkey types.Pubkey, coin types.CoinID, amount *big.Int) (low, big bool)
 	GetStakeValueOfAddress(pubkey types.Pubkey, address types.Address, coin types.CoinID) *big.Int
 	GetCandidateOwner(pubkey types.Pubkey) types.Address
 	GetCandidateControl(pubkey types.Pubkey) types.Address
@@ -643,20 +643,20 @@ func (c *Candidates) IsDelegatorStakeSufficient(address types.Address, pubkey ty
 	return false
 }
 
-// IsDelegatorStakeAllow determines if given stake is sufficient to add it to a candidate
-func (c *Candidates) IsDelegatorStakeAllow(address types.Address, pubkey types.Pubkey, coin types.CoinID, amount *big.Int) bool {
-	var ok bool
+// IsDelegatorStakeAllowed determines if given stake is sufficient to add it to a candidate
+func (c *Candidates) IsDelegatorStakeAllowed(address types.Address, pubkey types.Pubkey, coin types.CoinID, amount *big.Int) (low, b bool) {
+	low, b = true, true
 	old := big.NewInt(0)
 	stakeValue := c.calculateBipValue(coin, amount, true, true, nil)
 
 	stakes := c.GetStakes(pubkey)
 	if len(stakes) < MaxDelegatorsPerCandidate {
-		ok = true
+		low = false
 	} else {
 		for _, stake := range stakes {
 			if stakeValue.Cmp(stake.BipValue) == 1 || (stake.Owner == address && stake.Coin == coin) {
 				old = stake.BipValue
-				ok = true
+				low = false
 				break
 			}
 		}
@@ -669,16 +669,16 @@ func (c *Candidates) IsDelegatorStakeAllow(address types.Address, pubkey types.P
 	defer c.lock.RUnlock()
 
 	if len(c.pubKeyIDs) < 4 {
-		return ok
+		return low, false
 	}
 
 	newTotalStakes := big.NewInt(0).Add(c.totalStakes, diff)
 
 	if newTotalStakes.Div(newTotalStakes, newTotalStake).Cmp(big.NewInt(5)) == -1 {
-		return false
+		return low, true
 	}
 
-	return ok
+	return low, false
 }
 
 // Delegate adds a stake to a candidate
