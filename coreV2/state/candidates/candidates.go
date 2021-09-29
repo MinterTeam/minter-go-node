@@ -463,8 +463,8 @@ func (c *Candidates) RecalculateStakes(height uint64) {
 // 3. Removal of candidates over 100
 func (c *Candidates) RecalculateStakesV2(height uint64) {
 	c.recalculateStakes(height)
-	candidates := c.GetCandidates()
-	if len(candidates) <= 100 {
+	candidates := c.getOrderedCandidatesLessID()
+	if len(candidates) < 100 {
 		return
 	}
 
@@ -1090,6 +1090,7 @@ func (c *Candidates) Export(state *types.AppState) {
 	})
 }
 
+// Deprecated: Use getOrderedCandidatesLessID
 func (c *Candidates) getOrderedCandidates() []*Candidate {
 	c.lock.RLock()
 	var candidates []*Candidate
@@ -1104,6 +1105,27 @@ func (c *Candidates) getOrderedCandidates() []*Candidate {
 		cmp := candidates[i].GetTotalBipStake().Cmp(candidates[j].GetTotalBipStake())
 		if cmp == 0 {
 			return candidates[i].ID > candidates[j].ID
+		}
+		return cmp == 1
+	})
+
+	return candidates
+}
+
+func (c *Candidates) getOrderedCandidatesLessID() []*Candidate {
+	c.lock.RLock()
+	var candidates []*Candidate
+	for _, candidate := range c.list {
+		candidate.lock.RLock()
+		candidates = append(candidates, candidate)
+		candidate.lock.RUnlock()
+	}
+	c.lock.RUnlock()
+
+	sort.SliceStable(candidates, func(i, j int) bool {
+		cmp := candidates[i].GetTotalBipStake().Cmp(candidates[j].GetTotalBipStake())
+		if cmp == 0 {
+			return candidates[i].ID < candidates[j].ID
 		}
 		return cmp == 1
 	})
@@ -1392,6 +1414,7 @@ func (c *Candidates) deleteCandaditeFromList(candidate *Candidate) {
 	c.dirtyDeletedCandidates = true
 
 	delete(c.list, candidate.ID)
+	delete(c.pubKeyIDs, candidate.PubKey)
 }
 
 func (c *Candidates) loadDeletedCandidates() {
