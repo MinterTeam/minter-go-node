@@ -10,6 +10,7 @@ import (
 )
 
 func init() {
+	tmjson.RegisterType(&removeCandidate{}, "removeCandidate")
 	tmjson.RegisterType(&reward{}, "reward")
 	tmjson.RegisterType(&slash{}, "slash")
 	tmjson.RegisterType(&jail{}, "jail")
@@ -24,6 +25,7 @@ func init() {
 	tmjson.RegisterType(&UpdateNetworkEvent{}, TypeUpdateNetworkEvent)
 	tmjson.RegisterType(&UpdateCommissionsEvent{}, TypeUpdateCommissionsEvent)
 	tmjson.RegisterType(&OrderExpiredEvent{}, TypeOrderExpiredEvent)
+	tmjson.RegisterType(&RemoveCandidateEvent{}, TypeRemoveCandidateEvent)
 }
 
 // IEventsDB is an interface of Events
@@ -122,6 +124,8 @@ func (store *eventsStore) LoadEvents(height uint32) Events {
 			resultEvents = append(resultEvents, c.compile(types.Pubkey(store.idPubKey[c.pubKeyID()])))
 		} else if c, ok := compactEvent.(*orderExpired); ok {
 			resultEvents = append(resultEvents, c.compile(store.idAddress[c.addressID()]))
+		} else if c, ok := compactEvent.(*removeCandidate); ok {
+			resultEvents = append(resultEvents, c.compile(types.Pubkey(store.idPubKey[c.pubKeyID()])))
 		} else if c, ok := compactEvent.(Event); ok {
 			resultEvents = append(resultEvents, c)
 		} else {

@@ -17,6 +17,7 @@ const (
 	TypeUpdateNetworkEvent     = "minter/UpdateNetworkEvent"
 	TypeUpdateCommissionsEvent = "minter/UpdateCommissionsEvent"
 	TypeOrderExpiredEvent      = "minter/OrderExpiredEvent"
+	TypeRemoveCandidateEvent   = "minter/RemoveCandidateEvent"
 )
 
 type Stake interface {
@@ -481,4 +482,40 @@ type UpdateNetworkEvent struct {
 
 func (un *UpdateNetworkEvent) Type() string {
 	return TypeUpdateNetworkEvent
+}
+
+type removeCandidate struct {
+	PubKeyID uint16
+}
+
+func (u *removeCandidate) compile(pubKey types.Pubkey) Event {
+	event := new(RemoveCandidateEvent)
+	event.ValidatorPubKey = pubKey
+	return event
+}
+
+func (u *removeCandidate) pubKeyID() uint16 {
+	return u.PubKeyID
+}
+
+type RemoveCandidateEvent struct {
+	ValidatorPubKey types.Pubkey `json:"validator_pub_key"`
+}
+
+func (ue *RemoveCandidateEvent) Type() string {
+	return TypeRemoveCandidateEvent
+}
+
+func (ue *RemoveCandidateEvent) ValidatorPubKeyString() string {
+	return ue.ValidatorPubKey.String()
+}
+
+func (ue *RemoveCandidateEvent) validatorPubKey() types.Pubkey {
+	return ue.ValidatorPubKey
+}
+
+func (ue *RemoveCandidateEvent) convert(pubKeyID uint16) compact {
+	result := new(removeCandidate)
+	result.PubKeyID = pubKeyID
+	return result
 }

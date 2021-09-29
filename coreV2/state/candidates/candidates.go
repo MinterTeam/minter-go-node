@@ -917,8 +917,8 @@ func (c *Candidates) TotalStakes() *big.Int {
 
 // LoadStakes loads all stakes of candidates
 func (c *Candidates) LoadStakes() {
-	c.lock.Lock()
-	defer c.lock.Unlock()
+	//c.lock.Lock()
+	//defer c.lock.Unlock()
 
 	c.loadStakes()
 }
@@ -1399,6 +1399,8 @@ func (c *Candidates) DeleteCandidate(height uint64, candidate *Candidate) {
 	c.deleteCandaditeFromList(candidate)
 	c.totalStakes.Sub(c.totalStakes, candidate.totalBipStake)
 	c.lock.Unlock()
+
+	c.bus.Events().AddEvent(&eventsdb.RemoveCandidateEvent{ValidatorPubKey: candidate.PubKey})
 }
 
 func (c *Candidates) deleteCandaditeFromList(candidate *Candidate) {
