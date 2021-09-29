@@ -97,7 +97,7 @@ func (data AddLiquidityDataV1) Run(tx *Transaction, context state.Interface, rew
 	if neededAmount1.Cmp(data.MaximumVolume1) == 1 {
 		return Response{
 			Code: code.InsufficientInputAmount,
-			Log:  fmt.Sprintf("You wanted to add %s %s, but currently you need to add %s %s to complete tx", data.Volume0, checkState.Coins().GetCoin(data.Coin0).GetFullSymbol(), neededAmount1, checkState.Coins().GetCoin(data.Coin1).GetFullSymbol()),
+			Log:  fmt.Sprintf("You wanted to add maximum %s %s, but currently you need to add %s %s to complete tx", data.MaximumVolume1, checkState.Coins().GetCoin(data.Coin1).GetFullSymbol(), neededAmount1, checkState.Coins().GetCoin(data.Coin1).GetFullSymbol()),
 			Info: EncodeError(code.NewInsufficientInputAmount(data.Coin0.String(), data.Volume0.String(), data.Coin1.String(), data.MaximumVolume1.String(), neededAmount1.String())),
 		}
 	}
@@ -114,7 +114,7 @@ func (data AddLiquidityDataV1) Run(tx *Transaction, context state.Interface, rew
 		} else if err == swap.ErrorInsufficientInputAmount {
 			return Response{
 				Code: code.InsufficientInputAmount,
-				Log:  fmt.Sprintf("You wanted to add %s %s, but currently you need to add %s %s to complete tx", data.Volume0, checkState.Coins().GetCoin(data.Coin0).GetFullSymbol(), neededAmount1, checkState.Coins().GetCoin(data.Coin1).GetFullSymbol()),
+				Log:  fmt.Sprintf("You wanted to add maximum %s %s, but currently you need to add %s %s to complete tx", data.MaximumVolume1, checkState.Coins().GetCoin(data.Coin1).GetFullSymbol(), neededAmount1, checkState.Coins().GetCoin(data.Coin1).GetFullSymbol()),
 				Info: EncodeError(code.NewInsufficientInputAmount(data.Coin0.String(), data.Volume0.String(), data.Coin1.String(), data.MaximumVolume1.String(), neededAmount1.String())),
 			}
 		}
