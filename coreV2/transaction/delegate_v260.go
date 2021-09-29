@@ -83,7 +83,7 @@ func (data DelegateDataV260) basicCheck(tx *Transaction, context *state.CheckSta
 	if b {
 		return &Response{
 			Code: code.TooBigStake,
-			Log:  "Stake is too big",
+			Log:  "Cannot be delegated to a candidate, and his total stake exceeds 20% of the network",
 			Info: EncodeError(code.NewTooBigStake(sender.String(), data.PubKey.String(), value.String(), data.Coin.String(), coin.GetFullSymbol())),
 		}
 	}

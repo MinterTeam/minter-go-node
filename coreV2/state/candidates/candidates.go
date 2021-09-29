@@ -645,7 +645,7 @@ func (c *Candidates) IsDelegatorStakeSufficient(address types.Address, pubkey ty
 
 // IsDelegatorStakeAllowed determines if given stake is sufficient to add it to a candidate
 func (c *Candidates) IsDelegatorStakeAllowed(address types.Address, pubkey types.Pubkey, coin types.CoinID, amount *big.Int) (low, b bool) {
-	low, b = true, true
+	low = true
 	old := big.NewInt(0)
 	stakeValue := c.calculateBipValue(coin, amount, true, true, nil)
 
@@ -662,6 +662,10 @@ func (c *Candidates) IsDelegatorStakeAllowed(address types.Address, pubkey types
 		}
 	}
 
+	if low {
+		return true, false
+	}
+
 	diff := big.NewInt(0).Sub(old, stakeValue)
 	newTotalStake := big.NewInt(0).Add(c.GetCandidate(pubkey).GetTotalBipStake(), diff)
 
@@ -669,16 +673,16 @@ func (c *Candidates) IsDelegatorStakeAllowed(address types.Address, pubkey types
 	defer c.lock.RUnlock()
 
 	if len(c.pubKeyIDs) < 4 {
-		return low, false
+		return false, false
 	}
 
 	newTotalStakes := big.NewInt(0).Add(c.totalStakes, diff)
 
-	if newTotalStakes.Div(newTotalStakes, newTotalStake).Cmp(big.NewInt(5)) == -1 {
-		return low, true
+	if big.NewInt(0).Div(newTotalStakes, newTotalStake).Cmp(big.NewInt(5)) == -1 {
+		return false, true
 	}
 
-	return low, false
+	return false, false
 }
 
 // Delegate adds a stake to a candidate
