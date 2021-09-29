@@ -148,6 +148,23 @@ func (c *Candidates) ResetIsChangedPublicKeys() {
 	c.isChangedPublicKeys = false
 }
 
+func (c *Candidates) SetDeletedCandidates(list []types.DeletedCandidate) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	c.muDeletedCandidates.Lock()
+	defer c.muDeletedCandidates.Unlock()
+
+	c.dirtyDeletedCandidates = true
+	for _, deleted := range list {
+		c.deletedCandidates[deleted.PubKey] = &deletedID{
+			ID:      uint32(deleted.ID),
+			PybKey:  deleted.PubKey,
+			isDirty: true,
+		}
+	}
+}
+
 func (c *Candidates) IsCandidateJailed(pubkey types.Pubkey, block uint64) bool {
 	candidate := c.GetCandidate(pubkey)
 
@@ -1087,6 +1104,17 @@ func (c *Candidates) Export(state *types.AppState) {
 	}
 	sort.SliceStable(state.BlockListCandidates, func(i, j int) bool {
 		return bytes.Compare(state.BlockListCandidates[i].Bytes(), state.BlockListCandidates[j].Bytes()) == 1
+	})
+
+	c.loadDeletedCandidates()
+	for _, c := range c.deletedCandidates {
+		state.DeletedCandidates = append(state.DeletedCandidates, types.DeletedCandidate{
+			ID:     uint64(c.ID),
+			PubKey: c.PybKey,
+		})
+	}
+	sort.SliceStable(state.DeletedCandidates, func(i, j int) bool {
+		return state.DeletedCandidates[i].ID < state.DeletedCandidates[j].ID
 	})
 }
 

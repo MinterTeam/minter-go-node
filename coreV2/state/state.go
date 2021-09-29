@@ -280,6 +280,7 @@ func (s *State) Import(state types.AppState) error {
 		s.Candidates.SetTotalStake(c.PubKey, helpers.StringToBigInt(c.TotalBipStake))
 		s.Candidates.SetStakes(c.PubKey, c.Stakes, c.Updates)
 	}
+	s.Candidates.SetDeletedCandidates(state.DeletedCandidates)
 	s.Candidates.RecalculateStakesV2(uint64(s.height))
 
 	for _, pubkey := range state.BlockListCandidates {
