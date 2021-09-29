@@ -3,6 +3,7 @@ package transaction
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/coreV2/state/swap"
 	"math/big"
 
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
@@ -13,20 +14,20 @@ import (
 	abcTypes "github.com/tendermint/tendermint/abci/types"
 )
 
-type DelegateData struct {
+type DelegateDataV260 struct {
 	PubKey types.Pubkey
 	Coin   types.CoinID
 	Value  *big.Int
 }
 
-func (data DelegateData) Gas() int64 {
+func (data DelegateDataV260) Gas() int64 {
 	return gasDelegate
 }
-func (data DelegateData) TxType() TxType {
+func (data DelegateDataV260) TxType() TxType {
 	return TypeDelegate
 }
 
-func (data DelegateData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data DelegateDataV260) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	coin := context.Coins().GetCoin(data.Coin)
 	if coin == nil {
 		return &Response{
@@ -71,27 +72,35 @@ func (data DelegateData) basicCheck(tx *Transaction, context *state.CheckState) 
 		}
 	}
 
-	if !context.Candidates().IsDelegatorStakeSufficient(sender, data.PubKey, data.Coin, value) {
+	low, b := context.Candidates().IsDelegatorStakeAllowed(sender, data.PubKey, data.Coin, value)
+	if low {
 		return &Response{
 			Code: code.TooLowStake,
 			Log:  "Stake is too low",
 			Info: EncodeError(code.NewTooLowStake(sender.String(), data.PubKey.String(), value.String(), data.Coin.String(), coin.GetFullSymbol())),
 		}
 	}
+	if b {
+		return &Response{
+			Code: code.TooBigStake,
+			Log:  "Cannot be delegated to a candidate, and his total stake exceeds 20% of the network",
+			Info: EncodeError(code.NewTooBigStake(sender.String(), data.PubKey.String(), value.String(), data.Coin.String(), coin.GetFullSymbol())),
+		}
+	}
 
 	return nil
 }
 
-func (data DelegateData) String() string {
+func (data DelegateDataV260) String() string {
 	return fmt.Sprintf("DELEGATE pubkey:%s ",
 		hexutil.Encode(data.PubKey[:]))
 }
 
-func (data DelegateData) CommissionData(price *commission.Price) *big.Int {
+func (data DelegateDataV260) CommissionData(price *commission.Price) *big.Int {
 	return price.Delegate
 }
 
-func (data DelegateData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
+func (data DelegateDataV260) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -145,11 +154,29 @@ func (data DelegateData) Run(tx *Transaction, context state.Interface, rewardPoo
 	}
 	var tags []abcTypes.EventAttribute
 	if deliverState, ok := context.(*state.State); ok {
+		var tagsCom *tagPoolChange
 		if isGasCommissionFromPoolSwap {
-			commission, commissionInBaseCoin, _ = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
+			var (
+				poolIDCom  uint32
+				detailsCom *swap.ChangeDetailsWithOrders
+				ownersCom  []*swap.OrderDetail
+			)
+			commission, commissionInBaseCoin, poolIDCom, detailsCom, ownersCom = deliverState.Swap.PairSellWithOrders(tx.CommissionCoin(), types.GetBaseCoinID(), commission, big.NewInt(0))
+			tagsCom = &tagPoolChange{
+				PoolID:   poolIDCom,
+				CoinIn:   tx.CommissionCoin(),
+				ValueIn:  commission.String(),
+				CoinOut:  types.GetBaseCoinID(),
+				ValueOut: commissionInBaseCoin.String(),
+				Orders:   detailsCom,
+				Sellers:  ownersCom,
+			}
+			for _, value := range ownersCom {
+				deliverState.Accounts.AddBalance(value.Owner, tx.CommissionCoin(), value.ValueBigInt)
+			}
 		} else if !tx.GasCoin.IsBaseCoin() {
-			deliverState.Coins.SubVolume(tx.GasCoin, commission)
-			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
+			deliverState.Coins.SubVolume(tx.CommissionCoin(), commission)
+			deliverState.Coins.SubReserve(tx.CommissionCoin(), commissionInBaseCoin)
 		}
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
@@ -168,6 +195,7 @@ func (data DelegateData) Run(tx *Transaction, context state.Interface, rewardPoo
 			{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
 			{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String()), Index: true},
 			{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
+			{Key: []byte("tx.commission_details"), Value: []byte(tagsCom.string())},
 			{Key: []byte("tx.public_key"), Value: []byte(hex.EncodeToString(data.PubKey[:])), Index: true},
 			{Key: []byte("tx.coin_id"), Value: []byte(data.Coin.String()), Index: true},
 		}

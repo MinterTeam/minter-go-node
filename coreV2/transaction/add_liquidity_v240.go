@@ -99,6 +99,21 @@ func (data AddLiquidityDataV240) Run(tx *Transaction, context state.Interface, r
 		return *errResp
 	}
 
+	{
+		amount0 := new(big.Int).Set(data.Volume0)
+		if tx.GasCoin == data.Coin0 {
+			amount0.Add(amount0, commission)
+		}
+		if checkState.Accounts().GetBalance(sender, data.Coin0).Cmp(amount0) == -1 {
+			symbol := checkState.Coins().GetCoin(data.Coin0).GetFullSymbol()
+			return Response{
+				Code: code.InsufficientFunds,
+				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), amount0.String(), symbol),
+				Info: EncodeError(code.NewInsufficientFunds(sender.String(), amount0.String(), symbol, data.Coin0.String())),
+			}
+		}
+	}
+
 	neededAmount1 := new(big.Int).Set(data.MaximumVolume1)
 
 	swapper := checkState.Swap().GetSwapper(data.Coin0, data.Coin1)
@@ -134,20 +149,6 @@ func (data AddLiquidityDataV240) Run(tx *Transaction, context state.Interface, r
 				Code: code.InsufficientInputAmount,
 				Log:  fmt.Sprintf("You wanted to add %s %s, but currently you need to add %s %s to complete tx", data.Volume0, checkState.Coins().GetCoin(data.Coin0).GetFullSymbol(), neededAmount1, checkState.Coins().GetCoin(data.Coin1).GetFullSymbol()),
 				Info: EncodeError(code.NewInsufficientInputAmount(data.Coin0.String(), data.Volume0.String(), data.Coin1.String(), data.MaximumVolume1.String(), neededAmount1.String())),
-			}
-		}
-	}
-	{
-		amount0 := new(big.Int).Set(data.Volume0)
-		if tx.GasCoin == data.Coin0 {
-			amount0.Add(amount0, commission)
-		}
-		if checkState.Accounts().GetBalance(sender, data.Coin0).Cmp(amount0) == -1 {
-			symbol := checkState.Coins().GetCoin(data.Coin0).GetFullSymbol()
-			return Response{
-				Code: code.InsufficientFunds,
-				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), amount0.String(), symbol),
-				Info: EncodeError(code.NewInsufficientFunds(sender.String(), amount0.String(), symbol, data.Coin0.String())),
 			}
 		}
 	}

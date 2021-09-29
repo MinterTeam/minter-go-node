@@ -8,8 +8,9 @@ import (
 type Candidates interface {
 	GetStakes(types.Pubkey) []Stake
 	Punish(uint64, types.TmAddress)
-	GetCandidate(types.Pubkey) *Candidate
+	ID(types.Pubkey) uint32
 	SetOffline(types.Pubkey)
+	GetCandidate(types.Pubkey) *Candidate
 	GetCandidateByTendermintAddress(types.TmAddress) *Candidate
 }
 

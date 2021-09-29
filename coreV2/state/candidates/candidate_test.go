@@ -19,12 +19,59 @@ import (
 	"testing"
 )
 
+type mockValisators struct{}
+
+func (m mockValisators) IsValidator(pubkey types.Pubkey) bool {
+	return false
+}
+
+func TestCandidates_DeleteCandidate(t *testing.T) {
+	t.Parallel()
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	b := bus.NewBus()
+
+	b.SetValidators(&mockValisators{})
+	b.SetChecker(checker.NewChecker(b))
+	candidates := NewCandidates(b, mutableTree.GetLastImmutable())
+
+	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10, 0, 0)
+	candidates.Create([20]byte{2}, [20]byte{3}, [20]byte{4}, [32]byte{5}, 10, 0, 0)
+
+	_, _, err := mutableTree.Commit(candidates)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	candidate := candidates.GetCandidate([32]byte{4})
+	if candidate == nil {
+		t.Fatal("candidate not found")
+	}
+
+	candidates.DeleteCandidate(5, candidate)
+	_, _, err = mutableTree.Commit(candidates)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	{
+		candidates := NewCandidates(b, mutableTree.GetLastImmutable())
+		t.Log(candidates.ID([32]byte{4}))
+		if candidates.GetCandidate([32]byte{4}) != nil {
+			t.Fatal("candidate exist")
+		}
+	}
+}
 func TestCandidates_Create_oneCandidate(t *testing.T) {
 	t.Parallel()
 	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
 	b := bus.NewBus()
 	b.SetChecker(checker.NewChecker(b))
 	candidates := NewCandidates(b, mutableTree.GetLastImmutable())
+
+	t.Log(candidates.ID([32]byte{4}))
+	if candidates.GetCandidate([32]byte{4}) != nil {
+		t.Fatal("candidate exist")
+	}
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10, 0, 0)
 

@@ -143,6 +143,8 @@ func NewState(height uint64, db db.DB, events eventsdb.IEventsDB, cacheSize int,
 	state.tree = iavlTree
 	state.height = int64(height)
 	state.InitialVersion = int64(initialVersion)
+
+	// todo: do not upload there CheckState, mb add param to this func
 	state.Candidates.LoadCandidatesDeliver()
 	state.Candidates.LoadStakes()
 	state.Validators.LoadValidators()
@@ -269,10 +271,6 @@ func (s *State) Import(state types.AppState) error {
 	}
 	s.Validators.SetValidators(vals)
 
-	for _, pubkey := range state.BlockListCandidates {
-		s.Candidates.AddToBlockPubKey(pubkey)
-	}
-
 	for _, c := range state.Candidates {
 		s.Candidates.CreateWithID(c.OwnerAddress, c.RewardAddress, c.ControlAddress, c.PubKey, uint32(c.Commission), uint32(c.ID), c.LastEditCommissionHeight, c.JailedUntil)
 		if c.Status == candidates.CandidateStatusOnline {
@@ -282,7 +280,11 @@ func (s *State) Import(state types.AppState) error {
 		s.Candidates.SetTotalStake(c.PubKey, helpers.StringToBigInt(c.TotalBipStake))
 		s.Candidates.SetStakes(c.PubKey, c.Stakes, c.Updates)
 	}
-	s.Candidates.RecalculateStakes(uint64(s.height))
+	s.Candidates.RecalculateStakesV2(uint64(s.height))
+
+	for _, pubkey := range state.BlockListCandidates {
+		s.Candidates.AddToBlockPubKey(pubkey)
+	}
 
 	for _, w := range state.Waitlist {
 		value := helpers.StringToBigInt(w.Value)

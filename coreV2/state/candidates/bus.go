@@ -36,6 +36,11 @@ func (b *Bus) Punish(height uint64, address types.TmAddress) {
 	b.candidates.Punish(height, address)
 }
 
+// ID returns id by a public key
+func (b *Bus) ID(pubkey types.Pubkey) uint32 {
+	return b.candidates.ID(pubkey)
+}
+
 // GetCandidate returns candidate by a public key
 func (b *Bus) GetCandidate(pubkey types.Pubkey) *bus.Candidate {
 	candidate := b.candidates.GetCandidate(pubkey)

@@ -84,6 +84,11 @@ func GetData(txType TxType) (Data, bool) {
 
 func GetDataV260(txType TxType) (Data, bool) {
 	switch txType {
+	case TypeDelegate:
+		return &DelegateDataV260{}, true
+	case TypeUnbond:
+		return &UnbondDataV260{}, true
+
 	case TypeSellSwapPool:
 		return &SellSwapPoolDataV260{}, true
 	case TypeBuySwapPool:

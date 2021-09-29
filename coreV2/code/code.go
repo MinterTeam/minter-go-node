@@ -61,6 +61,7 @@ const (
 	InsufficientWaitList  uint32 = 412
 	PeriodLimitReached    uint32 = 413
 	CandidateJailed       uint32 = 414
+	TooBigStake           uint32 = 415
 
 	// check
 	CheckInvalidLock uint32 = 501
@@ -149,17 +150,14 @@ type insufficientLiquidity struct {
 	Amount1Out string `json:"amount1_out,omitempty"`
 }
 
-func NewInsufficientInputAmount(coin0, value0, coin1, value1, neededValue1 string) *insufficientInputAmount {
-	return &insufficientInputAmount{Code: strconv.Itoa(int(InsufficientInputAmount)), Coin0: coin0, Coin1: coin1, Amount0: value0, Amount1: value1, NeededAmount1: neededValue1}
+func NewInsufficientInputAmount(_, _, coin1, value1, neededValue1 string) *insufficientInputAmount {
+	return &insufficientInputAmount{Code: strconv.Itoa(int(InsufficientInputAmount)), Coin1: coin1, Amount1: value1, NeededAmount1: neededValue1}
 }
 
 type insufficientInputAmount struct {
-	Code    string `json:"code,omitempty"`
-	Coin0   string `json:"coin0,omitempty"`
-	Amount0 string `json:"amount0,omitempty"`
-
+	Code          string `json:"code,omitempty"`
 	Coin1         string `json:"coin1,omitempty"`
-	Amount1       string `json:"amount1,omitempty"`
+	Amount1       string `json:"maximum_amount1,omitempty"`
 	NeededAmount1 string `json:"needed_amount1,omitempty"`
 }
 
@@ -781,6 +779,19 @@ type tooLowStake struct {
 
 func NewTooLowStake(sender string, pubKey string, value string, coinId string, coinSymbol string) *tooLowStake {
 	return &tooLowStake{Code: strconv.Itoa(int(TooLowStake)), Sender: sender, PublicKey: pubKey, Value: value, CoinId: coinId, CoinSymbol: coinSymbol}
+}
+
+type tooBigStake struct {
+	Code       string `json:"code,omitempty"`
+	Sender     string `json:"sender,omitempty"`
+	PublicKey  string `json:"public_key,omitempty"`
+	Value      string `json:"value,omitempty"`
+	CoinSymbol string `json:"coin_symbol,omitempty"`
+	CoinId     string `json:"coin_id,omitempty"`
+}
+
+func NewTooBigStake(sender string, pubKey string, value string, coinId string, coinSymbol string) *tooBigStake {
+	return &tooBigStake{Code: strconv.Itoa(int(TooBigStake)), Sender: sender, PublicKey: pubKey, Value: value, CoinId: coinId, CoinSymbol: coinSymbol}
 }
 
 type wrongCommission struct {

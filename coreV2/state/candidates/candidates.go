@@ -28,13 +28,14 @@ const (
 )
 
 const (
-	mainPrefix       = 'c'
-	pubKeyIDPrefix   = mainPrefix + 'p'
-	blockListPrefix  = mainPrefix + 'b'
-	maxIDPrefix      = mainPrefix + 'i'
-	stakesPrefix     = 's'
-	totalStakePrefix = 't'
-	updatesPrefix    = 'u'
+	mainPrefix             = 'c'
+	pubKeyIDPrefix         = mainPrefix + 'p'
+	blockListPrefix        = mainPrefix + 'b'
+	maxIDPrefix            = mainPrefix + 'i'
+	deleteCandidatesPrefix = mainPrefix + 'd'
+	stakesPrefix           = 's'
+	totalStakePrefix       = 't'
+	updatesPrefix          = 'u'
 )
 
 var (
@@ -53,12 +54,13 @@ type RCandidates interface {
 	Count() int
 	IsNewCandidateStakeSufficient(coin types.CoinID, stake *big.Int, limit int) bool
 	IsDelegatorStakeSufficient(address types.Address, pubkey types.Pubkey, coin types.CoinID, amount *big.Int) bool
+	IsDelegatorStakeAllowed(address types.Address, pubkey types.Pubkey, coin types.CoinID, amount *big.Int) (low, big bool)
 	GetStakeValueOfAddress(pubkey types.Pubkey, address types.Address, coin types.CoinID) *big.Int
 	GetCandidateOwner(pubkey types.Pubkey) types.Address
 	GetCandidateControl(pubkey types.Pubkey) types.Address
 	GetTotalStake(pubkey types.Pubkey) *big.Int
 	LoadCandidates()
-	LoadStakesOfCandidate(pubkey types.Pubkey)
+	LoadStakesOfCandidate(pubkey types.Pubkey) *big.Int
 	GetCandidate(pubkey types.Pubkey) *Candidate
 	LoadStakes()
 	GetCandidates() []*Candidate
@@ -81,6 +83,17 @@ type Candidates struct {
 	lock                sync.RWMutex
 	loaded              bool
 	isChangedPublicKeys bool
+
+	totalStakes            *big.Int
+	deletedCandidates      map[types.Pubkey]*deletedID
+	dirtyDeletedCandidates bool
+	muDeletedCandidates    sync.RWMutex
+}
+
+type deletedID struct {
+	ID      uint32
+	PybKey  types.Pubkey
+	isDirty bool
 }
 
 // NewCandidates returns newly created Candidates state with a given bus and iavl
@@ -93,12 +106,13 @@ func NewCandidates(bus *bus.Bus, db *iavl.ImmutableTree) *Candidates {
 		loaded = true
 	}
 	candidates := &Candidates{
-		db:        immutableTree,
-		loaded:    loaded,
-		bus:       bus,
-		blockList: map[types.Pubkey]struct{}{},
-		pubKeyIDs: map[types.Pubkey]uint32{},
-		list:      map[uint32]*Candidate{},
+		db:          immutableTree,
+		loaded:      loaded,
+		bus:         bus,
+		blockList:   map[types.Pubkey]struct{}{},
+		pubKeyIDs:   map[types.Pubkey]uint32{},
+		list:        map[uint32]*Candidate{},
+		totalStakes: big.NewInt(0),
 	}
 	candidates.bus.SetCandidates(NewBus(candidates))
 
@@ -205,6 +219,46 @@ func (c *Candidates) Commit(db *iavl.MutableTree, version int64) error {
 		db.Set([]byte{maxIDPrefix}, c.maxIDBytes())
 	}
 	c.lock.Unlock()
+
+	c.muDeletedCandidates.Lock()
+	if c.dirtyDeletedCandidates {
+		c.dirtyDeletedCandidates = false
+		var deletedCandidates = make([]*deletedID, 0, len(c.deletedCandidates))
+		for _, key := range c.deletedCandidates {
+			deletedCandidates = append(deletedCandidates, key)
+		}
+
+		sort.Slice(deletedCandidates, func(i, j int) bool {
+			return deletedCandidates[i].ID < deletedCandidates[j].ID
+		})
+
+		var deletedKeys [][]byte
+		for _, id := range deletedCandidates {
+			if id.isDirty {
+				id.isDirty = false
+				db.IterateRange(append([]byte{mainPrefix}, idBytes(id.ID)...), append([]byte{mainPrefix}, idBytes(id.ID+1)...), true, func(key []byte, value []byte) bool {
+					if len(key) <= 5 || !(key[5] == stakesPrefix || key[5] == updatesPrefix || key[5] == totalStakePrefix) {
+						return false
+					}
+
+					deletedKeys = append(deletedKeys, key)
+					return false
+				})
+			}
+		}
+
+		for _, key := range deletedKeys {
+			db.Remove(key)
+		}
+
+		data, err := rlp.EncodeToBytes(deletedCandidates)
+		if err != nil {
+			return fmt.Errorf("can't encode stake: %v", err)
+		}
+
+		db.Set([]byte{deleteCandidatesPrefix}, data)
+	}
+	c.muDeletedCandidates.Unlock()
 
 	for _, candidate := range keys {
 		candidate.lock.Lock()
@@ -403,9 +457,27 @@ func (c *Candidates) RecalculateStakes(height uint64) {
 	c.recalculateStakes(height)
 }
 
+// RecalculateStakesV2 recalculate stakes of all candidates:
+// 1. Updates bip-values of each stake
+// 2. Applies updates
+// 3. Removal of candidates over 100
+func (c *Candidates) RecalculateStakesV2(height uint64) {
+	c.recalculateStakes(height)
+	candidates := c.getOrderedCandidatesLessID()
+	if len(candidates) < 100 {
+		return
+	}
+
+	for _, candidate := range candidates[100:] {
+		c.DeleteCandidate(height, candidate)
+	}
+}
+
 func (c *Candidates) recalculateStakes(height uint64) {
 	coinsCache := newCoinsCache()
-
+	c.lock.Lock()
+	c.totalStakes.SetInt64(0)
+	c.lock.Unlock()
 	for _, candidate := range c.getOrderedCandidates() {
 		stakes := &candidate.stakes
 		for _, stake := range stakes {
@@ -472,6 +544,10 @@ func (c *Candidates) recalculateStakes(height uint64) {
 		}
 
 		candidate.setTotalBipStake(totalBipValue)
+
+		c.lock.Lock()
+		c.totalStakes.Add(c.totalStakes, totalBipValue)
+		c.lock.Unlock()
 	}
 }
 
@@ -565,6 +641,48 @@ func (c *Candidates) IsDelegatorStakeSufficient(address types.Address, pubkey ty
 	}
 
 	return false
+}
+
+// IsDelegatorStakeAllowed determines if given stake is sufficient to add it to a candidate
+func (c *Candidates) IsDelegatorStakeAllowed(address types.Address, pubkey types.Pubkey, coin types.CoinID, amount *big.Int) (low, b bool) {
+	low = true
+	old := big.NewInt(0)
+	stakeValue := c.calculateBipValue(coin, amount, true, true, nil)
+
+	stakes := c.GetStakes(pubkey)
+	if len(stakes) < MaxDelegatorsPerCandidate {
+		low = false
+	} else {
+		for _, stake := range stakes {
+			if stakeValue.Cmp(stake.BipValue) == 1 || (stake.Owner == address && stake.Coin == coin) {
+				old = stake.BipValue
+				low = false
+				break
+			}
+		}
+	}
+
+	if low {
+		return true, false
+	}
+
+	diff := big.NewInt(0).Sub(old, stakeValue)
+	newTotalStake := big.NewInt(0).Add(c.GetCandidate(pubkey).GetTotalBipStake(), diff)
+
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
+	if len(c.pubKeyIDs) < 4 {
+		return false, false
+	}
+
+	newTotalStakes := big.NewInt(0).Add(c.totalStakes, diff)
+
+	if big.NewInt(0).Div(newTotalStakes, newTotalStake).Cmp(big.NewInt(5)) == -1 {
+		return false, true
+	}
+
+	return false, false
 }
 
 // Delegate adds a stake to a candidate
@@ -790,10 +908,26 @@ func (c *Candidates) checkAndSetLoaded() bool {
 	return false
 }
 
+func (c *Candidates) TotalStakes() *big.Int {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
+	return big.NewInt(0).Set(c.totalStakes)
+}
+
 // LoadStakes loads all stakes of candidates
 func (c *Candidates) LoadStakes() {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	c.loadStakes()
+}
+
+// loadStakes loads all stakes of candidates
+func (c *Candidates) loadStakes() {
+	c.totalStakes.SetInt64(0)
 	for pubkey := range c.pubKeyIDs {
-		c.LoadStakesOfCandidate(pubkey)
+		c.totalStakes.Add(c.totalStakes, c.LoadStakesOfCandidate(pubkey))
 	}
 }
 
@@ -906,7 +1040,7 @@ func (c *Candidates) SetStakes(pubkey types.Pubkey, stakes []types.Stake, update
 // Export exports all data to the given state
 func (c *Candidates) Export(state *types.AppState) {
 	c.LoadCandidatesDeliver()
-	c.LoadStakes()
+	c.loadStakes()
 
 	candidates := c.GetCandidates()
 	state.Candidates = make([]types.Candidate, 0, len(candidates))
@@ -956,6 +1090,7 @@ func (c *Candidates) Export(state *types.AppState) {
 	})
 }
 
+// Deprecated: Use getOrderedCandidatesLessID
 func (c *Candidates) getOrderedCandidates() []*Candidate {
 	c.lock.RLock()
 	var candidates []*Candidate
@@ -970,6 +1105,27 @@ func (c *Candidates) getOrderedCandidates() []*Candidate {
 		cmp := candidates[i].GetTotalBipStake().Cmp(candidates[j].GetTotalBipStake())
 		if cmp == 0 {
 			return candidates[i].ID > candidates[j].ID
+		}
+		return cmp == 1
+	})
+
+	return candidates
+}
+
+func (c *Candidates) getOrderedCandidatesLessID() []*Candidate {
+	c.lock.RLock()
+	var candidates []*Candidate
+	for _, candidate := range c.list {
+		candidate.lock.RLock()
+		candidates = append(candidates, candidate)
+		candidate.lock.RUnlock()
+	}
+	c.lock.RUnlock()
+
+	sort.SliceStable(candidates, func(i, j int) bool {
+		cmp := candidates[i].GetTotalBipStake().Cmp(candidates[j].GetTotalBipStake())
+		if cmp == 0 {
+			return candidates[i].ID < candidates[j].ID
 		}
 		return cmp == 1
 	})
@@ -1022,7 +1178,7 @@ func (c *Candidates) SetTotalStake(pubkey types.Pubkey, stake *big.Int) {
 }
 
 // LoadStakesOfCandidate loads stakes of given candidate from disk
-func (c *Candidates) LoadStakesOfCandidate(pubkey types.Pubkey) {
+func (c *Candidates) LoadStakesOfCandidate(pubkey types.Pubkey) *big.Int {
 	candidate := c.GetCandidate(pubkey)
 
 	// load stakes
@@ -1096,6 +1252,8 @@ func (c *Candidates) LoadStakesOfCandidate(pubkey types.Pubkey) {
 
 	candidate.setTmAddress()
 	c.setToMap(candidate.PubKey, candidate)
+
+	return big.NewInt(0).Set(candidate.totalBipStake)
 }
 
 // ChangePubKey change public key of a candidate from old to new
@@ -1138,7 +1296,20 @@ func (c *Candidates) getOrNewID(pubKey types.Pubkey) uint32 {
 }
 
 func (c *Candidates) id(pubKey types.Pubkey) uint32 {
-	return c.pubKeyIDs[pubKey]
+	id, ok := c.pubKeyIDs[pubKey]
+	if ok {
+		return id
+	}
+
+	c.muDeletedCandidates.Lock()
+	defer c.muDeletedCandidates.Unlock()
+
+	c.loadDeletedCandidates()
+	deleted := c.deletedCandidates[pubKey]
+	if deleted == nil {
+		return 0
+	}
+	return deleted.ID
 }
 
 // ID returns an id of candidate by it's public key
@@ -1198,4 +1369,71 @@ func (c *Candidates) maxIDBytes() []byte {
 	bs := make([]byte, 4)
 	binary.LittleEndian.PutUint32(bs, c.maxID)
 	return bs
+}
+
+func (c *Candidates) DeleteCandidate(height uint64, candidate *Candidate) {
+	if c.bus.Validators().IsValidator(candidate.PubKey) {
+		return
+	}
+
+	c.AddToBlockPubKey(candidate.PubKey)
+
+	for _, s := range candidate.stakes {
+		if s == nil {
+			continue
+		}
+		c.bus.FrozenFunds().AddFrozenFund(height+types.GetUnbondPeriod(), s.Owner, &candidate.PubKey, candidate.ID, s.Coin, s.Value)
+		c.bus.Checker().AddCoin(s.Coin, big.NewInt(0).Neg(s.Value))
+		s.setValue(big.NewInt(0))
+	}
+	for _, u := range candidate.updates {
+		if u == nil {
+			continue
+		}
+		c.bus.FrozenFunds().AddFrozenFund(height+types.GetUnbondPeriod(), u.Owner, &candidate.PubKey, candidate.ID, u.Coin, u.Value)
+		c.bus.Checker().AddCoin(u.Coin, big.NewInt(0).Neg(u.Value))
+		u.setValue(big.NewInt(0))
+	}
+
+	c.lock.Lock()
+	c.deleteCandaditeFromList(candidate)
+	c.totalStakes.Sub(c.totalStakes, candidate.totalBipStake)
+	c.lock.Unlock()
+}
+
+func (c *Candidates) deleteCandaditeFromList(candidate *Candidate) {
+	c.muDeletedCandidates.Lock()
+	defer c.muDeletedCandidates.Unlock()
+
+	c.loadDeletedCandidates()
+	c.deletedCandidates[candidate.PubKey] = &deletedID{
+		ID:      candidate.ID,
+		PybKey:  candidate.PubKey,
+		isDirty: true,
+	}
+	c.dirtyDeletedCandidates = true
+
+	delete(c.list, candidate.ID)
+	delete(c.pubKeyIDs, candidate.PubKey)
+}
+
+func (c *Candidates) loadDeletedCandidates() {
+	if c.deletedCandidates != nil {
+		return
+	}
+	c.deletedCandidates = make(map[types.Pubkey]*deletedID)
+	_, data := c.immutableTree().Get([]byte{deleteCandidatesPrefix})
+	if len(data) == 0 {
+		return
+	}
+
+	var list []*deletedID
+	err := rlp.DecodeBytes(data, &list)
+	if err != nil {
+		panic(fmt.Errorf("can't decode deleted candidates: %v", err))
+	}
+
+	for _, id := range list {
+		c.deletedCandidates[id.PybKey] = id
+	}
 }
