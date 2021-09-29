@@ -9,24 +9,28 @@ import (
 )
 
 type AppState struct {
-	Note                string           `json:"note"`
-	Validators          []Validator      `json:"validators,omitempty"`
-	Candidates          []Candidate      `json:"candidates,omitempty"`
-	BlockListCandidates []Pubkey         `json:"block_list_candidates,omitempty"`
-	Waitlist            []Waitlist       `json:"waitlist,omitempty"`
-	Pools               []Pool           `json:"pools,omitempty"`
-	NextOrderID         uint64           `json:"next_order_id"`
-	Accounts            []Account        `json:"accounts,omitempty"`
-	Coins               []Coin           `json:"coins,omitempty"`
-	FrozenFunds         []FrozenFund     `json:"frozen_funds,omitempty"`
-	HaltBlocks          []HaltBlock      `json:"halt_blocks,omitempty"`
-	Commission          Commission       `json:"commission,omitempty"`
-	CommissionVotes     []CommissionVote `json:"commission_votes,omitempty"`
-	UpdateVotes         []UpdateVote     `json:"update_votes,omitempty"`
-	UsedChecks          []UsedCheck      `json:"used_checks,omitempty"`
-	MaxGas              uint64           `json:"max_gas"`
-	TotalSlashed        string           `json:"total_slashed"`
-	Version             string           `json:"version,omitempty"`
+	Note                string      `json:"note"`
+	Validators          []Validator `json:"validators,omitempty"`
+	Candidates          []Candidate `json:"candidates,omitempty"`
+	BlockListCandidates []Pubkey    `json:"block_list_candidates,omitempty"`
+	DeletedCandidates   []struct {  // todo: FIXME
+		ID     uint64 `json:"id"`
+		PubKey Pubkey `json:"public_key"`
+	} `json:"deleted_candidates,omitempty"`
+	Waitlist        []Waitlist       `json:"waitlist,omitempty"`
+	Pools           []Pool           `json:"pools,omitempty"`
+	NextOrderID     uint64           `json:"next_order_id"`
+	Accounts        []Account        `json:"accounts,omitempty"`
+	Coins           []Coin           `json:"coins,omitempty"`
+	FrozenFunds     []FrozenFund     `json:"frozen_funds,omitempty"`
+	HaltBlocks      []HaltBlock      `json:"halt_blocks,omitempty"`
+	Commission      Commission       `json:"commission,omitempty"`
+	CommissionVotes []CommissionVote `json:"commission_votes,omitempty"`
+	UpdateVotes     []UpdateVote     `json:"update_votes,omitempty"`
+	UsedChecks      []UsedCheck      `json:"used_checks,omitempty"`
+	MaxGas          uint64           `json:"max_gas"`
+	TotalSlashed    string           `json:"total_slashed"`
+	Version         string           `json:"version,omitempty"`
 }
 
 func (s *AppState) Verify() error {

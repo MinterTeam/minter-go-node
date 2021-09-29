@@ -122,6 +122,10 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 					Coin:            e.Coin,
 					ValidatorPubKey: e.ValidatorPubKeyString(),
 				}
+			case *events.RemoveCandidateEvent:
+				m = &pb.RemoveCandidateEvent{
+					CandidatePubKey: e.CandidatePubKeyString(),
+				}
 			case *events.UpdateNetworkEvent:
 				m = &pb.UpdateNetworkEvent{
 					Version: e.Version,
