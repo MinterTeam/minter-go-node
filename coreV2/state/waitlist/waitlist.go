@@ -23,7 +23,7 @@ type RWaitList interface {
 
 	Get(address types.Address, pubkey types.Pubkey, coin types.CoinID) *Item
 	GetByAddress(address types.Address) *Model
-	GetByAddressAndPubKey(address types.Address, pubkey types.Pubkey) []Item
+	GetByAddressAndPubKey(address types.Address, pubkey types.Pubkey) []*Item
 	Export(state *types.AppState)
 }
 
@@ -169,34 +169,34 @@ func (wl *WaitList) Get(address types.Address, pubkey types.Pubkey, coin types.C
 		return nil
 	}
 
-	candidate := wl.bus.Candidates().GetCandidate(pubkey)
-	if candidate == nil {
+	candidateID := wl.bus.Candidates().ID(pubkey)
+	if candidateID == 0 {
 		return nil
 	}
 
 	for _, item := range waitlist.List {
-		if item.CandidateId == candidate.ID && item.Coin == coin {
-			return &item
+		if item.CandidateId == candidateID && item.Coin == coin {
+			return item
 		}
 	}
 
 	return nil
 }
 
-func (wl *WaitList) GetByAddressAndPubKey(address types.Address, pubkey types.Pubkey) []Item {
+func (wl *WaitList) GetByAddressAndPubKey(address types.Address, pubkey types.Pubkey) []*Item {
 	waitlist := wl.get(address)
 	if waitlist == nil {
 		return nil
 	}
 
-	candidate := wl.bus.Candidates().GetCandidate(pubkey)
-	if candidate == nil {
+	candidateID := wl.bus.Candidates().ID(pubkey)
+	if candidateID == 0 {
 		return nil
 	}
 
-	var items []Item
+	var items []*Item
 	for _, item := range waitlist.List {
-		if item.CandidateId == candidate.ID {
+		if item.CandidateId == candidateID {
 			items = append(items, item)
 		}
 	}
@@ -207,12 +207,12 @@ func (wl *WaitList) GetByAddressAndPubKey(address types.Address, pubkey types.Pu
 func (wl *WaitList) AddWaitList(address types.Address, pubkey types.Pubkey, coin types.CoinID, value *big.Int) {
 	w := wl.getOrNew(address)
 
-	candidate := wl.bus.Candidates().GetCandidate(pubkey)
-	if candidate == nil {
+	candidateID := wl.bus.Candidates().ID(pubkey)
+	if candidateID == 0 {
 		log.Panicf("Candidate not found: %s", pubkey.String())
 	}
 
-	w.AddToList(candidate.ID, coin, value)
+	w.AddToList(candidateID, coin, value)
 	wl.setToMap(address, w)
 	w.markDirty(address)
 	wl.bus.Checker().AddCoin(coin, value)
@@ -224,17 +224,17 @@ func (wl *WaitList) Delete(address types.Address, pubkey types.Pubkey, coin type
 		log.Panicf("Waitlist not found for %s", address.String())
 	}
 
-	candidate := wl.bus.Candidates().GetCandidate(pubkey)
-	if candidate == nil {
+	candidateID := wl.bus.Candidates().ID(pubkey)
+	if candidateID == 0 {
 		log.Panicf("Candidate not found: %s", pubkey.String())
 	}
 
 	value := big.NewInt(0)
 
 	w.lock.RLock()
-	items := make([]Item, 0, len(w.List)-1)
+	items := make([]*Item, 0, len(w.List)-1)
 	for _, item := range w.List {
-		if item.CandidateId != candidate.ID || item.Coin != coin {
+		if item.CandidateId != candidateID || item.Coin != coin {
 			items = append(items, item)
 		} else {
 			value.Add(value, item.Value)
@@ -251,7 +251,7 @@ func (wl *WaitList) Delete(address types.Address, pubkey types.Pubkey, coin type
 func (wl *WaitList) getOrNew(address types.Address) *Model {
 	w := wl.get(address)
 	if w == nil {
-		w = &Model{List: make([]Item, 0), address: address, markDirty: wl.markDirty}
+		w = &Model{List: make([]*Item, 0), address: address, markDirty: wl.markDirty}
 		wl.setToMap(address, w)
 	}
 
