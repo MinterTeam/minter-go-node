@@ -40,7 +40,7 @@ func TestRemoveCandidate(t *testing.T) {
 				},
 			)
 		} else {
-			stake.Sub(stake, big.NewInt(100)).String()
+			stake.Sub(stake, big.NewInt(100))
 		}
 
 		state.Candidates = append(state.Candidates,
