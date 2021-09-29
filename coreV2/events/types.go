@@ -490,7 +490,7 @@ type removeCandidate struct {
 
 func (u *removeCandidate) compile(pubKey types.Pubkey) Event {
 	event := new(RemoveCandidateEvent)
-	event.ValidatorPubKey = pubKey
+	event.CandidatePubKey = pubKey
 	return event
 }
 
@@ -499,19 +499,19 @@ func (u *removeCandidate) pubKeyID() uint16 {
 }
 
 type RemoveCandidateEvent struct {
-	ValidatorPubKey types.Pubkey `json:"validator_pub_key"`
+	CandidatePubKey types.Pubkey `json:"candidate_pub_key"`
 }
 
 func (ue *RemoveCandidateEvent) Type() string {
 	return TypeRemoveCandidateEvent
 }
 
-func (ue *RemoveCandidateEvent) ValidatorPubKeyString() string {
-	return ue.ValidatorPubKey.String()
+func (ue *RemoveCandidateEvent) CandidatePubKeyString() string {
+	return ue.CandidatePubKey.String()
 }
 
-func (ue *RemoveCandidateEvent) validatorPubKey() types.Pubkey {
-	return ue.ValidatorPubKey
+func (ue *RemoveCandidateEvent) candidatePubKey() types.Pubkey {
+	return ue.CandidatePubKey
 }
 
 func (ue *RemoveCandidateEvent) convert(pubKeyID uint16) compact {

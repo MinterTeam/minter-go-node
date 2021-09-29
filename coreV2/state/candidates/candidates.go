@@ -1400,7 +1400,7 @@ func (c *Candidates) DeleteCandidate(height uint64, candidate *Candidate) {
 	c.totalStakes.Sub(c.totalStakes, candidate.totalBipStake)
 	c.lock.Unlock()
 
-	c.bus.Events().AddEvent(&eventsdb.RemoveCandidateEvent{ValidatorPubKey: candidate.PubKey})
+	c.bus.Events().AddEvent(&eventsdb.RemoveCandidateEvent{CandidatePubKey: candidate.PubKey})
 }
 
 func (c *Candidates) deleteCandaditeFromList(candidate *Candidate) {
