@@ -37,6 +37,64 @@ func TestPair_taker2_sell(t *testing.T) {
 		t.Error(out)
 	}
 }
+
+func TestPair_SmallOrder_buy01(t *testing.T) {
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+
+	swap := New(newBus, immutableTree.GetLastImmutable())
+	_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(10), helpers.StringToBigInt("1000000"))
+	pair := swap.Pair(0, 1)
+	pair.AddOrder(big.NewInt(1), helpers.StringToBigInt("100000"), types.Address{1}, 1)
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Error("Recovered", r)
+		}
+	}()
+
+	out, _, _ := pair.BuyWithOrders(big.NewInt(1))
+	t.Log(out)
+	t.Log(pair.orderSellByIndex(0))
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+func TestPair_SmallOrder_sell01(t *testing.T) {
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+
+	swap := New(newBus, immutableTree.GetLastImmutable())
+	_, _, _, _ = swap.PairCreate(0, 1, helpers.StringToBigInt("1000000"), big.NewInt(10))
+	pair := swap.Pair(0, 1)
+	pair.AddOrder(helpers.StringToBigInt("100000"), big.NewInt(1), types.Address{1}, 1)
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Error("Recovered", r)
+		}
+	}()
+
+	out, _, _ := pair.SellWithOrders(big.NewInt(1001))
+	t.Log(out)
+	t.Log(pair.orderSellByIndex(0))
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestPair_taker2_sell1(t *testing.T) {
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)

@@ -89,6 +89,10 @@ func (p *Pair) SellWithOrders(amount0In *big.Int) (amount1Out *big.Int, owners m
 
 	amount1Out, orders := p.calculateBuyForSellWithOrders(amount0In)
 	if amount1Out == nil || amount1Out.Sign() != 1 {
+		log.Println("s", amount0In, amount1Out)
+		for _, limit := range orders {
+			log.Println(limit)
+		}
 		panic(ErrorInsufficientOutputAmount)
 	}
 
@@ -172,6 +176,10 @@ func (p *Pair) BuyWithOrders(amount1Out *big.Int) (amount0In *big.Int, owners ma
 
 	amount0In, orders := p.calculateSellForBuyWithOrders(amount1Out)
 	if amount0In == nil || amount0In.Sign() != 1 {
+		log.Println("b", amount0In, amount1Out)
+		for _, limit := range orders {
+			log.Println(limit)
+		}
 		panic(ErrorInsufficientOutputAmount)
 	}
 
@@ -305,8 +313,8 @@ func (p *Pair) calculateBuyForSellWithOrders(amount0In *big.Int) (amountOut *big
 				//log.Println("acc", acc)
 			}
 
-			//log.Println(limit.WantBuy, limit.WantSell)
-			//log.Println(amount0, amount1)
+			log.Println(limit.WantBuy, limit.WantSell, limit.id)
+			log.Println(amount0, amount1)
 			if amount1.Cmp(limit.WantSell) == 0 && amount0.Cmp(limit.WantBuy) != 0 {
 				log.Println(limit.WantBuy, limit.WantSell, limit.id)
 				log.Println(amount0, amount1)
@@ -520,7 +528,8 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big
 			if acc != big.Exact {
 				//log.Println("acc", acc) // todo
 			}
-			//log.Println("amount0", amount0)
+			log.Println(limit.WantBuy, limit.WantSell, limit.id)
+			log.Println(amount0, amount1)
 
 			if amount1.Cmp(limit.WantSell) == 0 && amount0.Cmp(limit.WantBuy) != 0 {
 				log.Println(limit.WantBuy, limit.WantSell, limit.id)
