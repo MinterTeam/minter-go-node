@@ -1405,11 +1405,18 @@ func (c *Candidates) DeleteCandidate(height uint64, candidate *Candidate) {
 	}
 
 	c.AddToBlockPubKey(candidate.PubKey)
+	c.bus.Events().AddEvent(&eventsdb.RemoveCandidateEvent{CandidatePubKey: candidate.PubKey})
 
 	for _, s := range candidate.stakes {
 		if s == nil {
 			continue
 		}
+		c.bus.Events().AddEvent(&eventsdb.UnbondEvent{
+			Address:         s.Owner,
+			Amount:          s.Value.String(),
+			Coin:            uint64(s.Coin),
+			ValidatorPubKey: &candidate.PubKey,
+		})
 		c.bus.FrozenFunds().AddFrozenFund(height+types.GetUnbondPeriod(), s.Owner, &candidate.PubKey, candidate.ID, s.Coin, s.Value)
 		c.bus.Checker().AddCoin(s.Coin, big.NewInt(0).Neg(s.Value))
 		s.setValue(big.NewInt(0))
@@ -1418,6 +1425,12 @@ func (c *Candidates) DeleteCandidate(height uint64, candidate *Candidate) {
 		if u == nil {
 			continue
 		}
+		c.bus.Events().AddEvent(&eventsdb.UnbondEvent{
+			Address:         u.Owner,
+			Amount:          u.Value.String(),
+			Coin:            uint64(u.Coin),
+			ValidatorPubKey: &candidate.PubKey,
+		})
 		c.bus.FrozenFunds().AddFrozenFund(height+types.GetUnbondPeriod(), u.Owner, &candidate.PubKey, candidate.ID, u.Coin, u.Value)
 		c.bus.Checker().AddCoin(u.Coin, big.NewInt(0).Neg(u.Value))
 		u.setValue(big.NewInt(0))
@@ -1427,8 +1440,6 @@ func (c *Candidates) DeleteCandidate(height uint64, candidate *Candidate) {
 	c.deleteCandaditeFromList(candidate)
 	c.totalStakes.Sub(c.totalStakes, candidate.totalBipStake)
 	c.lock.Unlock()
-
-	c.bus.Events().AddEvent(&eventsdb.RemoveCandidateEvent{CandidatePubKey: candidate.PubKey})
 }
 
 func (c *Candidates) deleteCandaditeFromList(candidate *Candidate) {
