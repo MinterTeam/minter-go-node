@@ -459,4 +459,47 @@ func TestRemoveCandidate5(t *testing.T) {
 	if len(appState.FrozenFunds) != 2 {
 		t.Errorf("want 2, got %d", len(appState.FrozenFunds))
 	}
+	if len(appState.BlockListCandidates) != 1 {
+		t.Error("not add pubkey to block list")
+	}
+	if appState.BlockListCandidates[0].String() != "Mp6500000000000000000000000000000000000000000000000000000000000000" {
+		t.Error("delete not last (101) candidate")
+	}
+	if len(appState.DeletedCandidates) != 1 {
+		t.Error("not add pubkey to block list")
+	}
+	if appState.DeletedCandidates[0].PubKey.String() != "Mp6500000000000000000000000000000000000000000000000000000000000000" {
+		t.Error("delete not last (101) candidate")
+	}
+	if appState.DeletedCandidates[0].ID != 101 {
+		t.Error("delete not last (101) candidate")
+	}
+	if len(appState.FrozenFunds) != 2 {
+		t.Error("frozen not exist")
+	}
+	if appState.FrozenFunds[0].Height != 518400 {
+		t.Error(appState.FrozenFunds[0].Height)
+	}
+	if appState.FrozenFunds[0].CandidateID != 101 {
+		t.Error(appState.FrozenFunds[0].CandidateID)
+	}
+	if appState.FrozenFunds[0].Coin != 0 {
+		t.Error(appState.FrozenFunds[0].Coin)
+	}
+	if appState.FrozenFunds[0].Value != "10000000000000000000000" {
+		t.Error(appState.FrozenFunds[0].Value)
+	}
+	if appState.FrozenFunds[1].Height != 518400 {
+		t.Error(appState.FrozenFunds[1].Height)
+	}
+	if appState.FrozenFunds[1].CandidateID != 101 {
+		t.Error(appState.FrozenFunds[1].CandidateID)
+	}
+	if appState.FrozenFunds[1].Coin != 101 {
+		t.Error(appState.FrozenFunds[1].Coin)
+	}
+	if appState.FrozenFunds[1].Value != "10000000000000000000000000" {
+		t.Error(appState.FrozenFunds[1].Value)
+	}
+
 }

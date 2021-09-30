@@ -148,6 +148,23 @@ func (c *Candidates) ResetIsChangedPublicKeys() {
 	c.isChangedPublicKeys = false
 }
 
+func (c *Candidates) SetDeletedCandidates(list []types.DeletedCandidate) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	c.muDeletedCandidates.Lock()
+	defer c.muDeletedCandidates.Unlock()
+
+	c.dirtyDeletedCandidates = true
+	for _, deleted := range list {
+		c.deletedCandidates[deleted.PubKey] = &deletedID{
+			ID:      uint32(deleted.ID),
+			PybKey:  deleted.PubKey,
+			isDirty: true,
+		}
+	}
+}
+
 func (c *Candidates) IsCandidateJailed(pubkey types.Pubkey, block uint64) bool {
 	candidate := c.GetCandidate(pubkey)
 
@@ -1088,6 +1105,17 @@ func (c *Candidates) Export(state *types.AppState) {
 	sort.SliceStable(state.BlockListCandidates, func(i, j int) bool {
 		return bytes.Compare(state.BlockListCandidates[i].Bytes(), state.BlockListCandidates[j].Bytes()) == 1
 	})
+
+	c.loadDeletedCandidates()
+	for _, c := range c.deletedCandidates {
+		state.DeletedCandidates = append(state.DeletedCandidates, types.DeletedCandidate{
+			ID:     uint64(c.ID),
+			PubKey: c.PybKey,
+		})
+	}
+	sort.SliceStable(state.DeletedCandidates, func(i, j int) bool {
+		return state.DeletedCandidates[i].ID < state.DeletedCandidates[j].ID
+	})
 }
 
 // Deprecated: Use getOrderedCandidatesLessID
@@ -1377,11 +1405,18 @@ func (c *Candidates) DeleteCandidate(height uint64, candidate *Candidate) {
 	}
 
 	c.AddToBlockPubKey(candidate.PubKey)
+	c.bus.Events().AddEvent(&eventsdb.RemoveCandidateEvent{CandidatePubKey: candidate.PubKey})
 
 	for _, s := range candidate.stakes {
 		if s == nil {
 			continue
 		}
+		c.bus.Events().AddEvent(&eventsdb.UnbondEvent{
+			Address:         s.Owner,
+			Amount:          s.Value.String(),
+			Coin:            uint64(s.Coin),
+			ValidatorPubKey: &candidate.PubKey,
+		})
 		c.bus.FrozenFunds().AddFrozenFund(height+types.GetUnbondPeriod(), s.Owner, &candidate.PubKey, candidate.ID, s.Coin, s.Value)
 		c.bus.Checker().AddCoin(s.Coin, big.NewInt(0).Neg(s.Value))
 		s.setValue(big.NewInt(0))
@@ -1390,6 +1425,12 @@ func (c *Candidates) DeleteCandidate(height uint64, candidate *Candidate) {
 		if u == nil {
 			continue
 		}
+		c.bus.Events().AddEvent(&eventsdb.UnbondEvent{
+			Address:         u.Owner,
+			Amount:          u.Value.String(),
+			Coin:            uint64(u.Coin),
+			ValidatorPubKey: &candidate.PubKey,
+		})
 		c.bus.FrozenFunds().AddFrozenFund(height+types.GetUnbondPeriod(), u.Owner, &candidate.PubKey, candidate.ID, u.Coin, u.Value)
 		c.bus.Checker().AddCoin(u.Coin, big.NewInt(0).Neg(u.Value))
 		u.setValue(big.NewInt(0))
@@ -1399,8 +1440,6 @@ func (c *Candidates) DeleteCandidate(height uint64, candidate *Candidate) {
 	c.deleteCandaditeFromList(candidate)
 	c.totalStakes.Sub(c.totalStakes, candidate.totalBipStake)
 	c.lock.Unlock()
-
-	c.bus.Events().AddEvent(&eventsdb.RemoveCandidateEvent{CandidatePubKey: candidate.PubKey})
 }
 
 func (c *Candidates) deleteCandaditeFromList(candidate *Candidate) {
