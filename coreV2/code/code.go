@@ -97,6 +97,7 @@ const (
 	OrderNotExists               uint32 = 711
 	IsNotOwnerOfOrder            uint32 = 712
 	WrongOrderPrice              uint32 = 713
+	WrongOrderVolume             uint32 = 714
 
 	// emission coin
 	CoinIsNotToken  uint32 = 800
@@ -894,5 +895,19 @@ func NewWrongOrderPrice(minPrice, maxPrice, orderPrice string) *wrongOrderPrice 
 		MinPrice:   minPrice,
 		MaxPrice:   maxPrice,
 		OrderPrice: orderPrice,
+	}
+}
+
+type wrongOrderVolume struct {
+	Code    string `json:"code,omitempty"`
+	Volume0 string `json:"volume0"`
+	Volume1 string `json:"Volume1"`
+}
+
+func NewWrongOrderVolume(v0, v1 string) *wrongOrderVolume {
+	return &wrongOrderVolume{
+		Code:    strconv.Itoa(int(WrongOrderVolume)),
+		Volume0: v0,
+		Volume1: v1,
 	}
 }

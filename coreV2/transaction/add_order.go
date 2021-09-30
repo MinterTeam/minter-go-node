@@ -38,11 +38,11 @@ func (data AddLimitOrderData) basicCheck(tx *Transaction, context *state.CheckSt
 		}
 	}
 
-	if data.ValueToBuy.Sign() != 1 || data.ValueToSell.Sign() != 1 {
+	if data.ValueToBuy.Cmp(big.NewInt(2)) == -1 || data.ValueToSell.Cmp(big.NewInt(2)) == -1 {
 		return &Response{
-			Code: code.DecodeError,
+			Code: code.WrongOrderVolume,
 			Log:  "positive values of coin volumes are expected",
-			Info: EncodeError(code.NewDecodeError()),
+			Info: EncodeError(code.NewWrongOrderVolume(data.ValueToBuy.String(), data.ValueToSell.String())),
 		}
 	}
 

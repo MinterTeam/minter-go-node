@@ -32,6 +32,7 @@ func TestCandidates_DeleteCandidate(t *testing.T) {
 
 	b.SetValidators(&mockValisators{})
 	b.SetChecker(checker.NewChecker(b))
+	b.SetEvents(eventsdb.NewEventsStore(db.NewMemDB()))
 	candidates := NewCandidates(b, mutableTree.GetLastImmutable())
 
 	candidates.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10, 0, 0)
