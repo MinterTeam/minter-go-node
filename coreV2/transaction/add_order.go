@@ -38,10 +38,10 @@ func (data AddLimitOrderData) basicCheck(tx *Transaction, context *state.CheckSt
 		}
 	}
 
-	if data.ValueToBuy.Cmp(big.NewInt(2)) == -1 || data.ValueToSell.Cmp(big.NewInt(2)) == -1 {
+	if data.ValueToBuy.Cmp(big.NewInt(1000)) == -1 || data.ValueToSell.Cmp(big.NewInt(1000)) == -1 {
 		return &Response{
 			Code: code.WrongOrderVolume,
-			Log:  "positive values of coin volumes are expected",
+			Log:  "order volumes must exceed 1000 units",
 			Info: EncodeError(code.NewWrongOrderVolume(data.ValueToBuy.String(), data.ValueToSell.String())),
 		}
 	}
