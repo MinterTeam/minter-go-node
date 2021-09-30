@@ -203,9 +203,9 @@ func (c *Candidates) Commit(db *iavl.MutableTree, version int64) error {
 	c.lock.Lock()
 	if c.isDirty {
 		c.isDirty = false
-		var pubIDs []pubkeyID
+		var pubIDs []*pubkeyID
 		for pk, v := range c.pubKeyIDs {
-			pubIDs = append(pubIDs, pubkeyID{
+			pubIDs = append(pubIDs, &pubkeyID{
 				PubKey: pk,
 				ID:     v,
 			})
@@ -1454,8 +1454,10 @@ func (c *Candidates) deleteCandaditeFromList(candidate *Candidate) {
 	}
 	c.dirtyDeletedCandidates = true
 
-	delete(c.list, candidate.ID)
+	c.isDirty = true
 	delete(c.pubKeyIDs, candidate.PubKey)
+
+	delete(c.list, candidate.ID)
 }
 
 func (c *Candidates) loadDeletedCandidates() {
