@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/coreV2/events"
 	"log"
 	"math"
 	"math/big"
@@ -17,11 +18,28 @@ import (
 
 const commissionOrder = 2
 
+var minimumOrderVolume int64 = 1e10
+
+func MinimumOrderVolume() int64 {
+	return minimumOrderVolume
+}
+
 func (s *Swap) PairSellWithOrders(coin0, coin1 types.CoinID, amount0In, minAmount1Out *big.Int) (*big.Int, *big.Int, uint32, *ChangeDetailsWithOrders, []*OrderDetail) {
 	pair := s.Pair(coin0, coin1)
-	amount1Out, ownersMap, details := pair.SellWithOrders(amount0In)
+	amount1Out, ownersMap, details, expiredOrders := pair.SellWithOrders(amount0In)
 	if amount1Out.Cmp(minAmount1Out) == -1 {
 		panic(fmt.Sprintf("calculatedAmount1Out %s less minAmount1Out %s", amount1Out, minAmount1Out))
+	}
+
+	for _, limit := range expiredOrders {
+		returnVolume := big.NewInt(0).Set(limit.WantSell)
+		s.bus.Accounts().AddBalance(limit.Owner, limit.Coin1, returnVolume)
+		s.bus.Events().AddEvent(&events.OrderExpiredEvent{
+			ID:      uint64(limit.ID()),
+			Address: limit.Owner,
+			Coin:    uint64(limit.Coin1),
+			Amount:  returnVolume.String(),
+		})
 	}
 
 	owners := sortOwners(ownersMap)
@@ -30,14 +48,26 @@ func (s *Swap) PairSellWithOrders(coin0, coin1 types.CoinID, amount0In, minAmoun
 	}
 	s.bus.Checker().AddCoin(coin0, amount0In)
 	s.bus.Checker().AddCoin(coin1, big.NewInt(0).Neg(amount1Out))
+
 	return amount0In, amount1Out, pair.GetID(), details, owners
 }
 
 func (s *Swap) PairBuyWithOrders(coin0, coin1 types.CoinID, maxAmount0In, amount1Out *big.Int) (*big.Int, *big.Int, uint32, *ChangeDetailsWithOrders, []*OrderDetail) {
 	pair := s.Pair(coin0, coin1)
-	amount0In, ownersMap, details := pair.BuyWithOrders(amount1Out)
+	amount0In, ownersMap, details, expiredOrders := pair.BuyWithOrders(amount1Out)
 	if amount1Out.Cmp(maxAmount0In) == 1 {
 		panic(fmt.Sprintf("calculatedAmount1Out %s less minAmount1Out %s", amount1Out, maxAmount0In))
+	}
+
+	for _, limit := range expiredOrders {
+		returnVolume := big.NewInt(0).Set(limit.WantSell)
+		s.bus.Accounts().AddBalance(limit.Owner, limit.Coin1, returnVolume)
+		s.bus.Events().AddEvent(&events.OrderExpiredEvent{
+			ID:      uint64(limit.ID()),
+			Address: limit.Owner,
+			Coin:    uint64(limit.Coin1),
+			Amount:  returnVolume.String(),
+		})
 	}
 
 	owners := sortOwners(ownersMap)
@@ -46,6 +76,7 @@ func (s *Swap) PairBuyWithOrders(coin0, coin1 types.CoinID, maxAmount0In, amount
 	}
 	s.bus.Checker().AddCoin(coin0, amount0In)
 	s.bus.Checker().AddCoin(coin1, big.NewInt(0).Neg(amount1Out))
+
 	return amount0In, amount1Out, pair.GetID(), details, owners
 }
 
@@ -79,7 +110,7 @@ type OrderDetail struct {
 	Value       string        `json:"value"`
 }
 
-func (p *Pair) SellWithOrders(amount0In *big.Int) (amount1Out *big.Int, owners map[types.Address]*big.Int, c *ChangeDetailsWithOrders) {
+func (p *Pair) SellWithOrders(amount0In *big.Int) (amount1Out *big.Int, owners map[types.Address]*big.Int, c *ChangeDetailsWithOrders, expiredOrders []*Limit) {
 	if amount0In == nil || amount0In.Sign() != 1 {
 		panic(ErrorInsufficientInputAmount)
 	}
@@ -107,7 +138,7 @@ func (p *Pair) SellWithOrders(amount0In *big.Int) (amount1Out *big.Int, owners m
 
 	p.update(commission0orders, commission1orders)
 
-	p.updateOrders(orders)
+	expiredOrders = p.updateOrders(orders)
 
 	p.orderSellByIndex(0) // update list
 
@@ -117,7 +148,7 @@ func (p *Pair) SellWithOrders(amount0In *big.Int) (amount1Out *big.Int, owners m
 		CommissionAmountIn:  commission0orders,
 		CommissionAmountOut: commission1orders,
 		Orders:              orders,
-	}
+	}, expiredOrders
 }
 
 func sortOwners(owners map[types.Address]*big.Int) (result []*OrderDetail) {
@@ -166,7 +197,7 @@ func CalcDiffPool(amount0In, amount1Out *big.Int, orders []*Limit) (*big.Int, *b
 	return commission0orders, commission1orders, amount0, amount1, owners
 }
 
-func (p *Pair) BuyWithOrders(amount1Out *big.Int) (amount0In *big.Int, owners map[types.Address]*big.Int, c *ChangeDetailsWithOrders) { // todo: add mutex
+func (p *Pair) BuyWithOrders(amount1Out *big.Int) (amount0In *big.Int, owners map[types.Address]*big.Int, c *ChangeDetailsWithOrders, expiredOrders []*Limit) { // todo: add mutex
 	if amount1Out == nil || amount1Out.Sign() != 1 {
 		panic(ErrorInsufficientInputAmount)
 	}
@@ -194,7 +225,7 @@ func (p *Pair) BuyWithOrders(amount1Out *big.Int) (amount0In *big.Int, owners ma
 
 	p.update(commission0orders, commission1orders)
 
-	p.updateOrders(orders)
+	expiredOrders = p.updateOrders(orders)
 
 	p.orderSellByIndex(0) // update list
 
@@ -204,23 +235,36 @@ func (p *Pair) BuyWithOrders(amount1Out *big.Int) (amount0In *big.Int, owners ma
 		CommissionAmountIn:  commission0orders,
 		CommissionAmountOut: commission1orders,
 		Orders:              orders,
-	}
+	}, expiredOrders
 }
 
-func (p *Pair) updateOrders(orders []*Limit) {
+func (p *Pair) updateOrders(orders []*Limit) (littles []*Limit) {
 	for _, order := range orders {
-		p.updateSellOrder(order.id, order.WantBuy, order.WantSell)
+		limit := p.updateSellOrder(order.id, order.WantBuy, order.WantSell)
+
+		if !limit.isEmpty() &&
+			(limit.WantBuy.Cmp(big.NewInt(minimumOrderVolume)) == -1 ||
+				limit.WantSell.Cmp(big.NewInt(minimumOrderVolume)) == -1) {
+
+			littles = append(littles, limit.clone())
+
+			limit.WantSell.SetInt64(0)
+			limit.WantBuy.SetInt64(0)
+		}
+
+		p.MarkDirtyOrders(limit)
 	}
+	return littles
 }
 
-func (p *Pair) updateSellOrder(id uint32, amount0, amount1 *big.Int) {
+func (p *Pair) updateSellOrder(id uint32, amount0, amount1 *big.Int) *Limit {
 	limit := p.getOrder(id)
 	limit.OldSortPrice()
 
 	limit.WantBuy.Sub(limit.WantBuy, amount0)
 	limit.WantSell.Sub(limit.WantSell, amount1)
 
-	p.MarkDirtyOrders(limit)
+	return limit
 }
 
 func (l *Limit) isEmpty() (empty bool) {
@@ -303,7 +347,7 @@ func (p *Pair) calculateBuyForSellWithOrders(amount0In *big.Int) (amountOut *big
 		//log.Println("amountIn", amountIn)
 		amount0 := big.NewInt(0).Sub(amountIn, calcCommission1001(amountIn))
 		//log.Println(amount0)
-		if big.NewInt(0).Sub(amount0, limit.WantBuy).Sign() != 1 {
+		if amount0.Cmp(limit.WantBuy) != 1 {
 			//log.Println("rest", rest)
 
 			// 9000
@@ -313,8 +357,8 @@ func (p *Pair) calculateBuyForSellWithOrders(amount0In *big.Int) (amountOut *big
 				//log.Println("acc", acc)
 			}
 
-			log.Println(limit.WantBuy, limit.WantSell, limit.id)
-			log.Println(amount0, amount1)
+			//log.Println(limit.WantBuy, limit.WantSell, limit.id)
+			//log.Println(amount0, amount1)
 			if amount1.Cmp(limit.WantSell) == 0 && amount0.Cmp(limit.WantBuy) != 0 {
 				log.Println(limit.WantBuy, limit.WantSell, limit.id)
 				log.Println(amount0, amount1)
@@ -528,8 +572,8 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big
 			if acc != big.Exact {
 				//log.Println("acc", acc) // todo
 			}
-			log.Println(limit.WantBuy, limit.WantSell, limit.id)
-			log.Println(amount0, amount1)
+			//log.Println(limit.WantBuy, limit.WantSell, limit.id)
+			//log.Println(amount0, amount1)
 
 			if amount1.Cmp(limit.WantSell) == 0 && amount0.Cmp(limit.WantBuy) != 0 {
 				log.Println(limit.WantBuy, limit.WantSell, limit.id)
@@ -541,8 +585,7 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big
 				//	amount1.Set(limit.WantSell)
 				//}
 			}
-			if amount1.Cmp(limit.WantSell) != 0 && amount0.Cmp(limit.WantBuy) == 0 {
-				amount0.Set(limit.WantBuy)
+			if amount1.Cmp(limit.WantSell) == -1 && amount0.Cmp(limit.WantBuy) == 0 {
 				amount1.Set(limit.WantSell)
 			}
 
@@ -874,10 +917,15 @@ func (p *Pair) unsortedSellOrderIDs() *orderDirties {
 }
 
 func (p *Pair) setUnsortedSellOrder(id uint32) {
-	ds := p.unsortedSellOrderIDs()
+	us := p.unsortedSellOrderIDs()
+	us.mu.Lock()
+	defer us.mu.Unlock()
+	us.list[id] = struct{}{}
+
+	ds := p.deletedSellOrderIDs()
 	ds.mu.Lock()
 	defer ds.mu.Unlock()
-	ds.list[id] = struct{}{}
+	delete(ds.list, id)
 }
 
 func (p *Pair) hasDeletedSellOrders() bool {
@@ -885,6 +933,11 @@ func (p *Pair) hasDeletedSellOrders() bool {
 }
 
 func (p *Pair) setDeletedSellOrderIDs(id uint32) {
+	us := p.unsortedSellOrderIDs()
+	us.mu.Lock()
+	defer us.mu.Unlock()
+	delete(us.list, id)
+
 	ds := p.deletedSellOrderIDs()
 	ds.mu.Lock()
 	defer ds.mu.Unlock()
