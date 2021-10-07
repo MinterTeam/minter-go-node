@@ -156,6 +156,7 @@ func (data BuySwapPoolDataV260) Run(tx *Transaction, context state.Interface, re
 					Info: EncodeError(code.NewInsufficientLiquidity(coinToSellModel.ID().String(), "", coinToBuyModel.ID().String(), valueToBuy.String(), reserve0.String(), reserve1.String())),
 				}
 			}
+
 			valueToBuy = valueToSellCalc
 			coinToBuyModel = coinToSellModel
 			coinToBuy = coinToSell
@@ -306,6 +307,9 @@ func CheckSwap(rSwap swap.EditableChecker, coinIn CalculateCoin, coinOut Calcula
 				Info: EncodeError(code.NewInsufficientLiquidity(coinIn.ID().String(), valueIn.String(), coinOut.ID().String(), valueOut.String(), reserve0.String(), reserve1.String())),
 			}, nil
 		}
+		if valueOut.Sign() == 0 {
+			valueOut = big.NewInt(1)
+		}
 		if calculatedAmountToBuy.Cmp(valueOut) == -1 {
 			symbolOut := coinOut.GetFullSymbol()
 			return &Response{
@@ -313,7 +317,7 @@ func CheckSwap(rSwap swap.EditableChecker, coinIn CalculateCoin, coinOut Calcula
 				Log: fmt.Sprintf(
 					"You wanted to buy minimum %s %s, but currently you buy only %s %s",
 					valueOut.String(), symbolOut, calculatedAmountToBuy.String(), symbolOut),
-				Info: EncodeError(code.NewMaximumValueToSellReached(valueOut.String(), calculatedAmountToBuy.String(), coinIn.GetFullSymbol(), coinIn.ID().String())),
+				Info: EncodeError(code.NewMinimumValueToBuyReached(valueOut.String(), calculatedAmountToBuy.String(), coinIn.GetFullSymbol(), coinIn.ID().String())),
 			}, nil
 		}
 		valueOut = calculatedAmountToBuy

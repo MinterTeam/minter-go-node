@@ -8,6 +8,8 @@
 
 - AMM with Order Book
 - Allow all holders to burn tokens
+- Limitation of the maximum total stake of a candidate to 20% of the sum of all candidates
+- Removal of candidates that do not fall into the top 100 by stake size
 
 ## [v2.5.0](https://github.com/MinterTeam/minter-go-node/tree/v2.5.0)
 

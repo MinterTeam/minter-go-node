@@ -217,6 +217,7 @@ func (data SellAllSwapPoolDataV260) Run(tx *Transaction, context state.Interface
 					Info: EncodeError(code.NewInsufficientLiquidity(coinToSellModel.ID().String(), valueToSell.String(), coinToBuyModel.ID().String(), valueToBuyCalc.String(), reserve0.String(), reserve1.String())),
 				}
 			}
+
 			valueToSell = valueToBuyCalc
 			coinToSellModel = coinToBuyModel
 			coinToSell = coinToBuy

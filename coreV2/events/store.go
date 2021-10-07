@@ -36,12 +36,14 @@ type IEventsDB interface {
 	Close() error
 }
 
-type MockEvents struct{}
+type MockEvents struct {
+	evnts Events
+}
 
-func (e MockEvents) AddEvent(event Event)            {}
-func (e MockEvents) LoadEvents(height uint32) Events { return nil }
-func (e MockEvents) CommitEvents(uint32) error       { return nil }
-func (e MockEvents) Close() error                    { return nil }
+func (e *MockEvents) AddEvent(event Event)            { e.evnts = append(e.evnts, event) }
+func (e *MockEvents) LoadEvents(height uint32) Events { return e.evnts }
+func (e *MockEvents) CommitEvents(uint32) error       { return nil }
+func (e *MockEvents) Close() error                    { return nil }
 
 type eventsStore struct {
 	sync.RWMutex

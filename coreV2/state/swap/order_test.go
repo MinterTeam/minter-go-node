@@ -17,6 +17,10 @@ import (
 	db "github.com/tendermint/tm-db"
 )
 
+func init() {
+	minimumOrderVolume = 0 // todo
+}
+
 func TestPair_taker2_sell(t *testing.T) {
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
@@ -31,12 +35,72 @@ func TestPair_taker2_sell(t *testing.T) {
 	pair := swap.Pair(0, 1)
 	pair.AddOrder(helpers.StringToBigInt("100000"), helpers.StringToBigInt("100000"), types.Address{1}, 1)
 
-	out, _, _ := pair.SellWithOrders(big.NewInt(100100))
+	out, _, _, _ := pair.SellWithOrders(big.NewInt(100100))
 	t.Log(out)
 	if out.Cmp(big.NewInt(99900)) != 0 {
 		t.Error(out)
 	}
 }
+
+func TestPair_SmallOrder_buy01(t *testing.T) {
+	t.Skip("minimumOrderVolume")
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+
+	swap := New(newBus, immutableTree.GetLastImmutable())
+	_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(10), helpers.StringToBigInt("1000000"))
+	pair := swap.Pair(0, 1)
+	pair.AddOrder(big.NewInt(1), helpers.StringToBigInt("100000"), types.Address{1}, 1)
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Error("Recovered", r)
+		}
+	}()
+
+	out, _, _, _ := pair.BuyWithOrders(big.NewInt(1))
+	t.Log(out)
+	t.Log(pair.orderSellByIndex(0))
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+func TestPair_SmallOrder_sell01(t *testing.T) {
+	t.Skip("minimumOrderVolume")
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+
+	swap := New(newBus, immutableTree.GetLastImmutable())
+	_, _, _, _ = swap.PairCreate(0, 1, helpers.StringToBigInt("1000000"), big.NewInt(10))
+	pair := swap.Pair(0, 1)
+	pair.AddOrder(helpers.StringToBigInt("100000"), big.NewInt(1), types.Address{1}, 1)
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Error("Recovered", r)
+		}
+	}()
+
+	out, _, _, _ := pair.SellWithOrders(big.NewInt(1001))
+	t.Log(out)
+	t.Log(pair.orderSellByIndex(0))
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestPair_taker2_sell1(t *testing.T) {
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
@@ -51,7 +115,7 @@ func TestPair_taker2_sell1(t *testing.T) {
 	pair := swap.Pair(0, 1)
 	pair.AddOrder(helpers.StringToBigInt("100000"), helpers.StringToBigInt("100000"), types.Address{1}, 1)
 
-	out, _, _ := pair.SellWithOrders(big.NewInt(200100))
+	out, _, _, _ := pair.SellWithOrders(big.NewInt(200100))
 	t.Log(out)
 	if out.Cmp(big.NewInt(199699)) != 0 {
 		t.Error(out)
@@ -71,7 +135,7 @@ func TestPair_taker2_Buy(t *testing.T) {
 	pair := swap.Pair(0, 1)
 	pair.AddOrder(helpers.StringToBigInt("100000"), helpers.StringToBigInt("100000"), types.Address{1}, 1)
 
-	out, _, _ := pair.BuyWithOrders(big.NewInt(99900))
+	out, _, _, _ := pair.BuyWithOrders(big.NewInt(99900))
 	if out.Cmp(big.NewInt(100100)) != 0 {
 		t.Error(out)
 	}
@@ -90,7 +154,7 @@ func TestPair_taker2_Buy2(t *testing.T) {
 	pair := swap.Pair(0, 1)
 	pair.AddOrder(helpers.StringToBigInt("100000"), helpers.StringToBigInt("100000"), types.Address{1}, 1)
 
-	out, _, _ := pair.BuyWithOrders(big.NewInt(199900))
+	out, _, _, _ := pair.BuyWithOrders(big.NewInt(199900))
 	if out.Cmp(big.NewInt(200301)) != 0 {
 		t.Error(out)
 	}
@@ -132,7 +196,7 @@ func TestPair_cals0(t *testing.T) {
 		}
 	}
 
-	out, _, _ := pair.SellWithOrders(c)
+	out, _, _, _ := pair.SellWithOrders(c)
 	if out.Cmp(a) != 0 {
 		t.Error(out, a)
 	}
@@ -181,7 +245,7 @@ func TestPair_cals1(t *testing.T) {
 		}
 	}
 
-	out, _, _ := pair.BuyWithOrders(c)
+	out, _, _, _ := pair.BuyWithOrders(c)
 	if out.Cmp(b) != 0 {
 		t.Error(out, b)
 	}
@@ -1786,7 +1850,7 @@ func TestPair_ResortOrders(t *testing.T) {
 
 	// order := pair.OrderSellByIndex(0)
 
-	_, _, _ = pair.SellWithOrders(helpers.StringToBigInt("10000000000000000000000"))
+	_, _, _, _ = pair.SellWithOrders(helpers.StringToBigInt("10000000000000000000000"))
 
 	t.Run("resort dirty", func(t *testing.T) {
 		t.Run("mem", func(t *testing.T) {
@@ -1844,7 +1908,7 @@ func TestPair_SellWithOrders_changePriceWithOrderAndUpdateList0(t *testing.T) {
 
 	// order := pair.OrderSellByIndex(0)
 
-	_, _, _ = pair.SellWithOrders(big.NewInt(1e18))
+	_, _, _, _ = pair.SellWithOrders(big.NewInt(1e18))
 
 	t.Run("resort dirty", func(t *testing.T) {
 		t.Run("mem", func(t *testing.T) {
@@ -1892,7 +1956,7 @@ func TestPair_SellWithOrders_changePriceWithOrderAndUpdateList1(t *testing.T) {
 
 	// order := pair.OrderSellByIndex(0)
 
-	_, _, _ = pair.SellWithOrders(helpers.StringToBigInt("10000000000000000000000"))
+	_, _, _, _ = pair.SellWithOrders(helpers.StringToBigInt("10000000000000000000000"))
 
 	t.Run("resort dirty", func(t *testing.T) {
 		t.Run("mem", func(t *testing.T) {
@@ -1952,7 +2016,7 @@ func TestPair_CalculateAddAmount0ForPrice_0(t *testing.T) {
 		t.Error("wrong need to buy", calcAmount1Out)
 	}
 
-	amount1Out, _, _ := pair.SellWithOrders(amount0ForPrice)
+	amount1Out, _, _, _ := pair.SellWithOrders(amount0ForPrice)
 	if amount1Out.Cmp(wantedAmount1Out) != 0 {
 		t.Error("wrong need to buy", amount1Out.String())
 	}
@@ -2061,7 +2125,7 @@ func TestSimple_my(t *testing.T) {
 			t.Error("Recovered", r)
 		}
 	}()
-	out, _, _ := New(newBus, immutableTree.GetLastImmutable()).Pair(0, 1).SellWithOrders(amount0In)
+	out, _, _, _ := New(newBus, immutableTree.GetLastImmutable()).Pair(0, 1).SellWithOrders(amount0In)
 	if out.Cmp(amount1Out) != 0 {
 		t.Error("err")
 	}
@@ -2172,7 +2236,7 @@ func TestPair_AddLastSwapStepWithOrders(t *testing.T) {
 	t.Log(price)
 	addAmount0ForPrice, _ := pair.CalculateAddAmountsForPrice(price)
 
-	_, _, _ = pair.SellWithOrders(addAmount0ForPrice)
+	_, _, _, _ = pair.SellWithOrders(addAmount0ForPrice)
 
 	sell := big.NewInt(15e15)
 	calcBuy1 := pair.CalculateBuyForSellWithOrders(sell)
@@ -2187,13 +2251,13 @@ func TestPair_AddLastSwapStepWithOrders(t *testing.T) {
 		t.Error("err", pair1.(*Pair).dirtyOrders.list)
 	}
 	// t.SkipNow()
-	buy1, _, _ := pair.SellWithOrders(sell)
+	buy1, _, _, _ := pair.SellWithOrders(sell)
 	if calcBuy1.Cmp(buy1) != 0 {
 		t.Error("err", calcBuy1, buy1)
 	}
 	t.Log(calcBuy1, buy1)
 
-	buy2, _, _ := pair.SellWithOrders(sell)
+	buy2, _, _, _ := pair.SellWithOrders(sell)
 	if calcBuy2.Cmp(buy2) != 0 {
 		t.Error("err", calcBuy2, buy2)
 	}
@@ -2250,7 +2314,7 @@ func TestPair_BuyWithOrders_01_ChangeRemainderOrderPrice(t *testing.T) {
 		}
 	})
 
-	amount0In, owners, _ := pair.BuyWithOrders(big.NewInt(0).Add(addAmount1, big.NewInt(2997)))
+	amount0In, owners, _, _ := pair.BuyWithOrders(big.NewInt(0).Add(addAmount1, big.NewInt(2997)))
 	t.Run("owner", func(t *testing.T) {
 		if len(owners) != 1 {
 			t.Fatal("b", owners)
@@ -2276,7 +2340,7 @@ func TestPair_BuyWithOrders_01_ChangeRemainderOrderPrice(t *testing.T) {
 		if order.WantBuy.Cmp(big.NewInt(6000)) != 0 {
 			t.Error(order.WantBuy)
 		}
-		amount0In, owners, _ := pair.BuyWithOrders(big.NewInt(999))
+		amount0In, owners, _, _ := pair.BuyWithOrders(big.NewInt(999))
 		t.Run("owner", func(t *testing.T) {
 			if len(owners) != 1 {
 				t.Fatal("b", owners)
@@ -2356,7 +2420,7 @@ func TestPair_SellWithOrders_01_ChangeRemainderOrderPrice(t *testing.T) {
 		t.Error("z", addAmount1)
 	}
 
-	amount1Out, owners, _ := pair.SellWithOrders(big.NewInt(0).Add(addAmount0ForPrice, big.NewInt(9009)))
+	amount1Out, owners, _, _ := pair.SellWithOrders(big.NewInt(0).Add(addAmount0ForPrice, big.NewInt(9009)))
 	if len(owners) != 1 {
 		t.Error("b", owners)
 	}
@@ -2380,7 +2444,7 @@ func TestPair_SellWithOrders_01_ChangeRemainderOrderPrice(t *testing.T) {
 		if order.WantBuy.Cmp(big.NewInt(6000)) != 0 {
 			t.Error(order.WantBuy)
 		}
-		amount0Out, owners, _ := pair.SellWithOrders(big.NewInt(3003))
+		amount0Out, owners, _, _ := pair.SellWithOrders(big.NewInt(3003))
 		t.Run("owner", func(t *testing.T) {
 			if len(owners) != 1 {
 				t.Fatal("b", owners)
@@ -2458,7 +2522,7 @@ func TestPair_SellWithOrders_10_ChangeRemainderOrderPrice(t *testing.T) {
 		t.Error("z", addAmount1)
 	}
 
-	amount1Out, owners, _ := pair.SellWithOrders(big.NewInt(0).Add(addAmount0ForPrice, big.NewInt(9009)))
+	amount1Out, owners, _, _ := pair.SellWithOrders(big.NewInt(0).Add(addAmount0ForPrice, big.NewInt(9009)))
 	if len(owners) != 1 {
 		t.Error("b", owners)
 	}
@@ -2484,7 +2548,7 @@ func TestPair_SellWithOrders_10_ChangeRemainderOrderPrice(t *testing.T) {
 			if order.WantBuy.Cmp(big.NewInt(5991)) != 0 {
 				t.Error(order.WantBuy)
 			}
-			amount0In, owners, _ := pair.SellWithOrders(big.NewInt(1001))
+			amount0In, owners, _, _ := pair.SellWithOrders(big.NewInt(1001))
 			t.Run("owner", func(t *testing.T) {
 				if len(owners) != 1 {
 					t.Fatal("b", owners)
@@ -2593,7 +2657,7 @@ func TestPair_SellWithOrders_01_FullOrder(t *testing.T) {
 		if len(orders) == 0 {
 			t.Error("empty orders")
 		}
-		amount1OutSell, owners, _ := pair.SellWithOrders(big.NewInt(4146 + 2002))
+		amount1OutSell, owners, _, _ := pair.SellWithOrders(big.NewInt(4146 + 2002))
 		if amount1OutSell.Cmp(amount1Out) != 0 {
 			t.Error("not equal", amount1Out, amount1OutSell)
 		}
@@ -2660,7 +2724,7 @@ func TestPair_SellWithOrders_01_PartOrder(t *testing.T) {
 		if len(orders) == 0 {
 			t.Error("empty orders")
 		}
-		amount1OutSell, owners, _ := pair.SellWithOrders(big.NewInt(4146 + 1001))
+		amount1OutSell, owners, _, _ := pair.SellWithOrders(big.NewInt(4146 + 1001))
 		if amount1OutSell.Cmp(amount1Out) != 0 {
 			t.Error("not equal", amount1Out, amount1OutSell)
 		}

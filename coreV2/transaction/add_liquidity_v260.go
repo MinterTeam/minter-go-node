@@ -12,22 +12,22 @@ import (
 	abcTypes "github.com/tendermint/tendermint/abci/types"
 )
 
-type AddLiquidityDataV240 struct {
+type AddLiquidityDataV260 struct {
 	Coin0          types.CoinID
 	Coin1          types.CoinID
 	Volume0        *big.Int
 	MaximumVolume1 *big.Int
 }
 
-func (data AddLiquidityDataV240) Gas() int64 {
+func (data AddLiquidityDataV260) Gas() int64 {
 	return gasAddLiquidity
 }
 
-func (data AddLiquidityDataV240) TxType() TxType {
+func (data AddLiquidityDataV260) TxType() TxType {
 	return TypeAddLiquidity
 }
 
-func (data AddLiquidityDataV240) basicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data AddLiquidityDataV260) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.Coin1 == data.Coin0 {
 		return &Response{
 			Code: code.CrossConvert,
@@ -69,15 +69,15 @@ func (data AddLiquidityDataV240) basicCheck(tx *Transaction, context *state.Chec
 	return nil
 }
 
-func (data AddLiquidityDataV240) String() string {
+func (data AddLiquidityDataV260) String() string {
 	return fmt.Sprintf("ADD SWAP POOL")
 }
 
-func (data AddLiquidityDataV240) CommissionData(price *commission.Price) *big.Int {
+func (data AddLiquidityDataV260) CommissionData(price *commission.Price) *big.Int {
 	return price.AddLiquidity
 }
 
-func (data AddLiquidityDataV240) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
+func (data AddLiquidityDataV260) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -97,6 +97,21 @@ func (data AddLiquidityDataV240) Run(tx *Transaction, context state.Interface, r
 	commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoin, commissionInBaseCoin)
 	if errResp != nil {
 		return *errResp
+	}
+
+	{
+		amount0 := new(big.Int).Set(data.Volume0)
+		if tx.CommissionCoin() == data.Coin0 {
+			amount0.Add(amount0, commission)
+		}
+		if checkState.Accounts().GetBalance(sender, data.Coin0).Cmp(amount0) == -1 {
+			symbol := checkState.Coins().GetCoin(data.Coin0).GetFullSymbol()
+			return Response{
+				Code: code.InsufficientFunds,
+				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), amount0.String(), symbol),
+				Info: EncodeError(code.NewInsufficientFunds(sender.String(), amount0.String(), symbol, data.Coin0.String())),
+			}
+		}
 	}
 
 	neededAmount1 := new(big.Int).Set(data.MaximumVolume1)
@@ -134,21 +149,6 @@ func (data AddLiquidityDataV240) Run(tx *Transaction, context state.Interface, r
 				Code: code.InsufficientInputAmount,
 				Log:  fmt.Sprintf("You wanted to add %s %s, but currently you need to add %s %s to complete tx", data.Volume0, checkState.Coins().GetCoin(data.Coin0).GetFullSymbol(), neededAmount1, checkState.Coins().GetCoin(data.Coin1).GetFullSymbol()),
 				Info: EncodeError(code.NewInsufficientInputAmount(data.Coin0.String(), data.Volume0.String(), data.Coin1.String(), data.MaximumVolume1.String(), neededAmount1.String())),
-			}
-		}
-	}
-
-	{
-		amount0 := new(big.Int).Set(data.Volume0)
-		if tx.GasCoin == data.Coin0 {
-			amount0.Add(amount0, commission)
-		}
-		if checkState.Accounts().GetBalance(sender, data.Coin0).Cmp(amount0) == -1 {
-			symbol := checkState.Coins().GetCoin(data.Coin0).GetFullSymbol()
-			return Response{
-				Code: code.InsufficientFunds,
-				Log:  fmt.Sprintf("Insufficient funds for sender account: %s. Wanted %s %s", sender.String(), amount0.String(), symbol),
-				Info: EncodeError(code.NewInsufficientFunds(sender.String(), amount0.String(), symbol, data.Coin0.String())),
 			}
 		}
 	}
