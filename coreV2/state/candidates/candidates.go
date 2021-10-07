@@ -795,6 +795,10 @@ func (c *Candidates) GetStakes(pubkey types.Pubkey) []*stake {
 // GetStakeOfAddress returns stake of address in given candidate and in given coin
 func (c *Candidates) GetStakeOfAddress(pubkey types.Pubkey, address types.Address, coin types.CoinID) *stake {
 	candidate := c.GetCandidate(pubkey)
+	if candidate == nil {
+		return nil
+	}
+
 	for _, stake := range candidate.stakes {
 		if stake == nil {
 			continue
