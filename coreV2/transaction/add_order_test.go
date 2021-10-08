@@ -284,7 +284,7 @@ func TestAddOrderSwapPoolData_ExpireLittleOrder_sell(t *testing.T) {
 	{
 		data := SellSwapPoolDataV260{
 			Coins:             []types.CoinID{coin0, coin1},
-			ValueToSell:       big.NewInt(5),
+			ValueToSell:       big.NewInt(10010000000 - 1),
 			MinimumValueToBuy: big.NewInt(1),
 		}
 		encodedData, err := rlp.EncodeToBytes(data)
@@ -608,7 +608,7 @@ func TestAddOrderSwapPoolData_ExpireLittleOrder_buy(t *testing.T) {
 		data := BuySwapPoolDataV260{
 			Coins:              []types.CoinID{coin0, coin1},
 			MaximumValueToSell: big.NewInt(1e18),
-			ValueToBuy:         big.NewInt(1),
+			ValueToBuy:         big.NewInt(9990000000 - 1),
 		}
 		encodedData, err := rlp.EncodeToBytes(data)
 
