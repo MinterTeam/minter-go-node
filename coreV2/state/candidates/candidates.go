@@ -683,7 +683,7 @@ func (c *Candidates) IsDelegatorStakeAllowed(address types.Address, pubkey types
 		return true, false
 	}
 
-	diff := big.NewInt(0).Sub(old, stakeValue)
+	diff := big.NewInt(0).Sub(stakeValue, old)
 	newTotalStake := big.NewInt(0).Add(c.GetCandidate(pubkey).GetTotalBipStake(), diff)
 
 	c.lock.RLock()
