@@ -75,7 +75,7 @@ func encode(data transaction.Data, txType transaction.TxType, rCoins coins.RCoin
 			Stake: d.Stake.String(),
 		}
 	case transaction.TypeDelegate:
-		d := data.(*transaction.DelegateData)
+		d := data.(*transaction.DelegateDataV260)
 		m = &pb.DelegateData{
 			PubKey: d.PubKey.String(),
 			Coin: &pb.Coin{
@@ -199,7 +199,7 @@ func encode(data transaction.Data, txType transaction.TxType, rCoins coins.RCoin
 			PubKey: d.PubKey.String(),
 		}
 	case transaction.TypeUnbond:
-		d := data.(*transaction.UnbondData)
+		d := data.(*transaction.UnbondDataV260)
 		m = &pb.UnbondData{
 			PubKey: d.PubKey.String(),
 			Coin: &pb.Coin{
@@ -209,7 +209,7 @@ func encode(data transaction.Data, txType transaction.TxType, rCoins coins.RCoin
 			Value: d.Value.String(),
 		}
 	case transaction.TypeAddLiquidity:
-		d := data.(*transaction.AddLiquidityDataV240)
+		d := data.(*transaction.AddLiquidityDataV260)
 		m = &pb.AddLiquidityData{
 			Coin0: &pb.Coin{
 				Id:     uint64(d.Coin0),
