@@ -175,21 +175,30 @@ func (c *Candidates) IsCandidateJailed(pubkey types.Pubkey, block uint64) bool {
 func (c *Candidates) Commit(db *iavl.MutableTree, version int64) error {
 	keys := c.getOrderedCandidates()
 
-	hasDirty := false
-	for _, candidate := range keys {
-		candidate.lock.RLock()
-		if candidate.isDirty {
-			hasDirty = true
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
+	c.muDeletedCandidates.RLock()
+	dirtyDeletedCandidates := c.dirtyDeletedCandidates
+	c.muDeletedCandidates.RUnlock()
+
+	hasDirty := dirtyDeletedCandidates
+	if !hasDirty {
+		for _, candidate := range keys {
+			candidate.lock.RLock()
+			if candidate.isDirty {
+				hasDirty = true
+				candidate.lock.RUnlock()
+				break
+			}
 			candidate.lock.RUnlock()
-			break
 		}
-		candidate.lock.RUnlock()
 	}
 
 	if hasDirty {
-		var candidates []Candidate
+		var candidates []*Candidate
 		for _, candidate := range keys {
-			candidates = append(candidates, *candidate)
+			candidates = append(candidates, candidate)
 		}
 		data, err := rlp.EncodeToBytes(candidates)
 		if err != nil {
@@ -200,7 +209,6 @@ func (c *Candidates) Commit(db *iavl.MutableTree, version int64) error {
 		db.Set(path, data)
 	}
 
-	c.lock.Lock()
 	if c.isDirty {
 		c.isDirty = false
 		var pubIDs []*pubkeyID
@@ -235,10 +243,10 @@ func (c *Candidates) Commit(db *iavl.MutableTree, version int64) error {
 
 		db.Set([]byte{maxIDPrefix}, c.maxIDBytes())
 	}
-	c.lock.Unlock()
 
-	c.muDeletedCandidates.Lock()
-	if c.dirtyDeletedCandidates {
+	if dirtyDeletedCandidates {
+		c.muDeletedCandidates.RLock()
+
 		c.dirtyDeletedCandidates = false
 		var deletedCandidates = make([]*deletedID, 0, len(c.deletedCandidates))
 		for _, key := range c.deletedCandidates {
@@ -270,12 +278,13 @@ func (c *Candidates) Commit(db *iavl.MutableTree, version int64) error {
 
 		data, err := rlp.EncodeToBytes(deletedCandidates)
 		if err != nil {
-			return fmt.Errorf("can't encode stake: %v", err)
+			return fmt.Errorf("can't encode deletedCandidates: %v", err)
 		}
 
 		db.Set([]byte{deleteCandidatesPrefix}, data)
+
+		c.muDeletedCandidates.RUnlock()
 	}
-	c.muDeletedCandidates.Unlock()
 
 	for _, candidate := range keys {
 		candidate.lock.Lock()
