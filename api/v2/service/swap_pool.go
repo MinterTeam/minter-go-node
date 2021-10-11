@@ -44,7 +44,7 @@ func (s *Service) LimitOrdersOfPool(ctx context.Context, req *pb.LimitOrdersOfPo
 	if capacity > 50 {
 		capacity = 50
 	}
-	resp := &pb.LimitOrdersOfPoolResponse{Orders: make([]*pb.LimitOrderResponse, 0, capacity), PoolPrice: swapper.Price().String()}
+	resp := &pb.LimitOrdersOfPoolResponse{Orders: make([]*pb.LimitOrderResponse, 0, capacity), PoolPrice: swapper.Price().Text('f', 18)}
 
 	orders := swapper.OrdersSell(uint32(limit))
 	for _, order := range orders {

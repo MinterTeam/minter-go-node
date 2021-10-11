@@ -277,9 +277,11 @@ func (l *Limit) isEmpty() (empty bool) {
 	if !empty {
 		return false
 	}
+
 	if l.WantBuy.Sign() != 0 || l.WantSell.Sign() != 0 {
 		panic(fmt.Sprintf("order %d has one zero volume: %s, %s. Sell %v", l.id, l.WantBuy, l.WantSell, !l.IsBuy))
 	}
+
 	return true
 }
 
