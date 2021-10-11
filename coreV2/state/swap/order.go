@@ -31,16 +31,7 @@ func (s *Swap) PairSellWithOrders(coin0, coin1 types.CoinID, amount0In, minAmoun
 		panic(fmt.Sprintf("calculatedAmount1Out %s less minAmount1Out %s", amount1Out, minAmount1Out))
 	}
 
-	for _, limit := range expiredOrders {
-		returnVolume := big.NewInt(0).Set(limit.WantSell)
-		s.bus.Accounts().AddBalance(limit.Owner, limit.Coin1, returnVolume)
-		s.bus.Events().AddEvent(&events.OrderExpiredEvent{
-			ID:      uint64(limit.ID()),
-			Address: limit.Owner,
-			Coin:    uint64(limit.Coin1),
-			Amount:  returnVolume.String(),
-		})
-	}
+	s.hundleLittleExpiredOrders(expiredOrders)
 
 	owners := sortOwners(ownersMap)
 	for _, b := range owners {
@@ -59,16 +50,7 @@ func (s *Swap) PairBuyWithOrders(coin0, coin1 types.CoinID, maxAmount0In, amount
 		panic(fmt.Sprintf("calculatedAmount1Out %s less minAmount1Out %s", amount1Out, maxAmount0In))
 	}
 
-	for _, limit := range expiredOrders {
-		returnVolume := big.NewInt(0).Set(limit.WantSell)
-		s.bus.Accounts().AddBalance(limit.Owner, limit.Coin1, returnVolume)
-		s.bus.Events().AddEvent(&events.OrderExpiredEvent{
-			ID:      uint64(limit.ID()),
-			Address: limit.Owner,
-			Coin:    uint64(limit.Coin1),
-			Amount:  returnVolume.String(),
-		})
-	}
+	s.hundleLittleExpiredOrders(expiredOrders)
 
 	owners := sortOwners(ownersMap)
 	for _, b := range owners {
@@ -78,6 +60,20 @@ func (s *Swap) PairBuyWithOrders(coin0, coin1 types.CoinID, maxAmount0In, amount
 	s.bus.Checker().AddCoin(coin1, big.NewInt(0).Neg(amount1Out))
 
 	return amount0In, amount1Out, pair.GetID(), details, owners
+}
+
+func (s *Swap) hundleLittleExpiredOrders(expiredOrders []*Limit) {
+	for _, limit := range expiredOrders {
+		returnVolume := big.NewInt(0).Set(limit.WantSell)
+		s.bus.Accounts().AddBalance(limit.Owner, limit.Coin1, returnVolume)
+		s.bus.Checker().AddCoin(limit.Coin1, big.NewInt(0).Neg(returnVolume))
+		s.bus.Events().AddEvent(&events.OrderExpiredEvent{
+			ID:      uint64(limit.ID()),
+			Address: limit.Owner,
+			Coin:    uint64(limit.Coin1),
+			Amount:  returnVolume.String(),
+		})
+	}
 }
 
 type ChangeDetailsWithOrders struct {
