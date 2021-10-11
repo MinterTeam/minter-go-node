@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"math/big"
 	"testing"
 
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
@@ -448,6 +449,108 @@ func TestOrder_sell_part(t *testing.T) {
 		if balance.String() == "0" {
 			t.Fatalf("Saller balance is not correct. Expected %s, got %s", "> 0", balance)
 		}
+	}
+}
+
+func TestOrder_buy(t *testing.T) {
+	address, pk := CreateAddress() // create account for test
+
+	state := DefaultAppState() // generate default state
+
+	state.Coins = append(state.Coins, types.Coin{
+		ID:           1,
+		Name:         "Test 1",
+		Symbol:       types.StrToCoinBaseSymbol("TEST1"),
+		Volume:       "40000000000",
+		Crr:          0,
+		Reserve:      "0",
+		MaxSupply:    "90000000000000000000000000000",
+		Version:      0,
+		OwnerAddress: &address,
+		Mintable:     false,
+		Burnable:     false,
+	})
+
+	seller, _ := CreateAddress() // generate seller
+	state.NextOrderID = 2
+	state.Pools = append(state.Pools, types.Pool{
+		Coin0:    1,
+		Coin1:    0,
+		Reserve0: "20000000000",
+		Reserve1: "20000000000",
+		ID:       1,
+		Orders: []types.Order{
+			{
+				IsSale:  true,
+				Volume0: "20000000000", // want to buy
+				Volume1: "20000000000", // want to sell
+				ID:      1,
+				Owner:   seller,
+			},
+		},
+	})
+
+	state.Accounts = append(state.Accounts, types.Account{
+		Address: address,
+		Balance: []types.Balance{
+			{
+				Coin:  uint64(types.GetBaseCoinID()),
+				Value: helpers.StringToBigInt("100000000000000000").String(),
+			},
+			{
+				Coin:  1,
+				Value: helpers.StringToBigInt("20000000000").String(),
+			},
+		},
+		Nonce:        0,
+		MultisigData: nil,
+	})
+
+	app := CreateApp(state) // create application
+	SendBeginBlock(app, 1)  // send BeginBlock
+
+	tx := CreateTx(app, address, transaction.TypeBuySwapPool, transaction.BuySwapPoolDataV260{
+		Coins:              []types.CoinID{1, 0},
+		ValueToBuy:         helpers.StringToBigInt("10000000000"),
+		MaximumValueToSell: helpers.StringToBigInt("20000000000"),
+	}, 0)
+
+	response := SendTx(app, SignTx(pk, tx)) // compose and send tx
+
+	// check that result is OK
+	if response.Code != code.OK {
+		t.Fatalf("Response code is not OK: %s, %d", response.Log, response.Code)
+	}
+
+	// check seller's balance
+	{
+		balance1 := app.CurrentState().Accounts().GetBalance(seller, 1)
+		if balance1.String() != "10010010011" {
+			t.Fatalf("Saller balance is not correct. Expected %s, got %s", "10010010011", balance1)
+		}
+
+		balance0 := app.CurrentState().Accounts().GetBalance(seller, 0)
+		if balance0.String() != big.NewInt(20000000000-10010010011).String() {
+			t.Fatalf("Saller balance is not correct. Expected %s, got %s", big.NewInt(20000000000-10010010011).String(), balance0)
+		}
+	}
+
+	// check taker's balance
+	{
+		balance := app.CurrentState().Accounts().GetBalance(address, 1)
+		if balance.String() != big.NewInt(20000000000-10020010022).String() {
+			t.Fatalf("Taker balance is not correct. Expected %s, got %s", big.NewInt(20000000000-10020010022).String(), balance)
+		}
+	}
+
+	SendEndBlock(app, 1) // send EndBlock
+	SendCommit(app)      // send Commit
+
+	appState := app.CurrentState().Export()
+	appState.Validators = append(appState.Validators, types.Validator{TotalBipStake: "1000", AccumReward: "1000", AbsentTimes: &types.BitArray{}}) // there should be at least one validator
+	appState.Candidates = append(appState.Candidates, types.Candidate{})                                                                           // candidate for validator
+	if err := appState.Verify(); err != nil {
+		t.Fatalf("export err: %v", err)
 	}
 }
 
