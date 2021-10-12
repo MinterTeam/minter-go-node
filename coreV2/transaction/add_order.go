@@ -41,7 +41,7 @@ func (data AddLimitOrderData) basicCheck(tx *Transaction, context *state.CheckSt
 	if data.ValueToBuy.Cmp(big.NewInt(swap.MinimumOrderVolume())) == -1 || data.ValueToSell.Cmp(big.NewInt(swap.MinimumOrderVolume())) == -1 {
 		return &Response{
 			Code: code.WrongOrderVolume,
-			Log:  "order volumes must exceed 1e10 units",
+			Log:  "minimum volume is 10000000000",
 			Info: EncodeError(code.NewWrongOrderVolume(data.ValueToBuy.String(), data.ValueToSell.String())),
 		}
 	}
