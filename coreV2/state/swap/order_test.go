@@ -21,8 +21,83 @@ func init() {
 	minimumOrderVolume = 100 // todo
 }
 
-func TestPair_BigPrice(t *testing.T) {
+func TestPair_CmpPrice(t *testing.T) {
+	//prec := 35
+	{
+		priceC := new(big.Float).SetPrec(Precision).Quo(
+			big.NewFloat(0).SetInt(helpers.StringToBigInt("10000000000")),
+			big.NewFloat(0).SetInt(helpers.StringToBigInt("500801598198396793587174349")),
+		)
+		//t.Log(priceC.Text('f', prec))
+		priceV := new(big.Float).SetPrec(Precision).Quo(
+			big.NewFloat(0).SetInt(helpers.BipToPip(helpers.StringToBigInt("1"))),
+			big.NewFloat(0).SetInt(helpers.BipToPip(helpers.StringToBigInt("50080159819839686"))),
+		)
+		//t.Log(priceV.Text('f', prec))
+		if priceC.Cmp(priceV) == -1 {
+			t.Error("a", priceC, priceV)
+		}
 
+		priceI := new(big.Float).SetPrec(Precision).Quo(
+			big.NewFloat(0).SetInt(helpers.BipToPip(helpers.StringToBigInt("1"))),
+			big.NewFloat(0).SetInt(helpers.BipToPip(helpers.StringToBigInt("50080159819839685"))),
+		)
+		//t.Log(priceI.Text('f', prec))
+		if priceC.Cmp(priceI) == -1 {
+			t.Error("b", priceC, priceI)
+		}
+	}
+	{
+		price0 := new(big.Float).SetPrec(Precision).Quo(
+			big.NewFloat(0).SetInt(helpers.StringToBigInt("10000000000")),
+			big.NewFloat(0).SetInt(helpers.StringToBigInt("500801598198396793587174349")),
+		)
+		//t.Log(price0.Text('f', prec))
+		price1 := new(big.Float).SetPrec(Precision).Quo(
+			big.NewFloat(0).SetInt(helpers.FloatBipToPip(0.00000001)),
+			big.NewFloat(0).SetInt(helpers.FloatBipToPip(500801598.198396793587174349)),
+		)
+		//t.Log(price1.Text('f', prec))
+		if price0.Cmp(price1) == -1 {
+			t.Error("c", price0, price1)
+		}
+
+		price2 := new(big.Float).SetPrec(Precision).Quo(
+			big.NewFloat(0).SetInt(helpers.FloatBipToPip(0.0000001)),
+			big.NewFloat(0).SetInt(helpers.FloatBipToPip(5008015981.98396793587174349)),
+		)
+		//t.Log(price2.Text('f', prec))
+		if price0.Cmp(price2) == -1 {
+			t.Error("d", price0, price2)
+		}
+	}
+	{
+		price0 := new(big.Float).SetPrec(Precision).Quo(
+			big.NewFloat(0).SetInt(helpers.StringToBigInt("10000000000")),
+			big.NewFloat(0).SetInt(helpers.StringToBigInt("500801598198396793587174349")),
+		)
+		//t.Log(price0.Text('f', prec))
+		price1 := new(big.Float).SetPrec(Precision).Quo(
+			big.NewFloat(0).SetInt(helpers.FloatBipToPip(0.0000001)),
+			big.NewFloat(0).SetInt(helpers.FloatBipToPip(5008015981.983968)),
+		)
+		//t.Log(price1.Text('f', prec))
+		if price0.Cmp(price1) == -1 {
+			t.Error("e", price0, price1)
+		}
+
+		price2 := new(big.Float).SetPrec(Precision).Quo(
+			big.NewFloat(0).SetInt(helpers.FloatBipToPip(0.0000001)),
+			big.NewFloat(0).SetInt(helpers.FloatBipToPip(5008015981.98397)),
+		)
+		//t.Log(price2.Text('f', prec))
+		if price0.Cmp(price2) == -1 {
+			t.Error("f", price0, price2)
+		}
+	}
+}
+
+func TestPair_BigPrice(t *testing.T) {
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
 	if err != nil {
@@ -56,7 +131,7 @@ func TestPair_BigPrice(t *testing.T) {
 
 	prev := big.NewFloat(0)
 	for _, limit := range pair.OrdersSell(11) {
-		t.Logf("%v,%#v", limit.Price().Text('f', Precision), limit)
+		//t.Logf("%v,%#v", limit.Price().Text('f', Precision), limit)
 		price := new(big.Float).Quo(
 			big.NewFloat(0).SetInt(limit.WantBuy),
 			big.NewFloat(0).SetInt(limit.WantSell),
