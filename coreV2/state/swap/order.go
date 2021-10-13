@@ -1011,7 +1011,7 @@ func (p *Pair) getDirtyOrdersList() []uint32 {
 	p.dirtyOrders.mu.RUnlock()
 
 	sort.SliceStable(dirtiesOrders, func(i, j int) bool {
-		return dirtiesOrders[i] > dirtiesOrders[j]
+		return dirtiesOrders[i] < dirtiesOrders[j]
 	})
 	return dirtiesOrders
 }
