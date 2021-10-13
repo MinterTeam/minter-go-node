@@ -424,7 +424,7 @@ func pricePathO(key PairKey, price *big.Float, id uint32, isSale bool) []byte {
 func pricePath(key PairKey, price *big.Float, id uint32, isSale bool) []byte {
 	var pricePath []byte
 
-	text := price.Text('e', Precision)
+	text := price.Text('e', 18)
 	split := strings.Split(text, "e")
 	if len(split) != 2 {
 		panic("p")
