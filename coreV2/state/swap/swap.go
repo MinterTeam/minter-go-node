@@ -424,7 +424,7 @@ func pricePathO(key PairKey, price *big.Float, id uint32, isSale bool) []byte {
 func pricePath(key PairKey, price *big.Float, id uint32, isSale bool) []byte {
 	var pricePath []byte
 
-	text := price.Text('e', 18)
+	text := price.Text('e', Precision)
 	split := strings.Split(text, "e")
 	if len(split) != 2 {
 		panic("p")
@@ -440,7 +440,7 @@ func pricePath(key PairKey, price *big.Float, id uint32, isSale bool) []byte {
 
 	pricePath = append(pricePath, []byte(split[0])...)
 
-	//log.Println("id p m", id,   b, split[0],)
+	//log.Println("id p m", id,   b, split[0])
 	byteID := id2BytesWithType(id, isSale)
 
 	var saleByte byte = 0

@@ -56,7 +56,7 @@ func TestPair_BigPrice(t *testing.T) {
 
 	prev := big.NewFloat(0)
 	for _, limit := range pair.OrdersSell(11) {
-		//t.Logf("%v,%#v", limit.Price().Text('f', 62), limit)
+		t.Logf("%v,%#v", limit.Price().Text('f', Precision), limit)
 		price := new(big.Float).Quo(
 			big.NewFloat(0).SetInt(limit.WantBuy),
 			big.NewFloat(0).SetInt(limit.WantSell),
