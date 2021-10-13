@@ -137,7 +137,7 @@ func (data AddLimitOrderData) Run(tx *Transaction, context state.Interface, rewa
 		maxPrice.Cmp(orderPrice) == 1 {
 		return Response{
 			Code: code.WrongOrderPrice,
-			Log:  fmt.Sprintf("order price is %s, but must be less than %s and more than %s", orderPrice.Text('f', swap.Precision), currentPrice.Text('f', swap.Precision), maxPrice.Text('f', swap.Precision)),
+			Log:  fmt.Sprintf("order price is %s, but must not exceed %s and more than %s", orderPrice.Text('f', swap.Precision), currentPrice.Text('f', swap.Precision), maxPrice.Text('f', swap.Precision)),
 			Info: EncodeError(code.NewWrongOrderPrice(currentPrice.Text('f', swap.Precision), maxPrice.Text('f', swap.Precision), orderPrice.Text('f', swap.Precision))),
 		}
 	}
