@@ -644,7 +644,7 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big
 }
 
 func CalcPriceSell(sell, buy *big.Int) *big.Float {
-	return new(big.Float).SetPrec(precision).Quo(
+	return new(big.Float).SetPrec(Precision).Quo(
 		big.NewFloat(0).SetInt(buy),
 		big.NewFloat(0).SetInt(sell),
 	)
@@ -701,7 +701,7 @@ type orderDirties struct {
 }
 
 const (
-	precision = 54 // supported precision
+	Precision = 54 // supported precision
 )
 
 func (l *Limit) Price() *big.Float {
@@ -802,10 +802,10 @@ func (l *Limit) SortPrice() *big.Float {
 
 func (l *Limit) OldSortPrice() *big.Float {
 	if l.oldSortPrice == nil {
-		l.oldSortPrice = new(big.Float).SetPrec(precision).Set(l.SortPrice())
+		l.oldSortPrice = new(big.Float).SetPrec(Precision).Set(l.SortPrice())
 	}
 
-	return new(big.Float).SetPrec(precision).Set(l.oldSortPrice)
+	return new(big.Float).SetPrec(Precision).Set(l.oldSortPrice)
 }
 
 func (l *Limit) isSell() bool {
@@ -1096,7 +1096,7 @@ func (p *Pair) AddOrder(wantBuyAmount0, wantSellAmount1 *big.Int, sender types.A
 		WantBuy:      wantBuyAmount0,
 		WantSell:     wantSellAmount1,
 		id:           p.getLastTotalOrderID(),
-		oldSortPrice: new(big.Float).SetPrec(precision),
+		oldSortPrice: new(big.Float).SetPrec(Precision),
 		Owner:        sender,
 		RWMutex:      new(sync.RWMutex),
 		Height:       block,
@@ -1120,7 +1120,7 @@ func (p *Pair) AddOrderWithID(wantBuyAmount0, wantSellAmount1 *big.Int, sender t
 		WantBuy:      wantBuyAmount0,
 		WantSell:     wantSellAmount1,
 		id:           id,
-		oldSortPrice: new(big.Float).SetPrec(precision),
+		oldSortPrice: new(big.Float).SetPrec(Precision),
 		Owner:        sender,
 		Height:       height,
 		RWMutex:      new(sync.RWMutex),
@@ -1250,7 +1250,7 @@ func (s *Swap) loadOrder(id uint32) *Limit {
 
 	order := &Limit{
 		id:           id,
-		oldSortPrice: new(big.Float).SetPrec(precision),
+		oldSortPrice: new(big.Float).SetPrec(Precision),
 		RWMutex:      new(sync.RWMutex),
 	}
 	err := rlp.DecodeBytes(value, order)

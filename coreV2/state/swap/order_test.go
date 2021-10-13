@@ -18,9 +18,73 @@ import (
 )
 
 func init() {
-	minimumOrderVolume = 0 // todo
+	minimumOrderVolume = 100 // todo
 }
 
+func TestPair_BigPrice(t *testing.T) {
+
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+
+	swap := New(newBus, immutableTree.GetLastImmutable())
+	_, _, _, _ = swap.PairCreate(0, 1, helpers.BipToPip(helpers.BipToPip(big.NewInt(1e18))), big.NewInt(1e10))
+	pair := swap.Pair(0, 1)
+	pair.AddOrder(helpers.BipToPip(helpers.BipToPip(helpers.BipToPip(big.NewInt(1e18)))), big.NewInt(1000), types.Address{1}, 1)
+	pair.AddOrder(helpers.BipToPip(helpers.BipToPip(big.NewInt(2e18))), big.NewInt(2e10), types.Address{1}, 1)
+	pair.AddOrder(helpers.BipToPip(helpers.BipToPip(big.NewInt(1e18))), big.NewInt(1e10), types.Address{1}, 1)
+	pair.AddOrder(helpers.BipToPip(helpers.BipToPip(big.NewInt(1e17))), big.NewInt(1e9), types.Address{1}, 1)
+	pair.AddOrder(helpers.BipToPip(helpers.BipToPip(big.NewInt(1e16))), big.NewInt(1e8), types.Address{1}, 1)
+	pair.AddOrder(helpers.BipToPip(helpers.BipToPip(big.NewInt(1e15))), big.NewInt(1e7), types.Address{1}, 1)
+	pair.AddOrder(helpers.BipToPip(helpers.BipToPip(big.NewInt(1e14))), big.NewInt(1e6), types.Address{1}, 1)
+	pair.AddOrder(helpers.BipToPip(helpers.BipToPip(big.NewInt(1e13))), big.NewInt(1e5), types.Address{1}, 1)
+	pair.AddOrder(helpers.BipToPip(helpers.BipToPip(big.NewInt(2e18))), big.NewInt(2e10), types.Address{1}, 1)
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	swap = New(newBus, immutableTree.GetLastImmutable())
+	pair = swap.Pair(0, 1)
+
+	prev := big.NewFloat(0)
+	for _, limit := range pair.OrdersSell(9) {
+		//t.Logf("%v,%#v", limit.Price().Text('f', 62), limit)
+		price := new(big.Float).Quo(
+			big.NewFloat(0).SetInt(limit.WantBuy),
+			big.NewFloat(0).SetInt(limit.WantSell),
+		)
+		prec := price.Prec()
+
+		if prec > Precision {
+			t.Error(prec)
+		}
+		if prev.Sign() != 1 {
+			prev = price
+		} else {
+			if prev.Cmp(price) == 1 {
+				t.Error(prev, price)
+			}
+		}
+	}
+	out, o, _, _ := pair.BuyWithOrders(big.NewInt(100))
+	if len(o) != 1 {
+		t.Error(len(o))
+	}
+	//t.Log(out)
+	if out.Cmp(big.NewInt(99900)) == 0 {
+		t.Error(out)
+	}
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
 func TestPair_taker2_sell(t *testing.T) {
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)

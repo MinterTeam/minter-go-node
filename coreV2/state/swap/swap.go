@@ -387,7 +387,7 @@ func id2BytesWithType(id uint32, sale bool) []byte {
 	return byteID
 }
 
-func pricePath(key PairKey, price *big.Float, id uint32, isSale bool) []byte {
+func pricePathO(key PairKey, price *big.Float, id uint32, isSale bool) []byte {
 	var pricePath []byte
 
 	text := price.Text('e', 18)
@@ -417,6 +417,35 @@ func pricePath(key PairKey, price *big.Float, id uint32, isSale bool) []byte {
 	if isSale {
 		saleByte = 1
 		// log.Println("c s", saleByte)
+	}
+	return append(append(append(append([]byte{mainPrefix}, key.pathOrders()...), saleByte), pricePath...), byteID...)
+}
+
+func pricePath(key PairKey, price *big.Float, id uint32, isSale bool) []byte {
+	var pricePath []byte
+
+	text := price.Text('e', 18)
+	split := strings.Split(text, "e")
+	if len(split) != 2 {
+		panic("p")
+	}
+
+	// порядок
+	bString, err := strconv.Atoi(split[1])
+	if err != nil {
+		panic(err)
+	}
+	b := byte(bString + math.MaxInt8)
+	pricePath = append(pricePath, b)
+
+	pricePath = append(pricePath, []byte(split[0])...)
+
+	//log.Println("id p m", id,   b, split[0],)
+	byteID := id2BytesWithType(id, isSale)
+
+	var saleByte byte = 0
+	if isSale {
+		saleByte = 1
 	}
 	return append(append(append(append([]byte{mainPrefix}, key.pathOrders()...), saleByte), pricePath...), byteID...)
 }
