@@ -77,8 +77,8 @@ const (
 	gasAddLiquidity    = 5
 	gasRemoveLiquidity = 5
 
-	gasAddLimitOrder    = 50 // todo
-	gasRemoveLimitOrder = 50 // todo
+	gasAddLimitOrder    = 50
+	gasRemoveLimitOrder = 50
 
 	convertDelta       = 1
 	gasSellSwapPool    = 2

@@ -510,7 +510,6 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 			db.Set(pathOrderID, pairOrderBytes)
 		}
 
-		// todo: add mu or tests pair.lockOrders
 		pair.loadedBuyOrders.ids = pair.buyOrders.ids[:]
 		pair.loadedSellOrders.ids = pair.sellOrders.ids[:]
 

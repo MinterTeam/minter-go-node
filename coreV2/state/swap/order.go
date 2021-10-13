@@ -666,7 +666,7 @@ type Limit struct {
 
 func (l *Limit) ID() uint32 {
 	if l == nil {
-		return 0 // todo: test
+		return 0
 	}
 
 	return l.id
@@ -1518,7 +1518,7 @@ func (p *Pair) orderSellLoadToIndex(index int) *Limit {
 				if index > lastI {
 					// загрузим с последнего нужное количество и отсортируем
 					fromOrder = p.order(orders[lastI])
-					loadedNextOrders := p.loadSellOrders(p, fromOrder, index-lastI) // todo var
+					loadedNextOrders := p.loadSellOrders(p, fromOrder, index-lastI)
 					resortedOrders, unsets := p.updateDirtyOrders(append(orders, loadedNextOrders...), true)
 					//resortedOrders, unsets := p.updateDirtyOrders(append(orders, loadedNextOrders...), true)
 					// проверим загружены ли все
@@ -1540,12 +1540,12 @@ func (p *Pair) orderSellLoadToIndex(index int) *Limit {
 					//else {
 					// загружено все что есть
 					// тут нужно выйти и отдать что есть
-					// todo
+					//
 					//}
 					// тут уже был выход
 				} else {
 					// тут нужно выйти и отдать элемент
-					// todo
+					//
 				}
 
 			} else {
@@ -1562,10 +1562,10 @@ func (p *Pair) orderSellLoadToIndex(index int) *Limit {
 				// тк нет грязных, то просто складываем
 				orders = append(orders, loadedNextOrders...)
 				// тут нужно выйти и отдать то что есть
-				// todo
+				//
 			}
 			// тут нужно выйти и отдать то что есть
-			// todo
+			//
 		}
 	} else {
 		orders = p.loadSellOrders(p, nil, index+1)
