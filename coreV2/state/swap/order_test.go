@@ -38,7 +38,9 @@ func TestPair_BigPrice(t *testing.T) {
 	pair.AddOrder(helpers.BipToPip(helpers.BipToPip(big.NewInt(2e18))), big.NewInt(2e10), types.Address{1}, 1)
 	pair.AddOrder(helpers.BipToPip(helpers.BipToPip(big.NewInt(1e18))), big.NewInt(1e10), types.Address{1}, 1)
 	pair.AddOrder(helpers.BipToPip(helpers.BipToPip(big.NewInt(1e17))), big.NewInt(1e9), types.Address{1}, 1)
+	pair.AddOrder(helpers.BipToPip(helpers.BipToPip(big.NewInt(2e16))), big.NewInt(1e8), types.Address{1}, 1)
 	pair.AddOrder(helpers.BipToPip(helpers.BipToPip(big.NewInt(1e16))), big.NewInt(1e8), types.Address{1}, 1)
+	pair.AddOrder(helpers.BipToPip(helpers.BipToPip(big.NewInt(1e16))), big.NewInt(2e8), types.Address{1}, 1)
 	pair.AddOrder(helpers.BipToPip(helpers.BipToPip(big.NewInt(1e15))), big.NewInt(1e7), types.Address{1}, 1)
 	pair.AddOrder(helpers.BipToPip(helpers.BipToPip(big.NewInt(1e14))), big.NewInt(1e6), types.Address{1}, 1)
 	pair.AddOrder(helpers.BipToPip(helpers.BipToPip(big.NewInt(1e13))), big.NewInt(1e5), types.Address{1}, 1)
@@ -53,7 +55,7 @@ func TestPair_BigPrice(t *testing.T) {
 	pair = swap.Pair(0, 1)
 
 	prev := big.NewFloat(0)
-	for _, limit := range pair.OrdersSell(9) {
+	for _, limit := range pair.OrdersSell(11) {
 		//t.Logf("%v,%#v", limit.Price().Text('f', 62), limit)
 		price := new(big.Float).Quo(
 			big.NewFloat(0).SetInt(limit.WantBuy),
