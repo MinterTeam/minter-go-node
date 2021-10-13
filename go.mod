@@ -3,7 +3,7 @@ module github.com/MinterTeam/minter-go-node
 go 1.16
 
 require (
-	github.com/MinterTeam/node-grpc-gateway v1.4.3-0.20210929143118-7e2957b6abab
+	github.com/MinterTeam/node-grpc-gateway v1.5.0
 	github.com/btcsuite/btcd v0.21.0-beta
 	github.com/c-bata/go-prompt v0.2.3
 	github.com/cosmos/iavl v0.17.1-0.20210901093355-89f6b77e9284
@@ -32,9 +32,9 @@ require (
 	github.com/urfave/cli/v2 v2.0.0
 	golang.org/x/crypto v0.0.0-20201117144127-c1f2f97bffc9
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20210831042530-f4d43177bf5e
+	golang.org/x/sys v0.0.0-20210903071746-97244b99971b
 	google.golang.org/grpc v1.40.0
 	google.golang.org/protobuf v1.27.1
 )
 
-replace github.com/tendermint/tendermint => github.com/MinterTeam/tendermint v0.34.11-0.20210908145550-606076196a4b
+replace github.com/tendermint/tendermint => github.com/MinterTeam/tendermint v0.34.11-0.20210923081749-4193cf101f9f
