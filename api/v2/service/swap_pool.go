@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-const precision = 18
+const precision = 34
 
 func (s *Service) LimitOrdersOfPool(ctx context.Context, req *pb.LimitOrdersOfPoolRequest) (*pb.LimitOrdersOfPoolResponse, error) {
 	if req.SellCoin == req.BuyCoin {
