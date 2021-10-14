@@ -42,6 +42,7 @@ type EditableChecker interface {
 	Reverse() EditableChecker
 	Price() *big.Float
 	PriceRat() *big.Rat
+	PriceRatCmp(rat *big.Rat) int
 	Reserves() (reserve0 *big.Int, reserve1 *big.Int)
 	Amounts(liquidity, totalSupply *big.Int) (amount0 *big.Int, amount1 *big.Int)
 	CalculateAddAmountsForPrice(float *big.Float) (amount0, amount1 *big.Int)
@@ -514,7 +515,7 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 			pathOrderID := pathOrder(limit.id)
 
 			oldSortPrice := limit.OldSortPrice()
-			newPath := pricePath(key, limit.ReCalcOldSortPrice(), limit.id, !limit.IsBuy)
+			newPath := pricePath(key, limit.reCalcOldSortPrice(), limit.id, !limit.IsBuy)
 			if oldSortPrice.Sign() != 0 {
 				oldPathOrderList := pricePath(key, oldSortPrice, limit.id, !limit.IsBuy)
 
