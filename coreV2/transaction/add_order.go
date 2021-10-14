@@ -131,15 +131,15 @@ func (data AddLimitOrderData) Run(tx *Transaction, context state.Interface, rewa
 			swapper = swapper.AddLastSwapStepWithOrders(big.NewInt(0).Neg(commissionInBaseCoin), big.NewInt(0).Neg(commission), true)
 		}
 	}
-	currentPrice := swapper.Reverse().Price()
-	maxPrice := big.NewFloat(0).Quo(currentPrice, big.NewFloat(5))
-	orderPrice := swap.CalcPriceSell(data.ValueToBuy, data.ValueToSell)
+	currentPrice := swapper.Reverse().PriceRat()
+	maxPrice := new(big.Rat).Quo(currentPrice, big.NewRat(5, 1))
+	orderPrice := swap.CalcPriceSellRat(data.ValueToBuy, data.ValueToSell)
 	if currentPrice.Cmp(orderPrice) == -1 ||
 		maxPrice.Cmp(orderPrice) == 1 {
 		return Response{
 			Code: code.WrongOrderPrice,
-			Log:  fmt.Sprintf("order price is %s, but must not exceed %s and more than %s", orderPrice.Text('f', precision), currentPrice.Text('f', precision), maxPrice.Text('f', precision)),
-			Info: EncodeError(code.NewWrongOrderPrice(currentPrice.Text('f', precision), maxPrice.Text('f', precision), orderPrice.Text('f', precision))),
+			Log:  fmt.Sprintf("order price is %s, but must not exceed %s and more than %s", orderPrice.FloatString(precision), currentPrice.FloatString(precision), maxPrice.FloatString(precision)),
+			Info: EncodeError(code.NewWrongOrderPrice(currentPrice.FloatString(precision), maxPrice.FloatString(precision), orderPrice.FloatString(precision))),
 		}
 	}
 
