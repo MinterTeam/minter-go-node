@@ -24,23 +24,23 @@ func init() {
 func TestPair_CmpPrice(t *testing.T) {
 	//prec := 35
 	{
-		priceC := new(big.Float).SetPrec(Precision).Quo(
-			big.NewFloat(0).SetInt(helpers.StringToBigInt("10000000000")),
-			big.NewFloat(0).SetInt(helpers.StringToBigInt("500801598198396793587174349")),
+		priceC := CalcPriceSell(
+			big.NewInt(0).Set(helpers.StringToBigInt("500801598198396793587174349")),
+			big.NewInt(0).Set(helpers.StringToBigInt("10000000000")),
 		)
 		//t.Log(priceC.Text('f', prec))
-		priceV := new(big.Float).SetPrec(Precision).Quo(
-			big.NewFloat(0).SetInt(helpers.BipToPip(helpers.StringToBigInt("1"))),
-			big.NewFloat(0).SetInt(helpers.BipToPip(helpers.StringToBigInt("50080159819839686"))),
+		priceV := CalcPriceSell(
+			big.NewInt(0).Set(helpers.BipToPip(helpers.StringToBigInt("50080159819839686"))),
+			big.NewInt(0).Set(helpers.BipToPip(helpers.StringToBigInt("1"))),
 		)
 		//t.Log(priceV.Text('f', prec))
 		if priceC.Cmp(priceV) == -1 {
 			t.Error("a", priceC, priceV)
 		}
 
-		priceI := new(big.Float).SetPrec(Precision).Quo(
-			big.NewFloat(0).SetInt(helpers.BipToPip(helpers.StringToBigInt("1"))),
-			big.NewFloat(0).SetInt(helpers.BipToPip(helpers.StringToBigInt("50080159819839685"))),
+		priceI := CalcPriceSell(
+			big.NewInt(0).Set(helpers.BipToPip(helpers.StringToBigInt("50080159819839685"))),
+			big.NewInt(0).Set(helpers.BipToPip(helpers.StringToBigInt("1"))),
 		)
 		//t.Log(priceI.Text('f', prec))
 		if priceC.Cmp(priceI) == -1 {
@@ -48,47 +48,47 @@ func TestPair_CmpPrice(t *testing.T) {
 		}
 	}
 	{
-		price0 := new(big.Float).SetPrec(Precision).Quo(
-			big.NewFloat(0).SetInt(helpers.StringToBigInt("10000000000")),
-			big.NewFloat(0).SetInt(helpers.StringToBigInt("500801598198396793587174349")),
+		price0 := CalcPriceSell(
+			big.NewInt(0).Set(helpers.StringToBigInt("500801598198396793587174349")),
+			big.NewInt(0).Set(helpers.StringToBigInt("10000000000")),
 		)
 		//t.Log(price0.Text('f', prec))
-		price1 := new(big.Float).SetPrec(Precision).Quo(
-			big.NewFloat(0).SetInt(helpers.FloatBipToPip(0.00000001)),
-			big.NewFloat(0).SetInt(helpers.FloatBipToPip(500801598.198396793587174349)),
+		price1 := CalcPriceSell(
+			big.NewInt(0).Set(helpers.FloatBipToPip(500801598.198396793587174349)),
+			big.NewInt(0).Set(helpers.FloatBipToPip(0.00000001)),
 		)
 		//t.Log(price1.Text('f', prec))
 		if price0.Cmp(price1) == -1 {
 			t.Error("c", price0, price1)
 		}
 
-		price2 := new(big.Float).SetPrec(Precision).Quo(
-			big.NewFloat(0).SetInt(helpers.FloatBipToPip(0.0000001)),
-			big.NewFloat(0).SetInt(helpers.FloatBipToPip(5008015981.98396793587174349)),
+		price2 := CalcPriceSell(
+			big.NewInt(0).Set(helpers.FloatBipToPip(5008015981.98396793587174349)),
+			big.NewInt(0).Set(helpers.FloatBipToPip(0.0000001)),
 		)
 		//t.Log(price2.Text('f', prec))
-		if price0.Cmp(price2) == -1 {
+		if price0.Cmp(price2) == 1 {
 			t.Error("d", price0, price2)
 		}
 	}
 	{
-		price0 := new(big.Float).SetPrec(Precision).Quo(
-			big.NewFloat(0).SetInt(helpers.StringToBigInt("10000000000")),
-			big.NewFloat(0).SetInt(helpers.StringToBigInt("500801598198396793587174349")),
+		price0 := CalcPriceSell(
+			big.NewInt(0).Set(helpers.StringToBigInt("500801598198396793587174349")),
+			big.NewInt(0).Set(helpers.StringToBigInt("10000000000")),
 		)
-		//t.Log(price0.Text('f', prec))
-		price1 := new(big.Float).SetPrec(Precision).Quo(
-			big.NewFloat(0).SetInt(helpers.FloatBipToPip(0.0000001)),
-			big.NewFloat(0).SetInt(helpers.FloatBipToPip(5008015981.983968)),
+		t.Log(price0.Text('f', 18))
+		price1 := CalcPriceSell(
+			big.NewInt(0).Set(helpers.FloatBipToPip(5008015981.983968)),
+			big.NewInt(0).Set(helpers.FloatBipToPip(0.0000001)),
 		)
 		//t.Log(price1.Text('f', prec))
 		if price0.Cmp(price1) == -1 {
 			t.Error("e", price0, price1)
 		}
 
-		price2 := new(big.Float).SetPrec(Precision).Quo(
-			big.NewFloat(0).SetInt(helpers.FloatBipToPip(0.0000001)),
-			big.NewFloat(0).SetInt(helpers.FloatBipToPip(5008015981.98397)),
+		price2 := CalcPriceSell(
+			big.NewInt(0).Set(helpers.FloatBipToPip(5008015981.98397)),
+			big.NewInt(0).Set(helpers.FloatBipToPip(0.0000001)),
 		)
 		//t.Log(price2.Text('f', prec))
 		if price0.Cmp(price2) == -1 {
