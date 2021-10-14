@@ -644,9 +644,15 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big
 }
 
 func CalcPriceSell(sell, buy *big.Int) *big.Float {
-	return new(big.Float).SetPrec(Precision).Quo(
-		big.NewFloat(0).SetInt(buy),
-		big.NewFloat(0).SetInt(sell),
+	return new(big.Float).SetPrec(Precision).SetRat(
+		CalcPriceSellRat(sell, buy),
+	)
+}
+
+func CalcPriceSellRat(sell, buy *big.Int) *big.Rat {
+	return new(big.Rat).SetFrac(
+		big.NewInt(0).Set(buy),
+		big.NewInt(0).Set(sell),
 	)
 }
 
@@ -715,8 +721,24 @@ func (l *Limit) Price() *big.Float {
 	return CalcPriceSell(l.WantBuy, l.WantSell)
 }
 
+func (l *Limit) PriceCmp(sell, buy *big.Int) int {
+	if l.isEmpty() {
+		return 0
+	}
+
+	rat := CalcPriceSellRat(sell, buy)
+
+	l.RLock()
+	defer l.RUnlock()
+
+	return CalcPriceSellRat(l.WantBuy, l.WantSell).Cmp(rat)
+}
+
 func (p *Pair) Price() *big.Float {
 	return p.pairData.Price()
+}
+func (p *Pair) PriceRat() *big.Rat {
+	return p.pairData.PriceRat()
 }
 
 func (p *Pair) getOrder(id uint32) *Limit {
@@ -777,13 +799,6 @@ func (p *Pair) setOrder(l *Limit) {
 	defer p.orders.mu.Unlock()
 
 	p.orders.list[l.id] = l
-}
-
-func (p *Pair) SortPrice() *big.Float {
-	if p.isSorted() {
-		return p.pairData.Price()
-	}
-	return p.pairData.reverse().Price()
 }
 
 func (p *Pair) DirectionSortPrice() int {

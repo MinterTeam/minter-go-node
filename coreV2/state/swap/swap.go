@@ -41,6 +41,7 @@ type EditableChecker interface {
 	AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int, isBuy bool) EditableChecker
 	Reverse() EditableChecker
 	Price() *big.Float
+	PriceRat() *big.Rat
 	Reserves() (reserve0 *big.Int, reserve1 *big.Int)
 	Amounts(liquidity, totalSupply *big.Int) (amount0 *big.Int, amount1 *big.Int)
 	CalculateAddAmountsForPrice(float *big.Float) (amount0, amount1 *big.Int)
@@ -275,6 +276,13 @@ func (pd *pairData) Price() *big.Float {
 	defer pd.RUnlock()
 
 	return CalcPriceSell(pd.Reserve0, pd.Reserve1)
+}
+
+func (pd *pairData) PriceRat() *big.Rat {
+	pd.RLock()
+	defer pd.RUnlock()
+
+	return CalcPriceSellRat(pd.Reserve0, pd.Reserve1)
 }
 
 func (pd *pairData) reverse() *pairData {
