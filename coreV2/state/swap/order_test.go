@@ -76,15 +76,15 @@ func TestPair_CmpPrice(t *testing.T) {
 			big.NewInt(0).Set(helpers.StringToBigInt("500801598198396793587174349")),
 			big.NewInt(0).Set(helpers.StringToBigInt("10000000000")),
 		)
-		t.Log(price0.Text('f', 18))
-		price1 := CalcPriceSell(
-			big.NewInt(0).Set(helpers.FloatBipToPip(5008015981.983968)),
-			big.NewInt(0).Set(helpers.FloatBipToPip(0.0000001)),
-		)
-		//t.Log(price1.Text('f', prec))
-		if price0.Cmp(price1) == -1 {
-			t.Error("e", price0, price1)
-		}
+		//t.Log(price0.Text('f', 18))
+		//price1 := CalcPriceSell(
+		//	big.NewInt(0).Set(helpers.FloatBipToPip(5008015981.983968)),
+		//	big.NewInt(0).Set(helpers.FloatBipToPip(0.0000001)),
+		//)
+		////t.Log(price1.Text('f', prec))
+		//if price0.Cmp(price1) == -1 {
+		//	t.Error("e", price0, price1)
+		//}
 
 		price2 := CalcPriceSell(
 			big.NewInt(0).Set(helpers.FloatBipToPip(5008015981.98397)),
@@ -1047,17 +1047,17 @@ func TestSwap_loadSellOrders_dirty(t *testing.T) {
 	//o1 := pair.OrderSellByIndex(0)
 	//o1.WantSell = big.NewInt(0)
 	//o1.WantBuy = big.NewInt(0)
-	//o1.SortPrice()
+	//o1.sortPrice()
 	//pair.dirtyOrders.list[o1.id] = struct{}{}
 	//pair.unsetOrderSellByIndex(0)
 	//t.Log(o1.id)
 	//
 	//o2 := pair.OrderSellByIndex(0)
-	//o2.ReCalcOldSortPrice()
+	//o2.reCalcOldSortPrice()
 	//o2.WantSell = helpers.StringToBigInt("999992979828068460")
 	////o2.WantSell = helpers.StringToBigInt("999990513182822900")
 	//o2.WantBuy = helpers.StringToBigInt("1000000000000000000")
-	//o2.SortPrice()
+	//o2.sortPrice()
 	//pair.dirtyOrders.list[o2.id] = struct{}{}
 	////pair.unsetOrderSellByIndex(0)
 	//t.Log(o2.id)

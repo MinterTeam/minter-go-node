@@ -289,12 +289,12 @@ func (l *Limit) isKeepRate() bool {
 	if l == nil {
 		return false
 	}
-	//fmt.Println("is keep", l.oldSortPrice, l.SortPrice())
+	//fmt.Println("is keep", l.oldSortPrice, l.sortPrice())
 	return l.CmpOldRate() == 0
 }
 
 func (l *Limit) CmpOldRate() int {
-	return l.SortPrice().Cmp(l.OldSortPrice())
+	return l.sortPrice().Cmp(l.OldSortPrice())
 }
 
 func (p *Pair) CalculateBuyForSellWithOrders(amount0In *big.Int) (amount1Out *big.Int) {
@@ -321,7 +321,7 @@ func (p *Pair) calculateBuyForSellWithOrders(amount0In *big.Int) (amountOut *big
 		//log.Println("ow", limit.id, limit.Owner.String())
 
 		price := limit.Price()
-		if price.Cmp(pair.Price()) == -1 {
+		if pair.PriceRatCmp(limit.PriceRat()) == 1 {
 			reserve0diff, reserve1diff := pair.CalculateAddAmountsForPrice(price)
 			if reserve0diff != nil && reserve1diff != nil {
 				if amountIn.Cmp(reserve0diff) != 1 {
@@ -342,9 +342,9 @@ func (p *Pair) calculateBuyForSellWithOrders(amount0In *big.Int) (amountOut *big
 
 		// хотим продать 9009 (9 пойдет в пул)
 		// проверяем есть ли 9000 на продажу
-		//log.Println("amountIn", amountIn)
+		log.Println("amountIn", amountIn)
 		amount0 := big.NewInt(0).Sub(amountIn, calcCommission1001(amountIn))
-		//log.Println(amount0)
+		log.Println(amount0)
 		if amount0.Cmp(limit.WantBuy) != 1 {
 			//log.Println("rest", rest)
 
@@ -379,7 +379,7 @@ func (p *Pair) calculateBuyForSellWithOrders(amount0In *big.Int) (amountOut *big
 				WantSell:     amount1, // 3000, 3 в пул и 2997 тейкеру
 				Owner:        limit.Owner,
 				Height:       limit.Height,
-				oldSortPrice: limit.SortPrice(),
+				oldSortPrice: limit.sortPrice(),
 				id:           limit.id,
 				RWMutex:      new(sync.RWMutex),
 			})
@@ -398,7 +398,7 @@ func (p *Pair) calculateBuyForSellWithOrders(amount0In *big.Int) (amountOut *big
 			Owner:        limit.Owner,
 			Height:       limit.Height,
 			PairKey:      limit.PairKey,
-			oldSortPrice: limit.SortPrice(),
+			oldSortPrice: limit.sortPrice(),
 			id:           limit.id,
 			RWMutex:      limit.RWMutex,
 		})
@@ -531,7 +531,7 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big
 		//log.Println("ow", limit.id, limit.Owner.String())
 
 		price := limit.Price()
-		if price.Cmp(pair.Price()) == -1 {
+		if pair.PriceRatCmp(limit.PriceRat()) == 1 {
 			reserve0diff, reserve1diff := pair.CalculateAddAmountsForPrice(price)
 			//log.Println(reserve0diff, reserve1diff, "ooo")
 			if reserve1diff != nil && reserve0diff != nil {
@@ -594,7 +594,7 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big
 				WantSell:     amount1,                    // 3003, из них 3 в пул
 				Owner:        limit.Owner,
 				Height:       limit.Height,
-				oldSortPrice: limit.SortPrice(),
+				oldSortPrice: limit.sortPrice(),
 				id:           limit.id,
 				RWMutex:      new(sync.RWMutex),
 			})
@@ -615,7 +615,7 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big
 			Owner:        limit.Owner,
 			Height:       limit.Height,
 			PairKey:      limit.PairKey,
-			oldSortPrice: limit.SortPrice(),
+			oldSortPrice: limit.sortPrice(),
 			id:           limit.id,
 			RWMutex:      limit.RWMutex,
 		})
@@ -721,17 +721,15 @@ func (l *Limit) Price() *big.Float {
 	return CalcPriceSell(l.WantBuy, l.WantSell)
 }
 
-func (l *Limit) PriceCmp(sell, buy *big.Int) int {
+func (l *Limit) PriceRat() *big.Rat {
 	if l.isEmpty() {
-		return 0
+		return new(big.Rat)
 	}
-
-	rat := CalcPriceSellRat(sell, buy)
 
 	l.RLock()
 	defer l.RUnlock()
 
-	return CalcPriceSellRat(l.WantBuy, l.WantSell).Cmp(rat)
+	return CalcPriceSellRat(l.WantBuy, l.WantSell)
 }
 
 func (p *Pair) Price() *big.Float {
@@ -739,6 +737,9 @@ func (p *Pair) Price() *big.Float {
 }
 func (p *Pair) PriceRat() *big.Rat {
 	return p.pairData.PriceRat()
+}
+func (p *Pair) PriceRatCmp(rat *big.Rat) int {
+	return p.pairData.PriceRat().Cmp(rat)
 }
 
 func (p *Pair) getOrder(id uint32) *Limit {
@@ -808,7 +809,7 @@ func (p *Pair) DirectionSortPrice() int {
 	return -1
 }
 
-func (l *Limit) SortPrice() *big.Float {
+func (l *Limit) sortPrice() *big.Float {
 	if l.isSorted() {
 		return l.Price()
 	}
@@ -817,7 +818,7 @@ func (l *Limit) SortPrice() *big.Float {
 
 func (l *Limit) OldSortPrice() *big.Float {
 	if l.oldSortPrice == nil {
-		l.oldSortPrice = new(big.Float).SetPrec(Precision).Set(l.SortPrice())
+		l.oldSortPrice = new(big.Float).SetPrec(Precision).Set(l.sortPrice())
 	}
 
 	return new(big.Float).SetPrec(Precision).Set(l.oldSortPrice)
@@ -827,9 +828,9 @@ func (l *Limit) isSell() bool {
 	return !l.IsBuy
 }
 
-// ReCalcOldSortPrice saves before change, need for update on disk
-func (l *Limit) ReCalcOldSortPrice() *big.Float {
-	l.oldSortPrice.Set(l.SortPrice())
+// reCalcOldSortPrice saves before change, need for update on disk
+func (l *Limit) reCalcOldSortPrice() *big.Float {
+	l.oldSortPrice.Set(l.sortPrice())
 	return l.OldSortPrice()
 }
 
@@ -1273,7 +1274,7 @@ func (s *Swap) loadOrder(id uint32) *Limit {
 		panic(err)
 	}
 
-	order.ReCalcOldSortPrice()
+	order.reCalcOldSortPrice()
 
 	return order
 }
@@ -1372,7 +1373,7 @@ func (p *Pair) updateDirtyOrders(list []uint32, lower bool) (orders []uint32, de
 	sort.Slice(dirties, func(i, j int) bool {
 		a := dirties[j]
 		b := dirties[i]
-		switch a.SortPrice().Cmp(b.SortPrice()) {
+		switch a.sortPrice().Cmp(b.sortPrice()) {
 		case cmp:
 			return true
 		case 0:
@@ -1428,7 +1429,7 @@ func addToList(orders []*Limit, dirtyOrder *Limit, cmp int, index int) (list []*
 			//log.Println("start", skeeped, "stop", skeeped+len(slice)-1, "cur", cur, "id", dirtyOrder.id)
 
 			less := false
-			switch dirtyOrder.SortPrice().Cmp(limit.SortPrice()) {
+			switch dirtyOrder.sortPrice().Cmp(limit.sortPrice()) {
 			case cmp:
 				less = true
 			case 0:
@@ -1465,7 +1466,7 @@ func addToList(orders []*Limit, dirtyOrder *Limit, cmp int, index int) (list []*
 			}
 
 			var ok bool
-			switch dirtyOrder.SortPrice().Cmp(limit.SortPrice()) {
+			switch dirtyOrder.sortPrice().Cmp(limit.sortPrice()) {
 			case cmp:
 				index = i + 1
 				continue
