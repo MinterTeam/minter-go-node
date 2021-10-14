@@ -46,15 +46,15 @@ func (data AddLimitOrderData) basicCheck(tx *Transaction, context *state.CheckSt
 		}
 	}
 
-	if new(big.Float).Quo(
-		big.NewFloat(0).SetInt(data.ValueToBuy),
-		big.NewFloat(0).SetInt(data.ValueToSell),
-	).Prec() > swap.Precision {
-		return &Response{
-			Code: code.SwapPoolUnknown,
-			Log:  "price invalid",
-			Info: EncodeError(code.NewCustomCode(code.SwapPoolUnknown))}
-	}
+	//if new(big.Float).Quo(
+	//	big.NewFloat(0).SetInt(data.ValueToBuy),
+	//	big.NewFloat(0).SetInt(data.ValueToSell),
+	//).Prec() > swap.Precision {
+	//	return &Response{
+	//		Code: code.SwapPoolUnknown,
+	//		Log:  "price invalid",
+	//		Info: EncodeError(code.NewCustomCode(code.SwapPoolUnknown))}
+	//}
 
 	swapper := context.Swap().GetSwapper(data.CoinToSell, data.CoinToBuy)
 	if !swapper.Exists() {
