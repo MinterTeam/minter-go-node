@@ -79,6 +79,7 @@ func (data AddLimitOrderData) CommissionData(price *commission.Price) *big.Int {
 }
 
 func (data AddLimitOrderData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
+	const precision = 34
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -137,8 +138,8 @@ func (data AddLimitOrderData) Run(tx *Transaction, context state.Interface, rewa
 		maxPrice.Cmp(orderPrice) == 1 {
 		return Response{
 			Code: code.WrongOrderPrice,
-			Log:  fmt.Sprintf("order price is %s, but must not exceed %s and more than %s", orderPrice.Text('f', swap.Precision), currentPrice.Text('f', swap.Precision), maxPrice.Text('f', swap.Precision)),
-			Info: EncodeError(code.NewWrongOrderPrice(currentPrice.Text('f', swap.Precision), maxPrice.Text('f', swap.Precision), orderPrice.Text('f', swap.Precision))),
+			Log:  fmt.Sprintf("order price is %s, but must not exceed %s and more than %s", orderPrice.Text('f', precision), currentPrice.Text('f', precision), maxPrice.Text('f', precision)),
+			Info: EncodeError(code.NewWrongOrderPrice(currentPrice.Text('f', precision), maxPrice.Text('f', precision), orderPrice.Text('f', precision))),
 		}
 	}
 
