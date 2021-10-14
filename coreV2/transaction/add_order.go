@@ -41,9 +41,19 @@ func (data AddLimitOrderData) basicCheck(tx *Transaction, context *state.CheckSt
 	if data.ValueToBuy.Cmp(big.NewInt(swap.MinimumOrderVolume())) == -1 || data.ValueToSell.Cmp(big.NewInt(swap.MinimumOrderVolume())) == -1 {
 		return &Response{
 			Code: code.WrongOrderVolume,
-			Log:  "order volumes must exceed 1e10 units",
+			Log:  "minimum volume is 10000000000",
 			Info: EncodeError(code.NewWrongOrderVolume(data.ValueToBuy.String(), data.ValueToSell.String())),
 		}
+	}
+
+	if new(big.Float).Quo(
+		big.NewFloat(0).SetInt(data.ValueToBuy),
+		big.NewFloat(0).SetInt(data.ValueToSell),
+	).Prec() > swap.Precision {
+		return &Response{
+			Code: code.SwapPoolUnknown,
+			Log:  "price invalid",
+			Info: EncodeError(code.NewCustomCode(code.SwapPoolUnknown))}
 	}
 
 	swapper := context.Swap().GetSwapper(data.CoinToSell, data.CoinToBuy)
@@ -127,8 +137,8 @@ func (data AddLimitOrderData) Run(tx *Transaction, context state.Interface, rewa
 		maxPrice.Cmp(orderPrice) == 1 {
 		return Response{
 			Code: code.WrongOrderPrice,
-			Log:  fmt.Sprintf("order price is %s, but must be less than %s and more than %s", orderPrice.Text('f', 18), currentPrice.Text('f', 18), maxPrice.Text('f', 18)),
-			Info: EncodeError(code.NewWrongOrderPrice(currentPrice.Text('f', 18), maxPrice.Text('f', 18), orderPrice.Text('f', 18))),
+			Log:  fmt.Sprintf("order price is %s, but must not exceed %s and more than %s", orderPrice.Text('f', swap.Precision), currentPrice.Text('f', swap.Precision), maxPrice.Text('f', swap.Precision)),
+			Info: EncodeError(code.NewWrongOrderPrice(currentPrice.Text('f', swap.Precision), maxPrice.Text('f', swap.Precision), orderPrice.Text('f', swap.Precision))),
 		}
 	}
 

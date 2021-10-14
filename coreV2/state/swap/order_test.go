@@ -18,9 +18,150 @@ import (
 )
 
 func init() {
-	minimumOrderVolume = 0 // todo
+	minimumOrderVolume = 100 // todo
 }
 
+func TestPair_CmpPrice(t *testing.T) {
+	//prec := 35
+	{
+		priceC := new(big.Float).SetPrec(Precision).Quo(
+			big.NewFloat(0).SetInt(helpers.StringToBigInt("10000000000")),
+			big.NewFloat(0).SetInt(helpers.StringToBigInt("500801598198396793587174349")),
+		)
+		//t.Log(priceC.Text('f', prec))
+		priceV := new(big.Float).SetPrec(Precision).Quo(
+			big.NewFloat(0).SetInt(helpers.BipToPip(helpers.StringToBigInt("1"))),
+			big.NewFloat(0).SetInt(helpers.BipToPip(helpers.StringToBigInt("50080159819839686"))),
+		)
+		//t.Log(priceV.Text('f', prec))
+		if priceC.Cmp(priceV) == -1 {
+			t.Error("a", priceC, priceV)
+		}
+
+		priceI := new(big.Float).SetPrec(Precision).Quo(
+			big.NewFloat(0).SetInt(helpers.BipToPip(helpers.StringToBigInt("1"))),
+			big.NewFloat(0).SetInt(helpers.BipToPip(helpers.StringToBigInt("50080159819839685"))),
+		)
+		//t.Log(priceI.Text('f', prec))
+		if priceC.Cmp(priceI) == -1 {
+			t.Error("b", priceC, priceI)
+		}
+	}
+	{
+		price0 := new(big.Float).SetPrec(Precision).Quo(
+			big.NewFloat(0).SetInt(helpers.StringToBigInt("10000000000")),
+			big.NewFloat(0).SetInt(helpers.StringToBigInt("500801598198396793587174349")),
+		)
+		//t.Log(price0.Text('f', prec))
+		price1 := new(big.Float).SetPrec(Precision).Quo(
+			big.NewFloat(0).SetInt(helpers.FloatBipToPip(0.00000001)),
+			big.NewFloat(0).SetInt(helpers.FloatBipToPip(500801598.198396793587174349)),
+		)
+		//t.Log(price1.Text('f', prec))
+		if price0.Cmp(price1) == -1 {
+			t.Error("c", price0, price1)
+		}
+
+		price2 := new(big.Float).SetPrec(Precision).Quo(
+			big.NewFloat(0).SetInt(helpers.FloatBipToPip(0.0000001)),
+			big.NewFloat(0).SetInt(helpers.FloatBipToPip(5008015981.98396793587174349)),
+		)
+		//t.Log(price2.Text('f', prec))
+		if price0.Cmp(price2) == -1 {
+			t.Error("d", price0, price2)
+		}
+	}
+	{
+		price0 := new(big.Float).SetPrec(Precision).Quo(
+			big.NewFloat(0).SetInt(helpers.StringToBigInt("10000000000")),
+			big.NewFloat(0).SetInt(helpers.StringToBigInt("500801598198396793587174349")),
+		)
+		//t.Log(price0.Text('f', prec))
+		price1 := new(big.Float).SetPrec(Precision).Quo(
+			big.NewFloat(0).SetInt(helpers.FloatBipToPip(0.0000001)),
+			big.NewFloat(0).SetInt(helpers.FloatBipToPip(5008015981.983968)),
+		)
+		//t.Log(price1.Text('f', prec))
+		if price0.Cmp(price1) == -1 {
+			t.Error("e", price0, price1)
+		}
+
+		price2 := new(big.Float).SetPrec(Precision).Quo(
+			big.NewFloat(0).SetInt(helpers.FloatBipToPip(0.0000001)),
+			big.NewFloat(0).SetInt(helpers.FloatBipToPip(5008015981.98397)),
+		)
+		//t.Log(price2.Text('f', prec))
+		if price0.Cmp(price2) == -1 {
+			t.Error("f", price0, price2)
+		}
+	}
+}
+
+func TestPair_BigPrice(t *testing.T) {
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+
+	swap := New(newBus, immutableTree.GetLastImmutable())
+	_, _, _, _ = swap.PairCreate(0, 1, helpers.BipToPip(helpers.BipToPip(big.NewInt(1e18))), big.NewInt(1e10))
+	pair := swap.Pair(0, 1)
+	pair.AddOrder(helpers.BipToPip(helpers.BipToPip(helpers.BipToPip(big.NewInt(1e18)))), big.NewInt(1000), types.Address{1}, 1)
+	pair.AddOrder(helpers.BipToPip(helpers.BipToPip(big.NewInt(2e18))), big.NewInt(2e10), types.Address{1}, 1)
+	pair.AddOrder(helpers.BipToPip(helpers.BipToPip(big.NewInt(1e18))), big.NewInt(1e10), types.Address{1}, 1)
+	pair.AddOrder(helpers.BipToPip(helpers.BipToPip(big.NewInt(1e17))), big.NewInt(1e9), types.Address{1}, 1)
+	pair.AddOrder(helpers.BipToPip(helpers.BipToPip(big.NewInt(2e16))), big.NewInt(1e8), types.Address{1}, 1)
+	pair.AddOrder(helpers.BipToPip(helpers.BipToPip(big.NewInt(1e16))), big.NewInt(1e8), types.Address{1}, 1)
+	pair.AddOrder(helpers.BipToPip(helpers.BipToPip(big.NewInt(1e16))), big.NewInt(2e8), types.Address{1}, 1)
+	pair.AddOrder(helpers.BipToPip(helpers.BipToPip(big.NewInt(1e15))), big.NewInt(1e7), types.Address{1}, 1)
+	pair.AddOrder(helpers.BipToPip(helpers.BipToPip(big.NewInt(1e14))), big.NewInt(1e6), types.Address{1}, 1)
+	pair.AddOrder(helpers.BipToPip(helpers.BipToPip(big.NewInt(1e13))), big.NewInt(1e5), types.Address{1}, 1)
+	pair.AddOrder(helpers.BipToPip(helpers.BipToPip(big.NewInt(2e18))), big.NewInt(2e10), types.Address{1}, 1)
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	swap = New(newBus, immutableTree.GetLastImmutable())
+	pair = swap.Pair(0, 1)
+
+	prev := big.NewFloat(0)
+	for _, limit := range pair.OrdersSell(11) {
+		//t.Logf("%v,%#v", limit.Price().Text('f', Precision), limit)
+		price := new(big.Float).Quo(
+			big.NewFloat(0).SetInt(limit.WantBuy),
+			big.NewFloat(0).SetInt(limit.WantSell),
+		)
+		prec := price.Prec()
+
+		if prec > Precision {
+			t.Error(prec)
+		}
+		if prev.Sign() != 1 {
+			prev = price
+		} else {
+			if prev.Cmp(price) == 1 {
+				t.Error(prev, price)
+			}
+		}
+	}
+	out, o, _, _ := pair.BuyWithOrders(big.NewInt(100))
+	if len(o) != 1 {
+		t.Error(len(o))
+	}
+	//t.Log(out)
+	if out.Cmp(big.NewInt(99900)) == 0 {
+		t.Error(out)
+	}
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
 func TestPair_taker2_sell(t *testing.T) {
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)

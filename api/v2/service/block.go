@@ -45,7 +45,7 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 	if _, ok := fields[pb.BlockField_transactions]; ok {
 		blockResults, err = s.client.BlockResults(ctx, &height)
 		if err != nil {
-			return nil, status.Error(codes.NotFound, "Block results not found")
+			return nil, status.Error(codes.NotFound, "Block results not found") // fmt.Sprintf("Block results not found: %v", err))
 		}
 	}
 
