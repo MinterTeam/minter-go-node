@@ -46,7 +46,7 @@ func (s *Service) LimitOrdersOfPool(ctx context.Context, req *pb.LimitOrdersOfPo
 	if capacity > 50 {
 		capacity = 50
 	}
-	resp := &pb.LimitOrdersOfPoolResponse{Orders: make([]*pb.LimitOrderResponse, 0, capacity), PoolPrice: swapper.Price().Text('f', precision)}
+	resp := &pb.LimitOrdersOfPoolResponse{Orders: make([]*pb.LimitOrderResponse, 0, capacity), PoolPrice: swapper.PriceRat().FloatString(precision)}
 
 	orders := swapper.OrdersSell(uint32(limit))
 	for _, order := range orders {
@@ -65,7 +65,7 @@ func (s *Service) LimitOrdersOfPool(ctx context.Context, req *pb.LimitOrdersOfPo
 			},
 			WantSell: order.WantSell.String(),
 			WantBuy:  order.WantBuy.String(),
-			Price:    swap.CalcPriceSell(order.WantBuy, order.WantSell).Text('f', precision),
+			Price:    swap.CalcPriceSellRat(order.WantBuy, order.WantSell).FloatString(precision),
 			Owner:    order.Owner.String(),
 			Height:   order.Height,
 		})
@@ -109,7 +109,7 @@ func (s *Service) LimitOrder(ctx context.Context, req *pb.LimitOrderRequest) (*p
 		},
 		WantSell: order.WantSell.String(),
 		WantBuy:  order.WantBuy.String(),
-		Price:    swap.CalcPriceSell(order.WantBuy, order.WantSell).Text('f', precision),
+		Price:    swap.CalcPriceSellRat(order.WantBuy, order.WantSell).FloatString(precision),
 		Owner:    order.Owner.String(),
 		Height:   order.Height,
 	}, nil
@@ -157,7 +157,7 @@ func (s *Service) LimitOrders(ctx context.Context, req *pb.LimitOrdersRequest) (
 			},
 			WantSell: order.WantSell.String(),
 			WantBuy:  order.WantBuy.String(),
-			Price:    swap.CalcPriceSell(order.WantBuy, order.WantSell).Text('f', precision),
+			Price:    swap.CalcPriceSellRat(order.WantBuy, order.WantSell).FloatString(precision),
 			Owner:    order.Owner.String(),
 			Height:   order.Height,
 		})
@@ -194,7 +194,7 @@ func (s *Service) SwapPool(ctx context.Context, req *pb.SwapPoolRequest) (*pb.Sw
 	}
 
 	return &pb.SwapPoolResponse{
-		Price:     swap.CalcPriceSell(reserve1, reserve0).Text('f', precision),
+		Price:     swap.CalcPriceSellRat(reserve1, reserve0).FloatString(precision),
 		Amount0:   reserve0.String(),
 		Amount1:   reserve1.String(),
 		Liquidity: cState.Coins().GetCoinBySymbol(transaction.LiquidityCoinSymbol(liquidityID), 0).Volume().String(),
@@ -244,7 +244,7 @@ func (s *Service) SwapPoolProvider(ctx context.Context, req *pb.SwapPoolProvider
 
 	amount0, amount1 := swapper.Amounts(balance, liquidityCoin.Volume())
 	return &pb.SwapPoolResponse{
-		Price:     swapper.Reverse().Price().Text('f', precision),
+		Price:     swapper.Reverse().PriceRat().FloatString(precision),
 		Amount0:   amount0.String(),
 		Amount1:   amount1.String(),
 		Liquidity: balance.String(),
