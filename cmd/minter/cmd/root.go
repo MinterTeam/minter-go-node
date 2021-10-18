@@ -51,6 +51,8 @@ var RootCmd = &cobra.Command{
 			panic(err)
 		}
 
-		cfg.P2P.PersistentPeers = peers
+		if peers != "" {
+			cfg.P2P.PersistentPeers = peers
+		}
 	},
 }
