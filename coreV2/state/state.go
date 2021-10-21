@@ -144,7 +144,6 @@ func NewState(height uint64, db db.DB, events eventsdb.IEventsDB, cacheSize int,
 	state.height = int64(height)
 	state.InitialVersion = int64(initialVersion)
 
-	// todo: do not upload there CheckState, mb add param to this func
 	state.Candidates.LoadCandidatesDeliver()
 	state.Candidates.LoadStakes()
 	state.Validators.LoadValidators()
