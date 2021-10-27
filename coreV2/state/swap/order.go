@@ -342,9 +342,9 @@ func (p *Pair) calculateBuyForSellWithOrders(amount0In *big.Int) (amountOut *big
 
 		// хотим продать 9009 (9 пойдет в пул)
 		// проверяем есть ли 9000 на продажу
-		log.Println("amountIn", amountIn)
+		//log.Println("amountIn", amountIn)
 		amount0 := big.NewInt(0).Sub(amountIn, calcCommission1001(amountIn))
-		log.Println(amount0)
+		//log.Println(amount0)
 		if amount0.Cmp(limit.WantBuy) != 1 {
 			//log.Println("rest", rest)
 

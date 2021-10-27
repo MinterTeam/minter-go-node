@@ -2,6 +2,7 @@ package swap
 
 import (
 	"math/big"
+	"math/rand"
 	"reflect"
 	"strconv"
 	"sync"
@@ -24,12 +25,12 @@ func init() {
 func TestPair_CmpPrice(t *testing.T) {
 	//prec := 35
 	{
-		priceC := CalcPriceSell(
+		priceC := CalcPriceSellRat(
 			big.NewInt(0).Set(helpers.StringToBigInt("500801598198396793587174349")),
 			big.NewInt(0).Set(helpers.StringToBigInt("10000000000")),
 		)
 		//t.Log(priceC.Text('f', prec))
-		priceV := CalcPriceSell(
+		priceV := CalcPriceSellRat(
 			big.NewInt(0).Set(helpers.BipToPip(helpers.StringToBigInt("50080159819839686"))),
 			big.NewInt(0).Set(helpers.BipToPip(helpers.StringToBigInt("1"))),
 		)
@@ -38,7 +39,7 @@ func TestPair_CmpPrice(t *testing.T) {
 			t.Error("a", priceC, priceV)
 		}
 
-		priceI := CalcPriceSell(
+		priceI := CalcPriceSellRat(
 			big.NewInt(0).Set(helpers.BipToPip(helpers.StringToBigInt("50080159819839685"))),
 			big.NewInt(0).Set(helpers.BipToPip(helpers.StringToBigInt("1"))),
 		)
@@ -48,12 +49,12 @@ func TestPair_CmpPrice(t *testing.T) {
 		}
 	}
 	{
-		price0 := CalcPriceSell(
+		price0 := CalcPriceSellRat(
 			big.NewInt(0).Set(helpers.StringToBigInt("500801598198396793587174349")),
 			big.NewInt(0).Set(helpers.StringToBigInt("10000000000")),
 		)
 		//t.Log(price0.Text('f', prec))
-		price1 := CalcPriceSell(
+		price1 := CalcPriceSellRat(
 			big.NewInt(0).Set(helpers.FloatBipToPip(500801598.198396793587174349)),
 			big.NewInt(0).Set(helpers.FloatBipToPip(0.00000001)),
 		)
@@ -62,7 +63,7 @@ func TestPair_CmpPrice(t *testing.T) {
 			t.Error("c", price0, price1)
 		}
 
-		price2 := CalcPriceSell(
+		price2 := CalcPriceSellRat(
 			big.NewInt(0).Set(helpers.FloatBipToPip(5008015981.98396793587174349)),
 			big.NewInt(0).Set(helpers.FloatBipToPip(0.0000001)),
 		)
@@ -72,7 +73,7 @@ func TestPair_CmpPrice(t *testing.T) {
 		}
 	}
 	{
-		price0 := CalcPriceSell(
+		price0 := CalcPriceSellRat(
 			big.NewInt(0).Set(helpers.StringToBigInt("500801598198396793587174349")),
 			big.NewInt(0).Set(helpers.StringToBigInt("10000000000")),
 		)
@@ -86,7 +87,7 @@ func TestPair_CmpPrice(t *testing.T) {
 		//	t.Error("e", price0, price1)
 		//}
 
-		price2 := CalcPriceSell(
+		price2 := CalcPriceSellRat(
 			big.NewInt(0).Set(helpers.FloatBipToPip(5008015981.98397)),
 			big.NewInt(0).Set(helpers.FloatBipToPip(0.0000001)),
 		)
@@ -3789,4 +3790,110 @@ func TestPair_CalculateAddAmount0ForPrice_10(t *testing.T) {
 			})
 		})
 	})
+}
+
+func BenchmarkSwap_PairAddOrder(b *testing.B) {
+	r := rand.New(rand.NewSource(1))
+
+	b.StopTimer()
+
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		b.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+
+	swap := New(newBus, immutableTree.GetLastImmutable())
+
+	_, _, _, _ = swap.PairCreate(0, 1, helpers.BipToPip(helpers.BipToPip(big.NewInt(1e18))), big.NewInt(1e18))
+
+	for j := 0; j < 10000; j++ {
+		k := r.Uint64()
+		swap.PairAddOrder(0, 1, big.NewInt(int64(k%1e17+9e17)), big.NewInt(1e18), types.Address{1}, 1)
+	}
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.StartTimer()
+
+	for i := 0; i < b.N; i++ {
+		swapCopy := New(newBus, immutableTree.GetLastImmutable())
+		k := r.Uint64()
+		swapCopy.PairAddOrder(0, 1, big.NewInt(int64(k%1e17+9e17)), big.NewInt(1e18), types.Address{1}, 1)
+	}
+
+}
+
+func BenchmarkSwap_PairSellWithOrders(b *testing.B) {
+	r := rand.New(rand.NewSource(1))
+
+	b.StopTimer()
+
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		b.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+
+	swap := New(newBus, immutableTree.GetLastImmutable())
+
+	_, _, _, _ = swap.PairCreate(0, 1, helpers.BipToPip(helpers.BipToPip(big.NewInt(1e18))), big.NewInt(1e18))
+
+	for j := 0; j < 10000; j++ {
+		k := r.Uint64()
+		swap.PairAddOrder(0, 1, big.NewInt(int64(k%1e17+9e17)), big.NewInt(1e18), types.Address{1}, 1)
+	}
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.StartTimer()
+
+	for i := 0; i < b.N; i++ {
+		swapCopy := New(newBus, immutableTree.GetLastImmutable())
+		_, _, _, _, _ = swapCopy.PairSellWithOrders(0, 1, helpers.BipToPip(big.NewInt(1e18)), big.NewInt(1))
+	}
+}
+
+func BenchmarkPair_OrdersSell(b *testing.B) {
+	r := rand.New(rand.NewSource(1))
+
+	b.StopTimer()
+
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		b.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+
+	swap := New(newBus, immutableTree.GetLastImmutable())
+
+	_, _, _, _ = swap.PairCreate(0, 1, helpers.BipToPip(helpers.BipToPip(big.NewInt(1e18))), big.NewInt(1e18))
+
+	for j := 0; j < 10000; j++ {
+		k := r.Uint64()
+		swap.PairAddOrder(0, 1, big.NewInt(int64(k%1e17+9e17)), big.NewInt(1e18), types.Address{1}, 1)
+	}
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.StartTimer()
+
+	for i := 0; i < b.N; i++ {
+		New(newBus, immutableTree.GetLastImmutable()).GetSwapper(0, 1).OrdersSell(10000)
+	}
 }
