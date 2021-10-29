@@ -1,6 +1,7 @@
 package swap
 
 import (
+	"fmt"
 	"math/big"
 	"math/rand"
 	"reflect"
@@ -3791,11 +3792,8 @@ func TestPair_CalculateAddAmount0ForPrice_10(t *testing.T) {
 		})
 	})
 }
-
-func BenchmarkSwap_PairAddOrder(b *testing.B) {
+func benchmarkSwapPairOrders(b *testing.B, size int) {
 	r := rand.New(rand.NewSource(1))
-
-	b.StopTimer()
 
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
@@ -3809,7 +3807,7 @@ func BenchmarkSwap_PairAddOrder(b *testing.B) {
 
 	_, _, _, _ = swap.PairCreate(0, 1, helpers.BipToPip(helpers.BipToPip(big.NewInt(1e18))), big.NewInt(1e18))
 
-	for j := 0; j < 10000; j++ {
+	for j := 0; j < size; j++ {
 		k := r.Uint64()
 		swap.PairAddOrder(0, 1, big.NewInt(int64(k%1e17+9e17)), big.NewInt(1e18), types.Address{1}, 1)
 	}
@@ -3819,81 +3817,27 @@ func BenchmarkSwap_PairAddOrder(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	b.StartTimer()
+	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
-		swapCopy := New(newBus, immutableTree.GetLastImmutable())
-		k := r.Uint64()
-		swapCopy.PairAddOrder(0, 1, big.NewInt(int64(k%1e17+9e17)), big.NewInt(1e18), types.Address{1}, 1)
-	}
-
-}
-
-func BenchmarkSwap_PairSellWithOrders(b *testing.B) {
-	r := rand.New(rand.NewSource(1))
-
-	b.StopTimer()
-
-	memDB := db.NewMemDB()
-	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
-	if err != nil {
-		b.Fatal(err)
-	}
-	newBus := bus.NewBus()
-	checker.NewChecker(newBus)
-
-	swap := New(newBus, immutableTree.GetLastImmutable())
-
-	_, _, _, _ = swap.PairCreate(0, 1, helpers.BipToPip(helpers.BipToPip(big.NewInt(1e18))), big.NewInt(1e18))
-
-	for j := 0; j < 10000; j++ {
-		k := r.Uint64()
-		swap.PairAddOrder(0, 1, big.NewInt(int64(k%1e17+9e17)), big.NewInt(1e18), types.Address{1}, 1)
-	}
-
-	_, _, err = immutableTree.Commit(swap)
-	if err != nil {
-		b.Fatal(err)
-	}
-
-	b.StartTimer()
-
-	for i := 0; i < b.N; i++ {
-		swapCopy := New(newBus, immutableTree.GetLastImmutable())
-		_, _, _, _, _ = swapCopy.PairSellWithOrders(0, 1, helpers.BipToPip(big.NewInt(1e18)), big.NewInt(1))
-	}
-}
-
-func BenchmarkPair_OrdersSell(b *testing.B) {
-	r := rand.New(rand.NewSource(1))
-
-	b.StopTimer()
-
-	memDB := db.NewMemDB()
-	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
-	if err != nil {
-		b.Fatal(err)
-	}
-	newBus := bus.NewBus()
-	checker.NewChecker(newBus)
-
-	swap := New(newBus, immutableTree.GetLastImmutable())
-
-	_, _, _, _ = swap.PairCreate(0, 1, helpers.BipToPip(helpers.BipToPip(big.NewInt(1e18))), big.NewInt(1e18))
-
-	for j := 0; j < 10000; j++ {
-		k := r.Uint64()
-		swap.PairAddOrder(0, 1, big.NewInt(int64(k%1e17+9e17)), big.NewInt(1e18), types.Address{1}, 1)
-	}
-
-	_, _, err = immutableTree.Commit(swap)
-	if err != nil {
-		b.Fatal(err)
-	}
-
-	b.StartTimer()
-
-	for i := 0; i < b.N; i++ {
+	b.Run(fmt.Sprintf("AddOrder_%d", size), func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			k := r.Uint64()
+			New(newBus, immutableTree.GetLastImmutable()).PairAddOrder(0, 1, big.NewInt(int64(k%1e17+9e17)), big.NewInt(1e18), types.Address{1}, 1)
+		}
+	})
+	b.Run(fmt.Sprintf("SellWithOrders_%d", size), func(b *testing.B) {
+		New(newBus, immutableTree.GetLastImmutable()).PairSellWithOrders(0, 1, helpers.BipToPip(big.NewInt(1e18)), big.NewInt(1))
+	})
+	b.Run(fmt.Sprintf("OrdersSell_%d", size), func(b *testing.B) {
 		New(newBus, immutableTree.GetLastImmutable()).GetSwapper(0, 1).OrdersSell(10000)
+	})
+	b.Run(fmt.Sprintf("OrderSellByIndex_%d", size), func(b *testing.B) {
+		New(newBus, immutableTree.GetLastImmutable()).GetSwapper(0, 1).OrderSellByIndex(9999)
+	})
+
+}
+func BenchmarkSwapPairOrders(b *testing.B) {
+	for _, size := range []int{100, 500, 2000, 4000, 6000, 8000, 10000, 20000} {
+		benchmarkSwapPairOrders(b, size)
 	}
 }
