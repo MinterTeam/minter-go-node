@@ -342,9 +342,9 @@ func (p *Pair) calculateBuyForSellWithOrders(amount0In *big.Int) (amountOut *big
 
 		// хотим продать 9009 (9 пойдет в пул)
 		// проверяем есть ли 9000 на продажу
-		log.Println("amountIn", amountIn)
+		//log.Println("amountIn", amountIn)
 		amount0 := big.NewInt(0).Sub(amountIn, calcCommission1001(amountIn))
-		log.Println(amount0)
+		//log.Println(amount0)
 		if amount0.Cmp(limit.WantBuy) != 1 {
 			//log.Println("rest", rest)
 
@@ -1584,14 +1584,22 @@ func (p *Pair) orderSellLoadToIndex(index int) *Limit {
 			//
 		}
 	} else {
-		orders = p.loadSellOrders(p, nil, index+1)
-		if p.hasUnsortedSellOrders() || p.hasDeletedSellOrders() {
-			orders, _ = p.updateDirtyOrders(orders, true)
+		num := index
+		for {
+			orders = append(orders, p.loadSellOrders(p, fromOrder, num+1)...)
+			num = 0
+			if p.hasUnsortedSellOrders() || p.hasDeletedSellOrders() {
+				orders, num = p.updateDirtyOrders(orders, true)
+			}
+			if num == 0 {
+				break
+			}
+			lenOrders := len(orders)
+			if lenOrders != 0 && orders[lenOrders-1] != 0 {
+				fromOrder = p.order(orders[lenOrders-1])
+			}
 		}
-		// если пусто, то загрузить столько сколько нужно
-		//if orders[len(orders)-1] != 0 {
 
-		//}
 		// можно не сортировать
 	}
 	//log.Println("orders end", orders)

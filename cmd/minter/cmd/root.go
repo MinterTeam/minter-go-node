@@ -45,5 +45,14 @@ var RootCmd = &cobra.Command{
 			types.CurrentChainID = types.ChainTestnet
 			version.Version += "-testnet"
 		}
+
+		peers, err := cmd.Flags().GetString("persistent-peers")
+		if err != nil {
+			panic(err)
+		}
+
+		if peers != "" {
+			cfg.P2P.PersistentPeers = peers
+		}
 	},
 }
