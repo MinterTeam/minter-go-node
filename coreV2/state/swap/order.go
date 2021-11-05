@@ -1591,7 +1591,7 @@ func (p *Pair) orderSellLoadToIndex(index int) *Limit {
 			if p.hasUnsortedSellOrders() || p.hasDeletedSellOrders() {
 				orders, num = p.updateDirtyOrders(orders, true)
 			}
-			if num == 0 {
+			if num <= 0 {
 				break
 			}
 			lenOrders := len(orders)
