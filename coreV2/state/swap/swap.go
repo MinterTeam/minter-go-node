@@ -517,6 +517,9 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 		pair.loadedBuyOrders.ids = pair.buyOrders.ids[:]
 		pair.loadedSellOrders.ids = pair.sellOrders.ids[:]
 
+		pair.buyOrders.ids = nil
+		pair.sellOrders.ids = nil
+
 		pair.dirtyOrders.mu.Lock()
 		pair.dirtyOrders.list = make(map[uint32]struct{})
 		pair.dirtyOrders.mu.Unlock()

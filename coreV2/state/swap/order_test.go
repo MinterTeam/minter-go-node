@@ -23,7 +23,7 @@ func init() {
 	minimumOrderVolume = 100 // todo
 }
 
-func TestPair_CmpPrice(t *testing.T) {
+func TestCmpPrice(t *testing.T) {
 	//prec := 35
 	{
 		priceC := CalcPriceSellRat(
@@ -96,6 +96,55 @@ func TestPair_CmpPrice(t *testing.T) {
 		if price0.Cmp(price2) == -1 {
 			t.Error("f", price0, price2)
 		}
+	}
+}
+
+func TestPair_CmpPrice(t *testing.T) {
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+
+	swap := New(newBus, immutableTree.GetLastImmutable())
+	_, _, _, _ = swap.PairCreate(0, 1, helpers.StringToBigInt("500801598198396793587174349"), helpers.StringToBigInt("10000000000"))
+	pair := swap.Pair(0, 1)
+	pair.AddOrder(helpers.FloatBipToPip(5008015981.98396793587174349), helpers.FloatBipToPip(0.0000001), types.Address{1}, 1)
+	pair.AddOrder(helpers.FloatBipToPip(500801598.198396793587174349), helpers.FloatBipToPip(0.00000001), types.Address{1}, 1)
+	pair.AddOrder(helpers.FloatBipToPip(5008015981.98396793587174349), helpers.FloatBipToPip(0.0000001), types.Address{1}, 1)
+	pair.AddOrder(helpers.StringToBigInt("500801598198396793587174349"), helpers.StringToBigInt("10000000000"), types.Address{1}, 1)
+	pair.AddOrder(helpers.BipToPip(helpers.StringToBigInt("50080159819839685")), helpers.BipToPip(helpers.StringToBigInt("1")), types.Address{1}, 1)
+	pair.AddOrder(helpers.BipToPip(helpers.StringToBigInt("50080159819839686")), helpers.BipToPip(helpers.StringToBigInt("1")), types.Address{1}, 1)
+	pair.AddOrder(helpers.BipToPip(helpers.StringToBigInt("500801598198396793587174349")), helpers.BipToPip(helpers.StringToBigInt("10000000000")), types.Address{1}, 1)
+	pair.AddOrder(helpers.BipToPip(helpers.StringToBigInt("50080159819839686")), helpers.BipToPip(helpers.StringToBigInt("1")), types.Address{1}, 1)
+	pair.AddOrder(helpers.BipToPip(helpers.StringToBigInt("50080159819839685")), helpers.BipToPip(helpers.StringToBigInt("1")), types.Address{1}, 1)
+	pair.AddOrder(helpers.StringToBigInt("500801598198396793587174349"), helpers.StringToBigInt("10000000000"), types.Address{1}, 1)
+	pair.AddOrder(helpers.FloatBipToPip(5008015981.98397), helpers.FloatBipToPip(0.0000001), types.Address{1}, 1)
+	pair.AddOrder(helpers.FloatBipToPip(5008015981.983968), helpers.FloatBipToPip(0.0000001), types.Address{1}, 1)
+	pair.AddOrder(helpers.FloatBipToPip(5008015981.98397), helpers.FloatBipToPip(0.0000001), types.Address{1}, 1)
+
+	ordersMem := pair.ordersSell(100)
+	t.Log(ordersMem)
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	swap = New(newBus, immutableTree.GetLastImmutable())
+	pair = swap.Pair(0, 1)
+
+	ordersDB := pair.ordersSell(100)
+	t.Log(ordersDB)
+
+	if !reflect.DeepEqual(ordersDB, ordersMem) {
+		t.Errorf("db %v and mem %v is not equal", ordersDB, ordersMem)
+	}
+
+	for _, limit := range ordersDB {
+		t.Logf("%s - %#v", limit.Price().Text('e', 18), limit)
 	}
 }
 
