@@ -13,7 +13,7 @@ require (
 	github.com/gorilla/handlers v1.4.2
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.5.0
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.6.0
 	github.com/marcusolsson/tui-go v0.4.0
 	github.com/mattn/go-isatty v0.0.12 // indirect
 	github.com/mattn/go-tty v0.0.3 // indirect
