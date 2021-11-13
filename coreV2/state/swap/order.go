@@ -1056,16 +1056,16 @@ func (s *Swap) PairRemoveLimitOrder(id uint32) (types.CoinID, *big.Int) {
 	pair.lockOrders.Lock()
 	defer pair.lockOrders.Unlock()
 
-	if pair.isDirtyOrder(id) {
-		if pair.isOrderAlreadyUsed(id) {
-			return 0, big.NewInt(0)
-		}
-
-		order = pair.getOrder(id)
-		if order == nil || order.isEmpty() {
-			return 0, big.NewInt(0)
-		}
+	//if pair.isDirtyOrder(id) {
+	if pair.isOrderAlreadyUsed(id) {
+		return 0, big.NewInt(0)
 	}
+
+	order = pair.getOrder(id)
+	if order == nil || order.isEmpty() {
+		return 0, big.NewInt(0)
+	}
+	//}
 
 	returnVolume := big.NewInt(0).Set(order.WantSell)
 
