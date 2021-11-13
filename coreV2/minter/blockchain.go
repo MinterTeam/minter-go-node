@@ -567,6 +567,7 @@ func (blockchain *Blockchain) Commit() abciTypes.ResponseCommit {
 	if err != nil {
 		panic(err)
 	}
+	blockchain.stateCheck = state.NewCheckState(blockchain.stateDeliver)
 
 	if blockchain.checkStop() {
 		return abciTypes.ResponseCommit{Data: hash}
