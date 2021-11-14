@@ -1054,6 +1054,10 @@ func (s *Swap) PairRemoveLimitOrder(id uint32) (types.CoinID, *big.Int) {
 }
 
 func (s *Swap) removeLimitOrder(order *Limit) (types.CoinID, *big.Int) {
+	if order.isEmpty() { // FIXME: delete
+		return 0, big.NewInt(0)
+	}
+
 	if !order.isSell() {
 		order = order.Reverse()
 	}
