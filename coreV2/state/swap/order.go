@@ -1255,9 +1255,15 @@ func (s *Swap) GetOrder(id uint32) *Limit {
 
 	pair := s.Pair(order.Coin0, order.Coin1)
 
+	pair.lockOrders.Lock()
+	defer pair.lockOrders.Unlock()
+
 	if pair.IsOrderAlreadyUsed(id) {
 		return nil
 	}
+
+	pair.orders.mu.Lock()
+	defer pair.orders.mu.Unlock()
 
 	if o, ok := pair.orders.list[id]; ok {
 		return o
