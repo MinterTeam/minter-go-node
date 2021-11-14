@@ -152,7 +152,7 @@ func TestSwap_PairRemoveLimitOrder_revert_and_restert(t *testing.T) {
 
 	t.Logf("%#v", events.LoadEvents(0))
 }
-func TestSwap_PairRemoveLimitOrder_restert(t *testing.T) {
+func TestSwap_PairRemoveLimitOrder_restert_and_api(t *testing.T) {
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
 	if err != nil {
@@ -175,6 +175,11 @@ func TestSwap_PairRemoveLimitOrder_restert(t *testing.T) {
 	}
 
 	swap = New(newBus, immutableTree.GetLastImmutable())
+
+	pair = swap.Pair(0, 1)
+	t.Log(pair.calculateBuyForSellWithOrders(big.NewInt(8e18)))
+	t.Log(pair.calculateSellForBuyWithOrders(big.NewInt(8e18)))
+
 	swap.ExpireOrders(1e18)
 
 	_, _, err = immutableTree.Commit(swap)
