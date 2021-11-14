@@ -237,7 +237,7 @@ func (p *Pair) BuyWithOrders(amount1Out *big.Int) (amount0In *big.Int, owners ma
 func (p *Pair) updateOrders(orders []*Limit) (littles []*Limit) {
 	for _, order := range orders {
 		limit := p.updateSellOrder(order.id, order.WantBuy, order.WantSell)
-
+		//fmt.Println(limit.WantBuy, limit.WantSell)
 		if !limit.isEmpty() &&
 			(limit.WantBuy.Cmp(big.NewInt(minimumOrderVolume)) == -1 ||
 				limit.WantSell.Cmp(big.NewInt(minimumOrderVolume)) == -1) {
@@ -247,7 +247,7 @@ func (p *Pair) updateOrders(orders []*Limit) (littles []*Limit) {
 			limit.WantSell.SetInt64(0)
 			limit.WantBuy.SetInt64(0)
 		}
-
+		//fmt.Println(limit.WantBuy, limit.WantSell)
 		p.MarkDirtyOrders(limit)
 	}
 	return littles
@@ -255,9 +255,6 @@ func (p *Pair) updateOrders(orders []*Limit) (littles []*Limit) {
 
 func (p *Pair) updateSellOrder(id uint32, amount0, amount1 *big.Int) *Limit {
 	limit := p.getOrder(id)
-	if limit == nil {
-		panic(fmt.Sprintf("%v, %v,%v, %#v", id, amount0, amount1, p))
-	}
 	limit.OldSortPrice()
 
 	limit.WantBuy.Sub(limit.WantBuy, amount0)
@@ -559,7 +556,7 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big
 		// хочу купить amountOut = 3000, надо купить 3003 (тк 0.1 в пул)
 
 		//log.Println("amountOut", amountOut)
-		amount1 := big.NewInt(0).Add(amountOut, calcCommission0999(amountOut))
+		amount1 := big.NewInt(0).Add(amountOut, calcCommission1000(amountOut))
 		// проверим что в пуле есть 3003
 		//log.Println("amount1", amount1)
 
@@ -626,8 +623,10 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big
 		comB := calcCommission1001(limit.WantSell)
 		comS := calcCommission1001(limit.WantBuy)
 
+		//log.Println(limit.WantSell)
 		//log.Println(limit.WantBuy)
 		//log.Println(comS)
+		//log.Println(comB)
 		pair = pair.AddLastSwapStep(comS, big.NewInt(0).Neg(comB))
 
 		amountOut = big.NewInt(0).Sub(amountOut, big.NewInt(0).Sub(limit.WantSell, comB))
@@ -638,7 +637,9 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big
 
 	amount0diff := pair.CalculateSellForBuy(amountOut)
 	if amount0diff != nil {
+		//fmt.Println(amount0diff, amountOut)
 		if err := pair.CheckSwap(amount0diff, amountOut); err != nil {
+			fmt.Println(amount0diff, amountOut)
 			panic(err) // todo: for test
 		}
 		amountIn.Add(amountIn, amount0diff)
@@ -885,7 +886,7 @@ func (l *Limit) clone() *Limit {
 		WantSell:     big.NewInt(0).Set(l.WantSell),
 		Owner:        l.Owner,
 		Height:       l.Height,
-		oldSortPrice: big.NewFloat(0).Set(l.oldSortPrice),
+		oldSortPrice: new(big.Float).SetPrec(Precision).Set(l.oldSortPrice),
 		id:           l.id,
 		RWMutex:      &sync.RWMutex{},
 	}
@@ -1054,10 +1055,6 @@ func (s *Swap) PairRemoveLimitOrder(id uint32) (types.CoinID, *big.Int) {
 }
 
 func (s *Swap) removeLimitOrder(order *Limit) (types.CoinID, *big.Int) {
-	if order.isEmpty() { // FIXME: delete
-		return 0, big.NewInt(0)
-	}
-
 	if !order.isSell() {
 		order = order.Reverse()
 	}
@@ -1823,7 +1820,7 @@ func (p *Pair) AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int, buy boo
 			WantSell:     big.NewInt(0).Set(order.WantSell),
 			Owner:        order.Owner,
 			PairKey:      order.PairKey,
-			oldSortPrice: big.NewFloat(0).Set(order.oldSortPrice),
+			oldSortPrice: new(big.Float).SetPrec(Precision).Set(order.oldSortPrice),
 			id:           order.id,
 			RWMutex:      &sync.RWMutex{},
 		})

@@ -120,7 +120,7 @@ func TestPair_TODO(t *testing.T) {
 		t.Fatal(err)
 	}
 }
-func TestSwap_PairRemoveLimitOrder_revert_and_restert(t *testing.T) {
+func TestSwap_PairRemoveLimitOrder_revert_and_restart(t *testing.T) {
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
 	if err != nil {
@@ -152,7 +152,7 @@ func TestSwap_PairRemoveLimitOrder_revert_and_restert(t *testing.T) {
 
 	t.Logf("%#v", events.LoadEvents(0))
 }
-func TestSwap_PairRemoveLimitOrder_restert_and_api(t *testing.T) {
+func TestSwap_PairRemoveLimitOrder_restart_and_api(t *testing.T) {
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
 	if err != nil {
@@ -189,7 +189,7 @@ func TestSwap_PairRemoveLimitOrder_restert_and_api(t *testing.T) {
 		t.Error("err")
 	}
 }
-func TestSwap_PairRemoveLimitOrder_restert_and_sell(t *testing.T) {
+func TestSwap_PairRemoveLimitOrder_restart_and_sell(t *testing.T) {
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
 	if err != nil {
@@ -254,6 +254,176 @@ func TestSwap_PairRemoveLimitOrder(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	t.Logf("%#v", events.LoadEvents(0))
+}
+func TestSwap_PairRemoveLimitOrder_1(t *testing.T) {
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+	accounts.NewBus(accounts.NewAccounts(newBus, immutableTree.GetLastImmutable()))
+	events := &eventsdb.MockEvents{}
+	newBus.SetEvents(events)
+
+	swap := New(newBus, immutableTree.GetLastImmutable())
+	_, _, _, _ = swap.PairCreate(0, 1, helpers.BipToPip(big.NewInt(1001)), helpers.BipToPip(big.NewInt(999)))
+	pair := swap.Pair(0, 1)
+	pair.AddOrder(helpers.BipToPip(big.NewInt(1001)), helpers.BipToPip(big.NewInt(999)), types.Address{1}, 1)
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+	swap = New(newBus, immutableTree.GetLastImmutable())
+	pair = swap.Pair(0, 1)
+
+	tmp := minimumOrderVolume
+	minimumOrderVolume = 1e10
+	defer func() { minimumOrderVolume = tmp }()
+
+	t.Log(swap.PairSellWithOrders(0, 1, helpers.BipToPip(big.NewInt(1001)), big.NewInt(1)))
+	t.Logf("%#v", events.LoadEvents(0))
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	swap = New(newBus, immutableTree.GetLastImmutable())
+	t.Log(swap.PairSellWithOrders(0, 1, big.NewInt(1e18+99999e10), big.NewInt(1)))
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("%#v", events.LoadEvents(0))
+
+	//}
+	//	t.Fatal(err)
+	//if err != nil {
+	immutableTree, err = tree.NewMutableTree(3, memDB, 1024, 0)
+	*events = eventsdb.MockEvents{}
+	swap = New(newBus, immutableTree.GetLastImmutable())
+	swap.ExpireOrders(1e18)
+	t.Logf("%#v", events.LoadEvents(0))
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	immutableTree, err = tree.NewMutableTree(4, memDB, 1024, 0)
+	*events = eventsdb.MockEvents{}
+	swap = New(newBus, immutableTree.GetLastImmutable())
+	swap.ExpireOrders(1e18)
+	t.Logf("%#v", events.LoadEvents(0))
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+}
+func TestSwap_PairRemoveLimitOrder_2(t *testing.T) {
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+	accounts.NewBus(accounts.NewAccounts(newBus, immutableTree.GetLastImmutable()))
+	events := &eventsdb.MockEvents{}
+	newBus.SetEvents(events)
+
+	swap := New(newBus, immutableTree.GetLastImmutable())
+	_, _, _, _ = swap.PairCreate(0, 1, helpers.BipToPip(big.NewInt(1001)), helpers.BipToPip(big.NewInt(999)))
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pair := swap.Pair(0, 1)
+	pair.AddOrder(helpers.BipToPip(big.NewInt(1001)), helpers.BipToPip(big.NewInt(999)), types.Address{1}, 1)
+
+	//_, _, err = immutableTree.Commit(swap)
+	//if err != nil {
+	//	t.Fatal(err)
+	//}
+	//swap = New(newBus, immutableTree.GetLastImmutable())
+	//pair = swap.Pair(0, 1)
+
+	tmp := minimumOrderVolume
+	minimumOrderVolume = 1e10
+	defer func() { minimumOrderVolume = tmp }()
+
+	t.Log(swap.PairSellWithOrders(0, 1, helpers.BipToPip(big.NewInt(1001)), big.NewInt(1)))
+	t.Log(swap.PairSellWithOrders(0, 1, helpers.BipToPip(big.NewInt(501)), big.NewInt(1)))
+	t.Logf("%#v", events.LoadEvents(0))
+	//_, _, err = immutableTree.Commit(swap)
+	//if err != nil {
+	//	t.Fatal(err)
+	//}
+
+	//swap = New(newBus, immutableTree.GetLastImmutable())
+	t.Log(swap.PairSellWithOrders(0, 1, big.NewInt(1e18+99999e10), big.NewInt(1)))
+	t.Logf("%#v", events.LoadEvents(0))
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	//}
+	//	t.Fatal(err)
+	//if err != nil {
+	//immutableTree, err = tree.NewMutableTree(3, memDB, 1024, 0)
+	*events = eventsdb.MockEvents{}
+	swap = New(newBus, immutableTree.GetLastImmutable())
+	swap.ExpireOrders(1e18)
+	t.Logf("%#v", events.LoadEvents(0))
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	//immutableTree, err = tree.NewMutableTree(4, memDB, 1024, 0)
+	*events = eventsdb.MockEvents{}
+	swap = New(newBus, immutableTree.GetLastImmutable())
+	swap.ExpireOrders(1e18)
+	t.Logf("%#v", events.LoadEvents(0))
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+}
+func TestSwap_PairSell2(t *testing.T) {
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+	accounts.NewBus(accounts.NewAccounts(newBus, immutableTree.GetLastImmutable()))
+	events := &eventsdb.MockEvents{}
+	newBus.SetEvents(events)
+
+	swap := New(newBus, immutableTree.GetLastImmutable())
+	_, _, _, _ = swap.PairCreate(0, 1, helpers.BipToPip(big.NewInt(1)), helpers.BipToPip(big.NewInt(1)))
+	pair := swap.Pair(0, 1)
+	pair.AddOrder(helpers.BipToPip(big.NewInt(1001)), helpers.BipToPip(big.NewInt(999)), types.Address{1}, 1)
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+	swap = New(newBus, immutableTree.GetLastImmutable())
+	pair = swap.Pair(0, 1)
+	t.Log(pair.BuyWithOrders(big.NewInt(0).Add(helpers.BipToPip(big.NewInt(998)), big.NewInt(2e15))))
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
 	t.Logf("%#v", events.LoadEvents(0))
 }
 

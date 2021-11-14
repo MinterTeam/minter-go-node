@@ -834,12 +834,12 @@ func TestOrder_buy(t *testing.T) {
 	// check seller's balance
 	{
 		balance1 := app.CurrentState().Accounts().GetBalance(seller, 1)
-		if balance1.String() != "10010010011" {
+		if balance1.String() != "10010000000" {
 			t.Fatalf("Saller balance is not correct. Expected %s, got %s", "10010010011", balance1)
 		}
 
 		balance0 := app.CurrentState().Accounts().GetBalance(seller, 0)
-		if balance0.String() != big.NewInt(20000000000-10010010011).String() {
+		if balance0.String() != big.NewInt(20000000000-10010000000).String() {
 			t.Fatalf("Saller balance is not correct. Expected %s, got %s", big.NewInt(20000000000-10010010011).String(), balance0)
 		}
 	}
@@ -847,7 +847,7 @@ func TestOrder_buy(t *testing.T) {
 	// check taker's balance
 	{
 		balance := app.CurrentState().Accounts().GetBalance(address, 1)
-		if balance.String() != big.NewInt(20000000000-10020010022).String() {
+		if balance.String() != big.NewInt(20000000000-10020000000).String() {
 			t.Fatalf("Taker balance is not correct. Expected %s, got %s", big.NewInt(20000000000-10020010022).String(), balance)
 		}
 	}

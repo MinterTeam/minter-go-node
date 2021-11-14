@@ -119,6 +119,7 @@ func (s *Swap) ExpireOrders(beforeHeight uint64) {
 	})
 
 	for _, order := range orders {
+		//fmt.Println(order)
 		coin, volume := s.removeLimitOrder(order)
 		if volume.Sign() == 0 {
 			continue
@@ -522,6 +523,10 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 					db.Remove(oldPathOrderList)
 					//log.Printf("remove old path %q, %s, %s. Sell %v", oldPathOrderList, limit.WantBuy, limit.WantSell, !limit.IsBuy)
 				}
+			}
+
+			if limit.isEmpty() {
+				continue
 			}
 
 			//log.Printf("new path %q, %s, %s. Sell %v", newPath, limit.WantBuy, limit.WantSell, !limit.IsBuy)
