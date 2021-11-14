@@ -256,7 +256,7 @@ func (p *Pair) updateOrders(orders []*Limit) (littles []*Limit) {
 func (p *Pair) updateSellOrder(id uint32, amount0, amount1 *big.Int) *Limit {
 	limit := p.getOrder(id)
 	if limit == nil {
-		panic(fmt.Sprintf("%v, %v,%v", id, amount0, amount1))
+		panic(fmt.Sprintf("%v, %v,%v, %#v", id, amount0, amount1, p))
 	}
 	limit.OldSortPrice()
 
