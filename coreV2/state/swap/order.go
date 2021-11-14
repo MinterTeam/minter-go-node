@@ -365,13 +365,20 @@ func (p *Pair) calculateBuyForSellWithOrders(amount0In *big.Int) (amountOut *big
 			}
 
 			if amount1.Cmp(limit.WantSell) == 1 {
+				log.Println(limit.WantBuy, limit.WantSell, limit.id)
+				log.Println(amount0, amount1)
+				log.Println("b")
 				amount1.Set(limit.WantSell)
 				if amount0.Cmp(limit.WantBuy) == -1 {
+					log.Println("bc")
 					amount1.Sub(amount1, big.NewInt(1))
 				}
 			}
 
 			if amount1.Cmp(limit.WantSell) == -1 && amount0.Cmp(limit.WantBuy) == 0 {
+				log.Println(limit.WantBuy, limit.WantSell, limit.id)
+				log.Println(amount0, amount1)
+				log.Println("a")
 				amount1.Set(limit.WantSell)
 			}
 
@@ -581,6 +588,9 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big
 			if amount1.Cmp(limit.WantSell) == 0 && amount0.Cmp(limit.WantBuy) != 0 {
 
 				if amount0.Cmp(limit.WantBuy) == -1 {
+					log.Println(limit.WantBuy, limit.WantSell, limit.id)
+					log.Println(amount0, amount1)
+					log.Println("d")
 					amount0.Set(limit.WantBuy)
 					//amount1.Set(limit.WantSell)
 				} else {
@@ -590,6 +600,9 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big
 				}
 			}
 			if amount1.Cmp(limit.WantSell) == -1 && amount0.Cmp(limit.WantBuy) == 0 {
+				log.Println(limit.WantBuy, limit.WantSell, limit.id)
+				log.Println(amount0, amount1)
+				log.Println("f")
 				amount1.Set(limit.WantSell)
 			}
 
