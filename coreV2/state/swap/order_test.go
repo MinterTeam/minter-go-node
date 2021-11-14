@@ -175,10 +175,8 @@ func TestSwap_PairRemoveLimitOrder_restert_and_api(t *testing.T) {
 	}
 
 	swap = New(newBus, immutableTree.GetLastImmutable())
-
 	pair = swap.Pair(0, 1)
-	t.Log(pair.calculateBuyForSellWithOrders(big.NewInt(8e18)))
-	t.Log(pair.calculateSellForBuyWithOrders(big.NewInt(8e18)))
+	//t.Log(pair.SellWithOrders(helpers.BipToPip(big.NewInt(8e18))))
 
 	swap.ExpireOrders(1e18)
 
@@ -187,7 +185,46 @@ func TestSwap_PairRemoveLimitOrder_restert_and_api(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Logf("%#v", events.LoadEvents(0))
+	if len(events.LoadEvents(0)) != 1 {
+		t.Error("err")
+	}
+}
+func TestSwap_PairRemoveLimitOrder_restert_and_sell(t *testing.T) {
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+	accounts.NewBus(accounts.NewAccounts(newBus, immutableTree.GetLastImmutable()))
+	events := &eventsdb.MockEvents{}
+	newBus.SetEvents(events)
+
+	swap := New(newBus, immutableTree.GetLastImmutable())
+	_, _, _, _ = swap.PairCreate(0, 1, helpers.StringToBigInt("500801598198396793587174349"), helpers.StringToBigInt("10000000000"))
+	pair := swap.Pair(0, 1)
+	pair.AddOrder(helpers.BipToPip(helpers.StringToBigInt("50000159819839685")), helpers.BipToPip(helpers.StringToBigInt("1")), types.Address{1}, 1)
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	swap = New(newBus, immutableTree.GetLastImmutable())
+	pair = swap.Pair(0, 1)
+	t.Log(pair.SellWithOrders(helpers.BipToPip(big.NewInt(8e18))))
+
+	swap.ExpireOrders(1e18)
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(events.LoadEvents(0)) != 0 {
+		t.Error("err")
+	}
 }
 func TestSwap_PairRemoveLimitOrder(t *testing.T) {
 	memDB := db.NewMemDB()
