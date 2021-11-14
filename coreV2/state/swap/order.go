@@ -1047,6 +1047,10 @@ func (s *Swap) PairRemoveLimitOrder(id uint32) (types.CoinID, *big.Int) {
 		return 0, big.NewInt(0)
 	}
 
+	return s.removeLimitOrder(order)
+}
+
+func (s *Swap) removeLimitOrder(order *Limit) (types.CoinID, *big.Int) {
 	if !order.isSell() {
 		order = order.Reverse()
 	}
@@ -1056,15 +1060,17 @@ func (s *Swap) PairRemoveLimitOrder(id uint32) (types.CoinID, *big.Int) {
 	pair.lockOrders.Lock()
 	defer pair.lockOrders.Unlock()
 
-	if pair.isDirtyOrder(id) {
-		if pair.isOrderAlreadyUsed(id) {
+	if pair.isDirtyOrder(order.ID()) {
+		if pair.isOrderAlreadyUsed(order.ID()) {
 			return 0, big.NewInt(0)
 		}
 
-		order = pair.getOrder(id)
+		order = pair.getOrder(order.ID())
 		if order == nil || order.isEmpty() {
 			return 0, big.NewInt(0)
 		}
+	} else {
+		order.reCalcOldSortPrice()
 	}
 
 	returnVolume := big.NewInt(0).Set(order.WantSell)
