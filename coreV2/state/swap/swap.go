@@ -100,8 +100,9 @@ func (s *Swap) ExpireOrders(beforeHeight uint64) {
 		id := binary.BigEndian.Uint32(key[1:])
 
 		order := &Limit{
-			id:      id,
-			RWMutex: new(sync.RWMutex),
+			id:           id,
+			oldSortPrice: new(big.Float).SetPrec(Precision),
+			RWMutex:      new(sync.RWMutex),
 		}
 		err := rlp.DecodeBytes(value, order)
 		if err != nil {
@@ -118,7 +119,7 @@ func (s *Swap) ExpireOrders(beforeHeight uint64) {
 	})
 
 	for _, order := range orders {
-		coin, volume := s.PairRemoveLimitOrder(order.ID())
+		coin, volume := s.removeLimitOrder(order)
 		if volume.Sign() == 0 {
 			continue
 		}
@@ -400,6 +401,7 @@ func pricePath(key PairKey, price *big.Float, id uint32, isSale bool) []byte {
 	var pricePath []byte
 
 	text := price.Text('e', 18) // todo: 34
+
 	split := strings.Split(text, "e")
 	if len(split) != 2 {
 		panic("p")
@@ -413,8 +415,27 @@ func pricePath(key PairKey, price *big.Float, id uint32, isSale bool) []byte {
 	b := byte(bString + math.MaxInt8)
 	pricePath = append(pricePath, b)
 
-	pricePath = append(pricePath, []byte(split[0])...)
+	if false { // todo
+		split0 := strings.Split(split[0], ".")
+		atoi1, err := strconv.Atoi(split0[0])
+		if err != nil {
+			panic(err)
+		}
+		pricePath = append(pricePath, byte(atoi1))
+		atoi2, err := strconv.Atoi(split0[1])
+		if err != nil {
+			panic(err)
+		}
 
+		n := make([]byte, 8)
+
+		binary.BigEndian.PutUint64(n, uint64(atoi2+math.MaxInt64))
+
+		pricePath = append(pricePath, n...)
+
+	} else {
+		pricePath = append(pricePath, []byte(split[0])...)
+	}
 	//log.Println("id p m", id,   b, split[0])
 	byteID := id2BytesWithType(id, isSale)
 
