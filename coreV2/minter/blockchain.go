@@ -559,6 +559,17 @@ func (blockchain *Blockchain) Commit() abciTypes.ResponseCommit {
 	// Clear mempool
 	blockchain.currentMempool = &sync.Map{}
 
+	blockchain.stateDeliver, err = state.NewState(blockchain.Height(),
+		blockchain.storages.StateDB(),
+		blockchain.eventsDB,
+		blockchain.cfg.StateCacheSize,
+		blockchain.cfg.KeepLastStates,
+		blockchain.InitialHeight())
+	if err != nil {
+		panic(err)
+	}
+	blockchain.stateCheck = state.NewCheckState(blockchain.stateDeliver)
+
 	if blockchain.checkStop() {
 		return abciTypes.ResponseCommit{Data: hash}
 	}
