@@ -310,6 +310,9 @@ func (p *Pair) calculateBuyForSellWithOrders(amount0In *big.Int) (amountOut *big
 	amountIn := big.NewInt(0).Set(amount0In)
 	var pair EditableChecker = p
 	for i := 0; true; i++ {
+		if amountIn.Sign() == -1 {
+			panic(fmt.Sprint(amountIn, amountOut))
+		}
 		if amountIn.Sign() == 0 {
 			return amountOut, orders
 		}
@@ -531,6 +534,9 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big
 	amountOut := big.NewInt(0).Set(amount1Out)
 	var pair EditableChecker = p
 	for i := 0; true; i++ {
+		if amountOut.Sign() == -1 {
+			panic(fmt.Sprint(amountIn, amountOut))
+		}
 		if amountOut.Sign() == 0 {
 			return amountIn, orders
 		}
@@ -730,7 +736,7 @@ type orderDirties struct {
 }
 
 const (
-	Precision = 53 // supported precision
+	Precision = 53 // todo: 0 // supported precision
 )
 
 func (l *Limit) Price() *big.Float {
