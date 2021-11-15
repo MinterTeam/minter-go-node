@@ -730,7 +730,7 @@ type orderDirties struct {
 }
 
 const (
-	Precision = 53 // supported precision
+	Precision = 53 // todo: 0 // supported precision
 )
 
 func (l *Limit) Price() *big.Float {

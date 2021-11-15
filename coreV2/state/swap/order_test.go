@@ -5,7 +5,6 @@ import (
 	"fmt"
 	eventsdb "github.com/MinterTeam/minter-go-node/coreV2/events"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/accounts"
-	"github.com/MinterTeam/minter-go-node/coreV2/state/coins"
 	"math"
 	"math/big"
 	"math/rand"
@@ -113,10 +112,18 @@ func TestA(t *testing.T) {
 	//	big.NewInt(0).Set(helpers.FloatBipToPip(3.3)),
 	//	big.NewInt(0).Set(helpers.FloatBipToPip(1.1)),
 	//).SetPrec(Precision)).SetPrec(Precision).Text('e', 38))
-	price := CalcPriceSell(
-		big.NewInt(0).Set(coins.MaxCoinSupply()),
+	priceR := CalcPriceSellRat(
+		big.NewInt(0).Set(helpers.StringToBigInt("300000000000000000000")),
 		big.NewInt(0).Set(helpers.StringToBigInt("1")),
 	)
+	t.Log(priceR.FloatString(34))
+	price := new(big.Float).SetRat(priceR)
+	price = CalcPriceSell(
+		big.NewInt(0).Set(helpers.StringToBigInt("300000000000000000000")),
+		big.NewInt(0).Set(helpers.StringToBigInt("1")),
+	)
+	t.Log(price.Text('f', 38))
+
 	text := price.Text('e', 38)
 	t.Log(text)
 
@@ -164,6 +171,8 @@ func TestA(t *testing.T) {
 	pricePath = append(pricePath, n3...)
 
 	t.Log(pricePath)
+	// 3.33333333333333333333433206338953473586e-21
+	// 3.33333333333333327589696893507590635576e-21
 }
 
 func TestPair_TODO(t *testing.T) {
@@ -583,7 +592,7 @@ func TestPair_BigPrice(t *testing.T) {
 		prec := price.Prec()
 
 		if prec > Precision {
-			t.Error(prec)
+			t.Log(prec)
 		}
 		if prev.Sign() != 1 {
 			prev = price
@@ -3747,8 +3756,8 @@ func TestPair_CalculateBuyForSellWithOrders_01(t *testing.T) {
 				}
 				amount1 := pair.CalculateBuyForSell(amount0)
 				p := pair.AddLastSwapStep(amount0, amount1)
-				if p.Price().Text('f', 18) != "0.500070691361515607" {
-					t.Error(amount0, amount1, p.Price().Text('f', 18), price)
+				if p.PriceRat().FloatString(18) != "0.500070691361515623" {
+					t.Error(amount0, amount1, p.PriceRat().FloatString(18), price)
 				}
 			})
 			t.Run("buy", func(t *testing.T) {
@@ -3758,8 +3767,8 @@ func TestPair_CalculateBuyForSellWithOrders_01(t *testing.T) {
 				}
 				amount0 := pair.CalculateSellForBuyAllowNeg(amount1)
 				p := pair.AddLastSwapStep(amount0, amount1)
-				if p.Price().Text('f', 18) != "0.500106044538706218" {
-					t.Error(amount0, amount1, p.Price().Text('f', 18), price)
+				if p.PriceRat().FloatString(18) != "0.500106044538706257" {
+					t.Error(amount0, amount1, p.PriceRat().FloatString(18), price)
 				}
 			})
 		})
@@ -4173,8 +4182,8 @@ func TestPair_CalculateAddAmount0ForPrice_10(t *testing.T) {
 					}
 					amount1 := pair.CalculateBuyForSell(amount0)
 					p := pair.AddLastSwapStep(amount0, amount1)
-					if p.Price().Text('f', 18) != "0.500071053005542110" {
-						t.Error(amount0, amount1, p.Price().Text('f', 18), price)
+					if p.PriceRat().FloatString(18) != "0.500071053005542134" {
+						t.Error(amount0, amount1, p.PriceRat().FloatString(18), price)
 					}
 				})
 				t.Run("buy", func(t *testing.T) {
@@ -4184,8 +4193,8 @@ func TestPair_CalculateAddAmount0ForPrice_10(t *testing.T) {
 					}
 					amount0 := pair.CalculateSellForBuyAllowNeg(amount1)
 					p := pair.AddLastSwapStep(amount0, amount1)
-					if p.Price().Text('f', 18) != "0.500106587081645682" {
-						t.Error(amount0, amount1, p.Price().Text('f', 18), price)
+					if p.PriceRat().FloatString(18) != "0.500106587081645705" {
+						t.Error(amount0, amount1, p.PriceRat().FloatString(18), price)
 					}
 				})
 			})
@@ -4229,8 +4238,8 @@ func TestPair_CalculateAddAmount0ForPrice_10(t *testing.T) {
 					}
 					amount1 := pair.CalculateBuyForSell(amount0)
 					p := pair.AddLastSwapStep(amount0, amount1)
-					if p.Price().Text('f', 18) != "0.500071042909917551" {
-						t.Error(amount0, amount1, p.Price().Text('f', 18), price)
+					if p.PriceRat().FloatString(18) != "0.500071042909917590" {
+						t.Error(amount0, amount1, p.PriceRat().FloatString(18), price)
 					}
 				})
 				t.Run("buy", func(t *testing.T) {
@@ -4240,8 +4249,8 @@ func TestPair_CalculateAddAmount0ForPrice_10(t *testing.T) {
 					}
 					amount0 := pair.CalculateSellForBuyAllowNeg(amount1)
 					p := pair.AddLastSwapStep(amount0, amount1)
-					if p.Price().Text('f', 18) != "0.500106571936056787" {
-						t.Error(amount0, amount1, p.Price().Text('f', 18), price)
+					if p.PriceRat().FloatString(18) != "0.500106571936056838" {
+						t.Error(amount0, amount1, p.PriceRat().FloatString(18), price)
 					}
 				})
 			})
