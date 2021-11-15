@@ -119,6 +119,7 @@ func (s *Swap) ExpireOrders(beforeHeight uint64) {
 	})
 
 	for _, order := range orders {
+		//fmt.Println(order)
 		coin, volume := s.removeLimitOrder(order)
 		if volume.Sign() == 0 {
 			continue
@@ -400,7 +401,7 @@ func id2BytesWithType(id uint32, sale bool) []byte {
 func pricePath(key PairKey, price *big.Float, id uint32, isSale bool) []byte {
 	var pricePath []byte
 
-	text := price.Text('e', 18) // todo: 34
+	text := price.Text('e', 38)
 
 	split := strings.Split(text, "e")
 	if len(split) != 2 {
@@ -408,35 +409,43 @@ func pricePath(key PairKey, price *big.Float, id uint32, isSale bool) []byte {
 	}
 
 	// порядок
-	bString, err := strconv.Atoi(split[1])
+	b, err := strconv.Atoi(split[1])
 	if err != nil {
 		panic(err)
 	}
-	b := byte(bString + math.MaxInt8)
-	pricePath = append(pricePath, b)
+	pricePath = append(pricePath, byte(b+math.MaxInt8))
 
-	if false { // todo
+	if true {
 		split0 := strings.Split(split[0], ".")
 		atoi1, err := strconv.Atoi(split0[0])
 		if err != nil {
 			panic(err)
 		}
 		pricePath = append(pricePath, byte(atoi1))
-		atoi2, err := strconv.Atoi(split0[1])
+
+		atoi2, err := strconv.ParseUint(split0[1][:19], 10, 0)
 		if err != nil {
 			panic(err)
 		}
 
-		n := make([]byte, 8)
+		n2 := make([]byte, 8)
+		binary.BigEndian.PutUint64(n2, atoi2)
 
-		binary.BigEndian.PutUint64(n, uint64(atoi2+math.MaxInt64))
+		pricePath = append(pricePath, n2...)
 
-		pricePath = append(pricePath, n...)
+		atoi3, err := strconv.ParseUint(split0[1][19:], 10, 0)
+		if err != nil {
+			panic(err)
+		}
+
+		n3 := make([]byte, 8)
+		binary.BigEndian.PutUint64(n3, atoi3)
+
+		pricePath = append(pricePath, n3...)
 
 	} else {
 		pricePath = append(pricePath, []byte(split[0])...)
 	}
-	//log.Println("id p m", id,   b, split[0])
 	byteID := id2BytesWithType(id, isSale)
 
 	var saleByte byte = 0
@@ -522,6 +531,10 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 					db.Remove(oldPathOrderList)
 					//log.Printf("remove old path %q, %s, %s. Sell %v", oldPathOrderList, limit.WantBuy, limit.WantSell, !limit.IsBuy)
 				}
+			}
+
+			if limit.isEmpty() {
+				continue
 			}
 
 			//log.Printf("new path %q, %s, %s. Sell %v", newPath, limit.WantBuy, limit.WantSell, !limit.IsBuy)
