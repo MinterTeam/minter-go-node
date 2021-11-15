@@ -350,8 +350,7 @@ func (p *Pair) calculateBuyForSellWithOrders(amount0In *big.Int) (amountOut *big
 
 			// 1000
 			// считаем сколько сможем купить -- 1000
-			//amount1, acc := big.NewFloat(0).SetRat(new(big.Rat).Mul(limit.PriceRat(), new(big.Rat).SetInt(amount0))).Int(nil)
-			amount1, acc := big.NewFloat(0).Mul(price, big.NewFloat(0).SetInt(amount0)).Int(nil)
+			amount1, acc := new(big.Float).SetRat(new(big.Rat).Mul(limit.PriceRat(), new(big.Rat).SetFrac(amount0, big.NewInt(1)))).Int(nil)
 			if acc != big.Exact {
 				//log.Println("acc", acc)
 			}
@@ -578,7 +577,8 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big
 
 			//amount1 := big.NewInt(0).Set(amountOut)
 			// считаем сколько монет надо продать что бы купить 1000
-			amount0, acc := big.NewFloat(0).Quo(big.NewFloat(0).SetInt(amount1), price).Int(nil)
+			//amount0, acc := big.NewFloat(0).Quo(big.NewFloat(0).SetInt(amount1), price).Int(nil)
+			amount0, acc := new(big.Float).SetRat(new(big.Rat).Quo(new(big.Rat).SetFrac(amount1, big.NewInt(1)), limit.PriceRat())).Int(nil)
 			if acc != big.Exact {
 				//log.Println("acc", acc) // todo
 			}
