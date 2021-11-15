@@ -730,7 +730,7 @@ type orderDirties struct {
 }
 
 const (
-	Precision = 54 // supported precision
+	Precision = 53 // supported precision
 )
 
 func (l *Limit) Price() *big.Float {
@@ -837,6 +837,13 @@ func (l *Limit) sortPrice() *big.Float {
 		return l.Price()
 	}
 	return l.Reverse().Price()
+}
+
+func (l *Limit) sortPriceRat() *big.Rat {
+	if l.isSorted() {
+		return l.PriceRat()
+	}
+	return l.Reverse().PriceRat()
 }
 
 func (l *Limit) OldSortPrice() *big.Float {

@@ -1,13 +1,17 @@
 package swap
 
 import (
+	"encoding/binary"
 	"fmt"
 	eventsdb "github.com/MinterTeam/minter-go-node/coreV2/events"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/accounts"
+	"github.com/MinterTeam/minter-go-node/coreV2/state/coins"
+	"math"
 	"math/big"
 	"math/rand"
 	"reflect"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 
@@ -99,6 +103,64 @@ func TestCmpPrice(t *testing.T) {
 			t.Error("f", price0, price2)
 		}
 	}
+}
+func TestA(t *testing.T) {
+	//t.Skip("debug")
+	//t.Log(big.NewFloat(0).Mul(big.NewFloat(9).SetPrec(Precision), CalcPriceSell(
+	//	big.NewInt(0).Set(helpers.FloatBipToPip(3.3)),
+	//	big.NewInt(0).Set(helpers.FloatBipToPip(1.1)),
+	//).SetPrec(Precision)).SetPrec(Precision).Text('e', 38))
+	price := CalcPriceSell(
+		big.NewInt(0).Set(coins.MaxCoinSupply()),
+		big.NewInt(0).Set(helpers.StringToBigInt("1")),
+	)
+	text := price.Text('e', 38)
+	t.Log(text)
+
+	var pricePath []byte
+
+	split := strings.Split(text, "e")
+	if len(split) != 2 {
+		panic("p")
+	}
+
+	// порядок
+	b, err := strconv.Atoi(split[1])
+	if err != nil {
+		panic(err)
+	}
+	t.Log(b)
+	pricePath = append(pricePath, byte(b+math.MaxInt8))
+
+	split0 := strings.Split(split[0], ".")
+	atoi1, err := strconv.Atoi(split0[0])
+	if err != nil {
+		panic(err)
+	}
+	t.Log(atoi1)
+	pricePath = append(pricePath, byte(atoi1))
+
+	atoi2, err := strconv.ParseUint(split0[1][:19], 10, 0)
+	if err != nil {
+		panic(err)
+	}
+	t.Log(atoi2)
+	n2 := make([]byte, 8)
+	binary.BigEndian.PutUint64(n2, atoi2)
+
+	pricePath = append(pricePath, n2...)
+
+	atoi3, err := strconv.ParseUint(split0[1][19:], 10, 0)
+	if err != nil {
+		panic(err)
+	}
+	t.Log(atoi3)
+	n3 := make([]byte, 8)
+	binary.BigEndian.PutUint64(n3, atoi3)
+
+	pricePath = append(pricePath, n3...)
+
+	t.Log(pricePath)
 }
 
 func TestPair_TODO(t *testing.T) {
@@ -3673,7 +3735,7 @@ func TestPair_CalculateBuyForSellWithOrders_01(t *testing.T) {
 				}
 				amount0 := pair.CalculateSellForBuyAllowNeg(amount1)
 				p := pair.AddLastSwapStep(amount0, amount1)
-				if p.Price().Text('f', 18) != "0.500106044538706274" {
+				if p.Price().Text('f', 18) != "0.500106044538706218" {
 					t.Error(amount0, amount1, p.Price().Text('f', 18), price)
 				}
 			})
@@ -4144,7 +4206,7 @@ func TestPair_CalculateAddAmount0ForPrice_10(t *testing.T) {
 					}
 					amount1 := pair.CalculateBuyForSell(amount0)
 					p := pair.AddLastSwapStep(amount0, amount1)
-					if p.Price().Text('f', 18) != "0.500071042909917607" {
+					if p.Price().Text('f', 18) != "0.500071042909917551" {
 						t.Error(amount0, amount1, p.Price().Text('f', 18), price)
 					}
 				})
@@ -4155,7 +4217,7 @@ func TestPair_CalculateAddAmount0ForPrice_10(t *testing.T) {
 					}
 					amount0 := pair.CalculateSellForBuyAllowNeg(amount1)
 					p := pair.AddLastSwapStep(amount0, amount1)
-					if p.Price().Text('f', 18) != "0.500106571936056843" {
+					if p.Price().Text('f', 18) != "0.500106571936056787" {
 						t.Error(amount0, amount1, p.Price().Text('f', 18), price)
 					}
 				})
