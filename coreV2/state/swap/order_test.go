@@ -105,6 +105,9 @@ func TestCmpPrice(t *testing.T) {
 	}
 }
 func TestA(t *testing.T) {
+	amount1, _ := new(big.Float).SetRat(new(big.Rat).Mul(new(big.Rat).SetFrac(big.NewInt(1e18), big.NewInt(1e18)), new(big.Rat).SetFrac(helpers.StringToBigInt("100000000000000000000000"), big.NewInt(1)))).Int(nil)
+	t.Log(amount1)
+
 	//t.Skip("debug")
 	//t.Log(big.NewFloat(0).Mul(big.NewFloat(9).SetPrec(Precision), CalcPriceSell(
 	//	big.NewInt(0).Set(helpers.FloatBipToPip(3.3)),
@@ -657,10 +660,10 @@ func TestPair_taker4_sell(t *testing.T) {
 	pair := swap.Pair(0, 1)
 	pair.AddOrder(helpers.StringToBigInt("200000000000000000000000"), helpers.StringToBigInt("200000000000000000000000"), types.Address{1}, 1)
 
-	out, _, _, _ := pair.SellWithOrders(helpers.StringToBigInt("100000000000000000000000"))
-	t.Log(out)
+	out, _, _, _ := pair.SellWithOrders(helpers.StringToBigInt("100100000000000000000000"))
+	//t.Log(out)
 	if out.Cmp(helpers.StringToBigInt("99900000000000000000000")) != 0 {
-		t.Skip(out)
+		t.Error(out)
 	}
 }
 
