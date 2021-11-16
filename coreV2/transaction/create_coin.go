@@ -205,7 +205,7 @@ func (data CreateCoinData) Run(tx *Transaction, context state.Interface, rewardP
 				CoinOut:  types.GetBaseCoinID(),
 				ValueOut: commissionInBaseCoin.String(),
 				Orders:   detailsCom,
-				Sellers:  ownersCom,
+				// Sellers:  ownersCom,
 			}
 			for _, value := range ownersCom {
 				deliverState.Accounts.AddBalance(value.Owner, tx.CommissionCoin(), value.ValueBigInt)

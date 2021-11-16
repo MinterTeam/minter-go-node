@@ -152,7 +152,7 @@ func (data RemoveLiquidityV240) Run(tx *Transaction, context state.Interface, re
 				CoinOut:  types.GetBaseCoinID(),
 				ValueOut: commissionInBaseCoin.String(),
 				Orders:   detailsCom,
-				Sellers:  ownersCom,
+				// Sellers:  ownersCom,
 			}
 			for _, value := range ownersCom {
 				deliverState.Accounts.AddBalance(value.Owner, tx.CommissionCoin(), value.ValueBigInt)

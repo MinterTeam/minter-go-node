@@ -38,7 +38,7 @@ type tagPoolChange struct {
 	CoinOut  types.CoinID                  `json:"coin_out"`
 	ValueOut string                        `json:"value_out"`
 	Orders   *swap.ChangeDetailsWithOrders `json:"details"`
-	Sellers  []*swap.OrderDetail           `json:"sellers"`
+	//Sellers  []*swap.OrderDetail           `json:"sellers"`
 }
 
 func (tPool *tagPoolChange) string() string {
@@ -241,7 +241,7 @@ func (data SellAllSwapPoolDataV260) Run(tx *Transaction, context state.Interface
 				CoinOut:  types.GetBaseCoinID(),
 				ValueOut: commissionInBaseCoin.String(),
 				Orders:   detailsCom,
-				Sellers:  ownersCom,
+				// Sellers:  ownersCom,
 			}
 			for _, value := range ownersCom {
 				deliverState.Accounts.AddBalance(value.Owner, tx.CommissionCoin(), value.ValueBigInt)
@@ -267,7 +267,7 @@ func (data SellAllSwapPoolDataV260) Run(tx *Transaction, context state.Interface
 				CoinOut:  coinToBuy,
 				ValueOut: amountOut.String(),
 				Orders:   details,
-				Sellers:  owners,
+				// Sellers:  owners,
 			}
 
 			for _, value := range owners {

@@ -537,6 +537,7 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big
 		if amountOut.Sign() == -1 {
 			panic(fmt.Sprint(amountIn, amountOut))
 		}
+		// todo: move check minAmountIn
 		if amountOut.Sign() == 0 {
 			return amountIn, orders
 		}
