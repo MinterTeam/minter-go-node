@@ -106,13 +106,14 @@ func NewCandidates(bus *bus.Bus, db *iavl.ImmutableTree) *Candidates {
 		loaded = true
 	}
 	candidates := &Candidates{
-		db:          immutableTree,
-		loaded:      loaded,
-		bus:         bus,
-		blockList:   map[types.Pubkey]struct{}{},
-		pubKeyIDs:   map[types.Pubkey]uint32{},
-		list:        map[uint32]*Candidate{},
-		totalStakes: big.NewInt(0),
+		db:                immutableTree,
+		loaded:            loaded,
+		bus:               bus,
+		deletedCandidates: map[types.Pubkey]*deletedID{},
+		blockList:         map[types.Pubkey]struct{}{},
+		pubKeyIDs:         map[types.Pubkey]uint32{},
+		list:              map[uint32]*Candidate{},
+		totalStakes:       big.NewInt(0),
 	}
 	candidates.bus.SetCandidates(NewBus(candidates))
 
