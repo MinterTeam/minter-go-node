@@ -1120,9 +1120,9 @@ func (s *Swap) removeLimitOrder(order *Limit) (types.CoinID, *big.Int) {
 	return order.Coin1, returnVolume
 }
 
-func (s *Swap) PairAddOrderWithID(coinWantBuy, coinWantSell types.CoinID, wantBuyAmount, wantSellAmount *big.Int, sender types.Address, id uint32, height uint64) (uint32, uint32) {
+func (s *Swap) pairAddOrderWithID(coinWantBuy, coinWantSell types.CoinID, wantBuyAmount, wantSellAmount *big.Int, sender types.Address, id uint32, height uint64) (uint32, uint32) {
 	pair := s.Pair(coinWantBuy, coinWantSell)
-	order := pair.AddOrderWithID(wantBuyAmount, wantSellAmount, sender, id, height)
+	order := pair.addOrderWithID(wantBuyAmount, wantSellAmount, sender, id, height)
 
 	s.bus.Checker().AddCoin(coinWantSell, wantSellAmount)
 
@@ -1172,7 +1172,7 @@ func (p *Pair) AddOrder(wantBuyAmount0, wantSellAmount1 *big.Int, sender types.A
 	return order
 }
 
-func (p *Pair) AddOrderWithID(wantBuyAmount0, wantSellAmount1 *big.Int, sender types.Address, id uint32, height uint64) (order *Limit) {
+func (p *Pair) addOrderWithID(wantBuyAmount0, wantSellAmount1 *big.Int, sender types.Address, id uint32, height uint64) (order *Limit) {
 	order = &Limit{
 		PairKey:      p.PairKey,
 		IsBuy:        false,
@@ -1186,13 +1186,13 @@ func (p *Pair) AddOrderWithID(wantBuyAmount0, wantSellAmount1 *big.Int, sender t
 	}
 	sortedOrder := order.sort()
 
-	p.lockOrders.Lock()
-	defer p.lockOrders.Unlock()
+	//p.lockOrders.Lock()
+	//defer p.lockOrders.Unlock()
 
 	p.MarkDirtyOrders(sortedOrder)
 
 	p.setOrder(sortedOrder)
-	p.orderSellByIndex(0)
+	//p.orderSellByIndex(0)
 	return order
 }
 

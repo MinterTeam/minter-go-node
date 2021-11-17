@@ -235,18 +235,16 @@ func (s *Swap) Import(state *types.AppState) {
 		pair.markDirty()
 		s.incID()
 		for _, order := range pool.Orders {
-			key := pair.PairKey
 			id := order.ID
 			v0 := helpers.StringToBigInt(order.Volume0)
 			v1 := helpers.StringToBigInt(order.Volume1)
 			if !order.IsSale {
-				key = key.reverse()
+				pair = pair.reverse()
 				v0, v1 = v1, v0
 			}
 
-			s.PairAddOrderWithID(key.Coin0, key.Coin1, v0, v1, order.Owner, uint32(id), order.Height)
-			pair.sellOrders.ids = nil
-			pair.buyOrders.ids = nil
+			pair.addOrderWithID(v0, v1, order.Owner, uint32(id), order.Height)
+			s.bus.Checker().AddCoin(pair.Coin1, v1)
 		}
 	}
 	s.nextOrderID = uint32(state.NextOrderID)
