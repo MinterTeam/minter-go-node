@@ -242,14 +242,15 @@ func (s *Swap) Import(state *types.AppState) {
 			if !order.IsSale {
 				key = key.reverse()
 				v0, v1 = v1, v0
-			} else {
 			}
 
 			s.PairAddOrderWithID(key.Coin0, key.Coin1, v0, v1, order.Owner, uint32(id), order.Height)
+			pair.sellOrders.ids = nil
+			pair.buyOrders.ids = nil
 		}
-		s.nextOrderID = uint32(state.NextOrderID)
-		s.dirtyNextID = true
 	}
+	s.nextOrderID = uint32(state.NextOrderID)
+	s.dirtyNextID = true
 }
 
 const mainPrefix = byte('s')
