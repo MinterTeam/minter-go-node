@@ -235,7 +235,6 @@ func (s *Swap) Import(state *types.AppState) {
 		pair.markDirty()
 		s.incID()
 		for _, order := range pool.Orders {
-			id := order.ID
 			v0 := helpers.StringToBigInt(order.Volume0)
 			v1 := helpers.StringToBigInt(order.Volume1)
 			pair0 := pair
@@ -244,7 +243,7 @@ func (s *Swap) Import(state *types.AppState) {
 				v0, v1 = v1, v0
 			}
 
-			pair0.addOrderWithID(v0, v1, order.Owner, uint32(id), order.Height)
+			pair0.addOrderWithID(v0, v1, order.Owner, uint32(order.ID), order.Height)
 			s.bus.Checker().AddCoin(pair0.Coin1, v1)
 		}
 	}
