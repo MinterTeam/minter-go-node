@@ -321,7 +321,7 @@ type Waitlist struct {
 	Value       string  `json:"value"`
 }
 type Order struct {
-	IsSale  bool    // isReverse
+	IsSale  bool    `json:"is_sale"`
 	Volume0 string  `json:"volume0"` // buy
 	Volume1 string  `json:"volume1"` // sell
 	ID      uint64  `json:"id"`
