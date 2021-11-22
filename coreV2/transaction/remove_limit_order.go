@@ -58,6 +58,9 @@ func (data RemoveLimitOrderData) Run(tx *Transaction, context state.Interface, r
 	if errResp != nil {
 		return *errResp
 	}
+	if isGasCommissionFromPoolSwap {
+		commissionInBaseCoin = commissionPoolSwapper.CalculateBuyForSellWithOrders(commission)
+	}
 
 	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
 		return Response{

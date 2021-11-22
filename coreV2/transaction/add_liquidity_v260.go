@@ -98,6 +98,9 @@ func (data AddLiquidityDataV260) Run(tx *Transaction, context state.Interface, r
 	if errResp != nil {
 		return *errResp
 	}
+	if isGasCommissionFromPoolSwap {
+		commissionInBaseCoin = commissionPoolSwapper.CalculateBuyForSellWithOrders(commission)
+	}
 
 	{
 		amount0 := new(big.Int).Set(data.Volume0)

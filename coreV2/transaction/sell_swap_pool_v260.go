@@ -94,6 +94,9 @@ func (data SellSwapPoolDataV260) Run(tx *Transaction, context state.Interface, r
 	if errResp != nil {
 		return *errResp
 	}
+	if isGasCommissionFromPoolSwap {
+		commissionInBaseCoin = commissionPoolSwapper.CalculateBuyForSellWithOrders(commission)
+	}
 
 	lastIteration := len(data.Coins[1:]) - 1
 	{

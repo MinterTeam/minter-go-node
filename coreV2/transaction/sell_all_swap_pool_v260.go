@@ -159,6 +159,9 @@ func (data SellAllSwapPoolDataV260) Run(tx *Transaction, context state.Interface
 	if errResp != nil {
 		return *errResp
 	}
+	if isGasCommissionFromPoolSwap {
+		commissionInBaseCoin = commissionPoolSwapper.CalculateBuyForSellWithOrders(commission)
+	}
 
 	balance := checkState.Accounts().GetBalance(sender, coinToSell)
 	available := big.NewInt(0).Set(balance)

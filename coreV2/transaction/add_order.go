@@ -100,6 +100,9 @@ func (data AddLimitOrderData) Run(tx *Transaction, context state.Interface, rewa
 	if errResp != nil {
 		return *errResp
 	}
+	if isGasCommissionFromPoolSwap {
+		commissionInBaseCoin = commissionPoolSwapper.CalculateBuyForSellWithOrders(commission)
+	}
 
 	amountSell := new(big.Int).Set(data.ValueToSell)
 	if tx.GasCoin != data.CoinToSell {

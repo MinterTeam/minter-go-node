@@ -106,7 +106,9 @@ func (data BuySwapPoolDataV260) Run(tx *Transaction, context state.Interface, re
 	if errResp != nil {
 		return *errResp
 	}
-
+	if isGasCommissionFromPoolSwap {
+		commissionInBaseCoin = commissionPoolSwapper.CalculateBuyForSellWithOrders(commission)
+	}
 	reverseCoinIds(data.Coins)
 
 	var calculatedAmountToSell *big.Int
