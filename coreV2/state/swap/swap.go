@@ -68,7 +68,9 @@ type RSwap interface {
 	SwapPool(coin0, coin1 types.CoinID) (reserve0, reserve1 *big.Int, id uint32)
 	GetSwapper(coin0, coin1 types.CoinID) EditableChecker
 	SwapPoolExist(coin0, coin1 types.CoinID) bool
+	// Deprecated
 	PairCalculateBuyForSell(coin0, coin1 types.CoinID, amount0In *big.Int) (amount1Out *big.Int, err error)
+	// Deprecated
 	PairCalculateSellForBuy(coin0, coin1 types.CoinID, amount1Out *big.Int) (amount0In *big.Int, err error)
 }
 
@@ -414,37 +416,33 @@ func pricePath(key PairKey, price *big.Float, id uint32, isSale bool) []byte {
 	}
 	pricePath = append(pricePath, byte(b+math.MaxInt8))
 
-	if true {
-		split0 := strings.Split(split[0], ".")
-		atoi1, err := strconv.Atoi(split0[0])
-		if err != nil {
-			panic(err)
-		}
-		pricePath = append(pricePath, byte(atoi1))
-
-		atoi2, err := strconv.ParseUint(split0[1][:19], 10, 0)
-		if err != nil {
-			panic(err)
-		}
-
-		n2 := make([]byte, 8)
-		binary.BigEndian.PutUint64(n2, atoi2)
-
-		pricePath = append(pricePath, n2...)
-
-		atoi3, err := strconv.ParseUint(split0[1][19:], 10, 0)
-		if err != nil {
-			panic(err)
-		}
-
-		n3 := make([]byte, 8)
-		binary.BigEndian.PutUint64(n3, atoi3)
-
-		pricePath = append(pricePath, n3...)
-
-	} else {
-		pricePath = append(pricePath, []byte(split[0])...)
+	split0 := strings.Split(split[0], ".")
+	atoi1, err := strconv.Atoi(split0[0])
+	if err != nil {
+		panic(err)
 	}
+	pricePath = append(pricePath, byte(atoi1))
+
+	atoi2, err := strconv.ParseUint(split0[1][:19], 10, 0)
+	if err != nil {
+		panic(err)
+	}
+
+	n2 := make([]byte, 8)
+	binary.BigEndian.PutUint64(n2, atoi2)
+
+	pricePath = append(pricePath, n2...)
+
+	atoi3, err := strconv.ParseUint(split0[1][19:], 10, 0)
+	if err != nil {
+		panic(err)
+	}
+
+	n3 := make([]byte, 8)
+	binary.BigEndian.PutUint64(n3, atoi3)
+
+	pricePath = append(pricePath, n3...)
+
 	byteID := id2BytesWithType(id, isSale)
 
 	var saleByte byte = 0
@@ -641,6 +639,7 @@ func (s *Swap) Pair(coin0, coin1 types.CoinID) *Pair {
 	return pair
 }
 
+// Deprecated
 func (s *Swap) PairCalculateSellForBuy(coin0, coin1 types.CoinID, amount1Out *big.Int) (amount0In *big.Int, err error) {
 	pair := s.Pair(coin0, coin1)
 	if pair == nil {
@@ -653,6 +652,7 @@ func (s *Swap) PairCalculateSellForBuy(coin0, coin1 types.CoinID, amount1Out *bi
 	return value, nil
 }
 
+// Deprecated
 func (s *Swap) PairCalculateBuyForSell(coin0, coin1 types.CoinID, amount0In *big.Int) (amount1Out *big.Int, err error) {
 	pair := s.Pair(coin0, coin1)
 	if pair == nil {

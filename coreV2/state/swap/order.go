@@ -1457,85 +1457,50 @@ func (p *Pair) updateDirtyOrders(list []uint32, lower bool) (orders []uint32, de
 func addToList(orders []*Limit, dirtyOrder *Limit, cmp int, index int) (list []*Limit, included bool, pos int) {
 
 	var hasZero bool
-	if true {
 
-		var last int
-		if len(orders) != 0 && orders[len(orders)-1] == nil {
-			hasZero = true
-			last = 1
-		}
-
-		skeeped := index
-		var start, end = index, len(orders) - last
-		var slice = orders[start:end]
-		for len(slice) > 0 {
-			cur := len(slice) / 2
-			limit := slice[cur]
-			if limit.id == dirtyOrder.id {
-				log.Panicln("dirty ID == in list ID", limit.id)
-			}
-
-			//log.Println("start", skeeped, "stop", skeeped+len(slice)-1, "cur", cur, "id", dirtyOrder.id)
-
-			less := false
-			switch dirtyOrder.sortPrice().Cmp(limit.sortPrice()) {
-			case cmp:
-				less = true
-			case 0:
-				if dirtyOrder.id > limit.id {
-					less = true
-				} else {
-					less = false
-				}
-			default:
-				less = false
-			}
-
-			if less {
-				skeeped += cur + 1
-				index = 0
-				slice = slice[cur+1:]
-			} else {
-				index = cur
-				slice = slice[:cur]
-			}
-			//log.Println("slice", slice)
-		}
-		index += skeeped
-	} else {
-		for i, limit := range orders {
-			if limit == nil {
-				hasZero = true
-				index = i
-				break
-			}
-			if limit.id == dirtyOrder.id {
-				log.Println("equal ID in addToList")
-				return orders, true, i
-			}
-
-			var ok bool
-			switch dirtyOrder.sortPrice().Cmp(limit.sortPrice()) {
-			case cmp:
-				index = i + 1
-				continue
-			case 0:
-				index = i
-				if dirtyOrder.id > limit.id {
-					index = i + 1
-				}
-				//log.Println("sort of equal orders", dirtyOrder.id, limit.id, orders, index)
-			default:
-				//log.Println("sort order result", dirtyOrder.id, orders, index)
-				ok = true
-			}
-			if ok {
-				break
-			}
-		}
+	var last int
+	if len(orders) != 0 && orders[len(orders)-1] == nil {
+		hasZero = true
+		last = 1
 	}
 
-	//log.Println("index", index)
+	skeeped := index
+	var start, end = index, len(orders) - last
+	var slice = orders[start:end]
+	for len(slice) > 0 {
+		cur := len(slice) / 2
+		limit := slice[cur]
+		if limit.id == dirtyOrder.id {
+			log.Panicln("dirty ID == in list ID", limit.id)
+		}
+
+		//log.Println("start", skeeped, "stop", skeeped+len(slice)-1, "cur", cur, "id", dirtyOrder.id)
+
+		less := false
+		switch dirtyOrder.sortPrice().Cmp(limit.sortPrice()) {
+		case cmp:
+			less = true
+		case 0:
+			if dirtyOrder.id > limit.id {
+				less = true
+			} else {
+				less = false
+			}
+		default:
+			less = false
+		}
+
+		if less {
+			skeeped += cur + 1
+			index = 0
+			slice = slice[cur+1:]
+		} else {
+			index = cur
+			slice = slice[:cur]
+		}
+		//log.Println("slice", slice)
+	}
+	index += skeeped
 
 	if index == 0 {
 		return append([]*Limit{dirtyOrder}, orders...), true, 0
