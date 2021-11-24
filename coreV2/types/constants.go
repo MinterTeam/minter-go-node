@@ -27,7 +27,7 @@ const m15 = 518400 / 2920 // 15m
 
 func GetExpireOrdersPeriodWithChain(chain ChainID) uint64 {
 	if chain == ChainTestnet {
-		return day * 3
+		return day * 5
 	}
 	return mounth
 }

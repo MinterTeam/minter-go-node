@@ -190,6 +190,7 @@ func (data SellAllSwapPoolDataV260) Run(tx *Transaction, context state.Interface
 			checkDuplicatePools[swapper.GetID()] = struct{}{}
 
 			if isGasCommissionFromPoolSwap == true && swapper.GetID() == commissionPoolSwapper.GetID() {
+				commissionInBaseCoin = commissionPoolSwapper.CalculateBuyForSellWithOrders(commission)
 				if tx.CommissionCoin() == coinToSell && coinToBuy.IsBaseCoin() {
 					swapper = swapper.AddLastSwapStepWithOrders(commission, commissionInBaseCoin, true)
 				}
