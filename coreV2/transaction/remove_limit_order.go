@@ -58,9 +58,6 @@ func (data RemoveLimitOrderData) Run(tx *Transaction, context state.Interface, r
 	if errResp != nil {
 		return *errResp
 	}
-	if isGasCommissionFromPoolSwap {
-		commissionInBaseCoin = commissionPoolSwapper.CalculateBuyForSellWithOrders(commission)
-	}
 
 	if checkState.Accounts().GetBalance(sender, tx.GasCoin).Cmp(commission) < 0 {
 		return Response{
@@ -93,6 +90,7 @@ func (data RemoveLimitOrderData) Run(tx *Transaction, context state.Interface, r
 
 	swapper := checkState.Swap().GetSwapper(order.Coin0, order.Coin1)
 	if isGasCommissionFromPoolSwap && swapper.GetID() == commissionPoolSwapper.GetID() {
+		commissionInBaseCoin = commissionPoolSwapper.CalculateBuyForSellWithOrders(commission)
 		if tx.GasCoin == order.Coin0 && order.Coin1.IsBaseCoin() {
 			swapper = swapper.AddLastSwapStepWithOrders(commission, commissionInBaseCoin, true)
 		}

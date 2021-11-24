@@ -78,9 +78,6 @@ func (data RemoveLiquidityV240) Run(tx *Transaction, context state.Interface, re
 	if errResp != nil {
 		return *errResp
 	}
-	if isGasCommissionFromPoolSwap {
-		commissionInBaseCoin = commissionPoolSwapper.CalculateBuyForSellWithOrders(commission)
-	}
 
 	swapper := checkState.Swap().GetSwapper(data.Coin0, data.Coin1)
 	if !swapper.Exists() {
@@ -92,6 +89,7 @@ func (data RemoveLiquidityV240) Run(tx *Transaction, context state.Interface, re
 	}
 
 	if isGasCommissionFromPoolSwap && swapper.GetID() == commissionPoolSwapper.GetID() {
+		commissionInBaseCoin = commissionPoolSwapper.CalculateBuyForSellWithOrders(commission)
 		if tx.GasCoin == data.Coin0 && data.Coin1.IsBaseCoin() {
 			swapper = swapper.AddLastSwapStepWithOrders(commission, commissionInBaseCoin, true)
 		}
