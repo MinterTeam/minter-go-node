@@ -250,7 +250,7 @@ func (s *Swap) Import(state *types.AppState) {
 		}
 	}
 	s.nextOrderID = uint32(state.NextOrderID)
-	s.dirtyNextID = true
+	s.dirtyNextOrdersID = true
 }
 
 const mainPrefix = byte('s')
