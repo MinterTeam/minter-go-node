@@ -249,7 +249,7 @@ func (s *Swap) Import(state *types.AppState) {
 			s.bus.Checker().AddCoin(pair0.Coin1, v1)
 		}
 	}
-	if uint32(state.NextOrderID) > 1 {
+	if state.NextOrderID > 1 {
 		s.nextOrderID = uint32(state.NextOrderID)
 		s.dirtyNextOrdersID = true
 	}
