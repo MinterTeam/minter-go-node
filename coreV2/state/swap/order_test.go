@@ -4367,21 +4367,15 @@ func TestAPIOrders4(t *testing.T) {
 
 	var wg errgroup.Group
 	for j := 0; j < 500; j++ {
+		swap.PairBuyWithOrders(0, 1, coins.MaxCoinSupply(), big.NewInt(15e17))
 		wg.Go(func() error {
 			t.Log(pair.OrdersSell(3))
 			return nil
 		})
-		wg.Go(func() error {
-			swap.PairBuyWithOrders(0, 1, coins.MaxCoinSupply(), big.NewInt(15e17))
-			return nil
-		})
-		wg.Go(func() error {
-			_, _, err = immutableTree.Commit(swap)
-			if err != nil {
-				t.Fatal(err)
-			}
-			return nil
-		})
+		_, _, err = immutableTree.Commit(swap)
+		if err != nil {
+			t.Fatal(err)
+		}
 		wg.Wait()
 	}
 	t.Log(pair.OrdersSell(3))
@@ -4467,6 +4461,68 @@ func TestAPIOrders3(t *testing.T) {
 			pair.CalculateSellForBuyWithOrders(big.NewInt(15e17))
 			return nil
 		})
+		wg.Go(func() error {
+			swap.PairBuyWithOrders(0, 1, coins.MaxCoinSupply(), big.NewInt(15e17))
+
+			return nil
+		})
+	}
+	wg.Wait()
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(pair.OrdersSell(3))
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(pair.OrdersSell(3))
+}
+func TestAPIOrders0(t *testing.T) {
+	//t.Skip("a")
+	r := rand.New(rand.NewSource(1))
+
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+
+	swap := New(newBus, immutableTree.GetLastImmutable())
+
+	_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(1e18), big.NewInt(1e18))
+	pair := swap.Pair(0, 1)
+
+	for j := 0; j < 1000; j++ {
+		f := r.Int63n(92-1) + 1
+		s := int64(f * 1e17)
+		i := r.Int63n(s-s/2) + s/2
+
+		swap.PairAddOrder(0, 1, big.NewInt(s), big.NewInt(i), types.Address{1}, 1)
+	}
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var wg errgroup.Group
+	for j := 0; j < 500; j++ {
+		//wg.Go(func() error {
+		//	pair.OrdersSell(3)
+		//	return nil
+		//})
+		//wg.Go(func() error {
+		//	pair.CalculateSellForBuyWithOrders(big.NewInt(15e17))
+		//	return nil
+		//})
 		wg.Go(func() error {
 			swap.PairBuyWithOrders(0, 1, coins.MaxCoinSupply(), big.NewInt(15e17))
 
