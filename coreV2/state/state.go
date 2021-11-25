@@ -218,7 +218,7 @@ func (s *State) Commit() ([]byte, error) {
 	return hash, nil
 }
 
-func (s *State) Import(state types.AppState) error {
+func (s *State) Import(state types.AppState, version string) error {
 	defer s.Checker.RemoveBaseCoin()
 
 	s.App.SetMaxGas(state.MaxGas)
@@ -280,7 +280,11 @@ func (s *State) Import(state types.AppState) error {
 		s.Candidates.SetStakes(c.PubKey, c.Stakes, c.Updates)
 	}
 	s.Candidates.SetDeletedCandidates(state.DeletedCandidates)
-	s.Candidates.RecalculateStakesV2(uint64(s.height))
+	if version == "" {
+		s.Candidates.RecalculateStakes(uint64(s.height)) // RecalculateStakesV2
+	} else {
+		s.Candidates.RecalculateStakesV2(uint64(s.height))
+	}
 
 	for _, pubkey := range state.BlockListCandidates {
 		s.Candidates.AddToBlockPubKey(pubkey)
