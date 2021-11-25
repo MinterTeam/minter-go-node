@@ -202,7 +202,7 @@ func (blockchain *Blockchain) InitChain(req abciTypes.RequestInitChain) abciType
 	blockchain.appDB.AddVersion(genesisState.Version, initialHeight)
 	blockchain.initState()
 
-	if err := blockchain.stateDeliver.Import(genesisState); err != nil {
+	if err := blockchain.stateDeliver.Import(genesisState, genesisState.Version); err != nil {
 		panic(err)
 	}
 	if err := blockchain.stateDeliver.Check(); err != nil {

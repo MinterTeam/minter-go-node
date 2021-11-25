@@ -104,7 +104,7 @@ func (s *Swap) ExpireOrders(beforeHeight uint64) {
 		order := &Limit{
 			id:           id,
 			oldSortPrice: new(big.Float).SetPrec(Precision),
-			RWMutex:      new(sync.RWMutex),
+			mu:           new(sync.RWMutex),
 		}
 		err := rlp.DecodeBytes(value, order)
 		if err != nil {
@@ -249,8 +249,10 @@ func (s *Swap) Import(state *types.AppState) {
 			s.bus.Checker().AddCoin(pair0.Coin1, v1)
 		}
 	}
-	s.nextOrderID = uint32(state.NextOrderID)
-	s.dirtyNextID = true
+	if state.NextOrderID > 1 {
+		s.nextOrderID = uint32(state.NextOrderID)
+		s.dirtyNextOrdersID = true
+	}
 }
 
 const mainPrefix = byte('s')
@@ -486,6 +488,7 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 		pair, _ := s.pair(key)
 		pairDataBytes, err := rlp.EncodeToBytes(pair.pairData)
 		if err != nil {
+			panic(err)
 			return err
 		}
 		db.Set(append(basePath, key.pathData()...), pairDataBytes)
@@ -514,13 +517,7 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 
 				if limit.isEmpty() {
 					db.Remove(pathOrderID)
-					/*_, ok :=*/ db.Remove(oldPathOrderList)
-					//if !ok {
-					//	log.Printf("do not remove old path %q, %s, %s. Sell %v", oldPathOrderList, limit.WantBuy, limit.WantSell, !limit.IsBuy)
-					//} else {
-					//	log.Printf("remove old path %q, %s, %s. Sell %v", oldPathOrderList, limit.WantBuy, limit.WantSell, !limit.IsBuy)
-					//}
-
+					db.Remove(oldPathOrderList)
 					continue
 				}
 
@@ -539,21 +536,26 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 
 			pairOrderBytes, err := rlp.EncodeToBytes(limit)
 			if err != nil {
+				panic(err)
 				return err
 			}
 
 			db.Set(pathOrderID, pairOrderBytes)
 		}
 
-		pair.loadedBuyOrders.ids = pair.buyOrders.ids[:]
-		pair.loadedSellOrders.ids = pair.sellOrders.ids[:]
+		lenB := len(pair.buyOrders.ids)
+		pair.loadedBuyOrders.ids = pair.buyOrders.ids[:lenB:lenB]
+		//if lenB > 1 {
+		//	pair.buyOrders.ids = pair.buyOrders.ids[:1:1]
+		//}
+		pair.buyOrders.ids = nil
 
-		if len(pair.buyOrders.ids) > 100 {
-			pair.buyOrders.ids = pair.buyOrders.ids[:100]
-		}
-		if len(pair.sellOrders.ids) > 100 {
-			pair.sellOrders.ids = pair.sellOrders.ids[:100]
-		}
+		lenS := len(pair.sellOrders.ids)
+		pair.loadedSellOrders.ids = pair.sellOrders.ids[:lenS:lenS]
+		//if lenS > 1 {
+		//	pair.sellOrders.ids = pair.sellOrders.ids[:1:1]
+		//}
+		pair.sellOrders.ids = nil
 
 		pair.dirtyOrders.mu.Lock()
 		pair.dirtyOrders.list = make(map[uint32]struct{})
