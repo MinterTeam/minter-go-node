@@ -1560,6 +1560,7 @@ func (p *Pair) orderSellLoadToIndex(index int) *Limit {
 		if p.hasUnsortedSellOrders() || p.hasDeletedSellOrders() {
 			// пересортируем, что бы лист почистился и пересортировался
 			orders, _ = p.updateDirtyOrders(orders, true)
+			//log.Println("a")
 
 			lastI := len(orders) - 1
 
@@ -1567,6 +1568,7 @@ func (p *Pair) orderSellLoadToIndex(index int) *Limit {
 			if lastI >= 0 && orders[lastI] != 0 {
 				// проверяем есть ли среди этого массива, элемент с нужным индексом
 				if index > lastI {
+					//log.Println("b")
 					// загрузим с последнего нужное количество и отсортируем
 					fromOrder = p.order(orders[lastI])
 					loadedNextOrders := p.loadSellOrders(p, fromOrder, index-lastI)
@@ -1575,9 +1577,11 @@ func (p *Pair) orderSellLoadToIndex(index int) *Limit {
 					// проверим загружены ли все
 					lastJ := len(resortedOrders) - 1
 					if resortedOrders[lastJ] != 0 {
+						//log.Println("c")
 						// среди них не может быть использованных иначе бы они были загружены ранее,
 						// но могут быть удаленные удаленных, проверим
 						for ; index > lastJ && lastJ >= 0 && resortedOrders[lastJ] != 0 && p.hasDeletedSellOrders() && unsets > 0; lastJ = len(resortedOrders) - 1 {
+							//log.Println("d")
 							fromOrder = p.order(resortedOrders[lastI])
 							loadedNextOrders := p.loadSellOrders(p, fromOrder, index-lastI+unsets)
 							var resortLoadedNextOrders []uint32
@@ -1608,6 +1612,7 @@ func (p *Pair) orderSellLoadToIndex(index int) *Limit {
 			lastI := len(orders) - 1
 			// если загружены не все и их не достаточно, то подгрузить
 			if orders[lastI] != 0 && index > lastI {
+				//log.Println("e")
 				fromOrder = p.order(orders[lastI])
 				loadedNextOrders := p.loadSellOrders(p, fromOrder, index-lastI)
 				// тк нет грязных, то просто складываем
@@ -1621,6 +1626,7 @@ func (p *Pair) orderSellLoadToIndex(index int) *Limit {
 	} else {
 		num := index
 		for {
+			//log.Println("f")
 			orders = append(orders, p.loadSellOrders(p, fromOrder, num+1)...)
 			num = 0
 			if p.hasUnsortedSellOrders() || p.hasDeletedSellOrders() {
