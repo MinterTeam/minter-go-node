@@ -1413,7 +1413,7 @@ func TestAddOrderSwapPoolData_InsufficientLiquidity_buy(t *testing.T) {
 		response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 
 		if response.Code != code.InsufficientLiquidity {
-			t.Fatalf("Response code %d is not %s. Error: %s", response.Code, code.InsufficientLiquidity, response.Log)
+			t.Fatalf("Response code %d is not %d. Error: %s", response.Code, code.InsufficientLiquidity, response.Log)
 		}
 
 		for _, tag := range response.Tags {
