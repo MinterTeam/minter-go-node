@@ -104,7 +104,7 @@ func (s *Swap) ExpireOrders(beforeHeight uint64) {
 		order := &Limit{
 			id:           id,
 			oldSortPrice: new(big.Float).SetPrec(Precision),
-			RWMutex:      new(sync.RWMutex),
+			mu:           new(sync.RWMutex),
 		}
 		err := rlp.DecodeBytes(value, order)
 		if err != nil {
@@ -499,12 +499,10 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 
 		for _, id := range pair.getDirtyOrdersList() {
 			limit := pair.getOrder(id)
-			//limit.RLock() // todo
 
 			if limit.isEmpty() {
 				pair.orders.mu.Lock()
 				pair.orders.list[limit.id] = nil
-				//log.Println("set nil", limit.id)
 				pair.orders.mu.Unlock()
 			}
 
@@ -518,7 +516,6 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 				if limit.isEmpty() {
 					db.Remove(pathOrderID)
 					db.Remove(oldPathOrderList)
-					//limit.RUnlock() // todo
 					continue
 				}
 
@@ -529,7 +526,6 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 			}
 
 			if limit.isEmpty() {
-				//limit.RUnlock() // todo
 				continue
 			}
 
@@ -543,7 +539,6 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 			}
 
 			db.Set(pathOrderID, pairOrderBytes)
-			//limit.RUnlock() // todo
 		}
 
 		lenB := len(pair.buyOrders.ids)

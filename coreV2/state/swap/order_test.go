@@ -1040,7 +1040,7 @@ func TestAddToList(t *testing.T) {
 			},
 			oldSortPrice: nil,
 			id:           2,
-			RWMutex:      &sync.RWMutex{},
+			mu:           &sync.RWMutex{},
 		},
 		{
 			WantBuy:  helpers.StringToBigInt("1000000000000000000"),
@@ -1054,7 +1054,7 @@ func TestAddToList(t *testing.T) {
 			},
 			oldSortPrice: nil,
 			id:           3,
-			RWMutex:      &sync.RWMutex{},
+			mu:           &sync.RWMutex{},
 		},
 		{
 			WantBuy:  helpers.StringToBigInt("1000000000000000000"),
@@ -1068,7 +1068,7 @@ func TestAddToList(t *testing.T) {
 			},
 			oldSortPrice: nil,
 			id:           4,
-			RWMutex:      &sync.RWMutex{},
+			mu:           &sync.RWMutex{},
 		},
 		{
 			WantBuy:  helpers.StringToBigInt("1000000000000000000"),
@@ -1082,7 +1082,7 @@ func TestAddToList(t *testing.T) {
 			},
 			oldSortPrice: nil,
 			id:           5,
-			RWMutex:      &sync.RWMutex{},
+			mu:           &sync.RWMutex{},
 		},
 		nil,
 	}, &Limit{
@@ -1097,7 +1097,7 @@ func TestAddToList(t *testing.T) {
 		},
 		oldSortPrice: nil,
 		id:           1,
-		RWMutex:      &sync.RWMutex{},
+		mu:           &sync.RWMutex{},
 	}, -1, 0)
 
 	t.Log(inc, pos)
@@ -4437,7 +4437,7 @@ func TestAPIOrders3(t *testing.T) {
 	_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(1e18), big.NewInt(1e18))
 	pair := swap.Pair(0, 1)
 
-	for j := 0; j < 100; j++ {
+	for j := 0; j < 1000; j++ {
 		f := r.Int63n(92-1) + 1
 		s := int64(f * 1e17)
 		i := r.Int63n(s-s/2) + s/2
@@ -4452,7 +4452,7 @@ func TestAPIOrders3(t *testing.T) {
 	}
 
 	var wg errgroup.Group
-	for j := 0; j < 100; j++ {
+	for j := 0; j < 500; j++ {
 		wg.Go(func() error {
 			pair.OrdersSell(3)
 			return nil

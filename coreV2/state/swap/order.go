@@ -281,8 +281,8 @@ func (l *Limit) isEmpty() (empty bool) {
 		return true
 	}
 
-	l.RLock()
-	defer l.RUnlock()
+	l.mu.RLock()
+	defer l.mu.RUnlock()
 
 	if l.WantBuy.Sign() == 0 || l.WantSell.Sign() == 0 {
 		empty = true
@@ -408,7 +408,7 @@ func (p *Pair) calculateBuyForSellWithOrders(amount0In *big.Int) (amountOut *big
 				Height:       limit.Height,
 				oldSortPrice: limit.sortPrice(),
 				id:           limit.id,
-				RWMutex:      new(sync.RWMutex),
+				mu:           new(sync.RWMutex),
 			})
 
 			comB := calcCommission1000(amount1)
@@ -427,7 +427,7 @@ func (p *Pair) calculateBuyForSellWithOrders(amount0In *big.Int) (amountOut *big
 			PairKey:      limit.PairKey,
 			oldSortPrice: limit.sortPrice(),
 			id:           limit.id,
-			RWMutex:      limit.RWMutex,
+			mu:           limit.mu,
 		})
 
 		comS := calcCommission1000(limit.WantBuy)
@@ -634,7 +634,7 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big
 				Height:       limit.Height,
 				oldSortPrice: limit.sortPrice(),
 				id:           limit.id,
-				RWMutex:      new(sync.RWMutex),
+				mu:           new(sync.RWMutex),
 			})
 
 			com := calcCommission1000(amount0)
@@ -655,7 +655,7 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big
 			PairKey:      limit.PairKey,
 			oldSortPrice: limit.sortPrice(),
 			id:           limit.id,
-			RWMutex:      limit.RWMutex,
+			mu:           limit.mu,
 		})
 
 		comB := calcCommission1000(limit.WantSell)
@@ -710,7 +710,7 @@ type Limit struct {
 	oldSortPrice *big.Float
 	id           uint32
 
-	*sync.RWMutex
+	mu *sync.RWMutex
 }
 
 func (l *Limit) ID() uint32 {
@@ -758,8 +758,8 @@ func (l *Limit) Price() *big.Float {
 		return big.NewFloat(0)
 	}
 
-	l.RLock()
-	defer l.RUnlock()
+	l.mu.RLock()
+	defer l.mu.RUnlock()
 
 	return CalcPriceSell(l.WantBuy, l.WantSell)
 }
@@ -769,8 +769,8 @@ func (l *Limit) PriceRat() *big.Rat {
 		return new(big.Rat)
 	}
 
-	l.RLock()
-	defer l.RUnlock()
+	l.mu.RLock()
+	defer l.mu.RUnlock()
 
 	return CalcPriceSellRat(l.WantBuy, l.WantSell)
 }
@@ -889,8 +889,8 @@ func (l *Limit) Reverse() *Limit {
 		return nil
 	}
 
-	l.RLock()
-	defer l.RUnlock()
+	l.mu.RLock()
+	defer l.mu.RUnlock()
 
 	return &Limit{
 		PairKey:      l.PairKey.reverse(),
@@ -901,7 +901,7 @@ func (l *Limit) Reverse() *Limit {
 		Height:       l.Height,
 		oldSortPrice: l.oldSortPrice,
 		id:           l.id,
-		RWMutex:      l.RWMutex,
+		mu:           l.mu,
 	}
 }
 
@@ -922,8 +922,8 @@ func (l *Limit) clone() *Limit {
 		return nil
 	}
 
-	l.RLock()
-	defer l.RUnlock()
+	l.mu.RLock()
+	defer l.mu.RUnlock()
 
 	return &Limit{
 		PairKey:      l.PairKey,
@@ -934,7 +934,7 @@ func (l *Limit) clone() *Limit {
 		Height:       l.Height,
 		oldSortPrice: new(big.Float).SetPrec(Precision).Set(l.oldSortPrice),
 		id:           l.id,
-		RWMutex:      &sync.RWMutex{},
+		mu:           &sync.RWMutex{},
 	}
 }
 
@@ -1170,7 +1170,7 @@ func (p *Pair) AddOrder(wantBuyAmount0, wantSellAmount1 *big.Int, sender types.A
 		id:           p.getLastTotalOrderID(),
 		oldSortPrice: new(big.Float).SetPrec(Precision),
 		Owner:        sender,
-		RWMutex:      new(sync.RWMutex),
+		mu:           new(sync.RWMutex),
 		Height:       block,
 	}
 	sortedOrder := order.sort()
@@ -1195,7 +1195,7 @@ func (p *Pair) addOrderWithID(wantBuyAmount0, wantSellAmount1 *big.Int, sender t
 		oldSortPrice: new(big.Float).SetPrec(Precision),
 		Owner:        sender,
 		Height:       height,
-		RWMutex:      new(sync.RWMutex),
+		mu:           new(sync.RWMutex),
 	}
 	sortedOrder := order.sort()
 
@@ -1334,7 +1334,7 @@ func (s *Swap) loadOrder(id uint32) *Limit {
 	order := &Limit{
 		id:           id,
 		oldSortPrice: new(big.Float).SetPrec(Precision),
-		RWMutex:      new(sync.RWMutex),
+		mu:           new(sync.RWMutex),
 	}
 	err := rlp.DecodeBytes(value, order)
 	if err != nil {
@@ -1852,7 +1852,7 @@ func (p *Pair) AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int, buy boo
 			PairKey:      order.PairKey,
 			oldSortPrice: new(big.Float).SetPrec(Precision).Set(order.oldSortPrice),
 			id:           order.id,
-			RWMutex:      &sync.RWMutex{},
+			mu:           &sync.RWMutex{},
 		})
 	}
 
