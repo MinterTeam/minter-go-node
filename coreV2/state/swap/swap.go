@@ -546,17 +546,19 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 			//limit.RUnlock() // todo
 		}
 
-		pair.loadedBuyOrders.ids = pair.buyOrders.ids[:]
-		pair.loadedSellOrders.ids = pair.sellOrders.ids[:]
+		lenB := len(pair.buyOrders.ids)
+		pair.loadedBuyOrders.ids = pair.buyOrders.ids[:lenB:lenB]
+		//if lenB > 1 {
+		//	pair.buyOrders.ids = pair.buyOrders.ids[:1:1]
+		//}
+		pair.buyOrders.ids = nil
 
-		if len(pair.buyOrders.ids) > 100 {
-			pair.buyOrders.ids = pair.buyOrders.ids[:100]
-		}
-		//pair.buyOrders.ids=nil
-		if len(pair.sellOrders.ids) > 100 {
-			pair.sellOrders.ids = pair.sellOrders.ids[:100]
-		}
-		//pair.sellOrders.ids = nil
+		lenS := len(pair.sellOrders.ids)
+		pair.loadedSellOrders.ids = pair.sellOrders.ids[:lenS:lenS]
+		//if lenS > 1 {
+		//	pair.sellOrders.ids = pair.sellOrders.ids[:1:1]
+		//}
+		pair.sellOrders.ids = nil
 
 		pair.dirtyOrders.mu.Lock()
 		pair.dirtyOrders.list = make(map[uint32]struct{})

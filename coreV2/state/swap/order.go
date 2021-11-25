@@ -1383,16 +1383,16 @@ func (s *Swap) loadSellOrders(pair *Pair, fromOrder *Limit, limit int) []uint32 
 
 	var has bool
 	s.immutableTree().IterateRange(startKey, endKey, false, func(key []byte, value []byte) bool {
-		has = true
-		if k > limit {
-			return true
-		}
-
 		id := math.MaxUint32 - binary.BigEndian.Uint32(key[len(key)-4:])
 
 		l, ok := pair.orders.list[id]
 		if ok && l == nil {
 			return false
+		}
+
+		has = true
+		if k > limit {
+			return true
 		}
 
 		slice = append(slice, id)
@@ -1782,10 +1782,10 @@ func (p *Pair) AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int, buy boo
 			markDirty: func() {},
 		},
 		sellOrders: &limits{
-			ids: p.sellOrders.ids[:],
+			ids: p.sellOrders.ids[:len(p.sellOrders.ids):len(p.sellOrders.ids)],
 		},
 		buyOrders: &limits{
-			ids: p.buyOrders.ids[:],
+			ids: p.buyOrders.ids[:len(p.buyOrders.ids):len(p.buyOrders.ids)],
 		},
 		orders: &orderList{
 			mu:   sync.RWMutex{},
@@ -1807,10 +1807,10 @@ func (p *Pair) AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int, buy boo
 		loadBuyOrders:   p.loadBuyOrders,
 		loadSellOrders:  p.loadSellOrders,
 		loadedSellOrders: &limits{
-			ids: p.loadedSellOrders.ids[:],
+			ids: p.loadedSellOrders.ids[:len(p.loadedSellOrders.ids):len(p.loadedSellOrders.ids)],
 		},
 		loadedBuyOrders: &limits{
-			ids: p.loadedBuyOrders.ids[:],
+			ids: p.loadedBuyOrders.ids[:len(p.loadedBuyOrders.ids):len(p.loadedBuyOrders.ids)],
 		},
 		unsortedDirtyBuyOrders: &orderDirties{
 			mu:   sync.RWMutex{},
