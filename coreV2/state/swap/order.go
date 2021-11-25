@@ -1242,11 +1242,11 @@ func (s *Swap) loadBuyOrders(pair *Pair, fromOrder *Limit, limit int) []uint32 {
 	ids := pair.loadedBuyOrderIDs()
 	if len(ids) != 0 && ids[len(ids)-1] == 0 {
 		loadedAll = true
-		ids = ids[:len(ids)-1]
+		ids = ids[: len(ids)-1 : len(ids)-1]
 	}
 
 	if fromOrder == nil && len(ids) >= limit {
-		return ids[:limit]
+		return ids[:limit:limit]
 	}
 
 	k := 1
@@ -1260,7 +1260,7 @@ func (s *Swap) loadBuyOrders(pair *Pair, fromOrder *Limit, limit int) []uint32 {
 				break
 			}
 
-			return ids[i+1 : i+limit+1]
+			return ids[i+1 : i+limit+1 : i+limit+1]
 		}
 	}
 
@@ -1274,12 +1274,17 @@ func (s *Swap) loadBuyOrders(pair *Pair, fromOrder *Limit, limit int) []uint32 {
 
 	var has bool
 	s.immutableTree().IterateRange(startKey, endKey, true, func(key []byte, _ []byte) bool {
+		id := binary.BigEndian.Uint32(key[len(key)-4:])
+
+		l, ok := pair.orders.list[id]
+		if ok && l == nil {
+			return false
+		}
+
 		has = true
 		if k > limit {
 			return true
 		}
-
-		id := binary.BigEndian.Uint32(key[len(key)-4:])
 
 		slice = append(slice, id)
 		k++
@@ -1351,11 +1356,11 @@ func (s *Swap) loadSellOrders(pair *Pair, fromOrder *Limit, limit int) []uint32 
 	//log.Println("loadedOrderIDSs", ids)
 	if len(ids) != 0 && ids[len(ids)-1] == 0 {
 		loadedAll = true
-		ids = ids[:len(ids)-1]
+		ids = ids[: len(ids)-1 : len(ids)-1]
 	}
 
 	if fromOrder == nil && len(ids) >= limit {
-		return ids[:limit]
+		return ids[:limit:limit]
 	}
 	//log.Println("fromOrder", fromOrder)
 	k := 1
@@ -1369,7 +1374,7 @@ func (s *Swap) loadSellOrders(pair *Pair, fromOrder *Limit, limit int) []uint32 
 				break
 			}
 
-			return ids[i+1 : i+limit+1]
+			return ids[i+1 : i+limit+1 : i+limit+1]
 		}
 	}
 
@@ -1528,12 +1533,12 @@ func addToList(orders []*Limit, dirtyOrder *Limit, cmp int, index int) (list []*
 
 	if index == len(orders) {
 		if hasZero {
-			return append(orders[:len(orders)-1], dirtyOrder, nil), true, index
+			return append(orders[:len(orders)-1:len(orders)-1], dirtyOrder, nil), true, index
 		}
 		return orders, false, -1
 	}
 
-	return append(orders[:index], append([]*Limit{dirtyOrder}, orders[index:]...)...), true, index
+	return append(orders[:index:index], append([]*Limit{dirtyOrder}, orders[index:]...)...), true, index
 }
 
 func (p *Pair) OrderSellByIndex(index int) *Limit {
@@ -1676,7 +1681,7 @@ func (p *Pair) ordersSellToIndex(index int) []*Limit {
 	orderIDs := p.sellOrderIDs()
 	//log.Println("getOrders")
 	if len(orderIDs) > index {
-		return p.getOrders(orderIDs[:index+1])
+		return p.getOrders(orderIDs[: index+1 : index+1])
 	}
 
 	return p.getOrders(orderIDs)
