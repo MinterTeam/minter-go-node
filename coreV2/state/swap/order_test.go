@@ -4460,11 +4460,12 @@ func TestAPIOrders3(t *testing.T) {
 	var wg errgroup.Group
 	for j := 0; j < 100; j++ {
 		wg.Go(func() error {
-			//t.Log(pair.OrdersSell(3))
+			pair.OrdersSell(3)
 			return nil
 		})
 		wg.Go(func() error {
-			swap.PairBuyWithOrders(0, 1, coins.MaxCoinSupply(), big.NewInt(15e17))
+			pair.CalculateSellForBuyWithOrders(big.NewInt(15e17))
+			//swap.PairBuyWithOrders(0, 1, coins.MaxCoinSupply(), big.NewInt(15e17))
 			return nil
 		})
 		wg.Go(func() error {
