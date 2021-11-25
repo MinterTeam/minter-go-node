@@ -156,14 +156,12 @@ func (c *Candidates) SetDeletedCandidates(list []types.DeletedCandidate) {
 	c.muDeletedCandidates.Lock()
 	defer c.muDeletedCandidates.Unlock()
 
-	if len(list) > 0 {
-		c.dirtyDeletedCandidates = true
-		for _, deleted := range list {
-			c.deletedCandidates[deleted.PubKey] = &deletedID{
-				ID:      uint32(deleted.ID),
-				PybKey:  deleted.PubKey,
-				isDirty: true,
-			}
+	c.dirtyDeletedCandidates = true
+	for _, deleted := range list {
+		c.deletedCandidates[deleted.PubKey] = &deletedID{
+			ID:      uint32(deleted.ID),
+			PybKey:  deleted.PubKey,
+			isDirty: true,
 		}
 	}
 }
