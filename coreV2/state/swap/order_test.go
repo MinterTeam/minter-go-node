@@ -4335,7 +4335,7 @@ func BenchmarkSwapPairOrders(b *testing.B) {
 	}
 }
 
-func TestAPIOrders0(t *testing.T) {
+func TestAPIOrders4(t *testing.T) {
 	r := rand.New(rand.NewSource(1))
 
 	memDB := db.NewMemDB()
@@ -4351,9 +4351,9 @@ func TestAPIOrders0(t *testing.T) {
 	_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(1e18), big.NewInt(1e18))
 	pair := swap.Pair(0, 1)
 
-	for j := 0; j < 440; j++ {
+	for j := 0; j < 500; j++ {
 		f := r.Int63n(92-1) + 1
-		s := int64(f * 1e16)
+		s := int64(f * 1e17)
 		i := r.Int63n(s-s/2) + s/2
 
 		swap.PairAddOrder(0, 1, big.NewInt(s), big.NewInt(i), types.Address{1}, 1)
@@ -4366,12 +4366,13 @@ func TestAPIOrders0(t *testing.T) {
 	}
 
 	var wg errgroup.Group
-	for j := 0; j < 100; j++ {
-		//wg.Go(func() error {
-		swap.PairBuyWithOrders(0, 1, coins.MaxCoinSupply(), big.NewInt(15e17))
-		//return nil
-		//})
+	for j := 0; j < 500; j++ {
 		wg.Go(func() error {
+			t.Log(pair.OrdersSell(3))
+			return nil
+		})
+		wg.Go(func() error {
+			swap.PairBuyWithOrders(0, 1, coins.MaxCoinSupply(), big.NewInt(15e17))
 			return nil
 		})
 		wg.Go(func() error {
@@ -4388,10 +4389,11 @@ func TestAPIOrders0(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Log(New(newBus, immutableTree.GetLastImmutable()).Pair(0, 1).OrdersSell(3))
+	t.Log(pair.OrdersSell(3))
 }
-func TestAPIOrders1(t *testing.T) {
-	r := rand.New(rand.NewSource(1))
+
+func TestOrders1(t *testing.T) {
+	t.Skip("see coreV2/transaction/add_order_test.go:TestAddOrderSwapPoolData_InsufficientLiquidity_buy")
 
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
@@ -4403,98 +4405,29 @@ func TestAPIOrders1(t *testing.T) {
 
 	swap := New(newBus, immutableTree.GetLastImmutable())
 
-	_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(1e18), big.NewInt(1e18))
-	pair := swap.Pair(0, 1)
+	_, _, _, _ = swap.PairCreate(0, 1, helpers.StringToBigInt("1654133536271723092"), helpers.StringToBigInt("830205299073239593"))
 
-	for j := 0; j < 441; j++ {
-		f := r.Int63n(92-1) + 1
-		s := int64(f * 1e16)
-		i := r.Int63n(s-s/2) + s/2
-
-		swap.PairAddOrder(0, 1, big.NewInt(s), big.NewInt(i), types.Address{1}, 1)
-	}
-
-	t.Log(pair.OrdersSell(3))
 	_, _, err = immutableTree.Commit(swap)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	var wg errgroup.Group
-	for j := 0; j < 100; j++ {
-		//wg.Go(func() error {
-		swap.PairBuyWithOrders(0, 1, coins.MaxCoinSupply(), big.NewInt(15e17))
-		//return nil
-		//})
-		//wg.Go(func() error {
-		_, _, err = immutableTree.Commit(swap)
-		if err != nil {
-			t.Fatal(err)
-		}
-		//return nil
-		//})
-		wg.Wait()
-	}
-	t.Log(pair.OrdersSell(3))
-	_, _, err = immutableTree.Commit(swap)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(New(newBus, immutableTree.GetLastImmutable()).Pair(0, 1).OrdersSell(3))
-}
-func TestAPIOrders2(t *testing.T) {
-	r := rand.New(rand.NewSource(1))
+	swap.PairAddOrder(0, 1, helpers.StringToBigInt("116883124902985055"), helpers.StringToBigInt("58663334935709421"), types.Address{1}, 1)
 
-	memDB := db.NewMemDB()
-	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
-	if err != nil {
-		t.Fatal(err)
-	}
-	newBus := bus.NewBus()
-	checker.NewChecker(newBus)
-
-	swap := New(newBus, immutableTree.GetLastImmutable())
-
-	_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(1e18), big.NewInt(1e18))
-	pair := swap.Pair(0, 1)
-
-	for j := 0; j < 442; j++ {
-		f := r.Int63n(92-1) + 1
-		s := int64(f * 1e16)
-		i := r.Int63n(s-s/2) + s/2
-
-		swap.PairAddOrder(0, 1, big.NewInt(s), big.NewInt(i), types.Address{1}, 1)
-	}
-
-	t.Log(pair.OrdersSell(3))
 	_, _, err = immutableTree.Commit(swap)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	var wg errgroup.Group
-	for j := 0; j < 100; j++ {
-		//wg.Go(func() error {
-		swap.PairBuyWithOrders(0, 1, coins.MaxCoinSupply(), big.NewInt(15e17))
-		//return nil
-		//})
-		wg.Go(func() error {
-			_, _, err = immutableTree.Commit(swap)
-			if err != nil {
-				t.Fatal(err)
-			}
-			return nil
-		})
-		wg.Wait()
-	}
-	t.Log(pair.OrdersSell(3))
+	swap.PairBuyWithOrders(0, 1, coins.MaxCoinSupply(), big.NewInt(15e17))
+
 	_, _, err = immutableTree.Commit(swap)
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Log(New(newBus, immutableTree.GetLastImmutable()).Pair(0, 1).OrdersSell(3))
 }
 func TestAPIOrders3(t *testing.T) {
+	//t.Skip("a")
 	r := rand.New(rand.NewSource(1))
 
 	memDB := db.NewMemDB()

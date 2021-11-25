@@ -164,18 +164,28 @@ func sortOwners(owners map[types.Address]*big.Int) (result []*OrderDetail) {
 }
 
 func CalcDiffPool(amount0In, amount1Out *big.Int, orders []*Limit) (*big.Int, *big.Int, *big.Int, *big.Int, map[types.Address]*big.Int) {
+	// amount0In = 1001002
+	// amount1Out = 999001
+	// order = 1000000/1000000
+
 	owners := map[types.Address]*big.Int{}
 
 	amount0orders, amount1orders := big.NewInt(0), big.NewInt(0)
 	commission0orders, commission1orders := big.NewInt(0), big.NewInt(0)
 	for _, order := range orders {
+		// 1000000
 		amount0orders.Add(amount0orders, order.WantBuy)
+		// 1000000
 		amount1orders.Add(amount1orders, order.WantSell)
 
-		//cB := calcCommission1000(order.WantBuy)
+		// 1000
+		cB := calcCommission1000(order.WantBuy)
+		// 1000
 		cS := calcCommission1000(order.WantSell)
 
-		//commission0orders.Add(commission0orders, cB)
+		// 1000
+		commission0orders.Add(commission0orders, cB)
+		// 1000
 		commission1orders.Add(commission1orders, cS)
 
 		if owners[order.Owner] == nil {
@@ -184,10 +194,14 @@ func CalcDiffPool(amount0In, amount1Out *big.Int, orders []*Limit) (*big.Int, *b
 		owners[order.Owner].Add(owners[order.Owner], order.WantBuy)
 	}
 
-	//amount0orders.Add(amount0orders, commission0orders)
+	// 1001000
+	amount0orders.Add(amount0orders, commission0orders)
+	// 999000
 	amount1orders.Sub(amount1orders, commission1orders)
 
+	// 1001002 - 1001000 = 2
 	amount0 := big.NewInt(0).Sub(amount0In, amount0orders)
+	// 999001 - 999000 = 1
 	amount1 := big.NewInt(0).Sub(amount1Out, amount1orders)
 
 	return commission0orders, commission1orders, amount0, amount1, owners
@@ -211,7 +225,6 @@ func (p *Pair) BuyWithOrders(amount1Out *big.Int) (amount0In *big.Int, owners ma
 	}
 
 	commission0orders, commission1orders, amount0, amount1, ownersMap := CalcDiffPool(amount0In, amount1Out, orders)
-
 	//log.Println(commission0orders, commission1orders, "uB")
 
 	if amount0.Sign() != 0 || amount1.Sign() != 0 {
@@ -546,7 +559,6 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big
 		if limit == nil {
 			break
 		}
-		//log.Println("ow", limit.id, limit.Owner.String())
 
 		price := limit.Price()
 		if pair.PriceRatCmp(limit.PriceRat()) == 1 {
@@ -662,8 +674,9 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big
 	}
 
 	amount0diff := pair.CalculateSellForBuy(amountOut)
+	//log.Println(pair.Reserves())
+	//log.Println(amount0diff, amountOut)
 	if amount0diff != nil {
-		//fmt.Println(amount0diff, amountOut)
 		if err := pair.CheckSwap(amount0diff, amountOut); err != nil {
 			fmt.Println(amount0diff, amountOut)
 			panic(err) // todo: for test
@@ -1335,6 +1348,7 @@ func (s *Swap) loadSellOrders(pair *Pair, fromOrder *Limit, limit int) []uint32 
 
 	var loadedAll bool
 	ids := pair.loadedSellOrderIDs()
+	//log.Println("loadedOrderIDSs", ids)
 	if len(ids) != 0 && ids[len(ids)-1] == 0 {
 		loadedAll = true
 		ids = ids[:len(ids)-1]
@@ -1343,7 +1357,7 @@ func (s *Swap) loadSellOrders(pair *Pair, fromOrder *Limit, limit int) []uint32 
 	if fromOrder == nil && len(ids) >= limit {
 		return ids[:limit]
 	}
-
+	//log.Println("fromOrder", fromOrder)
 	k := 1
 	var slice []uint32
 	for i, id := range ids {
@@ -1376,6 +1390,11 @@ func (s *Swap) loadSellOrders(pair *Pair, fromOrder *Limit, limit int) []uint32 
 
 		id := math.MaxUint32 - binary.BigEndian.Uint32(key[len(key)-4:])
 
+		l, ok := pair.orders.list[id]
+		if ok && l == nil {
+			return false
+		}
+
 		slice = append(slice, id)
 		k++
 		return false
@@ -1386,6 +1405,7 @@ func (s *Swap) loadSellOrders(pair *Pair, fromOrder *Limit, limit int) []uint32 
 	}
 
 	pair.setLoadedSellOrders(append(ids, slice...))
+	//log.Println("setLoadedOrderIDSslice", slice)
 	return slice
 }
 
@@ -1531,6 +1551,7 @@ func (p *Pair) orderSellLoadToIndex(index int) *Limit {
 	defer p.deletedSellOrderIDs().mu.Unlock()
 
 	orders := p.sellOrderIDs()
+
 	//log.Println("orders start", orders)
 	var fromOrder *Limit
 	// если массив не пустой, то пересортировать, если есть грязные!
@@ -1620,7 +1641,6 @@ func (p *Pair) orderSellLoadToIndex(index int) *Limit {
 	}
 	//log.Println("orders end", orders)
 	p.setSellOrders(orders)
-
 	i := len(orders) - 1
 	if i >= 0 && orders[i] == 0 {
 		i--
@@ -1648,6 +1668,7 @@ func (p *Pair) ordersSellToIndex(index int) []*Limit {
 	p.orderSellLoadToIndex(index)
 
 	orderIDs := p.sellOrderIDs()
+	//log.Println("getOrders")
 	if len(orderIDs) > index {
 		return p.getOrders(orderIDs[:index+1])
 	}

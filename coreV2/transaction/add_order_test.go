@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"github.com/MinterTeam/minter-go-node/coreV2/events"
+	"github.com/MinterTeam/minter-go-node/coreV2/state/coins"
 	"math/big"
 	"sync"
 	"testing"
@@ -1247,6 +1248,172 @@ func TestAddOrderSwapPoolData_ExpireLittleOrder_buy(t *testing.T) {
 
 		if response.Code != 0 {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
+		}
+
+		for _, tag := range response.Tags {
+			if string(tag.Key) != "tx.pools" {
+				continue
+			}
+			t.Log(tag.String())
+		}
+
+		if err := checkState(cState); err != nil {
+			t.Error(err)
+		}
+	}
+
+	for _, event := range e.LoadEvents(0) {
+		t.Logf("%#v", event.(*events.OrderExpiredEvent))
+	}
+}
+func TestAddOrderSwapPoolData_InsufficientLiquidity_buy(t *testing.T) {
+	// t.SkipNow()
+	t.Parallel()
+	e := &events.MockEvents{}
+	cState := getState(e)
+
+	coin0 := createNonReserveCoin(cState)
+	coin1 := createNonReserveCoin(cState)
+
+	privateKey, _ := crypto.GenerateKey()
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+
+	cState.Accounts.AddBalance(addr, types.BasecoinID, helpers.BipToPip(big.NewInt(1000000)))
+
+	cState.Accounts.SubBalance(types.Address{}, coin0, helpers.BipToPip(big.NewInt(100000)))
+	cState.Accounts.AddBalance(addr, coin0, helpers.BipToPip(big.NewInt(100000)))
+	cState.Accounts.SubBalance(types.Address{}, coin1, helpers.BipToPip(big.NewInt(100000)))
+	cState.Accounts.AddBalance(addr, coin1, helpers.BipToPip(big.NewInt(100000)))
+
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
+
+	{
+		data := CreateSwapPoolData{
+			Coin0:   coin0,
+			Volume0: helpers.StringToBigInt("1650430261925377833"),
+			Coin1:   coin1,
+			Volume1: helpers.StringToBigInt("831046393127060170"),
+		}
+
+		encodedData, err := rlp.EncodeToBytes(data)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		tx := Transaction{
+			Nonce:         1,
+			GasPrice:      1,
+			ChainID:       types.CurrentChainID,
+			GasCoin:       types.GetBaseCoinID(),
+			Type:          TypeCreateSwapPool,
+			Data:          encodedData,
+			SignatureType: SigTypeSingle,
+		}
+
+		if err := tx.Sign(privateKey); err != nil {
+			t.Fatal(err)
+		}
+
+		encodedTx, err := rlp.EncodeToBytes(tx)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+
+		if response.Code != 0 {
+			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
+		}
+
+		if err := checkState(cState); err != nil {
+			t.Error(err)
+		}
+	}
+	{
+		data := AddLimitOrderData{
+			CoinToSell:  coin1,
+			ValueToSell: helpers.StringToBigInt("381545748998466867"),
+			CoinToBuy:   coin0,
+			ValueToBuy:  helpers.StringToBigInt("760000000000000000"),
+		}
+
+		encodedData, err := rlp.EncodeToBytes(data)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		tx := Transaction{
+			Nonce:         2,
+			GasPrice:      1,
+			ChainID:       types.CurrentChainID,
+			GasCoin:       types.GetBaseCoinID(),
+			Type:          TypeAddLimitOrder,
+			Data:          encodedData,
+			SignatureType: SigTypeSingle,
+		}
+
+		if err := tx.Sign(privateKey); err != nil {
+			t.Fatal(err)
+		}
+
+		encodedTx, err := rlp.EncodeToBytes(tx)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+
+		if response.Code != code.OK {
+			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
+		}
+
+		if err := checkState(cState); err != nil {
+			t.Error(err)
+		}
+	}
+
+	{
+		data := BuySwapPoolDataV260{
+			Coins:              []types.CoinID{coin0, coin1},
+			MaximumValueToSell: coins.MaxCoinSupply(),
+			ValueToBuy:         big.NewInt(15e17),
+		}
+		encodedData, err := rlp.EncodeToBytes(data)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		tx := Transaction{
+			Nonce:         3,
+			GasPrice:      1,
+			ChainID:       types.CurrentChainID,
+			GasCoin:       types.GetBaseCoinID(),
+			Type:          TypeBuySwapPool,
+			Data:          encodedData,
+			SignatureType: SigTypeSingle,
+		}
+
+		if err := tx.Sign(privateKey); err != nil {
+			t.Fatal(err)
+		}
+
+		encodedTx, err := rlp.EncodeToBytes(tx)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+
+		if response.Code != code.InsufficientLiquidity {
+			t.Fatalf("Response code %d is not %s. Error: %s", response.Code, code.InsufficientLiquidity, response.Log)
 		}
 
 		for _, tag := range response.Tags {

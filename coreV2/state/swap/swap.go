@@ -486,6 +486,7 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 		pair, _ := s.pair(key)
 		pairDataBytes, err := rlp.EncodeToBytes(pair.pairData)
 		if err != nil {
+			panic(err)
 			return err
 		}
 		db.Set(append(basePath, key.pathData()...), pairDataBytes)
@@ -498,10 +499,12 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 
 		for _, id := range pair.getDirtyOrdersList() {
 			limit := pair.getOrder(id)
+			//limit.RLock() // todo
 
 			if limit.isEmpty() {
 				pair.orders.mu.Lock()
 				pair.orders.list[limit.id] = nil
+				//log.Println("set nil", limit.id)
 				pair.orders.mu.Unlock()
 			}
 
@@ -514,13 +517,8 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 
 				if limit.isEmpty() {
 					db.Remove(pathOrderID)
-					/*_, ok :=*/ db.Remove(oldPathOrderList)
-					//if !ok {
-					//	log.Printf("do not remove old path %q, %s, %s. Sell %v", oldPathOrderList, limit.WantBuy, limit.WantSell, !limit.IsBuy)
-					//} else {
-					//	log.Printf("remove old path %q, %s, %s. Sell %v", oldPathOrderList, limit.WantBuy, limit.WantSell, !limit.IsBuy)
-					//}
-
+					db.Remove(oldPathOrderList)
+					//limit.RUnlock() // todo
 					continue
 				}
 
@@ -531,6 +529,7 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 			}
 
 			if limit.isEmpty() {
+				//limit.RUnlock() // todo
 				continue
 			}
 
@@ -539,10 +538,12 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 
 			pairOrderBytes, err := rlp.EncodeToBytes(limit)
 			if err != nil {
+				panic(err)
 				return err
 			}
 
 			db.Set(pathOrderID, pairOrderBytes)
+			//limit.RUnlock() // todo
 		}
 
 		pair.loadedBuyOrders.ids = pair.buyOrders.ids[:]
@@ -551,9 +552,11 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 		if len(pair.buyOrders.ids) > 100 {
 			pair.buyOrders.ids = pair.buyOrders.ids[:100]
 		}
+		//pair.buyOrders.ids=nil
 		if len(pair.sellOrders.ids) > 100 {
 			pair.sellOrders.ids = pair.sellOrders.ids[:100]
 		}
+		//pair.sellOrders.ids = nil
 
 		pair.dirtyOrders.mu.Lock()
 		pair.dirtyOrders.list = make(map[uint32]struct{})
