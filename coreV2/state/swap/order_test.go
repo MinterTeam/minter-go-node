@@ -5,6 +5,8 @@ import (
 	"fmt"
 	eventsdb "github.com/MinterTeam/minter-go-node/coreV2/events"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/accounts"
+	"github.com/MinterTeam/minter-go-node/coreV2/state/coins"
+	"golang.org/x/sync/errgroup"
 	"math"
 	"math/big"
 	"math/rand"
@@ -4331,4 +4333,220 @@ func BenchmarkSwapPairOrders(b *testing.B) {
 	for _, size := range []int{100, 500, 2000, 4000, 6000, 8000, 10000, 20000} {
 		benchmarkSwapPairOrders(b, size)
 	}
+}
+
+func TestAPIOrders0(t *testing.T) {
+	r := rand.New(rand.NewSource(1))
+
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+
+	swap := New(newBus, immutableTree.GetLastImmutable())
+
+	_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(1e18), big.NewInt(1e18))
+	pair := swap.Pair(0, 1)
+
+	for j := 0; j < 440; j++ {
+		f := r.Int63n(92-1) + 1
+		s := int64(f * 1e16)
+		i := r.Int63n(s-s/2) + s/2
+
+		swap.PairAddOrder(0, 1, big.NewInt(s), big.NewInt(i), types.Address{1}, 1)
+	}
+
+	t.Log(pair.OrdersSell(3))
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var wg errgroup.Group
+	for j := 0; j < 100; j++ {
+		//wg.Go(func() error {
+		swap.PairBuyWithOrders(0, 1, coins.MaxCoinSupply(), big.NewInt(15e17))
+		//return nil
+		//})
+		wg.Go(func() error {
+			return nil
+		})
+		wg.Go(func() error {
+			_, _, err = immutableTree.Commit(swap)
+			if err != nil {
+				t.Fatal(err)
+			}
+			return nil
+		})
+		wg.Wait()
+	}
+	t.Log(pair.OrdersSell(3))
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(New(newBus, immutableTree.GetLastImmutable()).Pair(0, 1).OrdersSell(3))
+}
+func TestAPIOrders1(t *testing.T) {
+	r := rand.New(rand.NewSource(1))
+
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+
+	swap := New(newBus, immutableTree.GetLastImmutable())
+
+	_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(1e18), big.NewInt(1e18))
+	pair := swap.Pair(0, 1)
+
+	for j := 0; j < 441; j++ {
+		f := r.Int63n(92-1) + 1
+		s := int64(f * 1e16)
+		i := r.Int63n(s-s/2) + s/2
+
+		swap.PairAddOrder(0, 1, big.NewInt(s), big.NewInt(i), types.Address{1}, 1)
+	}
+
+	t.Log(pair.OrdersSell(3))
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var wg errgroup.Group
+	for j := 0; j < 100; j++ {
+		//wg.Go(func() error {
+		swap.PairBuyWithOrders(0, 1, coins.MaxCoinSupply(), big.NewInt(15e17))
+		//return nil
+		//})
+		//wg.Go(func() error {
+		_, _, err = immutableTree.Commit(swap)
+		if err != nil {
+			t.Fatal(err)
+		}
+		//return nil
+		//})
+		wg.Wait()
+	}
+	t.Log(pair.OrdersSell(3))
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(New(newBus, immutableTree.GetLastImmutable()).Pair(0, 1).OrdersSell(3))
+}
+func TestAPIOrders2(t *testing.T) {
+	r := rand.New(rand.NewSource(1))
+
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+
+	swap := New(newBus, immutableTree.GetLastImmutable())
+
+	_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(1e18), big.NewInt(1e18))
+	pair := swap.Pair(0, 1)
+
+	for j := 0; j < 442; j++ {
+		f := r.Int63n(92-1) + 1
+		s := int64(f * 1e16)
+		i := r.Int63n(s-s/2) + s/2
+
+		swap.PairAddOrder(0, 1, big.NewInt(s), big.NewInt(i), types.Address{1}, 1)
+	}
+
+	t.Log(pair.OrdersSell(3))
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var wg errgroup.Group
+	for j := 0; j < 100; j++ {
+		//wg.Go(func() error {
+		swap.PairBuyWithOrders(0, 1, coins.MaxCoinSupply(), big.NewInt(15e17))
+		//return nil
+		//})
+		wg.Go(func() error {
+			_, _, err = immutableTree.Commit(swap)
+			if err != nil {
+				t.Fatal(err)
+			}
+			return nil
+		})
+		wg.Wait()
+	}
+	t.Log(pair.OrdersSell(3))
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(New(newBus, immutableTree.GetLastImmutable()).Pair(0, 1).OrdersSell(3))
+}
+func TestAPIOrders3(t *testing.T) {
+	r := rand.New(rand.NewSource(1))
+
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+
+	swap := New(newBus, immutableTree.GetLastImmutable())
+
+	_, _, _, _ = swap.PairCreate(0, 1, big.NewInt(1e18), big.NewInt(1e18))
+	pair := swap.Pair(0, 1)
+
+	for j := 0; j < 100; j++ {
+		f := r.Int63n(92-1) + 1
+		s := int64(f * 1e17)
+		i := r.Int63n(s-s/2) + s/2
+
+		swap.PairAddOrder(0, 1, big.NewInt(s), big.NewInt(i), types.Address{1}, 1)
+	}
+
+	t.Log(pair.OrdersSell(3))
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var wg errgroup.Group
+	for j := 0; j < 100; j++ {
+		wg.Go(func() error {
+			//t.Log(pair.OrdersSell(3))
+			return nil
+		})
+		wg.Go(func() error {
+			swap.PairBuyWithOrders(0, 1, coins.MaxCoinSupply(), big.NewInt(15e17))
+			return nil
+		})
+		wg.Go(func() error {
+			_, _, err = immutableTree.Commit(swap)
+			if err != nil {
+				t.Fatal(err)
+			}
+			return nil
+		})
+	}
+	wg.Wait()
+	t.Log(pair.OrdersSell(3))
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(pair.OrdersSell(3))
 }
