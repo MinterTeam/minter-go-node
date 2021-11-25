@@ -4367,11 +4367,11 @@ func TestAPIOrders4(t *testing.T) {
 
 	var wg errgroup.Group
 	for j := 0; j < 500; j++ {
-		swap.PairBuyWithOrders(0, 1, coins.MaxCoinSupply(), big.NewInt(15e17))
 		wg.Go(func() error {
 			t.Log(pair.OrdersSell(3))
 			return nil
 		})
+		swap.PairBuyWithOrders(0, 1, coins.MaxCoinSupply(), big.NewInt(15e17))
 		_, _, err = immutableTree.Commit(swap)
 		if err != nil {
 			t.Fatal(err)
@@ -4515,14 +4515,14 @@ func TestAPIOrders0(t *testing.T) {
 
 	var wg errgroup.Group
 	for j := 0; j < 500; j++ {
-		//wg.Go(func() error {
-		//	pair.OrdersSell(3)
-		//	return nil
-		//})
-		//wg.Go(func() error {
-		//	pair.CalculateSellForBuyWithOrders(big.NewInt(15e17))
-		//	return nil
-		//})
+		wg.Go(func() error {
+			pair.OrdersSell(3)
+			return nil
+		})
+		wg.Go(func() error {
+			pair.CalculateSellForBuyWithOrders(big.NewInt(15e17))
+			return nil
+		})
 		wg.Go(func() error {
 			swap.PairBuyWithOrders(0, 1, coins.MaxCoinSupply(), big.NewInt(15e17))
 
