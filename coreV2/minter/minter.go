@@ -86,7 +86,12 @@ func (blockchain *Blockchain) calculatePowers(vals []*validators2.Validator) {
 
 func (blockchain *Blockchain) updateValidators() []abciTypes.ValidatorUpdate {
 	height := blockchain.Height()
-	blockchain.stateDeliver.Candidates.RecalculateStakes(height)
+
+	if h := blockchain.appDB.GetVersionHeight(v260); h > 0 && height > h {
+		blockchain.stateDeliver.Candidates.RecalculateStakesV2(height)
+	} else {
+		blockchain.stateDeliver.Candidates.RecalculateStakes(height)
+	}
 
 	valsCount := validators.GetValidatorsCountForBlock(height)
 	newCandidates := blockchain.stateDeliver.Candidates.GetNewCandidates(valsCount)

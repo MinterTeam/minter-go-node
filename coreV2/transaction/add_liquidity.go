@@ -12,22 +12,22 @@ import (
 	abcTypes "github.com/tendermint/tendermint/abci/types"
 )
 
-type AddLiquidityData struct {
+type AddLiquidityDataV1 struct {
 	Coin0          types.CoinID
 	Coin1          types.CoinID
 	Volume0        *big.Int
 	MaximumVolume1 *big.Int
 }
 
-func (data AddLiquidityData) Gas() int64 {
+func (data AddLiquidityDataV1) Gas() int64 {
 	return gasAddLiquidity
 }
 
-func (data AddLiquidityData) TxType() TxType {
+func (data AddLiquidityDataV1) TxType() TxType {
 	return TypeAddLiquidity
 }
 
-func (data AddLiquidityData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data AddLiquidityDataV1) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	if data.Coin1 == data.Coin0 {
 		return &Response{
 			Code: code.CrossConvert,
@@ -48,36 +48,18 @@ func (data AddLiquidityData) basicCheck(tx *Transaction, context *state.CheckSta
 		}
 	}
 
-	coin0 := context.Coins().GetCoin(data.Coin0)
-	if coin0 == nil {
-		return &Response{
-			Code: code.CoinNotExists,
-			Log:  "Coin not exists",
-			Info: EncodeError(code.NewCoinNotExists("", data.Coin0.String())),
-		}
-	}
-
-	coin1 := context.Coins().GetCoin(data.Coin1)
-	if coin1 == nil {
-		return &Response{
-			Code: code.CoinNotExists,
-			Log:  "Coin not exists",
-			Info: EncodeError(code.NewCoinNotExists("", data.Coin1.String())),
-		}
-	}
-
 	return nil
 }
 
-func (data AddLiquidityData) String() string {
+func (data AddLiquidityDataV1) String() string {
 	return fmt.Sprintf("ADD SWAP POOL")
 }
 
-func (data AddLiquidityData) CommissionData(price *commission.Price) *big.Int {
+func (data AddLiquidityDataV1) CommissionData(price *commission.Price) *big.Int {
 	return price.AddLiquidity
 }
 
-func (data AddLiquidityData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
+func (data AddLiquidityDataV1) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -115,7 +97,7 @@ func (data AddLiquidityData) Run(tx *Transaction, context state.Interface, rewar
 	if neededAmount1.Cmp(data.MaximumVolume1) == 1 {
 		return Response{
 			Code: code.InsufficientInputAmount,
-			Log:  fmt.Sprintf("You wanted to add %s %s, but currently you need to add %s %s to complete tx", data.Volume0, checkState.Coins().GetCoin(data.Coin0).GetFullSymbol(), neededAmount1, checkState.Coins().GetCoin(data.Coin1).GetFullSymbol()),
+			Log:  fmt.Sprintf("You wanted to add maximum %s %s, but currently you need to add %s %s to complete tx", data.MaximumVolume1, checkState.Coins().GetCoin(data.Coin1).GetFullSymbol(), neededAmount1, checkState.Coins().GetCoin(data.Coin1).GetFullSymbol()),
 			Info: EncodeError(code.NewInsufficientInputAmount(data.Coin0.String(), data.Volume0.String(), data.Coin1.String(), data.MaximumVolume1.String(), neededAmount1.String())),
 		}
 	}
@@ -132,7 +114,7 @@ func (data AddLiquidityData) Run(tx *Transaction, context state.Interface, rewar
 		} else if err == swap.ErrorInsufficientInputAmount {
 			return Response{
 				Code: code.InsufficientInputAmount,
-				Log:  fmt.Sprintf("You wanted to add %s %s, but currently you need to add %s %s to complete tx", data.Volume0, checkState.Coins().GetCoin(data.Coin0).GetFullSymbol(), neededAmount1, checkState.Coins().GetCoin(data.Coin1).GetFullSymbol()),
+				Log:  fmt.Sprintf("You wanted to add maximum %s %s, but currently you need to add %s %s to complete tx", data.MaximumVolume1, checkState.Coins().GetCoin(data.Coin1).GetFullSymbol(), neededAmount1, checkState.Coins().GetCoin(data.Coin1).GetFullSymbol()),
 				Info: EncodeError(code.NewInsufficientInputAmount(data.Coin0.String(), data.Volume0.String(), data.Coin1.String(), data.MaximumVolume1.String(), neededAmount1.String())),
 			}
 		}
@@ -180,8 +162,8 @@ func (data AddLiquidityData) Run(tx *Transaction, context state.Interface, rewar
 		if isGasCommissionFromPoolSwap {
 			commission, commissionInBaseCoin, _ = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
 		} else if !tx.GasCoin.IsBaseCoin() {
-			deliverState.Coins.SubVolume(tx.GasCoin, commission)
-			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
+			deliverState.Coins.SubVolume(tx.CommissionCoin(), commission)
+			deliverState.Coins.SubReserve(tx.CommissionCoin(), commissionInBaseCoin)
 		}
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)

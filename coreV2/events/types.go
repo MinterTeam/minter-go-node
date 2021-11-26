@@ -16,6 +16,8 @@ const (
 	TypeStakeKickEvent         = "minter/StakeKickEvent"
 	TypeUpdateNetworkEvent     = "minter/UpdateNetworkEvent"
 	TypeUpdateCommissionsEvent = "minter/UpdateCommissionsEvent"
+	TypeOrderExpiredEvent      = "minter/OrderExpiredEvent"
+	TypeRemoveCandidateEvent   = "minter/RemoveCandidateEvent"
 )
 
 type Stake interface {
@@ -86,6 +88,7 @@ type reward struct {
 	AddressID uint32
 	Amount    []byte
 	PubKeyID  uint16
+	ForCoin   uint32
 }
 
 func (r *reward) compile(pubKey *types.Pubkey, address [20]byte) Event {
@@ -94,6 +97,7 @@ func (r *reward) compile(pubKey *types.Pubkey, address [20]byte) Event {
 	event.Address = address
 	event.Role = r.Role.String()
 	event.Amount = big.NewInt(0).SetBytes(r.Amount).String()
+	event.ForCoin = uint64(r.ForCoin)
 	return event
 }
 
@@ -110,6 +114,7 @@ type RewardEvent struct {
 	Address         types.Address `json:"address"`
 	Amount          string        `json:"amount"`
 	ValidatorPubKey types.Pubkey  `json:"validator_pub_key"`
+	ForCoin         uint64        `json:"for_coin"`
 }
 
 func (re *RewardEvent) Type() string {
@@ -139,6 +144,7 @@ func (re *RewardEvent) convert(pubKeyID uint16, addressID uint32) compact {
 	bi, _ := big.NewInt(0).SetString(re.Amount, 10)
 	result.Amount = bi.Bytes()
 	result.PubKeyID = pubKeyID
+	result.ForCoin = uint32(re.ForCoin)
 	return result
 }
 
@@ -217,6 +223,55 @@ func (s *jail) compile(pubKey types.Pubkey) Event {
 
 func (s *jail) pubKeyID() uint16 {
 	return s.PubKeyID
+}
+
+type orderExpired struct {
+	AddressID uint32
+	Amount    []byte
+	Coin      uint32
+	ID        uint32
+}
+
+func (e *orderExpired) addressID() uint32 {
+	return e.AddressID
+}
+
+func (e *orderExpired) compile(address [20]byte) Event {
+	event := new(OrderExpiredEvent)
+	event.ID = uint64(e.ID)
+	event.Address = address
+	event.Coin = uint64(e.Coin)
+	event.Amount = big.NewInt(0).SetBytes(e.Amount).String()
+	return event
+}
+
+type OrderExpiredEvent struct {
+	ID      uint64        `json:"id"`
+	Address types.Address `json:"address"`
+	Coin    uint64        `json:"coin"`
+	Amount  string        `json:"amount"`
+}
+
+func (oe *OrderExpiredEvent) AddressString() string {
+	return oe.Address.String()
+}
+
+func (oe *OrderExpiredEvent) address() types.Address {
+	return oe.Address
+}
+
+func (oe *OrderExpiredEvent) Type() string {
+	return TypeOrderExpiredEvent
+}
+
+func (oe *OrderExpiredEvent) convert(addressID uint32) compact {
+	result := new(orderExpired)
+	result.ID = uint32(oe.ID)
+	result.Coin = uint32(oe.Coin)
+	result.AddressID = addressID
+	bi, _ := big.NewInt(0).SetString(oe.Amount, 10)
+	result.Amount = bi.Bytes()
+	return result
 }
 
 type JailEvent struct {
@@ -427,4 +482,40 @@ type UpdateNetworkEvent struct {
 
 func (un *UpdateNetworkEvent) Type() string {
 	return TypeUpdateNetworkEvent
+}
+
+type removeCandidate struct {
+	PubKeyID uint16
+}
+
+func (u *removeCandidate) compile(pubKey types.Pubkey) Event {
+	event := new(RemoveCandidateEvent)
+	event.CandidatePubKey = pubKey
+	return event
+}
+
+func (u *removeCandidate) pubKeyID() uint16 {
+	return u.PubKeyID
+}
+
+type RemoveCandidateEvent struct {
+	CandidatePubKey types.Pubkey `json:"candidate_pub_key"`
+}
+
+func (ue *RemoveCandidateEvent) Type() string {
+	return TypeRemoveCandidateEvent
+}
+
+func (ue *RemoveCandidateEvent) CandidatePubKeyString() string {
+	return ue.CandidatePubKey.String()
+}
+
+func (ue *RemoveCandidateEvent) candidatePubKey() types.Pubkey {
+	return ue.CandidatePubKey
+}
+
+func (ue *RemoveCandidateEvent) convert(pubKeyID uint16) compact {
+	result := new(removeCandidate)
+	result.PubKeyID = pubKeyID
+	return result
 }

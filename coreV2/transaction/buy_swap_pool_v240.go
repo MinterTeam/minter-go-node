@@ -127,7 +127,7 @@ func (data BuySwapPoolDataV240) Run(tx *Transaction, context state.Interface, re
 			}
 
 			coinToSellModel := checkState.Coins().GetCoin(coinToSell)
-			errResp = CheckSwap(swapper, coinToSellModel, coinToBuyModel, valueToSell, valueToBuy, true)
+			errResp = CheckSwapV230(swapper, coinToSellModel, coinToBuyModel, valueToSell, valueToBuy, true)
 			if errResp != nil {
 				return *errResp
 			}
@@ -135,7 +135,7 @@ func (data BuySwapPoolDataV240) Run(tx *Transaction, context state.Interface, re
 			valueToBuyCalc := swapper.CalculateSellForBuy(valueToBuy)
 			if valueToBuyCalc == nil {
 				reserve0, reserve1 := swapper.Reserves()
-				return Response{ // todo
+				return Response{
 					Code: code.SwapPoolUnknown,
 					Log:  fmt.Sprintf("swap pool has reserves %s %s and %d %s, you wanted buy %s %s", reserve0, coinToSellModel.GetFullSymbol(), reserve1, coinToBuyModel.GetFullSymbol(), valueToBuy, coinToSellModel.GetFullSymbol()),
 					Info: EncodeError(code.NewInsufficientLiquidity(coinToSellModel.ID().String(), "", coinToBuyModel.ID().String(), valueToBuy.String(), reserve0.String(), reserve1.String())),
@@ -174,8 +174,8 @@ func (data BuySwapPoolDataV240) Run(tx *Transaction, context state.Interface, re
 		if isGasCommissionFromPoolSwap {
 			commission, commissionInBaseCoin, _ = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
 		} else if !tx.GasCoin.IsBaseCoin() {
-			deliverState.Coins.SubVolume(tx.GasCoin, commission)
-			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
+			deliverState.Coins.SubVolume(tx.CommissionCoin(), commission)
+			deliverState.Coins.SubReserve(tx.CommissionCoin(), commissionInBaseCoin)
 		}
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)

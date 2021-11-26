@@ -18,20 +18,6 @@ type BuySwapPoolDataV230 struct {
 	MaximumValueToSell *big.Int
 }
 
-func reverseCoinIds(a []types.CoinID) {
-	for i := len(a)/2 - 1; i >= 0; i-- {
-		opp := len(a) - 1 - i
-		a[i], a[opp] = a[opp], a[i]
-	}
-}
-
-func reversePools(a []*tagPoolChange) {
-	for i := len(a)/2 - 1; i >= 0; i-- {
-		opp := len(a) - 1 - i
-		a[i], a[opp] = a[opp], a[i]
-	}
-}
-
 func (data BuySwapPoolDataV230) Gas() int64 {
 	return gasBuySwapPool + int64(len(data.Coins)-2)*convertDelta
 }
@@ -127,7 +113,6 @@ func (data BuySwapPoolDataV230) Run(tx *Transaction, context state.Interface, re
 				}
 			}
 			checkDuplicatePools[swapper.GetID()] = struct{}{}
-
 			if isGasCommissionFromPoolSwap {
 				if tx.GasCoin == coinToSell && coinToBuy.IsBaseCoin() {
 					swapper = swapper.AddLastSwapStep(commission, commissionInBaseCoin)
@@ -142,7 +127,7 @@ func (data BuySwapPoolDataV230) Run(tx *Transaction, context state.Interface, re
 			}
 
 			coinToSellModel := checkState.Coins().GetCoin(coinToSell)
-			errResp = CheckSwap(swapper, coinToSellModel, coinToBuyModel, valueToSell, valueToBuy, true)
+			errResp = CheckSwapV230(swapper, coinToSellModel, coinToBuyModel, valueToSell, valueToBuy, true)
 			if errResp != nil {
 				return *errResp
 			}
@@ -150,7 +135,7 @@ func (data BuySwapPoolDataV230) Run(tx *Transaction, context state.Interface, re
 			valueToBuyCalc := swapper.CalculateSellForBuy(valueToBuy)
 			if valueToBuyCalc == nil {
 				reserve0, reserve1 := swapper.Reserves()
-				return Response{ // todo
+				return Response{
 					Code: code.SwapPoolUnknown,
 					Log:  fmt.Sprintf("swap pool has reserves %s %s and %d %s, you wanted buy %s %s", reserve0, coinToSellModel.GetFullSymbol(), reserve1, coinToBuyModel.GetFullSymbol(), valueToBuy, coinToSellModel.GetFullSymbol()),
 					Info: EncodeError(code.NewInsufficientLiquidity(coinToSellModel.ID().String(), valueToBuyCalc.String(), coinToBuyModel.ID().String(), valueToBuy.String(), reserve0.String(), reserve1.String())),
@@ -187,10 +172,10 @@ func (data BuySwapPoolDataV230) Run(tx *Transaction, context state.Interface, re
 	var tags []abcTypes.EventAttribute
 	if deliverState, ok := context.(*state.State); ok {
 		if isGasCommissionFromPoolSwap {
-			commission, commissionInBaseCoin, _ = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
+			commission, commissionInBaseCoin, _, _, _ = deliverState.Swap.PairSellWithOrders(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
 		} else if !tx.GasCoin.IsBaseCoin() {
-			deliverState.Coins.SubVolume(tx.GasCoin, commission)
-			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
+			deliverState.Coins.SubVolume(tx.CommissionCoin(), commission)
+			deliverState.Coins.SubReserve(tx.CommissionCoin(), commissionInBaseCoin)
 		}
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
@@ -245,7 +230,7 @@ func (data BuySwapPoolDataV230) Run(tx *Transaction, context state.Interface, re
 	}
 }
 
-func CheckSwap(rSwap swap.EditableChecker, coinIn CalculateCoin, coinOut CalculateCoin, valueIn *big.Int, valueOut *big.Int, isBuy bool) *Response {
+func CheckSwapV230(rSwap swap.EditableChecker, coinIn CalculateCoin, coinOut CalculateCoin, valueIn *big.Int, valueOut *big.Int, isBuy bool) *Response {
 	if isBuy {
 		calculatedAmountToSell := rSwap.CalculateSellForBuy(valueOut)
 		if calculatedAmountToSell == nil {

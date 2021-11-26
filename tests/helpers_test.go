@@ -17,6 +17,11 @@ import (
 	"github.com/tendermint/tendermint/proto/tendermint/version"
 )
 
+const (
+	updateStakePeriod   = 2
+	expiredOrdersPeriod = 5
+)
+
 // CreateApp creates and returns new Blockchain instance
 func CreateApp(state types.AppState) *minter.Blockchain {
 	jsonState, err := amino.MarshalJSON(state)
@@ -27,7 +32,8 @@ func CreateApp(state types.AppState) *minter.Blockchain {
 	storage := utils.NewStorage("", "")
 	cfg := config.GetConfig(storage.GetMinterHome())
 	cfg.DBBackend = "memdb"
-	app := minter.NewMinterBlockchain(storage, cfg, nil, 120)
+
+	app := minter.NewMinterBlockchain(storage, cfg, nil, updateStakePeriod, expiredOrdersPeriod)
 	var updates []tmTypes.ValidatorUpdate
 	for _, validator := range state.Validators {
 		updates = append(updates, tmTypes.Ed25519ValidatorUpdate(validator.PubKey.Bytes(), 1))
@@ -94,6 +100,13 @@ func SendEndBlock(app *minter.Blockchain, height int64) tmTypes.ResponseEndBlock
 	})
 }
 
+func getCommissionCoinID(commissionCoins []types.CoinID) types.CoinID {
+	if len(commissionCoins) == 0 {
+		return types.GetBaseCoinID()
+	}
+	return commissionCoins[0]
+}
+
 // CreateTx composes and returns Tx with given params.
 // Nonce, chain id, gas price, gas coin and signature type fields are auto-filled.
 func CreateTx(app *minter.Blockchain, address types.Address, txType transaction.TxType, data interface{}, gas types.CoinID, gasPrice ...uint32) transaction.Transaction {
@@ -150,7 +163,7 @@ func CreateAddress() (types.Address, *ecdsa.PrivateKey) {
 // DefaultAppState returns new AppState with some predefined values
 func DefaultAppState() types.AppState {
 	return types.AppState{
-		Version:             "v250",
+		Version:             "v260",
 		Note:                "",
 		Validators:          nil,
 		Candidates:          nil,
@@ -205,9 +218,9 @@ func DefaultAppState() types.AppState {
 			BurnToken:               "100000000000000000",
 			VoteCommission:          "1000000000000000000",
 			VoteUpdate:              "1000000000000000000",
-			FailedTx:                "",
-			AddLimitOrder:           "",
-			RemoveLimitOrder:        "",
+			FailedTx:                "10000000000000000",
+			AddLimitOrder:           "100000000000000000",
+			RemoveLimitOrder:        "100000000000000000",
 		},
 		CommissionVotes: nil,
 		UpdateVotes:     nil,

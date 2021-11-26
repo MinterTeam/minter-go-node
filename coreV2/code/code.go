@@ -61,6 +61,7 @@ const (
 	InsufficientWaitList  uint32 = 412
 	PeriodLimitReached    uint32 = 413
 	CandidateJailed       uint32 = 414
+	TooBigStake           uint32 = 415
 
 	// check
 	CheckInvalidLock uint32 = 501
@@ -93,6 +94,10 @@ const (
 	PairAlreadyExists            uint32 = 708
 	TooLongSwapRoute             uint32 = 709
 	DuplicatePoolInRoute         uint32 = 710
+	OrderNotExists               uint32 = 711
+	IsNotOwnerOfOrder            uint32 = 712
+	WrongOrderPrice              uint32 = 713
+	WrongOrderVolume             uint32 = 714
 
 	// emission coin
 	CoinIsNotToken  uint32 = 800
@@ -146,17 +151,14 @@ type insufficientLiquidity struct {
 	Amount1Out string `json:"amount1_out,omitempty"`
 }
 
-func NewInsufficientInputAmount(coin0, value0, coin1, value1, neededValue1 string) *insufficientInputAmount {
-	return &insufficientInputAmount{Code: strconv.Itoa(int(InsufficientInputAmount)), Coin0: coin0, Coin1: coin1, Amount0: value0, Amount1: value1, NeededAmount1: neededValue1}
+func NewInsufficientInputAmount(_, _, coin1, value1, neededValue1 string) *insufficientInputAmount {
+	return &insufficientInputAmount{Code: strconv.Itoa(int(InsufficientInputAmount)), Coin1: coin1, Amount1: value1, NeededAmount1: neededValue1}
 }
 
 type insufficientInputAmount struct {
-	Code    string `json:"code,omitempty"`
-	Coin0   string `json:"coin0,omitempty"`
-	Amount0 string `json:"amount0,omitempty"`
-
+	Code          string `json:"code,omitempty"`
 	Coin1         string `json:"coin1,omitempty"`
-	Amount1       string `json:"amount1,omitempty"`
+	Amount1       string `json:"maximum_amount1,omitempty"`
 	NeededAmount1 string `json:"needed_amount1,omitempty"`
 }
 
@@ -193,6 +195,33 @@ type pairNotExists struct {
 
 func NewPairNotExists(coin0 string, coin1 string) *pairNotExists {
 	return &pairNotExists{Code: strconv.Itoa(int(PairNotExists)), Coin0: coin0, Coin1: coin1}
+}
+
+type orderNotExists struct {
+	Code string `json:"code,omitempty"`
+	// Coin0 string `json:"coin0,omitempty"`
+	// Coin1 string `json:"coin1,omitempty"`
+	ID string `json:"id,omitempty"`
+}
+
+func NewOrderNotExists( /*coin0 string, coin1 string,*/ id uint32) *orderNotExists {
+	return &orderNotExists{Code: strconv.Itoa(int(OrderNotExists)),
+		// Coin0: coin0, Coin1: coin1,
+		ID: strconv.Itoa(int(id))}
+}
+
+type isNotOwnerOfOrder struct {
+	Code  string `json:"code,omitempty"`
+	Coin0 string `json:"coin0,omitempty"`
+	Coin1 string `json:"coin1,omitempty"`
+	ID    string `json:"id,omitempty"`
+	Owner string `json:"owner"`
+}
+
+func NewIsNotOwnerOfOrder(coin0 string, coin1 string, id uint32, owner string) *isNotOwnerOfOrder {
+	return &isNotOwnerOfOrder{Code: strconv.Itoa(int(IsNotOwnerOfOrder)),
+		Coin0: coin0, Coin1: coin1,
+		ID: strconv.Itoa(int(id)), Owner: owner}
 }
 
 type pairAlreadyExists struct {
@@ -753,6 +782,19 @@ func NewTooLowStake(sender string, pubKey string, value string, coinId string, c
 	return &tooLowStake{Code: strconv.Itoa(int(TooLowStake)), Sender: sender, PublicKey: pubKey, Value: value, CoinId: coinId, CoinSymbol: coinSymbol}
 }
 
+type tooBigStake struct {
+	Code       string `json:"code,omitempty"`
+	Sender     string `json:"sender,omitempty"`
+	PublicKey  string `json:"public_key,omitempty"`
+	Value      string `json:"value,omitempty"`
+	CoinSymbol string `json:"coin_symbol,omitempty"`
+	CoinId     string `json:"coin_id,omitempty"`
+}
+
+func NewTooBigStake(sender string, pubKey string, value string, coinId string, coinSymbol string) *tooBigStake {
+	return &tooBigStake{Code: strconv.Itoa(int(TooBigStake)), Sender: sender, PublicKey: pubKey, Value: value, CoinId: coinId, CoinSymbol: coinSymbol}
+}
+
 type wrongCommission struct {
 	Code          string `json:"code,omitempty"`
 	GotCommission string `json:"got_commission,omitempty"`
@@ -838,4 +880,34 @@ type duplicatePoolInRouteCode struct {
 
 func NewDuplicatePoolInRouteCode(pool uint32) *duplicatePoolInRouteCode {
 	return &duplicatePoolInRouteCode{Code: strconv.Itoa(int(DuplicatePoolInRoute)), PoolID: strconv.Itoa(int(pool))}
+}
+
+type wrongOrderPrice struct {
+	Code       string `json:"code,omitempty"`
+	MinPrice   string `json:"min_price"`
+	MaxPrice   string `json:"max_price"`
+	OrderPrice string `json:"order_price"`
+}
+
+func NewWrongOrderPrice(minPrice, maxPrice, orderPrice string) *wrongOrderPrice {
+	return &wrongOrderPrice{
+		Code:       strconv.Itoa(int(WrongOrderPrice)),
+		MinPrice:   minPrice,
+		MaxPrice:   maxPrice,
+		OrderPrice: orderPrice,
+	}
+}
+
+type wrongOrderVolume struct {
+	Code    string `json:"code,omitempty"`
+	Volume0 string `json:"volume0"`
+	Volume1 string `json:"Volume1"`
+}
+
+func NewWrongOrderVolume(v0, v1 string) *wrongOrderVolume {
+	return &wrongOrderVolume{
+		Code:    strconv.Itoa(int(WrongOrderVolume)),
+		Volume0: v0,
+		Volume1: v1,
+	}
 }

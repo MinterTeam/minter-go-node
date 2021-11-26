@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/MinterTeam/minter-go-node/coreV2/events"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/coins"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
@@ -17,6 +18,8 @@ import (
 	tmTypes "github.com/tendermint/tendermint/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 // Block returns block data at given height.
@@ -42,7 +45,7 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 	if _, ok := fields[pb.BlockField_transactions]; ok {
 		blockResults, err = s.client.BlockResults(ctx, &height)
 		if err != nil {
-			return nil, status.Error(codes.NotFound, "Block results not found")
+			return nil, status.Error(codes.NotFound, "Block results not found") // fmt.Sprintf("Block results not found: %v", err))
 		}
 	}
 
@@ -71,6 +74,121 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 		Height:           uint64(block.Block.Height),
 		Time:             block.Block.Time.Format(time.RFC3339Nano),
 		TransactionCount: uint64(len(block.Block.Txs)),
+	}
+
+	if req.Events {
+		loadEvents := s.blockchain.GetEventsDB().LoadEvents(uint32(req.Height))
+		for _, event := range loadEvents {
+			var m proto.Message
+			switch e := event.(type) {
+			case *events.JailEvent:
+				m = &pb.JailEvent{
+					ValidatorPubKey: e.ValidatorPubKeyString(),
+					JailedUntil:     e.JailedUntil,
+				}
+			case *events.OrderExpiredEvent:
+				m = &pb.OrderExpiredEvent{
+					Id:      e.ID,
+					Address: e.AddressString(),
+					Coin:    e.Coin,
+					Amount:  e.Amount,
+				}
+			case *events.RewardEvent:
+				m = &pb.RewardEvent{
+					Role:            pb.RewardEvent_Role(pb.RewardEvent_Role_value[e.Role]),
+					Address:         e.AddressString(),
+					Amount:          e.Amount,
+					ForCoin:         e.ForCoin,
+					ValidatorPubKey: e.ValidatorPubKeyString(),
+				}
+			case *events.SlashEvent:
+				m = &pb.SlashEvent{
+					Address:         e.AddressString(),
+					Amount:          e.Amount,
+					Coin:            e.Coin,
+					ValidatorPubKey: e.ValidatorPubKeyString(),
+				}
+			case *events.StakeKickEvent:
+				m = &pb.StakeKickEvent{
+					Address:         e.AddressString(),
+					Amount:          e.Amount,
+					Coin:            e.Coin,
+					ValidatorPubKey: e.ValidatorPubKeyString(),
+				}
+			case *events.UnbondEvent:
+				m = &pb.UnbondEvent{
+					Address:         e.AddressString(),
+					Amount:          e.Amount,
+					Coin:            e.Coin,
+					ValidatorPubKey: e.ValidatorPubKeyString(),
+				}
+			case *events.RemoveCandidateEvent:
+				m = &pb.RemoveCandidateEvent{
+					CandidatePubKey: e.CandidatePubKeyString(),
+				}
+			case *events.UpdateNetworkEvent:
+				m = &pb.UpdateNetworkEvent{
+					Version: e.Version,
+				}
+			case *events.UpdateCommissionsEvent:
+				m = &pb.UpdateCommissionsEvent{
+					Coin:                    e.Coin,
+					PayloadByte:             e.PayloadByte,
+					Send:                    e.Send,
+					BuyBancor:               e.BuyBancor,
+					SellBancor:              e.SellBancor,
+					SellAllBancor:           e.SellAllBancor,
+					BuyPoolBase:             e.BuyPoolBase,
+					BuyPoolDelta:            e.BuyPoolDelta,
+					SellPoolBase:            e.SellPoolBase,
+					SellPoolDelta:           e.SellPoolDelta,
+					SellAllPoolBase:         e.SellAllPoolBase,
+					SellAllPoolDelta:        e.SellAllPoolDelta,
+					CreateTicker3:           e.CreateTicker3,
+					CreateTicker4:           e.CreateTicker4,
+					CreateTicker5:           e.CreateTicker5,
+					CreateTicker6:           e.CreateTicker6,
+					CreateTicker7_10:        e.CreateTicker7_10,
+					CreateCoin:              e.CreateCoin,
+					CreateToken:             e.CreateToken,
+					RecreateCoin:            e.RecreateCoin,
+					RecreateToken:           e.RecreateToken,
+					DeclareCandidacy:        e.DeclareCandidacy,
+					Delegate:                e.Delegate,
+					Unbond:                  e.Unbond,
+					RedeemCheck:             e.RedeemCheck,
+					SetCandidateOn:          e.SetCandidateOn,
+					SetCandidateOff:         e.SetCandidateOff,
+					CreateMultisig:          e.CreateMultisig,
+					MultisendBase:           e.MultisendBase,
+					MultisendDelta:          e.MultisendDelta,
+					EditCandidate:           e.EditCandidate,
+					SetHaltBlock:            e.SetHaltBlock,
+					EditTickerOwner:         e.EditTickerOwner,
+					EditMultisig:            e.EditMultisig,
+					EditCandidatePublicKey:  e.EditCandidatePublicKey,
+					CreateSwapPool:          e.CreateSwapPool,
+					AddLiquidity:            e.AddLiquidity,
+					RemoveLiquidity:         e.RemoveLiquidity,
+					EditCandidateCommission: e.EditCandidateCommission,
+					MintToken:               e.MintToken,
+					BurnToken:               e.BurnToken,
+					VoteCommission:          e.VoteCommission,
+					VoteUpdate:              e.VoteUpdate,
+					FailedTx:                e.FailedTx,
+					AddLimitOrder:           e.AddLimitOrder,
+					RemoveLimitOrder:        e.RemoveLimitOrder,
+				}
+			default:
+				return nil, status.Error(codes.Internal, "unknown event type")
+			}
+
+			a, err := anypb.New(m)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			response.Events = append(response.Events, a)
+		}
 	}
 
 	for field := range fields {

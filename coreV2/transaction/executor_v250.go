@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/MinterTeam/minter-go-node/coreV2/check"
+	"github.com/MinterTeam/minter-go-node/coreV2/state/swap"
 	abcTypes "github.com/tendermint/tendermint/abci/types"
 
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
@@ -25,16 +26,16 @@ type DecoderTx interface {
 	DecodeFromBytes(buf []byte) (*Transaction, error)
 }
 
-type ExecutorV240 struct {
+type ExecutorV250 struct {
 	*Executor
 	decodeTxFunc func(txType TxType) (Data, bool)
 }
 
 func NewExecutorV250(decodeTxFunc func(txType TxType) (Data, bool)) ExecutorTx {
-	return &ExecutorV240{decodeTxFunc: decodeTxFunc, Executor: &Executor{decodeTxFunc: decodeTxFunc}}
+	return &ExecutorV250{decodeTxFunc: decodeTxFunc, Executor: &Executor{decodeTxFunc: decodeTxFunc}}
 }
 
-func (e *ExecutorV240) RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBlock uint64, currentMempool *sync.Map, minGasPrice uint32, notSaveTags bool) Response {
+func (e *ExecutorV250) RunTx(context state.Interface, rawTx []byte, rewardPool *big.Int, currentBlock uint64, currentMempool *sync.Map, minGasPrice uint32, notSaveTags bool) Response {
 	lenRawTx := len(rawTx)
 	if lenRawTx > maxTxLength {
 		return Response{
@@ -67,11 +68,11 @@ func (e *ExecutorV240) RunTx(context state.Interface, rawTx []byte, rewardPool *
 		checkState = state.NewCheckState(context.(*state.State))
 	}
 
-	if !checkState.Coins().Exists(tx.commissionCoin()) {
+	if !checkState.Coins().Exists(tx.CommissionCoin()) {
 		return Response{
 			Code: code.CoinNotExists,
-			Log:  fmt.Sprintf("Coin %s not exists", tx.commissionCoin()),
-			Info: EncodeError(code.NewCoinNotExists("", tx.commissionCoin().String())),
+			Log:  fmt.Sprintf("Coin %s not exists", tx.CommissionCoin()),
+			Info: EncodeError(code.NewCoinNotExists("", tx.CommissionCoin().String())),
 		}
 	}
 
@@ -182,7 +183,11 @@ func (e *ExecutorV240) RunTx(context state.Interface, rawTx []byte, rewardPool *
 	priceCommission := abcTypes.EventAttribute{Key: []byte("tx.commission_price"), Value: []byte(price.String())}
 
 	if !commissions.Coin.IsBaseCoin() {
-		price = checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()).CalculateBuyForSell(price)
+		var resp *Response
+		resp, price = CheckSwap(checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()), checkState.Coins().GetCoin(commissions.Coin), checkState.Coins().GetCoin(0), price, big.NewInt(0), false)
+		if resp != nil {
+			return *resp
+		}
 	}
 	if price == nil || price.Sign() != 1 {
 		return Response{
@@ -209,7 +214,11 @@ func (e *ExecutorV240) RunTx(context state.Interface, rawTx []byte, rewardPool *
 		commissionInBaseCoin = tx.MulGasPrice(commissionInBaseCoin)
 
 		if !commissions.Coin.IsBaseCoin() {
-			commissionInBaseCoin = checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()).CalculateBuyForSell(commissionInBaseCoin)
+			var resp *Response
+			resp, commissionInBaseCoin = CheckSwap(checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()), checkState.Coins().GetCoin(commissions.Coin), checkState.Coins().GetCoin(0), commissionInBaseCoin, big.NewInt(0), false)
+			if resp != nil {
+				return *resp
+			}
 			if commissionInBaseCoin == nil || commissionInBaseCoin.Sign() != 1 {
 				return Response{
 					Code: code.CommissionCoinNotSufficient,
@@ -219,8 +228,8 @@ func (e *ExecutorV240) RunTx(context state.Interface, rawTx []byte, rewardPool *
 			}
 		}
 
-		commissionPoolSwapper := checkState.Swap().GetSwapper(tx.commissionCoin(), types.GetBaseCoinID())
-		gasCoin := checkState.Coins().GetCoin(tx.commissionCoin())
+		commissionPoolSwapper := checkState.Swap().GetSwapper(tx.CommissionCoin(), types.GetBaseCoinID())
+		gasCoin := checkState.Coins().GetCoin(tx.CommissionCoin())
 		commission, isGasCommissionFromPoolSwap, errResp := CalculateCommission(checkState, commissionPoolSwapper, gasCoin, commissionInBaseCoin)
 		if errResp != nil {
 			return *errResp
@@ -244,18 +253,23 @@ func (e *ExecutorV240) RunTx(context state.Interface, rawTx []byte, rewardPool *
 					Info: EncodeError(code.NewDecodeError()),
 				}
 			}
-
 			intruder = checkSender
 			response.Tags = append(response.Tags,
-				abcTypes.EventAttribute{Key: []byte("tx.check_owner"), Value: []byte(hex.EncodeToString(intruder[:]))},
+				abcTypes.EventAttribute{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(intruder[:]))},
 			)
 		}
-		balance := checkState.Accounts().GetBalance(intruder, tx.commissionCoin())
+		balance := checkState.Accounts().GetBalance(intruder, tx.CommissionCoin())
 		if balance.Sign() == 1 {
 			if balance.Cmp(commission) == -1 {
 				commission = big.NewInt(0).Set(balance)
 				if isGasCommissionFromPoolSwap {
-					commissionInBaseCoin = commissionPoolSwapper.CalculateBuyForSell(commission)
+					if !commissions.Coin.IsBaseCoin() {
+						var resp *Response
+						resp, commissionInBaseCoin = CheckSwap(commissionPoolSwapper, checkState.Coins().GetCoin(tx.CommissionCoin()), checkState.Coins().GetCoin(0), commission, big.NewInt(0), false)
+						if resp != nil {
+							return *resp
+						}
+					}
 					if commissionInBaseCoin == nil || commissionInBaseCoin.Sign() != 1 {
 						return Response{
 							Code: code.CommissionCoinNotSufficient,
@@ -274,18 +288,38 @@ func (e *ExecutorV240) RunTx(context state.Interface, rawTx []byte, rewardPool *
 			}
 
 			if deliverState, ok := context.(*state.State); ok {
+				var tagsCom *tagPoolChange
 				if isGasCommissionFromPoolSwap {
-					commission, commissionInBaseCoin, _ = deliverState.Swap.PairSell(tx.commissionCoin(), types.GetBaseCoinID(), commission, commissionInBaseCoin)
-				} else if !tx.commissionCoin().IsBaseCoin() {
-					deliverState.Coins.SubVolume(tx.commissionCoin(), commission)
-					deliverState.Coins.SubReserve(tx.commissionCoin(), commissionInBaseCoin)
+					var (
+						poolIDCom  uint32
+						detailsCom *swap.ChangeDetailsWithOrders
+						ownersCom  []*swap.OrderDetail
+					)
+					commission, commissionInBaseCoin, poolIDCom, detailsCom, ownersCom = deliverState.Swap.PairSellWithOrders(tx.CommissionCoin(), types.GetBaseCoinID(), commission, big.NewInt(0))
+					tagsCom = &tagPoolChange{
+						PoolID:   poolIDCom,
+						CoinIn:   tx.CommissionCoin(),
+						ValueIn:  commission.String(),
+						CoinOut:  types.GetBaseCoinID(),
+						ValueOut: commissionInBaseCoin.String(),
+						Orders:   detailsCom,
+						// Sellers:  ownersCom,
+					}
+					for _, value := range ownersCom {
+						deliverState.Accounts.AddBalance(value.Owner, tx.CommissionCoin(), value.ValueBigInt)
+					}
+				} else if !tx.CommissionCoin().IsBaseCoin() {
+					deliverState.Coins.SubVolume(tx.CommissionCoin(), commission)
+					deliverState.Coins.SubReserve(tx.CommissionCoin(), commissionInBaseCoin)
 				}
 
-				deliverState.Accounts.SubBalance(intruder, tx.commissionCoin(), commission)
+				deliverState.Accounts.SubBalance(intruder, tx.CommissionCoin(), commission)
 
 				rewardPool.Add(rewardPool, commissionInBaseCoin)
 				response.Tags = append(response.Tags,
+					abcTypes.EventAttribute{Key: []byte("tx.commission_details"), Value: []byte(tagsCom.string())},
 					abcTypes.EventAttribute{Key: []byte("tx.fail_fee"), Value: []byte(commission.String())},
+					abcTypes.EventAttribute{Key: []byte("tx.fail"), Value: []byte{49}, Index: true}, // "1"
 				)
 			}
 		}
@@ -297,10 +331,12 @@ func (e *ExecutorV240) RunTx(context state.Interface, rawTx []byte, rewardPool *
 		response.Tags = append(response.Tags,
 			coinCommission,
 			priceCommission,
-			abcTypes.EventAttribute{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:])), Index: true},
 			abcTypes.EventAttribute{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(tx.decodedData.TxType())})), Index: true},
-			abcTypes.EventAttribute{Key: []byte("tx.commission_coin"), Value: []byte(tx.commissionCoin().String()), Index: true},
+			abcTypes.EventAttribute{Key: []byte("tx.commission_coin"), Value: []byte(tx.CommissionCoin().String()), Index: true},
 		)
+		if tx.Type != TypeRedeemCheck {
+			response.Tags = append(response.Tags, abcTypes.EventAttribute{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:])), Index: true})
+		}
 	}
 
 	response.GasUsed = tx.Gas()

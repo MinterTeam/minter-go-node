@@ -13,7 +13,7 @@ type Item struct {
 }
 
 type Model struct {
-	List []Item
+	List []*Item
 
 	address   types.Address
 	markDirty func(address types.Address)
@@ -23,7 +23,7 @@ type Model struct {
 func (m *Model) AddToList(candidateId uint32, coin types.CoinID, value *big.Int) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	m.List = append(m.List, Item{
+	m.List = append(m.List, &Item{
 		CandidateId: candidateId,
 		Coin:        coin,
 		Value:       new(big.Int).Set(value),

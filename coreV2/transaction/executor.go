@@ -195,9 +195,9 @@ func (e *Executor) RunTx(context state.Interface, rawTx []byte, rewardPool *big.
 	priceCommission := abcTypes.EventAttribute{Key: []byte("tx.commission_price"), Value: []byte(price.String())}
 
 	if !commissions.Coin.IsBaseCoin() {
-		price = checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()).CalculateBuyForSell(price)
+		price = checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()).CalculateBuyForSellWithOrders(price)
 	}
-	if price == nil {
+	if price == nil || price.Sign() != 1 {
 		return Response{
 			Code: code.CommissionCoinNotSufficient,
 			Log:  fmt.Sprint("Not possible to pay commission"),
@@ -225,7 +225,7 @@ func (e *Executor) RunTx(context state.Interface, rawTx []byte, rewardPool *big.
 			priceCommission,
 			abcTypes.EventAttribute{Key: []byte("tx.from"), Value: []byte(hex.EncodeToString(sender[:])), Index: true},
 			abcTypes.EventAttribute{Key: []byte("tx.type"), Value: []byte(hex.EncodeToString([]byte{byte(tx.decodedData.TxType())})), Index: true},
-			abcTypes.EventAttribute{Key: []byte("tx.commission_coin"), Value: []byte(tx.commissionCoin().String()), Index: true},
+			abcTypes.EventAttribute{Key: []byte("tx.commission_coin"), Value: []byte(tx.CommissionCoin().String()), Index: true},
 		)
 	}
 
@@ -245,7 +245,7 @@ func EncodeError(data interface{}) string {
 	return string(marshaled)
 }
 
-func (tx *Transaction) commissionCoin() types.CoinID {
+func (tx *Transaction) CommissionCoin() types.CoinID {
 	if tx.Type == TypeSellAllSwapPool || tx.Type == TypeSellAllCoin {
 		return tx.decodedData.(dataCommission).commissionCoin()
 	}

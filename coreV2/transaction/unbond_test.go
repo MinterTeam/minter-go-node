@@ -162,6 +162,82 @@ func TestFullUnbondTxWithWaitlist(t *testing.T) {
 	}
 }
 
+func TestUnbondTxWithWaitlistAndDeletedCandidate(t *testing.T) {
+	t.Parallel()
+	cState := getState()
+	pubkey := createTestCandidate(cState)
+
+	privateKey, _ := crypto.GenerateKey()
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+	coin := types.GetBaseCoinID()
+	waitlistAmount := helpers.BipToPip(big.NewInt(1000))
+	value := helpers.BipToPip(big.NewInt(1000))
+
+	cState.Accounts.AddBalance(addr, coin, helpers.BipToPip(big.NewInt(1000000)))
+	cState.Waitlist.AddWaitList(addr, pubkey, coin, waitlistAmount)
+	cState.Candidates.RecalculateStakes(109000)
+	cState.Candidates.DeleteCandidate(109000, cState.Candidates.GetCandidate(pubkey))
+
+	data := UnbondData{
+		PubKey: pubkey,
+		Coin:   coin,
+		Value:  value,
+	}
+
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tx := Transaction{
+		Nonce:         1,
+		GasPrice:      1,
+		ChainID:       types.CurrentChainID,
+		GasCoin:       coin,
+		Type:          TypeUnbond,
+		Data:          encodedData,
+		SignatureType: SigTypeSingle,
+	}
+
+	if err := tx.Sign(privateKey); err != nil {
+		t.Fatal(err)
+	}
+
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+	if response.Code != 0 {
+		t.Fatalf("Response code is not 0. Error %s", response.Log)
+	}
+
+	cState.Candidates.RecalculateStakes(109000)
+	funds := cState.FrozenFunds.GetFrozenFunds(types.GetUnbondPeriod())
+	if funds == nil || len(funds.List) != 1 {
+		t.Fatalf("Frozen funds are not correct")
+	}
+
+	stake := cState.Candidates.GetStakeOfAddress(pubkey, addr, coin)
+	if stake != nil {
+		t.Fatalf("Stake value is not empty.")
+	}
+
+	if funds.List[0].Value.Cmp(value) != 0 {
+		t.Fatalf("Frozen funds value is not corrent. Expected %s, got %s", value, funds.List[0].Value)
+	}
+
+	wl := cState.Waitlist.Get(addr, pubkey, coin)
+	if wl != nil {
+		t.Fatalf("Waitlist is not deleted")
+	}
+
+	if err := checkState(cState); err != nil {
+		t.Error(err)
+	}
+}
+
 func TestUnbondTxWithWaitlist(t *testing.T) {
 	t.Parallel()
 	cState := getState()

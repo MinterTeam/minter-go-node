@@ -38,11 +38,11 @@ func (s *Service) WaitList(ctx context.Context, req *pb.WaitListRequest) (*pb.Wa
 	}
 
 	response := new(pb.WaitListResponse)
-	var items []waitlist.Item
+	var items []*waitlist.Item
 	publicKey := req.PublicKey
 	if publicKey != "" {
 		if !strings.HasPrefix(publicKey, "Mp") {
-			return nil, status.Error(codes.InvalidArgument, "public key don't has prefix 'Mp'")
+			return nil, status.Error(codes.InvalidArgument, "public key don't have preffix 'Mp'")
 		}
 		items = cState.WaitList().GetByAddressAndPubKey(address, types.HexToPubkey(publicKey))
 	} else {

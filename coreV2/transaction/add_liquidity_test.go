@@ -93,7 +93,7 @@ func TestAddExchangeLiquidityTx_Bug4415829(t *testing.T) {
 	}
 
 	{
-		data := AddLiquidityData{
+		data := AddLiquidityDataV1{
 			Coin0:          coin,
 			Volume0:        helpers.StringToBigInt("85867881698893382390"),
 			Coin1:          coin1,
@@ -125,15 +125,13 @@ func TestAddExchangeLiquidityTx_Bug4415829(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-
 		{
-			response := NewExecutor(GetDataV240).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+			response := NewExecutor(GetDataV260).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 
 			if response.Code != 107 {
 				t.Fatalf("Response code %d is not 107. Error: %s", response.Code, response.Log)
 			}
 		}
-
 		{
 			response := NewExecutor(GetDataV230).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 
@@ -343,7 +341,7 @@ func TestAddExchangeLiquidityTx_addLiquidity(t *testing.T) {
 		t.Error(err)
 	}
 	{
-		data := AddLiquidityData{
+		data := AddLiquidityDataV1{
 			Coin0:          coin,
 			Volume0:        helpers.BipToPip(big.NewInt(10)),
 			Coin1:          coin1,
@@ -454,7 +452,7 @@ func TestAddExchangeLiquidityTx_addLiquidity_1(t *testing.T) {
 		t.Error(err)
 	}
 	{
-		data := AddLiquidityData{
+		data := AddLiquidityDataV1{
 			Coin0:          coin,
 			Volume0:        big.NewInt(10000),
 			Coin1:          coin1,
@@ -565,7 +563,7 @@ func TestAddExchangeLiquidityTx_addLiquidity_2(t *testing.T) {
 		t.Error(err)
 	}
 	{
-		data := AddLiquidityData{
+		data := AddLiquidityDataV1{
 			Coin0:          coin,
 			Volume0:        big.NewInt(9000),
 			Coin1:          coin1,

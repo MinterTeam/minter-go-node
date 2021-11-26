@@ -7,23 +7,24 @@ import (
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/commission"
+	"github.com/MinterTeam/minter-go-node/coreV2/state/swap"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	abcTypes "github.com/tendermint/tendermint/abci/types"
 )
 
-type BurnTokenData struct {
+type BurnTokenDataV260 struct {
 	Coin  types.CoinID
 	Value *big.Int
 }
 
-func (data BurnTokenData) Gas() int64 {
+func (data BurnTokenDataV260) Gas() int64 {
 	return gasBurnToken
 }
-func (data BurnTokenData) TxType() TxType {
+func (data BurnTokenDataV260) TxType() TxType {
 	return TypeBurnToken
 }
 
-func (data BurnTokenData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data BurnTokenDataV260) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	coin := context.Coins().GetCoin(data.Coin)
 	if coin == nil {
 		return &Response{
@@ -49,33 +50,18 @@ func (data BurnTokenData) basicCheck(tx *Transaction, context *state.CheckState)
 		}
 	}
 
-	sender, _ := tx.Sender()
-	symbolInfo := context.Coins().GetSymbolInfo(coin.Symbol())
-	if coin.Version() != 0 || symbolInfo == nil || symbolInfo.OwnerAddress().Compare(sender) != 0 {
-		var owner *string
-		if symbolInfo != nil && symbolInfo.OwnerAddress() != nil {
-			own := symbolInfo.OwnerAddress().String()
-			owner = &own
-		}
-		return &Response{
-			Code: code.IsNotOwnerOfCoin,
-			Log:  "Sender is not owner of coin",
-			Info: EncodeError(code.NewIsNotOwnerOfCoin(coin.Symbol().String(), owner)),
-		}
-	}
-
 	return nil
 }
 
-func (data BurnTokenData) String() string {
+func (data BurnTokenDataV260) String() string {
 	return fmt.Sprintf("BURN COIN: %d", data.Coin)
 }
 
-func (data BurnTokenData) CommissionData(price *commission.Price) *big.Int {
+func (data BurnTokenDataV260) CommissionData(price *commission.Price) *big.Int {
 	return price.BurnToken
 }
 
-func (data BurnTokenData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
+func (data BurnTokenDataV260) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState
@@ -120,11 +106,29 @@ func (data BurnTokenData) Run(tx *Transaction, context state.Interface, rewardPo
 	}
 	var tags []abcTypes.EventAttribute
 	if deliverState, ok := context.(*state.State); ok {
+		var tagsCom *tagPoolChange
 		if isGasCommissionFromPoolSwap {
-			commission, commissionInBaseCoin, _ = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
+			var (
+				poolIDCom  uint32
+				detailsCom *swap.ChangeDetailsWithOrders
+				ownersCom  []*swap.OrderDetail
+			)
+			commission, commissionInBaseCoin, poolIDCom, detailsCom, ownersCom = deliverState.Swap.PairSellWithOrders(tx.CommissionCoin(), types.GetBaseCoinID(), commission, big.NewInt(0))
+			tagsCom = &tagPoolChange{
+				PoolID:   poolIDCom,
+				CoinIn:   tx.CommissionCoin(),
+				ValueIn:  commission.String(),
+				CoinOut:  types.GetBaseCoinID(),
+				ValueOut: commissionInBaseCoin.String(),
+				Orders:   detailsCom,
+				// Sellers:  ownersCom,
+			}
+			for _, value := range ownersCom {
+				deliverState.Accounts.AddBalance(value.Owner, tx.CommissionCoin(), value.ValueBigInt)
+			}
 		} else if !tx.GasCoin.IsBaseCoin() {
-			deliverState.Coins.SubVolume(tx.GasCoin, commission)
-			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
+			deliverState.Coins.SubVolume(tx.CommissionCoin(), commission)
+			deliverState.Coins.SubReserve(tx.CommissionCoin(), commissionInBaseCoin)
 		}
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
@@ -138,6 +142,7 @@ func (data BurnTokenData) Run(tx *Transaction, context state.Interface, rewardPo
 			{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
 			{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String()), Index: true},
 			{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
+			{Key: []byte("tx.commission_details"), Value: []byte(tagsCom.string())},
 			{Key: []byte("tx.coin_id"), Value: []byte(data.Coin.String()), Index: true},
 		}
 	}

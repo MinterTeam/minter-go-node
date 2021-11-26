@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/ecdsa"
 	"crypto/sha256"
+	"github.com/MinterTeam/minter-go-node/coreV2/events"
 	"log"
 	"math/big"
 	"math/rand"
@@ -75,8 +76,14 @@ var (
 	}
 )
 
-func getState() *state.State {
-	s, err := state.NewState(0, db.NewMemDB(), nil, 1, 1, 0)
+func getState(evnts ...events.IEventsDB) *state.State {
+	var e events.IEventsDB
+	if len(evnts) == 0 {
+		e = &events.MockEvents{}
+	} else {
+		e = evnts[0]
+	}
+	s, err := state.NewState(0, db.NewMemDB(), e, 1, 1, 0)
 	if err != nil {
 		panic(err)
 	}
