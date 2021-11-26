@@ -364,7 +364,7 @@ func (s *State) Import(state types.AppState, version string) error {
 	}
 
 	if c.FailedTx != "" &&
-		c.FailedTx != "" &&
+		c.AddLimitOrder != "" &&
 		c.RemoveLimitOrder != "" {
 		com.More = append(com.More,
 			helpers.StringToBigInt(c.FailedTx),
@@ -423,7 +423,7 @@ func (s *State) Import(state types.AppState, version string) error {
 			More:                    nil,
 		}
 		if vc.FailedTx != "" &&
-			vc.FailedTx != "" &&
+			vc.AddLimitOrder != "" &&
 			vc.RemoveLimitOrder != "" {
 			voteCom.More = append(com.More,
 				helpers.StringToBigInt(vc.FailedTx),
