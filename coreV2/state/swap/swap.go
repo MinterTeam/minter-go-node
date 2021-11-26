@@ -264,11 +264,11 @@ const totalPairIDPrefix = 'i'
 const totalOrdersIDPrefix = 'n'
 
 type pairData struct {
-	*sync.RWMutex
-	Reserve0  *big.Int
-	Reserve1  *big.Int
-	ID        *uint32
-	markDirty func()
+	*sync.RWMutex // todo: mu *sync.RWMutex
+	Reserve0      *big.Int
+	Reserve1      *big.Int
+	ID            *uint32
+	markDirty     func()
 }
 
 func (pd *pairData) Reserves() (reserve0 *big.Int, reserve1 *big.Int) {
@@ -545,17 +545,17 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 
 		lenB := len(pair.buyOrders.ids)
 		pair.loadedBuyOrders.ids = pair.buyOrders.ids[:lenB:lenB]
-		//if lenB > 1 {
-		//	pair.buyOrders.ids = pair.buyOrders.ids[:1:1]
-		//}
-		pair.buyOrders.ids = nil
+		if lenB > 10 {
+			pair.buyOrders.ids = pair.buyOrders.ids[:10:10]
+		}
+		//pair.buyOrders.ids = nil
 
 		lenS := len(pair.sellOrders.ids)
 		pair.loadedSellOrders.ids = pair.sellOrders.ids[:lenS:lenS]
-		//if lenS > 1 {
-		//	pair.sellOrders.ids = pair.sellOrders.ids[:1:1]
-		//}
-		pair.sellOrders.ids = nil
+		if lenS > 10 {
+			pair.sellOrders.ids = pair.sellOrders.ids[:10:10]
+		}
+		//pair.sellOrders.ids = nil
 
 		pair.dirtyOrders.mu.Lock()
 		pair.dirtyOrders.list = make(map[uint32]struct{})
