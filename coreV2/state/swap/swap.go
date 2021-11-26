@@ -523,7 +523,6 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 
 				if !bytes.Equal(oldPathOrderList, newPath) {
 					db.Remove(oldPathOrderList)
-					//log.Printf("remove old path %q, %s, %s. Sell %v", oldPathOrderList, limit.WantBuy, limit.WantSell, !limit.IsBuy)
 				}
 			}
 
@@ -531,7 +530,6 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 				continue
 			}
 
-			//log.Printf("new path %q, %s, %s. Sell %v", newPath, limit.WantBuy, limit.WantSell, !limit.IsBuy)
 			db.Set(newPath, []byte{})
 
 			pairOrderBytes, err := rlp.EncodeToBytes(limit)
