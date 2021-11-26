@@ -642,6 +642,7 @@ type Limit struct {
 	oldSortPrice *big.Float
 	id           uint32
 
+	*sync.RWMutex
 	mu *sync.RWMutex
 }
 
