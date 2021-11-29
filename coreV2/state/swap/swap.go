@@ -475,6 +475,7 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 		b, err := rlp.EncodeToBytes(s.nextOrderID)
 		if err != nil {
 			s.muNextOrdersID.Unlock()
+			panic(err)
 			return err
 		}
 		db.Set([]byte{mainPrefix, totalOrdersIDPrefix}, b)

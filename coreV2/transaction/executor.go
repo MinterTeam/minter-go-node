@@ -141,7 +141,7 @@ func (e *Executor) RunTx(context state.Interface, rawTx []byte, rewardPool *big.
 			return Response{
 				Code: code.IncorrectMultiSignature,
 				Log:  "Incorrect multi-signature",
-				Info: EncodeError(code.NewIncorrectMultiSignature()),
+				Info: EncodeError(code.NewIncorrectMultiSignature("error in the number of signers")),
 			}
 		}
 
@@ -155,7 +155,7 @@ func (e *Executor) RunTx(context state.Interface, rawTx []byte, rewardPool *big.
 				return Response{
 					Code: code.IncorrectMultiSignature,
 					Log:  "Incorrect multi-signature",
-					Info: EncodeError(code.NewIncorrectMultiSignature()),
+					Info: EncodeError(code.NewIncorrectMultiSignature(err.Error())),
 				}
 			}
 
