@@ -12,6 +12,7 @@ type Bus struct {
 	waitlist    WaitList
 	events      eventsdb.IEventsDB
 	checker     Checker
+	validators  Validators
 }
 
 func NewBus() *Bus {
@@ -38,8 +39,16 @@ func (b *Bus) SetAccounts(accounts Accounts) {
 	b.accounts = accounts
 }
 
+func (b *Bus) SetValidators(validators Validators) {
+	b.validators = validators
+}
+
 func (b *Bus) Accounts() Accounts {
 	return b.accounts
+}
+
+func (b *Bus) Validators() Validators {
+	return b.validators
 }
 
 func (b *Bus) SetCandidates(candidates Candidates) {

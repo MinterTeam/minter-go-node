@@ -110,6 +110,13 @@ func TestBuySwapPoolTx_0(t *testing.T) {
 			t.Fatalf("Response code %d is not 0. Error: %s", response.Code, response.Log)
 		}
 
+		// for _, tag := range response.Tags {
+		// 	if string(tag.Key) != "tx.pools" {
+		// 		continue
+		// 	}
+		// 	t.Log(tag.String())
+		// }
+
 		if err := checkState(cState); err != nil {
 			t.Error(err)
 		}

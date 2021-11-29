@@ -9,23 +9,25 @@ import (
 )
 
 type AppState struct {
-	Note                string           `json:"note"`
-	Validators          []Validator      `json:"validators,omitempty"`
-	Candidates          []Candidate      `json:"candidates,omitempty"`
-	BlockListCandidates []Pubkey         `json:"block_list_candidates,omitempty"`
-	Waitlist            []Waitlist       `json:"waitlist,omitempty"`
-	Pools               []Pool           `json:"pools,omitempty"`
-	Accounts            []Account        `json:"accounts,omitempty"`
-	Coins               []Coin           `json:"coins,omitempty"`
-	FrozenFunds         []FrozenFund     `json:"frozen_funds,omitempty"`
-	HaltBlocks          []HaltBlock      `json:"halt_blocks,omitempty"`
-	Commission          Commission       `json:"commission,omitempty"`
-	CommissionVotes     []CommissionVote `json:"commission_votes,omitempty"`
-	UpdateVotes         []UpdateVote     `json:"update_votes,omitempty"`
-	UsedChecks          []UsedCheck      `json:"used_checks,omitempty"`
-	MaxGas              uint64           `json:"max_gas"`
-	TotalSlashed        string           `json:"total_slashed"`
-	Version             string           `json:"version,omitempty"`
+	Note                string             `json:"note"`
+	Validators          []Validator        `json:"validators,omitempty"`
+	Candidates          []Candidate        `json:"candidates,omitempty"`
+	BlockListCandidates []Pubkey           `json:"block_list_candidates,omitempty"`
+	DeletedCandidates   []DeletedCandidate `json:"deleted_candidates,omitempty"`
+	Waitlist            []Waitlist         `json:"waitlist,omitempty"`
+	Pools               []Pool             `json:"pools,omitempty"`
+	NextOrderID         uint64             `json:"next_order_id"`
+	Accounts            []Account          `json:"accounts,omitempty"`
+	Coins               []Coin             `json:"coins,omitempty"`
+	FrozenFunds         []FrozenFund       `json:"frozen_funds,omitempty"`
+	HaltBlocks          []HaltBlock        `json:"halt_blocks,omitempty"`
+	Commission          Commission         `json:"commission,omitempty"`
+	CommissionVotes     []CommissionVote   `json:"commission_votes,omitempty"`
+	UpdateVotes         []UpdateVote       `json:"update_votes,omitempty"`
+	UsedChecks          []UsedCheck        `json:"used_checks,omitempty"`
+	MaxGas              uint64             `json:"max_gas"`
+	TotalSlashed        string             `json:"total_slashed"`
+	Version             string             `json:"version,omitempty"`
 }
 
 func (s *AppState) Verify() error {
@@ -160,17 +162,34 @@ func (s *AppState) Verify() error {
 		}
 
 		for _, swap := range s.Pools {
+			if coin.ID != swap.Coin0 && coin.ID != swap.Coin1 {
+				continue
+			}
 			if swap.Coin0 == coin.ID {
 				volume.Add(volume, helpers.StringToBigInt(swap.Reserve0))
+
 			}
 			if swap.Coin1 == coin.ID {
 				volume.Add(volume, helpers.StringToBigInt(swap.Reserve1))
+
 			}
+			for _, order := range swap.Orders {
+				if !order.IsSale {
+					if swap.Coin0 == coin.ID {
+						volume.Add(volume, helpers.StringToBigInt(order.Volume0))
+					}
+				} else {
+					if swap.Coin1 == coin.ID {
+						volume.Add(volume, helpers.StringToBigInt(order.Volume1))
+					}
+				}
+			}
+
 		}
 
 		if coin.Crr == 0 {
 			if volume.Cmp(helpers.StringToBigInt(coin.Volume)) != 0 {
-				return fmt.Errorf("wrong token %s volume (%s)", coin.Symbol.String(), big.NewInt(0).Sub(volume, helpers.StringToBigInt(coin.Volume)))
+				return fmt.Errorf("wrong token %s (%d) volume (%s)", coin.Symbol.String(), coin.ID, big.NewInt(0).Sub(volume, helpers.StringToBigInt(coin.Volume)))
 			}
 			continue
 		}
@@ -301,13 +320,21 @@ type Waitlist struct {
 	Coin        uint64  `json:"coin"`
 	Value       string  `json:"value"`
 }
-
+type Order struct {
+	IsSale  bool    `json:"is_sale"`
+	Volume0 string  `json:"volume0"` // buy
+	Volume1 string  `json:"volume1"` // sell
+	ID      uint64  `json:"id"`
+	Owner   Address `json:"owner"`
+	Height  uint64  `json:"height"`
+}
 type Pool struct {
-	Coin0    uint64 `json:"coin0"`
-	Coin1    uint64 `json:"coin1"`
-	Reserve0 string `json:"reserve0"`
-	Reserve1 string `json:"reserve1"`
-	ID       uint64 `json:"id"`
+	Coin0    uint64  `json:"coin0"`
+	Coin1    uint64  `json:"coin1"`
+	Reserve0 string  `json:"reserve0"`
+	Reserve1 string  `json:"reserve1"`
+	ID       uint64  `json:"id"`
+	Orders   []Order `json:"orders"`
 }
 
 type Coin struct {
@@ -322,6 +349,11 @@ type Coin struct {
 	OwnerAddress *Address   `json:"owner_address,omitempty"`
 	Mintable     bool       `json:"mintable,omitempty"`
 	Burnable     bool       `json:"burnable,omitempty"`
+}
+
+type DeletedCandidate struct {
+	ID     uint64 `json:"id"`
+	PubKey Pubkey `json:"public_key"`
 }
 
 type FrozenFund struct {

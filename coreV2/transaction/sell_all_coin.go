@@ -7,6 +7,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/commission"
+	"github.com/MinterTeam/minter-go-node/coreV2/state/swap"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	abcTypes "github.com/tendermint/tendermint/abci/types"
@@ -176,17 +177,35 @@ func (data SellAllCoinData) Run(tx *Transaction, context state.Interface, reward
 	}
 	var tags []abcTypes.EventAttribute
 	if deliverState, ok := context.(*state.State); ok {
+		var tagsCom *tagPoolChange
 		if isGasCommissionFromPoolSwap {
-			commission, commissionInBaseCoin, _ = deliverState.Swap.PairSell(data.CoinToSell, types.GetBaseCoinID(), commission, commissionInBaseCoin)
+			var (
+				poolIDCom  uint32
+				detailsCom *swap.ChangeDetailsWithOrders
+				ownersCom  []*swap.OrderDetail
+			)
+			commission, commissionInBaseCoin, poolIDCom, detailsCom, ownersCom = deliverState.Swap.PairSellWithOrders(tx.CommissionCoin(), types.GetBaseCoinID(), commission, commissionInBaseCoin)
+			tagsCom = &tagPoolChange{
+				PoolID:   poolIDCom,
+				CoinIn:   tx.CommissionCoin(),
+				ValueIn:  commission.String(),
+				CoinOut:  types.GetBaseCoinID(),
+				ValueOut: commissionInBaseCoin.String(),
+				Orders:   detailsCom,
+				// Sellers:  ownersCom,
+			}
+			for _, value := range ownersCom {
+				deliverState.Accounts.AddBalance(value.Owner, tx.CommissionCoin(), value.ValueBigInt)
+			}
 		} else if !data.CoinToSell.IsBaseCoin() {
-			deliverState.Coins.SubVolume(data.CoinToSell, commission)
-			deliverState.Coins.SubReserve(data.CoinToSell, commissionInBaseCoin)
+			deliverState.Coins.SubVolume(tx.CommissionCoin(), commission)
+			deliverState.Coins.SubReserve(tx.CommissionCoin(), commissionInBaseCoin)
 		}
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
-		deliverState.Accounts.SubBalance(sender, data.CoinToSell, balance)
+		deliverState.Accounts.SubBalance(sender, tx.CommissionCoin(), balance)
 		if !data.CoinToSell.IsBaseCoin() {
-			deliverState.Coins.SubVolume(data.CoinToSell, valueToSell)
-			deliverState.Coins.SubReserve(data.CoinToSell, diffBipReserve)
+			deliverState.Coins.SubVolume(tx.CommissionCoin(), valueToSell)
+			deliverState.Coins.SubReserve(tx.CommissionCoin(), diffBipReserve)
 		}
 		deliverState.Accounts.AddBalance(sender, data.CoinToBuy, value)
 		if !data.CoinToBuy.IsBaseCoin() {
@@ -199,6 +218,7 @@ func (data SellAllCoinData) Run(tx *Transaction, context state.Interface, reward
 			{Key: []byte("tx.commission_in_base_coin"), Value: []byte(commissionInBaseCoin.String())},
 			{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String()), Index: true},
 			{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
+			{Key: []byte("tx.commission_details"), Value: []byte(tagsCom.string())},
 			{Key: []byte("tx.coin_to_buy"), Value: []byte(data.CoinToBuy.String()), Index: true},
 			{Key: []byte("tx.coin_to_sell"), Value: []byte(data.CoinToSell.String()), Index: true},
 			{Key: []byte("tx.return"), Value: []byte(value.String())},

@@ -2,18 +2,21 @@ package events
 
 import (
 	"encoding/binary"
+	"sync"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	tmjson "github.com/tendermint/tendermint/libs/json"
 	db "github.com/tendermint/tm-db"
-	"sync"
 )
 
 func init() {
+	tmjson.RegisterType(&removeCandidate{}, "removeCandidate")
 	tmjson.RegisterType(&reward{}, "reward")
 	tmjson.RegisterType(&slash{}, "slash")
 	tmjson.RegisterType(&jail{}, "jail")
 	tmjson.RegisterType(&unbond{}, "unbond")
 	tmjson.RegisterType(&kick{}, "kick")
+	tmjson.RegisterType(&orderExpired{}, "orderExpired")
 	tmjson.RegisterType(&RewardEvent{}, TypeRewardEvent)
 	tmjson.RegisterType(&SlashEvent{}, TypeSlashEvent)
 	tmjson.RegisterType(&JailEvent{}, TypeJailEvent)
@@ -21,6 +24,8 @@ func init() {
 	tmjson.RegisterType(&StakeKickEvent{}, TypeStakeKickEvent)
 	tmjson.RegisterType(&UpdateNetworkEvent{}, TypeUpdateNetworkEvent)
 	tmjson.RegisterType(&UpdateCommissionsEvent{}, TypeUpdateCommissionsEvent)
+	tmjson.RegisterType(&OrderExpiredEvent{}, TypeOrderExpiredEvent)
+	tmjson.RegisterType(&RemoveCandidateEvent{}, TypeRemoveCandidateEvent)
 }
 
 // IEventsDB is an interface of Events
@@ -31,12 +36,14 @@ type IEventsDB interface {
 	Close() error
 }
 
-type MockEvents struct{}
+type MockEvents struct {
+	evnts Events
+}
 
-func (e MockEvents) AddEvent(event Event)            {}
-func (e MockEvents) LoadEvents(height uint32) Events { return nil }
-func (e MockEvents) CommitEvents(uint32) error       { return nil }
-func (e MockEvents) Close() error                    { return nil }
+func (e *MockEvents) AddEvent(event Event)            { e.evnts = append(e.evnts, event) }
+func (e *MockEvents) LoadEvents(height uint32) Events { return e.evnts }
+func (e *MockEvents) CommitEvents(uint32) error       { return nil }
+func (e *MockEvents) Close() error                    { return nil }
 
 type eventsStore struct {
 	sync.RWMutex
@@ -117,6 +124,10 @@ func (store *eventsStore) LoadEvents(height uint32) Events {
 			resultEvents = append(resultEvents, stake.compile(p, store.idAddress[stake.addressID()]))
 		} else if c, ok := compactEvent.(*jail); ok {
 			resultEvents = append(resultEvents, c.compile(types.Pubkey(store.idPubKey[c.pubKeyID()])))
+		} else if c, ok := compactEvent.(*orderExpired); ok {
+			resultEvents = append(resultEvents, c.compile(store.idAddress[c.addressID()]))
+		} else if c, ok := compactEvent.(*removeCandidate); ok {
+			resultEvents = append(resultEvents, c.compile(types.Pubkey(store.idPubKey[c.pubKeyID()])))
 		} else if c, ok := compactEvent.(Event); ok {
 			resultEvents = append(resultEvents, c)
 		} else {
@@ -140,9 +151,14 @@ func (store *eventsStore) CommitEvents(height uint32) error {
 			data = append(data, stake.convert(store.savePubKey(key), address))
 			continue
 		}
-		if stake, ok := item.(*JailEvent); ok {
-			key := stake.validatorPubKey()
-			data = append(data, stake.convert(store.savePubKey(key)))
+		if jail, ok := item.(*JailEvent); ok {
+			key := jail.validatorPubKey()
+			data = append(data, jail.convert(store.savePubKey(key)))
+			continue
+		}
+		if order, ok := item.(*OrderExpiredEvent); ok {
+			address := store.saveAddress(order.address())
+			data = append(data, order.convert(address))
 			continue
 		}
 		data = append(data, item)

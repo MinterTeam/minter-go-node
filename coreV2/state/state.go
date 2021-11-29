@@ -143,6 +143,7 @@ func NewState(height uint64, db db.DB, events eventsdb.IEventsDB, cacheSize int,
 	state.tree = iavlTree
 	state.height = int64(height)
 	state.InitialVersion = int64(initialVersion)
+
 	state.Candidates.LoadCandidatesDeliver()
 	state.Candidates.LoadStakes()
 	state.Validators.LoadValidators()
@@ -217,7 +218,7 @@ func (s *State) Commit() ([]byte, error) {
 	return hash, nil
 }
 
-func (s *State) Import(state types.AppState) error {
+func (s *State) Import(state types.AppState, version string) error {
 	defer s.Checker.RemoveBaseCoin()
 
 	s.App.SetMaxGas(state.MaxGas)
@@ -282,7 +283,16 @@ func (s *State) Import(state types.AppState) error {
 		s.Candidates.SetTotalStake(c.PubKey, helpers.StringToBigInt(c.TotalBipStake))
 		s.Candidates.SetStakes(c.PubKey, c.Stakes, c.Updates)
 	}
-	s.Candidates.RecalculateStakes(uint64(s.height))
+
+	if len(state.DeletedCandidates) > 0 {
+		s.Candidates.SetDeletedCandidates(state.DeletedCandidates)
+	}
+
+	if version == "" {
+		s.Candidates.RecalculateStakes(uint64(s.height)) // RecalculateStakesV2
+	} else {
+		s.Candidates.RecalculateStakesV2(uint64(s.height))
+	}
 
 	for _, w := range state.Waitlist {
 		value := helpers.StringToBigInt(w.Value)
@@ -305,63 +315,125 @@ func (s *State) Import(state types.AppState) error {
 
 	s.Swap.Import(&state)
 
+	c := state.Commission
 	com := &commission.Price{
-		Coin:                    types.CoinID(state.Commission.Coin),
-		PayloadByte:             helpers.StringToBigInt(state.Commission.PayloadByte),
-		Send:                    helpers.StringToBigInt(state.Commission.Send),
-		BuyBancor:               helpers.StringToBigInt(state.Commission.BuyBancor),
-		SellBancor:              helpers.StringToBigInt(state.Commission.SellBancor),
-		SellAllBancor:           helpers.StringToBigInt(state.Commission.SellAllBancor),
-		BuyPoolBase:             helpers.StringToBigInt(state.Commission.BuyPoolBase),
-		BuyPoolDelta:            helpers.StringToBigInt(state.Commission.BuyPoolDelta),
-		SellPoolBase:            helpers.StringToBigInt(state.Commission.SellPoolBase),
-		SellPoolDelta:           helpers.StringToBigInt(state.Commission.SellPoolDelta),
-		SellAllPoolBase:         helpers.StringToBigInt(state.Commission.SellAllPoolBase),
-		SellAllPoolDelta:        helpers.StringToBigInt(state.Commission.SellAllPoolDelta),
-		CreateTicker3:           helpers.StringToBigInt(state.Commission.CreateTicker3),
-		CreateTicker4:           helpers.StringToBigInt(state.Commission.CreateTicker4),
-		CreateTicker5:           helpers.StringToBigInt(state.Commission.CreateTicker5),
-		CreateTicker6:           helpers.StringToBigInt(state.Commission.CreateTicker6),
-		CreateTicker7to10:       helpers.StringToBigInt(state.Commission.CreateTicker7_10),
-		CreateCoin:              helpers.StringToBigInt(state.Commission.CreateCoin),
-		CreateToken:             helpers.StringToBigInt(state.Commission.CreateToken),
-		RecreateCoin:            helpers.StringToBigInt(state.Commission.RecreateCoin),
-		RecreateToken:           helpers.StringToBigInt(state.Commission.RecreateToken),
-		DeclareCandidacy:        helpers.StringToBigInt(state.Commission.DeclareCandidacy),
-		Delegate:                helpers.StringToBigInt(state.Commission.Delegate),
-		Unbond:                  helpers.StringToBigInt(state.Commission.Unbond),
-		RedeemCheck:             helpers.StringToBigInt(state.Commission.RedeemCheck),
-		SetCandidateOn:          helpers.StringToBigInt(state.Commission.SetCandidateOn),
-		SetCandidateOff:         helpers.StringToBigInt(state.Commission.SetCandidateOff),
-		CreateMultisig:          helpers.StringToBigInt(state.Commission.CreateMultisig),
-		MultisendBase:           helpers.StringToBigInt(state.Commission.MultisendBase),
-		MultisendDelta:          helpers.StringToBigInt(state.Commission.MultisendDelta),
-		EditCandidate:           helpers.StringToBigInt(state.Commission.EditCandidate),
-		SetHaltBlock:            helpers.StringToBigInt(state.Commission.SetHaltBlock),
-		EditTickerOwner:         helpers.StringToBigInt(state.Commission.EditTickerOwner),
-		EditMultisig:            helpers.StringToBigInt(state.Commission.EditMultisig),
-		EditCandidatePublicKey:  helpers.StringToBigInt(state.Commission.EditCandidatePublicKey),
-		CreateSwapPool:          helpers.StringToBigInt(state.Commission.CreateSwapPool),
-		AddLiquidity:            helpers.StringToBigInt(state.Commission.AddLiquidity),
-		RemoveLiquidity:         helpers.StringToBigInt(state.Commission.RemoveLiquidity),
-		EditCandidateCommission: helpers.StringToBigInt(state.Commission.EditCandidateCommission),
-		BurnToken:               helpers.StringToBigInt(state.Commission.BurnToken),
-		MintToken:               helpers.StringToBigInt(state.Commission.MintToken),
-		VoteCommission:          helpers.StringToBigInt(state.Commission.VoteCommission),
-		VoteUpdate:              helpers.StringToBigInt(state.Commission.VoteUpdate),
+		Coin:                    types.CoinID(c.Coin),
+		PayloadByte:             helpers.StringToBigInt(c.PayloadByte),
+		Send:                    helpers.StringToBigInt(c.Send),
+		BuyBancor:               helpers.StringToBigInt(c.BuyBancor),
+		SellBancor:              helpers.StringToBigInt(c.SellBancor),
+		SellAllBancor:           helpers.StringToBigInt(c.SellAllBancor),
+		BuyPoolBase:             helpers.StringToBigInt(c.BuyPoolBase),
+		BuyPoolDelta:            helpers.StringToBigInt(c.BuyPoolDelta),
+		SellPoolBase:            helpers.StringToBigInt(c.SellPoolBase),
+		SellPoolDelta:           helpers.StringToBigInt(c.SellPoolDelta),
+		SellAllPoolBase:         helpers.StringToBigInt(c.SellAllPoolBase),
+		SellAllPoolDelta:        helpers.StringToBigInt(c.SellAllPoolDelta),
+		CreateTicker3:           helpers.StringToBigInt(c.CreateTicker3),
+		CreateTicker4:           helpers.StringToBigInt(c.CreateTicker4),
+		CreateTicker5:           helpers.StringToBigInt(c.CreateTicker5),
+		CreateTicker6:           helpers.StringToBigInt(c.CreateTicker6),
+		CreateTicker7to10:       helpers.StringToBigInt(c.CreateTicker7_10),
+		CreateCoin:              helpers.StringToBigInt(c.CreateCoin),
+		CreateToken:             helpers.StringToBigInt(c.CreateToken),
+		RecreateCoin:            helpers.StringToBigInt(c.RecreateCoin),
+		RecreateToken:           helpers.StringToBigInt(c.RecreateToken),
+		DeclareCandidacy:        helpers.StringToBigInt(c.DeclareCandidacy),
+		Delegate:                helpers.StringToBigInt(c.Delegate),
+		Unbond:                  helpers.StringToBigInt(c.Unbond),
+		RedeemCheck:             helpers.StringToBigInt(c.RedeemCheck),
+		SetCandidateOn:          helpers.StringToBigInt(c.SetCandidateOn),
+		SetCandidateOff:         helpers.StringToBigInt(c.SetCandidateOff),
+		CreateMultisig:          helpers.StringToBigInt(c.CreateMultisig),
+		MultisendBase:           helpers.StringToBigInt(c.MultisendBase),
+		MultisendDelta:          helpers.StringToBigInt(c.MultisendDelta),
+		EditCandidate:           helpers.StringToBigInt(c.EditCandidate),
+		SetHaltBlock:            helpers.StringToBigInt(c.SetHaltBlock),
+		EditTickerOwner:         helpers.StringToBigInt(c.EditTickerOwner),
+		EditMultisig:            helpers.StringToBigInt(c.EditMultisig),
+		EditCandidatePublicKey:  helpers.StringToBigInt(c.EditCandidatePublicKey),
+		CreateSwapPool:          helpers.StringToBigInt(c.CreateSwapPool),
+		AddLiquidity:            helpers.StringToBigInt(c.AddLiquidity),
+		RemoveLiquidity:         helpers.StringToBigInt(c.RemoveLiquidity),
+		EditCandidateCommission: helpers.StringToBigInt(c.EditCandidateCommission),
+		BurnToken:               helpers.StringToBigInt(c.BurnToken),
+		MintToken:               helpers.StringToBigInt(c.MintToken),
+		VoteCommission:          helpers.StringToBigInt(c.VoteCommission),
+		VoteUpdate:              helpers.StringToBigInt(c.VoteUpdate),
 		More:                    nil,
 	}
 
-	if helpers.StringToBigIntOrNil(state.Commission.FailedTx) != nil ||
-		helpers.StringToBigIntOrNil(state.Commission.AddLimitOrder) != nil ||
-		helpers.StringToBigIntOrNil(state.Commission.RemoveLimitOrder) != nil {
+	if c.FailedTx != "" &&
+		c.AddLimitOrder != "" &&
+		c.RemoveLimitOrder != "" {
 		com.More = append(com.More,
-			helpers.StringToBigIntOrNil(state.Commission.FailedTx),
-			helpers.StringToBigIntOrNil(state.Commission.AddLimitOrder),
-			helpers.StringToBigIntOrNil(state.Commission.RemoveLimitOrder))
+			helpers.StringToBigInt(c.FailedTx),
+			helpers.StringToBigInt(c.AddLimitOrder),
+			helpers.StringToBigInt(c.RemoveLimitOrder))
 	}
 
 	s.Commission.SetNewCommissions(com.Encode())
+
+	for _, vote := range state.CommissionVotes {
+		vc := vote.Commission
+		voteCom := &commission.Price{
+			Coin:                    types.CoinID(vc.Coin),
+			PayloadByte:             helpers.StringToBigInt(vc.PayloadByte),
+			Send:                    helpers.StringToBigInt(vc.Send),
+			BuyBancor:               helpers.StringToBigInt(vc.BuyBancor),
+			SellBancor:              helpers.StringToBigInt(vc.SellBancor),
+			SellAllBancor:           helpers.StringToBigInt(vc.SellAllBancor),
+			BuyPoolBase:             helpers.StringToBigInt(vc.BuyPoolBase),
+			BuyPoolDelta:            helpers.StringToBigInt(vc.BuyPoolDelta),
+			SellPoolBase:            helpers.StringToBigInt(vc.SellPoolBase),
+			SellPoolDelta:           helpers.StringToBigInt(vc.SellPoolDelta),
+			SellAllPoolBase:         helpers.StringToBigInt(vc.SellAllPoolBase),
+			SellAllPoolDelta:        helpers.StringToBigInt(vc.SellAllPoolDelta),
+			CreateTicker3:           helpers.StringToBigInt(vc.CreateTicker3),
+			CreateTicker4:           helpers.StringToBigInt(vc.CreateTicker4),
+			CreateTicker5:           helpers.StringToBigInt(vc.CreateTicker5),
+			CreateTicker6:           helpers.StringToBigInt(vc.CreateTicker6),
+			CreateTicker7to10:       helpers.StringToBigInt(vc.CreateTicker7_10),
+			CreateCoin:              helpers.StringToBigInt(vc.CreateCoin),
+			CreateToken:             helpers.StringToBigInt(vc.CreateToken),
+			RecreateCoin:            helpers.StringToBigInt(vc.RecreateCoin),
+			RecreateToken:           helpers.StringToBigInt(vc.RecreateToken),
+			DeclareCandidacy:        helpers.StringToBigInt(vc.DeclareCandidacy),
+			Delegate:                helpers.StringToBigInt(vc.Delegate),
+			Unbond:                  helpers.StringToBigInt(vc.Unbond),
+			RedeemCheck:             helpers.StringToBigInt(vc.RedeemCheck),
+			SetCandidateOn:          helpers.StringToBigInt(vc.SetCandidateOn),
+			SetCandidateOff:         helpers.StringToBigInt(vc.SetCandidateOff),
+			CreateMultisig:          helpers.StringToBigInt(vc.CreateMultisig),
+			MultisendBase:           helpers.StringToBigInt(vc.MultisendBase),
+			MultisendDelta:          helpers.StringToBigInt(vc.MultisendDelta),
+			EditCandidate:           helpers.StringToBigInt(vc.EditCandidate),
+			SetHaltBlock:            helpers.StringToBigInt(vc.SetHaltBlock),
+			EditTickerOwner:         helpers.StringToBigInt(vc.EditTickerOwner),
+			EditMultisig:            helpers.StringToBigInt(vc.EditMultisig),
+			EditCandidatePublicKey:  helpers.StringToBigInt(vc.EditCandidatePublicKey),
+			CreateSwapPool:          helpers.StringToBigInt(vc.CreateSwapPool),
+			AddLiquidity:            helpers.StringToBigInt(vc.AddLiquidity),
+			RemoveLiquidity:         helpers.StringToBigInt(vc.RemoveLiquidity),
+			EditCandidateCommission: helpers.StringToBigInt(vc.EditCandidateCommission),
+			BurnToken:               helpers.StringToBigInt(vc.BurnToken),
+			MintToken:               helpers.StringToBigInt(vc.MintToken),
+			VoteCommission:          helpers.StringToBigInt(vc.VoteCommission),
+			VoteUpdate:              helpers.StringToBigInt(vc.VoteUpdate),
+			More:                    nil,
+		}
+		if vc.FailedTx != "" &&
+			vc.AddLimitOrder != "" &&
+			vc.RemoveLimitOrder != "" {
+			voteCom.More = append(com.More,
+				helpers.StringToBigInt(vc.FailedTx),
+				helpers.StringToBigInt(vc.AddLimitOrder),
+				helpers.StringToBigInt(vc.RemoveLimitOrder))
+		}
+		for _, pubkey := range vote.Votes {
+			s.Commission.AddVote(vote.Height, pubkey, voteCom.Encode())
+		}
+	}
 
 	return nil
 }

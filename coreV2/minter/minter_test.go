@@ -56,7 +56,7 @@ func initTestNode(t *testing.T, initialHeight int64) (*Blockchain, *rpc.Local, *
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 
-	app := NewMinterBlockchain(storage, minterCfg, ctx, 120)
+	app := NewMinterBlockchain(storage, minterCfg, ctx, 120, 0)
 	nodeKey, err := p2p.LoadOrGenNodeKey(cfg.NodeKeyFile())
 	if err != nil {
 		t.Fatal(err)
@@ -405,8 +405,8 @@ func TestBlockchain_SetStatisticData(t *testing.T) {
 }
 
 func TestBlockchain_IsApplicationHalted(t *testing.T) {
-	blockchain, tmCli, pv, _ := initTestNode(t, 0)
-	// defer cancel() // unexpected call to os.Exit(0) during test
+	blockchain, tmCli, pv, cancel := initTestNode(t, 0)
+	defer cancel() // unexpected call to os.Exit(0) during test
 	data := transaction.SetHaltBlockData{
 		PubKey: types.BytesToPubkey(pv.Key.PubKey.Bytes()[:]),
 		Height: 5,

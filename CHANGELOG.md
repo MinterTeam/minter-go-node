@@ -1,5 +1,16 @@
 # Changelog
 
+## [v2.6.0](https://github.com/MinterTeam/minter-go-node/tree/v2.6.0)
+
+[Full Changelog](https://github.com/MinterTeam/minter-go-node/compare/v2.5.0...v2.6.0)
+
+### Added
+
+- AMM with Order Book
+- Allow all holders to burn tokens
+- Limitation of the maximum total stake of a candidate to 20% of the sum of all candidates
+- Removal of candidates that do not fall into the top 100 by stake size
+
 ## [v2.5.0](https://github.com/MinterTeam/minter-go-node/tree/v2.5.0)
 
 [Full Changelog](https://github.com/MinterTeam/minter-go-node/compare/v2.4.1...v2.5.0)

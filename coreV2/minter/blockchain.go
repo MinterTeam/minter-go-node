@@ -60,6 +60,7 @@ type Blockchain struct {
 	totalPower                      *big.Int
 	rewardsCounter                  *rewards.Reward
 	updateStakesAndPayRewardsPeriod uint64
+	expiredOrdersPeriod             uint64
 	// local rpc client for Tendermint
 	rpcClient *rpc.Local
 
@@ -84,7 +85,7 @@ func (blockchain *Blockchain) GetCurrentRewards() *big.Int {
 }
 
 // NewMinterBlockchain creates Minter Blockchain instance, should be only called once
-func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx context.Context, period uint64) *Blockchain {
+func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx context.Context, updateStakePeriod uint64, expiredOrdersPeriod uint64) *Blockchain {
 	// Initiate Application DB. Used for persisting data like current block, validators, etc.
 	applicationDB := appdb.NewAppDB(storages.GetMinterHome(), cfg)
 	if ctx == nil {
@@ -97,8 +98,11 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 		eventsDB = &eventsdb.MockEvents{}
 	}
 	const updateStakesAndPayRewards = 720
-	if period == 0 {
-		period = updateStakesAndPayRewards
+	if updateStakePeriod == 0 {
+		updateStakePeriod = updateStakesAndPayRewards
+	}
+	if expiredOrdersPeriod == 0 {
+		expiredOrdersPeriod = types.GetExpireOrdersPeriod()
 	}
 	app := &Blockchain{
 		rewardsCounter:                  rewards.NewReward(),
@@ -109,12 +113,14 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 		cfg:                             cfg,
 		stopChan:                        ctx,
 		haltHeight:                      uint64(cfg.HaltHeight),
-		updateStakesAndPayRewardsPeriod: period,
+		updateStakesAndPayRewardsPeriod: updateStakePeriod,
+		expiredOrdersPeriod:             expiredOrdersPeriod,
 		stopOk:                          make(chan struct{}),
 		knownUpdates: map[string]struct{}{
 			"":   {}, // default version
 			v230: {}, // add more for update
 			v250: {}, // commissions and mempool
+			v260: {}, // amm with orderbook
 		},
 		executor: GetExecutor(""),
 	}
@@ -130,6 +136,8 @@ func graceForUpdate(height uint64) *upgrades.GracePeriod {
 
 func GetExecutor(v string) transaction.ExecutorTx {
 	switch v {
+	case v260:
+		return transaction.NewExecutorV250(transaction.GetDataV260)
 	case v250:
 		return transaction.NewExecutorV250(transaction.GetDataV250)
 	case v230:
@@ -141,8 +149,13 @@ func GetExecutor(v string) transaction.ExecutorTx {
 
 const haltBlockV210 = 3431238
 const updateBlockV240 = 4448826
-const v230 = "v230"
-const v250 = "v250"
+
+const ( // known update versions
+	v2   = ""     // default
+	v230 = "v230" // remove liquidity bug
+	v250 = "v250" // commissions and failed txs
+	v260 = "v260" // orderbook
+)
 
 func (blockchain *Blockchain) initState() {
 	initialHeight := blockchain.appDB.GetStartHeight()
@@ -189,7 +202,7 @@ func (blockchain *Blockchain) InitChain(req abciTypes.RequestInitChain) abciType
 	blockchain.appDB.AddVersion(genesisState.Version, initialHeight)
 	blockchain.initState()
 
-	if err := blockchain.stateDeliver.Import(genesisState); err != nil {
+	if err := blockchain.stateDeliver.Import(genesisState, genesisState.Version); err != nil {
 		panic(err)
 	}
 	if err := blockchain.stateDeliver.Check(); err != nil {
@@ -344,6 +357,11 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 
 	// add remainder to total slashed
 	blockchain.stateDeliver.App.AddTotalSlashed(remainder)
+
+	// expire orders
+	if height > blockchain.expiredOrdersPeriod && height%blockchain.updateStakesAndPayRewardsPeriod == blockchain.updateStakesAndPayRewardsPeriod/2 {
+		blockchain.stateDeliver.Swap.ExpireOrders(height - blockchain.expiredOrdersPeriod)
+	}
 
 	// pay rewards
 	if height%blockchain.updateStakesAndPayRewardsPeriod == 0 {

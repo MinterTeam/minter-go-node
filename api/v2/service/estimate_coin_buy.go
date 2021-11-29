@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/coreV2/state/coins"
 	"math/big"
 
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
@@ -184,20 +185,19 @@ func (s *Service) calcBuyFromPool(ctx context.Context, value *big.Int, cState *s
 			}
 		}
 
-		sellValue := swapChecker.CalculateSellForBuy(buyValue)
-		if sellValue == nil {
-			reserve0, reserve1 := swapChecker.Reserves()
-			symbolOut := coinBuy.GetFullSymbol()
-			return nil, s.createError(status.New(codes.FailedPrecondition, fmt.Sprintf("You wanted to buy %s %s, but pool reserve has only %s %s", value, symbolOut, reserve1.String(), symbolOut)), transaction.EncodeError(code.NewInsufficientLiquidity(coinFrom.ID().String(), "", coinBuy.ID().String(), value.String(), reserve0.String(), reserve1.String())))
-		}
-
 		coinSell := coinFrom
 		if sellCoinID != coinSell.ID() {
 			coinSell = cState.Coins().GetCoin(sellCoinID)
 		}
 
-		if errResp := transaction.CheckSwap(swapChecker, coinSell, coinBuy, sellValue, buyValue, true); errResp != nil {
+		errResp, sellValue := transaction.CheckSwap(swapChecker, coinSell, coinBuy, coins.MaxCoinSupply(), buyValue, true)
+		if errResp != nil {
 			return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
+		}
+		if sellValue == nil || sellValue.Sign() != 1 {
+			reserve0, reserve1 := swapChecker.Reserves()
+			symbolOut := coinBuy.GetFullSymbol()
+			return nil, s.createError(status.New(codes.FailedPrecondition, fmt.Sprintf("You wanted to buy %s %s, but pool reserve has only %s %s", value, symbolOut, reserve1.String(), symbolOut)), transaction.EncodeError(code.NewInsufficientLiquidity(coinFrom.ID().String(), "", coinBuy.ID().String(), value.String(), reserve0.String(), reserve1.String())))
 		}
 
 		buyValue = sellValue
@@ -283,7 +283,7 @@ func (s *Service) calcBuyPoolWithCommission(ctx context.Context, commissions *co
 
 	commissionPoolSwapper := cState.Swap().GetSwapper(requestCoinCommissionID, types.GetBaseCoinID())
 	if commissionFromPool && requestCoinCommissionID != types.GetBaseCoinID() {
-		commissionPoolSwapper = commissionPoolSwapper.AddLastSwapStep(commission, commissionInBaseCoin)
+		commissionPoolSwapper = commissionPoolSwapper.AddLastSwapStepWithOrders(commission, commissionInBaseCoin, false)
 	}
 
 	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {

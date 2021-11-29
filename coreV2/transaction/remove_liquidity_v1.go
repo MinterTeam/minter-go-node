@@ -132,10 +132,10 @@ func (data RemoveLiquidityV1) Run(tx *Transaction, context state.Interface, rewa
 	var tags []abcTypes.EventAttribute
 	if deliverState, ok := context.(*state.State); ok {
 		if isGasCommissionFromPoolSwap {
-			commission, commissionInBaseCoin, _ = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
+			commission, commissionInBaseCoin, _, _, _ = deliverState.Swap.PairSellWithOrders(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
 		} else if !tx.GasCoin.IsBaseCoin() {
-			deliverState.Coins.SubVolume(tx.GasCoin, commission)
-			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
+			deliverState.Coins.SubVolume(tx.CommissionCoin(), commission)
+			deliverState.Coins.SubReserve(tx.CommissionCoin(), commissionInBaseCoin)
 		}
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)

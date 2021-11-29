@@ -1,12 +1,13 @@
 package swap
 
 import (
+	"math/big"
+	"testing"
+
 	"github.com/MinterTeam/minter-go-node/coreV2/state/bus"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/checker"
 	"github.com/MinterTeam/minter-go-node/tree"
 	db "github.com/tendermint/tm-db"
-	"math/big"
-	"testing"
 )
 
 func TestPair_load(t *testing.T) {

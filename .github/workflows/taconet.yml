@@ -1,25 +1,25 @@
-name: m2-testnet
+name: taconet
 
 on:
   push:
-    branches: [ v2.0 ]
+    branches: [ taconet ]
 
 jobs:
   build:
     name: Build & Deploy
     runs-on: ubuntu-latest
     steps:
-      - name: Set up Go 1.15
+      - name: Set up Go 1.16
         uses: actions/setup-go@v2
         with:
-          go-version: ^1.15
+          go-version: ^1.16
 
       - name: Check out code into the Go module directory
         uses: actions/checkout@v2
 
       - name: Get dependencies
         run: |
-          go mod download
+          go mod tidy
 
       - name: Build
         env:
@@ -38,14 +38,14 @@ jobs:
           target: "/tmp/node"
           rm: true
 
-      - name: Rename old build
+      - name: Remove old build
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.NODE_V2_HOST }}
           USERNAME: ${{ secrets.NODE_V2_USERNAME }}
           PORT: ${{ secrets.NODE_V2_PORT }}
           KEY: ${{ secrets.NODE_V2_SSH }}
-          script: mv /opt/minter/node/minter /opt/minter/node/minter_${{ github.sha }}
+          script: rm /opt/minter/node/minter
 
       - name: Copy new build
         uses: appleboy/ssh-action@master
@@ -55,6 +55,15 @@ jobs:
           PORT: ${{ secrets.NODE_V2_PORT }}
           KEY: ${{ secrets.NODE_V2_SSH }}
           script: mv /tmp/node/build/minter /opt/minter/node/minter
+
+      - name: Copy backup build
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.NODE_V2_HOST }}
+          USERNAME: ${{ secrets.NODE_V2_USERNAME }}
+          PORT: ${{ secrets.NODE_V2_PORT }}
+          KEY: ${{ secrets.NODE_V2_SSH }}
+          script: cp /opt/minter/node/minter /opt/minter/node/minter_${{ github.sha }}
 
       - name: Restart service
         uses: appleboy/ssh-action@master

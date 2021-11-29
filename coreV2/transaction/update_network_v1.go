@@ -31,7 +31,7 @@ func (data VoteUpdateDataV1) GetPubKey() types.Pubkey {
 	return data.PubKey
 }
 
-var allowedVersionNameRegexpCompileDeprecated, _ = regexp.Compile("^[a-zA-Z0-9]{1,20}$") // todo
+var allowedVersionNameRegexpCompileDeprecated, _ = regexp.Compile("^[a-zA-Z0-9]{1,20}$")
 
 func (data VoteUpdateDataV1) basicCheck(tx *Transaction, context *state.CheckState, block uint64) *Response {
 	if !allowedVersionNameRegexpCompileDeprecated.Match([]byte(data.Version)) {
@@ -103,8 +103,8 @@ func (data VoteUpdateDataV1) Run(tx *Transaction, context state.Interface, rewar
 		if isGasCommissionFromPoolSwap {
 			commission, commissionInBaseCoin, _ = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
 		} else if !tx.GasCoin.IsBaseCoin() {
-			deliverState.Coins.SubVolume(tx.GasCoin, commission)
-			deliverState.Coins.SubReserve(tx.GasCoin, commissionInBaseCoin)
+			deliverState.Coins.SubVolume(tx.CommissionCoin(), commission)
+			deliverState.Coins.SubReserve(tx.CommissionCoin(), commissionInBaseCoin)
 		}
 
 		deliverState.Updates.AddVote(data.Height, data.PubKey, data.Version)

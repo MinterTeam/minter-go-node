@@ -75,6 +75,11 @@ api_v2_listen_addr = "{{ .BaseConfig.APIv2ListenAddress }}"
 # API v2 Timeout
 api_v2_timeout_duration = "{{ .BaseConfig.APIv2TimeoutDuration }}"
 
+# Need add "rpc:info" to log_level
+api_v2_logger = "{{ .BaseConfig.APIv2Logger }}"
+
+api_v2_prometheus = "{{ .BaseConfig.APIv2Prometheus }}"
+
 # WebSocket connection duration
 ws_connection_duration = "{{ .BaseConfig.WSConnectionDuration }}"
 

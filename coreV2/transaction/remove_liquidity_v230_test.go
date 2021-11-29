@@ -480,7 +480,7 @@ func TestRemoveExchangeLiquidityTx_2(t *testing.T) {
 		t.Error(err)
 	}
 	{
-		data := AddLiquidityData{
+		data := AddLiquidityDataV1{
 			Coin0:          coin,
 			Volume0:        helpers.BipToPip(big.NewInt(10)),
 			Coin1:          coin1,
@@ -635,7 +635,7 @@ func TestRemoveExchangeLiquidityTx_3(t *testing.T) {
 		t.Error(err)
 	}
 	{
-		data := AddLiquidityData{
+		data := AddLiquidityDataV1{
 			Coin0:          coin,
 			Volume0:        helpers.BipToPip(big.NewInt(9)),
 			Coin1:          coin1,

@@ -11,51 +11,11 @@ import (
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/formula"
 	abcTypes "github.com/tendermint/tendermint/abci/types"
-	tmjson "github.com/tendermint/tendermint/libs/json"
 )
-
-type tagPoolsChange []*tagPoolChange
-
-func (p *tagPoolsChange) string() string {
-	if p == nil {
-		return ""
-	}
-	marshal, err := tmjson.Marshal(p)
-	if err != nil {
-		panic(err)
-	}
-	return string(marshal)
-}
-
-type tagPoolChange struct {
-	PoolID   uint32       `json:"pool_id"`
-	CoinIn   types.CoinID `json:"coin_in"`
-	ValueIn  string       `json:"value_in"`
-	CoinOut  types.CoinID `json:"coin_out"`
-	ValueOut string       `json:"value_out"`
-}
 
 type SellAllSwapPoolDataV230 struct {
 	Coins             []types.CoinID
 	MinimumValueToBuy *big.Int
-}
-
-type dataCommission interface {
-	commissionCoin() types.CoinID
-}
-
-func (data *SellAllSwapPoolDataV1) commissionCoin() types.CoinID {
-	if len(data.Coins) == 0 {
-		return 0
-	}
-	return data.Coins[0]
-}
-
-func (data *SellAllSwapPoolDataV230) commissionCoin() types.CoinID {
-	if len(data.Coins) == 0 {
-		return 0
-	}
-	return data.Coins[0]
 }
 
 func (data SellAllSwapPoolDataV230) Gas() int64 {
@@ -173,7 +133,7 @@ func (data SellAllSwapPoolDataV230) Run(tx *Transaction, context state.Interface
 			}
 
 			coinToBuyModel := checkState.Coins().GetCoin(coinToBuy)
-			errResp = CheckSwap(swapper, coinToSellModel, coinToBuyModel, valueToSell, valueToBuy, false)
+			errResp = CheckSwapV230(swapper, coinToSellModel, coinToBuyModel, valueToSell, valueToBuy, false)
 			if errResp != nil {
 				return *errResp
 			}
@@ -181,7 +141,7 @@ func (data SellAllSwapPoolDataV230) Run(tx *Transaction, context state.Interface
 			valueToSellCalc := swapper.CalculateBuyForSell(valueToSell)
 			if valueToSellCalc == nil {
 				reserve0, reserve1 := swapper.Reserves()
-				return Response{ // todo
+				return Response{
 					Code: code.SwapPoolUnknown,
 					Log:  fmt.Sprintf("swap pool has reserves %s %s and %d %s, you wanted sell %s %s", reserve0, coinToSellModel.GetFullSymbol(), reserve1, coinToBuyModel.GetFullSymbol(), valueToSell, coinToSellModel.GetFullSymbol()),
 					Info: EncodeError(code.NewInsufficientLiquidity(coinToSellModel.ID().String(), valueToSell.String(), coinToBuyModel.ID().String(), valueToSellCalc.String(), reserve0.String(), reserve1.String())),
@@ -349,11 +309,20 @@ func commissionFromPool(swapChecker swap.EditableChecker, coin CalculateCoin, ba
 			Info: EncodeError(code.NewPairNotExists(coin.ID().String(), types.GetBaseCoinID().String())),
 		}
 	}
-	commission := swapChecker.CalculateSellForBuy(commissionInBaseCoin)
-	if errResp := CheckSwap(swapChecker, coin, baseCoin, commission, commissionInBaseCoin, true); errResp != nil {
+
+	errResp, coms := CheckSwap(swapChecker, coin, baseCoin, maxCoinSupply, commissionInBaseCoin, true)
+	if errResp != nil {
 		return nil, errResp
 	}
-	return commission, nil
+	if coms == nil || coms.Sign() != 1 {
+		reserve0, reserve1 := swapChecker.Reserves()
+		return nil, &Response{
+			Code: code.InsufficientLiquidity,
+			Log:  fmt.Sprintf("swap pool has reserves %s %s and %d %s, you wanted buy %s %s", reserve0, coin.GetFullSymbol(), reserve1, baseCoin.GetFullSymbol(), commissionInBaseCoin, coin.GetFullSymbol()),
+			Info: EncodeError(code.NewInsufficientLiquidity(coin.ID().String(), coms.String(), baseCoin.ID().String(), commissionInBaseCoin.String(), reserve0.String(), reserve1.String())),
+		}
+	}
+	return coms, nil
 }
 
 func commissionFromReserve(gasCoin CalculateCoin, commissionInBaseCoin *big.Int) (*big.Int, *Response) {

@@ -62,6 +62,8 @@ const (
 	TypeVoteCommission          TxType = 0x20
 	TypeVoteUpdate              TxType = 0x21
 	TypeCreateSwapPool          TxType = 0x22
+	TypeAddLimitOrder           TxType = 0x23
+	TypeRemoveLimitOrder        TxType = 0x24
 )
 
 const (
@@ -74,6 +76,9 @@ const (
 	gasCreateSwapPool  = 10
 	gasAddLiquidity    = 5
 	gasRemoveLiquidity = 5
+
+	gasAddLimitOrder    = 50
+	gasRemoveLimitOrder = 50
 
 	convertDelta       = 1
 	gasSellSwapPool    = 2
@@ -198,7 +203,7 @@ func (tx *Transaction) Serialize() ([]byte, error) {
 
 func (tx *Transaction) Gas() int64 {
 	base := int64(gasBase)
-	if tx.commissionCoin() != types.GetBaseCoinID() {
+	if tx.CommissionCoin() != types.GetBaseCoinID() {
 		base += 1
 	}
 	if tx.payloadAndServiceDataLen() != 0 {

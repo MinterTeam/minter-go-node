@@ -1,9 +1,9 @@
 module github.com/MinterTeam/minter-go-node
 
-go 1.15
+go 1.16
 
 require (
-	github.com/MinterTeam/node-grpc-gateway v1.4.2
+	github.com/MinterTeam/node-grpc-gateway v1.5.1
 	github.com/btcsuite/btcd v0.21.0-beta
 	github.com/c-bata/go-prompt v0.2.3
 	github.com/cosmos/iavl v0.17.1-0.20210901093355-89f6b77e9284
@@ -13,7 +13,7 @@ require (
 	github.com/gorilla/handlers v1.4.2
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.1.0
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.6.0
 	github.com/marcusolsson/tui-go v0.4.0
 	github.com/mattn/go-isatty v0.0.12 // indirect
 	github.com/mattn/go-tty v0.0.3 // indirect
@@ -31,10 +31,10 @@ require (
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20201229170055-e5319fda7802
 	github.com/urfave/cli/v2 v2.0.0
 	golang.org/x/crypto v0.0.0-20201117144127-c1f2f97bffc9
-	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
-	golang.org/x/sys v0.0.0-20201020230747-6e5568b54d1a
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
+	golang.org/x/sys v0.0.0-20210903071746-97244b99971b
 	google.golang.org/grpc v1.40.0
-	google.golang.org/protobuf v1.26.0
+	google.golang.org/protobuf v1.27.1
 )
 
-//replace github.com/tendermint/tendermint => github.com/MinterTeam/tendermint v0.34.11-0.20210615080504-44952755291a
+replace github.com/tendermint/tendermint => github.com/MinterTeam/tendermint v0.34.11-0.20210923081749-4193cf101f9f

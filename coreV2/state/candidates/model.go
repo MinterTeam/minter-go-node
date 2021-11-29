@@ -40,12 +40,12 @@ type Candidate struct {
 }
 
 func (candidate *Candidate) idBytes() []byte {
+	return idBytes(candidate.ID)
+}
+
+func idBytes(id uint32) []byte {
 	bs := make([]byte, 4)
-
-	candidate.lock.RLock()
-	defer candidate.lock.RUnlock()
-
-	binary.LittleEndian.PutUint32(bs, candidate.ID)
+	binary.LittleEndian.PutUint32(bs, id)
 	return bs
 }
 

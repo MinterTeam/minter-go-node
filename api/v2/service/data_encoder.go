@@ -75,7 +75,7 @@ func encode(data transaction.Data, txType transaction.TxType, rCoins coins.RCoin
 			Stake: d.Stake.String(),
 		}
 	case transaction.TypeDelegate:
-		d := data.(*transaction.DelegateData)
+		d := data.(*transaction.DelegateDataV260)
 		m = &pb.DelegateData{
 			PubKey: d.PubKey.String(),
 			Coin: &pb.Coin{
@@ -199,7 +199,7 @@ func encode(data transaction.Data, txType transaction.TxType, rCoins coins.RCoin
 			PubKey: d.PubKey.String(),
 		}
 	case transaction.TypeUnbond:
-		d := data.(*transaction.UnbondData)
+		d := data.(*transaction.UnbondDataV260)
 		m = &pb.UnbondData{
 			PubKey: d.PubKey.String(),
 			Coin: &pb.Coin{
@@ -209,7 +209,7 @@ func encode(data transaction.Data, txType transaction.TxType, rCoins coins.RCoin
 			Value: d.Value.String(),
 		}
 	case transaction.TypeAddLiquidity:
-		d := data.(*transaction.AddLiquidityDataV240)
+		d := data.(*transaction.AddLiquidityDataV260)
 		m = &pb.AddLiquidityData{
 			Coin0: &pb.Coin{
 				Id:     uint64(d.Coin0),
@@ -238,7 +238,7 @@ func encode(data transaction.Data, txType transaction.TxType, rCoins coins.RCoin
 			MinimumVolume1: d.MinimumVolume1.String(),
 		}
 	case transaction.TypeBuySwapPool:
-		d := data.(*transaction.BuySwapPoolDataV240)
+		d := data.(*transaction.BuySwapPoolDataV260)
 		var coinsInfo []*pb.Coin
 		for _, coin := range d.Coins {
 			coinsInfo = append(coinsInfo, &pb.Coin{
@@ -252,7 +252,7 @@ func encode(data transaction.Data, txType transaction.TxType, rCoins coins.RCoin
 			MaximumValueToSell: d.MaximumValueToSell.String(),
 		}
 	case transaction.TypeSellSwapPool:
-		d := data.(*transaction.SellSwapPoolDataV240)
+		d := data.(*transaction.SellSwapPoolDataV260)
 		var coinsInfo []*pb.Coin
 		for _, coin := range d.Coins {
 			coinsInfo = append(coinsInfo, &pb.Coin{
@@ -266,7 +266,7 @@ func encode(data transaction.Data, txType transaction.TxType, rCoins coins.RCoin
 			MinimumValueToBuy: d.MinimumValueToBuy.String(),
 		}
 	case transaction.TypeSellAllSwapPool:
-		d := data.(*transaction.SellAllSwapPoolDataV240)
+		d := data.(*transaction.SellAllSwapPoolDataV260)
 		var coinsInfo []*pb.Coin
 		for _, coin := range d.Coins {
 			coinsInfo = append(coinsInfo, &pb.Coin{
@@ -299,7 +299,7 @@ func encode(data transaction.Data, txType transaction.TxType, rCoins coins.RCoin
 			Burnable:      d.Burnable,
 		}
 	case transaction.TypeBurnToken:
-		d := data.(*transaction.BurnTokenData)
+		d := data.(*transaction.BurnTokenDataV260)
 		m = &pb.BurnTokenData{
 			Coin: &pb.Coin{
 				Id:     uint64(d.Coin),
@@ -345,6 +345,25 @@ func encode(data transaction.Data, txType transaction.TxType, rCoins coins.RCoin
 			},
 			Volume0: d.Volume0.String(),
 			Volume1: d.Volume1.String(),
+		}
+	case transaction.TypeAddLimitOrder:
+		d := data.(*transaction.AddLimitOrderData)
+		m = &pb.AddLimitOrderData{
+			CoinToBuy: &pb.Coin{
+				Id:     uint64(d.CoinToBuy),
+				Symbol: rCoins.GetCoin(d.CoinToBuy).GetFullSymbol(),
+			},
+			CoinToSell: &pb.Coin{
+				Id:     uint64(d.CoinToSell),
+				Symbol: rCoins.GetCoin(d.CoinToSell).GetFullSymbol(),
+			},
+			ValueToBuy:  d.ValueToBuy.String(),
+			ValueToSell: d.ValueToSell.String(),
+		}
+	case transaction.TypeRemoveLimitOrder:
+		d := data.(*transaction.RemoveLimitOrderData)
+		m = &pb.RemoveLimitOrderData{
+			Id: uint64(d.ID),
 		}
 	default:
 		return nil, errors.New("unknown tx type")

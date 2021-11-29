@@ -540,7 +540,7 @@ func TestRecalculateStakes(t *testing.T) {
 }
 
 func getState() *State {
-	s, err := NewState(0, db.NewMemDB(), eventsdb.MockEvents{}, 1, 1, 0)
+	s, err := NewState(0, db.NewMemDB(), &eventsdb.MockEvents{}, 1, 1, 0)
 
 	if err != nil {
 		panic(err)

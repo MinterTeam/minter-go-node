@@ -46,6 +46,16 @@ func (s *Service) TimeoutDuration() time.Duration {
 	return s.minterCfg.APIv2TimeoutDuration
 }
 
+// EnabledLogger returns ...
+func (s *Service) EnabledLogger() bool {
+	return s.minterCfg.APIv2Logger
+}
+
+// EnabledPrometheus returns ...
+func (s *Service) EnabledPrometheus() bool {
+	return s.minterCfg.APIv2Prometheus
+}
+
 // Version returns version app
 func (s *Service) Version() string {
 	return s.version
