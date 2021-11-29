@@ -723,10 +723,11 @@ func NewNotEnoughMultisigVotes(neededVotes, gotVotes string) *notEnoughMultisigV
 
 type incorrectMultiSignature struct {
 	Code string `json:"code,omitempty"`
+	Text string `json:"text"`
 }
 
-func NewIncorrectMultiSignature() *incorrectMultiSignature {
-	return &incorrectMultiSignature{Code: strconv.Itoa(int(IncorrectMultiSignature))}
+func NewIncorrectMultiSignature(text string) *incorrectMultiSignature {
+	return &incorrectMultiSignature{Code: strconv.Itoa(int(IncorrectMultiSignature)), Text: text}
 }
 
 type wrongCrr struct {
