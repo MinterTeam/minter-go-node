@@ -197,7 +197,7 @@ func (s *Service) calcSellPoolWithCommission(ctx context.Context, commissions *c
 
 	commissionPoolSwapper := cState.Swap().GetSwapper(requestCoinCommissionID, types.GetBaseCoinID())
 	if commissionFromPool && requestCoinCommissionID != types.GetBaseCoinID() {
-		commissionInBaseCoin = commissionPoolSwapper.CalculateBuyForSellWithOrders(commission)
+		commissionInBaseCoin, _ = commissionPoolSwapper.CalculateBuyForSellWithOrders(commission)
 		commissionPoolSwapper = commissionPoolSwapper.AddLastSwapStepWithOrders(commission, commissionInBaseCoin, false)
 	}
 	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
@@ -220,13 +220,13 @@ func (s *Service) commissionInCoin(cState *state.CheckState, coinCommissionID ty
 		commission = commissionInBaseCoin
 		isSwapFromPool = true
 	case types.GetBaseCoinID():
-		commission = cState.Swap().GetSwapper(commissionsCoin, types.GetBaseCoinID()).CalculateBuyForSellWithOrders(commissionInBaseCoin)
+		commission, _ = cState.Swap().GetSwapper(commissionsCoin, types.GetBaseCoinID()).CalculateBuyForSellWithOrders(commissionInBaseCoin)
 		if commission == nil {
 			return nil, false, s.createError(status.New(codes.FailedPrecondition, "Not possible to pay commission"), transaction.EncodeError(code.NewCommissionCoinNotSufficient("", "")))
 		}
 	default:
 		if !commissionsCoin.IsBaseCoin() {
-			commissionInBaseCoin = cState.Swap().GetSwapper(commissionsCoin, types.GetBaseCoinID()).CalculateBuyForSellWithOrders(commissionInBaseCoin)
+			commissionInBaseCoin, _ = cState.Swap().GetSwapper(commissionsCoin, types.GetBaseCoinID()).CalculateBuyForSellWithOrders(commissionInBaseCoin)
 			if commissionInBaseCoin == nil {
 				return nil, false, s.createError(status.New(codes.FailedPrecondition, "Not possible to pay commission"), transaction.EncodeError(code.NewCommissionCoinNotSufficient("", "")))
 			}
@@ -276,7 +276,7 @@ func (s *Service) calcSellFromPool(ctx context.Context, value *big.Int, cState *
 			}
 		}
 
-		errResp, buyValue := transaction.CheckSwap(swapChecker, coinSell, coinBuy, sellValue, big.NewInt(0), false)
+		errResp, buyValue, _ := transaction.CheckSwap(swapChecker, coinSell, coinBuy, sellValue, big.NewInt(0), false)
 		if errResp != nil {
 			return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
 		}

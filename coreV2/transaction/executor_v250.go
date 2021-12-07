@@ -184,7 +184,7 @@ func (e *ExecutorV250) RunTx(context state.Interface, rawTx []byte, rewardPool *
 
 	if !commissions.Coin.IsBaseCoin() {
 		var resp *Response
-		resp, price = CheckSwap(checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()), checkState.Coins().GetCoin(commissions.Coin), checkState.Coins().GetCoin(0), price, big.NewInt(0), false)
+		resp, price, _ = CheckSwap(checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()), checkState.Coins().GetCoin(commissions.Coin), checkState.Coins().GetCoin(0), price, big.NewInt(0), false)
 		if resp != nil {
 			return *resp
 		}
@@ -215,7 +215,7 @@ func (e *ExecutorV250) RunTx(context state.Interface, rawTx []byte, rewardPool *
 
 		if !commissions.Coin.IsBaseCoin() {
 			var resp *Response
-			resp, commissionInBaseCoin = CheckSwap(checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()), checkState.Coins().GetCoin(commissions.Coin), checkState.Coins().GetCoin(0), commissionInBaseCoin, big.NewInt(0), false)
+			resp, commissionInBaseCoin, _ = CheckSwap(checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()), checkState.Coins().GetCoin(commissions.Coin), checkState.Coins().GetCoin(0), commissionInBaseCoin, big.NewInt(0), false)
 			if resp != nil {
 				return *resp
 			}
@@ -265,7 +265,7 @@ func (e *ExecutorV250) RunTx(context state.Interface, rawTx []byte, rewardPool *
 				if isGasCommissionFromPoolSwap {
 					if !commissions.Coin.IsBaseCoin() {
 						var resp *Response
-						resp, commissionInBaseCoin = CheckSwap(commissionPoolSwapper, checkState.Coins().GetCoin(tx.CommissionCoin()), checkState.Coins().GetCoin(0), commission, big.NewInt(0), false)
+						resp, commissionInBaseCoin, _ = CheckSwap(commissionPoolSwapper, checkState.Coins().GetCoin(tx.CommissionCoin()), checkState.Coins().GetCoin(0), commission, big.NewInt(0), false)
 						if resp != nil {
 							return *resp
 						}

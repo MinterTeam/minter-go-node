@@ -48,10 +48,10 @@ type EditableChecker interface {
 	CalculateAddAmountsForPrice(float *big.Float) (amount0, amount1 *big.Int)
 	// Deprecated
 	CalculateBuyForSell(amount0In *big.Int) (amount1Out *big.Int)
-	CalculateBuyForSellWithOrders(amount0In *big.Int) (amount1Out *big.Int)
+	CalculateBuyForSellWithOrders(amount0In *big.Int) (amount1Out *big.Int, orders []*Limit)
 	// Deprecated
 	CalculateSellForBuy(amount1Out *big.Int) (amount0In *big.Int)
-	CalculateSellForBuyWithOrders(amount1Out *big.Int) (amount0In *big.Int)
+	CalculateSellForBuyWithOrders(amount1Out *big.Int) (amount0In *big.Int, orders []*Limit)
 	CalculateAddLiquidity(amount0 *big.Int, supply *big.Int) (liquidity *big.Int, amount1 *big.Int)
 	CheckSwap(amount0In, amount1Out *big.Int) error
 	CheckMint(amount0, maxAmount1, totalSupply *big.Int) (err error)

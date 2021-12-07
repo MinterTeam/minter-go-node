@@ -80,7 +80,7 @@ func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinS
 	if req.SwapFrom == pb.SwapFrom_bancor || req.SwapFrom == pb.SwapFrom_optimal {
 		commissionInBaseCoin := new(big.Int).Set(commissions.SellAllBancor)
 		if !commissions.Coin.IsBaseCoin() {
-			commissionInBaseCoin = cState.Swap().GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuyWithOrders(commissionInBaseCoin)
+			commissionInBaseCoin, _ = cState.Swap().GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuyWithOrders(commissionInBaseCoin)
 		}
 		if req.GasPrice > 1 {
 			commissionInBaseCoin.Mul(commissionInBaseCoin, big.NewInt(int64(req.GasPrice)))
@@ -125,7 +125,7 @@ func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinS
 	if req.SwapFrom == pb.SwapFrom_pool || req.SwapFrom == pb.SwapFrom_optimal {
 		commissionInBaseCoin := new(big.Int).Set(commissions.SellAllPoolBase)
 		if !commissions.Coin.IsBaseCoin() {
-			commissionInBaseCoin = cState.Swap().GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuyWithOrders(commissionInBaseCoin)
+			commissionInBaseCoin, _ = cState.Swap().GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuyWithOrders(commissionInBaseCoin)
 		}
 		if req.GasPrice > 1 {
 			commissionInBaseCoin.Mul(commissionInBaseCoin, big.NewInt(int64(req.GasPrice)))

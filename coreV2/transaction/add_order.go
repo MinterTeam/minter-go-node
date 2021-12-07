@@ -124,7 +124,7 @@ func (data AddLimitOrderData) Run(tx *Transaction, context state.Interface, rewa
 
 	swapper := checkState.Swap().GetSwapper(data.CoinToSell, data.CoinToBuy)
 	if isGasCommissionFromPoolSwap && swapper.GetID() == commissionPoolSwapper.GetID() {
-		commissionInBaseCoin = commissionPoolSwapper.CalculateBuyForSellWithOrders(commission)
+		commissionInBaseCoin, _ = commissionPoolSwapper.CalculateBuyForSellWithOrders(commission)
 		if tx.GasCoin == data.CoinToSell && data.CoinToBuy.IsBaseCoin() {
 			swapper = swapper.AddLastSwapStepWithOrders(commission, commissionInBaseCoin, true)
 		}
