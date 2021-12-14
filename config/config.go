@@ -98,6 +98,7 @@ type Config struct {
 	BaseConfig `mapstructure:",squash"`
 
 	// Options for services
+	StateSync       *tmConfig.StateSyncConfig       `mapstructure:"statesync"`
 	RPC             *tmConfig.RPCConfig             `mapstructure:"rpc"`
 	P2P             *tmConfig.P2PConfig             `mapstructure:"p2p"`
 	Mempool         *tmConfig.MempoolConfig         `mapstructure:"mempool"`
@@ -110,6 +111,7 @@ type Config struct {
 func defaultConfig() *Config {
 	return &Config{
 		BaseConfig:      DefaultBaseConfig(),
+		StateSync:       tmConfig.DefaultStateSyncConfig(),
 		RPC:             tmConfig.DefaultRPCConfig(),
 		P2P:             tmConfig.DefaultP2PConfig(),
 		Mempool:         tmConfig.DefaultMempoolConfig(),
@@ -149,19 +151,10 @@ func GetTmConfig(cfg *Config) *tmConfig.Config {
 			ABCI:                    cfg.ABCI,
 			FilterPeers:             cfg.FilterPeers,
 		},
-		RPC:     cfg.RPC,
-		P2P:     cfg.P2P,
-		Mempool: cfg.Mempool,
-		// StateSync:       &tmConfig.StateSyncConfig{
-		// 	Enable:        true,
-		// 	TempDir:       "",
-		// 	RPCServers:    []string{}, // todo
-		// 	TrustPeriod:   168 * time.Hour,
-		// 	TrustHeight:   0,
-		// 	TrustHash:     "",
-		// 	DiscoveryTime: 15 * time.Second,
-		// },
-		StateSync:       tmConfig.DefaultStateSyncConfig(),
+		RPC:             cfg.RPC,
+		P2P:             cfg.P2P,
+		Mempool:         cfg.Mempool,
+		StateSync:       cfg.StateSync,
 		FastSync:        tmConfig.DefaultFastSyncConfig(),
 		Consensus:       cfg.Consensus,
 		TxIndex:         cfg.TxIndex,
@@ -262,6 +255,11 @@ type BaseConfig struct {
 	StateMemAvailable int `mapstructure:"state_mem_available"`
 
 	HaltHeight int `mapstructure:"halt_height"`
+
+	// State sync snapshot interval
+	SnapshotInterval int `mapstructure:"snapshot_interval"`
+	// State sync snapshot to keep
+	SnapshotKeepRecent int `mapstructure:"snapshot_keep_recent"`
 }
 
 // DefaultBaseConfig returns a default base configuration for a Tendermint node
@@ -286,11 +284,14 @@ func DefaultBaseConfig() BaseConfig {
 		WSConnectionDuration:    time.Minute,
 		ValidatorMode:           false,
 		KeepLastStates:          120,
-		StateCacheSize:          1000000,
-		StateMemAvailable:       1024,
 		APISimultaneousRequests: 100,
 		LogPath:                 "stdout",
 		LogFormat:               LogFormatPlain,
+		StateCacheSize:          1000000,
+		StateMemAvailable:       1024,
+		HaltHeight:              0,
+		SnapshotInterval:        0,
+		SnapshotKeepRecent:      2,
 	}
 }
 

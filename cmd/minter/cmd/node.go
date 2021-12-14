@@ -3,7 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
-
+	"github.com/cosmos/cosmos-sdk/snapshots"
 	"io"
 	"net/http"
 	_ "net/http/pprof" // nolint: gosec // securely exposed on separate, optional port
@@ -88,10 +88,25 @@ func runNode(cmd *cobra.Command) error {
 	if err != nil {
 		return err
 	}
-	app := minter.NewMinterBlockchain(storages, cfg, cmd.Context(), 720, 0)
+	app := minter.NewMinterBlockchain(storages, cfg, cmd.Context(), 720, 0, logger.With("module", "node"))
+
+	if cfg.SnapshotInterval > 0 {
+		snapshotDB, err := storages.InitSnapshotLevelDB("data/snapshots/metadata", minter.GetDbOpts(cfg.StateMemAvailable))
+		if err != nil {
+			return err
+		}
+
+		snapshotStore, err := snapshots.NewStore(snapshotDB, storages.GetMinterHome()+"/data/snapshots")
+		if err != nil {
+			panic(err)
+		}
+
+		app.SetSnapshotStore(snapshotStore, cfg.SnapshotInterval, cfg.SnapshotKeepRecent)
+	}
 
 	// start TM node
 	node := startTendermintNode(app, tmConfig, logger, storages.GetMinterHome())
+
 	client := app.RpcClient()
 
 	if !cfg.ValidatorMode {

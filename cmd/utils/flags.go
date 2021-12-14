@@ -12,6 +12,7 @@ type Storage struct {
 	minterConfig string
 	eventDB      db.DB
 	stateDB      db.DB
+	snapshotDB   db.DB
 }
 
 func (s *Storage) SetMinterConfig(minterConfig string) {
@@ -31,7 +32,16 @@ func (s *Storage) StateDB() db.DB {
 }
 
 func NewStorage(home string, config string) *Storage {
-	return &Storage{eventDB: db.NewMemDB(), stateDB: db.NewMemDB(), minterConfig: config, minterHome: home}
+	return &Storage{eventDB: db.NewMemDB(), stateDB: db.NewMemDB(), snapshotDB: db.NewMemDB(), minterConfig: config, minterHome: home}
+}
+
+func (s *Storage) InitSnapshotLevelDB(name string, opts *opt.Options) (db.DB, error) {
+	levelDB, err := db.NewGoLevelDBWithOpts(name, s.GetMinterHome(), opts)
+	if err != nil {
+		return nil, err
+	}
+	s.snapshotDB = levelDB
+	return s.snapshotDB, nil
 }
 
 func (s *Storage) InitEventLevelDB(name string, opts *opt.Options) (db.DB, error) {

@@ -56,7 +56,7 @@ func initTestNode(t *testing.T, initialHeight int64) (*Blockchain, *rpc.Local, *
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 
-	app := NewMinterBlockchain(storage, minterCfg, ctx, 120, 0)
+	app := NewMinterBlockchain(storage, minterCfg, ctx, 120, 0, nil)
 	nodeKey, err := p2p.LoadOrGenNodeKey(cfg.NodeKeyFile())
 	if err != nil {
 		t.Fatal(err)
@@ -108,7 +108,12 @@ func initTestNode(t *testing.T, initialHeight int64) (*Blockchain, *rpc.Local, *
 	return app, tmCli, pv, func() {
 		cancelFunc()
 		if err := app.WaitStop(); err != nil {
-			t.Skip(err)
+			if err.Error() == "leveldb: closed" {
+				t.Helper()
+				t.Log(err)
+				return
+			}
+			t.Error(err)
 		}
 	}
 }
