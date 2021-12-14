@@ -74,6 +74,7 @@ func (blockchain *Blockchain) stop() {
 func (blockchain *Blockchain) WaitStop() error {
 	defer close(blockchain.stopOk)
 	blockchain.tmNode.Wait()
+	blockchain.wgSnapshot.Wait()
 	return blockchain.Close()
 }
 

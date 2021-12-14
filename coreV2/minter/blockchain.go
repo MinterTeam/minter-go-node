@@ -91,6 +91,7 @@ type Blockchain struct {
 	snapshotInterval   uint64 // block interval between state sync snapshots
 	snapshotKeepRecent uint32 // recent state sync snapshots to keep
 	snapshotter        snapshottypes.Snapshotter
+	wgSnapshot         sync.WaitGroup
 }
 
 func (blockchain *Blockchain) GetCurrentRewards() *big.Int {
