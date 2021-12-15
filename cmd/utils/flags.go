@@ -31,6 +31,10 @@ func (s *Storage) StateDB() db.DB {
 	return s.stateDB
 }
 
+func (s *Storage) SnapshotDB() db.DB {
+	return s.snapshotDB
+}
+
 func NewStorage(home string, config string) *Storage {
 	return &Storage{eventDB: db.NewMemDB(), stateDB: db.NewMemDB(), snapshotDB: db.NewMemDB(), minterConfig: config, minterHome: home}
 }

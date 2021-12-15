@@ -618,5 +618,8 @@ func (blockchain *Blockchain) Close() error {
 	if err := blockchain.storages.EventDB().Close(); err != nil {
 		return err
 	}
+	if err := blockchain.storages.SnapshotDB().Close(); err != nil {
+		return err
+	}
 	return nil
 }
