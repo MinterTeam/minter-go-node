@@ -132,11 +132,6 @@ func (blockchain *Blockchain) ApplySnapshotChunk(req abci.RequestApplySnapshotCh
 
 // snapshot takes a snapshot of the current state and prunes any old snapshottypes.
 func (blockchain *Blockchain) snapshot(height int64) {
-	if blockchain.snapshotManager == nil {
-		blockchain.logger.Info("snapshot manager not configured")
-		return
-	}
-
 	if blockchain.stopped {
 		blockchain.logger.Info("node stopped, snapshot skipped", "height", height)
 		return

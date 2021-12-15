@@ -41,7 +41,8 @@ const (
 // AppDB is responsible for storing basic information about app state on disk
 type AppDB struct {
 	db db.DB
-	mu sync.RWMutex
+	//mu sync.RWMutex
+	WG sync.WaitGroup
 
 	store tree.MTree
 
@@ -64,8 +65,8 @@ func (appDB *AppDB) Close() error {
 
 // GetLastBlockHash returns latest block hash stored on disk
 func (appDB *AppDB) GetLastBlockHash() []byte {
-	appDB.mu.RLock()
-	defer appDB.mu.RUnlock()
+	// appDB.mu.RLock()
+	// defer appDB.mu.RUnlock()
 
 	rawHash, err := appDB.db.Get([]byte(hashPath))
 	if err != nil {
@@ -83,8 +84,8 @@ func (appDB *AppDB) GetLastBlockHash() []byte {
 
 // SetLastBlockHash stores given block hash on disk, panics on error
 func (appDB *AppDB) SetLastBlockHash(hash []byte) {
-	appDB.mu.Lock()
-	defer appDB.mu.Unlock()
+	// appDB.mu.Lock()
+	// defer appDB.mu.Unlock()
 
 	if err := appDB.db.Set([]byte(hashPath), hash); err != nil {
 		panic(err)
@@ -93,8 +94,8 @@ func (appDB *AppDB) SetLastBlockHash(hash []byte) {
 
 // GetLastHeight returns latest block height stored on disk
 func (appDB *AppDB) GetLastHeight() uint64 {
-	appDB.mu.RLock()
-	defer appDB.mu.RUnlock()
+	// appDB.mu.RLock()
+	// defer appDB.mu.RUnlock()
 	return appDB.getLastHeight()
 }
 func (appDB *AppDB) getLastHeight() uint64 {
@@ -121,8 +122,8 @@ func (appDB *AppDB) SetLastHeight(height uint64) {
 	h := make([]byte, 8)
 	binary.BigEndian.PutUint64(h, height)
 
-	appDB.mu.Lock()
-	defer appDB.mu.Unlock()
+	// appDB.mu.Lock()
+	// defer appDB.mu.Unlock()
 
 	if err := appDB.db.Set([]byte(heightPath), h); err != nil {
 		panic(err)
@@ -141,8 +142,8 @@ func (appDB *AppDB) SaveStartHeight() {
 	h := make([]byte, 8)
 	binary.BigEndian.PutUint64(h, atomic.LoadUint64(&appDB.startHeight))
 
-	appDB.mu.Lock()
-	defer appDB.mu.Unlock()
+	// appDB.mu.Lock()
+	// defer appDB.mu.Unlock()
 
 	if err := appDB.db.Set([]byte(startHeightPath), h); err != nil {
 		panic(err)
@@ -156,8 +157,8 @@ func (appDB *AppDB) GetStartHeight() uint64 {
 		return val
 	}
 
-	appDB.mu.RLock()
-	defer appDB.mu.RUnlock()
+	// appDB.mu.RLock()
+	// defer appDB.mu.RUnlock()
 
 	result, err := appDB.db.Get([]byte(startHeightPath))
 	if err != nil {
@@ -178,8 +179,8 @@ func (appDB *AppDB) GetValidators() abcTypes.ValidatorUpdates {
 		return appDB.validators
 	}
 
-	appDB.mu.RLock()
-	defer appDB.mu.RUnlock()
+	// appDB.mu.RLock()
+	// defer appDB.mu.RUnlock()
 
 	result, err := appDB.db.Get([]byte(validatorsPath))
 	if err != nil {
@@ -215,8 +216,8 @@ func (appDB *AppDB) FlushValidators() {
 		panic(err)
 	}
 
-	appDB.mu.Lock()
-	defer appDB.mu.Unlock()
+	// appDB.mu.Lock()
+	// defer appDB.mu.Unlock()
 
 	if err := appDB.db.Set([]byte(validatorsPath), data); err != nil {
 		panic(err)
@@ -230,8 +231,8 @@ const BlocksTimeCount = 4
 func (appDB *AppDB) GetLastBlockTimeDelta() (sumTimes int, count int) {
 	if len(appDB.lastTimeBlocks) == 0 {
 
-		appDB.mu.RLock()
-		defer appDB.mu.RUnlock()
+		// appDB.mu.RLock()
+		// defer appDB.mu.RUnlock()
 
 		result, err := appDB.db.Get([]byte(blocksTimePath))
 		if err != nil {
@@ -267,8 +268,8 @@ func calcBlockDelta(times []uint64) (sumTimes int, num int) {
 func (appDB *AppDB) AddBlocksTime(time time.Time) {
 	if len(appDB.lastTimeBlocks) == 0 {
 
-		appDB.mu.RLock()
-		defer appDB.mu.RUnlock()
+		// appDB.mu.RLock()
+		// defer appDB.mu.RUnlock()
 
 		result, err := appDB.db.Get([]byte(blocksTimePath))
 		if err != nil {
@@ -295,8 +296,8 @@ func (appDB *AppDB) SaveBlocksTime() {
 		panic(err)
 	}
 
-	appDB.mu.Lock()
-	defer appDB.mu.Unlock()
+	// appDB.mu.Lock()
+	// defer appDB.mu.Unlock()
 
 	if err := appDB.db.Set([]byte(blocksTimePath), data); err != nil {
 		panic(err)
@@ -333,8 +334,8 @@ func (appDB *AppDB) GetVersionHeight(name string) uint64 {
 func (appDB *AppDB) GetVersions() []*Version {
 	if len(appDB.versions) == 0 {
 
-		appDB.mu.RLock()
-		defer appDB.mu.RUnlock()
+		// appDB.mu.RLock()
+		// defer appDB.mu.RUnlock()
 
 		result, err := appDB.db.Get([]byte(versionsPath))
 		if err != nil {
@@ -372,8 +373,8 @@ func (appDB *AppDB) SaveVersions() {
 		panic(err)
 	}
 
-	appDB.mu.Lock()
-	defer appDB.mu.Unlock()
+	// appDB.mu.Lock()
+	// defer appDB.mu.Unlock()
 
 	if err := appDB.db.Set([]byte(versionsPath), data); err != nil {
 		panic(err)
@@ -421,15 +422,11 @@ func (appDB *AppDB) Snapshot(height uint64, format uint32) (<-chan io.ReadCloser
 	}
 
 	var results []*types.SnapshotItem
-	appDB.mu.RLock()
-
-	if height != appDB.getLastHeight() {
-		appDB.mu.RUnlock()
+	if height != appDB.GetLastHeight() {
 		return nil, sdkerrors.Wrapf(sdkerrors.ErrLogic, "cannot snapshot future height %v", height)
 	}
 
 	if height == 0 {
-		appDB.mu.RUnlock()
 		return nil, sdkerrors.Wrap(sdkerrors.ErrLogic, "cannot snapshot height 0")
 	}
 
@@ -448,7 +445,7 @@ func (appDB *AppDB) Snapshot(height uint64, format uint32) (<-chan io.ReadCloser
 			},
 		})
 	}
-	appDB.mu.RUnlock()
+	appDB.WG.Done()
 
 	// Spawn goroutine to generate snapshot chunks and pass their io.ReadClosers through a channel
 	ch := make(chan io.ReadCloser)

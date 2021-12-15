@@ -585,7 +585,8 @@ func (blockchain *Blockchain) Commit() abciTypes.ResponseCommit {
 		return abciTypes.ResponseCommit{Data: hash}
 	}
 
-	if blockchain.snapshotInterval > 0 && height%blockchain.snapshotInterval == 0 {
+	if blockchain.snapshotInterval > 0 && height%blockchain.snapshotInterval == 0 && blockchain.snapshotManager != nil {
+		blockchain.appDB.WG.Add(1)
 		go blockchain.snapshot(int64(height))
 	}
 
