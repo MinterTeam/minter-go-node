@@ -93,13 +93,15 @@ func (appDB *AppDB) SetLastBlockHash(hash []byte) {
 
 // GetLastHeight returns latest block height stored on disk
 func (appDB *AppDB) GetLastHeight() uint64 {
+	appDB.mu.RLock()
+	defer appDB.mu.RUnlock()
+	return appDB.getLastHeight()
+}
+func (appDB *AppDB) getLastHeight() uint64 {
 	val := atomic.LoadUint64(&appDB.lastHeight)
 	if val != 0 {
 		return val
 	}
-
-	appDB.mu.RLock()
-	defer appDB.mu.RUnlock()
 
 	result, err := appDB.db.Get([]byte(heightPath))
 	if err != nil {
@@ -417,16 +419,20 @@ func (appDB *AppDB) Snapshot(height uint64, format uint32) (<-chan io.ReadCloser
 	if format != snapshottypes.CurrentFormat {
 		return nil, sdkerrors.Wrapf(snapshottypes.ErrUnknownFormat, "format %v", format)
 	}
-	if height == 0 {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrLogic, "cannot snapshot height 0")
-	}
-	if height > appDB.GetLastHeight() {
+
+	var results []*types.SnapshotItem
+	appDB.mu.RLock()
+
+	if height != appDB.getLastHeight() {
+		appDB.mu.RUnlock()
 		return nil, sdkerrors.Wrapf(sdkerrors.ErrLogic, "cannot snapshot future height %v", height)
 	}
 
-	var results []*types.SnapshotItem
+	if height == 0 {
+		appDB.mu.RUnlock()
+		return nil, sdkerrors.Wrap(sdkerrors.ErrLogic, "cannot snapshot height 0")
+	}
 
-	appDB.mu.RLock()
 	for _, name := range []string{validatorsPath, heightPath, hashPath, versionsPath, blocksTimePath, startHeightPath} {
 		result, err := appDB.db.Get([]byte(name))
 		if err != nil {
