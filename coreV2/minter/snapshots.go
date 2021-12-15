@@ -137,7 +137,7 @@ func (blockchain *Blockchain) snapshot(height int64) {
 		return
 	}
 
-	//blockchain.wgSnapshot.Wait()
+	blockchain.wgSnapshot.Wait()
 	blockchain.wgSnapshot.Add(1)
 	defer blockchain.wgSnapshot.Done()
 
