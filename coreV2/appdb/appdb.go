@@ -84,6 +84,8 @@ func (appDB *AppDB) GetLastBlockHash() []byte {
 
 // SetLastBlockHash stores given block hash on disk, panics on error
 func (appDB *AppDB) SetLastBlockHash(hash []byte) {
+
+	appDB.WG.Wait()
 	// appDB.mu.Lock()
 	// defer appDB.mu.Unlock()
 
@@ -122,6 +124,7 @@ func (appDB *AppDB) SetLastHeight(height uint64) {
 	h := make([]byte, 8)
 	binary.BigEndian.PutUint64(h, height)
 
+	appDB.WG.Wait()
 	// appDB.mu.Lock()
 	// defer appDB.mu.Unlock()
 
@@ -142,6 +145,7 @@ func (appDB *AppDB) SaveStartHeight() {
 	h := make([]byte, 8)
 	binary.BigEndian.PutUint64(h, atomic.LoadUint64(&appDB.startHeight))
 
+	appDB.WG.Wait()
 	// appDB.mu.Lock()
 	// defer appDB.mu.Unlock()
 
@@ -216,6 +220,7 @@ func (appDB *AppDB) FlushValidators() {
 		panic(err)
 	}
 
+	appDB.WG.Wait()
 	// appDB.mu.Lock()
 	// defer appDB.mu.Unlock()
 
@@ -296,6 +301,7 @@ func (appDB *AppDB) SaveBlocksTime() {
 		panic(err)
 	}
 
+	appDB.WG.Wait()
 	// appDB.mu.Lock()
 	// defer appDB.mu.Unlock()
 
@@ -373,6 +379,7 @@ func (appDB *AppDB) SaveVersions() {
 		panic(err)
 	}
 
+	appDB.WG.Wait()
 	// appDB.mu.Lock()
 	// defer appDB.mu.Unlock()
 
@@ -418,15 +425,18 @@ type Store interface {
 // TestMultistoreSnapshot_Checksum test.
 func (appDB *AppDB) Snapshot(height uint64, format uint32) (<-chan io.ReadCloser, error) {
 	if format != snapshottypes.CurrentFormat {
+		appDB.WG.Done()
 		return nil, sdkerrors.Wrapf(snapshottypes.ErrUnknownFormat, "format %v", format)
 	}
 
 	var results []*types.SnapshotItem
 	if height != appDB.GetLastHeight() {
+		appDB.WG.Done()
 		return nil, sdkerrors.Wrapf(sdkerrors.ErrLogic, "cannot snapshot future height %v", height)
 	}
 
 	if height == 0 {
+		appDB.WG.Done()
 		return nil, sdkerrors.Wrap(sdkerrors.ErrLogic, "cannot snapshot height 0")
 	}
 
