@@ -143,10 +143,13 @@ enable = {{ .StateSync.Enable }}
 
 # At least 2 available RPC servers.
 rpc_servers = {{ .StateSync.RPCServers }}
+
 # A trusted height
 trust_height = {{ .StateSync.TrustHeight }}
+
 # The block ID hash of the trusted height
 trust_hash = "{{ .StateSync.TrustHash }}"
+
 trust_period = "{{ .StateSync.TrustPeriod }}"
 
 ##### rpc server configuration options #####
