@@ -54,6 +54,7 @@ func (blockchain *Blockchain) OfferSnapshot(req abci.RequestOfferSnapshot) abci.
 	err = blockchain.snapshotManager.Restore(snapshot)
 	switch {
 	case err == nil:
+		blockchain.initState()
 		return abci.ResponseOfferSnapshot{Result: abci.ResponseOfferSnapshot_ACCEPT}
 
 	case errors.Is(err, snapshottypes.ErrUnknownFormat):
@@ -109,6 +110,7 @@ func (blockchain *Blockchain) ApplySnapshotChunk(req abci.RequestApplySnapshotCh
 	_, err := blockchain.snapshotManager.RestoreChunk(req.Chunk)
 	switch {
 	case err == nil:
+		blockchain.initState()
 		return abci.ResponseApplySnapshotChunk{Result: abci.ResponseApplySnapshotChunk_ACCEPT}
 
 	case errors.Is(err, snapshottypes.ErrChunkHashMismatch):
@@ -125,7 +127,7 @@ func (blockchain *Blockchain) ApplySnapshotChunk(req abci.RequestApplySnapshotCh
 		}
 
 	default:
-		//blockchain.logger.Error("failed to restore snapshot", "err", err)
+		blockchain.logger.Error("failed to restore snapshot", "err", err)
 		return abci.ResponseApplySnapshotChunk{Result: abci.ResponseApplySnapshotChunk_ABORT}
 	}
 }

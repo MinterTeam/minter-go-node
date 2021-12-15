@@ -124,6 +124,7 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 	app := &Blockchain{
 		logger: logger,
 
+		rewards:                         big.NewInt(0),
 		rewardsCounter:                  rewards.NewReward(),
 		appDB:                           applicationDB,
 		storages:                        storages,
@@ -190,7 +191,6 @@ func (blockchain *Blockchain) initState() {
 	}
 
 	atomic.StoreUint64(&blockchain.height, currentHeight)
-	blockchain.rewards = big.NewInt(0)
 	blockchain.stateDeliver = stateDeliver
 	blockchain.stateCheck = state.NewCheckState(stateDeliver)
 	blockchain.appDB.SetState(stateDeliver.Tree())
@@ -544,6 +544,7 @@ func (blockchain *Blockchain) CheckTx(req abciTypes.RequestCheckTx) abciTypes.Re
 // Commit the state and return the application Merkle root hash
 func (blockchain *Blockchain) Commit() abciTypes.ResponseCommit {
 	if blockchain.stopped {
+		blockchain.wgSnapshot.Wait()
 		select {
 		case <-time.After(10 * time.Second):
 			blockchain.Close()
