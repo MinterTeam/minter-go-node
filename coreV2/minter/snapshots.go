@@ -137,6 +137,7 @@ func (blockchain *Blockchain) snapshot(height int64) {
 		return
 	}
 
+	//blockchain.wgSnapshot.Wait()
 	blockchain.wgSnapshot.Add(1)
 	defer blockchain.wgSnapshot.Done()
 
@@ -144,6 +145,7 @@ func (blockchain *Blockchain) snapshot(height int64) {
 
 	snapshot, err := blockchain.snapshotManager.Create(uint64(height))
 	if err != nil {
+		blockchain.appDB.WG.Done()
 		blockchain.logger.Error("failed to create state snapshot", "height", height, "err", err)
 		return
 	}
