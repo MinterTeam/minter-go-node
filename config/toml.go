@@ -104,9 +104,9 @@ api_simultaneous_requests = {{ .BaseConfig.APISimultaneousRequests }}
 fast_sync = {{ .BaseConfig.FastSync }}
 
 # State sync snapshot interval
-snapshot_interval =	{{ .BaseConfig.SnapshotInterval }}
+snapshot_interval = {{ .BaseConfig.SnapshotInterval }}
 # State sync snapshot to keep
-snapshot_keep_recent = 	{{ .BaseConfig.SnapshotKeepRecent }}
+snapshot_keep_recent = {{ .BaseConfig.SnapshotKeepRecent }}
 
 # Database backend: leveldb | memdb
 db_backend = "{{ .BaseConfig.DBBackend }}"
